@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-22
+updated: 2026-08-23
 review_by: 2027-02-08
 status: stable
 ---
@@ -1876,10 +1876,123 @@ halvmesyr:
 |---|---|---|
 | Anmälningar vars eventlänk inte kunde verifieras | `Anmälningar.Eventmatchning` (formelfält, `ADR-122` beslut 3) | Speccas |
 
+## 23. Sidramen — Mer-familjens delade sidkrom
+
+App-bred formregel, införd av
+[ADR-126](../decisions/ADR-126-delade-presentationsformer.md) (S111,
+2026-08-23). **Paragrafen finns för att dess frånvaro var den diagnostiserade
+orsaken till en defekt:** fram till nu täckte § 14 `NavCard` och ingenting
+täckte sidramen, så appen hann bära TVÅ oförenliga sidram-dialekter — båda
+facit-stämplade, den ena med en kodkommentar som kallade den andra ett
+`dubbleringsfel`. Varje ny yta valde sida utan att frågan ställdes.
+
+### Formen — kant-i-kant
+
+Valet (PRD `TASK-299` beslut 3, Marcus 2026-08-22) föll på den dialekt fyra av
+sex skarpa ytor redan bar. Formen bor i
+`src/components/primitives/SidRam.tsx`; talen nedan är lästa ur den filen och
+ur `src/components/AppShell/AppShell.tsx`, inte återgivna ur minnet.
+
+| Del | Låst form | Källa |
+|---|---|---|
+| Innehållsytan | `<main>` bär `mx-auto w-full max-w-[600px] px-4 py-4 pb-24` | `AppShell.tsx` |
+| Chevronen | `mx-4 flex size-11 shrink-0 items-center justify-center self-start rounded-full bg-bg-muted` | `SidRam.tsx` |
+| Ikonen | `ChevronLeft`, `size={26}`, `aria-hidden="true"` | `SidRam.tsx` |
+| Träffytan | `size-11` = 44 px — WCAG 2.5.5-golvet exakt, inte med marginal | `SidRam.tsx` |
+| Tillgängligt namn | `tillbakaEtikett`, **obligatorisk prop** — ingen tyst standard | `SidRam.tsx` |
+| Rubrikblocket | sidans eget, `px-4` — matchar chevronens `mx-4` | varje konsument |
+
+**Regeln som binder ihop dem, i en mening:** *chevronen dras in `mx-4` och
+HELA innehållskolumnen under den delar samma `px-4` — kortytorna ligger kant i
+kant mot `<main>`s egen padding, ingen extra inramning läggs på.*
+
+Sista ledet är inte kosmetik. `TASK-299.2`-mätningen (2026-08-23,
+`boundingBox()` i en 1280 px-vy) fann att en yta som drog in chevron och rubrik
+men lämnade innehållet kvar på `<main>`s marginal fick **16 px missalignment** —
+rubriken på `x=372`, filterraden och listan på `x=356`. Det är den fällan
+regelns andra hälft stänger.
+
+### Vad sidramen äger — och inte
+
+**Bara sidkromet.** Rubriken lever kvar i varje sida (`TASK-299` §
+OMFATTNINGEN LÅST punkt 2, Marcus 2026-08-22). `SidRam` BÄR en valfri
+rubrik-ägande gren, men **ingen skarp yta använder den** — den demonstreras och
+tillgänglighetsprövas enbart på `/dev/primitives`.
+
+Grunden är mätt, inte tyckt: den bredare grenen hade noll konsumenter, och att
+bredda en primitiv senare är billigt medan att smalna av den betyder att plocka
+isär varje konsument (`ADR-126` B3).
+
+Sidramen äger heller **ingen `<Layout>`** — allt under kromet är sidans eget.
+Ytorna är genuint olika (en scanlista, ett formulär, en dörrlista med
+kvittensfönster), och `PersonDetail.tsx`s docblock hade dragit samma slutsats
+redan i prototypfasen.
+
+### Vilka ytor som bär den
+
+Åtta skarpa ytor konsumerar `primitives/SidRam` (grep-verifierat 2026-08-23):
+
+| Yta | Fil | Landning |
+|---|---|---|
+| Väntelista | `waitlist/Waitlist.tsx` | `TASK-299.7` |
+| Intresserade | `intresserade/Intresserade.tsx` | `TASK-299.8` |
+| Maillogg | `maillog/MailLog.tsx` | `TASK-299.9` |
+| Installera appen | `installera-appen/InstalleraAppen.tsx` | `TASK-299.9` |
+| Aktivitetshistorik | `aktivitetshistorik/AktivitetsHistorik.tsx` | `TASK-299.11` |
+| Dokument | `dokument/DokumentYta.tsx` | `TASK-299.11` |
+| Persondetalj | `persons/PersonDetail.tsx` | `TASK-299.6` |
+| Check-in / dörrlistan | `events/EventCheckin.tsx` | `TASK-299.6` |
+
+Anmälningssidan (`/mer/anmalningar`) tillkommer när `TASK-299.5` landar.
+
+### Familjegränsen — vilka ytklasser som INTE bär den
+
+Detta är paragrafens hela poäng: en delad form utan utskriven gräns sprider
+sig till ytor den inte hör hemma på (`ADR-126` B5).
+
+| Ytklass | Bär sidramen? | Skäl |
+|---|---|---|
+| **Mer-familjen och dess detaljytor** | **Ja** | de har alla exakt en väg tillbaka, till en känd föräldrayta |
+| **Hem** | **Nej** | landningsyta — den har ingen förälder att gå tillbaka till, och bär en `text-4xl`/`lg:text-5xl`-rubrik i stället för sidkrom |
+| **Eventdetaljen** | **Nej** (i dag) | sidans identitet bärs av `EventValjare` — en väljare, inte en rubrik; chevronen finns men sidan är en annan formklass. Se § Öppna poster |
+| **Overlays** (dialoger, Visa-lägen) | **Nej** | de har ingen sida att lämna — vägen ut är stängning, inte navigering, och bärs av dialogens egna mönster |
+| **Prototypytor under `dev/`** | **Nej** som regel | de får bära en egen form medan de itereras; promoveringen tar in dem (`ADR-103`) |
+
+**Testet vid tveksamhet:** *lämnar användaren sidan genom att gå TILLBAKA till
+en känd föräldrayta?* Ja ⇒ sidram. Stängs den, eller är den roten i sin gren
+⇒ inte sidram.
+
+### Tillgänglighet — golvet, inte ambitionen
+
+- Chevronen är **ikon-ensam** och får sitt namn ur `tillbakaEtikett`, som är
+  obligatorisk. Ikonen är `aria-hidden`. Namnet ska nämna MÅLET, inte
+  handlingen (`"Tillbaka till Mer"`, `"Tillbaka till eventet"`).
+- Träffytan är 44 px exakt (`size-11`).
+- Primitiven är byggd på `react-aria-components` `Link` (`ADR-044`) wrappad i
+  TanStack Routers `createLink` — den renderar ett riktigt `<a href>`, så
+  router-navigering, hover/press-semantik och fokushantering följer med utan
+  egen kod.
+- Rubrikens `<h1>` tar en valfri `rubrikRef` för fokusflytt vid datalandning.
+  Ytor som äger sin egen rubrik ansvarar själva för det mönstret.
+
+### Öppna poster
+
+- **`text-2xl` mot `text-3xl` i familjens rubriker.** Mätt 2026-08-23:
+  `text-3xl` på persondetalj, check-in, aktivitetshistorik, dokument och
+  intresserade; `text-2xl` på väntelista, maillogg och installera-appen. Sidan
+  äger rubriken (ovan), så divergensen bryter ingen regel som står här — men
+  den är inte heller ett beslut någon fattat. Ingen egen skiva ännu.
+- **Sex kvarvarande inline-kopior av chevron-formen** i skarpa filer och en
+  prototypyta, uppräknade i `ADR-126` § Konsekvenser. De är utanför
+  `TASK-299`s omfattning tills de fått visuella vakter.
+- **Eventdetaljens formklass.** Den står som "nej" i tabellen ovan därför att
+  den är en annan klass i dag, inte därför att frågan prövats mot ett facit.
+
 ## Ändringslogg
 
 | Datum | Förändring |
 |-------|-----------|
+| 2026-08-23 | §23 Sidramen — Mer-familjens delade sidkrom ([ADR-126](../decisions/ADR-126-delade-presentationsformer.md), S111). Paragrafen saknades HELT, och frånvaron var den diagnostiserade orsaken till att appen bar två oförenliga sidram-dialekter — båda facit-stämplade, den ena med en kodkommentar som kallade den andra ett `dubbleringsfel`. Formen låst till kant-i-kant: `size-11`-chevron (44 px, WCAG 2.5.5-golvet exakt) indragen `mx-4`, `ChevronLeft` 26, obligatoriskt `tillbakaEtikett`, och HELA innehållskolumnen på samma `px-4` — sista ledet mätt, en yta som drog in bara rubriken fick 16 px missalignment (`TASK-299.2`, `boundingBox()`). Sidramen äger BARA sidkromet; rubriken lever kvar per sida, och den rubrik-ägande grenen har noll skarpa konsumenter (demonstreras på `/dev/primitives`). Familjegränsen utskriven mot Hem (landningsyta), eventdetaljen (`EventValjare` bär identiteten), overlays (stängs, navigeras inte ur) och dev-prototyper, med testet "lämnar användaren sidan genom att gå TILLBAKA till en känd föräldrayta?". Åtta bärande ytor uppräknade; tre öppna poster bokförda, däribland `text-2xl`/`text-3xl`-divergensen i familjens rubriker. |
 | 2026-08-21 | §22 Åtgärdskön — arbetsobjekt är INTE notiser ([ADR-122](../decisions/ADR-122-eventlankens-vakt-och-atgardskon.md), S110). Dragen som familjegräns mot §21 dagen efter att §21 skrevs: notistrappans åtta klasser är alla händelsebundna, och en post som ligger kvar tills någon åtgärdar den har ingen klass där. Regeln i en mening: kan beskedet vara sant för en användare som loggar in i morgon är det inte en notis. Tre delar krävs alltid (kö · markör · resolution i appen) — två av tre är en halvmesyr som gör Airtable till en yta Lotta måste kunna. Notiscenter förkastat på NN/g:s grund. Formen på Hem är den befintliga `Bevakningsrad`, inte en ny yta. |
 | 2026-08-21 | §21 Notistrappan — familjens FÖRSTA styrande yta ([ADR-121](../decisions/ADR-121-notistrappan-form-per-klass-i-notisfamiljen.md), S109). Fram till nu hade specen noll träffar på banner/notis/toast/`MessageBox`; fem ytor bar fyra separata designspråk utan att någon regel band dem. Trappan delar på TVÅ axlar (orsakade användaren detta? kräver det handling nu?) i stället för på kodhemvist, med åtta klasser och kolumnen "förskjuter layout". Fyra app-breda regler: fel blir aldrig toast · ingen timer när knappen är enda vägen till åtgärden (WCAG 2.2.1) · överlagrade notiser har fast bredd · `role="status"` alltid monterad medan `role="alert"` monteras villkorat. Copy-golvet problem/orsak/lösning mot GOV.UK + NN/g + Microsoft; "Ladda om" låst framför "Uppdatera" (mätt domänkollision). Systerstruktur till §15 Laddtrappan, samma form som `ADR-113` etablerade. |
 | 2026-04-05 | Initialt dokument. Token-arkitektur, typografiskala, spacing-system, lint-config, design-audit skill-spec, Playwright-config, Tailwind-mappning. |

@@ -14,16 +14,25 @@ import { Link as AriaLink, type LinkProps as AriaLinkProps } from 'react-aria-co
  * `PersonDetail.tsx` § `sidRam` och `EventCheckin.tsx` (chevron `mx-4`) samt
  * `ManuellAnmalanForm.tsx`/`AtgardsSida.tsx` § `Sidhuvud` (rubrikblockets
  * form, `border-border border-b px-4 pb-5`) — ingen ny form mintas, sex
- * kopierade sidkrom-instanser lyfts till en delad primitiv (ADR-124).
+ * kopierade sidkrom-instanser lyfts till en delad primitiv (ADR-126; numret
+ * stod som ADR-124 fram till TASK-299.6 — det hann tas av
+ * förhandsgranskningens leveransväg medan detta beslut ännu var omintat).
  *
  * RUBRIKBLOCKET ÄR VALFRITT (AC #1): satt `rubrik` — sidramen äger
  * rubrikblocket också (den BREDARE omfattningen, `Sidhuvud`-formen med
  * avgränsande linje under). Utelämnad — sidramen äger bara chevronen (den
  * SMALARE omfattningen); callern renderar sitt eget rubrikblock separat och
  * ansvarar själv för att hålla det `px-4`-indraget så helheten läser som
- * kant-i-kant. Vilken av de två omfattningarna huset landar på avgörs INTE
- * här (PRD `TASK-299` beslut 5, mätningsberoende, avsiktligt olåst) —
- * komponenten bär bara båda formerna.
+ * kant-i-kant.
+ *
+ * OMFATTNINGEN ÄR LÅST sedan 2026-08-22 (`TASK-299.2`, Marcus; PRD
+ * `TASK-299` § OMFATTNINGEN LÅST punkt 2): huset bär den SMALARE — bara
+ * sidkromet, rubriken lever kvar i varje sida. Den rubrik-ägande grenen har
+ * därmed NOLL skarpa konsumenter och renderas enbart på `/dev/primitives`,
+ * där den också axe-provas. Den behålls med avsikt: att bredda en primitiv
+ * senare är billigt, att smalna av den betyder att plocka isär varje
+ * konsument (`ADR-126` B3). Formen och familjegränsen:
+ * `docs/specs/DESIGN-SYSTEM-SPEC.md` § 23.
  *
  * Byggd på react-aria-components `Link` (ADR-044) wrappad i TanStack
  * Routers `createLink` (samma mekanism som `NavCard`/`PersonMiniKort`):
