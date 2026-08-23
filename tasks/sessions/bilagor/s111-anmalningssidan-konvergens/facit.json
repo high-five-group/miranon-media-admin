@@ -2,7 +2,12 @@
   "prototyp": "s111-anmalningssidan-konvergens",
   "last": "2026-08-23",
   "lasning": "Det blir bra.",
-  "godkand": null,
+  "godkand": {
+    "av": "marcus",
+    "datum": "2026-08-23",
+    "citat": "Det blir bra.",
+    "sha": "d3858a29b09dc4a5a6184357eda82d5c04f3d4f8"
+  },
   "ytor": [
     {
       "yta": "anmälningssidan",

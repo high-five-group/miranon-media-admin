@@ -4,7 +4,7 @@ title: 'Skiva: Konvergens till godkänd form + facit-stämpel för anmälningssi
 status: To Do
 assignee: []
 created_date: '2026-08-22 19:20'
-updated_date: '2026-08-23 14:26'
+updated_date: '2026-08-23 14:54'
 labels:
   - ready-for-human
 dependencies:
@@ -24,7 +24,7 @@ Den variant Marcus valde itereras tills han är helt nöjd — konvergensfasen. 
 - [x] #1 Vinnarvarianten itererad till Marcus uttryckliga godkännande i klartext
 - [x] #2 Facit-manifest finns på tasks/sessions/bilagor/s111-anmalningssidan-konvergens/facit.json med ytan 'anmälningssidan' och bilder för alla tre lägen (ofiltrerad, åtgärdskö, tomt)
 - [x] #3 Manifestet deklarerar uttryckligen vilka bilder som är facit och vilka som är iterationssteg eller förkastade alternativ
-- [ ] #4 Marcus har stämplat manifestet via kanalseparationen; godkand-fältet bär av, datum, citat och sha
+- [x] #4 Marcus har stämplat manifestet via kanalseparationen; godkand-fältet bär av, datum, citat och sha
 - [x] #5 check-facit grön med det nya manifestet
 <!-- AC:END -->
 
@@ -42,4 +42,6 @@ Den variant Marcus valde itereras tills han är helt nöjd — konvergensfasen. 
 
 <!-- SECTION:NOTES:BEGIN -->
 2026-08-23 (S111 resume 2, fönster 1) — AC #1 bockad: vinnarvarianten (B) itererad till Marcus uttryckliga godkännande i klartext. Kedjan: Del 5 *"Ser bra ut. Jag godkänner bevakningsraden och åtgärdskö-raden nu"* (Hems rader) → resume 2: Marcus begärde dokumentsidans eventväljarform + ikon på "Alla event" (*"Jag vill ha den andra eventväljaren som har ett annat utseende, den som sitter på dokument-sidan. Och 'Alla event' kan väl få en ikon då precis som 'Delade dokument' har på dokumentsidan, det blir väl snyggt?"*), byggt i 7ac7b973 (form="fristaende" + CalendarRange), granskat på dev-servern ur worktreen → *"Det blir bra."* Formen som ska in i facit-manifestet = wip/s111-marcus-iteration vid 7ac7b973 (+ ordbytet som följer).
+
+2026-08-23 — AC #4 bockad: Marcus stämplade manifestet via kanalseparationen (npm run facit:godkann, !-prefix, ADR-104): av marcus · datum 2026-08-23 · citat "Det blir bra." · sha d3858a29 (origin/main vid stämpeln). Bilderna som stämplades är de omtagna efter mobilfixen (87438ea6/348c9079). check-facit exit 0 med stämpeln.
 <!-- SECTION:NOTES:END -->
