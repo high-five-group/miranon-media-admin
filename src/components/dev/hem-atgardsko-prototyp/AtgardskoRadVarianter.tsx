@@ -141,23 +141,32 @@ function RadInnehall({
   marker,
   header,
   subtext,
+  meta,
 }: {
   marker?: ReactNode;
   header: string;
   subtext: string;
+  meta?: string;
 }) {
   return (
     <>
       {marker}
-      <span className="flex min-w-0 flex-1 flex-col">
-        <span className="truncate font-semibold text-body">{header}</span>
-        <span className="truncate text-caption text-text-secondary">{subtext}</span>
+      <span className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 gap-y-0.5">
+        <span className="col-start-1 row-start-1 truncate font-semibold text-body">{header}</span>
+        {meta && (
+          <span className="col-start-2 row-span-2 row-start-1 shrink-0 self-center text-caption text-text-muted">
+            {meta}
+          </span>
+        )}
+        <ChevronRight
+          aria-hidden="true"
+          size={18}
+          className="text-(color:--mm-navcard-icon) col-start-3 row-span-2 row-start-1 shrink-0 self-center"
+        />
+        <span className="col-start-1 row-start-2 truncate text-caption text-text-secondary">
+          {subtext}
+        </span>
       </span>
-      <ChevronRight
-        aria-hidden="true"
-        size={18}
-        className="text-(color:--mm-navcard-icon) shrink-0"
-      />
     </>
   );
 }
@@ -200,8 +209,8 @@ export function AtgardskoRadIkon({ antal }: AtgardskoInnehallProps) {
             <Link2Off size={16} />
           </span>
         }
-        header="Kräver åtgärd"
-        subtext={`${antal} anmälningar kunde inte kopplas till rätt event`}
+        header={`${antal} kräver åtgärd`}
+        subtext="Kunde inte kopplas till rätt event"
       />
     </AtgardskoLinkSkal>
   );
@@ -217,10 +226,7 @@ export function AtgardskoRadIkon({ antal }: AtgardskoInnehallProps) {
 export function AtgardskoRadEtikett({ antal }: AtgardskoInnehallProps) {
   return (
     <AtgardskoLinkSkal to="/mer/anmalningar" search={{ visa: 'atgardskon' }}>
-      <RadInnehall
-        header="Kräver åtgärd"
-        subtext={`${antal} anmälningar kunde inte kopplas till rätt event`}
-      />
+      <RadInnehall header={`${antal} kräver åtgärd`} subtext="Kunde inte kopplas till rätt event" />
     </AtgardskoLinkSkal>
   );
 }
@@ -317,8 +323,8 @@ export function EventinfoRadAnatomi({
   const dagar = bevakningDagarText(rad.dagarTillStart);
   const ejSkickad = rad.lage === 'ej-skickad';
   const subtext = ejSkickad
-    ? `${dagar} · Deltagarinfo saknas`
-    : `${dagar} · ${rad.antalUtanEventinfo} nya deltagare saknar deltagarinfo`;
+    ? 'Deltagarinfo saknas'
+    : `${rad.antalUtanEventinfo} nya deltagare saknar deltagarinfo`;
   return (
     <li>
       <AriaButton
@@ -326,7 +332,7 @@ export function EventinfoRadAnatomi({
         onPress={() => onOppna(rad.event)}
         className="text-(color:--mm-navcard-text) flex min-h-14 w-full items-center gap-3 rounded-2xl border border-(--mm-navcard-border) bg-(--mm-navcard-bg) px-4 py-3 text-left hover:bg-bg-emphasized motion-safe:transition-colors contrast-more:border-(--mm-navcard-border-contrast)"
       >
-        <RadInnehall header={rad.eventNamn} subtext={subtext} />
+        <RadInnehall header={rad.eventNamn} subtext={subtext} meta={dagar} />
       </AriaButton>
     </li>
   );
