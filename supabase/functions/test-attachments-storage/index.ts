@@ -101,7 +101,16 @@ const UTKAST_PREFIX_MARKER = 'utkast';
 
 /** Fail-closed-guarden delad av "list_prefix"/"remove_paths": exakt de TVÅ
  * reserverade namnrymderna, ingenting annat. */
+// Namnrymds-spärren är en PREFIX-match — därför avvisas varje segment-
+// traversering explicit: `utkast/../bilagor-rad.pdf` börjar med "utkast/"
+// men pekar utanför. Vi litar inte på att Storage normaliserar nyckeln åt
+// oss (orkestrerar-härdning vid granskningen av TASK-302.3, 2026-08-23).
+function harTraversering(path: string): boolean {
+  return path.split('/').some((segment) => segment === '..' || segment === '.' || segment === '');
+}
+
 function isAllowedPrefix(prefix: string): boolean {
+  if (harTraversering(prefix)) return false;
   return (
     prefix.startsWith(TEST_EVENT_PREFIX_MARKER) ||
     prefix === UTKAST_PREFIX_MARKER ||

@@ -263,6 +263,23 @@ test.describe('test-attachments-storage — bucket, path-form och signerad åtko
       expect(res.status(), await res.text()).toBe(400);
     });
 
+    test('deny: remove_paths/list_prefix med segment-traversering under utkast/ → 400 (prefix-matchen räcker inte)', async ({
+      request,
+    }) => {
+      const config = getApiConfig();
+      const jwt = await getValidUserJWT(request, config);
+      const remove = await request.post(`${config.baseUrl}${ENDPOINT}`, {
+        headers: { Authorization: `Bearer ${jwt}` },
+        data: { action: 'remove_paths', paths: ['utkast/../recXXXXXXXXXXXXXX/bilaga.pdf'] },
+      });
+      expect(remove.status(), await remove.text()).toBe(400);
+      const list = await request.post(`${config.baseUrl}${ENDPOINT}`, {
+        headers: { Authorization: `Bearer ${jwt}` },
+        data: { action: 'list_prefix', prefix: 'utkast/..' },
+      });
+      expect(list.status(), await list.text()).toBe(400);
+    });
+
     test('deny: list_prefix/remove_paths saknar sina obligatoriska fält → 400', async ({
       request,
     }) => {
