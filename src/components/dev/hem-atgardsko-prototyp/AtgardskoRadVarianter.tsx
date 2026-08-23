@@ -47,23 +47,17 @@ import type { Event } from '@/domain/models/Event';
  * (eventinfo OCH åtgärdskö) — se `EventinfoRadAnatomi` längst ned i denna
  * fil, konsumerad av routens referensrad i variant-läge.
  *
- * TALET SOM BADGE (TASK-303 AC #3): den varierande siffran ligger ALDRIG
- * längre inbakad i en mening — den bärs av `RadBadge`, en egen,
- * bredd-reserverad platta (`tabular-nums`, fast `min-w`). Kvarvarande text
- * (rubrik + undertext) blir därmed KONSTANT oavsett datan, vilket är
- * SKÄLET till att en enda `truncate`-rad (i stället för `line-clamp-2`)
- * är trygg här: den konstanta texten är mätt för att rymmas på en rad vid
- * 375px (se `EventinfoRadAnatomi`s docblock för siffrorna) — till
- * skillnad från eventnamnet (äkta, obegränsad användardata), som ÄRVER
- * personlistans egna `truncate`-hantering av långa namn (samma avvägning
- * `PersonsList.tsx` redan gör för långa namn, inte en ny regel).
+ * TALET I MENINGEN, INTE I EN BADGE (Marcus 2026-08-23, omkastat beslut).
+ * TASK-303 lyfte först ut den varierande siffran till en trailing badge så
+ * att kvarvarande text blev konstant. Marcus rev den: "jag vill ta bort
+ * siffer-pillen ... siffran ska alltså in i meningen." Talet bor därför i
+ * texten igen — i eventinfo-radens undertext, och i åtgärdskö-radens
+ * RUBRIK ("12 kräver åtgärd"), eftersom den raden saknar en meta att flytta
+ * ut och dess mening annars klipptes.
  *
- * VARIANT C:s UNDANTAG, ÖPPET BOKFÖRT: C:s ledande platta BÄR redan talet
- * (dess ursprungliga koncept) — den får därför INGEN separat trailing-
- * badge (`badge` utelämnad), annars skulle samma tal synas två gånger på
- * samma rad. Plattan är av samma skäl INTE `aria-hidden` (till skillnad
- * från A:s rent dekorativa ikon) — annars skulle talet försvinna helt ur
- * tillgänglighetsträdet sedan rubrik/undertext blev konstant text.
+ * HÖJDLÅSET vilar därmed inte längre på konstant text, utan på att varje
+ * rad ryms på EN rad. Det är mätt, inte antaget — siffrorna står i
+ * commit-historiken, inte upprepade här som en andra kopierbar källa.
  *
  * DELAD SKAL (`AtgardskoRadSkal`): identisk yttre form som produktionens
  * `AtgardskoRadLink` (`Bevakningsrad.tsx`) — samma `--mm-navcard-*`-yta,
@@ -114,28 +108,28 @@ function badgeVarde(antal: number): string {
  * vill jag att vi skriver ut '3 nya deltagare saknar deltagarinfo',
  * siffran ska alltså in i meningen."
  *
- * VARFÖR FLEX HÄR, TROTS ATT GRIDEN INFÖRDES FÖR ATT LÖSA EN MÄTT BUGG.
- * Den tidigare formen hade badge OCH chevron INNE i textblocket, på rad 1.
- * En naiv `flex-col` gav då undertexten bara ~179-227px vid 375px
- * (`scrollWidth` översteg `clientWidth` med 45-60px = klippning mitt i ord,
- * det AC #4 och `Bevakningsrad.tsx`s ursprungliga `line-clamp-2`-motivering
- * förbjuder), och griden fanns för att låta rad 2 återta bredden under dem.
+ * TVÅRADIGT GRID, INTE `flex-col`. En naiv `flex-col` klämmer undertexten
+ * till ~179-227px vid 375px (live-mätt `scrollWidth` över `clientWidth` =
+ * klippning mitt i ord, det AC #4 och `Bevakningsrad.tsx`s ursprungliga
+ * `line-clamp-2`-motivering förbjuder). Griden låter i stället rubrikraden
+ * och undertexten dela kolumn 1, medan meta och chevron bor i egna
+ * kolumner.
  *
- * Med badgen RIVEN och chevronen flyttad UT ur textblocket — den är nu
- * syskon till textblocket i förälderns `flex items-center` — konkurrerar
- * ingenting längre om rad 1:s bredd. Båda raderna får samma bredd, och det
- * finns inget att återta. Det är dessutom exakt Hems listanatomi
- * (`NyaAnmalningar.tsx`: avatar · `flex-col`-textblock · högerställd meta),
- * som Marcus i samma besked pekade ut som formen anmälningslistan ska ha —
- * två ytor, en anatomi.
+ * META OCH CHEVRON SPÄNNER BÅDA RADERNA (`row-span-2 self-center`) — Marcus
+ * verbatim: "Tiden måste ju ligga centrerat lagom långt från chevronen."
+ * `gap-x-3` ger 12px mellan dem. Följden är mätt och avsiktlig: en centrerad
+ * meta tar plats i BÅDA raderna, så undertexten får kolumn 1 ensam. Det är
+ * skälet att meningen kortades till "N nya saknar deltagarinfo" — den fulla
+ * formen behövde 201px mot 155 tillgängliga, och klippning är inte ett
+ * alternativ.
  *
- * CHEVRONEN CENTRERAS MOT HELA RADEN av förälderns `items-center`, inte mot
- * rubrikraden som griden gjorde med `self-center` i `row-start-1`.
- *
- * HÖJDLÅSET vilar nu på att undertexten ryms på EN rad: talet är tillbaka i
- * meningen och `deltagarinfo` är tre tecken längre än `eventinfo`, så raden
- * växte. Mätt vid 375px med 1-, 2- och 3-siffriga tal — siffrorna står i
- * commit-meddelandet, inte upprepade här som en andra kopierbar källa.
+ * META-PILLEN lånar `PersonsList.tsx`s `Pill`-form rakt av (`rounded-full
+ * px-2 py-0.5 font-medium text-caption`, `bg-surface text-text-secondary`)
+ * — husets etablerade form, ingen ny uppfunnen. Marcus: "Tiden behöver
+ * dessutom ligga i en vit pill." Mätt: pillen är `rgb(255,255,255)`, dess
+ * text 7,91:1 mot pillen. Pillen mot kortytan är 1,09:1 — avsiktligt
+ * subtilt, en ytskillnad och inte en textkontrast, men värd att se med
+ * ögat.
  */
 function RadInnehall({
   marker,
@@ -154,7 +148,7 @@ function RadInnehall({
       <span className="grid min-w-0 flex-1 grid-cols-[minmax(0,1fr)_auto_auto] items-center gap-x-3 gap-y-0.5">
         <span className="col-start-1 row-start-1 truncate font-semibold text-body">{header}</span>
         {meta && (
-          <span className="col-start-2 row-span-2 row-start-1 shrink-0 self-center text-caption text-text-muted">
+          <span className="col-start-2 row-span-2 row-start-1 shrink-0 self-center rounded-full bg-surface px-2 py-0.5 font-medium text-caption text-text-secondary">
             {meta}
           </span>
         )}
@@ -324,7 +318,7 @@ export function EventinfoRadAnatomi({
   const ejSkickad = rad.lage === 'ej-skickad';
   const subtext = ejSkickad
     ? 'Deltagarinfo saknas'
-    : `${rad.antalUtanEventinfo} nya deltagare saknar deltagarinfo`;
+    : `${rad.antalUtanEventinfo} nya saknar deltagarinfo`;
   return (
     <li>
       <AriaButton
