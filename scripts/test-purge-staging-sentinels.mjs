@@ -813,6 +813,67 @@ t('skarpa policy-filen på disk passerar validatePolicy', () => {
   validatePolicy(raw);
 });
 
+// --- [TASK-309.3] Bilagornas skrivvägars sentinel-targets (ADR-125 § 2) ---
+// Spot-checks (utkast-drafts-mönstret ovan) — bevisar att de TRE nya
+// targetsen faktiskt landade i .purge-staging-policy.json med rätt tabell,
+// exakt-match-fält och linkGuard-exkludering. `save-event-text`s throwaway-
+// events, `save-place-standard`s Platser-rader och agendans Agendapunkter-
+// rader delar ALLA prefixet `ZZ-TASK-309.3-` (data-model.md § Bilagornas
+// datamodell).
+
+function findTarget(name) {
+  const raw = JSON.parse(
+    readFileSync(new URL('../.purge-staging-policy.json', import.meta.url), 'utf8'),
+  );
+  return raw.targets.find((tgt) => tgt.name === name);
+}
+
+t('policyn på disk BÄR save-event-text-eventplanering-sentineler (Eventplanering, Ort)', () => {
+  const target = findTarget('save-event-text-eventplanering-sentineler');
+  assert.ok(
+    target,
+    'save-event-text-eventplanering-sentineler saknas i .purge-staging-policy.json',
+  );
+  assert.equal(target.table, 'Eventplanering');
+  assert.equal(target.exactMatchField, 'Ort');
+  assert.equal(target.linkGuard, true);
+  // Plats/Agendapunkter är FÖRVÄNTADE länkar på dessa test-events (AC #1
+  // sätter agendans egen kopia, AC #2 länkar Plats) — linkGuard ska inte
+  // fastna på dem (samma "exkludera de konstruktions-kända länkarna"-
+  // disciplin som create-event-sentineler redan tillämpar på Eventtyp).
+  assert.deepEqual(target.linkGuardExcludeFields, ['Eventtyp', 'Plats', 'Agendapunkter']);
+  assert.equal(isExactSentinel({ fields: { Ort: 'ZZ-TASK-309.3-plats-abc123' } }, target), true);
+  assert.equal(isExactSentinel({ fields: { Ort: 'ZZ-create-event-test' } }, target), false);
+});
+
+t('policyn på disk BÄR save-place-standard-platser-sentineler (Platser, Namn)', () => {
+  const target = findTarget('save-place-standard-platser-sentineler');
+  assert.ok(target, 'save-place-standard-platser-sentineler saknas i .purge-staging-policy.json');
+  assert.equal(target.table, 'Platser');
+  assert.equal(target.exactMatchField, 'Namn');
+  assert.equal(target.linkGuard, true);
+  // 'Eventplanering' är Platsers auto-födda spegelfält (ADR-125 § 2) —
+  // POPULERAT så fort ett event länkas, alltid, by design. Utan denna
+  // exkludering skulle VARJE test-Platser-rad permanent fastna i linkGuard.
+  assert.deepEqual(target.linkGuardExcludeFields, ['Eventplanering']);
+  assert.equal(isExactSentinel({ fields: { Namn: 'ZZ-TASK-309.3-plats-abc123' } }, target), true);
+  assert.equal(isExactSentinel({ fields: { Namn: 'Rönninge' } }, target), false);
+});
+
+t('policyn på disk BÄR save-event-text-agendapunkter-sentineler (Agendapunkter, Text)', () => {
+  const target = findTarget('save-event-text-agendapunkter-sentineler');
+  assert.ok(target, 'save-event-text-agendapunkter-sentineler saknas i .purge-staging-policy.json');
+  assert.equal(target.table, 'Agendapunkter');
+  assert.equal(target.exactMatchField, 'Text');
+  // linkGuard: false — Event/Eventinnehåll är FÖRVÄNTADE, obligatoriska
+  // länkar på VARJE Agendapunkter-rad (ADR-125 § 2: "hör till EXAKT EN
+  // förälder") — true hade gjort linkGuard fail-open för hela tabellen
+  // (varje rad skulle träffas, ingen rad skulle någonsin purgas).
+  assert.equal(target.linkGuard, false);
+  assert.equal(isExactSentinel({ fields: { Text: 'ZZ-TASK-309.3-rad-1' } }, target), true);
+  assert.equal(isExactSentinel({ fields: { Text: 'Miranon Media' } }, target), false);
+});
+
 process.on('beforeExit', () => {
   if (failed > 0) {
     console.error(`\n${failed} test(er) RÖDA`);

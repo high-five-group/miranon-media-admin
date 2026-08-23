@@ -54,6 +54,9 @@ import {
   RegistrationSchema,
   type SavedSegment,
   SavedSegmentSchema,
+  type SaveEventContentInput,
+  type SaveEventTextInput,
+  type SavePlaceStandardInput,
   type SaveSegmentInput,
   type SegmentResult,
   SegmentResultSchema,
@@ -418,6 +421,48 @@ export class AirtableAdapter implements DataSourceAdapter {
   async getDocumentSources(eventId: string): Promise<DocumentSources> {
     const data = await callEdgeFunction<unknown>('get-document-sources', { eventId });
     return DocumentSourcesSchema.parse(data);
+  }
+
+  /**
+   * Spara eventets egna kopia av ett block (TASK-309.3 AC #1). POST mot
+   * save-event-text-EF:en — se `DataSourceAdapter.saveEventText` för det
+   * fulla kontraktet. Inget svar att parse:a (ingen domän-shape konsumeras
+   * här ännu; refetch sker via `queryKeys.documentSources` -invalideringen
+   * i mutations-hooken).
+   */
+  async saveEventText(input: SaveEventTextInput): Promise<void> {
+    await postEdgeFunction('save-event-text', {
+      eventId: input.eventId,
+      falt: input.falt,
+      agenda: input.agenda,
+    });
+  }
+
+  /**
+   * "Spara som platsens standard" (TASK-309.3 AC #2). POST mot
+   * save-place-standard-EF:en — se `DataSourceAdapter.savePlaceStandard`
+   * för det fulla kontraktet (find-or-create Platser + länk + kopia-
+   * rensning, allt server-side).
+   */
+  async savePlaceStandard(input: SavePlaceStandardInput): Promise<void> {
+    await postEdgeFunction('save-place-standard', {
+      eventId: input.eventId,
+      falt: input.falt,
+    });
+  }
+
+  /**
+   * Spara Eventinnehållets standardtexter/-agenda (TASK-309.3 AC #3). POST
+   * mot save-event-content-EF:en — `Namn` skickas ALDRIG (EF:en härleder
+   * den server-side ur radens Event/Typ, se
+   * `DataSourceAdapter.saveEventContent`).
+   */
+  async saveEventContent(input: SaveEventContentInput): Promise<void> {
+    await postEdgeFunction('save-event-content', {
+      eventinnehallId: input.eventinnehallId,
+      falt: input.falt,
+      agenda: input.agenda,
+    });
   }
 
   /**

@@ -31,6 +31,9 @@ import {
   RecordActivityResultSchema,
   type RegistrationDetail,
   type SavedSegment,
+  type SaveEventContentInput,
+  type SaveEventTextInput,
+  type SavePlaceStandardInput,
   type SaveSegmentInput,
   type SegmentResult,
   type SegmentRuleDnf,
@@ -153,6 +156,18 @@ export class SupabaseAdapter implements DataSourceAdapter {
   }
 
   async getDocumentSources(_eventId: string): Promise<DocumentSources> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async saveEventText(_input: SaveEventTextInput): Promise<void> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async savePlaceStandard(_input: SavePlaceStandardInput): Promise<void> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async saveEventContent(_input: SaveEventContentInput): Promise<void> {
     throw new Error(NOT_IMPLEMENTED);
   }
 

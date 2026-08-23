@@ -389,3 +389,92 @@ export async function deleteAirtableRecord(
     throw new Error(`Airtable DELETE ${res.status}: ${body}`);
   }
 }
+
+/**
+ * Skapar FLERA records i en batch (Airtable POST /{table} med `{ records:
+ * [...] }`) — TASK-309.3: agendans atomiska dags-ersättning
+ * (`_shared/agendapunkter.ts`) kan behöva skapa upp mot ~15 rader i ETT
+ * svep. Airtable tillåter max 10 records per anrop; denna funktion
+ * chunk:ar och POST:ar en chunk i taget, SEKVENTIELLT (ingen
+ * parallellisering — samma throttle-försiktighet som `fetchFromAirtable`s
+ * sid-loop; `purge-staging-sentinels.mjs` delar samma chunk-storlek för
+ * sin DELETE-batchning, se den filens filhuvud). `typecast: false`
+ * EXPLICIT (samma disciplin som `upsertAirtableRecord`) — Text/Tid är fria
+ * strängar utan singleSelect-risk, men principen hålls konsekvent.
+ */
+export async function createAirtableRecords(
+  tableIdOrName: string,
+  fieldsList: readonly Record<string, unknown>[],
+): Promise<AirtableRecord[]> {
+  if (fieldsList.length === 0) return [];
+  const token = Deno.env.get('AIRTABLE_TOKEN');
+  if (!token) {
+    throw new Error('AIRTABLE_TOKEN not set');
+  }
+  const baseId = getAirtableBaseId();
+  const url = `${AIRTABLE_API_URL}/${baseId}/${encodeURIComponent(tableIdOrName)}`;
+
+  const created: AirtableRecord[] = [];
+  for (let i = 0; i < fieldsList.length; i += 10) {
+    const chunkFields = fieldsList.slice(i, i + 10);
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        records: chunkFields.map((fields) => ({ fields })),
+        typecast: false,
+      }),
+    });
+
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`Airtable batch POST ${res.status}: ${body}`);
+    }
+
+    const data = (await res.json()) as { records: AirtableRecord[] };
+    created.push(...data.records);
+  }
+  return created;
+}
+
+/**
+ * Tar bort FLERA records i en batch (Airtable DELETE /{table}?records[]=…).
+ * Max 10 id:n per anrop (samma Airtable-gräns som create) — chunk:as
+ * sekventiellt. TILL SKILLNAD MOT `deleteAirtableRecord` (per-ID-tolerant
+ * mot 404 — "redan borta, målet nått") kastar denna OFÖRÄNDRAT vid ett
+ * batch-404: agendans ersättnings-flöde (`_shared/agendapunkter.ts`) läser
+ * ID:na att ta bort OMEDELBART innan detta anrop, i samma request — ett
+ * 404 här signalerar ett genuint oväntat tillstånd (radering i en annan
+ * process mitt i samma sekund) och SKA fälla (→ 500 via
+ * `mapErrorToResponse`), inte sväljas tyst.
+ */
+export async function deleteAirtableRecords(
+  tableIdOrName: string,
+  recordIds: readonly string[],
+): Promise<void> {
+  if (recordIds.length === 0) return;
+  const token = Deno.env.get('AIRTABLE_TOKEN');
+  if (!token) {
+    throw new Error('AIRTABLE_TOKEN not set');
+  }
+  const baseId = getAirtableBaseId();
+
+  for (let i = 0; i < recordIds.length; i += 10) {
+    const chunkIds = recordIds.slice(i, i + 10);
+    const url = new URL(`${AIRTABLE_API_URL}/${baseId}/${encodeURIComponent(tableIdOrName)}`);
+    for (const id of chunkIds) url.searchParams.append('records[]', id);
+
+    const res = await fetch(url.toString(), {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`Airtable batch DELETE ${res.status}: ${body}`);
+    }
+  }
+}

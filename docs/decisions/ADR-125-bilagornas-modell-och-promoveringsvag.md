@@ -349,3 +349,17 @@ välkommen regression att uppdatera denna ADR-post för, inte ett fel att
 tysta ner. Grinden är mätt fälla-och-passera (negativ kontroll: ett
 felaktigt förväntat bytetal gav ett faktiskt rött testutfall, återställt
 efteråt).
+
+### 2026-08-23 — § 2:s `Eventinnehåll.Namn`-spec korrigerad: text-fält populerat av skrivvägen, inte en levande formel
+
+**TASK-309.2 (`#1870`, `da2df248`).** § 2:s tabell ovan specificerar `Namn`
+som *"formel `{Event} & " · " & {Typ}`, primär"* — en plattformsvägg gjorde
+den bokstavliga specen omöjlig (Airtables Meta-API kan varken skapa ett
+formelfält vid tabellskapelse, se `create-eventinnehall-modell.mjs` §
+filhuvud, eller byta primärfält i efterhand). `Namn` är i stället
+`singleLineText`, populerad med `"{Event} · {Typ}"` av seed-/skrivvägen —
+en ÖGONBLICKSBILD, inte en härledd formel. Väggen bokfördes redan i
+`data-model.md` § Bilagornas datamodell (TASK-309.2) men saknades här; denna
+rad stänger den kvarvarande motsägelsen mellan ADR:n och den skarpa
+implementationen. `TASK-309.3` fortsätter mönstret: `save-event-content`
+sätter `Namn` VID VARJE skrivning, inte bara vid radens födelse.

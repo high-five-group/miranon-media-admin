@@ -30,6 +30,9 @@ import type {
   RecordActivityResult,
   RegistrationDetail,
   SavedSegment,
+  SaveEventContentInput,
+  SaveEventTextInput,
+  SavePlaceStandardInput,
   SaveSegmentInput,
   SegmentResult,
   SegmentRuleDnf,
@@ -195,6 +198,34 @@ export interface DataSourceAdapter {
    * är `null`).
    */
   getDocumentSources(eventId: string): Promise<DocumentSources>;
+
+  /**
+   * Spara EVENTETS EGNA kopia av ett block (TASK-309.3 AC #1, ADR-125 § 2)
+   * — antingen ett (bilagetext)-textfält, en dags Agendapunkter-rader
+   * (ersatta atomärt), eller båda. `falt.<nyckel>: null` respektive
+   * `agenda.rader: []` TÖMMER kopian tillbaka till standarden (beslut 1).
+   * POST mot save-event-text-EF:en, som bygger Airtable-fälten server-side.
+   */
+  saveEventText(input: SaveEventTextInput): Promise<void>;
+
+  /**
+   * "Spara som platsens standard" (TASK-309.3 AC #2, Del 2 § D beslut 6+8)
+   * — sparar `falt` på Platser-raden (föder den om eventets `Ort` saknar
+   * en), länkar eventet till den, och TÖMMER eventets egen (bilagetext)-
+   * kopia för exakt de block som sparades. POST mot
+   * save-place-standard-EF:en; `Ort` skickas ALDRIG (servern läser den ur
+   * eventet — beslut 8: Ort rörs aldrig).
+   */
+  savePlaceStandard(input: SavePlaceStandardInput): Promise<void>;
+
+  /**
+   * Spara Eventinnehåll-radens standardtexter och/eller standardagenda
+   * (TASK-309.3 AC #3, Mer-sidan, ADR-125 § 7). POST mot
+   * save-event-content-EF:en, som ALLTID sätter `Namn = "<Event> · <Typ>"`
+   * vid en fält-skrivning (plattformsväggen, data-model.md § Bilagornas
+   * datamodell) — klienten skickar aldrig `Namn` självt.
+   */
+  saveEventContent(input: SaveEventContentInput): Promise<void>;
 
   /**
    * Skapa ett nytt event (Fas 6f, ADR-066). Tar write-shapen `CreateEventInput`
