@@ -301,15 +301,19 @@ export interface BevakningRad {
  * granskning 2026-08-16: den gamla "N nya deltagare saknar eventinfo"
  * klipptes med ellipsis i demo-läget ("3 nya deltagare saknar e…") — en
  * klippt mening är obegriplig för Lotta (Gunilla-principen). Mönster:
- * behåll betydelsen, stryk utfyllnadsordet "nya" — canon-ordet "eventinfo"
- * (ORDLISTA.md, aldrig "deltagarinfo" i UI-text) rörs inte.
+ * behåll betydelsen, stryk utfyllnadsordet "nya". ORDBYTET 2026-08-23
+ * (TASK-303, Marcus: "Jag vänder beslutet"): canon-ordet i UI-text är
+ * numera "deltagarinfo". Den gamla regeln — canon-ordet "eventinfo",
+ * aldrig "deltagarinfo" i UI-text — är RIVEN, se ORDLISTA § Deltagarinfo.
+ * Historiken ovan står kvar verbatim: den beskriver copyn som den löd
+ * 2026-08-16.
  */
 export function bevakningStatusText(
   rad: Pick<BevakningRad, 'lage' | 'antalUtanEventinfo'>,
 ): string {
   return rad.lage === 'ej-skickad'
-    ? 'Eventinfo saknas'
-    : `${rad.antalUtanEventinfo} deltagare saknar eventinfo`;
+    ? 'Deltagarinfo saknas'
+    : `${rad.antalUtanEventinfo} deltagare saknar deltagarinfo`;
 }
 
 /**

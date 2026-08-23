@@ -234,7 +234,7 @@ Deno.serve(async (req) => {
     // fältnamn endast här server-side).
     if (typeof reserverade === 'number') fields['Extra platser'] = reserverade;
     if (typeof manuelltTillagda === 'number') fields['Manuella platser'] = manuelltTillagda;
-    // Auto-utskicket (task-18.6): basens ord är 'Deltagarinfo' (UI-ordet eventinfo,
+    // Auto-utskicket (task-18.6): basens ord är 'Deltagarinfo' (UI-ordet detsamma sedan TASK-303,
     // ORDLISTA). NULL skickas VIDARE som null → Airtable RENSAR datumet (krysset kan
     // ta bort ett schema), medan frånvaro betyder "ändra inte" som för alla andra fält.
     if (deltagarinfoSchemalagd !== undefined) {

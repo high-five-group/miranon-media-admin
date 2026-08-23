@@ -415,7 +415,7 @@ function BetalningsPersonRad({ registration }: { registration: Registration }) {
       text: 'Påminnelse om slutbetalning',
       ikon: Bell,
     },
-    { nar: registration.deltagarinfoSkickad ?? null, text: 'Eventinfo skickad', ikon: Mail },
+    { nar: registration.deltagarinfoSkickad ?? null, text: 'Deltagarinfo skickad', ikon: Mail },
   ].flatMap((p) =>
     p.nar != null && !Number.isNaN(Date.parse(p.nar))
       ? [

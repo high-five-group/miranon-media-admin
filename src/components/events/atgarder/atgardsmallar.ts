@@ -65,7 +65,7 @@ export const ATGARDER: AtgardsTyp[] = [
   {
     nr: 3,
     nyckel: 'eventinfo',
-    namn: 'Skicka eventinformation',
+    namn: 'Skicka deltagarinformation',
     amne: 'Information inför {event}',
     mall: 'Hej {förnamn},\n\nSnart är det dags! Här kommer praktisk information inför {event}.\n\nRoger och Lotta',
   },

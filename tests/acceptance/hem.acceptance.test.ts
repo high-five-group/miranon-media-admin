@@ -1002,7 +1002,7 @@ test.describe('Förfallna betalningar — avgiftstyp, skickat-markör, tre tills
  * ALDRIG ellips på meningsbärande text (line-clamp-2, aldrig `truncate`).
  */
 test.describe('Bevakningsraden — full text utan klippning, två lägen (PRD berättelse 7, S102 Del 10 beslut 2–4)', () => {
-  test('"ej-skickad" — ALLA bekräftade saknar stämpeln → "Eventinfo saknas"; ett långt eventnamn klipps ALDRIG med ellipsis', async ({
+  test('"ej-skickad" — ALLA bekräftade saknar stämpeln → "Deltagarinfo saknas"; ett långt eventnamn klipps ALDRIG med ellipsis', async ({
     page,
     network,
   }) => {
@@ -1026,7 +1026,7 @@ test.describe('Bevakningsraden — full text utan klippning, två lägen (PRD be
     // HELA namnet finns i DOM:en — line-clamp klipper VISUELLT (CSS), aldrig
     // textinnehållet, till skillnad från `truncate`/ellipsis.
     await expect(rad).toContainText(langtNamn);
-    await expect(rad).toContainText('Eventinfo saknas');
+    await expect(rad).toContainText('Deltagarinfo saknas');
     await expect(rad).toContainText('15 dagar kvar');
     // Riktig knapp med chevron — leder framåt men no-op (svep-PRD:n bygger
     // inte här, task-241).
@@ -1039,7 +1039,7 @@ test.describe('Bevakningsraden — full text utan klippning, två lägen (PRD be
     await expect(namnSpan).not.toHaveClass(/truncate/);
   });
 
-  test('"eftersalantrare" — NÅGRA (inte alla) bekräftade saknar stämpeln → "N nya deltagare saknar eventinfo"', async ({
+  test('"eftersalantrare" — NÅGRA (inte alla) bekräftade saknar stämpeln → "N nya deltagare saknar deltagarinfo"', async ({
     page,
     network,
   }) => {
@@ -1071,7 +1071,7 @@ test.describe('Bevakningsraden — full text utan klippning, två lägen (PRD be
     await page.goto('/hem');
     const rad = page.getByRole('list', { name: 'Bevakningar' }).getByRole('listitem');
     await expect(rad).toHaveCount(1);
-    await expect(rad).toContainText('1 nya deltagare saknar eventinfo');
+    await expect(rad).toContainText('1 nya deltagare saknar deltagarinfo');
   });
 });
 
@@ -1120,7 +1120,7 @@ test.describe('Bevakningsraden — "nya"-copyns geometri vid värsta fall (TASK-
     { width: 375, height: 800, namn: '375px (mobil, staplad kolumnform)' },
     { width: 1440, height: 900, namn: '1440px (desktop, grid-kolumnform)' },
   ]) {
-    test(`${viewport.namn}: "12 nya deltagare saknar eventinfo" ryms i line-clamp-2 — ingen NY klippning`, async ({
+    test(`${viewport.namn}: "12 nya deltagare saknar deltagarinfo" ryms i line-clamp-2 — ingen NY klippning`, async ({
       page,
       network,
     }) => {
@@ -1135,7 +1135,7 @@ test.describe('Bevakningsraden — "nya"-copyns geometri vid värsta fall (TASK-
 
       const rad = page.getByRole('list', { name: 'Bevakningar' }).getByRole('listitem');
       await expect(rad).toHaveCount(1);
-      await expect(rad).toContainText('12 nya deltagare saknar eventinfo');
+      await expect(rad).toContainText('12 nya deltagare saknar deltagarinfo');
 
       // Statuskolumnens line-clamp-2-element är det ANDRA `.line-clamp-2`-
       // spannet i raden (det första bär eventnamnet) — samma lokalisering
@@ -1147,7 +1147,7 @@ test.describe('Bevakningsraden — "nya"-copyns geometri vid värsta fall (TASK-
       }));
       // BEVISET: `scrollHeight` (innehållets FAKTISKA höjd) överskrider ALDRIG
       // `clientHeight` (den synliga, clampade höjden) — annars klipper
-      // line-clamp-2 en tredje rad av "12 nya deltagare saknar eventinfo",
+      // line-clamp-2 en tredje rad av "12 nya deltagare saknar deltagarinfo",
       // och Gunilla-principens skyddsnät (ALDRIG ellips på meningsbärande
       // text mitt i en mening) är brutet.
       expect(geometri.scrollHeight).toBeLessThanOrEqual(geometri.clientHeight);

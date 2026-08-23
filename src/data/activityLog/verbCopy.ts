@@ -23,7 +23,7 @@
  *   term (ORDLISTA.md § Bor över: markeringen per anmälan) och frasen läser
  *   redan naturligt ("markerade [att deltagaren] bor över"); "övernattning"
  *   hade varit ordlisteavvikelsen.
- * - "skickade testmail till sig själv" / "skickade eventinformation" —
+ * - "skickade testmail till sig själv" / "skickade deltagarinformation" —
  *   redan naturliga utan artikel.
  * Verb utanför tabellen (t.ex. staging-testradernas API-kontrolltest)
  * faller till radens lagrade display.
@@ -48,7 +48,7 @@ const VERB_COPY: Record<string, string> = {
   'skickade-kvitto': 'skickade ett kvitto',
   'skickade-mail/bekraftelse': 'skickade ett bekräftelsemail',
   'skickade-mail/paminnelse': 'skickade en betalningspåminnelse',
-  'skickade-mail/eventinfo': 'skickade eventinformation',
+  'skickade-mail/eventinfo': 'skickade deltagarinformation',
   'skickade-mail/fritt': 'skickade ett mail',
   'skickade-testmail': 'skickade testmail till sig själv',
   'skickade-segment-mail': 'skickade mail till ett segment',

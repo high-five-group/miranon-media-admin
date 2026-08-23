@@ -1307,7 +1307,7 @@ test.describe('Personkorten — metaytan + historiken (task-18.5)', () => {
     expect(davidRader[0]).toMatch(/^Anmäld 25 juni \d{2}:\d{2}$/);
     await expect(kortet(page, 'David Nord').getByText('Bekräftelse 26 juni')).toHaveCount(0);
     await expect(kortet(page, 'David Nord').getByText(/Påminnelse 8 juli/)).toHaveCount(0);
-    await expect(kortet(page, 'David Nord').getByText(/Eventinfo 10 juli/)).toHaveCount(0);
+    await expect(kortet(page, 'David Nord').getByText(/Deltagarinfo 10 juli/)).toHaveCount(0);
   });
 
   test('historikraden: Första eventet / N tidigare event — HELA namnet Miranon Media', async ({

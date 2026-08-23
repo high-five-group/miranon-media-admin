@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-22 21:48'
-updated_date: '2026-08-23 13:56'
+updated_date: '2026-08-23 14:09'
 labels:
   - ready-for-human
 dependencies: []
@@ -87,4 +87,10 @@ MENINGEN KORTADES för att rymmas med centrerad tid: "3 nya saknar deltagarinfo"
 2026-08-23 (S111 resume 2, fönster 1) — AC #3 STRUKET på Marcus beslut: *"1. Stryk"* som svar på frågan om kriteriet (*"talet bärs av en badge med reserverad plats, inte inbakat i meningen"*) skulle amenderas eller strykas. Bakgrund: Del 5 rev exakt det — siffer-pillen revs, talet in i meningen (eventinfo-raden) respektive rubriken (åtgärdskö-raden), och höjdlåset bärs av radanatomin + 375 px-regressionsvakten i stället. Kriteriet kunde aldrig bockas ärligt. Ordbytet Eventinfo → Deltagarinfo (AC #5:s sträng-divergens) avgörs SAMTIDIGT: Marcus *"4. UI-copy enbart"* — synliga UI-strängar byter ord; actionType 'eventinfo' (SendActionEmail-kontraktet), routen skickade-mail/eventinfo, test-id:t eventinfo-signal-slot och aktivitetsloggens typer rörs INTE.
 
 Omnumrering efter strykningen: CLI:t packar index, så gamla AC #4–#7 är nu #3–#6 — sträng-divergensen (ordbytet) är AC #4, hem-facit-amenderingen AC #6.
+
+ORDBYTET GENOMFÖRT 2026-08-23 (gren feat/s111-ordbyte-deltagarinfo, baserad på wip/s111-marcus-iteration c52a0cdc). Marcus Del 5, verbatim: "Jag vänder beslutet." Gräns, verbatim: "4. UI-copy enbart." Samtliga synliga UI-strängar bär nu "deltagarinfo"/"deltagarinformation": bevakningsradens båda lägen, eventsidans rad "Deltagarinfo skickad", MetaRad-datumraderna (Deltagare.tsx + AtgardsSida.tsx + Betalningar.tsx + AnmalanDetail.tsx), svep-overlayns rubrik/åtgärdsnamn/tomläge/slide-etikett, åtgärdsmallens namn, hållplats-prototypens stegetikett och aktivitetsloggens två verb-copyn. ORDLISTA § Eventinfo omdöpt till § Deltagarinfo med den gamla regeln kvar som öppet riven historik.
+
+IDENTIFIERARE ORÖRDA per gränsen: actionType "eventinfo" (SendActionEmail-kontraktet, EF:en), routen skickade-mail/eventinfo, test-id:t eventinfo-signal-slot, filter-ID:t eventinfo-saknas, SvepTyp-unionens "eventinfo", samtliga variabel-/funktions-/typnamn och Airtable-fältnamnen.
+
+AC #4 EJ BOCKAD — ordbytet ensamt gör den inte sann. Kriteriet kräver att hem-derivations.ts och dev/hem-prototyp/data.ts bär SAMMA sträng. Efter ordbytet säger de "N nya deltagare saknar deltagarinfo" respektive "N deltagare saknar deltagarinfo" — ordet "nya" skiljer dem fortfarande, och hem-atgardsko-prototypens godkända form säger en tredje variant, "N nya saknar deltagarinfo". Detta korts egna notes sade det redan före arbetet: "AC #5 stängs först när det globala ordbytet är gjort OCH formen promoverats." Ordbytet är gjort; promoveringen av Bevakningsrad.tsx återstår och äger ordvalet. AC #4 bockas av det passet.
 <!-- SECTION:NOTES:END -->

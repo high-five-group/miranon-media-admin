@@ -562,7 +562,7 @@ function DeltagarKortInnehall({
         {anmald && <MetaRad ikon={Inbox}>{anmald}</MetaRad>}
         {bekraftelse && <MetaRad ikon={MailCheck}>{`Bekräftelse ${bekraftelse}`}</MetaRad>}
         {paminnelse && <MetaRad ikon={MailCheck}>{`Påminnelse ${paminnelse}`}</MetaRad>}
-        {eventinfo && <MetaRad ikon={MailCheck}>{`Eventinfo ${eventinfo}`}</MetaRad>}
+        {eventinfo && <MetaRad ikon={MailCheck}>{`Deltagarinfo ${eventinfo}`}</MetaRad>}
         {genomforda != null && (
           <span className="mt-0.5 flex items-center gap-1.5">
             <History aria-hidden="true" size={12} className="shrink-0" />

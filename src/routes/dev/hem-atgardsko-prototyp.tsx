@@ -136,7 +136,7 @@ function AtgardskoPrototypPage() {
           fil-ikon, eller ingen <code>?variant=</code> alls) visar dagens FAKTISKA rader,
           oförändrade: fyndet, live, är att de ser identiska ut OCH att höjden kan variera med
           copyns längd. Varje variant a/b/c byter åtgärdskö-radens innehåll mot ett förslag OCH
-          visar eventinfo-referensraden i den nya, höjdlåsta anatomin (rubrik + undertext, alltid
+          visar deltagarinfo-referensraden i den nya, höjdlåsta anatomin (rubrik + undertext, alltid
           båda, talet i en egen badge): den fulla, promoverbara formen.
         </p>
       </header>

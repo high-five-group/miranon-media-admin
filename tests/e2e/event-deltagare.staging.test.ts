@@ -234,7 +234,7 @@ test.describe('Anmälda deltagare — arbetsköns skelett (task-18.4)', () => {
     // (Obekräftade anmälningar / Anmälningsbekräftelse skickad /
     // Betalningspåminnelse skickad), och Avbokade tillkom sist — grillad samsyn
     // beslut 2 (S93 Del 3) namnger exakt tre rivningar och åtta rader.
-    // LOGISTIK-GRUPPEN (Eventinfo skickad / Bor över / Avbokade) står kvar
+    // LOGISTIK-GRUPPEN (Deltagarinfo skickad / Bor över / Avbokade) står kvar
     // efter dem, i den ordningen.
     //
     // Testet lämnades rött när TASK-145.2 landade. Det rättas HÄR, i den skiva
@@ -248,7 +248,7 @@ test.describe('Anmälda deltagare — arbetsköns skelett (task-18.4)', () => {
       'Anmälningsavgifter0 av 4 mottagna−4',
       'Slutbetalningar0 klara−4',
       'Klara0',
-      'Eventinfo skickad1 av 4−3',
+      'Deltagarinfo skickad1 av 4−3',
       'Bor över0',
       'Avbokade1',
     ]);
@@ -363,7 +363,7 @@ test.describe('Anmälda deltagare — arbetsköns skelett (task-18.4)', () => {
     // krymper till träffarna och växer tillbaka när filtret rensas.
     // Raden som klickas är dessutom en av de NYA steg-raderna — den gamla
     // `Anmälningsbekräftelse skickad` revs av TASK-145.2 och testet stod rött.
-    const rad = gruppen(page).getByRole('button', { name: /^Eventinfo skickad/ });
+    const rad = gruppen(page).getByRole('button', { name: /^Deltagarinfo skickad/ });
     await rad.click();
     await expect(rad).toHaveAttribute('aria-pressed', 'true');
     await expect(register).toBeVisible();
@@ -423,7 +423,7 @@ test.describe('Anmälda deltagare — arbetsköns skelett (task-18.4)', () => {
     // FIFO inom steg-hink: Bertil (06-20) och Anna (07-01) väntar på
     // bekräftelse (hink 0), Cecilia saknar avgift (hink 1).
     await gruppen(page)
-      .getByRole('button', { name: /^Eventinfo skickad/ })
+      .getByRole('button', { name: /^Deltagarinfo skickad/ })
       .click();
     await expect(vantarRad).toHaveAttribute('aria-pressed', 'false');
     expect(await register.getByTestId('deltagar-namn').allTextContents()).toEqual([
@@ -572,8 +572,8 @@ test.describe('Anmälda deltagare — arbetsköns skelett (task-18.4)', () => {
     await mocka(page, eventDetail({ startdatum: omDagar(7), slutdatum: omDagar(8) }), allaFatt);
     await oppnaEventsidan(page);
 
-    await expect(gruppen(page).getByRole('button', { name: /^Eventinfo skickad/ })).toHaveText(
-      'Eventinfo skickad4 av 4',
+    await expect(gruppen(page).getByRole('button', { name: /^Deltagarinfo skickad/ })).toHaveText(
+      'Deltagarinfo skickad4 av 4',
     );
     await expect(gruppen(page).getByText(/Dags att skicka/)).toHaveCount(0);
     // Slotten står kvar reserverad även när signalen är släckt.
