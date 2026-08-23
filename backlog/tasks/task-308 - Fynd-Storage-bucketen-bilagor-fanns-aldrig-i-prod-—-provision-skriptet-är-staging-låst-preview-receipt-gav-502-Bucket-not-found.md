@@ -3,10 +3,10 @@ id: TASK-308
 title: >-
   Fynd: Storage-bucketen bilagor fanns aldrig i prod — provision-skriptet är
   staging-låst, preview-receipt gav 502 'Bucket not found'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-23 12:29'
-updated_date: '2026-08-23 13:44'
+updated_date: '2026-08-23 15:34'
 labels:
   - ready-for-agent
 dependencies: []
@@ -34,17 +34,17 @@ Marcus skapade bucketen för hand i dashboarden 2026-08-23 (samma inställningar
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Prod-bucketen bilagor verifierad mot BUCKET_DESIRED_CONFIG med skriptets egen konvergenskontroll (privat, 25 MB, application/pdf) — utfall bokfört
+- [x] #1 Prod-bucketen bilagor verifierad mot BUCKET_DESIRED_CONFIG med skriptets egen konvergenskontroll (privat, 25 MB, application/pdf) — utfall bokfört
 - [x] #2 fas4-prod-deploy.sh --kontrollera rapporterar bucketens existens/konvergens; testsviten scripts/test-fas4-prod-deploy.sh täcker raden i båda riktningar
 - [x] #3 Prod-provisioneringens väg (skript med lås ELLER dokumenterat dashboard-steg) bokförd i runbook/atkomst-och-nycklar + ADR-124 § Updates
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -90,4 +90,6 @@ BUCKET_DESIRED_CONFIG.`, exit 0. Bocka AC #1 (`npx backlog task edit 308
 Källa: `ADR-124` § Updates 2026-08-23 (`TASK-308`) ·
 `docs/reference/atkomst-och-nycklar.md` § "Prod-provisionering av externa
 Storage-resurser".
+
+AC #1 PROD-MÄTT 2026-08-23 ~15:35Z av Marcus (fas4-prod-deploy.sh --kontrollera <prod-ref>, kört från s108-bilagesparet på main 42e55431): 'Bucket "bilagor" redan konvergerad (public=false, fileSizeLimit=26214400, allowedMimeTypes=application/pdf). Ingen ändring.' → ✅ konvergerad mot BUCKET_DESIRED_CONFIG, exit 0, länkläge orört. Samma körning visade DOCRAPTOR_API_KEY i prod-secrets (digest identisk med staging — ADR-125 § 4). Bifynd, ej denna skivas: INVITE_REDIRECT_URL saknas i prod-secrets; invite-user faller till undefined → Supabase Site URL (pre-existing, ej blockerande, noterat i S108 Del 15). CI grön på #1862 (landad b71a433e).
 <!-- SECTION:NOTES:END -->
