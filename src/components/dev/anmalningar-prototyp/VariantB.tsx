@@ -2,7 +2,8 @@ import { Link } from '@tanstack/react-router';
 import { ChevronRight } from 'lucide-react';
 import { parseAsStringEnum, useQueryState } from 'nuqs';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { dateValue, eventName } from '@/components/events/EventCard';
+import { dateValue } from '@/components/events/EventCard';
+import { eventIdentitet } from '@/components/hem/hem-derivations';
 import { relativTid } from '@/components/hem/relativ-tid';
 import { InitialAvatar, ToggleButton, ToggleButtonGroup } from '@/components/primitives';
 import { MessageBox } from '@/components/primitives/MessageBox';
@@ -43,34 +44,6 @@ const PERIOD_ANNOUNCEMENT_LED: Record<PeriodFilter, string> = {
   upcoming: 'kommande event',
   past: 'tidigare event',
 };
-
-/**
- * Eventets visningsnamn för en anmälningsrads undertext — ALDRIG blankt.
- *
- * ROTORSAK till reviewfyndet (Marcus, 2026-08-22, mätt live i staging mot
- * `?variant=b&lage=lista`): `reg.eventNamn` är anmälans EGEN fritext (vad
- * personen skrev i formuläret), inte det matchade eventets riktiga namn —
- * och den fritexten kan vara `null` även när `reg.eventId` pekar på ett
- * giltigt, korrekt matchat event (`eventmatchning: 'OK'`). Föregående
- * variant läste `reg.eventNamn` rakt av; för en sådan rad gav
- * `[relTid, null].filter(Boolean)` bara tidsdelen — eventnamnet försvann
- * tyst ur DOM:en, aldrig dolt, aldrig trunkerat. Samma mönster som redan
- * fanns löst i `hem-derivations.ts`s `eventIdentitet()` (slå upp det
- * MATCHADE eventets namn via `eventId` FÖRST, falla tillbaka till anmälans
- * egen text bara om eventet inte kan slås upp) — den logiken porteras hit
- * i sin enklaste form (bara namnet, inte `eventIdentitet`s "namn · ort ·
- * datum" — AC #3s citat är bara "Eventnamn").
- */
-function eventUndertext(reg: Registration, eventsById: Map<string, Event>): string {
-  if (!reg.eventId) return 'Utan event';
-  const event = eventsById.get(reg.eventId);
-  if (event) return eventName(event);
-  // eventId satt men eventet inte i den hämtade listan (borde inte
-  // inträffa i skarpt läge — eventId KOMMER från en matchning mot samma
-  // eventregister — men testfixturer kan sakna en matchande post).
-  // Samma golv som `eventIdentitet`/`AnmalningarList`: aldrig blankt.
-  return reg.eventNamn ?? 'Uppgift saknas';
-}
 
 /** Kommande/tidigare för en anmälningsrad, härlett ur DET LÄNKADE eventets
     startdatum (`dateValue`, samma härledning som EventsList/EventValjare —
@@ -285,8 +258,13 @@ export function VariantB({ rader, lage, isPending, isError, error, nuMs, events 
             const namn = displayName(reg);
             const tid = inskickadTid(reg);
             const relTid = Number.isFinite(tid) ? relativTid(tid, nuMs) : null;
-            const eventText = eventUndertext(reg, eventsById);
-            const undertext = [relTid, eventText].filter(Boolean).join(' · ') || ' ';
+            // Undertexten är eventets IDENTITET ("kurs · ort · datum"),
+            // inte längre tid+eventnamn hopslagna. Marcus 2026-08-23:
+            // "under namnet har vi event, ort, datum, EXAKT så vill jag att
+            // anmälningslistan också ska ha." `eventIdentitet` är Hems egen
+            // hjälpare — lånad, inte återuppfunnen.
+            const undertext =
+              eventIdentitet(reg, reg.eventId ? eventsById.get(reg.eventId) : undefined) || ' ';
             const behoverKoppling = behoverAtgard(reg);
             const namnKlass =
               'min-w-0 truncate font-medium text-body underline-offset-2 after:absolute after:inset-0 hover:underline';
@@ -323,6 +301,11 @@ export function VariantB({ rader, lage, isPending, isError, error, nuMs, events 
                   <div className="flex min-w-0 items-center gap-2">{namnElement}</div>
                   <span className="truncate text-caption text-text-muted">{undertext}</span>
                 </div>
+                {/* Tiden — egen kolumn, högerställd och vertikalt centrerad
+                    mot hela raden av förälderns `items-center`. Exakt Hems
+                    form (`NyaAnmalningar.tsx`: `shrink-0 pl-2 text-caption
+                    text-text-muted`), som Marcus pekade ut som förlagan. */}
+                <span className="shrink-0 pl-2 text-caption text-text-muted">{relTid}</span>
                 {/* Statuskolumnen — EGEN kolumn, RESERVERAD plats (AC #3 +
                     DoD #6). Ikon+ord, aldrig färg ensam (AC #5). */}
                 <span
