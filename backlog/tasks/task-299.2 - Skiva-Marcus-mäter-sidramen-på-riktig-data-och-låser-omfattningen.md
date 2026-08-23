@@ -4,7 +4,7 @@ title: 'Skiva: Marcus mäter sidramen på riktig data och låser omfattningen'
 status: To Do
 assignee: []
 created_date: '2026-08-22 19:14'
-updated_date: '2026-08-22 21:49'
+updated_date: '2026-08-23 13:55'
 labels:
   - ready-for-human
 dependencies:
@@ -47,4 +47,6 @@ Ytaxeln, verbatim: "jag tycker vi ska köra full omfattning". FULL OMFATTNING �
 ATT AXELN VAR TVÅ upptäcktes först vid beslutstillfället: kortets tre alternativ blandar ihop VILKA ytor som bär sidramen med HUR MYCKET sidramen äger. Noten i TASK-299 skriver ut båda halvorna, eftersom AC #3:s hela syfte är att efterföljande skivor ska läsa EN källa utan att gissa.
 
 AC #1 EJ AVBOCKAD — OCH DET ÄR AVSIKTLIGT. Kriteriet kräver att alla fyra ytorna granskats med och utan dev-parametern på BÅDE desktop och mobil. Marcus fattade beslutet utan att den genomgången bekräftats för mig; jag har belägg för valet, inte för granskningen. Att bocka det hade gjort registret osant. Bocka det när genomgången faktiskt är gjord — eller stryk kriteriet medvetet om beslutet bedöms bära utan det.
+
+2026-08-23 (S111 resume 2, fönster 1) — AC #1 (genomgången av de fyra sidram-ytorna med/utan ?sidram=ny, desktop + mobil) DELEGERAS TILL AGENT på Marcus beslut: *"3. Skit i genomgången nu, eller sätt en agent på det, jag orkar inte hålla på med det i alla fall."* Agenten vandrar ytorna i den hermetiska fixturvärlden och mot facit-manifesten (s103-persondetalj, s103-checkin, s106-aktivitetslogg, s102-dokument), rapporterar avvikelser per yta, och bockar AC #1 med sin rapport som belägg. Omfattningsvalet (AC #2/#3) står kvar som Marcus eget.
 <!-- SECTION:NOTES:END -->

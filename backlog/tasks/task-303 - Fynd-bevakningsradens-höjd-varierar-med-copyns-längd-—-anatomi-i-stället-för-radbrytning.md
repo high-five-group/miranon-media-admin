@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-22 21:48'
-updated_date: '2026-08-23 13:23'
+updated_date: '2026-08-23 13:56'
 labels:
   - ready-for-human
 dependencies: []
@@ -35,11 +35,10 @@ REGISTRERAD SOM EGET KORT, inte som utvidgning av TASK-291: 291 är uttryckligen
 <!-- AC:BEGIN -->
 - [ ] #1 Bevakningsradens höjd är konstant oavsett copyns längd och oavsett antalet siffror i talet — verifierat som BETEENDE i test, inte som påstående, vid smalaste stödda bredd
 - [ ] #2 Radanatomin är rubrikrad + undertext, alltid båda renderade, samma form som personlistans radanatomi
-- [ ] #3 Talet som varierar bärs av en badge med reserverad plats, inte inbakat i meningen
-- [ ] #4 Ingen text klipps mitt i ett ord i något läge (Gunilla-principen håller)
-- [ ] #5 Sträng-divergensen mellan hem-derivations.ts och dev/hem-prototyp/data.ts är avgjord åt ETT håll, med Marcus citat daterat på kortet, och båda ytorna bär samma sträng efteråt
-- [ ] #6 Familjegränsen mot notisfamiljen orörd: ingen varningsfärg, ingen notis-ikon; betydelse aldrig enbart genom färg
-- [ ] #7 Hem-facit amenderat i egen commit med Marcus citat, EFTER att formen är godkänd
+- [ ] #3 Ingen text klipps mitt i ett ord i något läge (Gunilla-principen håller)
+- [ ] #4 Sträng-divergensen mellan hem-derivations.ts och dev/hem-prototyp/data.ts är avgjord åt ETT håll, med Marcus citat daterat på kortet, och båda ytorna bär samma sträng efteråt
+- [ ] #5 Familjegränsen mot notisfamiljen orörd: ingen varningsfärg, ingen notis-ikon; betydelse aldrig enbart genom färg
+- [ ] #6 Hem-facit amenderat i egen commit med Marcus citat, EFTER att formen är godkänd
 <!-- AC:END -->
 
 ## Definition of Done
@@ -84,4 +83,8 @@ AC #5 HAR GLIDIT ÅT FEL HÅLL, inte närmare. Kriteriet kräver att båda ytorn
 VAD SOM FAKTISKT ÄR BYGGT OCH GODKÄNT (lokalt, opushat, wip/s111-marcus-iteration): anatomin rubrikrad + undertext alltid båda renderade, höjden konstant 70 px på båda radtyperna, chevron och tid centrerade mot hela raden med 0,0 px avvikelse, tiden i vit pill (PersonsList Pill-formen, 7,91:1 textkontrast), ingen text klippt. Höjdlåset mätt mot 1-, 2-, 3- och 4-siffriga tal.
 
 MENINGEN KORTADES för att rymmas med centrerad tid: "3 nya saknar deltagarinfo" i stället för "3 nya deltagare saknar deltagarinfo" (201 px behov mot 171 tillgängliga). Marcus valde den framför alternativet att sätta bakgrund på siffran — skälet var hans eget: ordet "nya" bär betydelsen.
+
+2026-08-23 (S111 resume 2, fönster 1) — AC #3 STRUKET på Marcus beslut: *"1. Stryk"* som svar på frågan om kriteriet (*"talet bärs av en badge med reserverad plats, inte inbakat i meningen"*) skulle amenderas eller strykas. Bakgrund: Del 5 rev exakt det — siffer-pillen revs, talet in i meningen (eventinfo-raden) respektive rubriken (åtgärdskö-raden), och höjdlåset bärs av radanatomin + 375 px-regressionsvakten i stället. Kriteriet kunde aldrig bockas ärligt. Ordbytet Eventinfo → Deltagarinfo (AC #5:s sträng-divergens) avgörs SAMTIDIGT: Marcus *"4. UI-copy enbart"* — synliga UI-strängar byter ord; actionType 'eventinfo' (SendActionEmail-kontraktet), routen skickade-mail/eventinfo, test-id:t eventinfo-signal-slot och aktivitetsloggens typer rörs INTE.
+
+Omnumrering efter strykningen: CLI:t packar index, så gamla AC #4–#7 är nu #3–#6 — sträng-divergensen (ordbytet) är AC #4, hem-facit-amenderingen AC #6.
 <!-- SECTION:NOTES:END -->
