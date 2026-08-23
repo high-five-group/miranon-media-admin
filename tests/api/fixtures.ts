@@ -232,3 +232,37 @@ export const EVENTMATCHNING_ANMALAN_BACKFILL_ID = 'rec6ElPLSO3GGVK8q';
 export const EVENTMATCHNING_ANMALAN_UTAN_EVENT_ID = 'rectuHzKciiEDn2HQ';
 /** `ZZ-TASK-284.1 Fixtur Fel år` — T168:s regressionsfall (rätt dag och månad, fel år). */
 export const EVENTMATCHNING_ANMALAN_FEL_AR_ID = 'recdKgK82XA0Oa2ee';
+
+/**
+ * `ZZ-dokumentunderlag-fixtur` — permanent get-document-sources-fixtur i
+ * staging-Eventplanering (TASK-309.2 AC #4, ADR-125 § 2; seedad via MCP
+ * 2026-08-23, `Ort` 'ZZ-dokumentunderlag-fixtur' — medvetet SKILD från
+ * ADR-060-purgens sentinel-markör, samma mönster som beläggnings-/
+ * arbetskö-fixturerna ovan). Event × Typ = "Resor i medvetandet 1" ×
+ * "Utbildning" — matchar den ENA seedade Eventinnehåll-raden som är fylld
+ * verbatim (ADR-125 § 2 AC #2), så fixturen bevisar BÅDA hälfterna av
+ * standard/kopia-kontraktet i EN rad i stället för två separata fixturer:
+ *
+ *   - `Tid (bilagetext)`/`Pris (bilagetext)` ÄR SATTA (`ZZ-override-tid`/
+ *     `ZZ-override-pris`) → kopia-hälften: `kopior.tid.kopia`/
+ *     `kopior.pris.kopia` ska vara dessa strängar, INTE standarden.
+ *   - `Beskrivning (bilagetext)` m.fl. är MEDVETET OSATTA → standard-
+ *     hälften: `kopior.beskrivning.kopia` ska vara `null`,
+ *     `kopior.beskrivning.standard` ska vara Eventinnehåll-radens verbatim-
+ *     text (samma sträng som `EVENTINNEHALL.beskrivning` i
+ *     `GenereringsPrototyp.tsx`).
+ *   - `Plats` länkad till Rönninge, INGET `Adress (bilagetext)`/
+ *     `Parkering (bilagetext)` satt → `kopior.adress.standard` ska vara
+ *     Rönninges adress, `kopior.adress.kopia` `null`.
+ *   - EN egen Agendapunkter-rad (`ZZ-egen-agendapunkt`, Dag 1) länkad via
+ *     `Event` → `agenda.dag1.kopia` ska vara en 1-elements-array,
+ *     `agenda.dag2.kopia` en TOM array (INTE `null` — "har en kopia" är en
+ *     hela-agendan-eller-inget-boolean, se get-document-sources/index.ts §
+ *     eventHarEgenAgenda), medan `agenda.dag1.standard`/`agenda.dag2.standard`
+ *     ska vara standardagendans 14/10 rader (seedade av
+ *     scripts/seed-eventinnehall-modell.mjs).
+ *
+ * Konsumeras av get-document-sources.staging.test.ts. STÄDA INTE bort den.
+ */
+export const DOKUMENTUNDERLAG_EVENT_ID = 'recnzSBfLWCo5dBlY';
+export const DOKUMENTUNDERLAG_AGENDAPUNKT_ID = 'recPbZUoa0KKKOXAi';
