@@ -136,6 +136,82 @@ else
     FEL=$((FEL + 1))
 fi
 
+# ── BUCKET-KONTROLLEN (TASK-308) ─────────────────────────────────────────────
+# Den skarpa vägen (kontrollera-bilagor-bucket.sh:s riktiga nyckel-hämtning +
+# nätverksanrop) kan inte täckas här av samma skäl som ovan — men logiken den
+# omsluter är UTFLYTTAD ur fas4-prod-deploy.sh till en egen fil precis för
+# att göras testbar i isolering: KONTROLL_CMD-injektionen (samma mönster som
+# FUNCTIONS_DIR/ALLOWLIST_FILE i test-deploy-prod-functions.sh) låter oss
+# bevisa BÅDA RIKTNINGARNA utan en enda riktig project-ref eller nätverksanrop.
+BUCKET_SKRIPT="${SCRIPT_DIR}/kontrollera-bilagor-bucket.sh"
+
+FALL=$((FALL + 1))
+KONTROLL_CMD=true bash "${BUCKET_SKRIPT}" ZZ-TEST-REF > /dev/null 2>&1
+KOD_KONVERGERAD=$?
+if [[ "${KOD_KONVERGERAD}" -eq 0 ]]; then
+    printf '✓ FALL %d — bucket-kontroll: konvergerad → exit 0 (grönt)\n' "${FALL}"
+else
+    printf '✗ FALL %d (bucket-kontroll konvergerad): exit %d, förväntade 0\n' \
+        "${FALL}" "${KOD_KONVERGERAD}" >&2
+    FEL=$((FEL + 1))
+fi
+
+FALL=$((FALL + 1))
+KONTROLL_CMD=false bash "${BUCKET_SKRIPT}" ZZ-TEST-REF > /dev/null 2>&1
+KOD_SAKNAS=$?
+if [[ "${KOD_SAKNAS}" -eq 1 ]]; then
+    printf '✓ FALL %d — bucket-kontroll: saknas/avviker → exit 1 (rapporteras)\n' "${FALL}"
+else
+    printf '✗ FALL %d (bucket-kontroll saknas/avviker): exit %d, förväntade 1\n' \
+        "${FALL}" "${KOD_SAKNAS}" >&2
+    FEL=$((FEL + 1))
+fi
+
+FALL=$((FALL + 1))
+UTDATA_UTAN_REF="$(bash "${BUCKET_SKRIPT}" 2>&1)"
+KOD_UTAN_REF=$?
+if [[ "${KOD_UTAN_REF}" -eq 1 ]] && [[ "${UTDATA_UTAN_REF}" == *"Project-ref saknas"* ]]; then
+    printf '✓ FALL %d — bucket-kontroll utan ref nekas, exit 1\n' "${FALL}"
+else
+    printf '✗ FALL %d: bucket-kontroll utan ref gav exit %d (förväntade 1 + "Project-ref saknas")\n' \
+        "${FALL}" "${KOD_UTAN_REF}" >&2
+    FEL=$((FEL + 1))
+fi
+
+# ── BUCKET-GRINDENS WIRING I fas4-prod-deploy.sh ─────────────────────────────
+FALL=$((FALL + 1))
+ANTAL_ANROP="$(grep -c 'kontrollera-bilagor-bucket\.sh' "${MAL}")"
+if [[ "${ANTAL_ANROP}" -ge 2 ]]; then
+    printf '✓ FALL %d — fas4-prod-deploy.sh anropar bucket-kontrollen i BÅDA lägena (%d ställen)\n' \
+        "${FALL}" "${ANTAL_ANROP}"
+else
+    printf '✗ FALL %d: fas4-prod-deploy.sh anropar bucket-kontrollen på färre än 2 ställen (%d)\n' \
+        "${FALL}" "${ANTAL_ANROP}" >&2
+    FEL=$((FEL + 1))
+fi
+
+FALL=$((FALL + 1))
+BUCKET_RAD="$(grep -n 'kontrollera-bilagor-bucket\.sh' "${MAL}" | tail -1 | cut -d: -f1)"
+DEPLOY_RAD="$(grep -n 'deploy-prod-functions\.sh' "${MAL}" | tail -1 | cut -d: -f1)"
+if [[ -n "${BUCKET_RAD}" ]] && [[ -n "${DEPLOY_RAD}" ]] && [[ "${BUCKET_RAD}" -lt "${DEPLOY_RAD}" ]]; then
+    printf '✓ FALL %d — bucket-kontrollen körs FÖRE EF-deployen (rad %s < rad %s)\n' \
+        "${FALL}" "${BUCKET_RAD}" "${DEPLOY_RAD}"
+else
+    printf '✗ FALL %d: bucket-kontrollen ligger inte strukturellt före EF-deployen\n' "${FALL}" >&2
+    FEL=$((FEL + 1))
+fi
+
+FALL=$((FALL + 1))
+# Den exakta strängen i --deploya-grenens `doden`-anrop (se fas4-prod-deploy.sh
+# § DEPLOYA) — förekommer ENDAST där, inte i --kontrollera-lägets `rott`-gren,
+# så träff bevisar att avvikelse verkligen FÄLLER deployen, inte bara rapporteras.
+if grep -qF 'doden "Bucket \"bilagor\" saknas eller avviker i prod (TASK-308)' "${MAL}"; then
+    printf '✓ FALL %d — --deploya FÄLLER (doden) om bucketen inte konvergerar\n' "${FALL}"
+else
+    printf '✗ FALL %d: hittar ingen doden-gate för bucket-avvikelse i --deploya\n' "${FALL}" >&2
+    FEL=$((FEL + 1))
+fi
+
 echo
 if [[ "${FEL}" -eq 0 ]]; then
     printf '✅ %d/%d gröna\n' "${FALL}" "${FALL}"

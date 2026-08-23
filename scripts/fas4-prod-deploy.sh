@@ -182,6 +182,13 @@ if [[ "${LAGE}" = "--kontrollera" ]]; then
     npx supabase secrets list --project-ref "${ANGIVEN_REF}" \
         || doden "Kunde inte lista hemligheter." 2
 
+    printf '\n--- Bucket "bilagor" (Storage, TASK-308) ---\n'
+    if bash "${SCRIPT_DIR}/kontrollera-bilagor-bucket.sh" "${ANGIVEN_REF}"; then
+        gront "✓ Bucket \"bilagor\" konvergerad mot önskad config."
+    else
+        rott "⚠️  Bucket \"bilagor\" saknas eller avviker i prod."
+    fi
+
     cat <<'NOT'
 
 ──────────────────────────────────────────────────────────────────────
@@ -193,6 +200,10 @@ LÄS DETTA I UTDATAN OVAN:
                         för användaren — och deploy-verifieringens
                         curl-test upptäcker det INTE (curl skickar
                         ingen Origin-header).
+  Bucket "bilagor"      Saknas den, faller varje Storage-beroende EF
+                        (preview-receipt m.fl.) med 502 "Bucket not
+                        found" i skarpt läge — mätt TASK-308, 2026-08-23.
+                        `--deploya` VÄGRAR om denna rad är röd.
 
 OBS: `secrets list` visar NAMN och DIGEST, inte värden. Syns inget
 värde måste det läsas i Supabase-dashboarden:
@@ -232,6 +243,14 @@ aterstall_staging() {
     exit "${kod}"
 }
 trap aterstall_staging EXIT
+
+rubrik "Kontrollerar bucket \"bilagor\" (Storage, TASK-308) innan deploy"
+# shellcheck disable=SC2310  # samma avsiktliga mönster som `lanka` nedan.
+if bash "${SCRIPT_DIR}/kontrollera-bilagor-bucket.sh" "${ANGIVEN_REF}"; then
+    gront "✓ Bucket \"bilagor\" konvergerad — säkert att deploya Storage-beroende EF:er."
+else
+    doden "Bucket \"bilagor\" saknas eller avviker i prod (TASK-308) — en Storage-beroende EF (t.ex. preview-receipt) skulle deployas mot tomhet. Provisionera via dashboarden, verifiera med \`node scripts/provision-attachments-bucket.mjs --kontrollera ${ANGIVEN_REF}\`, kör om." 2
+fi
 
 rubrik "Länkar till prod"
 # shellcheck disable=SC2310  # avsiktligt: `lanka` returnerar felkod och vi

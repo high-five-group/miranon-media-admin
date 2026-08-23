@@ -65,7 +65,11 @@
 //   node scripts/provision-attachments-bucket.mjs
 //
 // Flaggor:
-//   --dry-run   Visar önskat vs faktiskt tillstånd. Ändrar ingenting.
+//   --dry-run          Visar önskat vs faktiskt tillstånd. Ändrar ingenting.
+//   --kontrollera <ref>  Read-only konvergenskontroll ÄVEN mot PROD (TASK-308).
+//                        Se § KONTROLLERA-LÄGET nedan — detta är den ENDA
+//                        avsiktliga vägen förbi assertStagingOnly, och den
+//                        skriver ALDRIG (tvingar dryRun internt).
 //
 // IDEMPOTENT: bucketen finns inte → skapas. Bucketen finns och matchar redan
 // önskad konfiguration → "redan konvergerad", ingen mutation. Bucketen finns
@@ -76,6 +80,42 @@
 // Exit 0 vid lyckad provisionering (skapad, konvergerad eller redan-OK).
 // Exit 1 vid saknad env, fel miljö (icke-staging-ref), eller ett Storage-
 // API-fel som inte är "bucket saknas".
+//
+// ═══ KONTROLLERA-LÄGET (TASK-308) ═══
+//
+// `--kontrollera <ref>` är skriptets ENDA avsiktliga läsväg mot PROD —
+// byggd efter att `preview-receipt` mätte 502 "Bucket not found" i prod
+// 2026-08-23 (TASK-308): bucketen provisionerades aldrig där, för att
+// assertStagingOnly() by design vägrar allt utom staging. Marcus skapade
+// bucketen för hand i dashboarden samma dag; detta läge gör konvergensen
+// MÄTBAR efteråt, upprepbart, utan att skriptets skrivväg någonsin öppnas
+// mot prod.
+//
+// SAMMA LÅS-MÖNSTER SOM fas4-prod-deploy.sh: refen är ett ARGUMENT, aldrig
+// läst ur env/config villkorslöst — den MÅSTE dessutom matcha den faktiska
+// SUPABASE_URL som redan krävs (se main()). Detta är en explicit
+// dubbelkontroll, inte en genväg: kommandoraden bär refen synligt (samma
+// skäl som scripts/deny-prod-ref.sh § header — en agents Bash-anrop med
+// PROD_REF_PROD i kommandosträngen FÄLLS mekaniskt av den hooken), och
+// Marcus egen körning (via `!`-prefixet, som passerar PreToolUse) är den
+// ENDA vägen detta läge någonsin faktiskt kör mot prod.
+//
+// LÄSER, SKRIVER ALDRIG: tvingar dryRun=true internt oavsett `--dry-run`.
+// Exit 0 = bucketen finns och matchar BUCKET_DESIRED_CONFIG (konvergerad).
+// Exit 1 = bucketen saknas, avviker, ref/URL matchar inte, eller ett
+//          Storage-API-fel — FAIL-CLOSED, så en anropare (t.ex.
+//          fas4-prod-deploy.sh --deploya) kan gata en Storage-beroende
+//          EF-deploy på detta exitkod.
+//
+// Exempel (Marcus, prod):
+//   SUPABASE_URL="https://lvjsfnphlauldxqlncpl.supabase.co" \
+//   SUPABASE_SERVICE_ROLE_KEY="$(supabase projects api-keys \
+//     --project-ref lvjsfnphlauldxqlncpl -o json \
+//     | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{
+//         const k=JSON.parse(s).find(k=>k.name==="service_role");
+//         process.stdout.write(k.api_key);
+//       })')" \
+//   node scripts/provision-attachments-bucket.mjs --kontrollera lvjsfnphlauldxqlncpl
 
 import { createClient } from '@supabase/supabase-js';
 
@@ -205,8 +245,25 @@ export async function provisionAttachmentsBucket({ supabase, dryRun = false, log
   return { action: 'updated', config: BUCKET_DESIRED_CONFIG };
 }
 
+/**
+ * Läser --kontrollera <ref> ur argv. Returnerar `undefined` om flaggan inte
+ * finns, annars refen som stod direkt efter (kan vara en tom sträng om
+ * flaggan angavs sist utan värde — main() behandlar det som "saknas").
+ */
+export function parseKontrolleraRef(argv) {
+  const index = argv.indexOf('--kontrollera');
+  if (index === -1) {
+    return undefined;
+  }
+  return argv[index + 1] ?? '';
+}
+
 async function main() {
-  const dryRun = process.argv.includes('--dry-run');
+  const argv = process.argv.slice(2);
+  const angivenRef = parseKontrolleraRef(argv);
+  const kontrollera = angivenRef !== undefined;
+  const dryRun = argv.includes('--dry-run') || kontrollera;
+
   const url = process.env.SUPABASE_URL;
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -219,17 +276,53 @@ async function main() {
     process.exit(1);
   }
 
-  try {
-    assertStagingOnly(url);
-  } catch (error) {
-    console.error(`❌ ${error.message}`);
-    process.exit(1);
+  if (kontrollera) {
+    // § KONTROLLERA-LÄGET — hoppar MEDVETET över assertStagingOnly. Detta är
+    // den enda avsiktliga läsvägen mot prod (Marcus-moment, se fil-header).
+    if (!angivenRef) {
+      console.error(
+        '❌ --kontrollera kräver en ref som argument (anges explicit, aldrig ur config).',
+      );
+      process.exit(1);
+    }
+    let faktiskRef;
+    try {
+      faktiskRef = extractProjectRef(url);
+    } catch (error) {
+      console.error(`❌ ${error.message}`);
+      process.exit(1);
+    }
+    if (faktiskRef !== angivenRef) {
+      console.error(
+        `❌ VÄGRAR: angiven ref "${angivenRef}" matchar inte SUPABASE_URL:s ref ` +
+          `"${faktiskRef}". Refen anges explicit för att aldrig råka kontrollera fel miljö.`,
+      );
+      process.exit(1);
+    }
+  } else {
+    try {
+      assertStagingOnly(url);
+    } catch (error) {
+      console.error(`❌ ${error.message}`);
+      process.exit(1);
+    }
   }
 
   const supabase = createClient(url, serviceRoleKey);
 
   try {
-    await provisionAttachmentsBucket({ supabase, dryRun });
+    const result = await provisionAttachmentsBucket({ supabase, dryRun });
+    if (kontrollera) {
+      if (result.action === 'noop') {
+        console.log(`✅ Bucket "${BUCKET_ID}" konvergerad mot BUCKET_DESIRED_CONFIG.`);
+        process.exit(0);
+      }
+      console.error(
+        `❌ Bucket "${BUCKET_ID}" INTE konvergerad (utfall: ${result.action}). ` +
+          'Provisionera via dashboarden (prod) eller detta skript utan --kontrollera (staging).',
+      );
+      process.exit(1);
+    }
   } catch (error) {
     console.error(`❌ ${error.message}`);
     process.exit(1);
