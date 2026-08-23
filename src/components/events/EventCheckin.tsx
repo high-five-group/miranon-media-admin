@@ -93,9 +93,7 @@
  * och får därför aldrig vara tyst.
  */
 import { useQuery } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
-import { BedDouble, Check, ChevronDown, ChevronLeft, RotateCcw, X } from 'lucide-react';
-import { useQueryState } from 'nuqs';
+import { BedDouble, Check, ChevronDown, RotateCcw, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Button as AriaButton,
@@ -703,12 +701,6 @@ function VariantD({
   const { sessioner, session, setSession, datumtext } = useSessionsval(event, alla);
   const lage = useDorrLageD();
   const skrivning = useSetAttendanceStatus(eventId);
-  // TASK-299.1 DEV-VÄXEL (rivs igen efter Marcus mätning, TASK-299.2/299.6):
-  // `?sidram=ny` bakom `import.meta.env.DEV` (ADR-074 amendering 7-formen) —
-  // utan flaggan är ytan identisk med sitt facit (AC #4). Enda läspunkten i
-  // denna fil.
-  const [sidram] = useQueryState('sidram');
-  const sidramNy = import.meta.env.DEV && sidram === 'ny';
   const [fraga, setFraga] = useState('');
   const [visaKlara, setVisaKlara] = useState(false);
   /** Rader vars skrivning misslyckats (lägesnyckel → namn). Se `skriv`. */
@@ -942,19 +934,18 @@ function VariantD({
           EventDetail/PersonDetail (`sidRam`-formen, EventDetail.tsx:142-150).
           Prototypens textlänk och text-2xl var en avvikelse från appens
           grund. A/B/C:s egen `TillbakaLank` (textlänken) är riven med dem
-          (TASK-214.4) — denna länk är D:s enda kvarvarande. */}
-      {sidramNy ? (
-        <SidRam to="/event/$eventId" params={{ eventId }} tillbakaEtikett="Tillbaka till eventet" />
-      ) : (
-        <Link
-          to="/event/$eventId"
-          params={{ eventId }}
-          aria-label="Tillbaka till eventet"
-          className="mx-4 flex size-11 shrink-0 items-center justify-center self-start rounded-full bg-bg-muted"
-        >
-          <ChevronLeft aria-hidden="true" size={26} />
-        </Link>
-      )}
+          (TASK-214.4) — denna länk är D:s enda kvarvarande.
+
+          TASK-299.6 — PROMOVERAD: chevronen byggs nu av husets delade
+          `SidRam`-primitiv (kant-i-kant-dialekten, endast sidkromet —
+          rubriken lever kvar nedan, PRD TASK-299 § OMFATTNINGEN LÅST) i
+          stället för av en inline-kopia; dev-växeln `?sidram=ny`
+          (TASK-299.1) är riven (ADR-103 B2 steg 4). Ytan var redan
+          kant-i-kant, så bytet är RENT: TASK-299.2-mätningen 2026-08-23 fann
+          chevron/rubrik på identisk position med och utan växeln — därav
+          facit-amenderingens klass (b), se
+          s103-checkin-konvergens/AMENDERING-2026-08-23-sidram-promovering.md. */}
+      <SidRam to="/event/$eventId" params={{ eventId }} tillbakaEtikett="Tillbaka till eventet" />
 
       {/* EVENTETS IDENTITET (punkt 3): body-grad med namnet i medium-vikt i
           stället för small/sekundär - det är sidans enda kontextbärare och

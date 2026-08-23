@@ -395,16 +395,18 @@ test.describe('Dörrlistan skriver skarpt efter kvittensfönstret (TASK-214.2)',
 });
 
 /**
- * TASK-299.1 — dev-växeln `?sidram=ny` (AC #4): den delade `SidRam`-
- * primitiven i husets kant-i-kant-dialekt, bakom `import.meta.env.DEV`.
- * UTAN parametern är ytan oförändrad — bevisat av svitens övriga tester
- * ovan, alla navigerar via `oppnaDorren` utan flaggan. Rivs igen med
- * växeln (TASK-299.2/299.6, ADR-103 B2 steg 4).
+ * TASK-299.6 — husets delade `SidRam`-primitiv är PROMOVERAD till dörrlistan;
+ * dev-växeln `?sidram=ny` (TASK-299.1) är riven (`ADR-103` B2 steg 4). Blocket
+ * testade tidigare växelns EGEN mekanik och navigerade med flaggan; nu täcker
+ * det den promoverade formen som DEFAULT — samma assertion, ingen parameter.
+ * Det är också filens enda axe-svep över dörrlistans grundvy, och behålls
+ * därför i stället för att rivas med växeln (motsatt val mot TASK-299.11:s
+ * ytor, som bar egna axe-tester att flytta assertionen till).
  */
-test.describe('Dörrlistan — TASK-299.1 dev-växel `?sidram=ny`', () => {
-  test('axe 0 violations med den nya sidramen synlig', async ({ page, network }) => {
+test.describe('Dörrlistan — husets delade sidram (TASK-299.6)', () => {
+  test('axe 0 violations med den promoverade sidramen synlig', async ({ page, network }) => {
     mockaLasning(network);
-    await page.goto(`/event/${EVENT_ID}/narvaro?sidram=ny`);
+    await page.goto(`/event/${EVENT_ID}/narvaro`);
     await expect(page.getByRole('heading', { level: 1, name: 'Check-in' })).toBeVisible();
     await expect(page.getByRole('link', { name: 'Tillbaka till eventet' })).toBeVisible();
 
