@@ -1,0 +1,1 @@
+export const minimaltestHtml: string = "<!doctype html>\n<html lang=\"sv\">\n  <head><meta charset=\"utf-8\" /><title>TASK-309.1 minimaltest</title></head>\n  <body>\n    <p>Minimaltest för static_files-bundling. Åäö testar teckenkodningen.</p>\n    <p>Rader: två stycken, ingen mer text behövs för mätningen.</p>\n  </body>\n</html>\n";
