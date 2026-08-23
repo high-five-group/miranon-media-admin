@@ -410,6 +410,22 @@ Numrering efter S109: ADR 122 · kort 284 (om `#1674` landat) · L512 + 55
 fragment · T158 · f52 · session 111. Full narrativ: sessionsdok S109 Del 1–4 +
 PAUSLÄGE.
 
+**Session 108 🌙 NATTKÖRNING 2 KLAR (2026-08-23 ~23:00, `lifecycle: active`,
+resume 8 fortsätter — INTE pausad; Marcus order *"Kör klart så mycket som
+bara är möjligt … stäng av monitorn"*) — SKIVOR 0–6 + 8-PREP LANDADE;
+PROMOVERINGEN STÅR SOM DRAFT `#1889` OCH VÄNTAR PÅ MARCUS.** ADR-125 →
+PRD `TASK-309` → skivorna: `#1867` minimaltest (TS-strängmoduler, static_files
+föll) · `#1870` datamodell+läsväg · `#1874` skrivvägar · `#1877` renderaren
+(pdf-lib ut ur `generate-event-attachment`) · `#1880` kvittot · `#1879`
+Mer-raderna · `#1885` genereringsvyn mot riktig data · `#1884` prod-vägarna
+(allowlist-luckan stängd, GO-gate, runbook (a)–(g)). `TASK-308` Done
+(Marcus prod-mätning). DocRaptor-nyckeln i BÅDA miljöers secrets
+(exponerad i chatt — roteras efter prod-verifiering). **MORGONSEKVENS:
+sessionsdok S108 Del 16 § D** — runbook (a)–(d) → granska `#1889` →
+ready+armera → röktest → facit (`309.10`) → nyckelrotation. Kända
+prod-fönster i natt: Mer-radernas EF:er odeployade (Del 16 § C).
+Numrering efter S111:s K-sista: re-mät före nästa skörd.
+
 **Session 108 ▶️ ÅTERUPPTAGEN (2026-08-23, `lifecycle: active`, åttonde resumen;
 pausad sju gånger, historik) — MÅL FÖR RESUMEN: HELA VÄGEN TILL PROMOVERING
 (PUNKT 4 → 5 → 6), SÅ ATT DENNA RESUME BLIR DEN SISTA.** Marcus order:
