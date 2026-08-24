@@ -1,9 +1,10 @@
 ---
 id: TASK-192
 title: 'Facit-grindens markörlista: två döda markörer + personlistan saknar egen'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-10 17:54'
+updated_date: '2026-08-24 14:44'
 labels:
   - grind
   - facit
@@ -28,7 +29,7 @@ DEN DJUPARE LUCKAN: markörlistan är YTSPECIFIK men invarianten är GLOBAL. Ing
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 De två döda markörerna är borta ur .facit-policy.conf
+- [x] #1 De två döda markörerna är borta ur .facit-policy.conf
 - [ ] #2 Personlistans egen prototyp-markör finns i listan och grep-verifieras finnas i src/
 - [ ] #3 tasks/sessions/bilagor/s90-personlistan-konvergens/facit.json finns med godkand: null och ytor[] deklarerade
 - [ ] #4 bash scripts/check-facit.sh ger EXIT=0 med minst ett ogodkänt manifest, dvs med B3-spärren AKTIV
@@ -41,3 +42,15 @@ DEN DJUPARE LUCKAN: markörlistan är YTSPECIFIK men invarianten är GLOBAL. Ing
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+STÄNGNING 2026-08-24 (S112 mandatpasset). Beslutat av Code på Marcus-mandat 2026-08-24 (GO i klartext), S112. Sakproblemet löst 2026-08-10 (samma dag kortet skrevs) — .facit-policy.conf:s egen historik dokumenterar att de två döda markörerna ('ÅTGÄRDS-SIDAN — konvergens-prototyp', 'Åtgärds-sidan MED event — konvergens-prototyp') togs bort samma dag. AC#1 bockad — verifierat på disk 2026-08-24: ingen av de två gav träff i .facit-policy.conf. AC#2/#3/#4 lämnas OBOCKADE — AC-bokstaven matchar inte dagens disk, av skäl som ligger UTANFÖR kortets egen leverans (senare, orelaterad approval-progression):
+
+- AC#2 ('Personlistans egen prototyp-markör finns i listan') — FALSKT idag: 'Personlistan - promoverad' lades till och togs bort SAMMA DAG (2026-08-10) enligt .facit-policy.conf:s egen kommentar, eftersom personlistans rivning (PROTO_VARIANTS) redan hade skett. Markören är borta med rätta, inte en regression.
+- AC#3 ('facit.json finns med godkand: null') — FALSKT idag: tasks/sessions/bilagor/s90-personlistan-konvergens/facit.json existerar men bär ett SATT godkand-fält (Marcus, 2026-08-22, sha d4997b5a, citat 'Ser ju skitbra ut! Bra jobb Claude!') — personlistan godkändes 12 dagar efter kortet skrevs.
+- AC#4 ('EXIT=0 med minst ett ogodkänt manifest, B3-spärren AKTIV') — idag ger check-facit.sh EXIT=0 med '0 ogodkända' (kört 2026-08-24) — INGET manifest har för närvarande godkand: null, så B3-spärren är strukturellt overifierbar just nu (inte trasig, bara utan aktivt objekt att skydda).
+
+Dagens mätvärden (S112 städvåg A-rapporten, verifierat självständigt 2026-08-24): samtliga FYRA aktiva markörer i FACIT_PROTO_MARKORER ger minst 1 träff i src/ — isHallplatsVariant (4), protoAktiv (6), 'Åtgärds-sidan UTAN event — tomt läge' (1), 'V1 Lugna morgonen (ro)' (1). Grinden är alltså frisk och skyddande idag; AC-bokstaven är bara inaktuell mot en fråga som redan avgjorts (personlistan godkänd).
+<!-- SECTION:NOTES:END -->

@@ -4,7 +4,7 @@ title: 'Depbot-major: @tanstack/react-table 8.21.3 → 9.1.2 — migrationen få
 status: To Do
 assignee: []
 created_date: '2026-08-17 06:42'
-updated_date: '2026-08-17 09:12'
+updated_date: '2026-08-24 14:44'
 labels:
   - ready-for-human
 dependencies: []
@@ -21,7 +21,7 @@ PR #1491 (Dependabot 2026-08-17, måndags-schemat). Major-bump = ADR-031 Lager 4
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [x] #1 v9:s changelog/breaking changes lästa och migrationens faktiska omfattning i VÅR kodbas bokförd på kortet (vilka ytor, vilka API-brott)
-- [ ] #2 Marcus-beslut: migrera nu eller parkera med motiv + omprövningsdatum
+- [x] #2 Marcus-beslut: migrera nu eller parkera med motiv + omprövningsdatum
 - [ ] #3 Vid migrering: DoD-fyran grön + tabellytorna verifierade i browsern
 <!-- AC:END -->
 
@@ -94,4 +94,6 @@ Eftersom noll kod konsumerar paketet finns **ingen migration att utföra**. Frå
 **Avrådes — (C) parkera kvar på v8.** Ger det sämsta av båda: kvarvarande oanvänt beroende plus en öppen PR och återkommande hygien-brus vid varje ny v9-utgåva.
 
 **Observation, ej åtgärdad (utanför detta korts AC1-mandat):** #1491 står `CLEAN`, odraftad och oarmerad. Per ADR-031 Lager 4 ska den aldrig auto-mergas, men enligt `tasks/lessons.d/parkerad-pr-utan-draft-ar-oskiljbar-fran-glomd.md` är en medvetet parkerad PR utan draft-status oskiljbar från en glömd för varje bevakningsmekanism. Överväg `gh pr ready 1491 --undo` tills AC2 är beslutat. PR:en är orörd av detta arbete.
+
+Beslutat av Code på Marcus-mandat 2026-08-24 (GO i klartext), S112. Marcus-beslut (AC#2): alternativ (B) — ta bort @tanstack/react-table ur package.json och stäng PR #1491. Skäl (ur AC1-kartläggningen ovan): 0 källfiler konsumerar paketet, ADR-013 gjorde DataTable-komponenten uttryckligen villkorlig ('om event-detalj behöver det; annars eliminera', docs/byggplan.md:915), och paketet har legat oanvänt sedan Fas 0. Beslutskriteriet (AC#2) bockas här. Själva borttagningen (paketets faktiska removal ur package.json/package-lock.json + PR-hantering av #1491) utförs av en PARALLELL agent i samma S112-mandatpass, inte av detta kort/denna landning — noll kod ändras härifrån. AC#3 ('Vid migrering: DoD-fyran grön + tabellytorna verifierade i browsern') gäller inte längre bokstavligt: beslutet är BORTTAGNING, inte migrering, och AC#3:s text ger ingen uttrycklig grund för att låta en systerkorts/parallell-PR:s arbete räknas som fullbordande av DENNA korts DoD (inget AC-villkor nämner en removal-väg eller en sibling-referens). Status lämnas därför TO DO i väntan på att borttagningen landar — flippas inte till Done i detta pass. Rapporteras till orkestreraren för uppföljning när removal-PR:n är klar (t.ex. genom en ny AC som pekar på borttagnings-kortet, eller en direkt DoD-verifiering här).
 <!-- SECTION:NOTES:END -->

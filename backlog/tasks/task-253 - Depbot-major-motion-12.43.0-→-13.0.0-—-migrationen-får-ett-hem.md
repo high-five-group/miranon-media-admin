@@ -4,7 +4,7 @@ title: 'Depbot-major: motion 12.43.0 → 13.0.0 — migrationen får ett hem'
 status: To Do
 assignee: []
 created_date: '2026-08-17 06:44'
-updated_date: '2026-08-17 09:12'
+updated_date: '2026-08-24 14:44'
 labels:
   - ready-for-human
 dependencies: []
@@ -21,7 +21,7 @@ PR #1490 (Dependabot 2026-08-17). Major-bump = ADR-031 Lager 4: manuell Marcus-r
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [x] #1 v13:s changelog/breaking changes lästa och omfattningen i VÅR kodbas bokförd (vilka animationsytor, vilka API-brott)
-- [ ] #2 Marcus-beslut: migrera nu eller parkera med motiv + omprövningsdatum
+- [x] #2 Marcus-beslut: migrera nu eller parkera med motiv + omprövningsdatum
 - [ ] #3 Vid migrering: DoD-fyran grön + animationsytor verifierade inkl. prefers-reduced-motion
 <!-- AC:END -->
 
@@ -129,4 +129,6 @@ Kortet erbjuder två alternativ; kartläggningen pekar på ett tredje som inte f
 ### Grindar körda
 
 - `npm run build` → **exit 0** (använd för bundle-mätningen ovan)
+
+Beslutat av Code på Marcus-mandat 2026-08-24 (GO i klartext), S112. Marcus-beslut (AC#2): alternativ (B) — ta bort paketet (motion). Kortets egen alternativ-bokstav skiljer sig från TASK-252:s: här är borttagningen ALTERNATIV (C) i kortets AC1-kartläggning ('Ta bort motion ur dependencies helt — REKOMMENDERAS'), inte (B); mandatets 'alternativ B' läses därför som SAKINNEHÅLLET (borttagning), inte bokstaven, eftersom de två korten numrerar sina alternativ olika. Skäl (ur AC1-kartläggningen ovan): 0 källfiler importerar motion i repots hela historia (git log -S), 0 bundle-påverkan, samtliga animationsytor (WOW-övergången, Sidbytesindikatorn m.fl.) går via Tailwinds motion-safe:/CSS — kortets egen ursprungspremiss att de 'konsumerar biblioteket' var falsifierad redan i AC1-passet. Beslutskriteriet (AC#2) bockas här. Själva borttagningen (paketets faktiska removal ur package.json/package-lock.json + '@dependabot ignore this dependency' + stängning av PR #1490) utförs av en PARALLELL agent i samma S112-mandatpass, inte av detta kort/denna landning — noll kod ändras härifrån. AC#3 ('Vid migrering: ...') gäller inte längre bokstavligt: beslutet är BORTTAGNING, inte migrering, och AC#3:s text ger ingen uttrycklig grund för att låta en systerkorts/parallell-PR:s arbete räknas som fullbordande av DENNA korts DoD. Status lämnas därför TO DO i väntan på att borttagningen landar — flippas inte till Done i detta pass. Rapporteras till orkestreraren för uppföljning.
 <!-- SECTION:NOTES:END -->
