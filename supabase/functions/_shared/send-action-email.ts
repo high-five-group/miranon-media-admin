@@ -174,6 +174,40 @@ export type ResolvedAttachment = { id: string; namn: string; lagringsnyckel: str
 export type AttachmentPayload = { filename: string; contentBase64: string };
 
 /**
+ * Härleder Content-Type ur filändelsen (TASK-193, `send-action-email/
+ * index.ts`s `makeRealSingleSender`). Resends Node/TS-SDK (samma
+ * `resend.emails.send()`-form skriptet använder) tar emot `contentType` som
+ * camelCase-fält på attachment-objektet — bekräftat via context7 mot
+ * resend.com/docs/examples' Express-exempel: `attachments: [{ filename,
+ * content, contentType, cid }]` (2026-08-24). UTAN fältet faller Resend
+ * tillbaka till `application/octet-stream` i stället för filens verkliga
+ * typ — exakt kortets symptom (mail b1e1b27b-e579-4c39-960d-f0a0cc8b7ea1,
+ * PDF-innehållet var intakt men servades med fel Content-Type).
+ *
+ * Alla bilagor `send-action-email` någonsin skickar är PDF:er —
+ * `generate-event-attachment/index.ts` och `_shared/receipt-content.ts`
+ * genererar ENDAST `.pdf`-filnamn (se respektive filhuvud). Härledningen
+ * täcker därför `.pdf` explicit och faller tillbaka till samma
+ * `application/octet-stream` som var det ENDA beteendet innan denna fix,
+ * för en filändelse som aldrig förekommer i dag — ingen gissad mime-typ
+ * för ett fall vi inte kan bevisa.
+ *
+ * Placerad HÄR (inte i `_shared/attachments.ts`, inte i `index.ts`) av två
+ * skäl, båda EMPIRISKT bevisade, inte antagna: (1) `index.ts`-filer
+ * importeras aldrig direkt av tester i detta repo (mönstret finns inte
+ * någonstans i `tests/api/`); (2) `_shared/attachments.ts` importerar `z`
+ * FRÅN `https://esm.sh/zod@4` (Deno-URL-import) — ett första försök att
+ * lägga funktionen där fällde HELA testsviten i Node med `Only URLs with a
+ * scheme in: file and data are supported by the default ESM loader`. Denna
+ * fil (`_shared/send-action-email.ts`) importeras REDAN av
+ * `tests/api/send-action-email.test.ts` utan problem — bevisat
+ * Deno-URL-fritt genom att sviten faktiskt kör.
+ */
+export function deriveContentType(filename: string): string {
+  return filename.toLowerCase().endsWith('.pdf') ? 'application/pdf' : 'application/octet-stream';
+}
+
+/**
  * Injicerad Storage-läsare: given de RESOLVED bilagorna + eventId, hämta
  * bytesen. EF:en ger en riktig Supabase-Storage-`.download()`-läsare
  * (service-role); testet en mock — NOLL riktig Storage/Airtable i api-pure-

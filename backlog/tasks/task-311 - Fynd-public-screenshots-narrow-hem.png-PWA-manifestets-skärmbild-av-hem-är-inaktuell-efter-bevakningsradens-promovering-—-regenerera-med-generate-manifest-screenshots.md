@@ -7,6 +7,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-23 16:47'
+updated_date: '2026-08-24 15:59'
 labels:
   - fynd
 dependencies: []
@@ -21,8 +22,8 @@ Bifynd ur TASK-291 AC #3-promoveringen (S111 resume 2, 2026-08-23, agentens slut
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 narrow-hem.png visar den promoverade bevakningsradsformen, genererad enligt den rutin git-historiken för public/screenshots/ visar
-- [ ] #2 Ingen darwin-genererad PNG committad om de befintliga föddes i linux — miljön matchar
+- [x] #1 narrow-hem.png visar den promoverade bevakningsradsformen, genererad enligt den rutin git-historiken för public/screenshots/ visar
+- [x] #2 Ingen darwin-genererad PNG committad om de befintliga föddes i linux — miljön matchar
 <!-- AC:END -->
 
 ## Definition of Done

@@ -171,13 +171,51 @@ test.describe('create-event — skarp conformance (Fas 6f L1)', () => {
   // är en STÄNGD singleSelect (data-model.md rad 404, `flddlv4JA5C5CeH5R`) med
   // EXAKT de sex värden `_shared/course-dimensions.ts`s KURS_KARTA täcker —
   // `typecast:false` (airtable-client.ts) FÄLLER varje värde utanför den
-  // listan REDAN på Airtable-anropet (500, ej vår mapping-gren). Scenariot
-  // blir alltså skarpt reproducerbart först den dag Marcus lägger till en ny
-  // singleSelect-option (t.ex. "RIM 4") UTAN att uppdatera kartan — exakt
-  // berättelse 15:s (PRD task-249) beskrivna kant. Lookup-logiken för ett
-  // okänt namn är däremot fullt bevisad i `course-dimensions.test.ts`
-  // ("okänt kursnamn → null") — den prövar exakt samma gren utan att
-  // förutsätta ett Airtable-schema-tillstånd som inte finns i staging idag.
+  // listan REDAN på Airtable-anropet (nu klassat 4xx, TASK-190 nedan — INTE
+  // vår mapping-gren). Scenariot blir alltså skarpt reproducerbart först den
+  // dag Marcus lägger till en ny singleSelect-option (t.ex. "RIM 4") UTAN att
+  // uppdatera kartan — exakt berättelse 15:s (PRD task-249) beskrivna kant.
+  // Lookup-logiken för ett okänt namn är däremot fullt bevisad i
+  // `course-dimensions.test.ts` ("okänt kursnamn → null") — den prövar exakt
+  // samma gren utan att förutsätta ett Airtable-schema-tillstånd som inte
+  // finns i staging idag.
+
+  // TASK-190: Airtables EGEN valideringsavvisning (typecast:false mot den
+  // STÄNGDA `Event (source)`-singleSelecten ovan) svarade tidigare generisk
+  // 500 "Internal error" — anroparen kunde inte skilja sitt eget
+  // kontraktsbrott (ett värde utanför de sex giltiga) från ett äkta
+  // serverfel. Repro: ett `event`-värde som INTE är någon av de sex kända
+  // singleSelect-optionerna. Ingen rad skapas (Airtable avvisar FÖRE
+  // persistering) → ingen sentinel-städning krävs.
+  test('deny: ogiltigt Event (source)-värde (utanför den stängda singleSelecten) → 4xx DIAGNOSTISERBART, ALDRIG 500', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const eventtyp = eventformatId();
+    const ogiltigtVarde = 'Ett-värde-som-inte-finns-i-singleSelecten-xyz';
+
+    const res = await postCreate(request, config, jwt, {
+      ...validBody(eventtyp, randomUUID()),
+      event: ogiltigtVarde,
+    });
+    const raw = await res.text();
+    // Klassat klientfel (Airtables egen 4xx vidarebefordrad, se
+    // classifyAirtableWriteError) — ALDRIG 500. LIVE-VERIFIERAT mot staging
+    // (2026-08-24): Airtables faktiska svar för DENNA feltyp är 422
+    // INVALID_MULTIPLE_CHOICE_OPTIONS — INTE INVALID_VALUE_FOR_COLUMN som
+    // kortets ursprungliga hypotes antog, och meddelandet bär den AVVISADE
+    // VÄRDET, INTE fältnamnet ("Event (source)" saknas i Airtables egen
+    // text). Testet asserterar därför mot vad Airtable FAKTISKT svarar —
+    // aldrig en gissad textform — men kärnkravet står kvar: felet är
+    // klassat och DIAGNOSTISERBART (typ + avvisat värde synligt), i
+    // stället för den tidigare opaka 500:an.
+    expect(res.status(), raw).toBeGreaterThanOrEqual(400);
+    expect(res.status(), raw).toBeLessThan(500);
+    const body = JSON.parse(raw) as { error?: string };
+    expect(body.error).toContain('INVALID_MULTIPLE_CHOICE_OPTIONS');
+    expect(body.error).toContain(ogiltigtVarde);
+  });
 
   test('IDEMPOTENS: färsk UUID → 201 created; samma UUID → 200 replay, samma record-ID, noll dubblett', async ({
     request,
