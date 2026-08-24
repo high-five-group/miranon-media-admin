@@ -1,7 +1,7 @@
 project_name: "miranon-media-admin"
 default_status: "To Do"
 statuses: ["To Do", "In Progress", "Done"]
-labels: ["ready-for-agent", "ready-for-human", "wontfix", "intentionally-open"]
+labels: ["ready-for-agent", "ready-for-human", "wontfix", "intentionally-open", "intentionally-unchecked"]
 date_format: yyyy-mm-dd
 max_column_width: 20
 auto_open_browser: false
@@ -16,5 +16,5 @@ task_prefix: "task"
 definition_of_done:
   - Alla acceptanskriterier avbockade (task edit --check-ac)
   - Rörd fil-klass lokala grindar gröna (L147)
-  - CI grön per jobb på pushad commit
+  - CI grön per jobb på pushad commit — bevisas av raden "Landning: PR #<nr>" i Final Summary, inte av denna ruta (TASK-281)
   - Inga orelaterade filer i diffen (path-scopad add)

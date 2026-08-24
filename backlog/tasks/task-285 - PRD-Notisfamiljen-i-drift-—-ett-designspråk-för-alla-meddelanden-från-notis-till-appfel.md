@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-21 10:45'
-updated_date: '2026-08-24 13:59'
+updated_date: '2026-08-24 14:50'
 labels: []
 dependencies: []
 ordinal: 515000
@@ -144,4 +144,6 @@ FÖRÄLDERFLIPP S112 STÄDVÅG A (2026-08-24, bokföringspass, ingen kod ändrad
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
 Notisfamiljen i drift levererad: 285.1-285.11 + 285.13 (tolv bygg-/beslutsskivor) Done, sista låset (visual-baslinjer, PR #1811) satt 2026-08-22. Marcus har granskat formen och stämplat båda manifesten (s109-uppdateringsnotis-konvergens + s109-meddelandefamiljen-konvergens). QA (285.12) formellt avskriven av Marcus ('Nej inget Q&A, skit i det. Gör klart allt de andra.', 2026-08-22). Bokförd förälderflipp, S112 städvåg A.
+
+Landning: PR #1910 (commit b6bf96a5, S112 städvåg A). DoD #3 kräver ingen bock — CI-grönheten härleds ur landningen i stället för att intygas manuellt (TASK-281).
 <!-- SECTION:FINAL_SUMMARY:END -->

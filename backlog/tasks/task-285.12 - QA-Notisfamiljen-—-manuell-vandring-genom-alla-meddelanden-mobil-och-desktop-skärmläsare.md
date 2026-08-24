@@ -6,9 +6,10 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-21 11:22'
-updated_date: '2026-08-24 13:58'
+updated_date: '2026-08-24 14:50'
 labels:
   - ready-for-human
+  - intentionally-unchecked
 dependencies:
   - TASK-285.1
   - TASK-285.2
@@ -64,6 +65,8 @@ Varje avvikelse blir ett NYTT fynd-kort med exakt symptom och förväntat beteen
 AVSTÅDD PÅ MARCUS BESLUT 2026-08-22, verbatim: 'Nej inget Q&A, skit i det. Gör klart allt de andra.' — citatet står källmärkt i föräldrakortet TASK-285 § Implementation Notes rad 134 (verifierat: grep -n 'Nej inget Q&A' mot task-285-filen ger exakt den raden). Den 10-punkts manuella vandringen körs därmed inte; AC #1/#2 kan inte bockas mot belägg — lämnas OBOCKADE med avsikt, inte tyst. DoD #1 ('alla AC avbockade') lämnas ALLTSÅ ocheckad med avsikt — dess bokstav är osann, och kortets Done-status vilar i stället på Marcus explicita avskrivning, inte på DoD #1. DoD #2/3/4 checkade: ingen kod ändrad (backlog-endast), path-scopad diff, CI verifieras av orkestreraren efter push. STÄNGD S112 STÄDVÅG A (2026-08-24, bokföringspass, ingen kod ändrad).
 
 RÄTTELSE: DoD #3 (CI grön per jobb på pushad commit) avbockad igen — denna bokföringscommit är ännu opushad, och CI-verifieringen är orkestrerarens ansvar efter push (samma konvention TASK-169 dokumenterar för S112:s bokföringspass).
+
+OBOCKAT MED AVSIKT: AC #1/#2 och DoD #1 lämnas obockade permanent, inte tillfälligt. Marcus avstod QA-vandringen verbatim 2026-08-22 ("Nej inget Q&A, skit i det. Gör klart allt de andra.", källa TASK-285 § Implementation Notes rad 134). De 10 punkterna gicks aldrig igenom, så rutorna kan inte bockas mot belägg, och DoD #1:s bokstav ("alla acceptanskriterier avbockade") är därmed osann. Kortets Done-status vilar på Marcus explicita avskrivning som en egen bokförd handling. Deklarationen är maskinläsbar sedan TASK-281 — etikett + denna markör undantar kortet från stängningsgrindens invariant 2, och grinden namnger det i varje körning så undantaget aldrig blir tyst.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
