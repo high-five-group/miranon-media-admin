@@ -4,6 +4,7 @@ title: 'A2 Gren 1-fixen: prod-utrullning (efter staging-bevis)'
 status: To Do
 assignee: []
 created_date: '2026-08-24 13:36'
+updated_date: '2026-08-24 14:46'
 labels:
   - ready-for-human
 dependencies: []
@@ -32,3 +33,64 @@ Samma ändring som 229.1, utförd i PROD-basens A2 (app8uGPrVCVOm6LfD, wflRPMp5Q
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+## S112 — Prod-draften skriven (TASK-229.3 steg 1)
+
+Modell: Sonnet 5 (claude-sonnet-5). Utfört 2026-08-24 mot prod-basen
+`app8uGPrVCVOm6LfD`, automation `wflRPMp5QNGEa7wH1` (samma ID som staging).
+Metodiken följde spec:en `docs/reference/automation-scripts/a2-gren1-person-lank-och-touchpoint.md`
+§ Prod-utrullning, nod för nod.
+
+**Fältkontraktet verifierat live FÖRE skrivning** (`get_table_schema`, prod-basen):
+alla fyra fält matchade spec:en exakt, noll avvikelse —
+`fldQekqRlLfup8x5K` (Anmälningar.Person, multipleRecordLinks→`tbl6ZyCm3V026iFTU`),
+`fldLiC0ZiUAdxXu9u` (Touchpoints.Person, samma linked-tabell),
+`fldL8gMBzkMHyUoiK` (Touchpoints.Typ, singleSelect — choicen `sel8DlybaDi9slhD3`
+"Inskickad anmälan" fanns kvar), `fldcq8oJWTyc8p8dA` (Touchpoints.Datum, dateTime).
+
+**Identitets-skrivning** (`get_automation` läst live → samma config skriven
+tillbaka via `update_automation`): `isValid: true`, `actionId: actefWlOQYOuJmUne`.
+Återläsningen jämfördes programmatiskt (Python, `json.dumps(..., sort_keys=True)`
+efter att `deployedVersion`/`configurationStatus` strippats) mot före-läget:
+**EQUAL — semantiskt byte-identisk.** Ingen avvikelse, gick vidare till ändringen.
+
+**Ändringen**: två nya noder i Gren 1 (`wdezdzNWaL1MYcrkE`s första branch), efter
+befintliga `wacKY1MLhOdtIXxR7`. Innehållet mirroring:ades exakt mot staging-A2:s
+FAKTISKA post-ändring-state (läst live ur `apphjj8Q7lkXCMsL4`/`wflRPMp5QNGEa7wH1`)
+eftersom spec:ens § Ändringen inte skrev ut den exakta nya grenbeskrivningen.
+`update_automation`: `isValid: true`, `actionId: actjkg0loVDZtVVre`.
+
+**Verifiering: ren addition.** Strukturell diff (Python, nod-för-nod jämförelse
+via nyckel, leaf-nivå) mot före-läget visade:
+- Adderade nod-nycklar: `wacrYuDXyDNg6grGv` (updateRecord — Person-länk via
+  `fldQekqRlLfup8x5K`, refererar `wacmPhj6tKzUl65Wk`) och `wacnB7VdOzprs7Tks`
+  (createRecord i Touchpoints — `fldLiC0ZiUAdxXu9u`+`fldL8gMBzkMHyUoiK`=
+  `sel8DlybaDi9slhD3`+`fldcq8oJWTyc8p8dA`). Prod fick EGNA persistenta ID:n,
+  skiljer sig medvetet från stagings (`wachkIpvrX0FnbdvB`/`wacSOcz26EBGzr661`)
+  — förväntat, ID:n är per-bas.
+- Borttagna nod-nycklar: inga.
+- Ändrade BEFINTLIGA nod-nycklar (leaf-nivå, exkl. själva conditionalGroup-
+  containern): inga — de två findRecords-sökningarna, Gren 2/3/4:s samtliga
+  noder, och `wacKY1MLhOdtIXxR7` (namn-uppdateringen) är byte-för-byte
+  oförändrade.
+- Gren 1:s branch-`description` ändrades (förväntat, speglar staging):
+  "Uppdatera med namn från anmälan, koppla anmälan till personen och
+  registrera touchpointen".
+- Topp-nivå-fält (`name`, `description`, `trigger`) oförändrade.
+
+**`deploymentStatus` var `"deployed"` FÖRE och EFTER båda skrivningarna** —
+bekräftar spec:ens dokumenterade egenskap: MCP-draftskrivningar mot en deployed
+automation ändrar inte live-beteendet.
+
+**Inga record-skrivningar, inga testposter i prod.** Endast automation-draften
+rördes.
+
+**Vad Marcus ska klicka:** öppna A2 i prod-basens Airtable-UI
+(`app8uGPrVCVOm6LfD`, automation `wflRPMp5QNGEa7wH1`) och klicka **Update** —
+det är enda återstående steget för att publicera draften. Skarpt bevis
+(namnlös person + anmälan → länk + touchpoint) tas i ett SEPARAT pass EFTER
+klicket, per uppdraget. AC #2 bockas INTE här — den kräver "live i prod".
+<!-- SECTION:NOTES:END -->
