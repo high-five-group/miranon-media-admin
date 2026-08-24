@@ -35,12 +35,19 @@ test('installera appen (SidRam-sidkrom, default fallback-guidning) — /mer/inst
 
 /**
  * [TASK-314, 299.10 steg 10] prefers-contrast: more. Samma `emulateMedia`-
- * mönster som `dorrlista-promoverings-grind.spec.ts` rad ~746-782. De tre
- * `<details>`-korten (`InstalleraAppen.tsx` § "Andra enheter") bär en STATISK
- * `border-border` (verifierat, noll `contrast-more:`-träffar i filen) — redan
- * synlig i normalläget. Grinden bevisar att den befintliga gränsen förblir
- * renderad (solid, bredd > 0) under förstärkt kontrast, plus en fullsides
- * pixel-baseline (samma idiom som filens ordinarie test ovan) och axe 0.
+ * mönster som `dorrlista-promoverings-grind.spec.ts` rad ~746-782.
+ *
+ * UPPGRADERAD TILL TOKEN-PROBE (TASK-317, Marcus-beslut 2026-08-24): de tre
+ * `<details>`-korten (`InstalleraAppen.tsx` § "Andra enheter") bar tidigare
+ * en STATISK `border-border`, redan synlig i normalläget, så grinden kunde
+ * bara bevisa att gränsen förblev renderad (solid, bredd > 0), inte att
+ * kontrastläget faktiskt gjorde något. TASK-317 lade till
+ * `contrast-more:border-border-strong` på de tre korten — samma token-kedja
+ * (`--mm-border-strong`) dörrlistans/`AnmalningarSida.tsx`s referens prövar.
+ * Probeteknik identisk med `anmalningssidan-promoverings-grind.spec.ts`:
+ * DOM-löst token jämfört mot den faktiskt renderade kantfärgen, plus en
+ * fullsides pixel-baseline (samma idiom som filens ordinarie test ovan) och
+ * axe 0.
  */
 test('installera appen — hög-kontrast-läge (prefers-contrast: more)', async ({ page }) => {
   const WCAG_TAGGAR = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
@@ -53,10 +60,20 @@ test('installera appen — hög-kontrast-läge (prefers-contrast: more)', async 
   const detaljer = page.locator('details').first();
   const kant = await detaljer.evaluate((el) => {
     const s = getComputedStyle(el);
-    return { bredd: s.borderTopWidth, stil: s.borderTopStyle };
+    return { bredd: s.borderTopWidth, stil: s.borderTopStyle, farg: s.borderTopColor };
   });
   expect(kant.stil).toBe('solid');
   expect(Number.parseFloat(kant.bredd)).toBeGreaterThan(0);
+
+  const strongToken = await page.evaluate(() => {
+    const probe = document.createElement('span');
+    probe.style.color = 'var(--mm-border-strong)';
+    document.body.appendChild(probe);
+    const c = getComputedStyle(probe).color;
+    probe.remove();
+    return c;
+  });
+  expect(kant.farg).toBe(strongToken);
 
   const resultat = await new AxeBuilder({ page }).withTags(WCAG_TAGGAR).analyze();
   expect(resultat.violations).toEqual([]);

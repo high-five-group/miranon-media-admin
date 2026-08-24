@@ -128,7 +128,7 @@ function InstalleraAppenInnehall({ state }: { state: InstallPromptState }) {
         <p className="text-small text-text-muted">Andra enheter</p>
 
         {state.path !== 'ios-manuell' && (
-          <details className="rounded-2xl border border-border p-4">
+          <details className="rounded-2xl border border-border p-4 contrast-more:border-border-strong">
             <summary className="cursor-pointer font-semibold text-body">
               Har du en iPhone eller iPad?
             </summary>
@@ -139,7 +139,7 @@ function InstalleraAppenInnehall({ state }: { state: InstallPromptState }) {
         )}
 
         {state.path !== 'macos-safari-dock' && (
-          <details className="rounded-2xl border border-border p-4">
+          <details className="rounded-2xl border border-border p-4 contrast-more:border-border-strong">
             <summary className="cursor-pointer font-semibold text-body">Har du en Mac?</summary>
             <div className="mt-3">
               <MacSteg />
@@ -148,7 +148,7 @@ function InstalleraAppenInnehall({ state }: { state: InstallPromptState }) {
         )}
 
         {state.path !== 'chromium-prompt' && (
-          <details className="rounded-2xl border border-border p-4">
+          <details className="rounded-2xl border border-border p-4 contrast-more:border-border-strong">
             <summary className="cursor-pointer font-semibold text-body">
               På en dator med Chrome eller Edge?
             </summary>

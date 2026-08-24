@@ -51,7 +51,7 @@ function Field({ term, value }: { term: string; value: string | null }) {
 function IntresseradRow({ person }: { person: Intresserad }) {
   const namn = displayName(person);
   return (
-    <li className="flex break-inside-avoid items-start gap-3 border-text-muted/20 border-b pb-3">
+    <li className="flex break-inside-avoid items-start gap-3 border-text-muted/20 border-b pb-3 contrast-more:border-border-strong">
       <InitialAvatar namn={namn} />
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <span className="font-medium">{namn}</span>

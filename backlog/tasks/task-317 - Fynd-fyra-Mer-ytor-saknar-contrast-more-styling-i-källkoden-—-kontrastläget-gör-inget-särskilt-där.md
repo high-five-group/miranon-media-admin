@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-24 14:10'
+updated_date: '2026-08-24 14:45'
 labels:
   - fynd
 dependencies: []
@@ -20,7 +21,7 @@ Mätt 2026-08-24 (S112, TASK-314-passet, grep per komponent): Waitlist.tsx, Intr
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Marcus-beslut bokfört: affordans byggs / statiska kanter deklareras tillräckliga med motiv
+- [x] #1 Marcus-beslut bokfört: affordans byggs / statiska kanter deklareras tillräckliga med motiv
 - [ ] #2 Vid bygge: contrast-more-styling på de fyra ytorna + TASK-314-svepen uppgraderade till token-probes + ny baseline-dispatch
 <!-- AC:END -->
 
@@ -31,3 +32,9 @@ Mätt 2026-08-24 (S112, TASK-314-passet, grep per komponent): Waitlist.tsx, Intr
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Marcus-beslut (S112 mandatpasset, beslut 7c, 2026-08-24): affordansen BYGGS — tillgänglighet 11 är golv (kvalitetsribban, CLAUDE.md § Design-system). De statiska kanterna på Waitlist/Intresserade/MailLog/InstalleraAppen deklareras INTE tillräckliga; de fyra ytorna får samma contrast-more:border-border-strong-affordans som husets övriga fem ytor.
+<!-- SECTION:NOTES:END -->

@@ -53,7 +53,7 @@ function Field({ term, value }: { term: string; value: string | null }) {
 function WaitlistRow({ entry }: { entry: WaitlistEntry }) {
   const namn = displayName(entry);
   return (
-    <li className="flex break-inside-avoid flex-col gap-2 border-text-muted/20 border-b pb-3">
+    <li className="flex break-inside-avoid flex-col gap-2 border-text-muted/20 border-b pb-3 contrast-more:border-border-strong">
       <div className="flex items-center gap-3">
         <InitialAvatar namn={namn} />
         <span className="font-medium">{namn}</span>
