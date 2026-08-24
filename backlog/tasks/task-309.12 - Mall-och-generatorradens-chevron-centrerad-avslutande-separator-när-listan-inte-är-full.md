@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-24 16:33'
-updated_date: '2026-08-24 17:10'
+updated_date: '2026-08-24 17:21'
 labels:
   - ready-for-agent
 dependencies: []
@@ -34,10 +34,10 @@ Två fynd ur Marcus granskning 2026-08-24 av den promoverade dokumentytan (ADR-1
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Final Summary
@@ -52,4 +52,6 @@ Landad i `d9d973d5` (PR #1889, merge `24c39777`, 2026-08-24T17:00:37Z).
 **#4 — bevis.** `npm run test:acceptance -- dokument` mot landad `origin/main`: **15/15 gröna**, exitkod 0, inklusive de tre axe-testerna (0 violations).
 
 Marcus grund (granskning 2026-08-24): *"chevronen sitter inte centrerat som den gjorde i prototypen"* och *"om det bara är två rader så ser det dumt ut att den nedersta raden (dokumentet) inte har en separatorlinje nedtill"*.
+
+**DoD-kvittens.** #1 alla AC bockade mot landad kod (belägg i tabellen ovan). #2 lokala grindar för rörd fil-klass gröna: `npm run typecheck` exit 0 · `npx @biomejs/biome check .` exit 0 · `npm run test:acceptance -- dokument` 15/15 · promoverings-grinden visual-desktop 5/5. #3 är en HÄRLEDD rad — Landning: PR #1889 (merge `24c39777`, 12 SUCCESS + 3 SKIPPED, noll fel). #4 path-scopad `git add`, diffen bar tre källfiler och fem kortfiler, inget orelaterat.
 <!-- SECTION:FINAL_SUMMARY:END -->
