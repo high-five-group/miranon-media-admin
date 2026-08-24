@@ -1,10 +1,10 @@
 ---
 id: TASK-279
 title: HTML/CSS-mallarna för bekräftelsebilagan och deltagarinformationen
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-19 09:53'
-updated_date: '2026-08-19 12:30'
+updated_date: '2026-08-24 13:06'
 labels: []
 dependencies: []
 ordinal: 505000
@@ -78,10 +78,10 @@ Marcus API-nyckel eller prod-deploy.
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -186,3 +186,9 @@ Mallarna: `docs/mallar/bilagor/{bekraftelsebilaga,deltagarinformation}.html` + d
 
 **biome.json:** lade till `!docs/mallar/bilagor/*.html` i files.includes, samma mönster/skäl som befintliga `!supabase/templates` (Biomes HTML-parser stödjer inte `{{ }}`-interpolation utan en config-flagga; exkludering följer redan etablerat precedent, ingen ny ADR bedömd nödvändig — under ADR-baren, samma klass som föregångaren).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+S112 bokföringspass (2026-08-24): PR #1634 (feat/s107-279-bilage-mallar) MERGED 2026-08-19T12:45:24Z, samtliga checks SUCCESS (gh pr view 1634). Filer scopade till docs/mallar/bilagor/, biome.json, package.json, scripts/render-bilage-mall.mjs, .gitignore — konsekvent med kortets scope. Samtliga 4 DoD bockade mot detta.
+<!-- SECTION:FINAL_SUMMARY:END -->

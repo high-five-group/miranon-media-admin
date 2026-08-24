@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-17 00:30'
-updated_date: '2026-08-17 09:08'
+updated_date: '2026-08-24 13:07'
 labels:
   - ready-for-agent
 dependencies: []
@@ -31,7 +31,7 @@ Basen är dimensionskällan: fälten finns redan i BÅDA baserna med verifierad 
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 ariaSnapshot-referenserna låsta ur variant d FÖRE flippen (enkelriktad ordning, ADR-103 B4)
 - [ ] #6 check-facit grön genom flipp OCH rivning — referenserna orörda och gröna efteråt
@@ -41,4 +41,6 @@ Basen är dimensionskällan: fälten finns redan i BÅDA baserna med verifierad 
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
 Byggd och landad i natt-orkestreringen S104 2026-08-17 (resume 5). PR: se kortets notes/kommentarer; CI grön per jobb + merge-kö-verifikat. Stängd av orkestreraren efter landnings-verifiering mot origin/main.
+
+S112 bokföringspass (2026-08-24): PR #1478 MERGED, CI SUCCESS (verifierad gh pr view). DoD #5/#6 N/A per 249.3:s korsreferens (samma boilerplate-mönster) — lämnas orörda.
 <!-- SECTION:FINAL_SUMMARY:END -->

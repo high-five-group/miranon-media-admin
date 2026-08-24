@@ -1,10 +1,10 @@
 ---
 id: TASK-278
 title: 'Leads-ytans hämtningssiffra visar fälla 47:s fält — självmotsägande rad'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-19 09:24'
-updated_date: '2026-08-19 09:42'
+updated_date: '2026-08-24 13:06'
 labels: []
 dependencies: []
 ordinal: 504000
@@ -62,10 +62,10 @@ appens läsning, inte basens fält.
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -79,3 +79,9 @@ AC #2 korsundersökning (2026-08-19):
 
 AC #4 staging-belägg: zz-lead-person-01/02 (T146, nu fixat parallellt) har Totalt antal hämtningar (erbjudande)=1 = Antal hämtningar=1 — diskriminerar INTE mellan gammal/ny mappning. Verklig diskriminerande post hittad i staging: Sofia Isaksson (recxF88ZKUbP9JUs1) — Totalt antal hämtningar (erbjudande)=3, Antal hämtningar (COUNTA)=0 (har dock anmälningar, är alltså inte en 'lead' per LEAD_FILTER just nu). Ingen post i staging matchar alla tre LEAD_FILTER-villkor (rollup>0 ∧ COUNTA=0 ∧ 0 anmälningar) just nu — bokfört öppet, inte dolt.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+S112 bokföringspass (2026-08-24): PR #1621 (fix/task-278-antalhamtningar-mapping) MERGED 2026-08-19T10:00:15Z, samtliga checks SUCCESS (gh pr view 1621). Tråd T147 (staging saknar fixtur av rätt klass) medvetet lämnad ACTIVE — bokförd egen deferral, blockerar inte detta kort. Filer i PR uteslutande leads/person-domänen. Samtliga 4 DoD bockade mot detta.
+<!-- SECTION:FINAL_SUMMARY:END -->

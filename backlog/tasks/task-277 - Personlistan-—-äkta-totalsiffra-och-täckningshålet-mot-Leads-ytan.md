@@ -1,10 +1,10 @@
 ---
 id: TASK-277
 title: Personlistan — äkta totalsiffra och täckningshålet mot Leads-ytan
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-18 11:44'
-updated_date: '2026-08-19 09:03'
+updated_date: '2026-08-24 13:05'
 labels: []
 dependencies: []
 ordinal: 503000
@@ -147,10 +147,10 @@ fält som bär sanningen — därav AC #6.
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -192,3 +192,9 @@ Marcus formulering varierade mellan två pass ("Visar 50 av XXX" 2026-08-18,
 **kortets befintliga AC #2-form**: `Visar N av TOTAL personer`. AC:n är
 oförändrad och är den låsta ordalydelsen.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+S112 bokföringspass (2026-08-24): PR #1614 (feat/task-277-totalsiffra-och-lead-filter) MERGED 2026-08-19T09:29:15Z, samtliga checks SUCCESS (gh pr view 1614). Följdfix b55412a4 (isolera totalsiffrans full-walk-fel) samma PR-sekvens, ancestor av origin/main bekräftad. Tråd T146 (staging-fixturer fel fält, blockerade get-leads-deploy) LÖST 2026-08-19 per tasks/threads/README.md. Filer i PR: persons/leads-domänen uteslutande, inga orelaterade. Samtliga 4 DoD bockade mot detta.
+<!-- SECTION:FINAL_SUMMARY:END -->

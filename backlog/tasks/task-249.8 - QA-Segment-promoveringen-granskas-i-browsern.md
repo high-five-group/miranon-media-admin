@@ -4,7 +4,7 @@ title: 'QA: Segment-promoveringen granskas i browsern'
 status: Done
 assignee: []
 created_date: '2026-08-17 00:38'
-updated_date: '2026-08-17 12:25'
+updated_date: '2026-08-24 13:07'
 labels:
   - ready-for-human
 dependencies:
@@ -32,15 +32,17 @@ MANUELL TESTPLAN (skarpa segment-ytan, utan variantparameter): 1) Mallvyn: skapa
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 check-facit grön genom flipp OCH rivning — referenserna orörda och gröna efteråt
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 check-facit grön genom flipp OCH rivning — referenserna orörda och gröna efteråt
 <!-- DOD:END -->
 
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
 Marcus QA genomförd 2026-08-17 i prod (admin.miranon.dev): hela testplanen gicks igenom; fynden triagerades till task-259 (UI-fixar, PR #1534 MERGED), task-260-utredningen (PR #1522 — 0 leads i publiken, namnlösheten äkta backfill-klass), task-264/K1 (PR #1546 MERGED — mailvägen namntålig) och task-265/B1 (Leads-vyn, ready-for-human). Efter fixarna: Marcus slutkvittens i klartext 'Ser bra ut' (2026-08-17, mot prod-bundle bekräftat bärande K1). DoD #5:s flipp/rivnings-led uppfyllt via 249.1/249.5/249.6-kedjan (aria-grinden 14/14 genom båda).
+
+S112 bokföringspass (2026-08-24): PR #1552 MERGED 2026-08-17T12:31:15Z, CI SUCCESS (gh pr view 1552), filer = enbart task-249/task-249.8-kortfilerna, inga orelaterade. Marcus slutkvittens 'Ser bra ut' i notes; check-facit.sh kört om: exit 0. Samtliga 5 DoD bockade mot detta.
 <!-- SECTION:FINAL_SUMMARY:END -->

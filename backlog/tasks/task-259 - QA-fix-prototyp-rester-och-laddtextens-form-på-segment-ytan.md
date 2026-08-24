@@ -4,7 +4,7 @@ title: 'QA-fix: prototyp-rester och laddtextens form på segment-ytan'
 status: Done
 assignee: []
 created_date: '2026-08-17 09:34'
-updated_date: '2026-08-17 12:28'
+updated_date: '2026-08-24 13:07'
 labels:
   - qa-fix
 dependencies: []
@@ -27,7 +27,7 @@ Marcus QA-fynd 2026-08-17 (249.8, prod): 1) PrototypNot ('Prototyp. Inget sparas
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
@@ -59,4 +59,6 @@ GRINDAR: typecheck exit 0 · biome exit 0 · build exit 0 · aria-grind exit 0 (
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
 Byggd (Opus), landad och CI-verifierad via merge-kön (259: PR #1534 MERGED 10:58Z · 264: PR #1546 MERGED 12:09Z); Marcus slutkvittens i prod 'Ser bra ut' 2026-08-17. Done-flippad vid S104 session-end.
+
+S112 bokföringspass (2026-08-24): PR #1534 MERGED 2026-08-17T10:58:28Z, CI SUCCESS (gh pr view 1534). DoD #3 bockad mot detta.
 <!-- SECTION:FINAL_SUMMARY:END -->

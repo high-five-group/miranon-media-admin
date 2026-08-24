@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-22 22:36'
-updated_date: '2026-08-23 09:12'
+updated_date: '2026-08-24 13:06'
 labels:
   - ready-for-agent
 dependencies: []
@@ -39,10 +39,10 @@ Ur kvittots Prince-omgranskning (S108 resume 7, `docs/research/kvitto-prince-gap
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -76,3 +76,9 @@ AC#3s exakta rader: CSS-värdet för SEK->BETALT-gapet är `margin-right: 6.55mm
 
 AC #5 — Marcus granskade Prince-PDF:en 2026-08-23 (http://127.0.0.1:5199/granskning/kvitto-prince.pdf): *"det ser bra ut. Hela kvittot visas i skärmen"*. FORMEN godkänd. INNEHÅLLET fick tre avvikelser mot Lottas förlaga (benämning, A-pris netto, betalsätt) + nytt fält — eget kort TASK-306. Stängd av orkestreraren.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+S112 bokföringspass (2026-08-24): PR #1844 MERGED 2026-08-22T23:49:06Z, samtliga checks SUCCESS. Docs-only diff (mallar + research), typecheck/build/test:api explicit N/A per notes. Marcus godkände formen 2026-08-23. Samtliga 4 DoD bockade mot detta.
+<!-- SECTION:FINAL_SUMMARY:END -->

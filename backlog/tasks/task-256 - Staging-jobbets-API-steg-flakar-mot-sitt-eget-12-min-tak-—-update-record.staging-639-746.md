@@ -3,10 +3,10 @@ id: TASK-256
 title: >-
   Staging-jobbets API-steg flakar mot sitt eget 12-min-tak —
   update-record.staging 639/746
-status: In Progress
+status: To Do
 assignee: []
 created_date: '2026-08-17 07:41'
-updated_date: '2026-08-17 09:51'
+updated_date: '2026-08-24 13:08'
 labels:
   - ready-for-agent
 dependencies: []
@@ -182,4 +182,6 @@ en förstklassig leverabel (CLAUDE.md § Airtable-basen som leverabel) och fatta
 inte av bygg-agenten på eget bevåg. Behöver eget kort: fastställ om värdena är
 legitima seed-värden eller kvarlämningar, och om testerna bör kräva ett
 utgångsläge SKILT från det de skriver (annars kan assertionen aldrig fälla).
+
+S112 bokföringspass (2026-08-24): re-verifierat läge (ADR-086-passet visade kortet In Progress utan levande ägare-session). AC#2/#3 GENOMFÖRDA och landade: PR #1518 (fix/task-256-las-tillbaka-bunden-vantan) MERGED 2026-08-17T10:05:24Z, CI SUCCESS. AC#1 (flake reproducerad+kvantifierad via metrics:flake) förblir explicit OUPPFYLLD per kortets egna notes: mekanism-sonden (180 skriv-läs-cykler) och metrics:flake-körningen (0/36 fällda) kunde INTE reproducera flaken — 'AC #1 lämnas OBOCKAD: kvantifierad är uppfyllt, reproducerad är det inte'. AC#4 (post-merge-marginal mätt efter åtgärd) krävde en mätning EFTER landning som ingen bygg-agent kunde göra då. Färsk datapunkt denna session (nightly run 32682955266, 2026-08-24, steget 'API tests (staging)'): 340 s — högre än kortets egen 'dagens era'-baseline (median 107 s, max 184 s, mätt t.o.m. 2026-08-17). Detta KAN vara normal svit-tillväxt (fler tester tillkomna S104-S111) snarare än ett nytt flake-problem, men är INTE mätt isär här — flaggas som öppen fråga för nästa som plockar kortet, inte avgjord. Status flyttad In Progress → To Do: ingen levande session äger arbetet, och de återstående AC-punkterna kräver en ny mät-/reproduktionsinsats, inte en administrativ bockning.
 <!-- SECTION:NOTES:END -->

@@ -4,7 +4,7 @@ title: 'Skiva: Mekanisk rivning — varianter, gamla byggaren, riggarna'
 status: Done
 assignee: []
 created_date: '2026-08-17 00:35'
-updated_date: '2026-08-17 09:08'
+updated_date: '2026-08-24 13:09'
 labels:
   - ready-for-agent
 dependencies:
@@ -30,7 +30,7 @@ Rivningen är mekanisk eftersom godkännandet redan är stämplat via kanalsepar
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 Facit-granskning mot tasks/sessions/bilagor/s104-segment-divergens/facit.json — rivningen får inte röra någon deklarerad yta
 - [x] #6 ariaSnapshot-referenserna låsta ur variant d FÖRE flippen (enkelriktad ordning, ADR-103 B4)
@@ -67,4 +67,6 @@ DoD #6 är bockad som historiskt uppfyllt: referenserna låstes ur variant d i T
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
 Byggd och landad i natt-orkestreringen S104 2026-08-17 (resume 5, Opus-agent per ADR-089-avvikelse). CI grön per jobb + merge-kö-verifikat. Stängd av orkestreraren efter landnings-verifiering mot origin/main.
+
+S112 bokföringspass (2026-08-24): PR #1501 MERGED, CI SUCCESS (verifierad gh pr view). DoD #3 bockad mot detta (missad i första svepet, rättad direkt).
 <!-- SECTION:FINAL_SUMMARY:END -->

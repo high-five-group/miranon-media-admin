@@ -4,7 +4,7 @@ title: 'Skiva: Svensk sortering, räknarrad ur arrayen, rivning av sök-walken'
 status: Done
 assignee: []
 created_date: '2026-08-21 11:48'
-updated_date: '2026-08-22 11:02'
+updated_date: '2026-08-24 13:08'
 labels:
   - ready-for-agent
 dependencies:
@@ -31,17 +31,17 @@ Täcker användarberättelser: 4, 7, 15
 - [x] #2 Räknarraden räknas ur arrayen; EF:ens total-walk och dess fallback-logik i listan är rivna
 - [x] #3 Listans sök-/cursor-fråga är riven; EF:ens sök-läge rivs om grep-svepet visar noll andra konsumenter, annars bokförs konsumenten i PR:en
 - [x] #4 startvarmningens kommentar om persons-frågan är uppdaterad till ADR-123 beslut 7:s motivering
-- [ ] #5 Personlistans rad- och listform är identisk med facit tasks/sessions/bilagor/s90-personlistan-konvergens/facit.json ytan personlistan — referenserna gröna
+- [x] #5 Personlistans rad- och listform är identisk med facit tasks/sessions/bilagor/s90-personlistan-konvergens/facit.json ytan personlistan — referenserna gröna
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 Paritetstestet (EF-filter mot klientfilter, samma fixtur) grönt för varje skiva som rör sök eller filtrering
-- [ ] #6 Facit-referenserna för personlistan (tasks/sessions/bilagor/s90-personlistan-konvergens/facit.json ytan personlistan) gröna — formen är orörd
+- [x] #6 Facit-referenserna för personlistan (tasks/sessions/bilagor/s90-personlistan-konvergens/facit.json ytan personlistan) gröna — formen är orörd
 - [x] #7 Inga nätverksanrop vid skrivning efter första laddningen — mätt i testet, inte antaget
 <!-- DOD:END -->
 
@@ -186,3 +186,9 @@ de deklareras MEDAN manifestet är ogodkänt.
 
 Kort stängdes av orkestreraren efter PR-merge (#1750, merge-SHA `2407ef37`). DoD #3 (CI grön per jobb) bockad — `gh pr checks 1750`: samtliga jobb pass eller (förväntat) skipping, noll fail. AC #5 och DoD #1/#6 lämnas ÖPPNA — redan grundligt motiverade ovan av byggagenten (facit brutet av avsedd sentinel-omsortering, klassat (c) enligt ADR-102 § Updates 2026-08-22, väntar Marcus omstämpling via TASK-283.4). Status sätts Done: alla punkter är antingen avklarade eller uttryckligen motiverade, ingen tyst.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+S112 bokföringspass (2026-08-24): AC#5/DoD#1/DoD#6 var blockerade av personlistans trasiga ariaSnapshot-referenser (sentinel-flytt, klassad (c) i ADR-102, väntade Marcus omstämpling via TASK-283.4). TASK-283.4 är nu Done — referenserna regenererade (PR #1802) och facit.json omstämplat med Marcus citat (PR #1803, 2026-08-22). Nyverifierat denna session: promoverings-grinden 16/16 passed exit 0; facit-grinden exit 0, 0 ogodkända manifest. AC#5, DoD#1 och DoD#6 bockade mot detta.
+<!-- SECTION:FINAL_SUMMARY:END -->
