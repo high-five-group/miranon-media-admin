@@ -4,6 +4,7 @@ title: 'PRD: Kontinuerlig bas-maxning — våg 1'
 status: To Do
 assignee: []
 created_date: '2026-08-14 17:16'
+updated_date: '2026-08-24 14:43'
 labels: []
 dependencies: []
 ordinal: 387000
@@ -202,3 +203,11 @@ här.
 - [ ] #5 Rollback-väg dokumenterad och bevisat reversibel (formeltext eller record-ID:n sparade verbatim) FÖRE varje prod-mutation, per skiva
 - [ ] #6 Marcus-GO för prod-mutationen explicit citerat i skivans Implementation Notes, per skiva
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+S112 mandatpasset (2026-08-24, beslut 3, Marcus mandat 2026-08-24 att pröva omklassning): premiss- + omklassningspass kört mot samtliga 213.1–213.12. Utfall: samtliga bas-rörande skivor (213.1–213.3, 213.5–213.10, 213.12) klassade MARCUS-MOMENT — PRD:ts egen governance ("Prod-basen muteras ALDRIG utan uttalat Marcus-GO per skiva", DoD #6 på varje skiva) är en avsiktlig policy, inte en tooling-begränsning, och omklassas inte bort av att en operation råkar vara skriptbar. 213.4 RÖRD EJ (spärr bekräftad, se dess egna notes). 213.11 MARCUS-MOMENT (beror på samtliga övriga + manuell browserverifiering).
+Trots detta: omfattande agent-säker förberedelse gjord och dokumenterad per skiva (läs-mätningar, formeltexter, automationskod, rollback-förbilder) som krymper Marcus faktiska UI/GO-tid kraftigt. Fullständig körplan: docs/reference/s113-basmaxning-dukning.md.
+Två väsentliga premissdivergenser hittade (byggs INTE vidare på utan flagg, ADR-086): (1) 213.6:s "16 oavstämda" är nu 11 (3 event, ej 4) — prod mätt 2026-08-24, se 213.6:s notes. (2) 213.12:s tre citerade Event-55-poster (rec1SD7i2467gPrJ9, rec3A0IJir34yoekd, recViNdItldmL6O8l) är REDAN Person-länkade med Deltaganden-rader — prod-brett sök gav 0 träffar på aktiva anmälningar utan Deltaganden. Se 213.12:s notes.
+<!-- SECTION:NOTES:END -->

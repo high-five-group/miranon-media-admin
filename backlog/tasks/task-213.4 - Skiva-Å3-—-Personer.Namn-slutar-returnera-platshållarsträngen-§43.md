@@ -4,7 +4,7 @@ title: 'Skiva: Å3 — Personer.Namn slutar returnera platshållarsträngen (§4
 status: To Do
 assignee: []
 created_date: '2026-08-14 17:22'
-updated_date: '2026-08-17 09:55'
+updated_date: '2026-08-24 14:45'
 labels:
   - ready-for-human
 dependencies:
@@ -69,6 +69,12 @@ Täcker användarberättelser: 4
 - [ ] #5 Rollback-väg dokumenterad och bevisat reversibel (formeltext eller record-ID:n sparade verbatim) FÖRE varje prod-mutation, per skiva
 - [ ] #6 Marcus-GO för prod-mutationen explicit citerat i skivans Implementation Notes, per skiva
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+S112 mandatpasset (2026-08-24): SPÄRR BEKRÄFTAD, KORTET RÖRT ENDAST HÄR (denna not). Kommentar #1 (orkestreraren S104, 2026-08-17) lästes och står KVAR: kör INTE denna skiva med nuvarande AC-lista — byt-till-BLANK()-fixen gör mailvägens visatNamn ('(namn saknas)' → 'Hej (namn,') värre. Inget annat på detta kort ändrat: ingen etikett, ingen AC, ingen prod-/stagingoperation. Måste lösas FÖRE denna skiva kan köras: (1) K1-kodfixen (visatNamn tål båda formerna + {förnamn}-egen väg, VariantD.tsx ~999-1001) landar FÖRST, i egen PR; (2) AC-listan utökas med utskicksytan + mail-förhandsvisningen (saknas i nuvarande AC#3). Se docs/reference/s113-basmaxning-dukning.md för S113-ordningen — denna skiva placeras EFTER K1-fixen, inte i S113:s första svep.
+<!-- SECTION:NOTES:END -->
 
 ## Comments
 

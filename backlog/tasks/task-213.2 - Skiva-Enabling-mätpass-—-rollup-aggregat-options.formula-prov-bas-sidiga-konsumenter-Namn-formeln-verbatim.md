@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-14 17:22'
+updated_date: '2026-08-24 14:44'
 labels:
   - ready-for-human
 dependencies: []
@@ -72,3 +73,16 @@ Täcker användarberättelser: 12
 - [ ] #5 Rollback-väg dokumenterad och bevisat reversibel (formeltext eller record-ID:n sparade verbatim) FÖRE varje prod-mutation, per skiva
 - [ ] #6 Marcus-GO för prod-mutationen explicit citerat i skivans Implementation Notes, per skiva
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+S112-förberedelse (2026-08-24). Delvis redan slutfört, men AC#1 kräver fortsatt UI-läsning → MARCUS-MOMENT för hela skivan (osäker → b, ADR-086).
+AC#4 (Personer.Namn-formeln) — REDAN GJORT, kortets premiss ("kräver att en människa öppnar Airtable UI") FALSIFIERAD: formeltexten är läsbar via API (både mcp__airtable__describe_table och mcp__claude_ai_Airtable__get_table_schema returnerar den). Verbatim (fldnYys0Ac3UGOdpe, läst live 2026-08-24):
+IF(AND({Förnamn}="", {Efternamn}=""), "Ej tillgängligt", TRIM({Förnamn} & " " & {Efternamn}))
+(fältreferenser fldx4jrCJDOtWUk4O=Förnamn, fldjcYkSmJBLRhwsO=Efternamn)
+AC#3 (bas-sidiga konsumenter) — delvis gjort: vy-antal bekräftade via list_views_for_table (prod): Personer 11, Anmälningar 7, Eventplanering 11 — matchar kortets tal exakt. Leads-vyns EXAKTA filtervillkor är fortfarande inte exponerat av verktygsytan (endast namn/id/typ) — kvarstår som genuint UI-moment.
+AC#1 (rollup-aggregatens uttryck) — bekräftat GENUINT API-omätbart: rollup-fältens options i både describe_table och get_table_schema saknar helt aggregerings-/funktions-nyckel (endast recordLinkFieldId/fieldIdInLinkedTable/result) — kräver UI.
+AC#2 (options.formula-PATCH-provet) — EJ körd (skarp Airtable-skrivning, förbjuden i detta pass). Men: mcp__claude_ai_Airtable__update_field's schema deklarerar explicit stöd för options.formula-PATCH på formula-fält — stark indikation (ej bevis) att skiva 3/4/5/7/9/10:s formelfixar KAN vara skriptbara i S113, om Marcus GO:ar att agenten kör provet.
+Dukning: docs/reference/s113-basmaxning-dukning.md.
+<!-- SECTION:NOTES:END -->

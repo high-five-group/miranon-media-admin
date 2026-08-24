@@ -4,6 +4,7 @@ title: 'Skiva: Å8 — Fynd 1: Antal anmälningar / Antal anmälda (§O3, efter 
 status: To Do
 assignee: []
 created_date: '2026-08-14 17:24'
+updated_date: '2026-08-24 14:45'
 labels:
   - ready-for-human
 dependencies:
@@ -68,3 +69,13 @@ Täcker användarberättelser: 8
 - [ ] #5 Rollback-väg dokumenterad och bevisat reversibel (formeltext eller record-ID:n sparade verbatim) FÖRE varje prod-mutation, per skiva
 - [ ] #6 Marcus-GO för prod-mutationen explicit citerat i skivans Implementation Notes, per skiva
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+S112-förberedelse (agent-säkert, 2026-08-24) — AC#2 GJORT. Automation A6 ("A6 - Event fullbokat (Beläggning 100 %)", id wfl0filPx4wyAcaQ8, prod app8uGPrVCVOm6LfD) läst i sin helhet via claude.ai-connectorns get_automation:
+Trigger: recordMatchesConditions på Eventplanering (tblVE3UKWl1CKrphV), villkor fldqkyeE7cVHMNRpH ("Anmäld beläggning (%)") = 1 (exakt likhet, inte >=).
+Åtgärd: sendEmail till lotta@outsidereality.se + marcus@h5gruppen.se, statisk ämnesrad "Event fullbokat! Ändra status på webbsidan nu." och statiskt meddelande — inga dynamiska fält/formler i mailkroppen.
+Konsekvens för fixen: eftersom A6 triggar på EXAKT beläggning=1 (inte tröskel-överskridande), och fixen ändrar täljaren (Antal anmälda, exkluderar avbokade/inställda), kommer A6 fira vid ett ANNAT faktiskt antal aktiva anmälningar efter fixen än före — samma procentvärde (100%) men mot en mindre population. Ingen formel i A6 själv behöver ändras; endast NÄR den fyrar flyttas. Detta är precis vad AC#2 efterfrågar dokumenterat.
+Bekräftat samtidigt (identifiersOnly/full describe_table, prod): Antal anmälningar (fldU5MCQmagdHtz4G) är type="count" (ovillkorat, ej rollup) — matchar kortets "M-a/M-b"-premiss exakt. Anmäld beläggning (%) = {Antal anmälda}/{Max antal platser}; Platser kvar = {Max antal platser}-{Antal anmälda}; Antal slutbetalning saknas = {Antal anmälda}-{Antal mottagna slutbetalningar} — samtliga tre följdfält bekräftat beroende av Antal anmälda, exakt som blast-radius-varningen anger.
+<!-- SECTION:NOTES:END -->
