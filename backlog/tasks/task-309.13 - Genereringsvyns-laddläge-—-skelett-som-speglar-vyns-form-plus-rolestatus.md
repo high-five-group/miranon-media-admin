@@ -1,9 +1,10 @@
 ---
 id: TASK-309.13
 title: 'Genereringsvyns laddläge — skelett som speglar vyns form, plus role=status'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-24 16:35'
+updated_date: '2026-08-24 17:10'
 labels:
   - ready-for-agent
 dependencies: []
@@ -25,9 +26,9 @@ TILLGÄNGLIGHETEN, som ingen såg: <p> bär varken role=status eller aria-live, 
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Laddläget renderar skelett som speglar vyns faktiska form: rubrikrad + metarad, sedan två gruppkort med KORT_KLASS och tre listRow-rader vardera
-- [ ] #2 Skelettblocket bär role=status, aria-live=polite och aria-busy=true, med sr-only-texten 'Hämtar underlag …'
-- [ ] #3 Sidkromets chevron renderas i laddläget precis som i det landade läget (ingen hoppande chevron)
+- [x] #1 Laddläget renderar skelett som speglar vyns faktiska form: rubrikrad + metarad, sedan två gruppkort med KORT_KLASS och tre listRow-rader vardera
+- [x] #2 Skelettblocket bär role=status, aria-live=polite och aria-busy=true, med sr-only-texten 'Hämtar underlag …'
+- [x] #3 Sidkromets chevron renderas i laddläget precis som i det landade läget (ingen hoppande chevron)
 <!-- AC:END -->
 
 ## Definition of Done
@@ -37,3 +38,19 @@ TILLGÄNGLIGHETEN, som ingen såg: <p> bär varken role=status eller aria-live, 
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landad i `d9d973d5` (PR #1889, merge `24c39777`).
+
+Genereringsvyns laddläge renderade `<p>Hämtar underlag …</p>`. Två fel, varav bara det ena syntes.
+
+**#1 — formen.** Ersatt av skelett som speglar vyns faktiska form: rubrikrad + metarad, sedan två gruppkort med `KORT_KLASS` och tre `listRow`-rader vardera. Syskonytorna i samma spår (`PlatserYta`, `EventinnehallYta`) körde redan husets `Skeleton`-mönster; genereringsvyn var avvikaren. Skelett reserverar dessutom ytan, så layouten inte hoppar vid datalandning.
+
+**#2 — tillgängligheten, som ingen hade sett.** `<p>` bär varken `role="status"` eller `aria-live`, så en skärmläsare fick INGEN avisering om att något laddades — vyn var tyst tills innehållet dök upp. Blocket bär nu `role="status" aria-live="polite" aria-busy="true"` med `sr-only`-texten. `Skeleton` självt är `aria-hidden`, så `sr-only` är det som faktiskt annonseras.
+
+**#3 — chevronen** renderas i laddläget som i det landade läget (samma `SidRamKnapp`), så den inte hoppar när datan kommer.
+
+Marcus grund (granskning 2026-08-24): *"När jag trycker på chevronen så står det Hämtar underlag…, det ser inte så snyggt ut. Förslag?"* Kvalitetsribban för tillgänglighet är 11 utan undantag (`CLAUDE.md` § Kvalitetsribba).
+<!-- SECTION:FINAL_SUMMARY:END -->
