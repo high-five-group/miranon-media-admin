@@ -176,6 +176,96 @@ test.describe('create-attachment-upload-ticket + finalize-attachment-upload — 
     expect(attachment.dokumentklass).toBe('Uppladdad');
   });
 
+  // TASK-183 — finalize-attachment-upload saknade idempotensnyckel: ett
+  // klient-retry efter timeout (samma ticket, samma attachmentId) kunde
+  // skapa TVÅ Bilagor-rader för samma fil. Fixen använder Lagringsnyckel
+  // (deterministisk — <attachmentId>-<filnamn>, se index.ts § IDEMPOTENS)
+  // som Airtable-upsert-merge-fält (ADR-066:s mönster).
+  //
+  // BEVISAT TVÅSIDIGT (AC #1): (a) SAMMA attachmentId retry:as → matchar →
+  // EN rad, INGEN dubblett; (b) TVÅ OLIKA attachmentId (två genuint skilda
+  // uppladdningar, varsin egen ticket) → TVÅ separata rader — mekanismen
+  // dedupar bara äkta retries, den slår aldrig ihop olika filer.
+  test('IDEMPOTENS: samma attachmentId (retry) → EN rad; olika attachmentId (ny uppladdning) → TVÅ rader', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const filnamn = sentinelFilnamn();
+    const bytes = buildPseudoPdfBuffer(1024);
+
+    const ticketRes = await postTicket(request, config, jwt, {
+      eventId: BELAGGNING_EVENT_ID,
+      filnamn,
+      contentType: 'application/pdf',
+      sizeBytes: bytes.length,
+    });
+    const ticketBody = JSON.parse(await ticketRes.text()) as { ticket: unknown };
+    const ticket: Ticket = AttachmentUploadTicketSchema.parse(ticketBody.ticket);
+
+    const putRes = await request.put(ticket.signedUrl, {
+      headers: { 'Content-Type': 'application/pdf' },
+      data: bytes,
+    });
+    expect(putRes.status(), await putRes.text()).toBeLessThan(300);
+
+    const finalizeBody = {
+      eventId: BELAGGNING_EVENT_ID,
+      attachmentId: ticket.attachmentId,
+      filnamn,
+    };
+
+    // (1) Första finalize → 201, ny rad (createdRecords).
+    const first = await postFinalize(request, config, jwt, finalizeBody);
+    const firstRaw = await first.text();
+    expect(first.status(), firstRaw).toBe(201);
+    const firstJson = JSON.parse(firstRaw) as { record: { id: string }; created: boolean };
+    expect(firstJson.created).toBe(true);
+    const firstId = firstJson.record.id;
+
+    // (2) RETRY — EXAKT samma (eventId, attachmentId, filnamn) som en klient
+    // skulle skicka efter en nätverkstimeout (fetchWithRetry, src/data/utils.ts).
+    // Samma Lagringsnyckel deriveras → upsert MATCHAR → 200, updatedRecords,
+    // SAMMA record-ID. Ingen dubblett.
+    const retry = await postFinalize(request, config, jwt, finalizeBody);
+    const retryRaw = await retry.text();
+    expect(retry.status(), retryRaw).toBe(200);
+    const retryJson = JSON.parse(retryRaw) as { record: { id: string }; created: boolean };
+    expect(retryJson.created).toBe(false);
+    expect(retryJson.record.id).toBe(firstId);
+
+    // (3) En GENUINT NY uppladdning — egen ticket, eget attachmentId, SAMMA
+    // filnamn — får en ANNAN Lagringsnyckel (attachmentId är prefixet) och
+    // ska INTE matcha (1)/(2):s rad. Mekanismen dedupar retries, den slår
+    // aldrig ihop två olika filer bara för att filnamnet råkar vara likt.
+    const ticketRes2 = await postTicket(request, config, jwt, {
+      eventId: BELAGGNING_EVENT_ID,
+      filnamn,
+      contentType: 'application/pdf',
+      sizeBytes: bytes.length,
+    });
+    const ticketBody2 = JSON.parse(await ticketRes2.text()) as { ticket: unknown };
+    const ticket2: Ticket = AttachmentUploadTicketSchema.parse(ticketBody2.ticket);
+    expect(ticket2.attachmentId).not.toBe(ticket.attachmentId);
+
+    const putRes2 = await request.put(ticket2.signedUrl, {
+      headers: { 'Content-Type': 'application/pdf' },
+      data: bytes,
+    });
+    expect(putRes2.status(), await putRes2.text()).toBeLessThan(300);
+
+    const second = await postFinalize(request, config, jwt, {
+      eventId: BELAGGNING_EVENT_ID,
+      attachmentId: ticket2.attachmentId,
+      filnamn,
+    });
+    const secondRaw = await second.text();
+    expect(second.status(), secondRaw).toBe(201);
+    const secondJson = JSON.parse(secondRaw) as { record: { id: string }; created: boolean };
+    expect(secondJson.created).toBe(true);
+    expect(secondJson.record.id).not.toBe(firstId);
+  });
+
   test('deny: sizeBytes över bucketens faktiska gräns → 400 i MB, INNAN ticket utfärdas (AC #6/PRD US11)', async ({
     request,
   }) => {
