@@ -6,10 +6,11 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-07-25 01:48'
-updated_date: '2026-08-24 14:41'
+updated_date: '2026-08-24 15:46'
 labels:
   - ready-for-agent
   - wontfix
+  - intentionally-unchecked
 dependencies: []
 ordinal: 103000
 ---
@@ -32,6 +33,8 @@ Fynd ur task-18.16:s review-pilot (2026-07-25), icke-blockerande. SYMPTOM: src/c
 
 <!-- SECTION:NOTES:BEGIN -->
 Beslutat av Code på Marcus-mandat 2026-08-24 (GO i klartext), S112. Motiv: citerad kommentar existerar inte längre (grep 0 träffar, 2026-08-24). Ingen divergens — belägget höll exakt som uppdraget beskrev.
+
+OBOCKAT MED AVSIKT: förkastat (wontfix) — den citerade kommentaren existerar inte längre i filen.
 <!-- SECTION:NOTES:END -->
 
 ## Comments

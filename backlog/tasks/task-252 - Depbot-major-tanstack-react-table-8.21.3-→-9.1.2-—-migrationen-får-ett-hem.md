@@ -1,10 +1,10 @@
 ---
 id: TASK-252
 title: 'Depbot-major: @tanstack/react-table 8.21.3 → 9.1.2 — migrationen får ett hem'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-17 06:42'
-updated_date: '2026-08-24 14:44'
+updated_date: '2026-08-24 15:44'
 labels:
   - ready-for-human
 dependencies: []
@@ -27,10 +27,10 @@ PR #1491 (Dependabot 2026-08-17, måndags-schemat). Major-bump = ADR-031 Lager 4
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -114,4 +114,6 @@ Not: `npm uninstall` konverterade denna worktrees symlänkade `node_modules` til
 Commit-referens: se PR (fylls i separat commit strax innan push).
 
 Commit-referens (uppdaterad): c735bb35b2f9a222e257b8360701033132305bb0 (chore(deps): ta bort oanvända @tanstack/react-table + motion).
+
+Done-flipp S112: PR #1921 landad (rebasad efter #1924-konflikt), post-merge grönt; paketet borttaget, #1491 stängd. Landning: PR #1921
 <!-- SECTION:NOTES:END -->

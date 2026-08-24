@@ -6,10 +6,11 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-07-26 11:32'
-updated_date: '2026-08-24 14:40'
+updated_date: '2026-08-24 15:46'
 labels:
   - ready-for-human
   - wontfix
+  - intentionally-unchecked
 dependencies:
   - TASK-48
 parent_task_id: TASK-18
@@ -175,4 +176,6 @@ Allt i `src/components/events/detail/Deltagare.tsx` om inget annat anges.
 - Tvåstegs-stängningen (K61.1/T75) och path-scopad add gäller som vanligt.
 
 Beslutat av Code på Marcus-mandat 2026-08-24 (GO i klartext), S112. Motiv: explicit ersatt av TASK-145 (citat i dess text, verifierat verbatim mot disk, rad 138). Ingen divergens funnen — belägget håller exakt som uppdraget beskrev.
+
+OBOCKAT MED AVSIKT: förkastat (wontfix) — explicit ersatt av TASK-145; AC ogiltigförklarade av dess text.
 <!-- SECTION:NOTES:END -->

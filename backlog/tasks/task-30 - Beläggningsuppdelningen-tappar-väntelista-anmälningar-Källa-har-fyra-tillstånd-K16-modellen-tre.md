@@ -6,10 +6,11 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-07-22 19:02'
-updated_date: '2026-08-24 14:40'
+updated_date: '2026-08-24 15:46'
 labels:
   - ready-for-human
   - wontfix
+  - intentionally-unchecked
 dependencies: []
 ordinal: 79000
 ---
@@ -40,6 +41,8 @@ Oetiketterat per fynd-regeln — människan klassar.
 
 <!-- SECTION:NOTES:BEGIN -->
 Beslutat av Code på Marcus-mandat 2026-08-24 (GO i klartext), S112. Motiv: falsifierad mot Belaggning.tsx rad ~41 (K22-designbeslutet). Ingen divergens — belägget höll exakt vid egen prövning.
+
+OBOCKAT MED AVSIKT: förkastat (wontfix) — premissen falsifierad, väntelista-exkludering är avsiktlig design (K22).
 <!-- SECTION:NOTES:END -->
 
 ## Comments
