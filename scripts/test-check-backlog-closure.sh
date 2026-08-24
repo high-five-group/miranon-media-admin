@@ -30,6 +30,14 @@ ETIKETT="intentionally-open"
 # karens tyst ändrat vad testerna påstår sig bevisa.
 KARENS_H=24
 
+# Stängningsformernas värden (TASK-281). Sviten sätter dem SJÄLV av exakt samma
+# skäl som etiketten och karensen ovan: ärvdes de från repots policy hade ett
+# byte av projektets mönster tyst ändrat vad testerna påstår sig bevisa.
+HARLEDD_MONSTER="CI grön per jobb"
+PEKARE_MONSTER="Landning:\s*PR #[0-9]+"
+AVSTADD_ETIKETT="intentionally-unchecked"
+AVSTADD_MARKOR="OBOCKAT MED AVSIKT:"
+
 # Tidsstämplar för karens-fallen. Kortens tidsstämplar skrivs i UTC, så FARSK
 # räknas i UTC — annars hade en maskin i CEST fått en "färsk" stämpel som ligger
 # två timmar i framtiden och testet blivit sant av fel skäl.
@@ -79,8 +87,18 @@ for (const f of filer) {
     const barn = [];
     const ac = [];
     const dod = [];
+    // Prosa-sektionerna (TASK-281). Pekaren söks ENDAST i Final Summary och
+    // markören i NOTES ∪ FINAL_SUMMARY — beskrivningen finns med just för att
+    // den avgränsningen ska gå att pröva, inte bara påstås.
+    const beskrivning = [];
+    const notes = [];
+    const slutrad = [];
     let block = "";
     for (const r of rader) {
+        // ALLA rubrik-igenkänningar ligger före ALL insamling. Låg man
+        // prosa-insamlingen först hade en `Acceptance Criteria:`-rubrik som
+        // följde efter `Final Summary:` svalts av slutraden — och fixturen
+        // hade tyst tappat sina AC utan att något test blev rött.
         if (/^Status:/.test(r)) {
             // Glyfen (✔/○/✖) är CLI:ts DISPLAY-form; JSON bär det rena värdet.
             status = r.replace(/^Status:\s*/, "").replace(/^[^\p{L}]+/u, "").trim();
@@ -95,6 +113,12 @@ for (const f of filer) {
         if (/^Subtasks \(/.test(r)) { block = "barn"; continue; }
         if (/^Acceptance Criteria:/.test(r)) { block = "ac"; continue; }
         if (/^Definition of Done:/.test(r)) { block = "dod"; continue; }
+        if (/^Description:/.test(r)) { block = "beskrivning"; continue; }
+        if (/^Implementation Notes:/.test(r)) { block = "notes"; continue; }
+        if (/^Final Summary:/.test(r)) { block = "slutrad"; continue; }
+        if (block === "beskrivning") { beskrivning.push(r); continue; }
+        if (block === "notes") { notes.push(r); continue; }
+        if (block === "slutrad") { slutrad.push(r); continue; }
         if (block === "barn") {
             const m = r.match(/^- (TASK-[0-9.]+)/);
             if (m) { barn.push(m[1]); continue; }
@@ -106,7 +130,11 @@ for (const f of filer) {
         if (block === "ac") ac.push(post);
         if (block === "dod") dod.push(post);
     }
-    kort.push({ id, status, labels, updated, created, barn, ac, dod });
+    const trim = (rader) => rader.join("\n").replace(/^\n+|\n+$/g, "");
+    kort.push({
+        id, status, labels, updated, created, barn, ac, dod,
+        beskrivning: trim(beskrivning), notes: trim(notes), slutrad: trim(slutrad),
+    });
 }
 
 // Förälder/barn deklareras i fixturen på FÖRÄLDERN (Subtasks-blocket) men bärs
@@ -137,12 +165,25 @@ for (const k of kort) {
     if (k.dod.length > 0) {
         kropp.push("## Definition of Done", "<!-- DOD:BEGIN -->", blk(k.dod), "<!-- DOD:END -->", "");
     }
+    // Prosa-sektionerna skrivs med verktygets egna SECTION-markörer — samma
+    // kontrakt grinden läser i verkligheten. En sektion utan innehåll skrivs
+    // inte alls, precis som CLI:t gör.
+    const sektion = (rubrik, namn, text) => {
+        if (!text) return;
+        kropp.push(`## ${rubrik}`, `<!-- SECTION:${namn}:BEGIN -->`, text, `<!-- SECTION:${namn}:END -->`, "");
+    };
+    sektion("Description", "DESCRIPTION", k.beskrivning);
+    sektion("Implementation Notes", "NOTES", k.notes);
+    sektion("Final Summary", "FINAL_SUMMARY", k.slutrad);
     fs.writeFileSync(path.join(dir, "tasks", `task-${k.id.replace("TASK-", "")}.md`),
         `${fm.join("\n")}${kropp.join("\n")}`);
     fs.writeFileSync(path.join(dir, "view", `${k.id.replace("TASK-", "")}.json`),
         JSON.stringify({
             schemaVersion: 1, kind: "task",
-            task: { id: k.id, status: k.status, acceptanceCriteria: k.ac, definitionOfDone: k.dod },
+            task: {
+                id: k.id, status: k.status, acceptanceCriteria: k.ac, definitionOfDone: k.dod,
+                description: k.beskrivning, implementationNotes: k.notes, finalSummary: k.slutrad,
+            },
         }));
 }
 
@@ -209,6 +250,10 @@ bygg_fixturer() {
         printf 'BACKLOG_UNDANTAGNA_STATUSAR=""\n'
         printf 'BACKLOG_AVSIKTLIGT_OPPEN_ETIKETT="%s"\n' "${ETIKETT}"
         printf 'BACKLOG_KARENS_TIMMAR="%s"\n' "${KARENS_H}"
+        printf 'BACKLOG_HARLEDD_DOD_MONSTER="%s"\n' "${HARLEDD_MONSTER}"
+        printf 'BACKLOG_LANDNINGS_PEKARE_MONSTER="%s"\n' "${PEKARE_MONSTER}"
+        printf 'BACKLOG_AVSTADD_KRAV_ETIKETT="%s"\n' "${AVSTADD_ETIKETT}"
+        printf 'BACKLOG_AVSTADD_KRAV_MARKOR="%s"\n' "${AVSTADD_MARKOR}"
     } > "${d}/policy.conf"
 }
 
@@ -997,6 +1042,218 @@ if ! grep -qE '^\s*(for|while).*\$\{BACKLOG_CMD\}' "${GRIND}"; then
 else
     echo "  ✗ T53 en per-kort-loop över BACKLOG_CMD är tillbaka i grinden:"
     grep -nE '^\s*(for|while).*\$\{BACKLOG_CMD\}' "${GRIND}" | while IFS= read -r r; do echo "      ${r}"; done
+    FAIL=$((FAIL + 1))
+fi
+
+# ── Stängningsformerna (TASK-281) ────────────────────────────────────────────
+#
+# Två undantag från invariant 2, båda prövade i PAR: att undantaget bär när det
+# ska, och att det INTE bär när halva formen saknas. Det är den enda formen som
+# skiljer "grinden accepterar rätt sak" från "grinden accepterar allt".
+
+HARLEDD_KLAR="Status: ✔ Done
+${AC_HDR}
+- [x] #1 ett
+${DOD_HDR}
+- [x] #1 dod
+- [ ] #2 ${HARLEDD_MONSTER} på pushad commit"
+
+prova "T54 härledd DoD-rad obockad + landnings-pekare -> passerar" 0 \
+"${HARLEDD_KLAR}
+Final Summary:
+Levererad. Landning: PR #1910."
+
+prova "T55 SAMMA kort utan pekare -> FÄLLER (pekaren är utbytet, inte amnesti)" 1 \
+"${HARLEDD_KLAR}
+Final Summary:
+Levererad. Ingen adress till landningen."
+
+prova_utskrift "T55b fällningen namnger vad som saknas (död pekare lärs ut)" 1 \
+'landnings-pekare' 1 \
+"${HARLEDD_KLAR}
+Final Summary:
+Levererad."
+
+# Pekaren undantar EXAKT den härledda raden. Vore den ett generellt frikort hade
+# vilken obockad DoD-rad som helst svalts av en PR-referens.
+prova "T56 pekare + obockad ICKE-härledd DoD-rad -> FÄLLER ändå" 1 \
+"Status: ✔ Done
+${AC_HDR}
+- [x] #1 ett
+${DOD_HDR}
+- [ ] #1 facit-manifestet amenderat
+Final Summary:
+Landning: PR #1910."
+
+# Ett omnämnande är inte en deklaration. Detta är fallet som MÄTTES skarpt
+# 2026-08-24: TASK-285:s slutrad nämnde 'PR #1811' som kontext, och den lösare
+# formen kvitterade rätt kort på fel bevis.
+prova "T57 blott ett PR-nummer utan etikettordet 'Landning:' -> FÄLLER" 1 \
+"${HARLEDD_KLAR}
+Final Summary:
+Baslinjen sattes i PR #1811 och formen stämplades."
+
+# Sökytan: pekaren gäller bara i Final Summary. En beskrivning som NÄMNER en PR
+# (repot har kort vars titel gör precis det) får aldrig kvittera en landning.
+prova "T58 pekare i Description i stället för Final Summary -> FÄLLER" 1 \
+"${HARLEDD_KLAR}
+Description:
+Blockerad av Landning: PR #1910 tills den landat."
+
+AVSTADD_KROPP="Status: ✔ Done
+Labels: ${AVSTADD_ETIKETT}
+${AC_HDR}
+- [ ] #1 manuell vandring genomförd
+${DOD_HDR}
+- [ ] #1 alla acceptanskriterier avbockade"
+
+prova "T59 avstådd-etikett + markör -> passerar (legitim stängning)" 0 \
+"${AVSTADD_KROPP}
+Implementation Notes:
+${AVSTADD_MARKOR} Marcus avstod QA:n verbatim."
+
+prova "T60 avstådd-etikett UTAN markör -> FÄLLER (blankocheck-spärren)" 1 \
+"${AVSTADD_KROPP}
+Implementation Notes:
+QA:n gjordes inte."
+
+prova_utskrift "T60b fällningen säger att motiveringen saknas, inte att AC saknas" 1 \
+'ingen motivering' 1 \
+"${AVSTADD_KROPP}
+Implementation Notes:
+QA:n gjordes inte."
+
+# Markören ensam är ingen deklaration: etiketten är den maskinläsbara halvan,
+# och ett kort som BESKRIVER mekanismen (TASK-281 självt gör det) får aldrig
+# råka undanta sig.
+prova "T61 markör UTAN etikett -> FÄLLER (etiketten är deklarationen)" 1 \
+"Status: ✔ Done
+${AC_HDR}
+- [ ] #1 manuell vandring genomförd
+${DOD_HDR}
+- [x] #1 dod
+Implementation Notes:
+${AVSTADD_MARKOR} Marcus avstod QA:n verbatim."
+
+# Markören godtas i Final Summary lika väl som i Notes — men INTE i
+# beskrivningen, av samma skäl som pekaren.
+prova "T62 markör i Final Summary -> passerar" 0 \
+"${AVSTADD_KROPP}
+Final Summary:
+${AVSTADD_MARKOR} Marcus avstod QA:n verbatim."
+
+prova "T63 markör i Description -> FÄLLER (fel sökyta)" 1 \
+"${AVSTADD_KROPP}
+Description:
+${AVSTADD_MARKOR} står här av misstag."
+
+# Formen gäller STÄNGDA kort. Ett öppet kort med etiketten men utan markör får
+# inte fällas av blankocheck-spärren — etiketten kan ligga i förväg, och ett
+# falskt rött på ett öppet kort är exakt det karensen finns för att undvika.
+prova "T64 ÖPPET kort med avstådd-etikett utan markör -> fäller INTE" 0 \
+"Status: ○ To Do
+Labels: ${AVSTADD_ETIKETT}
+${AC_HDR}
+- [ ] #1 ett
+${DOD_HDR}
+- [ ] #1 dod"
+
+# Redovisningen: ett undantag som inte syns är samma blinda fläck TASK-90
+# lagade. Båda formerna namnger sina kort i varje körning.
+prova_utskrift "T65 undantagna kort NAMNGES i täckningsblocket" 0 \
+'TASK-1' 1 \
+"${AVSTADD_KROPP}
+Implementation Notes:
+${AVSTADD_MARKOR} Marcus avstod QA:n verbatim."
+
+# Policy-kopplingen är fail-closed: halva paret är en blankocheck, inte en
+# härledning, och grinden vägrar gissa vilken halva som var avsedd.
+POLICY_BAS='BACKLOG_KLAR_STATUS="Done"
+BACKLOG_UNDANTAGNA_STATUSAR=""
+BACKLOG_AVSIKTLIGT_OPPEN_ETIKETT="intentionally-open"
+BACKLOG_KARENS_TIMMAR="24"'
+
+prova_policy "T66 härledd-mönster utan pekar-mönster -> exit 2" \
+"${POLICY_BAS}
+BACKLOG_HARLEDD_DOD_MONSTER=\"${HARLEDD_MONSTER}\"" \
+2 'BACKLOG_LANDNINGS_PEKARE_MONSTER saknas'
+
+prova_policy "T66b båda satta -> passerar (fällningen kom från kopplingen)" \
+"${POLICY_BAS}
+BACKLOG_HARLEDD_DOD_MONSTER=\"${HARLEDD_MONSTER}\"
+BACKLOG_LANDNINGS_PEKARE_MONSTER=\"${PEKARE_MONSTER}\"" \
+0 ''
+
+prova_policy "T67 avstådd-etikett utan markör-variabel -> exit 2" \
+"${POLICY_BAS}
+BACKLOG_AVSTADD_KRAV_ETIKETT=\"${AVSTADD_ETIKETT}\"" \
+2 'BACKLOG_AVSTADD_KRAV_MARKOR saknas'
+
+prova_policy "T67b båda satta -> passerar (fällningen kom från kopplingen)" \
+"${POLICY_BAS}
+BACKLOG_AVSTADD_KRAV_ETIKETT=\"${AVSTADD_ETIKETT}\"
+BACKLOG_AVSTADD_KRAV_MARKOR=\"${AVSTADD_MARKOR}\"" \
+0 ''
+
+# Avstängt läge: utan mönster ska grinden bete sig EXAKT som före TASK-281 —
+# en obockad härledd rad på ett Done-kort fäller igen.
+prova_policy "T68 tomma stängningsform-variabler -> formerna är avstängda" \
+"${POLICY_BAS}" 0 ''
+
+d="${TMP}/avstangt"
+bygg_fixturer "${d}" 1 "${HARLEDD_KLAR}
+Final Summary:
+Landning: PR #1910."
+printf '%s\n' "${POLICY_BAS}" > "${d}/policy.conf"
+kor_fixtur "${d}"
+if [[ "${SISTA_KOD}" -eq 1 ]]; then
+    echo "  ✓ T68b samma kort med formerna AVSTÄNGDA -> fäller (formen gör skillnaden)"
+    PASS=$((PASS + 1))
+else
+    echo "  ✗ T68b avstängda former borde ge exit 1, fick ${SISTA_KOD}"
+    while IFS= read -r r; do echo "      ${r}"; done <<< "${SISTA_UT}"
+    FAIL=$((FAIL + 1))
+fi
+
+# Korsvalideringen täcker de nya fälten också: filen och CLI:t måste vara
+# överens om PEKAREN, inte bara om kryssrutorna. Fixturen manipuleras efter
+# stub-bygget så att .md-filen bär en pekare som JSON:en saknar.
+d="${TMP}/korsvalidering-pekare"
+bygg_fixturer "${d}" 1 "${HARLEDD_KLAR}
+Final Summary:
+Levererad."
+perl -pi -e 's/^Levererad\.$/Levererad. Landning: PR #1910./' "${d}/tasks/task-1.md"
+kod=0
+ut=""
+ut="$(BACKLOG_CMD="${d}/backlog" BACKLOG_TASKS_DIR="${d}/tasks" \
+      BACKLOG_CLOSURE_POLICY="${d}/policy.conf" bash "${GRIND}" 2>&1)" || kod=$?
+if [[ "${kod}" -eq 2 ]] && grep -q 'stängningsformens fält' <<< "${ut}"; then
+    echo "  ✓ T69 fil och CLI oense om landnings-pekaren -> exit 2"
+    PASS=$((PASS + 1))
+else
+    echo "  ✗ T69 oenig pekar-korsvalidering gav inte exit 2 av rätt orsak (kod=${kod})"
+    while IFS= read -r r; do echo "      ${r}"; done <<< "${ut}"
+    FAIL=$((FAIL + 1))
+fi
+
+# Formatdrift i prosa-sektionerna: en Final Summary-RUBRIK utan markörpar får
+# aldrig tolkas som "tom slutrad" — då hade varje pekare försvunnit tyst och
+# grinden blivit rödare utan att någon förstod varför.
+d="${TMP}/sektionsmarkor-borta"
+bygg_fixturer "${d}" 1 "${HARLEDD_KLAR}
+Final Summary:
+Landning: PR #1910."
+perl -0777 -pi -e 's/<!-- SECTION:FINAL_SUMMARY:BEGIN -->\n|<!-- SECTION:FINAL_SUMMARY:END -->\n//g' "${d}/tasks/task-1.md"
+kod=0
+ut=""
+ut="$(BACKLOG_CMD="${d}/backlog" BACKLOG_TASKS_DIR="${d}/tasks" \
+      BACKLOG_CLOSURE_POLICY="${d}/policy.conf" bash "${GRIND}" 2>&1)" || kod=$?
+if [[ "${kod}" -eq 2 ]] && grep -q 'saknar markörparet' <<< "${ut}"; then
+    echo "  ✓ T70 Final Summary-rubrik utan markörpar -> exit 2, aldrig tyst tom"
+    PASS=$((PASS + 1))
+else
+    echo "  ✗ T70 saknad sektionsmarkör gav inte exit 2 av rätt orsak (kod=${kod})"
+    while IFS= read -r r; do echo "      ${r}"; done <<< "${ut}"
     FAIL=$((FAIL + 1))
 fi
 

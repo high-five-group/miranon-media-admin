@@ -71,6 +71,132 @@
 # vilka barn som existerar. CLI:ts eget `Subtasks (N):`-block är den
 # auktoritativa relationen och kräver ingen gissning.
 #
+# ═══ STÄNGNINGSFORMERNA — TVÅ UNDANTAG FRÅN INVARIANT 2 (TASK-281) ═══
+#
+# Invariant 2 fällde 2026-08-24 på 17 kort. Ingen av fällningarna var det fel
+# invarianten skrevs för. Två skilda strukturhål producerade dem, och båda är
+# lagade här.
+#
+# ── HÅL 1: "CI grön per jobb" hade ingen ägare ───────────────────────────────
+#
+# DoD-raden `CI grön per jobb på pushad commit` (backlog/config.yml:s DoD-mall)
+# kan bygg-agenten INTE bocka: dess arbete slutar vid pushen, och CI-utfallet
+# finns inte då. TASK-249.5 kommentar #1 säger det verbatim: "DoD-status: #3
+# (CI grön per jobb) lämnas obockad — CI-verifikation ägs av orkestrerarens
+# svep, inte av mig." Stängnings-commiten flippar sedan bara status; mätt på
+# ea1cffbc rördes NOLL kryssrutor. Ingen part äger steget däremellan, så varje
+# PRD med bygg-agent-skivor producerade en ny kull falskt röda kort — nattens
+# drivande mängd växte från 20 (2026-08-18) till 31 (2026-08-20) på två dygn.
+#
+# OPTIONS-RYMDEN, VÄGD (TASK-281 AC #2; Marcus GO 2026-08-24 för väg iii):
+#
+#   (i)  ORKESTRERAREN BOCKAR som ett explicit steg i landnings-svepet.
+#        FÖRKASTAD som huvudväg. Den lägger tillbaka exakt den manuella
+#        handling som redan bevisligen uteblir: svepet ÄGDE steget hela tiden
+#        (ADR-073 beslut 5 beskriver det), och 17 kort visar att beskrivningen
+#        inte räckte. Det är ADR-083-felklassen ordagrant — en regel utan
+#        mekanism efterlevs inte — och detta kort finns just för att bevisa det.
+#        Behålls som MANDATERAD FALLBACK om (iii) faller tekniskt; den föll inte.
+#   (ii) BYGG-AGENTEN ARMERAR OCH BOCKAR SJÄLV efter en CI-vakt.
+#        FÖRKASTAD, och inte på smak: den bryter ADR-096:s väntekontrakt.
+#        Subagenten är Activity — den saknar en framtida tur att vakna i, och
+#        Monitor-callbacken levereras aldrig till en subagent (L340, mätt
+#        2026-07-25). En agent som väntar in CI är en parkerad agent med färdig
+#        leverans; T112 mätte elva sådana på en natt. Vägen kostar alltså exakt
+#        den tillståndsklass orkestrerings-arkitekturen är byggd för att undvika.
+#   (iii) GRINDEN SLUTAR KRÄVA RUTAN och härleder grönheten maskinellt. VALD.
+#
+# VAD (iii) FAKTISKT HÄRLEDER, OCH VARFÖR HÄRLEDNINGEN HÅLLER: allt som når
+# `main` har gått genom merge-kön. Direktpush avvisas av rulesetet (ADR-076) och
+# kön mergar aldrig en post vars required checks är röda. "CI grön per jobb på
+# pushad commit" är därför inte något en människa ska intyga — det är en
+# EGENSKAP hos landningen. Rutan var en manuell omskrivning av en invariant
+# rulesetet redan upprätthåller.
+#
+# BEVISET KORTET MÅSTE BÄRA ÄR DÄRFÖR PEKAREN, INTE BOCKEN. En obockad DoD-rad
+# som matchar BACKLOG_HARLEDD_DOD_MONSTER räknas inte som obockad — FÖRUTSATT
+# att kortets Final Summary bär en landnings-pekare som matchar
+# BACKLOG_LANDNINGS_PEKARE_MONSTER (`Landning: PR #<nr>`). Saknas pekaren
+# räknas raden precis som förut och grinden säger vad som saknas. Bytet är
+# alltså ett UTBYTE: ett manuellt påstående ersätts av en maskinläsbar pekare
+# till den landning som bär beviset.
+#
+# PEKAREN KRÄVER ETIKETTORDET, OCH DET ÄR MÄTT: första formen var `PR #[0-9]+`
+# rakt av, och den godkände TASK-285 vid provkörningen 2026-08-24 utan att
+# någon rört kortet — slutraden nämner `PR #1811` (det visuella baslinje-låset)
+# som KONTEXT, medan kortets faktiska landning var PR #1910. Rätt kort, fel
+# bevis. Etikettordet skiljer en DEKLARERAD landning från ett omnämnande.
+#
+# DET LAGAR SAMTIDIGT DEATH POINTER-FORMEN (TASK-281 bifynd a). Sex kort bar
+# slutraden "PR: se kortets notes/kommentarer" utan att något nummer fanns i
+# notes; numren gick bara att få fram med `git log --grep`. Ett kort som pekar
+# på ingenting är en pekare till en död adress. Nu är pekaren det som gör
+# kortet grönt, så den kan inte utelämnas utan att någon märker det.
+#
+# ═══ VARFÖR HÄRLEDNINGEN INTE FRÅGAR gh ELLER git ═══
+#
+# Den uppenbara formen — slå upp PR:en mot GitHubs API och läsa dess checks —
+# är förkastad, och det är ett MÄTT hinder, inte en bedömning:
+#
+#   * NATTJOBBET CHECKAR UT MED `fetch-depth: 1` (.github/workflows/nightly.yml,
+#     jobbet `Backlog-stängning (natt-grind)`). Det finns alltså ingen
+#     git-historik att slå `Merge pull request #N` mot i CI. En ancestry-baserad
+#     verifiering hade fungerat lokalt och tyst fallit tillbaka i natten — den
+#     dyraste sorten av grind.
+#   * gh-API:t lägger till ett NÄTVERKSBEROENDE i en grind som i dag inte har
+#     något. Rate-limit eller offline hade tvingat fram ett val mellan tyst
+#     grönt (oacceptabelt) och falskt rött i en required check i natten (som
+#     devalverar nästa larm — se KARENS-sektionen). Jobbet bär dessutom bara
+#     `contents: read`.
+#
+# GRINDEN VERIFIERAR DÄRFÖR PEKARENS NÄRVARO OCH FORM, INTE DESS SANNING. Det
+# är en ÖPPEN GRÄNS och skrivs ut som en: ett påhittat nummer passerar. Vad som
+# ändå vinns är mätbart — pekaren finns, den står där en läsare av kortet ser
+# den, och grinden skriver ut den varje natt. Det är strikt mer bevis än den
+# bock den ersätter: bocken var ett påstående av den som stängde kortet, och
+# den var dessutom obockad i samtliga 17 fall.
+#
+# ── HÅL 2: invariant 2 hade ingen undantagsform ──────────────────────────────
+#
+# `intentionally-open` undantar ÖPPNA kort (invariant 1 och 3). För ett STÄNGT
+# kort fanns ingenting. Men det finns en legitim stängning med medvetet obockade
+# rutor, och den är mätt fem gånger 2026-08-24 (TASK-283, 283.5, 285, 285.12,
+# 286.6 i städvåg A, PR #1910): Marcus avstår QA:n verbatim ("Nej inget Q&A,
+# skit i det. Gör klart allt de andra."), kortet stängs som formellt avskrivet i
+# stället för genomfört, och AC-rutorna lämnas obockade MED AVSIKT — att bocka
+# dem hade varit en osann utsaga om att vandringen gjorts. Samma klass:
+# TASK-283 DoD #5/#6, obockade för att bokstaven är strukturellt omöjlig
+# respektive inapplicerbar efter en arkitekturpivot.
+#
+# Den formen gjorde grinden RÖDARE ju mer korrekt den utfördes. En grind som
+# straffar den ärligaste stängningen lär ut fel sak.
+#
+# FORMEN ÄR TVÅFAKTORS, MED FLIT: etiketten BACKLOG_AVSTADD_KRAV_ETIKETT OCH
+# markören BACKLOG_AVSTADD_KRAV_MARKOR i kortets Notes eller Final Summary.
+# Etikett UTAN markör FÄLLER med eget meddelande. Skälet är asymmetrin mot
+# `intentionally-open`: den etiketten tystar ett kort som ännu inte är stängt
+# (lågt pris — det prövas igen när det stängs), medan denna tystar ett STÄNGT
+# kort för alltid. En enfaktors-form hade varit en blankocheck som vem som helst
+# kan skriva ut med ett `--add-label`. Två faktorer kostar en mening och tvingar
+# fram tanken.
+#
+# FÖRKASTAT — låta `wontfix` undanta automatiskt. Etiketten finns redan
+# (backlog/config.yml) och TASK-283.1 är stängd med den. Men `wontfix` betyder
+# "vi gör inte detta", vilket är ortogonalt mot "rutorna är obockade med
+# avsikt", och att ge en befintlig etikett ny tystande verkan hade ändrat
+# innebörden för varje kort som redan bär den — retroaktivt och osynligt.
+# FÖRKASTAT — undanta per RAD i stället för per kort. Det kräver en
+# deklarations-syntax bunden till radnummer, och radnummer flyttar sig när ett
+# AC läggs till. Kort-nivån följer dessutom `intentionally-open`-precedenten:
+# etiketten säger något om KORTET, inte om en enskild kontroll.
+# FÖRKASTAT — en ny status (`Avskriven`). Samma argument som redan står under
+# AVSIKTLIGT ÖPPNA KORT: backlog/config.yml deklarerar exakt tre statusar, och
+# en fjärde ändrar tavlan för varje kort och varje verktyg.
+#
+# BÅDA UNDANTAGEN REDOVISAS ÖPPET i täcknings-blocket, med kort-ID. Ett undantag
+# som inte syns är samma defekt som TASK-90 lagade: en blind fläck utskriften
+# inte redovisar. Ledstjärnan är repots egen — registrera, förkasta aldrig tyst.
+#
 # ═══ AVSIKTLIGT ÖPPNA KORT ═══
 #
 # Ett föräldrakort kan vara öppet med flit — TASK-54 och TASK-59 är båda
@@ -276,6 +402,34 @@ esac
 
 BACKLOG_UNDANTAGNA_STATUSAR="${BACKLOG_UNDANTAGNA_STATUSAR-}"
 
+# ═══ STÄNGNINGSFORMERNAS POLICY-VARIABLER (TASK-281) ═══
+#
+# Alla fyra är OPTIONELLA var för sig: tomt/saknat = grinden beter sig exakt
+# som före TASK-281. Ett repo utan tvåstegsstängning behöver ingen av dem.
+#
+# MEN DE ÄR PARVIS KOPPLADE, OCH KOPPLINGEN ÄR FAIL-CLOSED. Sätts halva paret
+# blir undantaget en blankocheck: en härledd DoD-rad utan pekar-mönster hade
+# undantagits utan att kortet behövde bära något bevis alls, och en
+# avstådd-krav-etikett utan markör hade tystat ett stängt kort på ett enda
+# `--add-label`. Grinden fäller därför till exit 2 (anropsfel) i stället för
+# att gissa vilken halva som var avsedd.
+if [[ -n "${BACKLOG_HARLEDD_DOD_MONSTER:-}" && -z "${BACKLOG_LANDNINGS_PEKARE_MONSTER:-}" ]]; then
+    echo "❌ BACKLOG_HARLEDD_DOD_MONSTER är satt men BACKLOG_LANDNINGS_PEKARE_MONSTER saknas i ${POLICY_FIL}" >&2
+    echo "   Utan pekar-mönster undantas den härledda DoD-raden utan att kortet" >&2
+    echo "   behöver bära något bevis — det är tyst grönt, inte en härledning." >&2
+    exit 2
+fi
+if [[ -n "${BACKLOG_AVSTADD_KRAV_ETIKETT:-}" && -z "${BACKLOG_AVSTADD_KRAV_MARKOR:-}" ]]; then
+    echo "❌ BACKLOG_AVSTADD_KRAV_ETIKETT är satt men BACKLOG_AVSTADD_KRAV_MARKOR saknas i ${POLICY_FIL}" >&2
+    echo "   Utan markör räcker ett '--add-label' för att tysta ett stängt kort" >&2
+    echo "   för alltid. Undantaget är tvåfaktors med flit — se grindens huvud." >&2
+    exit 2
+fi
+BACKLOG_HARLEDD_DOD_MONSTER="${BACKLOG_HARLEDD_DOD_MONSTER-}"
+BACKLOG_LANDNINGS_PEKARE_MONSTER="${BACKLOG_LANDNINGS_PEKARE_MONSTER-}"
+BACKLOG_AVSTADD_KRAV_ETIKETT="${BACKLOG_AVSTADD_KRAV_ETIKETT-}"
+BACKLOG_AVSTADD_KRAV_MARKOR="${BACKLOG_AVSTADD_KRAV_MARKOR-}"
+
 # ═══ CI-KONTEXTENS check_active_branches-AVSTÄNGNING (TASK-238) ═══
 #
 # check_active_branches: true (TASK-93) skyddar ID-allokering vid INTERAKTIV
@@ -414,6 +568,14 @@ antal_kort=0
 antal_fel=0
 antal_med_tid=0
 
+# Stängningsformernas redovisning (TASK-281). Ett undantag som inte syns är
+# samma defekt TASK-90 lagade: en blind fläck utskriften inte redovisar. Båda
+# räknas OCH namnges, i båda utfallen.
+antal_harledda=0
+antal_avstadda=0
+HARLEDDA_IDN=""
+AVSTADDA_IDN=""
+
 # Insamlad kort-data för andra passet. Förälder/barn-invarianten behöver
 # barnens STATUS, och den får aldrig kosta ett extra CLI-anrop per barn: varje
 # kort läses exakt EN gång i pass 1, raden sparas här, och pass 2 slår upp
@@ -440,7 +602,8 @@ KORT_RADER=""
 # ADR-117 — den är ett medvetet, bevakat undantag, inte en glidning.
 #
 # Fältordning (status SIST — fältet får svälja resten av raden):
-#   id|tid12|ac_totalt|ac_obockat|dod_obockat|barn_ids|labels|status
+#   id|tid12|ac_totalt|ac_obockat|dod_obockat|dod_obockat_harledd|har_pekare|
+#   har_markor|barn_ids|labels|status
 #
 # PORTABILITET: `mapfile`/`readarray` finns först i bash 4. macOS levererar
 # bash 3.2, så en mapfile-form hade fungerat i CI och aldrig lokalt — alltså en
@@ -456,7 +619,11 @@ if [[ ! -f "${KORTFAKTA_SKRIPT}" ]]; then
     exit 2
 fi
 KORTFAKTA=""
-KORTFAKTA="$(BACKLOG_CMD="${BACKLOG_CMD}" node "${KORTFAKTA_SKRIPT}")"
+KORTFAKTA="$(BACKLOG_CMD="${BACKLOG_CMD}" \
+    BACKLOG_HARLEDD_DOD_MONSTER="${BACKLOG_HARLEDD_DOD_MONSTER}" \
+    BACKLOG_LANDNINGS_PEKARE_MONSTER="${BACKLOG_LANDNINGS_PEKARE_MONSTER}" \
+    BACKLOG_AVSTADD_KRAV_MARKOR="${BACKLOG_AVSTADD_KRAV_MARKOR}" \
+    node "${KORTFAKTA_SKRIPT}")"
 kortfakta_kod=$?
 if [[ "${kortfakta_kod}" -ne 0 ]]; then
     echo "❌ ${KORTFAKTA_SKRIPT} gav exitkod ${kortfakta_kod} — korten är OPRÖVADE" >&2
@@ -470,13 +637,15 @@ fi
 
 # ═══ PASS 1 — läs varje kort en gång, pröva invariant 1 och 2, spara raden ═══
 
-while IFS='|' read -r id tid_siffror ac_totalt ac_obockat dod_obockat barn_ids labels status; do
+while IFS='|' read -r id tid_siffror ac_totalt ac_obockat dod_obockat dod_obockat_harledd \
+                       har_pekare har_markor barn_ids labels status; do
     [[ -z "${id}" ]] && continue
     [[ -z "${status}" ]] && continue
     antal_kort=$((antal_kort + 1))
 
     # Etiketterna, exakt per token. Fältet är kommaseparerat.
     deklarerad=0
+    avstadd_etikett=0
     rest="${labels}"
     while [[ -n "${rest}" ]]; do
         tok="${rest%%,*}"
@@ -484,6 +653,9 @@ while IFS='|' read -r id tid_siffror ac_totalt ac_obockat dod_obockat barn_ids l
         tok="${tok#"${tok%%[![:space:]]*}"}"   # trimma före
         tok="${tok%"${tok##*[![:space:]]}"}"   # trimma efter
         [[ "${tok}" == "${BACKLOG_AVSIKTLIGT_OPPEN_ETIKETT}" ]] && deklarerad=1
+        if [[ -n "${BACKLOG_AVSTADD_KRAV_ETIKETT}" && "${tok}" == "${BACKLOG_AVSTADD_KRAV_ETIKETT}" ]]; then
+            avstadd_etikett=1
+        fi
     done
 
     # ── Karensens tidsstämpel ────────────────────────────────────────────────
@@ -561,12 +733,62 @@ while IFS='|' read -r id tid_siffror ac_totalt ac_obockat dod_obockat barn_ids l
         EXIT_CODE=1
     fi
 
+    # ── Stängningsformerna (TASK-281) — gäller ENDAST stängda kort ───────────
+    #
+    # Båda formerna är avsiktligt inaktiva för öppna kort. En avstådd-krav-
+    # etikett på ett To Do-kort säger ingenting (kortet är inte stängt), och att
+    # låta blankocheck-spärren fälla där hade gett ett falskt rött på ett kort
+    # vars etikett bara ligger i förväg.
+    avstadd=0
+    if [[ "${ar_klar}" -eq 1 && "${avstadd_etikett}" -eq 1 ]]; then
+        if [[ "${har_markor}" -eq 1 ]]; then
+            avstadd=1
+        else
+            # Blankocheck-spärren. Exit 1 (drift), aldrig 2: det är kortets
+            # tillstånd som är fel, inte anropet.
+            echo "❌ TASK-${id} — bär etiketten '${BACKLOG_AVSTADD_KRAV_ETIKETT}' men ingen motivering"
+            echo "   Etiketten undantar ett STÄNGT kort från invariant 2 för alltid."
+            echo "   Den kräver därför en utskriven motivering på kortet, som börjar"
+            echo "   med markören '${BACKLOG_AVSTADD_KRAV_MARKOR}' i Implementation Notes"
+            echo "   eller Final Summary. Utan den är etiketten en blankocheck."
+            echo "   Fix: ${BACKLOG_CMD} task edit ${id} --append-notes '${BACKLOG_AVSTADD_KRAV_MARKOR} <varför>'"
+            antal_fel=$((antal_fel + 1))
+            EXIT_CODE=1
+        fi
+    fi
+
+    # Härledda DoD-rader dras av när kortet bär sin landnings-pekare. Utan
+    # pekare räknas de precis som förut — härledningen är ett UTBYTE (bock mot
+    # pekare), aldrig en amnesti.
+    dod_kvar="${dod_obockat}"
+    pekare_saknas=0
+    if [[ "${dod_obockat_harledd}" -gt 0 ]]; then
+        if [[ "${har_pekare}" -eq 1 ]]; then
+            dod_kvar=$(( dod_obockat - dod_obockat_harledd ))
+            antal_harledda=$((antal_harledda + 1))
+            HARLEDDA_IDN="${HARLEDDA_IDN}${HARLEDDA_IDN:+, }TASK-${id}"
+        else
+            pekare_saknas=1
+        fi
+    fi
+
     # Invariant 2 — kortet stängt utan att arbetet är bevisat.
-    if [[ "${ar_klar}" -eq 1 && ( "${ac_obockat}" -gt 0 || "${dod_obockat}" -gt 0 ) ]]; then
-        echo "❌ TASK-${id} — status '${status}' men ${ac_obockat} AC och ${dod_obockat} DoD står obockade"
+    if [[ "${ar_klar}" -eq 1 && "${avstadd}" -eq 0 \
+          && ( "${ac_obockat}" -gt 0 || "${dod_kvar}" -gt 0 ) ]]; then
+        echo "❌ TASK-${id} — status '${status}' men ${ac_obockat} AC och ${dod_kvar} DoD står obockade"
         echo "   Kortet är stängt utan att kraven är kvitterade."
+        if [[ "${pekare_saknas}" -eq 1 ]]; then
+            echo "   ${dod_obockat_harledd} av dem är HÄRLEDDA rader (matchar '${BACKLOG_HARLEDD_DOD_MONSTER}')"
+            echo "   som inte kräver en bock — men kortets Final Summary bär ingen"
+            echo "   landnings-pekare (mönster '${BACKLOG_LANDNINGS_PEKARE_MONSTER}')."
+            echo "   Fix: ${BACKLOG_CMD} task edit ${id} --append-final-summary 'Landning: PR #<nr>'"
+        fi
         antal_fel=$((antal_fel + 1))
         EXIT_CODE=1
+    fi
+    if [[ "${avstadd}" -eq 1 ]]; then
+        antal_avstadda=$((antal_avstadda + 1))
+        AVSTADDA_IDN="${AVSTADDA_IDN}${AVSTADDA_IDN:+, }TASK-${id}"
     fi
     # Herestring, inte pipe: en pipe hade kört loopen i ett SUBSKAL, och då
     # hade antal_kort/KORT_RADER/EXIT_CODE nollställts vid loopens slut —
@@ -715,6 +937,25 @@ fi
 if [[ "${antal_inom_karens}" -gt 0 ]]; then
     echo "     Korten inom karens är INTE friskförklarade — de är för nya för att"
     echo "     kunna skiljas från en pågående leverans. De prövas i nästa körning."
+fi
+
+# Stängningsformerna (TASK-281). Skrivs bara när de är påslagna i policyn —
+# ett repo som inte använder dem ska inte läsa två rader nollor varje natt.
+if [[ -n "${BACKLOG_HARLEDD_DOD_MONSTER}" || -n "${BACKLOG_AVSTADD_KRAV_ETIKETT}" ]]; then
+    echo ""
+    echo "Stängningsformer bland de ${antal_kort} korten:"
+    if [[ -n "${BACKLOG_HARLEDD_DOD_MONSTER}" ]]; then
+        echo "  ${antal_harledda} med härledd DoD-rad ('${BACKLOG_HARLEDD_DOD_MONSTER}') godkänd via landnings-pekare"
+        [[ -n "${HARLEDDA_IDN}" ]] && echo "     ${HARLEDDA_IDN}"
+    fi
+    if [[ -n "${BACKLOG_AVSTADD_KRAV_ETIKETT}" ]]; then
+        echo "  ${antal_avstadda} stängda med avstådda krav (etikett '${BACKLOG_AVSTADD_KRAV_ETIKETT}')"
+        [[ -n "${AVSTADDA_IDN}" ]] && echo "     ${AVSTADDA_IDN}"
+        if [[ "${antal_avstadda}" -gt 0 ]]; then
+            echo "     Dessa är UNDANTAGNA från invariant 2, inte friskförklarade."
+            echo "     Motiveringen står på varje kort vid markören '${BACKLOG_AVSTADD_KRAV_MARKOR}'."
+        fi
+    fi
 fi
 
 exit "${EXIT_CODE}"

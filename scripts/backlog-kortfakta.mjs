@@ -89,10 +89,44 @@
 // DEMO-substrat med ett eget TASK-1 + TASK-1.1 — en kollision med de riktiga
 // id:na. Inversionen görs därför över exakt den mängd `task list` returnerar.
 //
+// ═══ STÄNGNINGSFORMERNAS TRE EXTRAFÄLT (TASK-281) ═══
+//
+// Grinden slutade 2026-08-24 kräva en manuellt bockad ruta för "CI grön per
+// jobb" och prövar i stället kortets LANDNINGS-PEKARE. Den prövningen behöver
+// tre fakta som bara filerna bär, och alla tre samlas här av samma skäl som
+// AC/DoD-antalen ovan — CLI:t exponerar dem inte i bulk:
+//
+//   * dod_obockat_harledd — hur många av de obockade DoD-raderna som är
+//     HÄRLEDDA rader (matchar BACKLOG_HARLEDD_DOD_MONSTER). Grinden drar av
+//     dem från dod_obockat när kortet bär en pekare.
+//   * har_pekare — bär kortets Final Summary en landnings-pekare
+//     (BACKLOG_LANDNINGS_PEKARE_MONSTER, t.ex. `PR #1910`)?
+//   * har_markor — bär kortets Implementation Notes ELLER Final Summary
+//     avstådd-krav-markören (BACKLOG_AVSTADD_KRAV_MARKOR)?
+//
+// SÖKYTAN ÄR AVGRÄNSAD MED FLIT, INTE HELA FILEN. Pekaren söks ENDAST i
+// Final Summary: en beskrivning som nämner "PR #1912" som kontext (TASK-243.5
+// gör precis det i sin egen titel) hade annars kvitterat en landning som aldrig
+// skett. Markören söks i NOTES ∪ FINAL_SUMMARY — de två sektioner där en
+// stängningsmotivering hör hemma — så att ett kort som BESKRIVER mekanismen
+// (TASK-281 självt) inte råkar deklarera sig undantaget.
+//
+// Sektionerna avgränsas av verktygets egna maskin-markörer, samma kontrakt som
+// AC/DoD ovan. DISK-VERIFIERAT 2026-08-24: 357 av 642 kort bär rubriken
+// `## Final Summary` och exakt 357 bär `SECTION:FINAL_SUMMARY:BEGIN`;
+// 401 bär `## Implementation Notes` och exakt 401 bär `SECTION:NOTES:BEGIN`.
+// Rubrik utan markörpar är därför formatdrift och fäller (exit 2), aldrig ett
+// tyst "sektionen är tom" — samma fail-closed som raknaBlock.
+//
+// TOMT MÖNSTER = AVSTÄNGD. Sätter policyn inget mönster blir fältet 0 och
+// grinden beter sig exakt som före TASK-281. Universell logik, projekt-värden i
+// policy-filen — samma mönster som resten av grindfamiljen.
+//
 // Utdata: en rad per kort, pipe-separerad, status SIST (fältet får svälja
 // resten av raden på bash-sidan):
 //
-//     id|tid12|ac_totalt|ac_obockat|dod_obockat|barn_ids|labels|status
+//     id|tid12|ac_totalt|ac_obockat|dod_obockat|dod_obockat_harledd|
+//     har_pekare|har_markor|barn_ids|labels|status
 //
 // Exit 0 = fakta på stdout. Exit 2 = anropsfel (samma kontrakt som grinden).
 
@@ -111,6 +145,26 @@ function fel(...rader) {
   for (const r of rader) console.error(r);
   process.exit(2);
 }
+
+// Mönstren kommer som REGEX-text ur policy-filen via grinden. Ett ogiltigt
+// mönster fäller direkt: ett tyst tomt mönster hade gjort varje härledd rad
+// osynlig och därmed gett tyst grönt — precis den klass av fel grindens hela
+// huvud handlar om.
+function monster(varde, namn) {
+  if (!varde) return null;
+  try {
+    return new RegExp(varde);
+  } catch (e) {
+    fel(`❌ ${namn} är inte ett giltigt reguljärt uttryck: ${e.message}`);
+  }
+}
+
+const HARLEDD_DOD = monster(process.env.BACKLOG_HARLEDD_DOD_MONSTER, 'BACKLOG_HARLEDD_DOD_MONSTER');
+const LANDNINGS_PEKARE = monster(
+  process.env.BACKLOG_LANDNINGS_PEKARE_MONSTER,
+  'BACKLOG_LANDNINGS_PEKARE_MONSTER',
+);
+const AVSTADD_MARKOR = process.env.BACKLOG_AVSTADD_KRAV_MARKOR || '';
 
 function kliAnrop(args) {
   const r = spawnSync(CLI, args, { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 });
@@ -149,7 +203,10 @@ for (const t of kort) {
 // den klass som annars gör grinden tyst grön).
 if (!fs.existsSync(TASKS_DIR)) fel(`❌ uppgiftskatalogen ${TASKS_DIR} hittas inte`);
 
-function raknaBlock(text, startMarkor, slutMarkor, rubrik, id) {
+// Avgränsar ett block och returnerar dess RÅTEXT, eller null när markörparet
+// saknas. Rubrik-utan-markörpar är formatdrift och fäller — samma fail-closed
+// för kryssrute-blocken (AC/DoD) som för prosa-sektionerna (NOTES/FINAL_SUMMARY).
+function blockText(text, startMarkor, slutMarkor, rubrik, id) {
   const s = text.indexOf(startMarkor);
   const e = text.indexOf(slutMarkor);
   if (s === -1 || e === -1 || e < s) {
@@ -157,19 +214,38 @@ function raknaBlock(text, startMarkor, slutMarkor, rubrik, id) {
       fel(
         `❌ ${id} bär rubriken '${rubrik}' men saknar markörparet ${startMarkor}…${slutMarkor}`,
         '   Fail-closed: verktygets filformat har troligen ändrats. Grinden vägrar',
-        '   räkna kryssrutor den inte kan avgränsa — en gissning här ger tyst grönt.',
+        '   läsa en sektion den inte kan avgränsa — en gissning här ger tyst grönt.',
       );
     }
-    return { totalt: 0, obockat: 0 };
+    return null;
   }
-  const rader = text.slice(s + startMarkor.length, e).split('\n');
+  return text.slice(s + startMarkor.length, e);
+}
+
+// `harledd` är null för AC-blocket: den härledda raden är ett DoD-begrepp, och
+// att låta den matcha ett acceptanskriterium hade tyst tagit bort ett AC ur
+// bedömningen.
+function raknaBlock(text, startMarkor, slutMarkor, rubrik, id, harledd) {
+  const kropp = blockText(text, startMarkor, slutMarkor, rubrik, id);
+  if (kropp === null) return { totalt: 0, obockat: 0, obockatHarledd: 0 };
+  const rader = kropp.split('\n');
   let totalt = 0;
   let obockat = 0;
+  let obockatHarledd = 0;
   for (const r of rader) {
     if (/^- \[[ x]\] /.test(r)) totalt++;
-    if (/^- \[ \] /.test(r)) obockat++;
+    if (/^- \[ \] /.test(r)) {
+      obockat++;
+      if (harledd && harledd.test(r)) obockatHarledd++;
+    }
   }
-  return { totalt, obockat };
+  return { totalt, obockat, obockatHarledd };
+}
+
+function sektionText(text, namn, rubrik, id) {
+  const start = `<!-- SECTION:${namn}:BEGIN -->`;
+  const slut = `<!-- SECTION:${namn}:END -->`;
+  return blockText(text, start, slut, rubrik, id) ?? '';
 }
 
 const faktaPerId = new Map();
@@ -179,15 +255,30 @@ for (const f of fs.readdirSync(TASKS_DIR)) {
   const m = text.match(/^id:\s*(\S+)\s*$/m);
   if (!m) fel(`❌ ${f} saknar 'id:' i frontmatter — filformatet är inte det väntade`);
   const id = m[1];
-  const ac = raknaBlock(text, '<!-- AC:BEGIN -->', '<!-- AC:END -->', '## Acceptance Criteria', id);
+  const ac = raknaBlock(
+    text,
+    '<!-- AC:BEGIN -->',
+    '<!-- AC:END -->',
+    '## Acceptance Criteria',
+    id,
+    null,
+  );
   const dod = raknaBlock(
     text,
     '<!-- DOD:BEGIN -->',
     '<!-- DOD:END -->',
     '## Definition of Done',
     id,
+    HARLEDD_DOD,
   );
-  faktaPerId.set(id, { ac, dod });
+  const slutrad = sektionText(text, 'FINAL_SUMMARY', '## Final Summary', id);
+  const anteckningar = sektionText(text, 'NOTES', '## Implementation Notes', id);
+  const harPekare = LANDNINGS_PEKARE ? (LANDNINGS_PEKARE.test(slutrad) ? 1 : 0) : 0;
+  const harMarkor =
+    AVSTADD_MARKOR && (anteckningar.includes(AVSTADD_MARKOR) || slutrad.includes(AVSTADD_MARKOR))
+      ? 1
+      : 0;
+  faktaPerId.set(id, { ac, dod, harPekare, harMarkor });
 }
 
 // Mängderna MÅSTE vara identiska, i BÅDA riktningar. Divergerar de läser de två
@@ -258,6 +349,36 @@ if (STICKPROV > 0) {
         '   scripts/backlog-kortfakta.mjs — grinden får inte gissa AC/DoD.',
       );
     }
+
+    // Stängningsformernas fält korsvalideras av SAMMA skäl som AC/DoD: de
+    // avgör om ett Done-kort undantas från invariant 2, och en tyst
+    // felläsning där ger tyst grönt. CLI:t bär `definitionOfDone[].text`,
+    // `finalSummary` och `implementationNotes` — alltså exakt de tre ytor
+    // filparsningen ovan läser.
+    const kliHarledd = kliDod.filter(
+      (x) => x && x.checked === false && HARLEDD_DOD && HARLEDD_DOD.test(String(x.text ?? '')),
+    ).length;
+    const kliSlutrad = String(t.finalSummary ?? '');
+    const kliNotes = String(t.implementationNotes ?? '');
+    const kliPekare = LANDNINGS_PEKARE ? (LANDNINGS_PEKARE.test(kliSlutrad) ? 1 : 0) : 0;
+    const kliMarkor =
+      AVSTADD_MARKOR && (kliNotes.includes(AVSTADD_MARKOR) || kliSlutrad.includes(AVSTADD_MARKOR))
+        ? 1
+        : 0;
+    if (
+      kliHarledd !== min.dod.obockatHarledd ||
+      kliPekare !== min.harPekare ||
+      kliMarkor !== min.harMarkor
+    ) {
+      fel(
+        `❌ korsvalidering FÄLLDE för ${id} — stängningsformens fält skiljer sig mot CLI:t`,
+        `   CLI:  härledda obockade ${kliHarledd} · pekare ${kliPekare} · markör ${kliMarkor}`,
+        `   fil:  härledda obockade ${min.dod.obockatHarledd} · pekare ${min.harPekare} · markör ${min.harMarkor}`,
+        '   Fail-closed: sektionsmarkörerna eller DoD-formatet har ändrats. Laga',
+        '   parsningen i scripts/backlog-kortfakta.mjs — grinden får inte gissa',
+        '   vilka kort som är undantagna från invariant 2.',
+      );
+    }
   }
 }
 
@@ -286,6 +407,9 @@ for (const t of kort) {
       min.ac.totalt,
       min.ac.obockat,
       min.dod.obockat,
+      min.dod.obockatHarledd,
+      min.harPekare,
+      min.harMarkor,
       barn,
       rent((t.labels || []).join(','), t.id, 'labels'),
       rent(t.status, t.id, 'status'),

@@ -4,8 +4,9 @@ title: 'PRD: Bokstavsindex i personlistan'
 status: Done
 assignee: []
 created_date: '2026-08-21 08:41'
-updated_date: '2026-08-24 13:59'
-labels: []
+updated_date: '2026-08-24 14:51'
+labels:
+  - intentionally-unchecked
 dependencies: []
 ordinal: 509000
 ---
@@ -156,6 +157,8 @@ KORTET STÅR DÄRFÖR ÖPPET MED AVSIKT — INTE AV GLÖMSKA. Att sätta en PRD 
 Kortet stängs när QA-skivan antingen körts eller formellt avskrivits av Marcus som en egen, bokförd handling — inte som en sidoeffekt av att bygget blev klart.
 
 FÖRÄLDERFLIPP S112 STÄDVÅG A (2026-08-24, bokföringspass, ingen kod ändrad). Samtliga 4 icke-QA-skivor Done (283.1 wontfix/väg B via ADR-123, 283.2/283.3/283.4 Done), QA-skivan 283.5 stängd separat idag med Marcus verbatim-avskrivning. DoD #1 (inga egna AC på PRD:t — 'No acceptance criteria defined', vakuöst uppfyllt) och #4 (path-scopad diff) checkade. DoD #2 checkat för denna bokföringscommit (backlog-endast, inga kodgrindar tillämpliga). DoD #3 lämnas OCHECKAD — opushad commit, orkestrerarens ansvar efter push. DoD #5 ('Facit-manifestet amenderat FÖRE ARIA-referenserna regenereras') lämnas OCHECKAD MED AVSIKT: TASK-283.4:s egna notes bevisar mekaniskt att bokstaven är STRUKTURELLT OMÖJLIG (ADR-102 § A1 klass (c) föreskriver att omstämplingen kommer SIST, i Marcus egen !-kanal, EFTER regenereringen — mätt: regenerering 16:37:05Z, omstämpling 17:06:22Z, 29 min senare) — samma 'formuleringsskuld, ärvd ordagrant från detta föräldrakort, inte en obetald punkt'-slutsats som 283.3/283.4 redan satte. DoD #6 ('EF deployad till staging FÖRE...') lämnas OCHECKAD MED AVSIKT: Marcus valde väg B 2026-08-21 (klientsidan, ADR-123, 'Då kör vi B!') — TASK-283.1 (serverside-EF-arbetet) gick wontfix, ingen bokstavs-parameter skickas någonsin till EF:en, kriteriet är därmed INAPPLICERBART efter pivoten, inte obetalt. DoD #7 (sentinel undantagen ur E, bevisat med testfall) och #8 (24x24 CSS-px, mätt i renderad yta) checkade mot 283.2:s egna Done-DoD (#6/#7 där, identisk formulering, redan bockade mot belägg).
+
+OBOCKAT MED AVSIKT: DoD #5 och #6 lämnas obockade permanent, inte tillfälligt. #5 ("Facit-manifestet amenderat FÖRE ARIA-referenserna regenereras") är strukturellt omöjlig i den ordning ADR-102 § A1 klass (c) föreskriver — omstämplingen kommer SIST, i Marcus egen kanal, EFTER regenereringen (mätt: regenerering 16:37:05Z, omstämpling 17:06:22Z). #6 ("EF deployad till staging FÖRE den landning som börjar skicka bokstavs-parametern") blev INAPPLICERBAR när Marcus valde väg B 2026-08-21 ("Då kör vi B!", ADR-123): registret laddas i klienten, TASK-283.1 gick wontfix, och ingen bokstavs-parameter skickas någonsin till EF:en. Båda är formuleringsskuld, inte obetalda punkter — motiveringen i sin helhet står i styckena ovan. DoD #3 kräver ingen bock; se landnings-pekaren i Final Summary. Deklarationen är maskinläsbar sedan TASK-281 — etikett + denna markör undantar kortet från stängningsgrindens invariant 2, och grinden namnger det i varje körning så undantaget aldrig blir tyst.
 <!-- SECTION:NOTES:END -->
 
 ## Comments
@@ -171,4 +174,6 @@ AMENDERING 2026-08-21 (S109, ADR-123 — väg B): Implementationsbeslutet 'Filtr
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
 Bokstavsindex i personlistan levererat: 283.1 (server-EF) gick wontfix efter Marcus väg B-beslut (ADR-123, klientsidan i stället), 283.2 (bokstavsraden), 283.3 (nedtoning) och 283.4 (facit-amenderingen, Marcus stämpel 'Ser ju skitbra ut!') Done. QA (283.5) formellt avskriven av Marcus ('Nej inget Q&A, skit i det. Gör klart allt de andra.', 2026-08-22). DoD #5/#6 lämnade obockade med avsikt — formuleringsskuld respektive pivot-inapplicerbarhet, se notes. Bokförd förälderflipp, S112 städvåg A.
+
+Landning: PR #1910 (commit b6bf96a5, S112 städvåg A).
 <!-- SECTION:FINAL_SUMMARY:END -->

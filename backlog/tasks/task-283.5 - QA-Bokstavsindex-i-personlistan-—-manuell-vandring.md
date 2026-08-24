@@ -4,9 +4,10 @@ title: 'QA: Bokstavsindex i personlistan — manuell vandring'
 status: Done
 assignee: []
 created_date: '2026-08-21 08:57'
-updated_date: '2026-08-24 13:58'
+updated_date: '2026-08-24 14:50'
 labels:
   - ready-for-human
+  - intentionally-unchecked
 dependencies:
   - TASK-283.1
   - TASK-283.2
@@ -62,6 +63,8 @@ AVSTÅDD PÅ MARCUS BESLUT 2026-08-22, verbatim: 'Nej inget Q&A, skit i det. Gö
 RÄTTELSE (samma pass): DoD #1 bockades felaktigt i föregående rad — dess bokstav ('alla acceptanskriterier avbockade') är osann så länge AC #1/#2 medvetet lämnas obockade (QA:n genomfördes aldrig). Avbockad igen för att inte påstå något som inte stämmer. Kortets Done-status vilar i stället på Marcus explicita avskrivning (citerad ovan), inte på DoD #1:s bokstav — samma 'formuleringsskuld, inte obetald punkt'-princip som TASK-283.3/283.4 redan etablerat i denna familj.
 
 RÄTTELSE 2: DoD #3 (CI grön per jobb på pushad commit) avbockad igen — denna bokföringscommit är ännu opushad när detta skrivs, och CI-verifieringen är orkestrerarens ansvar efter push (samma konvention TASK-169 dokumenterar för S112:s bokföringspass: 'DoD#3 lämnas okryssad — orkestrerarens ansvar efter push').
+
+OBOCKAT MED AVSIKT: AC #1/#2 och DoD #1 lämnas obockade permanent, inte tillfälligt. Marcus avstod QA-vandringen verbatim 2026-08-22 ("Nej inget Q&A, skit i det. Gör klart allt de andra.", källa TASK-283 § Implementation Notes rad 152). De 15 stegen kördes aldrig, så rutorna kan inte bockas mot belägg, och DoD #1:s bokstav ("alla acceptanskriterier avbockade") är därmed osann. Kortets Done-status vilar på Marcus explicita avskrivning som en egen bokförd handling. Deklarationen är maskinläsbar sedan TASK-281 — etikett + denna markör undantar kortet från stängningsgrindens invariant 2, och grinden namnger det i varje körning så undantaget aldrig blir tyst.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
