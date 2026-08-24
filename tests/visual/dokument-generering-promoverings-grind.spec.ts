@@ -47,19 +47,56 @@ import { expect, test } from '../support/fixturvarld/hermetic';
  *      `deltagarinfo`) — samma textläge som (3) men MED
  *      "Använd som standard för <ort>"-kryssrutan (`def.platsFalt`).
  *
- * MEDVETET UTANFÖR — "DATUM"-LÄGET (öppen skuld, bokförd, INTE
- * fabricerad): `BlockDialog.tsx` har en fjärde intern gren
- * (`def.datum ? <DatumEnkel .../> : …`), men det ENDA blocket i `GRUPPER`
- * som bär `datum: true` (`sistaBetalningsdag`) hör till Inforutan-gruppen
- * — och Inforutans rader öppnar ALDRIG `BlockDialog` (de redigeras som
- * SEKTION via `InforutanMorf`, se `GenereringsVy.tsx`s `arInforutan`-
- * villkor: varje Inforuta-rad är `lasEndast`). Datum-grenen är därför
- * strukturellt ONÅBAR via den levande UI:n i dagens `GRUPPER`-karta —
- * att tvinga fram den hade krävt att FLYTTA `sistaBetalningsdag` ut ur
- * Inforutan, vilket är en FORMÄNDRING (`GRUPPER` är del av formen
- * `ADR-103` B2 steg 4 fredar). Verifierat via källäsning
- * (`blockDefinitioner.ts` § GRUPPER, `GenereringsVy.tsx` §
- * `arInforutan`/`lasEndast`), inte antaget.
+ *   6. **Inforutans sektionsmorf — DATUM-läget** (`sistaBetalningsdag`,
+ *      mallen `bekraftelse`) — `DatumEnkel`s segment-form. Se
+ *      § DATUM-LÄGET nedan för varför den bor HÄR och inte bland
+ *      block-dialogens lägen.
+ *
+ * DATUM-LÄGET SITTER I MORFEN, INTE I DIALOGEN (`TASK-309.17`,
+ * mätt 2026-08-24 — kortets premiss var att `BlockDialog`s datum-gren
+ * saknade par; mätningen visar att den grenen inte GÅR att nå).
+ * `BlockDialog.tsx` har visserligen en egen gren (`def.datum ?
+ * <DatumEnkel .../> : …`), men det ENDA blocket i `GRUPPER` som bär
+ * `datum: true` (`sistaBetalningsdag`) hör till Inforutan-gruppen, och
+ * DIT når dialogen aldrig — tre oberoende spärrar i källan, var och en
+ * tillräcklig:
+ *
+ *   a. `GenereringsVy.tsx` § `lasEndast = r.def.last || arInforutan` —
+ *      varje Inforuta-rad renderas som `<div>`, inte som knapp, så det
+ *      finns ingen `oppnaBlock`-ingång att klicka.
+ *   b. `GenereringsVy.tsx` § varningsrutans "Fyll i …"-knappar dispatchar
+ *      `INFORUTA_IDN.has(id) ? oppnaMorf(id) : oppnaBlock(id)`.
+ *   c. `GenereringsVy.tsx` § `dialogRader()` filtrerar bort
+ *      `INFORUTA_IDN` ur `navSyskon`, så inte heller dialogens
+ *      Föregående/Nästa-bläddring kan nå blocket.
+ *
+ * Datum-grenen i `BlockDialog` är därmed DÖD kod i dagens `GRUPPER`-karta.
+ * Att väcka den hade krävt att FLYTTA `sistaBetalningsdag` ut ur
+ * Inforutan — en FORMÄNDRING som `ADR-103` B2 steg 4 fredar, och som
+ * denna grind aldrig får orsaka. Det datum-läge en användare FAKTISKT ser
+ * är `InforutanMorf`s `DatumEnkel` (samma komponent, importerad ur
+ * `BlockDialog.tsx`), och det är den ytan test 6 låser. Den kvarvarande
+ * döda grenen är öppet bokförd här, inte utjämnad: den hör till ett eget
+ * beslut (riva grenen, eller flytta blocket), inte till denna skiva.
+ *
+ * TÄCKNINGEN, MÄTT 2026-08-24 (`TASK-309.16` AC #3 + `TASK-309.17` AC #3
+ * — bokförd HÄR därför att den gäller just den här grindens familj):
+ *
+ *   · VYPORT-AXELN. Denna grind var den ENDA av repots tolv
+ *     promoverings-grindar som hade facit för bara en vyport. Räknat per
+ *     katalog under `tests/visual/__aria__/`: anmalningssidan 3/3,
+ *     appfel 1/1, atgardssida 6/6, dorrlista 6/6, eventsida 6/6,
+ *     hem-aktivitetsspalt 3/3, hem-bevakningsrad 2/2, messagebox 4/4,
+ *     persondetalj 2/2, personer 3/3, segment 7/7 (desktop/mobile) —
+ *     och `dokument-generering` 5/0. Efter `TASK-309.16` är den 6/6.
+ *     Ingen annan grind bär alltså samma halva täckning.
+ *   · LÄGES-AXELN för `BlockDialog`. Komponenten har exakt TRE
+ *     kropps-grenar (`def.agenda` → `AgendaEditor`, `def.datum` →
+ *     `DatumEnkel`, annars → `TextArea`) plus ETT ortogonalt tillägg
+ *     (`def.platsFalt && ort` → `Kryss`). Grinden täcker nu samtliga:
+ *     agenda (test 4), ren `TextArea` (test 3, Beskrivning), `TextArea`
+ *     + `Kryss` (test 5, Kläder), och datum (test 6, i morfen — se
+ *     § DATUM-LÄGET). Ingen ytterligare `BlockDialog`-gren är otäckt.
  *
  * FIXTURVÄRLDEN: `get-events` är GLOBALT mockad (`EVENTS_RESPONSE`,
  * `VISUAL_EVENT_ID`) — `EventValjare`/dispatchern i `dokument.tsx` hittar
@@ -185,5 +222,32 @@ test.describe('promoverings-grinden — block-dialogens lägen (ADR-103 B4)', ()
     const dialog = page.getByRole('dialog', { name: 'Kläder' });
     await expect(dialog).toBeVisible();
     await expect(dialog).toMatchAriaSnapshot({ name: 'block-dialog-plats.aria.yml' });
+  });
+});
+
+test.describe('promoverings-grinden — Inforutans sektionsmorf (ADR-103 B4)', () => {
+  /**
+   * DATUM-LÄGET, där det faktiskt går att nå (`TASK-309.17`). Inforutan
+   * redigeras som SEKTION via `InforutanMorf`, inte rad för rad via
+   * `BlockDialog` — se filhuvudets § DATUM-LÄGET för de tre spärrarna som
+   * gör dialogens datum-gren onåbar. Morfen bär `DatumEnkel` för
+   * `sistaBetalningsdag` (`def.datum`), och mallen `bekraftelse` är den
+   * ENDA vars Inforuta har blocket alls (`deltagarinfo` bär bara
+   * `INFORUTA_BAS`).
+   *
+   * REFERENSEN ÄR FÖDD EFTER FLIPPEN, till skillnad från de fem ovan.
+   * Den kan därför INTE bevisa identitet med variant-läget — det läget
+   * upphörde att existera i `1ec70a85`. Vad den gör är att LÅSA den
+   * promoverade formen framåt, och den granskas som facit i skiva 9:s
+   * eget pass (`tasks/sessions/bilagor/s108-generering/facit.json`, där
+   * filen är deklarerad under `referenser` och innehållslåses av Marcus
+   * stämpel). Skillnaden står här i klartext i stället för att jämnas ut.
+   */
+  test('datum-läget — Sista betalningsdag (bekräftelsebilagan)', async ({ page }) => {
+    await gotoGenerering(page, 'bekraftelse');
+    await page.getByRole('button', { name: 'Ändra', exact: true }).click();
+    const morf = page.getByRole('region', { name: 'Inforutan' });
+    await expect(morf.getByRole('group', { name: 'Sista betalningsdag' })).toBeVisible();
+    await expect(morf).toMatchAriaSnapshot({ name: 'inforutan-morf-datum.aria.yml' });
   });
 });

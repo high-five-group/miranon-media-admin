@@ -1,0 +1,32 @@
+- region "Inforutan":
+  - heading "Inforutan" [level=2]
+  - list:
+    - listitem: "Rubrik Utbildning: Utbildning Skövde"
+    - listitem:
+      - text: Datum och tid
+      - textbox "Datum och tid": /kl\. \d+:\d+ - \d+:\d+/
+    - listitem:
+      - text: Plats
+      - textbox "Plats":
+        - /placeholder: Gatuadress och ort
+        - text: /Uttringe Hages väg \d+, Rönninge/
+      - checkbox "Använd som standard för Skövde framöver"
+      - text: Använd som standard för Skövde framöver
+    - listitem:
+      - text: Pris
+      - textbox "Pris": /\d+\.\d+/
+    - listitem:
+      - text: Anmälningsavgift
+      - textbox "Anmälningsavgift": /\d+:-/
+    - listitem:
+      - text: Resterande belopp
+      - textbox "Resterande belopp": /\d+:-/
+    - listitem:
+      - text: Sista betalningsdag
+      - group "Sista betalningsdag":
+        - spinbutton "år, Sista betalningsdag": /\d+/
+        - spinbutton "månad, Sista betalningsdag": /\d+/
+        - spinbutton "dag, Sista betalningsdag": /\d+/
+    - listitem:
+      - button "Avbryt"
+      - button "Spara"

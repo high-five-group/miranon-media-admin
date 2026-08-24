@@ -1,0 +1,48 @@
+- button "Tillbaka till Dokument"
+- heading "Deltagarinformation" [level=1]
+- paragraph: /Utbildning Skövde · Skövde · \d+-\d+ september \d+/
+- alert:
+  - strong: Förberedelser, tag med, för dig som röker, parfym och kosmetika, mat/fika, övernattning, parkering, transport från tåget och utrustning
+  - text: saknas för det här eventet. De delarna tas inte med i bilagan förrän du fyllt i dem.
+  - button "Fyll i förberedelser"
+  - button "Fyll i tag med"
+  - button "Fyll i för dig som röker"
+  - button "Fyll i parfym och kosmetika"
+  - button "Fyll i mat/fika"
+  - button "Fyll i övernattning"
+  - button "Fyll i parkering"
+  - button "Fyll i transport från tåget"
+  - button "Fyll i utrustning"
+- region "Inforutan":
+  - heading "Inforutan" [level=2]
+  - list:
+    - listitem: Rubrik Välkommen till Utbildning Skövde!
+    - listitem: /Datum och tid \d+-\d+ september \d+, kl\. \d+:\d+ - \d+:\d+/
+    - listitem: /Plats Uttringe Hages väg \d+, Rönninge/
+    - listitem:
+      - button "Ändra"
+- region "Praktisk information":
+  - heading "Praktisk information" [level=2]
+  - list:
+    - listitem:
+      - button "Fyll i förberedelser": Förberedelser Fyll i förberedelser
+    - listitem:
+      - button "Ändra kläder": Kläder Varma kläder och bekväma inneskor.
+    - listitem:
+      - button "Fyll i tag med": Tag med Fyll i tag med
+    - listitem:
+      - button "Fyll i för dig som röker": För dig som röker Fyll i för dig som röker
+    - listitem:
+      - button "Fyll i parfym och kosmetika": Parfym och kosmetika Fyll i parfym och kosmetika
+    - listitem:
+      - button "Fyll i mat/fika": Mat/fika Fyll i mat/fika
+    - listitem:
+      - button "Fyll i övernattning": Övernattning Fyll i övernattning
+    - listitem:
+      - button "Fyll i parkering": Parkering Fyll i parkering
+    - listitem:
+      - button "Fyll i transport från tåget": Transport från tåget Fyll i transport från tåget
+    - listitem:
+      - button "Fyll i utrustning": Utrustning Fyll i utrustning
+- button "Förhandsgranska först"
+- button "Skapa deltagarinformation"

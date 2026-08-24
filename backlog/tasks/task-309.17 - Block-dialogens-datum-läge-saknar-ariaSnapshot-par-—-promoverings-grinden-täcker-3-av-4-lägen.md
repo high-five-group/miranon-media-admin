@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-24 17:00'
+updated_date: '2026-08-24 17:47'
 labels:
   - ready-for-agent
 dependencies: []
@@ -34,8 +35,8 @@ Att det inte fångades har samma orsak som 309.16: visual-testerna bor i visual-
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [ ] #1 block-dialogens datum-läge har ett ariaSnapshot-par i promoverings-grinden, i båda vyporterna
-- [ ] #2 Facit-manifestet för s108-generering bär datum-lägets bild, så AC #1:s 'block-dialog × 4 lägen' är uppfyllt i sak och inte bara i ordalydelse
-- [ ] #3 Klarlagt och bokfört om andra block-dialog-lägen eller andra promoverings-grindar har motsvarande täckningsluckor
+- [x] #2 Facit-manifestet för s108-generering bär datum-lägets bild, så AC #1:s 'block-dialog × 4 lägen' är uppfyllt i sak och inte bara i ordalydelse
+- [x] #3 Klarlagt och bokfört om andra block-dialog-lägen eller andra promoverings-grindar har motsvarande täckningsluckor
 <!-- AC:END -->
 
 ## Definition of Done
@@ -44,3 +45,19 @@ Att det inte fångades har samma orsak som 309.16: visual-testerna bor i visual-
 - [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+TASK-309.17, bygg-agentens landning 2026-08-24 (gren task-309.10-skiva9-facit).
+
+KORTETS PREMISS ÄR FALSIFIERAD, mätt mot källan. Kortet antog att BlockDialogs datum-gren saknade ariaSnapshot-par och kunde få ett. Den grenen GÅR INTE ATT NÅ via den levande UI:n. Det enda blocket med 'datum: true' (sistaBetalningsdag, blockDefinitioner.ts rad 90) bor i Inforutan-gruppen, och tre oberoende spärrar i GenereringsVy.tsx stänger vägen dit — var och en tillräcklig: (a) 'lasEndast = r.def.last || arInforutan' (rad ~941) renderar varje Inforuta-rad som div, inte knapp, så ingen oppnaBlock-ingång finns att klicka; (b) varningsrutans 'Fyll i …'-knappar dispatchar 'INFORUTA_IDN.has(id) ? oppnaMorf(id) : oppnaBlock(id)' (rad ~835); (c) dialogRader() filtrerar bort INFORUTA_IDN ur navSyskon (rad ~269), så inte heller dialogens Föregående/Nästa kan nå blocket. Datum-grenen i BlockDialog.tsx (rad ~634) är därmed DÖD KOD i dagens GRUPPER-karta. Detta var redan korrekt bokfört i spec-filens ursprungliga docblock ('MEDVETET UTANFÖR — DATUM-LÄGET'), men kortet skrevs utan den läsningen.
+
+VAD SOM LEVERERADES I STÄLLET. Det datum-läge en användare FAKTISKT ser är InforutanMorf:s DatumEnkel (samma komponent, importerad ur BlockDialog.tsx) för sistaBetalningsdag, nådd via Inforutans 'Ändra'-rad. Den ytan har nu ariaSnapshot-par i BÅDA vyporterna (inforutan-morf-datum-visual-{desktop,mobile}.aria.yml, byte-identiska) och facit-bild i båda (facit-datum-laget-inforutan-morf-{desktop,mobil}.png). Snapshotten låser segment-formen: group 'Sista betalningsdag' med spinbutton år/månad/dag i svensk ordning.
+
+AC-STATUS. #2 BOCKAD — manifestet bär datum-lägets bild, och kriteriets egen formulering ('uppfyllt i sak och inte bara i ordalydelse') är precis vad som levererats. #3 BOCKAD — mätt på båda axlarna: BlockDialog har exakt TRE kropps-grenar (def.agenda → AgendaEditor, def.datum → DatumEnkel, annars → TextArea) plus ETT ortogonalt tillägg (def.platsFalt && ort → Kryss); grinden täcker nu samtliga fyra (agenda, ren TextArea, TextArea+Kryss, datum). Ingen ytterligare BlockDialog-gren är otäckt. Vyport-axeln: se TASK-309.16 AC #3 — dokument-generering var den enda halva av tolv. Bokfört durabelt i spec-filens docblock § TÄCKNINGEN.
+
+#1 MEDVETET OBOCKAD. Ordalydelsen är 'block-dialogens datum-läge', och det är inte vad som levererades — att uppfylla den bokstavligt hade krävt att FLYTTA sistaBetalningsdag ut ur Inforutan, alltså en FORMÄNDRING som ADR-103 B2 steg 4 uttryckligen fredar, och som en bygg-agent aldrig får göra på eget bevåg.
+
+ÖPPET BESLUT FÖR MARCUS/ORKESTRERAREN: vad ska hända med den döda datum-grenen i BlockDialog.tsx? Två vägar — riv grenen (den är onåbar kod), eller flytta sistaBetalningsdag ut ur Inforutan (formändring, kräver Marcus). Tills dess står den bokförd i spec-filens docblock § DATUM-LÄGET, inte utjämnad.
+<!-- SECTION:NOTES:END -->
