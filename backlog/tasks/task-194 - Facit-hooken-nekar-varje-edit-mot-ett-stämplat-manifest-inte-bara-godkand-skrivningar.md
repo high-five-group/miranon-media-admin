@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-10 18:29'
+updated_date: '2026-08-24 13:51'
 labels:
   - grind
   - facit
@@ -45,3 +46,29 @@ RISKEN MED FIXEN, som ska adresseras i bygget: en delta-jämförelse får INTE �
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+TASK-194 — EJ IMPLEMENTERAD. PREMISSEN ÄR SUPERSEDAD AV ADR-102 § Updates 2026-08-22 (bygg-agent, Sonnet 5, 2026-08-24). Ingen kod ändrad; detta är en dokumentations-only-landning som registrerar fyndet per ADR-086 (premiss-passet).
+
+PREMISS-PASSET (körd FÖRE design, ADR-086). Uppdraget bad om en delta-jämförelse (godkand FÖRE/EFTER) i scripts/deny-facit-godkand-skrivning.sh + scripts/lib/facit-godkand-skrivning.mjs, med kortets AC#1/#2 som mål, och angav att kortet blockerar TASK-241.7 och TASK-243.5. Innan bygge lästes hooken, ADR-102 i sin helhet och de två utpekade blockerade korten. Båda de faktapåståenden kortet/uppdraget vilar på visade sig vara FALSIFIERADE av senare landad arkitektur.
+
+1. KORTETS MOTIVERANDE EXEMPEL (S103:s kallor-flytt efter rivning) ÄR REDAN LÖST — via en ANNAN mekanism än kortets AC ber om. ADR-102 § Updates 2026-08-22 "Rivna prototyp-källor: invariant (b):s rivnings-klausul" (R1) lade en git-härledd invariant i scripts/lib/facit-validera.mjs (fannsVidStampeln, rad 247) + scripts/check-facit.sh: en kallor-sökväg som saknas på disk i ett STÄMPLAT manifest accepteras UTAN manifest-edit om filen fanns i stämpel-commitens träd (godkand.sha) och är riven därefter. Ingen skrivning mot manifestet krävs alls längre.
+
+   EMPIRISKT VERIFIERAT (denna session, 2026-08-24, i egen worktree, återställt efteråt): flyttade undan samtliga sex källor i tasks/sessions/bilagor/s102-svep-konvergens/facit.json (TASK-241.7:s yta) och samtliga sex källor i s102-hem-konvergens/facit.json (TASK-243.5:s yta), körde bash scripts/check-facit.sh — exit 0 BÅDA gångerna, varje riven fil uppräknad som "NOT: … riven efter stämpeln <sha>" (10dff531 resp. 8044e5b6). git status --short tomt efter återställning.
+
+2. UPPDRAGETS BLOCKERINGS-PÅSTÅENDE ÄR DÄRMED FALSIFIERAT FÖR FACIT-HOOK-DELEN. TASK-241.7:s egen Implementation Notes-blockering (mätt 2026-08-17, "SEX fel … kallor … som inte finns") föregår R1-fixen (2026-08-22) och är omsprungen — grinden släpper nu igenom rivningen utan att kallor rörs. ADR-102 § Updates R5 säger det rakt ut: "De fyra kvarvarande rivningarna är avblockerade utan att något manifest behöver röras — hem, svep, segment och hållplats." TASK-243.5 har KVAR en egen, orelaterad blockering (svep-routens src/routes/dev/svep-prototyp.tsx importerar ur hem-prototypkatalogen, dess egna Implementation Notes 2026-08-17) — ett kod-beroendeordnings-beslut (241.7 före 243.5, eller ompekning av importen), INTE en facit-hook-fråga. TASK-194 rör inte den blockeringen.
+
+3. KORTETS EGEN AC-ANSATS (AC#1/#2: smalna av hooken via delta-jämförelse, släpp igenom byte-identiska godkand-editer) MOTSÄGS EXPLICIT AV EN SENARE, ACCEPTED ARKITEKTURBESLUT. ADR-102 § Updates 2026-08-22 "Amenderings-mekaniken för ett STÄMPLAT facit" (T157) § A3, verbatim: "Ett stämplat manifest är agent-fruset i SIN HELHET… Bredden är hookens egen, medvetna design (dess § HELLRE FÖR BRETT ÄN FÖR SMALT) och rivs INTE här." Beslutet valde MEDVETET en annan väg: legitima ändringar av ett stämplat manifest bokförs i en sidofil (AMENDERING-<datum>-<slug>.md) i stället för att öppna manifestet för agent-edits, med en tvåstegs klassning (b)/(c) där en agent föreslår och Marcus/orkestreraren dömer (A2). Kortets egen motivering ("VARFÖR DET ÄR EN BUGG OCH INTE AVSIKTEN") är alltså numera motsagd ordagrant av den nyare ADR-texten, som kallar exakt samma bredd "hookens egen, medvetna design".
+
+4. ADR-102 SJÄLV KÄNNER TILL TASK-194 OCH LÄMNAR DESS ÖDE UTTRYCKLIGEN ÖPPET. § Updates "Rivna prototyp-källor" § R5 tredje punkten, verbatim: "Rivnings-skivan behöver inte längre röra kallor efter en rivning, och därmed inte heller kringgå ADR-104-hooken som 570c5951 gjorde. Det avgör INTE TASK-194:s öde — kortet bär mer än detta fall — men det tar bort kallor-trycket ur det." ADR-uppdateringens författare hade alltså TASK-194 i åtanke och lämnade frågan om kortets vara-eller-inte-vara explicit olöst.
+
+VARFÖR AC#1/#2 INTE BYGGDES ÄNDÅ (STOPPA-OCH-FLAGGA, inte ett scope-beslut på eget bevåg). Att smalna av hooken enligt kortets AC hade direkt återinfört den bredd ADR-102 A3 uttryckligen valde bort — det är en reversering av ett Accepted arkitekturbeslut, inte en bugg-fix inom givet scope. Valet mellan (a) stänga TASK-194 som superseded av ADR-102, (b) skriva om kortets AC mot den sidofils-mekanism ADR-102 redan valt (t.ex. om något täcknings-hål ändå kvarstår i AMENDERING-mekaniken — se ADR-102 § Updates A6, öppna luckor: klass (b)/(c) är konvention utan spärr, referenser-täckningen är 0/22 vid ADR-postens skrivning), eller (c) ett explicit beslut att riva ADR-102 A3 och bygga kortets ursprungliga delta-ansats ändå — är Marcus/orkestrerarens att fatta, inte bygg-agentens.
+
+VAD SOM ÄR OFÖRÄNDRAT: scripts/deny-facit-godkand-skrivning.sh, scripts/lib/facit-godkand-skrivning.mjs — noll rader ändrade i detta pass. Ingen AC nedan är avbockad: AC#3 beskriver befintligt, redan verifierat beteende (ingen ny mekanism byggd för den); AC#1/#2/#4 förutsätter en mekanism (delta-jämförelse) som INTE byggdes eftersom den skulle strida mot ADR-102 A3 — att bocka dem hade intygat ett arbete som aldrig utfördes.
+
+ÖVRIGT: kortet bär inte labeln "ready-for-agent" (Labels: grind, facit, hook) trots att uppdragstexten beskrev det som ready-for-agent — status är "To Do" utan dependencies, så det var ändå plockbart. Mindre avvikelse, bokförd för fullständighetens skull.
+
+REKOMMENDATION: Marcus/orkestreraren avgör kortets vidare öde mot underlaget: docs/decisions/ADR-102-prototypen-ar-facit-skarpa-ska-vara-identisk.md § Updates 2026-08-22 (båda posterna, särskilt A3 och R1/R5), tasks/threads/T157-adr-102-saknar-amenderings-mekanik-for-stamplat-facit.md (stängd 2026-08-22, samma fråga för det generella fallet).
+<!-- SECTION:NOTES:END -->
