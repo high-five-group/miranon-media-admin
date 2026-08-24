@@ -410,6 +410,31 @@ Numrering efter S109: ADR 122 · kort 284 (om `#1674` landat) · L512 + 55
 fragment · T158 · f52 · session 111. Full narrativ: sessionsdok S109 Del 1–4 +
 PAUSLÄGE.
 
+**Session 108 ⏸️ PAUSAD (nionde gången, 2026-08-24, `lifecycle: paused`) —
+PROD ÄR HELT OCH DEPLOYAT; KVAR ÄR MARCUS GRANSKNING AV `#1889` OCH DE TRE
+STEGEN EFTER DEN (SESSIONSDOK S108 § PAUSLÄGE NIONDE → MARCUS-SEKVENS).**
+Resume 9 landade sju PR:er: `#1893` `#1895` `#1897` `#1900` `#1902` `#1915`
+`#1929`. **Del A körd av agenten på Marcus GO** — tre tabeller + 18 fält på
+Eventplanering + 2 på Bilagor + seed i prod, basen 21→24 tabeller, alla
+prod-ID:n i `data-model.md`. **Prod-deployen föll först** efter 18 av 45
+funktioner: `deploy-prod-functions.sh` kallade den GLOBALA CLI-binären
+(2.75.0) medan anroparen körde `npx` (2.115.0) — differentialmätt mot
+staging. Marcus fällde lapp-fixen (*"vi SKA hålla branschledarstandard i
+ALLT"*), sveppasset visade **sju** opinnade anropsställen i stället för ett,
+och hela klassen stängdes i `#1915` (`.supabase-cli-policy.conf` + delad
+resolver + fail-closed guard i preflighten + 25/25 nya testfall).
+Granskningen fällde `#1915` en gång: en miljövariabel kortslöt policyn OCH
+framgångsraden ljög om källan. **Omkörd deploy: 45/45, `UPDATED_AT`
+verifierad på alla nio — nattens tre prod-fönster STÄNGDA.**
+**Granskningsvägen föll strukturellt:** Vercel-preview bygger i
+production-läge → pratar med prod → prods CORS matchar Origin EXAKT → en
+per-gren-subdomän kan aldrig stå i listan ⇒ `Failed to fetch`. Granskningen
+går via dev-servern mot staging. Numrering vid paus 9 (S112 konsumerar
+kort-serien snabbt — mät mot `origin/main`, ALDRIG mot huvudkatalogens
+detached HEAD): ADR **127** · task-**320** · **L533** · 66 fragment ·
+**T176** · f53 · session **113**. Full handoff: sessionsdok S108 § PAUSLÄGE
+(nionde) + Del 17–19.
+
 **Session 108 ▶️ ÅTERUPPTAGEN (2026-08-24, `lifecycle: active`, nionde resumen;
 pausad åtta gånger, historik) — RESUMEN ÖPPNAR PÅ MARCUS FEM MOMENT; INGET
 AGENT-ARBETE ÄR PLOCKBART FÖRE STEG 1–2.** Marcus order: *"Återuppta S108."*
