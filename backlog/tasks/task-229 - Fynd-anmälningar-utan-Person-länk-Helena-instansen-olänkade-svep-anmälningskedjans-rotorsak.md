@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-08-15 22:59'
-updated_date: '2026-08-15 23:47'
+updated_date: '2026-08-24 13:16'
 labels:
   - ready-for-agent
 dependencies: []
@@ -201,4 +201,44 @@ sweep, ingen ny dubblett uppstod under mellantiden.
 SLUTKONTROLL: ny sweep {Person}=BLANK() mot hela Anmälningar-tabellen efter
 samtliga 7 skrivningar → 0 träffar. Olänkade-luckan i prod är därmed
 STÄNGD (8/8 ursprungligen olänkade nu länkade: Helena i Del 1 + dessa 7).
+
+## Del 5 — Del 3:s slutsats FALSIFIERAD: rotorsaken är belagd, inte obestämbar [S112, 2026-08-24, Opus-agent, read-only mot prod-basens automations-config + records]
+
+Del 3 (2026-08-16) skrev slutsatsen "rotorsaken är BELAGD till gren-nivå ...
+men INTE till trigger-vs-exekvering-nivå ... öppet bokförd som obestämbar på
+den sista graden" — och byggde uteslutningen av Gren 1 på att "alla 8
+matchande Personer hade REDAN namn ... vid tidpunkten". Den premissen var
+CIRKULÄR: Gren 1 är den gren som SÄTTER namnet (utan att sätta länken) — att
+Personerna bar namn vid mättillfället bevisar inte att de bar namn vid
+A2-körningens tidpunkt, det är precis det utfall Gren 1 producerar. Samma
+mätfel som data-model.md §Kända fällor 21 tidigare gjorde (se rättelsen
+2026-08-24 i data-model.md rad ~1668, samma källa): "namnlös Person" lästes
+som ett permanent tillstånd i stället för ett övergående tillstånd som Gren 1
+själv stänger.
+
+Rotorsaken är därmed BELAGD, inte obestämbar: A2 Gren 1 sätter aldrig
+Person-länk eller Touchpoint för en namnlös Person — det är konstruktionen,
+inte ett körningsfel. Det förklarar Del 2/4:s samtliga 8 instanser utan att
+någon Airtable-körningshistorik krävs. Del 3:s öppna fråga ("triggern
+avfyrades aldrig" vs "triggern avfyrades men exekveringen felade tyst") är
+därmed inaktuell — det fanns ingen exekvering att fela i, Gren 1 gjorde exakt
+vad den är byggd för att göra.
+
+**Bredare omfattning, mätt i samma pass:** 61 kvarvarande namnlösa
+lead-personer i prod bär samma laddade fälla (+~9 nya/månad) — varje sådan
+Persons FÖRSTA framtida kursanmälan kommer att träffa Gren 1 och lämnas
+olänkad, utan touchpoint, om ingen manuellt patchar `Anmälan.Person` i
+efterhand (samma reverse-flow-kompensation som redan är etablerad praxis,
+se `docs/backfill/execute-log.md` § Fas 4–5).
+
+**Åtgärdsbeslut väntar Marcus GO** — två delar: (a) A2 Gren 1-fix i basen (sätt
+Person-länk + Touchpoint även när Personen är namnlös, inte bara namnet), (b)
+touchpoint-backfill för de 8 redan identifierade instanserna (ID-intervallet
+866–983) vars Anmälan i dag saknar den Touchpoint Gren 2 normalt skapar.
+Ingen skrivning gjord i detta pass — read-only mot prod, ADR-063-resolution
+i basen kräver Marcus uttryckliga GO per den vanliga prod-write-disciplinen.
+
+Se `docs/reference/data-model.md` §Kända fällor 21 (raden korrigerad
+2026-08-24, samma källa och samma dag) för den fullständiga mätta
+omfattningen (8/97 ≈ 8,2 % felrat i defekt-fönstret).
 <!-- SECTION:NOTES:END -->

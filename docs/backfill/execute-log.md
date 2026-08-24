@@ -1,7 +1,7 @@
 ---
 owner: marcus803
-updated: 2026-08-17
-review_by: 2026-11-17
+updated: 2026-08-24
+review_by: 2026-11-24
 status: stable
 ---
 
@@ -15,8 +15,11 @@ status: stable
 >
 > **Poster:** Session 60 (2026-07-08/09) — närvaroavstämning av tre maj-2026-event
 > mot faktiska deltagarlistor · Session 102 (2026-08-17) — backfill av tidsfältet
-> `Inskickad` på 294 rader. Varje post bär sitt eget mandat och sin egen
-> verifiering; en ny post läggs sist, tidigare poster skrivs inte om.
+> `Inskickad` på 294 rader · Session 107 (2026-08-17) — länkning av 26
+> anmälningar utan Event-länk · Session 110 (2026-08-21) — omlänkning av 61
+> felmatchade anmälningar (Elfsight-URL-buggen). Varje post bär sitt eget
+> mandat och sin egen verifiering; en ny post läggs sist, tidigare poster
+> skrivs inte om.
 
 ## Session 60 — syfte och pivot
 
@@ -268,13 +271,87 @@ Session 60:s konserveringskontroll, som §Steg 4 visade är blind för kategori-
   håller, samma mätning som friade backfillens egen PATCH. Övriga fem är
   obelagda härifrån: claude.ai-connectorn nekade läsning med `permission_error`,
   och PAT-servern ser inte automationer.
-- **Bifynd, ej åtgärdade** (fält-mandatet var avgränsat till `Inskickad`):
-  26 rader bär `EventKey` utan `Event-`-prefix (`"11"` ×17, `"10"` ×9), samtliga
-  `Huvudformulär`, spann 2026-04-26 → 2026-08-15 → bokfört på `TASK-232`, som
-  antog en enda rad. En rad saknar `Från formulär` helt (`rec8H1aVug1RMw3hq`).
+- **Bifynd, ÅTGÄRDADE i senare poster [rättat 2026-08-24, `TASK-229`]** (fält-mandatet
+  var avgränsat till `Inskickad`, så denna post skrev det inte): 26 rader bar
+  `EventKey` utan `Event-`-prefix (`"11"` ×17, `"10"` ×9), samtliga `Huvudformulär`,
+  spann 2026-04-26 → 2026-08-15 → bokfört på `TASK-232`. Rotorsaken (Elfsight-
+  kalenderwidgeten på miranon.se) och åtgärden ligger i posterna **2026-08-17
+  (Session 107)** och **2026-08-21 (Session 110)** nedan — se dem för fullständig
+  logg. En rad saknar `Från formulär` helt (`rec8H1aVug1RMw3hq`) och är fortsatt
+  oåtgärdad (utanför bägge posternas scope).
+
+## 2026-08-17 — Länkning av 26 anmälningar utan Event-länk, Session 107
+
+Tredje skarpa prod-skrivningen i denna logg. Rotorsak (bekräftad i skärpa av
+Session 110 nedan): Elfsight-kalenderwidgeten på miranon.se — Roger duplicerar
+gamla kalenderposter och redigerar kurstext men inte URL-parametrarna, så nya
+anmälningar bär en äldre events `EventKey`. 26 anmälningar hade `{Event} =
+BLANK()`, i tre kluster: Fjärrskådning Rönninge 25–26 juli ×17 · Fjärrskådning
+Rönninge 17–18 okt ×8 · RIM 1 Rönninge 14–15 nov ×1. Mandat: Marcus per-operation
+GO, 2026-08-17 (nio-punktslistans spår 2). Kort: `TASK-273` (spåret) / `TASK-232`
+(EventKey-instansen, ID 868).
+
+### Vad som skrevs
+
+Tre Eventplanering-rader skapade: **Event-59** (RIM 1, Arboga, 31 okt–1 nov,
+`recqA2Us1FByBnibz`) · **Event-60** (Fjärrskådning, Rönninge, 25–26 juli,
+Genomfört — retroaktivt satt, Marcus bekräftade att eventet hölls) · **Event-61**
+(Fjärrskådning, Rönninge, 17–18 okt, Planerat). De 26 orphan-anmälningarna
+länkade till respektive event (17 juli + 8 okt, inkl. Maud + 1 nov), plus
+Agnetas separat felmatchade anmälan (`reczi2qUFpS1eiyYm`) → Event-59 och Maria
+Karlsson → Event-56.
+
+### Verifiering
+
+`{Event} = BLANK()` mätt **26 → 0** i prod efter länkningen. ID 868 (Allan
+Nieminen, `TASK-232`s namngivna instans, `EventKey = "11"` sedan raden skapades
+2026-05-12) låg i juli-klustret → länkad till Event-60 — Event-länken datafixad;
+`EventKey`-textfältet självt rördes inte i detta steg (fält-mandatet var
+Event-länken, inte texten — normaliseringen av `EventKey`-fältet hör till
+2026-08-21-posten nedan).
+
+Källa: [`../../tasks/sessions/2026-08-17-session-107.md`](../../tasks/sessions/2026-08-17-session-107.md)
+§ Del 2 + `TASK-232`-kortets Implementation Notes.
+
+## 2026-08-21 — Omlänkning av 61 felmatchade anmälningar (Elfsight-URL-bugg), Session 110
+
+Fjärde skarpa prod-skrivningen i denna logg. `TASK-232`s enrads-hypotes (ID 868)
+breddades kraftigt: rotorsaken är Elfsight Event Calendar-widgeten på
+miranon.se (`8d8c059d-…`) — Roger duplicerar gamla kalenderposter och redigerar
+kurstext men glömmer URL-parametrarna, så nya anmälningar länkas mot ETT FEL,
+äldre event. Sex kalenderposter bar fel nyckel (fem kommande event + 25–26
+juli-posten). Mandat: Marcus GO per steg, 2026-08-21. Kort: `TASK-232` (AC 1–3
+bockade, Done i stängningscommit), tråd `T158`.
+
+### Vad som skrevs (Marcus GO per steg, spårbarhetsrad i varje `Notering`)
+
+| Steg | Operation | Antal | Verifierat |
+|---|---|---|---|
+| 1 | Event skapade: **Event-62** (RIM 1, Rönninge, 12–13 sep, `recPSBvKXcjDUpnkF`) · **Event-63** (RIM 1, Bredaryd, 10–11 okt, `rectqoBHIXQpOcmUY`) · **Event-64** (RIM 2, Rönninge, 24–25 okt, `recfCJJozYm4IN118`) | 3 | `AnmälningsURL` + Sessionsmall Dag 1/Dag 2 lästa tillbaka |
+| 2a–2f | Anmälningar omlänkade (`Event` + `EventKey` + `Notering`): 18 → 62 · 19 → 63 · 15 → 59 · 1 → 61 · 3 → 64 · 5 → 60 | 61 | `Antal anmälningar` per event = förväntat, nio räkningar |
+| 3 | Deltaganden flyttade/skapade (112 flyttade + Agnetas 2 S107-rest + 5+5 nya Dag 1/Dag 2 för 2f:s Föreläsning-rader + Fredriks 2 av A3) | 124 | 304/304 anmälningar konsistenta · 1 777/1 777 Deltaganden `Event` = lookup |
+| 4 | A7:s `Ej betalda (records)` räknad om på Event-10, Event-11, Event-55 | 3 | fältet läst tillbaka |
+| 5 | Kontrollsvep, samma metod som före | — | **MISMATCH 65 → 4 · ORPHAN 1 → 0** |
+
+Fyra kvarvarande vid passets stängning: ID 21/22/23 (väntade på Lottas besked —
+formulärtexten och kalenderlänken pekade mot olika RIM-nivåer, ingen närvaro
+bokförd någonstans som kunde avgöra det) och ID 960 (rätt event, ingen åtgärd).
+
+**Per-post-beviset är durabelt, per-ID-tabellen ovan är det inte.** Varje
+omlänkad rad bär stämpeln **`[Omlänkad 2026-08-21, S110]`** i sin `Notering` i
+prod-basen — det är källan att slå upp för en specifik rad i efterhand.
+Rådata/klassning/skrivlogg låg i sessionens scratchpad (`svep/`, `svep/efter/`)
+och är efemär; ID-listan i tabellen ovan är rekonstruerad ur sessionsdoket för
+läsbarhet, inte en levande frågekälla.
+
+Källa: [`../../tasks/sessions/2026-08-21-session-110.md`](../../tasks/sessions/2026-08-21-session-110.md)
+§ Del 2 B + Paushistorik § TILLSTÅND.
 
 ## Källor
 
 - CSV: `~/Downloads/alla-anmalda-medveten-kontakt-2026-07-08.csv` (Psionautics, 88 anm).
 - Xlsx: `~/Downloads/2026-06-24 uppdaterade deltagare.xlsx` (FJS + RIM1).
 - Sessionsdok: [`../../tasks/sessions/archive/2026-07/2026-07-08-session-60.md`](../../tasks/sessions/archive/2026-07/2026-07-08-session-60.md).
+- Sessionsdok: [`../../tasks/sessions/2026-08-17-session-107.md`](../../tasks/sessions/2026-08-17-session-107.md) § Del 2.
+- Sessionsdok: [`../../tasks/sessions/2026-08-21-session-110.md`](../../tasks/sessions/2026-08-21-session-110.md) § Del 2.
+- Kort: `TASK-232` (Fynd EventKey 11 på anmälan ID 868 — återfall av sanerad fälla 10/F.2).
