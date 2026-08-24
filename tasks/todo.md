@@ -15,6 +15,22 @@
 
 ## Aktuellt fokus
 
+**Session 112 ▶️ PÅGÅR (2026-08-24, `lifecycle: active`) — STÄDSESSIONEN:
+REGISTRET SANT, REPOT RENT, ROTORSAKER.** Marcus fullt beslutsmandat ("Go
+på alla", 2026-08-24), körs autonomt i worktree `s112-stadsessionen`
+(S108 äger huvudkatalogen). Levererat hittills: closure-grinden 38→4
+S112-klassade röda · grenstädningen 289→54 · **A2-bågen komplett i prod
+(61 fällor desarmerade, fälla 21 STÄNGD)** · 193 kort triagerade · 6
+förkastade + 13 stängda · DoD-mekanismen väg iii + `ADR-127` ·
+review-grindens skiva 1 · prototyp-substraten rivna · kontrast-vakter +
+affordans · två paket bort · hub `vol-07` + do-work-mallen ·
+S113-dukningen klar (`docs/reference/s113-basmaxning-dukning.md`).
+**ACTIONPLAN + full landningstabell: sessionsdok S112 Del 2** (kö-svans +
+flip-batch + slutmätning · fix-våg 3 · vandringsblocket efter Marcus
+bildgranskning `#1883`→`#1926` · session-end med skörd). **S113
+RESERVERAD för Airtable-fönstret.** claude.ai-projektkunskapen LÄMNAD
+(TASK-318) — inga Update-klick-moment framgent.
+
 **Session 111 ✅ STÄNGD (2026-08-23, K-sista i AFK-läge på Marcus mandat; `lifecycle: closed`) —
 ANMÄLNINGSSIDAN I PROD: KONVERGENSPASSET HELA VÄGEN, BEVAKNINGSRADERNA I NY
 ANATOMI, SIDRAMEN SOM FAMILJ.** `main` `e1470eb0` = Vercel Production, bundle-
