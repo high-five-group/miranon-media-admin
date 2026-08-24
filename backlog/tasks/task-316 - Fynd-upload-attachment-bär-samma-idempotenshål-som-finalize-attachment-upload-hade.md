@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-24 14:01'
+updated_date: '2026-08-24 15:57'
 labels:
   - ready-for-agent
 dependencies: []
@@ -20,9 +21,9 @@ Registrerat 2026-08-24 (S112, TASK-183-passet): upload-attachment/index.ts (mön
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 upsertAirtableRecord med Lagringsnyckel som merge-fält ersätter createAirtableRecord i upload-attachment
-- [ ] #2 Idempotens-test i befintlig skarv: retry ger EN rad, ny uppladdning ger TVÅ — rött-först-belagt som i TASK-183
-- [ ] #3 Staging-deploy + grön riktad testkörning
+- [x] #1 upsertAirtableRecord med Lagringsnyckel som merge-fält ersätter createAirtableRecord i upload-attachment
+- [x] #2 Idempotens-test i befintlig skarv: retry ger EN rad, ny uppladdning ger TVÅ — rött-först-belagt som i TASK-183
+- [x] #3 Staging-deploy + grön riktad testkörning
 <!-- AC:END -->
 
 ## Definition of Done
