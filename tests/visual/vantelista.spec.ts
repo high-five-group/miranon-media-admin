@@ -1,3 +1,4 @@
+import AxeBuilder from '@axe-core/playwright';
 import { http } from 'msw';
 import { EF, json } from '../support/fixturvarld/handlers';
 import { expect, test } from '../support/fixturvarld/hermetic';
@@ -66,4 +67,61 @@ test('väntelista — sidram, initialcirkel och tre rader ur fixturvärlden', as
   await expect(page.getByText('Cecilia Carlsson')).toBeVisible();
 
   await expect(page).toHaveScreenshot('vantelista.png', { fullPage: true });
+});
+
+/**
+ * [TASK-314, 299.10 steg 10] prefers-contrast: more. Samma `emulateMedia`-
+ * mönster som `dorrlista-promoverings-grind.spec.ts` rad ~746-782, men
+ * väntelistans rader (`WaitlistRow`, `Waitlist.tsx`) bär INGEN egen
+ * `contrast-more:`-klass — verifierat (`grep -rn "contrast-more"
+ * src/components/waitlist/`, noll träffar). Raddelaren är i stället en
+ * STATISK `border-text-muted/20 border-b`, redan synlig i normalläget. Grinden
+ * bevisar därför att den befintliga gränsen förblir renderad (icke-transparent,
+ * solid, bredd > 0) under förstärkt kontrast i stället för att jämföra mot ett
+ * kontrast-specifikt token-byte som inte finns här — plus en fullsides
+ * pixel-baseline (samma idiom som filens ordinarie test ovan) och axe 0, så att
+ * "tappar sin gräns eller sin betydelse" (299.10 steg 10) är mekaniskt prövat
+ * i båda leden.
+ */
+test('väntelista — hög-kontrast-läge (prefers-contrast: more)', async ({ page, network }) => {
+  const WCAG_TAGGAR = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
+
+  await page.emulateMedia({ contrast: 'more' });
+  network.use(
+    http.get(EF('get-waitlist'), () =>
+      json({
+        waitlist: [
+          {
+            id: 'recKontrastWait001',
+            fornamn: 'Anna',
+            efternamn: 'Andersson',
+            email: 'anna@example.se',
+            telefon: '070-1234567',
+            informationsmail1Skickad: null,
+            createdTime: '2026-05-03T10:00:00.000Z',
+          },
+        ],
+      }),
+    ),
+  );
+
+  await page.goto('/mer/vantelista');
+  await expect(page.getByTestId('vantelista-yta')).toBeVisible();
+  await expect(page.getByText('Anna Andersson')).toBeVisible();
+
+  const rad = page.getByRole('list').getByRole('listitem').first();
+  const kant = await rad.evaluate((el) => {
+    const s = getComputedStyle(el);
+    return { bredd: s.borderBottomWidth, stil: s.borderBottomStyle };
+  });
+  expect(kant.stil).toBe('solid');
+  expect(Number.parseFloat(kant.bredd)).toBeGreaterThan(0);
+
+  const resultat = await new AxeBuilder({ page })
+    .withTags(WCAG_TAGGAR)
+    .include('[data-testid="vantelista-yta"]')
+    .analyze();
+  expect(resultat.violations).toEqual([]);
+
+  await expect(page).toHaveScreenshot('vantelista-kontrast.png', { fullPage: true });
 });

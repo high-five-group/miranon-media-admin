@@ -1,3 +1,4 @@
+import AxeBuilder from '@axe-core/playwright';
 import { http } from 'msw';
 import { EF, json } from '../support/fixturvarld/handlers';
 import { expect, test } from '../support/fixturvarld/hermetic';
@@ -61,4 +62,56 @@ test('maillogg (SidRam-sidkrom, ifylld vy) — /mer/maillogg', async ({ page, ne
   await expect(page.getByText('Vårnyhetsbrev')).toBeVisible();
 
   await expect(page).toHaveScreenshot('maillogg-ifylld.png', { fullPage: true });
+});
+
+/**
+ * [TASK-314, 299.10 steg 10] prefers-contrast: more. Samma `emulateMedia`-
+ * mönster som `dorrlista-promoverings-grind.spec.ts` rad ~746-782.
+ * Maillogg-radens (`MailLog.tsx`) `<li>` bär INGEN egen `contrast-more:`-klass
+ * (verifierat, noll träffar) — raddelaren är en STATISK `border-text-muted/20
+ * border-b`, redan synlig i normalläget. Grinden bevisar att den befintliga
+ * gränsen förblir renderad (solid, bredd > 0) under förstärkt kontrast, plus
+ * en fullsides pixel-baseline (samma idiom som filens ordinarie test ovan)
+ * och axe 0.
+ */
+test('maillogg — hög-kontrast-läge (prefers-contrast: more)', async ({ page, network }) => {
+  const WCAG_TAGGAR = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
+
+  await page.emulateMedia({ contrast: 'more' });
+  network.use(
+    http.get(EF('get-mail-log'), () =>
+      json({
+        maillog: [
+          {
+            id: 'recMLKontrast001',
+            utskicksNamn: 'Vårnyhetsbrev',
+            utskicksIds: ['recBULK01'],
+            skickatTill: ['recPER01', 'recPER02'],
+            antalSkickade: 2,
+            datum: '2026-05-02T10:00:00.000Z',
+            oppningsgrad: 0.5,
+            filterSnapshot: 'Segment: aktiva deltagare',
+            mailutskickCopy: null,
+          },
+        ],
+      }),
+    ),
+  );
+
+  await page.goto('/mer/maillogg');
+  await expect(page.getByRole('heading', { level: 1, name: 'Maillogg' })).toBeVisible();
+  await expect(page.getByText('Vårnyhetsbrev')).toBeVisible();
+
+  const rad = page.getByRole('list').getByRole('listitem').first();
+  const kant = await rad.evaluate((el) => {
+    const s = getComputedStyle(el);
+    return { bredd: s.borderBottomWidth, stil: s.borderBottomStyle };
+  });
+  expect(kant.stil).toBe('solid');
+  expect(Number.parseFloat(kant.bredd)).toBeGreaterThan(0);
+
+  const resultat = await new AxeBuilder({ page }).withTags(WCAG_TAGGAR).analyze();
+  expect(resultat.violations).toEqual([]);
+
+  await expect(page).toHaveScreenshot('maillogg-kontrast.png', { fullPage: true });
 });

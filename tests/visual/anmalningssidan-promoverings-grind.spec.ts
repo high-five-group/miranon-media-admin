@@ -396,3 +396,49 @@ test.describe('a11y-golvet — axe på samma ytor som formgrinden (DoD #5)', () 
     await axeNoll(page);
   });
 });
+
+/**
+ * [TASK-314, 299.10 steg 10] prefers-contrast: more. Samma `emulateMedia`-
+ * mönster som `dorrlista-promoverings-grind.spec.ts` rad ~746-782.
+ * Anmälningslistan (`<ul aria-label="Anmälningar">`, `AnmalningarSida.tsx`
+ * rad ~788) bär `contrast-more:border-border-strong` — samma token-kedja
+ * (`--mm-border-strong`) dörrlistans referens prövar. Samma probe-teknik:
+ * DOM-löst token jämfört mot den faktiskt renderade kantfärgen, plus en
+ * axe-scan scopad till YTAN (samma lokator som a11y-golvet ovan). Ingen
+ * `ariaSnapshot` här — dörrlistans eget kontrast-test bär ingen, och det är
+ * medvetet (docblock ovan § VARFÖR ARIASNAPSHOT OCH INTE PIXLAR): strukturen
+ * ändras inte av emuleringen, bara beräknade stilar.
+ */
+test.describe('TASK-314 — prefers-contrast: more (299.10 steg 10)', () => {
+  const WCAG_TAGGAR = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
+
+  test('hög-kontrast-läge: anmälningslistan får synlig kantlinje', async ({ page, network }) => {
+    await page.emulateMedia({ contrast: 'more' });
+    mockaYtan(network, grindRader());
+    await gotoYta(page, 'lista');
+
+    const lista = page.getByRole('list', { name: 'Anmälningar' });
+    const kant = await lista.evaluate((el) => {
+      const s = getComputedStyle(el);
+      return { farg: s.borderTopColor, bredd: s.borderTopWidth, stil: s.borderTopStyle };
+    });
+    expect(kant.stil).toBe('solid');
+    expect(kant.bredd).toBe('1px');
+
+    const strongToken = await page.evaluate(() => {
+      const probe = document.createElement('span');
+      probe.style.color = 'var(--mm-border-strong)';
+      document.body.appendChild(probe);
+      const c = getComputedStyle(probe).color;
+      probe.remove();
+      return c;
+    });
+    expect(kant.farg).toBe(strongToken);
+
+    const resultat = await new AxeBuilder({ page })
+      .withTags(WCAG_TAGGAR)
+      .include(`[data-testid="${YTA}"]`)
+      .analyze();
+    expect(resultat.violations).toEqual([]);
+  });
+});

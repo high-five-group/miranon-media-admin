@@ -4,7 +4,7 @@ title: 'QA: Anmälningssidan och Mer-familjens sidram — manuell vandring'
 status: To Do
 assignee: []
 created_date: '2026-08-22 19:38'
-updated_date: '2026-08-23 19:24'
+updated_date: '2026-08-24 14:01'
 labels:
   - ready-for-human
 dependencies:
@@ -69,4 +69,6 @@ DoD #3 BOCKAD — CI GRÖN PER JOBB: QA-fyndens rättningar (9a06cf3b, 718e586f,
 DoD #4 BOCKAD — path-scopad add; PR-diffen granskad före merge.
 DoD #5 BOCKAD — axe 0 i alla fyra tillstånd på den yta QA-fynden rörde: tests/acceptance/mer-anmalningar-form.acceptance.test.ts rad 185 (lista), 201 (filtrerat/åtgärdskö), 231 (tomt), 244 (fel, 4xx via role=alert), plus filter-tomläget rad 645 och öppen panel rad 685/894. Kördes grön i CI på #1864 (Acceptance hermetisk, 8m54s).
 DoD #6 BOCKAD — DEV-VÄXELN RIVEN, verifierat i detta pass och inte antaget: `grep -rn "useQueryState(.sidram|'sidram'|\"sidram\"" src/` ger exit 1, NOLL träffar — ingen levande sidram-växel finns kvar i skarp kod. Samtliga kvarvarande 'sidram=ny'-förekomster i src/ är docblock-rader som dokumenterar att växeln ÄR riven (AktivitetsHistorik.tsx:750, PersonDetail.tsx:1617, EventCheckin.tsx:942, DokumentYta.tsx:57/379, dev/primitives.tsx:379). NOTERAD PRECISERING mot uppdragets formulering: grepen efter '?variant=' ger inte noll rader, men samtliga levande träffar tillhör ANDRA prototyper i dev-substratet (PrototypeSwitcher, /dev/hem-prototyp, /dev/auth-prototyp, segment- och genererings-prototyperna) — de ligger utanför TASK-299:s omfattning och rivs av sina egna kort. Ingen av dem är en sidram-växel.
+
+TASK-314 LANDAT — steg 10 (förstärkt kontrast) nu mekaniskt belagt för samtliga nio tidigare obevakade ytor. prefers-contrast: more-svep tillagda enligt dörrlistans mönster (tests/visual/dorrlista-promoverings-grind.spec.ts rad ~746-782) i de nio ytornas BEFINTLIGA spec-filer: anmalningssidan-promoverings-grind.spec.ts, vantelista.spec.ts, intresserade.spec.ts, maillogg-visual.spec.ts, installera-appen-visual.spec.ts, aktivitetshistorik-visual.spec.ts, dokument-visual.spec.ts, persondetalj-promoverings-grind.spec.ts, hem-bevakningsrad-promoverings-grind.spec.ts. Fem av nio ytor (anmälningssidan, aktivitetshistorik, dokument, persondetalj, bevakningsraden) hade en befintlig contrast-more:border-border-strong-affordans att probe:a mot token-kedjan (--mm-border-strong); fyra (väntelista, intresserade, maillogg, installera-appen) saknade helt egen contrast-more-styling — deras svep bevisar i stället att den befintliga STATISKA gränsen (border-text-muted/20 respektive border-border) förblir renderad under förstärkt kontrast. Negativ kontroll genomförd (TASK-314 AC #2): en riktad mutation av anmälningslistans contrast-more:border-border-strong gav RÖTT (borderTopColor rgba(0,0,0,0) i stället för token-värdet rgb(196,196,194)), reverterad, grönt igen. Bockning av 299.10 AC #1 görs i separat stängningspass, per uppdraget till detta pass.
 <!-- SECTION:NOTES:END -->

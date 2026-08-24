@@ -1,3 +1,4 @@
+import AxeBuilder from '@axe-core/playwright';
 import type { Page } from '@playwright/test';
 import { http } from 'msw';
 import type { z } from 'zod';
@@ -222,5 +223,57 @@ test.describe('promoverings-grinden — bevakningsradens två radtyper (ADR-103 
     await expect(atgardskoRad(page)).toMatchAriaSnapshot({
       name: 'bevakningsrad-atgardsko.aria.yml',
     });
+  });
+});
+
+/**
+ * [TASK-314, 299.10 steg 10] prefers-contrast: more. Samma `emulateMedia`-
+ * mönster som `dorrlista-promoverings-grind.spec.ts` rad ~746-782. `RAD_YTA`
+ * (`Bevakningsrad.tsx` rad ~191, gemensam för båda radtyperna) bär
+ * `contrast-more:border-(--mm-navcard-border-contrast)`, som i sin tur löser
+ * till SAMMA `--mm-border-strong`-token dörrlistans referens prövar
+ * (`components.css` rad 241). Åtgärdskö-raden valdes som probe — samma
+ * `RAD_YTA`-klass som deltagarinfo-raden, så en mätning täcker båda
+ * radtyperna strukturellt. Ingen `ariaSnapshot` här — dörrlistans eget
+ * kontrast-test bär ingen heller, strukturen ändras inte av emuleringen,
+ * bara beräknade stilar.
+ */
+test.describe('TASK-314 — prefers-contrast: more (299.10 steg 10)', () => {
+  const WCAG_TAGGAR = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
+
+  test('hög-kontrast-läge: bevakningsradens kant får synlig kantlinje', async ({
+    page,
+    network,
+  }) => {
+    await page.emulateMedia({ contrast: 'more' });
+    network.use(
+      http.get(EF('get-registrations'), () => json({ registrations: fixturRader() })),
+      http.get(EF('get-events'), () => json({ events: [ev()] })),
+    );
+    await gotoPromoverad(page);
+
+    const rad = atgardskoRad(page).getByRole('link');
+    const kant = await rad.evaluate((el) => {
+      const s = getComputedStyle(el);
+      return { farg: s.borderTopColor, bredd: s.borderTopWidth, stil: s.borderTopStyle };
+    });
+    expect(kant.stil).toBe('solid');
+    expect(kant.bredd).toBe('1px');
+
+    const contrastToken = await page.evaluate(() => {
+      const probe = document.createElement('span');
+      probe.style.color = 'var(--mm-navcard-border-contrast)';
+      document.body.appendChild(probe);
+      const c = getComputedStyle(probe).color;
+      probe.remove();
+      return c;
+    });
+    expect(kant.farg).toBe(contrastToken);
+
+    const resultat = await new AxeBuilder({ page })
+      .withTags(WCAG_TAGGAR)
+      .include('[aria-label="Bevakningar"]')
+      .analyze();
+    expect(resultat.violations).toEqual([]);
   });
 });
