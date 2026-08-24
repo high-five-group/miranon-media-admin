@@ -3,10 +3,10 @@ id: TASK-285
 title: >-
   PRD: Notisfamiljen i drift — ett designspråk för alla meddelanden, från notis
   till appfel
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-21 10:45'
-updated_date: '2026-08-22 19:35'
+updated_date: '2026-08-24 13:59'
 labels: []
 dependencies: []
 ordinal: 515000
@@ -105,14 +105,14 @@ Nio skivor: referenser+flipp av notisen · chunk-bannerns flytt och kortning · 
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Facit-granskning gjord mot båda manifesten (s109-uppdateringsnotis-konvergens + s109-meddelandefamiljen-konvergens) med sökvägarna utskrivna i PR:en — aldrig mot minne eller bildkatalog
-- [ ] #6 ariaSnapshot-paret grönt för varje promoverad yta (variant före == promoverad efter), ADR-103 B4
-- [ ] #7 Test-konsument-svepets träffyta bilagd (grep-svep över testfiler som konsumerar ytan) och alla träffar uppdaterade i samma skiva som sin flip
-- [ ] #8 Inga nya design-tokens uppfunna; inga hårdkodade färger utanför appfel-sidan (vars inline-form är designvillkoret)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 Facit-granskning gjord mot båda manifesten (s109-uppdateringsnotis-konvergens + s109-meddelandefamiljen-konvergens) med sökvägarna utskrivna i PR:en — aldrig mot minne eller bildkatalog
+- [x] #6 ariaSnapshot-paret grönt för varje promoverad yta (variant före == promoverad efter), ADR-103 B4
+- [x] #7 Test-konsument-svepets träffyta bilagd (grep-svep över testfiler som konsumerar ytan) och alla träffar uppdaterade i samma skiva som sin flip
+- [x] #8 Inga nya design-tokens uppfunna; inga hårdkodade färger utanför appfel-sidan (vars inline-form är designvillkoret)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -136,4 +136,12 @@ VAD SOM ÅTERSTÅR: TASK-285.12 — QA: Notisfamiljen, manuell vandring genom al
 KORTET STÅR DÄRFÖR ÖPPET MED AVSIKT — INTE AV GLÖMSKA. Att sätta en PRD till Done medan dess QA-skiva är oöppnad är ett PÅSTÅENDE om att arbetet är verifierat i drift. Det påståendet är inte sant här. Arbetet är byggt, granskat av Marcus på FORMEN, och stämplat — men ingen har vandrat igenom det i ANVÄNDNING. För just denna familj är avståndet extra tydligt: axe-svep och kontrastmätningar (285.9) är mekaniska mätningar av en yta, inte en skärmläsarvandring genom ett verkligt meddelandeflöde. Prod-incidenten samma dag visade samma skillnad från andra hållet — allt grönt i repot medan Lotta såg 50 av 559 personer.
 
 Kortet stängs när QA-skivan antingen körts eller formellt avskrivits av Marcus som en egen, bokförd handling — inte som en sidoeffekt av att bygget blev klart.
+
+FÖRÄLDERFLIPP S112 STÄDVÅG A (2026-08-24, bokföringspass, ingen kod ändrad). Samtliga 12 icke-QA-skivor Done (285.1-285.11, 285.13), QA-skivan 285.12 stängd separat idag med Marcus verbatim-avskrivning. DoD #1 (PRD:t har inga egna AC — vakuöst uppfyllt) och #4 (path-scopad) checkade. DoD #2 checkat för denna bokföringscommit (backlog-endast). DoD #5-8 checkade mot TASK-285.11:s egna Done-DoD — IDENTISK ordalydelse för samtliga fyra punkter, redan bockade mot belägg där (facit-granskning mot båda s109-manifesten, ariaSnapshot-par grönt, test-konsument-svep bilagt, inga nya tokens/hårdkodade färger). DoD #3 lämnas OCHECKAD — opushad commit, orkestrerarens ansvar efter push.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Notisfamiljen i drift levererad: 285.1-285.11 + 285.13 (tolv bygg-/beslutsskivor) Done, sista låset (visual-baslinjer, PR #1811) satt 2026-08-22. Marcus har granskat formen och stämplat båda manifesten (s109-uppdateringsnotis-konvergens + s109-meddelandefamiljen-konvergens). QA (285.12) formellt avskriven av Marcus ('Nej inget Q&A, skit i det. Gör klart allt de andra.', 2026-08-22). Bokförd förälderflipp, S112 städvåg A.
+<!-- SECTION:FINAL_SUMMARY:END -->

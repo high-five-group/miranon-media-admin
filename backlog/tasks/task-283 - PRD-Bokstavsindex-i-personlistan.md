@@ -1,10 +1,10 @@
 ---
 id: TASK-283
 title: 'PRD: Bokstavsindex i personlistan'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-21 08:41'
-updated_date: '2026-08-22 19:35'
+updated_date: '2026-08-24 13:59'
 labels: []
 dependencies: []
 ordinal: 509000
@@ -126,14 +126,14 @@ Styrande i området, alla oförändrade av detta kort: **ADR-056** (cursor-pagin
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Facit-manifestet amenderat med Marcus citat FÖRE ARIA-referenserna regenereras (ADR-102 väg A, T157)
 - [ ] #6 EF deployad till staging FÖRE den landning som börjar skicka bokstavs-parametern (deploy-ordningen)
-- [ ] #7 Sentinelen undantagen ur E-filtret — bevisat med testfall, aldrig antaget (fälla 51)
-- [ ] #8 Varje bokstavsknapp minst 24x24 CSS-px — mätt i renderad yta, aldrig läst ur en klass (WCAG 2.5.8 AA)
+- [x] #7 Sentinelen undantagen ur E-filtret — bevisat med testfall, aldrig antaget (fälla 51)
+- [x] #8 Varje bokstavsknapp minst 24x24 CSS-px — mätt i renderad yta, aldrig läst ur en klass (WCAG 2.5.8 AA)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -154,6 +154,8 @@ VAD SOM ÅTERSTÅR: TASK-283.5 — QA: Bokstavsindex i personlistan, manuell van
 KORTET STÅR DÄRFÖR ÖPPET MED AVSIKT — INTE AV GLÖMSKA. Att sätta en PRD till Done medan dess QA-skiva är oöppnad är ett PÅSTÅENDE om att arbetet är verifierat i drift. Det påståendet är inte sant här. Arbetet är byggt, granskat av Marcus på FORMEN, och stämplat — men ingen har vandrat igenom det i ANVÄNDNING. Skillnaden mellan de två är inte teoretisk: prod-incidenten samma dag visade exakt den, där allt var grönt i repot medan Lotta såg 50 av 559 personer. Ett grönt repo är inte ett fungerande system.
 
 Kortet stängs när QA-skivan antingen körts eller formellt avskrivits av Marcus som en egen, bokförd handling — inte som en sidoeffekt av att bygget blev klart.
+
+FÖRÄLDERFLIPP S112 STÄDVÅG A (2026-08-24, bokföringspass, ingen kod ändrad). Samtliga 4 icke-QA-skivor Done (283.1 wontfix/väg B via ADR-123, 283.2/283.3/283.4 Done), QA-skivan 283.5 stängd separat idag med Marcus verbatim-avskrivning. DoD #1 (inga egna AC på PRD:t — 'No acceptance criteria defined', vakuöst uppfyllt) och #4 (path-scopad diff) checkade. DoD #2 checkat för denna bokföringscommit (backlog-endast, inga kodgrindar tillämpliga). DoD #3 lämnas OCHECKAD — opushad commit, orkestrerarens ansvar efter push. DoD #5 ('Facit-manifestet amenderat FÖRE ARIA-referenserna regenereras') lämnas OCHECKAD MED AVSIKT: TASK-283.4:s egna notes bevisar mekaniskt att bokstaven är STRUKTURELLT OMÖJLIG (ADR-102 § A1 klass (c) föreskriver att omstämplingen kommer SIST, i Marcus egen !-kanal, EFTER regenereringen — mätt: regenerering 16:37:05Z, omstämpling 17:06:22Z, 29 min senare) — samma 'formuleringsskuld, ärvd ordagrant från detta föräldrakort, inte en obetald punkt'-slutsats som 283.3/283.4 redan satte. DoD #6 ('EF deployad till staging FÖRE...') lämnas OCHECKAD MED AVSIKT: Marcus valde väg B 2026-08-21 (klientsidan, ADR-123, 'Då kör vi B!') — TASK-283.1 (serverside-EF-arbetet) gick wontfix, ingen bokstavs-parameter skickas någonsin till EF:en, kriteriet är därmed INAPPLICERBART efter pivoten, inte obetalt. DoD #7 (sentinel undantagen ur E, bevisat med testfall) och #8 (24x24 CSS-px, mätt i renderad yta) checkade mot 283.2:s egna Done-DoD (#6/#7 där, identisk formulering, redan bockade mot belägg).
 <!-- SECTION:NOTES:END -->
 
 ## Comments
@@ -164,3 +166,9 @@ created: 2026-08-21 11:34
 AMENDERING 2026-08-21 (S109, ADR-123 — väg B): Implementationsbeslutet 'Filtret byggs som ett tredje AND-villkor i Personer-EF:ens befintliga formel' UTGÅR. Marcus valde förladdat register med sök i klienten ('Då kör vi B!'); bokstavsfiltret och fördelningen blir en filter/reduce över den laddade arrayen (ADR-123 beslut 3), sorteringen svensk kollation i klienten (beslut 4) — vilket stänger fälla 51:s bläddrings-/filter-inkonsekvens som detta PRD bokförde som pris. Konsekvens: 283.1 utgår (wontfix), 283.2–283.4 byggs mot klientdata och blockeras av registerskivan i det nya PRD-kortet för personregistret. Användarberättelser, formkrav (raden byter aldrig längd, nedtoning bunden till hela registret, A–Ö-ordning, hinken för namnlösa) och facit-amenderingsvägen (väg A, T157) står oförändrade.
 ---
 <!-- COMMENTS:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Bokstavsindex i personlistan levererat: 283.1 (server-EF) gick wontfix efter Marcus väg B-beslut (ADR-123, klientsidan i stället), 283.2 (bokstavsraden), 283.3 (nedtoning) och 283.4 (facit-amenderingen, Marcus stämpel 'Ser ju skitbra ut!') Done. QA (283.5) formellt avskriven av Marcus ('Nej inget Q&A, skit i det. Gör klart allt de andra.', 2026-08-22). DoD #5/#6 lämnade obockade med avsikt — formuleringsskuld respektive pivot-inapplicerbarhet, se notes. Bokförd förälderflipp, S112 städvåg A.
+<!-- SECTION:FINAL_SUMMARY:END -->

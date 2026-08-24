@@ -3,10 +3,10 @@ id: TASK-197
 title: >-
   check-pausade-sessioner.sh falsklarmar: nåbarhetstest presenteras som
   kronologi — parallella PR:er före pausen flaggas som arbete efter paus
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-11 18:30'
-updated_date: '2026-08-11 19:09'
+updated_date: '2026-08-24 13:55'
 labels: []
 dependencies: []
 priority: high
@@ -21,10 +21,10 @@ Belägg (rödklassningen 2026-08-11, run 31454392944 job 93665096969): grinden f
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -81,4 +81,12 @@ gav noll träffar för filnamnet) — till skillnad från test-check-backlog-
 closure.sh och test-check-nattvakt-dedup.sh, vars grindar också kör i natten.
 Sviten (nu 19 fall) körs alltså bara lokalt/manuellt, aldrig av CI. Flaggas
 till orkestreraren för ett separat beslut.
+
+STÄNGD S112 STÄDVÅG A (2026-08-24, bokföringspass, ingen kod ändrad). Belägg verifierat mot disk: fixen (merge-base --is-ancestor-nåbarhetsgrind, SIDA 5) finns i scripts/check-pausade-sessioner.sh rad 238 och 287 (grep-bekräftat). Testsviten scripts/test-check-pausade-sessioner.sh kördes lokalt av mig: 19/19 gröna, exit 0. Fixen landade i PR #1170 (merge 43070f95, 2026-08-11T19:36:21Z), verifierad ancestor av origin/main (git merge-base --is-ancestor), samtliga checks SUCCESS/SKIPPED. Kortet saknar egna AC (No acceptance criteria defined) — inget att bocka där. DoD #1-4 bockade mot detta belägg.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Redan löst på disk sedan PR #1170 (2026-08-11) — falsklarmet (nåbarhetstest presenterat som kronologi) rättat med SIDA 5:s merge-base --is-ancestor-skopning. Kortet flippades aldrig till Done i backlog-CLI:t. Bokförd stängning, S112 städvåg A.
+<!-- SECTION:FINAL_SUMMARY:END -->
