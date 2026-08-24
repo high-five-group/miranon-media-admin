@@ -4,10 +4,11 @@ title: 'Facit-grindens markörlista: två döda markörer + personlistan saknar 
 status: Done
 assignee: []
 created_date: '2026-08-10 17:54'
-updated_date: '2026-08-24 14:44'
+updated_date: '2026-08-24 15:47'
 labels:
   - grind
   - facit
+  - intentionally-unchecked
 dependencies: []
 ordinal: 358000
 ---
@@ -53,4 +54,6 @@ STÄNGNING 2026-08-24 (S112 mandatpasset). Beslutat av Code på Marcus-mandat 20
 - AC#4 ('EXIT=0 med minst ett ogodkänt manifest, B3-spärren AKTIV') — idag ger check-facit.sh EXIT=0 med '0 ogodkända' (kört 2026-08-24) — INGET manifest har för närvarande godkand: null, så B3-spärren är strukturellt overifierbar just nu (inte trasig, bara utan aktivt objekt att skydda).
 
 Dagens mätvärden (S112 städvåg A-rapporten, verifierat självständigt 2026-08-24): samtliga FYRA aktiva markörer i FACIT_PROTO_MARKORER ger minst 1 träff i src/ — isHallplatsVariant (4), protoAktiv (6), 'Åtgärds-sidan UTAN event — tomt läge' (1), 'V1 Lugna morgonen (ro)' (1). Grinden är alltså frisk och skyddande idag; AC-bokstaven är bara inaktuell mot en fråga som redan avgjorts (personlistan godkänd).
+
+OBOCKAT MED AVSIKT: sakproblemet löst 2026-08-10; AC #2-#4:s bokstav matchar inte dagens disk (godkand-fält satt 2026-08-22) — avvikelsenot med mätvärden i notes ovan.
 <!-- SECTION:NOTES:END -->

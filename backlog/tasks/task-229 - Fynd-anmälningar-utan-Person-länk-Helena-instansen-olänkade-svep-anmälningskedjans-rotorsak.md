@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-08-15 22:59'
-updated_date: '2026-08-24 13:16'
+updated_date: '2026-08-24 15:45'
 labels:
   - ready-for-agent
 dependencies: []
@@ -241,4 +241,6 @@ i basen kräver Marcus uttryckliga GO per den vanliga prod-write-disciplinen.
 Se `docs/reference/data-model.md` §Kända fällor 21 (raden korrigerad
 2026-08-24, samma källa och samma dag) för den fullständiga mätta
 omfattningen (8/97 ≈ 8,2 % felrat i defekt-fönstret).
+
+S112 slutbatch: 229.1/229.2/229.3 alla Done (rotorsak fixad hela vägen till prod, 61 fällor desarmerade, Helenas historikpost backfillad recF10FuDa0NEKFEK). AC #1:s app-verifiering (historikraden syns i persondetaljen) är ett Marcus-vandringsmoment — kortet lämnas öppet tills den blicken; allt annat är klart.
 <!-- SECTION:NOTES:END -->

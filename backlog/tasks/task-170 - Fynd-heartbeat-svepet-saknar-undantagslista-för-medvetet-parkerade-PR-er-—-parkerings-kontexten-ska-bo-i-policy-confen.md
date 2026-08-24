@@ -6,9 +6,10 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-09 07:53'
-updated_date: '2026-08-24 14:42'
+updated_date: '2026-08-24 15:47'
 labels:
   - ready-for-agent
+  - intentionally-unchecked
 dependencies: []
 ordinal: 313000
 ---
@@ -38,4 +39,6 @@ Ur S100:s bo vid stängningen (sessionsdok S100 § PAUSLÄGE fjärde pausen, 'kv
 
 <!-- SECTION:NOTES:BEGIN -->
 STÄNGNING 2026-08-24 (S112 mandatpasset). Beslutat av Code på Marcus-mandat 2026-08-24 (GO i klartext), S112. AC#1 bockad — löst FÖRE detta kort: HEARTBEAT_EXEMPT_AUTHORS=("dependabot") finns i .heartbeat-svep-policy.conf, och scripts/heartbeat-svep.sh rad 226 (default-deklaration) + rad 244-253 (is_exempt_author) läser den — inga hårdkodade författare/nummer i skriptet. Verifierat på disk 2026-08-24. AC#2 AVVISAT som krav: .heartbeat-svep-policy.conf § GRÄNS dokumenterar en MEDVETEN designgräns — 'undantaget gäller ENDAST armerings-kandidat-vägen. En Dependabot-PR som genuint går RÖD (trasig CI) eller DIRTY (konflikt) larmar OFÖRÄNDRAT — författar-undantaget tystar bara "ingen aktiv auto-merge-begäran", aldrig ett verkligt trädfel.' Att bygga AC#2 (filtrera även DIRTY-larmen) hade motsagt denna dokumenterade, avsiktliga design om att rött aldrig ska tystas. AC#3 lämnas OBOCKAD trots existerande stödjande evidens: scripts/test-heartbeat-svep.sh T25/T25b/T25c/T26 visar exakt det tvåsidiga beviset (undantagen PR ger PARKERAD-rutinrad, icke-undantagen identisk PR-form larmar ARMERINGS-KANDIDAT fortfarande) — körd 2026-08-24, 36 passerade / 0 failade, EXIT=0. Lämnas obockad eftersom mandatet inte uttryckligen instruerade stängning av just den punkten (endast AC#1/#2 nämnda); bokfört här som verifierat bifynd, inte som en bockad AC.
+
+OBOCKAT MED AVSIKT: AC #2:s krav AVVISAT (strider mot heartbeat-policyns § GRÄNS medvetna design — rött tystas aldrig); AC #3 obockad då mandatet inte täckte den. Stängd som löst 2026-08-24.
 <!-- SECTION:NOTES:END -->

@@ -1,10 +1,10 @@
 ---
 id: TASK-229.3
 title: 'A2 Gren 1-fixen: prod-utrullning (efter staging-bevis)'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-24 13:36'
-updated_date: '2026-08-24 15:23'
+updated_date: '2026-08-24 15:44'
 labels:
   - ready-for-human
 dependencies: []
@@ -28,10 +28,10 @@ Samma ändring som 229.1, utförd i PROD-basens A2 (app8uGPrVCVOm6LfD, wflRPMp5Q
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -103,4 +103,6 @@ Steg 1 (mailrisk-sparr): samtliga 12 Airtable-automationer i prod listade + last
 Steg 2 (skarpt bevis): Personer recelNZc1Rze6MYMK (enbart E-post zz-task2293-namnlos@example.com) + Anmalningar recupmiKjINEKuRxX (samma e-post, Fornamn=ZzBevis2293/Efternamn=Gren1ProdTest) skapade. A2 korde inom sekunder: Personens namn ifyllt, Anmalningar.Person -> recelNZc1Rze6MYMK, Touchpoint recyGNVi4vBwXK0uy skapad (Typ=Inskickad anmalan). A12 satte samtidigt Inskickad. Eventmatchning=Utan event (designat, A1 hittade ingen match). Motprov EJ kord i prod (Gren 2 strukturellt orord + staging-motprov fran 229.1 samma dag star). Sidoeffekt-sokning (Deltaganden, Error-log): noll traffar. STADAT: alla tre poster raderade, efterkontroll zz-task2293/Gren1ProdTest gav noll traffar i Personer/Anmalningar/Touchpoints/Deltaganden/Error-log.
 
 Steg 3 (bokforing): data-model.md falla 21 amenderad med ny STANGD-not (datum, node-ID:n, bevis, stadverifiering). docs/backfill/execute-log.md fick ny sektion 2026-08-24 -- A2 Gren 1-fixens skarpa prod-bevis (sjunde skarpa prod-aktiviteten i loggen) med fullstandig testpost-cykel. AC #1 (229.1 AC#4 gron FORE prodsteg) verifierad -- 229.1-kortet visar samtliga 5 AC ikryssade. AC #2-#4 avbockade via CLI. Full nodstruktur, faltkontrakt och prod-spec: docs/reference/automation-scripts/a2-gren1-person-lank-och-touchpoint.md. Modell-identitet ur egen transcript: You are powered by the model named Sonnet 5. The exact model ID is claude-sonnet-5.
+
+Done-flipp S112: PR #1923+#1933 landade, post-merge grönt; prod-deploy verifierad + skarpt bevis med nollstädning 2026-08-24. Landning: PR #1933
 <!-- SECTION:NOTES:END -->

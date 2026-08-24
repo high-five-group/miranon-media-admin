@@ -4,10 +4,11 @@ title: 'PRD: Eventsidan till S73-facit'
 status: Done
 assignee: []
 created_date: '2026-07-21 07:56'
-updated_date: '2026-08-24 14:40'
+updated_date: '2026-08-24 15:46'
 labels:
   - ready-for-human
   - wontfix
+  - intentionally-unchecked
 dependencies: []
 ordinal: 40000
 ---
@@ -128,6 +129,8 @@ ADR-055/057 (router-context-DI + lager-oberoende) · ADR-016 (optimistiska mutat
 
 <!-- SECTION:NOTES:BEGIN -->
 Beslutat av Code på Marcus-mandat 2026-08-24 (GO i klartext), S112. Motiv: superseded av S93-facit-familjen (TASK-145/146/147), se WONTFIX-kommentaren för belägg. Divergens noterad öppet (ADR-086): mandatets premiss för TASK-18 (till skillnad från TASK-18.20) saknar en lika explicit citation — beläggkedjan för föräldra-PRD:t är indirekt (18/19 barnkort Done + S93-grillningens dokumenterade arkitekturbyte), inte en enskild rad som citerar 'ersätter task-18'. Prövad och hållande, men källmärkt svagare än 18.20:s belägg.
+
+OBOCKAT MED AVSIKT: kortet förkastat (wontfix, Marcus-mandat 2026-08-24) — superseded av S93-facit-familjen; AC/DoD avser arbete som aldrig ska utföras.
 <!-- SECTION:NOTES:END -->
 
 ## Comments

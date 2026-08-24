@@ -3,10 +3,10 @@ id: TASK-281
 title: >-
   DoD-bockningen har ingen ägare — bygg-agenten kan inte se CI, stängningen
   bockar inget
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-20 08:05'
-updated_date: '2026-08-24 15:02'
+updated_date: '2026-08-24 15:44'
 labels:
   - ready-for-agent
 dependencies: []
@@ -49,7 +49,7 @@ AVGRÄNSNING: detta kort löser MEKANISMEN. Den historiska skulden (de 15 korten
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
@@ -74,3 +74,9 @@ STÄNGNINGEN AV DETTA KORT SKA BÄRA "Landning: PR #<nr>" i sin Final Summary. D
 
 KONKRETISERING (efter PR-skapandet): detta korts landning är PR #1930, gren feat/task-281-ci-grondhet-harleds-ur-landningen, leverans-commit a37813a0. Stängningens Final Summary ska alltså innehålla raden "Landning: PR #1930". Använd --append-final-summary om slutraden redan skrivits — --final-summary ERSÄTTER och skulle radera pekaren.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landning: PR #1930 · post-merge grönt på main 2026-08-24 (S112 slutbatch) — första kortet stängt under den egna nya formen
+<!-- SECTION:FINAL_SUMMARY:END -->

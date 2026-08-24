@@ -1,10 +1,10 @@
 ---
 id: TASK-243.5
 title: 'Skiva: Prototyp-rivningen — dev-substratet bort efter stämpeln'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-16 14:39'
-updated_date: '2026-08-24 14:46'
+updated_date: '2026-08-24 15:44'
 labels:
   - ready-for-agent
 dependencies:
@@ -30,10 +30,10 @@ Prototyp-substratet har gjort sitt jobb när stämpeln sitter: dev-routen med va
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -89,4 +89,6 @@ RIVET (git rm, 8 filer): src/routes/dev/hem-prototyp.tsx, src/components/dev/hem
 GRINDAR (alla i förgrunden, exitkod läst separat från fil, ingen pipe): check-facit.sh exit 0 · typecheck (tsr generate && tsc -b) exit 0 · biome check exit 0 (9 warnings/61 infos, samtliga pre-existing i orörda filer) · check-langa-streck.mjs exit 0 (260 filer, 0 ofångade) · build exit 0, grep -rn hem-prototyp dist/ exit 1 (0 träffar) · test:api exit 0 (1164 passed).
 
 AC #3 / task-226: redan Status Done sedan 2026-08-20 (ej gjort av detta pass, bekräftat via task 226 --plain) — bockas som uppfyllt i sak. Bifynd bokfört: task-243.5:s Dependencies-kort (TASK-243.4, TASK-241.7) står båda kvar "To Do" som backlog-status trots att deras respektive mekaniska gates (facit-manifestets "godkand", PR #1912 mergad) är uppfyllda — konsekvent med att Done-flippen ägs av orkestreraren efter CI, inte av bygg-agenten. Ingen åtgärd vidtagen på dessa kort.
+
+Done-flipp S112: PR #1925 landad, post-merge grönt. Landning: PR #1925
 <!-- SECTION:NOTES:END -->
