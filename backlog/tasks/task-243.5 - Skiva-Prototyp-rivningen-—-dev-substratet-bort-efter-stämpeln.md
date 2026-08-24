@@ -4,7 +4,7 @@ title: 'Skiva: Prototyp-rivningen — dev-substratet bort efter stämpeln'
 status: To Do
 assignee: []
 created_date: '2026-08-16 14:39'
-updated_date: '2026-08-17 09:58'
+updated_date: '2026-08-24 14:12'
 labels:
   - ready-for-agent
 dependencies:
@@ -77,4 +77,6 @@ AC-STATUS VID PASSETS SLUT — inget kriterium bockat:
   #4 EJ TILLÄMPLIG — ingen diff.
 
 GRINDUTFALL I PASSET: bash scripts/check-facit.sh exit 0 (baseline, oförändrat träd). npm run typecheck exit 0 (oförändrat träd, efter probe-återställning). npm run typecheck exit 1 (probe, avsiktligt — beviset ovan). Övriga DoD-grindar ej körda: ingen fil ändrad, ingenting att verifiera.
+
+PREMISS-PASS 2026-08-24 (S112 fix-våg 1, modell Sonnet 5). Uppdragets kärnpåstående — att svep-routens import mot hem-prototyp-katalogen är HÄVD via PR #1912 (TASK-241.7) — prövat mot faktiskt tillstånd och FALSIFIERAT som fakta-om-main, om än korrekt som fakta-om-en-öppen-PR. git fetch + grep bekräftar: src/routes/dev/svep-prototyp.tsx finns fortfarande i origin/main (6d62c0ce, fetchad 2026-08-24T14:0x UTC) och importerar fortsatt @/components/dev/hem-prototyp/demoData (rad 6) + .../VariantRo (rad 7) — inga docblock-kommentarer, äkta ES-imports. PR #1912 (feat(TASK-241.7): riv svep-prototypens substrat efter QA-godkännande, gren feat/task-241-7-svep-substrat-prototypriving) river faktiskt exakt dessa filer (diff-stat mot origin/main: 8 filer, -1081/+37, inklusive hela src/components/dev/svep-prototyp/ + src/routes/dev/svep-prototyp.tsx) men var vid mätningen OPEN, mergeStateStatus BLOCKED, mergedAt null — INTE landad i main. autoMergeRequest ÄR satt (enabledBy marcus803, 2026-08-24T14:05:46Z) — armerad, väntar på att Acceptance-jobben (IN_PROGRESS vid mätningen) blir gröna och kön processar den. TASK-241.7 (243.5:s eget Dependencies-fält) står fortsatt To Do. Blockeringen är alltså IDENTISK med 2026-08-17-passets fynd (samma två TS2307-rader), omprövad och bekräftad ännu kvarstående 2026-08-24. Ingen kod ändrad; inget vägval fattat — path (a) var redan vald och är under exekvering via PR #1912, path (b)/(c)/(d) därmed ej aktuella. Bifynd: task-226 är sedan 2026-08-20 redan Status Done (ej gjort av detta pass) — löser AC #3:s sakinnehåll, om än inte bokstavligen 'i samma landning' som kriterietexten kräver; ingen vidare åtgärd bedöms nödvändig där. REKOMMENDATION: re-dispatch detta kort så snart PR #1912 landat i main (gh pr view 1912 --json mergedAt) — rivningen blir då mekanisk enligt 241.7-mönstret, exakt som uppdraget förutsåg.
 <!-- SECTION:NOTES:END -->
