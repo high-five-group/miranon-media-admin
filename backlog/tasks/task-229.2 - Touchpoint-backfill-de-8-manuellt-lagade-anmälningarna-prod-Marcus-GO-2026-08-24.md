@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-24 13:36'
+updated_date: '2026-08-24 13:46'
 labels:
   - ready-for-agent
 dependencies: []
@@ -21,10 +22,10 @@ De 8 anmälningar som Person-länk-lagades via manuell PATCH (2026-08-15) fick a
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Dedup-kontroll körd per post omedelbart före createRecord (Typ='Inskickad anmälan' inom ±5 min av måldatum → hoppa över)
-- [ ] #2 8 touchpoints skapade i prod (tbl22SCvlHrgcAiZi) med exakt tre fält: Person-länk, Typ=Inskickad anmälan, Datum=anmälans Inskickad-tidsstämpel
-- [ ] #3 Read-back per post: personens Touchpoints-array vuxit med exakt 1; slutsvep ger 15 poster (7 befintliga + 8 nya) med utredningens datumfilter
-- [ ] #4 Backfillen bokförd som ny post i docs/backfill/execute-log.md (spårbarhet — Touchpoints saknar fritextfält)
+- [x] #1 Dedup-kontroll körd per post omedelbart före createRecord (Typ='Inskickad anmälan' inom ±5 min av måldatum → hoppa över)
+- [x] #2 8 touchpoints skapade i prod (tbl22SCvlHrgcAiZi) med exakt tre fält: Person-länk, Typ=Inskickad anmälan, Datum=anmälans Inskickad-tidsstämpel
+- [x] #3 Read-back per post: personens Touchpoints-array vuxit med exakt 1; slutsvep ger 15 poster (7 befintliga + 8 nya) med utredningens datumfilter
+- [x] #4 Backfillen bokförd som ny post i docs/backfill/execute-log.md (spårbarhet — Touchpoints saknar fritextfält)
 <!-- AC:END -->
 
 ## Definition of Done
