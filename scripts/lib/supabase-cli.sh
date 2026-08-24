@@ -103,13 +103,49 @@
 #   TTY-läge.
 
 SUPABASE_CLI_POLICY_FILE="${SUPABASE_CLI_POLICY_FILE:-.supabase-cli-policy.conf}"
-SUPABASE_CLI_VERSION="${SUPABASE_CLI_VERSION:-}"
 
-# _supabase_cli_load_policy — lazy, memoized. Fail-closed: saknad policyfil
-# eller saknad SUPABASE_CLI_VERSION i den är ett HÅRT fel (returnerar 1 med
-# ett läsbart skäl på stderr), aldrig en tyst gissning.
+# SUPABASE_CLI_VERSION ÄRVS ALDRIG UR MILJÖN — MEDVETET, INTE ETT UTELÄMNAT
+# `:-`. En tidigare version av denna fil skrev
+# `SUPABASE_CLI_VERSION="${SUPABASE_CLI_VERSION:-}"`, vilket lät en AMBIENT
+# miljövariabel med samma namn (t.ex. läckt in via en CI-secret, ett `export`
+# tidigare i skalet, eller bara en operatörs egen terminal-historik) tysta
+# kortsluta HELA policyn: `_supabase_cli_load_policy`s memo-check
+# (`[[ -n "${SUPABASE_CLI_VERSION}" ]] && return 0`) såg variabeln redan satt
+# och LÄSTE ALDRIG FILEN — guarden "verifierade" precis den version den
+# finns för att göra omöjlig (S108-orkestrerarfynd, 2026-08-24, PR #1915
+# review). Se scripts/test-supabase-cli-policy.sh T9 för det skarpa beviset:
+# `SUPABASE_CLI_VERSION=2.75.0` i miljön fick guarden att be npx om exakt den
+# CLI-versionen som fällde prod-deployen, trots att policyfilen sa 2.115.0.
+#
+# Fixen är att INITIALVÄRDET alltid är tomt, oavsett vad miljön säger — och
+# att memo-flaggan nedan (_SUPABASE_CLI_POLICY_LOADED) är en SEPARAT,
+# privat variabel som bara VI sätter efter en lyckad filinläsning, i stället
+# för att (åter-)använda SUPABASE_CLI_VERSION:s eget "är den satt?"-tillstånd
+# som memo-signal. De två informationerna — "har vi laddat policyn?" och
+# "vilket värde har CLI-versionen?" — konflaterades tidigare i samma
+# variabel, och det VAR sömmen.
+#
+# INGET MEDVETET NÖDLÄGES-OVERRIDE FINNS. Övervägt och avvisat: ett eget,
+# otvetydigt namngivet override (t.ex. SUPABASE_CLI_VERSION_OVERRIDE) med en
+# högljudd varning i utskriften hade varit ett giltigt svar, men den enda
+# kända legitima anledningen att avvika från policyfilen — testisolering —
+# täcks redan fullt ut av SUPABASE_CLI_POLICY_FILE (peka om HELA filen, inte
+# bara värdet). Ett andra, värde-nivå-override hade återinfört exakt den
+# klass av seam som just stängdes, för ett behov som redan har en lösning.
+SUPABASE_CLI_VERSION=""
+_SUPABASE_CLI_POLICY_LOADED=""
+
+# _supabase_cli_load_policy — lazy, memoized PÅ EN PRIVAT FLAGGA (inte på
+# SUPABASE_CLI_VERSION:s eget tillstånd, se ovan). Fail-closed: saknad
+# policyfil eller saknad SUPABASE_CLI_VERSION i den är ett HÅRT fel
+# (returnerar 1 med ett läsbart skäl på stderr), aldrig en tyst gissning —
+# och SUPABASE_CLI_VERSION nollställs INNAN filen läses, så en ambient
+# variabel (satt före ELLER efter att denna fil sourcades, se § ovan) aldrig
+# kan överleva som ett gammalt, oläst värde.
 _supabase_cli_load_policy() {
-    [[ -n "${SUPABASE_CLI_VERSION}" ]] && return 0
+    [[ -n "${_SUPABASE_CLI_POLICY_LOADED}" ]] && return 0
+
+    SUPABASE_CLI_VERSION=""
 
     if [[ ! -f "${SUPABASE_CLI_POLICY_FILE}" ]]; then
         echo "❌ Supabase CLI-policyn saknas: ${SUPABASE_CLI_POLICY_FILE} (fail-closed — vägrar gissa CLI-version)." >&2
@@ -126,6 +162,8 @@ _supabase_cli_load_policy() {
         echo "❌ ${SUPABASE_CLI_POLICY_FILE} saknar SUPABASE_CLI_VERSION (fail-closed — vägrar gissa CLI-version)." >&2
         return 1
     fi
+
+    _SUPABASE_CLI_POLICY_LOADED="1"
     return 0
 }
 

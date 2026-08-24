@@ -22,6 +22,15 @@
 #   T8  repots RIKTIGA .supabase-cli-policy.conf är läsbar och laddar ett
 #       icke-tomt SUPABASE_CLI_VERSION (sanity mot faktisk fil, inte bara
 #       fixturer)
+#   T9  AMBIENT SUPABASE_CLI_VERSION i miljön kan INTE kortsluta policyn —
+#       guarden använder FILENS värde, aldrig miljöns, och framgångsraden
+#       namnger aldrig ett värde den inte faktiskt läste ur filen (orkestrerar-
+#       fynd, 2026-08-24: `SUPABASE_CLI_VERSION="${SUPABASE_CLI_VERSION:-}"` +
+#       den tidiga memo-checken i _supabase_cli_load_policy lät en ambient
+#       env-var kortsluta policyn helt — guarden "verifierade" 2.75.0, exakt
+#       versionen den finns för att göra omöjlig). Körs UTAN kor_isolerat()
+#       (som själv nollställer SUPABASE_CLI_VERSION) — annars testar vi
+#       harnessets försvar, inte bibliotekets.
 #
 # OFFLINE: stubbar `npx` på PATH (prependad temp-bin-katalog). Ingen
 # nätverkstrafik, ingen riktig Supabase-åtkomst, ingen prod-ref i
@@ -96,15 +105,35 @@ check_contains() {
     return 1
 }
 
+check_absent() {
+    local label="$1" needle="$2" hay="$3"
+    if [[ "${hay}" != *"${needle}"* ]]; then
+        echo "  ✅ ${label} korrekt frånvarande: '${needle}'"
+        PASSED=$((PASSED + 1))
+        return 0
+    fi
+    echo "  ❌ ${label} SKA INTE innehålla: '${needle}'"
+    echo "     fick: ${hay}"
+    FAILED=$((FAILED + 1))
+    return 1
+}
+
 # Kör en isolerad sub-shell: källar libbet med given SUPABASE_CLI_POLICY_FILE
 # och given STUB_NPX_*-miljö, kör given funktion, ekar utfall+exitkod.
+#
+# INGEN SUPABASE_CLI_VERSION-nollställning här längre (fanns tidigare) —
+# biblioteket självt nollställer den ovillkorligt vid varje source (se
+# scripts/lib/supabase-cli.sh, fixad efter T9 nedan). Att testharnesset
+# behövde städa undan en ambient miljövariabel INNAN varje isolerad körning
+# VAR sömmen sedd inifrån: T9 bevisar nu att biblioteket försvarar sig utan
+# den hjälpen, så en extra reset här hade bara dolt regressionen bakom en
+# egen skyddsmekanism i stället för att låta den fällas.
 kor_isolerat() {
     local policy_file="$1" fn="$2"
     shift 2
     (
         SUPABASE_CLI_POLICY_FILE="${policy_file}"
-        SUPABASE_CLI_VERSION=""
-        export SUPABASE_CLI_POLICY_FILE SUPABASE_CLI_VERSION
+        export SUPABASE_CLI_POLICY_FILE
         # shellcheck source=/dev/null
         source "${LIB}"
         "${fn}" "$@"
@@ -219,6 +248,27 @@ else
     echo "  ❌ T8: ${RIKTIG_POLICY} saknas helt — kan inte köra sanity-checken"
     FAILED=$((FAILED + 1))
 fi
+
+# ══════════════════════════════════════════════════════════════════════════
+echo "─── T9: ambient SUPABASE_CLI_VERSION i miljön får INTE kortsluta policyn ───"
+# MEDVETET INTE kor_isolerat() — den funktionen nollställer själv
+# SUPABASE_CLI_VERSION innan den sourcar libbet (försvar i TESTHARNESSET).
+# Det här fallet ska bevisa att BIBLIOTEKET SJÄLVT försvarar sig även utan
+# den hjälpen — annars mäter vi bara att vår egen städning fungerar.
+: > "${NPX_LOG}"
+UT="$(
+    SUPABASE_CLI_POLICY_FILE="${TEST_DIR}/ratt.conf" \
+    SUPABASE_CLI_VERSION="2.75.0" \
+    STUB_NPX_VERSION="2.115.0" \
+    bash -c 'source "$1"; supabase_cli_guard' _ "${LIB}" 2>&1
+)"
+EC=$?
+check "T9 exit (policyns version verifierad, trots avvikande ambient värde)" 0 "${EC}"
+check_contains "T9 bekräftelsen namnger FILENS version" "verifierad: 2.115.0" "${UT}"
+check_absent "T9 miljöns avvikande värde syns INTE i bekräftelsen" "2.75.0" "${UT}"
+LOGGAT="$(cat "${NPX_LOG}")"
+check_contains "T9 npx anropades med FILENS pinnade paketspec" "supabase@2.115.0" "${LOGGAT}"
+check_absent "T9 npx anropades ALDRIG med miljöns avvikande paketspec" "supabase@2.75.0" "${LOGGAT}"
 
 echo ""
 TOTAL=$((PASSED + FAILED))
