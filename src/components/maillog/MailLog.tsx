@@ -46,7 +46,7 @@ function Field({ term, value }: { term: string; value: string | null }) {
  * raden samlad över sidbrytning vid utskrift (§4 print-golv — minst läsbar utskrift). */
 function MailLogRow({ entry }: { entry: MailLogEntry }) {
   return (
-    <li className="flex break-inside-avoid flex-col gap-1 border-text-muted/20 border-b pb-3">
+    <li className="flex break-inside-avoid flex-col gap-1 border-text-muted/20 border-b pb-3 contrast-more:border-border-strong">
       <span className="font-medium">{displayName(entry)}</span>
       <dl className="flex flex-col gap-0.5 text-small">
         <Field term="Skickat" value={skickatDatum(entry)} />
