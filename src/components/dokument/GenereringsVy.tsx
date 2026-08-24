@@ -55,7 +55,7 @@
  * PDF hade skapats.
  */
 
-import { ChevronLeft, ChevronRight, ExternalLink, FileText, Loader2, Pencil } from 'lucide-react';
+import { ChevronRight, ExternalLink, FileText, Loader2, Pencil } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 import {
   type AgendaRad,
@@ -80,6 +80,8 @@ import { Button } from '@/components/primitives/Button';
 import { Input } from '@/components/primitives/Input';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Modal } from '@/components/primitives/Modal';
+import { SidRamKnapp } from '@/components/primitives/SidRam';
+import { Skeleton } from '@/components/primitives/Skeleton';
 import { useForhandsgranskaBilaga } from '@/data/mutations/useForhandsgranskaBilaga';
 import { useGenereraEventBilaga } from '@/data/mutations/useGenereraEventBilaga';
 import { useSaveEventText } from '@/data/mutations/useSaveEventText';
@@ -291,32 +293,18 @@ function meningsStart(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-/**
- * Husets sidkrom-knapp — EXAKT `DokumentYta`s klasser (dess `SidRam`-primitiv
- * bär motsvarande form för `/mer`-navigeringen; denna knapp går i stället
- * TILLBAKA I SAMMA YTA, till dokumentlistan, så den kan inte återanvända
- * `SidRam`). Knappen är en rå `<button>` med samma klasser, inte
- * `Button`-primitiven: dess egna `min-h`/`px`/`gap` hade ändrat storleken
- * (Marcus 2026-08-21: "fel storlek").
+/* `KromKnapp` bodde här — RIVEN i TASK-322.
  *
- * [FÖRENKLAD, TASK-309.8] Bar tidigare en andra gren utan `onPress` (en
- * `<Link to="/mer">`) — prototypens rivna `ListaVy` var den enda anroparen.
- * `GenereringsVy` skickar alltid `onTillbaka`, så grenen är borttagen i
- * stället för lämnad död; det renderade resultatet för kvarvarande
- * anrop är oförändrat (samma klasser, samma ikon).
+ * Den var en rå `<button>` vars docblock påstod "EXAKT `DokumentYta`s
+ * klasser". Sant när den skrevs; falskt från 2026-08-23, då sidkromets
+ * topp-luft (`mt-2 lg:mt-10`) lades till i `SidRam` men inte i kopian här.
+ * Marcus såg driften i granskningen 2026-08-24 — chevronen satt för högt —
+ * och avvisade lapp-vägen (*"INGET lappande"*). Geometrin bor nu i
+ * `SidRam.tsx` § `CHEVRON_KLASS`, delad av länk- och knapp-grenen, och denna
+ * yta använder `SidRamKnapp`. Bygg inte tillbaka en lokal kopia: det var
+ * precis den formen `ADR-126` samlade bort, och den enda av de sju
+ * instanserna som hann glida isär innan den lyftes.
  */
-function KromKnapp({ onPress, label }: { onPress: () => void; label: string }) {
-  return (
-    <button
-      type="button"
-      aria-label={label}
-      className="flex size-11 shrink-0 items-center justify-center self-start rounded-full bg-bg-muted"
-      onClick={onPress}
-    >
-      <ChevronLeft aria-hidden="true" size={26} />
-    </button>
-  );
-}
 
 /* ------------------------------------------------------------------ *
  * GENERERINGSVYN — det nya mellanledet
@@ -737,17 +725,59 @@ export function GenereringsVy({
   };
 
   if (sourcesQuery.isPending) {
+    /* LADDLÄGET SPEGLAR VYNS EGEN FORM — husets mönster, inte en textrad.
+     *
+     * Här stod `<p>Hämtar underlag …</p>`. Marcus 2026-08-24: *"det ser inte
+     * så snyggt ut"*. Två saker var fel, och bara den ena syntes:
+     *
+     *   1. FORMEN. Syskonytorna i samma spår (`PlatserYta`, `EventinnehallYta`)
+     *      kör redan husets skelett-mönster. En textrad som byts mot ett
+     *      fullt gruppkort får dessutom layouten att hoppa vid datalandning —
+     *      skelettets hela poäng är att reservera ytan i förväg, så måtten
+     *      nedan speglar den riktiga vyn (rubrik + metarad, sedan två
+     *      gruppkort med `KORT_KLASS` och radhöjd `3lh` ≈ blockradens 72 px).
+     *
+     *   2. TILLGÄNGLIGHETEN, som ingen såg. `<p>` bär varken `role="status"`
+     *      eller `aria-live`, så en skärmläsare fick INGEN avisering om att
+     *      något laddades — vyn var bara tyst tills innehållet dök upp.
+     *      Ribban är 11 utan undantag; `sr-only`-texten är det som faktiskt
+     *      annonseras, `Skeleton` självt är `aria-hidden`.
+     */
     return (
-      <div className="flex flex-col gap-4" data-testid="generering-vy">
-        <KromKnapp label="Tillbaka till Dokument" onPress={onTillbaka} />
-        <p className="text-body text-text-muted">Hämtar underlag …</p>
+      <div className="flex flex-col gap-6" data-testid="generering-vy">
+        <div className="flex flex-col gap-4">
+          <SidRamKnapp tillbakaEtikett="Tillbaka till Dokument" onTillbaka={onTillbaka} />
+          <div role="status" aria-live="polite" aria-busy="true" className="flex flex-col gap-1">
+            <span className="sr-only">Hämtar underlag …</span>
+            <span className="font-semibold text-3xl">
+              <Skeleton variant="text" className="w-3/5" />
+            </span>
+            <span className="text-small">
+              <Skeleton variant="text" className="w-2/5" />
+            </span>
+          </div>
+        </div>
+        {[0, 1].map((i) => (
+          <div key={i} className="flex flex-col gap-2">
+            <span className="px-4 text-small">
+              <Skeleton variant="text" className="w-1/4" />
+            </span>
+            <div className={KORT_KLASS}>
+              {[0, 1, 2].map((j) => (
+                <div key={j} className="py-3">
+                  <Skeleton variant="listRow" />
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     );
   }
   if (!sources) {
     return (
       <div className="flex flex-col gap-4" data-testid="generering-vy">
-        <KromKnapp label="Tillbaka till Dokument" onPress={onTillbaka} />
+        <SidRamKnapp tillbakaEtikett="Tillbaka till Dokument" onTillbaka={onTillbaka} />
         <MessageBox intent="error">
           {sourcesQuery.error instanceof Error
             ? sourcesQuery.error.message
@@ -760,7 +790,7 @@ export function GenereringsVy({
   return (
     <div className="flex flex-col gap-6" data-testid="generering-vy">
       <div className="flex flex-col gap-4">
-        <KromKnapp label="Tillbaka till Dokument" onPress={onTillbaka} />
+        <SidRamKnapp tillbakaEtikett="Tillbaka till Dokument" onTillbaka={onTillbaka} />
         <header className="flex flex-col gap-1">
           <h1 className="font-semibold text-3xl">{meta.namn}</h1>
           <p className="text-small text-text-secondary">

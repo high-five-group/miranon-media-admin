@@ -1138,7 +1138,7 @@ function MallRad({ mall }: { mall: Mall }) {
   const [, setVy] = useQueryState('vy');
   const [, setMall] = useQueryState('mall');
   return (
-    <div data-testid="dokument-mall" className="flex items-start gap-3 py-3">
+    <div data-testid="dokument-mall" className="flex items-center gap-3 py-3">
       <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
         <span className="w-full min-w-0 truncate font-medium text-body" title={mall.namn}>
           {mall.namn}
@@ -1173,7 +1173,7 @@ function MallRad({ mall }: { mall: Mall }) {
 /** Samma `relative`-krav som `MallRad` ovan — se dess docblock. */
 function GeneratorRad({ gen, eventId }: { gen: Generator; eventId: string }) {
   return (
-    <div data-testid="dokument-generator" className="flex items-start gap-3 py-3">
+    <div data-testid="dokument-generator" className="flex items-center gap-3 py-3">
       <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
         <span className="w-full min-w-0 truncate font-medium text-body" title={gen.namn}>
           {gen.namn}
@@ -1294,6 +1294,22 @@ function DokumentLista({
   const totaltAntal = rader.length + MALLAR.length + GENERATORER.length;
   const kanRulla = antalSynliga > LISTA_SYNLIGA_RADER;
   const lasHojd = totaltAntal > LISTA_SYNLIGA_RADER;
+  // `avslutaLista` — bär SISTA raden en egen underkant?
+  //
+  // `divide-y` ritar linjer MELLAN rader, aldrig under den sista. Det är rätt
+  // när listan är exakt full: fjärde radens underkant sammanfaller då med
+  // ytans egen kant, och `LISTA_MAXHOJD` är mätt för att klippa "exakt precis
+  // över separatorn" (se dess docblock). Är listan KORTARE slutar den i
+  // stället naket mitt i kortet — Marcus 2026-08-24: *"om det bara är två
+  // rader så ser det dumt ut att den nedersta raden (dokumentet) inte har en
+  // separatorlinje nedtill."* Är den LÄNGRE ligger sista raden bortom den
+  // låsta höjden, och den som rullar dit ska mötas av en avslutad lista, inte
+  // en avskuren.
+  //
+  // Villkoret är därför OLIKHET mot golvet, inte "mindre än": exakt fyra rader
+  // är det enda läget där ytans kant redan gör separatorns jobb. Noll rader
+  // renderar tom-raden, som aldrig ska bära linje.
+  const avslutaLista = antalSynliga > 0 && antalSynliga !== LISTA_SYNLIGA_RADER;
 
   return (
     // ═══ UPPLADDNINGEN FÖRST, LISTAN SEDAN (Marcus 2026-08-17) ═══
@@ -1416,7 +1432,7 @@ function DokumentLista({
               lasHojd
                 ? `focus-ring-inset scrollbar-inline h-[396px] ${LISTA_MAXHOJD} overflow-y-auto`
                 : ''
-            }`}
+            } ${avslutaLista ? '[&>li:last-child]:border-border [&>li:last-child]:border-b' : ''}`}
           >
             {visaBilagor &&
               rader.map((r) => (

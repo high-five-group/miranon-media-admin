@@ -1,7 +1,11 @@
 import { createLink } from '@tanstack/react-router';
 import { ChevronLeft } from 'lucide-react';
 import type { Ref } from 'react';
-import { Link as AriaLink, type LinkProps as AriaLinkProps } from 'react-aria-components';
+import {
+  Button as AriaButton,
+  Link as AriaLink,
+  type LinkProps as AriaLinkProps,
+} from 'react-aria-components';
 
 /**
  * SidRam — husets KANT-I-KANT sidkrom (TASK-299.1; PRD `TASK-299`
@@ -90,14 +94,29 @@ interface SidRamLinkProps
  * SidRam — persondetaljen och check-in släppte sin sektions-`pt` i samma
  * landning, nettonoll där.
  */
+/**
+ * Chevronens geometri — EN KÄLLA, delad av bägge grenarna nedan.
+ *
+ * Strängen låg tidigare inline i `SidRamLink`. Den bröts ut när `SidRamKnapp`
+ * (TASK-322) tillkom, av exakt det skäl `ADR-126` finns för: den föregående
+ * kopian av dessa klasser — `GenereringsVy.tsx` § `KromKnapp` — hade en
+ * docblock som påstod "EXAKT `DokumentYta`s klasser". Det var sant när den
+ * skrevs och FALSKT från och med 2026-08-23, då topp-luften (`mt-2 lg:mt-10`)
+ * lades till här men inte där. Marcus såg driften i granskningen 2026-08-24:
+ * *"bakåtchevronen sitter för högt upp, jag har varit tydlig med att alla
+ * undersidor ska ha samma sidkrom, samma 'grund'."* — samma observation som
+ * gav topp-luften från början.
+ *
+ * En delad konstant kan inte glida isär. En kopierad klass-sträng kan bara
+ * det.
+ */
+const CHEVRON_KLASS =
+  'mx-4 mt-2 flex size-11 shrink-0 items-center justify-center self-start rounded-full bg-bg-muted lg:mt-10';
+
 function SidRamLink({ tillbakaEtikett, rubrik, rubrikRef, ...props }: SidRamLinkProps) {
   return (
     <>
-      <AriaLink
-        {...props}
-        aria-label={tillbakaEtikett}
-        className="mx-4 mt-2 flex size-11 shrink-0 items-center justify-center self-start rounded-full bg-bg-muted lg:mt-10"
-      >
+      <AriaLink {...props} aria-label={tillbakaEtikett} className={CHEVRON_KLASS}>
         <ChevronLeft aria-hidden="true" size={26} />
       </AriaLink>
       {rubrik != null && (
@@ -113,3 +132,49 @@ function SidRamLink({ tillbakaEtikett, rubrik, rubrikRef, ...props }: SidRamLink
 
 export const SidRam = createLink(SidRamLink);
 export type { SidRamLinkProps as SidRamProps };
+
+export interface SidRamKnappProps {
+  /** Chevronens tillgängliga namn — ikonen bär ingen synlig text. */
+  tillbakaEtikett: string;
+  /** Vad "tillbaka" betyder här. */
+  onTillbaka: () => void;
+}
+
+/**
+ * SidRamKnapp — sidkromets chevron för ytor som går tillbaka UTAN att byta
+ * route.
+ *
+ * VARFÖR EN ANDRA GREN OCH INTE EN ANDRA KOMPONENT: `SidRam` är wrappad i
+ * TanStack Routers `createLink` och renderar ett riktigt `<a href>`. Det är
+ * rätt för de sex ytor som navigerar till en annan route — men fel för en yta
+ * som byter läge INOM sin egen route via query-parametrar. Genereringsvyn är
+ * den första sådana: `/mer/dokument?vy=generering` går "tillbaka" genom att
+ * nolla `vy`, inte genom att gå någon annanstans.
+ *
+ * Den ytan bar därför en egen handrullad `<button>` (`GenereringsVy.tsx`
+ * § `KromKnapp`, riven i TASK-322) — kopia nummer sju av en geometri
+ * `ADR-126` just hade samlat i en primitiv, och den enda som inte fick
+ * topp-luften när den lades till. Att lappa in `mt-2 lg:mt-10` i kopian hade
+ * löst instansen och lämnat nästa drift på plats; Marcus 2026-08-24:
+ * *"INGET lappande"*. Grenen här delar `CHEVRON_KLASS` med länk-grenen, så
+ * geometrin har en källa oavsett vilken navigeringsform ytan behöver.
+ *
+ * Tillgänglighet (11): samma kontrakt som länk-grenen — `tillbakaEtikett` är
+ * obligatorisk (ikonen är ensam), ikonen `aria-hidden`, träffytan 44 px
+ * (`size-11`). react-aria-components `Button` ger tangentbords- och
+ * press-semantiken; ett `<button>` är dessutom rätt ELEMENT här, eftersom
+ * ingen URL byts — en `<a>` utan `href` hade varit fel för både skärmläsare
+ * och mellanklick.
+ *
+ * @example
+ * ```tsx
+ * <SidRamKnapp tillbakaEtikett="Tillbaka till Dokument" onTillbaka={stang} />
+ * ```
+ */
+export function SidRamKnapp({ tillbakaEtikett, onTillbaka }: SidRamKnappProps) {
+  return (
+    <AriaButton aria-label={tillbakaEtikett} className={CHEVRON_KLASS} onPress={onTillbaka}>
+      <ChevronLeft aria-hidden="true" size={26} />
+    </AriaButton>
+  );
+}
