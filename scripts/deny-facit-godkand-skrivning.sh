@@ -151,6 +151,8 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FACIT_POLICY="${FACIT_GODKANN_POLICY:-${SCRIPT_DIR}/../.facit-policy.conf}"
 HELPER="${SCRIPT_DIR}/lib/facit-godkand-skrivning.mjs"
+# shellcheck source=/dev/null  # dynamisk SCRIPT_DIR-relativ path; scripts/lib/jq-guard.sh lintas separat via ci.yml:s shellcheck-lista
+source "${SCRIPT_DIR}/lib/jq-guard.sh"
 
 neka() {
     printf 'FACIT-GODKÄNNANDETS KANALSEPARATION (ADR-104): %s\n' "$1" >&2
@@ -185,7 +187,7 @@ facit_neka_skrivning() {
 }
 
 # ── Steg 1: infra. Fail-open på ALLA infra-fel — se § FAIL-OPEN ovan.
-command -v jq > /dev/null 2>&1 || exit 0
+jq_version_ok > /dev/null 2>&1 || exit 0
 command -v node > /dev/null 2>&1 || exit 0
 
 INPUT=""

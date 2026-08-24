@@ -68,6 +68,10 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROT="${REPO_ROT:-$(cd "${SCRIPT_DIR}/.." && pwd)}"
 LARM_POLICY="${LARM_POLICY:-${REPO_ROT}/.sanningsavstamning-policy.conf}"
+# shellcheck source=/dev/null  # dynamisk SCRIPT_DIR-relativ path; scripts/lib/jq-guard.sh lintas separat via ci.yml:s shellcheck-lista
+source "${SCRIPT_DIR}/lib/jq-guard.sh"
+# shellcheck source=/dev/null  # dynamisk SCRIPT_DIR-relativ path; scripts/lib/gh-guard.sh lintas separat via ci.yml:s shellcheck-lista
+source "${SCRIPT_DIR}/lib/gh-guard.sh"
 
 anropsfel() {
     printf '::error::check-obesvarade-larm: ANROPSFEL — %s\n' "$1" >&2
@@ -75,7 +79,7 @@ anropsfel() {
     exit 2
 }
 
-command -v jq >/dev/null 2>&1 || anropsfel "jq saknas i PATH."
+jq_version_ok || anropsfel "jq saknas eller är för gammal i PATH (TASK-312, .jq-version-policy.conf)."
 [[ -f "${LARM_POLICY}" ]] || anropsfel "policyfilen ${LARM_POLICY} saknas."
 
 LARM_ARENDE_TROSKLAR=()
@@ -98,7 +102,7 @@ hamta_arenden() {
             "${LARM_FAKE_JSON}" 2>/dev/null || return 1
         return 0
     fi
-    command -v gh >/dev/null 2>&1 || return 1
+    gh_version_ok >/dev/null 2>&1 || return 1
     # Ingen tom array här: under `set -u` är "${arr[@]}" på en TOM array en
     # unbound variable i bash 3.2 (macOS systembash), vilket fällde den skarpa
     # körningen 2026-08-04. Fail-closed-designen höll — felet gav ANROPSFEL,

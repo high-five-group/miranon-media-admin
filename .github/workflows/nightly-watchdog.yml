@@ -82,7 +82,9 @@ jobs:
         # som annars inte finns på runnern — jobbet var innan dess rent
         # gh-API-baserat utan lokala filer. Grunt (fetch-depth 1) räcker:
         # skriptet läser bara sin egen källa vid HEAD, ingen git-historik.
-        uses: actions/checkout@v7
+        # SHA-pin: se ci.yml:s FÖRSTA Checkout-steg (jobbet `changed`) för
+        # hela rationalen (TASK-312, 2026-08-24).
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           fetch-depth: 1
 
@@ -226,6 +228,9 @@ jobs:
 
           Stängningsregel (CONTRIBUTING § Nattnätet): stängs ENDAST med (a) åtgärd som fixar grundorsaken eller (b) öppet skriven motivering — aldrig tyst.${note}"
 
+          # gh — MEDVETET OPINNAD (TASK-312, 2026-08-24): GitHub-hostad
+          # runner, gh förinstallerat/versionshanterat av GitHub självt.
+          # Se scripts/lib/gh-guard.sh § SCOPE.
           gh issue create \
             --repo "${REPO}" \
             --title "🌑 ${rubrik} — $(date -u +%F)" \

@@ -76,6 +76,8 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 POLICY="${STOP_VAKT_POLICY:-${SCRIPT_DIR}/../.stop-vakt-policy.json}"
+# shellcheck source=/dev/null  # dynamisk SCRIPT_DIR-relativ path; scripts/lib/jq-guard.sh lintas separat via ci.yml:s shellcheck-lista
+source "${SCRIPT_DIR}/lib/jq-guard.sh"
 
 INDATA="$(cat || true)"
 
@@ -108,12 +110,12 @@ blockera_statiskt() {
     exit 0
 }
 
-if ! command -v jq > /dev/null 2>&1; then
+if ! jq_version_ok 2> /dev/null; then
     if aktiv_degraderat; then
         logga "tillat" "stop_hook_active_degraderat" "true"
         exit 0
     fi
-    blockera_statiskt "STOP-VAKTEN (T108/ADR-087): jq saknas — avslutspåståendet kan inte stämmas av mot observerat tillstånd (fail-closed, förebild ci-wait.sh). Detta är vaktens eget fel, inte ditt. Nästa avslutsförsök släpps igenom (stop_hook_active)." "jq_saknas"
+    blockera_statiskt "STOP-VAKTEN (T108/ADR-087): jq saknas eller är för gammal (TASK-312, .jq-version-policy.conf) — avslutspåståendet kan inte stämmas av mot observerat tillstånd (fail-closed, förebild ci-wait.sh). Detta är vaktens eget fel, inte ditt. Nästa avslutsförsök släpps igenom (stop_hook_active)." "jq_saknas"
 fi
 
 if [[ -z "${INDATA}" ]]; then

@@ -77,8 +77,10 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || exit 0
 KATALOG_POLICY="${KATALOG_POLICY:-${SCRIPT_DIR}/../.katalogagarskap-policy.conf}"
+# shellcheck source=/dev/null  # dynamisk SCRIPT_DIR-relativ path; scripts/lib/jq-guard.sh lintas separat via ci.yml:s shellcheck-lista
+source "${SCRIPT_DIR}/lib/jq-guard.sh"
 
-command -v jq >/dev/null 2>&1 || exit 0
+jq_version_ok > /dev/null 2>&1 || exit 0
 command -v git >/dev/null 2>&1 || exit 0
 [[ -f "${KATALOG_POLICY}" ]] || exit 0
 # shellcheck source=/dev/null

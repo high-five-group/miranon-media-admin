@@ -43,8 +43,11 @@ trap cleanup EXIT
 
 setup() {
     rm -rf "${TEST_DIR}"
-    mkdir -p "${TEST_DIR}/scripts" "${TEST_DIR}/.claude/agents"
+    mkdir -p "${TEST_DIR}/scripts/lib" "${TEST_DIR}/.claude/agents"
     cp "${SRC}" "${TEST_DIR}/scripts/agent-spawn-log.sh"
+    # jq-guard.sh (TASK-312) sourcas nu av skriptet.
+    cp "${REPO_ROOT}/scripts/lib/jq-guard.sh" "${TEST_DIR}/scripts/lib/jq-guard.sh"
+    cp "${REPO_ROOT}/.jq-version-policy.conf" "${TEST_DIR}/.jq-version-policy.conf"
     : > "${LOGG}"
 }
 

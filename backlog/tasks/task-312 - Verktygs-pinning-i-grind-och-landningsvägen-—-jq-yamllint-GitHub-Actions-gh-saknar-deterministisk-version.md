@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-24 13:35'
+updated_date: '2026-08-24 16:39'
 labels:
   - ready-for-agent
 dependencies: []
@@ -38,9 +39,9 @@ KALLA: S108 Del 18; sveparens fulla tabell i sessionsdoket.
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Varje fynd 1-4 har ett medvetet beslut: pinnad, eller oppet deklarerad som medvetet opinnad med skal i fil
-- [ ] #2 jq-ytan (fynd 1) har antingen versionsassert eller dokumenterat skal till varfor den inte behover en
-- [ ] #3 Inget verktyg i grind- eller landningsvagen saknar bade pin OCH mitigering efter kortet
+- [x] #1 Varje fynd 1-4 har ett medvetet beslut: pinnad, eller oppet deklarerad som medvetet opinnad med skal i fil
+- [x] #2 jq-ytan (fynd 1) har antingen versionsassert eller dokumenterat skal till varfor den inte behover en
+- [x] #3 Inget verktyg i grind- eller landningsvagen saknar bade pin OCH mitigering efter kortet
 <!-- AC:END -->
 
 ## Definition of Done

@@ -603,20 +603,34 @@ function hanteraActionlintHybrid(step, spec, tmpRoot, fel) {
 }
 
 /**
- * "Check YAML syntax (yamllint)"-steget konflaterar bootstrap (`pip install
- * --quiet yamllint`) och grind (`yamllint .github/`) i SAMMA `run:`-block —
- * rimligt på en fräsch CI-runner, men `pip` (utan siffra) finns inte på
- * PATH på en macOS/Homebrew-maskin där `yamllint` redan är installerat via
- * en annan väg (mätt: `pip3`/`python3 -m pip` finns, bar `pip` gör inte).
- * Verbatim-körning av HELA blocket hade alltså fällt på steg 1 av två, av
- * ett skäl som inte har med YAML-innehållet att göra.
+ * HISTORISK — INGEN post i .ci-parity-policy.json:s specialSteps namnger
+ * längre `handling: "toolPresenceLastLine"`, så denna gren i dispatchen
+ * (huvudflödet nedan) väljs aldrig i praktiken. Kvar med avsikt (inte rivet)
+ * ifall ett framtida CI-steg konflaterar bootstrap+grind i samma `run:`-block
+ * igen — mönstret är generiskt, bara den ursprungliga motiveringen är
+ * inaktuell.
  *
- * Lösningen är INTE att hårdkoda "yamllint .github/" som en fjärde
+ * URSPRUNGLIG MOTIVERING (TASK-312 löste den underliggande konflationen,
+ * 2026-08-24): "Check YAML syntax (yamllint)"-steget konflaterade bootstrap
+ * (`pip install --quiet yamllint`) och grind (`yamllint .github/`) i SAMMA
+ * `run:`-block — rimligt på en fräsch CI-runner, men `pip` (utan siffra)
+ * finns inte på PATH på en macOS/Homebrew-maskin där `yamllint` redan är
+ * installerat via en annan väg (mätt: `pip3`/`python3 -m pip` finns, bar
+ * `pip` gör inte). Verbatim-körning av HELA blocket hade alltså fällt på
+ * steg 1 av två, av ett skäl som inte har med YAML-innehållet att göra.
+ * TASK-312 separerade ci.yml:s steg i ett rent bootstrap-steg ("Install
+ * yamllint (pinned 1.38.0)", nu `versionAssert`-hanterat som shellcheck/vale)
+ * och ett rent grind-steg ("Check YAML syntax (yamllint)", nu oklassat →
+ * körs verbatim via den vanliga `derive`-vägen) — konflationen som
+ * motiverade DENNA funktion existerar inte längre.
+ *
+ * Lösningen var INTE att hårdkoda "yamllint .github/" som en fjärde
  * duplicerad siffra — det vore precis den drift-risk skriptet finns för att
  * undvika (scopet ".github/" skulle kunna ändras i ci.yml utan att någon
- * uppdaterar en kopia här). I stället: verifiera att verktyget redan finns
- * på PATH, och härled den FAKTISKA gate-kommandoraden ur steg-texten genom
- * att ta dess sista icke-tomma rad — CI:s egen konvention i detta steg
+ * uppdaterar en kopia här). I stället, för EN framtida konflaterad
+ * situation: verifiera att verktyget redan finns på PATH, och härled den
+ * FAKTISKA gate-kommandoraden ur steg-texten genom att ta dess sista
+ * icke-tomma rad — CI:s egen konvention i det ursprungliga steget
  * (bootstrap-rader följt av den faktiska körningen sist).
  */
 function hanteraToolPresenceLastLine(step, spec, tmpRoot) {

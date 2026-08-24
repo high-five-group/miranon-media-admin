@@ -149,6 +149,8 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PRECOMPACT_POLICY="${PRECOMPACT_POLICY:-${SCRIPT_DIR}/../.precompact-policy.conf}"
+# shellcheck source=/dev/null  # dynamisk SCRIPT_DIR-relativ path; scripts/lib/jq-guard.sh lintas separat via ci.yml:s shellcheck-lista
+source "${SCRIPT_DIR}/lib/jq-guard.sh"
 
 # neka <skäl> — stderr (visas för Marcus vid manuell /compact; se
 # hooks.md rad ~2769) + exit 2, den enda väg som garanterat blockerar
@@ -161,7 +163,7 @@ neka() {
 # ── Steg 1: tolka hook-indatan. FAIL-CLOSED ovillkorligt — se § FAIL-CLOSED,
 # OVILLKORLIGT ovan: denna hook har ingen oskyldig majoritet att skydda,
 # till skillnad från deny-arbetsform-push.sh.
-command -v jq > /dev/null 2>&1 || neka "jq saknas i PATH — kan inte avgöra om kompakteringen är kontrollerad (fail-closed). Detta är hookens eget fel, inte ditt."
+jq_version_ok || neka "jq saknas eller är för gammal i PATH (TASK-312, .jq-version-policy.conf) — kan inte avgöra om kompakteringen är kontrollerad (fail-closed). Detta är hookens eget fel, inte ditt."
 
 INPUT=""
 IFS= read -r -d '' INPUT || true

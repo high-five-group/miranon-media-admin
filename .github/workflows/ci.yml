@@ -85,8 +85,42 @@ jobs:
       # — se `acceptance-urval`-steget nedan och scripts/acceptance-urval.sh.
       acceptance_urval: ${{ steps.acceptance-urval.outputs.acceptance_urval }}
     steps:
+      # ═══ SHA-PINNADE FIRST-PARTY ACTIONS (TASK-312, 2026-08-24) ═══
+      #
+      # actions/checkout, actions/setup-node, actions/cache och
+      # actions/upload-artifact bar tidigare TVÅ av tre samexisterande
+      # pinnings-discipliner i detta repo (exakt tagg: setup-node@v7.0.0,
+      # cache@v6.1.0; flytande major: checkout@v7, upload-artifact@v7) —
+      # tredje disciplinen är SHA-pin (tj-actions/changed-files,
+      # lycheeverse/lychee-action, redan i detta repo). Flytande major är
+      # strukturellt samma svaghet som ett opinnat npx-anrop: en tagg
+      # leverantören kan flytta. ADR-029 § Beslut kräver redan "SHA-pin
+      # obligatoriskt på alla non-GitHub-officiella Actions" — detta kort
+      # utökar den till husets FÖRSTA-parts Actions också, så alla fyra
+      # konvergerar till EN disciplin (SHA-pin), husets starkaste form.
+      #
+      # VERSIONSVAL: INGEN version bumpades — varje SHA nedan pekar på
+      # EXAKT samma commit den flytande/exakta taggen redan pekade på
+      # (checkout v7 → v7.0.1, upload-artifact v7 → v7.0.1, setup-node
+      # v7.0.0, cache v6.1.0 — verifierade IDENTISKA via `gh api
+      # repos/<org>/<repo>/git/refs/tags/<tag>` OCH `git ls-remote`, två
+      # oberoende vägar, 2026-08-24). Detta kort ändrar PINNINGSFORMEN,
+      # inte BETEENDET.
+      #
+      # ADVISORY-STATUS FÖRE BUMP-VAL (K18-disciplinen, ADR-029 §
+      # Konsekvenser): `gh api "advisories?affects=<action>"` för samtliga
+      # fyra gav TOM TRÄFFMÄNGD ([]) 2026-08-24 — inga kända sårbarheter,
+      # ingen bump-anledning. Se docs/decisions/ADR-029-ci-architektur-
+      # changed-files-pattern.md § Konsekvenser för metodologin (samma som
+      # redan etablerad för tj-actions/changed-files, K1.C).
+      #
+      # UPPGRADERING: bumpa taggen i `gh api`-uppslaget ovan, kör om båda
+      # verifieringarna, uppdatera SHA + kommentarens versionsnummer på
+      # VARJE anropsställe (45 st, samtliga sju workflow-filer — inga
+      # centrala variabler i GitHub Actions `uses:`-syntax, samma
+      # begränsning som tj-actions/lychee-action redan lever med).
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           # fetch-depth: 0 = FULL historik (ADR-054, 2026-06-17). Finit djup var
           # anti-mönstret: 1→50→100→250 brast 4 ggr när orörda governing-docs
@@ -474,7 +508,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           # fetch-depth: 0 = FULL historik (ADR-054, 2026-06-17) för
           # scripts/check-frontmatter.sh Check 2 (git log -1 --format=%cs -- <fil>).
@@ -484,7 +518,7 @@ jobs:
           fetch-depth: 0
 
       - name: Setup Node
-        uses: actions/setup-node@v7.0.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
@@ -535,15 +569,58 @@ jobs:
           tar -xzf /tmp/actionlint.tar.gz -C /tmp actionlint
           /tmp/actionlint -color -ignore 'unexpected key "queue" for "concurrency" section'
 
+      - name: Install yamllint (pinned 1.38.0)
+        # TASK-312 (2026-08-24): repots ENDA CI-verktyg utan version-pin
+        # fram till detta kort — ett flytande `pip install yamllint` kunde
+        # tyst hämta en ny major med andra default-regler.
+        #
+        # Exakt version-pin (PyPI-releaser är immutabla per version, samma
+        # "byte-determinism utan behov av hash" som scripts/lib/
+        # supabase-cli.sh § VARFÖR VERSIONEN INTE PINNAS I package.json
+        # resonerar för npx-installerade paket). SHA256-hash-verifiering
+        # (full parity med shellcheck/actionlint/vale-mönstret nedan)
+        # MEDVETET AVSTÅDD: pip:s `--require-hashes`-läge kräver att VARJE
+        # transitiv dependency (yamllint drar in `pathspec`) OCKSÅ pinnas
+        # exakt + hash-verifieras — empiriskt bekräftat 2026-08-24
+        # (`pip install --require-hashes` avvisar med "In --require-hashes
+        # mode, all requirements must have their versions pinned with =="
+        # så fort en icke-pinnad transitiv dependency finns i trädet). Det
+        # är en betydligt skörare underhållslast än en enda fristående
+        # static binär utan dependencies (shellcheck/actionlint/vale) —
+        # varje framtida yamllint-release som ändrar/lägger till en
+        # dependency bryter CI på ett sätt som inte har med YAML-innehållet
+        # att göra. Version-pinningen ensam stänger den faktiska risken
+        # kortet flaggar (flytande install, ingen determinism) utan den
+        # kostnaden.
+        #
+        # SHA256 för denna version, bokförd som referens (INTE verifierad
+        # av detta steg, se ovan för varför): verifierad två oberoende
+        # vägar 2026-08-24 (PyPI JSON-API + lokal `pip download` +
+        # `shasum -a 256`, identiska) —
+        # yamllint-1.38.0-py3-none-any.whl =
+        # fc394a5b3be980a4062607b8fdddc0843f4fa394152b6da21722f5d59013c220
+        #
+        # Python pre-installed på ubuntu-latest; pip-install ~3-5s.
+        run: pip install --quiet "yamllint==1.38.0"
+
       - name: Check YAML syntax (yamllint)
         # Per ADR-030 § Del 1.4: yamllint kompletterar actionlint (yamllint =
         # generic YAML syntax/style; actionlint = GitHub Actions semantics).
         # Config: .yamllint.yml. Scope: .github/ (workflow + dependabot).
-        # Python pre-installed på ubuntu-latest; pip-install ~3-5s.
         # Ingen pre-commit-hook — CI-only-grindvakt per Marcus' direktiv K2.
-        run: |
-          pip install --quiet yamllint
-          yamllint .github/
+        #
+        # SEPARERAD FRÅN BOOTSTRAP-STEGET OVAN (TASK-312, 2026-08-24):
+        # tidigare konflaterade EN run:-rad `pip install` (opinnat) +
+        # `yamllint .github/` — vilket tvingade scripts/verify-ci-parity.mjs
+        # till en särskild "toolPresenceLastLine"-hantering för att kunna
+        # köra grinden lokalt utan att fällas av steg 1 (se
+        # .ci-parity-policy.json § specialStepsRationale, och
+        # verify-ci-parity.mjs:s hanteraToolPresenceLastLine() — kvar som
+        # generell mekanism, men ingen policy-post namnger den längre).
+        # Separationen låter DETTA steg köras verbatim lokalt (yamllint
+        # antas redan finnas på PATH, ansvaret för det ligger nu helt på
+        # bootstrap-steget ovan).
+        run: yamllint .github/
 
       # ═══ PARITETS-MARKÖRER (TASK-109) ═══
       # Regionen från start-markören på nästa rad till dess slut-markör (efter
@@ -1030,6 +1107,30 @@ jobs:
         # (källdrift utan omsynk fälls), FÖRÄLDRALÖS genererad fil (borttagen
         # källa fälls), omsynk läker paritet-brottet, och byte-fidelity
         # (avkodat innehåll === källan, exakt). Ingen nätverkstrafik.
+        #
+        # test-jq-guard.sh (TASK-312, 2026-08-24) hör hit av samma
+        # kadens-skäl som test-supabase-cli-policy.sh ovan: prövar
+        # scripts/lib/jq-guard.sh + .jq-version-policy.conf i BÅDA
+        # riktningar — jq saknas / policyfil saknas / policy utan
+        # JQ_MIN_VERSION / version under floor (T1–T4, alla FÄLLER) och
+        # version på/över floor inklusive numerisk (ej lexikografisk)
+        # jämförelse och ojämnt antal versionskomponenter (T5–T8,
+        # PASSERAR) — plus att repots RIKTIGA .jq-version-policy.conf
+        # laddar ett äkta värde (T9), att den FAKTISKA lokala jq-binären
+        # klarar den (T10), och att default-policyvägen är LIB-relativ
+        # snarare än cwd-relativ (T11 — skiljer sig medvetet från
+        # supabase-cli.sh:s cwd-relativa default, se jq-guard.sh §
+        # POLICYFILENS SÖKVÄG). 11 fall, 18 assertioner. Stubbar `jq` på
+        # PATH i en mktemp-sandlåda för T1/T4–T8/T11 — ingen
+        # nätverkstrafik. 0,1 s LOKALT mätt (macOS, 2026-08-24, `time bash
+        # scripts/test-jq-guard.sh`) — CI-tiden är INTE mätt av mig.
+        #
+        # test-gh-guard.sh (TASK-312, 2026-08-24) hör hit av IDENTISKT
+        # skäl och form som test-jq-guard.sh ovan, applicerad på
+        # scripts/lib/gh-guard.sh + .gh-version-policy.conf i stället för
+        # jq. 11 fall, 18 assertioner. Stubbar `gh` på PATH i en
+        # mktemp-sandlåda — ingen nätverkstrafik. 0,1 s LOKALT mätt (macOS,
+        # 2026-08-24) — CI-tiden är INTE mätt av mig.
         run: |
           bash scripts/test-check-frontmatter.sh
           bash scripts/test-check-public-checklists.sh
@@ -1052,6 +1153,8 @@ jobs:
           node scripts/test-check-mailto.mjs
           bash scripts/test-fas4-prod-deploy.sh
           bash scripts/test-supabase-cli-policy.sh
+          bash scripts/test-jq-guard.sh
+          bash scripts/test-gh-guard.sh
           bash scripts/test-visual-baselines-scope.sh
           bash scripts/test-check-mallparitet.sh
 
@@ -1364,7 +1467,16 @@ jobs:
         # tjugoåtta i S108-wiringen (.supabase-cli-policy.conf — samma
         # räkning gäller BARA de sourcade .conf-filerna; scripts/lib/
         # supabase-cli.sh räknas separat ovan eftersom den är en sourcad
-        # .sh-KODFIL utanför den flata scripts/*.sh-globen, inte en config).
+        # .sh-KODFIL utanför den flata scripts/*.sh-globen, inte en config)
+        # och till tjugonio i TASK-312-wiringen (.jq-version-policy.conf —
+        # pinnad LÄGSTA jq-version, scripts/lib/jq-guard.sh — se filens
+        # egen header: ~25 jq-anropsställen i hook-/grindlagret saknade
+        # HELT versionskontroll innan detta kort, bara en bar
+        # `command -v jq`-presence-check; scripts/lib/jq-guard.sh räknas
+        # separat nedan av samma skäl som supabase-cli.sh ovan) och till
+        # trettio i SAMMA TASK-312-wiring (.gh-version-policy.conf —
+        # pinnad LÄGSTA gh-version, scripts/lib/gh-guard.sh, samma
+        # separat-räkning som de två andra sourcade .sh-kodfilerna).
         # Pre-aktiverings-state (post-K3.2 commit d86d846): 0/0/0/0.
         run: |
           shellcheck \
@@ -1372,6 +1484,8 @@ jobs:
             --enable=all \
             scripts/*.sh \
             scripts/lib/supabase-cli.sh \
+            scripts/lib/jq-guard.sh \
+            scripts/lib/gh-guard.sh \
             .githooks/* \
             .checklist-policy.conf \
             .frontmatter-policy.conf \
@@ -1400,7 +1514,9 @@ jobs:
             .atkomst-diagnos-policy.conf \
             .hemlighet-utskrift-policy.conf \
             .prod-ref-policy.conf \
-            .supabase-cli-policy.conf
+            .supabase-cli-policy.conf \
+            .jq-version-policy.conf \
+            .gh-version-policy.conf
 
   # Job 3: Tung testsvit — anropar den reusable ci-suite.yml (EN KÄLLA,
   # delad med nightly.yml OCH post-merge.yml; task-36.2 / ADR-077). Villkorat på
@@ -1541,7 +1657,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
           # fetch-depth: 0 = FULL historik (ADR-054, 2026-06-17) för
           # scripts/check-frontmatter.sh Check 2 (git log -1 --format=%cs -- <fil>).
@@ -1624,7 +1740,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node
-        uses: actions/setup-node@v7.0.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
