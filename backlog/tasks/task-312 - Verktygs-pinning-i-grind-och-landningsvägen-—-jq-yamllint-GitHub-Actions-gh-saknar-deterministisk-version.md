@@ -3,10 +3,10 @@ id: TASK-312
 title: >-
   Verktygs-pinning i grind- och landningsvägen — jq, yamllint, GitHub Actions,
   gh saknar deterministisk version
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-24 13:35'
-updated_date: '2026-08-24 16:39'
+updated_date: '2026-08-24 17:23'
 labels:
   - ready-for-agent
 dependencies: []
@@ -46,8 +46,14 @@ KALLA: S108 Del 18; sveparens fulla tabell i sessionsdoket.
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Done-flipp S112: PR #1942 landad, post-merge d80acb16 grön; 19 jq-vakter + gh-vakter + yamllint-pin + 45 Actions-SHA-pins, tvåsidigt bevisade. Landning: PR #1942
+<!-- SECTION:NOTES:END -->
