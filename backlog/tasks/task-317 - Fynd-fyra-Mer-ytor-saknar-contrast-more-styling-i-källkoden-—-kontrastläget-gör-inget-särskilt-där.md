@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-24 14:10'
-updated_date: '2026-08-24 14:45'
+updated_date: '2026-08-24 14:49'
 labels:
   - fynd
 dependencies: []
@@ -22,7 +22,7 @@ Mätt 2026-08-24 (S112, TASK-314-passet, grep per komponent): Waitlist.tsx, Intr
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [x] #1 Marcus-beslut bokfört: affordans byggs / statiska kanter deklareras tillräckliga med motiv
-- [ ] #2 Vid bygge: contrast-more-styling på de fyra ytorna + TASK-314-svepen uppgraderade till token-probes + ny baseline-dispatch
+- [x] #2 Vid bygge: contrast-more-styling på de fyra ytorna + TASK-314-svepen uppgraderade till token-probes + ny baseline-dispatch
 <!-- AC:END -->
 
 ## Definition of Done
@@ -37,4 +37,6 @@ Mätt 2026-08-24 (S112, TASK-314-passet, grep per komponent): Waitlist.tsx, Intr
 
 <!-- SECTION:NOTES:BEGIN -->
 Marcus-beslut (S112 mandatpasset, beslut 7c, 2026-08-24): affordansen BYGGS — tillgänglighet 11 är golv (kvalitetsribban, CLAUDE.md § Design-system). De statiska kanterna på Waitlist/Intresserade/MailLog/InstalleraAppen deklareras INTE tillräckliga; de fyra ytorna får samma contrast-more:border-border-strong-affordans som husets övriga fem ytor.
+
+AC #2 uppfylld: contrast-more:border-border-strong tillagd på de fyra ytorna (Waitlist.tsx/Intresserade.tsx/MailLog.tsx/InstalleraAppen.tsx), TASK-314:s fyra statiska boundary-probes uppgraderade till token-probes (vantelista.spec.ts, intresserade.spec.ts, maillogg-visual.spec.ts, installera-appen-visual.spec.ts). PR #1922 (kod+tester). Baseline-dispatch kört: gh workflow run visual-baselines.yml --ref task-317-kontrast-more-fyra-ytor -f specfilter='anmalningssidan|vantelista|intresserade|maillogg|installera-appen|aktivitetshistorik|dokument-visual|persondetalj|bevakningsrad' → run 32740792946 (success) → baseline-PR #1926 (24 bilder, OARMERAD, väntar Marcus granskning).
 <!-- SECTION:NOTES:END -->
