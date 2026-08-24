@@ -496,7 +496,16 @@ VANLIGA vägen genom kön, inte ett undantag. Ett skript som bara läser
 "aldrig armerad"/"utsparkad med konsumerad armering" (larma) —
 `isInMergeQueue` skiljer dem åt: `isInMergeQueue: true` ⇒ tyst, `false` ⇒
 larma (kan fortfarande vara ANTINGEN aldrig-armerad ELLER utsparkad — den
-skillnaden kräver fortfarande det andra `gh pr merge --auto`). Fixad i
+skillnaden kräver fortfarande det andra `gh pr merge --auto`).
+
+**"GraphQL" ovan är bokstavligt — `gh pr view --json isInMergeQueue` finns
+INTE.** Anropet faller med `Unknown JSON field: "isInMergeQueue"` plus en
+fältlista där namnet saknas (mätt i `gh` 2.96.0, två gånger oberoende
+2026-08-24). Fältet nås bara via `gh api graphql`. Raden är alltså korrekt som
+den står, men den är lätt att läsa som "fråga båda fälten" utan att märka
+vilket API som avses — och `gh pr view --json` är den form man når först.
+Skriver du ett svep som klassar armering: bygg det på `gh api graphql`, inte
+på `--json`. Fixad i
 `TASK-128` (falsklarmade sju gånger på en enda natt innan fixen — full
 instansdata på kortet).
 
