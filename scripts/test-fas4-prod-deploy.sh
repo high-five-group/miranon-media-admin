@@ -11,6 +11,13 @@
 #   ett skript som nekar allting. Fall 2 (--help) och fall 7:s andra halva
 #   prövar därför att rätt input SLÄPPS respektive når fram till spärren.
 #
+# Sista fyra fallen (S108, 2026-08-24) prövar STRUKTURELLT att den pinnade
+# Supabase CLI-vägen (scripts/lib/supabase-cli.sh) faktiskt är inkopplad i
+# fas4-prod-deploy.sh — RUNTIME-beteendet (stubbad npx) täcks i stället av
+# scripts/test-supabase-cli-policy.sh + T5–T7 i
+# scripts/test-deploy-prod-functions.sh, samma "kan inte nätverkstestas här"-
+# skäl som resten av filen.
+#
 # Körs av: CI (shellcheck-strict + denna svit), och för hand vid ändring.
 
 set -uo pipefail
@@ -209,6 +216,63 @@ if grep -qF 'doden "Bucket \"bilagor\" saknas eller avviker i prod (TASK-308)' "
     printf '✓ FALL %d — --deploya FÄLLER (doden) om bucketen inte konvergerar\n' "${FALL}"
 else
     printf '✗ FALL %d: hittar ingen doden-gate för bucket-avvikelse i --deploya\n' "${FALL}" >&2
+    FEL=$((FEL + 1))
+fi
+
+# ── SUPABASE CLI-PINNING (S108, 2026-08-24) ──────────────────────────────────
+# Den skarpa vägen (npx faktiskt anropat, guarden verifierad mot en riktig
+# CLI-version) kan inte täckas här av samma skäl som ovan — men den STRUKTUR-
+# ELLA wiringen kan, och det är precis vad som gick sönder i incidenten:
+# fem av sju anropsställen bar VAR SIN form. scripts/test-deploy-prod-
+# functions.sh:s T5–T7 bevisar RUNTIME-beteendet (stubbad npx, offline) för
+# anropsställe A1; dessa fall bevisar STRUKTUREN i fas4-prod-deploy.sh (A2–A6).
+
+FALL=$((FALL + 1))
+# shellcheck disable=SC2016  # enkelfnuttarna ÄR avsikten — mönstret ska matcha
+# den LITERALA texten i målfilen, inte expandera här (samma mönster som
+# ANGIVEN_REF-fallen ovan).
+if grep -qF 'source "${SCRIPT_DIR}/lib/supabase-cli.sh"' "${MAL}"; then
+    printf '✓ FALL %d — scripts/lib/supabase-cli.sh sourcas\n' "${FALL}"
+else
+    printf '✗ FALL %d: scripts/lib/supabase-cli.sh sourcas inte\n' "${FALL}" >&2
+    FEL=$((FEL + 1))
+fi
+
+FALL=$((FALL + 1))
+PREFLIGHT_RAD="$(grep -n 'rubrik "Preflight"' "${MAL}" | head -1 | cut -d: -f1)"
+GUARD_RAD="$(grep -n 'supabase_cli_guard' "${MAL}" | head -1 | cut -d: -f1)"
+# shellcheck disable=SC2016  # enkelfnuttarna ÄR avsikten, samma skäl som ovan.
+CD_REPO_RAD="$(grep -n 'cd "\${REPO_ROT}"' "${MAL}" | head -1 | cut -d: -f1)"
+if [[ -n "${PREFLIGHT_RAD}" ]] && [[ -n "${GUARD_RAD}" ]] && [[ -n "${CD_REPO_RAD}" ]] \
+    && [[ "${GUARD_RAD}" -gt "${PREFLIGHT_RAD}" ]] && [[ "${GUARD_RAD}" -lt "${CD_REPO_RAD}" ]]; then
+    printf '✓ FALL %d — supabase_cli_guard körs INNE I Preflight-blocket (rad %s, mellan %s och %s)\n' \
+        "${FALL}" "${GUARD_RAD}" "${PREFLIGHT_RAD}" "${CD_REPO_RAD}"
+else
+    printf '✗ FALL %d: supabase_cli_guard ligger inte strukturellt i Preflight (preflight=%s guard=%s cd=%s)\n' \
+        "${FALL}" "${PREFLIGHT_RAD:-saknas}" "${GUARD_RAD:-saknas}" "${CD_REPO_RAD:-saknas}" >&2
+    FEL=$((FEL + 1))
+fi
+
+FALL=$((FALL + 1))
+# Enda tillåtna kvarvarande "npx supabase " (obar, opinnad) är hint-texten
+# "npx supabase login" i felmeddelandet — INTE ett exekverat CLI-anrop.
+OPINNADE="$(grep -n 'npx supabase ' "${MAL}" | grep -vc 'npx supabase login')"
+if [[ "${OPINNADE}" -eq 0 ]]; then
+    printf '✓ FALL %d — inga opinnade "npx supabase "-anrop kvar (utöver login-hintens text)\n' "${FALL}"
+else
+    printf '✗ FALL %d: %d opinnat "npx supabase "-anrop kvar\n' "${FALL}" "${OPINNADE}" >&2
+    grep -n 'npx supabase ' "${MAL}" | grep -v 'npx supabase login' >&2
+    FEL=$((FEL + 1))
+fi
+
+FALL=$((FALL + 1))
+ANTAL_SUPABASE_CLI="$(grep -c 'supabase_cli ' "${MAL}")"
+if [[ "${ANTAL_SUPABASE_CLI}" -ge 4 ]]; then
+    printf '✓ FALL %d — supabase_cli() används på ≥4 operationsställen (%d, A2–A5)\n' \
+        "${FALL}" "${ANTAL_SUPABASE_CLI}"
+else
+    printf '✗ FALL %d: supabase_cli() används på färre än 4 ställen (%d) — ett anropsställe kan ha regredierat\n' \
+        "${FALL}" "${ANTAL_SUPABASE_CLI}" >&2
     FEL=$((FEL + 1))
 fi
 

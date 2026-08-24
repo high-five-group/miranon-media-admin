@@ -122,6 +122,16 @@ rubrik "Preflight"
 
 command -v npx > /dev/null 2>&1 || doden "npx saknas i PATH."
 
+# Supabase CLI: pinnad version, fail-closed guard — EN gång, tidigt, här.
+# Poängen är att en trasig/felresolvd CLI blir högljudd FÖRE första
+# funktionen, aldrig mitt i en halv deploy (S108, 2026-08-24 — se
+# .supabase-cli-policy.conf § VARFÖR FILEN FINNS för incidenten).
+# shellcheck source=/dev/null  # dynamisk SCRIPT_DIR-relativ path; scripts/lib/supabase-cli.sh lintas separat via ci.yml:s shellcheck-lista
+source "${SCRIPT_DIR}/lib/supabase-cli.sh"
+# shellcheck disable=SC2310  # avsiktligt: `doden` ger eget skäl i stället
+# för `set -e`:s tysta död — samma mönster som `lanka`-anropen nedan.
+supabase_cli_guard || doden "Supabase CLI-versionen kunde inte verifieras mot .supabase-cli-policy.conf."
+
 cd "${REPO_ROT}"
 
 TRADSTATUS="$(git status --porcelain)" || doden "git status misslyckades."
@@ -155,7 +165,7 @@ printf 'Länkat projekt just nu: %s\n' "${NUVARANDE_LANK:-<inget>}"
 # databas-lösenordet och HÄNGER (fas 4-underlagets fälla 1).
 lanka() {
     local ref="$1"
-    echo "" | npx supabase link --project-ref "${ref}" > /dev/null 2>&1 \
+    echo "" | supabase_cli link --project-ref "${ref}" > /dev/null 2>&1 \
         || return 1
 }
 
@@ -175,11 +185,11 @@ if [[ "${LAGE}" = "--kontrollera" ]]; then
     rubrik "Prod-läget (read-only — inget ändras, ingen omlänkning)"
 
     printf '\n--- Deployade funktioner ---\n'
-    npx supabase functions list --project-ref "${ANGIVEN_REF}" \
+    supabase_cli functions list --project-ref "${ANGIVEN_REF}" \
         || doden "Kunde inte lista funktioner. Är du inloggad? (npx supabase login)" 2
 
     printf '\n--- Hemligheter ---\n'
-    npx supabase secrets list --project-ref "${ANGIVEN_REF}" \
+    supabase_cli secrets list --project-ref "${ANGIVEN_REF}" \
         || doden "Kunde inte lista hemligheter." 2
 
     printf '\n--- Bucket "bilagor" (Storage, TASK-308) ---\n'
@@ -238,7 +248,11 @@ aterstall_staging() {
         fi
     else
         rott "⚠️  ÅTERLÄNKNINGEN MISSLYCKADES — katalogen kan fortfarande peka på prod."
-        rott "⚠️  Kör manuellt: echo \"\" | npx supabase link --project-ref ${PROD_REF_STAGING}"
+        # shellcheck disable=SC2154  # SUPABASE_CLI_VERSION sätts av det
+        # sourcade scripts/lib/supabase-cli.sh (guarden körde i Preflight,
+        # innan denna trap överhuvudtaget kan nås) — samma cross-file-
+        # begränsning som andra sourcade policy-variabler i repot.
+        rott "⚠️  Kör manuellt: echo \"\" | npx supabase@${SUPABASE_CLI_VERSION} link --project-ref ${PROD_REF_STAGING}"
     fi
     exit "${kod}"
 }
@@ -265,7 +279,7 @@ bash "${SCRIPT_DIR}/deploy-prod-functions.sh" --project-ref "${ANGIVEN_REF}" \
 
 rubrik "Verifierar"
 kraev_lankat "${ANGIVEN_REF}" "verifiering"
-npx supabase functions list --project-ref "${ANGIVEN_REF}" \
+supabase_cli functions list --project-ref "${ANGIVEN_REF}" \
     || doden "Kunde inte verifiera funktionslistan." 2
 
 cat <<'NOT'

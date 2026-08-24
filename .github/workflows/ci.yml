@@ -974,12 +974,29 @@ jobs:
         # kommer ur ARGUMENTET, aldrig ur .prod-ref-policy.conf — en enda
         # bekvämlighets-refaktor som läser refen ur policyn skulle göra låset
         # verkningslöst för varje agent, tyst. Fall 8/9 vaktar exakt den
-        # invarianten i båda riktningar. Sviten rör inget nätverk: samtliga 11
-        # fall ligger före första nätverksanropet, och de skarpa vägarna är
-        # otestbara här per konstruktion (de kräver prod-refen, som låset
-        # spärrar). 0,18 s LOKALT mätt (macOS, 2026-08-17, nanosekunds-
-        # avgränsad körning av `bash scripts/test-fas4-prod-deploy.sh`) —
-        # CI-tiden är INTE mätt av mig.
+        # invarianten i båda riktningar. Sviten rör inget nätverk: samtliga 21
+        # fall (var 17 t.o.m. S108) ligger före första nätverksanropet, och de
+        # skarpa vägarna är otestbara här per konstruktion (de kräver
+        # prod-refen, som låset spärrar). Fall 18–21 (S108, 2026-08-24) prövar
+        # STRUKTURELLT att den pinnade Supabase CLI-vägen
+        # (scripts/lib/supabase-cli.sh) faktiskt är inkopplad — sourcad, guard
+        # i Preflight, inga opinnade `npx supabase `-anrop kvar, ≥4
+        # operationsställen på supabase_cli(). 0,26 s LOKALT mätt (macOS,
+        # 2026-08-24, `time bash scripts/test-fas4-prod-deploy.sh`) — CI-tiden
+        # är INTE mätt av mig.
+        #
+        # test-supabase-cli-policy.sh (S108, 2026-08-24) hör hit av samma
+        # kadens-skäl: prövar scripts/lib/supabase-cli.sh + .supabase-cli-
+        # policy.conf i BÅDA riktningar — policyfil saknas / policy utan
+        # SUPABASE_CLI_VERSION / version-missmatch (T1–T3, alla FÄLLER) och
+        # korrekt version (T4, PASSERAR) — plus att `supabase_cli()` faktiskt
+        # anropar `npx --yes "supabase@<pinnad version>"` VERBATIM (T5–T7) och
+        # att repots RIKTIGA .supabase-cli-policy.conf laddar ett äkta
+        # versionsvärde (T8, sanity mot disk). 8 fall, 20 assertioner. Stubbar
+        # `npx` på PATH i en mktemp-sandlåda — ingen nätverkstrafik, ingen
+        # riktig Supabase-åtkomst. 0,52 s LOKALT mätt (macOS, 2026-08-24,
+        # `time bash scripts/test-supabase-cli-policy.sh`) — CI-tiden är INTE
+        # mätt av mig.
         #
         # test-visual-baselines-scope.sh (TASK-298) hör hit av samma
         # kadens-skäl som syskonen: den prövar den fail-closed grind som
@@ -1034,6 +1051,7 @@ jobs:
           bash scripts/test-check-sessionsdok-fonster.sh
           node scripts/test-check-mailto.mjs
           bash scripts/test-fas4-prod-deploy.sh
+          bash scripts/test-supabase-cli-policy.sh
           bash scripts/test-visual-baselines-scope.sh
           bash scripts/test-check-mallparitet.sh
 
@@ -1081,7 +1099,12 @@ jobs:
         # (ADR-050 steg 2 / Fas 7-skuld L115): test-* + nya funktioner
         # exkluderas från prod-deploy by default. Eget steg med ärligt namn
         # (Session 17 K7-disciplin: stegnamn ska inte ljuga om sitt innehåll).
-        # Kör endast --list/felvägar — INGEN faktisk deploy.
+        # T1–T4 kör endast --list/felvägar — INGEN faktisk deploy. T5–T7
+        # (S108, 2026-08-24) kör faktiskt DEPLOY-läget (--project-ref) men mot
+        # en STUBBAD `npx` på PATH — bevisar att den pinnade CLI-vägen
+        # (scripts/lib/supabase-cli.sh) faktiskt nås och att guarden blockar
+        # FÖRE första funktionen vid version-missmatch. Fortfarande ingen
+        # nätverkstrafik och ingen riktig Supabase-åtkomst i något fall.
         run: |
           bash scripts/test-deploy-prod-functions.sh
 
@@ -1274,6 +1297,7 @@ jobs:
         # --enable=all aktiverar optional checks (SC2250, SC2312,
         # SC2310, SC2311 m.fl. som är default-disabled).
         # Scope per ADR-033 § Del 3: scripts/*.sh + .githooks/* +
+        # scripts/lib/supabase-cli.sh (tillagd i S108-wiringen, se nedan) +
         # 20 sourced-config-filer (.checklist-policy.conf +
         # .frontmatter-policy.conf + .lesson-policy.conf, tillagd S91/ADR-081 +
         # .ci-wait-policy.conf, tillagd S91/TASK-72 +
@@ -1316,7 +1340,11 @@ jobs:
         # i TASK-203-wiringen (scripts/deny-hemlighet-utskrift.sh +
         # scripts/deny-prod-ref.sh — mekaniska PreToolUse-lås mot kommandon
         # som skriver ut hemligheters värde resp. agent-kommandon riktade
-        # mot produktions-Supabase-projektet, Marcus-order 2026-08-12) —
+        # mot produktions-Supabase-projektet, Marcus-order 2026-08-12) +
+        # .supabase-cli-policy.conf, tillagd i S108-wiringen (pinnad Supabase
+        # CLI-version, scripts/lib/supabase-cli.sh — se filens egen header
+        # för S108-incidenten: den globala CLI:n 2.75.0 avbröt en prod-EF-
+        # deploy efter 18 av 45 funktioner) —
         # en sourced conf utanför scopet är samma lucka som de övriga redan
         # stänger).
         # Räkningen sade "5" medan listan bar sex filer fram till TASK-90;
@@ -1329,16 +1357,21 @@ jobs:
         # TASK-152, till tjugo i TASK-149.3, till tjugoett i TASK-158.2,
         # till tjugotvå i TASK-160.2, till tjugotre i ADR-102-wiringen,
         # till tjugofyra i TASK-180-wiringen, till tjugofem i
-        # TASK-202-wiringen och till tjugosju i TASK-203-wiringen
+        # TASK-202-wiringen, till tjugosju i TASK-203-wiringen
         # (.facit-policy.conf — agenten som byggde grinden lade till conf-filen
         # men wirade den inte in hit; luckan fångades av att shellcheck-strict
-        # fällde på skriptet, inte av att någon läste listan).
+        # fällde på skriptet, inte av att någon läste listan) och till
+        # tjugoåtta i S108-wiringen (.supabase-cli-policy.conf — samma
+        # räkning gäller BARA de sourcade .conf-filerna; scripts/lib/
+        # supabase-cli.sh räknas separat ovan eftersom den är en sourcad
+        # .sh-KODFIL utanför den flata scripts/*.sh-globen, inte en config).
         # Pre-aktiverings-state (post-K3.2 commit d86d846): 0/0/0/0.
         run: |
           shellcheck \
             --severity=style \
             --enable=all \
             scripts/*.sh \
+            scripts/lib/supabase-cli.sh \
             .githooks/* \
             .checklist-policy.conf \
             .frontmatter-policy.conf \
@@ -1366,7 +1399,8 @@ jobs:
             .nattvakt-dedup-policy.conf \
             .atkomst-diagnos-policy.conf \
             .hemlighet-utskrift-policy.conf \
-            .prod-ref-policy.conf
+            .prod-ref-policy.conf \
+            .supabase-cli-policy.conf
 
   # Job 3: Tung testsvit — anropar den reusable ci-suite.yml (EN KÄLLA,
   # delad med nightly.yml OCH post-merge.yml; task-36.2 / ADR-077). Villkorat på
