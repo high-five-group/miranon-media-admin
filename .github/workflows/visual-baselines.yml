@@ -105,11 +105,13 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        # SHA-pin: se ci.yml:s FÖRSTA Checkout-steg (jobbet `changed`) för
+        # hela rationalen (TASK-312, 2026-08-24).
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         # Medvetet UTAN fetch-depth-config — utanför bärar-mängden (ADR-039).
 
       - name: Setup Node
-        uses: actions/setup-node@v7.0.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
@@ -130,7 +132,7 @@ jobs:
         run: bash scripts/visual-baselines-scope.sh
 
       - name: Cache Playwright browsers
-        uses: actions/cache@v6.1.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         id: playwright-cache-baselines
         with:
           path: ~/.cache/ms-playwright
@@ -213,6 +215,9 @@ jobs:
             git add tests/visual/__screenshots__
             git commit -m "test(visual): baseline-uppdatering ur CI (run ${RUN_ID})"
             git push origin "${gren}"
+            # gh — MEDVETET OPINNAD (TASK-312, 2026-08-24): GitHub-hostad
+            # runner, gh förinstallerat/versionshanterat av GitHub självt.
+            # Se scripts/lib/gh-guard.sh § SCOPE.
             gh pr create \
               --title "${titel}" \
               --body "$(printf 'CI-födda linux-baselines från visual-baselines-run %s (%s ändrade/nya bilder).\n\n%s\n\nGRANSKNINGSPLIKT: varje bild i diffen definierar vad som hädanefter anses KORREKT — granska att vyerna ser ut som de SKA innan merge. CI:n på denna PR står i approval-required-läge (Approve workflows to run) tills en granskare släpper den; det är avsiktligt — samma blick som godkänner bilderna släpper grinden.' "${RUN_ID}" "${antal}" "${omfattning}")"

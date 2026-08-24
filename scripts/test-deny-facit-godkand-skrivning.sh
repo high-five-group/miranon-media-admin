@@ -105,6 +105,9 @@ setup() {
     cp "${SKRIPT_SRC}" "${SKRIPT}"
     chmod +x "${SKRIPT}"
     cp "${HELPER_SRC}" "${TEST_DIR}/scripts/lib/facit-godkand-skrivning.mjs"
+    # jq-guard.sh (TASK-312) sourcas nu av skriptet.
+    cp "${REPO_ROOT}/scripts/lib/jq-guard.sh" "${TEST_DIR}/scripts/lib/jq-guard.sh"
+    cp "${REPO_ROOT}/.jq-version-policy.conf" "${TEST_DIR}/.jq-version-policy.conf"
     cat > "${TEST_DIR}/.facit-policy.conf" <<'CONF'
 FACIT_BILAGE_ROT="bilagor"
 FACIT_MANIFEST_NAMN="facit.json"

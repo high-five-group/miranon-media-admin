@@ -177,6 +177,8 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ARBETSFORM_POLICY="${ARBETSFORM_POLICY:-${SCRIPT_DIR}/../.arbetsform-push-policy.conf}"
+# shellcheck source=/dev/null  # dynamisk SCRIPT_DIR-relativ path; scripts/lib/jq-guard.sh lintas separat via ci.yml:s shellcheck-lista
+source "${SCRIPT_DIR}/lib/jq-guard.sh"
 
 # neka <skäl> — stderr (det agenten ser) + exit 2, den enda väg som
 # garanterat blockerar oavsett vad stdout innehåller (samma kontrakt som
@@ -190,7 +192,7 @@ neka() {
 # § FAIL-OPEN vs FAIL-CLOSED ovan — denna gren är AVSIKTLIGT INTE scopad,
 # till skillnad från deny-subagent-vantan.sh:s motsvarande gren, eftersom
 # damage-klassen här är återställbar snarare än allvarlig.
-command -v jq > /dev/null 2>&1 || exit 0
+jq_version_ok > /dev/null 2>&1 || exit 0
 
 INPUT=""
 IFS= read -r -d '' INPUT || true

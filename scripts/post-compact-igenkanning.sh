@@ -164,6 +164,22 @@ SOURCE="$(printf '%s' "${INPUT}" | jq -r '.source // empty' 2> /dev/null)"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || exit 0
 PRECOMPACT_POLICY="${PRECOMPACT_POLICY:-${SCRIPT_DIR}/../.precompact-policy.conf}"
 
+# ── jq-VERSIONSKONTROLL, MEDVETET INTE VID RAD 150 (TASK-312) ──────────────
+# Raden 150 (`command -v jq > /dev/null 2>&1 || exit 0`) MÅSTE förbli en
+# bar presence-check FÖRE all dirname/coreutils-användning — se § ovan
+# ("jq-kontrollen körs FÖRST, innan något annat... på system där jq och
+# coreutils som dirname delar katalog"). Att source:a jq-guard.sh DÄR hade
+# krävt dirname FÖRE presence-checken, exakt den ordning stycket ovan
+# varnar för. Guarden läggs i stället HÄR: SCRIPT_DIR är redan beräknad
+# (raden ovan, av ett ANNAT skäl — PRECOMPACT_POLICY), och vi är redan
+# förbi "källan är compact"-grinden (rad 162) — de fyra tysta källorna gör
+# därför fortfarande NOLL extra filsystemsarbete, precis som kommentaren
+# vid rad 160 kräver. jq:s presence är redan bevisad (rad 150); detta
+# lägger bara till versionskontrollen ovanpå den.
+# shellcheck source=/dev/null  # dynamisk SCRIPT_DIR-relativ path; scripts/lib/jq-guard.sh lintas separat via ci.yml:s shellcheck-lista
+source "${SCRIPT_DIR}/lib/jq-guard.sh" || exit 0
+jq_version_ok > /dev/null 2>&1 || exit 0
+
 # ── Arbetsträdets rot via cwd, INTE ${CLAUDE_PROJECT_DIR:-.} — samma
 # mönster och samma skäl som scripts/deny-precompact.sh § ARBETSTRÄDETS
 # ROT: markörfilen (satt av pre-compact-skillen i SESSIONENS EGET

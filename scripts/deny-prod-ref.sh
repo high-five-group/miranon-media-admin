@@ -77,6 +77,8 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROD_REF_POLICY="${PROD_REF_POLICY:-${SCRIPT_DIR}/../.prod-ref-policy.conf}"
+# shellcheck source=/dev/null  # dynamisk SCRIPT_DIR-relativ path; scripts/lib/jq-guard.sh lintas separat via ci.yml:s shellcheck-lista
+source "${SCRIPT_DIR}/lib/jq-guard.sh"
 
 # deny <skäl> — se deny-hemlighet-utskrift.sh för samma kontrakt.
 deny() {
@@ -85,7 +87,7 @@ deny() {
     exit 2
 }
 
-command -v jq >/dev/null 2>&1 || deny "jq saknas i PATH — hooken kan inte verifiera anropet."
+jq_version_ok || deny "jq saknas eller är för gammal i PATH — hooken kan inte verifiera anropet (TASK-312, .jq-version-policy.conf)."
 
 INPUT=""
 IFS= read -r -d '' INPUT || true

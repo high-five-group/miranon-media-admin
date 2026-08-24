@@ -79,12 +79,20 @@ set -uo pipefail
 
 CONFIG=".claims-tackning-policy.conf"
 
+# SCRIPT_DIR-relativ, INTE cwd-relativ som CONFIG ovan: testsviten
+# (scripts/test-check-claims-tackning.sh) kör detta skript med cwd =
+# en mktemp-sandlåda (för att testa olika CONFIG-scenarier där), inte
+# repo-roten — en cwd-relativ jq-guard-sökväg hade brutit där.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null  # dynamisk SCRIPT_DIR-relativ path; scripts/lib/jq-guard.sh lintas separat via ci.yml:s shellcheck-lista
+source "${SCRIPT_DIR}/lib/jq-guard.sh"
+
 die() { printf 'check-claims-tackning: %s\n' "$1" >&2; exit "${2:-3}"; }
 
 [[ $# -ge 1 ]] || die "användning: check-claims-tackning.sh <manifest.json>"
 MANIFEST="$1"
 
-command -v jq >/dev/null 2>&1 || die "jq krävs men saknas i PATH"
+jq_version_ok || die "jq krävs men saknas eller är för gammal i PATH (TASK-312, .jq-version-policy.conf)"
 
 # Deklarera FÖRE source (shellcheck SC2154 — se check-permissions-claims.sh
 # för samma motiv; arrayer behöver en tom deklaration). SHARED_SURFACE_GLOBS

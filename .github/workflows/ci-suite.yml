@@ -100,13 +100,17 @@ jobs:
       contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        # SHA-pin: se ci.yml:s FÖRSTA Checkout-steg (jobbet `changed`) för
+        # hela rationalen (TASK-312, 2026-08-24) — gäller identiskt för
+        # varje actions/checkout · actions/setup-node · actions/cache ·
+        # actions/upload-artifact-anropsställe i detta repo.
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         # Medvetet UTAN fetch-depth-config: jobbet kör enbart purge-skriptet +
         # policy-filen och behöver ingen git-historik. Utanför fetch-depth-
         # bärar-mängden by design (ADR-039).
 
       - name: Setup Node
-        uses: actions/setup-node@v7.0.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version-file: '.nvmrc'
 
@@ -154,11 +158,11 @@ jobs:
       contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         # Medvetet UTAN fetch-depth-config — inga historik-beroende skript.
 
       - name: Setup Node
-        uses: actions/setup-node@v7.0.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
@@ -298,11 +302,11 @@ jobs:
       contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         # Medvetet UTAN fetch-depth-config — utanför bärar-mängden (ADR-039).
 
       - name: Setup Node
-        uses: actions/setup-node@v7.0.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
@@ -313,7 +317,7 @@ jobs:
       # Samma cache-nyckel som a11y/test-staging (ADR-029 §1c) — först färdiga
       # jobbet värmer, de andra hit:ar.
       - name: Cache Playwright browsers
-        uses: actions/cache@v6.1.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         id: playwright-cache-acceptance
         with:
           path: ~/.cache/ms-playwright
@@ -354,7 +358,7 @@ jobs:
 
       - name: Ladda upp Playwright-artefakter vid rött
         if: failure() || cancelled()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
           name: playwright-acceptance-artefakter
           path: |
@@ -436,10 +440,10 @@ jobs:
       contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
 
       - name: Setup Node
-        uses: actions/setup-node@v7.0.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
@@ -451,7 +455,7 @@ jobs:
       # först färdiga jobbet värmer, de andra hit:ar. Delningen ovan lägger till
       # EN konsument av samma nyckel; den skapar ingen ny cache-yta.
       - name: Cache Playwright browsers
-        uses: actions/cache@v6.1.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         id: playwright-cache-acceptance-sjalvtest
         with:
           path: ~/.cache/ms-playwright
@@ -481,7 +485,7 @@ jobs:
       # `cancelled()` lämnar en takfällning noll spår.
       - name: Ladda upp Playwright-artefakter vid rött
         if: failure() || cancelled()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
           name: playwright-acceptance-sjalvtest-artefakter
           path: |
@@ -534,11 +538,11 @@ jobs:
       contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         # Medvetet UTAN fetch-depth-config — utanför bärar-mängden (ADR-039).
 
       - name: Setup Node
-        uses: actions/setup-node@v7.0.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
@@ -549,7 +553,7 @@ jobs:
       # Samma cache-nyckel som acceptance/a11y/test-staging (ADR-029 §1c) —
       # först färdiga jobbet värmer, de andra hit:ar.
       - name: Cache Playwright browsers
-        uses: actions/cache@v6.1.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         id: playwright-cache-webblasarbeteende
         with:
           path: ~/.cache/ms-playwright
@@ -576,7 +580,7 @@ jobs:
       # som TASK-239 AC #4, PR #1380 för de två andra instanserna).
       - name: Ladda upp Playwright-artefakter vid rött
         if: failure() || cancelled()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
           name: playwright-webblasarbeteende-artefakter
           path: |
@@ -609,11 +613,11 @@ jobs:
       contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         # Medvetet UTAN fetch-depth-config — utanför bärar-mängden (ADR-039).
 
       - name: Setup Node
-        uses: actions/setup-node@v7.0.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
@@ -624,7 +628,7 @@ jobs:
       # Cache Playwright browsers (~150MB) per ADR-029 §1c. Samma nyckel som
       # test-staging — först färdiga jobbet värmer, det andra hit:ar.
       - name: Cache Playwright browsers
-        uses: actions/cache@v6.1.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         id: playwright-cache-a11y
         with:
           path: ~/.cache/ms-playwright
@@ -681,11 +685,11 @@ jobs:
       queue: max
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         # Medvetet UTAN fetch-depth-config — utanför bärar-mängden (ADR-039).
 
       - name: Setup Node
-        uses: actions/setup-node@v7.0.0
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
         with:
           node-version-file: '.nvmrc'
           cache: 'npm'
@@ -694,7 +698,7 @@ jobs:
         run: npm ci
 
       - name: Cache Playwright browsers
-        uses: actions/cache@v6.1.0
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9  # v6.1.0
         id: playwright-cache
         with:
           path: ~/.cache/ms-playwright
@@ -737,7 +741,7 @@ jobs:
       # error-context.md (ADR-061 pelare 3, T29) innan uppladdningen.
       - name: Ladda upp Playwright-artefakter vid rött e2e
         if: failure() || cancelled()
-        uses: actions/upload-artifact@v7
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
           name: playwright-e2e-artefakter
           path: |

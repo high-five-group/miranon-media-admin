@@ -120,14 +120,16 @@
       "ignoreFlagRegex": "-ignore\\s+'([^']*)'",
       "remedyHint": "actionlint saknas eller matchar inte CI:s pinnade version — faller tillbaka på att köra CI:s egen nedladdning+sha256-verifiering ur workflow-blocket (kräver nätverk, ingen sudo)."
     },
-    "Check YAML syntax (yamllint)": {
-      "handling": "toolPresenceLastLine",
+    "Install yamllint (pinned 1.38.0)": {
+      "handling": "versionAssert",
       "tool": "yamllint",
-      "presenceArgs": ["--version"],
-      "remedyHint": "yamllint saknas på PATH. macOS: `brew install yamllint` eller `pip3 install yamllint` (bar `pip` finns ofta inte på Homebrew-Python — CI:s `pip install`-rad förutsätter en Ubuntu-runners namngivning som inte alltid finns lokalt)."
+      "pinRegex": "yamllint==([0-9.]+)",
+      "versionArgs": ["--version"],
+      "versionOutputRegex": "yamllint\\s+([0-9.]+)",
+      "remedyHint": "yamllint saknas eller matchar inte CI:s pinnade version. macOS: `brew install yamllint` eller `brew upgrade yamllint` (bar `pip` finns ofta inte på Homebrew-Python; `pip3 install \"yamllint==<pin>\"` funkar också)."
     }
   },
-  "specialStepsRationale": "Check YAML syntax (yamllint)-steget konflaterar bootstrap (pip install) och grind (yamllint .github/) i EN run:-rad. `pip` (utan siffra) saknas ofta på macOS/Homebrew där yamllint redan är installerat via en annan väg — verbatim-körning av HELA blocket hade fällt på steg 1 av skäl som inte har med YAML-innehållet att göra. toolPresenceLastLine verifierar att verktyget redan finns, och kör sedan ENDAST stegets sista icke-tomma rad (härledd ur ci.yml:s egen text, aldrig en fjärde hårdkodad kopia av \"yamllint .github/\").",
+  "specialStepsRationale": "\"Check YAML syntax (yamllint)\" konflaterade tidigare bootstrap (pip install) och grind (yamllint .github/) i EN run:-rad, opinnat — repots ENDA CI-verktyg utan version-pin (TASK-312, 2026-08-24). Löst genom att SEPARERA ci.yml:s steg: \"Install yamllint (pinned 1.38.0)\" (versionAssert, samma mönster som shellcheck/vale ovan — pip:s --require-hashes-läge kräver att HELA yamllints transitiva dependency-träd pinnas+hash-verifieras, empiriskt bekräftat 2026-08-24 och avvisat som oproportionerlig skörhet för ett enda docs-lint-verktyg, se ci.yml:s egen kommentar vid steget) och \"Check YAML syntax (yamllint)\" (nu ren `yamllint .github/`, oklassad → körs verbatim via derive-vägen, ingen special-hantering behövs längre). scripts/verify-ci-parity.mjs:s hanteraToolPresenceLastLine() är kvar som allmän mekanism för en FRAMTIDA konflaterad situation, men ingen post här namnger den handlingen längre.",
   "exprSubstitutions": {
     "${{ inputs.acceptance_selection }}": ""
   },
