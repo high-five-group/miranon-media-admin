@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-23
+updated: 2026-08-24
 review_by: 2026-11-15
 status: stable
 ---
@@ -79,10 +79,10 @@ app8uGPrVCVOm6LfD
 
 | Tabell | ID | Antal fält | Anteckning |
 |---|---|--:|---|
-| Eventplanering | `tblVE3UKWl1CKrphV` | 45 (staging: 63 sedan TASK-309.2 — se § Bilagornas datamodell) | Prod alltjämt 45 tills Marcus GO (ADR-125 § 8). |
-| Eventinnehåll | staging `tblwqaBrkm6hJPITd` (ny tabell) | 14 (+1 auto-född) | ADR-125 § 2, TASK-309.2. Se § Bilagornas datamodell. Prod: skapas efter GO (skiva 8). |
-| Agendapunkter | staging `tblgEItD0UM1oJVI9` (ny tabell) | 7 | ADR-125 § 2, TASK-309.2. Se § Bilagornas datamodell. Prod: skapas efter GO (skiva 8). |
-| Platser | staging `tbl7ER0wNqAZ9ZhEq` (ny tabell) | 5 (+1 auto-född) | ADR-125 § 2, TASK-309.2. Se § Bilagornas datamodell. Prod: skapas efter GO (skiva 8). |
+| Eventplanering | `tblVE3UKWl1CKrphV` | 63 i BÅDA (staging TASK-309.2, prod 2026-08-24 — se § Bilagornas datamodell) | +18 fält i prod på Marcus GO (ADR-125 § 8), S108 resume 9. |
+| Eventinnehåll | staging `tblwqaBrkm6hJPITd` · prod `tblfwqsNPSYd6o44L` | 14 (+1 auto-född) | ADR-125 § 2, TASK-309.2. Se § Bilagornas datamodell. Prod skapad 2026-08-24 (S108 resume 9). |
+| Agendapunkter | staging `tblgEItD0UM1oJVI9` · prod `tblB1wu9Qm9SWpF0T` | 7 | ADR-125 § 2, TASK-309.2. Se § Bilagornas datamodell. Prod skapad 2026-08-24 (S108 resume 9). |
+| Platser | staging `tbl7ER0wNqAZ9ZhEq` · prod `tblPeNLeeQ1IduGTK` | 5 (+1 auto-född) | ADR-125 § 2, TASK-309.2. Se § Bilagornas datamodell. Prod skapad 2026-08-24 (S108 resume 9). |
 | Eventformat | `tbl8qhuJQ5ZWPMRk4` | 3 | |
 | Anmälningar | `tbloOcrppVoyrHbrq` | 51 | |
 | Personer | `tbl6ZyCm3V026iFTU` | 87 | Master registry. Innehåller mest formel/rollup-fält som speglar Anmälningar och Deltaganden. |
@@ -313,7 +313,7 @@ count-verifierat efter med `{Räckvidd} = BLANK()` → 0 träffar (24/24).
 Prod-tabellen mättes TOM i S102 och är TOM alltjämt — `list_records` gav 0
 rader både före och efter fältskapelsen (0/0, inget att migrera).
 
-#### Bilagornas datamodell (ADR-125, TASK-309.2) — staging skapad 2026-08-23, prod skapas efter GO (skiva 8)
+#### Bilagornas datamodell (ADR-125, TASK-309.2) — staging skapad 2026-08-23, prod skapad 2026-08-24
 
 Tre nya tabeller + fält på Eventplanering/Bilagor, per
 [ADR-125](../decisions/ADR-125-bilagornas-modell-och-promoveringsvag.md) § 2.
@@ -321,9 +321,12 @@ Skapade LIVE via Airtable MCP (`AIRTABLE_SCHEMA_TOKEN` saknades i lokal
 `.env.seed` — samma lucka som `TASK-147.12`s Dokumentklass-fält, se
 `scripts/create-eventinnehall-modell.mjs` § filhuvud för den fulla
 motiveringen); skriptet SPEGLAR den skapade specen för framtida idempotenta
-körningar. **Samtliga ID:n nedan är staging** (`apphjj8Q7lkXCMsL4`) —
-**prod-kolumnen är "skapas efter Marcus GO i klartext per tabell" (ADR-125
-§ 8), additivt men irreversibelt i data när rader fötts.**
+körningar. **Staging-ID:n står i tabellerna nedan** (`apphjj8Q7lkXCMsL4`); **prod-ID:na
+(`app8uGPrVCVOm6LfD`) står i sin egen sektion "Prod-ID:n" längre ned** —
+skapade 2026-08-24 på Marcus GO i klartext (S108 resume 9), additivt men
+irreversibelt i data när rader fötts. **ID:na skiljer sig mellan miljöerna**
+(samma egenskap som § "Prod-basens additiva tillskott" redan bokför) — läs
+alltid rätt kolumn för rätt bas.
 
 **HUR (TASK-309.9):** `scripts/create-eventinnehall-modell.mjs` fick en
 MEDVETEN prod-väg — basen anges som `--bas <baseId>` (aldrig ur config), och
@@ -395,6 +398,54 @@ multipleRecordLinks → Agendapunkter) — eventets egen agenda-kopia.
 Bekräftelsebilaga/Deltagarinformation) · `Källhash` (`fld03lo2OEehq1KlJ`,
 singleLineText, server-internt — SHA-256 över kanoniskt serialiserad
 ifyllnadsdata, ADR-125 § 3).
+
+##### Prod-ID:n (`app8uGPrVCVOm6LfD`) — skapade 2026-08-24, S108 resume 9
+
+Skapade av `scripts/create-eventinnehall-modell.mjs --bas app8uGPrVCVOm6LfD`
+respektive `seed-eventinnehall-modell.mjs`, på Marcus GO i klartext
+(`AIRTABLE_PROD_GODKAND_AV_MARCUS`, ADR-125 § 8). Verifierat oberoende efter
+körningen: basen gick 21 → 24 tabeller. Fältnamn och typer är IDENTISKA med
+staging — endast ID:na skiljer, så tabellerna ovan bär formen och tabellen
+nedan bär prod-adresserna.
+
+| Tabell | Prod-ID | Fält (prod-ID) |
+|---|---|---|
+| **Platser** | `tblPeNLeeQ1IduGTK` | Namn `fld9CfDq4rqTAGGpw` · Adress `fldRgIz9SMYsdBhfm` · Parkering `fldHcUAU4IU0aiZsU` · Transport `fldxlsQXzEe5PTJsB` · Kläder `fldcsp57EXqngLlDV` |
+| **Eventinnehåll** | `tblfwqsNPSYd6o44L` | Namn `fldYGiYlpwzIRUXeE` · Event `fldiJpscoKwvfAqFQ` · Typ `fldv1Fw1d95ST7mlw` · Tid `fldtGnx2EQnFJ6OGk` · Pris `fld785SR7XP5Kk9f7` · Anmälningsavgift `fldoHHvoL70nFHvWf` · Resterande belopp `fldl0qdckKaB7LTyF` · Beskrivning `fldRxjLHI32lV1Uaz` · Förberedelser `fldXTECdUKBzFDfEO` · Tag med `fldz5nRwvYVjt89Ne` · För dig som röker `fldmrg0Jv4tB1xIXm` · Parfym och kosmetika `fld7mV44xqVaAoKAG` · Mat/fika `fldGgs1JiQLoCUzKk` · Övernattning `fldYsWtPyTL7ji0IW` · Utrustning `fld1h9jh4xHzPQhgA` |
+| **Agendapunkter** | `tblB1wu9Qm9SWpF0T` | Text `fld07E0EweoV9ZMhb` · Dag `fldS6MhYH9abukPWl` · Ordning `fldKCVIhRS5V5kmKB` · Tid `fldKeT8ED8ybFr4nZ` · Meditation `fldImmBIQgmQPJTKN` · Eventinnehåll `fldTsMLDOKkJo6j4n` · Event `fldW0gftr4yB34N5a` |
+
+**Eventplanering (+18 fält, prod).** `Plats` `fldaVV1KS6skbOLrB` ·
+Tid `fldnwRYhM9D2nN2R8` · Pris `fldCYaLHQkfESFBt7` ·
+Anmälningsavgift `fldNihOd4WmNWQL7E` · Resterande belopp `fld7jlqEQeAZBxaLT` ·
+Beskrivning `fldYi92LyrBwZNSfH` · Förberedelser `fldIwg7M3U3lW1uzo` ·
+Tag med `fldln6jT0MLSUg9Zj` · För dig som röker `fldYM1Bg1Sp0c7rqt` ·
+Parfym och kosmetika `fldr88Nt2nPySZpQV` · Mat/fika `fldH9plXuiRkY46YW` ·
+Övernattning `fldSz83QQXM6oA3iq` · Utrustning `fldhZvlylo024AQdW` ·
+Adress `fldUdTTqhngE8GRJu` · Parkering `fld7taisyClIx99o7` ·
+Transport `fld7kpwgFqTkrL1UB` · Kläder `fldUsXSUyJjSYMwB2` ·
+Sista betalningsdag `fld7KM5DqGvAjJt6e`.
+
+**Bilagor (+2 fält, prod).** `Mall` `fldyrjqmp4VK9qLfH` ·
+`Källhash` `flds6JYJpr4pxU2Ww` (tabellen själv: prod `tblevR1B54wFjp7QC`,
+staging `tblFamrna53MVf1nG`).
+
+**Seed-rader (prod).** `Platser."Rönninge"` `recZc1EMWMYw5KADo`; sju
+`Eventinnehåll`-rader — Fjärrskådning · Utbildning `rec78DCYjF2wMFlO5` ·
+Fjärrskådning · Föreläsning `rech4KOMCOXGJWBH5` · Resor i medvetandet ·
+Föreläsning `reczZleTUxMind5Wx` · Resor i medvetandet 1 · Utbildning
+`recNRTFebfkQR5eVI` · Resor i medvetandet 2 · Utbildning `reck6P7jM8k0lpA5s` ·
+Resor i medvetandet 3 · Utbildning `recEhb0BMo26Y7ndN` · Psionautics ·
+Utbildning `recG7kY1EV0GrUOTa`; samt 24 `Agendapunkter`-rader knutna till
+"Resor i medvetandet 1 · Utbildning" (record-ID:na i S108 Del 17).
+
+**Torrkörnings-kant, bokförd — inte ett fel i skarpa vägen.**
+`create-eventinnehall-modell.mjs --dry-run` kan INTE planera hela kedjan mot
+en bas där tabellerna saknas: dry-run-grenen skapar ingen tabell och
+threadar därför inget ID vidare (skriptets egen kommentar, rad 841–843), så
+nästa operation som länkar dit fäller med `Guard: länkad tabell
+"Eventinnehåll" hittades inte`. Kommentaren säger att sådana operationer
+*"rapporteras separat i dry-run-läget"* — koden kastar i stället. Skarpa
+körningen är opåverkad (`tableIdByName.set` på rad 849). Mätt 2026-08-24.
 
 **Uppslaget Event (source) × Typ (ADR-125 § 2 — uppslag, inte länk).**
 `Eventplanering.Event (source)` (`flddlv4JA5C5CeH5R`) × `Typ`

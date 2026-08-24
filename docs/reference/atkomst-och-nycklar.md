@@ -216,10 +216,32 @@ kommandon mot prod-Supabase-projektet (`scripts/deny-prod-ref.sh`).
 
 Bilagespårets promovering (eventinnehåll, platser, en server-side renderare
 — [ADR-125](../decisions/ADR-125-bilagornas-modell-och-promoveringsvag.md))
-blir skarp i prod i EXAKT denna ordning, kopierbar rakt av i Marcus egen
-terminal (eller via `!`-prefixet). **Ordningen är inte kosmetisk:** körs
-(c) FÖRE (a)/(b) svarar de sex nya EF:erna 500 mot tabeller som inte finns
-— schema FÖRE deploy, alltid.
+blir skarp i prod i EXAKT denna ordning. **Ordningen är inte kosmetisk:**
+körs (c) FÖRE (a)/(b) svarar de sex nya EF:erna 500 mot tabeller som inte
+finns — schema FÖRE deploy, alltid.
+
+**VEM som kan köra vad — mätt 2026-08-24 (S108 Del 17), inte antaget.**
+Stegen delar sig i två klasser, och gränsen går vid vilken spärr som är
+MEKANISK:
+
+| Steg | Agent-körbar? | Varför |
+|---|---|---|
+| (a) schema · (b) seed | **JA** | Airtable-bas-ID:t bärs inte av `deny-prod-ref.sh` (den matchar Supabase-prod-refen). `AIRTABLE_PROD_GODKAND_AV_MARCUS` är en gate INUTI skripten — ingen hook, inget deny-skript (grep-verifierat över `scripts/` + `.claude/`). Den kräver alltså Marcus **GO i klartext**, inte hans tangentbord |
+| (c) EF-deploy · (d) verifiering | **NEJ** | kommandot bär Supabase-prod-refen → `scripts/deny-prod-ref.sh` fäller det mekaniskt. Marcus egen terminal, alltid |
+| (f) röktest | **NEJ** | manuell prod-användning |
+| (g) nyckelrotation | **NEJ** | bär prod-refen |
+
+**TOKEN-FÄLLAN, mätt och rättad (S108 Del 17 § A).** Meningen i (a) nedan om
+att `.env.seed`s `AIRTABLE_SCHEMA_TOKEN` är staging-scopad är SANN — men den
+säger något om *en variabel i en fil*, inte om vilken Airtable-åtkomst som
+finns på maskinen. Airtable-MCP-serverns token
+(`~/.claude.json` → `mcpServers.airtable.env.AIRTABLE_API_KEY`) når
+**prod-basen** (`permissionLevel: "create"`) och fungerar via skript-vägen
+när den exporteras som `AIRTABLE_SCHEMA_TOKEN`/`STAGING_AIRTABLE_TOKEN`.
+En agent läste 2026-08-24 runbookens mening som "Marcus saknar prod-åtkomst"
+och skrev tio instruktionspunkter för att skapa två nya PAT:ar som aldrig
+behövdes — i samma session som den själv redan läst prod-basen två gånger.
+**Mät åtkomsten, härled den aldrig ur en mening om en annan token.**
 
 ### (a) Prod-schemat — tre tabeller + fält, per tabell efter GO i klartext
 
