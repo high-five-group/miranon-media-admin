@@ -3,10 +3,10 @@ id: TASK-314
 title: >-
   Kontrast-vakter: prefers-contrast-svep för de nio obevakade ytorna (299.10
   steg 10)
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-24 13:43'
-updated_date: '2026-08-24 14:02'
+updated_date: '2026-08-24 14:39'
 labels:
   - ready-for-agent
 dependencies: []
@@ -28,10 +28,10 @@ Marcus-beslut 2026-08-24 (S112, alternativ a): bygg automatiska prefers-contrast
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -44,4 +44,6 @@ Lokal körning (PLAYWRIGHT_VISUAL_DEV_SERVER=1, --project=visual-desktop OCH --p
 Negativ kontroll (AC #2): riktad mutation — AnmalningarSida.tsx rad 788, contrast-more:border-border-strong tillfälligt borttagen. RÖTT: expect(kant.farg).toBe(strongToken) — Expected "rgb(196, 196, 194)", Received "rgba(0, 0, 0, 0)". Reverterad (git diff --stat bekräftar byte-identisk fil mot före), omkörd: GRÖNT, 1 passed.
 
 Baseline-dispatch: kördes riktat (specfilter täcker exakt de nio filerna, 56 matchande tester) — PR-nummer och run-ID bokförs i slutrapporten till orkestreraren. Baseline-PR #1883 (öppen, orörd) överlappar delvis (aktivitetshistorik-visual + dokument-visual) för filernas ORDINARIE test — min dispatch föder ÄVEN de nio ytornas NYA kontrast-bilder, vilket #1883 inte gör (den kördes innan detta pass).
+
+Done-flipp S112: PR #1911 landad, post-merge 0a93e95f grön (verifierad 2026-08-24).
 <!-- SECTION:NOTES:END -->

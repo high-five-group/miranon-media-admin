@@ -3,10 +3,10 @@ id: TASK-183
 title: >-
   finalize-attachment-upload saknar idempotensnyckel — retry kan ge
   dubblett-metadatarad
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-10 08:58'
-updated_date: '2026-08-24 13:57'
+updated_date: '2026-08-24 14:39'
 labels:
   - ready-for-agent
 dependencies: []
@@ -27,8 +27,14 @@ Fynd ur S102-batchen (kort ②, 146.4-agenten, öppet bokfört i dess notes): EF
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Done-flipp S112: PR #1908 landad, post-merge 0a93e95f grön; rött-först-bevis + staging v21 i leveransrapporten (verifierad 2026-08-24).
+<!-- SECTION:NOTES:END -->
