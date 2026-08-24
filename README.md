@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-23
+updated: 2026-08-24
 review_by: 2027-02-08
 status: stable
 ---
@@ -157,7 +157,7 @@ npm run dev                        # Vite dev-server på http://localhost:5173
   - Datakälla-åtkomst via TanStack Router-context-DI (ADR-055) — första UI→data-wiringen, precedens för Fas 6; typad `EdgeFunctionError` med strukturerad `requestId`; fel-yta via MessageBox `role="alert"` + aria-live för lyckad flip
   - Server deny/allow + restore-teardown (`update-record.staging.test.ts`) + 3 klient-e2e (`mark-paid.staging.test.ts`, DoD 1/5/6/7/8 via `page.route`-gate); mall för Fas 6:s mutationer
 
-**Arkitekturbeslut:** 125 arkitekturbeslut (ADR:er) totalt i `docs/decisions/` — levande räkning som CI-grindas vid varje push (se [ADR-039](docs/decisions/ADR-039-konsistens-grindar-kadens.md) + [`scripts/check-adr-count.sh`](scripts/check-adr-count.sh)).
+**Arkitekturbeslut:** 126 arkitekturbeslut (ADR:er) totalt i `docs/decisions/` — levande räkning som CI-grindas vid varje push (se [ADR-039](docs/decisions/ADR-039-konsistens-grindar-kadens.md) + [`scripts/check-adr-count.sh`](scripts/check-adr-count.sh)).
 
 **Statistik (post-Fas 2, historisk ögonblicksbild):**
 
