@@ -205,10 +205,11 @@ function platsOchTillfalle(ort: string | null, eventDatum: string | null): strin
  *    kontextrad, `size-2.5 rounded-full`) och `Gruppdynamik.tsx:183`
  *    (`h-3.5 w-1`). Pricken är gränsen som saknades, och bär dessutom kursens
  *    identitet utan ett ord.
- *  · **` · `-separator** — `AnmalningarList.tsx:136`
- *    (`[eventNamn, datum].join(' · ')`), samt D:s egna Eventhistorik- och
- *    Just nu-rader. Samma vy använde alltså redan separatorn på två andra
- *    ställen; motiveringsraden var undantaget.
+ *  · **` · `-separator** — den rivna `AnmalningarList.tsx`s
+ *    `[eventNamn, datum].join(' · ')` (numera `AnmalningarSida.tsx`,
+ *    `TASK-299.5`), samt D:s egna Eventhistorik- och Just nu-rader. Samma
+ *    vy använde alltså redan separatorn på två andra ställen;
+ *    motiveringsraden var undantaget.
  *
  * Separatorerna är `aria-hidden` — de är en visuell gräns, inte innehåll, och
  * en skärmläsare som läser "punkt" mellan varje led vinner ingenting.

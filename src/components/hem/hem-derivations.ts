@@ -410,7 +410,8 @@ export function bevakningar(
  * osynlig-vid-noll-kontrakt som `Bevakningsrad` bär för HELA komponenten,
  * upprepat här så konsumenten aldrig behöver kontrollera `antal === 0`
  * själv). Räknar via `antalBehoverAtgard` — det DELADE predikatet
- * `AnmalningarList`s markör också läser, aldrig en egen klientberäkning.
+ * `AnmalningarSida`s markör (f.d. `AnmalningarList`, `TASK-299.5`) också
+ * läser, aldrig en egen klientberäkning.
  */
 export function atgardskoRad(regs: Registration[] | undefined): AtgardskoBevakningRad | null {
   const antal = antalBehoverAtgard(regs);

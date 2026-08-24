@@ -236,8 +236,9 @@ interface AtgardskoRadLinkProps extends Omit<AriaLinkProps, 'children' | 'classN
  * ("12 kräver åtgärd", Marcus Del 5) och undertexten bär orsaken. Den
  * delade `atgardskoText` ("N anmälningar kunde inte kopplas till rätt
  * event") är EN mening och kan därför inte fylla en tvådelad anatomi; den
- * lever kvar oförändrad på `/mer/anmalningar` (`AnmalningarList.tsx`), som
- * är den yta den skrevs för. Samma tal, samma orsak, två ytors egna former
+ * lever kvar oförändrad på `/mer/anmalningar` (`AnmalningarSida.tsx` —
+ * `AnmalningarList.tsx` riven/döpt om, `TASK-299.5`), som är den yta den
+ * skrevs för. Samma tal, samma orsak, två ytors egna former
  * — se `registration-display.ts` § `atgardskoText`, vars docblock bär samma
  * bokföring från andra hållet.
  */
