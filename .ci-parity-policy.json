@@ -39,7 +39,8 @@
       "acceptance-sjalvtest": "DERIVERAS — se derivedJobs.ciSuite. TASK-239 (2026-08-17): hermetik-självtestet var ett STEG i `acceptance` och är nu ett eget parallellt jobb (motivering i ci-suite.yml vid jobbet). Paritetsytan är OFÖRÄNDRAD i sak — samma `npm run test:acceptance:sjalvtest`-steg härleds och körs verbatim som förr, bara ur ett annat jobb. Posten finns här därför att verifieraJobbmangd är fail-closed mot HELT NYA jobb (filhuvudets § PARITETS-GRINDEN punkt a), inte för att täckningen ändrats.",
       "webblasarbeteende": "DERIVERAS — se derivedJobs.ciSuite.",
       "a11y": "gated av inputs.run_a11y, som ci.yml:s suite-jobb skickar VILLKORSLÖST false (mekaniskt verifierat, se suiteInputInvariants) — instansieras aldrig på PR-ytan.",
-      "test-staging": "gated av inputs.run_staging, samma skäl som purge — kräver dessutom staging-secrets som inte finns lokalt."
+      "test-staging": "gated av inputs.run_staging, samma skäl som purge — kräver dessutom staging-secrets som inte finns lokalt.",
+      "purge-efter": "TASK-309.15 (2026-08-24): efter-körning-purgen, samma gate som purge/test-staging (inputs.run_staging, villkorslöst false på PR-ytan) och samma secret-krav (STAGING_AIRTABLE_TOKEN). Instansieras därför aldrig på PR-ytan och kan inte köras lokalt av denna grind. Posten finns här därför att verifieraJobbmangd är fail-closed mot HELT NYA jobb (filhuvudets § PARITETS-GRINDEN punkt a) — inte för att täckningen ändrats."
     }
   },
   "derivedJobs": {
