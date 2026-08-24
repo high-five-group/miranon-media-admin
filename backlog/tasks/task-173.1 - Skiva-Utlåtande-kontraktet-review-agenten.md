@@ -4,6 +4,7 @@ title: 'Skiva: Utlåtande-kontraktet + review-agenten'
 status: To Do
 assignee: []
 created_date: '2026-08-09 13:11'
+updated_date: '2026-08-24 14:51'
 labels:
   - ready-for-agent
 dependencies: []
@@ -20,9 +21,9 @@ ordinal: 324000
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [ ] #1 En manuell körning av review-agenten mot en verklig PR producerar ett utlåtande som validerar mot JSON-schemat (severity error/warning/info · action auto-fix/ask-user · risknivå låg/medel/hög + enmenings-motivering · bevisreferenser)
-- [ ] #2 Saknad action-klassning i ett fynd failar closed till ask-user
-- [ ] #3 Review-agenten körs i färsk kontext och är aldrig driv-/bygg-agenten; orkestrerar- och bygg-agent-kontrakten bär grind-steget: spawn efter push, före armering
-- [ ] #4 HÖG risknivå bokförd som orkestrerar-regel: armering väntar på Marcus explicita granskning
+- [x] #2 Saknad action-klassning i ett fynd failar closed till ask-user
+- [x] #3 Review-agenten körs i färsk kontext och är aldrig driv-/bygg-agenten; orkestrerar- och bygg-agent-kontrakten bär grind-steget: spawn efter push, före armering
+- [x] #4 HÖG risknivå bokförd som orkestrerar-regel: armering väntar på Marcus explicita granskning
 - [ ] #5 Kortets AC hämtas verbatim via CLI:t och prövas som antaganden — fel-ställda AC flaggas i utlåtandet
 - [ ] #6 PR utan kort-ID granskas med PR-text som intent och utlåtandet flaggar öppet lägre intent-konfidens
 <!-- AC:END -->

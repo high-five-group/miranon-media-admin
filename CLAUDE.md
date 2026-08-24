@@ -553,6 +553,49 @@ orkestreraren i fällan två gånger under en och samma resume 2026-07-28. Det
 var beviset för att en regel utan mekanism inte efterlevs — och skälet till att
 den nu har en.
 
+### Review-grinden — spawn efter push, före armering (ADR-105)
+
+**ORKESTRERAR-REGEL, från och med `TASK-173.1`:** efter en bygg-agents push,
+och INNAN du armerar (`gh pr merge --auto`), spawna `review-agent`
+(`.claude/agents/review-agent.md`) i FÄRSK kontext mot den pushade PR:en.
+Färsk kontext betyder ett NYTT agent-anrop — aldrig ett meddelande till
+bygg-agentens egen session. Driv-agent och granskare är strukturellt olika
+agenter, alltid (ADR-105 beslut 2; motiv: en granskare som delar kontext med
+utföraren kan godkänna sin egen förskrivning,
+`docs/research/k1-no-mistakes-anatomi-2026-08-09.md` § 3).
+
+**HÖG risknivå blockerar formellt** (ADR-105 beslut 5): returnerar
+granskaren `risk.niva: 'hog'` — armera INTE. Eskalera till Marcus med
+utlåtandets fynd; armering sker först efter hans explicita granskning. `lag`/
+`medel` är i detta skede (`TASK-173.1`, innan `173.3`s PR-sektion och `173.4`s
+CI-backstopp) informativt underlag för din egen bedömning — ingen mekanisk
+spärr hindrar armering vid `lag`/`medel` än.
+
+**Vad som ÄR byggt i denna skiva, och vad som INTE är det (progressiv
+härdning, ADR-105 beslut 3):** `review-agent`-kontraktet och utlåtande-
+schemat (`scripts/lib/review-utlatande.mjs`,
+`scripts/validera-review-utlatande.mjs`) existerar och är skarpbevisade. **Vad
+som SAKNAS än:** path-scopade regler ur main (`TASK-173.2`), den fasta
+Riskbedömnings-sektionen i PR-kroppen (`TASK-173.3`), den deterministiska
+CI-backstoppen som fäller en PR utan giltigt utlåtande (`TASK-173.4`),
+rundtaks-loopen med konvergensregel (`TASK-173.5`), och
+fångstrate-instrumenteringen (`TASK-173.6`). Fram tills dess är grinden ett
+**orkestrerar-åtagande**, inte en mekanisk spärr — en PR kan i praktiken
+armeras utan granskning så länge `173.4` inte finns. Skriv aldrig om detta
+stycke till att låta grinden vara mekaniskt otvingbar innan `173.4` faktiskt
+landat (samma `ADR-083`-disciplin som resten av denna fil: prosa som påstår
+en mekanism som inte finns är värre än att inte skriva något alls).
+
+**Skarpbevis-skuld, öppet bokförd (`CLAUDE.md` § En ny hooks skarpbevis,
+samma strukturella klass generaliserad från hookar till agent-definitioner):**
+`.claude/agents/review-agent.md` skapades och skarpbevisades i samma session
+som denna rad skrevs. Att `subagent_type: "review-agent"` faktiskt känns igen
+av `Agent`-verktyget i en **framtida** session — utöver den session som
+skapade filen — är OPRÖVAT och kan inte förlitas på förrän det bevisats i en
+ny session. Betala skulden som en av nästa berörda sessions första
+handlingar: spawna `review-agent` mot en verklig PR och bekräfta att
+subagent_type-registret känner igen namnet.
+
 ### Kortnummer — verktyget skyddar, men bara halva vägen
 
 `backlog/config.yml` har `check_active_branches: true` sedan `TASK-93`

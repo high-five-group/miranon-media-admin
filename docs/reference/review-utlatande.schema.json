@@ -1,0 +1,185 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "type": "object",
+  "properties": {
+    "schemaVersion": {
+      "type": "string",
+      "const": "1.0"
+    },
+    "kortId": {
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 1
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "prNummer": {
+      "type": "integer",
+      "exclusiveMinimum": 0,
+      "maximum": 9007199254740991
+    },
+    "granskadSha": {
+      "type": "string",
+      "minLength": 7
+    },
+    "runda": {
+      "type": "integer",
+      "exclusiveMinimum": 0,
+      "maximum": 9007199254740991
+    },
+    "intentKalla": {
+      "type": "string",
+      "enum": ["kort", "pr-text"]
+    },
+    "intentKonfidens": {
+      "type": "string",
+      "enum": ["hog", "lag"]
+    },
+    "acProvning": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "nummer": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "text": {
+            "type": "string",
+            "minLength": 1
+          },
+          "bedomning": {
+            "type": "string",
+            "enum": ["haller", "felstalld"]
+          },
+          "motivering": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": ["nummer", "text", "bedomning", "motivering"],
+        "additionalProperties": false
+      }
+    },
+    "fynd": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "beskrivning": {
+            "type": "string",
+            "minLength": 1
+          },
+          "severity": {
+            "type": "string",
+            "enum": ["error", "warning", "info"]
+          },
+          "action": {
+            "default": "ask-user",
+            "type": "string",
+            "enum": ["auto-fix", "ask-user"]
+          },
+          "plats": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "fil": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "rad": {
+                    "anyOf": [
+                      {
+                        "type": "integer",
+                        "exclusiveMinimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": ["fil", "rad"],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "bevis": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kommando": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "utdrag": {
+                  "type": "string"
+                },
+                "exitkod": {
+                  "anyOf": [
+                    {
+                      "type": "integer",
+                      "minimum": -9007199254740991,
+                      "maximum": 9007199254740991
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "runIdEllerSha": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "required": ["kommando", "utdrag", "exitkod", "runIdEllerSha"],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": ["beskrivning", "severity", "action", "plats", "bevis"],
+        "additionalProperties": false
+      }
+    },
+    "risk": {
+      "type": "object",
+      "properties": {
+        "niva": {
+          "type": "string",
+          "enum": ["lag", "medel", "hog"]
+        },
+        "motivering": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 400
+        }
+      },
+      "required": ["niva", "motivering"],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schemaVersion",
+    "kortId",
+    "prNummer",
+    "granskadSha",
+    "runda",
+    "intentKalla",
+    "intentKonfidens",
+    "acProvning",
+    "fynd",
+    "risk"
+  ],
+  "additionalProperties": false
+}
