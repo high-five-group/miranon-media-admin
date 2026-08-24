@@ -186,9 +186,30 @@ if [[ "${mode}" == "list" ]]; then
 fi
 
 # Deploy-läge: deploya varje allowlistad funktion explicit (aldrig bare deploy).
+#
+# CLI-ANROPET ÄR `npx supabase`, INTE `supabase` — och det är MÄTT, inte
+# stilval (S108 Del 18, 2026-08-24). Denna rad kallade tidigare den GLOBALA
+# binären, medan anroparen `fas4-prod-deploy.sh` genomgående kör `npx
+# supabase`. Samma deploy-väg körde alltså TVÅ olika CLI-versioner, och den
+# globala (2.75.0 på Marcus maskin) FALLER på `_shared/mallar/kvitto.css.ts`
+# — en 25 kB enkelrads-strängmodul — med `failed to read file: open /*\n *
+# Kvitto-mallens EGNA CSS …: invalid argument`: den försöker öppna modulens
+# INNEHÅLL som en sökväg. Fällde prod-deployen mitt i, efter 18 av 45
+# funktioner.
+#
+# Differentialmätning mot SAMMA funktion och SAMMA mål (staging), samma träd:
+#   supabase       2.75.0  → FAIL (identiskt fel, reproducerat)
+#   npx supabase  2.115.0  → EXIT 0
+# Alltså CLI-versionen, inte prod och inte filen.
+#
+# KVARSTÅENDE SVAGHET, bokförd öppet: `npx supabase` är inte heller PINNAD —
+# CLI:t saknas i package.json, så npx hämtar senaste. Bytet gör vägen
+# INTERNT KONSEKVENT och avvärjer den mätta stale-globala fällan, men en
+# framtida npx-version kan flytta sig under fötterna på oss. Riktig
+# lösning (pinning + versionsgolv) är eget kort — se S108 Del 18 § C.
 echo "Deployar ${#deploy_set[@]} funktion(er) till project-ref ${project_ref} ..."
 for fn in "${deploy_set[@]}"; do
-    echo "→ supabase functions deploy ${fn} --project-ref ${project_ref}"
-    supabase functions deploy "${fn}" --project-ref "${project_ref}"
+    echo "→ npx supabase functions deploy ${fn} --project-ref ${project_ref}"
+    npx supabase functions deploy "${fn}" --project-ref "${project_ref}"
 done
 echo "✅ Klart — ${#deploy_set[@]} funktion(er) deployade. test-* aldrig rörda."
