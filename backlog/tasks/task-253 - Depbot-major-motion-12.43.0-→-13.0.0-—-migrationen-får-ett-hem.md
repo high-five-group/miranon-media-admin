@@ -149,4 +149,6 @@ Avvikelse mot uppdragstexten (ADR-086, ej blockerande): uppdraget kallade åtgä
 Not: npm uninstall konverterade denna worktrees symlänkade node_modules till en riktig katalog (npm reify tog bort symlänken). Huvudrepots node_modules overifierat orört (kontrollerat filsystem-tidsstämpel).
 
 Commit-referens: se PR (fylls i separat commit strax innan push).
+
+Commit-referens (uppdaterad): c735bb35b2f9a222e257b8360701033132305bb0 (chore(deps): ta bort oanvända @tanstack/react-table + motion).
 <!-- SECTION:NOTES:END -->
