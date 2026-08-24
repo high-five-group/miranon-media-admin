@@ -1,0 +1,26 @@
+{
+  "prototyp": "s108-dokumentytan",
+  "last": "2026-08-24",
+  "lasning": "FÖRBEREDANDE FACIT-LÅS (TASK-309.10, skiva 9) för dokument-ytans två lägen som S108:s pass rörde: räckviddsläget (\"Delade dokument\") och eventväljaren. Samma villkor som syskonkatalogen s108-generering: ytan är promoverad (TASK-309.8, PR #1889, merge 24c39777), Marcus har granskat och gett ordrar (landade i d9d973d5) men har INTE satt någon egen godkännande-mening för facit-låset — TASK-309.8 AC #4 står obockad. \"godkand\" är därför null, och stämpeln sätts av Marcus via hans egen kanal (ADR-104 § Beslut 2), aldrig av en agent.",
+  "godkand": null,
+  "ytor": [
+    {
+      "yta": "Dokument-ytan /mer/dokument — räckviddsläget (Delade dokument) och eventväljaren",
+      "bilder": [
+        "facit-dokumentyta-rackviddslage-desktop.png",
+        "facit-dokumentyta-rackviddslage-mobil.png",
+        "facit-dokumentyta-eventvaljare-desktop.png",
+        "facit-dokumentyta-eventvaljare-mobil.png"
+      ],
+      "kallor": [
+        "src/routes/_authenticated/mer/dokument.tsx",
+        "src/components/dokument/DokumentYta.tsx",
+        "src/components/dokument/RackviddBadge.tsx",
+        "src/components/events/EventValjare.tsx",
+        "src/components/primitives/SidRam.tsx"
+      ],
+      "referenser": [],
+      "not": "SAMMA RIGG OCH SAMMA FÅNGSTLÄGE som syskonkatalogen s108-generering — se dess \"not\" för metoden i sin helhet (hermetisk fixturvärld, engångs-spec som raderades, ingen fullPage, animations disabled, desktop 1440 och mobil 375 @2x). De fyra bilderna togs i samma körning.\n\nDE FYRA BILDERNA: facit-dokumentyta-rackviddslage-{desktop,mobil} visar GemensamtLage — inget event valt, väljaren i sitt \"Delade dokument\"-läge, en räckviddsmärkt bilaga (Hörlursinformation.pdf, RIM · Alla steg) med ikonparet Öppna, Ladda ner, Ersätt och Radera. facit-dokumentyta-eventvaljare-{desktop,mobil} visar väljaren ÖPPEN: sökfältet, det markerade nolläget \"Delade dokument\" med sin ikon, och fixturvärldens två event månadsgrupperade (September 2026: Utbildning Skövde · Skövde; Oktober 2026: Föreläsning Göteborg · Göteborg).\n\nINGEN ARIASNAPSHOT-REFERENS FINNS FÖR DENNA YTA, och \"referenser\": [] är därför en DEKLARERAD FRÅNVARO, inte en odeklarerad lucka. Mätt: tests/visual/__aria__/ har ingen katalog för dokument-ytan (bara promoverings-grinden för genereringsvyn), och tests/visual/dokument-visual.spec.ts är pixelbaserad (toHaveScreenshot) med baslinjer som föds i CI (visual-baselines.yml), aldrig lokalt av en agent — CONTRIBUTING.md § Visuell regression. Ytans mekaniska facit är alltså tills vidare pixelbaslinjen, inte en aria-referens; att bygga en sådan är ett eget kort, inte denna skivas.\n\nSUPERSEDERAR INTE s102-dokument-konvergens, MEN DIVERGERAR MÄTBART FRÅN DEN. Det stämplade facitet i tasks/sessions/bilagor/s102-dokument-konvergens/facit.json (marcus, 2026-08-16, sha cc1d7c53) visar samma yta med en ANNAN radform: textknapparna \"Visa\" och \"Ersätt\" och filnamn som radbryts över flera rader. Dagens yta bär i stället fyra ikonknappar och trunkerade filnamn. Skillnaden härrör från TASK-273.4 (commit b881fe64, 2026-08-17 17:55) som ersatte Visa-dialogen med förhandsvisnings- och nedladdningsikoner — verifierat med git merge-base --is-ancestor att den kom EFTER s102-stämpeln och FÖRE promoveringen 1ec70a85. Ingen grind fällde på det, eftersom s102-manifestets yta saknar \"referenser\" (invariant d gäller bara deklarerade referenser, och check-facit.sh räknar upp de odeklarerade i sin slutrad just för att frånvaron inte ska bli tyst). Detta manifest RÖR INTE s102:s — ett stämplat manifest är agent-fruset (ADR-104-hooken) — utan bokför divergensen så att nästa läsare som jämför de två katalogerna inte tror sig ha hittat en regression i skiva 7. Att avgöra vad som ska hända med s102:s bilder (amendering, omstämpling, eller inget) är Marcus, inte en agents."
+    }
+  ]
+}

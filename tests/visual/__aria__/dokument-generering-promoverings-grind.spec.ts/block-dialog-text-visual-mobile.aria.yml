@@ -1,0 +1,6 @@
+- dialog "Beskrivning":
+  - heading "Beskrivning" [level=2]
+  - textbox "Beskrivning": En beskrivning av utbildningen.
+  - paragraph: Följer standarden. Ändras standarden senare markeras bilagan som inaktuell.
+  - button "Avbryt"
+  - button "Spara"

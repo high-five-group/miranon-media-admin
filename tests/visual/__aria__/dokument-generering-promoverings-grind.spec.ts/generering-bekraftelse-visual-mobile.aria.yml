@@ -1,0 +1,33 @@
+- button "Tillbaka till Dokument"
+- heading "Bekräftelsebilaga" [level=1]
+- paragraph: /Utbildning Skövde · Skövde · \d+-\d+ september \d+/
+- alert:
+  - strong: Dag 2
+  - text: saknas för det här eventet. Den delen tas inte med i bilagan förrän du fyllt i den.
+  - button "Fyll i dag 2"
+- region "Inforutan":
+  - heading "Inforutan" [level=2]
+  - list:
+    - listitem: "Rubrik Utbildning: Utbildning Skövde"
+    - listitem: /Datum och tid \d+-\d+ september \d+, kl\. \d+:\d+ - \d+:\d+/
+    - listitem: /Plats Uttringe Hages väg \d+, Rönninge/
+    - listitem: /Pris \d+\.\d+ Kr/
+    - listitem: /Anmälningsavgift \d+:-, betalas vid anmälan\./
+    - listitem: /Resterande belopp \d+:-/
+    - listitem: /Sista betalningsdag \d+ oktober \d+/
+    - listitem:
+      - button "Ändra"
+- region "Om utbildningen":
+  - heading "Om utbildningen" [level=2]
+  - list:
+    - listitem:
+      - button "Ändra beskrivning": Beskrivning Standardtexten om utbildningen
+- region "Agenda":
+  - heading "Agenda" [level=2]
+  - list:
+    - listitem:
+      - button "Ändra dag 1": Dag 1 3 punkter, varav 1 meditationer
+    - listitem:
+      - button "Fyll i dag 2": Dag 2 Fyll i dag 2
+- button "Förhandsgranska först"
+- button "Skapa bekräftelsebilaga"

@@ -1,0 +1,11 @@
+- dialog "Kläder":
+  - heading "Kläder" [level=2]
+  - text: /2 av \d+/
+  - textbox "Kläder": Varma kläder och bekväma inneskor.
+  - checkbox "Använd som standard för Skövde framöver"
+  - text: Använd som standard för Skövde framöver
+  - paragraph: Följer standarden. Ändras standarden senare markeras bilagan som inaktuell.
+  - 'button "Föregående: Förberedelser"'
+  - 'button "Nästa: Tag med"'
+  - button "Avbryt"
+  - button "Spara"
