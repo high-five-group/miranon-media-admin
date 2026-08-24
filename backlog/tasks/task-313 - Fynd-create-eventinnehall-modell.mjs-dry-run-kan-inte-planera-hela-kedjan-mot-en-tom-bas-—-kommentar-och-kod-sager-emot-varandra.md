@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-24 13:36'
+updated_date: '2026-08-24 15:59'
 labels:
   - ready-for-agent
 dependencies: []
@@ -36,9 +37,9 @@ KALLA: S108 Del 17 § D.
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 En --dry-run mot en bas utan de tre tabellerna planerar HELA kedjan utan att kasta, ELLER faller med ett meddelande som sager att det ar en dry-run-begransning och inte ett datafel
-- [ ] #2 Kommentaren vid createTable-grenens dry-run beskriver vad koden FAKTISKT gor (ADR-083)
-- [ ] #3 Tvasidigt test: dry-run mot tom bas och mot fylld bas, bada med forvantat utfall
+- [x] #1 En --dry-run mot en bas utan de tre tabellerna planerar HELA kedjan utan att kasta, ELLER faller med ett meddelande som sager att det ar en dry-run-begransning och inte ett datafel
+- [x] #2 Kommentaren vid createTable-grenens dry-run beskriver vad koden FAKTISKT gor (ADR-083)
+- [x] #3 Tvasidigt test: dry-run mot tom bas och mot fylld bas, bada med forvantat utfall
 <!-- AC:END -->
 
 ## Definition of Done

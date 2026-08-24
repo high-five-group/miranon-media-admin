@@ -40,8 +40,14 @@ export class ForbiddenError extends HttpError {
 }
 
 export class ValidationError extends HttpError {
-  constructor(message = 'Validation failed') {
-    super(400, message);
+  // `status` är VALFRI (default 400, ADR-066/klient-input-varianten, oförändrat
+  // för alla befintliga anrop). TASK-190: en uppströms-klassad Airtable-
+  // valideringsavvisning (typiskt 422, se airtable-client.ts §
+  // classifyAirtableWriteError) behöver kunna BÄRA Airtables egen status i
+  // stället för att hårdkodas till 400 — samma felklass (klient-orsakat,
+  // 4xx), men rätt kod för den som faktiskt orsakade avvisningen (Airtable).
+  constructor(message = 'Validation failed', status = 400) {
+    super(status, message);
     this.name = 'ValidationError';
   }
 }

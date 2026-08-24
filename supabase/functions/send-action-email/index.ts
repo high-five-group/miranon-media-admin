@@ -16,6 +16,7 @@ import {
   type ActionType,
   type AttachmentPayload,
   type AttachmentReader,
+  deriveContentType,
   type EventContext,
   isActionType,
   mapRegistrationFields,
@@ -219,6 +220,7 @@ function makeRealSingleSender(): ActionSingleSender {
         attachments: ctx.attachments.map((a) => ({
           filename: a.filename,
           content: a.contentBase64,
+          contentType: deriveContentType(a.filename),
         })),
         ...(replyTo && replyTo.trim() ? { replyTo } : {}),
       },

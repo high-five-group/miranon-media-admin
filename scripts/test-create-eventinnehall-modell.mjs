@@ -25,22 +25,48 @@ import {
   parseArgs,
   planFields,
   resolveTargetBaseId,
+  runOperations,
   validateConfig,
 } from './create-eventinnehall-modell.mjs';
 
 let passed = 0;
 let failed = 0;
 
+// Väntande async-tester (TASK-313: runOperations är async). Synkrona tester
+// beter sig EXAKT som tidigare — resultatet är då inte ett thenable och
+// grenen nedan tar den gamla, direkta vägen. Async-tester köas och avvaktas
+// samlat via `pendingAsync` innan sviten skriver ut sin summering, så att en
+// avvisad Promise verkligen räknas som ❌ i stället för att bli en tyst
+// unhandled rejection.
+const pendingAsync = [];
+
 function test(name, fn) {
+  let result;
   try {
-    fn();
-    passed += 1;
-    console.log(`✅ ${name}`);
+    result = fn();
   } catch (err) {
     failed += 1;
     console.error(`❌ ${name}`);
     console.error(`   ${err.message}`);
+    return;
   }
+  if (result && typeof result.then === 'function') {
+    pendingAsync.push(
+      result
+        .then(() => {
+          passed += 1;
+          console.log(`✅ ${name}`);
+        })
+        .catch((err) => {
+          failed += 1;
+          console.error(`❌ ${name}`);
+          console.error(`   ${err.message}`);
+        }),
+    );
+    return;
+  }
+  passed += 1;
+  console.log(`✅ ${name}`);
 }
 
 // ---------------------------------------------------------------------------
@@ -378,6 +404,129 @@ test('PROD_GODKAND_ENV_VAR: exporteras som exakt "AIRTABLE_PROD_GODKAND_AV_MARCU
 });
 
 // ---------------------------------------------------------------------------
+// runOperations — TASK-313: dry-run mot en bas där de tre NYA tabellerna
+// (Platser/Eventinnehåll/Agendapunkter) INTE finns kraschade tidigare på
+// tredje operationen (Agendapunkter länkar Eventinnehåll) eftersom
+// dry-run-grenen för createTable aldrig trädde tableIdByName. Tvåsidigt
+// test per AC #3: en TOM bas (för DETTA skript — Eventplanering/Bilagor är
+// addFields-mål som per skriptets egen guard MÅSTE finnas sedan tidigare,
+// de skapas aldrig här) och en HELT FYLLD bas (allt redan i synk, no-op).
+// Ingen fetch, inget nätverk — createTableApi/createFieldApi är stubbar som
+// KASTAR om de anropas, vilket bevisar att dry-run aldrig anropar API:t.
+// ---------------------------------------------------------------------------
 
+const failIfApiCalled = () => {
+  throw new Error('createTableApi/createFieldApi anropades i dry-run — ska ALDRIG hända');
+};
+
+test('runOperations: dry-run mot tom bas (de tre nya tabellerna saknas) planerar HELA kedjan utan att kasta', async () => {
+  const tables = [
+    { id: 'tblEventplanering', name: 'Eventplanering', fields: [] },
+    { id: 'tblBilagor', name: 'Bilagor', fields: [] },
+  ];
+  const result = await runOperations({
+    tables,
+    operations: CONFIG.operations,
+    dryRun: true,
+    createTableApi: failIfApiCalled,
+    createFieldApi: failIfApiCalled,
+  });
+  assert.equal(result.anyChange, true);
+  // Dry-run mutar aldrig basen — inget skapas på riktigt, listan är därför tom.
+  assert.deepEqual(result.skapadeRader, []);
+});
+
+test('runOperations: dry-run mot en HELT tom bas (även Eventplanering/Bilagor saknas) kastar fortfarande — de ska aldrig skapas av skriptet', async () => {
+  // Agendapunkter (tredje createTable-operationen) länkar BÅDE Eventinnehåll
+  // (nyss "skapad" via det syntetiska ID:t, TASK-313-fixen) OCH Eventplanering
+  // — som INTE är en createTable-operation och alltså aldrig får ett
+  // syntetiskt ID. Det är korrekt: skriptet ska ALDRIG skapa Eventplanering
+  // (den "förväntas existera SEDAN TIDIGARE", se guarden för addFields), så
+  // ett GuardError här är rätt beteende, inte en regression.
+  await assert.rejects(
+    () =>
+      runOperations({
+        tables: [],
+        operations: CONFIG.operations,
+        dryRun: true,
+        createTableApi: failIfApiCalled,
+        createFieldApi: failIfApiCalled,
+      }),
+    /länkad tabell "Eventplanering" hittades inte/,
+  );
+});
+
+test('runOperations: dry-run mot fylld bas (allt redan i synk) är en ren no-op, kastar aldrig', async () => {
+  const idFor = (name) => `tbl${name.replace(/[^a-zA-Z0-9]/g, '')}`;
+  const resolver = (name) => idFor(name);
+  const tablesByName = new Map();
+  for (const op of CONFIG.operations) {
+    if (op.kind === 'createTable') {
+      const body = buildCreateTableBody(op, resolver);
+      tablesByName.set(op.name, {
+        id: idFor(op.name),
+        name: op.name,
+        fields: body.fields.map((f, i) => ({
+          id: `fld${i}`,
+          name: f.name,
+          type: f.type,
+          options: f.options,
+        })),
+      });
+    }
+  }
+  for (const op of CONFIG.operations) {
+    if (op.kind === 'addFields') {
+      const existing = tablesByName.get(op.name) ?? {
+        id: idFor(op.name),
+        name: op.name,
+        fields: [],
+      };
+      const newFields = op.fields
+        .map((f) => buildCreateFieldBody(f, resolver))
+        .map((f, i) => ({ id: `afld${i}`, name: f.name, type: f.type, options: f.options }));
+      existing.fields = [...existing.fields, ...newFields];
+      tablesByName.set(op.name, existing);
+    }
+  }
+
+  const result = await runOperations({
+    tables: [...tablesByName.values()],
+    operations: CONFIG.operations,
+    dryRun: true,
+    createTableApi: failIfApiCalled,
+    createFieldApi: failIfApiCalled,
+  });
+  assert.equal(result.anyChange, false, 'allt redan i synk — inget att planera');
+  assert.deepEqual(result.skapadeRader, []);
+});
+
+test('runOperations: skarpt läge (dryRun: false) trär tableIdByName från API-svaret — Agendapunkter kan länka nyskapad Eventinnehåll', async () => {
+  const createdTables = [];
+  const result = await runOperations({
+    tables: [
+      { id: 'tblEventplanering', name: 'Eventplanering', fields: [] },
+      { id: 'tblBilagor', name: 'Bilagor', fields: [] },
+    ],
+    operations: CONFIG.operations,
+    dryRun: false,
+    createTableApi: async (body) => {
+      createdTables.push(body.name);
+      const id = `tblSKAPAD${createdTables.length}`;
+      return {
+        id,
+        name: body.name,
+        fields: body.fields.map((f, i) => ({ id: `fld${i}`, name: f.name, type: f.type })),
+      };
+    },
+    createFieldApi: async (_tableId, body) => ({ id: 'fldNY', name: body.name, type: body.type }),
+  });
+  assert.deepEqual(createdTables, ['Platser', 'Eventinnehåll', 'Agendapunkter']);
+  assert.equal(result.anyChange, true);
+});
+
+// ---------------------------------------------------------------------------
+
+await Promise.all(pendingAsync);
 console.log(`\n${passed} passed, ${failed} failed`);
 process.exit(failed > 0 ? 1 : 0);
