@@ -410,6 +410,25 @@ Numrering efter S109: ADR 122 · kort 284 (om `#1674` landat) · L512 + 55
 fragment · T158 · f52 · session 111. Full narrativ: sessionsdok S109 Del 1–4 +
 PAUSLÄGE.
 
+**Session 108 ▶️ ÅTERUPPTAGEN (2026-08-24, `lifecycle: active`, nionde resumen;
+pausad åtta gånger, historik) — RESUMEN ÖPPNAR PÅ MARCUS FEM MOMENT; INGET
+AGENT-ARBETE ÄR PLOCKBART FÖRE STEG 1–2.** Marcus order: *"Återuppta S108."*
+**Paus-PR `#1892` verifierad landad** (`origin/main` `f5ed41d2`).
+Huvudkatalogen bär numera DENNA sessions egen ägarlapp (den främmande lappen
+från 2026-08-23 hade en död ägare) och är fast-forwardad till `f5ed41d2`,
+detached — `main` hålls av `s108-bilagesparet`. Dokgren `docs/s108-resume-9`
+från `origin/main` i `s108-paus-docs`. **Numreringen re-verifierad mot disk —
+ingen post rörde sig under pausen:** ADR **127** · task-**312** · **L533** ·
+66 fragment · **T176** · f53 · session **112**. Arbetsform: inget läge aktivt
+i något av de tre träden. Öppna PR:er exakt som handoffen: draft `#1889`
+(promoveringen), `#1883` (främmande baseline), fem Dependabot parkerade.
+**MÄTT VID RESUME, bekräftar handoffen:** prod-basen `app8uGPrVCVOm6LfD`
+saknar `Eventinnehåll`/`Agendapunkter`/`Platser` (read-only MCP-läsning) —
+runbookens steg 1 (a)–(d) är alltså OKÖRT och nattens prod-fönster (Del 16
+§ C) står fortfarande öppna. Nästa: Marcus kör MARCUS-SEKVENSEN steg 1–2,
+agenten assisterar och bokför prod-ID:n. Full handoff: sessionsdok S108
+§ Paushistorik 8 + Del 14–16.
+
 **Session 108 ⏸️ PAUSAD (åttonde gången, 2026-08-24, `lifecycle: paused`) —
 ALLA AFK-SKIVOR LANDADE; PROMOVERINGEN STÅR SOM DRAFT `#1889`; KVAR ÄR
 EXAKT MARCUS FEM MOMENT (SESSIONSDOK S108 § PAUSLÄGE ÅTTONDE →
