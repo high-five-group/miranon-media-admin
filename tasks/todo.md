@@ -426,6 +426,34 @@ Numrering efter S109: ADR 122 · kort 284 (om `#1674` landat) · L512 + 55
 fragment · T158 · f52 · session 111. Full narrativ: sessionsdok S109 Del 1–4 +
 PAUSLÄGE.
 
+**Session 108 🤖 ORKESTRERINGS-PASS (2026-08-24, `lifecycle: active`, tionde
+resumen forts.) — PROMOVERINGEN I PROD, ÅTTA AGENTER, NITTON LANDNINGAR,
+KORTFAMILJEN 0 → 12 STÄNGDA.** Marcus AFK med order att delegera allt
+delegerbart och köra så långt möjligt. **`#1889` landad 17:00:37Z
+(`24c39777`)** → Vercel Production 17:01:13Z; prod verifierat via
+`git merge-base --is-ancestor` mot deploy-SHA, inte via stränglätning i
+bundle. Landat i övrigt: `309.1`–`.7` stängda (`#1946`) · `309.12`–`.16`
+stängda (`#1947`/`#1951`/`#1965`) · **efter-körning-purgen** (`#1956`,
+`ADR-060` punkt 3 amenderad — **Marcus bör granska**) · **skiva 9:s facit**
+(`#1961`, 22 bilder + 2 manifest, båda `godkand: null`) · 24 lessons-fragment
+(65 → 89) · `ADR-109`-indexraden · runbookens `fullPage`-fälla · 11 döda
+filreferenser. **SEX AGENTER RÄTTADE MITT EGET UNDERLAG** — fragment-talet
+(66→65), testevent-antalet (44→55, och 151 över fem familjer), min falska
+förklaring att setup-purgen inte kör efter, `ADR-109`:s upphävda momsrad,
+och att block-dialogens datum-läge skulle vara nåbart (det är **död kod**,
+falsifierar mitt eget `TASK-309.17`). **TRE FYND INGEN LETADE EFTER:** två
+Airtable-rader kvar i **27 och 32 dygn** utan matchande purge-target ·
+runbookens mall bar `fullPage: true` och **lärde ut** buggen · `s102`:s
+stämplade facit vaktas av **ingenting** (innehållslåset gäller bara ytor med
+`referenser`-nyckel). **Nya kort:** `309.15`–`.21`. **Lessons-konsolideringen
+STOPPAD med avsikt** — 65 av 89 fragment tillhör andra sessioner; ett
+fragment är en fullgod leverans. **KVAR FÖR MARCUS:** `309.8` AC #3
+(ordalydelsen "identisk med prototypen" är inte längre sann) · `ADR-060`-
+amenderingen · **`309.20` är tidskritisk** (två formdefekter vid 375 px som
+facit fryser om du stämplar före fix) · prod-röktest · DocRaptor-rotation ·
+facit-stämpling · `byggplan.md` §2 saknar hela spåret · `CHANGELOG`
+`[Unreleased]` tom sedan `0.8.0`. Full narrativ: sessionsdok S108 Del 22.
+
 **Session 108 ▶️ ÅTERUPPTAGEN (2026-08-24, `lifecycle: active`, tionde resumen;
 pausad nio gånger, historik) — LÄGET RE-MÄTT MOT `origin/main`,
 GRANSKNINGSYTAN UPPE, `TASK-309.9` AC #3 BOCKAD; MARCUS-SEKVENSEN STÅR
