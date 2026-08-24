@@ -17,9 +17,10 @@ status: stable
 > mot faktiska deltagarlistor · Session 102 (2026-08-17) — backfill av tidsfältet
 > `Inskickad` på 294 rader · Session 107 (2026-08-17) — länkning av 26
 > anmälningar utan Event-länk · Session 110 (2026-08-21) — omlänkning av 61
-> felmatchade anmälningar (Elfsight-URL-buggen). Varje post bär sitt eget
-> mandat och sin egen verifiering; en ny post läggs sist, tidigare poster
-> skrivs inte om.
+> felmatchade anmälningar (Elfsight-URL-buggen) · Session 112 (2026-08-24) —
+> touchpoint-backfill för 8 manuellt Person-länkade anmälningar
+> (`TASK-229.2`). Varje post bär sitt eget mandat och sin egen verifiering;
+> en ny post läggs sist, tidigare poster skrivs inte om.
 
 ## Session 60 — syfte och pivot
 
@@ -346,6 +347,92 @@ läsbarhet, inte en levande frågekälla.
 
 Källa: [`../../tasks/sessions/2026-08-21-session-110.md`](../../tasks/sessions/2026-08-21-session-110.md)
 § Del 2 B + Paushistorik § TILLSTÅND.
+
+## 2026-08-24 — Touchpoint-backfill: 8 manuellt lagade anmälningar, Session 112
+
+Sjätte skarpa prod-skrivningen i denna logg. Rotorsak (`TASK-229` § Del 5,
+falsifiering av Del 3:s tidigare "obestämbar"-slutsats): A2 Gren 1 sätter
+aldrig Person-länk eller Touchpoint för en namnlös Person — konstruktionen,
+inte ett körningsfel. De 8 anmälningarna (ID 868/877/884/899/910/911/941/981)
+fick sin Person-länk manuellt patchad via `TASK-229` § Del 1+4 (2026-08-16),
+men Gren 2:s `createRecord` för `Inskickad anmälan`-touchpointen uteblev
+samtidigt — CRM-historiken (`Senaste interaktion`, TP-sammanfattning) stod
+ofullständig för de 8 personerna tills denna backfill. Mandat: Marcus GO
+2026-08-24, klartext ("Det är absolut GO på 1+2"). Kort: `TASK-229.2`.
+Scope: EXAKT 8 `createRecord` i `Touchpoints` (`tbl22SCvlHrgcAiZi`) — inga
+uppdateringar, inga raderingar.
+
+### Fältkontrakt (verifierat mot prod-schemat före skrivning)
+
+Tre fält per post, matchat exakt mot `describe_table` innan första skrivning:
+`Person (länkat fält)` (`fldLiC0ZiUAdxXu9u`, länk → `tbl6ZyCm3V026iFTU`) ·
+`Typ` (`fldL8gMBzkMHyUoiK`, singleSelect) = `"Inskickad anmälan"`
+(`sel8DlybaDi9slhD3`) · `Datum` (`fldcq8oJWTyc8p8dA`, dateTime) = anmälans
+`Inskickad`-tidsstämpel. Övriga fält (formler, `Erbjudande`, `Kanal`) rörda
+aldrig — de är formelfält eller hör hämtningar till, inte anmälningar.
+
+### För-verifiering och dedup (per post, före varje skrivning)
+
+Samtliga 8 anmälningar lästa mot `tbloOcrppVoyrHbrq` (Anmälningar): `Person`
+och `Inskickad` matchade spec-tabellen **exakt**, 0 avvikelser — inget
+skäl att hoppa över någon post. Dedup kördes därefter per person
+(`tbl6ZyCm3V026iFTU`s `Touchpoints`-array läst ut, varje länkad post hämtad):
+ingen av de 8 personerna bar en befintlig `Typ="Inskickad anmälan"`-touchpoint
+inom ±5 min av respektive måldatum — närmaste kollisionskandidat var Allan
+Nieminens `recOStoMeytYbeHIv` (2026-05-14T09:47, mot måldatum
+2026-05-12T21:39 — ca 1 dygn 12 tim bort, långt utanför fönstret). 0 poster
+hoppades över.
+
+### Vad som skrevs
+
+| # | Anmälan (ID) | Person | Ny touchpoint | Datum |
+|---|---|---|---|---|
+| 1 | recNbJwwt8nlFtasL (868) | rec5fF7QD16Qpr0C9 (Allan Nieminen) | `recRZ8xLB3HwxvZzn` (TP 1087) | 2026-05-12T21:39:15.000Z |
+| 2 | rec4QfGSOjwljAbKV (877) | recZ8qJn3iOquLXC8 (Elin Melwinsson) | `recAiFxc3V2xGTVgj` (TP 1088) | 2026-05-18T18:56:59.000Z |
+| 3 | recViNdItldmL6O8l (884) | recT8y8DvaZz09gtW (Ulrika Arvas) | `recVEpBSnxtK1KAPZ` (TP 1089) | 2026-05-29T15:05:48.000Z |
+| 4 | rec1SD7i2467gPrJ9 (899) | rectj3ixgMylQYAGH (Lena Maria Olsson) | `recrQO0193gPayvEI` (TP 1090) | 2026-06-15T05:09:16.000Z |
+| 5 | rec3A0IJir34yoekd (910) | recAZF4Y7Y0AyKFNq (maria lejdeby) | `recvZvsKJ2jInu5Rv` (TP 1091) | 2026-06-28T07:38:56.000Z |
+| 6 | rec1ft7CDqLJwZw9V (911) | recoFAXvbggTQ8WrL (Helena Skoglund) | `recF10FuDa0NEKFEK` (TP 1092) | 2026-06-29T18:28:11.000Z |
+| 7 | rechDOujWs8FdnrCL (941) | recAc3ToqnjYUWEHq (Karl Areskough) | `recnlsDTWAt3qCAwx` (TP 1093) | 2026-07-15T18:15:54.000Z |
+| 8 | reczi2qUFpS1eiyYm (981) | recM5CHah9vqFh3fb (Agneta Lindell) | `recALBd4SUmGERO2Q` (TP 1094) | 2026-08-11T08:23:24.000Z |
+
+### Verifiering
+
+Read-back per post: samtliga 8 nya touchpoints hämtade tillbaka individuellt
+— alla tre fält (Person-länk, Typ, Datum) matchade exakt vad som skickades.
+Samtliga 8 personers `Touchpoints`-array läst tillbaka: växte med **exakt 1**
+i varje fall (Allan 5→6, Elin 1→2, Ulrika 2→3, Lena Maria 1→2, maria lejdeby
+1→2, Helena 2→3, Karl 1→2, Agneta 1→2).
+
+Slutsvep kört som en **oberoende serverfrågad räkning** (`filterByFormula`
+mot `Touchpoints` direkt, `Typ='Inskickad anmälan'` + `OR(FIND(personnamn,
+ARRAYJOIN({Person (länkat fält)})), …)` över de 8 namnen — inte en manuell
+räkning av arrayerna) → **15 poster**, exakt det förväntade (7 befintliga + 8
+nya). Fördelning per person i svepet: Allan 4 (3+1), Elin 1 (0+1), Ulrika 3
+(2+1), Lena Maria 2 (1+1), maria lejdeby 2 (1+1), Helena 1 (0+1), Karl 1
+(0+1), Agneta 1 (0+1) — summan matchar både den manuella tallyn och
+person-array-räkningen, tre oberoende metoder som konvergerar på samma tal.
+
+### Sidoeffekt (känd i förväg, observerad — inte åtgärdad)
+
+`Senast touchpoint datum` (formel över `Touchpoints`) flyttades framåt för de
+personer vars nya touchpoint blev den SENASTE i deras historik (7 av 8: Elin
+2026-05-15→2026-05-18, Ulrika 2026-04-19→2026-05-29, Lena Maria
+2026-04-19→2026-06-15, maria lejdeby 2026-04-19→2026-06-28, Helena
+2025-12-26→2026-06-29, Karl 2026-04-26→2026-07-15, Agneta
+2026-05-10→2026-08-11). Allan opåverkad — hans senaste touchpoint
+(2026-08-24, dagens anmälan) var redan nyare än den backfillade
+2026-05-12-posten. Korrekt utfall per kortets spec, ingen åtgärd.
+
+### Öppet efter denna post
+
+A2 Gren 1-fixen som förhindrar återfallet (namnlösa Personer missar samma
+Touchpoint-createRecord vid framtida anmälningar) är `TASK-229.1`
+(staging) + `TASK-229.3` (prod-utrullning) — ej del av detta kort. Denna post
+städar historik, den hindrar inte återfall.
+
+Källa: `TASK-229`-kortet § Del 5 (rotorsaks-falsifieringen + spec-underlaget)
+och `TASK-229.2`-kortet (AC + mandat).
 
 ## Källor
 
