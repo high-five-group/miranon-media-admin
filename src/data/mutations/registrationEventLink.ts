@@ -63,7 +63,8 @@ export function useRelinkRegistration() {
     },
 
     // Bred invalidering (prefix-match, se queryKeys.ts:s docblock): träffar
-    // BÅDE den globala listan (`registrations.all`, AnmalningarList) och en
+    // BÅDE den globala listan (`registrations.all`, AnmalningarSida — f.d.
+    // AnmalningarList, TASK-299.5) och en
     // ev. öppen `registrations.byEvent`/`registrations.detail` för samma rad
     // — precis den bredd `registrations.all` är dokumenterad att bära.
     onSettled: () => {

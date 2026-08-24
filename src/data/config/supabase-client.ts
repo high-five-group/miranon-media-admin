@@ -134,12 +134,15 @@ export async function postEdgeFunction<T>(name: string, body: Record<string, unk
  * läser `res.blob()` i stället för `res.json()`. Husets alla andra
  * PDF-vägar returnerar base64 inuti JSON (`preview-receipt`,
  * `generate-event-attachment`) och konsumeras därför av `postEdgeFunction`;
- * `test-docraptor-render` svarar i stället med rå `application/pdf`
- * (`supabase/functions/test-docraptor-render/index.ts` § returen), eftersom
- * den byggdes som mätinstrument för `ADR-119` beslut 7 och mäter
+ * `test-docraptor-render` svarade i stället med rå `application/pdf`,
+ * eftersom den byggdes som mätinstrument för `ADR-119` beslut 7 och mätte
  * PDF-bytesen direkt. Att i stället ändra EF:ens kontrakt till base64 hade
- * rivit grunden under den redan gjorda mätningen — därför tar klienten emot
- * det format instrumentet faktiskt talar.
+ * rivit grunden under den redan gjorda mätningen — därför tog klienten emot
+ * det format instrumentet faktiskt talade. [RIVEN, TASK-309.4, ADR-125 § 5]
+ * EF:en är riven; denna hjälpares enda anropare
+ * (`AirtableAdapter.renderPdfFranHtml`) saknar i sin tur egna anropare i
+ * `src/` och står bokförd som öppen skuld i `DataSourceAdapter.ts`s
+ * `renderPdfFranHtml`-docblock.
  *
  * Auth-, fel- och retry-kontraktet är IDENTISKT med `postEdgeFunction`:
  * samma `getAuthHeader`, samma `edgeFunctionError` vid non-2xx (feltexten

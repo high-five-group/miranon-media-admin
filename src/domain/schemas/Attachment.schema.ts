@@ -127,8 +127,9 @@ export const DocumentPreviewSchema = z.object({
 });
 
 /**
- * Svaret från `test-docraptor-render` med `leverans: 'utkast'` (TASK-302.1,
- * PRD `TASK-302`, `ADR-124`) — en kort signerad URL till ett TRANSIENT
+ * Svaret från `test-docraptor-render` (RIVEN, `TASK-309.4`, `ADR-125` § 5)
+ * med `leverans: 'utkast'` (TASK-302.1, PRD `TASK-302`, `ADR-124`) — en kort
+ * signerad URL till ett TRANSIENT
  * utkast i Storage i stället för PDF-bytes, eftersom Chromes PDF-visare
  * bara scrollar jämnt på en URL serverad av nätverkstjänsten (mätt,
  * `TASK-302` § "Problemet"). `utgar` är URL:ens ISO-utgångstid — samma
