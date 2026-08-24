@@ -3,10 +3,10 @@ id: TASK-309.3
 title: >-
   Skiva 2: Skrivvägarna — eventets kopior, spara som platsens standard,
   eventinnehåll och agenda
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-23 14:04'
-updated_date: '2026-08-23 16:16'
+updated_date: '2026-08-24 17:03'
 labels:
   - ready-for-agent
 dependencies:
@@ -34,8 +34,23 @@ Det Lotta ändrar i genereringsvyn och det Roger underhåller på Mer-sidan hamn
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 Prod-schemaändringar endast efter Marcus GO i klartext per tabell (ADR-125 § 8)
 - [x] #6 Ingen HTML byggs i klienten; lagervakten (ADR-057) grön
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Skiva 2 levererade bilagornas skrivvägar i staging: save-event-text (eventets kopior i (bilagetext)-fälten och eventets Agendapunkter, rader ersatta atomärt per dag, samt tömning av kopian tillbaka till standard), save-place-standard (platsens standard för adress/parkering/transport/kläder, föder platsen om den saknas och länkar eventet — "spara som platsens standard" per Del 2 § D beslut 6) och save-event-content (Eventinnehåll-radens standardtexter och dess standardagenda, för Mer-sidan). Klientlagret: adapter-kontraktet, båda adaptrarna och mutations-hookar med invalidering av dokumentunderlaget. Fält-allowlisten för skrivning avgränsad till exakt de nya fälten.
+
+BARS AV: PR #1874, commit 49aba1a0 (MERGED 2026-08-23T16:35Z, 25 filer).
+GRIND-UTFALL: 11 CheckRuns SUCCESS + 3 SKIPPED + Vercel SUCCESS på exakt 49aba1a0 — noll icke-gröna. Landad via merge-kön.
+
+Staging-testerna som bevisar skrivvägarna i båda riktningar ligger i tests/api/save-event-text.staging.test.ts, save-place-standard.staging.test.ts och save-event-content.staging.test.ts; deras sentinel-rader är purge-täckta (targets med prefix ^ZZ-TASK-309.3-, verifierade gröna 2026-08-24 via `node scripts/test-purge-staging-sentinels.mjs`, exit 0).
+
+DoD-belägg: #3 bockad 2026-08-24 mot den mätta check-rollupen ovan. Punkterna #1, #2, #4, #5 och #6 var redan bockade av bygg-agenten; #6 dessutom oberoende ommätt 2026-08-24 — lagervakten `tests/api/attachment-layer-independence.test.ts` 7/7 gröna, exit 0.
+
+Stängd av orkestrerad stängningsagent 2026-08-24 mot post-merge-bevis.
+<!-- SECTION:FINAL_SUMMARY:END -->
