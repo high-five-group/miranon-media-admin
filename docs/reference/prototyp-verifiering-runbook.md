@@ -77,10 +77,52 @@ await page.goto(`${BASE}/`, { waitUntil: 'networkidle' });
 
 // ---- PÅSTÅENDET: det unika för passet skrivs här ----
 
-await page.screenshot({ path: `${OUT}/resultat.png`, fullPage: true });
+// FULLPAGE ÄR MEDVETET BORTA — se § Bildtagningens två fällor nedan.
+// Väx viewporten till det som ska fångas i stället.
+await page.screenshot({ path: `${OUT}/resultat.png`, animations: 'disabled' });
 console.log(fel.length ? fel.join('\n') : 'Inga sidfel.');
 await browser.close();
 ```
+
+## Bildtagningens två fällor — båda mätta 2026-08-24 (S108, skiva 9)
+
+Mallen ovan bar `fullPage: true` fram till dess. Den formen producerade tre
+defekta bilder i skiva 9:s facit-pass innan de fångades av manuell granskning.
+Fällorna är oberoende av varandra och har olika motmedel.
+
+### 1 · `fullPage: true` ljuger om varje viewport-fäst element
+
+`fullPage` renderar sidan i sin fulla höjd — men element med `position: fixed`
+mäts fortfarande mot den URSPRUNGLIGA viewporten. Mätt utfall i skiva 9:s pass:
+
+- Bottennavigeringen (`AppShell/TabBar.tsx`, `fixed inset-x-4 bottom-4`)
+  ockluderade blocket *"Sista betalningsdag"*.
+- Dialogens overlay (`primitives/Modal.tsx`, `fixed inset-0`) dimmade bara
+  **omkring två tredjedelar** av ytan — `inset-0` täcker exakt EN vyporthöjd,
+  och sidan var cirka 1,5 vyporthöjder hög.
+
+**Motmedlet är att växa viewporten**, inte att fånga hela sidan:
+
+```js
+await page.setViewportSize({ width: 1440, height: 1600 });
+```
+
+Det gäller varje bild som ska bli referens, och även engångsdiagnostik — en
+diagnos som tittar på en ockluderad yta ställer fel fråga.
+
+### 2 · Animationer måste stängas av, annars fryser du ett övergångstillstånd
+
+Playwrights default är `animations: 'allow'`. Mobil-dialogerna i skiva 9:s pass
+fångades **mitt i sin in-animation** och blev halvgenomskinliga i bilden. Ett
+facit som bär ett övergångstillstånd fryser något som aldrig är det stabila
+läget — och varje framtida jämförelse mot det facit blir ojämförbar av skäl som
+inte har med den prövade ändringen att göra.
+
+`animations: 'disabled'` står därför i mallen ovan. Ta inte bort det.
+
+> Fällorna är skördade som lärdomar i `tasks/lessons.d/`
+> (`en-fullpage-bild-ljuger-om-varje-viewport-fast-element.md` respektive
+> `ett-facit-taget-med-animationer-pa-fryser-ett-overgangstillstand.md`).
 
 ## Auth-state
 
