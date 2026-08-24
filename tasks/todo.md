@@ -426,6 +426,29 @@ Numrering efter S109: ADR 122 · kort 284 (om `#1674` landat) · L512 + 55
 fragment · T158 · f52 · session 111. Full narrativ: sessionsdok S109 Del 1–4 +
 PAUSLÄGE.
 
+**Session 108 ▶️ ÅTERUPPTAGEN (2026-08-24, `lifecycle: active`, tionde resumen;
+pausad nio gånger, historik) — LÄGET RE-MÄTT MOT `origin/main`,
+GRANSKNINGSYTAN UPPE, `TASK-309.9` AC #3 BOCKAD; MARCUS-SEKVENSEN STÅR
+OFÖRÄNDRAD.** Marcus order: *"Återuppta S108."* Paus-PR:en verifierad landad
+(`origin/main` `3d4ae13e` — S112 landade vidare under pausen). **Dokgren
+`docs/s108-resume-10` tagen ur `origin/main` i `s108-paus-docs`; all
+faktainsamling via `git show origin/main:<fil>`** — huvudkatalogen står kvar
+detached på `f5ed41d2`, **91 commits bakom**, och gav en FALSK kort-läsning
+(`TASK-309.9` AC #1 visades obockad där, är bockad på `main`). Handoffens
+numrerings-varning gällde serierna; klassen är bredare — kort-INNEHÅLL ljuger
+lika gärna. **Numreringen re-verifierad, ingen post rörde sig:** ADR **127** ·
+task-**320** · **L533** · 66 fragment · **T176** · f53 · session **113**.
+**AC #3 bockad efter att alla fyra led mätts** (`--kontrollera` + bucket-raden ·
+`--deploya` 45/45 · `UPDATED_AT` på nio EF:er · allowlisten 45 poster utan
+`test-docraptor-render`). **AC #2 är kandidat men EJ bockad** — prod-secrets kan
+inte mätas från agent-sidan, bocken skulle vila på bokföring. **Granskningsytan
+uppe** (`agent-a36ffea842efba83a`, `1ec70a85`, `localhost:5173/mer/dokument`
+→ 200, staging-URL verifierad skild från prods). Ägarlappen på huvudkatalogen
+är BORTA (`T120`-formen: lappen tas vid skrivning, inte vid ankomst) — noterat,
+ingen åtgärd. **NÄSTA: Marcus kör MARCUS-SEKVENS steg 0 (`#1883`) + steg 2
+(granskningen, sex punkter); agenten tar steg 3–5 och därefter skiva 9 + QA +
+AC-bockning.** Full narrativ: sessionsdok S108 Del 20 + § Paushistorik 9.
+
 **Session 108 ⏸️ PAUSAD (nionde gången, 2026-08-24, `lifecycle: paused`) —
 PROD ÄR HELT OCH DEPLOYAT; KVAR ÄR MARCUS GRANSKNING AV `#1889` OCH DE TRE
 STEGEN EFTER DEN (SESSIONSDOK S108 § PAUSLÄGE NIONDE → MARCUS-SEKVENS).**
