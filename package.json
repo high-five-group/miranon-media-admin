@@ -34,6 +34,7 @@
     "test:visual": "PLAYWRIGHT_VISUAL_DEV_SERVER=1 playwright test --project=visual-desktop --project=visual-mobile",
     "generate:manifest-screenshots": "PLAYWRIGHT_MANIFEST_SCREENSHOTS=1 playwright test --project=manifest-screenshots",
     "purge:staging": "node --env-file-if-exists=.env.seed scripts/purge-staging-sentinels.mjs",
+    "purge:staging:efter": "node --env-file-if-exists=.env.seed scripts/purge-staging-sentinels.mjs --efter-korning",
     "backfill:bilagor-dokumentklass": "node --env-file-if-exists=.env.seed scripts/backfill-bilagor-dokumentklass.mjs",
     "schema:bilagor": "node --env-file-if-exists=.env.seed scripts/create-bilagor-table.mjs",
     "schema:kvitton": "node --env-file-if-exists=.env.seed scripts/create-kvitton-table.mjs",

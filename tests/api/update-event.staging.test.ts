@@ -37,12 +37,25 @@
 import { randomUUID } from 'node:crypto';
 import { type APIRequestContext, type APIResponse, expect, test } from '@playwright/test';
 import { EventSchema } from '../../src/domain/schemas';
+import { registreraKastbarPost } from '../support/kastbara-poster';
 import { type ApiConfig, classify401Body, getApiConfig, getValidUserJWT } from './helpers';
 
 const ENDPOINT = '/functions/v1/update-event';
 const SENTINEL_ORT = 'ZZ-create-event-test';
 // Ändrad ort under testet — återställs till SENTINEL_ORT i finally så att
 // ADR-060-purgens exakta Ort-match ('^ZZ-create-event-test$') består.
+//
+// [TASK-309.15] ÅTERSTÄLLNINGEN ÄR EN ENDA FELPUNKT, OCH DEN HAR FALLIT.
+// Mätt i staging 2026-08-24: TVÅ rader med Ort `ZZ-create-event-test-uppdaterad`,
+// 26,9 respektive 32,3 dygn gamla. Faller `finally` (kraschad körning, avbrutet
+// CI-jobb) matchar raden INGEN purge-target — varken formeln
+// `{Ort} = 'ZZ-create-event-test'` eller mönstret `^ZZ-create-event-test$` —
+// och blir därmed liggande FÖR ALLTID. Två svar, båda tillagda:
+//   1. `.purge-staging-policy.json`s target `update-event-uppdaterad-sentineler`
+//      gör den uppdaterade orten purge-bar i sig (försvar i djupled).
+//   2. Eventet registreras i ägar-manifestet redan vid SKAPANDET (nedan), så
+//      `purge:staging:efter` når det oavsett vilken av de två orterna det
+//      slutade med.
 const UPDATED_ORT = 'ZZ-create-event-test-uppdaterad';
 
 // Samma seedade Eventformat-ankare som create-event.staging.test.ts (Session 38 L1).
@@ -98,7 +111,11 @@ async function createSentinelEvent(
   });
   const raw = await res.text();
   expect(res.status(), raw).toBe(201);
-  return (JSON.parse(raw) as { record: { id: string } }).record.id;
+  const id = (JSON.parse(raw) as { record: { id: string } }).record.id;
+  // [TASK-309.15] Registreras FÖRE någon mutation — ägarskapet gäller raden,
+  // inte det Ort-värde den råkar bära när körningen slutar.
+  registreraKastbarPost(id, 'update-event/Eventplanering');
+  return id;
 }
 
 /** Omläsning via get-event — samma EF som detaljsidan läser genom (AC #1-formen). */

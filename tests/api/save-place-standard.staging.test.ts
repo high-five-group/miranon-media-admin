@@ -47,6 +47,7 @@
 import { randomUUID } from 'node:crypto';
 import { type APIRequestContext, type APIResponse, expect, test } from '@playwright/test';
 import { DocumentSourcesSchema } from '../../src/domain/schemas';
+import { registreraKastbarPost } from '../support/kastbara-poster';
 import { type ApiConfig, classify401Body, getApiConfig, getValidUserJWT } from './helpers';
 
 const ENDPOINT = '/functions/v1/save-place-standard';
@@ -89,6 +90,14 @@ async function createThrowawayEventWithOrt(
   });
   expect(res.status(), await res.text()).toBe(201);
   const body = (await res.json()) as { record: { id: string } };
+  // [TASK-309.15] KOMMANDE event (startdatum 2026-09-15) → syns i appens
+  // eventväljare tills det städas. Registreras i ägar-manifestet så
+  // `purge:staging:efter` raderar det direkt efter körningen.
+  // De Platser-rader testet föder lämnas MEDVETET till setup-purgen (targets
+  // `save-place-standard-platser-sentineler` + `…-event-los-…`): de är inte
+  // event, når aldrig eventväljaren, och mättes till 10 rader totalt
+  // 2026-08-24 mot Eventplanerings 151.
+  registreraKastbarPost(body.record.id, 'save-place-standard/Eventplanering');
   return body.record.id;
 }
 

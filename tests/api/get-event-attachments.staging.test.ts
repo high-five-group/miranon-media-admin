@@ -54,6 +54,7 @@ import { randomUUID } from 'node:crypto';
 import { type APIRequestContext, expect, test } from '@playwright/test';
 import type { z } from 'zod';
 import { AttachmentSchema } from '../../src/domain/schemas';
+import { registreraKastbarPost } from '../support/kastbara-poster';
 import { ARBETSKO_EVENT_ID, BELAGGNING_EVENT_ID } from './fixtures';
 import { type ApiConfig, classify401Body, getApiConfig, getValidUserJWT } from './helpers';
 
@@ -202,6 +203,10 @@ async function skapaRimNiva2Event(
   // som drivit, inte detta test.
   expect(body.record.fields.Kursfamilj).toBe('RIM');
   expect(body.record.fields.Kursnivå).toBe('Nivå 2');
+  // [TASK-309.15] Kastbart KOMMANDE event → ägar-manifestet, så
+  // `purge:staging:efter` river det direkt i stället för att lämna det i
+  // eventväljaren till nästa staging-jobbs setup-purge.
+  registreraKastbarPost(body.record.id, 'get-event-attachments/Eventplanering');
   return body.record.id;
 }
 

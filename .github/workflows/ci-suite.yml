@@ -745,3 +745,96 @@ jobs:
             playwright-report/
           retention-days: 7
           if-no-files-found: ignore
+
+      # [TASK-309.15] ÄGAR-MANIFESTET över de kastbara staging-rader denna
+      # körning skapade (tests/support/kastbara-poster.ts, JSONL). Lämnas över
+      # till jobbet `purge-efter` nedan, som är den enda Airtable-creddade
+      # kontexten: test-jobbet får ALDRIG en Airtable-token (ADR-060 punkt
+      # 2+4, EF-only-gränsen), och någon delete-EF för event finns inte — så
+      # sviten KAN strukturellt inte städa efter sig med sina egna medel.
+      #
+      # `if: always()` (inte `failure() || cancelled()` som Playwright-
+      # artefakten ovan): ett RÖTT eller AVBRUTET staging-steg är precis när
+      # städningen behövs mest, men den behövs lika mycket när allt gick bra —
+      # det är de GRÖNA körningarna som producerat de 151 kvarliggande
+      # ZZ-eventen (mätt 2026-08-24).
+      #
+      # `retention-days: 1` — manifestet är förbrukat i samma workflow-körning
+      # och har inget forensiskt värde efteråt (till skillnad mot
+      # Playwright-artefakterna ovan, som är felsökningsunderlag i sju dagar).
+      - name: Ladda upp ägar-manifestet för kastbara staging-poster
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: kastbara-poster
+          path: .kastbara/poster.jsonl
+          retention-days: 1
+          if-no-files-found: ignore
+
+  # Staging sentinel purge, EFTER körningen — FÖRSTA försvarslinjen (TASK-309.15).
+  #
+  # VARFÖR JOBBET FINNS. `purge` ovan är setup-purgen (ADR-060 punkt 3): den
+  # städar FÖRE varje staging-jobb och är därmed strukturellt oförmögen att
+  # städa fönstret MELLAN en körning och nästa staging-jobb. De kastbara
+  # eventen bär framtida `startdatum` och blir KOMMANDE event i appens
+  # eventväljare under hela det fönstret. Mätt 2026-08-24: 151 kvarliggande
+  # ZZ-event, samtliga yngre än 2,4 h — setup-purgen HADE alltså kört. Marcus
+  # valde ett av dem vid en granskning och fick en tom genereringsvy, vilket
+  # läste som ett designfel i vyn och kostade en granskningsrunda.
+  #
+  # VARFÖR ETT EGET JOBB OCH INTE ETT STEG I `test-staging`. Exakt samma skäl
+  # som `purge` ovan bär: egen runner-VM med egen secret. Ett purge-steg i
+  # test-jobbet hade lagt Airtable-token på samma VM som testerna kör på och
+  # rivit EF-only-gränsen (ADR-060 punkt 2+4) för en ren bekvämlighet.
+  #
+  # VARFÖR `always()`. Städningen ska ske oavsett testutfall — och oavsett om
+  # workflowet avbröts. `!cancelled()` hade hoppat över den vid en
+  # takfällning, alltså vid en av de körningar som lämnar MEST skräp.
+  # Jobbet är ofarligt att köra utan manifest: skriptet loggar "inget att
+  # städa" och avslutar 0.
+  #
+  # INGEN staging-mutex, av samma skäl som `purge`: jobbet rör bara poster som
+  # står i den avslutade körningens EGET manifest, och ett samtidigt lokalt
+  # test kan per konstruktion aldrig hamna där.
+  purge-efter:
+    name: Staging sentinel purge (efter körning)
+    needs: [test-staging]
+    if: ${{ always() && inputs.run_staging && github.actor != 'dependabot[bot]' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+        # Medvetet UTAN fetch-depth-config — samma skäl som `purge`-jobbet:
+        # kör bara purge-skriptet + policy-filen, ingen git-historik behövs.
+
+      - name: Setup Node
+        uses: actions/setup-node@v7.0.0
+        with:
+          node-version-file: '.nvmrc'
+
+      # `continue-on-error` är BÄRANDE, inte slarv: artefakten saknas helt när
+      # `test-staging` aldrig kom så långt som till sitt uppladdningssteg
+      # (runner-krasch, tidig fällning), och download-artifact FÄLLER på en
+      # artefakt som inte finns. Ett rött städjobb i det läget hade dolt det
+      # verkliga felet bakom ett andra. Utan fil loggar purge-skriptet
+      # "inget ägar-manifest" och avslutar 0 — setup-purgen tar raderna vid
+      # nästa staging-jobb, precis som före denna skiva.
+      - name: Hämta ägar-manifestet
+        continue-on-error: true
+        uses: actions/download-artifact@v8
+        with:
+          name: kastbara-poster
+          path: .kastbara
+
+      # STAGING_AIRTABLE_TOKEN = samma least-privilege-PAT som `purge`-jobbet,
+      # scopad till ENBART staging-basen (data.records:read+write) — kan aldrig
+      # röra prod. De fyra TEST_*-secreten behövs INTE här: efter-körning-läget
+      # rör bara Airtable-targets, aldrig storageTargets (Storage-purgen är
+      # ålders-driven och hör hemma i setup-jobbet).
+      - name: Purga denna körnings kastbara poster
+        run: node scripts/purge-staging-sentinels.mjs --efter-korning
+        env:
+          STAGING_AIRTABLE_TOKEN: ${{ secrets.STAGING_AIRTABLE_TOKEN }}

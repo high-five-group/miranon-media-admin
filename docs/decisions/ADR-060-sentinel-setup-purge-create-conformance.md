@@ -187,3 +187,88 @@ S71). Värden config-drivna i `.purge-staging-policy.json`. Punkt 5:s
 interim ("bounded ackumulering tolereras") är därmed UTGÅNGET — L285-skulden
 (två tröskel-händelser) stängd vid källan. Beslutstexten ovan står orörd
 (L53).
+
+### 2026-08-24 — Setup-purgen KOMPLETTERAS med en efter-körning-purge; punkt 3:s "inte i teardown" amenderas (TASK-309.15)
+
+**Vad som ändras:** punkt 3 sade *"Purge vid SETUP, inte teardown"*, och Alt C
+(teardown-baserad cleanup) avvisades. Setup-purgen är kvar oförändrad som ANDRA
+försvarslinje — men den kompletteras nu av en FÖRSTA linje som städar EFTER
+körningen. Punkt 2 (EF-only-gränsen) och punkt 4 (städ-credentialen bor i
+Airtable-creddad tooling SKILD från testet) står helt orörda och är i själva
+verket det som formar lösningen.
+
+**Vad som falsifierade den gamla formen — mätt, inte antaget.** Punkt 3:s
+rationale (Vlad Mihalcea: teardown skippas vid rött test) är fortfarande sann
+och är exakt därför setup-purgen behålls. Vad rationalen INTE såg var att
+setup-purgen är strukturellt oförmögen att stänga fönstret MELLAN en körning
+och nästa staging-jobb — och att det fönstret har en användar-synlig kostnad
+som inte fanns 2026-06-22, när sentinelerna bara var Anmälningar-rader.
+Sentinel-familjerna som tillkommit sedan dess (`ZZ-create-event-test`,
+`ZZ-TASK-309.3-*`) är EVENT med framtida `startdatum`, alltså **KOMMANDE
+event i appens eventväljare**.
+
+Mätning 2026-08-24 (`mcp__airtable__list_records` + räknat script mot
+`apphjj8Q7lkXCMsL4`, tabellen Eventplanering, `FIND('ZZ-', {Ort}) = 1`):
+
+| familj | antal | äldsta |
+|---|---|---|
+| `ZZ-create-event-test` | 61 | 0,1 d |
+| `ZZ-TASK-309.3-text-*` | 55 | 0,1 d |
+| `ZZ-TASK-309.3-plats-*` | 30 | 0,1 d |
+| `ZZ-TASK-309.3-content-*` | 5 | 0,1 d |
+| `ZZ-create-event-test-uppdaterad` | 2 | **32,3 d** |
+| permanenta fixturer (ej kastbara) | 10 | — |
+
+Att varje kastbar familj utom en var yngre än 2,4 h är BEVISET för att
+setup-purgen fungerar: den hade kört, och ändå låg 151 kommande testevent i
+väljaren. Marcus valde ett av dem vid en granskning 2026-08-24 och fick en
+genereringsvy där varje block var tomt (testeventet har varken
+Eventinnehåll-data eller Plats-länk) — det läste som ett designfel i vyn och
+kostade en granskningsrunda.
+
+Den sjätte raden i tabellen är en ANNAN klass: `ZZ-create-event-test-uppdaterad`
+matchade INGEN target alls och låg därför kvar i 27 respektive 32 dygn.
+`update-event.staging.test.ts` döper om sitt sentinel-event mitt i testet och
+återställer i `finally`; faller `finally` är raden opurgbar för alltid.
+
+**Beslutet:** branschpraxis för integrationstester mot en delad databas är
+setup-purge KOMBINERAD med teardown — den första minskar fönstret, den andra
+är den deterministiska botten som överlever krascher. Repot kör nu båda:
+
+1. **Efter-körning-purge (ny, första linjen).** Varje staging-svit som skapar en
+   kastbar Airtable-rad registrerar dess record-ID i ett **ägar-manifest**
+   (`tests/support/kastbara-poster.ts`, JSONL). Manifestet bärs över till
+   `scripts/purge-staging-sentinels.mjs --efter-korning` — CI-jobbet **Staging
+   sentinel purge (efter körning)** (`ci-suite.yml`, `if: always()`), lokalt
+   `npm run purge:staging:efter`.
+2. **Setup-purge (oförändrad, andra linjen).** Rör inte en rad; samma fyra
+   skyddsräcken, samma 60-minutersgräns.
+
+**Alt C:s avvisning står kvar i sak — lösningen är inte en teardown i testet.**
+Punkt 2 gäller ordagrant: testet får aldrig en Airtable-token, och det finns
+ingen delete-EF för event, så sviten KAN strukturellt inte städa själv.
+Manifestet bär bara KUNSKAPEN (vilka rader körningen skapade) dit credentialen
+redan finns — vilket är punkt 4 ordagrant, bara tillämpad på efter-läget också.
+Alt A (en delete-EF nåbar med användar-JWT) förblir avvisad; ingen ny
+destruktiv yta har byggts.
+
+**Ålders-guarden är ERSATT, inte borttagen, i det nya läget.** I setup-läget är
+åldern det enda tillgängliga beviset för "ingen kör på den här raden just nu".
+I efter-körning-läget finns ett starkare: raden står i den avslutade körningens
+EGET manifest, och en samtidig lokal körnings rader kan per konstruktion aldrig
+hamna i CI:s manifest. Bas-guard, `filterByFormula`, exakt markör-match och
+länk-guard körs oförändrat via SAMMA `planPurge`.
+
+**Två nya mekaniska svar på den 32 dygn gamla läckan:**
+
+- `.purge-staging-policy.json`-targeten `update-event-uppdaterad-sentineler`
+  gör den uppdaterade orten purge-bar i sig (försvar i djupled).
+- Efter-körning-läget bär en **luckdetektion**: en ägd post som FINNS KVAR i
+  basen men som ingen target gör anspråk på fäller jobbet (exit 2). Hade den
+  funnits 2026-07-23 hade läckan larmat samma dag i stället för att upptäckas
+  av en manuell räkning en månad senare.
+
+Guard-testerna (`scripts/test-purge-staging-sentinels.mjs`, CI-wirade) täcker
+båda riktningarna för det nya läget, inklusive den bärande negativa: en
+FRÄMMANDE rad som matchar formeln och mönstret perfekt raderas ALDRIG när den
+saknas i manifestet. Beslutstexten ovan står orörd (L53).

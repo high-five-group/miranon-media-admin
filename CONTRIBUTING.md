@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-23
+updated: 2026-08-24
 review_by: 2027-02-08
 status: stable
 ---
@@ -103,6 +103,13 @@ Platsers `Namn`, Agendapunkters `Text` — bilagornas skrivvägar, TASK-309.3),
 och `ZZ-TASK-309.7-` i Platsers `Namn` (Mer-sidans Platser-yta, TASK-309.7 —
 EGEN sentinel-klass skild från 309.3:s: dessa rader föds via
 `save-place-standard`s event-lösa läge, utan något throwaway-event i sikte).
+Till dem kommer `ZZ-create-event-test-uppdaterad` i Eventplaneringens `Ort`
+(TASK-309.15) — den ort `update-event.staging.test.ts` döper om sitt
+sentinel-event till mitt i testet och återställer i `finally`. Faller den
+återställningen (kraschad körning, avbrutet CI-jobb) matchar raden ingen av de
+övriga targets och blir opurgbar för alltid; mätt 2026-08-24 låg två sådana
+rader kvar i 26,9 respektive 32,3 dygn.
+
 Uppräkningen hålls komplett mot `.purge-staging-policy.json` av
 `scripts/check-listparitet.sh` (paret `sentinel-markorer`) — den stod med
 två av fyra tills den grinden byggdes. CI städar dem automatiskt i jobbet **Staging sentinel
@@ -132,6 +139,47 @@ Serialisering via projekt-dependencies i `playwright.config.ts` förkastades:
 `--project`-anrop drar in dependencies transitivt, vilket hade svällt CI:s
 e2e-stegs testmängd (bevisat 148 → 259 tester) och fällt steget på saknade
 admin-secrets — TASK-6-kortets notes bär hela beviskedjan.
+
+### Efter-körning-purgen — den första försvarslinjen (`TASK-309.15`)
+
+Setup-purgen ovan städar FÖRE varje staging-jobb och kan därför strukturellt
+inte städa fönstret MELLAN en körning och nästa staging-jobb. De kastbara
+eventen bär framtida `startdatum` och är alltså KOMMANDE event — de dyker upp i
+appens eventväljare under hela det fönstret. **Mätt 2026-08-24: 151
+kvarliggande ZZ-event i staging, samtliga yngre än 2,4 h** (setup-purgen hade
+alltså kört — fönstret är formen, inte ett fel i purgen). Marcus valde ett av
+dem vid en granskning och fick en genereringsvy där varje block var tomt, vilket
+läste som ett designfel i vyn.
+
+Branschpraxis för integrationstester mot en delad databas är setup-purge
+KOMBINERAD med teardown, och det är vad repot kör:
+
+| Linje | Vad | När |
+|---|---|---|
+| 1 | **Efter-körning-purge** — raderar exakt de rader körningen själv skapade | direkt efter varje staging-körning |
+| 2 | **Setup-purge** (oförändrad) — raderar allt sentinel-märkt äldre än 60 min | före varje staging-jobb |
+
+Mekaniken: varje staging-svit som skapar en kastbar Airtable-rad registrerar
+dess record-ID i ett **ägar-manifest** (`tests/support/kastbara-poster.ts`,
+JSONL i `.kastbara/poster.jsonl` — utanför `test-results/`, som Playwright
+rensar vid varje körningsstart). Manifestet bärs över till en Airtable-creddad
+kodväg SKILD från testet (ADR-060 punkt 4 verbatim): CI-jobbet **Staging
+sentinel purge (efter körning)** i `ci-suite.yml`, `if: always()` så att även en
+röd eller avbruten körning städas. Lokalt: `npm run purge:staging:efter`.
+
+Att sviten inte städar själv är inget förbiseende — den KAN inte. Testet får
+aldrig en Airtable-token (ADR-060 punkt 2, EF-only-gränsen) och det finns ingen
+delete-EF för event. Manifestet bär kunskapen dit credentialen redan finns.
+
+Ålders-guarden är **ersatt, inte borttagen**, i efter-körning-läget: snittet mot
+manifestet är ett starkare ägarskapsbevis än åldern, och en samtidig lokal
+körnings rader kan per konstruktion aldrig hamna i CI:s manifest. Bas-guard,
+`filterByFormula`, exakt markör-match och länk-guard körs oförändrat via samma
+`planPurge`.
+
+Läget bär dessutom en **luckdetektion**: en ägd post som finns kvar i basen men
+som ingen target gör anspråk på fäller jobbet (exit 2). Det är exakt den lucka
+som lät de två `ZZ-create-event-test-uppdaterad`-raderna ligga i en månad.
 
 ### Staging-preflighten — lokala körningar frågar CI först (`TASK-77`, `TASK-84`)
 
@@ -165,7 +213,7 @@ täcker alla.
 | `test:api:staging` + `vakt:kontrakt` | setup-projektet `api-setup` (`tests/api/auth.setup.ts`) |
 | `test:e2e:staging` | setup-projektet `setup` (`tests/e2e/auth.setup.ts`) |
 | `test:preview:staging` | setup-projektet `preview-setup` (`tests/preview/preflight.setup.ts`) |
-| `purge:staging` | `main()` i `scripts/purge-staging-sentinels.mjs` |
+| `purge:staging` + `purge:staging:efter` | `main()` i `scripts/purge-staging-sentinels.mjs` |
 | `seed:review` + `seed:review:clean` | `main()` i `scripts/seed-review-fixture.mjs` |
 
 Haken sitter i KODVÄGEN, aldrig i kommandonamnet. Playwright-ytorna bär den via
