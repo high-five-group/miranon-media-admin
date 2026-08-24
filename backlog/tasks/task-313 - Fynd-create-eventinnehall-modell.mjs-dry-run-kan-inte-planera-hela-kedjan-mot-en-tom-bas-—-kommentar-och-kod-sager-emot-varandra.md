@@ -3,10 +3,10 @@ id: TASK-313
 title: >-
   Fynd: create-eventinnehall-modell.mjs --dry-run kan inte planera hela kedjan
   mot en tom bas — kommentar och kod sager emot varandra
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-24 13:36'
-updated_date: '2026-08-24 15:59'
+updated_date: '2026-08-24 16:43'
 labels:
   - ready-for-agent
 dependencies: []
@@ -44,8 +44,14 @@ KALLA: S108 Del 17 § D.
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Done-flipp S112: PR #1940 landad, post-merge 27ac6712 grön; tvåsidigt testbevis 35/35. Landning: PR #1940
+<!-- SECTION:NOTES:END -->
