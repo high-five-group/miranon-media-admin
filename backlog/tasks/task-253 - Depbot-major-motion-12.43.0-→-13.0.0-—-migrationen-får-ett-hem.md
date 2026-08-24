@@ -22,7 +22,7 @@ PR #1490 (Dependabot 2026-08-17). Major-bump = ADR-031 Lager 4: manuell Marcus-r
 <!-- AC:BEGIN -->
 - [x] #1 v13:s changelog/breaking changes lästa och omfattningen i VÅR kodbas bokförd (vilka animationsytor, vilka API-brott)
 - [x] #2 Marcus-beslut: migrera nu eller parkera med motiv + omprövningsdatum
-- [ ] #3 Vid migrering: DoD-fyran grön + animationsytor verifierade inkl. prefers-reduced-motion
+- [x] #3 Vid migrering: DoD-fyran grön + animationsytor verifierade inkl. prefers-reduced-motion
 <!-- AC:END -->
 
 ## Definition of Done
@@ -131,4 +131,24 @@ Kortet erbjuder två alternativ; kartläggningen pekar på ett tredje som inte f
 - `npm run build` → **exit 0** (använd för bundle-mätningen ovan)
 
 Beslutat av Code på Marcus-mandat 2026-08-24 (GO i klartext), S112. Marcus-beslut (AC#2): alternativ (B) — ta bort paketet (motion). Kortets egen alternativ-bokstav skiljer sig från TASK-252:s: här är borttagningen ALTERNATIV (C) i kortets AC1-kartläggning ('Ta bort motion ur dependencies helt — REKOMMENDERAS'), inte (B); mandatets 'alternativ B' läses därför som SAKINNEHÅLLET (borttagning), inte bokstaven, eftersom de två korten numrerar sina alternativ olika. Skäl (ur AC1-kartläggningen ovan): 0 källfiler importerar motion i repots hela historia (git log -S), 0 bundle-påverkan, samtliga animationsytor (WOW-övergången, Sidbytesindikatorn m.fl.) går via Tailwinds motion-safe:/CSS — kortets egen ursprungspremiss att de 'konsumerar biblioteket' var falsifierad redan i AC1-passet. Beslutskriteriet (AC#2) bockas här. Själva borttagningen (paketets faktiska removal ur package.json/package-lock.json + '@dependabot ignore this dependency' + stängning av PR #1490) utförs av en PARALLELL agent i samma S112-mandatpass, inte av detta kort/denna landning — noll kod ändras härifrån. AC#3 ('Vid migrering: ...') gäller inte längre bokstavligt: beslutet är BORTTAGNING, inte migrering, och AC#3:s text ger ingen uttrycklig grund för att låta en systerkorts/parallell-PR:s arbete räknas som fullbordande av DENNA korts DoD. Status lämnas därför TO DO i väntan på att borttagningen landar — flippas inte till Done i detta pass. Rapporteras till orkestreraren för uppföljning.
+
+## Borttagning genomförd (2026-08-24, S112 mandatpass beslut 5 — Marcus-mandat alternativ B)
+
+Premiss-pass (ADR-086): grep av 'from motion'-importer över src/, tests/, playwright/, scripts/ omkört före åtgärd (kombinerat med TASK-252:s grep i samma körning) → 0 träffar (bekräftar AC1:s fynd, ingen divergens). PR #1490 verifierad OPEN/CLEAN/dependabot innan stängning.
+
+Åtgärd: npm uninstall @tanstack/react-table motion (delat kort-par TASK-252/253, en operation). package.json/package-lock.json diff är minimal — enbart de två raderna borta, inga orelaterade ändringar.
+
+Grindar (fulla DoD-fyran, mätta exitkoder): npm run typecheck exit 0, npx @biomejs/biome check . exit 0, npm run build exit 0, npm run test:api (staging) — första körningen stoppades av staging-preflighten (post-merge.yml körning 32738556092 höll staging, väntade ut den cirka 11 min); andra körningen 1163 passed / 1 failed (generate-event-attachment.staging.test.ts, Bilagor-radräkning 34 till 35 — delad-stagingfixturkollision, orelaterad till borttagningen); isolerad omkörning av exakt det testet: 2 passed. npx audit-ci --config audit-ci.jsonc exit 0 (extra krav i uppdraget).
+
+Bundle-bevis: grep efter motion-dom/framer-motion/AnimatePresence/MotionConfig i dist/ efter build gav 0 träffar (kontrollgrep mot 'react' gav träffar, så metoden fungerar). prefers-reduced-motion-vägarna är CSS/Tailwind-baserade (kartlagt i AC1) och strukturellt opåverkade av borttagningen.
+
+AC3-tolkning (flaggad, ej blockerande): kriteriet är ordagrant skrivet för alternativ A (Vid migrering: DoD-fyran grön plus animationsytor verifierade) men beslutet blev alternativ C i kortets egen bokstavering (borttagning, kallad alternativ B i uppdragstexten — se avvikelse nedan). Bockat eftersom den underliggande avsikten, DoD-fyran grön, är uppfylld, och animationsytorna är vakuöst opåverkade (0 konsumenter). AC2 (beslutskriteriet) rörs INTE av denna leverans — annan agent äger den rutan.
+
+Avvikelse mot uppdragstexten (ADR-086, ej blockerande): uppdraget kallade åtgärden 'alternativ B i TASK-252/TASK-253'. I TASK-252:s egen bokstavering är borttagning B (matchar). I TASK-253:s egen bokstavering är borttagning C (Marcus rekommenderade C i AC1-noten, B är där 'parkera med motiv'). Bokstaven stämmer alltså inte för TASK-253, men den konkreta instruktionen i uppdraget (npm uninstall) var entydig och oberoende av bokstaven, och matchar TASK-253:s egen C-rekommendation. Genomfört enligt den konkreta instruktionen.
+
+Not: npm uninstall konverterade denna worktrees symlänkade node_modules till en riktig katalog (npm reify tog bort symlänken). Huvudrepots node_modules overifierat orört (kontrollerat filsystem-tidsstämpel).
+
+Commit-referens: se PR (fylls i separat commit strax innan push).
+
+Commit-referens (uppdaterad): c735bb35b2f9a222e257b8360701033132305bb0 (chore(deps): ta bort oanvända @tanstack/react-table + motion).
 <!-- SECTION:NOTES:END -->
