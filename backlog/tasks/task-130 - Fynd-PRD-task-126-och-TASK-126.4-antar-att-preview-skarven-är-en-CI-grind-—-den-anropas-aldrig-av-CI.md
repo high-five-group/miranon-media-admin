@@ -3,10 +3,10 @@ id: TASK-130
 title: >-
   Fynd: PRD task-126 och TASK-126.4 antar att preview-skarven är en CI-grind —
   den anropas aldrig av CI
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-02 16:33'
-updated_date: '2026-08-03 11:53'
+updated_date: '2026-08-24 13:56'
 labels:
   - ready-for-human
 dependencies: []
@@ -34,10 +34,10 @@ KVARSTÅENDE RISK: TASK-126.4 AC#3 bär formuleringen oförändrad och kommer m�
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -55,4 +55,12 @@ SKÄLEN, i ordning:
 ARBETSFÖRDELNING (för att undvika kortfils-konflikt mellan parallella agenter): PRD task-126 § Testbeslut-raden ägs av TASK-131:s agent (dess arbetspunkt 5). task-126.4 AC#3 ägs av TASK-126.4:s agent. Denna post stängs när båda landat.
 
 KVAR SOM EGEN FRÅGA, ej avgjord här: att tests/preview/ (TASK-10 + TASK-84:s arbete) står helt utanför CI kan vara medvetet men är värt en egen läsning. Den frågan följer INTE med detta beslut och ska inte antas besvarad av det.
+
+STÄNGD S112 STÄDVÅG A (2026-08-24, bokföringspass, ingen kod ändrad). Belägg verifierat mot disk: PRD task-126 § Testbeslut bär raden 'RÄTTAT 2026-08-03 (TASK-130)' (rad 99, grep-bekräftat), och TASK-126.4 AC #3 bär den rättade ci-suite.yml Pure+Build-hemvisten (kortet Done, samtliga AC/DoD bockade, PR #648 mergad 2026-08-03T13:27:23Z, CI-verifikat i kortets egna notes). Arbetsfördelningen (PRD ägd av TASK-131:s agent, AC#3 av TASK-126.4:s agent) är fullgjord på båda halvor. Kortet saknar egna AC — inget att bocka där. DoD #1-4 bockade mot detta belägg (PR e2515cac/#644, merge 2026-08-03T12:01:11Z, checks SUCCESS/SKIPPED, verifierad ancestor av origin/main).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Redan löst på disk — båda halvorna av beslutet (PRD § Testbeslut-raden + TASK-126.4 AC#3) rättade till ci-suite.yml Pure+Build som stående hemvist för mekaniska manifest-/bundle-grindar (PR #644 + #648). Kortet flippades aldrig till Done i backlog-CLI:t. Bokförd stängning, S112 städvåg A.
+<!-- SECTION:FINAL_SUMMARY:END -->

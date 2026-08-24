@@ -3,10 +3,10 @@ id: TASK-188
 title: >-
   event-bekraftelse scroll-mätningen (rad ~437): deterministisk 57
   px-förskjutning i post-merge-staging — INTE flake
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-10 14:12'
-updated_date: '2026-08-14 16:09'
+updated_date: '2026-08-24 13:56'
 labels: []
 dependencies: []
 ordinal: 354000
@@ -20,10 +20,10 @@ SYMPTOM (mätt, 3 instanser 2026-08-10): toBeLessThanOrEqual-mätningen i tests/
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -44,4 +44,12 @@ Den faktiska orsaken: Anteckningar-gruppen (src/components/events/detail/Anteckn
 Fix landad i TASK-205: get-event-notes-mock tillagd i testfilens mocka(), samma konvention som mockNotes() i event-detail.staging.test.ts. 12/12 + hela filens 16/16 gröna efter fix, mot 2/8 röda (samma Received: 57-mönster) på pristina filen före fix.
 
 Full diagnos, källor och verifieringsdata: TASK-205:s implementation notes.
+
+STÄNGD S112 STÄDVÅG A (2026-08-24, bokföringspass, ingen kod ändrad). Belägg verifierat mot disk: TASK-205 (Done) korsreferererar detta kort i tests/e2e/event-bekraftelse.staging.test.ts rad 34-47 (docblock, grep-bekräftat) och bekräftar samma mekanism — get-event-notes ofullständigt mockad, +57px felboxs-render, race mot testets synkrona mätsekvens. Fixen (get-event-notes-mock) landade i PR #1273 (merge a4ef52c7, 2026-08-14T16:31:25Z), verifierad ancestor av origin/main, checks SUCCESS/SKIPPED. 12/12 + hela filens 16/16 gröna efter fix per TASK-205:s egna notes. Kortet saknar egna AC — inget att bocka där. Genuin duplikat, inte samma kort som borde förbli separat.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Duplikat av Done TASK-205 — samma test/rad, samma mekanism (Anteckningar-gruppens unmocked get-event-notes-fetch mot skarp staging, +57px felboxs-render), fixad i PR #1273. Cross-referens verifierad i tests/e2e/event-bekraftelse.staging.test.ts:34-47. Kortet flippades aldrig till Done i backlog-CLI:t. Bokförd stängning, S112 städvåg A.
+<!-- SECTION:FINAL_SUMMARY:END -->

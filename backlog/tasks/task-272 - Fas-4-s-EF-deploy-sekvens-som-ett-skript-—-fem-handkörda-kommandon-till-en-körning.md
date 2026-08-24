@@ -3,9 +3,10 @@ id: TASK-272
 title: >-
   Fas 4:s EF-deploy-sekvens som ett skript — fem handkörda kommandon till en
   körning
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-17 12:20'
+updated_date: '2026-08-24 13:56'
 labels:
   - ready-for-human
 dependencies: []
@@ -30,15 +31,27 @@ EGEN FÅNGST under bygget: testsvitens första version av fall 8 matchade all f�
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Skriptet kör hela sekvensen med ett anrop per läge, och återlänkar till staging även vid fel halvvägs
-- [ ] #2 Prod-låsets integritet bevarad — refen kommer ur argumentet, aldrig ur policyn; vaktat av testsviten i båda riktningar
-- [ ] #3 Marcus har kört --deploya skarpt och sekvensen gick igenom, eller avvikelsen är bokförd
+- [x] #1 Skriptet kör hela sekvensen med ett anrop per läge, och återlänkar till staging även vid fel halvvägs
+- [x] #2 Prod-låsets integritet bevarad — refen kommer ur argumentet, aldrig ur policyn; vaktat av testsviten i båda riktningar
+- [x] #3 Marcus har kört --deploya skarpt och sekvensen gick igenom, eller avvikelsen är bokförd
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+STÄNGD S112 STÄDVÅG A (2026-08-24, bokföringspass, ingen kod ändrad). Belägg verifierat mot disk: scripts/fas4-prod-deploy.sh finns (14053 bytes, exekverbar), matchar CLAUDE.md § Prod-EF-deploy körs via SKRIPTET. AC #1/#2 redan bevisade i kortets egna notes (11/11 testsvit, deny-prod-ref.sh-bypass fälld skarpt). AC #3 (Marcus har kört --deploya skarpt) verifierat via TASK-269:s notes: 'DEPLOYAD 2026-08-17 (Marcus körde --deploya via fas4-prod-deploy.sh). Verifierat mot prod-svaret...39 funktioner ACTIVE...SKRIPTETS SKYDDSRÄCKEN FUNGERADE SKARPT'. Landningskommiten 910a2998/PR #1551 verifierad ancestor av origin/main, checks SUCCESS/SKIPPED, merge 2026-08-17T12:41:20Z.
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Redan löst på disk och skarpt kört — scripts/fas4-prod-deploy.sh landade i PR #1551 och kördes --deploya skarpt av Marcus 2026-08-17 (bevis i TASK-269:s notes: 39 EF ACTIVE, deny-triple mot create-attendance 401/401/405, skyddsräckena verifierade). Kortet flippades aldrig till Done i backlog-CLI:t. Bokförd stängning, S112 städvåg A.
+<!-- SECTION:FINAL_SUMMARY:END -->
