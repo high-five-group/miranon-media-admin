@@ -4,7 +4,7 @@ title: 'Skiva: Utlåtande-kontraktet + review-agenten'
 status: To Do
 assignee: []
 created_date: '2026-08-09 13:11'
-updated_date: '2026-08-24 14:51'
+updated_date: '2026-08-24 15:07'
 labels:
   - ready-for-agent
 dependencies: []
@@ -20,22 +20,22 @@ ordinal: 324000
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 En manuell körning av review-agenten mot en verklig PR producerar ett utlåtande som validerar mot JSON-schemat (severity error/warning/info · action auto-fix/ask-user · risknivå låg/medel/hög + enmenings-motivering · bevisreferenser)
+- [x] #1 En manuell körning av review-agenten mot en verklig PR producerar ett utlåtande som validerar mot JSON-schemat (severity error/warning/info · action auto-fix/ask-user · risknivå låg/medel/hög + enmenings-motivering · bevisreferenser)
 - [x] #2 Saknad action-klassning i ett fynd failar closed till ask-user
 - [x] #3 Review-agenten körs i färsk kontext och är aldrig driv-/bygg-agenten; orkestrerar- och bygg-agent-kontrakten bär grind-steget: spawn efter push, före armering
 - [x] #4 HÖG risknivå bokförd som orkestrerar-regel: armering väntar på Marcus explicita granskning
-- [ ] #5 Kortets AC hämtas verbatim via CLI:t och prövas som antaganden — fel-ställda AC flaggas i utlåtandet
-- [ ] #6 PR utan kort-ID granskas med PR-text som intent och utlåtandet flaggar öppet lägre intent-konfidens
+- [x] #5 Kortets AC hämtas verbatim via CLI:t och prövas som antaganden — fel-ställda AC flaggas i utlåtandet
+- [x] #6 PR utan kort-ID granskas med PR-text som intent och utlåtandet flaggar öppet lägre intent-konfidens
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Tvåsidig skript-testsvit (ska-fälla + ska-passera) per nytt deterministiskt skript, grön lokalt
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 Tvåsidig skript-testsvit (ska-fälla + ska-passera) per nytt deterministiskt skript, grön lokalt
 - [ ] #6 CI-backstoppens grind-verkan bevisad med rött-först-form: positivt bevis + negativ self-test
 - [ ] #7 Instrumenteringsloggen bevisat skrivande från första skarpa körningen (findings-per-runda + risk-kalibrering + grind-missar)
-- [ ] #8 Mekanism som inte kan skarpbevisas i byggsessionen bokförs som öppen skuld i handoff, aldrig som klar
+- [x] #8 Mekanism som inte kan skarpbevisas i byggsessionen bokförs som öppen skuld i handoff, aldrig som klar
 <!-- DOD:END -->

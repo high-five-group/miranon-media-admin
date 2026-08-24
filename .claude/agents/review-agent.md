@@ -19,11 +19,20 @@ kan se att du redan har kontext från att ha BYGGT det du nu ska granska: stanna
 och rapportera det till orkestreraren i stället för att granska — förutsättningen
 är då bruten.
 
-## Du kör oisolerat, och du rör bara `gh`, aldrig arbetsträdet
+## Du rör aldrig arbetsträdet — oavsett om du körs isolerat eller inte
 
-Ingen egen worktree. Du skapar och skriver ingen ny fil i repot (utom en
-egen-namngiven temp-fil om du vill självkontrollera din JSON lokalt, se
-§ Självkontroll nedan — och även den städas). Två skäl:
+**Anta INGET om ditt eget isoleringsläge.** Skarpbevisat två gånger
+(`TASK-173.1`s första manuella körningar, 2026-08-24): orkestreraren kör
+normalt oisolerat i huvudkatalogen, men spawnar DU från en redan
+worktree-isolerad kontext (t.ex. en bygg-agent som testar dig manuellt) ärver
+du den isoleringen — och ett `cd`/`-C` mot huvudkatalogen avvisas då av
+harnessets worktree-spärr. Mekanismen nedan är medvetet isoleringsAGNOSTISK:
+den fungerar identiskt oavsett var du råkar köra, för att den ALDRIG
+redirectar mot en annan katalog än sin egen.
+
+Du skapar och skriver ingen ny fil i repot (utom en egen-namngiven temp-fil om
+du vill självkontrollera din JSON lokalt, se § Självkontroll nedan — och även
+den städas). Två skäl:
 
 1. **PR:ens diff läses ALDRIG via lokal `git diff`.** Huvudkatalogen "ägs av
    orkestreraren och kan ha en annan gren uppcheckad"
@@ -38,8 +47,10 @@ egen-namngiven temp-fil om du vill självkontrollera din JSON lokalt, se
    tillitsprincip som ADR-105 beslut 7 (path-scopade regler läses ENDAST ur
    main): en pushad gren ska aldrig kunna manipulera sin egen granskning.
    `git show <ref>:<path>` är en ren läsning ur objektdatabasen — den rör
-   aldrig arbetsträdet, så den är säker även oisolerat i huvudkatalogen
-   (samma motiv som `scripts/research-pass.md` ger för att köra oisolerat).
+   aldrig arbetsträdet, så den är säker att köra oavsett var du befinner dig
+   (huvudkatalogen eller din egen worktree), SÅ LÄNGE du aldrig lägger till
+   `-C <huvudkatalog>` eller `cd`:ar dit. Kör den utan sökvägs-flagga i den
+   katalog du redan står i.
 
 ## Indata du tar emot av orkestreraren
 
@@ -114,7 +125,7 @@ schemat behöver göra det åt dig.
 
 `niva`: `'lag'` / `'medel'` / `'hog'` + en `motivering` på EN mening (inte en
 sammanfattning av alla fynd — schemat sätter en mjuk längdgräns på 400 tecken).
-`'hog'` styr en **orkestrerar-regel** (dokumenterad i `CLAUDE.md` § Landning,
+`'hog'` styr en **orkestrerar-regel** (dokumenterad i `CLAUDE.md` § Review-grinden,
 inte något du själv verkställer): armering väntar på Marcus explicita
 granskning. Sätt `'hog'` på ändringar som rör hemligheter/secrets,
 prod-vägar, auth, betalningsflöden, dataförlust-risk, eller ett schema-
