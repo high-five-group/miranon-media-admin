@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-10 08:58'
+updated_date: '2026-08-24 13:57'
 labels:
   - ready-for-agent
 dependencies: []
@@ -21,7 +22,7 @@ Fynd ur S102-batchen (kort ②, 146.4-agenten, öppet bokfört i dess notes): EF
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Deterministisk idempotensnyckel per uppladdning; retry-test bevisar EN rad (tvåsidigt: utan nyckel två rader, med nyckel en)
+- [x] #1 Deterministisk idempotensnyckel per uppladdning; retry-test bevisar EN rad (tvåsidigt: utan nyckel två rader, med nyckel en)
 <!-- AC:END -->
 
 ## Definition of Done

@@ -28,8 +28,27 @@
 // Zod-validerade, `Event` förblir satt oavsett räckvidd. `create-attachment-
 // upload-ticket` (steg 1) rör INTE dessa — den skriver ingen Bilagor-rad,
 // bara denna (steg 2, radskapelsen) behöver dem.
+//
+// IDEMPOTENS [TASK-183] — DETERMINISTISK nyckel, INTE ett klient-genererat
+// Idempotency-Key (skiljer sig från create-event/create-registration-
+// mönstret, ADR-014/ADR-066): `Lagringsnyckel` (`buildAttachmentLeaf`,
+// `<attachmentId>-<sanitizeFilnamn(filnamn)>`) är REDAN unik och deterministisk
+// per uppladdning — attachmentId är alltid server-genererat en gång vid
+// ticket-utfärdandet (create-attachment-upload-ticket) och klienten
+// återanvänder SAMMA attachmentId vid ett retry (nätverkstimeout,
+// `fetchWithRetry` i src/data/utils.ts). Ett andra finalize-anrop med samma
+// (eventId, attachmentId, filnamn) deriverar därför samma path OCH samma
+// Lagringsnyckel-värde — precis den egenskap ADR-066:s upsert-mekanism
+// (`upsertAirtableRecord`, `performUpsert.fieldsToMergeOn`) kräver av ett
+// merge-fält. MEKANISM: samma Airtable-native match-or-create som
+// create-event — färsk Lagringsnyckel → createdRecords (ny rad, 201); samma
+// Lagringsnyckel (retry) → updatedRecords (idempotent replay, 200, SAMMA
+// record-ID). En genuint NY uppladdning får alltid en NY ticket → ny
+// attachmentId → ny Lagringsnyckel → egen rad (ingen omedveten sammanslagning
+// av två olika filer). Ingen klient-ändring krävs — nyckeln är alltid
+// implicit i de tre värden klienten redan skickar.
 
-import { createAirtableRecord, fetchAirtableRecord } from '../_shared/airtable-client.ts';
+import { fetchAirtableRecord, upsertAirtableRecord } from '../_shared/airtable-client.ts';
 import {
   ATTACHMENT_CLASS_UPPLADDAD,
   AttachmentScopeInputSchema,
@@ -50,6 +69,11 @@ import { generateRequestId, HttpError, mapErrorToResponse } from '../_shared/err
 import { findDisallowedField, getOperation } from '../_shared/field-allowlists.ts';
 
 const OPERATION_KEY = 'create-attachment';
+// IDEMPOTENS-MERGE-FÄLTET [TASK-183] — se filhuvudets § IDEMPOTENS. `Lagringsnyckel`
+// är redan skrivbart och redan skrivet av denna funktion (deriverat, aldrig
+// klient-buret) — merge-fältet återanvänder ett fält som redan finns, ingen
+// ny kolumn behövs.
+const MERGE_FIELD = 'Lagringsnyckel';
 
 function badRequest(message: string, corsHeaders: Record<string, string>): Response {
   return new Response(JSON.stringify({ error: message }), {
@@ -189,7 +213,9 @@ Deno.serve(async (req) => {
       Skapad: new Date().toISOString(),
       Event: [eventId],
       // [TASK-147.5] Additivt — se upload-attachment/index.ts:s motsvarande rad.
-      Lagringsnyckel: expectedFilename,
+      // [TASK-183] Samma värde är NU merge-fältet (se filhuvudets § IDEMPOTENS)
+      // — MERGE_FIELD pekar på precis denna nyckel, inte en parallell konstant.
+      [MERGE_FIELD]: expectedFilename,
       // [TASK-147.12] Additivt — mönster 2 är fortfarande klass A (samma
       // uppladdningshandling, bara stor fil). Se upload-attachment/index.ts:s
       // motsvarande rad.
@@ -210,14 +236,27 @@ Deno.serve(async (req) => {
       `[finalize-attachment-upload] ALLOW | caller_user_id=${user.id} | event=${eventId} | path=${path} | bytes=${actualSizeBytes} | rackvidd=${scopeParsed.data.rackvidd}`,
     );
 
-    const created = await createAirtableRecord(BILAGOR_TABLE, fields);
+    // IDEMPOTENS-MEKANISM [TASK-183]: upsert på Lagringsnyckel (ADR-066:s
+    // mönster, se filhuvudets § IDEMPOTENS). Färsk Lagringsnyckel →
+    // createdRecords (ny rad); samma Lagringsnyckel (retry, samma
+    // attachmentId) → updatedRecords (idempotent replay, samma rad — INGEN
+    // dubblett skapas).
+    const { record, created: wasCreated } = await upsertAirtableRecord(BILAGOR_TABLE, fields, [
+      MERGE_FIELD,
+    ]);
 
+    // 201 vid ny rad, 200 vid idempotent replay (samma Lagringsnyckel →
+    // matchad, inget nytt skapades) — speglar create-event/index.ts EXAKT.
     return new Response(
       JSON.stringify({
-        attachment: mapAttachmentRecord(created),
-        record: { id: created.id, fields: created.fields, createdTime: created.createdTime },
+        attachment: mapAttachmentRecord(record),
+        record: { id: record.id, fields: record.fields, createdTime: record.createdTime },
+        created: wasCreated,
       }),
-      { status: 201, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      {
+        status: wasCreated ? 201 : 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      },
     );
   } catch (error) {
     return mapErrorToResponse(error, requestId, corsHeaders, {
