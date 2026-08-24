@@ -410,6 +410,18 @@ Numrering efter S109: ADR 122 · kort 284 (om `#1674` landat) · L512 + 55
 fragment · T158 · f52 · session 111. Full narrativ: sessionsdok S109 Del 1–4 +
 PAUSLÄGE.
 
+**Session 108 ⏸️ PAUSAD (åttonde gången, 2026-08-24, `lifecycle: paused`) —
+ALLA AFK-SKIVOR LANDADE; PROMOVERINGEN STÅR SOM DRAFT `#1889`; KVAR ÄR
+EXAKT MARCUS FEM MOMENT (SESSIONSDOK S108 § PAUSLÄGE ÅTTONDE →
+MARCUS-SEKVENS).** Steg 1: prod-schema+seed+EF-deploy (runbook (a)–(d),
+stänger nattens prod-fönster) · steg 2: granska `#1889` mot
+Vercel-preview/dev-server · steg 3: `gh pr ready 1889` + armera · steg 4:
+röktest (QA `309.11`) · steg 5: rotera DocRaptor-nyckeln. Därefter
+agent-arbete: facit (`309.10`), AC-bockning, QA, K-sista. Numrering vid
+paus 8 (S111 stängde i natt och förbrukade serier): ADR **127** ·
+task-**312** · **L533** · 66 fragment · **T176** · f53 · session **112**.
+Full handoff: sessionsdok S108 § PAUSLÄGE (åttonde) + Del 14–16.
+
 **Session 108 🌙 NATTKÖRNING 2 KLAR (2026-08-23 ~23:00, `lifecycle: active`,
 resume 8 fortsätter — INTE pausad; Marcus order *"Kör klart så mycket som
 bara är möjligt … stäng av monitorn"*) — SKIVOR 0–6 + 8-PREP LANDADE;
