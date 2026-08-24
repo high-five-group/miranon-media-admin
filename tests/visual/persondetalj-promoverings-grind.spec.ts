@@ -1,3 +1,4 @@
+import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '../support/fixturvarld/hermetic';
 
 /**
@@ -82,5 +83,50 @@ test.describe('promoverings-grinden — ariaSnapshot mot persondetaljens form (A
     await expect(page.getByTestId('persondetalj-yta')).toMatchAriaSnapshot({
       name: 'persondetalj-tunn.aria.yml',
     });
+  });
+});
+
+/**
+ * [TASK-314, 299.10 steg 10] prefers-contrast: more. Samma `emulateMedia`-
+ * mönster som `dorrlista-promoverings-grind.spec.ts` rad ~746-782. `Sektion`
+ * (`PersonDetail.tsx` § `Sektion`, delad av alla blocken) bär
+ * `contrast-more:border-border-strong` — samma token-kedja
+ * (`--mm-border-strong`) dörrlistans referens prövar. Flagga-blocket
+ * (`id="proto-d-flagga"`) valdes som probe: det finns för den RIKA personen
+ * (docblockets scope-punkt 1). Ankaret är `#proto-d-flagga + div` — samma
+ * struktur `Sektion` alltid renderar (`<h2 id>` direkt följt av kortets
+ * `<div>`), inte en ariaSnapshot: dörrlistans eget kontrast-test bär ingen
+ * heller, strukturen ändras inte av emuleringen, bara beräknade stilar.
+ */
+test.describe('TASK-314 — prefers-contrast: more (299.10 steg 10)', () => {
+  const WCAG_TAGGAR = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
+
+  test('hög-kontrast-läge: Flagga-sektionens kort får synlig kantlinje', async ({ page }) => {
+    await page.emulateMedia({ contrast: 'more' });
+    await gotoPromoverad(page, RIK_ID);
+
+    const kort = page.locator('#proto-d-flagga + div');
+    const kant = await kort.evaluate((el) => {
+      const s = getComputedStyle(el);
+      return { farg: s.borderTopColor, bredd: s.borderTopWidth, stil: s.borderTopStyle };
+    });
+    expect(kant.stil).toBe('solid');
+    expect(kant.bredd).toBe('1px');
+
+    const strongToken = await page.evaluate(() => {
+      const probe = document.createElement('span');
+      probe.style.color = 'var(--mm-border-strong)';
+      document.body.appendChild(probe);
+      const c = getComputedStyle(probe).color;
+      probe.remove();
+      return c;
+    });
+    expect(kant.farg).toBe(strongToken);
+
+    const resultat = await new AxeBuilder({ page })
+      .withTags(WCAG_TAGGAR)
+      .include('[data-testid="persondetalj-yta"]')
+      .analyze();
+    expect(resultat.violations).toEqual([]);
   });
 });

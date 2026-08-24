@@ -1,3 +1,4 @@
+import AxeBuilder from '@axe-core/playwright';
 import type { NetworkFixture } from '@msw/playwright';
 import { http } from 'msw';
 import type { z } from 'zod';
@@ -89,4 +90,46 @@ test('intresserade — sidram + initialcirklar (TASK-299.8) ur mockad lead-lista
   await expect(page.getByText('Bo Bengtsson')).toBeVisible();
 
   await expect(page).toHaveScreenshot('intresserade.png', { fullPage: true });
+});
+
+/**
+ * [TASK-314, 299.10 steg 10] prefers-contrast: more. Samma `emulateMedia`-
+ * mönster som `dorrlista-promoverings-grind.spec.ts` rad ~746-782.
+ * `IntresseradRow` (`Intresserade.tsx`) bär INGEN egen `contrast-more:`-klass
+ * (verifierat, noll träffar) — raddelaren är en STATISK `border-text-muted/20
+ * border-b`, redan synlig i normalläget. Grinden bevisar att den befintliga
+ * gränsen förblir renderad (solid, bredd > 0) under förstärkt kontrast, plus
+ * en fullsides pixel-baseline (samma idiom som filens ordinarie test ovan)
+ * och axe 0.
+ */
+test('intresserade — hög-kontrast-läge (prefers-contrast: more)', async ({ page, network }) => {
+  const WCAG_TAGGAR = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
+
+  await page.emulateMedia({ contrast: 'more' });
+  mockLeads(network, [
+    row({
+      namn: 'Anna Andersson',
+      email: 'anna@example.se',
+      antalHamtningar: 2,
+      allaHamtningar: ['Gratis guide', 'Webinar'],
+      senasteInteraktion: 'Laddade ner guide',
+    }),
+  ]);
+  await page.goto('/mer/intresserade');
+
+  await expect(page.getByRole('heading', { level: 1, name: 'Intresserade' })).toBeVisible();
+  await expect(page.getByText('Anna Andersson')).toBeVisible();
+
+  const rad = page.getByRole('list').getByRole('listitem').first();
+  const kant = await rad.evaluate((el) => {
+    const s = getComputedStyle(el);
+    return { bredd: s.borderBottomWidth, stil: s.borderBottomStyle };
+  });
+  expect(kant.stil).toBe('solid');
+  expect(Number.parseFloat(kant.bredd)).toBeGreaterThan(0);
+
+  const resultat = await new AxeBuilder({ page }).withTags(WCAG_TAGGAR).analyze();
+  expect(resultat.violations).toEqual([]);
+
+  await expect(page).toHaveScreenshot('intresserade-kontrast.png', { fullPage: true });
 });
