@@ -3,10 +3,10 @@ id: TASK-190
 title: >-
   Staging create-event mappar Airtable-valideringsfel till generisk 500 utan
   felklassning
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-10 17:36'
-updated_date: '2026-08-10 18:17'
+updated_date: '2026-08-24 16:44'
 labels: []
 dependencies: []
 ordinal: 356000
@@ -25,3 +25,9 @@ OMFORMULERAT 2026-08-10 (S102): ursprungsfyndet ('500 Internal error, odiagnosti
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Done-flipp S112: fixen (500→422, classifyAirtableWriteError) i PR #1940, landad + post-merge grön; testet asserterar Airtables faktiska svar (hypotesen om fältnamn falsifierad mot staging). Kortet saknar AC — fyndets FÖRVÄNTAT uppfyllt. Landning: PR #1940
+<!-- SECTION:NOTES:END -->

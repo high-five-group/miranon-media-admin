@@ -3,9 +3,10 @@ id: TASK-193
 title: >-
   send-action-email-bilagor saknar explicit content-type — Resend servar
   application/octet-stream
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-10 18:17'
+updated_date: '2026-08-24 16:44'
 labels: []
 dependencies: []
 ordinal: 358000
@@ -24,3 +25,9 @@ FYND (FRAMME-verifikatet varv 3, 2026-08-10, mail b1e1b27b-e579-4c39-960d-f0a0cc
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Done-flipp S112: deriveContentType i PR #1940, landad + post-merge grön; contentType-formen verifierad mot Resends officiella SDK-exempel. Kortet saknar AC — fyndets FÖRVÄNTAT uppfyllt. Landning: PR #1940
+<!-- SECTION:NOTES:END -->

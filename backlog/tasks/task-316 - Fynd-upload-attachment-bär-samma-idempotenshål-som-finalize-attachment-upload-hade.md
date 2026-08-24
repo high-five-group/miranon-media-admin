@@ -3,10 +3,10 @@ id: TASK-316
 title: >-
   Fynd: upload-attachment bär samma idempotenshål som finalize-attachment-upload
   hade
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-24 14:01'
-updated_date: '2026-08-24 15:57'
+updated_date: '2026-08-24 16:43'
 labels:
   - ready-for-agent
 dependencies: []
@@ -28,8 +28,14 @@ Registrerat 2026-08-24 (S112, TASK-183-passet): upload-attachment/index.ts (mön
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Done-flipp S112: PR #1939 landad, post-merge 69dbcdc7 grön; rött-först-bevis + deterministisk attachmentId-design. Landning: PR #1939
+<!-- SECTION:NOTES:END -->

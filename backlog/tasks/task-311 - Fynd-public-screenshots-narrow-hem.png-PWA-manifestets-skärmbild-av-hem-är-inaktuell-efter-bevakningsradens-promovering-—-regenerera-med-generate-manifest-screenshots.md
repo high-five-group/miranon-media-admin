@@ -4,10 +4,10 @@ title: >-
   Fynd: public/screenshots/narrow-hem.png (PWA-manifestets skärmbild av /hem) är
   inaktuell efter bevakningsradens promovering — regenerera med
   generate:manifest-screenshots
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-23 16:47'
-updated_date: '2026-08-24 15:59'
+updated_date: '2026-08-24 16:43'
 labels:
   - fynd
 dependencies: []
@@ -28,8 +28,14 @@ Bifynd ur TASK-291 AC #3-promoveringen (S111 resume 2, 2026-08-23, agentens slut
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Done-flipp S112: PR #1940 landad, post-merge grön; skärmbilden regenererad + manifest-verifierad. Landning: PR #1940
+<!-- SECTION:NOTES:END -->
