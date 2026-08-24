@@ -1,10 +1,10 @@
 ---
 id: TASK-241.7
 title: 'Skiva: Prototyp-rivningen — svep-substratet bort efter QA'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-16 23:09'
-updated_date: '2026-08-24 14:04'
+updated_date: '2026-08-24 14:39'
 labels:
   - ready-for-agent
 dependencies:
@@ -28,10 +28,10 @@ Rivningen följer 243.4-till-243.5-prejudikatet: prototypen står kvar som körb
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -63,4 +63,6 @@ GRINDUTFALL (samtliga mätta, exitkod fångad utan pipe):
 243.5-AVBLOCKERINGEN BEVISAD: den enda import som höll TASK-243.5 blockerad (src/routes/dev/svep-prototyp.tsx rad 6-7, mot @/components/dev/hem-prototyp/demoData och VariantRo) är riven i sin helhet med routfilen. Grep över kvarvarande src/ för faktiska import-satser mot hem-prototyp-katalogen gav 0 träffar (endast docblock-kommentarer i promoverade svep/-filer kvar, ingen körande import). TASK-243.5 är därmed avblockerat från svep-hållet.
 
 Diffen är path-scopad: git status --short visar enbart de sex rm-raderna plus .facit-policy.conf. dist/ är gitignored, ingen build-artefakt i diffen.
+
+Done-flipp S112: PR #1912 landad, post-merge 0a93e95f grön (verifierad 2026-08-24).
 <!-- SECTION:NOTES:END -->
