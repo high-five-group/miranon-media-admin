@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-20 08:05'
-updated_date: '2026-08-24 14:59'
+updated_date: '2026-08-24 15:02'
 labels:
   - ready-for-agent
 dependencies: []
@@ -71,4 +71,6 @@ MÄTT UTFALL: grinden 18 -> 14 inkonsistenta kort av 642 prövade. De fem instan
 HUB-DEL FLAGGAD, EJ RÖRD: Final Summary-mallens ordalydelse bor i hubben, plugins/marcus-system/skills/do-work/SKILL.md steg 5 (b) — raden "Levererad · commit <sha> · CI-run <id> per jobb · ...". Den bör få "· Landning: PR #<nr>" i en separat hub-commit. Repo-sidan är gjord: backlog/config.yml:s DoD-mall namnger nu pekarformen, och grinden framtvingar den.
 
 STÄNGNINGEN AV DETTA KORT SKA BÄRA "Landning: PR #<nr>" i sin Final Summary. DoD #3 lämnas obockad med avsikt — det är exakt den form kortet inför. Utan pekaren fäller grindens invariant 2 på just den raden, och grindens meddelande säger vad som saknas.
+
+KONKRETISERING (efter PR-skapandet): detta korts landning är PR #1930, gren feat/task-281-ci-grondhet-harleds-ur-landningen, leverans-commit a37813a0. Stängningens Final Summary ska alltså innehålla raden "Landning: PR #1930". Använd --append-final-summary om slutraden redan skrivits — --final-summary ERSÄTTER och skulle radera pekaren.
 <!-- SECTION:NOTES:END -->
