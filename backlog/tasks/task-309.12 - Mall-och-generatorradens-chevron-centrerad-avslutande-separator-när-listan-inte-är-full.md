@@ -3,9 +3,10 @@ id: TASK-309.12
 title: >-
   Mall- och generatorradens chevron centrerad + avslutande separator när listan
   inte är full
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-24 16:33'
+updated_date: '2026-08-24 17:10'
 labels:
   - ready-for-agent
 dependencies: []
@@ -25,10 +26,10 @@ Två fynd ur Marcus granskning 2026-08-24 av den promoverade dokumentytan (ADR-1
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Mall- och generatorraden bär items-center — chevronen vertikalt centrerad mot radens tre led, samma form som den godkända prototypen
-- [ ] #2 Sista raden i dokumentlistan bär en avslutande separator när antalet synliga rader är skilt från LISTA_SYNLIGA_RADER (4) och större än 0; vid exakt 4 rader ritas ingen (ytans kant avslutar)
-- [ ] #3 Tom-raden ('Inga bilagor för det här eventet än.') bär aldrig separator
-- [ ] #4 npm run test:acceptance -- dokument grön; axe 0 violations kvar
+- [x] #1 Mall- och generatorraden bär items-center — chevronen vertikalt centrerad mot radens tre led, samma form som den godkända prototypen
+- [x] #2 Sista raden i dokumentlistan bär en avslutande separator när antalet synliga rader är skilt från LISTA_SYNLIGA_RADER (4) och större än 0; vid exakt 4 rader ritas ingen (ytans kant avslutar)
+- [x] #3 Tom-raden ('Inga bilagor för det här eventet än.') bär aldrig separator
+- [x] #4 npm run test:acceptance -- dokument grön; axe 0 violations kvar
 <!-- AC:END -->
 
 ## Definition of Done
@@ -38,3 +39,17 @@ Två fynd ur Marcus granskning 2026-08-24 av den promoverade dokumentytan (ADR-1
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landad i `d9d973d5` (PR #1889, merge `24c39777`, 2026-08-24T17:00:37Z).
+
+**#1 — regression rättad.** `MallRad` och `GeneratorRad` bar `items-start`; prototypens godkända form var `items-center` (`1ec70a85^:src/components/dokument/prototyp/GenereringsPrototyp.tsx` rad 483 resp. 511). Raden bär tre led men bara en 44 px-knapp, så chevronen klistrades i överkant. Trolig orsak: `DokumentRadSkal`s form kopierad — där är `items-start` rätt, för den raden har fyra ikonknappar.
+
+**#2/#3 — ny `avslutaLista`.** Sista raden bär egen underkant när `antalSynliga > 0 && antalSynliga !== LISTA_SYNLIGA_RADER`. Exakt fyra rader är det enda läget där ytans kant redan gör separatorns jobb (`LISTA_MAXHOJD` är mätt för att klippa precis över separatorn). `> 0`-guarden håller tom-raden fri från linje.
+
+**#4 — bevis.** `npm run test:acceptance -- dokument` mot landad `origin/main`: **15/15 gröna**, exitkod 0, inklusive de tre axe-testerna (0 violations).
+
+Marcus grund (granskning 2026-08-24): *"chevronen sitter inte centrerat som den gjorde i prototypen"* och *"om det bara är två rader så ser det dumt ut att den nedersta raden (dokumentet) inte har en separatorlinje nedtill"*.
+<!-- SECTION:FINAL_SUMMARY:END -->

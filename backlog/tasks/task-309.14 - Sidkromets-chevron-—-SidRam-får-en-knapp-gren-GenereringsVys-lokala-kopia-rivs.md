@@ -3,9 +3,10 @@ id: TASK-309.14
 title: >-
   Sidkromets chevron — SidRam får en knapp-gren, GenereringsVys lokala kopia
   rivs
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-24 16:36'
+updated_date: '2026-08-24 17:11'
 labels:
   - ready-for-agent
 dependencies: []
@@ -27,10 +28,10 @@ Skälet kopian fanns är verkligt men litet: SidRam är wrappad i TanStack Route
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 SidRam.tsx exporterar SidRamKnapp (react-aria-components Button, onTillbaka-callback, obligatorisk tillbakaEtikett) som delar CHEVRON_KLASS med länk-grenen
-- [ ] #2 GenereringsVy.tsx § KromKnapp är RIVEN; alla tre anropsställen använder SidRamKnapp
-- [ ] #3 Chevronen i genereringsvyn står på samma höjd och indrag som husets övriga undersidor (mx-4 mt-2 lg:mt-10)
-- [ ] #4 ariaSnapshot-facit oförändrat — button 'Tillbaka till Dokument' kvar; promoverings-grindens desktop-tester gröna
+- [x] #1 SidRam.tsx exporterar SidRamKnapp (react-aria-components Button, onTillbaka-callback, obligatorisk tillbakaEtikett) som delar CHEVRON_KLASS med länk-grenen
+- [x] #2 GenereringsVy.tsx § KromKnapp är RIVEN; alla tre anropsställen använder SidRamKnapp
+- [x] #3 Chevronen i genereringsvyn står på samma höjd och indrag som husets övriga undersidor (mx-4 mt-2 lg:mt-10)
+- [x] #4 ariaSnapshot-facit oförändrat — button 'Tillbaka till Dokument' kvar; promoverings-grindens desktop-tester gröna
 <!-- AC:END -->
 
 ## Definition of Done
@@ -40,3 +41,17 @@ Skälet kopian fanns är verkligt men litet: SidRam är wrappad i TanStack Route
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landad i `d9d973d5` (PR #1889, merge `24c39777`).
+
+**Regression mot Marcus eget beslut 2026-08-23**, som lever verbatim i `SidRam.tsx`s docblock: *"Alla chevrons … sitter ju mycket högre upp än alla andra … Flytta ner alla. Tanken med sidkromet som komponent var ju att alla 'undersidor' skulle se likadana ut i 'grunden'."* Det implementerades som `mx-4 mt-2 lg:mt-10`.
+
+`GenereringsVy.tsx` bar en egen `KromKnapp` — rå `<button>` vars docblock påstod *"EXAKT DokumentYtas klasser"*. Sant när den skrevs, falskt från 2026-08-23 då topp-luften lades till i `SidRam` men inte i kopian. Den satt därmed både för högt och utan `mx-4`-indraget. Kopia nummer sju av den geometri `ADR-126` just samlat i en primitiv — och den enda som hann glida isär.
+
+**Vägen: gren, inte lapp.** Marcus 2026-08-24: *"INGET lappande"*. Skälet kopian fanns är verkligt men litet — `SidRam` är wrappad i TanStack Routers `createLink` och renderar `<a href>`, medan genereringsvyn går tillbaka INOM sin egen route genom att nolla query-parametern `vy`. Det motiverar en andra gren i primitiven, inte en sjunde kopia. `<button>` är dessutom rätt element när ingen URL byts — en `<a>` utan `href` hade varit fel för både skärmläsare och mellanklick.
+
+**#1** `CHEVRON_KLASS` utbruten, delad av `SidRamLink` och nya `SidRamKnapp` (react-aria-components `Button`, obligatorisk `tillbakaEtikett`). **#2** `KromKnapp` riven; alla tre anropsställen använder `SidRamKnapp` (verifierat mot `origin/main`: 0 träffar på `function KromKnapp`, 3 på `<SidRamKnapp tillbakaEtikett`). **#3** `mx-4 mt-2 … lg:mt-10` verifierad i den delade konstanten. **#4** ariaSnapshot-facit oförändrat (`button "Tillbaka till Dokument"` kvar) — promoverings-grindens **desktop-tester 5/5 gröna** mot landad kod.
+<!-- SECTION:FINAL_SUMMARY:END -->
