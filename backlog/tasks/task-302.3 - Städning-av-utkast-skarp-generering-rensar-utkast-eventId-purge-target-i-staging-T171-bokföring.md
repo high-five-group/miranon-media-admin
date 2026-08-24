@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-22 21:24'
-updated_date: '2026-08-23 00:20'
+updated_date: '2026-08-24 13:06'
 labels:
   - ready-for-agent
 dependencies:
@@ -38,10 +38,10 @@ Skiva 3 av `TASK-302`. Håller den transienta mängden bunden och bokför resten
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -55,3 +55,9 @@ AVVIKELSE 3 / MEDVETET SCOPE-BESLUT (for orkestrerarens granskning): .github/wor
 
 Stängd av orkestreraren efter CI-verifiering (S108 natt-körning 2026-08-23). Landad via merge-kön; se Del 12 § A för PR och SHA.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+S112 bokföringspass (2026-08-24): PR #1849 MERGED 2026-08-23T00:18:13Z, samtliga checks SUCCESS. Filer scopade till städnings-/purge-mekanismen (send-receipt, generate-event-attachment, purge-policy, T171-tråd). Samtliga 4 DoD bockade mot detta.
+<!-- SECTION:FINAL_SUMMARY:END -->

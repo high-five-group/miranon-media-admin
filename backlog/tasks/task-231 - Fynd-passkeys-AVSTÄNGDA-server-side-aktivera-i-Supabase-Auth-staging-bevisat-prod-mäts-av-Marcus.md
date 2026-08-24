@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-15 23:26'
-updated_date: '2026-08-17 12:01'
+updated_date: '2026-08-24 13:06'
 labels:
   - ready-for-agent
 dependencies: []
@@ -29,10 +29,10 @@ S102 Lotta-vandringen punkt 8-rotorsaken (2026-08-16): staging-Supabase svarar 4
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -133,3 +133,9 @@ BIFYND: rpId är 'admin.miranon.dev' — Supabase-projektets domänkonfiguration
 
 KVARSTÅR för QA 127.10 steg 6: registrering + inloggning med passkey e2e i browsern. Serverledet är nu öppet; klientflödet byggdes mot det (127.8/ADR-093) och degraderade tyst så länge servern svarade 404 — den tystnaden ska nu vara borta.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+S112 bokföringspass (2026-08-24): PR #1548 (fix: [S102] create-attendance allowlistad + 231 stängd + 270 rättad) MERGED 2026-08-17T12:17:03Z, samtliga checks SUCCESS (gh pr view 1548). Ingen egen src-kod för detta korts arbete (Supabase Auth-dashboard-aktivering); AC redan verifierade i notes (curl mot prod, HTTP 200). Samtliga 4 DoD bockade mot detta.
+<!-- SECTION:FINAL_SUMMARY:END -->

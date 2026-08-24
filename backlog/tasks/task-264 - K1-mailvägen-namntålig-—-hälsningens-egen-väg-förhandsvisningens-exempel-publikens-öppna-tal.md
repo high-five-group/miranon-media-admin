@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-17 10:03'
-updated_date: '2026-08-17 12:28'
+updated_date: '2026-08-24 13:07'
 labels:
   - qa-fix
 dependencies: []
@@ -29,14 +29,16 @@ Ur publik-utredningen (docs/research/utskickspublikens-leads-och-namnlosa-2026-0
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
 Byggd (Opus), landad och CI-verifierad via merge-kön (259: PR #1534 MERGED 10:58Z · 264: PR #1546 MERGED 12:09Z); Marcus slutkvittens i prod 'Ser bra ut' 2026-08-17. Done-flippad vid S104 session-end.
+
+S112 bokföringspass (2026-08-24): PR #1546 MERGED 2026-08-17T12:09:29Z, CI SUCCESS (gh pr view 1546). Filer = kortfilen + VariantD.tsx + acceptance-test, inga orelaterade. Samtliga 4 DoD bockade mot detta.
 <!-- SECTION:FINAL_SUMMARY:END -->

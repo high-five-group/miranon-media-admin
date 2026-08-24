@@ -4,7 +4,7 @@ title: 'Skiva: Tomma bokstäver tonas ned — raden byter aldrig längd'
 status: Done
 assignee: []
 created_date: '2026-08-21 08:53'
-updated_date: '2026-08-22 15:20'
+updated_date: '2026-08-24 13:08'
 labels:
   - ready-for-agent
 dependencies:
@@ -45,7 +45,7 @@ Täcker användarberättelser: 6 (och skärper 17)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Personlistans rad- och listform granskad mot facit tasks/sessions/bilagor/s90-personlistan-konvergens/facit.json ytan personlistan — bokstavsraden är ett TILLÄGG ovanför listan och rör inget låst formbeslut
+- [x] #5 Personlistans rad- och listform granskad mot facit tasks/sessions/bilagor/s90-personlistan-konvergens/facit.json ytan personlistan — bokstavsraden är ett TILLÄGG ovanför listan och rör inget låst formbeslut
 - [x] #6 Varje bokstavsknapp minst 24x24 CSS-px — mätt i renderad yta, aldrig läst ur en klass (WCAG 2.5.8 AA)
 <!-- DOD:END -->
 
@@ -74,3 +74,9 @@ created: 2026-08-21 11:34
 AMENDERING 2026-08-21 (S109, ADR-123 — väg B): meningen 'Fördelningen kom i EF-svaret redan i första skivan; ingen serverändring' gäller inte längre — fördelningen är en reduce över den laddade klientarrayen (bunden till HELA registret precis som tidigare, eftersom arrayen ÄR hela registret). Fortsatt ren klientlogik; ingen deploy. AC oförändrade.
 ---
 <!-- COMMENTS:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+S112 bokföringspass (2026-08-24): DoD #5 var explicit reserverad för TASK-283.4:s Marcus-godkännande-kanal (se notes: 'omstämplingen är EXPLICIT reserverad för Marcus egen kanal och görs i TASK-283.4'). TASK-283.4 är nu Done — Marcus godkände bokstavsraden ('Ser ju skitbra ut! Bra jobb Claude!', 2026-08-22) och de sex ariaSnapshot-referenserna regenererades (PR #1802) samt facit.json omstämplades (PR #1803, godkand.citat satt). Nyverifierat denna session: promoverings-grinden 16/16 passed exit 0; facit-grinden exit 0, 0 ogodkända. DoD #5 bockad mot detta.
+<!-- SECTION:FINAL_SUMMARY:END -->

@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-21 11:52'
-updated_date: '2026-08-22 09:33'
+updated_date: '2026-08-24 13:08'
 labels:
   - ready-for-human
 dependencies:
@@ -35,10 +35,10 @@ Täcker användarberättelser: 13
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -50,3 +50,9 @@ Motivering: Svenska namn bär diakritiker som vardag, inte som kant (Åsa, Öste
 
 Uppföljningskort: TASK-286.7 ("Skiva: Personsök blir diakritik-tolerant — asa hittar Åsa, likvärdig med eventväljarens filter (TASK-286.5 JA)"), ready-for-agent, parent TASK-286, dependencies TASK-286.3, med paritetstestets nya facit utskrivet i AC #1-#2.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+S112 bokföringspass (2026-08-24): PR #1752 MERGED 2026-08-22T09:45:18Z, CI SUCCESS. Filer = beslutskortet + uppföljningskortet 286.7 + task-288 (referens-backfill), ren bokföring, inga orelaterade kodfiler. Samtliga 4 DoD bockade mot detta.
+<!-- SECTION:FINAL_SUMMARY:END -->

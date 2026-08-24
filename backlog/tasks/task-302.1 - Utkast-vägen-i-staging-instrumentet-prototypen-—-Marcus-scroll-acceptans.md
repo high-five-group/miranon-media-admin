@@ -4,7 +4,7 @@ title: Utkast-vägen i staging-instrumentet + prototypen — Marcus scroll-accep
 status: Done
 assignee: []
 created_date: '2026-08-22 21:17'
-updated_date: '2026-08-22 22:25'
+updated_date: '2026-08-24 13:06'
 labels:
   - ready-for-agent
 dependencies: []
@@ -43,10 +43,10 @@ Se --ac. Marcus-momentet är sist: dev-server mot staging (port 5174 ägs av en 
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -62,3 +62,9 @@ AC#4: DataSourceAdapter.renderPdfTillUtkast (ny metod, renderPdfFranHtml BEHÅLL
 
 AC #5 — Marcus scroll-acceptans BOKFÖRD 2026-08-23 (~00:30): *"Jag har testat nu, det funkar som A, inga problem med scrollningen."* Staging, prototypen (`/mer/dokument?variant=a&vy=generering&mall=bekraftelse`), Förhandsgranska först → 8,4 s → Storage-URL i ny flik. Orkestreraren verifierade kedjan headed själv före överlämning (skärmdumpar i sessionens scratchpad). Två fällor på vägen, båda orkestrerarens: dev-servern startades på `127.0.0.1:5176` som inte är i `CORS_ALLOWED_ORIGINS` (preflight-mätt: `localhost:5173/5174/5175/4173` → 200, allt annat 403) → "Failed to fetch"; och navigationsanvisning gavs ur kod i stället för ur skärm. Servern flyttades till `localhost:4173`. Landad `#1833` → `1a09601e`. Stängd av orkestreraren efter CI-verifiering.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+S112 bokföringspass (2026-08-24): PR #1833, merge-commit 1a09601e, MERGED 2026-08-22T22:12:05Z, samtliga checks SUCCESS. Filer scopade uteslutande till utkast-leveransvägen (adaptrar, EF, mutation, schema, staging-test). Samtliga 4 DoD bockade mot detta.
+<!-- SECTION:FINAL_SUMMARY:END -->

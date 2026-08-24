@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-22 21:16'
-updated_date: '2026-08-23 09:12'
+updated_date: '2026-08-24 13:06'
 labels:
   - prd
 dependencies: []
@@ -50,10 +50,10 @@ Marcus öppnar en förhandsgranskning i prototypen (bilaga) och i Dokument-ytan 
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -63,3 +63,9 @@ S108 natt-körning 2026-08-23: 302.1–302.3 Done och landade (#1833, #1838, #18
 
 Enhetens acceptans 2026-08-23: klass C via Dokument-ytan öppnar Storage-URL:en (orkestreraren skärmverifierad, Del 12 § B); det gamla pdf-lib-kvittot är en sida och ger inget att scrolla — mekanismen är identisk med 302.1:s accepterade. Marcus informerad, invände inte. Prod-EF-deploy (preview-receipt, generate-event-attachment, send-receipt-email) kvarstår som Marcus moment — bokfört i todo. Stängd av orkestreraren.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+S112 bokföringspass (2026-08-24): PRD-parent, 0 egna AC. Samtliga tre barn (302.1/302.2/302.3) Done och landade — PR #1833 (MERGED 2026-08-22T22:12:05Z), PR #1838 (MERGED 2026-08-22T23:14:44Z), PR #1849 (MERGED 2026-08-23T00:18:13Z), samtliga CI SUCCESS. Enhetens acceptans dokumenterad i notes (orkestrerar-skärmverifiering + Marcus informerad). Samtliga 4 DoD bockade mot detta.
+<!-- SECTION:FINAL_SUMMARY:END -->

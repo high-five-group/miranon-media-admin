@@ -1,10 +1,10 @@
 ---
 id: TASK-280
 title: 'PWA-appikonen uppdateras aldrig — ikon-URL:erna måste versioneras'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-20 07:44'
-updated_date: '2026-08-20 08:01'
+updated_date: '2026-08-24 13:06'
 labels:
   - ready-for-agent
 dependencies: []
@@ -35,10 +35,10 @@ VÄNTAT BETEENDE EFTER FIXEN, ej en defekt: vår ikonändring är långt över C
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -93,3 +93,9 @@ Hash för denna körning (källbild oförändrad sedan S107-bytet):
 120d7838 — pwa-192x192-120d7838.png / pwa-512x512-120d7838.png /
 maskable-icon-512x512-120d7838.png.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+S112 bokföringspass (2026-08-24): PR #1645 (feat/s107-280-pwa-ikon-versionering) MERGED 2026-08-20T08:16:27Z, samtliga checks SUCCESS (gh pr view 1645). Filer scopade till kortets ikon-/manifest-yta. Samtliga 4 DoD bockade mot detta.
+<!-- SECTION:FINAL_SUMMARY:END -->

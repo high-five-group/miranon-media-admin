@@ -1,10 +1,10 @@
 ---
 id: TASK-282
 title: 'M:et är optiskt höger-tungt i favicon och PWA-ikoner'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-20 08:42'
-updated_date: '2026-08-20 10:04'
+updated_date: '2026-08-24 13:06'
 labels:
   - ready-for-agent
 dependencies: []
@@ -48,7 +48,7 @@ OBS PÅ INTERAKTION MED TASK-280: ikonernas filnamn bär nu en innehållshash (s
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
@@ -182,3 +182,9 @@ något annat.
 GRINDAR (nakna, exitkod läst separat): test:api 0 (924 passerade),
 typecheck 0, biome 0 (567 filer), build 0, verify:manifest 0, check:docs 0.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+S112 bokföringspass (2026-08-24): PR #1658 (fix/s107-282-optisk-centrering-1px) MERGED 2026-08-20T10:18:20Z, samtliga checks SUCCESS (gh pr view 1658). Filer scopade till ikon-källorna + genererade varianter, konsekvent med kortets scope. DoD #3 bockad mot detta.
+<!-- SECTION:FINAL_SUMMARY:END -->

@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-21 11:50'
-updated_date: '2026-08-22 11:02'
+updated_date: '2026-08-24 13:08'
 labels:
   - ready-for-agent
 dependencies:
@@ -40,7 +40,7 @@ Täcker användarberättelser: 5
 - [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Paritetstestet (EF-filter mot klientfilter, samma fixtur) grönt för varje skiva som rör sök eller filtrering
-- [ ] #6 Facit-referenserna för personlistan (tasks/sessions/bilagor/s90-personlistan-konvergens/facit.json ytan personlistan) gröna — formen är orörd
+- [x] #6 Facit-referenserna för personlistan (tasks/sessions/bilagor/s90-personlistan-konvergens/facit.json ytan personlistan) gröna — formen är orörd
 - [x] #7 Inga nätverksanrop vid skrivning efter första laddningen — mätt i testet, inte antaget
 <!-- DOD:END -->
 
@@ -61,3 +61,9 @@ DoD #5 (paritetstestet EF-filter mot klientfilter) är EJ TILLÄMPLIGT för denn
 
 Merge-SHA `d4317a2e` (PR #1760). DoD #3 (CI grön per jobb) bockad — `gh pr checks 1760`: samtliga jobb pass/skipping, noll fail. DoD #7 (inga nätverksanrop vid skrivning efter första laddningen) bockad — mekaniskt bevisat i tests/api/personregister-invalidering.test.ts, testet 'en OMONTERAD registerfråga markeras stale UTAN nätverksanrop': räknande queryFn stannar på antal()===1 efter invalideringen, 250ms grace-period för en ev. felaktig refetch inräknad. DoD #5 och #6 lämnas ÖPPNA — redan motiverade ovan (EJ TILLÄMPLIGT respektive BLOCKERAD, klass (c), TASK-283.4). Status sätts Done.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+S112 bokföringspass (2026-08-24): DoD#6 var BLOCKERAD (explicit, ej N/A) av samma personlistan-facit-brott som 286.3/283.3, väntande TASK-283.4. TASK-283.4 är nu Done (referenser regenererade PR #1802, facit omstämplat PR #1803). Nyverifierat denna session: promoverings-grinden 16/16 passed exit 0; facit-grinden exit 0. DoD#6 bockad mot detta.
+<!-- SECTION:FINAL_SUMMARY:END -->

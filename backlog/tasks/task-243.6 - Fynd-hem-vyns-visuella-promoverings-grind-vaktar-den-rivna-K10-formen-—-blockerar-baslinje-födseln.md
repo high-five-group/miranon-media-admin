@@ -3,10 +3,10 @@ id: TASK-243.6
 title: >-
   Fynd: hem-vyns visuella promoverings-grind vaktar den rivna K10-formen —
   blockerar baslinje-födseln
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-22 18:00'
-updated_date: '2026-08-22 18:19'
+updated_date: '2026-08-24 13:05'
 labels:
   - ready-for-agent
 dependencies: []
@@ -46,7 +46,7 @@ KORTET LAGAR GRINDEN, INTE FORMEN. Formen är stämplad (s102-hem-konvergens/fac
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
@@ -73,3 +73,9 @@ GRINDAR, exitkoder fångade separat (aldrig via pipe): npx @biomejs/biome check 
 
 DIVERGENSER MOT UPPDRAGSTEXTEN (ADR-086-passet): (1) main hade landat vidare — worktreen föddes på 3849ac5a, origin/main stod på 9be5172d vid mätning och 5db01658 vid rebase; samtliga mätningar gjorda mot det faktiska läget. (2) Uppdraget tillskrev alla 6 grind-fall 'element(s) not found' på data-testid; mätningen delar dem 4 + 2 (se AC #2). (3) Uppdraget föreslog parent TASK-225; kortet lades under TASK-243 — TASK-225:s egen 'Utanför omfattningen' undantar uttryckligen hem-spaltens FORM, medan d794669f (TASK-243.1) är den commit som orphanade grinden och TASK-243.3 är kortet som lagade samma felklass i syskonfilerna. TASK-243 är dessutom fortfarande To Do, TASK-225 är Done. (4) Uppdragets mål 'test:visual exit 0 i sin helhet' är uppnått, men bara efter att lokala darwin-baslinjer fötts — se AC #6:s avgränsning; på ett rent träd är första körningen alltid 18 röda på macOS, by design.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+S112 bokföringspass (2026-08-24): landad och CI-verifierad. PR #1807 (fix/task-243-6-hem-visuell-grind-mot-faktisk-form), merge-commit d7498747, MERGED 2026-08-22T18:37:57Z, samtliga checks SUCCESS (gh pr view 1807). Merge-commit bekräftad ancestor av origin/main. DoD #3 bockad mot detta.
+<!-- SECTION:FINAL_SUMMARY:END -->

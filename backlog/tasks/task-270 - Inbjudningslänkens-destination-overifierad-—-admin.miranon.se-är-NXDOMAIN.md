@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-17 11:53'
-updated_date: '2026-08-17 13:05'
+updated_date: '2026-08-24 13:07'
 labels:
   - ready-for-human
 dependencies: []
@@ -38,10 +38,10 @@ Gissa inte vilket. Mät.
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -91,3 +91,9 @@ AC3 bockad: destinationen är verifierad nåbar (HTTP 200) OCH bevisad vara den 
 
 KVARSTÅENDE ROBUSTHETS-FRÅGA, INTE BLOCKERANDE (deferrad): INVITE_REDIRECT_URL saknas fortfarande som explicit hemlighet, så destinationen ägs av Site URL. Det fungerar, men bäraren är en auth-inställning som kan ändras som sidoeffekt av annat dashboard-arbete utan att något i repot märker det. Att sätta variabeln explicit gör destinationen till ett driftvärde som läses i samma svep som allt annat driftläge. Förkastas INTE — bokförs som öppen förbättring att ta när go-live-trycket släppt.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+S112 bokföringspass (2026-08-24): PR #1558 MERGED 2026-08-17T13:11:33Z, CI SUCCESS (gh pr view 1558). Enda rörd fil = kortfilen själv (ren mätning/dokumentation, ingen kod). Samtliga 4 DoD bockade mot detta.
+<!-- SECTION:FINAL_SUMMARY:END -->

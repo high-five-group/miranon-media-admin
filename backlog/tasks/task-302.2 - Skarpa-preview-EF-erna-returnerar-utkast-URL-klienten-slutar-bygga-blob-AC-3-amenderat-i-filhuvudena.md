@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-22 21:21'
-updated_date: '2026-08-23 00:20'
+updated_date: '2026-08-24 13:06'
 labels:
   - ready-for-agent
 dependencies:
@@ -41,10 +41,10 @@ Skiva 2 av `TASK-302`. Plockas FÖRST när 302.1:s Marcus-acceptans är bokförd
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -66,3 +66,9 @@ PREMISS-PASS: origin/main var vid start exakt commit-SHA:n uppdraget angav (matc
 
 Stängd av orkestreraren efter CI-verifiering (S108 natt-körning 2026-08-23). Landad via merge-kön; se Del 12 § A för PR och SHA.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+S112 bokföringspass (2026-08-24): PR #1838 MERGED 2026-08-22T23:14:44Z, samtliga checks SUCCESS. Filer scopade uteslutande till preview-EF:erna + adaptrarna/schemat, ingen orelaterad yta. Samtliga 4 DoD bockade mot detta.
+<!-- SECTION:FINAL_SUMMARY:END -->
