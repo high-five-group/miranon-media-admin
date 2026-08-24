@@ -1,10 +1,10 @@
 ---
 id: TASK-309.16
 title: Promoverings-grindens mobila aria-snapshots saknas — grinden är halv
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-24 16:38'
-updated_date: '2026-08-24 17:46'
+updated_date: '2026-08-24 18:13'
 labels:
   - ready-for-agent
 dependencies: []
@@ -33,10 +33,10 @@ VIKTIGT OM VÄGEN: Playwright SKREV de fem mobil-filerna vid körningen. De togs
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -50,3 +50,19 @@ AC #2 — MÄTT VÄRDE 12 passed / 0 failed, inte 10/0. Skillnaden är inte en a
 
 AC #3 — MÄTT över samtliga tolv promoverings-grindar under tests/visual/__aria__/. dokument-generering var den ENDA med halv vyport-täckning (5 desktop / 0 mobile). De elva andra har desktop == mobile: anmalningssidan 3/3, appfel 1/1, atgardssida 6/6, dorrlista 6/6, eventsida 6/6, hem-aktivitetsspalt 3/3, hem-bevakningsrad 2/2, messagebox 4/4, persondetalj 2/2, personer 3/3, segment 7/7. Efter denna landning är dokument-generering 6/6. Bokfört durabelt i spec-filens docblock § TÄCKNINGEN, inte bara här.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landning: PR #1961 (skiva 9:s pass, `164190b6`).
+
+Promoverings-grinden bar bara `-desktop`-facit; `npm run test:visual` gav 5 passed / 5 failed där alla fem fällningar var `visual-mobile` med *"snapshot doesn't exist"*. Att det inte fångades beror på att visual-testerna bor i `visual-baselines.yml` (`workflow_dispatch`) och grindar ingenting i CI — `#1889` var grön med luckan på plats.
+
+**Utfall:** fem mobila ariaSnapshots genererade i skiva 9:s pass, samtliga **byte-identiska** med sina desktop-motsvarigheter (sha256-verifierat). Grinden ger nu **12 passed / 0 failed** — inte 10 som AC:t förutsåg, eftersom `309.17` lade ett sjätte test × två vyporter.
+
+**Kontrollmätningen som gav fyndet dess verkliga vikt:** av husets **12** promoverings-grindar bär **11** desktop/mobile i par. Dokument-genereringens var den ENDA halva. Det gör detta till en avvikelse i beståndet, inte en allmän lucka — och därmed till något som borde ha synts.
+
+**Formen på hur luckan INTE stängdes:** Playwright skrev de fem filerna själv vid den första körningen (`writing actual`). De togs medvetet bort igen i stället för att committas — ett facit stämplas av Marcus (`ADR-102`/`ADR-104`), och de genererades dessutom ur ett träd där koden just ändrats. Ett verktyg som fyller i saknat facit ger en grön grind utan att någon granskat innehållet.
+
+DoD #3 är en härledd rad — landnings-pekaren ovan bär den.
+<!-- SECTION:FINAL_SUMMARY:END -->
