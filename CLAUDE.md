@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-22
+updated: 2026-08-24
 review_by: 2026-11-15
 status: stable
 ---
@@ -633,6 +633,48 @@ gånger.
 grind betalade 164,60 s i en körning, och en orkestrator-`task edit` dog mot
 ett 2-minuterstak medan en parallell agents anrop malde. Kostnaden växer med
 antalet grenar — och en fleet av agenter PRODUCERAR grenar.
+
+**`TASK-310` (2026-08-24): grenskulden hann växa till 289 lokala / 345 totalt
+grenar** (`git branch` / `git branch -a`) innan någon städade — elva
+`task create` i rad hade dött mot 10-minuterstaket dagen innan (S108 resume 8,
+2026-08-23, källa: kortets egen beskrivning). Mätt rakt mot
+`node_modules/.bin/backlog` (ej `npm run bl`-wrappern — den kör `list`/`view`
+mot en isolerad `check_active_branches: false`-config och hade dolt precis
+det denna mätning skulle visa; se § ovan):
+
+| Läge | grenar (lokala / totalt) | `task list --plain` | `task create` |
+|---|---|---|---|
+| Före städning | 289 / 345 | 39,20 s | — |
+| Efter lokal gren-städning (235× `git branch -d`, 0 fel) | 54 / 110 | 18,57 s | — |
+| + fjärr-tracking-refs prunade (`git remote prune origin`, 37 st) | 54 / 72 | 18,51 s | 21,08 s |
+
+Loadavg steg 5,15→15,71 (1 min) UNDER mätfönstret — annan fleet-aktivitet
+samtidigt, så talen är INTE en ren branch-count-till-tid-funktion. Riktningen
+är ändå entydig: lokal gren-städning gav ~2× (39,2 s→18,6 s); den efterföljande
+fjärr-ref-pruningen gav ~0 (18,57 s→18,51 s, brus). **Rotorsaken är LOKALA
+grenar, inte fjärrgrenar.** `remote_operations: false` i `backlog/config.yml`
+utesluter nätverksanrop, men inte att skanningen läser redan cachade
+`refs/remotes/origin/*` lokalt — ändå syns ingen mätbar effekt av att ta bort
+dem. Ingen av mätpunkterna når kortets eget mål (`task create` under ~10 s) —
+kvarvarande 54 lokala grenar (plus stigande fleet-last) räcker för att hålla
+kostnaden en bit över det, så 10 s-målet kräver antingen ett lägre stabilt
+gren-golv eller en omprövning av målet självt.
+
+`delete_branch_on_merge` var redan `true` (satt av `TASK-70.6`, 2026-07-29,
+bevisat med kontrastgrupp PR #418 vs #417 — grenen från PR:en efter
+inställningen var borta på fjärren, grenen från PR:en före fanns kvar) —
+verifierat oförändrat 2026-08-24 via `gh repo view --json
+deleteBranchOnMerge`. De 37 prunade fjärr-tracking-refsen var alltså redan
+raderade PÅ GITHUB (auto-delete fungerar som avsett); pruningen tog bara bort
+de LOKALA cache-pekarna i denna klon och rörde aldrig fjärren.
+
+**Vägen framåt, obetald skuld:** ingen mekanism raderar en lokal gren efter
+att en worktree-isolerad agent landat sin PR — `git worktree remove` tar bort
+arbetskatalogen men rör aldrig grenen, så den ligger kvar för evigt tills
+någon kör `git branch -d` för hand (vilket denna städning gjorde, en gång, se
+`TASK-310`). Ett återkommande lokalt gren-svep (t.ex. vid worktree-borttagning,
+eller periodiskt à la `heartbeat-svep.sh`) är flaggat men INTE byggt i detta
+pass — se `TASK-310` § Final Summary för fullständig mätserie och motivering.
 
 ---
 
