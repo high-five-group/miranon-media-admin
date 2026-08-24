@@ -3,10 +3,10 @@ id: TASK-310
 title: >-
   Fynd: task create kostar ~3 min per kort — 287 grenar skannas av
   check_active_branches; elva kort tog över 30 min
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-23 14:55'
-updated_date: '2026-08-24 12:58'
+updated_date: '2026-08-24 13:22'
 labels:
   - ready-for-agent
 dependencies: []
@@ -73,4 +73,6 @@ AC3 — CLAUDE.md § Kortnummer uppdaterad med hela mätserien + "Vägen framåt
 ingen mekanism raderar lokala grenar efter att en worktree-agent landat (git
 worktree remove rör aldrig grenen) - ett återkommande lokalt gren-svep är
 flaggad, obetald skuld, inte byggt i detta pass.
+
+Stängning S112 (tvåstegsstängningen): leverans-PR #1896 landad (merge 205b4c6d), post-merge-körningen på main e8c45c51 grön (CI: success, Post-merge: success, verifierad 2026-08-24). AC 1–3 bockade i leveranssteget.
 <!-- SECTION:NOTES:END -->
