@@ -30,6 +30,7 @@
 
 set -euo pipefail
 
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FUNCTIONS_DIR="${FUNCTIONS_DIR:-supabase/functions}"
 ALLOWLIST_FILE="${ALLOWLIST_FILE:-.prod-functions-allowlist.conf}"
 
@@ -187,29 +188,36 @@ fi
 
 # Deploy-läge: deploya varje allowlistad funktion explicit (aldrig bare deploy).
 #
-# CLI-ANROPET ÄR `npx supabase`, INTE `supabase` — och det är MÄTT, inte
-# stilval (S108 Del 18, 2026-08-24). Denna rad kallade tidigare den GLOBALA
-# binären, medan anroparen `fas4-prod-deploy.sh` genomgående kör `npx
-# supabase`. Samma deploy-väg körde alltså TVÅ olika CLI-versioner, och den
-# globala (2.75.0 på Marcus maskin) FALLER på `_shared/mallar/kvitto.css.ts`
-# — en 25 kB enkelrads-strängmodul — med `failed to read file: open /*\n *
-# Kvitto-mallens EGNA CSS …: invalid argument`: den försöker öppna modulens
-# INNEHÅLL som en sökväg. Fällde prod-deployen mitt i, efter 18 av 45
-# funktioner.
+# CLI-ANROPET ÄR PINNAT — och det är MÄTT, inte stilval (S108, 2026-08-24).
+# Denna rad kallade tidigare den GLOBALA binären (bar `supabase`), medan
+# anroparen fas4-prod-deploy.sh:s övriga anrop genomgående körde `npx
+# supabase` UTAN pin. Samma deploy-väg körde alltså TVÅ olika CLI-versioner,
+# och den globala (2.75.0 på Marcus maskin) FALLER på
+# `_shared/mallar/kvitto.css.ts` — en 25 kB enkelrads-strängmodul — med
+# `failed to read file: open /*\n * Kvitto-mallens EGNA CSS …: invalid
+# argument`: den försöker öppna modulens INNEHÅLL som en sökväg. Fällde
+# prod-deployen mitt i, efter 18 av 45 funktioner. Full differentialmätning:
+# .supabase-cli-policy.conf § VARFÖR FILEN FINNS.
 #
-# Differentialmätning mot SAMMA funktion och SAMMA mål (staging), samma träd:
-#   supabase       2.75.0  → FAIL (identiskt fel, reproducerat)
-#   npx supabase  2.115.0  → EXIT 0
-# Alltså CLI-versionen, inte prod och inte filen.
-#
-# KVARSTÅENDE SVAGHET, bokförd öppet: `npx supabase` är inte heller PINNAD —
-# CLI:t saknas i package.json, så npx hämtar senaste. Bytet gör vägen
-# INTERNT KONSEKVENT och avvärjer den mätta stale-globala fällan, men en
-# framtida npx-version kan flytta sig under fötterna på oss. Riktig
-# lösning (pinning + versionsgolv) är eget kort — se S108 Del 18 § C.
+# Källan för PINNINGEN (inte bara `npx supabase` utan version) är
+# scripts/lib/supabase-cli.sh + .supabase-cli-policy.conf — sju
+# anropsställen som tidigare bar var sin form konsoliderade till en.
+# shellcheck source=/dev/null  # dynamisk SCRIPT_DIR-relativ path; scripts/lib/supabase-cli.sh lintas separat via ci.yml:s shellcheck-lista
+source "${SCRIPT_DIR}/lib/supabase-cli.sh"
+# shellcheck disable=SC2310  # avsiktligt: eget läsbart skäl i stället för
+# `set -e`:s tysta död — samma mönster som `lanka`-anropen i
+# fas4-prod-deploy.sh.
+supabase_cli_guard || {
+    echo "❌ Avbryter — fail-closed (ingen deploy utan verifierad CLI-version)." >&2
+    exit 1
+}
+
 echo "Deployar ${#deploy_set[@]} funktion(er) till project-ref ${project_ref} ..."
 for fn in "${deploy_set[@]}"; do
-    echo "→ npx supabase functions deploy ${fn} --project-ref ${project_ref}"
-    npx supabase functions deploy "${fn}" --project-ref "${project_ref}"
+    # shellcheck disable=SC2154  # SUPABASE_CLI_VERSION sätts av det sourcade
+    # scripts/lib/supabase-cli.sh (supabase_cli_guard körde ovan) — samma
+    # cross-file-begränsning som andra sourcade policy-variabler i repot.
+    echo "→ npx supabase@${SUPABASE_CLI_VERSION} functions deploy ${fn} --project-ref ${project_ref}"
+    supabase_cli functions deploy "${fn}" --project-ref "${project_ref}"
 done
 echo "✅ Klart — ${#deploy_set[@]} funktion(er) deployade. test-* aldrig rörda."
