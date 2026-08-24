@@ -50,6 +50,8 @@
     "revision:uppdrag": "node scripts/uppdragsrevision.mjs",
     "atkomst:diagnos": "bash scripts/atkomst-diagnos.sh",
     "mall:granska": "node scripts/render-bilage-mall.mjs",
+    "review:schema": "node scripts/generera-review-schema.mjs && biome format --write docs/reference/review-utlatande.schema.json",
+    "review:validera": "node scripts/validera-review-utlatande.mjs",
     "postinstall": "git config core.hooksPath .githooks 2>/dev/null || true",
     "atlas": "node scripts/build-farg-atlas.mjs && biome format --write docs/design/ && biome check docs/design/ && node scripts/verifiera-farg-atlas.mjs"
   },
