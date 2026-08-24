@@ -250,7 +250,7 @@ export const EVENTMATCHNING_ANMALAN_FEL_AR_ID = 'recdKgK82XA0Oa2ee';
  *     hälften: `kopior.beskrivning.kopia` ska vara `null`,
  *     `kopior.beskrivning.standard` ska vara Eventinnehåll-radens verbatim-
  *     text (samma sträng som `EVENTINNEHALL.beskrivning` i
- *     `GenereringsPrototyp.tsx`).
+ *     `GenereringsVy.tsx`).
  *   - `Plats` länkad till Rönninge, INGET `Adress (bilagetext)`/
  *     `Parkering (bilagetext)` satt → `kopior.adress.standard` ska vara
  *     Rönninges adress, `kopior.adress.kopia` `null`.

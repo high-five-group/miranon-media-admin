@@ -1,6 +1,10 @@
 /**
- * [PROTOTYPE, S108] Genereringsvyn — KONVERGENS, NU MOT RIKTIG DATA
- * (TASK-309.6, ADR-125).
+ * Genereringsvyn — mallarnas skapa-yta (S108, `TASK-309`, `ADR-125`).
+ * PROMOVERAD (`ADR-102` B1/B2, `ADR-103` B2, `TASK-309.8`): denna fil ÄR
+ * den skarpa ytan, ingen separat prototypfil kvar att riva — `git mv` från
+ * `dokument/prototyp/GenereringsPrototyp.tsx` i samma commit som denna
+ * docblock skrevs. Full bygghistorik (konvergensvarv 1–6, riktig-data-
+ * skivan): `git log --follow -p -- src/components/dokument/GenereringsVy.tsx`.
  *
  * FRÅGAN PROTOTYPEN BESVARADE (S108 Del 2 § I, Marcus 2026-08-20):
  *
@@ -11,56 +15,47 @@
  * (logiska luckan mellan beslut 6 och 7 — vad inaktuell-markeringen betyder
  * när ett event skrivit över ett block). Formen var DIREKT KONVERGENS
  * (Marcus 2026-08-20): en variant, ingen divergensfas, itererad i
- * dev-servern tills han var nöjd. Promoveringskontraktet (ADR-103) gäller —
- * DENNA skiva byter bara datavägarna, formen är oförändrad mot det
- * godkända varvet (Marcus *"Nu är jag helt nöjd"*).
+ * dev-servern tills han var nöjd. `ADR-103` B2 steg 4 ("formen rörs
+ * inte") höll genom riktig-data-skivan (`TASK-309.6`) och promoveringen
+ * (`TASK-309.8`) — varje klass, text och ordning nedan är oförändrad mot
+ * det godkända varvet (Marcus *"Nu är jag helt nöjd"*).
  *
- * HEMVIST: underform A — monterad på den skarpa routen `/mer/dokument` bakom
- * `?variant=a`, DEV-grindad i routen (ADR-044/ADR-103 B3: EN läspunkt).
- * `?vy=lista|generering` + `?mall=bekraftelse|deltagarinfo` adresserar läget
- * så en URL kan delas. `?event=` (delad med `DokumentYta.tsx`, samma
- * queryKey) väljer eventet.
+ * INGÅNGEN (TASK-309.8, ADR-125 § 6): `DokumentYta.tsx`s mallkatalog
+ * (`MallRad`) bär de två mallarnas "Skapa …"-knappar — samma nuqs-par
+ * (`vy`/`mall`) sätts där, och `/mer/dokument`s routekomponent
+ * (`dokument.tsx`) dispatchar mellan `DokumentYta` och denna vy (samma
+ * villkor som förut, bara flyttat en fil upp). Tidigare (S108–TASK-309.7)
+ * nåddes vyn bakom `?variant=a`, DEV-grindad i routen; prototypens egen
+ * listvy (`ListaVy`, en handkopia av `DokumentYta.tsx`s form, byggd som
+ * startpunkt-EXAKT-kopia, T66) är RIVEN i samma skiva som denna docblock —
+ * dess två mallrader ÄR nu `DokumentYta.tsx`s egna `MallRad`-poster (se
+ * dess filhuvud för `MALLAR`/`MallRad`s form och varför de gamla
+ * förhandsgransknings-/nedladdningsknapparna där ersattes). `?vy=
+ * lista|generering` + `?mall=bekraftelse|deltagarinfo` är oförändrade
+ * adresser, aldrig dev-flaggor (ADR-125 § 6 route-noten: "prototypens
+ * `?vy`/`?mall` var aldrig dev-flaggor, de är ytans navigering"). `?event=`
+ * (delad med `DokumentYta.tsx`, samma queryKey) väljer eventet.
  *
- * DATA ÄR NU RIKTIG (TASK-309.6): eventet kommer ur `EventValjare`
- * (`dataSource.fetchEvents()`), och underlaget (Eventinnehåll/Platser/
- * agenda/eventets egna kopior) ur `getDocumentSources` — ARBOGA-fixturen,
- * `PLATSER_SEED` och `EVENTINNEHALL`-konstanten (som bar allt detta i
- * minnet) är RIVNA. Block-dialogens Spara skriver DIREKT mot skiva 2:s
- * skrivvägar (`useSaveEventText`/`useGenereraEventBilaga`s
- * platsstandard-gren) — inget lokalt `overrides`-state längre; `sources`
- * (React Query-cachen) ÄR sanningskällan, en lyckad skrivning invaliderar
- * den och nästa render läser det som faktiskt sparades.
+ * DATA ÄR RIKTIG (TASK-309.6): eventet kommer ur `EventValjare`
+ * (`DokumentYta.tsx`, `dataSource.fetchEvents()`), och underlaget
+ * (Eventinnehåll/Platser/agenda/eventets egna kopior) ur
+ * `getDocumentSources` — ARBOGA-fixturen, `PLATSER_SEED` och
+ * `EVENTINNEHALL`-konstanten (som bar allt detta i minnet) är RIVNA.
+ * Block-dialogens Spara skriver DIREKT mot skiva 2:s skrivvägar
+ * (`useSaveEventText`/`useGenereraEventBilaga`s platsstandard-gren) —
+ * inget lokalt `overrides`-state längre; `sources` (React Query-cachen) ÄR
+ * sanningskällan, en lyckad skrivning invaliderar den och nästa render
+ * läser det som faktiskt sparades.
  *
  * DOKUMENTET ÄR DET RIKTIGA: "Skapa" anropar `generate-event-attachment`
  * (via adaptern, `useGenereraEventBilaga`) som renderar server-side
  * (`_shared/mall-render.ts`, Eta + DocRaptor) och persisterar en Bilagor-
  * rad — ingen HTML byggs längre i klienten (`sjalvbarande.ts` riven,
- * AC #6). Det är vad Lotta ser — inte en ruta som säger att en PDF hade
- * skapats.
- *
- * LISTA-VYN är en kopia av Dokument-ytans form i eventläget (`DokumentYta.tsx`
- * § DokumentLista) — startpunkten var EXAKT kopia (T66), därför är
- * klasserna stulna rad för rad, inte omtolkade. Skillnaden mot skarpa: två
- * mallrader i stället för en, och mallradens knapp leder till genereringsvyn
- * i stället för direkt till PDF:en. Denna skiva byter bara vilket event
- * listan/knapparna pekar på (eventväljaren, riktig) — den skarpa
- * DokumentYta.tsx-listans EGNA komponenter (Mall-badge, INAKTUELL, Skapa om)
- * byggs INTE in i denna kopia (skiva 7 ersätter kopian helt).
+ * `TASK-309.6` AC #6). Det är vad Lotta ser — inte en ruta som säger att en
+ * PDF hade skapats.
  */
 
-import { useQuery } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
-import {
-  ChevronLeft,
-  ChevronRight,
-  ExternalLink,
-  Files,
-  FileText,
-  Loader2,
-  Pencil,
-  Upload,
-} from 'lucide-react';
-import { useQueryState } from 'nuqs';
+import { ChevronRight, ExternalLink, FileText, Loader2, Pencil } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
 import {
   type AgendaRad,
@@ -68,7 +63,6 @@ import {
   DatumEnkel,
   DIALOG_ANKARE,
   DIALOG_PANEL_KLASS,
-  IKON_STORLEK,
   Kryss,
   type Override,
   type Rad,
@@ -82,30 +76,28 @@ import {
 } from '@/components/dokument/blockDefinitioner';
 import { datumSpannText } from '@/components/events/detail/datumSpann';
 import { eventName } from '@/components/events/EventCard';
-import { EventValjare } from '@/components/events/EventValjare';
 import { Button } from '@/components/primitives/Button';
 import { Input } from '@/components/primitives/Input';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Modal } from '@/components/primitives/Modal';
-import { ToggleButton, ToggleButtonGroup } from '@/components/primitives/ToggleButtonGroup';
+import { SidRamKnapp } from '@/components/primitives/SidRam';
+import { Skeleton } from '@/components/primitives/Skeleton';
 import { useForhandsgranskaBilaga } from '@/data/mutations/useForhandsgranskaBilaga';
 import { useGenereraEventBilaga } from '@/data/mutations/useGenereraEventBilaga';
 import { useSaveEventText } from '@/data/mutations/useSaveEventText';
 import { useDocumentSources } from '@/data/queries/useDocumentSources';
-import { useDataSource } from '@/data/useDataSource';
 import type { DocumentSources } from '@/domain/models/DocumentSources';
 import type { Event } from '@/domain/models/Event';
 import type { EventTextFalt, PlatsFalt } from '@/domain/schemas';
 import { cn } from '@/lib/cn';
-import { queryKeys } from '@/queries/keys';
 
 /* ------------------------------------------------------------------ *
  * BLOCKMODELLEN — beslut 1 (fält med standardvärde), 5 (tomt block
  * utelämnas, aldrig tyst), 6 (texten hör till eventet, kan sparas som
  * platsens standard). RIKTIG DATA (TASK-309.6): fixturerna
  * (`ARBOGA`/`EVENTINNEHALL`/`PLATSER_SEED`) är RIVNA — eventet kommer ur
- * `EventValjare` och underlaget ur `getDocumentSources` (adaptern),
- * `useDocumentSources`-hooken.
+ * `EventValjare` (`DokumentYta.tsx`) och underlaget ur `getDocumentSources`
+ * (adaptern), `useDocumentSources`-hooken.
  * ------------------------------------------------------------------ */
 
 // BlockId/BlockDef/Kalla/Grupp/INFORUTA_BAS/GRUPPER/INFORUTA_IDN UTBRUTNA
@@ -301,268 +293,18 @@ function meningsStart(text: string): string {
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
-/* ------------------------------------------------------------------ *
- * FORMKONSTANTER — stulna ur DokumentYta.tsx / AtgardsSida.tsx, inte
- * omtolkade (exakt-kopia-startpunkten).
- * ------------------------------------------------------------------ */
-
-const TACKNING_KLASS =
-  'inline-flex shrink-0 items-center rounded-full border border-transparent bg-bg-muted px-2 py-0.5 font-medium text-caption text-text-secondary contrast-more:border-border-strong';
-const IKONKNAPP_KLASS = 'size-11 shrink-0 p-0';
-// BLADDRAKNAPP_KLASS/IKON_STORLEK/KRYSSRUTA_KLASS UTBRUTNA (TASK-309.7)
-// till `@/components/dokument/BlockDialog` — importerade ovan (KRYSSRUTA_KLASS
-// är intern där, se `Kryss`).
-const GRUPP_KORT_KLASS =
-  'flex flex-col gap-3 rounded-2xl border border-transparent bg-bg-muted p-4 contrast-more:border-border-strong';
-const LISTA_KLASS =
-  'divide-y divide-border rounded-xl border border-transparent bg-surface px-3 contrast-more:border-border-strong';
-
-/**
- * Husets sidkrom-knapp — EXAKT `DokumentYta`s klasser. Knappvarianten är en rå
- * `<button>` med samma klasser, inte `Button`-primitiven: dess egna
- * `min-h`/`px`/`gap` hade ändrat storleken (Marcus 2026-08-21: "fel storlek").
+/* `KromKnapp` bodde här — RIVEN i TASK-322.
+ *
+ * Den var en rå `<button>` vars docblock påstod "EXAKT `DokumentYta`s
+ * klasser". Sant när den skrevs; falskt från 2026-08-23, då sidkromets
+ * topp-luft (`mt-2 lg:mt-10`) lades till i `SidRam` men inte i kopian här.
+ * Marcus såg driften i granskningen 2026-08-24 — chevronen satt för högt —
+ * och avvisade lapp-vägen (*"INGET lappande"*). Geometrin bor nu i
+ * `SidRam.tsx` § `CHEVRON_KLASS`, delad av länk- och knapp-grenen, och denna
+ * yta använder `SidRamKnapp`. Bygg inte tillbaka en lokal kopia: det var
+ * precis den formen `ADR-126` samlade bort, och den enda av de sju
+ * instanserna som hann glida isär innan den lyftes.
  */
-function KromKnapp({ onPress, label }: { onPress?: () => void; label: string }) {
-  const klass =
-    'flex size-11 shrink-0 items-center justify-center self-start rounded-full bg-bg-muted';
-  if (onPress) {
-    return (
-      <button type="button" aria-label={label} className={klass} onClick={onPress}>
-        <ChevronLeft aria-hidden="true" size={26} />
-      </button>
-    );
-  }
-  return (
-    <Link to="/mer" aria-label={label} className={klass}>
-      <ChevronLeft aria-hidden="true" size={26} />
-    </Link>
-  );
-}
-
-function MetaRad({ delar }: { delar: (string | null)[] }) {
-  const text = delar.filter(Boolean).join(' · ');
-  if (!text) return null;
-  return (
-    <span className="w-full min-w-0 truncate text-caption text-text-muted" title={text}>
-      {text}
-    </span>
-  );
-}
-
-// Kryss UTBRUTEN (TASK-309.7) till `@/components/dokument/BlockDialog` —
-// importerad ovan.
-
-/* ------------------------------------------------------------------ *
- * ROTEN
- * ------------------------------------------------------------------ */
-
-export function GenereringsPrototyp() {
-  const [vy, setVy] = useQueryState('vy');
-  const [mallParam, setMall] = useQueryState('mall');
-  const mall: MallId = mallParam === 'deltagarinfo' ? 'deltagarinfo' : 'bekraftelse';
-  // [TASK-309.6] Delad queryKey med `DokumentYta.tsx`s `?event=` — samma
-  // val följer med om Lotta växlar `?variant=a` av/på.
-  const [eventId, setEventId] = useQueryState('event');
-
-  const dataSource = useDataSource();
-  const eventsQuery = useQuery({
-    queryKey: queryKeys.events.list,
-    queryFn: () => dataSource.fetchEvents(),
-  });
-  const valtEvent = eventsQuery.data?.find((e) => e.id === eventId);
-
-  // Genereringsvyn kräver ett RIKTIGT event — en direktlänk till
-  // `?vy=generering` utan (eller med ett okänt) `?event=` faller tillbaka
-  // till listvyn i stället för att krascha på ett odefinierat event.
-  if (vy === 'generering' && valtEvent) {
-    return (
-      <GenereringsVy
-        key={`${valtEvent.id}-${mall}`}
-        event={valtEvent}
-        mall={mall}
-        onTillbaka={() => {
-          void setVy(null);
-          void setMall(null);
-        }}
-      />
-    );
-  }
-
-  return (
-    <ListaVy
-      event={valtEvent}
-      onByte={(id) => void setEventId(id)}
-      onOppnaMall={(m) => {
-        void setMall(m);
-        void setVy('generering');
-      }}
-    />
-  );
-}
-
-/* ------------------------------------------------------------------ *
- * LISTA-VYN — kopia av DokumentYta i eventläget
- * ------------------------------------------------------------------ */
-
-type ListaTyp = 'alla' | 'bilaga' | 'mall' | 'generator';
-const LISTA_FILTER: { key: ListaTyp; label: string }[] = [
-  { key: 'alla', label: 'Alla' },
-  { key: 'bilaga', label: 'Bilagor' },
-  { key: 'mall', label: 'Mallar' },
-  { key: 'generator', label: 'Kvitton' },
-];
-
-const MALLAR: { id: MallId; namn: string; fyllerI: string[] }[] = [
-  {
-    id: 'bekraftelse',
-    namn: 'Bekräftelsebilaga',
-    fyllerI: ['Datum', 'Plats', 'Pris', 'Betalning', 'Innehåll'],
-  },
-  { id: 'deltagarinfo', namn: 'Deltagarinformation', fyllerI: ['Datum', 'Plats', 'Praktisk info'] },
-];
-
-function ListaVy({
-  event,
-  onByte,
-  onOppnaMall,
-}: {
-  /** [TASK-309.6] `undefined` = inget event valt ÄN (eventväljarens tomma
-   *  startläge, eller ett `?event=`-värde som inte matchar något laddat
-   *  event) — katalogen (MALLAR/GENERATORER) kräver ett riktigt event att
-   *  peka generering mot, se villkoret nedan. */
-  event: Event | undefined;
-  onByte: (eventId: string) => void;
-  onOppnaMall: (m: MallId) => void;
-}) {
-  const [filter, setFilter] = useQueryState('typ');
-  const aktivtFilter: ListaTyp =
-    filter === 'bilaga' || filter === 'mall' || filter === 'generator' ? filter : 'alla';
-  const visaBilagor = aktivtFilter === 'alla' || aktivtFilter === 'bilaga';
-  const visaMallar = aktivtFilter === 'alla' || aktivtFilter === 'mall';
-  const visaGeneratorer = aktivtFilter === 'alla' || aktivtFilter === 'generator';
-
-  return (
-    <div className="flex flex-col gap-4" data-testid="dokument-yta">
-      <KromKnapp label="Tillbaka till Mer" />
-      <header className="flex flex-col gap-1">
-        <h1 className="font-semibold text-3xl">Dokument</h1>
-      </header>
-
-      <EventValjare
-        form="fristaende"
-        valtEventId={event?.id}
-        valtEvent={event}
-        onByte={onByte}
-        gemensamtAlternativ={{
-          etikett: 'Delade dokument',
-          ikon: <Files aria-hidden="true" size={18} className="shrink-0" />,
-          onValj: () => undefined,
-        }}
-      />
-
-      {event ? (
-        <div className="flex flex-col gap-4">
-          <section className="flex flex-col gap-3">
-            <div data-testid="grupp-kort" className={GRUPP_KORT_KLASS}>
-              <ToggleButtonGroup
-                label="Filtrera på typ"
-                spread
-                selectedKey={aktivtFilter}
-                onSelectionChange={(key) => void setFilter(key === 'alla' ? null : key)}
-              >
-                {LISTA_FILTER.map((f) => (
-                  <ToggleButton key={f.key} id={f.key} size="sm" className="min-h-11">
-                    {f.label}
-                  </ToggleButton>
-                ))}
-              </ToggleButtonGroup>
-              <ul data-testid="dokument-lista" className={LISTA_KLASS}>
-                {visaMallar &&
-                  MALLAR.map((m) => (
-                    <li key={m.id}>
-                      <div data-testid="dokument-mall" className="flex items-center gap-3 py-3">
-                        <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
-                          <span
-                            className="w-full min-w-0 truncate font-medium text-body"
-                            title={m.namn}
-                          >
-                            {m.namn}
-                          </span>
-                          <span className={TACKNING_KLASS}>Detta event</span>
-                          <MetaRad delar={[`Fyller i ${m.fyllerI.join(', ').toLowerCase()}`]} />
-                        </span>
-                        <span className="flex shrink-0 items-center gap-0.5">
-                          <Button
-                            intent="primary"
-                            emphasis="subtle"
-                            size="sm"
-                            className={IKONKNAPP_KLASS}
-                            aria-label={`Skapa ${m.namn}`}
-                            onPress={() => onOppnaMall(m.id)}
-                          >
-                            <ChevronRight aria-hidden="true" size={IKON_STORLEK} />
-                          </Button>
-                        </span>
-                      </div>
-                    </li>
-                  ))}
-                {visaGeneratorer && (
-                  <li>
-                    <div data-testid="dokument-generator" className="flex items-center gap-3 py-3">
-                      <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
-                        <span className="w-full min-w-0 truncate font-medium text-body">
-                          Betalningskvitto
-                        </span>
-                        <span className={TACKNING_KLASS}>Detta event</span>
-                        <MetaRad
-                          delar={['Byggs ur namn, e-post, betalt belopp, betaldatum, eventnamn']}
-                        />
-                      </span>
-                      <span className="flex shrink-0 items-center gap-0.5">
-                        <Button
-                          intent="primary"
-                          emphasis="subtle"
-                          size="sm"
-                          className={IKONKNAPP_KLASS}
-                          aria-label="Öppna Betalningskvitto"
-                          onPress={() => undefined}
-                        >
-                          <ChevronRight aria-hidden="true" size={IKON_STORLEK} />
-                        </Button>
-                      </span>
-                    </div>
-                  </li>
-                )}
-                {visaBilagor && !visaMallar && !visaGeneratorer && (
-                  <li className="py-3 text-small text-text-muted">
-                    Inga bilagor för det här eventet än.
-                  </li>
-                )}
-              </ul>
-            </div>
-          </section>
-        </div>
-      ) : (
-        // [TASK-309.6] Katalogen (MALLAR/GENERATORER) pekar generering mot
-        // ETT event — utan ett valt finns inget att peka mot. Prototypens
-        // ListaVy har aldrig implementerat räckviddsläget (`gemensamtAlternativ`
-        // ovan är en no-op, oförändrat sedan fixtur-varvet).
-        <p className="px-1 text-small text-text-muted">
-          Välj ett event ovan för att se dess mallar.
-        </p>
-      )}
-
-      <div data-testid="ladda-upp-ny-fil">
-        {/* Inert i prototypen — uppladdning är utanför frågan. Samma utseende
-            som skarpa så lista-vyn förblir en exakt kopia. */}
-        <Button intent="primary" onPress={() => undefined}>
-          <Upload aria-hidden="true" size={16} className="shrink-0" />
-          Ladda upp ny fil
-        </Button>
-      </div>
-    </div>
-  );
-}
 
 /* ------------------------------------------------------------------ *
  * GENERERINGSVYN — det nya mellanledet
@@ -793,7 +535,7 @@ function InforutanMorf({
   );
 }
 
-function GenereringsVy({
+export function GenereringsVy({
   event,
   mall,
   onTillbaka,
@@ -983,17 +725,59 @@ function GenereringsVy({
   };
 
   if (sourcesQuery.isPending) {
+    /* LADDLÄGET SPEGLAR VYNS EGEN FORM — husets mönster, inte en textrad.
+     *
+     * Här stod `<p>Hämtar underlag …</p>`. Marcus 2026-08-24: *"det ser inte
+     * så snyggt ut"*. Två saker var fel, och bara den ena syntes:
+     *
+     *   1. FORMEN. Syskonytorna i samma spår (`PlatserYta`, `EventinnehallYta`)
+     *      kör redan husets skelett-mönster. En textrad som byts mot ett
+     *      fullt gruppkort får dessutom layouten att hoppa vid datalandning —
+     *      skelettets hela poäng är att reservera ytan i förväg, så måtten
+     *      nedan speglar den riktiga vyn (rubrik + metarad, sedan två
+     *      gruppkort med `KORT_KLASS` och radhöjd `3lh` ≈ blockradens 72 px).
+     *
+     *   2. TILLGÄNGLIGHETEN, som ingen såg. `<p>` bär varken `role="status"`
+     *      eller `aria-live`, så en skärmläsare fick INGEN avisering om att
+     *      något laddades — vyn var bara tyst tills innehållet dök upp.
+     *      Ribban är 11 utan undantag; `sr-only`-texten är det som faktiskt
+     *      annonseras, `Skeleton` självt är `aria-hidden`.
+     */
     return (
-      <div className="flex flex-col gap-4" data-testid="generering-vy">
-        <KromKnapp label="Tillbaka till Dokument" onPress={onTillbaka} />
-        <p className="text-body text-text-muted">Hämtar underlag …</p>
+      <div className="flex flex-col gap-6" data-testid="generering-vy">
+        <div className="flex flex-col gap-4">
+          <SidRamKnapp tillbakaEtikett="Tillbaka till Dokument" onTillbaka={onTillbaka} />
+          <div role="status" aria-live="polite" aria-busy="true" className="flex flex-col gap-1">
+            <span className="sr-only">Hämtar underlag …</span>
+            <span className="font-semibold text-3xl">
+              <Skeleton variant="text" className="w-3/5" />
+            </span>
+            <span className="text-small">
+              <Skeleton variant="text" className="w-2/5" />
+            </span>
+          </div>
+        </div>
+        {[0, 1].map((i) => (
+          <div key={i} className="flex flex-col gap-2">
+            <span className="px-4 text-small">
+              <Skeleton variant="text" className="w-1/4" />
+            </span>
+            <div className={KORT_KLASS}>
+              {[0, 1, 2].map((j) => (
+                <div key={j} className="py-3">
+                  <Skeleton variant="listRow" />
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
       </div>
     );
   }
   if (!sources) {
     return (
       <div className="flex flex-col gap-4" data-testid="generering-vy">
-        <KromKnapp label="Tillbaka till Dokument" onPress={onTillbaka} />
+        <SidRamKnapp tillbakaEtikett="Tillbaka till Dokument" onTillbaka={onTillbaka} />
         <MessageBox intent="error">
           {sourcesQuery.error instanceof Error
             ? sourcesQuery.error.message
@@ -1006,7 +790,7 @@ function GenereringsVy({
   return (
     <div className="flex flex-col gap-6" data-testid="generering-vy">
       <div className="flex flex-col gap-4">
-        <KromKnapp label="Tillbaka till Dokument" onPress={onTillbaka} />
+        <SidRamKnapp tillbakaEtikett="Tillbaka till Dokument" onTillbaka={onTillbaka} />
         <header className="flex flex-col gap-1">
           <h1 className="font-semibold text-3xl">{meta.namn}</h1>
           <p className="text-small text-text-secondary">

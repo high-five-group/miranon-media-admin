@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-23 14:30'
+updated_date: '2026-08-23 20:11'
 labels:
   - ready-for-human
 dependencies:
@@ -24,7 +25,7 @@ Den godkända formen blir den enda formen: flaggor och växlar rivs mekaniskt, f
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [ ] #1 ariaSnapshot-par taget i variant-läge FÖRE flippen för båda mallarnas genereringsvy och listvyn; paret fäller på varje skillnad mot den promoverade ytan EFTER (ADR-103 B4)
-- [ ] #2 DEV-gaten och ?variant=a rivna; GenereringsPrototyp blir GenereringsVy bredvid DokumentYta; prototyp-mappen tom; listvyns handkopierade klasser ersatta av DokumentYta:s komponenter; MALL_META.fastForm städad; prototyp-markörerna borta ur manifestet (referens-scanningen grön)
+- [x] #2 DEV-gaten och ?variant=a rivna; GenereringsPrototyp blir GenereringsVy bredvid DokumentYta; prototyp-mappen tom; listvyns handkopierade klasser ersatta av DokumentYta:s komponenter; MALL_META.fastForm städad; prototyp-markörerna borta ur manifestet (referens-scanningen grön)
 - [ ] #3 Den promoverade ytan är identisk med den körande prototypen i lägena: lista · generering bekräftelse · generering deltagarinfo · block-dialog (text, agenda, datum, plats) · efter Skapa (ADR-102: facit saknas för S108 — prototypen i sitt sista godkända varv är facit tills skiva 9 låser det)
 - [ ] #4 Marcus granskar den promoverade ytan mot staging på tillåten origin och godkänner i klartext (HITL)
 - [ ] #5 Ny visuell baslinje tas EFTER godkännandet, aldrig före

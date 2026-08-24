@@ -1,7 +1,7 @@
 /**
  * Blockdefinitionerna — vilka block hör till eventinnehåll respektive
  * plats, deras etiketter, agenda-/långtext-/datum-flaggor (Del 2 § D
- * beslut 1, 5, 6). UTBRUTEN ur `GenereringsPrototyp.tsx` (TASK-309.7,
+ * beslut 1, 5, 6). UTBRUTEN ur `GenereringsVy.tsx` (TASK-309.7,
  * ADR-125 § 7) — VERBATIM flytt, ingen formändring: samma `MallId`/`Kalla`/
  * `BlockId`/`BlockDef`/`Grupp`-typer, samma `INFORUTA_BAS`/`GRUPPER`/
  * `INFORUTA_IDN`-värden som förut levde inline i prototypfilen (tidigare
@@ -12,7 +12,7 @@
  * i UI:t — exakt samma karta genereringsvyn redan bär. En andra
  * handhållen lista hade kunnat glida isär från den första (samma
  * SSOT-disciplin som `_shared/eventinnehall-falt.ts` redan följer på
- * EF-sidan). `GenereringsPrototyp.tsx` importerar härifrån i stället för
+ * EF-sidan). `GenereringsVy.tsx` importerar härifrån i stället för
  * att definiera sin egen kopia.
  */
 

@@ -320,9 +320,18 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
     page,
     network,
   }) => {
-    // Fixturen ger fyra poster i eventläget (2 bilagor + 1 mall + 1 generator)
-    // — precis PÅ gränsen, alltså ingen rullning och inget tomt tabb-stopp.
-    network.use(bilagorHandler());
+    // [ÄNDRAD, TASK-309.8] `MALLAR` bär nu TVÅ poster (Bekräftelsebilaga +
+    // Deltagarinformation, ADR-125 § 6 — se `DokumentYta.tsx`s filhuvud)
+    // i stället för den tidigare enda generiska platshållaren. Fixturen ger
+    // därför EN bilaga (i stället för `bilagorHandler()`s två) + 2 mallar +
+    // 1 generator = fyra poster, precis PÅ gränsen, alltså ingen rullning
+    // och inget tomt tabb-stopp — samma avsikt som förut, räknat om mot den
+    // nya katalogstorleken. Bilagan är `BILAGA_GEMENSAM` (inte `_EGEN`) i
+    // BÅDA lägena: `gotoEventlage`s eget assert letar efter just den, delat
+    // med alla andra tester i filen.
+    network.use(
+      http.get(EF('get-event-attachments'), () => json({ attachments: [BILAGA_GEMENSAM] })),
+    );
     await gotoEventlage(page);
 
     const lista = page.getByTestId('dokument-lista');

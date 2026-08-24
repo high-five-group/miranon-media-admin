@@ -27,7 +27,7 @@ async function callGetDocumentSources(
 }
 
 // Verbatim standardtext för "Resor i medvetandet 1 · Utbildning" (samma
-// sträng som EVENTINNEHALL.beskrivning i GenereringsPrototyp.tsx rad 142,
+// sträng som EVENTINNEHALL.beskrivning i GenereringsVy.tsx rad 142,
 // seedad av scripts/seed-eventinnehall-modell.mjs) — börjes-fragment räcker
 // för att bevisa att STANDARDEN (inte kopian, som är null) kom med.
 const FYLLD_BESKRIVNING_BORJAN =
@@ -107,7 +107,7 @@ test.describe('get-document-sources — conformance (ADR-125 § 2, standard/kopi
     const body = DocumentSourcesSchema.parse(await res.json());
 
     // Standardagendan (Eventinnehåll → Agendapunkter) — seedad verbatim ur
-    // prototypens dagEtt/dagTva (GenereringsPrototyp.tsx).
+    // prototypens dagEtt/dagTva (GenereringsVy.tsx).
     expect(body.agenda.dag1.standard.length).toBe(14);
     expect(body.agenda.dag2.standard.length).toBe(10);
     expect(body.agenda.dag1.standard[0]).toEqual({
