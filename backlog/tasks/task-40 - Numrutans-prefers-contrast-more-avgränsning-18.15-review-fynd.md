@@ -1,12 +1,13 @@
 ---
 id: TASK-40
 title: Numrutans prefers-contrast-more-avgränsning (18.15-review-fynd)
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-25 00:58'
-updated_date: '2026-08-07 11:19'
+updated_date: '2026-08-24 14:41'
 labels:
   - ready-for-human
+  - wontfix
 dependencies: []
 ordinal: 101000
 ---
@@ -29,4 +30,15 @@ Review-pilot-fynd (task-18.15, utanför skivans scope; T86). SYMPTOM: åtgärds-
 
 <!-- SECTION:NOTES:BEGIN -->
 Fött ur review-pilotens utanför-scope-sektion 2026-07-25 (granskat träd e9cff7d8). Oetiketterat tills Marcus klassar (ADR-053).
+
+Beslutat av Code på Marcus-mandat 2026-08-24 (GO i klartext), S112. Motiv: objektet (Åtgärds-sidans numrerade rader/numruta) rivet via TASK-162.2. Verifierat mot Atgarder.tsx 2026-08-24 innan stängning; ingen divergens.
 <!-- SECTION:NOTES:END -->
+
+## Comments
+
+<!-- COMMENTS:BEGIN -->
+created: 2026-08-24 14:41
+---
+WONTFIX 2026-08-24 (S112, Marcus-mandat): objektet fyndet gäller är rivet. src/components/events/detail/Atgarder.tsx (rad 37-51, 83-91, 257-274) dokumenterar att Åtgärds-gruppen — sektionen med den vita NumRuta (bg-surface/24x24) detta fynd (saknad prefers-contrast:more-avgränsning) rör — är PROMOVERAD BORT via TASK-162.2 (ADR-103 B2 steg 1): 'den gamla grenen fanns bakom ?variant=a-villkoret, nu riven (git bevarar)'. Ersatt av AtgarderKort ('Gå till åtgärder') + SkrivUtKort utan numruta-formen. Kontrast-avgränsningsfrågan fyndet beskrev finns inte kvar att åtgärda.
+---
+<!-- COMMENTS:END -->

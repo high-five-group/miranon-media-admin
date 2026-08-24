@@ -3,12 +3,13 @@ id: TASK-18.20
 title: >-
   Skiva: Bekräftade-sektionen till paritet med Obekräftade — markera-läge,
   delmängds-handlingar och Åtgärder-radernas form (review-iteration 6)
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-26 11:32'
-updated_date: '2026-08-07 11:19'
+updated_date: '2026-08-24 14:40'
 labels:
   - ready-for-human
+  - wontfix
 dependencies:
   - TASK-48
 parent_task_id: TASK-18
@@ -63,6 +64,25 @@ Två ytterligare frågor föll ut ur inventeringen (Code-fynd med rekommendation
 - [ ] #5 Åtgärds-radernas form per A3 genomförd (inklusive rad 2:s inaktuella 18.6-koppling); varje rivning eller ändring öppet bokförd i Atgarder.tsx och berörd spec, numreringens referentbarhet (18.15) uttryckligen hanterad
 - [ ] #6 E2e täcker markera-läget på Bekräftade (öppna, välja, markera alla, rensa, Esc, fokus-återlämning) + varje ny batch-handling + B1/B2-beslutens beteende; axe 0 i både vilande läge och markera-läge
 <!-- AC:END -->
+
+## Comments
+
+<!-- COMMENTS:BEGIN -->
+created: 2026-08-24 14:40
+---
+WONTFIX 2026-08-24 (S112, Marcus-mandat): explicit ersatt av TASK-145 — citat verbatim ur TASK-145 § Implementationsbeslut, rad 138: 'Detta kort ersätter task-18.20. Det kortet stod låst på fyra Marcus-frågor — inline-scroll, batch-handlingarnas uppsättning, Åtgärds-radernas form och batch-barens intents. Alla fyra är besvarade av facit och av läsyte-beslutet.' Ingen kod byggd härifrån; de fyra Marcus-frågorna avgörs i stället av TASK-145:s facit och läsyte-beslut.
+---
+<!-- COMMENTS:END -->
+
+## Definition of Done
+<!-- DOD:BEGIN -->
+- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [ ] #3 CI grön per jobb på pushad commit
+- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [ ] #5 Design-review: Marcus-granskning i webbläsaren godkänd (L220)
+- [ ] #6 Renderad verifiering (computed-style/skärmdump) av registrets markera-läge + batch-barens breddlås före granskning (L245/L246)
+<!-- DOD:END -->
 
 ## Implementation Notes
 
@@ -153,14 +173,6 @@ Allt i `src/components/events/detail/Deltagare.tsx` om inget annat anges.
 - Design-review MOT S73-facit gäller (DoD #5) — men facit har ingen bild av det här läget: markera-läget föddes i S86-prototypen efter S73. Bedömningsunderlaget är därför S86-facitets form ÖVERFÖRD till registret, inte en facit-bild. Avvikelser bokförs öppet, som i task-48.
 - Visual-baselines driftar avsiktligt → refresh i T87:s aktiveringssteg (samma läge som task-48).
 - Tvåstegs-stängningen (K61.1/T75) och path-scopad add gäller som vanligt.
-<!-- SECTION:NOTES:END -->
 
-## Definition of Done
-<!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Design-review: Marcus-granskning i webbläsaren godkänd (L220)
-- [ ] #6 Renderad verifiering (computed-style/skärmdump) av registrets markera-läge + batch-barens breddlås före granskning (L245/L246)
-<!-- DOD:END -->
+Beslutat av Code på Marcus-mandat 2026-08-24 (GO i klartext), S112. Motiv: explicit ersatt av TASK-145 (citat i dess text, verifierat verbatim mot disk, rad 138). Ingen divergens funnen — belägget håller exakt som uppdraget beskrev.
+<!-- SECTION:NOTES:END -->

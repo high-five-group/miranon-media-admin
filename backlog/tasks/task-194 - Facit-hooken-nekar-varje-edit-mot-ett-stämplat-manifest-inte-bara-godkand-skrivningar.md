@@ -3,10 +3,10 @@ id: TASK-194
 title: >-
   Facit-hooken nekar varje edit mot ett stämplat manifest, inte bara
   godkand-skrivningar
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-10 18:29'
-updated_date: '2026-08-24 13:51'
+updated_date: '2026-08-24 14:42'
 labels:
   - grind
   - facit
@@ -71,4 +71,12 @@ VAD SOM ÄR OFÖRÄNDRAT: scripts/deny-facit-godkand-skrivning.sh, scripts/lib/f
 ÖVRIGT: kortet bär inte labeln "ready-for-agent" (Labels: grind, facit, hook) trots att uppdragstexten beskrev det som ready-for-agent — status är "To Do" utan dependencies, så det var ändå plockbart. Mindre avvikelse, bokförd för fullständighetens skull.
 
 REKOMMENDATION: Marcus/orkestreraren avgör kortets vidare öde mot underlaget: docs/decisions/ADR-102-prototypen-ar-facit-skarpa-ska-vara-identisk.md § Updates 2026-08-22 (båda posterna, särskilt A3 och R1/R5), tasks/threads/T157-adr-102-saknar-amenderings-mekanik-for-stamplat-facit.md (stängd 2026-08-22, samma fråga för det generella fallet).
+
+STÄNGNING 2026-08-24 (S112 mandatpasset). Beslutat av Code på Marcus-mandat 2026-08-24 (GO i klartext), S112: kortet stängs som superseded av ADR-102 § Updates 2026-08-22 — beslutspunkt (a) ur föregående bygg-agents egen REKOMMENDATION ovan (2026-08-24, samma dag). ADR-102 § Updates A3 valde uttryckligen en ANNAN mekanism (AMENDERING-<datum>-<slug>.md-sidofiler) för legitima ändringar av ett stämplat manifest i stället för att smalna av hooken (kortets AC#1/#2-ansats); R1/R5 löste dessutom kortets motiverande exempel (S103:s kallor-flytt efter rivning) via en git-härledd rivnings-klausul (fannsVidStampeln) UTAN att manifestet någonsin behöver röras. Att bygga kortets ursprungliga AC hade återinfört den bredd ADR-102 A3 medvetet valde bort — en reversering av ett Accepted arkitekturbeslut, inte en bugg-fix. Kvarvarande täckningsluckor (referenser-fältets 0/22-täckning för stämplade ytor, ADR-102 § Updates A6) bor i TASK-297 (Facit-regimernas täckning: kartlägg 27 stämplade ytor) — verifierat att TASK-297 AC#4 uttryckligen äger just detta ('24 av 27 ytor saknar referenser-fältet och är inte sha256-låsta — beslut om fältet ska vara obligatoriskt'). Ingen AC nedan bockas: arbetet AC#1/#2/#4 kräver (delta-jämförelse-mekanismen) byggdes aldrig, eftersom det hade motsagt ADR-102; AC#3 beskriver redan existerande, oförändrat beteende. Att bocka någon AC hade intygat ett arbete som aldrig utfördes.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Stängd 2026-08-24 (S112 mandatpasset, Marcus-mandat/GO) som superseded av ADR-102 § Updates 2026-08-22. Ingen kod ändrad — scripts/deny-facit-godkand-skrivning.sh och scripts/lib/facit-godkand-skrivning.mjs orörda. Kortets AC-ansats (smalna av hooken via delta-jämförelse) motsägs av ADR-102 A3:s medvetna designval (AMENDERING-sidofiler i stället). Kvarvarande täckningsluckor spårade i TASK-297.
+<!-- SECTION:FINAL_SUMMARY:END -->

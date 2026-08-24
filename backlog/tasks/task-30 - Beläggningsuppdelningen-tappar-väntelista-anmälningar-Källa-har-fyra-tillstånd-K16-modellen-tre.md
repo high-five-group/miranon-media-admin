@@ -3,12 +3,13 @@ id: TASK-30
 title: >-
   Beläggningsuppdelningen tappar väntelista-anmälningar (Källa har fyra
   tillstånd, K16-modellen tre)
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-22 19:02'
-updated_date: '2026-08-07 11:19'
+updated_date: '2026-08-24 14:40'
 labels:
   - ready-for-human
+  - wontfix
 dependencies: []
 ordinal: 79000
 ---
@@ -34,3 +35,18 @@ Oetiketterat per fynd-regeln — människan klassar.
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Beslutat av Code på Marcus-mandat 2026-08-24 (GO i klartext), S112. Motiv: falsifierad mot Belaggning.tsx rad ~41 (K22-designbeslutet). Ingen divergens — belägget höll exakt vid egen prövning.
+<!-- SECTION:NOTES:END -->
+
+## Comments
+
+<!-- COMMENTS:BEGIN -->
+created: 2026-08-24 14:40
+---
+WONTFIX 2026-08-24 (S112, Marcus-mandat): falsifierad. src/components/events/detail/Belaggning.tsx rad 41 dokumenterar uttryckligen (docblock ovan belaggningsDelar): 'Väntelista är ALDRIG en del — utanför taket (K22).' Väntelista-exkluderingen ur beläggningsuppdelningen är en avsiktlig, dokumenterad designbeslut (K16/K22, S73-facit) — inte en bugg som 'tappar' anmälningar. Verifierat mot disk 2026-08-24 innan stängning.
+---
+<!-- COMMENTS:END -->
