@@ -426,6 +426,32 @@ Numrering efter S109: ADR 122 · kort 284 (om `#1674` landat) · L512 + 55
 fragment · T158 · f52 · session 111. Full narrativ: sessionsdok S109 Del 1–4 +
 PAUSLÄGE.
 
+**Session 108 ⏸️ PAUSAD (tionde gången, 2026-08-25, `lifecycle: paused`) —
+PROMOVERINGEN ÄR I PROD; KORTFAMILJEN HALVSTÄNGD; ALLT SOM ÅTERSTÅR KRÄVER
+MARCUS BESLUT (SESSIONSDOK S108 § PAUSLÄGE TIONDE → MARCUS-SEKVENS).**
+Resume 10 landade **21 PR:er**. `#1889` merge `24c39777` 17:00:37Z → Vercel
+Production 17:01:13Z; prod verifierat med `git merge-base --is-ancestor` mot
+deploy-SHA, inte med stränglätning i bundle. `TASK-309`-familjen: **12 Done**
+(`.1`–`.7`, `.12`–`.16`), 10 öppna — closure-grinden fäller **noll**
+309-kort. Fragment-katalogen 65 → **89**. Efter-körning-purgen skarpt bevisad
+i post-merge (`ADR-060` punkt 3 amenderad av agent — **Marcus bör granska**).
+Skiva 9:s facit levererat: 22 bilder + 2 manifest, båda `godkand: null`.
+**SEX AV ÅTTA AGENTER RÄTTADE ORKESTRERARENS EGET UNDERLAG** — fragment-talet
+(66→65), testevent-antalet (44→55, 151 över fem familjer), den falska
+förklaringen att setup-purgen inte kör efter, `ADR-109`:s upphävda momsrad,
+ett `dvh`-påstående, och att block-dialogens datum-läge skulle vara nåbart
+(**död kod** — falsifierar `TASK-309.17`). **TRE FYND INGEN LETADE EFTER:**
+två Airtable-rader kvar i **27 och 32 dygn** utan matchande purge-target ·
+runbookens mall bar `fullPage: true` och **lärde ut** buggen · `s102`:s
+stämplade facit vaktas av **ingenting**. **Lessons-konsolideringen STOPPAD
+med avsikt** — 65 av 89 fragment tillhör andra sessioner. **TIDSKRITISKT VID
+RESUME: `TASK-309.20`** (två formdefekter vid 375 px som facit fryser om
+stämplingen sker före fixen). Därefter `309.8` AC #3 · `ADR-060`-granskningen
+· stämpling · röktest · nyckelrotation · `309.18`/`.19`/`.21`.
+Numrering vid paus 10: ADR **127** · task-**321** · **L533** · 89 fragment ·
+**T176** · f53 · session **113**. Dev-servern lämnad igång på `localhost:5173`
+mot staging. Full handoff: sessionsdok S108 § PAUSLÄGE (tionde) + Del 20–22.
+
 **Session 108 🤖 ORKESTRERINGS-PASS (2026-08-24, `lifecycle: active`, tionde
 resumen forts.) — PROMOVERINGEN I PROD, ÅTTA AGENTER, NITTON LANDNINGAR,
 KORTFAMILJEN 0 → 12 STÄNGDA.** Marcus AFK med order att delegera allt
