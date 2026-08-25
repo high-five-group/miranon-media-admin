@@ -15,7 +15,7 @@
 
 ## Aktuellt fokus
 
-**Session 112 ▶️ PÅGÅR (2026-08-24, `lifecycle: active`) — STÄDSESSIONEN:
+**Session 112 ⏸️ PAUSAD (paus 1, 2026-08-25, `lifecycle: paused`) — STÄDSESSIONEN:
 REGISTRET SANT, REPOT RENT, ROTORSAKER.** Marcus fullt beslutsmandat ("Go
 på alla", 2026-08-24), körs autonomt i worktree `s112-stadsessionen`
 (S108 äger huvudkatalogen). Levererat hittills: closure-grinden 38→4
@@ -29,7 +29,12 @@ S113-dukningen klar (`docs/reference/s113-basmaxning-dukning.md`).
 flip-batch + slutmätning · fix-våg 3 · vandringsblocket efter Marcus
 bildgranskning `#1883`→`#1926` · session-end med skörd). **S113
 RESERVERAD för Airtable-fönstret.** claude.ai-projektkunskapen LÄMNAD
-(TASK-318) — inga Update-klick-moment framgent.
+(TASK-318) — inga Update-klick-moment framgent. **PAUSAD 2026-08-25 efter
+att HELA actionplanen exekverats** (Del 2–3 + slutmätning 14/643 noll
+oskötta; A2-bågen komplett i prod). HANDOFF: sessionsdok S112 § PAUSLÄGE
+— Marcus-momenten dukade (bilder #1883→#1926 · #1957-draften ·
+vandringsblocket · småbesluten), #1932/dependabot-verifikat +
+heartbeat-omstart är resume-steg 1. Återupptas via `session-resume`.
 
 **Session 111 ✅ STÄNGD (2026-08-23, K-sista i AFK-läge på Marcus mandat; `lifecycle: closed`) —
 ANMÄLNINGSSIDAN I PROD: KONVERGENSPASSET HELA VÄGEN, BEVAKNINGSRADERNA I NY
