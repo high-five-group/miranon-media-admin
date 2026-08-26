@@ -15,9 +15,9 @@
 
 ## Aktuellt fokus
 
-**Session 112 ▶️ ÅTERUPPTAGEN (2026-08-26, `lifecycle: active`, resume 1;
-pausad en gång, historik) — RESUMEN ÖPPNAR PÅ RE-MÄTNING, `#1932`-FIXEN OCH
-FIX-VÅG 4.** Marcus order: *"Återuppta S112 …"* + kvittens *"Gör det du anser
+**Session 112 ⏸️ PAUSAD (paus 2, 2026-08-26 ~07:45, `lifecycle: paused`; resume 1
+körd AFK på fullt mandat) — FIX-VÅG 4 HELT LANDAD, REVIEW-GRINDEN 173.1–173.5
+I DRIFT, FLASKHALSEN UTREDD.** Marcus order: *"Återuppta S112 …"* + kvittens *"Gör det du anser
 vi behöver göra. Var noggrann och chansa aldrig."* **Paus-PR `#1969` landad**
 (`origin/main` `60b5e659`). Huvudkatalogen ägs av **S108 resume 11** (levande,
 pid 23064) — S112 kvar i `s112-stadsessionen`, gren `docs/s112-resume-1`.
@@ -34,8 +34,12 @@ mintade; flaskhals-research landad (globalt create-lås, 2/8 vid 8 agenter);
 18 lessons-fragment.** Kvar i luften: `#1992` (G, fix) · `#2000` (kö) ·
 `173.5` (Opus). **NÄSTA: 173.4/173.6 + stängnings-batch 3 · Marcus-moment:
 `TASK-325` prod-deploy · `TASK-326`/`328` beslut · granskningsfärdiga 22/222/223 ·
-`#1883`→`#1926` · `#1957` · vandringsblocket.** Full narrativ: sessionsdok S112
-Del 4–5.
+`#1883`→`#1926` · `#1957` · vandringsblocket.** **Del 6 + PAUSLÄGE (07:45):** #1992/#2000/#2007/#2009/#2010 landade;
+`#2012` i kö; closure 2/663; `TASK-329`/`330` mintade; loop-policyfrågan
+öppen. HANDOFF: sessionsdok S112 § PAUSLÄGE — Marcus-momenten (325 prod-deploy ·
+37 audit · 326/328/330 beslut · 22/222/223 Done-flippar · bilder · #1957),
+nästa AFK-våg 173.4/173.6/327/322–324/329. Återupptas via `session-resume`.
+Full narrativ: sessionsdok S112 Del 4–6.
 
 **Session 112 ⏸️ PAUSAD (paus 1, 2026-08-25, `lifecycle: paused`) — STÄDSESSIONEN:
 REGISTRET SANT, REPOT RENT, ROTORSAKER.** Marcus fullt beslutsmandat ("Go
