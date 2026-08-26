@@ -28,10 +28,14 @@ head (stackad PR auto-retargetad till `main` utan `pull_request`-event; fix =
 commit på grenen) · closure-grinden **15/650** (`190`/`193` = S112:s egna
 flippar utan `Landning:`-pekare, dolda av karensen) · review-agent-skulden
 **BETALD** (typen laddades mitt i sessionen; utlåtande för `#1932`: risk låg,
-2 info). **NÄSTA: fix-våg 4 ur A-klassen (29 agent-körbara) + `190`/`193` +
-`173.2`/`.3`/`.5` med review-agent per PR · Marcus-momenten oförändrade
-(`#1883`→`#1926` · `#1957` · vandringsblocket · småbesluten).** Full narrativ:
-sessionsdok S112 Del 4.
+2 info). **Del 5 (05:30, AFK på mandat): fix-våg 4 LANDAD — 17 PR:er, 27 kort;
+closure-grinden 2/661 (bara dina domar 241.5/284.4); `TASK-322`–`328`
+mintade; flaskhals-research landad (globalt create-lås, 2/8 vid 8 agenter);
+18 lessons-fragment.** Kvar i luften: `#1992` (G, fix) · `#2000` (kö) ·
+`173.5` (Opus). **NÄSTA: 173.4/173.6 + stängnings-batch 3 · Marcus-moment:
+`TASK-325` prod-deploy · `TASK-326`/`328` beslut · granskningsfärdiga 22/222/223 ·
+`#1883`→`#1926` · `#1957` · vandringsblocket.** Full narrativ: sessionsdok S112
+Del 4–5.
 
 **Session 112 ⏸️ PAUSAD (paus 1, 2026-08-25, `lifecycle: paused`) — STÄDSESSIONEN:
 REGISTRET SANT, REPOT RENT, ROTORSAKER.** Marcus fullt beslutsmandat ("Go
