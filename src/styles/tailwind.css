@@ -1,5 +1,36 @@
 /* src/styles/tailwind.css */
-@import "tailwindcss";
+/* ── Explicit källbegränsning (TASK-22) ──────────────────────────────
+   Tailwind v4:s AUTOMATISKA källdetektion skannar hela projektroten
+   (allt icke-.gitignore:at) efter potentiella utility-klasser — inklusive
+   docs/, som är fullt av klass-formade kodexempel i prosa (ADR-002,
+   DESIGN-SYSTEM-SPEC.md, docs/design/farg-atlas.html m.fl.). Utan
+   källbegränsning emitterades dessa som riktiga (ibland ogiltiga) CSS-regler
+   i produktions-bundeln — mätt FÖRE denna ändring i dist/assets/*.css:
+     .bg-\[\#D4960A\]{background-color:#d4960a}   (ADR-002:s exempeltext)
+     .bg-\[\#…\]{background-color:#…}             (farg-atlas.html, bokstavlig
+                                                     ellips — ogiltigt CSS-värde)
+     .text-\[Npx\]{color:Npx}                      (ADR-032:s "Npx"-placeholder)
+   `source(none)` stänger av automatisk detektion helt (Tailwind CSS-docs,
+   tailwindcss.com/docs/detecting-classes-in-source-files § "Disabling
+   automatic detection"); @source-raderna nedan pekar EXPLICIT ut de enda
+   platser appen faktiskt hämtar klasser ur — alla .ts- och .tsx-filer
+   under src/, oavsett djup (enda filtyperna med JSX/klass-strängar där,
+   TASK-22-verifierat: 144 .ts + 138 .tsx + 5 .css, inga bracket-utility-
+   tokens i .css-filerna) plus roten index.html (Vite-entrypointen; inga
+   klasser i den i dag, men explicit medtagen så en framtida klass där
+   inte tyst uteblir).
+
+   OBS TILL FRAMTIDA REDIGERARE: skriv ALDRIG ett bokstavligt
+   dubbelstjärne-glob-mönster (två stjärnor, snedstreck, stjärna) i en CSS-
+   kommentar i DENNA fil — det innehåller själva CSS-kommentarens
+   stängningssekvens (stjärna-snedstreck) som en substräng och stänger
+   kommentaren FÖR TIDIGT, vilket får resten av texten tolkad som riktig
+   CSS ("Unknown word" från PostCSS). Mätt här 2026-08-26: exakt detta fällde
+   bygget två gånger innan glob-exemplen skrevs ut i ord i stället. */
+@import "tailwindcss" source(none);
+@source "../../index.html";
+@source "../**/*.ts";
+@source "../**/*.tsx";
 
 /* ══════════════════════════════════════════
    Miranon Media Admin — Tailwind v4 @theme
