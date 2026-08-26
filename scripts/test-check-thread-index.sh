@@ -10,7 +10,7 @@
 #   med att grinden inte gör någonting alls. T104/TASK-60 etablerade formen:
 #   beviset ska vara körbart i repot, inte en mening i en agentrapport.
 #
-# 28 testfall, varav 22 planterar ett känt fel och 6 prövar att grinden är grön
+# 29 testfall, varav 23 planterar ett känt fel och 6 prövar att grinden är grön
 # på korrekt indata (utan de gröna mäter fällnings-testerna ingenting):
 #   T1     — ren fixtur passerar (annars mäter resten ingenting)
 #   T2–T4  — enum + tillstånds-KOLUMN (T4 är falskpositiv-regressionen: ordet
@@ -38,6 +38,13 @@
 #            (501) fälls med den EXAKT uppmätta längden i felmeddelandet;
 #            T28 bevisar fail-closed — policy utan THREAD_ROW_MAX_LEN fälls,
 #            inte tyst passerar mot en tom/nollställd gräns.
+#   T29    — TASK-138: en ESCAPAD pipe (\|) fälls ÄNDÅ, samma klass som T8.
+#            Bevisar att felmeddelandets tidigare rekommendation ("escapa
+#            pipe-tecken som \|") aldrig var en giltig kringgång —
+#            ${line//[^|]/} stryker alla icke-pipe-tecken (inklusive det
+#            inledande \), så en escapad pipe räknas identiskt med en
+#            oescapad. Grunden till att felmeddelandet nu säger "undvik"
+#            i stället för "escapa".
 #
 # Test-isolering: skapar sandbox under /tmp med egna fixturer och en KOPIA av
 # grinden + policyn. Återställer (rm -rf) via trap. INGEN ändring av real-repo.
@@ -451,6 +458,22 @@ ${HEADER}
 EOF
 grep -v '^THREAD_ROW_MAX_LEN=' "${POLICY_SRC}" > "${TEST_DIR}/.thread-index-policy.conf"
 assert "T28 policy utan THREAD_ROW_MAX_LEN fälls fail-closed" 1 "THREAD_ROW_MAX_LEN måste vara > 0"
+
+# ── T29: escapad pipe (\|) fälls ÄNDÅ — TASK-138 ─────────────────────────────
+# Samma planterade fel som T8 (en extra pipe förskjuter tillstånds-kolumnen),
+# men här FÖREGÅS pipen av ett \ — den form det tidigare felmeddelandet
+# rekommenderade som fix. ${line//[^|]/} stryker alla icke-pipe-tecken,
+# inklusive \, så escapet syns aldrig i räkningen och raden fälls identiskt
+# med T8. Beviset för att felmeddelandet nu säger "undvik" i stället för
+# "escapa" — en regression här (grinden börjar plötsligt släppa igenom en
+# escapad pipe) vore ett tecken på att ${line//[^|]/}-mekaniken ändrats
+# under fötterna på den här dokumentationen.
+setup
+index <<EOF
+${HEADER}
+| \`T01\` | Titel med \| pipe | \`active\` | _x_ |
+EOF
+assert "T29 escapad pipe (\\|) fälls ändå (escape kringgår inte kontrollen)" 1 "pipe-tecken"
 
 echo
 echo "── Resultat ──"
