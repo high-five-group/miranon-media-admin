@@ -152,9 +152,53 @@ body {
    * Förlagan: ramens ytterkant 7,90 mm från vänster kant och 8,37 mm från
    * höger — 0,47 mm asymmetri som är handplacering i PowerPoint, inte design.
    * Vi sätter medelvärdet 8,1 mm på båda sidor (se RAPPORT.md § Öppna frågor).
-   * Topp 9,75 mm, botten 6,03 mm — båda mätta, båda behållna som de är.
+   *
+   * TOPP/BOTTEN-SYMMETRIN, RÄTTAD (TASK-309.27, 2026-08-26): förlagans mått
+   * (topp 9,75 mm, botten 6,03 mm) stod här tidigare "behållna som de är" —
+   * SAMMA klass av PowerPoint-handplacering som vänster/höger-asymmetrin två
+   * rader ovan, men den fick här stå okorrigerad i tre veckor. Marcus,
+   * skarp PDF i prod 2026-08-26: "den blåa ramen är inte helt centrerad på
+   * pappret... om du flyttar upp den blåa ramen lite så den är centrerad".
+   * Disk-mätt (DocRaptor/Prince, staging, `pdftocairo -svg` på ramens
+   * fyllda ring-path): ytterkant topp 28,0625 pt (9,90 mm) från sidans
+   * överkant, ytterkant botten 824,25 pt → 17,6398 pt (6,22 mm) från
+   * sidans nederkant — bekräftar asymmetrin (~3,7 mm) inom mät-toleransen
+   * mot CSS-källvärdena. Ny fördelning = medelvärdet av de två ORIGINALA
+   * CSS-talen, (9,75 + 6,03) / 2 = 7,89 mm — SAMMA SUMMA (15,78 mm) som
+   * förut.
+   *
+   * SIDBRYTNING, MÄTT — INTE HÖJD-NEUTRAL I PRAKTIKEN (rättelse av ett eget
+   * felslut). En första version av detta stycke hävdade att en bevarad
+   * padding-SUMMA garanterar noll sidbrytningsrisk (ren box-modell-matematik:
+   * `.sida`s content-box-höjd = 297mm − padding-top − padding-bottom, alltså
+   * identisk före/efter). DocRaptor/Prince höll INTE med den matematiken:
+   * disk-mätt mot samma DOKUMENTUNDERLAG_EVENT_ID-fixtur (en REALISTISK
+   * fullängds kursbeskrivning, `pdfinfo`) gav 9,75/6,03mm **1 sida**, men
+   * 7,89/7,89mm **2 sidor** — samma summa, samma `.yttre-ram`-padding,
+   * BYTE-IDENTISK textinnehåll (verifierat med `pdftotext`-diff), ändå olika
+   * sidantal. Ingen fullständig teoretisk förklaring hittad inom denna skivas
+   * ram (flexbox `align-items:stretch` + `min-height` + sidbrytning tycks
+   * INTE fungera som ren CSS-box-modell-matematik förutsäger i Prince 15.1)
+   * — men mätningen är entydig och reproducerad. Detta ÄR uppdragets
+   * stop-villkor ("sidbrytning — det är en formändring Marcus avgör"): se
+   * PR:en/kortets slutrapport för båda renderade bevisen
+   * (`309-27-bekraftelse-fore.pdf` = 1 sida, `309-27-bekraftelse-final.pdf`
+   * = 2 sidor) INNAN detta godkänns.
+   *
+   * "ETT MINDRE VÄRDE"-VÄGEN PRÖVAD OCH STÄNGD (2 extra staging-renderingar,
+   * samma fixtur): halvvägs mot centrering (8,82/6,96 mm — asymmetri 1,86 mm
+   * i stället för 3,72 mm) gav ÄNDÅ 2 sidor. Ett näst intill omärkligt
+   * 0,25 mm-nyp (9,50/6,28 mm) gav ÄNDÅ 2 sidor. De ORIGINALA talen
+   * (9,75/6,03 mm) ligger alltså på en knivsegg — dokumentet är redan på
+   * sin exakta kapacitetsgräns för denna fixturs (en REALISTISK, inte
+   * konstruerad, fullängds kursbeskrivning) innehållsmängd, och VARJE
+   * flyttning bort från just dessa två tal (åt endera hållet, i denna
+   * fixturs mätning) knuffar över kanten. Det finns alltså INGET
+   * mellanläge att hitta genom att bara pröva fler tal — antingen 0 mm
+   * synlig centrering (nuläget) eller en synlig centrering med sidbrytning
+   * som pris. Se PR:en för alla fyra mätpunkterna.
    */
-  padding: 9.75mm 8.1mm 6.03mm;
+  padding: 7.89mm 8.1mm 7.89mm;
   display: flex; /* så ramen når sidfoten även när innehållet är kort */
 }
 
@@ -191,6 +235,37 @@ body {
    * Vänster/höger-padding 14,79 mm ger brödtextens vänsterkant på förlagans
    * 23,68 mm från sidkanten; padding-bottom 2,92 mm lägger sidfotens rutor
    * 11,99 mm över sidkanten, som i förlagan.
+   *
+   * PADDING-TOP — PRÖVAD, INTE SKEPPAD (TASK-309.27, 2026-08-26). Fortfarande
+   * 0: loggan (`.loggarad`, första flex-barnet) sitter DIREKT an mot ramens
+   * inneröverkant, noll luft. Disk-mätt (staging, `pdftocairo -svg`): ramens
+   * inneröverkant och loggabildens topp ligger på EXAKT samma sidkoordinat
+   * (30,308594 pt) — loggan rör ramens streck, precis Marcus observation
+   * ("Loggan ligger i överkant nästan PÅ den blåa ramen"). VERIFIERAT att
+   * detta INTE är samma fel som topp/bottenasymmetrin ovan (uppdragets
+   * premiss prövad och falsifierad för EN-fix-hypotesen, ADR-086): att
+   * centrera ramen flyttar hela ramen som EN enhet på sidan — avståndet
+   * mellan ramens EGEN innerkant och dess första barn är opåverkat av var
+   * ramen står, så centreringsfixen ovan LÖSER INTE loggproblemet på egen
+   * hand (verifierat, se `.sida--bekraftelse` ovan för den mätningen).
+   *
+   * EN KANDIDATFIX PRÖVADES OCH DROGS TILLBAKA: `padding-top: 2.92mm`
+   * (spegling av padding-bottom två rader ovan) renderad mot staging gav
+   * bekräftelsebilagan (DOKUMENTUNDERLAG_EVENT_ID-fixturen, en REALISTISK
+   * fullängds kursbeskrivning, inte en konstruerad extremsträng) **2 SIDOR**
+   * — svansen av "Innehåll, Dag Ett" plus HELA sidfoten hamnade övergivna
+   * nära toppen av en annars tom sida 2, UTANFÖR den blå ramen (ramen
+   * stänger fullständigt på sida 1 — det är BARNEN som svämmar över dess
+   * osynliga underkant, `overflow: visible` är default). **VIKTIGT:**
+   * centreringsfixen i `.sida--bekraftelse` ovan orsakar REDAN SJÄLV samma
+   * 2-sidors-utfall isolerat, utan denna padding-top-kandidat inblandad (se
+   * den rättade förklaringen där) — detta stycke skeppar alltså INTE
+   * loggfixen, inte för att den ensam vore farligare, utan för att den
+   * OVANPÅ ett redan sidbrytande läge bara gör det värre, utan att själv ha
+   * blivit efterfrågad (Marcus bad bara om centrering). Kvarstår 0 tills
+   * Marcus beslutat om centreringsfixen ovan och, i så fall, prövat om
+   * loggan behöver egen luft i den formen. Se PR:en/kortets slutrapport för
+   * de renderade bevisen.
    */
   border: 2.25pt solid var(--mm-bilaga-morkbla-ram);
   border-radius: 15.7mm;

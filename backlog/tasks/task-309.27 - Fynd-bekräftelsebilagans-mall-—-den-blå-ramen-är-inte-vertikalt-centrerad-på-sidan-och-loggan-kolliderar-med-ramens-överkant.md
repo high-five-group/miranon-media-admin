@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-26 03:06'
+updated_date: '2026-08-26 14:22'
 labels:
   - ready-for-agent
 dependencies: []
@@ -25,9 +26,9 @@ GÖR: (1) Mät nuläget: sidans höjd (A4 = 297 mm), ramens top/bottom-marginal,
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Före/efter-mätning i den DocRaptor-renderade PDF:en: ramens övre och nedre marginal lika (±1 mm), loggans avstånd till ramens överkant angivet i mm — tal i PR:en
-- [ ] #2 Förlagan ändrad, EF-kopian synkad via skriptet, paritetsgrinden grön; ingen handredigering av kopian
-- [ ] #3 Deltagarinformations-mallen renderad och opåverkad (eller medvetet justerad, bokfört)
+- [x] #1 Före/efter-mätning i den DocRaptor-renderade PDF:en: ramens övre och nedre marginal lika (±1 mm), loggans avstånd till ramens överkant angivet i mm — tal i PR:en
+- [x] #2 Förlagan ändrad, EF-kopian synkad via skriptet, paritetsgrinden grön; ingen handredigering av kopian
+- [x] #3 Deltagarinformations-mallen renderad och opåverkad (eller medvetet justerad, bokfört)
 - [ ] #4 Marcus har granskat den staging-renderade PDF:en och godkänt formen i klartext FÖRE armering (HITL)
 <!-- AC:END -->
 
