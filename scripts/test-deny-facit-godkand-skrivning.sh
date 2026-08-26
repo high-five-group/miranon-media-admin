@@ -165,20 +165,50 @@ JSON
 # alltså vacuously green, inte ett bevis på att enkel-katalogs-tekniken
 # fungerar på Linux.
 #
-# FIXEN: skanna VARJE PATH-segment och uteslut alla där `${bin}` faktiskt
-# är en körbar fil (`-x "${seg}/${bin}"`) — inte bara det `command -v`
-# råkar resolva till. Robust oavsett hur många kataloger som håller
-# binären, på vilken plattform som helst. Skriver till en NAMNGIVEN
-# utdata-variabel via `printf -v` (bash 3.1+, portabelt — `local -n`/
-# nameref kräver bash 4.3+ och FAILAR på macOS systembash 3.2, mätt i
-# denna byggsession) i stället för att returneras via command substitution
-# i anropsstället, vilket SC2312 varnar för.
+# ANDRA RUNDAN (samma dag, CI-körning 32932454040): "ta bort HELA
+# PATH-segmentet om det håller ${bin}" var FORTFARANDE fel — bara på ett
+# NYTT sätt. ubuntu-latest kör merged-usr (`/bin` är en SYMLÄNK till
+# `/usr/bin` — samma FYSISKA katalog, men TVÅ separata PATH-segment).
+# Den katalogen härbärgerar inte bara jq/node utan ISO ALLA coreutils
+# skriptet (och testriggen SJÄLV) behöver — `dirname`, `bash` inklusive.
+# Att ta bort segmentet tog därför bort `dirname` också: F1 föll om igen,
+# nu med exit 127 ("command not found") i stället för exit 2 — hookens
+# EGEN `SCRIPT_DIR="$(dirname "${BASH_SOURCE[0]}")"`-rad (dess FÖRSTA
+# körbara rad, före jq_version_ok) gick sönder innan fail-open-vägen ens
+# nåddes. Kontrollerad repro (två PATH-segment som pekar på SAMMA katalog,
+# vilken håller både jq och dirname): "ta bort hela segmentet" FÄLLER
+# dirname också ("command not found"); en riktad SHIM som bara utesluter
+# den enskilda filen håller dirname vid liv och döljer jq lika fullständigt.
+#
+# FIXEN (denna rad): för varje PATH-segment som håller `${bin}`, bygg en
+# FILTRERAD symlänk-kopia av den katalogen — VARJE annan fil symlänkas in
+# oförändrad, `${bin}` utesluts — och sätt segmentet till shim-katalogen i
+# stället för att stryka det. Ett segment som INTE håller `${bin}` lämnas
+# helt orört. Robust oavsett hur många (eller hur sammanflätade) katalogerna
+# är, på vilken plattform som helst — döljer EXAKT en binär, aldrig en hel
+# katalogs övriga verktyg. Shim-katalogerna skapas UNDER ${TEST_DIR} så
+# skriptets befintliga `cleanup()`-trap (rm -rf "${TEST_DIR}") städar dem
+# automatiskt. Skriver till en NAMNGIVEN utdata-variabel via `printf -v`
+# (bash 3.1+, portabelt — `local -n`/nameref kräver bash 4.3+ och FAILAR på
+# macOS systembash 3.2, mätt i denna byggsession) i stället för att
+# returneras via command substitution i anropsstället, vilket SC2312
+# varnar för.
 path_utan() {
-    local malvar="$1" bin="$2" out="" seg segs
+    local malvar="$1" bin="$2" out="" seg segs shim entry base
     IFS=':' read -r -a segs <<< "${PATH}"
     for seg in "${segs[@]}"; do
-        [[ -n "${seg}" && -x "${seg}/${bin}" ]] && continue
-        out="${out:+${out}:}${seg}"
+        if [[ -n "${seg}" && -x "${seg}/${bin}" ]]; then
+            shim="$(mktemp -d "${TEST_DIR}/path-utan-XXXXXX")"
+            for entry in "${seg}"/*; do
+                [[ -e "${entry}" ]] || continue
+                base="${entry##*/}"
+                [[ "${base}" == "${bin}" ]] && continue
+                ln -s "${entry}" "${shim}/${base}" 2> /dev/null
+            done
+            out="${out:+${out}:}${shim}"
+        else
+            out="${out:+${out}:}${seg}"
+        fi
     done
     printf -v "${malvar}" '%s' "${out}"
 }
