@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-26 04:57'
-updated_date: '2026-08-26 05:17'
+updated_date: '2026-08-26 05:32'
 labels:
   - ready-for-agent
 dependencies: []
@@ -25,7 +25,7 @@ GÖR (research-filens § 1, steg 1–4): (1) git mv tasks/sessions/bilagor/s102-
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [ ] #1 Katalogen ligger under tasks/sessions/archive/bilagor/s102-dokument-konvergens med ORÖRT manifest (godkand-blocket byte-identiskt före/efter — diff-bevis), alla bilder och de tre AMENDERING-filerna
-- [ ] #2 ARKIVERAD.md finns i s55-formen och bokför både efterträdarna och GAPET (valt events fulla lista + ikonpar-Visa) med pekare till TASK-309.30
+- [ ] #2 ARKIVERAD.md finns i s55-formen och bokför både efterträdarna och GAPET (valt events fulla lista + ikonpar-Visa) med pekare till TASK-309.32
 - [ ] #3 Pekar-svepet: inga levande filer refererar den gamla sökvägen (grep-bevis i PR:en); historiska sessionsdok/kort orörda
 - [ ] #4 scripts/check-facit.sh exit 0 och dokumentationsgrindarna exit 0 efter flytten; TASK-309.21 AC #1 + #2 (s102) bockade med hänvisning
 <!-- AC:END -->
