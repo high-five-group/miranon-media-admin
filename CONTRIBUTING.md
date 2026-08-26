@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-24
+updated: 2026-08-26
 review_by: 2027-02-08
 status: stable
 ---
@@ -109,6 +109,15 @@ sentinel-event till mitt i testet och återställer i `finally`. Faller den
 återställningen (kraschad körning, avbrutet CI-jobb) matchar raden ingen av de
 övriga targets och blir opurgbar för alltid; mätt 2026-08-24 låg två sådana
 rader kvar i 26,9 respektive 32,3 dygn.
+
+Och `ZZ-attachment-filename-test-` i Bilagors `Namn` (TASK-309.22) —
+`upload-attachment-ascii-safety.staging.test.ts`s EGEN sentinel-klass, skild
+från `ZZ-attachment-test-` ovan eftersom den targetens exakt-mönster bara
+tillåter ett UUID-only-suffix och därför inte kan bära det rapporterade
+bugg-filnamnet (`2025-HörlurarMiranonMedia.pdf`) som testet medvetet laddar
+upp. Städas via ägar-manifestet (`tests/support/kastbara-poster.ts`,
+ADR-060 punkt 3), inte setup-purgen — testet självstädar redan i sitt eget
+`finally`-block, manifestet är ett säkerhetsnät för en kraschad körning.
 
 Uppräkningen hålls komplett mot `.purge-staging-policy.json` av
 `scripts/check-listparitet.sh` (paret `sentinel-markorer`) — den stod med

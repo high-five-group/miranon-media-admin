@@ -50,6 +50,7 @@
   "include": [
     "supabase/functions/_shared/airtable-filter.ts",
     "supabase/functions/_shared/airtable-retry.ts",
+    "supabase/functions/_shared/attachment-filename.ts",
     "supabase/functions/_shared/coerce.ts",
     "supabase/functions/_shared/confirm-registrations.ts",
     "supabase/functions/_shared/cursor.ts",

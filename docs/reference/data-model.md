@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-24
+updated: 2026-08-26
 review_by: 2026-11-24
 status: stable
 ---
@@ -169,9 +169,24 @@ URL); all åtkomst går via en signerad URL (`SIGNED_DOWNLOAD_URL_TTL_SECONDS
 
 | Path-form | Skrivs av | Formel |
 |---|---|---|
-| `<eventId>/<attachmentId>-<filnamn>` | Klass A/B, event-räckvidd | `buildAttachmentPath`, `_shared/attachments.ts` |
+| `<eventId>/<attachmentId>-<filnamn>` | Klass A/B, event-räckvidd | `buildAttachmentPath`, `_shared/attachment-filename.ts` (re-exporterad via `_shared/attachments.ts`) |
 | `kurstyp/<kursfamilj>/<attachmentId>-<filnamn>` · `alla-event/<attachmentId>-<filnamn>` | Gemensamma bilagor (ADR-118 beslut 5) | `buildStorageAnchor`, `_shared/attachments.ts` |
 | `utkast/<eventId>/<typ>.pdf` (`typ` ∈ `bilaga`\|`kvitto`\|`deltagarinformation`) | TASK-302, `ADR-124` — transient förhandsgransknings-utkast, `upsert: true` (högst ETT per event och typ) | `laggUtkast`, `_shared/utkast.ts` |
+
+**[TASK-309.22] `<filnamn>` ovan är sedan denna skiva ASCII-/Storage-SÄKERT,
+INTE klientens råa filnamn.** Rotorsak: Supabase Storages nyckel-regex
+(`supabase/storage` `src/storage/limits.ts`, `VALID_OBJECT_KEY`) accepterar
+bara `/^[A-Za-z0-9_/!.*'() &$=@;:+,?-]*$/` — ett filnamn med å/ä/ö/é/… gav
+`502 Invalid key: …` (Marcus prod-röktest 2026-08-26,
+`2025-HörlurarMiranonMedia.pdf`). `sanitizeFilnamn` (nu i
+`_shared/attachment-filename.ts`) NFKD-normaliserar + stripper diakritik
+(å→a, ä→a, ö→o, …) och faller allt som ändå ligger utanför den tillåtna
+mängden till `-`. **Bilagor.Namn förblir klientens ORIGINALFILNAMN
+oförändrat** — bara Storage-nyckeln/`Lagringsnyckel` transformeras.
+Befintliga rader (redan ASCII-giltiga per konstruktion — annars hade
+uppladdningen redan fallerat) är BYTE FÖR BYTE oförändrade. Se
+`_shared/attachment-filename.ts`s docblock för hela algoritmen och
+`tests/api/attachment-filename.test.ts` för regressionstäckningen.
 
 `utkast/`-prefixet skiljer sig från de två andra på tre punkter: det är
 ALDRIG listat i appen (ingen Bilagor-rad pekar dit), det ÖVERSKRIVS i
@@ -2015,3 +2030,4 @@ Code kan ta dessa när de blir relevanta för en specifik uppgift.
 | 2026-08-23 (`TASK-309.2`) | **§ Bilagornas datamodell (ADR-125) tillagd** — tre nya tabeller (Eventinnehåll/Agendapunkter/Platser) + 18 fält på Eventplanering + 2 på Bilagor, skapade live i staging via Airtable MCP. Tabell-ID-tabellen (§ Snabbreferens) uppdaterad med de tre nya raderna + Eventplanerings ändrade fältantal. Sju Event×Typ-kombinationer verifierade READ-ONLY mot prod (2026-08-23) — det tidigare osourcade "sju kombinationer"-påståendet (ORDLISTA.md/ADR-125) bär nu en källa och en lista. Plattformsvägg dokumenterad: formelfält kan varken skapas vid tabellskapelse eller bli primärfält i efterhand. |
 | 2026-08-23 (`TASK-309.3`) | **§ Skrivvägar (TASK-309.3) tillagd** — tre nya EF:er (`save-event-text`/`save-place-standard`/`save-event-content`) + delad agenda-ersättningsoperation, allowlistade fält per operation dokumenterade. TASK-309.2:s "Öppen skuld"-not stängd: tre nya `.purge-staging-policy.json`-targets (Eventplanering/Platser/Agendapunkter, prefix `ZZ-TASK-309.3-`); Eventinnehåll fick medvetet ingen ny target (mutera-och-återställ mot en av de sex tomma seedade raderna, ingen ny transient rad skapas). |
 | 2026-08-23 (`TASK-309.7`) | **§ Mer-sidans läsvägar + Platsers event-lösa läge tillagd** — två nya GLOBALA läs-EF:er (`get-event-contents`/`get-places`, Mer-sidans nya Eventinnehåll-/Platser-ytor); `save-place-standard` utökad med TVÅ event-lösa lägen (`platsId`-uppdatering, `namn`-skapelse med valfri `falt`) för Platser-ytans rena plats-redigering utan event. Ny `.purge-staging-policy.json`-target `save-place-standard-event-los-platser-sentineler` (Platser, prefix `ZZ-TASK-309.7-`, egen sentinel-klass — dessa rader föds utan något throwaway-event). Block-redigeringsdialogen utbruten ur `GenereringsPrototyp.tsx` till `src/components/dokument/BlockDialog.tsx`/`blockDefinitioner.ts`, delad av genereringsvyn och Mer-sidans två nya ytor. |
+| 2026-08-26 (`TASK-309.22`) | **§ Bucket `bilagor` — Storage-path-formerna: `<filnamn>` ASCII-/Storage-säkrat.** Prod-symptom: `upload-attachment` 502 "Invalid key" på ett filnamn med å/ä/ö (`2025-HörlurarMiranonMedia.pdf`, Marcus röktest). Rotorsak: Supabase Storages nyckel-regex (`supabase/storage` `limits.ts`) accepterar bara ett fast ASCII-tecken-set. `sanitizeFilnamn`/`buildAttachmentLeaf`/`buildAttachmentPath` flyttade ur `_shared/attachments.ts` till en ny zod-fri `_shared/attachment-filename.ts` (re-exporterade oförändrat, se filens docblock för det strukturella skälet — Node/Playwright kan inte importera en esm.sh-beroende modul direkt), och `sanitizeFilnamn` NFKD-normaliserar + faller icke-Storage-säkra tecken till ASCII. `Namn`-fältet (klientens originalfilnamn) OFÖRÄNDRAT; endast Storage-nyckeln transformeras. Befintliga ASCII-namngivna rader bevisbart oförändrade (se `_shared/attachment-filename.ts`s docblock för argumentet). |

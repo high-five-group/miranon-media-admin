@@ -97,6 +97,32 @@
 // aldrig två olika filer. `anchor` ingår i hash-indata specifikt för att
 // samma fil+filnamn uppladdat till TVÅ OLIKA event inte ska kollidera till
 // en enda rad.
+//
+// [TASK-309.22, HASH-BESLUT] `deriveAttachmentId` hashar `sanitizeFilnamn
+// (filnamn)` — sedan TASK-309.22 är den funktionen ASCII-/Storage-SÄKER
+// (se `_shared/attachment-filename.ts`s docblock), inte längre bara
+// separator-/styrtecken-städad. Beslutet: hasha DET SANERADE (nu
+// ASCII-säkra) namnet, INTE en parallell "rått, endast-separator-städat"
+// variant enbart för hashen. Skälet är arkitektoniskt — EN sanerings-
+// funktion, EN sanning, återanvänd överallt (samma disciplin
+// `buildAttachmentLeaf`s docblock redan kräver: "en formel, inte en
+// parallell variant") — INTE att alternativet inte övervägdes.
+//
+// KÄND, ACCEPTERAD BIEFFEKT: två uppladdningar med BYTE-IDENTISKT
+// filinnehåll till SAMMA anchor, vars filnamn ENDAST skiljer sig i
+// diakritik (t.ex. "café.pdf" vs "cafe.pdf"), hashar nu till SAMMA
+// attachmentId — en andra sådan uppladdning blir en idempotent replay
+// (200, uppdaterar `Namn` till den senaste stavningen) i stället för en
+// egen rad. Detta är en UTVIDGNING av ett mönster som redan fanns (hashen
+// har ALLTID hashat det SANERADE, inte det råa, namnet — två namn som
+// bara skiljer sig i kontrolltecken kollapsade redan innan denna skiva)
+// snarare än en ny riskklass. Bedömt ofarligt: ett enda uppladdnings-
+// anrop bär ALLTID exakt EN bokstavlig `filnamn`-sträng (webbläsarens
+// `File.name`) — kollisionen kräver TVÅ SEPARATA uppladdningar av
+// byte-identiskt innehåll under kosmetiskt olika stavningar, vilket redan
+// låg utanför vad denna idempotens-mekanism lovar att särskilja (se
+// filhuvudets § IDEMPOTENS: mekanismen dedupar RETRIES, inte "alla
+// filer en människa skulle kalla olika").
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { fetchAirtableRecord, upsertAirtableRecord } from '../_shared/airtable-client.ts';
