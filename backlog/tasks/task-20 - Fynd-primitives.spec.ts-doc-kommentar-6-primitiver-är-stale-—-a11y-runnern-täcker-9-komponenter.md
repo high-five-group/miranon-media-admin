@@ -3,10 +3,10 @@ id: TASK-20
 title: >-
   Fynd: primitives.spec.ts doc-kommentar '6 primitiver' är stale — a11y-runnern
   täcker 9 komponenter
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-21 09:30'
-updated_date: '2026-08-26 03:29'
+updated_date: '2026-08-26 04:52'
 labels:
   - ready-for-agent
 dependencies: []
@@ -31,3 +31,9 @@ Uppdatering (S75-batch v2.1, 19.1-bygget): täckningen är nu 11 sektioner (NavC
 
 FIXAT (TASK-20). Docblocken i tests/a11y/primitives.spec.ts skriven om till räknings-neutral form ('samtliga primitiver i sektionslistan nedan' + motivering) i stället för ett nytt hårdkodat tal — per notera-fältets egen rekommendation ('docblocken bör bli räknings-neutral'). 17 test()-block i filen idag (grep -c '^  test(' tests/a11y/primitives.spec.ts, 2026-08-26); antalet uttrycks medvetet INTE i kommentaren eftersom listan redan drivit stale två gånger (6 → 11 → 17).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landning: PR #1988
+<!-- SECTION:FINAL_SUMMARY:END -->
