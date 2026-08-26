@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-26 02:48'
-updated_date: '2026-08-26 06:04'
+updated_date: '2026-08-26 07:33'
 labels:
   - ready-for-agent
 dependencies:
@@ -51,3 +51,17 @@ FACIT: s108-dokumentytans fyra bilder (tasks/sessions/bilagor/s108-dokumentytan/
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+RUNDA 2 (2026-08-26, PR #2008 återupptagen efter review-agentens utlåtande):
+
+Review-fynd 1 (allvarligast): körning 1s berakaListgeometri läste lasHojd = totaltAntal > LISTA_SYNLIGA_RADER — höjden var alltså BARA låst när totalen översteg fyra, i strid mot kortets regel 2 (ALLTID exakt fyra raders hög ... Gäller 0-3 rader). AC #3 var felaktigt avbockad (testet hette tomt läge inom O-LÅST höjd — bekräftade det FELAKTIGA beteendet, prövade inte det rätta). Omdesignat: useLastaListhojd har nu TRE mätnivåer (PRECIS minst fyra riktiga rader / ESTIMAT 1-3 / FALLBACK 0, monotont fallande aldrig nedåt via harPreciserMatt) — se DokumentYta.tsx docblock för hela motiveringen, inkl. den empiriskt uppmätta LISTA_FALLBACK_BRYTPUNKT-kanten (en första gissning på 640 px föll skarpt i test — ul renderade bredd är bara 502 px vid 1280x720-viewporten, under gränsen, vilket gav MOBIL-konstanten på ett skrivbordsfönster; rättat till 400 efter att ha mätt BÅDA breddernas verkliga ul-bredd).
+
+Review-fynd 2 (gränsfall): nytt acceptance-test bevisar att en IN-PLACE minskning under fyra rader (en riktig Radera-åtgärd i GemensamtLage, ingen page.goto) inte krymper en redan precis låst höjd — harPreciserMatt spärrar nedgradering till en sämre ESTIMAT-mätning.
+
+Review-fynd 3 (facit-noten): s108-dokumentytan/facit.json påstod git bekräftar en diff på alla fyra — falskt, PR-diffen visade 3 av 4 (eventvaljare-desktop oförändrad, rimligt då ingen lista syns i den ramen). Rättat med ett öppet korrigerings-stycke (inte tyst omskrivet); samtliga tre påverkade bilder plus s108-generering/facit-dokumentlista-inaktuell-rad-desktop/mobil omtagna en gång till mot den KORRIGERADE koden, samma engångs-spec-metod som skiva 9 (tests/visual/zz-facit-tagning-309-24.spec.ts, raderad efter passet). godkand-fältet i BÅDA manifesten orört (null).
+
+AC #3 och #4 avbockades och bockades om (höll efter omprövning). AC #1/#2/#5 höll redan och rördes inte. Negativ kontroll körd: DokumentYta.tsx tillfälligt återställd till körning 1s implementation (patch sparad, sedan återapplicerad) — exakt de 5 NYA testerna (0/1/3-raders-lägena plus gränsfallstestet) föll, de 6 tidigare testerna höll. Full mättabell och grindutfall i PR-beskrivningen.
+<!-- SECTION:NOTES:END -->
