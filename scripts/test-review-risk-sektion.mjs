@@ -40,6 +40,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   byggSektion,
+  cell,
   MARKER_END,
   MARKER_START,
   renderaRiskbedomning,
@@ -202,6 +203,61 @@ test('A8 pipe-tecken i beskrivning escapas så tabellen inte går sönder', () =
     }),
   );
   assert.match(md, /a \\\| b \\\| c/);
+});
+
+/** Simulerar hur en GFM-parser konsumerar bakstreck-escape vänster-till-höger
+ * (varje `\` konsumerar SIG SJÄLV plus nästa tecken) och avgör om en
+ * OESCAPAD — alltså tabellcell-brytande — pipe finns kvar i strängen. Egen
+ * referens-implementation i TESTET (inte i produktionskoden) så att A8b kan
+ * BEVISA att den kontrollen faktiskt fäller på den trasiga (pre-fix) formen,
+ * inte bara påstå det. Se CodeQL js/incomplete-sanitization, alert #6,
+ * PR #1993. */
+function harOskyddadPipeEnligtGfm(text) {
+  let i = 0;
+  while (i < text.length) {
+    if (text[i] === '\\') {
+      i += 2;
+      continue;
+    }
+    if (text[i] === '|') return true;
+    i += 1;
+  }
+  return false;
+}
+
+test('A8b RÖTT-FÖRST-belägg: en naiv escaping som ENDAST escapar pipe (utan att escapa bakstreck FÖRST) lämnar en oskyddad pipe kvar när indata redan har "bakstreck-direkt-före-pipe" — detta VAR CodeQL-fyndet (js/incomplete-sanitization, alert #6, PR #1993)', () => {
+  const indata = `a${'\\'}${'|'}b`; // faktiska tecken: a, \, |, b
+  const naivEscaping = indata.replace(/\|/g, `${'\\'}|`); // ENDAST pipe-escape — den GAMLA, TRASIGA ordningen (rad 85 före fixen)
+  assert.equal(
+    harOskyddadPipeEnligtGfm(naivEscaping),
+    true,
+    'referensimplementationen ska fälla den naiva (pre-fix) escapingen — annars bevisar A8c ingenting',
+  );
+});
+
+test('A8c cell(): bakstreck-direkt-före-pipe i indata escapas FULLSTÄNDIGT (bakstreck escapas FÖRST, sedan pipe) — ingen oskyddad pipe kvar', () => {
+  const indata = `a${'\\'}${'|'}b`; // samma indata som A8b: a, \, |, b
+  const escaped = cell(indata);
+  assert.equal(
+    harOskyddadPipeEnligtGfm(escaped),
+    false,
+    `cell()s utdata ska INTE innehålla någon oskyddad pipe (fick: ${JSON.stringify(escaped)})`,
+  );
+});
+
+test('A8d cell(): ett fristående bakstreck utan efterföljande pipe escapas också (rendreras som ett literalt bakstreck, inte tolkas som ett escape-tecken för nästa tecken)', () => {
+  const indata = `a${'\\'}b`; // faktiska tecken: a, \, b — inget pipe alls
+  const escaped = cell(indata);
+  assert.equal(
+    harOskyddadPipeEnligtGfm(escaped),
+    false,
+    'inget pipe i indata → inget pipe ska kunna uppstå i utdata',
+  );
+  // Bakstrecket ska förekomma DUBBLERAT (escapat) i utdata, inte enkelt.
+  assert.ok(
+    escaped.includes(`${'\\'}${'\\'}`),
+    `förväntade dubblerat bakstreck, fick: ${JSON.stringify(escaped)}`,
+  );
 });
 
 test('A9 nyrad i beskrivning ersätts med <br>', () => {

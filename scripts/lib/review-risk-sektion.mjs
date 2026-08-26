@@ -77,12 +77,35 @@ const SEVERITY_LABEL = {
 };
 
 /** Escapar en fri textsträng för säker plats i en GFM-tabellcell/bullet:
- * radbrytningar → `<br>`, pipe-tecken escapas, och innehåll över CELL_MAX
- * trunkeras SYNLIGT (aldrig tyst — samma "aldrig tyst partiell" disciplin
- * som AC #3 kräver av hela sektionen, utsträckt till enskilda fält). */
-function cell(varde) {
+ * backslash escapas FÖRST, sedan radbrytningar → `<br>`, sedan pipe-tecken
+ * — och innehåll över CELL_MAX trunkeras SYNLIGT (aldrig tyst — samma
+ * "aldrig tyst partiell" disciplin som AC #3 kräver av hela sektionen,
+ * utsträckt till enskilda fält).
+ *
+ * ═══ VARFÖR BACKSLASH ESCAPAS FÖRST (CodeQL js/incomplete-sanitization,
+ * alert #6, PR #1993) ═══
+ * Att escapa `|` genom att sätta ett bakstreck FRAMFÖR det är bara
+ * fullständigt om varje BEFINTLIGT bakstreck i indatan också escapas —
+ * annars kan en indata-sträng som redan innehåller `\|` (bakstreck direkt
+ * följt av pipe) neutralisera vårt eget escape: `a\|b` hade blivit
+ * `a\\|b` (bakstrecket i indatan + vårt injicerade bakstreck bildar ETT
+ * escapat bakstreck-par, `\\`, och pipe-tecknet står sedan KVAR
+ * oescapat) — en GFM-renderare tolkar `\\` som ett literalt bakstreck och
+ * `|` som en NY tabellcell-avgränsare, vilket bryter ut ur cellen. Genom
+ * att escapa bakstreck FÖRST (`\` → `\\`) i ett eget, tidigare steg
+ * konsumeras alla befintliga bakstreck innan pipe-escapingen lägger till
+ * NYA — de två stegen körs var för sig, aldrig i en loop som skulle kunna
+ * dubbel-escapa det nyss tillagda bakstrecket. Se
+ * scripts/test-review-risk-sektion.mjs A8b/A8c för det tvåsidiga beviset. */
+/**
+ * Exporterad (utöver de övriga rena hjälpfunktionerna i denna fil) specifikt
+ * för att kunna DIREKT-testa CodeQL-fixen (js/incomplete-sanitization,
+ * alert #6, PR #1993) utan en fragil regex-extraktion ur renderad markdown
+ * — se scripts/test-review-risk-sektion.mjs A8b/A8c.
+ */
+export function cell(varde) {
   if (varde === null || varde === undefined || varde === '') return '—';
-  const text = String(varde).replace(/\r?\n/g, '<br>').replace(/\|/g, '\\|');
+  const text = String(varde).replace(/\\/g, '\\\\').replace(/\r?\n/g, '<br>').replace(/\|/g, '\\|');
   return text.length > CELL_MAX ? `${text.slice(0, CELL_MAX)}…` : text;
 }
 
