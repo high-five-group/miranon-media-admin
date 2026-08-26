@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-26 02:23'
+updated_date: '2026-08-26 03:26'
 labels:
   - ready-for-agent
 dependencies: []
@@ -27,10 +28,10 @@ Klass: blockerar dokumentspåret i prod för vanliga svenska filnamn. Airtable-f
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Uppladdning av en fil med å/ä/ö i namnet lyckas i staging (API-test i api-staging-projektet: POST med filnamnet '2025-HörlurarMiranonMedia.pdf' → 200, Storage-objekt finns, Bilagor-rad med Namn = originalnamnet)
-- [ ] #2 Storage-nyckeln är ASCII-säker per Supabases isValidKey-regex; befintliga poster med ASCII-namn ger oförändrad nyckel (regressionstest på sanitize/leaf-funktionerna, båda riktningar)
-- [ ] #3 Beslut om hash-underlaget (deriveAttachmentId) bokfört i attachments.ts docblock + data-model.md § Lagringsnyckel; prosan och koden säger samma sak (ADR-083)
-- [ ] #4 Klientens felmeddelande vid 502 förblir läsbart; ingen HTML byggs i klienten (ADR-057)
+- [x] #1 Uppladdning av en fil med å/ä/ö i namnet lyckas i staging (API-test i api-staging-projektet: POST med filnamnet '2025-HörlurarMiranonMedia.pdf' → 200, Storage-objekt finns, Bilagor-rad med Namn = originalnamnet)
+- [x] #2 Storage-nyckeln är ASCII-säker per Supabases isValidKey-regex; befintliga poster med ASCII-namn ger oförändrad nyckel (regressionstest på sanitize/leaf-funktionerna, båda riktningar)
+- [x] #3 Beslut om hash-underlaget (deriveAttachmentId) bokfört i attachments.ts docblock + data-model.md § Lagringsnyckel; prosan och koden säger samma sak (ADR-083)
+- [x] #4 Klientens felmeddelande vid 502 förblir läsbart; ingen HTML byggs i klienten (ADR-057)
 <!-- AC:END -->
 
 ## Definition of Done
