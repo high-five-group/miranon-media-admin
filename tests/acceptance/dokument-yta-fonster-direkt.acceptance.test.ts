@@ -1,7 +1,7 @@
 import { delay, HttpResponse, http } from 'msw';
 import { VISUAL_EVENT_ID } from '../support/fixturvarld/fixture-data';
 import { EF, json } from '../support/fixturvarld/handlers';
-import { expect, test } from './support/acceptance-bas';
+import { expect, test } from './acceptance-bas';
 
 /**
  * TASK-309.26, review-runda 1, AC #4 — Dokument-ytans förhandsvisning
