@@ -272,3 +272,13 @@ Guard-testerna (`scripts/test-purge-staging-sentinels.mjs`, CI-wirade) täcker
 båda riktningarna för det nya läget, inklusive den bärande negativa: en
 FRÄMMANDE rad som matchar formeln och mönstret perfekt raderas ALDRIG när den
 saknas i manifestet. Beslutstexten ovan står orörd (L53).
+
+### 2026-08-26 — Amenderingen 2026-08-24 granskad och godkänd (S108 resume 11, Marcus mandat)
+
+Amenderingen ovan skrevs av en agent under `TASK-309.15` och flaggades av
+den själv för granskning. Granskad 2026-08-26 av orkestreraren på Marcus
+mandat i klartext (*"Du har mandat att ta besluten"*): formen är additiv —
+punkt 2 (testet får aldrig en token) och punkt 4 (credentialen bor i
+purge-jobbet) gäller ordagrant, Alt A förblir avvisad, ingen ny destruktiv
+yta; efter-körning-purgen är skarpbevisad i post-merge-run `32759422247`.
+**Godkänd utan ändringar.** Sessionsdok S108 Del 24 § F.
