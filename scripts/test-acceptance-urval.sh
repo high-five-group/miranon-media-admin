@@ -3,7 +3,7 @@
 #
 # Empirisk test-suite för scripts/acceptance-urval.sh (TASK-75).
 #
-# 15 testfall — båda riktningarna, alltså både att urvalet TILLÄMPAS när det
+# 16 testfall — båda riktningarna, alltså både att urvalet TILLÄMPAS när det
 # ska och att det FALLER när det ska:
 #   T1  tom sträng (ren docs-diff)                        → full klass
 #   T2  enbart blanksteg                                  → full klass
@@ -20,6 +20,7 @@
 #   T13 användningsfel (0 respektive 2 argument)          → exit 2
 #   T14 VERKLIGHETSGRINDEN — klassens faktiska spec-filer
 #   T15 KOPPLINGSGRINDEN — mekaniken är faktiskt inkopplad
+#   T16 SÖM-IMPORTGRINDEN — varje spec-fils acceptance-bas-import på disk
 #
 # ═══ VARFÖR T14 FINNS: MÖNSTRET MÅSTE MÖTA DISKEN ═══
 # Skriptets `SPEC_MONSTER` är den enda plats där formen på en valbar fil är
@@ -241,6 +242,44 @@ if awk '/^      acceptance_selection:$/{f=1} f&&/^        default: /{print;exit}
     pass "T15f defaulten är tom sträng — post-merge och nightly kör full klass"
 else
     fel "T15f defaulten för acceptance_selection är INTE tom sträng — post-merge-nätet är brutet."
+fi
+
+echo ""
+echo "── T16: SÖM-IMPORTGRINDEN — varje spec-fils acceptance-bas-import resolver på disk ──"
+# PR #2000 (TASK-47/123, 2026-08-26): merge_group-run 32934127922 föll röd —
+# en spec-fil som landade på main via en ANNAN, senare PR (S108) importerade
+# fortfarande './support/acceptance-bas'. Katalogen fanns inte längre efter
+# TASK-123:s utplattning (git mv till tests/acceptance/acceptance-bas.ts).
+# tsc -b FÅNGADE felet i kön (TS2307 Cannot find module) — grinden saknades
+# alltså inte i sak, men felmeddelandet pekar inte rakt på sömmen. Denna
+# check ger samma svar snabbare (ren grep, ingen kompilering) och namnger
+# EXAKT vilken fil som bär en obefintlig acceptance-bas-import — värdefullt
+# särskilt i merge-kön, där en spec-fil kan landas av en HELT ANNAN gren än
+# den som senast flyttade sömmen.
+sominport_fel=""
+sominport_antal=0
+for spec in "${REPO_ROOT}"/tests/acceptance/*.acceptance.test.ts; do
+    [[ -e "${spec}" ]] || continue
+    rad="$(grep -oE "from '[^']*acceptance-bas'" "${spec}" 2>/dev/null | head -1)"
+    [[ -n "${rad}" ]] || continue
+    sominport_antal=$((sominport_antal + 1))
+    specifier="${rad#from \'}"
+    specifier="${specifier%\'}"
+    specdir="$(dirname "${spec}")"
+    mal="${specdir}/${specifier}.ts"
+    if [[ ! -f "${mal}" ]]; then
+        sominport_fel="${sominport_fel}
+    $(basename "${spec}") importerar '${specifier}' — ${mal} finns INTE på disk"
+    fi
+done
+
+if [[ "${sominport_antal}" -eq 0 ]]; then
+    fel "T16a hittade NOLL acceptance-bas-importer bland *.acceptance.test.ts — grinden mäter ingenting"
+elif [[ -n "${sominport_fel}" ]]; then
+    fel "T16a acceptance-bas-importer som INTE resolver på disk:${sominport_fel}"
+    echo "     Fix: uppdatera importraden till './acceptance-bas' (TASK-123:s platta form)." >&2
+else
+    pass "T16a alla ${sominport_antal} spec-filers acceptance-bas-import resolver på disk"
 fi
 
 echo ""
