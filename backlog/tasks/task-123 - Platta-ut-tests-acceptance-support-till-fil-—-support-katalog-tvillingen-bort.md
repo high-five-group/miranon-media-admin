@@ -1,10 +1,10 @@
 ---
 id: TASK-123
 title: Platta ut tests/acceptance/support/ till fil — support-katalog-tvillingen bort
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-02 08:19'
-updated_date: '2026-08-26 05:44'
+updated_date: '2026-08-26 07:07'
 labels:
   - ready-for-agent
 dependencies: []
@@ -27,16 +27,16 @@ BIFYND att ta i samma veva OM ADR-080 ändå öppnas: dess not om tests/visual/s
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [x] #1 tests/acceptance/support/ utplattad till fil (researchens form: tests/acceptance/acceptance-bas.ts eller likvärdigt); alla importrader + path-strängar uppdaterade, git mv bevarar historik
-- [ ] #2 Full grindkedja grön inkl. acceptance-sviten lokalt; ingen logikändring i urvals-skript/testMatch
+- [x] #2 Full grindkedja grön inkl. acceptance-sviten lokalt; ingen logikändring i urvals-skript/testMatch
 - [x] #3 Katalog-referenser i styrande dok korslästa; åldrade pekare rättade eller öppet bokförda
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -59,4 +59,12 @@ UPPFÖLJNING (samma dag, orkestrerar-order efter merge_group-run 32934127922 rö
 MEKANISK GRIND TILLAGD (orkestreringens "överväg att stärka"): scripts/test-acceptance-urval.sh T16 "SÖM-IMPORTGRINDEN" — grepper varje *.acceptance.test.ts fils acceptance-bas-import och verifierar att målfilen finns på disk, oavsett vad SPEC_MONSTER/urvalslogiken gör. Redan CI-wired (samma steg i ci.yml som T1-T15, rad ~1198). Bidirektionellt bevisat: (a) reproducerade EXAKT incidenten genom att temporärt återställa den nya filens import till './support/acceptance-bas' — T16a föll med filnamn + sökväg namngiven; (b) återställd fix → 23/23 gröna igen. 15 → 16 testfall, huvudkommentaren uppdaterad i samma andetag.
 
 Ny head-SHA efter denna uppföljning: se commit-loggen (mergecommit + fix-commit, samma gren fix/s112-vag4-bunt-h).
+
+AC #2 BOCKAD (S112 resume 1, 2026-08-26): CI:s isolerade Acceptance-jobb på PR #2000 verifierat GRONT bade pa PR:ens egen pushade commit (run 32935263348: 'Test suite / Acceptance (hermetisk)' pass 8m55s, 'Test suite / Acceptance — tvasidigt bevis (hermetik-sjalvtest)' pass 9m15s) och i den slutgiltiga grona merge_group-korningen (run 32936685547, samma tva jobb: success). Detta ar den 'auktoritativa domaren' kortets eget tidigare pass efterlyste. DIVERGENS FLAGGAD (ADR-086): uppdragets mer specifika pastaende 'granskarens hermetiska A/B (orord main fallde samma test 2/3)' hittades INTE i nagon PR-kommentar, review eller fil i repot vid sokning i denna session (gh pr view --json comments/reviews for 2000 ar tomma, ingen fil namngiven efter PR-numret). Bockningen vilar darfor pa det oberoende, sjalvverifierade CI-beviset ovan — inte pa den ospecificerade granskar-detaljen, som forblir obelagd.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landning: PR #2000 (merge-commit f90fef04, mergad 2026-08-26T06:16:01Z; merge_group pr-2000 slutlig körning grön 06:05, inkl. Acceptance-jobben). AC #1-#3 bockade (AC#2 via CI-bevis, se notes). DoD #1-4 bockade. Done-flipp S112 resume 1, 2026-08-26, post-merge f90fef04 grönt.
+<!-- SECTION:FINAL_SUMMARY:END -->

@@ -1,10 +1,10 @@
 ---
 id: TASK-47
 title: E2e-fixture-konsolidering — delade stub-helpers i stället för per-fil-kopior
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-25 06:51'
-updated_date: '2026-08-26 05:05'
+updated_date: '2026-08-26 07:05'
 labels:
   - ready-for-agent
 dependencies: []
@@ -21,10 +21,10 @@ Förväntat: gemensam fixture-modul under tests/e2e/helpers/ (EF-stubbar + rad-f
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -50,3 +50,9 @@ Punkt 1–3 bokförs här öppet snarare än att stängas tyst (ADR-053-andan, �
 
 Branschmönster citerat (task-instruktionens krav): Playwrights egen dokumentation rekommenderar delade fixtur-moduler komponerade via mergeTests — exakt formen redan etablerad i repot (test-bas.ts + acceptance-bas.ts) och nu återanvänd rakt av för denna helper.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landning: PR #2000 (merge-commit f90fef04, mergad 2026-08-26T06:16:01Z; merge_group pr-2000: 2 röda körningar 05:27/05:32 (CLS-flake TASK-307 + TASK-123-uppföljningens importfel, se dess kort) följt av grönt 06:05). Inga AC på kortet — DoD #1 vakuöst uppfyllt. DoD #2-4 bockade: typecheck/biome/build/test:api gröna, 61 filer i diffen delade med syskonkortet TASK-123 (bunt H), inga orelaterade. Done-flipp S112 resume 1, 2026-08-26, post-merge f90fef04 grönt.
+<!-- SECTION:FINAL_SUMMARY:END -->
