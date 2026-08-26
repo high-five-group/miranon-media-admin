@@ -431,6 +431,20 @@ Numrering efter S109: ADR 122 · kort 284 (om `#1674` landat) · L512 + 55
 fragment · T158 · f52 · session 111. Full narrativ: sessionsdok S109 Del 1–4 +
 PAUSLÄGE.
 
+**Session 108 ▶️ ÅTERUPPTAGEN (2026-08-26, `lifecycle: active`, elfte resumen;
+pausad tio gånger, historik) — LÄGET RE-MÄTT MOT `origin/main` `60b5e659`:
+ALLT ÄR LIVE I PROD, KVAR ÄR MARCUS VERIFIERING OCH BESLUT.** Handoff mot
+disk: paus-PR `#1970` landad · `TASK-309` 12 Done / 10 öppna · båda facit-
+manifesten `godkand: null` · numreringen OFÖRÄNDRAD sedan paus 10 (ADR 127 ·
+task-321 · L533 · T176 · session 113) · huvudkatalogen fast-forwardad
+`f5ed41d2` → `60b5e659` · **dev-servern DÖD** (den förutsagda risken) ·
+S112 pausad parallellt, ingen öppen PR är S108:s. Live-belägg: Vercel
+Production `60b5e659` 2026-08-25T15:00:31Z, prod-schema + 45/45 EF:er sedan
+2026-08-24. **MARCUS-SEKVENS (sessionsdok Del 23 § C):** GO på `309.20`-agent
+→ röktest i prod (`309.11`, nio punkter) → nyckelrotation (§ (g)) →
+stämpling efter `309.20` → `309.8` AC #3/#4 · `ADR-060` · `309.18`/`.19`/`.21`
+→ agent-svans + K-sista. Full narrativ: sessionsdok S108 Del 23.
+
 **Session 108 ⏸️ PAUSAD (tionde gången, 2026-08-25, `lifecycle: paused`) —
 PROMOVERINGEN ÄR I PROD; KORTFAMILJEN HALVSTÄNGD; ALLT SOM ÅTERSTÅR KRÄVER
 MARCUS BESLUT (SESSIONSDOK S108 § PAUSLÄGE TIONDE → MARCUS-SEKVENS).**
