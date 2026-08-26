@@ -613,10 +613,15 @@ stycke till att låta grinden vara mekaniskt otvingbar innan `173.4` faktiskt
 landat (samma `ADR-083`-disciplin som resten av denna fil: prosa som påstår
 en mekanism som inte finns är värre än att inte skriva något alls).
 
-**Policy-ytans egna testsvit (`scripts/test-review-policy.mjs`, 44 fall) är
-INTE CI-wirad** — lika lite som `173.1`s `scripts/test-validera-review-
-utlatande.mjs`. Båda är bevis, inte grindar, tills `173.4` bygger CI-ytan.
-Kör dem för hand när du rör review-ytan.
+**Policy-ytans egna testsvit (`scripts/test-review-policy.mjs`, 44 fall) och
+`173.1`s `scripts/test-validera-review-utlatande.mjs` körs sedan `TASK-185`
+(PR #1992, 2026-08-26) som gatekeeper-sviter i `ci.yml`:s "Test gatekeeper
+script suites"-steg** — samma klass som repots övriga ~15 gatekeeper-sviter:
+enhetstester för skriptens egen logik, wirade så att en regression fälls
+FÖRE landning i stället för att upptäckas efteråt. Det är INTE `173.4`s
+CI-backstopp (den deterministiska spärren mot en PR utan giltigt utlåtande)
+— den saknas fortfarande, se stycket ovan (samma `ADR-083`-disciplin: påstå
+aldrig en mekanism som inte finns).
 
 **Skarpbevis-skulden — BETALD 2026-08-26 (S112 resume 1), med en mätt kant
 (`CLAUDE.md` § En ny hooks skarpbevis, samma strukturella klass generaliserad

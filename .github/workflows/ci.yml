@@ -1218,6 +1218,25 @@ jobs:
         # exit-koderna faktiskt matchar. Hermetisk. 5,5 s LOKALT mätt (macOS,
         # 2026-08-26).
         #
+        # test-review-policy.mjs (TASK-173.2, base-drift-fynd 2026-08-26 —
+        # main flyttade sig under TASK-185:s eget bygge, PR #1993/#1995
+        # mellanlandade) hör hit av samma ADR-039-skäl som syskonet
+        # test-validera-review-utlatande.mjs ovan: policy-ytan (.review-
+        # policy.json + scripts/lib/review-policy.mjs +
+        # scripts/hamta-review-policy.mjs) är review-grindens ANDRA
+        # kontraktsyta (ADR-105) och var lika oskyddad. AC #1 (regler läses
+        # ENDAST ur `main`, aldrig ur en gren eller ett ocommittat arbetsträd)
+        # bevisas i ett äkta temporärt git-repo med tre OLIKA policy-versioner
+        # samtidigt (main/gren/arbetsträd) plus ett KONTRAST-test som läser
+        # grenens ref och FÅR angriparens innehåll — utan den kontrasten vore
+        # huvudtestet vakuöst. 44 fall. Orkestrerar-beslut (Marcus-mandat,
+        # samma svep som denna rad): båda review-policy-sviterna är
+        # enhetstester för skript, samma klass som de 15 övriga
+        # gatekeeper-sviterna — INTE samma sak som TASK-173.4:s ännu obyggda
+        # CI-backstopp (den mekaniska spärren mot en PR utan giltigt
+        # utlåtande), se CLAUDE.md § Review-grinden. Hermetisk (temp-repo,
+        # node_modules-symlänk, ingen nätverkstrafik). 2026-08-26 (macOS).
+        #
         # test-verify-ci-parity.mjs hör hit av samma ADR-039-skäl applicerat
         # på scripts/verify-ci-parity.mjs SJÄLVT (CLAUDE.md § verify:ci-
         # parity) — paritetsverktyget som ska fånga när ci.yml/ci-suite.yml
@@ -1269,6 +1288,7 @@ jobs:
           bash scripts/test-post-compact-igenkanning.sh
           bash scripts/test-stada-grenar.sh
           node scripts/test-validera-review-utlatande.mjs
+          node scripts/test-review-policy.mjs
           node scripts/test-verify-ci-parity.mjs
 
       - name: Test post-merge-lagrets ärvda klassning (TASK-73)
