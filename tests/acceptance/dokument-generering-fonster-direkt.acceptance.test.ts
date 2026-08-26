@@ -34,14 +34,21 @@ function mockaLagradPdf(url: string) {
 
 /**
  * TASK-309.26 — förhandsgranskningens PDF-fönster öppnas DIREKT, popup-
- * blockerar-säkert (Marcus prod-röktest 2026-08-26, S108 resume 11,
- * ordagrant: *"Jag tryckte sedan på förhandsgranska och pdf:en skapades och
- * när den va klar kom de grön inforuta upp […] Webbläsaren stoppade det
- * nya fönstret. Öppna det härifrån i stället. […] Skarpt så måste ju ett
- * chromefönster öppnas direkt."*).
+ * blockerar-säkert, OCH bär en läsbar sida i stället för att stå tomt
+ * (Marcus TVÅ doms, båda löses av samma ändring — se `GenereringsVy.tsx`s
+ * `skapaDokument`/`skrivLaddningssida`-docblock för hela resonemanget):
  *
- * TVÅ DEFEKTER, samma ställe (`GenereringsVy.tsx`s `skapaDokument` —
- * se filens eget docblock för hela resonemanget och källorna):
+ *   - 22 aug 2026: avvisade ett fönster som öppnas "helt abrupt" och tomt,
+ *     med bara en anonym statusrad i ett hörn ("Va? Seriöst?").
+ *   - 26 aug 2026, prod-röktest (S108 resume 11), ordagrant: *"Jag tryckte
+ *     sedan på förhandsgranska och pdf:en skapades och när den va klar kom
+ *     de grön inforuta upp […] Webbläsaren stoppade det nya fönstret. Öppna
+ *     det härifrån i stället. […] Skarpt så måste ju ett chromefönster
+ *     öppnas direkt."*
+ *
+ * TVÅ URSPRUNGLIGA DEFEKTER, samma ställe (`GenereringsVy.tsx`s
+ * `skapaDokument` — se filens eget docblock för hela resonemanget och
+ * källorna):
  *
  *   1. `window.open` anropades EFTER mutationens `onSuccess`, utanför
  *      klickets synkrona user-activation-fönster — webbläsarens popup-
@@ -57,22 +64,26 @@ function mockaLagradPdf(url: string) {
  * `tabbar-personer-prefetch.acceptance.test.ts`s kontrastpar. EF-svaret
  * fördröjs `SVARSFORDROJNING_MS` (långt över varje assert-budget i denna
  * fil): fönstret måste alltså existera REDAN innan svaret kommer, annars
- * hinner testet aldrig se det inom sin egen väntan. Den nya sidan är
- * `about:blank` direkt efter klicket — INNAN svaret hunnit komma — och
- * navigerar till PDF-URL:en FÖRST när mutationen löser ut.
+ * hinner testet aldrig se det inom sin egen väntan. Fönstrets URL är
+ * `about:blank` direkt efter klicket (INNAN svaret hunnit komma) — men dess
+ * INNEHÅLL är INTE tomt: en `document.write`-skriven sida med titel + en
+ * läsbar text syns direkt (22 aug-domen), och SAMMA fönster navigerar till
+ * PDF-URL:en FÖRST när mutationen löser ut (26 aug-domen).
  *
  * AC #3 (negativ kontroll): en EF som svarar 400 lämnar INGEN tom flik
  * kvar — `stangOanvantFonster` stänger den, felet visas i appens egen
  * `MessageBox` (husets mönster, inte en tom flik utan förklaring).
  *
  * AC #1 + #4 verifieras i samma pass: ingen "Prototyp"-text i toasten, och
- * samma öppningsmekanism ("ett tomt fönster, adress satt efteråt") som
- * `DokumentYta.tsx`s kvittoförhandsgranskning redan använder.
+ * samma öppningsmekanism (`window.open('', '_blank')` synkront, adress
+ * satt efteråt) som `DokumentYta.tsx`s kvittoförhandsgranskning redan
+ * använder.
  *
  * DENNA FIL BEVISAR EXTERNT BETEENDE (samma disciplin som resten av
  * klassen, `acceptance-bas.ts` § VAD KLASSEN BEVISAR): vad Lotta SER
- * (en flik som öppnas, en toast utan prototyp-text, ett fel som visas i
- * stället för en tom flik) — aldrig att en handler anropades eller hur.
+ * (en flik som öppnas med en läsbar sida, en toast utan prototyp-text, ett
+ * fel som visas i stället för en tom flik) — aldrig att en handler
+ * anropades eller hur.
  */
 
 const SVARSFORDROJNING_MS = 4000;
@@ -145,10 +156,18 @@ test.describe('Genereringsvyn — förhandsgranskningens fönster öppnas direkt
     const knapp = page.getByRole('button', { name: 'Förhandsgranska först' });
     const [nyFlik] = await Promise.all([context.waitForEvent('page'), knapp.click()]);
 
-    // Fönstret existerar DIREKT, blankt — INNAN mutationen (fördröjd
-    // SVARSFORDROJNING_MS) hunnit svara. Detta är beviset att öppningen
-    // skedde synkront i klicket, inte efter ett asynkrt svar.
+    // Fönstret existerar DIREKT — INNAN mutationen (fördröjd
+    // SVARSFORDROJNING_MS) hunnit svara. Beviset att öppningen skedde
+    // synkront i klicket, inte efter ett asynkrt svar: URL:en är
+    // fortfarande `about:blank` (ingen navigering till PDF:en ännu)...
     await expect.poll(() => nyFlik.url()).toBe('about:blank');
+    // ...MEN INNEHÅLLET är INTE tomt (22 aug-domen, "helt abrupt"): en
+    // document.write-skriven sida med titel + läsbar text syns REDAN här,
+    // långt innan mutationen (4 s fördröjd) svarar.
+    await expect(nyFlik).toHaveTitle('Skapar dokument…');
+    await expect(
+      nyFlik.getByText('Skapar förhandsgranskningen. Sidan byter till PDF:en när den är klar.'),
+    ).toBeVisible();
 
     // Efter att mutationen löst ut: SAMMA fönster navigerar till PDF:en —
     // ingen ny flik, ingen omdirigering av appens egen sida. Poll på `.url()`
@@ -179,9 +198,14 @@ test.describe('Genereringsvyn — förhandsgranskningens fönster öppnas direkt
       http.get(EF('get-document-sources'), () =>
         json(MOCK_SOURCES as unknown as Record<string, unknown>),
       ),
-      http.post(EF('generate-event-attachment'), () =>
-        json({ error: 'DocRaptor svarade inte i tid' }, 400),
-      ),
+      http.post(EF('generate-event-attachment'), async () => {
+        // Fördröjd (inte omedelbar): ger testet ett fönster att observera
+        // laddningssidan i INNAN felet stänger den — ett omedelbart fel
+        // racear annars mot document.write-anropet (samma mutate-anrop
+        // gör båda i samma tick).
+        await delay(1000);
+        return json({ error: 'DocRaptor svarade inte i tid' }, 400);
+      }),
     );
 
     await page.goto(`/mer/dokument?event=${VISUAL_EVENT_ID}&vy=generering&mall=bekraftelse`);
@@ -192,6 +216,9 @@ test.describe('Genereringsvyn — förhandsgranskningens fönster öppnas direkt
       page.getByRole('button', { name: 'Förhandsgranska först' }).click(),
     ]);
     expect(nyFlik.url()).toBe('about:blank');
+    // Laddningssidan hann synas innan felet stängde fönstret — den öppnade
+    // fliken var aldrig bara ett tomt `about:blank`, ens i felvägen.
+    await expect(nyFlik).toHaveTitle('Skapar dokument…');
 
     await expect(page.getByText(/DocRaptor svarade inte i tid/)).toBeVisible();
     await expect.poll(() => nyFlik.isClosed()).toBe(true);
@@ -242,6 +269,10 @@ test.describe('Genereringsvyn — förhandsgranskningens fönster öppnas direkt
     ]);
 
     await expect.poll(() => nyFlik.url()).toBe('about:blank');
+    await expect(nyFlik).toHaveTitle('Skapar dokument…');
+    await expect(
+      nyFlik.getByText('Skapar bekräftelsebilagan. Sidan byter till PDF:en när den är klar.'),
+    ).toBeVisible();
     // Se motiveringen ovan i första testet: poll på `.url()`, inte `waitForURL`
     // — Chromes PDF-visare stör load-eventet för en `application/pdf`-navigering.
     await expect

@@ -361,6 +361,69 @@ type Resultat =
   | { typ: 'fel'; text: string };
 
 /**
+ * DEN MOMENTANA SIDAN I DET SYNKRONT ÖPPNADE FÖNSTRET (TASK-309.26,
+ * tillägg efter att Marcus 22 aug-dom återupptäcktes av orkestreraren).
+ *
+ * LÖSER BÅDA MARCUS-DOMARNA, INTE BARA DEN SENASTE. 26 aug krävde att
+ * fönstret öppnas DIREKT (löst av `window.open('', '_blank')` synkront i
+ * skapaDokument, se dess docblock) — men ett fönster som bara står TOMT
+ * (`about:blank`) i några sekunder är fortfarande precis den upplevelse
+ * Marcus dömde ut 22 aug: *"då öppnas ett nytt fönster helt abrupt, men en
+ * text uppe i högra hörnet om att bilagan genereras… Va? Seriöst?"*.
+ * Skillnaden mellan den avvisade formen och denna är INTE att en text
+ * skrivs in — det gjorde 22 aug-varianten också — utan VAR och HUR: 22
+ * aug-varianten var en anonym statusrad i ett hörn av en annars orelaterad
+ * yta; denna är en egen, tyst, centrerad sida vars ENDA syfte är att vara
+ * just det fönstret blir, tills adressen sätts. Skrivs direkt efter
+ * `window.open('', '_blank')`, INNAN `mutate()` — fönstret är därför ALDRIG
+ * ett obeskrivet `about:blank` som Lotta hinner se.
+ *
+ * TEKNIKEN ÄR HUSETS EGEN, INTE NY: `useForhandsvisaDokument.ts`s felväg
+ * gör exakt detta redan (`handle.document.write(...)`, inline `style`,
+ * ingen extern stylesheet) — denna funktion utökar samma mönster till att
+ * även bära det FÖRVÄNTADE, icke-fel-läget. `document.write` på ett
+ * same-origin `about:blank`-fönster öppnaren själv skapade är standard-
+ * beteende (MDN `Window.open()`: en same-origin browsing context kan
+ * läsas/skrivas av öppnaren; MDN `Document.write()`: anropet skriver
+ * direkt in i det redan öppna dokument-strömmen — `document.close()`
+ * anropas aldrig här, så strömmen förblir öppen tills webbläsaren självmant
+ * stänger den vid sidans slut). Att SEDAN sätta `fonster.location.href`
+ * (i `onSuccess`, oförändrat) är en helt separat, vanlig navigering som
+ * kasserar detta dokument och ersätter det med PDF:en — samma ordning
+ * `useForhandsvisaDokument.ts` redan förlitar sig på för sin success-väg.
+ *
+ * LITERALA FÄRG-/TYPSNITTSVÄRDEN, INTE CSS CUSTOM PROPERTIES: detta
+ * dokument delar INGENTING med appens `index.html`/`base.css` — det är
+ * fönstrets EGET, fristående dokument, utan tillgång till appens
+ * stylesheet. Värdena är en ÖGONBLICKSKOPIA av `--mm-bg`/`--mm-text`
+ * (`src/styles/tokens/primitives.css` § `--p-neutral-0`/`--p-neutral-900`)
+ * tagen vid skrivtillfället — en framtida tokenändring synkas INTE hit
+ * automatiskt, samma avvägning som alla andra literal-kopior i huset.
+ * Typsnittet UTELÄMNAR Inter/Google Fonts medvetet, av samma skäl
+ * `useForhandsvisaDokument.ts`s felsida redan gör (`system-ui, sans-serif`,
+ * ingen import): sidan lever i högst någon sekund, en fontleverans över
+ * nätet vore en kostnad utan en mottagare som hinner se skillnaden.
+ *
+ * `lang="sv"` sätts explicit — dokumentet ärver annars webbläsarens
+ * standardspråk, inte appens (ett fristående `document.write`-dokument har
+ * ingen relation till appens `<html lang>`).
+ */
+function skrivLaddningssida(fonster: Window | null, text: string) {
+  if (!fonster) return;
+  fonster.document.write(
+    '<!doctype html><html lang="sv"><head><meta charset="utf-8">' +
+      '<title>Skapar dokument…</title>' +
+      '<style>' +
+      'body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;' +
+      'font-family:system-ui,-apple-system,sans-serif;background:#ffffff;color:#242424;}' +
+      'p{max-width:32rem;padding:2rem;text-align:center;}' +
+      '</style></head><body><p>' +
+      text +
+      '</p></body></html>',
+  );
+}
+
+/**
  * EF-felets stängningsplikt (TASK-309.26, AC #3): ett förhandsöppnat, tomt
  * fönster som aldrig fick sin adress satt lämnas ALDRIG kvar — appens egen
  * `MessageBox` (`resultat.typ === 'fel'` nedan) bär felmeddelandet, husets
@@ -681,14 +744,26 @@ export function GenereringsVy({
    * stänga av user-activation-fönstret. Samma popup-blockerar-säkra mönster
    * som `DokumentYta.tsx` § IKONPAR / `useForhandsvisaDokument.ts` redan
    * bevisat (TASK-273.4 AC #1, `context.waitForEvent('page')`-beviset här
-   * upprepar det): ett TOMT fönster öppnas direkt (`window.open('', '_blank')`,
+   * upprepar det): ett fönster öppnas direkt (`window.open('', '_blank')`,
    * `noopener` MEDVETET UTELÄMNAT — samma skäl, se `useForhandsvisaDokument.ts`),
-   * adressen sätts EFTERÅT i `onSuccess`. Marcus *"Lotta ska inte skickas
-   * till pdf:en automatiskt"*-krav från 2026-08-22 är fortsatt uppfyllt:
-   * fönstret hon ser är blankt tills HON redan klickat — ingen navigering
-   * sker förrän hennes egen handling startade den. EF-fel stänger det
-   * öppnade fönstret i stället för att lämna en tom flik kvar (AC #3) —
-   * felet visas i appens egen `MessageBox` nedan, husets mönster.
+   * adressen sätts EFTERÅT i `onSuccess`.
+   *
+   * [TILLÄGG, TASK-309.26, orkestrerarens andra vändning] Fönstret stod
+   * FÖRST tomt (`about:blank`) tills adressen sattes — det löser bara den
+   * SENASTE Marcus-domen (26 aug, "måste öppnas direkt"), inte den FÖRSTA
+   * (22 aug, avvisade ett fönster som öppnas "helt abrupt" och tomt). Ett
+   * fönster som öppnas direkt men sedan STÅR TOMT i flera sekunder är
+   * fortfarande abrupt i Lottas ögon, bara tidigareläggd. `skrivLaddningssida`
+   * (nedan) skriver en läsbar, avsiktlig sida i fönstret DIREKT efter
+   * öppningen, innan `mutate()` — fönstret är därför ALDRIG ett obeskrivet
+   * `about:blank` som Lotta hinner se, och löser båda domarna samtidigt: se
+   * den funktionens eget docblock för hela resonemanget och MDN-källorna.
+   * Marcus *"Lotta ska inte skickas till pdf:en automatiskt"*-krav från
+   * 2026-08-22 är fortsatt uppfyllt: ingen NAVIGERING till PDF:en sker förrän
+   * hennes egen handling (klicket) startade den — bara den momentana sidan
+   * mellan klick och färdig PDF är ny. EF-fel stänger det öppnade fönstret i
+   * stället för att lämna en (numera skriven, inte längre tom) flik kvar
+   * (AC #3) — felet visas i appens egen `MessageBox` nedan, husets mönster.
    */
   const skapaDokument = (skarpt: boolean) => {
     if (forhandsgranska.isPending || genereraBilaga.isPending) return;
@@ -698,6 +773,10 @@ export function GenereringsVy({
     const fonster = window.open('', '_blank');
 
     if (!skarpt) {
+      skrivLaddningssida(
+        fonster,
+        'Skapar förhandsgranskningen. Sidan byter till PDF:en när den är klar.',
+      );
       forhandsgranska.mutate(
         { eventId: event.id, mall },
         {
@@ -732,6 +811,10 @@ export function GenereringsVy({
       }
     }
 
+    skrivLaddningssida(
+      fonster,
+      `Skapar ${meta.namn.toLowerCase()}n. Sidan byter till PDF:en när den är klar.`,
+    );
     genereraBilaga.mutate(
       { mall, platsFalt: Object.keys(platsFalt).length > 0 ? platsFalt : undefined },
       {
