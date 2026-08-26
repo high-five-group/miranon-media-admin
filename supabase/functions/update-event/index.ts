@@ -1,8 +1,8 @@
 import { updateAirtableRecord } from '../_shared/airtable-client.ts';
 import { requireUser } from '../_shared/auth.ts';
-import { scalarNumber, scalarString, selectName } from '../_shared/coerce.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
 import { generateRequestId, mapErrorToResponse } from '../_shared/errors.ts';
+import { deriveManadAr, mapEventBas, mapEventKategorifalt } from '../_shared/event-map.ts';
 import { findDisallowedField, getOperation } from '../_shared/field-allowlists.ts';
 
 // update-event — uppdaterar ett BEFINTLIGT event i Eventplanering (task-18.1,
@@ -45,79 +45,19 @@ const OPERATION_KEY = 'update-event';
 // som create-event — exakt kalender-validitet vilar på Airtable).
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-// Svenska månadsnamn för `Månad/år`-härledningen — HÅLL I SYNK med create-event
-// (samma medvetna duplicering som get-event/get-events mapEvent; EF:er delar kod
-// endast via _shared, och en extraktion hör till en egen refaktor-landning).
-const MANAD_AR_MONTHS = [
-  'Januari',
-  'Februari',
-  'Mars',
-  'April',
-  'Maj',
-  'Juni',
-  'Juli',
-  'Augusti',
-  'September',
-  'Oktober',
-  'November',
-  'December',
-];
-
-/** Härleder `Månad/år`-värdet ("Mars 2026") ur ett ISO-datum (YYYY-MM-DD). */
-function deriveManadAr(isoDate: string): string {
-  const [year, month] = isoDate.split('-');
-  return `${MANAD_AR_MONTHS[Number(month) - 1]} ${year}`;
-}
-
-// Fältnamn från Airtable → ren API-respons (BERIKADE läs-shapen). IDENTISK mappning
-// som get-event/get-events mapEvent — PATCH-svaret från Airtable bär ALLA fält
-// (inkl. formler/rollups), så update-svaret kan bära samma domän-shape som
-// läs-vägen och klienten kan cache-sätta direkt. Håll i synk med get-event/
-// get-events om fält ändras.
+// Fältnamn från Airtable → ren API-respons (BERIKADE läs-shapen) ur
+// `_shared/event-map.ts` — SSOT sedan TASK-23, samma mappning som get-event/get-events
+// använder. Write-vägen kan bära läs-vägens domän-shape därför att Airtables
+// PATCH-svar bär ALLA fält (inkl. formler/rollups), så klienten kan cache-sätta direkt.
+//
+// De aggregerade räkningarna (viaFormular/medfoljande/vantelista/borOverAntal) läggs
+// MEDVETET INTE till här — write-EF:en förblir ETT Airtable-anrop (fälten är ADDITIVT-
+// OPTIONAL i EventSchema); klienten MERGE-cachar (useUpdateEvent) och onSettled-
+// refetchen mot get-event bär hela modellen.
 function mapEvent(record: { id: string; fields: Record<string, unknown> }) {
-  const f = record.fields;
-
   return {
-    id: record.id,
-    eventlabel: f['Eventlabel'] ?? null, // formula (primary)
-    eventNamn: selectName(f['Event (source)']), // singleSelect
-    typ: selectName(f['Typ']), // singleSelect
-    ort: scalarString(f['Ort']), // text (eget fält, skalärt)
-    startdatum: f['Startdatum'] ?? null, // date
-    slutdatum: f['Slutdatum'] ?? null, // date
-    tidKvarTillEvent: f['Tid kvar till event'] ?? null, // formula → text
-    maxPlatser: scalarNumber(f['Max antal platser']), // number (osatt → null)
-    antalAnmalda: scalarNumber(f['Antal anmälda']) ?? 0, // formel → number
-    platserKvar: scalarNumber(f['Platser kvar']), // formel → number|null
-    anmaldBelaggning: scalarNumber(f['Anmäld beläggning (%)']), // formel-% (NaN→null)
-    bekraftadBelaggning: scalarNumber(f['Bekräftad beläggning (%)']), // formel-% (NaN→null)
-    antalNyaAnmalningar: scalarNumber(f['Antal nya anmälningar']) ?? 0, // rollup → number
-    antalAnmalningsavgifter: scalarNumber(f['Antal mottagna anmälningsavgifter']) ?? 0, // rollup
-    antalSlutbetalningar: scalarNumber(f['Antal mottagna slutbetalningar']) ?? 0, // rollup
-    antalSlutbetalningFelande: scalarNumber(f['Antal slutbetalning saknas']) ?? 0, // formel
-    status: selectName(f['Status'] ?? null), // singleSelect (om det finns)
-    // eventKey: saknas värdet UTELÄMNAS nyckeln (undefined droppas av
-    // JSON.stringify; OPTIONAL i EventSchema — aldrig null). Håll i synk.
-    eventKey: typeof f['EventKey'] === 'string' ? f['EventKey'] : undefined,
-    // Basdimensionerna (TASK-249.4, ADR-115): direkta singleSelect-fält, alltid lästa ur
-    // PATCH-svarets fullständiga fields (kommentaren ovan mapEvent) — selectName ger
-    // string|null (aldrig gissat). Håll i synk med get-event/get-events.
-    kursfamilj: selectName(f['Kursfamilj']),
-    kursniva: selectName(f['Kursnivå']),
-    // Beläggningens TVÅ skrivbara kategorifält (task-18.2, K16) — PATCH-svaret
-    // bär dem. Räkningarna (viaFormular/medfoljande/vantelista) aggregeras
-    // MEDVETET INTE här (write-EF:en förblir ett Airtable-anrop; ADDITIVT-
-    // OPTIONAL i EventSchema) — klienten MERGE-cachar (useUpdateEvent) och
-    // onSettled-refetchen mot get-event bär hela modellen. Osatt → nyckeln
-    // UTELÄMNAS (eventKey-formen — aldrig null).
-    reserverade: scalarNumber(f['Extra platser']) ?? undefined,
-    manuelltTillagda: scalarNumber(f['Manuella platser']) ?? undefined,
-    // Auto-utskickets två ADDITIVA fält (task-18.6). Datumet: osatt → nyckeln
-    // UTELÄMNAS (eventKey-formen). Opt-out: Airtable utelämnar en OKRYSSAD checkbox
-    // ur svaret — normaliseras därför till FALSE (aldrig undefined), så krysset alltid
-    // har ett definit läge att rendera. Håll i synk med get-event.
-    deltagarinfoSchemalagd: scalarString(f['Deltagarinfo schemalagd']) ?? undefined,
-    deltagarinfoAutoAvstangt: f['Deltagarinfo auto-utskick avstängt'] === true,
+    ...mapEventBas(record),
+    ...mapEventKategorifalt(record),
   };
 }
 

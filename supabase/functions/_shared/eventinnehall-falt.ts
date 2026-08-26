@@ -9,10 +9,15 @@
 // (`get-document-sources/index.ts`) redan använder i sitt svar. Ny kod
 // SKA importera nycklarna härifrån, aldrig skriva en fjärde parallell lista.
 //
-// BILAGETEXT_SUFFIX duplicerar (medvetet, HÅLL I SYNK-mönstret
-// `update-event/index.ts` redan etablerar för MANAD_AR_MONTHS) den lokala
-// konstanten i `get-document-sources/index.ts` — den filen ligger utanför
-// denna skivas scope (TASK-309.2, redan landad i #1870) och rörs inte här.
+// BILAGETEXT_SUFFIX duplicerar den lokala konstanten i
+// `get-document-sources/index.ts` — den filen ligger utanför denna skivas scope
+// (TASK-309.2, redan landad i #1870) och rörs inte här.
+//
+// NB: raden hänvisade tidigare till update-event/index.ts som precedent för att
+// hålla MANAD_AR_MONTHS i synk mellan EF:er. Den precedenten finns inte längre —
+// TASK-23 flyttade MANAD_AR_MONTHS och `deriveManadAr` till `_shared/event-map.ts`
+// just för att håll-i-synk-plikten var driftrisken. Kvarvarande duplicering här är
+// alltså en ÖPPEN skuld av samma klass, inte ett mönster att härma.
 
 export const EVENT_TEXT_FALT_KEYS = [
   'tid',
