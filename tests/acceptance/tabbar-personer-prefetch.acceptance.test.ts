@@ -1,6 +1,6 @@
 import { delay, http } from 'msw';
 import { EF, json } from '../support/fixturvarld/handlers';
-import { expect, test } from './support/acceptance-bas';
+import { expect, test } from './acceptance-bas';
 
 /**
  * TabBar — prefetch på avsikt för personregistret (`ADR-078` beslut 3,

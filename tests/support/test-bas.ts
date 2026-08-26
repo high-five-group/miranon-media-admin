@@ -4,7 +4,8 @@
  * HEMVISTEN ÄR KLASSDELAD, INTE E2E-ÄGD (task-110, tråd T103). Modulen bodde
  * till och med task-109 under `tests/e2e/support/`, vilket lästes som ägarskap
  * — men sedan task-59.3 komponerar acceptance-klassens söm
- * (`tests/acceptance/support/acceptance-bas.ts`) BÅDA fixturmodulerna via
+ * (`tests/acceptance/acceptance-bas.ts` — platt fil sedan TASK-123, tidigare
+ * `tests/acceptance/support/acceptance-bas.ts`) BÅDA fixturmodulerna via
  * `mergeTests` och importerar alltså tvärs klassgränsen. Samma skäl som
  * flyttade fixturvärlden i task-59.1. Flytten var ren: noll beteendeändring,
  * bevisad med `PLAYWRIGHT_HERMETIK_RAPPORT=1` före och efter.

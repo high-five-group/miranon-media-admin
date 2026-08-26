@@ -3,14 +3,14 @@
 #
 # Empirisk test-suite för scripts/acceptance-urval.sh (TASK-75).
 #
-# 15 testfall — båda riktningarna, alltså både att urvalet TILLÄMPAS när det
+# 16 testfall — båda riktningarna, alltså både att urvalet TILLÄMPAS när det
 # ska och att det FALLER när det ska:
 #   T1  tom sträng (ren docs-diff)                        → full klass
 #   T2  enbart blanksteg                                  → full klass
 #   T3  EN spec-fil                                       → urval, den filen
 #   T4  TRE spec-filer                                    → urval, alla tre
 #   T5  en källfil                                        → full klass
-#   T6  sömmen tests/acceptance/support/**                → full klass
+#   T6  sömmen tests/acceptance/acceptance-bas.ts          → full klass
 #   T7  en giltig spec + en källfil                       → full klass
 #   T8  sökvägs-traversal                                 → full klass
 #   T9  fel suffix under tests/acceptance/                → full klass
@@ -20,6 +20,7 @@
 #   T13 användningsfel (0 respektive 2 argument)          → exit 2
 #   T14 VERKLIGHETSGRINDEN — klassens faktiska spec-filer
 #   T15 KOPPLINGSGRINDEN — mekaniken är faktiskt inkopplad
+#   T16 SÖM-IMPORTGRINDEN — varje spec-fils acceptance-bas-import på disk
 #
 # ═══ VARFÖR T14 FINNS: MÖNSTRET MÅSTE MÖTA DISKEN ═══
 # Skriptets `SPEC_MONSTER` är den enda plats där formen på en valbar fil är
@@ -80,7 +81,6 @@ fel() {
 # disk-kontroll prövas mot riktiga filer i stället för mot en attrapp.
 setup() {
     rm -rf "${TEST_DIR}"
-    mkdir -p "${TEST_DIR}/tests/acceptance/support"
     mkdir -p "${TEST_DIR}/tests/acceptance/nastlad"
     mkdir -p "${TEST_DIR}/src/components/hem"
     mkdir -p "${TEST_DIR}/.github/workflows"
@@ -91,7 +91,7 @@ setup() {
     : > "${TEST_DIR}/tests/acceptance/persons-list.acceptance.test.ts"
     : > "${TEST_DIR}/tests/acceptance/mer-segment.acceptance.test.ts"
     : > "${TEST_DIR}/tests/acceptance/hjalpare.test.ts"
-    : > "${TEST_DIR}/tests/acceptance/support/acceptance-bas.ts"
+    : > "${TEST_DIR}/tests/acceptance/acceptance-bas.ts"
     : > "${TEST_DIR}/tests/acceptance/nastlad/djup.acceptance.test.ts"
     : > "${TEST_DIR}/src/components/hem/Hem.tsx"
     : > "${TEST_DIR}/.github/workflows/ci.yml"
@@ -120,7 +120,7 @@ echo "── Urvalet FALLER när det ska (allowlist-golvet) ──"
 prova "T1  tom sträng → full klass" "" ""
 prova "T2  enbart blanksteg → full klass" "   " ""
 prova "T5  källfil → full klass" "src/components/hem/Hem.tsx" ""
-prova "T6  sömmen support/ → full klass" "tests/acceptance/support/acceptance-bas.ts" ""
+prova "T6  sömmen acceptance-bas.ts → full klass" "tests/acceptance/acceptance-bas.ts" ""
 prova "T7  giltig spec + källfil → full klass" \
     "tests/acceptance/hem.acceptance.test.ts src/components/hem/Hem.tsx" ""
 prova "T8  sökvägs-traversal → full klass" \
@@ -183,12 +183,21 @@ else
 fi
 
 # Sömmen får ALDRIG bli valbar — den delas av hela klassen, och ett urval på den
-# hade kört en delmängd mot en ändrad gemensam söm.
-som_ut=$(cd "${REPO_ROOT}" && bash "${GATE_SRC}" "tests/acceptance/support/acceptance-bas.ts" 2>/dev/null)
-if [[ -z "${som_ut}" ]]; then
-    pass "T14b den faktiska sömmen acceptance-bas.ts faller till full klass"
+# hade kört en delmängd mot en ändrad gemensam söm. Sedan TASK-123 är sömmen en
+# platt fil (`tests/acceptance/acceptance-bas.ts`, tidigare
+# `tests/acceptance/support/acceptance-bas.ts`) — SÖKVÄGEN prövas mot disk här
+# så en framtida omdöpning av den faktiska sömmen fälls i stället för att tyst
+# fortsätta "passera" mot en sökväg som inte längre existerar.
+SOM_PATH="tests/acceptance/acceptance-bas.ts"
+if [[ ! -f "${REPO_ROOT}/${SOM_PATH}" ]]; then
+    fel "T14b den faktiska sömmen finns inte på ${SOM_PATH} — testet mäter fel fil"
 else
-    fel "T14b sömmen valdes ('${som_ut}') — en ändrad söm rör hela klassen"
+    som_ut=$(cd "${REPO_ROOT}" && bash "${GATE_SRC}" "${SOM_PATH}" 2>/dev/null)
+    if [[ -z "${som_ut}" ]]; then
+        pass "T14b den faktiska sömmen ${SOM_PATH} faller till full klass"
+    else
+        fel "T14b sömmen valdes ('${som_ut}') — en ändrad söm rör hela klassen"
+    fi
 fi
 
 echo ""
@@ -233,6 +242,44 @@ if awk '/^      acceptance_selection:$/{f=1} f&&/^        default: /{print;exit}
     pass "T15f defaulten är tom sträng — post-merge och nightly kör full klass"
 else
     fel "T15f defaulten för acceptance_selection är INTE tom sträng — post-merge-nätet är brutet."
+fi
+
+echo ""
+echo "── T16: SÖM-IMPORTGRINDEN — varje spec-fils acceptance-bas-import resolver på disk ──"
+# PR #2000 (TASK-47/123, 2026-08-26): merge_group-run 32934127922 föll röd —
+# en spec-fil som landade på main via en ANNAN, senare PR (S108) importerade
+# fortfarande './support/acceptance-bas'. Katalogen fanns inte längre efter
+# TASK-123:s utplattning (git mv till tests/acceptance/acceptance-bas.ts).
+# tsc -b FÅNGADE felet i kön (TS2307 Cannot find module) — grinden saknades
+# alltså inte i sak, men felmeddelandet pekar inte rakt på sömmen. Denna
+# check ger samma svar snabbare (ren grep, ingen kompilering) och namnger
+# EXAKT vilken fil som bär en obefintlig acceptance-bas-import — värdefullt
+# särskilt i merge-kön, där en spec-fil kan landas av en HELT ANNAN gren än
+# den som senast flyttade sömmen.
+sominport_fel=""
+sominport_antal=0
+for spec in "${REPO_ROOT}"/tests/acceptance/*.acceptance.test.ts; do
+    [[ -e "${spec}" ]] || continue
+    rad="$(grep -oE "from '[^']*acceptance-bas'" "${spec}" 2>/dev/null | head -1)"
+    [[ -n "${rad}" ]] || continue
+    sominport_antal=$((sominport_antal + 1))
+    specifier="${rad#from \'}"
+    specifier="${specifier%\'}"
+    specdir="$(dirname "${spec}")"
+    mal="${specdir}/${specifier}.ts"
+    if [[ ! -f "${mal}" ]]; then
+        sominport_fel="${sominport_fel}
+    $(basename "${spec}") importerar '${specifier}' — ${mal} finns INTE på disk"
+    fi
+done
+
+if [[ "${sominport_antal}" -eq 0 ]]; then
+    fel "T16a hittade NOLL acceptance-bas-importer bland *.acceptance.test.ts — grinden mäter ingenting"
+elif [[ -n "${sominport_fel}" ]]; then
+    fel "T16a acceptance-bas-importer som INTE resolver på disk:${sominport_fel}"
+    echo "     Fix: uppdatera importraden till './acceptance-bas' (TASK-123:s platta form)." >&2
+else
+    pass "T16a alla ${sominport_antal} spec-filers acceptance-bas-import resolver på disk"
 fi
 
 echo ""

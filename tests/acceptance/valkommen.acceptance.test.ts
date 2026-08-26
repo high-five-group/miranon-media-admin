@@ -3,7 +3,7 @@ import type { NetworkFixture } from '@msw/playwright';
 import type { Page } from '@playwright/test';
 import { HttpResponse, http } from 'msw';
 import { FROZEN_NOW } from '../support/fixturvarld/fixture-data';
-import { expect, test } from './support/acceptance-bas';
+import { expect, test } from './acceptance-bas';
 
 /**
  * Accept-sidan `/valkommen` (TASK-127.6, ADR-092/ADR-093) — DATABEROENDE

@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, type Page, type Route, test } from '../support/test-bas';
+import { mockTommaAnteckningar } from './helpers/tomma-anteckningar';
 import { mockValjarLista, type ValjarRad, valjarRad } from './helpers/valjar-lista';
 
 /**
@@ -23,28 +24,8 @@ import { mockValjarLista, type ValjarRad, valjarRad } from './helpers/valjar-lis
  */
 
 const GET_EVENT = /\/functions\/v1\/get-event\?/;
-const GET_EVENT_NOTES = '**/functions/v1/get-event-notes*';
 const UPDATE_EVENT = '**/functions/v1/update-event';
 const EVENT_ID = 'recDETAIL0000001';
-
-/**
- * Anteckningar-gruppen (task-18.11) fetchar get-event-notes för VARJE event. Stubbas
- * tom här så eventsidans övriga sviter förblir deterministiska (antecknings-strömmens
- * egna beteenden bevisas i `tests/acceptance/event-anteckningar.acceptance.test.ts`,
- * dit filen flyttade i task-59.6).
- */
-async function mockNotes(
-  // biome-ignore lint/suspicious/noExplicitAny: Playwright Page type i test-scope.
-  page: any,
-): Promise<void> {
-  await page.route(GET_EVENT_NOTES, async (route: { fulfill: (r: unknown) => Promise<void> }) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ notes: [] }),
-    });
-  });
-}
 
 type EventMock = Record<string, unknown>;
 
@@ -142,7 +123,7 @@ async function mockEvent(
       });
     },
   );
-  await mockNotes(page);
+  await mockTommaAnteckningar(page);
   await mockValjarLista(page, VALJAR_LISTA);
   return release;
 }
@@ -333,7 +314,7 @@ test.describe('Eventsidan — grundformen (task-18.1)', () => {
     // Server-sanning i mocken (mark-paid-mönstret): efter update speglar get-event
     // det nya värdet — onSettled-refetchen (ADR-016 E) ska KONVERGERA, inte backa.
     let serverOrt = 'Skövde';
-    await mockNotes(page);
+    await mockTommaAnteckningar(page);
     await mockValjarLista(page, VALJAR_LISTA);
     await page.route(GET_EVENT, async (route) => {
       await route.fulfill({
@@ -943,7 +924,7 @@ test.describe('Beläggningen (task-18.2)', () => {
     // Server-sanning i mocken: efter update speglar get-event det nya värdet —
     // onSettled-refetchen (ADR-016 E) ska KONVERGERA, inte backa.
     let serverMax = 12;
-    await mockNotes(page);
+    await mockTommaAnteckningar(page);
     await mockValjarLista(page, VALJAR_LISTA);
     await page.route(GET_EVENT, async (route) => {
       await route.fulfill({
@@ -1165,7 +1146,7 @@ async function mockaPersonkort(
       body: JSON.stringify({ event: eventDetail({ id: PK_EVENT_ID }) }),
     });
   });
-  await mockNotes(page);
+  await mockTommaAnteckningar(page);
   await mockValjarLista(page, VALJAR_LISTA);
   await page.route(GET_REGISTRATIONS, async (route: { fulfill: (r: unknown) => Promise<void> }) => {
     await route.fulfill({
@@ -1564,7 +1545,7 @@ async function mockaGruppdynamik(
       body: JSON.stringify({ event: eventDetail({ id: GD_EVENT_ID }) }),
     });
   });
-  await mockNotes(page);
+  await mockTommaAnteckningar(page);
   await mockValjarLista(page, VALJAR_LISTA);
   await page.route(GET_REGISTRATIONS, async (route: { fulfill: (r: unknown) => Promise<void> }) => {
     await route.fulfill({
@@ -1849,7 +1830,7 @@ test.describe('Eventväljaren på eventdetaljsidan (task-18.19)', () => {
         body: JSON.stringify({ registrations: [] }),
       });
     });
-    await mockNotes(page);
+    await mockTommaAnteckningar(page);
     await mockValjarLista(page, VALJAR_LISTA);
     return { slappHost, detaljAnrop: () => detaljAnrop, regAnrop: () => regAnrop };
   }
@@ -2055,7 +2036,7 @@ test.describe('Eventväljaren på eventdetaljsidan (task-18.19)', () => {
     const LANGT_NAMN =
       'Resor i medvetandet 3 — fördjupningsresan för återvändande deltagare med övernattning';
     await mockEvent(page, eventDetail({ eventNamn: LANGT_NAMN }));
-    await mockNotes(page);
+    await mockTommaAnteckningar(page);
     await mockValjarLista(page, VALJAR_LISTA);
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(`/event/${EVENT_ID}`);
@@ -2107,7 +2088,7 @@ test.describe('Eventväljaren på eventdetaljsidan (task-18.19)', () => {
     // medvetandet 3" SKA rymmas ("annars faller hela konceptet med
     // Eventnamnet som rubrik"). Ellipsis är ENBART extremnamns-skyddsnät.
     await mockEvent(page, eventDetail({ eventNamn: 'Resor i medvetandet 3' }));
-    await mockNotes(page);
+    await mockTommaAnteckningar(page);
     await mockValjarLista(page, VALJAR_LISTA);
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto(`/event/${EVENT_ID}`);
