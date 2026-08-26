@@ -4,6 +4,7 @@ title: 'Beslut: nattjobbets fetch-depth: 1 vs pekarsanningen (ADR-127 § B4-amen
 status: To Do
 assignee: []
 created_date: '2026-08-26 04:59'
+updated_date: '2026-08-26 07:11'
 labels:
   - ready-for-human
   - beslut
@@ -29,3 +30,9 @@ TASK-319 (verifierat existerande, PR #1985, merge-commit 7ac4b6c67bc18b667108ce5
 - [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+POINTER TILL S112 DEL 5 (S112 resume 1, 2026-08-26): tasks/sessions/2026-08-24-session-112.md rad 366+ (landad #2004, merge-commit 9b3a2581) bar landningstabellen for fix-vaga 4 och naromnar bunt E (TASK-319/PR #1985): '319 ancestry-verifiering av Landning:-pekare (89/0, mutationsbevis; +0,08 % lokalt) ...'. DIVERGENS FLAGGAD (ADR-086): uppdragets pastaende att de FULLSTANDIGA mattvarderna ('full klon 20,999 vs 20,982 s, 0,838 s/5575 commits') samt 'B1-agentens task edit-race 2026-08-26' skulle vara 'nu bokforda i sessionsdok S112 Del 5' stammer INTE ordagrant — grep over hela session-112.md efter '20,999'/'20,982'/'0,838'/'5575'/'B1-agentens' gav NOLL traffar. De fullstandiga mattvardena finns i STALLET pa TASK-319s eget kort (Implementation Notes, verifierat: 'full klon 20,999 s vs grund klon 20,982 s (+0,08 %, LOKALT 2026-08-26 pa macOS...), landningsmangden byggs pa 0,838 s over 5575 commits'). 'B1-agentens task edit-race'-attributionen ar redan sjalv flaggad som obelagd av TASK-327s egna notes (S112 resume 1). Ratt kalla for de exakta talen ar darfor TASK-319, inte Del 5 — Del 5 bar bara den forkortade '+0,08 % lokalt'-versionen.
+<!-- SECTION:NOTES:END -->

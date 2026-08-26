@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-26 05:01'
+updated_date: '2026-08-26 07:11'
 labels:
   - ready-for-agent
   - deps
@@ -33,3 +34,9 @@ Vi kör 1.49.1 (verifierat: docs/research/backlog-kortskapandets-flaskhals-2026-
 - [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+POINTER TILL S112 DEL 5 (S112 resume 1, 2026-08-26): tasks/sessions/2026-08-24-session-112.md (landad #2004, merge-commit 9b3a2581) bar landningstabellen for hela fix-voga 4 (17 PR:er / 27 kort) samt CLAUDE.md § Kortnummer-rattelsen (Backlog.md PR #710-fyndet). DIVERGENS-BEKRAFTELSE (ADR-086): sokning i denna session (grep over tasks/, docs/, backlog/tasks/) efter 'B1-agentens'/'edit-race' hittar ENDAST detta korts EGEN tidigare notes-rad ('DIVERGENS, FLAGGAD (S112 resume 1, 2026-08-26): uppdragets instans ... hittas INTE i forskningsdokumentet eller nagon annan fil ... obelagd') — dvs kortet hade redan sjalv flaggat exakt denna divergens innan detta pass. Ingen ny kalla hittad i Del 5 eller nagon annanstans. Attributionen till en specifik B1-instans forblir OBELAGD; kortets grund (upstream #843s 12/12-matning) star dock kvar oberoende av den attributionen.
+<!-- SECTION:NOTES:END -->
