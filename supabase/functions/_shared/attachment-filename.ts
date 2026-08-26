@@ -1,4 +1,4 @@
-// GEN `@ts-nocheck` HÄR — till skillnad från `_shared/attachments.ts` (som
+// INGEN `@ts-nocheck` HÄR — till skillnad från `_shared/attachments.ts` (som
 // importerar Deno-globaler + esm.sh) rör denna fil VARKEN `Deno.` direkt
 // eller transitivt. Den är därför REDAN i `tsconfig.edge-shared.json`s
 // include-lista (den filens huvud förklarar mekaniken: "transitivt
@@ -81,11 +81,44 @@ const STORAGE_UNSAFE_CHAR_RE = /[^A-Za-z0-9_!.*'() &$=@;:+,?-]/gu;
 const COMBINING_DIACRITICS_RE = /[\u0300-\u036f]/gu;
 
 /**
+ * Städar ett klient-angivet filnamn till något som är säkert som EN
+ * path-SEGMENT (aldrig flera): tar bort katalogseparatorer och styrtecken,
+ * trimmar, cappar längden. Body-only — bär INGEN säkerhetsgaranti mot
+ * cross-event-åtkomst (den kommer från att `eventId` valideras separat och
+ * att attachmentId alltid är server-genererat).
+ *
+ * [TASK-309.22, REVIDERAD EFTER REVIEW-RUNDA 1] Denna funktion faller INTE
+ * längre icke-ASCII till ASCII — den gjorde det i en tidigare version av
+ * denna skiva, men det visade sig fel PLATS för det steget (se
+ * `toStorageSafe`/`buildAttachmentLeaf` nedan för var ASCII-fallet nu bor
+ * och VARFÖR). `sanitizeFilnamn`s jobb är att vara den STABILA, IDENTITETS-
+ * BÄRANDE saneringen — samma sträng oavsett om resultatet ska hashas
+ * (`deriveAttachmentId`, `upload-attachment/index.ts`) eller vidare
+ * ASCII-falls för Storage. Två klient-filnamn som bara skiljer sig i
+ * diakritik eller skript (`café.pdf` vs `cafe.pdf`, eller två helt olika
+ * CJK-strängar) ska ge OLIKA `sanitizeFilnamn`-utdata, eftersom de ÄR
+ * olika filnamn — hash-idempotensen (TASK-316) ska skilja dem åt, inte
+ * kollapsa dem.
+ */
+export function sanitizeFilnamn(raw: string): string {
+  const noSeparators = raw.replace(PATH_SEPARATOR_RE, '-');
+  const noControlChars = Array.from(noSeparators)
+    .filter((ch) => !isControlCodePoint(ch.codePointAt(0) ?? 0))
+    .join('');
+  const stripped = noControlChars.trim();
+  const MAX_LEN = 200;
+  return stripped.length > MAX_LEN ? stripped.slice(0, MAX_LEN) : stripped;
+}
+
+/**
  * [TASK-309.22, rotorsak: `Edge Function "upload-attachment" 502: ...
  * Invalid key: alla-event/…-2025-HörlurarMiranonMedia.pdf`, Marcus
- * prod-röktest 2026-08-26] Faller ett klient-angivet filnamns icke-Storage-
- * säkra tecken (å/ä/ö, é, ü, ñ, ç, CJK-ideogram, emoji, …) till Storage-
- * SÄKRA ASCII-tecken. TVÅ steg, i ordning:
+ * prod-röktest 2026-08-26] Faller ett REDAN `sanitizeFilnamn`-saneratnamn
+ * icke-Storage-säkra tecken (å/ä/ö, é, ü, ñ, ç, CJK-ideogram, emoji, …) till
+ * Storage-SÄKRA ASCII-tecken. Körs ENDAST av `buildAttachmentLeaf` nedan —
+ * ALDRIG av `sanitizeFilnamn` självt (se den funktionens docblock för
+ * varför de två stegen medvetet hålls isär sedan review-runda 1). TVÅ
+ * steg, i ordning:
  *
  *  1. **Deburra**: `.normalize('NFKD')` + strippa kombinerande diakritiska
  *     tecken. Samma "normalisera → strippa combining marks"-mönster som
@@ -100,12 +133,23 @@ const COMBINING_DIACRITICS_RE = /[\u0300-\u036f]/gu;
  *     andra skript.
  *  2. **Fallback-ersättning**: allt som ÄNDÅ ligger utanför
  *     `STORAGE_UNSAFE_CHAR_RE` efter steg 1 (CJK-ideogram och annan skrift
- *     som INTE diakritik-dekomponerar mot ASCII, emoji, kvarvarande
- *     symboler som `ß`/`ø`/`æ`/`œ`) → ETT `-` per KODPUNKT (inte per
- *     UTF-16-enhet, se regexens `u`-flagga ovan). Detta är vad som
+ *     som INTE diakritik-dekomponerar mot ASCII, emoji, `ß`/`ø`/`æ`/`œ`/`Þ`,
+ *     en-dash `–`, citattecken, `#`, `%`, …) → ETT `-` per KODPUNKT (inte
+ *     per UTF-16-enhet, se regexens `u`-flagga ovan). Detta är vad som
  *     GARANTERAR Storage-kompatibilitet för VILKET filnamn som helst —
  *     steg 1 är bara en läsbarhets-bonus för skript som faktiskt
- *     diakritik-dekomponerar.
+ *     diakritik-dekomponerar. **VIKTIGT, KORRIGERAT PÅSTÅENDE:** en
+ *     tidigare version av denna docblock (och av `upload-attachment/
+ *     index.ts`s hash-not) påstod att KOLLAPSEN detta steg kan orsaka var
+ *     begränsad till "namn som ENDAST skiljer sig i diakritik" — det var
+ *     sakligt fel (ADR-083), empiriskt motbevisat i review-runda 1: TVÅ
+ *     HELT OLIKA CJK-strängar (`填报指南.pdf`/`肆意妄为.pdf`) och TVÅ HELT
+ *     OLIKA emoji (`😀`/`🎉`) faller till SAMMA ASCII-sträng lika lätt som
+ *     ett diakritik-par gör. Den bredare sanningen: VARJE tecken utanför
+ *     Storages tillåtna mängd kollapsar mot samma fallback-`-`, oavsett hur
+ *     olika käll-tecknen är. Just DÄRFÖR flyttades ASCII-fallet HIT (bara
+ *     Storage-nyckeln) och hash-underlaget (`sanitizeFilnamn`, ovan) förblir
+ *     ofallet — se den funktionens docblock.
  *
  * **MEDVETET AVSTEG från `supabase/supabase#34596`s `[^\w\s-]` → `-`-steg:**
  * den ersättningen är STRÄNGARE än vad Storage faktiskt kräver — `\w` är
@@ -132,35 +176,22 @@ function toStorageSafe(raw: string): string {
 }
 
 /**
- * Städar ett klient-angivet filnamn till något som är säkert som EN
- * path-SEGMENT (aldrig flera) OCH giltigt enligt Supabase Storages
- * nyckel-regex (TASK-309.22, se `toStorageSafe` ovan): tar bort
- * katalogseparatorer och styrtecken, faller icke-Storage-säkra tecken till
- * ASCII/`-`, trimmar, cappar längden. Body-only — bär INGEN
- * säkerhetsgaranti mot cross-event-åtkomst (den kommer från att `eventId`
- * valideras separat och att attachmentId alltid är server-genererat).
- */
-export function sanitizeFilnamn(raw: string): string {
-  const noSeparators = raw.replace(PATH_SEPARATOR_RE, '-');
-  const noControlChars = Array.from(noSeparators)
-    .filter((ch) => !isControlCodePoint(ch.codePointAt(0) ?? 0))
-    .join('');
-  const storageSafe = toStorageSafe(noControlChars);
-  const stripped = storageSafe.trim();
-  const MAX_LEN = 200;
-  return stripped.length > MAX_LEN ? stripped.slice(0, MAX_LEN) : stripped;
-}
-
-/**
  * Storage-objektets LEAF-namn (allt utom `eventId/`-prefixet): `<attachmentId>-
- * <sanitizeFilnamn(filnamn)>`. Utbruten som EGEN funktion (TASK-147.5) eftersom
- * den bilage-bärande sändvägen behöver PRECIS denna sträng för att skriva
- * `Lagringsnyckel`-fältet vid radskapelse (upload-attachment/finalize-
- * attachment-upload/generate-event-attachment) — samma formel som
- * `buildAttachmentPath` nedan bygger på, inte en parallell variant.
+ * <ASCII-säkra formen av sanitizeFilnamn(filnamn)>`. Utbruten som EGEN
+ * funktion (TASK-147.5) eftersom den bilage-bärande sändvägen behöver
+ * PRECIS denna sträng för att skriva `Lagringsnyckel`-fältet vid
+ * radskapelse (upload-attachment/finalize-attachment-upload/generate-
+ * event-attachment) — samma formel som `buildAttachmentPath` nedan bygger
+ * på, inte en parallell variant.
+ *
+ * [TASK-309.22, REVIDERAD EFTER REVIEW-RUNDA 1] Det ÄR HÄR — och ENDAST
+ * här — `toStorageSafe` körs. `deriveAttachmentId`
+ * (`upload-attachment/index.ts`) anropar `sanitizeFilnamn` DIREKT (inte via
+ * denna funktion) just för att UNDVIKA ASCII-fallet i sitt hash-underlag —
+ * se den funktionens docblock för det fulla idempotens-resonemanget.
  */
 export function buildAttachmentLeaf(attachmentId: string, filnamn: string): string {
-  return `${attachmentId}-${sanitizeFilnamn(filnamn)}`;
+  return `${attachmentId}-${toStorageSafe(sanitizeFilnamn(filnamn))}`;
 }
 
 /**

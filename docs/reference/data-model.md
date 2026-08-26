@@ -178,13 +178,34 @@ INTE klientens råa filnamn.** Rotorsak: Supabase Storages nyckel-regex
 (`supabase/storage` `src/storage/limits.ts`, `VALID_OBJECT_KEY`) accepterar
 bara `/^[A-Za-z0-9_/!.*'() &$=@;:+,?-]*$/` — ett filnamn med å/ä/ö/é/… gav
 `502 Invalid key: …` (Marcus prod-röktest 2026-08-26,
-`2025-HörlurarMiranonMedia.pdf`). `sanitizeFilnamn` (nu i
-`_shared/attachment-filename.ts`) NFKD-normaliserar + stripper diakritik
-(å→a, ä→a, ö→o, …) och faller allt som ändå ligger utanför den tillåtna
-mängden till `-`. **Bilagor.Namn förblir klientens ORIGINALFILNAMN
-oförändrat** — bara Storage-nyckeln/`Lagringsnyckel` transformeras.
-Befintliga rader (redan ASCII-giltiga per konstruktion — annars hade
-uppladdningen redan fallerat) är BYTE FÖR BYTE oförändrade. Se
+`2025-HörlurarMiranonMedia.pdf`).
+
+**Två separata steg, MEDVETET åtskilda sedan review-runda 1** (en tidigare
+version av denna rad lät ETT enda steg göra båda sakerna — fel, se nedan):
+
+1. `sanitizeFilnamn` (`_shared/attachment-filename.ts`) städar bara
+   separatorer/styrtecken, trimmar och cappar vid 200 tecken — den faller
+   ALDRIG till ASCII. Detta är den sträng `upload-attachment/index.ts`s
+   `deriveAttachmentId` hashar (TASK-316:s idempotens-nyckel): två OLIKA
+   klient-filnamn (oavsett skript — `café.pdf`/`cafe.pdf`, eller två helt
+   olika CJK-strängar) ska alltid ge OLIKA hash, precis som före hela detta
+   korts arbete.
+2. `buildAttachmentLeaf` (samma fil) tar `sanitizeFilnamn`s utdata och
+   NFKD-normaliserar + stripper diakritik (å→a, ä→a, ö→o, …) + faller allt
+   som ändå ligger utanför den tillåtna mängden till `-` — ENDAST för
+   Storage-nyckeln/`Lagringsnyckel`, aldrig för hash-underlaget.
+
+**Varför isärhållningen:** ASCII-fallet i steg 2 KOLLAPSAR olika filnamn
+till identisk sträng (`填报指南.pdf`/`肆意妄为.pdf` → samma ASCII-form) — om
+HASHEN hade använt den formen hade två olika filer med samma bytes kunnat få
+samma `attachmentId`, dvs. en genuint ny uppladdning hade tolkats som en
+idempotent replay av en annan fil. Steg 1 (hash-underlaget) håller sig
+därför OASCII-fallet.
+
+**Bilagor.Namn förblir klientens ORIGINALFILNAMN oförändrat** — bara
+Storage-nyckeln/`Lagringsnyckel` transformeras (steg 2). Befintliga rader
+(redan ASCII-giltiga per konstruktion — annars hade uppladdningen redan
+fallerat) är BYTE FÖR BYTE oförändrade, i BÅDA stegen. Se
 `_shared/attachment-filename.ts`s docblock för hela algoritmen och
 `tests/api/attachment-filename.test.ts` för regressionstäckningen.
 
@@ -2031,3 +2052,4 @@ Code kan ta dessa när de blir relevanta för en specifik uppgift.
 | 2026-08-23 (`TASK-309.3`) | **§ Skrivvägar (TASK-309.3) tillagd** — tre nya EF:er (`save-event-text`/`save-place-standard`/`save-event-content`) + delad agenda-ersättningsoperation, allowlistade fält per operation dokumenterade. TASK-309.2:s "Öppen skuld"-not stängd: tre nya `.purge-staging-policy.json`-targets (Eventplanering/Platser/Agendapunkter, prefix `ZZ-TASK-309.3-`); Eventinnehåll fick medvetet ingen ny target (mutera-och-återställ mot en av de sex tomma seedade raderna, ingen ny transient rad skapas). |
 | 2026-08-23 (`TASK-309.7`) | **§ Mer-sidans läsvägar + Platsers event-lösa läge tillagd** — två nya GLOBALA läs-EF:er (`get-event-contents`/`get-places`, Mer-sidans nya Eventinnehåll-/Platser-ytor); `save-place-standard` utökad med TVÅ event-lösa lägen (`platsId`-uppdatering, `namn`-skapelse med valfri `falt`) för Platser-ytans rena plats-redigering utan event. Ny `.purge-staging-policy.json`-target `save-place-standard-event-los-platser-sentineler` (Platser, prefix `ZZ-TASK-309.7-`, egen sentinel-klass — dessa rader föds utan något throwaway-event). Block-redigeringsdialogen utbruten ur `GenereringsPrototyp.tsx` till `src/components/dokument/BlockDialog.tsx`/`blockDefinitioner.ts`, delad av genereringsvyn och Mer-sidans två nya ytor. |
 | 2026-08-26 (`TASK-309.22`) | **§ Bucket `bilagor` — Storage-path-formerna: `<filnamn>` ASCII-/Storage-säkrat.** Prod-symptom: `upload-attachment` 502 "Invalid key" på ett filnamn med å/ä/ö (`2025-HörlurarMiranonMedia.pdf`, Marcus röktest). Rotorsak: Supabase Storages nyckel-regex (`supabase/storage` `limits.ts`) accepterar bara ett fast ASCII-tecken-set. `sanitizeFilnamn`/`buildAttachmentLeaf`/`buildAttachmentPath` flyttade ur `_shared/attachments.ts` till en ny zod-fri `_shared/attachment-filename.ts` (re-exporterade oförändrat, se filens docblock för det strukturella skälet — Node/Playwright kan inte importera en esm.sh-beroende modul direkt), och `sanitizeFilnamn` NFKD-normaliserar + faller icke-Storage-säkra tecken till ASCII. `Namn`-fältet (klientens originalfilnamn) OFÖRÄNDRAT; endast Storage-nyckeln transformeras. Befintliga ASCII-namngivna rader bevisbart oförändrade (se `_shared/attachment-filename.ts`s docblock för argumentet). |
+| 2026-08-26 (`TASK-309.22`, review-runda 1) | **§ Bucket `bilagor`s rad ovan AMENDERAD** — föregående rad (samma dag) sa att `sanitizeFilnamn` NFKD-normaliserar/faller till ASCII. Det var fel EFTER review-runda 1: `sanitizeFilnamn` faller INTE till ASCII (den är hash-underlaget för `deriveAttachmentId`, TASK-316) — ASCII-fallet flyttades till `buildAttachmentLeaf` (Storage-nyckeln/`Lagringsnyckel` ENDAST). Skälet: review visade empiriskt att det GAMLA (ett-stegs) upplägget kollapsade OLIKA filnamn (två helt olika CJK-strängar, två helt olika emoji — inte bara diakritik-varianter) till samma hash, vilket hade gjort en genuint ny uppladdning till en falsk idempotent replay av en annan fil. Se `_shared/attachment-filename.ts`s docblock och `upload-attachment/index.ts`s HASH-BESLUT-not för den fullständiga uppdelningen. |
