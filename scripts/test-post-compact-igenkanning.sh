@@ -100,15 +100,33 @@ setup() {
 
 # PATH utan katalogen som äger den riktiga jq-binären (F1). Beräknas mot den
 # FAKTISKA jq-platsen — ingen hårdkodning av en specifik katalog.
+# TASK-185 (2026-08-26, CI-körning 32935328121, tredje bugg-familjen i
+# samma svep): en-katalogs-borttagningen (ursprunglig form) döljer bara
+# den FÖRSTA träffen `command -v jq` råkar resolva till — otillräckligt på
+# ubuntu-latest. Se scripts/test-deny-facit-godkand-skrivning.sh:s
+# path_utan() § FIXEN för fullständig historik + kontrollerad repro (två
+# felscenarier: jq i flera separata kataloger, OCH ubuntu-latests
+# merged-usr där /bin är symlänk till /usr/bin — att STRYKA hela
+# segmentet tar då bort dirname/bash också). Fixen här: shimma en
+# FILTRERAD symlänk-kopia (allt UTOM jq) i stället för att stryka hela
+# segmentet.
 PATH_NO_JQ=""
 compute_path_no_jq() {
-    local jq_path jq_dir out="" seg segs
-    jq_path="$(command -v jq)"
-    jq_dir="$(dirname "${jq_path}")"
+    local out="" seg segs shim entry base
     IFS=':' read -r -a segs <<< "${PATH}"
     for seg in "${segs[@]}"; do
-        [[ "${seg}" == "${jq_dir}" ]] && continue
-        out="${out:+${out}:}${seg}"
+        if [[ -n "${seg}" && -x "${seg}/jq" ]]; then
+            shim="$(mktemp -d "${TEST_DIR}/path-no-jq-XXXXXX")"
+            for entry in "${seg}"/*; do
+                [[ -e "${entry}" ]] || continue
+                base="${entry##*/}"
+                [[ "${base}" == "jq" ]] && continue
+                ln -s "${entry}" "${shim}/${base}" 2> /dev/null
+            done
+            out="${out:+${out}:}${shim}"
+        else
+            out="${out:+${out}:}${seg}"
+        fi
     done
     PATH_NO_JQ="${out}"
 }

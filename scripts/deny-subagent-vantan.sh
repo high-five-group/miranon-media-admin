@@ -159,7 +159,7 @@ AGENT_ID="$(printf '%s' "${INPUT}" | jq -r '.agent_id // empty' 2> /dev/null)"
 # shellcheck source=/dev/null
 source "${SUBAGENT_VANTAN_POLICY}" || deny "policyfilen ${SUBAGENT_VANTAN_POLICY} gick inte att läsa (syntaxfel?). Detta är hookens eget fel, inte ditt."
 
-[[ "${#SUBAGENT_VANTAN_ALLTID[@]:-0}" -gt 0 || "${#SUBAGENT_VANTAN_BAKGRUND[@]:-0}" -gt 0 ]] || deny "policyn definierar noll verktyg i båda listorna — ett tomt regelverk är inte 'inget att neka', det är ett trasigt lås. Detta är hookens eget fel, inte ditt."
+[[ -n "${SUBAGENT_VANTAN_ALLTID[*]:+x}" || -n "${SUBAGENT_VANTAN_BAKGRUND[*]:+x}" ]] || deny "policyn definierar noll verktyg i båda listorna — ett tomt regelverk är inte 'inget att neka', det är ett trasigt lås. Detta är hookens eget fel, inte ditt."
 
 for verktyg in "${SUBAGENT_VANTAN_ALLTID[@]:-}"; do
     [[ -n "${verktyg}" ]] || continue

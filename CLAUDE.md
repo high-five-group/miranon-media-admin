@@ -657,12 +657,18 @@ default-normalisering), aldrig rå JSON direkt, vilket är bevisat i
 utan de två fälten går genom den EKTA validatorn och renderar korrekt). Löses
 inte här — flaggas framåt till `173.4`.
 
-**Ingen av review-ytans tre testsviter är CI-wirad ännu:**
+**Review-ytans TRE testsviter körs sedan `TASK-185` (PR #1992, 2026-08-26)
+som gatekeeper-sviter i `ci.yml`:s "Test gatekeeper script suites"-steg** —
 `scripts/test-validera-review-utlatande.mjs` (35 fall, `173.1`),
 `scripts/test-review-policy.mjs` (44 fall, `173.2`) och
-`scripts/test-review-risk-sektion.mjs` (39 fall, `173.3`). Alla tre är bevis,
-inte grindar, tills `173.4` bygger CI-ytan. Kör dem för hand när du rör
-review-ytan.
+`scripts/test-review-risk-sektion.mjs` (47 fall, `173.3`, wirad i samma
+bas-drift-svep sedan `173.3` landade UNDER `185`s eget bygge — PR #1993) —
+samma klass som repots övriga ~15 gatekeeper-sviter: enhetstester för
+skriptens egen logik, wirade så att en regression fälls FÖRE landning i
+stället för att upptäckas efteråt. Det är INTE `173.4`s CI-backstopp (den
+deterministiska spärren mot en PR utan giltigt utlåtande) — den saknas
+fortfarande, se stycket ovan (samma `ADR-083`-disciplin: påstå aldrig en
+mekanism som inte finns).
 
 **Skarpbevis-skulden — BETALD 2026-08-26 (S112 resume 1), med en mätt kant
 (`CLAUDE.md` § En ny hooks skarpbevis, samma strukturella klass generaliserad
