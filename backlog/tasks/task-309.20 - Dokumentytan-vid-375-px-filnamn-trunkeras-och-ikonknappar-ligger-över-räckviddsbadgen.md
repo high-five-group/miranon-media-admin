@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-24 17:54'
+updated_date: '2026-08-26 02:51'
 labels:
   - ready-for-agent
 dependencies: []
@@ -33,10 +34,10 @@ Agenten bokförde observationen i manifestens not-fält i stället för att tyst
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Filnamnet på Event-mallade rader är läsbart vid 375 px — trunkeringen ger tillräckligt med tecken för att skilja dokumenten åt
-- [ ] #2 Ikonknapparna ockluderar inte räckviddsbadgen i räckviddsläget vid 375 px
-- [ ] #3 Avgjort och bokfört: lagas FÖRE Marcus stämplar skiva 9:s facit (billigare), eller efter med amendering (ADR-102 klass c)
-- [ ] #4 Regressionsskydd: den mobila vyporten bär facit för båda lägena efter fixen
+- [x] #1 Filnamnet på Event-mallade rader är läsbart vid 375 px — trunkeringen ger tillräckligt med tecken för att skilja dokumenten åt
+- [x] #2 Ikonknapparna ockluderar inte räckviddsbadgen i räckviddsläget vid 375 px
+- [x] #3 Avgjort och bokfört: lagas FÖRE Marcus stämplar skiva 9:s facit (billigare), eller efter med amendering (ADR-102 klass c)
+- [x] #4 Regressionsskydd: den mobila vyporten bär facit för båda lägena efter fixen
 <!-- AC:END -->
 
 ## Definition of Done
@@ -45,3 +46,30 @@ Agenten bokförde observationen i manifestens not-fält i stället för att tyst
 - [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Marcus GO i klartext 2026-08-26 ("GO 309.20"), efter orkestrerarens rekommendation
+att laga FÖRE facit-stämplingen (billigare än amendering efteråt). Beslutet
+avgör AC #3: vägen är "lagas FÖRE Marcus stämplar skiva 9:s facit" — bekräftat
+genomfört i denna skiva (TASK-309.20), samma PR som koden.
+
+Fix, mätt (Playwright mot hermetisk fixturvärld, visual-mobile 375x812@2x):
+- Defekt 2 (badge ockluderad av ikonknappar i räckviddsläget): RackviddBadge.tsx
+  + DokumentYta.tsx (TACKNING_KLASS + badge-radens wrapper) fick min-w-0/truncate
+  i stället för shrink-0. Badge x=62 w=103 mot knapp x=131 (34px overlap) -> ingen
+  overlap efter fix.
+- Defekt 1 (Event-mallad rads filnamn trunkerat till "Bekr..."): DokumentRadSkal
+  fick flex-wrap + namnkolumnens golv min-w-[12ch] i stallet for min-w-0 - vid
+  375px med 4 ikonknappar (182px) wrappar knapparna till egen rad, namnet far
+  full radbredd. "Bekräftelsebilaga.pdf" (21 tecken) fullt synligt efter fix
+  (var truncated till ~7 tecken fore, ground truth-facit visade "Bekr...").
+
+De två mobila facit-bilderna i s108-dokumentytan/ omtagna med samma
+rigg/metod (AC #4). facit.json "not"-falt uppdaterat, "godkand" ororg.
+
+OBS: syskonkatalogen s108-generering/facit-dokumentlista-inaktuell-rad-mobil.png
+visar defekt 1 konkret men ar INTE omtagen av denna skiva - utanfor AC #4:s
+uttryckliga scope (bara s108-dokumentytan namndes). Flaggat i Final Summary.
+<!-- SECTION:NOTES:END -->
