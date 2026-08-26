@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-24
+updated: 2026-08-26
 review_by: 2026-11-15
 status: stable
 ---
@@ -595,23 +595,23 @@ stycke till att låta grinden vara mekaniskt otvingbar innan `173.4` faktiskt
 landat (samma `ADR-083`-disciplin som resten av denna fil: prosa som påstår
 en mekanism som inte finns är värre än att inte skriva något alls).
 
-**Skarpbevis-skuld, öppet bokförd (`CLAUDE.md` § En ny hooks skarpbevis,
-samma strukturella klass generaliserad från hookar till agent-definitioner):**
-`.claude/agents/review-agent.md` skapades i samma session som denna rad
-skrevs. `subagent_type: "review-agent"` känns **BEVISLIGEN INTE** igen av
-`Agent`-verktyget i DEN SESSIONEN (mätt: ett direkt anrop med den
-`subagent_type` gav `Agent type 'review-agent' not found` — listan över
-kända typer omfattade inte namnet, trots att filen redan låg på disk). Den
-manuella skarpkörningen mot en verklig PR (AC #1/#5/#6) gjordes därför via
-`general-purpose` med kontraktets fulla text inklistrad i uppdraget, inte via
-`subagent_type: "review-agent"` — logiken är skarpbevisad, REGISTRERINGEN är
-det inte. Om `subagent_type: "review-agent"` känns igen i en **framtida**
-session (efter att filen synkats via en ny sessionsstart) är OPRÖVAT. Betala
-skulden som en av nästa berörda sessions första handlingar: ett enkelt
-`Agent`-anrop med `subagent_type: "review-agent"` mot en trivial uppgift —
-lyckas det, är skulden betald; misslyckas det på nytt, eskalera till Marcus
-(agent-definitioner kan kräva en mekanism utöver filnärvaro för att
-registreras, vilket i så fall är ett nytt fynd, inte bara en väntan).
+**Skarpbevis-skulden — BETALD 2026-08-26 (S112 resume 1), med en mätt kant
+(`CLAUDE.md` § En ny hooks skarpbevis, samma strukturella klass generaliserad
+från hookar till agent-definitioner):** `.claude/agents/review-agent.md`
+skapades i S112 (`#1927`, 2026-08-24). I DEN sessionen kändes
+`subagent_type: "review-agent"` **bevisligen inte** igen av `Agent`-verktyget
+(`Agent type 'review-agent' not found` trots filen på disk); skarpkörningen
+mot en verklig PR (AC #1/#5/#6) gjordes via `general-purpose` med kontraktets
+fulla text inklistrad. I S112 resume 1 (2026-08-26) saknades typen ÅTER vid
+sessionsstart — huvudkatalogen stod på `f5ed41d2`, före `#1927` — och dök upp
+mitt i sessionen när en parallell session flyttade huvudkatalogen till `main`:
+harnesset annonserade *"New agent types are now available: review-agent"*, och
+ett `Agent`-anrop med `subagent_type: "review-agent"` mot `#1932` gav ett
+schema-giltigt utlåtande (Sonnet 5, 42 verktygsanrop, risk `lag`, 2 info).
+Slutsats, samma form som hook-raden: agent-definitioner läses ur den katalog
+sessionen startade i och KAN laddas om av filbevakaren — en NY definition kan
+aldrig FÖRLITAS på i sessionen som skapar den, men en tidig laddning är ett
+giltigt skarpbevis (`task-167`-precedentet). Belägg: sessionsdok S112 Del 4.
 
 ### Kortnummer — verktyget skyddar, men bara halva vägen
 
