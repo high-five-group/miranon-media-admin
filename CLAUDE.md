@@ -580,20 +580,43 @@ utlåtandets fynd; armering sker först efter hans explicita granskning. `lag`/
 CI-backstopp) informativt underlag för din egen bedömning — ingen mekanisk
 spärr hindrar armering vid `lag`/`medel` än.
 
-**Vad som ÄR byggt i denna skiva, och vad som INTE är det (progressiv
-härdning, ADR-105 beslut 3):** `review-agent`-kontraktet och utlåtande-
-schemat (`scripts/lib/review-utlatande.mjs`,
-`scripts/validera-review-utlatande.mjs`) existerar och är skarpbevisade. **Vad
-som SAKNAS än:** path-scopade regler ur main (`TASK-173.2`), den fasta
-Riskbedömnings-sektionen i PR-kroppen (`TASK-173.3`), den deterministiska
-CI-backstoppen som fäller en PR utan giltigt utlåtande (`TASK-173.4`),
-rundtaks-loopen med konvergensregel (`TASK-173.5`), och
-fångstrate-instrumenteringen (`TASK-173.6`). Fram tills dess är grinden ett
-**orkestrerar-åtagande**, inte en mekanisk spärr — en PR kan i praktiken
-armeras utan granskning så länge `173.4` inte finns. Skriv aldrig om detta
+**Injicera path-reglerna när du spawnar granskaren (`TASK-173.2`):**
+
+```bash
+npm run review:policy -- --pr <NUMMER>          # blocket du klistrar in
+npm run review:policy -- --pr <NUMMER> --json   # samma, maskinläsbart
+```
+
+Kommandot läser `.review-policy.json` ur `origin/main` med `git show` — aldrig
+från disk och aldrig från PR-grenen, så en gren kan inte manipulera sin egen
+granskning (ADR-105 beslut 7). Reglerna injiceras bara för filer som faktiskt
+matchar sitt mönster, var och en med sitt scope. **Exit 64 = POLICYFEL:
+granska inte vidare — en halverad regelmängd ser ut som en fullständig
+granskning men saknar regler ingen ser saknas.** Glömmer du steget kör
+granskaren kommandot själv (`.claude/agents/review-agent.md` § Indata) —
+källan är densamma oavsett vem som kör den.
+
+**Vad som ÄR byggt, och vad som INTE är det (progressiv härdning, ADR-105
+beslut 3):** `review-agent`-kontraktet och utlåtande-schemat
+(`scripts/lib/review-utlatande.mjs`, `scripts/validera-review-utlatande.mjs`)
+existerar och är skarpbevisade, och sedan `TASK-173.2` även policy-ytan
+(`.review-policy.json`, `scripts/lib/review-policy.mjs`,
+`scripts/hamta-review-policy.mjs`) med utlåtandets `policySha`/`policyRegler`.
+**Vad som SAKNAS än:** den fasta Riskbedömnings-sektionen i PR-kroppen
+(`TASK-173.3`), den deterministiska CI-backstoppen som fäller en PR utan
+giltigt utlåtande (`TASK-173.4`), rundtaks-loopen med konvergensregel
+(`TASK-173.5`), och fångstrate-instrumenteringen (`TASK-173.6`). Fram tills
+dess är grinden ett **orkestrerar-åtagande**, inte en mekanisk spärr — en PR
+kan i praktiken armeras utan granskning så länge `173.4` inte finns, och
+INGET tvingar dig att köra policy-kommandot ovan. Skriv aldrig om detta
 stycke till att låta grinden vara mekaniskt otvingbar innan `173.4` faktiskt
 landat (samma `ADR-083`-disciplin som resten av denna fil: prosa som påstår
 en mekanism som inte finns är värre än att inte skriva något alls).
+
+**Policy-ytans egna testsvit (`scripts/test-review-policy.mjs`, 44 fall) är
+INTE CI-wirad** — lika lite som `173.1`s `scripts/test-validera-review-
+utlatande.mjs`. Båda är bevis, inte grindar, tills `173.4` bygger CI-ytan.
+Kör dem för hand när du rör review-ytan.
 
 **Skarpbevis-skulden — BETALD 2026-08-26 (S112 resume 1), med en mätt kant
 (`CLAUDE.md` § En ny hooks skarpbevis, samma strukturella klass generaliserad
