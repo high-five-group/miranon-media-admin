@@ -360,6 +360,16 @@ type Resultat =
     }
   | { typ: 'fel'; text: string };
 
+/**
+ * EF-felets stängningsplikt (TASK-309.26, AC #3): ett förhandsöppnat, tomt
+ * fönster som aldrig fick sin adress satt lämnas ALDRIG kvar — appens egen
+ * `MessageBox` (`resultat.typ === 'fel'` nedan) bär felmeddelandet, husets
+ * mönster, i stället för en tom flik utan förklaring.
+ */
+function stangOanvantFonster(fonster: Window | null) {
+  if (fonster && !fonster.closed) fonster.close();
+}
+
 // INGEN bakgrundstint vid hover — husets divide-y-grammatik (AktivitetsHistorik
 // § radKlass, Marcus 2026-08-15: tinten skar sig mot separatorlinjerna; samma
 // fynd igen 2026-08-21). Affordansen är personlistans: underline på värdet via
@@ -659,25 +669,40 @@ export function GenereringsVy({
    * (`useGenereraEventBilaga`) som skapar en NY Bilagor-rad, sparar ev.
    * platsstandard i samma andetag, och slår upp en nedladdnings-URL.
    *
-   * ÖPPNAR INGENTING FÖRRÄN RESULTATET FINNS. Marcus 2026-08-22: *"Lotta
-   * ska inte skickas till pdf:en automatiskt utan välja att gå dit."*
-   * Laddningen visas på knappen i appen, och den färdiga PDF:en
-   * presenteras som ett val i resultatytan — `window.open` sker EFTER
-   * mutationen löst ut, i onSuccess, exakt samma popup-säkra mönster som
-   * förlagan (mätt 2026-08-22: Chrome tillåter `window.open` även efter
-   * flera sekunders väntan; `blockerad: fonster === null` är fallbacken om
-   * inte).
+   * [RÄTTAT, TASK-309.26] Fram till denna skiva öppnades fönstret EFTER att
+   * mutationen löst ut (Marcus 2026-08-22: *"Lotta ska inte skickas till
+   * pdf:en automatiskt utan välja att gå dit"*, mätt samma dag att "Chrome
+   * tillåter `window.open` även efter flera sekunders väntan"). Den andra
+   * mätningen var FEL — Marcus eget prod-röktest 2026-08-26 fick fönstret
+   * blockerat av webbläsaren efter att DocRaptor-renderingen tog några
+   * sekunder ("Skarpt så måste ju ett chromefönster öppnas direkt").
+   * `window.open` MÅSTE alltså ske SYNKRONT i klickets egen tick, innan
+   * `mutate()`/någon `await` — annars hinner webbläsarens popup-skydd
+   * stänga av user-activation-fönstret. Samma popup-blockerar-säkra mönster
+   * som `DokumentYta.tsx` § IKONPAR / `useForhandsvisaDokument.ts` redan
+   * bevisat (TASK-273.4 AC #1, `context.waitForEvent('page')`-beviset här
+   * upprepar det): ett TOMT fönster öppnas direkt (`window.open('', '_blank')`,
+   * `noopener` MEDVETET UTELÄMNAT — samma skäl, se `useForhandsvisaDokument.ts`),
+   * adressen sätts EFTERÅT i `onSuccess`. Marcus *"Lotta ska inte skickas
+   * till pdf:en automatiskt"*-krav från 2026-08-22 är fortsatt uppfyllt:
+   * fönstret hon ser är blankt tills HON redan klickat — ingen navigering
+   * sker förrän hennes egen handling startade den. EF-fel stänger det
+   * öppnade fönstret i stället för att lämna en tom flik kvar (AC #3) —
+   * felet visas i appens egen `MessageBox` nedan, husets mönster.
    */
   const skapaDokument = (skarpt: boolean) => {
     if (forhandsgranska.isPending || genereraBilaga.isPending) return;
     setResultat(null);
+
+    // Se docblocket ovan: MÅSTE ske synkront, före mutate()/all await.
+    const fonster = window.open('', '_blank');
 
     if (!skarpt) {
       forhandsgranska.mutate(
         { eventId: event.id, mall },
         {
           onSuccess: ({ url }) => {
-            const fonster = window.open(url, '_blank');
+            if (fonster) fonster.location.href = url;
             setResultat({
               typ: 'klar',
               skarpt: false,
@@ -687,7 +712,10 @@ export function GenereringsVy({
               sparade: [],
             });
           },
-          onError: (e) => setResultat({ typ: 'fel', text: e.message }),
+          onError: (e) => {
+            stangOanvantFonster(fonster);
+            setResultat({ typ: 'fel', text: e.message });
+          },
         },
       );
       return;
@@ -709,7 +737,7 @@ export function GenereringsVy({
       {
         onSuccess: ({ url }) => {
           setSomStandard(new Set());
-          const fonster = window.open(url, '_blank');
+          if (fonster) fonster.location.href = url;
           setResultat({
             typ: 'klar',
             skarpt: true,
@@ -719,7 +747,10 @@ export function GenereringsVy({
             sparade: sparadeEtiketter,
           });
         },
-        onError: (e) => setResultat({ typ: 'fel', text: e.message }),
+        onError: (e) => {
+          stangOanvantFonster(fonster);
+          setResultat({ typ: 'fel', text: e.message });
+        },
       },
     );
   };
@@ -999,15 +1030,24 @@ export function GenereringsVy({
             {resultat.blockerad
               ? ' Webbläsaren stoppade det nya fönstret. Öppna det härifrån i stället.'
               : ' Den öppnades i ett nytt fönster.'}
+            {/* [RÄTTAT, TASK-309.26] "(Prototyp: ingen PDF sparas.)" var en
+                kvarleva från prototypen (ADR-103 B2 steg 4 kräver att sådana
+                rivs) — sakinnehållet stämmer (förhandsgranskningen sparar
+                inget, utkast-vägen ADR-124), ordet "Prototyp" gjorde det inte,
+                i den PROMOVERADE, skarpa ytan. */}
             {!resultat.skarpt && (
-              <span className="text-text-muted"> (Prototyp: ingen PDF sparas.)</span>
+              <span className="text-text-muted">
+                {' Förhandsgranskningen sparas inte. Tryck Skapa för att spara bilagan.'}
+              </span>
             )}
-            {/* DOKUMENTET ÄR ETT VAL, INTE EN OMDIRIGERING. `window.open` sker
-                här, i ett eget direkt klick — därför finns ingen popup-
-                blockerare att smita förbi, och Lotta bestämmer själv när hon
-                lämnar formuläret. `noreferrer` utelämnas medvetet: målet är en
-                blob:-URL byggd av vår egen JS, aldrig en främmande adress
-                (samma resonemang som DokumentYta § IKONPAR). */}
+            {/* DOKUMENTET ÄR ETT VAL, INTE EN OMDIRIGERING — den här knappens
+                `window.open` sker här, i ETT EGET direkt klick (Lottas, på
+                DENNA knapp) — därför finns ingen popup-blockerare att smita
+                förbi, och Lotta bestämmer själv när hon lämnar formuläret.
+                `noreferrer` utelämnas medvetet: målet är alltid en signerad
+                Storage-URL i vår egen bucket (`ADR-124`, `dokumentKalla.ts`s
+                filhuvud — ALDRIG längre en `blob:`-URL), aldrig en främmande
+                adress (samma resonemang som DokumentYta § IKONPAR). */}
             <span className="mt-3 block">
               <Button
                 intent="primary"

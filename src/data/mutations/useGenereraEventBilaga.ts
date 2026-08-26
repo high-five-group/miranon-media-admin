@@ -21,7 +21,9 @@ export interface GenereraEventBilagaInput {
 export interface GenereradEventBilaga {
   attachment: Attachment;
   /** Signerad nedladdnings-URL till den NYSS skapade filen (`getAttachmentDownloadUrl`) —
-   *  genereringsvyn öppnar den i en ny flik EFTER att mutationen löst ut. */
+   *  genereringsvyn sätter den i det tomma fönster Lotta redan öppnade med
+   *  sitt klick, INNAN mutationen löste ut (popup-blockerar-säkert mönster,
+   *  TASK-309.26 — se `GenereringsVy.tsx`s `skapaDokument`-docblock). */
   url: string;
 }
 
