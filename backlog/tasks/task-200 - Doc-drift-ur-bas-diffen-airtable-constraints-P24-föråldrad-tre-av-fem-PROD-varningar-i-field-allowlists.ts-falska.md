@@ -3,10 +3,10 @@ id: TASK-200
 title: >-
   Doc-drift ur bas-diffen: airtable-constraints P24 föråldrad + tre av fem
   PROD-varningar i field-allowlists.ts falska
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-11 19:16'
-updated_date: '2026-08-26 03:33'
+updated_date: '2026-08-26 05:02'
 labels: []
 dependencies: []
 priority: medium
@@ -21,10 +21,10 @@ Belägg (bas-diffen 2026-08-11, Opus-passet, docs/research/prodbas-synk-staging-
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -36,3 +36,9 @@ FIXAT + DIVERGENS UPPTÄCKT (viktigt, ADR-086). (1) P24 rättad i docs/reference
 
 Grindar: check:docs grönt (14/14), typecheck/biome/build gröna. Filer: docs/reference/airtable-constraints.md, supabase/functions/_shared/field-allowlists.ts.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landning: PR #1988
+<!-- SECTION:FINAL_SUMMARY:END -->

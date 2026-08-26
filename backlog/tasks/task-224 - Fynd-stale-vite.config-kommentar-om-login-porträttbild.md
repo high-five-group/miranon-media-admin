@@ -1,10 +1,10 @@
 ---
 id: TASK-224
 title: 'Fynd: stale vite.config-kommentar om login-porträttbild'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-15 09:06'
-updated_date: '2026-08-26 03:33'
+updated_date: '2026-08-26 05:02'
 labels:
   - ready-for-agent
 dependencies: []
@@ -26,10 +26,10 @@ S102 Explore-svepets fynd (2026-08-15): kommentaren i vite.config.ts:s PWA-block
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -39,3 +39,9 @@ AC#1 FORENSIK-UTFALL: bilden BYTTE hemvist, kommentaren rättad till sanningen. 
 
 AC#2: npm run build grön (exit 0). Precache-manifestet oförändrat i INNEHÅLL (endast kommentartext ändrad, globPatterns-strängen orörd) — verifierat: dist/sw.js innehåller fortsatt exakt 'roger-och-lotta.webp' i precache-listan, build-loggen visar 137 entries (2407.65 KiB), samma mönster som förr eftersom globPatterns-VÄRDET inte rördes.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landning: PR #1988
+<!-- SECTION:FINAL_SUMMARY:END -->
