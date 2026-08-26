@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-24 15:07'
+updated_date: '2026-08-26 03:28'
 labels:
   - fynd
 dependencies: []
@@ -20,8 +21,8 @@ ordinal: 582000
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Verifieringsform vald mot mätning (fetch-depth-kostnad vs gh-API-robusthet) och bokförd
-- [ ] #2 Grinden fäller en pekare vars PR inte finns mergad mot main — tvåsidigt bevisad
+- [x] #1 Verifieringsform vald mot mätning (fetch-depth-kostnad vs gh-API-robusthet) och bokförd
+- [x] #2 Grinden fäller en pekare vars PR inte finns mergad mot main — tvåsidigt bevisad
 <!-- AC:END -->
 
 ## Definition of Done
@@ -31,3 +32,9 @@ ordinal: 582000
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+S112 fix-vag 4 bunt E: pekarens SANNING provas nu mot landningshistoriken via git-ancestry (BACKLOG_PEKARE_ANCESTRY_REF + BACKLOG_PEKARE_LANDNINGS_COMMIT_MONSTER), inte via gh-API. AC #1 — formen vald mot MATNING: full klon 20,999 s vs grund klon 20,982 s (+0,08 %, LOKALT 2026-08-26 pa macOS; CI-tiden ar EJ matt), landningsmangden byggs pa 0,838 s over 5575 commits, och samtliga 14 befintliga pekare aterfanns bland 1707 landningar pa origin/main (noll falska positiva). gh-API forkastad: lagger till natberoende i en grind utan sadant, kraver pull-requests: read som nattjobbet inte bar (det har contents: read), och bar rate limit. AC #2 — tvasidigt bevisad: T71 (sann pekare passerar) mot T72 (falsk faller), plus T73/T74/T75/T76/T77/T78 i scripts/test-check-backlog-closure.sh (89 fall grona, exit 0); mutationsprov (pekare_falsk=1 satt till 0) fallde exakt T72/T72b/T73/T74 och lamnade ovriga 85 grona — sviten ar bevisat rod-kapabel. KVARSTAR, medvetet ej taget har: .github/workflows/nightly.yml checkar ut med fetch-depth: 1 (ADR-127 B4), sa provningen redovisas som OPROVAD i natten. Den ar skarp lokalt och i ci.yml:s lint-jobb (fetch-depth: 0). Att andra nattens fetch-depth ar ett eget arkitekturbeslut som hor till ADR-127:s amendering.
+<!-- SECTION:NOTES:END -->

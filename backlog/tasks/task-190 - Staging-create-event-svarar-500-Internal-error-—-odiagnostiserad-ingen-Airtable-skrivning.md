@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-10 17:36'
-updated_date: '2026-08-24 16:44'
+updated_date: '2026-08-26 03:26'
 labels: []
 dependencies: []
 ordinal: 356000
@@ -20,10 +20,10 @@ OMFORMULERAT 2026-08-10 (S102): ursprungsfyndet ('500 Internal error, odiagnosti
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -31,3 +31,9 @@ OMFORMULERAT 2026-08-10 (S102): ursprungsfyndet ('500 Internal error, odiagnosti
 <!-- SECTION:NOTES:BEGIN -->
 Done-flipp S112: fixen (500→422, classifyAirtableWriteError) i PR #1940, landad + post-merge grön; testet asserterar Airtables faktiska svar (hypotesen om fältnamn falsifierad mot staging). Kortet saknar AC — fyndets FÖRVÄNTAT uppfyllt. Landning: PR #1940
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landning: PR #1940
+<!-- SECTION:FINAL_SUMMARY:END -->
