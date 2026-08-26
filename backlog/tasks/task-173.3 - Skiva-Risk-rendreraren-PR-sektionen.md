@@ -4,6 +4,7 @@ title: 'Skiva: Risk-rendreraren + PR-sektionen'
 status: To Do
 assignee: []
 created_date: '2026-08-09 13:13'
+updated_date: '2026-08-26 04:12'
 labels:
   - ready-for-agent
 dependencies:
@@ -20,9 +21,9 @@ ordinal: 326000
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Ett schema-giltigt utlåtande renderas till en deterministisk Riskbedömnings-sektion i PR-kroppen: nivå + enmenings-motivering + fynd-sammanfattning + bevisreferenser med kommando och run-ID/SHA
-- [ ] #2 Samma JSON-indata ger identisk sektionsutdata (determinism tvåsidigt bevisad)
-- [ ] #3 Malformat utlåtande fäller rendreraren med tydligt fel — aldrig en tyst tom eller partiell sektion
+- [x] #1 Ett schema-giltigt utlåtande renderas till en deterministisk Riskbedömnings-sektion i PR-kroppen: nivå + enmenings-motivering + fynd-sammanfattning + bevisreferenser med kommando och run-ID/SHA
+- [x] #2 Samma JSON-indata ger identisk sektionsutdata (determinism tvåsidigt bevisad)
+- [x] #3 Malformat utlåtande fäller rendreraren med tydligt fel — aldrig en tyst tom eller partiell sektion
 <!-- AC:END -->
 
 ## Definition of Done
