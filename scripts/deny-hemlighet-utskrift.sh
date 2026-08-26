@@ -103,7 +103,7 @@ TOOL_NAME="$(printf '%s' "${INPUT}" | jq -r '.tool_name // empty' 2>/dev/null)"
 # shellcheck source=/dev/null
 source "${HEMLIGHET_POLICY}" || deny "policyfilen ${HEMLIGHET_POLICY} gick inte att läsa (syntaxfel?)."
 
-[[ "${#HEMLIGHET_KOMMANDO_MONSTER[@]:-0}" -gt 0 ]] || deny "policyn definierar noll kommando-mönster — ett tomt regelverk är inte 'inget att neka', det är ett trasigt lås."
+[[ -n "${HEMLIGHET_KOMMANDO_MONSTER[*]:+x}" ]] || deny "policyn definierar noll kommando-mönster — ett tomt regelverk är inte 'inget att neka', det är ett trasigt lås."
 
 COMMAND="$(printf '%s' "${INPUT}" | jq -r '.tool_input.command // empty' 2>/dev/null)"
 [[ -n "${COMMAND}" ]] || exit 0

@@ -442,7 +442,7 @@ command -v git >/dev/null 2>&1 || exit 0
 # shellcheck source=/dev/null
 source "${KATALOG_POLICY}" 2>/dev/null || exit 0
 
-[[ "${#KATALOG_GIT_SKRIVKOMMANDON[@]:-0}" -gt 0 ]] || exit 0
+[[ -n "${KATALOG_GIT_SKRIVKOMMANDON[*]:+x}" ]] || exit 0
 
 INPUT=""
 IFS= read -r -d '' INPUT || true

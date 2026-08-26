@@ -120,9 +120,9 @@ TOOL_NAME="$(printf '%s' "${INPUT}" | jq -r '.tool_name // empty' 2>/dev/null)"
 # shellcheck source=/dev/null
 source "${MAIL_LOCK_POLICY}" || deny "policyfilen ${MAIL_LOCK_POLICY} gick inte att läsa (syntaxfel?)."
 
-[[ "${#MAIL_LOCK_SEND_TOOLS[@]:-0}" -gt 0 ]] || deny "policyn definierar noll sänd-klassade verktyg — ett tomt regelverk är inte 'inget att neka', det är ett trasigt lås."
-[[ "${#MAIL_LOCK_MCP_PREFIXES[@]:-0}" -gt 0 ]] || deny "policyn definierar noll MCP-prefix."
-[[ "${#MAIL_LOCK_ENDPOINT_PATTERNS[@]:-0}" -gt 0 ]] || deny "policyn definierar noll endpoint-mönster."
+[[ -n "${MAIL_LOCK_SEND_TOOLS[*]:+x}" ]] || deny "policyn definierar noll sänd-klassade verktyg — ett tomt regelverk är inte 'inget att neka', det är ett trasigt lås."
+[[ -n "${MAIL_LOCK_MCP_PREFIXES[*]:+x}" ]] || deny "policyn definierar noll MCP-prefix."
+[[ -n "${MAIL_LOCK_ENDPOINT_PATTERNS[*]:+x}" ]] || deny "policyn definierar noll endpoint-mönster."
 
 if [[ "${TOOL_NAME}" = "Bash" ]]; then
     COMMAND="$(printf '%s' "${INPUT}" | jq -r '.tool_input.command // empty' 2>/dev/null)"
