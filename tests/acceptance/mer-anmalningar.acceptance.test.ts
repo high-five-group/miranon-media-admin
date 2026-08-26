@@ -4,7 +4,7 @@ import { http } from 'msw';
 import type { z } from 'zod';
 import type { RegistrationSchema } from '../../src/domain/schemas';
 import { EF, json } from '../support/fixturvarld/handlers';
-import { expect, test } from './support/acceptance-bas';
+import { expect, test } from './acceptance-bas';
 
 /**
  * task-1.4 — Samlade anmälningslistan (/mer/anmalningar, LÄS-vy via

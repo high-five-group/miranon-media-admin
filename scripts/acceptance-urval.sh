@@ -45,16 +45,19 @@
 # ═══ ALLOWLIST, ALDRIG BLOCKLIST ═══
 # Urvalet tillämpas ENDAST när VARENDA post i `other_changed_files` är en
 # acceptance-spec-fil som finns på disk. En enda post som inte är det — en
-# källfil, en delad testsöm under `tests/acceptance/support/`, en workflow, ett
-# paketmanifest, en okänd filtyp — ger tomt utfall och därmed full klass. En ny
-# filtyp kan aldrig tyst hamna i snabbfilen; den är per konstruktion okänd och
-# okänt givet faller till full svit (ADR-077 § Beslut 1, D3-defaulten).
+# källfil, den delade testsömmen `tests/acceptance/acceptance-bas.ts`, en
+# workflow, ett paketmanifest, en okänd filtyp — ger tomt utfall och därmed
+# full klass. En ny filtyp kan aldrig tyst hamna i snabbfilen; den är per
+# konstruktion okänd och okänt givet faller till full svit (ADR-077 § Beslut
+# 1, D3-defaulten).
 #
 # Riktningen är asymmetrisk med avsikt: skriptet kan bara orsaka att FÖR MYCKET
 # körs, aldrig att för lite körs — utom via en spec-fil, och en spec-fil kan per
 # konstruktion bara påverka sig själv (Playwright-specar importerar inte
-# varandra; sömmen bor i `tests/acceptance/support/`, som inte är valbar och
-# därför alltid fäller till full klass).
+# varandra; sömmen bor i `tests/acceptance/acceptance-bas.ts` — sedan TASK-123
+# en platt fil, inte längre en egen `support/`-katalog — och är inte valbar
+# eftersom namnet inte matchar `SPEC_MONSTER` nedan, så den fäller alltid till
+# full klass).
 #
 # ═══ VAD SOM MEDVETET INTE GÖRS: URVAL PÅ KÄLLKOD ═══
 # Ett urval som mappar `src/**` till spec-filer kräver en testgraf. ADR-077
@@ -93,7 +96,8 @@
 set -uo pipefail
 
 # Formen en valbar post MÅSTE ha. Snäv med avsikt: allt annat under
-# tests/acceptance/ — inklusive support/-sömmen — faller till full klass.
+# tests/acceptance/ — inklusive den delade sömmen `acceptance-bas.ts` — faller
+# till full klass.
 readonly SPEC_MONSTER='^tests/acceptance/[A-Za-z0-9._-]+\.acceptance\.test\.ts$'
 
 usage() {

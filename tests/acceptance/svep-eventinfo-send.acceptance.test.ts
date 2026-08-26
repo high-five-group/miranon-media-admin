@@ -4,7 +4,7 @@ import type { z } from 'zod';
 import type { EventSchema, RegistrationSchema } from '../../src/domain/schemas';
 import { EF, json } from '../support/fixturvarld/handlers';
 import { medvetetOanvand } from '../support/fixturvarld/overskuggnings-vakt';
-import { expect, type Page, test } from './support/acceptance-bas';
+import { expect, type Page, test } from './acceptance-bas';
 
 /**
  * TASK-241.8 — Eventinfo-svepet, ände till ände: bevakningsradens `onPress`

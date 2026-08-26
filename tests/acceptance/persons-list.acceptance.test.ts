@@ -4,7 +4,7 @@ import { delay, http } from 'msw';
 import type { z } from 'zod';
 import type { PersonSchema } from '../../src/domain/schemas';
 import { EF, json } from '../support/fixturvarld/handlers';
-import { expect, test } from './support/acceptance-bas';
+import { expect, test } from './acceptance-bas';
 
 /**
  * Personer-listan — förladdat register, sök i klienten (TASK-286.2, ADR-123).

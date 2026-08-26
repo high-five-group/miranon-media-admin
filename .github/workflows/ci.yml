@@ -435,8 +435,8 @@ jobs:
         #
         # ALLOWLIST, ALDRIG BLOCKLIST: skriptet ger urval ENDAST när VARENDA
         # post är en acceptance-spec-fil som finns på disk. En källfil, den
-        # delade sömmen under tests/acceptance/support/, en workflow eller en
-        # okänd filtyp ⇒ tomt ⇒ full klass. Okänt givet faller till full svit.
+        # delade sömmen tests/acceptance/acceptance-bas.ts, en workflow eller
+        # en okänd filtyp ⇒ tomt ⇒ full klass. Okänt givet faller till full svit.
         #
         # SKYDDSNÄTET: post-merge.yml skickar ingen input och kör därmed full
         # klass på varje mergat träd (ADR-077 § Kontext, Google-modellen).

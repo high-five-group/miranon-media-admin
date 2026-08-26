@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, type Page, test } from '../support/test-bas';
+import { mockTommaAnteckningar } from './helpers/tomma-anteckningar';
 import { mockValjarLista } from './helpers/valjar-lista';
 
 /**
@@ -35,7 +36,6 @@ const GET_EVENT = /\/functions\/v1\/get-event\?/;
 const GET_REGISTRATIONS = '**/functions/v1/get-registrations*';
 const UPDATE_RECORD = '**/functions/v1/update-record';
 const LOG_ACTIVITY = '**/functions/v1/log-activity';
-const GET_EVENT_NOTES = '**/functions/v1/get-event-notes*';
 const EVENT_ID = 'recBOROVER000001';
 
 function omDagar(n: number): string {
@@ -212,15 +212,9 @@ async function mocka(
     });
   });
   // Anteckningar-gruppen (task-18.11) fetchar get-event-notes för VARJE event —
-  // stubbas tom här (samma form som mockNotes() i event-detail.staging.test.ts
-  // / TASK-205) så eventsidans övriga sviter förblir deterministiska (TASK-212).
-  await page.route(GET_EVENT_NOTES, async (route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ notes: [] }),
-    });
-  });
+  // stubbas tom via delade sömmen (TASK-47, tidigare TASK-205/TASK-212) så
+  // eventsidans övriga sviter förblir deterministiska.
+  await mockTommaAnteckningar(page);
   return { skrivningar, aktivitetsloggar };
 }
 

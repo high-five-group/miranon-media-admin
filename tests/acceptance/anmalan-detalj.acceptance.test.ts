@@ -8,7 +8,7 @@ import type {
   RegistrationSchema,
 } from '../../src/domain/schemas';
 import { EF, json } from '../support/fixturvarld/handlers';
-import { expect, type Page, test } from './support/acceptance-bas';
+import { expect, type Page, test } from './acceptance-bas';
 
 /**
  * task-18.17 — Per-anmälan-detaljvyn (S83-facit, Marcus-låst 2026-07-24):

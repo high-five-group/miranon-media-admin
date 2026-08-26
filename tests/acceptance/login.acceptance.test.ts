@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import { delay, HttpResponse, http } from 'msw';
 import { FROZEN_NOW } from '../support/fixturvarld/fixture-data';
-import { expect, test } from './support/acceptance-bas';
+import { expect, test } from './acceptance-bas';
 
 /**
  * `/login` (TASK-127.3) — DENNA FIL täcker ENDAST det TASK-127.8 lägger

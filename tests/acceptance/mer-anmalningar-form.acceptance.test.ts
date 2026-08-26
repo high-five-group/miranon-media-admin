@@ -5,7 +5,7 @@ import { http } from 'msw';
 import type { z } from 'zod';
 import type { EventSchema, RegistrationSchema } from '../../src/domain/schemas';
 import { EF, json } from '../support/fixturvarld/handlers';
-import { expect, test } from './support/acceptance-bas';
+import { expect, test } from './acceptance-bas';
 
 /**
  * ANMÄLNINGSSIDANS FORM — `/mer/anmalningar` (TASK-299.5, `ADR-103` B1/B2).

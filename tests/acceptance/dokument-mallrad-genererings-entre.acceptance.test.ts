@@ -2,7 +2,7 @@ import { http } from 'msw';
 import type { DocumentSources } from '../../src/domain/models/DocumentSources';
 import { VISUAL_EVENT_ID } from '../support/fixturvarld/fixture-data';
 import { EF, json } from '../support/fixturvarld/handlers';
-import { expect, test } from './support/acceptance-bas';
+import { expect, test } from './acceptance-bas';
 
 /**
  * TASK-309.8, ADR-125 § 6 — `DokumentYta.tsx`s mallkatalog (`MallRad`) är

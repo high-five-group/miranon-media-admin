@@ -5,7 +5,7 @@ import type { z } from 'zod';
 import type { EventSchema } from '../../src/domain/schemas';
 import { FROZEN_NOW } from '../support/fixturvarld/fixture-data';
 import { EF, json } from '../support/fixturvarld/handlers';
-import { expect, type Page, test } from './support/acceptance-bas';
+import { expect, type Page, test } from './acceptance-bas';
 
 /**
  * Kalendervyn till S72-facit (task-17.4).

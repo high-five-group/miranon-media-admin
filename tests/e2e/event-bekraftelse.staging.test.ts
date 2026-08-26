@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, type Page, type Route, test } from '../support/test-bas';
+import { mockTommaAnteckningar } from './helpers/tomma-anteckningar';
 import { mockValjarLista, valjarRad } from './helpers/valjar-lista';
 
 /**
@@ -47,7 +48,9 @@ import { mockValjarLista, valjarRad } from './helpers/valjar-lista';
  * "deterministiska 57px" TASK-188 mätte — INGENDERA av kortens ursprungliga
  * hypoteser (kodregression / stagings datavolym) stämde; test-mockningen var
  * bara ofullständig, i strid mot denna docblocks eget påstådda kontrakt och
- * mot syskonkonventionen `mockNotes()` i `event-detail.staging.test.ts`.
+ * mot syskonkonventionen (idag den delade sömmen `mockTommaAnteckningar()`,
+ * `helpers/tomma-anteckningar.ts`, TASK-47 — tidigare `mockNotes()` lokalt i
+ * `event-detail.staging.test.ts`).
  *
  * Mockarna är TILLSTÅNDSBÄRANDE: bekräftelse-anropet muterar listan som
  * get-registrations serverar, så batchens utfall bevisas överleva
@@ -74,7 +77,6 @@ const GET_EVENT = /\/functions\/v1\/get-event\?/;
 const GET_REGISTRATIONS = '**/functions/v1/get-registrations*';
 const CONFIRM = '**/functions/v1/send-registration-confirmation';
 const UPDATE_EVENT = '**/functions/v1/update-event';
-const GET_EVENT_NOTES = '**/functions/v1/get-event-notes*';
 const EVENT_ID = 'recBEKRAFTELSE001';
 
 type Json = Record<string, unknown>;
@@ -309,20 +311,14 @@ async function mocka(page: Page, event: Json, deltagare: Json[] = grundData()): 
     });
   });
   // Anteckningar-gruppen (task-18.11) fetchar get-event-notes för VARJE event —
-  // stubbas tom här (samma form som mockNotes() i event-detail.staging.test.ts)
-  // så eventsidans övriga sviter förblir deterministiska. TASK-205: obemockad
-  // gick anropet mot SKARP staging med denna fixtur-EVENT_ID (aldrig seedad
-  // där), fick 404, och Strommen växlade från laddläge till felboxen någon
-  // gång under testkörningen — ett äkta nätverks-race, inte flake i klassisk
-  // mening (antecknings-strömmens EGNA beteenden bevisas i
+  // stubbas tom via delade sömmen (TASK-47) så eventsidans övriga sviter
+  // förblir deterministiska. TASK-205: obemockad gick anropet mot SKARP
+  // staging med denna fixtur-EVENT_ID (aldrig seedad där), fick 404, och
+  // Strommen växlade från laddläge till felboxen någon gång under
+  // testkörningen — ett äkta nätverks-race, inte flake i klassisk mening
+  // (antecknings-strömmens EGNA beteenden bevisas i
   // `tests/acceptance/event-anteckningar.acceptance.test.ts`).
-  await page.route(GET_EVENT_NOTES, async (route: Route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ notes: [] }),
-    });
-  });
+  await mockTommaAnteckningar(page);
   return mockar;
 }
 
