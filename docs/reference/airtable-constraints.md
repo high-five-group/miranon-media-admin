@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-15
+updated: 2026-08-26
 review_by: 2027-02-07
 status: stable
 ---
@@ -403,21 +403,35 @@ hanterar den i Airtable-eran — det Supabase-adaptern ska *ersätta*, inte åte
 - **Fas E-krav.** Postgres ger point-in-time recovery och transaktionell rollback; Supabase-adaptern
   MÅSTE inte längre förlita sig på kopia-baserad restore.
 
-#### P24 · MCP/API-blindhet för automationer, vyer, formulär, extensions, webhooks
+#### P24 · MCP/API-blindhet för automationer, vyer, formulär, extensions, webhooks (RÄTTAD, TASK-200)
 
-- **Begränsning.** Airtable-MCP (och REST-API:t) exponerar bara baser, tabeller, fält, records.
-  Automationer, sparade vyer, formulär, extensions och webhooks är osynliga.
-- **Kostnad/manifestation.** A1–A11 kan inte queryas, testas eller versioneras via API; ändringar i
-  Airtable-UI:t är osynliga för CI. Tvingade fram extern HAR-export
-  (`miranon_automations_COMPLETE.json`) + manuell UI-audit. Källor: global CLAUDE.md §Kritiska guards
-  ("Airtable MCP kan INTE se automationer, interfaces, vyer, formulär eller extensions");
-  datamodell-research-projekt rad ~52 (NO-GO på MCP);
-  [`field-allowlists.ts:12`](../../supabase/functions/_shared/field-allowlists.ts#L12); BUILD-LOG
-  (backfill-verifiering kräver manuell audit).
-- **v1-kompensation.** Extern automation-export + manuell verifiering; `field-allowlists.ts` underhålls
-  för hand i synk med automationerna.
-- **Fas E-krav.** Postgres-logik (triggers, funktioner, RLS) lever som schema-as-code i git och CI-testas;
-  Supabase-adaptern MÅSTE inte längre lita på osynlig, oversionerad UI-logik.
+- **Begränsning — RÄTTAD mot uppmätt verklighet 2026-08-11, katalogen ej synkad förrän nu.**
+  Ursprungsformuleringen ("Airtable-MCP exponerar bara baser, tabeller, fält, records — automationer,
+  vyer, formulär, extensions och webhooks är osynliga") gäller ENDAST PAT-servern
+  (`mcp__airtable__*`). claude.ai-connectorn (`mcp__claude_ai_Airtable__*`) exponerar
+  `list_automations`/`get_automation`/`list_pages_for_base`/`list_views_for_table` och läser dem
+  DIREKT, inklusive fullständiga triggers och `watchFields` — falsifierat av bas-diff-passet
+  2026-08-11, som läste samtliga 11 prod-automationer live på detta sätt (§ "Oväntade fynd" 1).
+  Global CLAUDE.md § Verktygsfakta bokför korrigeringen sedan S90; endast denna väggkatalog hade
+  inte följt med. **Caveat, oförändrad:** connectorn är interaktivt autentiserad och kan saknas i
+  headless-/cron-körningar; den nådde i det citerade passet endast PROD — pariteten mot staging
+  förblir overifierad och får aldrig antas. Formulär/extensions/webhooks är inte omprövade av detta
+  fynd (passet läste bara automationer + sidlistning) och kvarstår som obekräftat osynliga tills
+  någon faktiskt prövar dem via connectorn.
+- **Kostnad/manifestation.** Läsning är alltså inte längre blockerad (via connectorn, med caveaten
+  ovan) — men SKRIVNING/versionering av automationer via API är fortsatt oprövad, och `field-
+  allowlists.ts` underhålls fortfarande för hand. A1–A11 kan fortfarande inte CI-testas eller
+  git-versioneras. Källor: global CLAUDE.md §Verktygsfakta ("Airtable-MCP:erna är TVÅ, med olika
+  räckvidd"); `docs/research/prodbas-synk-staging-till-prod-2026-08-11.md` § Metod +
+  § Oväntade fynd 1; [`field-allowlists.ts:12`](../../supabase/functions/_shared/field-allowlists.ts#L12).
+- **v1-kompensation.** claude.ai-connectorn för READ-ONLY-verifiering (trigger/watchFields-läsning
+  inför en bas-ändring, se prodbas-synk-forskningspasset för ett skarpt exempel); extern HAR-export
+  kvarstår som fallback när connectorn saknas (headless/cron) eller för write/versionering.
+  `field-allowlists.ts` underhålls fortsatt för hand i synk med automationerna.
+- **Fas E-krav.** Postgres-logik (triggers, funktioner, RLS) lever som schema-as-code i git och
+  CI-testas; Supabase-adaptern MÅSTE inte längre lita på UI-logik som saknar versionering och
+  CI-täckning — detta krav STÅR KVAR trots rättelsen ovan, eftersom connectorn löser LÄSBARHET,
+  inte git-versionering eller CI-testbarhet.
 
 #### P25 · Airtable saknar schema-as-code / migrations
 

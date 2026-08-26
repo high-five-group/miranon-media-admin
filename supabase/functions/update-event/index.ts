@@ -1,4 +1,4 @@
-import { updateAirtableRecord } from '../_shared/airtable-client.ts';
+import { fetchAirtableRecord, updateAirtableRecord } from '../_shared/airtable-client.ts';
 import { requireUser } from '../_shared/auth.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
 import { generateRequestId, mapErrorToResponse } from '../_shared/errors.ts';
@@ -38,6 +38,23 @@ import { findDisallowedField, getOperation } from '../_shared/field-allowlists.t
 // VALIDERING (manuell deny-by-default): speglar create-event/create-registration —
 // manuell validering, INTE Zod (Zod bor i klient-/adapter-lagret, ADR-026;
 // kodbas-konsistens > abstrakt schema-kanon).
+//
+// 404-KONTRAKTET (TASK-24-fyndet, rättat): ett rec-prefixat men okänt/raderat
+// eventId gav tidigare 500 i stället för 404. Grundorsaken var att
+// `updateAirtableRecord` kastar en GENERISK `Error` på varje icke-2xx-svar
+// (samma helper alla PATCH-EF:er delar), och den generiska Error:en är ingen
+// `HttpError` — `mapErrorToResponse` faller därför till 500-grenen. Fixen
+// speglar det MALL-kontrakt get-event/create-event-note redan bär: en
+// pre-check-`fetchAirtableRecord` läser raden FÖRE skrivningen och returnerar
+// 404 manuellt om den är `null`, i stället för att förlita sig på PATCH:ens
+// egen felhantering. Live-verifierat mot staging 2026-08-26: en PATCH mot ett
+// rec-prefixat men obefintligt ID (`recZZZZZZZZZZZZZZ`) ger Airtable-svaret
+// 403 `INVALID_PERMISSIONS_OR_MODEL_NOT_FOUND` — SAMMA statuskod
+// `fetchAirtableRecord`s egen docblock redan beskriver för GET (record-GET
+// konflaterar medvetet "saknas" och "ingen behörighet"); PATCH beter sig
+// identiskt. Ett malformat (icke rec-prefixat) ID fälls redan tidigare, som
+// 400 (se `eventId`-valideringen ovan) — det Airtable-läget (404 `NOT_FOUND`
+// på en URL-form som inte matchar route-mönstret) når därför aldrig hit.
 
 const OPERATION_KEY = 'update-event';
 
@@ -208,6 +225,16 @@ Deno.serve(async (req) => {
         `Field "${disallowed}" not allowed for operation "${OPERATION_KEY}"`,
         corsHeaders,
       );
+    }
+
+    // Mål-raden måste finnas — null = okänt/raderat ID → 404 (se 404-KONTRAKTET
+    // i filens docblock ovan, TASK-24).
+    const existing = await fetchAirtableRecord(operation.tableId, eventId);
+    if (!existing) {
+      return new Response(JSON.stringify({ error: 'Event not found' }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     console.log(
