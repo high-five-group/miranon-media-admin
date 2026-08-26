@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-10 18:17'
-updated_date: '2026-08-24 16:44'
+updated_date: '2026-08-26 03:27'
 labels: []
 dependencies: []
 ordinal: 358000
@@ -20,10 +20,10 @@ FYND (FRAMME-verifikatet varv 3, 2026-08-10, mail b1e1b27b-e579-4c39-960d-f0a0cc
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -31,3 +31,9 @@ FYND (FRAMME-verifikatet varv 3, 2026-08-10, mail b1e1b27b-e579-4c39-960d-f0a0cc
 <!-- SECTION:NOTES:BEGIN -->
 Done-flipp S112: deriveContentType i PR #1940, landad + post-merge grön; contentType-formen verifierad mot Resends officiella SDK-exempel. Kortet saknar AC — fyndets FÖRVÄNTAT uppfyllt. Landning: PR #1940
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landning: PR #1940
+<!-- SECTION:FINAL_SUMMARY:END -->

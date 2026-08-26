@@ -133,28 +133,26 @@
 # på ingenting är en pekare till en död adress. Nu är pekaren det som gör
 # kortet grönt, så den kan inte utelämnas utan att någon märker det.
 #
-# ═══ VARFÖR HÄRLEDNINGEN INTE FRÅGAR gh ELLER git ═══
+# ═══ VARFÖR HÄRLEDNINGEN INTE FRÅGAR gh ═══
 #
-# Den uppenbara formen — slå upp PR:en mot GitHubs API och läsa dess checks —
-# är förkastad, och det är ett MÄTT hinder, inte en bedömning:
+# gh-API-formen — slå upp PR:en och läsa dess checks — är förkastad, och det är
+# ett MÄTT hinder, inte en bedömning: den lägger till ett NÄTVERKSBEROENDE i en
+# grind som i dag inte har något. Rate-limit eller offline hade tvingat fram ett
+# val mellan tyst grönt (oacceptabelt) och falskt rött i natten (som devalverar
+# nästa larm — se KARENS-sektionen). Nattjobbet bär dessutom bara
+# `contents: read`, inte den `pull-requests: read` uppslaget kräver.
 #
-#   * NATTJOBBET CHECKAR UT MED `fetch-depth: 1` (.github/workflows/nightly.yml,
-#     jobbet `Backlog-stängning (natt-grind)`). Det finns alltså ingen
-#     git-historik att slå `Merge pull request #N` mot i CI. En ancestry-baserad
-#     verifiering hade fungerat lokalt och tyst fallit tillbaka i natten — den
-#     dyraste sorten av grind.
-#   * gh-API:t lägger till ett NÄTVERKSBEROENDE i en grind som i dag inte har
-#     något. Rate-limit eller offline hade tvingat fram ett val mellan tyst
-#     grönt (oacceptabelt) och falskt rött i en required check i natten (som
-#     devalverar nästa larm — se KARENS-sektionen). Jobbet bär dessutom bara
-#     `contents: read`.
+# git-ANCESTRY, DÄREMOT, FRÅGAR GRINDEN NUMERA (TASK-319). Fram till 2026-08-26
+# prövades bara pekarens NÄRVARO och FORM — ett påhittat nummer passerade, och
+# den öppna gränsen stod utskriven här. Den är stängd: pekarens nummer slås upp
+# mot landningarna i historiken, utan nätverk, utan ny permission och utan rate
+# limit. Mekaniken, mätningarna som valde formen, och varför ett OPRÖVBART läge
+# redovisas i stället för att fällas: § PEKARENS SANNING längre ned.
 #
-# GRINDEN VERIFIERAR DÄRFÖR PEKARENS NÄRVARO OCH FORM, INTE DESS SANNING. Det
-# är en ÖPPEN GRÄNS och skrivs ut som en: ett påhittat nummer passerar. Vad som
-# ändå vinns är mätbart — pekaren finns, den står där en läsare av kortet ser
-# den, och grinden skriver ut den varje natt. Det är strikt mer bevis än den
-# bock den ersätter: bocken var ett påstående av den som stängde kortet, och
-# den var dessutom obockad i samtliga 17 fall.
+# fetch-depth STYR FORTFARANDE VAD SOM ÄR PRÖVBART. Nattjobbet checkar ut med
+# `fetch-depth: 1` (.github/workflows/nightly.yml, ADR-127 B4), så där finns
+# ingen historik att slå mot och prövningen redovisas som OPRÖVAD. Lokalt och i
+# CI-jobb med full historik är den skarp.
 #
 # ── HÅL 2: invariant 2 hade ingen undantagsform ──────────────────────────────
 #
@@ -425,10 +423,22 @@ if [[ -n "${BACKLOG_AVSTADD_KRAV_ETIKETT:-}" && -z "${BACKLOG_AVSTADD_KRAV_MARKO
     echo "   för alltid. Undantaget är tvåfaktors med flit — se grindens huvud." >&2
     exit 2
 fi
+# Pekarens sannings-prövning (TASK-319) är OPTIONELL och PARVIS på samma
+# fail-closed sätt som paren ovan: en referens utan commit-mönster kan inte
+# bygga en landningsmängd, och grinden hade då dömt VARJE pekare som oprövbar
+# utan att någon bad om det. Tomt/saknat par = prövningen är avstängd och
+# grinden beter sig exakt som före TASK-319.
+if [[ -n "${BACKLOG_PEKARE_ANCESTRY_REF:-}" && -z "${BACKLOG_PEKARE_LANDNINGS_COMMIT_MONSTER:-}" ]]; then
+    echo "❌ BACKLOG_PEKARE_ANCESTRY_REF är satt men BACKLOG_PEKARE_LANDNINGS_COMMIT_MONSTER saknas i ${POLICY_FIL}" >&2
+    echo "   Utan commit-mönster finns ingen landningsmängd att pröva pekarna mot." >&2
+    exit 2
+fi
 BACKLOG_HARLEDD_DOD_MONSTER="${BACKLOG_HARLEDD_DOD_MONSTER-}"
 BACKLOG_LANDNINGS_PEKARE_MONSTER="${BACKLOG_LANDNINGS_PEKARE_MONSTER-}"
 BACKLOG_AVSTADD_KRAV_ETIKETT="${BACKLOG_AVSTADD_KRAV_ETIKETT-}"
 BACKLOG_AVSTADD_KRAV_MARKOR="${BACKLOG_AVSTADD_KRAV_MARKOR-}"
+BACKLOG_PEKARE_ANCESTRY_REF="${BACKLOG_PEKARE_ANCESTRY_REF-}"
+BACKLOG_PEKARE_LANDNINGS_COMMIT_MONSTER="${BACKLOG_PEKARE_LANDNINGS_COMMIT_MONSTER-}"
 
 # ═══ CI-KONTEXTENS check_active_branches-AVSTÄNGNING (TASK-238) ═══
 #
@@ -603,7 +613,7 @@ KORT_RADER=""
 #
 # Fältordning (status SIST — fältet får svälja resten av raden):
 #   id|tid12|ac_totalt|ac_obockat|dod_obockat|dod_obockat_harledd|har_pekare|
-#   har_markor|barn_ids|labels|status
+#   pekare_nr|har_markor|barn_ids|labels|status
 #
 # PORTABILITET: `mapfile`/`readarray` finns först i bash 4. macOS levererar
 # bash 3.2, så en mapfile-form hade fungerat i CI och aldrig lokalt — alltså en
@@ -635,10 +645,103 @@ if [[ -z "${KORTFAKTA}" ]]; then
     exit 2
 fi
 
+# ═══ PEKARENS SANNING — PRÖVAD MOT LANDNINGSHISTORIKEN (TASK-319) ═══
+#
+# TASK-281 gav grinden en landnings-pekare i stället för en obockad ruta, men
+# prövade bara pekarens NÄRVARO och FORM. Ett påhittat nummer gav grön
+# härledning — utskrivet som en öppen gräns i huvudet ovan och bokfört som
+# TASK-319. Detta block stänger den.
+#
+# VALD FORM: ANCESTRY MOT LOKAL HISTORIK, INTE gh-API. TASK-319 föreskrev att
+# kostnaden mäts före val (ADR-127 § Konsekvenser). Mätningen, LOKALT
+# 2026-08-26 (macOS, `time git clone`; CI-tiden är INTE mätt av mig):
+#
+#   * full klon 20,999 s mot grund klon 20,982 s — +0,017 s (+0,08 %).
+#     Utcheckningen av 2873 filer dominerar, inte objekthämtningen, så
+#     historikens pris är nära noll i wall-clock. ADR-127:s fetch-depth-
+#     invändning vilade på en OMÄTT kostnad; lokalt är den försumbar.
+#   * landningsmängden hämtas i ETT svep: 0,838 s över 5575 commits. Ett
+#     `git log --grep` PER KORT hade varit O(n) anrop — mängden byggs därför
+#     en gång och slås upp som substräng, samma bulk-disciplin som ADR-117.
+#
+# VARFÖR INTE gh-API:t, vars invändningar ADR-127 räknade upp: det lägger till
+# ett NÄTVERKSBEROENDE i en grind som inte har något, det kräver en
+# `pull-requests: read` som nattjobbet inte bär (det har `contents: read`), och
+# det bär en rate-limit vars utfall är valet mellan tyst grönt och falskt rött.
+# Ancestry-formen har ingen av de tre: historiken finns redan i checkouten,
+# `contents: read` ÄR checkout-scopet, och uppslaget är deterministiskt.
+#
+# TVÅSIDIGT MÄTT PÅ VERKLIG DATA före bygget: samtliga 14 landnings-pekare som
+# korten bar 2026-08-26 återfinns i landningsmängden (1707 landningar på
+# origin/main). Noll falska positiva — formen fäller inte korrekta kort.
+#
+# GRACEFUL DEGRADATION, OCH DEN ÄR INTE FAIL-OPEN. Saknas historiken kan
+# sanningen inte prövas, och då säger grinden det HÖGT i täcknings-blocket i
+# stället för att låtsas ha prövat. Det är samma form som redan bär
+# "obedömbara"-raderna: ett oprövat tillstånd som inte redovisas läses som
+# full täckning (TASK-90). Motsatsen — att fälla varje opröv­bar pekare — hade
+# gjort nattgrinden permanent röd under fetch-depth: 1 och devalverat varje
+# larm (T87), vilket är exakt vad ADR-127 varnade för.
+#
+# NATTJOBBET ÄR MEDVETET ORÖRT. `.github/workflows/nightly.yml` checkar ut med
+# fetch-depth: 1 (ADR-127 B4), så prövningen är OPRÖVBAR där tills det värdet
+# ändras — ett arkitekturbeslut som hör till ADR-127:s amendering, inte till
+# detta block. Verifieringen är alltså skarp lokalt och i varje CI-jobb med
+# full historik (ci.yml:s lint-jobb, fetch-depth: 0), och ärligt oprövad i
+# natten. Att bygga logiken först och aktivera den i ett eget, vägt steg är
+# ordningen ADR-127 självt föreskrev.
+
+PEKARE_LAGE="av"
+PEKARE_SKAL=""
+PEKARE_LANDADE=""
+antal_pekare_sanna=0
+antal_pekare_oprovade=0
+
+if [[ -n "${BACKLOG_PEKARE_ANCESTRY_REF}" && -n "${BACKLOG_LANDNINGS_PEKARE_MONSTER}" ]]; then
+    PEKARE_LAGE="oprovbar"
+    # Grund-klon-frågan ställs SEPARAT, inte inuti elif-kedjan: en
+    # kommandosubstitution i ett villkor maskerar kommandots egen exitkod
+    # (SC2312), och skillnaden är verklig här — `rev-parse` svarar med FEL
+    # utanför ett arbetsträd, vilket inte är samma sak som att svara "false".
+    pekare_shallow=""
+    if command -v git >/dev/null 2>&1; then
+        pekare_shallow="$(git rev-parse --is-shallow-repository 2>/dev/null)" || pekare_shallow=""
+    fi
+    if ! command -v git >/dev/null 2>&1; then
+        PEKARE_SKAL="git finns inte i PATH"
+    elif ! git rev-parse --git-dir >/dev/null 2>&1; then
+        PEKARE_SKAL="grinden kör utanför ett git-arbetsträd"
+    elif [[ "${pekare_shallow}" == "true" ]]; then
+        PEKARE_SKAL="grund klon (fetch-depth: 1) — ingen landningshistorik att pröva mot"
+    elif ! git rev-parse --verify --quiet "${BACKLOG_PEKARE_ANCESTRY_REF}" >/dev/null 2>&1; then
+        PEKARE_SKAL="referensen '${BACKLOG_PEKARE_ANCESTRY_REF}' finns inte i denna checkout"
+    else
+        # Mönstret ankrar radens början och slutar FÖRE grennamnet, så den
+        # andra grep:en ser bara landningens eget nummer. Ett grennamn som
+        # innehåller siffror ligger utanför matchningen och kan inte förorena
+        # mängden.
+        pekare_dump="$(git log "${BACKLOG_PEKARE_ANCESTRY_REF}" --format='%s' 2>/dev/null \
+            | grep -oE "${BACKLOG_PEKARE_LANDNINGS_COMMIT_MONSTER}" \
+            | grep -oE '[0-9]+' | sort -u | tr '\n' '|')"
+        if [[ -z "${pekare_dump}" ]]; then
+            # FAIL-SAFE, INTE FAIL-OPEN — och riktningen är vald med flit. En TOM
+            # mängd betyder att mönstret inte matchade en enda commit. Det är
+            # nästan alltid en trasig konfiguration (ändrad merge-strategi,
+            # squash-landningar, fel referens) — och att då döma VARJE pekare
+            # som falsk hade fällt hela backloggen på en gång. Grinden
+            # rapporterar i stället att den inte kunde pröva.
+            PEKARE_SKAL="noll landningar matchade mönstret på '${BACKLOG_PEKARE_ANCESTRY_REF}' — mönstret eller merge-strategin har ändrats"
+        else
+            PEKARE_LANDADE="|${pekare_dump}"
+            PEKARE_LAGE="provande"
+        fi
+    fi
+fi
+
 # ═══ PASS 1 — läs varje kort en gång, pröva invariant 1 och 2, spara raden ═══
 
 while IFS='|' read -r id tid_siffror ac_totalt ac_obockat dod_obockat dod_obockat_harledd \
-                       har_pekare har_markor barn_ids labels status; do
+                       har_pekare pekare_nr har_markor barn_ids labels status; do
     [[ -z "${id}" ]] && continue
     [[ -z "${status}" ]] && continue
     antal_kort=$((antal_kort + 1))
@@ -757,13 +860,38 @@ while IFS='|' read -r id tid_siffror ac_totalt ac_obockat dod_obockat dod_obocka
         fi
     fi
 
+    # Pekarens SANNING (TASK-319). Prövas för VARJE kort som bär en pekare —
+    # inte bara för dem som har en härledd DoD-rad att vinna på den. En pekare
+    # är ett påstående om var kortet landade, och ett falskt påstående är fel
+    # oavsett vad det råkar undanta.
+    pekare_falsk=0
+    pekare_falska_nr=""
+    if [[ "${har_pekare}" -eq 1 && -n "${pekare_nr}" ]]; then
+        if [[ "${PEKARE_LAGE}" == "provande" ]]; then
+            rest_nr="${pekare_nr}"
+            while [[ -n "${rest_nr}" ]]; do
+                nr="${rest_nr%%,*}"
+                if [[ "${nr}" == "${rest_nr}" ]]; then rest_nr=""; else rest_nr="${rest_nr#*,}"; fi
+                [[ -z "${nr}" ]] && continue
+                if [[ "${PEKARE_LANDADE}" != *"|${nr}|"* ]]; then
+                    pekare_falsk=1
+                    pekare_falska_nr="${pekare_falska_nr:+${pekare_falska_nr} }#${nr}"
+                fi
+            done
+            [[ "${pekare_falsk}" -eq 0 ]] && antal_pekare_sanna=$((antal_pekare_sanna + 1))
+        elif [[ "${PEKARE_LAGE}" == "oprovbar" ]]; then
+            antal_pekare_oprovade=$((antal_pekare_oprovade + 1))
+        fi
+    fi
+
     # Härledda DoD-rader dras av när kortet bär sin landnings-pekare. Utan
     # pekare räknas de precis som förut — härledningen är ett UTBYTE (bock mot
-    # pekare), aldrig en amnesti.
+    # pekare), aldrig en amnesti. En FALSK pekare ger ingen amnesti heller:
+    # härledningen vilar på att landningen faktiskt skett.
     dod_kvar="${dod_obockat}"
     pekare_saknas=0
     if [[ "${dod_obockat_harledd}" -gt 0 ]]; then
-        if [[ "${har_pekare}" -eq 1 ]]; then
+        if [[ "${har_pekare}" -eq 1 && "${pekare_falsk}" -eq 0 ]]; then
             dod_kvar=$(( dod_obockat - dod_obockat_harledd ))
             antal_harledda=$((antal_harledda + 1))
             HARLEDDA_IDN="${HARLEDDA_IDN}${HARLEDDA_IDN:+, }TASK-${id}"
@@ -773,16 +901,38 @@ while IFS='|' read -r id tid_siffror ac_totalt ac_obockat dod_obockat dod_obocka
     fi
 
     # Invariant 2 — kortet stängt utan att arbetet är bevisat.
+    foll_invariant2=0
     if [[ "${ar_klar}" -eq 1 && "${avstadd}" -eq 0 \
           && ( "${ac_obockat}" -gt 0 || "${dod_kvar}" -gt 0 ) ]]; then
+        foll_invariant2=1
         echo "❌ TASK-${id} — status '${status}' men ${ac_obockat} AC och ${dod_kvar} DoD står obockade"
         echo "   Kortet är stängt utan att kraven är kvitterade."
-        if [[ "${pekare_saknas}" -eq 1 ]]; then
+        if [[ "${pekare_falsk}" -eq 1 ]]; then
+            echo "   ${dod_obockat_harledd} av dem är HÄRLEDDA rader (matchar '${BACKLOG_HARLEDD_DOD_MONSTER}')"
+            echo "   som inte kräver en bock — men kortets landnings-pekare ${pekare_falska_nr}"
+            echo "   finns INTE som landning på '${BACKLOG_PEKARE_ANCESTRY_REF}'."
+            echo "   Härledningen vilar på att landningen faktiskt skett — en pekare"
+            echo "   till en PR som aldrig mergats bevisar ingenting."
+            echo "   Fix: rätta pekaren till PR-numret som faktiskt landade kortet."
+        elif [[ "${pekare_saknas}" -eq 1 ]]; then
             echo "   ${dod_obockat_harledd} av dem är HÄRLEDDA rader (matchar '${BACKLOG_HARLEDD_DOD_MONSTER}')"
             echo "   som inte kräver en bock — men kortets Final Summary bär ingen"
             echo "   landnings-pekare (mönster '${BACKLOG_LANDNINGS_PEKARE_MONSTER}')."
             echo "   Fix: ${BACKLOG_CMD} task edit ${id} --append-final-summary 'Landning: PR #<nr>'"
         fi
+        antal_fel=$((antal_fel + 1))
+        EXIT_CODE=1
+    fi
+
+    # En falsk pekare på ett kort som invariant 2 inte redan fällde — t.ex. ett
+    # kort med allt bockat, eller ett öppet kort. Påståendet är osant oavsett,
+    # och det redovisas här i stället för att passera tyst. Villkoret mot
+    # foll_invariant2 håller räkningen ärlig: ett kort är ETT inkonsistent kort,
+    # aldrig två, hur många fel det än bär.
+    if [[ "${pekare_falsk}" -eq 1 && "${foll_invariant2}" -eq 0 ]]; then
+        echo "❌ TASK-${id} — landnings-pekaren ${pekare_falska_nr} finns inte som landning på '${BACKLOG_PEKARE_ANCESTRY_REF}'"
+        echo "   Kortet deklarerar en landning som inte går att belägga i historiken."
+        echo "   Fix: rätta pekaren till PR-numret som faktiskt landade kortet."
         antal_fel=$((antal_fel + 1))
         EXIT_CODE=1
     fi
@@ -955,6 +1105,21 @@ if [[ -n "${BACKLOG_HARLEDD_DOD_MONSTER}" || -n "${BACKLOG_AVSTADD_KRAV_ETIKETT}
             echo "     Dessa är UNDANTAGNA från invariant 2, inte friskförklarade."
             echo "     Motiveringen står på varje kort vid markören '${BACKLOG_AVSTADD_KRAV_MARKOR}'."
         fi
+    fi
+fi
+
+# Pekarnas SANNING (TASK-319). Redovisas i BÅDA lägena — särskilt det oprövbara.
+# En prövning som tyst uteblir är exakt den blinda fläck täcknings-blocket finns
+# för: utskriften läses annars som att sanningen kontrollerats.
+if [[ "${PEKARE_LAGE}" != "av" ]]; then
+    echo ""
+    echo "Landnings-pekarnas sanning (mot '${BACKLOG_PEKARE_ANCESTRY_REF}'):"
+    if [[ "${PEKARE_LAGE}" == "provande" ]]; then
+        echo "  ${antal_pekare_sanna} pekare belagda i landningshistoriken"
+    else
+        echo "  ${antal_pekare_oprovade} pekare OPRÖVADE — ${PEKARE_SKAL}"
+        echo "     Pekarnas FORM är prövad, deras SANNING är det inte. Ett påhittat"
+        echo "     nummer passerar i detta läge — se grindens huvud § PEKARENS SANNING."
     fi
 fi
 

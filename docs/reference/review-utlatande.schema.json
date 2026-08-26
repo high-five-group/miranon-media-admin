@@ -167,6 +167,60 @@
       },
       "required": ["niva", "motivering"],
       "additionalProperties": false
+    },
+    "policySha": {
+      "default": null,
+      "anyOf": [
+        {
+          "type": "string",
+          "minLength": 7
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "policyRegler": {
+      "default": [],
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "scope": {
+            "type": "object",
+            "properties": {
+              "monster": {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "matchadeFiler": {
+                "minItems": 1,
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              }
+            },
+            "required": ["monster", "matchadeFiler"],
+            "additionalProperties": false
+          },
+          "kalla": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": ["id", "scope", "kalla"],
+        "additionalProperties": false
+      }
     }
   },
   "required": [
@@ -179,7 +233,9 @@
     "intentKonfidens",
     "acProvning",
     "fynd",
-    "risk"
+    "risk",
+    "policySha",
+    "policyRegler"
   ],
   "additionalProperties": false
 }

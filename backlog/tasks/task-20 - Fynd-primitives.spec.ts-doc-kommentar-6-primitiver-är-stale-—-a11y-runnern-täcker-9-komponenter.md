@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-21 09:30'
-updated_date: '2026-08-07 11:18'
+updated_date: '2026-08-26 03:29'
 labels:
   - ready-for-agent
 dependencies: []
@@ -28,4 +28,6 @@ Förväntat beteende: doc-kommentaren speglar aktuell täckning eller uttrycks a
 
 <!-- SECTION:NOTES:BEGIN -->
 Uppdatering (S75-batch v2.1, 19.1-bygget): täckningen är nu 11 sektioner (NavCard, Skeleton, ToggleButtonGroup, SlideToConfirm tillkomna) — docblocken bör bli räknings-neutral.
+
+FIXAT (TASK-20). Docblocken i tests/a11y/primitives.spec.ts skriven om till räknings-neutral form ('samtliga primitiver i sektionslistan nedan' + motivering) i stället för ett nytt hårdkodat tal — per notera-fältets egen rekommendation ('docblocken bör bli räknings-neutral'). 17 test()-block i filen idag (grep -c '^  test(' tests/a11y/primitives.spec.ts, 2026-08-26); antalet uttrycks medvetet INTE i kommentaren eftersom listan redan drivit stale två gånger (6 → 11 → 17).
 <!-- SECTION:NOTES:END -->

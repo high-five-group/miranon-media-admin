@@ -71,12 +71,17 @@ export default defineConfig(({ mode }) => {
         registerType: 'autoUpdate',
         injectManifest: {
           // offline.html måste in i precache — förutsättning för ADR-047 B2.
-          // webp tillagt 2026-08-03 (S96): login-vyns porträttbild ligger i det
-          // formatet, och utan ändelsen i mönstret hamnar den UTANFÖR precachen
-          // — då laddas den över nätet vid varje besök i stället för ur appens
-          // egen cache. Mätt, inte antaget: mönstret bar tidigare varken webp
-          // eller jpg, så vilket bildformat som helst utöver png/svg hade fallit
-          // utanför tyst.
+          // webp tillagt 2026-08-03 (S96): ursprungligen login-vyns
+          // porträttbild. Kommentaren rättad TASK-224 (2026-08-26): bilden
+          // BYTTE hemvist när login-vyn tappade sin bild — den bor i dag som
+          // Forberedelseskärmens fönsterfyllande bakgrundsfoto i stället
+          // (`public/roger-och-lotta.webp`, `Forberedelseskarm.tsx`,
+          // `task-273.6`). Nu, som då, finns EXAKT en webp-asset i `public/`
+          // (grep-verifierat) — utan ändelsen i mönstret hamnar den UTANFÖR
+          // precachen och laddas över nätet vid varje besök i stället för ur
+          // appens egen cache. Mätt, inte antaget: mönstret bar tidigare
+          // varken webp eller jpg, så vilket bildformat som helst utöver
+          // png/svg hade fallit utanför tyst.
           globPatterns: ['**/*.{js,css,html,svg,png,webp,ico,woff2}'],
         },
         // Manifest per ADR-047 B4. Färger ur design-tokens:

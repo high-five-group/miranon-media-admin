@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-01 13:08'
-updated_date: '2026-08-05 15:57'
+updated_date: '2026-08-26 02:57'
 labels:
   - ready-for-agent
 dependencies: []
@@ -43,9 +43,21 @@ Möjliga former, ingen vald här: (a) vakten läser **jobb-nivå** i stället f�
 <!-- AC:BEGIN -->
 - [x] #1 Grundorsaken åtgärdad i vald form: en natt vars enda röda jobb är länkkontrollen ger INTE ärendet Nattnätet rött utan larm; formvalet motiverat mot åtgärdsrymden och förkastade alternativ bär sina skäl
 - [x] #2 Vaktens äkta larmklasser intakta: startup_failure, utebliven schemakörning och röd natt där larm-jobbet faktiskt uteblivit larmar fortfarande — tvåsidigt bevis, mätt inte resonerat
-- [ ] #3 Bevis-läget simulate_missing fungerar efter ändringen, verifierat med en dispatch
+- [x] #3 Bevis-läget simulate_missing fungerar efter ändringen, verifierat med en dispatch
 - [x] #4 Ärende #469 stängt enligt stängningsregeln med hänvisning till detta korts leverans
 <!-- AC:END -->
+
+## Definition of Done
+<!-- DOD:BEGIN -->
+- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [ ] #3 CI grön per jobb på pushad commit
+- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [ ] #5 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [ ] #6 Rörd fil-klass lokala grindar gröna (L147)
+- [ ] #7 CI grön per jobb på pushad commit
+- [ ] #8 Inga orelaterade filer i diffen (path-scopad add)
+<!-- DOD:END -->
 
 ## Implementation Notes
 
@@ -63,16 +75,6 @@ EJ BELAGT, lämnas obockat:
 ÅTERSTÅENDE ARBETE: en simulate_missing-dispatch mot vakten efter 39e55a58, med run-länk bokförd. Det är hela kortets rest. Kör den, bocka AC #3, stäng.
 
 Varför kortet inte stängs på tre av fyra: att bocka ett obelagt AC för att kortet 'känns klart' är precis den klass av påstående utan mekanism som ADR-083 vaktar mot.
-<!-- SECTION:NOTES:END -->
 
-## Definition of Done
-<!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #6 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #7 CI grön per jobb på pushad commit
-- [ ] #8 Inga orelaterade filer i diffen (path-scopad add)
-<!-- DOD:END -->
+AC #3 BELAGT 2026-08-26 (S112 fix-våg 4, bunt A). simulate_missing-dispatch kört mot .github/workflows/nightly-watchdog.yml på origin/main (post 39e55a58): gh workflow run nightly-watchdog.yml --ref main -f simulate_missing=true → run https://github.com/high-five-group/miranon-media-admin/actions/runs/32923517894 (conclusion success). Vaktkedjan fungerade end-to-end: dispatchen skapade issue #1975 ("🌑 Nattvakten — BEVIS-LÄGE — 2026-08-26", etikett ci-natt, assignee marcus803) med kroppens SIMULERAT-notering intakt. Issue stängd samma pass med motiveringen "Stängs enligt vaktens egen anvisning: SIMULERAT via simulate_missing-dispatch (run 32923517894) för TASK-116 AC #3 ...". Ingen kodändring krävdes — beviset var det enda återstående. Alla fyra AC nu belagda; DoD (CI grön per jobb / PR) lämnas till orkestreraren att verifiera efter push.
+<!-- SECTION:NOTES:END -->

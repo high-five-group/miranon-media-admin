@@ -33,8 +33,19 @@
 // utlåtandet vid ett fel — de har ingen säker default att falla tillbaka på.
 // Tvåsidigt bevis: scripts/test-validera-review-utlatande.mjs.
 //
+// ═══ POLICY-FÄLTEN (TASK-173.2) ═══
+// `policySha` + `policyRegler` bokför vilka path-scopade granskningsregler som
+// injicerades och ur VILKEN main-commit de lästes (ADR-105 beslut 7). Båda bär
+// `.default()`, vilket gör utökningen ICKE-BRYTANDE: ett utlåtande skrivet mot
+// 173.1:s form validerar oförändrat och får `null` respektive `[]` — semantiskt
+// korrekt för "inga regler injicerades". Därför står SCHEMA_VERSION kvar på
+// 1.0; en bump hade tvingat nedströms-skivorna (173.3–173.6) att hantera två
+// former utan att någon konsument av den andra formen finns.
+// Fältens VÄRDEN fylls ur `npm run review:policy -- --pr <nr> --json`, aldrig
+// för hand — skriptet är det enda som läser den trusted källan.
+//
 // ═══ STRUKTURELLA INVARIANTER (superRefine) ═══
-// Tre regler som inte går att uttrycka som ren fält-typning:
+// Fem regler som inte går att uttrycka som ren fält-typning:
 //   1. `intentKalla: 'pr-text'` (PR utan kort, ADR-105 beslut 7 / AC #6) MÅSTE
 //      bära `intentKonfidens: 'lag'` — en review-agent får aldrig flagga hög
 //      konfidens på en PR-text-härledd intent.
@@ -42,6 +53,10 @@
 //      pröva som antagande, ADR-086).
 //   3. `kortId` satt → `intentKalla` måste vara `'kort'` (ett kort-ID utan att
 //      deklarera kortet som intent-källa är en inkonsekvent utsaga).
+//   4. Ifyllda `policyRegler` → `policySha` måste vara satt (TASK-173.2 AC #1):
+//      regler utan commit-pinning går inte att verifiera mot main i efterhand.
+//   5. `policyRegler[].id` måste vara unika — en regel bokförs EN gång, med
+//      sitt fulla scope, aldrig uppdelad på flera poster.
 // Dessa fäller HELA utlåtandet (`ctx.addIssue`) — de är inte fail-closed-bara
 // som `action`, eftersom det inte finns någon säker default för en
 // motsägelsefull intent-deklaration.
@@ -101,6 +116,24 @@ const Risk = z.strictObject({
   motivering: z.string().min(1).max(400),
 });
 
+/** En path-scopad granskningsregel som FAKTISKT injicerades i granskningen
+ * (TASK-173.2, ADR-105 beslut 7). Formen speglar `matchaRegler()`s utdata i
+ * scripts/lib/review-policy.mjs — den fylls i ur `npm run review:policy`, inte
+ * för hand.
+ *
+ * `scope.matchadeFiler` har `.min(1)`: en regel utan matchande fil får ALDRIG
+ * stå i ett utlåtande. Det är AC #2 uttryckt som en strukturell invariant i
+ * stället för som en konvention — utan den kunde en granskare bokföra en regel
+ * som repo-bred, vilket är precis vad scope-etiketten finns för att förhindra. */
+const PolicyRegelReferens = z.strictObject({
+  id: z.string().min(1),
+  scope: z.strictObject({
+    monster: z.array(z.string().min(1)).min(1),
+    matchadeFiler: z.array(z.string().min(1)).min(1),
+  }),
+  kalla: z.string().min(1),
+});
+
 export const UtlatandeSchema = z
   .strictObject({
     schemaVersion: z.literal(SCHEMA_VERSION),
@@ -118,6 +151,17 @@ export const UtlatandeSchema = z
     acProvning: z.array(AcProvning),
     fynd: z.array(Fynd),
     risk: Risk,
+    /** Den commit `.review-policy.json` lästes ur — ALLTID en main-SHA
+     * (TASK-173.2 AC #1). `null` = inga regler injicerades. Commit-pinning
+     * som lag (ADR-105 beslut 6): utan den går det inte att i efterhand
+     * verifiera VILKEN regelmängd granskningen faktiskt vilade på. */
+    policySha: z.string().min(7).nullable().default(null),
+    /** De path-scopade regler som injicerades, med sitt scope (TASK-173.2
+     * AC #2). Default `[]` — semantiskt korrekt för "inga regler matchade",
+     * och gör utökningen ICKE-BRYTANDE mot 173.1:s form, vilket är varför
+     * SCHEMA_VERSION står kvar på 1.0: ett utlåtande skrivet före denna
+     * skiva validerar oförändrat. */
+    policyRegler: z.array(PolicyRegelReferens).default([]),
   })
   .superRefine((data, ctx) => {
     if (data.intentKalla === 'pr-text' && data.intentKonfidens !== 'lag') {
@@ -142,6 +186,26 @@ export const UtlatandeSchema = z
         path: ['intentKalla'],
         message: "Ett satt kortId kräver intentKalla='kort'.",
       });
+    }
+    if (data.policyRegler.length > 0 && data.policySha === null) {
+      ctx.addIssue({
+        code: 'custom',
+        path: ['policySha'],
+        message:
+          'Injicerade policyRegler kräver en policySha — utan commit-pinning går det inte att ' +
+          'verifiera att reglerna lästes ur main (TASK-173.2 AC #1, ADR-105 beslut 6).',
+      });
+    }
+    const seddaRegelIdn = new Set();
+    for (const [i, regel] of data.policyRegler.entries()) {
+      if (seddaRegelIdn.has(regel.id)) {
+        ctx.addIssue({
+          code: 'custom',
+          path: ['policyRegler', i, 'id'],
+          message: `Regel '${regel.id}' står två gånger — varje injicerad regel bokförs en gång, med sitt fulla scope.`,
+        });
+      }
+      seddaRegelIdn.add(regel.id);
     }
   });
 

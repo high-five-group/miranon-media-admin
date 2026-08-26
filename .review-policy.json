@@ -1,0 +1,114 @@
+{
+  "_readme": [
+    "Config för scripts/hamta-review-policy.mjs (TASK-173.2, ADR-105 beslut 7).",
+    "Path-scopade granskningsregler som injiceras i review-agentens input när —",
+    "och ENDAST när — en PR rör filer som matchar regelns mönster.",
+    "",
+    "LOGIK I SKRIPTET, VÄRDEN HÄR (grindvakts-konventionen, ~/.claude/CLAUDE.md",
+    "§ Instruktioner, Lesson #6 [UNIVERSAL]). Matchningen, ackumuleringen och",
+    "fail-closed-beteendet bor i scripts/lib/review-policy.mjs; denna fil bär",
+    "bara reglernas VÄRDEN och kan därför bytas ut per projekt utan refactor.",
+    "",
+    "═══ FILEN LÄSES ENDAST UR MAIN (AC #1) ═══",
+    "scripts/hamta-review-policy.mjs läser den med `git show <ref>:<fil>` mot",
+    "origin/main — ALDRIG från arbetsträdet. En PR-gren som ändrar denna fil",
+    "påverkar därför inte granskningen av SIN EGEN PR; ändringen får verkan",
+    "först när den landat i main. Samma tillitsmodell som GitHubs CODEOWNERS:",
+    "'To trigger review requests, pull requests use the version of CODEOWNERS",
+    "from the base branch of the pull request' (docs.github.com, About code",
+    "owners, verifierat 2026-08-26).",
+    "",
+    "═══ ALLA MATCHANDE REGLER GÄLLER — INTE BARA DEN SISTA ═══",
+    "Medvetet avsteg från CODEOWNERS ('Order is important; the last matching",
+    "pattern takes the most precedence', samma källa). Den regeln är rätt för",
+    "ÄGARSKAP (en fil har en ägar-uppsättning) men fel för GRANSKNINGSREGLER:",
+    "två regler som båda gäller en fil ska båda prövas. Vi följer i stället",
+    "Kubernetes/Prow OWNERS-modellen, som ackumulerar över katalogträdet —",
+    "'determine potential reviewers of a file by going over all reviewers found",
+    "in the OWNERS files for current and parent directories of the file'",
+    "(docs.prow.k8s.io, approve-pluginet, verifierat 2026-08-26).",
+    "",
+    "═══ VARJE REGEL PEKAR, KOPIERAR ALDRIG (ADR-100 §2) ═══",
+    "`provning` är en PRÖVNINGS-instruktion till granskaren, inte en kopia av",
+    "den styrande texten. `kalla` namnger ytan som äger regeln. Glider källan",
+    "är pekaren fortfarande rätt — en kopia hade tyst blivit fel.",
+    "",
+    "═══ FAIL-CLOSED (medvetet strängare än CODEOWNERS) ═══",
+    "Trasig JSON, okänd `version` eller en regel som bryter mot schemat gör att",
+    "skriptet avbryter med exit 64 — granskningen får hellre stanna än köras",
+    "med en tyst halverad regelmängd. CODEOWNERS gör tvärtom ('If any line in",
+    "your CODEOWNERS file contains invalid syntax, that line will be skipped'),",
+    "vilket är rimligt för en ägar-notifiering men inte för en grind: en tyst",
+    "bortfallen regel är exakt den ADR-083-felklass repot städat bort två",
+    "gånger.",
+    "",
+    "En ny regel kräver samma källmärkning som posterna nedan: `kalla` ska peka",
+    "på en styrande yta som faktiskt finns, och `monster` ska matcha sökvägar",
+    "som faktiskt existerar i repot."
+  ],
+  "version": 1,
+  "regler": [
+    {
+      "id": "airtable-faltoperationer",
+      "rubrik": "Airtable-fältoperationer mot fällkatalogen",
+      "monster": ["src/data/adapters/**", "supabase/functions/**/*.ts"],
+      "undantag": ["**/*.test.ts", "**/*.spec.ts"],
+      "provning": "Rör diffen en Airtable-fältoperation (läsning eller skrivning)? Verifiera att fältets skrivbarhet, typ och eventuella formel-/rollup-status är avstämd mot referensen — och att ingen fält-form är ANTAGEN. Kontrollera särskilt att inget skriver mot ett formel-/rollup-fält och att kända fällor för det rörda fältet är beaktade.",
+      "kalla": "CLAUDE.md § Instruktioner ('Airtable-schema före write') · docs/reference/data-model.md § Kända fällor"
+    },
+    {
+      "id": "tillganglighets-golvet",
+      "rubrik": "Tillgänglighet är alltid 11 — inga undantag",
+      "monster": ["src/components/**", "src/routes/**"],
+      "undantag": ["**/*.test.ts", "**/*.test.tsx", "src/components/dev/**"],
+      "provning": "Bär den rörda ytan tangentbordsnavigering, korrekt fokushantering, tillgängliga namn på interaktiva element och synlig fokusindikering? Klarar den prefers-contrast: more, prefers-reduced-motion och print? Ett a11y-avsteg är aldrig en avvägning mot tid — golvet är icke förhandlingsbart.",
+      "kalla": "CLAUDE.md § Kvalitetsribba (Tillgänglighet 11, inga undantag) · docs/specs/KVALITETSDEFINITIONER-11-REACT.md"
+    },
+    {
+      "id": "design-tokens",
+      "rubrik": "Inga hårdkodade färger — tre-lagers token-systemet",
+      "monster": ["src/components/**/*.css", "src/styles/**"],
+      "undantag": [],
+      "provning": "Introducerar diffen ett råt färgvärde i en komponent i stället för en CSS custom property? Ligger en komponentspecifik token utanför components.css? Konsumerar koden en variabel som inte är DEFINIERAD någonstans (den faller då tyst till webbläsarens default — en levande bugg av exakt den klassen fanns i repot tills commit 9d1875ea).",
+      "kalla": "CLAUDE.md § Design-system · docs/specs/DESIGN-SYSTEM-SPEC.md §1"
+    },
+    {
+      "id": "langa-streck-grinden",
+      "rubrik": "Långt streck i användarsynlig kod fäller i CI",
+      "monster": ["src/**/*.ts", "src/**/*.tsx"],
+      "undantag": ["src/**/*.d.ts"],
+      "provning": "Innehåller någon ny eller ändrad StringLiteral, JSXText eller TemplateElement ett långt streck? Grinden är wirad direkt i ci.yml och finns VARKEN i package.json eller check-docs.sh — den är därför osynlig för den som kör standard-kommandolistan, och två av fyra src-rörande agenter föll på den i samma våg 2026-08-21. Ett nytt undantag i policyfilen är fel svar för en sträng som kan skrivas om.",
+      "kalla": "scripts/check-langa-streck.mjs · .langa-streck-policy.json · .claude/agents/bygg-agent.md § Verifiera med CI:s exakta kommandon"
+    },
+    {
+      "id": "prod-och-hemligheter",
+      "rubrik": "Prod-vägar och hemligheter",
+      "monster": [
+        ".env*",
+        "scripts/*prod*",
+        "supabase/functions/**/*.ts",
+        "*-policy.conf",
+        "*-policy.json"
+      ],
+      "undantag": ["**/*.example", "**/*.test.ts"],
+      "provning": "Exponerar diffen en hemlighet, en prod-project-ref eller en nyckel i klartext (inklusive i loggutskrifter och felmeddelanden)? Öppnar den en väg där en agent kan nå prod-basen eller prod-projektet? Försvagar den ett befintligt lås? Detta är en kandidat för risk.niva = 'hog' — armering väntar då på Marcus explicita granskning.",
+      "kalla": "CLAUDE.md § Prod-EF-deploy · scripts/deny-prod-ref.sh · docs/reference/atkomst-och-nycklar.md"
+    },
+    {
+      "id": "ci-workflow",
+      "rubrik": "Ändrad CI-yta kräver paritetskontroll",
+      "monster": [".github/workflows/**"],
+      "undantag": [],
+      "provning": "Är ändringen verifierad med `npm run verify:ci-parity` (det ENA av tre lägen där verktyget ska plockas fram — inte som rutin)? Har paritets-grinden mot .ci-parity-policy.json passerat, eller har policyfilen uppdaterats i samma diff? Är actionlint körd med repots -ignore-flagga (utan den ger den ett falskt fynd på ci-suite.yml)?",
+      "kalla": "CLAUDE.md § verify:ci-parity är ett DIAGNOSVERKTYG · scripts/verify-ci-parity.mjs"
+    },
+    {
+      "id": "granskningsreglerna-sjalva",
+      "rubrik": "Ändring av policy-ytan granskas mot sin egen tillitsmodell",
+      "monster": [".review-policy.json", "scripts/lib/review-policy.mjs"],
+      "undantag": [],
+      "provning": "Diffen ändrar de regler som granskningen självt vilar på — samma självrefererande yta som CODEOWNERS ('This file applies to everything within the directory, including the OWNERS file itself'). Försvagar eller tar ändringen bort en regel, och är det motiverat i PR-kroppen? Bryter den mot att `kalla` ska peka på en styrande yta som faktiskt finns? OBS: denna regel injiceras ur MAIN:s version av filen, så den gäller även när PR:en försöker ta bort den.",
+      "kalla": "ADR-105 beslut 7 · TASK-173.2 AC #1"
+    }
+  ]
+}

@@ -6,9 +6,10 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-21 11:44'
-updated_date: '2026-08-22 08:53'
+updated_date: '2026-08-26 03:28'
 labels:
   - ready-for-agent
+  - intentionally-unchecked
 dependencies: []
 parent_task_id: TASK-286
 ordinal: 516000
@@ -65,4 +66,6 @@ STÄNGNINGSPASS 2 (kortstängnings-agent, uppdrag efter det flaggade "register-o
 CI grön per jobb bekräftat separat: gh pr checks 1699 mot merge-commit 3ef0168e — samtliga jobb pass/skipping, noll fällningar.
 
 Kortet sätts Done.
+
+OBOCKAT MED AVSIKT: DoD #5 (paritetstest EF-filter/klientfilter) och #7 (inga nätverksanrop vid skrivning) är otillämpliga — denna skiva bygger enbart adaptern/EF:ens registerläge; ingen klientkod konsumerar den ännu (kortets egen ÄNDE-TILL-ÄNDE-text: 'Inget i appen konsumerar den ännu ... nästa skiva TASK-286.2 byter listans källa', redan verifierat i kortets STÄNGNINGSPASS 2 mot gh pr diff 1699 --name-only: noll klientfiler, ingen PersonsList.tsx, inga sök-/filterhooks). Sök-/filterlogiken och nätverksmätningen hör till TASK-286.2. Landningen PR #1699 (MERGED, verifierat gh pr view 1699). Källmärkt 2026-08-26, S112 fix-våg 4, ADR-127-normalisering.
 <!-- SECTION:NOTES:END -->

@@ -92,9 +92,12 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
   // Allowlisten gatar FÄLTET, inte värdet — samma operation kryssar i och ur
   // (och är därmed test-teardownens väg). Eventets bor över-ANTAL härleds
   // ALLTID ur dessa kryss; något lagrat räknefält finns medvetet inte och kan
-  // därför inte heller skrivas. ⚠️ PROD-fältet är INTE skapat — hård
-  // prod-deploy-förutsättning (fält FÖRE EF, per miljö; data-model.md §Kända
-  // fällor 37). Tabell per NAMN (ADR-050 bas-portabilitet).
+  // därför inte heller skrivas. PROD-fältet FINNS sedan 2026-07-23 (S75
+  // prod-deploy-vågen, prod-ID `fld4Flif4NoFnNsxS` — data-model.md § Prod-
+  // basens additiva tillskott 2026-07-23). Föregående ⚠️-varning ("PROD-
+  // fältet är INTE skapat") var föråldrad; rättad TASK-200 (svept mot
+  // live-schema via data-model.md, 2026-08-26). Tabell per NAMN (ADR-050
+  // bas-portabilitet).
   'set-registration-lodging': {
     tableId: 'Anmälningar',
     allowedFields: ['Bor över'],
@@ -179,9 +182,12 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
   // skapa-sidans dra-till-bekräfta-handtag armerar. ADDITIVT checkbox-fält, live-verifierat
   // mot STAGING-schemat (tblVE3UKWl1CKrphV, fält `fldyJKnJCP1brHwL6`, skapat 2026-07-22 —
   // skrivbart per konstruktion, L294) INNAN posten låstes; namnet är EXAKT Airtable-fältnamnet.
-  // ⚠️ PROD-fältet är INTE skapat — hård prod-deploy-förutsättning (fält FÖRE EF, per miljö;
-  // samma ordning som 'Idempotensnyckel', data-model.md §Kända fällor 37). EF:en skriver
-  // fältet ENDAST när flaggan är ARMERAD; oarmerat utelämnas det ur fields-mapen (ett skrivet
+  // PROD-fältet FINNS sedan 2026-07-23 (S75 prod-deploy-vågen, prod-ID
+  // `fldrjj61ovL3Zv1mN` — data-model.md § Prod-basens additiva tillskott
+  // 2026-07-23). Föregående ⚠️-varning ("PROD-fältet är INTE skapat") var
+  // föråldrad; rättad TASK-200 (svept mot live-schema via data-model.md,
+  // 2026-08-26). EF:en skriver fältet ENDAST när flaggan är ARMERAD;
+  // oarmerat utelämnas det ur fields-mapen (ett skrivet
   // `false` skulle SÄTTA checkboxen till omarkerad — utelämnande är formen för "osatt").
   // 'Kursfamilj'/'Kursnivå' (TASK-249.4, ADR-115) — basdimensionerna som stänger den
   // dokumenterade skapelseväg-kanten (data-model.md § "Staging- och prodbasens additiva
@@ -283,8 +289,11 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
   // additivt 2026-07-23; skrivbarheten LIVE-VERIFIERAD via create+läs-tillbaka+radera
   // INNAN posten låstes, L294): 'Författare' (singleLineText, primär), 'Anteckning'
   // (multilineText), 'Event' (multipleRecordLinks → Eventplanering). Tidpunkten sätts av
-  // Airtables createdTime (aldrig ett skrivet fält). ⚠️ PROD-tabellen är INTE skapad —
-  // hård prod-deploy-förutsättning (tabell FÖRE EF, per miljö; ADR-050/ADR-063).
+  // Airtables createdTime (aldrig ett skrivet fält). PROD-tabellen FINNS
+  // sedan 2026-07-23 (S75 prod-deploy-vågen, prod-ID `tblaUhH1KF9k9imul` —
+  // data-model.md § Prod-basens additiva tillskott 2026-07-23). Föregående
+  // ⚠️-varning ("PROD-tabellen är INTE skapad") var föråldrad; rättad
+  // TASK-200 (svept mot live-schema via data-model.md, 2026-08-26).
   // Tabell per NAMN (ADR-050 bas-portabilitet).
   'create-event-note': {
     tableId: 'Anteckningar',
@@ -327,10 +336,19 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
   // separat live-verifiering behövdes): 'Namn' (singleLineText, primär),
   // 'Storlek (bytes)' (number), 'Skapad' (dateTime — manuellt satt, INTE
   // Airtables createdTime, se scripts/create-bilagor-table.mjs § "Skapad"),
-  // 'Event' (multipleRecordLinks → Eventplanering). ⚠️ PROD-tabellen är INTE
-  // skapad — hård prod-deploy-förutsättning (tabell FÖRE EF, per miljö;
-  // ADR-050/ADR-063, samma mönster som create-event-note). Tabell per NAMN
-  // (ADR-050 bas-portabilitet).
+  // 'Event' (multipleRecordLinks → Eventplanering). PROD-tabellen FINNS
+  // sedan 2026-08-11 (S102 bas-apply, prod-ID `tblevR1B54wFjp7QC` —
+  // data-model.md § Prod-basens additiva tillskott 2026-08-11). DIVERGENS
+  // mot TASK-200s ursprungliga premiss (kortet pekade ut tre av fem
+  // varningar som föråldrade — Bor över/Publicerad på miranon.se/
+  // Anteckningar; denna och create-receipts varning nedan var vid kortets
+  // skrivande fortfarande sanna, men bas-applyn som skapade denna tabell
+  // landade SAMMA DAG, några timmar senare — se
+  // docs/research/prodbas-synk-staging-till-prod-2026-08-11.md § Delfråga 2
+  // + § Rekommendation p1). Rättad TASK-200 (svept mot live-schema via
+  // data-model.md, 2026-08-26, alltså mot ALLA FEM, inte bara de tre
+  // kortet ursprungligen pekade ut). Tabell per NAMN (ADR-050
+  // bas-portabilitet).
   // 'Lagringsnyckel' (TASK-147.5, additiv) — storage-objektets leaf-namn,
   // skrivet av upload-attachment/finalize-attachment-upload/generate-event-
   // attachment vid radskapelse. Server-internt (aldrig i den publika
@@ -423,9 +441,11 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
   // fel. Additiv tabell (staging tblk8fZcArXPpRYnX, skapad additivt via
   // Airtable MCP 2026-08-10, deklarativ hemvist
   // scripts/create-kvitton-table.mjs — samma mönster som
-  // scripts/create-bilagor-table.mjs). ⚠️ PROD-tabellen är INTE skapad —
-  // hård prod-deploy-förutsättning (tabell FÖRE EF, per miljö; ADR-050/
-  // ADR-063). Tabell per NAMN (ADR-050 bas-portabilitet).
+  // scripts/create-bilagor-table.mjs). PROD-tabellen FINNS sedan 2026-08-11
+  // (S102 bas-apply, prod-ID `tblZC6jBQIHiuS24a` — data-model.md § Prod-
+  // basens additiva tillskott 2026-08-11). Samma divergens-anmärkning som
+  // create-attachment ovan gäller: föråldrad, rättad TASK-200 2026-08-26.
+  // Tabell per NAMN (ADR-050 bas-portabilitet).
   'create-receipt': {
     tableId: 'Kvitton',
     allowedFields: [

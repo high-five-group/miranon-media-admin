@@ -101,8 +101,16 @@
 //     dem från dod_obockat när kortet bär en pekare.
 //   * har_pekare — bär kortets Final Summary en landnings-pekare
 //     (BACKLOG_LANDNINGS_PEKARE_MONSTER, t.ex. `PR #1910`)?
+//   * pekare_nr — PR-NUMREN ur de pekare har_pekare hittade, kommaseparerade
+//     och unika (TASK-319). har_pekare säger att en pekare FINNS; numret är
+//     det enda som gör dess SANNING prövbar mot landningshistoriken. Fältet
+//     är tomt när ingen pekare finns eller mönstret är avstängt.
 //   * har_markor — bär kortets Implementation Notes ELLER Final Summary
 //     avstådd-krav-markören (BACKLOG_AVSTADD_KRAV_MARKOR)?
+//
+// ALLA pekare på kortet tas med, inte bara den första. Ett kort som deklarerar
+// två landningar gör två påståenden, och grinden prövar båda — annars hade ett
+// påhittat nummer kunnat gömma sig bakom ett sant.
 //
 // SÖKYTAN ÄR AVGRÄNSAD MED FLIT, INTE HELA FILEN. Pekaren söks ENDAST i
 // Final Summary: en beskrivning som nämner "PR #1912" som kontext (TASK-243.5
@@ -126,7 +134,7 @@
 // resten av raden på bash-sidan):
 //
 //     id|tid12|ac_totalt|ac_obockat|dod_obockat|dod_obockat_harledd|
-//     har_pekare|har_markor|barn_ids|labels|status
+//     har_pekare|pekare_nr|har_markor|barn_ids|labels|status
 //
 // Exit 0 = fakta på stdout. Exit 2 = anropsfel (samma kontrakt som grinden).
 
@@ -165,6 +173,28 @@ const LANDNINGS_PEKARE = monster(
   'BACKLOG_LANDNINGS_PEKARE_MONSTER',
 );
 const AVSTADD_MARKOR = process.env.BACKLOG_AVSTADD_KRAV_MARKOR || '';
+
+// Global variant av pekar-mönstret, för att plocka SAMTLIGA pekare på kortet.
+// Egen instans med flit: en `g`-regex bär muterbart `lastIndex`, och att dela
+// den med `har_pekare`-testet ovan hade gjort utfallet beroende av anropsordning
+// — den klassiska `test()`-med-`g`-fällan.
+const LANDNINGS_PEKARE_ALLA = LANDNINGS_PEKARE ? new RegExp(LANDNINGS_PEKARE.source, 'g') : null;
+
+// PR-numren ur varje pekare i texten, unika och i funnen ordning.
+// Nollängds-matchning kan inte hänga loopen: lastIndex stegas manuellt.
+function pekarNummer(text) {
+  if (!LANDNINGS_PEKARE_ALLA) return '';
+  const nummer = [];
+  LANDNINGS_PEKARE_ALLA.lastIndex = 0;
+  let m = LANDNINGS_PEKARE_ALLA.exec(text);
+  while (m !== null) {
+    const siffror = m[0].match(/[0-9]+/);
+    if (siffror) nummer.push(siffror[0]);
+    if (m.index === LANDNINGS_PEKARE_ALLA.lastIndex) LANDNINGS_PEKARE_ALLA.lastIndex++;
+    m = LANDNINGS_PEKARE_ALLA.exec(text);
+  }
+  return [...new Set(nummer)].join(',');
+}
 
 function kliAnrop(args) {
   const r = spawnSync(CLI, args, { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 });
@@ -278,7 +308,8 @@ for (const f of fs.readdirSync(TASKS_DIR)) {
     AVSTADD_MARKOR && (anteckningar.includes(AVSTADD_MARKOR) || slutrad.includes(AVSTADD_MARKOR))
       ? 1
       : 0;
-  faktaPerId.set(id, { ac, dod, harPekare, harMarkor });
+  const pekareNr = harPekare ? pekarNummer(slutrad) : '';
+  faktaPerId.set(id, { ac, dod, harPekare, pekareNr, harMarkor });
 }
 
 // Mängderna MÅSTE vara identiska, i BÅDA riktningar. Divergerar de läser de två
@@ -365,15 +396,21 @@ if (STICKPROV > 0) {
       AVSTADD_MARKOR && (kliNotes.includes(AVSTADD_MARKOR) || kliSlutrad.includes(AVSTADD_MARKOR))
         ? 1
         : 0;
+    // Pekarens NUMMER korsvalideras med samma stränghet som dess närvaro: det
+    // är numret grinden prövar mot landningshistoriken (TASK-319), så en tyst
+    // felläsning här ger antingen falskt rött på ett korrekt kort eller tyst
+    // grönt på ett påhittat nummer.
+    const kliPekareNr = kliPekare ? pekarNummer(kliSlutrad) : '';
     if (
       kliHarledd !== min.dod.obockatHarledd ||
       kliPekare !== min.harPekare ||
+      kliPekareNr !== min.pekareNr ||
       kliMarkor !== min.harMarkor
     ) {
       fel(
         `❌ korsvalidering FÄLLDE för ${id} — stängningsformens fält skiljer sig mot CLI:t`,
-        `   CLI:  härledda obockade ${kliHarledd} · pekare ${kliPekare} · markör ${kliMarkor}`,
-        `   fil:  härledda obockade ${min.dod.obockatHarledd} · pekare ${min.harPekare} · markör ${min.harMarkor}`,
+        `   CLI:  härledda obockade ${kliHarledd} · pekare ${kliPekare} · nr '${kliPekareNr}' · markör ${kliMarkor}`,
+        `   fil:  härledda obockade ${min.dod.obockatHarledd} · pekare ${min.harPekare} · nr '${min.pekareNr}' · markör ${min.harMarkor}`,
         '   Fail-closed: sektionsmarkörerna eller DoD-formatet har ändrats. Laga',
         '   parsningen i scripts/backlog-kortfakta.mjs — grinden får inte gissa',
         '   vilka kort som är undantagna från invariant 2.',
@@ -409,6 +446,7 @@ for (const t of kort) {
       min.dod.obockat,
       min.dod.obockatHarledd,
       min.harPekare,
+      rent(min.pekareNr, t.id, 'pekare_nr'),
       min.harMarkor,
       barn,
       rent((t.labels || []).join(','), t.id, 'labels'),

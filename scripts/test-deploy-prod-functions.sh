@@ -28,11 +28,25 @@
 #   T7 deploy-läge, policyfil saknas → samma fail-closed, exit 1, noll
 #      npx-anrop alls.
 #
+# T8–T10 (TASK-37, 2026-08-26) prövar --AUDIT-LÄGET: read-only diff av
+# LIVE prod-funktioner (stubbad `functions list -o json`) mot allowlisten.
+# Bygger på samma setup_pinned()-fixtur som T5–T7 (utökad med
+# scripts/lib/jq-guard.sh + .jq-version-policy.conf — audit-läget kräver
+# jq för att tolka svaret, de andra CLI-anropen gör inte det). jq körs ÄKTA
+# (systembinären), bara `npx supabase functions list` är stubbad.
+#   T8 audit, alla live-funktioner allowlistade → 0 icke-allowlistade
+#      rapporterade, exit 0.
+#   T9 audit, en live-funktion (`test-auth`) SAKNAS i allowlisten → rapporten
+#      pekar ut den under "[ICKE-ALLOWLISTAD]", exit 1 — bevisar TRÄFF-sidan
+#      av AC #2 (T8 bevisar ICKE-TRÄFF-sidan).
+#   T10 --audit utan --project-ref → usage-fel, exit 1 (kan inte granska
+#      prod utan mål; ingen npx/jq-anrop sker).
+#
 # Test-isolering: skapar /tmp/s19-test-deploy-allowlist/ med supabase/functions/
 # + .prod-functions-allowlist.conf-fixturer (T1–T4) resp. en utökad variant
-# med scripts/lib/ + .supabase-cli-policy.conf + stubbad npx på PATH (T5–T7).
+# med scripts/lib/ + .supabase-cli-policy.conf + stubbad npx på PATH (T5–T10).
 # Återställer (rm -rf) via trap. INGEN ändring av real-repo, INGEN faktisk
-# deploy eller nätverkstrafik i något testfall.
+# deploy/audit-anrop mot verklig prod eller nätverkstrafik i något testfall.
 #
 # Användning: bash scripts/test-deploy-prod-functions.sh
 # Exit 0 om alla testfall passerar. Exit 1 om någon failar.
@@ -162,7 +176,7 @@ write_allowlist "${PROD_FNS[@]}"
 out=$(run_script); ec=$?
 ok=0
 check_exit "T4" 1 "${ec}" || ok=1
-check_contains "T4" "Ange --list eller --project-ref" "${out}" || ok=1
+check_contains "T4" "Ange --list, --audit eller --project-ref" "${out}" || ok=1
 mark "${ok}"
 
 # ============================================================
@@ -183,16 +197,34 @@ setup_pinned() {
     mkdir -p "${TEST_DIR}/scripts/lib"
     cp "${REPO_ROOT}/scripts/lib/supabase-cli.sh" "${TEST_DIR}/scripts/lib/supabase-cli.sh"
     printf 'SUPABASE_CLI_VERSION="2.115.0"\n' > "${TEST_DIR}/.supabase-cli-policy.conf"
+    # --audit (T8–T10) sourcar dessutom jq-guard.sh — samma kopierings-
+    # mönster som supabase-cli.sh ovan. jq-guard.sh löser sin policyfil
+    # LIB-relativt (${_JQ_GUARD_LIB_DIR}/../../.jq-version-policy.conf, se
+    # den filens § POLICYFILENS SÖKVÄG), alltså TEST_DIR/.jq-version-
+    # policy.conf härifrån — inte cwd-relativt som ALLOWLIST_FILE ovan.
+    cp "${REPO_ROOT}/scripts/lib/jq-guard.sh" "${TEST_DIR}/scripts/lib/jq-guard.sh"
+    printf 'JQ_MIN_VERSION="1.6"\n' > "${TEST_DIR}/.jq-version-policy.conf"
     mkdir -p "${STUB_BIN}"
     cat > "${STUB_BIN}/npx" <<'STUB'
 #!/usr/bin/env bash
 echo "$@" >> "${NPX_LOG}"
+is_list=0
 for a in "$@"; do
     if [[ "${a}" == "--version" ]]; then
         echo "${STUB_NPX_VERSION:-2.115.0}"
         exit 0
     fi
+    if [[ "${a}" == "list" ]]; then
+        is_list=1
+    fi
 done
+# --audit (T8–T10): `supabase functions list --project-ref <ref> -o json`
+# matchar HELLER inte `--version` ovan, så det svarar detta i stället — den
+# stubbade prod-listan T8/T9 sätter via STUB_FUNCTIONS_LIST_JSON.
+if [[ "${is_list}" -eq 1 ]]; then
+    printf '%s' "${STUB_FUNCTIONS_LIST_JSON:-[]}"
+    exit 0
+fi
 exit 0
 STUB
     chmod +x "${STUB_BIN}/npx"
@@ -252,6 +284,49 @@ if [[ ! -s "${NPX_LOG}" ]]; then
     echo "  ✅ T7: npx anropades ALDRIG"
 else
     echo "  ❌ T7: npx anropades trots saknad policy"
+    ok=1
+fi
+mark "${ok}"
+
+# ============================================================
+# T8–T10: --AUDIT-LÄGET (TASK-37) — se filhuvudets § T8–T10 för fixtur-motiv.
+
+LIVE_JSON_ALLA_ALLOWLISTADE='[{"slug":"create-admin-user"},{"slug":"get-events"},{"slug":"get-persons"},{"slug":"get-registrations"},{"slug":"update-record"}]'
+LIVE_JSON_MED_TEST_AUTH='[{"slug":"create-admin-user"},{"slug":"get-events"},{"slug":"get-persons"},{"slug":"get-registrations"},{"slug":"update-record"},{"slug":"test-auth"}]'
+
+echo "═══ T8: --audit, alla live-funktioner allowlistade → 0 icke-allowlistade, exit 0 ═══"
+setup_pinned
+out=$(STUB_NPX_VERSION="2.115.0" STUB_FUNCTIONS_LIST_JSON="${LIVE_JSON_ALLA_ALLOWLISTADE}" \
+    run_script_pinned --audit --project-ref ZZ-TEST-REF); ec=$?
+ok=0
+check_exit "T8" 0 "${ec}" || ok=1
+check_contains "T8" "0 icke-allowlistade funktioner live i ZZ-TEST-REF" "${out}" || ok=1
+check_absent "T8 ingen deploy skedde" "functions deploy" "${out}" || ok=1
+mark "${ok}"
+
+echo "═══ T9: --audit, test-auth live men INTE allowlistad → TRÄFF, exit 1 ═══"
+setup_pinned
+out=$(STUB_NPX_VERSION="2.115.0" STUB_FUNCTIONS_LIST_JSON="${LIVE_JSON_MED_TEST_AUTH}" \
+    run_script_pinned --audit --project-ref ZZ-TEST-REF); ec=$?
+ok=0
+check_exit "T9" 1 "${ec}" || ok=1
+check_contains "T9 pekar ut test-auth" "[ICKE-ALLOWLISTAD]  test-auth" "${out}" || ok=1
+check_contains "T9 antal" "1 icke-allowlistad(e) funktion(er) LIVE" "${out}" || ok=1
+for fn in "${PROD_FNS[@]}"; do
+    check_absent "T9 ${fn} INTE rapporterad som icke-allowlistad" "[ICKE-ALLOWLISTAD]  ${fn}" "${out}" || ok=1
+done
+mark "${ok}"
+
+echo "═══ T10: --audit utan --project-ref → usage-fel, exit 1, noll npx/jq-anrop ═══"
+setup_pinned
+out=$(run_script_pinned --audit); ec=$?
+ok=0
+check_exit "T10" 1 "${ec}" || ok=1
+check_contains "T10" "--audit kräver --project-ref" "${out}" || ok=1
+if [[ ! -s "${NPX_LOG}" ]]; then
+    echo "  ✅ T10: npx anropades ALDRIG"
+else
+    echo "  ❌ T10: npx anropades trots saknad --project-ref"
     ok=1
 fi
 mark "${ok}"

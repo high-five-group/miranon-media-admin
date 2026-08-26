@@ -227,3 +227,83 @@ export async function classify401Body(response: APIResponse): Promise<Unauthoriz
     `classify401Body: 401-body matchar varken gateway-format ({code:'UNAUTHORIZED_*',...}) eller requireUser-format ({error:'<non-empty>'}). Body-snippet: ${JSON.stringify(body).slice(0, 200)}`,
   );
 }
+
+/**
+ * Transienta 502/503 från Supabase Edge Runtime/Airtable-lagret (TASK-207,
+ * 2026-08-12: post-merge-sviten föll TRE separata gånger med genuina 502/503
+ * spridda över FEM orelaterade endpoints, tre PR:er utan gemensam kod, två
+ * skilda tidsfönster — bevisat oskyldiga via first-parent-diff. Signaturen
+ * (två av fem instanser) var Supabase egen kropp
+ * `{"code":"SUPABASE_EDGE_RUNTIME_SERVICE_DEGRADED",...}` — plattforms-
+ * degradering, ingen kodregression).
+ *
+ * Branschmönstret för denna felklass är exponentiell backoff + jitter mot en
+ * IDEMPOTENT läsning (AWS Architecture Blog, "Exponential Backoff And
+ * Jitter", 2015 — "full jitter": `random(0, base * 2^attempt)`), samma
+ * grundform som repots egna `supabase/functions/_shared/airtable-retry.ts`
+ * använder för Airtables 429-kontrakt. En tröskel eller ett fast `sleep` är
+ * INTE samma lösning — de antingen maskerar en genuin regression (tröskel)
+ * eller garanterar ingen verklig väntan (fast sleep utan backoff).
+ *
+ * ENDAST för idempotenta GET-anrop — retry av en WRITE (POST/PATCH) är INTE
+ * säkert här: en 502/503 kan komma EFTER att skrivningen redan lyckats på
+ * servern, och ett omförsök hade då dubblat den. Call-sites som skriver
+ * (create-event-note, update-record, attachment-upload) ska INTE använda
+ * denna funktion — se TASK-207 § Final Summary för den avgränsningen.
+ *
+ * ALLA andra statuskoder (inkl. 500, 4xx, 200) returneras OFÖRÄNDRADE efter
+ * FÖRSTA anropet — retryn viker alltid för en genuin regression. Efter
+ * `maxRetries` returneras det sista (fortsatt 502/503) svaret rakt av: testet
+ * fäller precis som förut om plattformsdegraderingen varar längre än
+ * fönstret, i stället för att dölja den bakom en oändlig loop.
+ */
+export const TRANSIENT_RETRY_STATUSES = [502, 503] as const;
+
+/** Bas-väntan före FÖRSTA omförsöket (attempt 0). Dubblas per efterföljande försök. */
+export const TRANSIENT_RETRY_BASE_WAIT_MS = 500;
+
+/** Tak på antal omförsök UTÖVER första försöket — tre extra anrop, ~3,5 s värsta fall. */
+export const TRANSIENT_RETRY_MAX_RETRIES = 3;
+
+export interface TransientRetryOptions {
+  /** Max antal omförsök utöver första försöket. Default: `TRANSIENT_RETRY_MAX_RETRIES` (3). */
+  maxRetries?: number;
+  /** Bas-väntan i ms. Default: `TRANSIENT_RETRY_BASE_WAIT_MS` (500). */
+  baseWaitMs?: number;
+  /** Injicerbar sleep (tester mäter/nollar väntetiden). Default: `setTimeout`. */
+  sleep?: (ms: number) => Promise<void>;
+  /** Injicerbar slumpkälla för full-jitter (tester). Default: `Math.random`. */
+  random?: () => number;
+}
+
+const defaultSleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
+
+/**
+ * Kör en idempotent GET och gör om anropet vid transient 502/503, med full
+ * jitter (AWS-mönstret: `random() * base * 2^attempt`) och ett hårt tak.
+ *
+ * `get` tar en `signal`-fri closure så call-sites kan bygga URL/headers precis
+ * som förut — funktionen kallar bara `get()` igen vid en transient status.
+ */
+export async function getWithTransientRetry(
+  get: () => Promise<APIResponse>,
+  options: TransientRetryOptions = {},
+): Promise<APIResponse> {
+  const maxRetries = options.maxRetries ?? TRANSIENT_RETRY_MAX_RETRIES;
+  const baseWaitMs = options.baseWaitMs ?? TRANSIENT_RETRY_BASE_WAIT_MS;
+  const random = options.random ?? Math.random;
+  const sleep = options.sleep ?? defaultSleep;
+
+  let attempt = 0;
+  let res = await get();
+  while (
+    TRANSIENT_RETRY_STATUSES.includes(res.status() as (typeof TRANSIENT_RETRY_STATUSES)[number]) &&
+    attempt < maxRetries
+  ) {
+    const cap = baseWaitMs * 2 ** attempt;
+    await sleep(random() * cap);
+    attempt += 1;
+    res = await get();
+  }
+  return res;
+}
