@@ -66,6 +66,15 @@
       "linkGuard": false
     },
     {
+      "name": "attachment-filename-ascii-safety-sentineler",
+      "table": "Bilagor",
+      "_TASK-309.22": "upload-attachment.staging.test.ts:s sentinel-formel/exact-mönster kräver ett UUID-only-suffix (regexen slutar direkt efter uuid:t med .pdf) och kan därför inte bära det rapporterade bugg-filnamnet självt. Denna target är EFTER-KÖRNING-ÄGD (registreras via tests/support/kastbara-poster.ts, ADR-060 punkt 3) — testet upload-attachment-ascii-safety.staging.test.ts laddar upp EXAKT filnamnet 2025-HörlurarMiranonMedia.pdf (rotorsaksfilnamnet, Marcus prod-röktest 2026-08-26) inbäddat i en per-körning-unik sentinel för att bevisa Storage-nyckel-fixen mot skarp staging-EF.",
+      "filterByFormula": "FIND('ZZ-attachment-filename-test-', {Namn}) = 1",
+      "exactMatchField": "Namn",
+      "exactMatchPattern": "^ZZ-attachment-filename-test-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-2025-HörlurarMiranonMedia\\.pdf$",
+      "linkGuard": false
+    },
+    {
       "name": "save-event-text-eventplanering-sentineler",
       "table": "Eventplanering",
       "filterByFormula": "FIND('ZZ-TASK-309.3-', {Ort}) = 1",

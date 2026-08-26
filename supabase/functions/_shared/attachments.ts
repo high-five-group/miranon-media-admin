@@ -192,81 +192,22 @@ export function isValidAttachmentId(value: unknown): value is string {
   return typeof value === 'string' && UUID_RE.test(value);
 }
 
-const MAX_CONTROL_CODE_POINT = 31;
-const DEL_CODE_POINT = 127;
-
 /**
- * Sant för styrtecken (kodpunkt 0 till 31, eller DEL/127) — filtreras bort ur
- * klient-angivna filnamn. Kodpunkt-jämförelse i stället för en regex-
- * teckenklass med inbäddade escape-sekvenser: undviker risken att en
- * bokstavlig styrtecken-byte smyger sig in i själva källfilen via en
- * textredigering (motiv, inte gissning — exakt det hände under detta korts
- * eget bygge, TASK-146.4, se slutrapportens § fynd).
+ * [TASK-309.22] `sanitizeFilnamn`/`buildAttachmentLeaf`/`buildAttachmentPath`
+ * FLYTTADE till `./attachment-filename.ts` (en egen, ZOD-FRI fil — se den
+ * filens huvud för det fulla strukturella skälet: `_shared/attachments.ts`
+ * importerar zod från `esm.sh`, vilket gör HELA filen otestbar som ett
+ * direkt Node-import; funktionerna behövde ingen zod och blev därför
+ * body-testbara mot produktionskoden genom flytten,
+ * `tests/api/attachment-filename.test.ts`). RE-EXPORTERADE här oförändrat
+ * så INGEN av de 13 EF-filer som redan importerar dem via
+ * `'../_shared/attachments.ts'` behöver ändra sin importsats.
  */
-function isControlCodePoint(codePoint: number): boolean {
-  return codePoint <= MAX_CONTROL_CODE_POINT || codePoint === DEL_CODE_POINT;
-}
-
-const PATH_SEPARATOR_RE = /[/\\]/g;
-
-/**
- * Städar ett klient-angivet filnamn till något som är säkert som EN
- * path-SEGMENT (aldrig flera): tar bort katalogseparatorer och styrtecken,
- * trimmar, cappar längden. Body-only — bär INGEN säkerhetsgaranti mot
- * cross-event-åtkomst (den kommer från att `eventId` valideras separat och
- * att attachmentId alltid är server-genererat).
- */
-export function sanitizeFilnamn(raw: string): string {
-  const noSeparators = raw.replace(PATH_SEPARATOR_RE, '-');
-  const noControlChars = Array.from(noSeparators)
-    .filter((ch) => !isControlCodePoint(ch.codePointAt(0) ?? 0))
-    .join('');
-  const stripped = noControlChars.trim();
-  const MAX_LEN = 200;
-  return stripped.length > MAX_LEN ? stripped.slice(0, MAX_LEN) : stripped;
-}
-
-/**
- * Storage-objektets LEAF-namn (allt utom `eventId/`-prefixet): `<attachmentId>-
- * <sanitizeFilnamn(filnamn)>`. Utbruten som EGEN funktion (TASK-147.5) eftersom
- * den bilage-bärande sändvägen behöver PRECIS denna sträng för att skriva
- * `Lagringsnyckel`-fältet vid radskapelse (upload-attachment/finalize-
- * attachment-upload/generate-event-attachment) — samma formel som
- * `buildAttachmentPath` nedan bygger på, inte en parallell variant.
- */
-export function buildAttachmentLeaf(attachmentId: string, filnamn: string): string {
-  return `${attachmentId}-${sanitizeFilnamn(filnamn)}`;
-}
-
-/**
- * Den DETERMINISTISKA path-formen — SAMMA formel i create-attachment-upload-
- * ticket (vid utfärdande) och finalize-attachment-upload (vid verifiering).
- * `attachmentId` är alltid server-genererat (crypto.randomUUID()), aldrig
- * klient-buret — det är därför en klient inte kan peka finalize mot en annan
- * händelses/annan uppladdnings fil: de kan bara "träffa" en path som
- * FAKTISKT har bytes där, och bytes hamnar bara där via ett tillstånd som
- * SERVERN redan knöt till just detta (eventId, attachmentId, filnamn).
- *
- * [UTBYGGD, TASK-275.3, ADR-118] Parametern heter `anchor`, inte längre
- * `eventId` (ren namnändring — INGEN formel/beteendeförändring, samma
- * `${anchor}/${leaf}`-konkatenering som förut). Anledningen: EF:erna för
- * MÖNSTER 2 (create-attachment-upload-ticket/finalize-attachment-upload,
- * OFÖRÄNDRADE av denna skiva) skickar alltid ett riktigt `eventId` (rec…)
- * hit — event-löst mönster 2-stöd är MEDVETET UTANFÖR denna skivas scope
- * (se upload-attachment/index.ts § filhuvudet). MÖNSTER 1
- * (upload-attachment/index.ts) kan däremot skicka in VILKEN sträng
- * `buildStorageAnchor` nedan än härledde — ett rec-ID (Event-räckvidd/
- * event-kontext) ELLER en scope-prefix-sträng (event-löst Kurstyp/Alla
- * event, se den funktionens docblock). Funktionen bryr sig inte om VILKET —
- * den konkatenerar bara.
- */
-export function buildAttachmentPath(
-  anchor: string,
-  attachmentId: string,
-  filnamn: string,
-): string {
-  return `${anchor}/${buildAttachmentLeaf(attachmentId, filnamn)}`;
-}
+export {
+  buildAttachmentLeaf,
+  buildAttachmentPath,
+  sanitizeFilnamn,
+} from './attachment-filename.ts';
 
 /**
  * [TASK-275.3, ADR-118 beslut 5] Storage-path-ANKARET — den DETERMINISTISKA

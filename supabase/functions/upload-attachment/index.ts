@@ -97,6 +97,48 @@
 // aldrig två olika filer. `anchor` ingår i hash-indata specifikt för att
 // samma fil+filnamn uppladdat till TVÅ OLIKA event inte ska kollidera till
 // en enda rad.
+//
+// [TASK-309.22, HASH-BESLUT — REVIDERAT I REVIEW-RUNDA 1] `deriveAttachmentId`
+// hashar `sanitizeFilnamn(filnamn)` — men EN TIDIGARE VERSION av detta beslut
+// (samma korts första bygg-varv) lät `sanitizeFilnamn` SJÄLV falla till
+// ASCII, vilket gjorde hash-underlaget ASCII-säkert också. Det var FEL:
+// review-runda 1 visade empiriskt att `toStorageSafe` (ASCII-fallet)
+// kollapsar OLIKA filnamn till IDENTISK sträng långt bortom "bara
+// diakritik" — TVÅ HELT OLIKA CJK-strängar (`填报指南.pdf`/`肆意妄为.pdf`)
+// och TVÅ HELT OLIKA emoji (`😀`/`🎉`) föll till samma ASCII-form precis
+// lika lätt som ett diakritik-par. Eftersom `deriveAttachmentId` hashar
+// (anchor, hash-underlag, bytes) hade DETTA gjort att två filer med OLIKA
+// namn och byte-identiskt innehåll fick SAMMA attachmentId — en genuint ny
+// uppladdning hade av misstag blivit en "idempotent replay" av en HELT
+// annan fil (fel Namn kvarstående i Airtable).
+//
+// BESLUTET NU: `sanitizeFilnamn` (`_shared/attachment-filename.ts`) faller
+// INTE längre till ASCII alls — den gör bara det den alltid gjort
+// (separator-/styrtecken-städning, trim, 200-cap). ASCII-fallet
+// (`toStorageSafe`) körs ENDAST inuti `buildAttachmentLeaf`, för
+// Storage-nyckeln/`Lagringsnyckel` — ALDRIG för hash-underlaget. Två olika
+// filnamn (oavsett skript) ger därför ALLTID olika `sanitizeFilnamn`-utdata
+// och därmed olika attachmentId, PRECIS som innan denna hela skiva någonsin
+// rörde vid ASCII-frågan. Bakåtkompatibiliteten (befintliga ASCII-namns
+// hash/nyckel OFÖRÄNDRADE) håller fortfarande: för rena ASCII-namn är
+// `sanitizeFilnamn`s utdata och den ASCII-fallna leaf-formen IDENTISKA (inget
+// tecken att falla), så ingenting ändras för dem. Se
+// `_shared/attachment-filename.ts`s docblock för `sanitizeFilnamn`/
+// `toStorageSafe`/`buildAttachmentLeaf` för den fullständiga uppdelningen.
+//
+// DEN TIDIGARE "KÄND, ACCEPTERAD BIEFFEKT"-NOTEN HÄR ÄR DÄRFÖR BORTTAGEN,
+// INTE OMFORMULERAD: bieffekten den beskrev (två diakritik-varianter av
+// samma namn kolliderar) finns INTE LÄNGRE — hash-underlaget ascii-faller
+// aldrig, så `café.pdf` och `cafe.pdf` hashar till OLIKA attachmentId igen,
+// exakt som före hela detta korts arbete.
+//
+// MÖNSTER 2 (create-attachment-upload-ticket/finalize-attachment-upload)
+// PÅVERKAS INTE av detta beslut: verifierat via kodläsning att den vägen
+// aldrig hashar ett filnamn alls — `attachmentId` där är ALLTID
+// `crypto.randomUUID()`, utfärdat av create-attachment-upload-ticket och
+// sedan client-relayat till finalize (se `create-attachment-upload-ticket/
+// index.ts` respektive `finalize-attachment-upload/index.ts`s § IDEMPOTENS).
+// Hash-frågan är UNIK för mönster 1 (denna EF).
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { fetchAirtableRecord, upsertAirtableRecord } from '../_shared/airtable-client.ts';
