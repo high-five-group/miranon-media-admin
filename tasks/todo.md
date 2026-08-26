@@ -457,6 +457,22 @@ Numrering efter S109: ADR 122 · kort 284 (om `#1674` landat) · L512 + 55
 fragment · T158 · f52 · session 111. Full narrativ: sessionsdok S109 Del 1–4 +
 PAUSLÄGE.
 
+**Session 108 ▶️ ÅTERUPPTAGEN (2026-08-26, `lifecycle: active`, tolfte resumen;
+pausad elva gånger, historik) — PAUS-LANDNINGEN DIAGNOSTISERAD: `#2015` FÖLL
+INTE PÅ SIN DIFF UTAN PÅ EN ZOMBIE-KÖRNING FRÅN AKTIONS-LÅSET.** Marcus order:
+*"Återuppta S108. Jag vill få klart de här nu. Förra resumen fick problem med
+paus-landningen så du får kolla upp vad som är problemet och lösa det."* Mätt
+15:45 UTC: CI-run `32985153863` `queued` i 19 min med **noll jobb**, CodeQL
+`startup_failure` (ej omkörbar), noll check-runs på paus-SHA:n,
+`mergeStateStatus: BLOCKED` trots `MERGEABLE` — och **ingenting hade kört i
+repot sedan 14:48:52Z**. Åtgärd: resume-commiten ÄR det nya SHA:t (paus +
+resume i samma PR `#2015`, push-ekonomin per `ADR-097`). Del 26 § B:s
+*"14:24–16:30 UTC"* rättad — mätt lås-fönster **14:24–14:36 UTC**, den övre
+gränsen var lokal tid, och låset var **inte** över: symptomet återkom 15:25
+UTC. **Marcus-sekvensen (§ Paushistorik 11) står oförändrad:** `#2014` beslut
+A/C/D → prod-EF-deploy → röktest → facit-stämpling → nyckelrotation. Full
+narrativ: sessionsdok S108 Del 27.
+
 **Session 108 ⏸️ PAUSAD (elfte gången, 2026-08-26, `lifecycle: paused`) —
 BILAGE-SPÅRET I PROD UTOM MALLENS B-VÄRDE OCH EF-DEPLOYEN; KVAR ÄR MARCUS TRE
 MOMENT (SESSIONSDOK S108 § PAUSLÄGE ELFTE → MARCUS-SEKVENS).** Resume 11
