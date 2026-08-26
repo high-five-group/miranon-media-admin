@@ -625,24 +625,82 @@ utlåtandet var giltigt, det är kommunikationen med GitHub som bröt. Full
 mekanik + forskningskällorna (Danger.js:s markör-mönster, GitHubs
 full-ersättnings-semantik): `scripts/lib/review-risk-sektion.mjs` filhuvud.
 
+**Kör loop-beslutet efter VARJE runda — gissa aldrig nästa steg (`TASK-173.5`):**
+
+```bash
+node scripts/review-loop-beslut.mjs /path/till/utlatande-pr<NR>.json
+node scripts/review-loop-beslut.mjs <utlatande.json> --foregaende-sha <sha>   # runda ≥ 2
+node scripts/review-loop-beslut.mjs <utlatande.json> --json                   # maskinläsbart
+npm run review:loop -- <utlatande.json>
+```
+
+**Exitkoden BÄR beslutet**, så `… && gh pr merge --auto` aldrig kan armera på
+annat än konvergens: **0** = konvergerad · **10** = ny runda · **20** =
+ESKALERA till Marcus (armera INTE) · **1** = malformat utlåtande · **2** =
+CLI-fel · **64** = POLICYFEL (fail-closed, samma kod och skäl som
+`review:policy`). Utdatan vid `20` ÄR den markeringsbara STOPPA-OCH-FRÅGA-
+listan — klistra in den i chatten, den är skriven för att svaras i.
+
+Värdena bor i `.review-loop-policy.json` och läses ur `origin/main` med `git
+show`, aldrig från disk — en PR-gren som satte `tak: 99` hade annars mildrat
+granskningen av sin egen PR (samma tillitsmodell som `.review-policy.json`,
+ADR-105 beslut 7; tvåsidigt bevisat i `scripts/test-review-loop.mjs` § F).
+**Loopens kontrakt, som det står i policyn i dag:**
+
+| Vad | Värde | Var det kommer ifrån |
+|---|---|---|
+| Rundtak | **2** | ADR-105 beslut 4 — öppet deklarerad startbedömning, inte mätning |
+| Blockerar runda 1 | `warning` och uppåt | bred fångst i första rundan |
+| Blockerar runda 2 | **`error` enbart** | ADR-105 beslut 4: warnings/info bokförs utan att stoppa |
+| Öppet fynd (vid tak) | `warning` och uppåt, **plus** varje `ask-user` oavsett severity | härledd ur den bredaste rundans tröskel — ingen egen config-ratt |
+| Konvergensregel | runda k+1 granskar diffen **sedan runda k:s `granskadSha`** + kvarstående öppna fynd | CodeRabbits incremental/full-distinktion; motåtgärd mot förlagans 27 rundor utan konvergens (`#683`) |
+| Eskalerar oavsett runda | `risk.niva: 'hog'` · varje `ask-user`-fynd | ADR-105 beslut 5 · `173.5` AC #3 |
+| Vid tak med öppna fynd | STOPPA-OCH-FRÅGA, **aldrig** en tredje automatisk runda | `173.5` AC #2/#4 — taket byter automatik mot eskalering, aldrig mot godkännande |
+
+**"Blockerar" och "öppet vid tak" är TVÅ SKILDA trösklar — den skillnaden är
+lätt att läsa fel.** *Blockerar* betyder "tvingar fram ännu en runda", och i
+runda 2 gör bara `error` det. *Öppet* betyder "kvarstår och ska visas för
+Marcus", och där räknas `warning` med. Följden: **ett ensamt `warning` i
+runda 2 startar ingen tredje runda — men det eskalerar ändå**, eftersom taket
+är nått och fyndet är öppet (`eskalera-tak`, exit 20, armering väntar).
+Alternativet vore att grinden tyst släppte igenom ett kvarstående warning för
+att det inte råkade nå blockeringströskeln — alltså självgodkännande, som
+ADR-105 beslut 4 uttryckligen förbjuder. Ett `info`/`auto-fix`-fynd är
+däremot varken blockerande eller öppet: det bokförs och konvergerar.
+
+**En omgranskning utan ny commit räknas aldrig som konvergens.** Ger du
+`--foregaende-sha` och den är identisk med utlåtandets `granskadSha` i runda
+≥ 2 fälls det som `eskalera-ingen-andring` — inget pushades emellan, så rundan
+prövade ingen fix. Samma koppling som GitHub (`dismiss stale pull request
+approvals when commits are pushed`), Prow (`retracts the label automatically if
+someone updates the PR with a new commit`) och Gerrits patchset-bundna röster
+gör. Utelämnar du flaggan hoppas kontrollen över — **synligt**, som en varning i
+utdatan, aldrig tyst.
+
 **Vad som ÄR byggt, och vad som INTE är det (progressiv härdning, ADR-105
 beslut 3):** `review-agent`-kontraktet och utlåtande-schemat
 (`scripts/lib/review-utlatande.mjs`, `scripts/validera-review-utlatande.mjs`)
 existerar och är skarpbevisade; sedan `TASK-173.2` policy-ytan
 (`.review-policy.json`, `scripts/lib/review-policy.mjs`,
 `scripts/hamta-review-policy.mjs`) med utlåtandets `policySha`/`policyRegler`;
-och sedan `TASK-173.3` den fasta Riskbedömnings-sektionen i PR-kroppen
-(`scripts/lib/review-risk-sektion.mjs`, `scripts/uppdatera-review-sektion.mjs`).
+sedan `TASK-173.3` den fasta Riskbedömnings-sektionen i PR-kroppen
+(`scripts/lib/review-risk-sektion.mjs`, `scripts/uppdatera-review-sektion.mjs`);
+och sedan `TASK-173.5` rundtaks-loopen med konvergensregel och eskaleringsform
+(`.review-loop-policy.json`, `scripts/lib/review-loop.mjs`,
+`scripts/review-loop-beslut.mjs`).
 **Vad som SAKNAS än:** den deterministiska CI-backstoppen som fäller en PR
-utan giltigt utlåtande (`TASK-173.4`), rundtaks-loopen med konvergensregel
-(`TASK-173.5`), och fångstrate-instrumenteringen (`TASK-173.6`). Fram tills
-dess är grinden ett **orkestrerar-åtagande**, inte en mekanisk spärr — en PR
-kan i praktiken armeras utan granskning, eller med en oskriven Riskbedömnings-
-sektion, så länge `173.4` inte finns, och INGET tvingar dig att köra
-kommandona ovan. Skriv aldrig om detta stycke till att låta grinden vara
-mekaniskt otvingbar innan `173.4` faktiskt landat (samma `ADR-083`-disciplin
-som resten av denna fil: prosa som påstår en mekanism som inte finns är värre
-än att inte skriva något alls).
+utan giltigt utlåtande (`TASK-173.4`) och fångstrate-instrumenteringen
+(`TASK-173.6`). Fram tills dess är grinden ett **orkestrerar-åtagande**, inte
+en mekanisk spärr — en PR kan i praktiken armeras utan granskning, eller med
+en oskriven Riskbedömnings-sektion, så länge `173.4` inte finns, och INGET
+tvingar dig att köra kommandona ovan. **Det gäller loop-beslutet lika mycket
+som de andra:** `review-loop-beslut.mjs` är deterministiskt och bär sitt
+beslut i exitkoden, men ingen mekanism tvingar dig att köra det, och ingenting
+hindrar en armering vid exit 20. Rundtaket är alltså ett åtagande du håller,
+inte ett lås som håller dig. Skriv aldrig om detta stycke till att låta
+grinden vara mekaniskt otvingbar innan `173.4` faktiskt landat (samma
+`ADR-083`-disciplin som resten av denna fil: prosa som påstår en mekanism som
+inte finns är värre än att inte skriva något alls).
 
 **Känd divergens i den genererade JSON-Schema-artefakten, öppen för `173.4`:**
 `docs/reference/review-utlatande.schema.json` listar `policySha`/
@@ -657,17 +715,37 @@ default-normalisering), aldrig rå JSON direkt, vilket är bevisat i
 utan de två fälten går genom den EKTA validatorn och renderar korrekt). Löses
 inte här — flaggas framåt till `173.4`.
 
-**Review-ytans TRE testsviter körs sedan `TASK-185` (PR #1992, 2026-08-26)
-som gatekeeper-sviter i `ci.yml`:s "Test gatekeeper script suites"-steg** —
-`scripts/test-validera-review-utlatande.mjs` (35 fall, `173.1`),
-`scripts/test-review-policy.mjs` (44 fall, `173.2`) och
-`scripts/test-review-risk-sektion.mjs` (47 fall, `173.3`, wirad i samma
-bas-drift-svep sedan `173.3` landade UNDER `185`s eget bygge — PR #1993) —
-samma klass som repots övriga ~15 gatekeeper-sviter: enhetstester för
-skriptens egen logik, wirade så att en regression fälls FÖRE landning i
-stället för att upptäckas efteråt. Det är INTE `173.4`s CI-backstopp (den
-deterministiska spärren mot en PR utan giltigt utlåtande) — den saknas
-fortfarande, se stycket ovan (samma `ADR-083`-disciplin: påstå aldrig en
+**Bunt-PR: `kortId` är SINGULÄR i schemat — en öppen fråga, inte en lösning.**
+Schemat (`scripts/lib/review-utlatande.mjs`) bär ETT `kortId`, och superRefine
+kräver tom `acProvning` när det är `null`. En PR som landar flera kort får
+därför `kortId: null`, och granskaren tvingas lägga sin AC-prövning i `fynd`
+som fri text — mätt på fem bunt-PR:er i S112 (`#1978`, `#1982`, `#1986`,
+`#1987`, `#1988`, 2026-08-26). Loopens beslut påverkas INTE (fynd och risk är
+kort-oberoende, bevisat i `scripts/test-review-loop.mjs` C26), men den
+strukturerade AC-prövningen går förlorad. `173.5` prövade frågan och valde
+INGEN väg: att utvidga ADR-105 beslut 7 till flera kort per PR kräver ett eget
+ADR-beslut och en bakåtkompatibel schemaändring. Tills dess: föredra en PR per
+kort där det går, och räkna med att bunt-PR:ers AC-prövning är prosa, inte
+struktur. Options-rymden och instansdatan bor i
+[`tasks/lessons.d/bunt-prer-passar-inte-review-utlatandets-kortid-schema.md`](tasks/lessons.d/bunt-prer-passar-inte-review-utlatandets-kortid-schema.md)
+— pekare, inte kopia (ADR-100 §2).
+
+**Review-ytans FYRA testsviter körs som gatekeeper-sviter i `ci.yml`:s "Test
+gatekeeper script suites"-steg** — `scripts/test-validera-review-utlatande.mjs`
+(35 fall, `173.1`), `scripts/test-review-policy.mjs` (44 fall, `173.2`) och
+`scripts/test-review-risk-sektion.mjs` (47 fall, `173.3`) sedan `TASK-185`
+(PR #1992, 2026-08-26, den sista wirad i samma bas-drift-svep sedan `173.3`
+landade UNDER `185`s eget bygge — PR #1993), plus
+`scripts/test-review-loop.mjs` (103 fall, `173.5`, wirad i sin egen PR på
+samma orkestrerar-beslut). Samma klass som repots övriga ~15
+gatekeeper-sviter: enhetstester för skriptens egen logik, wirade så att en
+regression fälls FÖRE landning i stället för att upptäckas efteråt.
+
+**Det är INTE `173.4`:s CI-backstopp** — den deterministiska spärren som
+fäller en PR utan giltigt granskningsutlåtande är en ANNAN mekanism och
+**saknas fortfarande**. Att fyra testsviter körs i CI betyder att skriptens
+logik är skyddad mot regression; det betyder INTE att grinden är mekaniskt
+otvingbar. Se stycket ovan (samma `ADR-083`-disciplin: påstå aldrig en
 mekanism som inte finns).
 
 **Skarpbevis-skulden — BETALD 2026-08-26 (S112 resume 1), med en mätt kant

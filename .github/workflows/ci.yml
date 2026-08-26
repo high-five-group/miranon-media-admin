@@ -1252,6 +1252,36 @@ jobs:
         # TASK-173.4:s ännu obyggda CI-backstopp. Hermetisk, ingen riktig
         # gh-/nätverkstrafik. 2026-08-26 (macOS).
         #
+        # test-review-loop.mjs (TASK-173.5, ADR-105 beslut 4) hör hit av samma
+        # ADR-039-skäl som sina tre syskon ovan: rundtaks-loopen
+        # (.review-loop-policy.json + scripts/lib/review-loop.mjs +
+        # scripts/review-loop-beslut.mjs) är review-grindens FJÄRDE
+        # kontraktsyta och skulle annars vara lika oskyddad som de var före
+        # TASK-185. Rena funktioner (sektion A–D: config-validering,
+        # rundtrösklar, prioritetsordning, eskaleringsrendering) + ett
+        # CLI-lager (sektion E, exit 0/10/20/1/2/64) + ett trusted-ref-lager
+        # (sektion F) som bygger ÄKTA engångs-git-repon där origin/main,
+        # PR-grenen och arbetsträdet bär TRE OLIKA policy-versioner samtidigt
+        # — med KONTRAST-fallet F4 som landar mildringen i main och visar att
+        # den DÅ syns, utan vilket F2/F3 vore vakuösa. Samma temp-repo-
+        # disciplin som test-review-policy.mjs. 103 fall.
+        #
+        # Sviten är tvåsidigt bevisad med mutationstest (bygg-agentens
+        # slutrapport, 2026-08-26): takkontrollen bortkopplad fällde 10 fall,
+        # rundtröskeln bortkopplad fällde 8 — inklusive AC #1- och AC
+        # #4-kontrastparen.
+        #
+        # Orkestrerar-beslut (Marcus-mandat, samma som för de tre syskonen):
+        # en enhetstestsvit för ett skript är en gatekeeper-svit, samma klass
+        # som de övriga ~15 — INTE samma sak som TASK-173.4:s ännu obyggda
+        # CI-backstopp (den deterministiska spärren mot en PR utan giltigt
+        # utlåtande), se CLAUDE.md § Review-grinden. Att denna svit körs i CI
+        # skyddar loop-skriptets LOGIK mot regression; det gör inte
+        # review-grinden mekaniskt otvingbar. Hermetisk (temp-repon,
+        # node_modules-symlänk, ingen nätverkstrafik). 9,2 s LOKALT mätt
+        # (macOS, 2026-08-26, `time node scripts/test-review-loop.mjs`) —
+        # CI-tiden är INTE mätt av mig och kan avvika.
+        #
         # test-verify-ci-parity.mjs hör hit av samma ADR-039-skäl applicerat
         # på scripts/verify-ci-parity.mjs SJÄLVT (CLAUDE.md § verify:ci-
         # parity) — paritetsverktyget som ska fånga när ci.yml/ci-suite.yml
@@ -1305,6 +1335,7 @@ jobs:
           node scripts/test-validera-review-utlatande.mjs
           node scripts/test-review-policy.mjs
           node scripts/test-review-risk-sektion.mjs
+          node scripts/test-review-loop.mjs
           node scripts/test-verify-ci-parity.mjs
 
       - name: Test post-merge-lagrets ärvda klassning (TASK-73)
