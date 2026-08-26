@@ -22,8 +22,21 @@ import {
   BELAGGNING_EVENT_ID,
   BELAGGNING_EXPECTED,
 } from './fixtures';
-import { type ApiConfig, classify401Body, getApiConfig, getValidUserJWT } from './helpers';
+import {
+  type ApiConfig,
+  classify401Body,
+  getApiConfig,
+  getValidUserJWT,
+  getWithTransientRetry,
+} from './helpers';
 
+// TASK-207: get-event.staging.test.ts:48 (get-events-listan, i firstEventId)
+// var ETT av fem endpoints som föll på genuina transienta 502/503 från
+// Edge Runtime/Airtable-lagret i post-merge-sviten 2026-08-12 — bevisat
+// oskyldigt via first-parent-diff. Båda anropen här är idempotenta GET, så
+// getWithTransientRetry appliceras på VARJE försök, negativa vägar (404/401/
+// 400) inkluderat — retryn är ett no-op för dem eftersom de aldrig ser
+// 502/503 på första försöket.
 async function callGetEvent(
   request: APIRequestContext,
   config: ApiConfig,
@@ -33,7 +46,19 @@ async function callGetEvent(
   const query = id === undefined ? '' : `?id=${encodeURIComponent(id)}`;
   const headers: Record<string, string> = {};
   if (jwt) headers.Authorization = `Bearer ${jwt}`;
-  return request.get(`${config.baseUrl}/functions/v1/get-event${query}`, { headers });
+  return getWithTransientRetry(() =>
+    request.get(`${config.baseUrl}/functions/v1/get-event${query}`, { headers }),
+  );
+}
+
+/** Hämta get-events-listan RÅTT — transient-retry-skyddad (TASK-207), delas av
+    firstEventId och de tester nedan som läser listan direkt utan att härleda ett ID. */
+async function fetchEventsList(request: APIRequestContext, config: ApiConfig, jwt: string) {
+  return getWithTransientRetry(() =>
+    request.get(`${config.baseUrl}/functions/v1/get-events`, {
+      headers: { Authorization: `Bearer ${jwt}` },
+    }),
+  );
 }
 
 /** Härled ett riktigt event-ID ur get-events (list) — ingen seedad fixtur. */
@@ -42,9 +67,7 @@ async function firstEventId(
   config: ApiConfig,
   jwt: string,
 ): Promise<string> {
-  const res = await request.get(`${config.baseUrl}/functions/v1/get-events`, {
-    headers: { Authorization: `Bearer ${jwt}` },
-  });
+  const res = await fetchEventsList(request, config, jwt);
   expect(res.status()).toBe(200);
   const body = (await res.json()) as { events: unknown };
   const events = z.array(EventSchema).parse(body.events);
@@ -77,9 +100,7 @@ test.describe('get-event — conformance (single-get-mall, Fas 6b L2)', () => {
   }) => {
     const config = getApiConfig();
     const jwt = await getValidUserJWT(request, config);
-    const res = await request.get(`${config.baseUrl}/functions/v1/get-events`, {
-      headers: { Authorization: `Bearer ${jwt}` },
-    });
+    const res = await fetchEventsList(request, config, jwt);
     expect(res.status()).toBe(200);
     const body = (await res.json()) as { events: unknown };
 
@@ -121,9 +142,7 @@ test.describe('get-event — conformance (single-get-mall, Fas 6b L2)', () => {
   }) => {
     const config = getApiConfig();
     const jwt = await getValidUserJWT(request, config);
-    const res = await request.get(`${config.baseUrl}/functions/v1/get-events`, {
-      headers: { Authorization: `Bearer ${jwt}` },
-    });
+    const res = await fetchEventsList(request, config, jwt);
     expect(res.status()).toBe(200);
     const events = z.array(EventSchema).parse(((await res.json()) as { events: unknown }).events);
 
@@ -144,9 +163,7 @@ test.describe('get-event — conformance (single-get-mall, Fas 6b L2)', () => {
 
     // Härled ett RIM-event ur listan (samma mönster som firstEventId ovan) — mer
     // robust än ett hårdkodat ID.
-    const listRes = await request.get(`${config.baseUrl}/functions/v1/get-events`, {
-      headers: { Authorization: `Bearer ${jwt}` },
-    });
+    const listRes = await fetchEventsList(request, config, jwt);
     const listEvents = z
       .array(EventSchema)
       .parse(((await listRes.json()) as { events: unknown }).events);
@@ -272,9 +289,7 @@ test.describe('get-event — conformance (single-get-mall, Fas 6b L2)', () => {
   }) => {
     const config = getApiConfig();
     const jwt = await getValidUserJWT(request, config);
-    const res = await request.get(`${config.baseUrl}/functions/v1/get-events`, {
-      headers: { Authorization: `Bearer ${jwt}` },
-    });
+    const res = await fetchEventsList(request, config, jwt);
     expect(res.status()).toBe(200);
     const events = z.array(EventSchema).parse(((await res.json()) as { events: unknown }).events);
 

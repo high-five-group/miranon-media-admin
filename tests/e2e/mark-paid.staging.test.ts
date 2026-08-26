@@ -48,6 +48,7 @@ import { mockValjarLista } from './helpers/valjar-lista';
 const GET_EVENT = /\/functions\/v1\/get-event\?/;
 const GET_REGISTRATIONS = '**/functions/v1/get-registrations*';
 const UPDATE_RECORD = '**/functions/v1/update-record';
+const GET_EVENT_NOTES = '**/functions/v1/get-event-notes*';
 const EVENT_ID = 'recBETALNING0001';
 // Scenario 2-id för tvåscenario-testerna (S75-diagnos 2): ADR-072 persistar
 // query-cachen (throttle-synk ~1 s, src/queries/persist.ts) och global
@@ -181,6 +182,16 @@ async function mockSidan(
       body: JSON.stringify({
         registrations: registrations.map((r) => ({ ...r, eventId: event.id })),
       }),
+    }),
+  );
+  // Anteckningar-gruppen (task-18.11) fetchar get-event-notes för VARJE event —
+  // stubbas tom här (samma form som mockNotes() i event-detail.staging.test.ts
+  // / TASK-205) så eventsidans övriga sviter förblir deterministiska (TASK-212).
+  await page.route(GET_EVENT_NOTES, (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ notes: [] }),
     }),
   );
 }

@@ -200,14 +200,22 @@ test.describe('get-person — skarp conformance (ADR-056 detalj, Fas 6a L5b)', (
   });
 });
 
-// Multi-värd "Ort"-klass: ZZ-History Person 01 har 2 Anmälningar i olika orter →
-// Personer.Ort-rollup = ['ZZ-Skövde','ZZ-Göteborg']. Detta är fixturen L5b SAKNADE.
-// Bevisar att data-förlust-regressionen (firstString) är stängd mot SKARP data:
-// båda orterna måste komma tillbaka (gammal kod gav 1 / kraschade parse).
+// Multi-värd "Ort"-klass: ZZ-History Person 01 har (minst) 2 Anmälningar i
+// olika orter → Personer.Ort-rollup innehåller ['ZZ-Skövde','ZZ-Göteborg'].
+// Detta är fixturen L5b SAKNADE. Bevisar att data-förlust-regressionen
+// (firstString) är stängd mot SKARP data: båda orterna måste komma tillbaka
+// (gammal kod gav 1 / kraschade parse).
+//
+// INVARIANT (TASK-31, ej exakt räkning): rollupen är additiv — en framtida
+// skiva som länkar ÄNNU en Anmälan till ZZ-History-personen växer den till 3+
+// element utan att något faktiskt är fel (fångat live i S75 batch 3, 18.4:s
+// bygg-agent — rollupen växte till tre element mitt i en annan skivas
+// seedning innan länken togs bort). Assertionen prövar därför att BÅDA
+// orterna är REPRESENTERADE, aldrig att listan är exakt dessa två.
 const EXPECTED_ORTER = ['ZZ-Skövde', 'ZZ-Göteborg'];
 
 test.describe('get-person/get-persons — multi-värd ort (data-förlust-fixens skarp-bevis)', () => {
-  test('get-person → ort = string[] med BÅDA orterna (ingen tyst drop)', async ({ request }) => {
+  test('get-person → ort innehåller BÅDA orterna (ingen tyst drop)', async ({ request }) => {
     const config = getApiConfig();
     const jwt = await getValidUserJWT(request, config);
     const res = await callGetPerson(request, config, jwt, HISTORY_PERSON_ID);
@@ -216,8 +224,8 @@ test.describe('get-person/get-persons — multi-värd ort (data-förlust-fixens 
     const body = (await res.json()) as { person: unknown };
     const person = PersonDetailSchema.parse(body.person);
 
-    expect(person.ort).toHaveLength(2);
-    expect([...person.ort].sort()).toEqual([...EXPECTED_ORTER].sort());
+    // Innehåller, inte "är exakt" — robust mot additiv fixtur-tillväxt (TASK-31).
+    expect(person.ort).toEqual(expect.arrayContaining(EXPECTED_ORTER));
   });
 
   test('get-persons (search) → samma person, ort string[] båda, PersonSchema-parse OK', async ({
@@ -236,6 +244,7 @@ test.describe('get-person/get-persons — multi-värd ort (data-förlust-fixens 
     const persons = z.array(PersonSchema).parse(body.persons); // SAKNAD-fix: rå array kraschar ej
     const person = persons.find((p) => p.id === HISTORY_PERSON_ID);
     expect(person, 'ZZ-History-personen ska finnas i sökträffen').toBeTruthy();
-    expect([...(person?.ort ?? [])].sort()).toEqual([...EXPECTED_ORTER].sort());
+    // Innehåller, inte "är exakt" — samma invariant som ovan (TASK-31).
+    expect(person?.ort ?? []).toEqual(expect.arrayContaining(EXPECTED_ORTER));
   });
 });
