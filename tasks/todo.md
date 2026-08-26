@@ -457,6 +457,23 @@ Numrering efter S109: ADR 122 · kort 284 (om `#1674` landat) · L512 + 55
 fragment · T158 · f52 · session 111. Full narrativ: sessionsdok S109 Del 1–4 +
 PAUSLÄGE.
 
+**Session 108 ⏸️ PAUSAD (elfte gången, 2026-08-26, `lifecycle: paused`) —
+BILAGE-SPÅRET I PROD UTOM MALLENS B-VÄRDE OCH EF-DEPLOYEN; KVAR ÄR MARCUS TRE
+MOMENT (SESSIONSDOK S108 § PAUSLÄGE ELFTE → MARCUS-SEKVENS).** Resume 11
+landade **tolv** S108-PR:er (`#1971` `#1972` `#1977` `#1979` `#1984` `#1990`
+`#1991` `#1994` `#1995` `#1996` `#1998` `#2002` `#2003` `#2005` `#2006`
+`#2008` `#2011` `#1983`); i prod (Vercel): `309.18` `.19` `.20` `.23` `.24`
+`.25` `.26` `.28`. **Plats-backfill 27/27** i prod på Marcus GO.
+Review-grinden skarp: 12 utlåtanden, sex verkliga fel fångade (bl.a.
+`document.write`-kollision reproducerad i Chromium, ASCII-hash-kollisioner).
+**Faktureringslås** på GitHub Actions ~14:24–16:30 UTC (prövperioden
+utgången → Enterprise Cloud tecknat). **Orkestrerarfel:** "B stängt"
+accepterades utan att läsa vad som mätts — Marcus pushback; mätserien
+beställd. `#2014` (draft, väntar Marcus beslut A/C/D vid resume (mätserien i PR-kroppen, staging v49 = PR-innehållet)). Prod-EF: EJ deployad — Marcus-moment vid resume (`fas4-prod-deploy.sh`; på `main` väntar `#1939` `#1983` + S112:s `#1940` `#1954` `#1981` `#1988`; `#2014` efter A/C/D). Numrering vid
+paus 11: ADR **128** · task-**331**/`309.33` · **L533** · 118 fragment ·
+**T176** · f53 · session **113**. Full handoff: sessionsdok S108 § PAUSLÄGE
+(elfte) + Del 24–26.
+
 **Session 108 ▶️ ÅTERUPPTAGEN (2026-08-26, `lifecycle: active`, elfte resumen;
 pausad tio gånger, historik) — LÄGET RE-MÄTT MOT `origin/main` `60b5e659`:
 ALLT ÄR LIVE I PROD, KVAR ÄR MARCUS VERIFIERING OCH BESLUT.** Handoff mot
