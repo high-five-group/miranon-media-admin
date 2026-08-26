@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-24 17:54'
-updated_date: '2026-08-26 02:51'
+updated_date: '2026-08-26 03:20'
 labels:
   - ready-for-agent
 dependencies: []
@@ -72,4 +72,19 @@ rigg/metod (AC #4). facit.json "not"-falt uppdaterat, "godkand" ororg.
 OBS: syskonkatalogen s108-generering/facit-dokumentlista-inaktuell-rad-mobil.png
 visar defekt 1 konkret men ar INTE omtagen av denna skiva - utanfor AC #4:s
 uttryckliga scope (bara s108-dokumentytan namndes). Flaggat i Final Summary.
+
+TILLÄGG 2026-08-26 (orkestrerarorder, samma PR #1977 efter första pushen):
+s108-generering/facit-dokumentlista-inaktuell-rad-mobil.png — bilden som
+ovanstående OBS flaggade som konkret visande defekt 1 men utanför AC #4:s
+scope — är NU OMTAGEN på orkestrerarens explicita tilläggsorder, eftersom
+Marcus stämplar BÅDA manifesten samtidigt och den annars hade frusit
+defekten. Samma rigg/metod som skiva 9 (STALE-kallhash-mock, samma som
+tests/acceptance/dokument-event-mallad-inaktuell.acceptance.test.ts).
+Verifierat ändrad: git diff --stat visar binärt diff, sha256 skiljer sig,
+750×1826 → 750×1882 px. facit.json (s108-generering) "not"-fält uppdaterat
+på samma sätt som s108-dokumentytans; "godkand" orört (null). check:docs
+kört på nytt efter ändringen: exit 0, 14/14 gröna. Ingen ny AC bockas för
+detta — kortets AC #4 nämnde bara s108-dokumentytan; denna omtagning är
+bokförd här som orkestrerarens explicita tilläggsbeslut, inte en
+scope-utvidgning jag gjorde på eget bevåg.
 <!-- SECTION:NOTES:END -->
