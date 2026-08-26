@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-21 23:26'
-updated_date: '2026-08-07 11:18'
+updated_date: '2026-08-26 03:06'
 labels:
   - ready-for-agent
 dependencies: []
@@ -23,6 +23,15 @@ Symptom: samma berikade läs-mappning + månads-härledning kopieras i get-event
 
 Förväntat: gemensam modul i supabase/functions/_shared/ (samma SSOT-mönster som field-allowlists) — refactor-kandidat, ingen beteendeändring.
 <!-- SECTION:DESCRIPTION:END -->
+
+## Acceptance Criteria
+<!-- AC:BEGIN -->
+- [x] #1 Den berikade läs-mappningens gemensamma del (bas-shapen + beläggningens kategorifält) bor i EN modul under supabase/functions/_shared/ — noll kvarvarande inline-kopior i get-events, get-event och update-event
+- [x] #2 deriveManadAr och dess månadslista bor i samma delade modul — noll kvarvarande kopior i create-event och update-event
+- [x] #3 Refaktoreringen är beteende-bevarande: svarens JSON är byte-identisk inklusive nyckelordning mot koden före ändringen, mätt mot de verbatim FÖRE-kopiorna från origin/main
+- [x] #4 Beteendet är låst framåt av ett committat api-pure-test vars facit härstammar ur FÖRE-koden, och som bevisat fäller på både värdedrift och nyckelordningsdrift
+- [x] #5 Den nya modulen typkollas av npm run typecheck (upptagen i tsconfig.edge-shared.json), bevisat genom att ett infört typfel fäller grinden
+<!-- AC:END -->
 
 ## Implementation Notes
 
