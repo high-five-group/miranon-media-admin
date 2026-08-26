@@ -129,7 +129,7 @@ Tre kandidater för hål 1, i den vägning som styrde valet:
 ### B4. Fetch-depth styr verifieringens gräns
 
 Nattjobbet (`.github/workflows/nightly.yml`, jobbet `backlog-closure`)
-checkar ut med **`fetch-depth: 1`** (rad 417). Det finns alltså ingen
+checkar ut med **`fetch-depth: 1`** (`actions/checkout`-steget). Det finns alltså ingen
 git-historik i den checkouten att slå `Merge pull request #N` mot — en
 ancestry-baserad verifiering av pekaren hade fungerat lokalt och fallit
 tillbaka tyst i natten, den dyraste sorten av grind. Grinden verifierar
