@@ -15,6 +15,24 @@
 
 ## Aktuellt fokus
 
+**Session 112 ▶️ ÅTERUPPTAGEN (2026-08-26, `lifecycle: active`, resume 1;
+pausad en gång, historik) — RESUMEN ÖPPNAR PÅ RE-MÄTNING, `#1932`-FIXEN OCH
+FIX-VÅG 4.** Marcus order: *"Återuppta S112 …"* + kvittens *"Gör det du anser
+vi behöver göra. Var noggrann och chansa aldrig."* **Paus-PR `#1969` landad**
+(`origin/main` `60b5e659`). Huvudkatalogen ägs av **S108 resume 11** (levande,
+pid 23064) — S112 kvar i `s112-stadsessionen`, gren `docs/s112-resume-1`.
+**Numrering re-verifierad mot disk:** task-**320** → 321 · ADR **126** på main
+(127 = `#1932`, EJ landad) · **L533** · 90 fragment · **T176** · session
+**112**. **Avvikelser mot handoffen:** `#1932` var ALDRIG i kön — noll CI på
+head (stackad PR auto-retargetad till `main` utan `pull_request`-event; fix =
+commit på grenen) · closure-grinden **15/650** (`190`/`193` = S112:s egna
+flippar utan `Landning:`-pekare, dolda av karensen) · review-agent-skulden
+**BETALD** (typen laddades mitt i sessionen; utlåtande för `#1932`: risk låg,
+2 info). **NÄSTA: fix-våg 4 ur A-klassen (29 agent-körbara) + `190`/`193` +
+`173.2`/`.3`/`.5` med review-agent per PR · Marcus-momenten oförändrade
+(`#1883`→`#1926` · `#1957` · vandringsblocket · småbesluten).** Full narrativ:
+sessionsdok S112 Del 4.
+
 **Session 112 ⏸️ PAUSAD (paus 1, 2026-08-25, `lifecycle: paused`) — STÄDSESSIONEN:
 REGISTRET SANT, REPOT RENT, ROTORSAKER.** Marcus fullt beslutsmandat ("Go
 på alla", 2026-08-24), körs autonomt i worktree `s112-stadsessionen`
