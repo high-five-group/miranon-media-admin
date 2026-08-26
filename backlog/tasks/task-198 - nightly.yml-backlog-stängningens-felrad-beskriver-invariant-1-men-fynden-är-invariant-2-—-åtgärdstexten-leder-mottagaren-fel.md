@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-11 18:30'
-updated_date: '2026-08-26 02:58'
+updated_date: '2026-08-26 03:23'
 labels: []
 dependencies: []
 priority: low
@@ -31,8 +31,8 @@ Belägg (rödklassningen 2026-08-11, run 31454392944 job 93665096973): grinden f
 
 <!-- SECTION:NOTES:BEGIN -->
 FIXAT 2026-08-26 (S112 fix-våg 4, bunt A). Premiss verifierad mot origin/main (fetch 2026-08-26, HEAD 2fda2d78): felraden fanns på TVÅ ställen, inte bara det kortet nämner (rad ~428-445 i den ursprungliga beskrivningen) — filen har vuxit sedan kortets skapande 2026-08-11:
-  1. .github/workflows/nightly.yml rad 446: ::error::-annotationen i backlog-closure-jobbet.
-  2. .github/workflows/nightly.yml rad 798 (bekräftat NYTT fynd, ej i kortets ursprungliga beskrivning): samma felaktiga text återges ordagrant i alarm-jobbets backlog_sektion — den byggs in i själva GitHub-issuen varje natt, så bara rad 446 hade lämnat den vilseledande texten kvar i det faktiska ärendet.
+  1. .github/workflows/nightly.yml rad 450 (korrigerat efter review-fynd — agenten citerade 446): ::error::-annotationen i backlog-closure-jobbet.
+  2. .github/workflows/nightly.yml rad 802 (korrigerat från 798; bekräftat NYTT fynd, ej i kortets ursprungliga beskrivning): samma felaktiga text återges ordagrant i alarm-jobbets backlog_sektion — den byggs in i själva GitHub-issuen varje natt, så bara rad 450 hade lämnat den vilseledande texten kvar i det faktiska ärendet.
 
 Rotorsak: scripts/check-backlog-closure.sh sätter EXIT_CODE=1 för invariant 1 (öppet men bevisat klart), invariant 2 (stängt men obockat) OCH invariant 3 (barn klara, förälder ej stängd) samt blankocheck-spärren — samma exitkod för fyra olika situationer med olika rätt åtgärd. nightly.yml:s hårdkodade text beskrev bara invariant 1:s symptom+åtgärd ("stäng korten") oavsett vilken invariant som faktiskt trigga.
 
