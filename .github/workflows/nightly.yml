@@ -447,7 +447,7 @@ jobs:
           esac
           echo "utfall=${utfall}" >> "${GITHUB_OUTPUT}"
           if [ "${KOD}" -eq 1 ]; then
-            echo "::error::Backlog-DRIFT (exit 1): kort vars arbete är bevisat klart står öppna bortom karensen. Åtgärd: stäng korten — se loggen ovan för vilka."
+            echo "::error::Backlog-DRIFT (exit 1): grinden fann inkonsistenta kort. Invariant och rätt åtgärd skiljer sig PER KORT (invariant 1/3: öppet men bevisat klart — åtgärd: stäng korten; invariant 2: stängt men obockat — åtgärd: bocka DoD/AC mot belägg eller öppna ärligt) — se loggens ❌-rader ovan för vilket kort som bär vilken."
           elif [ "${KOD}" -ne 0 ]; then
             echo "::error::ANROPSFEL i grinden (exit ${KOD}): korten är OPRÖVADE. Åtgärd: laga grinden/miljön, inte korten."
           fi
@@ -799,7 +799,7 @@ jobs:
           if [ "${BACKLOG_RESULT}" = "failure" ]; then
             case "${BACKLOG_UTFALL}" in
               drift)
-                backlog_sektion=$'\n\n**Backlog-stängningsgrinden: DRIFT (exit 1).** Kort vars arbete är bevisat klart står öppna bortom karensen. Åtgärd: stäng korten via CLI:t (`node_modules/.bin/backlog task edit <id> --check-dod … -s Done`) — körningsloggen listar vilka.'
+                backlog_sektion=$'\n\n**Backlog-stängningsgrinden: DRIFT (exit 1).** Grinden fann inkonsistenta kort — invariant och åtgärd skiljer sig PER KORT: invariant 1/3 (öppet men bevisat klart) ⇒ stäng korten via CLI:t (`node_modules/.bin/backlog task edit <id> --check-dod … -s Done`); invariant 2 (stängt men obockat) ⇒ bocka DoD/AC mot belägg eller öppna ärligt. Körningsloggens ❌-rader namnger vilket kort som bär vilken invariant — läs dem innan åtgärd, applicera inte en gemensam åtgärd på alla.'
                 ;;
               anropsfel)
                 backlog_sektion=$'\n\n**Backlog-stängningsgrinden: ANROPSFEL (exit 2).** Grinden kunde inte pröva korten (CLI-, policy- eller formatfel). Detta är INTE ett påstående om kortens tillstånd — åtgärda grinden/miljön, inte korten.'

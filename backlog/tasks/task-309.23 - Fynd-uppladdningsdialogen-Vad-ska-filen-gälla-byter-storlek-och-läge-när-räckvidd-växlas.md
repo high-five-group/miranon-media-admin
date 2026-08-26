@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-26 02:24'
+updated_date: '2026-08-26 03:00'
 labels:
   - ready-for-agent
 dependencies: []
@@ -25,15 +26,15 @@ Krav: dialogens yttre mått och position är IDENTISKA i alla tre räckviddsläg
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Dialogens bounding box (x, y, bredd, höjd) är identisk i lägena Detta event / En familj / Alla event och under pågående uppladdning — mätt med Playwright (getBoundingClientRect) i desktop och 375 px, tal redovisade i PR:en
-- [ ] #2 Dolda kontroller är inte fokuserbara och inte i tabordningen; axe-svepet grönt; Familj-valet nås med tangentbord som förut
-- [ ] #3 Ingen regression i uppladdningsflödet (acceptance-testet för uppladdning grönt)
-- [ ] #4 Prototyp-/facit-påverkan bokförd: om dokumentytans facit-bilder berörs anges det i PR:en (dialogen ingår inte i s108-dokumentytans ytor — verifiera mot manifestet)
+- [x] #1 Dialogens bounding box (x, y, bredd, höjd) är identisk i lägena Detta event / En familj / Alla event och under pågående uppladdning — mätt med Playwright (getBoundingClientRect) i desktop och 375 px, tal redovisade i PR:en
+- [x] #2 Dolda kontroller är inte fokuserbara och inte i tabordningen; axe-svepet grönt; Familj-valet nås med tangentbord som förut
+- [x] #3 Ingen regression i uppladdningsflödet (acceptance-testet för uppladdning grönt)
+- [x] #4 Prototyp-/facit-påverkan bokförd: om dokumentytans facit-bilder berörs anges det i PR:en (dialogen ingår inte i s108-dokumentytans ytor — verifiera mot manifestet)
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->

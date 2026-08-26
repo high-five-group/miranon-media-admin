@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-24 17:55'
+updated_date: '2026-08-26 04:06'
 labels:
   - ready-for-agent
 dependencies: []
@@ -34,7 +35,7 @@ Det är samma klass som repot städat två gånger: ett facit vars tystnad läse
 <!-- AC:BEGIN -->
 - [ ] #1 Avgjort: stämplas s102-dokument-konvergens om mot den levande ytan, eller pensioneras manifestet till förmån för s108-generering/s108-dokumentytan?
 - [ ] #2 De tre öppna AMENDERING-filerna avgjorda — omstämplade eller stängda med skäl
-- [ ] #3 Klarlagt och bokfört hur många ytterligare stämplade ytor som saknar referenser-nyckel och därmed står utanför innehållslåset
+- [x] #3 Klarlagt och bokfört hur många ytterligare stämplade ytor som saknar referenser-nyckel och därmed står utanför innehållslåset
 - [ ] #4 Avgjort om avsaknad av referenser-nyckel ska fortsätta vara tillåtet, eller om check-facit bör larma på det (ADR-102-fråga, Marcus)
 <!-- AC:END -->
 
@@ -44,3 +45,23 @@ Det är samma klass som repot städat två gånger: ett facit vars tystnad läse
 - [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+UTREDNING LEVERERAD (docs-only, 2026-08-26): docs/research/facit-pensionering-s102-2026-08-26.md — fullt källmärkt underlag för alla fyra AC + Marcus morgonsekvens (exakta !-kommandon).
+
+AC #1 (pensionera vs omstämpla s102): PREMISS PRÖVAD — s108-generering + s108-dokumentytan täcker INTE allt s102 täckte. Verkligt gap: ingen av de tre manifesten visar ett VALT events fullt filtrerbara dokumentlista med dagens ikonpar-Visa-beteende (s108-dokumentytan visar ikonparet men i räckviddsläget/inget-event-valt; s108-generering visar en annan vy, genereringsflödet). Gapet är redan bokfört av skiva 9 självt i s108-dokumentytan/facit.json:s "not"-fält ("SUPERSEDERAR INTE s102... Att avgöra vad som ska hända med s102:s bilder... är Marcus"). REKOMMENDATION: (a) pensionera ändå, gap explicit bokfört i ARKIVERAD.md + rekommendera ett separat uppföljningskort för den nya bilden. Omstämpling (b) avrådd: s102:s "Visa-overlay"-beskrivning avser en dialog-baserad förhandsvisning som är RIVEN ur koden (DokumentYta.tsx rad 75-87, [ERSATT TASK-273.4]) — --ersatt byter bara godkand-blocket, aldrig bilder/kallor/not (facit-godkann.mjs rad 187-212), så en omstämpling hade producerat ett färskt-daterat kvitto för en funktion som inte går att klicka fram i appen. Kräver Marcus/orkestrerarens beslut — EJ bockad.
+
+AC #2 (tre AMENDERING-filer): s102/AMENDERING-2026-08-23-sidram-promovering.md blir MOOT om AC#1 = pensionera (hela katalogen arkivflyttas frusen, ingen restämpling behövs). s106-aktivitetslogg och s111-anmalningssidan-konvergens är HELT OBEROENDE av s102-beslutet, väntar bara på Marcus --ersatt-omstämpling (se research-filens exakta kommandon). Kräver Marcus-kanal — EJ bockad.
+
+AC #3 (referenser-täckning): KLARLAGT OCH BOKFÖRT. 24 stämplade ytor (av 28 totalt, 15 manifest) saknar "referenser" — mätt två gånger identiskt (check-facit.sh exit 0-körning + oberoende node-räkning). Full lista manifest·yta i research-filen § 2. Bockad.
+
+VIKTIG DIVERGENS MOT UPPDRAGET (ADR-086): uppdraget påstod "TASK-288 gjorde det för 22 ytor" som om backfillen redan utförts. FALSKT — TASK-288 Status: ○ To Do, samtliga 4 AC okryssade, aldrig utförd. Talet 22 var kortets EGET ögonblicksvärde 2026-08-22; kortets egen kommentar samma dag bokför redan drift till 24. Dagens 24 är "0 gjorda, talet har vandrat" — inte "22 gjorda + 2 nya".
+
+AC #4 (ska check-facit larma på avsaknad av referenser?): REKOMMENDATION varna, fäll inte (retroaktivt) — se research-filen § 4 för fullt underlag (branschmönster Percy/Chromatic/BackstopJS/Storybook kräver INTE denna form; omedelbar fällning hade rödmålat main idag, 24/28; rotorsaken till att denna instans smög förbi är en ANNAN mekanism — check-facit jämför aldrig rendering mot bild, det gör den aldrig). ADR-102-beslut, Marcus — EJ bockad.
+
+Se research-filen för fullständig källmärkning, citat och de exakta ! npm run facit:godkann-kommandona i ordning.
+
+PREMISS-PASS-FYND (ADR-086, tillagt efter första notes-skrivningen): origin/main rörde sig 27 commits under detta pass (192bbd29 → 9d15fa0a), inklusive TASK-309.20 (515028c4) som redan fixat EN av de två 375px-formdefekter s108-generering ursprungligen flaggade öppet (räckviddslägets badge-overlapp — omtagen mobil-bild). Den ANDRA defekten (dokumentlistans radtrunkering i s108-generering/facit-dokumentlista-inaktuell-rad-mobil.png) är fortfarande INTE åtgärdad (bokfört öppet i TASK-309.20:s Final Summary). godkand/referenser/bilder-strukturen i båda s108-manifesten är OFÖRÄNDRAD av detta — AC#1/#2/#3-analysen i research-filen påverkas inte strukturellt, men detta är källmärkt i research-filens § 0 så morgonsekvensen körs mot aktuellt läge, inte det ursprungligen granskade. PR:en byggs mot färsk origin/main (9d15fa0a), inte mot worktreens ursprungliga bas.
+<!-- SECTION:NOTES:END -->

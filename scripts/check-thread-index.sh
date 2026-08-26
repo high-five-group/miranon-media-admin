@@ -228,7 +228,7 @@ while IFS= read -r line; do
     PIPES="${line//[^|]/}"
     if [[ "${#PIPES}" -ne "${EXPECTED_PIPES}" ]]; then
         echo "❌ ${THREAD_INDEX}:${LINE_NO} — ${TID} har ${#PIPES} pipe-tecken (förväntat ${EXPECTED_PIPES}, dvs ${THREAD_COLUMN_COUNT} kolumner)"
-        echo "   Fix: escapa pipe-tecken i titel/ingång som \\| — annars läser varje maskinell läsare fel kolumn."
+        echo "   Fix: undvik literala pipe-tecken i titel/ingång helt — ett \\|-escape löser INTE detta, kontrollen ovan räknar \${line//[^|]/} som stryker alla icke-pipe-tecken (inklusive ett inledande \\), så en escapad pipe räknas ändå (TASK-138)."
         EXIT_CODE=1
         continue
     fi
@@ -369,7 +369,7 @@ if [[ -f "${THREAD_CHILDREN_MANIFEST}" ]]; then
         MANIFEST_PIPES="${manifest_line//[^|]/}"
         if [[ "${#MANIFEST_PIPES}" -ne 3 ]]; then
             echo "❌ ${THREAD_CHILDREN_MANIFEST}:${MANIFEST_LINE_NO} — raden har ${#MANIFEST_PIPES} pipe-tecken (förväntat 3, dvs två kolumner: Tråd | Barn)"
-            echo "   Fix: escapa pipe-tecken i cellerna som \\| — annars läser varje maskinell läsare fel kolumn."
+            echo "   Fix: undvik literala pipe-tecken i cellerna helt — ett \\|-escape löser INTE detta, kontrollen ovan räknar \${manifest_line//[^|]/} som stryker alla icke-pipe-tecken (inklusive ett inledande \\), så en escapad pipe räknas ändå (TASK-138)."
             EXIT_CODE=1
             continue
         fi

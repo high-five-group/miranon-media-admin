@@ -1,6 +1,6 @@
 import * as Sentry from '@sentry/react';
 import { createFileRoute, Link } from '@tanstack/react-router';
-import { type FormEvent, useState } from 'react';
+import { type FormEvent, useEffect, useState } from 'react';
 import { Button, Input, MessageBox } from '@/components/primitives';
 import { supabase } from '@/data/config/supabase-client';
 
@@ -48,12 +48,33 @@ export const Route = createFileRoute('/glomt-losenord')({
  * KLIENTVALIDERING (tomt fält) sker FÖRE nätverksanropet och är INTE en
  * enumeration-signal — det är ett publikt, adressoberoende formkrav (samma
  * gren-innan-nätverk-mönster som valkommen.tsx:s längd-check).
+ *
+ * AUTH-FONDEN (TASK-223, S102 Explore-svepets fynd 2026-08-15): denna sida
+ * saknade `data-auth-fond` trots att den delar samma publika auth-kortform
+ * som login/passkey/nytt-losenord/valkommen. Forensik körd (git log/blame,
+ * commit 0d3cb92f som skapade sidan): ingen dokumenterad avsikt hittades —
+ * nytt-losenord.tsx fick fonden i SAMMA commit, glomt-losenord.tsx gjorde
+ * det inte. Klassat som MISS, inte medvetet undantag. Samma
+ * sätt/städ-mönster som login.tsx (se src/styles/base.css § "FULL-BREDDS-
+ * FOND UTAN ATT RÖRA RÄNNSTENEN").
  */
 function GlomtLosenordRoute() {
   const [epost, setEpost] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [tillstand, setTillstand] = useState<'formular' | 'skickat'>('formular');
   const [fel, setFel] = useState<string | null>(null);
+
+  // Varm fond kant i kant (S96-facit) — satt på <html>, städas vid unmount så
+  // appen aldrig ärver auth-fonden. Se src/styles/base.css rad ~100–164.
+  // TASK-223: samma mönster som login.tsx, tillagt efter forensik (se
+  // filens docblock).
+  useEffect(() => {
+    const rot = document.documentElement;
+    rot.dataset.authFond = 'true';
+    return () => {
+      delete rot.dataset.authFond;
+    };
+  }, []);
 
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();

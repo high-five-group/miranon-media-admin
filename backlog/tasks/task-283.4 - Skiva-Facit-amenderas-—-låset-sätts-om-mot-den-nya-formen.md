@@ -4,9 +4,10 @@ title: 'Skiva: Facit amenderas — låset sätts om mot den nya formen'
 status: Done
 assignee: []
 created_date: '2026-08-21 08:55'
-updated_date: '2026-08-22 19:31'
+updated_date: '2026-08-26 03:26'
 labels:
   - ready-for-human
+  - intentionally-unchecked
 dependencies:
   - TASK-283.3
 parent_task_id: TASK-283
@@ -148,4 +149,6 @@ Och bokstaven ÄR strukturellt omöjlig, inte bara ouppfylld. (a) ADR-102 § A1 
 VAD SOM FAKTISKT SKYDDADES, och som ÄR uppfyllt: kortets enkelriktade ordning — Marcus ord FÖRE regenereringen. AC #1 och #2 bär den, belagd i notes ovan. Raden bokförs som en formuleringsskuld i DoD-mallen, inte som en obetald punkt i arbetet. Samma precedent som TASK-283.3, som sattes Done med sin DoD #5 motiverad i stället för bockad.
 
 ÖVRIGA DoD, mätta: #1 alla fem AC bockade · #2 grindarna i GRINDAR-raden ovan (test:visual 0, check-facit 0, check:docs 0, biome 0, typecheck 0) · #3 CI per jobb grön på båda landningarna (#1802 och #1803; #1803 docs-only, Test suite + Docs link check korrekt skipping) · #4 diffen path-scopad — #1802 bär kortet, fyra amenderings-sidofiler och sex aria-referenser, #1803 bär enbart facit.json, noll orelaterade filer i båda · #6 rad- och listformen mekaniskt granskad mot facit (listblocket extraherat före/efter, diff exit 0, nodmängden byte-identisk).
+
+OBOCKAT MED AVSIKT: DoD #5 ('Facit-manifestet amenderat med Marcus citat FÖRE ARIA-referenserna regenereras') är strukturellt omöjlig, inte ouppfylld — mätt i kortets egna Implementation Notes: regenereringen (PR #1802, merge 2026-08-22T16:37:05Z) föregick manifestets omstämpling (PR #1803, merge 2026-08-22T17:06:22Z) med 29 minuter, i EXAKT den ordning ADR-102 § A1 klass (c) föreskriver (sidofil skrivs i byggpasset, omstämplingen sker i Marcus egen !-kanal EFTER — deny-facit-godkand-skrivning.sh fryser manifestet så ingen agent kan skriva det i förväg). Bokstaven ärvdes ordagrant ur föräldrakortet TASK-283, formulerad innan T157-mekaniken (ADR-102 § Updates 2026-08-22) fanns. Landningarna PR #1802 och #1803 verifierade MERGED (gh pr view). Källmärkt 2026-08-26, S112 fix-våg 4, ADR-127-normalisering.
 <!-- SECTION:NOTES:END -->

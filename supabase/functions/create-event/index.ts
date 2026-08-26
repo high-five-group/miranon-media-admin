@@ -4,6 +4,7 @@ import { scalarNumber, scalarString, selectName } from '../_shared/coerce.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
 import { lookupCourseDimensions } from '../_shared/course-dimensions.ts';
 import { generateRequestId, mapErrorToResponse } from '../_shared/errors.ts';
+import { deriveManadAr } from '../_shared/event-map.ts';
 import { findDisallowedField, getOperation } from '../_shared/field-allowlists.ts';
 
 // create-event — skapar ett NYTT event i Eventplanering (Fas 6f, ADR-066). Repots
@@ -62,33 +63,6 @@ const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9
 // ISO-datum YYYY-MM-DD (Airtable date-fält-form; samma anda som create-registrations
 // pragmatiska format-grindar — exakt kalender-validitet vilar på Airtable).
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-
-// Svenska månadsnamn (kapitaliserade) för `Månad/år`-härledningen. Basens singleSelect
-// bär options på formen "Mars 2026" → vi bygger samma sträng ur Startdatum. NB: options-
-// listan i basen är ändlig (range Nov 2025 – Dec 2026 i nuläget); ett datum utanför den
-// gör att `typecast:false`-upserten FELAR (→ 500) i stället för att tyst skapa en option.
-// Det är medvetet: basens manuella Månad/år-fält är en designbrist (§Kända fällor 36) och
-// en out-of-range-träff ska SYNAS, inte maskeras. Maximerings-kandidat T16.
-const MANAD_AR_MONTHS = [
-  'Januari',
-  'Februari',
-  'Mars',
-  'April',
-  'Maj',
-  'Juni',
-  'Juli',
-  'Augusti',
-  'September',
-  'Oktober',
-  'November',
-  'December',
-];
-
-/** Härleder `Månad/år`-värdet ("Mars 2026") ur ett ISO-datum (YYYY-MM-DD). */
-function deriveManadAr(isoDate: string): string {
-  const [year, month] = isoDate.split('-');
-  return `${MANAD_AR_MONTHS[Number(month) - 1]} ${year}`;
-}
 
 /**
  * Mappar en skapad/matchad Eventplanering-rad till domän-Event (samma anda som
@@ -212,6 +186,10 @@ Deno.serve(async (req) => {
       Ort: ort.trim(),
       Startdatum: startdatum,
       Slutdatum: slutdatum,
+      // Härlett server-side ur Startdatum (ADR-066 b6) via _shared/event-map.ts.
+      // Basens options-lista är ändlig (Nov 2025 – Dec 2026); ett datum utanför
+      // den FELAR (typecast:false → 500) i stället för att tyst skapa en option —
+      // medvetet, §Kända fällor 36 + 45. Maximerings-kandidat T16.
       'Månad/år': deriveManadAr(startdatum),
       'Max antal platser': maxPlatser,
       Status: status,

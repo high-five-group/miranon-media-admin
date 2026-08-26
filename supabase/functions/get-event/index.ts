@@ -1,8 +1,9 @@
 import { fetchAirtableRecord, fetchFromAirtable } from '../_shared/airtable-client.ts';
 import { requireUser } from '../_shared/auth.ts';
-import { scalarNumber, scalarString, selectName } from '../_shared/coerce.ts';
+import { selectName } from '../_shared/coerce.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
 import { generateRequestId, mapErrorToResponse } from '../_shared/errors.ts';
+import { mapEventBas, mapEventKategorifalt } from '../_shared/event-map.ts';
 
 // Tabeller adresseras per NAMN (ej tbl-id) så samma kod fungerar mot prod- och
 // staging-bas — tbl-id:n är bas-unika och skiljer sig i en duplicerad bas (ADR-050).
@@ -106,11 +107,13 @@ async function fetchBelaggning(f: Fields): Promise<{
   return { viaFormular, medfoljande, vantelista, borOverAntal };
 }
 
-// Fältnamn från Airtable → ren API-respons. Bas-fälten mappas IDENTISKT med
-// get-events `mapEvent` (samma berikade shape per EventSchema); därtill bär
-// get-event ENSAM beläggningens innehållsmodell (task-18.2) — aggregerade
-// räkningar + de två skrivbara kategorifälten. Håll bas-delen i synk med
-// get-events/index.ts och update-event/index.ts om fält ändras.
+// Fältnamn från Airtable → ren API-respons. Bas-shapen (21 fält) och beläggningens
+// två skrivbara kategorifält + auto-utskickets två fält kommer ur
+// `_shared/event-map.ts` — SSOT sedan TASK-23, delad med get-events/update-event.
+// Därtill bär get-event ENSAM beläggningens AGGREGERADE räkningar (task-18.2), som
+// kräver egna batch-läsningar och därför stannar här. Spread i samma ordning som
+// inline-kopian hade: bas → kategorifält → aggregeringar, så svarets nyckelordning är
+// oförändrad.
 function mapEvent(
   record: { id: string; fields: Record<string, unknown> },
   belaggning: {
@@ -120,58 +123,15 @@ function mapEvent(
     borOverAntal: number;
   },
 ) {
-  const f = record.fields;
-
   return {
-    id: record.id,
-    eventlabel: f['Eventlabel'] ?? null, // formula (primary)
-    eventNamn: selectName(f['Event (source)']), // singleSelect
-    typ: selectName(f['Typ']), // singleSelect
-    ort: scalarString(f['Ort']), // text (eget fält, skalärt)
-    startdatum: f['Startdatum'] ?? null, // date
-    slutdatum: f['Slutdatum'] ?? null, // date
-    tidKvarTillEvent: f['Tid kvar till event'] ?? null, // formula → text
-    // Number-fält via scalarNumber: Airtable ger formel-/procent-fält som blir
-    // NaN/Infinity (0/0, osatt maxPlatser) som OBJEKT {specialValue} — scalarNumber
-    // coercar det till null så .parse() håller (konsekvent över get-event/get-events).
-    maxPlatser: scalarNumber(f['Max antal platser']), // number (osatt → null)
-    antalAnmalda: scalarNumber(f['Antal anmälda']) ?? 0, // formel → number
-    platserKvar: scalarNumber(f['Platser kvar']), // formel → number|null
-    anmaldBelaggning: scalarNumber(f['Anmäld beläggning (%)']), // formel-% (NaN→null)
-    bekraftadBelaggning: scalarNumber(f['Bekräftad beläggning (%)']), // formel-% (NaN→null)
-    antalNyaAnmalningar: scalarNumber(f['Antal nya anmälningar']) ?? 0, // rollup → number
-    antalAnmalningsavgifter: scalarNumber(f['Antal mottagna anmälningsavgifter']) ?? 0, // rollup
-    antalSlutbetalningar: scalarNumber(f['Antal mottagna slutbetalningar']) ?? 0, // rollup
-    antalSlutbetalningFelande: scalarNumber(f['Antal slutbetalning saknas']) ?? 0, // formel
-    status: selectName(f['Status'] ?? null), // singleSelect (om det finns)
-    // eventKey (task-18.1): formel "Event-" & {Event-nr} — EventKey-pillen på
-    // detaljsidans topprad. Håll i synk med get-events (fältet är OPTIONAL i
-    // EventSchema — saknas värdet UTELÄMNAS nyckeln: JSON.stringify droppar
-    // undefined; aldrig null). Båda EF:erna bär fältet sedan samma leverans.
-    eventKey: typeof f['EventKey'] === 'string' ? f['EventKey'] : undefined,
-    // Basdimensionerna (TASK-249.4, ADR-115): direkta singleSelect-fält, alltid lästa —
-    // selectName ger string|null (aldrig gissat). Håll i synk med get-events/update-event.
-    kursfamilj: selectName(f['Kursfamilj']),
-    kursniva: selectName(f['Kursnivå']),
-    // Beläggningens innehållsmodell (task-18.2, K16 — mappar basen 1-till-1):
-    // de två skrivbara kategorifälten ur eventraden + de aggregerade räkningarna.
-    // Osatt i basen → nyckeln UTELÄMNAS (undefined droppas av JSON.stringify;
-    // eventKey-formen — aldrig null, OPTIONAL i EventSchema).
-    reserverade: scalarNumber(f['Extra platser']) ?? undefined, // 'Extra platser'
-    manuelltTillagda: scalarNumber(f['Manuella platser']) ?? undefined, // 'Manuella platser'
-    // Auto-utskicket (task-18.6, PRD task-18 beslut 14): schemalagt datum + opt-out
-    // ur de ADDITIVA staging-fälten. Datumet: osatt → nyckeln UTELÄMNAS (eventKey-
-    // formen). Opt-out: Airtable utelämnar en OKRYSSAD checkbox ur svaret →
-    // normaliseras till FALSE (aldrig undefined) så krysset alltid har ett definit
-    // läge. Håll i synk med update-event/index.ts.
-    deltagarinfoSchemalagd: scalarString(f['Deltagarinfo schemalagd']) ?? undefined,
-    deltagarinfoAutoAvstangt: f['Deltagarinfo auto-utskick avstängt'] === true,
+    ...mapEventBas(record),
+    ...mapEventKategorifalt(record),
     viaFormular: belaggning.viaFormular, // länkade Anmälningar, Källa TOM
     medfoljande: belaggning.medfoljande, // länkade Anmälningar, Källa '+1'
     vantelista: belaggning.vantelista, // aktiva event-kopplade Väntelisteplatser
     // Bor över-summeringen (task-17.5): härlett antal ikryssade 'Bor över'
-    // bland eventets Anmälningar (listkortets/eventsidans säng-rad). Håll i
-    // synk med get-events mapEvent (samma härledning ur registrerings-batchen).
+    // bland eventets Anmälningar (eventsidans säng-rad) — get-events härleder
+    // samma tal ur sin list-nivå-batch.
     borOverAntal: belaggning.borOverAntal,
   };
 }

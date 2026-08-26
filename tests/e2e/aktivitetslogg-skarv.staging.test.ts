@@ -1,6 +1,7 @@
 import type { Route } from '@playwright/test';
 import { verbCopy } from '../../src/data/activityLog/verbCopy';
 import { expect, type Page, test } from '../support/test-bas';
+import { mockTommaAnteckningar } from './helpers/tomma-anteckningar';
 import { mockValjarLista, valjarRad } from './helpers/valjar-lista';
 
 /**
@@ -64,7 +65,6 @@ const NOTE_TEXT = 'Hemlig provanteckning som ALDRIG får synas i aktivitetslogge
 
 const GET_EVENT = /\/functions\/v1\/get-event\?/;
 const GET_REGISTRATIONS = '**/functions/v1/get-registrations*';
-const GET_EVENT_NOTES = '**/functions/v1/get-event-notes*';
 const CREATE_EVENT_NOTE = '**/functions/v1/create-event-note';
 const LOG_ACTIVITY = '**/functions/v1/log-activity';
 const GET_ACTIVITY_LOG = '**/functions/v1/get-activity-log*';
@@ -158,15 +158,9 @@ async function mockSidan(page: Page): Promise<Rigg> {
   });
 
   // Anteckningsströmmens EGEN visning är inte denna skivas yta (ADR-075
-  // täcker den redan) — alltid tom, deterministisk, speglar
-  // event-detail.staging.test.ts § mockNotes.
-  await page.route(GET_EVENT_NOTES, async (route: Route) => {
-    await route.fulfill({
-      status: 200,
-      contentType: 'application/json',
-      body: JSON.stringify({ notes: [] }),
-    });
-  });
+  // täcker den redan) — alltid tom, deterministisk, via delade sömmen
+  // (TASK-47).
+  await mockTommaAnteckningar(page);
 
   await page.route(CREATE_EVENT_NOTE, async (route: Route) => {
     const body = route.request().postDataJSON() as { text: string };

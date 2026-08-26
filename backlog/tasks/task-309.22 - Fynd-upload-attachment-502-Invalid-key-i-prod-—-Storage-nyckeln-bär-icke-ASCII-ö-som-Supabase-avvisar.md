@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-26 02:23'
-updated_date: '2026-08-26 03:26'
+updated_date: '2026-08-26 06:14'
 labels:
   - ready-for-agent
 dependencies: []
@@ -40,3 +40,9 @@ Klass: blockerar dokumentspåret i prod för vanliga svenska filnamn. Airtable-f
 - [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+RÄTTELSE 2026-08-26 (orkestreraren, efter review runda 1+2 på #1983): AC #1:s ordalydelse '→ 200' är felställd — EF:en svarar 201 för en genuint ny rad (TASK-316:s idempotens-kontrakt; 200 är reserverat för replay). AC #3:s pekare 'attachments.ts docblock + data-model.md § Lagringsnyckel' är felställd — beslutet bor i upload-attachment/index.ts:s docblock och data-model.md § 'Bucket bilagor — Storage-path-formerna'. Sakinnehållet i båda AC håller (verifierat av review-agenten runda 2, SHA 21e613fd); bockarna står mot sak, inte mot bokstav. Hash-underlaget efter runda 2: sanitizeFilnamn (originalnamn, aldrig ASCII-fall) hashas; toStorageSafe enbart för Storage-leaf.
+<!-- SECTION:NOTES:END -->

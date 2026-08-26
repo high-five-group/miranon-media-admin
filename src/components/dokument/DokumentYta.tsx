@@ -653,9 +653,18 @@ const LISTA_MAXHOJD = 'max-h-[396px]';
  * NÄSTLINGEN, aldrig vanan.** Byter en behållare bakgrund måste allt som
  * ligger I den prövas om — och prövningen är en mätning av `backgroundColor`,
  * inte en blick på klassnamnet.
+ *
+ * [TASK-309.20] `min-w-0 max-w-full truncate`, INTE `shrink-0` — samma fix
+ * som `RackviddBadge.tsx` fick, av samma mätta skäl (se dess docblock för
+ * pixelbeläggen): en Mall-badge med lång text ("Bekräftelsebilaga", 17 tecken)
+ * i en Event-mallad rad vid 375 px flöt annars ut över ikonknapparna på
+ * exakt samma sätt som räckviddsbadgen — X-överlappet mättes (badge
+ * `x=62 width=121` mot första knappens `x=131`), även om Y-banden råkade
+ * missa varandra i just den mätta raden. Samma underliggande arkitekturfel,
+ * så samma fix på den delade klassen.
  */
 const TACKNING_KLASS =
-  'inline-flex shrink-0 items-center rounded-full border border-transparent bg-bg-muted px-2 py-0.5 font-medium text-caption text-text-secondary contrast-more:border-border-strong';
+  'inline-flex min-w-0 max-w-full items-center truncate rounded-full border border-transparent bg-bg-muted px-2 py-0.5 font-medium text-caption text-text-secondary contrast-more:border-border-strong';
 const IKON_STORLEK = 16;
 
 function MetaRad({ delar }: { delar: (string | null)[] }) {
@@ -874,6 +883,42 @@ function DokumentAtgardsKnappar({ namn, kalla }: { namn: string; kalla: Dokument
  *
  * "+N ÄLDRE FILER" FLYTTADE IN I DATUMLEDET. Den stod som en fjärde rad och
  * bröt låsningen för just de rader som hade dubbletter.
+ *
+ * ═══ [TASK-309.20] RADEN BRYTER NU VID 375 px NÄR FYRA IKONKNAPPAR INTE
+ * FÅR PLATS — "skyddsnätet" höll inte för NORMALFALLET ═══
+ *
+ * Mätt (facit `s108-generering/facit-dokumentlista-inaktuell-rad-mobil.png`
+ * + `s108-dokumentytan/facit-dokumentyta-rackviddslage-mobil.png`): en
+ * Event-mallad rad med FYRA handlingar (Öppna/Ladda ner/Skapa om/Ersätt,
+ * `IKONKNAPP_KLASS`s egen räkning: 4×44 px + 3×2 px = 182 px) trunkerade
+ * "Bekräftelsebilaga.pdf" till "Bekr…" — fyra tecken, inte den 17–24-tecken-
+ * normalen stycket ovan förutsätter. Orsaken är ARITMETISK, inte kosmetisk:
+ * vid 375 px är radens tillgängliga bredd (mätt, `RAD_BOX`) 251 px; 182 px
+ * ikonkolumn + 12 px mellanrum lämnar bara 57 px åt namnet — under
+ * "skyddsnät för undantaget"-antagandet stycket ovan bygger på.
+ *
+ * FIXEN ÄR DEN REDAN DOKUMENTERADE PLANEN (`IKONKNAPP_KLASS`s docblock,
+ * Marcus 2026-08-17): *"Skulle bredden ändå inte räcka på en smal skärm är
+ * rätt svar att låta raden bryta, inte att krympa träffytan."* Namnkolumnen
+ * bär nu `min-w-[12ch]` i stället för `min-w-0` (ETT golv, ingen ceiling —
+ * kolumnen krymper fortfarande till EXAKT den bredd raden ger den så länge
+ * båda får plats på en rad, precis som förut). Radens eget skal fick
+ * `flex-wrap`: när ikonkolumnens (`shrink-0`, ingen tillåten krympning)
+ * hypotetiska bredd + namnkolumnens 12ch-golv + mellanrummet överskrider
+ * radens bredd, flyttar CSS-motorn ikonkolumnen till en EGEN rad under —
+ * namnkolumnen står då ensam på sin rad och `flex-1` fyller HELA bredden
+ * (251 px i det mätta fallet, gott om plats för "Bekräftelsebilaga.pdf" i
+ * sin helhet). Vid gott om bredd (skrivbord, eller mobil med färre knappar)
+ * händer ingenting nytt — vägen är oförändrad.
+ *
+ * DETTA BRYTER INTE höjdlåsningen ovan: samma facit-bild visar att rader
+ * REDAN varierar i höjd med sitt innehåll (raden med tre badgar — Detta
+ * event/Mall/Inaktuell — är synligt högre än syskonraderna med bara en).
+ * Låsningen är ett GOLV (namn/täckning/datum renderas ALLTID, aldrig
+ * kortare), inte ett tak — en rad får vara högre när den bär mer, och en
+ * rad vars ikonkolumn bryter till en egen rad är samma sorts variation.
+ * 12ch är ett MEDVETET, JUSTERBART golv (motsvarande knapparnas egna 44 px-
+ * golv i princip, inte i magnitud) — inte en ny interaktionsform.
  */
 function DokumentRadSkal({
   namn,
@@ -889,8 +934,8 @@ function DokumentRadSkal({
   handlingar: React.ReactNode;
 }) {
   return (
-    <div data-testid="dokument-fil" className="flex items-start gap-3 py-3">
-      <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
+    <div data-testid="dokument-fil" className="flex flex-wrap items-start gap-3 py-3">
+      <span className="flex min-w-[12ch] flex-1 flex-col items-start gap-1">
         <span className="w-full min-w-0 truncate font-medium text-body" title={namn}>
           {namn}
         </span>
@@ -901,8 +946,17 @@ function DokumentRadSkal({
             varje icke-Event-mallad rad (uppladdade/person-genererade filer),
             så de allra flesta rader visar EXAKT samma två-badge-yta som
             förut. INAKTUELL bär TEXT, inte bara färg (`StatusBadge`,
-            WCAG 1.4.1 — samma disciplin som RackviddBadge/nivåbadgar). */}
-        <span className="flex flex-wrap items-center gap-1">
+            WCAG 1.4.1 — samma disciplin som RackviddBadge/nivåbadgar).
+
+            [TASK-309.20] `w-full min-w-0` TILLAGT — utan dem sizear denna
+            flex-wrap-rad sig efter sitt EGET innehåll (kolumnens
+            `items-start` stretchar inte barn), så badgens tilldelade bredd
+            var odefinierad och en enda för bred badge (`shrink-0`) flöt rakt
+            ut över ikonknapparna i stället för att TRUNKERAS inom raden.
+            Samma `w-full min-w-0`-par som namnspannet ovan bär redan, av
+            samma skäl (`DokumentRadSkal`s docblock). Se `RackviddBadge.tsx`
+            och `TACKNING_KLASS` för motsvarande fix på badgens egen sida. */}
+        <span className="flex w-full min-w-0 flex-wrap items-center gap-1">
           <RackviddBadge
             rackvidd={current.rackvidd}
             kursfamilj={current.kursfamilj}
@@ -1603,54 +1657,99 @@ function RackviddsDialog({
             <Radio value={AttachmentScope.ALLA_EVENT}>Alla event</Radio>
           </RadioGroup>
 
-          {rackvidd === AttachmentScope.KURSTYP && (
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
+          {/* TASK-309.23 — RAD-HÖJDEN ÄR LÅST, INTE VILLKORAD (Marcus
+              prod-röktest 2026-08-26: *"rutan aldrig ändrar storlek och
+              läge vad jag än väljer eller trycker på"*). Raden renderades
+              tidigare bara när `rackvidd === KURSTYP`, vilket gjorde
+              dialogens höjd — och därmed dess VERTIKALT CENTRERADE läge
+              (`Modal`s overlay är `items-center`) — en funktion av
+              räckviddsvalet: ett hopp varje gång Lotta bytte radioknapp.
+
+              SAMMA "RESERVERA ALLTID PLATS"-TEKNIK som husets `Pill dold`
+              (`PersonsList.tsx`, Marcus S103) och breddlåset i
+              `EventCheckin.tsx`: raden RENDERAS ALLTID, döljs med
+              `invisible` (kvar i layouten, osynlig) + native `inert`
+              (React 19-attribut, https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/inert)
+              när räckvidden inte är Kurstyp. `inert` gör HELA underträdet
+              icke-fokuserbart och tar bort det ur tillgänglighetsträdet i
+              en sats — starkare golv än `tabIndex={-1}` satt per kontroll,
+              som måste upprepas för varje ny kontroll i raden och lätt
+              glöms. `invisible` sköter den visuella döljningen ensam;
+              `inert` är fokus-/AT-spärren.
+
+              STEG-SELECTEN BÄR SAMMA TEKNIK, EN NIVÅ NER. Den var tidigare
+              en egen villkorad rendering (`kursfamiljHarNivaer && …`) inuti
+              den redan villkorade raden — utan att den ALLTID renderas
+              (bara osynliggörs) hade en nivåbärande familj (RIM) fått en
+              annan radhöjd vid `sm:`s kolumn-layout (375 px: `flex-col`
+              STAPLAR de två selecten, så en andra select adderar höjd) än
+              en nivålös familj (Fjärrskådning) eller ingen familj alls —
+              exakt samma felklass som räckviddsraden, en nivå ner. */}
+          <div
+            className={`flex flex-col gap-2 sm:flex-row sm:items-start ${
+              rackvidd === AttachmentScope.KURSTYP ? '' : 'invisible'
+            }`}
+            inert={rackvidd !== AttachmentScope.KURSTYP}
+          >
+            <Select
+              label="Familj"
+              hideLabel
+              placeholder="Välj familj"
+              selectedKey={kursfamilj}
+              onSelectionChange={(key) => {
+                setKursfamilj(key == null ? null : String(key));
+                setKursniva(null);
+              }}
+              className="sm:max-w-56"
+            >
+              {KURSFAMILJ_VALUES.map((v) => (
+                <SelectItem key={v} id={v}>
+                  {v}
+                </SelectItem>
+              ))}
+            </Select>
+            <div
+              className={`sm:max-w-56 ${kursfamiljHarNivaer ? '' : 'invisible'}`}
+              inert={!kursfamiljHarNivaer}
+            >
               <Select
-                label="Familj"
+                label="Steg"
                 hideLabel
-                placeholder="Välj familj"
-                selectedKey={kursfamilj}
-                onSelectionChange={(key) => {
-                  setKursfamilj(key == null ? null : String(key));
-                  setKursniva(null);
-                }}
-                className="sm:max-w-56"
+                placeholder="Alla steg"
+                selectedKey={kursniva}
+                onSelectionChange={(key) => setKursniva(key == null ? null : String(key))}
               >
-                {KURSFAMILJ_VALUES.map((v) => (
+                {/* `id` är basvärdet ('Nivå 1'), texten är presentationen
+                    ('Steg 1'). Det som skickas till EF:en är därför
+                    oförändrat — se nivaSprak.ts. */}
+                {KURSNIVA_VALUES.map((v) => (
                   <SelectItem key={v} id={v}>
-                    {v}
+                    {stegEtikett(v)}
                   </SelectItem>
                 ))}
               </Select>
-              {kursfamiljHarNivaer && (
-                <Select
-                  label="Steg"
-                  hideLabel
-                  placeholder="Alla steg"
-                  selectedKey={kursniva}
-                  onSelectionChange={(key) => setKursniva(key == null ? null : String(key))}
-                  className="sm:max-w-56"
-                >
-                  {/* `id` är basvärdet ('Nivå 1'), texten är presentationen
-                      ('Steg 1'). Det som skickas till EF:en är därför
-                      oförändrat — se nivaSprak.ts. */}
-                  {KURSNIVA_VALUES.map((v) => (
-                    <SelectItem key={v} id={v}>
-                      {stegEtikett(v)}
-                    </SelectItem>
-                  ))}
-                </Select>
-              )}
             </div>
-          )}
+          </div>
 
           {/* LEDTEXTEN SÄGER VAD SOM SAKNAS, knappens `isDisabled` är grinden
               — de ska inte förväxlas. Samma disciplin som steg 2:s
               vilo-tillstånd bar innan blocket revs: en avstängd knapp säger
-              "nej" utan att säga varför. */}
-          {!scopeGiltig && (
-            <p className="text-small text-text-muted">Välj en familj för att gå vidare.</p>
-          )}
+              "nej" utan att säga varför.
+
+              [TASK-309.23] SAMMA RESERVERA-PLATS-TEKNIK som raden ovan:
+              meddelandet togglade tidigare hela sin rad in och ut
+              (`!scopeGiltig && <p>…</p>`), vilket gav ÄNNU en höjdskillnad
+              — denna gången mellan "En familj" utan valt värde (meddelandet
+              syns) och en vald familj (meddelandet försvinner), på BÅDA
+              brytpunkterna, inte bara vid `sm:`. Ingen fokuserbar kontroll
+              i en `<p>`, så `aria-hidden` + `invisible` räcker (samma form
+              som `Pill`s `dold`-prop) — `inert` tillför inget här. */}
+          <p
+            aria-hidden={scopeGiltig || undefined}
+            className={`text-small text-text-muted ${scopeGiltig ? 'invisible' : ''}`}
+          >
+            Välj en familj för att gå vidare.
+          </p>
 
           <div className="flex flex-wrap justify-end gap-2">
             <Button intent="ghost" onPress={onStang} isDisabled={laddarUpp}>

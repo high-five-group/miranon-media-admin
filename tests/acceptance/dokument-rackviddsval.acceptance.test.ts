@@ -1,9 +1,10 @@
 import AxeBuilder from '@axe-core/playwright';
+import type { NetworkFixture } from '@msw/playwright';
 import type { Page } from '@playwright/test';
 import { http } from 'msw';
 import { VISUAL_EVENT_ID } from '../support/fixturvarld/fixture-data';
 import { EF, json } from '../support/fixturvarld/handlers';
-import { expect, test } from './support/acceptance-bas';
+import { expect, test } from './acceptance-bas';
 
 /**
  * TASK-275.3 — Dokument-ytan utbyggd: räckviddsval, gemensamt läge, badges
@@ -145,8 +146,13 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
     // I eventläget är "Detta event" INTE avstängd (ett event ÄR valt).
     await expect(dettaEvent).toBeEnabled();
 
-    // Ingen Familj-select innan familj-läget är valt.
-    await expect(familjValjare(page)).toHaveCount(0);
+    // [TASK-309.23] Familj-selecten är sedan layout-shift-fixen ALLTID
+    // monterad (platsen reserveras för att dialogens höjd aldrig ska hoppa
+    // när räckvidden växlar) — men osynlig och `inert` (icke-fokuserbar,
+    // borta ur tillgänglighetsträdet) innan familj-läget är valt.
+    // `not.toBeVisible()` är rätt prövning för "syns inte", inte
+    // `toHaveCount(0)`: elementet FINNS i DOM, bara dolt.
+    await expect(familjValjare(page)).not.toBeVisible();
 
     // RAC:s `<Radio>` renderar (som `<Checkbox>`, se klickaKryss-mönstret i
     // atgarder-bilageval-send.acceptance.test.ts) sin `<input>` VISUELLT
@@ -155,8 +161,9 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
     // i stället (samma etablerade repo-mönster).
     await enKurstyp.locator('xpath=ancestor::label[1]').click();
     await expect(familjValjare(page)).toBeVisible();
-    // Steg-selecten syns INTE förrän en nivåbärande familj är vald.
-    await expect(stegValjare(page)).toHaveCount(0);
+    // Steg-selecten är samma "alltid monterad, osynlig tills tillämplig"
+    // — syns INTE förrän en nivåbärande familj är vald.
+    await expect(stegValjare(page)).not.toBeVisible();
 
     await familjValjare(page).click();
     await page.getByRole('option', { name: 'RIM', exact: true }).click();
@@ -179,7 +186,7 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
     // som står stilla genom hela flödet.
     await familjValjare(page).click();
     await page.getByRole('option', { name: 'Fjärrskådning', exact: true }).click();
-    await expect(stegValjare(page)).toHaveCount(0);
+    await expect(stegValjare(page)).not.toBeVisible();
   });
 
   test('AC #2: räckviddsläget (utan valt event) visar gemensamma dokument, "Detta event" avstängd', async ({
@@ -495,5 +502,232 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
       .click();
     await expect(page).toHaveURL(new RegExp(`event=${VISUAL_EVENT_ID}`));
     await expect(page.getByText(BILAGA_EGEN.namn)).toBeVisible();
+  });
+});
+
+/**
+ * [TASK-309.23] REGRESSIONSVAKT — dialogens geometri är LÅST, inte
+ * villkorad. Marcus prod-röktest 2026-08-26: *"När jag laddar upp dokument
+ * ... och om jag väljer 'Alla event' så ändrar rutan storlek, sånt avskyr
+ * ju jag ... Åtgärda så rutan aldrig ändrar storlek och läge vad jag än
+ * väljer eller trycker på."*
+ *
+ * ROTORSAKEN (tre separata villkorade block i `RackviddsDialog`, alla i
+ * `DokumentYta.tsx`) är fixad med samma "reservera alltid plats"-teknik
+ * som `Pill`s `dold`-prop i `PersonsList.tsx` (Marcus S103): Familj/Steg-
+ * raden, Steg-selecten för sig och valideringsmeddelandet renderas nu
+ * ALLTID och döljs med `invisible` (+ `inert` på de två förstnämnda, som
+ * bär fokuserbara kontroller) i stället för att monteras/avmonteras.
+ *
+ * Testerna nedan bevisar BÅDA hälfterna av fixen: att geometrin verkligen
+ * står stilla (AC #1) OCH att de dolda kontrollerna är riktigt dolda för
+ * tangentbord och skärmläsare (AC #2) — en `invisible`-yta som ändå går
+ * att tabba till hade bytt ett synligt problem mot ett osynligt.
+ */
+test.describe('TASK-309.23 — uppladdningsdialogens geometri är låst', () => {
+  /**
+   * Håll-bar uppladdningsmock (samma mönster som `hallbarMock` i
+   * `hem-laddlage.acceptance.test.ts`, task-4.5): `hall = true` parkerar
+   * EF-anropet obesvarat så `uploadMutation.isPending` — och därmed
+   * dialogens "Laddar upp …"-läge — står deterministiskt tills testet
+   * släpper det, i stället för en gissad `setTimeout`-fördröjning
+   * (TASK-3-klassen).
+   */
+  function hallbarUppladdningsmock(network: NetworkFixture) {
+    const st = {
+      hall: true,
+      parkerade: [] as Array<() => void>,
+      slapp() {
+        for (const slapp of this.parkerade.splice(0)) slapp();
+      },
+    };
+    network.use(
+      http.post(EF('upload-attachment'), async () => {
+        if (st.hall) await new Promise<void>((slapp) => st.parkerade.push(slapp));
+        return json({
+          attachment: { ...BILAGA_GEMENSAM, id: 'recBilagaGeometri01', namn: 'GeometriTest.pdf' },
+        });
+      }),
+    );
+    return st;
+  }
+
+  /**
+   * Kärnflödet, delat mellan desktop- och mobil-testet: samma FEM lägen,
+   * samma sekvens, samma dialog-instans genom hela vandringen (ingen
+   * stängning/öppning mellan mätpunkterna — det är just STABILITETEN inom
+   * en sittning som är kravet). Returnerar de fem uppmätta rutorna.
+   *
+   * `page.emulateMedia({ reducedMotion: 'reduce' })` slår av `Modal`s
+   * in-animation (`base.css`s globala `prefers-reduced-motion: reduce`-
+   * regel nollar `transition-duration`) INNAN dialogen öppnas — annars
+   * mäter den FÖRSTA rutan potentiellt mitt i `data-entering`s
+   * `scale-95`-transform, vilket testar en övergångsram i stället för det
+   * stabila läget (samma fälla som `prototyp-verifiering-runbook.md`
+   * § Bildtagningens andra fälla varnar för, fast för `getBoundingClientRect`
+   * i stället för en skärmdump).
+   */
+  async function matUppLagen(page: Page, network: NetworkFixture) {
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    network.use(bilagorHandler());
+    const uppladdning = hallbarUppladdningsmock(network);
+    await gotoEventlage(page);
+    await oppnaRackviddsdialog(page, 'GeometriTest.pdf');
+
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+
+    const matt = async () => {
+      const box = await dialog.boundingBox();
+      if (!box) throw new Error('Dialogen har ingen bounding box — inte synlig?');
+      return box;
+    };
+
+    // LÄGE 1: "Detta event" — dialogens defaultläge i eventkontext.
+    const dettaEvent = await matt();
+
+    // LÄGE 2: "En familj", ingen familj vald ännu — Familj-selecten syns,
+    // Steg-selecten är fortfarande dold, valideringsmeddelandet ("Välj en
+    // familj för att gå vidare.") syns.
+    await dialog
+      .getByRole('radio', { name: 'En familj' })
+      .locator('xpath=ancestor::label[1]')
+      .click();
+    await expect(familjValjare(page)).toBeVisible();
+    const enFamilj = await matt();
+
+    // LÄGE 3: "Familj vald" (RIM) — Steg-selecten blir synlig,
+    // valideringsmeddelandet försvinner. Detta är det läge som adderar MEST
+    // innehåll (två selects + inget meddelande i stället för ett), så det är
+    // den hårdaste prövningen av reservationen.
+    await familjValjare(page).click();
+    await page.getByRole('option', { name: 'RIM', exact: true }).click();
+    await expect(stegValjare(page)).toBeVisible();
+    const familjVald = await matt();
+
+    // LÄGE 4: "Alla event" — tillbaka till samma tomma yta som läge 1, men
+    // via en annan väg (byte FRÅN Kurstyp, inte bara aldrig dit).
+    await dialog
+      .getByRole('radio', { name: 'Alla event' })
+      .locator('xpath=ancestor::label[1]')
+      .click();
+    const allaEvent = await matt();
+
+    // LÄGE 5: under pågående uppladdning. Räckvidden växlas tillbaka till
+    // "Detta event" (enklaste giltiga valet) och mutationen hålls pending
+    // med håll-bar-mocken — deterministiskt, ingen gissad väntetid.
+    await dialog
+      .getByRole('radio', { name: 'Detta event' })
+      .locator('xpath=ancestor::label[1]')
+      .click();
+    await dialog.getByRole('button', { name: 'Ladda upp' }).click();
+    await expect(dialog.getByRole('button', { name: 'Laddar upp…' })).toBeVisible();
+    const underUppladdning = await matt();
+
+    // Släpp mutationen — annars lämnar testet ett hängande nätverksanrop
+    // (samma disciplin som `slappAlla` i hem-laddlage-mönstret).
+    uppladdning.slapp();
+    await expect(dialog).toHaveCount(0);
+
+    return { dettaEvent, enFamilj, familjVald, allaEvent, underUppladdning };
+  }
+
+  test('AC #1: dialogens bounding box är IDENTISK i alla fem lägen — desktop 1280×720', async ({
+    page,
+    network,
+  }) => {
+    const lagen = await matUppLagen(page, network);
+    expect(lagen.enFamilj).toEqual(lagen.dettaEvent);
+    expect(lagen.familjVald).toEqual(lagen.dettaEvent);
+    expect(lagen.allaEvent).toEqual(lagen.dettaEvent);
+    expect(lagen.underUppladdning).toEqual(lagen.dettaEvent);
+  });
+
+  test('AC #1: dialogens bounding box är IDENTISK i alla fem lägen — mobil 375 px (sm:-brytpunkten kolumn→rad)', async ({
+    page,
+    network,
+  }) => {
+    // 375 px är den kritiska brytpunkten: `sm:flex-row` växlar till
+    // `flex-col`, så Familj-/Steg-raden STAPLAR sina två selects i stället
+    // för att lägga dem sida vid sida. Reservationen måste hålla här också
+    // — annars döljer desktop-mätningen ovan exakt den höjdskillnad
+    // rad-kommentaren i `DokumentYta.tsx` varnar för.
+    await page.setViewportSize({ width: 375, height: 800 });
+    const lagen = await matUppLagen(page, network);
+    expect(lagen.enFamilj).toEqual(lagen.dettaEvent);
+    expect(lagen.familjVald).toEqual(lagen.dettaEvent);
+    expect(lagen.allaEvent).toEqual(lagen.dettaEvent);
+    expect(lagen.underUppladdning).toEqual(lagen.dettaEvent);
+  });
+
+  test('AC #2: dolda Familj-/Steg-kontroller är INTE i tabordningen (Detta event/Alla event)', async ({
+    page,
+    network,
+  }) => {
+    network.use(bilagorHandler());
+    await gotoEventlage(page);
+    await oppnaRackviddsdialog(page);
+
+    const dialog = page.getByRole('dialog');
+    const dettaEvent = dialog.getByRole('radio', { name: 'Detta event' });
+    await expect(dettaEvent).toBeChecked();
+
+    // Familj-/Steg-raden är monterad men `inert` i "Detta event"-läget.
+    // Tab FRÅN den markerade radioknappen (RadioGroups roving tabindex ger
+    // EN tabbstation för hela gruppen) ska hoppa RAKT till "Avbryt" — hade
+    // raden varit fokuserbar hade Tab i stället landat i Familj-selecten.
+    await dettaEvent.focus();
+    await expect(dettaEvent).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(dialog.getByRole('button', { name: 'Avbryt' })).toBeFocused();
+
+    // Samma prövning i "Alla event" — en annan väg dit, samma dolda rad.
+    await dialog
+      .getByRole('radio', { name: 'Alla event' })
+      .locator('xpath=ancestor::label[1]')
+      .click();
+    const allaEvent = dialog.getByRole('radio', { name: 'Alla event' });
+    await allaEvent.focus();
+    await page.keyboard.press('Tab');
+    await expect(dialog.getByRole('button', { name: 'Avbryt' })).toBeFocused();
+
+    // `.focus()` (JS-anrop, inte tangentbord) ska INTE heller kunna flytta
+    // fokus in i en `inert` kontroll — spec-beteendet `inert` bygger på.
+    await familjValjare(page).evaluate((el: HTMLElement) => el.focus());
+    await expect(familjValjare(page)).not.toBeFocused();
+  });
+
+  test('AC #2: "Familj vald" (RIM) — båda selecten synliga/fokuserbara, meddelandet dolt, axe-rent', async ({
+    page,
+    network,
+  }) => {
+    network.use(bilagorHandler());
+    await gotoEventlage(page);
+    await oppnaRackviddsdialog(page);
+
+    await page
+      .getByRole('dialog')
+      .getByRole('radio', { name: 'En familj' })
+      .locator('xpath=ancestor::label[1]')
+      .click();
+    await familjValjare(page).click();
+    await page.getByRole('option', { name: 'RIM', exact: true }).click();
+
+    await expect(familjValjare(page)).toBeVisible();
+    await expect(stegValjare(page)).toBeVisible();
+    // Valideringsmeddelandet är dolt (en familj ÄR vald) men kvar i DOM —
+    // `not.toBeVisible()`, inte `toHaveCount(0)` (se AC #1-testets kommentar
+    // ovan i filen för samma distinktion på Familj-/Steg-selecten).
+    await expect(page.getByText('Välj en familj för att gå vidare.')).not.toBeVisible();
+
+    // Familj-valet nås fortfarande med tangentbord (AC #2s explicita krav)
+    // — Steg-selecten är den ANDRA riktiga kontrollen i tabbordningen nu.
+    await stegValjare(page).focus();
+    await expect(stegValjare(page)).toBeFocused();
+
+    const resultat = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+      .analyze();
+    expect(resultat.violations).toEqual([]);
   });
 });

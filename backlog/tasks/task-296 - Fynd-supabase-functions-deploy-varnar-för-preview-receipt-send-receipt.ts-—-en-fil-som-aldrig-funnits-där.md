@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-22 17:41'
-updated_date: '2026-08-22 17:42'
+updated_date: '2026-08-26 02:59'
 labels:
   - ready-for-agent
 dependencies: []
@@ -90,3 +90,15 @@ Referenser: supabase/functions/preview-receipt/index.ts rad 34-42 (mekanismen, r
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+BLOCKERAT 2026-08-26 (S112 fix-våg 4, bunt A) — kräver Marcus-beslut/scope utanför en enskild bygg-agents mandat. Premiss-passet bekräftar att koden fortfarande är korrekt (npm run typecheck exit 0) och att kortets mätta läge (preview-receipt/index.ts åtta importer, ingen mot send-receipt.ts; supabase/functions/_shared/send-receipt.ts finns med Betalning/Betalsatt) stämmer oförändrat mot origin/main.
+
+Varför blockerat, inte fixat:
+1. AC #1 kräver en FAKTISK deploy-utskrift för alla fem exponerade EF:er (compute-segment, preview-receipt, send-email, send-receipt-email, send-registration-confirmation). En sådan mätning kräver `supabase functions deploy --project-ref <ref>` — scannern som producerar WARN-raden kör som en del av CLI:ts lokala bundling-steg, oavsett mål. Prod-refen är strukturellt otillgänglig för en agent: CLAUDE.md § Prod-EF-deploy + scripts/deny-prod-ref.sh matchar refens NÄRVARO i hela Bash-kommandosträngen och nekar agent-anrop (dokumenterat skarpt prövat i CLAUDE.md: "ett agent-anrop med prod-refen avvisades av låset"). Stagingrefen (pqtshyierkdgwdnxuirz) är tekniskt tillåten för agenter (scripts/test-deny-prod-ref.sh fall A1), men en investigativ deploy av fem EF:er till en DELAD, aktivt använd stagingmiljö — enbart för att läsa en varningsrad — ligger utanför vad denna CI/workflow-fynd-bunt är mandaterad att mutera, och riskerar att kollidera med parallella sessioners staging-beroende testkörningar (jfr. den omfattande staging-semaphore/purge-staging-maskinen som finns just för att koordinera sådana mutationer).
+2. AC #2 kräver ett VÄGVAL mellan (a) acceptera-och-dokumentera, (b) undanröj specifikatorn (flytta typer, rör kvittokedjan), (c) rapportera uppströms till supabase/cli — och kortets egen text markerar uttryckligen "KORTET SKAPAS, LÖSES INTE HÄR" samt "Vägvalet kräver först ett svar [på det mätta omfånget]". Detta är ett designbeslut som kräver mätningen i AC #1 FÖRE det kan fattas, inte något en enskild agent ska besluta unilateralt i en bunt märkt "CI/workflow-fynd".
+
+Ingen kod, inget AC rört. Rekommenderad väg framåt: Marcus/orkestreraren kör de fem prod-mätningarna (via fas4-prod-deploy.sh --kontrollera, som ändrar inget) ELLER godkänner explicit ett dedikerat staging-deploy-fönster; därefter kan ett fristående kort ta vägvalet och ev. (b)-implementationen.
+<!-- SECTION:NOTES:END -->

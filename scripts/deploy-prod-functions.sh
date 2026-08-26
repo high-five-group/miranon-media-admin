@@ -16,17 +16,40 @@
 # Användning:
 #   bash scripts/deploy-prod-functions.sh --list
 #       Visar deploy-setet + exkluderade funktioner. Deployar INGET.
+#   bash scripts/deploy-prod-functions.sh --audit --project-ref <prod-ref>
+#       Read-only: hämtar LIVE-funktionslistan från <prod-ref> och diffar
+#       den mot allowlisten. Rapporterar varje live funktion som INTE står
+#       i allowlisten och exit 1:ar vid träff — ser historiska rester
+#       grinden vid deploy-tid inte kan se (den prövar bara framtida
+#       deployer, aldrig vad som redan ligger kvar i prod). Ändrar inget.
 #   bash scripts/deploy-prod-functions.sh --project-ref <prod-ref>
 #       Deployar varje allowlistad funktion till angivet projekt.
 #
+# ═══ VARFÖR --audit FINNS (TASK-37) ═══
+#
+#   Fail-closed-deployen ovan hindrar en framtida icke-allowlistad funktion
+#   från att NÅ prod via DETTA skript — men den är blind bakåt: den granskar
+#   aldrig vad som redan ligger deployat i prod via en ANNAN väg (manuell
+#   `supabase functions deploy <namn>`, en äldre deploy innan allowlisten
+#   fanns, etc). test-auth låg i prod i 81 dagar trots allowlist-förbud
+#   innan S84 städade det manuellt — allowlist-grinden såg det aldrig,
+#   eftersom den bara körs vid en NY deploy. --audit stänger den luckan:
+#   den frågar prod direkt (`functions list -o json`) i stället för att lita
+#   på att ingenting smugit sig förbi grinden historiskt.
+#
+#   Källa: TASK-35 AC2-beslutet (2026-07-24, S84) ·
+#          docs/research/t39-ef-sync-preflight-2026-07-24.md §7.
+#
 # Env-override (för test-isolering): FUNCTIONS_DIR, ALLOWLIST_FILE.
 #
-# Exit 0 vid lyckad list/deploy. Exit 1 vid saknad allowlist, allowlistad
-# funktion som saknas på disk, eller saknad/ogiltig användning.
+# Exit 0 vid lyckad list/audit/deploy (audit: 0 icke-allowlistade live).
+# Exit 1 vid saknad allowlist, allowlistad funktion som saknas på disk,
+# saknad/ogiltig användning, eller (audit) minst en icke-allowlistad
+# funktion live i prod.
 #
 # Källa: docs/decisions/ADR-050-isolerad-staging-miljo.md (steg 2) +
 #        tasks/lessons.md L115 (Fas 7-skuld).
-# Etablerad: Session 19 (2026-06-13)
+# Etablerad: Session 19 (2026-06-13) · --audit tillagd TASK-37
 
 set -euo pipefail
 
@@ -38,10 +61,14 @@ usage() {
     cat <<'EOF'
 Användning:
   scripts/deploy-prod-functions.sh --list
+  scripts/deploy-prod-functions.sh --audit --project-ref <prod-ref>
   scripts/deploy-prod-functions.sh --project-ref <prod-ref>
 
   --list, --dry-run     Visa deploy-set + exkluderade. Deployar inget.
-  --project-ref <ref>   Deploya allowlistade funktioner till <ref>.
+  --audit               Read-only: diffa LIVE prod-funktioner mot
+                         allowlisten (kräver --project-ref). Deployar inget.
+  --project-ref <ref>   Deploya allowlistade funktioner till <ref>
+                         (eller mål för --audit ovan).
   -h, --help            Visa denna hjälp.
 EOF
 }
@@ -52,6 +79,10 @@ while [[ $# -gt 0 ]]; do
     case "${1}" in
         --list | --dry-run)
             mode="list"
+            shift
+            ;;
+        --audit)
+            mode="audit"
             shift
             ;;
         --project-ref)
@@ -78,11 +109,19 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
-if [[ -n "${project_ref}" ]]; then
+# Defaultar till deploy-läge ENDAST om ingen flagga (--list/--audit) redan
+# valde ett läge — annars hade `--audit --project-ref <ref>` tyst blivit en
+# skarp deploy, eftersom project_ref alltid är satt i det anropet.
+if [[ -z "${mode}" ]] && [[ -n "${project_ref}" ]]; then
     mode="deploy"
 fi
 if [[ -z "${mode}" ]]; then
-    echo "❌ Ange --list eller --project-ref <ref> (deployar aldrig utan explicit val)." >&2
+    echo "❌ Ange --list, --audit eller --project-ref <ref> (deployar aldrig utan explicit val)." >&2
+    usage >&2
+    exit 1
+fi
+if [[ "${mode}" == "audit" ]] && [[ -z "${project_ref}" ]]; then
+    echo "❌ --audit kräver --project-ref <ref> (kan inte granska prod utan mål)." >&2
     usage >&2
     exit 1
 fi
@@ -184,6 +223,105 @@ fi
 if [[ "${mode}" == "list" ]]; then
     echo "✅ list-läge — inget deployat."
     exit 0
+fi
+
+# ── Audit-läge: read-only, diffar LIVE prod mot allowlisten (TASK-37) ───────
+#
+# Detta är en ANNAN diff än deploy_set/excluded ovan: de jämför allowlisten
+# mot vad som finns PÅ DISK i detta repo. Audit jämför allowlisten mot vad
+# som faktiskt är DEPLOYAT i prod just nu — den enda av de två som kan
+# upptäcka en historisk rest som aldrig gick via detta skripts deploy-läge.
+if [[ "${mode}" == "audit" ]]; then
+    echo "═══ AUDIT — LIVE prod-funktioner mot ${ALLOWLIST_FILE} (read-only) ═══"
+    echo "project-ref: ${project_ref}"
+    echo ""
+
+    # Samma pinnade CLI-disciplin som deploy-läget (S108) — en oupplöst/fel
+    # CLI-version ska larma högljutt här också, inte bara vid skarp deploy.
+    # shellcheck source=/dev/null  # dynamisk SCRIPT_DIR-relativ path; scripts/lib/supabase-cli.sh lintas separat via ci.yml:s shellcheck-lista
+    source "${SCRIPT_DIR}/lib/supabase-cli.sh"
+    # shellcheck disable=SC2310  # avsiktligt: eget läsbart skäl i stället för
+    # `set -e`:s tysta död — samma mönster som deploy-läget nedan.
+    supabase_cli_guard || {
+        echo "❌ Avbryter — fail-closed (ingen granskning utan verifierad CLI-version)." >&2
+        exit 1
+    }
+
+    # jq krävs för att tolka `functions list -o json` (TASK-312-disciplinen —
+    # samma minimiversions-guard som varje annan jq-konsument i repot).
+    # shellcheck source=/dev/null  # dynamisk SCRIPT_DIR-relativ path; scripts/lib/jq-guard.sh lintas separat via ci.yml:s shellcheck-lista
+    source "${SCRIPT_DIR}/lib/jq-guard.sh"
+    jq_version_ok || {
+        echo "❌ jq saknas eller är för gammal (.jq-version-policy.conf, TASK-312) — kan inte tolka prod-listan." >&2
+        exit 1
+    }
+
+    live_json=""
+    # shellcheck disable=SC2310  # avsiktligt: eget läsbart skäl i stället för
+    # `set -e`:s tysta död — samma mönster som resten av filen.
+    live_json="$(supabase_cli functions list --project-ref "${project_ref}" -o json 2> /dev/null)" || {
+        echo "❌ Kunde inte hämta funktionslistan för ${project_ref}. Är du inloggad? (npx supabase login)" >&2
+        exit 1
+    }
+    if ! printf '%s' "${live_json}" | jq -e 'type == "array"' > /dev/null 2>&1; then
+        echo "❌ Oväntat svar från 'functions list -o json' — kunde inte tolkas som en lista." >&2
+        exit 1
+    fi
+
+    # Live-funktionens URL-identifierare är `.slug` — matchar katalognamnen
+    # under supabase/functions/ och allowlistens rader (Supabase CLI:s
+    # dokumenterade -o json-kontrakt, list.encoders.ts:
+    # toGoJsonFunction()/encodeFunctionsGoJson).
+    #
+    # jq-utfallet fångas i en variabel FÖRST (inte en process-substitution
+    # rakt in i while-loopen) — en kommandosubstitution i en process-
+    # substitution maskerar jq:s returvärde (SC2312), och ett tyst jq-fel
+    # hade blivit noll rader = "inget live", vilket är fail-open. Samma
+    # mönster som scripts/check-nattvakt-dedup.sh RADER-hämtningen.
+    live_slugs_raw=""
+    live_slugs_raw="$(printf '%s' "${live_json}" | jq -r '.[].slug')" || {
+        echo "❌ jq kunde inte tolka funktionslistan (${project_ref})." >&2
+        exit 1
+    }
+
+    live_slugs=()
+    while IFS= read -r slug; do
+        [[ -z "${slug}" ]] && continue
+        live_slugs+=("${slug}")
+    done <<< "${live_slugs_raw}"
+
+    echo "Live funktioner i ${project_ref} (${#live_slugs[@]}):"
+    if [[ ${#live_slugs[@]} -gt 0 ]]; then
+        for slug in "${live_slugs[@]}"; do
+            echo "  ${slug}"
+        done
+    fi
+    echo ""
+
+    icke_allowlistade=()
+    for slug in "${live_slugs[@]}"; do
+        is_allowed="no"
+        for a in "${allowlist[@]}"; do
+            if [[ "${a}" == "${slug}" ]]; then
+                is_allowed="yes"
+                break
+            fi
+        done
+        if [[ "${is_allowed}" == "no" ]]; then
+            icke_allowlistade+=("${slug}")
+        fi
+    done
+
+    if [[ ${#icke_allowlistade[@]} -eq 0 ]]; then
+        echo "✅ 0 icke-allowlistade funktioner live i ${project_ref}."
+        exit 0
+    fi
+
+    echo "❌ ${#icke_allowlistade[@]} icke-allowlistad(e) funktion(er) LIVE i ${project_ref} (finns i prod, men INTE i ${ALLOWLIST_FILE}):" >&2
+    for slug in "${icke_allowlistade[@]}"; do
+        echo "  [ICKE-ALLOWLISTAD]  ${slug}" >&2
+    done
+    exit 1
 fi
 
 # Deploy-läge: deploya varje allowlistad funktion explicit (aldrig bare deploy).

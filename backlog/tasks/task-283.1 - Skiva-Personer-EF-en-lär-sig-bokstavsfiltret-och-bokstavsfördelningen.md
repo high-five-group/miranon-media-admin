@@ -4,10 +4,11 @@ title: 'Skiva: Personer-EF:en lär sig bokstavsfiltret och bokstavsfördelningen
 status: Done
 assignee: []
 created_date: '2026-08-21 08:51'
-updated_date: '2026-08-22 11:06'
+updated_date: '2026-08-26 03:25'
 labels:
   - ready-for-agent
   - wontfix
+  - intentionally-unchecked
 dependencies: []
 parent_task_id: TASK-283
 ordinal: 510000
@@ -68,6 +69,8 @@ Källa: tasks/sessions/2026-08-20-session-109.md § Del 7 (landad på main, 2026
 **Statusval.** Repot har enbart To Do / In Progress / Done (backlog/config.yml). Ingen 'avbruten'-status finns eller uppfinns här. Status sätts Done; detta kort avslutades genom ett medvetet arkitekturbeslut och blev överflödigt — det glömdes aldrig bort.
 
 **Divergens mot uppdraget, bokförd öppet (ADR-086).** Uppdraget bad om en hänvisning till 'väg B, ADR-123 och ADR-122'. ADR-122 ('Eventlänkens vakt — A1 verifierar mot facit') är en HELT ANNAN, orelaterad ADR (Airtable-automation A1 / eventlänk-matchning, landad S110/T158, commit 3ce9c65d) — den nämns inte ovan eftersom den inte hör hemma i detta beslut. Roten till felet: Del 7:s egen tabellrad ('Fortsättning | ADR-122 efter research... → TASK-283 skrivs om') citerar fel ADR-nummer. Verifierat mot git-historik (ADR-123: commit dbdaf228, S109, 2026-08-21 — samma session och datum som Del 7) och mot filinnehåll (ADR-123:s eget § Relation, samt TASK-283-föräldrakortets AMENDERING-post) — endast ADR-123 hör hemma här.
+
+OBOCKAT MED AVSIKT: samtliga 9 AC och 6 DoD lämnas obockade — skivan avbröts mitt i byggarbetet 2026-08-21 (S109) när Marcus valde arkitekturväg B (förladdat personregister, ADR-123) i stället för väg A (EF-filter) som denna skiva byggde mot. Ingen kod landade från denna skiva: bygg-agenten stoppades i sin worktree, ingen commit, ingen kod-PR (verifierat: gh pr list --search '283.1' ger enbart den administrativa stängnings-PR:en #1772 'chore: stäng ... TASK-283.1 (överflödig, väg B)', ingen feature-PR — se git log 3dd7a483/31638172). DoD #3 ('CI grön per jobb') kan inte få en landnings-pekare (form 1, ADR-127 B1) eftersom ingen commit någonsin pushades att verifiera — detta är WONTFIX, inte en obetald punkt. Kortets egna Implementation Notes ('Orkestrerar-stängning 2026-08-22') och Comment #1 (WONTFIX 2026-08-21, S109, ADR-123) dokumenterar samma sak sedan tidigare, innan ADR-127 fanns. Källmärkt 2026-08-26, S112 fix-våg 4, ADR-127-normalisering.
 <!-- SECTION:NOTES:END -->
 
 ## Comments

@@ -2,7 +2,7 @@ import { http } from 'msw';
 import type { z } from 'zod';
 import type { EventSchema, RegistrationSchema } from '../../src/domain/schemas';
 import { EF, json } from '../support/fixturvarld/handlers';
-import { expect, type Page, test } from './support/acceptance-bas';
+import { expect, type Page, test } from './acceptance-bas';
 
 /**
  * TASK-241.5 — WOW-övergångens AC #2: prefers-reduced-motion neutraliserar

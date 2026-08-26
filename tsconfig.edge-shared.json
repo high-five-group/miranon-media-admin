@@ -55,6 +55,7 @@
     "supabase/functions/_shared/confirm-registrations.ts",
     "supabase/functions/_shared/cursor.ts",
     "supabase/functions/_shared/errors.ts",
+    "supabase/functions/_shared/event-map.ts",
     "supabase/functions/_shared/field-allowlists.ts",
     "supabase/functions/_shared/prepare-bulk-send.ts",
     "supabase/functions/_shared/resend-batch.ts",

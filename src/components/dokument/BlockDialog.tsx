@@ -22,6 +22,28 @@
  * standard DIREKT och alltså inte har någon "egen kopia hos ett event"
  * att skilja från) ersätts den beräknade texten av den givna — ren
  * utökning, ingen bakåtbrytande ändring av den befintliga callern.
+ *
+ * DATUM-GRENEN RIVEN (`TASK-309.19`, 2026-08-26, Marcus mandat väg A).
+ * Dialogen bar tidigare en fjärde kropps-gren (`def.datum ? <DatumEnkel
+ * .../> : …`) för `sistaBetalningsdag`. `TASK-309.17` (2026-08-24) mätte
+ * att den ALDRIG gick att nå: det enda blocket i `GRUPPER`
+ * (`blockDefinitioner.ts`) med `datum: true` hör till Inforutan-gruppen,
+ * och tre oberoende spärrar i `GenereringsVy.tsx` stänger vägen dit —
+ * `lasEndast = r.def.last || arInforutan` gör varje Inforuta-rad till en
+ * `<div>` utan `oppnaBlock`-ingång, varningsrutans knappar dispatchar
+ * `oppnaMorf` i stället för `oppnaBlock` för Inforuta-ID:n, och
+ * `dialogRader()` filtrerar bort samma ID:n ur bläddringens `navSyskon`.
+ * Fullständig härledning + citat:
+ * `tests/visual/dokument-generering-promoverings-grind.spec.ts`
+ * § DATUM-LÄGET (dess docblock hade detta rätt REDAN innan rivningen —
+ * `TASK-309.17` skrevs utan den läsningen). `datumUtanAr` och
+ * `resterandeBeloppHjalp`-propen revs med grenen: de tjänade bara dess
+ * hjälptext. `DatumEnkel` och blockDefinitioner.ts:s `datum`-flagga
+ * lever kvar — de driver Inforutans SEKTIONSMORF i `GenereringsVy.tsx`
+ * (`r.def.datum ? <DatumEnkel .../> : <Input .../>`), en helt annan
+ * renderingsväg än denna dialog. `TASK-309.17`s AC #1 (som antog att den
+ * döda grenen kunde få ett ariaSnapshot-par) stängdes som obsolet i
+ * samma landning.
  */
 import { type CalendarDate, parseDate } from '@internationalized/date';
 import { Check, ChevronLeft, ChevronRight, Plus, Trash2 } from 'lucide-react';
@@ -57,15 +79,6 @@ export type Rad = {
   agenda: AgendaRad[] | null;
   tomt: boolean;
 };
-
-const DAG_MANAD = new Intl.DateTimeFormat('sv-SE', { day: 'numeric', month: 'long' });
-
-/** "10 oktober" — som förlagan skriver sista betalningsdag. Tom sträng om inget datum. */
-export function datumUtanAr(iso: string): string {
-  if (!iso) return '';
-  const d = new Date(`${iso}T12:00:00`);
-  return Number.isNaN(d.getTime()) ? '' : DAG_MANAD.format(d);
-}
 
 /**
  * Från hur många dialograder en grupp bär BLÄDDRING i stället för
@@ -120,8 +133,10 @@ export function Kryss({
 
 /**
  * Ett enda datum — samma segment-form som husets `DatumFalt` (som är ett
- * intervall och därför inte passar här). ISO-sträng ut, så värdet kan bo i
- * samma `Override`-typ som texterna.
+ * intervall och därför inte passar här). ISO-sträng ut — enkel för
+ * anroparen att lagra som vanlig text (Inforutans sektionsmorf i
+ * `GenereringsVy.tsx`, dess enda kvarvarande caller sedan `TASK-309.19`,
+ * lagrar den i ett utkasts-`Record<string, string>`, ingen `Override`).
  */
 export function DatumEnkel({
   label,
@@ -295,13 +310,21 @@ export function AgendaEditor({
       </ul>
       {/* Staplade och LIKA BREDA — `w-fit` gav två olika breda knappar under
           varandra, vilket läses som slarv. Full bredd ger dem samma vikt och
-          en större träffyta. */}
+          en större träffyta.
+          VÄNSTERSTÄLLDA, INTE CENTRERADE (TASK-309.28, Marcus prod-röktest
+          2026-08-26): `justify-center` (ärvt från `Button`s bas-klasser)
+          lät ikon+text flyta i mitten av den fullbredda knappen — långt
+          till höger om agendaradernas text ovanför. `justify-start` +
+          `pl-0` (nollar `size="sm"`s `px-3` bara på vänstersidan, `pr-3`
+          orört) ger samma vänsterkant som radernas text: båda är MÄTTA
+          till x=456 (desktop) / x=40 (375 px) — knapparnas egen box låg
+          redan där, det var bara INNEHÅLLET som centrerades bort från den. */}
       <div className="flex flex-col gap-2">
         <Button
           intent="secondary"
           emphasis="outline"
           size="sm"
-          className="w-full justify-center"
+          className="w-full justify-start pl-0"
           onPress={() => laggTill(false)}
         >
           <Plus aria-hidden="true" size={14} />
@@ -311,7 +334,7 @@ export function AgendaEditor({
           intent="secondary"
           emphasis="outline"
           size="sm"
-          className="w-full justify-center"
+          className="w-full justify-start pl-0"
           onPress={() => laggTill(true)}
         >
           <Plus aria-hidden="true" size={14} />
@@ -493,7 +516,6 @@ export function BlockDialog({
   somStandard,
   syskon,
   caption,
-  resterandeBeloppHjalp,
   onVaxla,
   onSpara,
   onStang,
@@ -508,14 +530,6 @@ export function BlockDialog({
    *  Platser-ytor) och alltså saknar "egen text hos ett event" att skilja
    *  från. Utelämnad: exakt samma beräkning som förlagan alltid bar. */
   caption?: ReactNode;
-  /** [TASK-309.7] `sistaBetalningsdag`-blockets (`def.datum`) hjälptext
-   *  citerar "Resterande <belopp> betalas senast …" — beloppet är
-   *  callerns fixtur/data (`EVENTINNEHALL.resterandeBelopp` i
-   *  genereringsvyn), inte något denna delade dialog kan känna till.
-   *  Blocket har `kalla: 'event'` och nås aldrig av Mer-sidans
-   *  Eventinnehåll-/Platser-ytor (de redigerar bara `eventinnehall`-/
-   *  `plats`-kalla block) — propen är därför optional. */
-  resterandeBeloppHjalp?: string | null;
   /** Lämna raden för en annan: utkastet skrivs, dialogen står kvar. */
   onVaxla: (id: BlockId, nytt: Override | null, blirStandard: boolean) => void;
   onSpara: (nytt: Override | null, blirStandard: boolean) => void;
@@ -631,15 +645,6 @@ export function BlockDialog({
       <div className="flex h-full flex-col gap-4">
         {def.agenda ? (
           <AgendaEditor rader={agenda} onChange={setAgenda} />
-        ) : def.datum ? (
-          <DatumEnkel
-            label={def.etikett}
-            iso={text}
-            onChange={setText}
-            hjalp={`I bilagan: "Resterande ${resterandeBeloppHjalp ?? ''} betalas senast ${
-              datumUtanAr(text) || '…'
-            }. Anmälan är bindande."`}
-          />
         ) : (
           /* Loptexten: rutan FYLLER dialogens body och rullar I SIG SJALV,
                sa rullisten sitter dar texten ar — inte utanfor rutan.

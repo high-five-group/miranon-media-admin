@@ -1024,9 +1024,13 @@ per körning — är delvis stängd så länge Airtable-basen varken är självh
 eller klonbar. ADR-080 säger det rakt ut och ritar in omprövningen vid Fas E.
 
 **Var den bor:** `tests/acceptance/`, projektet `acceptance`, sömmen
-`tests/acceptance/support/acceptance-bas.ts` (komponerad med Playwrights
-`mergeTests` ur den **klassdelade** fixturvärlden `tests/support/fixturvarld/`
-— aldrig en egen kopia). Kör lokalt med `npm run test:acceptance`.
+`tests/acceptance/acceptance-bas.ts` (platt fil sedan TASK-123 — katalogen
+`tests/acceptance/support/` fanns bara för att härbärgera denna EN fil och
+lästes som en falsk tvilling till den klassdelade fixturvärlden
+`tests/support/fixturvarld/`; branschmönstret för en klasslokal söm är en fil,
+inte en katalog med en fil i, se Cypress `support/e2e.js` + RTL:s
+`test-utils`). Komponerad med Playwrights `mergeTests` ur fixturvärlden —
+aldrig en egen kopia. Kör lokalt med `npm run test:acceptance`.
 
 **CI:** eget jobb i `ci-suite.yml`, **utan staging-mutex och utan secrets** —
 en PR som bara rör renderingen får svar utan att köa bakom `staging-tests`.
@@ -1051,8 +1055,11 @@ Mekaniken är `scripts/acceptance-urval.sh`, kallad av `ci.yml`:s
   § Beslut 1).
 - **Allowlist, aldrig blocklist.** Urvalet tillämpas endast när *varenda* post
   är en spec-fil som finns på disk. En källfil, den delade sömmen
-  `tests/acceptance/support/**`, en workflow eller en okänd filtyp ⇒ **full
-  klass**. Vid minsta osäkerhet körs allt.
+  `tests/acceptance/acceptance-bas.ts` (platt fil sedan TASK-123 — faller
+  fortfarande till full klass, nu för att namnet inte matchar
+  spec-mönstret `*.acceptance.test.ts`, inte för att den ligger i en
+  egen katalog), en workflow eller en okänd filtyp ⇒ **full klass**. Vid
+  minsta osäkerhet körs allt.
 - **Post-merge är nätet.** `post-merge.yml` och `nightly.yml` skickar ingen
   input och kör därför hela klassen på varje mergat träd. Ett urval som missar
   något fångas där, inom minuter — inte aldrig.

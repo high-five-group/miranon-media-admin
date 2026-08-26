@@ -383,6 +383,25 @@ test.describe('update-event — skarp conformance (task-18.1)', () => {
     expect(res.status()).toBe(400);
   });
 
+  // TASK-24-kontraktstestet: rec-prefixat men obefintligt eventId gav tidigare
+  // 500 (generisk Error ur updateAirtableRecord → mapErrorToResponse). Speglar
+  // get-event.staging.test.ts:s "okänt ID → 404"-test och
+  // create-event-note.staging.test.ts:s "okänt event (rec-format men finns
+  // ej) → 404" — samma mall-kontrakt, nu även för PATCH.
+  test('okänt event (rec-format men finns ej) → 404 (mall-kontraktet, TASK-24)', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const res = await postUpdate(request, config, jwt, {
+      eventId: 'recZZZZZZZZZZZZZZ',
+      ort: 'Skövde',
+    });
+    expect(res.status()).toBe(404);
+    const body = (await res.json()) as { error?: unknown };
+    expect(typeof body.error).toBe('string');
+  });
+
   test('deny: inga uppdaterbara fält → 400', async ({ request }) => {
     const config = getApiConfig();
     const jwt = await getValidUserJWT(request, config);

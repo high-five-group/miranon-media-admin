@@ -3,12 +3,13 @@ id: TASK-34
 title: >-
   Test-isolering: hem.staging.test.ts:410 + :663 rött i full svit, grönt ensamt
   (persist-cache-hydrering)
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-23 02:06'
-updated_date: '2026-08-07 11:19'
+updated_date: '2026-08-26 04:18'
 labels:
   - ready-for-agent
+  - intentionally-unchecked
 dependencies: []
 ordinal: 83000
 ---
@@ -36,3 +37,69 @@ Oetiketterat per fynd-regeln — människan klassar.
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+FALSIFIERAT (S112 fix-våg 4, bunt B1) — rör INTE koden, se motivering.
+
+Premiss-pass (ADR-086): git fetch origin → tests/e2e/hem.staging.test.ts
+EXISTERAR INTE på origin/main. `find tests -iname "*hem*"` listar noll
+träff på den filnamnsformen. `git log --all --diff-filter=D -- "*hem.staging.test.ts"`
+visar att filen togs bort i commit 109f8465 ("[TASK-59.3] acceptance-klassen
+etablerad med Hem-ytan som pilot", 2026-07-28) — FEM dagar EFTER att detta
+kort skrevs (2026-07-23). git visar det som en RENAME (302 ändrade rader)
+till tests/acceptance/hem.acceptance.test.ts, inte en ren flytt: filen gick
+samtidigt om från page.route-mockning mot verklig playwright-navigation
+till MSW-baserad hermetisk mockning (network.use()) i en helt egen,
+mutexfri CI-klass (ADR-080).
+
+STÖRRE DIVERGENS DÄRUTÖVER: Hem-vyn i sig är sedan dess HELT OMSKRIVEN
+(TASK-243.3, "full omskrivning mot den promoverade formen" — K10-formen som
+task-4.3/4.4 byggde mot är riven, ersatt av V1 "Lugna morgonen").
+hem.acceptance.test.ts:s egen docblock bokför öppet att "dagar-kvar-pillen"
+(pill-WIDGETEN task-4.3 byggde) INTE promoverades till den nya formen.
+
+Kortets två specifika testfall:
+- task-4.3 "dagar-kvar-pillen: tre exakta former" (gamla :410) — motsvarande
+  TEXT-invariant finns kvar i NY FORM: hem.acceptance.test.ts:313
+  "dagar-kvar-formens tre exakta texter" — men implementationen navigerar
+  med page.goto('/hem') FRÄSCH per scenario i en for-loop, INTE page.reload()
+  som gamla testet gjorde. Ingen reload → ingen persist-cache-hydrering
+  mellan scenarierna → rotorsaksklassen kortet beskriver kan strukturellt
+  inte uppstå i den nya formen.
+- task-4.4 "anmälningslistan: namn 16/600 + relativ tid, fast klocka" (gamla
+  :663) — motsvarande yta: hem.acceptance.test.ts:797 "Nya anmälningar —
+  statusfilter, räknare...". Samma sak: page.goto() per test, MSW-mock unik
+  per test, ingen delad query-cache mellan scenarier.
+
+KLASSFIXEN ÄR REDAN ETABLERAD ANNANSTANS I KODBASEN: TASK-34:s föreslagna
+fix ("skilda event-ID:n i stället för reload") är exakt mönstret som redan
+används i tests/e2e/event-deltagare.staging.test.ts:512-516 (kommentar
+verbatim: "TVÅ event-ID:n i stället för route-byte + reload:
+persist-hydreringen serverar annars scenario 1-data under samma
+query-nyckel efter en reload (TASK-28-fyndets klass). Skilda ID:n ⇒ skilda
+nycklar ⇒ inget överlapp.") — samma TASK-28-fyndsklass kortet själv
+refererar. Fixen finns redan i produktionskod-mönstret, bara inte i den nu
+raderade filen.
+
+SLUTSATS: kortets mål (filen, raderna, testfallens exakta form) är samtliga
+obsoleta. Ingen kod rörd — risken att "fixa" en fil som inte längre
+existerar, eller reintroducera K10-formens rivna dagar-kvar-pill, är större
+än värdet. Rekommendation: stäng kortet som obsolet/superseded via Marcus-
+beslut (ADR-053-triage: utanför scope, ej blockerande — defer/förkasta,
+ej agent-beslut).
+
+Källor: git fetch origin (SHA vid detta pass: 1d853fa3), git log
+--diff-filter=D -- "*hem.staging.test.ts", git show 109f8465 --stat,
+tests/acceptance/hem.acceptance.test.ts (docblock rad 1-49, rad 312-337,
+rad 796-869), tests/e2e/event-deltagare.staging.test.ts rad 512-517.
+
+OBOCKAT MED AVSIKT: falsifierat, ingen kod. tests/e2e/hem.staging.test.ts existerar inte på origin/main — borttagen/omdöpt till tests/acceptance/hem.acceptance.test.ts i TASK-59.3 (commit 109f8465, 2026-07-28, fem dagar EFTER att detta kort skrevs), och Hem-vyn därtill helt omskriven senare i TASK-243.3 (K10-formen riven, ersatt av V1 'Lugna morgonen'). Nya sviten navigerar med page.goto() per scenario (aldrig page.reload()) i en hermetisk MSW-mockad acceptance-klass — rotorsaksklassen kortet beskriver (persist-cache-hydrering över en reload-loop) kan strukturellt inte uppstå i den nya formen. Ingen fil att rätta, ingen risk att mitigera i den nu levande koden. Samtliga 4 DoD-rader (och avsaknaden av AC) är därför N/A i sin helhet, inte rad för rad — hela kortets mål är obsolet. Se Implementation Notes ovan för fullständig källbelagd analys.
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landning: PR #1982 (bokföringslandning, ingen kod). Done-flipp S112 resume 1, 2026-08-26, post-merge f3929e17e66e: in_progress vid flipptillfället (merge_group för pr-1982 var conclusion=success). Utfall: FALSIFIERAT — kortets mål (fil, rader, testfallens exakta form) är obsoleta; rekommenderas stängt som obsolet/superseded, vilket denna Done-flipp genomför.
+<!-- SECTION:FINAL_SUMMARY:END -->

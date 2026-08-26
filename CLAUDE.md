@@ -576,24 +576,93 @@ utföraren kan godkänna sin egen förskrivning,
 **HÖG risknivå blockerar formellt** (ADR-105 beslut 5): returnerar
 granskaren `risk.niva: 'hog'` — armera INTE. Eskalera till Marcus med
 utlåtandets fynd; armering sker först efter hans explicita granskning. `lag`/
-`medel` är i detta skede (`TASK-173.1`, innan `173.3`s PR-sektion och `173.4`s
-CI-backstopp) informativt underlag för din egen bedömning — ingen mekanisk
-spärr hindrar armering vid `lag`/`medel` än.
+`medel` är i detta skede (efter `TASK-173.3`, innan `173.4`s CI-backstopp)
+informativt underlag för din egen bedömning — sedan `173.3` SYNS nivån åt
+Marcus i PR-kroppens Riskbedömnings-sektion (se nedan), men ingen mekanisk
+spärr hindrar ännu armering vid `lag`/`medel`.
 
-**Vad som ÄR byggt i denna skiva, och vad som INTE är det (progressiv
-härdning, ADR-105 beslut 3):** `review-agent`-kontraktet och utlåtande-
-schemat (`scripts/lib/review-utlatande.mjs`,
-`scripts/validera-review-utlatande.mjs`) existerar och är skarpbevisade. **Vad
-som SAKNAS än:** path-scopade regler ur main (`TASK-173.2`), den fasta
-Riskbedömnings-sektionen i PR-kroppen (`TASK-173.3`), den deterministiska
-CI-backstoppen som fäller en PR utan giltigt utlåtande (`TASK-173.4`),
-rundtaks-loopen med konvergensregel (`TASK-173.5`), och
-fångstrate-instrumenteringen (`TASK-173.6`). Fram tills dess är grinden ett
-**orkestrerar-åtagande**, inte en mekanisk spärr — en PR kan i praktiken
-armeras utan granskning så länge `173.4` inte finns. Skriv aldrig om detta
-stycke till att låta grinden vara mekaniskt otvingbar innan `173.4` faktiskt
-landat (samma `ADR-083`-disciplin som resten av denna fil: prosa som påstår
-en mekanism som inte finns är värre än att inte skriva något alls).
+**Injicera path-reglerna när du spawnar granskaren (`TASK-173.2`):**
+
+```bash
+npm run review:policy -- --pr <NUMMER>          # blocket du klistrar in
+npm run review:policy -- --pr <NUMMER> --json   # samma, maskinläsbart
+```
+
+Kommandot läser `.review-policy.json` ur `origin/main` med `git show` — aldrig
+från disk och aldrig från PR-grenen, så en gren kan inte manipulera sin egen
+granskning (ADR-105 beslut 7). Reglerna injiceras bara för filer som faktiskt
+matchar sitt mönster, var och en med sitt scope. **Exit 64 = POLICYFEL:
+granska inte vidare — en halverad regelmängd ser ut som en fullständig
+granskning men saknar regler ingen ser saknas.** Glömmer du steget kör
+granskaren kommandot själv (`.claude/agents/review-agent.md` § Indata) —
+källan är densamma oavsett vem som kör den.
+
+**Skriv in utlåtandet i PR-kroppen som Riskbedömnings-sektion (`TASK-173.2`
+→ `TASK-173.3`):** när granskaren returnerat sitt JSON-utlåtande, spara det
+till fil och kör:
+
+```bash
+node scripts/uppdatera-review-sektion.mjs /path/till/utlatande-pr<NR>.json
+node scripts/uppdatera-review-sektion.mjs /path/till/utlatande.json --dry-run   # förhandsgranska
+```
+
+PR-numret hämtas ur utlåtandets EGNA `prNummer`-fält — ingen separat
+`--pr`-flagga. Skriptet validerar utlåtandet mot
+`scripts/lib/review-utlatande.mjs`s schema FÖRE någon gh-anrop (**exit 1 =
+malformat, ingen sektion skrivs — AC #3**), hämtar PR:ens NUVARANDE kropp via
+`gh pr view`, och skriver tillbaka HELA kroppen via `gh pr edit --body-file -`
+(GitHubs `body`-fält är alltid en fullständig ersättning, aldrig en delvis
+patch — `gh pr edit --help`, docs.github.com REST-referens för Pulls). Sektionen
+är inramad av två HTML-kommentarmarkörer
+(`<!-- review-grinden:riskbedomning:start/end -->`, version-oberoende med
+avsikt) som gör uppdateringen IDEMPOTENT: finns en tidigare sektion ERSÄTTS
+den in-place (`agerande: 'ersatte'`), texten runt omkring rörs inte; finns
+ingen läggs sektionen till sist (`agerande: 'lade-till'`). En KORRUPT
+markörsituation (bara en av de två, eller i fel ordning — t.ex. en människa
+som redigerat kroppen för hand) fäller skriptet med **exit 4** i stället för
+att gissa. **Exit 3** = gh-I/O fallerade (nätverk/auth/fel PR-nummer) —
+utlåtandet var giltigt, det är kommunikationen med GitHub som bröt. Full
+mekanik + forskningskällorna (Danger.js:s markör-mönster, GitHubs
+full-ersättnings-semantik): `scripts/lib/review-risk-sektion.mjs` filhuvud.
+
+**Vad som ÄR byggt, och vad som INTE är det (progressiv härdning, ADR-105
+beslut 3):** `review-agent`-kontraktet och utlåtande-schemat
+(`scripts/lib/review-utlatande.mjs`, `scripts/validera-review-utlatande.mjs`)
+existerar och är skarpbevisade; sedan `TASK-173.2` policy-ytan
+(`.review-policy.json`, `scripts/lib/review-policy.mjs`,
+`scripts/hamta-review-policy.mjs`) med utlåtandets `policySha`/`policyRegler`;
+och sedan `TASK-173.3` den fasta Riskbedömnings-sektionen i PR-kroppen
+(`scripts/lib/review-risk-sektion.mjs`, `scripts/uppdatera-review-sektion.mjs`).
+**Vad som SAKNAS än:** den deterministiska CI-backstoppen som fäller en PR
+utan giltigt utlåtande (`TASK-173.4`), rundtaks-loopen med konvergensregel
+(`TASK-173.5`), och fångstrate-instrumenteringen (`TASK-173.6`). Fram tills
+dess är grinden ett **orkestrerar-åtagande**, inte en mekanisk spärr — en PR
+kan i praktiken armeras utan granskning, eller med en oskriven Riskbedömnings-
+sektion, så länge `173.4` inte finns, och INGET tvingar dig att köra
+kommandona ovan. Skriv aldrig om detta stycke till att låta grinden vara
+mekaniskt otvingbar innan `173.4` faktiskt landat (samma `ADR-083`-disciplin
+som resten av denna fil: prosa som påstår en mekanism som inte finns är värre
+än att inte skriva något alls).
+
+**Känd divergens i den genererade JSON-Schema-artefakten, öppen för `173.4`:**
+`docs/reference/review-utlatande.schema.json` listar `policySha`/
+`policyRegler` som `required` trots att båda bär zod `.default()` i
+källschemat (`scripts/lib/review-utlatande.mjs`) — en STRIKT JSON-Schema-
+konsument UTAN defaults (t.ex. en framtida CI-backstopp som validerar rå JSON
+direkt mot filen i stället för att gå via zod) skulle avvisa ett giltigt,
+äldre utlåtande som saknar dessa fält. Risk-rendreraren (`173.3`) berörs INTE
+— den konsumerar alltid `valideraUtlatande(raw).data` (EFTER zods
+default-normalisering), aldrig rå JSON direkt, vilket är bevisat i
+`scripts/test-review-risk-sektion.mjs` (fall A16: ett genuint 173.1-format
+utan de två fälten går genom den EKTA validatorn och renderar korrekt). Löses
+inte här — flaggas framåt till `173.4`.
+
+**Ingen av review-ytans tre testsviter är CI-wirad ännu:**
+`scripts/test-validera-review-utlatande.mjs` (35 fall, `173.1`),
+`scripts/test-review-policy.mjs` (44 fall, `173.2`) och
+`scripts/test-review-risk-sektion.mjs` (39 fall, `173.3`). Alla tre är bevis,
+inte grindar, tills `173.4` bygger CI-ytan. Kör dem för hand när du rör
+review-ytan.
 
 **Skarpbevis-skulden — BETALD 2026-08-26 (S112 resume 1), med en mätt kant
 (`CLAUDE.md` § En ny hooks skarpbevis, samma strukturella klass generaliserad
@@ -625,16 +694,30 @@ arbete. Tre hål är mätta och kända:
 | Läge | Skyddar flaggan? |
 |---|---|
 | Kortet är committat på en annan gren | **Ja** — numret hoppas över |
-| Kortet är skapat men **inte committat** i ett systerträd | **Nej** — osynligt |
-| Kortet ligger **ospårat i huvudträdet** medan en agent räknar från `main` | **Nej** |
+| Kortet är skapat men **inte committat** i ett systerträd | **Ja** — sedan Backlog.md PR #710 (2026-07-01, före vår 1.49.1); stod här som "Nej — osynligt" i fyra veckor, falsifierat tvåsidigt 2026-08-26 |
+| Kortet ligger **ospårat i huvudträdet** medan en agent räknar från `main` | **Ja** — samma mätning: ett okommitterat `task-9000` i ett systerträd gav `TASK-9001` (1.49.1) resp. `TASK-9002` (1.50.1) |
 | Grenen är äldre än `active_branch_days` (30) | **Nej** |
+
+Två av tabellens tre hål var alltså stängda hela tiden — raderna skrevs av
+ADR-081:s antagande, aldrig mätta, och research-passet
+[`backlog-kortskapandets-flaskhals-2026-08-26.md`](docs/research/backlog-kortskapandets-flaskhals-2026-08-26.md)
+§ Sidofynd 1 fällde dem i ett labb med ett okommitterat kort i ett systerträd.
+Kvarvarande hål: `active_branch_days` — och det filtrerar i praktiken bort
+noll grenar hos oss, hela populationen är yngre än 30 dagar. Det verkliga
+problemet är inte längre osynlighet utan det **globala create-låset**
+(`<git-common-dir>/backlog.md/locks/create`, 30 s timeout, ingen jitter):
+mätt 2/8 lyckade `task create` vid åtta samtidiga agenter, och ett enda kort
+tog 513 s att skapa under S112:s fleet (`TASK-322`-mintningen, 2026-08-26).
+Beslutsunderlaget är research-doket; substratfrågan grillas (`TASK-328`),
+uppgraderingen till 1.50.1 är kortad (`TASK-327`).
 
 Praktiskt, i den ordningen:
 
 1. **`git fetch` + fast-forwarda före `task create`.** En föråldrad worktree ger
    dig ett nummer som redan är taget i merge-kön.
-2. **Committa kortet i samma andetag som du skapar det.** Uppskjuten bokföring är
-   inte neutral väntan — den är en osynlig reservation av en delad resurs.
+2. **Committa kortet i samma andetag som du skapar det.** Skälet är inte längre
+   osynlighet (se tabellen) utan durabilitet: ett okommitterat kort dör med
+   worktreen, och `git worktree remove` frågar inte.
 3. **Krockar det ändå: rätta via CLI:t, aldrig för hand.** Parkera kortet utanför
    registret och återskapa det med `task create` när den andra posten landat. En
    handredigerad `id:`-rad löser symptomet och bryter den regel som gör registret

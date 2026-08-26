@@ -246,6 +246,115 @@ test('helt tom input ({}) fälls med flera fel, inte en krasch', () => {
   assert.ok(errors.length > 3);
 });
 
+// ── policySha + policyRegler (TASK-173.2) ─────────────────────────────────
+// Path-scopade regler bokförs med sitt scope i utlåtandet, så en regel aldrig
+// läses som repo-bred (AC #2), och pinnas till den main-commit de lästes ur
+// (AC #1). Utökningen är ICKE-BRYTANDE — därför prövas FÖRST att 173.1:s form
+// fortfarande validerar oförändrad.
+
+function giltigPolicyRegel(overrides = {}) {
+  return {
+    id: 'airtable-faltoperationer',
+    scope: {
+      monster: ['src/data/adapters/**'],
+      matchadeFiler: ['src/data/adapters/AirtableAdapter.ts'],
+    },
+    kalla: 'CLAUDE.md § Instruktioner',
+    ...overrides,
+  };
+}
+
+test('ICKE-BRYTANDE: ett utlåtande utan policy-fält validerar och får defaults', () => {
+  const { ok, data } = valideraUtlatande(basUtlatande());
+  assert.equal(ok, true);
+  assert.equal(data.policySha, null, 'saknad policySha ska defaulta till null');
+  assert.deepEqual(data.policyRegler, [], 'saknade policyRegler ska defaulta till tom array');
+});
+
+test('utlåtande MED policySha och en scope-etiketterad regel passerar', () => {
+  const { ok, data, errors } = valideraUtlatande(
+    basUtlatande({ policySha: 'fbeb8c3c', policyRegler: [giltigPolicyRegel()] }),
+  );
+  assert.equal(ok, true, errors.join('; '));
+  assert.deepEqual(data.policyRegler[0].scope.matchadeFiler, [
+    'src/data/adapters/AirtableAdapter.ts',
+  ]);
+});
+
+test('policyRegler utan policySha fälls (AC #1: regler måste pinnas till en main-commit)', () => {
+  const { ok, errors } = valideraUtlatande(basUtlatande({ policyRegler: [giltigPolicyRegel()] }));
+  assert.equal(ok, false);
+  assert.ok(
+    errors.some((e) => e.startsWith('policySha')),
+    `fick: ${errors}`,
+  );
+});
+
+test('KONTRAST: policySha UTAN regler är tillåtet (policyn lästes, inget matchade)', () => {
+  assert.equal(valideraUtlatande(basUtlatande({ policySha: 'fbeb8c3c' })).ok, true);
+});
+
+test('regel med TOM matchadeFiler fälls (AC #2: en regel utan träff får aldrig bokföras)', () => {
+  const { ok } = valideraUtlatande(
+    basUtlatande({
+      policySha: 'fbeb8c3c',
+      policyRegler: [giltigPolicyRegel({ scope: { monster: ['src/**'], matchadeFiler: [] } })],
+    }),
+  );
+  assert.equal(ok, false, 'en regel utan matchande fil är precis vad scope-etiketten förhindrar');
+});
+
+test('regel med TOMT monster fälls (en regel utan mönster vore repo-bred)', () => {
+  const { ok } = valideraUtlatande(
+    basUtlatande({
+      policySha: 'fbeb8c3c',
+      policyRegler: [giltigPolicyRegel({ scope: { monster: [], matchadeFiler: ['src/a.ts'] } })],
+    }),
+  );
+  assert.equal(ok, false);
+});
+
+test('samma regel-id två gånger fälls (en regel bokförs EN gång, med fullt scope)', () => {
+  const { ok, errors } = valideraUtlatande(
+    basUtlatande({
+      policySha: 'fbeb8c3c',
+      policyRegler: [giltigPolicyRegel(), giltigPolicyRegel()],
+    }),
+  );
+  assert.equal(ok, false);
+  assert.ok(
+    errors.some((e) => e.includes('två gånger')),
+    `fick: ${errors}`,
+  );
+});
+
+test('KONTRAST: två regler med OLIKA id passerar', () => {
+  const { ok } = valideraUtlatande(
+    basUtlatande({
+      policySha: 'fbeb8c3c',
+      policyRegler: [giltigPolicyRegel(), giltigPolicyRegel({ id: 'tillganglighets-golvet' })],
+    }),
+  );
+  assert.equal(ok, true);
+});
+
+test('okänt fält i en policyRegel fälls (strictObject hela vägen ned)', () => {
+  const { ok } = valideraUtlatande(
+    basUtlatande({
+      policySha: 'fbeb8c3c',
+      policyRegler: [giltigPolicyRegel({ provning: 'hela regeltexten hör inte hemma här' })],
+    }),
+  );
+  assert.equal(ok, false);
+});
+
+test('för kort policySha fälls (min 7 tecken — en pinning måste vara uppslagbar)', () => {
+  const { ok } = valideraUtlatande(
+    basUtlatande({ policySha: 'abc', policyRegler: [giltigPolicyRegel()] }),
+  );
+  assert.equal(ok, false);
+});
+
 // ── genereraJsonSchema: portabel artefakt, härledd ur samma källa ──────────
 
 test('genereraJsonSchema() producerar ett objekt med required action-fält + default ask-user', () => {

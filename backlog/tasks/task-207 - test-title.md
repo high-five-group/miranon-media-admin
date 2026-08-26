@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-13 14:52'
-updated_date: '2026-08-14 18:41'
+updated_date: '2026-08-26 04:20'
 labels: []
 dependencies: []
 priority: medium
@@ -51,4 +51,57 @@ NÄSTA STEG FÖR DEN SOM TAR KORTET:
 
 <!-- SECTION:NOTES:BEGIN -->
 FILNAMNS-UNDERSÖKNING (orkestrerar-agent, 2026-08-14): kortets fil hette redan 'backlog/tasks/task-207 - test-title.md' medan frontmatter-titeln var korrekt ('Fynd: staging Edge Runtime/Airtable transienta 502/503 …'). Prövat: npx backlog task edit 207 --title "<identisk titel>" (samma sträng som redan stod i frontmatter). Resultat mätt via git status --short backlog/tasks/ FÖRE och EFTER — noll diff, filnamnet oförändrat. Slutsats: backlog-CLI:t (backlog.md@1.49.1) härleder INTE om filnamnet från titeln vid edit — filnamnet sätts vid task create och är därefter fixerat oavsett senare titel-ändringar. CLI:t saknar synlig rename/mv-kommando (npx backlog task --help: create/list/edit/view/archive/complete/demote — inget av dem rör filnamnet). Ingen handredigering eller git mv utförd — registret ägs av verktyget, och verktyget kan inte utföra ändringen. Kvarstår som känt, ofarligt malformerat filnamn (enda av 415 kort); en riktig fix kräver antingen en uppströms CLI-funktion eller ett medvetet Marcus-beslut om undantag från 'aldrig handredigera registret'.
+
+DELVIS ÅTGÄRDAT (S112 fix-våg 4, bunt B1) — byggd mitigering, INTE en
+stängning av kortets fulla NÄSTA STEG-lista. Kortet var oetiketterat
+(fynd-regeln, människan klassar) men uppdraget till detta pass gav
+explicit riktning: "retry med backoff på idempotenta läsningar är
+etablerat mönster; en tröskel eller sleep är inte en lösning."
+
+BYGGT: tests/api/helpers.ts fick getWithTransientRetry() — full-jitter
+exponentiell backoff (AWS "Exponential Backoff And Jitter", samma
+grundmönster som repots egen supabase/functions/_shared/airtable-retry.ts
+för Airtables 429-kontrakt, men EGEN modul: olika kontrakt, ingen 30s-golv-
+garanti att skydda). Retryn triggar ENDAST på 502/503 — alla andra
+statuskoder (inkl. 500) returneras oförändrade efter första anropet, så en
+genuin regression aldrig kan döljas. Tak 3 extra försök, bas 500ms.
+Enhetstest (tests/api/transient-retry.test.ts, api-pure, 10 fall, injicerad
+sleep — ingen riktig tid förflyter) bevisar BÅDA riktningarna: retry sker
+på 502/503 med korrekt exponentiell/jitter-beräkning, INGEN retry på
+400/401/404/500/200, taket är ändligt (ger upp och returnerar sista
+502-svaret i stället för oändlig loop).
+
+APPLICERAT — ENDAST på idempotenta GET, per uppdragets avgränsning:
+- tests/api/get-event.staging.test.ts: samtliga fem get-events-anrop
+  (nu genom en delad fetchEventsList()-helper) + get-event (single) via
+  callGetEvent(). Detta var filen/raden kortet bevisade som flaky
+  (get-event.staging.test.ts:48, Fönster A).
+- tests/api/airtable-filter.staging.test.ts: fuzz-GET:en (raden kortet
+  bevisade i Fönster B, 502 mot get-registrations/get-persons-fuzzen).
+
+MEDVETET INTE RÖRDA (icke-idempotenta writes — retry hade riskerat
+dubbel-mutation om skrivningen lyckats innan 502/503 hann tillbaka):
+- tests/api/get-event-notes.staging.test.ts:51 (createNote-hjälparen,
+  POST create-event-note)
+- tests/api/update-record.staging.test.ts:634 (write)
+- tests/api/attachment-upload-large.staging.test.ts:145 (POST-upload)
+
+VERIFIERAT: npm run test:api → 1179/1179 passed, exit 0 (inkl. de 10 nya
+enhetstesterna och samtliga tester i de två ändrade staging-filerna).
+
+INTE GJORT — kortets NÄSTA STEG 1-3 kräver ett beslut som ligger utanför
+detta pass verktyg/mandat:
+1. Supabase-status-historik för pqtshyierkdgwdnxuirz kring 2026-08-12 —
+   ingen verktygsåtkomst till det i detta pass, overifierat.
+2/3. Mutex mot staging kontra "signalvärdes-varning" (TASK-205 § REVIDERAD
+   NÄSTA-STEG p.4) — strategiskt vägval, kräver Marcus/orkestrerar-beslut,
+   inte fattat här. Retry-mitigeringen ovan är en tredje, kompletterande
+   åtgärd som INTE föregriper det valet — den gör befintliga tester
+   robustare mot transienta fel oavsett vilket av de två spåren som väljs
+   sedan.
+
+Kortet har ingen definierad AC att bocka. Kvarstår öppet för
+uppföljning/triage.
+
+Bokföring S112 resume 1 (2026-08-26, stängnings-batch 1). Landning: PR #1982 (getWithTransientRetry() + tillämpning på get-event.staging.test.ts + airtable-filter.staging.test.ts). post-merge f3929e17e66e: in_progress vid detta bokföringstillfälle (merge_group för pr-1982 var conclusion=success). Status lämnas MEDVETET på To Do — kortets NÄSTA STEG 1-3 (Supabase-status-historik, mutex vs signalvärdes-strategival) är obetalda och kräver Marcus/orkestrerar-beslut, redan dokumenterat utförligt i Implementation Notes ovan. Ingen AC/DoD rörd i detta pass.
 <!-- SECTION:NOTES:END -->

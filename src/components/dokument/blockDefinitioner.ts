@@ -59,7 +59,15 @@ export type BlockDef = {
   /** Låst: hämtas ur eventet och ändras på eventsidan, inte här. */
   last?: boolean;
   agenda?: boolean;
-  /** Ett datum (ISO-sträng som värde) — redigeras med datumfält, inte text. */
+  /** Ett datum (ISO-sträng som värde) — redigeras med datumfält, inte
+   *  text. `sistaBetalningsdag` är det enda blocket som sätter den, och
+   *  det enda som LÄSER flaggan är Inforutans sektionsmorf
+   *  (`GenereringsVy.tsx`, `r.def.datum ? <DatumEnkel .../> : <Input
+   *  .../>`) — `sistaBetalningsdag` hör till Inforutan-gruppen och når
+   *  aldrig `BlockDialog`, vars motsvarande (onåbara) gren revs i
+   *  `TASK-309.19` (se
+   *  `tests/visual/dokument-generering-promoverings-grind.spec.ts`
+   *  § DATUM-LÄGET för de tre spärrarna). */
   datum?: boolean;
   /** Löptext: blockets yta fyller sitt tak och textrutan rullar i sig själv,
    *  i stället för att växa förbi dialogen. */

@@ -567,100 +567,26 @@ export interface DataSourceAdapter {
    * (se get-activity-log-EF:ens filhuvud för den fulla motiveringen).
    */
   fetchActivityLog(params?: ActivityLogParams): Promise<ActivityLogPage>;
-
-  /**
-   * Rendera en färdig, SJÄLVBÄRANDE HTML-sträng till PDF och returnera
-   * bytesen som `Blob` (S108 MARCUS-SEKVENS punkt 3, `ADR-119`).
-   *
-   * PROVISORISK ADRESS, PERMANENT FÖRMÅGA — läs skillnaden noga. Metoden
-   * uttrycker en förmåga datalagret ska ha: "gör PDF av denna HTML". VILKEN
-   * renderare som svarar är adapterns ensak, och i dag är svaret
-   * `test-docraptor-render` — en staging-only testharness-EF som är
-   * MEDVETET utelämnad ur `.prod-functions-allowlist.conf` och alltså
-   * saknas i produktion. Anropas metoden mot ett prod-projekt blir svaret
-   * 404 — staging-only med avsikt, oavsett anropare.
-   *
-   * [UPPDATERAD, TASK-309.8] Denna docblock beskrev tidigare metoden som
-   * nådd via en dev-gatead prototypväg (`?variant=a`/`protoAktiv` i
-   * `dokument.tsx`) som skulle "byta adress till den skarpa renderings-
-   * EF:en vid promoveringen". Den flaggan är nu riven (ADR-103 B2), men
-   * promoveringen (ADR-125 § 4–5) valde en ANNAN väg än den denna docblock
-   * förutsåg: `generate-event-attachment`/`_shared/mall-render.ts`
-   * (Eta + DocRaptor, server-side), inte denna metod. `renderPdfFranHtml`
-   * saknar (mätt, grep) varje anropare i `src/` — trolig kvarleva från
-   * S108 MARCUS-SEKVENS punkt 3 innan renderingsvägen valdes om. Rivning av
-   * själva metoden/dess adapterimplementationer är UTANFÖR denna skivas
-   * scope (mekanisk gate-/mappe-rivning, inte en dead-code-revision) och
-   * bokförs i stället här som öppen skuld.
-   *
-   * VARFÖR METODEN ÖVER HUVUD TAGET FANNS, i stället för ett `fetch` i
-   * komponenten: `ADR-057` klausul (a) förbjuder UI-lagret att importera
-   * EF-klienten. Prototypkod är inte undantagen från lager-invarianten —
-   * den granskas av samma fitness-audit som resten.
-   *
-   * `html` MÅSTE vara självbärande (stil, typsnitt och bilder som
-   * `data:`-URI:er) — renderaren kör i sitt eget nät och når ingenting
-   * relativt. [RIVET, TASK-309.6] `src/components/dokument/prototyp/
-   * sjalvbarande.ts`, som tidigare byggde denna HTML klient-sidigt, är
-   * riven — servern gör jobbet nu (se ovan). `namn` är dokumentnamnet
-   * renderaren stämplar jobbet med.
-   */
-  renderPdfFranHtml(html: string, namn: string): Promise<Blob>;
-
-  /**
-   * Rendera självbärande HTML till PDF och lagra resultatet som ett
-   * TRANSIENT utkast i Storage — returnerar en KORT signerad URL i stället
-   * för bytes (TASK-302.1, PRD `TASK-302`, `ADR-124`).
-   *
-   * VARFÖR EN EGEN METOD, INTE ETT PARAMETER-TILLÄGG PÅ `renderPdfFranHtml`:
-   * de två metoderna svarar olika FORMER (`Blob` kontra `{ url, utgar }`) —
-   * ett gemensamt returtyp-union hade tvingat VARJE anropare att gissa
-   * vilken form som kom tillbaka. `renderPdfFranHtml` BEHÅLLS OFÖRÄNDRAD
-   * (riv inte) — den är fortfarande skiva 2:s (`TASK-302.2`) startpunkt för
-   * de skarpa preview-EF:erna, som byter LEVERANSVÄG men inte metodform.
-   *
-   * MÄTT, INTE ANTAGET (`TASK-302` § "Problemet"): Chromes PDF-visare
-   * scrollar bara jämnt på en PDF SERVERAD AV NÄTVERKSTJÄNSTEN. En
-   * `blob:`-URL (denna adapters ANDRA metod ovan), och likaså en URL fångad
-   * av appens egen Service Worker, laggar vid scroll — sex mätta armar,
-   * headed Chrome 151. Den URL denna metod returnerar är Supabase Storages
-   * SIGNERADE URL (`supabase.co`, cross-origin mot appens eget origin) —
-   * `src/sw.ts`s `NavigationRoute` rör den därför aldrig.
-   *
-   * PROVISORISK ADRESS, PERMANENT FÖRMÅGA — samma resonemang som
-   * `renderPdfFranHtml`: i dag svarar `test-docraptor-render` med
-   * `leverans: 'utkast'` (staging-only, `.prod-functions-allowlist.conf`-
-   * exkluderad); vid promoveringen (`ADR-103`) byter adaptern adress till
-   * de skarpa preview-EF:erna (`TASK-302.2`), interfacet är då oförändrat.
-   *
-   * `eventId`/`typ` blir Storage-sökvägen `utkast/<eventId>/<typ>.pdf`
-   * (`upsert` — högst en fil per event och typ). `utgar` är URL:ens
-   * ISO-utgångstid.
-   */
-  renderPdfTillUtkast(
-    html: string,
-    namn: string,
-    params: { eventId: string; typ: UtkastTyp },
-  ): Promise<{ url: string; utgar: string }>;
 }
 
 /**
- * `typ`-diskriminatorn för TASK-302:s utkast-väg (`ADR-124`) — bilaga (denna
- * skivas prototyp-väg, TASK-302.1), kvitto och deltagarinformation (skiva
- * 2:s skarpa EF:er, TASK-302.2). SAMMA tre värden som backend-enumen
- * `UTKAST_TYPER` i `supabase/functions/_shared/utkast.ts` — dubblerad
- * MEDVETET (Deno-EF:erna delar ingen build-kedja med Vite-bygget, samma
- * duplicerings-mönster `_shared/attachments.ts`s filhuvud redan etablerar
- * för `AttachmentClass`/`AttachmentScope`).
+ * [RIVET, TASK-309.18] `renderPdfFranHtml`/`renderPdfTillUtkast` (samt
+ * `UtkastTyp`, deras enda gemensamma parametertyp) stod tidigare här som
+ * öppen skuld: de anropade `test-docraptor-render`, en EF som redan var
+ * riven (`TASK-309.4`) utan att interfacet följde med. Skulden är nu betald
+ * — mätt (`git grep`) noll anropare kvar utanför adapter-lagret innan
+ * rivningen, och den skarpa vägen (`generate-event-attachment`s
+ * preview-gren / `preview-receipt`, `ADR-125` § 5) bär redan den förmåga
+ * metoderna en gång uttryckte. Prosa och kod säger nu samma sak (ADR-083).
  */
-export type UtkastTyp = 'bilaga' | 'kvitto' | 'deltagarinformation';
 
 /**
  * De TVÅ bilagemallarna generate-event-attachment renderar (TASK-309.6,
  * ADR-125 § 5) — SAMMA två värden som EF:ens `MallParam`
  * (`generate-event-attachment/index.ts`) och UI-lagrets `MallId`
- * (`@/components/dokument/blockDefinitioner`). Duplicerad MEDVETET, samma
- * Deno↔Vite-gränsmönster som `UtkastTyp` ovan — datalagret får inte
- * importera UI-lagrets `blockDefinitioner.ts` (lager-oberoende, `ADR-057`).
+ * (`@/components/dokument/blockDefinitioner`). Duplicerad MEDVETET — samma
+ * Deno↔Vite-gränsmönster `_shared/attachments.ts`s filhuvud redan etablerar
+ * för `AttachmentClass`/`AttachmentScope` — datalagret får inte importera
+ * UI-lagrets `blockDefinitioner.ts` (lager-oberoende, `ADR-057`).
  */
 export type MallId = 'bekraftelse' | 'deltagarinfo';
