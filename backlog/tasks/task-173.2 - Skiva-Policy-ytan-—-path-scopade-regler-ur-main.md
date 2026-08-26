@@ -4,6 +4,7 @@ title: 'Skiva: Policy-ytan — path-scopade regler ur main'
 status: To Do
 assignee: []
 created_date: '2026-08-09 13:12'
+updated_date: '2026-08-26 03:11'
 labels:
   - ready-for-agent
 dependencies:
@@ -20,9 +21,9 @@ ordinal: 325000
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Path-scopade regler läses ENDAST ur main/trusted-källan — en regeländring på PR-grenen påverkar inte granskningen av samma gren (tvåsidigt bevisad)
-- [ ] #2 Regler injiceras endast för filer som matchar sitt mönster, med scope-etikett i utlåtandet så en regel aldrig läses som repo-bred
-- [ ] #3 Policy-ytan är config-driven per grindvakts-konventionen: värden i config, logik i skript
+- [x] #1 Path-scopade regler läses ENDAST ur main/trusted-källan — en regeländring på PR-grenen påverkar inte granskningen av samma gren (tvåsidigt bevisad)
+- [x] #2 Regler injiceras endast för filer som matchar sitt mönster, med scope-etikett i utlåtandet så en regel aldrig läses som repo-bred
+- [x] #3 Policy-ytan är config-driven per grindvakts-konventionen: värden i config, logik i skript
 <!-- AC:END -->
 
 ## Definition of Done

@@ -60,12 +60,26 @@ den städas). Två skäl:
   inte än i denna skiva — orkestreraren skickar ändå ett rundnummer redan nu,
   eftersom "findings-per-runda loggas från dag ett" (ADR-105 § Konsekvenser).
   Utan en orkestrerar-instruktion: anta `1`.
-- **Path-scopade granskningsregler** (valfritt, ur main). Policy-ytan som
-  levererar dessa är `TASK-173.2` — **obyggd i denna skiva**. Får du inga
-  regler: granska ändå, på kortets AC + PR-diffen + vad du själv kan läsa ur
-  `origin/main` (CLAUDE.md, relevanta ADR:er, `docs/reference/`), och notera i
-  ditt utlåtandes fynd om något du misstänker en framtida path-regel hade
-  fångat (informativt, ingen egen severity-klass för det).
+- **Path-scopade granskningsregler** (ur main, byggda i `TASK-173.2`).
+  Orkestreraren kör kommandot nedan och klistrar in blocket i din prompt. Fick
+  du inget block: kör det själv — källan är densamma oavsett vem som kör, det
+  är hela poängen med en trusted ref:
+
+  ```bash
+  npm run review:policy -- --pr <NUMMER>          # text att läsa
+  npm run review:policy -- --pr <NUMMER> --json   # samma, maskinläsbart
+  ```
+
+  Kommandot läser `.review-policy.json` ur `origin/main` med `git show` —
+  aldrig från disk, aldrig från PR-grenen (ADR-105 beslut 7). **Exit 64 =
+  POLICYFEL: stanna och rapportera till orkestreraren, granska INTE vidare.**
+  En halverad regelmängd ser ut som en fullständig granskning men saknar
+  regler ingen ser saknas.
+
+  **`origin/main` måste vara färsk.** Kommandot kör medvetet ingen `git
+  fetch` (du rör aldrig delad state) — men det skriver ut den SHA det läste.
+  Ser du en SHA som är äldre än PR:ens bas, säg det i ditt utlåtande i
+  stället för att låta det passera tyst.
 
 ## Steg 1 — Fastställ intent (ADR-105 beslut 7, AC #5–#6)
 
@@ -102,10 +116,26 @@ vara en tom array (schemat kräver detta strukturellt).
 Läs `gh pr diff <nummer>` mot: korrekthet (gör koden vad den påstår?),
 säkerhet, tillgänglighet (11/11/11-golvet, `CLAUDE.md` § Kvalitetsribba),
 repo-konventioner (`CLAUDE.md`, `CONTRIBUTING.md` läst ur `origin/main`),
-ADR-styrning på rörda filer, och path-scopade regler om du fick några. Var
+ADR-styrning på rörda filer, och de path-scopade reglerna. Var
 misstänksam mot egna påståenden i PR-beskrivningen — bevisa dem mot faktisk
 kod, håll dig inte till prosa (samma disciplin som `ADR-086` kräver av dig
 själv gentemot kortet).
+
+**En path-regel gäller ENDAST sina matchade filer — aldrig hela repot.** Varje
+regel du får bär ett `Scope` med mönstren och de faktiskt matchade filerna,
+och det står FÖRE prövningstexten med avsikt: läs hur smal regeln är innan du
+läser vad den kräver. Skriv aldrig ett fynd som om en regel vore repo-bred, och
+använd aldrig en regel mot en fil som inte står i dess scope. Reglernas
+`Källa`-rad pekar på den styrande yta som äger regeln — pröva den per
+`ADR-086` som vilken annan premiss som helst; en regel vars källa inte stöder
+den är i sig ett fynd.
+
+**Bokför reglerna i utlåtandet.** Fyll `policySha` (SHA:n kommandot skrev ut)
+och `policyRegler` (en post per injicerad regel, med `id`, `scope` och
+`kalla`). Enklast: kör `--json` och kopiera `policyRegler` rakt av — fälten har
+samma form. Schemat fäller ett utlåtande som bär regler utan `policySha`, och
+en regel med tom `matchadeFiler`. Matchade inga regler: låt fälten vara (de
+defaultar till `null` och `[]`).
 
 Varje fynd: `beskrivning`, `severity` (`error`/`warning`/`info`), `action`
 (`auto-fix`/`ask-user`), valfri `plats` (fil + rad), och `bevis` (kommando +
