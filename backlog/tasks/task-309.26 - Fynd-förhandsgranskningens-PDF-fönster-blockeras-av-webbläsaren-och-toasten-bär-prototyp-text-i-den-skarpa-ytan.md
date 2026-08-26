@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-26 02:59'
+updated_date: '2026-08-26 04:18'
 labels:
   - ready-for-agent
 dependencies: []
@@ -27,10 +28,10 @@ RESEARCH FÖRST, cite: branschmönstret är att öppna fönstret SYNKRONT i klic
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Prototyp-texten borta ur den skarpa ytan; toasten säger något sant och Gunilla-begripligt om att förhandsgranskningen inte sparas — svep hela src/components/dokument efter fler 'Prototyp'-kvarlevor och bokför
+- [x] #1 Prototyp-texten borta ur den skarpa ytan; toasten säger något sant och Gunilla-begripligt om att förhandsgranskningen inte sparas — svep hela src/components/dokument efter fler 'Prototyp'-kvarlevor och bokför
 - [ ] #2 Förhandsgranskningen öppnas direkt i nytt fönster utan popup-blockering i Chrome och Safari (desktop) — bevisat med Playwright (context.waitForEvent('page')) och manuellt i Chrome; fallback-knappen finns kvar för det fall webbläsaren ändå blockerar
-- [ ] #3 Felväg: EF-fel ger inget tomt fönster kvar; felmeddelande i husets mönster
-- [ ] #4 Kvittoförhandsgranskningen och bilageförhandsgranskningen delar samma öppningsmönster (konsekvens) — eller avvikelsen är bokförd med skäl
+- [x] #3 Felväg: EF-fel ger inget tomt fönster kvar; felmeddelande i husets mönster
+- [x] #4 Kvittoförhandsgranskningen och bilageförhandsgranskningen delar samma öppningsmönster (konsekvens) — eller avvikelsen är bokförd med skäl
 <!-- AC:END -->
 
 ## Definition of Done

@@ -17,6 +17,35 @@ import { useDataSource } from '@/data/useDataSource';
  * beteendetest (AC #1, throwaway, kastat efter passet) att detta INTE
  * blockeras.
  *
+ * [TILLÄGG, TASK-309.26 review-runda 1, AC #4] Anroparen skriver NUMERA
+ * också en momentan laddningssida i fönstret direkt efter `window.open`,
+ * innan `mutate()` (`skrivLaddningssida`, `@/lib/skriv-laddningssida`) —
+ * samma delade mönster som `GenereringsVy.tsx`s `skapaDokument`. Fram till
+ * denna skiva stod fönstret tomt (`about:blank`) under hela väntan, vilket
+ * var precis den "abrupt tomt fönster"-upplevelse Marcus avvisade 22 aug
+ * 2026 för genereringsvyn — samma defekt fanns här, bara aldrig påtalad för
+ * just denna yta förrän konsekvens-kravet (AC #4) synliggjorde den vid
+ * granskningen av den andra ytan. Denna hooks EGEN kontrakt är oförändrat:
+ * den öppnar ingenting själv, den bara fyller `handle.location.href` när
+ * datan är klar (eller skriver felsidan nedan).
+ *
+ * [RÄTTAT, TASK-309.26 review-runda 2, severity ERROR] Felvägens
+ * `handle.document.write(...)` APPENDADE tidigare felmeddelandet UNDER
+ * laddningssidan i stället för att ersätta den — Lotta såg "Öppnar
+ * dokument…" och "Kunde inte öppna dokumentet…" staplade i samma fönster.
+ * Grundorsaken (empiriskt verifierad, `@/lib/skriv-laddningssida`s
+ * docblock har hela mätserien): `document.write` APPENDAR på ett
+ * dokument som fortfarande är ÖPPET (`readyState: 'loading'`) — den
+ * implicita "töm dokumentet"-effekten (HTML-spec/MDN) triggar bara när
+ * `write()` anropas på ett REDAN STÄNGT dokument. `skrivLaddningssida`
+ * anropar numera `document.close()` efter sin skrivning, vilket räcker för
+ * att lösa buggen i normalfallet — men felvägen HÄR gör dessutom explicit
+ * `document.open()` FÖRE sin egen `write()` (och `document.close()`
+ * efteråt): försvar i djup, så felsidan garanterat ERSÄTTER allt tidigare
+ * innehåll OAVSETT om anroparen städade sin ström eller ej. Verifierat
+ * (samma mätpass): ett explicit `document.open()`-anrop tömmer dokumentet
+ * lika säkert oavsett om det var `'loading'` eller redan `'complete'`.
+ *
  * `noopener` är MEDVETET UTESLUTET ur `window.open`-anropet (anroparens
  * ansvar, inte denna hooks — men dokumenterat här eftersom skälet gäller
  * hela mönstret): verifierat (samma throwaway-pass) att
@@ -27,9 +56,27 @@ import { useDataSource } from '@/data/useDataSource';
  * JS), aldrig en tredjeparts-länk, vilket gör reverse-tabnabbing-risken av
  * det uteblivna `noopener` försumbar här.
  *
- * Fel: lämnar aldrig den redan öppnade fliken tyst tom (Gunilla-principen)
- * — skriver ett ärligt felmeddelande direkt i den i stället för att
- * förlita sig på en global toast (appen har ingen).
+ * [RÄTTAT, TASK-309.26 review-runda 3] Felvägen skriver ETT ärligt
+ * felmeddelande DIREKT I FLIKEN (Gunilla-principen: fliken ska aldrig stå
+ * tyst tom) — en tidigare formulering här påstod att detta var nödvändigt
+ * "eftersom appen har ingen [global toast]", vilket var FEL: DokumentYta.tsx
+ * HAR en lokal `MessageBox` för just denna mutation
+ * (`forhandsvisaMutation.isError && <MessageBox .../>`, `DokumentYta.tsx`
+ * rad ~813). De två felytorna är en MEDVETEN DUBBLERING, inte en glömska:
+ * den öppnade fliken kan vara SKYMD (bakom appfönstret, minimerad, på en
+ * annan skärm) medan Lotta tittar på appen, eller tvärtom — vilken yta hon
+ * FAKTISKT ser när felet inträffar går inte att veta i förväg, så båda
+ * bär meddelandet oberoende av varandra.
+ *
+ * AVVIKELSEN MOT GenereringsVy.tsx, bokförd med skäl: den ytan STÄNGER i
+ * stället det öppnade fönstret vid fel (`stangOanvantFonster`) och visar
+ * ENBART sin egen toast, med en fallback-knapp ("Öppna X") som återförsöker
+ * hela handlingen. Skillnaden är motiverad av flödets form: GenereringsVy
+ * håller kvar resultat-URL:en i komponent-state och kan därför erbjuda ett
+ * konkret återförsök i EN yta; denna hook har inget sådant tillstånd att
+ * återförsöka mot (varje klick startar en helt ny hämtning), så en flik som
+ * redan finns och redan väntar på Lotta är den bättre platsen att också
+ * bära felet.
  */
 export function useForhandsvisaDokument() {
   const dataSource = useDataSource();
@@ -44,13 +91,32 @@ export function useForhandsvisaDokument() {
       }
       try {
         const url = await hamtaDokumentUrl(dataSource, kalla);
+        // [RÄTTAT, TASK-309.26 review-runda 3] Lotta kan ha stängt fliken
+        // SJÄLV medan `hamtaDokumentUrl` väntade på nätverket — `handle` är
+        // då icke-null men `.closed`, och `.location.href` på ett stängt
+        // fönster kan kasta i vissa webbläsare (MDN), samma felklass som
+        // GenereringsVy.tsx:s `onSuccess`-vakt (review-runda 1). Kastar ett
+        // eget, Gunilla-läsbart fel i stället för att låta det råa
+        // webbläsarfelet nå `MessageBox` oformaterat — `catch`-blocket
+        // nedan hoppar korrekt över att skriva i fliken (den är ju stängd,
+        // `!handle.closed`-vakten där är oförändrad) och kastar detta fel
+        // vidare till mutationens `error`.
+        if (handle.closed) {
+          throw new Error('Fönstret stängdes innan dokumentet hann öppnas. Tryck på Visa igen.');
+        }
         handle.location.href = url;
       } catch (err) {
         if (!handle.closed) {
+          // [RÄTTAT, TASK-309.26 review-runda 2] explicit open()/close() —
+          // se docblocket ovan: garanterar att felsidan ERSÄTTER, aldrig
+          // APPENDAS efter, laddningssidan (eller något annat tidigare
+          // skrivet innehåll), oavsett anroparens städning.
+          handle.document.open();
           handle.document.write(
             '<p style="font-family: system-ui, sans-serif; padding: 2rem; max-width: 32rem;">' +
               'Kunde inte öppna dokumentet. Stäng fliken och försök igen.</p>',
           );
+          handle.document.close();
         }
         throw err;
       }

@@ -7,19 +7,29 @@ import { useDataSource } from '@/data/useDataSource';
  * MARCUS-SEKVENS punkt 3, `ADR-119`; leveransvägen UTBYGGD TASK-302.1, PRD
  * `TASK-302`, `ADR-124`; RIVEN OM MOT RIKTIG DATA, TASK-309.6, ADR-125 § 6).
  *
- * DEN ÖPPNAR INGENTING — och det är hela poängen. Första bygget öppnade en
- * flik synkront i klicket och lät den stå tom med ett vänteläge medan
- * renderingen pågick, enligt `DokumentYta` § IKONPAR-mönstret. Marcus dom på
- * det (2026-08-22): *"då öppnas ett nytt fönster helt abrupt, men en text
- * uppe i högra hörnet om att bilagan genereras… Va? Seriöst?"* — och
- * beslutet: *"den öppnas i ett nytt fönster. Lotta ska inte skickas till
- * pdf:en automatiskt utan välja att gå dit."*
+ * DENNA MUTATION ÖPPNAR INGENTING — den renderar och returnerar bara en URL.
+ * VEM som öppnar ett fönster och NÄR är anroparens (`GenereringsVy.tsx`)
+ * beslut, inte hookens.
  *
- * Så: mutationen renderar och returnerar en URL. Laddningen visas i appen,
- * där användaren redan tittar. Ytan presenterar sedan dokumentet som ett
- * VAL — och eftersom `window.open` då sker i ett eget, direkt klick finns
- * ingen popup-blockerare att smita förbi, vilket var hela skälet till den
- * synkrona öppningen från början. Kravet försvann med mönstret.
+ * [HISTORIK, delvis KORRIGERAD TASK-309.26] Första bygget öppnade en flik
+ * synkront i klicket och lät den stå tom med ett vänteläge medan
+ * renderingen pågick. Marcus dom på DEN specifika utformningen (2026-08-22):
+ * *"då öppnas ett nytt fönster helt abrupt, men en text uppe i högra hörnet
+ * om att bilagan genereras… Va? Seriöst?"* — varpå anroparen byggdes om att
+ * öppna fönstret EFTER att mutationen löst ut i stället, på antagandet
+ * (mätt samma dag) att "Chrome tillåter `window.open` även efter flera
+ * sekunders väntan". Det antagandet var FALSKT: Marcus eget prod-röktest
+ * 2026-08-26 fick fönstret blockerat när DocRaptor-renderingen tog några
+ * sekunder ("Skarpt så måste ju ett chromefönster öppnas direkt").
+ *
+ * NUVARANDE FORM (TASK-309.26): anroparen öppnar ett TOMT fönster SYNKRONT
+ * i klicket (`window.open('', '_blank')`, samma popup-blockerar-säkra
+ * mönster som `DokumentYta.tsx` § IKONPAR / `useForhandsvisaDokument.ts`)
+ * och sätter dess adress när DENNA mutation löser ut. Marcus ursprungliga
+ * krav — *"Lotta ska inte skickas till pdf:en automatiskt utan välja att gå
+ * dit"* — är fortsatt uppfyllt: fönstret är blankt tills HON redan klickat,
+ * ingen navigering sker förrän hennes egen handling startade den. Se
+ * `GenereringsVy.tsx`s `skapaDokument`-docblock för hela resonemanget.
  *
  * [RIVEN OM, TASK-309.6] Mutationen byggde tidigare den självbärande HTML:en
  * KLIENT-SIDIGT (`byggHtml`-callbacken, `sjalvbarande.ts`) och postade den
@@ -44,7 +54,8 @@ export interface ForhandsgranskaBilagaInput {
 }
 
 export type Forhandsgranskning = {
-  /** Signerad URL till den färdiga PDF:en — ytan öppnar den på användarens begäran. */
+  /** Signerad URL till den färdiga PDF:en — ytan sätter den i det fönster
+   *  Lotta redan öppnade med sitt klick (TASK-309.26). */
   url: string;
   /** URL:ens ISO-utgångstid (`SIGNED_DOWNLOAD_URL_TTL_SECONDS`). */
   utgar: string;

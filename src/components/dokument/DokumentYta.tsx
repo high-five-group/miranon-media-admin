@@ -101,6 +101,17 @@
  * aldrig en tredjeparts-länk, vilket gör reverse-tabnabbing-risken av det
  * uteblivna `noopener` försumbar här.
  *
+ * [TILLÄGG, TASK-309.26 review-runda 1, AC #4] Fönstret bär numera en
+ * momentan laddningssida (`skrivLaddningssida`, `@/lib/skriv-laddningssida`,
+ * "Öppnar dokument…") direkt efter `window.open`, INNAN
+ * `forhandsvisaMutation.mutate(...)` — samma delade mönster som
+ * `GenereringsVy.tsx`s `skapaDokument` numera använder. Fönstret stod annars
+ * tomt (`about:blank`) under hela hämtningen, samma "abrupt tomt fönster"
+ * Marcus avvisade 22 aug 2026 för genereringsvyn — konsekvenskravet (AC #4)
+ * mot just DENNA yta var det som synliggjorde att defekten fanns här också.
+ * Se `useForhandsvisaDokument.ts`s docblock och `@/lib/skriv-laddningssida`
+ * för hela resonemanget, MDN-källorna och viewport-/typsnittsvalen.
+ *
  * Nedladdning triggar INGEN flik: en dold `<a download>`-länk klickas
  * programmatiskt. Klass A: den signerade URL:en får en `download`-query-
  * parameter påklistrad KLIENT-SIDIGT — `@supabase/storage-js`s egen
@@ -196,6 +207,7 @@ import {
 import { useDataSource } from '@/data/useDataSource';
 import type { Attachment } from '@/domain/models/Attachment';
 import { AttachmentClass, AttachmentScope, type AttachmentScopeValue } from '@/domain/types/Status';
+import { skrivLaddningssida } from '@/lib/skriv-laddningssida';
 import { queryKeys } from '@/queries/keys';
 
 /* ------------------------------------------------------------------ *
@@ -783,6 +795,12 @@ function DokumentAtgardsKnappar({ namn, kalla }: { namn: string; kalla: Dokument
           // KRITISKT: window.open MÅSTE anropas synkront här, före all
           // await/mutate-hantering — se filhuvudets IKONPAR-not.
           const handle = window.open('', '_blank');
+          // [TILLÄGG, TASK-309.26 review-runda 1, AC #4] Samma delade
+          // laddningssida som GenereringsVy.tsx — fönstret stod annars
+          // tomt (about:blank) under hela hämtningen, samma "abrupt
+          // tomt fönster"-defekt Marcus avvisade 22 aug för den andra
+          // ytan. Se `useForhandsvisaDokument.ts`s docblock.
+          skrivLaddningssida(handle, { titel: 'Öppnar dokument…', text: 'Öppnar dokument…' });
           forhandsvisaMutation.mutate({ kalla, handle });
         }}
       >
