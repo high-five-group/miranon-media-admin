@@ -41,6 +41,7 @@ import { fileURLToPath } from 'node:url';
 import {
   byggSektion,
   cell,
+  kodcell,
   MARKER_END,
   MARKER_START,
   renderaRiskbedomning,
@@ -257,6 +258,67 @@ test('A8d cell(): ett fristående bakstreck utan efterföljande pipe escapas ock
   assert.ok(
     escaped.includes(`${'\\'}${'\\'}`),
     `förväntade dubblerat bakstreck, fick: ${JSON.stringify(escaped)}`,
+  );
+});
+
+/* ── kodcell() — samma sårbarhetsklass som cell() (CodeQL
+   js/incomplete-sanitization), fångad av granskningen på PR #1993 i
+   SYSKONFUNKTIONEN kodcell() (används för plats fil:rad, bevis.kommando,
+   runIdEllerSha, policySha, granskadSha, kortId). Ett kodspann skyddar INTE
+   mot en pipe som bryter tabellraden — cmark-gfm delar rader på `|` FÖRE
+   inline-parsning (github/cmark-gfm#24) — så backtick-substitution ensam är
+   otillräcklig; samma bakstreck-FÖRST-ordning som cell() krävs. ── */
+
+test('A8e kodcell(): pipe i bevis.kommando escapas (review-agentens NORMALFALL: pipade shell-kommandon, t.ex. "git log --oneline | grep foo")', () => {
+  const indata = 'git log --oneline | grep foo';
+  const kod = kodcell(indata);
+  assert.equal(
+    harOskyddadPipeEnligtGfm(kod),
+    false,
+    `kodcell()s utdata ska INTE innehålla någon oskyddad pipe (fick: ${JSON.stringify(kod)})`,
+  );
+});
+
+test('A8f kodcell(): pipe i fil-sökväg escapas', () => {
+  const kod = kodcell('src/weird|path.ts');
+  assert.equal(
+    harOskyddadPipeEnligtGfm(kod),
+    false,
+    `kodcell()s utdata ska INTE innehålla någon oskyddad pipe (fick: ${JSON.stringify(kod)})`,
+  );
+});
+
+test('A8g kodcell(): bakstreck-direkt-före-pipe escapas FULLSTÄNDIGT (samma indata-mönster som A8c, nu i kodcell)', () => {
+  const indata = `a${'\\'}${'|'}b`; // faktiska tecken: a, \, |, b
+  const kod = kodcell(indata);
+  assert.equal(
+    harOskyddadPipeEnligtGfm(kod),
+    false,
+    `kodcell()s utdata ska INTE innehålla någon oskyddad pipe (fick: ${JSON.stringify(kod)})`,
+  );
+});
+
+test('A8h kodcell(): backtick OCH pipe i samma indata hanteras båda (backtick substitueras, pipe escapas — ingen oskyddad pipe, inget backtick-läckage inuti kodspannet)', () => {
+  const indata = 'echo `whoami` | tee log';
+  const kod = kodcell(indata);
+  assert.equal(
+    harOskyddadPipeEnligtGfm(kod),
+    false,
+    `kodcell()s utdata ska INTE innehålla någon oskyddad pipe (fick: ${JSON.stringify(kod)})`,
+  );
+  assert.ok(
+    !kod.slice(1, -1).includes('`'),
+    `det inre innehållet ska inte innehålla någon backtick (byts mot citattecken), fick: ${JSON.stringify(kod)}`,
+  );
+});
+
+test('A8i RÖTT-FÖRST-referens för kodcell() (samma mönster som A8b): en naiv kodcell som ENDAST substituerar backtick — utan att escapa bakstreck/pipe — lämnar en oskyddad pipe kvar (detta VAR den trasiga pre-fix-formen)', () => {
+  const indata = 'git log --oneline | grep foo';
+  const naivKodcell = (v) => `\`${String(v).replace(/\r?\n/g, ' ').replace(/`/g, "'")}\``;
+  assert.equal(
+    harOskyddadPipeEnligtGfm(naivKodcell(indata)),
+    true,
+    'referens-simuleringen av den gamla (pre-fix) kodcell()-formen ska fälla — annars bevisar A8e–A8h ingenting om vad som faktiskt fixades',
   );
 });
 

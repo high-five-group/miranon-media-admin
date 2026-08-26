@@ -110,13 +110,37 @@ export function cell(varde) {
 }
 
 /** Som `cell`, men för värden som ska visas som inline-kod (kommando, SHA,
- * fil:rad). Backticks byts mot raka citattecken — kommandon/SHA:n i denna
- * kodbas innehåller aldrig backtick i praktiken, och en fullständig
- * nästlad-kodspann-eskapering vore spekulativ komplexitet utan nuvarande
- * användare (dubbelriktad över-engineering-vakt). */
-function kodcell(varde) {
+ * fil:rad). Backticks byts mot raka citattecken — en fullständig nästlad-
+ * kodspann-eskapering vore spekulativ komplexitet utan nuvarande användare
+ * (dubbelriktad över-engineering-vakt).
+ *
+ * ═══ BAKSTRECK OCH PIPE ESCAPAS I SAMMA ORDNING SOM `cell` (CodeQL
+ * js/incomplete-sanitization, samma sårbarhetsklass som alert #6/PR #1993,
+ * fångad i syskonfunktionen av granskningen på #1993) ═══
+ * Ett kodspann SKYDDAR INTE mot en pipe som bryter tabellraden: cmark-gfm
+ * delar en tabellrad på `|` FÖRE inline-parsning, så backtick-avgränsningen
+ * (som är en inline-konstruktion) etableras EFTER radsplittringen redan
+ * hänt (github/cmark-gfm#24). `bevis.kommando = 'git log --oneline | grep
+ * foo'` är review-agentens NORMALFALL (pipade shell-kommandon), inte en
+ * edge case — utan denna escaping bryter varje sådant bevis ut ur
+ * tabellcellen. GFM-specen bekräftar att escaping fungerar även "inside
+ * other inline spans": `\|` renderar som ett literalt `|` oavsett om det
+ * står inuti ett kodspann. Samma bakstreck-FÖRST-ordning som `cell` (se
+ * dess kommentar) av samma skäl: annars kan ett bakstreck som redan står
+ * direkt före en pipe i indatan neutralisera det egna escapet.
+ *
+ * `<`/`>` (HTML-metatecken) escapas MEDVETET INTE här — GitHubs egen
+ * PR-kropps-sanering (samma yta som `gh pr edit --body-file` skriver till)
+ * hanterar HTML-injektion i PR-kroppen; denna funktions ansvar är GFM-
+ * TABELLSTRUKTUREN (pipe/bakstreck), inte HTML-säkerhet i en yta GitHub
+ * redan saniterar. */
+export function kodcell(varde) {
   if (varde === null || varde === undefined || varde === '') return '—';
-  const text = String(varde).replace(/\r?\n/g, ' ').replace(/`/g, "'");
+  const text = String(varde)
+    .replace(/\\/g, '\\\\')
+    .replace(/\r?\n/g, ' ')
+    .replace(/`/g, "'")
+    .replace(/\|/g, '\\|');
   const trunkerad = text.length > CELL_MAX ? `${text.slice(0, CELL_MAX)}…` : text;
   return `\`${trunkerad}\``;
 }
