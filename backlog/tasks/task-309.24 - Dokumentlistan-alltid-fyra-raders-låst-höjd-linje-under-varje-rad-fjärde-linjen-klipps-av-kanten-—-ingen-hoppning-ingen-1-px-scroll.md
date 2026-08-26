@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-26 02:48'
+updated_date: '2026-08-26 06:04'
 labels:
   - ready-for-agent
 dependencies:
@@ -37,16 +38,16 @@ FACIT: s108-dokumentytans fyra bilder (tasks/sessions/bilagor/s108-dokumentytan/
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Listans bounding box (bredd, höjd) är identisk vid 0, 1, 3, 4 och 5+ rader och över alla filter — Playwright-mätning i desktop och 375 px, tal i PR:en
-- [ ] #2 Vid exakt 4 rader: ingen linje synlig nederst, scrollHeight === clientHeight (ingen scroll); vid 5+ rader: scroll, linjen under rad 4 synlig efter scroll, sista raden bär linje; vid 1–3 rader: linje under sista raden
-- [ ] #3 Tomt-läget renderas inom samma låsta höjd; a11y oförändrad (tabb-stopp bara när listan rullar, aria-label kvar); axe grönt; prefers-contrast: more visar linjerna
-- [ ] #4 Facit-bilderna för s108-dokumentytan (alla fyra) omtagna med skiva 9:s metod; not-fältet uppdaterat; godkand orört; dokumentationsgrindarna (check:docs) exit 0
-- [ ] #5 Acceptance-test i browser-skarven fäller på hoppning vid filterbyte och på 1 px-scroll vid exakt fyra rader
+- [x] #1 Listans bounding box (bredd, höjd) är identisk vid 0, 1, 3, 4 och 5+ rader och över alla filter — Playwright-mätning i desktop och 375 px, tal i PR:en
+- [x] #2 Vid exakt 4 rader: ingen linje synlig nederst, scrollHeight === clientHeight (ingen scroll); vid 5+ rader: scroll, linjen under rad 4 synlig efter scroll, sista raden bär linje; vid 1–3 rader: linje under sista raden
+- [x] #3 Tomt-läget renderas inom samma låsta höjd; a11y oförändrad (tabb-stopp bara när listan rullar, aria-label kvar); axe grönt; prefers-contrast: more visar linjerna
+- [x] #4 Facit-bilderna för s108-dokumentytan (alla fyra) omtagna med skiva 9:s metod; not-fältet uppdaterat; godkand orört; dokumentationsgrindarna (check:docs) exit 0
+- [x] #5 Acceptance-test i browser-skarven fäller på hoppning vid filterbyte och på 1 px-scroll vid exakt fyra rader
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->

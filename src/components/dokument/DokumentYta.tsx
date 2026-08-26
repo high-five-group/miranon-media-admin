@@ -177,7 +177,7 @@ import {
   Upload,
 } from 'lucide-react';
 import { useQueryState } from 'nuqs';
-import { useMemo, useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { FileTrigger } from 'react-aria-components';
 import type { MallId } from '@/components/dokument/blockDefinitioner';
 import { stegEtikett } from '@/components/dokument/nivaSprak';
@@ -628,21 +628,188 @@ const IKONKNAPP_KLASS = 'size-11 shrink-0 p-0';
 /**
  * Listans rullnings-geometri — MÄTT i renderad yta, inte uppskattad.
  *
- * Marcus 2026-08-18: *"se till att listan också visar exakt 4 dokumentrader,
- * alltså att den fjärde längst ner klipps exakt precis över separatorn."*
- *
- * Radsteget är **99 px** (uppmätt: fyra raders `top`-värden på 284/383/482/581
- * i acceptance-riggen), så fyra rader är **396 px** — mätt som avståndet från
- * första radens överkant till fjärde radens underkant. `max-h-96` (384 px) som
- * stod här innan klippte alltså 12 px IN i fjärde raden.
- *
- * Talet är hårt bundet till radhöjden, och den är LÅST till tre led sedan
- * S107 Del 9 (namn · täckning · datum, alla trunkerande). Ändras radens
- * innehållshöjd måste detta mätas om — måttet är en mätning, inte en
- * konvention, och en gissning här syns direkt som en halv rad i underkanten.
+ * [HISTORIK] Fram till TASK-309.24 stod här ett hårdkodat `max-h-[396px]`
+ * (4 × 99 px, "acceptance-riggens" mätning 2026-08-18: fyra raders
+ * `top`-värden på 284/383/482/581). Talet höll så länge VARJE rad var
+ * exakt 99 px hög — men TASK-309.20 (375 px-defekter, `DokumentRadSkal`s
+ * eget filhuvud) gav radens ikonkolumn `flex-wrap`: en Event-mallad rad
+ * med FYRA handlingar (Öppna/Ladda ner/Skapa om/Ersätt) bryter till TVÅ
+ * rader vid 375 px, och en rad med tre badgar kan göra detsamma redan
+ * innan dess (samma docblock, "rader REDAN varierar i höjd"). Radhöjden
+ * är sedan dess en RENDERAD EGENSKAP, inte en konstant — ett hårdkodat
+ * px-tal hade antingen klippt en verklig rad eller lämnat ett gap, båda
+ * fel. `LISTA_SYNLIGA_RADER` (antalet rader) är fortsatt en konstant;
+ * `useLastaListhojd` nedan MÄTER pixelhöjden dynamiskt i stället för
+ * `LISTA_MAXHOJD`, som är riven.
  */
 const LISTA_SYNLIGA_RADER = 4;
-const LISTA_MAXHOJD = 'max-h-[396px]';
+
+/**
+ * MÄTER listans låsta höjd mot RENDERAD geometri (TASK-309.24, Marcus
+ * 2026-08-26 — se filhuvudets nya stycke för hela regeln).
+ *
+ * MÄTKÄLLAN ÄR MEDVETET BEGRÄNSAD TILL 'alla' OCH 'bilaga', I TVÅ NIVÅER
+ * (`foretradesMatbar`/`reservMatbar`, satta av anroparen). Bilagor står
+ * ALLTID FÖRST i den kanoniska ordningen (bilagor → mallar → generatorer),
+ * så filtret 'bilaga's första `LISTA_SYNLIGA_RADER` rader är SAMMA rader
+ * (samma `id`, samma props) som 'alla's — men INTE nödvändigtvis SAMMA
+ * RENDERADE HÖJD: en rads pixelhöjd beror mätt (TASK-309.24) på hur många
+ * SYSKON den har i DOM, inte bara sitt eget innehåll (samma rad mätte 99 px
+ * bland sju syskon, 98 px bland fyra — ren layout-avrundning, se
+ * `DokumentLista`s eget stycke för den fulla diagnosen). En mätning måste
+ * därför tas i SAMMA "hur många rader finns i DOM"-kontext den senare ska
+ * gälla för — 'bilaga' är den kontext AC #2:s exakt-fyra-krav faktiskt
+ * prövas i, så `foretradesMatbar` (sann när 'bilaga' själv kan leverera
+ * minst fyra rader) vinner ALLTID och LÅSER (`harForetradesMatt`) — en
+ * gång mätt DÄRIFRÅN skriver 'alla' aldrig över värdet igen, oavsett hur
+ * många gånger filtret växlar tillbaka.
+ *
+ * `reservMatbar` ('alla', ovillkorat) finns för den FÖRSTA renderingen:
+ * sidan öppnas alltid i 'alla' (`aktivtFilter`s default), så UTAN en
+ * reservkälla hade den absolut första visningen — innan Lotta någonsin
+ * rört filterraden — saknat låst höjd helt (mätt, TASK-309.24: exakt detta
+ * hände första implementationsvarvet, `alla.scrollHeight` var lika med
+ * `clientHeight` bara för att INGEN mätning någonsin skett). Reservkällan
+ * ger ett DUGLIGT första-värde ('alla' är alltid rullningsbar när
+ * `lasHojd`, så ±1 px spelar ingen roll där) tills 'bilaga' — om den någonsin
+ * besöks — förfinar det till det EXAKTA talet. 'mall'/'generator' litas
+ * ALDRIG på egen hand: `MALLAR`/`GENERATORER` är statiska (2 respektive 1
+ * post, 2026-08-26) och kan idag aldrig ensamma nå `LISTA_SYNLIGA_RADER` —
+ * men skulle någon senare lägga till en tredje mall vore dess rader INTE
+ * en prefix av den kanoniska ordningen (mallar kommer EFTER bilagor i
+ * 'alla'), så mät inte därifrån utan att först lösa den frågan på nytt.
+ * `GemensamtLage` har inget filter alls — där finns bara EN kontext, så
+ * varje mätning är trygg och dess anrop sätter BÅDA till konstant `true`.
+ *
+ * `hojd`-state uppdateras alltså bara när minst en av de två är sann OCH
+ * spärren (`harForetradesMatt`) inte hindrar den — annars står den kvar vid
+ * sitt senaste värde. Det ÄR poängen med regel 5 (filterbyte ändrar aldrig
+ * listans bounding box).
+ *
+ * `getBoundingClientRect()` på RAD 1 och RAD 4, aldrig `offsetTop`/
+ * `clientHeight`: den senare rundar till HELA pixlar (mätt, TASK-309.24 —
+ * en 1 px-diff mot `tests/acceptance/dokument-rackviddsval.acceptance.test.ts`s
+ * egen `getBoundingClientRect`-baserade `fyraRader`-mätning avslöjade det).
+ * Att skillnaden mäts mellan TVÅ element i SAMMA rullande container gör den
+ * scroll-position-OBEROENDE trots att `getBoundingClientRect` är
+ * viewport-rymden: rullar listan S pixlar flyttar sig BÅDA elementens
+ * rektanglar med S, och S tar ut sig själv i subtraktionen
+ * (`fjarde.bottom - forsta.top`). Ingen egen kantlinje behöver uteslutas
+ * för hand här: `berakaListgeometri`s `sistaRadenBarLinje` är redan FALSK
+ * precis när fjärde raden är den sista OCH exakt fyller platserna — det är
+ * den enda situationen fjärde raden annars skulle fått en egen `border-b`.
+ *
+ * `ResizeObserver` på de FYRA RADERNA, inte på `<ul>` självt — samma val
+ * som `BlockDialog.tsx`s uttoningsmätning gör och av samma skäl: när
+ * höjden väl är LÅST slutar `<ul>` självt att ändra storlek (det är hela
+ * poängen), så en observer på ul:et skulle sluta trigga om en rads
+ * innehåll ändras EFTER första låsningen (t.ex. ett filnamn som växer och
+ * radbryter annorlunda). Raderna själva ändrar storlek oavsett.
+ */
+function useLastaListhojd(
+  foretradesMatbar: boolean,
+  reservMatbar: boolean,
+  aktiv: boolean,
+  ommatningsSignal: unknown,
+): { listRef: React.RefObject<HTMLUListElement | null>; hojd: number | null } {
+  // `listRef` skapas HÄR (inte mottagen som parameter) av samma skäl som
+  // `BlockDialog.tsx`s `rullRef`: biomes `useExhaustiveDependencies` känner
+  // igen en `ref.current`-läsning som stabil bara när `useRef`-anropet och
+  // effekten som läser den delar samma funktionskropp — en ref given som
+  // PARAMETER kan i princip vara vad som helst, och flaggas då som ett
+  // riktigt beroende (mätt, TASK-309.24: samma mönster gav
+  // `useExhaustiveDependencies`-fel så fort `listRef` kom in som argument).
+  const listRef = useRef<HTMLUListElement>(null);
+  const [hojd, setHojd] = useState<number | null>(null);
+  // Sant så fort `foretradesMatbar` mätt EN gång — spärrar `reservMatbar`
+  // från att SKRIVA ÖVER en redan etablerad, precis mätning med en mindre
+  // precis (se `DokumentLista`s docblock för VARFÖR de två källorna kan ge
+  // olika tal för "samma" fyra rader). Utan spärren hade den FÖRSTA
+  // sidladdningen (alltid filtret 'alla') låst in ett värde som senare,
+  // första gången 'Bilagor' besöks, tystast blivit fel igen — spärren gör
+  // förträdet OÅTERKALLELIGT inom komponentens livslängd, inte bara en
+  // engångsprioritering vid mättillfället.
+  const harForetradesMatt = useRef(false);
+
+  useLayoutEffect(() => {
+    if (!aktiv) return;
+    if (!foretradesMatbar && !(reservMatbar && !harForetradesMatt.current)) return;
+    // Läses aldrig — `ommatningsSignal` finns i beroendelistan uteslutande
+    // för att TVINGA en ommätning när kanoniska raders innehåll (`rader`)
+    // ändras (nya/borttagna bilagor kan byta ut vilka DOM-noder som är
+    // "de fyra första"). `void` gör referensen explicit i stället för att
+    // bara stå i beroendelistan — annars flaggar biomes
+    // `useExhaustiveDependencies` den som ett oanvänt beroende.
+    void ommatningsSignal;
+    const ul = listRef.current;
+    if (!ul) return;
+
+    const mat = () => {
+      const barn = ul.children;
+      if (barn.length < LISTA_SYNLIGA_RADER) return;
+      const forsta = barn[0].getBoundingClientRect();
+      const fjarde = barn[LISTA_SYNLIGA_RADER - 1].getBoundingClientRect();
+      // `<ul>` bär `border border-transparent` (husets nästlingsmönster,
+      // se `DokumentLista`s filterstycke) OCH ärver `box-sizing: border-box`
+      // (Tailwind preflight, gäller universellt). Ett `style.height` satt
+      // till EXAKT radspannet ovan hade därför reserverat 2 px FÖR LITE
+      // innehållsyta — kantlinjerna äts av samma tal som innehållet ska
+      // få, så raderna klipptes 2 px för tidigt (mätt, TASK-309.24: `ul`s
+      // egen `getBoundingClientRect().bottom` slutade 1 px FÖRE fjärde
+      // radens verkliga underkant). Kompensationen läggs på HÄR, en gång,
+      // i stället för att varje anropsställe behöver komma ihåg den.
+      const kant = getComputedStyle(ul);
+      const kantjustering =
+        Number.parseFloat(kant.borderTopWidth) + Number.parseFloat(kant.borderBottomWidth);
+      setHojd(fjarde.bottom - forsta.top + kantjustering);
+      if (foretradesMatbar) harForetradesMatt.current = true;
+    };
+    mat();
+
+    const ro = new ResizeObserver(mat);
+    for (let i = 0; i < Math.min(LISTA_SYNLIGA_RADER, ul.children.length); i++) {
+      ro.observe(ul.children[i]);
+    }
+    return () => ro.disconnect();
+  }, [foretradesMatbar, reservMatbar, aktiv, ommatningsSignal]);
+
+  return { listRef, hojd };
+}
+
+/**
+ * Listans geometri-regler — DELAD mellan `DokumentLista` och
+ * `GemensamtLage` (TASK-309.24, Marcus 2026-08-26, ordagrant): *"Vi kan ha
+ * låst höjd med separatorlinje på alla OM vi låser höjden så den fjärde
+ * separatorlinjen inte syns. Är 5 dokument i listan så syns inte linjen
+ * förrän du scrollar."* ERSÄTTER de tidigare separata
+ * `lasHojd`/`avslutaLista`-villkoren (TASK-309.12/91738caa,
+ * `DokumentLista` bar dem, `GemensamtLage` bar ingetdera — ett genuint
+ * glapp, inte ett medvetet undantag; samma regel gäller BÅDA listorna på
+ * `/mer/dokument`).
+ *
+ * `lasHojd` — låser containerns höjd till EXAKT fyra raders mätta höjd,
+ * OAVSETT vad just detta filter visar (`totaltAntal`, inte `antalSynliga`)
+ * — annars hoppar layouten när filtret smalnar av innehållet (Marcus
+ * 2026-08-18, se filhuvudets historik).
+ *
+ * `kanRulla` — rullar listan I DET AKTUELLA filtret? Styr tabb-stoppet
+ * OCH overflow-läget (`hidden` när den inte kan rulla, `auto` när den kan
+ * — regel 3: "overflow hidden när ≤ 4, auto när > 4").
+ *
+ * `sistaRadenBarLinje` — bär den sista SYNLIGA raden sin egen underkant?
+ * INTE precis när den exakt fyller de fyra platserna
+ * (`antalSynliga === LISTA_SYNLIGA_RADER`): då gör ytans egen kant redan
+ * separatorns jobb, och ännu en linje hade legat dubbelt (samma motiv som
+ * `d9d973d5`s `avslutaLista`). I alla andra fall — tomt läge undantaget
+ * (0 bär aldrig linje), 1–3 och 5+ — bär sista raden linje.
+ */
+function berakaListgeometri(antalSynliga: number, totaltAntal: number) {
+  return {
+    lasHojd: totaltAntal > LISTA_SYNLIGA_RADER,
+    kanRulla: antalSynliga > LISTA_SYNLIGA_RADER,
+    sistaRadenBarLinje: antalSynliga > 0 && antalSynliga !== LISTA_SYNLIGA_RADER,
+  };
+}
 
 /**
  * Täckningspillens klass — EN källa, delad av `RackviddBadge` (bilagor) och
@@ -1342,46 +1509,58 @@ function DokumentLista({
   const visaMallar = aktivtFilter === 'alla' || aktivtFilter === 'mall';
   const visaGeneratorer = aktivtFilter === 'alla' || aktivtFilter === 'generator';
 
-  // ═══ TVÅ SKILDA VILLKOR, OCH DE MÄTER OLIKA SAKER ═══
-  //
-  // `kanRulla` — rullar listan I DET AKTUELLA FILTRET? Styr tabb-stoppet.
-  // Ett fokuserbart område som inte rullar vore ett tomt stopp i
-  // tangentbordsflödet (`Deltagare.tsx`s förfining).
-  //
-  // `lasHojd` — skulle listan rulla i NÅGOT filter? Styr den FASTA höjden.
-  // Marcus 2026-08-18: *"nu ser skillnaden genom att växla mellan 'Alla' och
-  // 'Bilagor', för då hoppar layouten/listan i höjd."* Filtret smalnar av
-  // innehållet, listan krymper, och allt under den — inklusive
-  // uppladdningsknappen — flyttar sig. Det syntes inte förut, när listan
-  // delade kortets bakgrund och saknade egen kant.
-  //
-  // Höjden låses därför på TOTALEN, inte på det filtrerade antalet: bär
-  // eventet fler än fyra dokument står listan stilla oavsett vilket filter
-  // som är valt. Bär det färre är listan kort ändå, och en fast höjd hade
-  // bara skapat tom vit yta utan att lösa något.
+  // `antalSynliga`/`totaltAntal` — se `berakaListgeometri`s eget docblock
+  // för VARFÖR höjden låses på TOTALEN (Marcus 2026-08-18: *"nu ser
+  // skillnaden genom att växla mellan 'Alla' och 'Bilagor', för då hoppar
+  // layouten/listan i höjd"*) medan rullning/tabb-stopp styrs av det
+  // FILTRERADE antalet.
   const antalSynliga =
     (visaBilagor ? rader.length : 0) +
     (visaMallar ? MALLAR.length : 0) +
     (visaGeneratorer ? GENERATORER.length : 0);
   const totaltAntal = rader.length + MALLAR.length + GENERATORER.length;
-  const kanRulla = antalSynliga > LISTA_SYNLIGA_RADER;
-  const lasHojd = totaltAntal > LISTA_SYNLIGA_RADER;
-  // `avslutaLista` — bär SISTA raden en egen underkant?
+  const { lasHojd, kanRulla, sistaRadenBarLinje } = berakaListgeometri(antalSynliga, totaltAntal);
+
+  // [TASK-309.24] `useLastaListhojd`s TVÅ förtroendenivåer.
   //
-  // `divide-y` ritar linjer MELLAN rader, aldrig under den sista. Det är rätt
-  // när listan är exakt full: fjärde radens underkant sammanfaller då med
-  // ytans egen kant, och `LISTA_MAXHOJD` är mätt för att klippa "exakt precis
-  // över separatorn" (se dess docblock). Är listan KORTARE slutar den i
-  // stället naket mitt i kortet — Marcus 2026-08-24: *"om det bara är två
-  // rader så ser det dumt ut att den nedersta raden (dokumentet) inte har en
-  // separatorlinje nedtill."* Är den LÄNGRE ligger sista raden bortom den
-  // låsta höjden, och den som rullar dit ska mötas av en avslutad lista, inte
-  // en avskuren.
+  // ═══ 'bilaga' FÖRETRÄDS FRAMFÖR 'alla' — MÄTT, INTE ANTAGET ═══
   //
-  // Villkoret är därför OLIKHET mot golvet, inte "mindre än": exakt fyra rader
-  // är det enda läget där ytans kant redan gör separatorns jobb. Noll rader
-  // renderar tom-raden, som aldrig ska bära linje.
-  const avslutaLista = antalSynliga > 0 && antalSynliga !== LISTA_SYNLIGA_RADER;
+  // Båda filtren visar bilagornas första `LISTA_SYNLIGA_RADER` rader
+  // BYTE-FÖR-BYTE identiskt (bilagor står alltid FÖRST i den kanoniska
+  // ordningen) — men EN RADS RENDERADE HÖJD BEROR PÅ HUR MÅNGA SYSKON DEN
+  // HAR, inte bara på sitt eget innehåll. Diagnos (TASK-309.24, fyra
+  // bilagor + tre statiska rader = sju totalt): rad 4 mätte 99 px när sju
+  // rader låg i DOM men 98 px när bara fyra gjorde det — SAMMA rad, SAMMA
+  // props, en hel pixels skillnad, ren layout-avrundning fördelad över
+  // hela flödet. En höjd mätt i 'alla' (sju rader) och sedan applicerad på
+  // 'bilaga' (fyra rader) missar därför sin egen `scrollHeight ===
+  // clientHeight`-invariant med exakt den differensen — precis den
+  // 1 px-scroll-bugg AC #5 finns för att fånga.
+  //
+  // `foretradesMatbar` — 'bilaga' NÄR den kan leverera minst fyra egna
+  // rader (`rader.length >= LISTA_SYNLIGA_RADER`): det är den ENDA vägen
+  // till `antalSynliga === LISTA_SYNLIGA_RADER` SAMTIDIGT som `lasHojd` är
+  // sann (`totaltAntal > 4` kräver `rader.length > 1`, och
+  // `MALLAR.length + GENERATORER.length === 3` är fasta — se filhuvudets
+  // konstanter), så det är den kontext AC #2:s exakt-fyra-krav faktiskt
+  // prövas i.
+  //
+  // `reservMatbar` — 'alla', OVILLKORAT (inte bara "när bilaga inte kan").
+  // Sidan öppnas alltid i 'alla' (default), så utan en reservkälla som
+  // gäller REDAN vid första renderingen hade den första visningen —
+  // innan Lotta rört filterraden — saknat låst höjd helt (mätt: exakt
+  // detta hände när villkoret var `aktivtFilter === 'alla' &&
+  // !bilagaKanMataExakt`, eftersom `bilagaKanMataExakt` redan är sant vid
+  // FÖRSTA renderingen om eventet har ≥ 4 bilagor). Hookens egen
+  // `harForetradesMatt`-spärr gör reservkällan ofarlig: den skriver bara
+  // förrän 'bilaga' väl mätt en gång, aldrig efter.
+  const bilagaKanMataExakt = rader.length >= LISTA_SYNLIGA_RADER;
+  const { listRef, hojd: matadHojd } = useLastaListhojd(
+    aktivtFilter === 'bilaga' && bilagaKanMataExakt,
+    aktivtFilter === 'alla',
+    lasHojd,
+    rader,
+  );
 
   return (
     // ═══ UPPLADDNINGEN FÖRST, LISTAN SEDAN (Marcus 2026-08-17) ═══
@@ -1496,15 +1675,32 @@ function DokumentLista({
               (`NyaAnmalningar.tsx`, `Deltagare.tsx`). `divide-y` opererar på
               direkta barn, så avdelarna följer `<li>`-elementen oförändrat. */}
           <ul
+            ref={listRef}
             data-testid="dokument-lista"
             // biome-ignore lint/a11y/noNoninteractiveTabindex: fokuserbar scrollregion är WCAG 2.1.1-golvet (axe scrollable-region-focusable) — samma motiv som NyaAnmalningar.tsx.
             tabIndex={kanRulla ? 0 : undefined}
             aria-label={kanRulla ? 'Dokument' : undefined}
-            className={`divide-y divide-border rounded-xl border border-transparent bg-surface px-3 contrast-more:border-border-strong ${
+            // [TASK-309.24] Höjden är en MÄTNING (`useLastaListhojd`), inte
+            // ett hårdkodat px-tal — se hookens docblock. `matadHojd` kan
+            // vara `null` under en enda synkron render-cykel innan
+            // `useLayoutEffect` hunnit mäta (ingen synlig flimmer, samma
+            // "mät efter commit, applicera före paint"-garanti React ger
+            // `useLayoutEffect`); listan visar då sin NATURLIGA höjd, vilket
+            // är exakt vad mätningen själv behöver läsa av.
+            style={
+              lasHojd && matadHojd !== null
+                ? { height: matadHojd, maxHeight: matadHojd }
+                : undefined
+            }
+            className={`divide-y divide-border rounded-xl border border-transparent bg-surface px-3 contrast-more:divide-border-strong contrast-more:border-border-strong ${
               lasHojd
-                ? `focus-ring-inset scrollbar-inline h-[396px] ${LISTA_MAXHOJD} overflow-y-auto`
+                ? `focus-ring-inset scrollbar-inline ${kanRulla ? 'overflow-y-auto' : 'overflow-y-hidden'}`
                 : ''
-            } ${avslutaLista ? '[&>li:last-child]:border-border [&>li:last-child]:border-b' : ''}`}
+            } ${
+              sistaRadenBarLinje
+                ? '[&>li:last-child]:border-border [&>li:last-child]:border-b contrast-more:[&>li:last-child]:border-border-strong'
+                : ''
+            }`}
           >
             {visaBilagor &&
               rader.map((r) => (
@@ -1832,9 +2028,14 @@ function GemensamtLage({
   deleteMutation: DeleteMutation;
 }) {
   // Förvaltningsläget har INGEN filterrad (bara bilagor visas), så det finns
-  // inget filter att hoppa mellan — höjden behöver därför ingen låsning, bara
-  // taket. Se `DokumentLista` för varför de två villkoren skiljs där.
-  const kanRulla = rader.length > LISTA_SYNLIGA_RADER;
+  // inget filter att hoppa mellan — `lasHojd`/`kanRulla` sammanfaller därför
+  // (samma antal, se `berakaListgeometri`s docblock för `DokumentLista`s
+  // skilda fall). [TASK-309.24] Samma delade geometri- och höjdmätnings-
+  // logik som `DokumentLista` — `sistaRadenBarLinje` (den saknade helt här
+  // innan, ett genuint glapp) och `useLastaListhojd` med `matbar` KONSTANT
+  // sant: utan filter är varje render en giltig mätkälla.
+  const { lasHojd, kanRulla, sistaRadenBarLinje } = berakaListgeometri(rader.length, rader.length);
+  const { listRef, hojd: matadHojd } = useLastaListhojd(true, true, lasHojd, rader);
   return (
     // SAMMA ORDNING SOM EVENTLÄGET: uppladdningen först, listan sedan
     // (Marcus 2026-08-17). De två lägena delar nu skelett — en användare som
@@ -1880,12 +2081,26 @@ function GemensamtLage({
                 Räkningen är enklare här: räckviddsläget visar BARA bilagor,
                 ingen filterrad döljer grupper. */}
             <ul
+              ref={listRef}
               data-testid="dokument-lista"
               // biome-ignore lint/a11y/noNoninteractiveTabindex: fokuserbar scrollregion är WCAG 2.1.1-golvet (axe scrollable-region-focusable) — samma motiv som NyaAnmalningar.tsx.
               tabIndex={kanRulla ? 0 : undefined}
               aria-label={kanRulla ? 'Delade dokument' : undefined}
-              className={`divide-y divide-border rounded-xl border border-transparent bg-surface px-3 contrast-more:border-border-strong ${
-                kanRulla ? `focus-ring-inset scrollbar-inline ${LISTA_MAXHOJD} overflow-y-auto` : ''
+              // [TASK-309.24] Se `DokumentLista`s motsvarande `<ul>` för
+              // `matadHojd`/`useLastaListhojd`s fulla motiv.
+              style={
+                lasHojd && matadHojd !== null
+                  ? { height: matadHojd, maxHeight: matadHojd }
+                  : undefined
+              }
+              className={`divide-y divide-border rounded-xl border border-transparent bg-surface px-3 contrast-more:divide-border-strong contrast-more:border-border-strong ${
+                lasHojd
+                  ? `focus-ring-inset scrollbar-inline ${kanRulla ? 'overflow-y-auto' : 'overflow-y-hidden'}`
+                  : ''
+              } ${
+                sistaRadenBarLinje
+                  ? '[&>li:last-child]:border-border [&>li:last-child]:border-b contrast-more:[&>li:last-child]:border-border-strong'
+                  : ''
               }`}
             >
               {rader.map((r) => (
