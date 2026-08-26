@@ -3,10 +3,10 @@ id: TASK-307
 title: >-
   Fynd: offline-notis.test.ts (TASK-285.6) kräver CLS exakt 0 vid 390 px — fick
   0,0024 i merge_group och sparkade ut #1857
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-08-23 12:01'
-updated_date: '2026-08-26 07:07'
+updated_date: '2026-08-26 08:12'
 labels:
   - ready-for-agent
 dependencies: []
@@ -33,7 +33,7 @@ Ett exakt-noll-krav på ett flyttal mätt i webbläsaren är en flake-magnet: 0,
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [ ] #1 Flake-riggen körd mot offline-notis.test.ts 390 px, n och utfall bokförda
-- [ ] #2 Testets tröskel eller förskjutningens källa åtgärdad med hänvisning till mätningen; merge_group grön på en oberoende PR efteråt
+- [x] #2 Testets tröskel eller förskjutningens källa åtgärdad med hänvisning till mätningen; merge_group grön på en oberoende PR efteråt
 <!-- AC:END -->
 
 ## Definition of Done
@@ -117,4 +117,8 @@ hermetic.ts, Inter v20) ENBART för mat-cls.ts-helpern — inte för hela
 webblasarbeteende-klassen, som medvetet kör mot riktiga typsnitt/nätverk.
 En pinnad font eliminerar racet strukturellt men gör att just denna mätning
 slutar pröva mot verkliga Google Fonts-förhållanden.
+
+AC #2 avbockad (stangningsbatch 4, 2026-08-26): merge_group gron pa en OBEROENDE PR EFTERAT verifierad. #2010 (stangningsbatch 3, oberoende av #2009s eget innehall) landade i SAMMA kö-batch som #2009 (TASK-307s fix) - bada mergedAt=2026-08-26T07:28:33Z. Starkare bevis an enbart tidsstampel: #2010s merge_group-korning (databaseId 32942402978, conclusion=success) kor pa den readonly-queue-grenen 'gh-readonly-queue/main/pr-2010-c7a96f4d62e3c112979c0c4ef696f05c9043dfaa' - och c7a96f4d... AR EXAKT #2009s egna merge-commit-SHA (verifierat: gh pr view 2009 --json mergeCommit). Det bevisar att #2010s speculative queue-bygge byggdes OVANPA #2009s fix (TASK-307-andringen) och gick igenom gront. KAND DIVERGENS mot uppdraget: uppdragstexten pastod att korningen skulle vara 'skapad efter 07:28Z' - faktiskt skapad 07:22:01Z (fore bada PR:ernas mergedAt). Det ar FORVANTAT for en merge-queue (speculative build sker fore den faktiska mergen, inte efter) - uppdragets tidsstampel-formulering var fel, men den underliggande AC-substansen (gron merge_group pa en oberoende PR som byggde pa fixen) haller och ar starkare bevisad via SHA-matchningen an via tidsstamplar. Kommandon korda: gh pr view 2009/2010 --json mergeCommit,mergedAt ; gh run list --event merge_group --limit 20 --json conclusion,headBranch,createdAt,databaseId ; gh run view 32942402978/32942124862 --json status,conclusion,createdAt,updatedAt,headBranch.
+
+AC #1 lamnas OBOCKAD (stangningsbatch 4): uppdraget instruerade explicit att INTE kora npm run metrics:flake under pagaende 8-agent-fleet-last i denna session. Riggen ar ratt instrument for matningen (CLAUDE.md § Flakighet) men kors medvetet inte nu - eftermatning nar fleeten ar lugn. Se Implementation Notes ovan (2026-08-26, S112 resume 1) for den lokala repeat-each=10-mätningen (310/310 grona) som redan gjorts som substitut, vilket INTE ar samma instrument som AC:t bokstavligen kraver.
 <!-- SECTION:NOTES:END -->
