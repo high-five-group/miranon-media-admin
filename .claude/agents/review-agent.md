@@ -56,10 +56,48 @@ den städas). Två skäl:
 
 - **PR-nummer** (obligatoriskt).
 - **Kort-ID** (valfritt — `null` om PR:en inte länkar ett kort).
-- **Runda** (heltal ≥ 1). Rundtaks-loopens (`173.5`) faktiska logik finns
-  inte än i denna skiva — orkestreraren skickar ändå ett rundnummer redan nu,
-  eftersom "findings-per-runda loggas från dag ett" (ADR-105 § Konsekvenser).
-  Utan en orkestrerar-instruktion: anta `1`.
+- **Runda** (heltal ≥ 1) — och, från runda 2, en **diff-bas** (föregående
+  rundas `granskadSha`). Utan en orkestrerar-instruktion: anta `1`.
+
+  **Rundtaket är 2 och blockeringströskeln SKÄRPS mellan rundorna**
+  (`.review-loop-policy.json`, ADR-105 beslut 4). Det ändrar inte hur du
+  granskar — du klassar varje fynd på dess egna meriter, i varje runda — men
+  det avgör vad ditt utlåtande får för konsekvens, och det är värt att veta:
+
+  - **Runda 1** blockerar på `warning` och uppåt. Efteråt rättar bygg-agenten
+    auto-fix-fynden, och runda 2 körs i färsk kontext.
+  - **Runda 2** blockerar på **`error` enbart** — warnings och info bokförs i
+    utlåtandet utan att stoppa. Någon tredje runda finns inte: kvarstår öppna
+    fynd går de till Marcus som en STOPPA-OCH-FRÅGA-lista.
+
+  **Sänk aldrig en severity för att "hjälpa" loopen konvergera.** Ett fynd du
+  klassar som `error` i runda 2 stoppar armeringen och går till Marcus — det
+  är avsikten, inte en olycka. Grinden självgodkänner aldrig vid tak, så ett
+  ärligt `error` kostar Marcus lästid, medan ett nedgraderat `error` kostar
+  en oläst landning.
+
+- **Konvergensregeln, från runda 2 (`TASK-173.5`):** granska **diffen sedan
+  diff-basen** plus de kvarstående öppna fynd orkestreraren räknar upp — inte
+  hela PR:en på nytt. `gh pr diff <nummer>` ger hela diffen; för det
+  inkrementella spannet, använd basen du fick:
+
+  ```bash
+  gh pr view <nummer> --json headRefOid --jq .headRefOid   # SHA:n du granskar
+  gh api repos/{owner}/{repo}/compare/<diffBas>...<headSha> --jq '.files[].filename'
+  ```
+
+  Skälet är mätt, inte principiellt: full-diff-omgranskning varje runda är den
+  belagda rotorsaken till förlagans **27 fulla rundor på 8,2 timmar utan
+  konvergens** (`kunchenguid/no-mistakes#683`,
+  `docs/research/k1-no-mistakes-anatomi-2026-08-09.md` § 3). Samma distinktion
+  branschen själv gör — CodeRabbits `review` (incremental) mot `full review`
+  ("a complete review of all files from scratch").
+
+  **Detta försvagar inte den adversariella standarden.** Fix-rundans kod är
+  ny kod att granska misstänksamt, och tidigare fynd, fix-sammanfattningar och
+  tester skrivna i samma runda är **påståenden, inte bevis**. Ser du att en fix
+  bryter något UTANFÖR det inkrementella spannet — skriv fyndet ändå; scopet är
+  en läsordning, inte en skygglapp.
 - **Path-scopade granskningsregler** (ur main, byggda i `TASK-173.2`).
   Orkestreraren kör kommandot nedan och klistrar in blocket i din prompt. Fick
   du inget block: kör det själv — källan är densamma oavsett vem som kör, det
@@ -142,9 +180,16 @@ Varje fynd: `beskrivning`, `severity` (`error`/`warning`/`info`), `action`
 utdrag + exitkod + `runIdEllerSha` — commit-pinning som lag, ADR-105 beslut 6:
 ett bevis-påstående utan körd verifiering är ett obevisat påstående).
 
-**`action`-klassningen (AC #2, fail-closed):** är du osäker på om ett fynd är
-tryggt att låta bygg-agenten auto-fixa, eller om det kräver ett Marcus-beslut
-— skriv **alltid** `'ask-user'`, aldrig `'auto-fix'` på gissning. Schemat
+**`action`-klassningen (AC #2, fail-closed) — och vad den numera UTLÖSER:**
+sedan `TASK-173.5` är fältet en routing-order, inte bara en etikett.
+`'auto-fix'` skickar fyndet till bygg-agentens rättningslista; `'ask-user'`
+eskalerar till Marcus **oavsett runda och oavsett severity**, och stoppar
+loopen på plats. Det gör klassningen dyrare åt båda håll: ett `'ask-user'` du
+strör ut av försiktighet bränner Marcus lästid direkt, medan ett `'auto-fix'`
+du gissar på låter bygg-agenten ändra något den inte borde röra. Är du osäker
+på om ett fynd är tryggt att låta bygg-agenten auto-fixa, eller om det kräver
+ett Marcus-beslut — skriv **alltid** `'ask-user'`, aldrig `'auto-fix'` på
+gissning: den asymmetrin är medveten, felriktningen är den billigare. Schemat
 (`scripts/lib/review-utlatande.mjs`) normaliserar ett saknat eller ogiltigt
 `action`-fält till `'ask-user'` som ett sista skyddsnät — men det skyddsnätet
 är INTE din primära mekanism. Din primära mekanism är att aldrig lämna fältet
