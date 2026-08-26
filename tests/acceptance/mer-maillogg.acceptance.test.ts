@@ -4,7 +4,7 @@ import { http } from 'msw';
 import type { z } from 'zod';
 import type { MailLogEntrySchema } from '../../src/domain/schemas';
 import { EF, json } from '../support/fixturvarld/handlers';
-import { expect, test } from './support/acceptance-bas';
+import { expect, test } from './acceptance-bas';
 
 /**
  * Fas 6e L2 Landning 2 — Maillogg-vy (/mer/maillogg, LÄS-vy via get-mail-log,

@@ -435,8 +435,8 @@ jobs:
         #
         # ALLOWLIST, ALDRIG BLOCKLIST: skriptet ger urval ENDAST när VARENDA
         # post är en acceptance-spec-fil som finns på disk. En källfil, den
-        # delade sömmen under tests/acceptance/support/, en workflow eller en
-        # okänd filtyp ⇒ tomt ⇒ full klass. Okänt givet faller till full svit.
+        # delade sömmen tests/acceptance/acceptance-bas.ts, en workflow eller
+        # en okänd filtyp ⇒ tomt ⇒ full klass. Okänt givet faller till full svit.
         #
         # SKYDDSNÄTET: post-merge.yml skickar ingen input och kör därmed full
         # klass på varje mergat träd (ADR-077 § Kontext, Google-modellen).
@@ -1131,6 +1131,166 @@ jobs:
         # jq. 11 fall, 18 assertioner. Stubbar `gh` på PATH i en
         # mktemp-sandlåda — ingen nätverkstrafik. 0,1 s LOKALT mätt (macOS,
         # 2026-08-24) — CI-tiden är INTE mätt av mig.
+        #
+        # TASK-185 (2026-08-26): sjutton sviter nedan var ALDRIG inwirade i
+        # NÅGOT jobb — samma kadens-missmatch-felklass som resten av detta
+        # steg (ADR-039 § lesson→grind, L43), avtäckt av ett fullständigt
+        # svep av scripts/test-*.sh|.mjs mot samtliga .github/workflows/*.yml
+        # (grep på "(bash|node) scripts/test-"), inte kortets egen — då tre
+        # år gamla och ofullständiga — lista. Sex ANDRA o-wirade sviter
+        # (test-check-claims-tackning.sh, test-check-merge-tree.sh,
+        # test-backfill-bilagor-dokumentklass.mjs,
+        # test-create-{bilagor-table,eventinnehall-modell,kvitton-table}.mjs)
+        # rördes INTE: var och en bär sin egen "INTE WIRAD/AVGRÄNSAD BORT
+        # (medvetet)"-kommentar i eget filhuvud (TASK-82/-139-precedent) —
+        # att skriva över ett tidigare medvetet scope-beslut hör inte hemma
+        # i detta kort, se PR-beskrivning/slutrapport för fullständig lista.
+        #
+        # test-arkivera-sessionsdok.sh (TASK-158.2, kortets eget fynd) och
+        # test-check-obesvarade-larm.sh (T119 (b), kortets eget fynd) hör hit
+        # av EXAKT samma skäl som test-check-backlog-closure.sh/
+        # test-check-sessionsdok-fonster.sh ovan: grinden själv
+        # (arkivera-sessionsdok.sh resp. check-obesvarade-larm.sh) kör i
+        # NATTEN (nightly.yml, torrkörning resp. skarpt), men dess testsvit
+        # ska fälla FÖRE landning när någon försvagar grindens logik.
+        # Sandboxade i mktemp/äkta engångsrepo, ingen nätverkstrafik (fejkad
+        # JSON via env-override i obesvarade-larm-fallet). 5,1 s resp. 2,6 s
+        # LOKALT mätt (macOS, 2026-08-26).
+        #
+        # test-check-pausade-sessioner.sh (TASK-185 Implementation Notes,
+        # tredje instansen — samma nattvakts-familj, check-pausade-
+        # sessioner.sh) hör hit av identiskt skäl. 19 fall. 31,5 s LOKALT
+        # mätt (macOS, 2026-08-26, loadavg förhöjd av parallell fleet-drift
+        # i detta repo) — CI-tiden är INTE mätt av mig.
+        #
+        # test-deny-arbetsform-push.sh, test-deny-facit-godkand-skrivning.sh,
+        # test-deny-frammande-huvudkatalog.sh, test-deny-grind-genom-pipe.sh,
+        # test-deny-hemlighet-utskrift.sh, test-deny-precompact.sh,
+        # test-deny-prod-ref.sh, test-deny-resend-send.sh och
+        # test-deny-subagent-vantan.sh hör hit av EXAKT det skäl
+        # test-stop-vakt.sh ovan redan etablerar: var och en prövar en
+        # PreToolUse-HOOK som körs LIVE i en Claude Code-session, aldrig i
+        # CI — det enda som hör hemma i en pipeline är sviten som skyddar
+        # hookens LOGIK mot regression innan landning. Samtliga nio är
+        # tvåsidiga (D/A/F/E-formen: fäller planterat, släpper legitimt,
+        # fail-closed på trasig indata, exakt exit-kod 2), hermetiska
+        # (fixturer i mktemp/TEST_DIR, PATH_NO_<verktyg>-stubbning för
+        # fail-closed-fallen, inga hemliga värden i någon fixtur — se
+        # respektive skripts eget filhuvud) och saknade ALLA CI-täckning
+        # innan detta kort trots att flera skyddar säkerhetskritisk mekanik
+        # (deny-prod-ref.sh: prod-låset: se CLAUDE.md § "Project-refen anges
+        # som ARGUMENT"). test-deny-frammande-huvudkatalog.sh bygger ett äkta
+        # git-repo + worktree men är uttryckligen CI-portabel (eget filhuvud
+        # § "CI-PORTABILITET, MEDVETET" — processmönster-override styr bort
+        # den lokala VS Code-terminal-flakigheten). 3,9–35,3 s LOKALT mätt
+        # per svit (macOS, 2026-08-26, samma förhöjda loadavg som ovan) — CI-
+        # tiden är INTE mätt av mig.
+        #
+        # test-heartbeat-svep.sh hör hit av samma hook/vakt-skäl som
+        # test-stop-vakt.sh: scripts/heartbeat-svep.sh är orkestrerarens
+        # persistenta landnings-svep (CLAUDE.md § Landning), körs aldrig som
+        # ett CI-jobb, men dess LOGIK (fyra bitar: RÖTT/DIRTY/armerings-
+        # kandidat, level-triggered per L443) måste skyddas mot regression
+        # före landning. Räkningen i skriptets svit-slutrad är den
+        # AUKTORITATIVA totalen (TASK-106-disciplinen: aldrig handräknad
+        # hit). Hermetisk, fejkade GraphQL-svar. 17,0 s LOKALT mätt (macOS,
+        # 2026-08-26).
+        #
+        # test-post-compact-igenkanning.sh (TASK-160.4, ADR-101 § Beslut 5)
+        # hör hit av samma skäl som test-deny-precompact.sh (syskonhooken):
+        # PostCompact-hookens omorienterings-injektion är LOGIK som måste
+        # bevisas innan landning, oavsett att hooken själv bara körs live.
+        # Hermetisk, äkta git-repo som TEST_DIR. 2,9 s LOKALT mätt (macOS,
+        # 2026-08-26).
+        #
+        # test-stada-grenar.sh (TASK-152 AC #3) hör hit av samma kadens-skäl
+        # som test-arkivera-sessionsdok.sh: tvåsidigt bevis (mergad+ingen
+        # worktree raderas, ej-mergad/worktree-bunden/skyddslistad skonas) i
+        # ett engångsrepo under mktemp, ingen nätverkstrafik. 7,2 s LOKALT
+        # mätt (macOS, 2026-08-26).
+        #
+        # test-validera-review-utlatande.mjs (TASK-173.1, ADR-105) hör hit av
+        # samma ADR-039-skäl som test-check-manifest-fields.mjs
+        # (ci-suite.yml): en grind är inte en grind förrän dess fyrning
+        # bevisas, och review-utlåtande-schemat (scripts/lib/review-
+        # utlatande.mjs) är review-grindens (ADR-105) kontraktsyta.
+        # Rena funktioner + ett CLI-lager (spawnSync) som bevisar att
+        # exit-koderna faktiskt matchar. Hermetisk. 5,5 s LOKALT mätt (macOS,
+        # 2026-08-26).
+        #
+        # test-review-policy.mjs (TASK-173.2, base-drift-fynd 2026-08-26 —
+        # main flyttade sig under TASK-185:s eget bygge, PR #1993/#1995
+        # mellanlandade) hör hit av samma ADR-039-skäl som syskonet
+        # test-validera-review-utlatande.mjs ovan: policy-ytan (.review-
+        # policy.json + scripts/lib/review-policy.mjs +
+        # scripts/hamta-review-policy.mjs) är review-grindens ANDRA
+        # kontraktsyta (ADR-105) och var lika oskyddad. AC #1 (regler läses
+        # ENDAST ur `main`, aldrig ur en gren eller ett ocommittat arbetsträd)
+        # bevisas i ett äkta temporärt git-repo med tre OLIKA policy-versioner
+        # samtidigt (main/gren/arbetsträd) plus ett KONTRAST-test som läser
+        # grenens ref och FÅR angriparens innehåll — utan den kontrasten vore
+        # huvudtestet vakuöst. 44 fall. Orkestrerar-beslut (Marcus-mandat,
+        # samma svep som denna rad): båda review-policy-sviterna är
+        # enhetstester för skript, samma klass som de 15 övriga
+        # gatekeeper-sviterna — INTE samma sak som TASK-173.4:s ännu obyggda
+        # CI-backstopp (den mekaniska spärren mot en PR utan giltigt
+        # utlåtande), se CLAUDE.md § Review-grinden. Hermetisk (temp-repo,
+        # node_modules-symlänk, ingen nätverkstrafik). 2026-08-26 (macOS).
+        #
+        # test-review-risk-sektion.mjs (TASK-173.3, ÄNNU en base-drift-fynd
+        # 2026-08-26 — PR #1993 landade UNDER TASK-185:s eget bygge, andra
+        # gången main flyttade sig mitt i detta kort) hör hit av samma
+        # ADR-039-skäl som sina två syskon ovan: risk-rendreraren
+        # (scripts/lib/review-risk-sektion.mjs + scripts/uppdatera-review-
+        # sektion.mjs) är review-grindens TREDJE kontraktsyta (ADR-105) och
+        # var lika oskyddad. Rena funktioner (sektion A–D) + ett CLI-lager
+        # mot en FAKE `gh`-binär på PATH (sektion E–F, `gh pr view`/`gh pr
+        # edit --body-file -`) som bevisar KONTRAST (F2: fake gh pr view
+        # fallerar → CLI exit 3, ingen pr edit anropas — annars vore F1
+        # vakuöst). 47 fall. Samma Marcus-mandat som syskonen: enhetstest för
+        # skript, samma klass som de övriga gatekeeper-sviterna — INTE
+        # TASK-173.4:s ännu obyggda CI-backstopp. Hermetisk, ingen riktig
+        # gh-/nätverkstrafik. 2026-08-26 (macOS).
+        #
+        # test-review-loop.mjs (TASK-173.5, ADR-105 beslut 4) hör hit av samma
+        # ADR-039-skäl som sina tre syskon ovan: rundtaks-loopen
+        # (.review-loop-policy.json + scripts/lib/review-loop.mjs +
+        # scripts/review-loop-beslut.mjs) är review-grindens FJÄRDE
+        # kontraktsyta och skulle annars vara lika oskyddad som de var före
+        # TASK-185. Rena funktioner (sektion A–D: config-validering,
+        # rundtrösklar, prioritetsordning, eskaleringsrendering) + ett
+        # CLI-lager (sektion E, exit 0/10/20/1/2/64) + ett trusted-ref-lager
+        # (sektion F) som bygger ÄKTA engångs-git-repon där origin/main,
+        # PR-grenen och arbetsträdet bär TRE OLIKA policy-versioner samtidigt
+        # — med KONTRAST-fallet F4 som landar mildringen i main och visar att
+        # den DÅ syns, utan vilket F2/F3 vore vakuösa. Samma temp-repo-
+        # disciplin som test-review-policy.mjs. 103 fall.
+        #
+        # Sviten är tvåsidigt bevisad med mutationstest (bygg-agentens
+        # slutrapport, 2026-08-26): takkontrollen bortkopplad fällde 10 fall,
+        # rundtröskeln bortkopplad fällde 8 — inklusive AC #1- och AC
+        # #4-kontrastparen.
+        #
+        # Orkestrerar-beslut (Marcus-mandat, samma som för de tre syskonen):
+        # en enhetstestsvit för ett skript är en gatekeeper-svit, samma klass
+        # som de övriga ~15 — INTE samma sak som TASK-173.4:s ännu obyggda
+        # CI-backstopp (den deterministiska spärren mot en PR utan giltigt
+        # utlåtande), se CLAUDE.md § Review-grinden. Att denna svit körs i CI
+        # skyddar loop-skriptets LOGIK mot regression; det gör inte
+        # review-grinden mekaniskt otvingbar. Hermetisk (temp-repon,
+        # node_modules-symlänk, ingen nätverkstrafik). 9,2 s LOKALT mätt
+        # (macOS, 2026-08-26, `time node scripts/test-review-loop.mjs`) —
+        # CI-tiden är INTE mätt av mig och kan avvika.
+        #
+        # test-verify-ci-parity.mjs hör hit av samma ADR-039-skäl applicerat
+        # på scripts/verify-ci-parity.mjs SJÄLVT (CLAUDE.md § verify:ci-
+        # parity) — paritetsverktyget som ska fånga när ci.yml/ci-suite.yml
+        # driftar från .ci-parity-policy.json hade självt noll skydd mot
+        # regression i sin egen klassnings-/preflight-logik. Tre lager: rena
+        # funktioner mot syntetiska fixturer, levande regression mot det
+        # RIKTIGA ci.yml/ci-suite.yml (`--list`), och ett tvåsidigt CLI-bevis
+        # i en sandlåda med muterade kopior av policy+ci.yml+ci-suite.yml.
+        # Ingen nätverkstrafik. 18,0 s LOKALT mätt (macOS, 2026-08-26).
         run: |
           bash scripts/test-check-frontmatter.sh
           bash scripts/test-check-public-checklists.sh
@@ -1157,6 +1317,26 @@ jobs:
           bash scripts/test-gh-guard.sh
           bash scripts/test-visual-baselines-scope.sh
           bash scripts/test-check-mallparitet.sh
+          bash scripts/test-arkivera-sessionsdok.sh
+          bash scripts/test-check-obesvarade-larm.sh
+          bash scripts/test-check-pausade-sessioner.sh
+          bash scripts/test-deny-arbetsform-push.sh
+          bash scripts/test-deny-facit-godkand-skrivning.sh
+          bash scripts/test-deny-frammande-huvudkatalog.sh
+          bash scripts/test-deny-grind-genom-pipe.sh
+          bash scripts/test-deny-hemlighet-utskrift.sh
+          bash scripts/test-deny-precompact.sh
+          bash scripts/test-deny-prod-ref.sh
+          bash scripts/test-deny-resend-send.sh
+          bash scripts/test-deny-subagent-vantan.sh
+          bash scripts/test-heartbeat-svep.sh
+          bash scripts/test-post-compact-igenkanning.sh
+          bash scripts/test-stada-grenar.sh
+          node scripts/test-validera-review-utlatande.mjs
+          node scripts/test-review-policy.mjs
+          node scripts/test-review-risk-sektion.mjs
+          node scripts/test-review-loop.mjs
+          node scripts/test-verify-ci-parity.mjs
 
       - name: Test post-merge-lagrets ärvda klassning (TASK-73)
         # Per ADR-039 § lesson→grind (L43): en grind är inte en grind förrän

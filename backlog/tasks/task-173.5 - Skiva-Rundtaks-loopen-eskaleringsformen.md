@@ -4,7 +4,7 @@ title: 'Skiva: Rundtaks-loopen + eskaleringsformen'
 status: To Do
 assignee: []
 created_date: '2026-08-09 13:15'
-updated_date: '2026-08-26 06:02'
+updated_date: '2026-08-26 06:51'
 labels:
   - ready-for-agent
 dependencies:
@@ -21,7 +21,7 @@ ordinal: 328000
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [x] #1 Runda 2 körs i färsk kontext och blockerar endast på error-klass; warnings/info bokförs i utlåtandet utan att stoppa
+- [x] #1 Runda 2 körs i färsk kontext och blockerar — i betydelsen tvingar fram ännu en runda — endast på error-klass; warnings/info bokförs i utlåtandet utan att stoppa. Ett kvarstående warning i runda 2 tvingar alltså ingen tredje runda, men räknas som ÖPPET fynd vid taket och eskalerar därmed till Marcus enligt AC #2 — 'blockerar' och 'öppet vid tak' är två skilda trösklar, och grinden självgodkänner aldrig (AC #4)
 - [x] #2 Efter runda 2 sker aldrig en tredje automatisk runda — kvarvarande öppna fynd presenteras som markeringsbar STOPPA-OCH-FRÅGA-lista i chatten och armeringen väntar på Marcus beslut
 - [x] #3 auto-fix-klassade fynd routas till bygg-agenten för rättning; ask-user-klassade eskaleras till Marcus oavsett runda
 - [x] #4 Grinden självgodkänner aldrig vid tak — taket byter automatik mot eskalering

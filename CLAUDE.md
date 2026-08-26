@@ -650,11 +650,23 @@ ADR-105 beslut 7; tvåsidigt bevisat i `scripts/test-review-loop.mjs` § F).
 | Vad | Värde | Var det kommer ifrån |
 |---|---|---|
 | Rundtak | **2** | ADR-105 beslut 4 — öppet deklarerad startbedömning, inte mätning |
-| Blockering runda 1 | `warning` och uppåt | bred fångst i första rundan |
-| Blockering runda 2 | **`error` enbart** | ADR-105 beslut 4: warnings/info bokförs utan att stoppa |
+| Blockerar runda 1 | `warning` och uppåt | bred fångst i första rundan |
+| Blockerar runda 2 | **`error` enbart** | ADR-105 beslut 4: warnings/info bokförs utan att stoppa |
+| Öppet fynd (vid tak) | `warning` och uppåt, **plus** varje `ask-user` oavsett severity | härledd ur den bredaste rundans tröskel — ingen egen config-ratt |
 | Konvergensregel | runda k+1 granskar diffen **sedan runda k:s `granskadSha`** + kvarstående öppna fynd | CodeRabbits incremental/full-distinktion; motåtgärd mot förlagans 27 rundor utan konvergens (`#683`) |
 | Eskalerar oavsett runda | `risk.niva: 'hog'` · varje `ask-user`-fynd | ADR-105 beslut 5 · `173.5` AC #3 |
 | Vid tak med öppna fynd | STOPPA-OCH-FRÅGA, **aldrig** en tredje automatisk runda | `173.5` AC #2/#4 — taket byter automatik mot eskalering, aldrig mot godkännande |
+
+**"Blockerar" och "öppet vid tak" är TVÅ SKILDA trösklar — den skillnaden är
+lätt att läsa fel.** *Blockerar* betyder "tvingar fram ännu en runda", och i
+runda 2 gör bara `error` det. *Öppet* betyder "kvarstår och ska visas för
+Marcus", och där räknas `warning` med. Följden: **ett ensamt `warning` i
+runda 2 startar ingen tredje runda — men det eskalerar ändå**, eftersom taket
+är nått och fyndet är öppet (`eskalera-tak`, exit 20, armering väntar).
+Alternativet vore att grinden tyst släppte igenom ett kvarstående warning för
+att det inte råkade nå blockeringströskeln — alltså självgodkännande, som
+ADR-105 beslut 4 uttryckligen förbjuder. Ett `info`/`auto-fix`-fynd är
+däremot varken blockerande eller öppet: det bokförs och konvergerar.
 
 **En omgranskning utan ny commit räknas aldrig som konvergens.** Ger du
 `--foregaende-sha` och den är identisk med utlåtandets `granskadSha` i runda
@@ -710,20 +722,31 @@ därför `kortId: null`, och granskaren tvingas lägga sin AC-prövning i `fynd`
 som fri text — mätt på fem bunt-PR:er i S112 (`#1978`, `#1982`, `#1986`,
 `#1987`, `#1988`, 2026-08-26). Loopens beslut påverkas INTE (fynd och risk är
 kort-oberoende, bevisat i `scripts/test-review-loop.mjs` C26), men den
-strukturerade AC-prövningen går förlorad. Att utvidga beslut 7 till flera kort
-per PR kräver ett ADR-beslut och en bakåtkompatibel schemaändring — **inget av
-det gjordes i `173.5`**. Tills dess: föredra en PR per kort där det går, och
-räkna med att bunt-PR:ers AC-prövning är prosa, inte struktur.
+strukturerade AC-prövningen går förlorad. `173.5` prövade frågan och valde
+INGEN väg: att utvidga ADR-105 beslut 7 till flera kort per PR kräver ett eget
+ADR-beslut och en bakåtkompatibel schemaändring. Tills dess: föredra en PR per
+kort där det går, och räkna med att bunt-PR:ers AC-prövning är prosa, inte
+struktur. Options-rymden och instansdatan bor i
+[`tasks/lessons.d/bunt-prer-passar-inte-review-utlatandets-kortid-schema.md`](tasks/lessons.d/bunt-prer-passar-inte-review-utlatandets-kortid-schema.md)
+— pekare, inte kopia (ADR-100 §2).
 
-**Ingen av review-ytans FYRA testsviter är CI-wirad ännu:**
-`scripts/test-validera-review-utlatande.mjs` (35 fall, `173.1`),
-`scripts/test-review-policy.mjs` (44 fall, `173.2`),
-`scripts/test-review-risk-sektion.mjs` (47 fall, `173.3` — stod som "39" här
-tills `173.5` mätte om det 2026-08-26; CodeQL-fixarna i `#1993` lade till fall
-efter att raden skrevs) och `scripts/test-review-loop.mjs` (103 fall,
-`173.5`). Alla fyra är bevis, inte grindar, tills `173.4` bygger CI-ytan. Kör
-dem för hand när du rör review-ytan — och läs talen som mätta, inte
-avskrivna.
+**Review-ytans FYRA testsviter körs som gatekeeper-sviter i `ci.yml`:s "Test
+gatekeeper script suites"-steg** — `scripts/test-validera-review-utlatande.mjs`
+(35 fall, `173.1`), `scripts/test-review-policy.mjs` (44 fall, `173.2`) och
+`scripts/test-review-risk-sektion.mjs` (47 fall, `173.3`) sedan `TASK-185`
+(PR #1992, 2026-08-26, den sista wirad i samma bas-drift-svep sedan `173.3`
+landade UNDER `185`s eget bygge — PR #1993), plus
+`scripts/test-review-loop.mjs` (103 fall, `173.5`, wirad i sin egen PR på
+samma orkestrerar-beslut). Samma klass som repots övriga ~15
+gatekeeper-sviter: enhetstester för skriptens egen logik, wirade så att en
+regression fälls FÖRE landning i stället för att upptäckas efteråt.
+
+**Det är INTE `173.4`:s CI-backstopp** — den deterministiska spärren som
+fäller en PR utan giltigt granskningsutlåtande är en ANNAN mekanism och
+**saknas fortfarande**. Att fyra testsviter körs i CI betyder att skriptens
+logik är skyddad mot regression; det betyder INTE att grinden är mekaniskt
+otvingbar. Se stycket ovan (samma `ADR-083`-disciplin: påstå aldrig en
+mekanism som inte finns).
 
 **Skarpbevis-skulden — BETALD 2026-08-26 (S112 resume 1), med en mätt kant
 (`CLAUDE.md` § En ny hooks skarpbevis, samma strukturella klass generaliserad
@@ -755,16 +778,30 @@ arbete. Tre hål är mätta och kända:
 | Läge | Skyddar flaggan? |
 |---|---|
 | Kortet är committat på en annan gren | **Ja** — numret hoppas över |
-| Kortet är skapat men **inte committat** i ett systerträd | **Nej** — osynligt |
-| Kortet ligger **ospårat i huvudträdet** medan en agent räknar från `main` | **Nej** |
+| Kortet är skapat men **inte committat** i ett systerträd | **Ja** — sedan Backlog.md PR #710 (2026-07-01, före vår 1.49.1); stod här som "Nej — osynligt" i fyra veckor, falsifierat tvåsidigt 2026-08-26 |
+| Kortet ligger **ospårat i huvudträdet** medan en agent räknar från `main` | **Ja** — samma mätning: ett okommitterat `task-9000` i ett systerträd gav `TASK-9001` (1.49.1) resp. `TASK-9002` (1.50.1) |
 | Grenen är äldre än `active_branch_days` (30) | **Nej** |
+
+Två av tabellens tre hål var alltså stängda hela tiden — raderna skrevs av
+ADR-081:s antagande, aldrig mätta, och research-passet
+[`backlog-kortskapandets-flaskhals-2026-08-26.md`](docs/research/backlog-kortskapandets-flaskhals-2026-08-26.md)
+§ Sidofynd 1 fällde dem i ett labb med ett okommitterat kort i ett systerträd.
+Kvarvarande hål: `active_branch_days` — och det filtrerar i praktiken bort
+noll grenar hos oss, hela populationen är yngre än 30 dagar. Det verkliga
+problemet är inte längre osynlighet utan det **globala create-låset**
+(`<git-common-dir>/backlog.md/locks/create`, 30 s timeout, ingen jitter):
+mätt 2/8 lyckade `task create` vid åtta samtidiga agenter, och ett enda kort
+tog 513 s att skapa under S112:s fleet (`TASK-322`-mintningen, 2026-08-26).
+Beslutsunderlaget är research-doket; substratfrågan grillas (`TASK-328`),
+uppgraderingen till 1.50.1 är kortad (`TASK-327`).
 
 Praktiskt, i den ordningen:
 
 1. **`git fetch` + fast-forwarda före `task create`.** En föråldrad worktree ger
    dig ett nummer som redan är taget i merge-kön.
-2. **Committa kortet i samma andetag som du skapar det.** Uppskjuten bokföring är
-   inte neutral väntan — den är en osynlig reservation av en delad resurs.
+2. **Committa kortet i samma andetag som du skapar det.** Skälet är inte längre
+   osynlighet (se tabellen) utan durabilitet: ett okommitterat kort dör med
+   worktreen, och `git worktree remove` frågar inte.
 3. **Krockar det ändå: rätta via CLI:t, aldrig för hand.** Parkera kortet utanför
    registret och återskapa det med `task create` när den andra posten landat. En
    handredigerad `id:`-rad löser symptomet och bryter den regel som gör registret

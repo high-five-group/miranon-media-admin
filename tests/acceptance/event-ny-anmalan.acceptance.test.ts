@@ -4,7 +4,7 @@ import { http } from 'msw';
 import type { z } from 'zod';
 import type { EventSchema, RegistrationSchema } from '../../src/domain/schemas';
 import { EF, json } from '../support/fixturvarld/handlers';
-import { expect, type Page, test } from './support/acceptance-bas';
+import { expect, type Page, test } from './acceptance-bas';
 
 /**
  * Manuell anmälan-sidan: task-18.12 (skarpa formen) + task-18.18 (eventväljaren).

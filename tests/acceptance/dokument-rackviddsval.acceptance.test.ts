@@ -4,7 +4,7 @@ import type { Page } from '@playwright/test';
 import { http } from 'msw';
 import { VISUAL_EVENT_ID } from '../support/fixturvarld/fixture-data';
 import { EF, json } from '../support/fixturvarld/handlers';
-import { expect, test } from './support/acceptance-bas';
+import { expect, test } from './acceptance-bas';
 
 /**
  * TASK-275.3 — Dokument-ytan utbyggd: räckviddsval, gemensamt läge, badges

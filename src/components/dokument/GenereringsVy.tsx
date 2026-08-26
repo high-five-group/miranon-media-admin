@@ -274,6 +274,9 @@ function dialogRader(rader: Rad[]): Rad[] {
 // `datumUtanAr` UTBRUTEN dit i samma skiva men INTE längre importerad här
 // (TASK-309.6): den bodde bara i `renderaDokument` (riven, AC #6 —
 // mall-ifyllnaden sker nu server-side, `_shared/mall-data.ts`).
+// `datumUtanAr` SJÄLV är sedan riven ur `BlockDialog.tsx` (TASK-309.19,
+// 2026-08-26) — den tjänade bara dess onåbara datum-gren. Existerar inte
+// längre någonstans; se den modulens filhuvud.
 
 /** "10 oktober 2026" — listans visning av ett datumblock. */
 function datumMedAr(iso: string): string {
@@ -596,9 +599,6 @@ export function GenereringsVy({
      genomgång, inte hela bilagans. */
   const oppenGrupp = oppet ? rader.find((g) => g.rader.some((r) => r.def.id === oppet)) : undefined;
   const navSyskon = oppenGrupp ? dialogRader(oppenGrupp.rader) : [];
-  // BlockDialog.tsx:s resterande-belopp-hjälptext citerar det AKTUELLA
-  // (kopia-resolvda) beloppet — `allaRader` bär redan den upplösningen.
-  const resterandeBeloppText = allaRader.find((r) => r.def.id === 'resterande')?.text ?? null;
 
   /**
    * Persisterar ETT blocks kopia (text ELLER agenda) DIREKT mot skiva 2:s
@@ -1080,7 +1080,6 @@ export function GenereringsVy({
             ort={event.ort}
             somStandard={somStandard.has(oppenRad.def.id)}
             syskon={navSyskon}
-            resterandeBeloppHjalp={resterandeBeloppText}
             onVaxla={(id, nytt, blirStandard) => {
               spara(oppenRad.def.id, nytt, blirStandard);
               setOppet(id);

@@ -70,6 +70,12 @@ den städas). Två skäl:
     utlåtandet utan att stoppa. Någon tredje runda finns inte: kvarstår öppna
     fynd går de till Marcus som en STOPPA-OCH-FRÅGA-lista.
 
+  **"Blockerar" är inte samma sak som "släpps igenom".** Att ditt `warning` i
+  runda 2 inte blockerar betyder bara att det inte tvingar fram ännu en runda
+  — det räknas ändå som ett ÖPPET fynd vid taket och hamnar i Marcus lista.
+  Bara `info` med `auto-fix` bokförs utan att nå honom. Skriv alltså `warning`
+  när något är ett warning: det försvinner inte, det byter bara väg.
+
   **Sänk aldrig en severity för att "hjälpa" loopen konvergera.** Ett fynd du
   klassar som `error` i runda 2 stoppar armeringen och går till Marcus — det
   är avsikten, inte en olycka. Grinden självgodkänner aldrig vid tak, så ett

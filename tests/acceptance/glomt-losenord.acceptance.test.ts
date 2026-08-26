@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import { HttpResponse, http } from 'msw';
-import { expect, test } from './support/acceptance-bas';
+import { expect, test } from './acceptance-bas';
 
 /**
  * Begär-återställning-sidan `/glomt-losenord` (TASK-127.7, ADR-093) —

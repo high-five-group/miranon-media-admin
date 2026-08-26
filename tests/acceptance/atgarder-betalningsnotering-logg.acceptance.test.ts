@@ -2,7 +2,7 @@ import { http } from 'msw';
 import { VISUAL_EVENT_ID } from '../support/fixturvarld/fixture-data';
 import { EF, json } from '../support/fixturvarld/handlers';
 import { medvetetOanvand } from '../support/fixturvarld/overskuggnings-vakt';
-import { expect, test } from './support/acceptance-bas';
+import { expect, test } from './acceptance-bas';
 
 /**
  * TASK-201.13 — betalningsnoteringens aktivitetslogg, ände-till-ände genom

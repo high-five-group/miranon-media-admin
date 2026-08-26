@@ -1,6 +1,6 @@
 import { mergeTests } from '@playwright/test';
-import { test as fixturvarld } from '../../support/fixturvarld/hermetic';
-import { test as matbas } from '../../support/test-bas';
+import { test as fixturvarld } from '../support/fixturvarld/hermetic';
+import { test as matbas } from '../support/test-bas';
 
 /**
  * Acceptance-klassens söm (task-59.3, ADR-080 beslut 1).
