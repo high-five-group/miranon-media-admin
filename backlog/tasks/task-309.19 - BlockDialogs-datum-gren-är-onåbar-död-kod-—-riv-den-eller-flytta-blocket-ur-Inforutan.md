@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-24 17:53'
-updated_date: '2026-08-26 05:33'
+updated_date: '2026-08-26 05:37'
 labels:
   - ready-for-agent
 dependencies: []
@@ -84,4 +84,6 @@ TASK-309.17 stängs som obsolet i samma landning (se det kortets egna notes för
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
 BlockDialogs onåbara datum-gren riven (väg A, Marcus mandat 2026-08-26). Om-mätning mot färsk origin/main bekräftade kortets premiss ORÄNDRAD (radnummer identiska) och utvidgade den: samtliga fyra BlockDialog-callers (GenereringsVy, mer-eventinnehall, mer-platser, BlockDialog.tsx självt) saknar väg till ett datum:true-block. blockDefinitioner.ts:s datum-flagga och DatumEnkel-komponenten BEHÖLLS — de driver Inforutans sektionsmorf, en annan renderingsväg. Rivet: def.datum-grenen, resterandeBeloppHjalp-propen, datumUtanAr()+DAG_MANAD. Fyra filer ändrade (BlockDialog.tsx, GenereringsVy.tsx, blockDefinitioner.ts, tests/visual/dokument-generering-promoverings-grind.spec.ts — docblock-precision, ADR-083). Grindar: typecheck/biome/build/check-langa-streck/check:docs/test:api:pure alla EXIT 0; 6+23 acceptance-tester gröna; promoverings-grindens 12 ariaSnapshot-tester gröna med paren BYTE-IDENTISKA (git status --porcelain tomt på tests/visual/__aria__/ och tasks/sessions/bilagor/s108-generering/). TASK-309.17 stängt som obsolet i samma landning.
+
+Landning: PR #2005 (https://github.com/high-five-group/miranon-media-admin/pull/2005).
 <!-- SECTION:FINAL_SUMMARY:END -->

@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-24 17:00'
-updated_date: '2026-08-26 05:34'
+updated_date: '2026-08-26 05:37'
 labels:
   - ready-for-agent
   - intentionally-unchecked
@@ -63,4 +63,6 @@ AC-STATUS. #2 BOCKAD — manifestet bär datum-lägets bild, och kriteriets egen
 ÖPPET BESLUT FÖR MARCUS/ORKESTRERAREN: vad ska hända med den döda datum-grenen i BlockDialog.tsx? Två vägar — riv grenen (den är onåbar kod), eller flytta sistaBetalningsdag ut ur Inforutan (formändring, kräver Marcus). Tills dess står den bokförd i spec-filens docblock § DATUM-LÄGET, inte utjämnad.
 
 OBOCKAT MED AVSIKT: AC #1 ('block-dialogens datum-läge har ett ariaSnapshot-par i promoverings-grinden') är OBSOLET, inte bara obockad. TASK-309.19 (Marcus mandat väg A, 2026-08-26) mätte om premissen mot färsk origin/main och bekräftade den ORÄNDRAD: BlockDialog.tsx:s def.datum-gren var obevisligen onåbar från SAMTLIGA fyra callers (GenereringsVy.tsx, mer-eventinnehall, mer-platser, BlockDialog.tsx självt) — inte bara de tre spärrar i GenereringsVy.tsx detta korts egna notes redan bokförde. Väg A (riva grenen, inte flytta sistaBetalningsdag ur Inforutan) valdes explicit av Marcus/orkestreraren. Grenen (def.datum-ternären, resterandeBeloppHjalp-propen, datumUtanAr()) är nu RIVEN ur BlockDialog.tsx — det finns inget block-dialog-datum-läge kvar att ge ett ariaSnapshot-par, varken nu eller i framtiden, så länge dagens Inforutan-grupp-karta gäller. Att bocka AC #1 hade varit en osann utsaga. blockDefinitioner.ts:s datum-flagga och DatumEnkel-komponenten är OFÖRÄNDRADE i sitt kontrakt (verifierat: de driver Inforutans sektionsmorf, en annan renderingsväg) — AC #2/#3:s redan bockade slutsatser (morfens ariaSnapshot-par är det korrekta facit-läget) står därför fast, oberoende av denna stängning. Landning: samma PR som TASK-309.19 (gren fix/task-309-19-riv-blockdialog-datum-gren, öppnas direkt efter denna kort-uppdatering — se TASK-309.19:s notes för PR-referens när den finns). Källmärkt 2026-08-26.
+
+Landning: PR #2005 (https://github.com/high-five-group/miranon-media-admin/pull/2005).
 <!-- SECTION:NOTES:END -->
