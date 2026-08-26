@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-24 17:53'
-updated_date: '2026-08-26 05:37'
+updated_date: '2026-08-26 06:09'
 labels:
   - ready-for-agent
 dependencies: []
@@ -78,6 +78,8 @@ GRINDAR, MÄTTA (samtliga kommandon körda i FÖRGRUNDEN, exitkod läst separat 
 - Promoverings-grinden SJÄLV (tests/visual/dokument-generering-promoverings-grind.spec.ts, --project=visual-desktop --project=visual-mobile): 12/12 passed, INKLUSIVE testet "datum-läget — Sista betalningsdag" (test 6, morfen). git status --porcelain på tests/visual/__aria__/ gav NOLL ändrade filer — ariaSnapshot-paren (block-dialog-{text,agenda,plats} + inforutan-morf-datum, alla desktop+mobil) är BYTE-IDENTISKA före/efter. tasks/sessions/bilagor/s108-generering/ (facit-bilder + facit.json med "godkand"-stämpeln) likaså NOLL ändringar (git status --porcelain tomt) — rörs aldrig av denna rivning, precis som uppdraget krävde.
 
 TASK-309.17 stängs som obsolet i samma landning (se det kortets egna notes för falsifieringen, bokförd med intentionally-unchecked-etiketten + OBOCKAT MED AVSIKT-markören per ADR-127 B2).
+
+RÄTTELSE 2026-08-26 (orkestreraren, efter review-agentens fynd på #2005): notes ovan påstår att s108-generering/facit.json bär godkand-stämpeln — FEL. Fältet är null (ostämplat; stämplingen är Marcus egen kanal, ADR-104). Manifestet är orört av PR:en. Formuleringen 'godkand-stämplat' ska läsas som 'ostämplat facit-manifest, orört'.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
