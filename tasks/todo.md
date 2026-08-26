@@ -461,7 +461,7 @@ Production `60b5e659` 2026-08-25T15:00:31Z, prod-schema + 45/45 EF:er sedan
 2026-08-24. **MARCUS-SEKVENS (sessionsdok Del 23 § C):** GO på `309.20`-agent
 → röktest i prod (`309.11`, nio punkter) → nyckelrotation (§ (g)) →
 stämpling efter `309.20` → `309.8` AC #3/#4 · `ADR-060` · `309.18`/`.19`/`.21`
-→ agent-svans + K-sista. Full narrativ: sessionsdok S108 Del 23.
+→ agent-svans + K-sista. Full narrativ: sessionsdok S108 Del 23. **Forts. (Del 24):** Marcus prod-röktest → sju kort `309.22`–`.28` · **Plats-backfill 27/27 i prod** (Marcus GO) · `#1979` + `#1977` köade, `#1983` (Invalid key) under review · review-agent skarp ×3 · S112 kör AFK-fleet parallellt (prio S108) · **Marcus mandat** → `309.18` riv, `309.19` riv, `309.21` pensionera, `ADR-060` godkänd, `309.8` AC #3 omskrivet · **DEADLINE: Lotta testar i helgen 2026-08-29** — morgonsekvens i Del 24 § G.
 
 **Session 108 ⏸️ PAUSAD (tionde gången, 2026-08-25, `lifecycle: paused`) —
 PROMOVERINGEN ÄR I PROD; KORTFAMILJEN HALVSTÄNGD; ALLT SOM ÅTERSTÅR KRÄVER

@@ -438,6 +438,18 @@ Resor i medvetandet 3 · Utbildning `recEhb0BMo26Y7ndN` · Psionautics ·
 Utbildning `recG7kY1EV0GrUOTa`; samt 24 `Agendapunkter`-rader knutna till
 "Resor i medvetandet 1 · Utbildning" (record-ID:na i S108 Del 17).
 
+**Plats-backfill (prod, 2026-08-26, S108 resume 11).** Marcus GO i klartext
+(*"Kör plats-backfillen på alla Rönninge event"*): samtliga **27**
+`Eventplanering`-rader med `Ort = "Rönninge"` (Event-2 … Event-64, alla utan
+länk) fick `Plats` (`fldaVV1KS6skbOLrB`) → `recZc1EMWMYw5KADo` via
+Airtable-API:t — en testrad först (Event-14), sedan batchar 10+10+6.
+Kontroll efteråt: `AND({Ort}='Rönninge', {Plats}='')` → 0 rader. A6/A9/A10
+bevakar andra fält; inget triggades. Staging bär 0 Rönninge-event, så ingen
+paritet att hålla. Event-62:s testkopia `Adress (bilagetext)` tömd samma dag
+på Marcus order (regeln `kopia ?? standard`). **Öppen kant:**
+`create-event`-vertikalen sätter inte `Plats` — nya event får tom länk tills
+den sätts för hand eller vertikalen lär sig Ort → Plats.
+
 **Torrkörnings-kant, bokförd — inte ett fel i skarpa vägen.**
 `create-eventinnehall-modell.mjs --dry-run` kan INTE planera hela kedjan mot
 en bas där tabellerna saknas: dry-run-grenen skapar ingen tabell och
