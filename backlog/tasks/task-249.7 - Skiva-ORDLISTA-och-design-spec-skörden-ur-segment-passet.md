@@ -4,9 +4,10 @@ title: 'Skiva: ORDLISTA- och design-spec-skörden ur segment-passet'
 status: Done
 assignee: []
 created_date: '2026-08-17 00:36'
-updated_date: '2026-08-24 13:10'
+updated_date: '2026-08-26 03:24'
 labels:
   - ready-for-agent
+  - intentionally-unchecked
 dependencies: []
 parent_task_id: TASK-249
 ordinal: 469000
@@ -33,6 +34,12 @@ Domänspråket kristalliserades under granskningsvarven och Marcus kvitterade te
 - [ ] #5 ariaSnapshot-referenserna låsta ur variant d FÖRE flippen (enkelriktad ordning, ADR-103 B4)
 - [ ] #6 check-facit grön genom flipp OCH rivning — referenserna orörda och gröna efteråt
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+OBOCKAT MED AVSIKT: DoD #5 (ariaSnapshot-referenserna låsta ur variant d FÖRE flippen) och #6 (check-facit grön genom flipp OCH rivning) rör INTE denna skiva — redan dokumenterat i kortets egen Comment #1 (2026-08-17): skivan rör ENDAST ORDLISTA.md + DESIGN-SYSTEM-SPEC.md, ingen kod i VariantD.tsx rörs, ingen flipp/rivning sker. Landningen PR #1475 (MERGED 2026-08-17T01:38:10Z, verifierat gh pr view 1475). Källmärkt 2026-08-26, S112 fix-våg 4, ADR-127-normalisering.
+<!-- SECTION:NOTES:END -->
 
 ## Comments
 

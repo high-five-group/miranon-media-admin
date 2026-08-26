@@ -6,9 +6,10 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-17 00:24'
-updated_date: '2026-08-24 13:07'
+updated_date: '2026-08-26 03:23'
 labels:
   - ready-for-agent
+  - intentionally-unchecked
 dependencies: []
 parent_task_id: TASK-249
 ordinal: 464000
@@ -55,6 +56,8 @@ genom flipp/rivning) rör INTE denna skiva — de är forward-looking mot 249.1/
 249.5/249.6 (flipp+rivning har inte skett än) och tycks vara boilerplate ur
 PRD-DoD-mallen kopierad in på varje barn-skiva. Lämnade omarkerade, ej gissat
 klara. Se PR-rapporten för full motivering.
+
+OBOCKAT MED AVSIKT: DoD #5 (ariaSnapshot-referenserna låsta ur variant d FÖRE flippen) och #6 (check-facit grön genom flipp OCH rivning) rör INTE denna skiva — de är forward-looking mot syskonskivorna 249.1/249.5/249.6 (VariantD-flippen och rivningen sker där, inte här), boilerplate ur PRD-DoD-mallen kopierad till varje barn-skiva (se kortets egna Implementation Notes). Landningen PR #1477 (MERGED 2026-08-17T02:09:57Z, verifierat gh pr view 1477) rör enbart EF-motorns AND/DNF-stöd, ingen VariantD-flipp. Källmärkt 2026-08-26, S112 fix-våg 4, ADR-127-normalisering.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
