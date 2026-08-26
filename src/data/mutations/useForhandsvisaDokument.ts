@@ -29,6 +29,23 @@ import { useDataSource } from '@/data/useDataSource';
  * den öppnar ingenting själv, den bara fyller `handle.location.href` när
  * datan är klar (eller skriver felsidan nedan).
  *
+ * [RÄTTAT, TASK-309.26 review-runda 2, severity ERROR] Felvägens
+ * `handle.document.write(...)` APPENDADE tidigare felmeddelandet UNDER
+ * laddningssidan i stället för att ersätta den — Lotta såg "Öppnar
+ * dokument…" och "Kunde inte öppna dokumentet…" staplade i samma fönster.
+ * Grundorsaken (empiriskt verifierad, `@/lib/skriv-laddningssida`s
+ * docblock har hela mätserien): `document.write` APPENDAR på ett
+ * dokument som fortfarande är ÖPPET (`readyState: 'loading'`) — den
+ * implicita "töm dokumentet"-effekten (HTML-spec/MDN) triggar bara när
+ * `write()` anropas på ett REDAN STÄNGT dokument. `skrivLaddningssida`
+ * anropar numera `document.close()` efter sin skrivning, vilket räcker för
+ * att lösa buggen i normalfallet — men felvägen HÄR gör dessutom explicit
+ * `document.open()` FÖRE sin egen `write()` (och `document.close()`
+ * efteråt): försvar i djup, så felsidan garanterat ERSÄTTER allt tidigare
+ * innehåll OAVSETT om anroparen städade sin ström eller ej. Verifierat
+ * (samma mätpass): ett explicit `document.open()`-anrop tömmer dokumentet
+ * lika säkert oavsett om det var `'loading'` eller redan `'complete'`.
+ *
  * `noopener` är MEDVETET UTESLUTET ur `window.open`-anropet (anroparens
  * ansvar, inte denna hooks — men dokumenterat här eftersom skälet gäller
  * hela mönstret): verifierat (samma throwaway-pass) att
@@ -59,10 +76,16 @@ export function useForhandsvisaDokument() {
         handle.location.href = url;
       } catch (err) {
         if (!handle.closed) {
+          // [RÄTTAT, TASK-309.26 review-runda 2] explicit open()/close() —
+          // se docblocket ovan: garanterar att felsidan ERSÄTTER, aldrig
+          // APPENDAS efter, laddningssidan (eller något annat tidigare
+          // skrivet innehåll), oavsett anroparens städning.
+          handle.document.open();
           handle.document.write(
             '<p style="font-family: system-ui, sans-serif; padding: 2rem; max-width: 32rem;">' +
               'Kunde inte öppna dokumentet. Stäng fliken och försök igen.</p>',
           );
+          handle.document.close();
         }
         throw err;
       }

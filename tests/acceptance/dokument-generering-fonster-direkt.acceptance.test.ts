@@ -337,4 +337,69 @@ test.describe('Genereringsvyn — förhandsgranskningens fönster öppnas direkt
     // Ingen JS-exception i appens sida (samma `page`, inte den stängda fliken).
     expect(sidfel).toEqual([]);
   });
+
+  test('review-runda 2: Lotta stänger fliken vid Skapa (skarpt) — samma vakt, nu vittnad för BÅDA grenarna', async ({
+    page,
+    context,
+    network,
+  }) => {
+    const ATTACHMENT_ID = 'recSkarpBilagaStangdFlik1';
+    const NEDLADDNINGS_URL = 'https://storage.example.test/bekraftelsebilaga-stangd-flik.pdf';
+
+    network.use(
+      http.get(EF('get-document-sources'), () =>
+        json(MOCK_SOURCES as unknown as Record<string, unknown>),
+      ),
+      http.post(EF('generate-event-attachment'), async () => {
+        await delay(SVARSFORDROJNING_MS);
+        return json({
+          attachment: {
+            id: ATTACHMENT_ID,
+            namn: 'Bekräftelsebilaga – Arboga - Utbildning - Resor i medvetandet 1 - 2026-10-31.pdf',
+            storlekBytes: 51_200,
+            skapad: '2026-08-26T09:00:00.000Z',
+            eventId: VISUAL_EVENT_ID,
+            dokumentklass: 'Event-mallad',
+            rackvidd: null,
+            kursfamilj: null,
+            kursniva: null,
+            mall: 'Bekräftelsebilaga',
+            kallhash: 'a'.repeat(64),
+          },
+        });
+      }),
+      http.get(EF('get-attachment-download-url'), () =>
+        json({ url: NEDLADDNINGS_URL, expiresInSeconds: 300 }),
+      ),
+    );
+
+    const sidfel: Error[] = [];
+    page.on('pageerror', (fel) => sidfel.push(fel));
+
+    await page.goto(`/mer/dokument?event=${VISUAL_EVENT_ID}&vy=generering&mall=bekraftelse`);
+    await expect(page.getByTestId('generering-vy')).toBeVisible();
+
+    const [nyFlik] = await Promise.all([
+      context.waitForEvent('page'),
+      page.getByRole('button', { name: 'Skapa bekräftelsebilaga' }).click(),
+    ]);
+    await expect(nyFlik).toHaveTitle('Skapar dokument…');
+
+    // Samma sekvens som förhandsgranska-testet ovan, men nu för Skapa-
+    // grenen (`genereraBilaga`) — TVÅ nätverksanrop innan `onSuccess`
+    // (generate-event-attachment, sedan get-attachment-download-url), och
+    // fliken stängs medan DET FÖRSTA fortfarande väntar (fördröjt).
+    await nyFlik.close();
+    await expect.poll(() => nyFlik.isClosed()).toBe(true);
+
+    await expect(
+      page.getByText('Webbläsaren stoppade det nya fönstret.', { exact: false }),
+    ).toBeVisible({
+      timeout: SVARSFORDROJNING_MS + 10_000,
+    });
+    await expect(page.getByRole('button', { name: 'Öppna bekräftelsebilagan' })).toBeVisible();
+    await expect(page.getByText('Den öppnades i ett nytt fönster.')).toHaveCount(0);
+
+    expect(sidfel).toEqual([]);
+  });
 });

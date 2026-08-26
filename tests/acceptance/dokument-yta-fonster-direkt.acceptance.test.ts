@@ -110,4 +110,47 @@ test.describe('Dokument-ytan — förhandsvisningens fönster bär laddningssida
       .poll(() => nyFlik.url(), { timeout: SVARSFORDROJNING_MS + 10_000 })
       .toBe(SIGNERAD_URL);
   });
+
+  test('review-runda 2: EF-fel ERSÄTTER laddningssidan med felsidan — ingen stapling av "Öppnar dokument…" och felmeddelandet', async ({
+    page,
+    context,
+    network,
+  }) => {
+    const SVARSFORDROJNING_MS = 1000;
+
+    network.use(
+      http.get(EF('get-event-attachments'), () => json({ attachments: [uppladdRad()] })),
+      http.get(EF('get-attachment-download-url'), async () => {
+        // Fördröjd (inte omedelbar) — ger testet ett fönster att observera
+        // laddningssidan i INNAN felet skriver över den (samma disciplin
+        // som `dokument-generering-fonster-direkt...`s AC #3-test).
+        await delay(SVARSFORDROJNING_MS);
+        return json({ error: 'Filen kunde inte hittas' }, 404);
+      }),
+    );
+
+    await page.goto(`/mer/dokument?event=${VISUAL_EVENT_ID}`);
+    await expect(page.getByTestId('dokument-yta')).toBeVisible();
+
+    const knapp = page.getByRole('button', { name: `Öppna ${FIL_NAMN}` });
+    const [nyFlik] = await Promise.all([context.waitForEvent('page'), knapp.click()]);
+
+    // Laddningssidan syns DIREKT.
+    await expect(nyFlik).toHaveTitle('Öppnar dokument…');
+    await expect(nyFlik.getByText('Öppnar dokument…')).toBeVisible();
+
+    // Efter felet: felsidan ERSÄTTER (inte APPENDAS efter) laddningssidan —
+    // det granskade felet (review-runda 2, severity ERROR, empiriskt
+    // reproducerat i skarp Chromium via Playwright MCP). Utan
+    // `document.close()`/den explicita `open()`+`close()`-fixen i
+    // `useForhandsvisaDokument.ts`s catch-block hade BÅDA texterna synts
+    // samtidigt.
+    await expect(
+      nyFlik.getByText('Kunde inte öppna dokumentet. Stäng fliken och försök igen.'),
+    ).toBeVisible({ timeout: SVARSFORDROJNING_MS + 10_000 });
+    await expect(nyFlik.getByText('Öppnar dokument…')).toHaveCount(0);
+
+    // Appens egen felruta (befintligt beteende, oförändrat av denna fix).
+    await expect(page.getByText('Kunde inte öppna filen')).toBeVisible();
+  });
 });

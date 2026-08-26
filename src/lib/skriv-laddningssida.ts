@@ -23,12 +23,46 @@
  * till att även bära det FÖRVÄNTADE, icke-fel-läget, och till en andra yta.
  * `document.write` på ett same-origin `about:blank`-fönster öppnaren själv
  * skapade är standardbeteende (MDN `Window.open()`: en same-origin browsing
- * context kan läsas/skrivas av öppnaren; MDN `Document.write()`: anropet
- * skriver direkt in i det redan öppna dokument-strömmen — `document.close()`
- * anropas aldrig här, så strömmen förblir öppen tills webbläsaren självmant
- * stänger den vid sidans slut). Att SEDAN sätta fönstrets `location.href`
- * (i anroparens `onSuccess`) är en helt separat, vanlig navigering som
- * kasserar detta dokument och ersätter det med den faktiska destinationen.
+ * context kan läsas/skrivas av öppnaren). Att SEDAN sätta fönstrets
+ * `location.href` (i anroparens `onSuccess`) är en helt separat, vanlig
+ * navigering som kasserar detta dokument och ersätter det med den faktiska
+ * destinationen — EMPIRISKT verifierat (se nedan) att detta fungerar
+ * OFÖRÄNDRAT efter `document.close()`.
+ *
+ * `document.close()` ÄR OBLIGATORISK — INTE valfri (RÄTTAT, review-runda 2,
+ * severity ERROR, granskaren reproducerade felet i skarp Chromium via
+ * Playwright MCP). En tidigare version av detta docblock påstod att
+ * strömmen "förblir öppen tills webbläsaren självmant stänger den" — det
+ * påståendet var FEL och orsakade en verklig bugg: utan `close()` står
+ * dokumentet i `readyState: 'loading'` på obestämd tid, och ETT ANNAT
+ * `document.write`-anrop på samma (fortfarande öppna) dokument APPENDAR då
+ * sitt innehåll i stället för att ERSÄTTA det. Det slog till skarpt i
+ * `useForhandsvisaDokument.ts`s felväg: dess `catch`-block skriver
+ * felmeddelandet med `handle.document.write(...)` — utan `close()` här
+ * hade Lotta sett "Öppnar dokument…" och "Kunde inte öppna dokumentet…"
+ * STAPLADE ovanpå varandra i samma fönster.
+ *
+ * MEKANIKEN, EMPIRISKT MÄTT (Playwright + `playwright-core`s Chromium, inte
+ * bara MDN-läsning — tre scenarier körda, throwaway-skript, kastade efter
+ * passet):
+ *   A. `write(laddning)` → `readyState` = `'loading'`. `close()` →
+ *      `readyState` = `'complete'`, `body.innerText` fortfarande
+ *      laddningstexten. Ett ANDRA `write(fel)` (utan explicit `open()`,
+ *      exakt `useForhandsvisaDokument.ts`s kod) → `body.innerText` blir
+ *      ENBART feltexten — `write()` på ett STÄNGT dokument anropar implicit
+ *      `document.open()` FÖRST (som TÖMMER dokumentet, HTML-spec/MDN), sedan
+ *      skriver den nya kroppen. `location.href`-navigering EFTER `close()`
+ *      fungerar identiskt (ingen `navigationError`).
+ *   B. Samma sekvens UTAN `close()` (dagens bugg, reproducerad för att
+ *      bekräfta felbeskrivningen innan fixen skrevs): `body.innerText` blir
+ *      `"LADDNINGSTEXT\n\nFELTEXT"` — bekräftar granskarens fynd exakt.
+ *   C. Robusthetskontroll: om laddningssidan HYPOTETISKT glömde `close()`
+ *      (en annan anropare, ett framtida missat fall) gör ett explicit
+ *      `document.open()` FÖRE `write()` samma jobb oavsett dokumentets
+ *      föregående tillstånd (`'loading'` ELLER `'complete'`) — det är därför
+ *      `useForhandsvisaDokument.ts`s felväg NU gör `open()`+`write()`+
+ *      `close()` explicit (försvar i djup, se den filens docblock), i
+ *      stället för att bara lita på att DENNA funktion städat efter sig.
  *
  * INGEN `fonster.closed`-vakt HÄR: denna funktion anropas SYNKRONT, i samma
  * tick som `window.open` skapade fönstret — ingen realistisk tid för Lotta
@@ -93,4 +127,9 @@ export function skrivLaddningssida(fonster: Window | null, sida: Laddningssida):
       sida.text +
       '</p></body></html>',
   );
+  // [RÄTTAT, TASK-309.26 review-runda 2] document.close() ÄR OBLIGATORISK —
+  // se docblocket ovan för den empiriska mätningen (readyState 'loading' →
+  // 'complete', och varför en SENARE write() annars APPENDAR i stället för
+  // att ERSÄTTA).
+  fonster.document.close();
 }
