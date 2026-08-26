@@ -103,6 +103,17 @@
  * `lang="sv"` sätts explicit — dokumentet ärver annars webbläsarens
  * standardspråk, inte appens (ett fristående `document.write`-dokument har
  * ingen relation till appens `<html lang>`).
+ *
+ * ESCAPING (RÄTTAT, review-runda 3): `titel`/`text` escapas nu genom
+ * `escapeHtml` innan de interpoleras i markupen — ANROPAREN BEHÖVER ALDRIG
+ * sanera sina strängar själv, det är denna funktions eget ansvar (samma
+ * disciplin som en ren templating-motor). I dag är båda anropssajterna
+ * (`GenereringsVy.tsx`, `DokumentYta.tsx`) statiska, utvecklarskrivna
+ * strängar — ingen levande injektionsväg finns — men en framtida anropare
+ * som interpolerar t.ex. ett filnamn eller mallnamn i texten ska INTE
+ * behöva komma ihåg att escapa det själv. Verifierat (Playwright-test): en
+ * `titel`/`text` som innehåller `<b>x</b>` renderas som LITERAL TEXT (ingen
+ * riktig `<b>`-nod skapas i det skrivna dokumentet).
  */
 export interface Laddningssida {
   /** Fönstrets `<title>`. */
@@ -111,20 +122,34 @@ export interface Laddningssida {
   text: string;
 }
 
+/**
+ * Minimal HTML-escaping av de fem tecken som annars kan bryta ut ur en
+ * `document.write`-interpolering (`&`, `<`, `>`, `"`, `'`) — ingen ny
+ * abstraktion utöver detta, bara en lokal hjälpare för `skrivLaddningssida`.
+ */
+export function escapeHtml(input: string): string {
+  return input
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+}
+
 export function skrivLaddningssida(fonster: Window | null, sida: Laddningssida): void {
   if (!fonster) return;
   fonster.document.write(
     '<!doctype html><html lang="sv"><head><meta charset="utf-8">' +
       '<meta name="viewport" content="width=device-width, initial-scale=1.0">' +
       '<title>' +
-      sida.titel +
+      escapeHtml(sida.titel) +
       '</title>' +
       '<style>' +
       'body{margin:0;min-height:100vh;display:flex;align-items:center;justify-content:center;' +
       'font-family:system-ui,-apple-system,sans-serif;background:#ffffff;color:#242424;}' +
       'p{max-width:32rem;padding:2rem;text-align:center;}' +
       '</style></head><body><p>' +
-      sida.text +
+      escapeHtml(sida.text) +
       '</p></body></html>',
   );
   // [RÄTTAT, TASK-309.26 review-runda 2] document.close() ÄR OBLIGATORISK —

@@ -153,4 +153,47 @@ test.describe('Dokument-ytan — förhandsvisningens fönster bär laddningssida
     // Appens egen felruta (befintligt beteende, oförändrat av denna fix).
     await expect(page.getByText('Kunde inte öppna filen')).toBeVisible();
   });
+
+  test('review-runda 3: Lotta stänger fliken själv innan hämtningen svarar — inget rått fel, läsbar text i MessageBox', async ({
+    page,
+    context,
+    network,
+  }) => {
+    const SIGNERAD_URL = 'https://storage.example.test/deltagarlista-stangd-flik.pdf';
+    const SVARSFORDROJNING_MS = 1000;
+
+    network.use(
+      http.get(EF('get-event-attachments'), () => json({ attachments: [uppladdRad()] })),
+      http.get(EF('get-attachment-download-url'), async () => {
+        await delay(SVARSFORDROJNING_MS);
+        return json({ url: SIGNERAD_URL, expiresInSeconds: 300 });
+      }),
+    );
+
+    const sidfel: Error[] = [];
+    page.on('pageerror', (fel) => sidfel.push(fel));
+
+    await page.goto(`/mer/dokument?event=${VISUAL_EVENT_ID}`);
+    await expect(page.getByTestId('dokument-yta')).toBeVisible();
+
+    const knapp = page.getByRole('button', { name: `Öppna ${FIL_NAMN}` });
+    const [nyFlik] = await Promise.all([context.waitForEvent('page'), knapp.click()]);
+    await expect(nyFlik).toHaveTitle('Öppnar dokument…');
+
+    // Lotta stänger fliken SJÄLV — INNAN get-attachment-download-url (1 s
+    // fördröjd) svarar. `handle` i mutationFn är därefter icke-null men
+    // `.closed`.
+    await nyFlik.close();
+    await expect.poll(() => nyFlik.isClosed()).toBe(true);
+
+    // Mutationen ska INTE kasta ett rått, oformaterat webbläsarfel (t.ex.
+    // "Failed to set the 'href' property on 'Location'") — den kastar ett
+    // eget, Gunilla-läsbart fel som visas i appens befintliga MessageBox.
+    await expect(
+      page.getByText('Fönstret stängdes innan dokumentet hann öppnas. Tryck på Visa igen.'),
+    ).toBeVisible({ timeout: SVARSFORDROJNING_MS + 10_000 });
+
+    // Ingen JS-exception i appens sida.
+    expect(sidfel).toEqual([]);
+  });
 });
