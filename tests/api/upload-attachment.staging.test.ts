@@ -39,6 +39,13 @@
 //       angiven alls) → 400 ("Ogiltigt event-id.") — en event-specifik
 //       bilaga utan event är en kontradiktion, inte ett läge.
 //
+// TASK-316 tillägg — IDEMPOTENS, samma bugg-klass TASK-183 fixade i
+// finalize-attachment-upload (rött-först-belagt, se index.ts § IDEMPOTENS
+// för varför mekanismen skiljer sig från förlagan — mönster 1 har inget
+// klient-hållet attachmentId över ett omförsök):
+//   20. IDEMPOTENS: samma request-body (retry) → EN rad; andra bytes (en
+//       genuint ny uppladdning, samma filnamn+event) → TVÅ rader.
+//
 // SENTINEL: filnamnet bär en per-körning-unik markör
 // (`ZZ-attachment-test-<uuid>.pdf`) → ingen cross-run-kollision. TEARDOWN =
 // setup-purge (ADR-060): .purge-staging-policy.json:s
@@ -162,6 +169,75 @@ test.describe('upload-attachment — skarp conformance (TASK-146.4 mönster 1)',
     expect(attachment.rackvidd).toBe('Event');
     expect(attachment.kursfamilj).toBeNull();
     expect(attachment.kursniva).toBeNull();
+  });
+
+  // TASK-316 — upload-attachment gjorde en IDENTISK icke-merge-skrivning
+  // (createAirtableRecord) mot samma Bilagor-tabell/Lagringsnyckel-fält som
+  // finalize-attachment-upload hade FÖRE TASK-183: ett klient-retry
+  // (fetchWithRetry, src/data/utils.ts — samma request-body skickas om vid
+  // nätverksfel/5xx) kunde skapa TVÅ Bilagor-rader OCH TVÅ Storage-objekt
+  // för samma fil.
+  //
+  // Fixen kan INTE bokstavligen kopiera TASK-183:s förlaga: finalize håller
+  // ett STABILT, server-utfärdat attachmentId hos klienten (från ticket:en)
+  // över ett omförsök, men mönster 1 är EN ENDA request — attachmentId
+  // genererades tidigare FRISKT (crypto.randomUUID()) VARJE gång funktionen
+  // kördes, så två anrop med IDENTISK body fick ändå två olika attachmentId.
+  // index.ts härleder attachmentId i stället DETERMINISTISKT (SHA-256 över
+  // anchor+filnamn+bytes, se index.ts § IDEMPOTENS för hela resonemanget) —
+  // fortfarande 100 % server-beräknat, ingen klient-ändring, ingen ny
+  // Airtable-kolumn.
+  //
+  // BEVISAT TVÅSIDIGT (AC #2): (a) SAMMA body (retry) → EN rad, INGEN
+  // dubblett; (b) ANDRA bytes (genuint ny uppladdning, SAMMA filnamn+event)
+  // → TVÅ separata rader — mekanismen dedupar bara äkta retries, den slår
+  // aldrig ihop två olika filer.
+  test('IDEMPOTENS: samma body (retry) → EN rad; andra bytes (ny uppladdning) → TVÅ rader', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const filnamn = sentinelFilnamn();
+    const bytesBase64 = buildPseudoPdfBase64(1024);
+
+    const body: UploadBody = {
+      eventId: BELAGGNING_EVENT_ID,
+      filnamn,
+      contentType: 'application/pdf',
+      bytesBase64,
+    };
+
+    // (1) Första uppladdningen → 201, ny rad (createdRecords).
+    const first = await postUpload(request, config, jwt, body);
+    const firstRaw = await first.text();
+    expect(first.status(), firstRaw).toBe(201);
+    const firstJson = JSON.parse(firstRaw) as { record: { id: string }; created: boolean };
+    expect(firstJson.created).toBe(true);
+    const firstId = firstJson.record.id;
+
+    // (2) RETRY — EXAKT samma body som en klient skulle skicka via
+    // fetchWithRetry efter en nätverkstimeout/5xx. Samma
+    // (anchor, filnamn, bytes) → samma härledda attachmentId → samma
+    // Lagringsnyckel → upsert MATCHAR → 200, updatedRecords, SAMMA record-ID.
+    const retry = await postUpload(request, config, jwt, body);
+    const retryRaw = await retry.text();
+    expect(retry.status(), retryRaw).toBe(200);
+    const retryJson = JSON.parse(retryRaw) as { record: { id: string }; created: boolean };
+    expect(retryJson.created).toBe(false);
+    expect(retryJson.record.id).toBe(firstId);
+
+    // (3) En GENUINT NY uppladdning — SAMMA filnamn+event, men ANDRA bytes
+    // (t.ex. en uppdaterad version av samma dokument) — hashar annorlunda
+    // och ska INTE matcha (1)/(2):s rad.
+    const second = await postUpload(request, config, jwt, {
+      ...body,
+      bytesBase64: buildPseudoPdfBase64(2048),
+    });
+    const secondRaw = await second.text();
+    expect(second.status(), secondRaw).toBe(201);
+    const secondJson = JSON.parse(secondRaw) as { record: { id: string }; created: boolean };
+    expect(secondJson.created).toBe(true);
+    expect(secondJson.record.id).not.toBe(firstId);
   });
 
   test('deny: ogiltig eventId-form → 400', async ({ request }) => {

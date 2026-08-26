@@ -57,6 +57,8 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ARBETSFORM_POLICY="${ARBETSFORM_POLICY:-${SCRIPT_DIR}/../.arbetsform-push-policy.conf}"
+# shellcheck source=/dev/null  # dynamisk SCRIPT_DIR-relativ path; scripts/lib/jq-guard.sh lintas separat via ci.yml:s shellcheck-lista
+source "${SCRIPT_DIR}/lib/jq-guard.sh"
 
 fel() {
     printf 'arbetsform-tillstand.sh: %s\n' "$1" >&2
@@ -70,7 +72,7 @@ FILNAMN="${ARBETSFORM_TILLSTAND_FILNAMN:-}"
 [[ -n "${FILNAMN}" ]] || fel "policyn definierar inget ARBETSFORM_TILLSTAND_FILNAMN."
 
 command -v git > /dev/null 2>&1 || fel "git saknas i PATH."
-command -v jq > /dev/null 2>&1 || fel "jq saknas i PATH."
+jq_version_ok || fel "jq saknas eller är för gammal i PATH (TASK-312, .jq-version-policy.conf)."
 
 ARBETSTRAD_ROT="$(git rev-parse --show-toplevel 2> /dev/null)" || fel "inte i ett git-arbetsträd — kan inte avgöra var tillståndsfilen ska ligga."
 TILLSTANDSFIL="${ARBETSTRAD_ROT}/${FILNAMN}"

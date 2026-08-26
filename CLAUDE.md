@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-24
+updated: 2026-08-26
 review_by: 2026-11-15
 status: stable
 ---
@@ -496,7 +496,16 @@ VANLIGA vägen genom kön, inte ett undantag. Ett skript som bara läser
 "aldrig armerad"/"utsparkad med konsumerad armering" (larma) —
 `isInMergeQueue` skiljer dem åt: `isInMergeQueue: true` ⇒ tyst, `false` ⇒
 larma (kan fortfarande vara ANTINGEN aldrig-armerad ELLER utsparkad — den
-skillnaden kräver fortfarande det andra `gh pr merge --auto`). Fixad i
+skillnaden kräver fortfarande det andra `gh pr merge --auto`).
+
+**"GraphQL" ovan är bokstavligt — `gh pr view --json isInMergeQueue` finns
+INTE.** Anropet faller med `Unknown JSON field: "isInMergeQueue"` plus en
+fältlista där namnet saknas (mätt i `gh` 2.96.0, två gånger oberoende
+2026-08-24). Fältet nås bara via `gh api graphql`. Raden är alltså korrekt som
+den står, men den är lätt att läsa som "fråga båda fälten" utan att märka
+vilket API som avses — och `gh pr view --json` är den form man når först.
+Skriver du ett svep som klassar armering: bygg det på `gh api graphql`, inte
+på `--json`. Fixad i
 `TASK-128` (falsklarmade sju gånger på en enda natt innan fixen — full
 instansdata på kortet).
 
@@ -552,6 +561,57 @@ var nedskriven sedan S81 och beskrev mekanismen korrekt, ändå gick
 orkestreraren i fällan två gånger under en och samma resume 2026-07-28. Det
 var beviset för att en regel utan mekanism inte efterlevs — och skälet till att
 den nu har en.
+
+### Review-grinden — spawn efter push, före armering ([ADR-105](docs/decisions/ADR-105-review-grinden-fyra-deltan-byggs-inte-adopteras.md))
+
+**ORKESTRERAR-REGEL, från och med `TASK-173.1`:** efter en bygg-agents push,
+och INNAN du armerar (`gh pr merge --auto`), spawna `review-agent`
+(`.claude/agents/review-agent.md`) i FÄRSK kontext mot den pushade PR:en.
+Färsk kontext betyder ett NYTT agent-anrop — aldrig ett meddelande till
+bygg-agentens egen session. Driv-agent och granskare är strukturellt olika
+agenter, alltid (ADR-105 beslut 2; motiv: en granskare som delar kontext med
+utföraren kan godkänna sin egen förskrivning,
+`docs/research/k1-no-mistakes-anatomi-2026-08-09.md` § 3).
+
+**HÖG risknivå blockerar formellt** (ADR-105 beslut 5): returnerar
+granskaren `risk.niva: 'hog'` — armera INTE. Eskalera till Marcus med
+utlåtandets fynd; armering sker först efter hans explicita granskning. `lag`/
+`medel` är i detta skede (`TASK-173.1`, innan `173.3`s PR-sektion och `173.4`s
+CI-backstopp) informativt underlag för din egen bedömning — ingen mekanisk
+spärr hindrar armering vid `lag`/`medel` än.
+
+**Vad som ÄR byggt i denna skiva, och vad som INTE är det (progressiv
+härdning, ADR-105 beslut 3):** `review-agent`-kontraktet och utlåtande-
+schemat (`scripts/lib/review-utlatande.mjs`,
+`scripts/validera-review-utlatande.mjs`) existerar och är skarpbevisade. **Vad
+som SAKNAS än:** path-scopade regler ur main (`TASK-173.2`), den fasta
+Riskbedömnings-sektionen i PR-kroppen (`TASK-173.3`), den deterministiska
+CI-backstoppen som fäller en PR utan giltigt utlåtande (`TASK-173.4`),
+rundtaks-loopen med konvergensregel (`TASK-173.5`), och
+fångstrate-instrumenteringen (`TASK-173.6`). Fram tills dess är grinden ett
+**orkestrerar-åtagande**, inte en mekanisk spärr — en PR kan i praktiken
+armeras utan granskning så länge `173.4` inte finns. Skriv aldrig om detta
+stycke till att låta grinden vara mekaniskt otvingbar innan `173.4` faktiskt
+landat (samma `ADR-083`-disciplin som resten av denna fil: prosa som påstår
+en mekanism som inte finns är värre än att inte skriva något alls).
+
+**Skarpbevis-skulden — BETALD 2026-08-26 (S112 resume 1), med en mätt kant
+(`CLAUDE.md` § En ny hooks skarpbevis, samma strukturella klass generaliserad
+från hookar till agent-definitioner):** `.claude/agents/review-agent.md`
+skapades i S112 (`#1927`, 2026-08-24). I DEN sessionen kändes
+`subagent_type: "review-agent"` **bevisligen inte** igen av `Agent`-verktyget
+(`Agent type 'review-agent' not found` trots filen på disk); skarpkörningen
+mot en verklig PR (AC #1/#5/#6) gjordes via `general-purpose` med kontraktets
+fulla text inklistrad. I S112 resume 1 (2026-08-26) saknades typen ÅTER vid
+sessionsstart — huvudkatalogen stod på `f5ed41d2`, före `#1927` — och dök upp
+mitt i sessionen när en parallell session flyttade huvudkatalogen till `main`:
+harnesset annonserade *"New agent types are now available: review-agent"*, och
+ett `Agent`-anrop med `subagent_type: "review-agent"` mot `#1932` gav ett
+schema-giltigt utlåtande (Sonnet 5, 42 verktygsanrop, risk `lag`, 2 info).
+Slutsats, samma form som hook-raden: agent-definitioner läses ur den katalog
+sessionen startade i och KAN laddas om av filbevakaren — en NY definition kan
+aldrig FÖRLITAS på i sessionen som skapar den, men en tidig laddning är ett
+giltigt skarpbevis (`task-167`-precedentet). Belägg: sessionsdok S112 Del 4.
 
 ### Kortnummer — verktyget skyddar, men bara halva vägen
 

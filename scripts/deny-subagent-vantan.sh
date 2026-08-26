@@ -121,6 +121,8 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SUBAGENT_VANTAN_POLICY="${SUBAGENT_VANTAN_POLICY:-${SCRIPT_DIR}/../.subagent-vantan-policy.conf}"
+# shellcheck source=/dev/null  # dynamisk SCRIPT_DIR-relativ path; scripts/lib/jq-guard.sh lintas separat via ci.yml:s shellcheck-lista
+source "${SCRIPT_DIR}/lib/jq-guard.sh"
 
 # deny <skäl> — skriver deny-meddelandet till stderr (det agenten ser) och
 # avslutar med exit 2, den enda väg som garanterat blockerar verktygsanropet
@@ -133,7 +135,7 @@ deny() {
 # jq krävs för att tolka hook-input. Denna gren träffar ALLA kontexter
 # (huvudsession inräknad) eftersom vi inte ens kan avgöra vilken kontext det
 # är utan jq — se § FAIL-CLOSED, MEN SCOPAT ovan.
-command -v jq > /dev/null 2>&1 || deny "jq saknas i PATH — hooken kan inte avgöra om anropet sker i subagent-kontext. Detta är hookens eget fel, inte ditt."
+jq_version_ok || deny "jq saknas eller är för gammal i PATH — hooken kan inte avgöra om anropet sker i subagent-kontext (TASK-312, .jq-version-policy.conf). Detta är hookens eget fel, inte ditt."
 
 INPUT=""
 IFS= read -r -d '' INPUT || true

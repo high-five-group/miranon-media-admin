@@ -70,6 +70,8 @@ set -uo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HEMLIGHET_POLICY="${HEMLIGHET_POLICY:-${SCRIPT_DIR}/../.hemlighet-utskrift-policy.conf}"
+# shellcheck source=/dev/null  # dynamisk SCRIPT_DIR-relativ path; scripts/lib/jq-guard.sh lintas separat via ci.yml:s shellcheck-lista
+source "${SCRIPT_DIR}/lib/jq-guard.sh"
 
 # deny <skäl> — skriver deny-meddelandet till stderr (det modellen ser)
 # och avslutar med exit 2, den ENDA väg som garanterat blockerar
@@ -81,7 +83,7 @@ deny() {
 }
 
 # jq krävs för att tolka hook-input. FAIL-CLOSED: "vet inte" nekar.
-command -v jq >/dev/null 2>&1 || deny "jq saknas i PATH — hooken kan inte verifiera anropet."
+jq_version_ok || deny "jq saknas eller är för gammal i PATH — hooken kan inte verifiera anropet (TASK-312, .jq-version-policy.conf)."
 
 # Läs hela stdin utan extern process (samma `read -d ''`-form som
 # deny-resend-send.sh — `read`s egen exit-kod vid EOF är förväntad och

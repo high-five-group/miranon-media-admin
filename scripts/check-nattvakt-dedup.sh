@@ -69,6 +69,10 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROT="${REPO_ROT:-$(cd "${SCRIPT_DIR}/.." && pwd)}"
 NATTVAKT_DEDUP_POLICY="${NATTVAKT_DEDUP_POLICY:-${REPO_ROT}/.nattvakt-dedup-policy.conf}"
+# shellcheck source=/dev/null  # dynamisk SCRIPT_DIR-relativ path; scripts/lib/jq-guard.sh lintas separat via ci.yml:s shellcheck-lista
+source "${SCRIPT_DIR}/lib/jq-guard.sh"
+# shellcheck source=/dev/null  # dynamisk SCRIPT_DIR-relativ path; scripts/lib/gh-guard.sh lintas separat via ci.yml:s shellcheck-lista
+source "${SCRIPT_DIR}/lib/gh-guard.sh"
 
 anropsfel() {
     printf '::error::check-nattvakt-dedup: ANROPSFEL — %s\n' "$1" >&2
@@ -76,7 +80,7 @@ anropsfel() {
     exit 2
 }
 
-command -v jq >/dev/null 2>&1 || anropsfel "jq saknas i PATH."
+jq_version_ok || anropsfel "jq saknas eller är för gammal i PATH (TASK-312, .jq-version-policy.conf)."
 [[ -f "${NATTVAKT_DEDUP_POLICY}" ]] || anropsfel "policyfilen ${NATTVAKT_DEDUP_POLICY} saknas."
 
 NATTVAKT_DEDUP_ETIKETT=""
@@ -99,7 +103,7 @@ hamta_arenden() {
         cat "${NATTVAKT_DEDUP_FAKE_JSON}" 2>/dev/null || return 1
         return 0
     fi
-    command -v gh >/dev/null 2>&1 || return 1
+    gh_version_ok >/dev/null 2>&1 || return 1
     if [[ -n "${REPO:-}" ]]; then
         gh issue list --repo "${REPO}" --label "${NATTVAKT_DEDUP_ETIKETT}" --state all \
             --limit 50 --json number,state,closedAt,comments 2>/dev/null || return 1

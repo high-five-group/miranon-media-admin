@@ -282,6 +282,18 @@ export function renderReport(m) {
 // Hämtlager (gh api) + CLI — medvetet tunt; ALLT beräknande bor i de pura
 // funktionerna ovan och testas mot fixturer (AC#3). Auth: lokalt inloggad gh,
 // i Actions GH_TOKEN (nightly-metrics-jobbet grantar actions: read).
+//
+// gh — MEDVETET OPINNAD (TASK-312, 2026-08-24): ingen version-guard här.
+// Skälet är dubbelt — (1) körs antingen på en GitHub-hostad runner (gh
+// förinstallerat/versionshanterat av GitHub självt, samma kategori som
+// jq där — se scripts/lib/jq-guard.sh § DEN ENA UNDANTAGNA
+// ANROPSPUNKTEN) ELLER lokalt av Marcus (samma maskin/gh som alla hans
+// andra `gh`-anrop), och (2) detta är en NATTLIG RAPPORTERINGSVÄG (metrik,
+// inte landning) vars fel redan fångas läsbart: gh()-hjälparen nedan
+// FÅNGAR varje fel och ytpresenterar gh:s egen felsträng via ApiError, i
+// stället för att krascha ospecifikt. En för gammal/trasig gh syns alltså
+// direkt i felmeddelandet, den försvinner inte tyst. Se
+// scripts/lib/gh-guard.sh § SCOPE för den fulla avvägningen (samma kort).
 // ---------------------------------------------------------------------------
 
 import { execFile } from 'node:child_process';

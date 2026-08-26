@@ -1,10 +1,10 @@
 ---
 id: TASK-309.7
 title: 'Skiva 6: Mer-sidan — raderna Eventinnehåll och Platser'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-23 14:27'
-updated_date: '2026-08-23 17:56'
+updated_date: '2026-08-24 17:04'
 labels:
   - ready-for-agent
 dependencies:
@@ -29,12 +29,12 @@ Roger och Lotta underhåller standardtexter per Event × Eventtyp och platsernas
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Prod-schemaändringar endast efter Marcus GO i klartext per tabell (ADR-125 § 8)
-- [ ] #6 Ingen HTML byggs i klienten; lagervakten (ADR-057) grön
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 Prod-schemaändringar endast efter Marcus GO i klartext per tabell (ADR-125 § 8)
+- [x] #6 Ingen HTML byggs i klienten; lagervakten (ADR-057) grön
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -86,3 +86,20 @@ Ej byggt/prövat: DoD #6:s "lagervakten (ADR-057)" — ingen dedikerad
 CI-grind hittad under det namnet; verifierat manuellt via grep att inga nya
 filer bygger HTML-strängar eller använder dangerouslySetInnerHTML.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Skiva 6 gav Mer-sidan raderna Eventinnehåll och Platser, med samma radform som grannarna. Eventinnehåll-ytan listar de sju kombinationerna och låter standardtexterna inklusive agendan redigeras med SAMMA block-dialog som genereringsvyn (ingen andra dialogform); Platser-ytan listar platser, låter adress/parkering/transport/kläder redigeras och nya platser skapas. Båda sparar via skiva 2:s skrivvägar. Två nya EF:er (get-event-contents, get-places) plus save-place-standard utökad med två event-lösa lägen för Platser-ytans tvåstegsflöde. Block-dialogen och blockkartan bröts först ut VERBATIM ur GenereringsPrototyp till src/components/dokument/BlockDialog.tsx och blockDefinitioner.ts (prefaktorering, egen commit 89df534d).
+
+BARS AV: PR #1879, commits 89df534d + 544c3ec3, head 369c0a8e (MERGED 2026-08-23T18:15Z, 33 filer).
+GRIND-UTFALL: 12 CheckRuns SUCCESS + 3 SKIPPED på head-commiten 369c0a8e — noll icke-gröna. Landad via merge-kön.
+
+RÄTTELSE AV BYGGNOTERINGENS ÖPPNA PUNKT (mätt 2026-08-24): byggnoteringen ovan skrev att DoD #6:s lagervakt inte gick att köra — "ingen dedikerad CI-grind hittad under det namnet" — och föll tillbaka på manuell grep. Det var ett SÖK-MISS, inte en saknad grind. Vakten finns mekaniskt: `tests/api/attachment-layer-independence.test.ts` ("Bilage-lager-oberoendets mekaniska vakt", ADR-057 klausul a + c), körd i api-pure-projektet utan creds. Körd skarpt 2026-08-24: 7/7 gröna, exit 0, inklusive tvåvägsbevis — detektorn fäller på en konstruerad överträdelse OCH på en konstruerad temp-fil på disk (hela walk+scan-kedjan), och släpper igenom oskyldig text. DoD #6 är därmed MEKANISKT belagt, inte grep-belagt.
+
+DoD-belägg: #1 fyra av fyra AC bockade · #2 CI-jobben "Lint + Audit + TypeCheck" och "Test suite / Pure + Build" SUCCESS på exakt 369c0a8e · #3 rollupen ovan · #4 33 filer, samtliga inom skivans scope (två nya ytor med routes, EF:er, adaptrar, hooks, scheman, acceptance- och staging-tester, purge-target, kortet) · #5 diffen bär noll prod-schemaoperationer; prod-schemat skapades först i TASK-309.9 efter Marcus GO (commit 2290fa8f) · #6 se rättelsen ovan.
+
+Den nya purge-targeten `save-place-standard-event-los-platser-sentineler` (Platser, Namn, ^ZZ-TASK-309.7-) verifierad 2026-08-24 via `node scripts/test-purge-staging-sentinels.mjs`, exit 0, med explicit disk-assertion.
+
+Stängd av orkestrerad stängningsagent 2026-08-24 mot post-merge-bevis.
+<!-- SECTION:FINAL_SUMMARY:END -->

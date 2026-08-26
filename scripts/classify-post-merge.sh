@@ -162,6 +162,23 @@
 #   2  användningsfel (saknat argument eller saknad REPO) — fail-loud: ett
 #      konfigfel ska fälla jobbet och fyra larmet, inte tyst bli "full svit"
 #
+# ═══ gh — MEDVETET OPINNAD HÄR (TASK-312, 2026-08-24) ═══
+#
+# Skriptets `gh api`-anrop nedan har INGEN version-guard (till skillnad
+# från scripts/check-nattvakt-dedup.sh + scripts/check-obesvarade-larm.sh,
+# som BÅDA wirades till scripts/lib/gh-guard.sh i samma kort). Öppet skäl,
+# inte en glömd rad: varje `gh api`-anrop nedan är REDAN kopplat till
+# `|| api_failed="1"` (se § ANROPS-KONTRAKTET ovan), och VARJE gren där
+# api_failed sätts landar i "full svit, fail-closed" — den SÄKRA defaulten,
+# aldrig ett tyst felaktigt docs_only=true. En för gammal/trasig gh
+# producerar alltså i VÄRSTA FALL en onödig full testsvit, aldrig ett
+# felaktigt hoppat test. Risken en version-guard annars stänger (tyst fel
+# beslut) finns strukturellt inte här — skriptets egna fail-closed-kontrakt
+# äger redan den ytan. Körs dessutom uteslutande på GitHub-hostade runners
+# (post-merge.yml) där `gh` är förinstallerat och versionshanterat av
+# GitHub självt, samma kategori som jq där (se scripts/lib/jq-guard.sh §
+# DEN ENA UNDANTAGNA ANROPSPUNKTEN för samma resonemang).
+#
 # Källa: backlog TASK-73 · ADR-077 §§ 1-2 · CONTRIBUTING.md § Revert-vägen
 # Etablerad: Session 91 (2026-07-28)
 

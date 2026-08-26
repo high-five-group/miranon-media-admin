@@ -37,6 +37,7 @@
 
 import { randomUUID } from 'node:crypto';
 import { type APIRequestContext, type APIResponse, expect, test } from '@playwright/test';
+import { registreraKastbarPost } from '../support/kastbara-poster';
 import { type ApiConfig, classify401Body, getApiConfig, getValidUserJWT } from './helpers';
 
 const ENDPOINT = '/functions/v1/create-event';
@@ -69,6 +70,28 @@ function postCreate(
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (jwt) headers.Authorization = `Bearer ${jwt}`;
   return request.post(`${config.baseUrl}${ENDPOINT}`, { headers, data: body });
+}
+
+/**
+ * [TASK-309.15] Registrera den skapade raden i ägar-manifestet
+ * (`tests/support/kastbara-poster.ts`) så att
+ * `purge-staging-sentinels.mjs --efter-korning` kan radera EXAKT denna
+ * körnings rader direkt efteråt. Setup-purgen är kvar som andra
+ * försvarslinje — detta stänger fönstret MELLAN körningarna, där 61
+ * `ZZ-create-event-test`-event låg kvar som KOMMANDE event i appens
+ * eventväljare (mätt 2026-08-24).
+ *
+ * Tar RÅTEXTEN testet redan läst — läser aldrig `APIResponse` en andra gång.
+ * Deny-vägarnas svar bär ingen `record.id` och blir därför en no-op, vilket
+ * gör anropet säkert att lägga efter VARJE `.text()` i filen.
+ */
+function registreraSkapadRad(raw: string, vad: string): void {
+  try {
+    const id = (JSON.parse(raw) as { record?: { id?: unknown } })?.record?.id;
+    if (typeof id === 'string') registreraKastbarPost(id, `create-event/${vad}`);
+  } catch {
+    // Icke-JSON-kropp (t.ex. gateway-401) — ingen rad skapades, inget att registrera.
+  }
 }
 
 // Seedat Eventformat-ankare (eventtyp-länkens mål). Staging Eventformat var TOMT vid bygget
@@ -107,6 +130,7 @@ test.describe('create-event — skarp conformance (Fas 6f L1)', () => {
 
     const res = await postCreate(request, config, jwt, validBody(eventtyp, randomUUID()));
     const raw = await res.text();
+    registreraSkapadRad(raw, 'allow');
     expect(res.status(), raw).toBe(201);
     const body = JSON.parse(raw) as {
       event: Record<string, unknown>;
@@ -157,6 +181,7 @@ test.describe('create-event — skarp conformance (Fas 6f L1)', () => {
       event: 'Resor i medvetandet 2',
     });
     const raw = await res.text();
+    registreraSkapadRad(raw, 'basdimensioner');
     expect(res.status(), raw).toBe(201);
     const body = JSON.parse(raw) as { record: { fields: Record<string, unknown> } };
 
@@ -171,13 +196,51 @@ test.describe('create-event — skarp conformance (Fas 6f L1)', () => {
   // är en STÄNGD singleSelect (data-model.md rad 404, `flddlv4JA5C5CeH5R`) med
   // EXAKT de sex värden `_shared/course-dimensions.ts`s KURS_KARTA täcker —
   // `typecast:false` (airtable-client.ts) FÄLLER varje värde utanför den
-  // listan REDAN på Airtable-anropet (500, ej vår mapping-gren). Scenariot
-  // blir alltså skarpt reproducerbart först den dag Marcus lägger till en ny
-  // singleSelect-option (t.ex. "RIM 4") UTAN att uppdatera kartan — exakt
-  // berättelse 15:s (PRD task-249) beskrivna kant. Lookup-logiken för ett
-  // okänt namn är däremot fullt bevisad i `course-dimensions.test.ts`
-  // ("okänt kursnamn → null") — den prövar exakt samma gren utan att
-  // förutsätta ett Airtable-schema-tillstånd som inte finns i staging idag.
+  // listan REDAN på Airtable-anropet (nu klassat 4xx, TASK-190 nedan — INTE
+  // vår mapping-gren). Scenariot blir alltså skarpt reproducerbart först den
+  // dag Marcus lägger till en ny singleSelect-option (t.ex. "RIM 4") UTAN att
+  // uppdatera kartan — exakt berättelse 15:s (PRD task-249) beskrivna kant.
+  // Lookup-logiken för ett okänt namn är däremot fullt bevisad i
+  // `course-dimensions.test.ts` ("okänt kursnamn → null") — den prövar exakt
+  // samma gren utan att förutsätta ett Airtable-schema-tillstånd som inte
+  // finns i staging idag.
+
+  // TASK-190: Airtables EGEN valideringsavvisning (typecast:false mot den
+  // STÄNGDA `Event (source)`-singleSelecten ovan) svarade tidigare generisk
+  // 500 "Internal error" — anroparen kunde inte skilja sitt eget
+  // kontraktsbrott (ett värde utanför de sex giltiga) från ett äkta
+  // serverfel. Repro: ett `event`-värde som INTE är någon av de sex kända
+  // singleSelect-optionerna. Ingen rad skapas (Airtable avvisar FÖRE
+  // persistering) → ingen sentinel-städning krävs.
+  test('deny: ogiltigt Event (source)-värde (utanför den stängda singleSelecten) → 4xx DIAGNOSTISERBART, ALDRIG 500', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const eventtyp = eventformatId();
+    const ogiltigtVarde = 'Ett-värde-som-inte-finns-i-singleSelecten-xyz';
+
+    const res = await postCreate(request, config, jwt, {
+      ...validBody(eventtyp, randomUUID()),
+      event: ogiltigtVarde,
+    });
+    const raw = await res.text();
+    // Klassat klientfel (Airtables egen 4xx vidarebefordrad, se
+    // classifyAirtableWriteError) — ALDRIG 500. LIVE-VERIFIERAT mot staging
+    // (2026-08-24): Airtables faktiska svar för DENNA feltyp är 422
+    // INVALID_MULTIPLE_CHOICE_OPTIONS — INTE INVALID_VALUE_FOR_COLUMN som
+    // kortets ursprungliga hypotes antog, och meddelandet bär den AVVISADE
+    // VÄRDET, INTE fältnamnet ("Event (source)" saknas i Airtables egen
+    // text). Testet asserterar därför mot vad Airtable FAKTISKT svarar —
+    // aldrig en gissad textform — men kärnkravet står kvar: felet är
+    // klassat och DIAGNOSTISERBART (typ + avvisat värde synligt), i
+    // stället för den tidigare opaka 500:an.
+    expect(res.status(), raw).toBeGreaterThanOrEqual(400);
+    expect(res.status(), raw).toBeLessThan(500);
+    const body = JSON.parse(raw) as { error?: string };
+    expect(body.error).toContain('INVALID_MULTIPLE_CHOICE_OPTIONS');
+    expect(body.error).toContain(ogiltigtVarde);
+  });
 
   test('IDEMPOTENS: färsk UUID → 201 created; samma UUID → 200 replay, samma record-ID, noll dubblett', async ({
     request,
@@ -190,6 +253,7 @@ test.describe('create-event — skarp conformance (Fas 6f L1)', () => {
     // (1) Färsk nyckel → SKAPAR (createdRecords).
     const first = await postCreate(request, config, jwt, validBody(eventtyp, key));
     const firstRaw = await first.text();
+    registreraSkapadRad(firstRaw, 'idempotens');
     expect(first.status(), firstRaw).toBe(201);
     const firstBody = JSON.parse(firstRaw) as { record: { id: string }; created: boolean };
     expect(firstBody.created).toBe(true);
@@ -218,6 +282,7 @@ test.describe('create-event — skarp conformance (Fas 6f L1)', () => {
       publicera: true,
     });
     const armeradRaw = await armerad.text();
+    registreraSkapadRad(armeradRaw, 'publicering-armerad');
     expect(armerad.status(), armeradRaw).toBe(201);
     const armeradBody = JSON.parse(armeradRaw) as {
       record: { id: string; fields: Record<string, unknown> };
@@ -234,6 +299,7 @@ test.describe('create-event — skarp conformance (Fas 6f L1)', () => {
       validBody(eventtyp, randomUUID()), // ingen publicera-nyckel alls
     );
     const oarmeradRaw = await oarmerad.text();
+    registreraSkapadRad(oarmeradRaw, 'publicering-oarmerad');
     expect(oarmerad.status(), oarmeradRaw).toBe(201);
     const oarmeradBody = JSON.parse(oarmeradRaw) as {
       record: { id: string; fields: Record<string, unknown> };
@@ -247,6 +313,7 @@ test.describe('create-event — skarp conformance (Fas 6f L1)', () => {
       publicera: false,
     });
     const explicitRaw = await explicitFalse.text();
+    registreraSkapadRad(explicitRaw, 'publicering-explicit-false');
     expect(explicitFalse.status(), explicitRaw).toBe(201);
     const explicitBody = JSON.parse(explicitRaw) as {
       record: { fields: Record<string, unknown> };

@@ -19,14 +19,20 @@ import {
   chunk,
   deleteRecords,
   fetchWithNetworkRetry,
+  hanteradeIds,
   isAlreadyDeletedError,
   isExactSentinel,
   isOldEnough,
   isStorageObjectOldEnough,
   isTransientNetworkError,
+  KASTBARA_POSTER_FIL,
   linkGuardTrips,
+  parseArgs,
+  parseManifest,
+  planEfterKorning,
   planPurge,
   planStoragePurge,
+  recordIdFormula,
   validatePolicy,
 } from './purge-staging-sentinels.mjs';
 
@@ -893,6 +899,233 @@ t('policyn på disk BÄR save-event-text-agendapunkter-sentineler (Agendapunkter
   assert.equal(target.linkGuard, false);
   assert.equal(isExactSentinel({ fields: { Text: 'ZZ-TASK-309.3-rad-1' } }, target), true);
   assert.equal(isExactSentinel({ fields: { Text: 'Miranon Media' } }, target), false);
+});
+
+// ---------------------------------------------------------------------------
+// [TASK-309.15] Efter-körning-läget — ägar-manifestet
+// ---------------------------------------------------------------------------
+
+t('parseArgs: utan flagga → setup-läget, inget manifest', () => {
+  assert.deepEqual(parseArgs(['node', 'x']), {
+    lage: 'setup',
+    dryRun: false,
+    manifestFil: null,
+  });
+});
+
+t('parseArgs: --efter-korning utan sökväg → default-manifestet', () => {
+  const a = parseArgs(['node', 'x', '--efter-korning']);
+  assert.equal(a.lage, 'efter-korning');
+  assert.equal(a.manifestFil, KASTBARA_POSTER_FIL);
+});
+
+t('parseArgs: --efter-korning med sökväg → den sökvägen', () => {
+  const a = parseArgs(['node', 'x', '--efter-korning', 'nagon/annan.jsonl']);
+  assert.equal(a.manifestFil, 'nagon/annan.jsonl');
+});
+
+t('parseArgs: --efter-korning --dry-run tar INTE flaggan som sökväg', () => {
+  const a = parseArgs(['node', 'x', '--efter-korning', '--dry-run']);
+  assert.equal(a.manifestFil, KASTBARA_POSTER_FIL);
+  assert.equal(a.dryRun, true);
+});
+
+/**
+ * DRIFT-VAKTEN. Manifestets sökväg finns på TVÅ ställen — skrivaren är
+ * TypeScript i Playwright-processen, läsaren är detta Node-script, och de kan
+ * inte dela modul. Går de isär läser purgen en tom fil och rapporterar "inget
+ * att städa" utan att något ser fel ut: frånvaro presenterad som data, repots
+ * egen återkommande felklass. Därför korsläses de här.
+ */
+t('KASTBARA_POSTER_FIL är IDENTISK med tests/support/kastbara-poster.ts', () => {
+  const ts = readFileSync(new URL('../tests/support/kastbara-poster.ts', import.meta.url), 'utf8');
+  const m = /export const KASTBARA_POSTER_FIL = '([^']+)'/.exec(ts);
+  assert.ok(m, 'hittade ingen KASTBARA_POSTER_FIL-deklaration i tests/support/kastbara-poster.ts');
+  assert.equal(m[1], KASTBARA_POSTER_FIL);
+});
+
+t('parseManifest: giltiga rader ger ID-mängd + beskrivningar', () => {
+  const { ids, vad, ogiltiga } = parseManifest(
+    `${JSON.stringify({ id: 'recAAAAAAAAAAAAAA', vad: 'create-event/allow' })}\n` +
+      `${JSON.stringify({ id: 'recBBBBBBBBBBBBBB', vad: 'update-event' })}\n`,
+  );
+  assert.deepEqual([...ids].sort(), ['recAAAAAAAAAAAAAA', 'recBBBBBBBBBBBBBB']);
+  assert.equal(vad.get('recAAAAAAAAAAAAAA'), 'create-event/allow');
+  assert.deepEqual(ogiltiga, []);
+});
+
+t('parseManifest: tomma rader ignoreras helt (append-only-filens svans)', () => {
+  const { ids, ogiltiga } = parseManifest(
+    `\n${JSON.stringify({ id: 'recAAAAAAAAAAAAAA', vad: 'x' })}\n\n\n`,
+  );
+  assert.equal(ids.size, 1);
+  assert.deepEqual(ogiltiga, []);
+});
+
+t('parseManifest: dubblett slås ihop, FÖRSTA beskrivningen behålls', () => {
+  const { ids, vad } = parseManifest(
+    `${JSON.stringify({ id: 'recAAAAAAAAAAAAAA', vad: 'forsta' })}\n` +
+      `${JSON.stringify({ id: 'recAAAAAAAAAAAAAA', vad: 'andra' })}\n`,
+  );
+  assert.equal(ids.size, 1);
+  assert.equal(vad.get('recAAAAAAAAAAAAAA'), 'forsta');
+});
+
+t('parseManifest: trasig JSON blir OGILTIG rad — rapporteras, raderar inget', () => {
+  const { ids, ogiltiga } = parseManifest('{inte-json\n');
+  assert.equal(ids.size, 0);
+  assert.equal(ogiltiga.length, 1);
+});
+
+t('parseManifest: icke-rec-formad id blir OGILTIG rad (fail-closed)', () => {
+  const { ids, ogiltiga } = parseManifest(
+    `${JSON.stringify({ id: 'tblAAAAAAAAAAAAA', vad: 'fel-typ' })}\n` +
+      `${JSON.stringify({ id: '../../etc/passwd', vad: 'illvillig' })}\n` +
+      `${JSON.stringify({ vad: 'saknar id' })}\n`,
+  );
+  assert.equal(ids.size, 0);
+  assert.equal(ogiltiga.length, 3);
+});
+
+const AGD = 'recOWNED00000001';
+const FRAMMANDE = 'recFOREIGN000001';
+
+t('planEfterKorning: ÄGD exakt sentinel raderas — även 30 min FÄRSK', () => {
+  // Ålders-guarden är ERSATT av ägarskapet i detta läge. En färsk rad som står
+  // i körningens EGET manifest är per konstruktion inte någon annans
+  // in-flight-rad, och det är hela poängen: setup-purgens 60-minutersgräns är
+  // just det som gör att raden annars ligger kvar och syns i eventväljaren.
+  const plan = planEfterKorning(
+    [{ id: AGD, createdTime: FRESH, fields: { Ort: 'ZZ-create-event-test' } }],
+    EVENT_TARGET,
+    new Set([AGD]),
+    NOW,
+  );
+  assert.deepEqual(plan.toDelete, [AGD]);
+});
+
+t('planEfterKorning: FRÄMMANDE rad rörs ALDRIG, hur exakt den än matchar', () => {
+  // Den bärande riktningen: en samtidig LOKAL körnings rad matchar formeln och
+  // mönstret perfekt, men står inte i CI:s manifest. Skulle den raderas vore
+  // efter-körning-läget farligare än det fönster det stänger.
+  const plan = planEfterKorning(
+    [
+      { id: AGD, createdTime: OLD, fields: { Ort: 'ZZ-create-event-test' } },
+      { id: FRAMMANDE, createdTime: OLD, fields: { Ort: 'ZZ-create-event-test' } },
+    ],
+    EVENT_TARGET,
+    new Set([AGD]),
+    NOW,
+  );
+  assert.deepEqual(plan.toDelete, [AGD]);
+  assert.equal(plan.toDelete.includes(FRAMMANDE), false);
+});
+
+t('planEfterKorning: ägd rad utanför exakt-mönstret raderas INTE', () => {
+  const plan = planEfterKorning(
+    [{ id: AGD, createdTime: OLD, fields: { Ort: 'ZZ-History Ort' } }],
+    EVENT_TARGET,
+    new Set([AGD]),
+    NOW,
+  );
+  assert.deepEqual(plan.toDelete, []);
+  assert.deepEqual(plan.skippedMismatch, [AGD]);
+});
+
+t('planEfterKorning: länk-guarden gäller oförändrat även för ägda rader', () => {
+  const plan = planEfterKorning(
+    [
+      {
+        id: AGD,
+        createdTime: OLD,
+        fields: { Ort: 'ZZ-create-event-test', 'Anmälningar (länkat fält)': ['recZZZZZZZZZZZZZZ'] },
+      },
+    ],
+    EVENT_TARGET,
+    new Set([AGD]),
+    NOW,
+  );
+  assert.deepEqual(plan.toDelete, []);
+  assert.equal(plan.skippedLinked.length, 1);
+});
+
+t('planEfterKorning: oläsbar createdTime ⇒ fail-safe, ägd rad rörs ändå INTE', () => {
+  const plan = planEfterKorning(
+    [{ id: AGD, fields: { Ort: 'ZZ-create-event-test' } }],
+    EVENT_TARGET,
+    new Set([AGD]),
+    NOW,
+  );
+  assert.deepEqual(plan.toDelete, []);
+  assert.deepEqual(plan.skippedYoung, [AGD]);
+});
+
+t('hanteradeIds: samlar VARJE id ett plan rörde vid, oavsett utfall', () => {
+  const plan = {
+    toDelete: ['rec1'],
+    skippedYoung: ['rec2'],
+    skippedMismatch: ['rec3'],
+    skippedLinked: [{ id: 'rec4', fields: ['X'] }],
+  };
+  assert.deepEqual(hanteradeIds(plan).sort(), ['rec1', 'rec2', 'rec3', 'rec4']);
+});
+
+t('recordIdFormula: bygger en OR över exakt de givna ID:na', () => {
+  assert.equal(
+    recordIdFormula(['recAAAAAAAAAAAAAA', 'recBBBBBBBBBBBBBB']),
+    "OR(RECORD_ID()='recAAAAAAAAAAAAAA',RECORD_ID()='recBBBBBBBBBBBBBB')",
+  );
+});
+
+// --- [TASK-309.15] update-event-uppdaterad-targeten (den permanenta läckan) ---
+//
+// KLASSENS ROT: update-event.staging.test.ts döper om sitt sentinel-event och
+// återställer i `finally`. Faller `finally` matchar raden VARKEN
+// create-event-sentinelernas formel eller mönster, och blir opurgbar för
+// alltid. MÄTT i staging 2026-08-24: två rader, 26,9 och 32,3 dygn gamla —
+// medan varje ANNAN kastbar familj var yngre än 2,4 h.
+t('policyn på disk BÄR update-event-uppdaterad-sentineler (Eventplanering, Ort)', () => {
+  const target = findTarget('update-event-uppdaterad-sentineler');
+  assert.ok(target, 'update-event-uppdaterad-sentineler saknas i .purge-staging-policy.json');
+  assert.equal(target.table, 'Eventplanering');
+  assert.equal(target.exactMatchField, 'Ort');
+  assert.equal(target.linkGuard, true);
+  assert.deepEqual(target.linkGuardExcludeFields, ['Eventtyp']);
+});
+
+t('AC sida A: den uppdaterade orten FÅNGAS av den nya targeten', () => {
+  const target = findTarget('update-event-uppdaterad-sentineler');
+  assert.equal(
+    isExactSentinel({ fields: { Ort: 'ZZ-create-event-test-uppdaterad' } }, target),
+    true,
+  );
+});
+
+t('AC sida B: targeten är SMAL — rör varken basorten eller fixturerna', () => {
+  const target = findTarget('update-event-uppdaterad-sentineler');
+  // Basorten ägs av create-event-sentineler, inte av denna target.
+  assert.equal(isExactSentinel({ fields: { Ort: 'ZZ-create-event-test' } }, target), false);
+  // Prefix räcker aldrig (S52-formen).
+  assert.equal(
+    isExactSentinel({ fields: { Ort: 'ZZ-create-event-test-uppdaterad-igen' } }, target),
+    false,
+  );
+  // Granskningsfixturen får ALDRIG bli purge-bar (CLAUDE.md § seed:review).
+  assert.equal(isExactSentinel({ fields: { Ort: 'ZZ-GRANSKNING-S103' } }, target), false);
+  assert.equal(isExactSentinel({ fields: { Ort: 'Rönninge' } }, target), false);
+});
+
+t('den nya targeten gör INTE någon ANNAN targets mönster bredare', () => {
+  // Omvänd riktning: create-event-sentineler får inte plötsligt fånga den
+  // uppdaterade orten (den skulle då raderas av setup-purgen MITT i ett
+  // pågående update-event-test, före `finally` hunnit återställa).
+  assert.equal(
+    isExactSentinel(
+      { fields: { Ort: 'ZZ-create-event-test-uppdaterad' } },
+      findTarget('create-event-sentineler'),
+    ),
+    false,
+  );
 });
 
 process.on('beforeExit', () => {

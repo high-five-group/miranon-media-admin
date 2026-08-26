@@ -35,7 +35,14 @@ test('narrow — hem-vyn för installationsdialogens skärmbild', async ({ page 
   // Samma synlighets-vakt som tests/visual/hem.spec.ts: hälsningen bevisar
   // seedad session, eventnamnet bevisar mockad EF-data — skottet tas aldrig
   // av en halvladdad sida.
-  await expect(page.getByText('Lotta')).toBeVisible();
+  //
+  // SCOPAD TILL h1:n (TASK-243.6, samma fix som tests/visual/hem.spec.ts —
+  // denna spec-fil hade INTE fått den, TASK-311). `getByText('Lotta')` blev
+  // strict-mode-fällande när `SenasteAktivitetKompakt.tsx`/bevakningsraden
+  // landade på hem: aktörsnamn och bevakningsradens text matchar samma
+  // sträng, så lokatorn löser ut till FLERA element. Rubriken bär avsikten
+  // exakt — "Hej Lotta" är hälsningen, och `display_name` är dess enda källa.
+  await expect(page.getByRole('heading', { level: 1, name: 'Hej Lotta' })).toBeVisible();
   await expect(page.getByText('Utbildning Skövde').first()).toBeVisible();
 
   // fullPage: false (default) — installationsdialogens skärmbild ska visa EN

@@ -95,12 +95,17 @@ test('intresserade — sidram + initialcirklar (TASK-299.8) ur mockad lead-lista
 /**
  * [TASK-314, 299.10 steg 10] prefers-contrast: more. Samma `emulateMedia`-
  * mönster som `dorrlista-promoverings-grind.spec.ts` rad ~746-782.
- * `IntresseradRow` (`Intresserade.tsx`) bär INGEN egen `contrast-more:`-klass
- * (verifierat, noll träffar) — raddelaren är en STATISK `border-text-muted/20
- * border-b`, redan synlig i normalläget. Grinden bevisar att den befintliga
- * gränsen förblir renderad (solid, bredd > 0) under förstärkt kontrast, plus
- * en fullsides pixel-baseline (samma idiom som filens ordinarie test ovan)
- * och axe 0.
+ *
+ * UPPGRADERAD TILL TOKEN-PROBE (TASK-317, Marcus-beslut 2026-08-24):
+ * `IntresseradRow` (`Intresserade.tsx`) bar tidigare INGEN egen
+ * `contrast-more:`-klass — raddelaren var en STATISK `border-text-muted/20
+ * border-b`, redan synlig i normalläget, så grinden kunde bara bevisa att
+ * gränsen förblev renderad (solid, bredd > 0), inte att kontrastläget
+ * faktiskt GJORDE något. TASK-317 lade till `contrast-more:border-border-strong`
+ * på raden — samma token-kedja (`--mm-border-strong`) dörrlistans/
+ * `AnmalningarSida.tsx`s referens prövar. Probeteknik identisk med
+ * `anmalningssidan-promoverings-grind.spec.ts`: DOM-löst token jämfört mot
+ * den faktiskt renderade kantfärgen, plus axe 0 och pixel-baseline.
  */
 test('intresserade — hög-kontrast-läge (prefers-contrast: more)', async ({ page, network }) => {
   const WCAG_TAGGAR = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
@@ -123,10 +128,20 @@ test('intresserade — hög-kontrast-läge (prefers-contrast: more)', async ({ p
   const rad = page.getByRole('list').getByRole('listitem').first();
   const kant = await rad.evaluate((el) => {
     const s = getComputedStyle(el);
-    return { bredd: s.borderBottomWidth, stil: s.borderBottomStyle };
+    return { bredd: s.borderBottomWidth, stil: s.borderBottomStyle, farg: s.borderBottomColor };
   });
   expect(kant.stil).toBe('solid');
   expect(Number.parseFloat(kant.bredd)).toBeGreaterThan(0);
+
+  const strongToken = await page.evaluate(() => {
+    const probe = document.createElement('span');
+    probe.style.color = 'var(--mm-border-strong)';
+    document.body.appendChild(probe);
+    const c = getComputedStyle(probe).color;
+    probe.remove();
+    return c;
+  });
+  expect(kant.farg).toBe(strongToken);
 
   const resultat = await new AxeBuilder({ page }).withTags(WCAG_TAGGAR).analyze();
   expect(resultat.violations).toEqual([]);

@@ -297,6 +297,8 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || exit 0
 KATALOG_POLICY="${KATALOG_POLICY:-${SCRIPT_DIR}/../.katalogagarskap-policy.conf}"
 HOOK_LOGG="${HOOK_LOGG:-${SCRIPT_DIR}/../.claude/hook-fallningar.jsonl}"
+# shellcheck source=/dev/null  # dynamisk SCRIPT_DIR-relativ path; scripts/lib/jq-guard.sh lintas separat via ci.yml:s shellcheck-lista
+source "${SCRIPT_DIR}/lib/jq-guard.sh"
 
 # neka <skäl> — T120-formen. Se § DENY, INTE ASK ovan.
 neka() {
@@ -320,6 +322,12 @@ neka() {
 # exit eller stdout — varje steg failar tyst mot `|| true`.
 logga_fallning() {
     local skalnyckel="$1" kommando_kort
+    # Bar presence-check, MEDVETET INTE jq_version_ok (TASK-312): denna
+    # helper anropas alltid EFTER huvudgrinden nedan (rad ~435) redan
+    # passerat jq_version_ok — en version-koll här vore en redundant
+    # andra jq --version-process i en logg-väg som redan ska vara
+    # best-effort-billig (§ FÄLLNINGS-LOGG ovan: "får ALDRIG påverka
+    # hookens exit eller stdout").
     command -v jq >/dev/null 2>&1 || return 0
     mkdir -p "$(dirname "${HOOK_LOGG}")" 2>/dev/null || return 0
     kommando_kort="${COMMAND:0:120}"
@@ -428,7 +436,7 @@ arbetstrad_har_ocommittat_arbete() {
     return 1
 }
 
-command -v jq >/dev/null 2>&1 || exit 0
+jq_version_ok > /dev/null 2>&1 || exit 0
 command -v git >/dev/null 2>&1 || exit 0
 [[ -f "${KATALOG_POLICY}" ]] || exit 0
 # shellcheck source=/dev/null

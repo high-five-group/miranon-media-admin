@@ -97,8 +97,17 @@ ROT="${CLAUDE_PROJECT_DIR:-.}"
 LOGG="${ROT}/.claude/agent-spawn-log.jsonl"
 AGENTKATALOG="${ROT}/.claude/agents"
 
-# jq saknas → ingen rad, ingen spärr.
-command -v jq > /dev/null 2>&1 || exit 0
+# SCRIPT_DIR (BASH_SOURCE-baserad, INTE ROT/CLAUDE_PROJECT_DIR) enbart för
+# att hitta jq-guard.sh i DENNA egna worktree — ROT ovan pekar medvetet mot
+# den DELADE huvudkatalogen (§ ovan: .claude/agents är huvudkatalogs-
+# förankrat), vilket är fel plats att leta efter ett skript som ska köras
+# ur den worktree som faktiskt äger denna process.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)" || exit 0
+# shellcheck source=/dev/null  # dynamisk SCRIPT_DIR-relativ path; scripts/lib/jq-guard.sh lintas separat via ci.yml:s shellcheck-lista
+source "${SCRIPT_DIR}/lib/jq-guard.sh" || exit 0
+
+# jq saknas eller är för gammal (TASK-312) → ingen rad, ingen spärr.
+jq_version_ok > /dev/null 2>&1 || exit 0
 
 INDATA="$(cat)"
 [[ -n "${INDATA}" ]] || exit 0

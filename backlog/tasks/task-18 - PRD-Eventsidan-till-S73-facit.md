@@ -1,12 +1,14 @@
 ---
 id: TASK-18
 title: 'PRD: Eventsidan till S73-facit'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-21 07:56'
-updated_date: '2026-08-07 11:19'
+updated_date: '2026-08-24 15:46'
 labels:
   - ready-for-human
+  - wontfix
+  - intentionally-unchecked
 dependencies: []
 ordinal: 40000
 ---
@@ -122,3 +124,20 @@ ADR-055/057 (router-context-DI + lager-oberoende) · ADR-016 (optimistiska mutat
 - [ ] #6 Facit-avprickningen: varje berörd facit-punkt avprickad med renderad verifiering (computed-style/skärmdump) före granskning (L245/L246)
 - [ ] #7 Bas-ändringar ADDITIVA och staging FÖRST; prod-deploy av fält/EF är separat Marcus-auktoriserad handling (ADR-050/ADR-063)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Beslutat av Code på Marcus-mandat 2026-08-24 (GO i klartext), S112. Motiv: superseded av S93-facit-familjen (TASK-145/146/147), se WONTFIX-kommentaren för belägg. Divergens noterad öppet (ADR-086): mandatets premiss för TASK-18 (till skillnad från TASK-18.20) saknar en lika explicit citation — beläggkedjan för föräldra-PRD:t är indirekt (18/19 barnkort Done + S93-grillningens dokumenterade arkitekturbyte), inte en enskild rad som citerar 'ersätter task-18'. Prövad och hållande, men källmärkt svagare än 18.20:s belägg.
+
+OBOCKAT MED AVSIKT: kortet förkastat (wontfix, Marcus-mandat 2026-08-24) — superseded av S93-facit-familjen; AC/DoD avser arbete som aldrig ska utföras.
+<!-- SECTION:NOTES:END -->
+
+## Comments
+
+<!-- COMMENTS:BEGIN -->
+created: 2026-08-24 14:40
+---
+WONTFIX 2026-08-24 (S112, Marcus-mandat): PRD:n superseded av S93-facit-familjen TASK-145 (Eventsidans konsolidering), TASK-146 (Bilage-fundamentet) och TASK-147 (Åtgärds-sidan) — grillad samsyn S93 (tasks/sessions/2026-08-02-session-93.md rad 967, 'K27-anden faller, öppet') river den skrivvägsmodell TASK-18 byggde mot S73-facitet. 18 av 19 barnkort redan Done (grep -H "^status:" backlog/tasks/task-18.*.md, 2026-08-24); enda kvarvarande barnet TASK-18.20 förkastas i samma pass med explicit citat ur TASK-145 ('Detta kort ersätter task-18.20', rad 138). Ingen ny kod skriven; PRD:t stängs som obsolet.
+---
+<!-- COMMENTS:END -->

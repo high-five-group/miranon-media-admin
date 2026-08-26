@@ -1,0 +1,14 @@
+- dialog "Dag 1":
+  - heading "Dag 1" [level=2]
+  - list:
+    - listitem:
+      - button /Samling och incheckning \d+:\d+/
+    - listitem:
+      - button /Morgonmeditation \d+:\d+/
+    - listitem:
+      - button /Lunch \d+:\d+/
+  - button "Lägg till punkt"
+  - button "Lägg till meditation"
+  - paragraph: Följer standarden. Ändras standarden senare markeras bilagan som inaktuell.
+  - button "Avbryt"
+  - button "Spara"

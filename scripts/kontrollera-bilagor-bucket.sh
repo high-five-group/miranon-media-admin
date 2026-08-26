@@ -12,9 +12,10 @@
 # ANVÄNDNING:
 #   bash scripts/kontrollera-bilagor-bucket.sh <project-ref>
 #
-# Hämtar service-role-nyckeln engångs via `supabase projects api-keys`
-# (LEVER ALDRIG PÅ DISK, se provision-attachments-bucket.mjs § header) och
-# anropar den filens read-only `--kontrollera`-läge.
+# Hämtar service-role-nyckeln engångs via en PINNAD `supabase projects
+# api-keys` (scripts/lib/supabase-cli.sh + .supabase-cli-policy.conf, S108
+# 2026-08-24 — LEVER ALDRIG PÅ DISK, se provision-attachments-bucket.mjs §
+# header) och anropar den filens read-only `--kontrollera`-läge.
 #
 # ENV-OVERRIDE (test-isolering, samma mönster som FUNCTIONS_DIR/
 # ALLOWLIST_FILE i deploy-prod-functions.sh):
@@ -50,7 +51,10 @@ if [[ -n "${KONTROLL_CMD:-}" ]]; then
     exit $?
 fi
 
-NYCKEL="$(npx supabase projects api-keys --project-ref "${REF}" -o json 2> /dev/null \
+# shellcheck source=/dev/null  # dynamisk SCRIPT_DIR-relativ path; scripts/lib/supabase-cli.sh lintas separat via ci.yml:s shellcheck-lista
+source "${SCRIPT_DIR}/lib/supabase-cli.sh"
+
+NYCKEL="$(supabase_cli projects api-keys --project-ref "${REF}" -o json 2> /dev/null \
     | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{
         try {
           const k = JSON.parse(s).find((x) => x.name === "service_role");

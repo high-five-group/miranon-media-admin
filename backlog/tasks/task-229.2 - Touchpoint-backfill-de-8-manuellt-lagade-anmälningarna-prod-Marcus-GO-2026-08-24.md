@@ -3,10 +3,10 @@ id: TASK-229.2
 title: >-
   Touchpoint-backfill: de 8 manuellt lagade anmälningarna (prod, Marcus-GO
   2026-08-24)
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-24 13:36'
-updated_date: '2026-08-24 13:46'
+updated_date: '2026-08-24 14:39'
 labels:
   - ready-for-agent
 dependencies: []
@@ -30,8 +30,14 @@ De 8 anmälningar som Person-länk-lagades via manuell PATCH (2026-08-15) fick a
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Done-flipp S112: PR #1905 landad, post-merge grön; 8/8 prod-touchpoints med read-back + slutsvep 15/15 (verifierad 2026-08-24).
+<!-- SECTION:NOTES:END -->

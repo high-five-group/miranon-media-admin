@@ -711,6 +711,160 @@ async function createField(baseId, tableId, body, token, throttleMs) {
 }
 
 // ---------------------------------------------------------------------------
+// runOperations — EN delad implementation av operations-loopen, körd av
+// main() i BÅDA lägena (dry-run och skarpt). Fixar TASK-313: dry-run mot en
+// tom bas kraschade tidigare på operation nr 3 (Agendapunkter, som länkar
+// Eventinnehåll) eftersom createTable-dry-run-grenen aldrig trädde
+// tableIdByName — kommentaren på platsen påstod att en "separat
+// rapportering" fångade upp det; ingen sådan fanns (ADR-083-klassen).
+//
+// Dry-run threadar nu ett SYNTETISKT ID (DRY_RUN_ID_PREFIX + tabellnamn) för
+// varje createTable-operation innan den fortsätter — det är vad som låter en
+// SENARE operation som länkar dit (Agendapunkter → Eventinnehåll) planeras i
+// SAMMA pass i stället för att kasta GuardError. Det syntetiska ID:t skickas
+// ALDRIG till något API: createTableApi/createFieldApi anropas överhuvudtaget
+// inte när dryRun är sant (se de tidiga `continue`-grenarna nedan) — därför
+// är funktionen hermetiskt testbar med stubbar som kastar om de anropas.
+// ---------------------------------------------------------------------------
+
+const DRY_RUN_ID_PREFIX = 'dryrun-syntetisk-id:';
+
+export async function runOperations({
+  tables,
+  operations,
+  dryRun,
+  createTableApi,
+  createFieldApi,
+}) {
+  const tableIdByName = new Map();
+  for (const t of tables ?? []) tableIdByName.set(t.name, t.id);
+
+  const resolveLinkedTableId = (name) => {
+    const id = tableIdByName.get(name);
+    if (!id)
+      throw new GuardError(`länkad tabell "${name}" hittades inte (ordningsfel i operations?)`);
+    return id;
+  };
+
+  let anyChange = false;
+  const skapadeRader = [];
+
+  for (const op of operations) {
+    const existingTable = findTableByName(tables, op.name) ?? {
+      id: tableIdByName.get(op.name),
+      fields: [],
+    };
+    const tableExists = tableIdByName.has(op.name);
+
+    if (op.kind === 'addFields' && !tableExists) {
+      throw new GuardError(
+        `addFields riktad mot "${op.name}" som inte finns — den tabellen förväntas ` +
+          'existera SEDAN TIDIGARE (Eventplanering/Bilagor), inte skapas av detta skript',
+      );
+    }
+
+    if (op.kind === 'createTable' && tableExists) {
+      // Tabellen finns redan — behandla som addFields (idempotent-vägen).
+      const liveTable = tables.find((t) => t.id === tableIdByName.get(op.name));
+      const plan = planFields(liveTable, op.fields, resolveLinkedTableId);
+      if (plan.mismatches.length > 0) {
+        const beskrivning = plan.mismatches
+          .map((m) => `"${m.name}": förväntade "${m.expectedType}", fann "${m.actualType}"`)
+          .join('; ');
+        throw new GuardError(
+          `schema-missmatch mot befintlig tabell "${op.name}" — rör INGET: ${beskrivning}`,
+        );
+      }
+      if (plan.toCreate.length === 0) {
+        console.log(
+          `✅ Tabellen "${op.name}" (${liveTable.id}) finns redan med alla förväntade fält — inget att göra.`,
+        );
+        continue;
+      }
+      if (dryRun) {
+        console.log(
+          `📝 DRY-RUN: tabellen "${op.name}" finns, skulle LÄGGA TILL: ${plan.toCreate.map((f) => f.name).join(', ')}`,
+        );
+        anyChange = true;
+        continue;
+      }
+      for (const field of plan.toCreate) {
+        const body = buildCreateFieldBody(field, resolveLinkedTableId);
+        const created = await createFieldApi(liveTable.id, body);
+        console.log(`   • ${created.name} (${created.type}) — ${created.id}`);
+        skapadeRader.push(`${op.name}.${created.name} (${created.type}) — ${created.id}`);
+      }
+      anyChange = true;
+      continue;
+    }
+
+    if (op.kind === 'createTable') {
+      if (dryRun) {
+        const body = buildCreateTableBody(op, resolveLinkedTableId);
+        console.log(
+          `📝 DRY-RUN: skulle SKAPA tabellen "${op.name}" med fälten: ${body.fields.map((f) => f.name).join(', ')}`,
+        );
+        // Threada ett SYNTETISKT ID vidare (se filhuvudets kommentar ovan)
+        // så att en SENARE operation som länkar hit kan planeras i SAMMA
+        // dry-run-pass i stället för att kasta.
+        tableIdByName.set(op.name, `${DRY_RUN_ID_PREFIX}${op.name}`);
+        anyChange = true;
+        continue;
+      }
+      const body = buildCreateTableBody(op, resolveLinkedTableId);
+      console.log(`🛠️  Skapar tabellen "${op.name}" med ${body.fields.length} fält …`);
+      const created = await createTableApi(body);
+      tableIdByName.set(op.name, created.id);
+      console.log(`✅ Tabell skapad: ${created.id} ("${created.name}")`);
+      skapadeRader.push(`Tabell ${op.name} — ${created.id}`);
+      for (const f of created.fields ?? []) {
+        console.log(`   • ${f.name} (${f.type}) — ${f.id}`);
+        skapadeRader.push(`${op.name}.${f.name} (${f.type}) — ${f.id}`);
+      }
+      anyChange = true;
+      continue;
+    }
+
+    // op.kind === 'addFields', tabellen finns.
+    const liveTable = tables.find((t) => t.id === tableIdByName.get(op.name)) ?? existingTable;
+    const plan = planFields(liveTable, op.fields, resolveLinkedTableId);
+    if (plan.mismatches.length > 0) {
+      const beskrivning = plan.mismatches
+        .map((m) => `"${m.name}": förväntade "${m.expectedType}", fann "${m.actualType}"`)
+        .join('; ');
+      throw new GuardError(
+        `schema-missmatch mot befintlig tabell "${op.name}" — rör INGET: ${beskrivning}`,
+      );
+    }
+    if (plan.toCreate.length === 0) {
+      console.log(
+        `✅ Tabellen "${op.name}" (${liveTable.id}) bär redan alla förväntade fält — inget att göra.`,
+      );
+      continue;
+    }
+    if (dryRun) {
+      console.log(
+        `📝 DRY-RUN: tabellen "${op.name}" (${liveTable.id}), skulle LÄGGA TILL: ${plan.toCreate.map((f) => f.name).join(', ')}`,
+      );
+      anyChange = true;
+      continue;
+    }
+    console.log(
+      `🛠️  Tabellen "${op.name}" (${liveTable.id}), lägger till ${plan.toCreate.length} saknade fält …`,
+    );
+    for (const field of plan.toCreate) {
+      const body = buildCreateFieldBody(field, resolveLinkedTableId);
+      const created = await createFieldApi(liveTable.id, body);
+      console.log(`   • ${created.name} (${created.type}) — ${created.id}`);
+      skapadeRader.push(`${op.name}.${created.name} (${created.type}) — ${created.id}`);
+    }
+    anyChange = true;
+  }
+
+  return { anyChange, skapadeRader };
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
@@ -753,151 +907,18 @@ async function main() {
     kravStagingLedigt('lokal schema:eventinnehall');
   }
 
-  // tableIdByName threadas genom hela körningen: startar med redan kända
-  // tabeller (Eventplanering/Bilagor MÅSTE redan existera — se
-  // validateConfig-kommentaren om addFields), fylls på när varje createTable-
-  // operation lyckas (eller hittar en befintlig tabell).
-  const tableIdByName = new Map();
-
-  // Klistervänlig sammanfattning av allt som faktiskt skapades i DENNA
-  // körning — samlas löpande, skrivs ut som ETT block i slutet så att
-  // data-model.md:s prod-kolumn kan fyllas i ett enda klipp (TASK-309.9).
-  const skapadeRader = [];
-
   try {
     console.log(`🔍 Läser schema för ${targetBaseId}${korMotProd ? ' (PROD)' : ''} …`);
     const tables = await getBaseSchema(targetBaseId, token, CONFIG.requestThrottleMs);
-    for (const t of tables) tableIdByName.set(t.name, t.id);
 
-    const resolveLinkedTableId = (name) => {
-      const id = tableIdByName.get(name);
-      if (!id)
-        throw new GuardError(`länkad tabell "${name}" hittades inte (ordningsfel i operations?)`);
-      return id;
-    };
-
-    let anyChange = false;
-
-    for (const op of CONFIG.operations) {
-      const existingTable = findTableByName(tables, op.name) ?? {
-        id: tableIdByName.get(op.name),
-        fields: [],
-      };
-      const tableExists = tableIdByName.has(op.name);
-
-      if (op.kind === 'addFields' && !tableExists) {
-        throw new GuardError(
-          `addFields riktad mot "${op.name}" som inte finns — den tabellen förväntas ` +
-            'existera SEDAN TIDIGARE (Eventplanering/Bilagor), inte skapas av detta skript',
-        );
-      }
-
-      if (op.kind === 'createTable' && tableExists) {
-        // Tabellen finns redan — behandla som addFields (idempotent-vägen).
-        const liveTable = tables.find((t) => t.id === tableIdByName.get(op.name));
-        const plan = planFields(liveTable, op.fields, resolveLinkedTableId);
-        if (plan.mismatches.length > 0) {
-          const beskrivning = plan.mismatches
-            .map((m) => `"${m.name}": förväntade "${m.expectedType}", fann "${m.actualType}"`)
-            .join('; ');
-          throw new GuardError(
-            `schema-missmatch mot befintlig tabell "${op.name}" — rör INGET: ${beskrivning}`,
-          );
-        }
-        if (plan.toCreate.length === 0) {
-          console.log(
-            `✅ Tabellen "${op.name}" (${liveTable.id}) finns redan med alla förväntade fält — inget att göra.`,
-          );
-          continue;
-        }
-        if (args.dryRun) {
-          console.log(
-            `📝 DRY-RUN: tabellen "${op.name}" finns, skulle LÄGGA TILL: ${plan.toCreate.map((f) => f.name).join(', ')}`,
-          );
-          anyChange = true;
-          continue;
-        }
-        for (const field of plan.toCreate) {
-          const body = buildCreateFieldBody(field, resolveLinkedTableId);
-          const created = await createField(
-            targetBaseId,
-            liveTable.id,
-            body,
-            token,
-            CONFIG.requestThrottleMs,
-          );
-          console.log(`   • ${created.name} (${created.type}) — ${created.id}`);
-          skapadeRader.push(`${op.name}.${created.name} (${created.type}) — ${created.id}`);
-        }
-        anyChange = true;
-        continue;
-      }
-
-      if (op.kind === 'createTable') {
-        const body = buildCreateTableBody(op, resolveLinkedTableId);
-        if (args.dryRun) {
-          console.log(
-            `📝 DRY-RUN: skulle SKAPA tabellen "${op.name}" med fälten: ${body.fields.map((f) => f.name).join(', ')}`,
-          );
-          // Dry-run kan inte threada ett riktigt ID vidare — efterföljande
-          // operationer som länkar hit rapporteras separat i dry-run-läget.
-          anyChange = true;
-          continue;
-        }
-        console.log(`🛠️  Skapar tabellen "${op.name}" med ${body.fields.length} fält …`);
-        const created = await createTable(targetBaseId, body, token, CONFIG.requestThrottleMs);
-        tableIdByName.set(op.name, created.id);
-        console.log(`✅ Tabell skapad: ${created.id} ("${created.name}")`);
-        skapadeRader.push(`Tabell ${op.name} — ${created.id}`);
-        for (const f of created.fields ?? []) {
-          console.log(`   • ${f.name} (${f.type}) — ${f.id}`);
-          skapadeRader.push(`${op.name}.${f.name} (${f.type}) — ${f.id}`);
-        }
-        anyChange = true;
-        continue;
-      }
-
-      // op.kind === 'addFields', tabellen finns.
-      const liveTable = tables.find((t) => t.id === tableIdByName.get(op.name)) ?? existingTable;
-      const plan = planFields(liveTable, op.fields, resolveLinkedTableId);
-      if (plan.mismatches.length > 0) {
-        const beskrivning = plan.mismatches
-          .map((m) => `"${m.name}": förväntade "${m.expectedType}", fann "${m.actualType}"`)
-          .join('; ');
-        throw new GuardError(
-          `schema-missmatch mot befintlig tabell "${op.name}" — rör INGET: ${beskrivning}`,
-        );
-      }
-      if (plan.toCreate.length === 0) {
-        console.log(
-          `✅ Tabellen "${op.name}" (${liveTable.id}) bär redan alla förväntade fält — inget att göra.`,
-        );
-        continue;
-      }
-      if (args.dryRun) {
-        console.log(
-          `📝 DRY-RUN: tabellen "${op.name}" (${liveTable.id}), skulle LÄGGA TILL: ${plan.toCreate.map((f) => f.name).join(', ')}`,
-        );
-        anyChange = true;
-        continue;
-      }
-      console.log(
-        `🛠️  Tabellen "${op.name}" (${liveTable.id}), lägger till ${plan.toCreate.length} saknade fält …`,
-      );
-      for (const field of plan.toCreate) {
-        const body = buildCreateFieldBody(field, resolveLinkedTableId);
-        const created = await createField(
-          targetBaseId,
-          liveTable.id,
-          body,
-          token,
-          CONFIG.requestThrottleMs,
-        );
-        console.log(`   • ${created.name} (${created.type}) — ${created.id}`);
-        skapadeRader.push(`${op.name}.${created.name} (${created.type}) — ${created.id}`);
-      }
-      anyChange = true;
-    }
+    const { anyChange, skapadeRader } = await runOperations({
+      tables,
+      operations: CONFIG.operations,
+      dryRun: args.dryRun,
+      createTableApi: (body) => createTable(targetBaseId, body, token, CONFIG.requestThrottleMs),
+      createFieldApi: (tableId, body) =>
+        createField(targetBaseId, tableId, body, token, CONFIG.requestThrottleMs),
+    });
 
     console.log(anyChange ? '✅ Klart.' : '✅ Allt redan i synk — no-op.');
     if (skapadeRader.length > 0) {

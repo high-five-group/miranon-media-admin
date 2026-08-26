@@ -7,7 +7,7 @@
  * block.
  *
  * VARFÖR standard/kopia PER BLOCK, INTE TVÅ SEPARATA OBJEKT: prototypens
- * `BlockDef` (`GenereringsPrototyp.tsx`) läser varje block ur EN av tre
+ * `BlockDef` (`GenereringsVy.tsx`) läser varje block ur EN av tre
  * källor (event/eventinnehall/plats) med "tomt kopia-fält = standarden
  * gäller" som enda regel (ADR-125 beslut 1). Att exponera eventinnehall/
  * plats råvärden separat och låta klienten själv räkna ut fallback hade
@@ -24,7 +24,7 @@
  */
 
 /** En agendarad — verbatim samma form som prototypens `AgendaRad`
- *  (`GenereringsPrototyp.tsx` rad 123), speglar Agendapunkter-tabellens
+ *  (`GenereringsVy.tsx` rad 123), speglar Agendapunkter-tabellens
  *  Text/Tid/Meditation. */
 export interface AgendaRad {
   text: string;
@@ -79,7 +79,7 @@ export interface DocumentSourcesAgenda {
 /**
  * De sjutton redigerbara textblocken (ADR-125 § 2), nyckelnamngivna EXAKT
  * som prototypens `EVENTINNEHALL`/`PLATSER_SEED`-fält
- * (`GenereringsPrototyp.tsx`) för kontinuitet in i den promoverade ytan
+ * (`GenereringsVy.tsx`) för kontinuitet in i den promoverade ytan
  * (TASK-309.3/skiva 8). `sistaBetalningsdag` är den enda vars `standard`
  * aldrig är `null` — se filhuvudet.
  */

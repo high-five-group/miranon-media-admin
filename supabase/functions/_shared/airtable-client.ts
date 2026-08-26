@@ -1,7 +1,47 @@
+import { ValidationError } from './errors.ts';
 import { withAirtable429Retry } from './airtable-retry.ts';
 
 // Airtable REST-API-host (samma för alla baser/miljöer — ej prod-bindning).
 const AIRTABLE_API_URL = 'https://api.airtable.com/v0';
+
+/**
+ * Klassar Airtables EGNA valideringsavvisning (TASK-190) — typiskt 422 när
+ * `typecast:false` möter ett värde ett fält inte kan acceptera (t.ex. en
+ * fri text mot en STÄNGD singleSelect, `create-event`s repro: `Event
+ * (source)` med ett värde utanför de sex giltiga alternativen). Utan denna
+ * klassning kastar `upsertAirtableRecord` en vanlig `Error` som
+ * `_shared/errors.ts`s `mapErrorToResponse` inte känner igen → faller till
+ * generisk 500 "Internal error", och anroparen kan inte skilja sitt EGET
+ * kontraktsbrott från ett äkta serverfel (exakt vad kortet mätte).
+ *
+ * Airtables felkuvert är `{ error: { type, message } }` för 4xx (bekräftat
+ * mot developers.airtable.com/api/errors, 2026-08-24 — status 422 "Invalid
+ * Request" dokumenterat, exakt `type`-strängen för fält-nivå-avvisningar är
+ * INTE dokumenterad där och GISSAS alltså inte: vi vidarebefordrar
+ * Airtables `message` OFÖRÄNDRAT, vilket i praktiken bär fältnamnet i
+ * citattecken). Status LÄSES ur svaret (aldrig hårdkodad) så klassningen
+ * håller även om Airtable råkar svara 400 i stället för 422 för samma fel.
+ *
+ * Oparsbar/annan body (ospårbart 4xx, eller 5xx/nätverksfel) → generisk
+ * `Error` (OFÖRÄNDRAT beteende, faller till 500 i mapErrorToResponse) — en
+ * klassning vi inte kan BEVISA ur svaret görs aldrig (ADR-083-disciplinen:
+ * hellre en ärlig 500 än ett gissat 4xx).
+ */
+export function classifyAirtableWriteError(method: string, status: number, rawBody: string): Error {
+  if (status >= 400 && status < 500) {
+    try {
+      const parsed = JSON.parse(rawBody) as { error?: { type?: string; message?: string } };
+      const airtableMessage = parsed?.error?.message;
+      if (typeof airtableMessage === 'string' && airtableMessage.length > 0) {
+        const typ = typeof parsed?.error?.type === 'string' ? parsed.error.type : 'unknown';
+        return new ValidationError(`Airtable ${method} ${status} (${typ}): ${airtableMessage}`, status);
+      }
+    } catch {
+      // Oparsbar JSON-body — faller igenom till det generiska felet nedan.
+    }
+  }
+  return new Error(`Airtable ${method} ${status}: ${rawBody}`);
+}
 
 // Bas-ID läses från env (fail-fast, INGEN hårdkodad prod-fallback) så att samma
 // Edge Function kan peka mot prod- eller staging-Airtable-bas via Supabase-secret
@@ -338,7 +378,10 @@ export async function upsertAirtableRecord(
 
   if (!res.ok) {
     const body = await res.text();
-    throw new Error(`Airtable upsert ${res.status}: ${body}`);
+    // TASK-190: Airtables egen valideringsavvisning (t.ex. typecast:false mot en
+    // stängd singleSelect) klassas till ValidationError/4xx med fältnamnet kvar
+    // i meddelandet — se classifyAirtableWriteError-filhuvudet ovan.
+    throw classifyAirtableWriteError('upsert', res.status, body);
   }
 
   const data = (await res.json()) as {

@@ -1,10 +1,10 @@
 ---
 id: TASK-243.5
 title: 'Skiva: Prototyp-rivningen — dev-substratet bort efter stämpeln'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-16 14:39'
-updated_date: '2026-08-24 14:12'
+updated_date: '2026-08-24 15:44'
 labels:
   - ready-for-agent
 dependencies:
@@ -22,18 +22,18 @@ Prototyp-substratet har gjort sitt jobb när stämpeln sitter: dev-routen med va
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Dev-routen /dev/hem-prototyp, varianterna (VariantRo/VariantKontroll/VariantBento), PrototypeSwitcher-railen och prototypkatalogen src/components/dev/hem-prototyp/ rivna — B3-spärren (ADR-102) är släppt av stämpeln i task-243.4, vilket verifieras FÖRE rivning (godkand != null i facit-manifestet)
-- [ ] #2 Det som rivs är flaggor, växlar och prototyp-substrat — ALDRIG formen (ADR-103); den promoverade skarpa ytan är orörd av rivningen
-- [ ] #3 task-226 (hem-prototypen) flippas Done via backlog-CLI:t i samma landning (relationen avgjord vid skivningen per PRD:ns not)
-- [ ] #4 Inga döda referenser: typecheck, lint och build gröna; inga kvarvarande imports mot den rivna katalogen
+- [x] #1 Dev-routen /dev/hem-prototyp, varianterna (VariantRo/VariantKontroll/VariantBento), PrototypeSwitcher-railen och prototypkatalogen src/components/dev/hem-prototyp/ rivna — B3-spärren (ADR-102) är släppt av stämpeln i task-243.4, vilket verifieras FÖRE rivning (godkand != null i facit-manifestet)
+- [x] #2 Det som rivs är flaggor, växlar och prototyp-substrat — ALDRIG formen (ADR-103); den promoverade skarpa ytan är orörd av rivningen
+- [x] #3 task-226 (hem-prototypen) flippas Done via backlog-CLI:t i samma landning (relationen avgjord vid skivningen per PRD:ns not)
+- [x] #4 Inga döda referenser: typecheck, lint och build gröna; inga kvarvarande imports mot den rivna katalogen
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -79,4 +79,16 @@ AC-STATUS VID PASSETS SLUT — inget kriterium bockat:
 GRINDUTFALL I PASSET: bash scripts/check-facit.sh exit 0 (baseline, oförändrat träd). npm run typecheck exit 0 (oförändrat träd, efter probe-återställning). npm run typecheck exit 1 (probe, avsiktligt — beviset ovan). Övriga DoD-grindar ej körda: ingen fil ändrad, ingenting att verifiera.
 
 PREMISS-PASS 2026-08-24 (S112 fix-våg 1, modell Sonnet 5). Uppdragets kärnpåstående — att svep-routens import mot hem-prototyp-katalogen är HÄVD via PR #1912 (TASK-241.7) — prövat mot faktiskt tillstånd och FALSIFIERAT som fakta-om-main, om än korrekt som fakta-om-en-öppen-PR. git fetch + grep bekräftar: src/routes/dev/svep-prototyp.tsx finns fortfarande i origin/main (6d62c0ce, fetchad 2026-08-24T14:0x UTC) och importerar fortsatt @/components/dev/hem-prototyp/demoData (rad 6) + .../VariantRo (rad 7) — inga docblock-kommentarer, äkta ES-imports. PR #1912 (feat(TASK-241.7): riv svep-prototypens substrat efter QA-godkännande, gren feat/task-241-7-svep-substrat-prototypriving) river faktiskt exakt dessa filer (diff-stat mot origin/main: 8 filer, -1081/+37, inklusive hela src/components/dev/svep-prototyp/ + src/routes/dev/svep-prototyp.tsx) men var vid mätningen OPEN, mergeStateStatus BLOCKED, mergedAt null — INTE landad i main. autoMergeRequest ÄR satt (enabledBy marcus803, 2026-08-24T14:05:46Z) — armerad, väntar på att Acceptance-jobben (IN_PROGRESS vid mätningen) blir gröna och kön processar den. TASK-241.7 (243.5:s eget Dependencies-fält) står fortsatt To Do. Blockeringen är alltså IDENTISK med 2026-08-17-passets fynd (samma två TS2307-rader), omprövad och bekräftad ännu kvarstående 2026-08-24. Ingen kod ändrad; inget vägval fattat — path (a) var redan vald och är under exekvering via PR #1912, path (b)/(c)/(d) därmed ej aktuella. Bifynd: task-226 är sedan 2026-08-20 redan Status Done (ej gjort av detta pass) — löser AC #3:s sakinnehåll, om än inte bokstavligen 'i samma landning' som kriterietexten kräver; ingen vidare åtgärd bedöms nödvändig där. REKOMMENDATION: re-dispatch detta kort så snart PR #1912 landat i main (gh pr view 1912 --json mergedAt) — rivningen blir då mekanisk enligt 241.7-mönstret, exakt som uppdraget förutsåg.
+
+RIVNING UTFÖRD 2026-08-24 (S112 RE-DISPATCH, modell Sonnet 5). Premiss-pass FÖRE bygge: git fetch origin bekräftade PR #1912 (TASK-241.7) mergad (098dcd24, merge-commit i origin/main-loggen) — src/routes/dev/svep-prototyp.tsx + src/components/dev/svep-prototyp/ borta, den tidigare blockerande importen mot hem-prototyp-katalogen finns inte längre. grep -rn "hem-prototyp" src/ mot origin/main visade endast interna self-referenser (routen importerar sina egna VariantBento/Kontroll/Ro-syskon) plus docblock-citat i redan-promoverade filer — noll EXTERNA äkta imports. B3-spärren verifierad släppt FÖRE rivning: tasks/sessions/bilagor/s102-hem-konvergens/facit.json bär "godkand" (av marcus, 2026-08-17, sha 8044e5b655dad5b3a12a4eba7fe682f88705f8e4, citat "Hem-vyn ser bra ut, precis som prototypen.").
+
+RIVET (git rm, 8 filer): src/routes/dev/hem-prototyp.tsx, src/components/dev/hem-prototyp/{VariantRo,VariantKontroll,VariantBento}.tsx, {data,demoData,types}.ts, ui.tsx. PrototypeSwitcher.tsx SJÄLV rörd EJ — den är delad ADR-074-stående infrastruktur som fortsatt konsumeras av tre andra prototyper (dev/prototyper.tsx, dev/auth-prototyp.tsx, _authenticated/mer/dokument.tsx); endast MONTERINGEN i hem-prototyp.tsx försvann med filen.
+
+.facit-policy.conf: markören "V1 Lugna morgonen (ro)" avregistrerad ur FACIT_PROTO_MARKORER + daterad removal-not tillagd (TASK-243.5-mönster, mirror av TASK-241.7/TASK-299.5). check-facit.sh exit 0 både före och efter, rivna hem-konvergens-källor korrekt rapporterade under invariant (b):s rivnings-klausul.
+
+GRINDAR (alla i förgrunden, exitkod läst separat från fil, ingen pipe): check-facit.sh exit 0 · typecheck (tsr generate && tsc -b) exit 0 · biome check exit 0 (9 warnings/61 infos, samtliga pre-existing i orörda filer) · check-langa-streck.mjs exit 0 (260 filer, 0 ofångade) · build exit 0, grep -rn hem-prototyp dist/ exit 1 (0 träffar) · test:api exit 0 (1164 passed).
+
+AC #3 / task-226: redan Status Done sedan 2026-08-20 (ej gjort av detta pass, bekräftat via task 226 --plain) — bockas som uppfyllt i sak. Bifynd bokfört: task-243.5:s Dependencies-kort (TASK-243.4, TASK-241.7) står båda kvar "To Do" som backlog-status trots att deras respektive mekaniska gates (facit-manifestets "godkand", PR #1912 mergad) är uppfyllda — konsekvent med att Done-flippen ägs av orkestreraren efter CI, inte av bygg-agenten. Ingen åtgärd vidtagen på dessa kort.
+
+Done-flipp S112: PR #1925 landad, post-merge grönt. Landning: PR #1925
 <!-- SECTION:NOTES:END -->

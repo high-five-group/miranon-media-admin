@@ -11,7 +11,8 @@ import { Eventmatchning } from '@/domain/types/Status';
 /**
  * Eventlänkens vakt (TASK-284.4; ADR-122 beslut 7, § 22 Åtgärdskön) — den
  * DELADE predikat-källan bakom BÅDE Hem-vyns åtgärdskö-räknare
- * (`hem-derivations.ts`) OCH markören i `AnmalningarList`, så de aldrig kan
+ * (`hem-derivations.ts`) OCH markören i `AnmalningarSida` (f.d.
+ * `AnmalningarList`, `TASK-299.5`), så de aldrig kan
  * säga olika saker om samma rad (Hem-vyns AC #3). En anmälan "behöver
  * hanteras" när dess beräknade `eventmatchning` INTE är `'OK'` —
  * `'Avviker'` (länkad till fel event) eller `'Utan event'` (ingen länk

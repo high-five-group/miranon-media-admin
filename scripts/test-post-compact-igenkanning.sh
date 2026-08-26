@@ -71,9 +71,12 @@ trap cleanup EXIT
 
 setup() {
     rm -rf "${TEST_DIR}"
-    mkdir -p "${TEST_DIR}/scripts"
+    mkdir -p "${TEST_DIR}/scripts/lib"
     cp "${SKRIPT_SRC}" "${SKRIPT}"
     chmod +x "${SKRIPT}"
+    # jq-guard.sh (TASK-312) sourcas nu av skriptet.
+    cp "${REPO_ROOT}/scripts/lib/jq-guard.sh" "${TEST_DIR}/scripts/lib/jq-guard.sh"
+    cp "${REPO_ROOT}/.jq-version-policy.conf" "${TEST_DIR}/.jq-version-policy.conf"
     # § SEKVENSBEROENDE (skriptets huvud): .precompact-policy.conf landar
     # via TASK-160.2 och finns INTE på main ännu i denna byggsession. Om
     # repot ÄNDÅ råkar bära filen (t.ex. körs efter #943 landat) kopieras

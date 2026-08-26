@@ -3307,7 +3307,7 @@ Syftet är att en ny läsare ska kunna läsa sista sessionen och förstå var vi
 
 ## Referenser
 
-- [`decisions/`](decisions/) — Architecture Decision Records (20 ADR:er totalt — ADR-001..ADR-010 från Session 1 (React) Fas 0+1, ADR-011..ADR-020 från Session 2 (React) P3a)
+- [`decisions/`](decisions/) — Architecture Decision Records; katalog + index i [`decisions/README.md`](decisions/README.md). Den levande räkningen är kanonisk i rot-[`README.md`](../README.md) § Arkitekturbeslut (CI-grindad, [`scripts/check-adr-count.sh`](../scripts/check-adr-count.sh)) — karta, aldrig kopia ([ADR-100](decisions/ADR-100-sanningshierarkin-koden-ager-beteendet.md) § 2). Talet upprepas inte här: denna rad stod som "20 ADR:er totalt" i månader efter att räkningen slutat stämma, exakt den drift pekare-formen finns för att förhindra.
 - [`byggplan.md`](byggplan.md) — fas-för-fas-planen (styrande)
 - [`archive/conversion-plan-2026-04-14.md`](archive/conversion-plan-2026-04-14.md) — historisk fas-för-fas-plan, ersatt av `byggplan.md` per [ADR-012](decisions/ADR-012-conversion-plan-ersatt-av-byggplan.md)
 - [`gap-analysis.md`](archive/gap-analysis.md) — gap-analys som motiverade `[GA]`-tilläggen

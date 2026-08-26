@@ -207,8 +207,8 @@ Deno.serve(async (req) => {
 
     // [ADR-124, TASK-302.2] TRANSIENT utkast i Storage, inte bytes till
     // klienten — se filhuvudets LEVERANSVÄGEN-ÄNDRAD-stycke. `laggUtkast` är
-    // den GEMENSAMMA formeln (`_shared/utkast.ts`), samma som
-    // `test-docraptor-render`s utkast-gren redan använder (TASK-302.1).
+    // den GEMENSAMMA formeln (`_shared/utkast.ts`), samma som den (nu rivna,
+    // TASK-309.4) `test-docraptor-render`s utkast-gren använde (TASK-302.1).
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,

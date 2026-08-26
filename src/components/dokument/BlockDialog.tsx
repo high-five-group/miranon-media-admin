@@ -1,6 +1,6 @@
 /**
  * BlockDialog — husets block-redigeringsdialog (Del 2 § D beslut 1, 3, 5,
- * 6). UTBRUTEN ur `GenereringsPrototyp.tsx` (TASK-309.7, ADR-125 § 7):
+ * 6). UTBRUTEN ur `GenereringsVy.tsx` (TASK-309.7, ADR-125 § 7):
  * VERBATIM flytt av dialogformen, ingen formändring — samma tre-zons
  * `ProtoDialog`, samma `BlockDialog`/`AgendaEditor`/`DatumEnkel`/`Kryss`,
  * samma `Rad`/`Override`/`AgendaRad`-kontrakt som tidigare levde inline i
@@ -12,7 +12,7 @@
  * genereringsvyn — ingen andra dialogform". En kopia hade kunnat glida
  * isär från förlagan (exakt den risk `blockDefinitioner.ts` redan bokför
  * för blockkartan); denna fil är den ENDA platsen dialogformen bor.
- * `GenereringsPrototyp.tsx` importerar härifrån i stället för sin
+ * `GenereringsVy.tsx` importerar härifrån i stället för sin
  * tidigare inlinade version.
  *
  * EN TILLÄGGSPUNKT MOT FÖRLAGAN (medveten, bakåtkompatibel): `caption`-

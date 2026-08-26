@@ -19,8 +19,10 @@ status: stable
 > anmälningar utan Event-länk · Session 110 (2026-08-21) — omlänkning av 61
 > felmatchade anmälningar (Elfsight-URL-buggen) · Session 112 (2026-08-24) —
 > touchpoint-backfill för 8 manuellt Person-länkade anmälningar
-> (`TASK-229.2`). Varje post bär sitt eget mandat och sin egen verifiering;
-> en ny post läggs sist, tidigare poster skrivs inte om.
+> (`TASK-229.2`) · Session 112 (2026-08-24) — A2 Gren 1-fixens skarpa
+> prod-bevis: testpost skapad och raderad (`TASK-229.3`). Varje post bär sitt
+> eget mandat och sin egen verifiering; en ny post läggs sist, tidigare
+> poster skrivs inte om.
 
 ## Session 60 — syfte och pivot
 
@@ -433,6 +435,95 @@ städar historik, den hindrar inte återfall.
 
 Källa: `TASK-229`-kortet § Del 5 (rotorsaks-falsifieringen + spec-underlaget)
 och `TASK-229.2`-kortet (AC + mandat).
+
+## 2026-08-24 — A2 Gren 1-fixens skarpa prod-bevis: testpost skapad + raderad, TASK-229.3
+
+Sjunde skarpa prod-aktiviteten i denna logg — en testpost-cykel (skapad,
+kontrollerad, raderad), inte en bestående backfill. Mandat: Marcus klickade
+Update på prod-A2 2026-08-24 och begärde det skarpa beviset i samma andetag
+("Ta det skarpa beviset och stäng kortets AC"). Kort: `TASK-229.3`. Design +
+nodstruktur: [`../reference/automation-scripts/a2-gren1-person-lank-och-touchpoint.md`](../reference/automation-scripts/a2-gren1-person-lank-och-touchpoint.md).
+
+### Steg 0 — deploy-verifiering (FÖRE testet)
+
+`get_automation(wflRPMp5QNGEa7wH1, includeDeployedVersion: true)` mot prod
+(`app8uGPrVCVOm6LfD`): `deploymentStatus: deployed`, `deployedVersion: null`
+(draft = deployad version, ingen avvikelse). De två nya noderna
+`wacrYuDXyDNg6grGv` (Person-länk) och `wacnB7VdOzprs7Tks` (Touchpoint) fanns
+i den returnerade — alltså LIVE — nodstrukturen, i Gren 1 (`wdezdzNWaL1MYcrkE`).
+
+### Steg 1 — mailrisk-genomgång (FÖRE testposten)
+
+Samtliga 12 Airtable-automationer i prod listade (`list_automations`) och
+lästa (`get_automation`) i sin helhet. Ingen automation som triggar på
+ny/ändrad Anmälningar-post (A1, A2, A3, A7, A12) innehåller en `sendEmail`-nod
+eller annan irreversibel sidoeffekt utanför basen — samtliga är
+`findRecords`/`updateRecord`/`createRecord`/`customScript` mot Airtable-tabeller.
+A6 (`wfl0filPx4wyAcaQ8`, trigger på Eventplanering `Beläggning=100%`) HAR en
+`sendEmail`-nod till `lotta@outsidereality.se` + `marcus@h5gruppen.se`, men
+triggar på Eventplanering, inte Anmälningar, och testposten skulle medvetet
+sakna Event-länk (samma "namnlös person, ingen Event"-form som stagingbeviset)
+— A6 var därför strukturellt oåtkomlig för testet. Zapier-lagret
+(`schema_reference.md`, fryst mars 2026) kartlagt separat: Zap 9/10
+("Bekräftelse på anmälan") triggar på Elfsight-formulärinlämning, inte på
+Airtable-radskapande, och stod redan AV sedan okt 2025 — kunde inte triggas
+av en Airtable-skapad testrad oavsett status. Slutsats: fritt fram för
+testposten.
+
+### Vad som skrevs
+
+| Tabell | Record-ID | Fält vid create |
+|---|---|---|
+| Personer | `recelNZc1Rze6MYMK` | E-post = `zz-task2293-namnlos@example.com` (inga andra fält) |
+| Anmälningar | `recupmiKjINEKuRxX` | E-post = samma adress, Förnamn = `ZzBevis2293`, Efternamn = `Gren1ProdTest` |
+
+Automationerna körde inom sekunder på Anmälningar-createn och skrev i sin tur:
+
+| Tabell | Record-ID | Skrivet av | Fält |
+|---|---|---|---|
+| Personer | `recelNZc1Rze6MYMK` | A2 Gren 1 (befintlig nod) | Förnamn/Efternamn ifyllda från anmälan |
+| Anmälningar | `recupmiKjINEKuRxX` | A2 Gren 1 (ny nod `wacrYuDXyDNg6grGv`) | `Person` → `recelNZc1Rze6MYMK` |
+| Touchpoints | `recyGNVi4vBwXK0uy` | A2 Gren 1 (ny nod `wacnB7VdOzprs7Tks`) | `Typ=Inskickad anmälan`, `Person=recelNZc1Rze6MYMK`, `Datum=2026-08-24T15:17:27.963Z` |
+| Anmälningar | `recupmiKjINEKuRxX` | A12 (oberoende automation) | `Inskickad=2026-08-24T15:17:24.457Z` |
+
+### Verifiering
+
+Read-back av alla tre huvudposter bekräftade samtliga tre AC #3-kontroller:
+namn ifyllt (`Personer.Namn`-formeln gav `"ZzBevis2293 Gren1ProdTest"`, inte
+`"Ej tillgängligt"`), Person-länk satt (`Anmälningar.Person` →
+`recelNZc1Rze6MYMK`), touchpoint skapad (`Typ=Inskickad anmälan`). Anmälans
+`Eventmatchning`-formel gav `"Utan event"` — designat beteende (A1 hittade
+ingen event-match eftersom testposten aldrig fick en `EventKey`), bokfört ej
+felsökt, i linje med proceduren.
+
+Motprov mot Gren 2 gjordes INTE i detta pass. Gren 2:s noder är strukturellt
+orörda (normaliserad nod-diff, `TASK-229.1`) och redan motprovsbevisade i
+staging samma dag — ett andra motprov i prod hade bevisat samma sak igen,
+inte något nytt.
+
+Sidoeffekt-sökning (bredare än de tre huvudtabellerna, per uppdragets
+"sök brett på zz-taggen"): `search_records` för `zz-task2293`/`Gren1ProdTest`
+i Deltaganden och Error-log gav **noll träffar** — A3 triggade inte (kräver
+`Event` isNotEmpty, som förblev tomt) och ingen dubblett upptäcktes.
+
+### Städning
+
+Samtliga tre poster raderade i skapandeordningens omvända riktning:
+`recyGNVi4vBwXK0uy` (Touchpoints) → `recupmiKjINEKuRxX` (Anmälningar) →
+`recelNZc1Rze6MYMK` (Personer). Efterkontroll: `search_records` för
+`zz-task2293`/`Gren1ProdTest` i Personer, Anmälningar, Touchpoints,
+Deltaganden och Error-log gav **noll träffar i samtliga fem tabeller**.
+
+### Öppet efter denna post
+
+Inget. AC #2 och #3 på `TASK-229.3` är uppfyllda av denna post; AC #4
+(`data-model.md` fälla 21 → STÄNGD) är en dokumentationsändring i samma PR.
+De 61 kvarvarande namnlösa lead-personerna (`data-model.md` fälla 21) är
+desarmerade framåt av den redan-deployade fixen, inte av denna testpost.
+
+Källa: `TASK-229.3`-kortets Implementation Notes (steg 0–2, S112) och
+[`../reference/automation-scripts/a2-gren1-person-lank-och-touchpoint.md`](../reference/automation-scripts/a2-gren1-person-lank-och-touchpoint.md)
+§ Prod-utrullning.
 
 ## Källor
 

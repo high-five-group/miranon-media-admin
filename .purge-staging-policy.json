@@ -23,6 +23,16 @@
       "linkGuardExcludeFields": ["Eventtyp"]
     },
     {
+      "name": "update-event-uppdaterad-sentineler",
+      "_TASK-309.15": "update-event.staging.test.ts döper om sitt sentinel-event till den uppdaterade orten och återställer i finally. Faller finally (kraschad körning, avbrutet CI-jobb) matchar raden VARKEN create-event-sentinelernas formel eller dess exakt-mönster — den blir därmed OPURGBAR för alltid. Mätt i staging 2026-08-24: två rader, 26,9 och 32,3 dygn gamla. Denna target gör den uppdaterade orten purge-bar i sig (försvar i djupled bredvid TASK-309.15:s ägar-manifest).",
+      "table": "Eventplanering",
+      "filterByFormula": "{Ort} = 'ZZ-create-event-test-uppdaterad'",
+      "exactMatchField": "Ort",
+      "exactMatchPattern": "^ZZ-create-event-test-uppdaterad$",
+      "linkGuard": true,
+      "linkGuardExcludeFields": ["Eventtyp"]
+    },
+    {
       "name": "create-event-note-sentineler",
       "table": "Anteckningar",
       "filterByFormula": "AND(FIND('ZZ-note-test+', {Anteckning}) = 1, FIND('@sentinel', {Anteckning}) > 0)",

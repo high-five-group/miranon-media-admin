@@ -78,10 +78,13 @@ trap cleanup EXIT
 
 setup() {
     rm -rf "${TEST_DIR}"
-    mkdir -p "${TEST_DIR}/scripts"
+    mkdir -p "${TEST_DIR}/scripts/lib"
     cp "${SKRIPT_SRC}" "${SKRIPT}"
     chmod +x "${SKRIPT}"
     cp "${POLICY_SRC}" "${POLICY}"
+    # jq-guard.sh (TASK-312) sourcas nu av skriptet.
+    cp "${REPO_ROOT}/scripts/lib/jq-guard.sh" "${TEST_DIR}/scripts/lib/jq-guard.sh"
+    cp "${REPO_ROOT}/.jq-version-policy.conf" "${TEST_DIR}/.jq-version-policy.conf"
     (
         cd "${TEST_DIR}" \
             && git init -q \

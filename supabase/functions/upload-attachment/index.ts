@@ -14,7 +14,8 @@
 // finnas (404 annars), filen måste vara en PDF (matchar bucketens
 // allowedMimeTypes, försvar-i-djupet), och storleken måste rymmas under
 // mönster 1:s gräns. Klienten får aldrig välja path själv — attachmentId
-// genereras HÄR (crypto.randomUUID()) och path byggs deterministiskt
+// genereras HÄR (deterministiskt sedan TASK-316, se § IDEMPOTENS nedan —
+// tidigare crypto.randomUUID()) och path byggs deterministiskt
 // (_shared/attachments.ts buildAttachmentPath).
 //
 // FELMEDDELANDEN PÅ LOTTAS SPRÅK (AC #6): varje avvisning ger ett
@@ -56,9 +57,49 @@
 // försöker mönster 2 (se dess docblock för resonemanget) — Lottas verkliga
 // dokument (hörlursinfo, meny) är PDF:er på några hundra kB, ordentligt
 // under 6 MB-gränsen, så avgränsningen kostar inget i praktiken.
+//
+// IDEMPOTENS [TASK-316] — INNEHÅLLS-DERIVERAD nyckel, INTE crypto.randomUUID()
+// och INTE finalize-attachment-upload/index.ts:s mönster (client-relayat
+// attachmentId). Skälet de skiljer sig: mönster 2 håller ett STABILT,
+// server-utfärdat attachmentId hos klienten mellan create-attachment-upload-
+// ticket (utfärdande) och finalize (skrivning) — ett fetchWithRetry-omförsök
+// av FINALIZE återanvänder samma id, vilket gör Lagringsnyckel-återanvändning
+// (TASK-183) korrekt DÄR. Mönster 1 (denna EF) är EN ENDA request — före
+// denna fix genererades attachmentId FRISKT (`crypto.randomUUID()`) VARJE
+// gång funktionen kördes, så ett äkta nätverks-omförsök (samma body,
+// `postEdgeFunction`/`fetchWithRetry`, `src/data/config/supabase-client.ts` +
+// `src/data/utils.ts`) fick TVÅ OLIKA attachmentId → TVÅ Storage-objekt PÅ
+// OLIKA paths OCH två Bilagor-rader. Att bara byta `createAirtableRecord` mot
+// `upsertAirtableRecord` med Lagringsnyckel som merge-fält (TASK-183:s
+// bokstavliga förlaga) hade INTE löst detta: en frisk attachmentId per
+// anrop ger en frisk Lagringsnyckel per anrop, och merge-fältet hade aldrig
+// matchat sig själv — se skivans slutrapport (premiss-pass) för det fulla
+// resonemanget kring varför förlagan avviker här.
+//
+// MEKANISM: attachmentId härleds i stället DETERMINISTISKT — SHA-256 över
+// (storage-ankaret, den SANERADE filnamnet, de FAKTISKA bytesen) formaterad
+// till samma 8-4-4-4-12-hex-form `isValidAttachmentId` känner igen (samma
+// `crypto.subtle.digest('SHA-256', …)`-idiom som `_shared/mall-hash.ts`
+// redan etablerar för ett annat ändamål). Fortfarande 100 % SERVER-
+// BERÄKNAT — aldrig klient-buret eller klient-valt — så invarianten
+// `_shared/attachments.ts`s `isValidAttachmentId`-docblock dokumenterar
+// ("attachmentId genereras alltid av oss … aldrig av klienten") står kvar
+// OFÖRÄNDRAD; bara ALGORITMEN ändras (deterministisk i stället för slumpad).
+// Ingen klient-ändring krävs, ingen ny Airtable-kolumn — samma minimala
+// fotavtryck TASK-183 etablerade.
+//
+// SAMMA (anchor, filnamn, bytes) → SAMMA attachmentId → SAMMA Storage-path
+// (`upsert: true` skriver över IDENTISKA bytes, ingen läckt duplikat-fil) →
+// SAMMA Lagringsnyckel → `upsertAirtableRecord` matchar EN rad (200,
+// idempotent replay). En GENUINT ny uppladdning (andra bytes, ELLER annat
+// filnamn, ELLER annat event/räckvidd-ankare) hashar annorlunda → egen
+// attachmentId → egen rad (201) — mekanismen dedupar bara äkta retries,
+// aldrig två olika filer. `anchor` ingår i hash-indata specifikt för att
+// samma fil+filnamn uppladdat till TVÅ OLIKA event inte ska kollidera till
+// en enda rad.
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { createAirtableRecord, fetchAirtableRecord } from '../_shared/airtable-client.ts';
+import { fetchAirtableRecord, upsertAirtableRecord } from '../_shared/airtable-client.ts';
 import {
   ATTACHMENT_CLASS_UPPLADDAD,
   ATTACHMENT_SCOPE_EVENT,
@@ -73,6 +114,7 @@ import {
   formatMB,
   isValidEventId,
   mapAttachmentRecord,
+  sanitizeFilnamn,
   SMALL_UPLOAD_MAX_BYTES,
 } from '../_shared/attachments.ts';
 import { requireUser } from '../_shared/auth.ts';
@@ -86,6 +128,11 @@ import {
 import { findDisallowedField, getOperation } from '../_shared/field-allowlists.ts';
 
 const OPERATION_KEY = 'create-attachment';
+// IDEMPOTENS-MERGE-FÄLTET [TASK-316] — se filhuvudets § IDEMPOTENS. Samma fält,
+// samma ADR-066-upsert-mekanism som finalize-attachment-upload/index.ts —
+// bara attachmentId:ts HÄRLEDNING skiljer sig (deterministisk hash här,
+// klient-relayat där).
+const MERGE_FIELD = 'Lagringsnyckel';
 
 function badRequest(message: string, corsHeaders: Record<string, string>): Response {
   return new Response(JSON.stringify({ error: message }), {
@@ -107,6 +154,36 @@ function decodeBase64(bytesBase64: string): Uint8Array {
     bytes[i] = binary.charCodeAt(i);
   }
   return bytes;
+}
+
+/** Hex-kodar en bytesekvens (gemener) — samma idiom som `_shared/mall-hash.ts` bytesToHex. */
+function bytesToHex(bytes: Uint8Array): string {
+  return Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, '0'))
+    .join('');
+}
+
+/**
+ * IDEMPOTENS [TASK-316] — deterministiskt attachmentId, se filhuvudets § IDEMPOTENS
+ * för det fulla resonemanget. SHA-256 över (anchor, sanerat filnamn, bytes),
+ * formaterad till samma 8-4-4-4-12-hex-form som `isValidAttachmentId` känner igen
+ * (grupperna bär ingen UUID-version-semantik — bara ett stabilt, unikt 128-bitars
+ * fingeravtryck, precis vad merge-nyckeln behöver).
+ */
+async function deriveAttachmentId(
+  anchor: string,
+  filnamn: string,
+  bytes: Uint8Array,
+): Promise<string> {
+  // NUL-separerat (\0), inte mellanslag, så att ett anchor/filnamn som råkar
+  // innehålla separatorn inte kan skapa en tvetydig gräns mellan fälten.
+  const prefix = new TextEncoder().encode(`${anchor}\0${sanitizeFilnamn(filnamn)}\0`);
+  const combined = new Uint8Array(prefix.length + bytes.length);
+  combined.set(prefix, 0);
+  combined.set(bytes, prefix.length);
+  const digest = new Uint8Array(await crypto.subtle.digest('SHA-256', combined));
+  const hex = bytesToHex(digest).slice(0, 32);
+  return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20, 32)}`;
 }
 
 Deno.serve(async (req) => {
@@ -205,7 +282,6 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
 
-    const attachmentId = crypto.randomUUID();
     // [TASK-275.3] Ankaret HÄRLEDS — se `buildStorageAnchor`s docblock för de
     // tre grenarna. `null` är strukturellt ouppnåeligt här: schemat ovan
     // garanterar redan att (eventId satt) ELLER (rackvidd=Kurstyp+kursfamilj)
@@ -220,11 +296,23 @@ Deno.serve(async (req) => {
     if (anchor === null) {
       throw new HttpError(500, 'Kunde inte härleda lagringsplats för filen.');
     }
+    // IDEMPOTENS [TASK-316] — attachmentId härleds NU deterministiskt ur
+    // (anchor, filnamn, bytes) i stället för crypto.randomUUID(). Se
+    // filhuvudets § IDEMPOTENS för det fulla resonemanget. `anchor` måste
+    // därför vara känt FÖRE attachmentId beräknas (ordningen bytt mot
+    // tidigare, ingen annan beteendeförändring i denna kontroll).
+    const attachmentId = await deriveAttachmentId(anchor, filnamn, bytes);
     const path = buildAttachmentPath(anchor, attachmentId, filnamn);
 
+    // `upsert: true` [TASK-316] — ett äkta nätverks-omförsök (fetchWithRetry)
+    // deriverar SAMMA attachmentId och skriver därför till SAMMA path. Bytesen
+    // är per konstruktion IDENTISKA (samma bytesBase64 i request-body), så en
+    // omskrivning är ofarlig — utan `upsert: true` skulle Storage i stället
+    // avvisa omförsöket med "The resource already exists" (se _shared/utkast.ts
+    // och generate-event-attachment/index.ts för samma precedent).
     const { error: uploadError } = await supabaseAdmin.storage
       .from(BILAGOR_BUCKET_ID)
-      .upload(path, bytes, { contentType });
+      .upload(path, bytes, { contentType, upsert: true });
     if (uploadError) {
       throw new HttpError(502, `Uppladdningen misslyckades: ${uploadError.message}. Prova igen.`);
     }
@@ -273,9 +361,18 @@ Deno.serve(async (req) => {
       `[upload-attachment] ALLOW | caller_user_id=${user.id} | event=${eventId ?? '(räckviddsläge)'} | path=${path} | bytes=${bytes.length} | rackvidd=${scopeParsed.data.rackvidd}`,
     );
 
-    let created: { id: string; fields: Record<string, unknown>; createdTime: string };
+    // IDEMPOTENS-MEKANISM [TASK-316]: upsert på Lagringsnyckel (ADR-066:s
+    // mönster, samma som finalize-attachment-upload/index.ts — se filhuvudets
+    // § IDEMPOTENS för varför attachmentId:ts HÄRLEDNING skiljer sig här).
+    // Färsk Lagringsnyckel → createdRecords (ny rad); samma Lagringsnyckel
+    // (äkta omförsök, samma anchor+filnamn+bytes) → updatedRecords
+    // (idempotent replay, samma rad — INGEN dubblett skapas).
+    let record: { id: string; fields: Record<string, unknown>; createdTime: string };
+    let wasCreated: boolean;
     try {
-      created = await createAirtableRecord(BILAGOR_TABLE, fields);
+      const upserted = await upsertAirtableRecord(BILAGOR_TABLE, fields, [MERGE_FIELD]);
+      record = upserted.record;
+      wasCreated = upserted.created;
     } catch (airtableError) {
       // Bytesen ligger redan i lagringen men metadataraden misslyckades —
       // känd, öppet bokförd lucka (ingen kompenserande borttagning i v1, se
@@ -289,12 +386,19 @@ Deno.serve(async (req) => {
       );
     }
 
+    // 201 vid ny rad, 200 vid idempotent replay (samma Lagringsnyckel →
+    // matchad, inget nytt skapades) — speglar finalize-attachment-upload/
+    // index.ts (TASK-183) och create-event/index.ts (ADR-066) EXAKT.
     return new Response(
       JSON.stringify({
-        attachment: mapAttachmentRecord(created),
-        record: { id: created.id, fields: created.fields, createdTime: created.createdTime },
+        attachment: mapAttachmentRecord(record),
+        record: { id: record.id, fields: record.fields, createdTime: record.createdTime },
+        created: wasCreated,
       }),
-      { status: 201, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+      {
+        status: wasCreated ? 201 : 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      },
     );
   } catch (error) {
     return mapErrorToResponse(error, requestId, corsHeaders, {

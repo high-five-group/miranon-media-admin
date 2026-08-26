@@ -55,8 +55,14 @@
 // samma mönster som docs/research/
 // task-127-9-rundtur-e2e-service-role-blocker-2026-08-05.md använde:
 //
+// CLI-ANROPET ÄR PINNAT (`npx supabase@<version>`, INTE bar `supabase`) —
+// se .supabase-cli-policy.conf § VARFÖR FILEN FINNS för S108-incidenten
+// (2026-08-24) en obar CLI-version orsakade i just denna deploy-väg.
+// Versionen nedan är ett ÖGONBLICK — .supabase-cli-policy.conf är
+// sanningskällan, kolla den om siffran känns gammal.
+//
 //   SUPABASE_URL="https://pqtshyierkdgwdnxuirz.supabase.co" \
-//   SUPABASE_SERVICE_ROLE_KEY="$(supabase projects api-keys \
+//   SUPABASE_SERVICE_ROLE_KEY="$(npx supabase@2.115.0 projects api-keys \
 //     --project-ref pqtshyierkdgwdnxuirz -o json \
 //     | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{
 //         const k=JSON.parse(s).find(k=>k.name==="service_role");
@@ -107,9 +113,11 @@
 //          fas4-prod-deploy.sh --deploya) kan gata en Storage-beroende
 //          EF-deploy på detta exitkod.
 //
-// Exempel (Marcus, prod):
+// Exempel (Marcus, prod) — CLI-anropet är PINNAT, samma skäl som exemplet
+// i filhuvudet ovan (S108, .supabase-cli-policy.conf är sanningskällan för
+// versionssiffran):
 //   SUPABASE_URL="https://lvjsfnphlauldxqlncpl.supabase.co" \
-//   SUPABASE_SERVICE_ROLE_KEY="$(supabase projects api-keys \
+//   SUPABASE_SERVICE_ROLE_KEY="$(npx supabase@2.115.0 projects api-keys \
 //     --project-ref lvjsfnphlauldxqlncpl -o json \
 //     | node -e 'let s="";process.stdin.on("data",d=>s+=d).on("end",()=>{
 //         const k=JSON.parse(s).find(k=>k.name==="service_role");

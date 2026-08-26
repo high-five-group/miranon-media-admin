@@ -32,6 +32,7 @@ import {
   type ActionTarget,
   type ActionTestSendInput,
   type AttachmentReader,
+  deriveContentType,
   type EventContext,
   isActionType,
   mapRegistrationFields,
@@ -1138,6 +1139,35 @@ test.describe('runActionSend — bilage-bärande grenen (TASK-147.5)', () => {
     expect(result.completed).toEqual([]);
     expect(result.failed[0].registrationId).toBe('rec1');
     expect(result.failed[0].reason).toContain('mock-airtable-fel');
+  });
+});
+
+// ============================================================================
+// deriveContentType (TASK-193) — Resends `attachments[].content` gick ut
+// UTAN `contentType`, så Resend föll tillbaka till application/octet-stream
+// i stället för filens verkliga typ (mail b1e1b27b-e579-4c39-960d-
+// f0a0cc8b7ea1). Ren funktion, flyttad till _shared/attachments.ts EXAKT
+// för att kunna enhetstestas här (index.ts-filer importeras aldrig direkt
+// av tester i detta repo, se send-action-email/index.ts:s makeRealSingleSender
+// för anropsplatsen). Detta ÄR "riktat test: verifierat utskick servar rätt
+// Content-Type" i den form som är strukturellt möjlig utan en riktig
+// Resend-nyckel/mottagen-mail-verifiering (samma gräns TASK-147.5:s AC #2
+// redan drog för den bilage-bärande grenen, se filhuvudets kommentar ovan).
+// ============================================================================
+test.describe('deriveContentType (TASK-193)', () => {
+  test('.pdf-filnamn → application/pdf', () => {
+    expect(deriveContentType('Hörlursinformation.pdf')).toBe('application/pdf');
+    expect(deriveContentType('kvitto.pdf')).toBe('application/pdf');
+  });
+
+  test('skiftlägesokänslig — .PDF/.Pdf klassas identiskt', () => {
+    expect(deriveContentType('BEKRAFTELSE.PDF')).toBe('application/pdf');
+    expect(deriveContentType('Deltagarinfo.Pdf')).toBe('application/pdf');
+  });
+
+  test('okänd/annan filändelse → application/octet-stream (samma fallback som INNAN fixen, aldrig en gissad mime-typ)', () => {
+    expect(deriveContentType('bilaga.docx')).toBe('application/octet-stream');
+    expect(deriveContentType('utan-andelse')).toBe('application/octet-stream');
   });
 });
 

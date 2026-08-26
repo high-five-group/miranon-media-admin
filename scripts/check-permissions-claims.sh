@@ -31,6 +31,14 @@ set -euo pipefail
 
 CONFIG=".permissions-claims-policy.conf"
 
+# SCRIPT_DIR-relativ, INTE cwd-relativ som CONFIG ovan: testsviten
+# (scripts/test-check-permissions-claims.sh) kör detta skript med cwd =
+# en mktemp-sandlåda (för att testa olika CONFIG-scenarier där), inte
+# repo-roten — en cwd-relativ jq-guard-sökväg hade brutit där.
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=/dev/null  # dynamisk SCRIPT_DIR-relativ path; scripts/lib/jq-guard.sh lintas separat via ci.yml:s shellcheck-lista
+source "${SCRIPT_DIR}/lib/jq-guard.sh"
+
 die() { printf 'check-permissions-claims: %s\n' "$1" >&2; exit "${2:-3}"; }
 
 # Deklarera FÖRE source. shellcheck kan inte spåra variabler över filgränser
@@ -67,7 +75,7 @@ key_exists() {
   return 1
 }
 
-command -v jq >/dev/null 2>&1 || die "jq krävs men saknas i PATH"
+jq_version_ok || die "jq krävs men saknas eller är för gammal i PATH (TASK-312, .jq-version-policy.conf)"
 
 # --- Steg 2: leta påståenden och pröva vart och ett -------------------------
 violations=0

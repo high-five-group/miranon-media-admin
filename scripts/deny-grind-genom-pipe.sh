@@ -86,6 +86,8 @@ set -uo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 GRIND_POLICY="${GRIND_POLICY:-${SCRIPT_DIR}/../.grind-exitkod-policy.conf}"
 HOOK_LOGG="${HOOK_LOGG:-${SCRIPT_DIR}/../.claude/hook-fallningar.jsonl}"
+# shellcheck source=/dev/null  # dynamisk SCRIPT_DIR-relativ path; scripts/lib/jq-guard.sh lintas separat via ci.yml:s shellcheck-lista
+source "${SCRIPT_DIR}/lib/jq-guard.sh"
 
 neka() {
     jq -nc --arg skal "$1" '{
@@ -107,6 +109,12 @@ neka() {
 # scripts/agent-spawn-log.sh: får ALDRIG påverka hookens exit eller stdout.
 logga_fallning() {
     local skalnyckel="$1" kommando_kort
+    # Bar presence-check, MEDVETET INTE jq_version_ok (TASK-312): denna
+    # helper anropas alltid EFTER huvudgrinden nedan redan passerat
+    # jq_version_ok — en version-koll här vore en redundant andra
+    # jq --version-process i en logg-väg som redan ska vara best-effort-
+    # billig (§ FÄLLNINGS-LOGG ovan: "får ALDRIG påverka hookens exit
+    # eller stdout").
     command -v jq >/dev/null 2>&1 || return 0
     mkdir -p "$(dirname "${HOOK_LOGG}")" 2>/dev/null || return 0
     kommando_kort="${COMMAND:0:120}"
@@ -120,7 +128,7 @@ logga_fallning() {
     return 0
 }
 
-command -v jq >/dev/null 2>&1 || exit 0
+jq_version_ok > /dev/null 2>&1 || exit 0
 [[ -f "${GRIND_POLICY}" ]] || exit 0
 
 GRIND_MONSTER=()

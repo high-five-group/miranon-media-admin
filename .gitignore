@@ -107,6 +107,12 @@ tests/visual/__screenshots__/**/*-win32.png
 # Hermetik-rapportens mätdata (S91 steg 1) — utanför test-results/ eftersom
 # Playwright rensar sin outputDir vid varje körningsstart.
 .hermetik/
+
+# Ägar-manifestet för kastbara staging-poster (TASK-309.15) — samma skäl som
+# .hermetik/ ovan, plus att CI kör test:api:staging och test:e2e:staging som
+# TVÅ Playwright-invokationer i samma jobb och den andra hade rensat den
+# förstas manifest. Läses av `npm run purge:staging:efter`.
+.kastbara/
 # Vercel CLI:s projektkoppling (`vercel link`) — bär projekt-/org-ID och en
 # nedladdad VERCEL_OIDC_TOKEN. Aldrig i git.
 .vercel

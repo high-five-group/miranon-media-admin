@@ -15,6 +15,45 @@
 
 ## Aktuellt fokus
 
+**Session 112 ▶️ ÅTERUPPTAGEN (2026-08-26, `lifecycle: active`, resume 1;
+pausad en gång, historik) — RESUMEN ÖPPNAR PÅ RE-MÄTNING, `#1932`-FIXEN OCH
+FIX-VÅG 4.** Marcus order: *"Återuppta S112 …"* + kvittens *"Gör det du anser
+vi behöver göra. Var noggrann och chansa aldrig."* **Paus-PR `#1969` landad**
+(`origin/main` `60b5e659`). Huvudkatalogen ägs av **S108 resume 11** (levande,
+pid 23064) — S112 kvar i `s112-stadsessionen`, gren `docs/s112-resume-1`.
+**Numrering re-verifierad mot disk:** task-**320** → 321 · ADR **126** på main
+(127 = `#1932`, EJ landad) · **L533** · 90 fragment · **T176** · session
+**112**. **Avvikelser mot handoffen:** `#1932` var ALDRIG i kön — noll CI på
+head (stackad PR auto-retargetad till `main` utan `pull_request`-event; fix =
+commit på grenen) · closure-grinden **15/650** (`190`/`193` = S112:s egna
+flippar utan `Landning:`-pekare, dolda av karensen) · review-agent-skulden
+**BETALD** (typen laddades mitt i sessionen; utlåtande för `#1932`: risk låg,
+2 info). **NÄSTA: fix-våg 4 ur A-klassen (29 agent-körbara) + `190`/`193` +
+`173.2`/`.3`/`.5` med review-agent per PR · Marcus-momenten oförändrade
+(`#1883`→`#1926` · `#1957` · vandringsblocket · småbesluten).** Full narrativ:
+sessionsdok S112 Del 4.
+
+**Session 112 ⏸️ PAUSAD (paus 1, 2026-08-25, `lifecycle: paused`) — STÄDSESSIONEN:
+REGISTRET SANT, REPOT RENT, ROTORSAKER.** Marcus fullt beslutsmandat ("Go
+på alla", 2026-08-24), körs autonomt i worktree `s112-stadsessionen`
+(S108 äger huvudkatalogen). Levererat hittills: closure-grinden 38→4
+S112-klassade röda · grenstädningen 289→54 · **A2-bågen komplett i prod
+(61 fällor desarmerade, fälla 21 STÄNGD)** · 193 kort triagerade · 6
+förkastade + 13 stängda · DoD-mekanismen väg iii + `ADR-127` ·
+review-grindens skiva 1 · prototyp-substraten rivna · kontrast-vakter +
+affordans · två paket bort · hub `vol-07` + do-work-mallen ·
+S113-dukningen klar (`docs/reference/s113-basmaxning-dukning.md`).
+**ACTIONPLAN + full landningstabell: sessionsdok S112 Del 2** (kö-svans +
+flip-batch + slutmätning · fix-våg 3 · vandringsblocket efter Marcus
+bildgranskning `#1883`→`#1926` · session-end med skörd). **S113
+RESERVERAD för Airtable-fönstret.** claude.ai-projektkunskapen LÄMNAD
+(TASK-318) — inga Update-klick-moment framgent. **PAUSAD 2026-08-25 efter
+att HELA actionplanen exekverats** (Del 2–3 + slutmätning 14/643 noll
+oskötta; A2-bågen komplett i prod). HANDOFF: sessionsdok S112 § PAUSLÄGE
+— Marcus-momenten dukade (bilder #1883→#1926 · #1957-draften ·
+vandringsblocket · småbesluten), #1932/dependabot-verifikat +
+heartbeat-omstart är resume-steg 1. Återupptas via `session-resume`.
+
 **Session 111 ✅ STÄNGD (2026-08-23, K-sista i AFK-läge på Marcus mandat; `lifecycle: closed`) —
 ANMÄLNINGSSIDAN I PROD: KONVERGENSPASSET HELA VÄGEN, BEVAKNINGSRADERNA I NY
 ANATOMI, SIDRAMEN SOM FAMILJ.** `main` `e1470eb0` = Vercel Production, bundle-
@@ -409,6 +448,122 @@ direkt · notis-prototypen, EN variant itererad per `ADR-121` beslut 6.**
 Numrering efter S109: ADR 122 · kort 284 (om `#1674` landat) · L512 + 55
 fragment · T158 · f52 · session 111. Full narrativ: sessionsdok S109 Del 1–4 +
 PAUSLÄGE.
+
+**Session 108 ▶️ ÅTERUPPTAGEN (2026-08-26, `lifecycle: active`, elfte resumen;
+pausad tio gånger, historik) — LÄGET RE-MÄTT MOT `origin/main` `60b5e659`:
+ALLT ÄR LIVE I PROD, KVAR ÄR MARCUS VERIFIERING OCH BESLUT.** Handoff mot
+disk: paus-PR `#1970` landad · `TASK-309` 12 Done / 10 öppna · båda facit-
+manifesten `godkand: null` · numreringen OFÖRÄNDRAD sedan paus 10 (ADR 127 ·
+task-321 · L533 · T176 · session 113) · huvudkatalogen fast-forwardad
+`f5ed41d2` → `60b5e659` · **dev-servern DÖD** (den förutsagda risken) ·
+S112 pausad parallellt, ingen öppen PR är S108:s. Live-belägg: Vercel
+Production `60b5e659` 2026-08-25T15:00:31Z, prod-schema + 45/45 EF:er sedan
+2026-08-24. **MARCUS-SEKVENS (sessionsdok Del 23 § C):** GO på `309.20`-agent
+→ röktest i prod (`309.11`, nio punkter) → nyckelrotation (§ (g)) →
+stämpling efter `309.20` → `309.8` AC #3/#4 · `ADR-060` · `309.18`/`.19`/`.21`
+→ agent-svans + K-sista. Full narrativ: sessionsdok S108 Del 23.
+
+**Session 108 ⏸️ PAUSAD (tionde gången, 2026-08-25, `lifecycle: paused`) —
+PROMOVERINGEN ÄR I PROD; KORTFAMILJEN HALVSTÄNGD; ALLT SOM ÅTERSTÅR KRÄVER
+MARCUS BESLUT (SESSIONSDOK S108 § PAUSLÄGE TIONDE → MARCUS-SEKVENS).**
+Resume 10 landade **21 PR:er**. `#1889` merge `24c39777` 17:00:37Z → Vercel
+Production 17:01:13Z; prod verifierat med `git merge-base --is-ancestor` mot
+deploy-SHA, inte med stränglätning i bundle. `TASK-309`-familjen: **12 Done**
+(`.1`–`.7`, `.12`–`.16`), 10 öppna — closure-grinden fäller **noll**
+309-kort. Fragment-katalogen 65 → **89**. Efter-körning-purgen skarpt bevisad
+i post-merge (`ADR-060` punkt 3 amenderad av agent — **Marcus bör granska**).
+Skiva 9:s facit levererat: 22 bilder + 2 manifest, båda `godkand: null`.
+**SEX AV ÅTTA AGENTER RÄTTADE ORKESTRERARENS EGET UNDERLAG** — fragment-talet
+(66→65), testevent-antalet (44→55, 151 över fem familjer), den falska
+förklaringen att setup-purgen inte kör efter, `ADR-109`:s upphävda momsrad,
+ett `dvh`-påstående, och att block-dialogens datum-läge skulle vara nåbart
+(**död kod** — falsifierar `TASK-309.17`). **TRE FYND INGEN LETADE EFTER:**
+två Airtable-rader kvar i **27 och 32 dygn** utan matchande purge-target ·
+runbookens mall bar `fullPage: true` och **lärde ut** buggen · `s102`:s
+stämplade facit vaktas av **ingenting**. **Lessons-konsolideringen STOPPAD
+med avsikt** — 65 av 89 fragment tillhör andra sessioner. **TIDSKRITISKT VID
+RESUME: `TASK-309.20`** (två formdefekter vid 375 px som facit fryser om
+stämplingen sker före fixen). Därefter `309.8` AC #3 · `ADR-060`-granskningen
+· stämpling · röktest · nyckelrotation · `309.18`/`.19`/`.21`.
+Numrering vid paus 10: ADR **127** · task-**321** · **L533** · 89 fragment ·
+**T176** · f53 · session **113**. Dev-servern lämnad igång på `localhost:5173`
+mot staging. Full handoff: sessionsdok S108 § PAUSLÄGE (tionde) + Del 20–22.
+
+**Session 108 🤖 ORKESTRERINGS-PASS (2026-08-24, `lifecycle: active`, tionde
+resumen forts.) — PROMOVERINGEN I PROD, ÅTTA AGENTER, NITTON LANDNINGAR,
+KORTFAMILJEN 0 → 12 STÄNGDA.** Marcus AFK med order att delegera allt
+delegerbart och köra så långt möjligt. **`#1889` landad 17:00:37Z
+(`24c39777`)** → Vercel Production 17:01:13Z; prod verifierat via
+`git merge-base --is-ancestor` mot deploy-SHA, inte via stränglätning i
+bundle. Landat i övrigt: `309.1`–`.7` stängda (`#1946`) · `309.12`–`.16`
+stängda (`#1947`/`#1951`/`#1965`) · **efter-körning-purgen** (`#1956`,
+`ADR-060` punkt 3 amenderad — **Marcus bör granska**) · **skiva 9:s facit**
+(`#1961`, 22 bilder + 2 manifest, båda `godkand: null`) · 24 lessons-fragment
+(65 → 89) · `ADR-109`-indexraden · runbookens `fullPage`-fälla · 11 döda
+filreferenser. **SEX AGENTER RÄTTADE MITT EGET UNDERLAG** — fragment-talet
+(66→65), testevent-antalet (44→55, och 151 över fem familjer), min falska
+förklaring att setup-purgen inte kör efter, `ADR-109`:s upphävda momsrad,
+och att block-dialogens datum-läge skulle vara nåbart (det är **död kod**,
+falsifierar mitt eget `TASK-309.17`). **TRE FYND INGEN LETADE EFTER:** två
+Airtable-rader kvar i **27 och 32 dygn** utan matchande purge-target ·
+runbookens mall bar `fullPage: true` och **lärde ut** buggen · `s102`:s
+stämplade facit vaktas av **ingenting** (innehållslåset gäller bara ytor med
+`referenser`-nyckel). **Nya kort:** `309.15`–`.21`. **Lessons-konsolideringen
+STOPPAD med avsikt** — 65 av 89 fragment tillhör andra sessioner; ett
+fragment är en fullgod leverans. **KVAR FÖR MARCUS:** `309.8` AC #3
+(ordalydelsen "identisk med prototypen" är inte längre sann) · `ADR-060`-
+amenderingen · **`309.20` är tidskritisk** (två formdefekter vid 375 px som
+facit fryser om du stämplar före fix) · prod-röktest · DocRaptor-rotation ·
+facit-stämpling · `byggplan.md` §2 saknar hela spåret · `CHANGELOG`
+`[Unreleased]` tom sedan `0.8.0`. Full narrativ: sessionsdok S108 Del 22.
+
+**Session 108 ▶️ ÅTERUPPTAGEN (2026-08-24, `lifecycle: active`, tionde resumen;
+pausad nio gånger, historik) — LÄGET RE-MÄTT MOT `origin/main`,
+GRANSKNINGSYTAN UPPE, `TASK-309.9` AC #3 BOCKAD; MARCUS-SEKVENSEN STÅR
+OFÖRÄNDRAD.** Marcus order: *"Återuppta S108."* Paus-PR:en verifierad landad
+(`origin/main` `3d4ae13e` — S112 landade vidare under pausen). **Dokgren
+`docs/s108-resume-10` tagen ur `origin/main` i `s108-paus-docs`; all
+faktainsamling via `git show origin/main:<fil>`** — huvudkatalogen står kvar
+detached på `f5ed41d2`, **91 commits bakom**, och gav en FALSK kort-läsning
+(`TASK-309.9` AC #1 visades obockad där, är bockad på `main`). Handoffens
+numrerings-varning gällde serierna; klassen är bredare — kort-INNEHÅLL ljuger
+lika gärna. **Numreringen re-verifierad, ingen post rörde sig:** ADR **127** ·
+task-**320** · **L533** · 66 fragment · **T176** · f53 · session **113**.
+**AC #3 bockad efter att alla fyra led mätts** (`--kontrollera` + bucket-raden ·
+`--deploya` 45/45 · `UPDATED_AT` på nio EF:er · allowlisten 45 poster utan
+`test-docraptor-render`). **AC #2 är kandidat men EJ bockad** — prod-secrets kan
+inte mätas från agent-sidan, bocken skulle vila på bokföring. **Granskningsytan
+uppe** (`agent-a36ffea842efba83a`, `1ec70a85`, `localhost:5173/mer/dokument`
+→ 200, staging-URL verifierad skild från prods). Ägarlappen på huvudkatalogen
+är BORTA (`T120`-formen: lappen tas vid skrivning, inte vid ankomst) — noterat,
+ingen åtgärd. **NÄSTA: Marcus kör MARCUS-SEKVENS steg 0 (`#1883`) + steg 2
+(granskningen, sex punkter); agenten tar steg 3–5 och därefter skiva 9 + QA +
+AC-bockning.** Full narrativ: sessionsdok S108 Del 20 + § Paushistorik 9.
+
+**Session 108 ⏸️ PAUSAD (nionde gången, 2026-08-24, `lifecycle: paused`) —
+PROD ÄR HELT OCH DEPLOYAT; KVAR ÄR MARCUS GRANSKNING AV `#1889` OCH DE TRE
+STEGEN EFTER DEN (SESSIONSDOK S108 § PAUSLÄGE NIONDE → MARCUS-SEKVENS).**
+Resume 9 landade sju PR:er: `#1893` `#1895` `#1897` `#1900` `#1902` `#1915`
+`#1929`. **Del A körd av agenten på Marcus GO** — tre tabeller + 18 fält på
+Eventplanering + 2 på Bilagor + seed i prod, basen 21→24 tabeller, alla
+prod-ID:n i `data-model.md`. **Prod-deployen föll först** efter 18 av 45
+funktioner: `deploy-prod-functions.sh` kallade den GLOBALA CLI-binären
+(2.75.0) medan anroparen körde `npx` (2.115.0) — differentialmätt mot
+staging. Marcus fällde lapp-fixen (*"vi SKA hålla branschledarstandard i
+ALLT"*), sveppasset visade **sju** opinnade anropsställen i stället för ett,
+och hela klassen stängdes i `#1915` (`.supabase-cli-policy.conf` + delad
+resolver + fail-closed guard i preflighten + 25/25 nya testfall).
+Granskningen fällde `#1915` en gång: en miljövariabel kortslöt policyn OCH
+framgångsraden ljög om källan. **Omkörd deploy: 45/45, `UPDATED_AT`
+verifierad på alla nio — nattens tre prod-fönster STÄNGDA.**
+**Granskningsvägen föll strukturellt:** Vercel-preview bygger i
+production-läge → pratar med prod → prods CORS matchar Origin EXAKT → en
+per-gren-subdomän kan aldrig stå i listan ⇒ `Failed to fetch`. Granskningen
+går via dev-servern mot staging. Numrering vid paus 9 (S112 konsumerar
+kort-serien snabbt — mät mot `origin/main`, ALDRIG mot huvudkatalogens
+detached HEAD): ADR **127** · task-**320** · **L533** · 66 fragment ·
+**T176** · f53 · session **113**. Full handoff: sessionsdok S108 § PAUSLÄGE
+(nionde) + Del 17–19.
 
 **Session 108 ▶️ ÅTERUPPTAGEN (2026-08-24, `lifecycle: active`, nionde resumen;
 pausad åtta gånger, historik) — RESUMEN ÖPPNAR PÅ MARCUS FEM MOMENT; INGET

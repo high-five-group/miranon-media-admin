@@ -160,6 +160,16 @@ landningar är lösta (`CLAUDE.md` § Landning). Vad kön inte ser är två diff
 som mergar rent och ändå är fel tillsammans — och du kan inte se dina
 syskonagenter. Det kan orkestreraren.
 
+**Efter din push kan orkestreraren spawna en oberoende `review-agent` i FÄRSK
+kontext, före armering** (`CLAUDE.md` § Review-grinden, ADR-105). Det är
+strukturellt aldrig du — du har byggt PR:en, du kan inte vara den granskare
+som prövar den (samma självattesterings-felklass som motiverar färsk kontext
+i hela kedjan). Detta ändrar inget i DIN sekvens ovan: du pushar, du armerar
+eller inte enligt uppdragets instruktion, du rapporterar. Grinden är i denna
+fas (`TASK-173.1`) ett orkestrerar-åtagande, inte ännu en mekanisk spärr som
+skulle blockera DIN armering — se `CLAUDE.md` § Review-grinden för vad som
+faktiskt är byggt kontra pågående.
+
 ## Ingen asynkron signal når dig — kör allt du måste invänta i FÖRGRUNDEN
 
 Detta är den överordnade regeln. Landnings-vakten nedan är ETT fall av den,
