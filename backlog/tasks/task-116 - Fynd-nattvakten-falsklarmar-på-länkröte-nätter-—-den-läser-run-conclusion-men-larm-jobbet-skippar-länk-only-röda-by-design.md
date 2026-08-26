@@ -3,10 +3,10 @@ id: TASK-116
 title: >-
   Fynd: nattvakten falsklarmar på länkröte-nätter — den läser run-conclusion,
   men larm-jobbet skippar länk-only-röda by design
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-01 13:08'
-updated_date: '2026-08-26 02:57'
+updated_date: '2026-08-26 04:14'
 labels:
   - ready-for-agent
 dependencies: []
@@ -49,14 +49,14 @@ Möjliga former, ingen vald här: (a) vakten läser **jobb-nivå** i stället f�
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #6 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #6 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #7 CI grön per jobb på pushad commit
-- [ ] #8 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #8 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -77,4 +77,12 @@ EJ BELAGT, lämnas obockat:
 Varför kortet inte stängs på tre av fyra: att bocka ett obelagt AC för att kortet 'känns klart' är precis den klass av påstående utan mekanism som ADR-083 vaktar mot.
 
 AC #3 BELAGT 2026-08-26 (S112 fix-våg 4, bunt A). simulate_missing-dispatch kört mot .github/workflows/nightly-watchdog.yml på origin/main (post 39e55a58): gh workflow run nightly-watchdog.yml --ref main -f simulate_missing=true → run https://github.com/high-five-group/miranon-media-admin/actions/runs/32923517894 (conclusion success). Vaktkedjan fungerade end-to-end: dispatchen skapade issue #1975 ("🌑 Nattvakten — BEVIS-LÄGE — 2026-08-26", etikett ci-natt, assignee marcus803) med kroppens SIMULERAT-notering intakt. Issue stängd samma pass med motiveringen "Stängs enligt vaktens egen anvisning: SIMULERAT via simulate_missing-dispatch (run 32923517894) för TASK-116 AC #3 ...". Ingen kodändring krävdes — beviset var det enda återstående. Alla fyra AC nu belagda; DoD (CI grön per jobb / PR) lämnas till orkestreraren att verifiera efter push.
+
+DoD-avstämning S112 resume 1 (2026-08-26, stängnings-batch 1). DoD #1/#5 (AC avbockade): 4/4 AC bekräftat [x] — check. DoD #2/#6 (rörd fil-klass lokala grindar gröna): commit 39e55a58 (grundorsaksfixen) bär i sin egen commit-body 'Grindar: actionlint EXIT=0 · yamllint EXIT=0 · shellcheck-strict över hela scopet EXIT=0'; dagens simulate_missing-dispatch (run 32923517894) conclusion=success — check. DoD #4/#8 (inga orelaterade filer): git show --stat 39e55a58 bekräftar EXAKT 1 fil ändrad (.github/workflows/nightly-watchdog.yml, 50 insertions/2 deletions) — check. DoD #3/#7 (CI grön per jobb) lämnas obockade, härledda via landningspekaren nedan.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landning: PR #1978. Done-flipp S112 resume 1, 2026-08-26, post-merge efa98ffe74a4 success.
+<!-- SECTION:FINAL_SUMMARY:END -->

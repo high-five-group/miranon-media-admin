@@ -3,12 +3,13 @@ id: TASK-34
 title: >-
   Test-isolering: hem.staging.test.ts:410 + :663 rött i full svit, grönt ensamt
   (persist-cache-hydrering)
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-23 02:06'
-updated_date: '2026-08-26 03:16'
+updated_date: '2026-08-26 04:18'
 labels:
   - ready-for-agent
+  - intentionally-unchecked
 dependencies: []
 ordinal: 83000
 ---
@@ -93,4 +94,12 @@ Källor: git fetch origin (SHA vid detta pass: 1d853fa3), git log
 --diff-filter=D -- "*hem.staging.test.ts", git show 109f8465 --stat,
 tests/acceptance/hem.acceptance.test.ts (docblock rad 1-49, rad 312-337,
 rad 796-869), tests/e2e/event-deltagare.staging.test.ts rad 512-517.
+
+OBOCKAT MED AVSIKT: falsifierat, ingen kod. tests/e2e/hem.staging.test.ts existerar inte på origin/main — borttagen/omdöpt till tests/acceptance/hem.acceptance.test.ts i TASK-59.3 (commit 109f8465, 2026-07-28, fem dagar EFTER att detta kort skrevs), och Hem-vyn därtill helt omskriven senare i TASK-243.3 (K10-formen riven, ersatt av V1 'Lugna morgonen'). Nya sviten navigerar med page.goto() per scenario (aldrig page.reload()) i en hermetisk MSW-mockad acceptance-klass — rotorsaksklassen kortet beskriver (persist-cache-hydrering över en reload-loop) kan strukturellt inte uppstå i den nya formen. Ingen fil att rätta, ingen risk att mitigera i den nu levande koden. Samtliga 4 DoD-rader (och avsaknaden av AC) är därför N/A i sin helhet, inte rad för rad — hela kortets mål är obsolet. Se Implementation Notes ovan för fullständig källbelagd analys.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landning: PR #1982 (bokföringslandning, ingen kod). Done-flipp S112 resume 1, 2026-08-26, post-merge f3929e17e66e: in_progress vid flipptillfället (merge_group för pr-1982 var conclusion=success). Utfall: FALSIFIERAT — kortets mål (fil, rader, testfallens exakta form) är obsoleta; rekommenderas stängt som obsolet/superseded, vilket denna Done-flipp genomför.
+<!-- SECTION:FINAL_SUMMARY:END -->

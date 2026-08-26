@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-13 14:52'
-updated_date: '2026-08-26 03:19'
+updated_date: '2026-08-26 04:20'
 labels: []
 dependencies: []
 priority: medium
@@ -102,4 +102,6 @@ detta pass verktyg/mandat:
 
 Kortet har ingen definierad AC att bocka. Kvarstår öppet för
 uppföljning/triage.
+
+Bokföring S112 resume 1 (2026-08-26, stängnings-batch 1). Landning: PR #1982 (getWithTransientRetry() + tillämpning på get-event.staging.test.ts + airtable-filter.staging.test.ts). post-merge f3929e17e66e: in_progress vid detta bokföringstillfälle (merge_group för pr-1982 var conclusion=success). Status lämnas MEDVETET på To Do — kortets NÄSTA STEG 1-3 (Supabase-status-historik, mutex vs signalvärdes-strategival) är obetalda och kräver Marcus/orkestrerar-beslut, redan dokumenterat utförligt i Implementation Notes ovan. Ingen AC/DoD rörd i detta pass.
 <!-- SECTION:NOTES:END -->

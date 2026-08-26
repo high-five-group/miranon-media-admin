@@ -295,13 +295,21 @@ export function AgendaEditor({
       </ul>
       {/* Staplade och LIKA BREDA — `w-fit` gav två olika breda knappar under
           varandra, vilket läses som slarv. Full bredd ger dem samma vikt och
-          en större träffyta. */}
+          en större träffyta.
+          VÄNSTERSTÄLLDA, INTE CENTRERADE (TASK-309.28, Marcus prod-röktest
+          2026-08-26): `justify-center` (ärvt från `Button`s bas-klasser)
+          lät ikon+text flyta i mitten av den fullbredda knappen — långt
+          till höger om agendaradernas text ovanför. `justify-start` +
+          `pl-0` (nollar `size="sm"`s `px-3` bara på vänstersidan, `pr-3`
+          orört) ger samma vänsterkant som radernas text: båda är MÄTTA
+          till x=456 (desktop) / x=40 (375 px) — knapparnas egen box låg
+          redan där, det var bara INNEHÅLLET som centrerades bort från den. */}
       <div className="flex flex-col gap-2">
         <Button
           intent="secondary"
           emphasis="outline"
           size="sm"
-          className="w-full justify-center"
+          className="w-full justify-start pl-0"
           onPress={() => laggTill(false)}
         >
           <Plus aria-hidden="true" size={14} />
@@ -311,7 +319,7 @@ export function AgendaEditor({
           intent="secondary"
           emphasis="outline"
           size="sm"
-          className="w-full justify-center"
+          className="w-full justify-start pl-0"
           onPress={() => laggTill(true)}
         >
           <Plus aria-hidden="true" size={14} />
