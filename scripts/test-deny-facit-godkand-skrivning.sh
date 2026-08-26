@@ -141,19 +141,43 @@ stampla_manifest() {
 JSON
 }
 
-# PATH utan katalogen som äger en given binär (F-serien). Beräknas mot den
-# FAKTISKA platsen — ingen hårdkodning av en specifik katalog. Skriver till
-# en NAMNGIVEN utdata-variabel via `printf -v` (bash 3.1+, portabelt —
-# `local -n`/nameref kräver bash 4.3+ och FAILAR på macOS systembash 3.2,
-# mätt i denna byggsession) i stället för att returneras via command
-# substitution i anropsstället, vilket SC2312 varnar för.
+# PATH utan VARJE katalog som äger en given binär (F-serien).
+#
+# ROTORSAK (2026-08-26, CI-fynd på PR #1992, körning 32929323637): den
+# första versionen tog bort ENDAST katalogen `command -v "${bin}"` råkade
+# resolva till — d.v.s. den FÖRSTA träffen i PATH. Grönt lokalt på macOS
+# (Homebrew: jq+node delar en enda `/opt/homebrew/bin`), RÖTT på
+# ubuntu-latest-runnern: F1 (jq) OCH F2 (node) fällde med exit 2 (hooken
+# NEKADE — den hittade alltså jq/node ÄNDÅ) i stället för väntat exit 0.
+# GitHub-hostade ubuntu-runners exponerar rutinmässigt bägge binärerna via
+# MER ÄN EN PATH-katalog samtidigt (`actions/setup-node` PREPENDAR sin
+# hostedtoolcache-katalog via $GITHUB_PATH — köns ORIGINALinstallation
+# ligger kvar i PATH DÄREFTER; jq kan på samma sätt finnas i mer än en
+# katalog beroende på image-lager). Att ta bort bara den FÖRSTA träffen
+# lämnade den ANDRA fullt nåbar, så `command -v "${bin}"` i barn-processen
+# (hooken) hittade binären ändå.
+#
+# test-deny-arbetsform-push.sh:s F1 (samma enkel-katalogs-teknik, för jq)
+# är INTE ett motbevis: `rensa_tillstand` körs precis före dess F-serie,
+# så den hookens NEKA-väg är redan avstängd via en HELT ANNAN grind
+# (`[[ -f "${TILLSTANDSFIL}" ]] || exit 0`) oavsett om jq döljs eller ej —
+# testet är grönt där av en orsak som inte har med jq-döljning att göra,
+# alltså vacuously green, inte ett bevis på att enkel-katalogs-tekniken
+# fungerar på Linux.
+#
+# FIXEN: skanna VARJE PATH-segment och uteslut alla där `${bin}` faktiskt
+# är en körbar fil (`-x "${seg}/${bin}"`) — inte bara det `command -v`
+# råkar resolva till. Robust oavsett hur många kataloger som håller
+# binären, på vilken plattform som helst. Skriver till en NAMNGIVEN
+# utdata-variabel via `printf -v` (bash 3.1+, portabelt — `local -n`/
+# nameref kräver bash 4.3+ och FAILAR på macOS systembash 3.2, mätt i
+# denna byggsession) i stället för att returneras via command substitution
+# i anropsstället, vilket SC2312 varnar för.
 path_utan() {
-    local malvar="$1" bin="$2" bin_path bin_dir out="" seg segs
-    bin_path="$(command -v "${bin}")"
-    bin_dir="$(dirname "${bin_path}")"
+    local malvar="$1" bin="$2" out="" seg segs
     IFS=':' read -r -a segs <<< "${PATH}"
     for seg in "${segs[@]}"; do
-        [[ "${seg}" == "${bin_dir}" ]] && continue
+        [[ -n "${seg}" && -x "${seg}/${bin}" ]] && continue
         out="${out:+${out}:}${seg}"
     done
     printf -v "${malvar}" '%s' "${out}"
