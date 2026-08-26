@@ -18,7 +18,7 @@ efter en ny gissning på ett "rimligare" tal.
 
 **[UNIVERSAL]** Ett CSS-breakpoint-villkor i JS/TS som läser ett ELEMENTS
 egen bredd (`getBoundingClientRect().width`, `clientWidth`) ska ALDRIG
-jämföras mot ett Tailwind-/media-query-tal (`sm:`, `md:` …) rakt av — de two
+jämföras mot ett Tailwind-/media-query-tal (`sm:`, `md:` …) rakt av — de två
 talen mäter olika saker (elementets innehållsyta vs. hela viewporten). Mät
 elementets FAKTISKA bredd i de verkliga scenarier villkoret ska skilja åt,
 innan brytpunkten sätts — en gissning som "låter rimlig" (640 för `sm:`) är

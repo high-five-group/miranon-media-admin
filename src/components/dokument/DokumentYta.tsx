@@ -645,49 +645,52 @@ const IKONKNAPP_KLASS = 'size-11 shrink-0 p-0';
 const LISTA_SYNLIGA_RADER = 4;
 
 /**
- * FALLBACK-RADHÖJD PER BRYTPUNKT — `useLastaListhojd`s NIVÅ 3 (sista
- * utvägen), använd ENDAST när (a) noll RIKTIGA rader finns i DOM (bara
- * tomt-lägets placeholder-`<li>`) OCH (b) ingen mätning — varken PRECIS
- * eller ESTIMAT — någonsin skett i detta komponent-liv
- * (`senastUppmattRadhojd.current === null`). I PRAKTIKEN bara nåbar i
- * `GemensamtLage` vid ett events ALLRA FÖRSTA rendering med noll delade
- * dokument: `DokumentLista` har alltid minst `MALLAR.length +
- * GENERATORER.length === 3` RIKTIGA rader synliga i 'alla' (default-filtret)
- * och har därför redan skrivit `senastUppmattRadhojd` långt innan 'bilaga'
- * någonsin kan visa 0 (`bilagaKanMataExakt`s docblock nedan).
+ * FALLBACK-RADHÖJD — `useLastaListhojd`s NIVÅ 3 (sista utvägen), använd
+ * ENDAST när (a) noll RIKTIGA rader finns i DOM (bara tomt-lägets
+ * placeholder-`<li>`) OCH (b) ingen mätning — varken PRECIS eller ESTIMAT —
+ * någonsin skett i detta komponent-liv (`senastUppmattRadhojd.current ===
+ * null`). I PRAKTIKEN bara nåbar i `GemensamtLage` vid ett events ALLRA
+ * FÖRSTA rendering med noll delade dokument: `DokumentLista` har alltid
+ * minst `MALLAR.length + GENERATORER.length === 3` RIKTIGA rader synliga i
+ * 'alla' (default-filtret) och har därför redan skrivit
+ * `senastUppmattRadhojd` långt innan 'bilaga' någonsin kan visa 0
+ * (`bilagaKanMataExakt`s docblock nedan).
  *
- * MÄTT (TASK-309.24, runda 2, review-fynd 1, 2026-08-26): en ensam
- * `GemensamBilageRadRow` (1 `RackviddBadge`, Ersätt+Radera,
- * `sistaRadenBarLinje` sann → egen `border-bottom` inräknad i talet) —
- * `acceptance`-projektets 1280×720-viewport (`<ul>`s renderade bredd DÄR:
- * **502 px**, inte hela viewporten — sidolayouten smalnar av innehålls-
- * kolumnen): **99 px** (matchar den historiska 4×99-mätningen i filhuvudets
- * [HISTORIK]-stycke, alltså KONSISTENT med det gamla talet trots att
- * metoden är helt ny). 375 px-viewport (`<ul>`-bredd DÄR: **277 px**):
- * **155 px** — 56 px MER, eftersom badgen/ikonraden bryter till en egen rad
- * vid den bredden (samma `flex-wrap`-mekanism `DokumentRadSkal`s filhuvud
- * beskriver: "en rad med tre badgar kan göra detsamma redan innan
- * [375 px]" — här räcker EN badge för att bryta, eftersom
- * `GemensamBilageRadRow` alltid visar sin badge).
+ * [RUNDA 2, ANDRA VARVET — review-fynd, orkestrerarens/Marcus mandat
+ * 2026-08-26] FÖRSTA VARVETS TAL (155 för mobil) VAR FEL VAL, INTE FEL
+ * MÄTNING. 155 px kommer från en ENSAM `GemensamBilageRadRow` vid 375 px —
+ * den raden BRYTER (`DokumentRadSkal`: `flex-wrap`, 4 ikoner: förhandsvisa/
+ * ladda ner/ersätt/radera, `IKONKNAPP_KLASS`-bredden ryms strukturellt
+ * ALDRIG bredvid namnkolumnens `min-w-[12ch]`-golv i `<ul>`s uppmätta
+ * 277 px vid den bredden — verifierat: ÄVEN en rad med bara TRE ikoner
+ * bryter i samma mätning). Att låsa TOMMA listans höjd mot den VÄRSTA
+ * tänkbara radformen (en bruten rad) ger en orimlig box: 155×4+kant ≈ 622 px
+ * — 78 % av en 800 px mobilskärm luft under "Inga delade dokument än.",
+ * innan någon vet om den FÖRSTA riktiga raden ens kommer bryta.
  *
- * BRYTPUNKTEN MÄTS PÅ `<ul>`s EGEN RENDERADE BREDD, INTE VIEWPORTEN —
- * en första version använde 640 px (husets `sm:`-tröskel, t.ex.
- * `RackviddsDialog`s `sm:flex-row` nedan) och FÖLL SKARPT: vid
- * 1280×720-viewporten är `<ul>` bara 502 px (sidolayouten, inte hela
- * fönstret), under 640, så konstanten valde MOBIL-talet för ett skrivbords-
- * fönster (mätt, TASK-309.24 runda 2: `useLastaListhojd`s NIVÅ 3 gav 622 px
- * i stället för väntade ~400, ett acceptance-test fällde det skarpt). De
- * TVÅ FAKTISKA `<ul>`-bredderna ovan (502 respektive 277) ramar in var
- * gränsen egentligen ligger; **400** ligger mitt emellan. Brytningen är
- * ÄNDÅ INNEHÅLLSSTYRD flexbox (`DokumentRadSkal`: `flex flex-wrap`, ingen
- * `sm:`-prefix), inte media-query-styrd, så 400 är en PROXY — inte en exakt
- * mätning av var raden SJÄLV bryter. Godtagbart HÄR eftersom talet bara
- * används TRANSIENT — första riktiga mätning (estimat eller precis)
- * skriver över det permanent.
+ * Fallbacken representerar i stället en NORMAL rad UTAN ikon-radbrytning —
+ * samma storleksordning som desktop, på ALLA brytpunkter (ENGÅNGS-
+ * konstant, ingen brytpunkts-gren kvar). MÄTT (inte gissat): `MallRad`
+ * (`DokumentYta.tsx` nedan) har INGEN `flex-wrap` på sitt yttre skal och
+ * BARA EN ikon (`ChevronRight`) — den kan strukturellt aldrig bryta, och är
+ * därför den genuint viewport-OBEROENDE referensen för "en normal rad":
+ * uppmätt till **99 px** vid BÅDA `acceptance`-projektets 1280×720-viewport
+ * (`<ul>`-bredd 502 px) OCH en 375×800-viewport (`<ul>`-bredd 277 px) —
+ * SAMMA TAL, konstant, eftersom raden aldrig bryter oavsett bredd. Detta
+ * matchar dessutom den historiska 4×99-mätningen i filhuvudets
+ * [HISTORIK]-stycke.
+ *
+ * DETTA ÄR ETT UTTALAT PRODUKTBESLUT, INTE EN TEKNISK NÖDVÄNDIGHET: en
+ * `GemensamBilageRadRow` (GemensamtLage's ENDA radtyp) kommer troligen
+ * BRYTA första gången ett riktigt delat dokument dyker upp på en smal
+ * skärm (samma mekanism som ovan), vilket kan ge EN synlig höjdjustering
+ * den allra första gången listan går från tom till fylld på mobil — en
+ * mindre, kontrollerad avvikelse som medvetet väljs FRAMFÖR att alltid
+ * reservera en påtagligt för hög tom box. Marcus kan justera avvägningen
+ * efter helgen (S108 Del 26-frågan) om den mindre justeringen känns fel i
+ * praktiken — bokfört öppet, inte gömt.
  */
-const LISTA_FALLBACK_RADHOJD_DESKTOP = 99;
-const LISTA_FALLBACK_RADHOJD_MOBIL = 155;
-const LISTA_FALLBACK_BRYTPUNKT = 400;
+const LISTA_FALLBACK_RADHOJD = 99;
 
 /**
  * MÄTER listans låsta höjd mot RENDERAD geometri (TASK-309.24 — filhuvudets
@@ -702,8 +705,8 @@ const LISTA_FALLBACK_BRYTPUNKT = 400;
  *      radernas EGNA höjd (INTE en summa av spannet, se nedan), gånger
  *      `LISTA_SYNLIGA_RADER`.
  *   3. FALLBACK (0 RIKTIGA rader) — `senastUppmattRadhojd.current` om något
- *      NÅGONSIN uppmätts i detta komponent-liv, annars
- *      `LISTA_FALLBACK_RADHOJD_*`-konstanten för aktuell bredd.
+ *      NÅGONSIN uppmätts i detta komponent-liv, annars den dokumenterade
+ *      `LISTA_FALLBACK_RADHOJD`-konstanten (EN, viewport-oberoende).
  *
  * VARFÖR MAX, INTE FÖRSTA RADEN, I NIVÅ 2: TASK-309.20s `flex-wrap` gör att
  * rader kan variera i höjd (en rad med fler ikoner/badgar radbryter, en
@@ -720,6 +723,18 @@ const LISTA_FALLBACK_BRYTPUNKT = 400;
  * nedan (`harForetradesMatt`) — där mäter VARJE render (`matbar` konstant
  * sant), så UTAN `harPreciserMatt` hade en minskning under fyra DIREKT
  * skrivit över en tidigare precis mätning med en sämre estimat-mätning.
+ *
+ * MONOTONIN ÄR RIKTAD, INTE ABSOLUT: en UPPGRADERING (NIVÅ 2 → NIVÅ 1, ett
+ * fjärde RIKTIGT dokument dyker upp i samma sidladdning — review-fynd,
+ * runda 2 andra varvet) SKRIVER över en tidigare ESTIMAT-mätning, och detta
+ * är avsiktligt: fjärde raden är verkligt INNEHÅLL som nu går att mäta
+ * precist, inte ett filterhopp (regel 5 gäller BARA filterbyte, se
+ * `berakaListgeometri`). **Detta är därför det ENDA läget höjden tillåts
+ * ÄNDRAS UTAN att en `ResizeObserver`-triggad omritning av en BEFINTLIG
+ * raders storlek ligger bakom** (ADR-083: prosan här och koden i `mat()`
+ * ska hålla ihop) — en höjdökning vid 3→4 är en mätning av verkligt
+ * innehåll, inte en regression av regel 5. Test: se
+ * `dokument-lista-hojdlas.acceptance.test.ts`s gränsfall "NIVÅ 2 → NIVÅ 1".
  *
  * MÄTKÄLLAN ÄR I ÖVRIGT (nivå 1/2) MEDVETET BEGRÄNSAD TILL 'alla' OCH
  * 'bilaga', I TVÅ NIVÅER (`foretradesMatbar`/`reservMatbar`, satta av
@@ -869,12 +884,9 @@ function useLastaListhojd(
         }
       } else {
         // NIVÅ 3 — FALLBACK: senast kända radhöjd, annars den dokumenterade
-        // per-brytpunkts-konstanten (se `LISTA_FALLBACK_*`s docblock).
-        radhojd =
-          senastUppmattRadhojd.current ??
-          (ul.getBoundingClientRect().width < LISTA_FALLBACK_BRYTPUNKT
-            ? LISTA_FALLBACK_RADHOJD_MOBIL
-            : LISTA_FALLBACK_RADHOJD_DESKTOP);
+        // konstanten (se `LISTA_FALLBACK_RADHOJD`s docblock — EN konstant,
+        // viewport-oberoende, sedan runda 2:s andra varv).
+        radhojd = senastUppmattRadhojd.current ?? LISTA_FALLBACK_RADHOJD;
       }
       senastUppmattRadhojd.current = radhojd;
       setHojd(radhojd * LISTA_SYNLIGA_RADER + kantjustering);

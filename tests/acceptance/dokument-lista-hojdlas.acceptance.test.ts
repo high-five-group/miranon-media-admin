@@ -55,6 +55,27 @@ import { expect, test } from './acceptance-bas';
  * (`harPreciserMatt` i `useLastaListhojd`) är DELAD med `DokumentLista`,
  * som saknar en motsvarande UI-åtgärd för event-bilagor och därför inte
  * har ett eget dubblerande test här.
+ *
+ * [RUNDA 2, ANDRA VARVET — review-utlåtande på 8e34827f] Tre tillägg:
+ *
+ *   1. Fallback-konstanten (NIVÅ 3) var satt mot en BRUTEN radform (155 px,
+ *      mobil) — orimligt för ett tomt läge (622 px låst höjd, 78 % luft på
+ *      en 800 px-skärm). Nu EN viewport-oberoende konstant (99, mätt mot
+ *      `MallRad`, som strukturellt aldrig bryter) — se
+ *      `LISTA_FALLBACK_RADHOJD`s docblock i källan. Nytt: en HEL
+ *      `GemensamtLage`-svit vid 375 px (test.describe nedan) som speglar
+ *      desktop-sviten över alla tre nivåer, så regressionen fångas på BÅDA
+ *      brytpunkterna, inte bara desktop.
+ *   2. NIVÅ 2 → NIVÅ 1-övergången (3 riktiga rader → en fjärde dyker upp
+ *      IN-PLACE, ingen `page.goto`) hade inget eget test — bara NEDÅT-
+ *      gränsfallet (review-fynd 3, ovan) var täckt. Nytt sista test i
+ *      `GemensamtLage`-sviten: en riktig uppladdning tar en instans från
+ *      ESTIMAT till PRECIS, och höjden får (avsiktligt) ÖKA — se
+ *      `useLastaListhojd`s "MONOTONIN ÄR RIKTAD, INTE ABSOLUT"-stycke.
+ *   3. Tomt-lägets mobila höjd (~400 px, INTE ~622 px) är ETT PRODUKTBESLUT
+ *      Marcus kan justera efter helgen (S108 Del 26-frågan), inte en
+ *      slutgiltig teknisk sanning — bokfört i `LISTA_FALLBACK_RADHOJD`s
+ *      docblock och i PR-beskrivningen, inte bara här.
  */
 
 function bilaga(i: number) {
@@ -239,7 +260,7 @@ test.describe('DokumentLista (eventläge) — filterbyte ändrar aldrig bounding
     await expect(page.getByTestId('dokument-lista')).toHaveAttribute('tabindex', '0');
   });
 
-  test('AC #1/#6: samma invariant vid 375 px (radbrytningens brytpunkt, TASK-309.20)', async ({
+  test('AC #1 / regel 6: samma invariant vid 375 px (radbrytningens brytpunkt, TASK-309.20)', async ({
     page,
     network,
   }) => {
@@ -526,5 +547,141 @@ test.describe('GemensamtLage (räckviddsläge) — samma regel (tidigare saknad,
     // 3 !== 4: sista raden bär sin linje igen (den klipptes bort av scroll
     // innan, nu är den permanent synlig inom den frusna höjden).
     expect(efter.sistaBorderBottomWidth).not.toBe('0px');
+  });
+
+  test('AC #2 gränsfall (NIVÅ 2 → NIVÅ 1, orkestrerar-fynd runda 2 andra varvet): en fjärde RIKTIG rad dyker upp in-place (uppladdning, ingen page.goto) — höjden får ÖKA till den precisa mätningen', async ({
+    page,
+    network,
+  }) => {
+    // 3 → 4: FÖRSTA hämtningen ger 3 rader (NIVÅ 2, ESTIMAT). En lyckad
+    // uppladdning (`useUploadAttachment`s `onSettled`) invaliderar HELA
+    // `attachments`-prefixet oavsett utfall — EXAKT en andra hämtning,
+    // som returnerar 4 (korsar tröskeln till NIVÅ 1, PRECIS).
+    network.use(gransfallHandler(3, 4));
+    network.use(http.post(EF('upload-attachment'), () => json({ attachment: gemensamBilaga(4) })));
+
+    await gotoRackviddslage(page);
+    await expect(page.getByText('Delad 3.pdf')).toBeVisible();
+
+    const fore = await mataGeometri(page);
+    // 3 rader, NIVÅ 2 (ESTIMAT): ingen scroll — samma signatur som det
+    // separata "3 rader"-testet ovan.
+    expect(fore.scrollHeight).toBe(fore.clientHeight);
+
+    // Ladda upp en fjärde GEMENSAM bilaga, ingen `page.goto` — samma
+    // FileTrigger-väg som `dokument-rackviddsval.acceptance.test.ts`s
+    // `oppnaRackviddsdialog`. "Alla event" kräver ingen Familj-select.
+    await page
+      .getByTestId('ladda-upp-ny-fil')
+      .locator('input[type="file"]')
+      .setInputFiles({
+        name: 'Ny.pdf',
+        mimeType: 'application/pdf',
+        buffer: Buffer.from('%PDF-1.4 acceptance-fixtur'),
+      });
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+    // `<Radio>` täcks visuellt av ett dekorativt `<span>` — samma
+    // ancestor-`<label>`-klick som husets etablerade mönster
+    // (`dokument-rackviddsval.acceptance.test.ts`).
+    await dialog
+      .getByRole('radio', { name: 'Alla event' })
+      .locator('xpath=ancestor::label[1]')
+      .click();
+    await dialog.getByRole('button', { name: 'Ladda upp' }).click();
+    await expect(dialog).not.toBeVisible();
+    await expect(page.getByText('Delad 4.pdf')).toBeVisible();
+
+    const efter = await mataGeometri(page);
+    // Oberoende, FRÅN TESTET SJÄLVT beräknad PRECIS-referens — SAMMA
+    // matematik som källans NIVÅ 1 (`useLastaListhojd`s `mat()`), men
+    // räknad direkt mot DOM:en i stället för att läsa appens interna
+    // state. Bevisar att appen FAKTISKT applicerat en precis mätning, inte
+    // bara "något större".
+    const referens = await page.getByTestId('dokument-lista').evaluate((ul) => {
+      const kant = getComputedStyle(ul);
+      const kantjustering =
+        Number.parseFloat(kant.borderTopWidth) + Number.parseFloat(kant.borderBottomWidth);
+      const forsta = ul.children[0].getBoundingClientRect();
+      const fjarde = ul.children[3].getBoundingClientRect();
+      return fjarde.bottom - forsta.top + kantjustering;
+    });
+    // Regel 5 gäller FILTERBYTE — detta är INGET filterbyte, det är en mätning
+    // av VERKLIGT innehåll som nu går att mäta precist. Se `useLastaListhojd`s
+    // "MONOTONIN ÄR RIKTAD, INTE ABSOLUT"-stycke: detta är det ENDA läget
+    // höjden får ändras utan att en `ResizeObserver` på en BEFINTLIG rad
+    // triggat om.
+    //
+    // ≤ 1 PX-TOLERANS PÅ "ÖKAR" — SAMMA KÄNDA KVIRK SOM ALDRIG STÄNGS UTE,
+    // ALDRIG DÖLJS (se `AC #1/#5`-testets docblock ovan för hela diagnosen):
+    // `fore` mättes med 3 SYSKON i DOM (ESTIMAT), `efter` med 4 (PRECIS) —
+    // olika sub-pixel-avrundning för en OFÖRÄNDRAD radform ger ±1 px, precis
+    // som 'alla' kontra 'bilaga' gör i eventläget. Mätt HÄR: 398 → 397 (en
+    // MINSKNING på exakt 1 px), inte en ökning — toleransen fångar ändå en
+    // riktig regression (t.ex. en helt utebliven NIVÅ 1-mätning), eftersom
+    // EN sådan hade gett en helt annan (mindre) `hojd`, inte en 1 px-skillnad
+    // åt fel håll. Den RIGGOROSA bevisningen är nästa rad — `referens` är
+    // beräknad OBEROENDE av appens state, direkt mot DOM:en efter uppladdningen.
+    expect(efter.hojd).toBeGreaterThanOrEqual(fore.hojd - 1);
+    expect(efter.hojd).toBeCloseTo(referens, 1);
+    expect(efter.scrollHeight).toBe(efter.clientHeight); // exakt 4: ingen scroll
+    expect(efter.sistaBorderBottomWidth).toBe('0px'); // exakt 4: ingen linje
+  });
+});
+
+test.describe('GemensamtLage vid 375 px — samma tre nivåer som desktop (review-fynd, runda 2 andra varvet)', () => {
+  test('NIVÅ 3 (FALLBACK): 0 rader — låst höjd, INTE den bruta radformens 622 px', async ({
+    page,
+    network,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 800 });
+    network.use(hojdlasHandler(0, 0));
+    await gotoRackviddslage(page);
+    await expect(page.getByText('Inga delade dokument än.')).toBeVisible();
+
+    const geometri = await mataGeometri(page);
+    expect(geometri.scrollHeight).toBe(geometri.clientHeight);
+    expect(geometri.sistaBorderBottomWidth).toBe('0px');
+    // `LISTA_FALLBACK_RADHOJD` (99, EN konstant, se `DokumentYta.tsx`s
+    // docblock) × 4 + kant ≈ 396–400 px. Övre gräns 410 px (Marcus/
+    // orkestrerarens egen gräns i review-fyndet) — INTE ~622 px, som en
+    // fallback baserad på en BRUTEN `GemensamBilageRadRow`-rad hade gett.
+    expect(geometri.hojd).toBeGreaterThanOrEqual(99 * 4);
+    expect(geometri.hojd).toBeLessThanOrEqual(410);
+  });
+
+  test('NIVÅ 2 (ESTIMAT): 2 rader — låst höjd bevisad mot radens EGEN uppmätta höjd (bruten rad, 155 px)', async ({
+    page,
+    network,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 800 });
+    network.use(hojdlasHandler(0, 2));
+    await gotoRackviddslage(page);
+    await expect(page.getByText('Delad 2.pdf')).toBeVisible();
+
+    const geometri = await mataGeometri(page);
+    expect(geometri.scrollHeight).toBe(geometri.clientHeight);
+    expect(geometri.sistaBorderBottomWidth).not.toBe('0px');
+    // Samma "bevisar LÅSNING, inte bara ingen scroll"-mönster som desktop-
+    // testerna ovan — här är raderna FAKTISKT brutna (155 px, mätt) och
+    // `hojd` ska ändå vara ~4× det, inte radens egen naturliga 2-raders-höjd.
+    const maxRadhojd = Math.max(...geometri.radHojder);
+    expect(geometri.hojd).toBeGreaterThanOrEqual(maxRadhojd * 4);
+    expect(geometri.hojd).toBeLessThanOrEqual(maxRadhojd * 4 + 8);
+  });
+
+  test('NIVÅ 1 (PRECIS): 5 rader — scrollbart, samma exakta geometri-invariant som desktop', async ({
+    page,
+    network,
+  }) => {
+    await page.setViewportSize({ width: 375, height: 800 });
+    network.use(hojdlasHandler(0, 5));
+    await gotoRackviddslage(page);
+    await expect(page.getByText('Delad 5.pdf')).toBeVisible();
+
+    const geometri = await mataGeometri(page);
+    expect(geometri.scrollHeight).toBeGreaterThan(geometri.clientHeight);
+    expect(geometri.sistaBorderBottomWidth).not.toBe('0px');
+    await expect(page.getByTestId('dokument-lista')).toHaveAttribute('tabindex', '0');
   });
 });
