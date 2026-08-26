@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-23 12:01'
-updated_date: '2026-08-26 06:44'
+updated_date: '2026-08-26 07:07'
 labels:
   - ready-for-agent
 dependencies: []
@@ -93,4 +93,28 @@ Oberoende, orelaterad flake observerad (ej i denna diff):
 tests/webblasarbeteende/forberedelseskarm-hojdkedja.test.ts:166 (login-mounting)
 föll 1/105 under 8-worker fleet-körning, men 5/5 grönt isolerat — pre-existing
 fleet-contention-flake, ej rört av denna PR.
+
+--- Review-rättelse (PR #2009, review-utlåtande risk medel, 2026-08-26) ---
+Källcitaten i tests/support/mat-cls.ts rättades efter granskning: Mozilla bug
+1162850 och csswg-drafts #13538 var FEL källor (Gecko-specifik/RESOLVED FIXED
+i Firefox 41 resp. motsatt riktning — "aldrig uppfylls", inte "för tidigt").
+Ersatta med verifierade källor (lästa via WebFetch, citat exakt): w3c/
+csswg-drafts#1082 (cross-browser inkl. Chrome — "the promise can resolve
+before anything else interesting happens"), WebKit #174030 + #225790
+(Safari-specifika, citerade som belägg för bug-KLASSEN, inte en Chromium-bugg).
+Rotorsakstexten skriven om "indikerad" i stället för "bevisad" där CI-racet
+inte reproducerats lokalt. Tillagt: Playwright dokumenterar networkidle som
+DISCOURAGED för test-readiness (citat verbatim) + varför det ändå är rätt val
+här (mätförberedelse, ej generell readiness; klassen pinnar inte Google Fonts
+och saknar bakgrundstrafik); document.fonts.load() avvisad som alternativ
+(risk: tom FontFaceSet-matchning = tyst no-op, W3C CSS Font Loading Module
+Level 3s egen algoritm för FontFaceSet.load()). Endast kommentarer ändrade,
+ingen kodrad i funktionskroppen (verifierat med git diff).
+
+ESKALERINGSVÄG om symptomet (0,0024-CLS-fällningen) återkommer en TREDJE
+gång: pinna Google Fonts (samma mönster som tests/support/fixturvarld/
+hermetic.ts, Inter v20) ENBART för mat-cls.ts-helpern — inte för hela
+webblasarbeteende-klassen, som medvetet kör mot riktiga typsnitt/nätverk.
+En pinnad font eliminerar racet strukturellt men gör att just denna mätning
+slutar pröva mot verkliga Google Fonts-förhållanden.
 <!-- SECTION:NOTES:END -->
