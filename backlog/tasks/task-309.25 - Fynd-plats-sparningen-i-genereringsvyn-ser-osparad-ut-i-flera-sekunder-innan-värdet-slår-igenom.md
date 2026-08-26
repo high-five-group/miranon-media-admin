@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-26 02:54'
+updated_date: '2026-08-26 04:41'
 labels:
   - ready-for-agent
 dependencies: []
@@ -27,10 +28,10 @@ BESLUT som Marcus förväntar sig: efter 'Spara' ska det nya värdet synas OMEDE
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Mätning i staging före fix redovisad (tid från Spara till synligt värde, EF-latens, invalideringskedja) — tal i PR:en
-- [ ] #2 Efter Spara syns det nya värdet omedelbart (optimistisk uppdatering) eller ett explicit Sparar…-läge; aldrig ett osparat-utseende — acceptance-test i browser-skarven fäller om det gamla värdet visas efter Spara
-- [ ] #3 Felväg bevisad: EF-fel → rollback till föregående värde + felmeddelande i husets mönster; ingen tyst förlust
-- [ ] #4 Gäller alla tre skrivvägarna (text, agenda, plats/spara som platsens standard) — verifierat per väg
+- [x] #1 Mätning i staging före fix redovisad (tid från Spara till synligt värde, EF-latens, invalideringskedja) — tal i PR:en
+- [x] #2 Efter Spara syns det nya värdet omedelbart (optimistisk uppdatering) eller ett explicit Sparar…-läge; aldrig ett osparat-utseende — acceptance-test i browser-skarven fäller om det gamla värdet visas efter Spara
+- [x] #3 Felväg bevisad: EF-fel → rollback till föregående värde + felmeddelande i husets mönster; ingen tyst förlust
+- [x] #4 Gäller alla tre skrivvägarna (text, agenda, plats/spara som platsens standard) — verifierat per väg
 <!-- AC:END -->
 
 ## Definition of Done
