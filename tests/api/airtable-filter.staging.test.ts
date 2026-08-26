@@ -14,7 +14,7 @@
 // airtable-filter.test.ts.
 
 import { expect, test } from '@playwright/test';
-import { getApiConfig, getValidUserJWT } from './helpers';
+import { getApiConfig, getValidUserJWT, getWithTransientRetry } from './helpers';
 
 // Konstrueras via String.fromCharCode så filens visuella encoding inte
 // spelar roll och tester förblir deterministiska. Duplicerad från
@@ -47,9 +47,14 @@ for (const endpoint of E2E_ENDPOINTS) {
         const url = new URL(`${config.baseUrl}${endpoint.path}`);
         url.searchParams.set(endpoint.param, input);
 
-        const res = await request.get(url.toString(), {
-          headers: { Authorization: `Bearer ${jwt}` },
-        });
+        // TASK-207: denna sviten föll på ETT genuint transient 502 2026-08-12
+        // (post-merge run 31623411127) — plattformsdegradering, bevisat
+        // oskyldigt via first-parent-diff. Idempotent GET → retry-skyddad.
+        const res = await getWithTransientRetry(() =>
+          request.get(url.toString(), {
+            headers: { Authorization: `Bearer ${jwt}` },
+          }),
+        );
 
         // 400 (filter rejected) eller 200 (filter passerade men gav
         // tom/normalt svar). 500 = server-fel = M5-bugg som maste
