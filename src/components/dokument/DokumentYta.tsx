@@ -1603,54 +1603,99 @@ function RackviddsDialog({
             <Radio value={AttachmentScope.ALLA_EVENT}>Alla event</Radio>
           </RadioGroup>
 
-          {rackvidd === AttachmentScope.KURSTYP && (
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
+          {/* TASK-309.23 — RAD-HÖJDEN ÄR LÅST, INTE VILLKORAD (Marcus
+              prod-röktest 2026-08-26: *"rutan aldrig ändrar storlek och
+              läge vad jag än väljer eller trycker på"*). Raden renderades
+              tidigare bara när `rackvidd === KURSTYP`, vilket gjorde
+              dialogens höjd — och därmed dess VERTIKALT CENTRERADE läge
+              (`Modal`s overlay är `items-center`) — en funktion av
+              räckviddsvalet: ett hopp varje gång Lotta bytte radioknapp.
+
+              SAMMA "RESERVERA ALLTID PLATS"-TEKNIK som husets `Pill dold`
+              (`PersonsList.tsx`, Marcus S103) och breddlåset i
+              `EventCheckin.tsx`: raden RENDERAS ALLTID, döljs med
+              `invisible` (kvar i layouten, osynlig) + native `inert`
+              (React 19-attribut, https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/inert)
+              när räckvidden inte är Kurstyp. `inert` gör HELA underträdet
+              icke-fokuserbart och tar bort det ur tillgänglighetsträdet i
+              en sats — starkare golv än `tabIndex={-1}` satt per kontroll,
+              som måste upprepas för varje ny kontroll i raden och lätt
+              glöms. `invisible` sköter den visuella döljningen ensam;
+              `inert` är fokus-/AT-spärren.
+
+              STEG-SELECTEN BÄR SAMMA TEKNIK, EN NIVÅ NER. Den var tidigare
+              en egen villkorad rendering (`kursfamiljHarNivaer && …`) inuti
+              den redan villkorade raden — utan att den ALLTID renderas
+              (bara osynliggörs) hade en nivåbärande familj (RIM) fått en
+              annan radhöjd vid `sm:`s kolumn-layout (375 px: `flex-col`
+              STAPLAR de två selecten, så en andra select adderar höjd) än
+              en nivålös familj (Fjärrskådning) eller ingen familj alls —
+              exakt samma felklass som räckviddsraden, en nivå ner. */}
+          <div
+            className={`flex flex-col gap-2 sm:flex-row sm:items-start ${
+              rackvidd === AttachmentScope.KURSTYP ? '' : 'invisible'
+            }`}
+            inert={rackvidd !== AttachmentScope.KURSTYP}
+          >
+            <Select
+              label="Familj"
+              hideLabel
+              placeholder="Välj familj"
+              selectedKey={kursfamilj}
+              onSelectionChange={(key) => {
+                setKursfamilj(key == null ? null : String(key));
+                setKursniva(null);
+              }}
+              className="sm:max-w-56"
+            >
+              {KURSFAMILJ_VALUES.map((v) => (
+                <SelectItem key={v} id={v}>
+                  {v}
+                </SelectItem>
+              ))}
+            </Select>
+            <div
+              className={`sm:max-w-56 ${kursfamiljHarNivaer ? '' : 'invisible'}`}
+              inert={!kursfamiljHarNivaer}
+            >
               <Select
-                label="Familj"
+                label="Steg"
                 hideLabel
-                placeholder="Välj familj"
-                selectedKey={kursfamilj}
-                onSelectionChange={(key) => {
-                  setKursfamilj(key == null ? null : String(key));
-                  setKursniva(null);
-                }}
-                className="sm:max-w-56"
+                placeholder="Alla steg"
+                selectedKey={kursniva}
+                onSelectionChange={(key) => setKursniva(key == null ? null : String(key))}
               >
-                {KURSFAMILJ_VALUES.map((v) => (
+                {/* `id` är basvärdet ('Nivå 1'), texten är presentationen
+                    ('Steg 1'). Det som skickas till EF:en är därför
+                    oförändrat — se nivaSprak.ts. */}
+                {KURSNIVA_VALUES.map((v) => (
                   <SelectItem key={v} id={v}>
-                    {v}
+                    {stegEtikett(v)}
                   </SelectItem>
                 ))}
               </Select>
-              {kursfamiljHarNivaer && (
-                <Select
-                  label="Steg"
-                  hideLabel
-                  placeholder="Alla steg"
-                  selectedKey={kursniva}
-                  onSelectionChange={(key) => setKursniva(key == null ? null : String(key))}
-                  className="sm:max-w-56"
-                >
-                  {/* `id` är basvärdet ('Nivå 1'), texten är presentationen
-                      ('Steg 1'). Det som skickas till EF:en är därför
-                      oförändrat — se nivaSprak.ts. */}
-                  {KURSNIVA_VALUES.map((v) => (
-                    <SelectItem key={v} id={v}>
-                      {stegEtikett(v)}
-                    </SelectItem>
-                  ))}
-                </Select>
-              )}
             </div>
-          )}
+          </div>
 
           {/* LEDTEXTEN SÄGER VAD SOM SAKNAS, knappens `isDisabled` är grinden
               — de ska inte förväxlas. Samma disciplin som steg 2:s
               vilo-tillstånd bar innan blocket revs: en avstängd knapp säger
-              "nej" utan att säga varför. */}
-          {!scopeGiltig && (
-            <p className="text-small text-text-muted">Välj en familj för att gå vidare.</p>
-          )}
+              "nej" utan att säga varför.
+
+              [TASK-309.23] SAMMA RESERVERA-PLATS-TEKNIK som raden ovan:
+              meddelandet togglade tidigare hela sin rad in och ut
+              (`!scopeGiltig && <p>…</p>`), vilket gav ÄNNU en höjdskillnad
+              — denna gången mellan "En familj" utan valt värde (meddelandet
+              syns) och en vald familj (meddelandet försvinner), på BÅDA
+              brytpunkterna, inte bara vid `sm:`. Ingen fokuserbar kontroll
+              i en `<p>`, så `aria-hidden` + `invisible` räcker (samma form
+              som `Pill`s `dold`-prop) — `inert` tillför inget här. */}
+          <p
+            aria-hidden={scopeGiltig || undefined}
+            className={`text-small text-text-muted ${scopeGiltig ? 'invisible' : ''}`}
+          >
+            Välj en familj för att gå vidare.
+          </p>
 
           <div className="flex flex-wrap justify-end gap-2">
             <Button intent="ghost" onPress={onStang} isDisabled={laddarUpp}>
