@@ -1237,6 +1237,21 @@ jobs:
         # utlåtande), se CLAUDE.md § Review-grinden. Hermetisk (temp-repo,
         # node_modules-symlänk, ingen nätverkstrafik). 2026-08-26 (macOS).
         #
+        # test-review-risk-sektion.mjs (TASK-173.3, ÄNNU en base-drift-fynd
+        # 2026-08-26 — PR #1993 landade UNDER TASK-185:s eget bygge, andra
+        # gången main flyttade sig mitt i detta kort) hör hit av samma
+        # ADR-039-skäl som sina två syskon ovan: risk-rendreraren
+        # (scripts/lib/review-risk-sektion.mjs + scripts/uppdatera-review-
+        # sektion.mjs) är review-grindens TREDJE kontraktsyta (ADR-105) och
+        # var lika oskyddad. Rena funktioner (sektion A–D) + ett CLI-lager
+        # mot en FAKE `gh`-binär på PATH (sektion E–F, `gh pr view`/`gh pr
+        # edit --body-file -`) som bevisar KONTRAST (F2: fake gh pr view
+        # fallerar → CLI exit 3, ingen pr edit anropas — annars vore F1
+        # vakuöst). 47 fall. Samma Marcus-mandat som syskonen: enhetstest för
+        # skript, samma klass som de övriga gatekeeper-sviterna — INTE
+        # TASK-173.4:s ännu obyggda CI-backstopp. Hermetisk, ingen riktig
+        # gh-/nätverkstrafik. 2026-08-26 (macOS).
+        #
         # test-verify-ci-parity.mjs hör hit av samma ADR-039-skäl applicerat
         # på scripts/verify-ci-parity.mjs SJÄLVT (CLAUDE.md § verify:ci-
         # parity) — paritetsverktyget som ska fånga när ci.yml/ci-suite.yml
@@ -1289,6 +1304,7 @@ jobs:
           bash scripts/test-stada-grenar.sh
           node scripts/test-validera-review-utlatande.mjs
           node scripts/test-review-policy.mjs
+          node scripts/test-review-risk-sektion.mjs
           node scripts/test-verify-ci-parity.mjs
 
       - name: Test post-merge-lagrets ärvda klassning (TASK-73)

@@ -576,9 +576,10 @@ utföraren kan godkänna sin egen förskrivning,
 **HÖG risknivå blockerar formellt** (ADR-105 beslut 5): returnerar
 granskaren `risk.niva: 'hog'` — armera INTE. Eskalera till Marcus med
 utlåtandets fynd; armering sker först efter hans explicita granskning. `lag`/
-`medel` är i detta skede (`TASK-173.1`, innan `173.3`s PR-sektion och `173.4`s
-CI-backstopp) informativt underlag för din egen bedömning — ingen mekanisk
-spärr hindrar armering vid `lag`/`medel` än.
+`medel` är i detta skede (efter `TASK-173.3`, innan `173.4`s CI-backstopp)
+informativt underlag för din egen bedömning — sedan `173.3` SYNS nivån åt
+Marcus i PR-kroppens Riskbedömnings-sektion (se nedan), men ingen mekanisk
+spärr hindrar ännu armering vid `lag`/`medel`.
 
 **Injicera path-reglerna när du spawnar granskaren (`TASK-173.2`):**
 
@@ -596,32 +597,78 @@ granskning men saknar regler ingen ser saknas.** Glömmer du steget kör
 granskaren kommandot själv (`.claude/agents/review-agent.md` § Indata) —
 källan är densamma oavsett vem som kör den.
 
+**Skriv in utlåtandet i PR-kroppen som Riskbedömnings-sektion (`TASK-173.2`
+→ `TASK-173.3`):** när granskaren returnerat sitt JSON-utlåtande, spara det
+till fil och kör:
+
+```bash
+node scripts/uppdatera-review-sektion.mjs /path/till/utlatande-pr<NR>.json
+node scripts/uppdatera-review-sektion.mjs /path/till/utlatande.json --dry-run   # förhandsgranska
+```
+
+PR-numret hämtas ur utlåtandets EGNA `prNummer`-fält — ingen separat
+`--pr`-flagga. Skriptet validerar utlåtandet mot
+`scripts/lib/review-utlatande.mjs`s schema FÖRE någon gh-anrop (**exit 1 =
+malformat, ingen sektion skrivs — AC #3**), hämtar PR:ens NUVARANDE kropp via
+`gh pr view`, och skriver tillbaka HELA kroppen via `gh pr edit --body-file -`
+(GitHubs `body`-fält är alltid en fullständig ersättning, aldrig en delvis
+patch — `gh pr edit --help`, docs.github.com REST-referens för Pulls). Sektionen
+är inramad av två HTML-kommentarmarkörer
+(`<!-- review-grinden:riskbedomning:start/end -->`, version-oberoende med
+avsikt) som gör uppdateringen IDEMPOTENT: finns en tidigare sektion ERSÄTTS
+den in-place (`agerande: 'ersatte'`), texten runt omkring rörs inte; finns
+ingen läggs sektionen till sist (`agerande: 'lade-till'`). En KORRUPT
+markörsituation (bara en av de två, eller i fel ordning — t.ex. en människa
+som redigerat kroppen för hand) fäller skriptet med **exit 4** i stället för
+att gissa. **Exit 3** = gh-I/O fallerade (nätverk/auth/fel PR-nummer) —
+utlåtandet var giltigt, det är kommunikationen med GitHub som bröt. Full
+mekanik + forskningskällorna (Danger.js:s markör-mönster, GitHubs
+full-ersättnings-semantik): `scripts/lib/review-risk-sektion.mjs` filhuvud.
+
 **Vad som ÄR byggt, och vad som INTE är det (progressiv härdning, ADR-105
 beslut 3):** `review-agent`-kontraktet och utlåtande-schemat
 (`scripts/lib/review-utlatande.mjs`, `scripts/validera-review-utlatande.mjs`)
-existerar och är skarpbevisade, och sedan `TASK-173.2` även policy-ytan
+existerar och är skarpbevisade; sedan `TASK-173.2` policy-ytan
 (`.review-policy.json`, `scripts/lib/review-policy.mjs`,
-`scripts/hamta-review-policy.mjs`) med utlåtandets `policySha`/`policyRegler`.
-**Vad som SAKNAS än:** den fasta Riskbedömnings-sektionen i PR-kroppen
-(`TASK-173.3`), den deterministiska CI-backstoppen som fäller en PR utan
-giltigt utlåtande (`TASK-173.4`), rundtaks-loopen med konvergensregel
+`scripts/hamta-review-policy.mjs`) med utlåtandets `policySha`/`policyRegler`;
+och sedan `TASK-173.3` den fasta Riskbedömnings-sektionen i PR-kroppen
+(`scripts/lib/review-risk-sektion.mjs`, `scripts/uppdatera-review-sektion.mjs`).
+**Vad som SAKNAS än:** den deterministiska CI-backstoppen som fäller en PR
+utan giltigt utlåtande (`TASK-173.4`), rundtaks-loopen med konvergensregel
 (`TASK-173.5`), och fångstrate-instrumenteringen (`TASK-173.6`). Fram tills
 dess är grinden ett **orkestrerar-åtagande**, inte en mekanisk spärr — en PR
-kan i praktiken armeras utan granskning så länge `173.4` inte finns, och
-INGET tvingar dig att köra policy-kommandot ovan. Skriv aldrig om detta
-stycke till att låta grinden vara mekaniskt otvingbar innan `173.4` faktiskt
-landat (samma `ADR-083`-disciplin som resten av denna fil: prosa som påstår
-en mekanism som inte finns är värre än att inte skriva något alls).
+kan i praktiken armeras utan granskning, eller med en oskriven Riskbedömnings-
+sektion, så länge `173.4` inte finns, och INGET tvingar dig att köra
+kommandona ovan. Skriv aldrig om detta stycke till att låta grinden vara
+mekaniskt otvingbar innan `173.4` faktiskt landat (samma `ADR-083`-disciplin
+som resten av denna fil: prosa som påstår en mekanism som inte finns är värre
+än att inte skriva något alls).
 
-**Policy-ytans egna testsvit (`scripts/test-review-policy.mjs`, 44 fall) och
-`173.1`s `scripts/test-validera-review-utlatande.mjs` körs sedan `TASK-185`
-(PR #1992, 2026-08-26) som gatekeeper-sviter i `ci.yml`:s "Test gatekeeper
-script suites"-steg** — samma klass som repots övriga ~15 gatekeeper-sviter:
-enhetstester för skriptens egen logik, wirade så att en regression fälls
-FÖRE landning i stället för att upptäckas efteråt. Det är INTE `173.4`s
-CI-backstopp (den deterministiska spärren mot en PR utan giltigt utlåtande)
-— den saknas fortfarande, se stycket ovan (samma `ADR-083`-disciplin: påstå
-aldrig en mekanism som inte finns).
+**Känd divergens i den genererade JSON-Schema-artefakten, öppen för `173.4`:**
+`docs/reference/review-utlatande.schema.json` listar `policySha`/
+`policyRegler` som `required` trots att båda bär zod `.default()` i
+källschemat (`scripts/lib/review-utlatande.mjs`) — en STRIKT JSON-Schema-
+konsument UTAN defaults (t.ex. en framtida CI-backstopp som validerar rå JSON
+direkt mot filen i stället för att gå via zod) skulle avvisa ett giltigt,
+äldre utlåtande som saknar dessa fält. Risk-rendreraren (`173.3`) berörs INTE
+— den konsumerar alltid `valideraUtlatande(raw).data` (EFTER zods
+default-normalisering), aldrig rå JSON direkt, vilket är bevisat i
+`scripts/test-review-risk-sektion.mjs` (fall A16: ett genuint 173.1-format
+utan de två fälten går genom den EKTA validatorn och renderar korrekt). Löses
+inte här — flaggas framåt till `173.4`.
+
+**Review-ytans TRE testsviter körs sedan `TASK-185` (PR #1992, 2026-08-26)
+som gatekeeper-sviter i `ci.yml`:s "Test gatekeeper script suites"-steg** —
+`scripts/test-validera-review-utlatande.mjs` (35 fall, `173.1`),
+`scripts/test-review-policy.mjs` (44 fall, `173.2`) och
+`scripts/test-review-risk-sektion.mjs` (47 fall, `173.3`, wirad i samma
+bas-drift-svep sedan `173.3` landade UNDER `185`s eget bygge — PR #1993) —
+samma klass som repots övriga ~15 gatekeeper-sviter: enhetstester för
+skriptens egen logik, wirade så att en regression fälls FÖRE landning i
+stället för att upptäckas efteråt. Det är INTE `173.4`s CI-backstopp (den
+deterministiska spärren mot en PR utan giltigt utlåtande) — den saknas
+fortfarande, se stycket ovan (samma `ADR-083`-disciplin: påstå aldrig en
+mekanism som inte finns).
 
 **Skarpbevis-skulden — BETALD 2026-08-26 (S112 resume 1), med en mätt kant
 (`CLAUDE.md` § En ny hooks skarpbevis, samma strukturella klass generaliserad
