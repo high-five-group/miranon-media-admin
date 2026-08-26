@@ -700,16 +700,30 @@ arbete. Tre hål är mätta och kända:
 | Läge | Skyddar flaggan? |
 |---|---|
 | Kortet är committat på en annan gren | **Ja** — numret hoppas över |
-| Kortet är skapat men **inte committat** i ett systerträd | **Nej** — osynligt |
-| Kortet ligger **ospårat i huvudträdet** medan en agent räknar från `main` | **Nej** |
+| Kortet är skapat men **inte committat** i ett systerträd | **Ja** — sedan Backlog.md PR #710 (2026-07-01, före vår 1.49.1); stod här som "Nej — osynligt" i fyra veckor, falsifierat tvåsidigt 2026-08-26 |
+| Kortet ligger **ospårat i huvudträdet** medan en agent räknar från `main` | **Ja** — samma mätning: ett okommitterat `task-9000` i ett systerträd gav `TASK-9001` (1.49.1) resp. `TASK-9002` (1.50.1) |
 | Grenen är äldre än `active_branch_days` (30) | **Nej** |
+
+Två av tabellens tre hål var alltså stängda hela tiden — raderna skrevs av
+ADR-081:s antagande, aldrig mätta, och research-passet
+[`backlog-kortskapandets-flaskhals-2026-08-26.md`](docs/research/backlog-kortskapandets-flaskhals-2026-08-26.md)
+§ Sidofynd 1 fällde dem i ett labb med ett okommitterat kort i ett systerträd.
+Kvarvarande hål: `active_branch_days` — och det filtrerar i praktiken bort
+noll grenar hos oss, hela populationen är yngre än 30 dagar. Det verkliga
+problemet är inte längre osynlighet utan det **globala create-låset**
+(`<git-common-dir>/backlog.md/locks/create`, 30 s timeout, ingen jitter):
+mätt 2/8 lyckade `task create` vid åtta samtidiga agenter, och ett enda kort
+tog 513 s att skapa under S112:s fleet (`TASK-322`-mintningen, 2026-08-26).
+Beslutsunderlaget är research-doket; substratfrågan grillas (`TASK-328`),
+uppgraderingen till 1.50.1 är kortad (`TASK-327`).
 
 Praktiskt, i den ordningen:
 
 1. **`git fetch` + fast-forwarda före `task create`.** En föråldrad worktree ger
    dig ett nummer som redan är taget i merge-kön.
-2. **Committa kortet i samma andetag som du skapar det.** Uppskjuten bokföring är
-   inte neutral väntan — den är en osynlig reservation av en delad resurs.
+2. **Committa kortet i samma andetag som du skapar det.** Skälet är inte längre
+   osynlighet (se tabellen) utan durabilitet: ett okommitterat kort dör med
+   worktreen, och `git worktree remove` frågar inte.
 3. **Krockar det ändå: rätta via CLI:t, aldrig för hand.** Parkera kortet utanför
    registret och återskapa det med `task create` när den andra posten landat. En
    handredigerad `id:`-rad löser symptomet och bryter den regel som gör registret
