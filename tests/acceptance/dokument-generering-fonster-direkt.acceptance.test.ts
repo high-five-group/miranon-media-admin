@@ -285,4 +285,56 @@ test.describe('Genereringsvyn — förhandsgranskningens fönster öppnas direkt
       }),
     ).toBeVisible();
   });
+
+  test('review-runda 1: Lotta stänger fliken själv medan EF:en arbetar — ingen exception, toast med fallback-knapp', async ({
+    page,
+    context,
+    network,
+  }) => {
+    const PREVIEW_URL = 'https://storage.example.test/preview-bekraftelse-stangd-flik.pdf';
+
+    network.use(
+      http.get(EF('get-document-sources'), () =>
+        json(MOCK_SOURCES as unknown as Record<string, unknown>),
+      ),
+      http.post(EF('generate-event-attachment'), async () => {
+        await delay(SVARSFORDROJNING_MS);
+        return json({ url: PREVIEW_URL, utgar: new Date(Date.now() + 300_000).toISOString() });
+      }),
+      mockaLagradPdf(PREVIEW_URL),
+    );
+
+    const sidfel: Error[] = [];
+    page.on('pageerror', (fel) => sidfel.push(fel));
+
+    await page.goto(`/mer/dokument?event=${VISUAL_EVENT_ID}&vy=generering&mall=bekraftelse`);
+    await expect(page.getByTestId('generering-vy')).toBeVisible();
+
+    const [nyFlik] = await Promise.all([
+      context.waitForEvent('page'),
+      page.getByRole('button', { name: 'Förhandsgranska först' }).click(),
+    ]);
+    await expect(nyFlik).toHaveTitle('Skapar dokument…');
+
+    // Lotta ångrar sig och stänger fliken SJÄLV — INNAN mutationen (4 s
+    // fördröjd) svarar. `fonster` i appen är därefter icke-null men
+    // `.closed`.
+    await nyFlik.close();
+    await expect.poll(() => nyFlik.isClosed()).toBe(true);
+
+    // Mutationen löser ut ÄNDÅ (servern brydde sig inte om att fliken
+    // stängdes) — `onSuccess` körs mot ett stängt fönster. Det får INTE
+    // kasta ett fel i appens egen sida, och toasten ska INTE påstå att
+    // dokumentet öppnades: `blockerad` blir `true`, fallback-knappen visas.
+    await expect(
+      page.getByText('Webbläsaren stoppade det nya fönstret.', { exact: false }),
+    ).toBeVisible({
+      timeout: SVARSFORDROJNING_MS + 10_000,
+    });
+    await expect(page.getByRole('button', { name: 'Öppna bekräftelsebilagan' })).toBeVisible();
+    await expect(page.getByText('Den öppnades i ett nytt fönster.')).toHaveCount(0);
+
+    // Ingen JS-exception i appens sida (samma `page`, inte den stängda fliken).
+    expect(sidfel).toEqual([]);
+  });
 });

@@ -17,6 +17,18 @@ import { useDataSource } from '@/data/useDataSource';
  * beteendetest (AC #1, throwaway, kastat efter passet) att detta INTE
  * blockeras.
  *
+ * [TILLÄGG, TASK-309.26 review-runda 1, AC #4] Anroparen skriver NUMERA
+ * också en momentan laddningssida i fönstret direkt efter `window.open`,
+ * innan `mutate()` (`skrivLaddningssida`, `@/lib/skriv-laddningssida`) —
+ * samma delade mönster som `GenereringsVy.tsx`s `skapaDokument`. Fram till
+ * denna skiva stod fönstret tomt (`about:blank`) under hela väntan, vilket
+ * var precis den "abrupt tomt fönster"-upplevelse Marcus avvisade 22 aug
+ * 2026 för genereringsvyn — samma defekt fanns här, bara aldrig påtalad för
+ * just denna yta förrän konsekvens-kravet (AC #4) synliggjorde den vid
+ * granskningen av den andra ytan. Denna hooks EGEN kontrakt är oförändrat:
+ * den öppnar ingenting själv, den bara fyller `handle.location.href` när
+ * datan är klar (eller skriver felsidan nedan).
+ *
  * `noopener` är MEDVETET UTESLUTET ur `window.open`-anropet (anroparens
  * ansvar, inte denna hooks — men dokumenterat här eftersom skälet gäller
  * hela mönstret): verifierat (samma throwaway-pass) att
