@@ -3,10 +3,10 @@ id: TASK-23
 title: >-
   Fynd: mapEvent-/deriveManadAr-dupliceringen har växt till fyra EF-kopior med
   manuell håll-i-synk-plikt
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-07-21 23:26'
-updated_date: '2026-08-26 03:06'
+updated_date: '2026-08-26 04:17'
 labels:
   - ready-for-agent
 dependencies: []
@@ -39,4 +39,12 @@ Förväntat: gemensam modul i supabase/functions/_shared/ (samma SSOT-mönster s
 FÖRSTÄRKT av S75 batch 3 (task-18.4): den chunkade OR(RECORD_ID()=…)-batchen finns nu i TRE EF:er — get-attendance, get-person och get-registrations — med nästan identiska kopior av chunk() + fetchByRecordIds(). Dupliceringen växer alltså i två oberoende dimensioner: mapEvent ×4 och batch-läsningen ×3. Rimlig _shared-kandidat när baren nås.
 
 S75 batch 4 (17.5): mapEvent-kopiorna hölls i synk för LÄS-shapen igen — borOverAntal-aggregeringen lades avsiktligt bara i läs-EF:erna (get-events/get-event), write-EF:erna utelämnar den (samma form som viaFormular/medfoljande). Ingen NY drift införd, men fyra-kopior-skulden kvarstår och växer per läs-fält.
+
+Staging-deploy 2026-08-26 (av orkestreraren, efter #1981:s landning): get-events v34, get-event v33, create-event v25 (ref pqtshyierkdgwdnxuirz). update-event deployas när #1988 (bunt C) landat — separat kort/PR äger den deployen.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landning: PR #1981. Done-flipp S112 resume 1, 2026-08-26, post-merge 2774937333885: success. Inget DoD definierat på kortet.
+<!-- SECTION:FINAL_SUMMARY:END -->

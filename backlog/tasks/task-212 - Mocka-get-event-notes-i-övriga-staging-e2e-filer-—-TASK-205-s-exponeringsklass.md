@@ -1,10 +1,10 @@
 ---
 id: TASK-212
 title: 'Mocka get-event-notes i övriga staging-e2e-filer — TASK-205:s exponeringsklass'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-14 16:12'
-updated_date: '2026-08-26 03:18'
+updated_date: '2026-08-26 04:19'
 labels:
   - tests
   - ready-for-agent
@@ -31,10 +31,10 @@ Diagnos-agenten fann (källa: TASK-205 implementation notes, samma pass) att ytt
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -96,4 +96,12 @@ Ingen av de tre observerade flaky-testerna rör get-event-notes-mocken.
 AC #1: bedöms uppfylld med den disk-verifierade, korrigerade scopen ovan
 (inkl. det ENA dokumenterade undantaget). AC #2: gröna vid isolerad
 körning — se mätning ovan.
+
+DoD-avstämning S112 resume 1 (2026-08-26). DoD #1 (AC avbockade): 2/2 AC bekräftat [x] — check. DoD #2 (grindar gröna): PR #1982-body — npm run typecheck 0 fel, biome 0 fel i berörda filer, build grönt, npm run test:api 1179/1179; test:e2e:staging på de tre ändrade filerna 31/34 vid full-fil-körning under fleet-parallellism, samtliga 3 flakiga tester (axe-core-timeout + element-not-found) bevisat orelaterade till diffen via isolerad omkörning (100% gröna) — check. DoD #4 (inga orelaterade filer): git diff a2f68b71..f3929e17 (#1982:s korrekta förälder->merge-diff) visar event-bor-over/event-deltagare/mark-paid.staging.test.ts + backlog-kortet, exakt TASK-212:s tre ändrade filer — check. DoD #3 (CI grön per jobb) lämnas obockad, härledd via landningspekaren. Gränsfallet event-narvaro-register.staging.test.ts (medvetet exkluderad, redan flaggat i Implementation Notes ovan) kvarstår som ett öppet omprövningsbeslut för Marcus/orkestreraren mot AC #1:s bokstav — noteras här igen för synlighet i stängningsbatchen.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landning: PR #1982. Done-flipp S112 resume 1, 2026-08-26, post-merge f3929e17e66e: in_progress vid flipptillfället (merge_group för pr-1982 var conclusion=success, den auktoritativa CI-gaten). Gränsfall flaggat: event-narvaro-register.staging.test.ts medvetet exkluderad mot AC #1:s bokstav — se Implementation Notes.
+<!-- SECTION:FINAL_SUMMARY:END -->

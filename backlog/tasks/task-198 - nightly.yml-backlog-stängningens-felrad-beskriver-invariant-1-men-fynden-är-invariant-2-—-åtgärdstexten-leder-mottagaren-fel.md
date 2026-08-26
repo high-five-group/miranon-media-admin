@@ -3,10 +3,10 @@ id: TASK-198
 title: >-
   nightly.yml: backlog-stängningens felrad beskriver invariant 1 men fynden är
   invariant 2 — åtgärdstexten leder mottagaren fel
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-11 18:30'
-updated_date: '2026-08-26 03:23'
+updated_date: '2026-08-26 04:14'
 labels: []
 dependencies: []
 priority: low
@@ -21,10 +21,10 @@ Belägg (rödklassningen 2026-08-11, run 31454392944 job 93665096973): grinden f
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -39,4 +39,12 @@ Rotorsak: scripts/check-backlog-closure.sh sätter EXIT_CODE=1 för invariant 1 
 Fix (vald form): raderna beskriver nu INTE en specifik invariant/åtgärd längre — de pekar till loggens egna ❌-rader (som redan skiljer invarianterna per kort, se check-backlog-closure.sh rad ~725/771) och sammanfattar båda möjliga åtgärderna explicit ("invariant 1/3 ⇒ stäng korten; invariant 2 ⇒ bocka DoD/AC mot belägg eller öppna ärligt"). Detta är den lättviktiga formen av kortets alternativ "återge skriptets egen per-invariant-summering" — utan att plumba en ny strukturerad output ur skriptet, eftersom skriptets nuvarande outputs (utfall=gron/drift/anropsfel) inte differentierar invarianter och en sådan ändring hade varit en större, riskablare yta för ett Low-prio kosmetiskt fynd.
 
 Grindar: actionlint 1.7.12 (-ignore 'unexpected key "queue"...') exit 0, yamllint 1.38.0 .github/ exit 0, npm run typecheck exit 0, npx @biomejs/biome check . exit 0, npm run build exit 0, npm run test:api exit 0 (1169 passed). Inga AC definierade på kortet ("No acceptance criteria defined") — inget att bocka.
+
+DoD-avstämning S112 resume 1 (2026-08-26). DoD #1 (AC avbockade): kortet har inga AC definierade — vakuöst uppfyllt, check. DoD #2 (grindar gröna): redan dokumenterat i notes ovan — actionlint 1.7.12 exit 0, yamllint 1.38.0 exit 0, typecheck exit 0, biome exit 0, build exit 0, test:api exit 0 (1169 passed) — check. DoD #4 (inga orelaterade filer): git diff 27749373..efa98ffe (#1978:s egen förälder->merge) visar 8 filer: nightly.yml + 5 backlog-kort (TASK-26/116/198/26-dubblett? nej: task-116/138/198/26/296) + check-thread-index.sh + test — samtliga hör till bunt A:s deklarerade fyrkorts-batch (TASK-26/116/198/138) plus TASK-296:s blockerings-notering; ingen vilsen fil — check. DoD #3 (CI grön per jobb) lämnas obockad, härledd via landningspekaren.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landning: PR #1978. Done-flipp S112 resume 1, 2026-08-26, post-merge efa98ffe74a4 success.
+<!-- SECTION:FINAL_SUMMARY:END -->
