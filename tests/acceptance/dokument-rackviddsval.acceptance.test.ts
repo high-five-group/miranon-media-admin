@@ -377,17 +377,27 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
     // Höjden MÄTS mot radernas faktiska geometri i stället för mot en
     // hårdkodad siffra — då fäller testet om radhöjden någonsin ändras, i
     // stället för att tyst acceptera en halv rad i underkanten.
+    //
+    // [TASK-309.24] `listHojd` jämförs mot `ul.clientHeight` (innehålls-
+    // höjden), INTE `getBoundingClientRect().height` (ul:ens EGNA border-box,
+    // border inkluderad). `<ul>` bär `border border-transparent` +
+    // `box-sizing: border-box` (Tailwind preflight) — `useLastaListhojd`
+    // (`DokumentYta.tsx`) kompenserar sin satta `style.height` med exakt
+    // kantbredden (mätt: utan kompensationen klipptes fjärde radens
+    // underkant 2 px för tidigt), så ul:ens EGEN border-box är nu MEDVETET
+    // 2 px större än radspannet — `clientHeight` (som utesluter border) är
+    // det jämförbara talet.
     const geometri = await rullande.evaluate((ul) => {
       const items = Array.from(ul.children) as HTMLElement[];
       const forsta = items[0].getBoundingClientRect();
       const fjarde = items[3].getBoundingClientRect();
       return {
-        listHojd: ul.getBoundingClientRect().height,
+        listHojd: ul.clientHeight,
         fyraRader: fjarde.bottom - forsta.top,
         rullar: ul.scrollHeight > ul.clientHeight,
       };
     });
-    expect(geometri.listHojd).toBe(geometri.fyraRader);
+    expect(geometri.listHojd).toBeCloseTo(geometri.fyraRader, 0);
     expect(geometri.rullar).toBe(true);
 
     // ═══ LAYOUTEN HOPPAR INTE NÄR FILTRET VÄXLAR ═══

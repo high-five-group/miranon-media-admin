@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-26 02:48'
+updated_date: '2026-08-26 08:38'
 labels:
   - ready-for-agent
 dependencies:
@@ -37,16 +38,32 @@ FACIT: s108-dokumentytans fyra bilder (tasks/sessions/bilagor/s108-dokumentytan/
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Listans bounding box (bredd, höjd) är identisk vid 0, 1, 3, 4 och 5+ rader och över alla filter — Playwright-mätning i desktop och 375 px, tal i PR:en
-- [ ] #2 Vid exakt 4 rader: ingen linje synlig nederst, scrollHeight === clientHeight (ingen scroll); vid 5+ rader: scroll, linjen under rad 4 synlig efter scroll, sista raden bär linje; vid 1–3 rader: linje under sista raden
-- [ ] #3 Tomt-läget renderas inom samma låsta höjd; a11y oförändrad (tabb-stopp bara när listan rullar, aria-label kvar); axe grönt; prefers-contrast: more visar linjerna
-- [ ] #4 Facit-bilderna för s108-dokumentytan (alla fyra) omtagna med skiva 9:s metod; not-fältet uppdaterat; godkand orört; dokumentationsgrindarna (check:docs) exit 0
-- [ ] #5 Acceptance-test i browser-skarven fäller på hoppning vid filterbyte och på 1 px-scroll vid exakt fyra rader
+- [x] #1 Listans bounding box (bredd, höjd) är identisk vid 0, 1, 3, 4 och 5+ rader och över alla filter — Playwright-mätning i desktop och 375 px, tal i PR:en
+- [x] #2 Vid exakt 4 rader: ingen linje synlig nederst, scrollHeight === clientHeight (ingen scroll); vid 5+ rader: scroll, linjen under rad 4 synlig efter scroll, sista raden bär linje; vid 1–3 rader: linje under sista raden
+- [x] #3 Tomt-läget renderas inom samma låsta höjd; a11y oförändrad (tabb-stopp bara när listan rullar, aria-label kvar); axe grönt; prefers-contrast: more visar linjerna
+- [x] #4 Facit-bilderna för s108-dokumentytan (alla fyra) omtagna med skiva 9:s metod; not-fältet uppdaterat; godkand orört; dokumentationsgrindarna (check:docs) exit 0
+- [x] #5 Acceptance-test i browser-skarven fäller på hoppning vid filterbyte och på 1 px-scroll vid exakt fyra rader
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+RUNDA 2 (2026-08-26, PR #2008 återupptagen efter review-agentens utlåtande):
+
+Review-fynd 1 (allvarligast): körning 1s berakaListgeometri läste lasHojd = totaltAntal > LISTA_SYNLIGA_RADER — höjden var alltså BARA låst när totalen översteg fyra, i strid mot kortets regel 2 (ALLTID exakt fyra raders hög ... Gäller 0-3 rader). AC #3 var felaktigt avbockad (testet hette tomt läge inom O-LÅST höjd — bekräftade det FELAKTIGA beteendet, prövade inte det rätta). Omdesignat: useLastaListhojd har nu TRE mätnivåer (PRECIS minst fyra riktiga rader / ESTIMAT 1-3 / FALLBACK 0, monotont fallande aldrig nedåt via harPreciserMatt) — se DokumentYta.tsx docblock för hela motiveringen, inkl. den empiriskt uppmätta LISTA_FALLBACK_BRYTPUNKT-kanten (en första gissning på 640 px föll skarpt i test — ul renderade bredd är bara 502 px vid 1280x720-viewporten, under gränsen, vilket gav MOBIL-konstanten på ett skrivbordsfönster; rättat till 400 efter att ha mätt BÅDA breddernas verkliga ul-bredd).
+
+Review-fynd 2 (gränsfall): nytt acceptance-test bevisar att en IN-PLACE minskning under fyra rader (en riktig Radera-åtgärd i GemensamtLage, ingen page.goto) inte krymper en redan precis låst höjd — harPreciserMatt spärrar nedgradering till en sämre ESTIMAT-mätning.
+
+Review-fynd 3 (facit-noten): s108-dokumentytan/facit.json påstod git bekräftar en diff på alla fyra — falskt, PR-diffen visade 3 av 4 (eventvaljare-desktop oförändrad, rimligt då ingen lista syns i den ramen). Rättat med ett öppet korrigerings-stycke (inte tyst omskrivet); samtliga tre påverkade bilder plus s108-generering/facit-dokumentlista-inaktuell-rad-desktop/mobil omtagna en gång till mot den KORRIGERADE koden, samma engångs-spec-metod som skiva 9 (tests/visual/zz-facit-tagning-309-24.spec.ts, raderad efter passet). godkand-fältet i BÅDA manifesten orört (null).
+
+AC #3 och #4 avbockades och bockades om (höll efter omprövning). AC #1/#2/#5 höll redan och rördes inte. Negativ kontroll körd: DokumentYta.tsx tillfälligt återställd till körning 1s implementation (patch sparad, sedan återapplicerad) — exakt de 5 NYA testerna (0/1/3-raders-lägena plus gränsfallstestet) föll, de 6 tidigare testerna höll. Full mättabell och grindutfall i PR-beskrivningen.
+
+RUNDA 2, ANDRA VARVET (2026-08-26, review-utlåtande på 8e34827f, risk medel, alla fem AC höll): tre kvarstående fynd lösta i samma PR (#2008), ingen ny AC-avbockning behövdes (alla fem höll redan). (1) Mobil-fallbacken (LISTA_FALLBACK_RADHOJD_MOBIL=155) var mätt mot en STRUKTURELLT bruten GemensamBilageRadRow vid 375px (ul-bredd 277px, ryms strukturellt aldrig bredvid namnkolumnens 12ch-golv) och gav orimliga ~622px låst höjd för ett tomt läge. Löst: EN viewport-oberoende konstant (99, mätt mot MallRad som aldrig bryter, identisk vid 502px och 277px ul-bredd) - uttalat produktbeslut, Marcus kan justera efter helgen. Ny 375px-svit för GemensamtLage (0/2/5 rader) lades till. (2) Nytt gränsfallstest NIVÅ 2 till NIVÅ 1 (3 till 4 rader in-place via riktig uppladdning) - höjden får öka, verifierat mot en oberoende precis-referens; 1px-avvikelse mot utlåtandets bokstavliga >= (398 till 397) förklarad och tolererad som samma kända syskon-count-kvirk som redan dokumenteras i filen. (3) Info-fynd rättade: testnamn AC #1/#6 till AC #1 / regel 6, stavfel i lessons-fragment. Facit-bilder kontrollerade - inga berörs (ingen visar tomt läge). SHA 62c71a3c.
+<!-- SECTION:NOTES:END -->
