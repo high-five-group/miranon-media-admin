@@ -3,12 +3,13 @@ id: TASK-309.17
 title: >-
   Block-dialogens datum-läge saknar ariaSnapshot-par — promoverings-grinden
   täcker 3 av 4 lägen
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-24 17:00'
-updated_date: '2026-08-24 17:47'
+updated_date: '2026-08-26 05:34'
 labels:
   - ready-for-agent
+  - intentionally-unchecked
 dependencies: []
 parent_task_id: TASK-309
 ordinal: 583000
@@ -42,8 +43,8 @@ Att det inte fångades har samma orsak som 309.16: visual-testerna bor i visual-
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -60,4 +61,6 @@ AC-STATUS. #2 BOCKAD — manifestet bär datum-lägets bild, och kriteriets egen
 #1 MEDVETET OBOCKAD. Ordalydelsen är 'block-dialogens datum-läge', och det är inte vad som levererades — att uppfylla den bokstavligt hade krävt att FLYTTA sistaBetalningsdag ut ur Inforutan, alltså en FORMÄNDRING som ADR-103 B2 steg 4 uttryckligen fredar, och som en bygg-agent aldrig får göra på eget bevåg.
 
 ÖPPET BESLUT FÖR MARCUS/ORKESTRERAREN: vad ska hända med den döda datum-grenen i BlockDialog.tsx? Två vägar — riv grenen (den är onåbar kod), eller flytta sistaBetalningsdag ut ur Inforutan (formändring, kräver Marcus). Tills dess står den bokförd i spec-filens docblock § DATUM-LÄGET, inte utjämnad.
+
+OBOCKAT MED AVSIKT: AC #1 ('block-dialogens datum-läge har ett ariaSnapshot-par i promoverings-grinden') är OBSOLET, inte bara obockad. TASK-309.19 (Marcus mandat väg A, 2026-08-26) mätte om premissen mot färsk origin/main och bekräftade den ORÄNDRAD: BlockDialog.tsx:s def.datum-gren var obevisligen onåbar från SAMTLIGA fyra callers (GenereringsVy.tsx, mer-eventinnehall, mer-platser, BlockDialog.tsx självt) — inte bara de tre spärrar i GenereringsVy.tsx detta korts egna notes redan bokförde. Väg A (riva grenen, inte flytta sistaBetalningsdag ur Inforutan) valdes explicit av Marcus/orkestreraren. Grenen (def.datum-ternären, resterandeBeloppHjalp-propen, datumUtanAr()) är nu RIVEN ur BlockDialog.tsx — det finns inget block-dialog-datum-läge kvar att ge ett ariaSnapshot-par, varken nu eller i framtiden, så länge dagens Inforutan-grupp-karta gäller. Att bocka AC #1 hade varit en osann utsaga. blockDefinitioner.ts:s datum-flagga och DatumEnkel-komponenten är OFÖRÄNDRADE i sitt kontrakt (verifierat: de driver Inforutans sektionsmorf, en annan renderingsväg) — AC #2/#3:s redan bockade slutsatser (morfens ariaSnapshot-par är det korrekta facit-läget) står därför fast, oberoende av denna stängning. Landning: samma PR som TASK-309.19 (gren fix/task-309-19-riv-blockdialog-datum-gren, öppnas direkt efter denna kort-uppdatering — se TASK-309.19:s notes för PR-referens när den finns). Källmärkt 2026-08-26.
 <!-- SECTION:NOTES:END -->
