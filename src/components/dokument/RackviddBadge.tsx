@@ -60,7 +60,10 @@ export function RackviddBadge({
   // i badgen — den säger nu bara vad DEN HÄR raden gäller också.
   if (rackvidd !== AttachmentScope.KURSTYP && rackvidd !== AttachmentScope.ALLA_EVENT) {
     return (
-      <span className="inline-flex shrink-0 items-center rounded-full border border-transparent bg-bg-muted px-2 py-0.5 font-medium text-caption text-text-secondary contrast-more:border-border-strong">
+      <span
+        className="inline-flex min-w-0 max-w-full items-center truncate rounded-full border border-transparent bg-bg-muted px-2 py-0.5 font-medium text-caption text-text-secondary contrast-more:border-border-strong"
+        title="Detta event"
+      >
         Detta event
       </span>
     );
@@ -128,7 +131,35 @@ export function RackviddBadge({
     // NÄSTLINGEN, aldrig vanan — och "syns den?" besvaras med en mätning av
     // `backgroundColor` i renderad yta, aldrig med en blick på klassnamnet
     // eller ett resonemang om vilken yta som "brukar" bära vad.
-    <span className="inline-flex shrink-0 items-center rounded-full border border-transparent bg-bg-muted px-2 py-0.5 font-medium text-caption text-text-secondary contrast-more:border-border-strong">
+    //
+    // ═══ `min-w-0 max-w-full truncate`, INTE `shrink-0` — TASK-309.20 ═══
+    //
+    // Pillen bar `shrink-0` sedan tillkomsten. Mätt vid 375 px (räckviddsläget,
+    // badgetexten "RIM · Alla steg", Playwright mot hermetisk fixturvärld,
+    // se TASK-309.20s Final Summary för hela mätserien): badgens box
+    // `x=62 width=103` mot första ikonknappens `x=131` — badgen fortsatte
+    // 34 px IN i knapp-kolumnen, och knappen (senare i DOM-ordningen, samma
+    // stapelkontext) målades ovanpå. Ground truth: den stämplade facit-bilden
+    // `tasks/sessions/bilagor/s108-dokumentytan/facit-dokumentyta-rackviddslage-mobil.png`
+    // visar exakt detta — badgens högra kant syns bakom den röda
+    // Radera-knappen.
+    // `shrink-0` förbjuder krympning, så när badgens naturliga textbredd är
+    // större än kolumnens tilldelade utrymme finns bara en väg ut: den flyter
+    // över `overflow: visible` (default) rakt in i grannkolumnen.
+    //
+    // Fixen är samma idiom filnamnet redan bär (`DokumentYta.tsx`s
+    // `DokumentRadSkal`-docblock: "NAMNET TRUNKERAS I STÄLLET FÖR ATT
+    // RADBRYTA … truncate kräver min-w-0"): tillåt krympning (utelämna
+    // `shrink-0`, default är `flex-shrink: 1`), `min-w-0` river det implicita
+    // `min-width: auto` som annars vägrar krympa under textens egen bredd, och
+    // `truncate` klipper med ellips i stället för att låta texten svämma över
+    // pillens rundade kant. Behållaren måste ÄVEN vara bredd-bunden
+    // (`DokumentYta.tsx`s badge-rad bär nu `w-full min-w-0` av samma skäl) —
+    // annars finns inget "tillgängligt utrymme" att krympa MOT.
+    <span
+      className="inline-flex min-w-0 max-w-full items-center truncate rounded-full border border-transparent bg-bg-muted px-2 py-0.5 font-medium text-caption text-text-secondary contrast-more:border-border-strong"
+      title={text}
+    >
       {text}
     </span>
   );
