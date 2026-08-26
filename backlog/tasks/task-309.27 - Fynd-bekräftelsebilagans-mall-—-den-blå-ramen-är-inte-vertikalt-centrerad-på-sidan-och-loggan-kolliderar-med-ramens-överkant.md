@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-26 03:06'
-updated_date: '2026-08-26 14:22'
+updated_date: '2026-08-26 14:37'
 labels:
   - ready-for-agent
 dependencies: []
@@ -29,7 +29,7 @@ GÖR: (1) Mät nuläget: sidans höjd (A4 = 297 mm), ramens top/bottom-marginal,
 - [x] #1 Före/efter-mätning i den DocRaptor-renderade PDF:en: ramens övre och nedre marginal lika (±1 mm), loggans avstånd till ramens överkant angivet i mm — tal i PR:en
 - [x] #2 Förlagan ändrad, EF-kopian synkad via skriptet, paritetsgrinden grön; ingen handredigering av kopian
 - [x] #3 Deltagarinformations-mallen renderad och opåverkad (eller medvetet justerad, bokfört)
-- [ ] #4 Marcus har granskat den staging-renderade PDF:en och godkänt formen i klartext FÖRE armering (HITL)
+- [x] #4 Marcus har granskat den staging-renderade PDF:en och godkänt formen i klartext FÖRE armering (HITL)
 <!-- AC:END -->
 
 ## Definition of Done
@@ -38,3 +38,9 @@ GÖR: (1) Mät nuläget: sidans höjd (A4 = 297 mm), ramens top/bottom-marginal,
 - [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+BESLUT (Marcus, via orkestreraren, i klartext 2026-08-26 ~16:30): "vi kör på dina rekommendationer" — alternativ A (acceptera 2 sidor för långa kursbeskrivningar). Loggfixen (.yttre-ram padding-top: 2,92mm) skeppades MED i samma landning eftersom kostnaden (2 sidor) redan betalas av centreringen ensam — mätt: loggans luft mot ramens innerkant gick från 0mm till 2,92mm, sidantal oförändrat (2, samma som centrering ensam). Fyra staging-mätpunkter visade originalvärdena (9,75/6,03mm) ligger på en knivsegg — alternativ B (mindre värde) prövat och stängt. Full mätning i PR #2014.
+<!-- SECTION:NOTES:END -->

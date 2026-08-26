@@ -181,9 +181,20 @@ body {
    * INTE fungera som ren CSS-box-modell-matematik förutsäger i Prince 15.1)
    * — men mätningen är entydig och reproducerad. Detta ÄR uppdragets
    * stop-villkor ("sidbrytning — det är en formändring Marcus avgör"): se
-   * PR:en/kortets slutrapport för båda renderade bevisen
-   * (`309-27-bekraftelse-fore.pdf` = 1 sida, `309-27-bekraftelse-final.pdf`
-   * = 2 sidor) INNAN detta godkänns.
+   * PR:en/kortets slutrapport för de renderade bevisen, disk-sökväg
+   * (RÄTTAD 2026-08-26, review-fynd på PR #2014: pekade tidigare på
+   * `309-27-bekraftelse-fore.pdf`/`-final.pdf`, filer som aldrig fanns i
+   * repot — ADR-083, prosa som pekar på bevis ska peka på bevis som
+   * finns) `tasks/sessions/bilagor/s108-mall-309-27/`:
+   * `bekraftelsebilaga-1-fore-original-1sida.pdf` (1 sida) och
+   * `bekraftelsebilaga-2-efter-slutgiltig-centrerad-plus-loggfix-2sidor.pdf`
+   * (2 sidor, DEN SKEPPADE formen) INNAN detta godkänns.
+   *
+   * BESLUT (Marcus, via orkestreraren, i klartext 2026-08-26 ~16:30: "vi
+   * kör på dina rekommendationer"): ALTERNATIV A valt — centreringen
+   * skeppas, 2 sidor för innehållstunga event accepteras. Eftersom denna
+   * kostnad ändå betalas skeppas `.yttre-ram`s loggfix (padding-top,
+   * nedan) MED i samma landning — se den kommentaren för det beslutet.
    *
    * "ETT MINDRE VÄRDE"-VÄGEN PRÖVAD OCH STÄNGD (2 extra staging-renderingar,
    * samma fixtur): halvvägs mot centrering (8,82/6,96 mm — asymmetri 1,86 mm
@@ -197,6 +208,23 @@ body {
    * mellanläge att hitta genom att bara pröva fler tal — antingen 0 mm
    * synlig centrering (nuläget) eller en synlig centrering med sidbrytning
    * som pris. Se PR:en för alla fyra mätpunkterna.
+   *
+   * TROLIG MEKANISM, OVERIFIERAD (review-fynd på PR #2014, bokförd som
+   * HYPOTES — INTE facit): CSS:en saknar `orphans`/`widows`/
+   * `break-inside`/`box-decoration-break` helt (0 träffar i denna fil).
+   * `.sida--bekraftelse` är en flex-container med `min-height: 297mm`
+   * (ingen FAST höjd) och ETT enda barn (`.yttre-ram`, `flex: 1 1 auto`,
+   * `overflow: visible` genom att aldrig sättas). Hypotesen: Prince — som
+   * redan mätt avviker från spec på flex-`gap` (se `.ikonruta-media`s
+   * kommentar nedan) — beräknar sidbrytningen mot varje elements
+   * ABSOLUTA position i sidflödet snarare än mot containerns egen,
+   * beräknade höjd. Det skulle förklara knivseggen: var precis summan
+   * delas topp/botten, inte bara summan, avgör var innehållet HAMNAR i
+   * förhållande till 297mm-gränsen. ETT TÄNKBART FRAMTIDA EXPERIMENT
+   * (ett EGET kort, INTE denna skiva — formändring utanför
+   * beställningen): byt `min-height: 297mm` mot `height: 297mm` +
+   * `overflow: hidden` på `.sida`, se om sidbrytningen då följer
+   * containerns beräknade höjd i stället. PRÖVA INTE detta nu.
    */
   padding: 7.89mm 8.1mm 7.89mm;
   display: flex; /* så ramen når sidfoten även när innehållet är kort */
@@ -236,40 +264,37 @@ body {
    * 23,68 mm från sidkanten; padding-bottom 2,92 mm lägger sidfotens rutor
    * 11,99 mm över sidkanten, som i förlagan.
    *
-   * PADDING-TOP — PRÖVAD, INTE SKEPPAD (TASK-309.27, 2026-08-26). Fortfarande
-   * 0: loggan (`.loggarad`, första flex-barnet) sitter DIREKT an mot ramens
-   * inneröverkant, noll luft. Disk-mätt (staging, `pdftocairo -svg`): ramens
-   * inneröverkant och loggabildens topp ligger på EXAKT samma sidkoordinat
-   * (30,308594 pt) — loggan rör ramens streck, precis Marcus observation
-   * ("Loggan ligger i överkant nästan PÅ den blåa ramen"). VERIFIERAT att
-   * detta INTE är samma fel som topp/bottenasymmetrin ovan (uppdragets
-   * premiss prövad och falsifierad för EN-fix-hypotesen, ADR-086): att
-   * centrera ramen flyttar hela ramen som EN enhet på sidan — avståndet
-   * mellan ramens EGEN innerkant och dess första barn är opåverkat av var
-   * ramen står, så centreringsfixen ovan LÖSER INTE loggproblemet på egen
-   * hand (verifierat, se `.sida--bekraftelse` ovan för den mätningen).
+   * PADDING-TOP, SKEPPAD (TASK-309.27, rättelsevarv 2026-08-26 ~16:30).
+   * Var 0: loggan (`.loggarad`, första flex-barnet) satt DIREKT an mot
+   * ramens inneröverkant, noll luft. Disk-mätt (staging, `pdftocairo -svg`):
+   * ramens inneröverkant och loggabildens topp låg på EXAKT samma
+   * sidkoordinat (30,308594 pt) — loggan rörde ramens streck, precis Marcus
+   * observation ("Loggan ligger i överkant nästan PÅ den blåa ramen").
+   * VERIFIERAT att detta INTE är samma fel som topp/bottenasymmetrin ovan
+   * (uppdragets premiss prövad och falsifierad för EN-fix-hypotesen,
+   * ADR-086): att centrera ramen flyttar hela ramen som EN enhet på sidan —
+   * avståndet mellan ramens EGEN innerkant och dess första barn är
+   * opåverkat av var ramen står, så centreringsfixen ovan LÖSTE INTE
+   * loggproblemet på egen hand (verifierat, se `.sida--bekraftelse` ovan).
    *
-   * EN KANDIDATFIX PRÖVADES OCH DROGS TILLBAKA: `padding-top: 2.92mm`
-   * (spegling av padding-bottom två rader ovan) renderad mot staging gav
-   * bekräftelsebilagan (DOKUMENTUNDERLAG_EVENT_ID-fixturen, en REALISTISK
-   * fullängds kursbeskrivning, inte en konstruerad extremsträng) **2 SIDOR**
-   * — svansen av "Innehåll, Dag Ett" plus HELA sidfoten hamnade övergivna
-   * nära toppen av en annars tom sida 2, UTANFÖR den blå ramen (ramen
-   * stänger fullständigt på sida 1 — det är BARNEN som svämmar över dess
-   * osynliga underkant, `overflow: visible` är default). **VIKTIGT:**
-   * centreringsfixen i `.sida--bekraftelse` ovan orsakar REDAN SJÄLV samma
-   * 2-sidors-utfall isolerat, utan denna padding-top-kandidat inblandad (se
-   * den rättade förklaringen där) — detta stycke skeppar alltså INTE
-   * loggfixen, inte för att den ensam vore farligare, utan för att den
-   * OVANPÅ ett redan sidbrytande läge bara gör det värre, utan att själv ha
-   * blivit efterfrågad (Marcus bad bara om centrering). Kvarstår 0 tills
-   * Marcus beslutat om centreringsfixen ovan och, i så fall, prövat om
-   * loggan behöver egen luft i den formen. Se PR:en/kortets slutrapport för
-   * de renderade bevisen.
+   * BESLUTET (Marcus, via orkestreraren, i klartext 2026-08-26 ~16:30:
+   * "vi kör på dina rekommendationer" — alternativ A i PR #2014s
+   * beslutslista): eftersom centreringen ENSAM redan ger 2 sidor för
+   * innehållstunga event (se `.sida--bekraftelse` ovans mätning), kostar
+   * denna padding-top INGEN YTTERLIGARE sidbrytningsrisk utöver den redan
+   * accepterade — den lades tillbaka i SAMMA landning. Värdet 2,92 mm
+   * speglar padding-bottom två rader ovan (samma existerande, redan
+   * motiverade gap som redan bär sidfoten från ramens nederkant), så topp
+   * och botten får nu samma luft mot samma ram.
+   *
+   * MÄTT EFTER (staging, `pdftocairo -svg` på loggans faktiska ink-topp mot
+   * ramens innerkant): se PR:en för exakt mm-värde och sidantal — samma
+   * DOKUMENTUNDERLAG_EVENT_ID-fixtur, 2 sidor (oförändrat mot centrering
+   * ensam; se `.sida--bekraftelse` ovan för fullständig sidbrytnings-analys).
    */
   border: 2.25pt solid var(--mm-bilaga-morkbla-ram);
   border-radius: 15.7mm;
-  padding: 0 14.79mm 2.92mm;
+  padding: 2.92mm 14.79mm 2.92mm;
   flex: 1 1 auto;
   display: flex;
   flex-direction: column;
