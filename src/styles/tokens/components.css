@@ -110,8 +110,15 @@
   --mm-button-danger-subtle-bg-hover: color-mix(in srgb, var(--mm-error) 16%, transparent);
   --mm-button-danger-subtle-bg-pressed: color-mix(in srgb, var(--mm-error) 22%, transparent);
 
-  /* ── Input (Fas 3 K2) ── */
-  --mm-input-bg: var(--mm-bg);
+  /* ── Input (Fas 3 K2 — mm-input-bg flyttad till surface-familjen TASK-222) ──
+     Fältet pekade tidigare på --mm-bg (canvas-tokenen): inputfälten ärvde
+     sidbakgrunden, vilket bara såg rätt ut så länge canvas och kontrollyta
+     båda var vita (S102 gul-experimentets fynd, 2026-08-15 Del 7). Semantiskt
+     hör en input-yta till surface-familjen (kontrollyta), inte canvas — samma
+     roll Dialog/Modal/NavCard redan uttrycker via --mm-surface*. Visuellt
+     NEUTRALT idag: --mm-surface och --mm-bg är båda var(--p-neutral-0)
+     (semantic.css). */
+  --mm-input-bg: var(--mm-surface);
   --mm-input-bg-disabled: var(--mm-bg-muted);
   --mm-input-text: var(--mm-text);
   --mm-input-text-placeholder: var(--mm-text-muted);

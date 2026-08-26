@@ -6,9 +6,10 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-21 11:06'
-updated_date: '2026-08-22 08:53'
+updated_date: '2026-08-26 03:26'
 labels:
   - ready-for-agent
+  - intentionally-unchecked
 dependencies:
   - TASK-285.1
 parent_task_id: TASK-285
@@ -64,4 +65,6 @@ test:api KUNDE INTE re-verifieras fullt ut: staging-preflighten (TASK-77) stoppa
 STÄNGNINGSPASS (kortstängnings-agent): DoD #1-#5,#7,#8 var redan korrekt bockade i main (PR #1739-passet), DoD #6 lämnades öppen — matchar uppdragets premiss exakt. Adjudikerar tillämpligheten oberoende, inte bara byggagentens/registerpassets påstående: (1) facit tasks/sessions/bilagor/s109-uppdateringsnotis-konvergens/facit.json yta chunk-banner har bilder: [] med noten "prototypen visade chunk-bannern OFÖRÄNDRAD (data=chunk) enbart som kontrast ... spec-materia, inte denna prototyps fråga". (2) docs/specs/DESIGN-SYSTEM-SPEC.md rad cirka 1758: "Chunk-bannern har medvetet INGEN egen facit-bild ... Den delar familjens ingen-kontur-regel men har ingen låst pixel-form." (3) gh pr diff 1719: ChunkBanner.tsx återanvänder MessageBox-primitiven (redan promoverad via meddelandefamiljens konvergens, s109-meddelandefamiljen-konvergens/facit.json) ordagrant för formen; variant=1&data=chunk-parametrarna är en DATAVÄG (ADR-103 B2 steg 1: "skarpas DATAVÄGAR behålls ... datakälla, inte form"), inte en formvariant. Ingen egen variant-formgren för chunk-bannern existerar någonstans i kodbasen eller något manifest — kravets förutsättning (variant-läge FÖRE att jämföra mot promoverad EFTER) existerar inte för denna yta. DoD #6 lämnas OBOCKAD, otillämplig. Kortet sätts Done.
 
 (Notera: ett tidigare försök i denna session byggde på en stale lokal worktree-checkout som felaktigt visade DoD #3 som obockad och som drog en falsk slutsats om att jag skulle behöva bocka den — rättat via git reset --hard origin/main innan detta försök. DoD #3 var redan korrekt bockad av PR #1739-passet och rörs inte här.)
+
+OBOCKAT MED AVSIKT: DoD #6 (ariaSnapshot-paret, ADR-103 B4) är otillämplig — chunk-bannern gick aldrig igenom en ?variant-prototyp/konvergens: facit tasks/sessions/bilagor/s109-uppdateringsnotis-konvergens/facit.json ytan chunk-banner deklarerar bilder: [] och DESIGN-SYSTEM-SPEC.md §21 säger explicit att ytan 'har ingen låst pixel-form'. Det finns inget variant-läge att jämföra promoverad-EFTER mot (redan dokumenterat i kortets egna Implementation Notes och i STÄNGNINGSPASS-avsnittet). Landningen PR #1719 (MERGED, verifierat gh pr view 1719). Källmärkt 2026-08-26, S112 fix-våg 4, ADR-127-normalisering.
 <!-- SECTION:NOTES:END -->

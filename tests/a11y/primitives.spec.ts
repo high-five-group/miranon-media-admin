@@ -1,7 +1,11 @@
 import { expect, test } from './fixtures';
 
 /**
- * A11y-runner mot samtliga 6 primitiver (Fas 3 DoD 4 + Fas 3.5, ADR-045).
+ * A11y-runner mot samtliga primitiver i sektionslistan nedan (Fas 3 DoD 4 +
+ * Fas 3.5, ADR-045). Antalet uttrycks MEDVETET räknings-neutralt (TASK-20) —
+ * ett hårdkodat tal ('6 primitiver') drev tyst stale när NavCard/Skeleton/
+ * ToggleButtonGroup m.fl. tillkom (S75-batchen, task-17.1-fyndet); testerna
+ * nedan är den enda källa som behöver hållas i synk.
  *
  * Varje demo-sektion på /dev/primitives skannas scopad via sektionens
  * aria-labelledby; Modal/Dialog skannas dessutom i ÖPPNAT tillstånd som

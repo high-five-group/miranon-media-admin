@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-26 03:26'
+updated_date: '2026-08-26 04:15'
 labels:
   - ready-for-agent
 dependencies: []
@@ -27,15 +28,15 @@ FACIT: block-dialogens agenda-läge är en av s108-genererings ytor (facit.json 
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Knapparna '+ Lägg till punkt' och '+ Lägg till meditation' är vänsterställda i linje med agendaradernas vänsterkant, i desktop och 375 px — bounding-box-mätning mot radernas x-position i PR:en
-- [ ] #2 Ingen annan form i dialogen ändrad (ariaSnapshot-paret för block-dialogen oförändrat utöver knappraden)
-- [ ] #3 Berörda facit-bilder i s108-generering omtagna med skiva 9:s metod; not-fältet uppdaterat; godkand orört; dokumentationsgrindarna exit 0
-- [ ] #4 Tabordning och knapparnas tillgängliga namn oförändrade; axe grönt
+- [x] #1 Knapparna '+ Lägg till punkt' och '+ Lägg till meditation' är vänsterställda i linje med agendaradernas vänsterkant, i desktop och 375 px — bounding-box-mätning mot radernas x-position i PR:en
+- [x] #2 Ingen annan form i dialogen ändrad (ariaSnapshot-paret för block-dialogen oförändrat utöver knappraden)
+- [x] #3 Berörda facit-bilder i s108-generering omtagna med skiva 9:s metod; not-fältet uppdaterat; godkand orört; dokumentationsgrindarna exit 0
+- [x] #4 Tabordning och knapparnas tillgängliga namn oförändrade; axe grönt
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->

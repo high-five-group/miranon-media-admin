@@ -76,7 +76,6 @@ import {
   type SendReceiptResult,
   SendReceiptResultSchema,
   type UpdateEventInput,
-  UtkastResultatSchema,
   WaitlistEntrySchema,
 } from '../../domain/schemas';
 import type {
@@ -86,19 +85,14 @@ import type {
 } from '../../domain/types/Filters';
 import type { ActivityLogPage, ActivityLogParams } from '../../domain/types/Pagination';
 import { AttachmentClass } from '../../domain/types/Status';
-import {
-  callEdgeFunction,
-  postEdgeFunction,
-  postEdgeFunctionBlob,
-  supabase,
-} from '../config/supabase-client';
+import { callEdgeFunction, postEdgeFunction, supabase } from '../config/supabase-client';
 import {
   BILAGOR_BUCKET_ID,
   fileToBase64,
   formatMB,
   SMALL_UPLOAD_MAX_BYTES,
 } from './attachmentUpload';
-import type { DataSourceAdapter, MallId, UtkastTyp } from './DataSourceAdapter';
+import type { DataSourceAdapter, MallId } from './DataSourceAdapter';
 import { berakaAktuellKallhash, mallIdFranAirtableOption } from './mallKallhash';
 
 // Airtable tabell-ID:n (från docs/schema_reference.md). Behålls som
@@ -1044,60 +1038,6 @@ export class AirtableAdapter implements DataSourceAdapter {
   async previewReceipt(eventId: string): Promise<DocumentPreview> {
     const data = await postEdgeFunction<unknown>('preview-receipt', { eventId });
     return DocumentPreviewSchema.parse(data);
-  }
-
-  /**
-   * Rendera självbärande HTML till PDF (`DataSourceAdapter.renderPdfFranHtml`
-   * bär hela motiveringen — läs den där, inte här).
-   *
-   * ADRESSEN ÄR PROVISORISK: `test-docraptor-render` är staging-only och
-   * prod-exkluderad. Det är denna rad som byter till den skarpa
-   * renderings-EF:en vid promoveringen (`ADR-103`) — interfacet ovanför och
-   * anroparen ovanför den märker ingenting av bytet.
-   *
-   * `postEdgeFunctionBlob`, inte `postEdgeFunction`: EF:en svarar med rå
-   * `application/pdf`, inte base64-i-JSON som husets övriga PDF-vägar.
-   * Skälet står i hjälparens egen docblock.
-   */
-  async renderPdfFranHtml(html: string, namn: string): Promise<Blob> {
-    return await postEdgeFunctionBlob('test-docraptor-render', { html, namn });
-  }
-
-  /**
-   * Rendera + lagra som transient utkast, returnera signerad URL
-   * (`DataSourceAdapter.renderPdfTillUtkast` bär hela motiveringen — läs
-   * den där, TASK-302.1, `ADR-124`).
-   *
-   * ADRESSEN ÄR PROVISORISK, SAMMA RESONEMANG SOM `renderPdfFranHtml` OVAN:
-   * `test-docraptor-render` med `leverans: 'utkast'` är staging-only och
-   * prod-exkluderad. [RÄTTAT, TASK-302.2] Denna rad SKREV tidigare "byter
-   * till de skarpa preview-EF:erna vid TASK-302.2" — FEL: `ADR-124` § Öppet
-   * säger uttryckligen att `generate-event-attachment` FORTFARANDE ritar med
-   * pdf-lib, och bytet till DocRaptor-vägen är "promoveringens sak, inte
-   * denna ADR:s". `TASK-302.2` bytte BARA leveransformen på de befintliga
-   * pdf-lib-EF:erna (`preview-receipt`/`generate-event-attachment`) —
-   * `renderPdfTillUtkast` här är en HELT SEPARAT metod (egen HTML-input, egen
-   * DocRaptor-rendering) som denna skiva inte rör. Adressen byter i stället
-   * vid en FRAMTIDA promovering (`ADR-103`), om/när DocRaptor-vägen tar över
-   * mall-genereringen — interfacet ovanför märker ingenting av det bytet.
-   *
-   * `postEdgeFunction`, inte `postEdgeFunctionBlob`: den här grenen svarar
-   * JSON (`{ url, utgar }`), inte rå `application/pdf` som `renderPdfFranHtml`
-   * ovan. `.parse()` validerar vid datagränsen (ADR-026).
-   */
-  async renderPdfTillUtkast(
-    html: string,
-    namn: string,
-    params: { eventId: string; typ: UtkastTyp },
-  ): Promise<{ url: string; utgar: string }> {
-    const data = await postEdgeFunction<unknown>('test-docraptor-render', {
-      html,
-      namn,
-      leverans: 'utkast',
-      eventId: params.eventId,
-      typ: params.typ,
-    });
-    return UtkastResultatSchema.parse(data);
   }
 
   /**
