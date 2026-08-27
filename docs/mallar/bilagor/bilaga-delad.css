@@ -167,10 +167,20 @@ body {
    * Vi sätter medelvärdet 8,1 mm på båda sidor (se RAPPORT.md § Öppna frågor).
    * Topp/botten var 9,75 / 6,03 mm i förlagan — 3,72 mm asymmetri som är
    * handplacering i PowerPoint. Marcus fällde den vid prod-röktestet
-   * 2026-08-26 ("den blåa ramen är inte helt centrerad på pappret"); vi
-   * sätter medelvärdet 7,89 mm på båda och ramen blir synligt centrerad.
+   * 2026-08-26 ("den blåa ramen är inte helt centrerad på pappret").
+   *
+   * VÄRDET 6,5 mm ÄR MÄTT MOT FÖRLAGAN, inte valt. Medelvärdet 7,89 mm
+   * (samma summa som förlagan) gav 2 sidor med RIM 1:s KOMPLETTA agenda —
+   * 30 punkter, som originalbilagan faktiskt har. 6,5 mm symmetriskt ger
+   * EN sida och lägger sektionerna inom 0,5 mm från originalets:
+   *   rubrik      36,8 mm  (originalet 36,7)
+   *   sista punkt 249,1 mm (originalet 249,4)
+   *   sidfot      277,6 mm (originalet 278,1)
+   * Botten blir 0,47 mm STÖRRE än förlagans 6,03 mm, alltså ingen ny
+   * utskriftsrisk. Ändra inte utan att köra `npm run mall:pdf` mot en
+   * KOMPLETT agenda — standardfixturen är för kort för att fälla felet.
    */
-  padding: 7.89mm 8.1mm;
+  padding: 6.5mm 8.1mm;
   /*
    * INTE `display: flex`. Se § PRINCE OCH FLEXBOX nedan — den yttre
    * flex-containern plus `.yttre-ram`s `flex: 1 1 auto` fick Prince att
@@ -226,8 +236,8 @@ body {
    * padding-bottom reserverar sidfotens plats, eftersom sidfoten är absolut
    * positionerad (se .sidfot) och därmed ligger utanför flödet.
    */
-  padding: 2.92mm 14.79mm calc(2.92mm + var(--mm-bilaga-sidfot-hojd) + 6mm);
-  min-height: calc(297mm - 7.89mm - 7.89mm);
+  padding: 2.92mm 14.79mm calc(2.92mm + var(--mm-bilaga-sidfot-hojd) + 1mm);
+  min-height: calc(297mm - 6.5mm - 6.5mm);
   display: block;
   position: relative;
 }
