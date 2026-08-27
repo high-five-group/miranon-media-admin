@@ -457,6 +457,25 @@ Numrering efter S109: ADR 122 · kort 284 (om `#1674` landat) · L512 + 55
 fragment · T158 · f52 · session 111. Full narrativ: sessionsdok S109 Del 1–4 +
 PAUSLÄGE.
 
+**Session 108 ⏸️ PAUSAD (tolfte gången, 2026-08-27, `lifecycle: paused`) —
+BILAGE-MALLEN I PROD TILL FÖRLAGE-PARITET; KVAR ÄR MARCUS PROD-RÖKTEST,
+CAVOLINI OCH K-SISTA (SESSIONSDOK S108 § PAUSLÄGE TOLFTE → MARCUS-SEKVENS).**
+Resume 13 löste **rotorsaken**: bilagan blev två sidor oavsett innehåll för att
+Prince saknar `align-self: stretch` i row-containers — Del 26:s "knivsegg" och
+de tolv EF-deployerna (v37→v49) mätte den buggen. Byggde **den lokala
+PDF-loopen** (`npm run mall:pdf`, ~5 s mot tidigare ~45 min) efter Marcus fråga
+*"Håller proffs också på så här?"*. **Marcus fyra fångster**, alla verkliga: sex
+saknade agendapunkter i BÅDA baserna (Dag Två 10→16) · fetstilen borta sedan
+`TASK-309.4` (fyra dagar, inte tre veckor som jag påstod) · förlagornas sökväg
+obokförd · en vakt som bara täckte RIM 1. Landade `#2019` `#2020` `#2022`
+`#2024` `#2025`; `#2028` (höjdanpassningen) i kön vid paus. **PROD DEPLOYAD
+17:35:45 UTC** — 45 EF:er, `generate-event-attachment` v11, förkraven
+hash-verifierade. Bilagan är nu i paritet med förlagan **utom rubrikens
+typsnitt** (ComicNeue i stället för Cavolini, 80 % av bredden — kräver Marcus
+besked om var filen finns). Numrering vid paus 12: ADR **128** ·
+task-**331**/`309.33` · **L533** · **121 fragment** · **T176** · session
+**113**. Full handoff: sessionsdok S108 § PAUSLÄGE (tolfte) + Del 27–28.
+
 **Session 108 ▶️ ÅTERUPPTAGEN (2026-08-26, `lifecycle: active`, tolfte resumen;
 pausad elva gånger, historik) — PAUS-LANDNINGEN DIAGNOSTISERAD: `#2015` FÖLL
 INTE PÅ SIN DIFF UTAN PÅ EN ZOMBIE-KÖRNING FRÅN AKTIONS-LÅSET.** Marcus order:
