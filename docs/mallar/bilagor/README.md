@@ -1,5 +1,36 @@
 # Bilage-mallarna - bekräftelsebilagan, deltagarinformationen och kvittot (TASK-279 + S108)
 
+## Förlagorna — var originalen ligger
+
+```text
+~/Desktop/Miranon Media/exempelpdokument/
+  bekräftelsebilaga-exempel.pdf      ← facit för bekraftelsebilaga.html
+  deltagarinformation-exempel.pdf    ← facit för deltagarinformation.html
+  2026-08-03 kvitto-forlaga.pdf      ← facit för kvitto.html
+```
+
+**Läs dem innan du ändrar en mall.** De är Lottas designade original, och de
+är enda facit för geometri, färger, typsnitt och INNEHÅLL — mallen ska se ut
+som förlagan, fast bättre.
+
+**"Fast bättre" är en riktig regel, inte artighet** (Marcus 2026-08-27): där
+förlagan bär ett handgjort fel — innehåll som sitter snett för att någon
+placerat en ruta för hand i PowerPoint — behåller vi vår raka version. Kopiera
+förlagans FORM och INNEHÅLL, inte dess slarvfel.
+
+**Mät, ögonmät inte.** `npm run mall:pdf -- <mall>` renderar vår version på
+~5 s; `pdftotext -bbox` på båda PDF:erna ger sektionernas mm-koordinater att
+jämföra rad för rad. `pdffonts` avslöjar vilka typsnitt som FAKTISKT bäddats
+in — det var så fallbacken nedan upptäcktes.
+
+**Varför raden finns:** sökvägen stod ingenstans i repot förrän 2026-08-27.
+README pekade på `~/Downloads/exempelpdokument/` — en katalog som inte fanns
+(bara en zip med kvitto- och parkeringsfiler). Följden blev att en session
+byggde en fixtur ur Airtable-basen i tron att den var komplett, missade sex
+agendapunkter och en storleksavvikelse i rubriken, och Marcus fick leta reda
+på mappen själv: *"Varför har du inte sparat ref till originalbilagorna
+någonstans... orkar inte."*
+
 HTML/CSS-mallar för de tre dokumenten `ADR-119` beslut 2 lade grunden för
 (HTML/CSS-driven rendering, extern motor senare). Bekräftelsebilagan och
 deltagarinformationen byggdes i TASK-279 (**mallarna och en granskningsväg**,
@@ -174,7 +205,7 @@ läsare av git-historiken ska se vad som påstods och varför det föll.
 ## Visuell jämförelse mot förlagorna (AC #4)
 
 Granskad skärm-mot-skärm (Playwright-screenshot av den renderade mallen
-mot `~/Downloads/exempelpdokument/*.pdf`, lästa sida för sida).
+mot `~/Desktop/Miranon Media/exempelpdokument/*.pdf` (se § Förlagorna nedan), lästa sida för sida).
 
 ### Bekräftelsebilagan — matchar
 
@@ -264,7 +295,7 @@ mot `~/Downloads/exempelpdokument/*.pdf`, lästa sida för sida).
 - **Sidfotens vänster/höger-etiketter i kortets Implementation Notes
   stämmer INTE med den faktiska förlagan.** Notes säger "nedre vänstra
   hörnet → miranon.se, nedre högra hörnet → instagram"; den faktiska
-  PDF:en (läst direkt, `~/Downloads/exempelpdokument/
+  PDF:en (läst direkt, `~/Desktop/Miranon Media/exempelpdokument/
   bekräftelsebilaga-exempel.pdf`) visar Instagram-rutan LÄNGST TILL
   VÄNSTER och globe/miranon.se-rutan LÄNGST TILL HÖGER — motsatt av vad
   notes beskriver. Mallen matchar den FAKTISKA bilden (Instagram vänster,
