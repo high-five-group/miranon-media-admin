@@ -55,6 +55,7 @@ import {
   type KvittoradSpec,
   MIRANON_ORG,
 } from './receipt-content.ts';
+import { fetMarkera } from './fet-markering.ts';
 
 /**
  * `DocumentSourcesResult` — den fulla ifyllnadsunderlags-formen
@@ -246,7 +247,11 @@ export function byggBekraftelseData(sources: DocumentSourcesResult): Bekraftelse
     : (beskrivningRaw as string)
         .split(/\n{2,}/)
         .map((stycke) => stycke.trim())
-        .filter((stycke) => stycke.length > 0);
+        .filter((stycke) => stycke.length > 0)
+        // Escapar OCH konverterar **fet** — se fet-markering.ts. Utdatan är
+        // därför färdig HTML och renderas med `<%~ %>` i mallen, till skillnad
+        // från alla andra fält.
+        .map(fetMarkera);
 
   const dagEttRows = sources.agenda.dag1.kopia ?? sources.agenda.dag1.standard;
   const dagTvaRows = sources.agenda.dag2.kopia ?? sources.agenda.dag2.standard;

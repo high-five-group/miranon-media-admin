@@ -57,10 +57,18 @@
       <p class="halsning">Varmt välkomna önskar Roger &amp; Lotta!</p>
     </div>
 
+    <!--
+      RÅ-rendering nedan är SÄKER HÄR OCH BARA HÄR: styckena har gått genom
+      fetMarkera() (supabase/functions/_shared/fet-markering.ts), som escapar
+      hela strängen och därefter återinför enbart strong-taggen. Varje ANNAT
+      fält i denna mall använder den escapande formen. Se filhuvudet där för
+      varför fetstilen behövs (förlagan har den) och varför den inte får
+      släppas igenom rått.
+    -->
     <% if (data.beskrivning.length > 0) { %>
     <div class="brodtext">
       <% for (const stycke of data.beskrivning) { %>
-      <p><%= stycke %></p>
+      <p><%~ stycke %></p>
       <% } %>
     </div>
     <% } %>
