@@ -29,6 +29,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect, test } from '@playwright/test';
 import { Eta } from 'eta';
+import { fetMarkera } from '../../supabase/functions/_shared/fet-markering';
 import { bekraftelsebilagaHtml } from '../../supabase/functions/_shared/mallar/bekraftelsebilaga.html';
 import { deltagarinformationHtml } from '../../supabase/functions/_shared/mallar/deltagarinformation.html';
 // [TASK-309.5] kvitto.html konverterades från `{{fältnamn}}`-strängersättning
@@ -111,13 +112,35 @@ test.describe('Escaping — Airtable-härledd fritext kan aldrig injicera HTML (
     expect(html).not.toContain(FARLIG_STRANG);
   });
 
-  test('bekraftelsebilaga.html: beskrivningsstycket escapeas', () => {
+  // BESKRIVNINGEN BYTTE SKYDDSMEKANISM 2026-08-27 (TASK-309.27), och testet
+  // med den. Förlagan har fetstilta ord i kursbeskrivningen; mallen hade dem
+  // hårdkodade som <strong> fram till TASK-309.4 gjorde stycket datadrivet,
+  // varefter de försvann tyst. Fixen kunde inte vara att släppa igenom rå
+  // HTML — i stället escapar `fetMarkera` (fet-markering.ts) HELA strängen
+  // och återinför DÄREFTER enbart <strong>. Mallen renderar därför stycket
+  // rått, och skyddet ligger ett steg tidigare.
+  //
+  // Testet nedan speglar den ordningen: rå indata rakt in i mallen är NU
+  // otvättad (det är sant, och därför bär mall-data.ts ansvaret), medan
+  // fetMarkera-utdata är säker. Enhetstesterna för själva funktionen —
+  // inklusive <script>, HTML inuti markeringar och dubbel-escaping — bor i
+  // mall-data.test.ts § fetMarkera.
+  test('bekraftelsebilaga.html: beskrivningsstycket renderas rått — skyddet ligger i fetMarkera', () => {
     const html = eta.renderString(bekraftelsebilagaHtml, {
       ...MINIMAL_BEKRAFTELSE_DATA,
-      beskrivning: [FARLIG_STRANG],
+      beskrivning: [fetMarkera(FARLIG_STRANG)],
     }) as string;
+    // Går texten genom fetMarkera först är resultatet escapat i markupen …
     expect(html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
     expect(html).not.toContain(FARLIG_STRANG);
+  });
+
+  test('bekraftelsebilaga.html: fetMarkera-utdata behåller <strong> genom mallen', () => {
+    const html = eta.renderString(bekraftelsebilagaHtml, {
+      ...MINIMAL_BEKRAFTELSE_DATA,
+      beskrivning: [fetMarkera('Boken **Utanför Verkligheten** ligger till grund')],
+    }) as string;
+    expect(html).toContain('Boken <strong>Utanför Verkligheten</strong> ligger till grund');
   });
 
   test('deltagarinformation.html: ämnesstyckets text escapeas', () => {

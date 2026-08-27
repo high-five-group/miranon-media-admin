@@ -19,7 +19,10 @@
 //   5. `serialiseraKanoniskt`/`berakaKallhash` — nyckelordning påverkar
 //      INTE hashen, olika data ger olika hash, samma data ger samma hash.
 
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { expect, test } from '@playwright/test';
+import { fetMarkera } from '../../supabase/functions/_shared/fet-markering';
 import {
   byggBekraftelseData,
   byggDeltagarinfoData,
@@ -344,4 +347,80 @@ test.describe('serialiseraKanoniskt / berakaKallhash (ADR-125 § 3)', () => {
     const h2 = await berakaKallhash({ x: 2 });
     expect(h1).not.toBe(h2);
   });
+});
+
+// ─────────────────────────────────────────────────────────────────────────
+// `fetMarkera` — säker **fet**-markering (2026-08-27, Marcus fångst att
+// fetstilen försvann i TASK-309.4). TVÅSIDIGT: att fetstilen KOMMER TILLBAKA
+// (positiv), och att inget ANNAT slinker igenom (negativ). Den andra halvan
+// är den viktiga — funktionens utdata renderas RÅTT i mallen (`<%~ %>`), så
+// en lucka här är en injektionsväg in i ett dokument som mailas till
+// deltagare.
+// ─────────────────────────────────────────────────────────────────────────
+
+test('fetMarkera: **text** blir <strong>, som i förlagan', () => {
+  expect(fetMarkera('Utbildningen **Resor i Medvetandet** ger dig insikt')).toBe(
+    'Utbildningen <strong>Resor i Medvetandet</strong> ger dig insikt',
+  );
+});
+
+test('fetMarkera: flera markeringar i samma stycke', () => {
+  expect(fetMarkera('**ett** mitten **två**')).toBe(
+    '<strong>ett</strong> mitten <strong>två</strong>',
+  );
+});
+
+test('fetMarkera: text utan markörer passerar oförändrad', () => {
+  expect(fetMarkera('helt vanlig text')).toBe('helt vanlig text');
+});
+
+test('fetMarkera: HTML i indata escapas — ingen tagg överlever', () => {
+  expect(fetMarkera('<script>alert(1)</script>')).toBe('&lt;script&gt;alert(1)&lt;/script&gt;');
+});
+
+test('fetMarkera: HTML INUTI en markering escapas också', () => {
+  expect(fetMarkera('**<img src=x onerror=alert(1)>**')).toBe(
+    '<strong>&lt;img src=x onerror=alert(1)&gt;</strong>',
+  );
+});
+
+test('fetMarkera: attribut-brytande tecken escapas', () => {
+  expect(fetMarkera(`"citat" & 'apostrof'`)).toBe('&quot;citat&quot; &amp; &#39;apostrof&#39;');
+});
+
+test('fetMarkera: & escapas FÖRE < och > — ingen dubbel-escaping', () => {
+  // Om ordningen vore omvänd skulle &lt; bli &amp;lt; och visas som text.
+  expect(fetMarkera('a & b < c')).toBe('a &amp; b &lt; c');
+});
+
+test('fetMarkera: oparad markör lämnas som literal text', () => {
+  expect(fetMarkera('detta ** är inte fet')).toBe('detta ** är inte fet');
+});
+
+test('fetMarkera: markering spänner INTE över radbrytning', () => {
+  // Ett asterisk-par över två rader är nästan alltid ett skrivfel — det ska
+  // synas, inte svälja resten av stycket i fetstil.
+  expect(fetMarkera('**start\nslut**')).toBe('**start\nslut**');
+});
+
+test('fetMarkera: tom markering (****) blir inte en tom tagg', () => {
+  expect(fetMarkera('****')).toBe('****');
+});
+
+test('fetMarkera: tomt fält ger tom sträng', () => {
+  expect(fetMarkera('')).toBe('');
+});
+
+test('fetMarkera: den lokala kopian i render-bilage-mall.mjs är i synk', () => {
+  // scripts/render-bilage-mall.mjs kan inte importera Deno-TypeScript och bär
+  // därför en kopia av mönstret. Glider de isär granskar man lokalt en ANNAN
+  // bilaga än den som skickas — den klassen av tyst divergens vaktas här.
+  const rot = process.cwd();
+  const kanonisk = readFileSync(join(rot, 'supabase/functions/_shared/fet-markering.ts'), 'utf8');
+  const lokal = readFileSync(join(rot, 'scripts/render-bilage-mall.mjs'), 'utf8');
+  // Den literala mönsterkällan, tecken för tecken. Skiljer sig strängarna åt
+  // renderar de två vägarna olika — exakt den divergens testet finns för.
+  const MONSTER_KALLA = String.raw`\*\*([^*\n]+?)\*\*`;
+  expect(kanonisk).toContain(MONSTER_KALLA);
+  expect(lokal).toContain(MONSTER_KALLA);
 });
