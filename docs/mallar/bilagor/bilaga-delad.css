@@ -113,6 +113,24 @@
    * en gång på #2019.
    */
   --mm-bilaga-sida-padding: 6.5mm;
+  /*
+   * INNEHÅLLSSKALAN — hur mycket brödtexten och innehållslistorna krymps för
+   * att bilagan ska rymmas på EN sida. 1 = orörd storlek.
+   *
+   * Sätts av renderaren, inte här: `renderaMallPdf` i _shared/mall-render.ts
+   * renderar först med 1, räknar sidorna i den returnerade PDF:en, och gör om
+   * anropet med en mindre skala om det blev fler än en. Se den filens
+   * § HÖJDANPASSNINGEN för trappan och golvet.
+   *
+   * VARFÖR DEN BEHÖVS: Marcus krav 2026-08-27 är "allt på en sida, punkt".
+   * Utan skalning gäller det bara så länge innehållet råkar rymmas — mätt
+   * gräns är ~1800 tecken beskrivning plus 16 agendapunkter. RIM 2, RIM 3,
+   * Fjärrskådning och Psionautics har ännu TOMMA standardtexter; när Roger
+   * och Lotta fyller dem vet ingen om de ryms. Skalningen gör "en sida" till
+   * en egenskap hos mallen i stället för till tur — samma sak Lotta gör för
+   * hand i PowerPoint när texten blir för lång.
+   */
+  --mm-bilaga-innehalls-skala: 1;
   --mm-bilaga-gront: #548235;
   --mm-bilaga-gult: #ffff00;
   --mm-bilaga-gra-ram: #d9d9d9;
@@ -623,3 +641,25 @@ body {
  * `npm run mall:pdf -- bekraftelsebilaga` som visar 1 sida, och kontrollera
  * med en LÅNG kursbeskrivning, inte bara standardfixturen.
  */
+
+/*
+ * Höjdanpassningens verkan. Bara brödtexten och innehållslistorna skalas —
+ * logga, rubrik, inforuta och sidfot behåller sin mätta storlek, eftersom de
+ * är de element som gör bilagan igenkännlig mot förlagan. Krympningen tas
+ * alltså ur löptexten, precis som en människa hade gjort.
+ *
+ * MÄTT (npm run mall:pdf, 2026-08-27) på ett fall 25 % större än RIM 1:s
+ * verkliga innehåll — 1829 tecken beskrivning + 20 agendapunkter:
+ *   skala 1,00 -> 2 sidor · 0,95 -> 2 · 0,90 -> 2 · 0,85 -> EN sida
+ * Marginalerna är i mm och skalar därför INTE med font-size; effekten är
+ * medvetet mindre än proportionell, och trappan i mall-render.ts är satt
+ * efter den mätningen, inte efter matematiken.
+ *
+ * Fallbacket i var() är avsiktligt: renderas mallen av något som INTE sätter
+ * variabeln (den lokala granskningsvägen, en framtida konsument) blir
+ * resultatet oskalat i stället för trasigt.
+ */
+.sida--bekraftelse .brodtext,
+.sida--bekraftelse .innehallslistor {
+  font-size: calc(1em * var(--mm-bilaga-innehalls-skala, 1));
+}

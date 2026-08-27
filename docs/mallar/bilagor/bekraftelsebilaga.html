@@ -25,7 +25,13 @@
 <link rel="stylesheet" href="./bilaga-delad.css" />
 </head>
 <body>
-<div class="sida sida--bekraftelse">
+<!--
+      Innehållsskalan sätts av renderaren (se _shared/mall-render.ts §
+      HÖJDANPASSNINGEN). Värdet är alltid ett tal ur en fast trappa i
+      koden — aldrig fritext — och faller till 1 när ingen skala anges,
+      vilket den lokala granskningsvägen inte gör.
+    -->
+    <div class="sida sida--bekraftelse" style="--mm-bilaga-innehalls-skala: <%= data.innehallsSkala ?? 1 %>">
   <div class="yttre-ram">
     <header class="loggarad">
       <img class="logga" src="../../../public/miranon-media-ordmarke-original.svg" alt="MiranonMedia" />

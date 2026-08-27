@@ -186,6 +186,15 @@ function gorSjalvbarande(ifylldHtml: string, css: string): string {
 // disciplin research-passet (§ Delfråga 4) kräver: `<%= %>` (aldrig
 // `<%~ %>`) på VARJE fält som ytterst härstammar från Airtable-fritext.
 // `varName: 'data'` matchar mallarnas egen `<%= data.x %>`-syntax.
+//
+// ETT UNDANTAG FINNS, och det är medvetet: bekräftelsebilagans
+// BESKRIVNINGSSTYCKE renderas med `<%~ %>`. Det är säkert därför att
+// `byggBekraftelseData` kört texten genom `fetMarkera`
+// (_shared/fet-markering.ts), som escapar HELA strängen och därefter
+// återinför enbart <strong>. Regeln ovan gäller alltså varje fält som når
+// mallen OTVÄTTAT — och kopplingen hålls av två tester i mall-data.test.ts
+// som fäller om `.map(fetMarkera)` någonsin försvinner. Läser du bara denna
+// fil ser regeln absolut ut; den är det inte längre (review-fynd, #2025).
 const eta = new Eta({ autoEscape: true, varName: 'data' });
 
 /** Fyller mallen med Eta och gör resultatet självbärande. Ren funktion,
@@ -260,7 +269,57 @@ export interface RenderaMallPdfOpts {
  * Renderar `mall` med `data` (Eta, autoEscape) → självbärande HTML →
  * DocRaptor → PDF-bytes. EN retry på 5xx/timeout, aldrig på 4xx.
  */
-export async function renderaMallPdf(
+/*
+ * ═══ HÖJDANPASSNINGEN (TASK-309.27, 2026-08-27) ═══
+ *
+ * Marcus krav: "Jag vill ha allt på en sida, punkt!" Bekräftelsebilagan rymde
+ * RIM 1:s verkliga innehåll efter att flexbox-buggen rättats, men bara så
+ * länge innehållet råkade få plats — mätt gräns ~1800 tecken beskrivning plus
+ * 16 agendapunkter. RIM 2, RIM 3, Fjärrskådning och Psionautics har ännu TOMMA
+ * standardtexter i båda baserna; när de fylls vet ingen om de ryms.
+ *
+ * Lösningen är den Lotta redan använder i PowerPoint: krymp texten tills den
+ * får plats. Prince kan inte göra det åt oss — DocRaptor exponerar inte
+ * Prince-objektet (`ReferenceError: Can't find variable: Prince`, mätt
+ * 2026-08-27), så den dokumenterade multi-pass-vägen med JS är stängd. I
+ * stället mäter vi UTFALLET: rendera, räkna sidorna, rendera om mindre.
+ *
+ * TRAPPAN är mätt, inte räknad. På ett fall 25 % större än RIM 1:s verkliga
+ * innehåll (1829 tecken + 20 punkter) gav 1,00 / 0,95 / 0,90 alla två sidor;
+ * 0,85 gav en. Stegen nedan har därför marginal mot den mätningen. Marginaler
+ * i mallen är satta i mm och skalar inte med font-size, vilket gör effekten
+ * mindre än proportionell — ännu ett skäl att mäta i stället för att räkna.
+ *
+ * GOLVET finns för att en oläslig bilaga är sämre än en tvåsidig. Når vi
+ * botten utan att rymmas skickas den tvåsidiga versionen, och raden loggas —
+ * det är signalen att någon behöver korta texten, inte något att dölja.
+ *
+ * KOSTNAD: normalfallet är OFÖRÄNDRAT, ett anrop. Bara innehåll som faktiskt
+ * spiller betalar extra anrop.
+ */
+const SKALTRAPPA = [1, 0.88, 0.8] as const;
+
+/**
+ * Antal sidor i en PDF, läst direkt ur strömmen.
+ *
+ * `/Type /Page` (utan `s`) förekommer en gång per sida och ligger utanför
+ * objektströmmarna även när Prince komprimerar resten — verifierat mot en
+ * faktisk DocRaptor-PDF 2026-08-27 (3 komprimerade `/ObjStm`, ändå läsbar
+ * sidräkning). Det gör att vi slipper ett PDF-bibliotek i EF-lagret.
+ *
+ * Returnerar `null` när strömmen inte går att tolka — anroparen behandlar det
+ * som "vet inte" och avstår från att skala om, hellre än att gissa.
+ */
+export function raknaSidor(pdf: Uint8Array): number | null {
+  const text = new TextDecoder('latin1').decode(pdf);
+  const viaCount = text.match(/\/Count\s+(\d+)/);
+  if (viaCount) return Number(viaCount[1]);
+  const sidor = text.match(/\/Type\s*\/Page[^s]/g);
+  return sidor ? sidor.length : null;
+}
+
+/** Ett DocRaptor-anrop med retry på 5xx/timeout — trappans enskilda steg. */
+async function renderaEttPass(
   mall: MallNamn,
   data: Record<string, unknown>,
   opts: RenderaMallPdfOpts,
@@ -272,4 +331,30 @@ export async function renderaMallPdf(
     if (!arRetrybart(error)) throw error;
     return await postaTillDocRaptor(opts.apiKey, html, opts.namn, opts.test);
   }
+}
+
+export async function renderaMallPdf(
+  mall: MallNamn,
+  data: Record<string, unknown>,
+  opts: RenderaMallPdfOpts,
+): Promise<Uint8Array> {
+  // Bara bekräftelsebilagan bär en-sida-kravet. Deltagarinformationen och
+  // kvittot får växa — deras förlagor gör det också.
+  if (mall !== 'bekraftelsebilaga') return await renderaEttPass(mall, data, opts);
+
+  let sistaPdf: Uint8Array | null = null;
+  for (const skala of SKALTRAPPA) {
+    const pdf = await renderaEttPass(mall, { ...data, innehallsSkala: skala }, opts);
+    sistaPdf = pdf;
+    const sidor = raknaSidor(pdf);
+    // `null` = strömmen gick inte att tolka. Skala inte om på en gissning.
+    if (sidor === null || sidor <= 1) return pdf;
+    console.log(
+      `[mall-render] ${opts.namn}: ${sidor} sidor vid skala ${skala}` +
+        (skala === SKALTRAPPA[SKALTRAPPA.length - 1]
+          ? ' — golvet nått, skickar ändå. Texten behöver kortas.'
+          : ' — renderar om mindre.'),
+    );
+  }
+  return sistaPdf as Uint8Array;
 }
