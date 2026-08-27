@@ -104,6 +104,15 @@
    * raden en gång för att den påstod fel källa (2026-08-27, PR #2019).
    */
   --mm-bilaga-sidfot-hojd: 36mm;
+  /*
+   * Bekräftelsebilagans symmetriska sid-padding. Namngiven av SAMMA skäl som
+   * raden ovan: värdet konsumeras på TVÅ ställen (.sida--bekraftelses padding
+   * och .yttre-rams min-height) och måste hållas i synk — ändras det ena utan
+   * det andra rivs en-sida-garantin tyst. Review-grinden fällde exakt den
+   * dupliceringen på PR #2020 (2026-08-27), samma buggklass som redan fällts
+   * en gång på #2019.
+   */
+  --mm-bilaga-sida-padding: 6.5mm;
   --mm-bilaga-gront: #548235;
   --mm-bilaga-gult: #ffff00;
   --mm-bilaga-gra-ram: #d9d9d9;
@@ -169,7 +178,10 @@ body {
    * handplacering i PowerPoint. Marcus fällde den vid prod-röktestet
    * 2026-08-26 ("den blåa ramen är inte helt centrerad på pappret").
    *
-   * VÄRDET 6,5 mm ÄR MÄTT MOT FÖRLAGAN, inte valt. Medelvärdet 7,89 mm
+   * VÄRDET 6,5 mm ÄR MÄTT MOT FÖRLAGAN, inte valt. Metod: `npm run mall:pdf`
+   * renderar via DocRaptor (samma Prince som skarp drift), och sektionernas
+   * mm-koordinater läses ur BÅDA PDF:erna med `pdftotext -bbox` — vår mot
+   * ~/Desktop/Miranon Media/exempelpdokument/bekräftelsebilaga-exempel.pdf. Medelvärdet 7,89 mm
    * (samma summa som förlagan) gav 2 sidor med RIM 1:s KOMPLETTA agenda —
    * 30 punkter, som originalbilagan faktiskt har. 6,5 mm symmetriskt ger
    * EN sida och lägger sektionerna inom 0,5 mm från originalets:
@@ -180,7 +192,7 @@ body {
    * utskriftsrisk. Ändra inte utan att köra `npm run mall:pdf` mot en
    * KOMPLETT agenda — standardfixturen är för kort för att fälla felet.
    */
-  padding: 6.5mm 8.1mm;
+  padding: var(--mm-bilaga-sida-padding) 8.1mm;
   /*
    * INTE `display: flex`. Se § PRINCE OCH FLEXBOX nedan — den yttre
    * flex-containern plus `.yttre-ram`s `flex: 1 1 auto` fick Prince att
@@ -237,7 +249,7 @@ body {
    * positionerad (se .sidfot) och därmed ligger utanför flödet.
    */
   padding: 2.92mm 14.79mm calc(2.92mm + var(--mm-bilaga-sidfot-hojd) + 1mm);
-  min-height: calc(297mm - 6.5mm - 6.5mm);
+  min-height: calc(297mm - var(--mm-bilaga-sida-padding) * 2);
   display: block;
   position: relative;
 }
