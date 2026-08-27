@@ -83,6 +83,13 @@ const KANDA_MALLAR = ['bekraftelsebilaga', 'deltagarinformation', 'kvitto'];
 
 const DOCRAPTOR_URL = 'https://api.docraptor.com/docs';
 const TIMEOUT_MS = 60_000;
+/*
+ * Även de lokala processanropen tidsbegränsas. Verktygets hela syfte är en
+ * TÄT slinga — ett anrop som hänger utan gräns motsäger det, och en hängning
+ * är inget felmeddelande (samma felklass som `supabase link` utan styrd
+ * stdin, se scripts/fas4-prod-deploy.sh). Fångad av review-grinden på #2019.
+ */
+const PROCESS_TIMEOUT_MS = 30_000;
 
 /** Maskerar nyckeln i valfri text. Anropas på ALLT som skrivs ut. */
 function maskera(text, nyckel) {
@@ -109,7 +116,13 @@ function larsArgv() {
 function fyllMall(mall, data) {
   const argv = [join(__dirname, 'render-bilage-mall.mjs'), mall];
   if (data) argv.push('--data', data);
-  const r = spawnSync(process.execPath, argv, { encoding: 'utf8' });
+  const r = spawnSync(process.execPath, argv, {
+    encoding: 'utf8',
+    timeout: PROCESS_TIMEOUT_MS,
+  });
+  if (r.error?.code === 'ETIMEDOUT') {
+    throw new Error(`render-bilage-mall.mjs svarade inte inom ${PROCESS_TIMEOUT_MS} ms`);
+  }
   if (r.status !== 0) {
     throw new Error(`render-bilage-mall.mjs föll (exit ${r.status}):\n${r.stderr || r.stdout}`);
   }
@@ -157,11 +170,17 @@ async function postaTillDocRaptor(html, namn, nyckel) {
  * eller ligger på kanten.
  */
 function matPdf(pdfPath) {
-  const info = spawnSync('pdfinfo', [pdfPath], { encoding: 'utf8' });
+  const info = spawnSync('pdfinfo', [pdfPath], {
+    encoding: 'utf8',
+    timeout: PROCESS_TIMEOUT_MS,
+  });
   const sidor = Number((info.stdout.match(/^Pages:\s+(\d+)/m) ?? [])[1] ?? 0);
   const sidhojdPt = Number((info.stdout.match(/^Page size:\s+[\d.]+ x ([\d.]+)/m) ?? [])[1] ?? 0);
 
-  const bbox = spawnSync('pdftotext', ['-bbox', pdfPath, '-'], { encoding: 'utf8' });
+  const bbox = spawnSync('pdftotext', ['-bbox', pdfPath, '-'], {
+    encoding: 'utf8',
+    timeout: PROCESS_TIMEOUT_MS,
+  });
   const sidor_ = [
     ...bbox.stdout.matchAll(/<page width="[\d.]+" height="([\d.]+)">([\s\S]*?)<\/page>/g),
   ];
@@ -223,7 +242,7 @@ async function kor({ mall, data, oppna, nyckel }) {
   );
   console.log(`   ${pdfPath}`);
 
-  if (oppna) spawnSync('open', [pdfPath]);
+  if (oppna) spawnSync('open', [pdfPath], { timeout: PROCESS_TIMEOUT_MS });
   return ok;
 }
 

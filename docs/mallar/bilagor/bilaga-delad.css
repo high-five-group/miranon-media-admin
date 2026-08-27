@@ -91,9 +91,18 @@
   --mm-bilaga-hyperlank: #0563c1;
   --mm-bilaga-accent-bla: #4472c4;
   --mm-bilaga-morkbla-ram: #2f5597;
-  /* Sidfotens ikonrutor: .ikonruta-ram är 36 mm hög. Namngiven här för att
-     .yttre-ram ska kunna reservera plats åt den absolut positionerade
-     sidfoten utan att talet dubbleras på två ställen. */
+  /*
+   * Sidfotens höjd = dess HÖGSTA barn. .sidfot har tre: .ikonruta-ram
+   * (31,5 mm, med .ikonruta-bildtext INUTI sig — inte staplad under) och
+   * .ikonruta-omslag (36 mm). Bokomslaget är alltså det som bestämmer, och
+   * 36 mm är hämtat DÄRIFRÅN — inte från ikonrutorna.
+   *
+   * Namngiven här för att .yttre-ram ska kunna reservera plats åt den
+   * absolut positionerade sidfoten utan att talet dubbleras. Ändras något av
+   * de två barnens höjd måste MAX-värdet räknas om här — det finns ingen
+   * CSS-mekanism som gör det åt oss, och review-grinden fällde just den här
+   * raden en gång för att den påstod fel källa (2026-08-27, PR #2019).
+   */
   --mm-bilaga-sidfot-hojd: 36mm;
   --mm-bilaga-gront: #548235;
   --mm-bilaga-gult: #ffff00;
