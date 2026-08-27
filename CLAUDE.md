@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-26
+updated: 2026-08-27
 review_by: 2026-11-15
 status: stable
 ---
@@ -36,6 +36,21 @@ Detta är en **React-konvertering** av det Vue-byggda systemet i `~/Repon/mirano
 - **Styrande dokument för byggandet:** `docs/byggplan.md`. Läs den innan varje fas. Avvik aldrig utan att uppdatera byggplanen först.
 - Research före implementation (princip: `~/.claude/CLAUDE.md` § Instruktioner, "Research först, bygg sedan"): kolla React Aria, TanStack, Radix, FK Designsystemet INNAN du designar en lösning. Branschledarnas mönster är golvet.
 - **Airtable-schema före write:** konsultera `docs/reference/data-model.md` (fält-skrivbarhet, formel/rollup-fält, §Kända fällor, write-fält-IDs) INNAN du designar någon Airtable-fält-operation. Anta aldrig fält-form — verifiera mot referensen eller live via Code. Gäller vid Code:s fält-operations-design och utförande.
+- **Bilagemallarnas FÖRLAGOR ligger utanför repot** —
+  `~/Desktop/Miranon Media/exempelpdokument/` (`bekräftelsebilaga-exempel.pdf`,
+  `deltagarinformation-exempel.pdf`, `2026-08-03 kvitto-forlaga.pdf`). De är
+  Lottas designade original och enda facit för geometri, färger, typsnitt och
+  INNEHÅLL. Läs dem FÖRE varje mall-ändring; mät med `npm run mall:pdf` +
+  `pdftotext -bbox` + `pdffonts`, ögonmät aldrig. Regeln är "som förlagan, fast
+  bättre": där förlagan bär ett handgjort fel (innehåll som sitter snett efter
+  handplacering i PowerPoint) behåller vi vår raka version — kopiera formen och
+  innehållet, inte slarvfelen. **Varför raden står här:** sökvägen fanns
+  ingenstans i repot förrän 2026-08-27, och README pekade på en katalog under
+  `~/Downloads/` som inte existerade. Följden blev en fixtur byggd ur
+  Airtable-basen i tron att den var komplett — sex agendapunkter och en
+  rubrik-avvikelse missades, och Marcus fick leta reda på mappen själv. Full
+  mekanik: [`docs/mallar/bilagor/README.md`](docs/mallar/bilagor/README.md)
+  § Förlagorna.
 - **Prod-basens UI-/automations-lager (historisk karta):** [`docs/reference/schema_reference.md`](docs/reference/schema_reference.md) — interfaces, vyer, formulär, Zapier/Make och automationerna A1–A11 med skriptkod; frusen ögonblicksbild mars 2026, kopierad ur frysta Vue-repot 2026-08-01. För fält-data är `data-model.md` auktoritativ.
 - **Airtable-plattformens väggar:** `docs/reference/airtable-constraints.md` är den auktoritativa katalogen över vad Airtable strukturellt INTE kan (30 poster, A–G), var och en med `v1-kompensation` + `Fas E-krav` — den är därmed också migrations-kravspecen. Konsultera INNAN arkitektur-, test- eller CI-design som rör datakällan, och anta aldrig att en vägg är vår egen design. Vad valet kostar i testbarhet: [ADR-063](docs/decisions/ADR-063-airtable-bas-som-forstklassig-leverabel.md) § S91-not.
 - **Samarbetssystemets mekanik:** hur vårt Code/Marcus-system fungerar och sitter ihop bor i hubbens `SYSTEMET.md` (`marcus-system/SYSTEMET.md`) — den navigerbara mekanik-kartan (roller, hub/spoke, plugin/skills, governing/CI, lifecycle, tråd/backlog-substrat, MCP, distribution). Spoke-pekare: [`docs/reference/systemet.md`](docs/reference/systemet.md). Slå upp on-demand när du behöver systemets mekanik; läs inte in den i förväg.
