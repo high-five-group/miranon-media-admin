@@ -177,6 +177,32 @@ test.describe('byggBekraftelseData', () => {
     expect(data.beskrivning).toEqual([]);
   });
 
+  // ── Att byggBekraftelseData FAKTISKT kör fetMarkera ────────────────────
+  //
+  // Review-fynd på PR #2025: fetMarkera var enhetstestad isolerat, och
+  // mall-render.test.ts matade FÖRBEHANDLAD data in i mallen — men INGET test
+  // höll produktionsfunktionen till sitt ansvar. En refaktor som tog bort
+  // `.map(fetMarkera)` hade passerat hela sviten grönt och öppnat en levande
+  // injektionsväg, eftersom mallen renderar beskrivningen rått (`<%~ %>`).
+  //
+  // Dessa två testar den kopplingen, inte funktionen i sig.
+
+  test('byggBekraftelseData escapar beskrivningen — HTML från Airtable kan aldrig nå mallen rå', () => {
+    const data = byggBekraftelseData(
+      fixtureSources({ beskrivning: tomKopia('<script>alert(1)</script>') }),
+    );
+    expect(data.beskrivning).toEqual(['&lt;script&gt;alert(1)&lt;/script&gt;']);
+  });
+
+  test('byggBekraftelseData konverterar **fet** till <strong>', () => {
+    const data = byggBekraftelseData(
+      fixtureSources({ beskrivning: tomKopia('Boken **Utanför Verkligheten** ligger till grund') }),
+    );
+    expect(data.beskrivning).toEqual([
+      'Boken <strong>Utanför Verkligheten</strong> ligger till grund',
+    ]);
+  });
+
   test('agendans KOPIA vinner över standarden när eventet har en egen agenda', () => {
     const data = byggBekraftelseData(
       fixtureSources(
@@ -423,4 +449,26 @@ test('fetMarkera: den lokala kopian i render-bilage-mall.mjs är i synk', () => 
   const MONSTER_KALLA = String.raw`\*\*([^*\n]+?)\*\*`;
   expect(kanonisk).toContain(MONSTER_KALLA);
   expect(lokal).toContain(MONSTER_KALLA);
+
+  // Review-fynd på #2025: bold-regexet ensamt räckte inte. En ändring som rör
+  // vid ESCAPING-stegen i bara den ena filen — en borttagen rad, en kastad
+  // ordning — hade passerat obemärkt, trots att det är just escapingen som
+  // gör rå-renderingen säker. Alla fem stegen och deras ORDNING jämförs nu.
+  const ESCAPE_STEG = [
+    String.raw`.replace(/&/g, '&amp;')`,
+    String.raw`.replace(/</g, '&lt;')`,
+    String.raw`.replace(/>/g, '&gt;')`,
+    String.raw`.replace(/"/g, '&quot;')`,
+    String.raw`.replace(/'/g, '&#39;')`,
+  ];
+  for (const steg of ESCAPE_STEG) {
+    expect(kanonisk).toContain(steg);
+    expect(lokal).toContain(steg);
+  }
+  // Ordningen är säkerhetskritisk: & måste escapas FÖRST, annars blir &lt;
+  // till &amp;lt; och visas som text i stället för att skydda.
+  const index = (fil: string) => ESCAPE_STEG.map((steg) => fil.indexOf(steg));
+  for (const positioner of [index(kanonisk), index(lokal)]) {
+    expect(positioner).toEqual([...positioner].sort((a, b) => a - b));
+  }
 });
