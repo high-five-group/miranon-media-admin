@@ -492,10 +492,15 @@ Plats härledd ur Ort) · `#2040` (`309.26`, popup-bevis i äkta Chrome) · `#20
 fix införde ett nytt error, felmeddelandet nollställdes inte vid platsbyte; nu
 rättat och pushat som `0fcfc4c8` men OGRANSKAT — runda 3 kräver Marcus GO) och
 `#2060` (stängningsbatch 2, `445ee651`) under granskning.
-**PROD tog tre försök:** Cloudflare
-520 vid funktion 26/45 → `!`-kanalens 2-minuterstak SIGKILL:ade processen vid
-5/45 och lämnade katalogen sticky länkad mot PROD (EXIT-trapen kör inte vid
-SIGKILL) → eget terminalfönster, 45 EF `UPDATED_AT` 04:06–04:17Z. `CLAUDE.md`
+**PROD tog tre försök, och de TVÅ första gick
+båda via `!`-kanalen med OLIKA utfall vid tvåminuterstaket:** (1) harnesset
+flyttade körningen till BAKGRUNDEN (*"moved to the background"*), den fortsatte
+och föll på Cloudflare 520 vid funktion 26/45 — skriptet avbröt korrekt och
+återlänkade staging själv; (2) omkörningen DÖDADES i stället (*"Command timed
+out after 2m 0s"*) vid ~5/45 (`get-event-formats`), EXIT-trapen kördes aldrig
+och katalogen stod sticky länkad mot PROD i ~10 min; (3) eget terminalfönster,
+45 EF `UPDATED_AT` 04:06–04:17Z. Poängen: kanalens beteende vid taket är INTE
+förutsägbart. `CLAUDE.md`
 § Prod-EF-deploy nu skärpt PER LÄGE (`--kontrollera` via `!` OK, `--deploya`
 aldrig) med rivningen bokförd — granskaren på `#2060` fällde den första,
 motsägande formuleringen; preflight-fyndet är `TASK-337`.
