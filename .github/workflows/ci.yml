@@ -2100,12 +2100,18 @@ jobs:
       # PR kö-grenen namnger. Minsta grant utöver contents:read.
       pull-requests: read
     steps:
+      # INGEN `fetch-depth:`-nyckel här — MEDVETET, och raden står kvar för att
+      # nästa läsare inte ska "rätta" tillbaka den. `scripts/check-fetch-depth-
+      # invariant.sh` (ADR-039-grinden i lint-jobbet) kräver EXAKT TRE
+      # fetch-depth-bärare i denna fil (changed/lint/docs), alla med SAMMA
+      # värde. En fjärde bärare fäller grinden oavsett vilket värde den bär —
+      # mätt skarpt 2026-08-28 på detta jobbs första CI-körning (`fetch-depth:
+      # 1` gav "hittade 4 fetch-depth-config-rader (förväntat 3)"). Och jobbet
+      # BEHÖVER ingen historik: det läser två skript ur arbetsträdet och hämtar
+      # allt annat via `gh`. Checkoutens default (djup 1) är alltså både rätt
+      # för jobbet och det enda som håller invarianten.
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
-        with:
-          # fetch-depth: 1 räcker — jobbet läser bara skript ur arbetsträdet
-          # och hämtar allt annat via gh. Ingen git-historik konsulteras.
-          fetch-depth: 1
 
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
