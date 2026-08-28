@@ -8,8 +8,8 @@ status: draft
 # `barn:`-fältet — designbeslut för tråd↔kort/tråd-relationen (Code, 2026-08-04)
 
 > **Proveniens:** `T119` § carry-blockets rad *"Trådstatus-färskheten (b):s klass 2 —
-> BLOCKERAD med känt skäl"* ([`tasks/sessions/2026-08-04-session-97.md:745-751`](../../tasks/sessions/2026-08-04-session-97.md)),
-> som i sin tur pekar till [`Del 4 § Avvikelse 4`](../../tasks/sessions/2026-08-04-session-97.md#L615-L637)
+> BLOCKERAD med känt skäl"* ([`tasks/sessions/archive/2026-08/2026-08-04-session-97.md:745-751`](../../tasks/sessions/archive/2026-08/2026-08-04-session-97.md)),
+> som i sin tur pekar till [`Del 4 § Avvikelse 4`](../../tasks/sessions/archive/2026-08/2026-08-04-session-97.md#L615-L637)
 > (rad 615–637) — det mätta negativa svaret att en färskhets-grind inte kan
 > byggas korrekt förrän barn-relationen själv är mekaniserad.
 

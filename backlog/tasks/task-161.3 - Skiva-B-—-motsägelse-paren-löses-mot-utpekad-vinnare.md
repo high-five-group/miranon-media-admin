@@ -38,7 +38,7 @@ ordinal: 293000
 PREMISS-DIVERGENS (ADR-086), bokförd öppet: uppdragets "Explore-kartan" (S99
 uppdrag 9-passets fil:rad-facit för de elva Ö-paren) existerar INTE som fil på
 disk — uttömmande sökning (grep across docs/, tasks/, backlog/) gav noll
-träffar, och tasks/sessions/2026-08-07-session-99.md § Del 10 är en narrativ
+träffar, och tasks/sessions/archive/2026-08/2026-08-07-session-99.md § Del 10 är en narrativ
 SAMMANFATTNING utan fil:rad-detaljer, inte kartan själv. Byggd endast på de 4
 explicit specade paren i AC #1 + en egen forensisk skanning (grep +
 general-purpose-agent, konservativ/hög-precision) mot ADR-100:s domäntabell

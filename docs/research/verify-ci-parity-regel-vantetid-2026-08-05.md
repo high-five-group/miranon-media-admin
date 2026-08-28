@@ -55,7 +55,7 @@ ovan. Detta är en strukturell skillnad, inte en gissning — se
    diff-klassning (`TASK-142`) — importerad direkt ur skriptet, aldrig
    återimplementerad.
 2. **Tidsdata:** verktygens egna uppmätta väggklocka-tider, källmärkta mot
-   primärkälla (`tasks/sessions/2026-08-05-session-98.md`), inte mot
+   primärkälla (`tasks/sessions/archive/2026-08/2026-08-05-session-98.md`), inte mot
    uppdragstexten allena.
 3. **Röd-PR-kostnad:** `scripts/ci-metrics.mjs` (redan i repot, redan byggt
    för detta) återanvänd, inte omätt för hand.
@@ -65,9 +65,9 @@ ovan. Detta är en strukturell skillnad, inte en gissning — se
 | Premiss i uppdraget | Prövad mot | Utfall |
 |---|---|---|
 | `main` vid `031124a9` | `git log -1 --oneline` i worktreen, `git fetch` + jämförelse mot `origin/main` | **BEKRÄFTAD**, ingen divergens — worktreen skapades ur exakt denna commit, `main`/`origin/main` identiska |
-| `check:docs` 172 s · `verify:ci-parity` docs-only 332,7 s · kod-diff 910,7 s · CI parallell 401 s | `tasks/sessions/2026-08-05-session-98.md:190–195` (skriven vid Del 2:s stängning, samma dag) + `docs/research/ci-parity-lokal-trigger-branschmonster-2026-08-05.md` (oberoende research-pass samma dag, citerar samma 401 s-CI-mätning via `gh run view 30983879673`) | **BEKRÄFTAD mot skriftlig primärkälla** för 332,7/910,7/401 s (ordagrant identiska tal på två oberoende ställen). `check:docs`-talet 172 s saknade en skriftlig primärkälla i repot — **jag körde om det själv** (se nedan): 180 s, samma maskin, samma dag. Skillnaden (4,7 %) ligger inom normal last-variation (samma princip som `metrics:flake`-riggens loadavg-disciplin) och räknas som korroborerande, inte motsägande. |
+| `check:docs` 172 s · `verify:ci-parity` docs-only 332,7 s · kod-diff 910,7 s · CI parallell 401 s | `tasks/sessions/archive/2026-08/2026-08-05-session-98.md:190–195` (skriven vid Del 2:s stängning, samma dag) + `docs/research/ci-parity-lokal-trigger-branschmonster-2026-08-05.md` (oberoende research-pass samma dag, citerar samma 401 s-CI-mätning via `gh run view 30983879673`) | **BEKRÄFTAD mot skriftlig primärkälla** för 332,7/910,7/401 s (ordagrant identiska tal på två oberoende ställen). `check:docs`-talet 172 s saknade en skriftlig primärkälla i repot — **jag körde om det själv** (se nedan): 180 s, samma maskin, samma dag. Skillnaden (4,7 %) ligger inom normal last-variation (samma princip som `metrics:flake`-riggens loadavg-disciplin) och räknas som korroborerande, inte motsägande. |
 | "Jag körde `verify:ci-parity` fyra gånger (641,0 + 824,8 + 910,7 + 332,7 s)" | Samma primärkälla, tabellen på rad 190–195 | **BEKRÄFTAD** — exakt samma fyra tal står i sessionsdoket, i samma ordning (två "Före klassningen"-körningar, en docs-only-efter, en kod-diff-efter). |
-| "`check:docs` flera gånger" (utan exakt antal) | Sökt i `tasks/sessions/2026-08-05-session-98.md` (204 rader, hela filen läst) | **INTE BELAGD** — ingen körlogg med exakt antal hittades. Behandlas som HYPOTES och redovisas som ett spann, inte ett tal, i § Dagens session. |
+| "`check:docs` flera gånger" (utan exakt antal) | Sökt i `tasks/sessions/archive/2026-08/2026-08-05-session-98.md` (204 rader, hela filen läst) | **INTE BELAGD** — ingen körlogg med exakt antal hittades. Behandlas som HYPOTES och redovisas som ett spann, inte ett tal, i § Dagens session. |
 | `scripts/verify-ci-parity.mjs` bär D0-glob-logiken CI:s `changed`-jobb använder (`should_skip_tests`) | Läst filen i sin helhet (906 rader) — `parseraD0Glob` + `klassificeraDiff`, exporterade, härleder mönstret ur `ci.yml`:s `changed-files`-steg vid varje körning | **BEKRÄFTAD** — importerade funktionerna direkt (ingen omimplementering) för den historiska klassningen nedan |
 | `scripts/ci-metrics.mjs` har PR-ledtid, röd-orsak, flaky-data redan byggt | Körde `npm run metrics:ci -- --limit 100 --json` | **BEKRÄFTAD** — se § Vad väntetiden köper |
 | `docs/BUILD-LOG.md` bär commit-range per session | Läst samtliga 15 senaste sessions-poster (rad 2868–3166) | **BEKRÄFTAD, men med en viktig nyans** — se § Sessionsprofilen, "En delad upptäckt" |
@@ -244,7 +244,7 @@ i detta pass (se § Vad jag inte kunde belägga).
 
 ### Vad som faktiskt gjordes
 
-Källa: `tasks/sessions/2026-08-05-session-98.md` rad 190–195 (skriven av
+Källa: `tasks/sessions/archive/2026-08/2026-08-05-session-98.md` rad 190–195 (skriven av
 sessionens eget arbete, samma dag).
 
 | Post | Värde | Källa |

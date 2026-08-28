@@ -679,7 +679,7 @@ sinsemellan.
 - [`tasks/threads/T112-vackningskedjan-over-turgransen.md`](../../tasks/threads/T112-vackningskedjan-over-turgransen.md) — § Mätt, § Åtgärdsriktningar (iv), § Ny instans 2026-08-02
 - [`docs/research/obevakade-tillstand-vaktens-form-2026-07-30.md`](obevakade-tillstand-vaktens-form-2026-07-30.md) — metodförebild (sex lokala harness-mätningar mot faktisk binär)
 - [`docs/research/subagent-parkering-handoff-kontrakt-2026-08-05.md`](subagent-parkering-handoff-kontrakt-2026-08-05.md) § 1.1 — harness-fakta om notifikationsvägar, `Monitor`-luckan
-- `tasks/sessions/2026-08-07-session-99.md` § Del 2 — grillad samsyn, mätningens form
+- `tasks/sessions/archive/2026-08/2026-08-07-session-99.md` § Del 2 — grillad samsyn, mätningens form
 - [`docs/research/s83-transkriptgranskning-2026-07-24.md`](s83-transkriptgranskning-2026-07-24.md) — sessions-JSONL-sökvägskonvention
 - [`docs/research/harness-namnrymd-agenter-2026-07-30.md`](harness-namnrymd-agenter-2026-07-30.md) — scratchpad-namngivningsrisken protokollets markörfil-namn undviker
 - `docs/decisions/ADR-086-uppdragets-premisser-provas-av-mottagaren.md` — premiss-passets mandat
@@ -690,5 +690,5 @@ sinsemellan.
 - `backlog/tasks/task-160` — PRD: Compact-formen, § Implementationsbeslut (PreCompact-grindens trigger-kontrakt, markörfilens krav, robusthetsantagandet) och användarberättelse 9
 - `backlog/tasks/task-160.2` — Skiva: PreCompact-grinden — deny-familjen (AC#2: trigger auto/manual-kontraktet cellerna mäter mot)
 - `backlog/tasks/task-160.3` — Skiva: pre-compact-skillen i hub-pluginet (AC#1: säkra-läget-i-fil-kontraktet cellerna justerar)
-- `tasks/sessions/2026-08-07-session-99.md` § Del 9 — grillningens källbelägg för bakgrundstask-överlevnad som HYPOTES (guide-agent-pass 2026-08-07: fokus-instruktioner, PreCompact block-men-ej-inject, `source: "compact"`, tröskel-variabeln)
+- `tasks/sessions/archive/2026-08/2026-08-07-session-99.md` § Del 9 — grillningens källbelägg för bakgrundstask-överlevnad som HYPOTES (guide-agent-pass 2026-08-07: fokus-instruktioner, PreCompact block-men-ej-inject, `source: "compact"`, tröskel-variabeln)
 - `docs/decisions/ADR-096-subagentens-vantekontrakt.md` — Activity/Workflow-distinktionen, `T108`/`T112`-referensen i Cell 8:s edge-triggered-utfall

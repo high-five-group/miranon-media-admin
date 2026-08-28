@@ -50,7 +50,7 @@ Registrerad öppen fråga (ADR-053-triage: blockerar ej, värdefull — defer): 
 github.com/resend/resend-mcp @ 037c9b15f00ef4aafe3361ab3c7617ec900bd02a, src/tools/*.ts — samtliga registerTool(...)-anrop läst i sin helhet (17 filer, ~90 verktyg).
 code.claude.com/docs/en/hooks.md — exit-kod-kontrakt, matcher-syntax.
 code.claude.com/docs/en/permissions.md — deny-regler accepterar glob i verktygsnamn; connector-verktyg heter mcp__claude_ai_<server>__<tool>.
-tasks/sessions/2026-08-02-session-96.md Del 10 — Marcus-GO-citatet.
+tasks/sessions/archive/2026-08/2026-08-02-session-96.md Del 10 — Marcus-GO-citatet.
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Definition of Done

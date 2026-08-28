@@ -71,7 +71,7 @@ egen storlek, inte av en extern milstolpe.
    `.purge-staging-policy.json`s targets aldrig stod inskrivna i en ADR.
 
    **Startvärdet är N ≈ 10** — den samsyn som grillades i S99 Del 5
-   (`tasks/sessions/2026-08-07-session-99.md` § Del 5, 2026-08-07). Talet är
+   (`tasks/sessions/archive/2026-08/2026-08-07-session-99.md` § Del 5, 2026-08-07). Talet är
    ett startvärde, inte en helig konstant: det omprövas mot uppmätt
    rotstorlek och faktisk sessionstakt utan att kräva en ny ADR — bara en
    konfig-ändring. Denna ADR fastslår REGELN (rullande fönster + vad som
