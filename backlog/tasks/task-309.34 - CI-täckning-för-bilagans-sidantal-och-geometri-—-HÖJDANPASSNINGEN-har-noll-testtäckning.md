@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-28 02:59'
+updated_date: '2026-08-28 03:48'
 labels:
   - ready-for-agent
 dependencies: []
@@ -25,8 +26,20 @@ FAKTA (källmärkta, verifierade 2026-08-28):
 - `DOCRAPTOR_API_KEY` förekommer INTE i `.github/workflows/`
   (`grep -rn DOCRAPTOR_API_KEY .github/workflows/` → inga träffar) — ingen
   CI-grind renderar bilagan i dag.
-- Review-agenten flaggade avsaknaden två gånger: PR #2020 och PR #2028
-  (läs respektive PR-kropps Riskbedömnings-sektion för exakt ordalydelse).
+- RÄTTELSE (2026-08-28, review-runda 1 på PR #2036, ADR-086): kortets
+  ursprungliga FAKTA-lista påstod "Review-agenten flaggade avsaknaden två
+  gånger: PR #2020 och PR #2028". Det var FALSKT — påståendet kom obelagt ur
+  uppdragshandoffen och prövades aldrig innan det skrevs. Verifierat:
+  `gh pr view 2020 --json body,reviews,comments` och samma för 2028 ger
+  `comments: []`, `reviews: []`, och ingen av kropparna innehåller strängen
+  "review-grinden" eller "Riskbedömning"
+  (`gh pr view 2020 --json body --jq '.body | test("review-grinden")'` →
+  `false`; samma för 2028). Den enda dokumenterade granskningen kopplad till
+  #2020 (citerad i #2024:s kropp) gällde sid-padding/mätmetod, inte
+  testtäckning — och SKALTRAPPA/raknaSidor fanns inte ens vid tidpunkten för
+  #2020 (den funktionen landade först i #2028). Testtäckningsluckan är
+  alltså mätt av en agent (grep-resultaten ovan), inte flaggad av
+  review-grinden.
 
 GÖR — TVÅ SKIVOR:
 
@@ -66,3 +79,31 @@ för den logik PR #2028 redan landade.
 - [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+KÄLL-ATTRIBUTIONEN RÄTTAD 2026-08-28 (review-runda 1 på PR #2036, ADR-086).
+
+Ursprunglig FAKTA-rad påstod "Review-agenten flaggade avsaknaden två gånger:
+PR #2020 och PR #2028" — obelagt påstående ur uppdragshandoffen, aldrig
+prövat innan det skrevs i kortet. Granskaren i review-runda 1 falsifierade
+det och orkestreraren beordrade rättelse. Egen verifiering, körd innan
+denna redigering:
+
+- `gh pr view 2020 --json body,reviews,comments` → `reviews: []`,
+  `comments: []`
+- `gh pr view 2028 --json body,reviews,comments` → `reviews: []`,
+  `comments: []`
+- `gh pr view 2020 --json body --jq '.body | test("review-grinden")'` →
+  `false`
+- `gh pr view 2028 --json body --jq '.body | test("review-grinden")'` →
+  `false`
+- Ingen av kropparna innehåller "Riskbedömning" heller (grep, tomt resultat
+  båda gångerna).
+
+Slutsats: ingen Riskbedömnings-sektion existerar i #2020 eller #2028 —
+review-grinden granskade aldrig dessa PR:er. Sakbehovet (testtäckningsluckan)
+kvarstår oförändrat, källmärkt direkt via grep i stället för via ett
+obelagt review-påstående.
+<!-- SECTION:NOTES:END -->
