@@ -4,7 +4,7 @@ title: 'Skiva: CI-backstoppen'
 status: To Do
 assignee: []
 created_date: '2026-08-09 13:14'
-updated_date: '2026-08-28 04:16'
+updated_date: '2026-08-28 04:39'
 labels:
   - ready-for-agent
 dependencies:
@@ -64,4 +64,8 @@ BEVIS SOM FAKTISKT TOGS (2026-08-28, PR #2049, commit 68831622):
 - Mutationsbevis (sviten fäller när logiken bryts): STALE-kontrollen bortkopplad → 3 röda; PR-nummer-kontrollen → 2 röda; merge_group-regexen uppluckrad → 1 röd; CLI:ts exitkod låst till 0 → 3 röda.
 
 STOPPA-PUNKT för orkestreraren: AC #1 och #2 är INTE bockade. Verdikt-logiken är CI-bevisad i båda riktningar (ovan), men själva JOBBETS fällning på merge_group-ytan och gate-proof-workflowens run-ID kan strukturellt inte tas före landning — mätt: 'gh workflow run review-backstopp-proof.yml --ref <gren>' ger HTTP 404 'not found on the default branch'. Bocka #1/#2 efter merge, med run-ID från de två dispatch-kommandona i föregående not.
+
+SLUTLIG CI (commit eb6c9ac1, PR #2049): run 33141365973 :: SUCCESS, 'CI Passed or Skipped' :: success. Alla jobb gröna; 'Review-backstopp (granskningsutlåtande)' :: skipped på PR-ytan som designat.
+
+FYND UTANFÖR SCOPE (ADR-053: blockerade tillfälligt, löstes utan åtgärd — registreras, förkastas inte): 'Test suite / Acceptance (hermetisk)' föll i första körningen av 33141365973 på tests/acceptance/dokument-lista-hojdlas.acceptance.test.ts:535 — 'strict mode violation: getByText("Delad 5.pdf") resolved to 2 elements' i alla tre försök (initial + 2 retries). Ingen koppling till detta korts diff (noll src/, noll tests/acceptance). Acceptance var GRÖN på samma bas i post-merge-körning 33140227702 (55d83d0d). 'gh run rerun --failed' på identiskt träd gav SUCCESS ⇒ klassad som FLAKE, inte regression. Kandidat för npm run metrics:flake om den återkommer; testet kom med TASK-309.24 (commits 0ce587d5/b8e0f59b/62c71a3c).
 <!-- SECTION:NOTES:END -->
