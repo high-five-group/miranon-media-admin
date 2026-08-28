@@ -384,12 +384,31 @@ jobs:
       # (avgör om revert-förslaget ska bära `-m 1` eller inte).
       contents: read
       issues: write
-      # actions: read — `gh run list` mot körnings-API:t för föregående
-      # post-merge-körnings utfall. Ospecificerade permissions sätts till none,
-      # så utan grantet får anropet 403 (samma fälla som TASK-51 fann i
-      # nightly.yml:s larm-jobb).
+      # actions: read — `gh run list` + `gh run view` mot körnings-API:t för
+      # attributionen (se scripts/post-merge-attribution.sh). Ospecificerade
+      # permissions sätts till none, så utan grantet får anropen 403 (samma
+      # fälla som TASK-51 fann i nightly.yml:s larm-jobb).
       actions: read
     steps:
+      # CHECKOUT — NY MED TASK-334, och kostnaden är öppet bokförd.
+      # Jobbet gjorde tidigare INGEN checkout: hela larmet låg inline i
+      # steget nedan. Attributionen flyttade ut i ett skript (den måste
+      # kunna prövas tvåsidigt, och inline-bash i YAML kan den inte),
+      # och skriptet måste finnas på disk för att kunna köras.
+      #
+      # Priset är en NY felkälla i larm-kedjan: en fallerad checkout dödar
+      # larmet, vilket den inline-formen strukturellt inte kunde. Motvikten
+      # är att skriptet självt ALDRIG returnerar annat än 0 (se dess
+      # § FAIL-SOFT) — nettot är färre tysta felaktiga påståenden mot en
+      # marginellt större yta för hårt fel. Medvetet val, inte förbiseende.
+      #
+      # SHA-pin: se ci.yml:s FÖRSTA Checkout-steg (jobbet `changed`) för
+      # hela rationalen (TASK-312, 2026-08-24). Ingen fetch-depth-rad:
+      # skriptet utför noll git-operationer (ADR-039, samma skäl som
+      # `klassning`-jobbet ovan).
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
       - name: Skapa tilldelat ärende med revert-förslag
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -408,27 +427,33 @@ jobs:
           # --- (a) Vilka jobb föll ------------------------------------------
           roda=$(jq -r '[to_entries[] | select(.value.result == "failure" or .value.result == "cancelled") | "\(.key) (\(.value.result))"] | join(", ")' <<<"${NEEDS}")
 
-          # --- (b) Föregående post-merge-körning på main --------------------
-          # Exit-koden fångas SEPARAT från resultatet. Formen `$(gh … || echo "")`
-          # kollapsar "anropet gick fel" och "det finns inget svar" till samma
-          # tomma sträng, och då byggs ett faktapåstående på frånvaro av data
-          # (TASK-51, L322-klassen). --repo är OBLIGATORISK: jobbet gör ingen
-          # checkout, så gh kan inte härleda repot ur en git-remote.
-          gh_failed=""
-          forra=$(gh run list --repo "${REPO}" \
-            --workflow post-merge.yml --branch main --event push \
-            --limit 2 --json conclusion,databaseId \
-            --jq "[.[] | select(.databaseId != ${RUN_ID})][0].conclusion // \"\"") || gh_failed="1"
-
-          if [ -n "${gh_failed}" ]; then
-            historik="**OKÄND** — anropet mot körnings-API:t misslyckades. Detta är inte ett påstående om historiken; kontrollera att larm-jobbet har \`actions: read\`."
-          elif [ -z "${forra}" ]; then
-            historik="**Ingen tidigare post-merge-körning** på main — det här är den första. Ingen jämförelse att göra."
-          elif [ "${forra}" = "success" ]; then
-            historik="Föregående post-merge-körning var **GRÖN** ⇒ den här landningen är den primära misstänkta. Revert nedan är sannolikt rätt första åtgärd."
-          else
-            historik="Föregående post-merge-körning var **\`${forra}\`** ⇒ felet är sannolikt ÄLDRE än den här landningen. **Revertera inte reflexmässigt** — leta upp den första röda körningen först, annars backas fel commit."
-          fi
+          # --- (b) Attribution: är DEN HÄR landningen misstänkt? ------------
+          # RÄTTAT I TASK-334 (2026-08-28). Steget läste tidigare föregående
+          # post-merge-körnings WORKFLOW-nivå-conclusion och skrev, när den var
+          # `success`, att "den här landningen är den primära misstänkta".
+          #
+          # Den meningen är FALSK varje gång föregående körning var grön DÄRFÖR
+          # ATT `klassning` ärvde ett D0-beslut och `suite` hoppades: en sådan
+          # körning har inte mätt någonting. Mätt två gånger inom 13 minuter
+          # 2026-08-28 — ärende #2043 (körning 33139629247) och #2047 (körning
+          # 33140227702), båda med texten utskriven, båda med en rotorsak som
+          # låg fyra respektive fem landningar bakåt (TASK-333).
+          #
+          # Attributionen bor därför i ett skript: den går inte att pröva
+          # tvåsidigt som inline-bash, och en obeprövad larmtext är exakt den
+          # ADR-083-klass repot städat bort två gånger. Skriptet går bakåt till
+          # senaste körning som FAKTISKT körde sviten, räknar landningarna
+          # däremellan och formulerar därefter — "primär misstänkt" skrivs
+          # ENDAST när den är sann. Grindas av scripts/test-post-merge-
+          # attribution.sh (A11-A13), CI-wirad i ci.yml:s lint-jobb.
+          #
+          # Skriptet returnerar ALLTID 0 (se dess § FAIL-SOFT): larm-steget kör
+          # `set -euo pipefail`, och en exitkod skild från noll hade dödat
+          # själva ärendet — tystnad i exakt det läge signalen behövs. Varje
+          # avvikelse rapporteras i stället SOM TEXT ("OKÄND"), aldrig som ett
+          # påstående byggt på frånvaro av data (TASK-51, L322-klassen).
+          historik=$(REPO="${REPO}" RUN_ID="${RUN_ID}" SHA="${SHA}" \
+            bash scripts/post-merge-attribution.sh)
 
           # --- (c) Revert-förslag med RÄTT form -----------------------------
           # En merge-commit kräver `-m 1`; en enkel commit gör inte det, och fel

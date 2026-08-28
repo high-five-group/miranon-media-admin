@@ -914,12 +914,29 @@ aldrig växa, av `TASK-70.3`. Ett projicerat tal skrivs inte in här; nästa
 uppmätning ersätter tabellen.
 
 **Blir post-merge röd** skapas automatiskt ett tilldelat ärende (etikett
-`ci-post-merge`) med de röda jobben, föregående post-merge-körnings utfall och
-ett revert-förslag med rätt `-m`-form. Samma stängningsregel som nattnätet
-nedan: åtgärd, genomförd revert eller öppet skriven motivering — aldrig tyst.
-Ärendet bär en tolkningshjälp som ska läsas FÖRE revert; en ensam röd
-`Acceptance (hermetisk)` kan vara `TASK-64`:s kända flake, och en ensam röd
-mätning betyder att mätningen gått sönder, inte `main`.
+`ci-post-merge`) med de röda jobben, en **attribution** och ett revert-förslag
+med rätt `-m`-form. Samma stängningsregel som nattnätet nedan: åtgärd,
+genomförd revert eller öppet skriven motivering — aldrig tyst. Ärendet bär en
+tolkningshjälp som ska läsas FÖRE revert; en ensam röd `Acceptance (hermetisk)`
+kan vara `TASK-64`:s kända flake, och en ensam röd mätning betyder att
+mätningen gått sönder, inte `main`.
+
+**Attributionen svarar på "är det DEN HÄR landningen?" — och den frågan har
+inte alltid svaret ja.** Ärendet läste tidigare bara föregående
+post-merge-körnings utfall på workflow-nivå. Men en docs-landning ärver
+ci.yml:s `D0`-beslut, svit-anropet hoppas, och körningen blir `success` **utan
+att ha mätt någonting** — grönt betyder då "ingen mätning", inte "trädet var
+friskt". Larmet skrev ändå att landningen var den primära misstänkta; mätt två
+gånger inom 13 minuter 2026-08-28 (ärenden `#2043` och `#2047`), båda med en
+rotorsak som låg flera landningar bakåt. Sedan `TASK-334` går
+[`scripts/post-merge-attribution.sh`](scripts/post-merge-attribution.sh) i
+stället bakåt till senaste körning som FAKTISKT körde sviten, räknar
+landningarna däremellan och skriver ut spannet — och påståendet "primär
+misstänkt" produceras ENDAST när det är sant. Går något fel står det **OKÄND**
+i ärendet, aldrig en gissning. Beslutet, options-rymden och den tidsbaserade
+drift-vakt som är flaggad men INTE byggd:
+[ADR-077](docs/decisions/ADR-077-riskanpassad-ci-klassning-dedup-nightly.md)
+§ Updates 2026-08-28.
 
 **Öppet bokförd blind fläck:** larm-jobbet bor inne i den körning det bevakar. Ett
 `startup_failure` (noll jobb instansieras) lämnar därför inget spår — samma defekt
