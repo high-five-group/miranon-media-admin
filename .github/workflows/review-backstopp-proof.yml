@@ -1,0 +1,168 @@
+---
+name: Gate Proof — Review-backstoppen (BÅDA riktningar)
+
+# Riktad, manuellt avfyrbar bevis-workflow (TASK-173.4, ADR-105 beslut 2/3).
+#
+# Bevisar skarpt att ci.yml:s `review-backstopp`-grind FÄLLER en PR-kropp utan
+# giltig Riskbedömnings-sektion och SLÄPPER en med — i CI, med run-ID, utan att
+# någonsin göra en delad kö-körning avsiktligt röd.
+#
+# ═══ VARFÖR EN EGEN BEVIS-WORKFLOW OCH INTE EN RÖD PR ═══
+# CONTRIBUTING.md § Rött-först är kategorisk: *"Avsiktligt röda körningar i den
+# delade kön är förbjudna — rött i CI ska betyda EN sak: oväntad regression"*,
+# och pekar ut den riktade avfyrningsformen (`workflow_dispatch`) som
+# bevisformen för att en CI-grind faktiskt fyrar. Denna fil är den formen,
+# byggd som syskon till gate-proof.yml.
+#
+# Formen är sitt eget test: en GRÖN avfyrning = backstoppen fällde
+# no-sektion-fixturen OCH släppte med-sektion-fixturen. En RÖD avfyrning =
+# någondera riktningen brast (regression). Kör med `simulera_gront: true` för
+# NEGATIV KONTROLL: fällnings-jobbet matas då med den GILTIGA fixturen, fäller
+# inte, och assert:en ska sänka workflowen — utan den kontrollen vore
+# assert:en vakuös.
+#
+# ═══ FIXTURERNA ÄR EN VERKLIG, GRANSKAD PR ═══
+# tests/fixtures/review-backstopp/pr-2031-*.txt är PR #2031:s FAKTISKA
+# PR-kropp (`gh pr view 2031 --json body`, 2026-08-28) — en PR som gick genom
+# review-grinden på riktigt — med respektive utan Riskbedömnings-sektionen.
+# Ingen syntetisk konstruktion; det positiva beviset är alltså "en PR med
+# giltig sektion passerar", ordagrant som AC #2 kräver.
+#
+# Plattforms-tvingad trohets-not (samma som gate-proof.yml): GitHub kan inte
+# visa ett RÖTT jobb inuti en GRÖN körning, så den avsiktliga fällningen
+# manifesteras som en STEP-outcome (step-nivå continue-on-error). Jobb-nivå
+# continue-on-error används INTE någonstans här — den hade maskerat både
+# needs.result och REST-API:ts conclusion till success (actions/toolkit#1739).
+#
+# Bor i EGEN fil: tar aldrig staging-mutexen, rör aldrig staging-miljön,
+# konkurrerar aldrig med ordinarie körningar.
+
+on:
+  workflow_dispatch:
+    inputs:
+      simulera_gront:
+        description: >-
+          false (default) = positivt bevis (båda riktningar prövas, workflowen
+          ska bli GRÖN). true = negativ kontroll: fällnings-jobbet matas med
+          den GILTIGA fixturen så backstoppen INTE fäller, och assert:en ska
+          fånga det och sänka workflowen (self-test).
+        type: boolean
+        default: false
+
+# Least-privilege: bevis-jobben rör bara arbetsträdets fixturer — inget API,
+# ingen PR, ingen `gh`-hämtning (offline-läget `--kropp-fil` används).
+permissions: {}
+
+concurrency:
+  group: review-backstopp-proof-${{ github.run_id }}
+  cancel-in-progress: false
+
+env:
+  # PR #2031:s faktiska nummer och head vid granskningen — fixturernas sanna
+  # identitet. Ändras de utan att fixturerna byts blir beviset falskt.
+  FIXTUR_PR: '2031'
+  FIXTUR_HEAD: d11a2f205c4cece5cbaa1abe5847addd35558ff9
+
+jobs:
+  # Jobb 1: NEGATIVA riktningen — kropp UTAN sektion ska ge exit 1.
+  # Step-nivå continue-on-error ⇒ steget kör genuint mot exit 1 men jobbet
+  # förblir grönt (körningen får inte sänkas av det avsiktliga fallet).
+  faller:
+    name: Backstoppen ska FÄLLA en kropp utan sektion
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    outputs:
+      outcome: ${{ steps.kor.outcome }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Kör backstoppen mot fixturen
+        id: kor
+        continue-on-error: true
+        env:
+          # simulera_gront matar in den GILTIGA fixturen i stället — då fäller
+          # backstoppen INTE, outcome blir success, och assert:en sänker
+          # workflowen. Det är self-testet.
+          FIXTUR: >-
+            ${{ inputs.simulera_gront
+            && 'tests/fixtures/review-backstopp/pr-2031-med-sektion.txt'
+            || 'tests/fixtures/review-backstopp/pr-2031-utan-sektion.txt' }}
+        run: |
+          echo "Fixtur: ${FIXTUR}"
+          node scripts/review-backstopp.mjs \
+            --pr "${FIXTUR_PR}" --head-sha "${FIXTUR_HEAD}" --kropp-fil "${FIXTUR}"
+
+  # Jobb 2: POSITIVA riktningen — kropp MED giltig sektion ska ge exit 0.
+  # INGEN continue-on-error: fäller backstoppen här blir jobbet rött och
+  # workflowen röd, vilket är exakt rätt signal.
+  slapper:
+    name: Backstoppen ska SLÄPPA en kropp med giltig sektion
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+        with:
+          node-version-file: '.nvmrc'
+
+      - name: Kör backstoppen mot den granskade fixturen
+        run: |
+          node scripts/review-backstopp.mjs \
+            --pr "${FIXTUR_PR}" --head-sha "${FIXTUR_HEAD}" \
+            --kropp-fil tests/fixtures/review-backstopp/pr-2031-med-sektion.txt
+
+  # Jobb 3: assert:en — enda jobbet UTAN continue-on-error på sin egen
+  # slutsats, så dess conclusion färgar körningen. Kör alltid (if: always()).
+  assert-bevis:
+    name: Assertera att BÅDA riktningarna höll
+    needs: [faller, slapper]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    permissions: {}
+    steps:
+      - name: Assertera fällning + genomsläpp
+        env:
+          FALLER_RESULT: ${{ needs.faller.result }}
+          FALLER_OUTCOME: ${{ needs.faller.outputs.outcome }}
+          SLAPPER_RESULT: ${{ needs.slapper.result }}
+        run: |
+          echo "Fällnings-jobbets result:  ${FALLER_RESULT}"
+          echo "Fällnings-stegets outcome: ${FALLER_OUTCOME:-<tomt>}"
+          echo "Genomsläpps-jobbets result: ${SLAPPER_RESULT}"
+          if [[ "${FALLER_RESULT}" != "success" ]]; then
+            echo "❌ BEVIS UNDERKÄNT: fällnings-jobbet körde inte rent (result=${FALLER_RESULT})."
+            exit 1
+          fi
+          if [[ "${FALLER_OUTCOME}" != "failure" ]]; then
+            echo "❌ BEVIS UNDERKÄNT: backstoppen FÄLLDE INTE en kropp utan sektion"
+            echo "   (outcome=${FALLER_OUTCOME:-<tomt>}, väntade failure)."
+            echo "   Vid simulera_gront=true är detta det FÖRVÄNTADE utfallet — self-testet fungerar."
+            exit 1
+          fi
+          if [[ "${SLAPPER_RESULT}" != "success" ]]; then
+            echo "❌ BEVIS UNDERKÄNT: backstoppen fällde en kropp MED giltig sektion"
+            echo "   (result=${SLAPPER_RESULT}) — grinden är för sträng."
+            exit 1
+          fi
+          echo "✅ BEVISAT i BÅDA riktningar:"
+          echo "   · kropp UTAN sektion  ⇒ backstoppen fällde (exit 1)"
+          echo "   · kropp MED sektion   ⇒ backstoppen släppte (exit 0)"
+          echo "   Skulle någondera brista ⇒ denna workflow RÖD."

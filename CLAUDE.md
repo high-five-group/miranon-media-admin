@@ -591,10 +591,11 @@ utföraren kan godkänna sin egen förskrivning,
 **HÖG risknivå blockerar formellt** (ADR-105 beslut 5): returnerar
 granskaren `risk.niva: 'hog'` — armera INTE. Eskalera till Marcus med
 utlåtandets fynd; armering sker först efter hans explicita granskning. `lag`/
-`medel` är i detta skede (efter `TASK-173.3`, innan `173.4`s CI-backstopp)
-informativt underlag för din egen bedömning — sedan `173.3` SYNS nivån åt
-Marcus i PR-kroppens Riskbedömnings-sektion (se nedan), men ingen mekanisk
-spärr hindrar ännu armering vid `lag`/`medel`.
+`medel` är informativt underlag för din egen bedömning — nivån SYNS åt Marcus
+i PR-kroppens Riskbedömnings-sektion (se nedan), men ingen mekanisk spärr
+hindrar armering vid `lag`/`medel`. **Backstoppen (`TASK-173.4`) ändrar inte
+det**: den kräver att ett utlåtande FINNS och är färskt, aldrig att det bär
+en viss nivå — en `hog`-PR som Marcus granskat och armerat ska kunna landa.
 
 **Injicera path-reglerna när du spawnar granskaren (`TASK-173.2`):**
 
@@ -692,6 +693,56 @@ someone updates the PR with a new commit`) och Gerrits patchset-bundna röster
 gör. Utelämnar du flaggan hoppas kontrollen över — **synligt**, som en varning i
 utdatan, aldrig tyst.
 
+**CI-backstoppen fäller i KÖN, inte på PR-ytan (`TASK-173.4`) — kör därför
+preflighten FÖRE armering:**
+
+```bash
+npm run review:backstopp -- --pr <NUMMER>          # exit 0 = får armeras
+npm run review:backstopp -- --pr <NUMMER> --json   # samma, maskinläsbart
+```
+
+`ci.yml`-jobbet `review-backstopp` kör samma skript på **`merge_group`-ytan**
+och fäller landningen om PR:en inte bär en giltig Riskbedömnings-sektion.
+Exitkoderna är desamma i båda lägena: **0** = släpper · **1** = FÄLLER
+(sektionen saknas / korrupta markörer / oparsbar nivå eller fotnot / renderad
+för fel PR / `granskadSha` ≠ PR:ens head, alltså STALE) · **2** = CLI-fel ·
+**3** = gh-I/O fallerade (fail-closed i CI, men loggen skiljer orsaken från
+ett saknat utlåtande).
+
+**Varför kö-ytan och inte PR-ytan** — och läs detta innan du "förbättrar" det:
+grindens sekvens är push → granskning → sektion → armering, så vid PUSH saknas
+sektionen med NÖDVÄNDIGHET. En grind på PR-ytan hade gjort varje kod-PR röd som
+normaltillstånd, vilket bryter mot [`CONTRIBUTING.md`](CONTRIBUTING.md)
+§ Rött-först (*"rött i CI ska betyda EN sak: oväntad regression"*). På kö-ytan
+är PR:en armerad, alltså MÅSTE granskningen ha skett — och rött betyder exakt
+en sak.
+
+**Priset, och därför preflighten:** en fällning i kön sparkar posten ur kön och
+KONSUMERAR armeringen (§ Landning, fjärde läget). **Ett backstopp-rött i
+`merge_group` är en ORDER att köra granskningen — aldrig att armera om.** Att
+armera om utan att skriva sektionen ger exakt samma fällning igen, i en loop
+som bränner en full CI-körning per varv.
+
+**Vad backstoppen INTE bevisar:** att en granskning faktiskt ägt rum. PR-kroppen
+är skrivbar av PR:ens författare, så en sektion kan handskrivas. Det är en
+medveten gräns i ADR-105 beslut 2 ("verifierar att PR:en bär ett
+granskningsutlåtande") — tilliten till att granskningen ÄGDE RUM bärs av
+orkestrerar-kontraktet (färsk kontext, aldrig samma agent som byggde), inte av
+grinden. Skriv aldrig om detta stycke till att påstå mer (ADR-083).
+
+**D0-klassade PR:er undantas** via `needs.changed.outputs.should_skip_tests` —
+CI:s BEFINTLIGA klassning, ingen egen glob (ADR-105 beslut 3). Att `changed`
+beräknar rätt värde även på kö-ytan är mätt: merge_group-körning `33138424216`
+(docs-only) skippade `Test suite` på samma output.
+
+**Kö-antagandet som bär grinden, och som måste omprövas om rulesetet ändras:**
+kö-grenen namnger EN PR (`gh-readonly-queue/main/pr-<nr>-<bas-sha>`, verifierat
+mot 30 skarpa körningar 2026-08-28), medan `max_entries_to_merge` är 3. Att
+bara pröva den namngivna PR:en är fullständigt så länge `grouping_strategy` är
+**`ALLGREEN`** (varje köad post bygger sin egen spekulativa grupp, och alla
+måste vara gröna). Byts strategin till `HEADGREEN` faller argumentet och
+grinden måste räkna upp gruppens alla PR:er.
+
 **Vad som ÄR byggt, och vad som INTE är det (progressiv härdning, ADR-105
 beslut 3):** `review-agent`-kontraktet och utlåtande-schemat
 (`scripts/lib/review-utlatande.mjs`, `scripts/validera-review-utlatande.mjs`)
@@ -700,7 +751,7 @@ existerar och är skarpbevisade; sedan `TASK-173.2` policy-ytan
 `scripts/hamta-review-policy.mjs`) med utlåtandets `policySha`/`policyRegler`;
 sedan `TASK-173.3` den fasta Riskbedömnings-sektionen i PR-kroppen
 (`scripts/lib/review-risk-sektion.mjs`, `scripts/uppdatera-review-sektion.mjs`);
-och sedan `TASK-173.5` rundtaks-loopen med konvergensregel och eskaleringsform
+sedan `TASK-173.5` rundtaks-loopen med konvergensregel och eskaleringsform
 (`.review-loop-policy.json`, `scripts/lib/review-loop.mjs`,
 `scripts/review-loop-beslut.mjs`); och sedan `TASK-173.6` instrumenterings-
 ytan (`scripts/lib/review-metrics.mjs`, `scripts/review-metrics.mjs`,
@@ -713,6 +764,12 @@ till markdown (findings/runda, risk-/beslutsfördelning, härledd fångstrate
 per nivå). Detta är en **ren bokföringsyta** (Marcus-mandat, TASK-173.6):
 den fäller ingenting och styr ingen armering — se `173.4` nedan för den
 mekaniska spärren.
+
+Och sedan `TASK-173.4` (2026-08-28): den deterministiska CI-backstoppen
+(`scripts/lib/review-backstopp.mjs`, `scripts/review-backstopp.mjs`,
+`ci.yml`-jobbet `review-backstopp` i aggregatorns `needs`) — den mekaniska
+spärren stycket ovan pekar framåt på. Den fäller på `merge_group`-ytan, inte
+på PR-ytan; hela resonemanget står längre upp i detta avsnitt.
 
 **Loggfilen är versionerad (INTE gitignorad) men bär INGEN egen
 commit-mekanism — det är ett orkestrerar-ÅTAGANDE, inte en spärr (runda
@@ -735,31 +792,47 @@ review-agent-körningarna från S112 (2026-08-26) är INTE backfyllda — deras
 utlåtande-JSON låg i agenternas scratchpad-kataloger och gick inte att
 återfinna på disk när `173.6` byggdes (endast de aggregerade talen i
 `tasks/sessions/2026-08-24-session-112.md` Del 6 finns kvar, som prosa).
-**Vad som SAKNAS än:** den deterministiska CI-backstoppen som fäller en PR
-utan giltigt utlåtande (`TASK-173.4`). Fram tills dess är grinden ett **orkestrerar-åtagande**, inte
-en mekanisk spärr — en PR kan i praktiken armeras utan granskning, eller med
-en oskriven Riskbedömnings-sektion, så länge `173.4` inte finns, och INGET
-tvingar dig att köra kommandona ovan. **Det gäller loop-beslutet lika mycket
-som de andra:** `review-loop-beslut.mjs` är deterministiskt och bär sitt
-beslut i exitkoden, men ingen mekanism tvingar dig att köra det, och ingenting
-hindrar en armering vid exit 20. Rundtaket är alltså ett åtagande du håller,
-inte ett lås som håller dig. Skriv aldrig om detta stycke till att låta
-grinden vara mekaniskt otvingbar innan `173.4` faktiskt landat (samma
+
+**Vad som SAKNAS än:** ingen mekanism-skiva — samtliga sex är byggda. Kvar är
+`TASK-173.7`, QA-vandringen ände-till-ände (`ready-for-human`), och de
+skarpbevis-skulder den ska betala: `173.4`:s gate-proof-avfyrning och
+backstoppens första skarpa fällning på kö-ytan (se nedan).
+
+**Vad backstoppen faktiskt gjorde otvingbart — och vad som fortfarande är ett
+ÅTAGANDE.** Mekaniskt otvingbart sedan `173.4`: en kod-klassad PR kan inte
+MERGAS utan att bära en välformad, färsk Riskbedömnings-sektion — kön fäller
+den. Fortfarande enbart åtagande: (a) att granskningen faktiskt ägt rum (se
+"Vad backstoppen INTE bevisar" ovan), (b) att du kör `review:policy` när du
+spawnar granskaren, (c) att du kör `review-loop-beslut.mjs` och respekterar
+exit 20 — ingen mekanism tvingar dig, och ingenting hindrar en armering vid
+exit 20, (d) att `hog` eskaleras till Marcus före armering, (e) att du kör
+backstopp-preflighten i stället för att låta kön fälla, och (f) att
+instrumenteringsloggen faktiskt committas (`173.6`-stycket ovan). Rundtaket är
+alltså fortfarande ett åtagande du håller, inte ett lås som håller dig. Skriv
+aldrig om detta stycke till att låta MER vara mekaniserat än raderna ovan (samma
 `ADR-083`-disciplin som resten av denna fil: prosa som påstår en mekanism som
 inte finns är värre än att inte skriva något alls).
 
-**Känd divergens i den genererade JSON-Schema-artefakten, öppen för `173.4`:**
+**Den genererade JSON-Schema-artefakten är en UTDATA-sida-artefakt — inte en
+bugg, som denna rad tidigare påstod (avgjort i `TASK-173.4`, 2026-08-28).**
 `docs/reference/review-utlatande.schema.json` listar `policySha`/
 `policyRegler` som `required` trots att båda bär zod `.default()` i
-källschemat (`scripts/lib/review-utlatande.mjs`) — en STRIKT JSON-Schema-
-konsument UTAN defaults (t.ex. en framtida CI-backstopp som validerar rå JSON
-direkt mot filen i stället för att gå via zod) skulle avvisa ett giltigt,
-äldre utlåtande som saknar dessa fält. Risk-rendreraren (`173.3`) berörs INTE
-— den konsumerar alltid `valideraUtlatande(raw).data` (EFTER zods
-default-normalisering), aldrig rå JSON direkt, vilket är bevisat i
-`scripts/test-review-risk-sektion.mjs` (fall A16: ett genuint 173.1-format
-utan de två fälten går genom den EKTA validatorn och renderar korrekt). Löses
-inte här — flaggas framåt till `173.4`.
+källschemat (`scripts/lib/review-utlatande.mjs`). Skälet är mätt, inte
+gissat: `z.toJSONSchema()` i zod 4.4.3 defaultar till `io: 'output'`, där ett
+`.default()`-fält ALLTID är närvarande och därför korrekt `required` —
+verifierat direkt mot den installerade zod-versionen (`io: 'input'` ger
+`["a"]`, `io: 'output'` och default ger `["a","b"]` på ett probe-schema).
+Artefakten beskriver alltså vad en konsument SER EFTER validering, och det är
+sant. Vad som återstår är en tolknings-fälla, inte ett fel: en konsument som
+validerar RÅ, ovaliderad JSON (indata-sidan) mot filen skulle avvisa ett
+giltigt 173.1-format — den behöver `io: 'input'`, alltså en ANNAN artefakt.
+`173.4`:s CI-backstopp behövde ingendera: den parsar den RENDERADE
+Riskbedömnings-sektionen i PR-kroppen, aldrig JSON. Risk-rendreraren (`173.3`)
+berörs likaså inte — den konsumerar alltid `valideraUtlatande(raw).data`
+(EFTER zods default-normalisering), bevisat i
+`scripts/test-review-risk-sektion.mjs` fall A16. **Öppet framåt:** dyker en
+rå-JSON-konsument upp genereras en input-sidans artefakt vid sidan av — det
+är ett eget beslut, inte en tyst regenerering av den befintliga filen.
 
 **Bunt-PR: `kortId` är SINGULÄR i schemat — en öppen fråga, inte en lösning.**
 Schemat (`scripts/lib/review-utlatande.mjs`) bär ETT `kortId`, och superRefine
