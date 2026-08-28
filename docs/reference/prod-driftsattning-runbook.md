@@ -360,7 +360,7 @@ stämmer fortfarande: båda funktionerna prövar metoden FÖRE autentiseringen
 — men "405 före auth" gäller bara ANROPARE SOM NÅR KODEN, och en anropare
 utan giltig JWT kommer aldrig dit, oavsett metod. Discriminatorn är ett
 giltigt JWT som faller SENARE, i `requireUser` — anon-nyckeln (se
-`tasks/lessons.d/en-vakt-forst-i-din-kod-ar-inte-forst-i-kedjan.md`).
+[[L570]]).
 
 ```bash
 FN="$PROD_URL/functions/v1"

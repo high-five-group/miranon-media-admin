@@ -367,7 +367,7 @@ rmSync(BIOME_UNIT_SANDBOX, { recursive: true, force: true });
 // resolveMainSha — TASK-175 (2026-08-10). Regression för S93-stängningens
 // mätta bugg: en lokal `main`-ref i en orkestrerar-checkout stod stilla
 // medan origin rörde sig, och kvittot stämplade det FÖRLEGADE trädet
-// (tasks/lessons.d/stampel-sha-harleds-ur-ref-som-star-stilla.md).
+// ([[L573]] i tasks/lessons/vol-07.md).
 // TVÅSIDIGT bevis: samma fixtur bevisar BÅDE att den gamla härledningen
 // (lokal `main`, ingen fetch) ger den stillastående SHA:n OCH att den nya
 // härledningen (resolveMainSha, färsk origin/main) ger den färska.

@@ -12,7 +12,7 @@ status: stable
 
 # tasks/lessons.md — Projektets organisatoriska minne (index)
 
-> **Äger:** registret över volymfilerna (`tasks/lessons/vol-01..07.md`) —
+> **Äger:** registret över volymfilerna (`tasks/lessons/vol-01..08.md`) —
 > vilken volym som är aktiv och dess L-nummer-span. **Kartlägger:**
 > volymfilerna själva (den faktiska lärdomstexten bor där, inte här). **Vid
 > konflikt vinner:** volymfilerna för lärdomsinnehåll; detta index för
@@ -35,13 +35,20 @@ status: stable
 > enskilda lärdomar on-demand (`grep -n "^### L3" tasks/lessons/` → `Read` med
 > `offset`), eller läs de senaste via `offset` mot den aktiva volymens slut.
 >
-> **Senaste konsolidering:** `L533`–`L569` (Session 108:s K-sista,
-> 2026-08-28) — 37 fragment ur `tasks/lessons.d/`, varav **30** bär
-> `[UNIVERSAL]`. Ordning: fragmentets tillkomstdatum (`git log
-> --diff-filter=A`), sedan filnamn. Kropparna är ordagranna; endast
-> markörformen normaliserades (sex av 37) och tre inlänkar pekades om.
-> Hub-lyftet av de 30 görs i samma pass, på hub-grenen
-> `docs/s108-hub-lyft-lessons` — hub-commit bokförs här när den landat.
+> **Senaste konsolidering:** `L570`–`L654` (Session 112 resume 2,
+> 2026-08-28) — **samtliga 85** kvarvarande fragment ur `tasks/lessons.d/`,
+> varav **47** bär `[UNIVERSAL]`. Katalogen är därmed TOM för första gången
+> sedan ADR-081 införde den. Ordning: fragmentets tillkomstdatum (`git log
+> --diff-filter=A`). Kropparna är **byte-verbatim** — mekaniskt bevisat post
+> för post (85/85, noll avvikelser), och till skillnad från S108:s pass
+> normaliserades **ingen** markörform: varje post bär den form fragmentet
+> skrevs med (form D 26 · form F 15 · form 8 6). 50 inlänkar i 19 filer
+> pekades om till `[[Lnnn]]`-formen i samma commit.
+>
+> **Volymrotation i samma pass:** tillägget hade ensamt tagit `vol-07` till
+> 4 634 rader / 278 092 byte — över BÅDE rotationströskeln 3 000 och
+> Read-verktygets 256 KB-gräns. Det delades därför vid en POSTGRÄNS:
+> `L570`–`L597` i `vol-07` (2 977 rader), `L598`–`L654` i nya `vol-08`.
 >
 > **Senaste lyft till hubben:** `L522`–`L532`:s `[UNIVERSAL]`-poster
 > (Session 111, 11 poster) → hub `K111.1`–`K111.11` (hub-commit
@@ -82,19 +89,24 @@ status: stable
 > en form-D-rad så den är greppbar med husets vanliga mönster — kroppen
 > lämnades ordagrant, inklusive den kvalificerade markören.
 >
-> **Olyft rest:** `tasks/lessons.d/` bär 83 nummerlösa fragment, varav
-> 47 med `[UNIVERSAL]` (mätt 2026-08-28 efter S108:s K-sista; talen stod
-> tidigare som 65/34, mätta 2026-08-23 efter S111:s konsolidering), från
-> S102 och framåt plus några äldre utan sessionstagg.
-> Deras konsolidering och hub-lyft är egna moment per session, inte denna
-> rads ansvar. **Fyra av dem prövades och FÖRKASTADES uttryckligen som
-> nya poster i S111:s skörd** — de bär redan sin lärdom i en numrerad post
-> och behölls därför som fragment i sin egen sessions ägo:
-> `uppdragets-kommandorad-maste-vara-det-kanoniska-npm-scriptet.md` (S102),
-> `nastlade-worktree-sokvagar-faller-textmatchande-katalogvakter.md` (S104/S105),
-> `cwd-persisterar-mellan-bash-anrop-och-driftar-tyst.md` (S102) och
-> `tradnummer-har-ingen-kollisionsspärr-motsvarande-check-active-branches.md`
-> (S108–S110).
+> **Olyft rest:** ingen. `tasks/lessons.d/` är TOM (0 nummerlösa fragment,
+> mätt 2026-08-28 efter S112 resume 2:s konsolidering; talen stod tidigare
+> som 83/47, och dessförinnan 65/34). Hub-lyftet av de 47
+> `[UNIVERSAL]`-posterna är ett eget moment — se raden ovan om senaste lyft.
+>
+> **De fyra som S111 förkastade är nu numrerade — beslutet är ändrat, öppet.**
+> S111:s skörd behöll fyra fragment i sin egen sessions ägo med skälet att de
+> *"bär redan sin lärdom i en numrerad post"*. S112 resume 2 prövade det
+> skälet mot disk och fann det giltigt för **ett** av de fyra
+> ([[L615]], vars kärna bärs av `L510` (b), vol-06) men inte för de tre
+> övriga: [[L576]] och [[L590]] citeras av `L531` som SJÄLVSTÄNDIGA
+> grannposter vilkas avvägning `L531` uttryckligen INTE gör
+> (*"drar där motsatta slutsatser"*), och [[L628]] bärs av ingen befintlig
+> post alls. Samtliga fyra numrerades därför, och deras inlänkar pekar nu på
+> stabila `[[Lnnn]]`-referenser i stället för filsökvägar som ruttnar när
+> katalogen töms ([[L572]]). [[L615]]:s överlapp med `L510` (b) står kvar
+> som synlig dubblett — den slås ihop av den som får mandat för det, aldrig
+> tyst under en konsolidering (verbatim-kravet, `lessons-hub-sync`).
 
 ---
 
@@ -108,16 +120,20 @@ status: stable
 | [vol-04](lessons/vol-04.md) | 2026-07-08 → 2026-07-26 | Session 59:s H2-block, därefter flat L-numrering utan ny H2 per session (källans konventionsskifte — se not) | `L252` → `L359` | Stängd |
 | [vol-05](lessons/vol-05.md) | 2026-07-27 → 2026-07-30 | Session 91:s huvuddel (CI-paritet-fyndet, upphävande-räckvidd, m.fl.), flat L-numrering | `L360` → `L421` | Stängd |
 | [vol-06](lessons/vol-06.md) | 2026-07-31 → 2026-08-22 | Session 91:s fortsättning → Session 109:s skörd, flat L-numrering. Stängd 2026-08-23 vid **3 436 rader** (över rotationströskeln 3 000) när S111:s skörd skulle landa — rotationen utfördes då enligt regeln nedan | `L422` → `L521` | Stängd |
-| [vol-07](lessons/vol-07.md) | 2026-08-23 → | **Aktiv volym** — alla nya lärdomar landar här, flat L-numrering. Föddes TOM vid rotationen (till skillnad från vol-02–vol-06, som föddes ur engångs-delningen `TASK-161.9`) och fylls framåt ur `tasks/lessons.d/` | `L522` → `L569` | **Aktiv** |
+| [vol-07](lessons/vol-07.md) | 2026-08-23 → 2026-08-28 | Session 111:s skörd → Session 112:s konsolidering, flat L-numrering. Föddes TOM vid rotationen (till skillnad från vol-02–vol-06, som föddes ur engångs-delningen `TASK-161.9`) och fylldes framåt ur `tasks/lessons.d/`. Stängd 2026-08-28 vid **2 977 rader** — S112:s 85-postersskörd hade ensam tagit den till 4 634 rader / 278 092 byte, över både tröskeln 3 000 och Read-gränsen 256 KB, så skörden delades vid postgränsen `L597`/`L598` | `L522` → `L597` | Stängd |
+| [vol-08](lessons/vol-08.md) | 2026-08-28 → | **Aktiv volym** — alla nya lärdomar landar här, flat L-numrering. Föddes ur S112:s rotation med skördens andra hälft (`L598`–`L654`); samma födelseform som vol-07 | `L598` → `L654` | **Aktiv** |
 
-**Not om konventionsskiftet (vol-04–vol-07):** källfilen slutade skriva ett
+**Not om konventionsskiftet (vol-04–vol-08):** källfilen slutade skriva ett
 nytt `## <datum> — Session N (…)`-block per session efter Session 59
 (2026-07-08) — därefter tillkom lärdomar som platta `### Lnnn`-poster utan
 H2-omslutning ända till `L479`. Volymgränserna för vol-04–vol-06 följer därför
 `### Lnnn`-gränser i stället för H2-gränser; vol-01–vol-03 följer H2-gränser
-rakt av, per ADR-085:s bokstav. `vol-07` ärver den platta formen — dess gräns
-är däremot inte en delnings-gräns alls utan en rotations-gräns (volymen föddes
-tom, se dess eget huvud). Hubbens egen fil (ADR-085:s facit) är
+rakt av, per ADR-085:s bokstav. `vol-07` och `vol-08` ärver den platta formen
+— deras gränser är däremot inte delnings-gränser alls utan rotations-gränser
+(båda volymerna föddes tomma, se deras egna huvuden). `vol-07`:s gräns mot
+`vol-08` går dessutom mitt i EN sessions skörd (S112:s 85 poster delades vid
+`L597`/`L598`), vilket är förenligt med kravet nedan: gränsen går mellan
+poster, aldrig inuti en. Hubbens egen fil (ADR-085:s facit) är
 enhetligt H2-per-lyft hela vägen och gav aldrig upphov till denna fråga — det
 är en spoke-specifik divergens i källstrukturen, inte ett nytt formbeslut:
 samma krav (verbatim kropp, aldrig bruten mitt i en post, kronologisk
@@ -129,7 +145,7 @@ ordning) gäller båda gränstyperna.
   Mekaniskt: `grep -rn '^### L360' tasks/lessons/`. 17 äldre poster i
   punktlistform (utan egen `###`-rubrik, `L103`–`L119`) hittas med
   `grep -rn '\*\*L[0-9]* —' tasks/lessons/`.
-- **Nya poster:** alltid SIST i den aktiva volymen (`vol-07.md` just nu), som
+- **Nya poster:** alltid SIST i den aktiva volymen (`vol-08.md` just nu), som
   en ny `### Lnnn`-rubrik. Aldrig i denna indexfil, aldrig i en stängd volym.
   Formulera som en **regel**, inte en berättelse — "Gör X" eller "Gör aldrig
   Y". Om samma misstag händer två gånger: uppgradera till Kritisk regel. Vid

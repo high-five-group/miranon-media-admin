@@ -107,7 +107,7 @@ status: stable
   varje bunt-PR; vid B mintas en skiva under `TASK-173` och `ADR-105`
   § Updates får ett tillägg.
 - **Källa** — `TASK-330` ·
-  `tasks/lessons.d/bunt-prer-passar-inte-review-utlatandets-kortid-schema.md`
+  [[L636]]
   · `scripts/lib/review-utlatande.mjs` (schemat).
 
 ### 4. Review-loopen eskalerar nästan varje granskning till dig

@@ -15,7 +15,7 @@ status: draft
 > `.claude/worktrees/agent-ab42ca4e2d1956911` mot repots arbetsträd vid
 > mättillfället. Modell: **Claude Sonnet 5** (`claude-sonnet-5`) — denna
 > uppgift kräver explicit modell-identitet i rapporten (lärdomen
-> `tasks/lessons.d/en-agent-utan-modellidentitets-rad-kan-inte-bekrafta-sin-modell.md`).
+> [[L591]]).
 > Inga skills ändrade, inga beslut fattade — mätfakta, inget annat.
 
 ## Svaret, kort

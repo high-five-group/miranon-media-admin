@@ -12,7 +12,7 @@ Katalogen flyttades hit ur `tasks/sessions/bilagor/` på Marcus mandat
 för givet. Var proffsig och gör saker ordentligt."*, 2026-08-26, S108 resume 11
 — orkestrerarens beslut i samma anteckning: `309.21` **pensionera**
 s102-manifestet). Formen är den etablerade: arkivflytt, aldrig radering
-(`tasks/lessons.d/superseded-facit-arkivflyttas-aldrig-raderas.md`, prejudikat
+([[L610]], prejudikat
 `s55-hem-konvergens` → `s102-hem-konvergens`, `TASK-243.1`, PR #1426). Arkivet
 ligger utanför facit-grindens svep (`FACIT_BILAGE_ROT` i `.facit-policy.conf`).
 Innehållet är **FRUSET**: manifestet, de fem bilderna och de tre

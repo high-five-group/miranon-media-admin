@@ -56,8 +56,8 @@
 // Kvittots hela poäng är att dokumentera VAD som granskades (ADR-104 §
 // Beslut 4: "SHA dokumenterar"); en lokal main-ref i en orkestrerar-
 // checkout kan stå stilla i dagar utan att någon fast-forwardar den, vilket
-// stämplade fel träd i S93-stängningen (2026-08-10, se
-// tasks/lessons.d/stampel-sha-harleds-ur-ref-som-star-stilla.md). Saknas ett
+// stämplade fel träd i S93-stängningen (2026-08-10, se [[L573]] i
+// tasks/lessons/vol-07.md). Saknas ett
 // origin-remote (t.ex. ett repo utan fjärr) faller härledningen tillbaka
 // till lokal `main`, sedan `HEAD` — se resolveMainSha().
 //

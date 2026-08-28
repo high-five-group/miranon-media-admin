@@ -3152,7 +3152,7 @@ markörer, `TASK-287` saknade). Beslut och mätserie:
 `ADR-102` § Updates 2026-08-22 (Rivna prototyp-källor).
 
 **Relaterat, men inte samma sak:** fragmentet
-`facit-kallor-ompekas-fore-stampeln.md` ger den operativa omvägen — peka om
+[[L582]] ger den operativa omvägen — peka om
 `kallor` i flip-skivan medan manifestet ännu är skrivbart. Den räcker bara
 när prototypfilen har en skarp EFTERTRÄDARE att peka på. Mätt 2026-08-22:
 hem- och svep-familjerna har 6 av 6 källor som är rent prototyp-substrat utan
@@ -3337,7 +3337,7 @@ döpa om en nod i en av de nya referenserna — grinden föll (exit 1). Före
 omskrivningen kunde samma provokation inte fälla någonting. Det är skillnaden
 mellan ett lås och en fil som råkar ligga där.
 
-Släkt: fragmentet `verifiera-mot-den-axel-andringen-ror-inte-mot-fixturernas-rakade-tomhet.md`
+Släkt: fragmentet [[L634]]
 — samma rotklass, där i FIXTUR-ledet i stället för i uppdaterings-ledet.
 
 ### L519 — Agentens `grep` utelämnar filer tyst — och tystnaden ser ut som frånvaro
@@ -3384,7 +3384,7 @@ symptomet och bokförde det som verktygsartefakt; `283.3`:s agent rotorsakade de
    `grep -rn` bör kunna svara på hur många filer som faktiskt lästes — annars
    mäter den sin egen filtrering.
 
-Släkt: `ett-tyst-verktyg-ser-likadant-ut-som-ett-verktyg-utan-fynd.md` — där ett
+Släkt: [[L623]] — där ett
 övervakningsverktyg vars noll var tvetydigt, här ett sökverktyg vars noll var
 falskt. Samma rot: frånvaro rapporterad av ett verktyg måste kunna skiljas från
 trasig rapportering.
@@ -3451,7 +3451,7 @@ det passerade ändå, eftersom ingen hade skrivit ut förväntan innan kommandot
 lämnades ut.
 
 **Varför detta inte är samma lärdom som
-`stampel-sha-harleds-ur-ref-som-star-stilla.md`:** där härledde ett VERKTYG ett
+[[L573]]:** där härledde ett VERKTYG ett
 SHA ur en lokal ref som stod stilla, och fixen låg i verktyget. Här var trädet
 självt föråldrat i det ögonblick en människa körde kommandot, och ingen
 verktygsfix hade hjälpt. Ansvaret följer överlämningen: den som formulerar
