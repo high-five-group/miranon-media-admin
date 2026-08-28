@@ -7,7 +7,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-02 17:26'
-updated_date: '2026-08-03 12:37'
+updated_date: '2026-08-28 05:07'
 labels:
   - ready-for-agent
 dependencies: []
@@ -80,6 +80,8 @@ ARBETET SOM ÅTERSTÅR (utförs i nästa resume, Marcus order):
 4. Lös kortfils-konflikten i #628 (backlog/tasks/task-126.2-...md — grenen bär AC-bockningar, main bär parkerings-noten; resolutionen är behåll båda).
 5. Rätta PRD task-126 § Testbeslut, som styrde testerna fel från början (TASK-130 bär den posten).
 6. ADR-bar prövas: klassbytet är svårt att återställa i koherens och resultatet av en verklig avvägning — sannolikt ÖVER baren. Avgörs vid utförandet, inte här.
+
+Kandidat att stänga (registerhygien-passet 2026-08-28, ADR-053: registrera, aldrig tyst): kortets eget Final Summary beskriver arbetet som utfört (ALTERNATIV A), och det är BEKRÄFTAT LANDAT på origin/main. Belägg: git log --oneline --all -- docs/decisions/ADR-094-webblasarbeteende-testklass.md → commit 1956b1ee 'feat(tests): [TASK-131] ny testklass webblasarbeteende'; git merge-base --is-ancestor 1956b1ee origin/main → ANCESTOR (sant, kört 2026-08-28). docs/decisions/ADR-094-webblasarbeteende-testklass.md finns på disk. tests/webblasarbeteende/install-prompt.test.ts finns på disk. .github/workflows/ci-suite.yml rad ~527 har jobbet 'webblasarbeteende' wirat. Sätter INTE Done själv (utanför detta uppdrags mandat) — flaggar till orkestreraren för stängningsbeslut. Ingen AC skriven eftersom kortet redan är överspelat.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

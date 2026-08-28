@@ -6,8 +6,9 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-11 19:12'
-updated_date: '2026-08-14 19:28'
-labels: []
+updated_date: '2026-08-28 05:09'
+labels:
+  - ready-for-human
 dependencies: []
 priority: high
 ordinal: 364000
@@ -87,4 +88,6 @@ INSTANS #2-SERIEN OMTOLKAD EFTER MÄTNING (S105 Del 10, 2026-08-14 kväll) — V
 (b) FACIT via vercel CLI (åtkomsten FINNS — inloggad marcus-2914, se atkomst-och-nycklar.md, ny registerrad): git-integrationen deployar VARJE main-push (deploy-lista 13 st senaste 2h), inspect visade full byggkedja (klon main@133cb91c → tsc+vite 3994 moduler → Ready → alias admin.miranon.dev), och domänens bundle-namn churna:de live med kvällens landningar (BLxhUi59 → mI1AGlay → Spim29K5).
 (c) METODVARNINGEN: bundle-greppen som interimsverktyg är OPÅLITLIG — chunk-attribution flyttar mellan byggen (recordActivitys anropsmönster hittades inte i någon chunk trots bevisat närvarande kod; "Checka in"-markören saknades trots landad källa, trolig orsak tree-shaking/lazy-chunks). RÄTT INSTRUMENT är vercel inspect-kedjan (källcommit→bygglogg→alias), nu tillgänglig via den mätta CLI-åtkomsten. Steg 6-interimsformen i prod-driftsattning-runbook.md bör vid utredningens avslut ersättas med inspect-kedjan.
 (d) Kortets ursprungsinstans (stale ≥20 h, 2026-08-11-eran) är därmed INTE motbevisad — men kvällens mätning visar att pipelinen i sitt NUVARANDE läge deployar och servar färskt.
+
+AC saknas medvetet: kortets ursprungliga symptom är delvis åtgärdat (AppUpdateBanner, chunk-laddningsfel.ts, ADR-047-amenderingar redan landade, se kortets egna Implementation Notes) men kortet dokumenterar självt ett kvarstående öppet Marcus-beslut: 'MARCUS-BESLUT KVARSTÄR: plan-nivån (Vercel Pro/Enterprise), och om dpl-pinningen (Skew Protection) är värd att bygga.' Kräver Marcus-beslut om kontonivå + om det återstående nätverks-kraschfönstret (chunk som inte finns efter deploy-skifte) ska stängas helt. Källa: kortets egen Implementation Notes (S105, 2026-08-13/14). Verifierat av registerhygien-passet 2026-08-28 — satte label ready-for-human (saknades).
 <!-- SECTION:NOTES:END -->

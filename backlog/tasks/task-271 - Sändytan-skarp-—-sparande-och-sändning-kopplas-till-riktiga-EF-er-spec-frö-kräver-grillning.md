@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-17 12:10'
+updated_date: '2026-08-28 05:10'
 labels:
   - ready-for-human
 dependencies: []
@@ -25,3 +26,9 @@ HÅLET bokfört på Marcus fråga 2026-08-17 (S104 stängning): segment-ytans FO
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+AC saknas medvetet: kortet är explicit 'ETT SPEC-FRÖ, inte en byggbar skiva: nytt designarbete → börjar med GRILLNING till samsyn (konstitutionens normalstart) → PRD → skivor.' Kräver grillning med Marcus om kringvillkoren (mail-låset deny-resend-send, consent-golvet, aktivitetslogg-verb, prototyp-notens öde, K2-idén) innan PRD/AC kan skrivas. Källa: kortets egen Description. Verifierat av registerhygien-passet 2026-08-28 (redan taggat ready-for-human).
+<!-- SECTION:NOTES:END -->

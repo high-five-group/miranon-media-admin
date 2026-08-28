@@ -6,8 +6,9 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-13 14:52'
-updated_date: '2026-08-26 04:20'
-labels: []
+updated_date: '2026-08-28 05:09'
+labels:
+  - ready-for-human
 dependencies: []
 priority: medium
 ordinal: 382000
@@ -104,4 +105,6 @@ Kortet har ingen definierad AC att bocka. Kvarstår öppet för
 uppföljning/triage.
 
 Bokföring S112 resume 1 (2026-08-26, stängnings-batch 1). Landning: PR #1982 (getWithTransientRetry() + tillämpning på get-event.staging.test.ts + airtable-filter.staging.test.ts). post-merge f3929e17e66e: in_progress vid detta bokföringstillfälle (merge_group för pr-1982 var conclusion=success). Status lämnas MEDVETET på To Do — kortets NÄSTA STEG 1-3 (Supabase-status-historik, mutex vs signalvärdes-strategival) är obetalda och kräver Marcus/orkestrerar-beslut, redan dokumenterat utförligt i Implementation Notes ovan. Ingen AC/DoD rörd i detta pass.
+
+AC saknas medvetet: kortet säger självt 'Kortet har ingen definierad AC att bocka. Kvarstår öppet för uppföljning/triage' och 'strategiskt vägval, kräver Marcus/orkestrerar-beslut' mellan mutex mot staging vs signalvärdes-varning (TASK-205 § REVIDERAD NÄSTA-STEG p.4), plus overifierad Supabase-statushistorik. En delåtgärd (getWithTransientRetry() på idempotenta GET) redan landad (PR #1982, commit-referens i kortets Implementation Notes). Kräver Marcus-beslut om strategival innan resterande AC kan skrivas. Källa: kortets egen Implementation Notes (S112 resume 1, 2026-08-26). Verifierat av registerhygien-passet 2026-08-28 — satte label ready-for-human (saknades).
 <!-- SECTION:NOTES:END -->
