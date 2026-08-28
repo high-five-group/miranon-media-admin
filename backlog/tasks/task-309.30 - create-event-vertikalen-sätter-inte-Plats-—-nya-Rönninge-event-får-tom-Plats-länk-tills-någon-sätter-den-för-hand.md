@@ -3,10 +3,10 @@ id: TASK-309.30
 title: >-
   create-event-vertikalen sätter inte Plats — nya Rönninge-event får tom
   Plats-länk tills någon sätter den för hand
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-26 05:02'
-updated_date: '2026-08-28 03:28'
+updated_date: '2026-08-28 04:41'
 labels:
   - ready-for-agent
 dependencies: []
@@ -32,9 +32,9 @@ DESIGNFRÅGA (avgör med research, bokför): (a) create-event slår upp Platser 
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -58,4 +58,6 @@ Verifiera UPDATED_AT (inte VERSION — en deploy bumpar VERSION på alla funktio
 UPPDRAGS-DIVERGENS (premiss-passet): uppdraget angav staging-deployen som "--project-ref apphjj8Q7lkXCMsL4". Det är AIRTABLE-BASENS id, inte Supabase-projektrefen. Rätt staging-ref är pqtshyierkdgwdnxuirz (.env.staging VITE_SUPABASE_URL + .prod-ref-policy.conf PROD_REF_STAGING). Deployen kördes mot den riktiga refen.
 
 OVÄNTAT, EJ RÖRT AV DENNA PR (ADR-053-triage: blockerar ej, värdefullt -> rapporterat): npm run test:api ger 4 röda som är helt oberoende av detta kort. Deras testfiler och EF-källor är byte-identiska med origin/main (git diff origin/main --stat = tomt), och get-document-sources fäller likadant ISOLERAT utan att create-event ens anropas. Tre av dem är staging-SEED-drift efter S108:s förlage-paritetsarbete som inte följdes av uppdaterade förväntningar i testerna: get-document-sources dag2-agenda förväntar 10 rader, staging bär nu 16 (mätt via list_records, Ordning 1-16, äkta innehåll — 10 + de sex agendapunkter CLAUDE.md § Bilagemallarnas FÖRLAGOR beskriver som tidigare missade); get-document-sources Beskrivning förväntar oformaterad text, staging bär nu markdown-fetstil (commit 8cf5479c fix/task-309-27-fetstil); generate-event-attachment preview-läge räknar 37 Bilagor-rader mot förväntat 36. Den fjärde (attachment-upload-large) är ett 30 s test-timeout på ett nätverksanrop, alltså transient.
+
+AC #4 PROD-MOMENT VERKSTÄLLT 2026-08-28: prod-EF-deploy av create-event utförd av Marcus (fas4-prod-deploy.sh --deploya, eget terminalfönster — INTE via !-prefixet). create-event v21, UPDATED_AT 2026-08-28T04:07:38Z. Deployad källa >= 55d83d0d (PR #2038 mergad 2026-08-28T03:53:50Z, verifierat via gh pr view), så deployen bär denna skivas kod. Källa för tidsstämpeln: utdata i S108 sessionsdok Del 29 (skrivs parallellt av orkestreraren — INTE ännu synlig i denna gren vid tidpunkten för denna kortbokföring; Del 28 är senaste avsnittet i min checkout). Kunde inte oberoende verifieras av mig (agent-låset deny-prod-ref.sh nekar varje Bash-kommando som bär prod-refen, även --kontrollera) — bokförd som källmärkt orkestrerar-uppgift, inte egen mätning.
 <!-- SECTION:NOTES:END -->

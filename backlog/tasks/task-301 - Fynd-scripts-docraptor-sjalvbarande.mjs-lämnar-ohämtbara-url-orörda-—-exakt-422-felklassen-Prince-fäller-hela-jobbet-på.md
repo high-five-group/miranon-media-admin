@@ -3,10 +3,10 @@ id: TASK-301
 title: >-
   Fynd: scripts/docraptor-sjalvbarande.mjs lämnar ohämtbara url() orörda — exakt
   422-felklassen Prince fäller hela jobbet på
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-22 21:11'
-updated_date: '2026-08-28 03:14'
+updated_date: '2026-08-28 04:40'
 labels:
   - ready-for-agent
 dependencies: []
@@ -45,8 +45,14 @@ Samma `local("")`-neutralisering i skriptet som i klientvarianten, med ett minim
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Levererat i PR #2034 (MERGED fda2c36b, 2026-08-28). scripts/docraptor-sjalvbarande.mjs neutraliserar nu ohämtbara url() till local("") i stället för att lämna dem orörda (den 422-felklass Prince fäller hela DocRaptor-jobbet på). AC #3 löst mot supabase/functions/_shared/mall-render.ts (EF-varianten), inte klientvarianten uppdraget ursprungligen pekade på — src/components/dokument/prototyp/sjalvbarande.ts är riven sedan TASK-309.6 (5632e164); korrekt korsreferens bokförd i båda filhuvudena. Ny gatekeeper-svit scripts/test-docraptor-sjalvbarande.mjs (4 fall) CI-wirad i ci.yml. Divergens bokförd öppet i PR-kroppen: ett skarpt scarp-test mot riktig DocRaptor med GAMLA buggiga koden reproducerade INTE 422 i just det fallet (grundorsaken kräver Vites /@fs/-omskrivning, som inte finns i ren Node-skriptväg) — fixen kvarstår ändå korrekt eftersom den matchar EF-lagrets redan produktionsbeprövade semantik. CI: statusCheckRollup 16 checks, samtliga SUCCESS/SKIPPED, inga FAILURE.
+<!-- SECTION:NOTES:END -->

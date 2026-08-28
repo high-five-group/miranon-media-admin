@@ -3,10 +3,10 @@ id: TASK-309.29
 title: >-
   Pensionera s102-dokument-konvergens via arkivflytt — ARKIVERAD.md med gapet
   bokfört, pekar-svep
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-26 04:57'
-updated_date: '2026-08-28 03:10'
+updated_date: '2026-08-28 04:39'
 labels:
   - ready-for-agent
 dependencies: []
@@ -32,9 +32,9 @@ GÖR (research-filens § 1, steg 1–4): (1) git mv tasks/sessions/bilagor/s102-
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes

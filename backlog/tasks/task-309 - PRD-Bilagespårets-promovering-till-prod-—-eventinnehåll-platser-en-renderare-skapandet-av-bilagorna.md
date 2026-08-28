@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-23 13:53'
+updated_date: '2026-08-28 04:43'
 labels: []
 dependencies: []
 ordinal: 561000
@@ -125,3 +126,9 @@ Tio skivor plus QA-kort: en minimaltest-skiva (XS), en datamodell-skiva (M), en 
 - [ ] #5 Prod-schemaändringar endast efter Marcus GO i klartext per tabell (ADR-125 § 8)
 - [ ] #6 Ingen HTML byggs i klienten; lagervakten (ADR-057) grön
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+LÄGE 2026-08-28 K-sista S108: kod i prod (45 EF 04:06-04:17Z). Marcus-moment kvar: 309.11 röktest · 309.10 facit-stämpling · 309.9 AC#2 nyckelrotation + AC#4 röktest · 309.8 AC#4 · 309.35 standardtexter · 325 AC#2.
+<!-- SECTION:NOTES:END -->

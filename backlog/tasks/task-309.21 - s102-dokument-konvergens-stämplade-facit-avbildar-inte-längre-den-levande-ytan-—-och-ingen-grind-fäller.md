@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-24 17:55'
-updated_date: '2026-08-28 03:12'
+updated_date: '2026-08-28 04:42'
 labels:
   - ready-for-agent
 dependencies: []
@@ -34,7 +34,7 @@ Det är samma klass som repot städat två gånger: ett facit vars tystnad läse
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [x] #1 Avgjort: stämplas s102-dokument-konvergens om mot den levande ytan, eller pensioneras manifestet till förmån för s108-generering/s108-dokumentytan?
-- [x] #2 De tre öppna AMENDERING-filerna avgjorda — omstämplade eller stängda med skäl
+- [ ] #2 De tre öppna AMENDERING-filerna avgjorda — omstämplade eller stängda med skäl
 - [x] #3 Klarlagt och bokfört hur många ytterligare stämplade ytor som saknar referenser-nyckel och därmed står utanför innehållslåset
 - [x] #4 Avgjort om avsaknad av referenser-nyckel ska fortsätta vara tillåtet, eller om check-facit bör larma på det (ADR-102-fråga, Marcus)
 <!-- AC:END -->
@@ -80,4 +80,6 @@ AC #4 AVGJORD OCH BOCKAD 2026-08-28 (TASK-309.31): "VARNA" valdes, fällning val
 Kortet lämnas ÖPPET i övrigt: AC #1/#2 bockade av TASK-309.29 (se ovan); s106/s111-omstämplingarna kvarstår hos Marcus. (Rebase-sammanslagning 2026-08-28: #2031 landade före #2032, båda blocken behållna.)
 
 Landningen för AC #4-beslutet: PR #2032 (gren feat/task-309-31-facit-tackningsvarning).
+
+AC #2 URBOCKAD 2026-08-28 K-sista: bara s102:s AMENDERING-fil är avgjord (arkivflyttad, #2031); s106-aktivitetslogg och s111-anmalningssidan-konvergens väntar Marcus --ersatt-stämpling (docs/research/facit-pensionering-s102-2026-08-26.md § 6 steg 4-5) — bockas när stämplingarna är gjorda (review-runda 1 på #2031, warning). AC #1/#3/#4 står. Kortet öppet.
 <!-- SECTION:NOTES:END -->

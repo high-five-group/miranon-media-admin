@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-26 04:56'
+updated_date: '2026-08-28 04:42'
 labels:
   - ready-for-human
   - prod
@@ -21,7 +22,7 @@ update-event ligger i .prod-functions-allowlist.conf sedan fulldeployen c6c96a52
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 functions list visar UPDATED_AT för update-event nyare än deployen — läs UPDATED_AT, inte VERSION (CLAUDE.md paragraf Prod-EF-deploy: VERSION bumpar +1 för ALLA funktioner oavsett vilka som rördes)
+- [x] #1 functions list visar UPDATED_AT för update-event nyare än deployen — läs UPDATED_AT, inte VERSION (CLAUDE.md paragraf Prod-EF-deploy: VERSION bumpar +1 för ALLA funktioner oavsett vilka som rördes)
 - [ ] #2 prod-svar 404 på okänt rec-ID verifierat (read-only-anrop, ingen mutation)
 <!-- AC:END -->
 
@@ -31,3 +32,9 @@ update-event ligger i .prod-functions-allowlist.conf sedan fulldeployen c6c96a52
 - [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+AC #1 bockad 2026-08-28 K-sista S108: update-event UPDATED_AT 2026-08-28 04:15:03Z (prod-deploy, fas4-prod-deploy.sh --kontrollera/--deploya) > #1988:s merge 2026-08-26T04:18:49Z (verifierat via gh pr view 1988, mergeCommit 8d2ad561b5d8215d05943c66040c4d8f28ccaaa0) — fixen är i prod. Källa för UPDATED_AT-tidsstämpeln: Marcus eget terminalfönster (kunde inte oberoende verifieras av mig — agent-låset deny-prod-ref.sh nekar varje Bash-kommando som bär prod-refen). AC #2 (prod 404 på okänt rec-ID, read-only-anrop) STÅR KVAR ÖPPEN — Marcus-kanal, ej utfört av mig.
+<!-- SECTION:NOTES:END -->

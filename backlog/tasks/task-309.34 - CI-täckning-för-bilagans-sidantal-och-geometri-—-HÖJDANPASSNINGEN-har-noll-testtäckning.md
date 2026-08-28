@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-28 02:59'
-updated_date: '2026-08-28 03:48'
+updated_date: '2026-08-28 04:44'
 labels:
   - ready-for-agent
 dependencies: []
@@ -68,7 +68,7 @@ för den logik PR #2028 redan landade.
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Enhetstest av raknaSidor()/SKALTRAPPA-trappan med stubbad renderare, ingen DOCRAPTOR_API_KEY krävd, wirad som gatekeeper-svit i CI
+- [x] #1 Enhetstest av raknaSidor()/SKALTRAPPA-trappan med stubbad renderare, ingen DOCRAPTOR_API_KEY krävd, wirad som gatekeeper-svit i CI
 - [ ] #2 Riktig DocRaptor-render-grind dokumenterad som Marcus-moment (DOCRAPTOR_API_KEY som GitHub-secret) — bokfört, byggs bara efter att nyckeln finns
 - [ ] #3 Render-grinden (när byggd) path-filtrerad mot docs/mallar/bilagor/** och supabase/functions/_shared/mall* av kostnadsskäl
 <!-- AC:END -->
@@ -106,4 +106,8 @@ Slutsats: ingen Riskbedömnings-sektion existerar i #2020 eller #2028 —
 review-grinden granskade aldrig dessa PR:er. Sakbehovet (testtäckningsluckan)
 kvarstår oförändrat, källmärkt direkt via grep i stället för via ett
 obelagt review-påstående.
+
+AC #1 bockad 2026-08-28 K-sista S108. Levererat i PR #2054 (i kön — INTE MERGED när denna kortbokföring kördes, gh pr view 2054: state OPEN, mergeStateStatus CLEAN, autoMergeRequest null) som api-pure-test tests/api/hojdanpassning.test.ts (25 fall) — INTE gatekeeper-svit-formen AC:t nämner: fel yta för EF-kod, samma val som TASK-309.22 (review-runda 1 på #2054, acProvning #1 felställd). AC #2/#3 = skiva (ii), kräver DOCRAPTOR_API_KEY som GitHub-secret (Marcus).
+
+RÄTTELSE (samma pass, PR #2054 MERGED strax därefter): b370e6cb6cb0948c931a42cb919524878ea57a0f, mergedAt 2026-08-28T04:42:59Z — verifierat via gh pr view. Var OPEN vid den ursprungliga kortbokföringsraden ovan (skrevs 'i kön' per instruktion); origin/main rörde sig under passet.
 <!-- SECTION:NOTES:END -->
