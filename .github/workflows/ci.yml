@@ -1291,6 +1291,22 @@ jobs:
         # RIKTIGA ci.yml/ci-suite.yml (`--list`), och ett tvåsidigt CLI-bevis
         # i en sandlåda med muterade kopior av policy+ci.yml+ci-suite.yml.
         # Ingen nätverkstrafik. 18,0 s LOKALT mätt (macOS, 2026-08-26).
+        #
+        # test-docraptor-sjalvbarande.mjs (TASK-301) hör hit av samma
+        # ADR-039-skäl: scripts/docraptor-sjalvbarande.mjs lämnade tidigare
+        # en ohämtbar CSS-url() ORÖRD, exakt den referensklassen Prince
+        # fäller HELA DocRaptor-jobbet på med HTTP 422 "File system access
+        # is not allowed" (se skriptets eget filhuvud § inlinaCssUrls).
+        # Fixen neutraliserar i stället till `local("")`, samma regel som
+        # EF-lagrets `inlinaCssUrls` (supabase/functions/_shared/
+        # mall-render.ts) redan bär. Fyra fall, tvåsidigt bevis (en ohämtbar
+        # font-url() → local(""), INTE orörd; en hämtbar font-url() → en
+        # data-URI, regressionsskydd mot att fixen neutraliserar för brett;
+        # en saknad <img src> är fortfarande ett HÅRT fel — asymmetrin mot
+        # fonter; neutraliseringen loggas på stderr med filnamn). Hermetisk
+        # (egen mktemp-fixtur, ingen nätverkstrafik). 0,16 s LOKALT mätt
+        # (macOS, 2026-08-28, `time node scripts/test-docraptor-
+        # sjalvbarande.mjs`) — CI-tiden är INTE mätt av mig och kan avvika.
         run: |
           bash scripts/test-check-frontmatter.sh
           bash scripts/test-check-public-checklists.sh
@@ -1337,6 +1353,7 @@ jobs:
           node scripts/test-review-risk-sektion.mjs
           node scripts/test-review-loop.mjs
           node scripts/test-verify-ci-parity.mjs
+          node scripts/test-docraptor-sjalvbarande.mjs
 
       - name: Test post-merge-lagrets ärvda klassning (TASK-73)
         # Per ADR-039 § lesson→grind (L43): en grind är inte en grind förrän

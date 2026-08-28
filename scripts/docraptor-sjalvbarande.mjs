@@ -29,8 +29,11 @@
 //   node scripts/docraptor-sjalvbarande.mjs docs/mallar/bilagor/kvitto.granskning.html
 //   → skriver test-results/docraptor/kvitto.sjalvbarande.html
 //
-// Programmatiskt (används av scripts/docraptor-minimaltest.mjs):
-//   import { gorSjalvbarande, gorSjalvbarandeUtanTypsnitt } from './docraptor-sjalvbarande.mjs';
+// Programmatiskt (används av scripts/mall-pdf.mjs och detta skripts egen
+// testsvit, scripts/test-docraptor-sjalvbarande.mjs — "docraptor-
+// minimaltest.mjs" som stod här tidigare byggdes ALDRIG, se mall-pdf.mjs
+// eget filhuvud):
+//   import { gorSjalvbarande } from './docraptor-sjalvbarande.mjs';
 //   const html = await gorSjalvbarande(sokvag);
 
 import { existsSync } from 'node:fs';
@@ -62,22 +65,66 @@ async function tillDataUri(sokvag) {
 }
 
 // Inlinar url(...)-referenser i en CSS-textmassa. `cssDir` är katalogen
-// CSS-filen låg i (relativa url()-sökvägar räknas därifrån). Referenser som
-// INTE hittas på disk lämnas ORÖRDA (fail-safe, samma princip som
-// prototypens FOUC-fallback: en trasig data:-URI är värre än en url() som
-// pekar ut i tomma intet men som CSS:en hanterar med sin egen fallback-
-// font-stack). `uteslut` är en Set av absoluta sökvägar som MEDVETET ska
-// hoppas över — negativt-typsnittstestet i docraptor-minimaltest.mjs
-// använder detta för att simulera en saknad font utan att röra disk.
-async function inlinaCssUrls(css, cssDir, uteslut = new Set()) {
+// CSS-filen låg i (relativa url()-sökvägar räknas därifrån); `cssFilnamn`
+// är CSS-filens egen sökväg, ENDAST för loggraden nedan.
+//
+// [TASK-301] Referenser som INTE hittas på disk NEUTRALISERAS till
+// `local("")` — de lämnas INTE längre orörda. En orörd url() är INTE
+// fail-safe mot DocRaptor: Prince läser den som ett försök att nå
+// renderarens EGET filsystem och fäller HELA jobbet med HTTP 422 "File
+// system access is not allowed" (mätt instans: kvitto-omgranskningens
+// agent byggde självbärande HTML ur en worktree där Cavolini-symlänken
+// saknades — referensen lämnades orörd och hade fällt DocRaptor-anropet,
+// se `docs/research/kvitto-prince-gap-grid-omgranskning-2026-08-22.md` §
+// Övriga avvikelser). `local("")` är en giltig men aldrig-matchande
+// @font-face-källa — CSS:ens EGEN fallback-fontstack tar över, samma
+// effekt en trasig länk skulle haft i en webbläsare, men utan att
+// exponera ett filsystem-anrop åt Prince. Alla url()-referenser i denna
+// CSS är font-src (grep-verifierat, `bilaga-delad.css`/`kvitto.css` bär
+// inga andra url()-former) — "font" är alltså inte ett specialfall här,
+// det är den enda formen som förekommer.
+//
+// SAMMA REGEL som EF-lagrets `inlinaCssUrls`
+// (supabase/functions/_shared/mall-render.ts): en font utan bundlad modul
+// faller till `local("")`, aldrig ett kastat fel. Klientvarianten som
+// tidigare bar denna regel (`src/components/dokument/prototyp/
+// sjalvbarande.ts`) är RIVEN sedan TASK-309.6 (prototypen bytte till
+// riktig data, commit `5632e164`) — mall-render.ts är nu den enda
+// systervarianten att hålla i synk, se dess filhuvud för korsreferensen
+// tillbaka hit.
+//
+// Bilder hanteras ANNORLUNDA (se gorSjalvbarande nedan): en saknad bild är
+// ett HÅRT fel, INTE en neutralisering — samma asymmetri som EF-lagrets
+// inlinaBilder (en font-fallback är avsiktlig design, ett bildhål är ett
+// buggat bygge).
+//
+// `uteslut` är en Set av absoluta sökvägar som MEDVETET ska hoppas över —
+// scripts/test-docraptor-sjalvbarande.mjs använder detta för att simulera
+// en saknad font utan att röra disk.
+async function inlinaCssUrls(css, cssDir, uteslut = new Set(), cssFilnamn = cssDir) {
   const urlRegex = /url\((['"]?)([^'")]+)\1\)/g;
+  const cssBasnamn = String(cssFilnamn).split('/').pop();
   const ersattningar = [];
   for (const match of css.matchAll(urlRegex)) {
     const [helMatch, , rawPath] = match;
     if (rawPath.startsWith('data:') || rawPath.startsWith('http')) continue;
     const abs = resolve(cssDir, rawPath);
-    if (uteslut.has(abs)) continue; // medvetet uteslutet — negativt test
-    if (!existsSync(abs)) continue; // fail-safe: lämna url() orörd
+    if (uteslut.has(abs)) {
+      // medvetet uteslutet — testfixtur simulerar en saknad font
+      console.error(
+        `[docraptor-sjalvbarande] neutraliserad url() → local(""): "${rawPath}" i ${cssBasnamn} (medvetet uteslutet av testfixtur)`,
+      );
+      ersattningar.push({ helMatch, ersattning: 'local("")' });
+      continue;
+    }
+    if (!existsSync(abs)) {
+      // [TASK-301] ohämtbar — NEUTRALISERA, lämna aldrig orörd (422-risken ovan)
+      console.error(
+        `[docraptor-sjalvbarande] neutraliserad url() → local(""): "${rawPath}" i ${cssBasnamn} (saknas på disk: ${abs})`,
+      );
+      ersattningar.push({ helMatch, ersattning: 'local("")' });
+      continue;
+    }
     const dataUri = await tillDataUri(abs);
     ersattningar.push({ helMatch, ersattning: `url("${dataUri}")` });
   }
@@ -117,7 +164,7 @@ export async function gorSjalvbarande(htmlPath, { uteslutTypsnitt = [] } = {}) {
       throw new Error(`CSS saknas: ${cssAbs} (refererad från ${absHtmlPath})`);
     }
     const cssRaw = await readFile(cssAbs, 'utf8');
-    const cssInlinad = await inlinaCssUrls(cssRaw, dirname(cssAbs), uteslutSet);
+    const cssInlinad = await inlinaCssUrls(cssRaw, dirname(cssAbs), uteslutSet, cssAbs);
     html = html.replace(helMatch, `<style>\n${cssInlinad}\n</style>`);
   }
 
