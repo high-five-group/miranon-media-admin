@@ -491,8 +491,8 @@ Numrering efter S109: ADR 122 · kort 284 (om `#1674` landat) · L512 + 55
 fragment · T158 · f52 · session 111. Full narrativ: sessionsdok S109 Del 1–4 +
 PAUSLÄGE.
 
-**Session 108 ✅ K-SISTA KLAR (2026-08-28, väntar Marcus coverage-kvittens →
-`lifecycle: closed`) — HELA BILAGESPÅRET I PROD: NIO PR:ER LANDADE, 45 EF
+**Session 108 ✅ K-SISTA KLAR (2026-08-28, STÄNGD 2026-08-28 efter Marcus
+kvittens, `lifecycle: closed`, nästa session 113) — HELA BILAGESPÅRET I PROD: NIO PR:ER LANDADE, 45 EF
 DEPLOYADE 04:06–04:17Z, DOKUMENT/BILAGOR/KVITTON LIVE INFÖR LOTTAS SÖNDAG.**
 Marcus mål för resumen — *"komma hela vägen till session-end"* — nått för allt
 som är agent-görbart. **Landat på `main`:** `#2030` · `#2031` (`309.29`,
