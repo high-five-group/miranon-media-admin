@@ -58,7 +58,7 @@ plus två oberoende precedent inom samma repo:
   underliggande mönster i arbetsformens leveransväg, inte en ny observation.
 
 **Grindklassens dubbla bärare är facit-modellen.** Kod-verifierat under
-grillningen (`tasks/sessions/2026-08-07-session-99.md` § Del 3, punkt 3):
+grillningen (`tasks/sessions/archive/2026-08/2026-08-07-session-99.md` § Del 3, punkt 3):
 området som HAR koll — klassregeln `L147`, DoD-fyran (`ADR-036`),
 `check:docs`, `verify:ci-parity` — har det kadensregeln saknade: **mekaniska
 bärare**, konkret kort-DoD ur backlog-config OCH `.claude/agents/bygg-agent.md`
@@ -67,7 +67,7 @@ håller) och kadensregeln (som inte höll trots att den var skriven) är
 beviset för mekanismvalet nedan, och den dubbla-bärare-formen är mallen
 `(a)+(b)` replikerar.
 
-**Grillad samsyn**, fyra kvitterade frågor (`tasks/sessions/2026-08-07-session-99.md`
+**Grillad samsyn**, fyra kvitterade frågor (`tasks/sessions/archive/2026-08/2026-08-07-session-99.md`
 § Del 3):
 
 1. Tudelning: regel-leveransproblemet (`T126`) OCH push-ekonomin (Marcus
@@ -344,7 +344,7 @@ fullt känd förrän den skivan landar.
 - `tasks/threads/T126-arbetsformens-leveransvag.md` — hela felbilden,
   rotorsaks-hypotesen och de fyra ospelade åtgärdsriktningarna `(a)`–`(d)`
   denna ADR väljer och avvisar mellan.
-- `tasks/sessions/2026-08-07-session-99.md` § Del 3 — grillad samsyn, fyra
+- `tasks/sessions/archive/2026-08/2026-08-07-session-99.md` § Del 3 — grillad samsyn, fyra
   kvitterade frågor.
 - [`docs/research/push-kadens-agent-arbetstrad-2026-07-26.md`](../research/push-kadens-agent-arbetstrad-2026-07-26.md)
   — push-ekonomins fullständiga underlag, DORA/trunk-based-golvet,

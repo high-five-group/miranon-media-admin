@@ -12,7 +12,7 @@ arbetsenhet, med byggare i luften och PR:er i kön, finns i dag två utfall:
 serialiseringskostnad i S99:s båda tidigare pauser: "vi landar allt som är i
 luften och väntar in agenterna") — eller **fortsätta** tills harnessets eget
 auto-compact slår till okontrollerat, enligt grillningens observation
-(`tasks/sessions/2026-08-07-session-99.md` § Del 9) vid ungefär 85–90 %
+(`tasks/sessions/archive/2026-08/2026-08-07-session-99.md` § Del 9) vid ungefär 85–90 %
 fyllnad, utan fokus-instruktion och utan att läget säkrats i fil. Status quo
 är alltså inte "paus alltid" utan **"paus när någon råkar se statusraden,
 annars okontrollerad kompaktering"**. Grillningens nyckelinsikt (Uppdrag 8,
@@ -21,7 +21,7 @@ kompaktering** — inte compact kontra paus.
 
 ### Grillad samsyn — fem kvitterade frågor + Marcus GO 2026-08-07
 
-Källa: `tasks/sessions/2026-08-07-session-99.md` § Del 9.
+Källa: `tasks/sessions/archive/2026-08/2026-08-07-session-99.md` § Del 9.
 
 1. **Position B** — komplement med smal nisch, inte ersättning (position A)
    och inte totalavvisning (position C). Se § Decline-rationale.
@@ -326,7 +326,7 @@ denna skivas scope).
 - `tasks/threads/T111-autonom-orkestrering-kontexttroskel.md` — äldre
   (2026-07-31) bokföring som denna ADR:s § Källmärkning öppet vederlägger på
   en specifik punkt (PreCompact-hookens existens); filen själv orörd.
-- `tasks/sessions/2026-08-07-session-99.md` § Del 9 — grillad samsyn, fem
+- `tasks/sessions/archive/2026-08/2026-08-07-session-99.md` § Del 9 — grillad samsyn, fem
   kvitterade frågor, samsyns-narrativet för hela detta beslut.
 - `backlog/tasks/task-160*` — PRD + skivor (`TASK-160.1`–`.7`); denna ADR är
   `.1`.

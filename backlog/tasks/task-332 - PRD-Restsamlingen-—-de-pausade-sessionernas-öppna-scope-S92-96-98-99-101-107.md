@@ -30,7 +30,7 @@ Mätdatum för allt nedan: **2026-08-28**, mot `origin/main` `10ae24f3`.
 
 ---
 
-## S92 — Färgsystemet (`tasks/sessions/2026-07-26-session-92.md`, 699 rader)
+## S92 — Färgsystemet (`tasks/sessions/archive/2026-07/2026-07-26-session-92.md`, 699 rader)
 
 Landningen är klar (PR `#285` mergad `03d3a3f4`); det som står kvar är **migreringens förarbete A–E**, som PAUSLÄGET uttryckligen förbjöd att påbörja innan A–D landat.
 
@@ -48,7 +48,7 @@ Landningen är klar (PR `#285` mergad `03d3a3f4`); det som står kvar är **migr
 
 ---
 
-## S96 — Work-batchen, heartbeat + T95 (`tasks/sessions/2026-08-02-session-96.md`, 2363 rader, 8 pauser)
+## S96 — Work-batchen, heartbeat + T95 (`tasks/sessions/archive/2026-08/2026-08-02-session-96.md`, 2363 rader, 8 pauser)
 
 Referenserna nedan går till **åttonde (sista) pausen**, § CARRY / ÖPPNA TRÅDAR (rad 2288–2332) och § KÄNDA KANTER (rad 2334–2350), där alla tidigare pausers carry är ackumulerad.
 
@@ -68,7 +68,7 @@ Referenserna nedan går till **åttonde (sista) pausen**, § CARRY / ÖPPNA TRÅ
 
 ---
 
-## S98 — Nattgrinden och paritetsreglerna (`tasks/sessions/2026-08-05-session-98.md`, 390 rader)
+## S98 — Nattgrinden och paritetsreglerna (`tasks/sessions/archive/2026-08/2026-08-05-session-98.md`, 390 rader)
 
 Fyra beslutsposter låg hos Marcus vid pausen. **En är mekaniserad, tre står kvar.**
 
@@ -79,7 +79,7 @@ Fyra beslutsposter låg hos Marcus vid pausen. **En är mekaniserad, tre står k
 
 ---
 
-## S99 — Process-synen, nio uppdrag grillade (`tasks/sessions/2026-08-07-session-99.md`, 1049 rader, 5 pauser)
+## S99 — Process-synen, nio uppdrag grillade (`tasks/sessions/archive/2026-08/2026-08-07-session-99.md`, 1049 rader, 5 pauser)
 
 Agent-sidan av alla nio uppdrag är KOMPLETT (`TASK-161.1`–`161.9` Done). **Det som blockerar session-end är uteslutande Marcus-ägt.** Femte pausens CARRY (rad 1010–1023) hänvisar till fjärde pausens fullständiga listor (rad 921–954).
 
@@ -143,10 +143,10 @@ Två hela spår är ÖVERLÄMNADE och ingår därför INTE nedan: dokument-/bila
 
 **Källdoken, samtliga `lifecycle: closed` via scope-överföring 2026-08-28:**
 
-- `tasks/sessions/2026-07-26-session-92.md` — 3 K, 9 Ö
-- `tasks/sessions/2026-08-02-session-96.md` — 4 K, 11 Ö
-- `tasks/sessions/2026-08-05-session-98.md` — 3 K, 4 Ö
-- `tasks/sessions/2026-08-07-session-99.md` — 5 K, 11 Ö
+- `tasks/sessions/archive/2026-07/2026-07-26-session-92.md` — 3 K, 9 Ö
+- `tasks/sessions/archive/2026-08/2026-08-02-session-96.md` — 4 K, 11 Ö
+- `tasks/sessions/archive/2026-08/2026-08-05-session-98.md` — 3 K, 4 Ö
+- `tasks/sessions/archive/2026-08/2026-08-07-session-99.md` — 5 K, 11 Ö
 - `tasks/sessions/2026-08-09-session-101.md` — 3 K, 8 Ö
 - `tasks/sessions/2026-08-17-session-107.md` — 10 K, 13 Ö
 

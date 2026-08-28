@@ -133,6 +133,11 @@ status: stable
   `.review-loop-policy.json` · `scripts/lib/review-loop.mjs`. Inget eget kort
   finns — punkten är bokförd på `TASK-330`-nivå / `173.6`.
 
+- **Instanser 2026-08-28 (AFK-vågen)** — loopen gav exit 20 på tre
+  konvergerade PR:er enbart p.g.a. `ask-user` på `info`-nivå (`#2042` två
+  gånger, `#2052`); orkestreraren avgjorde under ditt mandat och bokförde i
+  Del 8. Utan tröskel blir varje granskning ett Marcus-ärende.
+
 ### 5. S113 — Airtable-fönstret: när bokar du det?
 
 - **Vad det är** — hela `TASK-213`-familjen (bas-maxning våg 1) ligger och
@@ -619,6 +624,13 @@ ligger på `https://admin.miranon.dev`. Vill du gå mot staging i stället:
 `npm run preview:staging` och öppna `http://localhost:4173` i en färsk
 webbläsarkontext.
 
+- **Läge 2026-08-28 ~08:30** — `#1878` är nu **konfliktad** (`DIRTY`):
+  `TASK-327` landade samma backlog.md-bump via `#2041` (`ef2e0522`).
+  Dependabot rebasar själv eller stänger; ny rekommendation: **stäng `#1878`**
+  med kommentaren att bumpen landade i `#2041`, och låt nästa Dependabot-
+  körning ta de övriga fem dev-paketen i en färsk grupp-PR. `#1826`/`#1487`
+  oförändrade.
+
 ### 24. Åtgärdssidan — hela Lotta-flödet (9 steg, ~45 min)
 
 - **Vad det är** — den sista stora vandringen före go-live: markera
@@ -954,5 +966,6 @@ de inte glömts bort.
   djupläsningen: S92:s rollmigrering är INTE gjord (`primitives.css` rad
   149–155 säger det själv), S98:s UNIVERSAL-form är fortfarande oavgjord
   (punkt 10 ovan), S101 saknar `173.4`, S107 bar tolv punkter, inte en.
-- **Källa** — `TASK-332` · PR `#2045` · `ADR-052` § Updates 2026-08-28 ·
-  sessionsdok S112 Del 7 Fynd 3 + Del 8.
+- **Källa** — `TASK-332` · PR `#2045` (**landad** `ecc324b1`, 2026-08-28 —
+  två granskningsrundor; runda 1 fångade en tappad S107-post, nu 28 K / 56 Ö)
+  · `ADR-052` § Updates 2026-08-28 · sessionsdok S112 Del 7 Fynd 3 + Del 8.

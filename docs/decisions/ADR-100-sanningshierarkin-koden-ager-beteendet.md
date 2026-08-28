@@ -236,7 +236,7 @@ skiva — den är en separat, framtida grillning och exekvering.
   ADR-praxis-jämförelse; samma Nygard-källa
 - [ADR-086](ADR-086-uppdragets-premisser-provas-av-mottagaren.md) —
   premiss-passet, läsregeln (§3) applicerad på uppdragstexter specifikt
-- `tasks/sessions/2026-08-07-session-99.md` § Del 6 (grillad samsyn, sex
+- `tasks/sessions/archive/2026-08/2026-08-07-session-99.md` § Del 6 (grillad samsyn, sex
   kvitterade frågor) + § Del 7 (memory-domänens tillägg, rad 7 i §1)
 - `~/Repon/marcus-system/SYSTEMET.md` §0 "sanningskälla (per domän)"
   (hub-commit `7913c16`) — termposten denna ADR fyller numret i (rad 1–6);
@@ -264,7 +264,7 @@ skiva — den är en separat, framtida grillning och exekvering.
 ### 2026-08-08 (S99) — review_by-bumpens innebörd + ägar-deklarationens form
 
 Additiv amendering, `TASK-161.1` (PRD `TASK-161`, styrande-docs-auditen —
-uppdrag 9). Grillad samsyn: `tasks/sessions/2026-08-07-session-99.md` § Del 10
+uppdrag 9). Grillad samsyn: `tasks/sessions/archive/2026-08/2026-08-07-session-99.md` § Del 10
 ("review_by-bumpens innebörd definieras (förfallo-grinden FINNS redan —
 check-frontmatter Check 3, verifierad) · ägar-deklaration per styrande dok").
 Ingen ny ADR — denna post **operationaliserar** §2 (karta-inte-kopia) och §3

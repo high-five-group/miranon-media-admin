@@ -1059,7 +1059,7 @@ gärning av en specifik process.
 (research-pass). Bokförd som egen post: L451 § "Lärdomen, i två delar" bär
 denna regel som sin PUNKT 2, buntad med en annan (frekvens som signal för
 aktiv skribent). Sessionsdokets egen paushistorik (tredje pausen,
-`tasks/sessions/2026-08-04-session-97.md` rad ~1138–1139) listar den ändå
+`tasks/sessions/archive/2026-08/2026-08-04-session-97.md` rad ~1138–1139) listar den ändå
 som en EGEN, fristående lesson-kandidat — den säkras därför här som sin
 egen post i stället för att bara vila inuti L451.
 

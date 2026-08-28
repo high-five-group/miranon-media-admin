@@ -27,7 +27,7 @@ källa: `wc -l`/`wc -c` + `awk '{print length}'` mot
   hela narrativet i Titel-kolumnen — inte bara Ingång-kolumnen, som en
   äldre, snävare hypotes om var fetman bor hade antagit).
 - **Divergens mot uppdragets utgångshypotes, öppet bokförd (ADR-086):**
-  `tasks/sessions/2026-08-07-session-99.md` § Del 4 och research-passet
+  `tasks/sessions/archive/2026-08/2026-08-07-session-99.md` § Del 4 och research-passet
   (`docs/research/register-index-skalning-branschmonster-2026-08-07.md`)
   angav **268 rader / 214 KB / 131 trådar** som mätgrund — skrivet samma
   session, några timmar tidigare. Ommätningen visar en marginell,
@@ -317,7 +317,7 @@ ett löfte om exakt datum.
 - [`docs/research/register-index-skalning-branschmonster-2026-08-07.md`](../research/register-index-skalning-branschmonster-2026-08-07.md)
   — sju primärkällor + tre lokala precedent, dom och rekommendation denna
   ADR verkställer.
-- `tasks/sessions/2026-08-07-session-99.md` § Del 4 — grillad samsyn,
+- `tasks/sessions/archive/2026-08/2026-08-07-session-99.md` § Del 4 — grillad samsyn,
   formvalet (A) och paketet (migration nu, växt-väg, leveransform)
   kvitterade.
 - `tasks/lessons.md` `L413` (strukturellt grönt kan dölja människo-synligt

@@ -56,7 +56,7 @@ blocked while waiting for a single subagent to finish searching" — av
 skälet att asynkron delegering flyttar problemet till "result coordination,
 state consistency, and error propagation" i stället för att lösa det.
 
-**Grillad samsyn** (`tasks/sessions/2026-08-07-session-99.md` § Del 2, fem
+**Grillad samsyn** (`tasks/sessions/archive/2026-08/2026-08-07-session-99.md` § Del 2, fem
 kvitterade frågor):
 
 1. **Scope:** båda sidorna — sida 1 (subagenten parkerar; rotorsak belagd)
@@ -312,7 +312,7 @@ alls av detta beslut — egen, framtida yta om mätning motiverar.
 - `tasks/threads/README.md` tråd `T108` — orkestreraren väntar på
   notifieringar som strukturellt aldrig kommer.
 - `backlog/tasks/task-148*` — PRD + skivor (`TASK-148.1`–`TASK-148.7`).
-- `tasks/sessions/2026-08-07-session-99.md` § Del 2 — grillad samsyn, fem
+- `tasks/sessions/archive/2026-08/2026-08-07-session-99.md` § Del 2 — grillad samsyn, fem
   kvitterade frågor + premiss-korrektionen.
 - `.claude/agents/bygg-agent.md` § "Ingen asynkron signal når dig" —
   sektionen `TASK-148.3` kompletterar.

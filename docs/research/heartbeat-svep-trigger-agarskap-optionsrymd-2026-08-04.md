@@ -8,7 +8,7 @@ status: stable
 # Heartbeat-svepets trigger — options-rymd och rekommendation (T119 arbetslista (c))
 
 > **Proveniens:** avgränsat research-pass 2026-08-04, beställt via `T119`
-> arbetslista-punkt (c) (`tasks/sessions/2026-08-04-session-97.md` rad 726–728,
+> arbetslista-punkt (c) (`tasks/sessions/archive/2026-08/2026-08-04-session-97.md` rad 726–728,
 > § "Paushistorik — Session 97, andra pausen" → CARRY): *"Heartbeat-svepets
 > trigger får en ägare (relaterat `TASK-135`). Svepet är redan korrekt designat
 > som periodisk level-triggered reconciliation — det är TRIGGERN som saknas,
@@ -59,7 +59,7 @@ olika svar.**
    "väcka" den specifika orkestrator-kontext som pausades. `/loop` överlever
    bara en **äkta `--resume`/`--continue`** eller en **bakgrundlagd session**
    (`/background`) — och vår egen dokumenterade praxis
-   (`tasks/sessions/2026-08-04-session-97.md` rad 799: *"Öppna nytt
+   (`tasks/sessions/archive/2026-08/2026-08-04-session-97.md` rad 799: *"Öppna nytt
    terminalfönster, kör `session-resume`"*) startar en **ny konversation**,
    inte en `--resume`. Det är samma slutsats `T111` redan drog för
    kontext-återställning (halva B), nu bekräftad för trigger-frågan från en
@@ -221,7 +221,7 @@ frånkoppling, inte en process-död.
 
 **Detta är ändå INTE samma sak som vår nuvarande `session-paus`/
 `session-resume`-praxis**, som medvetet startar en **ny konversation**
-(`tasks/sessions/2026-08-04-session-97.md` rad 799: *"Öppna nytt
+(`tasks/sessions/archive/2026-08/2026-08-04-session-97.md` rad 799: *"Öppna nytt
 terminalfönster"*) — ett val `T111` redan grundade i att `--resume`/
 `--continue` ärver *"the full history, including tool calls and results"*
 och att kontext-återställning kräver just detta brott. Att byta till
@@ -466,7 +466,7 @@ detta pass:**
 - `tasks/threads/README.md` (`T111`, `T112`, `T119`-raderna)
 - `backlog/tasks/task-135 - ...md` (Done — observabilitetsfix, disjunkt fråga)
 - `docs/research/orkestrerar-vackning-polling-vs-event-driven-2026-08-02.md`
-- `tasks/sessions/2026-08-04-session-97.md` (uppdragets källrad, rad 726–728)
+- `tasks/sessions/archive/2026-08/2026-08-04-session-97.md` (uppdragets källrad, rad 726–728)
 
 ## Släktskap
 

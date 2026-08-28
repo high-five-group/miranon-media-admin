@@ -143,7 +143,7 @@ under tiden till 86 dokument utan att kadensen någonsin utlöstes.
 fas-avslut-bindningen med ett rullande fönster: roten behåller de N senast
 stängda dokumenten (N som konfig-värde, startvärde ~10) plus samtliga
 `active`/`paused`-dokument; äldre stängda dokument arkiveras. Grillad
-samsyn: `tasks/sessions/2026-08-07-session-99.md` § Del 5 (2026-08-07,
+samsyn: `tasks/sessions/archive/2026-08/2026-08-07-session-99.md` § Del 5 (2026-08-07,
 "Uppdrag 5"). Beslut 6:s ursprungstext ovan bevaras oförändrad
 (immutabilitet, L53) — denna not styr tolkningen framåt. Övriga beslut i
 denna ADR (1–5) är helt opåverkade.

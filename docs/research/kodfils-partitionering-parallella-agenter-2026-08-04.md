@@ -10,7 +10,7 @@ status: draft
 > **Proveniens:** avgränsat research-pass beställt av orkestreraren 2026-08-04
 > för tråden `T119` (d) item 3, registrerad `tasks/threads/README.md` rad 162
 > som **åtgärdsriktning, ej beslutad design**. Sessionsdokets handoff
-> (`tasks/sessions/2026-08-04-session-97.md`, "Paushistorik — Session 97,
+> (`tasks/sessions/archive/2026-08/2026-08-04-session-97.md`, "Paushistorik — Session 97,
 > tredje pausen" § CARRY) formulerar frågan ordagrant: *"Kräver att
 > `/work-batch`s claims-check + `git merge-tree`-grind generaliseras till all
 > ad hoc-parallellitet. Worktree-isolering löser det INTE; kollisionen sker
@@ -610,7 +610,7 @@ identifierar som gap är två saker, båda mindre än "ny mekanism":
 - [processregler-mekanisering-branschpraxis-2026-08-04.md](processregler-mekanisering-branschpraxis-2026-08-04.md)
   (tre-lagers-doktrinen)
 - `tasks/threads/README.md` (rad 162, `T119`; rad 164, `T121`)
-- `tasks/sessions/2026-08-04-session-97.md` ("Paushistorik — Session 97,
+- `tasks/sessions/archive/2026-08/2026-08-04-session-97.md` ("Paushistorik — Session 97,
   tredje pausen" § CARRY)
 - `CLAUDE.md` § "Agenter kan INTE arbeta cross-repo — och varje worktree
   kostar"
