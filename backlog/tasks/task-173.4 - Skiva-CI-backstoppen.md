@@ -4,7 +4,7 @@ title: 'Skiva: CI-backstoppen'
 status: To Do
 assignee: []
 created_date: '2026-08-09 13:14'
-updated_date: '2026-08-28 04:02'
+updated_date: '2026-08-28 04:16'
 labels:
   - ready-for-agent
 dependencies:
@@ -54,4 +54,14 @@ AC #3 mätt, ej antaget: merge_group-körning 33138424216 (docs-only PR #2033) s
 JSON-SCHEMA-DIVERGENSEN (flaggad framåt hit av 173.3): AVGJORD som icke-bugg. z.toJSONSchema() i zod 4.4.3 defaultar till io:'output', där ett .default()-fält alltid är närvarande och därför korrekt 'required' — verifierat mot installerad zod (io:'input' ger [a], io:'output' och default ger [a,b] på probe-schema). Artefakten är utdata-sidans schema. En rå-JSON-konsument (indata-sidan) behöver io:'input', alltså en ANNAN artefakt. 173.4 behövde ingendera: backstoppen parsar den RENDERADE sektionen, aldrig JSON. Ingen regenerering gjord — det vore ett eget beslut.
 
 ÖPPEN SKULD (DoD #8): (a) skarpbevis för backstopp-JOBBETS wiring på merge_group-ytan kan strukturellt inte tas före landning — jobbet existerar bara på grenar som bär denna ändring, och en avsiktligt röd kö-körning är förbjuden. Det betalas av denna PR:s EGEN merge_group-körning, som kräver att PR:en bär en Riskbedömnings-sektion. (b) gate-proof-workflowen review-backstopp-proof.yml kan inte dispatchas före landning: GitHub registrerar workflow_dispatch först när filen finns på default-grenen. Kör 'gh workflow run review-backstopp-proof.yml' direkt efter merge för AC #1/#2:s run-ID, plus 'gh workflow run review-backstopp-proof.yml -f simulera_gront=true' som negativ kontroll (ska bli RÖD). (c) DoD #7 (instrumenteringsloggen) tillhör TASK-173.6, inte denna skiva — DoD-blocket är ärvt verbatim från förälder-PRD:n.
+
+BEVIS SOM FAKTISKT TOGS (2026-08-28, PR #2049, commit 68831622):
+- CI-run 33141087421, jobb 98751954146 (Lint + Audit + TypeCheck) :: success. Steg 26 'Test gatekeeper script suites' körde scripts/test-review-backstopp.mjs — loggrad 2669: 'review-backstopp: 38 gröna, 0 röda'. Sviten bevisar BÅDA riktningar mot en VERKLIG granskad PR-kropp (#2031): utan sektion → FÄLLER (kod 'saknas', CLI exit 1), med sektion → SLÄPPER (CLI exit 0).
+- Samma run: jobbet 'Review-backstopp (granskningsutlåtande)' :: SKIPPED på PR-ytan — exakt som designat (event_name != merge_group). Wiringen är alltså live och syns som check.
+- AC #3 tvåsidigt mätt på KÖ-ytan: docs-only merge_group 33138424216 → 'Test suite' SKIPPED (should_skip_tests=true ⇒ backstoppen skippar); kod-klassad merge_group 33139822993 (pr-2038) → 'Test suite / Pure + Build' SUCCESS (should_skip_tests=false ⇒ backstoppen kör).
+- Rulesetet 'main-skydd' (19627609): enforcement=active, bypass_actors=[] — ingen kan merga förbi kön, alltså kan ingen kod-PR landa förbi backstoppen.
+- Lokala grindar: actionlint (CI:s -ignore) 0 · yamllint 0 · biome check . 0 · markdownlint 0 issues · Vale 0 errors/0 warnings · check-langa-streck 0 · check-fetch-depth-invariant 0 · dess testsvit 7/7 · test-verify-ci-parity 69/69 · typecheck 0 · paritets-preflight 0.
+- Mutationsbevis (sviten fäller när logiken bryts): STALE-kontrollen bortkopplad → 3 röda; PR-nummer-kontrollen → 2 röda; merge_group-regexen uppluckrad → 1 röd; CLI:ts exitkod låst till 0 → 3 röda.
+
+STOPPA-PUNKT för orkestreraren: AC #1 och #2 är INTE bockade. Verdikt-logiken är CI-bevisad i båda riktningar (ovan), men själva JOBBETS fällning på merge_group-ytan och gate-proof-workflowens run-ID kan strukturellt inte tas före landning — mätt: 'gh workflow run review-backstopp-proof.yml --ref <gren>' ger HTTP 404 'not found on the default branch'. Bocka #1/#2 efter merge, med run-ID från de två dispatch-kommandona i föregående not.
 <!-- SECTION:NOTES:END -->
