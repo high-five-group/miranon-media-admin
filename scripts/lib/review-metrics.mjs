@@ -15,6 +15,17 @@
 //                                          per Marcus-fångst
 //   scripts/review-metrics.mjs             läser + summerar hela loggen
 //
+// ═══ BRANSCHENS EGET MÖNSTER: MÄT GRINDEN, INTE BARA GRINDVAKTEN ═══
+// CodeRabbit, Danger.js och reviewdog bokför alla sina fynd som en
+// STRUKTURERAD, maskinläsbar logg per granskningskörning (findings-JSON/
+// SARIF) i stället för att bara rendera dem i en PR-kommentar och slänga
+// underlaget — annars går det aldrig att i efterhand fråga "fångar grinden
+// det den ska?". Samma disciplin som SRE-praxisen "measure the gate, not
+// just the gatekeeper": en kvalitetsgrind som inte mäter sin EGEN
+// träffsäkerhet kan inte skiljas från teater. Det är precis frågan ADR-105 §
+// Konsekvenser ställer om review-grinden (C.4-2-sekvensen: mät före
+// ribb-flytt) — den här modulen är svaret i kod.
+//
 // ═══ VARFÖR EN JSONL-FIL, INTE EN DATABAS ═══
 // Samma val som scripts/flake-matserie.mjs gör för `resultat.jsonl`: en rad
 // per händelse, denormaliserad, `git`-spårbar och `jq`-summerbar utan
