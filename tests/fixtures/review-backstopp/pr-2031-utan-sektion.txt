@@ -1,0 +1,73 @@
+## Vad
+
+`TASK-309.29` — pensionerar det stämplade facit-manifestet `s102-dokument-konvergens` via **arkivflytt**, och exekverar `TASK-309.21` AC #1 (avgörandet) och AC #2 (s102-katalogens AMENDERING-filer) i samma landning.
+
+Manifestet stämplades 2026-08-16 (`cc1d7c53`) men avbildade en riven funktion: den dialog-baserade Visa-overlayen ersattes av ikonpar i `TASK-273.4` (`b881fe64`). `--ersatt` skriver bara om `godkand`-blocket, aldrig bilderna — en omstämpling hade producerat ett färskt-daterat kvitto för något som inte går att klicka fram i appen. Formen är därför arkivflytt, per prejudikatet `s55-hem-konvergens` (`TASK-243.1`, PR #1426) och `tasks/lessons.d/superseded-facit-arkivflyttas-aldrig-raderas.md`.
+
+Mandat: Marcus i klartext 2026-08-26 (S108 resume 11, `tasks/sessions/2026-08-20-session-108.md` rad 3795). Underlag: `docs/research/facit-pensionering-s102-2026-08-26.md` § 1 och § 5.
+
+## Manifestet är ORÖRT — bevis
+
+Alla nio filer flyttades som rena git-renames. `sha256` byte-identisk före/efter:
+
+| Fil | sha256 |
+|---|---|
+| `facit.json` | `725a963a5bc999a6a242bdaabe7dd2a71100d5d0be3242f602bad2ea801ea695` |
+| `AMENDERING-2026-08-17-rackviddsval-…` | `b48d95dc7b8d26781f77155e9bd6043502164372ea99f93f13f1ac17db9a278b` |
+| `AMENDERING-2026-08-17-visa-till-ikonpar` | `24d76a40d5191e614d33dedbe2cd8bc94a4ce9a1a8bb4acc8dbe0e50f5f62a99` |
+| `AMENDERING-2026-08-23-sidram-promovering` | `83a16bc6d5ae7cc52f7ec0d028ebd83576fed0d1e9d84c9ce6ea59d483140ef0` |
+
+Ingen `Edit`/`Write` rörde manifestet; `git mv` matchar ingen av `deny-facit-godkand-skrivning.sh`s två kanaler.
+
+## Grinden ser pensioneringen
+
+`bash scripts/check-facit.sh` exit 0 både före och efter. Utdatans skillnad:
+
+- `15 manifest, 30 ytor deklarerade` → **`14 manifest, 29 ytor`**
+- `24 stämplade ytor saknar "referenser"` → **`23`**
+- raden `s102-dokument-konvergens/facit.json · … receipt-pdf.ts — riven efter stämpeln cc1d7c53` är **borta** ur invariant (b)-listan
+
+Ett pensionerat pass räknas alltså inte längre som stämplat-men-avvikande.
+
+## Pekar-svepet
+
+Uppdaterade **levande** filer:
+
+| Fil | Rader | Vad |
+|---|---|---|
+| `src/components/dokument/DokumentYta.tsx` | 5–16 | manifest-pekaren: "auktoritativa formbeskrivningen" → PENSIONERAT + arkivsökväg + efterträdare + gap |
+| `src/components/dokument/DokumentYta.tsx` | 92–95, 153–155, 436–441 | sökvägar till de tre AMENDERING-filerna |
+| `tests/e2e/mer-index.staging.test.ts` | 47–49 | docblock-sökväg |
+| `tests/visual/dokument-visual.spec.ts` | 9–12 | docblock-sökväg |
+| `.facit-policy.conf` | 178–187 | ny `PENSIONERAT`-not efter `TASK-147.6`-stycket; historiken orörd, samma form som `s55-hem-konvergens`-noten i samma fil |
+
+`grep "tasks/sessions/bilagor/s102-dokument-konvergens"` ger **0 träffar** i levande kod/test/config.
+
+**Medvetet orörda** (historik): `backlog/tasks/*` (11 kort), fyra sessionsdok, `tasks/todo.md` 1047/1063 (historisk S102-handoff), `tasks/lessons.d/headless-bundlad-chromium-renderar-inte-pdf.md`, `ADR-102` rad 328 (historisk mätning, nämner katalognamn utan sökväg), två daterade research-dok.
+
+**Övervägd och avvisad:** `tasks/sessions/bilagor/s108-dokumentytan/facit.json` rad 23 bär den gamla sökvägen i sitt `not`-fält. Inte ändrad — det är ett facit-manifest som väntar Marcus stämpling (dess innehåll är precis vad han ska godkänna), omnämnandet är en daterad observation snarare än en aktiv pekare, och det är en JSON-sträng, ingen markdown-länk.
+
+## De tre AMENDERING-filerna (`309.21` AC #2)
+
+Alla tre i s102-katalogen flyttade **med**, frusna och orörda — stängda genom pensionering, inte omstämpling (motiverat i `ARKIVERAD.md`). De **två andra** öppna sidram-amenderingarna (`s106-aktivitetslogg`, `s111-anmalningssidan-konvergens`) är helt oberoende av s102-beslutet och **kvarstår hos Marcus** för `--ersatt`-omstämpling av sina egna manifest (utredningens § 6 steg 4–5).
+
+## Gapet är bokfört, inte bortdefinierat
+
+`ARKIVERAD.md` säger explicit att täckningen är **delvis**: inget av de tre manifesten visar ett valt events fulla filtrerbara lista med dagens ikonpar-Visa. Uppföljning: `TASK-309.32`. Den bokför också ett fynd från detta pass — båda efterträdarna bär fortfarande `"godkand": null`, så dokument-ytan saknar just nu varje stämplat facit.
+
+## Grindar (exitkoder lästa nakna)
+
+| Grind | Exit |
+|---|---|
+| `bash scripts/check-facit.sh` | **0** (före och efter) |
+| `npm run check:docs` | **0** — "samtliga 14 dokumentations-grindar körda" |
+| `npm run typecheck` | **0** |
+| `npx @biomejs/biome check .` | **0** |
+| `npm run build` | **0** |
+| `node scripts/check-langa-streck.mjs` | **0** (261 filer, 0 ofångade) |
+| `npx markdownlint-cli2` | **0** |
+
+## Kort
+
+- `TASK-309.29` — AC #1–#4 bockade. Stängs INTE här (CI-verifiering äger stängningen).
+- `TASK-309.21` — AC #1 + #2 bockade med hänvisning; **lämnas öppet** (AC #3 redan bockad, AC #4 ägs av `TASK-309.31` + Marcus).

@@ -64,7 +64,12 @@ export const MARKER_END = '<!-- review-grinden:riskbedomning:end -->';
  * acProvning[].text/motivering) kan träffa taket. */
 const CELL_MAX = 500;
 
-const RISK_LABEL = {
+/** Risknivå → synlig etikett i sektionens meta-rad. EXPORTERAD sedan
+ * TASK-173.4: CI-backstoppen (scripts/lib/review-backstopp.mjs) läser
+ * tabellen BAKLÄNGES för att avgöra om en renderad sektions nivå är en känd
+ * etikett. En kopia där hade drivit isär vid nästa etikettändring — samma
+ * kopierings-drift som resten av repot städar bort, inte återinför. */
+export const RISK_LABEL = {
   hog: '🔴 HÖG',
   medel: '🟡 MEDEL',
   lag: '🟢 LÅG',

@@ -1232,10 +1232,11 @@ jobs:
         # huvudtestet vakuöst. 44 fall. Orkestrerar-beslut (Marcus-mandat,
         # samma svep som denna rad): båda review-policy-sviterna är
         # enhetstester för skript, samma klass som de 15 övriga
-        # gatekeeper-sviterna — INTE samma sak som TASK-173.4:s ännu obyggda
-        # CI-backstopp (den mekaniska spärren mot en PR utan giltigt
-        # utlåtande), se CLAUDE.md § Review-grinden. Hermetisk (temp-repo,
-        # node_modules-symlänk, ingen nätverkstrafik). 2026-08-26 (macOS).
+        # gatekeeper-sviterna — INTE samma sak som TASK-173.4:s CI-backstopp
+        # (den mekaniska spärren mot en PR utan giltigt utlåtande; byggd
+        # 2026-08-28 som jobbet `review-backstopp` nedan), se CLAUDE.md
+        # § Review-grinden. Hermetisk (temp-repo, node_modules-symlänk, ingen
+        # nätverkstrafik). 2026-08-26 (macOS).
         #
         # test-review-risk-sektion.mjs (TASK-173.3, ÄNNU en base-drift-fynd
         # 2026-08-26 — PR #1993 landade UNDER TASK-185:s eget bygge, andra
@@ -1249,8 +1250,9 @@ jobs:
         # fallerar → CLI exit 3, ingen pr edit anropas — annars vore F1
         # vakuöst). 47 fall. Samma Marcus-mandat som syskonen: enhetstest för
         # skript, samma klass som de övriga gatekeeper-sviterna — INTE
-        # TASK-173.4:s ännu obyggda CI-backstopp. Hermetisk, ingen riktig
-        # gh-/nätverkstrafik. 2026-08-26 (macOS).
+        # TASK-173.4:s CI-backstopp (jobbet `review-backstopp` nedan, byggt
+        # 2026-08-28). Hermetisk, ingen riktig gh-/nätverkstrafik.
+        # 2026-08-26 (macOS).
         #
         # test-review-loop.mjs (TASK-173.5, ADR-105 beslut 4) hör hit av samma
         # ADR-039-skäl som sina tre syskon ovan: rundtaks-loopen
@@ -1273,11 +1275,12 @@ jobs:
         #
         # Orkestrerar-beslut (Marcus-mandat, samma som för de tre syskonen):
         # en enhetstestsvit för ett skript är en gatekeeper-svit, samma klass
-        # som de övriga ~15 — INTE samma sak som TASK-173.4:s ännu obyggda
-        # CI-backstopp (den deterministiska spärren mot en PR utan giltigt
-        # utlåtande), se CLAUDE.md § Review-grinden. Att denna svit körs i CI
-        # skyddar loop-skriptets LOGIK mot regression; det gör inte
-        # review-grinden mekaniskt otvingbar. Hermetisk (temp-repon,
+        # som de övriga ~15 — INTE samma sak som TASK-173.4:s CI-backstopp
+        # (den deterministiska spärren mot en PR utan giltigt utlåtande;
+        # sedan 2026-08-28 jobbet `review-backstopp` nedan), se CLAUDE.md
+        # § Review-grinden. Att denna svit körs i CI skyddar loop-skriptets
+        # LOGIK mot regression; det gör inte i sig review-grinden mekaniskt
+        # otvingbar — det gör backstopp-JOBBET. Hermetisk (temp-repon,
         # node_modules-symlänk, ingen nätverkstrafik). 9,2 s LOKALT mätt
         # (macOS, 2026-08-26, `time node scripts/test-review-loop.mjs`) —
         # CI-tiden är INTE mätt av mig och kan avvika.
@@ -1294,11 +1297,33 @@ jobs:
         # ett CLI-lager (sektion G–I) som TVÅSIDIGT bevisar append-kontraktet:
         # ett lyckat beslut loggar en rad (I1/I4), ett malformat utlåtande eller
         # policyfel loggar INGEN (I2/I3 — en trasig indata ska aldrig förorena
-        # fångstrate-underlaget). 48 fall. Samma Marcus-mandat som syskonen:
+        # fångstrate-underlaget). 49 fall (MÄTT 2026-08-28; stod som 48 här —
+        # ett fall tillkom i 173.6:s runda 2 utan att talet följde med, TASK-106:s
+        # kopierings-drift i miniatyr). Samma Marcus-mandat som syskonen:
         # enhetstest för skript, samma klass som de övriga gatekeeper-sviterna.
         # Hermetisk (egen tmpdir, ingen nätverkstrafik, ingen delad state med
         # de andra review-sviterna). Mutationsprövad (bygg-agentens
         # slutrapport, 2026-08-28): append-anropet bortkopplat fällde I1/I4.
+        #
+        # test-review-backstopp.mjs (TASK-173.4) hör hit av samma ADR-039-skäl
+        # som sina FEM syskon ovan, men med en skillnad värd att läsa: dess
+        # produktionsyta (scripts/lib/review-backstopp.mjs +
+        # scripts/review-backstopp.mjs) körs som ett EGET jobb i detta
+        # workflow (`review-backstopp`, se längre ned) och är alltså
+        # review-grindens SJÄTTE kontraktsyta OCH själva spärren. Sviten
+        # skyddar dess LOGIK mot regression; jobbet är mekanismen. Sektion C
+        # är kopplings-vakten mellan 173.3:s rendrerare och 173.4:s parser —
+        # de två sitter i olika moduler och kan drifta isär utan att
+        # någondera sviten märker det. Sektion F kör CLI:t mot en FAKE
+        # `gh`-binär på PATH, med tre KONTRAST-fall (gh fallerar / gh ger
+        # skräp-JSON / gh-svar utan headRefOid ⇒ exit 3, aldrig 0) — utan dem
+        # vore de positiva fallen vakuösa. Sektion E bär dessutom E7, ett
+        # REGRESSIONSFALL som kör CLI:t ur en katalog med mellanslag och åäö —
+        # runda 2 mätte där en fail-open där entrypoint-vakten aldrig fyrade
+        # (exit 0, noll byte, på en kropp UTAN sektion). 40 fall (MÄTT
+        # 2026-08-28), tvåsidigt mutationsbevisat (STALE-kontrollen bortkopplad
+        # fällde 3 fall, PR-nummer-kontrollen 2, ref-regexen 1, CLI:ts exitkod 3,
+        # entrypoint-vakten återställd till den trasiga formen 1). Hermetisk.
         #
         # test-verify-ci-parity.mjs hör hit av samma ADR-039-skäl applicerat
         # på scripts/verify-ci-parity.mjs SJÄLVT (CLAUDE.md § verify:ci-
@@ -1371,6 +1396,7 @@ jobs:
           node scripts/test-review-risk-sektion.mjs
           node scripts/test-review-loop.mjs
           node scripts/test-review-metrics.mjs
+          node scripts/test-review-backstopp.mjs
           node scripts/test-verify-ci-parity.mjs
           node scripts/test-docraptor-sjalvbarande.mjs
 
@@ -2058,7 +2084,78 @@ jobs:
         # Etablerad: Session 6.6.6 K3.6 (2026-05-20).
         run: bash scripts/test-vale-regression.sh
 
-  # Job 5: Aggregator — REQUIRED CHECK för main-rulesetet (ADR-076).
+  # Job 5: Review-backstoppen (TASK-173.4, ADR-105 beslut 2/3) — den
+  # deterministiska spärren mot att en kod-PR landar utan granskningsutlåtande.
+  #
+  # ═══ VARFÖR `merge_group` OCH INTE PR-YTAN ═══
+  # Review-grindens sekvens är push → granskning → sektion → armering
+  # (CLAUDE.md § Review-grinden). Vid PUSH saknas sektionen med NÖDVÄNDIGHET
+  # — granskningen har inte hänt än. En grind på PR-ytan hade därför gjort
+  # varje kod-PR röd som NORMALTILLSTÅND, vilket bryter mot CONTRIBUTING.md
+  # § Rött-först: "rött i CI ska betyda EN sak: oväntad regression". På
+  # kö-ytan är läget det motsatta — PR:en är armerad, alltså MÅSTE
+  # granskningen ha skett, och rött betyder exakt en sak. Se skriptets
+  # filhuvud för hela resonemanget och för varför en fällning här är dyr
+  # (utsparkning ur kön konsumerar armeringen) och därför ska föregripas av
+  # `npm run review:backstopp -- --pr <nr>` FÖRE armering.
+  #
+  # ═══ AC #3: INGEN EGEN KLASSNINGSLOGIK ═══
+  # `needs.changed.outputs.should_skip_tests` ÄR D0-klassningen — samma
+  # allowlist-glob (`paritet:start klassning-d0`) som resten av CI gatar på.
+  # Backstoppen duplicerar den aldrig. Att `changed` beräknar rätt värde även
+  # på kö-ytan är MÄTT, inte antaget: merge_group-körning 33138424216
+  # (docs-only) skippade `Test suite` på samma output, 2026-08-28.
+  #
+  # ═══ AC #4: DETERMINISTISK, INGEN LLM ═══
+  # Ett node-skript utan nätverk utöver ETT `gh pr view`-anrop, utan klocka
+  # och utan slumpkälla. Ingen modell anropas i CI, och kan inte anropas:
+  # jobbet installerar inga beroenden alls (se nedan).
+  #
+  # INGET `npm ci` — MED AVSIKT. scripts/review-backstopp.mjs och dess lib
+  # importerar bara scripts/lib/review-risk-sektion.mjs, som självt saknar
+  # importer. En backstopp ska inte kunna släckas av att det led den skyddar
+  # (beroende-installationen) fallerar. Steget "Install dependencies" är
+  # därför medvetet frånvarande, inte glömt.
+  review-backstopp:
+    name: Review-backstopp (granskningsutlåtande)
+    needs: [changed]
+    if: ${{ github.event_name == 'merge_group' && needs.changed.outputs.should_skip_tests != 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      # pull-requests: read — `gh pr view` läser kroppen + headRefOid på den
+      # PR kö-grenen namnger. Minsta grant utöver contents:read.
+      pull-requests: read
+    steps:
+      # INGEN `fetch-depth:`-nyckel här — MEDVETET, och raden står kvar för att
+      # nästa läsare inte ska "rätta" tillbaka den. `scripts/check-fetch-depth-
+      # invariant.sh` (ADR-039-grinden i lint-jobbet) kräver EXAKT TRE
+      # fetch-depth-bärare i denna fil (changed/lint/docs), alla med SAMMA
+      # värde. En fjärde bärare fäller grinden oavsett vilket värde den bär —
+      # mätt skarpt 2026-08-28 på detta jobbs första CI-körning (`fetch-depth:
+      # 1` gav "hittade 4 fetch-depth-config-rader (förväntat 3)"). Och jobbet
+      # BEHÖVER ingen historik: det läser två skript ur arbetsträdet och hämtar
+      # allt annat via `gh`. Checkoutens default (djup 1) är alltså både rätt
+      # för jobbet och det enda som håller invarianten.
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+        with:
+          node-version-file: '.nvmrc'
+          # INGEN `cache: 'npm'` — jobbet kör aldrig `npm ci`, så det finns
+          # inget att cacha och en cache-miss ska aldrig kunna sänka grinden.
+
+      - name: Verifiera granskningsutlåtandet
+        env:
+          MG_REF: ${{ github.event.merge_group.head_ref }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: node scripts/review-backstopp.mjs --merge-group-ref "${MG_REF}"
+
+  # Job 6: Aggregator — REQUIRED CHECK för main-rulesetet (ADR-076).
   # Per ADR-029 §1e + S77-incidenten (PR #101): jobbet KÖR ALLTID och
   # rapporterar success ELLER failure — ALDRIG skipped. Gamla formen
   # (if-villkor som skippade jobbet vid failure i needs) var FAIL-OPEN
@@ -2076,7 +2173,12 @@ jobs:
   ci-passed:
     name: CI Passed or Skipped
     if: ${{ always() }}
-    needs: [changed, lint, docs, suite]
+    # review-backstopp tillagt TASK-173.4: jobbet SKIPPAS på PR-ytan
+    # (`github.event_name == 'merge_group'`) och på D0-diffar — och en
+    # skipped post är per fail-closed-logiken nedan "skipped-by-design",
+    # alltså grön. Det är avsikten: spärren ska bita i landnings-ögonblicket,
+    # inte göra varje opgranskad PR röd (se jobbets eget kommentarsblock).
+    needs: [changed, lint, docs, suite, review-backstopp]
     runs-on: ubuntu-latest
     timeout-minutes: 1
     permissions: {}

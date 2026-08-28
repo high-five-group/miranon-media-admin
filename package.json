@@ -58,6 +58,7 @@
     "review:loop": "node scripts/review-loop-beslut.mjs",
     "review:metrics": "node scripts/review-metrics.mjs",
     "review:kalibrering": "node scripts/review-metrics-kalibrering.mjs",
+    "review:backstopp": "node scripts/review-backstopp.mjs",
     "postinstall": "git config core.hooksPath .githooks 2>/dev/null || true",
     "atlas": "node scripts/build-farg-atlas.mjs && biome format --write docs/design/ && biome check docs/design/ && node scripts/verifiera-farg-atlas.mjs",
     "mall:pdf": "node --env-file-if-exists=.env.docraptor scripts/mall-pdf.mjs"
