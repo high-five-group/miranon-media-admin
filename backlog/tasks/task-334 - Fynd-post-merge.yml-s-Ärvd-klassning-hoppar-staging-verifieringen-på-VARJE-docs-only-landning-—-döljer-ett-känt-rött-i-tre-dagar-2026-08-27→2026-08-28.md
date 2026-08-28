@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-28 03:50'
-updated_date: '2026-08-28 04:50'
+updated_date: '2026-08-28 05:20'
 labels:
   - fynd
   - ready-for-agent
@@ -71,6 +71,17 @@ Prövade premisser ur uppdraget, med kommandot som avgjorde:
   samma falska mening inom 13 minuter — `#2043` (körning `33139629247`) och
   `#2047` (körning `33140227702`). Uppdraget nämnde bara den första.
 
+## Beslutsstatus
+
+**AC #1 ratificerat av orkestreraren 2026-08-28 (mandat S112 Del 7); B → Marcus-listan.**
+
+Kryssrutan sattes av bygg-agenten och granskaren bedömde den som "felställd" —
+AC-texten namnger Marcus/orkestreraren som beslutsfattare. Ratificeringen ovan
+stänger det: val **C** (attributionen) accepterat, **A** förkastad på
+TASK-73-mätningen, **B** (tidsbaserad drift-vakt) lagd som öppen fråga i
+Marcus-listan av orkestreraren. AC #1 står därmed kryssat med rätt hemvist för
+beslutet.
+
 ## Options-rymden — vad som prövades och varför
 
 Frågan: post-merge ÄRVER PR-grindens D0-beslut och hoppar sviten på varje
@@ -131,8 +142,9 @@ gjorde ingen förut), och behöver `actions: read` även för `gh run view`
 
 ## Grindar och tvåsidigt bevis
 
-`scripts/test-post-merge-attribution.sh` — 47 hävdanden, hermetisk gh-stub,
-CI-wirad i `ci.yml`:s lint-jobb. Lokalt: **47 passerade, 0 failade** (exit 0).
+`scripts/test-post-merge-attribution.sh` — 48 hävdanden, hermetisk gh-stub,
+CI-wirad i `ci.yml`:s lint-jobb. Lokalt: **48 passerade, 0 failade** (exit 0).
+(47 i runda 1; A19 tillkom i runda 2, se § Runda 2 nedan.)
 
 Tre av hävdandena är kopplings-/wiringsvakter: A11 (skriptets
 `POST_MERGE_SUITE_JOB_NAME` == post-merge.yml:s svit-jobbnamn), A12 (workflowen
@@ -149,6 +161,7 @@ Tvåsidigheten är MÄTT mot fem muterade kopior, inte antagen:
 | M3 den falska meningen återinförd i post-merge.yml | **1 fälld** (A13) |
 | M4 anropet borttaget ur post-merge.yml | **1 fälld** (A12) |
 | M5 gamla logiken återskapad (grönt ankare ⇒ ovillkorlig primär misstanke) | **9 fällda** (A2 fäller med exakt den falska meningen) |
+| M6 taken satta isär igen (30/20 — det pre-fix-läge granskaren fann) | **1 fälld** (A19) |
 
 Övriga grindar, mätta exitkoder: `shellcheck --severity=style --enable=all` 0 ·
 `actionlint -color -ignore 'unexpected key "queue"…'` 0 · `yamllint -c
@@ -166,16 +179,57 @@ ingen ändring — paritetsvakten läser `ci.yml`/`ci-suite.yml`, inte
 (policyfilens egen `_readme`); endast nya JOBB och nya `${{ }}`-uttryck fäller
 fail-closed, och steget har inget av dem.
 
+## Runda 2 — granskningens tre punkter (PR #2059, 2026-08-28)
+
+Granskaren (review-agent, färsk kontext) gav risk **`lag`** på
+`granskadSha 6a8f26c8`, reproducerade 47/0 + 27/0 + actionlint/yamllint/
+shellcheck gröna, och lämnade tre punkter. Samtliga åtgärdade:
+
+1. **AC #1 "felställd"** → ratificerad, se § Beslutsstatus överst.
+2. **WARNING: fyndet om `verify-ci-parity.mjs` var obokfört** → nu bokfört
+   nedan under § Fynd utanför scope, med radnummer.
+3. **INFO: `MAX_KORNINGAR` (30) vs `MAX_JOBBFRAGOR` (20) skilde sig utan
+   förklaring.** Vid 21-30 hoppade körningar i rad slog jobbfråge-taket först
+   och svaret blev OKÄND trots outforskade kandidater (fail-soft, men ett
+   onödigt "vet inte"). **Åtgärd: taken satta LIKA (20/20)** — listan bär
+   alltid vår egen körning, så efter skärningen vid eget index finns som mest
+   19 kandidater och jobbfråge-taket kan aldrig bli det bindande. Läget är
+   alltså borttaget, inte förklarat. 20 och inte 30 för att varje steg kostar
+   ett `gh run view` inuti ett larm-jobb med `timeout-minutes: 3`, och mätt
+   värsta vandring hittills är fyra hoppade landningar i rad. Avvägningen är
+   utskriven i skriptet och **grindad av nytt fall A19**, som fäller om taken
+   glider isär — tvåsidigt bevisat mot mutant M6 (30/20, exakt pre-fix-läget).
+
+## Fynd utanför scope (ADR-053 — registrerade, ej åtgärdade här)
+
+1. **Nattnätet är `failure` på workflow-nivå 12 nätter i rad**
+   (2026-08-16→2026-08-27) och varje `ci-natt`-ärende har stängts. Rödheten
+   kommer från `Länkkontroll`, `Backlog-stängning`, `Kontraktsvakt`,
+   `Sessionsdok-fönstret` och `Sannings-avstämning` — **inte** från staging,
+   som var grön 2026-08-27 (körning `33065848810`). Klassisk kyrkogårdseffekt;
+   värd ett eget kort.
+2. **Ingen nattkörning för 2026-08-28** i mätfönstret. Senaste var
+   `33065848810` (2026-08-27T11:05Z), ~9 h efter nominell cron. `nightly.yml`
+   rad 23-28 bokför ~3 h uppmätt eftersläp; detta är större.
+3. **Räknings-drift i `scripts/verify-ci-parity.mjs`:** filen säger hårdkodat
+   **"13 grindar"** om `check:docs` på **rad 667, 792 och 885**, medan
+   `npm run check:docs` egen slutrad säger **"14 gröna"** (mätt i samma
+   körning 2026-08-28). Exakt den kopierings-drift `CLAUDE.md`
+   § Bygg, testa, linta redan bär som varning — där stod talet "nio"/"tretton"
+   fel mot skriptets egen slutrad, och raden säger uttryckligen att talet
+   aldrig ska skrivas av. **Fixas INTE i denna PR** (path-scope: `TASK-334`
+   rör post-merge-larmet, inte paritetsskriptet). Värt ett eget kort;
+   åtgärden är att låta skriptet läsa talet ur `check:docs` i stället för att
+   bära en kopia.
+4. **Räknings-drift i `scripts/test-classify-post-merge.sh`:** filhuvudet säger
+   "21 testfall" medan sviten rapporterar 27 passerade. Samma klass som punkt 3,
+   pre-existerande, ej införd här.
+
 ## Öppna punkter (STOPPA-punkter för Marcus)
 
-1. **Option B — drift-vaktens kadens.** Byggd: nej. Beslutet kräver en
-   avvägning mot staging-mutexen som är en arkitekturfråga, inte en följdändring
-   av denna rättelse. Underlaget står i tabellen ovan och i ADR-077 § Updates.
-2. **Nattnätet är rött 12 nätter i rad och ärendena stängs.** Utanför detta
-   korts scope (ADR-053: blockerar ej + värdefullt → defer). Klassisk
-   kyrkogårdseffekt; värd ett eget kort.
-3. **`scripts/test-classify-post-merge.sh`:s filhuvud säger "21 testfall" medan
-   sviten rapporterar 27 passerade.** Pre-existerande räknings-drift, inte
-   införd här. Låg risk, men samma kopierings-drift-klass som `CLAUDE.md`
-   varnar för.
+1. **Option B — drift-vaktens kadens.** Byggd: nej; ratificerat som öppen
+   fråga och lagd i Marcus-listan av orkestreraren (2026-08-28). Beslutet
+   kräver en avvägning mot den globala staging-mutexen som är en
+   arkitekturfråga, inte en följdändring av denna rättelse. Underlaget står i
+   options-tabellen ovan och i ADR-077 § Updates.
 <!-- SECTION:NOTES:END -->

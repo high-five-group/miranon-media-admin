@@ -77,7 +77,7 @@
 #   REPO=<owner/namn> RUN_ID=<denna körnings databaseId> SHA=<merge-sha> \
 #       scripts/post-merge-attribution.sh
 #
-#   Valfritt: MAX_KORNINGAR (default 30) — hur långt bakåt körningslistan läses.
+#   Valfritt: MAX_KORNINGAR (default 20) — hur långt bakåt körningslistan läses.
 #             MAX_JOBBFRAGOR (default 20) — tak för antalet `gh run view`-anrop.
 #
 # EXIT-KODER
@@ -108,7 +108,24 @@ POST_MERGE_WORKFLOW="post-merge.yml"
 REPO="${REPO:-}"
 RUN_ID="${RUN_ID:-}"
 SHA="${SHA:-}"
-MAX_KORNINGAR="${MAX_KORNINGAR:-30}"
+# DE TVÅ TAKEN ÄR LIKA MED AVSIKT, och det är hela poängen med värdet.
+# MAX_KORNINGAR är `gh run list --limit`, alltså hur långt bakåt fönstret
+# sträcker sig; MAX_JOBBFRAGOR är taket för `gh run view`-anrop under
+# vandringen. Listan innehåller ALLTID vår egen körning, så efter skärningen
+# vid eget index finns som mest MAX_KORNINGAR-1 kandidater kvar — med lika
+# värden kan jobbfråge-taket därför aldrig bli det bindande.
+#
+# RÄTTAT EFTER GRANSKNING (PR #2059, runda 2): värdena var 30 respektive 20.
+# Vid 21-30 hoppade körningar i rad slog jobbfråge-taket först, och svaret blev
+# OKÄND trots att listan bar outforskade kandidater — fail-soft, men ett
+# onödigt "vet inte". Att göra dem lika tar bort läget i stället för att
+# förklara det.
+#
+# 20 och inte 30: taket kostar ett `gh run view` per steg inuti ett larm-jobb
+# med `timeout-minutes: 3`, och den mätta värsta vandringen hittills är fyra
+# hoppade landningar i rad (2026-08-27→28). Höj BÅDA om fönstret behöver bli
+# större; höj aldrig bara den ena.
+MAX_KORNINGAR="${MAX_KORNINGAR:-20}"
 MAX_JOBBFRAGOR="${MAX_JOBBFRAGOR:-20}"
 
 emit() {

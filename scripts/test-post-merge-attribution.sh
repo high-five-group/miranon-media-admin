@@ -3,7 +3,7 @@
 #
 # Empirisk test-svit för scripts/post-merge-attribution.sh (TASK-334).
 #
-# 24 testfall — båda riktningarna för varje gren i attributionen.
+# 25 testfall — båda riktningarna för varje gren i attributionen.
 #
 # ATTRIBUTIONEN (A1-A10, A14-A15, A17-A18):
 #   A1  ankaret grönt, noll omätta landningar däremellan → "primära misstänkta"
@@ -20,6 +20,7 @@
 #   A15 spann-texten bär `<ankare>..<denna>`
 #   A17 MAX_JOBBFRAGOR-taket respekteras
 #   A18 frågans form: --workflow/--branch main/--event push
+#   A19 de två taken (MAX_KORNINGAR / MAX_JOBBFRAGOR) är LIKA
 #
 # KOPPLINGS- OCH WIRINGSGRINDARNA (A11-A13):
 #   A11 POST_MERGE_SUITE_JOB_NAME == post-merge.yml:s `suite`-jobbnamn
@@ -381,6 +382,25 @@ if grep -q -- "--workflow post-merge.yml" "${GH_CALL_LOG}"; then
     pass "A18c run list frågar post-merge.yml"
 else
     fel "A18c run list frågar inte post-merge.yml"
+fi
+
+# --- A19: de två taken är lika -----------------------------------------------
+# Listan bär alltid vår EGEN körning, så efter skärningen vid eget index finns
+# som mest MAX_KORNINGAR-1 kandidater. Är taken lika kan jobbfråge-taket därför
+# aldrig bli det bindande, och läget "OKÄND trots outforskade kandidater"
+# existerar inte. Glider de isär återuppstår det tyst — därför grindas det.
+# (Granskningsfynd, PR #2059 runda 2: värdena var 30 respektive 20.)
+tak_korningar=$(sed -n 's/^MAX_KORNINGAR=.*:-\([0-9][0-9]*\)}"$/\1/p' "${GATE_SRC}" | head -1)
+tak_fragor=$(sed -n 's/^MAX_JOBBFRAGOR=.*:-\([0-9][0-9]*\)}"$/\1/p' "${GATE_SRC}" | head -1)
+
+if [[ -z "${tak_korningar}" || -z "${tak_fragor}" ]]; then
+    fel "A19 kunde inte läsa de två takens defaultvärden ur ${GATE_SRC}"
+elif [[ "${tak_korningar}" == "${tak_fragor}" ]]; then
+    pass "A19 MAX_KORNINGAR == MAX_JOBBFRAGOR (${tak_korningar}) — jobbfråge-taket kan aldrig bli bindande"
+else
+    fel "A19 TAKEN HAR GLIDIT ISÄR: MAX_KORNINGAR=${tak_korningar}, MAX_JOBBFRAGOR=${tak_fragor}."
+    echo "     Vid ${tak_fragor}-${tak_korningar} hoppade körningar i rad svarar skriptet OKÄND trots"
+    echo "     outforskade kandidater. Höj BÅDA eller ingen."
 fi
 
 # --- A11-A13: KOPPLINGS- OCH WIRINGSGRINDARNA --------------------------------

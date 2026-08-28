@@ -211,7 +211,7 @@ namnet), räknar landningarna däremellan och formulerar därefter:
 fortsatt, räknas fortsatt aldrig om, och docs-landningar hoppar fortsatt
 sviten. `scripts/classify-post-merge.sh` är inte rörd av detta kort.
 
-**Grindarna.** `scripts/test-post-merge-attribution.sh` (47 hävdanden) körs i
+**Grindarna.** `scripts/test-post-merge-attribution.sh` (48 hävdanden) körs i
 `ci.yml`:s lint-jobb. Tre av dem är kopplings- och wiringsvakter: att skriptets
 `POST_MERGE_SUITE_JOB_NAME` är post-merge.yml:s faktiska svit-jobbnamn (A11),
 att workflowen anropar skriptet (A12), och — ADR-083-vakten — att den falska
@@ -220,3 +220,10 @@ muterade kopior: A9 fäller om körningslistan filtreras i stället för att sk�
 vid egen körnings index; A11 vid namndrift; A12 vid borttaget anrop; A13 vid
 återinförd mening; och en mutant som återskapar den GAMLA logiken (grönt ankare
 ⇒ ovillkorlig primär misstanke) fäller A2 med exakt den falska meningen.
+
+En sjätte mutant tillkom i granskningens runda 2 (2026-08-28): skriptets två
+tak — `MAX_KORNINGAR` (körningslistans fönster) och `MAX_JOBBFRAGOR` (taket för
+`gh run view`-anrop) — stod på 30 respektive 20, vilket gav ett läge där
+attributionen svarade OKÄND trots outforskade kandidater. Taken är nu LIKA
+(20/20), så jobbfråge-taket aldrig kan bli det bindande, och `A19` fäller om de
+glider isär.
