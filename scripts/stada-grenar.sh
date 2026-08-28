@@ -71,7 +71,7 @@
 #   "Mergad?" avgörs enbart på ANCESTOR-relationen (`git merge-base
 #   --is-ancestor <gren> <BAS_SHA>` nedan). Repot bär en egen namngiven
 #   lesson om precis det mönstret tillämpat på VÅR landningsväg:
-#   tasks/lessons.d/merge-kon-gor-branch-toppar-till-icke-ancestors.md —
+#   [[L604]] i tasks/lessons/vol-08.md —
 #   merge queue bygger om varje post mot main plus posterna före den, så den
 #   commit som faktiskt landar är en ANNAN commit än grenens topp. En gren
 #   vars innehåll ligger i main kan därför svara "nej" på ancestor-frågan.

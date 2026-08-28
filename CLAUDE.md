@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-27
+updated: 2026-08-28
 review_by: 2026-11-15
 status: stable
 ---
@@ -742,7 +742,7 @@ INGEN väg: att utvidga ADR-105 beslut 7 till flera kort per PR kräver ett eget
 ADR-beslut och en bakåtkompatibel schemaändring. Tills dess: föredra en PR per
 kort där det går, och räkna med att bunt-PR:ers AC-prövning är prosa, inte
 struktur. Options-rymden och instansdatan bor i
-[`tasks/lessons.d/bunt-prer-passar-inte-review-utlatandets-kortid-schema.md`](tasks/lessons.d/bunt-prer-passar-inte-review-utlatandets-kortid-schema.md)
+[[L636]]
 — pekare, inte kopia (ADR-100 §2).
 
 **Review-ytans FYRA testsviter körs som gatekeeper-sviter i `ci.yml`:s "Test

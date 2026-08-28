@@ -546,7 +546,7 @@ upptagen av orkestrerarens egen dev-server.
    sökväg.** En absolut sökväg bär huvudkatalogen som prefix (worktrees bor
    under `.claude/worktrees/`) och fälls därför av den textmatchande
    ägarskapsvakten. Mekanismen och dess fyra mätta instanser bor i
-   `nastlade-worktree-sokvagar-faller-textmatchande-katalogvakter.md` — den
+   [[L576]] — den
    nämns här bara för att den är förkravet för att kunna FÖLJA punkt 1.
 
 #### Den generella formen
@@ -605,8 +605,8 @@ det bär, eftersom mottagaren per definition inte kan se vad avsändaren antog.
 
 #### Avgränsning mot två grannposter — de rör olika ytor
 
-`cwd-persisterar-mellan-bash-anrop-och-driftar-tyst.md` och
-`nastlade-worktree-sokvagar-faller-textmatchande-katalogvakter.md` handlar båda
+[[L590]] och
+[[L576]] handlar båda
 om AGENTENS egna kommandon, och drar där motsatta slutsatser (explicit `-C` mot
 persisterande cwd) beroende på om risken är drift eller vakt-fällning. Den
 avvägningen gäller inte här: en människas `!`-kommando passerar ingen
@@ -1063,7 +1063,7 @@ formen. Åtgärden blev att utelämna refen ur texten; den tillförde ingenting
 som dokumentet inte redan bar på annat sätt. Ingen bypass-form konstruerades.
 
 **Avgränsning mot en närliggande lärdom:** fragmentet
-`bang-prefixet-passerar-pretooluse-hookar-matt-tva-ganger.md` § Bifynd
+[[L588]] § Bifynd
 beskriver samma felmod (ett lås fäller ett CITAT i prosa) men motsatt rätt
 svar — där löstes det genom att byta verktyg (heredoc → `Write`) och behålla
 texten, eftersom texten var själva poängen: fragmentet dokumenterade hookens
@@ -1140,7 +1140,7 @@ spekulativ kostnad ovanför golvet; hade CI faktiskt anropat CLI:t vore samma ta
 priset för golvet och inte förhandlingsbart. Det är därför "anropas aldrig i CI"
 måste MÄTAS och inte antas — det är den mätningen som avgör vilken sida av
 vakten kostnaden hamnar på. Jämför fragmentet
-`root-config-isolering-tar-bort-en-flaggas-kostnad-dar-den-inte-skyddar.md`:
+[[L606]]:
 samma resonemangsform (skyddsytan är smalare än kostnadsytan), men där löstes
 det med isolering i stället för avvisning.
 
@@ -1203,7 +1203,7 @@ bindningen finns bara i läsarens huvud. `&&` flyttar bindningen in i
 kommandot, där den blir mekanisk: faller `cd`, körs ingenting. En kant värd
 att känna till: enradsformen löser BINDNINGEN men inte driften — cwd står kvar
 efter anropet, så nästa instruktion måste bära sin egen `cd` på samma sätt.
-Besläktat men med annan mottagare: `cwd-persisterar-mellan-bash-anrop-och-driftar-tyst.md`
+Besläktat men med annan mottagare: [[L590]]
 handlar om agentens egna Bash-anrop, där `-C <mål>` är motmedlet. Här kan du
 inte ens mäta katalogen du skickar till, vilket gör enradsformen till enda
 tillgängliga försvaret.
@@ -1457,7 +1457,7 @@ vakts utsaga (behandla den som hypotes); denna riktar sig till den som SKRIVER
 utsagan. [[L478]] har samma kringgång av en config-gräns via en yttre kanal
 (kommandoradsargument i stället för miljövariabel) men utan den falska
 källattributionen. Fragmentet
-`stampel-sha-harleds-ur-ref-som-star-stilla.md` ligger närmast av alla — där
+[[L573]] ligger närmast av alla — där
 kom värdet från en FÖRÅLDRAD källa, här från en HELT ANNAN källa än den som
 namnges, och det är namngivningen som är lögnen. [[L371]] bär redan satsen
 *"loggraden ska spegla vad som faktiskt injicerades, inte vad som avsågs"*,
@@ -2052,3 +2052,926 @@ agent som inte litade på min beskrivning (`ADR-105` beslut 2). En granskare som
 delat kontext med mig hade sannolikt läst PR-kroppen som sanning.
 
 *Konsoliderad ur `tasks/lessons.d/verifiera-pr-innehallet-mot-forjarren-inte-mot-avsikten.md` (S108 K-sista, fragment-vägen `ADR-081`); fragmentet är borttaget.*
+
+### L570 — En vakt först i din kod är inte först i kedjan
+
+**En vakt som står FÖRST i DIN kod exekverar inte nödvändigtvis FÖRST i
+KEDJAN — en plattformslager (t.ex. en API-gateway) kan ligga före den, och
+då gäller din vakts ordning bara för anropare som når din kod.**
+
+Supabase Edge Functions med `verify_jwt = true` har en gateway som svarar
+`401` på varje anrop utan giltig JWT — INNAN funktionens egen kod körs.
+En metod-vakt skriven som första rad i `index.ts` (`if (req.method !== 'X')
+return 405`) ser ut som om den kör "före auth", och gör det verkligen — men
+bara för de anrop som redan passerat gatewayen. En anonym begäran med fel
+metod och utan `Authorization`-header får `401` från plattformen, aldrig
+`405` från koden. "405 före auth" är korrekt som påstående om KODENS
+ordning; det är fel som förutsägelse om vad en anropare UTIFRÅN observerar,
+om anroparen aldrig når koden.
+
+**Discriminatorn för att observera kodens egen ordning utifrån:** ett
+JWT som är giltigt nog att passera gatewayens signaturkontroll men som inte
+representerar en riktig användare — Supabase anon-nyckeln är exakt detta.
+Den passerar `verify_jwt`, men faller i en `requireUser`-kontroll som
+explicit avvisar `role === 'anon'`. Kombinerar man anon-nyckeln med fel
+metod passerar anropet gatewayen och når funktionens egen metod-vakt FÖRE
+`requireUser` — det enda sättet att se den interna ordningen utifrån.
+
+**Instanser:**
+
+- **T39-smoken, 2026-07-24** (S84, mot 13 prod-funktioner): samma gateway-
+  först-effekt observerades första gången, som en klassning mellan
+  405-bärande och 401-bärande funktioner i deny-smokens narrativ (aldrig en
+  committad testfil — se TASK-38:s AC #2).
+- **TASK-38** ("Fynd: sju EF:er saknar egen metod-vakt", rad 37 i
+  Implementation Notes): dokumenterade avgränsningen explicit efter att ha
+  lagt metod-vakten i sju EF:er — men hänvisade till DENNA fil innan den
+  fanns (trasig referens, upptäckt och rättad `S105`, 2026-08-14).
+- **`docs/reference/prod-driftsattning-runbook.md` § Steg 5** (rättad i
+  samma PR som detta fragment, `S105`): runbooken hade fel förväntad
+  utdata (`401 · 405 · 401`) för `log-activity`/`get-activity-log`, eftersom
+  dess tre curl-anrop saknar `Authorization`-header och därför aldrig når
+  koden — korrekt utfall är `401 · 401 · 401`. En fjärde, valfri probe
+  (fel metod + anon-nyckelns `Bearer`-header) lades till för den som vill
+  observera metod-vakten faktiskt köra.
+
+**Generaliseringen:** varje gång ett kontrakt formuleras som "X görs före Y"
+i kod som körs bakom ett plattformslager (gateway, proxy, middleware,
+service mesh) — fråga om plattformslagret kan avvisa anropet INNAN X
+någonsin exekverar. Om ja: kontraktet gäller för anropare som når koden, och
+en "utifrån"-verifiering av kontraktet kräver ett anrop som medvetet
+passerar plattformslagret men ändå faller i X.
+
+*Konsoliderad ur `tasks/lessons.d/en-vakt-forst-i-din-kod-ar-inte-forst-i-kedjan.md` (S112 resume 2, fragment-vägen `ADR-081`); fragmentet är borttaget.*
+
+### L571 — Ett fältnamn som kod läser per namn är ett kontrakt — en "snyggare" omdöpning är en brytande ändring, och den bryter tyst
+
+**Byt aldrig namn på ett datakällefält medan något bygge läser det per namn.
+Mot en namn-läsning är omdöpningen inte ett fel utan en TYSTNAD: läsningen
+returnerar tom lista, inte undantag, och varje grind som inte kör mot skarp
+data ser grönt.** `[UNIVERSAL]`
+
+Mätt 2026-08-10 (S103). Ett nytt `Anteckningar.Person`-länkfält i Airtable födde
+automatiskt ett spegelfält på `Personer`, som Airtable döpte till
+**"Anteckningar 2"** eftersom tabellen redan bar ett `Anteckningar`
+(multilineText). Orkestreraren döpte om spegelfältet till "Anteckningar (ström)"
+i båda baserna 20:13–20:14 med motiveringen att "Anteckningar 2" inte hör hemma
+i en bas som är en förstklassig leverabel (`ADR-063`).
+
+I exakt samma stund byggde en parallell agent `get-person-notes` med
+`const NOTES_LINK_FIELD = 'Anteckningar 2'`. Agentens 614 tester kördes FÖRE
+omdöpningen och var gröna; PR:en armerades 20:15:52 med en läsning som från
+20:13 hade gett **tyst tom lista** — exakt den felklass agenten själv skrivit
+en varning om i sin egen kodkommentar.
+
+**Fångsten kom inte från någon grind**, utan från att orkestreraren läste
+agentens slutrapport och kände igen fältnamnet: `gh pr diff | grep` på namnet
+visade beroendet. Förvärrande: repot skickar `run_staging: false` villkorslöst i
+PR-grinden sedan `TASK-70.3`, så staging-testerna kör först i post-merge. Ingen
+check hade fällt före landning.
+
+**Åtgärden var att backa, inte att laga framåt.** Namnet återställdes i båda
+baserna, och basen står nu i exakt det tillstånd agenten bevisade grönt mot —
+belagt med differentialmätning: `"Anteckningar 2"` accepteras av Airtable-API:t,
+`"Anteckningar (ström)"` ger `UNKNOWN_FIELD_NAME`. Ett fult fältnamn är
+oändligt mycket billigare än en tyst trasig läsning i prod.
+
+**Det generella, i tre led:**
+
+1. **Ett nytt länkfält ändrar TVÅ tabeller, inte en.** Verifiera motsatt tabells
+   fältlista efteråt — särskilt när det egna namnet redan förekommer där.
+2. **Kosmetik på en namn-läst yta är inte kosmetik.** Frågan före varje
+   omdöpning är "läser någon detta per namn?", inte "ser det snyggt ut?".
+3. **Skriv kontraktet där handen är.** Fältets egen beskrivning i basen bär nu
+   varningen om att namnet är ett kontrakt, så nästa person som frestas ser den
+   innan hen rör namnet — inte efteråt i en lesson.
+
+Samma familj som `ADR-050`s bas-portabilitet (adressera per NAMN, inte
+fält-ID): valet att läsa per namn är rätt, men det gör namnet till en del av
+API-ytan — och en API-yta byter man inte i förbifarten.
+
+*Konsoliderad ur `tasks/lessons.d/faltnamn-som-kod-laser-per-namn-ar-ett-kontrakt.md` (S112 resume 2, fragment-vägen `ADR-081`); fragmentet är borttaget.*
+
+### L572 — En fil som raderas vid konsolidering tar inte sina inlänkar med sig — svep dem i samma commit
+
+**Raderas en fil vars innehåll flyttar (fragment-konsolidering, dok-flytt) ska
+INLÄNKARNA till den sökas och skrivas om i SAMMA commit som raderingen —
+annars fäller länk-grinden landningen, eller värre: ingen grind finns och
+länkarna ruttnar tyst.** `[UNIVERSAL]`
+
+Mätt 2026-08-09 (S93, skörden `#1065`). Konsolideringen raderade åtta
+fragment ur `tasks/lessons.d/` enligt ADR-081:s flöde; två markdown-inlänkar
+i sessionsdoket (rad 1367/1369) pekade på två av dem. Lokala grindarna på de
+ÄNDRADE filerna var gröna — inlänkarna bodde i en fil diffen inte rörde.
+CI:s lychee fällde (`Docs link check`), PR:en sparkades ur kön med konsumerad
+armering, och en fixrunda krävdes (`aa2b802c`: länkarna → `[[L486]]`/
+`[[L487]]`-referenser).
+
+**Det generella:** samma klass som `[[L488]]` (en ändrad yta kräver svep över
+alla konsument-ytor) — fälld på sin egen skörd, i bokstavlig mening: posten
+som formulerade regeln landade i den PR som bröt den. Konsument-ytan för en
+RADERING är alla filer som refererar filen, inte diffens egna filer. Före en
+radering: `grep -rn "<filnamn>"` över repot, skriv om träffarna i samma
+commit. Wikilänk-formen (`[[Lnnn]]`, fil-oberoende uppslag) är robustare än
+sökvägs-länkar för innehåll som flyttar — använd den där den finns.
+
+*Konsoliderad ur `tasks/lessons.d/fragment-radering-kraver-inlank-svep-i-samma-commit.md` (S112 resume 2, fragment-vägen `ADR-081`); fragmentet är borttaget.*
+
+### L573 — Ett kvitto som själv härleder "aktuellt läge" ur en lokal ref dokumenterar var refen står — inte vad som granskades
+
+**Ett verktyg som stämplar "aktuell main-SHA" i ett kvitto måste härleda den ur
+en FÄRSK källa (origin efter fetch) eller fälla vid divergens. En lokal
+`main`-ref i en orkestrerar-checkout står stilla i dagar — och kvittot ser
+exakt lika giltigt ut med fel träd som med rätt.** `[UNIVERSAL]`
+
+Mätt 2026-08-10 (S93 stängningen). Marcus första omgodkännande-stämpel för
+`s93-hallplats-prototyp` bokförde `sha: f7360100` — ett träd FÖRE
+15-strecks-svepet — medan granskningen skedde mot dev-servern som serverade
+`e25efd05`-trädet (post-svep). `resolveMainSha` i `scripts/facit-godkann.mjs`
+läser lokala `main`-refen, som senast fast-forwardats kvällen innan, före
+svepets merge. Kvittots hela poäng är att dokumentera VAD som godkändes
+(ADR-104 beslut 4: *"SHA dokumenterar"*) — och just det värdet blev fel, i
+mekanismen som byggdes för dokumentations-integritet.
+
+**Fångsten:** orkestreraren läste kvittots SHA mot merge-kronologin i stället
+för att bara läsa ✅-raden — `f7360100` låg FÖRE `#1064`:s merge. Rättningen:
+ref-synk (`git branch -f main origin/main`) + omstämpling via Marcus kanal
+(`--ersatt`), båda stämplarna öppet bokförda. Mekanism-fixen: `task-175`.
+
+**Det generella:** varje verktyg som bakar in "nuläget" i en durabel artefakt
+(SHA, version, timestamp härledd ur en ref) måste antingen hämta det färskt
+från källan eller verifiera att den lokala projektionen inte divergerar. En
+lyckad utskrift med fel innehåll är farligare än ett fel — den konsumeras som
+kvitto. Släkt med `[[L499]]` (grön grind mot föråldrat träd) — samma rotklass,
+här i BOKFÖRINGS-ledet i stället för verifierings-ledet.
+
+*Konsoliderad ur `tasks/lessons.d/stampel-sha-harleds-ur-ref-som-star-stilla.md` (S112 resume 2, fragment-vägen `ADR-081`); fragmentet är borttaget.*
+
+### L574 — Mät åtkomsten, inte förklaringen som råkar passa
+
+**Tre bottnar av samma fälla. (1) Att mäta OMGIVNINGEN — miljövariabler,
+konfigkataloger, CI-workflow-filer — är inte att mäta ÅTKOMSTEN; kör
+bevis-kommandot innan du deklarerar att en åtkomst saknas. (2) En hängning
+är inte ett felmeddelande — ett headless-kommando som blockerar har inte
+sagt VARFÖR; kör om med tom eller styrd stdin innan orsaken antas. (3) En
+förklaring som PASSAR symptomet är inte verifierad förrän den också
+förklarar fallen där symptomet UTEBLEV — annars slutar sökningen vid den
+första träffen, inte vid sanningen.** `[UNIVERSAL]`
+
+Mätt/upptäckt 2026-08-12 (S105, TASK-202) i en och samma utredning om
+Marcus återkommande fick frågan om åtkomster han redan hade.
+
+#### Botten 1 — omgivningen mättes, inte åtkomsten
+
+En "token-utredning" (`tasks/sessions/2026-08-11-session-105.md` Del 4)
+mätte `printenv`, `~/.supabase/`, CI-workflow-filer och `.env`-filnamn, och
+drog slutsatsen att `SUPABASE_ACCESS_TOKEN` "saknas genuint". Fel: Supabase
+CLI hade en giltig nyckelrings-inloggning sedan 2026-03-30 hela tiden.
+Supabase egen dokumentation säger rakt ut att kontots token i första hand
+lagras i "native credentials storage" — en tom `~/.supabase/access-token`
+är bevis för att den ligger RÄTT, inte att den saknas. Bevis-kommandot
+(`npx supabase projects list`) svarar direkt och hade avslöjat detta på en
+sekund.
+
+#### Botten 2 — en hängning är inte ett felmeddelande
+
+`TASK-201.2`:s Implementation Notes bokför ordagrant: *"`supabase link
+--project-ref pqtshyierkdgwdnxuirz` (staging) hängde oändligt (interaktivt
+login-flöde utan TTY)"* — och drog slutsatsen att CLI:t saknade
+autentisering. Fel igen: CLI:t var redan inloggat. Hängningen var prompten
+för DATABAS-LÖSENORDET, som `supabase link` ställer och väntar på stdin
+för — inte ett login-flöde. Kontrollprovet som såg ut att bekräfta
+hypotesen (ett ogiltigt token gav snabbt svar) bekräftade den inte: ett
+ogiltigt token får `link` att fela FÖRE lösenordsprompten, ett annat skäl
+än det antagna. Regeln: ett headless-kommando som hänger har inte sagt
+VARFÖR det hänger — kör om med styrd stdin (`echo "" | kommando`) innan
+slutsatsen dras.
+
+#### Botten 3 — den viktigaste: en träff är inte samma sak som ett bevis
+
+Samma utredning byggde en tredje förklaring, för `~/Downloads`s
+"Operation not permitted": macOS TCC-tabellen visade `com.microsoft.VSCode`
+/ `kTCCServiceSystemPolicyDownloadsFolder` = `0` (nekad). Raden PASSADE
+symptomet perfekt — nekad behörighet, nekad läsning — och blev skriven ner
+som förklaring, med en föreslagen fix (slå på behörigheten i
+Systeminställningar).
+
+**Förklaringen var falsk, och den föll på det enda test som spelar roll:**
+en tidigare session (S104, 2026-08-10) läste `~/Downloads/<en fil>`
+FRAMGÅNGSRIKT — belagt i sessionens eget transkript — med exakt samma
+värdapp, samma TCC-rad (oförändrad sedan 2026-01-03, verifierat via
+`last_modified`), och samma worktree-isolering. Hade TCC-raden varit den
+verksamma mekanismen hade den körningen fallit också. Den gjorde inte det.
+Sökningen hade stannat vid den första förklaring som stämde med SYMPTOMETS
+NÄRVARO, utan att pröva om den också stämde med symptomets FRÅNVARO — och
+byggde till och med en föreslagen åtgärd (Systeminställnings-toggeln) på
+den ostämda förklaringen, innan någon kontrollerade om åtgärden faktiskt
+skulle lösa något.
+
+Den faktiska boven är, i skrivande stund, fortfarande okänd — den enda
+kända ledtråden är en KORRELATION (Claude Code-version 2.1.226 fungerade,
+2.1.227 gjorde det inte), uttryckligen inte hävdad som bevisad orsak. Se
+`docs/reference/atkomst-och-nycklar.md` § Aktuellt öppet läge för hela
+falsifieringskedjan och nästa, billiga mätsteg.
+
+#### Det generella
+
+En förklaring som förklarar TRÄFFEN är halvfärdig. Den är inte verifierad
+förrän den också förklarar varje känt fall där symptomet borde ha
+inträffat men inte gjorde det. Ett kontrollprov som "råkar peka rätt" är
+inte heller gratis att lita på — botten 2 ovan visar att ett kontrollprov
+kan bekräfta en hypotes av HELT ANNAT skäl än det avsedda (ogiltigt token
+felar på ett annat steg än giltigt-men-väntande token, inte för att
+hypotesen om saknad autentisering var rätt). Regeln som binder alla tre
+bottnar: mät den faktiska frågan (åtkomsten, orsaken till en hängning,
+frånvaron av ett symptom) — mät den aldrig genom en proxy som råkar se
+rätt ut.
+
+*Konsoliderad ur `tasks/lessons.d/mat-atkomsten-inte-forklaringen-som-rakar-passa.md` (S112 resume 2, fragment-vägen `ADR-081`); fragmentet är borttaget.*
+
+### L575 — Deploy-färskhet bevisas i deploy-kedjan, inte i minifierad bundle
+
+**[UNIVERSAL] Sträng-grep i minifierad bundle-utdata är fel instrument för
+att avgöra om en deploy bär en viss kodändring — chunk-attribution och
+strängars närvaro flyttar mellan byggen (code-splitting, tree-shaking,
+inlining), så både positiva och negativa fynd är opålitliga. Rätt instrument
+är plattformens egen deploy-kedja: källcommit → bygglogg → alias/domän.**
+
+Mätt 2026-08-14 (S105): ett P1-larm ("prod-fronten saknar #1264") restes på
+att `recordActivity`s minifierade anropsmönster inte hittades i den chunk där
+en IRI-sträng lokaliserade modulen. Larmet var FALSKT: `vercel inspect`
+visade att deployen byggts från en main-commit som git-bevisat innehöll
+ändringen, med fullt bygge i loggen och aliaset på domänen. Samma kväll
+misslyckades även den motsatta riktningen — en bevisat landad
+strängmarkör ("Checka in") hittades inte i någon chunk, trots färskt bygge.
+
+Tre lager av opålitlighet, alla observerade i samma mätserie:
+
+1. **Lokalisering:** en delad konstant (IRI-strängen) kan bo i en annan
+   chunk än funktionen som använder den — modulen "hittas" på fel ställe.
+2. **Negativa fynd:** tree-shaking/dev-gating kan legitimt utesluta koden
+   ur prod-bygget — frånvaro bevisar inte stale.
+3. **Layout-drift:** chunk-gränser och namn byter mellan byggen, så en
+   jämförelse gammal-mot-ny bundle jämför inte samma sak.
+
+Formen som håller: (a) läs deployens källcommit ur plattformens inspect/API,
+(b) verifiera med `git merge-base --is-ancestor` att ändringen är ancestor,
+(c) verifiera att bygget faktiskt kördes (byggloggen) och att aliaset pekar
+på deployen. Behavioral bevis i en miljö-tvilling (staging byggd från samma
+källa) kompletterar. Bundle-grep får på sin höjd vara en snabb INDIKATOR —
+aldrig grunden för ett larm eller ett friskintyg.
+
+Relaterat: TASK-199 (stale-front-utredningen — kortets notes bär hela
+mätserien), `docs/reference/prod-driftsattning-runbook.md` § Steg 6
+(interimsformen bör ersättas med inspect-kedjan när TASK-199 stänger).
+
+*Konsoliderad ur `tasks/lessons.d/deploy-farskhet-bevisas-i-deploykedjan-inte-i-minifierad-bundle.md` (S112 resume 2, fragment-vägen `ADR-081`); fragmentet är borttaget.*
+
+### L576 — Nästlade worktree-sökvägar fäller textmatchande katalogvakter
+
+**En vakt som textmatchar "kommandot nämner huvudkatalogens sökväg" ger
+falska positiver i repon där worktrees bor UNDER huvudkatalogen
+(`.claude/worktrees/…`) — varje absolut worktree-sökväg bär då
+huvudkatalogen som prefix, och `cd <egen-worktree> && git …`-former fälls
+trots att målet är agentens egen katalog. Arbetsformen som håller: byt
+arbetskatalog i ett EGET kommando (låt cwd persistera) och kör därefter
+rena git-kommandon utan absoluta sökvägar i kommandotexten.**
+
+Mätt 2026-08-14 (S105): orkestreraren + tre oberoende bygg-agenter fälldes
+av `scripts/deny-frammande-huvudkatalog.sh` väg 2 (textmönstret) på
+kommandon som riktades mot egna worktrees — `cd <worktree> && git checkout`,
+`git -C <worktree> …` och `git add`/`git commit` med cd-prefix. En agent såg
+dessutom transient fällning där identiskt kommando gick igenom vid retry
+(möjlig race i cwd-läsningen). Ingen av fällningarna skyddade något —
+huvudkatalogen berördes aldrig.
+
+Detta är en ANNAN felklass än harnessets engelska worktree-isoleringsspärr
+("too complex to check") — den svenska hookens väg 2 är repots egen. Vaktens
+design är medvetet "hellre för brett" och fällningen är billig att arbeta
+runt (cwd-formen ovan), så lärdomen är i första hand OPERATIV för den som
+skriver kommandon; en ev. skärpning av väg 2 (exkludera sökvägar under
+`<huvudkatalog>/.claude/worktrees/`) är en separat design-fråga för hookens
+ägare, inte något en fälld agent ändrar själv.
+
+Instanser: S105 sessionsdok Del 10 § lessons-kandidater p. 3 +
+bygg-agenternas slutrapporter (TASK-201.15/201.16/201.18-landningarna).
+Instans 2–3 (2026-08-17, S104 natt-orkestreringen): 249.4- och
+249.3-agenterna fälldes oberoende av varandra på `cd <egen-worktree> &&
+git …`-former mot egna worktrees; båda löste det med cwd-formen ovan utan
+att känna till detta fragment — mönstret är alltså återupptäckbart men
+kostar varje agent en egen omväg (S104 sessionsdok Del 10).
+
+*Konsoliderad ur `tasks/lessons.d/nastlade-worktree-sokvagar-faller-textmatchande-katalogvakter.md` (S112 resume 2, fragment-vägen `ADR-081`); fragmentet är borttaget.*
+
+### L577 — Acceptance-klassens hermetik-självtest tillåter ingen parkering — döda tester raderas, aldrig skippas
+
+**`describe.skip`/`test.skip` är strukturellt otillåtet i acceptance-klassen:
+hermetik-självtestet (`scripts/hermetik-sjalvtest.mjs`) kräver att VARJE test
+fälls med `OmockadRequestError` när fixturvärlden töms, och ett hoppat test
+rapporterar `skipped` där beviset kräver `unexpected`. Skip-ventil saknas MED
+AVSIKT — ett test som överlever utan fixturens svar bevisar inget om appens
+databeteende, och exakt det är drift-definitionen.**
+
+Mätt 2026-08-15 (PR `#1306`, TASK-214.4): flippen gjorde den ersatta ytans
+åtta acceptanstester subjektlösa; agenten parkerade dem med `describe.skip` —
+hela lokala acceptanssviten grön, CI:s självtest fällde med "8 avvikelser".
+Fixen: verifiera att VARJE test i filen har den ersatta ytan som subjekt,
+radera filen (`git rm`), självtest 229/229 med noll avvikelser + negativ
+kontroll grön.
+
+**Andra instansen, 2026-08-16 (S102, `task-243.1`, PR `#1426`):** Morgonkollens
+promovering fälldes av samma självtest — varv 1 bar **33 `test.skip`**, och de
+var strukturellt inkompatibla med det tvåsidiga beviset (`skipped` ≠
+`unexpected`). Varv 2 (`27288c3e`) raderade dem, och täckningen flyttades öppet
+till `task-243.3` i stället för att parkeras. Att klassen fällde en andra gång,
+på en agent som inte kände fragmentet, är belägget för att regeln måste bo i
+skiv-DoD:n och inte enbart i lessons.
+
+**Det generella (spoke-regel med universell kärna):** i en svit vars
+MENINGSFULLHET bevisas mekaniskt är "parkera tills vidare" inte ett neutralt
+mellanläge — det är mätbar drift. En död konsument uppdateras genom
+borttagning; vill man bevara innehållet för framtiden är git-historiken
+platsen, inte en skip-flagga.
+
+*Konsoliderad ur `tasks/lessons.d/acceptance-klassens-sjalvtest-tillater-ingen-parkering.md` (S112 resume 2, fragment-vägen `ADR-081`); fragmentet är borttaget.*
+
+### L578 — En agents falsifiering av orkestrerarens premiss är arbetsproduktens billigaste kvalitetskontroll
+
+**Ett uppdrag vars mottagare PRÖVAR premisserna mot disk innan bygge (ADR-086)
+fångar orkestrerarens fel innan de blir kod. Källmärk varje faktapåstående i
+uppdraget och BE om falsifiering — divergensrapporterna är inte friktion, de
+är kvalitetskontrollen.** `[UNIVERSAL]`
+
+Mätta instanser i S103: två av orkestrerarens påståenden föll redan i Del 11
+(båda med belägg). Under promoveringsnatten 2026-08-14/15 föll ytterligare
+fyra: (1) "17 operationer i allowlisten" — disk sade 18 (214.1); (2) "S90-
+förarbetet täcker hela kortet" — det nämnde `create-attendance` noll gånger
+(214.1, agenten designade själv mot PRD:t och RAPPORTERADE det); (3) husets
+strängform angavs som "kortstreck" — den faktiska precedent-diffen
+(`a4c0a641`) var OMFORMULERING, och agenten följde diffen i stället för
+uppdragets sammanfattning (214.2); (4) komponentens radnummer hade driftat
+~144 rader sedan mätningen (214.4 — lokaliserat via grep, bokfört, ej
+blockerande).
+
+**Instanser i S102 (2026-08-16/17) — och de visar att klassen även gäller
+orkestrerarens GRANSKNINGS-observationer, inte bara uppdragets premisser:**
+
+- Svep-prototypens skärpningsvarv (PR **#1438**, `b900601b`): **fem** av
+  orkestrerarens egna granskningspremisser mätt-falsifierade av bygg-agenten —
+  railen var delad och felkonfigurerad, inte egenbyggd; `SlideToConfirm` ÄR
+  husets armeringsform (`AtgardsSida.tsx:2762`); primärknappen antracit, ej
+  guld. Agenten följde intentionen över bokstaven och rapporterade
+  divergenserna.
+- `task-243.3` (PR **#1470**): orkestrerarens DATAhypotes falsifierad av
+  agentens kodläsning (Signe Sparad-sentinelns status mot det nya
+  Obekräftad-filtret).
+- `task-233`: orkestrerarens ~250 ms-tal slaget av ORDLISTA-regeln.
+- `task-266` (PR **#1537**): uppdrags-premissen "ADR-112-styrd" FALSIFIERAD —
+  **0 träffar**; ankaret ägs i själva verket av `TASK-242`:s doc-block.
+- Issue-svepet (Del 16, 19 ärenden): **fem** premisser falsifierade, bl.a. att
+  `task-235` var b-gruppens facit (det var det inte) och en D0-skippad run som
+  falskt räknats som post-merge-bevis.
+
+**Det generella:** orkestrerarens kontext åldras medan kedjan landar —
+premisser som var sanna vid uppdragsskrivningen är hypoteser vid
+uppdragsmottagningen. Mottagare som behandlar dem som hypoteser (och
+uppdragsgivare som källmärker så att prövningen är billig) gör felen till
+rapportrader i stället för buggar. Kostnaden är minuter; alternativet är
+kod byggd på fel grund.
+
+*Konsoliderad ur `tasks/lessons.d/agentens-falsifiering-av-premissen-ar-billigaste-kvalitetskontrollen.md` (S112 resume 2, fragment-vägen `ADR-081`); fragmentet är borttaget.*
+
+### L579 — Autofix-scopet måste vara CI:s helträd, inte de filer du minns att du rörde
+
+**[UNIVERSAL]-kandidat** · S106 (2026-08-15), miranon-media-admin
+
+**Mätt, två CI-fällningar i SAMMA session (båda `Biome check` i Lint-jobbet,
+PR `#1328` resp. `#1335`):** lokala passet körde
+`biome check --write <de ändrade filerna>` — CI kör `biome check .`.
+Fällning 1: `facit.json` (en fil jag skrev via Write och aldrig tänkte på som
+"kod"). Fällning 2: import-ordningen i två filer vars importer ompekats via
+`sed` (inte via Edit — så de fanns inte i min mentala "ändrade filer"-lista).
+
+**Mönstret:** fil-scopad autofix fixar det du MINNS att du rört; verktyg som
+skriver filer utanför Edit-flödet (Write av JSON, sed-ompekningar,
+skript-genererade filer) lämnar spår som bara helträdet ser. Kostnaden är en
+hel CI-cykel + konsumerad merge-armering per miss (utsparkningen är tyst,
+`autoMergeRequest` ser ut som aldrig-armerad).
+
+**Regeln:** före varje push: `npx @biomejs/biome check .` (exakt CI:s form,
+utan filargument) — autofix-varvet får gärna vara fil-scopat för tempo, men
+GRINDEN före push är alltid helträdet. Detta är instans-belägget för
+konstitutionens "verifiera med de exakta kommandon CI kör" applicerat på
+AUTOFIX-scopet, inte bara på verifierings-scopet.
+
+*Konsoliderad ur `tasks/lessons.d/autofix-scopet-maste-vara-cis-heltrad.md` (S112 resume 2, fragment-vägen `ADR-081`); fragmentet är borttaget.*
+
+### L580 — Dev-servern serverar huvudkatalogens utcheckade gren — en gren-växling är en tillståndsändring för varje levande server i trädet
+
+**En `git switch` i en katalog med en levande dev-server byter INNEHÅLLET i
+allt servern servar, utan omstart och utan varning. Granskningsytor,
+demolänkar och pågående QA som pekar på servern följer med till den nya
+grenen — mitt i användningen.** `[UNIVERSAL]`
+
+Mätt 2026-08-13 (S103): en gren-växling i huvudkatalogen svepte undan den yta
+Marcus just granskade — servern på `:5173` bytte tyst till den nya grenens
+värld. Samma mekanik åt andra hållet 2026-08-15: QA-vandringens server
+startades MEDVETET först efter att huvudkatalogen ställts på main, så att
+det granskade var det landade.
+
+**Det generella:** servern är en projektion av arbetsträdet, inte en frusen
+kopia. Operativa konsekvenser: (1) före `git switch` i en katalog — inventera
+levande servrar därifrån; (2) före granskning — verifiera VILKEN gren
+serverns katalog står på; (3) parallella sessioner använder egna portar OCH
+egna kataloger, aldrig bara egna portar (en främmande sessions server på en
+port säger inget om vilken katalog den projicerar).
+
+*Konsoliderad ur `tasks/lessons.d/dev-servern-serverar-utcheckade-grenen.md` (S112 resume 2, fragment-vägen `ADR-081`); fragmentet är borttaget.*
+
+### L581 — En grind som inte ligger i det svep man kör är osynlig — gröna lokala exitkoder täcker bara det svepet faktiskt kör
+
+**CI-jobb bär grindar som INTE ingår i de lokala DoD-kommandona. En utförare
+vars hela lokala svep är grönt kan ändå fällas av CI — inte för att något
+mättes fel, utan för att grinden aldrig kördes. Inventera målets JOBB-STEG,
+inte bara husets kommandolista, innan push.** `[UNIVERSAL]`
+
+Tre mätta instanser i S103: (1) `check-langa-streck` bor i CI-jobbet
+"Lint + Audit + TypeCheck", inte i `check:docs` — fälldes först i Del 11,
+igen på PR `#1301` (TASK-214.2, 2026-08-14: agentens typecheck/Biome/build/
+test:api alla exit 0, CI rött ändå). (2) Samma jobb bär `check-mailto` —
+samma osynlighet. (3) Hermetik-självtestet bor i Acceptance-JOBBET, inte i
+`test:acceptance` — fällde PR `#1306` (TASK-214.4) på `describe.skip` som
+hela den lokala acceptanssviten accepterade grönt.
+
+**Fångsten och fixen i drift:** efter `#1301` läste 214.2-agenten själv HELA
+stegkedjan i det fällande jobbet och identifierade exakt vilka `run:`-steg
+som saknades i det lokala svepet — därefter bar varje efterföljande
+agent-uppdrag de grindarna som explicit NAKET-körda kommandon, och inget
+ytterligare varv förlorades.
+
+**Det generella:** "alla mina grindar är gröna" är ett påstående om SVEPETS
+täckning, inte om ändringens kvalitet. Vid första CI-fällning: läs jobbets
+faktiska steglista och diffa mot det lokala svepet — luckan, inte felet, är
+rotorsaken.
+
+*Konsoliderad ur `tasks/lessons.d/en-grind-utanfor-det-korda-svepet-ar-osynlig.md` (S112 resume 2, fragment-vägen `ADR-081`); fragmentet är borttaget.*
+
+### L582 — Facit-manifestets kallor ompekas i FLIP-skivan — efter stämpeln är manifestet agent-fruset
+
+S106 (2026-08-15), miranon-media-admin · ADR-103/ADR-104-mekaniken
+
+**Mätt:** s106-manifestets `kallor` pekade på prototypfilen (korrekt vid
+låsningen — den VAR källan då). Efter Marcus `godkand`-stämpel river
+promoveringsordningen prototypfilen → `check-facit.sh` fällde ("källan finns
+inte") → och ADR-104-hooken nekar VARJE agent-skrivning mot ett manifest vars
+`godkand` är satt (prövat: Edit av kallor-raden OCH Edit av not-fältet, båda
+nekade). Rättelsen krävde en Marcus-`!`-rad (sed) — en extra rundresa för
+något som var känt redan vid flippen.
+
+**Regeln:** flip-skivan (ADR-103 B2a) ompekar manifestets `kallor` från
+prototypfilen till den promoverade skarpa filen I SAMMA landning som flippen —
+medan manifestet ännu är agent-skrivbart (`godkand: null`). Vid stämpel-
+ögonblicket ska manifestet redan beskriva världen EFTER rivningen.
+
+**Samma frysning träffar amenderingar av ANDRA stämplade manifest:**
+s55-hem-amenderingen (TASK-225.3) kunde inte bakas in agent-vägen; kanoniska
+vägen är Marcus omstämpling `facit:godkann --ersatt` med SAMTLIGA undantag
+återgivna (befintliga poster försvinner annars — --ersatt byter hela
+godkand-objektet). Sidofil i bilage-katalogen är den durabla bäraren tills
+Marcus-momentet är gjort.
+
+*Konsoliderad ur `tasks/lessons.d/facit-kallor-ompekas-fore-stampeln.md` (S112 resume 2, fragment-vägen `ADR-081`); fragmentet är borttaget.*
+
+### L583 — För en UI-yta är den renderade bilden källan — ett kodpass kan bekräfta att något finns, aldrig att det håller
+
+**Att läsa koden till en UI-yta bevisar att element EXISTERAR — aldrig hur de
+ser ut tillsammans. Bedöm aldrig en formfråga (val mellan varianter, "är detta
+klart?") på läst kod: rendera, titta, jämför mot facit-bilder.** `[UNIVERSAL]`
+
+Mätt 2026-08-10–13 (S103 Del 11): orkestreraren bedömde check-in-varianterna
+A–D på LÄST KOD utan att ha sett dem renderade. Marcus fångade det i klartext
+(*"har du ens tittat på hur det ser ut?"*) och pekade på facit-sidorna som
+mått. Den efterföljande D-konvergensen ändrade sju punkter som kodläsningen
+aldrig hade sett — bl.a. höjdlåset på framstegskortet (127 px konstant mätt
+genom fem incheckningar) och tint-hörnens klippning, båda rena render-fenomen.
+
+**Det generella:** koden är sanningskälla för BETEENDE (ADR-100); den
+renderade ytan är sanningskälla för FORM. Ett omdöme om form grundat i kod är
+en hypotes, inte en observation — och skillnaden syns först i pixlar.
+Operativ konsekvens: varje form-bedömning i ett uppdrag ska bära en skärmdump
+eller köras mot dev-servern; "jag läste komponenten" är inte belägg.
+
+*Konsoliderad ur `tasks/lessons.d/for-en-ui-yta-ar-den-renderade-bilden-kallan.md` (S112 resume 2, fragment-vägen `ADR-081`); fragmentet är borttaget.*
+
+### L584 — `git add` med flera pathspecs kan lämna hälften ostagat när en pathspec är ogiltig — verifiera committens INNEHÅLL, inte dess existens
+
+**Ett `git add` som får flera pathspecs där en inte matchar (t.ex. en sökväg
+som just försvunnit i ett `git mv`) kan avbryta innan senare pathspecs
+processats — committen som följer ser lyckad ut men bär bara halva
+ändringen. Stage:a en pathspec i taget, och verifiera efter commit att
+innehållet är det avsedda (`git show <sha>:<fil>` mot arbetsträdet).**
+`[UNIVERSAL]`
+
+Två mätta instanser samma natt (2026-08-14/15, S103): (1) TASK-214.7 —
+`git add` med gamla filnamnet (borta efter `git mv`) + nya; kommandot föll
+på den första och den andra stagades aldrig; committen `570c5951` saknade
+rename-filens innehållsändringar. Fångat av agentens egen post-commit-
+verifiering (`git show` mot working tree), rättat i `27303f60` FÖRE push,
+alla grindar omkörda mot rätt HEAD. (2) TASK-214.7:s kort-notes — samma
+mönster i samma skiva, bokfört i commit-meddelandet.
+
+**Tredje instansen (2026-08-16, S102, samma mönster i ett `git mv`-liknande
+läge):** facit-arkivflytten under Morgonkollens landning (`task-243.1`, PR
+**#1426**) bar ett tyst `git add`-pathspec-avbrott — bilagekatalogen flyttades
+till `tasks/sessions/archive/bilagor/s55-hem-konvergens/` och en pathspec
+pekade på den gamla, nu borta sökvägen. Självfångat av orkestreraren i samma
+pass och rättat öppet, tillsammans med en pipe-dold checkout-exitkod
+(`L440`-klassen). Bokfört i sessionsdok S102 Del 14 och buret som
+carry-kandidat genom tre pauser.
+
+**Det generella:** "committen finns och grindarna var gröna" bevisar inte
+att committen BÄR ändringen — grindarna kan ha mätt arbetsträdet medan
+committen bär en delmängd. Post-commit-verifiering av innehåll är den
+billiga försäkringen; path-scopad add EN pathspec i taget gör felklassen
+strukturellt omöjlig.
+
+*Konsoliderad ur `tasks/lessons.d/git-add-med-flera-pathspecs-avbryter-tyst-vid-ogiltig.md` (S112 resume 2, fragment-vägen `ADR-081`); fragmentet är borttaget.*
+
+### L585 — `| head` på en långlivad bakgrundsprocess dödar processen med SIGPIPE — inte bara utskriften
+
+**Att pipa en långlivad process (dev-server, watcher, tail) genom `head`
+stänger läsänden efter N rader — nästa write i processen får SIGPIPE och dör.
+Det som skulle vara en utskriftsbegränsning blir ett processmord, mitt i
+någon annans användning.** `[UNIVERSAL]`
+
+Mätt 2026-08-13 (S103, check-in-passet): dev-servern som serverade Marcus
+pågående granskning dog mitt i den — rotorsaken var ett `| head` på
+serverprocessens utström i ett diagnostik-kommando. Släkt med `[[L440]]`
+(pipens exitkod-maskering) — samma rotklass, pipe-semantik som ändrar det
+observerade systemet, här i process-livslängds-ledet i stället för
+exitkods-ledet.
+
+**Det generella:** rör aldrig en levande processströms rör. Skriv processens
+utdata till FIL (`> logg 2>&1`) och läs filen med `head`/`grep`/`tail` —
+läsningen är då frikopplad från processens liv. Regeln gäller varje
+long-running process vars fortsatta liv någon annan beror på.
+
+*Konsoliderad ur `tasks/lessons.d/head-pa-langlivad-bakgrundsprocess-ger-sigpipe-dod.md` (S112 resume 2, fragment-vägen `ADR-081`); fragmentet är borttaget.*
+
+### L586 — Kanalseparationen håller även mot "rätt innehåll, fel skribent" — och det är precis det den ska
+
+**ADR-104:s spärr prövar VEM som skriver, inte VAD som skrivs. Ett godkännande
+med korrekt citat, korrekt pass-namn och ärligt uppsåt nekas ändå när det går
+genom agentens verktygsloop — och båda gångerna det hänt var nekandet
+korrekt.**
+
+Två mätta instanser i S103: (1) 2026-08-14 (Del 13) — agenten försökte skriva
+`godkand`-fältet med Marcus eget citat; hooken fällde. (2) 2026-08-14 (Del 15)
+— Marcus klistrade själva `facit:godkann`-kommandot som CHATT-text; hade
+orkestreraren kört det via Bash hade samma innehåll nått basen genom fel
+kanal. Rätt drag var att be Marcus skriva raden med `!`-prefixet — kommandot
+kördes då i HANS kanal och stämpeln blev hans handling.
+
+**Det generella:** en integritets-mekanism som prövar innehåll kan alltid
+matas med rätt innehåll av fel aktör — bara aktörs-/kanalprövning stänger
+den vägen (CIBA-principen). Operativt: när något fastnar i en kanalspärr är
+lösningen att FLYTTA HANDLINGEN till rätt kanal, aldrig att hitta en väg
+runt spärren. Avgränsning: TASK-194 (hooken nekar i dag även icke-godkand-
+fält i stämplade manifest) är en TRÄFFYTE-bugg i implementationen — den
+falsifierar inte principen, och rättas i kortet, inte genom kringgående.
+
+*Konsoliderad ur `tasks/lessons.d/kanalseparationen-haller-aven-mot-ratt-innehall-fel-skribent.md` (S112 resume 2, fragment-vägen `ADR-081`); fragmentet är borttaget.*
+
+### L587 — Nätverksobservation kräver delta-räkning per steg — retry-lager förgiftar absoluträkning
+
+**Ett test som räknar nätverksanrop ackumulerat över flera interaktionssteg
+räknar även RETRY-LAGRETS omtag från tidigare steg. En provocerad felväg
+(abortad request) genererar N omtag som alla syns i request-loggen — nästa
+stegs assertion "exakt 1 anrop" läser då N+1. Räkna DELTAT från en snapshot
+tagen omedelbart före det observerade steget.** `[UNIVERSAL]`
+
+Mätt 2026-08-15 (S103, QA-vandringen 214.8): felvägs-steget abortade
+`update-record` via route-intercept; husets `fetchWithRetry` gjorde fyra
+väntade omtag. Nästa stegs assertion `writes.length === 1` (absoluträknad
+från testets start) läste 5 och fällde — appens beteende var korrekt i båda
+stegen, mätinstrumentet räknade fel population. Fixen: snapshot av räknaren
+före klicket, assertion på `slice(innan)`.
+
+**Det generella:** varje observations-assertion behöver en explicit
+population — "alla anrop sedan testets start" är nästan aldrig den avsedda.
+Gäller särskilt när samma test både PROVOCERAR fel (som multiplicerar
+trafik via retries) och BEVISAR exakthet (som kräver ren räkning); de två
+lägena delar logg men inte population.
+
+*Konsoliderad ur `tasks/lessons.d/natverksobservation-kraver-delta-rakning-retries-forgiftar-absolut.md` (S112 resume 2, fragment-vägen `ADR-081`); fragmentet är borttaget.*
+
+### L588 — `!`-prefixet passerar PreToolUse-hookar — mätt två gånger, medan dokumentationen tiger
+
+S102 resume 8 (2026-08-17), miranon-media-admin · Claude Code-harnessets hook-yta
+
+**Frågan som uppstod:** Marcus skulle köra prod-kommandon som
+`scripts/deny-prod-ref.sh` (PreToolUse på `Bash`) avsiktligt spärrar för
+agenter, och frågade om han kunde använda `!`-prefixet i stället för att byta
+till sin egen terminal.
+
+**Vad förstapartsdokumentationen svarar: ingenting.**
+`interactive-mode.md` § Shell mode säger att `!` kör kommandon *"directly
+without going through Claude"* och att det *"doesn't require Claude to
+interpret or approve the command"* — men hooks-dokumentationen nämner aldrig
+`!`, och ingen sida säger om shell-läget passerar `PreToolUse`-pipelinen.
+"Directly" kan lika gärna betyda *utan Claudes tolkning* (semantik) som *utan
+hookar* (struktur). En riktad genomsökning av docs, GitHub-issues och bloggar
+gav inget entydigt svar.
+
+**Vad repots egen historik svarar: ja, det passerar. Två instanser.**
+
+1. **S103 Del 15 (2026-08-14), facit-stämpeln.** Marcus klistrade först
+   stämplingskommandot som chatt-text — agenten körde det via `Bash` och
+   stämpel-hooken fällde på Kanal A (stämplings-skriptet i kommando-position).
+   *"Rättades till `!`-prefixet, stämpeln satt i HANS kanal"* — samma kommando,
+   samma hook, ingen fällning.
+2. **S106, manifest-rättelsen** ([[L582]]):
+   *"Rättelsen krävde en Marcus-`!`-rad (sed)"* mot ett stämplat manifest —
+   exakt formen deny-hookens Kanal B fäller (in-place-redigering mot en
+   manifest-sökväg i samma segment som fältnamnet).
+
+Båda hookarna är `PreToolUse` på `Bash`. Ett agent-anrop fälldes, ett
+`!`-anrop med samma innehåll gick igenom.
+
+**Regeln:** `!`-prefixet är en fungerande väg förbi PreToolUse-hookar — det är
+MÄTT, inte dokumenterat. Behandla det som empiriskt belagt för hookar av den
+klassen, aldrig som en garanti harnesset lovat: förstaparten kan ändra det
+utan att bryta något dokumenterat kontrakt.
+
+**Praktiskt:** för Marcus egna spärrade kommandon är `!` förstahandsvalet och
+kostar ingenting att pröva — fälls det syns hookens svenska skäl omedelbart i
+utdatan, och den egna terminalen står kvar som den strukturellt garanterade
+vägen (en hook ser bara Claude Codes egna anrop).
+
+**Felklassen att undvika:** jag avfärdade `!`-vägen som *"obelagd"* efter att
+ha frågat dokumentationen och fått tyst — och rekommenderade terminalen som
+enda väg. Belägget fanns i repots eget sessionsdok hela tiden, en fil jag
+redan läst i samma pass. **Att förstaparten tiger är inte samma sak som att
+huset saknar mätning.** Sök i egen historik innan ett verktygsfaktum kallas
+obelagt.
+
+#### Bifynd, mätt i samma andetag: att DOKUMENTERA kommandot fäller hooken
+
+Detta fragment skrevs först via en Bash-heredoc. Den fälldes av stämpel-hooken
+— inte för att den skrev något, utan för att brödtexten **citerade**
+stämplingskommandot inuti markdown-backticks. Hookens segmenterare delar på
+backtick (en kommandosubstitution kör sitt innehåll även inbäddad i en sträng),
+så ett citat i prosa blev ett segment vars kommando-position matchade Kanal A.
+
+Det är `TASK-168`-klassens falsk-positiv i en form kortet inte listar: inte ett
+argument, inte ett filnamn som råkar sluta likadant, utan **dokumentation av
+kommandot**. Vägen förbi är att skriva filen med `Write` i stället för heredoc
+— `Write` prövas bara mot manifest-sökvägar, och en lessons-fil är ingen sådan.
+
+Sensmoralen är inte att hooken är fel. § HELLRE FÖR BRETT gäller: en falsk
+fällning kostar ett verktygsbyte, en missad förfalskning kostar hela
+mekanikens syfte. Men klassen är värd att känna igen, för den träffar
+oundvikligen den som skriver ned hur mekaniken fungerar.
+
+*Konsoliderad ur `tasks/lessons.d/bang-prefixet-passerar-pretooluse-hookar-matt-tva-ganger.md` (S112 resume 2, fragment-vägen `ADR-081`); fragmentet är borttaget.*
+
+### L589 — CI-röd-felsökning routas per modelltier — inte tillbaka till byggarens default
+
+**När en byggagents PR blir CI-röd är felsökningen en ANNAN uppgiftsklass än
+bygget. ADR-089:s roll-tabell sätter Opus@xhigh på "svår felsökning" — men
+den intuitiva reflexen är att skicka rödan tillbaka till SAMMA agent som
+byggde (Sonnet-default via frontmatter), vilket är default-drift, inte
+routing. Klassa om uppgiften vid återkopplingen: rotorsakning av en
+oväntat bred fällning (217/233-klassen) är felsöknings-raden, inte
+implementations-raden.** [UNIVERSAL]-kandidat.
+
+Mätt 2026-08-17 (S104 natt-orkestreringen): 249.5:s CI-röd (hermetik-
+självtestet fällde 217/233 med `OmockadRequestError`) skickades tillbaka
+till Sonnet-byggaren — utfallet blev korrekt (rotorsak + precedent-fix),
+men Marcus-pushbacken i realtid ("svårare uppgifter till Opus, Sonnet-
+agenter gör ibland ful-lösningar") pekade på att routingen aldrig
+klassades om. Efterföljande svåra uppdrag (249.6-rivningen med referens-
+re-låsning, 249.9, publik-utredningen, 259, K1) kördes Opus@xhigh med
+bokförd avvikelse + sanity-check i slutrapporten — fem instanser, noll
+tysta nedgraderingar.
+
+Adversariell dubbelkoll av en Sonnet-fix är komplementet, inte
+alternativet: 249.5-fixen friades genom diff-klassning mot fusk-klasserna
+(tystad rigg, breda skip, försvagade assertioner, CI-villkorade hopp) plus
+precedent-verifiering — den granskningen är orkestrerarens egen yta
+oavsett vilken modell som byggde.
+
+Instanser: S104 sessionsdok Del 10 § Vågorna + § Modell-routingen;
+Marcus-pushback verbatim i S104-chatten 2026-08-17.
+
+*Konsoliderad ur `tasks/lessons.d/ci-rod-felsokning-routas-per-modelltier-inte-till-byggarens-default.md` (S112 resume 2, fragment-vägen `ADR-081`); fragmentet är borttaget.*
+
+### L590 — Arbetskatalogen persisterar mellan Bash-anrop — en `cd` i en kommandokedja är ett globalt tillståndsbyte som driftar tyst
+
+**Ett `cd` inuti ett kommando gäller inte bara det kommandot. Arbetskatalogen
+följer med till NÄSTA Bash-anrop, och alla senare git-kommandon utan explicit
+mål träffar då det träd man råkade stå i — inte det man tror. Vid arbete mot
+flera träd samtidigt (worktrees, syskonrepon) är `-C <mål>` på varje enskilt
+git-kommando den enda formen som inte kan driva.** `[UNIVERSAL]`
+
+Instans (S102, 2026-08-17): **TVÅ instanser samma dag**, den andra trots att
+den första redan var bokförd. Bokfört i Del 17-skörden som "cwd-drift — en cd
+i kommandokedja persisterar över Bash-anrop, git mot delade träd kräver
+explicit `-C`".
+
+**Spänningen mot den motsatta rekommendationen är verklig och måste läsas
+ihop.** Fragmentet
+[[L576]]
+rekommenderar precis tvärtom — byt katalog i ett EGET kommando, låt cwd
+persistera, och kör därefter rena git-kommandon UTAN absoluta sökvägar — för
+att undvika att repots egen katalogvakt textmatchar huvudkatalogens sökväg och
+fäller falskt. Båda observationerna är mätta och båda är sanna om sin egen
+felklass:
+
+- **cwd-formen** undviker VAKT-fällningar (sökvägen står inte i kommandotexten).
+- **`-C`-formen** undviker DRIFT (målet är explicit i varje anrop).
+
+De är alltså inte utbytbara råd utan en avvägning mellan två risker, och
+valet beror på om man arbetar mot ETT träd (cwd-formen räcker, driften kan
+inte uppstå) eller mot FLERA (driften är den större risken). Konsolideringen
+av de två posterna bör göras medvetet av den som numrerar — inte genom att den
+ena tyst skriver över den andra.
+
+*Konsoliderad ur `tasks/lessons.d/cwd-persisterar-mellan-bash-anrop-och-driftar-tyst.md` (S112 resume 2, fragment-vägen `ADR-081`); fragmentet är borttaget.*
+
+### L591 — En agent vars systemprompt saknar modellidentitets-raden kan inte bekräfta vilken modell den kör på
+
+**Uppdragsformen kräver att agenten rapporterar sin faktiska modell-identitet
+ur den egna systemprompten ("You are powered by the model named X. The exact
+model ID is Y."). Den raden är inte garanterad att finnas. Saknas den kan
+agenten INTE svara på frågan — och ett svar som ändå ges är en gissning ur
+träningsdata, inte en mätning. Rätt utfall är att rapportera raden som
+SAKNAD, inte att fylla i det troliga.** `[UNIVERSAL]`
+
+Instans (S102, 2026-08-16/17): `task-243.3`-agentens slutrapport kunde inte
+bära modellidentitets-raden — den fanns inte i dess systemprompt. Bokfört som
+lesson-kandidat i sjunde pausens carry-block ("agent utan modellidentitets-rad
+i systemprompt (243.3-agentens rapport)").
+
+**Varför kravet ändå står kvar:** raden är motmedlet mot att
+frontmatter-fältet `model` tyst ignoreras — ett dokumenterat harness-beteende
+med ≥8 GitHub-issues bakom sig (`ADR-089` § 7). Kravet är alltså rätt; det
+som saknades var ett definierat utfall när källan inte finns. Det utfallet är
+nu skrivet: **rapportera "modellidentitets-raden saknas i min systemprompt"**
+— en ärlig lucka i verifikationskedjan är läsbar, en gissning som ser ut som
+en mätning är det inte.
+
+*Konsoliderad ur `tasks/lessons.d/en-agent-utan-modellidentitets-rad-kan-inte-bekrafta-sin-modell.md` (S112 resume 2, fragment-vägen `ADR-081`); fragmentet är borttaget.*
+
+### L592 — En defekt som är byte-identisk med den godkända prototypen är en FACIT-nivå-defekt — bygget kan inte laga den
+
+**Hittas ett fel i en promoverad yta ska första frågan vara om felet också
+finns i det stämplade facitet. Är den skarpa ytan byte-identisk med
+prototypen har bygget gjort exakt rätt — felet ligger i det som godkändes.
+Då finns bara två giltiga vägar, båda Marcus: AMENDERA facitet (felet
+accepteras som gällande form) eller KRÄV FIX (facitet ändras och ytan byggs
+om). Att "bara laga det" i bygget bryter promoveringskontraktet och gör
+facitet osant.**
+
+Instans (S102): `task-243.1`:s Morgonkoll-promovering bar en defekt i
+badge-formen vid 375 px bredd. Den mättes vara **byte-identisk med
+prototypen** — alltså inte en byggmiss — och klassades som ADR-102 B2-beslut
+hos Marcus. Buren som carry-kandidat genom sjätte och sjunde pausen, avgjord
+vid QA 243.4 (2026-08-17): **B2 = AMENDERA** ("orkar inte ta tag i det just
+nu"; omprövning uttryckligen fri), bokförd på `task-243.1` i PR **#1517**.
+
+**Det generella:** promoveringskontraktet gör facitet till kravspec, inte till
+inspiration. En avvikelse mellan yta och facit är ett byggfel; en
+ÖVERENSSTÄMMELSE med facitet som ändå är fel är ett kravfel — och kravfel har
+en annan ägare. Att skilja de två kostar en jämförelse och sparar en
+tvist om vem som gjorde fel.
+
+*Konsoliderad ur `tasks/lessons.d/en-defekt-som-ar-byte-identisk-med-prototypen-ar-en-facit-niva-defekt.md` (S112 resume 2, fragment-vägen `ADR-081`); fragmentet är borttaget.*
+
+### L593 — En deny-hook som prövar RESULTATET i stället för DELTAT gör den godkända artefakten permanent agent-immutabel
+
+**En vakt kan pröva två saker: "vad står i filen efter ändringen?" (resultat)
+eller "vad ändrade den här skrivningen?" (delta). Skyddar vakten ett
+godkännande-fält och prövar RESULTATET, nekar den varje edit av filen —
+inklusive edits som inte rör godkännandet alls. Artefakten blir därmed
+oföränderlig för varje agent, och även ren underhållsändring kräver ett
+människo-moment. Prövar den DELTAT nekas exakt det den ska skydda och inget
+mer.**
+
+Instans (S102, 2026-08-17, `TASK-168`-klassens **sjätte** instans): 241.7-
+rivningen var färdigmätt (typecheck 0, 243.5-avblockeringen probe-bevisad) men
+kunde inte landa. Facit-manifestets `kallor`-lista pekade på filer rivningen
+tar bort → `check-facit` exit 1 med sex fel → och deny-facit-hooken nekade
+VARJE edit av det stämplade manifestet. Två vägar lades fram för Marcus:
+**(a)** han lägger själv om `kallor` per rivning, **(b)** hooken delta-fixas
+(rekommenderad — löser 241.7 och 243.5 permanent). Bokfört i PR **#1535**;
+samma vägg väntade 243.5.
+
+**Relaterat, men inte samma sak:** fragmentet
+[[L582]] ger den OPERATIVA vägen runt väggen —
+peka om `kallor` i flip-skivan medan manifestet ännu är skrivbart. Denna post
+handlar om VAKTENS DESIGN, alltså varför väggen finns även när man gör rätt i
+övrigt. Sjätte instansen är beviset för att den operativa omvägen inte räcker:
+en klass som återkommer sex gånger ska mekaniseras bort, inte kringgås en
+sjunde.
+
+*Konsoliderad ur `tasks/lessons.d/en-deny-hook-som-provar-resultat-i-stallet-for-delta-fryser-artefakten.md` (S112 resume 2, fragment-vägen `ADR-081`); fragmentet är borttaget.*
+
+### L594 — En hemlighet som passerat ett API-svar eller ett agent-transkript är exponerad — behandla den som rotationspliktig, inte som "troligen okej"
+
+**Ett lösenord som skrivits ut någonstans utanför sin nyckelbärare ÄR
+exponerat, oavsett hur begränsad läsekretsen råkar vara. Två vägar mättes
+skarpt: (1) ett API-svar som ekar tillbaka fältet man just skrev, och (2) ett
+skalkommando i ett agent-transkript som råkar skriva ut sin egen env-fil.
+Rätt hantering är att registrera rotationen som en öppen åtgärd i samma stund
+den upptäcks — inte att bedöma risken i stunden och gå vidare.**
+`[UNIVERSAL]`
+
+Tre mätta instanser i S102, alla på staging-kontonas SMTP-/testlösenord:
+
+1. **PATCH-svarets eko** (`task-231`-notes): SMTP-lösenordet returnerades i
+   svarskroppen på en uppdatering. Bokfört som carry-kandidat med
+   rotations-option öppen redan vid sjätte pausen.
+2. **`.env.test`-lösenordet echoat i ett agent-transkript** (sjunde pausen,
+   2026-08-17) — samma klass, annan kanal.
+3. **Andra echo-instansen, orkestrerarens egen** (åttonde pausen,
+   2026-08-17): "staging-lösenordsrotation (andra echo-instansen, denna gång
+   min)". Rotationen står öppen i Marcus beslutsbuffé, punkt (e).
+
+**Det generella och det obehagliga:** tredje instansen skrevs av den som
+bokförde de två första. Klassen är alltså inte okunskap — den är att
+utskriften sker som bieffekt av ett kommando vars SYFTE var något annat
+(felsökning, miljödiagnos, en `cat` för att kontrollera en variabel). Vakten
+måste därför sitta på kommandot, inte på uppmärksamheten: läs env-filer med
+verktyg som maskerar värden, och när utskriften ändå skett — registrera
+rotationen direkt i stället för att väga sannolikheter.
+
+*Konsoliderad ur `tasks/lessons.d/en-hemlighet-som-passerat-ett-api-svar-eller-ett-transkript-ar-rotationspliktig.md` (S112 resume 2, fragment-vägen `ADR-081`); fragmentet är borttaget.*
+
+### L595 — En preview-server startas ALDRIG utan bundle-verifieringsgrinden — annars granskar Marcus fel miljös bundle
+
+**En preview-server serverar den bundle som senast byggdes, inte den miljö man
+tror sig ha startat. Startas den utan `verify:staging-bundle` kan hela
+granskningen ske mot PROD-bundeln medan man förklarar staging-beteende — och
+felet visar sig först som obegripliga symptom (fel data, fel inloggning) långt
+in i passet. Grinden körs FÖRE servern, varje gång.**
+
+Instans (S102, 2026-08-17, QA 243.4): preview-servern på port 4173 startades
+utan grinden. `verify:staging-bundle` avslöjade i efterhand att bundeln var
+prod-byggd; ytan fick byggas om med `build:staging` innan granskningen kunde
+göras. Orkestreraren bokförde det öppet som egen miss ("fälla 1 skarp").
+Inloggningsstrulet i samma pass var en separat sak —
+`TEST_ADMIN_PASSWORD`-raden, egen variabel; auth-beviset var curl 200 före
+omdirigering.
+
+**Det generella:** grinden finns för att bundlar är omärkta i sitt eget
+gränssnitt. Inget i webbläsaren säger vilken miljö bundeln byggdes för, och
+den som startade servern minns sin AVSIKT, inte kommandots utfall. Därför
+måste verifieringen ligga i sekvensen före servern, inte som en möjlighet att
+plocka fram om något känns fel.
+
+*Konsoliderad ur `tasks/lessons.d/en-preview-server-startas-aldrig-utan-bundle-verifieringsgrinden.md` (S112 resume 2, fragment-vägen `ADR-081`); fragmentet är borttaget.*
+
+### L596 — En slutrapport som bär beslutsunderlag måste landa i en filartefakt — returvärdet dör med sessionen
+
+**En agents slutrapport är ett returvärde i en kontext som försvinner. Bär den
+enbart status ("klart, PR #N") räcker det. Bär den UNDERLAG som någon ska
+fatta beslut på — en klassning per post, en mätserie, en rekommendationslista
+— måste samma innehåll landa i en committad fil i samma leverans. Annars är
+beslutsunderlaget borta i samma stund kontexten byts.** `[UNIVERSAL]`
+
+Instans (S102, 2026-08-16): 40-listans forensik producerade en klassning av 40
+kort (26 BEHÅLL / 9 STÄNG / 5 OKLART) plus en grind-designfråga. Underlaget
+räddades till
+`docs/research/40-listan-proveniens-relevans-2026-08-16.md` (PR **#1436**,
+`59795b35`) — utan den filen hade hela klassningen funnits enbart i en
+agentrapport, och Marcus beslutspass hade fått göras om från början. Bokfört i
+sessionsdokets Del 14 som "40-listans räddade lucka" och buret som
+carry-kandidat genom tre pauser.
+
+**Det generella:** samma kontinuitets-regel som gäller lärdomar och
+sessionsläge gäller beslutsunderlag — filartefakter är enda sanningskällan.
+Testet är en enda fråga: *kommer någon behöva läsa det här EFTER att sessionen
+stängts?* Är svaret ja är rapporten inte leveransen, filen är det.
+
+*Konsoliderad ur `tasks/lessons.d/en-slutrapport-med-beslutsunderlag-maste-landa-i-filartefakt.md` (S112 resume 2, fragment-vägen `ADR-081`); fragmentet är borttaget.*
+
+### L597 — En stämpel-instruktion till Marcus skrivs aldrig utan att manifestet lästs först — `godkand` kan redan vara satt
+
+**Att be Marcus stämpla ett facit är ett anspråk på hans tid. Anspråket måste
+vila på en läsning av manifestet i samma stund instruktionen skrivs: är
+`godkand` redan satt är stämpeln redan gjord, och begäran är ren friktion.
+Läs `facit.json` → kontrollera `godkand` → skriv instruktionen först om
+fältet är `null`.**
+
+Instans (S102, 2026-08-17, QA 241.6): Marcus ombads stämpla svep-facitet i
+onödan — `godkand` var satt sedan 241.1-låset (`10dff531`). Felet är öppet
+bokfört som ORKESTRERAR-FEL på kortet, och kortet stängdes i PR **#1533**.
+
+**Det generella:** varje instruktion som riktas mot Marcus bär en implicit
+premiss om systemets tillstånd ("detta är ogjort"). Premissen är billig att
+pröva och dyr att anta fel — precis den asymmetri `ADR-086` kodar för
+uppdrag till agenter. Samma disciplin gäller åt andra hållet: orkestreraren
+prövar sina egna premisser mot disk innan de blir en begäran uppåt.
+
+*Konsoliderad ur `tasks/lessons.d/en-stampel-instruktion-kraver-manifest-laskoll-forst.md` (S112 resume 2, fragment-vägen `ADR-081`); fragmentet är borttaget.*

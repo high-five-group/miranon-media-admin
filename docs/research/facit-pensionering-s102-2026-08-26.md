@@ -73,7 +73,7 @@ bara `godkand`-blocket, aldrig `bilder`/`kallor`/`not`).
 en **omstämplings**-flagga för SAMMA manifest (skriver över ett redan satt
 `godkand`-fält). Den kanoniska formen för att pensionera ett HELT manifest
 till förmån för ett annat är **arkivflytt + `ARKIVERAD.md` + pekar-svep**
-(etablerat prejudikat, `tasks/lessons.d/superseded-facit-arkivflyttas-aldrig-raderas.md`,
+(etablerat prejudikat, [[L610]],
 instans `s55-hem-konvergens` → `s102-hem-konvergens`, `TASK-243.1`, PR #1426).
 
 24 stämplade ytor (av 28 totalt stämplade, i 15 manifest) saknar
@@ -113,7 +113,7 @@ schemat (`scripts/lib/facit-validera.mjs`, verifierat mot samtliga 15
 levande manifest).
 
 **Kanonisk form för pensionering (ett HELT manifest tas ur bruk):**
-arkivflytt. Källa: `tasks/lessons.d/superseded-facit-arkivflyttas-aldrig-raderas.md`
+arkivflytt. Källa: [[L610]]
 (hel lärdomsfil, citerad i sin helhet nedan eftersom den ÄR svaret på
 uppdragets fråga "finns ingen form: säg det och föreslå den minsta som
 håller invarianterna"):
@@ -162,7 +162,7 @@ tasks/sessions/archive/bilagor/` nämner varken `godkand` eller ett
 skriv-vektor-mönster — det är en filsystemsoperation, inte en JSON-mutation
 — och matchar därför INGENDERA kanalen. Detta är konsekvent med att
 `TASK-243.1`s stängande agent faktiskt utförde arkivflytten
-(`tasks/lessons.d/superseded-facit-arkivflyttas-aldrig-raderas.md`:
+([[L610]]:
 "Två självfångade verktygsfel uppstod under själva flytten... båda rättade
 öppet i samma pass" — flytten skedde, alltså blockerade hooken den inte).
 
@@ -548,7 +548,7 @@ inte något som stämplas. Ett JA på "fäll" blir ett eget bygg-kort
   (hela filen läst, inkl. båda 2026-08-22-amenderingarna)
 - `docs/decisions/ADR-104-godkannande-mekaniken-kanalseparation.md` (hela
   filen läst)
-- `tasks/lessons.d/superseded-facit-arkivflyttas-aldrig-raderas.md` (hela
+- [[L610]] (hela
   filen läst)
 - `tasks/sessions/archive/bilagor/s55-hem-konvergens/ARKIVERAD.md` (hela
   filen läst)
