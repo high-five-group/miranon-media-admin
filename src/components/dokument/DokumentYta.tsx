@@ -2,11 +2,18 @@
  * Dokument-ytan — Mer-ytan där bilagor förvaltas (`T131`). PROMOVERAD ur
  * S100/TASK-147.6:s konvergenspass (ADR-102 B1/B2, ADR-103 B2 steg 1) —
  * denna fil ÄR den skarpa ytan, ingen separat prototypfil att riva.
- * Facit-manifestet
- * `tasks/sessions/bilagor/s102-dokument-konvergens/facit.json` är den
- * auktoritativa formbeskrivningen (ADR-102 B1) och bär Marcus godkännande
- * (TASK-164-rivningen, ADR-103 B2 steg 4). Fullständig bygghistorik
- * (skärpningsvarv 1–3, TASK-245/246) finns i
+ * Facit-manifestet `s102-dokument-konvergens` är PENSIONERAT (TASK-309.29,
+ * 2026-08-28) och arkivflyttat till
+ * `tasks/sessions/archive/bilagor/s102-dokument-konvergens/` — dess
+ * `ARKIVERAD.md` bär skälet, gapet och efterträdarna. Det beskrev denna yta
+ * som den såg ut 2026-08-16 (Marcus stämpel, TASK-164-rivningen, ADR-102 B1,
+ * ADR-103 B2 steg 4); Visa-dialogen det avbildar är riven, se
+ * `[ERSATT, TASK-273.4]` nedan. Dagens formbeskrivning bor i
+ * `tasks/sessions/bilagor/s108-generering/facit.json` och
+ * `tasks/sessions/bilagor/s108-dokumentytan/facit.json` (TASK-309.10,
+ * PR #1961) — båda ännu ostämplade, och ingen av dem täcker ett valt events
+ * fulla lista med dagens ikonpar (gapet; uppföljning i TASK-309.32).
+ * Fullständig bygghistorik (skärpningsvarv 1–3, TASK-245/246) finns i
  * `git log -p -- src/components/dokument/DokumentYta.tsx`, inte upprepad
  * här.
  *
@@ -83,9 +90,10 @@
  * genererade en TRANSIENT PDF per klick för klass B/C på samma sätt.
  *
  * IKONPAR (TASK-273.4, Marcus-beslut 2026-08-17 — se amenderings-sidofilen
- * `tasks/sessions/bilagor/s102-dokument-konvergens/AMENDERING-2026-08-17-
- * visa-till-ikonpar.md`): Visa-dialogen ersatt av TVÅ ikonknappar per rad,
- * `DokumentAtgardsKnappar` nedan, för alla tre dokumentklasser. Förhandsvisa
+ * `tasks/sessions/archive/bilagor/s102-dokument-konvergens/
+ * AMENDERING-2026-08-17-visa-till-ikonpar.md`): Visa-dialogen ersatt av TVÅ
+ * ikonknappar per rad, `DokumentAtgardsKnappar` nedan, för alla tre
+ * dokumentklasser. Förhandsvisa
  * öppnar dokumentet i en RIKTIG ny webbläsarflik (webbläsarens egen
  * PDF-/bildvisare, ingen egen iframe/img-rendering längre) via ett
  * POPUP-BLOCKERAR-SÄKERT mönster: `window.open('', '_blank')` anropas
@@ -142,9 +150,10 @@
  * SIDOEFFEKTSFRI förhandsvisning (AC #3, TASK-246).
  *
  * [UTBYGGD, TASK-275.3, ADR-118] RÄCKVIDDSVAL + RÄCKVIDDSLÄGE + BADGES — se
- * amenderings-sidofilen `tasks/sessions/bilagor/s102-dokument-konvergens/
- * AMENDERING-2026-08-17-rackviddsval-gemensamt-lage-badges.md` för hela
- * avvikelsen mot det godkända facit-manifestet. Kort sammanfattat:
+ * amenderings-sidofilen `tasks/sessions/archive/bilagor/
+ * s102-dokument-konvergens/AMENDERING-2026-08-17-rackviddsval-gemensamt-
+ * lage-badges.md` för hela avvikelsen mot det godkända facit-manifestet.
+ * Kort sammanfattat:
  *   - RÄCKVIDDSVALET (RadioGroup: Detta event/En kurstyp/Alla event — husets
  *     radioval-primitiv, `RadioGroup`/`Radio`), med Kursfamilj/Kursnivå-
  *     `Select` (husets select-primitiv) när Kurstyp är valt. "Detta event" är
@@ -427,8 +436,9 @@ export function DokumentYta() {
       {/* TASK-299.11 — PROMOVERAD: husets delade SidRam-primitiv (kant-i-
           kant-dialekten, endast sidkromet) ersätter den gamla textlänken.
           Dev-växeln `?sidram=ny` (TASK-299.1) är riven (ADR-103 B2 steg 4);
-          facit-manifestet amenderat till klass (c), se
-          s102-dokument-konvergens/AMENDERING-2026-08-23-sidram-promovering.md. */}
+          facit-manifestet amenderat till klass (c), se tasks/sessions/
+          archive/bilagor/s102-dokument-konvergens/AMENDERING-2026-08-23-
+          sidram-promovering.md (arkivflyttat, TASK-309.29). */}
       <SidRam to="/mer" tillbakaEtikett="Tillbaka till Mer" />
 
       {/* INGEN INGRESS — PRÖVAD RENDERAD OCH FÄLLD (Marcus 2026-08-18).

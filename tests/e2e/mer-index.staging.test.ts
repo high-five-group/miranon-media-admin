@@ -44,8 +44,9 @@ import { expect, test } from '../support/test-bas';
  * ÅTTONDE raden, sist i grupp 2 (handling/verktyg, efter "Bygg segment").
  * Ytan var tidigare DEV-grindad (`visaDokumentPrototyp`, S100/T131) och
  * osynlig för detta test; efter Marcus godkännande av facit-låset
- * (`tasks/sessions/bilagor/s102-dokument-konvergens/facit.json`) är den
- * en skarp, ovillkorlig ingång. Höjer raderna till ÅTTA.
+ * (`tasks/sessions/archive/bilagor/s102-dokument-konvergens/facit.json` —
+ * PENSIONERAT och arkivflyttat i TASK-309.29, se `ARKIVERAD.md` i samma
+ * katalog) är den en skarp, ovillkorlig ingång. Höjer raderna till ÅTTA.
  *
  * EVENTINNEHÅLL + PLATSER TILLKOM TASK-309.7 (Del 2 § D beslut 10, ADR-125
  * § 7): NIONDE och TIONDE raden, sist i grupp 2 (efter "Dokument") —
