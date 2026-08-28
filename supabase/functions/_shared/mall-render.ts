@@ -41,16 +41,21 @@
 //
 // SJÄLVBÄRANDE UTAN DOM — regex-baserad, portering av `<link>`/`url()`-
 // inlinings-BETEENDET ur `scripts/docraptor-sjalvbarande.mjs`
-// (Node/fs-baserad) och `src/components/dokument/prototyp/sjalvbarande.ts`
-// (klient/DOM-baserad) till en tredje form utan filsystem OCH utan DOM:
-// varje `url(...)`-referens i den delade CSS:en slås upp mot en
-// FÖRUTBESTÄMD tabell av redan bundlade typsnitts-base64-strängar (samma
-// FAIL-SAFE-princip som klientens `inlinaCssUrls` — Cavolini saknas
-// alltid här, faller till `local("")`, aldrig ett kastat fel); varje
-// `<img src>` slås upp mot en tabell av redan bundlade bild-data-URI:er
-// (HÅRT fel om en bild saknar en genererad modul — samma asymmetri som
-// klientens `inlinaBilder`: en font som faller tillbaka ger ett annat
-// typsnitt, en bild som inte kan hämtas ger ett hål i dokumentet).
+// (Node/fs-baserad) — det tredje syskonet,
+// `src/components/dokument/prototyp/sjalvbarande.ts` (klient/DOM-baserad),
+// är RIVET sedan TASK-309.6 (prototypen bytte till riktig data, commit
+// `5632e164`) — till en form utan filsystem OCH utan DOM: varje
+// `url(...)`-referens i den delade CSS:en slås upp mot en FÖRUTBESTÄMD
+// tabell av redan bundlade typsnitts-base64-strängar (samma FAIL-SAFE-
+// princip som `scripts/docraptor-sjalvbarande.mjs`s `inlinaCssUrls` sedan
+// TASK-301 — tidigare lämnade SKRIPTVARIANTEN en ohämtbar referens ORÖRD,
+// vilket mätt fäller HELA DocRaptor-jobbet med HTTP 422 "File system
+// access is not allowed"; Cavolini saknas alltid här, faller till
+// `local("")`, aldrig ett kastat fel); varje `<img src>` slås upp mot en
+// tabell av redan bundlade bild-data-URI:er (HÅRT fel om en bild saknar en
+// genererad modul — samma asymmetri som skriptvariantens `gorSjalvbarande`:
+// en font som faller tillbaka ger ett annat typsnitt, en bild som inte kan
+// hämtas ger ett hål i dokumentet).
 //
 // ADR-125 § BESLUT 4 OMFATTAR ÄVEN LOGGA/IKON-BILDERNA, TROTS ATT DEN
 // EGNA TEXTEN BARA NÄMNER HTML/CSS/TYPSNITT: `bekraftelsebilaga.html`/

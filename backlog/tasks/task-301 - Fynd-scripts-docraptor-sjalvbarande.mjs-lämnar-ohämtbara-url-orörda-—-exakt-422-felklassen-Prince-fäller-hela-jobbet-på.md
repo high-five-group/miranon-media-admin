@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-22 21:11'
+updated_date: '2026-08-28 03:14'
 labels:
   - ready-for-agent
 dependencies: []
@@ -37,9 +38,9 @@ Samma `local("")`-neutralisering i skriptet som i klientvarianten, med ett minim
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Skriptet neutraliserar ohämtbara url() med local("") — verifierat med minimaltest (ohämtbar referens in → local("") ut)
-- [ ] #2 Kommentaren rad 64–67 beskriver det mätta beteendet (422-klassen), inte 'fail-safe'
-- [ ] #3 Klient- och skript-varianten delar samma regel, bokfört i båda filhuvudena med korsreferens
+- [x] #1 Skriptet neutraliserar ohämtbara url() med local("") — verifierat med minimaltest (ohämtbar referens in → local("") ut)
+- [x] #2 Kommentaren rad 64–67 beskriver det mätta beteendet (422-klassen), inte 'fail-safe'
+- [x] #3 Klient- och skript-varianten delar samma regel, bokfört i båda filhuvudena med korsreferens
 <!-- AC:END -->
 
 ## Definition of Done
