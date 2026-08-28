@@ -4,7 +4,7 @@ title: 'Fynd: katalogägarskaps-hooken fäller falskt på textmönster'
 status: Done
 assignee: []
 created_date: '2026-08-26 04:42'
-updated_date: '2026-08-28 05:06'
+updated_date: '2026-08-28 06:32'
 labels:
   - fynd
   - ready-for-agent
@@ -81,4 +81,8 @@ Hooken är registrerad CLAUDE_PROJECT_DIR-relativt, och CLAUDE_PROJECT_DIR pekar
 ## Stängning (S112 resume 2, 2026-08-28 ~10:00)
 
 Landning: PR #2044, merge-commit `71bbcadb` (kön, CI grön per jobb). Två granskningsrundor: runda 1 satte risk HÖG — `git --git-dir=<HUVUD>/.git commit` från främmande worktree släpptes (regression mot main) + två förexisterande hål (`GIT_DIR=… git`, subshell-parentes); runda 2 (e1262efa) fixade alla via målstyrd upplösning av --git-dir/GIT_DIR/GIT_COMMON_DIR/GIT_WORK_TREE/env + segment-tvätt; 133/133, 12/12 elaka former NEKA i granskarens egen rigg, verklig skada-blockering verifierad (`GIT_DIR=… git reset --hard HEAD~1` → NEKA, ref orörd). Risk låg i r2. **Skarpbevis-skulden ÖPPEN med mekanisk orsak:** hooken körs via `CLAUDE_PROJECT_DIR` = huvudkatalogen, vars skriptkopia är den gamla tills huvudkatalogen fast-forwardats (S108 äger den; S108:s session-end pågår). Betalas i S112:s nästa svep efter ff: provocera `cd <worktree> && git checkout -b x` från huvudkatalog-cwd (ska SLÄPPAS nu) + `git --git-dir=<HUVUD>/.git commit` från främmande session (ska NEKAS).
+
+## Skarpbevis BETALT (S112 resume 2, 2026-08-28 ~14:20, efter huvudkatalogens ff till cd98862a)
+
+Genom harnesset mot huvudkatalogens nya hook-kopia: (1) `git -C <HUVUD> log` från främmande session → SLÄPPT (gamla nekade läsning) = AC #2 · (2) `git --git-dir=<HUVUD>/.git branch -d zzz` → NEKAD med den målstyrda texten ("riktar git-katalogen mot huvudträdets delade .git") = r1-regressionen stängd i drift · (3) `git -C <egen worktree> status` → SLÄPPT (prefix-fallet borta). Skulden stängd.
 <!-- SECTION:NOTES:END -->

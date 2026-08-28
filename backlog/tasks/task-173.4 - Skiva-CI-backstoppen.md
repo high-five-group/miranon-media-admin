@@ -1,10 +1,10 @@
 ---
 id: TASK-173.4
 title: 'Skiva: CI-backstoppen'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-09 13:14'
-updated_date: '2026-08-28 05:22'
+updated_date: '2026-08-28 06:32'
 labels:
   - ready-for-agent
 dependencies:
@@ -21,17 +21,17 @@ ordinal: 327000
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 En PR i kod-klass utan giltig Riskbedömnings-sektion fälls av backstopp-jobbet (negativ self-test, rött-först-form)
-- [ ] #2 En PR med giltig sektion passerar backstoppen (positivt bevis med run-ID)
+- [x] #1 En PR i kod-klass utan giltig Riskbedömnings-sektion fälls av backstopp-jobbet (negativ self-test, rött-först-form)
+- [x] #2 En PR med giltig sektion passerar backstoppen (positivt bevis med run-ID)
 - [x] #3 D0-klassade PR:er undantas via CI:s befintliga diff-klassning — backstoppen bär ingen egen klassningslogik
 - [x] #4 Backstoppen är deterministisk — ingen LLM i CI
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Tvåsidig skript-testsvit (ska-fälla + ska-passera) per nytt deterministiskt skript, grön lokalt
 - [ ] #6 CI-backstoppens grind-verkan bevisad med rött-först-form: positivt bevis + negativ self-test
@@ -86,4 +86,8 @@ REBASE-KONFLIKTER (3 filer, alla lösta så BÅDA skivornas innehåll står kvar
 GRINDAR efter runda 2 (mätta exitkoder): actionlint 0 · yamllint 0 · check-fetch-depth-invariant 0 · biome 0 · test-review-backstopp 40/40 · test-review-metrics 49/49 · check:docs 0 (14 grindar, skriptets egen slutrad) · verify-ci-parity --list preflight 0.
 
 FYND UTANFÖR SCOPE, ej åtgärdat (ADR-053, registrerat): scripts/docraptor-sjalvbarande.mjs och scripts/provision-attachments-bucket.mjs bär SAMMA trasiga entrypoint-form ('file://${process.argv[1]}') som W1. De är inte grindar, så konsekvensen är mildare (ett verktyg som tyst inte startar), men felklassen är identisk och båda ligger utanför detta korts diff.
+
+## Stängning (S112 resume 2, 2026-08-28 ~15:30)
+
+Landning: PR #2049, merge-commit `e8c8bbc1` (två granskningsrundor, Opus: r1 medel — main-guardens fail-open i sökväg med mellanslag/symlänk, ALLGREEN-bokföring, STALE-via-rebase, CLAUDE.md-motsägelse; r2 låg — ett error-fynd om rebase-revert prövades bort med `git merge-tree --write-tree`). **AC #1/#2 betalda efter landning:** `review-backstopp-proof.yml` positiv run 33145964415 = success · negativ kontroll (`simulera_gront=true`) run 33145969468 = failure. **Första skarpa fällningen i drift:** merge_group-run 33145818932 sparkade orkestrerarens egen docs-batch #2066 (två .conf-rader = kodklass, ingen sektion) — grinden skiljer inte på vems PR det är. Post-merge på e8c8bbc1 grön (run 33145903146). DoD #7 hör till 173.6 (uppfyllt där: loggen skrivs och committas).
 <!-- SECTION:NOTES:END -->

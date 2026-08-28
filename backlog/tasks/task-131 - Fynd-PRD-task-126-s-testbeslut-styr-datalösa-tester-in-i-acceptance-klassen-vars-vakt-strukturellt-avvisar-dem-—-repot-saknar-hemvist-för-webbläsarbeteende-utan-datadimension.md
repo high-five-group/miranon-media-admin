@@ -7,7 +7,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-02 17:26'
-updated_date: '2026-08-28 05:39'
+updated_date: '2026-08-28 06:32'
 labels:
   - ready-for-agent
 dependencies: []
@@ -42,7 +42,7 @@ INGET FEL HOS AGENTEN: den följde PRD:ns testbeslut exakt, körde npm run test:
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
@@ -86,6 +86,8 @@ Kandidat att stänga (registerhygien-passet 2026-08-28, ADR-053: registrera, ald
 ## Stängning (S112 resume 2, 2026-08-28 ~12:25)
 
 Kandidat att stänga (AC-kompletteringen #2063, klass C) verifierad av orkestreraren: arbetet landade i `1956b1ee` (förfader till origin/main), ADR-094 finns, `tests/webblasarbeteende/install-prompt.test.ts` finns, CI-jobbet i `ci-suite.yml`. Kortet saknade AC från början; Final Summary + disk-belägg räcker som DoD-ersättning. Done på orkestrerarens mandat.
+
+DoD #3 bockad (S112 resume 2): landningen 1956b1ee gick genom merge-kön med gröna checks (granskning #2067).
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

@@ -3,10 +3,10 @@ id: TASK-334
 title: >-
   Fynd: post-merge.yml:s Ärvd klassning hoppar staging-verifieringen på VARJE
   docs-only-landning — döljer ett känt rött i tre dagar (2026-08-27→2026-08-28)
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-28 03:50'
-updated_date: '2026-08-28 05:20'
+updated_date: '2026-08-28 06:32'
 labels:
   - fynd
   - ready-for-agent
@@ -35,9 +35,9 @@ Uppdragets ursprungliga hypotes ('concurrency-avbrott när nästa commit landar 
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -232,4 +232,8 @@ shellcheck gröna, och lämnade tre punkter. Samtliga åtgärdade:
    kräver en avvägning mot den globala staging-mutexen som är en
    arkitekturfråga, inte en följdändring av denna rättelse. Underlaget står i
    options-tabellen ovan och i ADR-077 § Updates.
+
+## Stängning (S112 resume 2, 2026-08-28 ~15:30)
+
+Landning: PR #2059, merge-commit `7158200f` (två rundor, risk låg; AC #1 ratificerat av orkestreraren under Marcus mandat — val C, B som fråga i Marcus-listan punkt 41). Första skarpa provet: post-merge på 7158200f (run 33145804303) och e8c8bbc1 (run 33145903146) båda GRÖNA med staging-sviten körd; larmen #2043/#2047/#2057 stängda (a).
 <!-- SECTION:NOTES:END -->
