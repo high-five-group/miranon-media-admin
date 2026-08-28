@@ -157,7 +157,7 @@ export const EVENTS_RESPONSE = {
 } as const;
 
 /**
- * De TOLV additiva fälten som `get-registrations` ALLTID skickar i den
+ * De FJORTON additiva fälten som `get-registrations` ALLTID skickar i den
  * event-lösa grenen — och som fixturen saknade fram till task-59.2.
  *
  * KONTRAKTSVAKTENS FÖRSTA SKARPA FYND, inte en gissning. Vakten (ADR-080
@@ -165,6 +165,25 @@ export const EVENTS_RESPONSE = {
  * larmade: `FIXTUREN-BAKOM — staging levererar 11 nycklar fixturen saknar`,
  * var och en i 43/43 skarpa poster. Den tolfte, `kalla`, fanns i EN av sex
  * fixtur-poster medan Edge Functionen skickar den i alla.
+ *
+ * ANDRA SKARPA FYNDET (fynd-TASK-331, samma driftklass som TASK-255 löste
+ * för `EVENTS_RESPONSE`s `kursfamilj`/`kursniva`). `eventmatchning` +
+ * `datum` lades till ADDITIVT-OPTIONAL i `Registration.schema.ts`
+ * (task-284.1/commit `0667ec8c` + task-284.3/commit `3a355a49`,
+ * 2026-08-21) utan att denna konstant rördes i samma commit. Vakten larmade
+ * tre nätter i rad (25–27/8, run `32800998004` m.fl.):
+ * `FIXTUREN-BAKOM — staging levererar 2 nyckel/nycklar som fixturen saknar`.
+ * Formprofilen observerad i 81/81 skarpa poster styr valen nedan
+ * (`kontraktsjamforelse.ts` jämför TYP, inte värde, och exkluderar `null`
+ * via `ickeNullTyper` — se den filens `granskaKontrakt`): `eventmatchning`
+ * är ALLTID sträng (formeln har ingen `BLANK()`-väg, `Registration.schema.ts`
+ * rad 92) — default `'OK'` här, ALDRIG `null`. `datum` är `null | sträng` —
+ * anmälans EGNA fritextsvar (`Datum`, singleLineText; jämförs av
+ * Eventmatchning-formeln mot facit-lookupen `Datum (from Event)`,
+ * `docs/reference/data-model.md` rad 1134–1135) — default en sträng här,
+ * override till `null` på den enda manuellt skapade posten (`kalla:
+ * 'Manuell'` nedan), som aldrig gick via det publika formuläret och därför
+ * aldrig fick fältet ifyllt.
  *
  * VÄRDENA ÄR MAPPNINGENS, INTE VALDA: `supabase/functions/_shared/
  * registration-read.ts` skriver `?? null` för samtliga och `=== true` för
@@ -176,7 +195,12 @@ export const EVENTS_RESPONSE = {
  * fixturen SANN om svarets form; att låta dem bära innehåll hade ändrat vad
  * vyerna renderar och därmed de visuella baselines. Att acceptance-testerna
  * ska prövas mot fältens ifyllda tillstånd hör till migrerings-skivorna, där
- * varje flyttad fil får sitt eget tvåsidiga bevis — inte hit.
+ * varje flyttad fil får sitt eget tvåsidiga bevis — inte hit. `'OK'` som
+ * default håller sig till samma princip: `behoverAtgard()`
+ * (`registration-display.ts`) är `false` för `'OK'`, så ingen befintlig
+ * baseline/åtgärdskö-räknare rör sig av tillägget (verifierat: ingen vy
+ * under `src/` läser `datum`, och `eventmatchning` läses bara av
+ * `behoverAtgard`).
  */
 const ADDITIVA_ANMALNINGSFALT = {
   noteringAnmalningsavgift: null,
@@ -191,6 +215,8 @@ const ADDITIVA_ANMALNINGSFALT = {
   borOver: false,
   erfarenhetsbadge: null,
   kurshistorik: null,
+  eventmatchning: 'OK',
+  datum: '20 sep 2026',
 } as const;
 
 /**
@@ -339,6 +365,10 @@ export const REGISTRATIONS_RESPONSE = {
       personId: 'recVisualPers00006',
       ...ADDITIVA_ANMALNINGSFALT,
       kalla: 'Manuell',
+      // Manuellt skapad rad gick aldrig via det publika formuläret — ingen
+      // ifylld `Datum`-fritext att spegla. Provtrycker fixturens `null`-form
+      // (staging observerade null | sträng, 81/81 — se docblocket ovan).
+      datum: null,
     },
   ],
 } as const;
