@@ -3,10 +3,10 @@ id: TASK-309.27
 title: >-
   Fynd: bekräftelsebilagans mall — den blå ramen är inte vertikalt centrerad på
   sidan och loggan kolliderar med ramens överkant
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-26 03:06'
-updated_date: '2026-08-27 17:42'
+updated_date: '2026-08-28 03:20'
 labels:
   - ready-for-agent
 dependencies: []
@@ -34,9 +34,9 @@ GÖR: (1) Mät nuläget: sidans höjd (A4 = 297 mm), ramens top/bottom-marginal,
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -110,4 +110,33 @@ PROD-DEPLOY 2026-08-27 17:35:45 UTC (Marcus egen kanal): 45 EF:er,
 generate-event-attachment v10 -> v11. Förkraven verifierade före: DOCRAPTOR_API_KEY
 finns, ENVIRONMENT = production (hash-matchad), bucket konvergerad. Nyckeln är
 IDENTISK i prod och staging — rotationen måste göras i båda.
+
+KORT 1 (Cavolini-licens-/designbeslut) mintat separat: TASK-309.33
+(2026-08-28, S108 resume 13) — pekare för "EGET KORT"-raden ovan.
+
+STÄNGD SOM DONE 2026-08-28 (S108 resume 13). Landningspekare — samtliga sex
+PR:er verifierade MERGED via `gh pr view --json state,mergedAt,mergeCommit`
+(varje rad: PR-nummer, merge-SHA):
+
+- PR nummer 2019, merge-SHA 8d7b6560
+- PR nummer 2020, merge-SHA a0202a02
+- PR nummer 2022, merge-SHA f25f76f5
+- PR nummer 2024, merge-SHA e5da4f74
+- PR nummer 2025, merge-SHA 8cf5479c
+- PR nummer 2028, merge-SHA a620b3f4
+
+HEAD för denna PR är 7a0a2a46 (origin/main vid mintningen), som redan bär
+alla sex som förfäder.
+
+DIVERGENS MOT UPPDRAGET (ADR-086, bokförd öppet): uppdraget påstod "#2024
+stängd/ersatt av #2025". Det är FALSIFIERAT — `gh pr view 2024` visar
+state: MERGED, mergedAt 2026-08-27T16:35:58Z, titel "review-runda 1 på #2020
+— DRY-fixa sid-paddingen". #2024 landade som en EGEN merged PR, inte som
+stängd/ersatt. Samtliga sex PR:er är alltså MERGED, inte fem.
+
+Barn-kort mintade i samma svep under TASK-309: TASK-309.33 (Cavolini
+licens-/designbeslut, ready-for-human), TASK-309.34 (CI-täckning för
+sidantal/geometri, ready-for-agent), TASK-309.35 (tomma standardtexter i
+Eventinnehåll, ready-for-human), TASK-309.36 (Mer → Platser-sparningen ser
+osparad ut, ready-for-agent).
 <!-- SECTION:NOTES:END -->
