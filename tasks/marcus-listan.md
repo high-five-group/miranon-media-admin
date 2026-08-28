@@ -26,7 +26,7 @@ status: stable
 > terminal · C = granskning i webbläsaren · D = vandringar i appen ·
 > E = parkerat med avsikt, inget att göra nu.
 >
-> **Mätt mot disk och GitHub 2026-08-28.** Punkterna 34–39 är sådant du
+> **Mätt mot disk och GitHub 2026-08-28.** Punkterna 34–40 är sådant du
 > INTE behöver röra just nu.
 
 ---

@@ -3,10 +3,10 @@ id: TASK-327
 title: >-
   Uppgradera Backlog.md till 1.50.1 — fixar tyst dataförlust vid samtidiga task
   edit
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-26 05:01'
-updated_date: '2026-08-28 03:42'
+updated_date: '2026-08-28 04:19'
 labels:
   - ready-for-agent
   - deps
@@ -31,7 +31,7 @@ Vi kör 1.49.1 (verifierat: docs/research/backlog-kortskapandets-flaskhals-2026-
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
@@ -65,4 +65,8 @@ INGEN TYDLIG RIKTNING GAR ATT DRA — och det ar ett matt resultat, inte en giss
 OVANTAT FYND, UTANFOR SCOPE, REGISTRERAT EJ ATGARDAT (ADR-053, blockerar-DoD-men-inte-i-scope): `npm run test:api` gav 1241 passed / 3 failed forsta korningen. Omkorning av de tva `get-document-sources.staging.test.ts`-testerna (rad 52 och 100) fallde IDENTISKT en andra gang (samma "Expected: 10, Received: 16" och samma avvikande brodtext om "Resor i Medvetandet") — INTE flakighet, en genuin avvikelse i den DELADE staging-Airtable-fixturen. Tredje testet (generate-event-attachment.staging.test.ts:361) passerade vid omkorning — DEN var flakig, sannolikt fleet-samtidighet. De tva kvarstaende fallen ror en fixtur som TASK-31:s "BREDARE SVEP" (2026-08-26) uttryckligen klassade som "MEDVETET kontrollerad, icke-additiv" — dvs den skulle INTE vaxa. Att den nu visar 16 rader dar 10 forvantas motsager den klassningen och tyder pa att nagon/nagot (troligen en annan samtidig agent, ev. en seed-operation) har muterat just den staging-eventets agenda sedan TASK-31 landade. Ingen kausal koppling till backlog.md-bumpen ar mojlig eller sannolik (backlog.md ror aldrig Airtable/src-kod). Ej atgardat i denna skiva — utanfor scope, kraver egen Airtable-utredning. Flaggat for orkestreraren att triagera (ADR-053: blockerar min DoD-verifiering av test:api men blockerar inte SUBSTANSEN i denna PR, som inte ror dokumentgenerering).
 
 DoD-avstamning: typecheck exit 0, `npx @biomejs/biome check .` exit 0 (11 warnings/67 infos, ofororandrat mot baseline — src/ ej rord), `npm run build` exit 0. `scripts/check-langa-streck.mjs` EJ TILLAMPLIG (src/ ej rord av denna diff). Rord fil-klass: package.json + package-lock.json (dependency-bump, klassas FULL enligt D0-allowlisten eftersom bada explicit undantas fran docs-klassen) + detta kort. Diff-scope verifierad via `git status --porcelain`: exakt 3 filer.
+
+## Stängning (S112 resume 2, 2026-08-28 ~07:10)
+
+Landning: PR #2041, merge-commit `ef2e0522` (kön, CI grön per jobb). DoD #2 bockad av orkestreraren efter CI: bygg-agenten lämnade den öppen p.g.a. två lokalt fallande test:api-fall i `get-document-sources.staging.test.ts` — rotorsakad som staging-datadrift utanför denna PR (S108:s avsiktliga RIM 1-berikning `9bb8d6be`, testfix TASK-333/PR #2053, larm #2043). Ingen kausal väg från en backlog.md-bump till ett staging-API-test (review-utlåtande #2041, fynd 1). Uppströms #843-fixen är fail-fast (andra skrivaren får fel), inte 'båda överlever' — bokfört i notes ovan.
 <!-- SECTION:NOTES:END -->
