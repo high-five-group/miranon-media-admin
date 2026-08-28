@@ -15,6 +15,20 @@
 
 ## Aktuellt fokus
 
+**Session 112 ⏸️ PAUSAD (paus 3, 2026-08-28 ~16:30, `lifecycle: paused`; resume 2 körd AFK på
+fullt mandat — "du bestämmer") — AFK-VÅG 5 LANDAD: FLASKHALSEN BRUTEN, REVIEW-GRINDEN MEKANISK,
+REGISTRET RENT.** 21 S112-PR:er + hub-lyft `marcus-system#18`. **Mått:** issues 42 → **1** ·
+grenar 178 → **29** (trigger i heartbeat, `#2042`) · fragment 121 → **0** (L570–L654, vol-08) ·
+pausade dok 8 → **2** (sex stängda via scope-överföring → `TASK-332`, 56 Ö-punkter) · nightly
+3/5 gröna (kvar länkröta `254` + closure `241.5`/`284.4` = Marcus) · Backlog.md 1.50.1 ·
+CI-backstoppen live på merge_group-ytan (`#2049`, första fällning på egen batch) ·
+instrumenteringen (`#2052`) · hooken läser mål (`#2044`, HÖG→låg) · `TASK-334` attribution ·
+`TASK-336` disallowedTools (AC #3 = ny session) · AC-komplettering 12/10/1. **Marcus-listan**
+`tasks/marcus-listan.md` (41 punkter) + artifact. **Numrering:** task-337 → 338 · ADR 127 → 128
+· L654 → L655 · T176 · fragment 0 · session 112. **NÄSTA:** resume → `336` AC #3 (ny agent) +
+`323` AC #2 (≥ 24 h) → Marcus-listan → session-end med skörd (kandidater 25–50). HANDOFF:
+sessionsdok S112 § PAUSLÄGE (paus 3). Full narrativ: Del 7–8.
+
 **Session 112 ▶️ ÅTERUPPTAGEN (resume 2, 2026-08-28, `lifecycle: active`) — ORKESTRERARE +
 PROJEKTLEDARE PÅ FULLT AFK-MANDAT: BORT FRÅN FLASKHALSEN, TILL ETT RENT REPO.** Marcus
 order: *"Återuppta S112 … vad ett RENT och städat läge skulle vara"* + rollen antagen
