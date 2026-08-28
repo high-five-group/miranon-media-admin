@@ -79,8 +79,12 @@ export function useSavePlace() {
     },
 
     // Rollback (ADR-016 komponent D). Felytan renderas av `PlatserYta.tsx`
-    // ur `mutation.error` — ingen alertScreenReader här, samma avvägning
-    // som `useSaveEventText.ts`/`useUpdatePersonNote.ts`.
+    // ur `spara.isError`/`spara.error` (TASK-309.36, review-runda 1 på
+    // #2055, F1 — den tidigare versionen av denna kommentar PÅSTOD att
+    // ytan redan gjorde detta innan den faktiskt gjorde det, ett a11y-
+    // golvbrott, WCAG 3.3.1/4.1.3: ett misslyckat sparförsök rullades tyst
+    // tillbaka utan felindikation). Ingen alertScreenReader här, samma
+    // avvägning som `useSaveEventText.ts`/`useUpdatePersonNote.ts`.
     onError: (_err, _input, context) => {
       if (context?.previous) {
         queryClient.setQueryData(key, context.previous);

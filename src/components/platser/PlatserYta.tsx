@@ -132,6 +132,22 @@ export function PlatserYta() {
               ‹ Alla platser
             </Button>
             <h2 className="font-medium text-lg">{valt.namn}</h2>
+
+            {/* Felytan renderas ur `spara.isError`/`spara.error` — samma
+                disciplin som `GenereringsVy.tsx`s block-dialog (rad
+                ~885–895): dialogen stänger SYNKRONT vid Spara (`onSpara`,
+                nedan), så detta är ANVÄNDARENS enda besked om att den
+                optimistiska sparningen rullades tillbaka (TASK-309.36,
+                review-runda 1 på #2055, F1). Utan denna yta hade ett
+                misslyckat sparförsök tystats bort helt — a11y-golvbrott
+                (WCAG 3.3.1/4.1.3). */}
+            {spara.isError && (
+              <MessageBox intent="error">
+                Ändringen kunde inte sparas:{' '}
+                {spara.error instanceof Error ? spara.error.message : 'Okänt fel.'}
+              </MessageBox>
+            )}
+
             <ul
               data-testid="plats-block-lista"
               className="divide-y divide-border rounded-xl border border-transparent bg-surface px-3 contrast-more:border-border-strong"

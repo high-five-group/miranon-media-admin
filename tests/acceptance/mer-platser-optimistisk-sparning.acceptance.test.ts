@@ -157,16 +157,15 @@ test.describe('Mer — Platser — optimistisk sparning (TASK-309.36)', () => {
     await expect(dialog).toBeHidden();
 
     // …men rullas TILLBAKA när EF:en (efter fetchWithRetrys 3 försök) till
-    // sist fäller. En FAST väntan (i stället för `toPass()`s upprepade
-    // öppna/stäng) — en misslyckad assertion i en `toPass()`-retry hade
-    // lämnat dialogen ÖPPEN (assertionen kastar innan `Avbryt`-klicket
-    // hinner köra), och en redan monterad dialogs lokala textrute-state
-    // (`useState(rad.text ?? '')`, satt EN gång vid montering) uppdateras
-    // ALDRIG reaktivt när cachen ändras under tiden — nästa retry hade läst
-    // samma monterade instans, aldrig en färsk. 2,5 s ger gott om marginal
-    // mot retry-kedjans ~1,4–1,7 s (200 ms bas, exponentiell backoff +
-    // jitter) innan raden återöppnas EN gång.
-    await page.waitForTimeout(2500);
+    // sist fäller. DETERMINISTISK väntan (TASK-309.36, review-runda 1 på
+    // #2055, F1/F3 — en tidigare version väntade en FAST 2,5 s i stället,
+    // vilket bara flyttade gissningen till en annan konstant): felmedde-
+    // landet är den observerbara signalen att `onError` (och därmed
+    // rollbacken, SAMMA callback) har körts, samma mönster som
+    // `dokument-genereringsvy-optimistisk-sparning.acceptance.test.ts`
+    // (TASK-309.25) väntar in `/Ändringen kunde inte sparas/`.
+    await expect(page.getByText(/Ändringen kunde inte sparas/)).toBeVisible();
+
     await page.getByRole('button', { name: 'Parkering' }).click();
     dialog = page.getByRole('dialog');
     await expect(dialog.getByRole('textbox')).toHaveValue(RONNINGE.falt.parkering ?? '');
