@@ -172,4 +172,51 @@ test.describe('Mer — Platser — optimistisk sparning (TASK-309.36)', () => {
     await dialog.getByRole('button', { name: 'Avbryt' }).click();
     await expect(dialog).toBeHidden();
   });
+
+  test('fel på Plats A rensas vid platsbyte — läcker INTE till Plats B (review-runda 2 på #2055)', async ({
+    page,
+    network,
+  }) => {
+    /**
+     * NYTT ERROR från F1-fixen (review-runda 2 på #2055): `spara` (rad ~88)
+     * är EN delad `useSavePlace()`-instans för HELA `PlatserYta`-komponenten
+     * — den remountas ALDRIG när `valdId` byter plats, till skillnad från
+     * `GenereringsVy.tsx`s precedent (`dokument.tsx` rad ~48–52,
+     * `key={`${valtEvent.id}-${mall}`}`). Utan `spara.reset()` i BÅDA
+     * `setValdId`-anropen ("‹ Alla platser", platsvalet) hade `isError`
+     * legat kvar sant efter ett fel på Plats A och visats igen under
+     * Plats B — fel plats, samma felmeddelande.
+     */
+    const UPPSALA: PlaceListItem = {
+      id: 'recPlatsUppsala01',
+      namn: 'Uppsala',
+      falt: { adress: 'Kungsgatan 1, Uppsala', parkering: null, transport: null, klader: null },
+    };
+    network.use(http.get(EF('get-places'), () => json({ places: [RONNINGE, UPPSALA] })));
+    network.use(
+      http.post(EF('save-place-standard'), async () =>
+        json({ error: 'Kunde inte spara platsen' }, 500),
+      ),
+    );
+
+    await page.goto('/mer/platser');
+
+    // Fel på Plats A (Rönninge).
+    await page.getByRole('button', { name: RONNINGE.namn }).click();
+    await expect(page.getByRole('heading', { level: 2, name: RONNINGE.namn })).toBeVisible();
+    await page.getByRole('button', { name: 'Parkering' }).click();
+    const dialogA = page.getByRole('dialog');
+    await dialogA.getByRole('textbox').fill(NY_PARKERING);
+    await dialogA.getByRole('button', { name: 'Spara' }).click();
+    await expect(dialogA).toBeHidden();
+    await expect(page.getByText(/Ändringen kunde inte sparas/)).toBeVisible();
+
+    // Tillbaka till listan, öppna Plats B (Uppsala) — INGEN ny sparning görs.
+    await page.getByRole('button', { name: 'Alla platser' }).click();
+    await page.getByRole('button', { name: UPPSALA.namn }).click();
+    await expect(page.getByRole('heading', { level: 2, name: UPPSALA.namn })).toBeVisible();
+
+    // KÄRNAN: Plats A:s felmeddelande får INTE läcka till Plats B.
+    await expect(page.getByText(/Ändringen kunde inte sparas/)).toHaveCount(0);
+  });
 });
