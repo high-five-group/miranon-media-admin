@@ -352,6 +352,15 @@ function main(argv) {
   } else {
     try {
       appendMetrikRad(metrikPath, metrikRad.data);
+      // Runda 2-fynd 1 (PR #2052): loggen har INGEN commit-mekanism i sig
+      // själv — den ackumuleras lokalt i vilken checkout som råkar köra
+      // detta skript. Utan en synlig påminnelse kan den tystna ospårad i
+      // orkestrerarens worktree till nästa stängningsbatch glöms. Detta är
+      // en påminnelse, inte en spärr (ADR-083-ärligt): ingen mekanism här
+      // kan tvinga fram en commit.
+      console.error(
+        `instrumenterings-rad appendad till ${metrikPath} — ospårad tills committad (TASK-173.6).`,
+      );
     } catch (error) {
       console.error(
         `VARNING (TASK-173.6): kunde inte skriva instrumenterings-raden till ${metrikPath}: ${error.message}`,

@@ -4,7 +4,7 @@ title: 'Skiva: Instrumenteringen'
 status: To Do
 assignee: []
 created_date: '2026-08-09 13:16'
-updated_date: '2026-08-28 04:11'
+updated_date: '2026-08-28 04:38'
 labels:
   - ready-for-agent
 dependencies:
@@ -115,4 +115,45 @@ bokfört öppet per ADR-086.
   FÖRSTA raden i den verkliga docs/reference/review-instrumentering.jsonl
   skrivs av nästa faktiska review-loop-beslut.mjs-körning efter denna PR
   landat — filen finns INTE i denna PR:s diff.
+
+## Runda 2 (PR #2052) — review-agentens tre fynd, åtgärdade
+
+**FYND 1 (warning, ask-user — orkestrerarens BESLUT, ej mitt eget val):**
+docs/reference/review-instrumentering.jsonl är versionerad (bekräftat:
+`git check-ignore -v` gav exit 1, ingen träff i .gitignore) men saknade en
+commit-mekanism. Löst enligt orkestrerarens instruktion: (a) CLAUDE.md §
+Review-grinden utökad med att orkestreraren committar loggen i sina
+stängningsbatchar och att en ospårad logg vid session-paus/-end är en SKULD,
+inte tyst förlust; (b) review-loop-beslut.mjs skriver nu en stderr-påminnelse
+efter varje lyckad append ("instrumenterings-rad appendad till <sökväg> —
+ospårad tills committad"); (c) explicit noterat att ingen nightly-vakt kan se
+en lokal ospårad fil — mekanismen är ett orkestrerar-åtagande, aldrig påstådd
+som spärr (ADR-083).
+
+**FYND 2 (warning, auto-fix):** test-review-metrics.mjs I5 tillagd —
+`--metrik-fil` mot en sökväg vars förälder är en FIL (ENOTDIR) → exitkod
+IDENTISK med kontrollkörning (båda 0, konvergerad) + "VARNING (TASK-173.6)"
++ "ENOTDIR" på stderr. Negativt motprov utfört: try/catch:en runt
+appendMetrikRad togs tillfälligt bort → I5 gick RÖD (48 gröna/1 röd,
+återstoden opåverkad); återställt → 49/49 gröna. Backup + mutation +
+återställning gjord via cp (ej git stash, per AFK-regel).
+
+**FYND 3 (info) — RÄTTELSE av min egen tidigare rapport:** "hängde 13 min
+utan output" var en FELAKTIG beskrivning. Granskaren hittade min kvarlämnade
+capture-fil (task-173.6-ci-parity-fast.txt, delat scratchpad) och visade att
+körningen FAKTISKT producerade omfattande verklig output, inklusive en
+FULLSTÄNDIG grön körning av test-review-loop.mjs (103/103) och
+test-review-metrics.mjs (48/48) — bekräftat av mig genom
+`grep -c "gröna, 0 röda" <fil>` (7 träffar) och `tail -5` som visade filens
+sista rad var "69 gröna, 0 röda." (test-verify-ci-parity.mjs). Stallet
+inträffade EFTER dessa tre sviter, i ett senare steg (sannolikt
+test-docraptor-sjalvbarande.mjs, TASK-301, orört av denna PR) — inte i något
+test-review-*.mjs. Korrekt beskrivning: "output kom, stallet låg senare i
+samma run:-block." Capture-filen raderad ur scratchpad
+(`rm task-173.6-ci-parity-fast.txt`) per instruktion. Policyfrågan var redan
+statiskt avgjord av granskaren: ingen .ci-parity-policy.json-uppdatering
+krävs (raden ligger i lint-jobbets BEFINTLIGA steg).
+
+Rebasad mot origin/main (90edf82b-linjen) och pushad på samma gren efter
+dessa ändringar — se PR #2052 för ny HEAD-SHA.
 <!-- SECTION:NOTES:END -->

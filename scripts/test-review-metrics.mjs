@@ -734,5 +734,53 @@ test('I4 TVÅ lyckade körningar → TVÅ rader (append, aldrig skriv-över)', (
   assert.equal(rader[1].runda, 2);
 });
 
+test('I5 KONTRAST: --metrik-fil vars FÖRÄLDER är en FIL (ENOTDIR) → exitkod OFÖRÄNDRAD mot kontroll, VARNING på stderr (runda 2-fynd 2, PR #2052)', () => {
+  const foralderSomArFil = join(tmp, 'i5-fil-inte-katalog');
+  writeFileSync(foralderSomArFil, 'jag är en fil, inte en katalog — dirname(metrikPath) pekar hit');
+  const blockeradMetrikP = join(foralderSomArFil, 'metrics.jsonl');
+  const kontrollMetrikP = join(tmp, 'i5-kontroll.jsonl');
+
+  const uBlockerad = skrivUtlatandeFil('i5-blockerad.json', { prNummer: 900 });
+  const rBlockerad = korLoop([
+    uBlockerad,
+    '--policy-fil',
+    LOKAL_POLICY,
+    '--metrik-fil',
+    blockeradMetrikP,
+  ]);
+
+  const uKontroll = skrivUtlatandeFil('i5-kontroll.json', { prNummer: 900 });
+  const rKontroll = korLoop([
+    uKontroll,
+    '--policy-fil',
+    LOKAL_POLICY,
+    '--metrik-fil',
+    kontrollMetrikP,
+  ]);
+
+  assert.equal(
+    rKontroll.status,
+    0,
+    'kontrollkörningen (identiskt utlåtande, giltig --metrik-fil) ska konvergera med exit 0',
+  );
+  assert.equal(
+    rBlockerad.status,
+    rKontroll.status,
+    'en loggnings-MISS får ALDRIG ändra loop-beslutets exitkod — det är precis vad try/catch:en runt appendMetrikRad ska garantera',
+  );
+  assert.match(rBlockerad.stderr, /VARNING \(TASK-173\.6\)/, rBlockerad.stderr);
+  assert.match(rBlockerad.stderr, /ENOTDIR/, rBlockerad.stderr);
+  assert.equal(
+    existsSync(kontrollMetrikP),
+    true,
+    'kontrollens rad skrevs (annars är kontrollen värdelös)',
+  );
+  assert.equal(
+    existsSync(blockeradMetrikP),
+    false,
+    'den blockerade sökvägen kan aldrig skapas (föräldern är en fil)',
+  );
+});
+
 console.log(`\n${passed} gröna, ${failed} röda.`);
 process.exit(failed > 0 ? 1 : 0);

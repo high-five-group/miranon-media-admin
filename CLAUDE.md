@@ -712,7 +712,25 @@ på en stämplad PR som grind-miss; `npm run review:metrics` summerar loggen
 till markdown (findings/runda, risk-/beslutsfördelning, härledd fångstrate
 per nivå). Detta är en **ren bokföringsyta** (Marcus-mandat, TASK-173.6):
 den fäller ingenting och styr ingen armering — se `173.4` nedan för den
-mekaniska spärren. Loggen gäller FRÅN OCH MED denna skiva: de 14 skarpa
+mekaniska spärren.
+
+**Loggfilen är versionerad (INTE gitignorad) men bär INGEN egen
+commit-mekanism — det är ett orkestrerar-ÅTAGANDE, inte en spärr (runda
+2-fynd, PR #2052).** Den ackumuleras i vilken checkout som råkar köra
+`review-loop-beslut.mjs` (normalt orkestrerarens worktree, samma körpunkt
+loopen redan anropas ifrån). Skriptet skriver därför en synlig
+påminnelserad till stderr efter varje lyckad append
+("instrumenterings-rad appendad till `<sökväg>` — ospårad tills
+committad") — en påminnelse, inte en spärr. **Orkestreraren committar
+loggen i sina stängningsbatchar** (samma landning som Done-flipparna); en
+ospårad logg vid session-paus/-end är en SKULD att bokföra i handoffen,
+aldrig en tyst förlust. Ingen ny grind vaktar detta: en nightly-vakt (t.ex.
+`heartbeat-svep.sh`) kan strukturellt inte se en lokal, ospårad fil i en
+agents worktree, så ansvaret ligger hos den som stänger sessionen — inte
+hos ett skript (samma `ADR-083`-ärlighet som `173.4`-stycket nedan: säg
+det öppet, påstå aldrig en mekanisk spärr som inte finns).
+
+Loggen gäller FRÅN OCH MED denna skiva: de 14 skarpa
 review-agent-körningarna från S112 (2026-08-26) är INTE backfyllda — deras
 utlåtande-JSON låg i agenternas scratchpad-kataloger och gick inte att
 återfinna på disk när `173.6` byggdes (endast de aggregerade talen i
