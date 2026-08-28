@@ -837,7 +837,7 @@ generaliserar oberoende av kodbas. Registreras som skript-hygien-kandidat,
 lokal till detta repo tills fler instanser (i detta eller andra skript)
 visar motsatsen.
 
-**Källa:** `tasks/sessions/2026-08-02-session-93.md` Del 2 § "Bokfört i
+**Källa:** `tasks/sessions/archive/2026-08/2026-08-02-session-93.md` Del 2 § "Bokfört i
 övrigt" (rad ~126–129) + PAUSLÄGE-blockets CARRY-lista, kandidat (5).
 
 ### L448 — bokföring på ett kort vars ändringar ligger olandade

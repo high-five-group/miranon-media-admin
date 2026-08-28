@@ -9,7 +9,7 @@ import { expect, test } from '../support/fixturvarld/hermetic';
  * för åtgärds-/granskningsytan, FÅNGADE FÖRE NÅGON FLIP.
  *
  * FACIT-LÅSNINGEN (kortets AC #1) — Marcus, i klartext, 2026-08-09
- * (S93-resumen, kanonisk trail `tasks/sessions/2026-08-02-session-93.md`
+ * (S93-resumen, kanonisk trail `tasks/sessions/archive/2026-08/2026-08-02-session-93.md`
  * Del 15; verbatim-citatet är bokfört i `task-171`s Implementation Notes):
  *
  *   "Du får göra bedömningen om granulariteten och beroendena. Och inget

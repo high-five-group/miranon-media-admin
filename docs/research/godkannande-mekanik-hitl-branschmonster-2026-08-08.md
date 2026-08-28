@@ -9,7 +9,7 @@ status: draft
 
 > **Proveniens:** avgränsat research-pass 2026-08-08, kört oisolerat i
 > huvudkatalogen på Marcus uppdrag. Matar
-> **G2-grillningens fråga 2** (S93, se `tasks/sessions/2026-08-02-session-93.md`
+> **G2-grillningens fråga 2** (S93, se `tasks/sessions/archive/2026-08/2026-08-02-session-93.md`
 > Del 12–13: *"G2-grillningen (godkännande-mekaniken — `godkand` ska bära
 > Marcus kvittens, inte självbetjäning) tas FÖRE/VID `162.5`"*). Kört mot
 > `main` (`b5703ba6`) — ingen kod ändrad, ingen svit körd.
@@ -52,7 +52,7 @@ antagande verifieras empiriskt FÖRST: att `PreToolUse` inte triggas av
 | [`ui-prototyp-till-produktion-frontier-processer-2026-08-08.md`](ui-prototyp-till-produktion-frontier-processer-2026-08-08.md) | Chromatics UI Review som *"namngiven, personbunden och grindande"*, `145.2`-incidenten som exempel på vad formen förhindrar | Samma dag | Samma korrigering som ovan, plus GitHub-native-spåret (PR-review/CODEOWNERS/environments), agent-ramverkens HITL-primitiv (LangGraph/Temporal/Step Functions/CIBA) och Claude Code-specifika mekanik (`!`-prefix, hooks) — inget av detta fanns i det passet. |
 | [`ADR-102`](../decisions/ADR-102-prototypen-ar-facit-skarpa-ska-vara-identisk.md) §B3–B4 | Rivningsspärren (`godkand: null` blockerar rivning) | 12 dagar | Oförändrat — den mekaniska SPÄRREN (`check-facit.sh`) är redan byggd och korrekt; frågan här är vad som får SÄTTA fältet, inte vad fältet SKYDDAR. |
 | [`ADR-103`](../decisions/ADR-103-promoveringsformen-prototypen-promoveras-skarpa-bygget-avskaffas.md) § Vad som INTE beslutas här | Bekräftar explicit att godkännande-mekaniken är G2, olöst | Samma dag | — (kontext, inte underlag) |
-| `tasks/sessions/2026-08-02-session-93.md` Del 12–13 | G2 schemalagd FÖRE/VID `162.5`; inga kandidat-former nedskrivna i sessionsdoket självt | Samma dag | Kandidat-formerna A/B/C kom via uppdraget, inte doket — bekräftat att de inte redan är grillade. |
+| `tasks/sessions/archive/2026-08/2026-08-02-session-93.md` Del 12–13 | G2 schemalagd FÖRE/VID `162.5`; inga kandidat-former nedskrivna i sessionsdoket självt | Samma dag | Kandidat-formerna A/B/C kom via uppdraget, inte doket — bekräftat att de inte redan är grillade. |
 | `scripts/check-facit.sh` + `tasks/sessions/bilagor/s93-hallplats-prototyp/facit.json` (lästa i sin helhet) | Nuvarande skydd: `godkand: null` blockerar rivning; fältet är i dag en bar sträng/`null`, ingen identitet, ingen artefakt-referens | Levande kod | Branschens konvergenta kvitto-schema (§4) ger ett konkret, källbelagt förslag på vad fältet BÖR bära. |
 | `~/.claude/plugins/.../hooks/deny-backlog-direct-edit.sh` (läst i sin helhet, alla 12 versioner identiska mönster) | Precedent: PreToolUse-hook som `deny`:ar `Edit`/`Write` mot en sökväg | Etablerad `T100`, 2026-07-27 | Visar den EXAKTA svagheten branschkällan (§3) namnger: matchar bara `Edit`/`Write`, inte `Bash` — en `jq`/heredoc-skrivning mot samma fil går igenom obehindrad. |
 

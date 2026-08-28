@@ -9,7 +9,7 @@ status: draft
 
 > **Proveniens:** Research-pass R1 för tråd T95 (Session 95). Riktningsbeslutet
 > Vercel är REDAN Marcus-kvitterat i grillning 2026-08-02
-> (`tasks/sessions/2026-08-02-session-95.md` Del 2, beslut 2: *"Vercel — ADR
+> (`tasks/sessions/archive/2026-08/2026-08-02-session-95.md` Del 2, beslut 2: *"Vercel — ADR
 > mintas EFTER research-pass (2026-läge, CSP-nonce-mönstret); tre specs antog
 > redan Vercel, inget ADR låste"*). Detta pass är ADR-underlag som verifierar/
 > falsifierar 2026-läget FÖRE mintning — inte ett omval.
@@ -455,5 +455,5 @@ Rekommendation, inte beslut — Marcus/ADR-mintningen avgör.
 - Repo: `docs/specs/SECURITY-SPEC.md` rad 1–175 (CSP-sektionen i sin helhet)
 - Repo: `docs/specs/BYGGPLAN-LÄTTLÄST-v3.md` rad 444, 561
 - Repo: `vite.config.ts`, `index.html` (hela filerna läst)
-- Repo: `tasks/sessions/2026-08-02-session-95.md` Del 2 (grillnings-besluten)
+- Repo: `tasks/sessions/archive/2026-08/2026-08-02-session-95.md` Del 2 (grillnings-besluten)
 - Repo: `tasks/sessions/bilagor/s87-spaning/a4-riktig-webbapp-inbjudan.md`

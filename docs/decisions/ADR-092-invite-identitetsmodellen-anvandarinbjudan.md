@@ -11,7 +11,7 @@
 > beslut och citerade branschmönster (Linear, codifysaas.com) + kontots
 > account-takeover-risk. `/grill-me` tog riktningen till explicit samsyn
 > samma dag (sessionsdok
-> [S95 Del 2](../../tasks/sessions/2026-08-02-session-95.md), beslut 5
+> [S95 Del 2](../../tasks/sessions/archive/2026-08/2026-08-02-session-95.md), beslut 5
 > invite-kanal + beslut 7 token-TTL) — inklusive en webbverifiering UNDER
 > grillningen som falsifierade bilagans egen 7-dagars-rekommendation mot
 > Supabases faktiska plattformstak. Noteras av samma skäl som i

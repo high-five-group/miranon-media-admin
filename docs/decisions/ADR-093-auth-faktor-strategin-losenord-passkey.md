@@ -13,7 +13,7 @@
 > erbjudande efter första inloggningen" som den lägre-risk-vägen.
 > `/grill-me` gav Marcus tre alternativ (A: enbart lösenord, B:
 > passkey-först, C: lösenord + erbjudande) och kvitterade C samma dag
-> (sessionsdok [S95 Del 2](../../tasks/sessions/2026-08-02-session-95.md),
+> (sessionsdok [S95 Del 2](../../tasks/sessions/archive/2026-08/2026-08-02-session-95.md),
 > beslut 6 + § Öppna declines för TOTP-MFA). Noteras av samma skäl som i
 > [ADR-092](ADR-092-invite-identitetsmodellen-anvandarinbjudan.md): en
 > läsare ska kunna se vem som vägde, inte bara vad som beslutades.
