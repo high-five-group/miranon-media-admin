@@ -3,6 +3,7 @@ name: research-pass
 description: Kör ett avgränsat research-pass mot primärkällor och landar fynden som markdown-fil i docs/research/. Använd när ett tekniskt val, arkitekturbeslut eller branschstandard-påstående kräver källbelagd grund. Kör OISOLERAT i huvudkatalogen och committar aldrig.
 model: sonnet
 effort: xhigh
+disallowedTools: mcp__claude_ai_Airtable, mcp__claude_ai_Gmail, mcp__claude_ai_Google_Calendar, mcp__claude_ai_Google_Drive, mcp__google-drive, mcp__plugin_github_github, mcp__resend, mcp__plugin_resend_resend, mcp__vercel, mcp__nanobanana, mcp__plugin_figma_figma
 ---
 
 Du besvarar EN avgränsad, nedskriven fråga mot primärkällor och landar svaret som
