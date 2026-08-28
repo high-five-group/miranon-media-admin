@@ -1,10 +1,10 @@
 ---
 id: TASK-322
 title: 'Fynd: katalogägarskaps-hooken fäller falskt på textmönster'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-26 04:42'
-updated_date: '2026-08-28 04:36'
+updated_date: '2026-08-28 05:06'
 labels:
   - fynd
   - ready-for-agent
@@ -26,9 +26,9 @@ ordinal: 595000
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -77,4 +77,8 @@ Hooken är registrerad CLAUDE_PROJECT_DIR-relativt, och CLAUDE_PROJECT_DIR pekar
 
 ═══ DIVERGENSER ═══
 (1) skripthuvudets sektion heter '§ SCOPE-GRÄNSER, öppet skrivna' (rad 262), inte '§ Kända begränsningar'; radintervallet stämde. (2) Uppdragets övriga rad-referenser var EXAKTA. (3) Harnessets 'too complex to verify' bekräftades SEX gånger under bygget — den fällde kommandon helt utan git (python3-heredoc, echo, npm-pipeline, gh pr create-heredoc, en sammansatt ls). Utanför detta repos kod, ej fixbar här. (4) Min egen felaktiga baseline-mätning, se METODVARNING ovan — rapporterad öppet eftersom den motsade granskaren och jag hade kunnat bygga vidare på den.
+
+## Stängning (S112 resume 2, 2026-08-28 ~10:00)
+
+Landning: PR #2044, merge-commit `71bbcadb` (kön, CI grön per jobb). Två granskningsrundor: runda 1 satte risk HÖG — `git --git-dir=<HUVUD>/.git commit` från främmande worktree släpptes (regression mot main) + två förexisterande hål (`GIT_DIR=… git`, subshell-parentes); runda 2 (e1262efa) fixade alla via målstyrd upplösning av --git-dir/GIT_DIR/GIT_COMMON_DIR/GIT_WORK_TREE/env + segment-tvätt; 133/133, 12/12 elaka former NEKA i granskarens egen rigg, verklig skada-blockering verifierad (`GIT_DIR=… git reset --hard HEAD~1` → NEKA, ref orörd). Risk låg i r2. **Skarpbevis-skulden ÖPPEN med mekanisk orsak:** hooken körs via `CLAUDE_PROJECT_DIR` = huvudkatalogen, vars skriptkopia är den gamla tills huvudkatalogen fast-forwardats (S108 äger den; S108:s session-end pågår). Betalas i S112:s nästa svep efter ff: provocera `cd <worktree> && git checkout -b x` från huvudkatalog-cwd (ska SLÄPPAS nu) + `git --git-dir=<HUVUD>/.git commit` från främmande session (ska NEKAS).
 <!-- SECTION:NOTES:END -->
