@@ -33,6 +33,16 @@
       "linkGuardExcludeFields": ["Eventtyp"]
     },
     {
+      "name": "create-event-plats-harledning-sentineler",
+      "_TASK-309.30": "create-event.staging.test.ts bevisar Ort-till-Plats-härledningen i tre grenar och måste därför skapa event vars Ort är EXAKT ett platsnamn (uppslaget matchar Platser.Namn = Ort). Orten kan alltså inte bära create-event-sentinelernas 'ZZ-create-event-test'. De TVÅ Platser-raderna fixturen vilar på (ZZ-plats-unik-fixtur recVWAYh1cbVQKxi7; ZZ-plats-dubblett-fixtur rec1bMcnYvgAYeO6d + rec3XSjtWhbK3PRXF, seedade via Airtable-MCP 2026-08-28) är PERMANENTA av samma klass som ZZ-create-event-test-format och matchar MEDVETET ingen Platser-target: dubbletten går inte att återskapa via någon EF (save-place-standard är find-or-create by Namn), så en purgead fixtur hade tyst gjort flera-träffar-grenen oprövbar. Denna target städar därför ENBART Eventplanering-raderna. Plats star i linkGuardExcludeFields eftersom länken är exakt det testet bevisar - utan undantaget hade varje bevisad rad blivit permanent opurgbar, samma fälla update-event-uppdaterad-sentineler bokför.",
+      "table": "Eventplanering",
+      "filterByFormula": "FIND('ZZ-plats-', {Ort}) = 1",
+      "exactMatchField": "Ort",
+      "exactMatchPattern": "^ZZ-plats-(unik|dubblett|saknas)-fixtur$",
+      "linkGuard": true,
+      "linkGuardExcludeFields": ["Eventtyp", "Plats"]
+    },
+    {
       "name": "create-event-note-sentineler",
       "table": "Anteckningar",
       "filterByFormula": "AND(FIND('ZZ-note-test+', {Anteckning}) = 1, FIND('@sentinel', {Anteckning}) > 0)",

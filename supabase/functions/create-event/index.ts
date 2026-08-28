@@ -1,4 +1,9 @@
-import { upsertAirtableRecord } from '../_shared/airtable-client.ts';
+import {
+  fetchFromAirtable,
+  updateAirtableRecord,
+  upsertAirtableRecord,
+} from '../_shared/airtable-client.ts';
+import { buildEqualsFilter } from '../_shared/airtable-filter.ts';
 import { requireUser } from '../_shared/auth.ts';
 import { scalarNumber, scalarString, selectName } from '../_shared/coerce.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
@@ -6,6 +11,12 @@ import { lookupCourseDimensions } from '../_shared/course-dimensions.ts';
 import { generateRequestId, mapErrorToResponse } from '../_shared/errors.ts';
 import { deriveManadAr } from '../_shared/event-map.ts';
 import { findDisallowedField, getOperation } from '../_shared/field-allowlists.ts';
+import {
+  avgorPlatsLank,
+  harRedanPlats,
+  PLATS_UPPSLAG_MAX_RECORDS,
+  type PlatsLankning,
+} from '../_shared/plats-uppslag.ts';
 
 // create-event — skapar ett NYTT event i Eventplanering (Fas 6f, ADR-066). Repots
 // tredje write-vertikal; speglar create-registration (6c L4) + save-segment (6g L3)
@@ -37,6 +48,31 @@ import { findDisallowedField, getOperation } from '../_shared/field-allowlists.t
 // skapelseväg-kanten: "skapelsevägarna sätter INTE fälten än" (data-model.md, samma
 // sektion) — nya event föds aldrig utan familj när kursnamnet är känt.
 //
+// ORT-TILL-PLATS (TASK-309.30, ADR-125 § 2): eventets `Ort` slås upp mot
+// Platser-tabellens `Namn` och `Plats`-länken sätts när EXAKT EN rad matchar.
+// Ingen klient-input, ingen formändring — en HÄRLEDNING i samma anda som
+// Eventinnehålls "Event × Typ, ingen länk" och som `Månad/år` ovan. Noll eller
+// flera träffar → länken lämnas TOM och skälet loggas öppet (aldrig en gissad
+// plats; `Platser.Namn` kan strukturellt inte tvingas unik, se
+// `_shared/plats-uppslag.ts` § VARFÖR "EXAKT EN TRÄFF" ÄR HELA REGELN).
+//
+// ORDNINGEN ÄR INVARIANTEN: `Plats` läggs ALDRIG i upsertens fields-map. En
+// upsert som bar fältet hade vid en IDEMPOTENT REPLAY patchat en befintlig rad
+// och därmed kunnat skriva över en Plats som satts för hand efter det första
+// anropet — precis den felklass publiceringsflaggans utelämnings-mönster redan
+// bokför för checkboxen. I stället: upsert utan `Plats`, och DÄREFTER en
+// separat PATCH som bara körs när den upsertade raden faktiskt saknar länk.
+// En nyfödd rad har per definition ingen; en replayad rad som bär en behåller
+// den (`skal: 'redan-satt'`).
+//
+// Utfallet bärs ut i svarets `platsLankning` ({ satt, platsId, skal }) så
+// beteendet är OBSERVERBART för anroparen och för conformance-testet, inte
+// bara synligt i en serverlogg. Klienten är oberörd: adaptern parse:ar enbart
+// `data.event` (AirtableAdapter.createEvent), och zod strippar okända nycklar.
+// Ett fel i uppslaget eller i PATCH:en fäller ALDRIG skapandet — eventet är
+// redan skrivet, och en härledning får inte kosta Lotta hennes event
+// (`skal: 'uppslag-fel'`, öppet loggat).
+//
 // VALIDERING (manuell deny-by-default): speglar create-registration/save-segment som
 // validerar manuellt, INTE via Zod — Zod används bara i klient-/adapter-lagret (ADR-026),
 // inte i EF-request-vägen. Kodbas-konsistens > abstrakt schema-kanon (samma princip som
@@ -57,6 +93,13 @@ const STATUS_CREATE_DEFAULT = 'Planerat';
 // (checkbox, staging `fldyJKnJCP1brHwL6`). Skapa-sidans dra-till-bekräfta-handtag
 // armerar den; vad flaggan STYR på miranon.se är T79:s kontrakt, inte EF:ens.
 const PUBLICERAD_FIELD = 'Publicerad på miranon.se';
+
+// ORT-TILL-PLATS (TASK-309.30) — Platser-tabellen adresseras per NAMN
+// (ADR-050 bas-portabilitet, samma form som save-place-standard/get-places),
+// `Namn` är dess primärfält och `Plats` är Eventplanerings länkfält dit.
+const PLATSER_TABLE = 'Platser';
+const PLATSER_NAMN_FIELD = 'Namn';
+const PLATS_LINK_FIELD = 'Plats';
 
 // UUID v4-format (samma form som crypto.randomUUID() genererar klient-side).
 const UUID_V4_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
@@ -238,19 +281,106 @@ Deno.serve(async (req) => {
       `[create-event] ALLOW | caller_user_id=${user.id} | idempotencyKey=${idempotencyKey} | event=${event.trim()}`,
     );
 
+    // ORT-TILL-PLATS, steg 1 (TASK-309.30): uppslaget startar PARALLELLT med
+    // upserten — de är helt oberoende anrop, och en härledning ska inte kosta
+    // Lotta en extra round-trip i den skarpa skapa-vägen. Hela uttrycket ligger
+    // i en egen try/catch: `buildEqualsFilter` kan kasta SYNKRONT (kontroll-/
+    // bidi-tecken i orten) och skulle då aldrig nå en `.catch()` på promisen.
+    // `null` = uppslaget gav inget svar att lita på, aldrig "noll träffar".
+    const platsUppslag: Promise<{ id: string }[] | null> = (async () => {
+      try {
+        return (await fetchFromAirtable(PLATSER_TABLE, {
+          filterByFormula: buildEqualsFilter(PLATSER_NAMN_FIELD, ort.trim()),
+          maxRecords: PLATS_UPPSLAG_MAX_RECORDS,
+          fields: [PLATSER_NAMN_FIELD],
+        })) as { id: string }[];
+      } catch (error) {
+        console.warn(
+          `[create-event] Plats-uppslaget fallerade, Plats LÄMNAS TOM | caller_user_id=${user.id} | ort=${ort.trim()} | fel=${error instanceof Error ? error.message : String(error)}`,
+        );
+        return null;
+      }
+    })();
+
     // IDEMPOTENS-MEKANISM: upsert på 'Idempotensnyckel'. Färsk nyckel → createdRecords
     // (nytt event); samma nyckel → updatedRecords (idempotent replay, samma rad).
     const { record, created } = await upsertAirtableRecord(operation.tableId, fields, [MERGE_FIELD]);
+
+    // ORT-TILL-PLATS, steg 2: länka EFTER upserten. Ordningen är invarianten —
+    // se filhuvudet § ORT-TILL-PLATS. Startvärdet är 'uppslag-fel' eftersom det
+    // är precis vad ett `null`-uppslag betyder.
+    const platsTraffar = await platsUppslag;
+    let platsLankning: PlatsLankning = { satt: false, platsId: null, skal: 'uppslag-fel' };
+    // Radens fält som svaret ska bära. PATCH:ens svar returnerar hela raden,
+    // men vi LÄGGER den ovanpå upsertens i stället för att ersätta den: den
+    // enda skillnaden är `Plats`, och ett överlägg kan strukturellt inte tappa
+    // ett fält (EventKey/Event-nr/Månad/år) som conformance-testet läser.
+    let svarsFields: Record<string, unknown> = record.fields;
+
+    if (platsTraffar !== null) {
+      const beslut = avgorPlatsLank(platsTraffar);
+      if (!beslut.lanka) {
+        // Noll eller flera träffar: TOM länk, öppet loggat. Aldrig en gissning.
+        platsLankning = { satt: false, platsId: null, skal: beslut.skal };
+        console.log(
+          `[create-event] Plats EJ länkad | caller_user_id=${user.id} | record=${record.id} | ort=${ort.trim()} | skal=${beslut.skal}`,
+        );
+      } else if (harRedanPlats(record.fields)) {
+        // Idempotent replay mot en rad som redan bär en Plats. RÖRS ALDRIG —
+        // en manuellt satt plats vinner alltid över härledningen.
+        platsLankning = { satt: false, platsId: null, skal: 'redan-satt' };
+        console.log(
+          `[create-event] Plats redan satt, lämnas orörd | caller_user_id=${user.id} | record=${record.id}`,
+        );
+      } else {
+        const platsFields: Record<string, unknown> = { [PLATS_LINK_FIELD]: [beslut.platsId] };
+        // Samma SSOT-grind som fields-mapen ovan: skrivningen gates:as mot
+        // operationens allowlist FÖRE Airtable-anropet.
+        const disallowedPlats = findDisallowedField(operation, platsFields);
+        if (disallowedPlats !== null) {
+          console.warn(
+            `[create-event] DENY field not in allowlist (plats) | caller_user_id=${user.id} | field=${disallowedPlats}`,
+          );
+        } else {
+          try {
+            const uppdaterad = await updateAirtableRecord(
+              operation.tableId,
+              record.id,
+              platsFields,
+            );
+            svarsFields = { ...record.fields, ...uppdaterad.fields };
+            platsLankning = { satt: true, platsId: beslut.platsId, skal: 'exakt-en-traff' };
+            console.log(
+              `[create-event] Plats länkad | caller_user_id=${user.id} | record=${record.id} | ort=${ort.trim()} | plats=${beslut.platsId}`,
+            );
+          } catch (error) {
+            // Eventet ÄR skapat. Ett fel i härledningen får aldrig göra om det
+            // till ett misslyckat skapande som klienten retryar.
+            console.warn(
+              `[create-event] Plats-länkningen fallerade, eventet skapades ändå | caller_user_id=${user.id} | record=${record.id} | plats=${beslut.platsId} | fel=${error instanceof Error ? error.message : String(error)}`,
+            );
+          }
+        }
+      }
+    }
+
+    const svarsRecord = { id: record.id, fields: svarsFields };
 
     // Dubbel retur: `event` = ren domän-shape (adaptern parse:ar denna i L2); `record` =
     // rå skriv-bevis (id + fields) så staging-testet kan asserta att EventKey/Event-nr
     // genererades, Månad/år härleddes och Eventtyp sattes (create-registration-mönstret).
     // 201 vid create, 200 vid idempotent replay (samma nyckel → matchad, inget skapades).
+    //
+    // `platsLankning` (TASK-309.30) är det TREDJE, additiva fältet: härledningens
+    // utfall gjort OBSERVERBART. Klienten rör det inte (AirtableAdapter.createEvent
+    // parse:ar enbart `data.event`, och zod strippar okända nycklar) — det finns för
+    // conformance-testet och för den som läser ett svar i felsökning.
     return new Response(
       JSON.stringify({
-        event: mapCreatedEvent(record),
-        record: { id: record.id, fields: record.fields },
+        event: mapCreatedEvent(svarsRecord),
+        record: svarsRecord,
         created,
+        platsLankning,
       }),
       {
         status: created ? 201 : 200,
