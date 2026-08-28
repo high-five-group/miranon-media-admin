@@ -4,6 +4,7 @@ title: 'Fynd: lokala grenar städas aldrig automatiskt — grenåterväxt ~49/dy
 status: To Do
 assignee: []
 created_date: '2026-08-26 04:47'
+updated_date: '2026-08-28 04:14'
 labels:
   - fynd
   - ready-for-agent
@@ -19,7 +20,7 @@ TASK-310 (Done 2026-08-24) städade 289 -> 54 lokala grenar. Källmärkt (S112 r
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 mekaniserad trigger vald med motiv (post-merge-hook, worktree-remove-städsteg i orkestrerar-svepet, eller heartbeat) — bara MERGADE grenar städas, aldrig -D på ej mergade
+- [x] #1 mekaniserad trigger vald med motiv (post-merge-hook, worktree-remove-städsteg i orkestrerar-svepet, eller heartbeat) — bara MERGADE grenar städas, aldrig -D på ej mergade
 - [ ] #2 mätserie före/efter bokförd i kortet (grenantal vid start, grenantal efter aktivering, mätt över minst ett dygn)
 <!-- AC:END -->
 
@@ -29,3 +30,214 @@ TASK-310 (Done 2026-08-24) städade 289 -> 54 lokala grenar. Källmärkt (S112 r
 - [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+## TRIGGER-VALET (AC #1): heartbeat-svepets femte väg
+
+VALD: scripts/heartbeat-svep.sh anropar scripts/stada-grenar.sh --utfor på ett
+eget, glest intervall (HEARTBEAT_STADA_GRENAR_INTERVALL=1800 i
+.heartbeat-svep-policy.conf; 0/osatt = AV, fail-closed i skriptet).
+
+De fyra kandidaterna, prövade mot mätning i stället för smak:
+
+- post-merge-hook — AVFÄRDAD, två oberoende skäl. (1) `post-merge` fyrar bara
+  när ett LOKALT `git merge`/`git pull` faktiskt kör (git-scm.com/docs/githooks,
+  verbatim: "invoked by git-merge, which happens when a git pull is done on a
+  local repository"). Våra merges sker på GitHubs servrar via merge queue —
+  ingen lokal merge inträffar, så hooken fyrar aldrig av landningen. (2) Repot
+  har EN hook (.githooks/pre-commit, disk-verifierat 2026-08-28) och
+  `core.hooksPath` skrivs om av Claude Code vid VARJE worktree-skapelse (T121)
+  — hook-vägen är strukturellt opålitlig just här.
+- nightly.yml (CI) — AVFÄRDAD, fysiskt omöjlig. Lokala grenar finns bara i
+  Marcus klon; en GitHub-runner klonar färskt och ser dem aldrig.
+- worktree-remove-städsteg — AVFÄRDAD för denna landning. stada-worktrees.sh bor
+  i marcus-hub-pluginet (annat repo, utanför denna diff), fyrar bara vid
+  paus-svep (sällan), och städar bara de grenar en worktree den tar bort råkar
+  hålla — aldrig grenar som aldrig hade en worktree.
+- heartbeat — VALD. Den enda mekanism som redan är PERSISTENT igång exakt när
+  grenarna växer. Återväxten (~49/dygn) produceras av fleeten, och en fleet
+  förutsätter en orkestrerare — som kör detta svep. Korrelationen ÄR argumentet:
+  städningen är aktiv precis under de timmar skulden byggs, och sover när ingen
+  bygger den. Svepets main-SHA-väg gör den dessutom till den funktionella
+  motsvarigheten till en post-merge-hook i ett flöde där merges sker på servern.
+
+Tidsbaserad glesning, inte knuten till main-avancemang: avancemanget vore
+semantiskt precisare men vinsten marginell (grenar mergas löpande), kostnaden en
+extra tillståndskoppling mellan två oberoende vägar. Över-engineering-vakten.
+
+## BRANSCHRESEARCH (designkrav e) — primärkällor
+
+- `git maintenance` KAN INTE ta bort grenar. Dess uppgiftslista (git-scm.com/
+  docs/git-maintenance) är commit-graph, prefetch, gc, loose-objects,
+  incremental-repack, pack-refs, reflog-expire, rerere-gc, worktree-prune —
+  ingen rör refs/heads/*. Schemaläggare: launchctl (macOS), systemd user timers
+  (Linux), schtasks (Windows). Det är ett LOAD-BEARING negativt fynd: den enda
+  OS-schemalagda git-mekanismen utesluter medvetet gren-radering.
+- git-trim (github.com/foriequal0/git-trim) hanterar merge/rebase/SQUASH via
+  commit-tree + `git cherry` (patch-ID-ekvivalens, inte ancestry). Manuellt CLI,
+  ingen shippad automatik; READMEn föreslår en post-merge-hook användaren
+  själv monterar.
+- GitHubs "Automatically delete head branches" rör bara REMOTE (github.blog/
+  changelog/2019-07-30). GitHub Desktop 2.1 prunar lokala grenar först EFTER att
+  fjärrgrenen försvunnit (github.blog/changelog/2019-07-02) — automatik ovanpå
+  serverinställningen, Desktop-specifik, otillgänglig för ett CLI-flöde.
+- Graphite `gt sync` PROMPTAR som default (graphite.com/docs/command-reference);
+  -d/--delete-all krävs för tyst radering. Alltid manuell invokation.
+- Ingen `post-fetch`-hook existerar (git-scm.com/docs/githooks).
+  `git fetch --prune`/`git remote prune` tar bort remote-tracking refs
+  (refs/remotes/*), ALDRIG lokala grenar (refs/heads/*) — den distinktionen är
+  precis varför TASK-310:s fjärr-pruning gav ~0 effekt.
+
+SYNTES: branschens dominerande trigger-klass är MANUELL CLI-invokation. Ingen av
+de undersökta shippar en daemon för gren-radering. Vår heartbeat-koppling går
+alltså längre än branschstandard — motiverat av att vår återväxt (~49/dygn) är
+maskingenererad, vilket ingen av förlagorna har.
+
+## DESIGNKRAV (c) — DOMEN: inget lås, och skälet är strukturellt
+
+Frågan var om städningen måste undvika pågående gren-skanning. Mekanismen är nu
+exakt känd (extraherad ur node_modules/backlog.md-darwin-x64/backlog):
+Backlog.md tar ett fingeravtryck av aktiva gren-refs FÖRE varje laddning,
+jämför efter, och RETRYAR vid ändring — först på tredje störda försöket kastas
+"Active branch refs or configuration kept changing while tasks were loading".
+(Uppdraget citerade strängen utan "or configuration" — verbatim ovan.)
+
+Risken är alltså VERKLIG men kräver att alla tre försöken störs. Inget lås
+byggs, av tre skäl:
+1. En ID-KOLLISION är strukturellt omöjlig oavsett timing. Skriptet rör bara
+   grenar MERGADE i bas-grenen, och ett mergat korts fil ligger redan i
+   backlog/tasks/ på main — alltså i filsystemet. Gren-skanningen finns för att
+   hitta kort på ICKE-landade grenar; de rörs aldrig.
+2. Fönstret är glest (default var 30:e minut) och krymper med grenantalet.
+3. Ett lås mot ett CLI som inte känner till vårt lås är inte byggbart utan att
+   wrappa varje backlog-anrop i repot — en långt större yta än problemet.
+
+## MÄTSERIE (AC #2 — STARTPUNKT, ej dygnsmätningen)
+
+Skarpkörning från bygg-worktreen 2026-08-28 05:34 (Marcus GO via orkestrerare):
+
+| Mått | Värde |
+|---|---|
+| Lokala grenar FÖRE | 203 |
+| Totalt (git branch -a) FÖRE | 232 |
+| Lokala grenar EFTER | 41 |
+| Totalt EFTER | 71 |
+| Raderade | 162 |
+| Skonade | 41 |
+| Körtid | 39,16 s |
+| loadavg (1 min) före/efter | 54,85 / 38,91 |
+
+Skonade-orsakerna bevisar alla fyra skydd skarpt: 20 ej mergade, 19 uppcheckade
+i en worktree, 1 bas-gren, 1 aktuell gren. Noll `-D`.
+
+Återväxten bekräftad i realtid under passet: 192 lokala kl 05:16 → 193 kl 05:24
+→ 203 kl 05:34. Elva grenar på ~18 minuter med aktiv fleet.
+
+Torrkörnings-kostnaden som motiverar glesningen: 23,4 s över 193 grenar
+(exit 0, 157 kandidater). Vid svepets eget 90 s-intervall hade det ätit ~26 %
+av varje cykel och fördröjt larm.
+
+EJ TOLKBAR MÄTNING, bokförd ärligt: `task list --plain` rakt mot binären gav
+45,7 s vid 41 grenar — HÖGRE än TASK-310:s 18,57 s vid 54 grenar. Men loadavg
+var 42–70 här mot 5–15 då. Lasten dominerar; talet kan INTE läsas som en
+grenantals-funktion och används därför inte som belägg åt någotdera hållet.
+
+AC #2 lämnas OBOCKAD: dygnsmätningen ("minst ett dygn") kan en bygg-agent inte
+utföra. Orkestreraren tar slutmätningen efter att triggern gått ett dygn.
+
+## BEVIS I BÅDA RIKTNINGAR
+
+scripts/test-heartbeat-svep.sh: 52 passerade, 0 failade (exit 0). Nio nya fall
+(T28–T36 + T24c). Fyra mutationer bevisar att sviten FÄLLER:
+- `--utfor` borttaget → T36b fäller (51/1)
+- `--ingen-fetch` tillagt → T36c fäller (51/1)
+- städningen ges en exit-bit → T32 (exit 8 ≠ 0) OCH T33 (exit 9 ≠ 1) fäller (50/2)
+- glesningsspärren borttagen → T29 + T29b fäller (50/2)
+Skriptet återställt byte-identiskt efter varje mutation (diff -q, exit 0).
+
+shellcheck 0.11.0 (samma version CI pinnar) --severity=style --enable=all mot
+scripts/heartbeat-svep.sh, scripts/test-heartbeat-svep.sh och
+.heartbeat-svep-policy.conf: exit 0.
+
+## GRANSKNINGSRUNDA 2 (PR #2042, risk MEDEL, fyra ask-user-fynd)
+
+Två fynd åtgärdade i kod, två bokförda öppet per orkestrerar-beslut under
+Marcus AFK-mandat 2026-08-28.
+
+### FIXAT — fynd 2: fel fick inte tystas av --quiet
+
+Ett fallerande stada-grenar.sh-anrop rapporterades via say(), samma kanal som
+den lyckade rutin-raden — och en persistent monitor körs rimligen MED --quiet.
+En kontinuerligt trasig städning hade därför varit HELT osynlig: ingen stdout,
+bara en loggfil ingen läser om man inte redan vet att den finns. Samma
+observabilitets-felklass som TASK-135 en gång fixade för kallstart-raden.
+
+Fix: en ny kanal `alltid_pa()` bredvid `alarm()` — samma --quiet-immunitet, men
+semantiskt ALLTID-PÅ-klassen (ingen exit-bit). Skriptets § ANVÄNDNING skilde
+redan de två klasserna i prosa; distinktionen saknade bara en egen funktion.
+Verdiktet är oförändrat: T32/T33 håller fortsatt.
+
+Sidoobservation, MEDVETET EJ ÄNDRAD: de befintliga ALLTID-PÅ-raderna
+(main-avancemang, main-SHA-baslinje) skriver fortfarande via alarm(). Beteendet
+är korrekt — bara namnet ljuger — och migreringen ligger utanför TASK-323.
+
+### FIXAT — fynd 4: stämplingen är nu atomär och tiger inte vid fel
+
+`printf > fil` ersatt med `printf > fil.tmp && mv -f fil.tmp fil` (rename(2) är
+atomär per POSIX). Ett misslyckat skriv skrivs numera på ALLTID-PÅ-kanalen i
+stället för att sväljas av `|| true` — uteblir stämpeln kör nästa svep
+städningen om 90 s i stället för om 1800 s, och det är precis den sortens tysta
+frekvensdrift ingen upptäcker utan en rad.
+
+### EJ FIXAT, BOKFÖRT — fynd 1: glesnings-klockan är global per maskin
+
+Stämpeln bor i STATE_DIR (default /tmp/mm-heartbeat-svep), som två samtidiga
+orkestrerar-sessioner utan egen HEARTBEAT_STATE_DIR DELAR. Båda kan läsa samma
+`senast` innan endera hinner skriva den nya, och båda trigga städningen nära
+samtidigt — intervallet är alltså ett golv per MASKIN, inte en garanti per
+session.
+
+OFARLIGT: stada-grenar.sh:s fyra skydd gäller oförändrat i varje körning, och
+en `git branch -d` som förlorar kapplöpningen redovisas graciöst som SKONAS
+("vägrade"), aldrig som ett fel. Vad som drabbas är kostnadsantagandet (~1 % av
+cykeln), inte datan.
+
+Detta är samma delade-state-klass som F10 i
+docs/research/prototyp-till-skarp-processaudit-tidslinje-2026-08-08.md (öppet,
+ej fixat — gäller redan last-main-sha). F10:s föreslagna fix har TVÅ halvor:
+atomär skrivning + per-session-nyckling. Den atomära halvan är byggd här (fynd
+4 ovan); nyckling per session rör hela svepets state-modell och ligger utanför
+TASK-323. Bokfört i scripts/heartbeat-svep.sh § UNDERHÅLL.
+
+### EJ FIXAT, BOKFÖRT — fynd 3: ancestor-urvalet är under-upptäckande
+
+stada-grenar.sh avgör "mergad?" enbart på `git merge-base --is-ancestor`. Repot
+bär en egen lesson om precis det mönstret tillämpat på VÅR landningsväg
+(tasks/lessons.d/merge-kon-gor-branch-toppar-till-icke-ancestors.md): merge
+queue bygger om varje post mot main plus posterna före den, så den commit som
+faktiskt landar är en ANNAN commit än grenens topp. En gren vars innehåll
+ligger i main kan därför svara "nej" på ancestor-frågan.
+
+RIKTNINGEN ÄR SÄKER — en sådan gren SKONAS, aldrig felaktigt raderas. Felet går
+alltid mot att städa för LITE. Kostnaden är ett dolt tak på hur mycket
+automatiken kan lösa: en okänd andel av de skonade grenarna kan redan vara
+landade. Vid skarpkörningen identifierades 162 av 203 korrekt (20 skonades som
+"ej mergad"), så taket bet inte hårt då — men det är ett stickprov.
+
+VÄGEN OM TAKET BÖRJAR BITA: git-trims `git cherry`-teknik (patch-ID-ekvivalens
+i stället för ancestry) fångar både squash och ombyggda toppar. Byt inte
+urvalskriterium utan att först mäta hur många grenar som skonas felaktigt —
+`git cherry` är dyrare per gren, och skriptet körs nu automatiskt. Bokfört i
+scripts/stada-grenar.sh § KÄND BEGRÄNSNING.
+
+### Runda 2 — grindar
+
+test-heartbeat-svep.sh: 58 passerade, 0 failade (exit 0) — tre nya fall
+(T37/T38/T39). Två nya mutationer fäller dem: failure-raden återställd till
+say() → T37 fäller; stämplingen återställd till tyst `|| true` utan atomicitet
+→ T38 fäller. Skriptet återställt byte-identiskt efter varje.
+test-stada-grenar.sh: exit 0, ALLA PÅSTÅENDEN HÖLL.
+shellcheck 0.11.0 strict över båda skripten + båda policy-filerna: exit 0.
+<!-- SECTION:NOTES:END -->

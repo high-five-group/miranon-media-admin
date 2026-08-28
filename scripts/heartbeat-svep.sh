@@ -102,6 +102,37 @@
 #     "väckarklocka, aldrig fakta"-form § Landning redan kräver
 #     förgrundsverifiering efter.
 #
+#   UNDERHÅLL — GLES GREN-STÄDNING (TASK-323, config-driven, DESTRUKTIV):
+#     står HEARTBEAT_STADA_GRENAR_INTERVALL > 0 i policy-filen anropar svepet
+#     scripts/stada-grenar.sh --utfor högst så ofta (sekunder mellan
+#     körningar, tillstånd i STATE_DIR). Skriptet raderar LOKALA grenar som
+#     är mergade i bas-grenen, ALDRIG med -D, bakom sina fyra egna skydd
+#     (bas-gren · aktuell gren · uppcheckad i någon worktree · skyddslista).
+#     0 eller osatt ⇒ AV — en spoke-kopia utan värdet städar ingenting.
+#     Städningen bär INGEN exit-bit: den är UNDERHÅLL, inte övervakning, och
+#     kan aldrig göra ett svep till ett larm ens när den själv fallerar.
+#     Fel (städningen fallerar, stämpeln går inte att skriva) skrivs på
+#     ALLTID-PÅ-kanalen och syns även under --quiet; bara den LYCKADE
+#     rutin-raden dämpas.
+#
+#     KÄND BEGRÄNSNING — glesnings-klockan är GLOBAL PER MASKIN, inte per
+#     session. Stämpeln bor i STATE_DIR (default /tmp/mm-heartbeat-svep),
+#     som två samtidiga orkestrerar-sessioner utan egen HEARTBEAT_STATE_DIR
+#     DELAR. Följden: båda kan läsa samma `senast` innan endera hinner
+#     skriva den nya, och båda trigga städningen nära samtidigt — så
+#     intervallet är ett golv per MASKIN, inte en garanti per session.
+#     Ofarligt: stada-grenar.sh:s fyra skydd gäller oförändrat i varje
+#     körning, och en `git branch -d` som förlorar kapplöpningen redovisas
+#     graciöst som SKONAS ("vägrade"), aldrig som ett fel. Vad som drabbas
+#     är kostnadsantagandet (~1 % av cykeln), inte datan.
+#     Detta är samma delade-state-klass som F10 i
+#     docs/research/prototyp-till-skarp-processaudit-tidslinje-2026-08-08.md
+#     (öppet, ej fixat — gäller redan last-main-sha). F10:s föreslagna fix
+#     har TVÅ halvor: atomär skrivning + per-session-nyckling. Den atomära
+#     halvan är byggd här (se stämplingen i stada_grenar_om_dags());
+#     nyckling per session rör hela svepets state-modell och ligger utanför
+#     TASK-323.
+#
 # TREVÄGS-SNAPSHOT PER SVEP
 #   1. main-SHA — `gh api repos/<repo>/commits/<branch>`. Avancerar den
 #      sedan förra svepet har en landning skett (ALLTID-PÅ, inte en
@@ -179,6 +210,14 @@
 #   main-SHA-avancemang bär INGEN egen exit-bit: det är alltid goda
 #   nyheter, aldrig ett larm i sig.
 #
+#   Gren-städningen (§ UNDERHÅLL, TASK-323) bär INGEN egen exit-bit heller,
+#   av ett ANNAT skäl: den är en UNDERHÅLLS-åtgärd, inte en observation av
+#   landnings-läget. Ett fel i den (skriptet saknas, en radering vägras)
+#   säger ingenting om PR-läget svepet finns för att bevaka, och får därför
+#   aldrig maskeras in i verdikten — en röd städning som gjorde svepet
+#   "rött" hade fått orkestreraren att leta efter en trasig PR som inte
+#   finns.
+#
 # gh-binären kan överstyras med GH_BIN (testsvitens stub-väg, samma form
 # som ci-wait.sh/staging-semaphore.sh). Policy-filen med
 # HEARTBEAT_SVEP_POLICY, tillstånds-katalogen (senast sedda main-SHA) med
@@ -213,6 +252,19 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 HEARTBEAT_SVEP_POLICY="${HEARTBEAT_SVEP_POLICY:-${SCRIPT_DIR}/../.heartbeat-svep-policy.conf}"
 STATE_DIR="${HEARTBEAT_STATE_DIR:-/tmp/mm-heartbeat-svep}"
 
+# Gren-städarens binär (TASK-323). Overrideable av samma skäl som GH_BIN:
+# testsviten kopierar BARA heartbeat-svep.sh till sin TEST_DIR, så en
+# hårdkodad SCRIPT_DIR-sökväg hade gjort städvägen otestbar utan att köra
+# den skarpt mot ett riktigt repo.
+STADA_BIN="${HEARTBEAT_STADA_BIN:-${SCRIPT_DIR}/stada-grenar.sh}"
+
+# Fail-closed default INNAN source: en policy-fil UTAN variabeln (äldre
+# spoke-kopia, eller filen saknas helt) städar INGENTING. Motsatt riktning
+# mot HEARTBEAT_EXEMPT_AUTHORS ovan, och avsiktligt: den mekanismen tystar
+# ett larm om den är av, DENNA raderar grenar om den är på. Ett osatt värde
+# ska aldrig kunna bli en destruktiv operation någon inte bett om.
+HEARTBEAT_STADA_GRENAR_INTERVALL=0
+
 REPO=""
 BRANCH=""
 INTERVAL=""
@@ -241,6 +293,24 @@ say() { [[ "${QUIET}" -eq 1 ]] || printf '%s\n' "$1"; }
 # poängen med svepet (L443: ett tillstånd som håller i ska synas varje gång).
 alarm() { printf '%s\n' "$1"; }
 
+# ALLTID-PÅ-kanalen (TASK-323): samma --quiet-immunitet som alarm(), men
+# semantiskt en ANNAN klass — se § ANVÄNDNING, som skiljer LARM (bär en
+# exit-bit, kräver åtgärd) från ALLTID-PÅ (ingen exit-bit, men får aldrig
+# tystas). Behövs för rader som MÅSTE synas utan att påstå att något är fel:
+# en fallerande gren-städning är ett observabilitets-krav, inte ett larm om
+# landnings-läget.
+#
+# Varför en egen funktion och inte bara alarm(): utan den kan en läsare inte
+# se på anropsstället vilken klass raden tillhör, och nästa person som söker
+# "vad larmar det här skriptet om?" hade räknat in städningen. Distinktionen
+# fanns redan i prosan (§ ANVÄNDNING, TASK-135) men saknade en egen kanal.
+#
+# ÖPPET, MEDVETET EJ ÄNDRAT HÄR: de befintliga ALLTID-PÅ-raderna
+# (main-avancemang, main-SHA-baslinje) skriver fortfarande via alarm().
+# De är korrekta i beteende — bara namnet ljuger — och att migrera dem
+# ligger utanför TASK-323:s scope.
+alltid_pa() { printf '%s\n' "$1"; }
+
 # is_exempt_author <login> — sant om <login> finns i HEARTBEAT_EXEMPT_AUTHORS
 # (.heartbeat-svep-policy.conf § "PR-författare vars öppna PR:ar ALDRIG
 # larmar som ARMERINGS-KANDIDAT"). "${arr[@]:-}" (inte bara "${arr[@]}")
@@ -257,6 +327,152 @@ is_exempt_author() {
     return 1
 }
 
+# ── FEMTE VÄGEN: gles gren-städning (TASK-323) ───────────────────────────────
+#
+# VARFÖR HÄR OCH INTE I EN HOOK ELLER I CI — de fyra kandidaterna kortet
+# räknar upp, prövade mot mätning i stället för smak:
+#
+#   post-merge-hook   AVFÄRDAD. `post-merge` fyrar bara när ett LOKALT `git
+#                     merge`/`git pull` faktiskt kör (git-scm.com/docs/
+#                     githooks). Våra merges sker på GitHubs servrar via
+#                     merge queue — ingen lokal merge inträffar, så hooken
+#                     fyrar aldrig av landningen. Den skulle på sin höjd
+#                     fyra långt senare, om någon råkar `pull`:a i
+#                     huvudkatalogen. Dessutom: repot har EN hook
+#                     (.githooks/pre-commit), och `core.hooksPath` skrivs om
+#                     av Claude Code vid VARJE worktree-skapelse (T121) —
+#                     hook-vägen är strukturellt opålitlig just här.
+#   nightly.yml (CI)  AVFÄRDAD, fysiskt omöjlig. Lokala grenar finns bara i
+#                     Marcus klon; en GitHub-runner har en egen färsk klon
+#                     utan dem. Den kan inte se det den ska städa.
+#   worktree-remove   AVFÄRDAD för DENNA landning. stada-worktrees.sh bor i
+#                     marcus-hub-pluginet (annat repo, utanför denna diff),
+#                     fyrar bara vid paus-svep (sällan), och städar bara de
+#                     grenar en worktree den tar bort råkar hålla — aldrig
+#                     grenar som aldrig hade en worktree.
+#   heartbeat (VALD)  Den enda mekanism som redan är PERSISTENT igång exakt
+#                     när grenarna växer. Återväxten (~49 grenar/dygn,
+#                     docs/research/backlog-kortskapandets-flaskhals-
+#                     2026-08-26.md § Återväxten) produceras av fleeten, och
+#                     en fleet förutsätter en orkestrerare — som kör detta
+#                     svep. Korrelationen är själva argumentet: städningen är
+#                     aktiv precis under de timmar skulden byggs, och sover
+#                     när ingen bygger den.
+#
+# VARFÖR TIDSBASERAD OCH INTE KNUTEN TILL main-AVANCEMANG: avancemanget vore
+# semantiskt precisare ("nu blev grenar mergade"), men vinsten är marginell
+# — grenar mergas löpande och ett glest tidsfönster fångar dem ändå — medan
+# kostnaden är en extra tillståndskoppling mellan två oberoende vägar.
+# Över-engineering-vakten (~/.claude/CLAUDE.md): ren tid vinner.
+#
+# VARFÖR GLES OCH INTE VARJE SVEP: MÄTT 2026-08-28 i denna worktree — en
+# torrkörning över 193 grenar tog 23,4 s (157 kandidater, 36 skonade). Var
+# 90:e sekund hade ätit ~26 % av svep-cykeln och fördröjt varje larm.
+# Kostnaden är dessutom självbegränsande: den faller med grenantalet, så
+# efter första sopningen är den en bråkdel.
+#
+# VARFÖR INGET LÅS MOT PÅGÅENDE backlog-SKANNING (kortets designfråga (c)):
+# Backlog.md tar ett fingeravtryck av aktiva gren-refs före varje laddning
+# och jämför efter; ändras det RETRYAR den, och först på tredje försöket
+# kastas "Active branch refs or configuration kept changing while tasks were
+# loading" (verbatim ur node_modules/backlog.md-darwin-x64/backlog).
+# Risken är alltså VERKLIG men kräver att alla tre försöken störs. Två
+# egenskaper håller den nere utan lås: raderings-fönstret är glest (default
+# var 30:e minut) och kort, och — viktigast — en ID-KOLLISION är strukturellt
+# omöjlig oavsett timing: skriptet rör bara grenar som är MERGADE i
+# bas-grenen, och ett mergat korts fil ligger redan i backlog/tasks/ på main.
+# Skanningen finns för att hitta kort på ICKE-landade grenar; de rörs aldrig.
+# Ett lås mot ett CLI som inte känner till vårt lås vore dessutom inte
+# byggbart utan att wrappa varje backlog-anrop i repot.
+#
+# KONTRAKT: returnerar ALLTID 0. Skriver som mest en RUTIN-rad (say(),
+# dämpas av --quiet). Larmar aldrig, bär ingen exit-bit, och tiger helt när
+# ingenting raderades.
+stada_grenar_om_dags() {
+    local intervall nu senast utfil rc raderade
+
+    intervall="${HEARTBEAT_STADA_GRENAR_INTERVALL:-0}"
+    # Ogiltigt värde behandlas som AV, inte som fel: en trasig policy-rad ska
+    # inte kunna stoppa landnings-bevakningen (som är svepets faktiska jobb).
+    [[ "${intervall}" =~ ^[0-9]+$ ]] || return 0
+    [[ "${intervall}" -gt 0 ]] || return 0
+    [[ -x "${STADA_BIN}" ]] || return 0
+
+    nu="$(date +%s)"
+    senast=0
+    if [[ -f "${STADA_STATE_FILE}" ]]; then
+        senast="$(cat "${STADA_STATE_FILE}" 2>/dev/null || echo 0)"
+        [[ "${senast}" =~ ^[0-9]+$ ]] || senast=0
+    fi
+    [[ $(( nu - senast )) -ge "${intervall}" ]] || return 0
+
+    # Stämpla FÖRE körningen, inte efter. En städning som hänger eller dör
+    # halvvägs ska inte kunna starta om vid VARJE svep därefter — då vore en
+    # trasig städning en 90-sekunders-loop av destruktiva anrop i stället för
+    # ett glest försök. Samma "stämpla försöket, inte framgången"-disciplin
+    # som backoff-mönster i allmänhet.
+    #
+    # ATOMÄRT (skriv till temp + mv), av två skäl. (1) En läsare ska aldrig
+    # kunna se en HALVSKRIVEN stämpel — `mv` inom samma filsystem är en
+    # rename(2), som POSIX garanterar är atomär. (2) Det är den ena halvan av
+    # F10:s föreslagna fix för heartbeat-statens delade /tmp-katalog
+    # (docs/research/prototyp-till-skarp-processaudit-tidslinje-2026-08-08.md
+    # § F10 — den andra halvan, per-session-nyckling, ligger utanför
+    # TASK-323, se § UNDERHÅLL i huvudet).
+    #
+    # Ett MISSLYCKAT stämpel-skriv tigs INTE ihjäl: uteblir stämpeln kör
+    # nästa svep städningen igen om 90 s i stället för om ${intervall} s, och
+    # det är precis den sortens tyst frekvensdrift ingen upptäcker utan en
+    # rad. Den skrivs på ALLTID-PÅ-kanalen (syns även under --quiet) men bär
+    # ingen exit-bit — städningen larmar aldrig.
+    if printf '%s' "${nu}" > "${STADA_STATE_FILE}.tmp" 2>/dev/null \
+       && mv -f "${STADA_STATE_FILE}.tmp" "${STADA_STATE_FILE}" 2>/dev/null; then
+        :
+    else
+        rm -f "${STADA_STATE_FILE}.tmp" 2>/dev/null || true
+        alltid_pa "heartbeat-svep: UNDERHÅLL — kunde inte stämpla ${STADA_STATE_FILE}. Städningen körs, men glesningen kan gå tätare än ${intervall}s tills stämpeln går att skriva. Verdikt OPÅVERKAT."
+    fi
+
+    utfil="${STATE_DIR}/stada-grenar-senaste-utdata.txt"
+    rc=0
+    # INGEN --ingen-fetch, med avsikt. Svepets egen main-SHA-väg går via
+    # `gh api` och rör ALDRIG git-refs, så den lokala origin/main är inte
+    # färsk bara för att svepet kört. stada-grenar.sh:s eget huvud är
+    # explicit: en stale bas kan bara UNDER-rapportera (missa nyligen
+    # landade grenar), aldrig radera fel — men den skriver också att
+    # `--ingen-fetch` "finns bara för offline/test-bruk". En fetch var
+    # HEARTBEAT_STADA_GRENAR_INTERVALL:e sekund är försumbar; att städa mot
+    # en stale bas vore att bygga in den under-rapportering vi städar för
+    # att slippa.
+    "${STADA_BIN}" --utfor > "${utfil}" 2>&1 || rc=$?
+
+    # FEL SKRIVS PÅ ALLTID-PÅ-KANALEN, inte via say(). En persistent monitor
+    # körs rimligen med --quiet (det är hela poängen med rutin/larm-
+    # distinktionen), så en say()-rad här hade gjort en KONTINUERLIGT
+    # fallerande städning helt osynlig — ingen stdout, bara en loggfil ingen
+    # läser om man inte redan vet att den finns. Samma observabilitets-
+    # felklass som TASK-135 en gång fixade för kallstart-raden.
+    # Fortfarande INGEN exit-bit: raden säger "underhållet fungerar inte",
+    # aldrig "landnings-läget är trasigt".
+    if [[ "${rc}" -ne 0 ]]; then
+        alltid_pa "heartbeat-svep: UNDERHÅLL — gren-städningen gav exit ${rc}. Svepets verdikt är OPÅVERKAT (städning larmar aldrig). Utdata: ${utfil}"
+        return 0
+    fi
+
+    # `|| true`: set -o pipefail är aktivt i detta skript, och en tom/oväntad
+    # utdata får inte kunna avbryta svepet via set -e. Städningen larmar
+    # aldrig — då får den inte heller krascha på sin egen rapport-parsning.
+    raderade="$(sed -n 's/^Raderade grenar: *\([0-9][0-9]*\).*/\1/p' "${utfil}" | tail -1 || true)"
+    [[ "${raderade}" =~ ^[0-9]+$ ]] || raderade=0
+
+    # TYST VID NOLL (kortets designkrav (b)): en idempotent körning som inte
+    # hittade något att göra är ingen nyhet och skriver ingenting alls.
+    [[ "${raderade}" -gt 0 ]] || return 0
+
+    say "heartbeat-svep: UNDERHÅLL — ${raderade} mergade lokala grenar städade (stada-grenar.sh, aldrig -D). Nästa tidigast om ${intervall}s."
+    return 0
+}
+
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --repo)     REPO="${2:-}";     shift 2 ;;
@@ -268,9 +484,12 @@ while [[ $# -gt 0 ]]; do
         # Radintervallet är § ANVÄNDNING. Ändras huvudet ovan måste det
         # följa med — annars ljuger --help tyst (samma disciplin som ci-wait.sh).
         # Utökat 61,81 → 61,104 i TASK-135 (ALLTID-PÅ-klass + kallstart-
-        # stycket); scripts/test-heartbeat-svep.sh T24 fäller om raden
+        # stycket), 61,104 → 61,135 i TASK-323 (§ UNDERHÅLL — gles
+        # gren-städning; en DESTRUKTIV bieffekt får aldrig stå utanför det
+        # block --help faktiskt visar);
+        # scripts/test-heartbeat-svep.sh T24 fäller om raden
         # avviker från blockets faktiska start/slut.
-        -h|--help)  sed -n '61,104p' "$0"; exit 0 ;;
+        -h|--help)  sed -n '61,135p' "$0"; exit 0 ;;
         *) die "okänt argument: $1" ;;
     esac
 done
@@ -291,6 +510,11 @@ done
 
 mkdir -p "${STATE_DIR}"
 STATE_FILE="${STATE_DIR}/last-main-sha"
+# Gren-städningens egen tidsstämpel (TASK-323). Egen fil, inte en rad i
+# STATE_FILE: de två vägarna är oberoende och ska kunna nollställas var för
+# sig — testsviten river STATE_DIR mellan fall och båda ska då kallstarta
+# rent, utan att den ena vägens format kan korrumpera den andras.
+STADA_STATE_FILE="${STATE_DIR}/last-stada-grenar"
 
 # --- EN svep-cykel ----------------------------------------------------------
 # Returnerar bitmask-verdikten via $? (0/1/2/4/kombinationer, 77 vid sond-fel).
@@ -434,6 +658,15 @@ sweep_once() {
     [[ "${antal_rott}"     -gt 0 ]] && verdict=$(( verdict | 1 ))
     [[ "${antal_dirty}"    -gt 0 ]] && verdict=$(( verdict | 2 ))
     [[ "${antal_kandidat}" -gt 0 ]] && verdict=$(( verdict | 4 ))
+
+    # FEMTE VÄGEN — underhåll, körs EFTER att verdikten är färdigberäknad så
+    # den bevisligen inte kan påverka den (§ EXIT-KODER: städning larmar
+    # aldrig). `|| true` är bälte-och-hängslen: funktionen returnerar alltid
+    # 0 av sig själv, men set -e är aktivt här och kontraktet ska hålla även
+    # om någon senare ändrar funktionens returväg.
+    # shellcheck disable=SC2310
+    # AVSIKTLIGT: `|| true` är hela poängen — utfallet ska ignoreras.
+    stada_grenar_om_dags || true
 
     if [[ "${verdict}" -eq 0 ]]; then
         say "heartbeat-svep: ALLT LUGNT."
