@@ -3,10 +3,10 @@ id: TASK-309.19
 title: >-
   BlockDialogs datum-gren är onåbar död kod — riv den eller flytta blocket ur
   Inforutan
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-24 17:53'
-updated_date: '2026-08-26 06:09'
+updated_date: '2026-08-28 02:58'
 labels:
   - ready-for-agent
 dependencies: []
@@ -80,6 +80,8 @@ GRINDAR, MÄTTA (samtliga kommandon körda i FÖRGRUNDEN, exitkod läst separat 
 TASK-309.17 stängs som obsolet i samma landning (se det kortets egna notes för falsifieringen, bokförd med intentionally-unchecked-etiketten + OBOCKAT MED AVSIKT-markören per ADR-127 B2).
 
 RÄTTELSE 2026-08-26 (orkestreraren, efter review-agentens fynd på #2005): notes ovan påstår att s108-generering/facit.json bär godkand-stämpeln — FEL. Fältet är null (ostämplat; stämplingen är Marcus egen kanal, ADR-104). Manifestet är orört av PR:en. Formuleringen 'godkand-stämplat' ska läsas som 'ostämplat facit-manifest, orört'.
+
+Stängningssvansen (S108 resume 13): verifierad MERGED via gh pr view — PR #2005, merge-SHA 73073a6989f664508185b48dd013e0f4f044442a, mergad 2026-08-26T06:03:43Z (matchar kortets egen Final Summary-landningspekare). AC 3/3 och DoD 3/3 redan avbockade.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

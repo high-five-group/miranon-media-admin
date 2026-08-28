@@ -3,10 +3,10 @@ id: TASK-309.23
 title: >-
   Fynd: uppladdningsdialogen 'Vad ska filen gälla?' byter storlek och läge när
   räckvidd växlas
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-26 02:24'
-updated_date: '2026-08-26 03:00'
+updated_date: '2026-08-28 03:15'
 labels:
   - ready-for-agent
 dependencies: []
@@ -38,3 +38,9 @@ Krav: dialogens yttre mått och position är IDENTISKA i alla tre räckviddsläg
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Stängningssvansen (S108 resume 13): kortet saknade Implementation Notes/Final Summary vid stängning men AC 4/4 och DoD 3/3 var redan avbockade. Verifierat: gh pr view 1979 — MERGED 2026-08-26T03:27:15Z, merge-SHA 1c8b92ec67adc1946aad054d1476dcebd2cdacd3. gh pr diff 1979 --name-only: DokumentYta.tsx, tests/acceptance/dokument-rackviddsval.acceptance.test.ts, 2 lessons.d-fragment, kortfilen — inga orelaterade filer. gh pr checks 1979: samtliga körda jobb pass (staging/A11y skippade per klassning). Landning: PR #1979 (<https://github.com/high-five-group/miranon-media-admin/pull/1979>).
+<!-- SECTION:NOTES:END -->

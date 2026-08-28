@@ -3,10 +3,10 @@ id: TASK-309.25
 title: >-
   Fynd: plats-sparningen i genereringsvyn ser osparad ut i flera sekunder innan
   värdet slår igenom
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-26 02:54'
-updated_date: '2026-08-26 04:41'
+updated_date: '2026-08-28 03:17'
 labels:
   - ready-for-agent
 dependencies: []
@@ -36,7 +36,19 @@ BESLUT som Marcus förväntar sig: efter 'Spara' ska det nya värdet synas OMEDE
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Stängningssvansen (S108 resume 13): kortet saknade Implementation Notes/Final Summary — skriven ur PR #1998:s beskrivning + diff (gh pr view/diff). Verifierat: gh pr view 1998 — MERGED 2026-08-26T05:06:48Z, merge-SHA 48f853155891d14905010b123a4e068ceb8b88df. gh pr diff 1998 --name-only: src/data/mutations/useSaveEventText.ts, tests/acceptance/dokument-genereringsvy-optimistisk-sparning.acceptance.test.ts, kortfilen (+332/-11, 3 filer) — inga orelaterade filer. gh pr checks 1998: samtliga körda jobb pass. Landning: PR #1998 (<https://github.com/high-five-group/miranon-media-admin/pull/1998>).
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Genereringsvyns block-sparning (text + agenda) blir optimistisk (ADR-016s onMutate/onError/onSettled-mönster, samma form som useUpdatePersonNote.ts). Rotorsak (PR #1998): useSaveEventText.ts var rent pessimistisk — listan visade gammalt värde tills onSettled-invalideringen refetchat. Mätt i staging (5 anrop, throwaway ZZ-event): save-event-text 945 ms snitt, get-document-sources 1008 ms snitt, sekventiell kedja 1953 ms — det Marcus upplevde som lagg. Fix i src/data/mutations/useSaveEventText.ts, ny testfil tests/acceptance/dokument-genereringsvy-optimistisk-sparning.acceptance.test.ts (4 fall: text <250ms, agenda samma, felväg med rollback+felmeddelande, plats/standard-regressionsvärn). Plats/'spara som standard' rörs inte — redan blockerande Skapa-läge, AC #2:s uttryckligen acceptabla alternativ. Dubbelriktat bevisat mot gammal pessimistisk kod (1-3 röda, 4 grön oavsett). Grindar (PR-kroppen): typecheck 0 fel, biome 0 fel, check-langa-streck OK, build grön, test:api:pure 728/728, test:api:staging (riktad mot save-event-text+get-document-sources) 24/24, full staging-svit 3 körningar under hög maskinlast med enstaka transienta fel utanför diffens filer (miljöbrus, ej regression).
+<!-- SECTION:FINAL_SUMMARY:END -->
