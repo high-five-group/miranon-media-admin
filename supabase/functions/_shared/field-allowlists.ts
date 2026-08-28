@@ -199,6 +199,19 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
   // backfillens källa, prototypens KURS_KARTA) — klienten skickar dem ALDRIG. Kursnivå
   // UTELÄMNAS för nivålösa familjer (Fjärrskådning/Psionautics) OCH för okänt kursnamn
   // (öppet, aldrig gissat — modulens docblock).
+  // 'Plats' (TASK-309.30, ADR-125 § 2) — länken till Platser-raden, HÄRLEDD
+  // server-side ur eventets eget `Ort` via `_shared/plats-uppslag.ts` (exakt
+  // namnmatchning, ENDAST vid exakt en träff). Klienten skickar den ALDRIG;
+  // formuläret är oförändrat (kortets AC #3). Fältet skrivs i en SEPARAT PATCH
+  // EFTER upserten, aldrig i upsertens egen fields-map — se create-event/
+  // index.ts § ORT-TILL-PLATS för varför ordningen är invarianten som skyddar
+  // en redan satt Plats vid en idempotent replay. Bas-fältet är
+  // multipleRecordLinks → Platser (staging `fld8OmPGNgEYZ8eER`, prod
+  // `fldaVV1KS6skbOLrB`; data-model.md § Bilagornas datamodell, staging-ID:t
+  // live-verifierat via describe_table 2026-08-28 som Platser-fältets
+  // inverseLinkFieldId). BÅDA baserna bär fältet sedan 2026-08-24, så
+  // prod-EF-deployen har ingen schema-förutsättning kvar att vänta på (till
+  // skillnad mot `Idempotensnyckel`/publiceringsflaggan när de tillkom).
   'create-event': {
     tableId: 'Eventplanering',
     allowedFields: [
@@ -214,6 +227,7 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
       'Publicerad på miranon.se',
       'Kursfamilj',
       'Kursnivå',
+      'Plats',
       'Idempotensnyckel',
     ],
   },

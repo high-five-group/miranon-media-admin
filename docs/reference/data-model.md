@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-26
+updated: 2026-08-28
 review_by: 2026-11-24
 status: stable
 ---
@@ -482,9 +482,15 @@ Airtable-API:t — en testrad först (Event-14), sedan batchar 10+10+6.
 Kontroll efteråt: `AND({Ort}='Rönninge', {Plats}='')` → 0 rader. A6/A9/A10
 bevakar andra fält; inget triggades. Staging bär 0 Rönninge-event, så ingen
 paritet att hålla. Event-62:s testkopia `Adress (bilagetext)` tömd samma dag
-på Marcus order (regeln `kopia ?? standard`). **Öppen kant:**
-`create-event`-vertikalen sätter inte `Plats` — nya event får tom länk tills
-den sätts för hand eller vertikalen lär sig Ort → Plats.
+på Marcus order (regeln `kopia ?? standard`). **Kanten STÄNGD 2026-08-28
+(TASK-309.30):** `create-event` lärde sig Ort → Plats — vertikalen slår upp
+`Platser` på `Namn` = `Ort` och länkar vid exakt en träff, så ett nytt
+Rönninge-event föds med `Plats` satt. Regeln, dess tre nej-lägen och
+ordnings-invarianten: § Ort-till-Plats vid create (under Eventplanerings
+create-fält). Prod-EF-deployen av `create-event` är ett separat
+Marcus-moment (`scripts/fas4-prod-deploy.sh`); prod-fältet `Plats` finns
+sedan 2026-08-24, så deployen har ingen schema-förutsättning kvar att vänta
+på.
 
 **Torrkörnings-kant, bokförd — inte ett fel i skarpa vägen.**
 `create-eventinnehall-modell.mjs --dry-run` kan INTE planera hela kedjan mot
@@ -840,12 +846,58 @@ De skrivbara fält som [ADR-066](../decisions/ADR-066-skapa-event-write-vertikal
 | Kapacitet | Max antal platser | `fldbyEz8djcxCBO5r` | number | – |
 | Tillstånd | Status | `fld2nXlS1UG0aOHLt` | singleSelect | Default `Planerat`. |
 | Sessionsstruktur | Eventtyp | `fldCAGA9NPnd9kEmi` | multipleRecordLinks → Eventformat | **KRÄVS vid create** (ADR-066 b5, prod-belagt) — driver `Sessionsmall`-lookupen. Pekar på BEFINTLIG Eventformat-rad (ingen ny post). |
+| Plats | Plats | staging `fld8OmPGNgEYZ8eER` · prod `fldaVV1KS6skbOLrB` | multipleRecordLinks → Platser | **HÄRLEDS server-side** ur `Ort` (TASK-309.30) — klienten skickar den ALDRIG. Sätts ENDAST vid exakt en `Platser.Namn`-träff, aldrig över en befintlig länk. Se § Ort-till-Plats nedan. |
 | Dokument | PDF (URL) | `fldXIbT08897kV1Oa` | url | Valfritt. |
 | Spårning | Touchpoints | `fldeRc98Xs7XJRCn8` | singleLineText | Valfritt. |
 | Backfill | Backfill-ID | `fld2M7EdjCcocls0u` | singleLineText | Valfritt (historik-import). |
 | Idempotens | Idempotensnyckel | `fldOWoh4WR5zG6XgQ` (staging) | singleLineText | Merge-nyckel för upsert (ADR-066 b3). **Staging-live (Session 38 L1); PROD-fält ej skapat** — hård prod-deploy-förutsättning, se §Kända fällor 37. |
 
 **Sätts ALDRIG vid create** (system-genererat eller härlett från motsatt sida): `EventKey` (`fldhmhaz3ZnouAzDm`, formel `"Event-" & {Event-nr}`) + `Event-nr` (`fldl5By2a7jGBPpxF`, autoNumber) föds vid skapande; `Eventlabel` (primärfält, formel) + alla rollup/count/formel/lookup-fält beräknas; spegelfältet `Anmälningar (länkat fält)` (`fldUAjTutSM0fziMT`) + `Närvaro (records)` sätts från Anmälningar/Deltaganden-sidan (A1/A3) — ett nyfött event har noll.
+
+##### Ort-till-Plats vid create (TASK-309.30, ADR-125 § 2)
+
+`create-event` slår upp `Platser` på `Namn` = eventets `Ort` och sätter
+`Plats`-länken när **exakt en** rad matchar. Uppslag, inte länk-krav — samma
+härlednings-anda som `Eventinnehåll` (`Event (source)` × `Typ`) och som
+`Månad/år` (ADR-066 b6). Klienten är oförändrad: ingen ny formkontroll, ingen
+ny input.
+
+| Läge | `Plats` | Svarets `platsLankning.skal` |
+|---|---|---|
+| Exakt EN `Platser.Namn` = `Ort` | länkad | `exakt-en-traff` |
+| Ingen träff | TOM | `ingen-traff` |
+| FLERA träffar | TOM (aldrig den första) | `flera-traffar` |
+| Idempotent replay mot rad som redan bär `Plats` | ORÖRD | `redan-satt` |
+| Uppslaget eller PATCH:en fallerade | TOM, eventet skapas ändå | `uppslag-fel` |
+
+**Varför "exakt en" och inte "första träffen".** `Platser.Namn` är ett
+`singleLineText`-primärfält, och Airtable kan strukturellt inte tvinga unikhet
+på det (`airtable-constraints.md`). Två rader med samma `Namn` är alltså ett
+möjligt bastillstånd — skarpt verifierat 2026-08-28 genom att seeda
+`ZZ-plats-dubblett-fixtur` två gånger i staging (`rec1bMcnYvgAYeO6d` +
+`rec3XSjtWhbK3PRXF`, båda skapade utan invändning). `save-place-standard`s
+find-or-create tar medvetet första träffen eftersom operatören uttryckligen
+bett om skrivningen; den automatiska härledningen får inte göra samma sak — en
+gissad plats syns först som fel adress i en genererad bilaga.
+
+**Ordningen är invarianten:** `Plats` läggs ALDRIG i upsertens `fields`-map. Den
+skrivs i en SEPARAT PATCH efter upserten, och bara när den upsertade raden
+saknar länk — annars hade en idempotent replay kunnat skriva över en `Plats`
+som satts för hand efter det första anropet (samma felklass som
+publiceringsflaggans utelämnings-mönster bokför för checkboxen). Allowlisten
+(`_shared/field-allowlists.ts`, `create-event`) bär `Plats`, och skrivningen
+gates:as av `findDisallowedField` precis som fields-mapen. Beslutslogiken bor i
+`_shared/plats-uppslag.ts` (ren modul, enhetstestad i
+`tests/api/plats-uppslag.test.ts`); de fyra grenarna är skarpbevisade mot
+deployad staging-EF i `tests/api/create-event.staging.test.ts`.
+
+**Staging-fixturerna** (permanenta, matchar MEDVETET ingen purge-target — samma
+klass som `ZZ-create-event-test-format`): `ZZ-plats-unik-fixtur`
+(`recVWAYh1cbVQKxi7`) och `ZZ-plats-dubblett-fixtur` (de två ID:na ovan).
+Dubbletten går inte att återskapa via någon EF, så en purgead fixtur hade tyst
+gjort flera-träffar-grenen oprövbar. Eventen testet skapar städas i stället av
+den nya `create-event-plats-harledning-sentineler`-targeten (`Ort`-prefix
+`ZZ-plats-`, `linkGuardExcludeFields` inkluderar `Plats`).
 
 #### Eventplanering — kvitto-benämning (TASK-306, 2026-08-23)
 
@@ -2065,3 +2117,4 @@ Code kan ta dessa när de blir relevanta för en specifik uppgift.
 | 2026-08-23 (`TASK-309.7`) | **§ Mer-sidans läsvägar + Platsers event-lösa läge tillagd** — två nya GLOBALA läs-EF:er (`get-event-contents`/`get-places`, Mer-sidans nya Eventinnehåll-/Platser-ytor); `save-place-standard` utökad med TVÅ event-lösa lägen (`platsId`-uppdatering, `namn`-skapelse med valfri `falt`) för Platser-ytans rena plats-redigering utan event. Ny `.purge-staging-policy.json`-target `save-place-standard-event-los-platser-sentineler` (Platser, prefix `ZZ-TASK-309.7-`, egen sentinel-klass — dessa rader föds utan något throwaway-event). Block-redigeringsdialogen utbruten ur `GenereringsPrototyp.tsx` till `src/components/dokument/BlockDialog.tsx`/`blockDefinitioner.ts`, delad av genereringsvyn och Mer-sidans två nya ytor. |
 | 2026-08-26 (`TASK-309.22`) | **§ Bucket `bilagor` — Storage-path-formerna: `<filnamn>` ASCII-/Storage-säkrat.** Prod-symptom: `upload-attachment` 502 "Invalid key" på ett filnamn med å/ä/ö (`2025-HörlurarMiranonMedia.pdf`, Marcus röktest). Rotorsak: Supabase Storages nyckel-regex (`supabase/storage` `limits.ts`) accepterar bara ett fast ASCII-tecken-set. `sanitizeFilnamn`/`buildAttachmentLeaf`/`buildAttachmentPath` flyttade ur `_shared/attachments.ts` till en ny zod-fri `_shared/attachment-filename.ts` (re-exporterade oförändrat, se filens docblock för det strukturella skälet — Node/Playwright kan inte importera en esm.sh-beroende modul direkt), och `sanitizeFilnamn` NFKD-normaliserar + faller icke-Storage-säkra tecken till ASCII. `Namn`-fältet (klientens originalfilnamn) OFÖRÄNDRAT; endast Storage-nyckeln transformeras. Befintliga ASCII-namngivna rader bevisbart oförändrade (se `_shared/attachment-filename.ts`s docblock för argumentet). |
 | 2026-08-26 (`TASK-309.22`, review-runda 1) | **§ Bucket `bilagor`s rad ovan AMENDERAD** — föregående rad (samma dag) sa att `sanitizeFilnamn` NFKD-normaliserar/faller till ASCII. Det var fel EFTER review-runda 1: `sanitizeFilnamn` faller INTE till ASCII (den är hash-underlaget för `deriveAttachmentId`, TASK-316) — ASCII-fallet flyttades till `buildAttachmentLeaf` (Storage-nyckeln/`Lagringsnyckel` ENDAST). Skälet: review visade empiriskt att det GAMLA (ett-stegs) upplägget kollapsade OLIKA filnamn (två helt olika CJK-strängar, två helt olika emoji — inte bara diakritik-varianter) till samma hash, vilket hade gjort en genuint ny uppladdning till en falsk idempotent replay av en annan fil. Se `_shared/attachment-filename.ts`s docblock och `upload-attachment/index.ts`s HASH-BESLUT-not för den fullständiga uppdelningen. |
+| 2026-08-28 (`TASK-309.30`) | **§ Ort-till-Plats vid create tillagd** (under Eventplanerings create-fält) + `Plats` tillagd i create-fält-tabellen + Plats-backfillens **öppna kant STÄNGD**. `create-event` slår upp `Platser` på `Namn` = `Ort` och länkar vid EXAKT en träff; noll/flera träffar och en redan satt `Plats` lämnar länken orörd, var och en med sitt `platsLankning.skal` i svaret. Ordnings-invarianten (`Plats` skrivs i en PATCH EFTER upserten, aldrig i dess fields-map) skyddar en manuellt satt Plats vid idempotent replay. `Platser.Namn`s icke-unikhet skarpt verifierad genom att seeda två rader med samma namn i staging. Ny purge-target `create-event-plats-harledning-sentineler` (Eventplanering, `Ort`-prefix `ZZ-plats-`); de två permanenta Platser-fixturerna matchar medvetet ingen target. Staging-EF deployad (v25 → v26, `UPDATED_AT` 2026-08-28T03:08:03.740Z); prod-deploy är ett separat Marcus-moment. |

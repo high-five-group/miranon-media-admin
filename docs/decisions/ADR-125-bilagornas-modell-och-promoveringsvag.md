@@ -363,3 +363,35 @@ en ÖGONBLICKSBILD, inte en härledd formel. Väggen bokfördes redan i
 rad stänger den kvarvarande motsägelsen mellan ADR:n och den skarpa
 implementationen. `TASK-309.3` fortsätter mönstret: `save-event-content`
 sätter `Namn` VID VARJE skrivning, inte bara vid radens födelse.
+
+### 2026-08-28 — Eventplanerings `Plats` HÄRLEDS vid create, med samma uppslags-anda som § 2:s Event × Typ
+
+**TASK-309.30.** § 2 låser `Plats` som en LÄNK från `Eventplanering` till
+`Platser`, och slår samtidigt fast principen *"uppslag, inte länk"* för
+`Eventinnehåll` (`Event (source)` × `Typ` pekar ut sin rad deterministiskt;
+"en länk hade varit en andra sanning som Airtables UI kan låta glida isär").
+`Plats` MÅSTE vara en länk — bilagerenderingen läser platsens fyra fält ur
+den (`_shared/document-sources.ts`) — men den behöver inte SÄTTAS för hand.
+
+`create-event` (ADR-066) härleder den nu ur eventets eget `Ort`: uppslag mot
+`Platser.Namn`, länk vid EXAKT en träff, aldrig annars, aldrig över en
+befintlig länk. Det är samma anda tillämpad på en länk i stället för på ett
+uppslag — härledningen bär kopplingen, `Ort` förblir den enda platsen
+platsnamnet skrivs (beslut 8: `Ort` rörs ALDRIG av plats-vägarna).
+
+**Varför "exakt en" och inte "första träffen":** `Platser.Namn` är ett
+singleLineText-primärfält och Airtable kan strukturellt inte tvinga unikhet
+på det. Två rader med samma namn skapades utan invändning i staging
+2026-08-28 (verifikationen som regeln vilar på). `save-place-standard`s
+find-or-create tar medvetet första träffen — den skriver på operatörens
+uttryckliga order i stunden. Den automatiska härledningen får inte göra samma
+sak: en gissad plats syns först som fel adress i en genererad bilaga, alltså
+exakt den tysta felklass beslut 7:s "aldrig tyst regenerering" bevakar i
+inaktualitets-frågan.
+
+**Vad detta INTE beslutar:** en platsväljare i `CreateEventForm` (TASK-309.30
+alternativ (b)/(c)) är ett Marcus-beslut och fattas inte här. Klientens
+skapa-event-flöde är oförändrat i form. Full skriv-semantik, ordnings-
+invarianten och de fem `platsLankning.skal`-lägena:
+[ADR-066](ADR-066-skapa-event-write-vertikal-idempotens.md) § Tillägg
+2026-08-28 + `data-model.md` § Ort-till-Plats vid create.

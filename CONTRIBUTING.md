@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-26
+updated: 2026-08-28
 review_by: 2027-02-08
 status: stable
 ---
@@ -109,6 +109,18 @@ sentinel-event till mitt i testet och återställer i `finally`. Faller den
 återställningen (kraschad körning, avbrutet CI-jobb) matchar raden ingen av de
 övriga targets och blir opurgbar för alltid; mätt 2026-08-24 låg två sådana
 rader kvar i 26,9 respektive 32,3 dygn.
+
+Och `ZZ-plats-` i Eventplaneringens `Ort` (TASK-309.30) — de event
+`create-event.staging.test.ts` skapar för att bevisa Ort-till-Plats-
+härledningen. Deras `Ort` MÅSTE vara exakt ett platsnamn (uppslaget matchar
+`Platser.Namn` = `Ort`) och kan därför inte bära `ZZ-create-event-test`.
+De TVÅ Platser-raderna fixturen vilar på (`ZZ-plats-unik-fixtur` och den
+avsiktliga dubbletten `ZZ-plats-dubblett-fixtur`, seedade via Airtable-MCP)
+är PERMANENTA och matchar MEDVETET ingen purge-target — dubbletten går inte
+att återskapa via någon EF (`save-place-standard` är find-or-create by
+`Namn`), så en purgead fixtur hade tyst gjort flera-träffar-grenen oprövbar.
+Targeten städar alltså ENBART Eventplanering-raderna, och `Plats` står i dess
+`linkGuardExcludeFields` eftersom länken är just det testet bevisar.
 
 Och `ZZ-attachment-filename-test-` i Bilagors `Namn` (TASK-309.22) —
 `upload-attachment-ascii-safety.staging.test.ts`s EGEN sentinel-klass, skild
