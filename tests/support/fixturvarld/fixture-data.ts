@@ -180,7 +180,7 @@ export const EVENTS_RESPONSE = {
  * rad 92) — default `'OK'` här, ALDRIG `null`. `datum` är `null | sträng` —
  * anmälans EGNA fritextsvar (`Datum`, singleLineText; jämförs av
  * Eventmatchning-formeln mot facit-lookupen `Datum (from Event)`,
- * `docs/reference/data-model.md` rad 1134–1135) — default en sträng här,
+ * `docs/reference/data-model.md` rad 1186–1187) — default en sträng här,
  * override till `null` på den enda manuellt skapade posten (`kalla:
  * 'Manuell'` nedan), som aldrig gick via det publika formuläret och därför
  * aldrig fick fältet ifyllt.
@@ -195,12 +195,28 @@ export const EVENTS_RESPONSE = {
  * fixturen SANN om svarets form; att låta dem bära innehåll hade ändrat vad
  * vyerna renderar och därmed de visuella baselines. Att acceptance-testerna
  * ska prövas mot fältens ifyllda tillstånd hör till migrerings-skivorna, där
- * varje flyttad fil får sitt eget tvåsidiga bevis — inte hit. `'OK'` som
- * default håller sig till samma princip: `behoverAtgard()`
- * (`registration-display.ts`) är `false` för `'OK'`, så ingen befintlig
- * baseline/åtgärdskö-räknare rör sig av tillägget (verifierat: ingen vy
- * under `src/` läser `datum`, och `eventmatchning` läses bara av
- * `behoverAtgard`).
+ * varje flyttad fil får sitt eget tvåsidiga bevis — inte hit.
+ *
+ * `'OK'` SOM DEFAULT — DEN VERKLIGA GRUNDEN (rättat i review-runda 2,
+ * PR #2051): `datum` LÄSES visst under `src/` —
+ * `AnmalningRadResolution.tsx:140` och `KopplaTillEventDialog.tsx:122`
+ * renderar båda `registration.datum ?? 'Uppgift saknas'`. Skälet baseliner
+ * ändå inte rör sig är `behoverAtgard()` (`registration-display.ts`), som
+ * `AnmalningarSida.tsx` (rad ~801/812) villkorar `AnmalningRadResolution`
+ * på: den kräver `eventmatchning === 'Avviker' | 'Utan event'`, och var
+ * `false` för samtliga poster REDAN FÖRE denna konstant fick `eventmatchning`
+ * (fältet var då `undefined`, vilket missar båda likhetsjämförelserna precis
+ * som `'OK'` gör nu) — övergången `undefined → 'OK'` ändrar alltså inte
+ * sanningsvärdet för någon post. Det är detta, inte frånvaron av läsande
+ * vyer, som håller baselinerna stilla.
+ *
+ * LATENT RISK, DÄRFÖR ÖPPET DOKUMENTERAD: sätter en framtida fixtur-post som
+ * delar denna konstant `eventmatchning` till `'Avviker'`/`'Utan event'` (för
+ * att t.ex. provtrycka åtgärdskö-läget), dyker `datum`-defaulten
+ * `'20 sep 2026'` OFRIVILLIGT upp i `KopplaTillEventDialog`/
+ * `AnmalningRadResolution` där `'Uppgift saknas'` visades tidigare — sätt då
+ * `datum` explicit på den posten (samma mönster som `kalla`/`datum`-override
+ * på `recVisualReg000006` nedan), lita aldrig på att defaulten råkar passa.
  */
 const ADDITIVA_ANMALNINGSFALT = {
   noteringAnmalningsavgift: null,
