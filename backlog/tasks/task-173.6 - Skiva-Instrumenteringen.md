@@ -4,7 +4,7 @@ title: 'Skiva: Instrumenteringen'
 status: Done
 assignee: []
 created_date: '2026-08-09 13:16'
-updated_date: '2026-08-28 05:06'
+updated_date: '2026-08-28 06:39'
 labels:
   - ready-for-agent
 dependencies:
@@ -34,8 +34,8 @@ ordinal: 329000
 - [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 Tvåsidig skript-testsvit (ska-fälla + ska-passera) per nytt deterministiskt skript, grön lokalt
-- [ ] #6 CI-backstoppens grind-verkan bevisad med rött-först-form: positivt bevis + negativ self-test
-- [ ] #7 Instrumenteringsloggen bevisat skrivande från första skarpa körningen (findings-per-runda + risk-kalibrering + grind-missar)
+- [x] #6 CI-backstoppens grind-verkan bevisad med rött-först-form: positivt bevis + negativ self-test
+- [x] #7 Instrumenteringsloggen bevisat skrivande från första skarpa körningen (findings-per-runda + risk-kalibrering + grind-missar)
 - [x] #8 Mekanism som inte kan skarpbevisas i byggsessionen bokförs som öppen skuld i handoff, aldrig som klar
 <!-- DOD:END -->
 
@@ -160,4 +160,6 @@ dessa ändringar — se PR #2052 för ny HEAD-SHA.
 ## Stängning (S112 resume 2, 2026-08-28 ~10:00)
 
 Landning: PR #2052, merge-commit `c21c0743`. Två granskningsrundor (r1 risk låg: loggens git-persistens + skrivmiss-test; r2 29aa49db noll fynd). DoD #3 (CI grön per jobb) bockad efter landning. DoD #6 hör till TASK-173.4 (#2049, under granskning) och #7 uppfylls av första skarpa loop-körningen efter denna landning — orkestreraren committar `docs/reference/review-instrumentering.jsonl` i stängningsbatcharna (CLAUDE.md § Review-grinden).
+
+DoD #6/#7 bockade (S112 resume 2, 2026-08-28 ~16:00): #6 — CI-backstoppen (TASK-173.4, #2049 e8c8bbc1) är landad och skarpbevisad (proof-runs 33145964415/33145969468 + första fällning 33145818932); #7 — instrumenteringsloggen skrivs av varje loop-körning och är committad (docs/reference/review-instrumentering.jsonl, 7 rader via #2067/#2068). Nattgrinden 28/8 (run 33147637457) pekade ut kortet — rättat här.
 <!-- SECTION:NOTES:END -->
