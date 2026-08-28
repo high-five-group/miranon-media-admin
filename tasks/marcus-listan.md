@@ -429,15 +429,18 @@ status: stable
   frågan om en TIDSBASERAD vakt (alternativ B: kör sviten om det gått mer än
   N timmar sedan senaste staging-körning på `main`).
 - **Varför det väntar på dig** — nattnätet kör redan staging-sviten varje
-  natt (`nightly.yml` → `ci-suite.yml` med `run_staging: true`), så B är en
-  kadensfråga: kostar en tredje daglig tagning av `staging-tests`-mutexen mot
-  ett jobb med ~1,8× marginal som redan slagit i sitt 12-minuterstak.
-- **Gör så här** — svara `"41: A"` (nej, nattnätet räcker — status quo) eller
-  `"41: B"` (bygg driftvakten, N = 12 h) eller `"41: B, N = <timmar>"`.
-- **Min rekommendation** — **A**: nattnätet täcker driften inom 24 h och
-  attributionen är rättad; en tredje mutex-tagning köper timmar, inte
-  signalvärde.
-- **Vad som låses upp** — inget blockeras; B blir ett kort om du vill ha den.
+  natt: `nightly.yml` anropar `ci-suite.yml` utan `with:`-block och ärver
+  därmed defaulten `run_staging: true` (verifierat grönt i run 33065848810).
+  Driftvakten är alltså en kadensfråga: kostar en tredje daglig tagning av
+  `staging-tests`-mutexen mot ett jobb med ~1,8× marginal som redan slagit i
+  sitt 12-minuterstak.
+- **Gör så här** — svara `"41: NEJ"` (nattnätet räcker — status quo) eller
+  `"41: JA, N = 12"` (bygg driftvakten med N timmar). (Bokstäverna A–D i
+  `TASK-334`:s options-tabell betyder något annat — därför ja/nej här.)
+- **Min rekommendation** — **NEJ**: nattnätet täcker driften inom 24 h och
+  attributionen är rättad (`#2059`, post-merge grön på `7158200f` +
+  `e8c8bbc1`); en tredje mutex-tagning köper timmar, inte signalvärde.
+- **Vad som låses upp** — inget blockeras; JA blir ett kort.
 - **Källa** — `TASK-334` § Implementation Notes (options A–D) · `ADR-077`
   § Updates 2026-08-28 · `TASK-73` (revert-blockeringen 25 min) · PR `#2059`.
 
@@ -462,6 +465,13 @@ filen pekar på **staging** — S108:s återlänkning höll.
   granskning) lägger `disallowedTools` mot nio connector-familjer i alla tre
   agentdefinitionerna. Skarpbeviset (AC #3) betalas av orkestreraren efter
   landning. Bara fönsterfrågan ovan är kvar hos dig.
+
+- **Läge 2026-08-28 ~15:00** — `#2064` **landad** (`cd98862a`). Två
+  skarpbevis-mätningar visar att agentdefinitioner läses vid SESSIONSSTART:
+  även efter huvudkatalogens fast-forward körde en ny agent den gamla
+  definitionen. AC #3 mäts som nästa sessions första handling (ny agent:
+  AFK-rubrik finns, `ToolSearch +mcp vercel` ger noll). Fönsterfrågan ovan är
+  fortfarande din.
 
 ### 18. Prod-deploy: `update-event` kör fortfarande 500-buggen
 
