@@ -294,9 +294,19 @@ skillens instruktion att mäta hellre än citera när det går.
 
 **Källa:** <https://github.com/openai/codex/pull/10258> ("fix: unsafe
 auto-approval of git commands") + fil
-`codex-rs/shell-command/src/command_safety/is_dangerous_command.rs` (hämtad
+`codex-rs/core/src/command_safety/is_dangerous_command.rs` (hämtad
 live via GitHub API mot commit `18b9e7fd9e3f6670cc4f300338e44050b2c301e4`,
 huvudgrenen `main`, 2026-08-28T02:39:47Z).
+
+> **RÄTTAD 2026-08-28** (granskningen av PR #2044, fynd 3): sökvägen angavs
+> ursprungligen som `codex-rs/shell-command/src/command_safety/…`, vilket är
+> fel crate. Verifierat med `gh api repos/openai/codex/pulls/10258/files`:
+> PR:en rör `codex-rs/core/src/command_safety/is_dangerous_command.rs`,
+> `codex-rs/core/src/command_safety/is_safe_command.rs` och
+> `codex-rs/core/src/exec_policy.rs`. Citaten och slutsatsen nedan är
+> oförändrade och korrekta — funktionerna `git_branch_is_delete` och
+> `short_flag_group_contains` finns i `core`-crate:n med exakt den semantik
+> som beskrivs. Endast crate-namnet i sökvägen var fel.
 
 **PR-beskrivning, citat:** *"Hardens Git command safety to prevent approval
 bypasses for destructive or write-capable invocations (branch delete, risky
@@ -588,7 +598,7 @@ inte längre en öppen avvägning för detta pass att introducera.
 - Gitolite conf (del 2): <https://gitolite.com/gitolite/conf-2.html>
 - OpenAI Codex CLI, PR #10258: <https://github.com/openai/codex/pull/10258>
 - OpenAI Codex CLI, källkod (huvudgren, commit `18b9e7fd9e3f6670cc4f300338e44050b2c301e4`):
-  `codex-rs/shell-command/src/command_safety/is_dangerous_command.rs`,
+  `codex-rs/core/src/command_safety/is_dangerous_command.rs`,
   `codex-rs/core/src/exec_policy.rs`
 - OWASP OS Command Injection Defense Cheat Sheet: <https://cheatsheetseries.owasp.org/cheatsheets/OS_Command_Injection_Defense_Cheat_Sheet.html>
 - honnibal.dev, "Restricting Coding Agents' CLI GitHub Write Access": <https://honnibal.dev/blog/locking-down-gh>

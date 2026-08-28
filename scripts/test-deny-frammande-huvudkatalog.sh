@@ -823,6 +823,111 @@ forvanta SLAPP "oupplösligt mål + bara en UNDERKATALOG nämnd (worktree)" \
 forvanta SLAPP "obefintlig målkatalog under huvudkat. ⇒ ingen träff" \
     "${P_WT}" "${FRAMLING_SID}" "git -C ${P_HUVUD}/finns-inte-alls commit -m x"
 
+# ═══ SIDA 12 — GIT-DIR, MILJÖPREFIX OCH SUBSHELL (TASK-322 runda 2) ═══
+#
+#   VARFÖR DENNA SIDA FINNS: granskningen av PR #2044 fann en
+#   SÄKERHETSREGRESSION som runda 1 införde. Den nya reservvägens regel "en
+#   träff följd av / är en underkatalog och räknas inte" — avsedd för
+#   worktree-sökvägar — exkluderade lika blint huvudkatalogens EGEN
+#   `.git`-katalog. Följden: `git --git-dir=<HUVUD>/.git commit` SLÄPPTES
+#   från en främmande session med levande ägare, där origin/main NEKADE.
+#   Skarpt bevisat verkningsfullt: en `GIT_DIR=<HUVUD>/.git git reset --hard
+#   HEAD~1` från en främmande worktree flyttade faktiskt huvudkatalogens
+#   branch-ref bakåt.
+#
+#   Två KVARSTÅENDE hål av samma klass (pre-existing, alltså inte införda av
+#   runda 1 men heller inte stängda av den) stängs här samtidigt:
+#     - `GIT_DIR=… git …` — inline miljöprefix gjorde att segmentets första
+#       ord inte var `git`, så klassningen hoppade över det HELT.
+#     - `(cd <HUVUD>; git push)` — `;`-segmenteringen lämnade `push)` med ett
+#       hopklistrat `)`, som aldrig matchar `push` i skrivlistan.
+#
+#   Sidan är tvåsidig i FYRA riktningar, inte två: skrivningar mot
+#   huvudträdet nekas · samma former som LÄSNINGAR släpps · ÄGAREN själv
+#   släpps genom alla former · en WORKTREES egen git-dir släpps (den är inte
+#   huvudträdet). Utan de tre sista vore ett grönt facit förenligt med en
+#   hook som helt enkelt nekar allt som nämner en sökväg.
+echo
+echo "SIDA 12 — git-dir, miljöprefix och subshell (TASK-322 runda 2)"
+
+P_GITDIR="${P_COMMON}"
+P_WT_GITDIR="${P_COMMON}/worktrees/agent-x"
+
+# ── 12a. De sju elaka formerna: SKRIVNINGAR mot huvudträdet ⇒ NEKA ────────
+forvanta NEKA "git --git-dir=<H>/.git commit (REGRESSIONEN)" \
+    "${P_WT}" "${FRAMLING_SID}" "git --git-dir=${P_GITDIR} commit -m x"
+forvanta NEKA "git --git-dir <H>/.git commit (särskrivet värde)" \
+    "${P_WT}" "${FRAMLING_SID}" "git --git-dir ${P_GITDIR} commit -m x"
+forvanta NEKA "GIT_DIR=<H>/.git git reset --hard (miljöprefix)" \
+    "${P_WT}" "${FRAMLING_SID}" "GIT_DIR=${P_GITDIR} git reset --hard"
+forvanta NEKA "GIT_WORK_TREE=<H> git checkout -f" \
+    "${P_WT}" "${FRAMLING_SID}" "GIT_WORK_TREE=${P_HUVUD} git checkout -f"
+forvanta NEKA "GIT_DIR + GIT_WORK_TREE i kombination" \
+    "${P_WT}" "${FRAMLING_SID}" "GIT_DIR=${P_GITDIR} GIT_WORK_TREE=${P_HUVUD} git commit -m x"
+forvanta NEKA "env GIT_DIR=<H>/.git git commit (env-omslag)" \
+    "${P_WT}" "${FRAMLING_SID}" "env GIT_DIR=${P_GITDIR} git commit -m x"
+forvanta NEKA "(cd <H>; git push) — subshell med semikolon" \
+    "${P_WT}" "${FRAMLING_SID}" "(cd ${P_HUVUD}; git push)"
+forvanta NEKA "(cd <H> && git commit) — subshell med &&" \
+    "${P_WT}" "${FRAMLING_SID}" "(cd ${P_HUVUD} && git commit -m x)"
+forvanta NEKA "( git -C <H> branch -d x ) — subshell med mellanrum" \
+    "${P_WT}" "${FRAMLING_SID}" "( git -C ${P_HUVUD} branch -d x )"
+
+# ── 12b. Samma former som LÄSNINGAR ⇒ SLÄPP (AC #2 håller genom git-dir) ──
+forvanta SLAPP "git --git-dir=<H>/.git log" \
+    "${P_WT}" "${FRAMLING_SID}" "git --git-dir=${P_GITDIR} log --oneline"
+forvanta SLAPP "GIT_DIR=<H>/.git git status" \
+    "${P_WT}" "${FRAMLING_SID}" "GIT_DIR=${P_GITDIR} git status --short"
+forvanta SLAPP "git --git-dir=<H>/.git branch --merged" \
+    "${P_WT}" "${FRAMLING_SID}" "git --git-dir=${P_GITDIR} branch --merged"
+forvanta SLAPP "(cd <H>; git status) — subshell, ren läsning" \
+    "${P_WT}" "${FRAMLING_SID}" "(cd ${P_HUVUD}; git status --short)"
+
+# ── 12c. ÄGAREN själv släpps genom varje form ────────────────────────────
+forvanta SLAPP "ÄGAREN: --git-dir= commit" \
+    "${P_HUVUD}" "${AGARE_SID}" "git --git-dir=${P_GITDIR} commit -m x"
+forvanta SLAPP "ÄGAREN: GIT_DIR= reset --hard" \
+    "${P_HUVUD}" "${AGARE_SID}" "GIT_DIR=${P_GITDIR} git reset --hard"
+forvanta SLAPP "ÄGAREN: (cd <H>; git push)" \
+    "${P_HUVUD}" "${AGARE_SID}" "(cd ${P_HUVUD}; git push)"
+
+# ── 12d. En WORKTREES egen git-dir är INTE huvudträdet ⇒ SLÄPP ───────────
+#   <COMMON>/worktrees/<namn> bär worktreens egen HEAD och index. En
+#   skrivning dit rör inte huvudträdets refs, och ska därför inte fällas.
+forvanta SLAPP "--git-dir=<COMMON>/worktrees/agent-x commit" \
+    "${P_WT}" "${FRAMLING_SID}" "git --git-dir=${P_WT_GITDIR} commit -m x"
+forvanta SLAPP "GIT_DIR=<COMMON>/worktrees/agent-x reset" \
+    "${P_WT}" "${FRAMLING_SID}" "GIT_DIR=${P_WT_GITDIR} git reset --hard"
+forvanta SLAPP "(cd <egen worktree>; git commit)" \
+    "${P_WT}" "${FRAMLING_SID}" "(cd ${P_WT}; git commit -m x)"
+forvanta SLAPP "( git -C <egen worktree> branch -d x )" \
+    "${P_WT}" "${FRAMLING_SID}" "( git -C ${P_WT} branch -d x )"
+
+# ── 12e. Avslagstexten visar den GIT-UPPLÖSTA toppnivån ──────────────────
+#   `git -C ..` från en worktree UNDER huvudkatalogen landar via gits
+#   uppåtgående sökning på repo-roten. Att skriva ut mellansteget
+#   (`…/.claude/worktrees`, som inte ens är en repo-rot) förvirrar den som
+#   läser avslaget för att felsöka.
+ANTAL=$((ANTAL + 1))
+UT_12E="$(kor "${P_WT}" "${FRAMLING_SID}" "git -C .. branch -d x")"
+SKAL_12E="$(printf '%s' "${UT_12E}" | jq -r '.hookSpecificOutput.permissionDecisionReason // empty' 2>/dev/null)"
+if [[ "${SKAL_12E}" == *"${P_HUVUD}"* && "${SKAL_12E}" != *".claude/worktrees)"* ]]; then
+    printf '  ✅ %-58s [%s]\n' "relativt -C: texten visar repo-roten, ej mellansteget" "NEKA"
+else
+    printf '  ❌ %-58s\n' "relativt -C: texten visar repo-roten, ej mellansteget"
+    FEL=$((FEL + 1))
+fi
+
+# ── 12f. git-dir-träffens skäl namnger den delade git-katalogen ──────────
+ANTAL=$((ANTAL + 1))
+UT_12F="$(kor "${P_WT}" "${FRAMLING_SID}" "git --git-dir=${P_GITDIR} commit -m x")"
+SKAL_12F="$(printf '%s' "${UT_12F}" | jq -r '.hookSpecificOutput.permissionDecisionReason // empty' 2>/dev/null)"
+case "${SKAL_12F}" in
+    *"git-katalogen"*"${P_GITDIR}"*) OK=0 ;;
+    *) OK=1 ;;
+esac
+pastar "git-dir-träffens skäl namnger den delade git-katalogen" "${OK}"
+
 echo
 if [[ "${FEL}" -eq 0 ]]; then
     echo "✅ ${ANTAL}/${ANTAL} gröna."

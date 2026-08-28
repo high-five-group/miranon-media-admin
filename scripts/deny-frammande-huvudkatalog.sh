@@ -285,6 +285,16 @@
 #      variabler kan omvänt undgå upptäckt. Båda är avsiktliga: kostnaden för
 #      att stänga dem är en shell-parser i ett säkerhetslager, vilket är en
 #      större risk än de fel den skulle fånga.
+#
+#      LÄRDOM FRÅN RUNDA 2, värd att läsa innan nästa ändring här: när väg 2
+#      SKÄRPTES från "delsträng" till "hel sökväg" öppnades ett hål i samma
+#      andetag. Regeln "en träff följd av `/` är en underkatalog" stämde för
+#      worktree-sökvägar (det den byggdes för) men INTE för `<HUVUD>/.git`,
+#      som är huvudträdets eget delade tillstånd. En skärpning på
+#      FÄLL-sidan är alltid också en breddning på SLÄPP-sidan — pröva
+#      därför varje sådan ändring mot origin/mains beteende, inte bara mot
+#      den egna testsviten. Regressionen fångades av extern granskning, inte
+#      av de 110 testfall som var gröna när den infördes.
 #   3. Relativa sökvägar upplöses numera (`git -C ../..` normaliseras mot den
 #      spårade basen med `cd … && pwd -P`). Det som INTE spåras är
 #      katalogbyten som sker på annat sätt än ett segment vars första ord är
@@ -623,6 +633,14 @@ _malet_ar_huvudkatalogen() {
 # _kommandot_namner_huvudkatalogen — RESERVVÄGEN. Matchar huvudkatalogens
 # sökväg som HEL sökväg: en träff följd av `/` är en underkatalog (worktree)
 # och räknas inte. Se § MÅLUPPLÖSNING klass (c)/(d).
+#
+# ETT UNDANTAG FRÅN UNDERKATALOG-REGELN (TASK-322 runda 2): `<HUVUD>/.git`
+# är visserligen en underkatalog, men den ÄR huvudkatalogens eget delade
+# git-tillstånd — en sökväg dit pekar på huvudträdet, inte bort från det.
+# Att behandla den som "bara en underkatalog" var precis den lucka som
+# släppte igenom `--git-dir=<HUVUD>/.git`. Huvudvägen upplöser numera
+# git-dir explicit (_upplos_segment), men reservvägen måste hålla samma
+# gräns för de fall där sökvägen inte går att upplösa.
 _kommandot_namner_huvudkatalogen() {
     local form rest
     for form in "${HUVUD_FORMER[@]}"; do
@@ -637,7 +655,10 @@ _kommandot_namner_huvudkatalogen() {
         while [[ "${rest}" == *"${form}"* ]]; do
             rest="${rest#*"${form}"}"
             case "${rest}" in
-                /*) : ;;                 # underkatalog — inte huvudkatalogen
+                # `<HUVUD>/.git`, `<HUVUD>/.git/…` eller `<HUVUD>/.git` följt
+                # av whitespace/citat/slut — huvudträdets egen git-katalog.
+                /.git|/.git/*|/.git[[:space:]]*|/.git\"*|/.git\'*) return 0 ;;
+                /*) : ;;                 # annan underkatalog — inte huvudkat.
                 *) return 0 ;;           # slut, whitespace, citat, & … — träff
             esac
         done
@@ -676,7 +697,7 @@ _par_finns() {
 # -vd gammal` raderar en gren utan att någonsin bära ett ensamt `-d`. En
 # klassning som bara jämför hela token missar det. PRECEDENT, inte egen
 # uppfinning: OpenAI Codex CLI löser samma fall i
-# `codex-rs/shell-command/src/command_safety/is_dangerous_command.rs` med
+# `codex-rs/core/src/command_safety/is_dangerous_command.rs` med
 # `short_flag_group_contains(arg, 'd')`, tillagt i PR #10258 ("fix: unsafe
 # auto-approval of git commands") vars beskrivning uttryckligen listar
 # "grouped short-flag delete forms (e.g. stacked branch flags containing
@@ -747,14 +768,36 @@ _klassa_flaggstyrd() {
     return 1
 }
 
+# _ar_miljotilldelning <token> — 0 om token är en inline miljötilldelning
+# (`GIT_DIR=/x`). Se § INLINE MILJÖPREFIX.
+_ar_miljotilldelning() {
+    case "$1" in
+        [A-Za-z_]*=*) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
 # _prova_segment <segment> — 0 om segmentet är en git-SKRIVNING. Sätter
 # GIT_SUBKOMMANDO. Klassar nu på underkommando OCH flaggor (TASK-322).
 _prova_segment() {
     local seg="$1" sub="" wsub="" l
     # shellcheck disable=SC2086
     set -- ${seg}
+    # ═══ INLINE MILJÖPREFIX (TASK-322 runda 2, SÄKERHETSFIX) ═══
+    #   `GIT_DIR=<huvudkatalog>/.git git reset --hard` bär git-kommandot
+    #   BAKOM en miljötilldelning. Utan avskalningen är segmentets första ord
+    #   `GIT_DIR=…`, inte `git`, och HELA segmentet hoppades över — kommandot
+    #   nådde aldrig ens klassningen. Skarpt bevisat i granskningen av PR
+    #   #2044: en sådan `reset --hard` flyttade faktiskt huvudkatalogens
+    #   branch-ref bakåt från en främmande worktree.
+    while [[ $# -gt 0 ]] && _ar_miljotilldelning "${1}"; do shift; done
     # Täcker `git`, `/usr/bin/git` och `sudo git` (sudo hoppas över nedan).
     [[ "${1:-}" = "sudo" ]] && shift
+    # `env GIT_DIR=… git …` — samma väg in, ett omslag till.
+    if [[ "${1:-}" = "env" || "${1:-}" = */env ]]; then
+        shift
+        while [[ $# -gt 0 ]] && _ar_miljotilldelning "${1}"; do shift; done
+    fi
     case "${1:-}" in
         git|*/git) shift ;;
         *) return 1 ;;
@@ -812,15 +855,62 @@ _prova_segment() {
     return 1
 }
 
-# _mal_for_segment <bas> <segment> — katalogen git faktiskt skulle köra i.
-# Icke-noll = kunde inte avgöras (anroparen faller till textmönstret).
-# `-C` är KUMULATIV och relativ till föregående -C (git-scm.com/docs/git),
-# vilket loopen speglar genom att mata `kat` tillbaka in i _normalisera_kat.
-_mal_for_segment() {
-    local bas="$1" seg="$2" kat="$1" v
+# _upplos_segment <bas> <segment> — sätter globalerna:
+#   SEG_MAL    = arbetskatalogen git skulle köra i ("" om okänd)
+#   SEG_GITDIR = uttryckligen angiven git-katalog ("" om ingen angavs)
+# Returkod 0 = minst en av dem kunde avgöras; 1 = ingendera (textmönstret).
+#
+# `-C` är KUMULATIV och relativ till föregående `-C` (git-scm.com/docs/git:
+# "each subsequent non-absolute -C <path> is interpreted relative to the
+# preceding -C <path>"), vilket loopen speglar genom att mata `kat` tillbaka
+# in i _normalisera_kat.
+#
+# ═══ GIT-DIR UPPLÖSES NU, INTE ÖVERLÄMNAS (TASK-322 runda 2, SÄKERHETSFIX) ═
+#   Tidigare gav denna funktion upp på `--git-dir` med motiveringen att
+#   textmönstret skulle fånga det. Det påstod en mekanism som inte fanns:
+#   reservvägens "en träff följd av / är en underkatalog"-regel — avsedd för
+#   worktree-sökvägar — exkluderade lika blint huvudkatalogens EGEN
+#   `.git`-katalog. Följden var att `git --git-dir=<HUVUD>/.git commit`
+#   SLÄPPTES där origin/main nekade: en säkerhetsregression, skarpt bevisad
+#   i granskningen av PR #2044. En git-dir som pekar på huvudkatalogens
+#   delade `.git` NÅR huvudträdets refs oavsett arbetskatalog — därför
+#   upplöses den nu och jämförs direkt mot COMMON_DIR.
+_upplos_segment() {
+    local bas="$1" seg="$2" kat="$1" v gitdir=""
+    SEG_MAL=""
+    SEG_GITDIR=""
     # shellcheck disable=SC2086
     set -- ${seg}
+    # Inline miljötilldelningar bär GIT_DIR/GIT_WORK_TREE lika giltigt som
+    # flaggorna gör (git-scm.com/docs/git § ENVIRONMENT VARIABLES).
+    while [[ $# -gt 0 ]] && _ar_miljotilldelning "${1}"; do
+        case "$1" in
+            GIT_DIR=*|GIT_COMMON_DIR=*)
+                gitdir="$(_avcitera "${1#*=}")" ;;
+            GIT_WORK_TREE=*)
+                v="$(_avcitera "${1#*=}")"
+                [[ -n "${v}" ]] && kat="$(_normalisera_kat "${kat}" "${v}")"
+                [[ -n "${kat}" ]] || kat="${bas}" ;;
+            *) ;;
+        esac
+        shift
+    done
     [[ "${1:-}" = "sudo" ]] && shift
+    if [[ "${1:-}" = "env" || "${1:-}" = */env ]]; then
+        shift
+        while [[ $# -gt 0 ]] && _ar_miljotilldelning "${1}"; do
+            case "$1" in
+                GIT_DIR=*|GIT_COMMON_DIR=*)
+                    gitdir="$(_avcitera "${1#*=}")" ;;
+                GIT_WORK_TREE=*)
+                    v="$(_avcitera "${1#*=}")"
+                    [[ -n "${v}" ]] && kat="$(_normalisera_kat "${kat}" "${v}")"
+                    [[ -n "${kat}" ]] || kat="${bas}" ;;
+                *) ;;
+            esac
+            shift
+        done
+    fi
     case "${1:-}" in
         git|*/git) shift ;;
         *) return 1 ;;
@@ -829,30 +919,51 @@ _mal_for_segment() {
         case "$1" in
             -C|--work-tree)
                 v="$(_avcitera "${2:-}")"
-                [[ -n "${v}" ]] || return 1
-                kat="$(_normalisera_kat "${kat}" "${v}")" || return 1
-                shift 2 2>/dev/null || return 1 ;;
+                [[ -n "${v}" ]] || break
+                kat="$(_normalisera_kat "${kat}" "${v}")" || { kat=""; break; }
+                shift 2 2>/dev/null || break ;;
             --work-tree=*)
                 v="$(_avcitera "${1#--work-tree=}")"
-                kat="$(_normalisera_kat "${kat}" "${v}")" || return 1
+                kat="$(_normalisera_kat "${kat}" "${v}")" || { kat=""; break; }
                 shift ;;
-            # `--git-dir` pekar på .git, inte på arbetsträdet, och kan peka
-            # på huvudträdets .git från vilken katalog som helst. Vi avstår
-            # från att gissa och lämnar över till textmönstret.
-            --git-dir|--git-dir=*) return 1 ;;
-            -c|--namespace|--exec-path) shift 2 2>/dev/null || return 1 ;;
+            # En flagga slår motsvarande miljövariabel: "The --git-dir
+            # command-line option also sets this value" (git-scm.com/docs/git).
+            --git-dir)
+                gitdir="$(_avcitera "${2:-}")"
+                shift 2 2>/dev/null || break ;;
+            --git-dir=*)
+                gitdir="$(_avcitera "${1#--git-dir=}")"
+                shift ;;
+            -c|--namespace|--exec-path) shift 2 2>/dev/null || break ;;
             --*=*) shift ;;
             -*) shift ;;
             *) break ;;
         esac
     done
-    printf '%s' "${kat}"
+    if [[ -n "${gitdir}" ]]; then
+        # Normaliseras mot den `-C`-justerade basen, samma regel som git
+        # självt följer för path-flaggor.
+        SEG_GITDIR="$(_normalisera_kat "${kat:-${bas}}" "${gitdir}")" || SEG_GITDIR=""
+    fi
+    SEG_MAL="${kat}"
+    [[ -n "${SEG_MAL}" || -n "${SEG_GITDIR}" ]] || return 1
+    return 0
+}
+
+# _gitdir_ar_huvudkatalogens <gitdir> — 0 om den upplösta git-katalogen ÄR
+# huvudträdets delade `.git`. En WORKTREES git-dir (`<COMMON>/worktrees/<n>`)
+# är det INTE: skrivningar dit rör worktreens egen HEAD, inte huvudträdets.
+_gitdir_ar_huvudkatalogens() {
+    local g="$1"
+    [[ -n "${g}" ]] || return 1
+    [[ "${g}" = "${COMMON_DIR}" ]] && return 0
+    return 1
 }
 
 # klassa_kommando <cmd> — 0 om kommandot bär en git-SKRIVNING mot
 # huvudkatalogen. Sätter GIT_SUBKOMMANDO + TRAFFVAG.
 klassa_kommando() {
-    local cmd="$1" segment segmenterade bas mal rc forsta cd_mal
+    local cmd="$1" segment segmenterade bas mal rc forsta cd_mal toppniva
     bas="${PWD}"
     # Dela på shell-separatorer (; | & och radbrytning). `&&` och `||` blir
     # två newlines med en tom rad emellan, som hoppas över.
@@ -878,15 +989,31 @@ klassa_kommando() {
     while IFS= read -r segment; do
         [[ -n "${segment//[[:space:]]/}" ]] || continue
 
+        # SUBSHELL-PARENTESER (TASK-322 runda 2): segmenteringen delar på
+        # `;`/`&`, så `(cd <HUVUD>; git push)` lämnar `(cd <HUVUD>` och
+        # ` git push)`. Utan denna tvätt blev underkommandot `push)`, som
+        # aldrig matchar `push` i skrivlistan — ett verkligt skrivande
+        # git-anrop slapp igenom. Trimma whitespace, sedan omgivande
+        # parenteser. Riktningen är fail-closed: mer klassning, inte mindre.
+        segment="${segment#"${segment%%[![:space:]]*}"}"
+        segment="${segment%"${segment##*[![:space:]]}"}"
+        while [[ "${segment}" == \(* ]]; do
+            segment="${segment#\(}"
+            segment="${segment#"${segment%%[![:space:]]*}"}"
+        done
+        while [[ "${segment}" == *\) ]]; do
+            segment="${segment%\)}"
+            segment="${segment%"${segment##*[![:space:]]}"}"
+        done
+        [[ -n "${segment//[[:space:]]/}" ]] || continue
+
         # `cd`-SPÅRNING: ett segment vars första ord är `cd` flyttar basen
         # för EFTERFÖLJANDE segment. Det är vad som gör `cd <worktree> &&
-        # git checkout` läsbart som "målet är worktreen". Ledande `(` från en
-        # subshell strippas; misslyckas katalogbytet lämnas basen orörd
-        # (okänt mål ⇒ textmönstret får avgöra).
+        # git checkout` läsbart som "målet är worktreen". Misslyckas
+        # katalogbytet lämnas basen orörd (okänt mål ⇒ textmönstret avgör).
         # shellcheck disable=SC2086
         set -- ${segment}
         forsta="${1:-}"
-        forsta="${forsta#(}"
         if [[ "${forsta}" = "cd" && -n "${2:-}" ]]; then
             cd_mal="$(_avcitera "$2")"
             bas="$(_normalisera_kat "${bas}" "${cd_mal}")" || bas="${PWD}"
@@ -895,18 +1022,38 @@ klassa_kommando() {
 
         _prova_segment "${segment}" || continue
 
-        mal="$(_mal_for_segment "${bas}" "${segment}")"
-        if [[ -n "${mal}" ]]; then
-            _malet_ar_huvudkatalogen "${mal}"
-            rc=$?
-            if [[ "${rc}" -eq 0 ]]; then
-                TRAFFVAG="målet är huvudkatalogen (upplöst sökväg ${mal})"
-                set +f
-                return 0
+        if _upplos_segment "${bas}" "${segment}"; then
+            # En uttrycklig git-katalog avgör SAKEN FÖRST: den når
+            # huvudträdets refs oavsett vilken arbetskatalog som gäller.
+            if [[ -n "${SEG_GITDIR}" ]]; then
+                if _gitdir_ar_huvudkatalogens "${SEG_GITDIR}"; then
+                    TRAFFVAG="kommandot riktar git-katalogen mot huvudträdets delade ${SEG_GITDIR}"
+                    set +f
+                    return 0
+                fi
+                # En annan git-dir (t.ex. en worktrees egen) ⇒ inte vårt fall.
+                continue
             fi
-            # rc=1: målet är bevisligen en ANNAN katalog (worktree/annat
-            # repo) ⇒ detta segment angår oss inte. rc=2: okänt ⇒ reservväg.
-            [[ "${rc}" -eq 1 ]] && continue
+            mal="${SEG_MAL}"
+            if [[ -n "${mal}" ]]; then
+                _malet_ar_huvudkatalogen "${mal}"
+                rc=$?
+                if [[ "${rc}" -eq 0 ]]; then
+                    # Visa den git-UPPLÖSTA toppnivån, inte den literala
+                    # sökvägen: `git -C ..` från en worktree landar via gits
+                    # uppåtgående sökning på repo-roten, och att skriva ut
+                    # mellansteget (`…/.claude/worktrees`) förvirrar den som
+                    # läser avslaget för att felsöka.
+                    toppniva="$(git -C "${mal}" rev-parse --show-toplevel 2>/dev/null)"
+                    [[ -n "${toppniva}" ]] || toppniva="${mal}"
+                    TRAFFVAG="målet är huvudkatalogen (upplöst till ${toppniva})"
+                    set +f
+                    return 0
+                fi
+                # rc=1: målet är bevisligen en ANNAN katalog (worktree/annat
+                # repo) ⇒ segmentet angår oss inte. rc=2: okänt ⇒ reservväg.
+                [[ "${rc}" -eq 1 ]] && continue
+            fi
         fi
 
         if _kommandot_namner_huvudkatalogen; then
@@ -920,6 +1067,8 @@ klassa_kommando() {
 }
 
 GIT_SUBKOMMANDO=""
+SEG_MAL=""
+SEG_GITDIR=""
 TRAFFVAG=""
 klassa_kommando "${COMMAND}" || exit 0
 
