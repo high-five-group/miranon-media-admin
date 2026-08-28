@@ -5,7 +5,7 @@
 - Fas: Meta (agent-/orkestreringsinfrastruktur)
 
 > **Om beslutsvägen — bokförd öppet.** `S94` utredde frågan i sex ordnade steg
-> (`tasks/sessions/2026-08-02-session-94.md` Del 1–3): två research-pass mot
+> (`tasks/sessions/archive/2026-08/2026-08-02-session-94.md` Del 1–3): två research-pass mot
 > primärkällor (Anthropics förstapartslinje +
 > [`modell-tiering-anthropic-2026-08-02.md`](../research/modell-tiering-anthropic-2026-08-02.md);
 > frontier-branschpraxis +
@@ -281,7 +281,7 @@ och 4 lånar) ·
 [`modell-tiering-anthropic-2026-08-02.md`](../research/modell-tiering-anthropic-2026-08-02.md) ·
 [`modell-tiering-frontier-praxis-2026-08-02.md`](../research/modell-tiering-frontier-praxis-2026-08-02.md) ·
 [`uppdragsrevision-korning-3-2026-08-02.md`](../research/uppdragsrevision-korning-3-2026-08-02.md) ·
-`tasks/sessions/2026-08-02-session-94.md` Del 1–3.
+`tasks/sessions/archive/2026-08/2026-08-02-session-94.md` Del 1–3.
 
 ## Verkställande
 

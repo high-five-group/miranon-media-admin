@@ -138,6 +138,6 @@ OBOCKAT MED AVSIKT: kortet förkastat (wontfix, Marcus-mandat 2026-08-24) — su
 <!-- COMMENTS:BEGIN -->
 created: 2026-08-24 14:40
 ---
-WONTFIX 2026-08-24 (S112, Marcus-mandat): PRD:n superseded av S93-facit-familjen TASK-145 (Eventsidans konsolidering), TASK-146 (Bilage-fundamentet) och TASK-147 (Åtgärds-sidan) — grillad samsyn S93 (tasks/sessions/2026-08-02-session-93.md rad 967, 'K27-anden faller, öppet') river den skrivvägsmodell TASK-18 byggde mot S73-facitet. 18 av 19 barnkort redan Done (grep -H "^status:" backlog/tasks/task-18.*.md, 2026-08-24); enda kvarvarande barnet TASK-18.20 förkastas i samma pass med explicit citat ur TASK-145 ('Detta kort ersätter task-18.20', rad 138). Ingen ny kod skriven; PRD:t stängs som obsolet.
+WONTFIX 2026-08-24 (S112, Marcus-mandat): PRD:n superseded av S93-facit-familjen TASK-145 (Eventsidans konsolidering), TASK-146 (Bilage-fundamentet) och TASK-147 (Åtgärds-sidan) — grillad samsyn S93 (tasks/sessions/archive/2026-08/2026-08-02-session-93.md rad 967, 'K27-anden faller, öppet') river den skrivvägsmodell TASK-18 byggde mot S73-facitet. 18 av 19 barnkort redan Done (grep -H "^status:" backlog/tasks/task-18.*.md, 2026-08-24); enda kvarvarande barnet TASK-18.20 förkastas i samma pass med explicit citat ur TASK-145 ('Detta kort ersätter task-18.20', rad 138). Ingen ny kod skriven; PRD:t stängs som obsolet.
 ---
 <!-- COMMENTS:END -->

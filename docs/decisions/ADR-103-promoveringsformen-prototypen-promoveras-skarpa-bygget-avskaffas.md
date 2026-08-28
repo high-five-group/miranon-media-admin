@@ -1,7 +1,7 @@
 # ADR-103: Promoveringsformen — prototypen promoveras, det skarpa bygget avskaffas
 
 - Status: Accepted (grillad samsyn S93 sjunde resumen, 2026-08-08 — sex
-  kvitterade beslut, kanonisk trail: `tasks/sessions/2026-08-02-session-93.md`
+  kvitterade beslut, kanonisk trail: `tasks/sessions/archive/2026-08/2026-08-02-session-93.md`
   Del 12; Marcus polval-kvittensen verbatim: *"Jag är med dig på A"*)
 - Datum: 2026-08-08
 - Fas: Session 93 — processform (ingen byggfas-status-ändring)
@@ -133,5 +133,5 @@ havererade genom apparaten (150 min/skiva, 500–620k tokens).
   kartlägger (tidslinjen, R1–R6, R7–R9, FP-dekonstruktionen, RP1–RP3).
 - `ADR-102` (facit-principen) · `ADR-074` (adress-struktur/växlare) ·
   `ADR-044` (Storybook-avvisandet med ompröv-trigger).
-- `tasks/sessions/2026-08-02-session-93.md` Del 12 (grillnings-trail med
+- `tasks/sessions/archive/2026-08/2026-08-02-session-93.md` Del 12 (grillnings-trail med
   samtliga sex kvittenser).

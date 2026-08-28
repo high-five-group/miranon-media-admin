@@ -2,7 +2,7 @@
 
 - Status: Accepted (grillad samsyn S93 åttonde resumen, 2026-08-08 — fem
   kvitterade beslut + helhetskvittens, kanonisk trail:
-  `tasks/sessions/2026-08-02-session-93.md` Del 14; Marcus slutkvittens
+  `tasks/sessions/archive/2026-08/2026-08-02-session-93.md` Del 14; Marcus slutkvittens
   verbatim: *"Jag kvitterar helheten, kör!"*)
 - Datum: 2026-08-08
 - Fas: Session 93 — processform (ingen byggfas-status-ändring)

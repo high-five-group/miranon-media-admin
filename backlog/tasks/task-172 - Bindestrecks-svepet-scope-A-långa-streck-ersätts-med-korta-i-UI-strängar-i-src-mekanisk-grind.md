@@ -36,7 +36,7 @@ AC #1 DELVIS, ej avbockad. Traffyta (AST, @babel/parser): 93 rentat forekomster.
 
 UPPTACKT: datumSpann.ts rad 4-8 dokumenterar ett aldre Marcus-direktiv (tatt tankstreck for datumspann, svensk skrivregel) som KAN sta i konflikt mot task-172s blankettinstruktion. Filen ligger i REST och rordes ej - konflikten olost, flaggad for nasta iteration.
 
-Obesläktat, ej fixat (scope creep): verify:ci-parity:fast visade tva pre-existing roda poster - biome.json $schema 2.5.4 vs CLI 2.5.5, och markdownlint MD004 i tasks/sessions/2026-08-02-session-93.md:2259. Ingen fil rord av detta kort.
+Obesläktat, ej fixat (scope creep): verify:ci-parity:fast visade tva pre-existing roda poster - biome.json $schema 2.5.4 vs CLI 2.5.5, och markdownlint MD004 i tasks/sessions/archive/2026-08/2026-08-02-session-93.md:2259. Ingen fil rord av detta kort.
 
 CI-FYND (2026-08-09, samma dag, PR #1055 run 31316595089): Acceptance-hermetisk fallde tests/acceptance/anmalan-detalj.acceptance.test.ts rad 371 - testet asserterar datumspannet med en-dash (10 augusti 2026 EN-DASH 12 augusti 2026) i AnmalanDetail.tsx-s Avser-block (Datum-raden). Forsta passets sweep konverterade den raden till kort bindestreck utan att kanna igen den som en datumspann-yta (klassad bara som eventsida-lokal narrativ, inte som samma typografiklass som datumSpann.ts). Detta ar EXAKT den datumspann-konflikt jag sjalv flaggade som olost i forsta rapporten - nu SKARPT bekraftad av CI, inte bara en teoretisk risk.
 

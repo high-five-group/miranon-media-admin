@@ -11,7 +11,7 @@ status: stable
 > [`T95`](../../tasks/threads/README.md), beställt i
 > Session 95 grillningens beslut 9 (bilaga
 > [`a4-riktig-webbapp-inbjudan.md`](../../tasks/sessions/bilagor/s87-spaning/a4-riktig-webbapp-inbjudan.md)
-> § MARCUS-BESLUT + `tasks/sessions/2026-08-02-session-95.md` Del 1 + Del 2).
+> § MARCUS-BESLUT + `tasks/sessions/archive/2026-08/2026-08-02-session-95.md` Del 1 + Del 2).
 > Marcus-beslut B2 (grillad, 2026-08-02): PWA:n maxas NU oavsett detta pass
 > resultat — passet avgör bara om en desktop-wrapper DÄRUTÖVER är motiverad,
 > och wrapper-beslutet tas därefter som egen ADR. Del 2 ligger vid detta
@@ -389,4 +389,4 @@ beslutet.
 - [`vite.config.ts` rad 40–71](../../vite.config.ts) — nuvarande VitePWA-manifest
 - [`docs/decisions/ADR-047-pwa-arkitektur-fas-5.md`](../decisions/ADR-047-pwa-arkitektur-fas-5.md) — PWA-grundens arkitekturbeslut
 - [`tasks/sessions/bilagor/s87-spaning/a4-riktig-webbapp-inbjudan.md`](../../tasks/sessions/bilagor/s87-spaning/a4-riktig-webbapp-inbjudan.md) — S87-spaningen som satte upp T95
-- `tasks/sessions/2026-08-02-session-95.md` Del 1 (main) + Del 2 (gren `docs/s95-del2-samsyn`, commit `6ff0528b`) — grillningens beslut 9 + enhetsprofilen
+- `tasks/sessions/archive/2026-08/2026-08-02-session-95.md` Del 1 (main) + Del 2 (gren `docs/s95-del2-samsyn`, commit `6ff0528b`) — grillningens beslut 9 + enhetsprofilen

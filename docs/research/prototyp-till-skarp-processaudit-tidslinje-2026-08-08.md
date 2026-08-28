@@ -19,7 +19,7 @@ status: draft
 
 **Fullständigt lästa primärkällor:**
 
-- `tasks/sessions/2026-08-02-session-93.md` — samtliga 1 777 rader, Del 1–11
+- `tasks/sessions/archive/2026-08/2026-08-02-session-93.md` — samtliga 1 777 rader, Del 1–11
   plus tillhörande paushistorik-block.
 - `docs/decisions/ADR-102-prototypen-ar-facit-skarpa-ska-vara-identisk.md` —
   helt, inklusive R1–R9 och B1–B5.
@@ -802,7 +802,7 @@ UPPENBARLIGEN funkar det inte... Och DU ska reda ut VARFÖR, och det är
 NU!!!!!!!!!!!!!!!!!!!!!!!!!"* — följt tre minuter senare av *"FIXA snälla
 Claude!!!! Ordentligt så detta VERKLIGEN funkar som de ska sen!!!!!!"*
 *Källa:* `~/.claude/projects/…s93-agarlapp-regelbarare/89a5c755-e006-4c0b-a520-77c87400460a.jsonl`.
-Sökt i `tasks/sessions/2026-08-02-session-93.md` i sin helhet: ordet
+Sökt i `tasks/sessions/archive/2026-08/2026-08-02-session-93.md` i sin helhet: ordet
 "ägarlapp" förekommer nio gånger, samtliga i den rutinmässiga
 "Huvudkatalogens ägarlapp tillhör session X"-formen — **noll referenser**
 till denna incident, denna worktree, eller detta citat.
@@ -835,7 +835,7 @@ ordagrant, inte en skrivning härifrån):
 
 <!-- vale Vale.Repetition = YES -->
 *Källa:* `~/.claude/projects/…/c91a05a2-ea83-41d8-a38c-1e800b227992.jsonl`,
-2026-08-07T18:05:42.400Z. Ej nämnt i `tasks/sessions/2026-08-02-session-93.md`
+2026-08-07T18:05:42.400Z. Ej nämnt i `tasks/sessions/archive/2026-08/2026-08-02-session-93.md`
 Del 11 — den skrivna narrativen går direkt från felskärmdumpen (F43) till
 Marcus dom och ADR-mintningen, utan denna mellanliggande, andra felkälla.
 *Konsekvens:* okänt exakt vad som orsakade felpåståendet — men den mest
@@ -1131,7 +1131,7 @@ delar dess grundform: en regel skriven i en fil som en viss inträdesväg
 
 ## Källförteckning
 
-- `tasks/sessions/2026-08-02-session-93.md` (Del 1–11 + paushistorik, 1 777
+- `tasks/sessions/archive/2026-08/2026-08-02-session-93.md` (Del 1–11 + paushistorik, 1 777
   rader)
 - `docs/decisions/ADR-102-prototypen-ar-facit-skarpa-ska-vara-identisk.md`
 - `docs/research/eventsidan-prototyp-mot-skarpa-facitkarta-2026-08-07.md`

@@ -617,7 +617,7 @@ function MarkeringsBatchBar({
 
 /**
  * [RIVEN, TASK-145.2] `isoDatum`/`AutoKryss` (auto-utskicks-krysset, K44) bodde
- * här. Grillad samsyn beslut 2 (S93 Del 3, `tasks/sessions/2026-08-02-session-93.md`
+ * här. Grillad samsyn beslut 2 (S93 Del 3, `tasks/sessions/archive/2026-08/2026-08-02-session-93.md`
  * rad 158–162) namnger auto-kryssen som EN av exakt tre rivningar ur
  * summeringsblocket (med påminnelse-raden och "Anmälningsbekräftelse skickad"-
  * raden) — samma rivning `?variant=a`s konvergens-pass redan genomförde
