@@ -477,6 +477,49 @@ Numrering efter S109: ADR 122 · kort 284 (om `#1674` landat) · L512 + 55
 fragment · T158 · f52 · session 111. Full narrativ: sessionsdok S109 Del 1–4 +
 PAUSLÄGE.
 
+**Session 108 ✅ K-SISTA KLAR (2026-08-28, väntar Marcus coverage-kvittens →
+`lifecycle: closed`) — HELA BILAGESPÅRET I PROD: NIO PR:ER LANDADE, 45 EF
+DEPLOYADE 04:06–04:17Z, DOKUMENT/BILAGOR/KVITTON LIVE INFÖR LOTTAS SÖNDAG.**
+Marcus mål för resumen — *"komma hela vägen till session-end"* — nått för allt
+som är agent-görbart. **Landat på `main`:** `#2030` · `#2031` (`309.29`,
+s102-pensioneringen) · `#2034` (`301`, docraptor-sjalvbarande) · `#2037`
+(stängningssvansen, nio kort — inte tre som handoffen sade) · `#2038` (`309.30`,
+Plats härledd ur Ort) · `#2040` (`309.26`, popup-bevis i äkta Chrome) · `#2039`
+(lessons `L533`–`L569`) · `#2036` (fyra kort mintade) · `#2032` (`309.31`,
+`check-facit` varnar; `ADR-102` § Updates) · `#2053` (`333`, testdriften) ·
+`#2054` (`309.34` skiva i, `b370e6cb` 04:42:59Z) — elva landningar totalt;
+`#2055` kvar som draft (rundtaket nått, `review-loop-beslut` exit 20 — runda 2:s
+fix införde ett nytt error, felmeddelandet nollställdes inte vid platsbyte; nu
+rättat och pushat som `0fcfc4c8` men OGRANSKAT — runda 3 kräver Marcus GO) och
+`#2060` (stängningsbatch 2) MERGED `372050bd` 05:23:48Z.
+**PROD tog tre försök, och de TVÅ första gick
+båda via `!`-kanalen med OLIKA utfall vid tvåminuterstaket:** (1) harnesset
+flyttade körningen till BAKGRUNDEN (*"moved to the background"*), den fortsatte
+och föll på Cloudflare 520 vid funktion 26/45 — skriptet avbröt korrekt och
+återlänkade staging själv; (2) omkörningen DÖDADES i stället (*"Command timed
+out after 2m 0s"*) vid ~5/45 (`get-event-formats`), EXIT-trapen kördes aldrig
+och katalogen stod sticky länkad mot PROD i ~10 min; (3) eget terminalfönster,
+45 EF `UPDATED_AT` 04:06–04:17Z. Poängen: kanalens beteende vid taket är INTE
+förutsägbart. `CLAUDE.md`
+§ Prod-EF-deploy nu skärpt PER LÄGE (`--kontrollera` via `!` OK, `--deploya`
+aldrig) med rivningen bokförd — granskaren på `#2060` fällde den första,
+motsägande formuleringen; preflight-fyndet är `TASK-337`.
+**Hub:** `marcus-system` `73803d74` (`K108.1`–`K108.30`). **Fynd:** `TASK-333`
+`334` (S112:s) `335` + `TASK-337` (fas4-preflighten, i `#2060`) + `TASK-309.37`
+(ärvd race, i `#2055`); `git stash` delas mellan worktrees (S112 mintar).
+**MARCUS SKULD, åtta punkter:** prod-röktest `309.11` ·
+facit-stämpling (s108-generering, s108-dokumentytan, s106/s111 med `--ersatt`) ·
+DocRaptor-rotation i BÅDA miljöer · `325` AC #2 · `INVITE_REDIRECT_URL` ·
+`DOCRAPTOR_API_KEY` som GitHub-secret · GO/STOPP för `#2055`:s runda 3 ·
+coverage-kvittens. **CI-hygien:** post-merge GRÖN på `b370e6cb`
+(run `33142610595`), S108:s fyra larm-issues stängda, worktree-städningen körd
+(8 borttagna, 13 kvar) — enda öppna issue i repot är `#1482` (`TASK-254`). **Numrering vid K-sista (disk-mätt mot `ecc324b1`):** ADR 128 ·
+kort 337/`309.37` mintade men ej landade → nästa 338/`309.38` (336 togs av S112) ·
+`L570` · 85 fragment · `T176` · session 113. **NÄSTA (S113): `309.34` skiva (ii) ·
+`309.35` · `309.33` (d) · `#2055` runda 3 eller omtag · `TASK-309.37` · hela
+lessons-katalogen = egen planerad session per Marcus beslut A.** Full narrativ:
+sessionsdok S108 Del 29 + § K-SISTA.
+
 **Session 108 ▶️ ÅTERUPPTAGEN (2026-08-28, `lifecycle: active`, trettonde
 resumen; pausad tolv gånger, historik) — MÅLET ÄR SESSION-END: LOTTA ÄR I
 APPEN PÅ SÖNDAG, DOKUMENT/BILAGOR/KVITTON SKA FUNGERA HELT.** Marcus order:

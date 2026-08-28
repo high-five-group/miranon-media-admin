@@ -272,8 +272,9 @@ bara CI ser kan en lokal serie vara fel instrument helt och hållet.
 
 ### Prod-EF-deploy körs via SKRIPTET — handkörning har fällt tre gånger
 
-Ska Edge Functions till prod (fas 4-klassen) kör Marcus, i sin egen terminal
-eller via `!`-prefixet:
+Ska Edge Functions till prod (fas 4-klassen) kör Marcus i sin egen terminal —
+`--kontrollera` (sekunder) får gå via `!`-prefixet, `--deploya` (45 EF ≈ 10 min)
+får det INTE:
 
 ```bash
 bash scripts/fas4-prod-deploy.sh --kontrollera <prod-ref>   # läser prod-läget, ändrar inget
@@ -299,6 +300,25 @@ bär den också och **fälls**. Prövat skarpt — ett agent-anrop med prod-refe
 avvisades av låset med korrekt skäl. Testsviten
 (`scripts/test-fas4-prod-deploy.sh`, CI-wirad) vaktar invarianten i båda
 riktningar.
+
+**`--deploya` körs i ett EGET terminalfönster — aldrig via `!`-prefixet.**
+`!`-kanalen har ett 2-minuterstak, och dess beteende när taket träffas är
+**inte förutsägbart**: körningen kan flyttas till bakgrunden och fortsätta,
+eller dödas på fläcken. Dödas den körs EXIT-trapen inte, och
+`supabase/.temp/project-ref` står kvar på PROD-refen — exakt det sticky-läge
+skriptet finns för att förhindra. Mätt 2026-08-28 (S108 Del 29): ett
+`--deploya` via `!` dog vid funktion 5/45 och lämnade katalogen länkad mot
+prod i ~10 min tills orkestreraren återlänkade staging för hand; ett tidigare
+försök hade i stället flyttats till bakgrunden av harnesset (*"moved to the
+background"*), fortsatt köra och fallit på en Cloudflare 520 vid 26/45 — där
+avbröt skriptet korrekt och återlänkade staging själv. Ett skript vars
+säkerhetsmekanism ÄR en EXIT-trap hör alltså inte hemma i en kanal som ibland
+skickar SIGKILL. Raden ovan sade tidigare att båda kanalerna var likvärdiga
+för hela skriptet — det håller för `--kontrollera`, aldrig för `--deploya`;
+`!`-kanalens hook-passage
+(`tasks/lessons.d/bang-prefixet-passerar-pretooluse-hookar-matt-tva-ganger.md`)
+är oförändrad och skälet att kanalen finns kvar för de korta anropen.
+Preflight-vakt mot sticky prod-länk: `TASK-337`.
 
 **Läs `UPDATED_AT`, inte `VERSION`, i verifieringen.** En deploy bumpar
 `VERSION` +1 på ALLA funktioner medan `UPDATED_AT` står stilla för dem som inte
