@@ -120,9 +120,8 @@ inte har med den prövade ändringen att göra.
 
 `animations: 'disabled'` står därför i mallen ovan. Ta inte bort det.
 
-> Fällorna är skördade som lärdomar i `tasks/lessons.d/`
-> (`en-fullpage-bild-ljuger-om-varje-viewport-fast-element.md` respektive
-> `ett-facit-taget-med-animationer-pa-fryser-ett-overgangstillstand.md`).
+> Fällorna är skördade som lärdomar i `tasks/lessons/vol-07.md`
+> (`L537` respektive `L543`).
 
 ## Auth-state
 

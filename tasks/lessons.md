@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-23
+updated: 2026-08-28
 review_by: 2026-11-15
 status: stable
 ---
@@ -35,6 +35,14 @@ status: stable
 > enskilda lärdomar on-demand (`grep -n "^### L3" tasks/lessons/` → `Read` med
 > `offset`), eller läs de senaste via `offset` mot den aktiva volymens slut.
 >
+> **Senaste konsolidering:** `L533`–`L569` (Session 108:s K-sista,
+> 2026-08-28) — 37 fragment ur `tasks/lessons.d/`, varav **30** bär
+> `[UNIVERSAL]`. Ordning: fragmentets tillkomstdatum (`git log
+> --diff-filter=A`), sedan filnamn. Kropparna är ordagranna; endast
+> markörformen normaliserades (sex av 37) och tre inlänkar pekades om.
+> Hub-lyftet av de 30 görs i samma pass, på hub-grenen
+> `docs/s108-hub-lyft-lessons` — hub-commit bokförs här när den landat.
+>
 > **Senaste lyft till hubben:** `L522`–`L532`:s `[UNIVERSAL]`-poster
 > (Session 111, 11 poster) → hub `K111.1`–`K111.11` (hub-commit
 > `050fa9e1`, spoke-commit `2a6b9d8f`). Hela spannet är lyft — samtliga
@@ -64,9 +72,20 @@ status: stable
 > grep allena — räkna posterna och läs varje markör. Skillen bor i hubben
 > och är inte ändrad härifrån; rapporterat till orkestreraren.
 >
-> **Olyft rest utanför S111:** `tasks/lessons.d/` bär 65 nummerlösa
-> fragment, varav 34 med `[UNIVERSAL]` (mätt 2026-08-23 efter S111:s
-> konsolidering), från S102 och framåt plus några äldre utan sessionstagg.
+> **Ommätt 2026-08-24** — `docs/research/markorformernas-rematning-2026-08-24.md`
+> fann **tio** former på disk, inte åtta. **S108:s K-sista (2026-08-28)
+> fann ytterligare en variant:** kvalificeraren INUTI klammern
+> (`**Generalisering [UNIVERSAL för alla spokes med samma X]:**` — 1
+> instans, nu `L565`), skild från form åtta genom att klammern aldrig
+> sluts efter `UNIVERSAL`. Skillens sex mönster missar den; en lös
+> `\[UNIVERSAL`-sökning fångar den. Posten fick vid konsolideringen även
+> en form-D-rad så den är greppbar med husets vanliga mönster — kroppen
+> lämnades ordagrant, inklusive den kvalificerade markören.
+>
+> **Olyft rest:** `tasks/lessons.d/` bär 83 nummerlösa fragment, varav
+> 47 med `[UNIVERSAL]` (mätt 2026-08-28 efter S108:s K-sista; talen stod
+> tidigare som 65/34, mätta 2026-08-23 efter S111:s konsolidering), från
+> S102 och framåt plus några äldre utan sessionstagg.
 > Deras konsolidering och hub-lyft är egna moment per session, inte denna
 > rads ansvar. **Fyra av dem prövades och FÖRKASTADES uttryckligen som
 > nya poster i S111:s skörd** — de bär redan sin lärdom i en numrerad post
@@ -89,7 +108,7 @@ status: stable
 | [vol-04](lessons/vol-04.md) | 2026-07-08 → 2026-07-26 | Session 59:s H2-block, därefter flat L-numrering utan ny H2 per session (källans konventionsskifte — se not) | `L252` → `L359` | Stängd |
 | [vol-05](lessons/vol-05.md) | 2026-07-27 → 2026-07-30 | Session 91:s huvuddel (CI-paritet-fyndet, upphävande-räckvidd, m.fl.), flat L-numrering | `L360` → `L421` | Stängd |
 | [vol-06](lessons/vol-06.md) | 2026-07-31 → 2026-08-22 | Session 91:s fortsättning → Session 109:s skörd, flat L-numrering. Stängd 2026-08-23 vid **3 436 rader** (över rotationströskeln 3 000) när S111:s skörd skulle landa — rotationen utfördes då enligt regeln nedan | `L422` → `L521` | Stängd |
-| [vol-07](lessons/vol-07.md) | 2026-08-23 → | **Aktiv volym** — alla nya lärdomar landar här, flat L-numrering. Föddes TOM vid rotationen (till skillnad från vol-02–vol-06, som föddes ur engångs-delningen `TASK-161.9`) och fylls framåt ur `tasks/lessons.d/` | `L522` → `L532` | **Aktiv** |
+| [vol-07](lessons/vol-07.md) | 2026-08-23 → | **Aktiv volym** — alla nya lärdomar landar här, flat L-numrering. Föddes TOM vid rotationen (till skillnad från vol-02–vol-06, som föddes ur engångs-delningen `TASK-161.9`) och fylls framåt ur `tasks/lessons.d/` | `L522` → `L569` | **Aktiv** |
 
 **Not om konventionsskiftet (vol-04–vol-07):** källfilen slutade skriva ett
 nytt `## <datum> — Session N (…)`-block per session efter Session 59
