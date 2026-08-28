@@ -491,7 +491,7 @@ Plats härledd ur Ort) · `#2040` (`309.26`, popup-bevis i äkta Chrome) · `#20
 `#2055` kvar som draft (rundtaket nått, `review-loop-beslut` exit 20 — runda 2:s
 fix införde ett nytt error, felmeddelandet nollställdes inte vid platsbyte; nu
 rättat och pushat som `0fcfc4c8` men OGRANSKAT — runda 3 kräver Marcus GO) och
-`#2060` (stängningsbatch 2, `445ee651`) under granskning.
+`#2060` (stängningsbatch 2) MERGED `372050bd` 05:23:48Z.
 **PROD tog tre försök, och de TVÅ första gick
 båda via `!`-kanalen med OLIKA utfall vid tvåminuterstaket:** (1) harnesset
 flyttade körningen till BAKGRUNDEN (*"moved to the background"*), den fortsatte
