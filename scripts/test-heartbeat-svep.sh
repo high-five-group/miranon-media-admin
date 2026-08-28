@@ -723,6 +723,65 @@ else
     printf '  ✓ T36c  --ingen-fetch skickas INTE (färsk bas, medvetet val)\n'; PASSED=$((PASSED+1))
 fi
 
+# ============================================================
+# T37/T38 — OBSERVABILITET: fel tystas ALDRIG av --quiet (TASK-323 runda 2,
+# granskningsfynd 2 och 4).
+#
+# Varför detta är en egen klass, skild från T35: en persistent monitor körs
+# rimligen MED --quiet (det är hela poängen med rutin/larm-distinktionen).
+# Skickas ett FEL på say()-kanalen blir en kontinuerligt trasig städning helt
+# osynlig — ingen stdout, bara en loggfil ingen läser om man inte redan vet
+# att den finns. Samma observabilitets-felklass som TASK-135 en gång fixade
+# för kallstart-raden. Därför går fel via alltid_pa(), som är --quiet-immun
+# men INTE bär någon exit-bit.
+#
+# TVÅSIDIGHETEN sitter i paret T35 ↔ T37: SUCCESS-raden dämpas (T35b bevisar
+# helt tom stdout), FAILURE-raden syns (T37). Vore båda på samma kanal kunde
+# bara en av dem hålla.
+echo ""
+
+reset_scen
+EXPECT_OUT="gren-städningen gav exit 1"
+run_case "T37 städningen fallerar UNDER --quiet → felraden syns ändå (ALLTID-PÅ)" 0 - \
+    env HEARTBEAT_STADA_BIN="${STADA_STUB}" T323_EXIT=1 \
+    bash ./scripts/heartbeat-svep.sh --once --quiet
+if grep -qF "LARM (bitmask" "${TEST_DIR}/out.txt"; then
+    printf '  ✗ T37b  felraden drog med sig ett LARM — städningen ska aldrig bära en exit-bit\n'; FAILED=$((FAILED+1))
+else
+    printf '  ✓ T37b  ingen LARM-rad — synlig utan att vara ett larm\n'; PASSED=$((PASSED+1))
+fi
+
+# T38 — stämpel-skrivningen fallerar. Mockas genom att göra .tmp-sökvägen till
+# en KATALOG: `printf > <katalog>` fallerar ("Is a directory") utan att röra
+# något annat state, så main-SHA-vägen är opåverkad och felet isoleras till
+# exakt den skrivning fyndet gäller.
+reset_scen
+mkdir -p "${STATE_DIR}/last-stada-grenar.tmp"
+EXPECT_OUT="kunde inte stämpla"
+run_case "T38 stämpel-skrivfel UNDER --quiet → synlig rad, inte tyst || true" 0 - \
+    env HEARTBEAT_STADA_BIN="${STADA_STUB}" T323_RADERADE=2 \
+    bash ./scripts/heartbeat-svep.sh --once --quiet
+if grep -qF "LARM (bitmask" "${TEST_DIR}/out.txt"; then
+    printf '  ✗ T38b  stämpel-felet drog med sig ett LARM — får inte påverka verdiktet\n'; FAILED=$((FAILED+1))
+else
+    printf '  ✓ T38b  ingen LARM-rad — stämpel-felet är synligt men bär ingen exit-bit\n'; PASSED=$((PASSED+1))
+fi
+rm -rf "${STATE_DIR}/last-stada-grenar.tmp"
+
+# T39 — den lyckade stämplingen lämnar INGEN .tmp-fil kvar (atomiciteten får
+# inte läcka skräp in i STATE_DIR vid varje svep).
+reset_scen
+run_case "T39 lyckad stämpling → atomär mv, ingen kvarlämnad .tmp" 0 - \
+    env HEARTBEAT_STADA_BIN="${STADA_STUB}" T323_RADERADE=1 \
+    bash ./scripts/heartbeat-svep.sh --once
+if [[ -e "${STATE_DIR}/last-stada-grenar.tmp" ]]; then
+    printf '  ✗ T39b  .tmp-filen ligger kvar efter en lyckad körning\n'; FAILED=$((FAILED+1))
+elif [[ -f "${STATE_DIR}/last-stada-grenar" ]]; then
+    printf '  ✓ T39b  stämpeln på plats, ingen .tmp kvar\n'; PASSED=$((PASSED+1))
+else
+    printf '  ✗ T39b  stämpeln saknas helt\n'; FAILED=$((FAILED+1))
+fi
+
 printf '\ntest-heartbeat-svep: %s passerade, %s failade\n' "${PASSED}" "${FAILED}"
 [[ "${FAILED}" -eq 0 ]] || exit 1
 exit 0

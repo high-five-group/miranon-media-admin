@@ -111,6 +111,27 @@
 #     0 eller osatt ⇒ AV — en spoke-kopia utan värdet städar ingenting.
 #     Städningen bär INGEN exit-bit: den är UNDERHÅLL, inte övervakning, och
 #     kan aldrig göra ett svep till ett larm ens när den själv fallerar.
+#     Fel (städningen fallerar, stämpeln går inte att skriva) skrivs på
+#     ALLTID-PÅ-kanalen och syns även under --quiet; bara den LYCKADE
+#     rutin-raden dämpas.
+#
+#     KÄND BEGRÄNSNING — glesnings-klockan är GLOBAL PER MASKIN, inte per
+#     session. Stämpeln bor i STATE_DIR (default /tmp/mm-heartbeat-svep),
+#     som två samtidiga orkestrerar-sessioner utan egen HEARTBEAT_STATE_DIR
+#     DELAR. Följden: båda kan läsa samma `senast` innan endera hinner
+#     skriva den nya, och båda trigga städningen nära samtidigt — så
+#     intervallet är ett golv per MASKIN, inte en garanti per session.
+#     Ofarligt: stada-grenar.sh:s fyra skydd gäller oförändrat i varje
+#     körning, och en `git branch -d` som förlorar kapplöpningen redovisas
+#     graciöst som SKONAS ("vägrade"), aldrig som ett fel. Vad som drabbas
+#     är kostnadsantagandet (~1 % av cykeln), inte datan.
+#     Detta är samma delade-state-klass som F10 i
+#     docs/research/prototyp-till-skarp-processaudit-tidslinje-2026-08-08.md
+#     (öppet, ej fixat — gäller redan last-main-sha). F10:s föreslagna fix
+#     har TVÅ halvor: atomär skrivning + per-session-nyckling. Den atomära
+#     halvan är byggd här (se stämplingen i stada_grenar_om_dags());
+#     nyckling per session rör hela svepets state-modell och ligger utanför
+#     TASK-323.
 #
 # TREVÄGS-SNAPSHOT PER SVEP
 #   1. main-SHA — `gh api repos/<repo>/commits/<branch>`. Avancerar den
@@ -272,6 +293,24 @@ say() { [[ "${QUIET}" -eq 1 ]] || printf '%s\n' "$1"; }
 # poängen med svepet (L443: ett tillstånd som håller i ska synas varje gång).
 alarm() { printf '%s\n' "$1"; }
 
+# ALLTID-PÅ-kanalen (TASK-323): samma --quiet-immunitet som alarm(), men
+# semantiskt en ANNAN klass — se § ANVÄNDNING, som skiljer LARM (bär en
+# exit-bit, kräver åtgärd) från ALLTID-PÅ (ingen exit-bit, men får aldrig
+# tystas). Behövs för rader som MÅSTE synas utan att påstå att något är fel:
+# en fallerande gren-städning är ett observabilitets-krav, inte ett larm om
+# landnings-läget.
+#
+# Varför en egen funktion och inte bara alarm(): utan den kan en läsare inte
+# se på anropsstället vilken klass raden tillhör, och nästa person som söker
+# "vad larmar det här skriptet om?" hade räknat in städningen. Distinktionen
+# fanns redan i prosan (§ ANVÄNDNING, TASK-135) men saknade en egen kanal.
+#
+# ÖPPET, MEDVETET EJ ÄNDRAT HÄR: de befintliga ALLTID-PÅ-raderna
+# (main-avancemang, main-SHA-baslinje) skriver fortfarande via alarm().
+# De är korrekta i beteende — bara namnet ljuger — och att migrera dem
+# ligger utanför TASK-323:s scope.
+alltid_pa() { printf '%s\n' "$1"; }
+
 # is_exempt_author <login> — sant om <login> finns i HEARTBEAT_EXEMPT_AUTHORS
 # (.heartbeat-svep-policy.conf § "PR-författare vars öppna PR:ar ALDRIG
 # larmar som ARMERINGS-KANDIDAT"). "${arr[@]:-}" (inte bara "${arr[@]}")
@@ -372,7 +411,27 @@ stada_grenar_om_dags() {
     # trasig städning en 90-sekunders-loop av destruktiva anrop i stället för
     # ett glest försök. Samma "stämpla försöket, inte framgången"-disciplin
     # som backoff-mönster i allmänhet.
-    printf '%s' "${nu}" > "${STADA_STATE_FILE}" 2>/dev/null || true
+    #
+    # ATOMÄRT (skriv till temp + mv), av två skäl. (1) En läsare ska aldrig
+    # kunna se en HALVSKRIVEN stämpel — `mv` inom samma filsystem är en
+    # rename(2), som POSIX garanterar är atomär. (2) Det är den ena halvan av
+    # F10:s föreslagna fix för heartbeat-statens delade /tmp-katalog
+    # (docs/research/prototyp-till-skarp-processaudit-tidslinje-2026-08-08.md
+    # § F10 — den andra halvan, per-session-nyckling, ligger utanför
+    # TASK-323, se § UNDERHÅLL i huvudet).
+    #
+    # Ett MISSLYCKAT stämpel-skriv tigs INTE ihjäl: uteblir stämpeln kör
+    # nästa svep städningen igen om 90 s i stället för om ${intervall} s, och
+    # det är precis den sortens tyst frekvensdrift ingen upptäcker utan en
+    # rad. Den skrivs på ALLTID-PÅ-kanalen (syns även under --quiet) men bär
+    # ingen exit-bit — städningen larmar aldrig.
+    if printf '%s' "${nu}" > "${STADA_STATE_FILE}.tmp" 2>/dev/null \
+       && mv -f "${STADA_STATE_FILE}.tmp" "${STADA_STATE_FILE}" 2>/dev/null; then
+        :
+    else
+        rm -f "${STADA_STATE_FILE}.tmp" 2>/dev/null || true
+        alltid_pa "heartbeat-svep: UNDERHÅLL — kunde inte stämpla ${STADA_STATE_FILE}. Städningen körs, men glesningen kan gå tätare än ${intervall}s tills stämpeln går att skriva. Verdikt OPÅVERKAT."
+    fi
 
     utfil="${STATE_DIR}/stada-grenar-senaste-utdata.txt"
     rc=0
@@ -387,8 +446,16 @@ stada_grenar_om_dags() {
     # att slippa.
     "${STADA_BIN}" --utfor > "${utfil}" 2>&1 || rc=$?
 
+    # FEL SKRIVS PÅ ALLTID-PÅ-KANALEN, inte via say(). En persistent monitor
+    # körs rimligen med --quiet (det är hela poängen med rutin/larm-
+    # distinktionen), så en say()-rad här hade gjort en KONTINUERLIGT
+    # fallerande städning helt osynlig — ingen stdout, bara en loggfil ingen
+    # läser om man inte redan vet att den finns. Samma observabilitets-
+    # felklass som TASK-135 en gång fixade för kallstart-raden.
+    # Fortfarande INGEN exit-bit: raden säger "underhållet fungerar inte",
+    # aldrig "landnings-läget är trasigt".
     if [[ "${rc}" -ne 0 ]]; then
-        say "heartbeat-svep: UNDERHÅLL — gren-städningen gav exit ${rc}. Svepets verdikt är OPÅVERKAT (städning larmar aldrig). Utdata: ${utfil}"
+        alltid_pa "heartbeat-svep: UNDERHÅLL — gren-städningen gav exit ${rc}. Svepets verdikt är OPÅVERKAT (städning larmar aldrig). Utdata: ${utfil}"
         return 0
     fi
 
@@ -417,12 +484,12 @@ while [[ $# -gt 0 ]]; do
         # Radintervallet är § ANVÄNDNING. Ändras huvudet ovan måste det
         # följa med — annars ljuger --help tyst (samma disciplin som ci-wait.sh).
         # Utökat 61,81 → 61,104 i TASK-135 (ALLTID-PÅ-klass + kallstart-
-        # stycket), 61,104 → 61,114 i TASK-323 (§ UNDERHÅLL — gles
+        # stycket), 61,104 → 61,135 i TASK-323 (§ UNDERHÅLL — gles
         # gren-städning; en DESTRUKTIV bieffekt får aldrig stå utanför det
         # block --help faktiskt visar);
         # scripts/test-heartbeat-svep.sh T24 fäller om raden
         # avviker från blockets faktiska start/slut.
-        -h|--help)  sed -n '61,114p' "$0"; exit 0 ;;
+        -h|--help)  sed -n '61,135p' "$0"; exit 0 ;;
         *) die "okänt argument: $1" ;;
     esac
 done
