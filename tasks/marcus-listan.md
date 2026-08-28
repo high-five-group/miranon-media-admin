@@ -419,6 +419,28 @@ status: stable
 
 ---
 
+### 41. Post-merge-driftvakten — ska staging-sviten köras på tid, inte bara vid kodlandning?
+
+- **Vad det är** — post-merge-lagret ärver den landande PR:ens klassning
+  (ADR-077): på en docs-only-landning hoppas staging-sviten. Följden i dag:
+  staging-drift upptäcktes först vid nästa kodklass-landning och larmet pekade
+  ut fel PR (`#2043`, `#2047`). `TASK-334` (PR `#2059`) rättar attributionen —
+  larmet pekar nu på senaste körning som faktiskt körde sviten. Kvar är
+  frågan om en TIDSBASERAD vakt (alternativ B: kör sviten om det gått mer än
+  N timmar sedan senaste staging-körning på `main`).
+- **Varför det väntar på dig** — nattnätet kör redan staging-sviten varje
+  natt (`nightly.yml` → `ci-suite.yml` med `run_staging: true`), så B är en
+  kadensfråga: kostar en tredje daglig tagning av `staging-tests`-mutexen mot
+  ett jobb med ~1,8× marginal som redan slagit i sitt 12-minuterstak.
+- **Gör så här** — svara `"41: A"` (nej, nattnätet räcker — status quo) eller
+  `"41: B"` (bygg driftvakten, N = 12 h) eller `"41: B, N = <timmar>"`.
+- **Min rekommendation** — **A**: nattnätet täcker driften inom 24 h och
+  attributionen är rättad; en tredje mutex-tagning köper timmar, inte
+  signalvärde.
+- **Vad som låses upp** — inget blockeras; B blir ett kort om du vill ha den.
+- **Källa** — `TASK-334` § Implementation Notes (options A–D) · `ADR-077`
+  § Updates 2026-08-28 · `TASK-73` (revert-blockeringen 25 min) · PR `#2059`.
+
 ## B. Kommandon i din terminal
 
 Alla tre körs av dig, **i ett eget terminalfönster — inte via `!`-prefixet i
@@ -435,6 +457,11 @@ hinner det aldrig göra det): `echo "" | npx supabase@<pinnad version> link
 `scripts/lib/supabase-cli.sh` och refen i `.prod-ref-policy.conf` som
 `PROD_REF_STAGING`. Kontrollerat 2026-08-28 05:53 utan att värdet skrevs ut:
 filen pekar på **staging** — S108:s återlänkning höll.
+
+- **Läge 2026-08-28 ~12:00** — AC #1/#2/#4 byggda: PR `#2064` (under
+  granskning) lägger `disallowedTools` mot nio connector-familjer i alla tre
+  agentdefinitionerna. Skarpbeviset (AC #3) betalas av orkestreraren efter
+  landning. Bara fönsterfrågan ovan är kvar hos dig.
 
 ### 18. Prod-deploy: `update-event` kör fortfarande 500-buggen
 
@@ -805,6 +832,11 @@ webbläsarkontext.
 - **Källa** — `TASK-22`, `TASK-222`, `TASK-223` (alla `In Progress`,
   Landning PR `#1987`/`#1988`) · körning 32929746452 jobb 98059621388
   (den röda posten, verifierad 2026-08-28) · `TASK-307` · `ADR-071` beslut 3.
+
+- **Läge 2026-08-28 ~12:00** — `TASK-223` sattes Done av orkestreraren
+  (PR `#2061`): fixen landade i `#1988`, det röda post-merge-jobbet var
+  CLS-flaken (`TASK-307`), inte diffen. Din blick på glömt-lösenord-sidan är
+  nu frivillig, inte blockerande. `22` och `222` står kvar.
 
 ### 31. Check-in-dörrens reservväg i prod (5 min)
 
