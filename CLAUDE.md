@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-27
+updated: 2026-08-28
 review_by: 2026-11-15
 status: stable
 ---
@@ -702,10 +702,41 @@ sedan `TASK-173.3` den fasta Riskbedömnings-sektionen i PR-kroppen
 (`scripts/lib/review-risk-sektion.mjs`, `scripts/uppdatera-review-sektion.mjs`);
 och sedan `TASK-173.5` rundtaks-loopen med konvergensregel och eskaleringsform
 (`.review-loop-policy.json`, `scripts/lib/review-loop.mjs`,
-`scripts/review-loop-beslut.mjs`).
+`scripts/review-loop-beslut.mjs`); och sedan `TASK-173.6` instrumenterings-
+ytan (`scripts/lib/review-metrics.mjs`, `scripts/review-metrics.mjs`,
+`scripts/review-metrics-kalibrering.mjs`) — `review-loop-beslut.mjs` appendar
+sedan dess EN "korning"-rad per lyckat beslut till
+`docs/reference/review-instrumentering.jsonl` (findings-per-runda,
+risknivå, beslut), och `npm run review:kalibrering` bokför en Marcus-fångst
+på en stämplad PR som grind-miss; `npm run review:metrics` summerar loggen
+till markdown (findings/runda, risk-/beslutsfördelning, härledd fångstrate
+per nivå). Detta är en **ren bokföringsyta** (Marcus-mandat, TASK-173.6):
+den fäller ingenting och styr ingen armering — se `173.4` nedan för den
+mekaniska spärren.
+
+**Loggfilen är versionerad (INTE gitignorad) men bär INGEN egen
+commit-mekanism — det är ett orkestrerar-ÅTAGANDE, inte en spärr (runda
+2-fynd, PR #2052).** Den ackumuleras i vilken checkout som råkar köra
+`review-loop-beslut.mjs` (normalt orkestrerarens worktree, samma körpunkt
+loopen redan anropas ifrån). Skriptet skriver därför en synlig
+påminnelserad till stderr efter varje lyckad append
+("instrumenterings-rad appendad till `<sökväg>` — ospårad tills
+committad") — en påminnelse, inte en spärr. **Orkestreraren committar
+loggen i sina stängningsbatchar** (samma landning som Done-flipparna); en
+ospårad logg vid session-paus/-end är en SKULD att bokföra i handoffen,
+aldrig en tyst förlust. Ingen ny grind vaktar detta: en nightly-vakt (t.ex.
+`heartbeat-svep.sh`) kan strukturellt inte se en lokal, ospårad fil i en
+agents worktree, så ansvaret ligger hos den som stänger sessionen — inte
+hos ett skript (samma `ADR-083`-ärlighet som `173.4`-stycket nedan: säg
+det öppet, påstå aldrig en mekanisk spärr som inte finns).
+
+Loggen gäller FRÅN OCH MED denna skiva: de 14 skarpa
+review-agent-körningarna från S112 (2026-08-26) är INTE backfyllda — deras
+utlåtande-JSON låg i agenternas scratchpad-kataloger och gick inte att
+återfinna på disk när `173.6` byggdes (endast de aggregerade talen i
+`tasks/sessions/2026-08-24-session-112.md` Del 6 finns kvar, som prosa).
 **Vad som SAKNAS än:** den deterministiska CI-backstoppen som fäller en PR
-utan giltigt utlåtande (`TASK-173.4`) och fångstrate-instrumenteringen
-(`TASK-173.6`). Fram tills dess är grinden ett **orkestrerar-åtagande**, inte
+utan giltigt utlåtande (`TASK-173.4`). Fram tills dess är grinden ett **orkestrerar-åtagande**, inte
 en mekanisk spärr — en PR kan i praktiken armeras utan granskning, eller med
 en oskriven Riskbedömnings-sektion, så länge `173.4` inte finns, och INGET
 tvingar dig att köra kommandona ovan. **Det gäller loop-beslutet lika mycket

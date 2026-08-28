@@ -62,8 +62,26 @@
 //        och samma skäl som scripts/hamta-review-policy.mjs: loopen ska STANNA,
 //        aldrig köras med gissade tak eller trösklar.
 
+// ═══ INSTRUMENTERING (TASK-173.6) ═══
+// Varje LYCKAT beslut (utlåtande OCH policy giltiga) appendar EN "korning"-rad
+// till scripts/lib/review-metrics.mjs:s loggfil — INGEN ny orkestrerar-
+// handling att glömma (CLAUDE.md § Review-grinden varnar uttryckligen om just
+// det för de andra review-skripten). Ett malformat utlåtande (exit 1) eller
+// ett policyfel (exit 64) loggar INGET — en trasig indata ska inte förorena
+// fångstrate-underlaget. En loggnings-MISS (t.ex. filsystemet är skrivskyddat)
+// skriver en varning till stderr men ändrar ALDRIG exitkoden: instrumentering
+// är en bokföringsyta, aldrig en ny grind (Marcus-mandat, TASK-173.6-kortet).
+//
+// --metrik-fil <path>: skriv till en annan loggfil än default (test/offline-
+// läge, samma disciplin som --policy-fil ovan). Default resolvas mot SAMMA
+// `REPO`-konstant som redan styr var git-kommandona körs — vilket är det som
+// gör test-review-loop.mjs:s section F (CLI kopierad till ett engångs-repo)
+// trygg utan ändring: en kopierad script-fil härleder sin egen repo-rot.
+// Section E (CLI körd direkt mot DETTA repo) skickar --metrik-fil explicit
+// mot en temp-fil av exakt samma skäl.
+
 import { spawnSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { appendFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
@@ -72,6 +90,7 @@ import {
   parsaLoopPolicy,
   renderaBeslut,
 } from './lib/review-loop.mjs';
+import { byggKorningRad, METRIK_LOGG_FIL } from './lib/review-metrics.mjs';
 import { valideraUtlatande } from './lib/review-utlatande.mjs';
 
 const EXIT_KONVERGERAD = 0;
@@ -175,7 +194,14 @@ export function lasLoopPolicyUrFil(path) {
 }
 
 function parseArgv(argv) {
-  const ut = { path: null, json: false, foregaendeSha: null, policyFil: null, fel: null };
+  const ut = {
+    path: null,
+    json: false,
+    foregaendeSha: null,
+    policyFil: null,
+    metrikFil: null,
+    fel: null,
+  };
   const rest = [];
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -197,6 +223,14 @@ function parseArgv(argv) {
         return ut;
       }
       ut.policyFil = v;
+    } else if (arg === '--metrik-fil') {
+      i += 1;
+      const v = argv[i];
+      if (!v || v.startsWith('--')) {
+        ut.fel = '--metrik-fil kräver en sökväg.';
+        return ut;
+      }
+      ut.metrikFil = v;
     } else if (arg.startsWith('--')) {
       ut.fel = `okänt argument: ${arg}`;
       return ut;
@@ -212,13 +246,41 @@ function parseArgv(argv) {
   return ut;
 }
 
+/**
+ * Resolvar var instrumenteringsraden ska skrivas: `override` (--metrik-fil)
+ * om given, annars METRIK_LOGG_FIL under `repo`. Exporterad ren funktion så
+ * testsviten kan bevisa resolutionen utan att göra någon I/O eller spawna
+ * CLI:t (TASK-173.6).
+ *
+ * @param {string} repo
+ * @param {string|null} [override]
+ * @returns {string}
+ */
+export function metrikFilFor(repo, override = null) {
+  return override ?? resolve(repo, METRIK_LOGG_FIL);
+}
+
+/**
+ * Appendar en rad till instrumenteringsloggen. Skapar mappen om den saknas
+ * (en färsk temp-repo-kopia i test-review-loop.mjs section F har ingen
+ * docs/reference/ än). Ren I/O, ingen validering — anroparen skickar en
+ * redan schema-validerad rad (`byggKorningRad(...).data`).
+ *
+ * @param {string} path
+ * @param {object} rad
+ */
+function appendMetrikRad(path, rad) {
+  if (!existsSync(dirname(path))) mkdirSync(dirname(path), { recursive: true });
+  appendFileSync(path, `${JSON.stringify(rad)}\n`, 'utf8');
+}
+
 function main(argv) {
   const args = parseArgv(argv);
   if (args.fel) {
     console.error(`FEL: ${args.fel}`);
     console.error(
       'Användning: node scripts/review-loop-beslut.mjs <utlatande.json> ' +
-        '[--json] [--foregaende-sha <sha>] [--policy-fil <path>]',
+        '[--json] [--foregaende-sha <sha>] [--policy-fil <path>] [--metrik-fil <path>]',
     );
     return EXIT_CLI;
   }
@@ -274,6 +336,37 @@ function main(argv) {
     policy,
     foregaendeSha: args.foregaendeSha,
   });
+
+  // TASK-173.6: instrumentera EFTER ett lyckat beslut, aldrig före — se
+  // filhuvudets § INSTRUMENTERING. En loggnings-miss varnar men fäller
+  // aldrig CLI:ts exitkod, som bär loop-BESLUTET, inte bokförings-status.
+  const metrikPath = metrikFilFor(REPO, args.metrikFil);
+  const metrikRad = byggKorningRad({
+    utlatande: validerat.data,
+    beslut,
+    tidsstampel: new Date().toISOString(),
+  });
+  if (!metrikRad.ok) {
+    console.error('VARNING (TASK-173.6): kunde inte bygga instrumenterings-raden — loggas inte:');
+    for (const rad of metrikRad.errors) console.error(`  - ${rad}`);
+  } else {
+    try {
+      appendMetrikRad(metrikPath, metrikRad.data);
+      // Runda 2-fynd 1 (PR #2052): loggen har INGEN commit-mekanism i sig
+      // själv — den ackumuleras lokalt i vilken checkout som råkar köra
+      // detta skript. Utan en synlig påminnelse kan den tystna ospårad i
+      // orkestrerarens worktree till nästa stängningsbatch glöms. Detta är
+      // en påminnelse, inte en spärr (ADR-083-ärligt): ingen mekanism här
+      // kan tvinga fram en commit.
+      console.error(
+        `instrumenterings-rad appendad till ${metrikPath} — ospårad tills committad (TASK-173.6).`,
+      );
+    } catch (error) {
+      console.error(
+        `VARNING (TASK-173.6): kunde inte skriva instrumenterings-raden till ${metrikPath}: ${error.message}`,
+      );
+    }
+  }
 
   if (args.json) {
     console.log(JSON.stringify({ policyKalla, ...beslut }, null, 2));
