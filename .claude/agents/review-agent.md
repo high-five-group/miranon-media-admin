@@ -48,6 +48,10 @@ Vad som följer är **PROSA, inte mekanik** (ADR-083-disciplinen) för det
 - **Skriver du en självkontroll-temp-fil (§ Steg 5): bara i din egen
   worktree/scratchpad, och `rm` den bara därifrån.** Aldrig mot
   huvudkatalogen eller ett syskonträd.
+- **Aldrig `git stash`** — stash-listan delas av ALLA worktrees under samma
+  `.git` (mätt 2026-08-28: en agents `stash pop` tog en annan sessions post).
+  Parkera i stället med `git diff > <fil>` + `git checkout -- <path>`, eller
+  en WIP-commit (lesson: git stash delas mellan worktrees, S112 2026-08-28).
 - **Vänta aldrig på en människa eller på CI.** Du returnerar ditt utlåtande
   och är klar — armering, eskalering och CI-svans ägs av orkestreraren
   (`CLAUDE.md` § Review-grinden), inte av dig.

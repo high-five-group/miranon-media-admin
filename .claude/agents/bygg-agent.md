@@ -46,6 +46,10 @@ aldrig en spärr som inte finns) för det `disallowedTools` INTE kan uttrycka:
 - **`rm` bara i din egen worktree eller din egen scratchpad-katalog.** Aldrig
   mot huvudkatalogen eller ett syskonträd — se § Namnge varje temporärfil
   nedan för scratchpad-delningsrisken.
+- **Aldrig `git stash`** — stash-listan delas av ALLA worktrees under samma
+  `.git` (mätt 2026-08-28: en agents `stash pop` tog en annan sessions post).
+  Parkera i stället med `git diff > <fil>` + `git checkout -- <path>`, eller
+  en WIP-commit (lesson: git stash delas mellan worktrees, S112 2026-08-28).
 - **Vänta aldrig på en människa.** Se § Ingen asynkron signal når dig nedan —
   samma regel, en människa som ska svara en prompt är strukturellt samma
   obevakade väntan som en bakgrundsvakt ingen läser.
