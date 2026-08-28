@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-28 03:36'
+updated_date: '2026-08-28 03:53'
 labels:
   - prd
   - restsamling
@@ -71,43 +72,43 @@ Referenserna nedan går till **åttonde (sista) pausen**, § CARRY / ÖPPNA TRÅ
 
 Fyra beslutsposter låg hos Marcus vid pausen. **En är mekaniserad, tre står kvar.**
 
-- [ ] **S98-Ö1 · Dokumentationsluckans rest: `CONTRIBUTING.md` nämner pariteten inte alls** trots att filen bär Definition of Done. NÄR-regeln fick sitt hem i `CLAUDE.md` (§ `verify:ci-parity` är ett DIAGNOSVERKTYG), men DoD-avsnittet i CONTRIBUTING är orört. — *Källa:* § CARRY post 1 (rad 355–359) + § NÄSTA KONKRETA STEG 1 (rad 384–385). *Belägg för Ö:* `grep -c 'ci-parity' CONTRIBUTING.md` = **0**.
-- [ ] **S98-Ö2 · UNIVERSAL-konvergensen — sex markörformer, ingen av dem ett beslut.** Fet-stil-formen rekommenderad (noll falska positiver mot backtickens 24). Migrering av 444 poster är Marcus kall; underlaget ligger i `lessons-hub-sync`-skillen. — *Källa:* § CARRY post 2 (rad 360–363). *Belägg för Ö:* `lessons-hub-sync`-skillens egen description lyder alltjämt *"UNIVERSAL-markörens SEX former (konvergens till EN väntar Marcus-beslut)"*. **MARCUS-ÄGD.**
-- [ ] **S98-Ö3 · MCP-nyckelns fail-open.** `${VAR}`-expansion FUNGERAR i `~/.claude.json` (skarpt mätt med kastbar variabel), men beteendet är dokumenterat enbart för `.mcp.json` — odokumenterat i vårt scope. Unset-fallet är **fail-open**: misslyckas Keychain-hämtningen skickas strängen `${AIRTABLE_API_KEY}` som nyckel och felet pekar inte på rotorsaken. — *Källa:* § CARRY post 3 (rad 364–368). *Not:* `docs/reference/atkomst-och-nycklar.md` rad 238 nämner sökvägen men inte fail-open-egenskapen.
-- [ ] **S98-Ö4 · Lesson-KANDIDAT, ej mintad: en regel skriven på för tunt underlag kan göra problemet värre än ingen regel.** Den föreslagna paritetsregeln mättes till 2,3–2,9× dyrare än vad som faktiskt gjordes. Antecknad, hub-lyfts EJ. — *Källa:* § CARRY (rad 370–373).
+- [ ] **S98-Ö1 · Dokumentationsluckans rest: `CONTRIBUTING.md` nämner pariteten inte alls** trots att filen bär Definition of Done. NÄR-regeln fick sitt hem i `CLAUDE.md` (§ `verify:ci-parity` är ett DIAGNOSVERKTYG), men DoD-avsnittet i CONTRIBUTING är orört. — *Källa:* § CARRY post 1 (rad 357–360) + § NÄSTA KONKRETA STEG 1 (rad 385–386). *Belägg för Ö:* `grep -c 'ci-parity' CONTRIBUTING.md` = **0**.
+- [ ] **S98-Ö2 · UNIVERSAL-konvergensen — sex markörformer, ingen av dem ett beslut.** Fet-stil-formen rekommenderad (noll falska positiver mot backtickens 24). Migrering av 444 poster är Marcus kall; underlaget ligger i `lessons-hub-sync`-skillen. — *Källa:* § CARRY post 2 (rad 361–363). *Belägg för Ö:* `lessons-hub-sync`-skillens egen description lyder alltjämt *"UNIVERSAL-markörens SEX former (konvergens till EN väntar Marcus-beslut)"*. **MARCUS-ÄGD.**
+- [ ] **S98-Ö3 · MCP-nyckelns fail-open.** `${VAR}`-expansion FUNGERAR i `~/.claude.json` (skarpt mätt med kastbar variabel), men beteendet är dokumenterat enbart för `.mcp.json` — odokumenterat i vårt scope. Unset-fallet är **fail-open**: misslyckas Keychain-hämtningen skickas strängen `${AIRTABLE_API_KEY}` som nyckel och felet pekar inte på rotorsaken. — *Källa:* § CARRY post 3 (rad 364–367). *Not:* `docs/reference/atkomst-och-nycklar.md` rad 238 nämner sökvägen men inte fail-open-egenskapen.
+- [ ] **S98-Ö4 · Lesson-KANDIDAT, ej mintad: en regel skriven på för tunt underlag kan göra problemet värre än ingen regel.** Den föreslagna paritetsregeln mättes till 2,3–2,9× dyrare än vad som faktiskt gjordes. Antecknad, hub-lyfts EJ. — *Källa:* § CARRY (rad 373–375).
 
 ---
 
 ## S99 — Process-synen, nio uppdrag grillade (`tasks/sessions/2026-08-07-session-99.md`, 1049 rader, 5 pauser)
 
-Agent-sidan av alla nio uppdrag är KOMPLETT (`TASK-161.1`–`161.9` Done). **Det som blockerar session-end är uteslutande Marcus-ägt.** Femte pausens CARRY (rad 1010–1024) hänvisar till fjärde pausens fullständiga listor (rad 921–955).
+Agent-sidan av alla nio uppdrag är KOMPLETT (`TASK-161.1`–`161.9` Done). **Det som blockerar session-end är uteslutande Marcus-ägt.** Femte pausens CARRY (rad 1010–1023) hänvisar till fjärde pausens fullständiga listor (rad 921–954).
 
-- [ ] **S99-Ö1 · QA `TASK-160.7`** (compact-formen). — *Källa:* fjärde pausen § CARRY rad 922–923. *Belägg för Ö:* **To Do**. **MARCUS-ÄGD.**
+- [ ] **S99-Ö1 · QA `TASK-160.7`** (compact-formen). — *Källa:* fjärde pausen § CARRY rad 923 (Marcus-momenten, 923–931). *Belägg för Ö:* **To Do**. **MARCUS-ÄGD.**
 - [ ] **S99-Ö2 · QA `TASK-161.10`** (styrande-docs-auditen; inleds med lärdomslager-rapporten + spårbeslutet). — *Källa:* samma rad. *Belägg för Ö:* **To Do**. **MARCUS-ÄGD.**
-- [ ] **S99-Ö3 · BYGGPLAN-LÄTTLÄST-beslutet.** STOP-utfallet i `161.8`: beställ en Gunilla-uppdatering eller bekräfta frysningen. — *Källa:* fjärde pausen rad 923–926. *Belägg för Ö:* `docs/specs/BYGGPLAN-LÄTTLÄST-v3.md` bär fortfarande KÄND DRIFT-banderollen (enda filen i `docs/` med den strängen). **MARCUS-ÄGD.**
-- [ ] **S99-Ö4 · Hub-sync-vägvalet — MÅSTE föregå lessons-skörden.** `lessons-hub-sync`-skillens monolit-greppar ger tomt mot volymformen. Eget hub-ärende eller inuti hub-lyftet? — *Källa:* fjärde pausen rad 926–929 + MARCUS-SEKVENS rad 956–961. *Belägg för Ö:* `tasks/lessons/vol-01.md` … `vol-07.md` på disk = volymformen är verklighet; skillens grepp är oförändrade. **MARCUS-ÄGD, blockerar skörden.**
+- [ ] **S99-Ö3 · BYGGPLAN-LÄTTLÄST-beslutet.** STOP-utfallet i `161.8`: beställ en Gunilla-uppdatering eller bekräfta frysningen. — *Källa:* fjärde pausen rad 924–926. *Belägg för Ö:* `docs/specs/BYGGPLAN-LÄTTLÄST-v3.md` bär fortfarande KÄND DRIFT-banderollen (enda filen i `docs/` med den strängen). **MARCUS-ÄGD.**
+- [ ] **S99-Ö4 · Hub-sync-vägvalet — MÅSTE föregå lessons-skörden.** `lessons-hub-sync`-skillens monolit-greppar ger tomt mot volymformen. Eget hub-ärende eller inuti hub-lyftet? — *Källa:* fjärde pausen rad 926–928 + MARCUS-SEKVENS rad 956–962. *Belägg för Ö:* `tasks/lessons/vol-01.md` … `vol-07.md` på disk = volymformen är verklighet; skillens grepp är oförändrade. **MARCUS-ÄGD, blockerar skörden.**
 - [ ] **S99-Ö5 · Boka `TASK-148.5`.** — *Källa:* fjärde pausen rad 929. *Belägg för Ö:* **To Do**.
-- [ ] **S99-Ö6 · Triagera `TASK-154`–`TASK-156`.** — *Källa:* fjärde pausen rad 929–930. *Belägg för Ö:* alla tre **To Do**.
+- [ ] **S99-Ö6 · Triagera `TASK-154`–`TASK-156`.** — *Källa:* fjärde pausen rad 929. *Belägg för Ö:* alla tre **To Do**.
 - [ ] **S99-Ö7 · Lärdomslager-spårbeslutet.** Rapporten ligger: `docs/research/lardomslager-branschpraxis-2026-08-07.md`. — *Källa:* fjärde pausen rad 930–931. **MARCUS-ÄGD.**
-- [ ] **S99-Ö8 · Lesson-kandidater (a)–(g) plus tredje pausens elva oförlösta.** (a) refererat underlag landar som filartefakt i samma landning som specen · (b) worktree-sessioners transkript bor i egna kataloger per path · (c) `Read` med bar absolut-path läser delade checkouten från agent-worktree · (d) grind-räknings-kopian driftade igen inom timmar (tal ska vara pekare) · (e) bar `git stash` bröt formen hos en agent · (f) en armerad PR vars armering konsumeras av konflikt är samma obevakade klass som `T108` (mätinstans `#1059`) · (g) en huvudkatalog som muterar under en annan sessions läsning ger icke-reproducerbara snapshots. Tredje pausens: ägarskaps-hookens prefix-matchning · ägarlapp återfås inte vid resume · worktree-vaktens komplexitets-heuristik · 158.2-klassen · stängnings-flip ovanpå landad version · DIRTY-släppet `#910` · skal-cwd · docs-grindar lokalt före push · `CLAUDE_PROJECT_DIR` · obockade-AC · ci.yml-conf-serien. — *Källa:* fjärde pausen rad 932–947 + femte pausen rad 1018–1024.
-- [ ] **S99-Ö9 · Två skarpbevis som "fyrar naturligt".** Släpp-sidan + post-compact-igenkänningen (första naturliga kompaktering — markör sätts via pre-compact-skillen) · tröskel-zonlarmet (~500k tokens; trigger = auto-nekningen ÄR beviset). Kräver ingen handling, men är obetald skuld tills de fyrat. — *Källa:* fjärde pausen rad 948–951.
-- [ ] **S99-Ö10 · `T111`-korrigeringen.** PreCompact-hook-negationen vederlagd; pekare i `ADR-101` § Källmärkning. Triage-kandidat vid beröring. — *Källa:* fjärde pausen rad 952–953.
-- [ ] **S99-Ö11 · psionautics-remoten pekar på gamla org-namnet** (`marcus803` → GitHub-redirect). Bokförd teknisk skuld i ett ANNAT repo, ej åtgärdad (`161.8`). — *Källa:* fjärde pausen rad 954.
+- [ ] **S99-Ö8 · Lesson-kandidater (a)–(g) plus tredje pausens elva oförlösta.** (a) refererat underlag landar som filartefakt i samma landning som specen · (b) worktree-sessioners transkript bor i egna kataloger per path · (c) `Read` med bar absolut-path läser delade checkouten från agent-worktree · (d) grind-räknings-kopian driftade igen inom timmar (tal ska vara pekare) · (e) bar `git stash` bröt formen hos en agent · (f) en armerad PR vars armering konsumeras av konflikt är samma obevakade klass som `T108` (mätinstans `#1059`) · (g) en huvudkatalog som muterar under en annan sessions läsning ger icke-reproducerbara snapshots. Tredje pausens: ägarskaps-hookens prefix-matchning · ägarlapp återfås inte vid resume · worktree-vaktens komplexitets-heuristik · 158.2-klassen · stängnings-flip ovanpå landad version · DIRTY-släppet `#910` · skal-cwd · docs-grindar lokalt före push · `CLAUDE_PROJECT_DIR` · obockade-AC · ci.yml-conf-serien. — *Källa:* fjärde pausen rad 932–945 + femte pausen rad 1012–1023.
+- [ ] **S99-Ö9 · Två skarpbevis som "fyrar naturligt".** Släpp-sidan + post-compact-igenkänningen (första naturliga kompaktering — markör sätts via pre-compact-skillen) · tröskel-zonlarmet (~500k tokens; trigger = auto-nekningen ÄR beviset). Kräver ingen handling, men är obetald skuld tills de fyrat. — *Källa:* fjärde pausen rad 946–949.
+- [ ] **S99-Ö10 · `T111`-korrigeringen.** PreCompact-hook-negationen vederlagd; pekare i `ADR-101` § Källmärkning. Triage-kandidat vid beröring. — *Källa:* fjärde pausen rad 950–951.
+- [ ] **S99-Ö11 · psionautics-remoten pekar på gamla org-namnet** (`marcus803` → GitHub-redirect). Bokförd teknisk skuld i ett ANNAT repo, ej åtgärdad (`161.8`). — *Källa:* fjärde pausen rad 952–953.
 
 ---
 
 ## S101 — L8-workflow-kartläggningen (`tasks/sessions/2026-08-09-session-101.md`, 378 rader)
 
-Hela transformationens etablering är landad (åtta PR:er, ADR-105/106/107, `TASK-173` + sju skivor). Resten är **visionsspåret K3/K4 plus review-grindens svans**. Referenser går till § PAUSLÄGE (rad 314–378).
+Hela transformationens etablering är landad (åtta PR:er, ADR-105/106/107, `TASK-173` + sju skivor). Resten är **visionsspåret K3/K4 plus review-grindens svans**. Referenser går till § Paushistorik (rad 314–378).
 
-- [ ] **S101-Ö1 · Review-grindens tre kvarvarande skivor.** `TASK-173.4` (den deterministiska CI-backstoppen som fäller en PR utan giltigt utlåtande) · `TASK-173.6` (fångstrate-instrumenteringen) · `TASK-173.7` (`ready-for-human`). Tills `173.4` finns är review-grinden ett **orkestrerar-åtagande, inte en mekanisk spärr** (`CLAUDE.md` § Review-grinden). — *Källa:* § PAUSLÄGE TILLSTÅND (rad 316–328) + NÄSTA KONKRETA STEG 1 (rad 372–374). *Belägg för Ö:* alla tre **To Do**; `173.1/.2/.3/.5` Done.
-- [ ] **S101-Ö2 · K4-verifikaten ×3 — förkrav för K4-grillningen.** SendMessage-persistens över hård omstart · realtids-attach · public-followup-idempotens. Formen: kastbara minimal-test (prototype-skillens LOGIC-gren eller direkta harness-experiment); svaren matar grillningen. — *Källa:* § CARRY (rad 337–341) + NÄSTA STEG 2 (rad 374–376). *Belägg för Ö:* `docs/research/` bär K4-UNDERLAGET (`k4-firstmate-arkitektur-2026-08-09.md`) men inget verifikat-dokument.
-- [ ] **S101-Ö3 · K4-grillningen — HUVUDSPÅRET, Marcus startar.** FirstMate/exekverings-hubben; Marcus verbatim *"exakt det jag ser framför mig … ett HUBB-system som man kan plugga in i varje scope"*. Ärver ADR-106:s kontrakts-neutralitet. — *Källa:* § MARCUS-SEKVENS (rad 344–361) + NÄSTA STEG 3 (rad 376–377). *Besläktad tråd:* `T61` (AFK/Ralph-loop + sandbox) står `active` och bär exekverings-loopens obyggda del. **MARCUS-ÄGD.**
-- [ ] **S101-Ö4 · K3 — Lavish-minimal-testet vid nästa VERKLIGA plan-tillfälle.** Marcus: *"next-level för vårt UI-arbete/iterationsprocess"*. Dras parallellt med K4 per omprioriteringen. — *Källa:* § MARCUS-SEKVENS + NÄSTA STEG 4 (rad 377–378).
-- [ ] **S101-Ö5 · ADR-107:s setup-repo som eget kort.** — *Källa:* § MARCUS-SEKVENS (rad 358–359). *Belägg för Ö:* inget kort i backloggen nämner setup-repot.
-- [ ] **S101-Ö6 · Vågorna i övrigt + K9-placeringen** kvar i Marcus prioritering. — *Källa:* § MARCUS-SEKVENS (rad 357–358). **MARCUS-ÄGD.**
-- [ ] **S101-Ö7 · Fem lesson-kandidater, ej hub-lyfta — fyra kvarstår.** (1) ADR-katalogdriften: `check-adr-count.sh` validerar endast filantal mot rot-README-token, katalog-raderna är ogrindad blind fläck · (2) L440-fångsten på egen audit-pipe vid sessionsstart · (3) worktree-basen låg på lokal HEAD i stället för `origin/main` vid `EnterWorktree` · (4) heartbeat-larmserien på främmande `#1055` = instansdata till `task-170`. **(5) är BETALD:** att `gh pr view` saknar `isInMergeQueue` och att klassningen kräver GraphQL står nu i `CLAUDE.md` § Landning (om-mätt 2026-08-24). — *Källa:* § CARRY (rad 329–337).
-- [ ] **S101-Ö8 · Hub-sync-paketet väntar hub-moment.** Termerna *review-grinden* / *risk-rad* / *rundtak* / *kanalseparation*-mönstret + K6/K7-kandidaterna. — *Källa:* § CARRY (rad 341–343).
+- [ ] **S101-Ö1 · Review-grindens tre kvarvarande skivor.** `TASK-173.4` (den deterministiska CI-backstoppen som fäller en PR utan giltigt utlåtande) · `TASK-173.6` (fångstrate-instrumenteringen) · `TASK-173.7` (`ready-for-human`). Tills `173.4` finns är review-grinden ett **orkestrerar-åtagande, inte en mekanisk spärr** (`CLAUDE.md` § Review-grinden). — *Källa:* § Paushistorik TILLSTÅND (rad 316–331) + NÄSTA KONKRETA STEG 1 (rad 373–375). *Belägg för Ö:* alla tre **To Do**; `173.1/.2/.3/.5` Done.
+- [ ] **S101-Ö2 · K4-verifikaten ×3 — förkrav för K4-grillningen.** SendMessage-persistens över hård omstart · realtids-attach · public-followup-idempotens. Formen: kastbara minimal-test (prototype-skillens LOGIC-gren eller direkta harness-experiment); svaren matar grillningen. — *Källa:* § CARRY (rad 343–346) + NÄSTA STEG 2 (rad 375–377). *Belägg för Ö:* `docs/research/` bär K4-UNDERLAGET (`k4-firstmate-arkitektur-2026-08-09.md`) men inget verifikat-dokument.
+- [ ] **S101-Ö3 · K4-grillningen — HUVUDSPÅRET, Marcus startar.** FirstMate/exekverings-hubben; Marcus verbatim *"exakt det jag ser framför mig … ett HUBB-system som man kan plugga in i varje scope"*. Ärver ADR-106:s kontrakts-neutralitet. — *Källa:* § MARCUS-SEKVENS (rad 349–365) + NÄSTA STEG 3 (rad 377–378). *Besläktad tråd:* `T61` (AFK/Ralph-loop + sandbox) står `active` och bär exekverings-loopens obyggda del. **MARCUS-ÄGD.**
+- [ ] **S101-Ö4 · K3 — Lavish-minimal-testet vid nästa VERKLIGA plan-tillfälle.** Marcus: *"next-level för vårt UI-arbete/iterationsprocess"*. Dras parallellt med K4 per omprioriteringen. — *Källa:* § MARCUS-SEKVENS (rad 357–359) + NÄSTA STEG 4 (rad 378).
+- [ ] **S101-Ö5 · ADR-107:s setup-repo som eget kort.** — *Källa:* § MARCUS-SEKVENS (rad 362–363). *Belägg för Ö:* inget kort i backloggen nämner setup-repot.
+- [ ] **S101-Ö6 · Vågorna i övrigt + K9-placeringen** kvar i Marcus prioritering. — *Källa:* § MARCUS-SEKVENS (rad 361–362). **MARCUS-ÄGD.**
+- [ ] **S101-Ö7 · Fem lesson-kandidater, ej hub-lyfta — fyra kvarstår.** (1) ADR-katalogdriften: `check-adr-count.sh` validerar endast filantal mot rot-README-token, katalog-raderna är ogrindad blind fläck · (2) L440-fångsten på egen audit-pipe vid sessionsstart · (3) worktree-basen låg på lokal HEAD i stället för `origin/main` vid `EnterWorktree` · (4) heartbeat-larmserien på främmande `#1055` = instansdata till `task-170`. **(5) är BETALD:** att `gh pr view` saknar `isInMergeQueue` och att klassningen kräver GraphQL står nu i `CLAUDE.md` § Landning (om-mätt 2026-08-24). — *Källa:* § CARRY (rad 333–343).
+- [ ] **S101-Ö8 · Hub-sync-paketet väntar hub-moment.** Termerna *review-grinden* / *risk-rad* / *rundtak* / *kanalseparation*-mönstret + K6/K7-kandidaterna. — *Källa:* § CARRY (rad 345–347).
 
 ---
 
@@ -115,14 +116,14 @@ Hela transformationens etablering är landad (åtta PR:er, ADR-105/106/107, `TAS
 
 Två hela spår är ÖVERLÄMNADE och ingår därför INTE nedan: dokument-/bilage-/mallspåret → **S108** (Del 19, rad 2256–2382) och notis-/felmeddelande-spåret → **S109** (Överlämning 2, rad 2649–2765, `S109` numera `closed`). Det som står kvar är exakt vad Överlämning 2 § A räknar upp som "S107 behåller allt annat".
 
-- [ ] **S107-Ö1 · Länkrötan — `.lycheeignore`-beslutet.** ActiveCampaign `403`, `supabase/cli`-fil `404` (flyttad upstream). Nattnätets sista tekniska grind. — *Källa:* § PAUSLÄGE nattnäts-tabellen rad 2591 + NÄSTA STEG 2 (rad 2645). *Belägg för Ö:* `TASK-254` = **To Do** (`ready-for-human`); grep efter `activecampaign` / `supabase/cli` i `.lycheeignore` = **0**. **MARCUS-ÄGD (designad röd yta, ADR-082).**
-- [ ] **S107-Ö2 · De obesvarade larm-ärendena.** 16 vid pausen; **26 vid mätningen 2026-08-27** (S112 Fynd 1). Stängs med hänvisning till faktiska fixar, aldrig tyst (`CONTRIBUTING.md` § Nattnätet). — *Källa:* § PAUSLÄGE rad 2592 + NÄSTA STEG 3 (rad 2646). *Not:* S112 resume 2 har GO under mandatet att stänga dem med motivering — samordna innan dubbelarbete.
+- [ ] **S107-Ö1 · Länkrötan — `.lycheeignore`-beslutet.** ActiveCampaign `403`, `supabase/cli`-fil `404` (flyttad upstream). Nattnätets sista tekniska grind. — *Källa:* § Paushistorik nattnäts-tabellen rad 2591 + NÄSTA STEG 2 (rad 2643). *Belägg för Ö:* `TASK-254` = **To Do** (`ready-for-human`); grep efter `activecampaign` / `supabase/cli` i `.lycheeignore` = **0**. **MARCUS-ÄGD (designad röd yta, ADR-082).**
+- [ ] **S107-Ö2 · De obesvarade larm-ärendena.** 16 vid pausen; **26 vid mätningen 2026-08-27** (S112 Fynd 1). Stängs med hänvisning till faktiska fixar, aldrig tyst (`CONTRIBUTING.md` § Nattnätet). — *Källa:* § Paushistorik rad 2592 + NÄSTA STEG 3 (rad 2644). *Not:* S112 resume 2 har GO under mandatet att stänga dem med motivering — samordna innan dubbelarbete.
 - [ ] **S107-Ö3 · Preview-miljöns `VITE_SENTRY_DSN`.** Bekräfta att den lades även för Preview, inte bara Production. Production är skarpt verifierad. — *Källa:* § MARCUS ÖPPNA MOMENT 1 (rad 2596–2597). **MARCUS-ÄGD.**
 - [ ] **S107-Ö4 · Granska den nya ikoncentreringen** när `#1658` deployats — 1 px vänster, Marcus eget val mot renderad skala. — *Källa:* MOMENT 2 (rad 2598–2599). **MARCUS-ÄGD.**
 - [ ] **S107-Ö5 · De 13 klass B-korten.** Väntade på `TASK-281` per Marcus beslut ("vänta med de 15"); `249.1` och `249.9` är redan bockade. **`TASK-281` är nu Done — blockeraren är borta, korten är plockbara.** — *Källa:* MOMENT 4 (rad 2602–2603).
 - [ ] **S107-Ö6 · Fyra kvarstående basbeslut.** Nollställningens brytpunkt · de 565 tomma betalfälten · ompeka `Antal hämtningar` (**PROD-SCHEMAÄNDRING**) · 69 `Engagemang`-rader. — *Källa:* MOMENT 5 (rad 2604–2606). **MARCUS-ÄGD.**
 - [ ] **S107-Ö7 · `T151` — Sentrys fyra mätta luckor.** Tom `transaction` (`browserTracingIntegration` saknas) · `Users: 0` (ingen user context) · **source maps obesvarat** (röktestet bar ingen riktig stack — avgörs av ett ÄKTA fel ur appens kod) · `reportEdgeFunctionError` utan anropare. `§ LUCKA 3`-skarven mot felmeddelandena tillhör S109, resten S107. — *Källa:* § CARRY (rad 2610–2614). *Belägg för Ö:* `T151` = `active`.
-- [ ] **S107-Ö8 · `T147` · `T148` · `T149` · `T150`.** Staging-fixturen (steg 3 plockbart) · flake-riggen acceptance-bunden · två testklasser kan bara fällas efter landning · warmup-gaten. — *Källa:* § CARRY (rad 2615–2617) + NÄSTA STEG 4 (rad 2647). *Belägg för Ö:* alla fyra `active` i trådregistret.
+- [ ] **S107-Ö8 · `T147` · `T148` · `T149` · `T150`.** Staging-fixturen (steg 3 plockbart) · flake-riggen acceptance-bunden · två testklasser kan bara fällas efter landning · warmup-gaten. — *Källa:* § CARRY (rad 2615–2617) + NÄSTA STEG 4 (rad 2645). *Belägg för Ö:* alla fyra `active` i trådregistret.
 - [ ] **S107-Ö9 · Datakvalitet i personlistan — ej åtgärdad.** ~185–190 av 559 poster har `Namn = "Ej tillgängligt"`; var tredje rad saknar namn när Lotta öppnar listan. **Mätt EN gång utan dubbelkontroll** — mät om innan åtgärd. — *Källa:* § CARRY (rad 2620–2622).
 - [ ] **S107-Ö10 · Testposten `Marcus (test) Johansson` i de 559** — riktiga talet är 558. — *Källa:* § CARRY (rad 2623).
 - [ ] **S107-Ö11 · `.prod-ref-policy.conf:52` bär ett falskt påstående.** Raden motiverar prod-låset med att CLAUDE.md behandlar Airtables prod-bas som förbjuden UTAN läs-undantag — premissen är falsifierad i Del 13 § D (rad 1442–1458). Låset självt är korrekt; motiveringen är det inte. — *Källa:* § CARRY (rad 2624). *Belägg för Ö:* raden står oförändrad på disk.
@@ -159,3 +160,50 @@ Var och en bär en sektion `## Stängd via scope-överföring (2026-08-28)` med 
 - [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+## Bedömningar och divergenser vid klassningen (2026-08-28)
+
+Kortet är byggt av en bygg-agent under AFK-drift. Följande är omdömesbeslut,
+inte mätningar — de bokförs öppet så nästa läsare kan ompröva dem.
+
+**Fyra divergenser mot S112 Del 7 Fynd 3:s hypotes** (den bedömningen var
+uttryckligen HYPOTES per ADR-086; djupläsningen fällde fyra av sex rader):
+
+1. **S92 var INTE "absorberad".** Fynd 3 skrev att migreringen är fullbordad.
+   Den mätningen gällde PREFIX-bytet `--mm-` → `--p-` i `primitives.css`.
+   S92:s migrering är rollmigreringen, och `primitives.css` rad 149–155 säger
+   själv *"ingenting är migrerat"*. S92 hade flest öppna punkter av de tre
+   "absorberade".
+2. **S98:s post 2 (UNIVERSAL-formen) är INTE avgjord.** Fynd 3 räknade den som
+   en av tre klara. `lessons-hub-sync`-skillens description säger alltjämt
+   *"konvergens till EN väntar Marcus-beslut"*.
+3. **S101 är delvis, inte absorberad.** `173.4` saknas, och `T61` bär
+   exekverings-loopen — inte K4-grillningen. Sessionens huvudspår är obörjat.
+4. **S107:s rest är tolv punkter, inte en.** Överlämning 2 § A räknar självt
+   upp vad S107 BEHÖLL; `.lycheeignore`-beslutet är en av dem.
+
+S96 ("delvis") och S99 ("genuint pausad") höll som bedömda.
+
+**Klassnings-gränsfall, bokförda som K på svagare grund än de övriga:**
+
+- **`#780`** (S99) klassades K därför att ärendet är `CLOSED`. Villkoret raden
+  bar — *"hålls öppet tills S98-resumen refererar det"* — uppfylldes aldrig;
+  ärendet stängdes utan den referensen. Klassningen är alltså "premissen har
+  fallit", inte "kravet är uppfyllt".
+- **S98:s worktree-städning** klassades K som absorberad av senare städningar
+  (`stada-worktrees.sh`, beståndet mätt till 7 den 2026-08-27). Ingen mätning
+  knyter de 17 ursprungliga worktreesen till dagens sju.
+- **`#635`** (S96/S98/S99) är `CLOSED` utan merge. Bumpen togs aldrig — posten
+  är avgjord, inte levererad.
+
+**Medvetet UTANFÖR kortet** (uppdragets avgränsning, ej förkastat): hub-lyftet
+`L433`–`L479` och de 121 fragmenten i `tasks/lessons.d/` — de har en egen
+kadens. De lesson-KANDIDATER som bara existerar i pausdoken är däremot
+överförda, eftersom de annars hade dött med stängningen.
+
+**Radintervallen är mätta EFTER paus-rubrikernas omdöpning**, som är
+radneutral. Stängningssektionen ligger sist och skjuter ingenting.
+<!-- SECTION:NOTES:END -->
