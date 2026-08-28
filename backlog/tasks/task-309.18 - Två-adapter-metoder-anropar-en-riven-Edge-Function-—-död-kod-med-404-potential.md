@@ -1,10 +1,10 @@
 ---
 id: TASK-309.18
 title: Två adapter-metoder anropar en riven Edge Function — död kod med 404-potential
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-24 17:31'
-updated_date: '2026-08-26 04:01'
+updated_date: '2026-08-28 03:14'
 labels:
   - ready-for-agent
 dependencies: []
@@ -73,4 +73,6 @@ GRINDAR (mätta, denna gren):
 - check:docs: exit 0, 14/14 gröna (ADR-Updates-formatet verifierat mot frontmatter+lifecycle-grindarna).
 
 Inget grep-baserat test hittades som specifikt namnger renderPdfFranHtml/renderPdfTillUtkast (adapter-paritet enforceras av TS "implements DataSourceAdapter", redan bevisat av grönt typecheck) — inget sådant test behövde uppdateras.
+
+Landning: PR #1990 (<https://github.com/high-five-group/miranon-media-admin/pull/1990>), merge-SHA 732af00d4c66c9caa3de0549ece550969d433ab8, mergad 2026-08-26T04:23:11Z. AC 4/4 och DoD 3/3 redan avbockade före denna stängning; verifierad MERGED via gh pr view (S108 resume 13, stängningssvansen).
 <!-- SECTION:NOTES:END -->

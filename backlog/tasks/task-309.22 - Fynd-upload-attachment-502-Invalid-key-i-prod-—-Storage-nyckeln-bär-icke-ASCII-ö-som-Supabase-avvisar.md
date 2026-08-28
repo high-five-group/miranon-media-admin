@@ -3,10 +3,10 @@ id: TASK-309.22
 title: >-
   Fynd: upload-attachment 502 Invalid key i prod — Storage-nyckeln bär
   icke-ASCII (ö) som Supabase avvisar
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-26 02:23'
-updated_date: '2026-08-26 06:14'
+updated_date: '2026-08-28 03:15'
 labels:
   - ready-for-agent
 dependencies: []
@@ -36,13 +36,15 @@ Klass: blockerar dokumentspåret i prod för vanliga svenska filnamn. Airtable-f
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
 RÄTTELSE 2026-08-26 (orkestreraren, efter review runda 1+2 på #1983): AC #1:s ordalydelse '→ 200' är felställd — EF:en svarar 201 för en genuint ny rad (TASK-316:s idempotens-kontrakt; 200 är reserverat för replay). AC #3:s pekare 'attachments.ts docblock + data-model.md § Lagringsnyckel' är felställd — beslutet bor i upload-attachment/index.ts:s docblock och data-model.md § 'Bucket bilagor — Storage-path-formerna'. Sakinnehållet i båda AC håller (verifierat av review-agenten runda 2, SHA 21e613fd); bockarna står mot sak, inte mot bokstav. Hash-underlaget efter runda 2: sanitizeFilnamn (originalnamn, aldrig ASCII-fall) hashas; toStorageSafe enbart för Storage-leaf.
+
+Stängningssvansen (S108 resume 13): DoD verifierad — #1 AC 4/4 avbockade. #2 lokala grindar gröna (kortets Implementation Notes citerar review-agentens rundor 1+2). #3 diff path-scopad, gh pr diff 1983 --name-only: .purge-staging-policy.json, CONTRIBUTING.md, data-model.md, supabase/functions/_shared/attachment-filename.ts+attachments.ts, upload-attachment/index.ts, tests/api/*, tsconfig.edge-shared.json, lessons.d/*, kortfilen — inga orelaterade filer. gh pr checks 1983: samtliga körda jobb pass. Landning: PR #1983 (<https://github.com/high-five-group/miranon-media-admin/pull/1983>), merge-SHA f80ace726396d914d1c308ea46d7216771f572c3, mergad 2026-08-26T14:48:49Z.
 <!-- SECTION:NOTES:END -->

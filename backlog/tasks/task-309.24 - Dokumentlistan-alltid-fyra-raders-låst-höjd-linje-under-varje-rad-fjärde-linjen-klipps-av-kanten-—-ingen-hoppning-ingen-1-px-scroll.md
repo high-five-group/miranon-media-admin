@@ -3,10 +3,10 @@ id: TASK-309.24
 title: >-
   Dokumentlistan: alltid fyra raders låst höjd, linje under varje rad, fjärde
   linjen klipps av kanten — ingen hoppning, ingen 1 px-scroll
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-26 02:48'
-updated_date: '2026-08-26 08:38'
+updated_date: '2026-08-28 03:15'
 labels:
   - ready-for-agent
 dependencies:
@@ -66,4 +66,6 @@ Review-fynd 3 (facit-noten): s108-dokumentytan/facit.json påstod git bekräftar
 AC #3 och #4 avbockades och bockades om (höll efter omprövning). AC #1/#2/#5 höll redan och rördes inte. Negativ kontroll körd: DokumentYta.tsx tillfälligt återställd till körning 1s implementation (patch sparad, sedan återapplicerad) — exakt de 5 NYA testerna (0/1/3-raders-lägena plus gränsfallstestet) föll, de 6 tidigare testerna höll. Full mättabell och grindutfall i PR-beskrivningen.
 
 RUNDA 2, ANDRA VARVET (2026-08-26, review-utlåtande på 8e34827f, risk medel, alla fem AC höll): tre kvarstående fynd lösta i samma PR (#2008), ingen ny AC-avbockning behövdes (alla fem höll redan). (1) Mobil-fallbacken (LISTA_FALLBACK_RADHOJD_MOBIL=155) var mätt mot en STRUKTURELLT bruten GemensamBilageRadRow vid 375px (ul-bredd 277px, ryms strukturellt aldrig bredvid namnkolumnens 12ch-golv) och gav orimliga ~622px låst höjd för ett tomt läge. Löst: EN viewport-oberoende konstant (99, mätt mot MallRad som aldrig bryter, identisk vid 502px och 277px ul-bredd) - uttalat produktbeslut, Marcus kan justera efter helgen. Ny 375px-svit för GemensamtLage (0/2/5 rader) lades till. (2) Nytt gränsfallstest NIVÅ 2 till NIVÅ 1 (3 till 4 rader in-place via riktig uppladdning) - höjden får öka, verifierat mot en oberoende precis-referens; 1px-avvikelse mot utlåtandets bokstavliga >= (398 till 397) förklarad och tolererad som samma kända syskon-count-kvirk som redan dokumenteras i filen. (3) Info-fynd rättade: testnamn AC #1/#6 till AC #1 / regel 6, stavfel i lessons-fragment. Facit-bilder kontrollerade - inga berörs (ingen visar tomt läge). SHA 62c71a3c.
+
+Stängningssvansen (S108 resume 13): AC 5/5 och DoD 3/3 redan avbockade. Verifierat: gh pr view 2008 — MERGED 2026-08-26T09:05:51Z, merge-SHA ac41e811093bc9cdb209f565934302669517945b. gh pr diff 2008 --name-only: DokumentYta.tsx, 4 lessons.d-fragment, facit-bilder+facit.json (s108-dokumentytan + s108-generering), 2 acceptance-testfiler, kortfilen — inga orelaterade filer. gh pr checks 2008: samtliga körda jobb pass. Landning: PR #2008 (<https://github.com/high-five-group/miranon-media-admin/pull/2008>).
 <!-- SECTION:NOTES:END -->

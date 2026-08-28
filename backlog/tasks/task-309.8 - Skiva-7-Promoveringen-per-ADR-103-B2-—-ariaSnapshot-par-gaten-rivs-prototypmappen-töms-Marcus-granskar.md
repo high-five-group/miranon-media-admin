@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-23 14:30'
-updated_date: '2026-08-26 04:14'
+updated_date: '2026-08-28 03:00'
 labels:
   - ready-for-human
 dependencies:
@@ -24,7 +24,7 @@ Den godkända formen blir den enda formen: flaggor och växlar rivs mekaniskt, f
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 ariaSnapshot-par taget i variant-läge FÖRE flippen för båda mallarnas genereringsvy och listvyn; paret fäller på varje skillnad mot den promoverade ytan EFTER (ADR-103 B4)
+- [x] #1 ariaSnapshot-par taget i variant-läge FÖRE flippen för båda mallarnas genereringsvy och listvyn; paret fäller på varje skillnad mot den promoverade ytan EFTER (ADR-103 B4)
 - [x] #2 DEV-gaten och ?variant=a rivna; GenereringsPrototyp blir GenereringsVy bredvid DokumentYta; prototyp-mappen tom; listvyns handkopierade klasser ersatta av DokumentYta:s komponenter; MALL_META.fastForm städad; prototyp-markörerna borta ur manifestet (referens-scanningen grön)
 - [x] #3 Marcus granskar den promoverade ytan mot staging på tillåten origin och godkänner i klartext (HITL)
 - [ ] #4 Ny visuell baslinje tas EFTER godkännandet, aldrig före
@@ -45,4 +45,6 @@ Den godkända formen blir den enda formen: flaggor och växlar rivs mekaniskt, f
 
 <!-- SECTION:NOTES:BEGIN -->
 2026-08-26 (S108 resume 11, orkestreraren på Marcus mandat i klartext: "Du har mandat att ta besluten"): AC #3 (ursprungliga 'identisk med den körande prototypen') borttaget och ersatt av nytt AC #5 med de tre beställda avvikelserna explicit (309.12/.13/.14) — ordalydelsen var inte längre sann efter Marcus egna beställningar 2026-08-24. Nya #5 bockat: avvikelserna är verifierade landade (d9d973d5). AC #3 (f.d. #4, Marcus granskning + godkännande i klartext) bockat: granskningen skedde 2026-08-24 (sessionsdok Del 21 § A, fyra punkter, alla åtgärdade) och promoveringen landade i prod (#1889); godkännandet bekräftat via mandatet 2026-08-26. Kvar: #1 (aria-par: mobil täckt av 309.16 Done; datum-läget onåbart → stängs när 309.19 landat) och #4 (ny visuell baslinje = skiva 9:s facit, efter Marcus stämpling).
+
+Stängningssvansen (S108 resume 13): AC #1 bockad. TASK-309.19 (PR #2005, MERGED 2026-08-26T06:03:43Z) rev BlockDialogs datum-gren och stängde onåbarheten AC #1 väntade på ('datum-läget onåbart → stängs när 309.19 landat'). AC #1:s krav ('ariaSnapshot-par taget i variant-läge FÖRE flippen... paret fäller på varje skillnad') är därmed uppfyllt via promoverings-grindens bevisade oförändrade par (309.19:s Final Summary: 12/12 promoverings-tester gröna, tests/visual/__aria__/ byte-identiskt). Kortet lämnas ÖPPET — AC #4 (ny visuell baslinje efter Marcus stämpling) väntar fortfarande Marcus facit-stämpling, per uppdrag.
 <!-- SECTION:NOTES:END -->

@@ -3,10 +3,10 @@ id: TASK-309.20
 title: >-
   Dokumentytan vid 375 px: filnamn trunkeras och ikonknappar ligger över
   räckviddsbadgen
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-24 17:54'
-updated_date: '2026-08-26 03:20'
+updated_date: '2026-08-28 03:14'
 labels:
   - ready-for-agent
 dependencies: []
@@ -42,9 +42,9 @@ Agenten bokförde observationen i manifestens not-fält i stället för att tyst
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -87,4 +87,6 @@ kört på nytt efter ändringen: exit 0, 14/14 gröna. Ingen ny AC bockas för
 detta — kortets AC #4 nämnde bara s108-dokumentytan; denna omtagning är
 bokförd här som orkestrerarens explicita tilläggsbeslut, inte en
 scope-utvidgning jag gjorde på eget bevåg.
+
+Stängningssvansen (S108 resume 13): DoD verifierad — #1 AC 4/4 avbockade (redan). #2 lokala grindar gröna per kortets egna Implementation Notes (Playwright visual-mobile). #3 diff path-scopad, verifierat via gh pr diff 1977 --name-only: DokumentYta.tsx, RackviddBadge.tsx, facit-bilder+facit.json (s108-dokumentytan + s108-generering) samt kortfilen — inga orelaterade filer. gh pr checks 1977: samtliga körda jobb pass (staging/A11y skippade per D0/D1-klassning, ej fel). Landning: PR #1977 (<https://github.com/high-five-group/miranon-media-admin/pull/1977>), merge-SHA a2f68b71082d3731f9416640ee79015f7d9a348c, mergad 2026-08-26T03:53:05Z.
 <!-- SECTION:NOTES:END -->
