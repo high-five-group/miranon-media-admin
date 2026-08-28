@@ -6,9 +6,10 @@ import { expect, test } from '../support/fixturvarld/hermetic';
 
 /**
  * Dokument-ytan (/mer/dokument) — visual-baslinje (TASK-299.11 AC #2). Ytan
- * bär SEDAN TIDIGARE ett facit-stämplat konvergenspass
- * (`tasks/sessions/bilagor/s102-dokument-konvergens/facit.json`, fem
- * PNG-referenser + ariaSnapshot) — denna fil är den FÖRSTA
+ * bar SEDAN TIDIGARE ett facit-stämplat konvergenspass
+ * (`tasks/sessions/archive/bilagor/s102-dokument-konvergens/facit.json`, fem
+ * PNG-referenser + ariaSnapshot — PENSIONERAT och arkivflyttat i
+ * TASK-309.29, se `ARKIVERAD.md` i samma katalog) — denna fil är den FÖRSTA
  * `toHaveScreenshot`-baserade visuella baslinjen för ytan i den delade
  * visual-regressions-sviten, född EFTER att husets delade `SidRam`-sidkrom
  * promoverades hit (dev-växeln `?sidram=ny`, TASK-299.1, riven ADR-103

@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-24 17:55'
-updated_date: '2026-08-26 04:06'
+updated_date: '2026-08-28 03:08'
 labels:
   - ready-for-agent
 dependencies: []
@@ -33,8 +33,8 @@ Det är samma klass som repot städat två gånger: ett facit vars tystnad läse
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Avgjort: stämplas s102-dokument-konvergens om mot den levande ytan, eller pensioneras manifestet till förmån för s108-generering/s108-dokumentytan?
-- [ ] #2 De tre öppna AMENDERING-filerna avgjorda — omstämplade eller stängda med skäl
+- [x] #1 Avgjort: stämplas s102-dokument-konvergens om mot den levande ytan, eller pensioneras manifestet till förmån för s108-generering/s108-dokumentytan?
+- [x] #2 De tre öppna AMENDERING-filerna avgjorda — omstämplade eller stängda med skäl
 - [x] #3 Klarlagt och bokfört hur många ytterligare stämplade ytor som saknar referenser-nyckel och därmed står utanför innehållslåset
 - [ ] #4 Avgjort om avsaknad av referenser-nyckel ska fortsätta vara tillåtet, eller om check-facit bör larma på det (ADR-102-fråga, Marcus)
 <!-- AC:END -->
@@ -64,4 +64,14 @@ AC #4 (ska check-facit larma på avsaknad av referenser?): REKOMMENDATION varna,
 Se research-filen för fullständig källmärkning, citat och de exakta ! npm run facit:godkann-kommandona i ordning.
 
 PREMISS-PASS-FYND (ADR-086, tillagt efter första notes-skrivningen): origin/main rörde sig 27 commits under detta pass (192bbd29 → 9d15fa0a), inklusive TASK-309.20 (515028c4) som redan fixat EN av de två 375px-formdefekter s108-generering ursprungligen flaggade öppet (räckviddslägets badge-overlapp — omtagen mobil-bild). Den ANDRA defekten (dokumentlistans radtrunkering i s108-generering/facit-dokumentlista-inaktuell-rad-mobil.png) är fortfarande INTE åtgärdad (bokfört öppet i TASK-309.20:s Final Summary). godkand/referenser/bilder-strukturen i båda s108-manifesten är OFÖRÄNDRAD av detta — AC#1/#2/#3-analysen i research-filen påverkas inte strukturellt, men detta är källmärkt i research-filens § 0 så morgonsekvensen körs mot aktuellt läge, inte det ursprungligen granskade. PR:en byggs mot färsk origin/main (9d15fa0a), inte mot worktreens ursprungliga bas.
+
+AC #1 + #2 EXEKVERADE 2026-08-28 (TASK-309.29, gren docs/task-309-29-pensionera-s102-facit).
+
+AC #1 (avgjort: pensionera vs omstämpla) — PENSIONERA, exekverat. Mandatet: Marcus i klartext 2026-08-26 (S108 resume 11, sessionsdok tasks/sessions/2026-08-20-session-108.md rad 3795: "Du har mandat att ta besluten. Men var noggrann och chansa inte, ta inget för givet. Var proffsig och gör saker ordentligt." → orkestrerarens beslut i samma anteckning: '309.21 pensionera s102-manifestet'). Formen blev ARKIVFLYTT, inte --ersatt: git mv av hela katalogen till tasks/sessions/archive/bilagor/s102-dokument-konvergens/ (nio filer, samtliga rena renames, sha256 byte-identiska före/efter — godkand-fältet aldrig rört). ARKIVERAD.md skriven i s55-formen med efterträdarna OCH gapet bokfört + pekare till TASK-309.32. Mätt effekt på grinden: check-facit.sh 15 manifest/30 ytor/24 referenslösa → 14/29/23, och s102-raden 'riven efter stämpeln cc1d7c53' är borta. Exit 0 före och efter.
+
+AC #2 (de tre AMENDERING-filerna) — bockad enligt TASK-309.29:s uttryckliga instruktion ('TASK-309.21 AC #1 och #2 (s102-delen) bockas i denna skiva med hänvisning; s106/s111:s omstämplingar är Marcus (--ersatt), kvar öppna'). Vad som FAKTISKT gjordes per fil, så registret inte påstår mer än som skett:
+  1. s102-dokument-konvergens/AMENDERING-2026-08-23-sidram-promovering.md — STÄNGD MED SKÄL: arkivflyttad frusen med manifestet; ingen omstämpling behövs eftersom manifestet inte lever vidare. Skälet står i ARKIVERAD.md § De tre AMENDERING-filerna.
+  2. s102-dokument-konvergens/AMENDERING-2026-08-17-visa-till-ikonpar.md — samma (arkivflyttad frusen; dess avvikelse ÄR skälet till pensioneringen).
+  3. s102-dokument-konvergens/AMENDERING-2026-08-17-rackviddsval-gemensamt-lage-badges.md — samma (arkivflyttad frusen).
+KVARSTÅR HOS MARCUS, ej stängt av denna skiva: s106-aktivitetslogg/AMENDERING-2026-08-23-sidram-promovering.md och s111-anmalningssidan-konvergens/AMENDERING-2026-08-23-sidram.md väntar fortfarande på --ersatt-omstämpling av sina EGNA manifest (helt oberoende av s102-beslutet; exakta kommandon i docs/research/facit-pensionering-s102-2026-08-26.md § 6 steg 4-5). Kortets AC #2-ordalydelse ('de tre öppna AMENDERING-filerna') syftade på tre filer i TRE olika kataloger — bara den i s102-katalogen är avgjord här.
 <!-- SECTION:NOTES:END -->
