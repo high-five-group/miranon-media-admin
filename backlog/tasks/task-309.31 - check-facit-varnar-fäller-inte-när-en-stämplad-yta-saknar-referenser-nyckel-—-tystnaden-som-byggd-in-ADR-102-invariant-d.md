@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-26 05:06'
-updated_date: '2026-08-28 03:10'
+updated_date: '2026-08-28 03:13'
 labels:
   - ready-for-agent
 dependencies: []
@@ -57,4 +57,6 @@ AC #4 — .facit-policy.conf bär FACIT_VARNA_ODEKLARERAD_REFERENS="1"; skriptet
 Grindar (exitkod läst naket, aldrig genom pipe): bash scripts/test-check-facit.sh → 0 (64/0) · bash scripts/check-facit.sh → 0 · shellcheck --severity=style --enable=all (CI:s exakta flaggor) på check-facit.sh + test-check-facit.sh + .facit-policy.conf → 0 · npx @biomejs/biome check . → 0 · npm run check:docs → 0 (14 gröna; WARN-raderna syns i dess utdata — beviset att tystnaden bröts i den verkliga pipelinen).
 
 SIDOFYND (ej åtgärdat, ej blockerande): ADR-104-hooken deny-facit-godkand-skrivning.sh fällde ett Bash-heredoc som skulle skriva ADR-texten, därför att texten nämnde stämplingsskriptets filnamn efter ett backtick — vilket hooken läste som kommando-position. Falsk-positiv i Kanal A:s kommando-positions-matchning när målet är en heredoc-kropp. Kringgicks INTE: ADR-texten skrevs via Edit-verktyget i stället, och formuleringen bär nu "stämplingsskriptet" i prosa.
+
+LANDNING: PR #2032, gren feat/task-309-31-facit-tackningsvarning. Ej armerad — orkestreraren granskar diffen och armerar i sitt svep.
 <!-- SECTION:NOTES:END -->

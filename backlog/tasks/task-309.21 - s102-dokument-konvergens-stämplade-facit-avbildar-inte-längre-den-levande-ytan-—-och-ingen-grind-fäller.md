@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-24 17:55'
-updated_date: '2026-08-28 03:10'
+updated_date: '2026-08-28 03:12'
 labels:
   - ready-for-agent
 dependencies: []
@@ -78,4 +78,6 @@ KVARSTÅR HOS MARCUS, ej stängt av denna skiva: s106-aktivitetslogg/AMENDERING-
 AC #4 AVGJORD OCH BOCKAD 2026-08-28 (TASK-309.31): "VARNA" valdes, fällning valdes bort. check-facit.sh namnger nu varje stämplad yta som saknar nyckeln "referenser" på stderr plus en summeringsrad "24 av 28 stämplade ytor saknar innehållslås"; exitkoden är oförändrad 0 i varje läge. Beslutet med sina fyra skäl bor i ADR-102 § Updates 2026-08-28 ("Täckningsluckan i invariant (d) NAMNGES, men fäller inte"), som citerar research-filens § 4-rekommendation ordagrant. Vägen till ett FÄLLANDE innehållslås är TASK-288:s backfill, inte en strängare grind i dag.
 
 Kortet lämnas ÖPPET i övrigt: AC #1/#2 bockade av TASK-309.29 (se ovan); s106/s111-omstämplingarna kvarstår hos Marcus. (Rebase-sammanslagning 2026-08-28: #2031 landade före #2032, båda blocken behållna.)
+
+Landningen för AC #4-beslutet: PR #2032 (gren feat/task-309-31-facit-tackningsvarning).
 <!-- SECTION:NOTES:END -->
