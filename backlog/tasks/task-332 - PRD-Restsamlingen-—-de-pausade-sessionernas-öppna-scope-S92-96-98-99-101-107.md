@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-28 03:36'
-updated_date: '2026-08-28 03:53'
+updated_date: '2026-08-28 04:21'
 labels:
   - prd
   - restsamling
@@ -22,7 +22,7 @@ Samlingsartefakten för de SEX pausade sessionsdokens öppna scope-punkter. Marc
 
 Formen (PRD-kort, inte sessionsdok) beslutad i `tasks/sessions/2026-08-24-session-112.md` § "Marcus order mitt i resumen" beslut 1 (rad 757–770): ett för-skapat sessionsdok bryter ADR-043 beslut 4 (dok föds vid sessionsstart), och framåtriktat arbete bor i Backlog.md-substratet.
 
-**Ingenting är förkastat.** Varje scope-punkt i de sex doken är klassad **K** (klar, med belägg mätt mot disk/backlog/git) eller **Ö** (öppen). K-punkterna bokförs i respektive doks stängningssektion; Ö-punkterna står nedan, var och en med källdok + rubrik + radintervall samt de kort-/tråd-/PR-referenser den redan pekar på.
+**Ingenting är förkastat.** Summa: **28 K · 56 Ö**. Varje scope-punkt i de sex doken är klassad **K** (klar, med belägg mätt mot disk/backlog/git) eller **Ö** (öppen). K-punkterna bokförs i respektive doks stängningssektion; Ö-punkterna står nedan, var och en med källdok + rubrik + radintervall samt de kort-/tråd-/PR-referenser den redan pekar på.
 
 De sex doken är stängda via **scope-överföring** — ny stängningsform, bokförd som amendering i `docs/decisions/ADR-052-lifecycle-frontmatter-falt.md` § Updates 2026-08-28.
 
@@ -42,7 +42,7 @@ Landningen är klar (PR `#285` mergad `03d3a3f4`); det som står kvar är **migr
 - [ ] **S92-Ö6 · `--mm-btn-primary-hover` saknar målsteg.** Gamla neutral-700 (L\* 24,4) har ingen bra motsvarighet; närmaste nya är steg 11 (32,2). Designbeslut, inte palettfel. — *Källa:* § CARRY (rad 648–650).
 - [ ] **S92-Ö7 · Kandidat F16 — `btn` mot `button`.** Namnklyvningen mellan lager 2 och lager 3, och att `--mm-btn-*` är en komponentnamngiven roll i det SEMANTISKA lagret. Underlaget är korrigerat i § Ett S91-påstående som föll (rad 370–409); S91:s formulering vilade på ett falsifierat påstående. Ej infört i fyndregistret — **namnbeslutet är Marcus**. — *Källa:* § CARRY (rad 651–657) + rad 404–409. *Not:* `T125` handlar om `Button`-primitiven kontra handrullade piller (knappstorlek/radie), INTE om tokennamnen — F16 har alltså ingen egen tråd.
 - [ ] **S92-Ö8 · Primer-fyndet mot S91-beslutet.** Primer överger alfa i high-contrast och byter till solida färger, eftersom alfa inte KAN garantera kontrast. Vår `--mm-state-hover-contrast` är 12 % alfa. "Bör prövas separat — kandidat för eget tråd-kort." — *Källa:* § CARRY (rad 641–644). *Belägg för Ö:* inget tråd-kort finns (grep efter `primer` / `high-contrast` i `tasks/threads/README.md` = 0 träffar).
-- [ ] **S92-Ö9 · Elva lesson-kandidater, fyra `[UNIVERSAL]`, ej skördade.** Bl.a. `\b` är fel ordgräns för tokennamn · en verifierare som lånar den verifierades kod bevisar ingenting · oberoende implementation räcker inte, antagandena måste också skilja sig · kartlägg verkligheten innan du ändrar den. — *Källa:* § Lesson-kandidater (rad 544–588). *Belägg för Ö:* grep efter tre distinkta fraser ur listan i `tasks/lessons/` + `tasks/lessons.d/` = **0 filer**.
+- [ ] **S92-Ö9 · Elva lesson-kandidater, SJU `[UNIVERSAL]`, ej skördade.** Bl.a. `\b` är fel ordgräns för tokennamn · en verifierare som lånar den verifierades kod bevisar ingenting · oberoende implementation räcker inte, antagandena måste också skilja sig · kartlägg verkligheten innan du ändrar den. — *Källa:* § Lesson-kandidater (rad 544–588). *Belägg för Ö:* grep efter tre distinkta fraser ur listan i `tasks/lessons/` + `tasks/lessons.d/` = **0 filer**. *Räknat om 2026-08-28:* `sed -n '544,588p' | grep -c '^- \*\*'` = **11**, `grep -c '\[UNIVERSAL\]'` = **7**. **Dokets egen CARRY-rad (rad 656–657) är fel i BÅDA talen** — den säger *"sju stycken, fyra flaggade `[UNIVERSAL]`"*, medan listan bär 11 punkter varav 7 taggade och 4 otaggade. Dokets "sju" är alltså antalet TAGGADE och dess "fyra" antalet OTAGGADE — en förväxling av kolumnerna, inte en annan mätning. Kortet bär den omräknade siffran, inte dokets.
 
 **Så återupptas det tekniska arbetet:** `npm run atlas` (bygger, formaterar, verifierar) ska ge noll avvikelser innan något nytt påbörjas — 1611 kontroller. Se § Så återupptas arbetet (rad 528–542).
 
@@ -127,7 +127,8 @@ Två hela spår är ÖVERLÄMNADE och ingår därför INTE nedan: dokument-/bila
 - [ ] **S107-Ö9 · Datakvalitet i personlistan — ej åtgärdad.** ~185–190 av 559 poster har `Namn = "Ej tillgängligt"`; var tredje rad saknar namn när Lotta öppnar listan. **Mätt EN gång utan dubbelkontroll** — mät om innan åtgärd. — *Källa:* § CARRY (rad 2620–2622).
 - [ ] **S107-Ö10 · Testposten `Marcus (test) Johansson` i de 559** — riktiga talet är 558. — *Källa:* § CARRY (rad 2623).
 - [ ] **S107-Ö11 · `.prod-ref-policy.conf:52` bär ett falskt påstående.** Raden motiverar prod-låset med att CLAUDE.md behandlar Airtables prod-bas som förbjuden UTAN läs-undantag — premissen är falsifierad i Del 13 § D (rad 1442–1458). Låset självt är korrekt; motiveringen är det inte. — *Källa:* § CARRY (rad 2624). *Belägg för Ö:* raden står oförändrad på disk.
-- [ ] **S107-Ö12 · Lesson-kandidater ur passen, ej hub-lyfta.** Del 8 § F (fyra, rad 686–707) + Del 14 § G (rad 1694–1710). — *Källa:* de angivna sektionerna.
+- [ ] **S107-Ö12 · Lesson-kandidater ur passen, ej hub-lyfta.** Del 8 § F (fyra, rad 686–707) + Del 14 § G (rad 1694–1710). — *Källa:* de angivna sektionerna. *Se även `S107-Ö13` (f)* — Del 8 § F:s lista är själv ofullständig.
+- [ ] **S107-Ö13 · Bokföringsskulden — den namngivna kategorin, delvis kvar.** Överlämning 2 § A räknar upp *"bokföringsskulden inklusive ADR-README:s paritetsbrist"* bland det S107 BEHÖLLER; termen är en återkommande kategori i doket (rad 169–171 ADR-count-fixen · rad 1424 flipp-skulden · rad 2271 · rad 2675). **Kvarstår efter omklassning 2026-08-28:** (a) **`TASK-276`** står `To Do` med **0 av 8 AC bockade** fast arbetet är gjort — doket sade "alla fyra AC obockade", kortet bär i dag åtta · (b) **`TASK-241.5`** (WOW-övergången hem–sändyta) `To Do`, och **`TASK-241.8`** (eventinfo-svepet) `To Do` — det senare är kortet Del 13 sade saknades helt (*"eventinfo finns i inget kort"*), sedan skapat men ej byggt · (c) **`ORDLISTA.md` saknar fortfarande en kanonisk post för `Familj`** — `grep '^\*\*Familj' ORDLISTA.md` = 0 träffar; termen används i **Räckvidd**-definitionen (rad 193–194) utan att själv vara definierad · (d) **deploy-ordningen** ("EF-deploy före EF-form-ändrande landning") är alltjämt **oregistrerad som tråd** — 0 träffar i `tasks/threads/README.md` · (e) **`TASK-273`s QA-kort `273.5`** `To Do` (PRD-föräldern `273` står öppen på det); `275`-familjen räknas INTE hit, den ägs av S108 · (f) **D6-luckan**: PAUSLÄGE refererar *"de arton i Del 8 § F"* men listan slutar vid **(15)** — nummer **16–18 är aldrig utskrivna någonstans**, och (16) är den `bg-bg-muted`-lärdom PAUSLÄGE själv kallar UNIVERSAL-klass. — *Källa:* § Överlämning 2 § A (rad 2671–2676) · D4-tabellen (rad 1025–1035) · D6 (rad 1053–1060) · rad 1424. **Delvis MARCUS-ÄGD** (273.5 är hans QA).
 
 ---
 
@@ -147,7 +148,7 @@ Två hela spår är ÖVERLÄMNADE och ingår därför INTE nedan: dokument-/bila
 - `tasks/sessions/2026-08-05-session-98.md` — 3 K, 4 Ö
 - `tasks/sessions/2026-08-07-session-99.md` — 5 K, 11 Ö
 - `tasks/sessions/2026-08-09-session-101.md` — 3 K, 8 Ö
-- `tasks/sessions/2026-08-17-session-107.md` — 6 K, 12 Ö
+- `tasks/sessions/2026-08-17-session-107.md` — 10 K, 13 Ö
 
 Var och en bär en sektion `## Stängd via scope-överföring (2026-08-28)` med sin fullständiga K/Ö-tabell och beläggen för K-klassningarna.
 
@@ -206,4 +207,36 @@ kadens. De lesson-KANDIDATER som bara existerar i pausdoken är däremot
 
 **Radintervallen är mätta EFTER paus-rubrikernas omdöpning**, som är
 radneutral. Stängningssektionen ligger sist och skjuter ingenting.
+
+## Runda 2 (2026-08-28) — review-agentens tre fynd åtgärdade
+
+Granskning i färsk kontext på PR `#2045` (risk MEDEL) fällde tre saker. Alla
+tre prövades mot disk innan de åtgärdades; alla tre höll.
+
+1. **En tappad scope-post (error).** Överlämning 2 § A räknar upp SJU
+   retained-poster; min första klassning täckte sex. *"Bokföringsskulden
+   inklusive ADR-README:s paritetsbrist"* stod varken som K eller Ö — ett
+   brott mot ADR-052-amenderingens eget villkor 1. Posten är nu uppdelad:
+   fyra delposter klassade **K** med mätning (ADR-README-pariteten 126/126/126
+   · nio Done-flippar · `task-277` skapat och Done · flipp-skulden
+   `241.2/.3/.4` Done) och sex delposter samlade i **`S107-Ö13`**
+   (`TASK-276`s 0-av-8 obockade AC · `241.5`/`241.8` · `ORDLISTA` § `Familj`
+   · deploy-ordningen som tråd · `273.5` · D6-luckan).
+2. **Fel UNIVERSAL-tal (warning).** `S92-Ö9` sade "fyra `[UNIVERSAL]`";
+   omräkning ger **11 punkter, 7 taggade, 4 otaggade**. **Roten är dokets
+   egen CARRY-rad** (S92 rad 656–657), som säger *"sju stycken, fyra
+   flaggade"* — den har förväxlat kolumnerna, och jag ärvde felet i stället
+   för att räkna om. Exakt den felklass S92:s egen lesson-kandidat beskriver
+   (*"ett påstående ärvt ur ett annat sessionsdok är en hypotes"*) — begången
+   på det dok som formulerade den.
+3. **ADR-052 beslut 1 motsade amenderingen (info).** Beslut 1 band `closed`
+   till *"(session-end)"* medan amenderingen införde en andra väg och samtidigt
+   påstod att beslut 1–6 var oförändrade. Beslut 1:s parentes är nu amenderad
+   i beslutstexten med markering, och § Updates säger korrekt att beslut 1
+   amenderas och beslut 3 utvidgas.
+
+**Vad detta säger om första rundan:** samtliga tre fynd är klassnings- och
+bokförings-fel i MITT arbete, inget av dem fångades av någon grind — de tre
+grindarna var gröna i runda 1 också. Det är instansdata för ADR-105:s premiss
+att granskning i färsk kontext fångar en annan felklass än mekaniska grindar.
 <!-- SECTION:NOTES:END -->

@@ -28,9 +28,11 @@ två ortogonala tillstånds-axlar i ett fält.
 
 Gemena strängar, konsekvent med `status:`-enumets format. Semantik: `active` =
 sessionens arbete pågår eller är öppet (nyfött eller återupptaget); `paused` = durabelt
-parkerat utan completion (ADR-051-paus); `closed` = avslutat (session-end). Tre
-tillstånd, fyra verb: start/create-session-doc → `active`; paus → `paused`; resume →
-`active`; end → `closed`.
+parkerat utan completion (ADR-051-paus); `closed` = avslutat — **via `session-end`
+ELLER via scope-överföring** (*amenderat 2026-08-28, se § Updates; ursprungstexten
+sade enbart "(session-end)"*). Tre tillstånd, fyra verb: start/create-session-doc →
+`active`; paus → `paused`; resume → `active`; end → `closed` — plus
+scope-överföringen som femte, verblös skrivare av `closed`.
 
 ### 2. Ortogonal mot `status:` — `status:` förblir orört
 
@@ -128,9 +130,19 @@ skill-editsen landar (efterföljande inkrement) — tills dess är det en deklar
 
 ### 2026-08-28 (S112 resume 2) — andra vägen till `closed`: STÄNGNING VIA SCOPE-ÖVERFÖRING
 
-Beslut 1–6 är oförändrade. Denna post utvidgar **beslut 3** (skill-ägt
-underhåll) med en femte, namngiven skrivare av `lifecycle:`-fältet, och
-namnger den avvägning utvidgningen kostar.
+Denna post **amenderar beslut 1** och **utvidgar beslut 3**. Beslut 2, 4, 5
+och 6 är oförändrade.
+
+- **Beslut 1** band `closed` till ett enda verb (*"`closed` = avslutat
+  (session-end)"*). Den parentesen är nu ofullständig och har därför
+  amenderats i beslutstexten själv, med markering — en läsare som stannar
+  vid beslut 1 ska inte tro att `session-end` är enda vägen till `closed`.
+  Besluts-texten är annars fryst (L53): det som ändrats är parentesens
+  uppräkning, inte semantiken hos `closed`.
+- **Beslut 3** (skill-ägt underhåll) får en femte, namngiven skrivare av
+  `lifecycle:`-fältet.
+
+Posten namnger också den avvägning utvidgningen kostar.
 
 **Kontexten — sex dok som ingen ceremoni kunde nå.** Beslut 3 gav fältet fyra
 skrivare, en per lifecycle-verb: `session-start` → `active`, `session-paus` →
