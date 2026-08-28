@@ -15,6 +15,26 @@
 
 ## Aktuellt fokus
 
+**Session 112 ▶️ ÅTERUPPTAGEN (resume 2, 2026-08-28, `lifecycle: active`) — ORKESTRERARE +
+PROJEKTLEDARE PÅ FULLT AFK-MANDAT: BORT FRÅN FLASKHALSEN, TILL ETT RENT REPO.** Marcus
+order: *"Återuppta S112 … vad ett RENT och städat läge skulle vara"* + rollen antagen
+(*"Antar du den?"* / *"du bestämmer"*). Huvudkatalogen ägs av S108 resume 13 (pid 77130) —
+S112 i `s112-stadsessionen`, gren `docs/s112-resume-2` från `7a0a2a46`. `#2012` landad
+`27db4d69`. **Numrering mot disk:** task-330 → 331 · ADR 127 → 128 · L533 · **121 fragment**
+(handoff sade 112) · T176 · session 113. **Triagen (Del 7, fyra läs-agenter):** nightly rött
+3 nätter × 5 jobb = fyra registerhygien-skulder + en fixturdrift (`datum`/`eventmatchning`,
+saknar kort) · 42 issues = 42 bot-larm (27 post-merge, 13 ci-natt i obruten följd, 1 lankrota)
+· 8 pausade dok: S92/101/107 absorberade, S96/98 delvis, S99 genuin · backlog 168 öppna =
+STOR inte smutsig (5 landade-ej-flippade, 24 utan AC, `213` obörjad = S113) · trådar 131/175
+öppna, OAVGJORT T01/T17/T19 nu 67–75 d · **178 grenar/154 mergade** (åter sedan 310) ·
+**flaskhalsen: planen finns, 327/323/322 obyggda, 328 väntar Marcus; view 130 s under last.**
+**Beslut (Del 7):** restsamlingen = PRD-kort med referens per scope-punkt + scope-överföring
+som stängningsform (ADR-052-amendering) · larm-issues stängs med motivering · grenstädning
+från worktree som 323:s skarpbevis. **NÄSTA (AFK-våg 5): 327 → 323 → 322 · nightly-städ
+(arkivering, fixtur, 223) · larm-issues · restsamlingen · 173.4/173.6 · AC-komplettering ·
+grenstädning · Marcus-moment orörda (325 · 37 · 326/328/330/254 · bilder · #1957 · dependabot
+· vandringsblocket).** Full narrativ: sessionsdok S112 Del 7.
+
 **Session 112 ⏸️ PAUSAD (paus 2, 2026-08-26 ~07:45, `lifecycle: paused`; resume 1
 körd AFK på fullt mandat) — FIX-VÅG 4 HELT LANDAD, REVIEW-GRINDEN 173.1–173.5
 I DRIFT, FLASKHALSEN UTREDD.** Marcus order: *"Återuppta S112 …"* + kvittens *"Gör det du anser
