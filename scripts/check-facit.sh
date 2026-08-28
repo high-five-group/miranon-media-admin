@@ -61,11 +61,29 @@
 #
 # TVÅ NAMNGIVNA LUCKOR I (d), öppet bokförda i stället för utjämnade:
 #   1. TÄCKNINGEN. Nyckeln "referenser" är valfri, och 21 av 22 stämplade
-#      ytor saknar den (mätt 2026-08-22). Backfillen kräver mätning per yta
-#      — endast 4 av 12 manifest namnger sina __aria__-sökvägar — och är ett
-#      eget kort. Slutraden nedan RÄKNAR UPP de odeklarerade vid varje
-#      körning, så frånvaron aldrig blir tyst (R5-lärdomen: en odeklarerad
-#      lucka är oskiljbar från ett förbiseende).
+#      ytor saknar den (mätt 2026-08-22; 24 av 28 mätt 2026-08-28 i
+#      TASK-309.31 — talet har vandrat med antalet stämplade ytor, INTE med
+#      någon backfill: TASK-288 står ännu To Do). Backfillen kräver mätning
+#      per yta — endast 4 av 12 manifest namnger sina __aria__-sökvägar —
+#      och är ett eget kort. Slutraden nedan RÄKNAR UPP de odeklarerade vid
+#      varje körning, så frånvaron aldrig blir tyst (R5-lärdomen: en
+#      odeklarerad lucka är oskiljbar från ett förbiseende).
+#
+#      SEDAN TASK-309.31 (2026-08-28) räcker inte räkningen. En siffra säger
+#      HUR STOR luckan är men inte VAR den sitter, och en yta som ingen kan
+#      peka ut är i praktiken lika otäckt bevakad som en yta ingen räknat.
+#      Grinden NAMNGER därför varje stämplad yta som saknar nyckeln, på
+#      stderr, som en WARN-rad (manifest · yta · vad som saknas) följd av en
+#      summeringsrad "N av M". Exitkoden är OFÖRÄNDRAD — 0. Det är ett
+#      medvetet val, inte en halvmesyr: en retroaktiv fällning hade gjort 24
+#      ytor röda på en gång utan migrationsfönster medan backfillen
+#      (TASK-288) aldrig utförts, och branschens ögonblicksverktyg (Percy,
+#      Chromatic, BackstopJS, Storybook) accepterar baselines UTAN separat
+#      källreferens men rapporterar täckningen. Underlag med citat:
+#      docs/research/facit-pensionering-s102-2026-08-26.md § 4; beslutet:
+#      ADR-102 § Updates 2026-08-28. Vägen till fällning går via TASK-288:s
+#      backfill, inte via en strängare grind i dag.
+#      Omkopplare: FACIT_VARNA_ODEKLARERAD_REFERENS i .facit-policy.conf.
 #   2. BOKFÖRINGENS SANNINGSHALT. Grinden hävdar att en ändring under ett
 #      stämplat facit ÄR bokförd — att en sidofil namnger referensen och
 #      dess nya hash. Den kan aldrig hävda att bokföringens SKÄL är sant,
@@ -102,6 +120,15 @@ source "${CONFIG}"
 : "${FACIT_BILD_GLOB:?FACIT_BILD_GLOB är osatt i ${CONFIG}}"
 : "${FACIT_PROTO_SOKVAG:?FACIT_PROTO_SOKVAG är osatt i ${CONFIG}}"
 
+# Omkopplare för invariant (d):s täckningsVARNING (TASK-309.31). Till skillnad
+# från de fyra ovan är den INTE obligatorisk: default är PÅ. En config som
+# ännu inte känner nyckeln — ett annat spoke, eller denna fils egen historik —
+# ska varna, inte tiga. Tystnaden är precis det som kostade (ADR-102 § Updates
+# 2026-08-28), så frånvaron av ett värde får aldrig tolkas som ett val att
+# tiga. Sätt "0" i ${CONFIG} för att stänga av NAMNGIVNINGEN; den kosmetiska
+# summeringsraden längst ned skrivs ändå, oberoende av omkopplaren.
+: "${FACIT_VARNA_ODEKLARERAD_REFERENS:=1}"
+
 VALIDERARE="scripts/lib/facit-validera.mjs"
 [[ -f "${VALIDERARE}" ]] || die "${VALIDERARE} saknas."
 
@@ -109,9 +136,10 @@ FAILED=0
 MANIFEST_ANTAL=0
 YTA_ANTAL=0
 REFERENS_ANTAL=0
-ODEKLARERADE_YTOR=0
+STAMPLADE_YTOR=0
 OGODKANDA=()
 RIVNA_KALLOR=()
+ODEKLARERADE_LISTA=()
 
 # Frånvarande bilage-rot är GRÖNT: ett repo utan prototyp-pass har inget
 # facit att skydda. Grinden är tillgänglig, inte obligatorisk.
@@ -199,9 +227,27 @@ for katalog in "${FACIT_BILAGE_ROT}"/*/; do
     las=$(node -p "(()=>{const m=JSON.parse(require('fs').readFileSync('${manifest}','utf8'));if(!m.godkand)return 0;return (m.ytor||[]).reduce((n,y)=>n+(Array.isArray(y.referenser)?y.referenser.length:0),0);})()" 2>/dev/null) || las=0
     REFERENS_ANTAL=$((REFERENS_ANTAL + las))
 
-    odek=""
-    odek=$(node -p "(()=>{const m=JSON.parse(require('fs').readFileSync('${manifest}','utf8'));if(!m.godkand)return 0;return (m.ytor||[]).filter((y)=>!('referenser' in y)).length;})()" 2>/dev/null) || odek=0
-    ODEKLARERADE_YTOR=$((ODEKLARERADE_YTOR + odek))
+    # De odeklarerade ytorna NAMNGES, inte bara räknas (TASK-309.31). Listans
+    # längd ÄR räkningen — slutradens tal härleds ur den, så namnen och talet
+    # kan aldrig glida isär (två oberoende node-anrop hade kunnat säga olika
+    # saker om samma manifest, och då är det inte längre mätbart vilket som
+    # ljuger). Manifestet skickas som argv, inte interpolerat i skriptkroppen.
+    odek_namn=""
+    odek_namn=$(node -e "const m=JSON.parse(require('fs').readFileSync(process.argv[1],'utf8'));if(!m.godkand)process.exit(0);process.stdout.write((m.ytor||[]).filter((y)=>!('referenser' in y)).map((y)=>String(y.yta ?? '(namnlös yta)')).join('\n'));" "${manifest}" 2>/dev/null) || odek_namn=""
+
+    if [[ -n "${odek_namn}" ]]; then
+        while IFS= read -r ytnamn; do
+            [[ -n "${ytnamn}" ]] || continue
+            ODEKLARERADE_LISTA+=("${manifest} · ytan \"${ytnamn}\"")
+        done <<< "${odek_namn}"
+    fi
+
+    # Nämnaren i "N av M" — antalet ytor under ett STÄMPLAT manifest. Härleds
+    # ur de två värden loopen redan har (ytantalet + godkand-läget), så den
+    # kostar inget extra node-anrop.
+    if [[ "${godkand}" != "null" ]]; then
+        STAMPLADE_YTOR=$((STAMPLADE_YTOR + antal))
+    fi
 done
 
 # --- (c) B3-spärren: rivning före godkännande ----------------------------
@@ -258,8 +304,41 @@ skriv_rivna() {
     done
 }
 
+# Invariant (d):s TÄCKNINGSVARNING (TASK-309.31, ADR-102 § Updates 2026-08-28).
+# Skrivs på stderr och ändrar ALDRIG exitkoden — anropen nedan står efter att
+# utfallet redan är avgjort, aldrig i en gren som kan sätta FAILED.
+#
+# Varför varning och inte fällning: se filhuvudets lucka 1. Kort — backfillen
+# (TASK-288) är inte utförd, så en fällning hade gjort 24 stämplade ytor röda
+# på en gång utan migrationsfönster, och branschens ögonblicksverktyg
+# rapporterar täckning i stället för att kräva den. Vägen till fällning går
+# via backfillen, inte via denna rad.
+#
+# Varför NAMN och inte bara siffran som redan fanns: siffran säger hur stor
+# luckan är, aldrig var den sitter. Den som ska stänga luckan behöver de 24
+# raderna; den som läser en grön CI-logg behöver se att de finns.
+skriv_odeklarerade() {
+    [[ "${FACIT_VARNA_ODEKLARERAD_REFERENS}" = "1" ]] || return 0
+    [[ "${#ODEKLARERADE_LISTA[@]}" -gt 0 ]] || return 0
+    local post
+    {
+        echo "⚠️  VARNING (invariant d, täckning) — fäller INTE, exitkoden är oförändrad:"
+        echo "   Följande STÄMPLADE ytor saknar nyckeln \"referenser\" och står därmed"
+        echo "   utanför innehållslåset. Ingen mekanism ser om deras referenser ändras."
+        for post in "${ODEKLARERADE_LISTA[@]}"; do
+            echo "   ⚠️  ${post} — saknar nyckeln \"referenser\""
+        done
+        echo "   ⚠️  ${#ODEKLARERADE_LISTA[@]} av ${STAMPLADE_YTOR} stämplade ytor saknar innehållslås."
+        echo "   Vägen till att stänga luckan: TASK-288 (backfill av referenser — ett"
+        echo "   Marcus-moment, ADR-104-hooken fryser ett stämplat manifest). Beslutet"
+        echo "   att varna i stället för att fälla: ADR-102 § Updates 2026-08-28."
+        echo "   Tysta namngivningen med FACIT_VARNA_ODEKLARERAD_REFERENS=0 i ${CONFIG}."
+    } >&2
+}
+
 if [[ "${FAILED}" -ne 0 ]]; then
     skriv_rivna
+    skriv_odeklarerade
     exit 1
 fi
 
@@ -280,4 +359,9 @@ skriv_rivna
 # En grind som tiger om sin egen lucka gör frånvaron oskiljbar från
 # fullständighet — samma R5-fälla manifestets "bilder"-nyckel finns för att
 # stänga (ADR-102 § Updates 2026-08-22 § Vad som INTE mekaniseras här).
-echo "   Innehållslås (invariant d): ${REFERENS_ANTAL} referenser låsta mot sha256 i stämplade manifest; ${ODEKLARERADE_YTOR} stämplade ytor saknar \"referenser\" och är därmed INTE innehållslåsta."
+echo "   Innehållslås (invariant d): ${REFERENS_ANTAL} referenser låsta mot sha256 i stämplade manifest; ${#ODEKLARERADE_LISTA[@]} stämplade ytor saknar \"referenser\" och är därmed INTE innehållslåsta."
+
+# Namngivningen sist: den gröna slutraden ska stå kvar överst i läsarens blick,
+# och varningen läsas som det den är — en täckningslucka, inte ett fel i det
+# som prövats.
+skriv_odeklarerade
