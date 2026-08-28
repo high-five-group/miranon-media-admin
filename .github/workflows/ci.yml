@@ -1282,6 +1282,24 @@ jobs:
         # (macOS, 2026-08-26, `time node scripts/test-review-loop.mjs`) —
         # CI-tiden är INTE mätt av mig och kan avvika.
         #
+        # test-review-metrics.mjs (TASK-173.6, ADR-105 § Konsekvenser: "Fångst-
+        # rate-instrumenteringen är en del av BYGGET, inte ett tillägg") hör hit
+        # av samma ADR-039-skäl som sina FYRA review-syskon ovan:
+        # instrumenteringen (scripts/lib/review-metrics.mjs +
+        # scripts/review-metrics.mjs + scripts/review-metrics-kalibrering.mjs +
+        # append-tillägget i scripts/review-loop-beslut.mjs) är review-grindens
+        # FEMTE kontraktsyta och skulle annars vara lika oskyddad som de andra
+        # var före TASK-185. Rena funktioner (sektion A–F: radbyggning,
+        # JSONL-parsning fail-soft, summering, rendering, filväg-resolution) +
+        # ett CLI-lager (sektion G–I) som TVÅSIDIGT bevisar append-kontraktet:
+        # ett lyckat beslut loggar en rad (I1/I4), ett malformat utlåtande eller
+        # policyfel loggar INGEN (I2/I3 — en trasig indata ska aldrig förorena
+        # fångstrate-underlaget). 48 fall. Samma Marcus-mandat som syskonen:
+        # enhetstest för skript, samma klass som de övriga gatekeeper-sviterna.
+        # Hermetisk (egen tmpdir, ingen nätverkstrafik, ingen delad state med
+        # de andra review-sviterna). Mutationsprövad (bygg-agentens
+        # slutrapport, 2026-08-28): append-anropet bortkopplat fällde I1/I4.
+        #
         # test-verify-ci-parity.mjs hör hit av samma ADR-039-skäl applicerat
         # på scripts/verify-ci-parity.mjs SJÄLVT (CLAUDE.md § verify:ci-
         # parity) — paritetsverktyget som ska fånga när ci.yml/ci-suite.yml
@@ -1352,6 +1370,7 @@ jobs:
           node scripts/test-review-policy.mjs
           node scripts/test-review-risk-sektion.mjs
           node scripts/test-review-loop.mjs
+          node scripts/test-review-metrics.mjs
           node scripts/test-verify-ci-parity.mjs
           node scripts/test-docraptor-sjalvbarande.mjs
 

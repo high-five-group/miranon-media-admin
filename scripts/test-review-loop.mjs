@@ -617,6 +617,16 @@ const tmp = mkdtempSync(join(tmpdir(), 'test-review-loop-'));
 const LOKAL_POLICY = join(tmp, 'loop-policy.json');
 writeFileSync(LOKAL_POLICY, JSON.stringify(policy()));
 
+// TASK-173.6: CLI:t appendar sedan en instrumenteringsrad per lyckat beslut
+// (scripts/lib/review-metrics.mjs). --metrik-fil styr den bort från REPOTS
+// RIKTIGA logg (docs/reference/review-instrumentering.jsonl) till en
+// engångsfil här — annars skulle var och en av sektion E:s ~19 CLI-anrop
+// (körda direkt mot detta repo, `cwd: REPO`) skriva en rad i det riktiga
+// spårade repot vid varje testkörning. Instrumenteringens EGET beteende
+// (radform, append-inte-skriv-över, tyst vid malformat indata) testas i
+// scripts/test-review-metrics.mjs — inte här.
+const METRIK_TMP = join(tmp, 'metrics.jsonl');
+
 function skrivUtlatande(namn, overrides = {}) {
   const p = join(tmp, namn);
   writeFileSync(p, JSON.stringify(utlatande(overrides)));
@@ -624,7 +634,10 @@ function skrivUtlatande(namn, overrides = {}) {
 }
 
 function korCli(args) {
-  return spawnSync('node', [CLI, ...args], { cwd: REPO, encoding: 'utf8' });
+  return spawnSync('node', [CLI, ...args, '--metrik-fil', METRIK_TMP], {
+    cwd: REPO,
+    encoding: 'utf8',
+  });
 }
 
 test('E1 konvergerad → exit 0', () => {
@@ -801,7 +814,12 @@ function byggCliRepo(namn, mainPolicy, arbetstradPolicy = null) {
   const p = byggRepo(namn, mainPolicy, arbetstradPolicy);
   mkdirSync(join(p, 'scripts', 'lib'), { recursive: true });
   copyFileSync(join(REPO, 'scripts', 'review-loop-beslut.mjs'), join(p, 'scripts', CLI_NAMN));
-  for (const lib of ['review-loop.mjs', 'review-risk-sektion.mjs', 'review-utlatande.mjs']) {
+  for (const lib of [
+    'review-loop.mjs',
+    'review-risk-sektion.mjs',
+    'review-utlatande.mjs',
+    'review-metrics.mjs',
+  ]) {
     copyFileSync(join(REPO, 'scripts', 'lib', lib), join(p, 'scripts', 'lib', lib));
   }
   symlinkSync(join(REPO, 'node_modules'), join(p, 'node_modules'));
@@ -903,7 +921,12 @@ test('F11 SKARPA VÄGEN fail-closed: policyfilen saknas i main → exit 64', () 
   git(p, ['config', 'user.name', 'T']);
   mkdirSync(join(p, 'scripts', 'lib'), { recursive: true });
   copyFileSync(join(REPO, 'scripts', 'review-loop-beslut.mjs'), join(p, 'scripts', CLI_NAMN));
-  for (const lib of ['review-loop.mjs', 'review-risk-sektion.mjs', 'review-utlatande.mjs']) {
+  for (const lib of [
+    'review-loop.mjs',
+    'review-risk-sektion.mjs',
+    'review-utlatande.mjs',
+    'review-metrics.mjs',
+  ]) {
     copyFileSync(join(REPO, 'scripts', 'lib', lib), join(p, 'scripts', 'lib', lib));
   }
   symlinkSync(join(REPO, 'node_modules'), join(p, 'node_modules'));
