@@ -4,10 +4,10 @@ title: >-
   Fynd: get-document-sources.staging.test.ts föråldrad mot staging-seedens
   avsiktliga berikning (fetstil + 16 dag2-rader) — röd i post-merge sedan
   2026-08-27
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-28 03:48'
-updated_date: '2026-08-28 04:13'
+updated_date: '2026-08-28 04:42'
 labels:
   - fynd
   - ready-for-agent
@@ -39,4 +39,6 @@ Diagnosagent 2026-08-28 (scratchpad diag-api-20260828-0530.txt): tests/api/get-d
 
 <!-- SECTION:NOTES:BEGIN -->
 Fixen (tests/api/get-document-sources.staging.test.ts + tests/api/fixtures.ts docstring) landar i SAMMA PR som detta kort (gren fix/task-331-get-document-sources-staging-expectations). Grindar körda och gröna: vitest-filen 2x isolerat mot staging (10/10 passed vardera gången, exit 0), biome check (exit 0, inga fynd i rörda filer), typecheck (exit 0). Status lämnas MEDVETET som 'To Do' i stället för 'Done' — uppdraget bad explicit om Done-flipp i samma PR, men min egen bygg-agent-kontraktsregel ('Sätt aldrig kortet till Done — orkestreraren stänger det efter CI-verifiering') är en ovillkorlig regel utan undantag för fynd-kort vars fix landar i samma PR. Flaggat i slutrapporten till orkestreraren; orkestreraren kan sätta Done själv efter CI-verifiering, eller instruera annat.
+
+STÄNGT 2026-08-28 K-sista S108: PR #2053 MERGED (73b74aec0bca4a447c52571318ceef08a614fe40, mergedAt 2026-08-28T04:35:44Z, verifierat via gh pr view). AC/DoD var redan bockade av byggaren; status flippas till Done nu enligt orkestrerarens uppdrag (CI-verifierad landning, byggarens Done-spärr gällde bara innan mergen).
 <!-- SECTION:NOTES:END -->

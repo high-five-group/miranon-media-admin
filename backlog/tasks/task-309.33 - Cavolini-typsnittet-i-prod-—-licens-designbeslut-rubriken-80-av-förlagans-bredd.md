@@ -6,8 +6,9 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-28 02:57'
+updated_date: '2026-08-28 04:43'
 labels:
-  - ready-for-human
+  - ready-for-agent
 dependencies: []
 parent_task_id: TASK-309
 ordinal: 604000
@@ -81,3 +82,9 @@ agents).
 - [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Marcus beslut 2026-08-28: (a) Comic Neue i prod på söndag (låst väg B) + (d) CSS-justering av rubrikbredden som förbättring; (b) bundla i EF endast efter licensbesked (Sway-only-EULA-strängen). Lokal symlänk docs/mallar/bilagor/lokala-typsnitt → ~/.miranon-fonts skapad 2026-08-28 (git-ignorerad).
+<!-- SECTION:NOTES:END -->
