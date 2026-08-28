@@ -20,7 +20,7 @@ skörden)."*
 vilar på att läsaren kan lita på ATT och NÄR något skrevs (samma
 princip som gör en "premisskorrigering" farligare än ett vanligt fynd,
 se lärdomen om oisolerade pass som läser fel träd,
-`oisolerat-pass-laser-avsandarens-trad-synka-det-fore-passet.md`). En
+`L555` i `tasks/lessons/vol-07.md`). En
 eftersläpande Del-landning som INTE flaggar sig själv som eftersläpande
 läses som samtida dokumentation trots att den inte är det — den öppna
 bokföringen är vad som skiljer en accepterad avvikelse från en dold en.
