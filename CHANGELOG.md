@@ -7,6 +7,28 @@ och projektet följer [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — Bilage- och dokumentspåret till prod (Session 108, 2026-08-20 → 2026-08-28)
+
+- Höjdanpassning i `renderaMallPdf` (`supabase/functions/_shared/mall-render.ts`): bilagan renderas, sidorna räknas i PDF-strömmen via `/Count` (läsbar även med komprimerade objektströmmar) och renderas om mindre i en trappa `[1, 0,88, 0,8]` — "en sida" blir en garanti i stället för tur. RIM 1:s verkliga innehåll klarar sig på ETT pass, så normalfallet betalar ingenting; 25 % större innehåll räddas på pass två (TASK-309.27, PR #2028; live i prod som `generate-event-attachment` v13)
+- `create-event` härleder `Plats` ur `Ort` vid skapande via `supabase/functions/_shared/plats-uppslag.ts` — uppslaget sker i en separat PATCH efter upsert, så en okänd ort aldrig fäller själva skapandet (TASK-309.30, PR #2038; live i prod som `create-event` v21)
+- Lokal PDF-loop `npm run mall:pdf` — mall till renderad PDF på ~5 s med sidantal och geometri automatiskt mätta, plus `--watch`. Ersätter mätvägen via `supabase functions deploy`, som kostade tiotals minuter per mätpunkt (Session 108 Del 28 § B)
+- `scripts/docraptor-sjalvbarande.mjs` neutraliserar ohämtbara `local("")`-faces innan mallen skickas till DocRaptor, med egen testsvit wirad som gatekeeper-svit i CI (TASK-301, PR #2034)
+- `scripts/check-facit.sh` VARNAR när ett stämplat facit-pass saknar nyckeln `referenser` och namnger varje sådan yta — täckningsluckan i invariant (d) blir synlig utan att grinden fäller, per [ADR-102](docs/decisions/ADR-102-prototypen-ar-facit-skarpa-ska-vara-identisk.md) § Updates 2026-08-28. Slutmätning: 14 manifest, 29 ytor, 23 av 27 stämplade ytor utan innehållslås (TASK-309.31, PR #2032)
+
+### Changed
+
+- Facit-passet `s102-dokument-konvergens` **pensionerat** i stället för omstämplat: arkivflytt med `ARKIVERAD.md` plus pekar-svep över alla inlänkar, eftersom s108-faciten täcker samma ytor i sin nuvarande form. Underlaget för valet: `docs/research/facit-pensionering-s102-2026-08-26.md` (TASK-309.29, PR #2031)
+- Bilagemallarnas FÖRLAGOR bokförda med sin faktiska sökväg (`~/Desktop/Miranon Media/exempelpdokument/`) i `CLAUDE.md` och `docs/mallar/bilagor/README.md` — README pekade tidigare på en katalog som inte existerar (PR #2022)
+- Höjdanpassningens trappa utbruten ur `mall-render.ts` till `supabase/functions/_shared/hojdanpassning.ts` med 25 api-pure-tester; beteendepariteten mekaniskt bevisad mot den tidigare loopen över 125 scenarier med noll avvikelser, och `raknaSidor` byte-identisk (TASK-309.34 skiva i, PR #2054). Prod bär tills nästa EF-deploy den strukturellt äldre men beteendemässigt identiska koden
+- `CLAUDE.md` § Prod-EF-deploy: kanalregeln skärpt per läge i stället för riven — `--kontrollera` (sekunder) får gå via `!`-prefixet, `--deploya` (45 EF, ~10 min) får det inte, eftersom kanalens tvåminuterstak dödar processen med SIGKILL utan att EXIT-trapen hinner återlänka staging. Den tidigare formuleringen behandlade båda lägena lika; `!`-kanalens hook-passage är oförändrad och skälet att kanalen finns kvar för korta anrop
+
+### Fixed
+
+- Bekräftelsebilagan renderades i **två sidor oavsett innehåll** — rotorsaken var Prince egen lucka (`align-self: stretch` för flex-items i row-containers implementerades aldrig), inte textmängden. Löst med block-layout plus absolut positionerad sidfot; de tolv EF-deployerna v37→v49 dessförinnan mätte alltså en flexbox-bugg (TASK-309.27, PR #2019/#2020/#2024/#2025)
+- Fetstilen i kursbeskrivningen återinförd säkert via `fetMarkera` (`supabase/functions/_shared/fet-markering.ts`): hela strängen escapas, och `<strong>` återinförs därefter enbart där `**…**` matchar. Adversarial granskning fann ingen injektionsväg (TASK-309.27, PR #2025)
+- Beviset för dokumentgenereringens popup-policy mätte något annat än vad det påstod — `page.evaluate` förnyar user activation och förstör mätningen. Ersatt av ett bevis i äkta Chrome; produktkoden var redan synkron och behövde ingen ändring (TASK-309.26 AC #2, PR #2040)
+- `tests/api/get-document-sources.staging.test.ts` följer stagings avsiktligt berikade RIM 1-fixtur i stället för den gamla; testet hade varit rött sedan 2026-08-27 utan att synas, därför att `classify-post-merge.sh` ärver docs-only-klassningen och hoppar över staging-verifieringen (TASK-333, PR #2053; luckan själv är TASK-334)
+
 ## [0.8.0] - 2026-08-14
 
 ### Added — Fas 6.5: Aktivitetslogg (xAPI) (Session 105, 2026-08-11 → 2026-08-14)
