@@ -103,7 +103,7 @@
     "@vitejs/plugin-react": "^6.0.5",
     "audit-ci": "^7.1.0",
     "axe-core": "~4.12.1",
-    "backlog.md": "1.49.1",
+    "backlog.md": "1.50.1",
     "eta": "4.6.0",
     "js-yaml": "5.2.3",
     "markdownlint-cli2": "^0.23.2",
