@@ -457,6 +457,24 @@ Numrering efter S109: ADR 122 · kort 284 (om `#1674` landat) · L512 + 55
 fragment · T158 · f52 · session 111. Full narrativ: sessionsdok S109 Del 1–4 +
 PAUSLÄGE.
 
+**Session 108 ▶️ ÅTERUPPTAGEN (2026-08-28, `lifecycle: active`, trettonde
+resumen; pausad tolv gånger, historik) — MÅLET ÄR SESSION-END: LOTTA ÄR I
+APPEN PÅ SÖNDAG, DOKUMENT/BILAGOR/KVITTON SKA FUNGERA HELT.** Marcus order:
+*"Återuppta S108. Gå igenom och kartlägg exakt allt som är kvar att göra …
+Sätt ut agenter på allt som går att utföra direkt … Målet med denna session
+är att komma hela vägen till session-end."* LÄS-fasen mätt: `#2028`
+(höjdanpassningen) **landad** `a620b3f4` 18:01:57Z — live i `main`, **inte i
+prod** (kräver en andra EF-deploy, Marcus kanal); huvudkatalogen bär MIN
+ägarlapp, ingen parallell session; numreringen håller på alla sex serier
+(ADR 128 · kort 331/`309.33` · L533 · 121 fragment · T176 · session 113).
+**Divergens mot handoffen, disk vinner:** Cavolini-filerna FINNS på maskinen
+(`~/.miranon-fonts/`, fyra vikter sedan 2026-08-19) — bara den git-ignorerade
+symlänken saknas i huvudkatalogen; och EF-lagret bundlar Cavolini ALDRIG per
+design (`mall-render.ts` § FONT_BASE64_PER_FILNAMN), så prod renderar Comic
+Neue oavsett symlänk — "Cavolini-beslutet" är ett licens-/designbeslut om
+prod, inte en saknad fil. Heartbeat `bku4n5wpr`. Kartläggningen delegerad;
+agenter sätts ut på allt delegerbart. Full narrativ: sessionsdok S108 Del 29.
+
 **Session 108 ⏸️ PAUSAD (tolfte gången, 2026-08-27, `lifecycle: paused`) —
 BILAGE-MALLEN I PROD TILL FÖRLAGE-PARITET; KVAR ÄR MARCUS PROD-RÖKTEST,
 CAVOLINI OCH K-SISTA (SESSIONSDOK S108 § PAUSLÄGE TOLFTE → MARCUS-SEKVENS).**
