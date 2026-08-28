@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-24 17:55'
-updated_date: '2026-08-28 03:08'
+updated_date: '2026-08-28 03:12'
 labels:
   - ready-for-agent
 dependencies: []
@@ -36,7 +36,7 @@ Det är samma klass som repot städat två gånger: ett facit vars tystnad läse
 - [x] #1 Avgjort: stämplas s102-dokument-konvergens om mot den levande ytan, eller pensioneras manifestet till förmån för s108-generering/s108-dokumentytan?
 - [x] #2 De tre öppna AMENDERING-filerna avgjorda — omstämplade eller stängda med skäl
 - [x] #3 Klarlagt och bokfört hur många ytterligare stämplade ytor som saknar referenser-nyckel och därmed står utanför innehållslåset
-- [ ] #4 Avgjort om avsaknad av referenser-nyckel ska fortsätta vara tillåtet, eller om check-facit bör larma på det (ADR-102-fråga, Marcus)
+- [x] #4 Avgjort om avsaknad av referenser-nyckel ska fortsätta vara tillåtet, eller om check-facit bör larma på det (ADR-102-fråga, Marcus)
 <!-- AC:END -->
 
 ## Definition of Done
@@ -74,4 +74,10 @@ AC #2 (de tre AMENDERING-filerna) — bockad enligt TASK-309.29:s uttryckliga in
   2. s102-dokument-konvergens/AMENDERING-2026-08-17-visa-till-ikonpar.md — samma (arkivflyttad frusen; dess avvikelse ÄR skälet till pensioneringen).
   3. s102-dokument-konvergens/AMENDERING-2026-08-17-rackviddsval-gemensamt-lage-badges.md — samma (arkivflyttad frusen).
 KVARSTÅR HOS MARCUS, ej stängt av denna skiva: s106-aktivitetslogg/AMENDERING-2026-08-23-sidram-promovering.md och s111-anmalningssidan-konvergens/AMENDERING-2026-08-23-sidram.md väntar fortfarande på --ersatt-omstämpling av sina EGNA manifest (helt oberoende av s102-beslutet; exakta kommandon i docs/research/facit-pensionering-s102-2026-08-26.md § 6 steg 4-5). Kortets AC #2-ordalydelse ('de tre öppna AMENDERING-filerna') syftade på tre filer i TRE olika kataloger — bara den i s102-katalogen är avgjord här.
+
+AC #4 AVGJORD OCH BOCKAD 2026-08-28 (TASK-309.31): "VARNA" valdes, fällning valdes bort. check-facit.sh namnger nu varje stämplad yta som saknar nyckeln "referenser" på stderr plus en summeringsrad "24 av 28 stämplade ytor saknar innehållslås"; exitkoden är oförändrad 0 i varje läge. Beslutet med sina fyra skäl bor i ADR-102 § Updates 2026-08-28 ("Täckningsluckan i invariant (d) NAMNGES, men fäller inte"), som citerar research-filens § 4-rekommendation ordagrant. Vägen till ett FÄLLANDE innehållslås är TASK-288:s backfill, inte en strängare grind i dag.
+
+Kortet lämnas ÖPPET i övrigt: AC #1/#2 bockade av TASK-309.29 (se ovan); s106/s111-omstämplingarna kvarstår hos Marcus. (Rebase-sammanslagning 2026-08-28: #2031 landade före #2032, båda blocken behållna.)
+
+Landningen för AC #4-beslutet: PR #2032 (gren feat/task-309-31-facit-tackningsvarning).
 <!-- SECTION:NOTES:END -->

@@ -14,7 +14,7 @@
 # scripts/lib/facit-validera.mjs:s "godkand"-schemavalidering (ADR-104 §
 # Beslut 2, TASK-167 — schemat bytte från bar sträng till objektet
 # { av, datum, citat, sha, undantag? }).
-# 32 testfall, TVÅSIDIGA: varje invariant prövas både i sitt gröna och sitt
+# 36 testfall, TVÅSIDIGA: varje invariant prövas både i sitt gröna och sitt
 # röda läge. En grind som bara bevisats grön är inte bevisad — den kan vara
 # blind (L43, ADR-039 § lesson→grind).
 #
@@ -57,6 +57,21 @@
 #       trädet (trasig källhänvisning, röd)                → 1
 #   T32 stämplat facit, stämpel-commiten går inte att slå
 #       upp lokalt (fail-closed, röd)                      → 1
+#   T33 STÄMPLAD yta UTAN referenser-nyckeln → WARN,
+#       räkning "1 av 1"                     (inv. d-täckning) → 0
+#   T34 stämplad yta MED referenser → INGEN WARN               → 0
+#   T35 samma som T33 men omkopplaren AV → INGEN WARN          → 0
+#   T36 OGODKÄND yta utan referenser → INGEN WARN              → 0
+#
+# T33–T36 BÄR TÄCKNINGSVARNINGEN (TASK-309.31, ADR-102 § Updates 2026-08-28).
+# Tre negativa fall mot ett positivt, med avsikt: en varning som alltid skriks
+# är exakt lika oanvändbar som en som aldrig hörs — den drunknar, och nästa
+# läsare filtrerar bort hela klassen. De tre gränserna som måste hålla är
+# därför NYCKELN (T34), OMKOPPLAREN (T35) och STÄMPELN (T36). Just T36 är den
+# som lätt byggs fel: ett ogodkänt manifest SKA deklarera "referenser" i samma
+# landning som det skapas, men innehållslåset gäller först efter stämpeln —
+# varnade grinden där vore den brus under hela promoveringsarbetet.
+# ALLA FYRA ÄR GRÖNA (exit 0). Det är hela poängen: varningen fäller aldrig.
 #
 # T18/T19 ÄR PARET SOM BÄR HELA INVARIANT (d): samma ändring av samma
 # referens, en gång stämplat (röd) och en gång ogodkänt (grön). Utan BÅDA
@@ -238,6 +253,25 @@ check_utdata() {
     echo "${utdata}" | sed 's/^/       /'
     FAILED=$((FAILED + 1))
     return 1
+}
+
+# check_utdata_saknas <label> <mönster> — spegelbilden av check_utdata: fäller
+# om mönstret FINNS. Utan den kan en varnings-testrad bara bevisa att raden KAN
+# skrivas, aldrig att den skrivs på rätt sida av gränsen — samma tvåsidighets-
+# krav som T18/T19 bär för invariant (d) självt.
+check_utdata_saknas() {
+    local label=$1 monster=$2 utdata
+    utdata=$(run_gate)
+    if grep -qE "${monster}" <<< "${utdata}"; then
+        echo "  ❌ ${label}: utdatan bär mönstret '''${monster}''' som INTE skulle finnas"
+        # shellcheck disable=SC2001  # sed på multi-line är klarast här
+        echo "${utdata}" | sed '''s/^/       /'''
+        FAILED=$((FAILED + 1))
+        return 1
+    fi
+    echo "  ✅ ${label}: utdatan saknar mönstret, som förväntat"
+    PASSED=$((PASSED + 1))
+    return 0
 }
 
 echo "=== test-check-facit.sh ==="
@@ -610,6 +644,53 @@ write_manifest_kallor "${GODKAND_OK}" "${RIVBAR}"
 rm -f "${TEST_DIR}/${RIVBAR}"
 check_exit "T32 stämpel-commiten går inte att slå upp" 1 "$(run_exit)"
 check_utdata "T32 skäl" "går inte att slå upp i det lokala git-objektlagret"
+
+# ═══ INVARIANT (d):s TÄCKNINGSVARNING ════════════════════════════════════
+# TASK-309.31, ADR-102 § Updates 2026-08-28. Grinden NAMNGER varje stämplad
+# yta som saknar nyckeln "referenser" i stället för att bara räkna dem — men
+# fäller ALDRIG på det. Exitkoden är 0 i alla fyra fallen nedan; det som
+# prövas är vad grinden SÄGER, inte vad den gör med exitkoden.
+WARN_RUBRIK="VARNING \(invariant d, täckning\)"
+
+# --- T33: stämplad yta UTAN referenser-nyckeln → WARN (GRÖN) --------------
+# Fixturens .facit-policy.conf sätter INTE FACIT_VARNA_ODEKLARERAD_REFERENS.
+# Att fallet ändå varnar bevisar defaultvärdet: en config som inte känner
+# nyckeln tiger inte. Tystnad får aldrig uppstå av att någon glömt ett värde.
+setup
+write_manifest "${GODKAND_OK}" '''["facit-yta.png"]'''
+check_exit "T33 stämplad yta utan referenser varnar men fäller inte" 0 "$(run_exit)"
+check_utdata "T33 WARN-rubrik" "${WARN_RUBRIK}"
+check_utdata "T33 namnger manifest + yta" "facit\.json · ytan \"yta\" — saknar nyckeln"
+check_utdata "T33 summeringsrad N av M" "1 av 1 stämplade ytor saknar innehållslås"
+
+# --- T34: stämplad yta MED referenser → INGEN WARN (GRÖN) -----------------
+# Gränsen mot T33. Deklarerar ytan sin nyckel är den innehållslåst, och då
+# finns ingen lucka att varna om — inte ens en tom lista är en lucka (T22:s
+# "deklarerad frånvaro" är ett VAL, till skillnad från en frånvarande nyckel).
+setup
+skriv_referens
+write_manifest_ref "${GODKAND_OK}" "[{\"fil\":\"${REFERENS}\",\"sha256\":\"$(sha_av_referens)\"}]"
+check_exit "T34 stämplad yta med referenser" 0 "$(run_exit)"
+check_utdata_saknas "T34 ingen WARN" "${WARN_RUBRIK}"
+
+# --- T35: samma som T33 men omkopplaren AV → INGEN WARN (GRÖN) ------------
+# Bevisar att beteendet är CONFIG-DRIVET och inte hårdkodat i skriptet
+# (TASK-309.31 AC #4). Utan detta fall är "konfig-driven" ett påstående, inte
+# en mätning — exakt den ADR-083-klass repot städat bort två gånger.
+setup
+write_manifest "${GODKAND_OK}" '''["facit-yta.png"]'''
+printf '''FACIT_VARNA_ODEKLARERAD_REFERENS="0"\n''' >> "${TEST_DIR}/.facit-policy.conf"
+check_exit "T35 omkopplaren av, exitkoden oförändrad" 0 "$(run_exit)"
+check_utdata_saknas "T35 ingen WARN när omkopplaren är av" "${WARN_RUBRIK}"
+
+# --- T36: OGODKÄND yta utan referenser → INGEN WARN (GRÖN) ----------------
+# Stämpel-gränsen. Innehållslåset gäller först efter stämpeln (invariant d
+# hoppar över hash-jämförelsen för "godkand": null, se T19), så en ogodkänd
+# yta utan nyckel är inte en täckningslucka utan ett pågående arbete.
+setup
+write_manifest "null" '''["facit-yta.png"]'''
+check_exit "T36 ogodkänd yta utan referenser" 0 "$(run_exit)"
+check_utdata_saknas "T36 ingen WARN före stämpeln" "${WARN_RUBRIK}"
 
 echo
 echo "=== Resultat: ${PASSED} passerade, ${FAILED} failade ==="
