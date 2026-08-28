@@ -1,10 +1,10 @@
 ---
 id: TASK-173.6
 title: 'Skiva: Instrumenteringen'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-09 13:16'
-updated_date: '2026-08-28 04:38'
+updated_date: '2026-08-28 05:06'
 labels:
   - ready-for-agent
 dependencies:
@@ -31,7 +31,7 @@ ordinal: 329000
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 Tvåsidig skript-testsvit (ska-fälla + ska-passera) per nytt deterministiskt skript, grön lokalt
 - [ ] #6 CI-backstoppens grind-verkan bevisad med rött-först-form: positivt bevis + negativ self-test
@@ -156,4 +156,8 @@ krävs (raden ligger i lint-jobbets BEFINTLIGA steg).
 
 Rebasad mot origin/main (90edf82b-linjen) och pushad på samma gren efter
 dessa ändringar — se PR #2052 för ny HEAD-SHA.
+
+## Stängning (S112 resume 2, 2026-08-28 ~10:00)
+
+Landning: PR #2052, merge-commit `c21c0743`. Två granskningsrundor (r1 risk låg: loggens git-persistens + skrivmiss-test; r2 29aa49db noll fynd). DoD #3 (CI grön per jobb) bockad efter landning. DoD #6 hör till TASK-173.4 (#2049, under granskning) och #7 uppfylls av första skarpa loop-körningen efter denna landning — orkestreraren committar `docs/reference/review-instrumentering.jsonl` i stängningsbatcharna (CLAUDE.md § Review-grinden).
 <!-- SECTION:NOTES:END -->

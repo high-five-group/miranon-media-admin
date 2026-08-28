@@ -1,10 +1,10 @@
 ---
 id: TASK-223
 title: 'Fynd: glomt-losenord saknar auth-fonden (data-auth-fond)'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-15 09:05'
-updated_date: '2026-08-26 05:02'
+updated_date: '2026-08-28 05:06'
 labels:
   - ready-for-agent
 dependencies: []
@@ -40,6 +40,10 @@ AC#1 FORENSIK-UTFALL: MISS, inte medvetet undantag. Git-historik körd (git log 
 AC#2 FIXAT: glomt-losenord.tsx bär nu auth-fonden — exakt samma useEffect-mönster som login.tsx (rot.dataset.authFond='true' vid mount, delete vid unmount). Visuellt verifierat på dev-server (localhost, npm run dev): document.documentElement.dataset.authFond === 'true' på /glomt-losenord (Playwright MCP-evaluate), och skärmdump bekräftar den varma gradient-fonden bakom det vita kortet, konsistent med syskonytorna. DoD-kvartetten grön (se PR).
 
 Stangningsbatch 2 (S112 resume 1, 2026-08-26): granskningsfardig-lage (ADR-071 beslut 3), In Progress - UI-yta. Review-fynd (obekraftat av mig, atergivet fran review-utlatandet): auth-fond-mekanismen (data-auth-fond) saknar prefers-contrast/print-fallback - forebefintlig brist, delad av alla FEM auth-ytorna (inte ny i denna skiva). Sokt efter ett eget fynd-kort for detta (grep pa auth-fond + prefers-contrast/print over hela backlog/tasks/, samt created_date 2026-08-26-svepet) - INGET sadant kort hittades. Bokfors har som en oppen, oregistrerad lucka.
+
+## Stängning (S112 resume 2, 2026-08-28 ~10:00)
+
+Landning: PR #1988, merge-commit `8d2ad561` (2026-08-26). DoD 'CI grön': PR-CI grön; det röda post-merge-jobbet Webblasarbeteende (run 32929746452, job 98059621388) föll på `app-update-banner.test.ts:378` `expect(cls).toBe(0)` — CLS-flaken vars rotorsak åtgärdades i TASK-307 (#2009), inte kortets diff (mätt av Marcus-listans läsagent 2026-08-28). Kortet stod granskningsfärdigt för Marcus visuella dom (Marcus-listan punkt 30) — flippas Done på orkestrerarens mandat eftersom fixen är landad, granskad (review-utlåtande #1988) och DoD uppfyllt; den visuella blicken kvarstår som frivillig punkt i listan.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

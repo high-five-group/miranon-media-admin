@@ -348,6 +348,16 @@ Skilj alltid "hooken är fel" från "hooken är inte laddad" med en
 fälla), och provocera samtidigt en BEFINTLIG hook via harnesset (ska fälla).
 Faller den befintliga men inte den nya är det registreringen, inte logiken.
 
+**En hook-FIX kan dessutom inte skarpbevisas av den worktree-agent som bygger
+den — mekaniskt, inte bara "kanske inte laddad".** Mätt 2026-08-28 (`TASK-322`,
+PR `#2044`): hooken körs via `CLAUDE_PROJECT_DIR`, som pekar på huvudkatalogen,
+så varje worktree-isolerad agent kör huvudkatalogens skriptkopia — den gamla
+versionen, tills huvudkatalogen fast-forwardats. Agentens manuella körning av
+det NYA skriptet mot verkligt tillstånd (differentialmätningen ovan) är därför
+det enda beviset den kan producera; skarpbeviset genom harnesset betalas av
+den session som äger huvudkatalogen, efter ff. Bokför det som öppen skuld i
+kortet, aldrig som gjort.
+
 Samma strukturella klass som MCP-verktygsytan (S97 Del 2): båda bestäms vid
 sessionsstart, och en mitt-i-sessionen-ändring kan inte FÖRLITAS på att slå
 igenom retroaktivt — för hookar KAN den göra det (mätningen ovan), men bara
