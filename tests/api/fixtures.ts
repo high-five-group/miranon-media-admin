@@ -259,8 +259,9 @@ export const EVENTMATCHNING_ANMALAN_FEL_AR_ID = 'recdKgK82XA0Oa2ee';
  *     `agenda.dag2.kopia` en TOM array (INTE `null` — "har en kopia" är en
  *     hela-agendan-eller-inget-boolean, se get-document-sources/index.ts §
  *     eventHarEgenAgenda), medan `agenda.dag1.standard`/`agenda.dag2.standard`
- *     ska vara standardagendans 14/10 rader (seedade av
- *     scripts/seed-eventinnehall-modell.mjs).
+ *     ska vara standardagendans 14/16 rader (dag2 fick sex nya rader i
+ *     Airtable-basen 2026-08-27, #2020 — scripts/seed-eventinnehall-modell.mjs
+ *     bär fortfarande 14/10, öppen skuld TASK-333).
  *
  * Konsumeras av get-document-sources.staging.test.ts. STÄDA INTE bort den.
  */

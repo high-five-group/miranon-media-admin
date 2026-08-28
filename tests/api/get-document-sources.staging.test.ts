@@ -26,12 +26,16 @@ async function callGetDocumentSources(
   return request.get(`${config.baseUrl}/functions/v1/get-document-sources${query}`, { headers });
 }
 
-// Verbatim standardtext för "Resor i medvetandet 1 · Utbildning" (samma
-// sträng som EVENTINNEHALL.beskrivning i GenereringsVy.tsx rad 142,
-// seedad av scripts/seed-eventinnehall-modell.mjs) — börjes-fragment räcker
+// Verbatim standardtext för "Resor i medvetandet 1 · Utbildning" — staging
+// bär numera fetstilsmarkörer (**...**) kring nyckelorden, INSKRIVNA MED
+// AVSIKT direkt i Airtable-basen (TASK-309.27, commit 9bb8d6be), verifierat
+// live 2026-08-28 mot Eventinnehåll-raden rec2MZrLMKWAzxarB (Airtable
+// apphjj8Q7lkXCMsL4). scripts/seed-eventinnehall-modell.mjs bär fortfarande
+// den gamla omarkerade texten — en ny seed från grunden skulle återskapa
+// DEN texten, inte denna (öppen skuld, TASK-333). Börjes-fragment räcker
 // för att bevisa att STANDARDEN (inte kopian, som är null) kom med.
 const FYLLD_BESKRIVNING_BORJAN =
-  'Utbildningen Resor i Medvetandet kommer att ge dig en djupare insikt om medvetandet';
+  'Utbildningen **Resor i Medvetandet** kommer att ge dig en djupare insikt om medvetandet';
 
 test.describe('get-document-sources — conformance (ADR-125 § 2, standard/kopia)', () => {
   test('fixturen (AC #4): kopia-hälften — Tid/Pris är överskrivna, INTE standarden', async ({
@@ -97,7 +101,7 @@ test.describe('get-document-sources — conformance (ADR-125 § 2, standard/kopi
     expect(body.eventinnehall?.namn).toBe('Resor i medvetandet 1 · Utbildning');
   });
 
-  test('fixturen (AC #4): agendan — dag1-kopia finns (1 egen rad), dag2-kopia tom array (inte null); standard är de 14/10 seedade raderna', async ({
+  test('fixturen (AC #4): agendan — dag1-kopia finns (1 egen rad), dag2-kopia tom array (inte null); standard är de 14/16 seedade raderna', async ({
     request,
   }) => {
     const config = getApiConfig();
@@ -106,15 +110,28 @@ test.describe('get-document-sources — conformance (ADR-125 § 2, standard/kopi
     expect(res.status()).toBe(200);
     const body = DocumentSourcesSchema.parse(await res.json());
 
-    // Standardagendan (Eventinnehåll → Agendapunkter) — seedad verbatim ur
-    // prototypens dagEtt/dagTva (GenereringsVy.tsx).
+    // Standardagendan (Eventinnehåll → Agendapunkter) — dag1 seedad verbatim
+    // ur prototypens dagEtt (GenereringsVy.tsx), oförändrad. Dag2 fick SEX
+    // nya rader i Airtable-basen 2026-08-27 (Ordning 11-16, #2020s
+    // beskrivning — MED AVSIKT, se seed-skriptets öppna skuld ovan/TASK-333),
+    // 10 → 16, verifierat live mot Agendapunkter-tabellen (apphjj8Q7lkXCMsL4,
+    // tblgEItD0UM1oJVI9) 2026-08-28.
     expect(body.agenda.dag1.standard.length).toBe(14);
-    expect(body.agenda.dag2.standard.length).toBe(10);
+    expect(body.agenda.dag2.standard.length).toBe(16);
     expect(body.agenda.dag1.standard[0]).toEqual({
       text: 'Miranon Media',
       tid: '',
       meditation: false,
     });
+    // De sex nya raderna (Ordning 11-16) — sista sex elementen i dag2.standard.
+    expect(body.agenda.dag2.standard.slice(10)).toEqual([
+      { text: 'Tanke respektive medvetande', tid: '', meditation: false },
+      { text: 'Meditation: Kristallvägen', tid: '41 min', meditation: true },
+      { text: 'Upplevelser utanför verkligheten', tid: '', meditation: false },
+      { text: 'Tid, Affirmationer, Altruism', tid: '', meditation: false },
+      { text: 'Själshämtning', tid: '', meditation: false },
+      { text: 'Meditation: Spegeln', tid: '40 min', meditation: true },
+    ]);
 
     // Eventets egen kopia: EN rad, länkad via Event, Dag 1 → dag1-kopian bär
     // den, dag2-kopian är en TOM array (samma "har en kopia" som dag1, inte
