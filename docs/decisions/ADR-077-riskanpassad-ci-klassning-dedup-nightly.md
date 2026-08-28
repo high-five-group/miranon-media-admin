@@ -156,3 +156,67 @@ dess jq-fail-closed-gren är en verbatim replik av `ci-passed`:s och speglas om
   (rött-först-bärarbytets värd, 36.6).
 - [ADR-076](ADR-076-merge-grinden-ruleset-pr-flode.md) — merge-grinden (dedupens
   sundhetsvillkor: strict up-to-date).
+
+## Updates
+
+### 2026-08-28 — Den ärvda klassningen BEHÅLLS; larmets ATTRIBUTION rättas (TASK-334)
+
+**Vad som prövades.** Post-merge-lagrets `klassning`-jobb ärver ci.yml:s
+D0-beslut om den landande PR:ens EGEN diff (Beslut 1-2 ovan, byggt i TASK-73,
+utvidgat med kö-ytan i TASK-78). Följden är att svit-anropet hoppas på VARJE
+docs-only-landning. `TASK-334` frågade om det är rätt kontrakt för ett lager
+vars hela syfte är att fånga sådant PR-grinden inte kan se.
+
+**Mätt utfall, inte antaget** (`gh run view <id> --json jobs`, 2026-08-28):
+åtta av elva lästa post-merge-körningar hade `Verifierande svit på det mergade
+trädet` med conclusion `skipped` — bland dem `33137040114` (`7a0a2a46`),
+`33138604694` (`10ae24f3`), `33139966256` (`50eff8ad`) och `33141170428`
+(`5a3daf5b`). De tre som körde sviten föll alla på `Staging (API + E2E)`.
+
+**Det verkliga felet låg inte i vad som kördes, utan i vad larmet PÅSTOD.**
+Larm-jobbets steg (b) läste föregående post-merge-körnings WORKFLOW-nivå-
+conclusion. En körning vars svit hoppades är `success` på den nivån utan att ha
+mätt någonting, och larmet skrev då ordagrant: *"Föregående post-merge-körning
+var **GRÖN** ⇒ den här landningen är den primära misstänkta. Revert nedan är
+sannolikt rätt första åtgärd."* Mätt två gånger inom 13 minuter — ärende
+`#2043` (körning `33139629247`, träd `d5607d6254a3`, PR `#2035`) och `#2047`
+(körning `33140227702`, träd `55d83d0d674d`, PR `#2038`). Rotorsaken låg i
+staging-fixturens drift och åtgärdades i `TASK-333`; ingen av de två utpekade
+landningarna hade med den att göra.
+
+**Options-rymden, med skälen:**
+
+| Väg | Utfall | Skäl |
+|---|---|---|
+| **A** — kör alltid staging oavsett klass | **FÖRKASTAD** | Återinför exakt den defekt TASK-73 stängde: merge `ed51b95` (åtta rader i EN `.md`-fil) tog den globala `staging-tests`-mutexen i körning `30393323548`, revert-PR `#375` låg `pending` bakom den, `ci-wait.sh` timade ut efter 900 s och revert-vägen mätte 25 min 16 s. Med ~15 landningar på ett dygn är kostnaden inte marginell. |
+| **B** — tidsbaserad drift-vakt (kör sviten om > N h sedan senaste faktiska mätning) | **FLAGGAD, EJ BYGGD** | Nattnätet täcker redan staging på `main`: `nightly.yml` anropar `ci-suite.yml` utan `with:`-block och får därmed `run_staging: true` — verifierat grönt i körning `33065848810` (2026-08-27). B är alltså inte ett hål utan en KADENS-fråga (≤ 24 h → ≤ N h). Priset är en TREDJE daglig tagning av den globala `staging-tests`-mutexen, mot ett jobb som ligger på ~6-7 min under ett `timeout-minutes: 12`-tak (≈1,8× marginal) och som skarpt slagit i taket (tre instanser 2026-08-07). Kadensfrågan är en avvägning för Marcus, inte en följdändring av denna rättelse. |
+| **C** — rätta larmets attribution | **VALD** | Se nedan. |
+| **D** — B + C | **DELVIS** — C byggd, B flaggad | Villkoret för D var "om nattnätet inte redan täcker". Mätningen visar att det gör det. |
+
+**Vad som ÄNDRADES (C).** Larmets attribution bor nu i
+`scripts/post-merge-attribution.sh`. Den går bakåt till senaste post-merge-
+körning som FAKTISKT körde sviten (inner-jobb prefixade svit-jobbets namn,
+till skillnad från ett skippat anrop som rapporteras som ETT jobb med exakt
+namnet), räknar landningarna däremellan och formulerar därefter:
+
+- ankare grönt, noll omätta däremellan → primär misstanke, som förut
+- ankare grönt, k > 0 omätta däremellan → nekar primär misstanke, anger
+  spannet `<ankare>..<denna>`
+- ankare rött → felet är äldre, som förut men nu förankrat i en körning som
+  faktiskt mätte
+- API-fel, saknad env eller ingen mätning inom fönstret → **OKÄND**, aldrig ett
+  påstående byggt på frånvaro av data (`TASK-51`, L322-klassen)
+
+**Vad som INTE ändrades.** Beslut 1 och 2 ovan står orörda. Klassningen ärvs
+fortsatt, räknas fortsatt aldrig om, och docs-landningar hoppar fortsatt
+sviten. `scripts/classify-post-merge.sh` är inte rörd av detta kort.
+
+**Grindarna.** `scripts/test-post-merge-attribution.sh` (47 hävdanden) körs i
+`ci.yml`:s lint-jobb. Tre av dem är kopplings- och wiringsvakter: att skriptets
+`POST_MERGE_SUITE_JOB_NAME` är post-merge.yml:s faktiska svit-jobbnamn (A11),
+att workflowen anropar skriptet (A12), och — ADR-083-vakten — att den falska
+meningen inte återinförs hårdkodad i YAML (A13). Tvåsidigheten är mätt mot fem
+muterade kopior: A9 fäller om körningslistan filtreras i stället för att skäras
+vid egen körnings index; A11 vid namndrift; A12 vid borttaget anrop; A13 vid
+återinförd mening; och en mutant som återskapar den GAMLA logiken (grönt ankare
+⇒ ovillkorlig primär misstanke) fäller A2 med exakt den falska meningen.

@@ -1394,6 +1394,28 @@ jobs:
         # sitt innehåll.
         run: bash scripts/test-classify-post-merge.sh
 
+      - name: Test post-merge-larmets attribution (TASK-334)
+        # Per ADR-039 § lesson→grind (L43), samma kadens-argument som steget
+        # ovan. Sviten prövar scripts/post-merge-attribution.sh i BÅDA
+        # riktningar: att larmet PÅSTÅR primär misstanke när den är sann, och
+        # att det NEKAR den när sviten inte mätte landningarna däremellan.
+        #
+        # A11-A13 är skälet steget bor i CI och inte bara i en byggsession.
+        # A11 vaktar EN sträng — post-merge.yml:s `suite`-jobbnamn, skriptets
+        # enda koppling till workflowen. A12 vaktar att workflowen faktiskt
+        # anropar skriptet. A13 är ADR-083-vakten: den fäller om den FALSKA
+        # meningen ("… är den primära misstänkta. Revert nedan …") återinförs
+        # hårdkodad i YAML, där den skrivs oavsett om den är sann.
+        #
+        # Utan de tre driftar fixen tyst tillbaka till det läge som mättes
+        # 2026-08-28: två larm inom 13 minuter (ärenden #2043 och #2047) pekade
+        # ut fel landning som primärt misstänkt, eftersom föregående körning var
+        # `success` DÄRFÖR ATT den hoppade sviten på ärvd D0.
+        #
+        # Hermetisk (gh-stub på PATH, ingen nätverkstrafik, ~1 s). Eget steg
+        # med ärligt namn per Session 17 K7-disciplinen.
+        run: bash scripts/test-post-merge-attribution.sh
+
       - name: Test PR-grindens acceptance-urval (TASK-75)
         # Per ADR-039 § lesson→grind (L43), samma kadens-argument som stegen
         # ovan. Sviten prövar scripts/acceptance-urval.sh i BÅDA riktningar: att
