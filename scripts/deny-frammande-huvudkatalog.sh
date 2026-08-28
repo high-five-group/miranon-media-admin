@@ -14,8 +14,12 @@
 #   huvudkatalogen just nu?" — FYRA delfrågor, i denna ordning (billigast
 #   först) — PLUS en sidoeffekt: sessionen som klarar prövningen blir också
 #   den REGISTRERADE ägaren om ingen redan är det (§ ÄGARSKAP-TAGANDE nedan).
-#     1. Är kommandot en git-skrivning?      (mot policyfilens listor)
-#     2. Riktas det mot huvudkatalogen?      (cwd-jämförelse ELLER textmönster)
+#     1. Är kommandot en git-skrivning?      (underkommando OCH flaggor, mot
+#                                             policyfilens listor — `git branch
+#                                             --merged` är en LÄSNING)
+#     2. Riktas det mot huvudkatalogen?      (MÅLET upplöses och git tillfrågas
+#                                             om trädet; textmönster bara som
+#                                             reservväg — § MÅLUPPLÖSNING)
 #     3. Äger denna session huvudkatalogen?  (ägarlappen i --git-common-dir)
 #     4. Lever den ägande processen fortfarande? (§ LIVENESS-PRÖVNING nedan)
 #
@@ -265,14 +269,58 @@
 #      huvudkatalogen via Edit/Write med absolut sökväg — samma klass av fel,
 #      annan väg in. Det ligger UTANFÖR T119 arbetslista (a), som säger
 #      "git-skriv". Noterat som kandidat till egen punkt, inte inbakat här.
-#   2. Textmönstren för `git -C <path>` och `cd <path> && git` är
-#      APPROXIMATIVA. En shell-sträng går inte att tolka exakt utan att
-#      implementera en shell-parser. Väg 1 (cwd-jämförelsen) är exakt; väg 2
-#      och 3 är bäst-ansträngning. Samma medvetna grovhet som mail-låsets
-#      endpoint-mönster, och av samma skäl.
-#   3. Relativa sökvägar mot huvudkatalogen (t.ex. `git -C ../..`) fångas
-#      inte. De skulle kräva path-normalisering mot en cwd som kan ha ändrats
-#      tidigare i samma kommandokedja.
+#   2. TEXTMÖNSTRET ÄR NU EN RESERVVÄG, INTE HUVUDVÄGEN (TASK-322,
+#      2026-08-28). Klassningen upplöser målkatalogen och frågar GIT vilket
+#      träd den tillhör (§ MÅLUPPLÖSNING). Textmönstret används bara när
+#      målet inte går att upplösa — oexpanderad variabel i sökvägen, en
+#      katalog som inte finns än, eller `--git-dir`. Det matchar då
+#      huvudkatalogen som HEL sökväg; en träff följd av `/` är en
+#      underkatalog och räknas inte.
+#
+#      KVARVARANDE APPROXIMATION, oförändrat medveten: en shell-sträng går
+#      inte att tolka exakt utan att implementera en shell-parser, och det
+#      byggs INTE här. Konkret kvarstår att en heredoc eller citerad text som
+#      innehåller BÅDE ett git-skrivord OCH huvudkatalogens exakta sökväg
+#      fortfarande kan fälla falskt. Ett kommando som bygger sin målsökväg av
+#      variabler kan omvänt undgå upptäckt. Båda är avsiktliga: kostnaden för
+#      att stänga dem är en shell-parser i ett säkerhetslager, vilket är en
+#      större risk än de fel den skulle fånga.
+#   3. Relativa sökvägar upplöses numera (`git -C ../..` normaliseras mot den
+#      spårade basen med `cd … && pwd -P`). Det som INTE spåras är
+#      katalogbyten som sker på annat sätt än ett segment vars första ord är
+#      `cd` — t.ex. `pushd`, en funktion som byter katalog, eller ett `cd` i
+#      ett skript kommandot anropar.
+#
+# ═══ WORKTREE-OPERATIONER: STÄLLNINGSTAGANDE (TASK-322) ═══
+#
+#   FRÅGAN, som TASK-322 lämnade uttryckligen öppen: `git worktree remove`
+#   och `git worktree prune` skriver till DELAT tillstånd (.git/worktrees/),
+#   som bor i huvudkatalogens .git. BÖR de därför räknas som riktade mot
+#   huvudkatalogen, oavsett var de körs?
+#
+#   SVARET SOM VALDES: nej. Vad ADR-090 beslut 2 skyddar är huvudträdets
+#   ARBETSTRÄD och INDEX — "den först startade behåller sin plats i
+#   huvudträdet". Skadan regeln finns för är att någon skriver över ägarens
+#   ocommittade arbete (§ ÄGARSKAP-TAGANDE, "FÖRKASTAT": ett arbetsträd med
+#   ocommittade ändringar är upptaget). En session som tar bort SIN EGEN
+#   worktree rör varken ägarens arbetsträd, hans index eller hans HEAD — den
+#   städar upp efter sig själv. Att neka det hade gjort normal
+#   worktree-städning omöjlig för varje agent utom ägaren, vilket är precis
+#   den klass av falsk fällning kortet skrevs för.
+#
+#   HUR DET FALLER UT AV MÅLREGELN, utan ett eget undantag: operationens mål
+#   är den katalog git körs i. Kört från en worktree är målet den worktreen
+#   ⇒ släpps. Kört I huvudkatalogen är målet huvudkatalogen ⇒ nekas som varje
+#   annan skrivning där. Ingen särregel behövdes — vilket är ett tecken på
+#   att gränsen ligger rätt.
+#
+#   VAD SOM INTE SKYDDAS AV DETTA VAL, öppet skrivet: en session kan ta bort
+#   en ANNAN sessions worktree-post inifrån sin egen worktree. Det är en
+#   verklig lucka. Den lämnas öppen därför att skadan är låg (worktree-posten
+#   återskapas; arbetsträdets filer ligger kvar på disk om `--force` inte
+#   anges) och för att stänga den skulle kräva att hooken vet vem som äger
+#   VARJE worktree — ett register som inte finns. Kandidat till eget kort om
+#   den någonsin fäller skarpt.
 #
 # INPUT: PreToolUse hook-JSON på stdin (`tool_name`, `tool_input.command`,
 #   `cwd`, `session_id`) — bekräftat mot code.claude.com/docs/en/hooks.md
@@ -464,7 +512,141 @@ if [[ -n "${HOOK_CWD}" && -d "${HOOK_CWD}" ]]; then
     cd "${HOOK_CWD}" 2>/dev/null || exit 0
 fi
 
-# ── Delfråga 1: är kommandot en git-skrivning? ────────────────────────────
+# ── Repo-topologin: var ligger huvudträdet? ───────────────────────────────
+# Beräknas FÖRE klassningen (TASK-322) — den behöver COMMON_DIR för att kunna
+# avgöra om ett upplöst mål ÄR huvudträdet. Tidigare låg detta block EFTER
+# delfråga 1, när klassningen ännu inte visste något om målet.
+COMMON_DIR="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" || exit 0
+GIT_DIR="$(git rev-parse --path-format=absolute --git-dir 2>/dev/null)" || exit 0
+[[ -n "${COMMON_DIR}" && -n "${GIT_DIR}" ]] || exit 0
+
+HUVUDKATALOG="${COMMON_DIR%/.git}"
+[[ -n "${HUVUDKATALOG}" && "${HUVUDKATALOG}" != "${COMMON_DIR}" ]] || exit 0
+
+# Alternativa skrivformer av samma katalog. macOS symlinkar /var -> /private/var
+# och /tmp -> /private/tmp, så `git rev-parse` kan svara `/private/tmp/...`
+# medan kommandot och `cwd` bär `/tmp/...` — en ren strängjämförelse missar då.
+# Det är inte hypotetiskt: detta repo har worktrees under /private/tmp/claude-501/.
+# Sedan TASK-322 är dessa former bara TEXTMÖNSTRETS reservväg — huvudvägen
+# normaliserar i stället med `cd … && pwd -P`, som löser symlänken direkt.
+HUVUD_FORMER=("${HUVUDKATALOG}")
+[[ "${HUVUDKATALOG}" == /private/* ]] && HUVUD_FORMER+=("${HUVUDKATALOG#/private}")
+if command -v realpath >/dev/null 2>&1; then
+    HUVUD_REAL="$(realpath "${HUVUDKATALOG}" 2>/dev/null)"
+    [[ -n "${HUVUD_REAL}" && "${HUVUD_REAL}" != "${HUVUDKATALOG}" ]] && HUVUD_FORMER+=("${HUVUD_REAL}")
+fi
+
+# ═══ MÅLUPPLÖSNING (TASK-322) — KLASSNINGEN LÄSER MÅLET, INTE ANROPSPLATSEN ═
+#
+#   VAD SOM VAR FEL: klassningen prövade två STRÄNGAR — hook-inputens `cwd`
+#   vid anropstillfället (väg 1) och huvudkatalogens sökväg som DELSTRÄNG i
+#   kommandot (väg 2). Ingen av dem är målet. Fyra falska-positiv-klasser föll
+#   ut, alla reproducerade i scripts/test-deny-frammande-huvudkatalog.sh
+#   § SIDA 11 och live 2026-08-26/2026-08-28:
+#
+#     (a) `cd <worktree> && git checkout -b x` körd med cwd i huvudkatalogen
+#         — väg 1 träffade fast git-skrivningen sker i worktreen.
+#     (b) `git -C <worktree> checkout -b x` från huvudkatalogen — samma sak;
+#         `-C` flyttar målet, men väg 1 läste ändå cwd.
+#     (c) VARJE kommando som nämner sin EGEN worktree-sökväg. Claude Code
+#         lägger worktrees i <huvudkatalog>/.claude/worktrees/<namn>, så
+#         worktree-sökvägen BÄR huvudkatalogens sökväg som delsträng och väg
+#         2:s `*"${form}"*` träffade alltid. Denna klass var osynlig för den
+#         gamla testriggen, vars worktree låg BREDVID huvudkatalogen i stället
+#         för under den — riggen speglade inte produktionens topologi.
+#     (d) Följd av (c): en heredoc eller citerad text vars innehåll råkar
+#         innehålla både ett git-ord och en worktree-sökväg. Mätt live under
+#         TASK-322:s eget bygge: ett `cat > fil <<EOF` fälldes som
+#         "git-skrivning (add) mot huvudkatalogen".
+#
+#   VAD SOM GÄLLER NU: målkatalogen upplöses per segment, och prövningen är
+#   `git -C <mål> rev-parse --git-dir == --git-common-dir == COMMON_DIR` —
+#   gits EGEN upplösning av vilket träd en katalog tillhör, inte vår
+#   strängjämförelse. Både "är det DETTA repo?" och "är det huvudträdet,
+#   inte en worktree?" faller ut av samma två frågor.
+#
+#   TEXTMÖNSTRET FINNS KVAR, MEN BARA SOM RESERVVÄG när målet inte GÅR att
+#   upplösa (sökvägen bär en oexpanderad variabel, katalogen finns inte än,
+#   `--git-dir` anges). Det matchar nu huvudkatalogen som HEL sökväg — en
+#   träff följd av `/` är en UNDERKATALOG (typiskt just en worktree) och
+#   räknas inte. Det stänger klass (c) och (d) utan att öppna hålet som ett
+#   rakt släpp hade gjort.
+#
+#   INGEN SHELL-PARSER BYGGS HÄR, och det är fortsatt avsiktligt (§ SCOPE-
+#   GRÄNSER). `cd`-spårningen nedan är en avgränsad sekvensläsning av
+#   segment vars FÖRSTA ord är `cd`, inte en tolkning av godtycklig shell.
+
+# _avcitera <sträng> — tar bort omgivande ' eller " kring en sökväg.
+_avcitera() {
+    local s="$1"
+    case "${s}" in
+        \'*\') s="${s#\'}"; s="${s%\'}" ;;
+        \"*\") s="${s#\"}"; s="${s%\"}" ;;
+        *) ;;   # ociterad sökväg — lämnas orörd
+    esac
+    printf '%s' "${s}"
+}
+
+# _normalisera_kat <bas> <path> — absolut, symlänk-upplöst katalog på stdout.
+# Relativ <path> tolkas mot <bas>. `cd … && pwd -P` gör /tmp ↔ /private/tmp-
+# skillnaden betydelselös. Icke-noll = katalogen finns inte (anroparen faller
+# då till textmönstret).
+_normalisera_kat() {
+    local bas="$1" p="$2" ut
+    [[ -n "${p}" ]] || return 1
+    case "${p}" in
+        /*) ;;
+        *) p="${bas}/${p}" ;;
+    esac
+    ut="$(cd "${p}" 2>/dev/null && pwd -P)" || return 1
+    [[ -n "${ut}" ]] || return 1
+    printf '%s' "${ut}"
+}
+
+# _malet_ar_huvudkatalogen <katalog> — gits egen upplösning, inte vår.
+#   0 = katalogen ÄR detta repos huvudträd
+#   1 = den är något annat (en worktree, ett annat repo, inget repo)
+#   2 = kunde inte avgöras → anroparen faller till textmönstret
+_malet_ar_huvudkatalogen() {
+    local kat="$1" md mc
+    [[ -n "${kat}" && -d "${kat}" ]] || return 2
+    md="$(git -C "${kat}" rev-parse --path-format=absolute --git-dir 2>/dev/null)" || return 2
+    mc="$(git -C "${kat}" rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" || return 2
+    [[ -n "${md}" && -n "${mc}" ]] || return 2
+    # Samma repo? (annars är det ett helt främmande träd som inte angår oss)
+    [[ "${mc}" = "${COMMON_DIR}" ]] || return 1
+    # Huvudträdet, inte en worktree? (en worktrees --git-dir är .git/worktrees/<namn>)
+    [[ "${md}" = "${mc}" ]] || return 1
+    return 0
+}
+
+# _kommandot_namner_huvudkatalogen — RESERVVÄGEN. Matchar huvudkatalogens
+# sökväg som HEL sökväg: en träff följd av `/` är en underkatalog (worktree)
+# och räknas inte. Se § MÅLUPPLÖSNING klass (c)/(d).
+_kommandot_namner_huvudkatalogen() {
+    local form rest
+    for form in "${HUVUD_FORMER[@]}"; do
+        [[ -n "${form}" ]] || continue
+        case "${COMMAND}" in
+            *"${form}"*) ;;
+            *) continue ;;
+        esac
+        # Pröva VARJE förekomst: den första kan vara en worktree-sökväg
+        # medan en senare är huvudkatalogen själv.
+        rest="${COMMAND}"
+        while [[ "${rest}" == *"${form}"* ]]; do
+            rest="${rest#*"${form}"}"
+            case "${rest}" in
+                /*) : ;;                 # underkatalog — inte huvudkatalogen
+                *) return 0 ;;           # slut, whitespace, citat, & … — träff
+            esac
+        done
+    done
+    return 1
+}
+
+# ── Delfråga 1+2 (TASK-322: SAMMANSLAGNA) — är kommandot en git-skrivning
+#    MOT HUVUDKATALOGEN? ────────────────────────────────────────────────────
 #
 # Ett kommando kan bära FLERA git-anrop (`git merge && git status`), så varje
 # segment prövas för sig — annars hade bara det sista undersökts, och en
@@ -474,8 +656,101 @@ fi
 # (`-C <path>`, `-c <k=v>`, `--git-dir <path>` …) hoppas över med sitt
 # värde; annars skulle `git -C foo merge` läsas som underkommandot "-C".
 
+# _par_finns <sub> <flagga> <lista...> — "sub:flagga" i en policy-lista.
+# Platt par-lista i stället för en associativ array: bash 3.2 (repots golv på
+# macOS) har inga `declare -A`.
+_par_finns() {
+    local sub="$1" flagga="$2" post
+    shift 2
+    for post in "$@"; do
+        [[ -n "${post}" ]] || continue
+        [[ "${post}" = "${sub}:${flagga}" ]] && return 0
+    done
+    return 1
+}
+
+# _kort_grupp_har_skrivflagga <sub> <argument> — 0 om en STAPLAD kort
+# flagg-grupp (`-vd`, `-Dq`) bär en skrivflagga.
+#
+# VARFÖR: git tillåter att korta flaggor staplas i ett token, så `git branch
+# -vd gammal` raderar en gren utan att någonsin bära ett ensamt `-d`. En
+# klassning som bara jämför hela token missar det. PRECEDENT, inte egen
+# uppfinning: OpenAI Codex CLI löser samma fall i
+# `codex-rs/shell-command/src/command_safety/is_dangerous_command.rs` med
+# `short_flag_group_contains(arg, 'd')`, tillagt i PR #10258 ("fix: unsafe
+# auto-approval of git commands") vars beskrivning uttryckligen listar
+# "grouped short-flag delete forms (e.g. stacked branch flags containing
+# d/D)" som en approval-bypass. Källa: docs/research/
+# git-las-skriv-klassning-och-malkatalog-2026-08-28.md § Delfråga 3.1.
+#
+# Riktningen är FAIL-CLOSED med avsikt: en grupp som bär ett skrivtecken
+# klassas som skrivning även om övriga tecken är läsflaggor.
+_kort_grupp_har_skrivflagga() {
+    local sub="$1" arg="$2" tecken rest
+    case "${arg}" in
+        --*) return 1 ;;   # lång flagga — ingen grupp
+        -?)  return 1 ;;   # ensam kort flagga — redan prövad exakt
+        -*)  ;;
+        *)   return 1 ;;
+    esac
+    rest="${arg#-}"
+    while [[ -n "${rest}" ]]; do
+        tecken="${rest%"${rest#?}"}"
+        _par_finns "${sub}" "-${tecken}" "${KATALOG_GIT_SKRIVFLAGGOR[@]:-}" && return 0
+        rest="${rest#?}"
+    done
+    return 1
+}
+
+# _klassa_flaggstyrd <sub> <argument...> — 0 = SKRIVNING, 1 = LÄSNING.
+# Modellen och dess motiv: .katalogagarskap-policy.conf § FLAGG-MEDVETEN.
+_klassa_flaggstyrd() {
+    local sub="$1" har_skriv=1 har_las_abs=1 har_positionell=1 bara_positionella=1
+    local flagga flaggbas
+    shift
+    while [[ $# -gt 0 ]]; do
+        if [[ "${bara_positionella}" -eq 0 ]]; then
+            har_positionell=0; shift; continue
+        fi
+        case "$1" in
+            --) bara_positionella=0; shift; continue ;;
+            -*)
+                flagga="$1"
+                # `--delete=x` prövas mot `--delete` — samma defensiva form
+                # som Codex CLI:s `arg.starts_with("--delete=")`.
+                case "${flagga}" in
+                    --*=*) flaggbas="${flagga%%=*}" ;;
+                    *)     flaggbas="${flagga}" ;;
+                esac
+                if _par_finns "${sub}" "${flaggbas}" "${KATALOG_GIT_SKRIVFLAGGOR[@]:-}"; then
+                    har_skriv=0
+                elif _kort_grupp_har_skrivflagga "${sub}" "${flagga}"; then
+                    har_skriv=0
+                elif _par_finns "${sub}" "${flaggbas}" "${KATALOG_GIT_LASFLAGGOR_ABSOLUTA[@]:-}"; then
+                    har_las_abs=0
+                elif _par_finns "${sub}" "${flaggbas}" "${KATALOG_GIT_LASFLAGGOR_MED_VARDE[@]:-}"; then
+                    # Bär flaggan sitt värde i samma token (`--sort=x`) finns
+                    # inget separat värde att hoppa över.
+                    if [[ "${flagga}" != --*=* ]]; then
+                        shift 2 2>/dev/null || shift
+                        continue
+                    fi
+                fi
+                # Okänd flagga ⇒ ignoreras medvetet (policyfilens § OKÄNDA).
+                shift ;;
+            *) har_positionell=0; shift ;;
+        esac
+    done
+    [[ "${har_skriv}"    -eq 0 ]] && return 0
+    [[ "${har_las_abs}"  -eq 0 ]] && return 1
+    [[ "${har_positionell}" -eq 0 ]] && return 0
+    return 1
+}
+
+# _prova_segment <segment> — 0 om segmentet är en git-SKRIVNING. Sätter
+# GIT_SUBKOMMANDO. Klassar nu på underkommando OCH flaggor (TASK-322).
 _prova_segment() {
-    local seg="$1" sub="" wsub=""
+    local seg="$1" sub="" wsub="" l
     # shellcheck disable=SC2086
     set -- ${seg}
     # Täcker `git`, `/usr/bin/git` och `sudo git` (sudo hoppas över nedan).
@@ -505,6 +780,29 @@ _prova_segment() {
         return 1
     fi
 
+    # `git stash` har OMVÄND default mot worktree: bart `git stash` är
+    # `git stash push`, alltså en skrivning. Se policyfilens § STASH.
+    if [[ "${sub}" = "stash" ]]; then
+        wsub="${2:-}"
+        for l in "${KATALOG_STASH_LASKOMMANDON[@]:-}"; do
+            [[ -n "${l}" && "${wsub}" = "${l}" ]] && return 1
+        done
+        GIT_SUBKOMMANDO="stash${wsub:+ ${wsub}}"
+        return 0
+    fi
+
+    # Flaggstyrda underkommandon (`branch`, `tag`): argumenten avgör.
+    for l in "${KATALOG_GIT_FLAGGSTYRDA[@]:-}"; do
+        if [[ -n "${l}" && "${sub}" = "${l}" ]]; then
+            shift   # bort med underkommandot självt; resten är dess argument
+            if _klassa_flaggstyrd "${sub}" "$@"; then
+                GIT_SUBKOMMANDO="${sub}"
+                return 0
+            fi
+            return 1
+        fi
+    done
+
     for k in "${KATALOG_GIT_SKRIVKOMMANDON[@]}"; do
         if [[ "${sub}" = "${k}" ]]; then
             GIT_SUBKOMMANDO="${sub}"
@@ -514,15 +812,55 @@ _prova_segment() {
     return 1
 }
 
-ar_git_skrivning() {
-    local cmd="$1" segment
+# _mal_for_segment <bas> <segment> — katalogen git faktiskt skulle köra i.
+# Icke-noll = kunde inte avgöras (anroparen faller till textmönstret).
+# `-C` är KUMULATIV och relativ till föregående -C (git-scm.com/docs/git),
+# vilket loopen speglar genom att mata `kat` tillbaka in i _normalisera_kat.
+_mal_for_segment() {
+    local bas="$1" seg="$2" kat="$1" v
+    # shellcheck disable=SC2086
+    set -- ${seg}
+    [[ "${1:-}" = "sudo" ]] && shift
+    case "${1:-}" in
+        git|*/git) shift ;;
+        *) return 1 ;;
+    esac
+    while [[ $# -gt 0 ]]; do
+        case "$1" in
+            -C|--work-tree)
+                v="$(_avcitera "${2:-}")"
+                [[ -n "${v}" ]] || return 1
+                kat="$(_normalisera_kat "${kat}" "${v}")" || return 1
+                shift 2 2>/dev/null || return 1 ;;
+            --work-tree=*)
+                v="$(_avcitera "${1#--work-tree=}")"
+                kat="$(_normalisera_kat "${kat}" "${v}")" || return 1
+                shift ;;
+            # `--git-dir` pekar på .git, inte på arbetsträdet, och kan peka
+            # på huvudträdets .git från vilken katalog som helst. Vi avstår
+            # från att gissa och lämnar över till textmönstret.
+            --git-dir|--git-dir=*) return 1 ;;
+            -c|--namespace|--exec-path) shift 2 2>/dev/null || return 1 ;;
+            --*=*) shift ;;
+            -*) shift ;;
+            *) break ;;
+        esac
+    done
+    printf '%s' "${kat}"
+}
+
+# klassa_kommando <cmd> — 0 om kommandot bär en git-SKRIVNING mot
+# huvudkatalogen. Sätter GIT_SUBKOMMANDO + TRAFFVAG.
+klassa_kommando() {
+    local cmd="$1" segment segmenterade bas mal rc forsta cd_mal
+    bas="${PWD}"
     # Dela på shell-separatorer (; | & och radbrytning). `&&` och `||` blir
     # två newlines med en tom rad emellan, som hoppas över.
     # `printf '%s\n'` — den avslutande radbrytningen är INTE kosmetisk: utan
     # den returnerar `read` icke-noll på sista raden och while-loopen hoppar
     # över den. Med ett endradskommando (normalfallet) betyder det att INGET
     # prövas och hooken släpper allt. Fångat av testsviten 2026-08-04.
-    local segmenterade
+    #
     # `tr`:s returvärde är ointressant här och maskeras medvetet i en
     # kommandosubstitution (SC2312) — därför fångas det i en variabel först,
     # så loopen nedan matar från en här-sträng i stället.
@@ -532,56 +870,72 @@ ar_git_skrivning() {
     # är teckenvis ersättning, inte ordvis — precis vad tr gör.
     # shellcheck disable=SC2020
     segmenterade="$(printf '%s\n' "${cmd}" | tr ';|&' '\n\n\n')" || return 1
+
+    # Glob-expansion AV: `set -- ${seg}` ordsplittar avsiktligt, men ett `*`
+    # i ett segment skulle annars expanderas mot arbetskatalogens innehåll
+    # och göra klassningen beroende av vilka filer som råkar ligga där.
+    set -f
     while IFS= read -r segment; do
         [[ -n "${segment//[[:space:]]/}" ]] || continue
-        _prova_segment "${segment}" && return 0
+
+        # `cd`-SPÅRNING: ett segment vars första ord är `cd` flyttar basen
+        # för EFTERFÖLJANDE segment. Det är vad som gör `cd <worktree> &&
+        # git checkout` läsbart som "målet är worktreen". Ledande `(` från en
+        # subshell strippas; misslyckas katalogbytet lämnas basen orörd
+        # (okänt mål ⇒ textmönstret får avgöra).
+        # shellcheck disable=SC2086
+        set -- ${segment}
+        forsta="${1:-}"
+        forsta="${forsta#(}"
+        if [[ "${forsta}" = "cd" && -n "${2:-}" ]]; then
+            cd_mal="$(_avcitera "$2")"
+            bas="$(_normalisera_kat "${bas}" "${cd_mal}")" || bas="${PWD}"
+            continue
+        fi
+
+        _prova_segment "${segment}" || continue
+
+        mal="$(_mal_for_segment "${bas}" "${segment}")"
+        if [[ -n "${mal}" ]]; then
+            _malet_ar_huvudkatalogen "${mal}"
+            rc=$?
+            if [[ "${rc}" -eq 0 ]]; then
+                TRAFFVAG="målet är huvudkatalogen (upplöst sökväg ${mal})"
+                set +f
+                return 0
+            fi
+            # rc=1: målet är bevisligen en ANNAN katalog (worktree/annat
+            # repo) ⇒ detta segment angår oss inte. rc=2: okänt ⇒ reservväg.
+            [[ "${rc}" -eq 1 ]] && continue
+        fi
+
+        if _kommandot_namner_huvudkatalogen; then
+            TRAFFVAG="kommandot pekar explicit på huvudkatalogen (textmönster, målet gick inte att upplösa)"
+            set +f
+            return 0
+        fi
     done <<< "${segmenterade}"
+    set +f
     return 1
 }
 
 GIT_SUBKOMMANDO=""
-ar_git_skrivning "${COMMAND}" || exit 0
-
-# ── Delfråga 2: riktas den mot huvudkatalogen? ────────────────────────────
-COMMON_DIR="$(git rev-parse --path-format=absolute --git-common-dir 2>/dev/null)" || exit 0
-GIT_DIR="$(git rev-parse --path-format=absolute --git-dir 2>/dev/null)" || exit 0
-[[ -n "${COMMON_DIR}" && -n "${GIT_DIR}" ]] || exit 0
-
-HUVUDKATALOG="${COMMON_DIR%/.git}"
-[[ -n "${HUVUDKATALOG}" && "${HUVUDKATALOG}" != "${COMMON_DIR}" ]] || exit 0
-
-# Alternativa skrivformer av samma katalog. macOS symlinkar /var -> /private/var
-# och /tmp -> /private/tmp, så `git rev-parse` kan svara `/private/tmp/...`
-# medan kommandot och `cwd` bär `/tmp/...` — en ren strängjämförelse missar då.
-# Det är inte hypotetiskt: detta repo har worktrees under /private/tmp/claude-501/.
-HUVUD_FORMER=("${HUVUDKATALOG}")
-[[ "${HUVUDKATALOG}" == /private/* ]] && HUVUD_FORMER+=("${HUVUDKATALOG#/private}")
-if command -v realpath >/dev/null 2>&1; then
-    HUVUD_REAL="$(realpath "${HUVUDKATALOG}" 2>/dev/null)"
-    [[ -n "${HUVUD_REAL}" && "${HUVUD_REAL}" != "${HUVUDKATALOG}" ]] && HUVUD_FORMER+=("${HUVUD_REAL}")
-fi
-
 TRAFFVAG=""
-# Väg 1 (exakt): sessionens cwd ÄR huvudkatalogen.
-if [[ "${GIT_DIR}" = "${COMMON_DIR}" ]]; then
-    TRAFFVAG="arbetskatalogen är huvudkatalogen"
-else
-    # Väg 2+3 (approximativ, se § SCOPE-GRÄNSER): kommandot pekar dit explicit.
-    for form in "${HUVUD_FORMER[@]}"; do
-        if [[ "${COMMAND}" == *"${form}"* ]]; then
-            TRAFFVAG="kommandot pekar explicit på huvudkatalogen"
-            break
-        fi
-    done
-    [[ -n "${TRAFFVAG}" ]] || exit 0
-fi
+klassa_kommando "${COMMAND}" || exit 0
 
 # ── Delfråga 3: äger denna session huvudkatalogen — eller ska den TA den? ──
 # Se § ÄGARSKAP-TAGANDE ovan. Bara en session som faktiskt KÖR i
 # huvudkatalogen får ta eller ta över — en worktree-session som pekar dit via
 # `-C` gör inget hemvist-anspråk (§ VARFÖR "TA" BARA GÄLLER...).
+# TASK-322: härleds ur SESSIONENS EGEN cwd, inte ur träffvägen. Före
+# målupplösningen råkade de två sammanfalla ("väg 1 träffade" ⇔ "cwd är
+# huvudkatalogen"), och koden läste därför träffvägs-strängen. Nu är de
+# skilda frågor: en session som BOR i huvudkatalogen kan rikta en skrivning
+# mot en worktree (släpps, ingen träff alls), och en worktree-session kan
+# rikta en skrivning mot huvudkatalogen (träff, men inget hemvist-anspråk).
+# Hemvist-frågan är och förblir "var står jag?", alltså cwd:s eget git-dir.
 AR_HUVUDKAT_SESSION="false"
-[[ "${TRAFFVAG}" = "arbetskatalogen är huvudkatalogen" ]] && AR_HUVUDKAT_SESSION="true"
+[[ "${GIT_DIR}" = "${COMMON_DIR}" ]] && AR_HUVUDKAT_SESSION="true"
 
 MARKOR="${COMMON_DIR}/${KATALOG_MARKOR_FILNAMN:-katalogagarskap-agare.json}"
 

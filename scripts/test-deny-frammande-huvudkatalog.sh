@@ -624,6 +624,205 @@ RADER_EFTER="$(wc -l < "${HOOK_LOGG}" 2>/dev/null || echo 0)"
 if [[ "${RADER_FORE}" -eq "${RADER_EFTER}" ]]; then OK=0; else OK=1; fi
 pastar "ett SLÄPP loggar INTE en ny rad" "${OK}"
 
+# ═══ SIDA 11 — MÅLSTYRD KLASSNING (TASK-322) ═══
+#
+#   VARFÖR EN EGEN RIGG: riggen överst lägger worktreen BREDVID huvudrepot
+#   (${TMPROT}/worktree-b). Produktionen gör tvärtom — Claude Code lägger
+#   worktrees i <huvudkatalog>/.claude/worktrees/<namn>, alltså UNDER
+#   huvudkatalogen. Den skillnaden är inte kosmetisk: den gamla väg 2 matchade
+#   huvudkatalogens sökväg som DELSTRÄNG, och varje worktree-sökväg BÄR den
+#   som prefix. Hela den falska-positiv-klassen var därför strukturellt
+#   osynlig för riggen ovan — den kunde inte uppstå där. En testrigg som inte
+#   speglar produktionens topologi bevisar mekanismen i fel värld.
+#
+#   TVÅSIDIGT genomgående: varje falsk positiv som ska SLÄPPAS paras med den
+#   äkta skrivning mot samma yta som fortfarande ska NEKAS. Annars vore ett
+#   grönt facit förenligt med en hook som slutat fälla över huvud taget.
+echo
+echo "SIDA 11 — målstyrd klassning (TASK-322)"
+
+P_HUVUD="${TMPROT}/prod-topologi/huvudrepo"
+mkdir -p "${P_HUVUD}"
+git -C "${P_HUVUD}" init -q -b main
+git -C "${P_HUVUD}" config user.email "test@example.invalid"
+git -C "${P_HUVUD}" config user.name "Testrigg"
+echo "start" > "${P_HUVUD}/fil.txt"
+git -C "${P_HUVUD}" add fil.txt
+git -C "${P_HUVUD}" commit -q -m "init"
+# PRODUKTIONENS topologi: worktreen UNDER huvudkatalogen.
+P_WT="${P_HUVUD}/.claude/worktrees/agent-x"
+git -C "${P_HUVUD}" worktree add -q -b gren-x "${P_WT}"
+P_COMMON="$(git -C "${P_HUVUD}" rev-parse --path-format=absolute --git-common-dir)"
+P_MARKOR="${P_COMMON}/${KATALOG_MARKOR_FILNAMN}"
+
+# Främmande + BEVISLIGEN LEVANDE ägare ⇒ varje TRÄFF nekar. Allt som släpps
+# nedan släpps därför för att klassningen inte träffade — aldrig för att
+# ägarprövningen råkade ge vika.
+# SC2312-säkert: substitutionerna extraheras FÖRE anropet, aldrig nästlade
+# i argumentlistan (samma form som SIDA 4 redan följer).
+NU_ISO="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+NU_EPOCH="$(date +%s)"
+jq -n --arg sid "${AGARE_SID}" --arg huvud "${P_HUVUD}" \
+    --arg iso "${NU_ISO}" --argjson epoch "${NU_EPOCH}" \
+    --argjson pid "${LEVANDE_PID}" --arg pidstart "${LEVANDE_START}" \
+    '{session_id: $sid, huvudkatalog: $huvud, satt_vid: $iso, satt_vid_epoch: $epoch,
+      agare_pid: $pid, agare_pid_starttid: $pidstart}' > "${P_MARKOR}"
+
+echo "  (rigg: worktree UNDER huvudkatalogen, som i produktion)"
+
+# ── 11a. Instansklass "cd + git-checkout" — kortets första instans ────────
+forvanta SLAPP "cd <worktree> && git checkout, cwd=HUVUDKATALOGEN" \
+    "${P_HUVUD}" "${FRAMLING_SID}" "cd ${P_WT} && git checkout -b ny-gren"
+forvanta SLAPP "git -C <worktree> checkout, cwd=HUVUDKATALOGEN" \
+    "${P_HUVUD}" "${FRAMLING_SID}" "git -C ${P_WT} checkout -b ny-gren"
+forvanta NEKA "MOTPROV: cd <huvudkatalog> && git checkout, cwd=worktree" \
+    "${P_WT}" "${FRAMLING_SID}" "cd ${P_HUVUD} && git checkout -b ny-gren"
+forvanta NEKA "MOTPROV: git -C <huvudkatalog> checkout, cwd=worktree" \
+    "${P_WT}" "${FRAMLING_SID}" "git -C ${P_HUVUD} checkout -b ny-gren"
+
+# ── 11b. Instansklass "branch --merged" — läsning kontra skrivning ────────
+forvanta SLAPP "git branch --merged är en LÄSNING" \
+    "${P_HUVUD}" "${FRAMLING_SID}" "git branch --merged"
+forvanta SLAPP "git branch --merged <commit> (värdet är inte ett grennamn)" \
+    "${P_HUVUD}" "${FRAMLING_SID}" "git branch --merged main"
+forvanta SLAPP "git branch --list" \
+    "${P_HUVUD}" "${FRAMLING_SID}" "git branch --list"
+forvanta SLAPP "git branch --list <mönster> (absolut läsflagga slår positionell)" \
+    "${P_HUVUD}" "${FRAMLING_SID}" "git branch --list 'feat/*'"
+forvanta SLAPP "git branch --show-current" \
+    "${P_HUVUD}" "${FRAMLING_SID}" "git branch --show-current"
+forvanta SLAPP "git branch -a (ren listning)" \
+    "${P_HUVUD}" "${FRAMLING_SID}" "git branch -a"
+forvanta SLAPP "git branch utan argument (listar)" \
+    "${P_HUVUD}" "${FRAMLING_SID}" "git branch"
+forvanta SLAPP "git branch -a genom pipe (kortets live-instans)" \
+    "${P_HUVUD}" "${FRAMLING_SID}" "git branch -a | wc -l"
+forvanta SLAPP "git tag --list" \
+    "${P_HUVUD}" "${FRAMLING_SID}" "git tag --list"
+forvanta SLAPP "git stash list" \
+    "${P_HUVUD}" "${FRAMLING_SID}" "git stash list"
+forvanta SLAPP "git stash show" \
+    "${P_HUVUD}" "${FRAMLING_SID}" "git stash show"
+forvanta NEKA "MOTPROV: git branch -d <gren> är en SKRIVNING" \
+    "${P_HUVUD}" "${FRAMLING_SID}" "git branch -d gammal-gren"
+forvanta NEKA "MOTPROV: git branch -D <gren>" \
+    "${P_HUVUD}" "${FRAMLING_SID}" "git branch -D gammal-gren"
+forvanta NEKA "MOTPROV: git branch <nytt-namn> (positionellt = skapa)" \
+    "${P_HUVUD}" "${FRAMLING_SID}" "git branch helt-ny-gren"
+forvanta NEKA "MOTPROV: git branch -m gammal ny (byt namn)" \
+    "${P_HUVUD}" "${FRAMLING_SID}" "git branch -m gammal ny"
+forvanta NEKA "MOTPROV: git branch -u origin/main (sätter upstream)" \
+    "${P_HUVUD}" "${FRAMLING_SID}" "git branch -u origin/main"
+forvanta NEKA "MOTPROV: git tag -d <tagg>" \
+    "${P_HUVUD}" "${FRAMLING_SID}" "git tag -d v1.0.0"
+forvanta NEKA "MOTPROV: git tag <namn> (positionellt = skapa)" \
+    "${P_HUVUD}" "${FRAMLING_SID}" "git tag v2.0.0"
+forvanta NEKA "MOTPROV: git stash (bart = push, en SKRIVNING)" \
+    "${P_HUVUD}" "${FRAMLING_SID}" "git stash"
+forvanta NEKA "MOTPROV: git stash pop" \
+    "${P_HUVUD}" "${FRAMLING_SID}" "git stash pop"
+
+# ── 11b-bis. STAPLADE korta flaggor — Codex CLI:s approval-bypass ────────
+#   `git branch -vd gammal` raderar en gren utan att bära ett ensamt `-d`.
+#   OpenAI Codex CLI PR #10258 listar "grouped short-flag delete forms" som
+#   en faktisk auto-approval-bypass; deras `short_flag_group_contains(arg,
+#   'd')` är precedenten för vår `_kort_grupp_har_skrivflagga`. Belägg:
+#   docs/research/git-las-skriv-klassning-och-malkatalog-2026-08-28.md
+#   § Delfråga 3.1.
+forvanta NEKA "STAPLAD: git branch -vd <gren> (d gömd i grupp)" \
+    "${P_HUVUD}" "${FRAMLING_SID}" "git branch -vd gammal-gren"
+forvanta NEKA "STAPLAD: git branch -dv <gren> (omvänd ordning)" \
+    "${P_HUVUD}" "${FRAMLING_SID}" "git branch -dv gammal-gren"
+forvanta NEKA "STAPLAD: git branch -Dq <gren> (versalt D i grupp)" \
+    "${P_HUVUD}" "${FRAMLING_SID}" "git branch -Dq gammal-gren"
+forvanta NEKA "LIKHETSFORM: git branch --delete=<gren>" \
+    "${P_HUVUD}" "${FRAMLING_SID}" "git branch --delete=gammal-gren"
+forvanta NEKA "GLOBAL FLAGGA FÖRE: git -c color.ui=false branch -d <gren>" \
+    "${P_HUVUD}" "${FRAMLING_SID}" "git -c color.ui=false branch -d gammal"
+forvanta SLAPP "MOTPROV: git branch -av (grupp UTAN skrivtecken)" \
+    "${P_HUVUD}" "${FRAMLING_SID}" "git branch -av"
+forvanta SLAPP "MOTPROV: git branch -vv (grupp UTAN skrivtecken)" \
+    "${P_HUVUD}" "${FRAMLING_SID}" "git branch -vv"
+forvanta SLAPP "MOTPROV: git branch --sort=refname (läsflagga med värde)" \
+    "${P_HUVUD}" "${FRAMLING_SID}" "git branch --sort=refname"
+forvanta SLAPP "MOTPROV: git tag -n5 (siffra i kort-grupp)" \
+    "${P_HUVUD}" "${FRAMLING_SID}" "git tag -n5"
+
+# ── 11c. Instansklass "worktree remove + prune" ───────────────────────────
+#   STÄLLNINGSTAGANDE (skriptets § WORKTREE-OPERATIONER): ADR-090 beslut 2
+#   skyddar huvudträdets ARBETSTRÄD och index — inte worktree-REGISTRET. En
+#   session som tar bort sin EGEN worktree rör inte ägarens arbete.
+forvanta SLAPP "git worktree remove <EGEN worktree>, cwd=worktree" \
+    "${P_WT}" "${FRAMLING_SID}" "git worktree remove ${P_WT}"
+forvanta SLAPP "git worktree prune från egen worktree" \
+    "${P_WT}" "${FRAMLING_SID}" "git worktree prune"
+forvanta SLAPP "git worktree remove + prune i samma kedja, cwd=worktree" \
+    "${P_WT}" "${FRAMLING_SID}" "git worktree remove ${P_WT} && git worktree prune"
+forvanta SLAPP "git worktree list är fortsatt en läsning" \
+    "${P_WT}" "${FRAMLING_SID}" "git worktree list"
+forvanta NEKA "MOTPROV: worktree-operation KÖRD I huvudkatalogen" \
+    "${P_HUVUD}" "${FRAMLING_SID}" "git worktree prune"
+forvanta NEKA "MOTPROV: git -C <huvudkatalog> worktree add" \
+    "${P_WT}" "${FRAMLING_SID}" "git -C ${P_HUVUD} worktree add ../ny"
+
+# ── 11d. Klass (c)/(d): worktree-sökvägen BÄR huvudkatalogens som prefix ──
+forvanta SLAPP "git commit i EGEN worktree (sökvägen prefixas av huvudkat.)" \
+    "${P_WT}" "${FRAMLING_SID}" "git -C ${P_WT} commit -m 'arbete'"
+forvanta SLAPP "cd <egen worktree> && git commit, cwd=worktree" \
+    "${P_WT}" "${FRAMLING_SID}" "cd ${P_WT} && git commit -m 'arbete'"
+forvanta SLAPP "heredoc vars TEXT bär git-ord + worktree-sökväg" \
+    "${P_WT}" "${FRAMLING_SID}" "cat > ${P_WT}/f.sh <<'EOF'
+git -C \"\$HUVUD\" add fil.txt
+EOF"
+forvanta NEKA "MOTPROV: samma form men mot HUVUDKATALOGEN" \
+    "${P_WT}" "${FRAMLING_SID}" "git -C ${P_HUVUD} commit -m 'arbete'"
+
+# ── 11e. Instansklass "/private/tmp-arbetskatalog" ────────────────────────
+#   macOS symlänkar /tmp -> /private/tmp, så `git rev-parse` svarar
+#   /private/tmp/... medan cwd och kommandot bär /tmp/.... Målupplösningen
+#   normaliserar med `cd … && pwd -P` och blir därför symlänk-okänslig.
+#   PORTABELT: på Linux (CI) finns ingen sådan symlänk — testet är då en
+#   trivial identitet, men bevisar fortfarande att vägen inte kraschar.
+S_ROT="$(mktemp -d /tmp/t322-symlank-XXXXXX 2>/dev/null || mktemp -d)"
+S_HUVUD="${S_ROT}/huvudrepo"
+mkdir -p "${S_HUVUD}"
+git -C "${S_HUVUD}" init -q -b main
+git -C "${S_HUVUD}" config user.email "test@example.invalid"
+git -C "${S_HUVUD}" config user.name "Testrigg"
+echo "start" > "${S_HUVUD}/fil.txt"
+git -C "${S_HUVUD}" add fil.txt
+git -C "${S_HUVUD}" commit -q -m "init"
+S_WT="${S_HUVUD}/.claude/worktrees/agent-y"
+git -C "${S_HUVUD}" worktree add -q -b gren-y "${S_WT}"
+S_COMMON="$(git -C "${S_HUVUD}" rev-parse --path-format=absolute --git-common-dir)"
+S_ISO="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+S_EPOCH="$(date +%s)"
+jq -n --arg sid "${AGARE_SID}" --arg huvud "${S_HUVUD}" \
+    --arg iso "${S_ISO}" --argjson epoch "${S_EPOCH}" \
+    --argjson pid "${LEVANDE_PID}" --arg pidstart "${LEVANDE_START}" \
+    '{session_id: $sid, huvudkatalog: $huvud, satt_vid: $iso, satt_vid_epoch: $epoch,
+      agare_pid: $pid, agare_pid_starttid: $pidstart}' \
+    > "${S_COMMON}/${KATALOG_MARKOR_FILNAMN}"
+
+forvanta SLAPP "arbete i egen worktree under /tmp-sökväg" \
+    "${S_WT}" "${FRAMLING_SID}" "git commit -m 'arbete'"
+forvanta SLAPP "cd <worktree> && git checkout, /tmp-sökväg, cwd=huvudkat." \
+    "${S_HUVUD}" "${FRAMLING_SID}" "cd ${S_WT} && git checkout -b ny"
+forvanta NEKA "MOTPROV: skrivning mot huvudkatalogen via /tmp-sökväg" \
+    "${S_WT}" "${FRAMLING_SID}" "git -C ${S_HUVUD} reset --hard"
+rm -rf "${S_ROT}"
+
+# ── 11f. Reservvägen: målet går INTE att upplösa ──────────────────────────
+#   En oexpanderad variabel i sökvägen gör målet okänt. Då — och bara då —
+#   faller klassningen tillbaka på textmönstret, som nu matchar
+#   huvudkatalogen som HEL sökväg.
+forvanta NEKA "oupplösligt mål + huvudkatalogen nämnd som HEL sökväg" \
+    "${P_WT}" "${FRAMLING_SID}" "git -C \"\${OKAND}\" reset --hard ${P_HUVUD}"
+forvanta SLAPP "oupplösligt mål + bara en UNDERKATALOG nämnd (worktree)" \
+    "${P_WT}" "${FRAMLING_SID}" "git -C \"\${OKAND}\" reset --hard ${P_WT}"
+forvanta SLAPP "obefintlig målkatalog under huvudkat. ⇒ ingen träff" \
+    "${P_WT}" "${FRAMLING_SID}" "git -C ${P_HUVUD}/finns-inte-alls commit -m x"
+
 echo
 if [[ "${FEL}" -eq 0 ]]; then
     echo "✅ ${ANTAL}/${ANTAL} gröna."
