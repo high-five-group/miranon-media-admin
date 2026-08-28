@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-22 07:12'
-updated_date: '2026-08-07 11:19'
+updated_date: '2026-08-28 05:05'
 labels:
   - ready-for-agent
 dependencies: []
@@ -21,6 +21,14 @@ Proveniens: S75, diagnos-agenten för 18.8-studsen. Mekanism bevisad: testets No
 
 Förväntat: grep-svep över tests/e2e/** + gemensam Stockholm-förankrad datum-hjälpare för testens referensklocka. Snabbsignatur ur diagnosen: TZ-fel är stabila över CI-retries (identiska diffar), race-fel växlar mönster.
 <!-- SECTION:DESCRIPTION:END -->
+
+## Acceptance Criteria
+<!-- AC:BEGIN -->
+- [ ] #1 Grep-svep över tests/e2e/** identifierar samtliga asserts som jämför Node-lokalt beräknat datum mot browser-renderat datum, inkl. de två redan kända (hem.staging.test.ts:755, events-list.staging.test.ts:1013)
+- [ ] #2 En delad Stockholm-förankrad datum-hjälpare ersätter Node-lokal new Date()/setDate() i samtliga identifierade asserts
+- [ ] #3 Berörda testfiler körs grönt (npm run test:e2e eller motsvarande) utan TZ-relaterad diff, verifierat lokalt med TZ satt till UTC för att simulera fönstret 22:00–00:00 UTC
+- [ ] #4 CI grön på post-merge/staging-jobbet för de fixade testfilerna
+<!-- AC:END -->
 
 ## Implementation Notes
 

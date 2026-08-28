@@ -4,9 +4,10 @@ title: 'Städ: död kod efter segment-rivningen + PrototypNots felaktiga komment
 status: To Do
 assignee: []
 created_date: '2026-08-17 09:08'
-updated_date: '2026-08-17 10:14'
+updated_date: '2026-08-28 05:10'
 labels:
   - stad
+  - ready-for-human
 dependencies: []
 ordinal: 476000
 ---
@@ -24,6 +25,12 @@ ordinal: 476000
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+AC saknas medvetet: kortet bundlar mekanisk dead-code-rivning (SavedSegmentsList.tsx, SegmentMailCompose.tsx, useSaveSegment) med en scope-öppen fråga: 'Beslut om export-funktionens öde (SKOOL-exporten har ingen UI-yta längre, 249.9 divergens 3) ingår.' Kräver Marcus-beslut om src/lib/segment-export.ts ska rivas, behållas som headless-funktion, eller få en ny UI-yta, innan full AC kan skrivas för hela kortet. Källa: kortets egen Description. Verifierat av registerhygien-passet 2026-08-28 — satte label ready-for-human (saknades, hade bara 'stad').
+<!-- SECTION:NOTES:END -->
 
 ## Comments
 

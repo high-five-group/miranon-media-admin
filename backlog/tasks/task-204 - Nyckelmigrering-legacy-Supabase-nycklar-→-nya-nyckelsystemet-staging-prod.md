@@ -4,6 +4,7 @@ title: 'Nyckelmigrering: legacy Supabase-nycklar → nya nyckelsystemet (staging
 status: To Do
 assignee: []
 created_date: '2026-08-12 16:53'
+updated_date: '2026-08-28 05:09'
 labels:
   - ready-for-human
   - sakerhet
@@ -62,3 +63,9 @@ Orkestrerarens förslag 2026-08-12: kör detta som eget pass EFTER att aktivitet
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+AC saknas medvetet: kortet är explicit 'ARBETSENHET, ej plockbar skiva — behöver /to-issues innan exekvering', och sekvenseringen är ospecad: 'Marcus har inte tagit ställning' till om detta ska köras efter TASK-201.7 eller nu. Kräver Marcus-beslut om sekvensering innan /to-issues kan bryta ned i skivor med egen AC. Källa: kortets egen Description (SEKVENSERING-sektionen). Verifierat av registerhygien-passet 2026-08-28 (redan taggat ready-for-human, sakerhet).
+<!-- SECTION:NOTES:END -->
