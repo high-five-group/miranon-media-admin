@@ -4,10 +4,10 @@ title: >-
   Fynd: PRD task-126:s testbeslut styr datalösa tester in i acceptance-klassen,
   vars vakt strukturellt avvisar dem — repot saknar hemvist för
   webbläsarbeteende utan datadimension
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-02 17:26'
-updated_date: '2026-08-28 05:07'
+updated_date: '2026-08-28 05:39'
 labels:
   - ready-for-agent
 dependencies: []
@@ -82,6 +82,10 @@ ARBETET SOM ÅTERSTÅR (utförs i nästa resume, Marcus order):
 6. ADR-bar prövas: klassbytet är svårt att återställa i koherens och resultatet av en verklig avvägning — sannolikt ÖVER baren. Avgörs vid utförandet, inte här.
 
 Kandidat att stänga (registerhygien-passet 2026-08-28, ADR-053: registrera, aldrig tyst): kortets eget Final Summary beskriver arbetet som utfört (ALTERNATIV A), och det är BEKRÄFTAT LANDAT på origin/main. Belägg: git log --oneline --all -- docs/decisions/ADR-094-webblasarbeteende-testklass.md → commit 1956b1ee 'feat(tests): [TASK-131] ny testklass webblasarbeteende'; git merge-base --is-ancestor 1956b1ee origin/main → ANCESTOR (sant, kört 2026-08-28). docs/decisions/ADR-094-webblasarbeteende-testklass.md finns på disk. tests/webblasarbeteende/install-prompt.test.ts finns på disk. .github/workflows/ci-suite.yml rad ~527 har jobbet 'webblasarbeteende' wirat. Sätter INTE Done själv (utanför detta uppdrags mandat) — flaggar till orkestreraren för stängningsbeslut. Ingen AC skriven eftersom kortet redan är överspelat.
+
+## Stängning (S112 resume 2, 2026-08-28 ~12:25)
+
+Kandidat att stänga (AC-kompletteringen #2063, klass C) verifierad av orkestreraren: arbetet landade i `1956b1ee` (förfader till origin/main), ADR-094 finns, `tests/webblasarbeteende/install-prompt.test.ts` finns, CI-jobbet i `ci-suite.yml`. Kortet saknade AC från början; Final Summary + disk-belägg räcker som DoD-ersättning. Done på orkestrerarens mandat.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
