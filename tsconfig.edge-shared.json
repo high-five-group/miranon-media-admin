@@ -57,6 +57,10 @@
     "supabase/functions/_shared/errors.ts",
     "supabase/functions/_shared/event-map.ts",
     "supabase/functions/_shared/field-allowlists.ts",
+    // TASK-309.34: höjdanpassningens skaltrappa + sidräknare, utbruten ur
+    // mall-render.ts (som är esm.sh-/Deno-bunden). INGA importer alls —
+    // samma klass som plats-uppslag.ts nedan.
+    "supabase/functions/_shared/hojdanpassning.ts",
     // TASK-309.30: ren Ort-till-Plats-beslutslogik, transitivt Deno-fri
     // (ingen import alls) — samma klass som airtable-filter.ts ovan.
     "supabase/functions/_shared/plats-uppslag.ts",
