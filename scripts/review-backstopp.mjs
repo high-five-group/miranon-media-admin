@@ -48,15 +48,25 @@
 // 3 — kunde inte HÄMTA PR:ens tillstånd via `gh` (nätverk, auth, fel nummer)
 //     eller läsa en angiven --kropp-fil. Fail-closed i CI: jobbet blir rött —
 //     men skälet är I/O, inte ett saknat utlåtande, och loggen säger vilket.
+// 4 — PLATTFORMS-ANTAGANDET BRUTET: merge_group-refen har en form vi inte
+//     känner igen, så PR-numret går inte att härleda. Detta är INTE ett
+//     användarfel (därav inte 2) och inte ett I/O-fel (därav inte 3) — det
+//     betyder att GitHub ändrat kö-grenens namngivning, och då är HELA
+//     grindens PR-uppslag ogiltigt tills formen mätts om. Fail-closed: varje
+//     landning blockeras hellre än att en enda PR släpps igenom ogranskad.
+//     Åtgärden är att mäta den nya formen (`gh run list --workflow ci.yml
+//     --event merge_group`) och uppdatera `parsaMergeGroupRef`.
 
 import { spawnSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { readFileSync, realpathSync } from 'node:fs';
+import { pathToFileURL } from 'node:url';
 import { parsaMergeGroupRef, provaPrKropp } from './lib/review-backstopp.mjs';
 
 const EXIT_OK = 0;
 const EXIT_FALLER = 1;
 const EXIT_CLI = 2;
 const EXIT_GH_FEL = 3;
+const EXIT_PLATTFORM = 4;
 
 /**
  * Hämtar PR:ens kropp och head-SHA via `gh pr view` — GitHubs faktiska
@@ -130,10 +140,17 @@ export function main(argv) {
     }
     const parsad = parsaMergeGroupRef(mgRef);
     if (!parsad.ok) {
-      // FAIL-CLOSED: en okänd ref-form får aldrig tolkas som "ingen PR att
-      // pröva". Se lib:ens § parsaMergeGroupRef.
+      // FAIL-CLOSED, och med EGEN exitkod (runda 2-fynd I1, PR #2049): en
+      // okänd ref-form får aldrig tolkas som "ingen PR att pröva", men den är
+      // heller inte ett anropsfel — den betyder att plattformens namngivning
+      // av kö-grenen ändrats under oss. Se exit-kod-tabellen i filhuvudet.
       process.stderr.write(`❌ ${parsad.fel}\n`);
-      return EXIT_CLI;
+      process.stderr.write(
+        '   Detta är ett BRUTET PLATTFORMS-ANTAGANDE, inte ett anropsfel: mät om ' +
+          'kö-grenens form (`gh run list --workflow ci.yml --event merge_group`) ' +
+          'och uppdatera parsaMergeGroupRef.\n',
+      );
+      return EXIT_PLATTFORM;
     }
     prNummer = parsad.prNummer;
   } else if (flaggor.has('--pr')) {
@@ -196,6 +213,36 @@ export function main(argv) {
   return verdikt.ok ? EXIT_OK : EXIT_FALLER;
 }
 
-if (process.argv[1] && import.meta.url === `file://${process.argv[1]}`) {
+// ═══ ENTRYPOINT-VAKTEN — TVÅ MÄTTA FAIL-OPEN-LÄGEN STÄNGDA ═══
+// Misslyckas jämförelsen körs `main()` ALDRIG, och processen avslutas med
+// exit 0 och NOLL byte utdata. För just DENNA fil är det den värsta tänkbara
+// defekten: en saknad Riskbedömnings-sektion ser då ut som "grinden släppte
+// igenom". Båda lägena nedan är reproducerade 2026-08-28 (runda 2-fynd W1,
+// PR #2049), inte befarade:
+//
+//   1. `file://${process.argv[1]}` (formen denna fil bar först) är ingen
+//      giltig URL-konstruktion — mellanslag och icke-ASCII procent-kodas i
+//      `import.meta.url` men inte i mallsträngen. Mätt i en katalog med
+//      mellanslag och åäö: exit 0, noll byte, på en kropp UTAN sektion.
+//   2. `pathToFileURL(process.argv[1])` ensamt (repots form i 14 av 17
+//      CLI-skript) räcker inte heller när sökvägen går genom en SYMLÄNK:
+//      Node löser modulens egen sökväg med realpath, medan `argv[1]` bär
+//      vägen som den skrevs. På macOS är `os.tmpdir()` exakt ett sådant fall
+//      (`/var/folders/…` → `/private/var/folders/…`) — mätt när
+//      regressionstestet nedan först skrevs.
+//
+// Därför realpath:as BÅDA sidor. Detta AVVIKER medvetet från repots 14 andra
+// skript; för dem är läget kosmetiskt (ett verktyg som inte startar märks
+// direkt), för en fail-closed grind är det en säkerhetsegenskap. `realpathSync`
+// kastar om sökvägen inte finns — då är detta ändå inte en direktkörning.
+let arKord = false;
+try {
+  arKord =
+    Boolean(process.argv[1]) &&
+    import.meta.url === pathToFileURL(realpathSync(process.argv[1])).href;
+} catch {
+  arKord = false;
+}
+if (arKord) {
   process.exit(main(process.argv.slice(2)));
 }

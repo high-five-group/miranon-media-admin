@@ -412,7 +412,6 @@ test('E4: felaktig CLI-användning ⇒ exit 2 (aldrig 0, aldrig 1)', () => {
     ['--pr', 'noll', '--head-sha', 'abc1234', '--kropp-fil', FIXTUR_MED],
     ['--pr', '1', '--head-sha', 'abc1234'],
     ['--pr', '1', '--kropp-fil', FIXTUR_MED],
-    ['--merge-group-ref', 'refs/heads/main'],
     ['--merge-group-ref', 'gh-readonly-queue/main/pr-1-abcdef1', '--pr', '1'],
     ['positional'],
   ];
@@ -425,6 +424,66 @@ test('E4: felaktig CLI-användning ⇒ exit 2 (aldrig 0, aldrig 1)', () => {
 test('E5: oläsbar --kropp-fil ⇒ exit 3 (I/O), inte 1', () => {
   const r = kor(['--pr', '1', '--head-sha', 'abc1234', '--kropp-fil', '/finns/inte/alls.txt']);
   assert.equal(r.status, 3, `exit ${r.status}: ${r.stdout}${r.stderr}`);
+});
+
+test('E6: okänd merge_group-ref ⇒ exit 4 (brutet plattforms-antagande), aldrig 0/2', () => {
+  // I1 (runda 2, PR #2049): en ref vi inte känner igen betyder att GitHub
+  // ändrat kö-grenens namngivning — inte att anroparen skrev fel. Egen kod, så
+  // ett svep kan skilja "grinden fällde en PR" från "grinden kan inte längre
+  // hitta PR:en".
+  for (const ref of ['refs/heads/main', 'gh-readonly-queue/main/pr-abc-1234567', '']) {
+    const r = kor(['--merge-group-ref', ref]);
+    assert.equal(r.status, 4, `ref '${ref}' gav exit ${r.status}`);
+    assert.match(r.stderr, /BRUTET PLATTFORMS-ANTAGANDE/);
+  }
+});
+
+test('E7: REGRESSION — CLI:t fäller även ur en sökväg med mellanslag och åäö', () => {
+  // W1 (runda 2, PR #2049), MÄTT fail-open: entrypoint-vakten jämförde
+  // `import.meta.url` mot en `file://${process.argv[1]}`-MALL. Mellanslag och
+  // icke-ASCII procent-kodas i import.meta.url men INTE i mallen, så
+  // jämförelsen blev falsk, `main()` kördes ALDRIG, och processen avslutades
+  // med exit 0 och NOLL byte utdata — en saknad Riskbedömnings-sektion såg ut
+  // som "grinden släppte igenom". Detta fall kör CLI:t ur just en sådan
+  // katalog och kräver den EKTA fällningen.
+  const dir = mkdtempSync(join(tmpdir(), 'review backstopp åäö-'));
+  try {
+    mkdirSync(join(dir, 'lib'), { recursive: true });
+    for (const f of ['review-backstopp.mjs']) {
+      writeFileSync(join(dir, f), readFileSync(join(REPO, 'scripts', f), 'utf8'));
+    }
+    for (const f of ['review-backstopp.mjs', 'review-risk-sektion.mjs']) {
+      writeFileSync(join(dir, 'lib', f), readFileSync(join(REPO, 'scripts', 'lib', f), 'utf8'));
+    }
+    const kopia = join(dir, 'review-backstopp.mjs');
+    assert.ok(
+      kopia.includes(' ') && /[åäö]/.test(kopia),
+      'testets egen sökväg saknar mellanslag/åäö — fallet vore vakuöst',
+    );
+
+    const rod = spawnSync(
+      process.execPath,
+      [kopia, '--pr', String(FIXTUR_PR), '--head-sha', FIXTUR_HEAD, '--kropp-fil', FIXTUR_UTAN],
+      { encoding: 'utf8' },
+    );
+    assert.equal(rod.status, 1, `saknad sektion gav exit ${rod.status} ur udda sökväg`);
+    assert.ok(
+      rod.stdout.length > 0,
+      'NOLL byte utdata — main() kördes aldrig (W1-regressionen är tillbaka)',
+    );
+    assert.match(rod.stdout, /FÄLLER/);
+
+    // KONTRAST: samma binär, giltig sektion ⇒ 0. Utan detta vore fallet
+    // förenligt med ett CLI som alltid returnerar 1 ur udda sökvägar.
+    const gron = spawnSync(
+      process.execPath,
+      [kopia, '--pr', String(FIXTUR_PR), '--head-sha', FIXTUR_HEAD, '--kropp-fil', FIXTUR_MED],
+      { encoding: 'utf8' },
+    );
+    assert.equal(gron.status, 0, `giltig sektion gav exit ${gron.status} ur udda sökväg`);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 // ═══════════════════════════════════════════════════════════════════════════

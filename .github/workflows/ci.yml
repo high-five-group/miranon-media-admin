@@ -1297,7 +1297,9 @@ jobs:
         # ett CLI-lager (sektion G–I) som TVÅSIDIGT bevisar append-kontraktet:
         # ett lyckat beslut loggar en rad (I1/I4), ett malformat utlåtande eller
         # policyfel loggar INGEN (I2/I3 — en trasig indata ska aldrig förorena
-        # fångstrate-underlaget). 48 fall. Samma Marcus-mandat som syskonen:
+        # fångstrate-underlaget). 49 fall (MÄTT 2026-08-28; stod som 48 här —
+        # ett fall tillkom i 173.6:s runda 2 utan att talet följde med, TASK-106:s
+        # kopierings-drift i miniatyr). Samma Marcus-mandat som syskonen:
         # enhetstest för skript, samma klass som de övriga gatekeeper-sviterna.
         # Hermetisk (egen tmpdir, ingen nätverkstrafik, ingen delad state med
         # de andra review-sviterna). Mutationsprövad (bygg-agentens
@@ -1315,9 +1317,13 @@ jobs:
         # någondera sviten märker det. Sektion F kör CLI:t mot en FAKE
         # `gh`-binär på PATH, med tre KONTRAST-fall (gh fallerar / gh ger
         # skräp-JSON / gh-svar utan headRefOid ⇒ exit 3, aldrig 0) — utan dem
-        # vore de positiva fallen vakuösa. 38 fall, tvåsidigt mutationsbevisat
-        # (STALE-kontrollen bortkopplad fällde 3 fall, PR-nummer-kontrollen 2,
-        # ref-regexen 1, CLI:ts exitkod 3). Hermetisk. 2026-08-28 (macOS).
+        # vore de positiva fallen vakuösa. Sektion E bär dessutom E7, ett
+        # REGRESSIONSFALL som kör CLI:t ur en katalog med mellanslag och åäö —
+        # runda 2 mätte där en fail-open där entrypoint-vakten aldrig fyrade
+        # (exit 0, noll byte, på en kropp UTAN sektion). 40 fall (MÄTT
+        # 2026-08-28), tvåsidigt mutationsbevisat (STALE-kontrollen bortkopplad
+        # fällde 3 fall, PR-nummer-kontrollen 2, ref-regexen 1, CLI:ts exitkod 3,
+        # entrypoint-vakten återställd till den trasiga formen 1). Hermetisk.
         #
         # test-verify-ci-parity.mjs hör hit av samma ADR-039-skäl applicerat
         # på scripts/verify-ci-parity.mjs SJÄLVT (CLAUDE.md § verify:ci-

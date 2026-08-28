@@ -441,7 +441,7 @@ Kö-parametrarna, med skälen:
 |---|---|---|
 | `merge_method` | `MERGE` | måste matcha rulesetets `allowed_merge_methods` |
 | `min_entries_to_merge` | `1` | en ensam PR landar direkt; vore den 2 väntade varje PR på sällskap |
-| `grouping_strategy` | `ALLGREEN` | varje PR i gruppen måste vara grön, inte bara gruppens head |
+| `grouping_strategy` | `ALLGREEN` | varje PR i gruppen måste vara grön, inte bara gruppens head. **Review-backstoppens fullständighet hänger på detta värde** (`TASK-173.4`): kö-grenen namnger EN PR (`pr-<nr>-<bas-sha>`), och backstoppen prövar bara den. Under `ALLGREEN` bygger varje köad post sin egen spekulativa grupp och måste vara grön, så varje PR prövas av sin egen körning. Byts värdet till `HEADGREEN` faller det argumentet och backstoppen måste räkna upp gruppens ALLA PR:er — annars landar poster ogranskade. Ompröva `scripts/lib/review-backstopp.mjs` § `parsaMergeGroupRef` före ett sådant byte. |
 | `max_entries_to_build` | `3` | satt efter uppmätt parallellitet, inte efter optimism |
 | `check_response_timeout_minutes` | `60` | kritiska vägen är ~7,5 min — åtta gångers marginal |
 

@@ -707,7 +707,13 @@ Exitkoderna är desamma i båda lägena: **0** = släpper · **1** = FÄLLER
 (sektionen saknas / korrupta markörer / oparsbar nivå eller fotnot / renderad
 för fel PR / `granskadSha` ≠ PR:ens head, alltså STALE) · **2** = CLI-fel ·
 **3** = gh-I/O fallerade (fail-closed i CI, men loggen skiljer orsaken från
-ett saknat utlåtande).
+ett saknat utlåtande) · **4** = PLATTFORMS-ANTAGANDET BRUTET: kö-grenens namn
+har en form vi inte känner igen, så PR-numret går inte att härleda. Koden är
+egen just för att den inte betyder "någon skrev fel kommando" (2) och inte
+"nätverket strulade" (3) utan "GitHub har ändrat kö-grenens namngivning" — då
+är grindens hela PR-uppslag ogiltigt och VARJE landning blockeras tills formen
+mätts om (`gh run list --workflow ci.yml --event merge_group`) och
+`parsaMergeGroupRef` uppdaterats.
 
 **Varför kö-ytan och inte PR-ytan** — och läs detta innan du "förbättrar" det:
 grindens sekvens är push → granskning → sektion → armering, så vid PUSH saknas
@@ -716,6 +722,15 @@ normaltillstånd, vilket bryter mot [`CONTRIBUTING.md`](CONTRIBUTING.md)
 § Rött-först (*"rött i CI ska betyda EN sak: oväntad regression"*). På kö-ytan
 är PR:en armerad, alltså MÅSTE granskningen ha skett — och rött betyder exakt
 en sak.
+
+**VARJE NY HEAD GÖR SEKTIONEN STALE** — rebase, force-push, `gh pr
+update-branch`, en extra fix-commit. Sektionen bär `granskadSha`, och
+backstoppen kräver att den är commiten som landar; en omskriven head betyder
+alltså att granskningen inte längre gäller. Efter varje sådan operation: kör om
+granskningen (eller minst `node scripts/uppdatera-review-sektion.mjs
+<utlatande.json>` med ett utlåtande vars `granskadSha` är den NYA headen) OCH
+preflighten nedan, INNAN du armerar om. Hoppar du över det är kostnaden inte en
+varning utan en konsumerad armering.
 
 **Priset, och därför preflighten:** en fällning i kön sparkar posten ur kön och
 KONSUMERAR armeringen (§ Landning, fjärde läget). **Ett backstopp-rött i
@@ -733,7 +748,15 @@ grinden. Skriv aldrig om detta stycke till att påstå mer (ADR-083).
 **D0-klassade PR:er undantas** via `needs.changed.outputs.should_skip_tests` —
 CI:s BEFINTLIGA klassning, ingen egen glob (ADR-105 beslut 3). Att `changed`
 beräknar rätt värde även på kö-ytan är mätt: merge_group-körning `33138424216`
-(docs-only) skippade `Test suite` på samma output.
+(docs-only) skippade `Test suite` på samma output. **Läs undantaget bokstavligt:
+grinden är inte repo-bred.** En PR där VARJE fil matchar D0-allowlisten
+(`**/*.md`, `docs/**`, `tasks/**`, `.claude/**`, `.vale/**`, `LICENSE`,
+`.editorconfig` m.fl. — hela listan i `ci.yml`:s `paritet:start klassning-d0`)
+landar helt UTAN granskningsutlåtande. Det omfattar alltså styrande dokument,
+denna fil, ADR:er, backlog-kort och agent-kontrakt. Det är ADR-105 beslut 3:s
+medvetna räckvidd ("D0/docs-only undantagen tills mätdata visar missad
+felklass"), inte en lucka — men tro aldrig att en grön kö-körning betyder att
+en docs-PR granskats.
 
 **Kö-antagandet som bär grinden, och som måste omprövas om rulesetet ändras:**
 kö-grenen namnger EN PR (`gh-readonly-queue/main/pr-<nr>-<bas-sha>`, verifierat
@@ -849,23 +872,31 @@ struktur. Options-rymden och instansdatan bor i
 [`tasks/lessons.d/bunt-prer-passar-inte-review-utlatandets-kortid-schema.md`](tasks/lessons.d/bunt-prer-passar-inte-review-utlatandets-kortid-schema.md)
 — pekare, inte kopia (ADR-100 §2).
 
-**Review-ytans FYRA testsviter körs som gatekeeper-sviter i `ci.yml`:s "Test
+**Review-ytans SEX testsviter körs som gatekeeper-sviter i `ci.yml`:s "Test
 gatekeeper script suites"-steg** — `scripts/test-validera-review-utlatande.mjs`
 (35 fall, `173.1`), `scripts/test-review-policy.mjs` (44 fall, `173.2`) och
 `scripts/test-review-risk-sektion.mjs` (47 fall, `173.3`) sedan `TASK-185`
 (PR #1992, 2026-08-26, den sista wirad i samma bas-drift-svep sedan `173.3`
 landade UNDER `185`s eget bygge — PR #1993), plus
 `scripts/test-review-loop.mjs` (103 fall, `173.5`, wirad i sin egen PR på
-samma orkestrerar-beslut). Samma klass som repots övriga ~15
-gatekeeper-sviter: enhetstester för skriptens egen logik, wirade så att en
-regression fälls FÖRE landning i stället för att upptäckas efteråt.
+samma orkestrerar-beslut), `scripts/test-review-metrics.mjs` (49 fall,
+`173.6`) och `scripts/test-review-backstopp.mjs` (40 fall, `173.4`). Samma
+klass som repots övriga ~15 gatekeeper-sviter: enhetstester för skriptens egen
+logik, wirade så att en regression fälls FÖRE landning i stället för att
+upptäckas efteråt.
 
-**Det är INTE `173.4`:s CI-backstopp** — den deterministiska spärren som
-fäller en PR utan giltigt granskningsutlåtande är en ANNAN mekanism och
-**saknas fortfarande**. Att fyra testsviter körs i CI betyder att skriptens
-logik är skyddad mot regression; det betyder INTE att grinden är mekaniskt
-otvingbar. Se stycket ovan (samma `ADR-083`-disciplin: påstå aldrig en
-mekanism som inte finns).
+**Talen ovan är MÄTTA 2026-08-28**, inte avskrivna — varje svit kördes och
+dess egen slutrad lästes. Det är inte en formalitet: `ci.yml`:s eget
+kommentarsblock sade "48 fall" om metrics-sviten medan den faktiskt kör 49
+(ett fall tillkom i dess runda 2, kommentaren följde inte med). Talet är
+rättat där; skriv aldrig av ett tal hit utan att köra sviten (`TASK-106`).
+
+**Att sviterna körs är INTE detsamma som att grinden är otvingbar** — de
+skyddar skriptens LOGIK mot regression. Mekanismen som faktiskt fäller en PR
+utan giltigt granskningsutlåtande är `173.4`:s CI-jobb `review-backstopp`
+(beskrivet högre upp i detta avsnitt), och den fäller på `merge_group`-ytan.
+Håll de två isär i prosan (samma `ADR-083`-disciplin: en testsvit är inte en
+spärr).
 
 **Skarpbevis-skulden — BETALD 2026-08-26 (S112 resume 1), med en mätt kant
 (`CLAUDE.md` § En ny hooks skarpbevis, samma strukturella klass generaliserad
