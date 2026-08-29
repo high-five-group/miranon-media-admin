@@ -1,5 +1,80 @@
 import { z } from 'zod';
-import { AttachmentClass, AttachmentScope } from '../types/Status';
+import { AttachmentClass, AttachmentScope, LEGACY_ATTACHMENT_SCOPES } from '../types/Status';
+
+/**
+ * [TASK-338.3, ADR-125 § Beslut 1] LÄSVÄGENS legacy-normalisering — körs på
+ * det RÅA EF-svaret INNAN `AttachmentSchema.parse()`, aldrig efter.
+ *
+ * ═══ VARFÖR DEN MÅSTE FINNAS, OCH VARFÖR PRECIS HÄR ═══
+ *
+ * `rackvidd` är ett STRIKT enum (`z.enum(AttachmentScope)`), och sedan denna
+ * skiva bär det bara `Event | Gemensam`. Zod STRIPPAR inte på fel — den
+ * KASTAR — så ett enda `Kurstyp` i svaret hade fällt HELA listningen och
+ * gjort Dokument-ytan tom. Och legacy-värden KAN komma, från två håll som
+ * båda är övergående men verkliga:
+ *
+ *   1. BASEN. Prod-radernas migrering sker i TASK-338.6, alltså EFTER denna
+ *      skiva. Fram till dess bär prod `Kurstyp`/`Alla event`.
+ *   2. EF:EN. `mapAttachmentRecord` normaliserar på vägen ut sedan
+ *      TASK-338.2 — men den EF:en är inte deployad i samma ögonblick som
+ *      klienten byggs. Exakt den stale-deploy-klass `mall`/`kallhash`
+ *      nedan redan bär ett leniens-undantag för (TASK-309.6).
+ *
+ * Klienten kan alltså inte ANTA en normaliserad läsväg. Den gör samma
+ * normalisering själv, en gång, vid datagränsen (ADR-026) — vilket också är
+ * det enda stället en okänd `Räckvidd`-sträng får bli `null` i stället för
+ * ett kast.
+ *
+ * ═══ DETTA ÄR INTE MATCHNING (ADR-057, kortets DoD #6) ═══
+ *
+ * Funktionen översätter ett LAGRAT VÄRDE till modellens form. Den avgör
+ * ALDRIG vilka event en bilaga gäller — det gör `_shared/rackvidd-
+ * matchning.ts` server-side, och ingenting i denna fil replikerar den
+ * logiken. Att en av de tre grenarna nedan råkar TÖMMA axlar är en
+ * värde-översättning (`Alla event` betyder per definition inga axlar), inte
+ * ett filter.
+ *
+ * Grenarna är BYTE FÖR BYTE samma tre som EF:ens `normaliseraRackvidd`
+ * (`_shared/rackvidd-matchning.ts`) — medveten Deno↔Vite-dubblering, samma
+ * mönster som `AttachmentClass`/`AttachmentScope` själva. Driver de isär
+ * ser Lotta en badge som säger något annat än vad servern faktiskt matchar
+ * på; `tests/api/rackvidds-text.test.ts` § Legacy låser därför BÅDA sidornas
+ * utfall mot samma fall-tabell.
+ */
+export function normaliseraRaAttachment(ra: unknown): unknown {
+  if (ra === null || typeof ra !== 'object') return ra;
+  const post = ra as Record<string, unknown>;
+  const rackvidd = post.rackvidd;
+  if (typeof rackvidd !== 'string') return ra;
+
+  // `Kurstyp` → `Gemensam` med axlarna BEVARADE: Kursfamilj/Kursnivå var
+  // precis det Kurstyp-räckvidden betydde (ADR-118 beslut 1).
+  if (rackvidd === LEGACY_ATTACHMENT_SCOPES.KURSTYP) {
+    return { ...post, rackvidd: AttachmentScope.GEMENSAM };
+  }
+
+  // `Alla event` → `Gemensam` med axlarna TÖMDA. Värdet betyder per
+  // definition inga begränsningar; en rad som mot alla odds bär en axel
+  // (vår skrivväg har aldrig skrivit en sådan) skulle annars tyst SMALNA
+  // till färre event än värdet lovar — och Lotta hade sett en badge som
+  // sa "RIM" på ett dokument hon märkt "alla event".
+  if (rackvidd === LEGACY_ATTACHMENT_SCOPES.ALLA_EVENT) {
+    return {
+      ...post,
+      rackvidd: AttachmentScope.GEMENSAM,
+      kursfamilj: null,
+      kursniva: null,
+      plats: null,
+    };
+  }
+
+  // Levande värden passerar orörda; ALLT ANNAT blir `null` ("okänt"), aldrig
+  // ett kast och aldrig en gissning — samma disciplin som `dokumentklass`.
+  // EF:ens `mapAttachmentRecord` gör redan detta på sin sida, men klienten
+  // får inte VILA på att den EF-versionen är deployad (se docblocket ovan).
+  const kant: readonly string[] = [AttachmentScope.EVENT, AttachmentScope.GEMENSAM];
+  return kant.includes(rackvidd) ? ra : { ...post, rackvidd: null };
+}
 
 /**
  * [GA] Runtime-validering av upload-attachment/finalize-attachment-upload-svar
@@ -13,11 +88,20 @@ import { AttachmentClass, AttachmentScope } from '../types/Status';
  * använder för sin Status.ts-speglade enum — inte en ny konvention.
  *
  * [UTBYGGD, TASK-275.2, ADR-118] `rackvidd`: `z.enum(AttachmentScope)`
- * `.nullable()` — SAMMA teknik som `dokumentklass`, säkert eftersom
- * `mapAttachmentRecord` (server-side) redan defuserar okända värden till
- * `null` innan svaret lämnar EF:en. `kursfamilj`/`kursniva`: LENIENT
- * `z.string().nullable()` (INTE ett strikt enum) — P22-motiverat, speglar
- * `Event.schema.ts`s `kursfamilj`/`kursniva` för samma värdedomän.
+ * `.nullable()` — SAMMA teknik som `dokumentklass`. `kursfamilj`/`kursniva`:
+ * LENIENT `z.string().nullable()` (INTE ett strikt enum) — P22-motiverat,
+ * speglar `Event.schema.ts`s `kursfamilj`/`kursniva` för samma värdedomän.
+ *
+ * [RÄTTAD PREMISS, TASK-338.3] Raden ovan motiverade det strikta enumet med
+ * att *"`mapAttachmentRecord` (server-side) redan defuserar okända värden
+ * till `null` innan svaret lämnar EF:en"*. Det stämmer om koden — men inte
+ * om DRIFTEN: EF-versionen som gör det är inte nödvändigtvis den som är
+ * deployad när klienten kör (samma stale-deploy-klass `mall`/`kallhash`
+ * nedan redan bär ett leniens-undantag för). Sedan enumet dessutom smalnat
+ * till `Event | Gemensam` är legacy-värden i basen ett LÖPANDE, inte
+ * hypotetiskt, fall fram till TASK-338.6. Skyddet ligger därför i
+ * `normaliseraRaAttachment` ovan, körd FÖRE varje `.parse()` — parat i
+ * `parsaAttachment`/`parsaAttachments` nedan så det inte kan glömmas.
  */
 export const AttachmentSchema = z.object({
   id: z.string(),
@@ -62,7 +146,47 @@ export const AttachmentSchema = z.object({
     .nullable()
     .optional()
     .transform((v) => v ?? null),
+  // [TASK-338.3, ADR-125 § Beslut 1] Plats-axeln, upplöst till namn av EF:ens
+  // `Platsnamn`-lookup så klienten slipper ett eget uppslag mot Platser.
+  //
+  // `.nullable().optional()` — SAMMA leniens som `mall`/`kallhash` ovan, av
+  // ETT av deras två skäl: en EF som ännu inte deployats med TASK-338.2:s
+  // `mapAttachmentRecord` SAKNAR nyckeln helt i sitt svar, och en strikt
+  // `.nullable()` hade fällt HELA listningen för en transient driftsituation.
+  // Samma sak gäller varje befintlig acceptance-fixtur som konstruerar
+  // `Attachment`-formade svar utan fältet (mätt: tre filer, elva test).
+  //
+  // MEDVETET LENIENARE ÄN STAGING-SIDANS MOTSVARIGHET, och det är ingen
+  // motsägelse: `tests/api/attachment-staging-schema.ts` (TASK-338.2) har
+  // fältet STRIKT därför att dess jobb är att fälla en EF som glömt bära
+  // det. Detta schemas jobb är motsatt — att låta Lottas lista fungera även
+  // när EF:en halkar efter. Två sidor, två avsikter, samma fält.
+  plats: z
+    .object({ id: z.string(), namn: z.string() })
+    .nullable()
+    .optional()
+    .transform((v) => v ?? null),
 });
+
+/**
+ * [TASK-338.3] Datagränsens ENDA väg in för en bilaga: normalisera legacy,
+ * validera sedan (ADR-026).
+ *
+ * FINNS SOM HJÄLPARE, INTE SOM TVÅ ANROP PÅ FEM STÄLLEN. `AirtableAdapter`
+ * parsar `Attachment`-svar på fem ställen (två uppladdningsmönster, två
+ * listningar, en ersättning) och varje glömt `normaliseraRaAttachment` hade
+ * gett ett kast på just den vägen — ett fel som bara syns i drift, mot en
+ * icke-migrerad bas. Att paret bor i EN funktion gör det omöjligt att skilja
+ * dem åt av misstag.
+ */
+export function parsaAttachment(ra: unknown) {
+  return AttachmentSchema.parse(normaliseraRaAttachment(ra));
+}
+
+/** Listformen av `parsaAttachment` — samma par, per post. */
+export function parsaAttachments(ra: unknown) {
+  return z.array(AttachmentSchema).parse(Array.isArray(ra) ? ra.map(normaliseraRaAttachment) : ra);
+}
 
 /**
  * Svaret från create-attachment-upload-ticket-EF:en (TASK-146.4 mönster 2,

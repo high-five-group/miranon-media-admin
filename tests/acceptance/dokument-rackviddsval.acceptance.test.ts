@@ -17,21 +17,27 @@ import { expect, test } from './acceptance-bas';
  * TASK-275.3-tillägget m.fl. för den skarpa halvan).
  *
  * TÄCKNING:
- *   AC #1 — uppladdningsflödet bär räckviddsval (radio: Detta event/En
- *     familj/Alla event; familj-läget visar Familj-select + Steg-select
- *     BARA för en nivåbärande familj, RIM).
+ *   AC #1 — uppladdningsflödet bär räckviddsval. [OMSKRIVET, TASK-338.3,
+ *     ADR-125 § Beslut 1] TVÅ radioval ("Bara detta event" / "Delat dokument
+ *     - gäller flera event"), och under det senare TRE valfria Select:ar —
+ *     Familj, Steg (bara för en nivåbärande familj, RIM) och Plats — plus en
+ *     sammanfattningsrad som säger i klartext vad valet betyder. De tre
+ *     räckvidderna blev två: `Kurstyp`/`Alla event` ÄR `Gemensam` med
+ *     respektive utan axlar.
  *
- *   UI-SPRÅKET BYTTE VID S107 QA-VANDRINGEN, VÄRDENA GJORDE DET INTE.
- *   Etiketterna heter numera "En familj" / "Familj" / "Nivå" (Marcus:
- *   ordet "Kurs" ska bort ur produktspråket; "Eventtyp" var upptaget av
- *   ett annat begrepp och valdes bort). Det som skickas till basen är
- *   OFÖRÄNDRAT `AttachmentScope.KURSTYP` = 'Kurstyp' — optionsnamnet i
- *   Airtable-fältet `Räckvidd`. Testet låser därför etiketterna via
- *   `getByLabel`/`getByRole` men rör aldrig värde-strängen; ett framtida
- *   copy-byte ska fälla HÄR, ett värdebyte ska fälla i staging-API-testerna.
+ *   UI-SPRÅKET BYTTE VID S107 QA-VANDRINGEN, VÄRDENA GJORDE DET INTE —
+ *   OCH NU BYTTE VÄRDENA OCKSÅ (TASK-338.3). Etiketterna heter "Familj" /
+ *   "Steg" / "Plats" (Marcus: ordet "Kurs" ska bort ur produktspråket;
+ *   "Eventtyp" var upptaget av ett annat begrepp och valdes bort). Det som
+ *   skickas till basen är sedan ADR-125 § 1 `AttachmentScope.GEMENSAM` =
+ *   'Gemensam' — den nya optionen i Airtable-fältet `Räckvidd`. Testet låser
+ *   fortfarande etiketterna via `getByLabel`/`getByRole`, och rör värde-
+ *   strängen på exakt ETT ställe: ände-till-ände-testet som läser EF-kroppen
+ *   (räckvidden ÄR det testets fråga). Ett framtida copy-byte ska fälla HÄR,
+ *   ett värdebyte i staging-API-testerna OCH i det ena kropps-assertet.
  *   AC #2 — Dokument-sidan har ett läge UTAN valt event som visar gemensamma
- *     dokument (räckviddsläget); "Detta event" är avstängd där (inget event
- *     att koppla mot).
+ *     dokument (räckviddsläget); "Bara detta event" är avstängd där (inget
+ *     event att koppla mot).
  *   AC #4 — Ersätt/Radera är INTE tillgängliga i eventkontext för en
  *     GEMENSAM bilaga (badgen bär förklaringen i stället) men ÄR
  *     tillgängliga i räckviddsläget (samma bilaga, samma id).
@@ -54,8 +60,20 @@ const BILAGA_EGEN = {
   rackvidd: 'Event',
   kursfamilj: null,
   kursniva: null,
+  plats: null,
 } as const;
 
+/**
+ * [OMSKRIVEN, TASK-338.3, ADR-125 § Beslut 1] VÄRDET bytte: `Kurstyp` finns
+ * inte längre som räckvidd, det ÄR `Gemensam` med en familje-axel satt.
+ * Fixturen bär dessutom PLATS-axeln, så eventlägets renderade badge prövar
+ * en KOMBINERAD form ("RIM · Rönninge") i stället för den enklaste — det är
+ * kombinationen PRD TASK-338 berättelse 4 handlar om (sushimenyn: RIM-event
+ * i Rönninge), och den enda som kan avslöja att axlarna fogas ihop fel.
+ *
+ * Plats-ID:t är fixturvärldens Rönninge (`PLACES_RESPONSE`,
+ * `fixture-data.ts`), samma post dialogens Plats-select erbjuder.
+ */
 const BILAGA_GEMENSAM = {
   id: 'recBilagaGemensam01',
   namn: 'Hörlursinformation.pdf',
@@ -63,9 +81,10 @@ const BILAGA_GEMENSAM = {
   skapad: '2026-08-05T09:00:00.000Z',
   eventId: VISUAL_EVENT_ID,
   dokumentklass: 'Uppladdad',
-  rackvidd: 'Kurstyp',
+  rackvidd: 'Gemensam',
   kursfamilj: 'RIM',
   kursniva: null,
+  plats: { id: 'recPlatsRonninge01', namn: 'Rönninge' },
 } as const;
 
 function bilagorHandler() {
@@ -125,9 +144,39 @@ async function oppnaRackviddsdialog(page: Page, filnamn = 'Testfil.pdf') {
  */
 const familjValjare = (page: Page) => page.locator('button[aria-label="Familj"]');
 const stegValjare = (page: Page) => page.locator('button[aria-label="Steg"]');
+/** [TASK-338.3] Tredje axeln — samma `aria-label`-wrapper-ankare som ovan. */
+const platsValjare = (page: Page) => page.locator('button[aria-label="Plats"]');
+
+/** Räckviddsradions två etiketter, på ETT ställe (TASK-338.3). */
+const EVENT_RADIO = 'Bara detta event';
+const DELAT_RADIO = 'Delat dokument - gäller flera event';
+
+/**
+ * RAC:s `<Radio>` renderar sin `<input>` VISUELLT täckt av ett dekorativt
+ * `<span>` — ett direkt `.click()` på rollen hit-testar mot spannet och
+ * timeoutar. Klicka ancestor-`<label>` i stället (etablerat repo-mönster,
+ * samma som `klickaKryss` i atgarder-bilageval-send).
+ */
+async function valjRackvidd(page: Page, namn: string) {
+  await page
+    .getByRole('dialog')
+    .getByRole('radio', { name: namn })
+    .locator('xpath=ancestor::label[1]')
+    .click();
+}
+
+/** Väljer ett alternativ i en av de tre axel-selectarna. */
+async function valjIAxel(
+  page: Page,
+  valjare: (p: Page) => ReturnType<Page['locator']>,
+  alternativ: string,
+) {
+  await valjare(page).click();
+  await page.getByRole('option', { name: alternativ, exact: true }).click();
+}
 
 test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-275.3)', () => {
-  test('AC #1: uppladdningsflödet bär räckviddsval — radio Detta event/En familj/Alla event, Familj-select vid familj-läget', async ({
+  test('AC #1: uppladdningsflödet bär TVÅ radioval + tre valfria axel-selectar med defaults', async ({
     page,
     network,
   }) => {
@@ -137,40 +186,49 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
 
     const radioGroup = page.getByRole('radiogroup', { name: 'Räckvidd' });
     await expect(radioGroup).toBeVisible();
-    const dettaEvent = radioGroup.getByRole('radio', { name: 'Detta event' });
-    const enKurstyp = radioGroup.getByRole('radio', { name: 'En familj' });
-    const allaEvent = radioGroup.getByRole('radio', { name: 'Alla event' });
+    const dettaEvent = radioGroup.getByRole('radio', { name: EVENT_RADIO });
+    const delat = radioGroup.getByRole('radio', { name: DELAT_RADIO });
     await expect(dettaEvent).toBeChecked();
-    await expect(enKurstyp).toBeVisible();
-    await expect(allaEvent).toBeVisible();
-    // I eventläget är "Detta event" INTE avstängd (ett event ÄR valt).
+    await expect(delat).toBeVisible();
+    // I eventläget är "Bara detta event" INTE avstängd (ett event ÄR valt).
     await expect(dettaEvent).toBeEnabled();
 
-    // [TASK-309.23] Familj-selecten är sedan layout-shift-fixen ALLTID
-    // monterad (platsen reserveras för att dialogens höjd aldrig ska hoppa
-    // när räckvidden växlar) — men osynlig och `inert` (icke-fokuserbar,
-    // borta ur tillgänglighetsträdet) innan familj-läget är valt.
-    // `not.toBeVisible()` är rätt prövning för "syns inte", inte
-    // `toHaveCount(0)`: elementet FINNS i DOM, bara dolt.
-    await expect(familjValjare(page)).not.toBeVisible();
+    // [TASK-338.3] TVÅ val, inte tre — "Alla event" var ett eget radioval i
+    // ADR-118:s modell och ÄR nu "Delat dokument" utan satta axlar. Att
+    // assertera dess FRÅNVARO är hela poängen: en kvarlämnad tredje knapp
+    // hade skrivit ett legacy-värde till basen.
+    await expect(radioGroup.getByRole('radio')).toHaveCount(2);
+    await expect(radioGroup.getByRole('radio', { name: 'Alla event' })).toHaveCount(0);
 
-    // RAC:s `<Radio>` renderar (som `<Checkbox>`, se klickaKryss-mönstret i
-    // atgarder-bilageval-send.acceptance.test.ts) sin `<input>` VISUELLT
-    // täckt av ett eget dekorativt `<span>` — ett direkt `.click()` på
-    // rollen hit-testar mot spannet och timeoutar. Klicka ANCESTOR-`<label>`
-    // i stället (samma etablerade repo-mönster).
-    await enKurstyp.locator('xpath=ancestor::label[1]').click();
+    // [TASK-309.23] Axel-selectarna är sedan layout-shift-fixen ALLTID
+    // monterade (platsen reserveras för att dialogens höjd aldrig ska hoppa
+    // när räckvidden växlar) — men osynliga och `inert` (icke-fokuserbara,
+    // borta ur tillgänglighetsträdet) i event-läget.
+    // `not.toBeVisible()` är rätt prövning för "syns inte", inte
+    // `toHaveCount(0)`: elementen FINNS i DOM, bara dolda.
+    await expect(familjValjare(page)).not.toBeVisible();
+    await expect(platsValjare(page)).not.toBeVisible();
+
+    await valjRackvidd(page, DELAT_RADIO);
+
+    // Familj och Plats syns nu, BÅDA i sitt nolläge. Nolläget är ett eget
+    // alternativ (inte en platshållare) just för att axlarna är valfria och
+    // måste gå att ångra tillbaka till — se dialogens kommentar.
     await expect(familjValjare(page)).toBeVisible();
-    // Steg-selecten är samma "alltid monterad, osynlig tills tillämplig"
-    // — syns INTE förrän en nivåbärande familj är vald.
+    await expect(familjValjare(page)).toContainText('Alla familjer');
+    await expect(platsValjare(page)).toBeVisible();
+    await expect(platsValjare(page)).toContainText('Alla platser');
+
+    // Steg-selecten är "alltid monterad, osynlig tills tillämplig" — den
+    // syns INTE förrän en nivåbärande familj är vald.
     await expect(stegValjare(page)).not.toBeVisible();
 
-    await familjValjare(page).click();
-    await page.getByRole('option', { name: 'RIM', exact: true }).click();
+    await valjIAxel(page, familjValjare, 'RIM');
     await expect(stegValjare(page)).toBeVisible();
+    await expect(stegValjare(page)).toContainText('Alla steg');
 
     // Byte till en nivålös familj (Fjärrskådning) döljer Steg-selecten
-    // igen (ADR-118 beslut 1: nivålösa familjer lämnar alltid nivån tom).
+    // igen (ORDLISTA.md § Steg: nivålösa familjer har inga steg alls).
     //
     // SELECTARNA SÖKS PÅ SIN `aria-label`-WRAPPER, inte på trigger-texten.
     // Etiketterna är `hideLabel` sedan Marcus 2026-08-17 ("rubriken Familj
@@ -178,18 +236,59 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
     // `aria-label` och ett `aria-labelledby` som pekar på trigger-innehållet.
     // `aria-labelledby` VINNER över `aria-label` i namnberäkningen, så det
     // tillgängliga namnet blir trigger-texten — inte "Familj". Mätt i
-    // renderad yta 2026-08-17, därav helpers nedan.
+    // renderad yta 2026-08-17, därav helpers ovan.
     //
-    // Trigger-TEXTEN duger inte heller som ankare: den byter från "Välj
-    // familj" till det valda värdet ("RIM") så fort ett val gjorts, och
-    // testet klickar selecten TVÅ gånger. `aria-label`-wrappern är det enda
-    // som står stilla genom hela flödet.
-    await familjValjare(page).click();
-    await page.getByRole('option', { name: 'Fjärrskådning', exact: true }).click();
+    // Trigger-TEXTEN duger inte heller som ankare: den byter från nolläget
+    // till det valda värdet ("RIM") så fort ett val gjorts, och testet
+    // klickar selecten flera gånger. `aria-label`-wrappern är det enda som
+    // står stilla genom hela flödet.
+    await valjIAxel(page, familjValjare, 'Fjärrskådning');
     await expect(stegValjare(page)).not.toBeVisible();
+
+    // Och vägen TILLBAKA till nolläget finns — det var omöjligt före
+    // TASK-338.3, då familjen var obligatorisk och alltså aldrig ångrades.
+    await valjIAxel(page, familjValjare, 'Alla familjer');
+    await expect(familjValjare(page)).toContainText('Alla familjer');
   });
 
-  test('AC #2: räckviddsläget (utan valt event) visar gemensamma dokument, "Detta event" avstängd', async ({
+  test('AC #1: sammanfattningsraden speglar valet LIVE i kortets fyra former', async ({
+    page,
+    network,
+  }) => {
+    // PRD TASK-338 berättelse 6: *"se i klartext vad mitt räckviddsval
+    // betyder innan jag sparar"*. Raden är `aria-live="polite"`, så den
+    // annonseras för skärmläsare utan att flytta fokus.
+    network.use(bilagorHandler());
+    await gotoEventlage(page);
+    await oppnaRackviddsdialog(page);
+
+    const dialog = page.getByRole('dialog');
+    const sammanfattning = dialog.locator('[aria-live="polite"]');
+
+    await valjRackvidd(page, DELAT_RADIO);
+
+    // FORM 1 — inga axlar satta.
+    await expect(sammanfattning).toHaveText('Gäller: alla event');
+
+    // FORM 2 — bara plats (parkeringsbilagan, PRD:ns drivande fall).
+    await valjIAxel(page, platsValjare, 'Rönninge');
+    await expect(sammanfattning).toHaveText('Gäller: alla event i Rönninge');
+
+    // FORM 3 — familj + plats (sushimenyn, berättelse 4).
+    await valjIAxel(page, familjValjare, 'RIM');
+    await expect(sammanfattning).toHaveText('Gäller: RIM-event i Rönninge');
+
+    // FORM 4 — alla tre axlarna. Steget visas som "Steg 1", ALDRIG "Nivå 1"
+    // (ORDLISTA.md § Steg) — basvärdet 'Nivå 1' är det som skickas.
+    await valjIAxel(page, stegValjare, 'Steg 1');
+    await expect(sammanfattning).toHaveText('Gäller: RIM-event, Steg 1, i Rönninge');
+
+    // Och tillbaka: att nolla plats-axeln smalnar meningen igen, live.
+    await valjIAxel(page, platsValjare, 'Alla platser');
+    await expect(sammanfattning).toHaveText('Gäller: RIM-event, Steg 1');
+  });
+
+  test('AC #2: räckviddsläget (utan valt event) visar gemensamma dokument, "Bara detta event" avstängd', async ({
     page,
     network,
   }) => {
@@ -202,8 +301,8 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
 
     await oppnaRackviddsdialog(page);
     const radioGroup = page.getByRole('radiogroup', { name: 'Räckvidd' });
-    await expect(radioGroup.getByRole('radio', { name: 'Detta event' })).toBeDisabled();
-    await expect(radioGroup.getByRole('radio', { name: 'En familj' })).toBeChecked();
+    await expect(radioGroup.getByRole('radio', { name: EVENT_RADIO })).toBeDisabled();
+    await expect(radioGroup.getByRole('radio', { name: DELAT_RADIO })).toBeChecked();
   });
 
   test('AC #4: gemensam bilaga — Ersätt/Radera SAKNAS i eventläget (badge bär förklaringen), men FINNS i räckviddsläget', async ({
@@ -217,7 +316,10 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
       .getByTestId('dokument-fil')
       .filter({ hasText: BILAGA_GEMENSAM.namn });
     await expect(gemensamRadEventlage).toBeVisible();
-    await expect(gemensamRadEventlage.getByText('RIM · Alla steg')).toBeVisible();
+    // [TASK-338.3] Badgen KOMPONERAS ur axlarna: familj + plats ger
+    // "RIM · Rönninge". Formen "RIM · Alla steg" (ADR-118-eran, tom axel
+    // utskriven) finns inte längre — se `rackviddsText.ts` för varför.
+    await expect(gemensamRadEventlage.getByText('RIM · Rönninge')).toBeVisible();
     await expect(gemensamRadEventlage.getByRole('button', { name: 'Ersätt' })).toHaveCount(0);
     await expect(gemensamRadEventlage.getByRole('button', { name: 'Radera' })).toHaveCount(0);
 
@@ -287,15 +389,24 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
     // Fångar EF-kroppen så testet kan bevisa VAD som skickades, inte bara
     // att något skickades. Räckvidden är hela poängen med dialogen.
     let skickadKropp: Record<string, unknown> | null = null;
+    // NYCKLARNA fångas HÄR, inte läses ur `skickadKropp` efteråt: TS:s
+    // flödesanalys ser bara initialiseringen `= null` (tilldelningen sker i
+    // en MSW-callback den inte kan följa) och smalnar varje senare uppslag
+    // till `never`. Att fånga listan i callbacken är dessutom en STARKARE
+    // prövning än `?.x === undefined` — den skiljer "nyckeln saknas" från
+    // "nyckeln finns med värdet undefined", och det är utelämnandet som är
+    // kontraktet mot EF:ens `buildScopeFields`.
+    let skickadeNycklar: string[] = [];
     network.use(
       http.post(EF('upload-attachment'), async ({ request }) => {
         skickadKropp = (await request.json()) as Record<string, unknown>;
+        skickadeNycklar = Object.keys(skickadKropp);
         return json({
           attachment: {
             ...BILAGA_GEMENSAM,
             id: 'recBilagaNy00000001',
             namn: 'Testfil.pdf',
-            rackvidd: 'Alla event',
+            rackvidd: 'Gemensam',
             kursfamilj: null,
           },
         });
@@ -309,18 +420,73 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
     // Filnamnet står i dialogen — frågan gäller något konkret, inte "en fil".
     await expect(dialog.getByText('Testfil.pdf')).toBeVisible();
 
-    // RAC:s `<Radio>` täcks visuellt av ett dekorativt `<span>`; klicka
-    // ancestor-`<label>` (samma repo-mönster som AC #1 ovan).
-    await dialog
-      .getByRole('radio', { name: 'Alla event' })
-      .locator('xpath=ancestor::label[1]')
-      .click();
+    await valjRackvidd(page, DELAT_RADIO);
+
+    // Plats-axeln sätts — det är HELA skivans skäl att finnas (PRD TASK-338:
+    // parkeringsbilagan laddas upp EN gång och binds till Rönninge).
+    await valjIAxel(page, platsValjare, 'Rönninge');
     await dialog.getByRole('button', { name: 'Ladda upp' }).click();
 
     // Dialogen stänger av sig själv när uppladdningen lyckats — Lotta ska
     // inte behöva stänga en dialog vars jobb är gjort.
     await expect(dialog).toHaveCount(0);
-    expect(skickadKropp).toMatchObject({ rackvidd: 'Alla event' });
+
+    // KROPPEN, INTE BARA ATT NÅGOT SKICKADES. `plats` är ett RECORD-ID
+    // (`_shared/attachments.ts` § AttachmentScopeInputSchema kräver `rec…`),
+    // aldrig platsnamnet — en namn-skrivning hade drivit isär från EF:ens
+    // ID-baserade matchning och tyst slutat träffa eventen.
+    expect(skickadKropp).toMatchObject({
+      rackvidd: 'Gemensam',
+      plats: 'recPlatsRonninge01',
+    });
+    // Osatta axlar UTELÄMNAS — aldrig tom sträng. EF:ens `buildScopeFields`
+    // utelämnar i sin tur fältet i basen, så "ingen axel" betyder samma sak
+    // hela vägen ner; en tomsträng hade skrivits som ett värde.
+    expect(skickadeNycklar).toContain('plats');
+    expect(skickadeNycklar).not.toContain('kursfamilj');
+    expect(skickadeNycklar).not.toContain('kursniva');
+  });
+
+  test('flödet ände-till-ände: "Bara detta event" skickar Event UTAN axlar', async ({
+    page,
+    network,
+  }) => {
+    // Negativ kontroll mot testet ovan: axlarna får inte läcka med när Lotta
+    // väljer den event-egna räckvidden. EF:ens write-schema avvisar
+    // uttryckligen "Kursfamilj, Kursnivå och Plats" för räckvidd Event, så en
+    // läcka hade blivit en 400 i drift — inte ett testfel.
+    network.use(bilagorHandler());
+    let skickadKropp: Record<string, unknown> | null = null;
+    let skickadeNycklar: string[] = [];
+    network.use(
+      http.post(EF('upload-attachment'), async ({ request }) => {
+        skickadKropp = (await request.json()) as Record<string, unknown>;
+        skickadeNycklar = Object.keys(skickadKropp);
+        return json({ attachment: { ...BILAGA_EGEN, id: 'recBilagaNy00000002' } });
+      }),
+    );
+
+    await gotoEventlage(page);
+    await oppnaRackviddsdialog(page, 'Eventfil.pdf');
+    const dialog = page.getByRole('dialog');
+
+    // Gå via "Delat dokument", sätt en axel, och gå TILLBAKA — så testet
+    // bevisar att bytet NOLLAR axlarna, inte bara att de aldrig sattes.
+    await valjRackvidd(page, DELAT_RADIO);
+    await valjIAxel(page, platsValjare, 'Rönninge');
+    await valjRackvidd(page, EVENT_RADIO);
+
+    await dialog.getByRole('button', { name: 'Ladda upp' }).click();
+    await expect(dialog).toHaveCount(0);
+
+    expect(skickadKropp).toMatchObject({ rackvidd: 'Event' });
+    // Se nyckel-fångsten i testet ovan för varför detta mäts på nycklarna.
+    // HÄR är det extra viktigt: plats-axeln SATTES och nollades sedan, så
+    // ett kvarhängande `plats: undefined` hade varit en verklig defekt som
+    // ett `?.plats === undefined`-test inte kunnat se.
+    expect(skickadeNycklar).not.toContain('plats');
+    expect(skickadeNycklar).not.toContain('kursfamilj');
+    expect(skickadeNycklar).not.toContain('kursniva');
   });
 
   test('inline-rullningen: tabb-stopp och max-höjd bara när listan faktiskt rullar', async ({
@@ -464,7 +630,7 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
     network.use(bilagorHandler());
     await gotoEventlage(page);
 
-    const pill = page.getByText('RIM · Alla steg');
+    const pill = page.getByText('RIM · Rönninge');
     await expect(pill).toBeVisible();
     const pillFarg = await pill.evaluate((el) => getComputedStyle(el).backgroundColor);
     const listFarg = await page
@@ -565,6 +731,21 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
  * står stilla (AC #1) OCH att de dolda kontrollerna är riktigt dolda för
  * tangentbord och skärmläsare (AC #2) — en `invisible`-yta som ändå går
  * att tabba till hade bytt ett synligt problem mot ett osynligt.
+ *
+ * ═══ [UTVIDGAT, TASK-338.3] SAMMA LÅS, MER ATT LÅSA ═══
+ *
+ * Räckvidden bär nu TRE valfria axlar i stället för en obligatorisk familj,
+ * plus en sammanfattningsrad vars TEXT byter längd vid varje val. Kravet är
+ * oförändrat och prövningen densamma — men den reserverade ytan är större
+ * (tre selects + sammanfattningsraden), och sammanfattningen har därför en
+ * EGEN höjdlåsning (`line-clamp-2` + `min-h-12`) så att en tvåradig mening
+ * inte kan göra dialogen högre än en enradig. Valideringsmeddelandet som
+ * lägena nedan tidigare mätte är RIVET: noll axlar är giltigt sedan
+ * ADR-125 § 1, så det finns inget att validera mot.
+ *
+ * De fem lägena är omdefinierade mot den nya kontrollytan, men täcker samma
+ * sak: default, delat-utan-axlar, delat-med-mest-innehåll, tillbaka till
+ * event-läget, och pågående uppladdning.
  */
 test.describe('TASK-309.23 — uppladdningsdialogens geometri är låst', () => {
   /**
@@ -625,43 +806,39 @@ test.describe('TASK-309.23 — uppladdningsdialogens geometri är låst', () => 
       return box;
     };
 
-    // LÄGE 1: "Detta event" — dialogens defaultläge i eventkontext.
+    // LÄGE 1: "Bara detta event" — dialogens defaultläge i eventkontext.
+    // Hela axel-blocket är reserverat men `invisible`/`inert`.
     const dettaEvent = await matt();
 
-    // LÄGE 2: "En familj", ingen familj vald ännu — Familj-selecten syns,
-    // Steg-selecten är fortfarande dold, valideringsmeddelandet ("Välj en
-    // familj för att gå vidare.") syns.
-    await dialog
-      .getByRole('radio', { name: 'En familj' })
-      .locator('xpath=ancestor::label[1]')
-      .click();
+    // LÄGE 2: "Delat dokument", inga axlar satta — Familj- och Plats-
+    // selecten syns, Steg-selecten är fortfarande dold, sammanfattningen
+    // står på sin kortaste form ("Gäller: alla event").
+    await valjRackvidd(page, DELAT_RADIO);
     await expect(familjValjare(page)).toBeVisible();
     const enFamilj = await matt();
 
-    // LÄGE 3: "Familj vald" (RIM) — Steg-selecten blir synlig,
-    // valideringsmeddelandet försvinner. Detta är det läge som adderar MEST
-    // innehåll (två selects + inget meddelande i stället för ett), så det är
-    // den hårdaste prövningen av reservationen.
-    await familjValjare(page).click();
-    await page.getByRole('option', { name: 'RIM', exact: true }).click();
+    // LÄGE 3: MEST INNEHÅLL — nivåbärande familj (RIM, så Steg-selecten
+    // blir synlig), plats vald, och sammanfattningen på sin LÄNGSTA form
+    // ("Gäller: RIM-event, Steg 1, i Rönninge"). Detta är den hårdaste
+    // prövningen av reservationen: tre synliga selects OCH den text som
+    // först av alla skulle radbryta till två rader.
+    await valjIAxel(page, familjValjare, 'RIM');
     await expect(stegValjare(page)).toBeVisible();
+    await valjIAxel(page, stegValjare, 'Steg 1');
+    await valjIAxel(page, platsValjare, 'Rönninge');
+    await expect(dialog.locator('[aria-live="polite"]')).toHaveText(
+      'Gäller: RIM-event, Steg 1, i Rönninge',
+    );
     const familjVald = await matt();
 
-    // LÄGE 4: "Alla event" — tillbaka till samma tomma yta som läge 1, men
-    // via en annan väg (byte FRÅN Kurstyp, inte bara aldrig dit).
-    await dialog
-      .getByRole('radio', { name: 'Alla event' })
-      .locator('xpath=ancestor::label[1]')
-      .click();
+    // LÄGE 4: tillbaka till "Bara detta event" — samma tomma yta som läge 1,
+    // men via en annan väg (byte FRÅN delat med alla tre axlarna satta, inte
+    // bara aldrig dit).
+    await valjRackvidd(page, EVENT_RADIO);
     const allaEvent = await matt();
 
-    // LÄGE 5: under pågående uppladdning. Räckvidden växlas tillbaka till
-    // "Detta event" (enklaste giltiga valet) och mutationen hålls pending
-    // med håll-bar-mocken — deterministiskt, ingen gissad väntetid.
-    await dialog
-      .getByRole('radio', { name: 'Detta event' })
-      .locator('xpath=ancestor::label[1]')
-      .click();
+    // LÄGE 5: under pågående uppladdning. Mutationen hålls pending med
+    // håll-bar-mocken — deterministiskt, ingen gissad väntetid.
     await dialog.getByRole('button', { name: 'Ladda upp' }).click();
     await expect(dialog.getByRole('button', { name: 'Laddar upp…' })).toBeVisible();
     const underUppladdning = await matt();
@@ -702,7 +879,7 @@ test.describe('TASK-309.23 — uppladdningsdialogens geometri är låst', () => 
     expect(lagen.underUppladdning).toEqual(lagen.dettaEvent);
   });
 
-  test('AC #2: dolda Familj-/Steg-kontroller är INTE i tabordningen (Detta event/Alla event)', async ({
+  test('AC #2: de dolda axel-kontrollerna är INTE i tabordningen (event-läget)', async ({
     page,
     network,
   }) => {
@@ -711,35 +888,39 @@ test.describe('TASK-309.23 — uppladdningsdialogens geometri är låst', () => 
     await oppnaRackviddsdialog(page);
 
     const dialog = page.getByRole('dialog');
-    const dettaEvent = dialog.getByRole('radio', { name: 'Detta event' });
+    const dettaEvent = dialog.getByRole('radio', { name: EVENT_RADIO });
     await expect(dettaEvent).toBeChecked();
 
-    // Familj-/Steg-raden är monterad men `inert` i "Detta event"-läget.
-    // Tab FRÅN den markerade radioknappen (RadioGroups roving tabindex ger
-    // EN tabbstation för hela gruppen) ska hoppa RAKT till "Avbryt" — hade
-    // raden varit fokuserbar hade Tab i stället landat i Familj-selecten.
+    // Axel-blocket är monterat men `inert` i event-läget. Tab FRÅN den
+    // markerade radioknappen (RadioGroups roving tabindex ger EN tabbstation
+    // för hela gruppen) ska hoppa RAKT till "Avbryt" — hade blocket varit
+    // fokuserbart hade Tab i stället landat i Familj-selecten.
     await dettaEvent.focus();
     await expect(dettaEvent).toBeFocused();
     await page.keyboard.press('Tab');
     await expect(dialog.getByRole('button', { name: 'Avbryt' })).toBeFocused();
 
-    // Samma prövning i "Alla event" — en annan väg dit, samma dolda rad.
-    await dialog
-      .getByRole('radio', { name: 'Alla event' })
-      .locator('xpath=ancestor::label[1]')
-      .click();
-    const allaEvent = dialog.getByRole('radio', { name: 'Alla event' });
-    await allaEvent.focus();
+    // Samma prövning EFTER en tur genom det delade läget — en annan väg dit,
+    // samma dolda block. (I ADR-118-eran var detta "Alla event"-radion; med
+    // två val är återgången till event-läget den andra vägen.)
+    await valjRackvidd(page, DELAT_RADIO);
+    await expect(familjValjare(page)).toBeVisible();
+    await valjRackvidd(page, EVENT_RADIO);
+    await dettaEvent.focus();
     await page.keyboard.press('Tab');
     await expect(dialog.getByRole('button', { name: 'Avbryt' })).toBeFocused();
 
     // `.focus()` (JS-anrop, inte tangentbord) ska INTE heller kunna flytta
     // fokus in i en `inert` kontroll — spec-beteendet `inert` bygger på.
-    await familjValjare(page).evaluate((el: HTMLElement) => el.focus());
-    await expect(familjValjare(page)).not.toBeFocused();
+    // Prövas på ALLA TRE axlarna: `inert` sitter på blocket, men en framtida
+    // ändring som flyttar en select ut ur det ska fälla här.
+    for (const valjare of [familjValjare, stegValjare, platsValjare]) {
+      await valjare(page).evaluate((el: HTMLElement) => el.focus());
+      await expect(valjare(page)).not.toBeFocused();
+    }
   });
 
-  test('AC #2: "Familj vald" (RIM) — båda selecten synliga/fokuserbara, meddelandet dolt, axe-rent', async ({
+  test('AC #2: "Familj vald" (RIM) — alla tre selecten synliga/fokuserbara, axe-rent', async ({
     page,
     network,
   }) => {
@@ -747,25 +928,29 @@ test.describe('TASK-309.23 — uppladdningsdialogens geometri är låst', () => 
     await gotoEventlage(page);
     await oppnaRackviddsdialog(page);
 
-    await page
-      .getByRole('dialog')
-      .getByRole('radio', { name: 'En familj' })
-      .locator('xpath=ancestor::label[1]')
-      .click();
-    await familjValjare(page).click();
-    await page.getByRole('option', { name: 'RIM', exact: true }).click();
+    await valjRackvidd(page, DELAT_RADIO);
+    await valjIAxel(page, familjValjare, 'RIM');
 
     await expect(familjValjare(page)).toBeVisible();
     await expect(stegValjare(page)).toBeVisible();
-    // Valideringsmeddelandet är dolt (en familj ÄR vald) men kvar i DOM —
-    // `not.toBeVisible()`, inte `toHaveCount(0)` (se AC #1-testets kommentar
-    // ovan i filen för samma distinktion på Familj-/Steg-selecten).
-    await expect(page.getByText('Välj en familj för att gå vidare.')).not.toBeVisible();
+    await expect(platsValjare(page)).toBeVisible();
 
-    // Familj-valet nås fortfarande med tangentbord (AC #2s explicita krav)
-    // — Steg-selecten är den ANDRA riktiga kontrollen i tabbordningen nu.
-    await stegValjare(page).focus();
-    await expect(stegValjare(page)).toBeFocused();
+    // VALIDERINGSMEDDELANDET ÄR RIVET, inte dolt (TASK-338.3): noll axlar är
+    // giltigt sedan ADR-125 § 1, så det finns inget krav att påminna om.
+    // `toHaveCount(0)` — inte `not.toBeVisible()` — är rätt prövning för
+    // "finns inte längre i DOM", till skillnad mot de reserverade
+    // kontrollerna ovan som FINNS men är dolda.
+    await expect(page.getByText('Välj en familj för att gå vidare.')).toHaveCount(0);
+
+    // Och "Ladda upp" är följaktligen ALDRIG avstängd av räckviddsskäl.
+    await expect(page.getByRole('dialog').getByRole('button', { name: 'Ladda upp' })).toBeEnabled();
+
+    // Varje axel nås med tangentbord (AC #2s explicita krav) — de tre
+    // selectarna är de riktiga kontrollerna i tabbordningen nu.
+    for (const valjare of [familjValjare, stegValjare, platsValjare]) {
+      await valjare(page).focus();
+      await expect(valjare(page)).toBeFocused();
+    }
 
     const resultat = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])

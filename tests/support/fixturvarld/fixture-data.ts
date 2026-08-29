@@ -437,6 +437,49 @@ export const EVENT_NOTES_RESPONSE = {
  */
 export const EVENT_ATTACHMENTS_RESPONSE = { attachments: [] } as const;
 
+/**
+ * `get-places`-svaret (TASK-309.7, ADR-125 § 7) — den GLOBALA platslistan
+ * bakom Mer → Platser OCH, sedan TASK-338.3, bakom räckviddsdialogens
+ * Plats-axel. Samma läsväg, en fixtur (PRD TASK-338 berättelse 11: en ny
+ * plats ska bara behöva läggas till en gång).
+ *
+ * TRE PLATSER, inte noll: en tom lista hade gjort Plats-selecten omöjlig att
+ * pröva i acceptance-sviterna, och `usePlacesList` anropas numera av VARJE
+ * öppning av uppladdningsdialogen — utan handler faller hermetik-vakten
+ * (`hermetik-vakt.ts`) på ett omockat EF-anrop i stället för att testet
+ * säger något om ytan.
+ *
+ * RÖNNINGE STÅR FÖRST OCH ÄR INTE GODTYCKLIG: det är PRD TASK-338:s egen
+ * drivande instans (Rogers och Lottas hem, parkeringsbilagan och sushimenyn,
+ * tråd T153) och ORDLISTA.md § Plats beskriver den som platsen med stabila
+ * värden. Falköping och Gotland är de kontrasterande orterna ur PRD:ns
+ * berättelse 3 — "ett event i Falköping ska INTE visa Rönninge-dokumenten".
+ *
+ * `falt` bär de fyra `PLATS_FALT_KEYS` (`PlaceListItemSchema`). De är
+ * `null` här med avsikt: räckviddsdialogen läser bara `id`/`namn`, och en
+ * fixtur som fyller fält ingen konsument i dessa sviter läser hade bara
+ * varit en extra sanning att hålla synkad.
+ */
+export const PLACES_RESPONSE = {
+  places: [
+    {
+      id: 'recPlatsRonninge01',
+      namn: 'Rönninge',
+      falt: { adress: null, parkering: null, transport: null, klader: null },
+    },
+    {
+      id: 'recPlatsFalkoping1',
+      namn: 'Falköping',
+      falt: { adress: null, parkering: null, transport: null, klader: null },
+    },
+    {
+      id: 'recPlatsGotland001',
+      namn: 'Gotland',
+      falt: { adress: null, parkering: null, transport: null, klader: null },
+    },
+  ],
+} as const;
+
 /** `get-event-formats`-svaret (de två skarpa bas-formaten). */
 export const EVENT_FORMATS_RESPONSE = {
   eventFormats: [

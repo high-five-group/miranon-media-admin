@@ -192,6 +192,7 @@ import { useAuth } from '@/auth/useAuth';
 import type { MallId } from '@/components/dokument/blockDefinitioner';
 import { stegEtikett } from '@/components/dokument/nivaSprak';
 import { RackviddBadge } from '@/components/dokument/RackviddBadge';
+import { rackviddsSammanfattning } from '@/components/dokument/rackviddsText';
 import { EventValjare } from '@/components/events/EventValjare';
 import { Button } from '@/components/primitives/Button';
 import { Dialog } from '@/components/primitives/Dialog';
@@ -214,6 +215,7 @@ import {
   type UploadAttachmentVariables,
   useUploadAttachment,
 } from '@/data/mutations/useUploadAttachment';
+import { usePlacesList } from '@/data/queries/usePlacesList';
 import { useDataSource } from '@/data/useDataSource';
 import type { Attachment } from '@/domain/models/Attachment';
 import { AttachmentClass, AttachmentScope, type AttachmentScopeValue } from '@/domain/types/Status';
@@ -299,6 +301,26 @@ const KURSFAMILJ_VALUES = ['RIM', 'Fjärrskådning', 'Psionautics'] as const;
 const KURSNIVA_VALUES = ['Intro', 'Nivå 1', 'Nivå 2', 'Nivå 3'] as const;
 const KURSFAMILJ_MED_NIVAER: ReadonlySet<string> = new Set(['RIM']);
 
+/**
+ * [TASK-338.3] Nolläget i räckviddsdialogens tre axel-`Select`ar — "axeln är
+ * inte satt, den begränsar inte" (ADR-125 § 1). Se `RackviddsDialog`s
+ * kommentar vid Familj-selecten för varför nolläget är ett EGET alternativ
+ * i stället för en platshållare.
+ *
+ * Värdet kan inte kollidera med riktig data: familjerna är tre kända namn,
+ * stegen är basens `Nivå N`-optioner och platserna är Airtable-record-ID:n
+ * (`rec…`). Det lämnar aldrig klienten — `axelVarde` översätter tillbaka
+ * till `null` innan valet blir en EF-parameter.
+ */
+const ALLA_AXEL = '__alla';
+
+/** Select-nyckel → axelvärde: nolläget (och inget val alls) blir `null`. */
+function axelVarde(nyckel: React.Key | null): string | null {
+  if (nyckel == null) return null;
+  const varde = String(nyckel);
+  return varde === ALLA_AXEL ? null : varde;
+}
+
 /** Full precision, Gunilla-läsbart — samma format som Anteckningar.tsx § ANTECKNING_TID. */
 const DATUM_TID = new Intl.DateTimeFormat('sv-SE', {
   day: 'numeric',
@@ -317,10 +339,15 @@ const DATUM_TID = new Intl.DateTimeFormat('sv-SE', {
  */
 type BilageRad = { current: Attachment; dolda: number };
 
-/** [TASK-275.3] Räckviddsvalet `RackviddsDialog` producerar — delad shape
-    mellan uppladdning (`UploadAttachmentVariables` minus `file`) och
-    ersättning (`ReplaceAttachmentInput` minus `file`/`oldAttachmentId`). */
-type UploadScopeVal = Pick<UploadAttachmentVariables, 'rackvidd' | 'kursfamilj' | 'kursniva'>;
+/** [TASK-275.3, UTBYGGD TASK-338.3] Räckviddsvalet `RackviddsDialog`
+    producerar — delad shape mellan uppladdning (`UploadAttachmentVariables`
+    minus `file`) och ersättning (`ReplaceAttachmentInput` minus `file`/
+    `oldAttachmentId`). Bär sedan ADR-125 § 1 alla TRE axlarna; `plats` är
+    ett Platser-record-ID, aldrig ett namn. */
+type UploadScopeVal = Pick<
+  UploadAttachmentVariables,
+  'rackvidd' | 'kursfamilj' | 'kursniva' | 'plats'
+>;
 
 /**
  * [TASK-147.11, DEGRADERAD TILL REN VISNINGSHJÄLP] Grupperar VERKLIGA
@@ -1455,6 +1482,7 @@ function DokumentRadSkal({
             rackvidd={current.rackvidd}
             kursfamilj={current.kursfamilj}
             kursniva={current.kursniva}
+            plats={current.plats}
           />
           {current.mall !== null && <span className={TACKNING_KLASS}>{current.mall}</span>}
           {current.inaktuell === true && (
@@ -1517,11 +1545,15 @@ type ReplaceMutation = ReturnType<typeof useReplaceAttachment>;
 type DeleteMutation = ReturnType<typeof useDeleteAttachment>;
 type SkapaOmMutation = ReturnType<typeof useSkapaOmEventBilaga>;
 
-/** [TASK-275.3] Sant för en GEMENSAM bilaga (räckvidd Kurstyp/Alla event) —
-    delad mellan BilageRadRow (döljer Ersätt) och badgens eget "rendera
-    inget"-villkor (RackviddBadge.tsx). */
+/** [TASK-275.3, OMBYGGD TASK-338.3] Sant för en GEMENSAM bilaga (räckvidd
+    `Gemensam`) — delad mellan BilageRadRow (döljer Ersätt) och badgens eget
+    "Detta event"-villkor (RackviddBadge.tsx).
+
+    ETT värde att jämföra mot i stället för två: legacy-räckvidderna
+    normaliseras bort vid datagränsen (`normaliseraRaAttachment`), så ingen
+    UI-yta behöver längre känna till `Kurstyp`/`Alla event`. */
 function arGemensam(rackvidd: Attachment['rackvidd']): boolean {
-  return rackvidd === AttachmentScope.KURSTYP || rackvidd === AttachmentScope.ALLA_EVENT;
+  return rackvidd === AttachmentScope.GEMENSAM;
 }
 
 function BilageRadRow({
@@ -1612,6 +1644,10 @@ function BilageRadRow({
                   rackvidd: current.rackvidd ?? undefined,
                   kursfamilj: current.kursfamilj ?? undefined,
                   kursniva: current.kursniva ?? undefined,
+                  // [TASK-338.3] Plats-axeln MÅSTE följa med — se
+                  // `ReplaceAttachmentInput`s docblock: utan den vidgas en
+                  // platsbunden bilaga tyst till ALLA event vid nästa byte.
+                  plats: current.plats?.id ?? undefined,
                 })
               }
             >
@@ -2102,15 +2138,36 @@ function RackviddsDialog({
   onUpload: (files: FileList | null, scope: UploadScopeVal, onKlart?: () => void) => void;
 }) {
   const [rackvidd, setRackvidd] = useState<AttachmentScopeValue>(
-    harEvent ? AttachmentScope.EVENT : AttachmentScope.KURSTYP,
+    harEvent ? AttachmentScope.EVENT : AttachmentScope.GEMENSAM,
   );
   const [kursfamilj, setKursfamilj] = useState<string | null>(null);
   const [kursniva, setKursniva] = useState<string | null>(null);
+  const [platsId, setPlatsId] = useState<string | null>(null);
 
+  // PLATSLISTAN ÄR SAMMA LÄSVÄG SOM MER → PLATSER (kortets AC #1, PRD
+  // berättelse 11: *"platslistan i dialogen är samma som under Mer →
+  // Platser, så att en ny plats bara behöver läggas till en gång"*).
+  // `usePlacesList` bär redan den globala, stabila query-nyckeln och
+  // invalideras av `useSavePlace` — en egen hämtning här hade gett en andra
+  // sanning om vilka platser som finns, och en nyss tillagd plats hade
+  // saknats i dialogen tills sidan laddades om.
+  const platserQuery = usePlacesList();
+  const platser = platserQuery.data ?? [];
+
+  const gemensam = rackvidd === AttachmentScope.GEMENSAM;
   const kursfamiljHarNivaer = kursfamilj != null && KURSFAMILJ_MED_NIVAER.has(kursfamilj);
-  const scopeGiltig = rackvidd !== AttachmentScope.KURSTYP || kursfamilj != null;
   const laddarUpp = uploadMutation.isPending;
   const filnamn = filer.item(0)?.name ?? 'Filen';
+
+  // Sammanfattningen läser platsens NAMN, inte dess id — texten är för
+  // Lotta. Faller tillbaka på `null` (= "axeln räknas som osatt") medan
+  // listan laddar, så raden aldrig hinner peka på en plats den inte kan namnge.
+  const valdPlatsNamn = platser.find((plats) => plats.id === platsId)?.namn ?? null;
+  const sammanfattning = rackviddsSammanfattning({
+    kursfamilj,
+    kursniva,
+    platsNamn: valdPlatsNamn,
+  });
 
   return (
     <Modal
@@ -2129,7 +2186,7 @@ function RackviddsDialog({
       <Dialog
         title="Vad ska filen gälla?"
         size="md"
-        aria-description="Välj om filen gäller det valda eventet, en hel familj eller alla event."
+        aria-description="Välj om filen gäller bara det valda eventet eller är ett delat dokument som gäller flera event."
       >
         <div className="flex flex-col gap-4">
           {/* FILNAMNET ÄR EGEN RAD, INTE INBAKAT I RUBRIKEN. En rubrik som
@@ -2145,99 +2202,131 @@ function RackviddsDialog({
               dropdownlistan kan tas bort"). Primitiven gör då `label` till
               `aria-label`, så skärmläsaren behåller ett namn på kontrollen
               medan ögat slipper en rubrik det inte behöver. Dialogens egen
-              rubrik ställer redan frågan gruppen svarar på. */}
+              rubrik ställer redan frågan gruppen svarar på.
+
+              [TASK-338.3] TVÅ VAL, INTE TRE — och orienteringen är VERTIKAL.
+              "En familj"/"Alla event" var två av ADR-118:s tre räckvidder;
+              med ADR-125 § 1 är de samma räckvidd (`Gemensam`) med respektive
+              utan axlar, så valet är binärt: hör filen till DETTA event, eller
+              är den delad? Etiketterna är hela satser ("Delat dokument -
+              gäller flera event") och ryms inte bredvid varandra på 375 px,
+              därav `vertical` i stället för den tidigare `horizontal`. */}
           <RadioGroup
             label="Räckvidd"
             hideLabel
-            orientation="horizontal"
+            orientation="vertical"
             value={rackvidd}
             onChange={(value) => {
               const next = value as AttachmentScopeValue;
               setRackvidd(next);
-              if (next !== AttachmentScope.KURSTYP) {
+              // Axlarna nollas när filen blir event-egen: de är MENINGSLÖSA
+              // för räckvidd Event, och EF:ens write-schema avvisar dem
+              // uttryckligen ("Kursfamilj, Kursnivå och Plats är bara giltiga
+              // för en gemensam bilaga"). Att bara dölja dem hade skickat ett
+              // kontraktsbrott vid nästa Ladda upp.
+              if (next !== AttachmentScope.GEMENSAM) {
                 setKursfamilj(null);
                 setKursniva(null);
+                setPlatsId(null);
               }
             }}
           >
             <Radio value={AttachmentScope.EVENT} isDisabled={!harEvent}>
-              Detta event
+              Bara detta event
             </Radio>
-            {/* "En familj" — INTE "En eventtyp". `Eventtyp` är upptaget av ett
-                ANNAT begrepp på tre ställen samtidigt: ORDLISTA.md § Eventtyp
-                (= Utbildning/Föreläsning), `CreateEventForm.tsx`s egen
-                `label="Eventtyp"` för samma sak, och Airtable-fältet `Eventtyp`
-                (länken till Eventformat). Etiketten här följer i stället
-                Select:en nedan, som heter "Familj". VÄRDET som skickas är
-                oförändrat `AttachmentScope.KURSTYP` = strängen 'Kurstyp' —
-                basens optionsnamn i fältet `Räckvidd`, som INTE får bytas
-                härifrån (datakällans kontrakt, se ADR-118). */}
-            <Radio value={AttachmentScope.KURSTYP}>En familj</Radio>
-            <Radio value={AttachmentScope.ALLA_EVENT}>Alla event</Radio>
+            {/* KORT BINDESTRECK, INTE LÅNGT — Marcus 2026-08-09: *"Ta bort
+                alla långa bindestreck överallt, jag gillar de korta
+                bindestrecken (-)"*, mekaniserat i
+                `scripts/check-langa-streck.mjs` (CI-wirad grind som fäller på
+                långt streck i JSXText). Kortet skriver etiketten med långt
+                streck; regeln och grinden slår bokstaven, och ett undantag i
+                `.langa-streck-policy.json` vore fel väg — policyn reserverar
+                dem för tom-markören, inte för text som kan skrivas om. */}
+            <Radio value={AttachmentScope.GEMENSAM}>Delat dokument - gäller flera event</Radio>
           </RadioGroup>
 
-          {/* TASK-309.23 — RAD-HÖJDEN ÄR LÅST, INTE VILLKORAD (Marcus
-              prod-röktest 2026-08-26: *"rutan aldrig ändrar storlek och
-              läge vad jag än väljer eller trycker på"*). Raden renderades
-              tidigare bara när `rackvidd === KURSTYP`, vilket gjorde
-              dialogens höjd — och därmed dess VERTIKALT CENTRERADE läge
-              (`Modal`s overlay är `items-center`) — en funktion av
-              räckviddsvalet: ett hopp varje gång Lotta bytte radioknapp.
+          {/* ═══ DE TRE AXLARNA + SAMMANFATTNINGEN — ALLTID RENDERADE ═══
+              (TASK-309.23:s teknik, utvidgad till tre axlar av TASK-338.3.)
 
-              SAMMA "RESERVERA ALLTID PLATS"-TEKNIK som husets `Pill dold`
-              (`PersonsList.tsx`, Marcus S103) och breddlåset i
-              `EventCheckin.tsx`: raden RENDERAS ALLTID, döljs med
-              `invisible` (kvar i layouten, osynlig) + native `inert`
-              (React 19-attribut, https://developer.mozilla.org/en-US/docs/Web/API/HTMLElement/inert)
-              när räckvidden inte är Kurstyp. `inert` gör HELA underträdet
-              icke-fokuserbart och tar bort det ur tillgänglighetsträdet i
-              en sats — starkare golv än `tabIndex={-1}` satt per kontroll,
-              som måste upprepas för varje ny kontroll i raden och lätt
-              glöms. `invisible` sköter den visuella döljningen ensam;
-              `inert` är fokus-/AT-spärren.
+              Marcus prod-röktest 2026-08-26: *"rutan aldrig ändrar storlek och
+              läge vad jag än väljer eller trycker på"*. `Modal`s overlay är
+              `items-center`, så varje höjdändring flyttar OCKSÅ dialogen
+              vertikalt — ett hopp vid varje radioklick.
 
-              STEG-SELECTEN BÄR SAMMA TEKNIK, EN NIVÅ NER. Den var tidigare
-              en egen villkorad rendering (`kursfamiljHarNivaer && …`) inuti
-              den redan villkorade raden — utan att den ALLTID renderas
-              (bara osynliggörs) hade en nivåbärande familj (RIM) fått en
-              annan radhöjd vid `sm:`s kolumn-layout (375 px: `flex-col`
-              STAPLAR de två selecten, så en andra select adderar höjd) än
-              en nivålös familj (Fjärrskådning) eller ingen familj alls —
-              exakt samma felklass som räckviddsraden, en nivå ner. */}
-          <div
-            className={`flex flex-col gap-2 sm:flex-row sm:items-start ${
-              rackvidd === AttachmentScope.KURSTYP ? '' : 'invisible'
-            }`}
-            inert={rackvidd !== AttachmentScope.KURSTYP}
-          >
+              Blocket renderas därför ALLTID och döljs med `invisible` (kvar i
+              layouten, osynlig) + native `inert` när räckvidden är Event.
+              `inert` gör HELA underträdet icke-fokuserbart OCH tar bort det ur
+              tillgänglighetsträdet i en sats — starkare golv än `tabIndex={-1}`
+              per kontroll, som måste upprepas för varje ny kontroll och lätt
+              glöms. Det tystar dessutom `aria-live`-raden nedan i event-läget,
+              vilket är precis rätt: en sammanfattning av ett filter som inte
+              gäller ska inte annonseras.
+
+              PRISET ÄR RESERVERAT TOMRUM i event-läget, och det är MEDVETET
+              betalt: tre selects plus sammanfattningsraden är mer reserverad
+              yta än den enda rad TASK-309.23 reserverade. Alternativet är en
+              dialog som hoppar, vilket Marcus uttryckligen avvisat. Flaggat
+              för hans QA-vandring (kortets AC #3).
+
+              SELECTARNA STAPLAS, ingen `sm:flex-row`. Tre triggers sida vid
+              sida i en 28rem-dialog ger ~128 px var, vilket trunkerar "Alla
+              familjer"/"Alla platser" redan i nolläget — och en brytpunkt som
+              byter kolumn/rad gör dessutom geometrilåset beroende av
+              viewport-bredden (exakt det `sm:`-fall den tidigare radens
+              kommentar varnade för). En kolumn på alla bredder är både
+              läsbarare och trivialt stabil. */}
+          <div className={`flex flex-col gap-2 ${gemensam ? '' : 'invisible'}`} inert={!gemensam}>
+            {/* ═══ ALLA AXLAR ÄR VALFRIA — DÄRFÖR ETT EXPLICIT "ALLA"-VAL ═══
+
+                Fram till TASK-338.3 var Kursfamilj OBLIGATORISK för den (nu
+                rivna) Kurstyp-räckvidden, så en `Select` med enbart
+                platshållare räckte: ett val gjordes en gång och togs aldrig
+                tillbaka.
+
+                Med ADR-125 § 1 är varje axel valfri, och då MÅSTE vägen
+                tillbaka finnas — en Lotta som råkat välja RIM ska kunna ångra
+                sig till "alla familjer" utan att stänga dialogen och börja om.
+                `react-aria`s `Select` har ingen inbyggd rensa-knapp, så
+                nolläget bärs av ett eget första alternativ. Det är dessutom
+                BÄTTRE än en platshållare på en yta där etiketterna är
+                `hideLabel`: triggern säger nu alltid i klartext vad axeln gör
+                ("Alla familjer") i stället för att vara tom.
+
+                Sentinelvärdet kan inte kollidera med riktig data: familjerna
+                är tre kända namn och platserna är Airtable-record-ID:n
+                (`rec…`). */}
             <Select
               label="Familj"
               hideLabel
-              placeholder="Välj familj"
-              selectedKey={kursfamilj}
+              selectedKey={kursfamilj ?? ALLA_AXEL}
               onSelectionChange={(key) => {
-                setKursfamilj(key == null ? null : String(key));
+                setKursfamilj(axelVarde(key));
+                // Steget hör till familjen — byter familjen är ett kvarhängande
+                // steg antingen ogiltigt (nivålös familj) eller osynligt satt.
                 setKursniva(null);
               }}
-              className="sm:max-w-56"
             >
+              <SelectItem id={ALLA_AXEL}>Alla familjer</SelectItem>
               {KURSFAMILJ_VALUES.map((v) => (
                 <SelectItem key={v} id={v}>
                   {v}
                 </SelectItem>
               ))}
             </Select>
-            <div
-              className={`sm:max-w-56 ${kursfamiljHarNivaer ? '' : 'invisible'}`}
-              inert={!kursfamiljHarNivaer}
-            >
+
+            {/* Steg-selecten bär SAMMA teknik en nivå ner: alltid monterad,
+                osynlig + `inert` för en nivålös familj (Fjärrskådning och
+                Psionautics har inga steg alls — ORDLISTA.md § Steg). Utan att
+                den ALLTID renderas hade en nivåbärande familj (RIM) gett en
+                annan dialoghöjd än en nivålös. */}
+            <div className={kursfamiljHarNivaer ? '' : 'invisible'} inert={!kursfamiljHarNivaer}>
               <Select
                 label="Steg"
                 hideLabel
-                placeholder="Alla steg"
-                selectedKey={kursniva}
-                onSelectionChange={(key) => setKursniva(key == null ? null : String(key))}
+                selectedKey={kursniva ?? ALLA_AXEL}
+                onSelectionChange={(key) => setKursniva(axelVarde(key))}
               >
+                <SelectItem id={ALLA_AXEL}>Alla steg</SelectItem>
                 {/* `id` är basvärdet ('Nivå 1'), texten är presentationen
                     ('Steg 1'). Det som skickas till EF:en är därför
                     oförändrat — se nivaSprak.ts. */}
@@ -2248,27 +2337,59 @@ function RackviddsDialog({
                 ))}
               </Select>
             </div>
+
+            {/* PLATS-AXELN (ADR-125 § 1) — nolläget står FÖRST och är valt från
+                start, så listan är användbar även medan `usePlacesList` laddar
+                (då bär den bara nolläget). En tom lista under laddning hade
+                sett ut som "inga platser finns". */}
+            <Select
+              label="Plats"
+              hideLabel
+              selectedKey={platsId ?? ALLA_AXEL}
+              onSelectionChange={(key) => setPlatsId(axelVarde(key))}
+            >
+              <SelectItem id={ALLA_AXEL}>Alla platser</SelectItem>
+              {platser.map((plats) => (
+                <SelectItem key={plats.id} id={plats.id}>
+                  {plats.namn}
+                </SelectItem>
+              ))}
+            </Select>
+
+            {/* ═══ SAMMANFATTNINGEN — VAD VALET BETYDER, I KLARTEXT ═══
+                (kortets AC #1; PRD TASK-338 berättelse 6: *"se i klartext vad
+                mitt räckviddsval betyder innan jag sparar"*.)
+
+                Ersätter den rivna raden "Välj en familj för att gå vidare." —
+                den var en VALIDERINGSLEDTEXT för ett krav som inte längre
+                finns (noll axlar är giltigt och betyder alla event, ADR-125
+                § 1), så "Ladda upp" är aldrig avstängd av räckviddsskäl mer.
+
+                `aria-live="polite"` + `aria-atomic` UTAN `role="status"`:
+                rollen implicerar samma politeness, och att sätta båda är den
+                kända dubbelannonserings-fällan. Regionen bär BARA meningen —
+                aldrig kontrollerna — så skärmläsaren annonserar konsekvensen
+                ("Gäller: RIM-event i Rönninge") EFTER att selecten själv
+                annonserat sitt värde, i stället för att säga samma sak två
+                gånger.
+
+                HÖJDEN ÄR LÅST, som allt annat i denna dialog: `line-clamp-2`
+                gör att texten aldrig kan bli högre än två rader (2 × 1,5 ×
+                0,875rem = 2,625rem) och `min-h-12` (3rem) reserverar mer än
+                så — boxen är därmed exakt 3rem oavsett om meningen är "Gäller:
+                alla event" eller den längsta tre-axel-formen. Ett långt
+                platsnamn trunkeras visuellt men står helt i `title`, och
+                skärmläsaren läser alltid hela textnoden (klippningen är ren
+                CSS). */}
+            <p
+              aria-atomic="true"
+              aria-live="polite"
+              className="line-clamp-2 min-h-12 text-small text-text-secondary"
+              title={sammanfattning}
+            >
+              {sammanfattning}
+            </p>
           </div>
-
-          {/* LEDTEXTEN SÄGER VAD SOM SAKNAS, knappens `isDisabled` är grinden
-              — de ska inte förväxlas. Samma disciplin som steg 2:s
-              vilo-tillstånd bar innan blocket revs: en avstängd knapp säger
-              "nej" utan att säga varför.
-
-              [TASK-309.23] SAMMA RESERVERA-PLATS-TEKNIK som raden ovan:
-              meddelandet togglade tidigare hela sin rad in och ut
-              (`!scopeGiltig && <p>…</p>`), vilket gav ÄNNU en höjdskillnad
-              — denna gången mellan "En familj" utan valt värde (meddelandet
-              syns) och en vald familj (meddelandet försvinner), på BÅDA
-              brytpunkterna, inte bara vid `sm:`. Ingen fokuserbar kontroll
-              i en `<p>`, så `aria-hidden` + `invisible` räcker (samma form
-              som `Pill`s `dold`-prop) — `inert` tillför inget här. */}
-          <p
-            aria-hidden={scopeGiltig || undefined}
-            className={`text-small text-text-muted ${scopeGiltig ? 'invisible' : ''}`}
-          >
-            Välj en familj för att gå vidare.
-          </p>
 
           <div className="flex flex-wrap justify-end gap-2">
             <Button intent="ghost" onPress={onStang} isDisabled={laddarUpp}>
@@ -2276,16 +2397,21 @@ function RackviddsDialog({
             </Button>
             <Button
               intent="primary"
-              isDisabled={laddarUpp || !scopeGiltig}
+              isDisabled={laddarUpp}
               onPress={() =>
                 onUpload(
                   filer,
                   {
                     rackvidd,
-                    kursfamilj:
-                      rackvidd === AttachmentScope.KURSTYP ? (kursfamilj ?? undefined) : undefined,
-                    kursniva:
-                      rackvidd === AttachmentScope.KURSTYP ? (kursniva ?? undefined) : undefined,
+                    // AXLARNA SKICKAS BARA FÖR GEMENSAM, och `undefined`
+                    // (utelämnad nyckel) är formen för "axeln är inte satt" —
+                    // aldrig tom sträng. EF:ens `buildScopeFields` UTELÄMNAR i
+                    // sin tur fältet i Airtable-skrivningen, så "ingen axel" är
+                    // samma sak hela vägen ner. En tomsträng hade skrivits som
+                    // ett värde och smalnat räckvidden.
+                    kursfamilj: gemensam ? (kursfamilj ?? undefined) : undefined,
+                    kursniva: gemensam ? (kursniva ?? undefined) : undefined,
+                    plats: gemensam ? (platsId ?? undefined) : undefined,
                   },
                   onStang,
                 )
@@ -2475,6 +2601,9 @@ function GemensamBilageRadRow({
                 rackvidd: current.rackvidd ?? undefined,
                 kursfamilj: current.kursfamilj ?? undefined,
                 kursniva: current.kursniva ?? undefined,
+                // [TASK-338.3] Se BilageRadRow ovan — plats-axeln följer med,
+                // annars blir "Ersätt" en tyst uppvidgning till alla event.
+                plats: current.plats?.id ?? undefined,
               })
             }
           >

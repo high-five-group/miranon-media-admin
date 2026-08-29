@@ -24,6 +24,9 @@ export {
   AttachmentSchema,
   AttachmentUploadTicketSchema,
   DocumentPreviewSchema,
+  normaliseraRaAttachment,
+  parsaAttachment,
+  parsaAttachments,
   UtkastResultatSchema,
 } from './Attachment.schema';
 export { AttendanceSchema, CreatedAttendanceSchema } from './Attendance.schema';

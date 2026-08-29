@@ -36,7 +36,9 @@ import { expect, test } from './acceptance-bas';
  * som faktiskt skiljer synlig från klippt.
  */
 
-type Rad = { namn: string; rackvidd: 'Event' | 'Kurstyp' | 'Alla event' };
+/** [TASK-338.3, ADR-125 § Beslut 1] Två levande räckvidder, inte tre —
+ *  `Kurstyp`/`Alla event` ÄR `Gemensam` med respektive utan axlar. */
+type Rad = { namn: string; rackvidd: 'Event' | 'Gemensam' };
 
 function attachment(id: string, { namn, rackvidd }: Rad) {
   return {
@@ -49,6 +51,7 @@ function attachment(id: string, { namn, rackvidd }: Rad) {
     rackvidd,
     kursfamilj: null,
     kursniva: null,
+    plats: null,
   };
 }
 
@@ -76,7 +79,7 @@ function handler(antalEgna: number, antalGemensamma: number, latensMs = 0) {
       attachments: Array.from({ length: antalGemensamma }, (_, i) =>
         attachment(`recGem39${String(i).padStart(4, '0')}`, {
           namn: `Delad ${i + 1}.pdf`,
-          rackvidd: 'Alla event',
+          rackvidd: 'Gemensam',
         }),
       ),
     });

@@ -390,6 +390,15 @@ export interface DataSourceAdapter {
    * (valfria — se `UploadAttachmentInput`) trär igenom till BÅDA mönstren
    * oförändrat; `eventId` FÖRBLIR obligatoriskt oavsett räckvidd (se
    * modellens docblock för det medvetna skälet).
+   *
+   * [UTBYGGD, TASK-338.3, ADR-125 § Beslut 1] `input.plats` är den TREDJE
+   * räckviddsaxeln och trär igenom likadant — ett Platser-RECORD-ID, aldrig
+   * ett namn. VALIDERINGEN AV DEN BOR SERVER-SIDE, i två lager: Zod prövar
+   * FORMEN (`rec…`), och den skrivande EF:en prövar att raden FAKTISKT finns
+   * (`platsFinns`, `_shared/attachments.ts`) innan skrivning. Adaptern
+   * kontrollerar ingetdera med avsikt — en klientsidig existenskontroll hade
+   * krävt en egen Platser-hämtning och därmed en andra sanning om vad som
+   * finns (ADR-057: valideringen bor i EF/_shared, aldrig i klienten).
    */
   uploadAttachment(input: UploadAttachmentInput): Promise<Attachment>;
 
@@ -411,6 +420,13 @@ export interface DataSourceAdapter {
    * EGNA + KURSTYP-matchande + ALLA-EVENT-bilagor (server-side, `get-event-
    * attachments`) — gemensamma bilagor syns automatiskt, märkta med sin
    * `rackvidd` (se `Attachment`-modellens docblock för badge-underlaget).
+   *
+   * [OMBYGGD, TASK-338.3, ADR-125 § Beslut 1] Unionen är NU eventets EGNA +
+   * de `Gemensam`-bilagor vars satta axlar (Kursfamilj · Kursnivå · Plats)
+   * alla matchar eventet. Matchningen sker SERVER-SIDE i
+   * `_shared/rackvidd-matchning.ts` — klienten tar emot en färdig lista och
+   * filtrerar aldrig själv (ADR-057). Varje post bär numera också `plats`,
+   * upplöst till `{ id, namn }` av EF:ens `Platsnamn`-lookup.
    */
   fetchEventAttachments(eventId: string): Promise<Attachment[]>;
 
@@ -420,8 +436,8 @@ export interface DataSourceAdapter {
    * Gemensam bilaga). GET mot get-event-attachments-EF:en UTAN `eventId`
    * (den nya, valfria query-param-formen) — SAMMA endpoint som
    * `fetchEventAttachments`, en annan gren server-side (ingen eventunion,
-   * bara `Räckvidd IN (Kurstyp, Alla event)`, se get-event-attachments/
-   * index.ts § filhuvudet). EGEN adapter-metod i stället för att göra
+   * bara `Räckvidd = Gemensam` sedan TASK-338.2 — tidigare `Räckvidd IN
+   * (Kurstyp, Alla event)`, se get-event-attachments/index.ts § filhuvudet). EGEN adapter-metod i stället för att göra
    * `fetchEventAttachments`s `eventId`-parameter valfri: två genuint olika
    * frågor (ett events dokument vs. ALLA gemensamma dokument) förtjänar
    * varsitt namn — "håll adapter-API:t smalt och välnamnat" gäller åt båda

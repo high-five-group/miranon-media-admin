@@ -23,7 +23,6 @@ import {
   type ActivityStatement,
   ActivityStatementSchema,
   AttachmentDownloadUrlSchema,
-  AttachmentSchema,
   AttachmentUploadTicketSchema,
   AttendanceSchema,
   type ConfirmRegistrationsInput,
@@ -51,6 +50,8 @@ import {
   PersonSchema,
   type PlaceListItem,
   PlaceListItemSchema,
+  parsaAttachment,
+  parsaAttachments,
   type RecordActivityResult,
   RecordActivityResultSchema,
   type RegistrationDetail,
@@ -765,13 +766,20 @@ export class AirtableAdapter implements DataSourceAdapter {
       bytesBase64,
       // [TASK-275.2, ADR-118] Valfria — EF:en default:ar rackvidd till
       // 'Event' när utelämnad (oförändrat beteende).
+      // [UTBYGGT, TASK-338.3, ADR-125 § 1] `plats` är den TREDJE axeln, ett
+      // Platser-RECORD-ID. Skickas RAKT IGENOM: existenskontrollen mot
+      // Platser-tabellen bor i EF:en (`platsFinns`, `_shared/attachments.ts`)
+      // eftersom bara servern kan avgöra att raden finns — adaptern som
+      // gissade hade antingen behövt en egen hämtning (en andra sanning) eller
+      // släppt igenom ett ID som Airtable tyst sväljer som en TOM länk.
       rackvidd: input.rackvidd,
       kursfamilj: input.kursfamilj,
       kursniva: input.kursniva,
+      plats: input.plats,
     });
     // Uppladdade rader är aldrig Event-mallade — 'inaktuell' är strukturellt
     // inte tillämplig (TASK-309.6, se domänmodellens docblock).
-    return { ...AttachmentSchema.parse(data.attachment), inaktuell: null };
+    return { ...parsaAttachment(data.attachment), inaktuell: null };
   }
 
   /**
@@ -822,15 +830,17 @@ export class AirtableAdapter implements DataSourceAdapter {
       eventId: input.eventId,
       attachmentId: ticket.attachmentId,
       filnamn: input.file.name,
-      // [TASK-275.2, ADR-118] Se uploadAttachmentSmall ovan — samma
-      // valfria trädgren, `create-attachment-upload-ticket` (steget ovan)
-      // rör dem aldrig (skriver ingen Bilagor-rad).
+      // [TASK-275.2, ADR-118 · TASK-338.3] Se uploadAttachmentSmall ovan —
+      // samma valfria trädgren inklusive `plats`-axeln,
+      // `create-attachment-upload-ticket` (steget ovan) rör dem aldrig
+      // (skriver ingen Bilagor-rad).
       rackvidd: input.rackvidd,
       kursfamilj: input.kursfamilj,
       kursniva: input.kursniva,
+      plats: input.plats,
     });
     // Se uploadAttachmentSmall ovan — samma "aldrig Event-mallad"-motivering.
-    return { ...AttachmentSchema.parse(data.attachment), inaktuell: null };
+    return { ...parsaAttachment(data.attachment), inaktuell: null };
   }
 
   /**
@@ -844,7 +854,7 @@ export class AirtableAdapter implements DataSourceAdapter {
     const data = await callEdgeFunction<{ attachments: unknown }>('get-event-attachments', {
       eventId,
     });
-    const parsed = z.array(AttachmentSchema).parse(data.attachments);
+    const parsed = parsaAttachments(data.attachments);
     return this.berikaMedInaktuell(parsed);
   }
 
@@ -855,7 +865,7 @@ export class AirtableAdapter implements DataSourceAdapter {
    */
   async fetchGemensammaBilagor(): Promise<Attachment[]> {
     const data = await callEdgeFunction<{ attachments: unknown }>('get-event-attachments');
-    const parsed = z.array(AttachmentSchema).parse(data.attachments);
+    const parsed = parsaAttachments(data.attachments);
     // [TASK-309.6] Defensivt anropad (get-event-attachments/index.ts filtrerar
     // denna gren på `Räckvidd IN (Kurstyp, Alla event)` — generate-event-
     // attachment sätter ALDRIG `Räckvidd`, så en Event-mallad rad förekommer
@@ -1022,7 +1032,7 @@ export class AirtableAdapter implements DataSourceAdapter {
     // invalideringen (mutations-hooken) refetchar listan direkt efteråt, och
     // DEN vägen (`fetchEventAttachments`) härleder `inaktuell` riktigt. Att
     // gissa värdet här hade riskerat att glida isär från den härledningen.
-    return { ...AttachmentSchema.parse(data.attachment), inaktuell: null };
+    return { ...parsaAttachment(data.attachment), inaktuell: null };
   }
 
   /**

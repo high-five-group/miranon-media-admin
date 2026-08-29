@@ -41,6 +41,21 @@ import type { AttachmentClassValue, AttachmentScopeValue } from '../types/Status
  * nivålös familj (tom-nivå-regeln) — LENIENT `string | null` på läsvägen
  * (INTE ett strikt enum), samma P22-motiverade val som `Event.schema.ts`s
  * `kursfamilj`/`kursniva` redan gör för samma underliggande värdedomän.
+ *
+ * [OMBYGGD, TASK-338.3, ADR-125 § Beslut 1] Räckvidden är inte längre "exakt
+ * EN av tre" utan `Event` ELLER `Gemensam` — och `Gemensam` är ett FILTER
+ * över TRE valfria axlar: `kursfamilj`, `kursniva` och det nya `plats`.
+ * Axlarna kombineras med OCH, en tom axel begränsar inte, och noll satta
+ * axlar betyder alla event. Läsvägen normaliserar legacy-värdena
+ * (`Kurstyp`/`Alla event`) till `Gemensam` INNAN domänformen når hit — se
+ * `../schemas/Attachment.schema.ts` § `normaliseraRaAttachment`, så ingen
+ * konsument av denna modell behöver känna till att de har existerat.
+ *
+ * MATCHNINGEN BOR INTE HÄR OCH INTE I NÅGON KONSUMENT (ADR-057, kortets
+ * DoD #6): vilka event en gemensam bilaga faktiskt gäller avgörs SERVER-SIDE
+ * av `supabase/functions/_shared/rackvidd-matchning.ts`. Fälten nedan är
+ * uteslutande PRESENTATIONSUNDERLAG — det klienten renderar som badge och
+ * sammanfattningsrad, aldrig något den filtrerar på.
  */
 export interface Attachment {
   id: string;
@@ -65,12 +80,27 @@ export interface Attachment {
    * (→ `Event-mallad`) vid radskapelse — klienten läser, skriver aldrig.
    */
   dokumentklass: AttachmentClassValue | null;
-  /** Räckvidd (TASK-275.2, ADR-118) — se docblocken ovan. */
+  /** Räckvidd (TASK-275.2 → TASK-338.3, ADR-125 § 1) — se docblocken ovan.
+   *  `Event` | `Gemensam` | `null` (okänt/saknat värde). */
   rackvidd: AttachmentScopeValue | null;
-  /** Kursfamilj vid räckvidd Kurstyp; `null` annars (se docblocken ovan). */
+  /** Kursfamilj-AXELN vid räckvidd Gemensam; `null` = axeln begränsar inte. */
   kursfamilj: string | null;
-  /** Kursnivå vid räckvidd Kurstyp; `null` för nivålösa familjer ELLER utanför Kurstyp. */
+  /** Kursnivå-AXELN vid räckvidd Gemensam; `null` = hela familjen (tom-nivå-regeln). */
   kursniva: string | null;
+  /**
+   * [TASK-338.3, ADR-125 § Beslut 1] PLATS-AXELN — `null` när bilagan inte är
+   * platsbunden (det vanliga). Speglar `mapAttachmentRecord`
+   * (`_shared/attachments.ts`) exakt: `id` är Platser-radens record-ID,
+   * `namn` kommer ur `Platsnamn`-lookupen så klienten slipper ett eget
+   * uppslag mot Platser.
+   *
+   * `namn` KAN vara tomt utan att `id` försvinner — lookupen kan halka efter
+   * en nyss skapad länk, och ett `plats: null` hade då sett ut som "ingen
+   * plats" i stället för "namnet är inte läst än". Badgen/sammanfattningen
+   * faller tillbaka på ett neutralt uttryck i det läget i stället för att
+   * rendera en tom pill (se `rackviddsText.ts`).
+   */
+  plats: { id: string; namn: string } | null;
   /**
    * [TASK-309.6, ADR-125 § 5] Bara satt för Dokumentklass 'Event-mallad' —
    * Airtables optionsnamn ('Bekräftelsebilaga'/'Deltagarinformation'), eller
@@ -132,15 +162,31 @@ export interface Attachment {
 export interface UploadAttachmentInput {
   /** Airtable-record-ID (rec-format) för eventet bilagan hör till, eller
    *  `null` för en genuint event-lös gemensam uppladdning (räckviddsläget,
-   *  giltigt endast för `rackvidd` Kurstyp/Alla event). */
+   *  giltigt endast för `rackvidd` Gemensam). */
   eventId: string | null;
   file: File;
   /** Räckvidd — default Event (oförändrat beteende) om utelämnad. */
   rackvidd?: AttachmentScopeValue;
-  /** Kursfamilj — krävs av EF:en när `rackvidd` är Kurstyp. */
+  /** Kursfamilj-axeln — VALFRI sedan TASK-338.3 (var obligatorisk för den
+   *  rivna Kurstyp-räckvidden). Utelämnad = axeln begränsar inte. */
   kursfamilj?: string;
-  /** Kursnivå — valfri; tom/utelämnad = hela familjen (tom-nivå-regeln). */
+  /** Kursnivå-axeln — valfri; tom/utelämnad = hela familjen (tom-nivå-regeln).
+   *  EF:en avvisar en nivå UTAN familj ("en halv tanke", AttachmentScopeInputSchema). */
   kursniva?: string;
+  /**
+   * [TASK-338.3, ADR-125 § Beslut 1] PLATS-axeln — ett Platser-RECORD-ID
+   * (`rec…`), aldrig ett platsnamn. Utelämnad = axeln begränsar inte.
+   *
+   * ID OCH INTE NAMN, av två skäl som båda är mätta någon annanstans i
+   * huset: matchningen server-side jämför länkens record-ID
+   * (`_shared/rackvidd-matchning.ts` § Plats), och en namnjämförelse hade
+   * varit drift-känslig av exakt det skäl ADR-125 § 8 avvisar
+   * Ort-matchning. EF:en existenskontrollerar dessutom ID:t mot
+   * Platser-tabellen INNAN skrivning (`platsFinns`) — en felstavad
+   * referens hade annars skrivits som en TOM länk av Airtable och gjort
+   * bilagan synlig på ALLA event i stället för en plats.
+   */
+  plats?: string;
 }
 
 /**
