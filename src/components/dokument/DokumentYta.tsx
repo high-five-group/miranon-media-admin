@@ -661,12 +661,32 @@ const LISTA_SYNLIGA_RADER = 4;
  * ENDAST när (a) noll RIKTIGA rader finns i DOM (bara tomt-lägets
  * placeholder-`<li>`) OCH (b) ingen mätning — varken PRECIS eller ESTIMAT —
  * någonsin skett i detta komponent-liv (`senastUppmattRadhojd.current ===
- * null`). I PRAKTIKEN bara nåbar i `GemensamtLage` vid ett events ALLRA
- * FÖRSTA rendering med noll delade dokument: `DokumentLista` har alltid
- * minst `MALLAR.length + GENERATORER.length === 3` RIKTIGA rader synliga i
- * 'alla' (default-filtret) och har därför redan skrivit
- * `senastUppmattRadhojd` långt innan 'bilaga' någonsin kan visa 0
- * (`bilagaKanMataExakt`s docblock nedan).
+ * null`).
+ *
+ * NÅBAR I BÅDA LISTORNA (rättat i TASK-309.39 — stycket sade tidigare
+ * `GemensamtLage` ENSAMT, och `harMattAlls`-nödmätningen gjorde det
+ * falskt):
+ *
+ *   • `GemensamtLage`, vid ett events ALLRA FÖRSTA rendering med noll
+ *     delade dokument. Oförändrat sedan TASK-309.24.
+ *   • `DokumentLista`, vid SIDLADDNING direkt i `?typ=bilaga` på ett event
+ *     UTAN bilagor. Filtret visar då bara tomt-lägets placeholder-`<li>`
+ *     (`antalSynliga === 0`), och eftersom komponenten monteras MED det
+ *     filtret har den aldrig renderat i 'alla' — `senastUppmattRadhojd` är
+ *     alltså `null` när nödmätningen kör. Mätt 2026-08-29: 398 px, alltså
+ *     `LISTA_FALLBACK_RADHOJD × 4 + kantjustering`.
+ *
+ * DET GAMLA PÅSTÅENDET VAR SANT FÖR SIN EGEN KOD, INTE FÖR DENNA. Det löd
+ * att `DokumentLista` *"har alltid minst `MALLAR.length +
+ * GENERATORER.length === 3` RIKTIGA rader synliga i 'alla' (default-filtret)
+ * och har därför redan skrivit `senastUppmattRadhojd`"*. Den slutledningen
+ * förutsätter att komponenten NÅGON GÅNG renderat i 'alla' — vilket den
+ * inte gör när `?typ=` redan står på 'bilaga' vid mount. Före 309.39 var
+ * det ofarligt eftersom höjden då inte sattes ALLS (det var symptom S1);
+ * nödmätningen gör vägen nåbar, och därmed påståendet fel.
+ *
+ * Test: `dokument-lista-hojdlas-tidpunkt.acceptance.test.ts` § "NIVÅ 3 är
+ * nåbar även i DokumentLista".
  *
  * [RUNDA 2, ANDRA VARVET — review-fynd, orkestrerarens/Marcus mandat
  * 2026-08-26] FÖRSTA VARVETS TAL (155 för mobil) VAR FEL VAL, INTE FEL
@@ -703,6 +723,38 @@ const LISTA_SYNLIGA_RADER = 4;
  * praktiken — bokfört öppet, inte gömt.
  */
 const LISTA_FALLBACK_RADHOJD = 99;
+
+/**
+ * En rads EGEN separatorlinje i px — `border-bottom-width`, läst ur
+ * renderad stil, aldrig antagen.
+ *
+ * ATT DEN SITTER PÅ `border-bottom` OCH INTE PÅ `border-top` ÄR EN MÄTT
+ * EGENSKAP HOS TAILWIND 4, INTE EN SMAKSAK (TASK-309.39, 2026-08-29):
+ * `divide-y` genererar i v4 `:where(& > :not(:last-child)) {
+ * border-bottom-width: … }` — linjen tillhör alltså raden OVANFÖR
+ * mellanrummet. I v3 var samma verktygsklass `border-top-width` på
+ * `& > * + *`, alltså raden NEDANFÖR. Uppmätt i vår faktiska bundle
+ * (`tailwindcss@4.2.2`): varje `<li>` bär `border-top: 0px` och
+ * `border-bottom: 1px`.
+ *
+ * SKILLNADEN ÄR HELA TASK-309.39s ANDRA SYMPTOM. Med v3:s semantik hade
+ * linjen mellan rad 4 och rad 5 tillhört rad 5 och legat utanför en box
+ * som slutar vid rad 4:s underkant — helt utan avdrag. Med v4:s semantik
+ * ligger den INNANFÖR rad 4:s egen `getBoundingClientRect().bottom`, och
+ * en höjd satt till exakt det spannet reserverar plats åt just den linje
+ * som INTE ska synas.
+ *
+ * Läses per rad i stället för en gång för `<ul>`: linjen finns bara på
+ * `:not(:last-child)` plus (via `sistaRadenBarLinje`) på sista raden i
+ * 1–3- och 5+-lägena, så DEN AKTUELLA radens värde är det enda som säger
+ * något — och 0 är ett giltigt, meningsfullt svar (fjärde raden ÄR sista,
+ * exakt-fyra-fallet). `Number.parseFloat` av ett tomt/ogiltigt värde ger
+ * `NaN`, som hade förgiftat hela höjduttrycket tyst; `|| 0` gör den
+ * degraderingen explicit och ofarlig.
+ */
+function separatorBredd(rad: Element): number {
+  return Number.parseFloat(getComputedStyle(rad).borderBottomWidth) || 0;
+}
 
 /**
  * MÄTER listans låsta höjd mot RENDERAD geometri (TASK-309.24 — filhuvudets
@@ -787,6 +839,43 @@ const LISTA_FALLBACK_RADHOJD = 99;
  * annars står den kvar vid sitt senaste värde. Det ÄR poängen med regel 5
  * (filterbyte ändrar aldrig listans bounding box).
  *
+ * ── EN OMÄTT LISTA ÄR ALDRIG ETT GILTIGT VILOLÄGE (TASK-309.39) ──
+ *
+ * "Står kvar vid sitt senaste värde" förutsätter att ETT senaste värde
+ * finns. Gjorde det inte det, stod listan kvar vid `null` — och en `<ul>`
+ * utan `style.height` följer sitt innehåll. `harMattAlls` stänger exakt
+ * det hålet: när INGEN nivå ännu satt en höjd mäter effekten oavsett vad
+ * källvillkoren säger, och den nödmätningen sätter aldrig
+ * `harForetradesMatt` (den är ett dugligt första-värde, inte ett
+ * företräde — 'bilaga' och 'alla' får förfina det precis som förut).
+ *
+ * HÅLET VAR NÅBART PÅ TVÅ VÄGAR, BÅDA MÄTTA 2026-08-29:
+ *
+ *   1. `?typ=bilaga` på ett event med FÄRRE än fyra bilagor.
+ *      `foretradesMatbar` kräver `rader.length >= LISTA_SYNLIGA_RADER`,
+ *      `reservMatbar` kräver filtret 'alla' — båda falska. Marcus nådde
+ *      det genom att växla räckvidd: nuqs-nyckeln `typ` överlever bytet
+ *      delade ↔ event medan komponenten monteras OM (alla refs och
+ *      `hojd`-state nollställs), och räckviddsläget har ingen filterrad
+ *      som visar att filtret ens är satt. Uppmätt utfall före fixen:
+ *      listan stod på 200 px (två raders naturliga höjd) i stället för
+ *      fyra raders låsta, i VARJE ram — inte "sent låst" utan aldrig låst.
+ *      Marcus beskrivning *"några sekunder senare ligga låst"* är
+ *      låsningen som inträffar först när något ANNAT gör filtret mätbart.
+ *   2. Sidladdning i `?typ=mall` eller `?typ=generator`. `MALLAR` har två
+ *      poster och `GENERATORER` en, så de kan ALDRIG nå fyra rader —
+ *      låsningen uteblev permanent, utan att någon växling behövdes.
+ *
+ * VÄG 2 ÄR SKÄLET ATT FIXEN SITTER HÄR OCH INTE I RÄCKVIDDSVÄXLINGEN. Att
+ * i stället nolla `?typ` när räckvidden byts hade tagit väg 1 och lämnat
+ * väg 2 öppen — och det vore dessutom en produktändring (filtret skulle
+ * tyst kastas om), inte en rotorsaksfix. Frågan om `?typ` bör överleva ett
+ * räckviddsbyte är verklig men separat, och ligger hos Marcus.
+ *
+ * Test: `dokument-lista-hojdlas-tidpunkt.acceptance.test.ts` § S1 samplar
+ * ram för ram och fäller på FÖRSTA olåsta ramen — inte på ett stickprov
+ * efteråt, som inte kan se ett tidsfönster.
+ *
  * `getBoundingClientRect()` på RADERNA, aldrig `offsetTop`/`clientHeight`:
  * den senare rundar till HELA pixlar (mätt, TASK-309.24 — en 1 px-diff mot
  * `tests/acceptance/dokument-rackviddsval.acceptance.test.ts`s egen
@@ -795,10 +884,37 @@ const LISTA_FALLBACK_RADHOJD = 99;
  * gör den scroll-position-OBEROENDE trots att `getBoundingClientRect` är
  * viewport-rymden: rullar listan S pixlar flyttar sig BÅDA elementens
  * rektanglar med S, och S tar ut sig själv i subtraktionen
- * (`fjarde.bottom - forsta.top`). Ingen egen kantlinje behöver uteslutas
- * för hand här: `berakaListgeometri`s `sistaRadenBarLinje` är redan FALSK
- * precis när fjärde raden är den sista OCH exakt fyller platserna — det är
- * den enda situationen fjärde raden annars skulle fått en egen `border-b`.
+ * (`fjarde.bottom - forsta.top`).
+ *
+ * ── DEN FJÄRDE SEPARATORN LIGGER UTANFÖR KANTEN (TASK-309.39) ──
+ *
+ * Spannet ovan är INTE höjden. Fjärde radens egen `border-bottom` dras
+ * bort (`separatorBredd`, se dess docblock för Tailwind 4-mätningen som
+ * bär hela resonemanget) innan `kantjustering` läggs på.
+ *
+ * DETTA STYCKE SADE TIDIGARE MOTSATSEN, OCH DET VAR FEL — inte slarvigt
+ * skrivet, utan byggt på ett antagande om `divide-y` som aldrig prövades:
+ * *"Ingen egen kantlinje behöver uteslutas för hand här: `sistaRadenBarLinje`
+ * är redan FALSK precis när fjärde raden är den sista …"*. Den meningen
+ * resonerar enbart om `[&>li:last-child]:border-b`, och missar att
+ * `divide-y` ger fjärde raden en `border-bottom` så fort en FEMTE rad
+ * följer. Marcus såg följden i prod 2026-08-29: *"vi har sagt att listan
+ * ska sluta precis över den nedersta separatorn men det gör den inte just
+ * nu, jag ser den nedersta separatorn."*
+ *
+ * MÄTT FÖRE FIXEN (acceptance-riggen, 1280×720, fem rader): innehållsytan
+ * slutade vid 397 px och fjärde radens linje upptog 396→397 px — alltså
+ * ytans sista synliga pixelrad. Avdraget flyttar kanten till 396 px, så
+ * linjen hamnar precis utanför. Vid EXAKT fyra rader är fjärde raden
+ * `:last-child`, bär ingen linje, och avdraget blir 0 — höjden är
+ * oförändrad och 1 px-scroll-invarianten (AC #5) rörs inte. Bieffekten är
+ * god och avsiktlig: fyra och fem rader delar nu EXAKT samma bounding box
+ * i stället för att skilja sig med linjens bredd.
+ *
+ * NIVÅ 2 gör samma avdrag av samma skäl — `radhojd × 4` innehåller fyra
+ * separatorer när den mätta raden bär sin egen, men bara TRE av dem ligger
+ * MELLAN rader. NIVÅ 3 gör inget avdrag: den läser `senastUppmattRadhojd`,
+ * som NIVÅ 1/2 redan skrivit separator-fri.
  *
  * `ResizeObserver` på RADERNA (upp till fyra, eller färre om listan har
  * färre), inte på `<ul>` självt — samma val som `BlockDialog.tsx`s
@@ -834,13 +950,23 @@ function useLastaListhojd(
   const harForetradesMatt = useRef(false);
   // NIVÅ 3:s spärr (runda 2) — se filhuvudets "PRECISIONEN ÄR MONOTON"-stycke.
   const harPreciserMatt = useRef(false);
+  // [TASK-309.39] NÖDMÄTNINGENS spärr — se filhuvudets "EN OMÄTT LISTA ÄR
+  // ALDRIG ETT GILTIGT VILOLÄGE"-stycke. Sant så fort NÅGON nivå satt en
+  // höjd; det är det enda som skiljer "ingen mätkälla är giltig, men vi har
+  // redan ett värde" (stå kvar — regel 5) från "ingen mätkälla är giltig och
+  // vi har INGET värde" (mät ändå — annars följer listan innehållet).
+  const harMattAlls = useRef(false);
   // NIVÅ 2/3:s minne — senast uppmätt ENSKILD radhöjd (inte den slutliga
   // fyra-raders-höjden), skriven av VILKEN nivå som helst som lyckats mäta
   // riktiga rader. Grunden för NIVÅ 3:s förstahandsval.
   const senastUppmattRadhojd = useRef<number | null>(null);
 
   useLayoutEffect(() => {
-    if (!foretradesMatbar && !(reservMatbar && !harForetradesMatt.current)) return;
+    // [TASK-309.39] NÖDMÄTNING — se filhuvudets "EN OMÄTT LISTA ÄR ALDRIG
+    // ETT GILTIGT VILOLÄGE"-stycke. Villkoret nedan är oförändrat för allt
+    // UTOM det läge där ingen höjd alls existerar ännu.
+    const nodmatning = !harMattAlls.current;
+    if (!foretradesMatbar && !(reservMatbar && !harForetradesMatt.current) && !nodmatning) return;
     // Läses aldrig — `ommatningsSignal` finns i beroendelistan uteslutande
     // för att TVINGA en ommätning när kanoniska raders innehåll (`rader`)
     // ändras (nya/borttagna bilagor kan byta ut vilka DOM-noder som är
@@ -872,12 +998,16 @@ function useLastaListhojd(
 
       if (antalRiktigaRader >= LISTA_SYNLIGA_RADER) {
         // NIVÅ 1 — PRECIS.
+        const fjardeEl = barn[LISTA_SYNLIGA_RADER - 1];
         const forsta = barn[0].getBoundingClientRect();
-        const fjarde = barn[LISTA_SYNLIGA_RADER - 1].getBoundingClientRect();
-        const spann = fjarde.bottom - forsta.top;
+        const fjarde = fjardeEl.getBoundingClientRect();
+        // [TASK-309.39] Fjärde radens EGEN separator räknas ALDRIG in — se
+        // filhuvudets "DEN FJÄRDE SEPARATORN LIGGER UTANFÖR KANTEN"-stycke.
+        const spann = fjarde.bottom - forsta.top - separatorBredd(fjardeEl);
         setHojd(spann + kantjustering);
         senastUppmattRadhojd.current = spann / LISTA_SYNLIGA_RADER;
         harPreciserMatt.current = true;
+        harMattAlls.current = true;
         if (foretradesMatbar) harForetradesMatt.current = true;
         return;
       }
@@ -886,13 +1016,23 @@ function useLastaListhojd(
       if (harPreciserMatt.current) return;
 
       let radhojd: number;
+      // [TASK-309.39] Den mätta radens EGEN separator, av samma skäl som
+      // NIVÅ 1 drar bort den fjärdes: en `radhojd` mätt på en rad som BÄR
+      // sin linje innehåller fyra linjer när den multipliceras med fyra,
+      // men bara TRE av dem ligger mellan rader. Hålls NOLL i NIVÅ 3 — där
+      // finns ingen riktig rad, och `senastUppmattRadhojd` bär redan ett
+      // separator-fritt tal (NIVÅ 1/2 skriver det efter avdraget).
+      let radensSeparator = 0;
       if (antalRiktigaRader > 0) {
         // NIVÅ 2 — ESTIMAT: MAX av de riktiga radernas EGNA höjd (se
         // filhuvudets "VARFÖR MAX"-stycke).
         radhojd = 0;
         for (let i = 0; i < barn.length; i++) {
           const h = barn[i].getBoundingClientRect().height;
-          if (h > radhojd) radhojd = h;
+          if (h > radhojd) {
+            radhojd = h;
+            radensSeparator = separatorBredd(barn[i]);
+          }
         }
       } else {
         // NIVÅ 3 — FALLBACK: senast kända radhöjd, annars den dokumenterade
@@ -901,7 +1041,8 @@ function useLastaListhojd(
         radhojd = senastUppmattRadhojd.current ?? LISTA_FALLBACK_RADHOJD;
       }
       senastUppmattRadhojd.current = radhojd;
-      setHojd(radhojd * LISTA_SYNLIGA_RADER + kantjustering);
+      harMattAlls.current = true;
+      setHojd(radhojd * LISTA_SYNLIGA_RADER - radensSeparator + kantjustering);
     };
     mat();
 

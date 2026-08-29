@@ -387,16 +387,48 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
     // underkant 2 px för tidigt), så ul:ens EGEN border-box är nu MEDVETET
     // 2 px större än radspannet — `clientHeight` (som utesluter border) är
     // det jämförbara talet.
+    //
+    // [TASK-309.39] FJÄRDE RADENS EGEN SEPARATOR DRAS BORT — och det är
+    // testets förväntan som ändrades, inte produktregeln.
+    //
+    // Marcus regel ovan säger *"klipps exakt precis över separatorn"*.
+    // Fram till 309.39 mätte detta test `fjarde.bottom - forsta.top` rakt
+    // av, och det spannet INKLUDERAR fjärde radens `border-bottom`:
+    // Tailwind 4:s `divide-y` genererar `:where(& > :not(:last-child))
+    // { border-bottom-… }` (verifierat i `tailwindcss/dist/lib.js`), så
+    // linjen tillhör raden OVANFÖR mellanrummet — inte raden nedanför som
+    // i Tailwind 3. Att jämföra `clientHeight` mot det spannet krävde
+    // alltså att boxen slutade UNDER linjen i stället för över den, vilket
+    // är precis vad Marcus såg i prod 2026-08-29: *"listan ska sluta precis
+    // över den nedersta separatorn men det gör den inte just nu, jag ser
+    // den nedersta separatorn."*
+    //
+    // Mätt vid övergången (denna fixtur, 9 rader): `clientHeight` gick
+    // 396 → 395 medan det gamla `fyraRader` stod kvar på 396 — differensen
+    // är exakt linjens 1 px. `fyraRader` nedan drar därför bort samma term
+    // som `useLastaListhojd`s NIVÅ 1 gör, och testet mäter åter samma sak
+    // som produktregeln säger.
+    //
+    // Vid EXAKT fyra rader är fjärde raden `:last-child`, bär ingen
+    // `divide-y`-linje, och avdraget blir 0 — invarianten gäller alltså
+    // oförändrat i det gränsfallet (se `dokument-lista-hojdlas-tidpunkt`s
+    // negativa kontroll).
     const geometri = await rullande.evaluate((ul) => {
       const items = Array.from(ul.children) as HTMLElement[];
       const forsta = items[0].getBoundingClientRect();
       const fjarde = items[3].getBoundingClientRect();
+      const fjardeSeparator = Number.parseFloat(getComputedStyle(items[3]).borderBottomWidth) || 0;
       return {
         listHojd: ul.clientHeight,
-        fyraRader: fjarde.bottom - forsta.top,
+        fyraRader: fjarde.bottom - forsta.top - fjardeSeparator,
+        fjardeSeparator,
         rullar: ul.scrollHeight > ul.clientHeight,
       };
     });
+    // Linjen FINNS i denna fixtur (nio rader, så fjärde raden är inte
+    // sista) — utan detta hade testet kunnat passera på att avdraget var
+    // noll av fel skäl.
+    expect(geometri.fjardeSeparator).toBeGreaterThan(0);
     expect(geometri.listHojd).toBeCloseTo(geometri.fyraRader, 0);
     expect(geometri.rullar).toBe(true);
 
