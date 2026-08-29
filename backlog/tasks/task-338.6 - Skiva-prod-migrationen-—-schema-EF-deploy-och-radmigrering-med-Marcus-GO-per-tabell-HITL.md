@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-29 08:04'
-updated_date: '2026-08-29 11:47'
+updated_date: '2026-08-29 12:08'
 labels:
   - ready-for-human
 dependencies:
@@ -105,30 +105,36 @@ Token: Airtable-MCP-serverns PAT (`~/.claude.json` → `mcpServers.airtable.env.
 
 ## § Kommandoföljd Marcus kör mot PROD — DENNA SEKTION ÄR DEN ENDA GÄLLANDE
 
-(Tidigare versioner av denna sektion använde ett felaktigt kombinerat `--utfor <bas-id>`-läge som inte längre finns — kört som skrivet där gav `ArgError`/exit 2. Denna version är korrigerad och testad mot den faktiska CLI-formen.)
+(Tidigare versioner: en använde ett felaktigt kombinerat `--utfor <bas-id>`-läge som inte längre finns (rättat runda 3). Nästa version saknade steg 0 nedan — `resolveTargetBaseId()` körs OVILLKORLIGT för ALLA lägen, inklusive `--kontrollera`, så steg 1/4/8 utan steg 0 hade fallerat med exit 1 INNAN någon läsning skedde (review-runda 4). Beslut på Marcus mandat: guarden förblir strikt — en LÄSNING mot prod är fortfarande prod-ÅTKOMST och ska inte vara billigare att trigga än en skrivning. Denna version har steg 0 och är verifierad mot en isolerad kopia av skriptet med injicerad `fetch` — se § Verifiering nedan.)
 
-**Förkrav före steg 3:** `AIRTABLE_SCHEMA_TOKEN` måste vara en PAT med scopet `schema.bases:write` (utöver `schema.bases:read`) mot prod-basen — se § "PAT-scope-kravet" ovan för distinktionen mot basens `permissionLevel`, och `atkomst-och-nycklar.md` § "Prod-deploy av bilagespåret" → (a) Prod-schemat för var den dedikerade PAT:en beskrivs. `STAGING_AIRTABLE_TOKEN` behöver `data.records:read+write` mot samma bas. Sätt BÅDA inline på kommandoraden — ALDRIG i `.env.seed` (den är staging-scopad).
+**Steg 0 — kör EN gång per terminalsession, INNAN steg 1:**
 
-`--kontrollera`/`--utfor-schema`/`--utfor-rader` är alla snabba (sekunder) och får gå via `!`-prefixet. EF-deploy-steget (5) INTE — eget terminalfönster, CLAUDE.md § Prod-EF-deploy, kommandot `bash scripts/fas4-prod-deploy.sh --deploya <supabase-prod-ref>` (refen står i `.prod-ref-policy.conf`s `PROD_REF_PROD` — skrivs INTE ut här i klartext: `scripts/deny-prod-ref.sh` fäller varje Bash-kommando som nämner den, oavsett om det är en körning eller bara dokumentation som citerar den, se § Premiss-pass punkt 1).
+```
+export AIRTABLE_PROD_GODKAND_AV_MARCUS=app8uGPrVCVOm6LfD
+export AIRTABLE_SCHEMA_TOKEN="<prod-scopad-PAT-med-schema.bases:write>"
+export STAGING_AIRTABLE_TOKEN="<samma-prod-scopade-PAT>"
+```
+
+Detta ÄR Marcus GO för ÅTKOMST till prod-basen (både läsning och skrivning) — den gäller för HELA den terminalsessionen (varje `node scripts/…`-anrop i samma fönster ärver den, ingen behöver upprepa den). Det är INTE detsamma som GO för SCHEMAT (steg 2, före steg 3) eller GO för RADERNA (steg 6, före steg 7) — de två förblir SEPARATA klartextbeslut i chatten, ADR-125 § 8. `AIRTABLE_SCHEMA_TOKEN` måste bära PAT-scopet `schema.bases:write` (utöver `schema.bases:read`) — EN ANNAN AXEL än basens `permissionLevel` (t.ex. "create"); se `atkomst-och-nycklar.md` § "TOKEN-FÄLLAN, mätt och rättad" för distinktionen och § "Prod-deploy av bilagespåret" → (a) Prod-schemat för var den dedikerade PAT:en beskrivs. Sätt ALDRIG någon av dessa tre i `.env.seed` (den är staging-scopad).
+
+**Terminalfönster-fällan:** `export` gäller bara DEN process/det fönster där det kördes. Steg 5 (EF-deploy) MÅSTE köras i ett EGET fönster (CLAUDE.md § Prod-EF-deploy) — gör resten av sekvensen (steg 6–8) i steg 0:s URSPRUNGLIGA fönster, inte det nya. Byter Marcus fönster av någon anledning: kör steg 0 igen där.
+
+`--kontrollera`/`--utfor-schema`/`--utfor-rader` är alla snabba (sekunder) och får gå via `!`-prefixet. EF-deploy-steget (5) INTE — eget terminalfönster, kommandot `bash scripts/fas4-prod-deploy.sh --deploya <supabase-prod-ref>` (refen står i `.prod-ref-policy.conf`s `PROD_REF_PROD` — skrivs INTE ut här i klartext: `scripts/deny-prod-ref.sh` fäller varje Bash-kommando som nämner den, se § Premiss-pass punkt 1).
 
 ```
 1) Läs planen mot prod (ändrar inget):
-   AIRTABLE_SCHEMA_TOKEN="<prod-scopad-PAT>" STAGING_AIRTABLE_TOKEN="<prod-scopad-PAT>" \
    node scripts/task-338-6-prod-migration.mjs --kontrollera app8uGPrVCVOm6LfD
    Läs: "Gemensam" finns: NEJ · Plats-fält finns: NEJ · Platsnamn-fält finns: NEJ ·
    radfördelning (N rader Kurstyp + M rader Alla event, "Att migrera: N+M").
 
 2) Marcus GO i klartext för SCHEMAT på tabellen Bilagor (ADR-125 § 8).
 
-3) Steg (i): schema — KRÄVER GO. Miljövariabeln sätts i SHELLET på DENNA rad, aldrig i .env:
-   AIRTABLE_SCHEMA_TOKEN="<prod-scopad-PAT>" STAGING_AIRTABLE_TOKEN="<prod-scopad-PAT>" \
-   AIRTABLE_PROD_GODKAND_AV_MARCUS=app8uGPrVCVOm6LfD \
+3) Steg (i): schema — KRÄVER steg 2:s GO (steg 0:s export bär redan åtkomsten):
    node scripts/task-338-6-prod-migration.mjs --utfor-schema app8uGPrVCVOm6LfD
    Förväntat: exit 0. Exit 4 = post-verifieringen visade att schemat INTE
    konvergerade — STOPPA, utred INNAN nästa steg.
 
 4) Verifiera schemat:
-   AIRTABLE_SCHEMA_TOKEN="<prod-scopad-PAT>" STAGING_AIRTABLE_TOKEN="<prod-scopad-PAT>" \
    node scripts/task-338-6-prod-migration.mjs --kontrollera app8uGPrVCVOm6LfD
    Läs: "Gemensam" finns: JA · Plats-fält finns: JA · Platsnamn-fält finns: JA.
    Fält-ID:na skriptets utdata rapporterar (skapade i steg 3) bokförs i
@@ -137,18 +143,16 @@ Token: Airtable-MCP-serverns PAT (`~/.claude.json` → `mcpServers.airtable.env.
 5) Steg (ii): EF-deploy — EGET terminalfönster, ALDRIG via !-prefixet (~10 min):
    bash scripts/fas4-prod-deploy.sh --kontrollera <supabase-prod-ref-ur-.prod-ref-policy.conf>
    bash scripts/fas4-prod-deploy.sh --deploya     <supabase-prod-ref-ur-.prod-ref-policy.conf>
+   (Tillbaka i steg 0:s URSPRUNGLIGA fönster för steg 6–8 — se § Terminalfönster-fällan.)
 
 6) Marcus GO i klartext för RADERNA (ADR-125 § 8, "irreversibelt i data").
 
-7) Steg (iii): radmigrering — KRÄVER GO:
-   AIRTABLE_SCHEMA_TOKEN="<prod-scopad-PAT>" STAGING_AIRTABLE_TOKEN="<prod-scopad-PAT>" \
-   AIRTABLE_PROD_GODKAND_AV_MARCUS=app8uGPrVCVOm6LfD \
+7) Steg (iii): radmigrering — KRÄVER steg 6:s GO:
    node scripts/task-338-6-prod-migration.mjs --utfor-rader app8uGPrVCVOm6LfD
    Förväntat: exit 0. Exit 4 = legacy-rader kvar EFTER migreringen — STOPP,
    utred (rör inget mer förrän orsaken är förstådd).
 
 8) Slutverifiering:
-   AIRTABLE_SCHEMA_TOKEN="<prod-scopad-PAT>" STAGING_AIRTABLE_TOKEN="<prod-scopad-PAT>" \
    node scripts/task-338-6-prod-migration.mjs --kontrollera app8uGPrVCVOm6LfD
    Läs: "Att migrera: 0" · "Redan Gemensam" = N+M (summan från steg 1).
 
@@ -159,11 +163,24 @@ Token: Airtable-MCP-serverns PAT (`~/.claude.json` → `mcpServers.airtable.env.
 
 Efter körning: bocka AC #1–#3 på detta kort och sätt Status via `task edit`.
 
+**§ Verifiering (review-runda 4) — hur ovanstående kommandorader kontrollerades UTAN att röra någon bas:** en isolerad körning av det RIKTIGA skriptet (dynamisk import, ingen kopiering av logiken) med `globalThis.fetch` MONKEY-PATCHAD till en lokal, minnesresident Airtable-fejk INNAN skript-modulen laddades — så att INGEN riktig nätverksanrop kan uppstå oavsett vad skriptet gör internt (granskarens 401-miss i förra rundan berodde på att ett verkligt anrop nådde `api.airtable.com`; denna metod utesluter det strukturellt, inte bara av försiktighet). Fem scenarier kördes:
+
+| Scenario | argv | Steg 0 satt? | Utfall |
+|---|---|---|---|
+| Bugreproduktion | `--kontrollera app8uGPrVCVOm6LfD` | NEJ | exit 1, **0** fetch-anrop — matchar exakt granskarens fynd |
+| Steg 1/4/8 | `--kontrollera app8uGPrVCVOm6LfD` | JA | 2 fetch-anrop (stubbade), fullständig rapport, exit 0 |
+| Steg 3 | `--utfor-schema app8uGPrVCVOm6LfD` | JA | choice + två fält skapade, "konvergerat: JA", exit 0 |
+| Steg 7 (utan föregående steg 3, egen process) | `--utfor-rader app8uGPrVCVOm6LfD` | JA | `GuardError` — "kör --utfor-schema FÖRST", exit 1 (korrekt, inte en bugg) |
+| Steg 7 (schema förseedat som redan migrerat) | `--utfor-rader app8uGPrVCVOm6LfD` | JA | 2 rader migrerade, "konvergerat: JA", exit 0 |
+
+Ingen kod ändrad denna runda — endast kortets notes, per koordinatorns explicita instruktion.
+
 ## Granskningshistorik (PR #2097)
 
 | Runda | Granskad SHA | Risk | Fynd → åtgärd |
 |---|---|---|---|
 | 1 | `e0ddc1fe` | hög | 5 fynd: Platsnamn-body-formen (ERROR, fixad runda 2), --utfor-split (WARNING, fixad runda 2), fail-closed (WARNING, fixad runda 2), config-idempotens (WARNING, fixad runda 2), PAT-scope+5xx-retry (INFO, bokförd runda 2) |
-| 2 | `984ce344` | medel | 3 fynd: kortets kommandoföljd (ERROR, fixad DENNA runda), kvarleva-spårbarhet för createThrowawayAndDelete (WARNING, fixad DENNA runda), ci.yml-kommentardrift (INFO, fixad DENNA runda) |
-| 3 | (denna commit) | — | väntar granskning |
+| 2 | `984ce344` | medel | 3 fynd: kortets kommandoföljd (ERROR, fixad runda 3), kvarleva-spårbarhet för createThrowawayAndDelete (WARNING, fixad runda 3), ci.yml-kommentardrift (INFO, fixad runda 3) |
+| 3 | `3177b631` | medel | 1 fynd: kortets § Kommandoföljd saknade steg 0 (guard-export) — resolveTargetBaseId körs ovillkorligt för ALLA lägen, så steg 1/4/8 hade fallerat med exit 1 (ERROR, fixad DENNA runda, ENDAST notes — ingen kod) |
+| 4 | (denna commit) | — | väntar granskning |
 <!-- SECTION:NOTES:END -->
