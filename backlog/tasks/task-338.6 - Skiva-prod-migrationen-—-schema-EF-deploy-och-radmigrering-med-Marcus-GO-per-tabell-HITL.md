@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-29 08:04'
-updated_date: '2026-08-29 12:08'
+updated_date: '2026-08-29 15:23'
 labels:
   - ready-for-human
 dependencies:
@@ -183,4 +183,36 @@ Ingen kod ändrad denna runda — endast kortets notes, per koordinatorns explic
 | 2 | `984ce344` | medel | 3 fynd: kortets kommandoföljd (ERROR, fixad runda 3), kvarleva-spårbarhet för createThrowawayAndDelete (WARNING, fixad runda 3), ci.yml-kommentardrift (INFO, fixad runda 3) |
 | 3 | `3177b631` | medel | 1 fynd: kortets § Kommandoföljd saknade steg 0 (guard-export) — resolveTargetBaseId körs ovillkorligt för ALLA lägen, så steg 1/4/8 hade fallerat med exit 1 (ERROR, fixad DENNA runda, ENDAST notes — ingen kod) |
 | 4 | (denna commit) | — | väntar granskning |
+
+## § Steg (i) utförd mot prod 2026-08-29
+
+Körning: `node scripts/task-338-6-prod-migration.mjs --utfor-schema app8uGPrVCVOm6LfD` följt av `--kontrollera app8uGPrVCVOm6LfD` — **båda exit 0** (mätdata levererad av orkestreraren till bygg-agenten som bokförde detta, verbatim ur de två körningarna).
+
+Prod-bas: `app8uGPrVCVOm6LfD`
+- Bilagor-tabell: `tblevR1B54wFjp7QC`
+- Platser-tabell: `tblPeNLeeQ1IduGTK`
+- Räckvidd-choices EFTER: `Event, Kurstyp, Alla event, Gemensam` (optionen `Gemensam` tillagd)
+- Nytt länkfält `Plats` → `fldiRBrqROTJ7fnFs`
+- Nytt lookupfält `Platsnamn` → `fldFgcCtK8gRRm2m8`
+- Verifiering: `konvergerat: JA`, `Skrivningar: optionAdd=2 platsField=1 platsnamnField=1` (`optionAdd=2` = create+delete-paret för den kastbara raden, inte två tillagda choices — se `runSchema()` rad ~481)
+- Kastbar rad `rec5qoF9b2uBmNP3B` skapades och raderades korrekt (`--kontrollera` efteråt: `Gemensam-rader utan Namn/Event-länk: 0` — inga kvarlevor)
+
+**Marcus GO (2026-08-29), verbatim:** *"Du har ett GO från mig för steg 2 (schemaändringen)."* (ADR-125 § 8)
+
+`docs/reference/data-model.md` § Bilagor uppdaterad med prod-ID:na för `Plats`/`Platsnamn`; Räckvidd-choicens ID och Platsers auto-födda spegelfälts ID fångas INTE av migreringsskriptet (`runSchema()` läser aldrig tillbaka dem) — bokfört öppet i tabellen som en känd lucka, inte gissat.
+
+**AC #1 INTE bockad ännu** — kräver även fält-ID:n för choicen/spegelfältet dokumenterade (ovanstående lucka) och att steg (ii) EF-deploy + (iii) radmigrering är gjorda. Status kvarstår `To Do`.
+
+## § Steg (i) — de två återstående prod-ID:na kompletterade 2026-08-29
+
+`docs/reference/data-model.md` § Bilagor uppdaterad ovan sade att Räckvidd-choicen "Gemensam" och Platsers auto-födda spegelfälts ID inte kunde bokföras eftersom `scripts/task-338-6-prod-migration.mjs`s `runSchema()` aldrig fångar dem (choicen skapas via en kastbar rads typecast utan efterläsning; spegelfältet auto-föds av Airtable och skriptet frågar aldrig efter dess ID). Orkestreraren mätte de två saknade värdena separat via `describe_table` mot prod (`app8uGPrVCVOm6LfD`, tabell `tblevR1B54wFjp7QC`), på Marcus stående GO för prod-LÄSNING:
+
+- Räckvidd-choicen `Gemensam` → **`selsABHUcAQJqGd0M`**. Full choice-lista i prod: `seljRFJnazDELbE3C` (Event) · `selkHwo1c3WtQpBnC` (Kurstyp) · `seliEQKhV8i2KFTM0` (Alla event) · `selsABHUcAQJqGd0M` (Gemensam). **Not:** "Gemensam" fick färgen `blueLight2` medan de tre äldre choicesen alla har `grayLight2` — Airtables egen färgtilldelning vid typecast-skapelse, inte en avsiktlig färgsättning.
+- Platsers auto-födda spegelfält (invers av `Plats`) → **`fld1yaGrVppKh9fyh`**, läst ur `Plats`-fältets `options.inverseLinkFieldId`.
+
+Bonus mätt i samma svar: `Platsnamn`-lookupens `fieldIdInLinkedTable` i prod = `fld9CfDq4rqTAGGpw` (Platser.Namn). `Plats`-fältet har `prefersSingleRecordLink: false` i prod — bekräftar staging (`prefersSingleRecordLink: false`), vilket stänger denna kortsnots § Premiss-pass punkt 2 (uppdragsspecen sa `true`).
+
+`scripts/task-338-6-prod-migration.mjs`s tooling-lucka (`runSchema()` fångar aldrig choice-/spegelfälts-ID) kvarstår som ett verkligt fynd oberoende av att värdena nu är mätta för hand — bokfört i data-model.md, försvinner inte ur historiken.
+
+**AC #1 fortfarande INTE bockad** — kräver att steg (ii) EF-deploy och (iii) radmigrering också är gjorda. Status kvarstår `To Do`.
 <!-- SECTION:NOTES:END -->
