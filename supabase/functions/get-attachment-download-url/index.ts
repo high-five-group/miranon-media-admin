@@ -43,8 +43,9 @@
 // historiska rader, inte en serverbugg).
 //
 // [UTBYGGD, TASK-275.3, ADR-118] ÄGARSKAPS-GUARDEN OVAN GÄLLDE TIDIGARE
-// OVILLKORAT — och 403:ade därmed VARJE gemensam bilaga (Räckvidd Kurstyp/
-// Alla event) öppnad från ett ANNAT event än det den råkade laddas upp
+// OVILLKORAT — och 403:ade därmed VARJE gemensam bilaga (Räckvidd Gemensam,
+// eller legacy Kurstyp/Alla event) öppnad från ett ANNAT event än det den
+// råkade laddas upp
 // ifrån, trots att ADR-118 beslut 2 uttryckligen kräver att en sådan bilaga
 // SKA kunna öppnas från varje event unionen visar den på (eller från
 // räckviddsläget). Guarden är nu RÄCKVIDDSMEDVETEN (SAMMA mönster
@@ -60,12 +61,12 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { fetchAirtableRecord } from '../_shared/airtable-client.ts';
 import {
-  ATTACHMENT_SCOPE_ALLA_EVENT,
-  ATTACHMENT_SCOPE_KURSTYP,
+  arGemensam,
   BILAGOR_BUCKET_ID,
   BILAGOR_TABLE,
   buildStorageAnchor,
   isValidEventId as isValidRecordId,
+  normaliseraRackvidd,
   SIGNED_DOWNLOAD_URL_TTL_SECONDS,
 } from '../_shared/attachments.ts';
 import { requireUser } from '../_shared/auth.ts';
@@ -136,7 +137,8 @@ Deno.serve(async (req) => {
     //    `Event`s satthet (TASK-275.3, SAMMA mönster som
     //    delete-attachment/index.ts steg 2 — se den filens filhuvud för det
     //    fulla resonemanget kring VARFÖR):
-    //      - GEMENSAM bilaga (Räckvidd Kurstyp/Alla event): INGET
+    //      - GEMENSAM bilaga (Räckvidd Gemensam, eller legacy Kurstyp/
+    //        Alla event som normaliseras dit — TASK-338.2): INGET
     //        ägarskaps-guard alls. Per definition ska en gemensam bilaga
     //        kunna öppnas från VARJE event den gäller (unionen,
     //        get-event-attachments) ELLER från räckviddsläget (inget
@@ -151,8 +153,22 @@ Deno.serve(async (req) => {
     //        KRÄVS, ägarskaps-guarden gäller OFÖRÄNDRAT (samma beteende som
     //        före TASK-275.3 — regressionsskyddet: en Event-räckviddig
     //        bilaga nekas FORTFARANDE från fel event).
+    //      [TASK-338.2, ADR-125 § Beslut 1] Predikatet läser NU den delade
+    //      `arGemensam` efter `normaliseraRackvidd`, inte en egen
+    //      uppräkning av legacy-värdena. Utan den ändringen hade varje
+    //      bilaga med den NYA räckvidden (`Gemensam`) klassats som
+    //      Event-räckviddig och 403:ats från varje ANNAT event än det den
+    //      laddades upp ifrån — exakt den regression AC #2 i TASK-275.3
+    //      redan en gång fällde, återuppstånden genom ett nytt optionsnamn.
     const rackvidd = attachmentRecord.fields['Räckvidd'];
-    const isGemensam = rackvidd === ATTACHMENT_SCOPE_KURSTYP || rackvidd === ATTACHMENT_SCOPE_ALLA_EVENT;
+    const isGemensam = arGemensam(
+      normaliseraRackvidd({
+        rackvidd: typeof rackvidd === 'string' && rackvidd.length > 0 ? rackvidd : null,
+        kursfamilj: null,
+        kursniva: null,
+        platsIds: [],
+      }).rackvidd,
+    );
 
     if (!isGemensam) {
       if (eventId === null) {

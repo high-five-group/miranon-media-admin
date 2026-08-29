@@ -23,11 +23,15 @@
 // FAKTISKT laddade upp bytes till — annars finns ingenting att hitta på den
 // deriverade platsen och verifieringen faller.
 //
-// [TASK-275.2, ADR-118] RÄCKVIDDSPARAMETRARNA — SAMMA disciplin som upload-
-// attachment/index.ts (se den filens motsvarande stycke): valfria, strikt
-// Zod-validerade, `Event` förblir satt oavsett räckvidd. `create-attachment-
-// upload-ticket` (steg 1) rör INTE dessa — den skriver ingen Bilagor-rad,
-// bara denna (steg 2, radskapelsen) behöver dem.
+// [TASK-275.2, ADR-118 · UTBYGGT TASK-338.2, ADR-125 § Beslut 1]
+// RÄCKVIDDSPARAMETRARNA — SAMMA disciplin som upload-attachment/index.ts (se
+// den filens motsvarande stycke): valfria, strikt Zod-validerade, `Event`
+// förblir satt oavsett räckvidd. Nu FYRA parametrar: `plats` (Platser-
+// record-ID) är räckviddens tredje axel och existenskontrolleras mot
+// Platser-tabellen (`platsFinns`) innan raden skrivs. Legacy-värdena
+// `Kurstyp`/`Alla event` accepteras och sparas som `Gemensam`.
+// `create-attachment-upload-ticket` (steg 1) rör INTE dessa — den skriver
+// ingen Bilagor-rad, bara denna (steg 2, radskapelsen) behöver dem.
 //
 // IDEMPOTENS [TASK-183] — DETERMINISTISK nyckel, INTE ett klient-genererat
 // Idempotency-Key (skiljer sig från create-event/create-registration-
@@ -61,6 +65,7 @@ import {
   isValidAttachmentId,
   isValidEventId,
   mapAttachmentRecord,
+  platsFinns,
 } from '../_shared/attachments.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { requireUser } from '../_shared/auth.ts';
@@ -116,12 +121,14 @@ Deno.serve(async (req) => {
       return badRequest('Filen saknar namn.', corsHeaders);
     }
 
-    // [TASK-275.2] Räckviddsparametrarna — strikt Zod (AC #2), samma schema
-    // som upload-attachment/index.ts.
+    // [TASK-275.2 · UTBYGGT TASK-338.2] Räckviddsparametrarna — strikt Zod,
+    // SAMMA schema som upload-attachment/index.ts, nu inklusive Plats-axeln
+    // (ADR-125 § Beslut 1) och legacy-toleransen för Kurstyp/Alla event.
     const scopeParsed = AttachmentScopeInputSchema.safeParse({
       rackvidd: body?.rackvidd,
       kursfamilj: body?.kursfamilj,
       kursniva: body?.kursniva,
+      plats: body?.plats,
     });
     if (!scopeParsed.success) {
       return badRequest(
@@ -133,6 +140,17 @@ Deno.serve(async (req) => {
     const eventRecord = await fetchAirtableRecord(EVENTPLANERING_TABLE, eventId);
     if (!eventRecord) {
       return new Response(JSON.stringify({ error: 'Eventet hittades inte.' }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
+    // [TASK-338.2] PLATSEN FINNS-kontrollen — samma delade vakt som
+    // upload-attachment (se `platsFinns`, _shared/attachments.ts). Ligger
+    // FÖRE existenskontrollen av Storage-objektet av samma skäl som där:
+    // ett avvisat anrop ska falla på det billigaste ledet först.
+    if (scopeParsed.data.plats && !(await platsFinns(scopeParsed.data.plats))) {
+      return new Response(JSON.stringify({ error: 'Platsen hittades inte.' }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });

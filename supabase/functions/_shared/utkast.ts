@@ -20,6 +20,21 @@
 // generering (TASK-302.3). Mängden växer med ANTAL EVENT, inte med antal
 // förhandsgranskningar.
 //
+// [TASK-340.1, PRD `TASK-340` § A] UTKASTET ÄR INTE LÄNGRE BARA EN
+// FÖRHANDSVISNING — DET PROMOVERAS. Skarp generering kopierar utkastets
+// EXAKTA bytes till eventets prefix när klientens `kallhash` stämmer med
+// serverns omräkning (`_shared/promoveringsbeslut.ts`, `_shared/storage-
+// kopiera.ts`), i stället för att rendera om. Skälet är korrekthet, inte
+// hastighet: DocRaptor slumpar PDF:ens `/ID` per anrop, så en omrendering
+// ger BEVISLIGEN andra bytes än den fil Lotta granskade (research
+// `forhandsgranska-spara-atervand-bilageflodet-2026-08-29.md` § 2.3).
+// INVARIANTERNA ÄR OFÖRÄNDRADE: sökvägen är fortfarande `utkast/<eventId>/
+// <typ>.pdf` med `upsert: true` (hashen bärs i ANROPET, aldrig i
+// objektnamnet — ett namn som bar hashen hade brutit `ADR-124` beslut 2:s
+// "högst ETT utkast per event och typ"), och `rensaUtkast` städar precis
+// som förut EFTER en lyckad skarp skrivning — nu även efter en promovering,
+// eftersom utkastet DÅ är konsumerat.
+//
 // ÅTERANVÄNDER MEDVETET — ingen ny TTL, ingen ny bucket, ingen ny
 // eventId-valideringsform: `BILAGOR_BUCKET_ID` och
 // `SIGNED_DOWNLOAD_URL_TTL_SECONDS` (samma konstant `get-attachment-
@@ -64,13 +79,41 @@ interface SupabaseAdminLike {
         path: string,
         expiresIn: number,
       ): Promise<{ data: { signedUrl: string } | null; error: { message: string } | null }>;
+      // [TASK-340.1] `metadata.size` tillkom i den lästa ytan — `hittaUtkast`
+      // nedan behöver källobjektets storlek som RESERV när Storage-copyns
+      // eget svar inte rapporterar den (`_shared/storage-kopiera.ts`).
+      // Fältet är valfritt i typen: `rensaUtkast` läser bara `name`, och
+      // Storage returnerar `metadata: null` för mapp-poster.
       list(path: string): Promise<{
-        data: { name: string }[] | null;
+        data: { name: string; metadata?: { size?: number } | null }[] | null;
         error: { message: string } | null;
       }>;
       remove(paths: string[]): Promise<{ error: { message: string } | null }>;
     };
   };
+}
+
+/**
+ * [TASK-340.1] Utkastets sökväg — EN formel, tre anropare (`laggUtkast`
+ * skriver den, `hittaUtkast` läser den, `generate-event-attachment` kopierar
+ * FRÅN den vid promovering). Formen är `ADR-124` beslut 2:s ordagrant:
+ * `utkast/<eventId>/<typ>.pdf`, alltså högst ETT utkast per event och typ.
+ *
+ * VALIDERINGEN BOR HÄR, inte hos anroparen: `eventId` måste ha rec-formen
+ * och `typ` vara ett av de tre enum-värdena — samma "stängd uppsättning,
+ * ingen fri sträng i ett path-SEGMENT"-disciplin filhuvudet beskriver. Att
+ * lyfta ut den i en egen funktion gjorde INTE valideringen svagare: den
+ * kördes tidigare inuti `laggUtkast` och körs nu i varje anropare av denna,
+ * `laggUtkast` inräknad.
+ */
+export function byggUtkastPath(eventId: string, typ: UtkastTyp): string {
+  if (!isValidEventId(eventId)) {
+    throw new ValidationError('eventId must be an Airtable record ID (rec…)');
+  }
+  if (!isValidUtkastTyp(typ)) {
+    throw new ValidationError(`typ must be one of: ${UTKAST_TYPER.join(', ')}`);
+  }
+  return `utkast/${eventId}/${typ}.pdf`;
 }
 
 export interface UtkastResultat {
@@ -94,14 +137,7 @@ export async function laggUtkast(
   supabaseAdmin: SupabaseAdminLike,
   params: { eventId: string; typ: UtkastTyp; bytes: Uint8Array },
 ): Promise<UtkastResultat> {
-  if (!isValidEventId(params.eventId)) {
-    throw new ValidationError('eventId must be an Airtable record ID (rec…)');
-  }
-  if (!isValidUtkastTyp(params.typ)) {
-    throw new ValidationError(`typ must be one of: ${UTKAST_TYPER.join(', ')}`);
-  }
-
-  const path = `utkast/${params.eventId}/${params.typ}.pdf`;
+  const path = byggUtkastPath(params.eventId, params.typ);
 
   const { error: uploadError } = await supabaseAdmin.storage
     .from(BILAGOR_BUCKET_ID)
@@ -122,6 +158,71 @@ export async function laggUtkast(
 
   const utgar = new Date(Date.now() + SIGNED_DOWNLOAD_URL_TTL_SECONDS * 1000).toISOString();
   return { url: signed.signedUrl, utgar };
+}
+
+/** [TASK-340.1] Det befintliga utkastet för ETT event och EN typ. */
+export interface FunnetUtkast {
+  /** Objektets fulla nyckel i bucketen (`utkast/<eventId>/<typ>.pdf`). */
+  path: string;
+  /** Storleken i bytes ur `list()`s `metadata.size`, `null` om den saknas. */
+  storlek: number | null;
+}
+
+/**
+ * hittaUtkast — TASK-340.1, PRD `TASK-340` § A (c): *"saknas utkastet
+ * renderas tyst (degradering, aldrig fel)"*. Slår upp om
+ * `utkast/<eventId>/<typ>.pdf` FINNS just nu, och hämtar samtidigt dess
+ * storlek (reserv för `Storlek (bytes)` när Storage-copyns eget svar inte
+ * bär `metadata.size`).
+ *
+ * ANVÄNDER `list(prefix)` OCH INTE en HEAD/`download` — `list` är den enda
+ * lästa Storage-ytan denna fil redan bär (`rensaUtkast`), den hämtar INGA
+ * bytes, och den ger storleken på köpet. Prefixet innehåller som mest tre
+ * objekt (`UTKAST_TYPER`), så filtreringen i minnet är gratis.
+ *
+ * RETURNERAR `null` — kastar ALDRIG — när utkastet saknas ELLER när `list`
+ * fallerar. Skälet är kortets kontrakt: ett saknat/oläsbart utkast får
+ * ALDRIG fälla den skarpa genereringen, det ska bara leda till att vi
+ * renderar i stället. Samma best-effort-disciplin som `rensaUtkast` nedan,
+ * av samma skäl och med samma loggning. Formfel i `eventId`/`typ` är dock
+ * ett ANNAT slag av fel (programmerings-/klientfel) och propageras från
+ * `byggUtkastPath` som `ValidationError` — de tystas inte.
+ */
+export async function hittaUtkast(
+  supabaseAdmin: SupabaseAdminLike,
+  params: { eventId: string; typ: UtkastTyp },
+): Promise<FunnetUtkast | null> {
+  const path = byggUtkastPath(params.eventId, params.typ);
+  const prefix = `utkast/${params.eventId}`;
+  const filnamn = `${params.typ}.pdf`;
+
+  try {
+    const { data: entries, error: listError } = await supabaseAdmin.storage
+      .from(BILAGOR_BUCKET_ID)
+      .list(prefix);
+    if (listError) {
+      console.error(
+        `[hittaUtkast] list("${prefix}") misslyckades (behandlas som "utkast saknas") | ` +
+          `event=${params.eventId} | error=${listError.message}`,
+      );
+      return null;
+    }
+    const traff = (entries ?? []).find((entry) => entry.name === filnamn);
+    if (!traff) return null;
+
+    const storlek = traff.metadata?.size;
+    return {
+      path,
+      storlek: typeof storlek === 'number' && Number.isFinite(storlek) ? storlek : null,
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(
+      `[hittaUtkast] oväntat fel (behandlas som "utkast saknas") | event=${params.eventId} | ` +
+        `error=${message}`,
+    );
+    return null;
+  }
 }
 
 /**
