@@ -56,10 +56,16 @@ interface KopieringsSvar {
 export interface KopieringsResultat {
   /** Destinationens fulla nyckel som servern rapporterar den (`<bucket>/<path>`). */
   nyckel: string | null;
-  /** Objektets storlek i bytes ur svarets `metadata.size`, `null` om servern
-   *  inte rapporterade den. Anroparen MÅSTE hantera `null` — att skriva ett
-   *  gissat värde till `Storlek (bytes)` vore värre än att fela. */
-  storlek: number | null;
+  /** Objektets storlek i bytes: serverns egna `metadata.size` när den finns
+   *  (den beskriver DESTINATIONEN), annars `forvantadStorlek`. ALLTID ett tal
+   *  — se `forvantadStorlek`s docblock för varför `null` inte längre är ett
+   *  möjligt utfall. */
+  storlek: number;
+  /** Sant när serverns svar bar en egen `metadata.size`; falskt när värdet
+   *  är `forvantadStorlek` (källans redan kända storlek). Enbart för
+   *  loggning/diagnos — båda fallen är korrekta, eftersom en copy är
+   *  byte-identisk. */
+  storlekFranServern: boolean;
 }
 
 /**
@@ -70,6 +76,20 @@ export interface KopieringsResultat {
  * inte lyckas — anroparen mappar det till sitt eget felkontrakt
  * (`mapErrorToResponse`), precis som `laggUtkast` gör för sina Storage-fel.
  *
+ * @param forvantadStorlek Källobjektets REDAN KÄNDA storlek i bytes.
+ *   OBLIGATORISK, och kontrollerad INNAN något nätverksanrop görs.
+ *
+ *   [REVIEW-RUNDA 2] Detta är en ORDNINGS-spärr, inte en bekvämlighet. Den
+ *   promoverande skrivvägen skriver destinationen FÖRE Bilagor-raden
+ *   uppdateras. Tog vi storleken ur kopieringens SVAR och den saknades, var
+ *   den enda ärliga utvägen att fela — men då hade filen redan bytts ut
+ *   medan raden stod kvar med gammal `Källhash` och gammal storlek mot ett
+ *   nytt innehåll (i ersätt-fallet: en rad som beskriver fel fil). Genom att
+ *   kräva storleken FÖRE anropet kan det fönstret inte uppstå: saknas den
+ *   kopieras ingenting alls. Serverns egen `metadata.size` används fortsatt
+ *   när den finns — en copy är byte-identisk, så de två talen ska vara lika,
+ *   och en avvikelse loggas av anroparen.
+ *
  * @param fetchImpl Injicerbar för enhetstest; default är global `fetch`
  *   (finns i både Deno och Node ≥ 18).
  */
@@ -79,13 +99,22 @@ export async function kopieraInomBucket(params: {
   bucket: string;
   franPath: string;
   tillPath: string;
+  forvantadStorlek: number;
   fetchImpl?: typeof fetch;
 }): Promise<KopieringsResultat> {
-  const { supabaseUrl, serviceRoleKey, bucket, franPath, tillPath } = params;
+  const { supabaseUrl, serviceRoleKey, bucket, franPath, tillPath, forvantadStorlek } = params;
   const doFetch = params.fetchImpl ?? fetch;
 
   if (!supabaseUrl || !serviceRoleKey) {
     throw new Error('kopieraInomBucket: supabaseUrl och serviceRoleKey krävs');
+  }
+  // FÖRE fetch — se `forvantadStorlek`s docblock. Ingen kopiering utan känd
+  // storlek, någonsin.
+  if (typeof forvantadStorlek !== 'number' || !Number.isFinite(forvantadStorlek) || forvantadStorlek < 0) {
+    throw new Error(
+      'kopieraInomBucket: forvantadStorlek måste vara ett känt, icke-negativt tal — ' +
+        'ingen kopiering får ske innan källans storlek är känd',
+    );
   }
 
   const res = await doFetch(`${supabaseUrl.replace(/\/+$/, '')}/storage/v1/object/copy`, {
@@ -113,14 +142,16 @@ export async function kopieraInomBucket(params: {
   try {
     parsed = JSON.parse(raw) as KopieringsSvar;
   } catch {
-    // Lyckad status men oparsbar kropp: kopieringen ÄR gjord, men vi vet
-    // inget om storleken. Säg det i stället för att gissa.
-    return { nyckel: null, storlek: null };
+    // Lyckad status men oparsbar kropp: kopieringen ÄR gjord. Storleken är
+    // känd ändå — det är hela poängen med `forvantadStorlek`.
+    return { nyckel: null, storlek: forvantadStorlek, storlekFranServern: false };
   }
 
-  const storlek = parsed.metadata?.size;
+  const rapporterad = parsed.metadata?.size;
+  const franServern = typeof rapporterad === 'number' && Number.isFinite(rapporterad);
   return {
     nyckel: typeof parsed.Key === 'string' ? parsed.Key : null,
-    storlek: typeof storlek === 'number' && Number.isFinite(storlek) ? storlek : null,
+    storlek: franServern ? (rapporterad as number) : forvantadStorlek,
+    storlekFranServern: franServern,
   };
 }

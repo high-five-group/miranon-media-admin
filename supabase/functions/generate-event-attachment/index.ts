@@ -151,7 +151,12 @@ import {
   fetchFromAirtable,
   updateAirtableRecord,
 } from '../_shared/airtable-client.ts';
-import { buildEqualsFilter, combineWithAnd } from '../_shared/airtable-filter.ts';
+import {
+  buildEqualsFilter,
+  combineWithAnd,
+  combineWithOr,
+  escapeFormulaValue,
+} from '../_shared/airtable-filter.ts';
 import {
   ATTACHMENT_CLASS_EVENT_MALLAD,
   BILAGOR_BUCKET_ID,
@@ -199,6 +204,12 @@ const ATTACHMENTS_LINK_FIELD = 'Bilagor';
 // `OR(RECORD_ID()=…)`-formel.
 const ERSATT_UPPSLAG_BATCH_SIZE = 50;
 
+// Airtables record-ID-form, EXAKT som `_shared/airtable-filter.ts`s
+// `buildLinkedRecordFilter` kräver den. MEDVETET STRIKTARE än
+// `isValidEventId` (`startsWith('rec') && length > 3`), som hade släppt
+// igenom ett värde med citattecken i sig. Se `byggRecordIdOrFilter`.
+const REC_ID_FORM = /^rec[A-Za-z0-9]+$/;
+
 // Fälten ersätt-uppslaget behöver. `Lagringsnyckel` INGÅR — till skillnad
 // mot `get-event-attachments` (som medvetet utesluter den ur sitt
 // KLIENT-svar) är detta ett server-internt uppslag vars enda syfte är att
@@ -209,6 +220,45 @@ function chunk<T>(items: readonly T[], size: number): T[][] {
   const out: T[][] = [];
   for (let i = 0; i < items.length; i += size) out.push(items.slice(i, i + size));
   return out;
+}
+
+/**
+ * [TASK-340.1, REVIEW-RUNDA 2] `OR(RECORD_ID() = "rec…", …)` byggd genom
+ * HUSETS primitiv (`escapeFormulaValue` + `combineWithOr`,
+ * `_shared/airtable-filter.ts`) i stället för rå stränginterpolering, plus
+ * en formvakt per ID.
+ *
+ * VARFÖR, TROTS ATT KÄLLAN INTE ÄR KLIENT-STYRD: ID:na kommer ur Airtables
+ * EGET omvända länkfält på eventraden — de kan inte sättas av en anropare,
+ * så detta är INTE en exploaterbar injektionsväg i dagens flöde. Vakten
+ * finns ändå av tre skäl. (1) Repots formel-disciplin är UNDANTAGSLÖS:
+ * `airtable-filter.ts`s filhuvud slår fast att *"alla user-supplied värden
+ * går genom escapeFormulaValue"*, och en fil som bygger sin egen formelsträng
+ * vid sidan om lär nästa läsare att det är en tillåten form. (2) Premissen
+ * "källan är betrodd" är en EGENSKAP HOS ANROPAREN, inte hos denna funktion
+ * — flyttas den eller får en andra anropare med en klient-nära källa
+ * försvinner skyddet tyst. (3) `escapeFormulaValue` bär mer än citat-
+ * eskapering: den avvisar kontroll- och bidi-tecken och en orimlig längd,
+ * alltså värden som skulle trasa formeln eller Airtables loggar utan att
+ * synas i UI:t.
+ *
+ * ID:n som inte har rec-formen SLÄPPS (och loggas) i stället för att kastas
+ * med: ett skadat länkvärde ska inte fälla en skarp generering — det ska
+ * bara inte få styra vilken rad som ersätts. Returnerar `null` när inget
+ * giltigt ID återstår, vilket callern läser som "ingen kandidat".
+ */
+function byggRecordIdOrFilter(ids: readonly unknown[]): string | null {
+  const giltiga = ids.filter(
+    (rid): rid is string => typeof rid === 'string' && REC_ID_FORM.test(rid),
+  );
+  if (giltiga.length !== ids.length) {
+    console.warn(
+      `[generate-event-attachment] ersätt-uppslaget hoppade över ${ids.length - giltiga.length} ` +
+        'länkvärde(n) utan record-ID-form',
+    );
+  }
+  if (giltiga.length === 0) return null;
+  return combineWithOr(giltiga.map((rid) => `RECORD_ID() = ${escapeFormulaValue(rid)}`)) as string;
 }
 
 /**
@@ -247,9 +297,11 @@ async function hittaBefintligEventMalladRad(
   if (!Array.isArray(lankade) || lankade.length === 0) return null;
 
   const traffar: { id: string; fields: Record<string, unknown> }[] = [];
-  for (const idChunk of chunk(lankade as string[], ERSATT_UPPSLAG_BATCH_SIZE)) {
+  for (const idChunk of chunk(lankade, ERSATT_UPPSLAG_BATCH_SIZE)) {
+    const idFilter = byggRecordIdOrFilter(idChunk);
+    if (!idFilter) continue;
     const filterByFormula = combineWithAnd([
-      `OR(${idChunk.map((rid) => `RECORD_ID()='${rid}'`).join(',')})`,
+      idFilter,
       buildEqualsFilter('Dokumentklass', ATTACHMENT_CLASS_EVENT_MALLAD),
       buildEqualsFilter('Mall', airtableOption),
     ]) as string;
@@ -531,25 +583,41 @@ Deno.serve(async (req) => {
     let storlekBytes: number;
 
     if (promoverad && utkast) {
+      // [REVIEW-RUNDA 2] STORLEKEN KRÄVS FÖRE KOPIERINGEN, INTE EFTER.
+      // Kopieringen skriver destinationen INNAN Bilagor-raden uppdateras.
+      // Läste vi storleken ur kopieringens SVAR och den saknades, var enda
+      // ärliga utvägen att fela — men då hade filen redan bytts ut medan
+      // raden stod kvar med gammal `Källhash` och gammal storlek mot ett
+      // NYTT innehåll (i ersätt-fallet: en rad som beskriver fel fil). Med
+      // kontrollen här kan det fönstret inte uppstå: saknas storleken
+      // kopieras ingenting alls. `kopieraInomBucket` bär samma spärr som
+      // precondition, så ordningen kan inte kringgås av en framtida anropare.
+      if (typeof utkast.storlek !== 'number') {
+        throw new HttpError(
+          502,
+          'Utkastets storlek kunde inte läsas — promoveringen avbröts innan något skrevs.',
+        );
+      }
       const kopia = await kopieraInomBucket({
         supabaseUrl: Deno.env.get('SUPABASE_URL')!,
         serviceRoleKey: Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
         bucket: BILAGOR_BUCKET_ID,
         franPath: utkast.path,
         tillPath: path,
+        forvantadStorlek: utkast.storlek,
       });
-      // Storleken kommer i FÖRSTA hand ur kopieringssvarets egen
-      // `metadata.size` (den beskriver DESTINATIONEN), i andra hand ur
-      // källobjektets `list()`-metadata. Saknas båda FELAR vi hellre än
-      // skriver ett gissat tal till `Storlek (bytes)` — ett fält Lotta ser.
-      const storlek = kopia.storlek ?? utkast.storlek;
-      if (typeof storlek !== 'number') {
-        throw new HttpError(
-          502,
-          'Utkastet kopierades, men storleken kunde inte läsas ur Storage-svaret.',
+      // Serverns egen `metadata.size` beskriver DESTINATIONEN och vinner när
+      // den finns; annars står källans kända storlek kvar. En copy är
+      // byte-identisk, så en avvikelse mellan de två är en anomali värd att
+      // se i loggen — den fäller inte, eftersom destinationen redan är
+      // skriven och båda talen kommer från samma bytes.
+      storlekBytes = kopia.storlek;
+      if (kopia.storlekFranServern && kopia.storlek !== utkast.storlek) {
+        console.warn(
+          `[generate-event-attachment] storleksavvikelse vid promovering | event=${eventId} | ` +
+            `kalla=${utkast.storlek} | destination=${kopia.storlek}`,
         );
       }
-      storlekBytes = storlek;
       console.log(
         `[generate-event-attachment] PROMOVERAT | caller_user_id=${user.id} | event=${eventId} | ` +
           `mall=${mall} | fran=${utkast.path} | till=${path}`,

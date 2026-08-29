@@ -254,6 +254,7 @@ test.describe('kopieraInomBucket — anropsformen mot Storage-API:t', () => {
       bucket: 'bilagor',
       franPath: 'utkast/recEV/bilaga.pdf',
       tillPath: 'recEV/uuid-bekraftelsebilaga.pdf',
+      forvantadStorlek: 248_311,
       fetchImpl: fejkFetch({ status: 200, body: LYCKAT_SVAR }, fangat),
     });
 
@@ -271,6 +272,7 @@ test.describe('kopieraInomBucket — anropsformen mot Storage-API:t', () => {
     expect(resultat).toEqual({
       nyckel: 'bilagor/recEV/uuid-bekraftelsebilaga.pdf',
       storlek: 248_311,
+      storlekFranServern: true,
     });
   });
 
@@ -282,6 +284,7 @@ test.describe('kopieraInomBucket — anropsformen mot Storage-API:t', () => {
       bucket: 'bilagor',
       franPath: 'a',
       tillPath: 'b',
+      forvantadStorlek: 1,
       fetchImpl: fejkFetch({ status: 200, body: LYCKAT_SVAR }, fangat),
     });
     expect(fangat[0].url).toBe('https://exempel.supabase.co/storage/v1/object/copy');
@@ -296,6 +299,7 @@ test.describe('kopieraInomBucket — anropsformen mot Storage-API:t', () => {
         bucket: 'bilagor',
         franPath: 'a',
         tillPath: 'b',
+        forvantadStorlek: 1,
         fetchImpl: fejkFetch(
           { status: 404, body: '{"error":"not_found","message":"Object not found"}' },
           fangat,
@@ -304,7 +308,7 @@ test.describe('kopieraInomBucket — anropsformen mot Storage-API:t', () => {
     ).rejects.toThrow(/404.*Object not found/s);
   });
 
-  test('lyckad status men saknad/ogiltig storlek → storlek null (anroparen felar hellre än gissar)', async () => {
+  test('saknad/ogiltig storlek i svaret → källans kända storlek används, aldrig ett gissat tal', async () => {
     const fangat: FangatAnrop[] = [];
     const utanStorlek = await kopieraInomBucket({
       supabaseUrl: 'https://exempel.supabase.co',
@@ -312,9 +316,10 @@ test.describe('kopieraInomBucket — anropsformen mot Storage-API:t', () => {
       bucket: 'bilagor',
       franPath: 'a',
       tillPath: 'b',
+      forvantadStorlek: 4711,
       fetchImpl: fejkFetch({ status: 200, body: JSON.stringify({ Key: 'bilagor/b' }) }, fangat),
     });
-    expect(utanStorlek).toEqual({ nyckel: 'bilagor/b', storlek: null });
+    expect(utanStorlek).toEqual({ nyckel: 'bilagor/b', storlek: 4711, storlekFranServern: false });
 
     const ickeNumerisk = await kopieraInomBucket({
       supabaseUrl: 'https://exempel.supabase.co',
@@ -322,15 +327,17 @@ test.describe('kopieraInomBucket — anropsformen mot Storage-API:t', () => {
       bucket: 'bilagor',
       franPath: 'a',
       tillPath: 'b',
+      forvantadStorlek: 4711,
       fetchImpl: fejkFetch(
         { status: 200, body: JSON.stringify({ Key: 'bilagor/b', metadata: { size: '17' } }) },
         fangat,
       ),
     });
-    expect(ickeNumerisk.storlek).toBeNull();
+    expect(ickeNumerisk.storlek).toBe(4711);
+    expect(ickeNumerisk.storlekFranServern).toBe(false);
   });
 
-  test('lyckad status men oparsbar kropp → inget kast, men inget påstått heller', async () => {
+  test('lyckad status men oparsbar kropp → källans storlek står kvar, inget kast', async () => {
     const fangat: FangatAnrop[] = [];
     const resultat = await kopieraInomBucket({
       supabaseUrl: 'https://exempel.supabase.co',
@@ -338,9 +345,10 @@ test.describe('kopieraInomBucket — anropsformen mot Storage-API:t', () => {
       bucket: 'bilagor',
       franPath: 'a',
       tillPath: 'b',
+      forvantadStorlek: 99,
       fetchImpl: fejkFetch({ status: 200, body: 'inte JSON' }, fangat),
     });
-    expect(resultat).toEqual({ nyckel: null, storlek: null });
+    expect(resultat).toEqual({ nyckel: null, storlek: 99, storlekFranServern: false });
   });
 
   test('saknad url eller nyckel kastar innan något nätverksanrop görs', async () => {
@@ -353,6 +361,7 @@ test.describe('kopieraInomBucket — anropsformen mot Storage-API:t', () => {
         bucket: 'bilagor',
         franPath: 'a',
         tillPath: 'b',
+        forvantadStorlek: 1,
         fetchImpl,
       }),
     ).rejects.toThrow(/supabaseUrl och serviceRoleKey/);
@@ -363,9 +372,60 @@ test.describe('kopieraInomBucket — anropsformen mot Storage-API:t', () => {
         bucket: 'bilagor',
         franPath: 'a',
         tillPath: 'b',
+        forvantadStorlek: 1,
         fetchImpl,
       }),
     ).rejects.toThrow(/supabaseUrl och serviceRoleKey/);
     expect(fangat).toHaveLength(0);
+  });
+
+  test('ORDNINGEN: okänd källstorlek kastar UTAN att en enda kopiering görs (review-runda 2)', async () => {
+    // Den promoverande skrivvägen skriver destinationen FÖRE Bilagor-raden
+    // uppdateras. Kastade vi efter kopieringen hade filen bytts ut medan
+    // raden stod kvar med gammal Källhash mot nytt innehåll. Detta test
+    // bevisar spärren mekaniskt: `fangat` måste vara TOM efter varje
+    // ogiltigt värde — ingen byte har lämnat maskinen.
+    const fangat: FangatAnrop[] = [];
+    const fetchImpl = fejkFetch({ status: 200, body: LYCKAT_SVAR }, fangat);
+    const ogiltiga: unknown[] = [
+      null,
+      undefined,
+      Number.NaN,
+      Number.POSITIVE_INFINITY,
+      -1,
+      '248311',
+    ];
+
+    for (const storlek of ogiltiga) {
+      await expect(
+        kopieraInomBucket({
+          supabaseUrl: 'https://exempel.supabase.co',
+          serviceRoleKey: 'sr',
+          bucket: 'bilagor',
+          franPath: 'utkast/recEV/bilaga.pdf',
+          tillPath: 'recEV/uuid-bekraftelsebilaga.pdf',
+          forvantadStorlek: storlek as number,
+          fetchImpl,
+        }),
+        `forvantadStorlek=${String(storlek)} borde ha avvisats FÖRE kopieringen`,
+      ).rejects.toThrow(/forvantadStorlek/);
+    }
+
+    expect(fangat, 'ingen kopiering får ske utan känd storlek').toHaveLength(0);
+  });
+
+  test('storlek 0 är ett KÄNT värde och tillåts — bara okända värden spärrar', async () => {
+    const fangat: FangatAnrop[] = [];
+    const resultat = await kopieraInomBucket({
+      supabaseUrl: 'https://exempel.supabase.co',
+      serviceRoleKey: 'sr',
+      bucket: 'bilagor',
+      franPath: 'a',
+      tillPath: 'b',
+      forvantadStorlek: 0,
+      fetchImpl: fejkFetch({ status: 200, body: JSON.stringify({ Key: 'bilagor/b' }) }, fangat),
+    });
+    expect(fangat).toHaveLength(1);
+    expect(resultat.storlek).toBe(0);
   });
 });
