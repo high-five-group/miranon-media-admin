@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-23
+updated: 2026-08-29
 review_by: 2027-01-02
 status: stable
 ---
@@ -194,17 +194,29 @@ Familj · Event · Plats (familjen kan smalnas till ett **Steg**). Axlarna
 kombineras med OCH — *Familj RIM + Plats
 Rönninge* betyder "RIM-event som ligger i Rönninge", aldrig unionen av de
 två. En tom axel begränsar inte, så *inga axlar satta* betyder alla event.
-Kvitterad S108-grillningen (frågorna 4 och 9); ersätter ADR-118 beslut 1:s
-"exakt EN räckvidd, aldrig kombinerbart" och dess separata "alla
-event"-läge, som blir "inga filter satta".
+Filtret lagras i basen som EN singleSelect-option, **"Gemensam"**
+(`Bilagor.Räckvidd`), oavsett hur många av de tre axlarna som är satta —
+det är matchningen i kod, inte basvärdet, som avgör om en gemensam bilaga
+gäller alla event eller ett smalare urval (`TASK-338`). Kvitterad
+S108-grillningen (frågorna 4 och 9); ersätter ADR-118 beslut 1:s "exakt EN
+räckvidd, aldrig kombinerbart" och dess separata "alla event"-läge, som blir
+"inga filter satta".
 *Undvik:* scope, kurstyps-räckvidd (kurstyp är inte ett kanoniskt begrepp —
 se Eventinnehåll).
 
 **Gemensam bilaga** — en bilaga vars räckvidd är ett filter snarare än ett
 utpekat event: syns automatiskt, märkt med räckviddsbadge, i varje berört
-events dokumentlista och i Åtgärds-sidans bilageväljare; byts/raderas ENDAST
-i sitt räckviddsläge på Dokument-ytan, aldrig ur ett enskilt events kontext
-(S107-grillningen, ADR-118 beslut 3 — oförändrat av S108).
+events dokumentlista och i Dokument-ytans egen listning; byts/raderas
+ENDAST i sitt räckviddsläge på Dokument-ytan, aldrig ur ett enskilt events
+kontext (S107-grillningen, ADR-118 beslut 3 — oförändrat av S108). Badgens
+texten beror på vilka axlar som är satta: "Alla event" (inga axlar) ·
+"RIM · Steg 1" (familj + steg) · "Rönninge" (bara plats) · "RIM · Rönninge"
+(familj + plats) · "RIM · Steg 1 · Rönninge" (alla tre) — Kursnivåns
+basfältnamn ("Nivå 1") mappas till "Steg 1" i presentationslagret, se
+§ Steg. Badgen visas i Dokument-ytan; sedan `TASK-339` (Marcus 2026-08-29)
+INTE längre i Åtgärds-sidans bilageväljare, där den konkurrerade visuellt
+med kryssrutan och filnamnet — varifrån dokumentet kommer är inte ett
+beslutsunderlag i den ytan.
 *Undvik:* universell bilaga (arbetsbegreppet under grillningen), global
 bilaga, statisk bilaga (förväxlas med dokumentklass A).
 

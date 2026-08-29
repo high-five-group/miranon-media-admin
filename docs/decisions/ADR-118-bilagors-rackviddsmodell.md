@@ -85,3 +85,56 @@ dokumentflöden, EF-kontrakt och basstruktur byggs ovanpå — svår att
 återställa i koherens; (2) union-semantiken och raderingsskyddet är
 överraskande utan denna kontext; (3) tre genuina alternativ vägdes och
 förkastades av konkreta skäl.
+
+## Updates
+
+### 2026-08-29 — Beslut 1/4/5 ersatta av tre-axel-modellen; beslut 2 amenderat (pillen bort ur Åtgärds-sidan); beslut 3 gäller vidare
+
+**TASK-338.5.** Grillningen S108 Del 2 § D (frågorna 4 och 9) beslutade
+räckvidden om till ett AND-filter över tre kombinerbara axlar — Familj ·
+Event · Plats — och det beslutet kvitterades i
+[ADR-125](ADR-125-bilagornas-modell-och-promoveringsvag.md) § Beslut 1
+("räckvidden bär tre axlar"). Beslutet nådde aldrig koden förrän
+`TASK-338` (PRD: Platsbundna delade bilagor, forensiken 2026-08-29, S113):
+appen, EF-kontrakten och basen implementerade fram till dess fortfarande
+denna ADR:s ursprungliga modell rakt av.
+
+- **Beslut 1 (exakt EN räckvidd, radioval Event/Kurstyp/Alla event) —
+  ERSATT.** Räckvidden är sedan ADR-125 § Beslut 1 ett filter över tre
+  VALFRIA, kombinerbara axlar (Familj · Event · Plats — familjen kan smalnas
+  till ett Steg); en tom axel begränsar inte, och "inga axlar satta" är den
+  nya formen av "alla event". Lagringsformen: `Bilagor.Räckvidd` fick en
+  fjärde option **"Gemensam"** som ersätter (inte kompletterar) de gamla
+  "Kurstyp"/"Alla event"-valen, plus en ny länk `Bilagor.Plats` → `Platser`
+  och ett lookup-fält `Bilagor.Platsnamn`. Kedjan: S108 Del 2 § D →
+  ADR-125 § Beslut 1 → `TASK-338`.
+- **Beslut 4 (basform: `Räckvidd`-select Event/Kurstyp/Alla event +
+  Kursfamilj/Kursnivå, ingen ny tabell) — ERSATT** av samma tre-axel-form:
+  `Kursfamilj`/`Kursnivå` återanvänds oförändrade, men bär nu bara TVÅ av
+  tre axlar; `Plats`-länken är den tredje. Ingen ny tabell tillkom heller
+  här — additivt på samma `Bilagor`-tabell (ADR-063).
+- **Beslut 5 (administration i Dokument-ytan: räckviddsval i
+  uppladdningsflödet + ett läge som visar gemensamma dokument) — ERSATT** i
+  sin KONKRETA form (radioval blir tre valfria Select-fält: Familj/Steg/
+  Plats), men principen — utbyggd Dokument-yta, ett räckviddsläge för
+  gemensamma dokument, inget klonat hus — gäller oförändrad.
+- **Beslut 2 (unionen av tre mängder, gemensamma bilagor "sammanflätade med
+  räckviddsbadge … i Åtgärds-sidans bilageväljare") — AMENDERAT, inte
+  ersatt.** Unionssemantiken (eventets egna + gemensamma bilagor i
+  dokumentlistan) gäller vidare, bara mängderna är nu två i stället för tre
+  (eventets egna + `Räckvidd ≠ Event`, matchade i kod — `TASK-338.2`). Men
+  räckviddsbadgen visas INTE längre i Åtgärds-sidans bilageväljare — Marcus
+  röktest 2026-08-29 ("blir inte snyggt", bokfört i `TASK-339`, landad
+  `PR #2082`, `main 51e22c69`). Badgen kvarstår i Dokument-ytans
+  listor, där den förklarar varför en delad bilaga inte går att radera från
+  ett enskilt event (beslut 3).
+- **Beslut 3 (ersätt/radera endast i räckviddsläget, olycksskyddet) —
+  GÄLLER VIDARE, oförändrat.** Ingen del av tre-axel-modellen eller
+  badge-amenderingen rör raderingsskyddet.
+
+Fältmodell, matchningsregel och legacy-toleransen (skrivvägen accepterar
+fortfarande "Kurstyp"/"Alla event" och mappar dem till "Gemensam") är
+detaljerade i [ADR-125](ADR-125-bilagornas-modell-och-promoveringsvag.md)
+§ Updates 2026-08-29 och `data-model.md` § "Bilagornas Gemensam-räckvidd —
+Plats-axel". `ORDLISTA.md` § Räckvidd/§ Gemensam bilaga bär den kanoniska
+vokabulären (värdet "Gemensam", badge-formerna).

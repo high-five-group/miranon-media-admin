@@ -395,3 +395,52 @@ skapa-event-flöde är oförändrat i form. Full skriv-semantik, ordnings-
 invarianten och de fem `platsLankning.skal`-lägena:
 [ADR-066](ADR-066-skapa-event-write-vertikal-idempotens.md) § Tillägg
 2026-08-28 + `data-model.md` § Ort-till-Plats vid create.
+
+### 2026-08-29 — Beslut 1:s tre axlar bokförda som lagringsform: `Bilagor.Räckvidd = Gemensam` + Plats-länk
+
+**TASK-338.5.** § Beslut 1 ovan ("räckvidden bär tre axlar (9)") beskriver
+S108 Del 2 § D:s grillade beslut, men inte hur det landade i basen och
+koden — den skarva formen bokförs här, sedan `TASK-338` (PRD) körde
+beslutet genom staging (`TASK-338.1`) och EF-lagret (`TASK-338.2`).
+
+**Lagringsformen.** `Bilagor.Räckvidd` fick en fjärde option **"Gemensam"**
+som betyder "filter-räckvidd: axlarna gäller, tomma axlar begränsar inte" —
+den ersätter ADR-118:s "Kurstyp"/"Alla event" som samma sak uttryckt med
+TVÅ separata val. Axlarna bärs av de befintliga `Kursfamilj`/`Kursnivå`
+(ADR-115-fälten, oförändrade) plus en ny länk `Bilagor.Plats` → `Platser`
+(högst en plats avsedd; Airtable kan strukturellt inte tvinga det, adapter
+och EF vaktar) och ett lookup-fält `Bilagor.Platsnamn`
+(`Platser.Namn`) så appen och Lotta läser namnet utan extra uppslag. Fält-ID:n
+för båda baser: `data-model.md` § "Bilagornas Gemensam-räckvidd —
+Plats-axel".
+
+**Matchningen — EN hämtning, OCH i kod.** `get-event-attachments` hämtar (a)
+eventets egna rader och (b) ALLA rader med `Räckvidd = Gemensam` i EN
+Airtable-hämtning, och matchar (b) i kod mot eventets Kursfamilj, Kursnivå
+(tom-nivå-regeln oförändrad — tom nivå på bilagan betyder hela familjen) och
+Plats — på LÄNKENS record-ID, aldrig namnet (samma disciplin som § 8:s
+Ort-drift-skäl). Matcharen är en ren, zod-fri funktion i `_shared/`
+(`rackvidd-matchning.ts`) med egen enhetstestsvit — Airtables formelspråk kan
+inte jämföra länk-ID:n utan hjälpfält, så filterByFormula dög inte längre;
+de tre gamla filterByFormula-mängderna (Event/Kurstyp/Alla event) revs.
+
+**Legacy-toleransen är en BOKFÖRD RIVNINGSSKULD, inte en permanent gren.**
+Läsvägen tolererar `Räckvidd` = "Kurstyp"/"Alla event" som "Gemensam" med
+sina axlar (så prod fungerar oavsett i vilken ordning EF-deploy och
+radmigrering sker i `TASK-338.6`); skrivvägen accepterar samma legacy-värden
+och mappar dem till "Gemensam" (installerade PWA-klienter kan skicka dem
+tills de uppdaterats). Rivning av legacy-mappningen är en egen skuldpost,
+utanför `TASK-338`s omfattning — se PRD § Utanför omfattningen.
+
+**Options "Kurstyp"/"Alla event" lämnas kvar OANVÄNDA** på `Räckvidd`-fältet
+tills slutgenomlysningen — borttagning är ett Marcus-beslut, bokfört i
+defektregistret (`ADR-063` § Updates), inte en glömd städning.
+
+**Känt randfall, bokfört men INTE kodat mot:** en rad med tomt `Räckvidd`
+OCH tom `Event`-länk vore osynlig för både unionens mängder — den matchar
+varken "eventets egna" (ingen `Event`-länk) eller "Gemensam" (fältet är inte
+satt till det värdet). Ingen skrivväg i appen kan producera den formen
+(`upload-attachment`/`finalize-attachment-upload` kräver `rackvidd` ∈
+{Event, Gemensam}, och `Event` sätts alltid oavsett räckvidd), så randfallet
+kräver en direkt Airtable-redigering för att uppstå. Skälen och den fulla
+matchningslogiken: PRD `TASK-338` § Implementationsbeslut → Matchningen.
