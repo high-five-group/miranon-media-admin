@@ -297,8 +297,29 @@ body {
    PersonsList.tsx eller Input-primitivens fält) — den generella
    `.mm-fokusring-vid-fokus:focus`-regeln ovan vinner nu utan konkurrens,
    så den redundanta varianten vore dött, missvisande kod. */
+/* [T176, 2026-08-29] `role="menu"` TILLAGD — SAMMA defekt, samma lösning.
+   `Meny.tsx`s popover fick en 2 px-ring runt HELA menyn vid MUSÖPPNING:
+   `MenuTrigger` fokuserar `[role=menu]`-behållaren (mätt i renderad yta:
+   `document.activeElement` = menyn, `:focus-visible` matchade,
+   `outline: solid 2px rgb(27, 73, 101)`), och globalen ovan målade den.
+   Behållaren är en COMPOSITE-widget precis som listboxen: fokus bor på
+   behållaren, men fokus-INDIKATIONEN bärs av den markerade POSTEN
+   (`data-[focused]`-plattan + postens egen ring). Vid TANGENTBORDSÖPPNING
+   fokuseras första `[role=menuitem]` direkt (mätt: `data-focused="true"`,
+   ring på posten, ingen ring på behållaren), så släckaren tar aldrig en
+   ring någon behöver.
+
+   REGELN MÅSTE BO HÄR, OLAGRAD — inte som en Tailwind-klass på komponenten.
+   Prövat och MÄTT först: `focus-visible:outline-none` på `<Menu>` genereras
+   korrekt som `.focus-visible\:outline-none:focus-visible` (specificitet
+   0,2,0 mot globalens 0,1,0) men FÖRLORAR ändå — Tailwind-utilities ligger
+   i `@layer utilities` och olagrad author-CSS besegrar ALLA lagrade regler
+   oavsett specificitet (samma kaskad-arkitektur som noten vid `@layer base`
+   längre ner beskriver). Specificiteten är alltså rätt verktyg, men bara
+   inom samma olagrade kontext. */
 [role="listbox"][data-rac]:focus-visible:not([data-focus-visible]),
-[role="listbox"] [data-rac]:focus-visible:not([data-focus-visible]) {
+[role="listbox"] [data-rac]:focus-visible:not([data-focus-visible]),
+[role="menu"][data-rac]:focus-visible:not([data-focus-visible]) {
   outline: none;
 }
 

@@ -124,6 +124,18 @@ export function Meny({
           className,
         )}
       >
+        {/* ═══ MENYBEHÅLLAREN MÅLAR ALDRIG FOKUSRINGEN ═══
+            Den ÄR en composite-widget: fokus bor på behållaren, men
+            fokus-INDIKATIONEN bärs av den markerade POSTEN (`data-[focused]`
+            + postens egen ring), precis som `Select`s ListBox/option-par.
+
+            SLÄCKAREN BOR I `base.css`, INTE HÄR, och det är MÄTT och inte
+            valt: en Tailwind-klass kan inte vinna över den globala
+            `*:focus-visible`-regeln, eftersom utilities ligger i
+            `@layer utilities` och olagrad author-CSS besegrar varje lagrad
+            regel oavsett specificitet. Se base.css § `[role="menu"]`-släckaren
+            för hela mätningen. `outline-none` nedan står kvar för
+            NON-focus-visible-läget (RAC:s egen default-outline). */}
         <AriaMenu aria-label={etikett} className="max-h-72 overflow-auto outline-none">
           {children}
         </AriaMenu>
