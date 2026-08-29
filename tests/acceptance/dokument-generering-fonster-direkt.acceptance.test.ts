@@ -458,12 +458,12 @@ test.describe('Genereringsvyn — förhandsgranskningens fönster öppnas direkt
       page.getByRole('button', { name: 'Förhandsgranska' }).click(),
     ]);
     await expect(nyFlik).toHaveTitle('Skapar förhandsgranskningen…');
-    // `meta.namn.toLowerCase()` + 'n' — samma bildning som bekräftelsebilagan
-    // (AC #1 kräver bevis för BÅDA dokumenttyperna; se
-    // Implementation Notes/Slutrapport för dubbel-n-observationen).
+    // `MALL_META.deltagarinfo.namnBestamd` — EXPLICIT bestämd form
+    // (TASK-309.38 review-runda 1), inte längre `${namn.toLowerCase()}n`
+    // (som gav "deltagarinformationn", en dubbel-n-bugg — AC #4).
     await expect(
       nyFlik.getByText(
-        'Ett ögonblick Lotta, förhandsgranskningen av deltagarinformationn skapas och visas här om några sekunder.',
+        'Ett ögonblick Lotta, förhandsgranskningen av deltagarinformationen skapas och visas här om några sekunder.',
       ),
     ).toBeVisible();
   });

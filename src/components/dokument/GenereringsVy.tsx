@@ -108,9 +108,22 @@ import { skrivLaddningssida } from '@/lib/skriv-laddningssida';
 // — Mer-sidans Eventinnehåll-/Platser-ytor delar samma blockkarta, se den
 // modulens filhuvud för hela motiveringen. Importerade ovan.
 
-const MALL_META: Record<MallId, { namn: string }> = {
-  bekraftelse: { namn: 'Bekräftelsebilaga' },
-  deltagarinfo: { namn: 'Deltagarinformation' },
+/**
+ * [TILLÄGG, TASK-309.38 review-runda 1] `namnBestamd` (bestämd form, gemener
+ * — "bekräftelsebilagan"/"deltagarinformationen") lagd till EXPLICIT per
+ * mall, i stället för att härledas mekaniskt med `${namn.toLowerCase()}n`.
+ * Den gamla formeln antog att bestämd form ALLTID bildas genom att lägga
+ * till "n" — sant för "Bekräftelsebilaga" (slutar på vokal "a" →
+ * "bekräftelsebilagan"), FALSKT för "Deltagarinformation" (slutar redan på
+ * konsonanten "n" → bestämd form är "deltagarinformationEN", inte
+ * "deltagarinformationn"). Svensk bestämd form följer ingen enda mekanisk
+ * regel över substantiv-klasser, så en explicit tabell per mall är rätt
+ * lösning — inte en "smartare" formel. Sentence-initial användning
+ * (MessageBox nedan) versaliserar själv via `meningsStart()`.
+ */
+const MALL_META: Record<MallId, { namn: string; namnBestamd: string }> = {
+  bekraftelse: { namn: 'Bekräftelsebilaga', namnBestamd: 'bekräftelsebilagan' },
+  deltagarinfo: { namn: 'Deltagarinformation', namnBestamd: 'deltagarinformationen' },
 };
 
 /**
@@ -755,7 +768,7 @@ export function GenereringsVy({
     if (!skarpt) {
       skrivLaddningssida(fonster, {
         titel: 'Skapar förhandsgranskningen…',
-        text: `${vantehalsning(forNamn)}förhandsgranskningen av ${meta.namn.toLowerCase()}n skapas och visas här om några sekunder.`,
+        text: `${vantehalsning(forNamn)}förhandsgranskningen av ${meta.namnBestamd} skapas och visas här om några sekunder.`,
       });
       forhandsgranska.mutate(
         { eventId: event.id, mall },
@@ -799,8 +812,8 @@ export function GenereringsVy({
     }
 
     skrivLaddningssida(fonster, {
-      titel: `Skapar ${meta.namn.toLowerCase()}n…`,
-      text: `${vantehalsning(forNamn)}${meta.namn.toLowerCase()}n skapas och visas här om några sekunder.`,
+      titel: `Skapar ${meta.namnBestamd}…`,
+      text: `${vantehalsning(forNamn)}${meta.namnBestamd} skapas och visas här om några sekunder.`,
     });
     genereraBilaga.mutate(
       { mall, platsFalt: Object.keys(platsFalt).length > 0 ? platsFalt : undefined },
@@ -1095,8 +1108,8 @@ export function GenereringsVy({
         {resultat?.typ === 'klar' && (
           <MessageBox intent="success">
             {resultat.skarpt
-              ? `${meta.namn}n är skapad och ligger nu bland eventets dokument, redo att bifogas i utskick.`
-              : `${meta.namn}n är klar att granska.`}
+              ? `${meningsStart(meta.namnBestamd)} är skapad och ligger nu bland eventets dokument, redo att bifogas i utskick.`
+              : `${meningsStart(meta.namnBestamd)} är klar att granska.`}
             {resultat.utelamnade.length > 0 && ` Utan ${ochLista(resultat.utelamnade)}.`}
             {resultat.sparade.length > 0 &&
               ` ${event.ort} har nu ${ochLista(resultat.sparade)} som standard.`}
@@ -1129,7 +1142,7 @@ export function GenereringsVy({
                 onPress={() => window.open(resultat.url, '_blank')}
               >
                 <ExternalLink aria-hidden="true" size={16} className="shrink-0" />
-                Öppna {meta.namn.toLowerCase()}n
+                Öppna {meta.namnBestamd}
               </Button>
             </span>
           </MessageBox>

@@ -1121,11 +1121,15 @@ function DokumentAtgardsKnappar({ namn, kalla }: { namn: string; kalla: Dokument
           // mellan bilaga-rader (fritt uppladdat filnamn, t.ex.
           // "kontrakt_signerat.pdf" — inte en böjbar substantivfras) och
           // generatorraden/kvittot (`GeneratorRad`, `namn={gen.namn}`).
-          // GenereringsVy.tsx:s `${meta.namn.toLowerCase()}n`-bildning
-          // förutsätter ett känt, fast substantiv (`meta.namn` ur
-          // `MALL_META`) — samma antagande håller inte för ett godtyckligt
-          // filnamn. `titel` lämnas oförändrad ("Öppnar dokument…") — det
-          // är redan sant för den generiska "dokumentet"-formen nedan.
+          // GenereringsVy.tsx:s `MALL_META`-poster bär numera EXPLICIT
+          // `namnBestamd` per mall (review-runda 1, samma skiva — den
+          // mekaniska `${namn.toLowerCase()}n`-formeln gav "deltagarinformationn"
+          // eftersom svensk bestämd form inte bildas med en enda regel över
+          // substantiv-klasser). Ett känt, litet antal fasta mallnamn tål en
+          // uppslagstabell; ett godtyckligt uppladdat filnamn gör det inte —
+          // därför förblir DENNA yta generisk. `titel` lämnas oförändrad
+          // ("Öppnar dokument…") — det är redan sant för den generiska
+          // "dokumentet"-formen nedan.
           skrivLaddningssida(handle, {
             titel: 'Öppnar dokument…',
             text: forNamn

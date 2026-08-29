@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-29 07:34'
-updated_date: '2026-08-29 08:16'
+updated_date: '2026-08-29 08:25'
 labels:
   - ready-for-agent
 dependencies: []
@@ -123,4 +123,44 @@ Uppdraget instruerade explicit att återanvända SAMMA bildning, så den lämnas
 orörd här — flaggas för ett eget kort om Marcus vill rätta böjningen (skulle
 kräva en per-dokument bestämd-form-tabell i stället för mekanisk
 toLowerCase()+n).
+
+REVIEW-RUNDA 1 (orkestrerarens fynd, samma dag): dubbel-n-buggen
+("deltagarinformationn") som ovanstående OBSERVERAT-stycke flaggade som
+"utanför scope" omklassades till ett AC #4-fel (Gunilla-läsning) och
+RÄTTADES i samma PR — det stycket är alltså numera HISTORIK, inte
+kvarvarande status.
+
+Fix: `MALL_META` bär nu ett explicit `namnBestamd`-fält per mall
+(`bekraftelse: 'bekräftelsebilagan'`, `deltagarinfo: 'deltagarinformationen'`)
+i stället för att härleda bestämd form mekaniskt med
+`${meta.namn.toLowerCase()}n` — den formeln antog fel svensk grammatikregel
+för substantiv som redan slutar på konsonant "n" ("information" → "...ionen",
+inte "...ionn"). Svept med grep på `.toLowerCase()}n` och `namn.toLowerCase()`
+i hela src/: 6 levande träffar i GenereringsVy.tsx rättade (väntetextens
+titel+text i båda grenarna, MessageBox "X är skapad.../är klar att granska.",
+"Öppna X"-knappen); en sjunde träff (`Skapa ${meta.namn.toLowerCase()}`,
+obestämd form, ingen "n"-suffix) är AVSIKTLIGT orörd — inte bugg. Sentence-
+initial MessageBox-text versaliseras via befintlig `meningsStart()`-hjälpare
+(fanns redan i filen, återanvänd i stället för en ny abstraktion).
+DokumentYta.tsx:s docblock (bokförde tidigare den gamla formeln som
+förklaring till varför den ytan förblir generisk) uppdaterad till att
+referera `namnBestamd` i stället.
+
+Grep-bevis (0 träffar i levande kod, mätt EFTER fix):
+`grep -rn '\.namn}n' src/` → 0. `grep -rn '\.toLowerCase()}n' src/` → enbart
+två docblock-kommentarer som FÖRKLARAR den gamla buggen (DokumentYta.tsx,
+GenereringsVy.tsx), ingen levande kod.
+
+Test uppdaterad: dokument-generering-fonster-direkt.acceptance.test.ts:s
+deltagarinfo-test (tillagd tidigare i denna skiva) bevisar nu
+"deltagarinformationen" (rättad från "deltagarinformationn" — testet hade
+annars LÅST bugen, exakt vad orkestreraren flaggade). Ingen aria-snapshot
+bar den gamla strängen (mätt: grep i tests/visual/__aria__/ gav 0 träffar) —
+MessageBox-sektionen (där bugen syntes) renderas bara efter en handling,
+inte i promoverings-grindens statiska ögonblicksbild.
+
+Grindar omkörda (nakna exitkoder): typecheck=0, biome check .=0,
+dokument-generering-fonster-direkt.acceptance.test.ts +
+dokument-forhandsgranskning-popup-policy.acceptance.test.ts (mot äkta
+Google Chrome)=0 (8/8 gröna), check-facit.sh=0, check-langa-streck.mjs=0.
 <!-- SECTION:NOTES:END -->
