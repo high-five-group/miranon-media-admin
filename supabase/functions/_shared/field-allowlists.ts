@@ -428,6 +428,41 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
       'Källhash',
     ],
   },
+  // [TASK-338.4, ADR-125 § Beslut 1] `update-attachment-scope` — Lottas
+  // "Ändra räckvidd" i räckviddsläget (PRD TASK-338 berättelse 8: en
+  // felklassad delad bilaga ska gå att rätta utan att filen laddas upp igen).
+  //
+  // EGEN OPERATIONSNYCKEL, INTE ÅTERANVÄND 'create-attachment' — och det är
+  // avsiktligt trots att den nyckelns docblock uttryckligen tillåter samma
+  // nyckel för både POST och PATCH ("en OperationDef gatar FÄLTET, inte om
+  // anropet är POST eller PATCH", generate-event-attachments ersatt-läge).
+  // Skälet är MINSTA PRIVILEGIUM: denna operation ändrar RÄCKVIDDEN på en
+  // redan existerande rad och har därför inget ärende till `Namn`,
+  // `Storlek (bytes)`, `Skapad`, `Event`, `Lagringsnyckel`, `Dokumentklass`,
+  // `Mall` eller `Källhash`. Hade den ärvt create-listan vore listan tyst
+  // verkningslös för just denna EF — en kod-drift som bytte fil eller
+  // dokumentklass hade passerat grinden. FYRA fält, exakt de axlar
+  // `buildScopeUpdateFields` (_shared/attachments.ts) skriver.
+  //
+  // Fält-ID:n (staging) för de fyra: `Räckvidd` fldU6i9Ju5HRwSRBf,
+  // `Kursfamilj` fldiJnZk66jlkUiX8, `Kursnivå` fldep25m32Q3Cjh41,
+  // `Plats` fldmkHUxPNRRA0Rxi — data-model.md § "Bilagornas
+  // Gemensam-räckvidd — Plats-axel" resp. § "Staging- och prodbasens
+  // additiva tillskott 2026-08-17 (task-275.1...)". Prod väntar TASK-338.6.
+  // Lookup-fältet `Platsnamn` står MEDVETET INTE här av samma skäl som i
+  // 'create-attachment' ovan: multipleLookupValues är BERÄKNAT och kan inte
+  // skrivas (data-model.md § Kända fällor).
+  //
+  // Klienten når INTE dessa fältnamn — EF:en bygger `fields` server-side ur
+  // ett redan Zod-validerat `AttachmentScopeInput` (samma
+  // `AttachmentScopeInputSchema` som skrivvägen, importerad aldrig
+  // duplicerad), så listan är en SSOT-grind mot framtida kod-drift, exakt
+  // samma form som 'create-attachment'. Tabell per NAMN (ADR-050).
+  'update-attachment-scope': {
+    tableId: 'Bilagor',
+    allowedFields: ['Räckvidd', 'Kursfamilj', 'Kursnivå', 'Plats'],
+  },
+
   // Åtgärdsutskickens sändväg (TASK-147.1, ADR-067-revisionen — repots sjunde
   // write-vertikal, tredje mail-vertikal). send-action-email-EF:en bygger `fields`
   // SERVER-SIDE ur den UPPLÄSTA anmälan + den fasta per-åtgärdstyp-mappningen i

@@ -190,6 +190,43 @@ export interface UploadAttachmentInput {
 }
 
 /**
+ * [TASK-338.4, ADR-125 § Beslut 1] Indata till
+ * `DataSourceAdapter.updateAttachmentScope` — Lottas "Ändra räckvidd".
+ *
+ * SPEGLAR `UploadAttachmentInput`s tre axlar EXAKT, minus `file` och
+ * `eventId`. Att det INTE finns någon `eventId` här är en utsaga, inte en
+ * utelämning: operationen gäller uteslutande DELADE bilagor, och en delad
+ * bilaga har per definition inget ägande event att auktorisera mot (samma
+ * skäl `deleteAttachment` tar `eventId: null` i räckviddsläget).
+ *
+ * ═══ HELA SLUTTILLSTÅNDET, ALDRIG EN DELMÄNGD ═══
+ * Varje anrop beskriver hur räckvidden ska SE UT efteråt. En utelämnad axel
+ * betyder "denna bilaga ska inte begränsas av den axeln" — servern RENSAR
+ * fältet (`buildScopeUpdateFields`), den lämnar det inte orört. Utan den
+ * regeln gick det inte att bredda "RIM · Rönninge" tillbaka till bara
+ * "Rönninge", vilket är halva poängen med PRD TASK-338 berättelse 8.
+ */
+export interface UpdateAttachmentScopeInput {
+  /** Bilagor-radens Airtable-record-ID (`rec…`). */
+  attachmentId: string;
+  /**
+   * Målräckvidden. Bara `Gemensam` accepteras av EF:en — en delad bilaga
+   * kan inte göras event-egen här (filens lagringsplats är härledd ur
+   * räckvidden och flyttas inte av denna operation; se
+   * update-attachment-scope/index.ts § VAD DEN INTE ÄR). Legacy-värdena
+   * accepteras och normaliseras, samma tolerans som skrivvägen bär.
+   */
+  rackvidd: AttachmentScopeValue;
+  /** Kursfamilj-axeln. Utelämnad = axeln RENSAS (begränsar inte). */
+  kursfamilj?: string;
+  /** Kursnivå-axeln. Utelämnad = axeln RENSAS (tom-nivå-regeln: hela familjen). */
+  kursniva?: string;
+  /** Plats-axeln — ett Platser-RECORD-ID (`rec…`), aldrig ett namn (se
+   *  `UploadAttachmentInput.plats` för hela motivet). Utelämnad = RENSAS. */
+  plats?: string;
+}
+
+/**
  * Svaret från `DataSourceAdapter.getAttachmentDownloadUrl` (TASK-245). En
  * TIDSBEGRÄNSAD signerad URL för EN bilaga i den privata `bilagor`-bucketen
  * — se `_shared/attachments.ts` § SIGNED_DOWNLOAD_URL_TTL_SECONDS för

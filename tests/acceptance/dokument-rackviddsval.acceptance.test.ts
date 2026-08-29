@@ -1273,3 +1273,420 @@ test.describe('TASK-309.40 — typfiltret nollställs vid byte av räckvidd', ()
     await expect(page).toHaveURL(/typ=bilaga/);
   });
 });
+
+/**
+ * TASK-338.4 — "ÄNDRA RÄCKVIDD" (ADR-125 § Beslut 1, PRD TASK-338 berättelse 8)
+ *
+ * Lotta laddade upp parkeringsbilagan som "alla event" när den egentligen bara
+ * gäller Rönninge. Före denna skiva var enda vägen tillbaka att radera raden
+ * och ladda upp filen igen. Nu öppnar hon SAMMA räckviddsdialog, förifylld med
+ * radens nuvarande axlar, ändrar och sparar — filen rör sig aldrig.
+ *
+ * VAD SVITEN PRÖVAR, och varför var och en:
+ *   1. Åtgärden finns BARA i räckviddsläget (ADR-118 beslut 3 gäller vidare —
+ *      ur ett events kontext är en delad bilaga oredigerbar).
+ *   2. Dialogen öppnar FÖRIFYLLD med radens axlar, inte i nolläget. Utan det
+ *      vore "ändra" i praktiken "skriv om från början".
+ *   3. Alla event → Rönninge: EF-KROPPEN bär `plats`, och badgen byter.
+ *   4. Rönninge → alla event: tomma axlar UTELÄMNAS ur kroppen (servern
+ *      rensar dem, `buildScopeUpdateFields`) — riktningen som avslöjar en
+ *      fältbyggare som råkat återanvända CREATE-formen.
+ *   5. "Bara detta event" är AVSTÄNGD — servern svarar 400 på räckvidd Event
+ *      här, så ett valbart alternativ vore en fälla.
+ *   6. Serverns fel SYNS i dialogen, och dialogen står kvar.
+ *   7. Tangentbord + axe.
+ *
+ * KROPPS-FÅNGSTEN följer samma rigg som "Ersätt"-testerna ovan: en egen
+ * MSW-handler som sparar undan `request.json()` och listan av NYCKLAR —
+ * nycklarna är hela poängen i fall 4, eftersom en utelämnad nyckel och en
+ * `null`-nyckel ser identiska ut för `toMatchObject`.
+ */
+test.describe('TASK-338.4 — Ändra räckvidd på en delad bilaga', () => {
+  /** Radens "Ändra räckvidd"-knapp i räckviddsläget. */
+  const andraKnapp = (page: Page) =>
+    page
+      .getByTestId('dokument-fil')
+      .filter({ hasText: BILAGA_GEMENSAM.namn })
+      .getByRole('button', { name: `Ändra räckvidd för ${BILAGA_GEMENSAM.namn}` });
+
+  /**
+   * ═══ STATEFUL FIXTURVÄRLD FÖR SKRIVVÄGEN ═══
+   *
+   * VARFÖR STATEFUL, och inte en handler som svarar samma sak varje gång.
+   * MÄTT, inte antaget (CI-körning 33254282367, head 82edb19d): två av
+   * testen nedan föll i CI men gick grönt lokalt med `--workers=1`. Orsaken
+   * var INTE timing i UI:t utan att listnings-handlern var STATISK: den
+   * returnerade oförändrad fixturdata även efter en lyckad skrivning.
+   *
+   * Kedjan blir då: `onMutate` skriver badgen optimistiskt →
+   * `onSettled` invaliderar `attachments.all` → refetchen hämtar den GAMLA
+   * raden → badgen går TILLBAKA. Assertionen efter Spara mätte alltså ett
+   * ÖVERGÅENDE tillstånd, och utfallet avgjordes av om assertionen hann före
+   * refetchen. På en obelastad maskin hann den; under CI:s parallella last
+   * gjorde den inte det. Ett rent race, inbyggt i riggen.
+   *
+   * Fixen är inte att vänta längre eller att polla — det hade bara flyttat
+   * racet. Fixen är att fixturen BETER SIG SOM EN SERVER: skrivningen
+   * uppdaterar den rad efterföljande listningar serverar. Då är
+   * sluttillståndet stabilt och assertionen mäter hela kedjan
+   * (skrivning → refetch → badge) i stället för ett ögonblick i den.
+   *
+   * `slappSvar` finns för de fall som behöver observera det OPTIMISTISKA
+   * fönstret: POST-svaret hålls tillbaka tills testet släpper det. En FAST
+   * fördröjning hade återinfört samma klass av race under last.
+   *
+   * ═══ VÄNTA PÅ REFETCHEN, ALDRIG PÅ TID ═══
+   * Den stateful fixturen gör de två utfallen IDENTISKA (optimistisk badge
+   * och post-refetch-badge säger samma sak), vilket ensamt räcker för att
+   * fälla ut racet. Testen väntar ÄNDÅ explicit på att `listningar` ökat
+   * efter en skrivning innan badgen assertas. Skälet är mätt: lokalt stod
+   * räknaren kvar på 1 genom hela testet, alltså kördes post-refetch-vägen
+   * bara i CI — och det var just den vägen som föll där. Med väntan körs
+   * BÅDA vägarna på varje maskin, och assertionen mäter det Lotta faktiskt
+   * ser en sekund senare i stället för ett ögonblick i mitten.
+   */
+  function riggaScopeVarld(
+    network: NetworkFixture,
+    startrad: Record<string, unknown> = { ...BILAGA_GEMENSAM },
+    val: { hallTillbakaSvar?: boolean; svarStatus?: number; svarFel?: string } = {},
+  ) {
+    const rigg = {
+      /** Raden som listnings-handlern serverar just nu. */
+      aktuell: { ...startrad } as Record<string, unknown>,
+      /** Sista skrivningens kropp och dess NYCKLAR (utelämnade axlar syns bara här). */
+      kropp: null as Record<string, unknown> | null,
+      nycklar: [] as string[],
+      /** Antal LISTNINGS-hämtningar. Testen väntar på att denna ökar efter
+       *  en skrivning, i stället för på tid — se § VÄNTA PÅ REFETCHEN. */
+      listningar: 0,
+      /** Anropas för att släppa ett tillbakahållet POST-svar. */
+      slappSvar: () => {},
+    };
+
+    let vantaPaSlapp: Promise<void> = Promise.resolve();
+    if (val.hallTillbakaSvar) {
+      vantaPaSlapp = new Promise<void>((resolve) => {
+        rigg.slappSvar = resolve;
+      });
+    }
+
+    network.use(
+      http.get(EF('get-event-attachments'), ({ request }) => {
+        rigg.listningar += 1;
+        // Eventläget ser eventets egna + den gemensamma; räckviddsläget bara
+        // den gemensamma — samma grening som `bilagorHandler()`.
+        const eventId = new URL(request.url).searchParams.get('eventId');
+        if (eventId) return json({ attachments: [BILAGA_EGEN, rigg.aktuell] });
+        return json({ attachments: [rigg.aktuell] });
+      }),
+      http.post(EF('update-attachment-scope'), async ({ request }) => {
+        const kropp = (await request.json()) as Record<string, unknown>;
+        rigg.kropp = kropp;
+        rigg.nycklar = Object.keys(kropp);
+        await vantaPaSlapp;
+
+        if (val.svarStatus && val.svarStatus >= 400) {
+          // FELVÄG: raden ändras INTE, precis som servern inte skriver något
+          // när en vakt fäller. Det är vad som gör rollbacken observerbar som
+          // ett stabilt sluttillstånd.
+          return json({ error: val.svarFel ?? 'Nekad.' }, val.svarStatus);
+        }
+
+        // LYCKAD SKRIVNING: fixturen uppdateras som en riktig server hade
+        // gjort — tomma axlar RENSADE, aldrig kvarlämnade (samma semantik som
+        // `buildScopeUpdateFields`, se dess docblock).
+        rigg.aktuell = {
+          ...rigg.aktuell,
+          rackvidd: kropp.rackvidd ?? 'Gemensam',
+          kursfamilj: (kropp.kursfamilj as string | undefined) ?? null,
+          kursniva: (kropp.kursniva as string | undefined) ?? null,
+          plats: kropp.plats ? { id: kropp.plats as string, namn: 'Rönninge' } : null,
+        };
+        return json({ attachment: rigg.aktuell });
+      }),
+    );
+
+    return rigg;
+  }
+
+  test('åtgärden finns BARA i räckviddsläget — aldrig i eventläget (ADR-118 beslut 3)', async ({
+    page,
+    network,
+  }) => {
+    network.use(bilagorHandler());
+
+    // EVENTLÄGET: samma bilaga, samma id — ingen "Ändra räckvidd".
+    await gotoEventlage(page);
+    const radIEventlage = page
+      .getByTestId('dokument-fil')
+      .filter({ hasText: BILAGA_GEMENSAM.namn });
+    await expect(radIEventlage).toBeVisible();
+    await expect(radIEventlage.getByRole('button', { name: /Ändra räckvidd/ })).toHaveCount(0);
+
+    // RÄCKVIDDSLÄGET: här FINNS den.
+    await gotoRackviddslage(page);
+    await expect(andraKnapp(page)).toBeVisible();
+  });
+
+  test('dialogen öppnar FÖRIFYLLD med radens axlar, inte i nolläget', async ({ page, network }) => {
+    network.use(bilagorHandler());
+    await gotoRackviddslage(page);
+    await andraKnapp(page).click();
+
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+    // Radens namn står i dialogen — svaret gäller något konkret.
+    await expect(dialog.getByText(BILAGA_GEMENSAM.namn)).toBeVisible();
+
+    // FÖRIFYLLNINGEN: raden bär RIM + Rönninge, ingen nivå. Triggerns TEXT är
+    // beviset — ett nolläge hade sagt "Alla familjer"/"Alla platser".
+    await expect(familjValjare(page)).toContainText('RIM');
+    await expect(platsValjare(page)).toContainText('Rönninge');
+    await expect(stegValjare(page)).toContainText('Alla steg');
+
+    // Sammanfattningen speglar samma sak i klartext (PRD berättelse 6).
+    await expect(dialog.getByText('Gäller: RIM-event i Rönninge')).toBeVisible();
+  });
+
+  test('"Bara detta event" är AVSTÄNGD i ändra-läget — en delad bilaga kan inte göras event-egen', async ({
+    page,
+    network,
+  }) => {
+    network.use(bilagorHandler());
+    await gotoRackviddslage(page);
+    await andraKnapp(page).click();
+
+    const dialog = page.getByRole('dialog');
+    await expect(dialog.getByRole('radio', { name: EVENT_RADIO })).toBeDisabled();
+    await expect(dialog.getByRole('radio', { name: DELAT_RADIO })).toBeChecked();
+    // Knappen säger "Spara", inte "Ladda upp" — ingen fil rör sig här.
+    await expect(dialog.getByRole('button', { name: 'Spara' })).toBeVisible();
+  });
+
+  test('Alla event → Rönninge: kroppen bär plats-ID, och badgen byter', async ({
+    page,
+    network,
+  }) => {
+    // En AXELLÖS gemensam bilaga ("Alla event") är utgångsläget PRD:n
+    // beskriver: de två dokument Marcus laddade upp 2026-08-29.
+    const AXELLOS = {
+      ...BILAGA_GEMENSAM,
+      id: 'recBilagaAxellos01',
+      namn: 'Parkering.pdf',
+      kursfamilj: null,
+      kursniva: null,
+      plats: null,
+    };
+    // STATEFUL rigg — skrivningen uppdaterar den rad listningen serverar, så
+    // badge-assertionen nedan mäter ett STABILT sluttillstånd i stället för
+    // att kapplöpa med `onSettled`-refetchen (se riggaScopeVarld § VARFÖR
+    // STATEFUL för CI-fallet som avslöjade racet).
+    const rigg = riggaScopeVarld(network, AXELLOS);
+
+    await page.goto('/mer/dokument');
+    await expect(page.getByTestId('dokument-yta')).toBeVisible();
+    const rad = page.getByTestId('dokument-fil').filter({ hasText: AXELLOS.namn });
+    await expect(rad).toBeVisible();
+    // BADGEN FÖRE: axellös = "Alla event".
+    await expect(rad.getByText('Alla event')).toBeVisible();
+
+    await rad.getByRole('button', { name: `Ändra räckvidd för ${AXELLOS.namn}` }).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await valjIAxel(page, platsValjare, 'Rönninge');
+    await expect(page.getByRole('dialog').getByText('Gäller: alla event i Rönninge')).toBeVisible();
+    const listningarFore = rigg.listningar;
+    await page.getByRole('dialog').getByRole('button', { name: 'Spara' }).click();
+
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    // VÄNTA PÅ REFETCHEN, inte på tid (se riggens docblock): först när
+    // `onSettled`-invalideringen faktiskt hämtat om listan mäter assertionen
+    // nedan hela kedjan skrivning → listning → badge. Utan detta kunde ett
+    // grönt utfall komma enbart ur det optimistiska fönstret.
+    await expect.poll(() => rigg.listningar).toBeGreaterThan(listningarFore);
+    await expect(rad.getByText('Rönninge')).toBeVisible();
+    await expect(rad.getByText('Alla event')).toHaveCount(0);
+
+    // EF-KROPPEN — plats som RECORD-ID, aldrig ett namn.
+    expect(rigg.kropp).toMatchObject({ rackvidd: 'Gemensam', plats: 'recPlatsRonninge01' });
+    // Tomma axlar UTELÄMNAS ur kroppen (servern rensar dem server-side).
+    expect(rigg.nycklar).not.toContain('kursfamilj');
+    expect(rigg.nycklar).not.toContain('kursniva');
+  });
+
+  test('Rönninge → alla event: tomma axlar UTELÄMNAS, badgen breddas', async ({
+    page,
+    network,
+  }) => {
+    const rigg = riggaScopeVarld(network);
+
+    await gotoRackviddslage(page);
+    const rad = page.getByTestId('dokument-fil').filter({ hasText: BILAGA_GEMENSAM.namn });
+    // BADGEN FÖRE: den kombinerade formen.
+    await expect(rad.getByText('RIM · Rönninge')).toBeVisible();
+
+    await andraKnapp(page).click();
+    // Tillbaka till nolläget på BÅDA axlarna — riktningen som avslöjar en
+    // fältbyggare som utelämnar i stället för att rensa.
+    await valjIAxel(page, familjValjare, 'Alla familjer');
+    await valjIAxel(page, platsValjare, 'Alla platser');
+    await expect(page.getByRole('dialog').getByText('Gäller: alla event')).toBeVisible();
+    const listningarFore = rigg.listningar;
+    await page.getByRole('dialog').getByRole('button', { name: 'Spara' }).click();
+
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    // VÄNTA PÅ REFETCHEN (se riggens docblock) — sedan är sluttillståndet
+    // stabilt: fixturen har skrivits om, så badgen står kvar på "Alla event"
+    // även efter att listningen hämtats om.
+    await expect.poll(() => rigg.listningar).toBeGreaterThan(listningarFore);
+    await expect(rad.getByText('Alla event')).toBeVisible();
+    await expect(rad.getByText('RIM · Rönninge')).toHaveCount(0);
+
+    expect(rigg.kropp).toMatchObject({ rackvidd: 'Gemensam' });
+    // KÄRNAN: INGEN av de tre axlarna får följa med. Att pröva NYCKLARNA och
+    // inte värdena är avsiktligt — `{ plats: undefined }` och en utelämnad
+    // nyckel ser identiska ut för `toMatchObject`.
+    expect(rigg.nycklar).not.toContain('kursfamilj');
+    expect(rigg.nycklar).not.toContain('kursniva');
+    expect(rigg.nycklar).not.toContain('plats');
+  });
+
+  test('serverns fel: dialogen står kvar, den optimistiska badgen skrivs OCH tas tillbaka', async ({
+    page,
+    network,
+  }) => {
+    // Serverns dokumentklass-vakt (403), med svaret HÅLLET TILLBAKA tills
+    // testet släpper det. En FAST fördröjning (1,5 s stod här förut) är samma
+    // klass av race som CI avslöjade i de två testen ovan: under last kan
+    // vilken tidsgräns som helst passeras. En signal är deterministisk
+    // oavsett maskin.
+    const rigg = riggaScopeVarld(
+      network,
+      { ...BILAGA_GEMENSAM },
+      {
+        hallTillbakaSvar: true,
+        svarStatus: 403,
+        svarFel:
+          'Bara uppladdade dokument kan byta räckvidd. Mall-genererade bilagor följer sitt event.',
+      },
+    );
+
+    await gotoRackviddslage(page);
+    const rad = page.getByTestId('dokument-fil').filter({ hasText: BILAGA_GEMENSAM.namn });
+    await expect(rad.getByText('RIM · Rönninge')).toBeVisible();
+
+    await andraKnapp(page).click();
+    // Nollställ BÅDA axlarna, så den optimistiska badgen blir "Alla event".
+    await valjIAxel(page, familjValjare, 'Alla familjer');
+    await valjIAxel(page, platsValjare, 'Alla platser');
+    const listningarFore = rigg.listningar;
+    await page.getByRole('dialog').getByRole('button', { name: 'Spara' }).click();
+
+    // ═══ ARM 1: onMutate SKRIVER FAKTISKT (isolerbar, tvåsidigt bevisad) ═══
+    // Servern har tagit emot anropet men svarar inte förrän vi säger till, så
+    // badgen kan bara bära det nya valet genom den optimistiska skrivningen i
+    // `useUpdateAttachmentScope.onMutate`. Inget serversvar har kommit än.
+    await expect(rad.getByText('Alla event')).toBeVisible();
+    await expect(rad.getByText('RIM · Rönninge')).toHaveCount(0);
+
+    // Släpp 403:an.
+    rigg.slappSvar();
+
+    const dialog = page.getByRole('dialog');
+    await expect(dialog.getByText('Räckvidden kunde inte ändras')).toBeVisible();
+    // DIALOGEN STÅR KVAR — felet bor intill valet som orsakade det, till
+    // skillnad mot uppladdningsfelet som bor på sidan (dialogen rivs där).
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'Spara' })).toBeEnabled();
+
+    // ═══ ARM 2: BADGEN LJUGER INTE EFTER FELET ═══
+    // Riggen lämnar raden ORÖRD på felvägen (precis som servern inte skriver
+    // något när en vakt fäller), så detta är ett STABILT sluttillstånd:
+    // badgen är tillbaka på radens verkliga räckvidd, och ytan påstår aldrig
+    // en spridning basen inte har (PRD TASK-338 berättelse 3).
+    //
+    // VAD DEN INTE BEVISAR, och det är MÄTT, inte antaget: att just
+    // `onError`-grenens `setQueryData(key, context.previous)` är det som
+    // återställde den. En mutation som tog BORT hela `onError`-kroppen fällde
+    // INTE detta test — `onSettled`-invalideringen hämtar om listan, och
+    // eftersom felvägen lämnar fixturen orörd ger rollbacken och refetchen
+    // samma synliga utfall. Rollbacken är ett FLIMMER-skydd i fönstret före
+    // refetchen, inte den enda sanningskällan, och därför inte isolerbar på
+    // denna yta. Att skriva "rollback-armen bevisad" här hade varit ett
+    // påstående testet inte bär (ADR-083). Arm 1 ovan är den del som ÄR
+    // isolerbar, och den är bevisad i båda riktningar.
+    await expect.poll(() => rigg.listningar).toBeGreaterThan(listningarFore);
+    await expect(rad.getByText('RIM · Rönninge')).toBeVisible();
+    await expect(rad.getByText('Alla event')).toHaveCount(0);
+  });
+
+  test('tangentbord: fokus flyttas IN i dialogen och ÅTERLÄMNAS efter Escape', async ({
+    page,
+    network,
+  }) => {
+    network.use(bilagorHandler());
+    await gotoRackviddslage(page);
+
+    await andraKnapp(page).focus();
+    await expect(andraKnapp(page)).toBeFocused();
+    await page.keyboard.press('Enter');
+
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+
+    // ═══ FOKUS ÄR FAKTISKT INNE I DIALOGEN ═══
+    // Mätt, inte antaget: `document.activeElement` måste vara en ÄTTLING till
+    // dialogen. En tidigare version av detta test assertade `toContainText`,
+    // vilket bara bevisade att namnet RENDERADES — det hade varit grönt även
+    // med fokus kvar bakom overlayen, alltså precis den skada assertionen
+    // påstod sig skydda mot.
+    await expect
+      .poll(() => dialog.evaluate((el) => el.contains(document.activeElement)))
+      .toBe(true);
+
+    await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0);
+
+    // ═══ ÅTERLÄMNINGEN ═══
+    // Dialogen monteras VILLKORLIGT (`andrasRackvidd != null`), så
+    // react-arias fokus-restore måste överleva en unmount av hela trädet.
+    // Landar fokus på <body> i stället står tangentbordsanvändaren utan
+    // position i listan och får börja om från sidans topp.
+    await expect(andraKnapp(page)).toBeFocused();
+  });
+
+  test('tangentbord: fokus återlämnas till knappen även efter LYCKAD Spara', async ({
+    page,
+    network,
+  }) => {
+    network.use(bilagorHandler());
+    riggaScopeVarld(network);
+
+    await gotoRackviddslage(page);
+    await andraKnapp(page).focus();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('dialog')).toBeVisible();
+
+    await valjIAxel(page, platsValjare, 'Alla platser');
+    await page.getByRole('dialog').getByRole('button', { name: 'Spara' }).click();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+
+    // SVÅRARE FALL ÄN ESCAPE, och därför ett eget test: knappen är
+    // `isDisabled` medan `scopeMutation.isPending` — en disabled knapp kan
+    // inte ta fokus. Stängningen sker dessutom i mutationens `onSuccess`,
+    // alltså i samma vända som `isPending` faller tillbaka. Att fokus ändå
+    // landar rätt är inget man kan läsa sig till ur koden; det måste mätas.
+    await expect(andraKnapp(page)).toBeFocused();
+  });
+
+  test('ändra-dialogen är axe-ren', async ({ page, network }) => {
+    network.use(bilagorHandler());
+    await gotoRackviddslage(page);
+    await andraKnapp(page).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+
+    const resultat = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+      .analyze();
+    expect(resultat.violations).toEqual([]);
+  });
+});

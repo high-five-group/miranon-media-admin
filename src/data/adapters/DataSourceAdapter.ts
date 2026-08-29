@@ -3,6 +3,7 @@ import type {
   AttachmentDownloadUrl,
   DocumentPreview,
   SkapadEventBilaga,
+  UpdateAttachmentScopeInput,
   UploadAttachmentInput,
 } from '../../domain/models/Attachment';
 import type {
@@ -483,6 +484,35 @@ export interface DataSourceAdapter {
    * filhuvudet för den fulla auktorisationslogiken.
    */
   deleteAttachment(eventId: string | null, attachmentId: string): Promise<void>;
+
+  /**
+   * [TASK-338.4, ADR-125 § Beslut 1] Ändra RÄCKVIDDEN på en redan uppladdad
+   * DELAD bilaga — Lottas "Ändra räckvidd" i räckviddsläget. POST mot
+   * update-attachment-scope-EF:en, som svarar med den uppdaterade raden i
+   * samma `Attachment`-form som `fetchEventAttachments`.
+   *
+   * VARFÖR EN EGEN METOD OCH INTE `uploadAttachment` MED SAMMA `id`: det
+   * finns ingen ny FIL. Före denna metod var enda vägen att rätta en
+   * felklassad delad bilaga att radera raden och ladda upp filen igen (PRD
+   * TASK-338 berättelse 8) — bilagan bytte då `id`, tappade sitt
+   * `Skapad`-datum och passerade Storage i onödan. Här ändras bara de tre
+   * axlarna; `id`, bytesen och historiken står kvar.
+   *
+   * TOMMA AXLAR RENSAS, inte utelämnas. `kursfamilj: undefined` betyder
+   * "denna bilaga ska INTE vara familjebunden", inte "rör inte familjen" —
+   * annars hade Lotta inte kunnat bredda en bilaga från "RIM · Rönninge"
+   * till bara "Rönninge". Servern skriver alla fyra fälten vid varje anrop
+   * (`buildScopeUpdateFields`), så anroparen skickar ALLTID hela det
+   * önskade sluttillståndet, aldrig en delmängd.
+   *
+   * SERVERN ÄGER VAKTERNA, inte klienten (ADR-057): räckvidden på raden
+   * måste redan vara gemensam (403), dokumentklassen måste vara `Uppladdad`
+   * (403), plats-ID:t måste finnas i Platser (404), och ett familje-byte som
+   * skulle flytta filens lagringsplats nekas (409). Klienten kan visa
+   * felet — den får aldrig avgöra saken själv. Se update-attachment-scope/
+   * index.ts § VAKTERNA.
+   */
+  updateAttachmentScope(input: UpdateAttachmentScopeInput): Promise<Attachment>;
 
   /**
    * Hämta en TIDSBEGRÄNSAD signerad nedladdnings-/förhandsvisnings-URL för

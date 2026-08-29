@@ -37,10 +37,10 @@
 // används HÄR bara som "en annan plats" att INTE matcha. Testet skapar aldrig
 // en Platser-rad — det skulle bara lämna skräp bakom sig.
 //
-// TESTSIDANS SCHEMA: svaren läses med `StagingAttachmentSchema` (se
-// `attachment-staging-schema.ts`) — domänens `AttachmentSchema` kan ännu inte
-// parsa `rackvidd: 'Gemensam'`, det är TASK-338.3:s arbete. Skarven är
-// bokförd där, inte gömd här.
+// TESTSIDANS SCHEMA: svaren läses med `StagingAttachmentSchema`. Filen är
+// SMALNAD i TASK-338.4 — `rackvidd`-vidgningen är riven (domänschemat bär
+// `GEMENSAM` sedan TASK-338.3), men `plats` står kvar STRIKT med avsikt:
+// en EF som glömt bära axeln ska fälla sviten, inte se ut som "ingen plats".
 //
 // Räckviddsparametrarna sätts via upload-attachment (den bevisade mönster-1-
 // skrivvägen — se upload-attachment.staging.test.ts för den validerings-

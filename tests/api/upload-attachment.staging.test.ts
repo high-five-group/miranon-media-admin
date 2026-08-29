@@ -90,8 +90,11 @@
 import { randomUUID } from 'node:crypto';
 import { type APIRequestContext, type APIResponse, expect, test } from '@playwright/test';
 import type { z } from 'zod';
-// [TASK-338.2] Se `attachment-staging-schema.ts` för varför domänens
-// `AttachmentSchema` inte längre kan parsa en gemensam bilaga.
+// [TASK-338.2, SMALNAD TASK-338.4] Läser EF-svaret med testsidans schema —
+// numera BARA en strikt `plats`-överskrivning (räckvidden går via
+// domänschemat rakt av sedan `AttachmentScope` bär `GEMENSAM`). Se
+// `attachment-staging-schema.ts` § VAD SOM ÄR KVAR för varför strikt HÄR och
+// lenient i klienten är två avsikter, inte en inkonsekvens.
 import { StagingAttachmentSchema } from './attachment-staging-schema';
 import { BELAGGNING_EVENT_ID } from './fixtures';
 import { type ApiConfig, classify401Body, getApiConfig, getValidUserJWT } from './helpers';

@@ -274,6 +274,19 @@ verify_jwt = true
 [functions.delete-attachment]
 verify_jwt = true
 
+# update-attachment-scope — TASK-338.4 (ADR-125 § Beslut 1). Ändrar
+# räckvidden på en REDAN uppladdad delad bilaga, så Lotta kan rätta en
+# felklassning utan att radera och ladda upp filen igen (PRD TASK-338
+# berättelse 8). Gateway-första-försvar aktivt; requireUser + FYRA guards
+# läggs OVANPÅ i koden (räckvidden på raden måste vara gemensam,
+# dokumentklassen måste vara Uppladdad, plats-ID:t måste finnas i Platser,
+# och storage-ankaret får inte flyttas) — se EF:ens filhuvud. STÅR ÄNNU
+# INTE i .prod-functions-allowlist.conf: prod-halvan av hela PRD:n
+# (schema + EF-deploy + radmigrering) är TASK-338.6 och kräver Marcus GO
+# per tabell (ADR-125 § 8). Denna rad är en STAGING-registrering.
+[functions.update-attachment-scope]
+verify_jwt = true
+
 # ─────────────────────────────────────────────────────────────────────────
 # AUTH — Användarinbjudan + auth-mail (T95 Spår B, TASK-127.4)
 #

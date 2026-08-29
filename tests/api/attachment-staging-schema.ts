@@ -1,38 +1,50 @@
-// [TASK-338.2] Testsidans läsning av EF-svarets `Attachment` — en MEDVETET
-// vidare variant av domänens `AttachmentSchema`, bara för staging-sviterna.
+// [TASK-338.2, SMALNAD TASK-338.4] Staging-sviternas läsning av EF-svarets
+// `Attachment`. Kvar av MEDVETET SKÄL — men bara HALVA den ursprungliga
+// vidgningen. Läs varför innan du river resten.
 //
-// VARFÖR DEN BEHÖVS, precist: `src/domain/schemas/Attachment.schema.ts` har
-// `rackvidd: z.enum(AttachmentScope).nullable()`, och `AttachmentScope`
-// (`src/domain/types/Status.ts`) bär i dag `Event | Kurstyp | Alla event`.
-// Sedan denna skiva svarar EF:en med det NORMALISERADE värdet `Gemensam`
-// (ADR-125 § Beslut 1) och med det nya fältet `plats`. En `.parse()` mot
-// domänschemat KASTAR därför på varje gemensam bilaga.
+// ═══ VAD SOM FÖRSVANN, OCH VARFÖR ═══
+// Filen bar fram till TASK-338.4 ocksa `rackvidd: z.string().nullable()`.
+// Den vidgningen var en SKARV mot en halvfärdig klient: `AttachmentScope`
+// (`src/domain/types/Status.ts`) bar då `Event | Kurstyp | Alla event`, så
+// domänschemat KASTADE på varje `rackvidd: 'Gemensam'` EF:en svarade med.
+// TASK-338.3 landade `GEMENSAM` i enumet, och `normaliseraRaAttachment`
+// mappar dessutom legacy-värdena defensivt — skarven fyller alltså ingen
+// funktion längre och är riven. Räckvidden går nu via domänschemat rakt av,
+// vilket är strikt STARKARE: ett okänt räckviddsvärde fälls i stället för
+// att glida igenom som en fri sträng.
 //
-// KLIENTSIDAN ÄR NÄSTA SKIVAS ARBETE (TASK-338.3: domän, adapter,
-// RackviddBadge, RackviddsDialog). Att bredda enumet här hade tagit ett
-// beslut som hör hemma där — och en halv klientändring är sämre än ingen.
-// Testsidan får därför sin egen läsning, och skarven är bokförd, inte
-// gömd: SÅ LÄNGE denna fil finns är den beviset på att `AttachmentScope`
-// ännu inte bär `GEMENSAM`. När 338.3 landar ska filen rivas och sviterna
-// gå tillbaka till `AttachmentSchema` rakt av.
+// ═══ VAD SOM ÄR KVAR, OCH VARFÖR DET ALDRIG SKA RIVAS ═══
+// `plats` är STRIKT här och `.nullable().optional()` i domänschemat. Det ser
+// ut som en inkonsekvens och är motsatsen: de två schemana har MOTSATTA
+// JOBB, och båda gör sitt rätt.
 //
-// Formen är fortfarande VALIDERAD, inte kringgången: allt utom de två
-// fälten ärvs oförändrat från domänschemat, så en regression i `id`,
-// `storlekBytes`, `dokumentklass` eller något annat fält fälls precis som
-// förut.
+//   - Domänschemat (`src/domain/schemas/Attachment.schema.ts`) ska låta
+//     LOTTAS LISTA FUNGERA även när EF:en halkar efter. En stale deploy utan
+//     TASK-338.2:s `mapAttachmentRecord` saknar nyckeln helt, och en strikt
+//     `.nullable()` hade fällt HELA listningen för en transient driftsituation
+//     (samma leniens `mall`/`kallhash` redan bär, av samma skäl).
+//   - DENNA fil ska göra tvärtom: FÄLLA en EF som glömt bära fältet. Det är
+//     hela poängen med en conformance-svit — den mäter vad den DEPLOYADE
+//     funktionen faktiskt svarar, och plats-axeln ÄR det TASK-338.1–338.4
+//     bygger. Att ärva klientens leniens hit hade gjort sviten blind för
+//     precis den regression den finns för.
+//
+// Två sidor, två avsikter, samma fält. Ersätter man `StagingAttachmentSchema`
+// med `parsaAttachment` i sviterna försvinner den ena avsikten tyst.
+//
+// Formen är i övrigt oförändrat VALIDERAD, inte kringgången: allt utom
+// `plats` ärvs från domänschemat, så en regression i `id`, `storlekBytes`,
+// `rackvidd`, `dokumentklass` eller något annat fält fälls precis som förut.
 
 import { z } from 'zod';
 import { AttachmentSchema } from '../../src/domain/schemas';
 
 export const StagingAttachmentSchema = AttachmentSchema.extend({
-  /** `Event` | `Gemensam` efter EF:ens normalisering — legacy-värdena
-   *  (`Kurstyp`/`Alla event`) kan aldrig nå hit, men schemat påstår inte
-   *  mer än det kan bevisa: en fri sträng, `null` för rader utan värde. */
-  rackvidd: z.string().nullable(),
   /** [TASK-338.2] Plats-axeln, upplöst till namn via `Platsnamn`-lookupen.
-   *  STRIKT (inte `.optional()` som `mall`/`kallhash`): fältet är hela
+   *  STRIKT (inte `.optional()` som klientens motsvarighet): fältet är hela
    *  poängen med skivan, så en EF som INTE bär det ska fälla sviten
-   *  högljutt i stället för att tyst se ut som "ingen plats". */
+   *  högljutt i stället för att tyst se ut som "ingen plats". Se filhuvudet
+   *  § VAD SOM ÄR KVAR för varför de två sidorna skiljer sig med avsikt. */
   plats: z.object({ id: z.string(), namn: z.string() }).nullable(),
 });
 

@@ -3,6 +3,7 @@ import type {
   AttachmentDownloadUrl,
   DocumentPreview,
   SkapadEventBilaga,
+  UpdateAttachmentScopeInput,
   UploadAttachmentInput,
 } from '../../domain/models/Attachment';
 import type {
@@ -255,6 +256,10 @@ export class SupabaseAdapter implements DataSourceAdapter {
   }
 
   async deleteAttachment(_eventId: string | null, _attachmentId: string): Promise<void> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async updateAttachmentScope(_input: UpdateAttachmentScopeInput): Promise<Attachment> {
     throw new Error(NOT_IMPLEMENTED);
   }
 

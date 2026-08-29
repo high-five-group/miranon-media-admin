@@ -44,17 +44,24 @@ export const PLATSER_TABLE = 'Platser';
 
 /**
  * Bilagor.Dokumentklass-optionerna (TASK-147.12, additivt fält, staging
- * `fldr2CwboZ3M4USCX`) — DUPLICERAS MEDVETET mot `src/domain/types/Status.ts`s
- * `AttachmentClass`, samma duplicerings-mönster som BILAGOR_BUCKET_ID/
- * SMALL_UPLOAD_MAX_BYTES ovan (Deno-EF:erna delar ingen build-kedja med
- * Vite-bygget). Skrivande EF:er importerar DESSA konstanter, aldrig en
- * bokstavlig sträng inline — en stavfel-drift mellan de två sidorna hade
- * annars gett en tyst 400 (findDisallowedField) eller ett osynkat
- * options-val i UI:t.
+ * `fldr2CwboZ3M4USCX`).
+ *
+ * [TASK-338.4] FLYTTADE till `./rackvidd-matchning.ts` (den zod-FRIA,
+ * Node-importerbara filen) och RE-EXPORTERADE härifrån oförändrat — samma
+ * flytt och samma skäl som TASK-338.2 gjorde för scope-konstanterna, och
+ * som TASK-309.22 gjorde för `attachment-filename.ts`: `provaRackviddsbyte`
+ * konsumerar dem och måste kunna enhetstestas i `tests/api` (denna fil
+ * importerar zod från esm.sh och kan inte Node-importeras). INGEN av de
+ * EF:er som importerar dem via `'../_shared/attachments.ts'` behöver ändra
+ * sin importsats. Se den filens docblock för dupliceringen mot
+ * `src/domain/types/Status.ts`s `AttachmentClass`.
  */
-export const ATTACHMENT_CLASS_UPPLADDAD = 'Uppladdad';
-export const ATTACHMENT_CLASS_EVENT_MALLAD = 'Event-mallad';
-export const ATTACHMENT_CLASS_PERSON_GENERERAD = 'Person-genererad';
+export {
+  ATTACHMENT_CLASS_EVENT_MALLAD,
+  ATTACHMENT_CLASS_PERSON_GENERERAD,
+  ATTACHMENT_CLASS_UPPLADDAD,
+  provaRackviddsbyte,
+} from './rackvidd-matchning.ts';
 
 /**
  * [TASK-338.2, ADR-125 § Beslut 1] Bilagor.Räckvidd-optionerna och den rena
@@ -98,6 +105,7 @@ import {
   ATTACHMENT_SCOPE_KURSTYP,
   lasPlatsIds,
   normaliseraRackvidd,
+  VALID_ATTACHMENT_CLASSES,
   VALID_ATTACHMENT_SCOPES,
 } from './rackvidd-matchning.ts';
 
@@ -282,6 +290,57 @@ export function buildScopeFields(input: AttachmentScopeInput): Record<string, un
   if (norm.kursniva) fields.Kursnivå = norm.kursniva;
   if (norm.platsIds.length > 0) fields.Plats = [...norm.platsIds];
   return fields;
+}
+
+/**
+ * [TASK-338.4, ADR-125 § Beslut 1] `buildScopeFields` MOTSVARIGHET FÖR EN
+ * PATCH — `update-attachment-scope`s fältbyggare.
+ *
+ * ═══ VARFÖR EN EGEN FUNKTION OCH INTE `buildScopeFields` ═══
+ * De två har MOTSATT semantik för en tom axel, och det är hela skillnaden:
+ *
+ *   - `buildScopeFields` (CREATE) UTELÄMNAR en tom axel. På en radskapelse
+ *     är "utelämnad" och "tom" samma sak — raden föds utan fältet.
+ *   - Denna (PATCH) RENSAR den EXPLICIT. På en uppdatering betyder ett
+ *     utelämnat fält "rör inte", så ett återanvänt `buildScopeFields` hade
+ *     gjort det OMÖJLIGT att smalna av en bilaga: Lotta som ändrar
+ *     "RIM · Rönninge" till bara "Rönninge" hade fått `Kursfamilj` KVAR,
+ *     tyst, och dokumentet hade fortsatt gälla färre event än badgen sa.
+ *     Det är samma klass av tyst avvikelse mellan vad ytan lovar och vad
+ *     basen bär som PRD TASK-338 berättelse 3 finns för att förhindra.
+ *
+ * ═══ RENSNINGS-FORMEN ÄR MÄTT MOT STAGING, INTE GISSAD ═══
+ * (2026-08-29, egen ZZ-sentinelrad i `Bilagor`, skapad och raderad i samma
+ * körning — CLAUDE.md § "Airtable-schema före write: anta aldrig fält-form".)
+ * En PATCH med `{ Kursfamilj: null, Kursnivå: null, Plats: [] }` gav 200 och
+ * en efterföljande GET visade alla tre fälten HELT BORTA ur `fields` (inte
+ * tomsträng, inte tom array — Airtable utelämnar ett osatt fält, samma
+ * observation `rackvidd-matchning.ts` § `lasPlatsIds` redan bokför).
+ *   - singleSelect (`Kursfamilj`/`Kursnivå`) rensas med `null`. MEDVETET
+ *     INTE `''`: tomsträngen är TEXT-fältens rensningsform
+ *     (`save-place-standard`s `bilagetextClearFields`), och ett
+ *     singleSelect skulle behöva `''` som ett giltigt OPTIONSNAMN.
+ *   - multipleRecordLinks (`Plats`) rensas med `[]`.
+ *
+ * `Räckvidd` skrivs ALLTID (aldrig rensad) — en gemensam bilaga som tappade
+ * sitt räckviddsvärde hade fallit ur BÅDE Lottas lista över delade dokument
+ * OCH varje events union (`arGemensam` är fail-closed på `null`,
+ * se dess docblock), alltså blivit osynlig utan att vara borta.
+ */
+export function buildScopeUpdateFields(input: AttachmentScopeInput): Record<string, unknown> {
+  const norm = normaliseraRackvidd({
+    rackvidd: input.rackvidd,
+    kursfamilj: input.kursfamilj ?? null,
+    kursniva: input.kursniva ?? null,
+    platsIds: input.plats ? [input.plats] : [],
+  });
+
+  return {
+    Räckvidd: norm.rackvidd,
+    Kursfamilj: norm.kursfamilj ?? null,
+    Kursnivå: norm.kursniva ?? null,
+    Plats: norm.platsIds.length > 0 ? [...norm.platsIds] : [],
+  };
 }
 
 /** Se src/data/adapters/attachmentUpload.ts för det fulla resonemanget — samma tal. */
@@ -485,12 +544,6 @@ export function toBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
-/** Giltiga `Dokumentklass`-optionsnamn — allt annat (inkl. `undefined`/tomt) mappas till `null`. */
-const VALID_ATTACHMENT_CLASSES: readonly string[] = [
-  ATTACHMENT_CLASS_UPPLADDAD,
-  ATTACHMENT_CLASS_EVENT_MALLAD,
-  ATTACHMENT_CLASS_PERSON_GENERERAD,
-];
 
 /**
  * Mappar en skapad Bilagor-rad → domän-Attachment (samma shape som
