@@ -119,6 +119,43 @@
 // `prince_options[…]`-nycklar referenssidan dokumenterar i dag (räknat
 // 2026-08-29; forsknings-passets tal "33" i samma sida ovan gäller ett
 // annat, tidigare mätt datum och är inte omräknat här).
+//
+// HTTP_TIMEOUT-DEFAULTEN ÄR 10 S, INTE 60 (TASK-342, 2026-08-29, källa
+// https://docraptor.com/documentation/api, samma browser-kontrollerade
+// verifiering som ovan): "By default, DocRaptor will attempt to fetch any
+// external resource for up to 10 seconds." Detta gäller resurser PRINCE
+// HÄMTAR under rendering (typsnitt via CSS `url(...)`, bilder via
+// `<img src>`) — INTE det 60 s synkrona anropstaket ovan, som är ett annat
+// tal för en annan sak. Mallarna är AVSEDDA att vara helt självbärande
+// (ADR-125 § 4, `gorSjalvbarande` nedan), vilket GÖR exponeringen noll OM
+// ingen extern URL överlever inlining-stegen — men det var före denna
+// skiva ANTAGET, inte MÄTT.
+//
+// MÄTT (grep av de tre mallarnas HTML/CSS-källsträngar direkt, ur
+// `./mallar/*.html.ts` + `./mallar/*.css.ts`): NOLL `url(http…)`-referenser
+// i CSS:en och NOLL `<img src="http…">` i någon av de tre mallarna
+// (bekräftelse, deltagarinfo, kvitto) — samtliga `url(...)`/`<img src>`
+// är relativa och matchas av `FONT_BASE64_PER_FILNAMN`/
+// `BILD_DATA_URI_PER_FILNAMN` nedan. Kortet är alltså en BOKFÖRD FRÅNVARO
+// (dess egen § "Ingen ändring om (1) ger noll träffar"): ingen kodändring
+// gjord, `http_timeout` sätts INTE explicit eftersom det inte finns någon
+// hämtning att skydda.
+//
+// EN plaintext-förekomst av `https://miranon.se/` finns i
+// `bekraftelsebilaga.html.ts` — en `<span class="ikonruta-bildtext">`-
+// bildtext BREDVID en INLINE `<svg>`-QR-kod (se
+// `docs/mallar/bilagor/README.md` § QR-koderna). Varken QR-SVG:n (vektor-
+// markup, ingen extern referens) eller bildtexten (synlig text, inget
+// `href`/`src`) hämtas av Prince — http_timeout-exponeringen är alltså
+// fortsatt noll. Motsvarande Instagram-bildtext skriver `instagram.com/
+// se.miranon/` utan protokoll-prefix och matchar därför inte ens
+// `http(s)://`-mönstret.
+//
+// Låst av `tests/api/mall-render-sjalvbarande-resurser.test.ts` (källkods-
+// nivå, importerar mall-/CSS-strängarna direkt och kör mall-render.ts:s
+// EGNA `CSS_URL_REGEX`/`IMG_SRC_REGEX` — kopierade dit under en
+// KONFIG-PARITETSNOT, se den filens filhuvud) — en framtida `url(http…)`
+// eller `<img src="http…">` fälls lokalt, utan nätverk.
 
 import { Eta } from 'https://esm.sh/eta@4.6.0';
 import { HttpError } from './errors.ts';
