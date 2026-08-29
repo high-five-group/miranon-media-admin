@@ -3,10 +3,10 @@ id: TASK-309.40
 title: >-
   Fynd: typfiltret ?typ= överlever byte av räckvidd (delade ↔ event) —
   nollställs till 'alla' vid varje byte
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-29 08:38'
-updated_date: '2026-08-29 09:52'
+updated_date: '2026-08-29 11:00'
 labels:
   - ready-for-agent
 dependencies: []
@@ -32,3 +32,9 @@ Ur TASK-309.39:s diagnos (S113, 2026-08-29): typfiltret ?typ= (Alla/Bilagor/Mall
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landning: PR #2090 (mergad 2026-08-29 10:58:50Z, main 8c266b72). Typfiltret ?typ= nollställs (nyckeln tas bort) vid varje räckviddsbyte via EN handler (handleRackviddsByte) kopplad till EventValjares båda vägar; direktlänk in i vyn fungerar. Kö-utsparkning runda 1 → rotorsak PRE-EXISTERANDE flake: oskopat getByText i dokument-lista-hojdlas matchade både listraden och alertScreenReaders SR-nod ('… har laddats upp/raderats', 100–1100 ms); nollhypotes bevisad mot rent main (1/10), skopad fix 20/20. Review-grinden: r1 låg → r2 konvergerad låg.
+<!-- SECTION:FINAL_SUMMARY:END -->
