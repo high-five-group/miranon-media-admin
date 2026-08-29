@@ -13,6 +13,7 @@ import {
 import type { SvepTyp } from '@/components/svep/types';
 import type { Event } from '@/domain/models/Event';
 import type { Registration } from '@/domain/models/Registration';
+import { fornamn } from '@/lib/fornamn';
 import { Bevakningsrad } from './Bevakningsrad';
 import { ForfallnaBetalningar } from './ForfallnaBetalningar';
 import { Genvagar } from './Genvagar';
@@ -25,7 +26,6 @@ import {
   eventsById,
   type ForfallenRad,
   forfallnaBetalningar,
-  fornamn,
   obekraftadeAnmalningar,
   velNastaEvent,
 } from './hem-derivations';

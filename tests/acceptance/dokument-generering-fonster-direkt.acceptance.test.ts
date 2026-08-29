@@ -2,7 +2,32 @@ import { delay, HttpResponse, http } from 'msw';
 import type { DocumentSources } from '../../src/domain/models/DocumentSources';
 import { VISUAL_EVENT_ID } from '../support/fixturvarld/fixture-data';
 import { EF, json } from '../support/fixturvarld/handlers';
-import { expect, test } from './acceptance-bas';
+import { expect, type Page, test } from './acceptance-bas';
+
+/**
+ * Patchar den lagrade sessionens `display_name` FÖRE app-boot (samma teknik
+ * som `hem.acceptance.test.ts`s `patchStoredDisplayName`, TASK-220 — ingen
+ * delad testhjälpare finns ännu, duplicerad med avsikt, samma litenhet).
+ * Fixturvärldens session bär `display_name: 'Lotta'` som DEFAULT
+ * (`tests/support/fixturvarld/hermetic.ts`), så BARA fallback-testet
+ * (TASK-309.38 AC #1) behöver detta — `null` tar bort fältet helt.
+ */
+function patchStoredDisplayName(page: Page, displayName: string | null) {
+  return page.addInitScript((name) => {
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i);
+      if (!key?.startsWith('sb-') || !key.endsWith('-auth-token')) continue;
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+      const session = JSON.parse(raw);
+      if (!session?.user) continue;
+      session.user.user_metadata = { ...session.user.user_metadata };
+      if (name === null) delete session.user.user_metadata.display_name;
+      else session.user.user_metadata.display_name = name;
+      localStorage.setItem(key, JSON.stringify(session));
+    }
+  }, displayName);
+}
 
 /**
  * Den signerade PDF-URL:en är INTE en Edge Function — det är den faktiska
@@ -153,7 +178,7 @@ test.describe('Genereringsvyn — förhandsgranskningens fönster öppnas direkt
     await page.goto(`/mer/dokument?event=${VISUAL_EVENT_ID}&vy=generering&mall=bekraftelse`);
     await expect(page.getByTestId('generering-vy')).toBeVisible();
 
-    const knapp = page.getByRole('button', { name: 'Förhandsgranska först' });
+    const knapp = page.getByRole('button', { name: 'Förhandsgranska' });
     const [nyFlik] = await Promise.all([context.waitForEvent('page'), knapp.click()]);
 
     // Fönstret existerar DIREKT — INNAN mutationen (fördröjd
@@ -164,9 +189,11 @@ test.describe('Genereringsvyn — förhandsgranskningens fönster öppnas direkt
     // ...MEN INNEHÅLLET är INTE tomt (22 aug-domen, "helt abrupt"): en
     // document.write-skriven sida med titel + läsbar text syns REDAN här,
     // långt innan mutationen (4 s fördröjd) svarar.
-    await expect(nyFlik).toHaveTitle('Skapar dokument…');
+    await expect(nyFlik).toHaveTitle('Skapar förhandsgranskningen…');
     await expect(
-      nyFlik.getByText('Skapar förhandsgranskningen. Sidan byter till PDF:en när den är klar.'),
+      nyFlik.getByText(
+        'Ett ögonblick Lotta, förhandsgranskningen av bekräftelsebilagan skapas och visas här om några sekunder.',
+      ),
     ).toBeVisible();
 
     // Efter att mutationen löst ut: SAMMA fönster navigerar till PDF:en —
@@ -213,12 +240,12 @@ test.describe('Genereringsvyn — förhandsgranskningens fönster öppnas direkt
 
     const [nyFlik] = await Promise.all([
       context.waitForEvent('page'),
-      page.getByRole('button', { name: 'Förhandsgranska först' }).click(),
+      page.getByRole('button', { name: 'Förhandsgranska' }).click(),
     ]);
     expect(nyFlik.url()).toBe('about:blank');
     // Laddningssidan hann synas innan felet stängde fönstret — den öppnade
     // fliken var aldrig bara ett tomt `about:blank`, ens i felvägen.
-    await expect(nyFlik).toHaveTitle('Skapar dokument…');
+    await expect(nyFlik).toHaveTitle('Skapar förhandsgranskningen…');
 
     await expect(page.getByText(/DocRaptor svarade inte i tid/)).toBeVisible();
     await expect.poll(() => nyFlik.isClosed()).toBe(true);
@@ -269,9 +296,11 @@ test.describe('Genereringsvyn — förhandsgranskningens fönster öppnas direkt
     ]);
 
     await expect.poll(() => nyFlik.url()).toBe('about:blank');
-    await expect(nyFlik).toHaveTitle('Skapar dokument…');
+    await expect(nyFlik).toHaveTitle('Skapar bekräftelsebilagan…');
     await expect(
-      nyFlik.getByText('Skapar bekräftelsebilagan. Sidan byter till PDF:en när den är klar.'),
+      nyFlik.getByText(
+        'Ett ögonblick Lotta, bekräftelsebilagan skapas och visas här om några sekunder.',
+      ),
     ).toBeVisible();
     // Se motiveringen ovan i första testet: poll på `.url()`, inte `waitForURL`
     // — Chromes PDF-visare stör load-eventet för en `application/pdf`-navigering.
@@ -312,9 +341,9 @@ test.describe('Genereringsvyn — förhandsgranskningens fönster öppnas direkt
 
     const [nyFlik] = await Promise.all([
       context.waitForEvent('page'),
-      page.getByRole('button', { name: 'Förhandsgranska först' }).click(),
+      page.getByRole('button', { name: 'Förhandsgranska' }).click(),
     ]);
-    await expect(nyFlik).toHaveTitle('Skapar dokument…');
+    await expect(nyFlik).toHaveTitle('Skapar förhandsgranskningen…');
 
     // Lotta ångrar sig och stänger fliken SJÄLV — INNAN mutationen (4 s
     // fördröjd) svarar. `fonster` i appen är därefter icke-null men
@@ -383,7 +412,7 @@ test.describe('Genereringsvyn — förhandsgranskningens fönster öppnas direkt
       context.waitForEvent('page'),
       page.getByRole('button', { name: 'Skapa bekräftelsebilaga' }).click(),
     ]);
-    await expect(nyFlik).toHaveTitle('Skapar dokument…');
+    await expect(nyFlik).toHaveTitle('Skapar bekräftelsebilagan…');
 
     // Samma sekvens som förhandsgranska-testet ovan, men nu för Skapa-
     // grenen (`genereraBilaga`) — TVÅ nätverksanrop innan `onSuccess`
@@ -401,5 +430,78 @@ test.describe('Genereringsvyn — förhandsgranskningens fönster öppnas direkt
     await expect(page.getByText('Den öppnades i ett nytt fönster.')).toHaveCount(0);
 
     expect(sidfel).toEqual([]);
+  });
+
+  test('TASK-309.38 AC #1: väntetexten bär rätt dokumentnamn för deltagarinformation också', async ({
+    page,
+    context,
+    network,
+  }) => {
+    network.use(
+      http.get(EF('get-document-sources'), () =>
+        json(MOCK_SOURCES as unknown as Record<string, unknown>),
+      ),
+      http.post(EF('generate-event-attachment'), async () => {
+        await delay(SVARSFORDROJNING_MS);
+        return json({
+          url: 'https://storage.example.test/preview-deltagarinfo.pdf',
+          utgar: new Date(Date.now() + 300_000).toISOString(),
+        });
+      }),
+    );
+
+    await page.goto(`/mer/dokument?event=${VISUAL_EVENT_ID}&vy=generering&mall=deltagarinfo`);
+    await expect(page.getByTestId('generering-vy')).toBeVisible();
+
+    const [nyFlik] = await Promise.all([
+      context.waitForEvent('page'),
+      page.getByRole('button', { name: 'Förhandsgranska' }).click(),
+    ]);
+    await expect(nyFlik).toHaveTitle('Skapar förhandsgranskningen…');
+    // `meta.namn.toLowerCase()` + 'n' — samma bildning som bekräftelsebilagan
+    // (AC #1 kräver bevis för BÅDA dokumenttyperna; se
+    // Implementation Notes/Slutrapport för dubbel-n-observationen).
+    await expect(
+      nyFlik.getByText(
+        'Ett ögonblick Lotta, förhandsgranskningen av deltagarinformationn skapas och visas här om några sekunder.',
+      ),
+    ).toBeVisible();
+  });
+
+  test('TASK-309.38 AC #1: väntetexten faller tillbaka till den anonyma formen utan visningsnamn', async ({
+    page,
+    context,
+    network,
+  }) => {
+    await patchStoredDisplayName(page, null);
+
+    network.use(
+      http.get(EF('get-document-sources'), () =>
+        json(MOCK_SOURCES as unknown as Record<string, unknown>),
+      ),
+      http.post(EF('generate-event-attachment'), async () => {
+        await delay(SVARSFORDROJNING_MS);
+        return json({
+          url: 'https://storage.example.test/preview-utan-namn.pdf',
+          utgar: new Date(Date.now() + 300_000).toISOString(),
+        });
+      }),
+    );
+
+    await page.goto(`/mer/dokument?event=${VISUAL_EVENT_ID}&vy=generering&mall=bekraftelse`);
+    await expect(page.getByTestId('generering-vy')).toBeVisible();
+
+    const [nyFlik] = await Promise.all([
+      context.waitForEvent('page'),
+      page.getByRole('button', { name: 'Förhandsgranska' }).click(),
+    ]);
+    await expect(nyFlik).toHaveTitle('Skapar förhandsgranskningen…');
+    // Ingen `displayName` → "Ett ögonblick, " utan namn — inget hängande
+    // komma, inget dubbelt mellanslag (AC #1).
+    await expect(
+      nyFlik.getByText(
+        'Ett ögonblick, förhandsgranskningen av bekräftelsebilagan skapas och visas här om några sekunder.',
+      ),
+    ).toBeVisible();
   });
 });

@@ -200,9 +200,9 @@ test.describe('AC #2: äkta popup-policy i riktig Chrome (TASK-309.26)', () => {
     // ── LED 1 (positivt): appens egen knapp, äkta popup-policy påslagen ──
     const [nyFlik] = await Promise.all([
       context.waitForEvent('page'),
-      page.getByRole('button', { name: 'Förhandsgranska först' }).click(),
+      page.getByRole('button', { name: 'Förhandsgranska' }).click(),
     ]);
-    await expect(nyFlik).toHaveTitle('Skapar dokument…');
+    await expect(nyFlik).toHaveTitle('Skapar förhandsgranskningen…');
     await expect
       .poll(() => nyFlik.url(), { timeout: POPUP_FORDROJNING_MS + 10_000 })
       .toBe(PREVIEW_URL);

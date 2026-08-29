@@ -57,6 +57,7 @@
 
 import { ChevronRight, ExternalLink, FileText, Loader2, Pencil } from 'lucide-react';
 import { useMemo, useRef, useState } from 'react';
+import { useAuth } from '@/auth/useAuth';
 import {
   type AgendaRad,
   BlockDialog,
@@ -90,6 +91,7 @@ import type { DocumentSources } from '@/domain/models/DocumentSources';
 import type { Event } from '@/domain/models/Event';
 import type { EventTextFalt, PlatsFalt } from '@/domain/schemas';
 import { cn } from '@/lib/cn';
+import { fornamn } from '@/lib/fornamn';
 import { skrivLaddningssida } from '@/lib/skriv-laddningssida';
 
 /* ------------------------------------------------------------------ *
@@ -381,6 +383,17 @@ function stangOanvantFonster(fonster: Window | null) {
   if (fonster && !fonster.closed) fonster.close();
 }
 
+/**
+ * Väntetextens personliga hälsning (TASK-309.38, Marcus prod-röktest
+ * 2026-08-29): "Ett ögonblick <Förnamn>, " med `forNamn`, annars "Ett
+ * ögonblick, " — utan hängande komma eller dubbelt mellanslag i endera
+ * formen. Delad mellan förhandsgransknings- och skapa-grenen i
+ * `skapaDokument` nedan.
+ */
+function vantehalsning(forNamn: string | null): string {
+  return forNamn ? `Ett ögonblick ${forNamn}, ` : 'Ett ögonblick, ';
+}
+
 // INGEN bakgrundstint vid hover — husets divide-y-grammatik (AktivitetsHistorik
 // § radKlass, Marcus 2026-08-15: tinten skar sig mot separatorlinjerna; samma
 // fynd igen 2026-08-21). Affordansen är personlistans: underline på värdet via
@@ -571,6 +584,14 @@ export function GenereringsVy({
   const meta = MALL_META[mall];
   const grupper = GRUPPER[mall];
 
+  // [TILLÄGG, TASK-309.38] Väntetextens hälsning — samma källa och form som
+  // Hem-hälsningen (`Hem.tsx`, TASK-220): `user.displayName` via `fornamn()`,
+  // aldrig ett fallback till e-postadressen (Gunilla-principen). `null` när
+  // fältet saknas — laddningssidan visar då den anonyma varianten i stället,
+  // se `vantehalsning` nedan.
+  const { user } = useAuth();
+  const forNamn = user?.displayName ? fornamn(user.displayName) : null;
+
   // [TASK-309.6] Underlaget kommer nu ur `getDocumentSources` (adaptern) —
   // React Query-cachen ÄR sanningskällan. Inget lokalt `overrides`-state
   // längre: varje blocks Spara skriver DIREKT mot servern (`spara`/
@@ -733,8 +754,8 @@ export function GenereringsVy({
 
     if (!skarpt) {
       skrivLaddningssida(fonster, {
-        titel: 'Skapar dokument…',
-        text: 'Skapar förhandsgranskningen. Sidan byter till PDF:en när den är klar.',
+        titel: 'Skapar förhandsgranskningen…',
+        text: `${vantehalsning(forNamn)}förhandsgranskningen av ${meta.namn.toLowerCase()}n skapas och visas här om några sekunder.`,
       });
       forhandsgranska.mutate(
         { eventId: event.id, mall },
@@ -778,8 +799,8 @@ export function GenereringsVy({
     }
 
     skrivLaddningssida(fonster, {
-      titel: 'Skapar dokument…',
-      text: `Skapar ${meta.namn.toLowerCase()}n. Sidan byter till PDF:en när den är klar.`,
+      titel: `Skapar ${meta.namn.toLowerCase()}n…`,
+      text: `${vantehalsning(forNamn)}${meta.namn.toLowerCase()}n skapas och visas här om några sekunder.`,
     });
     genereraBilaga.mutate(
       { mall, platsFalt: Object.keys(platsFalt).length > 0 ? platsFalt : undefined },
@@ -1129,7 +1150,7 @@ export function GenereringsVy({
             {forhandsgranska.isPending && (
               <Loader2 aria-hidden="true" size={16} className="shrink-0 motion-safe:animate-spin" />
             )}
-            {forhandsgranska.isPending ? 'Skapar PDF …' : 'Förhandsgranska först'}
+            {forhandsgranska.isPending ? 'Förhandsgranskar …' : 'Förhandsgranska'}
           </Button>
           <Button
             intent="primary"
