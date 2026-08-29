@@ -419,6 +419,28 @@ skrivvägen som faktiskt sätter `Plats` på nya rader hör till TASK-338.2/
 `.purge-staging-policy.json`: ingen befintlig target rör `Plats`/`Platsnamn`,
 och ingen ny target behövs för detta bytes egna operationer.
 
+**Matchningsregeln (TASK-338.2, kod — inte basen).** `get-event-attachments`
+hämtar eventets egna rader plus ALLA `Räckvidd = Gemensam`-rader i EN
+hämtning, och matchar de senare i kod mot eventets Kursfamilj, Kursnivå
+(tom-nivå-regeln oförändrad) och `Plats` — på länkens record-ID, aldrig
+`Platsnamn`. Skälet: `Plats` är en länk och Airtables formelspråk kan inte
+jämföra ett länkfält mot ett record-ID utan hjälpfält (samma T15-klassbugg
+`get-event-attachments`s eget filhuvud redan varnar för); en tom axel
+begränsar inte. Den rena matcharen bor i
+`supabase/functions/_shared/rackvidd-matchning.ts`, enhetstestad utan
+staging (`tests/api/rackvidd-matchning.test.ts`). Läsvägen normaliserar
+legacy-värdena "Kurstyp"/"Alla event" till "Gemensam" med sina axlar FÖRE
+matchning — en bokförd rivningsskuld (töms först när prod är migrerad,
+`TASK-338.6`, och installerade PWA-klienter bevisligen slutat skicka dem).
+
+**Känt randfall, bokfört men OSKAPBART från appen:** en rad med tomt
+`Räckvidd` OCH tom `Event`-länk vore osynlig för unionen — den matchar
+varken "eventets egna" (ingen `Event`-länk) eller "Gemensam" (fältet har
+inte det värdet). Ingen skrivväg i appen kan producera formen (`rackvidd`
+är obligatoriskt ∈ {Event, Gemensam} vid skrivning, och `Event` sätts alltid
+oavsett räckvidd); den kräver en direkt Airtable-redigering. Ingen kod
+skyddar mot den.
+
 #### Bilagornas datamodell (ADR-125, TASK-309.2) — staging skapad 2026-08-23, prod skapad 2026-08-24
 
 Tre nya tabeller + fält på Eventplanering/Bilagor, per

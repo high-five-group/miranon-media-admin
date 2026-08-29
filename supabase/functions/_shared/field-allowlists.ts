@@ -405,6 +405,20 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
       'Räckvidd',
       'Kursfamilj',
       'Kursnivå',
+      // [TASK-338.2, ADR-125 § Beslut 1] Plats-axeln — `Bilagor.Plats`
+      // (staging `fldmkHUxPNRRA0Rxi`, multipleRecordLinks → Platser
+      // `tbl7ER0wNqAZ9ZhEq`; prod väntar TASK-338.6). Skrivs som en
+      // LÄNK-array (`[platsId]`) av `buildScopeFields`, ur ett redan
+      // Zod-validerat `AttachmentScopeInput` vars `plats` dessutom
+      // EXISTENSKONTROLLERATS mot Platser-tabellen av den skrivande EF:en
+      // (samma vaktklass som generate-event-attachments ersatt-guard) —
+      // listan är alltså en SSOT-grind mot framtida kod-drift, exakt
+      // samma form som 'Räckvidd' ovan. Lookup-fältet `Platsnamn`
+      // (`fldyEDJD3Y3InHJ7J`) står MEDVETET INTE här: ett
+      // multipleLookupValues-fält är beräknat och kan inte skrivas
+      // (data-model.md § Kända fällor) — en post för det hade varit en
+      // tillåtelse att göra något plattformen ändå avvisar.
+      'Plats',
       // [TASK-309.4, ADR-125 § Beslut 3] Mall-genererade bilagor (Event-
       // mallad) bär numera VILKEN mall som byggde dem och en hash av
       // ifyllnadsunderlaget (härledd inaktualitet). Samma operationsnyckel

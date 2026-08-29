@@ -31,13 +31,14 @@
 // operation kan aldrig pekas mot en resurs utan att servern SJÄLV verifierar
 // att resursen faktiskt hör dit klienten påstår.
 //
-// [UTBYGGD, TASK-275.2, ADR-118 beslut 3] `eventId` ÄR NU VALFRI —
-// signalen som skiljer "ur eventkontext" från "i räckviddsläge" för en
-// GEMENSAM bilaga (Räckvidd Kurstyp/Alla event):
+// [UTBYGGD, TASK-275.2, ADR-118 beslut 3 · TASK-338.2, ADR-125 § Beslut 1]
+// `eventId` ÄR VALFRI — signalen som skiljer "ur eventkontext" från "i
+// räckviddsläge" för en GEMENSAM bilaga (Räckvidd `Gemensam`, eller ett av
+// legacy-värdena Kurstyp/Alla event som normaliseras dit):
 //   - Bilagans Räckvidd är Event (eller legacy/okänt, fail-closed mot den
 //     STRIKTARE vägen): `eventId` KRÄVS fortfarande, ägarskaps-guarden ovan
 //     gäller OFÖRÄNDRAT.
-//   - Bilagans Räckvidd är Kurstyp/Alla event (GEMENSAM bilaga):
+//   - Bilagans Räckvidd är Gemensam (eller legacy Kurstyp/Alla event):
 //       * `eventId` ANGIVEN → 403 NEKAS ("ur eventkontext" — AC #3, olycks-
 //         skyddet: att städa ett events lista får aldrig radera kurs-
 //         familjens/alla-event-dokumentet).
@@ -75,12 +76,12 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { deleteAirtableRecord, fetchAirtableRecord } from '../_shared/airtable-client.ts';
 import {
-  ATTACHMENT_SCOPE_ALLA_EVENT,
-  ATTACHMENT_SCOPE_KURSTYP,
+  arGemensam,
   BILAGOR_BUCKET_ID,
   BILAGOR_TABLE,
   buildStorageAnchor,
   isValidEventId as isValidRecordId,
+  normaliseraRackvidd,
 } from '../_shared/attachments.ts';
 import { requireUser } from '../_shared/auth.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
@@ -149,8 +150,22 @@ Deno.serve(async (req) => {
 
     // 2) AUKTORISATIONEN — läser bilagans EGEN `Räckvidd`, ALDRIG `Event`s
     //    satthet (se filhuvudet, [UTBYGGD, TASK-275.2]).
+    //    [TASK-338.2, ADR-125 § Beslut 1] Predikatet läser NU den delade
+    //    `arGemensam` efter `normaliseraRackvidd` i stället för att räkna
+    //    upp legacy-värdena själv. Utan den ändringen hade varje bilaga
+    //    skriven med den NYA räckvidden (`Gemensam`) klassats som
+    //    Event-räckviddig och därmed blivit ORADERBAR i räckviddsläget —
+    //    fail-closed åt fel håll, och en tyst regression eftersom
+    //    uppräkningen såg fullständig ut.
     const rackvidd = attachmentRecord.fields['Räckvidd'];
-    const isGemensam = rackvidd === ATTACHMENT_SCOPE_KURSTYP || rackvidd === ATTACHMENT_SCOPE_ALLA_EVENT;
+    const isGemensam = arGemensam(
+      normaliseraRackvidd({
+        rackvidd: typeof rackvidd === 'string' && rackvidd.length > 0 ? rackvidd : null,
+        kursfamilj: null,
+        kursniva: null,
+        platsIds: [],
+      }).rackvidd,
+    );
 
     if (isGemensam) {
       if (eventId !== null) {
