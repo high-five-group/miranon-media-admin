@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-29 12:47'
-updated_date: '2026-08-29 12:56'
+updated_date: '2026-08-29 15:43'
 labels:
   - ready-for-agent
 dependencies: []
@@ -22,8 +22,8 @@ Ur TASK-338.3 runda 3 (S113, 2026-08-29): `tests/acceptance/dokument-lista-hojdl
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Rotorsaken belagd med reproduktion (--repeat-each ≥ 10, röd-rate bokförd) OCH mätning av om persist-lagret restaurerar mellan de två laddningarna; hypotesen bekräftad eller falsifierad öppet
-- [ ] #2 Fix mot rotorsaken (ingen retry, ingen sleep); testfilen 20/20 gröna med --repeat-each=20; övriga dokument-*-sviter gröna
+- [x] #1 Rotorsaken belagd med reproduktion (--repeat-each ≥ 10, röd-rate bokförd) OCH mätning av om persist-lagret restaurerar mellan de två laddningarna; hypotesen bekräftad eller falsifierad öppet
+- [x] #2 Fix mot rotorsaken (ingen retry, ingen sleep); testfilen 20/20 gröna med --repeat-each=20; övriga dokument-*-sviter gröna
 <!-- AC:END -->
 
 ## Definition of Done

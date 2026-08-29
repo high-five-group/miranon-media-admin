@@ -151,6 +151,35 @@ async function gotoRackviddslage(page: Page) {
   await expect(page.getByTestId('dokument-yta')).toBeVisible();
 }
 
+const PERSIST_KEY = 'REACT_QUERY_OFFLINE_CACHE';
+
+/**
+ * Tom cache-arrangemang (ADR-072) — persist-nyckeln bort FÖRE app-boot.
+ *
+ * SAMMA form och skäl som systerfilens `arrangeraTomCache`
+ * (`dokument-lista-hojdlas-tidpunkt.acceptance.test.ts`, TASK-309.41), och
+ * samma etablerade mönster som `hem-laddlage.acceptance.test.ts` redan bär:
+ * test-ARRANGEMANG före start, INTE runtime-tömning (den vägen är
+ * `queryClient.clear()`, ADR-072 skyddsräcke 1).
+ *
+ * Behövs av testet som laddar räckviddsläget TVÅ gånger med olika
+ * fixturdata. Båda laddningarna delar `queryKeys.attachments.gemensamma` —
+ * en KONSTANT nyckel utan id, så TASK-28:s vanliga fix (distinkta id per
+ * scenario) är inte tillämpligt utan att produktionskoden ändras för
+ * testets skull. Hinner localStorage-synken fyra mellan laddningarna
+ * (throttlad 1 s, `src/queries/persist.ts`) restaureras scenario 1:s svar,
+ * och den globala `staleTime` på 5 min (`src/router.ts`) gör det FÄRSKT —
+ * ingen bakgrundshämtning, och scenario 2:s rader når aldrig skärmen.
+ * Mätt före fixen: 8 av 10 fällda med `--repeat-each=10` (2026-08-29),
+ * alltid på `Delad 6.pdf`. Kommentaren vid den andra laddningen sade att
+ * `goto` valdes framför `reload()` av stabilitetsskäl; det hjälper inte mot
+ * DENNA klass, eftersom båda formerna startar om dokumentet och därmed
+ * restaurerar lagringen.
+ */
+function arrangeraTomCache(page: Page) {
+  return page.addInitScript((nyckel) => localStorage.removeItem(nyckel), PERSIST_KEY);
+}
+
 async function valjFilter(page: Page, etikett: string) {
   // `exact: true` — annars matchar 'Alla' ÄVEN 'Mallar' (Playwrights
   // namn-matchning är substräng som default, och "Mallar" innehåller
@@ -486,6 +515,11 @@ test.describe('GemensamtLage (räckviddsläge) — samma regel (tidigare saknad,
     page,
     network,
   }) => {
+    // ENDA testet i filen med TVÅ laddningar, och därför det enda som
+    // behöver arrangemanget — se `arrangeraTomCache` för mekanismen och
+    // mätningen (TASK-309.41).
+    await arrangeraTomCache(page);
+
     network.use(hojdlasHandler(0, 5));
     await gotoRackviddslage(page);
     await expect(page.getByText('Delad 5.pdf')).toBeVisible();
