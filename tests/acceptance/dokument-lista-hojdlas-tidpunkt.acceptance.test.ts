@@ -86,6 +86,46 @@ function handler(antalEgna: number, antalGemensamma: number, latensMs = 0) {
   });
 }
 
+const PERSIST_KEY = 'REACT_QUERY_OFFLINE_CACHE';
+
+/**
+ * Tom cache-arrangemang (ADR-072) — persist-nyckeln bort FÖRE app-boot.
+ *
+ * SAMMA form som `hem-laddlage.acceptance.test.ts` och
+ * `events-list.staging.test.ts` redan bär: ett init-script, alltså
+ * test-ARRANGEMANG före start — INTE runtime-tömning (den vägen är
+ * `queryClient.clear()`, ADR-072 skyddsräcke 1).
+ *
+ * ── VARFÖR ETT TEST HÄR BEHÖVER DET (TASK-309.41) ────────────────────────
+ *
+ * Ett test som laddar samma route TVÅ gånger med olika fixturdata delar
+ * `queryKeys.attachments.gemensamma` mellan laddningarna. Nyckeln är en
+ * KONSTANT (`['attachments', 'gemensamma']`, keys.ts) och bär inget id, så
+ * TASK-28:s vanliga fix-mönster (distinkta id per scenario, se
+ * `event-deltagare.staging.test.ts`) är inte tillämpligt utan att
+ * produktionskoden ändras för testets skull. Arrangemanget nedan är i
+ * stället det som tar bort den delade tillståndsbäraren.
+ *
+ * MEKANISMEN, MÄTT (differential-probe 2026-08-29, TASK-309.41):
+ * localStorage-synken är throttlad till 1 s (biblioteksdefault,
+ * `src/queries/persist.ts`). Hinner den fyra mellan laddningarna ligger
+ * scenario 1:s svar i lagringen när sidan startas om, och den globala
+ * `staleTime` på 5 min (`src/router.ts`) gör den restaurerade datan FÄRSK
+ * — alltså ingen bakgrundshämtning alls, och scenario 2:s svar når aldrig
+ * skärmen. Med nyckeln kvar: 0 EF-anrop, fyra rader renderade. Med
+ * nyckeln rensad, allt annat lika: 1 EF-anrop, fem rader renderade.
+ * Det är ADR-072:s AVSEDDA varmstart, inte en produktbugg (samma klassning
+ * som TASK-28) — testet måste därför arrangera bort den, inte appen.
+ *
+ * Init-script-formen är dessutom den enda race-fria: den kör på det NYA
+ * dokumentet innan app-JS vaknar, så ingen kvarvarande throttle-timer från
+ * den gamla sidan kan hinna skriva tillbaka scenario 1:s cache efter
+ * rensningen.
+ */
+function arrangeraTomCache(page: Page) {
+  return page.addInitScript((nyckel) => localStorage.removeItem(nyckel), PERSIST_KEY);
+}
+
 /**
  * Startar en `requestAnimationFrame`-slinga som samplar listan VARJE ram.
  *
@@ -362,6 +402,14 @@ test.describe('S2 — den fjärde separatorn ligger UTANFÖR ytans klippkant', (
     // gav ingen linje att räkna in, fem gav en. Fixen tar bort just den
     // termen, så boxen blir densamma — regel 5, skärpt från "≤ 1 px" till
     // exakt likhet i det par som tidigare bar hela avvikelsen.
+    //
+    // ENDA testet i filen med TVÅ laddningar, och därför det enda som
+    // behöver arrangemanget — se `arrangeraTomCache` för mekanismen och
+    // mätningen (TASK-309.41). Utan det bar den andra laddningen scenario
+    // 1:s fyra rader ur persist-lagret: 7 av 10 fällda med
+    // `--repeat-each=10` (2026-08-29), alltid på `Delad 5.pdf`.
+    await arrangeraTomCache(page);
+
     network.use(handler(0, 4));
     await page.goto('/mer/dokument');
     await expect(page.getByText('Delad 4.pdf')).toBeVisible();

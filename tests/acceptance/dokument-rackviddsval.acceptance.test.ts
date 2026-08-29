@@ -107,6 +107,40 @@ async function gotoRackviddslage(page: import('@playwright/test').Page) {
   await expect(page.getByText(BILAGA_GEMENSAM.namn)).toBeVisible();
 }
 
+const PERSIST_KEY = 'REACT_QUERY_OFFLINE_CACHE';
+
+/**
+ * Tom cache-arrangemang (ADR-072) — persist-nyckeln bort FÖRE app-boot.
+ *
+ * SAMMA form och skäl som `dokument-lista-hojdlas-tidpunkt`- och
+ * `dokument-lista-hojdlas`-filernas `arrangeraTomCache` (TASK-309.41), och
+ * samma etablerade mönster som `hem-laddlage.acceptance.test.ts` redan bär:
+ * test-ARRANGEMANG före start, INTE runtime-tömning (den vägen är
+ * `queryClient.clear()`, ADR-072 skyddsräcke 1).
+ *
+ * Behövs av testet som laddar EVENTLÄGET två gånger med olika fixturdata.
+ * Båda laddningarna delar `queryKeys.attachments.byEvent(VISUAL_EVENT_ID)`,
+ * och till skillnad från TASK-28:s fall kan de två scenarierna inte ges
+ * skilda id: hela poängen är att SAMMA event visar olika många bilagor.
+ * Hinner localStorage-synken fyra mellan laddningarna (throttlad 1 s,
+ * `src/queries/persist.ts`) restaureras scenario 1:s enda bilaga, och den
+ * globala `staleTime` på 5 min (`src/router.ts`) gör den FÄRSK — ingen
+ * bakgrundshämtning alls. Mätt före fixen: 8 av 10 fällda med
+ * `--repeat-each=10` (2026-08-29), alltid på `Bilaga 1.pdf`.
+ *
+ * ÖVERSKUGGNINGS-VAKTEN SÅG SAMMA SAK FRÅN HANDLER-SIDAN: den andra
+ * `network.use()`-registreringen rapporterades "använd av 0", eftersom den
+ * andra laddningen aldrig gjorde något EF-anrop att matcha. Ett dött-
+ * registrerings-fynd i ett flerladdningstest är därför värt att läsa som
+ * möjligt persist-symptom innan handlern misstänks.
+ *
+ * Testet på rad ~209 gör också två navigeringar men behåller SAMMA
+ * fixturdata över båda, och är därför strukturellt oberört av mekanismen.
+ */
+function arrangeraTomCache(page: Page) {
+  return page.addInitScript((nyckel) => localStorage.removeItem(nyckel), PERSIST_KEY);
+}
+
 /**
  * Öppnar räckviddsdialogen genom att välja en fil (S107 2026-08-18).
  *
@@ -709,6 +743,12 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
     // nya katalogstorleken. Bilagan är `BILAGA_GEMENSAM` (inte `_EGEN`) i
     // BÅDA lägena: `gotoEventlage`s eget assert letar efter just den, delat
     // med alla andra tester i filen.
+    //
+    // ENDA testet i filen som laddar om med ÄNDRAD fixturdata, och därför
+    // det enda som behöver arrangemanget — se `arrangeraTomCache` för
+    // mekanismen och mätningen (TASK-309.41).
+    await arrangeraTomCache(page);
+
     network.use(
       http.get(EF('get-event-attachments'), () => json({ attachments: [BILAGA_GEMENSAM] })),
     );
