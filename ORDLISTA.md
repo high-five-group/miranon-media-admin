@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-29
+updated: 2026-08-30
 review_by: 2027-01-02
 status: stable
 ---
@@ -185,8 +185,9 @@ metadatat och eventkopplingen i basen (delad hemvist, ADR vid bygget).
 Varje bilaga bär dessutom en **räckvidd** (S108-grillningen; ersätter
 ADR-118:s ursprungliga form). Räckvidden är ortogonal mot dokumentklassen:
 klassen är innehållets ursprung, räckvidden dess spridning.
-*Undvik:* dokument (tvetydigt — Dokument är YTAN i Mer där bilagor hanteras),
-attachment.
+*Undvik:* dokument (ytan i Mer heter **Bilagor** sedan 2026-08-29, S113 —
+hette Dokument dessförinnan; "dokument" står kvar bara där ordet inte är en
+bilaga, t.ex. kvittots förhandsvisning), attachment.
 
 **Räckvidd** — vilka event en bilaga gäller för. Antingen **ett utpekat
 event** (en direktlänk), eller ett **filter** över tre valfria axlar:
