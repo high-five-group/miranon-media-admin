@@ -1935,19 +1935,44 @@ function ListHandlingsRad({
     // `px-1 pt-1` — kortets egen padding är sedan T176 bara 8 px (Marcus:
     // *"den gråa ramen … stör mig lite att 'ramen' är så tjock"*), så
     // knapparna behöver egen luft för att inte klistra i ramens kant.
-    // `flex-wrap`: två knappar med RIKTIG text (inte ikoner) kan behöva två
-    // rader vid 320 px, och att låta dem bryta är rätt svar — samma
-    // avvägning `IKONKNAPP_KLASS`s docblock gör för träffytan.
-    <div className="flex flex-wrap items-center gap-2 px-1 pt-1">
+    //
+    // ═══ STAPLADE I FULL BREDD UNDER `sm`, SIDA VID SIDA FRÅN `sm` ═══
+    //
+    // Första formen var `flex-wrap`: knapparna behöll sin intrinsic bredd
+    // (mätt vid 390 px: 132 resp. 181 px) och bröt till två VÄNSTERSTÄLLDA
+    // rader med olika längd — det såg oavslutat ut, inte som en medveten
+    // mobilform. `flex-col` + `w-full` staplar dem i stället som ETT block
+    // med samma bredd, primärhandlingen överst; `sm:flex-row` + `sm:w-auto`
+    // ger tillbaka sida-vid-sida-formen så fort bredden räcker.
+    //
+    // BREDDEN MÅSTE NÅ SJÄLVA `<Button>`. `MenuTrigger` (react-aria) renderar
+    // INGET eget DOM-element — den är en ren kontextleverantör plus en
+    // portalerad `Popover` — så `Meny`s trigger-knapp är ett DIREKT flexbarn
+    // och tar `w-full` självt. Uppladdningens `FileTrigger` gör detsamma
+    // (fragment + dold input), men den ligger inuti `data-testid`-ankaret
+    // nedan, så DEN diven måste också bära `w-full sm:w-auto` — annars
+    // sträcker sig ankaret men inte knappen.
+    <div className="flex flex-col gap-2 px-1 pt-1 sm:flex-row sm:items-center">
       {/* `data-testid` på WRAPPERN, inte på knappen: `FileTrigger` renderar
           sin dolda `<input type="file">` som SYSKON till knappen, och det är
           inputen testet behöver nå (`setInputFiles`). Sidan bär flera
           filväljare — varje rads "Ersätt" är en — så ett scopat ankare är
           enda sättet att träffa RÄTT input. Ankarnamnet är oförändrat sedan
           knappen bodde under listan, så befintliga tester följer med. */}
-      <div data-testid="ladda-upp-ny-fil">
+      <div data-testid="ladda-upp-ny-fil" className="w-full sm:w-auto">
         <FileTrigger acceptedFileTypes={['application/pdf']} onSelect={onValjFil}>
-          <Button intent="primary" size="sm" isDisabled={uploadMutation.isPending}>
+          {/* `min-h-11` — 44 px-golvet, samma som filterraden bar
+              (`min-h-11` per pill, "size='sm' ensamt gav 37 px, under
+              golvet") och samma som radernas ⋯ bär via `IKONKNAPP_KLASS`.
+              `size="sm"` styr typografi och sidpadding, ALDRIG höjden:
+              dess `min-h-8` mätte 32 px, alltså under golvet för sidans
+              primära handling. */}
+          <Button
+            intent="primary"
+            size="sm"
+            className="min-h-11 w-full sm:w-auto"
+            isDisabled={uploadMutation.isPending}
+          >
             <Upload aria-hidden="true" size={IKON_STORLEK} className="shrink-0" />
             {uploadMutation.isPending ? 'Laddar upp…' : 'Ladda upp fil'}
           </Button>
@@ -1999,7 +2024,17 @@ function SkapaDokumentMeny({ eventId }: { eventId: string }) {
         // VÄNSTER i sin rad, så menyn ska växa åt höger.
         placement="bottom start"
         trigger={
-          <Button intent="secondary" emphasis="outline" size="sm">
+          // `min-h-11 w-full sm:w-auto` — samma 44 px-golv och samma
+          // stapel-form som uppladdningsknappen (se `ListHandlingsRad`s
+          // docblock). Knappen är ett DIREKT flexbarn i handlingsraden:
+          // `MenuTrigger` renderar inget eget DOM-element, så bredden når
+          // hela vägen ner utan en wrapper att kompensera för.
+          <Button
+            intent="secondary"
+            emphasis="outline"
+            size="sm"
+            className="min-h-11 w-full sm:w-auto"
+          >
             <FilePlus aria-hidden="true" size={IKON_STORLEK} className="shrink-0" />
             Skapa dokument
             <ChevronDown aria-hidden="true" size={IKON_STORLEK} className="shrink-0" />
