@@ -37,7 +37,21 @@ export function useSkapaOmEventBilaga(eventId: string) {
     // samtidiga ersättningar redan är (`useReplaceAttachment`s precedent).
     mutationKey: ['skapa-om-event-bilaga', eventId],
 
-    mutationFn: ({ mall, ersatt }) => dataSource.skapaEventBilaga({ eventId, mall, ersatt }),
+    // [TASK-340.2] Adaptern returnerar nu HELA det skarpa svaret
+    // (`SkapadEventBilaga`: bilagan + `promoverad`/`underlagAndrat`/
+    // `ersatte`). DENNA hook exponerar fortsatt bara `Attachment`, med
+    // avsikt: de tre booleanerna beskriver genereringsvyns BEKRÄFTELSE, och
+    // listans "Skapa om" har ingen sådan yta — den svarar med en
+    // live-region (`onSuccess` nedan) och en refetchad rad. `promoverad` är
+    // dessutom per konstruktion `false` här: "Skapa om" skickar aldrig
+    // någon `kallhash` (det finns ingen förhandsgranskning i listan att
+    // hämta den ur), och `ersatte` är alltid `true` eftersom `ersatt` pekas
+    // ut explicit. Att exponera tre fält vars värden är kända i förväg hade
+    // varit brus, inte information.
+    mutationFn: async ({ mall, ersatt }) => {
+      const { attachment } = await dataSource.skapaEventBilaga({ eventId, mall, ersatt });
+      return attachment;
+    },
 
     onSuccess: (attachment) => {
       alertScreenReader(`${attachment.namn} har skapats om`);

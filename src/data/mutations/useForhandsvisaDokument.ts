@@ -8,7 +8,13 @@ import { useDataSource } from '@/data/useDataSource';
  * hela resonemanget). Öppnar dokumentet i en RIKTIG ny webbläsarflik
  * (webbläsarens egen PDF-/bildvisare, ingen egen iframe/img-rendering).
  *
- * POPUP-BLOCKERAR-SÄKERT MÖNSTER — anroparen (`DokumentYta.tsx`) MÅSTE
+ * TVÅ ANROPARE (sedan TASK-340.2): `DokumentYta.tsx`s Öppna-ikon
+ * (§ IKONPAR) och `GenereringsVy.tsx`s bekräftelseyta ("Visa dokumentet",
+ * efter ett lyckat Skapa). Docblocket nedan talade fram till dess om
+ * "anroparen" i SINGULAR och namngav bara den första — läs det som en
+ * regel för BÅDA.
+ *
+ * POPUP-BLOCKERAR-SÄKERT MÖNSTER — anroparen MÅSTE
  * anropa `window.open('', '_blank')` SYNKRONT i klick-handlern (innan
  * `mutate()`, alltså innan någon `await`) och skicka in det redan öppnade
  * fönster-handtaget som variabel — se `PrototypeSwitcher.tsx` rad 381 för
@@ -20,7 +26,9 @@ import { useDataSource } from '@/data/useDataSource';
  * [TILLÄGG, TASK-309.26 review-runda 1, AC #4] Anroparen skriver NUMERA
  * också en momentan laddningssida i fönstret direkt efter `window.open`,
  * innan `mutate()` (`skrivLaddningssida`, `@/lib/skriv-laddningssida`) —
- * samma delade mönster som `GenereringsVy.tsx`s `skapaDokument`. Fram till
+ * samma delade mönster som `GenereringsVy.tsx` använder i sin
+ * förhandsgranskning (`startaForhandsgranskning`; funktionen hette
+ * `skapaDokument` när denna rad skrevs och delades i TASK-340.2). Fram till
  * denna skiva stod fönstret tomt (`about:blank`) under hela väntan, vilket
  * var precis den "abrupt tomt fönster"-upplevelse Marcus avvisade 22 aug
  * 2026 för genereringsvyn — samma defekt fanns här, bara aldrig påtalad för
@@ -68,15 +76,27 @@ import { useDataSource } from '@/data/useDataSource';
  * FAKTISKT ser när felet inträffar går inte att veta i förväg, så båda
  * bär meddelandet oberoende av varandra.
  *
- * AVVIKELSEN MOT GenereringsVy.tsx, bokförd med skäl: den ytan STÄNGER i
- * stället det öppnade fönstret vid fel (`stangOanvantFonster`) och visar
- * ENBART sin egen toast, med en fallback-knapp ("Öppna X") som återförsöker
- * hela handlingen. Skillnaden är motiverad av flödets form: GenereringsVy
- * håller kvar resultat-URL:en i komponent-state och kan därför erbjuda ett
- * konkret återförsök i EN yta; denna hook har inget sådant tillstånd att
- * återförsöka mot (varje klick startar en helt ny hämtning), så en flik som
- * redan finns och redan väntar på Lotta är den bättre platsen att också
- * bära felet.
+ * AVVIKELSEN GÄLLER GenereringsVy.tsx:s FÖRHANDSGRANSKNING, INTE HELA DEN
+ * FILEN (omskrivet i TASK-340.2 review-runda 3 — stycket löd tidigare
+ * "AVVIKELSEN MOT GenereringsVy.tsx" rakt av, som om den ytan inte alls
+ * använde denna hook. Den gör det numera, för sin bekräftelseyta).
+ * Genereringsvyn bär alltså BÅDA mönstren, ett per knapp:
+ *
+ *   · FÖRHANDSGRANSKNINGEN (`startaForhandsgranskning`, går INTE via denna
+ *     hook) stänger i stället det öppnade fönstret vid fel
+ *     (`stangOanvantFonster`) och visar enbart sin egen `MessageBox`, med
+ *     en fallback-knapp ("Öppna <dokumentet>") som öppnar den utkast-URL
+ *     svaret redan bar. Den kan det, eftersom den håller URL:en i
+ *     komponent-state — ett konkret återförsök i EN yta.
+ *   · BEKRÄFTELSEN ("Visa dokumentet") går via DENNA hook och får därmed
+ *     dess form: felet skrivs både i fliken och i appens egen yta.
+ *
+ * Skillnaden är motiverad av vad de två knapparna har att återförsöka MOT.
+ * Denna hook har inget lagrat tillstånd alls — varje klick startar en helt
+ * ny hämtning, och en signering är transient — så en flik som redan finns
+ * och redan väntar på Lotta är den bättre platsen att också bära felet.
+ * Förhandsgranskningen har en färsk URL i handen och kan därför erbjuda
+ * knappen i stället.
  */
 export function useForhandsvisaDokument() {
   const dataSource = useDataSource();

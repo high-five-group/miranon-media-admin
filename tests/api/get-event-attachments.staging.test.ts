@@ -37,10 +37,10 @@
 // används HÄR bara som "en annan plats" att INTE matcha. Testet skapar aldrig
 // en Platser-rad — det skulle bara lämna skräp bakom sig.
 //
-// TESTSIDANS SCHEMA: svaren läses med KLIENTENS `parsaAttachment`
-// (normalisera legacy → validera, ADR-026). TASK-338.2:s mellanliggande
-// `attachment-staging-schema.ts` är RIVEN i TASK-338.4 — `AttachmentScope`
-// bär `GEMENSAM` sedan TASK-338.3, så skarven fyller ingen funktion längre.
+// TESTSIDANS SCHEMA: svaren läses med `StagingAttachmentSchema`. Filen är
+// SMALNAD i TASK-338.4 — `rackvidd`-vidgningen är riven (domänschemat bär
+// `GEMENSAM` sedan TASK-338.3), men `plats` står kvar STRIKT med avsikt:
+// en EF som glömt bära axeln ska fälla sviten, inte se ut som "ingen plats".
 //
 // Räckviddsparametrarna sätts via upload-attachment (den bevisade mönster-1-
 // skrivvägen — se upload-attachment.staging.test.ts för den validerings-
@@ -64,8 +64,9 @@
 
 import { randomUUID } from 'node:crypto';
 import { type APIRequestContext, expect, test } from '@playwright/test';
-import { parsaAttachment } from '../../src/domain/schemas';
+import type { z } from 'zod';
 import { registreraKastbarPost } from '../support/kastbara-poster';
+import { StagingAttachmentSchema } from './attachment-staging-schema';
 import { ARBETSKO_EVENT_ID, BELAGGNING_EVENT_ID } from './fixtures';
 import { type ApiConfig, classify401Body, getApiConfig, getValidUserJWT } from './helpers';
 
@@ -84,7 +85,7 @@ function eventformatId(): string {
 
 // [TASK-338.4] Härledd ur datagräns-hjälparens RETURTYP i stället för ur
 // det rivna skarv-schemat — samma form, en källa mindre att glömma.
-type Attachment = ReturnType<typeof parsaAttachment>;
+type Attachment = z.infer<typeof StagingAttachmentSchema>;
 
 function sentinelFilnamn(): string {
   return `ZZ-attachment-test-${randomUUID()}.pdf`;
@@ -133,7 +134,7 @@ async function skapaBilaga(
   const raw = await res.text();
   expect(res.status(), `setup-uppladdning misslyckades: ${raw}`).toBe(201);
   const body = JSON.parse(raw) as { attachment: unknown };
-  return parsaAttachment(body.attachment).id;
+  return StagingAttachmentSchema.parse(body.attachment).id;
 }
 
 /** Raderar en bilaga i RÄCKVIDDSLÄGE (eventId UTELÄMNAD, TASK-275.2 AC #3) — teardown för
@@ -178,7 +179,7 @@ async function hamtaAttachments(
   });
   expect(res.status(), await res.text()).toBe(200);
   const body = (await res.json()) as { attachments: unknown[] };
-  return body.attachments.map((a) => parsaAttachment(a));
+  return body.attachments.map((a) => StagingAttachmentSchema.parse(a));
 }
 
 /** [TASK-275.3, ADR-118 beslut 5] Räckviddsläget — ANROPAS UTAN `eventId`. */
@@ -192,7 +193,7 @@ async function hamtaAllaGemensamma(
   });
   expect(res.status(), await res.text()).toBe(200);
   const body = (await res.json()) as { attachments: unknown[] };
-  return body.attachments.map((a) => parsaAttachment(a));
+  return body.attachments.map((a) => StagingAttachmentSchema.parse(a));
 }
 
 /** Skapar ett FRÄSCHT RIM/Nivå 2-event (create-event, ZZ-create-event-test-sentinel) —
@@ -486,7 +487,7 @@ test.describe('get-event-attachments — räckviddsfiltret (TASK-338.2, ADR-125 
       },
     });
     expect(kurstypRes.status(), await kurstypRes.text()).toBe(201);
-    const kurstyp = parsaAttachment((await kurstypRes.json()).attachment).id;
+    const kurstyp = StagingAttachmentSchema.parse((await kurstypRes.json()).attachment).id;
     // (c) Gemensam MED event (275.2:s väg — ska ändå synas i räckviddsläget).
     const allaEvent = await skapaBilaga(request, config, jwt, BELAGGNING_EVENT_ID, {
       rackvidd: 'Gemensam',

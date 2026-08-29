@@ -65,12 +65,12 @@
 
 import { randomUUID } from 'node:crypto';
 import { type APIRequestContext, type APIResponse, expect, test } from '@playwright/test';
-// [TASK-338.4] Läser EF-svaret med KLIENTENS egen datagräns-hjälpare
-// (`parsaAttachment` = normalisera legacy → validera, ADR-026). TASK-338.2:s
-// mellanliggande `attachment-staging-schema.ts` är RIVEN: `AttachmentScope`
-// bär `GEMENSAM` sedan TASK-338.3, så domänschemat parsar en gemensam
-// bilaga rakt av och skarven behövs inte längre.
-import { parsaAttachment } from '../../src/domain/schemas';
+// [TASK-338.2, SMALNAD TASK-338.4] Läser EF-svaret med testsidans schema —
+// numera BARA en strikt `plats`-överskrivning (räckvidden går via
+// domänschemat rakt av sedan `AttachmentScope` bär `GEMENSAM`). Se
+// `attachment-staging-schema.ts` § VAD SOM ÄR KVAR för varför strikt HÄR och
+// lenient i klienten är två avsikter, inte en inkonsekvens.
+import { StagingAttachmentSchema } from './attachment-staging-schema';
 import { ARBETSKO_EVENT_ID, BELAGGNING_EVENT_ID } from './fixtures';
 import { type ApiConfig, classify401Body, getApiConfig, getValidUserJWT } from './helpers';
 
@@ -132,7 +132,7 @@ async function skapaBilaga(
   const raw = await res.text();
   expect(res.status(), `setup-uppladdning misslyckades: ${raw}`).toBe(201);
   const body = JSON.parse(raw) as { attachment: unknown };
-  return parsaAttachment(body.attachment).id;
+  return StagingAttachmentSchema.parse(body.attachment).id;
 }
 
 test.describe('delete-attachment — skarp conformance (TASK-147.11)', () => {
@@ -402,7 +402,7 @@ test.describe('delete-attachment — skarp conformance (TASK-147.11)', () => {
     });
     const uploadRaw = await uploadRes.text();
     expect(uploadRes.status(), `setup-uppladdning misslyckades: ${uploadRaw}`).toBe(201);
-    const attachmentId = parsaAttachment(JSON.parse(uploadRaw).attachment).id;
+    const attachmentId = StagingAttachmentSchema.parse(JSON.parse(uploadRaw).attachment).id;
 
     const res = await postDelete(request, config, jwt, { attachmentId });
     const raw = await res.text();

@@ -222,6 +222,7 @@ import {
   type UploadAttachmentVariables,
   useUploadAttachment,
 } from '@/data/mutations/useUploadAttachment';
+import { useEventAttachments } from '@/data/queries/useEventAttachments';
 import { usePlacesList } from '@/data/queries/usePlacesList';
 import { useDataSource } from '@/data/useDataSource';
 import type { Attachment } from '@/domain/models/Attachment';
@@ -404,11 +405,12 @@ export function DokumentYta() {
   });
   const valtEvent = eventsQuery.data?.find((e) => e.id === eventId);
 
-  const attachmentsQuery = useQuery({
-    queryKey: queryKeys.attachments.byEvent(eventId ?? ''),
-    queryFn: () => dataSource.fetchEventAttachments(eventId ?? ''),
-    enabled: eventId != null,
-  });
+  // [TASK-340.2] Frågan bor nu i `useEventAttachments` — SAMMA nyckel, samma
+  // `enabled`-villkor, ingen beteendeändring här. Den flyttade ut därför att
+  // `GenereringsVy.tsx` behöver samma svar för sin "Skapa om …"-etikett, och
+  // två inline-`useQuery` med samma nyckel är två ställen att hålla i synk.
+  // Se hookens docblock för hela resonemanget.
+  const attachmentsQuery = useEventAttachments(eventId);
 
   // [TASK-275.3, ADR-118 beslut 5] Räckviddsläget (Fynd, filhuvudets nya
   // stycke): ALLA gemensamma bilagor, hämtas BARA när inget event är valt —

@@ -2,6 +2,7 @@ import type {
   Attachment,
   AttachmentDownloadUrl,
   DocumentPreview,
+  SkapadEventBilaga,
   UpdateAttachmentScopeInput,
   UploadAttachmentInput,
 } from '../../domain/models/Attachment';
@@ -277,7 +278,8 @@ export class SupabaseAdapter implements DataSourceAdapter {
     eventId: string;
     mall: MallId;
     ersatt?: string;
-  }): Promise<Attachment> {
+    kallhash?: string;
+  }): Promise<SkapadEventBilaga> {
     throw new Error(NOT_IMPLEMENTED);
   }
 

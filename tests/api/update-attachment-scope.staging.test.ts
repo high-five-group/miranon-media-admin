@@ -65,7 +65,11 @@
 
 import { randomUUID } from 'node:crypto';
 import { type APIRequestContext, type APIResponse, expect, test } from '@playwright/test';
-import { parsaAttachment } from '../../src/domain/schemas';
+// [TASK-338.4] Testsidans schema, inte klientens: `plats` är STRIKT här
+// (se attachment-staging-schema.ts § VAD SOM ÄR KVAR). Denna svit prövar
+// plats-axeln hårdare än någon annan — att läsa den med klientens
+// medvetet lenienta schema hade gjort ett saknat `plats` osynligt.
+import { StagingAttachmentSchema } from './attachment-staging-schema';
 import { BELAGGNING_EVENT_ID } from './fixtures';
 import { type ApiConfig, classify401Body, getApiConfig, getValidUserJWT } from './helpers';
 
@@ -138,7 +142,7 @@ async function skapaBilaga(
   });
   const raw = await res.text();
   expect(res.status(), `setup-uppladdning misslyckades: ${raw}`).toBe(201);
-  return parsaAttachment((JSON.parse(raw) as { attachment: unknown }).attachment).id;
+  return StagingAttachmentSchema.parse((JSON.parse(raw) as { attachment: unknown }).attachment).id;
 }
 
 /** Teardown — raderar raden i räckviddsläge (inget eventId). */
@@ -174,7 +178,7 @@ test.describe('update-attachment-scope — skarp conformance (TASK-338.4)', () =
     // SVARET är i SAMMA form som get-event-attachments (mapAttachmentRecord),
     // så klienten kan skriva rakt in i sin cache — det är hela skälet att
     // EF:en svarar med raden i stället för `{ ok: true }`.
-    const efter = parsaAttachment(JSON.parse(raw).attachment);
+    const efter = StagingAttachmentSchema.parse(JSON.parse(raw).attachment);
     expect(efter.id).toBe(attachmentId);
     expect(efter.rackvidd).toBe('Gemensam');
     expect(efter.plats?.id).toBe(RONNINGE_PLATS_ID);
@@ -193,7 +197,7 @@ test.describe('update-attachment-scope — skarp conformance (TASK-338.4)', () =
     );
     expect(lista.status(), await lista.text()).toBe(200);
     const rader = (JSON.parse(await lista.text()) as { attachments: unknown[] }).attachments.map(
-      (a) => parsaAttachment(a),
+      (a) => StagingAttachmentSchema.parse(a),
     );
     const traff = rader.find((r) => r.id === attachmentId);
     expect(traff, 'den ändrade raden ska finnas i räckviddslistan').toBeDefined();
@@ -216,7 +220,7 @@ test.describe('update-attachment-scope — skarp conformance (TASK-338.4)', () =
     const raw = await res.text();
     expect(res.status(), raw).toBe(200);
 
-    const efter = parsaAttachment(JSON.parse(raw).attachment);
+    const efter = StagingAttachmentSchema.parse(JSON.parse(raw).attachment);
     // KÄRNAN I FALLET: platsen är BORTA, inte kvar. En PATCH som utelämnat
     // fältet hade lämnat Rönninge-länken orörd och svarat 200 ändå.
     expect(efter.plats).toBeNull();
@@ -244,7 +248,7 @@ test.describe('update-attachment-scope — skarp conformance (TASK-338.4)', () =
     const raw = await res.text();
     expect(res.status(), raw).toBe(200);
 
-    const efter = parsaAttachment(JSON.parse(raw).attachment);
+    const efter = StagingAttachmentSchema.parse(JSON.parse(raw).attachment);
     expect(efter.kursfamilj).toBe('RIM');
     expect(efter.plats?.id).toBe(RONNINGE_PLATS_ID);
     expect(efter.kursniva).toBeNull();
@@ -268,7 +272,7 @@ test.describe('update-attachment-scope — skarp conformance (TASK-338.4)', () =
     const raw = await res.text();
     expect(res.status(), raw).toBe(200);
 
-    const efter = parsaAttachment(JSON.parse(raw).attachment);
+    const efter = StagingAttachmentSchema.parse(JSON.parse(raw).attachment);
     expect(efter.rackvidd).toBe('Gemensam');
     expect(efter.plats).toBeNull();
 
@@ -294,7 +298,7 @@ test.describe('update-attachment-scope — skarp conformance (TASK-338.4)', () =
       { headers: { Authorization: `Bearer ${jwt}` } },
     );
     const rader = (JSON.parse(await kvar.text()) as { attachments: unknown[] }).attachments.map(
-      (a) => parsaAttachment(a),
+      (a) => StagingAttachmentSchema.parse(a),
     );
     const traff = rader.find((r) => r.id === attachmentId);
     expect(traff?.rackvidd).toBe('Event');
@@ -325,7 +329,9 @@ test.describe('update-attachment-scope — skarp conformance (TASK-338.4)', () =
     // raden blivit PLATS-LÖS (= synlig på alla event) i stället för att
     // anropet nekades. En tyst uppvidgning är värre än ett 4xx.
     const res2 = await postScope(request, config, jwt, { attachmentId, rackvidd: 'Gemensam' });
-    expect(parsaAttachment(JSON.parse(await res2.text()).attachment).plats).toBeNull();
+    expect(
+      StagingAttachmentSchema.parse(JSON.parse(await res2.text()).attachment).plats,
+    ).toBeNull();
 
     await stadaGemensam(request, config, jwt, attachmentId);
   });

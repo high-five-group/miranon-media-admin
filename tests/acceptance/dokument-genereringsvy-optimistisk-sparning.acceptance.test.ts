@@ -231,6 +231,13 @@ test.describe('GenereringsVy — optimistisk sparning (TASK-309.25)', () => {
     await page.getByRole('button', { name: 'Skapa Bekräftelsebilaga' }).click();
 
     await expect(page.getByRole('button', { name: 'Skapar …' })).toBeVisible();
-    await expect(page.getByText('är skapad och ligger nu bland eventets dokument')).toHaveCount(0);
+    // [UPPDATERAD, TASK-340.2] Assertionen läste tidigare den gamla
+    // resultattextens ord ("är skapad och ligger nu bland eventets
+    // dokument"). Den texten finns inte längre — resultatet är nu en
+    // bekräftelseYTA som ERSÄTTER formuläret — och en `toHaveCount(0)` mot en
+    // sträng ingen kod kan producera är sann av fel skäl, alltså inget bevis
+    // alls. Nu läses ytan själv (`data-testid="bekraftelse"`), som är exakt
+    // det som INTE får ha dykt upp medan mutationen fortfarande väntar.
+    await expect(page.getByTestId('bekraftelse')).toHaveCount(0);
   });
 });
