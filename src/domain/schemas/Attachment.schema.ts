@@ -264,7 +264,99 @@ export const AttachmentDownloadUrlSchema = z.object({
 export const DocumentPreviewSchema = z.object({
   url: z.string().url(),
   utgar: z.string().datetime(),
+  /**
+   * [TILLÄGG, TASK-340.1 → TASK-340.2, PRD `TASK-340` § Implementationsbeslut A]
+   * Underlagets `Källhash` — den EF:en REDAN räknade ut och tidigare kastade
+   * bort i preview-grenen. Klienten skickar tillbaka den vid Skapa; servern
+   * räknar om dagens hash och PROMOVERAR utkastets exakta bytes när de
+   * stämmer, i stället för att rendera om (DocRaptor slumpar PDF:ens `/ID`
+   * per anrop, så en omrendering ger BEVISLIGEN andra bytes än den fil Lotta
+   * granskade — research `forhandsgranska-spara-atervand-bilageflodet-
+   * 2026-08-29.md` § 2.3).
+   *
+   * VALFRI, MED AVSIKT — TVÅ SKÄL, båda mätta och inget av dem hypotetiskt:
+   *   1. `preview-receipt` delar detta schema och bär INGEN hash (kvittots
+   *      utkast promoveras aldrig, PRD § Utanför omfattningen).
+   *   2. LANDNING ÄR INTE DEPLOY. `TASK-340.1` landade i `main` 2026-08-29
+   *      (PR `#2083`, `0f101a0d` + `873efad9`), men Edge Functions deployas
+   *      i en EGEN kadens (`scripts/fas4-prod-deploy.sh`, staging via sin
+   *      egen väg) — koden i `main` säger alltså ingenting om vad den
+   *      körande EF:en svarar just nu. Ett obligatoriskt fält hade brutit
+   *      varje förhandsgranskning i fönstret mellan merge och deploy, och
+   *      igen vid varje rollback.
+   *
+   * FORMEN VALIDERAS INTE HÄR, och det är ett medvetet val. EF:en avvisar en
+   * icke-kanonisk `kallhash` med 400 (`arKanoniskKallhash` i
+   * `_shared/promoveringsbeslut.ts`), så ett formfel MÅSTE fångas innan vi
+   * SKICKAR — inte när vi LÄSER. Läses formen strängt här faller hela
+   * förhandsgranskningen på ett fält som bara är en optimering; gaten sitter
+   * därför i `AirtableAdapter.skapaEventBilaga` (`arKanoniskKallhash`,
+   * `mallKallhash.ts`), som hellre utelämnar hashen än skickar en trasig.
+   */
+  kallhash: z.string().optional(),
 });
+
+/**
+ * Svaret från generate-event-attachment SKARPA gren (utan `preview`) —
+ * `TASK-340.1`s ADDITIVA utbyggnad, konsumerad av `TASK-340.2`s
+ * bekräftelseyta. Parallell sanningskälla: `../models/Attachment.ts` §
+ * `SkapadEventBilaga`.
+ *
+ * DE TRE BOOLEANERNA BÄR `.default(false)` — INTE `.optional()`. Skillnaden
+ * är hela poängen: konsumenten (`GenereringsVy`s textkomposition) ska aldrig
+ * behöva skilja `false` från `undefined` för att avgöra vilken mening som
+ * ska stå i bekräftelsen. Ett svar från den ÄNNU EJ DEPLOYADE EF:en (eller
+ * från en äldre fixtur) saknar fälten helt och normaliseras då till `false`,
+ * vilket är exakt sanningen om ett sådant svar: ingen promovering skedde,
+ * inget underlag ändrades, ingenting ersattes.
+ *
+ * STATUSKODEN LÄSES INTE HÄR, och behöver inte läsas någonstans.
+ * `postEdgeFunction` släpper igenom hela 2xx-bandet (`res.ok`), så både 201
+ * (ny rad) och 200 (`ersatte`) når parsningen oförändrat. Invarianten
+ * `201 ⇔ ersatte === false` bor i EF:en och bevisas i dess egen svit; på
+ * klientsidan är `ersatte` det enda vi behöver — att härleda samma sak ur
+ * statuskoden hade varit en andra, driftbar sanning om samma faktum.
+ */
+export const SkapadEventBilagaSchema = z.object({
+  attachment: AttachmentSchema,
+  /** Utkastets bytes kopierades — den sparade filen ÄR den granskade filen. */
+  promoverad: z.boolean().default(false),
+  /** Underlaget hade ändrats sedan förhandsgranskningen → dokumentet gjordes om. */
+  underlagAndrat: z.boolean().default(false),
+  /** En befintlig Event-mallad rad skrevs över i stället för att en ny föddes. */
+  ersatte: z.boolean().default(false),
+});
+
+/**
+ * [TASK-338.3 + TASK-340.2, merge] Datagränsens enda väg in för det INBÄDDADE
+ * `attachment`-fältet i `generate-event-attachment`s svar.
+ *
+ * DE TVÅ SKIVORNA MÖTS EXAKT HÄR. `340.2` gjorde svaret till en HELHET som
+ * parsas i ett svep (`SkapadEventBilagaSchema` — de tre booleanerna är det
+ * bekräftelseytan säger i klartext, och ett fält som plockas ut för hand vid
+ * sidan av schemat är precis den datagräns `ADR-026` finns för att stänga).
+ * `338.3` gjorde `rackvidd` till ett STRIKT enum över `Event | Gemensam`,
+ * vilket kräver att legacy-värden normaliseras FÖRE varje parse.
+ *
+ * Naivt hade de två varit oförenliga: helhets-parsen når `attachment` innan
+ * någon normalisering hunnit köra, och ett `Kurstyp` i svaret hade KASTAT.
+ * Lösningen är att normalisera det inbäddade fältet och sedan låta
+ * helhets-schemat validera allt — båda egenskaperna bevarade, ingen av dem
+ * försvagad.
+ *
+ * I PRAKTIKEN kan `generate-event-attachment` inte producera ett legacy-värde
+ * (den sätter ALDRIG `Räckvidd`, se `_shared/rackvidd-matchning.ts` §
+ * `arGemensam`), så normaliseringen är här ett SKYDDSRÄCKE snarare än en
+ * daglig nödvändighet. Den finns ändå, av samma skäl som `parsaAttachment`
+ * existerar: en normalisering som är valfri på ett av fem ställen är en
+ * normalisering någon glömmer på det sjätte.
+ */
+export function parsaSkapadEventBilaga(ra: unknown) {
+  const post = ra !== null && typeof ra === 'object' ? (ra as Record<string, unknown>) : null;
+  const normaliserad =
+    post === null ? ra : { ...post, attachment: normaliseraRaAttachment(post.attachment) };
+  return SkapadEventBilagaSchema.parse(normaliserad);
+}
 
 /**
  * Svaret från `test-docraptor-render` (RIVEN, `TASK-309.4`, `ADR-125` § 5)

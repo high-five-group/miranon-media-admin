@@ -27,6 +27,8 @@ export {
   normaliseraRaAttachment,
   parsaAttachment,
   parsaAttachments,
+  parsaSkapadEventBilaga,
+  SkapadEventBilagaSchema,
   UtkastResultatSchema,
 } from './Attachment.schema';
 export { AttendanceSchema, CreatedAttendanceSchema } from './Attendance.schema';

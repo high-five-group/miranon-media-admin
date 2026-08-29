@@ -59,6 +59,23 @@ export type Forhandsgranskning = {
   url: string;
   /** URL:ens ISO-utgångstid (`SIGNED_DOWNLOAD_URL_TTL_SECONDS`). */
   utgar: string;
+  /**
+   * [TILLÄGG, TASK-340.2, PRD `TASK-340` § Implementationsbeslut A]
+   * Underlagets `Källhash` ur EF:ens preview-svar. Genereringsvyn HÅLLER den
+   * i sitt state och skickar tillbaka den vid Skapa — då kopieras utkastets
+   * EXAKTA bytes i stället för att dokumentet renderas om.
+   *
+   * VARFÖR HASHEN ÖVER HUVUD TAGET: DocRaptor slumpar PDF:ens `/ID`-par per
+   * anrop och det går inte att styra (research
+   * `forhandsgranska-spara-atervand-bilageflodet-2026-08-29.md` § 2.3), så
+   * en omrendering ger BEVISLIGEN andra bytes än den fil Lotta granskade.
+   * Utan hashen kan appen inte hålla löftet "det du sparar är det du såg".
+   *
+   * `undefined` när EF:en inte bar fältet — den deployade EF:en gör det inte
+   * förrän `TASK-340.1` landat, och en klient som inte har någon hash att
+   * skicka får exakt dagens beteende (omrendering, tyst).
+   */
+  kallhash?: string;
 };
 
 export function useForhandsgranskaBilaga() {
@@ -67,8 +84,8 @@ export function useForhandsgranskaBilaga() {
   return useMutation<Forhandsgranskning, Error, ForhandsgranskaBilagaInput>({
     mutationKey: ['forhandsgranska-bilaga'],
     mutationFn: async ({ eventId, mall }) => {
-      const { url, utgar } = await dataSource.previewEventTemplate(eventId, mall);
-      return { url, utgar };
+      const { url, utgar, kallhash } = await dataSource.previewEventTemplate(eventId, mall);
+      return { url, utgar, kallhash };
     },
   });
 }

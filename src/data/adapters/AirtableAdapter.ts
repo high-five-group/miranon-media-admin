@@ -3,6 +3,7 @@ import type {
   Attachment,
   AttachmentDownloadUrl,
   DocumentPreview,
+  SkapadEventBilaga,
   UploadAttachmentInput,
 } from '../../domain/models/Attachment';
 import type {
@@ -52,6 +53,7 @@ import {
   PlaceListItemSchema,
   parsaAttachment,
   parsaAttachments,
+  parsaSkapadEventBilaga,
   type RecordActivityResult,
   RecordActivityResultSchema,
   type RegistrationDetail,
@@ -94,7 +96,11 @@ import {
   SMALL_UPLOAD_MAX_BYTES,
 } from './attachmentUpload';
 import type { DataSourceAdapter, MallId } from './DataSourceAdapter';
-import { berakaAktuellKallhash, mallIdFranAirtableOption } from './mallKallhash';
+import {
+  arKanoniskKallhash,
+  berakaAktuellKallhash,
+  mallIdFranAirtableOption,
+} from './mallKallhash';
 
 // Airtable tabell-ID:n (från docs/schema_reference.md). Behålls som
 // referens i kommentarer för framtida operations-definitioner i
@@ -1013,26 +1019,53 @@ export class AirtableAdapter implements DataSourceAdapter {
    * Skapa eller regenerera en Event-mallad bilaga (TASK-309.6, ADR-125 § 5).
    * POST mot generate-event-attachment UTAN `preview` — se
    * `DataSourceAdapter.skapaEventBilaga` för det fulla kontraktet
-   * (`ersatt`-läget, dubblett-beteendet). `.parse()` validerar vid
-   * datagränsen (ADR-026), speglar `uploadAttachment`.
+   * (`ersatt`-läget, server-valda ersätt-vägen, `kallhash`-promoveringen).
+   * `.parse()` validerar vid datagränsen (ADR-026), speglar `uploadAttachment`.
+   *
+   * [UTBYGGD, TASK-340.2] Svaret parsas nu som HELHET
+   * (`SkapadEventBilagaSchema`) i stället för att bara plocka ut
+   * `attachment` — de tre booleanerna `promoverad`/`underlagAndrat`/
+   * `ersatte` är det bekräftelseytan säger i klartext, och ett fält som
+   * plockas ut för hand vid sidan av schemat är precis den datagräns
+   * ADR-026 finns för att stänga.
+   *
+   * `kallhash` SKICKAS BARA I KANONISK FORM. EF:en svarar 400 på en
+   * icke-kanonisk hash (`arKanoniskKallhash`, `_shared/promoveringsbeslut.ts`),
+   * så ett trasigt värde hade fällt HELA Skapa — inte bara optimeringen.
+   * Gaten sitter därför här, på skickar-sidan, och hellre utelämnar hashen
+   * än skickar en form servern kommer avvisa: utelämnad hash = omrendering,
+   * vilket är ett SÄMRE men fungerande utfall (PRD § A (d)).
    */
   async skapaEventBilaga(input: {
     eventId: string;
     mall: MallId;
     ersatt?: string;
-  }): Promise<Attachment> {
-    const data = await postEdgeFunction<{ attachment: unknown }>('generate-event-attachment', {
+    kallhash?: string;
+  }): Promise<SkapadEventBilaga> {
+    const data = await postEdgeFunction<unknown>('generate-event-attachment', {
       eventId: input.eventId,
       mall: input.mall,
       ...(input.ersatt !== undefined ? { ersatt: input.ersatt } : {}),
+      ...(arKanoniskKallhash(input.kallhash) ? { kallhash: input.kallhash } : {}),
     });
+    // [MERGE 338.3 x 340.2] Helhets-parsen går via `parsaSkapadEventBilaga`,
+    // som normaliserar det INBÄDDADE `attachment`-fältets legacy-räckvidd
+    // innan `SkapadEventBilagaSchema` validerar hela svaret — se den
+    // funktionens docblock för varför de två skivorna annars vore
+    // oförenliga här.
+    const svar = parsaSkapadEventBilaga(data);
     // [TASK-309.6] `inaktuell` sätts inte här — en NYSKAPAD/nyss-regenererad
     // rads Källhash är per konstruktion den dagens hash (samma anrop skrev
     // båda), så `false` hade varit korrekt men ONÖDIGT: `attachments.byEvent`-
     // invalideringen (mutations-hooken) refetchar listan direkt efteråt, och
     // DEN vägen (`fetchEventAttachments`) härleder `inaktuell` riktigt. Att
     // gissa värdet här hade riskerat att glida isär från den härledningen.
-    return { ...parsaAttachment(data.attachment), inaktuell: null };
+    return {
+      attachment: { ...svar.attachment, inaktuell: null },
+      promoverad: svar.promoverad,
+      underlagAndrat: svar.underlagAndrat,
+      ersatte: svar.ersatte,
+    };
   }
 
   /**

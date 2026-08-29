@@ -1104,3 +1104,111 @@ test.describe('TASK-309.23 — uppladdningsdialogens geometri är låst', () => 
     expect(resultat.violations).toEqual([]);
   });
 });
+
+/**
+ * [TASK-309.40] Typfiltret (`?typ=`) ÖVERLEVDE tidigare ett räckviddsbyte —
+ * diagnos i TASK-309.39 (Marcus prod-röktest 2026-08-29): Lotta bytte från
+ * Delade dokument till ett event och fick ett "Bilagor"-filter kvar från
+ * förra sammanhanget, utan att räckviddsläget (som saknar en filterrad) gav
+ * någon ledtråd om varför listan var smalare. Produktbeslutet (review-agenten
+ * klassade frågan `ask-user`; orkestreraren avgjorde på Marcus mandat,
+ * TASK-309.40 kortets Description): filtret nollställs till 'alla' vid VARJE
+ * byte av räckvidd, i BÅDA riktningarna — men INTE vid navigering IN i vyn
+ * (en direktlänk med `?typ=bilaga`, TASK-340.2s "Till dokumenten", ska
+ * fortsätta fungera oförändrat).
+ *
+ * Fixen (`DokumentYta.tsx`s `handleRackviddsByte`) sitter i räckviddsväxlingens
+ * EN handler — den enda vägen in i ett räckviddsbyte är `EventValjare`s
+ * `onByte`/`gemensamtAlternativ.onValj` (se `EventValjare.tsx`s
+ * `onSelectionChange`), så testerna nedan täcker samma tre vägar: delade →
+ * event, event → delade, event → annat event — plus regressionsvakten att
+ * en sidladdning i `?typ=` fortfarande fungerar (den passerar aldrig
+ * handlern).
+ *
+ * "räckvidds-axeln"-testerna ovan (samma fil) övar redan delade↔event-
+ * NAVIGERINGEN utan `?typ=` inblandat — dessa fyra är dedikerade åt
+ * NOLLSTÄLLNINGEN.
+ */
+test.describe('TASK-309.40 — typfiltret nollställs vid byte av räckvidd', () => {
+  test('delade → event nollställer ?typ (URL saknar nyckeln, listan visar "alla")', async ({
+    page,
+    network,
+  }) => {
+    network.use(bilagorHandler());
+    // Räckviddsläget har ingen filterrad — `?typ=bilaga` sitter kvar i
+    // URL:en osynligt, precis det TASK-309.39 diagnosen beskriver.
+    await page.goto('/mer/dokument?typ=bilaga');
+    await expect(page.getByTestId('dokument-yta')).toBeVisible();
+    await expect(page.getByText(BILAGA_GEMENSAM.namn)).toBeVisible();
+    await expect(page).toHaveURL(/typ=bilaga/);
+
+    await page.getByTestId('event-valjare-trigger').click();
+    await page
+      .getByRole('option', { name: /Skövde/ })
+      .first()
+      .click();
+
+    await expect(page).toHaveURL(new RegExp(`event=${VISUAL_EVENT_ID}`));
+    await expect(page).not.toHaveURL(/typ=/);
+    // Listan visar 'alla' — mallarna (som 'bilaga'-filtret hade dolt) syns.
+    await expect(page.getByText('Bekräftelsebilaga')).toBeVisible();
+    await expect(page.getByRole('radio', { name: 'Alla', exact: true })).toBeChecked();
+  });
+
+  test('event → delade nollställer ?typ (URL saknar nyckeln)', async ({ page, network }) => {
+    network.use(bilagorHandler());
+    await page.goto(`/mer/dokument?event=${VISUAL_EVENT_ID}&typ=bilaga`);
+    await expect(page.getByTestId('dokument-yta')).toBeVisible();
+    await expect(page.getByRole('radio', { name: 'Bilagor' })).toBeChecked();
+    // 'bilaga'-filtret döljer mallarna — kvitto på att filtret faktiskt är
+    // aktivt innan bytet, inte bara att chippet råkar se markerat ut.
+    await expect(page.getByText('Bekräftelsebilaga')).toHaveCount(0);
+
+    await page.getByTestId('event-valjare-trigger').click();
+    await page.getByRole('option', { name: 'Delade dokument', exact: true }).click();
+
+    await expect(page).toHaveURL(/\/mer\/dokument$/);
+    await expect(page).not.toHaveURL(/typ=/);
+  });
+
+  test('event → annat event nollställer ?typ (URL saknar nyckeln)', async ({ page, network }) => {
+    network.use(bilagorHandler());
+    await page.goto(`/mer/dokument?event=${VISUAL_EVENT_ID}&typ=bilaga`);
+    await expect(page.getByTestId('dokument-yta')).toBeVisible();
+    await expect(page.getByRole('radio', { name: 'Bilagor' })).toBeChecked();
+
+    await page.getByTestId('event-valjare-trigger').click();
+    // Göteborg (`EVENTS_RESPONSE`s andra event, fixture-data.ts) — det ENDA
+    // sättet att öva "event → ANNAT event" i stället för event ↔ delade,
+    // som räckvidds-axeln-testerna redan täcker.
+    await page
+      .getByRole('option', { name: /Göteborg/ })
+      .first()
+      .click();
+
+    const url = new URL(page.url());
+    const nyttEventId = url.searchParams.get('event');
+    expect(nyttEventId).not.toBeNull();
+    expect(nyttEventId).not.toBe(VISUAL_EVENT_ID);
+    expect(url.searchParams.has('typ')).toBe(false);
+    // Listan om-monterades i 'alla' — mallarna syns igen.
+    await expect(page.getByText('Bekräftelsebilaga')).toBeVisible();
+    await expect(page.getByRole('radio', { name: 'Alla', exact: true })).toBeChecked();
+  });
+
+  test('direktlänk med ?typ=bilaga IN i vyn fortsätter fungera (navigering, inte byte)', async ({
+    page,
+    network,
+  }) => {
+    // Regressionsvakt för TASK-340.2s "Till dokumenten": en sidladdning
+    // passerar aldrig `handleRackviddsByte` (den körs bara vid ett VAL i
+    // `EventValjare`), så filtret ska stå kvar oförändrat.
+    network.use(bilagorHandler());
+    await page.goto(`/mer/dokument?event=${VISUAL_EVENT_ID}&typ=bilaga`);
+    await expect(page.getByTestId('dokument-yta')).toBeVisible();
+    await expect(page.getByRole('radio', { name: 'Bilagor' })).toBeChecked();
+    await expect(page.getByText(BILAGA_EGEN.namn)).toBeVisible();
+    await expect(page.getByText('Bekräftelsebilaga')).toHaveCount(0);
+    await expect(page).toHaveURL(/typ=bilaga/);
+  });
+});

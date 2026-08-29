@@ -538,7 +538,19 @@ test.describe('GemensamtLage (räckviddsläge) — samma regel (tidigare saknad,
     await page.getByRole('button', { name: 'Radera Delad 5.pdf' }).click();
     // Väntar in refetchen (den nya, kortare listan) — `not.toBeVisible()`
     // pollar tills DOM:en faktiskt hunnit uppdateras.
-    await expect(page.getByText('Delad 5.pdf')).not.toBeVisible();
+    //
+    // [TASK-309.40, kö-fynd 2026-08-29] SKOPAD till `dokument-lista` — ett
+    // OSKOPAT `page.getByText('Delad 5.pdf')` matchar även
+    // `alertScreenReader`s SR-only `<p>` (`useDeleteAttachment.ts`:
+    // `${namn} har raderats`), som lever i `document.body` UTANFÖR listan
+    // i exakt 1000 ms (100–1100 ms efter mutationen, `alert-screen-reader.ts`
+    // § APPEND_DELAY/REMOVE_DELAY). Träffar assertionen det fönstret ger
+    // lokatorn TVÅ element och Playwright kastar strict-mode-fel i stället
+    // för att fortsätta polla — reproducerat 2/10 (kö-trädet) och 1/10
+    // (ren `main`, UTAN TASK-309.40s ändring — alltså förprogrammerat i
+    // denna testfil, inte orsakat av den skivan). Scopet utesluter
+    // announcer-noden helt: den ligger aldrig under `dokument-lista`.
+    await expect(page.getByTestId('dokument-lista').getByText('Delad 5.pdf')).not.toBeVisible();
 
     const efter = await mataGeometri(page);
     // MONOTON PRECISION (`harPreciserMatt`, `useLastaListhojd`s filhuvud,
@@ -602,7 +614,13 @@ test.describe('GemensamtLage (räckviddsläge) — samma regel (tidigare saknad,
     ).toBeChecked();
     await dialog.getByRole('button', { name: 'Ladda upp' }).click();
     await expect(dialog).not.toBeVisible();
-    await expect(page.getByText('Delad 4.pdf')).toBeVisible();
+    // [TASK-309.40, kö-fynd 2026-08-29] SKOPAD — samma rotorsak som
+    // Radera-testets kommentar ovan i denna fil: `alertScreenReader`s
+    // SR-only `<p>` ("Delad 4.pdf har laddats upp",
+    // `useUploadAttachment.ts`) lever i `document.body`, utanför listan, i
+    // ett 1000 ms-fönster efter mutationen och kan annars kollidera med
+    // listradens EGNA "Delad 4.pdf"-text i ett oskopat sök.
+    await expect(page.getByTestId('dokument-lista').getByText('Delad 4.pdf')).toBeVisible();
 
     const efter = await mataGeometri(page);
     // Oberoende, FRÅN TESTET SJÄLVT beräknad PRECIS-referens — SAMMA

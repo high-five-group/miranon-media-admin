@@ -224,4 +224,35 @@ export interface AttachmentDownloadUrl {
 export interface DocumentPreview {
   url: string;
   utgar: string;
+  /**
+   * [TILLÄGG, TASK-340.1 → TASK-340.2] Underlagets `Källhash`. Klienten
+   * skickar tillbaka den vid Skapa så EF:en kan PROMOVERA de granskade
+   * bytesen i stället för att rendera om. VALFRI: `preview-receipt` bär
+   * ingen hash, och den DEPLOYADE EF:en kan svara utan fältet även efter
+   * att `TASK-340.1` landat i `main` (landning ≠ deploy). Parallell
+   * sanningskälla + hela resonemanget:
+   * `../schemas/Attachment.schema.ts` § `DocumentPreviewSchema`.
+   */
+  kallhash?: string;
+}
+
+/**
+ * Resultatet av en SKARP generering (`skapaEventBilaga`) — bilagan plus de
+ * tre fakta bekräftelseytan säger i klartext (`TASK-340.2`, PRD `TASK-340`
+ * § Implementationsbeslut "Bekräftelsen på plats"). Parallell sanningskälla:
+ * `../schemas/Attachment.schema.ts` § `SkapadEventBilagaSchema`.
+ *
+ * Metoden returnerade tidigare bara `Attachment`. Den formen kunde inte bära
+ * något av det Lotta faktiskt behöver veta — att dokumentet gjordes OM för
+ * att underlaget ändrats, eller att det ERSATTE den tidigare bilagan — och
+ * ett flöde som inte kan säga vad som hände kan inte kvittera det heller.
+ */
+export interface SkapadEventBilaga {
+  attachment: Attachment;
+  /** Utkastets bytes kopierades — den sparade filen ÄR den granskade filen. */
+  promoverad: boolean;
+  /** Underlaget hade ändrats sedan förhandsgranskningen → dokumentet gjordes om. */
+  underlagAndrat: boolean;
+  /** En befintlig Event-mallad rad skrevs över i stället för att en ny föddes. */
+  ersatte: boolean;
 }

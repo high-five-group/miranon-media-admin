@@ -22,10 +22,28 @@
 // människoläsbart svenskt fel (filstorlek i MB, inte byte) — aldrig en rå
 // bytejämförelse.
 //
-// [TASK-275.2, ADR-118] RÄCKVIDDSPARAMETRARNA (`rackvidd`/`kursfamilj`/
-// `kursniva`, valfria — default 'Event', dagens beteende oförändrat)
-// valideras STRIKT via `_shared/attachments.ts`s `AttachmentScopeInputSchema`
-// innan `fields` byggs (`buildScopeFields`). Anges `eventId` skrivs
+// [TASK-275.2, ADR-118 · OMBYGGT TASK-338.2, ADR-125 § Beslut 1]
+// RÄCKVIDDSPARAMETRARNA (`rackvidd`/`kursfamilj`/`kursniva`/`plats`, alla
+// valfria — default 'Event', dagens beteende oförändrat) valideras STRIKT
+// via `_shared/attachments.ts`s `AttachmentScopeInputSchema` innan `fields`
+// byggs (`buildScopeFields`).
+//
+// TVÅ levande räckvidder: `Event` och `Gemensam`. `Gemensam` bär tre
+// VALFRIA axlar (Kursfamilj · Kursnivå, bara med familj · Plats) som
+// kombineras med OCH; NOLL axlar är giltigt och betyder "alla event".
+// Legacy-värdena `Kurstyp`/`Alla event` ACCEPTERAS fortfarande (installerade
+// PWA-klienter kan skicka dem tills de uppdaterats) och SPARAS som
+// `Gemensam` med sina axlar bevarade — rivningsskuld, bokförd i
+// AttachmentScopeInputSchemas docblock. Deras egna gamla regler bevaras
+// oförändrade: `Kurstyp` KRÄVER fortfarande `kursfamilj`.
+//
+// `plats` är ett Platser-record-ID och EXISTENSKONTROLLERAS mot
+// Platser-tabellen (`platsFinns`) FÖRE lagringsskrivningen — samma vaktklass
+// som generate-event-attachments ersatt-guard. Skälet: Airtable tystar ett
+// okänt ID i ett länkfält, så ett felstavat plats-ID hade gett en PLATS-LÖS
+// bilaga synlig på ALLA event i stället för ett fel.
+//
+// Anges `eventId` skrivs
 // `Event: [eventId]` OAVSETT räckvidd (oförändrat 275.2-beteende: den bär
 // storage-path-ankaret och den befintliga ägarskaps-mekaniken i delete-
 // attachment/get-attachment-download-url; olycksskyddet mot radering ur
@@ -156,6 +174,7 @@ import {
   formatMB,
   isValidEventId,
   mapAttachmentRecord,
+  platsFinns,
   sanitizeFilnamn,
   SMALL_UPLOAD_MAX_BYTES,
 } from '../_shared/attachments.ts';
@@ -273,13 +292,17 @@ Deno.serve(async (req) => {
       return badRequest('Filen saknar innehåll.', corsHeaders);
     }
 
-    // [TASK-275.2] Räckviddsparametrarna — strikt Zod (AC #2). Ogiltig
-    // kombination (t.ex. Kurstyp utan Kursfamilj, eller Kursfamilj angiven
-    // trots räckvidd Event) → 400 med Zod:s egna, specifika felmeddelande.
+    // [TASK-275.2 · UTBYGGT TASK-338.2] Räckviddsparametrarna — strikt Zod.
+    // Ogiltig kombination (t.ex. Kursnivå utan Kursfamilj, eller Plats
+    // angiven trots räckvidd Event) → 400 med Zod:s egna, specifika
+    // felmeddelande. `plats` är den tredje axeln (ADR-125 § Beslut 1);
+    // legacy-värdena Kurstyp/Alla event accepteras och sparas som Gemensam
+    // (se AttachmentScopeInputSchemas docblock för rivningsskulden).
     const scopeParsed = AttachmentScopeInputSchema.safeParse({
       rackvidd: body?.rackvidd,
       kursfamilj: body?.kursfamilj,
       kursniva: body?.kursniva,
+      plats: body?.plats,
     });
     if (!scopeParsed.success) {
       return badRequest(
@@ -317,6 +340,19 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
+    }
+
+    // [TASK-338.2, ADR-125 § Beslut 1] PLATSEN FINNS-kontrollen — se
+    // `platsFinns` (_shared/attachments.ts) för varför formkontrollen i Zod
+    // inte räcker: Airtable tystar ett okänt record-ID i ett länkfält, så en
+    // felstavad plats hade gett en PLATS-LÖS bilaga (synlig på alla event)
+    // i stället för ett fel. Körs FÖRE bytesen skrivs till lagringen — ett
+    // avvisat anrop ska inte lämna ett föräldralöst Storage-objekt efter sig.
+    if (scopeParsed.data.plats && !(await platsFinns(scopeParsed.data.plats))) {
+      return new Response(JSON.stringify({ error: 'Platsen hittades inte.' }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const supabaseAdmin = createClient(
