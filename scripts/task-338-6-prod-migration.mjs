@@ -5,21 +5,30 @@
 //
 // VAD SKRIPTET GÖR (samma STAGING-halva som TASK-338.1 redan bevisade skarpt,
 // generaliserat till ett IDEMPOTENT, ÅTERANVÄNDBART verktyg i stället för
-// engångs-MCP-anrop):
-//   Steg (i)  schema, additivt:
-//     — option "Gemensam" på Bilagor.Räckvidd (singleSelect kan INTE få en
-//       ny choice via Meta-API PATCH, se § PLATTFORMSVÄGG nedan — vägen som
-//       FUNGERAR är en records-skrivning med typecast:true, TASK-338.1s
-//       skarpt bevisade fynd)
-//     — länkfältet Bilagor.Plats → Platser (multipleRecordLinks)
-//     — lookup-fältet Bilagor.Platsnamn (Platser.Namn via Plats)
-//   Steg (iii) radmigrering: alla Bilagor-rader med Räckvidd ∈
-//     {Kurstyp, Alla event} → Gemensam, i batchar om 10, Kursfamilj/Kursnivå
-//     ORÖRDA (fälten ingår aldrig i PATCH-payloaden), räknat före/efter.
+// engångs-MCP-anrop) — TRE separata lägen (review-runda 2, punkt 2 nedan):
+//
+//   --kontrollera <bas>     läser BÅDE schema och rader, ändrar inget.
+//   --utfor-schema <bas>    steg (i): option "Gemensam" + länkfältet Plats +
+//                           lookupfältet Platsnamn. Additivt, rör ALDRIG en
+//                           riktig Bilagor-rad (se § VAL-TILLÄGG nedan).
+//   --utfor-rader <bas>     steg (iii): alla rader Räckvidd ∈
+//                           {Kurstyp, Alla event} → Gemensam, batchat om 10,
+//                           Kursfamilj/Kursnivå ORÖRDA. Kräver att choicen
+//                           redan finns (kör --utfor-schema FÖRST).
 //
 // Steg (ii) — EF-deployen — är UTTRYCKLIGEN INTE detta skripts jobb.
 // scripts/fas4-prod-deploy.sh --deploya gör det, i Marcus EGET
 // terminalfönster (CLAUDE.md § Prod-EF-deploy — aldrig via `!`-prefixet).
+//
+// VARFÖR TRE LÄGEN OCH INTE ETT `--utfor` (review-runda 2, punkt 2 — avgjort
+// av orkestreraren på Marcus mandat): ett kombinerat `--utfor` band ihop
+// schema (additivt, ofarligt) med radmigrering (irreversibelt i DATA,
+// ADR-125 § 8) under EN GO. Splittringen låter Marcus ge sitt GO separat för
+// vart och ett, med EF-deployen imellan — exakt kortets (i)/(ii)/(iii) och
+// ADR-125 § 8:s "additivt men irreversibelt i data"-distinktion. Varje läge
+// är för sig FAIL-CLOSED: en post-skrivnings-räkneverifiering (§ Exit nedan,
+// kod 4) som visar diskrepans avslutar processen rött i stället för att bara
+// skriva ut en varning.
 //
 // ─────────────────────────────────────────────────────────────────────────
 // PROD-LÅSET — VARFÖR DETTA SKRIPT BÄR EN EGEN GUARD I STÄLLET FÖR ATT LITA
@@ -45,8 +54,8 @@
 // scripts/create-eventinnehall-modell.mjs (TASK-309.9, ADR-125 § 8) redan
 // etablerar för Platser/Eventinnehåll-modellen: `resolveTargetBaseId` kräver
 // miljövariabeln AIRTABLE_PROD_GODKAND_AV_MARCUS satt till EXAKT samma
-// bas-ID som `--kontrollera`/`--utfor` fick, INNAN någon nätverksanrop görs.
-// Denna guard KÖRDES skarpt av agenten mot app8uGPrVCVOm6LfD (utan att sätta
+// bas-ID som körningen fick, INNAN något nätverksanrop görs. Denna guard
+// KÖRDES skarpt av agenten mot app8uGPrVCVOm6LfD (utan att sätta
 // miljövariabeln) och VÄGRADE — se PR-rapporten för den exakta utskriften.
 // Det är beviset uppdraget bad om, fast producerat av rätt mekanism.
 //
@@ -56,7 +65,7 @@
 // matematiskt bevisat outbrytbart lås. Se PROD_GODKAND_ENV_VAR nedan.
 //
 // ─────────────────────────────────────────────────────────────────────────
-// PLATTFORMSVÄGG (TASK-338.1, skarpt mätt, återanvänd här) — val-tillägg
+// PLATTFORMSVÄGG (TASK-338.1, skarpt mätt) + VAL-TILLÄGG (review-runda 2)
 // ─────────────────────────────────────────────────────────────────────────
 // `mcp__airtable__update_field` (och den bakomliggande Meta-API PATCH mot
 // /v0/meta/bases/{baseId}/tables/{tableId}/fields/{fieldId}) kan INTE lägga
@@ -64,37 +73,63 @@
 // "Changing a field's type or number precision is not currently supported."
 // Vägen som FUNGERAR: en records-skrivning (POST/PATCH mot
 // /v0/{baseId}/{tableId}) med `typecast: true` och ett okänt strängvärde —
-// Airtable skapar choicen automatiskt. Detta skript använder DÄRFÖR:
-//   — om det finns en rad med Räckvidd ∈ {Kurstyp, Alla event}: PATCHa DEN
-//     raden till "Gemensam" (typecast:true). Detta är en KORREKT, PERMANENT
-//     migrering av den raden — inget att ångra, ingen "sätt-och-återställ".
-//   — annars (tabellen har inga legacy-rader men minst en rad totalt):
-//     samma trick på en ANNAN rad hade rört RIKTIG produktionsdata i onödan
-//     (en kort tidslucka där en obesläktad bilagas Räckvidd tillfälligt
-//     visar "Gemensam"). I stället: skapa en KASTBAR rad
-//     ({Räckvidd:"Gemensam"}, typecast:true), radera den omedelbart. Denna
-//     reservväg är OPRÖVAD SKARPT (dokumenterad här, inte mätt) — se
-//     `planOptionAdd` § reservväg. Prod har i praktiken alltid legacy-rader
-//     (Marcus två "Alla event"-dokument, TASK-338 § Implementationsbeslut)
-//     så primärvägen förväntas alltid vinna.
-//   — tabellen helt tom: guard-fel, kräver manuell hantering.
+// Airtable skapar choicen automatiskt.
+//
+// TASK-338.1 bevisade detta via en PATCH på en RIKTIG legacy-rad (samma
+// operation som ändå behövde migreras). Efter review-runda 2:s krav att
+// --utfor-schema ALDRIG ska röra en riktig rad (§ ovan, "additivt men
+// irreversibelt i data" ska hållas isär), byter detta skript till en
+// KASTBAR rad för choice-skapelsen ALLTID: POST en rad med
+// {Räckvidd:"Gemensam"} + typecast:true, läs tillbaka dess id, DELETE den
+// omedelbart. Nettoeffekten på Bilagor-tabellens data är NOLL — schema-steget
+// rör aldrig en persisterad rad, vilket var hela poängen med splittringen.
+//
+// ÄRLIG GRÄNS: create+typecast är INTE independent omprövat denna runda —
+// TASK-338.1 bevisade UPDATE-vägen (PATCH på en riktig rad) skarpt; denna
+// runda byter till CREATE+DELETE av arkitekturskäl (se ovan), och Airtables
+// dokumenterade typecast-beteende är beskrivet som identiskt för create och
+// update, men detta specifika create-anrop är INTE självt körts skarpt i
+// denna runda (koordinatorn förbjöd en ny --utfor-schema-körning mot staging
+// tills review-fyndet #1 var rättat — se PR-rapporten). Bokfört öppet, inte
+// dolt.
 //
 // ─────────────────────────────────────────────────────────────────────────
-// TOKEN (samma källa som repots övriga Airtable-skript, TASK-146.2/309.2-
-// mönstret): AIRTABLE_SCHEMA_TOKEN (schema.bases:read+write — fältskapelse)
-// och STAGING_AIRTABLE_TOKEN (data.records:read+write — options-tillägg via
-// typecast + radmigrering). Namnet "STAGING_AIRTABLE_TOKEN" är historiskt
-// (ADR-060 punkt 4); för en prod-körning sätter Marcus samma variabelnamn
-// till en prod-scopad PAT INLINE på kommandoraden (aldrig i .env.seed) —
-// exakt samma konvention som create-eventinnehall-modell.mjs § filhuvud
-// "PROD-KÖRNINGEN" redan etablerar.
+// TOKEN — SCOPE-KRAVET (review-runda 2, punkt 5)
+// ─────────────────────────────────────────────────────────────────────────
+// AIRTABLE_SCHEMA_TOKEN måste bära PAT-SCOPET `schema.bases:write` (utöver
+// `schema.bases:read`) — annars svarar Meta-API:t 403/422 på fältskapelsen.
+// Detta är EN ANNAN AXEL än Airtable-BASENS `permissionLevel` (t.ex.
+// "create") som en collaborator/token kan ha på basen som HELHET — en token
+// kan ha permissionLevel "create" på basen och ÄNDÅ sakna det granulära
+// `schema.bases:write`-PAT-scopet, om token:et skapades med en snävare
+// scope-lista. Se docs/reference/atkomst-och-nycklar.md § "TOKEN-FÄLLAN,
+// mätt och rättad" för den exakta distinktionen (MCP-serverns PAT har BÅDA:
+// permissionLevel "create" på båda baserna OCH fungerar via skript-vägen när
+// den exporteras som AIRTABLE_SCHEMA_TOKEN — men det är EMPIRISKT verifierat
+// för DEN specifika token:en, inte en generell garanti). Den DEDIKERADE,
+// least-privilege-scopade PAT:en (schema.bases:read+write, endast
+// målbasen) beskrivs i .env.seed.example (AIRTABLE_SCHEMA_TOKEN-blocket) för
+// staging, och i atkomst-och-nycklar.md § "Prod-deploy av bilagespåret" →
+// (a) Prod-schemat för prod-varianten.
+//
+// STAGING_AIRTABLE_TOKEN (data.records:read+write — radläsning/-migrering).
+// Namnet är historiskt (ADR-060 punkt 4); för en prod-körning sätter Marcus
+// samma variabelnamn till en prod-scopad PAT INLINE på kommandoraden (aldrig
+// i .env.seed) — exakt samma konvention som create-eventinnehall-modell.mjs
+// § filhuvud "PROD-KÖRNINGEN" redan etablerar.
 //
 // API-FORMEN: Airtable Web API (Meta för schema, vanliga records-API:t för
-// data), samma som repots övriga schema-/migreringsskript.
+// data), samma som repots övriga schema-/migreringsskript. 5xx-fel retries
+// upp till 2 gånger med exponentiell backoff (1 s, 2 s) utöver den
+// befintliga 429-hanteringen (review-runda 2, punkt 5).
 //
 // Exit: 0 = OK. 1 = prod-lås-VÄGRAN (icke-staging-bas utan
-// AIRTABLE_PROD_GODKAND_AV_MARCUS). 2 = argument-/bas-ID-form-fel. 3 =
-// Airtable-API-fel (nätverk/HTTP).
+// AIRTABLE_PROD_GODKAND_AV_MARCUS) ELLER ett guard-fel (schema-/
+// konfigurationsmissmatch — se planSchema/planRader). 2 =
+// argument-/bas-ID-form-fel. 3 = Airtable-API-/token-fel. 4 =
+// POST-VERIFIERINGSFEL — räkneverifieringen EFTER en --utfor-*-körning
+// visade diskrepans (schemat konvergerade inte / legacy-rader kvar) —
+// fail-closed (review-runda 2, punkt 3).
 
 import { pathToFileURL } from 'node:url';
 import { kravStagingLedigt } from './lib/staging-preflight.mjs';
@@ -132,26 +167,33 @@ export class ArgError extends Error {}
 export class GuardError extends Error {}
 export class ApiError extends Error {}
 
-/** Tolka argv. Formen är `--kontrollera <bas-id>` ELLER `--utfor <bas-id>` —
- *  bas-ID:t är ALLTID ett argument, ALDRIG ur config (prod-ref-låsets
- *  disciplin, se filhuvudet). Kastar ArgError vid okänt läge, saknat
- *  bas-ID, eller ett bas-ID som inte är app-format (exit 2, se main()). */
+const MODE_FLAGS = /** @type {const} */ ({
+  '--kontrollera': 'kontrollera',
+  '--utfor-schema': 'utfor-schema',
+  '--utfor-rader': 'utfor-rader',
+});
+
+/** Tolka argv. Formen är `<flagga> <bas-id>` där flagga ∈ {--kontrollera,
+ *  --utfor-schema, --utfor-rader}. Bas-ID:t är ALLTID ett argument, ALDRIG
+ *  ur config (prod-ref-låsets disciplin, se filhuvudet). Kastar ArgError vid
+ *  okänt/dubbelt/saknat läge, saknat bas-ID, eller ett bas-ID som inte är
+ *  app-format (exit 2, se main()). */
 export function parseArgs(argv) {
-  const kontrolleraIdx = argv.indexOf('--kontrollera');
-  const utforIdx = argv.indexOf('--utfor');
-  if (kontrolleraIdx === -1 && utforIdx === -1) {
-    throw new ArgError('Ange antingen --kontrollera <bas-id> eller --utfor <bas-id>.');
+  const funna = Object.keys(MODE_FLAGS).filter((flagga) => argv.includes(flagga));
+  if (funna.length === 0) {
+    throw new ArgError(
+      'Ange ett läge: --kontrollera, --utfor-schema eller --utfor-rader, plus ett bas-ID.',
+    );
   }
-  if (kontrolleraIdx !== -1 && utforIdx !== -1) {
-    throw new ArgError('Ange ENDAST ett läge: --kontrollera ELLER --utfor, inte båda.');
+  if (funna.length > 1) {
+    throw new ArgError(`Ange ENDAST ETT läge åt gången — fick: ${funna.join(', ')}.`);
   }
-  const mode = kontrolleraIdx !== -1 ? 'kontrollera' : 'utfor';
-  const flagIdx = kontrolleraIdx !== -1 ? kontrolleraIdx : utforIdx;
+  const flagga = funna[0];
+  const mode = MODE_FLAGS[flagga];
+  const flagIdx = argv.indexOf(flagga);
   const bas = argv[flagIdx + 1];
   if (!bas || bas.startsWith('--')) {
-    throw new ArgError(
-      `--${mode === 'kontrollera' ? 'kontrollera' : 'utfor'} kräver ett bas-ID som argument.`,
-    );
+    throw new ArgError(`${flagga} kräver ett bas-ID som argument.`);
   }
   if (!BASE_ID_PATTERN.test(bas)) {
     throw new ArgError(
@@ -203,6 +245,42 @@ export function findFieldByName(table, name) {
 /** Finns choicen `choiceName` redan i ett singleSelect-fälts options.choices? */
 export function hasChoice(field, choiceName) {
   return (field?.options?.choices ?? []).some((c) => c.name === choiceName);
+}
+
+// ---------------------------------------------------------------------------
+// Fält-body-byggare (review-runda 2, punkt 1) — EXPORTERADE, pura, INGEN
+// nätverksanrop. Detta är den kod som tidigare hade buggen: Platsnamn-
+// bodyn skickade fieldIdInLinkedTable/recordLinkFieldId på TOPPNIVÅ i
+// stället för nästlat under `options`, vilket Airtables Meta-API (POST
+// .../fields, variant multipleLookupValues) kräver — exakt som Plats-fältet
+// redan gjorde RÄTT (options.linkedTableId). Extraherade till egna,
+// exporterade funktioner så testsviten kan asserta body-FORMEN direkt utan
+// att gå via hela plan/exekverings-DI:t.
+// ---------------------------------------------------------------------------
+
+export function buildPlatsFieldBody(platserTableId) {
+  return {
+    name: PLATS_FIELD_NAME,
+    type: 'multipleRecordLinks',
+    description:
+      'Räckvidd = Gemensam: bilagans platsaxel (ADR-125 § Beslut 1, TASK-338.1/338.6). ' +
+      'Länkad tabell: Platser. Högst en plats avsedd — Airtable kan inte tvinga max 1 ' +
+      '(multipleRecordLinks), invarianten vaktas av adapter/EF (TASK-338.2/338.3), inte av basen. ' +
+      'Tom = platsen begränsar inte.',
+    options: { linkedTableId: platserTableId },
+  };
+}
+
+export function buildPlatsnamnFieldBody(platsFieldId, platserNamnFieldId) {
+  return {
+    name: PLATSNAMN_FIELD_NAME,
+    type: 'multipleLookupValues',
+    description:
+      'Lookup av Platser.Namn via länken Plats (ADR-125 § Beslut 1, TASK-338.1/338.6). Låter ' +
+      'appen och Lotta läsa platsnamnet utan extra uppslag; server-läsvägen matchar ändå på ' +
+      'Plats-länkens record-ID, aldrig på detta namn.',
+    options: { recordLinkFieldId: platsFieldId, fieldIdInLinkedTable: platserNamnFieldId },
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -273,16 +351,21 @@ export function formatKontrolleraReport(report, basId) {
 }
 
 // ---------------------------------------------------------------------------
-// --utfor — planering (ren funktion) + exekvering (injicerade API-anrop)
+// --utfor-schema — planering (ren funktion) + exekvering (injicerade
+// API-anrop). Rör ALDRIG en riktig Bilagor-rad (review-runda 2, punkt 2) och
+// gör CONFIG-BASERAD idempotens (punkt 4): ett fält som redan existerar men
+// är FELKONFIGURERAT (fel typ, fel linkedTableId/recordLinkFieldId/
+// fieldIdInLinkedTable) fäller med GuardError i stället för att tystas ner
+// som "redan klart".
 // ---------------------------------------------------------------------------
 
 /**
- * Planerar VAD --utfor behöver göra, givet redan hämtat schema + redan
- * hämtade Bilagor-rader (med Räckvidd). Rör inget nätverk. Testbar med
- * syntetiska indata för alla tre tillstånd: allt finns (no-op-plan),
- * delvis (bara fältet saknas), inget finns (allt planeras).
+ * Planerar VAD --utfor-schema behöver göra, givet redan hämtat schema. Rör
+ * inget nätverk och tar INGA Bilagor-rader (schema-steget är radlöst med
+ * flit). Testbar med syntetiska schema-objekt för: allt finns (no-op),
+ * delvis (ett fält saknas), inget finns, OCH felkonfiguration (mismatch).
  */
-export function planUtfor({ tables, bilagorRecords }) {
+export function planSchema({ tables }) {
   const bilagorTable = findTableByName(tables, BILAGOR_TABLE_NAME);
   const platserTable = findTableByName(tables, PLATSER_TABLE_NAME);
   if (!bilagorTable)
@@ -303,118 +386,86 @@ export function planUtfor({ tables, bilagorRecords }) {
     );
   }
 
-  // Plan A: option-tillägget. Legacy-raderna (om några) är den ENDA källan
-  // till "vilka rader behöver migreras" — samma lista konsumeras av
-  // rowsToMigrate nedan. Väljer vi en legacy-rad som optionAdd-bäraren
-  // exkluderas den ur rowsToMigrate (annars dubbel-PATCH — harmlöst men
-  // onödigt).
-  const legacyRader = bilagorRecords.filter((r) =>
-    LEGACY_RACKVIDD_VARDEN.includes(r.fields?.[RACKVIDD_FIELD_NAME]),
-  );
+  // Option-tillägget: ALLTID kastbar rad om choicen saknas (aldrig en
+  // riktig rad — se filhuvudets § VAL-TILLÄGG).
+  const optionAdd = hasChoice(rackviddField, GEMENSAM_CHOICE_NAME)
+    ? { strategy: 'already-exists' }
+    : { strategy: 'throwaway-record' };
 
-  let optionAdd;
-  if (hasChoice(rackviddField, GEMENSAM_CHOICE_NAME)) {
-    optionAdd = { strategy: 'already-exists' };
-  } else if (legacyRader.length > 0) {
-    optionAdd = { strategy: 'migrate-existing-row', recordId: legacyRader[0].id };
-  } else if (bilagorRecords.length > 0) {
-    optionAdd = { strategy: 'throwaway-record' };
+  // Plats-fältet — config-baserad idempotens (punkt 4): existerar det men
+  // pekar mot FEL tabell eller har fel typ, rör vi INGET.
+  let platsFieldPlan;
+  if (platsField) {
+    if (
+      platsField.type !== 'multipleRecordLinks' ||
+      platsField.options?.linkedTableId !== platserTable.id
+    ) {
+      throw new GuardError(
+        `fältet "${PLATS_FIELD_NAME}" finns men är FELKONFIGURERAT (type="${platsField.type}", ` +
+          `linkedTableId="${platsField.options?.linkedTableId}" — förväntat multipleRecordLinks → ` +
+          `"${platserTable.id}"). Rör INGET — kräver manuell utredning innan skriptet kan fortsätta.`,
+      );
+    }
+    platsFieldPlan = { strategy: 'skip', existingId: platsField.id };
   } else {
-    throw new GuardError(
-      `"${GEMENSAM_CHOICE_NAME}"-choicen saknas och ${BILAGOR_TABLE_NAME} har INGA rader att typecasta ` +
-        'mot (varken en legacy-rad eller någon annan rad). Kräver manuell hantering — se filhuvudets § PLATTFORMSVÄGG.',
-    );
+    platsFieldPlan = { strategy: 'create', body: buildPlatsFieldBody(platserTable.id) };
   }
 
-  const platsFieldPlan = platsField
-    ? { strategy: 'skip', existingId: platsField.id }
-    : {
-        strategy: 'create',
-        body: {
-          name: PLATS_FIELD_NAME,
-          type: 'multipleRecordLinks',
-          description:
-            'Räckvidd = Gemensam: bilagans platsaxel (ADR-125 § Beslut 1, TASK-338.1/338.6). ' +
-            'Länkad tabell: Platser. Högst en plats avsedd — Airtable kan inte tvinga max 1 ' +
-            '(multipleRecordLinks), invarianten vaktas av adapter/EF (TASK-338.2/338.3), inte av basen. ' +
-            'Tom = platsen begränsar inte.',
-          options: { linkedTableId: platserTable.id },
-        },
-      };
+  // Platsnamn-fältet — samma disciplin. Ett Platsnamn-fält kan strukturellt
+  // inte existera utan att Plats redan fanns (det är en lookup GENOM Plats)
+  // — om den kombinationen ändå observeras är basen i ett inkonsistent
+  // tillstånd och vi rör INGET.
+  let platsnamnFieldPlan;
+  if (platsnamnField) {
+    if (!platsField) {
+      throw new GuardError(
+        `fältet "${PLATSNAMN_FIELD_NAME}" finns men "${PLATS_FIELD_NAME}" (dess länk) gör det INTE — ` +
+          'inkonsistent schema. Rör INGET — kräver manuell utredning.',
+      );
+    }
+    if (
+      platsnamnField.type !== 'multipleLookupValues' ||
+      platsnamnField.options?.recordLinkFieldId !== platsField.id ||
+      platsnamnField.options?.fieldIdInLinkedTable !== platserNamnField.id
+    ) {
+      throw new GuardError(
+        `fältet "${PLATSNAMN_FIELD_NAME}" finns men är FELKONFIGURERAT (type="${platsnamnField.type}", ` +
+          `recordLinkFieldId="${platsnamnField.options?.recordLinkFieldId}" — förväntat "${platsField.id}", ` +
+          `fieldIdInLinkedTable="${platsnamnField.options?.fieldIdInLinkedTable}" — förväntat ` +
+          `"${platserNamnField.id}"). Rör INGET — kräver manuell utredning innan skriptet kan fortsätta.`,
+      );
+    }
+    platsnamnFieldPlan = { strategy: 'skip' };
+  } else {
+    platsnamnFieldPlan = { strategy: 'create', platserNamnFieldId: platserNamnField.id };
+  }
 
-  // Om Plats-fältet redan finns används dess LEVANDE id; skapas det i
-  // SAMMA körning är id:t okänt förrän efter skapelsen (trådas av
-  // runUtfor, se nedan — planen bär bara strategin).
-  const platsnamnFieldPlan = platsnamnField
-    ? { strategy: 'skip' }
-    : {
-        strategy: 'create',
-        // recordLinkFieldId sätts av runUtfor (behöver Plats-fältets id,
-        // känt först vid exekvering om det skapas i samma pass).
-        bodyTemplate: {
-          name: PLATSNAMN_FIELD_NAME,
-          type: 'multipleLookupValues',
-          description:
-            'Lookup av Platser.Namn via länken Plats (ADR-125 § Beslut 1, TASK-338.1/338.6). Låter ' +
-            'appen och Lotta läsa platsnamnet utan extra uppslag; server-läsvägen matchar ändå på ' +
-            'Plats-länkens record-ID, aldrig på detta namn.',
-          fieldIdInLinkedTable: platserNamnField.id,
-        },
-      };
-
-  const optionAddRecordId =
-    optionAdd.strategy === 'migrate-existing-row' ? optionAdd.recordId : null;
-  const rowsToMigrate = legacyRader
-    .filter((r) => r.id !== optionAddRecordId)
-    .map((r) => ({ id: r.id, namn: r.fields?.Namn }));
-
-  return {
-    optionAdd,
-    platsField: platsFieldPlan,
-    platsnamnField: platsnamnFieldPlan,
-    rowsToMigrate,
-    legacyRaderTotalt: legacyRader.length,
-  };
-}
-
-/** Dela en array i batchar om `size` (Airtables PATCH/POST-tak). */
-export function chunk(arr, size) {
-  const out = [];
-  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
-  return out;
+  return { optionAdd, platsField: platsFieldPlan, platsnamnField: platsnamnFieldPlan };
 }
 
 /**
- * Exekverar en plan från planUtfor(). Alla sido-effekter går via injicerade
- * API-funktioner (samma DI-mönster som create-eventinnehall-modell.mjs §
+ * Exekverar en plan från planSchema(). Sido-effekter via injicerade
+ * API-funktioner (DI-mönstret från create-eventinnehall-modell.mjs §
  * runOperations) — hermetiskt testbar utan nätverk.
  *
- * @param {object} plan  Från planUtfor().
+ * @param {object} plan  Från planSchema().
  * @param {{
- *   patchRackvidd: (recordIds: string[]) => Promise<void>,
  *   createThrowawayAndDelete: () => Promise<void>,
  *   createField: (body: object) => Promise<{id: string}>,
  * }} api
  */
-export async function runUtfor(plan, api) {
-  const skrivningar = { optionAdd: 0, platsField: 0, platsnamnField: 0, radMigrering: 0 };
+export async function runSchema(plan, api) {
+  const skrivningar = { optionAdd: 0, platsField: 0, platsnamnField: 0 };
   const logg = [];
 
   if (plan.optionAdd.strategy === 'already-exists') {
     logg.push(`✅ Choicen "${GEMENSAM_CHOICE_NAME}" finns redan — inget att göra.`);
-  } else if (plan.optionAdd.strategy === 'migrate-existing-row') {
-    await api.patchRackvidd([plan.optionAdd.recordId]);
-    skrivningar.optionAdd = 1;
-    logg.push(
-      `🛠️  Choicen "${GEMENSAM_CHOICE_NAME}" skapad via typecast på rad ${plan.optionAdd.recordId} ` +
-        '(korrekt permanent migrering av en legacy-rad, inget att återställa).',
-    );
   } else {
     await api.createThrowawayAndDelete();
-    skrivningar.optionAdd = 2; // create + delete
+    skrivningar.optionAdd = 2; // create + delete, ingen riktig rad rörd.
     logg.push(
-      `🛠️  Choicen "${GEMENSAM_CHOICE_NAME}" skapad via en kastbar rad (skapad + raderad — RESERVVÄG, ` +
-        'ej skarpt bevisad förut, se filhuvudets § PLATTFORMSVÄGG).',
+      `🛠️  Choicen "${GEMENSAM_CHOICE_NAME}" skapad via en kastbar rad (skapad + raderad — ingen ` +
+        'riktig Bilagor-rad rörd).',
     );
   }
 
@@ -431,14 +482,69 @@ export async function runUtfor(plan, api) {
   if (plan.platsnamnField.strategy === 'skip') {
     logg.push(`✅ Fältet "${PLATSNAMN_FIELD_NAME}" finns redan — inget att göra.`);
   } else {
-    const body = { ...plan.platsnamnField.bodyTemplate, recordLinkFieldId: platsFieldId };
+    const body = buildPlatsnamnFieldBody(platsFieldId, plan.platsnamnField.platserNamnFieldId);
     const created = await api.createField(body);
     skrivningar.platsnamnField = 1;
     logg.push(`🛠️  Fältet "${PLATSNAMN_FIELD_NAME}" skapat — ${created.id}.`);
   }
 
+  return { skrivningar, logg, platsFieldId };
+}
+
+/** Fail-closed-beslutet för --utfor-schemas post-verifiering (punkt 3) —
+ *  ren funktion, testbar utan I/O. Konvergerat = choicen finns OCH båda
+ *  fälten redan finns (dvs en FÄRSK planSchema() mot samma bas ger enbart
+ *  skip/already-exists-strategier). */
+export function schemaKonvergerad(verifieringsPlan) {
+  return (
+    verifieringsPlan.optionAdd.strategy === 'already-exists' &&
+    verifieringsPlan.platsField.strategy === 'skip' &&
+    verifieringsPlan.platsnamnField.strategy === 'skip'
+  );
+}
+
+// ---------------------------------------------------------------------------
+// --utfor-rader — planering (ren funktion) + exekvering (injicerade
+// API-anrop). Kräver att choicen redan finns (annars GuardError — kör
+// --utfor-schema FÖRST).
+// ---------------------------------------------------------------------------
+
+export function planRader({ tables, bilagorRecords }) {
+  const bilagorTable = findTableByName(tables, BILAGOR_TABLE_NAME);
+  if (!bilagorTable)
+    throw new GuardError(`tabellen "${BILAGOR_TABLE_NAME}" hittades inte i basen.`);
+  const rackviddField = findFieldByName(bilagorTable, RACKVIDD_FIELD_NAME);
+  if (!rackviddField) {
+    throw new GuardError(`fältet "${RACKVIDD_FIELD_NAME}" hittades inte på ${BILAGOR_TABLE_NAME}.`);
+  }
+  if (!hasChoice(rackviddField, GEMENSAM_CHOICE_NAME)) {
+    throw new GuardError(
+      `Choicen "${GEMENSAM_CHOICE_NAME}" finns INTE ännu på ${RACKVIDD_FIELD_NAME} — kör ` +
+        '--utfor-schema FÖRST (TASK-338.6, steg (i) före steg (iii)).',
+    );
+  }
+  const rowsToMigrate = bilagorRecords
+    .filter((r) => LEGACY_RACKVIDD_VARDEN.includes(r.fields?.[RACKVIDD_FIELD_NAME]))
+    .map((r) => ({ id: r.id, namn: r.fields?.Namn }));
+  return { rowsToMigrate };
+}
+
+/** Dela en array i batchar om `size` (Airtables PATCH/POST-tak). */
+export function chunk(arr, size) {
+  const out = [];
+  for (let i = 0; i < arr.length; i += size) out.push(arr.slice(i, i + size));
+  return out;
+}
+
+/**
+ * @param {object} plan  Från planRader().
+ * @param {{ patchRackvidd: (recordIds: string[]) => Promise<void> }} api
+ */
+export async function runRader(plan, api) {
+  const skrivningar = { radMigrering: 0 };
+  const logg = [];
   if (plan.rowsToMigrate.length === 0) {
-    logg.push('✅ Inga ytterligare rader att migrera (utöver ev. option-tilläggets rad ovan).');
+    logg.push('✅ Inga rader att migrera.');
   } else {
     const batchar = chunk(
       plan.rowsToMigrate.map((r) => r.id),
@@ -450,30 +556,53 @@ export async function runUtfor(plan, api) {
     }
     logg.push(`🛠️  ${plan.rowsToMigrate.length} rad(er) migrerade till "${GEMENSAM_CHOICE_NAME}".`);
   }
-
   return { skrivningar, logg };
 }
 
+/** Fail-closed-beslutet för --utfor-raders post-verifiering (punkt 3) — ren
+ *  funktion. Konvergerat = 0 legacy-rader kvar EFTER migreringen. */
+export function raderKonvergerade(efterLegacyCount) {
+  return efterLegacyCount === 0;
+}
+
 // ---------------------------------------------------------------------------
-// Airtable-API (nätverksanropande skal runt de pura funktionerna ovan)
+// Airtable-API (nätverksanropande skal runt de pura funktionerna ovan).
+// `fetchImpl`/`sleepImpl` injicerbara (default: globalt fetch/verklig sleep)
+// så retry-/backoff-logiken är hermetiskt testbar (review-runda 2, punkt 5).
 // ---------------------------------------------------------------------------
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-async function airtableRequest(url, token, init = {}) {
+const MAX_5XX_RETRIES = 2;
+
+export async function airtableRequest(
+  url,
+  token,
+  init = {},
+  { fetchImpl = fetch, sleepImpl = sleep } = {},
+) {
   const headers = { Authorization: `Bearer ${token}` };
   if (init.body) headers['Content-Type'] = 'application/json';
-  let res = await fetch(url, { ...init, headers });
-  if (res.status === 429) {
-    console.log('   429 rate limit — väntar 30 s och försöker igen …');
-    await sleep(30_000);
-    res = await fetch(url, { ...init, headers });
-  }
-  if (!res.ok) {
+  for (let forsok = 0; ; forsok += 1) {
+    let res = await fetchImpl(url, { ...init, headers });
+    if (res.status === 429) {
+      console.log('   429 rate limit — väntar 30 s och försöker igen …');
+      await sleepImpl(30_000);
+      res = await fetchImpl(url, { ...init, headers });
+    }
+    if (res.ok) return res.json();
+    if (res.status >= 500 && res.status < 600 && forsok < MAX_5XX_RETRIES) {
+      const backoffMs = 1000 * 2 ** forsok;
+      console.log(
+        `   ${res.status} serverfel — försök ${forsok + 1}/${MAX_5XX_RETRIES + 1} misslyckades, ` +
+          `väntar ${backoffMs} ms …`,
+      );
+      await sleepImpl(backoffMs);
+      continue;
+    }
     const body = await res.text().catch(() => '');
     throw new ApiError(`Airtable ${init.method ?? 'GET'} ${res.status}: ${body.slice(0, 800)}`);
   }
-  return res.json();
 }
 
 async function getBaseSchema(baseId, schemaToken) {
@@ -581,7 +710,8 @@ async function main() {
   if (!schemaToken) {
     console.error(
       '❌ AIRTABLE_SCHEMA_TOKEN saknas i env. Lokalt: .env.seed (gitignorad; se .env.seed.example). ' +
-        `Token behöver schema.bases:read+write mot målbasen (${targetBaseId}).`,
+        `Token behöver PAT-scopet schema.bases:read+write mot målbasen (${targetBaseId}) — se ` +
+        'filhuvudets § TOKEN för distinktionen mot basens permissionLevel.',
     );
     process.exit(3);
   }
@@ -597,10 +727,10 @@ async function main() {
     process.exit(3);
   }
 
-  if (args.mode === 'utfor') {
+  if (args.mode === 'utfor-schema' || args.mode === 'utfor-rader') {
     console.log(
-      'ℹ️  --utfor körs. Har --kontrollera <bas-id> körts först för att granska planen? Inte obligatoriskt, ' +
-        'men rekommenderat (TASK-338.6).',
+      `ℹ️  ${args.mode} körs. Har --kontrollera <bas-id> körts först för att granska planen? Inte ` +
+        'obligatoriskt, men rekommenderat (TASK-338.6).',
     );
   }
 
@@ -615,31 +745,67 @@ async function main() {
   try {
     const tables = await getBaseSchema(targetBaseId, schemaToken);
     const bilagorTable = findTableByName(tables, BILAGOR_TABLE_NAME);
-    if (!bilagorTable)
+    if (!bilagorTable) {
       throw new GuardError(
         `tabellen "${BILAGOR_TABLE_NAME}" hittades inte i basen ${targetBaseId}.`,
       );
-    const bilagorRecords = await listAllRecords(targetBaseId, bilagorTable.id, recordsToken, {
-      fields: ['Namn', RACKVIDD_FIELD_NAME],
-    });
+    }
 
     if (args.mode === 'kontrollera') {
+      const bilagorRecords = await listAllRecords(targetBaseId, bilagorTable.id, recordsToken, {
+        fields: ['Namn', RACKVIDD_FIELD_NAME],
+      });
       const report = buildKontrolleraReport({ tables, bilagorRecords });
       console.log(formatKontrolleraReport(report, targetBaseId));
       process.exit(0);
     }
 
-    // --utfor
-    const plan = planUtfor({ tables, bilagorRecords });
-    const { skrivningar, logg } = await runUtfor(plan, {
+    if (args.mode === 'utfor-schema') {
+      const plan = planSchema({ tables });
+      const { skrivningar, logg } = await runSchema(plan, {
+        createThrowawayAndDelete: () =>
+          createThrowawayAndDelete(targetBaseId, bilagorTable.id, recordsToken),
+        createField: (body) => createFieldApi(targetBaseId, bilagorTable.id, schemaToken, body),
+      });
+      for (const rad of logg) console.log(rad);
+
+      // Fail-closed post-verifiering (punkt 3): läs schemat FÄRSKT och
+      // pröva planSchema() igen — konvergerat betyder "allt redan i synk".
+      const freshTables = await getBaseSchema(targetBaseId, schemaToken);
+      let verifieringsPlan;
+      try {
+        verifieringsPlan = planSchema({ tables: freshTables });
+      } catch (err) {
+        console.error(`❌ Räkneverifiering EFTER --utfor-schema: ${err.message}`);
+        process.exit(4);
+      }
+      const konvergerat = schemaKonvergerad(verifieringsPlan);
+      console.log('');
+      console.log(
+        `── Verifiering efter --utfor-schema ── konvergerat: ${konvergerat ? 'JA' : 'NEJ'}`,
+      );
+      console.log(
+        `Skrivningar: optionAdd=${skrivningar.optionAdd} platsField=${skrivningar.platsField} ` +
+          `platsnamnField=${skrivningar.platsnamnField}`,
+      );
+      if (!konvergerat) {
+        console.error('❌ Schemat konvergerade INTE efter --utfor-schema — se utskriften ovan.');
+        process.exit(4);
+      }
+      process.exit(0);
+    }
+
+    // args.mode === 'utfor-rader'
+    const bilagorRecordsFore = await listAllRecords(targetBaseId, bilagorTable.id, recordsToken, {
+      fields: ['Namn', RACKVIDD_FIELD_NAME],
+    });
+    const plan = planRader({ tables, bilagorRecords: bilagorRecordsFore });
+    const { skrivningar, logg } = await runRader(plan, {
       patchRackvidd: (ids) => patchRackvidd(targetBaseId, bilagorTable.id, recordsToken, ids),
-      createThrowawayAndDelete: () =>
-        createThrowawayAndDelete(targetBaseId, bilagorTable.id, recordsToken),
-      createField: (body) => createFieldApi(targetBaseId, bilagorTable.id, schemaToken, body),
     });
     for (const rad of logg) console.log(rad);
 
-    // Räkneverifiering efter (AC #2/#3 — samma form som TASK-275/338.1).
+    // Fail-closed post-verifiering (punkt 3).
     const efterLegacy = await listAllRecords(targetBaseId, bilagorTable.id, recordsToken, {
       filterByFormula: `OR({${RACKVIDD_FIELD_NAME}}='Kurstyp',{${RACKVIDD_FIELD_NAME}}='Alla event')`,
       fields: ['Namn'],
@@ -648,15 +814,20 @@ async function main() {
       filterByFormula: `{${RACKVIDD_FIELD_NAME}}='${GEMENSAM_CHOICE_NAME}'`,
       fields: ['Namn'],
     });
-    console.log('');
-    console.log('── Räkneverifiering efter ──');
-    console.log(`Kurstyp/Alla event kvar: ${efterLegacy.length} (förväntat 0)`);
-    console.log(`Gemensam totalt: ${efterGemensam.length}`);
+    const konvergerat = raderKonvergerade(efterLegacy.length);
     console.log('');
     console.log(
-      `Skrivningar: optionAdd=${skrivningar.optionAdd} platsField=${skrivningar.platsField} ` +
-        `platsnamnField=${skrivningar.platsnamnField} radMigrering=${skrivningar.radMigrering}`,
+      `── Räkneverifiering efter --utfor-rader ── konvergerat: ${konvergerat ? 'JA' : 'NEJ'}`,
     );
+    console.log(`Kurstyp/Alla event kvar: ${efterLegacy.length} (förväntat 0)`);
+    console.log(`Gemensam totalt: ${efterGemensam.length}`);
+    console.log(`Skrivningar: radMigrering=${skrivningar.radMigrering}`);
+    if (!konvergerat) {
+      console.error(
+        `❌ Räkneverifiering: ${efterLegacy.length} legacy-rad(er) kvar EFTER --utfor-rader — förväntat 0.`,
+      );
+      process.exit(4);
+    }
     process.exit(0);
   } catch (err) {
     if (err instanceof GuardError) {

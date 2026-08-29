@@ -5,14 +5,21 @@
 // scripts/test-create-eventinnehall-modell.mjs § runOperations: sido-
 // effekter går via injicerade API-funktioner, aldrig riktig fetch).
 //
+// Uppdaterad i review-runda 2 (PR #2097) för det NYA tre-lägers-kontraktet
+// (--kontrollera / --utfor-schema / --utfor-rader), den rättade Platsnamn-
+// body-formen (nästlad under `options`, inte toppnivå), config-baserad
+// idempotens (felkonfigurerade fält fälls, tystas inte som "redan klart"),
+// fail-closed post-verifiering, och 5xx-retry-med-backoff.
+//
 // HERMETISKT: de flesta testerna importerar bara pura funktioner och rör
-// aldrig nätverk. En liten integrationsdel (§ EXIT-KODER) spawnar skriptet
-// som barnprocess för att bevisa de FAKTISKA exit-koderna — men bara för
-// grenar som kastar/exitar INNAN någon fetch görs (argument-/bas-ID-fel,
-// prod-guard-vägran, saknad token), så INGEN nätverkstrafik uppstår någonstans
-// i denna svit. Miljön för barnprocesserna byggs explicit (aldrig
-// process.env rakt av) så en lokal .env.seed/exporterad token aldrig läcker
-// in och gör ett test falskt grönt.
+// aldrig nätverk (airtableRequest testas med injicerad fetchImpl/sleepImpl,
+// aldrig riktig fetch). En liten integrationsdel (§ EXIT-KODER) spawnar
+// skriptet som barnprocess för att bevisa de FAKTISKA exit-koderna — men
+// bara för grenar som kastar/exitar INNAN någon fetch görs (argument-/
+// bas-ID-fel, prod-guard-vägran, saknad token), så INGEN nätverkstrafik
+// uppstår någonstans i denna svit. Miljön för barnprocesserna byggs explicit
+// (aldrig process.env rakt av) så en lokal .env.seed/exporterad token aldrig
+// läcker in och gör ett test falskt grönt.
 //
 // Kör: node scripts/test-task-338-6-prod-migration.mjs
 // Exit 0 = alla gröna, 1 = minst ett rött.
@@ -22,9 +29,13 @@ import { execFileSync } from 'node:child_process';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
+  ApiError,
   ArgError,
+  airtableRequest,
   BASE_ID_PATTERN,
   buildKontrolleraReport,
+  buildPlatsFieldBody,
+  buildPlatsnamnFieldBody,
   chunk,
   findFieldByName,
   findTableByName,
@@ -35,10 +46,14 @@ import {
   PROD_BASE_ID_KAND,
   PROD_GODKAND_ENV_VAR,
   parseArgs,
-  planUtfor,
+  planRader,
+  planSchema,
+  raderKonvergerade,
   resolveTargetBaseId,
-  runUtfor,
+  runRader,
+  runSchema,
   STAGING_BASE_ID,
+  schemaKonvergerad,
 } from './task-338-6-prod-migration.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -99,7 +114,7 @@ test('BASE_ID_PATTERN: accepterar giltiga app-format, avvisar allt annat', () =>
 });
 
 // ---------------------------------------------------------------------------
-// parseArgs
+// parseArgs — tre lägen
 // ---------------------------------------------------------------------------
 
 test('parseArgs: --kontrollera <bas-id> tolkas korrekt', () => {
@@ -109,9 +124,16 @@ test('parseArgs: --kontrollera <bas-id> tolkas korrekt', () => {
   });
 });
 
-test('parseArgs: --utfor <bas-id> tolkas korrekt', () => {
-  assert.deepEqual(parseArgs(['--utfor', STAGING_BASE_ID]), {
-    mode: 'utfor',
+test('parseArgs: --utfor-schema <bas-id> tolkas korrekt', () => {
+  assert.deepEqual(parseArgs(['--utfor-schema', STAGING_BASE_ID]), {
+    mode: 'utfor-schema',
+    bas: STAGING_BASE_ID,
+  });
+});
+
+test('parseArgs: --utfor-rader <bas-id> tolkas korrekt', () => {
+  assert.deepEqual(parseArgs(['--utfor-rader', STAGING_BASE_ID]), {
+    mode: 'utfor-rader',
     bas: STAGING_BASE_ID,
   });
 });
@@ -120,24 +142,35 @@ test('parseArgs: ingen flagga → ArgError', () => {
   assert.throws(() => parseArgs([STAGING_BASE_ID]), ArgError);
 });
 
-test('parseArgs: båda flaggorna samtidigt → ArgError', () => {
+test('parseArgs: två flaggor samtidigt → ArgError', () => {
   assert.throws(
-    () => parseArgs(['--kontrollera', STAGING_BASE_ID, '--utfor', STAGING_BASE_ID]),
+    () => parseArgs(['--kontrollera', STAGING_BASE_ID, '--utfor-schema', STAGING_BASE_ID]),
+    ArgError,
+  );
+  assert.throws(
+    () => parseArgs(['--utfor-schema', STAGING_BASE_ID, '--utfor-rader', STAGING_BASE_ID]),
     ArgError,
   );
 });
 
+test('parseArgs: gamla --utfor (utan suffix) känns INTE igen — ArgError', () => {
+  assert.throws(() => parseArgs(['--utfor', STAGING_BASE_ID]), ArgError);
+});
+
 test('parseArgs: saknat bas-ID efter flaggan → ArgError', () => {
   assert.throws(() => parseArgs(['--kontrollera']), ArgError);
+  assert.throws(() => parseArgs(['--utfor-schema']), ArgError);
+  assert.throws(() => parseArgs(['--utfor-rader']), ArgError);
 });
 
 test('parseArgs: nästa argument är en annan flagga, inte ett bas-ID → ArgError', () => {
-  assert.throws(() => parseArgs(['--kontrollera', '--utfor']), ArgError);
+  assert.throws(() => parseArgs(['--kontrollera', '--utfor-schema']), ArgError);
 });
 
 test('parseArgs: fel bas-ID-FORM → ArgError (huvudkravet: exit 2 i main(), se § EXIT-KODER)', () => {
   assert.throws(() => parseArgs(['--kontrollera', 'inte-ett-bas-id']), ArgError);
-  assert.throws(() => parseArgs(['--utfor', 'app123']), ArgError);
+  assert.throws(() => parseArgs(['--utfor-schema', 'app123']), ArgError);
+  assert.throws(() => parseArgs(['--utfor-rader', 'app123']), ArgError);
 });
 
 // ---------------------------------------------------------------------------
@@ -223,7 +256,13 @@ const SYNTETISK_PLATSER_TABLE = {
   fields: [{ id: 'fldNamnSYN0000001', name: 'Namn', type: 'singleLineText' }],
 };
 
-function bilagorTable({ medGemensam, medPlats, medPlatsnamn } = {}) {
+function bilagorTable({
+  medGemensam,
+  medPlats,
+  platsOverride,
+  medPlatsnamn,
+  platsnamnOverride,
+} = {}) {
   const choices = [
     { id: 'sel1', name: 'Event' },
     { id: 'sel2', name: 'Kurstyp' },
@@ -234,20 +273,27 @@ function bilagorTable({ medGemensam, medPlats, medPlatsnamn } = {}) {
     { id: 'fldRackviddSYN01', name: 'Räckvidd', type: 'singleSelect', options: { choices } },
   ];
   if (medPlats) {
-    fields.push({
-      id: 'fldPlatsSYN00001',
-      name: 'Plats',
-      type: 'multipleRecordLinks',
-      options: { linkedTableId: SYNTETISK_PLATSER_TABLE.id },
-    });
+    fields.push(
+      platsOverride ?? {
+        id: 'fldPlatsSYN00001',
+        name: 'Plats',
+        type: 'multipleRecordLinks',
+        options: { linkedTableId: SYNTETISK_PLATSER_TABLE.id },
+      },
+    );
   }
   if (medPlatsnamn) {
-    fields.push({
-      id: 'fldPlatsnamnSYN01',
-      name: 'Platsnamn',
-      type: 'multipleLookupValues',
-      options: { recordLinkFieldId: 'fldPlatsSYN00001', fieldIdInLinkedTable: 'fldNamnSYN0000001' },
-    });
+    fields.push(
+      platsnamnOverride ?? {
+        id: 'fldPlatsnamnSYN01',
+        name: 'Platsnamn',
+        type: 'multipleLookupValues',
+        options: {
+          recordLinkFieldId: 'fldPlatsSYN00001',
+          fieldIdInLinkedTable: 'fldNamnSYN0000001',
+        },
+      },
+    );
   }
   return { id: 'tblBilagorSYN00001', name: 'Bilagor', fields };
 }
@@ -262,6 +308,36 @@ test('findTableByName/findFieldByName/hasChoice — grundfall', () => {
   assert.equal(hasChoice(rackvidd, 'Nagot-som-inte-finns'), false);
   assert.equal(findTableByName(tables, 'FinnsInte'), undefined);
   assert.equal(findFieldByName(bil, 'FinnsInte'), undefined);
+});
+
+// ---------------------------------------------------------------------------
+// buildPlatsFieldBody / buildPlatsnamnFieldBody — REVIEW-RUNDA 2, PUNKT 1
+// (ERROR-fyndet): body-formen måste nästla recordLinkFieldId/
+// fieldIdInLinkedTable/linkedTableId under `options`, ALDRIG toppnivå.
+// ---------------------------------------------------------------------------
+
+test('buildPlatsFieldBody: linkedTableId nästlat under options, INGET på toppnivå', () => {
+  const body = buildPlatsFieldBody('tblPlatserXYZ');
+  assert.equal(body.name, 'Plats');
+  assert.equal(body.type, 'multipleRecordLinks');
+  assert.equal(body.options.linkedTableId, 'tblPlatserXYZ');
+  assert.equal(body.linkedTableId, undefined, 'linkedTableId får ALDRIG ligga på toppnivå');
+  assert.deepEqual(Object.keys(body).sort(), ['description', 'name', 'options', 'type']);
+});
+
+test('buildPlatsnamnFieldBody: recordLinkFieldId OCH fieldIdInLinkedTable nästlade under options, INGET på toppnivå (ERROR-fyndets kärna)', () => {
+  const body = buildPlatsnamnFieldBody('fldPlatsABC', 'fldNamnDEF');
+  assert.equal(body.name, 'Platsnamn');
+  assert.equal(body.type, 'multipleLookupValues');
+  assert.equal(body.options.recordLinkFieldId, 'fldPlatsABC');
+  assert.equal(body.options.fieldIdInLinkedTable, 'fldNamnDEF');
+  assert.equal(body.recordLinkFieldId, undefined, 'recordLinkFieldId får ALDRIG ligga på toppnivå');
+  assert.equal(
+    body.fieldIdInLinkedTable,
+    undefined,
+    'fieldIdInLinkedTable får ALDRIG ligga på toppnivå',
+  );
+  assert.deepEqual(Object.keys(body).sort(), ['description', 'name', 'options', 'type']);
 });
 
 // ---------------------------------------------------------------------------
@@ -324,126 +400,219 @@ test('formatKontrolleraReport: producerar en läsbar sträng med nyckeltalen', (
 });
 
 // ---------------------------------------------------------------------------
-// planUtfor — de tre huvudtillstånden (idempotens / delvis / inget)
+// planSchema — RADLÖST (rör aldrig bilagorRecords), config-baserad idempotens
 // ---------------------------------------------------------------------------
 
-test('planUtfor: ALLT FINNS, inga legacy-rader → no-op-plan (idempotens-beviset)', () => {
+test('planSchema: ALLT FINNS OCH KORREKT KONFIGURERAT → no-op-plan', () => {
   const tables = [
     bilagorTable({ medGemensam: true, medPlats: true, medPlatsnamn: true }),
     SYNTETISK_PLATSER_TABLE,
   ];
-  const plan = planUtfor({
-    tables,
-    bilagorRecords: [{ id: 'r1', fields: { Namn: 'x', Räckvidd: 'Gemensam' } }],
-  });
+  const plan = planSchema({ tables });
   assert.deepEqual(plan.optionAdd, { strategy: 'already-exists' });
   assert.equal(plan.platsField.strategy, 'skip');
+  assert.equal(plan.platsField.existingId, 'fldPlatsSYN00001');
   assert.equal(plan.platsnamnField.strategy, 'skip');
-  assert.deepEqual(plan.rowsToMigrate, []);
 });
 
-test('planUtfor: DELVIS — option finns, Plats/Platsnamn saknas, legacy-rader finns → bara fälten skapas, ALLA legacy-rader migreras (ingen konsumerades av optionAdd)', () => {
+test('planSchema: INGET FINNS → allt planeras, optionAdd ALLTID throwaway-record (aldrig en riktig rad)', () => {
+  const tables = [
+    bilagorTable({ medGemensam: false, medPlats: false, medPlatsnamn: false }),
+    SYNTETISK_PLATSER_TABLE,
+  ];
+  const plan = planSchema({ tables });
+  assert.deepEqual(plan.optionAdd, { strategy: 'throwaway-record' });
+  assert.equal(plan.platsField.strategy, 'create');
+  assert.equal(plan.platsField.body.options.linkedTableId, SYNTETISK_PLATSER_TABLE.id);
+  assert.equal(plan.platsnamnField.strategy, 'create');
+  assert.equal(plan.platsnamnField.platserNamnFieldId, 'fldNamnSYN0000001');
+});
+
+test('planSchema: DELVIS — option finns, fälten saknas → bara fälten planeras', () => {
   const tables = [
     bilagorTable({ medGemensam: true, medPlats: false, medPlatsnamn: false }),
     SYNTETISK_PLATSER_TABLE,
   ];
-  const records = [
-    { id: 'r1', fields: { Namn: 'a', Räckvidd: 'Kurstyp' } },
-    { id: 'r2', fields: { Namn: 'b', Räckvidd: 'Alla event' } },
-  ];
-  const plan = planUtfor({ tables, bilagorRecords: records });
+  const plan = planSchema({ tables });
   assert.deepEqual(plan.optionAdd, { strategy: 'already-exists' });
   assert.equal(plan.platsField.strategy, 'create');
-  assert.equal(plan.platsField.body.options.linkedTableId, SYNTETISK_PLATSER_TABLE.id);
   assert.equal(plan.platsnamnField.strategy, 'create');
-  assert.equal(plan.platsnamnField.bodyTemplate.fieldIdInLinkedTable, 'fldNamnSYN0000001');
-  assert.deepEqual(
-    plan.rowsToMigrate.map((r) => r.id),
-    ['r1', 'r2'],
-  );
 });
 
-test('planUtfor: INGET FINNS, legacy-rader finns → optionAdd konsumerar FÖRSTA legacy-raden, resten kvar i rowsToMigrate', () => {
+test('planSchema: planeringen rör ALDRIG bilagorRecords — funktionen tar inte ens emot dem', () => {
+  // Regressionsskydd mot att choice-skapelsen av misstag återkopplas till en
+  // riktig rad (review-runda 2, punkt 2): planSchema()s signatur { tables }
+  // har ingen plats för rader alls.
   const tables = [
-    bilagorTable({ medGemensam: false, medPlats: false, medPlatsnamn: false }),
+    bilagorTable({ medGemensam: false, medPlats: true, medPlatsnamn: true }),
     SYNTETISK_PLATSER_TABLE,
   ];
-  const records = [
-    { id: 'r1', fields: { Namn: 'a', Räckvidd: 'Kurstyp' } },
-    { id: 'r2', fields: { Namn: 'b', Räckvidd: 'Alla event' } },
-    { id: 'r3', fields: { Namn: 'c', Räckvidd: 'Event' } }, // orörd, inte legacy
-  ];
-  const plan = planUtfor({ tables, bilagorRecords: records });
-  assert.deepEqual(plan.optionAdd, { strategy: 'migrate-existing-row', recordId: 'r1' });
-  assert.equal(plan.platsField.strategy, 'create');
-  assert.equal(plan.platsnamnField.strategy, 'create');
-  assert.deepEqual(
-    plan.rowsToMigrate.map((r) => r.id),
-    ['r2'],
-  );
-  assert.equal(plan.legacyRaderTotalt, 2);
-});
-
-test('planUtfor: INGET FINNS, INGA legacy-rader men minst en annan rad → reservväg (throwaway-record)', () => {
-  const tables = [
-    bilagorTable({ medGemensam: false, medPlats: false, medPlatsnamn: false }),
-    SYNTETISK_PLATSER_TABLE,
-  ];
-  const records = [{ id: 'r1', fields: { Namn: 'a', Räckvidd: 'Event' } }];
-  const plan = planUtfor({ tables, bilagorRecords: records });
+  const plan = planSchema({ tables });
   assert.deepEqual(plan.optionAdd, { strategy: 'throwaway-record' });
-  assert.deepEqual(plan.rowsToMigrate, []);
 });
 
-test('planUtfor: INGET FINNS, tabellen är HELT TOM → GuardError (ingen rad att typecasta mot)', () => {
+test('planSchema: Plats-fältet FELKONFIGURERAT (fel type) → GuardError, rör INGET', () => {
   const tables = [
-    bilagorTable({ medGemensam: false, medPlats: false, medPlatsnamn: false }),
+    bilagorTable({
+      medGemensam: true,
+      medPlats: true,
+      platsOverride: { id: 'fldPlatsSYN00001', name: 'Plats', type: 'singleLineText', options: {} },
+      medPlatsnamn: false,
+    }),
     SYNTETISK_PLATSER_TABLE,
   ];
-  assert.throws(() => planUtfor({ tables, bilagorRecords: [] }), GuardError);
+  assert.throws(() => planSchema({ tables }), /FELKONFIGURERAT/);
 });
 
-test('planUtfor: Plats-fältet finns redan → platsnamnField-planen får bodyTemplate men INTE recordLinkFieldId (trådas av runUtfor från existingId)', () => {
+test('planSchema: Plats-fältet FELKONFIGURERAT (fel linkedTableId) → GuardError', () => {
   const tables = [
-    bilagorTable({ medGemensam: true, medPlats: true, medPlatsnamn: false }),
+    bilagorTable({
+      medGemensam: true,
+      medPlats: true,
+      platsOverride: {
+        id: 'fldPlatsSYN00001',
+        name: 'Plats',
+        type: 'multipleRecordLinks',
+        options: { linkedTableId: 'tblFELAKTIGT0000001' },
+      },
+      medPlatsnamn: false,
+    }),
     SYNTETISK_PLATSER_TABLE,
   ];
-  const plan = planUtfor({
-    tables,
-    bilagorRecords: [{ id: 'r1', fields: { Namn: 'a', Räckvidd: 'Gemensam' } }],
-  });
-  assert.equal(plan.platsField.strategy, 'skip');
-  assert.equal(plan.platsField.existingId, 'fldPlatsSYN00001');
-  assert.equal(plan.platsnamnField.strategy, 'create');
-  assert.equal(plan.platsnamnField.bodyTemplate.recordLinkFieldId, undefined);
+  assert.throws(() => planSchema({ tables }), GuardError);
 });
 
-test('planUtfor: saknad Bilagor-tabell → GuardError', () => {
-  assert.throws(
-    () => planUtfor({ tables: [SYNTETISK_PLATSER_TABLE], bilagorRecords: [] }),
-    GuardError,
-  );
+test('planSchema: Platsnamn-fältet FELKONFIGURERAT (fel recordLinkFieldId) → GuardError', () => {
+  const tables = [
+    bilagorTable({
+      medGemensam: true,
+      medPlats: true,
+      medPlatsnamn: true,
+      platsnamnOverride: {
+        id: 'fldPlatsnamnSYN01',
+        name: 'Platsnamn',
+        type: 'multipleLookupValues',
+        options: {
+          recordLinkFieldId: 'fldFELAKTIGT000001',
+          fieldIdInLinkedTable: 'fldNamnSYN0000001',
+        },
+      },
+    }),
+    SYNTETISK_PLATSER_TABLE,
+  ];
+  assert.throws(() => planSchema({ tables }), GuardError);
 });
 
-test('planUtfor: saknat Räckvidd-fält → GuardError', () => {
+test('planSchema: Platsnamn-fältet FELKONFIGURERAT (fel fieldIdInLinkedTable) → GuardError', () => {
+  const tables = [
+    bilagorTable({
+      medGemensam: true,
+      medPlats: true,
+      medPlatsnamn: true,
+      platsnamnOverride: {
+        id: 'fldPlatsnamnSYN01',
+        name: 'Platsnamn',
+        type: 'multipleLookupValues',
+        options: {
+          recordLinkFieldId: 'fldPlatsSYN00001',
+          fieldIdInLinkedTable: 'fldFELAKTIGT000001',
+        },
+      },
+    }),
+    SYNTETISK_PLATSER_TABLE,
+  ];
+  assert.throws(() => planSchema({ tables }), GuardError);
+});
+
+test('planSchema: Platsnamn-fältet FELKONFIGURERAT (fel type) → GuardError', () => {
+  const tables = [
+    bilagorTable({
+      medGemensam: true,
+      medPlats: true,
+      medPlatsnamn: true,
+      platsnamnOverride: {
+        id: 'fldPlatsnamnSYN01',
+        name: 'Platsnamn',
+        type: 'singleLineText',
+        options: {},
+      },
+    }),
+    SYNTETISK_PLATSER_TABLE,
+  ];
+  assert.throws(() => planSchema({ tables }), GuardError);
+});
+
+test('planSchema: Platsnamn finns men Plats saknas → inkonsistent schema, GuardError', () => {
+  const tables = [
+    bilagorTable({ medGemensam: true, medPlats: false, medPlatsnamn: true }),
+    SYNTETISK_PLATSER_TABLE,
+  ];
+  assert.throws(() => planSchema({ tables }), /inkonsistent/);
+});
+
+test('planSchema: saknad Bilagor-tabell → GuardError', () => {
+  assert.throws(() => planSchema({ tables: [SYNTETISK_PLATSER_TABLE] }), GuardError);
+});
+
+test('planSchema: saknat Räckvidd-fält → GuardError', () => {
   const bilTabellUtanRackvidd = { id: 'tblX', name: 'Bilagor', fields: [] };
   assert.throws(
-    () =>
-      planUtfor({ tables: [bilTabellUtanRackvidd, SYNTETISK_PLATSER_TABLE], bilagorRecords: [] }),
+    () => planSchema({ tables: [bilTabellUtanRackvidd, SYNTETISK_PLATSER_TABLE] }),
     GuardError,
   );
 });
 
-test('planUtfor: saknat Platser.Namn-fält → GuardError', () => {
+test('planSchema: saknat Platser.Namn-fält → GuardError', () => {
   const platserUtanNamn = { id: 'tblPY', name: 'Platser', fields: [] };
   const tables = [bilagorTable({ medGemensam: true }), platserUtanNamn];
-  assert.throws(
-    () =>
-      planUtfor({
-        tables,
-        bilagorRecords: [{ id: 'r1', fields: { Namn: 'a', Räckvidd: 'Gemensam' } }],
-      }),
-    GuardError,
+  assert.throws(() => planSchema({ tables }), GuardError);
+});
+
+// ---------------------------------------------------------------------------
+// schemaKonvergerad — fail-closed-beslutet (punkt 3), ren funktion
+// ---------------------------------------------------------------------------
+
+test('schemaKonvergerad: alla tre skip/already-exists → true', () => {
+  assert.equal(
+    schemaKonvergerad({
+      optionAdd: { strategy: 'already-exists' },
+      platsField: { strategy: 'skip' },
+      platsnamnField: { strategy: 'skip' },
+    }),
+    true,
+  );
+});
+
+test('schemaKonvergerad: optionAdd fortfarande throwaway-record → false', () => {
+  assert.equal(
+    schemaKonvergerad({
+      optionAdd: { strategy: 'throwaway-record' },
+      platsField: { strategy: 'skip' },
+      platsnamnField: { strategy: 'skip' },
+    }),
+    false,
+  );
+});
+
+test('schemaKonvergerad: platsField fortfarande create → false', () => {
+  assert.equal(
+    schemaKonvergerad({
+      optionAdd: { strategy: 'already-exists' },
+      platsField: { strategy: 'create' },
+      platsnamnField: { strategy: 'skip' },
+    }),
+    false,
+  );
+});
+
+test('schemaKonvergerad: platsnamnField fortfarande create → false', () => {
+  assert.equal(
+    schemaKonvergerad({
+      optionAdd: { strategy: 'already-exists' },
+      platsField: { strategy: 'skip' },
+      platsnamnField: { strategy: 'create' },
+    }),
+    false,
   );
 });
 
@@ -462,16 +631,64 @@ test('chunk: delar i batchar om N, sista batchen kan vara kortare', () => {
 });
 
 // ---------------------------------------------------------------------------
-// runUtfor — exekvering mot injicerade API-stubbar (DI, inget nätverk)
+// planRader — kräver att choicen redan finns
 // ---------------------------------------------------------------------------
 
-function callCounter() {
+test('planRader: choicen finns, legacy-rader finns → alla legacy-rader planeras', () => {
+  const tables = [bilagorTable({ medGemensam: true }), SYNTETISK_PLATSER_TABLE];
+  const records = [
+    { id: 'r1', fields: { Namn: 'a', Räckvidd: 'Kurstyp' } },
+    { id: 'r2', fields: { Namn: 'b', Räckvidd: 'Alla event' } },
+    { id: 'r3', fields: { Namn: 'c', Räckvidd: 'Event' } },
+  ];
+  const plan = planRader({ tables, bilagorRecords: records });
+  assert.deepEqual(
+    plan.rowsToMigrate.map((r) => r.id),
+    ['r1', 'r2'],
+  );
+});
+
+test('planRader: choicen finns, INGA legacy-rader → tom plan', () => {
+  const tables = [bilagorTable({ medGemensam: true }), SYNTETISK_PLATSER_TABLE];
+  const records = [{ id: 'r1', fields: { Namn: 'a', Räckvidd: 'Gemensam' } }];
+  const plan = planRader({ tables, bilagorRecords: records });
+  assert.deepEqual(plan.rowsToMigrate, []);
+});
+
+test('planRader: choicen SAKNAS → GuardError som pekar på --utfor-schema', () => {
+  const tables = [bilagorTable({ medGemensam: false }), SYNTETISK_PLATSER_TABLE];
+  const records = [{ id: 'r1', fields: { Namn: 'a', Räckvidd: 'Kurstyp' } }];
+  assert.throws(() => planRader({ tables, bilagorRecords: records }), /--utfor-schema/);
+});
+
+test('planRader: saknad Bilagor-tabell → GuardError', () => {
+  assert.throws(
+    () => planRader({ tables: [SYNTETISK_PLATSER_TABLE], bilagorRecords: [] }),
+    GuardError,
+  );
+});
+
+// ---------------------------------------------------------------------------
+// raderKonvergerade — fail-closed-beslutet (punkt 3), ren funktion
+// ---------------------------------------------------------------------------
+
+test('raderKonvergerade: 0 kvar → true', () => {
+  assert.equal(raderKonvergerade(0), true);
+});
+
+test('raderKonvergerade: >0 kvar → false', () => {
+  assert.equal(raderKonvergerade(1), false);
+  assert.equal(raderKonvergerade(6), false);
+});
+
+// ---------------------------------------------------------------------------
+// runSchema — exekvering mot injicerade API-stubbar (DI, inget nätverk)
+// ---------------------------------------------------------------------------
+
+function schemaApiCounter() {
   const anrop = [];
   return {
     anrop,
-    patchRackvidd: async (ids) => {
-      anrop.push({ typ: 'patch', ids });
-    },
     createThrowawayAndDelete: async () => {
       anrop.push({ typ: 'throwaway' });
     },
@@ -482,115 +699,201 @@ function callCounter() {
   };
 }
 
-test('runUtfor: no-op-plan (allt finns) → INGET API-anrop görs alls (0 skrivningar, idempotens-beviset)', async () => {
-  const api = callCounter();
+test('runSchema: no-op-plan (allt finns) → INGET API-anrop görs alls (idempotens-beviset)', async () => {
+  const api = schemaApiCounter();
   const plan = {
     optionAdd: { strategy: 'already-exists' },
     platsField: { strategy: 'skip', existingId: 'fldGammal' },
     platsnamnField: { strategy: 'skip' },
-    rowsToMigrate: [],
   };
-  const { skrivningar } = await runUtfor(plan, api);
-  assert.deepEqual(skrivningar, {
-    optionAdd: 0,
-    platsField: 0,
-    platsnamnField: 0,
-    radMigrering: 0,
-  });
+  const { skrivningar } = await runSchema(plan, api);
+  assert.deepEqual(skrivningar, { optionAdd: 0, platsField: 0, platsnamnField: 0 });
   assert.deepEqual(api.anrop, []);
 });
 
-test('runUtfor: migrate-existing-row + skapa båda fälten + migrera resten → korrekt anropssekvens och trådad recordLinkFieldId', async () => {
-  const api = callCounter();
+test('runSchema: throwaway-record + skapa båda fälten → korrekt sekvens, Platsnamn-body bär den NYSKAPADE Plats-fältets id via buildPlatsnamnFieldBody', async () => {
+  const api = schemaApiCounter();
   const plan = {
-    optionAdd: { strategy: 'migrate-existing-row', recordId: 'recFörst' },
-    platsField: {
-      strategy: 'create',
-      body: {
-        name: 'Plats',
-        type: 'multipleRecordLinks',
-        options: { linkedTableId: 'tblPlatser' },
-      },
-    },
-    platsnamnField: {
-      strategy: 'create',
-      bodyTemplate: {
-        name: 'Platsnamn',
-        type: 'multipleLookupValues',
-        fieldIdInLinkedTable: 'fldNamn',
-      },
-    },
-    rowsToMigrate: [{ id: 'recAndra' }, { id: 'recTredje' }],
+    optionAdd: { strategy: 'throwaway-record' },
+    platsField: { strategy: 'create', body: buildPlatsFieldBody('tblPlatserXYZ') },
+    platsnamnField: { strategy: 'create', platserNamnFieldId: 'fldNamnXYZ' },
   };
-  const { skrivningar, logg } = await runUtfor(plan, api);
-  assert.equal(skrivningar.optionAdd, 1);
+  const { skrivningar, platsFieldId } = await runSchema(plan, api);
+  assert.equal(skrivningar.optionAdd, 2);
   assert.equal(skrivningar.platsField, 1);
   assert.equal(skrivningar.platsnamnField, 1);
-  assert.equal(skrivningar.radMigrering, 2);
-  assert.equal(api.anrop[0].typ, 'patch');
-  assert.deepEqual(api.anrop[0].ids, ['recFörst']);
+  assert.equal(api.anrop[0].typ, 'throwaway');
   assert.equal(api.anrop[1].typ, 'createField');
   assert.equal(api.anrop[1].body.name, 'Plats');
   assert.equal(api.anrop[2].typ, 'createField');
   assert.equal(api.anrop[2].body.name, 'Platsnamn');
-  // KRITISKT: platsnamnField.body måste bära DEN NYSKAPADE Plats-fältets id (fld-Plats-NY), inte något gammalt.
-  assert.equal(api.anrop[2].body.recordLinkFieldId, 'fld-Plats-NY');
-  assert.equal(api.anrop[3].typ, 'patch');
-  assert.deepEqual(api.anrop[3].ids, ['recAndra', 'recTredje']);
-  assert.ok(logg.some((r) => r.includes('migrerade')));
+  // KRITISKT (samma fynd som § buildPlatsnamnFieldBody-testerna): nästlat
+  // under options, och bär den NYSKAPADE Plats-fältets id.
+  assert.equal(api.anrop[2].body.options.recordLinkFieldId, 'fld-Plats-NY');
+  assert.equal(api.anrop[2].body.recordLinkFieldId, undefined);
+  assert.equal(platsFieldId, 'fld-Plats-NY');
 });
 
-test('runUtfor: Plats-fältet finns REDAN → platsnamnField-skapelsen använder existingId, INTE en ny createField-retur', async () => {
-  const api = callCounter();
+test('runSchema: Plats-fältet finns REDAN → platsnamnField-skapelsen använder existingId, INTE en ny createField-retur', async () => {
+  const api = schemaApiCounter();
   const plan = {
     optionAdd: { strategy: 'already-exists' },
     platsField: { strategy: 'skip', existingId: 'fldPlatsGammal123' },
-    platsnamnField: {
-      strategy: 'create',
-      bodyTemplate: {
-        name: 'Platsnamn',
-        type: 'multipleLookupValues',
-        fieldIdInLinkedTable: 'fldNamn',
-      },
-    },
-    rowsToMigrate: [],
+    platsnamnField: { strategy: 'create', platserNamnFieldId: 'fldNamnXYZ' },
   };
-  const { skrivningar } = await runUtfor(plan, api);
+  const { skrivningar, platsFieldId } = await runSchema(plan, api);
   assert.equal(skrivningar.platsField, 0);
   assert.equal(skrivningar.platsnamnField, 1);
   assert.equal(api.anrop[0].typ, 'createField');
-  assert.equal(api.anrop[0].body.recordLinkFieldId, 'fldPlatsGammal123');
+  assert.equal(api.anrop[0].body.options.recordLinkFieldId, 'fldPlatsGammal123');
+  assert.equal(platsFieldId, 'fldPlatsGammal123');
 });
 
-test('runUtfor: throwaway-record-strategin anropar createThrowawayAndDelete, räknas som 2 skrivningar', async () => {
-  const api = callCounter();
+test('runSchema: rör ALDRIG en Bilagor-rad — api-objektet har ingen patchRackvidd alls', async () => {
+  // Regressionsskydd (review-runda 2, punkt 2): runSchemas api-kontrakt
+  // saknar patchRackvidd helt — det finns strukturellt ingen väg för
+  // schema-exekveringen att skriva till en riktig rad.
+  const api = schemaApiCounter();
+  assert.equal('patchRackvidd' in api, false);
   const plan = {
     optionAdd: { strategy: 'throwaway-record' },
     platsField: { strategy: 'skip', existingId: 'fldX' },
     platsnamnField: { strategy: 'skip' },
-    rowsToMigrate: [],
   };
-  const { skrivningar } = await runUtfor(plan, api);
-  assert.equal(skrivningar.optionAdd, 2);
+  await runSchema(plan, api);
   assert.deepEqual(api.anrop, [{ typ: 'throwaway' }]);
 });
 
-test('runUtfor: radmigrering batchas om RECORD_BATCH_SIZE (10) — 25 rader → 3 patch-anrop (10/10/5)', async () => {
-  const api = callCounter();
-  const rowsToMigrate = Array.from({ length: 25 }, (_, i) => ({ id: `rec${i}` }));
-  const plan = {
-    optionAdd: { strategy: 'already-exists' },
-    platsField: { strategy: 'skip', existingId: 'fldX' },
-    platsnamnField: { strategy: 'skip' },
-    rowsToMigrate,
+// ---------------------------------------------------------------------------
+// runRader — exekvering mot injicerade API-stubbar
+// ---------------------------------------------------------------------------
+
+function raderApiCounter() {
+  const anrop = [];
+  return {
+    anrop,
+    patchRackvidd: async (ids) => {
+      anrop.push({ typ: 'patch', ids });
+    },
   };
-  const { skrivningar } = await runUtfor(plan, api);
+}
+
+test('runRader: tom plan → inget API-anrop', async () => {
+  const api = raderApiCounter();
+  const { skrivningar } = await runRader({ rowsToMigrate: [] }, api);
+  assert.equal(skrivningar.radMigrering, 0);
+  assert.deepEqual(api.anrop, []);
+});
+
+test('runRader: batchar om RECORD_BATCH_SIZE (10) — 25 rader → 3 patch-anrop (10/10/5)', async () => {
+  const api = raderApiCounter();
+  const rowsToMigrate = Array.from({ length: 25 }, (_, i) => ({ id: `rec${i}` }));
+  const { skrivningar } = await runRader({ rowsToMigrate }, api);
   assert.equal(skrivningar.radMigrering, 25);
-  const patchAnrop = api.anrop.filter((a) => a.typ === 'patch');
-  assert.equal(patchAnrop.length, 3);
-  assert.equal(patchAnrop[0].ids.length, 10);
-  assert.equal(patchAnrop[1].ids.length, 10);
-  assert.equal(patchAnrop[2].ids.length, 5);
+  assert.equal(api.anrop.length, 3);
+  assert.equal(api.anrop[0].ids.length, 10);
+  assert.equal(api.anrop[1].ids.length, 10);
+  assert.equal(api.anrop[2].ids.length, 5);
+});
+
+// ---------------------------------------------------------------------------
+// airtableRequest — retry-med-backoff (REVIEW-RUNDA 2, PUNKT 5). Injicerad
+// fetchImpl/sleepImpl, INGEN riktig fetch, INGEN riktig väntan.
+// ---------------------------------------------------------------------------
+
+function fakeRes(status, jsonBody) {
+  return {
+    ok: status >= 200 && status < 300,
+    status,
+    json: async () => jsonBody,
+    text: async () => `status ${status}`,
+  };
+}
+
+test('airtableRequest: 200 direkt → returnerar JSON, ingen retry', async () => {
+  let calls = 0;
+  const fetchStub = async () => {
+    calls += 1;
+    return fakeRes(200, { ok: true });
+  };
+  const result = await airtableRequest(
+    'https://x',
+    'tok',
+    {},
+    { fetchImpl: fetchStub, sleepImpl: async () => {} },
+  );
+  assert.deepEqual(result, { ok: true });
+  assert.equal(calls, 1);
+});
+
+test('airtableRequest: 429 väntar 30000ms och försöker EN gång till (oförändrat beteende)', async () => {
+  let calls = 0;
+  const fetchStub = async () => {
+    calls += 1;
+    return calls === 1 ? fakeRes(429) : fakeRes(200, { ok: true });
+  };
+  const sleeps = [];
+  const result = await airtableRequest(
+    'https://x',
+    'tok',
+    {},
+    {
+      fetchImpl: fetchStub,
+      sleepImpl: async (ms) => sleeps.push(ms),
+    },
+  );
+  assert.deepEqual(result, { ok: true });
+  assert.equal(calls, 2);
+  assert.deepEqual(sleeps, [30_000]);
+});
+
+test('airtableRequest: 5xx retries upp till 2 gånger med exponentiell backoff (1000ms, 2000ms), sedan lyckas', async () => {
+  let calls = 0;
+  const fetchStub = async () => {
+    calls += 1;
+    return calls <= 2 ? fakeRes(503) : fakeRes(200, { ok: true });
+  };
+  const sleeps = [];
+  const result = await airtableRequest(
+    'https://x',
+    'tok',
+    {},
+    {
+      fetchImpl: fetchStub,
+      sleepImpl: async (ms) => sleeps.push(ms),
+    },
+  );
+  assert.deepEqual(result, { ok: true });
+  assert.equal(calls, 3);
+  assert.deepEqual(sleeps, [1000, 2000]);
+});
+
+test('airtableRequest: 5xx en TREDJE gång (efter 2 retries uttömda) → kastar ApiError, totalt 3 försök', async () => {
+  let calls = 0;
+  const fetchStub = async () => {
+    calls += 1;
+    return fakeRes(500);
+  };
+  await assert.rejects(
+    () =>
+      airtableRequest('https://x', 'tok', {}, { fetchImpl: fetchStub, sleepImpl: async () => {} }),
+    ApiError,
+  );
+  assert.equal(calls, 3); // 1 ursprungligt försök + 2 retries
+});
+
+test('airtableRequest: 4xx (icke-429) kastar DIREKT, ingen retry alls', async () => {
+  let calls = 0;
+  const fetchStub = async () => {
+    calls += 1;
+    return fakeRes(404);
+  };
+  await assert.rejects(
+    () =>
+      airtableRequest('https://x', 'tok', {}, { fetchImpl: fetchStub, sleepImpl: async () => {} }),
+    ApiError,
+  );
+  assert.equal(calls, 1);
 });
 
 // ---------------------------------------------------------------------------
@@ -624,12 +927,16 @@ test('EXIT-KOD: ingen flagga alls → exit 2', () => {
   assert.equal(korSkript([STAGING_BASE_ID]), 2);
 });
 
-test('EXIT-KOD: --kontrollera mot KÄND prod-bas UTAN miljövariabeln → exit 1 (prod-guard-vägran, INNAN token/nätverk)', () => {
-  assert.equal(korSkript(['--kontrollera', PROD_BASE_ID_KAND]), 1);
+test('EXIT-KOD: --utfor-schema mot KÄND prod-bas UTAN miljövariabeln → exit 1 (prod-guard-vägran, INNAN token/nätverk)', () => {
+  assert.equal(korSkript(['--utfor-schema', PROD_BASE_ID_KAND]), 1);
 });
 
-test('EXIT-KOD: --utfor mot KÄND prod-bas UTAN miljövariabeln → exit 1', () => {
-  assert.equal(korSkript(['--utfor', PROD_BASE_ID_KAND]), 1);
+test('EXIT-KOD: --utfor-rader mot KÄND prod-bas UTAN miljövariabeln → exit 1', () => {
+  assert.equal(korSkript(['--utfor-rader', PROD_BASE_ID_KAND]), 1);
+});
+
+test('EXIT-KOD: --kontrollera mot KÄND prod-bas UTAN miljövariabeln → exit 1', () => {
+  assert.equal(korSkript(['--kontrollera', PROD_BASE_ID_KAND]), 1);
 });
 
 test('EXIT-KOD: --kontrollera mot prod MED FEL värde i miljövariabeln → exit 1 (typa-för-att-bekräfta kräver EXAKT match)', () => {
@@ -651,6 +958,14 @@ test('EXIT-KOD: --kontrollera mot staging med SCHEMA_TOKEN men UTAN STAGING_AIRT
     korSkript(['--kontrollera', STAGING_BASE_ID], { ...REN_MILJO, AIRTABLE_SCHEMA_TOKEN: 'dummy' }),
     3,
   );
+});
+
+test('EXIT-KOD: --utfor-schema mot staging utan token → exit 3 (samma guard-ordning som --kontrollera)', () => {
+  assert.equal(korSkript(['--utfor-schema', STAGING_BASE_ID]), 3);
+});
+
+test('EXIT-KOD: --utfor-rader mot staging utan token → exit 3', () => {
+  assert.equal(korSkript(['--utfor-rader', STAGING_BASE_ID]), 3);
 });
 
 test('EXIT-KOD (§ premiss-pass-beviset): --kontrollera mot KÄND prod-bas, agent-liknande anrop utan GO → VÄGRAS mekaniskt av skriptets EGNA guard (deny-prod-ref.sh täcker inte Airtable-bas-ID, se filhuvudets § PROD-LÅSET)', () => {
