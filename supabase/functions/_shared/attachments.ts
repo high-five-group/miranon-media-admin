@@ -284,6 +284,57 @@ export function buildScopeFields(input: AttachmentScopeInput): Record<string, un
   return fields;
 }
 
+/**
+ * [TASK-338.4, ADR-125 § Beslut 1] `buildScopeFields` MOTSVARIGHET FÖR EN
+ * PATCH — `update-attachment-scope`s fältbyggare.
+ *
+ * ═══ VARFÖR EN EGEN FUNKTION OCH INTE `buildScopeFields` ═══
+ * De två har MOTSATT semantik för en tom axel, och det är hela skillnaden:
+ *
+ *   - `buildScopeFields` (CREATE) UTELÄMNAR en tom axel. På en radskapelse
+ *     är "utelämnad" och "tom" samma sak — raden föds utan fältet.
+ *   - Denna (PATCH) RENSAR den EXPLICIT. På en uppdatering betyder ett
+ *     utelämnat fält "rör inte", så ett återanvänt `buildScopeFields` hade
+ *     gjort det OMÖJLIGT att smalna av en bilaga: Lotta som ändrar
+ *     "RIM · Rönninge" till bara "Rönninge" hade fått `Kursfamilj` KVAR,
+ *     tyst, och dokumentet hade fortsatt gälla färre event än badgen sa.
+ *     Det är samma klass av tyst avvikelse mellan vad ytan lovar och vad
+ *     basen bär som PRD TASK-338 berättelse 3 finns för att förhindra.
+ *
+ * ═══ RENSNINGS-FORMEN ÄR MÄTT MOT STAGING, INTE GISSAD ═══
+ * (2026-08-29, egen ZZ-sentinelrad i `Bilagor`, skapad och raderad i samma
+ * körning — CLAUDE.md § "Airtable-schema före write: anta aldrig fält-form".)
+ * En PATCH med `{ Kursfamilj: null, Kursnivå: null, Plats: [] }` gav 200 och
+ * en efterföljande GET visade alla tre fälten HELT BORTA ur `fields` (inte
+ * tomsträng, inte tom array — Airtable utelämnar ett osatt fält, samma
+ * observation `rackvidd-matchning.ts` § `lasPlatsIds` redan bokför).
+ *   - singleSelect (`Kursfamilj`/`Kursnivå`) rensas med `null`. MEDVETET
+ *     INTE `''`: tomsträngen är TEXT-fältens rensningsform
+ *     (`save-place-standard`s `bilagetextClearFields`), och ett
+ *     singleSelect skulle behöva `''` som ett giltigt OPTIONSNAMN.
+ *   - multipleRecordLinks (`Plats`) rensas med `[]`.
+ *
+ * `Räckvidd` skrivs ALLTID (aldrig rensad) — en gemensam bilaga som tappade
+ * sitt räckviddsvärde hade fallit ur BÅDE Lottas lista över delade dokument
+ * OCH varje events union (`arGemensam` är fail-closed på `null`,
+ * se dess docblock), alltså blivit osynlig utan att vara borta.
+ */
+export function buildScopeUpdateFields(input: AttachmentScopeInput): Record<string, unknown> {
+  const norm = normaliseraRackvidd({
+    rackvidd: input.rackvidd,
+    kursfamilj: input.kursfamilj ?? null,
+    kursniva: input.kursniva ?? null,
+    platsIds: input.plats ? [input.plats] : [],
+  });
+
+  return {
+    Räckvidd: norm.rackvidd,
+    Kursfamilj: norm.kursfamilj ?? null,
+    Kursnivå: norm.kursniva ?? null,
+    Plats: norm.platsIds.length > 0 ? [...norm.platsIds] : [],
+  };
+}
+
 /** Se src/data/adapters/attachmentUpload.ts för det fulla resonemanget — samma tal. */
 export const SMALL_UPLOAD_MAX_BYTES = 6 * 1024 * 1024;
 
