@@ -3,14 +3,21 @@ import { AttachmentScope, type AttachmentScopeValue } from '@/domain/types/Statu
 
 /**
  * Räckviddsbadgen (TASK-275.3, ADR-118 beslut 2+5) — markerar en GEMENSAM
- * bilaga (räckvidd Kurstyp/Alla event) i eventläget och i Åtgärds-sidans
- * bilageväljare (ORDLISTA.md § Gemensam bilaga: "syns automatiskt, märkt med
- * räckviddsbadge, i varje berört events dokumentlista och i Åtgärds-sidans
- * bilageväljare"). RENDERAR INGET för `rackvidd` Event/`null` — en bilaga
- * som "bara" hör till DETTA event behöver ingen förklarande badge, badgen
- * finns för att förklara VARFÖR en rad dyker upp som INTE laddades upp här
- * (ADR-118 beslut 3: badgen "bär förklaringen" till varför Ersätt/Radera
- * saknas i eventkontext).
+ * bilaga (räckvidd Kurstyp/Alla event) i Dokument-ytans listor (eventläget
+ * och räckviddsläget). RENDERAR INGET för `rackvidd` Event/`null` — en
+ * bilaga som "bara" hör till DETTA event behöver ingen förklarande badge,
+ * badgen finns för att förklara VARFÖR en rad dyker upp som INTE laddades
+ * upp här (ADR-118 beslut 3: badgen "bär förklaringen" till varför
+ * Ersätt/Radera saknas i eventkontext).
+ *
+ * [TASK-339, 2026-08-29] INTE LÄNGRE I ÅTGÄRDS-SIDANS BILAGEVÄLJARE. Badgen
+ * fanns där fram till denna skiva (ADR-118 beslut 2:s ursprungsformulering,
+ * amenderad i TASK-338.5 § Updates) — Marcus prod-röktest 2026-08-29 (S113,
+ * TASK-309.11 punkt 8): "blir inte snyggt". I väljaren är räckvidden inte
+ * ett beslutsunderlag (Lotta väljer VAD som ska bifogas, inte varifrån det
+ * kommer) och pillen konkurrerade visuellt med kryssrutan/filnamnet.
+ * Komponenten är ORÖRD — den renderas bara på en yta färre nu
+ * (`AtgardsSida.tsx`s docblock vid det gamla anropsstället bär motivet).
  *
  * HUSETS PILL-GRAMMATIK, INGEN NY FORMUPPFINNING (Marcus kvalitetsdirektiv
  * 2026-08-17): EXAKT samma klass-sträng som den neutrala metadata-pillen på
