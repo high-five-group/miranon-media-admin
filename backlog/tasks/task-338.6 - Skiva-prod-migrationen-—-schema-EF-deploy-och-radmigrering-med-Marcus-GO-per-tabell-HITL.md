@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-29 08:04'
-updated_date: '2026-08-29 10:43'
+updated_date: '2026-08-29 11:22'
 labels:
   - ready-for-human
 dependencies:
@@ -126,4 +126,38 @@ node scripts/task-338-6-prod-migration.mjs --kontrollera app8uGPrVCVOm6LfD
 Ordningen mellan (i)/(iii) och (ii) är inte strikt tvingande — läsvägen (338.2) tolererar legacy-värden — men rekommenderas i denna ordning för renhet.
 
 Efter körning: bocka AC #1–#3 på detta kort och sätt Status via `task edit`, samt fyll data-model.md § Bilagor prod-kolumnen (idag "väntar TASK-338.6") med de faktiska prod-fält-ID:na skriptets utdata rapporterar.
+
+---
+
+## Review-runda 2 (PR #2097, granskad e0ddc1fe, risk hög — 1 error + 3 warning + 3 info) — RÄTTAT, ny SHA caca9989
+
+**Modell-identitet (denna runda):** Sonnet 5 ("You are powered by the model named Sonnet 5. The exact model ID is claude-sonnet-5.").
+
+**1. ERROR (rättat):** `Platsnamn`-fältets create-body skickade `recordLinkFieldId`/`fieldIdInLinkedTable` på TOPPNIVÅ i stället för nästlat under `options`, vilket Airtables Meta-API (POST .../fields, variant multipleLookupValues) kräver — samma fel `Plats`-fältet redan undvek (`options: { linkedTableId }`). Extraherat till EXPORTERADE, pura funktioner `buildPlatsFieldBody(platserTableId)` / `buildPlatsnamnFieldBody(platsFieldId, platserNamnFieldId)`; testsviten asserterar body-formen direkt (`body.options.recordLinkFieldId`/`fieldIdInLinkedTable`, samt att INGEN av nycklarna ligger på toppnivå). Sabotage-bevisat: återinförde buggen → 3 fall föll rött exakt på den → återställt → 70/70 grönt.
+
+**2. WARNING/ask-user (avgjort av orkestreraren på Marcus mandat, rättat):** Skriptet har nu TRE lägen i stället för två:
+
+```bash
+node scripts/task-338-6-prod-migration.mjs --kontrollera <bas-id>    # läser BÅDE schema och rader, ändrar inget
+node scripts/task-338-6-prod-migration.mjs --utfor-schema <bas-id>   # steg (i): option + Plats + Platsnamn — ALDRIG en riktig Bilagor-rad
+node scripts/task-338-6-prod-migration.mjs --utfor-rader <bas-id>    # steg (iii): radmigrering — kräver att choicen redan finns (annars GuardError, exit 1)
+```
+
+Option-tillägget ("Gemensam"-choicen) använder nu ALLTID en kastbar rad (skapa+radera, typecast) i stället för att typecasta på en riktig legacy-rad som förra rundan gjorde — så `--utfor-schema` rör ALDRIG persisterad Bilagor-data, oavsett om legacy-rader finns eller ej. Detta håller ADR-125 § 8:s "additivt men irreversibelt i data"-distinktion skarp mellan de två lägena.
+
+**3. WARNING (rättat):** Båda `--utfor-*`-lägena är nu FAIL-CLOSED. Efter skrivning läses schemat/raderna FÄRSKT och prövas igen (`schemaKonvergerad`/`raderKonvergerade`, rena testbara funktioner) — visar det diskrepans (schema INTE konvergerat / legacy-rader kvar >0) avslutar skriptet med **exit 4**, inte bara en utskriven varning.
+
+**4. WARNING (rättat):** Idempotensen är nu KONFIGURATIONSBASERAD, inte bara namnbaserad. Finns `Plats` men med annan `type`/`options.linkedTableId`, eller `Platsnamn` med annan `recordLinkFieldId`/`fieldIdInLinkedTable`/`type` → `planSchema` fäller med `GuardError` och rör INGET. Åtta nya testfall täcker varje felkonfigurationskombination (fel type på båda fälten, fel linkedTableId, fel recordLinkFieldId, fel fieldIdInLinkedTable, samt "Platsnamn finns men Plats saknas" — ett strukturellt inkonsistent schema).
+
+**5. INFO (bokfört):** `AIRTABLE_SCHEMA_TOKEN` måste bära PAT-SCOPET `schema.bases:write` (utöver `schema.bases:read`) — detta är en ANNAN axel än Airtable-basens `permissionLevel` (t.ex. "create") som en token/collaborator kan ha på basen som HELHET. Ett token kan ha `permissionLevel: "create"` på basen och ÄNDÅ sakna det granulära PAT-scopet, om token:et skapades med en snävare scope-lista. Se `docs/reference/atkomst-och-nycklar.md` § "TOKEN-FÄLLAN, mätt och rättad" för den exakta distinktionen samt § "Prod-deploy av bilagespåret" → (a) Prod-schemat för var den dedikerade, least-privilege-scopade PAT:en beskrivs (för prod-varianten; staging-varianten i `.env.seed.example`s `AIRTABLE_SCHEMA_TOKEN`-block). 5xx-fel retries nu upp till 2 gånger med exponentiell backoff (1 s, 2 s) utöver den befintliga 429-hanteringen — hermetiskt testat via injicerad `fetchImpl`/`sleepImpl` (fyra nya testfall: 200 direkt, 429-retry oförändrad, 5xx-retry-och-lyckas, 5xx-uttömd-kastar, 4xx-ingen-retry).
+
+**Skarp verifiering denna runda:** ENDAST `--kontrollera apphjj8Q7lkXCMsL4` kördes (koordinatorns explicita instruktion — fälten finns redan i staging sedan förra rundan, så en `--utfor-*`-körning hade bara bevisat 0 skrivningar utan att faktiskt exercisa create-vägarna). Utdata: `Gemensam`/`Plats`/`Platsnamn` finns alla (JA/JA/JA), 0 rader att migrera, exit 0, `PREFLIGHT OK`. **INGEN prod-anrop.**
+
+**Ärlig gräns, bokförd öppet:** create+typecast-mekanismen för choice-skapelse (steg 1 i `--utfor-schema`) är INTE oberoende omprövad skarpt denna runda — TASK-338.1 bevisade UPDATE-vägen (PATCH på en riktig rad) skarpt förra rundan; denna runda byter till CREATE+DELETE av arkitekturskäl (punkt 2 ovan). Airtables dokumenterade typecast-beteende beskrivs som identiskt för create och update, men detta specifika create-anrop är INTE självt körts skarpt — koordinatorn förbjöd en ny `--utfor-schema`-körning mot staging tills fynd #1 var rättat. Nästa granskningsrunda (eller Marcus faktiska prod-körning) blir den första skarpa exekveringen av denna specifika kodväg.
+
+**Testsvit:** 70 fall (upp från 43 i förra rundan), samtliga hermetiska (inklusive `airtableRequest`s retry-logik, testad via injicerad `fetchImpl`/`sleepImpl` — ingen riktig fetch, ingen riktig väntan). Tvåsidigt bevisad enligt ovan.
+
+**Grindar denna runda:** `npm run typecheck` (exit 0) · `npx @biomejs/biome check .` (exit 0, endast pre-existerande warnings/infos i orörda filer) · `node scripts/test-task-338-6-prod-migration.mjs` (70/70, exit 0) · `node scripts/check-staging-preflight-wiring.mjs` (grön, 8 Node-ytor, 0 oklassade) · `--kontrollera apphjj8Q7lkXCMsL4` (exit 0, endast läsning). `ci.yml` ORÖRT denna runda — actionlint/yamllint ej körda (inte tillämpligt).
+
+**Ny SHA:** `caca99892b299060845e2e0b0cdd9ad05977dba5` (PR #2097, gren `feat/task-338-6-prod-migrationsskript`).
 <!-- SECTION:NOTES:END -->
