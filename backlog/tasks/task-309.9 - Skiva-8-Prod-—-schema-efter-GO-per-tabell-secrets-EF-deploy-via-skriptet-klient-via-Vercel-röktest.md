@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-23 14:38'
-updated_date: '2026-08-24 16:06'
+updated_date: '2026-08-29 15:55'
 labels:
   - ready-for-human
 dependencies:
@@ -25,7 +25,7 @@ Allt som byggts blir skarpt i prod-appen: basens struktur, hemligheterna, funkti
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [x] #1 Prod-schemat skapat efter Marcus GO i klartext per tabell (Eventinnehåll, Agendapunkter, Platser; fälten på Eventplanering och Bilagor) med samma namn och typer som staging; prod-ID:n bokförda i datamodell-referensen; seed (Rönninge + sju Eventinnehåll-rader) lagd
-- [ ] #2 DOCRAPTOR_API_KEY satt i staging- och prod-secrets av Marcus via egen terminal (nyckeln passerar aldrig chatten); ENVIRONMENT ger test: false i prod
+- [x] #2 DOCRAPTOR_API_KEY satt i staging- och prod-secrets av Marcus via egen terminal (nyckeln passerar aldrig chatten); ENVIRONMENT ger test: false i prod
 - [x] #3 fas4-prod-deploy.sh --kontrollera grön (inkl. TASK-308:s bucket-rad) → --deploya av Marcus; UPDATED_AT verifierad för de rörda EF:erna; allowlist-policyn bär de nya/ändrade EF:erna och inte test-docraptor-render
 - [ ] #4 Klienten landad via merge-kön och byggd av Vercel; röktest i prod av Marcus: skapa bekräftelsebilaga för ett riktigt event → filen i listan → bifogbar på Åtgärds-sidan → kvittoförhandsgranskning visar nya mallen utan vattenstämpel
 <!-- AC:END -->
