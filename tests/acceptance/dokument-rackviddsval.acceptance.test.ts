@@ -834,7 +834,7 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
     const rullande = page.getByTestId('dokument-lista');
     await expect(rullande).toHaveAttribute('tabindex', '0');
     await expect(rullande).toHaveAttribute('aria-label', 'Dokument');
-    // ═══ EXAKT FYRA RADER, KLIPPT VID SEPARATORN ═══
+    // ═══ EXAKT FYRA KORT, DET FEMTE HELT UTANFÖR KANTEN ═══
     //
     // Marcus 2026-08-18: *"se till att listan visar exakt 4 dokumentrader,
     // alltså att den fjärde längst ner klipps exakt precis över separatorn."*
@@ -843,58 +843,63 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
     // stället för att tyst acceptera en halv rad i underkanten.
     //
     // [TASK-309.24] `listHojd` jämförs mot `ul.clientHeight` (innehålls-
-    // höjden), INTE `getBoundingClientRect().height` (ul:ens EGNA border-box,
-    // border inkluderad). `<ul>` bär `border border-transparent` +
-    // `box-sizing: border-box` (Tailwind preflight) — `useLastaListhojd`
-    // (`DokumentYta.tsx`) kompenserar sin satta `style.height` med exakt
-    // kantbredden (mätt: utan kompensationen klipptes fjärde radens
-    // underkant 2 px för tidigt), så ul:ens EGEN border-box är nu MEDVETET
-    // 2 px större än radspannet — `clientHeight` (som utesluter border) är
-    // det jämförbara talet.
+    // höjden), INTE `getBoundingClientRect().height`. Skälet gällde `<ul>`s
+    // egen `border` och står kvar som historik; sedan T176 bär `<ul>` ingen
+    // kant alls, så de två talen sammanfaller — jämförelsen mot
+    // `clientHeight` är ändå den rätta, eftersom det är innehållsytan
+    // klippkanten faktiskt går vid.
     //
-    // [TASK-309.39] FJÄRDE RADENS EGEN SEPARATOR DRAS BORT — och det är
-    // testets förväntan som ändrades, inte produktregeln.
+    // ═══ [T176, 2026-08-29] SEPARATOR-TERMEN ÄR BORTA — MED KVITTENS ═══
     //
-    // Marcus regel ovan säger *"klipps exakt precis över separatorn"*.
-    // Fram till 309.39 mätte detta test `fjarde.bottom - forsta.top` rakt
-    // av, och det spannet INKLUDERAR fjärde radens `border-bottom`:
-    // Tailwind 4:s `divide-y` genererar `:where(& > :not(:last-child))
-    // { border-bottom-… }` (verifierat i `tailwindcss/dist/lib.js`), så
-    // linjen tillhör raden OVANFÖR mellanrummet — inte raden nedanför som
-    // i Tailwind 3. Att jämföra `clientHeight` mot det spannet krävde
-    // alltså att boxen slutade UNDER linjen i stället för över den, vilket
-    // är precis vad Marcus såg i prod 2026-08-29: *"listan ska sluta precis
-    // över den nedersta separatorn men det gör den inte just nu, jag ser
-    // den nedersta separatorn."*
+    // Fram till kortformen drog detta test bort fjärde radens `border-bottom`
+    // ur spannet (TASK-309.39: Tailwind 4:s `divide-y` lägger linjen på raden
+    // OVANFÖR mellanrummet, så den låg innanför spannet och reserverade plats
+    // åt en linje som inte skulle synas — precis vad Marcus såg i prod
+    // 2026-08-29: *"listan ska sluta precis över den nedersta separatorn men
+    // det gör den inte just nu, jag ser den nedersta separatorn."*).
     //
-    // Mätt vid övergången (denna fixtur, 9 rader): `clientHeight` gick
-    // 396 → 395 medan det gamla `fyraRader` stod kvar på 396 — differensen
-    // är exakt linjens 1 px. `fyraRader` nedan drar därför bort samma term
-    // som `useLastaListhojd`s NIVÅ 1 gör, och testet mäter åter samma sak
-    // som produktregeln säger.
+    // Separatorerna FINNS INTE LÄNGRE: varje `<li>` är ett kort med ränna
+    // omkring sig, `divide-y` är riven och `sistaRadenBarLinje` med den
+    // (Marcus kvitterade rivningen av höjdlåsets separator-halva samma dag;
+    // fyra-synliga-med-inline-rullning står kvar). Termen som drogs bort är
+    // därför konstant 0, och assertionen `fjardeSeparator > 0` — som fanns
+    // för att avdraget inte skulle passera av fel skäl — hade blivit en
+    // permanent falsk vakt.
     //
-    // Vid EXAKT fyra rader är fjärde raden `:last-child`, bär ingen
-    // `divide-y`-linje, och avdraget blir 0 — invarianten gäller alltså
-    // oförändrat i det gränsfallet (se `dokument-lista-hojdlas-tidpunkt`s
-    // negativa kontroll).
+    // ERSÄTTAREN PRÖVAR SAMMA SAK DIREKT, INTE SVAGARE: fjärde kortet ska
+    // ligga HELT innanför klippkanten och det femte HELT utanför. Ett halvt
+    // kort i underkanten är den regression regeln finns för, och den fångas
+    // nu utan att gå omvägen via en linje. Rännan bor INUTI `<li>` (`py-1`),
+    // så `fjarde.bottom - forsta.top` är fyra hela li-höjder och `listHojd`
+    // ska matcha det exakt.
     const geometri = await rullande.evaluate((ul) => {
       const items = Array.from(ul.children) as HTMLElement[];
+      const kort = Array.from(ul.querySelectorAll('[data-testid="dokument-fil"]'));
+      const ulTop = ul.getBoundingClientRect().top;
       const forsta = items[0].getBoundingClientRect();
       const fjarde = items[3].getBoundingClientRect();
-      const fjardeSeparator = Number.parseFloat(getComputedStyle(items[3]).borderBottomWidth) || 0;
+      const fjardeKort = kort[3].getBoundingClientRect();
+      const femteKort = kort[4] ? kort[4].getBoundingClientRect() : null;
       return {
         listHojd: ul.clientHeight,
-        fyraRader: fjarde.bottom - forsta.top - fjardeSeparator,
-        fjardeSeparator,
+        fyraRader: fjarde.bottom - forsta.top,
+        antalKort: kort.length,
+        // Innehållsytans nederkant i samma rymd som kortens kanter.
+        innehallBottom: Number.parseFloat(getComputedStyle(ul).borderTopWidth) + ul.clientHeight,
+        fjardeKortBottom: fjardeKort.bottom - ulTop,
+        femteKortTop: femteKort ? femteKort.top - ulTop : null,
         rullar: ul.scrollHeight > ul.clientHeight,
       };
     });
-    // Linjen FINNS i denna fixtur (nio rader, så fjärde raden är inte
-    // sista) — utan detta hade testet kunnat passera på att avdraget var
-    // noll av fel skäl.
-    expect(geometri.fjardeSeparator).toBeGreaterThan(0);
+    // Ett FEMTE kort finns i denna fixtur (sex rader) — utan det hade
+    // invarianten varit trivialt sann, samma disciplin som den gamla
+    // `fjardeSeparator > 0`-kontrollen bar.
+    expect(geometri.antalKort).toBe(6);
+    expect(geometri.femteKortTop).not.toBeNull();
     expect(geometri.listHojd).toBeCloseTo(geometri.fyraRader, 0);
     expect(geometri.rullar).toBe(true);
+    expect(geometri.fjardeKortBottom).toBeLessThanOrEqual(geometri.innehallBottom + 0.5);
+    expect(geometri.femteKortTop ?? 0).toBeGreaterThanOrEqual(geometri.innehallBottom - 0.5);
 
     // ═══ [T176] FILTERVÄXLINGS-BLOCKET ÄR RIVET, INTE TAPPAT ═══
     //

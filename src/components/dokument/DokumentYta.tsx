@@ -811,11 +811,12 @@ export function DokumentYta() {
  * intent-färgen under `prefers-contrast: more` — 11-golvet, som `ghost`
  * (transparent botten) inte kan ge här.
  *
- * [T176-TILLÄGG] Sedan raden fick sin egen hover-platta (`bg-bg-muted` mot
- * listans `bg-surface`, se `DokumentRadSkal`) har invarianten en TREDJE
- * grund: en `ghost`-knapp inuti raden hade hovrat till exakt radens egen
- * hover-ton. Namnknappen löser samma sak åt andra hållet — den bär INGEN
- * platta alls och låter raden bära återkopplingen.
+ * [T176-TILLÄGG, uppdaterat vid kortformen 2026-08-29] Invarianten har en
+ * TREDJE grund sedan raden blev ett KORT: `ghost`s hover ÄR `--mm-bg-muted`,
+ * alltså EXAKT den grå behållarton kortet ligger PÅ men inte bär — en
+ * knapp-platta i behållarens färg mitt i ett vitt kort. Namnknappen löser
+ * samma sak åt andra hållet: den bär INGEN platta alls och låter kortet
+ * bära återkopplingen (`--mm-bilagekort-bg-hover`, #edeee9).
  */
 const IKONKNAPP_KLASS = 'size-11 shrink-0 p-0';
 
@@ -917,40 +918,73 @@ const LISTA_SYNLIGA_RADER = 4;
  *      alltså viewport-oberoende av samma skäl 99 var det, men nu för den
  *      radform som FAKTISKT visas.
  *
- * Följden är att tom och fylld lista delar höjd igen (4 × 107 + kant), i
- * stället för att hoppa ~32 px när första dokumentet dyker upp. Talet
- * dupliceras medvetet i båda acceptance-sviterna (`FALLBACK_RADHOJD`) — se
- * deras egna kommentarer.
+ * Följden är att tom och fylld lista delar höjd igen, i stället för att
+ * hoppa ~32 px när första dokumentet dyker upp. Talet dupliceras medvetet i
+ * båda acceptance-sviterna (`FALLBACK_RADHOJD`) — se deras egna kommentarer.
+ *
+ * ═══ [T176, ANDRA STEGET SAMMA DAG] 107 → 124: TALET ÄR LI-HÖJDEN ═══
+ *
+ * Konstanten mäter numera `<li>`, inte kortet — och det är ingen
+ * detaljskillnad utan hela poängen. Sedan raden blev ett KORT bor RÄNNAN
+ * mellan korten INUTI `<li>` (`py-1`, 4 + 4 px), just för att hookens två
+ * mätvägar ska se samma tal: NIVÅ 1 mäter SPANNET rad1.top → rad4.bottom
+ * (ränna inräknad), NIVÅ 2 mäter MAX av radernas EGNA höjder. Ett `gap-*`
+ * på `<ul>` hade legat mellan raderna — med i spannet, utanför radhöjden —
+ * och de två nivåerna hade gett olika svar.
+ *
+ * UPPMÄTT, INTE RÄKNAT (acceptance-riggen, 2026-08-29): `radHojder` =
+ * [124, 124, 124, 124] vid 1280×720 och [124, 124] vid 375×800, med
+ * `<ul>`s låsta `hojd` = 496 px = 124 × 4 i båda fallen. Kortet självt
+ * mäter 116 px (`p-3` + 1 px kant runt tre led vars första är namnknappens
+ * 44 px träffyta); 124 = 116 + 8.
+ *
+ * FÖLJDEN ÄR ATT ALLA TRE NIVÅER GER EXAKT SAMMA HÖJD: 0 rader (NIVÅ 3,
+ * konstanten × 4), 1–3 rader (NIVÅ 2, MAX × 4) och 4+ (NIVÅ 1, spannet)
+ * landar alla på 496 px. `<ul>` bär dessutom ingen kant längre, så
+ * `kantjustering` är 0 — talet är rent.
  */
-const LISTA_FALLBACK_RADHOJD = 107;
+const LISTA_FALLBACK_RADHOJD = 124;
 
 /**
  * En rads EGEN separatorlinje i px — `border-bottom-width`, läst ur
  * renderad stil, aldrig antagen.
  *
- * ATT DEN SITTER PÅ `border-bottom` OCH INTE PÅ `border-top` ÄR EN MÄTT
- * EGENSKAP HOS TAILWIND 4, INTE EN SMAKSAK (TASK-309.39, 2026-08-29):
- * `divide-y` genererar i v4 `:where(& > :not(:last-child)) {
- * border-bottom-width: … }` — linjen tillhör alltså raden OVANFÖR
- * mellanrummet. I v3 var samma verktygsklass `border-top-width` på
- * `& > * + *`, alltså raden NEDANFÖR. Uppmätt i vår faktiska bundle
- * (`tailwindcss@4.2.2`): varje `<li>` bär `border-top: 0px` och
- * `border-bottom: 1px`.
+ * ═══ [T176, 2026-08-29] I KORTFORMEN RETURNERAR DEN ALLTID 0 ═══
  *
- * SKILLNADEN ÄR HELA TASK-309.39s ANDRA SYMPTOM. Med v3:s semantik hade
- * linjen mellan rad 4 och rad 5 tillhört rad 5 och legat utanför en box
- * som slutar vid rad 4:s underkant — helt utan avdrag. Med v4:s semantik
- * ligger den INNANFÖR rad 4:s egen `getBoundingClientRect().bottom`, och
- * en höjd satt till exakt det spannet reserverar plats åt just den linje
- * som INTE ska synas.
+ * Säg det rakt ut i stället för att låta namnet lova något (ADR-083):
+ * sedan varje `<li>` blev ETT KORT med ränna omkring sig bär ingen rad en
+ * `border-bottom`. `divide-y` är riven från `<ul>`, `sistaRadenBarLinje`
+ * är riven ur `berakaListgeometri`, och funktionen mäter därför `0px` på
+ * varje anrop — mätt i renderad yta, inte antaget.
  *
- * Läses per rad i stället för en gång för `<ul>`: linjen finns bara på
- * `:not(:last-child)` plus (via `sistaRadenBarLinje`) på sista raden i
- * 1–3- och 5+-lägena, så DEN AKTUELLA radens värde är det enda som säger
- * något — och 0 är ett giltigt, meningsfullt svar (fjärde raden ÄR sista,
- * exakt-fyra-fallet). `Number.parseFloat` av ett tomt/ogiltigt värde ger
- * `NaN`, som hade förgiftat hela höjduttrycket tyst; `|| 0` gör den
- * degraderingen explicit och ofarlig.
+ * DEN ÄR ÄNDÅ KVAR, OCH DET ÄR ETT VAL: `useLastaListhojd`s kropp är
+ * ORÖRD i denna ändring (bara dess argument och den renderade markupen
+ * ändras), och kroppen anropar den på två ställen. Att riva funktionen
+ * hade krävt en ändring inuti hooken — precis den kirurgi som gjorde
+ * TASK-309.24/.39 dyra. En nollterm kostar ingenting, och mekanismen
+ * finns kvar den dag en radform med egen underkant återinförs.
+ *
+ * HÖJDMATEMATIKEN BÄRS NU AV RÄNNAN I STÄLLET, och den ligger INUTI
+ * `<li>` (`py-1`, se `DokumentListRam`s docblock) just för att hookens
+ * mätningar — NIVÅ 1:s spann rad1.top→rad4.bottom och NIVÅ 2:s
+ * MAX-av-radhöjder — ska se SAMMA tal. Ett `gap-*` på `<ul>` hade legat
+ * mellan raderna: med i spannet, utanför radhöjden, alltså två olika
+ * "radhöjder" i samma hook.
+ *
+ * [HISTORIK, bevarad för nästa läsare] Att linjen satt på `border-bottom`
+ * och inte `border-top` var en MÄTT egenskap hos Tailwind 4, inte en
+ * smaksak (TASK-309.39, 2026-08-29): `divide-y` genererar i v4
+ * `:where(& > :not(:last-child)) { border-bottom-width: … }` — linjen
+ * tillhörde alltså raden OVANFÖR mellanrummet. I v3 var samma
+ * verktygsklass `border-top-width` på `& > * + *`, alltså raden NEDANFÖR.
+ * Med v3:s semantik hade linjen mellan rad 4 och rad 5 legat utanför en
+ * box som slutar vid rad 4:s underkant; med v4:s låg den innanför, och
+ * en höjd satt till exakt spannet reserverade plats åt just den linje som
+ * INTE skulle synas. Det var hela TASK-309.39s andra symptom.
+ *
+ * `Number.parseFloat` av ett tomt/ogiltigt värde ger `NaN`, som hade
+ * förgiftat hela höjduttrycket tyst; `|| 0` gör den degraderingen
+ * explicit och ofarlig.
  */
 function separatorBredd(rad: Element): number {
   return Number.parseFloat(getComputedStyle(rad).borderBottomWidth) || 0;
@@ -1276,22 +1310,28 @@ function useLastaListhojd(
  * nivåer, inklusive FALLBACK-nivån för 0 rader), aldrig villkorat av ett
  * eget booleskt fält här.
  *
- * `kanRulla` — rullar listan I DET AKTUELLA filtret? Styr tabb-stoppet
- * OCH overflow-läget (`hidden` när den inte kan rulla, `auto` när den kan
- * — regel 3: "overflow hidden när ≤ 4, auto när > 4").
+ * `kanRulla` — rullar listan? Styr tabb-stoppet OCH overflow-läget
+ * (`hidden` när den inte kan rulla, `auto` när den kan — regel 3:
+ * "overflow hidden när ≤ 4, auto när > 4").
  *
- * `sistaRadenBarLinje` — bär den sista SYNLIGA raden sin egen underkant?
- * INTE precis när den exakt fyller de fyra platserna
- * (`antalSynliga === LISTA_SYNLIGA_RADER`): då gör ytans egen kant redan
- * separatorns jobb, och ännu en linje hade legat dubbelt (samma motiv som
- * `d9d973d5`s `avslutaLista`). I alla andra fall — tomt läge undantaget
- * (0 bär aldrig linje), 1–3 och 5+ — bär sista raden linje.
+ * ═══ [T176, 2026-08-29] `sistaRadenBarLinje` ÄR RIVET — MED KVITTENS ═══
+ *
+ * Fältet svarade på frågan *"bär den sista SYNLIGA raden sin egen
+ * underkant?"* och fanns bara för att raderna skildes åt av
+ * separatorlinjer (`divide-y` på `<ul>`). I kortformen är VARJE `<li>`
+ * ett eget kort med luft omkring sig — rannan mellan korten ÄR
+ * avdelaren, och en linje ovanpå den hade varit två avdelare för samma
+ * skarv.
+ *
+ * MARCUS HAR KVITTERAT RIVNINGEN EXPLICIT (2026-08-29): höjdlåsets
+ * SEPARATOR-halva (*"fjärde linjen klipps / sista raden bär linje"*) går
+ * bort, medan FYRA-SYNLIGA-MED-INLINE-RULLNING står kvar oförändrad.
+ * Regel 2 (alltid exakt fyra raders höjd), regel 3 (overflow) och regel 5
+ * (boxen ändras inte) gäller ord för ord som förut — det är bara den
+ * linje-specifika halvan som saknar föremål efter formbytet.
  */
 function berakaListgeometri(antalSynliga: number) {
-  return {
-    kanRulla: antalSynliga > LISTA_SYNLIGA_RADER,
-    sistaRadenBarLinje: antalSynliga > 0 && antalSynliga !== LISTA_SYNLIGA_RADER,
-  };
+  return { kanRulla: antalSynliga > LISTA_SYNLIGA_RADER };
 }
 
 /**
@@ -1308,6 +1348,15 @@ function berakaListgeometri(antalSynliga: number) {
  * osynlig mot sin nya bakgrund. MÄTT, inte antaget:
  * `getComputedStyle` gav `pill=rgb(255,255,255)` och
  * `lista=rgb(255,255,255)` i renderad yta.
+ *
+ * [T176, 2026-08-29] NÄSTLINGEN ÖVERLEVDE KORTFORMEN, MEN BÄRAREN BYTTE:
+ * den vita ytan under pillen är numera BILAGEKORTET, inte `<ul>` (som är
+ * genomskinlig). `bg-bg-muted` står alltså kvar — men prövningen gjordes
+ * om, inte antogs: mätt i renderad yta bär pillen #f5f5f3 mot kortets
+ * #ffffff i vila och mot kortets hover-ton #edeee9 vid hover. Vid HOVER
+ * är pillen alltså LJUSARE än sin bakgrund i stället för mörkare —
+ * fortfarande ett synligt steg, men riktningen kastas om. Rör någon
+ * kortets hover-ton måste pillen mätas om igen.
  *
  * Det är sjätte gången samma token-identitet gjort något osynligt på DENNA
  * yta (ghost-hovern ×2, Ersätt/Radera, räckviddspillen, uppladdningsskalet
@@ -1464,25 +1513,50 @@ function oppnaDokument({
  * höger på rad 2–3, alltså två olika radformer i samma lista. Nu är
  * anatomin identisk på mobil och skrivbord.
  *
- * ── HOVERN LIGGER PÅ RADEN, INTE PÅ NAMNKNAPPEN ──
+ * ═══ [T176, 2026-08-29] RADEN ÄR ETT KORT — INGET KORT-I-KORT ═══
  *
- * Raden hovrar till `bg-bg-muted` (#f5f5f3) mot listans `bg-surface`
- * (#ffffff) — ETT tonsteg, exakt samma steg `HandlingsRad` gör från sitt
- * kort (#f5f5f3 → #edeee9). NAMNKNAPPEN bär därför INGEN egen platta:
+ * Marcus mandat samma dag: ETT kort per bilaga, hover på HELA kortet.
+ * Formen är `NavCard`s dialekt (`rounded-2xl`, transparent kant som tänds
+ * under `prefers-contrast: more`, mjuk färgövergång), men INTE `NavCard`s
+ * TOKENS — `--mm-navcard-bg` ÄR `--mm-bg-muted`, alltså exakt samma värde
+ * som den grå behållaren korten ligger i. Ett kort på NavCards tokens hade
+ * varit osynligt: sjunde instansen av filhuvudets token-identitetsfälla.
+ * Korten bär därför egna `--mm-bilagekort-*` (components.css), och
+ * nästlingen är omvänd mot NavCards: kortet är den LJUSA ytan mot en TONAD
+ * behållare.
  *
- *   • `ghost` hade gett hover `--mm-bg-muted` — IDENTISK med radens egen
- *     hover, alltså en osynlig knapp-platta ovanpå en synlig rad-platta.
- *     Det är samma token-identitets-fälla som fällt denna yta sex gånger
- *     (filhuvudets systemiska fynd).
+ * DEN VITA LISTYTAN ÄR RIVEN I SAMMA DRAG. `<ul>` bar tidigare
+ * `bg-surface` + `rounded-xl` + `divide-y` INUTI den grå behållaren — ett
+ * kort i ett kort, med linjer inuti. Nu ligger `<ul>` direkt på behållaren
+ * och den grå ytan syns bara som RÄNNAN mellan korten.
+ *
+ * ── HOVERN LIGGER PÅ KORTET, INTE PÅ NAMNKNAPPEN ──
+ *
+ * Kortet hovrar `--mm-bilagekort-bg` (#ffffff) → `--mm-bilagekort-bg-hover`
+ * (#edeee9). Tonen är vald mot BÅDA grannarna, inte efter vana:
+ * `bg-bg-muted` (#f5f5f3) hade varit IDENTISK med behållaren korten ligger
+ * i, och `bg-bg-subtle` (#fafaf8) för nära den. NAMNKNAPPEN bär därför
+ * INGEN egen platta:
+ *
+ *   • `ghost` hade gett hover `--mm-bg-muted` — alltså behållarens egen
+ *     ton, mitt i ett kort som INTE bär den. Samma token-identitets-fälla
+ *     som fällt denna yta sex gånger (filhuvudets systemiska fynd).
  *   • `primary`+`subtle` hade gett varje rads NAMN en permanent guldtonad
  *     platta — en lista som ser ut som en knapprad.
  *
- * Knappen är alltså transparent i alla lägen och låter radplattan bära
+ * Knappen är alltså transparent i alla lägen och låter kortet bära
  * återkopplingen; tangentbordet får sin egen ring ur den globala
  * `*:focus-visible`-regeln (base.css). ⋯-knappen behåller däremot
  * `primary`+`subtle` — dess hover (`--mm-button-primary-subtle-bg-hover`)
- * skiljer sig från BÅDE `bg-surface` och `bg-bg-muted`, så invarianten i
+ * skiljer sig från BÅDE kortets vita och dess hover-ton, så invarianten i
  * `IKONKNAPP_KLASS`s docblock hålls.
+ *
+ * KORTPADDINGEN ÄR 12 px (`p-3`) OCH DET ÄR MÄTT MOT HANDLINGSRADEN:
+ * kortets och knapparnas YTTERKANTER linjerar exakt (0 px, båda ligger vid
+ * behållarens innerkant), och kortets innehållskant (1 px kant + 12 px
+ * padding = 13 px) linjerar med "Skapa bilaga"-knappens (`outline`, alltså
+ * också 1 px kant + `px-3`). Mot "Ladda upp bilaga" (`solid`, ingen kant)
+ * blir det 1 px — kantens bredd, inte ett val.
  *
  * ═══ RADENS FORM ÄR LÅST TILL TRE LED (Marcus 2026-08-17, OFÖRÄNDRAT) ═══
  *
@@ -1591,7 +1665,7 @@ function DokumentRadSkal({
   return (
     <div
       data-testid="dokument-fil"
-      className="-mx-2 flex flex-nowrap items-start gap-2 rounded-lg px-2 py-2 hover:bg-bg-muted motion-safe:transition-colors"
+      className="flex flex-nowrap items-start gap-2 rounded-2xl border border-(--mm-bilagekort-border) bg-(--mm-bilagekort-bg) p-3 hover:bg-(--mm-bilagekort-bg-hover) motion-safe:transition-colors contrast-more:border-(--mm-bilagekort-border-contrast)"
     >
       <TypGlyf namn={namn} />
       <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
@@ -2136,11 +2210,17 @@ function ErsattningsFel({ replaceMutation }: { replaceMutation: ReplaceMutation 
  * den gråa ramen som är bakgrunden blir lite smalare också, stör mig lite på
  * att 'ramen' är så tjock."*
  *
- * Kortet (`grupp-kort`, `bg-bg-muted`) bär listans egen `bg-surface`-yta, och
- * dess padding ÄR därför en synlig ram. `p-4` → `p-2` halverar den och ger
- * listytan 16 px mer bredd. SYMMETRIN är oförändrad och icke förhandlingsbar
+ * Kortet (`grupp-kort`, `bg-bg-muted`) bär listan, och dess padding ÄR
+ * därför en synlig ram. `p-4` → `p-2` halverar den och ger listytan 16 px
+ * mer bredd. SYMMETRIN är oförändrad och icke förhandlingsbar
  * (Marcus 2026-08-18: *"den grå ramen ser bredare ut på sidorna än vad den är
  * över och under"*) — `p-2` är lika brett runtom, precis som `p-4` var.
+ *
+ * [T176, 2026-08-29] BEHÅLLAREN ÄR NU OCKSÅ RÄNNAN. Listan har ingen egen
+ * `bg-surface`-yta längre — bilagekorten bär den (`DokumentRadSkal`), och
+ * den grå tonen syns mellan dem. Samma 8 px runtom OCH mellan korten:
+ * radens `py-1` ger 4+4 px och wrapperns `-my-1` tar bort halvorna som
+ * annars hade lagt sig ovanpå ramen (se `DokumentListRam`).
  *
  * DELAD KONSTANT, INTE TVÅ STRÄNGAR: eventläget och räckviddsläget bar
  * identiska men separata klass-strängar för både kortet och `<ul>`:et. De hade
@@ -2158,22 +2238,46 @@ const GRUPPKORT_KLASS =
  * `aria-label` stöds inte av en rollös `<div>` (biome
  * `useAriaPropsSupportedByRole` fällde exakt det, mätt 2026-08-18), och
  * listrollen bär namnet. Det är dessutom husets form för samma sak
- * (`NyaAnmalningar.tsx`, `Deltagare.tsx`). `divide-y` opererar på direkta
- * barn, så avdelarna följer `<li>`-elementen.
+ * (`NyaAnmalningar.tsx`, `Deltagare.tsx`).
  *
- * LISTAN ÄR EN EGEN YTA: `bg-surface` MOT KORTETS `bg-bg-muted`. Marcus
- * 2026-08-18: *"vi behöver ge inline-scroll-ytan en annan färg/toning"*.
- * TOKENVALET ÄR PÅTVINGAT, INTE SMAK — kortet ÄR `bg-bg-muted`, så en lista
- * med samma token hade varit OSYNLIG (filhuvudets systemiska fynd: sex
- * instanser av exakt den felklassen på denna yta).
+ * ═══ [T176, 2026-08-29] LISTAN HAR INGEN EGEN YTA LÄNGRE ═══
  *
- * INLINE-RULLNING är husets etablerade form (`NyaAnmalningar.tsx`,
- * `ForfallnaBetalningar.tsx` ×3, `Deltagare.tsx`, `EventValjare`s listbox) —
- * klasserna är kopierade ur den, inte uppfunna. TABB-STOPPET sätts BARA när
- * listan faktiskt rullar (`Deltagare.tsx`s förfining: *"ett fokuserbart
- * område utan funktion vore ett tomt stopp i tangentbordsflödet"*); när den
- * rullar är `tabIndex={0}` ett WCAG 2.1.1-golv (axe
- * `scrollable-region-focusable`).
+ * `bg-surface`, `rounded-xl`, `px-3`, `border` och `divide-y` är RIVNA.
+ * `<ul>` är sedan kortformen en GENOMSKINLIG rullningsbox: den vita ytan
+ * bor i varje `<li>`s eget kort, och den grå behållaren
+ * (`GRUPPKORT_KLASS`) syns som RÄNNAN mellan korten.
+ *
+ * DET UPPHÄVER ETT TIDIGARE BESLUT, ÖPPET: Marcus 2026-08-18 bad om att
+ * *"ge inline-scroll-ytan en annan färg/toning"*, och listan fick då sin
+ * egen `bg-surface`. Kravet bakom önskemålet — att listan ska skilja sig
+ * från behållaren — uppfylls fortfarande, men av korten i stället för av
+ * en yta bakom dem. Ett kort inuti ett kort var vad Marcus 2026-08-29 bad
+ * bort ("inget kort-i-kort").
+ *
+ * TOKENVALET ÄR FORTFARANDE PÅTVINGAT, INTE SMAK: korten kan inte bära
+ * `--mm-bg-muted` (behållarens egen ton) och inte `NavCard`s tokens (som
+ * ÄR `--mm-bg-muted`) — se `--mm-bilagekort-*` i `components.css`.
+ *
+ * SCROLLBAREN ÄR PLATTFORMENS, INTE HUSETS `scrollbar-inline` — OCH DET
+ * ÄR MÄTT. `scrollbar-inline` sätter `scrollbar-width: thin` +
+ * `scrollbar-gutter: stable`, vilket i Chromium på macOS äter 11 px ur
+ * `<ul>`s CONTENT-box (mätt 2026-08-29: `offsetWidth` 518 mot
+ * `clientWidth` 505 = 2 px kant + 11 px ränna) — men BARA när
+ * `overflow-y` är `auto`. Med kortformen hade korten därmed blivit 11 px
+ * smalare på höger sida så fort listan råkade ha fem poster i stället för
+ * fyra, alltså olika kortbredd för olika event och en synlig
+ * felinriktning mot handlingsradens knappar ovanför. Utan klassen
+ * använder Chromium på macOS sin OVERLAY-scrollbar: noll reserverad
+ * bredd, korten linjerar med knapparna i BÅDA lägena, och tumven tonar
+ * in vid rullning. Affordansen vid vila bärs av uttoningen nedan — den
+ * finns till just för att overlay-scrollbaren inte syns då.
+ *
+ * INLINE-RULLNING är i övrigt husets etablerade form (`NyaAnmalningar.tsx`,
+ * `ForfallnaBetalningar.tsx` ×3, `Deltagare.tsx`, `EventValjare`s listbox).
+ * TABB-STOPPET sätts BARA när listan faktiskt rullar (`Deltagare.tsx`s
+ * förfining: *"ett fokuserbart område utan funktion vore ett tomt stopp i
+ * tangentbordsflödet"*); när den rullar är `tabIndex={0}` ett WCAG
+ * 2.1.1-golv (axe `scrollable-region-focusable`).
  *
  * ── RULLNINGSSKUGGAN: DOLDA RADER SKA SYNAS SOM DOLDA (T176) ──
  *
@@ -2205,6 +2309,9 @@ const GRUPPKORT_KLASS =
  * som en rad, och en padding/margin hade förskjutit spannet. En absolut
  * positionerad syskon-`<span>` i en `relative` wrapper rör ingendera.
  *
+ * [T176] Den slutar vid FJÄRDE KORTETS underkant (`bottom-1`), inte vid
+ * `<ul>`:ets — de skiljer sig 4 px sedan rännan bor inuti `<li>`.
+ *
  * DEN FÖRSVINNER VID BOTTEN. En skugga som ligger kvar när man rullat hela
  * vägen ner ljuger — den säger "mer finns" om ett tomt slut. `onScroll`
  * (billig: listan har fyra synliga rader, ingen virtualisering) sätter
@@ -2221,20 +2328,29 @@ function DokumentListRam({
   listRef,
   matadHojd,
   kanRulla,
-  sistaRadenBarLinje,
   ariaLabel,
   children,
 }: {
   listRef: React.RefObject<HTMLUListElement | null>;
   matadHojd: number | null;
   kanRulla: boolean;
-  sistaRadenBarLinje: boolean;
   ariaLabel: string;
   children: React.ReactNode;
 }) {
   const [vidBotten, setVidBotten] = useState(false);
   return (
-    <div className="relative">
+    // `-my-1` NEUTRALISERAR RADENS HALVA RÄNNA MOT BEHÅLLARENS RAM. Varje
+    // `<li>` bär `py-1` (4 px över + 4 px under = 8 px ränna MELLAN korten),
+    // vilket också lägger 4 px överst och nederst i `<ul>`. Utan
+    // kompensationen hade den grå ramen mätt 12 px över/under mot 8 px på
+    // sidorna — exakt den asymmetri Marcus fångade 2026-08-18 (*"den grå
+    // ramen ser bredare ut på sidorna än vad den är över och under"*), fast
+    // spegelvänd. Med den mäter ramen 8 px runtom och rännan 8 px.
+    //
+    // MARGINALEN, INTE `gap-*`, BÄR RÄNNAN — se `<li>`-kommentaren i
+    // `DokumentLista`: ett `gap` hade legat MELLAN raderna och därmed synts i
+    // höjdlåsets NIVÅ 1-spann men inte i dess NIVÅ 2-radhöjd.
+    <div className="relative -my-1">
       <ul
         ref={listRef}
         data-testid="dokument-lista"
@@ -2253,13 +2369,10 @@ function DokumentListRam({
         // NATURLIGA höjd, vilket är exakt vad mätningen själv behöver läsa av.
         // Låsningen är OVILLKORAD — se `berakaListgeometri`s docblock.
         style={matadHojd !== null ? { height: matadHojd, maxHeight: matadHojd } : undefined}
-        className={`focus-ring-inset scrollbar-inline divide-y divide-border rounded-xl border border-transparent bg-surface px-3 contrast-more:divide-border-strong contrast-more:border-border-strong ${
-          kanRulla ? 'overflow-y-auto' : 'overflow-y-hidden'
-        } ${
-          sistaRadenBarLinje
-            ? '[&>li:last-child]:border-border [&>li:last-child]:border-b contrast-more:[&>li:last-child]:border-border-strong'
-            : ''
-        }`}
+        // [T176] INGEN egen yta kvar: `bg-surface`, `rounded-xl`, `px-3`,
+        // `border` och `divide-y` är rivna. Korten ÄR ytorna; `<ul>` är den
+        // genomskinliga rullningsboxen omkring dem.
+        className={`focus-ring-inset ${kanRulla ? 'overflow-y-auto' : 'overflow-y-hidden'}`}
       >
         {children}
       </ul>
@@ -2267,7 +2380,12 @@ function DokumentListRam({
         <span
           aria-hidden="true"
           data-testid="lista-uttoning"
-          className="pointer-events-none absolute inset-x-px bottom-px h-6 rounded-b-xl bg-linear-to-t from-(--mm-state-hover) to-transparent contrast-more:h-1 contrast-more:rounded-none contrast-more:bg-border-strong contrast-more:bg-none"
+          // `bottom-1` — inte `bottom-px`: `<ul>` slutar 4 px under fjärde
+          // kortets underkant (radens `py-1`), och en skugga som lade sig i
+          // den grå rännan hade läst som ett streck i ramen. Nu slutar den
+          // exakt vid kortets kant, med `rounded-b-2xl` som följer kortets
+          // egen radie.
+          className="pointer-events-none absolute inset-x-0 bottom-1 h-6 rounded-b-2xl bg-linear-to-t from-(--mm-state-hover) to-transparent contrast-more:h-1 contrast-more:rounded-none contrast-more:bg-border-strong contrast-more:bg-none"
         />
       )}
     </div>
@@ -2348,7 +2466,7 @@ function DokumentLista({
   // `AirtableAdapter.berikaMedInaktuell` § docblock).
   const skapaOmMutation = useSkapaOmEventBilaga(eventId);
 
-  const { kanRulla, sistaRadenBarLinje } = berakaListgeometri(rader.length);
+  const { kanRulla } = berakaListgeometri(rader.length);
   const { listRef, hojd: matadHojd } = useLastaListhojd(
     rader.length >= LISTA_SYNLIGA_RADER,
     true,
@@ -2380,11 +2498,27 @@ function DokumentLista({
             listRef={listRef}
             matadHojd={matadHojd}
             kanRulla={kanRulla}
-            sistaRadenBarLinje={sistaRadenBarLinje}
             ariaLabel="Dokument"
           >
+            {/* ═══ RÄNNAN BOR INUTI `<li>` (`py-1`), ALDRIG SOM `gap-*` PÅ
+                `<ul>` — OCH DET ÄR HÖJDLÅSET SOM KRÄVER DET ═══
+
+                `useLastaListhojd` mäter på TVÅ sätt: NIVÅ 1 tar SPANNET
+                rad1.top → rad4.bottom, NIVÅ 2 tar MAX av radernas EGNA
+                höjder × 4. Ett `gap` ligger MELLAN raderna: med i spannet,
+                utanför radhöjden — alltså två olika svar på "hur hög är en
+                rad" i samma hook, och en box som ändrar sig när listan går
+                från tre till fyra poster. Med rännan INUTI raden ser båda
+                nivåerna samma tal (kort + 8 px), och hookens kropp plus
+                `LISTA_SYNLIGA_RADER` står orörda.
+
+                `py-1` (4 px + 4 px) och INTE `pb-2` på alla utom den sista:
+                den formen hade gett raderna två olika höjder (sista utan
+                ränna), vilket bryter samma likhet igen — fyra och fem
+                poster hade då fått olika låst höjd. Halvorna över och under
+                tas ut av wrapperns `-my-1`, se `DokumentListRam`. */}
             {rader.map((r) => (
-              <li key={r.current.id}>
+              <li key={r.current.id} className="py-1">
                 <BilageRadRow
                   eventId={eventId}
                   rad={r}
@@ -2395,7 +2529,10 @@ function DokumentLista({
               </li>
             ))}
             {rader.length === 0 && (
-              <li className="py-3 text-small text-text-muted">
+              // TOMT LÄGE = INGET KORT. Det finns ingen bilaga att teckna ett
+              // kort omkring; texten står direkt på behållarens grå yta, med
+              // `px-3` så den börjar där kortens innehåll skulle ha börjat.
+              <li className="px-3 py-4 text-small text-text-muted">
                 Inga bilagor för det här eventet än.
               </li>
             )}
@@ -2981,7 +3118,7 @@ function GemensamtLage({
   // varit OVILLKORAD här sedan TASK-309.24 (`matbar` konstant sant). Sedan
   // T176 gäller samma sak i eventläget — de två inkopplingarna skiljer sig nu
   // bara i företrädesvillkoret, se `DokumentLista`s docblock.
-  const { kanRulla, sistaRadenBarLinje } = berakaListgeometri(rader.length);
+  const { kanRulla } = berakaListgeometri(rader.length);
   const { listRef, hojd: matadHojd } = useLastaListhojd(true, true, rader.length, rader);
   return (
     <div className="flex flex-col gap-4">
@@ -3020,11 +3157,12 @@ function GemensamtLage({
               listRef={listRef}
               matadHojd={matadHojd}
               kanRulla={kanRulla}
-              sistaRadenBarLinje={sistaRadenBarLinje}
               ariaLabel="Delade dokument"
             >
+              {/* `py-1` — se eventlägets kommentar på samma rad för varför
+                  rännan bor i `<li>` och inte i ett `gap`. */}
               {rader.map((r) => (
-                <li key={r.current.id}>
+                <li key={r.current.id} className="py-1">
                   <GemensamBilageRadRow
                     rad={r}
                     onReplace={onReplace}
@@ -3037,7 +3175,8 @@ function GemensamtLage({
                 </li>
               ))}
               {rader.length === 0 && (
-                <li className="py-3 text-small text-text-muted">Inga delade dokument än.</li>
+                // Tomt läge = inget kort — se eventlägets motsvarighet.
+                <li className="px-3 py-4 text-small text-text-muted">Inga delade dokument än.</li>
               )}
             </DokumentListRam>
           </div>
