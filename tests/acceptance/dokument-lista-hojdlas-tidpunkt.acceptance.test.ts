@@ -237,6 +237,30 @@ test.describe('S1 — höjden är låst från listans FÖRSTA målade ram', () =
     expect(geometri.hojd).toBeGreaterThanOrEqual(maxRad * 4 - 2);
   });
 
+  test('AC #2/#5: NIVÅ 3 är nåbar även i DokumentLista — ?typ=bilaga på ett event UTAN bilagor', async ({
+    page,
+    network,
+  }) => {
+    // Låser den nåbarhet `LISTA_FALLBACK_RADHOJD`s docblock beskriver efter
+    // 309.39. Komponenten monteras MED filtret 'bilaga', så den renderar
+    // aldrig i 'alla' — `senastUppmattRadhojd` är `null` när nödmätningen
+    // kör, och NIVÅ 3 använder konstanten. Före 309.39 var vägen ofarlig
+    // bara för att höjden inte sattes alls (symptom S1); nu ÄR den nåbar,
+    // och då ska den också vara mätt i stället för påstådd.
+    network.use(handler(0, 0));
+    await page.goto(`/mer/dokument?event=${VISUAL_EVENT_ID}&typ=bilaga`);
+    await expect(page.getByText('Inga bilagor för det här eventet än.')).toBeVisible();
+
+    const geometri = await matGeometri(page);
+    expect(geometri.last).toBe(true);
+    // Talet DUPLICERAS medvetet, samma disciplin som systerfilens
+    // `FALLBACK_DESKTOP` — se dess kommentar.
+    const FALLBACK = 99;
+    expect(geometri.hojd).toBeGreaterThanOrEqual(FALLBACK * 4);
+    expect(geometri.hojd).toBeLessThanOrEqual(FALLBACK * 4 + 8);
+    expect(geometri.scrollHeight).toBe(geometri.clientHeight);
+  });
+
   test('AC #1/#4: samma invariant vid 375 px', async ({ page, network }) => {
     await page.setViewportSize({ width: 375, height: 800 });
     network.use(handler(2, 2, 400));

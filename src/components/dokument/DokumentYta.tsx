@@ -659,12 +659,32 @@ const LISTA_SYNLIGA_RADER = 4;
  * ENDAST när (a) noll RIKTIGA rader finns i DOM (bara tomt-lägets
  * placeholder-`<li>`) OCH (b) ingen mätning — varken PRECIS eller ESTIMAT —
  * någonsin skett i detta komponent-liv (`senastUppmattRadhojd.current ===
- * null`). I PRAKTIKEN bara nåbar i `GemensamtLage` vid ett events ALLRA
- * FÖRSTA rendering med noll delade dokument: `DokumentLista` har alltid
- * minst `MALLAR.length + GENERATORER.length === 3` RIKTIGA rader synliga i
- * 'alla' (default-filtret) och har därför redan skrivit
- * `senastUppmattRadhojd` långt innan 'bilaga' någonsin kan visa 0
- * (`bilagaKanMataExakt`s docblock nedan).
+ * null`).
+ *
+ * NÅBAR I BÅDA LISTORNA (rättat i TASK-309.39 — stycket sade tidigare
+ * `GemensamtLage` ENSAMT, och `harMattAlls`-nödmätningen gjorde det
+ * falskt):
+ *
+ *   • `GemensamtLage`, vid ett events ALLRA FÖRSTA rendering med noll
+ *     delade dokument. Oförändrat sedan TASK-309.24.
+ *   • `DokumentLista`, vid SIDLADDNING direkt i `?typ=bilaga` på ett event
+ *     UTAN bilagor. Filtret visar då bara tomt-lägets placeholder-`<li>`
+ *     (`antalSynliga === 0`), och eftersom komponenten monteras MED det
+ *     filtret har den aldrig renderat i 'alla' — `senastUppmattRadhojd` är
+ *     alltså `null` när nödmätningen kör. Mätt 2026-08-29: 398 px, alltså
+ *     `LISTA_FALLBACK_RADHOJD × 4 + kantjustering`.
+ *
+ * DET GAMLA PÅSTÅENDET VAR SANT FÖR SIN EGEN KOD, INTE FÖR DENNA. Det löd
+ * att `DokumentLista` *"har alltid minst `MALLAR.length +
+ * GENERATORER.length === 3` RIKTIGA rader synliga i 'alla' (default-filtret)
+ * och har därför redan skrivit `senastUppmattRadhojd`"*. Den slutledningen
+ * förutsätter att komponenten NÅGON GÅNG renderat i 'alla' — vilket den
+ * inte gör när `?typ=` redan står på 'bilaga' vid mount. Före 309.39 var
+ * det ofarligt eftersom höjden då inte sattes ALLS (det var symptom S1);
+ * nödmätningen gör vägen nåbar, och därmed påståendet fel.
+ *
+ * Test: `dokument-lista-hojdlas-tidpunkt.acceptance.test.ts` § "NIVÅ 3 är
+ * nåbar även i DokumentLista".
  *
  * [RUNDA 2, ANDRA VARVET — review-fynd, orkestrerarens/Marcus mandat
  * 2026-08-26] FÖRSTA VARVETS TAL (155 för mobil) VAR FEL VAL, INTE FEL

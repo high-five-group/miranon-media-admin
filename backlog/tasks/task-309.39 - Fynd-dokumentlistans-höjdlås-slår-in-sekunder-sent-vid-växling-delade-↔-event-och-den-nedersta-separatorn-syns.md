@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-29 07:54'
-updated_date: '2026-08-29 08:21'
+updated_date: '2026-08-29 08:52'
 labels:
   - ready-for-agent
 dependencies: []
@@ -117,4 +117,46 @@ Ingen. Samtliga premisser prövade mot disk och bekräftade — se PR-beskrivnin
 ## Öppet, ej gjort
 
 `?typ`-nyckelns överlevnad vid räckviddsbyte (se Förkastade alternativ). Produktfråga för Marcus, inte en kvarvarande bugg: höjdlåset är korrekt oavsett hur den frågan avgörs.
+
+---
+
+## Runda 2 (orkestrerar-uppdrag, 2026-08-29)
+
+### 1. CI-rött på `dokument-rackviddsval` — var min 1 px-korrigering, prövat först
+
+CI run 33243034215 föll på `dokument-rackviddsval.acceptance.test.ts:326` "inline-rullningen: tabb-stopp och max-höjd bara när listan faktiskt rullar", tre försök av tre. Reproducerat lokalt mot grenen FÖRE någon ändring:
+
+```text
+Error: expect(received).toBeCloseTo(expected, precision)
+Expected: 396
+Received: 395
+Expected difference: < 0.5
+Received difference:   1
+```
+
+`Received: 395` är `ul.clientHeight` efter korrigeringen; `Expected: 396` är testets `fyraRader = fjarde.bottom - forsta.top`, alltså spannet INKLUSIVE fjärde radens separator. Differensen är exakt linjens 1 px — samma term som NIVÅ 1 nu drar bort. Det var alltså denna diff, inte något annat.
+
+**Testets förväntan uppdaterad till den nya produktregeln, inte tvärtom.** `fyraRader` drar nu bort `getComputedStyle(items[3]).borderBottomWidth` — samma avdrag som `useLastaListhojd`. Ett nytt `expect(geometri.fjardeSeparator).toBeGreaterThan(0)` säkrar att linjen FINNS i fixturen (nio rader), så testet inte kan passera på ett nollavdrag av fel skäl. Motivet står i testets egen kommentar (Tailwind 4 kontra 3, mätningen 396 -> 395).
+
+### 2. Review-fyndet: `LISTA_FALLBACK_RADHOJD`-docblocket
+
+Granskaren hade rätt. Stycket påstod att NIVÅ 3 "I PRAKTIKEN bara [är] nåbar i `GemensamtLage`", med motiveringen att `DokumentLista` alltid har minst tre riktiga rader i 'alla'. Den slutledningen förutsätter att komponenten NÅGON GÅNG renderat i 'alla' — vilket den inte gör när `?typ=bilaga` redan står i URL:en vid mount. Före 309.39 var det ofarligt eftersom höjden då inte sattes alls (det VAR symptom S1); `harMattAlls`-nödmätningen gör vägen nåbar och påståendet falskt.
+
+Stycket är omskrivet med båda nåbara vägarna. **Och nåbarheten är MÄTT, inte påstådd** — nytt testfall "NIVÅ 3 är nåbar även i DokumentLista — `?typ=bilaga` på ett event UTAN bilagor" låser den: höjden är låst, `hojd` ligger inom `FALLBACK * 4` .. `+ 8`, ingen scroll. Uppmätt 398 px. Inga andra prosa-ändringar gjorda.
+
+### Grindar runda 2 (mätta exitkoder, nakna)
+
+| Grind | Exit |
+|---|---|
+| `npm run typecheck` | 0 |
+| `npx @biomejs/biome check .` | 0 |
+| `node scripts/check-langa-streck.mjs` | 0 |
+| acceptance, HELA `tests/acceptance/dokument-*` (9 filer) | **0 — 57 passed** |
+| acceptance, omkörning efter biome-formatering (rackviddsval + hojdlas x2) | 0 — 40 passed |
+
+Nya sviten är nu 10 fall (var 9). Det tidigare fällande `inline-rullningen`-testet är grönt.
+
+### Ej rört
+
+`?typ`-nollställning vid räckviddsbyte — orkestreraren har avgjort JA på Marcus mandat, men i ett EGET kort. Inte berörd i denna PR.
 <!-- SECTION:NOTES:END -->
