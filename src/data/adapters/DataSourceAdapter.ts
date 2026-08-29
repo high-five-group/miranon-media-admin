@@ -437,9 +437,19 @@ export interface DataSourceAdapter {
    * Dokument-ytans RÄCKVIDDSLÄGE (läget utan valt event, ORDLISTA.md §
    * Gemensam bilaga). GET mot get-event-attachments-EF:en UTAN `eventId`
    * (den nya, valfria query-param-formen) — SAMMA endpoint som
-   * `fetchEventAttachments`, en annan gren server-side (ingen eventunion,
-   * bara `Räckvidd = Gemensam` sedan TASK-338.2 — tidigare `Räckvidd IN
-   * (Kurstyp, Alla event)`, se get-event-attachments/index.ts § filhuvudet). EGEN adapter-metod i stället för att göra
+   * `fetchEventAttachments`, en annan gren server-side (ingen eventunion).
+   *
+   * [PREMISSEN SKÄRPT, TASK-338.3 runda 3] Den gamla lydelsen sade `Räckvidd
+   * IN (Kurstyp, Alla event)` (TASK-275.2:s tre rivna filterByFormula-
+   * mängder); min egen första rättelse sade `Räckvidd = Gemensam`, vilket är
+   * närmare men fortfarande inte vad EF:en gör. FAKTISKT, sedan TASK-338.2:
+   * en hämtning med `NOT({Räckvidd} = 'Event')` — en medveten SUPERMÄNGD —
+   * följd av kod-grinden `arGemensam` efter normalisering. Två steg, inte
+   * ett, eftersom formeln måste släppa igenom legacy-värdena (som
+   * normaliseras till Gemensam i kod) men koden måste hålla ute raderna med
+   * TOMT `Räckvidd`. Se get-event-attachments/index.ts § fetchAllaGemensamma.
+   *
+   * EGEN adapter-metod i stället för att göra
    * `fetchEventAttachments`s `eventId`-parameter valfri: två genuint olika
    * frågor (ett events dokument vs. ALLA gemensamma dokument) förtjänar
    * varsitt namn — "håll adapter-API:t smalt och välnamnat" gäller åt båda

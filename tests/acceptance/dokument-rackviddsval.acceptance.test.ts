@@ -310,6 +310,9 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
     // (DESIGN-SYSTEM-SPEC.md § 21, ADR-121 beslut 4): inline MessageBox,
     // intill det som gick fel.
     await expect(dialog.getByText('Platserna kunde inte hämtas')).toBeVisible();
+    // Och den är en RIKTIG alert i tillgänglighetsträdet, inte bara synlig
+    // text — se det egna testet nedan för varför tidpunkten är hela poängen.
+    await expect(dialog.getByRole('alert')).toBeVisible();
 
     // Plats-axeln är AVSTÄNGD i stället för tomt lockande.
     await expect(platsValjare(page)).toBeDisabled();
@@ -328,6 +331,64 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
     // De två axlar som INTE beror på platslistan fungerar oförändrat.
     await valjIAxel(page, familjValjare, 'RIM');
     await expect(dialog.locator('[aria-live="polite"]')).toHaveText('Gäller: RIM-event');
+  });
+
+  test('platslistans fel MONTERAS först när det delade läget aktiveras — annars annonseras alerten aldrig', async ({
+    page,
+    network,
+  }) => {
+    // ═══ REGRESSIONSVAKT FÖR EN TYST A11Y-DEFEKT (runda 3) ═══
+    //
+    // `MessageBox intent="error"` renderar `role="alert"`. En alert annonseras
+    // när noden DYKER UPP i tillgänglighetsträdet — inte när den blir synlig.
+    //
+    // Villkorad bara på `platserFel` monterades rutan redan vid dialogens
+    // öppning, alltså INUTI axelblocket som är `inert` i eventläget (och
+    // dialogen initieras till EVENT när ett event är valt). `inert` tar bort
+    // hela underträdet ur tillgänglighetsträdet, så alerten fyrade där ingen
+    // kunde höra den — och när Lotta sedan växlade till "Delat dokument"
+    // fanns noden redan, så det fyrade inget då heller. Felet var SYNLIGT men
+    // aldrig ANNONSERAT: tyst för precis den grupp som inte kan se att
+    // Plats-selecten är avstängd.
+    //
+    // ═══ VARFÖR `locator('[role="alert"]')` OCH INTE `getByRole('alert')` ═══
+    //
+    // MÄTT, inte resonerat: en första version av detta test använde
+    // `getByRole('alert')` för BÅDA halvorna och PASSERADE mot den buggiga
+    // koden (mutation: `gemensam &&` borttaget → exit 0). `getByRole` gör
+    // ARIA-uppslag och utesluter därför noder som är dolda/`inert` — alltså
+    // exakt de noder buggen producerar. Assertionen kunde inte skilja "aldrig
+    // monterad" från "monterad men inert", och var en tyst falsk grön.
+    //
+    // `locator('[role="alert"]')` är ett CSS-attributuppslag och räknar noden
+    // oavsett `inert`/synlighet. DEN skiljer de två fallen. Paret nedan mäter
+    // därför två OLIKA saker med avsikt: DOM-närvaro (får inte finnas) före
+    // växlingen, och tillgänglighetsträdet (ska annonseras) efter.
+    network.use(bilagorHandler());
+    network.use(http.get(EF('get-places'), () => new Response(null, { status: 500 })));
+
+    await gotoEventlage(page);
+    await oppnaRackviddsdialog(page);
+    const dialog = page.getByRole('dialog');
+    const alertINagonForm = dialog.locator('[role="alert"]');
+
+    // Eventläget: axelblocket är `inert`. Alerten får INTE vara monterad ens
+    // i DOM — hade den varit det (osynlig/inert) vore annonseringen förbrukad.
+    await expect(dialog.getByRole('radio', { name: EVENT_RADIO })).toBeChecked();
+    await expect(alertINagonForm).toHaveCount(0);
+
+    // Växlingen aktiverar blocket OCH monterar alerten i samma ögonblick.
+    await valjRackvidd(page, DELAT_RADIO);
+    await expect(alertINagonForm).toHaveCount(1);
+    // ...och nu ÄR den i tillgänglighetsträdet (`getByRole` gör ARIA-uppslag
+    // och hade inte hittat en `inert` nod).
+    await expect(dialog.getByRole('alert')).toBeVisible();
+    await expect(dialog.getByRole('alert')).toContainText('Platserna kunde inte hämtas');
+
+    // Och tillbaka: alerten avmonteras igen, så nästa växling till det delade
+    // läget annonserar på nytt i stället för att stå kvar som en död nod.
+    await valjRackvidd(page, EVENT_RADIO);
+    await expect(alertINagonForm).toHaveCount(0);
   });
 
   test('AC #2: räckviddsläget (utan valt event) visar gemensamma dokument, "Bara detta event" avstängd', async ({
