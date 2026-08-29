@@ -316,10 +316,27 @@ body {
    i `@layer utilities` och olagrad author-CSS besegrar ALLA lagrade regler
    oavsett specificitet (samma kaskad-arkitektur som noten vid `@layer base`
    längre ner beskriver). Specificiteten är alltså rätt verktyg, men bara
-   inom samma olagrade kontext. */
+   inom samma olagrade kontext.
+
+   [T176, 2026-08-29] TRIGGERN TILLAGD (`[data-rac][aria-haspopup]`) — tredje
+   instansen av samma defektklass, denna gång på knappen som ÖPPNAR
+   popovern. RAC återlämnar fokus programmatiskt till triggern när overlayen
+   stänger; webbläsarens `:focus-visible`-heuristik klassar skript-fokus som
+   tangentbord och globalen målar — även när stängningen skedde med MUS.
+   MÄTT vid 390 px före regeln, mus-öppna + musklick utanför:
+   `data-focus-visible: null` (RAC säger PEKARE) men `outline: solid 2px
+   rgb(27, 73, 101)`. Gällde `Skapa dokument ▾`, radernas ⋯ OCH
+   eventväljaren — `aria-haspopup` är `"true"` för menyer och `"listbox"`
+   för Select/EventValjare, så attributets NÄRVARO är det som träffar exakt
+   popover-triggers och inget annat.
+
+   `:not([data-focus-visible])` bevarar tangentbordsringen, och den är mätt
+   i båda riktningarna: Escape-stängning ger `data-focus-visible="true"` +
+   ring KVAR, och ren Tab till triggern likaså. */
 [role="listbox"][data-rac]:focus-visible:not([data-focus-visible]),
 [role="listbox"] [data-rac]:focus-visible:not([data-focus-visible]),
-[role="menu"][data-rac]:focus-visible:not([data-focus-visible]) {
+[role="menu"][data-rac]:focus-visible:not([data-focus-visible]),
+[data-rac][aria-haspopup]:focus-visible:not([data-focus-visible]) {
   outline: none;
 }
 
