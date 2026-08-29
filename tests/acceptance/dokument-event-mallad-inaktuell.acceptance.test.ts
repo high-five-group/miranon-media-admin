@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import type { NetworkFixture } from '@msw/playwright';
+import type { Locator, Page } from '@playwright/test';
 import { http } from 'msw';
 import { berakaAktuellKallhash } from '../../src/data/adapters/mallKallhash';
 import type { DocumentSources } from '../../src/domain/models/DocumentSources';
@@ -122,6 +123,21 @@ function mockDokumentYta(
   return { ersattBody: () => ersattBody };
 }
 
+/**
+ * Radens ⋯-meny → posten `etikett`.
+ *
+ * [T176, 2026-08-29] SELEKTOR-UPPDATERING: radhandlingarna (Ladda ner /
+ * Ersätt / Skapa om / Ändra räckvidd / Radera) bodde som ikonknappar direkt i
+ * raden med filnamnet i `aria-label` ("Skapa om <namn>"). De bor nu i en
+ * `Meny` bakom EN ⋯-knapp — menyn bär filnamnet i sitt egna namn ("Fler val
+ * för <namn>"), posterna bär verbet. WAI-ARIA:s menygrammatik: kontexten
+ * namnger listan, posten namnger handlingen.
+ */
+async function valjRadhandling(rad: Locator, page: Page, etikett: string | RegExp) {
+  await rad.getByRole('button', { name: /^Fler val för / }).click();
+  await page.getByRole('menuitem', { name: etikett }).click();
+}
+
 test.describe('Dokument-ytan — Event-mallade rader: Mall, INAKTUELL, Skapa om (TASK-309.6)', () => {
   test('Mall-badge + INAKTUELL syns; "Skapa om" anropar ersatt-läget och gör raden aktuell (samma rad)', async ({
     page,
@@ -138,9 +154,7 @@ test.describe('Dokument-ytan — Event-mallade rader: Mall, INAKTUELL, Skapa om 
     await expect(rad.getByText('Bekräftelsebilaga', { exact: true })).toBeVisible();
     await expect(rad.getByText('Inaktuell')).toBeVisible();
 
-    const skapaOmKnapp = rad.getByRole('button', { name: /Skapa om/ });
-    await expect(skapaOmKnapp).toBeVisible();
-    await skapaOmKnapp.click();
+    await valjRadhandling(rad, page, /Skapa om/);
 
     // Efter lyckad regenerering: badgen försvinner, SAMMA rad (samma namn/id
     // — get-event-attachments-mocken speglar samma ATTACHMENT_ID oförändrat).
@@ -168,7 +182,11 @@ test.describe('Dokument-ytan — Event-mallade rader: Mall, INAKTUELL, Skapa om 
     const forstaGenomgangen = await new AxeBuilder({ page }).analyze();
     expect(forstaGenomgangen.violations).toEqual([]);
 
-    await page.getByRole('button', { name: /Skapa om/ }).click();
+    await valjRadhandling(
+      page.getByTestId('dokument-fil').filter({ hasText: 'Bekräftelsebilaga –' }),
+      page,
+      /Skapa om/,
+    );
     await expect(page.getByText('Inaktuell')).toHaveCount(0);
 
     const andraGenomgangen = await new AxeBuilder({ page }).analyze();

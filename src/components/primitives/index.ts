@@ -18,6 +18,13 @@ export {
 export { InitialAvatar } from './InitialAvatar';
 export { Input, type InputProps } from './Input';
 export { InstallPrompt, type InstallPromptProps } from './InstallPrompt';
+export {
+  Meny,
+  MenyAvdelare,
+  MenyPost,
+  type MenyPostProps,
+  type MenyProps,
+} from './Meny';
 export { MessageBox, type MessageBoxProps } from './MessageBox';
 export { Modal, type ModalProps } from './Modal';
 export { NavCard, type NavCardIcon } from './NavCard';

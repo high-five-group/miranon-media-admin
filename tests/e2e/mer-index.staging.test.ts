@@ -49,7 +49,8 @@ import { expect, test } from '../support/test-bas';
  * katalog) är den en skarp, ovillkorlig ingång. Höjer raderna till ÅTTA.
  *
  * EVENTINNEHÅLL + PLATSER TILLKOM TASK-309.7 (Del 2 § D beslut 10, ADR-125
- * § 7): NIONDE och TIONDE raden, sist i grupp 2 (efter "Dokument") —
+ * § 7): NIONDE och TIONDE raden, sist i grupp 2 (efter "Bilagor", som hette
+ * "Dokument" fram till T176) —
  * redigeringsytorna bilagornas skrivvägar (skiva 2, TASK-309.3) matar.
  * Höjer raderna till TIO.
  *
@@ -246,7 +247,10 @@ test.describe('Mer-landningen till M6-facitet (task-9.2)', () => {
     ]);
     await expect(grupper.nth(1).getByRole('link')).toHaveText([
       'Bygg segment',
-      'Dokument',
+      // [T176, 2026-08-29] Etiketten var 'Dokument' — Marcus: *"Mer-fliken
+      // 'Dokument' kanske borde heta 'Bilagor'"*. Sökvägen `/mer/dokument`
+      // är oförändrad; det är etiketten som bytt, inte raden.
+      'Bilagor',
       'Eventinnehåll',
       'Platser',
     ]);

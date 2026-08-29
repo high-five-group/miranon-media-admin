@@ -185,7 +185,7 @@ export function EventValjare({
       manuell anmälan."*
 
       Formen finns för ytor där väljaren är sidans PRIMÄRA VAL och aldrig står
-      tom — Dokument-ytan har ett kontextlöst alternativ ("Delade dokument"),
+      tom — Bilagor-ytan har ett kontextlöst alternativ ("Delade bilagor"),
       så dess `tomtLage` är per konstruktion alltid falskt och pillformen blev
       den enda den någonsin visade. */
   form?: 'kontextrad' | 'rubrik' | 'fristaende';

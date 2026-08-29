@@ -25,7 +25,7 @@ import { expect, test } from '../support/fixturvarld/hermetic';
  * använder — eftersom det är läget som renderas UTAN en föregående
  * eventväljning och därmed är stabilast att skärmdumpa.
  */
-test('dokument-ytan — sidram och räckviddsläget (Delade dokument) ur fixturvärlden', async ({
+test('dokument-ytan — sidram och räckviddsläget (Delade bilagor) ur fixturvärlden', async ({
   page,
   network,
 }) => {
@@ -58,7 +58,7 @@ test('dokument-ytan — sidram och räckviddsläget (Delade dokument) ur fixturv
   await page.goto('/mer/dokument');
 
   await expect(page.getByTestId('dokument-yta')).toBeVisible();
-  await expect(page.getByRole('heading', { level: 1, name: 'Dokument' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'Bilagor' })).toBeVisible();
   await expect(page.getByText('Hörlursinformation.pdf')).toBeVisible();
 
   await expect(page).toHaveScreenshot('dokument-yta.png', { fullPage: true });

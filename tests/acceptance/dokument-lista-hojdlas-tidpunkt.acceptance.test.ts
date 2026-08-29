@@ -22,18 +22,34 @@ import { expect, test } from './acceptance-bas';
  *
  * ── VARFÖR 309.24 INTE KUNDE SE DEM ────────────────────────────────────
  *
- * S1: varje test i 309.24 öppnar sidan i default-filtret 'alla', som ÄR en
- * mätkälla (`reservMatbar`). Höjden är därför alltid redan låst innan
- * mätningen sker, och filterbyten därefter läser samma bevarade
- * React-state. Ingen väg in i komponenten via ett ICKE-mätbart filter
- * fanns i sviten — och det är precis den vägen `?typ=` öppnar, eftersom
- * nuqs-nyckeln överlever räckviddsväxlingen medan komponenten monteras om.
+ * S1: varje test i 309.24 öppnade sidan i default-filtret 'alla', som ÄR en
+ * mätkälla (`reservMatbar`). Höjden var därför alltid redan låst innan
+ * mätningen skedde, och filterbyten därefter läste samma bevarade
+ * React-state. Ingen väg in i komponenten via ett ICKE-mätbart filter fanns i
+ * sviten — och det var precis den vägen `?typ=` öppnade, eftersom
+ * nuqs-nyckeln överlevde räckviddsväxlingen medan komponenten monterades om.
+ *
+ * [T176, 2026-08-29] TYPFILTRET ÄR RIVET (`DokumentLista` § docblock: listan
+ * visar bara bilagor, så ett filter med tre alternativ varav två är tomma är
+ * sämre än inget). Båda de ICKE-mätbara vägarna är därmed borta, och S1:s
+ * kvarvarande innehåll är växlingen i sig: komponenten monteras OM vid ett
+ * räckviddsbyte, alla refs och `hojd`-state nollställs, och höjden ska vara
+ * låst i VARJE ram listan existerar — nu buren av `reservMatbar` (ovillkorat
+ * `true` sedan filtret försvann) i stället för av nödmätningen. Nödmätningen
+ * är ORÖRD i hooken och täcks av 0-raderstestet.
  *
  * S2: 309.24:s femradersfall mätte `rad4.bottom <= ulRect.bottom + 0.5` och
  * kallade utfallet "klippt bort". Den olikheten är SANN när linjen ligger
  * på ytans SISTA synliga pixelrad — alltså exakt när den syns. Testet
- * mätte rätt tal mot fel gräns; se `separatornsLage` nedan för den gräns
- * som faktiskt skiljer synlig från klippt.
+ * mätte rätt tal mot fel gräns.
+ *
+ * [T176, 2026-08-29] S2 HANDLAR NU OM KORT, INTE OM LINJER. Separatorerna
+ * är rivna med kortformen (Marcus kvitterade rivningen av höjdlåsets
+ * separator-halva samma dag; fyra-synliga-med-inline-rullning står kvar).
+ * Klippkanten prövas därför direkt: fjärde kortet HELT innanför, femte
+ * kortet HELT utanför — se `kortensLage` nedan. Lärdomen ur den gamla
+ * gränsen bärs vidare där: mät den kant frågan faktiskt gäller, inte den
+ * som råkar vara lätt att läsa.
  */
 
 /** [TASK-338.3, ADR-125 § Beslut 1] Två levande räckvidder, inte tre —
@@ -166,35 +182,46 @@ async function lasProver(page: Page) {
 }
 
 /**
- * Den fjärde radens separator mot ytans KLIPPKANT.
+ * Det fjärde och femte KORTET mot ytans KLIPPKANT.
  *
  * `innehallBottom` är innehållsytans nederkant uttryckt i samma rymd som
- * radernas `bottom`: ytans egen `border-top` plus `clientHeight`. En rads
- * `getBoundingClientRect().bottom` ligger PÅ radens egen `border-bottom`s
- * yttre kant (`box-sizing: border-box`), så linjen upptar intervallet
- * `[bottom - borderBottomWidth, bottom]`.
+ * kortens `bottom`: ytans egen `border-top` plus `clientHeight`.
  *
- * LINJEN SYNS precis när det intervallet överlappar `[…, innehallBottom]` —
- * alltså när `bottom - borderBottomWidth < innehallBottom`. Att i stället
- * mäta `bottom <= innehallBottom` (309.24) besvarar en ANNAN fråga: om
- * radens underkant ryms, vilket den gör ÄVEN när linjen ligger på ytans
- * sista synliga pixelrad.
+ * ═══ [T176, 2026-08-29] FRÅN SEPARATOR TILL KORT — SAMMA FRÅGA, DIREKT ═══
+ *
+ * Funktionen hette `separatornsLage` och mätte om fjärde radens
+ * `border-bottom` hamnade innanför klippkanten. Separatorlinjerna är rivna
+ * med kortformen (rännan mellan korten ÄR avdelaren, Marcus kvitterat), så
+ * frågan ställs nu direkt: ligger fjärde kortet HELT innanför kanten, och
+ * femte kortet HELT utanför?
+ *
+ * DEN GAMLA GRÄNSEN VAR ÄNDÅ RÄTT LÄRDOM, OCH DEN BÄRS VIDARE: `bottom <=
+ * innehallBottom` (309.24) besvarade en ANNAN fråga än den som ställdes,
+ * eftersom linjen kunde ligga PÅ ytans sista synliga pixelrad och ändå
+ * "rymmas". Samma sorts fel vore här att bara mäta fjärde kortet: ett
+ * FEMTE kort som sticker upp en halv centimeter under kanten bryter regeln
+ * lika mycket, och syns inte i fjärde kortets tal. Båda mäts därför.
  */
-async function separatornsLage(page: Page) {
+async function kortensLage(page: Page) {
   return page.getByTestId('dokument-lista').evaluate((ul) => {
+    const rund = (n: number) => Math.round(n * 100) / 100;
     const ulRect = ul.getBoundingClientRect();
     const innehallBottom = Number.parseFloat(getComputedStyle(ul).borderTopWidth) + ul.clientHeight;
-    const fjarde = ul.children[3];
+    const kort = Array.from(ul.querySelectorAll('[data-testid="dokument-fil"]'));
+    const fjarde = kort[3];
+    const femte = kort[4];
     if (!fjarde) return null;
-    const bredd = Number.parseFloat(getComputedStyle(fjarde).borderBottomWidth);
-    const bottom = fjarde.getBoundingClientRect().bottom - ulRect.top;
+    const fjardeBottom = fjarde.getBoundingClientRect().bottom - ulRect.top;
+    const femteTop = femte ? femte.getBoundingClientRect().top - ulRect.top : null;
     return {
-      separatorBredd: bredd,
-      separatorTopp: Math.round((bottom - bredd) * 100) / 100,
-      innehallBottom: Math.round(innehallBottom * 100) / 100,
-      // Tolerans nedåt: sub-pixel-avrundning får inte läsas som en synlig
-      // linje. En VERKLIG regression lägger hela linjebredden innanför.
-      syns: bredd > 0 && bottom - bredd < innehallBottom - 0.5,
+      antalKort: kort.length,
+      fjardeBottom: rund(fjardeBottom),
+      femteTop: femteTop === null ? null : rund(femteTop),
+      innehallBottom: rund(innehallBottom),
+      // ±0,5 px mot sub-pixel-avrundning — en VERKLIG regression lägger
+      // hela kortkanten på fel sida.
+      fjardeHeltInne: fjardeBottom <= innehallBottom + 0.5,
+      femteHeltUte: femteTop === null ? true : femteTop >= innehallBottom - 0.5,
     };
   });
 }
@@ -222,22 +249,20 @@ function forstaOlasta(
 }
 
 test.describe('S1 — höjden är låst från listans FÖRSTA målade ram', () => {
-  test('AC #1/#2: växling delade → event med ?typ=bilaga kvar och FÄRRE än fyra bilagor', async ({
-    page,
-    network,
-  }) => {
+  test('AC #1/#2: växling delade → event med FÄRRE än fyra bilagor', async ({ page, network }) => {
     // Marcus flöde, exakt: två delade dokument i räckviddsläget, sedan ett
-    // event valt i väljaren. `?typ=bilaga` ligger kvar från ett tidigare
-    // besök — nuqs-nyckeln nollställs inte av räckviddsbytet, och
-    // räckviddsläget har ingen filterrad som visar att den är satt.
+    // event valt i väljaren. Det nya eventet har TVÅ bilagor.
     //
-    // Det nya eventet har TVÅ bilagor. Före fixen var BÅDA mätkällorna
-    // falska där (`foretradesMatbar` kräver >= 4 egna rader i 'bilaga';
-    // `reservMatbar` kräver filtret 'alla'), så `useLastaListhojd`
-    // returnerade tidigt och höjden förblev `null` — listan följde
-    // innehållet, permanent.
+    // [T176, 2026-08-29] URL:en bar tidigare `?typ=bilaga` — den nuqs-nyckeln
+    // var halva rotorsaken 2026-08-29 (den överlevde räckviddsbytet medan
+    // komponenten monterades om, och räckviddsläget hade ingen filterrad som
+    // visade att filtret var satt). Filterraden är riven, så vägen finns inte
+    // längre. VÄXLINGEN kvarstår som den intressanta delen: komponenten
+    // monteras OM, alla refs och `hojd`-state nollställs, och höjden måste
+    // vara låst i varje ram listan existerar — nu buren av `reservMatbar`
+    // (ovillkorat `true`) i stället för av nödmätningen.
     network.use(handler(2, 2, 400));
-    await page.goto('/mer/dokument?typ=bilaga');
+    await page.goto('/mer/dokument');
     await expect(page.getByText('Delad 2.pdf')).toBeVisible();
 
     await startaSampling(page);
@@ -260,45 +285,39 @@ test.describe('S1 — höjden är låst från listans FÖRSTA målade ram', () =
     expect(slut.hojd).toBeLessThanOrEqual(maxRad * 4 + 4);
   });
 
-  test('AC #1/#2: sidladdning direkt i ?typ=mall — ett filter som ALDRIG kan nå fyra rader', async ({
-    page,
-    network,
-  }) => {
-    // MALLAR har två poster och GENERATORER en (`DokumentYta.tsx`), så
-    // varken 'mall' eller 'generator' kan någonsin leverera fyra rader.
-    // Före fixen var en sidladdning i något av dem permanent olåst — samma
-    // rotorsak som testet ovan, men utan att en växling behövs för att nå
-    // den. Att den vägen finns är skälet att fixen sitter i hooken och inte
-    // i räckviddsväxlingens URL-hantering.
-    network.use(handler(6, 0));
-    await page.goto(`/mer/dokument?event=${VISUAL_EVENT_ID}&typ=mall`);
-    await expect(page.getByText('Bekräftelsebilaga')).toBeVisible();
+  // [T176, 2026-08-29] TESTET "sidladdning direkt i ?typ=mall" ÄR RIVET, INTE
+  // TAPPAT. Det prövade väg 2 i `useLastaListhojd`s "EN OMÄTT LISTA"-stycke:
+  // `MALLAR` har två poster och `GENERATORER` en, så filtren 'mall'/'generator'
+  // kunde ALDRIG nå fyra rader och en sidladdning i något av dem lämnade
+  // höjden permanent olåst. Både filtren och mall-/generatorraderna är rivna
+  // (mallarna är handlingar nu, se `SkapaDokumentMeny`), så vägen finns inte
+  // att pröva. Nödmätningen den fällde är ORÖRD i hooken och täcks fortfarande
+  // av 0-raderstestet nedan.
 
-    const geometri = await matGeometri(page);
-    expect(geometri.last).toBe(true);
-    const maxRad = Math.max(...geometri.radHojder);
-    expect(geometri.hojd).toBeGreaterThanOrEqual(maxRad * 4 - 2);
-  });
-
-  test('AC #2/#5: NIVÅ 3 är nåbar även i DokumentLista — ?typ=bilaga på ett event UTAN bilagor', async ({
+  test('AC #2/#5: NIVÅ 3 är nåbar även i DokumentLista — ett event UTAN bilagor', async ({
     page,
     network,
   }) => {
     // Låser den nåbarhet `LISTA_FALLBACK_RADHOJD`s docblock beskriver efter
-    // 309.39. Komponenten monteras MED filtret 'bilaga', så den renderar
-    // aldrig i 'alla' — `senastUppmattRadhojd` är `null` när nödmätningen
-    // kör, och NIVÅ 3 använder konstanten. Före 309.39 var vägen ofarlig
-    // bara för att höjden inte sattes alls (symptom S1); nu ÄR den nåbar,
-    // och då ska den också vara mätt i stället för påstådd.
+    // 309.39: noll RIKTIGA rader i DOM och ingen tidigare mätning i
+    // komponentens liv, alltså NIVÅ 3 (konstanten).
+    //
+    // [T176] Vägen dit gick tidigare via `?typ=bilaga` på ett event vars
+    // mallar/generatorer ändå fyllde 'alla'. Filtret är rivet — nu är det det
+    // ÄRLIGA fallet: eventet HAR inga bilagor, och listan har inget annat att
+    // visa.
     network.use(handler(0, 0));
-    await page.goto(`/mer/dokument?event=${VISUAL_EVENT_ID}&typ=bilaga`);
+    await page.goto(`/mer/dokument?event=${VISUAL_EVENT_ID}`);
     await expect(page.getByText('Inga bilagor för det här eventet än.')).toBeVisible();
 
     const geometri = await matGeometri(page);
     expect(geometri.last).toBe(true);
     // Talet DUPLICERAS medvetet, samma disciplin som systerfilens
-    // `FALLBACK_DESKTOP` — se dess kommentar.
-    const FALLBACK = 99;
+    // `FALLBACK_RADHOJD` — se dess kommentar. [T176] 99 → 107 → 124:
+    // referensraden `MallRad` är riven, och en bilagerad är sedan
+    // kortformen 124 px hög som `<li>` (kort 116 px + 8 px ränna). Uppmätt
+    // i denna rigg vid både 1280 px och 375 px.
+    const FALLBACK = 124;
     expect(geometri.hojd).toBeGreaterThanOrEqual(FALLBACK * 4);
     expect(geometri.hojd).toBeLessThanOrEqual(FALLBACK * 4 + 8);
     expect(geometri.scrollHeight).toBe(geometri.clientHeight);
@@ -307,7 +326,7 @@ test.describe('S1 — höjden är låst från listans FÖRSTA målade ram', () =
   test('AC #1/#4: samma invariant vid 375 px', async ({ page, network }) => {
     await page.setViewportSize({ width: 375, height: 800 });
     network.use(handler(2, 2, 400));
-    await page.goto('/mer/dokument?typ=bilaga');
+    await page.goto('/mer/dokument');
     await expect(page.getByText('Delad 2.pdf')).toBeVisible();
 
     await startaSampling(page);
@@ -320,12 +339,12 @@ test.describe('S1 — höjden är låst från listans FÖRSTA målade ram', () =
   });
 });
 
-test.describe('S2 — den fjärde separatorn ligger UTANFÖR ytans klippkant', () => {
+test.describe('S2 — fjärde kortet ligger HELT innanför klippkanten, femte HELT utanför', () => {
   for (const [etikett, antalGemensamma] of [
     ['fem rader', 5],
     ['sju rader', 7],
   ] as const) {
-    test(`AC #3: GemensamtLage, ${etikett} — fjärde radens linje är klippt, inte synlig`, async ({
+    test(`AC #3: GemensamtLage, ${etikett} — inget halvt kort vid kanten`, async ({
       page,
       network,
     }) => {
@@ -333,33 +352,43 @@ test.describe('S2 — den fjärde separatorn ligger UTANFÖR ytans klippkant', (
       await page.goto('/mer/dokument');
       await expect(page.getByText(`Delad ${antalGemensamma}.pdf`)).toBeVisible();
 
-      const lage = await separatornsLage(page);
+      const lage = await kortensLage(page);
       expect(lage).not.toBeNull();
-      // Linjen FINNS (divide-y ger den, eftersom en femte rad följer) —
-      // testet skulle annars kunna passera på att den saknas helt.
-      expect(lage?.separatorBredd).toBeGreaterThan(0);
+      // Ett FEMTE kort FINNS (annars vore invarianten trivialt sann) —
+      // samma disciplin som den gamla `separatorBredd > 0`-kontrollen.
+      expect(lage?.femteTop).not.toBeNull();
       expect(
-        lage?.syns,
-        `fjärde separatorn börjar vid ${lage?.separatorTopp} px, innehållsytan slutar vid ${lage?.innehallBottom} px`,
-      ).toBe(false);
+        lage?.fjardeHeltInne,
+        `fjärde kortet slutar vid ${lage?.fjardeBottom} px, innehållsytan vid ${lage?.innehallBottom} px`,
+      ).toBe(true);
+      expect(
+        lage?.femteHeltUte,
+        `femte kortet börjar vid ${lage?.femteTop} px, innehållsytan slutar vid ${lage?.innehallBottom} px`,
+      ).toBe(true);
     });
   }
 
-  test('AC #3/#4: DokumentLista (eventläge), sju rader i "alla" — samma invariant', async ({
+  test('AC #3/#4: DokumentLista (eventläge), sju rader — samma invariant', async ({
     page,
     network,
   }) => {
-    // 4 bilagor + 2 mallar + 1 generator = 7 rader i default-filtret.
-    network.use(handler(4, 0));
+    // [T176] Sju rader kommer nu från SJU BILAGOR. Före filterrivningen var
+    // samma sjua "4 bilagor + 2 mallar + 1 generator" i default-filtret —
+    // mall- och generatorraderna finns inte i listan längre.
+    network.use(handler(7, 0));
     await page.goto(`/mer/dokument?event=${VISUAL_EVENT_ID}`);
     await expect(page.getByText('Bilaga 1.pdf')).toBeVisible();
 
-    const lage = await separatornsLage(page);
-    expect(lage?.separatorBredd).toBeGreaterThan(0);
+    const lage = await kortensLage(page);
+    expect(lage?.femteTop).not.toBeNull();
     expect(
-      lage?.syns,
-      `fjärde separatorn börjar vid ${lage?.separatorTopp} px, innehållsytan slutar vid ${lage?.innehallBottom} px`,
-    ).toBe(false);
+      lage?.fjardeHeltInne,
+      `fjärde kortet slutar vid ${lage?.fjardeBottom} px, innehållsytan vid ${lage?.innehallBottom} px`,
+    ).toBe(true);
+    expect(
+      lage?.femteHeltUte,
+      `femte kortet börjar vid ${lage?.femteTop} px, innehållsytan slutar vid ${lage?.innehallBottom} px`,
+    ).toBe(true);
   });
 
   test('AC #3/#4: samma invariant vid 375 px (radbrytningens brytpunkt)', async ({
@@ -371,37 +400,43 @@ test.describe('S2 — den fjärde separatorn ligger UTANFÖR ytans klippkant', (
     await page.goto('/mer/dokument');
     await expect(page.getByText('Delad 6.pdf')).toBeVisible();
 
-    const lage = await separatornsLage(page);
-    expect(lage?.separatorBredd).toBeGreaterThan(0);
-    expect(lage?.syns).toBe(false);
+    const lage = await kortensLage(page);
+    expect(lage?.femteTop).not.toBeNull();
+    expect(lage?.fjardeHeltInne).toBe(true);
+    expect(lage?.femteHeltUte).toBe(true);
   });
 
-  test('AC #4: exakt fyra rader — ingen 1 px-scroll, och fjärde raden bär ingen linje att klippa', async ({
+  test('AC #4: exakt fyra rader — ingen 1 px-scroll, och inget femte kort att klippa', async ({
     page,
     network,
   }) => {
-    // Fixens andra halva får inte betalas av gränsfallet: vid exakt fyra
-    // rader ÄR fjärde raden sista, `divide-y` ger den ingen `border-bottom`
-    // och `sistaRadenBarLinje` är falsk — det finns alltså ingenting att
-    // dra bort, och höjden ska vara oförändrad mot före fixen.
+    // Gränsfallet får inte betalas av regeln: vid exakt fyra rader finns
+    // inget femte kort alls, och fjärde kortet ska ligga helt innanför
+    // kanten med luft kvar (radens `py-1`). [T176] Prövade förut att
+    // fjärde raden saknade `border-bottom`; separatorn finns inte längre,
+    // så frågan ställs mot korten i stället.
     network.use(handler(0, 4));
     await page.goto('/mer/dokument');
     await expect(page.getByText('Delad 4.pdf')).toBeVisible();
 
     const geometri = await matGeometri(page);
     expect(geometri.scrollHeight).toBe(geometri.clientHeight);
-    const lage = await separatornsLage(page);
-    expect(lage?.separatorBredd).toBe(0);
+    const lage = await kortensLage(page);
+    expect(lage?.antalKort).toBe(4);
+    expect(lage?.femteTop).toBeNull();
+    expect(lage?.fjardeHeltInne).toBe(true);
   });
 
   test('AC #3/#4: fyra och fem rader delar EXAKT samma låsta bounding box', async ({
     page,
     network,
   }) => {
-    // Före fixen skilde de sig med den fjärde separatorns bredd: fyra rader
-    // gav ingen linje att räkna in, fem gav en. Fixen tar bort just den
-    // termen, så boxen blir densamma — regel 5, skärpt från "≤ 1 px" till
-    // exakt likhet i det par som tidigare bar hela avvikelsen.
+    // Före TASK-309.39 skilde de sig med den fjärde separatorns bredd: fyra
+    // rader gav ingen linje att räkna in, fem gav en. [T176] Termen finns
+    // inte längre alls — rännan bor INUTI varje `<li>` (`py-1`) och är
+    // därför lika stor i varje rad oavsett position, så NIVÅ 1:s spann och
+    // NIVÅ 2:s radhöjd ger samma tal. Regel 5 prövas fortsatt som EXAKT
+    // likhet i det par som tidigare bar hela avvikelsen.
     //
     // ENDA testet i filen med TVÅ laddningar, och därför det enda som
     // behöver arrangemanget — se `arrangeraTomCache` för mekanismen och

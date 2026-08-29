@@ -1,4 +1,4 @@
-- button "Tillbaka till Dokument"
+- button "Tillbaka till Bilagor"
 - heading "Bekräftelsebilaga" [level=1]
 - paragraph: /Utbildning Skövde · Skövde · \d+-\d+ september \d+/
 - alert:

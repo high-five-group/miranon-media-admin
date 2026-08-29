@@ -90,15 +90,27 @@ function MerPage() {
           <li>
             <NavCard to="/mer/segment" icon={Filter} label="Bygg segment" />
           </li>
-          {/* Dokument (`T131`, promoverad TASK-164-rivningen, ADR-103 B2 steg
-              4) — ORDLISTA § Bilaga: "Dokument är YTAN i Mer där bilagor
-              hanteras". Hör till HANDLING/VERKTYG-gruppen, inte listorna: den
+          {/* Bilagor (`T131`, promoverad TASK-164-rivningen, ADR-103 B2 steg
+              4). Hör till HANDLING/VERKTYG-gruppen, inte listorna: den
               förvaltar material, den listar inte personer. Ikonen är
               Paperclip = bilaga (domänbegreppsmappningen, PRD beslut 5);
               FileText hade läst som "dokument i allmänhet", vilket är precis
-              det ORDLISTA varnar för. */}
+              det ORDLISTA varnar för.
+
+              [T176, 2026-08-29] ETIKETTEN VAR "Dokument" — ORDLISTA § Bilaga
+              säger *"Dokument är YTAN i Mer där bilagor hanteras"*, och ytan
+              hette därför så. Marcus dom samma dag: *"Mer-fliken 'Dokument'
+              kanske borde heta 'Bilagor'"*. BILAGA är substantivet för det
+              som faktiskt hanteras (ORDLISTA rad 179: en PDF som Lotta väljer
+              att bifoga i ett utskick), och alla tre klasserna — uppladdad,
+              event-mallad, person-genererad — är bilagor. ROUTEN
+              (`/mer/dokument`) är MEDVETET oförändrad: det är en adress, inte
+              en etikett, och att byta den hade brutit varje bokmärke och
+              varje testselektor utan att göra något begripligare. ORDLISTA.md
+              är inte ändrad av denna landning — språkbytet är UI-språk, och
+              ordlistans egen rad är Marcus att uppdatera. */}
           <li>
-            <NavCard to="/mer/dokument" icon={Paperclip} label="Dokument" />
+            <NavCard to="/mer/dokument" icon={Paperclip} label="Bilagor" />
           </li>
           {/* Eventinnehåll + Platser (TASK-309.7, Del 2 § D beslut 10):
               standardtexterna per Event × Eventtyp och platsernas uppgifter
