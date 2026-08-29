@@ -638,11 +638,14 @@ export function GenereringsVy({
   mall: MallId;
   onTillbaka: () => void;
   /**
-   * [TASK-340.2] Bekräftelseytans andra val — dokumentvyn med bilage-filtret
-   * påslaget (`?typ=bilaga`). NAVIGERINGEN ÄGS AV ROUTEN, precis som
-   * `onTillbaka`: `?vy`/`?mall`/`?typ` är nuqs-nycklar som `dokument.tsx`
-   * redan håller, och en vy som satte dem själv hade blivit en andra ägare
-   * till samma adress.
+   * [TASK-340.2] Bekräftelseytans andra val — tillbaka till dokumentlistan.
+   * NAVIGERINGEN ÄGS AV ROUTEN, precis som `onTillbaka`: `?vy`/`?mall` är
+   * nuqs-nycklar som `dokument.tsx` redan håller, och en vy som satte dem
+   * själv hade blivit en andra ägare till samma adress.
+   *
+   * [T176, 2026-08-29] Landningen slog tidigare på dokumentlistans
+   * bilage-filter (`?typ=bilaga`) i samma navigering. Filtret är rivet —
+   * listan visar bara bilagor — så nyckeln är borta ur routens handler.
    */
   onTillDokumenten: () => void;
 }) {

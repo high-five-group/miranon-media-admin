@@ -24,8 +24,8 @@ export const Route = createFileRoute('/_authenticated/mer/dokument')({
 // dispatch-logik flyttade hit OFÖRÄNDRAD (samma villkor: `?vy=generering`
 // plus ett faktiskt laddat event), bara utan flaggan och utan
 // `PrototypeSwitcher`-monteringen. `DokumentYta.tsx`s mallkatalog
-// (`MallRad`) sätter `?vy`/`?mall` via samma nuqs-nycklar; `?event=` är
-// delad mellan båda lägena (samma queryKey). <Outlet/> bärs av
+// (`SkapaDokumentMeny`, tidigare `MallRad`) sätter `?vy`/`?mall` via samma
+// nuqs-nycklar; `?event=` är delad mellan båda lägena (samma queryKey). <Outlet/> bärs av
 // _authenticated via AppShell (samma form som syskon-leafsen: maillogg.tsx,
 // vantelista.tsx, intresserade.tsx).
 function DokumentPage() {
@@ -33,13 +33,6 @@ function DokumentPage() {
   const [mallParam, setMall] = useQueryState('mall');
   const mall: MallId = mallParam === 'deltagarinfo' ? 'deltagarinfo' : 'bekraftelse';
   const [eventId] = useQueryState('event');
-  // [TASK-340.2] Dokumentlistans typfilter (`DokumentLista` § `useQueryState('typ')`)
-  // — bekräftelseytans "Till dokumenten" slår på bilage-filtret i samma
-  // navigering som den lämnar genereringsvyn. Nyckeln ägs av routen här,
-  // precis som `vy`/`mall`: en vy som satte den själv hade blivit en andra
-  // ägare till samma adress. `DokumentLista` LÄSER samma nyckel via sin egen
-  // `useQueryState`-instans (nuqs delar värde per nyckel, inte per instans).
-  const [, setTyp] = useQueryState('typ');
 
   const dataSource = useDataSource();
   const eventsQuery = useQuery({
@@ -62,14 +55,20 @@ function DokumentPage() {
           void setMall(null);
         }}
         onTillDokumenten={() => {
-          // TRE nycklar, EN navigering: nuqs buntar alla `set`-anrop i samma
+          // TVÅ nycklar, EN navigering: nuqs buntar alla `set`-anrop i samma
           // tick till en enda `router.navigate` (dess egen update-kö), så
           // `RouteAnnouncer` ser EN href-ändring och annonserar högst en
-          // gång. Att sätta dem i tre separata effekter hade gett tre
-          // navigeringar och riskerat tre annonseringar (AC #4).
+          // gång. Att sätta dem i separata effekter hade gett flera
+          // navigeringar och riskerat flera annonseringar (AC #4).
+          //
+          // [T176, 2026-08-29] `void setTyp('bilaga')` stod här som tredje
+          // nyckel (TASK-340.2) — den slog på dokumentlistans bilage-filter i
+          // samma navigering. Filtret är rivet (`DokumentLista` § docblock:
+          // listan kan inte visa något ANNAT än bilagor längre), så
+          // parametern är borta medan NAVIGERINGEN är oförändrad. Landningen
+          // visar samma sak som förut.
           void setVy(null);
           void setMall(null);
-          void setTyp('bilaga');
         }}
       />
     );

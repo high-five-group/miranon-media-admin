@@ -29,7 +29,8 @@ import { expect, type Page, test } from './acceptance-bas';
  *   AC #2 — bekräftelsen ersätter formuläret · tar fokus · bär EXAKT två
  *     val · rätt textvariant per svarsform (promoverad / underlagAndrat /
  *     ersatte / platsstandard, en MSW-fixtur per fall) · "Till dokumenten"
- *     landar på dokumentvyn med `?typ=bilaga` · axe 0 · tangentbords-
+ *     landar på dokumentvyn (T176: UTAN `?typ=bilaga` — filtret är rivet,
+ *     se AC #2-testet) · axe 0 · tangentbords-
  *     vandringen bokförd · 375 px utan horisontell scroll.
  *   AC #3 — knappens etikett i BÅDA lägena, och att `kallhash` följer med
  *     anropet EFTER en förhandsgranskning (men inte utan).
@@ -524,7 +525,7 @@ test.describe('Genereringsvyn — bekräftelsen på plats (TASK-340.2)', () => {
     ).toBeVisible();
   });
 
-  test('AC #2: "Till dokumenten" landar på dokumentvyn med ?typ=bilaga', async ({
+  test('AC #2: "Till dokumenten" landar på dokumentvyn med eventet kvar', async ({
     page,
     network,
   }) => {
@@ -536,7 +537,12 @@ test.describe('Genereringsvyn — bekräftelsen på plats (TASK-340.2)', () => {
     await page.getByRole('button', { name: 'Till dokumenten' }).click();
 
     await expect(page.getByTestId('dokument-yta')).toBeVisible();
-    await expect.poll(() => new URL(page.url()).searchParams.get('typ')).toBe('bilaga');
+    // [T176, 2026-08-29] `?typ=bilaga` SÄTTS INTE LÄNGRE — och nyckeln får
+    // inte heller smyga tillbaka. Dokumentlistans typfilter är rivet (listan
+    // visar bara bilagor, se `DokumentLista`s docblock), så landningen visar
+    // samma sak utan parametern. Assertionen är VÄND, inte struken: en
+    // återinförd `setTyp('bilaga')` fälls här.
+    expect(new URL(page.url()).searchParams.get('typ')).toBeNull();
     // Genereringsvyns adress är helt borta — inte bara överskuggad.
     expect(new URL(page.url()).searchParams.get('vy')).toBeNull();
     expect(new URL(page.url()).searchParams.get('mall')).toBeNull();
@@ -766,7 +772,9 @@ test.describe('Genereringsvyn — bekräftelsen på plats (TASK-340.2)', () => {
     await page.goto(`/mer/dokument?event=${VISUAL_EVENT_ID}`);
     await expect(page.getByTestId('dokument-yta')).toBeVisible();
 
-    await page.getByRole('button', { name: 'Skapa Bekräftelsebilaga' }).first().click();
+    // [T176] Mallkatalogen är en meny i kortets handlingsrad, inte en listrad.
+    await page.getByRole('button', { name: 'Skapa dokument' }).click();
+    await page.getByRole('menuitem', { name: 'Bekräftelsebilaga' }).click();
     await expect(page.getByTestId('generering-vy')).toBeVisible();
     await expect(page.getByText('Hämtar underlag …')).toHaveCount(0);
 
@@ -780,7 +788,8 @@ test.describe('Genereringsvyn — bekräftelsen på plats (TASK-340.2)', () => {
     await nollstallAnnonseringar(page);
     await page.getByRole('button', { name: 'Till dokumenten' }).click();
     await expect(page.getByTestId('dokument-yta')).toBeVisible();
-    await expect.poll(() => new URL(page.url()).searchParams.get('typ')).toBe('bilaga');
+    // [T176] `?typ` sätts inte längre — se AC #2-testet ovan.
+    expect(new URL(page.url()).searchParams.get('typ')).toBeNull();
 
     const efter = await lasAnnonseringar(page);
     // ALDRIG TVÅ — det är hela AC #4.

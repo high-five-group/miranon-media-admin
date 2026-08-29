@@ -160,6 +160,22 @@ async function gotoRackviddslage(page: Page) {
 const PERSIST_KEY = 'REACT_QUERY_OFFLINE_CACHE';
 
 /**
+ * `LISTA_FALLBACK_RADHOJD` (`DokumentYta.tsx`) — NIVÅ 3:s enda tal.
+ *
+ * DUPLICERAS MEDVETET (samma disciplin som talet hade när det var 99): en
+ * fallback som bara jämförs mot sig själv bevisar ingenting, så testet bär
+ * sin egen kopia och fälls när källan ändras utan att mätningen gjorts om.
+ *
+ * [T176, 2026-08-29] 99 → 107. Det gamla talet var uppmätt på `MallRad`, den
+ * enda radform som strukturellt aldrig kunde bryta — den raden är riven
+ * (mallarna är handlingar nu, inte listrader). Referensen är sedan dess en
+ * BILAGERAD, vars namnknapp bär 44 px träffyta; uppmätt till 107 px vid BÅDA
+ * 1280 px och 390 px (viewport-oberoende av samma skäl som 99 var det:
+ * raden bryter aldrig, den trunkerar).
+ */
+const FALLBACK_RADHOJD = 107;
+
+/**
  * Tom cache-arrangemang (ADR-072) — persist-nyckeln bort FÖRE app-boot.
  *
  * SAMMA form och skäl som systerfilens `arrangeraTomCache`
@@ -184,13 +200,6 @@ const PERSIST_KEY = 'REACT_QUERY_OFFLINE_CACHE';
  */
 function arrangeraTomCache(page: Page) {
   return page.addInitScript((nyckel) => localStorage.removeItem(nyckel), PERSIST_KEY);
-}
-
-async function valjFilter(page: Page, etikett: string) {
-  // `exact: true` — annars matchar 'Alla' ÄVEN 'Mallar' (Playwrights
-  // namn-matchning är substräng som default, och "Mallar" innehåller
-  // bokstavligen "alla"). Mätt, TASK-309.24: `strict mode violation`.
-  await page.getByRole('radio', { name: etikett, exact: true }).click();
 }
 
 /** Mäter listans FULLA geometri i ETT synkront steg — ingen mätning här får
@@ -236,118 +245,83 @@ async function mataGeometri(page: Page) {
   });
 }
 
-test.describe('DokumentLista (eventläge) — filterbyte ändrar aldrig bounding box (regel 5)', () => {
-  test('AC #1/#5: bounding box IDENTISK över Alla/Bilagor/Mallar/Generatorer vid totaltAntal=7 — desktop', async ({
+test.describe('DokumentLista (eventläge) — låst fyra-radershöjd, nu UTAN filterrad (T176)', () => {
+  test('AC #2/#5: EXAKT fyra bilagor — scrollHeight === clientHeight, ingen linje, inget tabb-stopp (den kritiska gränsen) — desktop', async ({
     page,
     network,
   }) => {
-    // 4 bilagor + 2 mallar (MALLAR, fast) + 1 generator (GENERATORER, fast)
-    // = 7 — över gränsen, så BÅDA 'alla' och 'bilaga' når NIVÅ 1 (PRECIS,
-    // >= LISTA_SYNLIGA_RADER riktiga rader) redan från start. 'Bilagor' ger
-    // EXAKT fyra (gränsfallet), 'Mallar' två och 'Generatorer' en — täcker
-    // därmed 1–3, exakt 4 och 5+ i EN fixtur.
     network.use(hojdlasHandler(4, 0));
     await gotoEventlage(page);
     await expect(page.getByText('Bilaga 1.pdf')).toBeVisible();
 
-    const alla = await mataGeometri(page);
-    expect(alla.scrollHeight).toBeGreaterThan(alla.clientHeight); // 5+ (7 rader)
-
-    await valjFilter(page, 'Bilagor');
-    const bilagor = await mataGeometri(page);
-    expect(bilagor.bredd).toBe(alla.bredd);
-    // ═══ KÄND, DOKUMENTERAD ≤ 1 PX-SKILLNAD — INTE HOPPNING (se
-    // `DokumentLista`s `bilagaKanMataExakt`-stycke i källan för hela
-    // diagnosen) ═══
-    //
-    // 'Alla' mäter (reserv, `reservMatbar`) FÖRSTA gången sidan öppnas —
-    // 7 rader i DOM. 'Bilagor' mäter (företräde, `foretradesMatbar`) sina
-    // EGNA fyra rader i EN KONTEXT MED BARA DE FYRA I DOM. En rads
-    // renderade höjd beror MÄTT på hur många syskon den har (layout-
-    // avrundning fördelad över hela flödet, inte en bugg i vår kod) — rad 4
-    // mätte 99 px bland sju syskon, 98 px bland fyra. Höjden "sätter sig"
-    // därför med som MEST 1 px första gången 'Bilagor' besöks; efter det
-    // är värdet LÅST (`harForetradesMatt`) och ändras aldrig igen.
-    //
-    // Detta ÄR skillnaden mot en verklig hoppnings-BUGG: en riktig
-    // regression (t.ex. ett hårdkodat 396 px som INTE räknar med
-    // TASK-309.20:s radbrytning) ger tiotals pixlars diff, inte 1. Toleransen
-    // nedan fångar alltså fortfarande den bugg-klassen medan den tolererar
-    // webbläsarens egen sub-pixel-avrundning.
-    expect(Math.abs(bilagor.hojd - alla.hojd)).toBeLessThanOrEqual(1);
+    const fyra = await mataGeometri(page);
     // Regel 3 + AC #2: exakt fyra rader — INGEN scroll, ingen synlig linje.
-    // Detta är den AUKTORITATIVA (företrädda, precisa) mätningen, och den
-    // MÅSTE hålla exakt — ingen tolerans här.
-    expect(bilagor.scrollHeight).toBe(bilagor.clientHeight);
-    expect(bilagor.sistaBorderBottomWidth).toBe('0px');
+    // AC #5 fäller här på 1 px-scroll. Ingen tolerans.
+    expect(fyra.scrollHeight).toBe(fyra.clientHeight);
+    expect(fyra.sistaBorderBottomWidth).toBe('0px');
     await expect(page.getByTestId('dokument-lista')).not.toHaveAttribute('tabindex', '0');
-
-    // Från och med HÄR är höjden LÅST vid `bilagor.hojd` (företrädet har
-    // mätt, `harForetradesMatt` spärrar all vidare skrivning) — resten av
-    // filtren jämförs därför mot `bilagor`, inte mot den tidiga `alla`-
-    // reserven, och ska hålla EXAKT (regel 5, ingen ytterligare tolerans).
-    await valjFilter(page, 'Mallar');
-    const mallar = await mataGeometri(page);
-    expect(mallar.bredd).toBe(bilagor.bredd);
-    expect(mallar.hojd).toBe(bilagor.hojd);
-    // 1–3 rader (två mallar): ingen scroll, men sista raden BÄR linje.
-    expect(mallar.scrollHeight).toBe(mallar.clientHeight);
-    expect(mallar.sistaBorderBottomWidth).not.toBe('0px');
-
-    await valjFilter(page, 'Generatorer');
-    const generatorer = await mataGeometri(page);
-    expect(generatorer.bredd).toBe(bilagor.bredd);
-    expect(generatorer.hojd).toBe(bilagor.hojd);
-    expect(generatorer.scrollHeight).toBe(generatorer.clientHeight);
-    expect(generatorer.sistaBorderBottomWidth).not.toBe('0px');
-
-    await valjFilter(page, 'Alla');
-    const allaIgen = await mataGeometri(page);
-    expect(allaIgen.bredd).toBe(bilagor.bredd);
-    expect(allaIgen.hojd).toBe(bilagor.hojd);
-    // 5+ (7 rader): scrollbart, sista raden (rad 7) bär linje.
-    expect(allaIgen.scrollHeight).toBeGreaterThan(allaIgen.clientHeight);
-    expect(allaIgen.sistaBorderBottomWidth).not.toBe('0px');
-    await expect(page.getByTestId('dokument-lista')).toHaveAttribute('tabindex', '0');
+    // BEVISAR LÅSNING, inte bara "ingen scroll": höjden ska vara fyra raders
+    // spann, inte innehållets naturliga.
+    const maxRadhojd = Math.max(...fyra.radHojder);
+    expect(fyra.hojd).toBeGreaterThanOrEqual(maxRadhojd * 4 - 2);
+    expect(fyra.hojd).toBeLessThanOrEqual(maxRadhojd * 4 + 4);
   });
 
-  test('AC #1 / regel 6: samma invariant vid 375 px (radbrytningens brytpunkt, TASK-309.20)', async ({
+  test('AC #1/#2: sju bilagor delar EXAKT samma låsta bounding box som fyra; scrollbart; sista raden bär linje', async ({
     page,
     network,
   }) => {
-    await page.setViewportSize({ width: 375, height: 800 });
+    // TVÅ laddningar av SAMMA route → samma `queryKeys.attachments`-nyckel,
+    // därför arrangemanget (se `arrangeraTomCache` för mekanismen och
+    // mätningen, TASK-309.41).
+    await arrangeraTomCache(page);
+
     network.use(hojdlasHandler(4, 0));
     await gotoEventlage(page);
-    await expect(page.getByText('Bilaga 1.pdf')).toBeVisible();
+    await expect(page.getByText('Bilaga 4.pdf')).toBeVisible();
+    const fyra = await mataGeometri(page);
 
-    const alla = await mataGeometri(page);
-    await valjFilter(page, 'Bilagor');
-    const bilagor = await mataGeometri(page);
-    expect(bilagor.bredd).toBe(alla.bredd);
-    // KÄND, DOKUMENTERAD ≤ 1 PX-SKILLNAD — se motsvarande stycke i
-    // desktop-testet ovan för hela diagnosen (webbläsarens egen
-    // sub-pixel-avrundning, inte en hoppnings-bugg).
-    expect(Math.abs(bilagor.hojd - alla.hojd)).toBeLessThanOrEqual(1);
-    expect(bilagor.scrollHeight).toBe(bilagor.clientHeight);
-    expect(bilagor.sistaBorderBottomWidth).toBe('0px');
+    network.use(hojdlasHandler(7, 0));
+    await gotoEventlage(page);
+    await expect(page.getByText('Bilaga 7.pdf')).toBeVisible();
+    const sju = await mataGeometri(page);
 
-    // Låst vid `bilagor.hojd` från och med här (samma motiv som desktop-testet).
-    await valjFilter(page, 'Mallar');
-    const mallar = await mataGeometri(page);
-    expect(mallar.bredd).toBe(bilagor.bredd);
-    expect(mallar.hojd).toBe(bilagor.hojd);
+    // Regel 2: låsningen är EXAKT fyra raders höjd oavsett hur många fler som
+    // väntar bortom kanten — fyra och sju rader delar alltså bounding box.
+    expect(sju.bredd).toBe(fyra.bredd);
+    expect(sju.hojd).toBe(fyra.hojd);
+    // 5+: scrollbart, sista raden (rad 7) bär linje, tabb-stopp finns.
+    expect(sju.scrollHeight).toBeGreaterThan(sju.clientHeight);
+    expect(sju.sistaBorderBottomWidth).not.toBe('0px');
+    await expect(page.getByTestId('dokument-lista')).toHaveAttribute('tabindex', '0');
+    await expect(page.getByTestId('dokument-lista')).toHaveAttribute('aria-label', 'Dokument');
+  });
 
-    await valjFilter(page, 'Generatorer');
-    const generatorer = await mataGeometri(page);
-    expect(generatorer.bredd).toBe(bilagor.bredd);
-    expect(generatorer.hojd).toBe(bilagor.hojd);
+  test('AC #1 / regel 6: samma invariant vid 375 px', async ({ page, network }) => {
+    await page.setViewportSize({ width: 375, height: 800 });
+    await arrangeraTomCache(page);
+
+    network.use(hojdlasHandler(4, 0));
+    await gotoEventlage(page);
+    await expect(page.getByText('Bilaga 4.pdf')).toBeVisible();
+    const fyra = await mataGeometri(page);
+    expect(fyra.scrollHeight).toBe(fyra.clientHeight);
+    expect(fyra.sistaBorderBottomWidth).toBe('0px');
+
+    network.use(hojdlasHandler(7, 0));
+    await gotoEventlage(page);
+    await expect(page.getByText('Bilaga 7.pdf')).toBeVisible();
+    const sju = await mataGeometri(page);
+    expect(sju.bredd).toBe(fyra.bredd);
+    expect(sju.hojd).toBe(fyra.hojd);
+    expect(sju.scrollHeight).toBeGreaterThan(sju.clientHeight);
   });
 
   test('AC #2/#5: fem-plus rader — scroll till botten avslöjar linjen under rad 4 och sista radens egen linje', async ({
     page,
     network,
   }) => {
-    network.use(hojdlasHandler(6, 0)); // 6 + 2 + 1 = 9, gott om marginal över 4
+    network.use(hojdlasHandler(6, 0));
     await gotoEventlage(page);
     await expect(page.getByText('Bilaga 1.pdf')).toBeVisible();
 
@@ -364,8 +338,6 @@ test.describe('DokumentLista (eventläge) — filterbyte ändrar aldrig bounding
       const rad4 = ul.children[3] as HTMLElement;
       const ulRect = ul.getBoundingClientRect();
       const rad4Rect = rad4.getBoundingClientRect();
-      // Linjen mellan rad 4/5 sitter vid rad4Rect.bottom (≈ rad5.top).
-      // "Syns" betyder: ligger inom listans synliga ram.
       return rad4Rect.bottom <= ulRect.bottom + 0.5;
     });
     expect(rad4SynligForeScroll).toBe(true); // klippt bort — inte VISUELLT synlig som "nästa rad"
@@ -375,42 +347,31 @@ test.describe('DokumentLista (eventläge) — filterbyte ändrar aldrig bounding
     });
     const efterScroll = await mataGeometri(page);
     expect(efterScroll.scrollTop).toBeGreaterThan(0);
-    // Sista raden (rad 9) bär nu sin egen synliga linje.
+    // Sista raden (rad 6) bär nu sin egen synliga linje.
     expect(efterScroll.sistaBorderBottomWidth).not.toBe('0px');
   });
 
-  test('AC #1/#3: 0 bilagor (bilaga-filtret) — tomt läge inom SAMMA låsta höjd som "alla" redan etablerat, ingen hoppning', async ({
+  test('AC #1/#3: 0 bilagor — tomt läge inom LÅST höjd (nivå 3, FALLBACK), ingen linje, inget tabb-stopp', async ({
     page,
     network,
   }) => {
-    // 0 bilagor + 2 mallar (fast) + 1 generator (fast) = 3 riktiga rader i
-    // 'alla' (default-filtret) — under LISTA_SYNLIGA_RADER, så 'alla' tar
-    // NIVÅ 2 (ESTIMAT) redan vid FÖRSTA renderingen. 'bilaga' visar sedan 0
-    // riktiga rader (bara tomt-lägets placeholder-`<li>`) — `foretradesMatbar`
-    // och `reservMatbar` är BÅDA falska där (se `bilagaKanMataExakt`-stycket
-    // i källan), så `useLastaListhojd` returnerar tidigt och höjden fryser
-    // vid 'alla's redan etablerade ESTIMAT — exakt det AC #3/regel 5 kräver.
+    // [T176] Före filterrivningen nåddes detta läge via 'bilaga'-filtret på
+    // ett event vars mallar/generatorer ändå fyllde 'alla' — nu är det det
+    // ÄRLIGA fallet: eventet har inga bilagor, listan har noll RIKTIGA rader,
+    // och `useLastaListhojd` faller till NIVÅ 3 (`LISTA_FALLBACK_RADHOJD`).
     network.use(hojdlasHandler(0, 0));
     await gotoEventlage(page);
-    await expect(page.getByText('Bekräftelsebilaga')).toBeVisible(); // mall, 'alla' visar den
-
-    const alla = await mataGeometri(page);
-    expect(alla.scrollHeight).toBe(alla.clientHeight); // 3 rader, ingen scroll
-    expect(alla.sistaBorderBottomWidth).not.toBe('0px'); // 3 !== 4: sista raden bär linje
-
-    await valjFilter(page, 'Bilagor');
     await expect(page.getByText('Inga bilagor för det här eventet än.')).toBeVisible();
-    const bilagor = await mataGeometri(page);
 
-    // INGEN HOPPNING (regel 5) — värdet är samma REACT-STATE, inte en ny
-    // mätning, så jämförelsen är EXAKT (ingen sub-pixel-tolerans behövs här:
-    // `useLastaListhojd`s guard hindrar 'bilaga' från att mäta alls i detta
-    // läge).
-    expect(bilagor.hojd).toBe(alla.hojd);
-    expect(bilagor.bredd).toBe(alla.bredd);
-    expect(bilagor.scrollHeight).toBe(bilagor.clientHeight);
-    // AC #3: tomt läge (antalSynliga === 0) bär ALDRIG linje.
-    expect(bilagor.sistaBorderBottomWidth).toBe('0px');
+    const tomt = await mataGeometri(page);
+    // `overflow-y-hidden` (regel 3, ≤ 4) gör `scrollHeight === clientHeight`
+    // trivialt sant OAVSETT låsning, så den ENSAM bevisar ingenting —
+    // höjdvärdet gör. Talet DUPLICERAS medvetet ur källans konstant, samma
+    // disciplin som `GemensamtLage`-sviten nedan.
+    expect(tomt.scrollHeight).toBe(tomt.clientHeight);
+    expect(tomt.sistaBorderBottomWidth).toBe('0px');
+    expect(tomt.hojd).toBeGreaterThanOrEqual(FALLBACK_RADHOJD * 4);
+    expect(tomt.hojd).toBeLessThanOrEqual(FALLBACK_RADHOJD * 4 + 8);
     await expect(page.getByTestId('dokument-lista')).not.toHaveAttribute('tabindex', '0');
   });
 
@@ -418,11 +379,12 @@ test.describe('DokumentLista (eventläge) — filterbyte ändrar aldrig bounding
     page,
     network,
   }) => {
-    network.use(hojdlasHandler(4, 0));
+    // TRE bilagor — 1–3-läget, där sista raden bär en RIKTIG linje att pröva
+    // färgen på (`sistaRadenBarLinje`). Nåddes före T176 via 'Mallar'-filtret.
+    network.use(hojdlasHandler(3, 0));
     await page.emulateMedia({ contrast: 'more' });
     await gotoEventlage(page);
-    await expect(page.getByText('Bilaga 1.pdf')).toBeVisible();
-    await valjFilter(page, 'Mallar'); // 1–3-läget: sista raden bär en RIKTIG linje att pröva färgen på
+    await expect(page.getByText('Bilaga 3.pdf')).toBeVisible();
 
     const strongToken = await page.evaluate(() => {
       const probe = document.createElement('span');
@@ -445,6 +407,42 @@ test.describe('DokumentLista (eventläge) — filterbyte ändrar aldrig bounding
       .analyze();
     expect(resultat.violations).toEqual([]);
   });
+
+  test('T176: uttoningen syns när listan rullar, försvinner vid botten, och finns aldrig när den inte rullar', async ({
+    page,
+    network,
+  }) => {
+    // UTTONINGEN ÄR EN SIGNAL, INTE DEKORATION: prod 2026-08-29 visade sex
+    // rader med `scrollHeight 594 / clientHeight 395` utan någon antydan om
+    // att två låg under kanten (macOS overlay-scrollbars syns först vid
+    // rullning). Den ligger på WRAPPERN, aldrig i `<ul>` — därför prövas
+    // också att `<ul>`:ets barnräkning är oförändrad.
+    network.use(hojdlasHandler(6, 0));
+    await gotoEventlage(page);
+    await expect(page.getByText('Bilaga 1.pdf')).toBeVisible();
+
+    const uttoning = page.getByTestId('lista-uttoning');
+    await expect(uttoning).toBeVisible();
+    // Uttoningen är ett SYSKON till `<ul>`, inte ett barn — annars hade
+    // `useLastaListhojd` räknat den som en rad.
+    await expect(page.getByTestId('dokument-lista').getByTestId('lista-uttoning')).toHaveCount(0);
+    await expect(page.getByTestId('dokument-lista').locator('> li')).toHaveCount(6);
+
+    await page.getByTestId('dokument-lista').evaluate((ul) => {
+      ul.scrollTo({ top: ul.scrollHeight });
+    });
+    await expect(uttoning).toHaveCount(0);
+  });
+
+  test('T176: EXAKT fyra rader bär INGEN uttoning (listan rullar inte)', async ({
+    page,
+    network,
+  }) => {
+    network.use(hojdlasHandler(4, 0));
+    await gotoEventlage(page);
+    await expect(page.getByText('Bilaga 4.pdf')).toBeVisible();
+    await expect(page.getByTestId('lista-uttoning')).toHaveCount(0);
+  });
 });
 
 test.describe('GemensamtLage (räckviddsläge) — samma regel (tidigare saknad, TASK-309.24)', () => {
@@ -464,15 +462,14 @@ test.describe('GemensamtLage (räckviddsläge) — samma regel (tidigare saknad,
     // docblock) — se filhuvudets TÄCKNING-stycke. `overflow-y-hidden`
     // (regel 3, ≤ 4) gör `scrollHeight === clientHeight` trivialt sant
     // OAVSETT låsning, så den ENSAM bevisar ingenting — höjdvärdet gör.
-    const FALLBACK_DESKTOP = 99;
     expect(geometri.scrollHeight).toBe(geometri.clientHeight);
     expect(geometri.sistaBorderBottomWidth).toBe('0px');
-    expect(geometri.hojd).toBeGreaterThanOrEqual(FALLBACK_DESKTOP * 4);
+    expect(geometri.hojd).toBeGreaterThanOrEqual(FALLBACK_RADHOJD * 4);
     // Övre gräns generös (kantjustering + typsnitt/webbläsar-brus) — ändå
     // långt under vad en NATURLIG (o-låst) tomt-lägesrad hade mätt (en
     // enda `py-3`-textrad, typiskt < 60 px), vilket är den regression
     // denna gräns skulle fånga.
-    expect(geometri.hojd).toBeLessThanOrEqual(FALLBACK_DESKTOP * 4 + 8);
+    expect(geometri.hojd).toBeLessThanOrEqual(FALLBACK_RADHOJD * 4 + 8);
     await expect(page.getByTestId('dokument-lista')).not.toHaveAttribute('tabindex', '0');
 
     const resultat = await new AxeBuilder({ page })
@@ -722,12 +719,13 @@ test.describe('GemensamtLage vid 375 px — samma tre nivåer som desktop (revie
     const geometri = await mataGeometri(page);
     expect(geometri.scrollHeight).toBe(geometri.clientHeight);
     expect(geometri.sistaBorderBottomWidth).toBe('0px');
-    // `LISTA_FALLBACK_RADHOJD` (99, EN konstant, se `DokumentYta.tsx`s
-    // docblock) × 4 + kant ≈ 396–400 px. Övre gräns 410 px (Marcus/
-    // orkestrerarens egen gräns i review-fyndet) — INTE ~622 px, som en
-    // fallback baserad på en BRUTEN `GemensamBilageRadRow`-rad hade gett.
-    expect(geometri.hojd).toBeGreaterThanOrEqual(99 * 4);
-    expect(geometri.hojd).toBeLessThanOrEqual(410);
+    // `LISTA_FALLBACK_RADHOJD` (EN konstant, se `DokumentYta.tsx`s docblock
+    // och `FALLBACK_RADHOJD` ovan) × 4 + kant — INTE ~622 px, som en fallback
+    // baserad på en BRUTEN `GemensamBilageRadRow`-rad hade gett. Övre gränsen
+    // följer konstanten i stället för ett fristående 410 (T176: raden är
+    // 107 px sedan namnknappen bär 44 px träffyta).
+    expect(geometri.hojd).toBeGreaterThanOrEqual(FALLBACK_RADHOJD * 4);
+    expect(geometri.hojd).toBeLessThanOrEqual(FALLBACK_RADHOJD * 4 + 8);
   });
 
   test('NIVÅ 2 (ESTIMAT): 2 rader — låst höjd bevisad mot radens EGEN uppmätta höjd (bruten rad, 155 px)', async ({

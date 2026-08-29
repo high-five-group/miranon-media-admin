@@ -22,12 +22,21 @@ import { expect, test } from './acceptance-bas';
  *
  * ── VARFÖR 309.24 INTE KUNDE SE DEM ────────────────────────────────────
  *
- * S1: varje test i 309.24 öppnar sidan i default-filtret 'alla', som ÄR en
- * mätkälla (`reservMatbar`). Höjden är därför alltid redan låst innan
- * mätningen sker, och filterbyten därefter läser samma bevarade
- * React-state. Ingen väg in i komponenten via ett ICKE-mätbart filter
- * fanns i sviten — och det är precis den vägen `?typ=` öppnar, eftersom
- * nuqs-nyckeln överlever räckviddsväxlingen medan komponenten monteras om.
+ * S1: varje test i 309.24 öppnade sidan i default-filtret 'alla', som ÄR en
+ * mätkälla (`reservMatbar`). Höjden var därför alltid redan låst innan
+ * mätningen skedde, och filterbyten därefter läste samma bevarade
+ * React-state. Ingen väg in i komponenten via ett ICKE-mätbart filter fanns i
+ * sviten — och det var precis den vägen `?typ=` öppnade, eftersom
+ * nuqs-nyckeln överlevde räckviddsväxlingen medan komponenten monterades om.
+ *
+ * [T176, 2026-08-29] TYPFILTRET ÄR RIVET (`DokumentLista` § docblock: listan
+ * visar bara bilagor, så ett filter med tre alternativ varav två är tomma är
+ * sämre än inget). Båda de ICKE-mätbara vägarna är därmed borta, och S1:s
+ * kvarvarande innehåll är växlingen i sig: komponenten monteras OM vid ett
+ * räckviddsbyte, alla refs och `hojd`-state nollställs, och höjden ska vara
+ * låst i VARJE ram listan existerar — nu buren av `reservMatbar` (ovillkorat
+ * `true` sedan filtret försvann) i stället för av nödmätningen. Nödmätningen
+ * är ORÖRD i hooken och täcks av 0-raderstestet.
  *
  * S2: 309.24:s femradersfall mätte `rad4.bottom <= ulRect.bottom + 0.5` och
  * kallade utfallet "klippt bort". Den olikheten är SANN när linjen ligger
@@ -222,22 +231,20 @@ function forstaOlasta(
 }
 
 test.describe('S1 — höjden är låst från listans FÖRSTA målade ram', () => {
-  test('AC #1/#2: växling delade → event med ?typ=bilaga kvar och FÄRRE än fyra bilagor', async ({
-    page,
-    network,
-  }) => {
+  test('AC #1/#2: växling delade → event med FÄRRE än fyra bilagor', async ({ page, network }) => {
     // Marcus flöde, exakt: två delade dokument i räckviddsläget, sedan ett
-    // event valt i väljaren. `?typ=bilaga` ligger kvar från ett tidigare
-    // besök — nuqs-nyckeln nollställs inte av räckviddsbytet, och
-    // räckviddsläget har ingen filterrad som visar att den är satt.
+    // event valt i väljaren. Det nya eventet har TVÅ bilagor.
     //
-    // Det nya eventet har TVÅ bilagor. Före fixen var BÅDA mätkällorna
-    // falska där (`foretradesMatbar` kräver >= 4 egna rader i 'bilaga';
-    // `reservMatbar` kräver filtret 'alla'), så `useLastaListhojd`
-    // returnerade tidigt och höjden förblev `null` — listan följde
-    // innehållet, permanent.
+    // [T176, 2026-08-29] URL:en bar tidigare `?typ=bilaga` — den nuqs-nyckeln
+    // var halva rotorsaken 2026-08-29 (den överlevde räckviddsbytet medan
+    // komponenten monterades om, och räckviddsläget hade ingen filterrad som
+    // visade att filtret var satt). Filterraden är riven, så vägen finns inte
+    // längre. VÄXLINGEN kvarstår som den intressanta delen: komponenten
+    // monteras OM, alla refs och `hojd`-state nollställs, och höjden måste
+    // vara låst i varje ram listan existerar — nu buren av `reservMatbar`
+    // (ovillkorat `true`) i stället för av nödmätningen.
     network.use(handler(2, 2, 400));
-    await page.goto('/mer/dokument?typ=bilaga');
+    await page.goto('/mer/dokument');
     await expect(page.getByText('Delad 2.pdf')).toBeVisible();
 
     await startaSampling(page);
@@ -260,45 +267,37 @@ test.describe('S1 — höjden är låst från listans FÖRSTA målade ram', () =
     expect(slut.hojd).toBeLessThanOrEqual(maxRad * 4 + 4);
   });
 
-  test('AC #1/#2: sidladdning direkt i ?typ=mall — ett filter som ALDRIG kan nå fyra rader', async ({
-    page,
-    network,
-  }) => {
-    // MALLAR har två poster och GENERATORER en (`DokumentYta.tsx`), så
-    // varken 'mall' eller 'generator' kan någonsin leverera fyra rader.
-    // Före fixen var en sidladdning i något av dem permanent olåst — samma
-    // rotorsak som testet ovan, men utan att en växling behövs för att nå
-    // den. Att den vägen finns är skälet att fixen sitter i hooken och inte
-    // i räckviddsväxlingens URL-hantering.
-    network.use(handler(6, 0));
-    await page.goto(`/mer/dokument?event=${VISUAL_EVENT_ID}&typ=mall`);
-    await expect(page.getByText('Bekräftelsebilaga')).toBeVisible();
+  // [T176, 2026-08-29] TESTET "sidladdning direkt i ?typ=mall" ÄR RIVET, INTE
+  // TAPPAT. Det prövade väg 2 i `useLastaListhojd`s "EN OMÄTT LISTA"-stycke:
+  // `MALLAR` har två poster och `GENERATORER` en, så filtren 'mall'/'generator'
+  // kunde ALDRIG nå fyra rader och en sidladdning i något av dem lämnade
+  // höjden permanent olåst. Både filtren och mall-/generatorraderna är rivna
+  // (mallarna är handlingar nu, se `SkapaDokumentMeny`), så vägen finns inte
+  // att pröva. Nödmätningen den fällde är ORÖRD i hooken och täcks fortfarande
+  // av 0-raderstestet nedan.
 
-    const geometri = await matGeometri(page);
-    expect(geometri.last).toBe(true);
-    const maxRad = Math.max(...geometri.radHojder);
-    expect(geometri.hojd).toBeGreaterThanOrEqual(maxRad * 4 - 2);
-  });
-
-  test('AC #2/#5: NIVÅ 3 är nåbar även i DokumentLista — ?typ=bilaga på ett event UTAN bilagor', async ({
+  test('AC #2/#5: NIVÅ 3 är nåbar även i DokumentLista — ett event UTAN bilagor', async ({
     page,
     network,
   }) => {
     // Låser den nåbarhet `LISTA_FALLBACK_RADHOJD`s docblock beskriver efter
-    // 309.39. Komponenten monteras MED filtret 'bilaga', så den renderar
-    // aldrig i 'alla' — `senastUppmattRadhojd` är `null` när nödmätningen
-    // kör, och NIVÅ 3 använder konstanten. Före 309.39 var vägen ofarlig
-    // bara för att höjden inte sattes alls (symptom S1); nu ÄR den nåbar,
-    // och då ska den också vara mätt i stället för påstådd.
+    // 309.39: noll RIKTIGA rader i DOM och ingen tidigare mätning i
+    // komponentens liv, alltså NIVÅ 3 (konstanten).
+    //
+    // [T176] Vägen dit gick tidigare via `?typ=bilaga` på ett event vars
+    // mallar/generatorer ändå fyllde 'alla'. Filtret är rivet — nu är det det
+    // ÄRLIGA fallet: eventet HAR inga bilagor, och listan har inget annat att
+    // visa.
     network.use(handler(0, 0));
-    await page.goto(`/mer/dokument?event=${VISUAL_EVENT_ID}&typ=bilaga`);
+    await page.goto(`/mer/dokument?event=${VISUAL_EVENT_ID}`);
     await expect(page.getByText('Inga bilagor för det här eventet än.')).toBeVisible();
 
     const geometri = await matGeometri(page);
     expect(geometri.last).toBe(true);
     // Talet DUPLICERAS medvetet, samma disciplin som systerfilens
-    // `FALLBACK_DESKTOP` — se dess kommentar.
-    const FALLBACK = 99;
+    // `FALLBACK_RADHOJD` — se dess kommentar. [T176] 99 → 107: referensraden
+    // `MallRad` är riven, och en bilagerad mäter 107 px.
+    const FALLBACK = 107;
     expect(geometri.hojd).toBeGreaterThanOrEqual(FALLBACK * 4);
     expect(geometri.hojd).toBeLessThanOrEqual(FALLBACK * 4 + 8);
     expect(geometri.scrollHeight).toBe(geometri.clientHeight);
@@ -307,7 +306,7 @@ test.describe('S1 — höjden är låst från listans FÖRSTA målade ram', () =
   test('AC #1/#4: samma invariant vid 375 px', async ({ page, network }) => {
     await page.setViewportSize({ width: 375, height: 800 });
     network.use(handler(2, 2, 400));
-    await page.goto('/mer/dokument?typ=bilaga');
+    await page.goto('/mer/dokument');
     await expect(page.getByText('Delad 2.pdf')).toBeVisible();
 
     await startaSampling(page);
@@ -345,12 +344,14 @@ test.describe('S2 — den fjärde separatorn ligger UTANFÖR ytans klippkant', (
     });
   }
 
-  test('AC #3/#4: DokumentLista (eventläge), sju rader i "alla" — samma invariant', async ({
+  test('AC #3/#4: DokumentLista (eventläge), sju rader — samma invariant', async ({
     page,
     network,
   }) => {
-    // 4 bilagor + 2 mallar + 1 generator = 7 rader i default-filtret.
-    network.use(handler(4, 0));
+    // [T176] Sju rader kommer nu från SJU BILAGOR. Före filterrivningen var
+    // samma sjua "4 bilagor + 2 mallar + 1 generator" i default-filtret —
+    // mall- och generatorraderna finns inte i listan längre.
+    network.use(handler(7, 0));
     await page.goto(`/mer/dokument?event=${VISUAL_EVENT_ID}`);
     await expect(page.getByText('Bilaga 1.pdf')).toBeVisible();
 

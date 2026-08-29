@@ -1,6 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
 import type { NetworkFixture } from '@msw/playwright';
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import { http } from 'msw';
 import { VISUAL_EVENT_ID } from '../support/fixturvarld/fixture-data';
 import { EF, json } from '../support/fixturvarld/handlers';
@@ -93,6 +93,42 @@ function bilagorHandler() {
     if (eventId) return json({ attachments: [BILAGA_EGEN, BILAGA_GEMENSAM] });
     return json({ attachments: [BILAGA_GEMENSAM] });
   });
+}
+
+/**
+ * Radens ⋯-meny → posten `etikett`.
+ *
+ * [T176, 2026-08-29] SELEKTOR-UPPDATERING: radhandlingarna (Ladda ner /
+ * Ersätt / Skapa om / Ändra räckvidd / Radera) bodde som ikonknappar direkt i
+ * raden med filnamnet i `aria-label` ("Radera <namn>"). De bor nu i en `Meny`
+ * bakom EN ⋯-knapp — menyn bär filnamnet i sitt eget namn ("Fler val för
+ * <namn>"), posterna bär verbet. WAI-ARIA:s menygrammatik: kontexten namnger
+ * listan, posten namnger handlingen (samma form GitHub och Drive använder).
+ */
+async function oppnaRadmeny(rad: Locator) {
+  await rad.getByRole('button', { name: /^Fler val för / }).click();
+}
+
+async function valjRadhandling(rad: Locator, page: Page, etikett: string) {
+  await oppnaRadmeny(rad);
+  await page.getByRole('menuitem', { name: etikett, exact: true }).click();
+  // VÄNTA IN STÄNGNINGEN — inte kosmetik. RAC:s `Popover` renderar
+  // `role="dialog"` (mätt i renderad yta), och menyns popover lever kvar under
+  // sin 150 ms uttoning. En handling som öppnar en MODAL (Ändra räckvidd) ger
+  // därför ett fönster där `getByRole('dialog')` matchar TVÅ element och
+  // Playwright kastar strict-mode-fel i stället för att vänta.
+  await page.waitForFunction(() => document.querySelectorAll('[role="menu"]').length === 0);
+}
+
+/** Menyposternas etiketter för en rad — den nya formen av "vilka handlingar
+    finns på raden?". Stänger menyn efteråt (och väntar in uttoningen) så
+    nästa rad kan öppna sin utan strict-mode-krock. */
+async function radensHandlingar(rad: Locator, page: Page): Promise<string[]> {
+  await oppnaRadmeny(rad);
+  const poster = await page.getByRole('menuitem').allInnerTexts();
+  await page.keyboard.press('Escape');
+  await page.waitForFunction(() => document.querySelectorAll('[role="menu"]').length === 0);
+  return poster.map((t) => t.trim());
 }
 
 async function gotoEventlage(page: import('@playwright/test').Page) {
@@ -457,16 +493,21 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
     // "RIM · Rönninge". Formen "RIM · Alla steg" (ADR-118-eran, tom axel
     // utskriven) finns inte längre — se `rackviddsText.ts` för varför.
     await expect(gemensamRadEventlage.getByText('RIM · Rönninge')).toBeVisible();
-    await expect(gemensamRadEventlage.getByRole('button', { name: 'Ersätt' })).toHaveCount(0);
-    await expect(gemensamRadEventlage.getByRole('button', { name: 'Radera' })).toHaveCount(0);
+    // [T176] Handlingarna bor i radens ⋯-meny — frånvaron prövas alltså i
+    // menyns POSTLISTA i stället för bland radens knappar.
+    expect(await radensHandlingar(gemensamRadEventlage, page)).toEqual(['Ladda ner']);
 
-    // SAMMA bilaga (samma id/namn), i räckviddsläget: BÅDA knapparna finns.
+    // SAMMA bilaga (samma id/namn), i räckviddsläget: BÅDA handlingarna finns.
     await gotoRackviddslage(page);
     const gemensamRadRackviddslage = page
       .getByTestId('dokument-fil')
       .filter({ hasText: BILAGA_GEMENSAM.namn });
-    await expect(gemensamRadRackviddslage.getByRole('button', { name: 'Ersätt' })).toBeVisible();
-    await expect(gemensamRadRackviddslage.getByRole('button', { name: 'Radera' })).toBeVisible();
+    expect(await radensHandlingar(gemensamRadRackviddslage, page)).toEqual([
+      'Ladda ner',
+      'Ersätt',
+      'Ändra räckvidd',
+      'Radera',
+    ]);
   });
 
   // ═══ "ERSÄTT" FÅR ALDRIG TAPPA EN AXEL (runda 2, WARNING) ═══
@@ -505,10 +546,15 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
     // (ADR-118 beslut 3, oförändrat) — därför prövas fallet här.
     await gotoRackviddslage(page);
     const rad = page.getByTestId('dokument-fil').filter({ hasText: BILAGA_GEMENSAM.namn });
-    await expect(rad.getByRole('button', { name: 'Ersätt' })).toBeVisible();
+    expect(await radensHandlingar(rad, page)).toContain('Ersätt');
 
-    // "Ersätt" är en egen `FileTrigger` per rad — inputen SCOPAS till raden,
-    // annars träffar `setInputFiles` vilken som helst av ytans filväljare.
+    // "Ersätt" har en egen dold `<input type="file">` per rad — inputen SCOPAS
+    // till raden, annars träffar `setInputFiles` vilken som helst av ytans
+    // filväljare. [T176] Inputen renderas numera av raden själv i stället för
+    // av en `FileTrigger` (react-arias `FileTrigger` driver sin input via
+    // `PressResponder`, som `MenuItem` inte konsumerar — se `oppnaFilvaljare`
+    // i `DokumentYta.tsx`). Den ligger kvar PÅ SAMMA plats i DOM, så
+    // scopingen nedan är oförändrad.
     await rad.locator('input[type="file"]').setInputFiles({
       name: 'Parkering-v2.pdf',
       mimeType: 'application/pdf',
@@ -734,15 +780,12 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
     page,
     network,
   }) => {
-    // [ÄNDRAD, TASK-309.8] `MALLAR` bär nu TVÅ poster (Bekräftelsebilaga +
-    // Deltagarinformation, ADR-125 § 6 — se `DokumentYta.tsx`s filhuvud)
-    // i stället för den tidigare enda generiska platshållaren. Fixturen ger
-    // därför EN bilaga (i stället för `bilagorHandler()`s två) + 2 mallar +
-    // 1 generator = fyra poster, precis PÅ gränsen, alltså ingen rullning
-    // och inget tomt tabb-stopp — samma avsikt som förut, räknat om mot den
-    // nya katalogstorleken. Bilagan är `BILAGA_GEMENSAM` (inte `_EGEN`) i
-    // BÅDA lägena: `gotoEventlage`s eget assert letar efter just den, delat
-    // med alla andra tester i filen.
+    // [ÄNDRAD, T176 2026-08-29] Räkningen görs om EN gång till, av samma skäl
+    // som TASK-309.8 gjorde den: katalogen ändrade storlek. Nu är den ute ur
+    // listan helt — mallar och generatorer är HANDLINGAR i kortets
+    // handlingsrad (`SkapaDokumentMeny`), inte rader. Listan innehåller bara
+    // bilagor, så gränsfallet "precis PÅ fyra, ingen rullning" byggs av FYRA
+    // bilagor i stället för "1 bilaga + 2 mallar + 1 generator".
     //
     // ENDA testet i filen som laddar om med ÄNDRAD fixturdata, och därför
     // det enda som behöver arrangemanget — se `arrangeraTomCache` för
@@ -750,7 +793,15 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
     await arrangeraTomCache(page);
 
     network.use(
-      http.get(EF('get-event-attachments'), () => json({ attachments: [BILAGA_GEMENSAM] })),
+      http.get(EF('get-event-attachments'), () =>
+        json({
+          attachments: Array.from({ length: 4 }, (_, i) => ({
+            ...BILAGA_GEMENSAM,
+            id: `recBilagaFyra${String(i).padStart(5, '0')}`,
+            namn: i === 0 ? BILAGA_GEMENSAM.namn : `Fyllnad ${i}.pdf`,
+          })),
+        }),
+      ),
     );
     await gotoEventlage(page);
 
@@ -845,17 +896,17 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
     expect(geometri.listHojd).toBeCloseTo(geometri.fyraRader, 0);
     expect(geometri.rullar).toBe(true);
 
-    // ═══ LAYOUTEN HOPPAR INTE NÄR FILTRET VÄXLAR ═══
+    // ═══ [T176] FILTERVÄXLINGS-BLOCKET ÄR RIVET, INTE TAPPAT ═══
     //
-    // Marcus: *"nu ser skillnaden genom att växla mellan 'Alla' och
-    // 'Bilagor', för då hoppar layouten/listan i höjd."* Höjden låses på
-    // TOTALEN, inte på det filtrerade antalet, så allt under listan —
-    // inklusive uppladdningsknappen — står stilla.
-    const foreVaxling = (await rullande.boundingBox())?.height;
-    await page.getByRole('radio', { name: 'Bilagor' }).click();
-    await expect(page.getByText('Deltagarinformation')).toHaveCount(0);
-    const efterVaxling = (await page.getByTestId('dokument-lista').boundingBox())?.height;
-    expect(efterVaxling).toBe(foreVaxling);
+    // Här stod en mätning av Marcus fynd *"nu ser skillnaden genom att växla
+    // mellan 'Alla' och 'Bilagor', för då hoppar layouten/listan i höjd."*
+    // Typfiltret finns inte längre (`DokumentLista` § docblock: listan visar
+    // bara bilagor), så det finns ingen växling att pröva. Regeln den
+    // skyddade — att listans bounding box är LÅST och inte följer
+    // radantalet — är inte tappad: den prövas i
+    // `dokument-lista-hojdlas.acceptance.test.ts` mot fyra/sju rader, som
+    // dessutom är en STARKARE prövning (två verkliga innehållsmängder mot
+    // samma box, inte två vyer av samma data).
   });
 
   test('täckningspillen är SYNLIG mot sitt underlag — mätt, inte antaget', async ({
@@ -923,12 +974,13 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
     // inte hör hemma och Radera (räckviddslägets ensamrätt) finns.
     await expect(page).toHaveURL(/\/mer\/dokument$/);
     await expect(page.getByText(BILAGA_EGEN.namn)).toHaveCount(0);
-    await expect(
-      page
-        .getByTestId('dokument-fil')
-        .filter({ hasText: BILAGA_GEMENSAM.namn })
-        .getByRole('button', { name: 'Radera' }),
-    ).toBeVisible();
+    // [T176] Radera bor i radens ⋯-meny.
+    expect(
+      await radensHandlingar(
+        page.getByTestId('dokument-fil').filter({ hasText: BILAGA_GEMENSAM.namn }),
+        page,
+      ),
+    ).toContain('Radera');
   });
 
   test('räckvidds-axeln: stängda väljaren säger VAR man är, inte att ett val saknas', async ({
@@ -1207,112 +1259,27 @@ test.describe('TASK-309.23 — uppladdningsdialogens geometri är låst', () => 
 });
 
 /**
- * [TASK-309.40] Typfiltret (`?typ=`) ÖVERLEVDE tidigare ett räckviddsbyte —
- * diagnos i TASK-309.39 (Marcus prod-röktest 2026-08-29): Lotta bytte från
- * Delade dokument till ett event och fick ett "Bilagor"-filter kvar från
- * förra sammanhanget, utan att räckviddsläget (som saknar en filterrad) gav
- * någon ledtråd om varför listan var smalare. Produktbeslutet (review-agenten
- * klassade frågan `ask-user`; orkestreraren avgjorde på Marcus mandat,
- * TASK-309.40 kortets Description): filtret nollställs till 'alla' vid VARJE
- * byte av räckvidd, i BÅDA riktningarna — men INTE vid navigering IN i vyn
- * (en direktlänk med `?typ=bilaga`, TASK-340.2s "Till dokumenten", ska
- * fortsätta fungera oförändrat).
+ * [T176, 2026-08-29] SVITEN "TASK-309.40 — typfiltret nollställs vid byte av
+ * räckvidd" ÄR RIVEN, INTE TAPPAD.
  *
- * Fixen (`DokumentYta.tsx`s `handleRackviddsByte`) sitter i räckviddsväxlingens
- * EN handler — den enda vägen in i ett räckviddsbyte är `EventValjare`s
- * `onByte`/`gemensamtAlternativ.onValj` (se `EventValjare.tsx`s
- * `onSelectionChange`), så testerna nedan täcker samma tre vägar: delade →
- * event, event → delade, event → annat event — plus regressionsvakten att
- * en sidladdning i `?typ=` fortfarande fungerar (den passerar aldrig
- * handlern).
+ * Den prövade fyra vägar genom en nollställning av nuqs-nyckeln `?typ` vid
+ * räckviddsbyte (delade → event, event → delade, event → annat event, plus
+ * regressionsvakten att en direktlänk med `?typ=bilaga` fortfarande
+ * fungerade). Typfiltret finns inte längre: dokumentlistan visar BARA bilagor
+ * sedan mallarna och generatorerna flyttat upp i kortets handlingsrad
+ * (`DokumentLista` § docblock, `SkapaDokumentMeny`), och nyckeln är riven i
+ * samma drag — både `handleRackviddsByte`s nollställning och `dokument.tsx`s
+ * `setTyp('bilaga')` i "Till dokumenten".
  *
- * "räckvidds-axeln"-testerna ovan (samma fil) övar redan delade↔event-
- * NAVIGERINGEN utan `?typ=` inblandat — dessa fyra är dedikerade åt
- * NOLLSTÄLLNINGEN.
+ * DEFEKTEN DEN SKYDDADE MOT KAN INTE UPPSTÅ IGEN: den krävde ett filter som
+ * överlevde ett räckviddsbyte osynligt. Att `?typ` inte SÄTTS av "Till
+ * dokumenten" prövas i stället i
+ * `dokument-generering-bekraftelse.acceptance.test.ts` § AC #2 (vänd
+ * assertion: nyckeln ska vara `null`), så en återinförd `setTyp` fälls där.
+ *
+ * "räckvidds-axeln"-testerna ovan (samma fil) övar fortfarande
+ * delade↔event-NAVIGERINGEN.
  */
-test.describe('TASK-309.40 — typfiltret nollställs vid byte av räckvidd', () => {
-  test('delade → event nollställer ?typ (URL saknar nyckeln, listan visar "alla")', async ({
-    page,
-    network,
-  }) => {
-    network.use(bilagorHandler());
-    // Räckviddsläget har ingen filterrad — `?typ=bilaga` sitter kvar i
-    // URL:en osynligt, precis det TASK-309.39 diagnosen beskriver.
-    await page.goto('/mer/dokument?typ=bilaga');
-    await expect(page.getByTestId('dokument-yta')).toBeVisible();
-    await expect(page.getByText(BILAGA_GEMENSAM.namn)).toBeVisible();
-    await expect(page).toHaveURL(/typ=bilaga/);
-
-    await page.getByTestId('event-valjare-trigger').click();
-    await page
-      .getByRole('option', { name: /Skövde/ })
-      .first()
-      .click();
-
-    await expect(page).toHaveURL(new RegExp(`event=${VISUAL_EVENT_ID}`));
-    await expect(page).not.toHaveURL(/typ=/);
-    // Listan visar 'alla' — mallarna (som 'bilaga'-filtret hade dolt) syns.
-    await expect(page.getByText('Bekräftelsebilaga')).toBeVisible();
-    await expect(page.getByRole('radio', { name: 'Alla', exact: true })).toBeChecked();
-  });
-
-  test('event → delade nollställer ?typ (URL saknar nyckeln)', async ({ page, network }) => {
-    network.use(bilagorHandler());
-    await page.goto(`/mer/dokument?event=${VISUAL_EVENT_ID}&typ=bilaga`);
-    await expect(page.getByTestId('dokument-yta')).toBeVisible();
-    await expect(page.getByRole('radio', { name: 'Bilagor' })).toBeChecked();
-    // 'bilaga'-filtret döljer mallarna — kvitto på att filtret faktiskt är
-    // aktivt innan bytet, inte bara att chippet råkar se markerat ut.
-    await expect(page.getByText('Bekräftelsebilaga')).toHaveCount(0);
-
-    await page.getByTestId('event-valjare-trigger').click();
-    await page.getByRole('option', { name: 'Delade dokument', exact: true }).click();
-
-    await expect(page).toHaveURL(/\/mer\/dokument$/);
-    await expect(page).not.toHaveURL(/typ=/);
-  });
-
-  test('event → annat event nollställer ?typ (URL saknar nyckeln)', async ({ page, network }) => {
-    network.use(bilagorHandler());
-    await page.goto(`/mer/dokument?event=${VISUAL_EVENT_ID}&typ=bilaga`);
-    await expect(page.getByTestId('dokument-yta')).toBeVisible();
-    await expect(page.getByRole('radio', { name: 'Bilagor' })).toBeChecked();
-
-    await page.getByTestId('event-valjare-trigger').click();
-    // Göteborg (`EVENTS_RESPONSE`s andra event, fixture-data.ts) — det ENDA
-    // sättet att öva "event → ANNAT event" i stället för event ↔ delade,
-    // som räckvidds-axeln-testerna redan täcker.
-    await page
-      .getByRole('option', { name: /Göteborg/ })
-      .first()
-      .click();
-
-    const url = new URL(page.url());
-    const nyttEventId = url.searchParams.get('event');
-    expect(nyttEventId).not.toBeNull();
-    expect(nyttEventId).not.toBe(VISUAL_EVENT_ID);
-    expect(url.searchParams.has('typ')).toBe(false);
-    // Listan om-monterades i 'alla' — mallarna syns igen.
-    await expect(page.getByText('Bekräftelsebilaga')).toBeVisible();
-    await expect(page.getByRole('radio', { name: 'Alla', exact: true })).toBeChecked();
-  });
-
-  test('direktlänk med ?typ=bilaga IN i vyn fortsätter fungera (navigering, inte byte)', async ({
-    page,
-    network,
-  }) => {
-    // Regressionsvakt för TASK-340.2s "Till dokumenten": en sidladdning
-    // passerar aldrig `handleRackviddsByte` (den körs bara vid ett VAL i
-    // `EventValjare`), så filtret ska stå kvar oförändrat.
-    network.use(bilagorHandler());
-    await page.goto(`/mer/dokument?event=${VISUAL_EVENT_ID}&typ=bilaga`);
-    await expect(page.getByTestId('dokument-yta')).toBeVisible();
-    await expect(page.getByRole('radio', { name: 'Bilagor' })).toBeChecked();
-    await expect(page.getByText(BILAGA_EGEN.namn)).toBeVisible();
-    await expect(page.getByText('Bekräftelsebilaga')).toHaveCount(0);
-    await expect(page).toHaveURL(/typ=bilaga/);
-  });
-});
 
 /**
  * TASK-338.4 — "ÄNDRA RÄCKVIDD" (ADR-125 § Beslut 1, PRD TASK-338 berättelse 8)
@@ -1342,12 +1309,35 @@ test.describe('TASK-309.40 — typfiltret nollställs vid byte av räckvidd', ()
  * `null`-nyckel ser identiska ut för `toMatchObject`.
  */
 test.describe('TASK-338.4 — Ändra räckvidd på en delad bilaga', () => {
-  /** Radens "Ändra räckvidd"-knapp i räckviddsläget. */
-  const andraKnapp = (page: Page) =>
-    page
-      .getByTestId('dokument-fil')
-      .filter({ hasText: BILAGA_GEMENSAM.namn })
-      .getByRole('button', { name: `Ändra räckvidd för ${BILAGA_GEMENSAM.namn}` });
+  /** Radens "Ändra räckvidd" i räckviddsläget — [T176] en menypost bakom
+      radens ⋯-knapp, inte längre en egen ikonknapp med filnamnet i
+      `aria-label`. `oppnaAndraRackvidd` gör de två stegen. */
+  const gemensamRad = (page: Page) =>
+    page.getByTestId('dokument-fil').filter({ hasText: BILAGA_GEMENSAM.namn });
+
+  const oppnaAndraRackvidd = (page: Page) =>
+    valjRadhandling(gemensamRad(page), page, 'Ändra räckvidd');
+
+  /** Radens ⋯-knapp — fokus-ANKARET sedan handlingarna flyttade in i menyn.
+      Det är hit react-aria ska återlämna fokus när dialogen stänger. */
+  const menyTrigger = (page: Page) =>
+    gemensamRad(page).getByRole('button', { name: /^Fler val för / });
+
+  /** Ren TANGENTBORDSVÄG in i dialogen: fokusera ⋯, Enter (menyn öppnas med
+      första posten fokuserad), pil ner till "Ändra räckvidd", Enter. Prövar
+      alltså menyns egen tangentbordsnavigation på köpet. */
+  async function oppnaAndraRackviddMedTangentbord(page: Page) {
+    await menyTrigger(page).focus();
+    await expect(menyTrigger(page)).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('menuitem', { name: 'Ladda ner' })).toBeFocused();
+    await page.keyboard.press('ArrowDown'); // Ersätt
+    await page.keyboard.press('ArrowDown'); // Ändra räckvidd
+    await expect(page.getByRole('menuitem', { name: 'Ändra räckvidd' })).toBeFocused();
+    await page.keyboard.press('Enter');
+    // Samma väntan som `valjRadhandling` — se dess kommentar om `role="dialog"`.
+    await page.waitForFunction(() => document.querySelectorAll('[role="menu"]').length === 0);
+  }
 
   /**
    * ═══ STATEFUL FIXTURVÄRLD FÖR SKRIVVÄGEN ═══
@@ -1461,17 +1451,18 @@ test.describe('TASK-338.4 — Ändra räckvidd på en delad bilaga', () => {
       .getByTestId('dokument-fil')
       .filter({ hasText: BILAGA_GEMENSAM.namn });
     await expect(radIEventlage).toBeVisible();
-    await expect(radIEventlage.getByRole('button', { name: /Ändra räckvidd/ })).toHaveCount(0);
+    // [T176] Handlingen bor i radens ⋯-meny — frånvaron prövas i postlistan.
+    expect(await radensHandlingar(radIEventlage, page)).not.toContain('Ändra räckvidd');
 
     // RÄCKVIDDSLÄGET: här FINNS den.
     await gotoRackviddslage(page);
-    await expect(andraKnapp(page)).toBeVisible();
+    expect(await radensHandlingar(gemensamRad(page), page)).toContain('Ändra räckvidd');
   });
 
   test('dialogen öppnar FÖRIFYLLD med radens axlar, inte i nolläget', async ({ page, network }) => {
     network.use(bilagorHandler());
     await gotoRackviddslage(page);
-    await andraKnapp(page).click();
+    await oppnaAndraRackvidd(page);
 
     const dialog = page.getByRole('dialog');
     await expect(dialog).toBeVisible();
@@ -1494,7 +1485,7 @@ test.describe('TASK-338.4 — Ändra räckvidd på en delad bilaga', () => {
   }) => {
     network.use(bilagorHandler());
     await gotoRackviddslage(page);
-    await andraKnapp(page).click();
+    await oppnaAndraRackvidd(page);
 
     const dialog = page.getByRole('dialog');
     await expect(dialog.getByRole('radio', { name: EVENT_RADIO })).toBeDisabled();
@@ -1530,7 +1521,7 @@ test.describe('TASK-338.4 — Ändra räckvidd på en delad bilaga', () => {
     // BADGEN FÖRE: axellös = "Alla event".
     await expect(rad.getByText('Alla event')).toBeVisible();
 
-    await rad.getByRole('button', { name: `Ändra räckvidd för ${AXELLOS.namn}` }).click();
+    await valjRadhandling(rad, page, 'Ändra räckvidd');
     await expect(page.getByRole('dialog')).toBeVisible();
     await valjIAxel(page, platsValjare, 'Rönninge');
     await expect(page.getByRole('dialog').getByText('Gäller: alla event i Rönninge')).toBeVisible();
@@ -1564,7 +1555,7 @@ test.describe('TASK-338.4 — Ändra räckvidd på en delad bilaga', () => {
     // BADGEN FÖRE: den kombinerade formen.
     await expect(rad.getByText('RIM · Rönninge')).toBeVisible();
 
-    await andraKnapp(page).click();
+    await oppnaAndraRackvidd(page);
     // Tillbaka till nolläget på BÅDA axlarna — riktningen som avslöjar en
     // fältbyggare som utelämnar i stället för att rensa.
     await valjIAxel(page, familjValjare, 'Alla familjer');
@@ -1614,7 +1605,7 @@ test.describe('TASK-338.4 — Ändra räckvidd på en delad bilaga', () => {
     const rad = page.getByTestId('dokument-fil').filter({ hasText: BILAGA_GEMENSAM.namn });
     await expect(rad.getByText('RIM · Rönninge')).toBeVisible();
 
-    await andraKnapp(page).click();
+    await oppnaAndraRackvidd(page);
     // Nollställ BÅDA axlarna, så den optimistiska badgen blir "Alla event".
     await valjIAxel(page, familjValjare, 'Alla familjer');
     await valjIAxel(page, platsValjare, 'Alla platser');
@@ -1666,9 +1657,7 @@ test.describe('TASK-338.4 — Ändra räckvidd på en delad bilaga', () => {
     network.use(bilagorHandler());
     await gotoRackviddslage(page);
 
-    await andraKnapp(page).focus();
-    await expect(andraKnapp(page)).toBeFocused();
-    await page.keyboard.press('Enter');
+    await oppnaAndraRackviddMedTangentbord(page);
 
     const dialog = page.getByRole('dialog');
     await expect(dialog).toBeVisible();
@@ -1691,7 +1680,13 @@ test.describe('TASK-338.4 — Ändra räckvidd på en delad bilaga', () => {
     // react-arias fokus-restore måste överleva en unmount av hela trädet.
     // Landar fokus på <body> i stället står tangentbordsanvändaren utan
     // position i listan och får börja om från sidans topp.
-    await expect(andraKnapp(page)).toBeFocused();
+    //
+    // [T176] ANKARET ÄR ⋯-KNAPPEN, inte den gamla "Ändra räckvidd"-ikonknappen:
+    // menyn stänger vid `onAction` och lämnar fokus till sin trigger, och det
+    // är den positionen dialogen sedan ska återlämna till. Kedjan meny →
+    // dialog → tillbaka är alltså EN länk längre än förut, och det är precis
+    // därför den mäts.
+    await expect(menyTrigger(page)).toBeFocused();
   });
 
   test('tangentbord: fokus återlämnas till knappen även efter LYCKAD Spara', async ({
@@ -1702,8 +1697,7 @@ test.describe('TASK-338.4 — Ändra räckvidd på en delad bilaga', () => {
     riggaScopeVarld(network);
 
     await gotoRackviddslage(page);
-    await andraKnapp(page).focus();
-    await page.keyboard.press('Enter');
+    await oppnaAndraRackviddMedTangentbord(page);
     await expect(page.getByRole('dialog')).toBeVisible();
 
     await valjIAxel(page, platsValjare, 'Alla platser');
@@ -1715,13 +1709,14 @@ test.describe('TASK-338.4 — Ändra räckvidd på en delad bilaga', () => {
     // inte ta fokus. Stängningen sker dessutom i mutationens `onSuccess`,
     // alltså i samma vända som `isPending` faller tillbaka. Att fokus ändå
     // landar rätt är inget man kan läsa sig till ur koden; det måste mätas.
-    await expect(andraKnapp(page)).toBeFocused();
+    // [T176] Ankaret är ⋯-knappen — se Escape-testet ovan.
+    await expect(menyTrigger(page)).toBeFocused();
   });
 
   test('ändra-dialogen är axe-ren', async ({ page, network }) => {
     network.use(bilagorHandler());
     await gotoRackviddslage(page);
-    await andraKnapp(page).click();
+    await oppnaAndraRackvidd(page);
     await expect(page.getByRole('dialog')).toBeVisible();
 
     const resultat = await new AxeBuilder({ page })
