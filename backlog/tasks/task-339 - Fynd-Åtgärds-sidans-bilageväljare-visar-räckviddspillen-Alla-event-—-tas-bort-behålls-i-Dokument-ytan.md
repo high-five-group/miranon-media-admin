@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-29 08:10'
+updated_date: '2026-08-29 08:49'
 labels:
   - ready-for-agent
 dependencies: []
@@ -24,14 +25,14 @@ VERIFIERAT LÄGE (main 86c343bb): badgen renderas i src/components/events/atgard
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Ingen RackviddBadge/pill renderas i Åtgärds-sidans bilageväljare (event-egna och delade bilagor listas utan räckviddsmarkering); Dokument-ytans listor oförändrade — bevisat i acceptance-test (bilageväljaren utan badge, Dokument-ytan med)
-- [ ] #2 atgarder-bilageval-send.acceptance.test.ts bevisar fortsatt unionen (event-egen + delad bilaga i väljaren, sändning med bifogad delad bilaga) utan badge-påståendet; axe-svep grönt
-- [ ] #3 Stale prosa rättad: AtgardsSida.tsx-docblocket vid badgen, RackviddBadge.tsx:s docblock ('… och i Åtgärds-sidans bilageväljare') och DokumentYta.tsx:2187-noten; check-facit.sh exit 0 eller fällning bokförd som STOPP
+- [x] #1 Ingen RackviddBadge/pill renderas i Åtgärds-sidans bilageväljare (event-egna och delade bilagor listas utan räckviddsmarkering); Dokument-ytans listor oförändrade — bevisat i acceptance-test (bilageväljaren utan badge, Dokument-ytan med)
+- [x] #2 atgarder-bilageval-send.acceptance.test.ts bevisar fortsatt unionen (event-egen + delad bilaga i väljaren, sändning med bifogad delad bilaga) utan badge-påståendet; axe-svep grönt
+- [x] #3 Stale prosa rättad: AtgardsSida.tsx-docblocket vid badgen, RackviddBadge.tsx:s docblock ('… och i Åtgärds-sidans bilageväljare') och DokumentYta.tsx:2187-noten; check-facit.sh exit 0 eller fällning bokförd som STOPP
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->

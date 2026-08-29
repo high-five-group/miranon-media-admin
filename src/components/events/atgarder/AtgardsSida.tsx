@@ -161,7 +161,6 @@ import {
 import { type ReactNode, useEffect, useId, useMemo, useState } from 'react';
 import { Checkbox } from 'react-aria-components';
 import { useAuth } from '@/auth/useAuth';
-import { RackviddBadge } from '@/components/dokument/RackviddBadge';
 import { Button } from '@/components/primitives/Button';
 import { Dialog, DialogTrigger } from '@/components/primitives/Dialog';
 import { Input } from '@/components/primitives/Input';
@@ -1550,19 +1549,19 @@ function BilageValjare({
                   className="text-(--mm-checkbox-check) opacity-0 group-data-[selected]:opacity-100"
                 />
               </span>
-              <span className="flex min-w-0 flex-1 items-center gap-1.5">
-                <span className="truncate font-medium text-body">{b.namn}</span>
-                {/* [TASK-275.3, ADR-118 beslut 2] Räckviddsbadgen — SAMMA
-                    komponent som Dokument-ytans lista (RackviddBadge.tsx,
-                    husets Pill-grammatik). Renderar inget för räckvidd
-                    Event: bara GEMENSAMMA bilagor (redan i unionen sedan
-                    TASK-275.2) behöver förklaringen. */}
-                <RackviddBadge
-                  rackvidd={b.rackvidd}
-                  kursfamilj={b.kursfamilj}
-                  kursniva={b.kursniva}
-                />
-              </span>
+              {/* [TASK-339] Räckviddsbadgen (RackviddBadge, TASK-275.3) TAGEN
+                  BORT härifrån — Marcus prod-röktest 2026-08-29 (S113,
+                  TASK-309.11 punkt 8): "blir inte snyggt". Här väljer Lotta
+                  VAD som ska bifogas; varifrån bilagan kommer (räckvidden)
+                  är inte ett beslutsunderlag i DEN här listan och
+                  konkurrerade visuellt med kryssrutan/filnamnet. Unionen
+                  (event-egen + delad, TASK-275.2) är OFÖRÄNDRAD — bara
+                  räckviddsmarkeringen är borta. Badgen behålls i
+                  Dokument-ytans listor (ADR-118 beslut 3: den förklarar där
+                  varför Ersätt/Radera saknas för en delad bilaga i
+                  eventkontext — ett skäl som inte finns i DENNA väljare,
+                  som varken ersätter eller raderar). */}
+              <span className="min-w-0 flex-1 truncate font-medium text-body">{b.namn}</span>
               {/* Storleken höger-justerad — samma plats som räknarna på sidans
                   övriga rader (`RAD_KLASS` § `ml-auto`). */}
               <span className="ml-auto shrink-0 text-small text-text-muted">
