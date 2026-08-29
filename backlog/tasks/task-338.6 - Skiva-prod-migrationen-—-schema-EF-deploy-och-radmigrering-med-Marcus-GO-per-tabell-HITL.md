@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-29 08:04'
-updated_date: '2026-08-29 15:23'
+updated_date: '2026-08-29 17:17'
 labels:
   - ready-for-human
 dependencies:
@@ -27,8 +27,8 @@ Marcus-moment i tre steg, i denna ordning: (i) Bilagor i PROD får option 'Gemen
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Prod: option, länk och lookup finns (fält-ID:n bokförda); Marcus GO citerat i Implementation Notes
-- [ ] #2 Prod-EF:erna get-event-attachments, upload-attachment, finalize-attachment-upload, update-attachment-scope deployade — UPDATED_AT-tider bokförda
+- [x] #1 Prod: option, länk och lookup finns (fält-ID:n bokförda); Marcus GO citerat i Implementation Notes
+- [x] #2 Prod-EF:erna get-event-attachments, upload-attachment, finalize-attachment-upload, update-attachment-scope deployade — UPDATED_AT-tider bokförda
 - [ ] #3 Prod: 0 rader kvar med Kurstyp/Alla event; antal Gemensam = summan före; de två dokument Marcus laddade upp 2026-08-29 finns kvar och är läsbara i räckviddsläget
 <!-- AC:END -->
 
@@ -215,4 +215,29 @@ Bonus mätt i samma svar: `Platsnamn`-lookupens `fieldIdInLinkedTable` i prod = 
 `scripts/task-338-6-prod-migration.mjs`s tooling-lucka (`runSchema()` fångar aldrig choice-/spegelfälts-ID) kvarstår som ett verkligt fynd oberoende av att värdena nu är mätta för hand — bokfört i data-model.md, försvinner inte ur historiken.
 
 **AC #1 fortfarande INTE bockad** — kräver att steg (ii) EF-deploy och (iii) radmigrering också är gjorda. Status kvarstår `To Do`.
+
+## § Steg (ii) och (iii) utförda mot PROD 2026-08-29 — AC #1 och #2 bockade
+
+**Marcus GO, verbatim:** schemat — *"Du har ett GO från mig för steg 2 (schemaändringen)."* · raderna — *"Kör!"* (ADR-125 § 8, två separata klartextbeslut som föreskrivet).
+
+**Arbetsdelningen** följde `atkomst-och-nycklar.md` § "Prod-deploy av bilagespåret"s VEM-tabell: schema- och radstegen är AGENT-körbara på Marcus GO i klartext (gaten `AIRTABLE_PROD_GODKAND_AV_MARCUS` sitter INUTI skriptet, ingen hook); endast EF-deployen bär Supabase-prod-refen och fälls mekaniskt av `deny-prod-ref.sh`. Orkestreraren körde steg 1/3/4/7/8, Marcus steg 5.
+
+**Steg (iii), radmigreringen** (`--utfor-rader`, exit 0): `2 rad(er) migrerade till "Gemensam"`, `konvergerat: JA`, `Kurstyp/Alla event kvar: 0 (förväntat 0)`, `radMigrering=2`. Slutverifieringen (`--kontrollera`, exit 0): `Att migrera: 0` · `Redan Gemensam: 2` = summan från steg 1 · `Gemensam-rader utan Namn/Event-länk: 0`. Raden med tomt `Räckvidd` (1 st) orörd som avsett.
+
+**Steg (ii), EF-deploy — TVÅ körningar, och skälet till den andra:**
+
+| Deploy | Tid (UTC) | Omfattning | Utfall |
+|---|---|---|---|
+| 1 | 15:30:41–15:37:04 | 45 funktioner | alla färsk `UPDATED_AT`, återlänkad staging |
+| 2 | 17:08:18–17:12:36 | **46** funktioner | `update-attachment-scope` **VERSION 1** (ny i prod), återlänkad staging |
+
+`UPDATED_AT` för de fyra AC #2 räknar upp, efter deploy 2: `finalize-attachment-upload` 17:09:49 · `generate-event-attachment` 17:09:59 · `get-event-attachments` 17:10:18 · `upload-attachment` 17:11:27 · plus `update-attachment-scope` 17:12:36.
+
+**Varför deploy 2 behövdes — och vad som nästan gick fel.** `TASK-338.4` (PR #2103) levererade `supabase/functions/update-attachment-scope/` men rörde aldrig `.prod-functions-allowlist.conf`. `deploy-prod-functions.sh` deployar ENDAST allowlistade funktioner; en katalog utan rad listas som `[EXKLUDERAD]` och **släpps igenom utan att fälla** (till skillnad från en allowlistad funktion utan katalog, som ger exit 1). Deployen hade alltså kört sina ~10 minuter och lämnat funktionen odeployad, varpå `TASK-338.7` punkt 7 ("Ändra räckvidd") hade varit död i prod utan att någon grind sagt ifrån.
+
+Fångat FÖRE deployen med `bash scripts/deploy-prod-functions.sh --list`, som visade `[EXKLUDERAD]  update-attachment-scope`. Rättat i PR #2117 (som i sin tur fick tre granskningsrundor: risk `hog` → `medel` → `lag`, och fällde ett falskt påstående i orkestrerarens egen kommentar om att grenen var "TYST" — den är icke-fällande, inte tyst).
+
+**Regeln som föll ut och nu bor i allowlistens eget kommentarsblock:** kör `--list` före varje prod-deploy som följer på en PR med en NY Edge Function.
+
+**AC-status:** #1 ✅ (fält-ID:n i `data-model.md`, GO citerat) · #2 ✅ (alla fyra EF:er deployade, `UPDATED_AT` bokförda ovan) · #3 **öppen** — de två första leden är verifierade (`0` kvar med legacy, `Gemensam` = 2), men det tredje ("de två dokument Marcus laddade upp finns kvar och är läsbara i räckviddsläget") kräver hans blick i appen och bockas i `TASK-338.7`s testrunda, punkt 7.
 <!-- SECTION:NOTES:END -->

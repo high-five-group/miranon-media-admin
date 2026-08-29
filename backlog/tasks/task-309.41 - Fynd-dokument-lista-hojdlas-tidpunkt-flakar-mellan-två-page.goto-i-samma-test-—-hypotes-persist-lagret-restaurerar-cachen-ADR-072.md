@@ -3,10 +3,10 @@ id: TASK-309.41
 title: >-
   Fynd: dokument-lista-hojdlas-tidpunkt flakar mellan två page.goto i samma test
   — hypotes: persist-lagret restaurerar cachen (ADR-072)
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-29 12:47'
-updated_date: '2026-08-29 15:43'
+updated_date: '2026-08-29 17:16'
 labels:
   - ready-for-agent
 dependencies: []

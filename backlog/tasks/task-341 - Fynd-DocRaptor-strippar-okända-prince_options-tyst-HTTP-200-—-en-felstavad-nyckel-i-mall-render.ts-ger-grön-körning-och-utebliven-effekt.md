@@ -3,10 +3,10 @@ id: TASK-341
 title: >-
   Fynd: DocRaptor strippar okända prince_options tyst (HTTP 200) — en felstavad
   nyckel i mall-render.ts ger grön körning och utebliven effekt
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-29 14:33'
-updated_date: '2026-08-29 15:15'
+updated_date: '2026-08-29 17:16'
 labels:
   - ready-for-agent
 dependencies: []
