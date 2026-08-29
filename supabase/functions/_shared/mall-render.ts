@@ -79,6 +79,46 @@
 // mönster `send-receipt-email/index.ts` (`isProd`) redan etablerat, så
 // mall-render.ts förblir en REN funktion av sina argument (testbar utan
 // att mocka miljövariabler).
+//
+// DOCRAPTOR-REQUEST-YTAN — VERIFIERAD MOT REFERENSEN (TASK-341, 2026-08-29,
+// källa https://docraptor.com/documentation/api, WebFetch + browser-kontroll
+// enligt tasks/lessons.d/webfetch-citat-verifieras-i-browser-fore-citering.md
+// — WebFetch:s sammanfattning kontrollerades ordagrant mot sidans egen
+// `document.body.innerText` innan något citerades här). `postaTillDocRaptor`
+// nedan skickar EXAKT FEM topp-nivå-nycklar i JSON-kroppen: `test`,
+// `document_type`, `document_content`, `name`, `javascript`. Alla fem finns i
+// referensen. `document_type` är INTE en felstavning — sidan säger verbatim:
+// "This field was previously called document_type and is still available
+// for applications that depend on it." (fältet heter `type` i dag, men den
+// gamla nyckeln stöds uttryckligen alltjämt). `javascript` är TOPP-NIVÅ
+// (DocRaptors EGEN JavaScript-motor: "If enabled, we will use DocRaptor's
+// custom JavaScript engine to run any JavaScript in your HTML before sending
+// it to Prince for conversion.") — skilt från det NÄSTLADE
+// `prince_options[javascript]` (Princes egen motor: "If enabled, we will use
+// Prince's built-in JavaScript engine. Note that this is a separate engine
+// from DocRaptor's JavaScript engine."). Vi sätter bara den förra, till
+// `false` (våra mallar kräver ingen JS-körning under rendering).
+//
+// PREMISSAVVIKELSE MOT FYND-KORTET (bokförd, inte tyst rättad — ADR-086):
+// TASK-341 formulerades utifrån att denna fil skickar ett eller flera
+// `prince_options`-fält som var och ett behöver verifieras mot referensen.
+// Mätt fakta (grep + läsning av `postaTillDocRaptor` nedan): filen skickar
+// NOLL `prince_options`-nycklar i dag — inget `prince_options`-objekt finns
+// alls i JSON-kroppen. Ursprungsfyndet som gav upphov till kortet — att
+// DocRaptor svarar HTTP 200 och TYST STRIPPAR en okänd `prince_options`-nyckel
+// (docs/research/forhandsgranska-spara-atervand-bilageflodet-2026-08-29.md
+// § Oväntade fynd, en `pdf_id`-probe) — beskriver alltså i dag en RISK för en
+// FRAMTIDA utökning av denna fil, inte en aktiv bugg. Ingen ändring av
+// renderingsbeteendet gjordes (kortets uttryckliga krav).
+// `tests/api/mall-render-docraptor-request.test.ts` fäller BÅDA
+// felklasserna lokalt utan nätverk: (1) en felstavning bland de fem
+// topp-nivå-nycklar som FAKTISKT skickas i dag, prövad mot en allowlist på
+// 19 dokumenterade topp-nivå-parametrar; och (2) — framåtsäkrat — om ett
+// `prince_options: { … }`-block någonsin läggs till i `postaTillDocRaptor`,
+// prövas VARJE nyckel däri mot en egen allowlist på de 32
+// `prince_options[…]`-nycklar referenssidan dokumenterar i dag (räknat
+// 2026-08-29; forsknings-passets tal "33" i samma sida ovan gäller ett
+// annat, tidigare mätt datum och är inte omräknat här).
 
 import { Eta } from 'https://esm.sh/eta@4.6.0';
 import { HttpError } from './errors.ts';
