@@ -165,6 +165,24 @@ källa där `fsType` "aldrig kunde mätas") — de två dokumenten beskriver tv�
 olika källor i tid, inte en verklig konflikt. Se AC #5-avsnittet i kortets
 Implementation Notes för hela resonemanget.
 
+**DocRaptors `http_timeout`-default (TASK-342, 2026-08-29):** Prince hämtar
+externa typsnitts-/bild-URL:er UNDER rendering, styrt av
+`prince_options[http_timeout]` — och den defaultar till **10 sekunder**, inte
+60 som tidigare antagits (verbatim,
+[docraptor.com/documentation/api](https://docraptor.com/documentation/api),
+browser-verifierad: *"By default, DocRaptor will attempt to fetch any
+external resource for up to 10 seconds."*). Fontstrategin ovan (Cavolini via
+lokal symlänk, Comic Neue som fallback) är irrelevant för DENNA risk — vid
+rendering är BÅDA redan inbäddade som base64 `data:`-URI:er av
+`_shared/mall-render.ts`s `gorSjalvbarande` (§ filhuvud "DOCRAPTOR-REQUEST-
+YTAN"/"HTTP_TIMEOUT-DEFAULTEN"), aldrig hämtade via nätverk vid PDF-tillfället
+— symlänken/fallbacken avgör bara vad som bäddas in vid BUILD-tid
+(`scripts/synka-bilagemallar.mjs`). Mätt (grep av de tre mallarnas HTML/CSS
+direkt): **noll** `url(http…)`/`<img src="http…">`-referenser i någon av
+bekräftelse/deltagarinfo/kvitto — exponeringen mot 10 s-defaulten är alltså
+noll i dag, bokförd frånvaro, ingen kodändring gjord. Låst av
+`tests/api/mall-render-sjalvbarande-resurser.test.ts`.
+
 ## QR-koderna — genererade, aldrig kopierade
 
 Båda QR-koderna i bekräftelsebilagans sidfot är genererade DIREKT ur
