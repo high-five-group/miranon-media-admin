@@ -204,6 +204,22 @@ async function valjFilter(page: Page, etikett: string) {
  * innehållets naturliga höjd" genom att jämföra `hojd` mot `Math.max(
  * ...radHojder) * 4`, i stället för att bara mäta "ingen scroll" (sant
  * även för en OLÅST kort lista). */
+/**
+ * Radens ⋯-meny → posten `etikett`.
+ *
+ * SELEKTOR-UPPDATERING, INTE EN MILDRAD ASSERT (2026-08-29): radhandlingarna
+ * (Ladda ner/Ersätt/Skapa om/Ändra räckvidd/Radera) bodde tidigare som
+ * ikonknappar direkt i raden, med filnamnet i `aria-label`
+ * ("Radera Delad 5.pdf"). De bor nu i en `Meny` bakom EN ⋯-knapp — menyn bär
+ * filnamnet i sitt eget namn ("Fler val för Delad 5.pdf"), posterna bär bara
+ * verbet. Det är WAI-ARIA:s egen menygrammatik (kontexten namnger listan,
+ * posten namnger handlingen) och samma form GitHub/Drive använder.
+ */
+async function valjRadhandling(page: Page, namn: string, etikett: string) {
+  await page.getByRole('button', { name: `Fler val för ${namn}` }).click();
+  await page.getByRole('menuitem', { name: etikett }).click();
+}
+
 async function mataGeometri(page: Page) {
   return page.getByTestId('dokument-lista').evaluate((ul) => {
     const rect = ul.getBoundingClientRect();
@@ -569,7 +585,7 @@ test.describe('GemensamtLage (räckviddsläge) — samma regel (tidigare saknad,
     const fore = await mataGeometri(page);
     expect(fore.scrollHeight).toBeGreaterThan(fore.clientHeight); // 5 rader: scrollbart
 
-    await page.getByRole('button', { name: 'Radera Delad 5.pdf' }).click();
+    await valjRadhandling(page, 'Delad 5.pdf', 'Radera');
     // Väntar in refetchen (den nya, kortare listan) — `not.toBeVisible()`
     // pollar tills DOM:en faktiskt hunnit uppdateras.
     //

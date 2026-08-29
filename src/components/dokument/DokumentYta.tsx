@@ -177,9 +177,20 @@ import { useQuery } from '@tanstack/react-query';
 import {
   ChevronRight,
   Download,
+  // [2026-08-29] ⋯-knappen som ersätter radens ikonrad. `Ellipsis` (inte
+  // `MoreVertical`): menyn öppnas NEDÅT från en knapp längst ut till höger i
+  // en vågrät rad, och tre vågräta prickar är den form användare känner igen
+  // som "fler val i den här raden" (samma val som `Files`/`Target` gjordes på
+  // — ikonen ska läsa som det den gör).
+  Ellipsis,
   ExternalLink,
   Files,
+  // Radens ledande typglyf — `FileText` för pdf/okänt, `Image` för bilder.
+  // `Image` krockar med webbläsarens globala `Image`-konstruktor, därav
+  // alias.
+  FileText,
   FileUp,
+  Image as ImageIcon,
   Loader2,
   RefreshCw,
   // [TASK-338.4] "Ändra räckvidd" — `Target` läser som "vad detta dokument
@@ -202,6 +213,7 @@ import { rackviddsSammanfattning } from '@/components/dokument/rackviddsText';
 import { EventValjare } from '@/components/events/EventValjare';
 import { Button } from '@/components/primitives/Button';
 import { Dialog } from '@/components/primitives/Dialog';
+import { Meny, MenyAvdelare, MenyPost } from '@/components/primitives/Meny';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Modal } from '@/components/primitives/Modal';
 import { Radio, RadioGroup } from '@/components/primitives/RadioGroup';
@@ -1392,6 +1404,45 @@ function metaDelar(current: BilageRad['current']): (string | null)[] {
  * intent-färgen under `prefers-contrast: more` — 11-golvet, som `ghost`
  * (transparent botten) inte kan ge här.
  */
+/**
+ * ÖPPNANDET — EN KODVÄG, tre anropsställen (radens namnknapp,
+ * `DokumentAtgardsKnappar`, generator-menyposten).
+ *
+ * MÅSTE ANROPAS SYNKRONT UR KLICK-HANDLERN. `window.open` nedan är hela
+ * popup-blockerar-säkerheten: fönstret öppnas i användarens egen gest, och
+ * adressen sätts EFTERÅT när hämtningen är klar (se filhuvudets IKONPAR-not
+ * för mätningen och för varför `noopener` är uteslutet). Lägg aldrig ett
+ * `await` före anropet av denna funktion.
+ *
+ * [TASK-309.26 AC #4 / TASK-309.38] Fönstret får en momentan laddningssida
+ * direkt — annars står det tomt (`about:blank`) under hela hämtningen, samma
+ * "abrupt tomt fönster" Marcus avvisade 2026-08-22 för genereringsvyn.
+ * Väntetexten är personlig men bär det GENERISKA "dokumentet", inte namnet i
+ * bestämd form: vägen är delad mellan fritt uppladdade filnamn
+ * ("kontrakt_signerat.pdf" — inte en böjbar substantivfras) och katalogens
+ * fasta namn, och svensk bestämd form bildas inte med en enda regel över
+ * substantiv-klasser (`GenereringsVy.tsx`s `MALL_META` bär därför en
+ * uppslagstabell i stället — den vägen har ett känt, litet antal namn).
+ */
+function oppnaDokument({
+  kalla,
+  forNamn,
+  mutation,
+}: {
+  kalla: DokumentKalla;
+  forNamn: string | null;
+  mutation: ReturnType<typeof useForhandsvisaDokument>;
+}) {
+  const handle = window.open('', '_blank');
+  skrivLaddningssida(handle, {
+    titel: 'Öppnar dokument…',
+    text: forNamn
+      ? `Ett ögonblick ${forNamn}, dokumentet öppnas här om några sekunder.`
+      : 'Ett ögonblick, dokumentet öppnas här om några sekunder.',
+  });
+  mutation.mutate({ kalla, handle });
+}
+
 function DokumentAtgardsKnappar({ namn, kalla }: { namn: string; kalla: DokumentKalla }) {
   const forhandsvisaMutation = useForhandsvisaDokument();
   // [TILLÄGG, TASK-309.38] Samma väntehälsning som GenereringsVy.tsx —
@@ -1414,37 +1465,7 @@ function DokumentAtgardsKnappar({ namn, kalla }: { namn: string; kalla: Dokument
         aria-label={forhandsvisaMutation.isPending ? `Öppnar ${namn} …` : `Öppna ${namn}`}
         onPress={() => {
           if (forhandsvisaMutation.isPending) return;
-          // KRITISKT: window.open MÅSTE anropas synkront här, före all
-          // await/mutate-hantering — se filhuvudets IKONPAR-not.
-          const handle = window.open('', '_blank');
-          // [TILLÄGG, TASK-309.26 review-runda 1, AC #4] Samma delade
-          // laddningssida som GenereringsVy.tsx — fönstret stod annars
-          // tomt (about:blank) under hela hämtningen, samma "abrupt
-          // tomt fönster"-defekt Marcus avvisade 22 aug för den andra
-          // ytan. Se `useForhandsvisaDokument.ts`s docblock.
-          //
-          // [TILLÄGG, TASK-309.38] Väntetexten är personlig här också
-          // (AC #3, formkonsekvens), men bär det GENERISKA "dokumentet" —
-          // inte `namn` böjt i bestämd form. Skälet: denna knapp är delad
-          // mellan bilaga-rader (fritt uppladdat filnamn, t.ex.
-          // "kontrakt_signerat.pdf" — inte en böjbar substantivfras) och
-          // generatorraden/kvittot (`GeneratorRad`, `namn={gen.namn}`).
-          // GenereringsVy.tsx:s `MALL_META`-poster bär numera EXPLICIT
-          // `namnBestamd` per mall (review-runda 1, samma skiva — den
-          // mekaniska `${namn.toLowerCase()}n`-formeln gav "deltagarinformationn"
-          // eftersom svensk bestämd form inte bildas med en enda regel över
-          // substantiv-klasser). Ett känt, litet antal fasta mallnamn tål en
-          // uppslagstabell; ett godtyckligt uppladdat filnamn gör det inte —
-          // därför förblir DENNA yta generisk. `titel` lämnas oförändrad
-          // ("Öppnar dokument…") — det är redan sant för den generiska
-          // "dokumentet"-formen nedan.
-          skrivLaddningssida(handle, {
-            titel: 'Öppnar dokument…',
-            text: forNamn
-              ? `Ett ögonblick ${forNamn}, dokumentet öppnas här om några sekunder.`
-              : 'Ett ögonblick, dokumentet öppnas här om några sekunder.',
-          });
-          forhandsvisaMutation.mutate({ kalla, handle });
+          oppnaDokument({ kalla, forNamn, mutation: forhandsvisaMutation });
         }}
       >
         {forhandsvisaMutation.isPending ? (
@@ -1465,21 +1486,6 @@ function DokumentAtgardsKnappar({ namn, kalla }: { namn: string; kalla: Dokument
 }
 
 /**
- * NEDLADDNINGEN ÄR RADENS ENDA ALLTID-SYNLIGA IKONKNAPP.
- *
- * Före S107:s fjärde QA-rond bar varje rad TRE kvadratiska ikonrutor
- * (`size-11 shrink-0 p-0`). Mönsterkartläggningen av appen visade att den
- * formen inte fanns någon annanstans i huset — samtliga träffar på den
- * klass-strängen låg i denna fil. Det var en lokal uppfinning, och Marcus
- * läste den som främmande ("dokumentsidan är skitdålig").
- *
- * Husets svar på radhandlingar är i stället att den PRIMÄRA handlingen är
- * hela raden (`HandlingsRad`-grammatiken). Förhandsvisningen är den
- * handlingen här; nedladdningen är den enda sekundära som Lotta gör ofta nog
- * att den ska stå framme. Ersätt/Radera är förvaltning och bor i sin egen
- * kolumn, se radernas egna kommentarer.
- */
-/**
  * ═══ RADENS DELADE SKAL — EN FORM FÖR BÅDA LÄGENA ═══
  *
  * Eventläget och räckviddsläget renderade före S107:s fjärde QA-rond varsin
@@ -1487,42 +1493,68 @@ function DokumentAtgardsKnappar({ namn, kalla }: { namn: string; kalla: Dokument
  * redan börjat glida isär. Skalet är därför delat KOD, inte delad
  * beskrivning — samma lärdom `HandlingsRad` bär i sitt eget huvud.
  *
- * Det enda som skiljer lägena är `handlingar`: eventläget skickar Ersätt för
- * event-egna filer, räckviddsläget skickar Ersätt + Radera. Nedladdningen
- * står alltid framme, och öppnandet är hela raden.
+ * ═══ [2026-08-29] FRÅN IKONRAD TILL NAMN + ⋯ (Marcus prod-granskning) ═══
  *
- * ── VARFÖR HELA RADEN ÄR KLICKBAR ──
+ * VAD SOM MÄTTES I PROD (event RIM 1, 2026-08-29): eventlägets rader bar två
+ * till fyra kvadratiska ikonknappar (Öppna · Ladda ner · Ersätt · Skapa om)
+ * och räckviddslägets bar FEM (+ Ändra räckvidd + Radera) — fem identiska
+ * grå lådor i rad, där filnamnet klipptes till "2025-HörlurarMiranonMedi…"
+ * för att ikonkolumnen tog bredden. Ikonerna hade inga etiketter; Lotta ska
+ * gissa vad en `FileUp` betyder bredvid en `Target`.
  *
- * Marcus dom 2026-08-17: *"dokumentsidan är skitdålig… Lotta kommer inte
- * gilla detta."* Mönsterkartläggningen gav orsaken: raden bar TRE
- * kvadratiska ikonrutor, och den formen fanns inte någon annanstans i appen
- * — samtliga träffar på `size-11 shrink-0 p-0` låg i denna fil. Huset löser
- * radhandlingar med att den primära handlingen ÄR raden (`PersonsList`,
- * `EventCard`, `HandlingsRad`), inte med en knappkolumn.
+ * DEN NYA ANATOMIN — TRE ZONER, ALDRIG FLER:
  *
- * Att öppna dokumentet är den handlingen. `after:absolute after:inset-0` på
- * öppna-knappen mot detta `relative`-skal är samma grepp `PersonsList`s
- * namn-Link använder; de sekundära knapparna lyfts över med `relative z-10`
- * så de förblir egna träffytor.
+ *   1. TYPGLYFEN (`TypGlyf`) — en 20 px lucide-ikon i en fast kolumn, så
+ *      varje rads text startar på samma x. `aria-hidden`: filändelsen står
+ *      redan i namnet, glyfen är ett SKANNINGSSTÖD, inte information.
+ *   2. TEXTKOLUMNEN — namnet som KNAPP (radens primära handling = Öppna),
+ *      därunder täckningsraden och metaraden. Samma TRE LED som förut, se
+ *      nedan.
+ *   3. ⋯-KNAPPEN — EN knapp, som öppnar `Meny` med alla sekundära
+ *      handlingar, var och en med ikon OCH text.
  *
- * ── HOVERN MÅSTE VARA `bg-bg-emphasized`, ALDRIG `bg-bg-muted` ──
+ * NAMNET ÄR KNAPPEN, INTE EN IKON BREDVID DET. Det tar bort tre av fyra
+ * ikonknappar ur bredduppgörelsen och ger namnet all plats som ⋯ inte
+ * behöver. Det följer husets egen grammatik (`PersonsList`s namn-Link,
+ * `HandlingsRad`) — men UTAN `after:absolute after:inset-0`-greppet: den
+ * osynliga klickfällan är riven på Marcus order och återinförs inte (se
+ * `MallRad`s docblock för buggen den orsakade).
  *
- * Kortet raden bor i bär `bg-bg-muted`. En hover i samma token hade varit
- * osynlig — exakt den felklass denna yta redan drabbats av tre gånger
- * (`ghost`-hovern två gånger, räckviddspillen en). `bg-bg-emphasized` är
- * husets nästa steg upp och det `HandlingsRad` självt använder.
- */
-/**
- * ═══ RADENS FORM ÄR LÅST TILL TRE RADER (Marcus 2026-08-17) ═══
+ * ── RADEN WRAPPAR ALDRIG (`flex-nowrap`) ──
+ *
+ * TASK-309.20 gav raden `flex-wrap` därför att fyra à fem 44 px-knappar
+ * strukturellt inte rymdes bredvid namnkolumnens golv vid 375 px. Med EN
+ * knapp kvar är den aritmetiken borta: 24 px glyf + 8 px + namn + 8 px +
+ * 44 px ⋯ ryms med marginal i den mätta 251 px-radbredden. Wrappen var en
+ * kompensation för ett problem som inte längre finns, och den KOSTADE:
+ * mobilraderna i prod visade knapparna under metaraden på rad 1 men till
+ * höger på rad 2–3, alltså två olika radformer i samma lista. Nu är
+ * anatomin identisk på mobil och skrivbord.
+ *
+ * ── HOVERN LIGGER PÅ RADEN, INTE PÅ NAMNKNAPPEN ──
+ *
+ * Raden hovrar till `bg-bg-muted` (#f5f5f3) mot listans `bg-surface`
+ * (#ffffff) — ETT tonsteg, exakt samma steg `HandlingsRad` gör från sitt
+ * kort (#f5f5f3 → #edeee9). NAMNKNAPPEN bär därför INGEN egen platta:
+ *
+ *   • `ghost` hade gett hover `--mm-bg-muted` — IDENTISK med radens egen
+ *     hover, alltså en osynlig knapp-platta ovanpå en synlig rad-platta.
+ *     Det är samma token-identitets-fälla som fällt denna yta sex gånger
+ *     (filhuvudets systemiska fynd).
+ *   • `primary`+`subtle` hade gett varje rads NAMN en permanent guldtonad
+ *     platta — en lista som ser ut som en knapprad.
+ *
+ * Knappen är alltså transparent i alla lägen och låter radplattan bära
+ * återkopplingen; tangentbordet får sin egen ring ur den globala
+ * `*:focus-visible`-regeln (base.css). ⋯-knappen behåller däremot
+ * `primary`+`subtle` — dess hover (`--mm-button-primary-subtle-bg-hover`)
+ * skiljer sig från BÅDE `bg-surface` och `bg-bg-muted`, så invarianten i
+ * `DokumentAtgardsKnappar`s docblock hålls.
+ *
+ * ═══ RADENS FORM ÄR LÅST TILL TRE LED (Marcus 2026-08-17, OFÖRÄNDRAT) ═══
  *
  * *"vi måste se till att alla dokumentrader är lika höga, det måste vara:
  * Dokumentnamn / Täckning / Uppladdningsdatum PÅ ALLA rader, alltid."*
- *
- * Det är INTE ett nytt mönster — `PersonsList.tsx` bär redan samma
- * höjdlåsning ("varje rad renderas ALLTID, tomt fält får en osynlig
- * platshållare, aldrig villkorad rendering"). Raderna här var förut olika
- * höga beroende på om en badge fanns, om namnet radbröt och om
- * "+N äldre filer" behövdes; listan blev ojämn att skanna.
  *
  * TRE LED, ALLTID RENDERADE:
  *   1. namnet     — ETT svep, trunkerat (se nedan)
@@ -1532,91 +1564,137 @@ function DokumentAtgardsKnappar({ namn, kalla }: { namn: string; kalla: Dokument
  *
  * NAMNET TRUNKERAS I STÄLLET FÖR ATT RADBRYTA. `truncate` kräver `min-w-0`
  * på varje flex-förfader hela vägen upp, annars växer kolumnen i stället för
- * att klippa — därav `min-w-0` på både kolumnen och namn-spannet.
+ * att klippa — därav `min-w-0` på kolumnen, knappen och namn-spannet.
  *
- * HELA NAMNET NÅS PÅ TRE VÄGAR, och det behövs: `title` (pekare), knappens
- * `aria-label` (skärmläsare — den bär alltid hela namnet), och radens egen
- * `title`. KÄND KANT, medvetet accepterad: på TOUCH finns ingen hover, så
- * ett avklippt namn kan där inte läsas i sin helhet. Motvikten är att
- * verkliga filnamn är korta — demo-fixturen mäter 17–24 tecken mot
- * testsentinelernas 59 — och att trunkeringen är ett skyddsnät för
- * undantaget, inte normalfallet.
+ * HELA NAMNET NÅS PÅ TVÅ VÄGAR: `title` (pekare) och knappens `aria-label`
+ * (skärmläsare — den bär alltid hela namnet). KÄND KANT, medvetet
+ * accepterad: på TOUCH finns ingen hover, så ett avklippt namn kan där inte
+ * läsas i sin helhet. Motvikten är att namnet nu får HELA raden minus
+ * 76 px i stället för minus 182–228 px, alltså att trunkeringen åter är ett
+ * skyddsnät för undantaget i stället för normalfallet.
  *
- * "+N ÄLDRE FILER" FLYTTADE IN I DATUMLEDET. Den stod som en fjärde rad och
- * bröt låsningen för just de rader som hade dubbletter.
+ * "+N ÄLDRE FILER" bor i datumledet, inte som en fjärde rad.
  *
- * ═══ [TASK-309.20] RADEN BRYTER NU VID 375 px NÄR FYRA IKONKNAPPAR INTE
- * FÅR PLATS — "skyddsnätet" höll inte för NORMALFALLET ═══
+ * ── HÖJDLÅSET RÖRS INTE ──
  *
- * Mätt (facit `s108-generering/facit-dokumentlista-inaktuell-rad-mobil.png`
- * + `s108-dokumentytan/facit-dokumentyta-rackviddslage-mobil.png`): en
- * Event-mallad rad med FYRA handlingar (Öppna/Ladda ner/Skapa om/Ersätt,
- * `IKONKNAPP_KLASS`s egen räkning: 4×44 px + 3×2 px = 182 px) trunkerade
- * "Bekräftelsebilaga.pdf" till "Bekr…" — fyra tecken, inte den 17–24-tecken-
- * normalen stycket ovan förutsätter. Orsaken är ARITMETISK, inte kosmetisk:
- * vid 375 px är radens tillgängliga bredd (mätt, `RAD_BOX`) 251 px; 182 px
- * ikonkolumn + 12 px mellanrum lämnar bara 57 px åt namnet — under
- * "skyddsnät för undantaget"-antagandet stycket ovan bygger på.
- *
- * FIXEN ÄR DEN REDAN DOKUMENTERADE PLANEN (`IKONKNAPP_KLASS`s docblock,
- * Marcus 2026-08-17): *"Skulle bredden ändå inte räcka på en smal skärm är
- * rätt svar att låta raden bryta, inte att krympa träffytan."* Namnkolumnen
- * bär nu `min-w-[12ch]` i stället för `min-w-0` (ETT golv, ingen ceiling —
- * kolumnen krymper fortfarande till EXAKT den bredd raden ger den så länge
- * båda får plats på en rad, precis som förut). Radens eget skal fick
- * `flex-wrap`: när ikonkolumnens (`shrink-0`, ingen tillåten krympning)
- * hypotetiska bredd + namnkolumnens 12ch-golv + mellanrummet överskrider
- * radens bredd, flyttar CSS-motorn ikonkolumnen till en EGEN rad under —
- * namnkolumnen står då ensam på sin rad och `flex-1` fyller HELA bredden
- * (251 px i det mätta fallet, gott om plats för "Bekräftelsebilaga.pdf" i
- * sin helhet). Vid gott om bredd (skrivbord, eller mobil med färre knappar)
- * händer ingenting nytt — vägen är oförändrad.
- *
- * DETTA BRYTER INTE höjdlåsningen ovan: samma facit-bild visar att rader
- * REDAN varierar i höjd med sitt innehåll (raden med tre badgar — Detta
- * event/Mall/Inaktuell — är synligt högre än syskonraderna med bara en).
- * Låsningen är ett GOLV (namn/täckning/datum renderas ALLTID, aldrig
- * kortare), inte ett tak — en rad får vara högre när den bär mer, och en
- * rad vars ikonkolumn bryter till en egen rad är samma sorts variation.
- * 12ch är ett MEDVETET, JUSTERBART golv (motsvarande knapparnas egna 44 px-
- * golv i princip, inte i magnitud) — inte en ny interaktionsform.
+ * `useLastaListhojd` MÄTER radernas renderade höjd; ingen konstant beskriver
+ * dem. Att raden blir något högre (namnknappens 44 px-träffyta) är därför
+ * ingen ändring av låsningens logik, bara av det tal den mäter fram.
  */
+
+/** Filändelser som ska visa en bild-glyf i stället för dokument-glyfen. */
+const BILDANDELSER = new Set([
+  'png',
+  'jpg',
+  'jpeg',
+  'gif',
+  'webp',
+  'avif',
+  'heic',
+  'heif',
+  'bmp',
+  'svg',
+  'tif',
+  'tiff',
+]);
+
+/**
+ * Radens ledande typglyf. `aria-hidden` — filändelsen står redan i namnet,
+ * som skärmläsaren läser; glyfen finns för ÖGAT som skannar en lista.
+ *
+ * Fast kolumnbredd (`w-6`) så att varje rads text börjar på samma x oavsett
+ * glyf, och `h-11` så glyfen centreras mot namnknappens 44 px i stället för
+ * att klistra i radens överkant.
+ */
+function TypGlyf({ namn }: { namn: string }) {
+  const andelse = namn.includes('.') ? (namn.split('.').pop() ?? '').toLowerCase() : '';
+  const arBild = BILDANDELSER.has(andelse);
+  return (
+    <span className="flex h-11 w-6 shrink-0 items-center justify-center text-text-secondary">
+      {arBild ? (
+        <ImageIcon aria-hidden="true" size={20} />
+      ) : (
+        <FileText aria-hidden="true" size={20} />
+      )}
+    </span>
+  );
+}
+
 function DokumentRadSkal({
   namn,
   kalla,
   current,
   dolda,
-  handlingar,
+  menyposter,
+  filinput,
 }: {
   namn: string;
   kalla: DokumentKalla;
   current: BilageRad['current'];
   dolda: number;
-  handlingar: React.ReactNode;
+  /**
+   * Radens EGNA menyposter (Ersätt/Skapa om/Ändra räckvidd/Radera) — de
+   * läggs EFTER den delade "Ladda ner"-posten som skalet självt renderar.
+   */
+  menyposter?: React.ReactNode;
+  /**
+   * Dolda `<input type="file">` raden behöver (Ersätt). MÅSTE renderas i
+   * RADEN och inte bland menyposterna: `Popover` portalerar sitt innehåll
+   * till `document.body`, så en input inuti menyn hade lämnat raden — och
+   * varje test som scopar `rad.locator('input[type="file"]')` hade slutat
+   * hitta den.
+   */
+  filinput?: React.ReactNode;
 }) {
-  return (
-    <div data-testid="dokument-fil" className="flex flex-wrap items-start gap-3 py-3">
-      <span className="flex min-w-[12ch] flex-1 flex-col items-start gap-1">
-        <span className="w-full min-w-0 truncate font-medium text-body" title={namn}>
-          {namn}
-        </span>
-        {/* [TASK-309.6, ADR-125 § 3+5] Mall-/INAKTUELL-badgen delar RADEN med
-            RackviddBadge (samma "TRE LED, ALLTID RENDERADE"-lås, Marcus
-            2026-08-17 — se filhuvudets docblock) i stället för att lägga till
-            en fjärde rad. `current.mall`/`current.inaktuell` är `null` för
-            varje icke-Event-mallad rad (uppladdade/person-genererade filer),
-            så de allra flesta rader visar EXAKT samma två-badge-yta som
-            förut. INAKTUELL bär TEXT, inte bara färg (`StatusBadge`,
-            WCAG 1.4.1 — samma disciplin som RackviddBadge/nivåbadgar).
+  // ÖPPNA + LADDA NER BOR HÄR, inte i anropande radkomponent: båda gäller
+  // VARJE rad i båda lägena, och två instanser av samma hook i två
+  // radkomponenter var precis det som lät lägena glida isär före S107.
+  const forhandsvisaMutation = useForhandsvisaDokument();
+  const nedladdningMutation = useLaddaNerDokument();
+  // [TASK-309.38] Samma väntehälsning som GenereringsVy.tsx.
+  const { user } = useAuth();
+  const forNamn = user?.displayName ? fornamn(user.displayName) : null;
 
-            [TASK-309.20] `w-full min-w-0` TILLAGT — utan dem sizear denna
-            flex-wrap-rad sig efter sitt EGET innehåll (kolumnens
-            `items-start` stretchar inte barn), så badgens tilldelade bredd
-            var odefinierad och en enda för bred badge (`shrink-0`) flöt rakt
-            ut över ikonknapparna i stället för att TRUNKERAS inom raden.
-            Samma `w-full min-w-0`-par som namnspannet ovan bär redan, av
-            samma skäl (`DokumentRadSkal`s docblock). Se `RackviddBadge.tsx`
-            och `TACKNING_KLASS` för motsvarande fix på badgens egen sida. */}
+  return (
+    <div
+      data-testid="dokument-fil"
+      className="-mx-2 flex flex-nowrap items-start gap-2 rounded-lg px-2 py-2 hover:bg-bg-muted motion-safe:transition-colors"
+    >
+      <TypGlyf namn={namn} />
+      <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
+        {/* NAMNET ÄR KNAPPEN — se docblocket för varför den är transparent
+            och varför hovern ligger på raden. `-mx-2 px-2` låter träffytan nå
+            ut i radens egen luft utan att namnet flyttar sig visuellt. */}
+        <Button
+          intent="ghost"
+          size="sm"
+          className="-mx-2 min-h-11 w-full min-w-0 justify-start rounded-lg px-2 font-medium text-body data-[hovered]:bg-transparent data-[pressed]:bg-transparent"
+          // `aria-disabled`, INTE `isDisabled`: ett native `disabled` tar
+          // knappen ur tabordningen mitt i klicket. Vakten i onPress bär
+          // dubbelklicks-skyddet i stället.
+          aria-disabled={forhandsvisaMutation.isPending}
+          aria-label={forhandsvisaMutation.isPending ? `Öppnar ${namn} …` : `Öppna ${namn}`}
+          onPress={() => {
+            if (forhandsvisaMutation.isPending) return;
+            oppnaDokument({ kalla, forNamn, mutation: forhandsvisaMutation });
+          }}
+        >
+          {forhandsvisaMutation.isPending && (
+            <Loader2
+              aria-hidden="true"
+              size={IKON_STORLEK}
+              className="shrink-0 motion-safe:animate-spin"
+            />
+          )}
+          <span className="min-w-0 truncate" title={namn}>
+            {namn}
+          </span>
+        </Button>
+        {/* [TASK-309.6, ADR-125 § 3+5] Mall-/INAKTUELL-badgen delar RADEN med
+            RackviddBadge (samma "TRE LED, ALLTID RENDERADE"-lås) i stället för
+            att lägga till en fjärde rad. INAKTUELL bär TEXT, inte bara färg
+            (`StatusBadge`, WCAG 1.4.1). `w-full min-w-0` så en för bred badge
+            TRUNKERAS inom raden i stället för att flyta ut. */}
         <span className="flex w-full min-w-0 flex-wrap items-center gap-1">
           <RackviddBadge
             rackvidd={current.rackvidd}
@@ -1637,12 +1715,64 @@ function DokumentRadSkal({
             dolda > 0 ? `+${dolda} ${dolda === 1 ? 'äldre fil' : 'äldre filer'}` : null,
           ]}
         />
+        {/* FELEN BOR I TEXTKOLUMNEN, inte i handlingszonen. De två
+            mutationerna vars knappar flyttat in i menyn (Öppna, Ladda ner)
+            har ingen synlig knapp att stå bredvid längre — och en felruta i
+            en portalerad meny hade försvunnit i samma ögonblick menyn
+            stängdes. */}
+        {forhandsvisaMutation.isError && (
+          <MessageBox intent="error" title="Kunde inte öppna filen" className="mt-1 w-full">
+            {forhandsvisaMutation.error instanceof Error
+              ? forhandsvisaMutation.error.message
+              : 'Inget felmeddelande angavs.'}
+          </MessageBox>
+        )}
+        {nedladdningMutation.isError && (
+          <MessageBox intent="error" title="Kunde inte ladda ner filen" className="mt-1 w-full">
+            {nedladdningMutation.error instanceof Error
+              ? nedladdningMutation.error.message
+              : 'Inget felmeddelande angavs.'}
+          </MessageBox>
+        )}
       </span>
-      <span className="flex shrink-0 items-center gap-0.5">
-        <DokumentAtgardsKnappar namn={namn} kalla={kalla} />
-        <LaddaNerKnapp namn={namn} kalla={kalla} />
-        {handlingar}
-      </span>
+      {filinput}
+      <Meny
+        etikett={`Fler val för ${namn}`}
+        trigger={
+          <Button
+            intent="primary"
+            emphasis="subtle"
+            size="sm"
+            className={IKONKNAPP_KLASS}
+            aria-label={`Fler val för ${namn}`}
+          >
+            <Ellipsis aria-hidden="true" size={IKON_STORLEK} />
+          </Button>
+        }
+      >
+        <MenyPost
+          ikon={
+            nedladdningMutation.isPending ? (
+              <Loader2
+                aria-hidden="true"
+                size={IKON_STORLEK}
+                className="motion-safe:animate-spin"
+              />
+            ) : (
+              <Download aria-hidden="true" size={IKON_STORLEK} />
+            )
+          }
+          isDisabled={nedladdningMutation.isPending}
+          textValue="Ladda ner"
+          onAction={() => {
+            if (nedladdningMutation.isPending) return;
+            nedladdningMutation.mutate({ kalla, namn });
+          }}
+        >
+          {nedladdningMutation.isPending ? 'Laddar ner…' : 'Ladda ner'}
+        </MenyPost>
+        {menyposter}
+      </Meny>
     </div>
   );
 }
@@ -1699,6 +1829,30 @@ function arGemensam(rackvidd: Attachment['rackvidd']): boolean {
   return rackvidd === AttachmentScope.GEMENSAM;
 }
 
+/**
+ * ÖPPNAR RADENS DOLDA FILVÄLJARE — den väg "Ersätt" tar sedan handlingen
+ * flyttade in i ⋯-menyn.
+ *
+ * VARFÖR INTE `FileTrigger` LÄNGRE: react-arias `FileTrigger` driver sin
+ * dolda input via `PressResponder`-kontexten (verifierat i den installerade
+ * källan, `react-aria-components/dist/private/FileTrigger.mjs` — den
+ * renderar `<PressResponder onPress={…}>{children}</PressResponder>` plus
+ * inputen). `MenuItem` bygger på `useMenuItem` och konsumerar INTE den
+ * kontexten, så en menypost inuti en `FileTrigger` hade aldrig öppnat något.
+ * Raden renderar därför inputen själv och menyposten klickar den.
+ *
+ * `value = ''` FÖRE klicket är inte kosmetik: utan nollställningen fyrar
+ * `change` inte när SAMMA fil väljs två gånger i rad, och Lotta som råkat
+ * välja fel version och väljer om den rätta hade fått tyst ingenting.
+ * `FileTrigger` gör exakt samma sak i sin `onPress` (samma källa).
+ */
+function oppnaFilvaljare(ref: React.RefObject<HTMLInputElement | null>) {
+  const input = ref.current;
+  if (!input) return;
+  input.value = '';
+  input.click();
+}
+
 function BilageRadRow({
   eventId,
   rad,
@@ -1713,20 +1867,21 @@ function BilageRadRow({
   skapaOmMutation: SkapaOmMutation;
 }) {
   const { current, dolda } = rad;
-  // Bara DENNA rads knapp visar "Ersätter…"/blir avstängd — inte hela
-  // listan (till skillnad mot uppladdningsknappen längst ner, som stänger
-  // av sig själv via sin egen `uploadMutation.isPending`). `variables`
-  // finns bara medan mutationen faktiskt pågår (TanStack Query), så
-  // jämförelsen är säker även innan första anropet.
+  const ersattInputRef = useRef<HTMLInputElement>(null);
+  // Bara DENNA rads meny visar "Ersätter…" — inte hela listan (till skillnad
+  // mot uppladdningsknappen, som stänger av sig själv via sin egen
+  // `uploadMutation.isPending`). `variables` finns bara medan mutationen
+  // faktiskt pågår (TanStack Query), så jämförelsen är säker även innan
+  // första anropet.
   const ersatterDennaRaden =
     replaceMutation.isPending && replaceMutation.variables?.oldAttachmentId === current.id;
-  // [TASK-309.6] Samma "bara DENNA rads knapp"-disciplin som `ersatterDennaRaden`.
+  // [TASK-309.6] Samma "bara DENNA rad"-disciplin som `ersatterDennaRaden`.
   const skaparOmDennaRaden =
     skapaOmMutation.isPending && skapaOmMutation.variables?.ersatt === current.id;
   // [TASK-275.3, ADR-118 beslut 3] Ersätt VISAS INTE i eventkontext för en
   // GEMENSAM bilaga — badgen bär förklaringen (AC #4). Servern nekar 403
   // ändå (delete-attachment/index.ts), men UI-lagret ska inte erbjuda en
-  // knapp den vet kommer avvisas.
+  // handling den vet kommer avvisas.
   const gemensam = arGemensam(current.rackvidd);
   // [TASK-309.6, ADR-125 § 3+4] "Skapa om" gäller BARA Event-mallade rader
   // med ett KÄNT `mall`-värde ('Bekräftelsebilaga'/'Deltagarinformation') —
@@ -1742,69 +1897,43 @@ function BilageRadRow({
       kalla={{ typ: 'bilaga', eventId, attachmentId: current.id }}
       current={current}
       dolda={dolda}
-      handlingar={
+      filinput={
+        !gemensam && (
+          // `hidden` (display:none) — EXAKT samma form som `FileTrigger`
+          // renderar sin egen input i (`style={{display:'none'}}`), så den
+          // varken syns, tar tabbstopp eller når skärmläsaren.
+          <input
+            ref={ersattInputRef}
+            type="file"
+            accept="application/pdf"
+            className="hidden"
+            onChange={(e) =>
+              onReplace(e.target.files, current.id, {
+                rackvidd: current.rackvidd ?? undefined,
+                kursfamilj: current.kursfamilj ?? undefined,
+                kursniva: current.kursniva ?? undefined,
+                // [TASK-338.3] Plats-axeln MÅSTE följa med — se
+                // `ReplaceAttachmentInput`s docblock: utan den vidgas en
+                // platsbunden bilaga tyst till ALLA event vid nästa byte.
+                plats: current.plats?.id ?? undefined,
+              })
+            }
+          />
+        )
+      }
+      menyposter={
         <>
-          {skapaOmMallId !== null && (
-            <Button
-              intent="primary"
-              emphasis="subtle"
-              size="sm"
-              className={IKONKNAPP_KLASS}
-              aria-disabled={skaparOmDennaRaden}
-              aria-label={
-                skaparOmDennaRaden ? `Skapar om ${current.namn} …` : `Skapa om ${current.namn}`
-              }
-              onPress={() => {
-                if (skaparOmDennaRaden) return;
-                skapaOmMutation.mutate({ mall: skapaOmMallId, ersatt: current.id });
-              }}
-            >
-              {skaparOmDennaRaden ? (
-                <Loader2
-                  aria-hidden="true"
-                  size={IKON_STORLEK}
-                  className="motion-safe:animate-spin"
-                />
-              ) : (
-                <RefreshCw aria-hidden="true" size={IKON_STORLEK} />
-              )}
-            </Button>
-          )}
           {/* [TASK-275.3, ADR-118 beslut 3] Ersätt VISAS INTE i eventkontext
               för en GEMENSAM bilaga — badgen bär förklaringen (AC #4).
-              Servern nekar 403 ändå, men UI-lagret ska inte erbjuda en knapp
-              den vet avvisas.
 
               För eventets EGNA filer står den kvar (Marcus-beslut
               2026-08-17): förvaltningen flyttades i övrigt till
               räckviddsläget, men en event-egen fil syns inte där, så utan
-              denna knapp hade den saknat ersätt-väg helt. */}
+              denna post hade den saknat ersätt-väg helt. */}
           {!gemensam && (
-            <FileTrigger
-              acceptedFileTypes={['application/pdf']}
-              onSelect={(files) =>
-                onReplace(files, current.id, {
-                  rackvidd: current.rackvidd ?? undefined,
-                  kursfamilj: current.kursfamilj ?? undefined,
-                  kursniva: current.kursniva ?? undefined,
-                  // [TASK-338.3] Plats-axeln MÅSTE följa med — se
-                  // `ReplaceAttachmentInput`s docblock: utan den vidgas en
-                  // platsbunden bilaga tyst till ALLA event vid nästa byte.
-                  plats: current.plats?.id ?? undefined,
-                })
-              }
-            >
-              <Button
-                intent="primary"
-                emphasis="subtle"
-                size="sm"
-                className={IKONKNAPP_KLASS}
-                isDisabled={ersatterDennaRaden}
-                aria-label={
-                  ersatterDennaRaden ? `Ersätter ${current.namn} …` : `Ersätt ${current.namn}`
-                }
-              >
-                {ersatterDennaRaden ? (
+            <MenyPost
+              ikon={
+                ersatterDennaRaden ? (
                   <Loader2
                     aria-hidden="true"
                     size={IKON_STORLEK}
@@ -1812,9 +1941,37 @@ function BilageRadRow({
                   />
                 ) : (
                   <FileUp aria-hidden="true" size={IKON_STORLEK} />
-                )}
-              </Button>
-            </FileTrigger>
+                )
+              }
+              isDisabled={ersatterDennaRaden}
+              textValue="Ersätt"
+              onAction={() => oppnaFilvaljare(ersattInputRef)}
+            >
+              {ersatterDennaRaden ? 'Ersätter…' : 'Ersätt'}
+            </MenyPost>
+          )}
+          {skapaOmMallId !== null && (
+            <MenyPost
+              ikon={
+                skaparOmDennaRaden ? (
+                  <Loader2
+                    aria-hidden="true"
+                    size={IKON_STORLEK}
+                    className="motion-safe:animate-spin"
+                  />
+                ) : (
+                  <RefreshCw aria-hidden="true" size={IKON_STORLEK} />
+                )
+              }
+              isDisabled={skaparOmDennaRaden}
+              textValue="Skapa om"
+              onAction={() => {
+                if (skaparOmDennaRaden) return;
+                skapaOmMutation.mutate({ mall: skapaOmMallId, ersatt: current.id });
+              }}
+            >
+              {skaparOmDennaRaden ? 'Skapar om…' : 'Skapa om'}
+            </MenyPost>
           )}
         </>
       }
@@ -2912,6 +3069,7 @@ function GemensamBilageRadRow({
   scopeMutation: ScopeMutation;
 }) {
   const { current, dolda } = rad;
+  const ersattInputRef = useRef<HTMLInputElement>(null);
   const ersatterDennaRaden =
     replaceMutation.isPending && replaceMutation.variables?.oldAttachmentId === current.id;
   const raderarDennaRaden =
@@ -2924,36 +3082,41 @@ function GemensamBilageRadRow({
       kalla={{ typ: 'bilaga', eventId: null, attachmentId: current.id }}
       current={current}
       dolda={dolda}
-      handlingar={
+      filinput={
+        // `hidden` (display:none) — se `BilageRadRow`s motsvarande input.
+        <input
+          ref={ersattInputRef}
+          type="file"
+          accept="application/pdf"
+          className="hidden"
+          onChange={(e) =>
+            onReplace(e.target.files, current.id, {
+              rackvidd: current.rackvidd ?? undefined,
+              kursfamilj: current.kursfamilj ?? undefined,
+              kursniva: current.kursniva ?? undefined,
+              // [TASK-338.3] Se BilageRadRow ovan — plats-axeln följer med,
+              // annars blir "Ersätt" en tyst uppvidgning till alla event.
+              plats: current.plats?.id ?? undefined,
+            })
+          }
+        />
+      }
+      menyposter={
         // RÄCKVIDDSLÄGET ÄR FÖRVALTNINGSYTAN (Marcus 2026-08-17): här — och
         // enligt ADR-118 beslut 3 BARA här — får en gemensam bilaga ersättas
         // och raderas. Eventläget är Lottas läsflöde och ska inte bära
         // handlingar som kan förstöra något för alla event samtidigt.
+        //
+        // ORDNINGEN GÅR FRÅN MINST TILL MEST INGRIPANDE: byt fil → byt
+        // spridning → ta bort. Radera står SIST, efter en avdelare, i egen
+        // faroton — muskelminnet för den farligaste handlingen flyttas inte,
+        // och avdelaren gör det svårare att träffa den av misstag när menyn
+        // öppnas med tangentbord (`ArrowUp` från triggern landar på Radera,
+        // men avdelaren gör gruppbytet hörbart för skärmläsaren).
         <>
-          <FileTrigger
-            acceptedFileTypes={['application/pdf']}
-            onSelect={(files) =>
-              onReplace(files, current.id, {
-                rackvidd: current.rackvidd ?? undefined,
-                kursfamilj: current.kursfamilj ?? undefined,
-                kursniva: current.kursniva ?? undefined,
-                // [TASK-338.3] Se BilageRadRow ovan — plats-axeln följer med,
-                // annars blir "Ersätt" en tyst uppvidgning till alla event.
-                plats: current.plats?.id ?? undefined,
-              })
-            }
-          >
-            <Button
-              intent="primary"
-              emphasis="subtle"
-              size="sm"
-              className={IKONKNAPP_KLASS}
-              isDisabled={ersatterDennaRaden}
-              aria-label={
-                ersatterDennaRaden ? `Ersätter ${current.namn} …` : `Ersätt ${current.namn}`
-              }
-            >
-              {ersatterDennaRaden ? (
+          <MenyPost
+            ikon={
+              ersatterDennaRaden ? (
                 <Loader2
                   aria-hidden="true"
                   size={IKON_STORLEK}
@@ -2961,9 +3124,14 @@ function GemensamBilageRadRow({
                 />
               ) : (
                 <FileUp aria-hidden="true" size={IKON_STORLEK} />
-              )}
-            </Button>
-          </FileTrigger>
+              )
+            }
+            isDisabled={ersatterDennaRaden}
+            textValue="Ersätt"
+            onAction={() => oppnaFilvaljare(ersattInputRef)}
+          >
+            {ersatterDennaRaden ? 'Ersätter…' : 'Ersätt'}
+          </MenyPost>
           {/* [TASK-338.4] ÄNDRA RÄCKVIDD — bara här, aldrig i eventläget.
               ADR-118 beslut 3 gäller vidare: räckviddsläget ÄR förvaltnings-
               ytan, och en handling som ändrar vilka event ett dokument gäller
@@ -2972,61 +3140,49 @@ function GemensamBilageRadRow({
               motsvarighet — där är en delad bilaga fortsatt oredigerbar, och
               badgen bär förklaringen.
 
-              PLACERAD MELLAN Ersätt och Radera, med avsikt: ordningen går
-              från minst till mest ingripande (byt fil → byt spridning → ta
-              bort), och Radera behåller sin plats YTTERST där den suttit
-              sedan TASK-275.3 — muskelminnet för den farligaste knappen
-              flyttas inte.
-
-              EN FEMTE IKON I RADEN. `DokumentRadSkal`s ikonkolumn är
-              `shrink-0` inuti en `flex-wrap`-rad (TASK-309.20), så bredden
-              bryter i stället för att trängas: 5 × 44 px + 4 × 2 px = 228 px
-              mot radens tidigare 182 px. 44 px-golvet är orört (DESIGN-
-              SYSTEM-SPEC.md § checklista) — det är luften och radbrytningen
-              som får ge, aldrig träffytan. Flaggat för Marcus QA-vandring
-              vid smal skärm. */}
-          <Button
-            intent="primary"
-            emphasis="subtle"
-            size="sm"
-            className={IKONKNAPP_KLASS}
-            isDisabled={andrarDennaRaden}
-            aria-label={
-              andrarDennaRaden
-                ? `Ändrar räckvidd för ${current.namn} …`
-                : `Ändra räckvidd för ${current.namn}`
+              [2026-08-29] `Target`-ikonen står kvar men är inte längre ensam
+              bärare av betydelsen: menyposten bär TEXTEN "Ändra räckvidd".
+              Den femte identiska grå ikonlådan som ADR-125-noten flaggade för
+              Marcus QA-vandring vid smal skärm finns inte längre — hela
+              ikonkolumnen är EN ⋯-knapp. */}
+          <MenyPost
+            ikon={
+              andrarDennaRaden ? (
+                <Loader2
+                  aria-hidden="true"
+                  size={IKON_STORLEK}
+                  className="motion-safe:animate-spin"
+                />
+              ) : (
+                <Target aria-hidden="true" size={IKON_STORLEK} />
+              )
             }
-            onPress={() => onAndraRackvidd(current)}
+            isDisabled={andrarDennaRaden}
+            textValue="Ändra räckvidd"
+            onAction={() => onAndraRackvidd(current)}
           >
-            {andrarDennaRaden ? (
-              <Loader2
-                aria-hidden="true"
-                size={IKON_STORLEK}
-                className="motion-safe:animate-spin"
-              />
-            ) : (
-              <Target aria-hidden="true" size={IKON_STORLEK} />
-            )}
-          </Button>
-          <Button
-            intent="danger"
-            emphasis="subtle"
-            size="sm"
-            className={IKONKNAPP_KLASS}
+            {andrarDennaRaden ? 'Ändrar räckvidd…' : 'Ändra räckvidd'}
+          </MenyPost>
+          <MenyAvdelare />
+          <MenyPost
+            ton="fara"
+            ikon={
+              raderarDennaRaden ? (
+                <Loader2
+                  aria-hidden="true"
+                  size={IKON_STORLEK}
+                  className="motion-safe:animate-spin"
+                />
+              ) : (
+                <Trash2 aria-hidden="true" size={IKON_STORLEK} />
+              )
+            }
             isDisabled={raderarDennaRaden}
-            aria-label={raderarDennaRaden ? `Raderar ${current.namn} …` : `Radera ${current.namn}`}
-            onPress={() => onDelete(current.id, current.namn)}
+            textValue="Radera"
+            onAction={() => onDelete(current.id, current.namn)}
           >
-            {raderarDennaRaden ? (
-              <Loader2
-                aria-hidden="true"
-                size={IKON_STORLEK}
-                className="motion-safe:animate-spin"
-              />
-            ) : (
-              <Trash2 aria-hidden="true" size={IKON_STORLEK} />
-            )}
-          </Button>
+            {raderarDennaRaden ? 'Raderar…' : 'Radera'}
+          </MenyPost>
         </>
       }
     />
