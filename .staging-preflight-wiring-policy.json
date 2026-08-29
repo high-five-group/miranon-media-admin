@@ -112,6 +112,11 @@
       "sökväg": "scripts/seed-eventinnehall-modell.mjs",
       "funktion": "main",
       "skäl": "Bilage-datamodellens permanenta seed (seed:eventinnehall, TASK-309.2, ADR-125 §2). Skriver Platser-/Eventinnehåll-/Agendapunkter-records via samma delade staging-bas som backfill-bilagor-dokumentklass.mjs — en lokal körning samtidigt med ett CI-staging-jobb ska stoppas av samma skäl."
+    },
+    {
+      "sökväg": "scripts/task-338-6-prod-migration.mjs",
+      "funktion": "main",
+      "skäl": "Räckvidd-migrationens förberedelseskript (TASK-338.6, ADR-125 § Beslut 1). --kontrollera/--utfor läser och skriver Bilagor-records OCH Metadata-API-schema via samma delade staging-bas som create-eventinnehall-modell.mjs/backfill-bilagor-dokumentklass.mjs — identisk risk, identisk motivering. Mutexen hoppas MEDVETET över när målbasen skiljer sig från staging (prod-körning; samma undantag som create-eventinnehall-modell.mjs § TASK-309.9 — semaforen bevakar staging-kontention, irrelevant för prod)."
     }
   ],
   "nodeSkriptUpptäckt": {
@@ -150,6 +155,10 @@
       {
         "sökväg": "scripts/test-create-eventinnehall-modell.mjs",
         "skäl": "Hermetisk testsvit (TASK-309.2) — importerar bara de pura funktionerna ur create-eventinnehall-modell.mjs (validateConfig, planFields, buildCreateTableBody m.fl.), anropar aldrig fetch. apphjj8Q7lkXCMsL4 förekommer enbart som strängvärde i assertions mot CONFIG.expectedBaseId, identiskt mönster som test-create-bilagor-table.mjs/test-create-kvitton-table.mjs."
+      },
+      {
+        "sökväg": "scripts/test-task-338-6-prod-migration.mjs",
+        "skäl": "Hermetisk testsvit (TASK-338.6) — de flesta fallen importerar bara de pura funktionerna (parseArgs, resolveTargetBaseId, planUtfor, runUtfor m.fl.) och anropar aldrig fetch; apphjj8Q7lkXCMsL4 förekommer enbart som strängvärde i assertions, identiskt mönster som test-create-eventinnehall-modell.mjs. Barnprocessdelen (§ EXIT-KODER) spawnar VERKLIGA CLI-anrop mot skriptet, men uteslutande på grenar som exitar vid argument-/bas-ID-/prod-guard-/token-fel — samtliga STRIKT FÖRE task-338-6-prod-migration.mjs:s egen kravStagingLedigt-anrop (som sitter EFTER token-checkarna) och FÖRE all fetch. Ingen av barnprocesserna når preflighten eller basen."
       }
     ]
   }

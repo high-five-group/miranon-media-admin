@@ -1350,6 +1350,31 @@ jobs:
         # (egen mktemp-fixtur, ingen nätverkstrafik). 0,16 s LOKALT mätt
         # (macOS, 2026-08-28, `time node scripts/test-docraptor-
         # sjalvbarande.mjs`) — CI-tiden är INTE mätt av mig och kan avvika.
+        #
+        # test-task-338-6-prod-migration.mjs (TASK-338.6) hör hit av SAMMA
+        # skäl som test-fas4-prod-deploy.sh (raden nedan, TASK-272): skriptet
+        # det prövar är ett REPETERBART operativt verktyg (Marcus kör
+        # --kontrollera/--utfor-schema/--utfor-rader mot prod fler gånger än
+        # en, inte ett engångs-schemaskript à la create-eventinnehall-
+        # modell.mjs, vars test-svit MEDVETET lämnas ovirad — se den sviten
+        # § filhuvud).
+        # Bevisar: bas-guarden (resolveTargetBaseId) VÄGRAR en icke-staging-
+        # bas utan AIRTABLE_PROD_GODKAND_AV_MARCUS satt till EXAKT samma
+        # bas-ID — mekaniken scripts/deny-prod-ref.sh INTE täcker (den
+        # matchar bara Supabase-prod-refen, TASK-203; Airtable-bas-ID:n
+        # nämns i .prod-ref-policy.conf endast i en kommentar). Planerings-
+        # och exekverings-logiken (planSchema/runSchema för steg (i),
+        # planRader/runRader för steg (iii), efter review-runda 2:s split av
+        # det tidigare kombinerade --utfor-läget) är hermetisk, DI mot
+        # injicerade API-stubbar (inkl. createThrowawayAndDeletes
+        # fetchImpl/sleepImpl/logImpl, review-runda 3); en liten
+        # barnprocess-integrationsdel bevisar de FAKTISKA exit-koderna
+        # (0–3, exit 4 = post-verifieringens fail-closed-läge vid
+        # schema-/rad-diskrepans efter en --utfor-*-körning, review-runda 2
+        # punkt 3) men ENDAST för grenar som exitar FÖRE någon fetch — ingen
+        # nätverkstrafik i sviten. 74 fall. 1,25 s LOKALT mätt (macOS,
+        # 2026-08-29, `time node scripts/test-task-338-6-prod-migration.mjs`)
+        # — CI-tiden är INTE mätt av mig och kan avvika.
         run: |
           bash scripts/test-check-frontmatter.sh
           bash scripts/test-check-public-checklists.sh
@@ -1398,6 +1423,7 @@ jobs:
           node scripts/test-review-metrics.mjs
           node scripts/test-review-backstopp.mjs
           node scripts/test-verify-ci-parity.mjs
+          node scripts/test-task-338-6-prod-migration.mjs
           node scripts/test-docraptor-sjalvbarande.mjs
 
       - name: Test post-merge-lagrets ärvda klassning (TASK-73)
