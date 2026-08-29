@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-29 08:18'
+updated_date: '2026-08-29 10:03'
 labels:
   - ready-for-agent
 dependencies:
@@ -22,15 +23,15 @@ Efter skivan bokför repot flödesbytet öppet: ADR-124 § Updates (preview-svar
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 ADR-124 och ADR-125 har daterade § Updates-rader med besluten och skälen; ingen ny ADR (check-adr-räkningen oförändrad)
-- [ ] #2 docraptor-minimaltest-2026-08-22.md bär en daterad rättelse-not vid det felaktiga påståendet med pekare till research-filen § 2.3; T176-raden uppdaterad; check-thread-index.sh exit 0
-- [ ] #3 npm run check:docs exit 0 (14 gröna)
+- [x] #1 ADR-124 och ADR-125 har daterade § Updates-rader med besluten och skälen; ingen ny ADR (check-adr-räkningen oförändrad)
+- [x] #2 docraptor-minimaltest-2026-08-22.md bär en daterad rättelse-not vid det felaktiga påståendet med pekare till research-filen § 2.3; T176-raden uppdaterad; check-thread-index.sh exit 0
+- [x] #3 npm run check:docs exit 0 (14 gröna)
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #4 Ingen HTML byggs i klienten; lagervakten (ADR-057) grön — promovering, hash-verifiering och ersätt-uppslag bor i EF/_shared
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Ingen HTML byggs i klienten; lagervakten (ADR-057) grön — promovering, hash-verifiering och ersätt-uppslag bor i EF/_shared
 <!-- DOD:END -->
