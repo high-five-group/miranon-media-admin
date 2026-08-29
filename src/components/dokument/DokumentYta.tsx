@@ -1932,9 +1932,17 @@ function ListHandlingsRad({
   onValjFil: (filer: FileList | null) => void;
 }) {
   return (
-    // `px-1 pt-1` — kortets egen padding är sedan T176 bara 8 px (Marcus:
-    // *"den gråa ramen … stör mig lite att 'ramen' är så tjock"*), så
-    // knapparna behöver egen luft för att inte klistra i ramens kant.
+    // `pt-1`, INGEN horisontell padding — knapparnas kanter ska LINJERA
+    // EXAKT med listans. Här stod `px-1` med motiveringen att knapparna
+    // "behöver egen luft för att inte klistra i ramens kant"; den var fel.
+    // Listan själv ligger vid ramens kant (kortets `p-2`), så 4 px extra
+    // indrag gav en synlig förskjutning mot listan i stället för luft —
+    // mätt i skärmdump: knappens vänsterkant 385 mot listans 381 vid
+    // 1280 px, 45 mot 41 (och högerkanten 345 mot 349) vid 390 px. Knappar
+    // som linjerar med listan läser som en rad i samma kolumn; 4 px
+    // förskjutning läser som ett fel. Den vertikala luften (`pt-1`) står
+    // kvar — den skiljer handlingsraden från kortets överkant utan att
+    // röra kolumnen.
     //
     // ═══ STAPLADE I FULL BREDD UNDER `sm`, SIDA VID SIDA FRÅN `sm` ═══
     //
@@ -1952,7 +1960,7 @@ function ListHandlingsRad({
     // (fragment + dold input), men den ligger inuti `data-testid`-ankaret
     // nedan, så DEN diven måste också bära `w-full sm:w-auto` — annars
     // sträcker sig ankaret men inte knappen.
-    <div className="flex flex-col gap-2 px-1 pt-1 sm:flex-row sm:items-center">
+    <div className="flex flex-col gap-2 pt-1 sm:flex-row sm:items-center">
       {/* `data-testid` på WRAPPERN, inte på knappen: `FileTrigger` renderar
           sin dolda `<input type="file">` som SYSKON till knappen, och det är
           inputen testet behöver nå (`setInputFiles`). Sidan bär flera
