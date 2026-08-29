@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-28
+updated: 2026-08-29
 review_by: 2026-11-24
 status: stable
 ---
@@ -348,6 +348,76 @@ migreringen; samtliga 24 PATCH:ade till `Räckvidd = Event`,
 count-verifierat efter med `{Räckvidd} = BLANK()` → 0 träffar (24/24).
 Prod-tabellen mättes TOM i S102 och är TOM alltjämt — `list_records` gav 0
 rader både före och efter fältskapelsen (0/0, inget att migrera).
+
+#### Bilagornas Gemensam-räckvidd — Plats-axel (ADR-125 § Updates 2026-08-29, TASK-338.1) — staging skapad 2026-08-29
+
+ADR-125 § Beslut 1 (S108 Del 2 § D:s grillade samsyn) beslutade räckvidden
+som ett AND-filter över tre kombinerbara axlar (Familj · Event · Plats) —
+det ERSÄTTER ADR-118 beslut 1 (radioval Event/Kurstyp/Alla event) för
+räckviddsVALET självt. ADR-118 beslut 2/3 (unionshämtning av eventets egna +
+gemensamma bilagor, raderingsskydd ur eventkontext) gäller **vidare
+oförändrat** — bara VAD som räknas som "gemensam" byter form. Denna skiva
+(TASK-338.1) bär STAGING-halvan (`apphjj8Q7lkXCMsL4`) av lagringsformen:
+fjärde option "Gemensam" på `Bilagor.Räckvidd`, ny länk `Bilagor.Plats` →
+`Platser`, och ett lookup-fält `Bilagor.Platsnamn` (`Platser.Namn`). Options
+"Kurstyp"/"Alla event" lämnas kvar OANVÄNDA på fältet (borttagning är ett
+Marcus-beslut, bokfört i defektregistret vid slutgenomlysningen, `ADR-063`
+§ Updates) — PRD `TASK-338` § Implementationsbeslut.
+
+**KÄND KANT, mätt skarpt — `mcp__airtable__update_field` kan INTE lägga till
+en `options.choice` på en befintlig singleSelect.** Verktygets JSON-schema
+exponerar bara `name`/`description` (bekräftat: en beskrivnings-uppdatering
+mot `Räckvidd` lyckades, en efterföljande `options`-payload mot SAMMA fält
+gav `INVALID_REQUEST_UNKNOWN: "name, description, and/or options must be
+specified"` — wrappern stryper okända fält innan anropet ens når Airtable).
+En efterföljande direkt Web-API-PATCH mot samma fält (samma PAT som
+MCP-servern använder — `~/.claude.json`
+`mcpServers.airtable.env.AIRTABLE_API_KEY`, verifierat vara EXAKT samma
+nyckel data-model.md redan bokför som delad mellan MCP:n och
+`AIRTABLE_SCHEMA_TOKEN`-klassen skript) gav Airtables EGEN 422:
+`"Changing a field's type or number precision is not currently supported."`
+— plattformens Metadata-API tillåter alltså inte att lägga till en choice på
+en BEFINTLIG singleSelect överhuvudtaget, oavsett verktyg. Vägen som
+FUNGERADE: `mcp__airtable__update_records` med `Räckvidd: "Gemensam"` på en
+riktig rad — Airtables dokumenterade **typecast**-beteende för Records-API:t
+skapar automatiskt en ny choice när strängen inte matchar något befintligt
+val. Choice-ID:t `selxFObtdzHsUJiun` föddes så och verifierades efteråt med
+`describe_table` (bekräftat närvarande med korrekt namn/färg). Bokförs här
+som verktygsfakta för nästa fält-operation av samma klass.
+
+| Yta | Staging-ID | Prod-ID | Typ |
+|---|---|---|---|
+| Bilagor → `Räckvidd` (ny 4:e option) | choice `selxFObtdzHsUJiun` på fält `fldU6i9Ju5HRwSRBf` | väntar TASK-338.6 | singleSelect-choice — "Gemensam" |
+| Bilagor → `Plats` | `fldmkHUxPNRRA0Rxi` | väntar TASK-338.6 | multipleRecordLinks → Platser (`tbl7ER0wNqAZ9ZhEq`); högst en plats avsedd — Airtable kan inte tvinga det, adapter/EF vaktar (TASK-338.2/338.3) |
+| Bilagor → `Platsnamn` | `fldyEDJD3Y3InHJ7J` | väntar TASK-338.6 | multipleLookupValues — lookup av `Platser.Namn` (`fldSDJcY7cb4dam3Y`) via `Plats` |
+| Platser → `Bilagor` (auto-född spegel av `Plats`) | `fldbdACukM1V52mZT` | väntar TASK-338.6 | multipleRecordLinks → Bilagor |
+
+**Migrering av befintliga rader (AC #2), samma form som `TASK-275`:s
+migrering ovan.** Staging bar **9** rader med `Räckvidd` = "Kurstyp" (6) eller
+"Alla event" (3) FÖRE migreringen (räknat med
+`OR({Räckvidd}='Kurstyp',{Räckvidd}='Alla event')`) — samtliga 9 PATCH:ade
+till "Gemensam" via `mcp__airtable__update_records`, `Kursfamilj`/`Kursnivå`
+lämnade helt orörda på var och en. Count-verifierat efter:
+`OR({Räckvidd}='Kurstyp',{Räckvidd}='Alla event')` → **0** träffar;
+`{Räckvidd}='Gemensam'` → **9** träffar (matchar summan 6+3 exakt), med
+samtliga `Kursfamilj`/`Kursnivå`-värden identiska mot före-läsningen
+(fält-för-fält jämförda). Övriga 36 rader i tabellen (13 med
+`Räckvidd`="Event", 23 utan `Räckvidd` satt alls — event-mallade
+`generate-event-attachment`-rader som aldrig skriver fältet) rördes inte.
+Prod-basen (`app8uGPrVCVOm6LfD`) är HELT ORÖRD i denna skiva — inget anrop i
+ovanstående bar det bas-ID:t; migreringen dit är `TASK-338.6` (Marcus GO per
+tabell, `ADR-125` § 8).
+
+**Ingen ny `.purge-staging-policy.json`-target.** Migreringen skapade inga
+nya rader — den PATCH:ade 9 befintliga, redan sentinel-täckta rader
+(`upload-attachment-sentineler`s `Namn`-mönster täcker de `ZZ-attachment-
+test-*`-raderna; `Demo - *`-raderna är permanenta demo-fixturer utanför
+purge-svepet av samma skäl som andra `Demo - *`-poster). De två nya fälten
+(`Plats`/`Platsnamn`) skapar inga transienta rader i DENNA skiva —
+skrivvägen som faktiskt sätter `Plats` på nya rader hör till TASK-338.2/
+338.3 och får bedöma purge-behov där. Verifierat mot
+`.purge-staging-policy.json`: ingen befintlig target rör `Plats`/`Platsnamn`,
+och ingen ny target behövs för detta bytes egna operationer.
 
 #### Bilagornas datamodell (ADR-125, TASK-309.2) — staging skapad 2026-08-23, prod skapad 2026-08-24
 
@@ -2118,3 +2188,4 @@ Code kan ta dessa när de blir relevanta för en specifik uppgift.
 | 2026-08-26 (`TASK-309.22`) | **§ Bucket `bilagor` — Storage-path-formerna: `<filnamn>` ASCII-/Storage-säkrat.** Prod-symptom: `upload-attachment` 502 "Invalid key" på ett filnamn med å/ä/ö (`2025-HörlurarMiranonMedia.pdf`, Marcus röktest). Rotorsak: Supabase Storages nyckel-regex (`supabase/storage` `limits.ts`) accepterar bara ett fast ASCII-tecken-set. `sanitizeFilnamn`/`buildAttachmentLeaf`/`buildAttachmentPath` flyttade ur `_shared/attachments.ts` till en ny zod-fri `_shared/attachment-filename.ts` (re-exporterade oförändrat, se filens docblock för det strukturella skälet — Node/Playwright kan inte importera en esm.sh-beroende modul direkt), och `sanitizeFilnamn` NFKD-normaliserar + faller icke-Storage-säkra tecken till ASCII. `Namn`-fältet (klientens originalfilnamn) OFÖRÄNDRAT; endast Storage-nyckeln transformeras. Befintliga ASCII-namngivna rader bevisbart oförändrade (se `_shared/attachment-filename.ts`s docblock för argumentet). |
 | 2026-08-26 (`TASK-309.22`, review-runda 1) | **§ Bucket `bilagor`s rad ovan AMENDERAD** — föregående rad (samma dag) sa att `sanitizeFilnamn` NFKD-normaliserar/faller till ASCII. Det var fel EFTER review-runda 1: `sanitizeFilnamn` faller INTE till ASCII (den är hash-underlaget för `deriveAttachmentId`, TASK-316) — ASCII-fallet flyttades till `buildAttachmentLeaf` (Storage-nyckeln/`Lagringsnyckel` ENDAST). Skälet: review visade empiriskt att det GAMLA (ett-stegs) upplägget kollapsade OLIKA filnamn (två helt olika CJK-strängar, två helt olika emoji — inte bara diakritik-varianter) till samma hash, vilket hade gjort en genuint ny uppladdning till en falsk idempotent replay av en annan fil. Se `_shared/attachment-filename.ts`s docblock och `upload-attachment/index.ts`s HASH-BESLUT-not för den fullständiga uppdelningen. |
 | 2026-08-28 (`TASK-309.30`) | **§ Ort-till-Plats vid create tillagd** (under Eventplanerings create-fält) + `Plats` tillagd i create-fält-tabellen + Plats-backfillens **öppna kant STÄNGD**. `create-event` slår upp `Platser` på `Namn` = `Ort` och länkar vid EXAKT en träff; noll/flera träffar och en redan satt `Plats` lämnar länken orörd, var och en med sitt `platsLankning.skal` i svaret. Ordnings-invarianten (`Plats` skrivs i en PATCH EFTER upserten, aldrig i dess fields-map) skyddar en manuellt satt Plats vid idempotent replay. `Platser.Namn`s icke-unikhet skarpt verifierad genom att seeda två rader med samma namn i staging. Ny purge-target `create-event-plats-harledning-sentineler` (Eventplanering, `Ort`-prefix `ZZ-plats-`); de två permanenta Platser-fixturerna matchar medvetet ingen target. Staging-EF deployad (v25 → v26, `UPDATED_AT` 2026-08-28T03:08:03.740Z); prod-deploy är ett separat Marcus-moment. |
+| 2026-08-29 (`TASK-338.1`) | **§ Bilagornas Gemensam-räckvidd — Plats-axel tillagd** (STAGING-halvan av `ADR-125` § Beslut 1, ersätter `ADR-118` beslut 1 för räckviddsVALET; beslut 2/3 gäller vidare). Ny 4:e option "Gemensam" på `Bilagor.Räckvidd` (choice `selxFObtdzHsUJiun`), ny länk `Bilagor.Plats` → `Platser` (`fldmkHUxPNRRA0Rxi`), lookup `Bilagor.Platsnamn` (`fldyEDJD3Y3InHJ7J`, `Platser.Namn` via `Plats`), auto-född spegel `Platser.Bilagor` (`fldbdACukM1V52mZT`). Migrerade 9 rader (6 "Kurstyp" + 3 "Alla event") → "Gemensam", `Kursfamilj`/`Kursnivå` oförändrade, räkneverifierat 9→0/9 med `filterByFormula`. **Plattformsvägg mätt:** `mcp__airtable__update_field` kan inte ändra en singleSelects `options.choices` (wrappern stryper okända fält); en direkt Web-API-PATCH mot samma fält (samma PAT som MCP-servern) gav Airtables egen 422 `"Changing a field's type or number precision is not currently supported"` — plattformen tillåter det inte alls via Metadata-API:t. Vägen som fungerade: `mcp__airtable__update_records` med ett okänt strängvärde, Airtables typecast-beteende skapade choicen automatiskt. Ingen ny `.purge-staging-policy.json`-target (migreringen skapade inga nya rader). Prod-kolumnen väntar `TASK-338.6` (Marcus GO per tabell, `ADR-125` § 8). |
