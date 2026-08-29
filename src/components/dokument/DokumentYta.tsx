@@ -1321,39 +1321,34 @@ function MetaRad({ delar }: { delar: (string | null)[] }) {
  * glider isär (de bar identiska men separata literal-listor före S107:s
  * fjärde QA-rond).
  *
- * ═══ VARFÖR "Klass:" ÄR BORTA, OCH VARFÖR DET INTE RÄCKTE ═══
+ * ═══ RADEN BÄR BARA DATUMET (Marcus 2026-08-29) ═══
  *
- * Marcus: *"Ta bort 'Klass:' framför 'Uppladdad:'"*. Raden löd
- * `Klass: Uppladdad · 0.0 MB · Uppladdad 17 aug. 2026 22:38`.
+ * Historiken, i tre steg, för den som undrar varför så lite står kvar:
  *
- * Att bara stryka prefixet hade gett `Uppladdad · 0.0 MB · Uppladdad 17
- * aug.` — ordet TVÅ gånger, alltså sämre. Dokumentklassens egna värden är
- * `Uppladdad` · `Event-mallad` · `Person-genererad` (`AttachmentClass`), och
- * det första kolliderar med datumledets verb.
+ *   1. `Klass: Uppladdad · 0.0 MB · Uppladdad 17 aug. 2026 22:38` var
+ *      utgångsläget. Marcus: *"Ta bort 'Klass:' framför 'Uppladdad:'"*.
+ *   2. FILSTORLEKEN UTGICK samtidigt. `0.0 MB` är brus för varje fil under
+ *      50 kB, och Lotta fattar inget beslut på den.
+ *   3. KLASSLEDET UTGÅR NU OCKSÅ (Marcus 2026-08-29, ordagrant: *"ta bort
+ *      'event-mallad'"*). Det stod villkorat — `Uppladdad` doldes som
+ *      default-fall medan `Event-mallad`/`Person-genererad`/`Okänd` visades
+ *      — och gav rader som `Event-mallad · Uppladdad 29 aug. 2026 19:52`.
+ *      Beslut 1 i TASK-147.12-resonemanget ("klassen visas bara när den
+ *      säger något nytt") är därmed UPPHÄVT, inte tappat: det är samma
+ *      information `RackviddBadge`/mall-pillen redan bär i täckningsraden
+ *      ovanför, i en form Lotta faktiskt läser.
  *
- * Tre beslut, i tur och ordning:
+ * KVAR STÅR `Uppladdad 17 aug. 2026 22:38` — det enda meta-värdet som
+ * faktiskt skiljer två filer åt i en lista — plus `+N äldre filer` när
+ * `grupperaPerNamn` kollapsat dubbletter (läggs på av anroparen, inte här).
  *
- *   1. KLASSEN VISAS BARA NÄR DEN SÄGER NÅGOT NYTT. `Uppladdad` är
- *      default-fallet och upprepar det datumledet redan säger — den utelämnas
- *      därför. `Event-mallad`/`Person-genererad`/`Okänd` bär äkta
- *      information och visas. Samma regel som segment-byggarens räknare
- *      ("N av M matchar" syns bara när filtret gör skillnad, `VariantD.tsx`).
- *   2. FILSTORLEKEN UTGÅR. `0.0 MB` är brus för varje fil under 50 kB, och
- *      Lotta fattar inget beslut på den. Den fanns för att den var lätt att
- *      visa, inte för att någon frågade efter den.
- *   3. DATUMET BÄR RADEN. Kvar står `Uppladdad 17 aug. 2026 22:38` — det
- *      enda meta-värdet som faktiskt skiljer två filer åt i en lista.
- *
- * "Okänd" behålls som ÄRLIG etikett (Gunilla-principen, TASK-147.12): den
- * betyder "backfillen kunde inte härleda den här raden", aldrig "vi vet men
- * visar det inte".
+ * Funktionen returnerar fortfarande en LISTA (inte en sträng): `MetaRad`
+ * fogar samman leden med ` · `, och `DokumentRadSkal` spetsar på
+ * dubblett-ledet. En framtida yta som vill lägga till ett led gör det på
+ * ett ställe.
  */
 function metaDelar(current: BilageRad['current']): (string | null)[] {
-  const klass = current.dokumentklass;
-  return [
-    klass != null && klass !== AttachmentClass.UPPLADDAD ? klass : null,
-    `Uppladdad ${DATUM_TID.format(new Date(current.skapad))}`,
-  ];
+  return [`Uppladdad ${DATUM_TID.format(new Date(current.skapad))}`];
 }
 
 /**
