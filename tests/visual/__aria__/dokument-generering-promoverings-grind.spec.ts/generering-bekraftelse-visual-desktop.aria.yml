@@ -29,5 +29,5 @@
       - button "Ändra dag 1": Dag 1 3 punkter, varav 1 meditationer
     - listitem:
       - button "Fyll i dag 2": Dag 2 Fyll i dag 2
-- button "Förhandsgranska först"
+- button "Förhandsgranska"
 - button "Skapa bekräftelsebilaga"

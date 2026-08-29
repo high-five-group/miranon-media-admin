@@ -188,6 +188,7 @@ import {
 import { useQueryState } from 'nuqs';
 import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { FileTrigger } from 'react-aria-components';
+import { useAuth } from '@/auth/useAuth';
 import type { MallId } from '@/components/dokument/blockDefinitioner';
 import { stegEtikett } from '@/components/dokument/nivaSprak';
 import { RackviddBadge } from '@/components/dokument/RackviddBadge';
@@ -216,6 +217,7 @@ import {
 import { useDataSource } from '@/data/useDataSource';
 import type { Attachment } from '@/domain/models/Attachment';
 import { AttachmentClass, AttachmentScope, type AttachmentScopeValue } from '@/domain/types/Status';
+import { fornamn } from '@/lib/fornamn';
 import { skrivLaddningssida } from '@/lib/skriv-laddningssida';
 import { queryKeys } from '@/queries/keys';
 
@@ -1084,6 +1086,11 @@ function metaDelar(current: BilageRad['current']): (string | null)[] {
  */
 function DokumentAtgardsKnappar({ namn, kalla }: { namn: string; kalla: DokumentKalla }) {
   const forhandsvisaMutation = useForhandsvisaDokument();
+  // [TILLÄGG, TASK-309.38] Samma väntehälsning som GenereringsVy.tsx —
+  // `user.displayName` via `fornamn()`, `null` (och därmed den anonyma
+  // formen) när fältet saknas.
+  const { user } = useAuth();
+  const forNamn = user?.displayName ? fornamn(user.displayName) : null;
 
   return (
     <>
@@ -1107,7 +1114,28 @@ function DokumentAtgardsKnappar({ namn, kalla }: { namn: string; kalla: Dokument
           // tomt (about:blank) under hela hämtningen, samma "abrupt
           // tomt fönster"-defekt Marcus avvisade 22 aug för den andra
           // ytan. Se `useForhandsvisaDokument.ts`s docblock.
-          skrivLaddningssida(handle, { titel: 'Öppnar dokument…', text: 'Öppnar dokument…' });
+          //
+          // [TILLÄGG, TASK-309.38] Väntetexten är personlig här också
+          // (AC #3, formkonsekvens), men bär det GENERISKA "dokumentet" —
+          // inte `namn` böjt i bestämd form. Skälet: denna knapp är delad
+          // mellan bilaga-rader (fritt uppladdat filnamn, t.ex.
+          // "kontrakt_signerat.pdf" — inte en böjbar substantivfras) och
+          // generatorraden/kvittot (`GeneratorRad`, `namn={gen.namn}`).
+          // GenereringsVy.tsx:s `MALL_META`-poster bär numera EXPLICIT
+          // `namnBestamd` per mall (review-runda 1, samma skiva — den
+          // mekaniska `${namn.toLowerCase()}n`-formeln gav "deltagarinformationn"
+          // eftersom svensk bestämd form inte bildas med en enda regel över
+          // substantiv-klasser). Ett känt, litet antal fasta mallnamn tål en
+          // uppslagstabell; ett godtyckligt uppladdat filnamn gör det inte —
+          // därför förblir DENNA yta generisk. `titel` lämnas oförändrad
+          // ("Öppnar dokument…") — det är redan sant för den generiska
+          // "dokumentet"-formen nedan.
+          skrivLaddningssida(handle, {
+            titel: 'Öppnar dokument…',
+            text: forNamn
+              ? `Ett ögonblick ${forNamn}, dokumentet öppnas här om några sekunder.`
+              : 'Ett ögonblick, dokumentet öppnas här om några sekunder.',
+          });
           forhandsvisaMutation.mutate({ kalla, handle });
         }}
       >
@@ -1503,7 +1531,7 @@ function BilageRadRow({
  * (`dokumentKalla.ts`s enda mall var just den), vilket hade förhandsvisat
  * FEL innehåll för den nytillkomna `'bekraftelse'`-posten (`MALLAR` ovan).
  * Genereringsvyn (`GenereringsVy.tsx`) äger nu BÅDA jobben för en mall —
- * "Förhandsgranska först" och "Skapa" — så mall-radens knapp blir en enda
+ * "Förhandsgranska" och "Skapa" — så mall-radens knapp blir en enda
  * ENTRÉ dit i stället för en andra, felkopplad, preview-väg. `typ: 'mall'`
  * (den gamla `DokumentKalla`-varianten) är därför riven, se
  * `dokumentKalla.ts`s filhuvud. `GeneratorRad` (kvitto) är OFÖRÄNDRAD —

@@ -44,5 +44,5 @@
       - button "Fyll i transport från tåget": Transport från tåget Fyll i transport från tåget
     - listitem:
       - button "Fyll i utrustning": Utrustning Fyll i utrustning
-- button "Förhandsgranska först"
+- button "Förhandsgranska"
 - button "Skapa deltagarinformation"
