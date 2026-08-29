@@ -2,6 +2,7 @@ import type {
   Attachment,
   AttachmentDownloadUrl,
   DocumentPreview,
+  SkapadEventBilaga,
   UploadAttachmentInput,
 } from '../../domain/models/Attachment';
 import type {
@@ -528,12 +529,35 @@ export interface DataSourceAdapter {
    * `ersatt`, satt till ett befintligt Event-mallat bilage-ID, regenererar
    * SAMMA rad (ADR-125 § 3 "regenerering är ERSÄTTNING") i stället för att
    * skapa en ny — servern verifierar ägarskap/dokumentklass/mall-matchning
-   * (se EF:ens filhuvud). Utelämnad: en NY rad skapas alltid (genererings-
-   * vyns "Skapa"-knapp, AC #3) — upprepade klick kan därför ge dubbletter,
-   * samma synliga "+N äldre filer"-grupp som redan gäller uppladdade filer
-   * (`DokumentYta.tsx` § grupperaPerNamn).
+   * (se EF:ens filhuvud). Det är listans "Skapa om"-väg.
+   *
+   * [ÄNDRAT, TASK-340.1 → TASK-340.2, PRD `TASK-340` § Implementationsbeslut E]
+   * ETT UTELÄMNAT `ersatt` SKAPAR INTE LÄNGRE ALLTID EN NY RAD. Finns redan
+   * en Event-mallad rad för (event × `Mall`) väljer SERVERN ersätt-vägen
+   * själv (uppslag på eventets omvända `Bilagor`-länk) och svarar
+   * `ersatte: true` med status 200 i stället för 201. Docblocket sade fram
+   * till denna skiva *"en NY rad skapas alltid … upprepade klick kan därför
+   * ge dubbletter"* — det var sant, och det var själva defekten: dubbletterna
+   * bär IDENTISKT filnamn, kollapsar bakom "+1 äldre fil" i
+   * `DokumentYta.tsx`s `grupperaPerNamn` och går inte att radera från appen
+   * (mätt på staging-fixturen 2026-08-29: 23 Bekräftelsebilaga-rader på ETT
+   * event). Klienten kan alltså inte längre skapa en dubblett av misstag.
+   *
+   * [TILLÄGG, TASK-340.1 § A] `kallhash` är underlagets hash ur den SENASTE
+   * förhandsgranskningen i samma vy. Stämmer den med serverns omräkning av
+   * dagens underlag PROMOVERAS utkastets exakta bytes (Storage copy, ingen
+   * omrendering) — det är hela integritetsargumentet: DocRaptor slumpar
+   * PDF:ens `/ID` per anrop, så en omrendering ger bevisligen andra bytes än
+   * den fil Lotta granskade. Hashen är ett PÅSTÅENDE som servern ALLTID
+   * verifierar; ett felaktigt värde ger aldrig fel dokument, bara en
+   * omrendering. Utelämnad hash = dagens beteende, oförändrat.
    */
-  skapaEventBilaga(input: { eventId: string; mall: MallId; ersatt?: string }): Promise<Attachment>;
+  skapaEventBilaga(input: {
+    eventId: string;
+    mall: MallId;
+    ersatt?: string;
+    kallhash?: string;
+  }): Promise<SkapadEventBilaga>;
 
   /**
    * Sidoeffektsfri förhandsvisning av klass C:s kvitto-generator

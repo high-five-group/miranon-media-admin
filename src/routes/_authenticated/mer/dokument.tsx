@@ -33,6 +33,13 @@ function DokumentPage() {
   const [mallParam, setMall] = useQueryState('mall');
   const mall: MallId = mallParam === 'deltagarinfo' ? 'deltagarinfo' : 'bekraftelse';
   const [eventId] = useQueryState('event');
+  // [TASK-340.2] Dokumentlistans typfilter (`DokumentLista` § `useQueryState('typ')`)
+  // — bekräftelseytans "Till dokumenten" slår på bilage-filtret i samma
+  // navigering som den lämnar genereringsvyn. Nyckeln ägs av routen här,
+  // precis som `vy`/`mall`: en vy som satte den själv hade blivit en andra
+  // ägare till samma adress. `DokumentLista` LÄSER samma nyckel via sin egen
+  // `useQueryState`-instans (nuqs delar värde per nyckel, inte per instans).
+  const [, setTyp] = useQueryState('typ');
 
   const dataSource = useDataSource();
   const eventsQuery = useQuery({
@@ -53,6 +60,16 @@ function DokumentPage() {
         onTillbaka={() => {
           void setVy(null);
           void setMall(null);
+        }}
+        onTillDokumenten={() => {
+          // TRE nycklar, EN navigering: nuqs buntar alla `set`-anrop i samma
+          // tick till en enda `router.navigate` (dess egen update-kö), så
+          // `RouteAnnouncer` ser EN href-ändring och annonserar högst en
+          // gång. Att sätta dem i tre separata effekter hade gett tre
+          // navigeringar och riskerat tre annonseringar (AC #4).
+          void setVy(null);
+          void setMall(null);
+          void setTyp('bilaga');
         }}
       />
     );

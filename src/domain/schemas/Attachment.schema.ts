@@ -124,6 +124,64 @@ export const AttachmentDownloadUrlSchema = z.object({
 export const DocumentPreviewSchema = z.object({
   url: z.string().url(),
   utgar: z.string().datetime(),
+  /**
+   * [TILLÄGG, TASK-340.1 → TASK-340.2, PRD `TASK-340` § Implementationsbeslut A]
+   * Underlagets `Källhash` — den EF:en REDAN räknade ut och tidigare kastade
+   * bort i preview-grenen. Klienten skickar tillbaka den vid Skapa; servern
+   * räknar om dagens hash och PROMOVERAR utkastets exakta bytes när de
+   * stämmer, i stället för att rendera om (DocRaptor slumpar PDF:ens `/ID`
+   * per anrop, så en omrendering ger BEVISLIGEN andra bytes än den fil Lotta
+   * granskade — research `forhandsgranska-spara-atervand-bilageflodet-
+   * 2026-08-29.md` § 2.3).
+   *
+   * VALFRI, MED AVSIKT — TVÅ SKÄL, båda mätta och inget av dem hypotetiskt:
+   *   1. `preview-receipt` delar detta schema och bär INGEN hash (kvittots
+   *      utkast promoveras aldrig, PRD § Utanför omfattningen).
+   *   2. `TASK-340.1` är i skrivande stund OLANDAD (PR `#2083`), så den
+   *      DEPLOYADE staging-EF:en svarar fortfarande utan fältet. Ett
+   *      obligatoriskt fält hade brutit varje förhandsgranskning tills
+   *      EF:en deployats.
+   *
+   * FORMEN VALIDERAS INTE HÄR, och det är ett medvetet val. EF:en avvisar en
+   * icke-kanonisk `kallhash` med 400 (`arKanoniskKallhash` i
+   * `_shared/promoveringsbeslut.ts`), så ett formfel MÅSTE fångas innan vi
+   * SKICKAR — inte när vi LÄSER. Läses formen strängt här faller hela
+   * förhandsgranskningen på ett fält som bara är en optimering; gaten sitter
+   * därför i `AirtableAdapter.skapaEventBilaga` (`arKanoniskKallhash`,
+   * `mallKallhash.ts`), som hellre utelämnar hashen än skickar en trasig.
+   */
+  kallhash: z.string().optional(),
+});
+
+/**
+ * Svaret från generate-event-attachment SKARPA gren (utan `preview`) —
+ * `TASK-340.1`s ADDITIVA utbyggnad, konsumerad av `TASK-340.2`s
+ * bekräftelseyta. Parallell sanningskälla: `../models/Attachment.ts` §
+ * `SkapadEventBilaga`.
+ *
+ * DE TRE BOOLEANERNA BÄR `.default(false)` — INTE `.optional()`. Skillnaden
+ * är hela poängen: konsumenten (`GenereringsVy`s textkomposition) ska aldrig
+ * behöva skilja `false` från `undefined` för att avgöra vilken mening som
+ * ska stå i bekräftelsen. Ett svar från den ÄNNU EJ DEPLOYADE EF:en (eller
+ * från en äldre fixtur) saknar fälten helt och normaliseras då till `false`,
+ * vilket är exakt sanningen om ett sådant svar: ingen promovering skedde,
+ * inget underlag ändrades, ingenting ersattes.
+ *
+ * STATUSKODEN LÄSES INTE HÄR, och behöver inte läsas någonstans.
+ * `postEdgeFunction` släpper igenom hela 2xx-bandet (`res.ok`), så både 201
+ * (ny rad) och 200 (`ersatte`) når parsningen oförändrat. Invarianten
+ * `201 ⇔ ersatte === false` bor i EF:en och bevisas i dess egen svit; på
+ * klientsidan är `ersatte` det enda vi behöver — att härleda samma sak ur
+ * statuskoden hade varit en andra, driftbar sanning om samma faktum.
+ */
+export const SkapadEventBilagaSchema = z.object({
+  attachment: AttachmentSchema,
+  /** Utkastets bytes kopierades — den sparade filen ÄR den granskade filen. */
+  promoverad: z.boolean().default(false),
+  /** Underlaget hade ändrats sedan förhandsgranskningen → dokumentet gjordes om. */
+  underlagAndrat: z.boolean().default(false),
+  /** En befintlig Event-mallad rad skrevs över i stället för att en ny föddes. */
+  ersatte: z.boolean().default(false),
 });
 
 /**

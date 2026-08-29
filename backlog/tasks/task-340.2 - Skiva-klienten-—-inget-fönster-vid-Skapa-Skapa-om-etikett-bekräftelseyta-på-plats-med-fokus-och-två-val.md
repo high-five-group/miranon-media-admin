@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-29 08:18'
+updated_date: '2026-08-29 10:07'
 labels:
   - ready-for-agent
 dependencies:
@@ -22,10 +23,10 @@ Efter skivan: Skapa öppnar inget fönster och skriver ingen laddningssida (för
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Acceptance: Skapa öppnar inget fönster (negativt bevis: context.waitForEvent('page') firar INTE inom 3 s) medan Förhandsgranska fortfarande gör det; ingen laddningssida för skapa-grenen kvar i koden
-- [ ] #2 Acceptance: bekräftelseytan ersätter formuläret, tar fokus (document.activeElement inuti ytan), visar rätt textvariant för promoverad / underlagAndrat / ersatte / platsstandard (MSW-fixturer per fall), och bär exakt två val; 'Till dokumenten' landar på dokumentvyn med ?typ=bilaga; axe grönt; tangentbordsvandring bokförd
-- [ ] #3 Knappens etikett 'Skapa om …' när rad finns, 'Skapa …' annars — testat i båda lägena; kallhash skickas med när en förhandsgranskning gjorts i vyn (nätverkspåstående i test)
-- [ ] #4 Skärmläsare: exakt en annonsering vid bekräftelsen och exakt en vid 'Till dokumenten' (Playwright-assert på live-regioner/RouteAnnouncer, eller manuell VoiceOver-mätning bokförd med utfall); aria-/visual-snapshots för genereringsvyn regenererade via spec-filens mekanism
+- [x] #1 Acceptance: Skapa öppnar inget fönster (negativt bevis: context.waitForEvent('page') firar INTE inom 3 s) medan Förhandsgranska fortfarande gör det; ingen laddningssida för skapa-grenen kvar i koden
+- [x] #2 Acceptance: bekräftelseytan ersätter formuläret, tar fokus (document.activeElement inuti ytan), visar rätt textvariant för promoverad / underlagAndrat / ersatte / platsstandard (MSW-fixturer per fall), och bär exakt två val; 'Till dokumenten' landar på dokumentvyn med ?typ=bilaga; axe grönt; tangentbordsvandring bokförd
+- [x] #3 Knappens etikett 'Skapa om …' när rad finns, 'Skapa …' annars — testat i båda lägena; kallhash skickas med när en förhandsgranskning gjorts i vyn (nätverkspåstående i test)
+- [x] #4 Skärmläsare: exakt en annonsering vid bekräftelsen och exakt en vid 'Till dokumenten' (Playwright-assert på live-regioner/RouteAnnouncer, eller manuell VoiceOver-mätning bokförd med utfall); aria-/visual-snapshots för genereringsvyn regenererade via spec-filens mekanism
 <!-- AC:END -->
 
 ## Definition of Done

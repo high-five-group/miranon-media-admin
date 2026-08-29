@@ -47,6 +47,36 @@ export function mallIdFranAirtableOption(mall: string | null): MallId | null {
 }
 
 /**
+ * `berakaKallhash`s kanoniska utdataform: SHA-256 som 64 hex-tecken i
+ * GEMENER (`bytesToHex` använder `toString(16)`, som aldrig ger versaler).
+ *
+ * SPEGEL AV `_shared/promoveringsbeslut.ts` § `KALLHASH_FORM`, MEDVETET
+ * DUPLICERAD OCH INTE IMPORTERAD. Resten av denna fil importerar visserligen
+ * rakt ur `supabase/functions/_shared/` (mirror-kontraktet i filhuvudet
+ * ovan) — men `promoveringsbeslut.ts` föds i `TASK-340.1`, som ännu inte är
+ * landad (PR `#2083`). En import därifrån hade gjort DENNA gren
+ * obyggbar. Formen är dessutom inte en delad ALGORITM utan SHA-256:s egen
+ * hex-form: två rader som beskriver samma naturkonstant kan inte glida isär
+ * på det sätt två hash-BERÄKNINGAR kan.
+ */
+const KALLHASH_FORM = /^[0-9a-f]{64}$/;
+
+/**
+ * Sant EXAKT när `varde` är en sträng på `berakaKallhash`s utdataform.
+ *
+ * VARFÖR GATEN BEHÖVS PÅ KLIENTSIDAN (TASK-340.2): EF:en behandlar en
+ * ANGIVEN men icke-kanonisk `kallhash` som ett KLIENTFEL och svarar 400 —
+ * samma "ett angivet men okänt värde är ett klientfel, aldrig en tyst
+ * fallback"-disciplin `mall`/`ersatt` redan bär. Att skicka en trasig hash
+ * skulle alltså fälla HELA Skapa, inte bara promoveringen. Klienten
+ * utelämnar därför hellre fältet: utan hash renderas dokumentet om, vilket
+ * är ett sämre men fullgott utfall (PRD `TASK-340` § A (d)).
+ */
+export function arKanoniskKallhash(varde: unknown): varde is string {
+  return typeof varde === 'string' && KALLHASH_FORM.test(varde);
+}
+
+/**
  * Dagens hash för `mall` givet ett events aktuella `DocumentSources` — SAMMA
  * beräkning `generate-event-attachment/index.ts` gör server-side
  * (`byggXData` → `berakaKallhash`). Jämför mot en bilagerads lagrade

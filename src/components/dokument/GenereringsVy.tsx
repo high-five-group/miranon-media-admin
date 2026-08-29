@@ -56,7 +56,7 @@
  */
 
 import { ChevronRight, ExternalLink, FileText, Loader2, Pencil } from 'lucide-react';
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useAuth } from '@/auth/useAuth';
 import {
   type AgendaRad,
@@ -83,13 +83,16 @@ import { MessageBox } from '@/components/primitives/MessageBox';
 import { Modal } from '@/components/primitives/Modal';
 import { SidRamKnapp } from '@/components/primitives/SidRam';
 import { Skeleton } from '@/components/primitives/Skeleton';
+import { mallIdFranAirtableOption } from '@/data/adapters/mallKallhash';
 import { useForhandsgranskaBilaga } from '@/data/mutations/useForhandsgranskaBilaga';
 import { useGenereraEventBilaga } from '@/data/mutations/useGenereraEventBilaga';
 import { useSaveEventText } from '@/data/mutations/useSaveEventText';
 import { useDocumentSources } from '@/data/queries/useDocumentSources';
+import { useEventAttachments } from '@/data/queries/useEventAttachments';
 import type { DocumentSources } from '@/domain/models/DocumentSources';
 import type { Event } from '@/domain/models/Event';
 import type { EventTextFalt, PlatsFalt } from '@/domain/schemas';
+import { AttachmentClass } from '@/domain/types/Status';
 import { cn } from '@/lib/cn';
 import { fornamn } from '@/lib/fornamn';
 import { skrivLaddningssida } from '@/lib/skriv-laddningssida';
@@ -360,17 +363,33 @@ function meningsStart(text: string): string {
  * dokumentet — precis den sortens tysta fel som inte syns förrän någon
  * öppnar fel bilaga.
  *
- * `skarpt` skiljer granskning från skapande. Texten "ligger nu bland
- * eventets dokument" är osann om en granskning, och ett halvsant
- * framgångsbesked är värre än inget.
+ * [OMSKRIVEN, TASK-340.2] Unionen bar tidigare EN `klar`-gren med en
+ * `skarpt: boolean` som skilde granskning från skapande. De två utfallen är
+ * nu STRUKTURELLT olika ytor — förhandsgranskningen är en ruta UNDER
+ * formuläret, bekräftelsen ERSÄTTER det — och en boolean som styr vilken
+ * halva av fälten som är meningsfulla är precis den formen TypeScript kan
+ * göra omöjlig i stället. `blockerad` finns bara i förhandsgransknings-
+ * grenen (skapandet öppnar inget fönster och kan därför inte få det
+ * blockerat), och de tre EF-booleanerna bara i skapande-grenen.
  */
 type Resultat =
+  /** Förhandsgranskningen är klar — rutan under formuläret, formen oförändrad. */
   | {
-      typ: 'klar';
-      skarpt: boolean;
+      typ: 'forhandsgranskad';
       url: string;
       /** Webbläsaren stoppade den automatiska öppningen — knappen bär vägen in. */
       blockerad: boolean;
+    }
+  /** Dokumentet är sparat — bekräftelseytan ERSÄTTER formuläret (PRD § Bekräftelsen på plats). */
+  | {
+      typ: 'skapad';
+      url: string;
+      /** Utkastets bytes kopierades — den sparade filen ÄR den granskade filen. */
+      promoverad: boolean;
+      /** Underlaget hade ändrats sedan förhandsgranskningen → dokumentet gjordes om. */
+      underlagAndrat: boolean;
+      /** En befintlig bilaga skrevs över i stället för att en dubblett föddes. */
+      ersatte: boolean;
       utelamnade: string[];
       sparade: string[];
     }
@@ -589,10 +608,19 @@ export function GenereringsVy({
   event,
   mall,
   onTillbaka,
+  onTillDokumenten,
 }: {
   event: Event;
   mall: MallId;
   onTillbaka: () => void;
+  /**
+   * [TASK-340.2] Bekräftelseytans andra val — dokumentvyn med bilage-filtret
+   * påslaget (`?typ=bilaga`). NAVIGERINGEN ÄGS AV ROUTEN, precis som
+   * `onTillbaka`: `?vy`/`?mall`/`?typ` är nuqs-nycklar som `dokument.tsx`
+   * redan håller, och en vy som satte dem själv hade blivit en andra ägare
+   * till samma adress.
+   */
+  onTillDokumenten: () => void;
 }) {
   const meta = MALL_META[mall];
   const grupper = GRUPPER[mall];
@@ -633,6 +661,79 @@ export function GenereringsVy({
   const forhandsgranska = useForhandsgranskaBilaga();
   const saveEventText = useSaveEventText(event.id);
   const genereraBilaga = useGenereraEventBilaga(event.id);
+
+  /**
+   * [TASK-340.2, PRD `TASK-340` § A] Källhashen ur den SENASTE
+   * förhandsgranskningen i denna vy. Skickas med vid Skapa så EF:en kan
+   * PROMOVERA de granskade bytesen i stället för att rendera om.
+   *
+   * PER (EVENT × MALL) UTAN EGEN NYCKEL: routekomponenten monterar denna vy
+   * med `key={`${eventId}-${mall}`}` (`dokument.tsx`), så hela komponentens
+   * state — inklusive detta — kastas när endera byts. Ett eget uppslag hade
+   * varit en andra mekanism för något React redan garanterar.
+   *
+   * HASHEN NOLLSTÄLLS ALDRIG NÄR ETT BLOCK SPARAS, och det är avsiktligt.
+   * En sparad ändring gör hashen INAKTUELL, inte farlig: servern räknar om
+   * dagens hash, ser att den skiljer sig, renderar om och svarar
+   * `underlagAndrat: true` — vilket är exakt det besked Lotta behöver
+   * ("förhandsgranska gärna igen"). Att kasta hashen lokalt hade gjort
+   * samma omrendering TYST och tagit bort beskedet.
+   */
+  const [kallhash, setKallhash] = useState<string | null>(null);
+
+  /**
+   * [TASK-340.2, PRD `TASK-340` § E] Finns det redan en Event-mallad bilaga
+   * för DENNA mall? Då heter knappen "Skapa om …" — samma verb som listans
+   * befintliga knapp — eftersom trycket skriver över den befintliga raden.
+   *
+   * SAMMA FRÅGA SOM `DokumentYta` REDAN STÄLLT: `useEventAttachments` bär
+   * nyckeln `attachments.byEvent(eventId)`, och genereringsvyn nås alltid
+   * därifrån, så svaret ligger normalt i cachen när vyn monteras. Ingen ny
+   * hämtväg, ingen prop-borrning.
+   *
+   * FALLBACK ÄR "Skapa …" — medvetet. Är frågan ännu obesvarad (kall cache,
+   * direktlänk) vet vi inte att en rad finns, och att gissa "Skapa om" hade
+   * påstått en överskrivning som kanske inte sker. Utfallet självt avgörs
+   * ändå av SERVERN (den slår upp raden och svarar `ersatte`), så etiketten
+   * är en upplysning i förväg — aldrig det som styr vad som händer.
+   */
+  const attachmentsQuery = useEventAttachments(event.id);
+  const finnsMalladRad = (attachmentsQuery.data ?? []).some(
+    (a) =>
+      a.dokumentklass === AttachmentClass.EVENT_MALLAD && mallIdFranAirtableOption(a.mall) === mall,
+  );
+
+  /**
+   * BEKRÄFTELSEYTAN TAR FOKUS — en NAMNGIVEN avvikelse från MDN:s
+   * `role="status"`-regel, inte ett förbiseende.
+   *
+   * MDN säger rakt ut: *"Do not give focus to the status when its content
+   * updates. … If a situation requires that focus needs to be moved, then
+   * using a `status`, or other live region, are likely not appropriate."*
+   * Vår `MessageBox` väljer roll automatiskt — `intent === 'error' ||
+   * 'warning' ? 'alert' : 'status'` (`MessageBox.tsx:118`) — så en
+   * success-ruta ÄR en `status`.
+   *
+   * VI FLYTTAR FOKUS ÄNDÅ, av exakt det skäl husets egen skapa-precedent
+   * bär (`CreateEventForm.tsx:188`, *"ingen automatisk omdirigering
+   * (skapandet ska KVITTERAS, inte bara hända)"*): DEN KNAPP LOTTA TRYCKTE
+   * PÅ FINNS INTE KVAR I DOM:EN. Bekräftelsen ersätter formuläret, alltså
+   * också Skapa-knappen. Utan fokusflytt hamnar tangentbords- och
+   * skärmläsarfokus på `document.body` — Lotta står ingenstans, och måste
+   * tabba om från sidans början för att hitta sina två val. MDN:s regel
+   * förutsätter en yta som står KVAR runt en uppdaterad live-region; det är
+   * inte fallet här.
+   *
+   * DUBBELANNONSERINGEN, som är MDN:s faktiska farhåga, är i stället löst
+   * vid källan: `useGenereraEventBilaga` annonserar INTE längre via
+   * `alertScreenReader` (se dess docblock). Kvar är EN region med EN text.
+   * Mätt i `dokument-generering-bekraftelse.acceptance.test.ts` (AC #4).
+   */
+  const skapad = resultat?.typ === 'skapad' ? resultat : null;
+  const bekraftelseRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (skapad) bekraftelseRef.current?.focus();
+  }, [skapad]);
 
   const oppnaBlock = (id: BlockId) => setOppet(id);
   const stangDialog = () => setOppet(null);
@@ -706,13 +807,15 @@ export function GenereringsVy({
   };
 
   /**
-   * Skapar dokumentet; `skarpt` sparar dessutom platsens standard.
+   * FÖRHANDSGRANSKA — formen är OFÖRÄNDRAD i TASK-340.2 (PRD `TASK-340`
+   * § Lösning: *"Förhandsgranska fungerar som i dag (eget fönster — det är
+   * hela poängen)"*). Docblocket nedan gäller alltså fortfarande DENNA gren
+   * och bara den; skapandets gren har flyttat till `startaSkapande` och
+   * öppnar inget fönster alls längre.
    *
-   * [RIVEN OM, TASK-309.6] `false` (Förhandsgranska) anropar preview-grenen
+   * [RIVEN OM, TASK-309.6] Anropar preview-grenen
    * (`useForhandsgranskaBilaga`, `{eventId, mall}` — ingen HTML byggs
-   * klient-side, AC #6). `true` (Skapa) anropar den PERSISTERANDE grenen
-   * (`useGenereraEventBilaga`) som skapar en NY Bilagor-rad, sparar ev.
-   * platsstandard i samma andetag, och slår upp en nedladdnings-URL.
+   * klient-side, AC #6).
    *
    * [RÄTTAT, TASK-309.26] Fram till denna skiva öppnades fönstret EFTER att
    * mutationen löst ut (Marcus 2026-08-22: *"Lotta ska inte skickas till
@@ -758,47 +861,83 @@ export function GenereringsVy({
    * det härifrån") visas då i stället för att toasten felaktigt påstår att
    * dokumentet öppnades i en flik som inte längre finns.
    */
-  const skapaDokument = (skarpt: boolean) => {
+  const startaForhandsgranskning = () => {
     if (forhandsgranska.isPending || genereraBilaga.isPending) return;
     setResultat(null);
 
     // Se docblocket ovan: MÅSTE ske synkront, före mutate()/all await.
     const fonster = window.open('', '_blank');
 
-    if (!skarpt) {
-      skrivLaddningssida(fonster, {
-        titel: 'Skapar förhandsgranskningen…',
-        text: `${vantehalsning(forNamn)}förhandsgranskningen av ${meta.namnBestamd} skapas och visas här om några sekunder.`,
-      });
-      forhandsgranska.mutate(
-        { eventId: event.id, mall },
-        {
-          onSuccess: ({ url }) => {
-            // [RÄTTAT, TASK-309.26 review-runda 1] `fonster` kan vara
-            // icke-null men STÄNGT — Lotta hann stänga fliken medan EF:en
-            // arbetade. `.location.href` på ett stängt fönster kan kasta i
-            // vissa webbläsare (MDN); `blockerad` måste då bli `true` så
-            // fallback-knappen visas, annars påstår toasten att dokumentet
-            // öppnades trots att ingen flik finns kvar att se det i.
-            const anvandbart = fonster !== null && !fonster.closed;
-            if (anvandbart) fonster.location.href = url;
-            setResultat({
-              typ: 'klar',
-              skarpt: false,
-              url,
-              blockerad: !anvandbart,
-              utelamnade: [],
-              sparade: [],
-            });
-          },
-          onError: (e) => {
-            stangOanvantFonster(fonster);
-            setResultat({ typ: 'fel', text: e.message });
-          },
+    skrivLaddningssida(fonster, {
+      titel: 'Skapar förhandsgranskningen…',
+      text: `${vantehalsning(forNamn)}förhandsgranskningen av ${meta.namnBestamd} skapas och visas här om några sekunder.`,
+    });
+    forhandsgranska.mutate(
+      { eventId: event.id, mall },
+      {
+        onSuccess: ({ url, kallhash: hash }) => {
+          // [RÄTTAT, TASK-309.26 review-runda 1] `fonster` kan vara
+          // icke-null men STÄNGT — Lotta hann stänga fliken medan EF:en
+          // arbetade. `.location.href` på ett stängt fönster kan kasta i
+          // vissa webbläsare (MDN); `blockerad` måste då bli `true` så
+          // fallback-knappen visas, annars påstår rutan att dokumentet
+          // öppnades trots att ingen flik finns kvar att se det i.
+          const anvandbart = fonster !== null && !fonster.closed;
+          if (anvandbart) fonster.location.href = url;
+          // [TASK-340.2] Hashen sparas ÄVEN när fönstret blockerades: Lotta
+          // kan öppna PDF:en via fallback-knappen och granska den ändå, så
+          // förhandsgranskningen ÄGDE RUM. Att kasta hashen för att ett
+          // fönster inte öppnades hade tvingat fram en omrendering av ett
+          // dokument hon faktiskt hunnit titta på.
+          setKallhash(hash ?? null);
+          setResultat({ typ: 'forhandsgranskad', url, blockerad: !anvandbart });
         },
-      );
-      return;
-    }
+        onError: (e) => {
+          stangOanvantFonster(fonster);
+          setResultat({ typ: 'fel', text: e.message });
+        },
+      },
+    );
+  };
+
+  /**
+   * SKAPA — den PERSISTERANDE grenen (`useGenereraEventBilaga`): en
+   * Bilagor-rad skrivs (ny ELLER ersatt, servern avgör), ev. platsstandard
+   * sparas i samma andetag, och filens nedladdnings-URL slås upp.
+   *
+   * ── INGET FÖNSTER, INGEN LADDNINGSSIDA (TASK-340.2, AC #1) ──
+   *
+   * `window.open('', '_blank')` + `skrivLaddningssida` + `location.href` är
+   * BORTA ur denna gren. Marcus prod-röktest 2026-08-29, ordagrant: *"Detta
+   * känns så ologiskt och klumpigt byggt … Detta kan omöjligen vara
+   * branschstandard."* — hon hade just granskat PDF:en i ett fönster, och
+   * fick ett ANDRA fönster med "samma" dokument så fort hon sparade.
+   *
+   * Research-passet (`forhandsgranska-spara-atervand-bilageflodet-
+   * 2026-08-29.md`) belade två saker: sju av åtta undersökta leverantörer
+   * PROMOVERAR samma objekt över spara-gränsen i stället för att rendera om,
+   * och GOV.UK:s regel för en LINJÄR uppgift är en avslutande BEKRÄFTELSE
+   * (inte en banner mitt i ett pågående arbete). Genereringsvyn är just en
+   * linjär uppgift: den öppnas för att skapa ETT dokument och är slut när
+   * dokumentet finns. Nästa steg är därför Lottas VAL i bekräftelsen —
+   * "Visa dokumentet" eller "Till dokumenten" — inte ett fönster appen
+   * öppnar åt henne.
+   *
+   * FÖRHANDSGRANSKNINGENS fönster är OFÖRÄNDRAT (se `startaForhandsgranskning`
+   * ovan). Skillnaden är inte inkonsekvens utan syfte: förhandsgranskningens
+   * HELA poäng är att visa PDF:en, skapandets poäng är att spara den.
+   *
+   * ── KÄLLHASHEN FÖLJER MED (PRD § A) ──
+   *
+   * `kallhash` är underlagets hash ur den senaste förhandsgranskningen i
+   * denna vy. Servern räknar om dagens hash och kopierar utkastets EXAKTA
+   * bytes när de stämmer — annars renderar den om och säger det
+   * (`underlagAndrat`). Klientens hash är ett PÅSTÅENDE som alltid
+   * verifieras; den kan aldrig ge fel dokument, bara en missad optimering.
+   */
+  const startaSkapande = () => {
+    if (forhandsgranska.isPending || genereraBilaga.isPending) return;
+    setResultat(null);
 
     // Platsens standard sparas när bilagan skapas — inte när krysset sätts
     // (AC #2). Insamlat ur `allaRader`s AKTUELLA (redan sparade) värden.
@@ -811,32 +950,26 @@ export function GenereringsVy({
       }
     }
 
-    skrivLaddningssida(fonster, {
-      titel: `Skapar ${meta.namnBestamd}…`,
-      text: `${vantehalsning(forNamn)}${meta.namnBestamd} skapas och visas här om några sekunder.`,
-    });
     genereraBilaga.mutate(
-      { mall, platsFalt: Object.keys(platsFalt).length > 0 ? platsFalt : undefined },
       {
-        onSuccess: ({ url }) => {
+        mall,
+        platsFalt: Object.keys(platsFalt).length > 0 ? platsFalt : undefined,
+        ...(kallhash !== null ? { kallhash } : {}),
+      },
+      {
+        onSuccess: ({ url, promoverad, underlagAndrat, ersatte }) => {
           setSomStandard(new Set());
-          // Se motiveringen i förhandsgranska-grenen ovan: samma
-          // stängt-fönster-vakt, samma `blockerad`-fallback.
-          const anvandbart = fonster !== null && !fonster.closed;
-          if (anvandbart) fonster.location.href = url;
           setResultat({
-            typ: 'klar',
-            skarpt: true,
+            typ: 'skapad',
             url,
-            blockerad: !anvandbart,
+            promoverad,
+            underlagAndrat,
+            ersatte,
             utelamnade: utelamnade.map((r) => r.def.etikett.toLowerCase()),
             sparade: sparadeEtiketter,
           });
         },
-        onError: (e) => {
-          stangOanvantFonster(fonster);
-          setResultat({ typ: 'fel', text: e.message });
-        },
+        onError: (e) => setResultat({ typ: 'fel', text: e.message }),
       },
     );
   };
@@ -900,6 +1033,97 @@ export function GenereringsVy({
             ? sourcesQuery.error.message
             : 'Underlaget kunde inte hämtas.'}
         </MessageBox>
+      </div>
+    );
+  }
+
+  /**
+   * BEKRÄFTELSELÄGET (TASK-340.2, PRD `TASK-340` § Implementationsbeslut
+   * "Bekräftelsen på plats") — dokumentet är sparat, och nästa steg är
+   * Lottas VAL. Bekräftelsen ERSÄTTER formuläret; ingen automatisk
+   * omdirigering, ingen toast, ingen markerad rad i listan.
+   *
+   * FORMEN ÄR HUSETS EGEN, inte en ny (`CreateEventForm.tsx:188`, verbatim:
+   * *"ingen automatisk omdirigering (skapandet ska KVITTERAS, inte bara
+   * hända)"*): sidkromet står kvar, resten byts mot en `MessageBox intent
+   * success` plus en rad med de två valen, allt inuti en fokuserbar
+   * behållare. Se `bekraftelseRef`-effekten ovan för varför fokus flyttas
+   * hit trots MDN:s `role="status"`-regel.
+   *
+   * ── VARFÖR EN BEKRÄFTELSE OCH INTE EN TOAST ──
+   * `ADR-121` placerar "uppgiftsgenererad bekräftelse" i toast-klassen, men
+   * research-passet (§ 3.4) avgränsar den klassen till INCIDENTELLA
+   * kvittenser INUTI ett flöde. Detta är flödets SLUTPUNKT: uppgiften är
+   * slut när dokumentet finns, resultatet är irreversibelt i UI:t, och
+   * GOV.UK:s regel för en linjär tjänst är uttryckligen en bekräftelse
+   * ("Using a notification banner is unlikely to be the right approach in a
+   * linear service"). En toast hade dessutom fått auto-döljas, och WCAG
+   * 2.4.11 varnar för att en överlagrad notis skymmer just det som nyss
+   * fick fokus.
+   *
+   * ── VARFÖR KNAPPARNA STÅR UTANFÖR `MessageBox` OCH INTE I DESS `actions` ──
+   * `MessageBox`s egen docblock säger att konsumenter aldrig placerar en
+   * egen knapp bredvid rutan. Vi gör det ändå, med två skäl som väger
+   * tyngre än formregeln, och skriver ut dem hellre än att tiga:
+   *   1. HUSETS BEKRÄFTELSE-PRECEDENT gör precis så (`CreateEventForm`s
+   *      två val ligger i en syskon-`div`), och kortet föreskriver DEN
+   *      formen. `actions` är byggd för rutans EGEN åtgärd ("Försök igen"),
+   *      inte för uppgiftens nästa steg.
+   *   2. LIVE-REGIONENS INNEHÅLL. Rutan ÄR regionen (`role="status"`).
+   *      Ligger knapparna inuti den läser skärmläsaren upp deras etiketter
+   *      som en del av beskedet; utanför läses beskedet, och valen nås som
+   *      det de är — två knappar att tabba till. AC #4 mäter den ena
+   *      annonseringen; detta är vad som gör den ren.
+   */
+  if (skapad) {
+    return (
+      <div className="flex flex-col gap-6" data-testid="generering-vy">
+        <div className="flex flex-col gap-4">
+          <SidRamKnapp tillbakaEtikett="Tillbaka till Dokument" onTillbaka={onTillbaka} />
+          <header className="flex flex-col gap-1">
+            <h1 className="font-semibold text-3xl">{meta.namn}</h1>
+            <p className="text-small text-text-secondary">
+              <span className="font-medium text-text">{eventName(event)}</span> · {event.ort} ·{' '}
+              {datumSpannText(event)}
+            </p>
+          </header>
+        </div>
+        <div
+          ref={bekraftelseRef}
+          tabIndex={-1}
+          data-testid="bekraftelse"
+          className="flex flex-col items-start gap-4 outline-none"
+        >
+          {/* TEXTEN KOMPONERAS UR SVARET, mening för mening (PRD § Bekräftelsen
+              på plats). `promoverad` bär MEDVETET ingen egen mening: att den
+              sparade filen är exakt den granskade är NORMALFALLET, och en app
+              som berättar att det normala hände lär Lotta att sluta läsa.
+              Det som ALLTID sägs är avvikelserna — att dokumentet gjordes om,
+              att något ersattes, att en standard sparades. */}
+          <MessageBox intent="success" title={`${meningsStart(meta.namnBestamd)} är sparad`}>
+            Den ligger nu bland eventets dokument, redo att bifogas i utskick.
+            {skapad.utelamnade.length > 0 && ` Utan ${ochLista(skapad.utelamnade)}.`}
+            {skapad.underlagAndrat &&
+              ' Underlaget hade ändrats sedan förhandsgranskningen, så dokumentet gjordes om. Förhandsgranska gärna igen.'}
+            {skapad.ersatte && ' Den ersätter den tidigare bilagan.'}
+            {skapad.sparade.length > 0 &&
+              ` ${event.ort} har nu ${ochLista(skapad.sparade)} som standard.`}
+          </MessageBox>
+          <div className="flex flex-wrap items-center gap-2">
+            {/* ETT DIREKT KLICK, ingen popup-blockerare att smita förbi:
+                `window.open` sker i Lottas EGEN knapptryckning. `noreferrer`
+                utelämnas medvetet — målet är alltid en signerad Storage-URL i
+                vår egen bucket (`ADR-124`), aldrig en främmande adress (samma
+                resonemang som DokumentYta § IKONPAR). */}
+            <Button intent="primary" onPress={() => window.open(skapad.url, '_blank')}>
+              <ExternalLink aria-hidden="true" size={16} className="shrink-0" />
+              Visa dokumentet
+            </Button>
+            <Button intent="secondary" onPress={onTillDokumenten}>
+              Till dokumenten
+            </Button>
+          </div>
+        </div>
       </div>
     );
   }
@@ -1105,14 +1329,16 @@ export function GenereringsVy({
         );
       })}
       <div className="flex flex-col gap-4">
-        {resultat?.typ === 'klar' && (
+        {/* FÖRHANDSGRANSKNINGENS RUTA — OFÖRÄNDRAD FORM (TASK-340.2 rör den
+            inte; PRD § Implementationsbeslut: *"Förhandsgranskningens egen
+            ruta ('… är klar att granska') behålls i dagens form med den
+            kvarvarande 'Öppna'-fallbacken ENDAST när webbläsaren blockerat
+            fönstret."*). Skapandets gren har flyttat härifrån till
+            bekräftelseytan ovan, så villkoret och texterna är nu
+            förhandsgranskningens ensamma — inga `skarpt`-grenar kvar. */}
+        {resultat?.typ === 'forhandsgranskad' && (
           <MessageBox intent="success">
-            {resultat.skarpt
-              ? `${meningsStart(meta.namnBestamd)} är skapad och ligger nu bland eventets dokument, redo att bifogas i utskick.`
-              : `${meningsStart(meta.namnBestamd)} är klar att granska.`}
-            {resultat.utelamnade.length > 0 && ` Utan ${ochLista(resultat.utelamnade)}.`}
-            {resultat.sparade.length > 0 &&
-              ` ${event.ort} har nu ${ochLista(resultat.sparade)} som standard.`}
+            {`${meningsStart(meta.namnBestamd)} är klar att granska.`}
             {resultat.blockerad
               ? ' Webbläsaren stoppade det nya fönstret. Öppna det härifrån i stället.'
               : ' Den öppnades i ett nytt fönster.'}
@@ -1121,30 +1347,35 @@ export function GenereringsVy({
                 rivs) — sakinnehållet stämmer (förhandsgranskningen sparar
                 inget, utkast-vägen ADR-124), ordet "Prototyp" gjorde det inte,
                 i den PROMOVERADE, skarpa ytan. */}
-            {!resultat.skarpt && (
-              <span className="text-text-muted">
-                {' Förhandsgranskningen sparas inte. Tryck Skapa för att spara bilagan.'}
-              </span>
-            )}
-            {/* DOKUMENTET ÄR ETT VAL, INTE EN OMDIRIGERING — den här knappens
+            <span className="text-text-muted">
+              {' Förhandsgranskningen sparas inte. Tryck Skapa för att spara bilagan.'}
+            </span>
+            {/* FALLBACKEN VISAS BARA NÄR FÖNSTRET BLOCKERADES (TASK-340.2,
+                PRD § Implementationsbeslut). Öppnades fliken finns dokumentet
+                redan framför Lotta, och en knapp som erbjuder en väg hon just
+                fick gratis är brus — det var Marcus punkt 3 i röktestet
+                2026-08-29. Är fliken däremot stoppad av webbläsaren är knappen
+                den ENDA vägen in, och då måste den stå kvar.
                 `window.open` sker här, i ETT EGET direkt klick (Lottas, på
                 DENNA knapp) — därför finns ingen popup-blockerare att smita
-                förbi, och Lotta bestämmer själv när hon lämnar formuläret.
-                `noreferrer` utelämnas medvetet: målet är alltid en signerad
-                Storage-URL i vår egen bucket (`ADR-124`, `dokumentKalla.ts`s
-                filhuvud — ALDRIG längre en `blob:`-URL), aldrig en främmande
-                adress (samma resonemang som DokumentYta § IKONPAR). */}
-            <span className="mt-3 block">
-              <Button
-                intent="primary"
-                emphasis="outline"
-                size="sm"
-                onPress={() => window.open(resultat.url, '_blank')}
-              >
-                <ExternalLink aria-hidden="true" size={16} className="shrink-0" />
-                Öppna {meta.namnBestamd}
-              </Button>
-            </span>
+                förbi. `noreferrer` utelämnas medvetet: målet är alltid en
+                signerad Storage-URL i vår egen bucket (`ADR-124`,
+                `dokumentKalla.ts`s filhuvud — ALDRIG längre en `blob:`-URL),
+                aldrig en främmande adress (samma resonemang som
+                DokumentYta § IKONPAR). */}
+            {resultat.blockerad && (
+              <span className="mt-3 block">
+                <Button
+                  intent="primary"
+                  emphasis="outline"
+                  size="sm"
+                  onPress={() => window.open(resultat.url, '_blank')}
+                >
+                  <ExternalLink aria-hidden="true" size={16} className="shrink-0" />
+                  Öppna {meta.namnBestamd}
+                </Button>
+              </span>
+            )}
           </MessageBox>
         )}
         {resultat?.typ === 'fel' && <MessageBox intent="error">{resultat.text}</MessageBox>}
@@ -1158,7 +1389,7 @@ export function GenereringsVy({
             intent="secondary"
             emphasis="outline"
             aria-disabled={forhandsgranska.isPending || genereraBilaga.isPending}
-            onPress={() => skapaDokument(false)}
+            onPress={startaForhandsgranskning}
           >
             {forhandsgranska.isPending && (
               <Loader2 aria-hidden="true" size={16} className="shrink-0 motion-safe:animate-spin" />
@@ -1168,14 +1399,27 @@ export function GenereringsVy({
           <Button
             intent="primary"
             aria-disabled={forhandsgranska.isPending || genereraBilaga.isPending}
-            onPress={() => skapaDokument(true)}
+            onPress={startaSkapande}
           >
             {genereraBilaga.isPending ? (
               <Loader2 aria-hidden="true" size={16} className="shrink-0 motion-safe:animate-spin" />
             ) : (
               <FileText aria-hidden="true" size={16} className="shrink-0" />
             )}
-            {genereraBilaga.isPending ? 'Skapar …' : `Skapa ${meta.namn.toLowerCase()}`}
+            {/* [TASK-340.2, PRD § E] "Skapa om <dokumentnamnet>" när en
+                Event-mallad rad redan finns för mallen: trycket SKRIVER ÖVER
+                den, och verbet ska säga det innan Lotta trycker (samma verb
+                som listans befintliga "Skapa om"). Bestämd form i om-fallet
+                ("bekräftelsebilagan") därför att raden är en BESTÄMD, redan
+                existerande fil; obestämd i skapa-fallet ("bekräftelsebilaga")
+                därför att den ännu inte finns. `MALL_META.namnBestamd` bär
+                den bestämda formen explicit per mall — se dess docblock för
+                varför den inte får härledas mekaniskt. */}
+            {genereraBilaga.isPending
+              ? 'Skapar …'
+              : finnsMalladRad
+                ? `Skapa om ${meta.namnBestamd}`
+                : `Skapa ${meta.namn.toLowerCase()}`}
           </Button>
         </div>
       </div>
