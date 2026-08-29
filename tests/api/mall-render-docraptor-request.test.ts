@@ -144,7 +144,9 @@ test.describe('DocRaptor-requestens nycklar (TASK-341, källkods-nivå)', () => 
     const nycklar = extraheraNycklar(matchning?.[1] ?? '');
     expect(nycklar.length).toBeGreaterThan(0);
     for (const nyckel of nycklar) {
-      expect(DOCRAPTOR_TOP_LEVEL_ALLOWLIST.has(nyckel), `okänd DocRaptor-nyckel: "${nyckel}"`).toBe(true);
+      expect(DOCRAPTOR_TOP_LEVEL_ALLOWLIST.has(nyckel), `okänd DocRaptor-nyckel: "${nyckel}"`).toBe(
+        true,
+      );
     }
   });
 
@@ -177,7 +179,10 @@ test.describe('DocRaptor-requestens nycklar (TASK-341, källkods-nivå)', () => 
       return;
     }
     const nycklar = extraheraNycklar(princeMatchning[1]);
-    expect(nycklar.length, 'prince_options: {} hittades men objektet innehöll inga nycklar').toBeGreaterThan(0);
+    expect(
+      nycklar.length,
+      'prince_options: {} hittades men objektet innehöll inga nycklar',
+    ).toBeGreaterThan(0);
     for (const nyckel of nycklar) {
       expect(
         DOCRAPTOR_PRINCE_OPTIONS_ALLOWLIST.has(nyckel),
