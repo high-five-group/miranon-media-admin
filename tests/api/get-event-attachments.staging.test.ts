@@ -83,8 +83,6 @@ function eventformatId(): string {
   return process.env.TEST_EVENTFORMAT_RECORD_ID || SEEDED_EVENTFORMAT_ID;
 }
 
-// [TASK-338.4] Härledd ur datagräns-hjälparens RETURTYP i stället för ur
-// det rivna skarv-schemat — samma form, en källa mindre att glömma.
 type Attachment = z.infer<typeof StagingAttachmentSchema>;
 
 function sentinelFilnamn(): string {

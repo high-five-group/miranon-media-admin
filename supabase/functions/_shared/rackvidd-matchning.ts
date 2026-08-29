@@ -356,7 +356,7 @@ export function provaRackviddsbyte(params: {
         kod: 'ankar-flytt',
         status: 409,
         skal:
-          'Familjen kan inte ändras på det här dokumentet — filen ligger sparad under den ' +
+          'Familjen kan inte ändras på det här dokumentet. Filen ligger sparad under den ' +
           'nuvarande familjen. Ladda upp filen på nytt med rätt familj i stället.',
       },
     };

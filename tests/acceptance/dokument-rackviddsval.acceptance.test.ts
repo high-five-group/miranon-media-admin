@@ -1406,10 +1406,15 @@ test.describe('TASK-338.4 — Ändra räckvidd på en delad bilaga', () => {
     await expect(rad.getByText('Alla event')).toBeVisible();
   });
 
-  test('serverns fel SYNS i dialogen, och dialogen står kvar', async ({ page, network }) => {
+  test('serverns fel SYNS i dialogen, dialogen står kvar, och badgen ROLLBACKAS', async ({
+    page,
+    network,
+  }) => {
     network.use(bilagorHandler());
-    // Serverns dokumentklass-vakt (403) — ett skäl Lotta faktiskt behöver
-    // läsa medan valet fortfarande syns.
+    // Serverns dokumentklass-vakt (403). Notera att UI:t renderar husets
+    // `EdgeFunctionError`-form runt skälet (`Edge Function "…" 403: <skäl>`,
+    // se DokumentYta.tsx § VAD FELRUTAN FAKTISKT VISAR) — testet ankrar
+    // därför på RUBRIKEN, som är den del Lotta faktiskt kan läsa.
     network.use(
       http.post(EF('update-attachment-scope'), () =>
         json(
@@ -1423,7 +1428,15 @@ test.describe('TASK-338.4 — Ändra räckvidd på en delad bilaga', () => {
     );
 
     await gotoRackviddslage(page);
+    const rad = page.getByTestId('dokument-fil').filter({ hasText: BILAGA_GEMENSAM.namn });
+    // BADGEN FÖRE: radens verkliga räckvidd.
+    await expect(rad.getByText('RIM · Rönninge')).toBeVisible();
+
     await andraKnapp(page).click();
+    // Nollställ BÅDA axlarna, så den optimistiska badgen hinner bli "Alla
+    // event" innan servern nekar — utan en synlig optimistisk ändring hade
+    // rollbacken varit oskiljbar från att ingenting hände.
+    await valjIAxel(page, familjValjare, 'Alla familjer');
     await valjIAxel(page, platsValjare, 'Alla platser');
     await page.getByRole('dialog').getByRole('button', { name: 'Spara' }).click();
 
@@ -1433,9 +1446,18 @@ test.describe('TASK-338.4 — Ändra räckvidd på en delad bilaga', () => {
     // skillnad mot uppladdningsfelet som bor på sidan (dialogen rivs där).
     await expect(dialog).toBeVisible();
     await expect(dialog.getByRole('button', { name: 'Spara' })).toBeEnabled();
+
+    // ═══ ROLLBACK-ARMEN (useUpdateAttachmentScope § onError) ═══
+    // Utan detta är `queryClient.setQueryData(key, context.previous)` en
+    // oprövad gren: den optimistiska skrivningen hade lämnat badgen på "Alla
+    // event" medan basen fortfarande säger "RIM · Rönninge", alltså en yta
+    // som ljuger om vad som gäller — precis den skada PRD TASK-338
+    // berättelse 3 finns för att förhindra.
+    await expect(rad.getByText('RIM · Rönninge')).toBeVisible();
+    await expect(rad.getByText('Alla event')).toHaveCount(0);
   });
 
-  test('tangentbord: knappen nås med fokus, dialogen öppnar med Enter och stänger med Escape', async ({
+  test('tangentbord: fokus flyttas IN i dialogen och ÅTERLÄMNAS efter Escape', async ({
     page,
     network,
   }) => {
@@ -1445,14 +1467,55 @@ test.describe('TASK-338.4 — Ändra räckvidd på en delad bilaga', () => {
     await andraKnapp(page).focus();
     await expect(andraKnapp(page)).toBeFocused();
     await page.keyboard.press('Enter');
-    await expect(page.getByRole('dialog')).toBeVisible();
 
-    // Fokus flyttas IN i dialogen (react-arias fokusfälla) — utan det hade
-    // en skärmläsaranvändare stått kvar bakom overlayen.
-    await expect(page.getByRole('dialog')).toContainText(BILAGA_GEMENSAM.namn);
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+
+    // ═══ FOKUS ÄR FAKTISKT INNE I DIALOGEN ═══
+    // Mätt, inte antaget: `document.activeElement` måste vara en ÄTTLING till
+    // dialogen. En tidigare version av detta test assertade `toContainText`,
+    // vilket bara bevisade att namnet RENDERADES — det hade varit grönt även
+    // med fokus kvar bakom overlayen, alltså precis den skada assertionen
+    // påstod sig skydda mot.
+    await expect
+      .poll(() =>
+        dialog.evaluate((el) => el.contains(document.activeElement)),
+      )
+      .toBe(true);
 
     await page.keyboard.press('Escape');
+    await expect(dialog).toHaveCount(0);
+
+    // ═══ ÅTERLÄMNINGEN ═══
+    // Dialogen monteras VILLKORLIGT (`andrasRackvidd != null`), så
+    // react-arias fokus-restore måste överleva en unmount av hela trädet.
+    // Landar fokus på <body> i stället står tangentbordsanvändaren utan
+    // position i listan och får börja om från sidans topp.
+    await expect(andraKnapp(page)).toBeFocused();
+  });
+
+  test('tangentbord: fokus återlämnas till knappen även efter LYCKAD Spara', async ({
+    page,
+    network,
+  }) => {
+    network.use(bilagorHandler());
+    fangaScopeAnrop(network);
+
+    await gotoRackviddslage(page);
+    await andraKnapp(page).focus();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('dialog')).toBeVisible();
+
+    await valjIAxel(page, platsValjare, 'Alla platser');
+    await page.getByRole('dialog').getByRole('button', { name: 'Spara' }).click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
+
+    // SVÅRARE FALL ÄN ESCAPE, och därför ett eget test: knappen är
+    // `isDisabled` medan `scopeMutation.isPending` — en disabled knapp kan
+    // inte ta fokus. Stängningen sker dessutom i mutationens `onSuccess`,
+    // alltså i samma vända som `isPending` faller tillbaka. Att fokus ändå
+    // landar rätt är inget man kan läsa sig till ur koden; det måste mätas.
+    await expect(andraKnapp(page)).toBeFocused();
   });
 
   test('ändra-dialogen är axe-ren', async ({ page, network }) => {

@@ -2300,9 +2300,18 @@ function DokumentLista({
  *   - FELET BOR I DIALOGEN i ändra-läget, till skillnad mot uppladdningens
  *     `UppladdningsFel` som bor på sidan. Uppladdningsdialogen STÄNGER vid
  *     framgång och skulle ha rivit felet med sig; ändra-dialogen står kvar
- *     tills servern sagt ja, så felet kan visas intill det som orsakade
- *     det — och de fyra vakternas skäl (403/404/409) är just sådant Lotta
- *     behöver läsa medan valet fortfarande syns.
+ *     tills servern sagt ja, så felet kan visas intill det val som orsakade
+ *     det i stället för på en sida hon redan lämnat.
+ *
+ * ═══ VAD FELRUTAN FAKTISKT VISAR ═══
+ * Husets `EdgeFunctionError`-form (`src/data/config/supabase-client.ts` §
+ * `edgeFunctionError`): `Edge Function "update-attachment-scope" 403:
+ * <serverns skäl>`. Serverns skäl NÅR alltså fram, men bakom ett tekniskt
+ * prefix Lotta inte har någon användning för. Att skriva att rutan visar ett
+ * Gunilla-läsbart skäl vore mer än vad koden gör (ADR-083). Begripligheten
+ * bärs av RUBRIKEN ("Räckvidden kunde inte ändras") tills den repo-breda
+ * felöversättningen finns — det är en egen, registrerad tråd, och
+ * renderingsmönstret rörs INTE härifrån.
  */
 type RackviddsDialogLage =
   | { typ: 'uppladdning'; filer: FileList }
@@ -2663,12 +2672,17 @@ function RackviddsDialog({
               Uppladdningens fel bor på SIDAN (`UppladdningsFel`) därför att
               dialogen rivs vid framgång och hade tagit felet med sig. Denna
               dialog står kvar tills servern sagt ja, så felet kan stå intill
-              valet som orsakade det — och serverns fyra vakter svarar med
-              skäl Lotta faktiskt behöver läsa medan valet syns ("Bara
-              uppladdade dokument kan byta räckvidd", "Familjen kan inte
-              ändras …"). Samma notistrappe-klass och samma primitiv som
-              platslistans fel ovan: uppgiftsgenererat fel, knutet till en
-              yta (`DESIGN-SYSTEM-SPEC.md` § 21, ADR-121 beslut 4). */}
+              valet som orsakade det, i stället för på en sida hon lämnat.
+
+              VAD RUTAN FAKTISKT VISAR: husets `EdgeFunctionError`-form,
+              `Edge Function "…" 403: <serverns skäl>`. Skälet NÅR alltså hit,
+              men bakom ett tekniskt prefix — se dialogens docblock § VAD
+              FELRUTAN FAKTISKT VISAR. Rubriken bär begripligheten;
+              felöversättningen är repo-bred och rörs inte här.
+
+              Samma notistrappe-klass och samma primitiv som platslistans fel
+              ovan: uppgiftsgenererat fel, knutet till en yta
+              (`DESIGN-SYSTEM-SPEC.md` § 21, ADR-121 beslut 4). */}
           {fel !== null && (
             <MessageBox intent="error" title="Räckvidden kunde inte ändras">
               {fel}

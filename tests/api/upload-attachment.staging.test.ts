@@ -113,8 +113,6 @@ const PLATS_NAMN = 'ZZ-plats-unik-fixtur';
 // (`platsFinns`), inte Zods formkontroll.
 const OKAND_PLATS_ID = 'recZZZZZZZZZZZZZZ';
 
-// [TASK-338.4] Härledd ur datagräns-hjälparens RETURTYP i stället för ur
-// det rivna skarv-schemat — samma form, en källa mindre att glömma.
 type Attachment = z.infer<typeof StagingAttachmentSchema>;
 
 interface UploadBody {
