@@ -24,6 +24,10 @@ export {
   AttachmentSchema,
   AttachmentUploadTicketSchema,
   DocumentPreviewSchema,
+  normaliseraRaAttachment,
+  parsaAttachment,
+  parsaAttachments,
+  parsaSkapadEventBilaga,
   SkapadEventBilagaSchema,
   UtkastResultatSchema,
 } from './Attachment.schema';

@@ -38,7 +38,10 @@ const BJORN = 'recVisualReg000002';
 
 // dokumentklass (TASK-147.12) + rackvidd/kursfamilj/kursniva (TASK-275.2):
 // AttachmentSchema.parse() kräver alla fyra (nullable, inte optional) —
-// mockresponsen måste bära dem eller klienten kraschar vid parse. Värdena
+// mockresponsen måste bära dem eller klienten kraschar vid parse. [TASK-338.3]
+// `plats` är däremot `.nullable().optional()` i schemat (en EF som ännu inte
+// deployats saknar nyckeln helt), så fixturerna nedan sätter den EXPLICIT för
+// form-trohet mot EF-svaret — inte för att parsen skulle falla utan den. Värdena
 // är REPRESENTATIVA (klass A/B, matchar respektive filnamns verkliga
 // uppkomst; räckvidd Event — dagens koppling, samma som ADR-118:s
 // migrerade default) men INTE vad DE FLESTA testen i denna fil bevisar (se
@@ -62,6 +65,7 @@ const BILAGA_INFO = {
   rackvidd: 'Event',
   kursfamilj: null,
   kursniva: null,
+  plats: null,
 };
 const BILAGA_DELTAGARINFO = {
   id: 'recBilagaDelt0001',
@@ -73,10 +77,19 @@ const BILAGA_DELTAGARINFO = {
   rackvidd: 'Event',
   kursfamilj: null,
   kursniva: null,
+  plats: null,
 };
-// [TASK-275.3, ADR-118] Gemensam bilaga (räckvidd Alla event) — union-
-// medlem sedan TASK-275.2. Bar badge i denna väljare TASK-275.3–TASK-339
-// (badgen togs bort härifrån av TASK-339, se filhuvudet).
+// [TASK-275.3, ADR-118 · VÄRDET OMSKRIVET TASK-338.3, ADR-125 § Beslut 1]
+// Gemensam bilaga — union-medlem sedan TASK-275.2. Bar badge i denna väljare
+// TASK-275.3–TASK-339 (badgen togs bort härifrån av TASK-339, se filhuvudet).
+//
+// RÄCKVIDDEN ÄR NU `Gemensam` UTAN AXLAR, vilket är EXAKT vad den gamla
+// optionen `Alla event` betydde (ADR-125 § 1: noll satta axlar = alla
+// event). Fixturen bevisar alltså samma sak som förut — att en icke
+// event-egen bilaga når väljarens union — bara uttryckt i den levande
+// modellen. Axlarna lämnas tomma med avsikt: den AXEL-BÄRANDE formen provas
+// i Dokument-ytans egen svit, och att duplicera den här hade gett två ställen
+// att hålla synkade utan ny täckning.
 const BILAGA_GEMENSAM = {
   id: 'recBilagaGemensam02',
   namn: 'Menyalternativ.pdf',
@@ -84,9 +97,10 @@ const BILAGA_GEMENSAM = {
   skapad: '2026-08-03T10:00:00.000Z',
   eventId: VISUAL_EVENT_ID,
   dokumentklass: 'Uppladdad',
-  rackvidd: 'Alla event',
+  rackvidd: 'Gemensam',
   kursfamilj: null,
   kursniva: null,
+  plats: null,
 };
 
 async function gotoAtgarder(page: import('@playwright/test').Page) {

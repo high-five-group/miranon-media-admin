@@ -1,10 +1,14 @@
-import { stegEtikett } from '@/components/dokument/nivaSprak';
+import { rackviddsBadgeText } from '@/components/dokument/rackviddsText';
+import type { Attachment } from '@/domain/models/Attachment';
 import { AttachmentScope, type AttachmentScopeValue } from '@/domain/types/Status';
 
 /**
- * Räckviddsbadgen (TASK-275.3, ADR-118 beslut 2+5) — markerar en GEMENSAM
- * bilaga (räckvidd Kurstyp/Alla event) i Dokument-ytans listor (eventläget
- * och räckviddsläget). RENDERAR INGET för `rackvidd` Event/`null` — en
+ * Räckviddsbadgen (TASK-275.3, ADR-118 beslut 2+5; OMBYGGD TASK-338.3,
+ * ADR-125 § Beslut 1) — markerar en GEMENSAM bilaga (räckvidd `Gemensam`)
+ * i Dokument-ytans listor (eventläget och räckviddsläget). Kortets AC #4
+ * låser de två ytorna: badgen syns i BÅDA, men INTE i Åtgärds-sidans
+ * bilageväljare (se TASK-339-stycket nedan).
+ * RENDERAR INGET för `rackvidd` Event/`null` — en
  * bilaga som "bara" hör till DETTA event behöver ingen förklarande badge,
  * badgen finns för att förklara VARFÖR en rad dyker upp som INTE laddades
  * upp här (ADR-118 beslut 3: badgen "bär förklaringen" till varför
@@ -33,20 +37,34 @@ import { AttachmentScope, type AttachmentScopeValue } from '@/domain/types/Statu
  * utan layout-hopp — samma tre-regels-disciplin `StatusBadge.tsx` § PILL_
  * STORLEK dokumenterar.
  *
- * TEXTEN, GUNILLA-LÄSBAR: "Alla event" (rakt av) eller "<Kursfamilj> · Nivå
- * N" / "<Familj> · Alla steg" (tom-nivå-regeln, ADR-118 beslut 1 —
- * EXPLICIT utskriven i stället för underförstådd, samma "gissa aldrig eller
- * lämna tvetydigt"-linje som `Attachment`-modellens `dokumentklass: null` →
- * "Okänd").
+ * TEXTEN, GUNILLA-LÄSBAR — [OMBYGGD, TASK-338.3, ADR-125 § Beslut 1] den
+ * KOMPONERAS numera ur de tre axlarna i stället för att vara en fast sträng
+ * per räckviddsvärde, eftersom räckvidden `Gemensam` ÄR ett filter över
+ * Kursfamilj · Kursnivå · Plats: "Alla event" (inga axlar) · "RIM" ·
+ * "RIM · Steg 1" · "Rönninge" · "RIM · Rönninge" · "RIM · Steg 1 · Rönninge".
+ * Kompositionen — inklusive varför tomma axlar INTE längre skrivs ut som
+ * "Alla steg", och varför ordet är "Steg" och inte "Nivå" — bor i
+ * `rackviddsText.ts`, som är REACT-FRI just för att formerna ska kunna
+ * enhetstestas en och en (kortets AC #4).
+ *
+ * Docblockets tidigare formulering ("<Kursfamilj> · Nivå N") var dessutom
+ * FALSK redan innan denna skiva: `stegEtikett` har översatt 'Nivå 1' →
+ * 'Steg 1' sedan 2026-08-17, så prosan beskrev en yta som inte fanns. Den
+ * felklassen (prosa som påstår ett beteende koden inte har) är samma som
+ * ADR-083 städar; texten är därför omskriven mot mätt utfall, inte mot
+ * minnet av den.
  */
 export function RackviddBadge({
   rackvidd,
   kursfamilj,
   kursniva,
+  plats,
 }: {
   rackvidd: AttachmentScopeValue | null;
   kursfamilj: string | null;
   kursniva: string | null;
+  /** Plats-axeln ur `Attachment.plats` — `null` för en icke platsbunden bilaga. */
+  plats: Attachment['plats'];
 }) {
   // ═══ RENDERAR NU ÄVEN "Detta event" — TIDIGARE `return null` ═══
   //
@@ -65,7 +83,13 @@ export function RackviddBadge({
   // kan göra med ögat i stället för en frånvaro man ska tolka. Att
   // Ersätt/Radera saknas för de gemensamma har fortfarande sin förklaring
   // i badgen — den säger nu bara vad DEN HÄR raden gäller också.
-  if (rackvidd !== AttachmentScope.KURSTYP && rackvidd !== AttachmentScope.ALLA_EVENT) {
+  //
+  // [TASK-338.3] Villkoret är NU en enda jämförelse mot `Gemensam` i stället
+  // för två mot `Kurstyp`/`Alla event`. Legacy-värdena kan strukturellt inte
+  // nå hit längre: läsvägen normaliserar dem till `Gemensam` vid datagränsen
+  // (`normaliseraRaAttachment`, `domain/schemas/Attachment.schema.ts`), så
+  // komponenten behöver aldrig känna till att de har funnits.
+  if (rackvidd !== AttachmentScope.GEMENSAM) {
     return (
       <span
         className="inline-flex min-w-0 max-w-full items-center truncate rounded-full border border-transparent bg-bg-muted px-2 py-0.5 font-medium text-caption text-text-secondary contrast-more:border-border-strong"
@@ -76,20 +100,15 @@ export function RackviddBadge({
     );
   }
 
-  const text =
-    rackvidd === AttachmentScope.ALLA_EVENT
-      ? 'Alla event'
-      : // "Okänd familj", inte "Okänd kursfamilj" — samma UI-språksbyte som
-        // uppladdningsflödets Select-etikett (S107 QA-vandringen, Marcus:
-        // "Kursfamilj" heter bara "Familj"). Prop-namnen `kursfamilj`/
-        // `kursniva` är ORÖRDA med avsikt: de speglar Airtable-fälten, och
-        // datakällans namn byts inte från en UI-copy-ändring.
-        //
-        // `stegEtikett` översätter basvärdet 'Nivå 1' → 'Steg 1' (Marcus
-        // 2026-08-17). Mappningen bor i DokumentYta.tsx och är den ENDA
-        // platsen ordet översätts — se dess docblock för den öppna
-        // kollisionen mot wizardens egna "Steg 1"/"Steg 2".
-        `${kursfamilj ?? 'Okänd familj'} · ${stegEtikett(kursniva) ?? 'Alla steg'}`;
+  // Prop-namnen `kursfamilj`/`kursniva` är ORÖRDA med avsikt: de speglar
+  // Airtable-fälten, och datakällans namn byts inte från en UI-copy-ändring
+  // (UI-språket säger "Familj"/"Steg", basen säger Kursfamilj/Kursnivå).
+  //
+  // PLATSENS NAMN kan vara tomt medan `id` är satt — `Platsnamn`-lookupen
+  // kan halka efter en nyss skapad länk (`Attachment.plats`s docblock).
+  // `rackviddsBadgeText` behandlar tom sträng som "axeln är inte satt", så
+  // badgen visar då de övriga axlarna i stället för en pill med ett hål i.
+  const text = rackviddsBadgeText({ kursfamilj, kursniva, platsNamn: plats?.namn ?? null });
 
   return (
     // ═══ `bg-surface`, INTE `bg-bg-muted` — OCH DET ÄR EN BUGGFIX ═══

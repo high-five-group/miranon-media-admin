@@ -89,6 +89,7 @@ function bilaga(i: number) {
     rackvidd: 'Event',
     kursfamilj: null,
     kursniva: null,
+    plats: null,
   };
 }
 
@@ -100,9 +101,14 @@ function gemensamBilaga(i: number) {
     skapad: '2026-08-20T09:00:00.000Z',
     eventId: VISUAL_EVENT_ID,
     dokumentklass: 'Uppladdad',
-    rackvidd: 'Kurstyp',
+    // [TASK-338.3, ADR-125 § Beslut 1] `Kurstyp` ÄR `Gemensam` med en
+    // familje-axel satt. Läsvägen normaliserar visserligen legacy-värdet
+    // (`normaliseraRaAttachment`), men en fixtur ska visa den LEVANDE
+    // modellen — annars läser nästa läsare den som en levande form.
+    rackvidd: 'Gemensam',
     kursfamilj: 'RIM',
     kursniva: null,
+    plats: null,
   };
 }
 
@@ -582,7 +588,14 @@ test.describe('GemensamtLage (räckviddsläge) — samma regel (tidigare saknad,
 
     // Ladda upp en fjärde GEMENSAM bilaga, ingen `page.goto` — samma
     // FileTrigger-väg som `dokument-rackviddsval.acceptance.test.ts`s
-    // `oppnaRackviddsdialog`. "Alla event" kräver ingen Familj-select.
+    // `oppnaRackviddsdialog`.
+    //
+    // [TASK-338.3] INGET RADIOKLICK BEHÖVS LÄNGRE. Testet klickade tidigare
+    // radion "Alla event"; den räckvidden finns inte som eget val sedan
+    // ADR-125 § 1 (den ÄR "Delat dokument" utan satta axlar). I
+    // räckviddsläget är dessutom "Bara detta event" avstängd — inget event
+    // att koppla mot — så dialogen öppnar redan förvald på "Delat dokument"
+    // med noll axlar, vilket är exakt den räckvidd detta test vill ha.
     await page
       .getByTestId('ladda-upp-ny-fil')
       .locator('input[type="file"]')
@@ -593,13 +606,12 @@ test.describe('GemensamtLage (räckviddsläge) — samma regel (tidigare saknad,
       });
     const dialog = page.getByRole('dialog');
     await expect(dialog).toBeVisible();
-    // `<Radio>` täcks visuellt av ett dekorativt `<span>` — samma
-    // ancestor-`<label>`-klick som husets etablerade mönster
-    // (`dokument-rackviddsval.acceptance.test.ts`).
-    await dialog
-      .getByRole('radio', { name: 'Alla event' })
-      .locator('xpath=ancestor::label[1]')
-      .click();
+    // Förvalet ÄR den räckvidd testet behöver — assertat, inte antaget, så
+    // en framtida ändring av defaultlogiken fälls här i stället för att
+    // tyst ladda upp med fel räckvidd.
+    await expect(
+      dialog.getByRole('radio', { name: 'Delat dokument - gäller flera event' }),
+    ).toBeChecked();
     await dialog.getByRole('button', { name: 'Ladda upp' }).click();
     await expect(dialog).not.toBeVisible();
     // [TASK-309.40, kö-fynd 2026-08-29] SKOPAD — samma rotorsak som

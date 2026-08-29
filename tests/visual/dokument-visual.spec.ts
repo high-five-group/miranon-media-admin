@@ -40,9 +40,15 @@ test('dokument-ytan — sidram och räckviddsläget (Delade dokument) ur fixturv
             skapad: '2026-08-05T09:00:00.000Z',
             eventId: VISUAL_EVENT_ID,
             dokumentklass: 'Uppladdad',
-            rackvidd: 'Kurstyp',
+            // [TASK-338.3, ADR-125 § Beslut 1] `Kurstyp` finns inte längre
+            // som räckvidd — det ÄR `Gemensam` med en familje-axel satt.
+            // Plats-axeln lämnas tom här: baslinjen ska visa den ENKLASTE
+            // gemensamma formen, och badgens axelkomposition provas i
+            // `dokument-rackviddsval.acceptance.test.ts` + enhetstesterna.
+            rackvidd: 'Gemensam',
             kursfamilj: 'RIM',
             kursniva: null,
+            plats: null,
           },
         ],
       }),
@@ -83,9 +89,15 @@ test('dokument-ytan — hög-kontrast-läge (prefers-contrast: more)', async ({ 
             skapad: '2026-08-05T09:00:00.000Z',
             eventId: VISUAL_EVENT_ID,
             dokumentklass: 'Uppladdad',
-            rackvidd: 'Kurstyp',
+            // [TASK-338.3, ADR-125 § Beslut 1] `Kurstyp` finns inte längre
+            // som räckvidd — det ÄR `Gemensam` med en familje-axel satt.
+            // Plats-axeln lämnas tom här: baslinjen ska visa den ENKLASTE
+            // gemensamma formen, och badgens axelkomposition provas i
+            // `dokument-rackviddsval.acceptance.test.ts` + enhetstesterna.
+            rackvidd: 'Gemensam',
             kursfamilj: 'RIM',
             kursniva: null,
+            plats: null,
           },
         ],
       }),
