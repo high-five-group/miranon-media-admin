@@ -444,3 +444,28 @@ satt till det värdet). Ingen skrivväg i appen kan producera den formen
 {Event, Gemensam}, och `Event` sätts alltid oavsett räckvidd), så randfallet
 kräver en direkt Airtable-redigering för att uppstå. Skälen och den fulla
 matchningslogiken: PRD `TASK-338` § Implementationsbeslut → Matchningen.
+
+### 2026-08-29 — Skapa är ersättning när raden finns — E
+
+**`TASK-340.1`/`TASK-340.3`.** § 3 (*"Regenerering är ERSÄTTNING"*)
+utvidgas till ospecificerat Skapa, inte bara till listans explicita
+"Skapa om"-knapp. Ett upprepat Skapa för samma (event × `Mall`) går
+ersätt-vägen AUTOMATISKT: `generate-event-attachment` slår själv upp om en
+Event-mallad Bilagor-rad redan finns för eventet, via eventets OMVÄNDA
+`Bilagor`-länk filtrerad på `Dokumentklass` + `Mall` — aldrig klientens
+val. Hittas en träff skrivs SAMMA rad, SAMMA `attachmentId`, SAMMA
+lagringsnyckel, svaret bär `ersatte: true` och statuskoden är **200**;
+hittas ingen skapas en NY rad, `ersatte: false`, statuskod **201** —
+invarianten är alltså **201 ⇔ ny rad, 200 ⇔ ersatte**, oavsett väg dit. Ett
+explicit `ersatt`-fält i body:n (listans befintliga "Skapa om") fortsätter
+fungera oförändrat och tar företräde framför server-uppslaget när det
+finns.
+
+**Skälet:** oraderbara dubbletter. Filnamnet är deterministiskt
+(`${namnPrefix} – ${eventlabel}.pdf`), `DokumentYta.tsx`s `grupperaPerNamn`
+grupperar per namn och visar bara den nyaste raden som "+1 äldre fil", och
+event-mallade rader saknar en Radera-knapp helt i appen — mätt på den
+permanenta staging-fixturen 2026-08-29: 23 Bekräftelsebilaga-rader och 4
+Deltagarinformation-rader länkade till ETT event, samtliga skapade samma
+dag (research `forhandsgranska-spara-atervand-bilageflodet-2026-08-29.md`
+§ 0 punkt b).
