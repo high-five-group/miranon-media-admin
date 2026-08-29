@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-29 08:04'
-updated_date: '2026-08-29 15:16'
+updated_date: '2026-08-29 15:23'
 labels:
   - ready-for-human
 dependencies:
@@ -202,4 +202,17 @@ Prod-bas: `app8uGPrVCVOm6LfD`
 `docs/reference/data-model.md` § Bilagor uppdaterad med prod-ID:na för `Plats`/`Platsnamn`; Räckvidd-choicens ID och Platsers auto-födda spegelfälts ID fångas INTE av migreringsskriptet (`runSchema()` läser aldrig tillbaka dem) — bokfört öppet i tabellen som en känd lucka, inte gissat.
 
 **AC #1 INTE bockad ännu** — kräver även fält-ID:n för choicen/spegelfältet dokumenterade (ovanstående lucka) och att steg (ii) EF-deploy + (iii) radmigrering är gjorda. Status kvarstår `To Do`.
+
+## § Steg (i) — de två återstående prod-ID:na kompletterade 2026-08-29
+
+`docs/reference/data-model.md` § Bilagor uppdaterad ovan sade att Räckvidd-choicen "Gemensam" och Platsers auto-födda spegelfälts ID inte kunde bokföras eftersom `scripts/task-338-6-prod-migration.mjs`s `runSchema()` aldrig fångar dem (choicen skapas via en kastbar rads typecast utan efterläsning; spegelfältet auto-föds av Airtable och skriptet frågar aldrig efter dess ID). Orkestreraren mätte de två saknade värdena separat via `describe_table` mot prod (`app8uGPrVCVOm6LfD`, tabell `tblevR1B54wFjp7QC`), på Marcus stående GO för prod-LÄSNING:
+
+- Räckvidd-choicen `Gemensam` → **`selsABHUcAQJqGd0M`**. Full choice-lista i prod: `seljRFJnazDELbE3C` (Event) · `selkHwo1c3WtQpBnC` (Kurstyp) · `seliEQKhV8i2KFTM0` (Alla event) · `selsABHUcAQJqGd0M` (Gemensam). **Not:** "Gemensam" fick färgen `blueLight2` medan de tre äldre choicesen alla har `grayLight2` — Airtables egen färgtilldelning vid typecast-skapelse, inte en avsiktlig färgsättning.
+- Platsers auto-födda spegelfält (invers av `Plats`) → **`fld1yaGrVppKh9fyh`**, läst ur `Plats`-fältets `options.inverseLinkFieldId`.
+
+Bonus mätt i samma svar: `Platsnamn`-lookupens `fieldIdInLinkedTable` i prod = `fld9CfDq4rqTAGGpw` (Platser.Namn). `Plats`-fältet har `prefersSingleRecordLink: false` i prod — bekräftar staging (`prefersSingleRecordLink: false`), vilket stänger denna kortsnots § Premiss-pass punkt 2 (uppdragsspecen sa `true`).
+
+`scripts/task-338-6-prod-migration.mjs`s tooling-lucka (`runSchema()` fångar aldrig choice-/spegelfälts-ID) kvarstår som ett verkligt fynd oberoende av att värdena nu är mätta för hand — bokfört i data-model.md, försvinner inte ur historiken.
+
+**AC #1 fortfarande INTE bockad** — kräver att steg (ii) EF-deploy och (iii) radmigrering också är gjorda. Status kvarstår `To Do`.
 <!-- SECTION:NOTES:END -->
