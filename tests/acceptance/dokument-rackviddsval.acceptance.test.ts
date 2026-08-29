@@ -1467,39 +1467,46 @@ test.describe('TASK-338.4 — Ändra räckvidd på en delad bilaga', () => {
     await expect(rad.getByText('Alla event')).toBeVisible();
   });
 
-  test('serverns fel SYNS i dialogen, dialogen står kvar, och badgen ROLLBACKAS', async ({
+  test('serverns fel: dialogen står kvar, den optimistiska badgen skrivs OCH tas tillbaka', async ({
     page,
     network,
   }) => {
     network.use(bilagorHandler());
-    // Serverns dokumentklass-vakt (403). Notera att UI:t renderar husets
-    // `EdgeFunctionError`-form runt skälet (`Edge Function "…" 403: <skäl>`,
-    // se DokumentYta.tsx § VAD FELRUTAN FAKTISKT VISAR) — testet ankrar
-    // därför på RUBRIKEN, som är den del Lotta faktiskt kan läsa.
+    // Serverns dokumentklass-vakt (403), FÖRDRÖJD 1,5 s. Fördröjningen är
+    // inte kosmetisk: utan den hinner den optimistiska badgen aldrig
+    // observeras, och testet hade bara mätt sluttillståndet. Notera att UI:t
+    // renderar husets `EdgeFunctionError`-form runt skälet (`Edge Function
+    // "…" 403: <skäl>`, se DokumentYta.tsx § VAD FELRUTAN FAKTISKT VISAR) —
+    // testet ankrar därför på RUBRIKEN, den del Lotta faktiskt kan läsa.
     network.use(
-      http.post(EF('update-attachment-scope'), () =>
-        json(
+      http.post(EF('update-attachment-scope'), async () => {
+        await new Promise((r) => setTimeout(r, 1500));
+        return json(
           {
             error:
               'Bara uppladdade dokument kan byta räckvidd. Mall-genererade bilagor följer sitt event.',
           },
           403,
-        ),
-      ),
+        );
+      }),
     );
 
     await gotoRackviddslage(page);
     const rad = page.getByTestId('dokument-fil').filter({ hasText: BILAGA_GEMENSAM.namn });
-    // BADGEN FÖRE: radens verkliga räckvidd.
     await expect(rad.getByText('RIM · Rönninge')).toBeVisible();
 
     await andraKnapp(page).click();
-    // Nollställ BÅDA axlarna, så den optimistiska badgen hinner bli "Alla
-    // event" innan servern nekar — utan en synlig optimistisk ändring hade
-    // rollbacken varit oskiljbar från att ingenting hände.
+    // Nollställ BÅDA axlarna, så den optimistiska badgen blir "Alla event".
     await valjIAxel(page, familjValjare, 'Alla familjer');
     await valjIAxel(page, platsValjare, 'Alla platser');
     await page.getByRole('dialog').getByRole('button', { name: 'Spara' }).click();
+
+    // ═══ ARM 1: onMutate SKRIVER FAKTISKT (isolerbar, mätt) ═══
+    // Medan servern fortfarande tänker bär badgen det nya valet. Det är den
+    // optimistiska skrivningen i `useUpdateAttachmentScope.onMutate`, och den
+    // är den enda möjliga källan här — inget serversvar har kommit än.
+    await expect(rad.getByText('Alla event')).toBeVisible();
+    await expect(rad.getByText('RIM · Rönninge')).toHaveCount(0);
 
     const dialog = page.getByRole('dialog');
     await expect(dialog.getByText('Räckvidden kunde inte ändras')).toBeVisible();
@@ -1508,12 +1515,25 @@ test.describe('TASK-338.4 — Ändra räckvidd på en delad bilaga', () => {
     await expect(dialog).toBeVisible();
     await expect(dialog.getByRole('button', { name: 'Spara' })).toBeEnabled();
 
-    // ═══ ROLLBACK-ARMEN (useUpdateAttachmentScope § onError) ═══
-    // Utan detta är `queryClient.setQueryData(key, context.previous)` en
-    // oprövad gren: den optimistiska skrivningen hade lämnat badgen på "Alla
-    // event" medan basen fortfarande säger "RIM · Rönninge", alltså en yta
-    // som ljuger om vad som gäller — precis den skada PRD TASK-338
-    // berättelse 3 finns för att förhindra.
+    // ═══ ARM 2: BADGEN LJUGER INTE EFTER FELET ═══
+    // VAD DENNA ASSERTION BEVISAR, exakt: sluttillståndet. Badgen är tillbaka
+    // på radens verkliga räckvidd, så ytan påstår aldrig en spridning basen
+    // inte har (PRD TASK-338 berättelse 3).
+    //
+    // VAD DEN INTE BEVISAR, och det är MÄTT, inte antaget: att just
+    // `onError`-grenens `setQueryData(key, context.previous)` är det som
+    // återställde den. En mutation som tog BORT hela `onError`-kroppen fällde
+    // INTE detta test (9 passed, exit 0) — `onSettled`-invalideringen hämtar
+    // om listan och skriver över cachen inom millisekunder, så rollbacken och
+    // refetchen ger samma synliga utfall. Ett försök att isolera grenen genom
+    // att låta den andra listnings-hämtningen hänga misslyckades också
+    // (räknaren visade att en andra hämtning aldrig nådde överskuggningen).
+    //
+    // Rollbacken är alltså ett FLIMMER-skydd i fönstret före refetchen, inte
+    // den enda sanningskällan — och just därför inte isolerbar på denna yta.
+    // Att skriva "rollback-armen bevisad" här hade varit ett påstående testet
+    // inte bär (ADR-083). Arm 1 ovan är den del av mutationen som ÄR
+    // isolerbar, och den är bevisad.
     await expect(rad.getByText('RIM · Rönninge')).toBeVisible();
     await expect(rad.getByText('Alla event')).toHaveCount(0);
   });
@@ -1539,9 +1559,7 @@ test.describe('TASK-338.4 — Ändra räckvidd på en delad bilaga', () => {
     // med fokus kvar bakom overlayen, alltså precis den skada assertionen
     // påstod sig skydda mot.
     await expect
-      .poll(() =>
-        dialog.evaluate((el) => el.contains(document.activeElement)),
-      )
+      .poll(() => dialog.evaluate((el) => el.contains(document.activeElement)))
       .toBe(true);
 
     await page.keyboard.press('Escape');
