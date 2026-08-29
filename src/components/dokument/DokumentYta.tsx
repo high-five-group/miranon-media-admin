@@ -2431,7 +2431,27 @@ function RackviddsDialog({
                 (c) sammanfattningsraden nedan fortsätter säga sanningen
                 ("Gäller: alla event") — hon kan alltså inte tro att hon valt
                 en plats. */}
-            {platserFel && (
+            {/* `gemensam &&` ÄR INTE REDUNDANT — det är a11y-golvet.
+                (Runda 3, INFO/a11y.)
+
+                `MessageBox intent="error"` renderar `role="alert"`
+                (MessageBox.tsx rad ~94). En alert annonseras när noden DYKER
+                UPP i tillgänglighetsträdet — inte när den råkar bli synlig.
+                Villkorad bara på `platserFel` monterades rutan direkt vid
+                dialogens öppning, alltså INUTI blocket som är `inert` i
+                eventläget (och dialogen initieras till EVENT när `harEvent`).
+                `inert` tar bort hela underträdet ur tillgänglighetsträdet, så
+                alerten fyrade i ett läge där ingen kunde höra den — och när
+                Lotta sedan växlade till "Delat dokument" fanns noden redan,
+                så det fyrade inget då heller. Felet var alltså SYNLIGT men
+                aldrig ANNONSERAT: tyst för en skärmläsaranvändare, vilket är
+                precis den grupp som inte kan se den avstängda Plats-selecten.
+
+                Med `gemensam &&` monteras rutan i samma ögonblick blocket
+                blir aktivt, och alerten fyrar då — mot ett träd som faktiskt
+                exponerar den. Tillgänglighet är 11 utan undantag
+                (CLAUDE.md § Kvalitetsribba). */}
+            {gemensam && platserFel && (
               <MessageBox intent="error" title="Platserna kunde inte hämtas">
                 Försök igen om en stund. Du kan fortfarande ladda upp filen, men inte koppla den
                 till en plats.

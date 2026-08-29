@@ -872,11 +872,26 @@ export class AirtableAdapter implements DataSourceAdapter {
   async fetchGemensammaBilagor(): Promise<Attachment[]> {
     const data = await callEdgeFunction<{ attachments: unknown }>('get-event-attachments');
     const parsed = parsaAttachments(data.attachments);
-    // [TASK-309.6] Defensivt anropad (get-event-attachments/index.ts filtrerar
-    // denna gren på `Räckvidd IN (Kurstyp, Alla event)` — generate-event-
-    // attachment sätter ALDRIG `Räckvidd`, så en Event-mallad rad förekommer
-    // strukturellt inte här i dag). `berikaMedInaktuell` kostar då bara den
-    // tomma `eventMallade.length === 0`-kontrollen, ingen extra nätverksfråga.
+    // [TASK-309.6, PREMISSEN RÄTTAD TASK-338.3] Defensivt anropad.
+    //
+    // Raden sade tidigare att EF:en filtrerar denna gren på `Räckvidd IN
+    // (Kurstyp, Alla event)`. Det var sant för TASK-275.2:s tre
+    // filterByFormula-mängder, men de är RIVNA sedan TASK-338.2. EF:en gör nu
+    // TVÅ steg (get-event-attachments/index.ts § fetchAllaGemensamma):
+    // en hämtning med `NOT({Räckvidd} = 'Event')` — en medveten SUPERMÄNGD —
+    // och därefter kod-grinden `arGemensam` efter normalisering.
+    //
+    // Steg två är inte en dubblering: det är det som håller ute raderna med
+    // TOMT `Räckvidd`, som formeln släpper igenom och som annars hade lagt 34
+    // mall-genererade, event-bundna PDF:er (mätt i staging 2026-08-29) i
+    // Lottas lista över delade dokument.
+    //
+    // SLUTSATSEN NEDAN HÅLLER OFÖRÄNDRAD, det var bara premissen som var
+    // stale (ADR-083): generate-event-attachment sätter ALDRIG `Räckvidd`, så
+    // en Event-mallad rad har tomt värde och sållas bort av `arGemensam` —
+    // den förekommer alltså strukturellt inte här. `berikaMedInaktuell`
+    // kostar då bara den tomma `eventMallade.length === 0`-kontrollen, ingen
+    // extra nätverksfråga.
     return this.berikaMedInaktuell(parsed);
   }
 

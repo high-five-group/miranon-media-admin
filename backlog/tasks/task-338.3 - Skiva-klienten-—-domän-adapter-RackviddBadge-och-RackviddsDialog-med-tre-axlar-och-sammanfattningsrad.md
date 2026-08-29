@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-29 08:03'
-updated_date: '2026-08-29 10:46'
+updated_date: '2026-08-29 12:33'
 labels:
   - ready-for-agent
 dependencies:
@@ -95,4 +95,28 @@ GEOMETRILÅSET HÅLLER: de fem lägena mäts fortfarande identiska (desktop 1280
 GRINDAR runda 2 (nakna exitkoder): typecheck 0 · biome 0 · test:api:pure 0 (860) · check-langa-streck 0 (263 filer) · check-facit 0 · acceptance --workers=1 över dokument-* + atgarder-bilageval-send: 71 passed, exit 0 (var 68 i runda 1; +3 nya fall). Ingen flake denna gång.
 
 EJ GJORT, per instruktion: main är INTE inmergad (orkestreraren säger till när #2093 landat, konflikt väntas i DokumentYta.tsx/Attachment.schema.ts). supabase/ orört. Ej armerad.
+
+RÄTTELSE AV RUNDA 2-NOTEN OVAN (runda 3, INFO): ordet "reserverad" är FEL om felrutan. Den renderas VILLKORLIGT och reserverar ingen höjd — notistrappan säger uttryckligen "Förskjuter layout: Ja" för klassen "uppgiftsgenererat fel, knutet till en yta" (DESIGN-SYSTEM-SPEC.md § 21). Rätt formulering: felrutan bor INUTI axelblocket (som är inert i eventläget) men är själv villkorligt monterad, och den får kosta höjd när den syns. Allt ANNAT i dialogen är reservat; felrutan är undantaget, med trappans stöd.
+
+MERGE AV MAIN — GJORD (runda 3 klartecken). Raden "EJ GJORT, per instruktion: main är INTE inmergad" ovan gällde runda 2 och är överspelad; headen ÄR sedan dess en merge-commit.
+
+Merge-SHA 5ecedc21ee78597f93fe4ea52960bfad351d1904 (merge av origin/main be87d128, ingen rebase). TRE konflikter, alla lösta så båda sidorna bevaras:
+1. src/domain/schemas/index.ts — rent additiv (338.3:s normaliseraRaAttachment/parsaAttachment/parsaAttachments mot 340.2:s SkapadEventBilagaSchema). Alla behållna.
+2. src/data/adapters/AirtableAdapter.ts § skapaEventBilaga — den enda SEMANTISKA konflikten. 340.2 parsar svaret som HELHET (SkapadEventBilagaSchema; de tre booleanerna promoverad/underlagAndrat/ersatte är bekräftelseytans text, och ett handplockat fält vid sidan av schemat är precis den datagräns ADR-026 stänger). 338.3 gjorde rackvidd till ett STRIKT enum som kräver legacy-normalisering FÖRE varje parse. Naivt oförenliga: helhets-parsen når det inbäddade attachment innan någon normalisering hunnit köra, och ett 'Kurstyp' hade KASTAT och fällt hela Skapa.
+3. src/components/dokument/DokumentYta.tsx — ren import-konflikt (340.2:s useEventAttachments mot 338.3:s usePlacesList), båda importerade. Kroppen auto-mergade och verifierades koherent: useEventAttachments(eventId) ersätter den inline useQuery, 309.40:s handleRackviddsByte på plats, och 338.3:s dialog + plats-axeln i båda Ersätt-anropen intakta.
+
+NY PUBLIK DOMÄNFUNKTION: parsaSkapadEventBilaga (src/domain/schemas/Attachment.schema.ts, exporterad via schemas/index.ts). Den löser konflikt 2 genom att normalisera det INBÄDDADE attachment-fältet och sedan låta SkapadEventBilagaSchema validera hela svaret — båda skivornas egenskaper bevarade, ingen försvagad. Samma "paras så den inte kan glömmas"-form som parsaAttachment/parsaAttachments: en normalisering som är valfri på ett av fem ställen är en normalisering någon glömmer på det sjätte. I praktiken kan generate-event-attachment inte producera ett legacy-värde (den sätter ALDRIG Räckvidd), så det är ett skyddsräcke snarare än en daglig nödvändighet — bokfört som sådant i funktionens docblock.
+
+SKARV-MARKÖRENS RÄTTA TEARDOWN (tests/api/attachment-staging-schema.ts, kom in med 338.2 i mergen) — GÅR I 338.4, INTE HÄR. En mekanisk rivning skulle FÖRSVAGA en grind: filens rackvidd-vidgning (z.string().nullable()) är numera obsolet eftersom klientens enum bär Gemensam, MEN dess plats-fält är STRIKT med avsikt (338.2: "fältet är hela poängen med skivan, så en EF som INTE bär det ska fälla sviten högljutt") medan klientens är medvetet LENIENT (stale-deploy-skälet, samma som mall/kallhash). Asymmetrin är avsiktlig på båda sidor. Rätt åtgärd är alltså att SMALNA filen till enbart plats-överskrivningen — inte att radera den och peka de fyra staging-sviterna på AttachmentSchema. Filen kompilerar och fungerar oförändrad i grenen (typecheck 0), så inget brådskar.
+
+RUNDA 3 — TVÅ KODRÄTTELSER:
+
+A. A11Y-DEFEKT RÄTTAD (INFO/a11y, golvet är 11). MessageBox intent="error" renderar role="alert", och en alert annonseras när noden DYKER UPP i tillgänglighetsträdet — inte när den blir synlig. Villkorad bara på platserFel monterades rutan redan vid dialogens öppning, alltså INUTI axelblocket som är inert i eventläget (dialogen initieras till EVENT när harEvent). inert tar bort underträdet ur tillgänglighetsträdet, så alerten fyrade där ingen kunde höra den — och vid växlingen till "Delat dokument" fanns noden redan, så inget fyrade då heller. Felet var SYNLIGT men aldrig ANNONSERAT: tyst för precis den grupp som inte kan se att Plats-selecten är avstängd. Fix: villkoret är nu `gemensam && platserFel`, så rutan monteras i samma ögonblick blocket blir aktivt.
+
+   TVÅSIDIGT BEVIS, MED EN FÅNGST PÅ VÄGEN: första versionen av regressionstestet använde getByRole('alert') för båda halvorna och PASSERADE mot den buggiga koden (mutation utan `gemensam &&` → exit 0, falsk grön). Orsak: getByRole gör ARIA-uppslag och utesluter dolda/inerta noder — alltså exakt de noder buggen producerar, så assertionen kunde inte skilja "aldrig monterad" från "monterad men inert". Testet skärptes till locator('[role="alert"]') (CSS-attributuppslag, räknar noden oavsett inert) för DOM-närvaro-halvan, med getByRole kvar för tillgänglighetsträds-halvan. Efter skärpningen: mutant exit 1 ("Expected: 0, Received: 1"), efter revert exit 0. Testet heter "platslistans fel MONTERAS först när det delade läget aktiveras — annars annonseras alerten aldrig".
+
+B. STALE PREMISS I TVÅ DOCBLOCK RÄTTAD (ADR-083). AirtableAdapter.ts § fetchGemensammaBilagor sade att EF:en filtrerar grenen på "Räckvidd IN (Kurstyp, Alla event)" — sant för 275.2:s tre rivna filterByFormula-mängder, falskt sedan 338.2. FAKTISKT (verifierat mot get-event-attachments/index.ts rad 173 och 221): en hämtning med NOT({Räckvidd} = 'Event') — en medveten SUPERMÄNGD — följd av kod-grinden arGemensam efter normalisering. Två steg, eftersom formeln måste släppa igenom legacy-värdena (som normaliseras i kod) medan koden måste hålla ute raderna med TOMT Räckvidd (annars hade 34 mall-genererade, event-bundna PDF:er, mätt i staging 2026-08-29, hamnat i Lottas lista över delade dokument). Slutsatsen i docblocket höll oförändrad; det var premissen som var stale.
+   SJÄLVFÅNGST: samma felklass fanns i min EGEN runda-1-rättelse i DataSourceAdapter.ts ("bara Räckvidd = Gemensam sedan TASK-338.2") — närmare, men fortfarande inte vad EF:en gör. Båda ställena är nu skrivna mot den faktiska tvåstegsformen.
+
+GRINDAR runda 3 (nakna exitkoder): typecheck 0 · biome 0 · dokument-rackviddsval 25 passed exit 0 · hela dokument-* + atgarder-bilageval-send (--workers=1, UTAN --reporter så oanvänd-handler-vakten är armerad) exit 0 · check-langa-streck 0 · check-facit 0.
 <!-- SECTION:NOTES:END -->
