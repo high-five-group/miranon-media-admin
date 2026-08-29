@@ -387,10 +387,30 @@ som verktygsfakta för nästa fält-operation av samma klass.
 
 | Yta | Staging-ID | Prod-ID | Typ |
 |---|---|---|---|
-| Bilagor → `Räckvidd` (ny 4:e option) | choice `selxFObtdzHsUJiun` på fält `fldU6i9Ju5HRwSRBf` | väntar TASK-338.6 | singleSelect-choice — "Gemensam" |
-| Bilagor → `Plats` | `fldmkHUxPNRRA0Rxi` | väntar TASK-338.6 | multipleRecordLinks → Platser (`tbl7ER0wNqAZ9ZhEq`); högst en plats avsedd — Airtable kan inte tvinga det, adapter/EF vaktar (TASK-338.2/338.3) |
-| Bilagor → `Platsnamn` | `fldyEDJD3Y3InHJ7J` | väntar TASK-338.6 | multipleLookupValues — lookup av `Platser.Namn` (`fldSDJcY7cb4dam3Y`) via `Plats` |
-| Platser → `Bilagor` (auto-född spegel av `Plats`) | `fldbdACukM1V52mZT` | väntar TASK-338.6 | multipleRecordLinks → Bilagor |
+| Bilagor → `Räckvidd` (ny 4:e option) | choice `selxFObtdzHsUJiun` på fält `fldU6i9Ju5HRwSRBf` | choice-ID ej mätt — skapas via en kastbar rads typecast och `runSchema()` läser aldrig tillbaka choice-ID:t (`scripts/task-338-6-prod-migration.mjs`); fältet självt är `fldsEltfGx3y63hhF` (ADR-118, 2026-08-17) | singleSelect-choice — "Gemensam" |
+| Bilagor → `Plats` | `fldmkHUxPNRRA0Rxi` | `fldiRBrqROTJ7fnFs` | multipleRecordLinks → Platser (`tbl7ER0wNqAZ9ZhEq` staging / `tblPeNLeeQ1IduGTK` prod); högst en plats avsedd — Airtable kan inte tvinga det, adapter/EF vaktar (TASK-338.2/338.3) |
+| Bilagor → `Platsnamn` | `fldyEDJD3Y3InHJ7J` | `fldFgcCtK8gRRm2m8` | multipleLookupValues — lookup av `Platser.Namn` (`fldSDJcY7cb4dam3Y` staging) via `Plats` |
+| Platser → `Bilagor` (auto-född spegel av `Plats`) | `fldbdACukM1V52mZT` | fält-ID ej mätt — auto-föds av Airtable vid `Plats`-skapelsen, skriptet frågar aldrig efter spegelns ID (samma gap som Räckvidd-choicen ovan) | multipleRecordLinks → Bilagor |
+
+**Steg (i) utförd mot prod 2026-08-29 (`TASK-338.6`, Marcus GO per `ADR-125`
+§ 8).** Körning: `node scripts/task-338-6-prod-migration.mjs --utfor-schema
+app8uGPrVCVOm6LfD` följt av `--kontrollera`, båda `exit 0`.
+Bilagor-tabellen är `tblevR1B54wFjp7QC`, Platser-tabellen `tblPeNLeeQ1IduGTK`
+(båda matchar redan bokförda ID:n i § Snabbreferens ovan). Räckvidd-choices
+EFTER: `Event, Kurstyp, Alla event, Gemensam`. Verifiering: `konvergerat: JA`
+(en färsk `planSchema()`-körning gav enbart `already-exists`/`skip` för alla
+tre komponenter — choice, `Plats`-fält, `Platsnamn`-fält), `Skrivningar:
+optionAdd=2 platsField=1 platsnamnField=1` (`optionAdd=2` är skriptets
+create+delete-par för den kastbara raden, INTE två tillagda choices — se
+`runSchema()` rad ~481). Kastbar rad `rec5qoF9b2uBmNP3B` skapades och
+raderades korrekt; `--kontrollera` efteråt gav `Gemensam-rader utan
+Namn/Event-länk: 0` — inga kvarlevor. **Två ID:n saknas i tabellen ovan
+eftersom skriptet aldrig fångar dem** (choice-ID:t för "Gemensam" och
+spegelfältets ID på `Platser`) — närvaron av båda är ändå bekräftad via
+konvergens-checken (namnbaserad `findFieldByName`/`hasChoice`, inte
+ID-baserad), inte en gissning. Ett separat `describe_table`-uppslag mot prod
+krävs för att fylla dem; ingen Airtable-anrop ingick i detta
+dokumentationsuppdrag.
 
 **Migrering av befintliga rader (AC #2), samma form som `TASK-275`:s
 migrering ovan.** Staging bar **9** rader med `Räckvidd` = "Kurstyp" (6) eller
@@ -2211,3 +2231,4 @@ Code kan ta dessa när de blir relevanta för en specifik uppgift.
 | 2026-08-26 (`TASK-309.22`, review-runda 1) | **§ Bucket `bilagor`s rad ovan AMENDERAD** — föregående rad (samma dag) sa att `sanitizeFilnamn` NFKD-normaliserar/faller till ASCII. Det var fel EFTER review-runda 1: `sanitizeFilnamn` faller INTE till ASCII (den är hash-underlaget för `deriveAttachmentId`, TASK-316) — ASCII-fallet flyttades till `buildAttachmentLeaf` (Storage-nyckeln/`Lagringsnyckel` ENDAST). Skälet: review visade empiriskt att det GAMLA (ett-stegs) upplägget kollapsade OLIKA filnamn (två helt olika CJK-strängar, två helt olika emoji — inte bara diakritik-varianter) till samma hash, vilket hade gjort en genuint ny uppladdning till en falsk idempotent replay av en annan fil. Se `_shared/attachment-filename.ts`s docblock och `upload-attachment/index.ts`s HASH-BESLUT-not för den fullständiga uppdelningen. |
 | 2026-08-28 (`TASK-309.30`) | **§ Ort-till-Plats vid create tillagd** (under Eventplanerings create-fält) + `Plats` tillagd i create-fält-tabellen + Plats-backfillens **öppna kant STÄNGD**. `create-event` slår upp `Platser` på `Namn` = `Ort` och länkar vid EXAKT en träff; noll/flera träffar och en redan satt `Plats` lämnar länken orörd, var och en med sitt `platsLankning.skal` i svaret. Ordnings-invarianten (`Plats` skrivs i en PATCH EFTER upserten, aldrig i dess fields-map) skyddar en manuellt satt Plats vid idempotent replay. `Platser.Namn`s icke-unikhet skarpt verifierad genom att seeda två rader med samma namn i staging. Ny purge-target `create-event-plats-harledning-sentineler` (Eventplanering, `Ort`-prefix `ZZ-plats-`); de två permanenta Platser-fixturerna matchar medvetet ingen target. Staging-EF deployad (v25 → v26, `UPDATED_AT` 2026-08-28T03:08:03.740Z); prod-deploy är ett separat Marcus-moment. |
 | 2026-08-29 (`TASK-338.1`) | **§ Bilagornas Gemensam-räckvidd — Plats-axel tillagd** (STAGING-halvan av `ADR-125` § Beslut 1, ersätter `ADR-118` beslut 1 för räckviddsVALET; beslut 2/3 gäller vidare). Ny 4:e option "Gemensam" på `Bilagor.Räckvidd` (choice `selxFObtdzHsUJiun`), ny länk `Bilagor.Plats` → `Platser` (`fldmkHUxPNRRA0Rxi`), lookup `Bilagor.Platsnamn` (`fldyEDJD3Y3InHJ7J`, `Platser.Namn` via `Plats`), auto-född spegel `Platser.Bilagor` (`fldbdACukM1V52mZT`). Migrerade 9 rader (6 "Kurstyp" + 3 "Alla event") → "Gemensam", `Kursfamilj`/`Kursnivå` oförändrade, räkneverifierat 9→0/9 med `filterByFormula`. **Plattformsvägg mätt:** `mcp__airtable__update_field` kan inte ändra en singleSelects `options.choices` (wrappern stryper okända fält); en direkt Web-API-PATCH mot samma fält (samma PAT som MCP-servern) gav Airtables egen 422 `"Changing a field's type or number precision is not currently supported"` — plattformen tillåter det inte alls via Metadata-API:t. Vägen som fungerade: `mcp__airtable__update_records` med ett okänt strängvärde, Airtables typecast-beteende skapade choicen automatiskt. Ingen ny `.purge-staging-policy.json`-target (migreringen skapade inga nya rader). Prod-kolumnen väntar `TASK-338.6` (Marcus GO per tabell, `ADR-125` § 8). |
+| 2026-08-29 (`TASK-338.6`, steg (i)) | **§ Bilagornas Gemensam-räckvidd — Plats-axel: prod-kolumnen ifylld** (PROD-halvan av samma tabell, Marcus GO citerat i kortets Implementation Notes). `Bilagor.Plats` = `fldiRBrqROTJ7fnFs`, `Bilagor.Platsnamn` = `fldFgcCtK8gRRm2m8`; Räckvidd-choicen "Gemensam" och Platsers auto-födda spegelfält bekräftat NÄRVARANDE (konvergens-verifierat namnbaserat) men deras ID:n fångas inte av migreringsskriptet — bokfört öppet i tabellen, inte gissat. Steg (ii) EF-deploy och (iii) radmigrering är INTE gjorda i denna skiva. |
