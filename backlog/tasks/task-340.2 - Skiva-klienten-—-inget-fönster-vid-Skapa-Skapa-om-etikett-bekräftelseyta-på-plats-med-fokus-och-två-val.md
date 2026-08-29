@@ -3,10 +3,10 @@ id: TASK-340.2
 title: >-
   Skiva: klienten — inget fönster vid Skapa, 'Skapa om'-etikett, bekräftelseyta
   på plats med fokus och två val
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-29 08:18'
-updated_date: '2026-08-29 10:33'
+updated_date: '2026-08-29 11:59'
 labels:
   - ready-for-agent
 dependencies:
@@ -62,3 +62,9 @@ Runda 1 lagrade den signerade nedladdnings-URL:en i bekräftelsens state (hämta
 
 Rättat till husets mönster (`DokumentYta.tsx` § IKONPAR): `window.open('', '_blank')` synkront i klicket, `skrivLaddningssida` med 309.38:s väntetext, och en FÄRSK URL via den ÅTERANVÄNDA `useForhandsvisaDokument`. `useGenereraEventBilaga` hämtar därmed ingen URL alls längre (`GenereradEventBilaga.url` rivet). Bevisat i test med en fixtur som ger en NY adress per anrop: 0 anrop vid Skapa, adress nr 1 vid första klicket, adress nr 2 vid det andra.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landning: PR #2093 (mergad 2026-08-29 11:57:05Z, main be87d128). Inget fönster vid Skapa; bekräftelseytan ersätter formuläret (fokus, exakt två val: 'Visa dokumentet' med FÄRSK signering per klick i husets mönster — review-runda 1 fann att den frysta 300 s-URL:en hade gett död länk — och 'Till dokumenten'); 'Skapa om <namnBestamd>' när rad finns; kallhash skickas efter förhandsgranskning; 'Öppna'-fallback bara vid blockerat fönster; delad useEventAttachments. Fyra granskningsrundor (r1 medel/ask-user → r2 docblock-drift → r3 prosa → r4 tester efter oanvänd-handler-vakten i CI); AC #4 omskrivet mätbart. Facit s108-generering: efter-Skapa-bilderna inaktuella, ny baslinje efter Marcus godkännande (ADR-074). Lesson: --reporter-flaggan ersätter reporter-listan och stänger av vakten.
+<!-- SECTION:FINAL_SUMMARY:END -->
