@@ -3,10 +3,10 @@ id: TASK-309.39
 title: >-
   Fynd: dokumentlistans höjdlås slår in sekunder sent vid växling delade ↔
   event, och den nedersta separatorn syns
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-29 07:54'
-updated_date: '2026-08-29 08:52'
+updated_date: '2026-08-29 09:15'
 labels:
   - ready-for-agent
 dependencies: []
@@ -160,3 +160,9 @@ Nya sviten är nu 10 fall (var 9). Det tidigare fällande `inline-rullningen`-te
 
 `?typ`-nollställning vid räckviddsbyte — orkestreraren har avgjort JA på Marcus mandat, men i ett EGET kort. Inte berörd i denna PR.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landning: PR #2080 (mergad 2026-08-29 09:14:23Z, main c7366aba). Två rotorsaker: S1 höjdlåset var ALDRIG satt när ?typ=bilaga följde med från Delade → event (och vid ?typ=mall/generator) — harMattAlls-nödmätning; S2 docblocket byggde på Tailwind v3:s divide-y (border-top på syskonet) medan v4 sätter border-bottom på :not(:last-child) — spannet räknade in linjen, separatorBredd dras bort. Reproduktion röd före fix (8/9), ny svit 10 fall. Review-grinden: runda 1 warning (stale LISTA_FALLBACK_RADHOJD-docblock) + CI-rött i dokument-rackviddsval (396 vs 395) → runda 2 konvergerad, risk låg. Produktfrågan ?typ vid räckviddsbyte → TASK-309.40.
+<!-- SECTION:FINAL_SUMMARY:END -->
