@@ -3,10 +3,10 @@ id: TASK-338.1
 title: >-
   Skiva: staging-schemat och migreringen — Räckvidd 'Gemensam', Plats-länk,
   Platsnamn-lookup
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-29 08:03'
-updated_date: '2026-08-29 08:18'
+updated_date: '2026-08-29 08:32'
 labels:
   - ready-for-agent
 dependencies: []
@@ -82,3 +82,9 @@ Efter skivan bär STAGING-basen (apphjj8Q7lkXCMsL4 — prod app8uGPrVCVOm6LfD ä
 
 **DoD #6 (Lagervakten — matchning/validering i EF/_shared):** N/A av samma skäl — ingen matchnings- eller valideringslogik skrevs i denna skiva (det är TASK-338.2/338.3). Ingen klientkod rörd.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landning: PR #2078 (mergad 2026-08-29 08:29:59Z, main 658e4243). Staging-schemat: option Gemensam (selxFObtdzHsUJiun), Plats-länk (fldmkHUxPNRRA0Rxi), Platsnamn-lookup (fldyEDJD3Y3InHJ7J); 9 rader (6 Kurstyp + 3 Alla event) → 9 Gemensam, räkneverifierat; prod orörd; staging-sviterna 43/43 gröna efter migreringen. Verktygsfakta bokförd: PAT-MCP:n kan inte lägga till en choice via update_field — update_records med nytt strängvärde (typecast) fungerar.
+<!-- SECTION:FINAL_SUMMARY:END -->
