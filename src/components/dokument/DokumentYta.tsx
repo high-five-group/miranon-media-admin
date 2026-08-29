@@ -182,6 +182,12 @@ import {
   FileUp,
   Loader2,
   RefreshCw,
+  // [TASK-338.4] "Ändra räckvidd" — `Target` läser som "vad detta dokument
+  // siktar på", vilket är precis vad en filter-räckvidd ÄR (ADR-125 § 1).
+  // `Files` är upptagen av räckviddslägets egen väljar-ikon och `Layers` av
+  // segment-byggarens lager-begrepp; `Settings`/`Pencil` hade lovat en
+  // generell redigering av bilagan, inte specifikt dess spridning.
+  Target,
   Trash2,
   Upload,
 } from 'lucide-react';
@@ -211,6 +217,7 @@ import { useForhandsvisaDokument } from '@/data/mutations/useForhandsvisaDokumen
 import { useLaddaNerDokument } from '@/data/mutations/useLaddaNerDokument';
 import { useReplaceAttachment } from '@/data/mutations/useReplaceAttachment';
 import { useSkapaOmEventBilaga } from '@/data/mutations/useSkapaOmEventBilaga';
+import { useUpdateAttachmentScope } from '@/data/mutations/useUpdateAttachmentScope';
 import {
   type UploadAttachmentVariables,
   useUploadAttachment,
@@ -427,6 +434,11 @@ export function DokumentYta() {
   // (`GemensamtLage` nedan; se useDeleteAttachment.ts § docblock för varför
   // signaturen ändå speglar hela `string | null`-kontraktet).
   const deleteMutation = useDeleteAttachment(eventId);
+  // [TASK-338.4] "Ändra räckvidd" — som Radera ovan ANVÄNDS den bara i
+  // räckviddsläget (ADR-118 beslut 3: en delad bilaga är oredigerbar ur ett
+  // events kontext). Enda OPTIMISTISKA mutationen på denna yta; skälet
+  // (ingen fil rör sig) står i useUpdateAttachmentScope.ts § docblock.
+  const scopeMutation = useUpdateAttachmentScope(eventId);
 
   const rader = useMemo(
     () => grupperaPerNamn(attachmentsQuery.data ?? []),
@@ -445,6 +457,15 @@ export function DokumentYta() {
   // eller inte, och två monterade dialoger (en per läge) hade kunnat glida
   // isär precis som de två radkomponenterna gjorde före S107:s fjärde rond.
   const [valdaFiler, setValdaFiler] = useState<FileList | null>(null);
+
+  // ═══ [TASK-338.4] RADEN VARS RÄCKVIDD ÄNDRAS ═══
+  //
+  // Samma disciplin som `valdaFiler` ovan, och samma dialog: `null` betyder
+  // "ingen ändring pågår". Att BÅDA lägena bärs av var sitt state (i stället
+  // för ett delat `dialogLage`) håller dem ömsesidigt uteslutande på ett sätt
+  // som syns i JSX-grenen nedan — och gör det omöjligt att av misstag öppna
+  // en uppladdningsdialog med en rad förifylld.
+  const [andrasRackvidd, setAndrasRackvidd] = useState<Attachment | null>(null);
 
   /**
    * [TASK-309.40] RÄCKVIDDSVÄXLINGENS EN HANDLER — nollställer typfiltret
@@ -498,6 +519,40 @@ export function DokumentYta() {
 
   const handleDelete = (attachmentId: string, namn: string) => {
     deleteMutation.mutate({ attachmentId, namn });
+  };
+
+  /**
+   * [TASK-338.4] Sparar den nya räckvidden på raden i `andrasRackvidd`.
+   *
+   * `platsNamn` kommer FRÅN DIALOGEN (som redan har platslistan) och används
+   * ENBART för den optimistiska renderingen — se `useUpdateAttachmentScope.ts`
+   * § `UpdateAttachmentScopeVariables`. EF:en får aldrig ett platsNAMN;
+   * kontraktet bär bara record-ID:t.
+   *
+   * `onSuccess`-callbacken stänger dialogen, INTE ett `isSuccess`-useEffect:
+   * flaggan står kvar efter stängning och hade stängt nästa dialog i samma
+   * ögonblick den öppnades (samma fälla `handleUpload` redan bokför). Vid
+   * FEL stängs dialogen inte — felet renderas inuti den, intill valet.
+   */
+  const handleSparaRackvidd = (scope: UploadScopeVal, onKlart: () => void, platsNamn?: string) => {
+    const rad = andrasRackvidd;
+    if (!rad) return;
+    scopeMutation.mutate(
+      {
+        attachmentId: rad.id,
+        namn: rad.namn,
+        // Dialogen kan bara producera GEMENSAM här ("Bara detta event" är
+        // avstängd i ändra-läget), men vi läser värdet den faktiskt gav i
+        // stället för att hårdkoda — så en framtida ändring av dialogen inte
+        // tyst skickar något annat än vad Lotta såg.
+        rackvidd: scope.rackvidd ?? AttachmentScope.GEMENSAM,
+        kursfamilj: scope.kursfamilj,
+        kursniva: scope.kursniva,
+        plats: scope.plats,
+        platsNamn,
+      },
+      { onSuccess: onKlart },
+    );
   };
 
   return (
@@ -594,6 +649,8 @@ export function DokumentYta() {
             replaceMutation={replaceMutation}
             onDelete={handleDelete}
             deleteMutation={deleteMutation}
+            onAndraRackvidd={setAndrasRackvidd}
+            scopeMutation={scopeMutation}
           />
         ) : attachmentsQuery.isPending ? (
           <div role="status" aria-busy="true" className="flex flex-col gap-2">
@@ -666,11 +723,57 @@ export function DokumentYta() {
           200 ms-skalning inte är det. */}
       {valdaFiler != null && (
         <RackviddsDialog
-          filer={valdaFiler}
+          lage={{ typ: 'uppladdning', filer: valdaFiler }}
           harEvent={eventId != null}
-          uploadMutation={uploadMutation}
+          arbetar={uploadMutation.isPending}
+          // Uppladdningsfelet bor på SIDAN (`UppladdningsFel` ovan), inte i
+          // dialogen — den stänger vid framgång och hade rivit felet med sig.
+          fel={null}
           onStang={() => setValdaFiler(null)}
-          onUpload={handleUpload}
+          onBekrafta={(scope, onKlart) => handleUpload(valdaFiler, scope, onKlart)}
+        />
+      )}
+
+      {/* [TASK-338.4] ÄNDRA RÄCKVIDD — samma dialog, andra läget. Villkorad
+          montering av EXAKT samma skäl som uppladdningens ovan: förifyllningen
+          läses som `useState`-initialvärde, så en rivning vid stängning är det
+          som garanterar att nästa öppning speglar RADENS axlar och inte förra
+          radens. De två staten är ömsesidigt uteslutande i praktiken (Lotta
+          kan bara trycka på en knapp i taget) men ingen av dem stänger av den
+          andra — det behövs inte, eftersom `Modal` staplar och den senast
+          öppnade tar fokus. */}
+      {andrasRackvidd != null && (
+        <RackviddsDialog
+          lage={{
+            typ: 'andra-rackvidd',
+            attachmentId: andrasRackvidd.id,
+            namn: andrasRackvidd.namn,
+            // RADENS NUVARANDE AXLAR blir dialogens utgångsläge. `?? undefined`
+            // och inte `?? null`: `UploadScopeVal` bär `undefined` som "axeln
+            // är inte satt" hela vägen ner till EF:en, medan modellen bär
+            // `null` — översättningen sker här, vid gränsen, en gång.
+            initial: {
+              rackvidd: andrasRackvidd.rackvidd ?? undefined,
+              kursfamilj: andrasRackvidd.kursfamilj ?? undefined,
+              kursniva: andrasRackvidd.kursniva ?? undefined,
+              plats: andrasRackvidd.plats?.id ?? undefined,
+            },
+          }}
+          harEvent={eventId != null}
+          arbetar={scopeMutation.isPending}
+          fel={
+            scopeMutation.isError
+              ? (scopeMutation.error?.message ?? 'Inget felmeddelande angavs.')
+              : null
+          }
+          onStang={() => {
+            setAndrasRackvidd(null);
+            // Nollställ felet med dialogen: mutationens `isError` står kvar
+            // efter stängning och hade annars visat förra försökets fel i
+            // samma ögonblick nästa rad öppnades.
+            scopeMutation.reset();
+          }}
+          onBekrafta={handleSparaRackvidd}
         />
       )}
     </div>
@@ -1583,6 +1686,9 @@ function LaddaNerKnapp({ namn, kalla }: { namn: string; kalla: DokumentKalla }) 
 type UploadMutation = ReturnType<typeof useUploadAttachment>;
 type ReplaceMutation = ReturnType<typeof useReplaceAttachment>;
 type DeleteMutation = ReturnType<typeof useDeleteAttachment>;
+/** [TASK-338.4] "Ändra räckvidd"-mutationen — samma härlednings-mönster
+    som syskonen ovan, så en signaturändring i hooken följer med hit. */
+type ScopeMutation = ReturnType<typeof useUpdateAttachmentScope>;
 type SkapaOmMutation = ReturnType<typeof useSkapaOmEventBilaga>;
 
 /** [TASK-275.3, OMBYGGD TASK-338.3] Sant för en GEMENSAM bilaga (räckvidd
@@ -2163,26 +2269,88 @@ function DokumentLista({
  * (`isDismissable`/`isKeyboardDismissDisabled` speglar `isPending`): ett
  * klick utanför mitt i en flerhundra-kB-uppladdning hade sett ut som en
  * avbruten uppladdning utan att vara det — mutationen kör vidare oavsett.
+ *
+ * ═══ TVÅ LÄGEN SEDAN TASK-338.4 (ADR-125 § Beslut 1) ═══
+ *
+ * Samma dialog bär nu BÅDE uppladdningens räckviddsfråga och "Ändra
+ * räckvidd" på en redan uppladdad delad bilaga (PRD TASK-338 berättelse 8).
+ * Lägena skiljs av `lage`, en DISKRIMINERAD UNION — inte av en handfull
+ * valfria props. Skälet är att de två lägena bär OLIKA data (en `FileList`
+ * respektive ett `attachmentId` + ett förifyllt utgångsläge), och en
+ * union gör det omöjligt att av misstag rendera ett halvt läge; med
+ * `filer?: FileList` + `initial?: …` hade typen tillåtit båda samtidigt
+ * eller ingendera.
+ *
+ * VAD SOM ÄR GEMENSAMT, och varför en delad dialog är rätt: frågan Lotta
+ * svarar på är IDENTISK ("vad ska det här gälla?"), och axlarna, deras
+ * defaults, sammanfattningsraden, geometrilåset och tangentbordsordningen
+ * ska vara det också. Två kopior hade drivit isär vid nästa axel.
+ *
+ * VAD SOM SKILJER, och varje skillnad har ett skäl:
+ *   - FÖRIFYLLNING. Uppladdningen startar i nolläget; ändringen startar i
+ *     radens NUVARANDE axlar, annars vore "ändra" i praktiken "skriv om
+ *     från början" och Lotta hade tappat det hon redan valt.
+ *   - "Bara detta event" är ALLTID avstängd i ändra-läget, oavsett
+ *     `harEvent`. Servern kan inte göra en delad bilaga event-egen (filens
+ *     lagringsplats är härledd ur räckvidden, se update-attachment-scope/
+ *     index.ts § VAD DEN INTE ÄR) — ett aktivt val som alltid ger 400 vore
+ *     en fälla, inte ett val.
+ *   - FELET BOR I DIALOGEN i ändra-läget, till skillnad mot uppladdningens
+ *     `UppladdningsFel` som bor på sidan. Uppladdningsdialogen STÄNGER vid
+ *     framgång och skulle ha rivit felet med sig; ändra-dialogen står kvar
+ *     tills servern sagt ja, så felet kan visas intill det som orsakade
+ *     det — och de fyra vakternas skäl (403/404/409) är just sådant Lotta
+ *     behöver läsa medan valet fortfarande syns.
  */
+type RackviddsDialogLage =
+  | { typ: 'uppladdning'; filer: FileList }
+  | { typ: 'andra-rackvidd'; attachmentId: string; namn: string; initial: UploadScopeVal };
+
 function RackviddsDialog({
-  filer,
+  lage,
   harEvent,
-  uploadMutation,
+  arbetar,
+  fel,
   onStang,
-  onUpload,
+  onBekrafta,
 }: {
-  filer: FileList;
+  lage: RackviddsDialogLage;
   harEvent: boolean;
-  uploadMutation: UploadMutation;
+  /** Den körande mutationens `isPending` — låser dialogen, se docblocket. */
+  arbetar: boolean;
+  /** Felmeddelande att visa INUTI dialogen (bara ändra-läget, se docblocket). */
+  fel: string | null;
   onStang: () => void;
-  onUpload: (files: FileList | null, scope: UploadScopeVal, onKlart?: () => void) => void;
+  /**
+   * Bekräftelsen. `platsNamn` är PRESENTATIONS-data, inte en del av
+   * EF-kontraktet: dialogen har redan platslistan (`usePlacesList`) och kan
+   * därför namnge den valda platsen gratis, medan `scope.plats` bär det
+   * record-ID servern faktiskt vill ha. Alternativet — att låta sidan slå
+   * upp namnet — hade krävt en andra `usePlacesList`-prenumeration på hela
+   * Dokument-ytan, alltså en platshämtning även när ingen dialog är öppen.
+   * Uppladdningsvägen ignorerar argumentet (den renderar ingen badge
+   * optimistiskt); ändra-vägen behöver det för sin.
+   */
+  onBekrafta: (scope: UploadScopeVal, onKlart: () => void, platsNamn?: string) => void;
 }) {
-  const [rackvidd, setRackvidd] = useState<AttachmentScopeValue>(
-    harEvent ? AttachmentScope.EVENT : AttachmentScope.GEMENSAM,
+  const andrar = lage.typ === 'andra-rackvidd';
+  // FÖRIFYLLNINGEN läses EN gång, som `useState`-initialvärde — dialogen
+  // unmountas vid varje stängning (se anropsstället), så ett kvarhängande
+  // värde är strukturellt omöjligt och en `useEffect`-synk vore både onödig
+  // och en väg för radens uppdaterade data att skriva över Lottas pågående
+  // redigering mitt i.
+  const [rackvidd, setRackvidd] = useState<AttachmentScopeValue>(() =>
+    andrar ? AttachmentScope.GEMENSAM : harEvent ? AttachmentScope.EVENT : AttachmentScope.GEMENSAM,
   );
-  const [kursfamilj, setKursfamilj] = useState<string | null>(null);
-  const [kursniva, setKursniva] = useState<string | null>(null);
-  const [platsId, setPlatsId] = useState<string | null>(null);
+  const [kursfamilj, setKursfamilj] = useState<string | null>(() =>
+    lage.typ === 'andra-rackvidd' ? (lage.initial.kursfamilj ?? null) : null,
+  );
+  const [kursniva, setKursniva] = useState<string | null>(() =>
+    lage.typ === 'andra-rackvidd' ? (lage.initial.kursniva ?? null) : null,
+  );
+  const [platsId, setPlatsId] = useState<string | null>(() =>
+    lage.typ === 'andra-rackvidd' ? (lage.initial.plats ?? null) : null,
+  );
 
   // PLATSLISTAN ÄR SAMMA LÄSVÄG SOM MER → PLATSER (kortets AC #1, PRD
   // berättelse 11: *"platslistan i dialogen är samma som under Mer →
@@ -2204,8 +2372,10 @@ function RackviddsDialog({
 
   const gemensam = rackvidd === AttachmentScope.GEMENSAM;
   const kursfamiljHarNivaer = kursfamilj != null && KURSFAMILJ_MED_NIVAER.has(kursfamilj);
-  const laddarUpp = uploadMutation.isPending;
-  const filnamn = filer.item(0)?.name ?? 'Filen';
+  const laddarUpp = arbetar;
+  // Dokumentets namn — filens i uppladdningsläget, radens i ändra-läget.
+  // Raden under rubriken svarar på "vad handlar det här om?" i BÅDA lägena.
+  const filnamn = andrar ? lage.namn : (lage.filer.item(0)?.name ?? 'Filen');
 
   // Sammanfattningen läser platsens NAMN, inte dess id — texten är för
   // Lotta. Faller tillbaka på `null` (= "axeln räknas som osatt") medan
@@ -2232,9 +2402,16 @@ function RackviddsDialog({
           Avbryt, Escape/utanförklick och lyckad uppladdning. En blandning av
           två stängningsmekanismer hade gjort det oklart vilken som gäller. */}
       <Dialog
-        title="Vad ska filen gälla?"
+        // RUBRIKEN SÄGER VILKEN FRÅGA SOM STÄLLS. I ändra-läget finns ingen
+        // fil att ladda upp — "Vad ska filen gälla?" hade läst som att en
+        // uppladdning pågick. Samma fråga, rätt tempus.
+        title={andrar ? 'Vad ska dokumentet gälla?' : 'Vad ska filen gälla?'}
         size="md"
-        aria-description="Välj om filen gäller bara det valda eventet eller är ett delat dokument som gäller flera event."
+        aria-description={
+          andrar
+            ? 'Ändra vilka event det delade dokumentet ska gälla. Välj familj, steg och plats — tomma val betyder ingen begränsning.'
+            : 'Välj om filen gäller bara det valda eventet eller är ett delat dokument som gäller flera event.'
+        }
       >
         <div className="flex flex-col gap-4">
           {/* FILNAMNET ÄR EGEN RAD, INTE INBAKAT I RUBRIKEN. En rubrik som
@@ -2279,7 +2456,14 @@ function RackviddsDialog({
               }
             }}
           >
-            <Radio value={AttachmentScope.EVENT} isDisabled={!harEvent}>
+            {/* ALLTID AVSTÄNGD I ÄNDRA-LÄGET, oavsett `harEvent` — se
+                docblockets § VAD SOM SKILJER. `update-attachment-scope`
+                svarar 400 på räckvidd Event ("en delad bilaga kan inte göras
+                event-egen här"), så ett valbart alternativ hade varit en
+                fälla: Lotta väljer, trycker Spara, får ett fel hon inte kan
+                göra något åt. Vägen dit finns ändå — radera och ladda upp
+                filen på nytt i eventets kontext. */}
+            <Radio value={AttachmentScope.EVENT} isDisabled={andrar || !harEvent}>
               Bara detta event
             </Radio>
             {/* KORT BINDESTRECK, INTE LÅNGT — Marcus 2026-08-09: *"Ta bort
@@ -2471,6 +2655,24 @@ function RackviddsDialog({
             </p>
           </div>
 
+          {/* ═══ ÄNDRA-LÄGETS FEL BOR HÄR, INTE PÅ SIDAN ═══
+              (Se docblockets § VAD SOM SKILJER för hela motivet.)
+
+              Uppladdningens fel bor på SIDAN (`UppladdningsFel`) därför att
+              dialogen rivs vid framgång och hade tagit felet med sig. Denna
+              dialog står kvar tills servern sagt ja, så felet kan stå intill
+              valet som orsakade det — och serverns fyra vakter svarar med
+              skäl Lotta faktiskt behöver läsa medan valet syns ("Bara
+              uppladdade dokument kan byta räckvidd", "Familjen kan inte
+              ändras …"). Samma notistrappe-klass och samma primitiv som
+              platslistans fel ovan: uppgiftsgenererat fel, knutet till en
+              yta (`DESIGN-SYSTEM-SPEC.md` § 21, ADR-121 beslut 4). */}
+          {fel !== null && (
+            <MessageBox intent="error" title="Räckvidden kunde inte ändras">
+              {fel}
+            </MessageBox>
+          )}
+
           <div className="flex flex-wrap justify-end gap-2">
             <Button intent="ghost" onPress={onStang} isDisabled={laddarUpp}>
               Avbryt
@@ -2479,8 +2681,7 @@ function RackviddsDialog({
               intent="primary"
               isDisabled={laddarUpp}
               onPress={() =>
-                onUpload(
-                  filer,
+                onBekrafta(
                   {
                     rackvidd,
                     // AXLARNA SKICKAS BARA FÖR GEMENSAM, och `undefined`
@@ -2489,16 +2690,27 @@ function RackviddsDialog({
                     // sin tur fältet i Airtable-skrivningen, så "ingen axel" är
                     // samma sak hela vägen ner. En tomsträng hade skrivits som
                     // ett värde och smalnat räckvidden.
+                    //
+                    // [TASK-338.4] I ÄNDRA-LÄGET betyder samma `undefined`
+                    // att axeln RENSAS (`buildScopeUpdateFields`), inte att
+                    // den lämnas orörd — det är därför Lotta kan bredda
+                    // "RIM · Rönninge" tillbaka till bara "Rönninge".
                     kursfamilj: gemensam ? (kursfamilj ?? undefined) : undefined,
                     kursniva: gemensam ? (kursniva ?? undefined) : undefined,
                     plats: gemensam ? (platsId ?? undefined) : undefined,
                   },
                   onStang,
+                  // Samma uppslag sammanfattningsraden redan gör — `valdPlatsNamn`
+                  // är `null` när ingen plats är vald ELLER när listan inte
+                  // hunnit ladda, och i båda fallen är `undefined` rätt: den
+                  // optimistiska badgen visar då platsen utan namn i stället
+                  // för ett namn som kan vara fel.
+                  valdPlatsNamn ?? undefined,
                 )
               }
             >
-              <Upload aria-hidden="true" size={16} className="shrink-0" />
-              {laddarUpp ? 'Laddar upp…' : 'Ladda upp'}
+              {andrar ? null : <Upload aria-hidden="true" size={16} className="shrink-0" />}
+              {andrar ? (laddarUpp ? 'Sparar…' : 'Spara') : laddarUpp ? 'Laddar upp…' : 'Ladda upp'}
             </Button>
           </div>
         </div>
@@ -2528,6 +2740,8 @@ function GemensamtLage({
   replaceMutation,
   onDelete,
   deleteMutation,
+  onAndraRackvidd,
+  scopeMutation,
 }: {
   rader: BilageRad[];
   laddar: boolean;
@@ -2537,6 +2751,8 @@ function GemensamtLage({
   replaceMutation: ReplaceMutation;
   onDelete: (attachmentId: string, namn: string) => void;
   deleteMutation: DeleteMutation;
+  onAndraRackvidd: (rad: Attachment) => void;
+  scopeMutation: ScopeMutation;
 }) {
   // Förvaltningsläget har INGEN filterrad (bara bilagor visas), så det finns
   // inget filter att hoppa mellan — höjdlåsningen är därför OVILLKORAD på
@@ -2619,6 +2835,8 @@ function GemensamtLage({
                     replaceMutation={replaceMutation}
                     onDelete={onDelete}
                     deleteMutation={deleteMutation}
+                    onAndraRackvidd={onAndraRackvidd}
+                    scopeMutation={scopeMutation}
                   />
                 </li>
               ))}
@@ -2650,18 +2868,25 @@ function GemensamBilageRadRow({
   replaceMutation,
   onDelete,
   deleteMutation,
+  onAndraRackvidd,
+  scopeMutation,
 }: {
   rad: BilageRad;
   onReplace: (files: FileList | null, oldAttachmentId: string, scope: UploadScopeVal) => void;
   replaceMutation: ReplaceMutation;
   onDelete: (attachmentId: string, namn: string) => void;
   deleteMutation: DeleteMutation;
+  /** [TASK-338.4] Öppnar RackviddsDialog förifylld med RADENS axlar. */
+  onAndraRackvidd: (rad: Attachment) => void;
+  scopeMutation: ScopeMutation;
 }) {
   const { current, dolda } = rad;
   const ersatterDennaRaden =
     replaceMutation.isPending && replaceMutation.variables?.oldAttachmentId === current.id;
   const raderarDennaRaden =
     deleteMutation.isPending && deleteMutation.variables?.attachmentId === current.id;
+  const andrarDennaRaden =
+    scopeMutation.isPending && scopeMutation.variables?.attachmentId === current.id;
   return (
     <DokumentRadSkal
       namn={current.namn}
@@ -2708,6 +2933,50 @@ function GemensamBilageRadRow({
               )}
             </Button>
           </FileTrigger>
+          {/* [TASK-338.4] ÄNDRA RÄCKVIDD — bara här, aldrig i eventläget.
+              ADR-118 beslut 3 gäller vidare: räckviddsläget ÄR förvaltnings-
+              ytan, och en handling som ändrar vilka event ett dokument gäller
+              hör hemma bland de andra förvaltningshandlingarna, inte i Lottas
+              läsflöde per event. `BilageRadRow` (eventläget) får därför ingen
+              motsvarighet — där är en delad bilaga fortsatt oredigerbar, och
+              badgen bär förklaringen.
+
+              PLACERAD MELLAN Ersätt och Radera, med avsikt: ordningen går
+              från minst till mest ingripande (byt fil → byt spridning → ta
+              bort), och Radera behåller sin plats YTTERST där den suttit
+              sedan TASK-275.3 — muskelminnet för den farligaste knappen
+              flyttas inte.
+
+              EN FEMTE IKON I RADEN. `DokumentRadSkal`s ikonkolumn är
+              `shrink-0` inuti en `flex-wrap`-rad (TASK-309.20), så bredden
+              bryter i stället för att trängas: 5 × 44 px + 4 × 2 px = 228 px
+              mot radens tidigare 182 px. 44 px-golvet är orört (DESIGN-
+              SYSTEM-SPEC.md § checklista) — det är luften och radbrytningen
+              som får ge, aldrig träffytan. Flaggat för Marcus QA-vandring
+              vid smal skärm. */}
+          <Button
+            intent="primary"
+            emphasis="subtle"
+            size="sm"
+            className={IKONKNAPP_KLASS}
+            isDisabled={andrarDennaRaden}
+            aria-label={
+              andrarDennaRaden
+                ? `Ändrar räckvidd för ${current.namn} …`
+                : `Ändra räckvidd för ${current.namn}`
+            }
+            onPress={() => onAndraRackvidd(current)}
+          >
+            {andrarDennaRaden ? (
+              <Loader2
+                aria-hidden="true"
+                size={IKON_STORLEK}
+                className="motion-safe:animate-spin"
+              />
+            ) : (
+              <Target aria-hidden="true" size={IKON_STORLEK} />
+            )}
+          </Button>
           <Button
             intent="danger"
             emphasis="subtle"

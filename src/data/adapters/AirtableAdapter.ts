@@ -3,6 +3,7 @@ import type {
   Attachment,
   AttachmentDownloadUrl,
   DocumentPreview,
+  UpdateAttachmentScopeInput,
   UploadAttachmentInput,
 } from '../../domain/models/Attachment';
 import type {
@@ -960,6 +961,41 @@ export class AirtableAdapter implements DataSourceAdapter {
     // tolkar båda formerna som "inget event angivet", men en explicit
     // `null` är öppen bokföring av avsikten, inte en tyst utelämning.
     await postEdgeFunction<{ deleted: boolean }>('delete-attachment', { eventId, attachmentId });
+  }
+
+  /**
+   * [TASK-338.4, ADR-125 § Beslut 1] Ändra räckvidden på en redan uppladdad
+   * delad bilaga. POST mot update-attachment-scope-EF:en — se
+   * `DataSourceAdapter.updateAttachmentScope` för det fulla kontraktet
+   * (vakterna, och varför tomma axlar RENSAS i stället för att lämnas).
+   *
+   * AXLARNA SKICKAS SOM `undefined` när de inte är satta, aldrig som
+   * tomsträng eller `null`: `postEdgeFunction` serialiserar med
+   * `JSON.stringify`, som UTELÄMNAR `undefined`-nycklar helt, och EF:ens
+   * `AttachmentScopeInputSchema` läser en frånvarande nyckel som "axeln är
+   * inte satt". En tomsträng hade i stället fällts av dess `z.enum`. Samma
+   * form `uploadAttachment` redan bär för samma tre axlar.
+   *
+   * `.parse()` VID DATAGRÄNSEN (ADR-026) via `parsaAttachment` — samma par
+   * (normalisera legacy → validera) som resten av adapterns fem
+   * `Attachment`-parsningar, så en icke-migrerad rad inte kan kasta här och
+   * bara här.
+   */
+  async updateAttachmentScope(input: UpdateAttachmentScopeInput): Promise<Attachment> {
+    const data = await postEdgeFunction<{ attachment: unknown }>('update-attachment-scope', {
+      attachmentId: input.attachmentId,
+      rackvidd: input.rackvidd,
+      kursfamilj: input.kursfamilj,
+      kursniva: input.kursniva,
+      plats: input.plats,
+    });
+    // `inaktuell: null` — SAMMA disciplin som `uploadAttachment`/
+    // `generateEventAttachment` ovan: fältet är HÄRLETT vid listning
+    // (`berikaMedInaktuell`), aldrig lagrat, och den här operationen rör
+    // varken `Mall` eller `Källhash`. En bilaga vars räckvidd just ändrats
+    // har alltså inget nytt att säga om sin aktualitet; `null` betyder
+    // "bedöms inte här", och nästa listning härleder värdet riktigt.
+    return { ...parsaAttachment(data.attachment), inaktuell: null };
   }
 
   /**

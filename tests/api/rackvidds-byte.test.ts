@@ -122,7 +122,9 @@ test.describe('provaRackviddsbyte — hindret ej-gemensam (403)', () => {
   test('legacy Kurstyp SLÄPPS IGENOM — normaliseras till Gemensam', () => {
     // Prod-raderna migreras först i TASK-338.6. Att neka dem hade gjort
     // "Ändra räckvidd" oanvändbar på exakt de rader som mest behöver den.
-    expect(prova({ rackvidd: ATTACHMENT_SCOPE_KURSTYP, ankarNu: ANKARE_RIM, ankarEfter: ANKARE_RIM })).toEqual({
+    expect(
+      prova({ rackvidd: ATTACHMENT_SCOPE_KURSTYP, ankarNu: ANKARE_RIM, ankarEfter: ANKARE_RIM }),
+    ).toEqual({
       tillatet: true,
     });
   });

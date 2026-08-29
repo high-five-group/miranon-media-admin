@@ -108,9 +108,10 @@ function sentinelFilnamn(): string {
 function buildPseudoPdfBase64(totalBytes: number): string {
   const header = '%PDF-1.4\n%';
   const footer = '\n%%EOF';
-  return Buffer.from(header + 'A'.repeat(totalBytes - header.length - footer.length) + footer, 'utf8').toString(
-    'base64',
-  );
+  return Buffer.from(
+    header + 'A'.repeat(totalBytes - header.length - footer.length) + footer,
+    'utf8',
+  ).toString('base64');
 }
 
 /**
@@ -201,7 +202,9 @@ test.describe('update-attachment-scope — skarp conformance (TASK-338.4)', () =
     await stadaGemensam(request, config, jwt, attachmentId);
   });
 
-  test('allow: TILLBAKA till axellös — tomma axlar RENSAS, plats blir null', async ({ request }) => {
+  test('allow: TILLBAKA till axellös — tomma axlar RENSAS, plats blir null', async ({
+    request,
+  }) => {
     const config = getApiConfig();
     const jwt = await getValidUserJWT(request, config);
     const attachmentId = await skapaBilaga(request, config, jwt, {
