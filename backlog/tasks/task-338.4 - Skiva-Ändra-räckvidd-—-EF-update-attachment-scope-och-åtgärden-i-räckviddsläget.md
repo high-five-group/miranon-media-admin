@@ -3,10 +3,10 @@ id: TASK-338.4
 title: >-
   Skiva: Ändra räckvidd — EF update-attachment-scope och åtgärden i
   räckviddsläget
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-29 08:04'
-updated_date: '2026-08-29 12:24'
+updated_date: '2026-08-29 17:16'
 labels:
   - ready-for-agent
 dependencies:

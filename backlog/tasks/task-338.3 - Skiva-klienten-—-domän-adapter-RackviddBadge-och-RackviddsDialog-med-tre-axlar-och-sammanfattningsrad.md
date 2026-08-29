@@ -3,10 +3,10 @@ id: TASK-338.3
 title: >-
   Skiva: klienten — domän, adapter, RackviddBadge och RackviddsDialog med tre
   axlar och sammanfattningsrad
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-29 08:03'
-updated_date: '2026-08-29 12:33'
+updated_date: '2026-08-29 17:16'
 labels:
   - ready-for-agent
 dependencies:
