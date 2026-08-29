@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-29 08:03'
+updated_date: '2026-08-29 08:10'
 labels:
   - ready-for-agent
 dependencies:
@@ -23,9 +24,9 @@ Efter skivan väljer Lotta i uppladdningsdialogen 'Bara detta event' eller 'Dela
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [ ] #1 Dialogen: två radioval + tre valfria Select med defaults; sammanfattningsraden speglar valet live i de fyra formerna ovan; 'Bara detta event' inaktiverat i räckviddsläget (som i dag); tangentbordsvandring och axe-svep gröna i dokument-rackviddsval.acceptance.test.ts
-- [ ] #2 RackviddBadge renderar de fem texterna ur axlarna (enhetstest per form); event-egna får 'Detta event' som i dag; badgen syns i eventläget, räckviddsläget och Åtgärds-sidans bilageväljare
-- [ ] #3 Domän + adapter: AttachmentScope EVENT|GEMENSAM, plats i modellen, legacy-mappning på läsvägen testad; typecheck 0 fel; attachment-layer-independence.test.ts grön
-- [ ] #4 Ytan 'Dokument-ytan /mer/dokument — räckviddsläget (Delade dokument) och eventväljaren' är identisk med facit tasks/sessions/bilagor/s108-dokumentytan/facit.json utom PRD:ns avsiktliga ändringar (tre axlar, sammanfattningsrad, nya badge-former) — avvikelser bokförda i Implementation Notes; aria-/visual-snapshots regenererade via spec-filernas egen mekanism
+- [ ] #2 Domän + adapter: AttachmentScope EVENT|GEMENSAM, plats i modellen, legacy-mappning på läsvägen testad; typecheck 0 fel; attachment-layer-independence.test.ts grön
+- [ ] #3 Ytan 'Dokument-ytan /mer/dokument — räckviddsläget (Delade dokument) och eventväljaren' är identisk med facit tasks/sessions/bilagor/s108-dokumentytan/facit.json utom PRD:ns avsiktliga ändringar (tre axlar, sammanfattningsrad, nya badge-former) — avvikelser bokförda i Implementation Notes; aria-/visual-snapshots regenererade via spec-filernas egen mekanism
+- [ ] #4 RackviddBadge renderar de fem texterna ur axlarna (enhetstest per form); event-egna får 'Detta event' som i dag; badgen syns i eventläget och räckviddsläget — INTE i Åtgärds-sidans bilageväljare (TASK-339, Marcus 2026-08-29 punkt 8)
 <!-- AC:END -->
 
 ## Definition of Done
