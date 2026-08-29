@@ -137,10 +137,13 @@ export const DocumentPreviewSchema = z.object({
    * VALFRI, MED AVSIKT — TVÅ SKÄL, båda mätta och inget av dem hypotetiskt:
    *   1. `preview-receipt` delar detta schema och bär INGEN hash (kvittots
    *      utkast promoveras aldrig, PRD § Utanför omfattningen).
-   *   2. `TASK-340.1` är i skrivande stund OLANDAD (PR `#2083`), så den
-   *      DEPLOYADE staging-EF:en svarar fortfarande utan fältet. Ett
-   *      obligatoriskt fält hade brutit varje förhandsgranskning tills
-   *      EF:en deployats.
+   *   2. LANDNING ÄR INTE DEPLOY. `TASK-340.1` landade i `main` 2026-08-29
+   *      (PR `#2083`, `0f101a0d` + `873efad9`), men Edge Functions deployas
+   *      i en EGEN kadens (`scripts/fas4-prod-deploy.sh`, staging via sin
+   *      egen väg) — koden i `main` säger alltså ingenting om vad den
+   *      körande EF:en svarar just nu. Ett obligatoriskt fält hade brutit
+   *      varje förhandsgranskning i fönstret mellan merge och deploy, och
+   *      igen vid varje rollback.
    *
    * FORMEN VALIDERAS INTE HÄR, och det är ett medvetet val. EF:en avvisar en
    * icke-kanonisk `kallhash` med 400 (`arKanoniskKallhash` i

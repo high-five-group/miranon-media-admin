@@ -27,28 +27,41 @@ export interface GenereraEventBilagaInput {
   kallhash?: string;
 }
 
-export interface GenereradEventBilaga extends SkapadEventBilaga {
-  /** Signerad nedladdnings-URL till den NYSS skapade filen (`getAttachmentDownloadUrl`) —
-   *  bekräftelseytans "Visa dokumentet" öppnar den i ETT direkt klick, på Lottas
-   *  egen knapptryckning (TASK-340.2 — se `GenereringsVy.tsx`s
-   *  `startaSkapande`-docblock för varför ingen `window.open` sker i mutationens
-   *  egen väg längre). */
-  url: string;
-}
+/**
+ * [OMSKRIVEN, TASK-340.2 review-runda 2] Typen bar tidigare ett `url`-fält:
+ * en signerad nedladdnings-URL som hämtades HÄR, direkt efter skapandet, och
+ * som bekräftelseytan sedan höll i sitt state tills Lotta klickade "Visa
+ * dokumentet".
+ *
+ * DEN FORMEN VAR EN TIDSINSTÄLLD DEFEKT. Signerade Storage-URL:er lever
+ * **300 sekunder** (`SIGNED_DOWNLOAD_URL_TTL_SECONDS`,
+ * `supabase/functions/_shared/attachments.ts`). Bekräftelsen är däremot en
+ * yta Lotta får STÅ KVAR på — det är hela poängen med att inte omdirigera
+ * henne — så ett klick fem minuter senare hade öppnat en flik mot en utgången
+ * URL: ett rått Storage-fel i ett nytt fönster, utan besked i appen och utan
+ * väg vidare. Fönstret blir inte tomt; det blir FEL, vilket är värre.
+ *
+ * Fältet är därför BORTA, och med det hämtningen: bekräftelsen lagrar bara
+ * `attachment.id` och hämtar en FÄRSK URL vid varje klick, genom husets
+ * befintliga `useForhandsvisaDokument` (samma väg dokumentlistans Öppna-ikon
+ * går, `DokumentYta.tsx` § IKONPAR). Att hämta en URL vid Skapa som ingen
+ * längre läser vore dessutom ett nätverksanrop för ingenting.
+ */
+export type GenereradEventBilaga = SkapadEventBilaga;
 
 /**
  * Mutation: "Skapa" i genereringsvyn (TASK-309.6, AC #3, ADR-125 § 5) —
  * skapar eller ERSÄTTER en Event-mallad Bilagor-rad ur eventets riktiga
- * data, sparar ev. markerade block som platsens nya standard, och slår upp
- * den färdiga filens nedladdnings-URL.
+ * data och sparar ev. markerade block som platsens nya standard.
  *
  * ── VAD SOM ÄNDRADES I TASK-340.2, OCH VARFÖR DEN GAMLA LYDELSEN VAR FEL ──
  *
  * Docblocket sade fram till denna skiva: *"Skapar ALLTID en ny rad (aldrig
  * `ersatt`) — upprepade klick kan ge dubbletter, samma synliga '+N äldre
  * filer'-grupp uppladdade filer redan delar."* Det var en sann beskrivning
- * av en DEFEKT, inte av ett designval, och det blir dessutom FALSKT när
- * `TASK-340.1` landar: SERVERN slår själv upp en befintlig Event-mallad rad
+ * av en DEFEKT, inte av ett designval, och det är dessutom FALSKT sedan
+ * `TASK-340.1` landade (`main`, 2026-08-29, PR `#2083`): SERVERN slår
+ * själv upp en befintlig Event-mallad rad
  * för (event × `Mall`) och går sin ersätt-väg när en finns — svaret bär
  * `ersatte: true` och status **200** i stället för **201**. Klienten kan
  * alltså inte längre skapa en dubblett av misstag.
@@ -107,8 +120,10 @@ export function useGenereraEventBilaga(eventId: string) {
         await dataSource.savePlaceStandard({ eventId, falt: platsFalt });
       }
 
-      const { url } = await dataSource.getAttachmentDownloadUrl(eventId, skapad.attachment.id);
-      return { ...skapad, url };
+      // INGEN `getAttachmentDownloadUrl` HÄR — se `GenereradEventBilaga`s
+      // docblock: en URL hämtad nu är utgången om fem minuter, och
+      // bekräftelseytan är byggd för att Lotta ska kunna stå kvar.
+      return skapad;
     },
 
     onSettled: (_data, _error, variables) => {

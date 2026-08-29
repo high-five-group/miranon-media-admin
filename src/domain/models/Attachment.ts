@@ -182,8 +182,9 @@ export interface DocumentPreview {
    * [TILLÄGG, TASK-340.1 → TASK-340.2] Underlagets `Källhash`. Klienten
    * skickar tillbaka den vid Skapa så EF:en kan PROMOVERA de granskade
    * bytesen i stället för att rendera om. VALFRI: `preview-receipt` bär
-   * ingen hash, och den deployade EF:en svarar utan fältet tills
-   * `TASK-340.1` landat. Parallell sanningskälla + hela resonemanget:
+   * ingen hash, och den DEPLOYADE EF:en kan svara utan fältet även efter
+   * att `TASK-340.1` landat i `main` (landning ≠ deploy). Parallell
+   * sanningskälla + hela resonemanget:
    * `../schemas/Attachment.schema.ts` § `DocumentPreviewSchema`.
    */
   kallhash?: string;

@@ -85,6 +85,7 @@ import { SidRamKnapp } from '@/components/primitives/SidRam';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { mallIdFranAirtableOption } from '@/data/adapters/mallKallhash';
 import { useForhandsgranskaBilaga } from '@/data/mutations/useForhandsgranskaBilaga';
+import { useForhandsvisaDokument } from '@/data/mutations/useForhandsvisaDokument';
 import { useGenereraEventBilaga } from '@/data/mutations/useGenereraEventBilaga';
 import { useSaveEventText } from '@/data/mutations/useSaveEventText';
 import { useDocumentSources } from '@/data/queries/useDocumentSources';
@@ -380,10 +381,18 @@ type Resultat =
       /** Webbläsaren stoppade den automatiska öppningen — knappen bär vägen in. */
       blockerad: boolean;
     }
-  /** Dokumentet är sparat — bekräftelseytan ERSÄTTER formuläret (PRD § Bekräftelsen på plats). */
+  /** Dokumentet är sparat — bekräftelseytan ERSÄTTER formuläret (PRD § Bekräftelsen på plats).
+   *
+   *  [RÄTTAT, review-runda 2] Grenen bar tidigare en `url` — den signerade
+   *  nedladdnings-URL som hämtades vid Skapa. Den levde **300 sekunder**
+   *  (`SIGNED_DOWNLOAD_URL_TTL_SECONDS`), medan bekräftelsen är en yta Lotta
+   *  får stå kvar på hur länge hon vill: ett klick sex minuter senare hade
+   *  öppnat en flik mot en utgången URL, alltså ett rått Storage-fel utan
+   *  besked i appen. Grenen bär nu `attachmentId`, och "Visa dokumentet"
+   *  hämtar en FÄRSK URL vid varje klick (`useForhandsvisaDokument`). */
   | {
       typ: 'skapad';
-      url: string;
+      attachmentId: string;
       /** Utkastets bytes kopierades — den sparade filen ÄR den granskade filen. */
       promoverad: boolean;
       /** Underlaget hade ändrats sedan förhandsgranskningen → dokumentet gjordes om. */
@@ -659,6 +668,12 @@ export function GenereringsVy({
   const andraKnappRef = useRef<HTMLButtonElement>(null);
   const [resultat, setResultat] = useState<Resultat | null>(null);
   const forhandsgranska = useForhandsgranskaBilaga();
+  /* [review-runda 2] Bekräftelsens "Visa dokumentet" går husets befintliga
+     öppna-väg i stället för att öppna en URL som frystes vid Skapa — se
+     knappens egen kommentar nedan för TTL-resonemanget. Hooken ÅTERANVÄNDS
+     (`DokumentYta.tsx` § IKONPAR är dess andra anropare); ingen egen
+     hämtväg, ingen duplicerad felhantering. */
+  const forhandsvisa = useForhandsvisaDokument();
   const saveEventText = useSaveEventText(event.id);
   const genereraBilaga = useGenereraEventBilaga(event.id);
 
@@ -957,11 +972,11 @@ export function GenereringsVy({
         ...(kallhash !== null ? { kallhash } : {}),
       },
       {
-        onSuccess: ({ url, promoverad, underlagAndrat, ersatte }) => {
+        onSuccess: ({ attachment, promoverad, underlagAndrat, ersatte }) => {
           setSomStandard(new Set());
           setResultat({
             typ: 'skapad',
-            url,
+            attachmentId: attachment.id,
             promoverad,
             underlagAndrat,
             ersatte,
@@ -1105,18 +1120,71 @@ export function GenereringsVy({
             {skapad.utelamnade.length > 0 && ` Utan ${ochLista(skapad.utelamnade)}.`}
             {skapad.underlagAndrat &&
               ' Underlaget hade ändrats sedan förhandsgranskningen, så dokumentet gjordes om. Förhandsgranska gärna igen.'}
-            {skapad.ersatte && ' Den ersätter den tidigare bilagan.'}
+            {skapad.ersatte && ' Den ersatte den tidigare bilagan.'}
             {skapad.sparade.length > 0 &&
               ` ${event.ort} har nu ${ochLista(skapad.sparade)} som standard.`}
           </MessageBox>
+          {/* FÖNSTRET BLOCKERADES — felet hör hemma i ytan Lotta tittar på.
+              `useForhandsvisaDokument` kastar ett Gunilla-läsbart fel när
+              `window.open` gav `null`, och skriver dessutom sitt eget besked
+              i fliken när den finns (se hookens docblock om den medvetna
+              dubbleringen: vilken yta Lotta faktiskt SER går inte att veta).
+              Samma plats som förhandsgranskningens `blockerad`-fallback fyller
+              i formuläret, fast här i bekräftelsen. */}
+          {forhandsvisa.isError && (
+            <MessageBox intent="error">
+              {forhandsvisa.error instanceof Error
+                ? forhandsvisa.error.message
+                : 'Dokumentet kunde inte öppnas. Försök igen.'}
+            </MessageBox>
+          )}
           <div className="flex flex-wrap items-center gap-2">
-            {/* ETT DIREKT KLICK, ingen popup-blockerare att smita förbi:
-                `window.open` sker i Lottas EGEN knapptryckning. `noreferrer`
-                utelämnas medvetet — målet är alltid en signerad Storage-URL i
-                vår egen bucket (`ADR-124`), aldrig en främmande adress (samma
-                resonemang som DokumentYta § IKONPAR). */}
-            <Button intent="primary" onPress={() => window.open(skapad.url, '_blank')}>
-              <ExternalLink aria-hidden="true" size={16} className="shrink-0" />
+            {/* HUSETS ÖPPNA-MÖNSTER, INTE EN LAGRAD URL (review-runda 2).
+                `window.open('', '_blank')` SYNKRONT i klicket (popup-skyddet
+                stänger user-activation-fönstret så fort ett svar dröjer),
+                laddningssida direkt, och FÄRSK signerad URL hämtad av
+                `useForhandsvisaDokument` — exakt samma väg och samma hook som
+                dokumentlistans Öppna-ikon (`DokumentYta.tsx` § IKONPAR).
+
+                VARFÖR INTE EN URL LAGRAD VID SKAPA: signerade Storage-URL:er
+                lever 300 sekunder (`SIGNED_DOWNLOAD_URL_TTL_SECONDS`), och
+                bekräftelsen är hela poängen med att INTE omdirigera Lotta —
+                hon får stå kvar hur länge hon vill. En lagrad URL hade därför
+                gett en död flik med ett rått Storage-fel efter fem minuter,
+                utan besked i appen. Varje klick hämtar i stället en ny URL;
+                kostnaden är ett nätverksanrop, vinsten är att knappen aldrig
+                kan peka på något utgånget.
+
+                `noopener`/`noreferrer` utelämnas medvetet: målet är alltid en
+                signerad Storage-URL i vår egen bucket (`ADR-124`), aldrig en
+                främmande adress — och `noopener` gör dessutom `window.open`
+                till `null` (mätt, se `useForhandsvisaDokument`s docblock),
+                vilket är oförenligt med att navigera handtaget efteråt. */}
+            <Button
+              intent="primary"
+              aria-disabled={forhandsvisa.isPending}
+              onPress={() => {
+                if (forhandsvisa.isPending) return;
+                const handle = window.open('', '_blank');
+                skrivLaddningssida(handle, {
+                  titel: 'Öppnar dokument…',
+                  text: `${vantehalsning(forNamn)}dokumentet öppnas här om några sekunder.`,
+                });
+                forhandsvisa.mutate({
+                  kalla: { typ: 'bilaga', eventId: event.id, attachmentId: skapad.attachmentId },
+                  handle,
+                });
+              }}
+            >
+              {forhandsvisa.isPending ? (
+                <Loader2
+                  aria-hidden="true"
+                  size={16}
+                  className="shrink-0 motion-safe:animate-spin"
+                />
+              ) : (
+                <ExternalLink aria-hidden="true" size={16} className="shrink-0" />
+              )}
               Visa dokumentet
             </Button>
             <Button intent="secondary" onPress={onTillDokumenten}>

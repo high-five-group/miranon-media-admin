@@ -48,9 +48,30 @@ import { expect, type Page, test } from './acceptance-bas';
  * handler rapporteras utanför testets egen assertion-kedja och kan tystas.
  */
 
-const NEDLADDNINGS_URL = 'https://storage.example.test/bekraftelsebilaga-skarp.pdf';
+/** En NY signerad URL per anrop — se `mockaFlodet` § nedladdningsAnrop. */
+const nedladdningsUrl = (n: number) =>
+  `https://storage.example.test/bekraftelsebilaga-skarp-${n}.pdf`;
 const PREVIEW_URL = 'https://storage.example.test/preview-bekraftelse.pdf';
 const KALLHASH = 'a'.repeat(64);
+
+/**
+ * De signerade PDF-adresserna är INTE Edge Functions utan de faktiska mål
+ * flikarna navigerar till. Hermetik-vakten fäller varje omockat anrop, och
+ * svaret måste vara `text/plain` — `application/pdf` låter Chromes egen
+ * PDF-visare ta över navigeringen och störa load-livscykeln (mätt,
+ * TASK-309.26; hela resonemanget i
+ * `dokument-generering-fonster-direkt.acceptance.test.ts` § mockaLagradPdf).
+ */
+function mockaLagradPdf(url: string) {
+  return http.get(
+    url,
+    () =>
+      new HttpResponse('fejk-innehall-for-test', {
+        status: 200,
+        headers: { 'content-type': 'text/plain' },
+      }),
+  );
+}
 
 /**
  * TVÅ KÄLLOR TILL "EVENTET", OCH BARA DEN ENA STYR YTAN — en fälla värd att
@@ -147,8 +168,17 @@ function mockaFlodet(
     sources?: DocumentSources;
     status?: 200 | 201;
   },
-): { skarpKropp: () => Record<string, unknown> | null } {
+): {
+  skarpKropp: () => Record<string, unknown> | null;
+  nedladdningsAnrop: () => number;
+} {
   let skarpKropp: Record<string, unknown> | null = null;
+  // VARJE anrop får en EGEN URL. Det är simuleringen av TTL:en: en signerad
+  // Storage-URL lever 300 s, så servern ger en NY adress varje gång man
+  // frågar. En yta som lagrat sitt svar visar därför alltid den FÖRSTA
+  // adressen, medan en yta som frågar om öppnar den SENASTE — skillnaden är
+  // mätbar utan att testet behöver vänta fem minuter.
+  let nedladdningsAnrop = 0;
 
   network.use(
     http.get(EF('get-document-sources'), () =>
@@ -177,26 +207,17 @@ function mockaFlodet(
         opt?.status ?? 201,
       );
     }),
-    http.get(EF('get-attachment-download-url'), () =>
-      json({ url: NEDLADDNINGS_URL, expiresInSeconds: 300 }),
-    ),
-    // Den signerade PDF-URL:en är INTE en Edge Function utan den faktiska
-    // adress förhandsgranskningens flik navigerar till. Hermetik-vakten
-    // fäller varje omockat anrop, så den behöver sin egen handler — och
-    // `text/plain` (inte `application/pdf`), annars tar Chromes PDF-visare
-    // över navigeringen och stör load-livscykeln. Hela resonemanget:
-    // `dokument-generering-fonster-direkt.acceptance.test.ts` § mockaLagradPdf.
-    http.get(
-      PREVIEW_URL,
-      () =>
-        new HttpResponse('fejk-innehall-for-test', {
-          status: 200,
-          headers: { 'content-type': 'text/plain' },
-        }),
-    ),
+    http.get(EF('get-attachment-download-url'), () => {
+      nedladdningsAnrop += 1;
+      return json({ url: nedladdningsUrl(nedladdningsAnrop), expiresInSeconds: 300 });
+    }),
+    mockaLagradPdf(PREVIEW_URL),
+    mockaLagradPdf(nedladdningsUrl(1)),
+    mockaLagradPdf(nedladdningsUrl(2)),
+    mockaLagradPdf(nedladdningsUrl(3)),
   );
 
-  return { skarpKropp: () => skarpKropp };
+  return { skarpKropp: () => skarpKropp, nedladdningsAnrop: () => nedladdningsAnrop };
 }
 
 async function oppnaGenerering(page: Page, mall: 'bekraftelse' | 'deltagarinfo' = 'bekraftelse') {
@@ -308,6 +329,81 @@ test.describe('Genereringsvyn — bekräftelsen på plats (TASK-340.2)', () => {
     await expect(bekraftelse.getByRole('button', { name: 'Till dokumenten' })).toBeVisible();
   });
 
+  test('review-runda 2: "Visa dokumentet" hämtar en FÄRSK signerad URL vid VARJE klick', async ({
+    page,
+    context,
+    network,
+  }) => {
+    /*
+     * DEN TIDSINSTÄLLDA DEFEKT DENNA RUNDA RÖJDE UNDAN. Bekräftelsen höll
+     * först den URL som hämtades vid Skapa. Signerade Storage-URL:er lever
+     * **300 sekunder** (`SIGNED_DOWNLOAD_URL_TTL_SECONDS`) — och bekräftelsen
+     * är just den yta Lotta får STÅ KVAR på, eftersom vi medvetet inte
+     * omdirigerar henne. Ett klick sex minuter senare hade därför öppnat en
+     * flik mot en utgången adress: ett rått Storage-fel, i ett nytt fönster,
+     * utan besked i appen.
+     *
+     * TESTET SIMULERAR TIDEN UTAN ATT VÄNTA. Fixturen ger en NY adress vid
+     * varje `get-attachment-download-url` — precis som en riktig server gör,
+     * eftersom varje signering är ny. Tre mätpunkter faller då ut:
+     *
+     *   1. Skapa hämtar INGEN URL alls (`nedladdningsAnrop() === 0`) — det
+     *      finns ingenting lagrat som KAN hinna gå ut.
+     *   2. Första klicket hämtar adress nr 1 och navigerar dit.
+     *   3. ANDRA klicket hämtar adress nr 2 och navigerar till DEN. Hade ytan
+     *      lagrat sitt svar skulle andra fliken visat adress nr 1 igen — det
+     *      är exakt den skillnad en utgången URL gör i skarp drift.
+     */
+    const { nedladdningsAnrop } = mockaFlodet(network);
+    await oppnaGenerering(page);
+    await page.getByRole('button', { name: 'Skapa bekräftelsebilaga' }).click();
+    await expect(page.getByTestId('bekraftelse')).toBeVisible();
+
+    // (1) Ingenting hämtat vid Skapa — inget att frysa.
+    expect(nedladdningsAnrop()).toBe(0);
+
+    // (2) Första klicket: fönstret öppnas SYNKRONT (popup-skyddet), bär en
+    //     läsbar laddningssida, och navigerar till den nyss hämtade adressen.
+    const [forstaFliken] = await Promise.all([
+      context.waitForEvent('page'),
+      page.getByRole('button', { name: 'Visa dokumentet' }).click(),
+    ]);
+    await expect.poll(() => forstaFliken.url(), { timeout: 10_000 }).toBe(nedladdningsUrl(1));
+    expect(nedladdningsAnrop()).toBe(1);
+
+    // (3) Andra klicket: en NY adress, inte den lagrade.
+    const [andraFliken] = await Promise.all([
+      context.waitForEvent('page'),
+      page.getByRole('button', { name: 'Visa dokumentet' }).click(),
+    ]);
+    await expect.poll(() => andraFliken.url(), { timeout: 10_000 }).toBe(nedladdningsUrl(2));
+    expect(nedladdningsAnrop()).toBe(2);
+    expect(nedladdningsUrl(2)).not.toBe(nedladdningsUrl(1));
+  });
+
+  test('review-runda 2: blockerat fönster vid "Visa dokumentet" visar felet I YTAN', async ({
+    page,
+    network,
+  }) => {
+    // Popup-skyddet ger `window.open` → `null`. `useForhandsvisaDokument`
+    // kastar då ett Gunilla-läsbart fel, och bekräftelseytan bär det — samma
+    // `blockerad`-princip som förhandsgranskningens ruta, fast här finns
+    // ingen flik att skriva i, så appens egen yta är enda platsen.
+    mockaFlodet(network);
+    await oppnaGenerering(page);
+    await page.getByRole('button', { name: 'Skapa bekräftelsebilaga' }).click();
+    await expect(page.getByTestId('bekraftelse')).toBeVisible();
+
+    await page.evaluate(() => {
+      window.open = () => null;
+    });
+    await page.getByRole('button', { name: 'Visa dokumentet' }).click();
+
+    await expect(
+      page.getByText('Webbläsaren blockerade den nya fliken.', { exact: false }),
+    ).toBeVisible();
+  });
+
   test('AC #2: textvarianten för PROMOVERAD är basbeskedet, utan omgjord-mening', async ({
     page,
     network,
@@ -325,7 +421,7 @@ test.describe('Genereringsvyn — bekräftelsen på plats (TASK-340.2)', () => {
     // bekräftelse-docblock): normalfallet berättas inte, avvikelserna gör det.
     // Att INGEN av de tre andra meningarna står här är dess textvariant.
     await expect(bekraftelse.getByText('gjordes om')).toHaveCount(0);
-    await expect(bekraftelse.getByText('ersätter den tidigare')).toHaveCount(0);
+    await expect(bekraftelse.getByText('ersatte den tidigare')).toHaveCount(0);
     await expect(bekraftelse.getByText('som standard')).toHaveCount(0);
   });
 
@@ -362,7 +458,7 @@ test.describe('Genereringsvyn — bekräftelsen på plats (TASK-340.2)', () => {
     await page.getByRole('button', { name: 'Skapa om bekräftelsebilagan' }).click();
 
     const bekraftelse = page.getByTestId('bekraftelse');
-    await expect(bekraftelse.getByText('Den ersätter den tidigare bilagan.')).toBeVisible();
+    await expect(bekraftelse.getByText('Den ersatte den tidigare bilagan.')).toBeVisible();
     await expect(bekraftelse.getByText('Bekräftelsebilagan är sparad')).toBeVisible();
   });
 
@@ -638,9 +734,16 @@ test.describe('Genereringsvyn — bekräftelsen på plats (TASK-340.2)', () => {
     await expect(page.getByTestId('dokument-yta')).toBeVisible();
 
     // Mallkatalogens entré sätter `?vy`/`?mall` → href ändras → regionen får
-    // "Dokument" för första gången. DEN annonseringen är väntad och mäts här
-    // som kontrollpunkt: mekanismen ÄR igång.
-    await nollstallAnnonseringar(page);
+    // "Dokument". KONTROLLPUNKT: mekanismen ÄR igång innan vi mäter nollan.
+    //
+    // Loggen NOLLSTÄLLS INTE här, med avsikt. Exakt VILKEN href-ändring som
+    // först ger regionen sitt värde är inte fastställt — nuqs kan normalisera
+    // adressen redan vid montering av listan, alltså före klicket (mätt: en
+    // reset före klicket gjorde kontrollpunkten tom, medan hela loggen bar
+    // annonseringen). Kontrollpunkten gäller ATT regionen bär "Dokument" när
+    // vi står i genereringsvyn, inte vid vilket av två likvärdiga ögonblick
+    // den fick det. Mätningen som AC #4 hänger på — nollan nedan — har sin
+    // egen reset omedelbart före sin egen handling.
     await page.getByRole('button', { name: 'Skapa Bekräftelsebilaga' }).first().click();
     await expect(page.getByTestId('generering-vy')).toBeVisible();
     await expect(page.getByText('Hämtar underlag …')).toHaveCount(0);

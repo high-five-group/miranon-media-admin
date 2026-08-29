@@ -53,11 +53,14 @@ export function mallIdFranAirtableOption(mall: string | null): MallId | null {
  * SPEGEL AV `_shared/promoveringsbeslut.ts` § `KALLHASH_FORM`, MEDVETET
  * DUPLICERAD OCH INTE IMPORTERAD. Resten av denna fil importerar visserligen
  * rakt ur `supabase/functions/_shared/` (mirror-kontraktet i filhuvudet
- * ovan) — men `promoveringsbeslut.ts` föds i `TASK-340.1`, som ännu inte är
- * landad (PR `#2083`). En import därifrån hade gjort DENNA gren
- * obyggbar. Formen är dessutom inte en delad ALGORITM utan SHA-256:s egen
- * hex-form: två rader som beskriver samma naturkonstant kan inte glida isär
- * på det sätt två hash-BERÄKNINGAR kan.
+ * ovan) — men `promoveringsbeslut.ts` föddes i `TASK-340.1`, som INTE fanns
+ * i denna grens bas (`73d23930`); den landade i `main` först 2026-08-29
+ * (PR `#2083`), efter att denna fil skrevs. En import därifrån hade gjort
+ * DENNA gren obyggbar. Formen är dessutom inte en delad ALGORITM utan
+ * SHA-256:s egen hex-form: två rader som beskriver samma naturkonstant kan
+ * inte glida isär på det sätt två hash-BERÄKNINGAR kan. Att konsolidera
+ * till en import när grenarna mötts är ett eget, litet beslut — inte något
+ * denna skiva kan göra mot en fil den inte har.
  */
 const KALLHASH_FORM = /^[0-9a-f]{64}$/;
 
