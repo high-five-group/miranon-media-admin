@@ -15,7 +15,8 @@
 
 ## Aktuellt fokus
 
-**Session 113 ⏸️ PAUSAD (paus 1, 2026-08-29 ~14:00 UTC, `lifecycle: paused`) —
+**Session 113 🔄 ÅTERUPPTAGEN (paus 1 avslutad 2026-08-29 ~15:00 UTC,
+`lifecycle: active`; paus-PR `#2108` mergad, `origin/main` `1b0b091f`) —
 BILAGESPÅRETS PROD-RÖKTEST: ÅTTA PUNKTER, SEX I PROD-BYGGET, TVÅ VÄNTAR MARCUS
 PROD-MOMENT.** Marcus fem+tre röktest-noteringar → 20 landade PR:er samma dag
 (`#2074`–`#2107`): `309.38` väntetext + Förhandsgranska · `309.39` höjdlåset
@@ -30,7 +31,8 @@ prod-moment (`338.6` runbook i kortet, briefing i chatten). Trådar `T176`,
 `T177`; kort `309.41`, `341`, `342`; 8 lessons-fragment. **Numrering:** ADR
 128 · kort 343/309.42 · L655 · T178 · session 113. **NÄSTA:** resume →
 Marcus prod-steg → armera `#2094`/`#2103` → andra EF-deploy → testrundan.
-HANDOFF: sessionsdok S113 § PAUSLÄGE. Full narrativ: Del 1–5.
+HANDOFF: sessionsdok S113 § Paushistorik (historik-form efter resume).
+Full narrativ: Del 1–5.
 
 **Session 112 ⏸️ PAUSAD (paus 3, 2026-08-28 ~16:30, `lifecycle: paused`; resume 2 körd AFK på
 fullt mandat — "du bestämmer") — AFK-VÅG 5 LANDAD: FLASKHALSEN BRUTEN, REVIEW-GRINDEN MEKANISK,
