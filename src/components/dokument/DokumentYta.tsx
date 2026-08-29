@@ -356,6 +356,13 @@ function grupperaPerNamn(attachments: readonly Attachment[]): BilageRad[] {
 export function DokumentYta() {
   const dataSource = useDataSource();
   const [eventId, setEventId] = useQueryState('event');
+  // [TASK-309.40] Bara SETTERN behövs här — `typ` LÄSES av `DokumentLista`
+  // (dess egen `useQueryState('typ')`, längre ner i filen); den skrivs HÄR,
+  // av `handleRackviddsByte` nedan. nuqs synkar flera `useQueryState('typ')`-
+  // instanser mot samma URL-nyckel (samma mönster som `dokument.tsx`s
+  // routekomponent redan delar `event` med denna komponent), så ingen
+  // prop-tunnling eller lyft av `DokumentLista`s state krävs.
+  const [, setFilter] = useQueryState('typ');
 
   const eventsQuery = useQuery({
     queryKey: queryKeys.events.list,
@@ -411,6 +418,39 @@ export function DokumentYta() {
   // eller inte, och två monterade dialoger (en per läge) hade kunnat glida
   // isär precis som de två radkomponenterna gjorde före S107:s fjärde rond.
   const [valdaFiler, setValdaFiler] = useState<FileList | null>(null);
+
+  /**
+   * [TASK-309.40] RÄCKVIDDSVÄXLINGENS EN HANDLER — nollställer typfiltret
+   * (nuqs-nyckeln `typ`, se `DokumentLista`s `useQueryState('typ')` längre
+   * ner) vid VARJE byte av räckvidd, i BÅDA riktningarna: delade → event,
+   * event → delade, och event → annat event.
+   *
+   * VARFÖR: `?typ=` överlevde tidigare ett räckviddsbyte eftersom nuqs-
+   * nyckeln inte hör till komponent-livscykeln — den läses/skrivs via URL:en,
+   * inte via ett state som nollställs vid unmount — och räckviddsläget
+   * (`GemensamtLage`) har ingen filterrad som avslöjar att filtret
+   * fortfarande är satt. Följd (TASK-309.39:s diagnos): Lotta byter från
+   * Delade dokument till ett event och får ett "Bilagor"-filter kvar från
+   * förra sammanhanget utan att se varför listan plötsligt är smalare.
+   *
+   * PRODUKTBESLUTET (review-agenten klassade frågan `ask-user`; orkestreraren
+   * avgjorde på Marcus mandat, TASK-309.40 kortets Description): filtret
+   * nollställs till 'alla' vid räckviddsbyte. Det gäller INTE navigering IN
+   * i vyn — en direktlänk med `?typ=bilaga` (TASK-340.2s "Till dokumenten")
+   * ska fortsätta fungera, eftersom en sidladdning aldrig passerar denna
+   * handler (den körs bara vid ett VAL i `EventValjare`, inte vid mount).
+   *
+   * EN KODVÄG, INTE FLERA: `onByte` (event → event/delade → event) och
+   * `gemensamtAlternativ.onValj` ("Delade dokument") är `EventValjare`s
+   * ENDA två anropsvägar in i ett räckviddsbyte (se dess `onSelectionChange`
+   * — sentinel-grenen ELLER event-grenen, aldrig båda för samma klick), och
+   * båda pekar hit i stället för att duplicera nollställningen i två
+   * komponenter.
+   */
+  const handleRackviddsByte = (nastaEventId: string | null) => {
+    void setEventId(nastaEventId);
+    void setFilter(null);
+  };
 
   const handleUpload = (files: FileList | null, scope: UploadScopeVal, onKlart?: () => void) => {
     const file = files?.[0];
@@ -496,7 +536,7 @@ export function DokumentYta() {
           form="fristaende"
           valtEventId={eventId ?? undefined}
           valtEvent={valtEvent}
-          onByte={(id) => void setEventId(id)}
+          onByte={(id) => handleRackviddsByte(id)}
           gemensamtAlternativ={{
             // "Delade dokument", inte "Gemensamma dokument" (Marcus 2026-08-18).
             // MODELLBEGREPPET är oförändrat: ORDLISTA.md § Gemensam bilaga och
@@ -509,7 +549,7 @@ export function DokumentYta() {
             // event. `Layers` var upptaget av segment-byggarens lager-begrepp.
             // Storleken 18 speglar kalenderikonens i väljarens tomma läge.
             ikon: <Files aria-hidden="true" size={18} className="shrink-0" />,
-            onValj: () => void setEventId(null),
+            onValj: () => handleRackviddsByte(null),
           }}
         />
 
