@@ -23,8 +23,8 @@
 // Att ankaret är oförändrat inom Gemensam-grenen är INTE gratis, det är
 // MÄTT mot `buildStorageAnchor`s egen kod: grenen ger `kurstyp/<slug>` när
 // `kursfamilj` är satt, annars `alla-event` — alltså KAN en ändring av
-// FAMILJE-axeln flytta ankaret. Se § ANKAR-INVARIANTEN nedan för guarden
-// som håller det.
+// FAMILJE-axeln flytta ankaret. Hindret `ankar-flytt` i
+// `provaRackviddsbyte` håller det.
 //
 // ═══ VAKTERNA (SECURITY-SPEC §6.10 "guard"), I ORDNING ═══
 //   1. `attachmentId` måste ha rec-formen                      → 400
@@ -33,24 +33,23 @@
 //      upload-attachment/finalize-attachment-upload, aldrig en kopia)  → 400
 //   3. Målräckvidden måste normalisera till `Gemensam`         → 400
 //   4. Raden måste finnas                                       → 404
-//   5. RADENS räckvidd måste vara gemensam (`arGemensam` efter
-//      `normaliseraRackvidd` — samma delade predikat delete-attachment
-//      läser, aldrig en egen uppräkning av legacy-värdena)      → 403
-//   6. RADENS `Dokumentklass` måste vara `Uppladdad`            → 403
-//   7. `plats` måste FINNAS i Platser (`platsFinns`)            → 404
-//   8. ANKAR-INVARIANTEN: den nya familje-axeln får inte flytta
-//      storage-ankaret                                          → 409
+//   5. `provaRackviddsbyte` (_shared/rackvidd-matchning.ts) — de TRE
+//      rad-beroende hindren, som EN ren funktion:
+//        `ej-gemensam`        radens egen räckvidd är inte Gemensam  → 403
+//        `fel-dokumentklass`  radens klass är inte `Uppladdad`       → 403
+//        `ankar-flytt`        familje-bytet skulle flytta storage-
+//                             ankaret från filens faktiska bytes     → 409
+//   6. `plats` måste FINNAS i Platser (`platsFinns`)            → 404
+//   7. `fields` mot `field-allowlists` (SSOT-grind)            → 400
 //
-// VAKT 6 FÖRTJÄNAR SIN EGEN RAD. En `Event-mallad` bilaga (klass B) fylls
-// ur mall-renderaren vid varje generering (`generate-event-attachment`,
-// ADR-125 § Beslut 3) och hör ALLTID till sitt event; en
-// `Person-genererad` (klass C) hör till en anmälan. Att låta någon av dem
-// få en filter-räckvidd hade lagt ett enskilt events kvitto eller
-// bekräftelsebilaga i VARJE Rönninge-events dokumentlista och därmed i
-// utskicken. Dokumentklassen är ortogonal mot räckvidden (ADR-118 beslut 4)
-// — den här EF:en är den ENDA platsen där de två möts, och den möts
-// fail-closed: `null`/okänd klass avvisas också, eftersom en rad vi inte
-// kan klassa inte heller kan bedömas som säker att bredda.
+// VAKTERNA BOR I `provaRackviddsbyte` OCH INTE HÄR av ett testbarhets-skäl
+// som är värt att förstå innan någon "förenklar" tillbaka dem hit: ett av
+// hindren (`fel-dokumentklass`) kan INGEN av våra EF:er framkalla, eftersom
+// ingen skrivväg producerar en rad som är både gemensam och mall-genererad.
+// Ett staging-test kan alltså inte bevisa den vakten — en ren funktion kan,
+// deterministiskt (`tests/api/rackvidds-byte.test.ts`), precis som
+// TASK-338.2 gjorde med matcharen. Se funktionens docblock för varje hinder
+// och för varför `ankar-flytt` svarar 409 och inte 400.
 //
 // ═══ SVARET ═══
 // Den uppdaterade raden i SAMMA form som get-event-attachments
@@ -70,7 +69,6 @@ import {
 } from '../_shared/airtable-client.ts';
 import {
   arGemensam,
-  ATTACHMENT_CLASS_UPPLADDAD,
   AttachmentScopeInputSchema,
   BILAGOR_TABLE,
   buildScopeUpdateFields,
@@ -79,6 +77,7 @@ import {
   mapAttachmentRecord,
   normaliseraRackvidd,
   platsFinns,
+  provaRackviddsbyte,
 } from '../_shared/attachments.ts';
 import { requireUser } from '../_shared/auth.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
@@ -169,38 +168,41 @@ Deno.serve(async (req) => {
       });
     }
 
-    // VAKT 5 — RADENS räckvidd. Läser det DELADE predikatet efter
-    // normalisering, aldrig en egen uppräkning: exakt den drift som gjorde
-    // varje `Gemensam`-rad oraderbar i delete-attachment innan TASK-338.2
-    // rättade den där (se den filens § AUKTORISATIONEN).
+    // VAKTERNA 5, 6 och 8 — HELA den rad-beroende auktorisationen i EN ren
+    // funktion (`provaRackviddsbyte`, _shared/rackvidd-matchning.ts). Den
+    // bor där, inte som tre `if`-satser här, eftersom en av vakterna
+    // (`fel-dokumentklass`) inte går att framkalla via någon EF vi har och
+    // därför bara kan bevisas deterministiskt — se den funktionens docblock
+    // för hela resonemanget och för vart och ett av hindren.
+    //
+    // ANKAREN beräknas HÄR (`buildStorageAnchor` bor i den zod-importerande
+    // filen och kan inte flyttas till den rena modulen) och JÄMFÖRS där, så
+    // beslutet ändå syns på ett ställe.
     const radensRackvidd = lasOption(rad.fields['Räckvidd']);
-    const radenArGemensam = arGemensam(
-      normaliseraRackvidd({
-        rackvidd: radensRackvidd,
-        kursfamilj: null,
-        kursniva: null,
-        platsIds: [],
-      }).rackvidd,
-    );
-    if (!radenArGemensam) {
-      console.warn(
-        `[update-attachment-scope] DENY icke-gemensam bilaga | caller_user_id=${user.id} | attachment=${attachmentId} | rackvidd=${radensRackvidd ?? '(tom)'}`,
-      );
-      throw new ForbiddenError(
-        'Bara delade bilagor kan byta räckvidd. Den här hör till ett enskilt event.',
-      );
-    }
+    const linkatEvent = rad.fields[EVENT_LINK_FIELD];
+    const linkatEventId =
+      Array.isArray(linkatEvent) && linkatEvent.length > 0 ? (linkatEvent[0] as string) : null;
 
-    // VAKT 6 — dokumentklassen. Se filhuvudet för varför denna vakt finns
-    // och varför den är fail-closed på `null`/okänt.
-    const dokumentklass = lasOption(rad.fields['Dokumentklass']);
-    if (dokumentklass !== ATTACHMENT_CLASS_UPPLADDAD) {
+    const provning = provaRackviddsbyte({
+      radensRackvidd,
+      radensDokumentklass: lasOption(rad.fields['Dokumentklass']),
+      ankarNu: buildStorageAnchor({
+        eventId: linkatEventId,
+        rackvidd: radensRackvidd ?? '',
+        kursfamilj: lasOption(rad.fields['Kursfamilj']),
+      }),
+      ankarEfter: buildStorageAnchor({
+        eventId: linkatEventId,
+        rackvidd: malRackvidd.rackvidd ?? '',
+        kursfamilj: malRackvidd.kursfamilj,
+      }),
+    });
+    if (!provning.tillatet) {
+      const { kod, status, skal } = provning.hinder;
       console.warn(
-        `[update-attachment-scope] DENY dokumentklass | caller_user_id=${user.id} | attachment=${attachmentId} | klass=${dokumentklass ?? '(tom)'}`,
+        `[update-attachment-scope] DENY ${kod} | caller_user_id=${user.id} | attachment=${attachmentId} | rackvidd=${radensRackvidd ?? '(tom)'} | klass=${lasOption(rad.fields['Dokumentklass']) ?? '(tom)'}`,
       );
-      throw new ForbiddenError(
-        'Bara uppladdade dokument kan byta räckvidd. Mall-genererade bilagor följer sitt event.',
-      );
+      throw status === 403 ? new ForbiddenError(skal) : new HttpError(status, skal);
     }
 
     // VAKT 7 — platsen måste FINNAS. Samma vaktklass och samma skäl som
@@ -208,55 +210,15 @@ Deno.serve(async (req) => {
     // så ett felstavat plats-ID hade rensat platsaxeln i stället för att
     // sätta den — en tyst UPPVIDGNING till alla event, alltså precis den
     // skada PRD TASK-338 berättelse 3 finns för att förhindra.
+    //
+    // KÖRS EFTER rad-vakterna, med avsikt: en anropare som inte ens får
+    // röra raden ska nekas på DEN grunden, inte få veta om ett plats-ID
+    // existerar. Ett extra Airtable-anrop sparas dessutom i nekade fall.
     if (scopeParsed.data.plats && !(await platsFinns(scopeParsed.data.plats))) {
       return new Response(JSON.stringify({ error: 'Platsen hittades inte.' }), {
         status: 404,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
-    }
-
-    // VAKT 8 — ANKAR-INVARIANTEN. `buildStorageAnchor` härleder path-ankaret
-    // ur radens EGNA fält, och inom Gemensam-grenen beror det på
-    // `kursfamilj` (`kurstyp/<slug>` när satt, annars `alla-event`). En
-    // ändring som flyttar ankaret hade lämnat bytesen kvar på den GAMLA
-    // pathen medan både `get-attachment-download-url` och
-    // `delete-attachment` härledde den NYA — filen blir tyst oöppningsbar
-    // och oraderbar, utan något felmeddelande någonstans.
-    //
-    // 409 CONFLICT, inte 400: anropet är VÄLFORMAT och skulle vara giltigt
-    // för en annan rad — det är radens nuvarande lagringsläge som står i
-    // vägen. Klienten kan inte rätta det genom att ändra sin input.
-    //
-    // ATT FLYTTA BYTESEN i stället vore den fulla lösningen (kopiera →
-    // verifiera → uppdatera → radera gamla). Den är MEDVETET INTE byggd
-    // här: den kräver Storage-transaktionsdisciplinen som
-    // `_shared/storage-kopiera.ts` (TASK-340.1) bär, och att bunta in den
-    // hade gjort denna skiva till två. Bokförd som öppen begränsning i
-    // kortets Implementation Notes, inte gömd — i praktiken träffar den
-    // bara den som byter FAMILJE-axeln på en familjebunden bilaga, medan
-    // hela skivans syfte (plats-axeln) aldrig rör ankaret.
-    const linkatEvent = rad.fields[EVENT_LINK_FIELD];
-    const linkatEventId =
-      Array.isArray(linkatEvent) && linkatEvent.length > 0 ? (linkatEvent[0] as string) : null;
-    const ankarNu = buildStorageAnchor({
-      eventId: linkatEventId,
-      rackvidd: radensRackvidd ?? '',
-      kursfamilj: lasOption(rad.fields['Kursfamilj']),
-    });
-    const ankarEfter = buildStorageAnchor({
-      eventId: linkatEventId,
-      rackvidd: malRackvidd.rackvidd ?? '',
-      kursfamilj: malRackvidd.kursfamilj,
-    });
-    if (ankarNu !== ankarEfter) {
-      console.warn(
-        `[update-attachment-scope] DENY ankar-flytt | caller_user_id=${user.id} | attachment=${attachmentId} | fran=${ankarNu} | till=${ankarEfter}`,
-      );
-      throw new HttpError(
-        409,
-        'Familjen kan inte ändras på den här bilagan — filen ligger lagrad under den nuvarande ' +
-          'familjen. Ladda upp filen på nytt med rätt familj i stället.',
-      );
     }
 
     const operation = getOperation(OPERATION_KEY);

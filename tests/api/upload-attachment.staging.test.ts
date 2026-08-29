@@ -89,10 +89,12 @@
 
 import { randomUUID } from 'node:crypto';
 import { type APIRequestContext, type APIResponse, expect, test } from '@playwright/test';
-import type { z } from 'zod';
-// [TASK-338.2] Se `attachment-staging-schema.ts` för varför domänens
-// `AttachmentSchema` inte längre kan parsa en gemensam bilaga.
-import { StagingAttachmentSchema } from './attachment-staging-schema';
+// [TASK-338.4] Läser EF-svaret med KLIENTENS egen datagräns-hjälpare
+// (`parsaAttachment` = normalisera legacy → validera, ADR-026). TASK-338.2:s
+// mellanliggande `attachment-staging-schema.ts` är RIVEN: `AttachmentScope`
+// bär `GEMENSAM` sedan TASK-338.3, så domänschemat parsar en gemensam
+// bilaga rakt av och skarven behövs inte längre.
+import { parsaAttachment } from '../../src/domain/schemas';
 import { BELAGGNING_EVENT_ID } from './fixtures';
 import { type ApiConfig, classify401Body, getApiConfig, getValidUserJWT } from './helpers';
 
@@ -110,7 +112,9 @@ const PLATS_NAMN = 'ZZ-plats-unik-fixtur';
 // (`platsFinns`), inte Zods formkontroll.
 const OKAND_PLATS_ID = 'recZZZZZZZZZZZZZZ';
 
-type Attachment = z.infer<typeof StagingAttachmentSchema>;
+// [TASK-338.4] Härledd ur datagräns-hjälparens RETURTYP i stället för ur
+// det rivna skarv-schemat — samma form, en källa mindre att glömma.
+type Attachment = ReturnType<typeof parsaAttachment>;
 
 interface UploadBody {
   eventId?: string | null;
@@ -194,7 +198,7 @@ test.describe('upload-attachment — skarp conformance (TASK-146.4 mönster 1)',
     expect(body.record.fields.Kursnivå).toBeUndefined();
 
     // (ii) Domän-shape (adapterns parse-väg).
-    const attachment: Attachment = StagingAttachmentSchema.parse(body.attachment);
+    const attachment: Attachment = parsaAttachment(body.attachment);
     expect(attachment.namn).toBe(filnamn);
     expect(attachment.storlekBytes).toBe(2048);
     expect(attachment.eventId).toBe(BELAGGNING_EVENT_ID);
@@ -545,7 +549,7 @@ test.describe('upload-attachment — skarp conformance (TASK-146.4 mönster 1)',
     // Kärnpremissen (TASK-275.3): INGEN `Event`-länk alls, inte en tom lista.
     expect(body.record.fields.Event).toBeUndefined();
 
-    const attachment = StagingAttachmentSchema.parse(JSON.parse(raw).attachment) as Attachment;
+    const attachment = parsaAttachment(JSON.parse(raw).attachment) as Attachment;
     expect(attachment.eventId).toBeNull();
 
     // Städar sig själv — räckviddsläge (eventId utelämnad), samma väg
@@ -576,7 +580,7 @@ test.describe('upload-attachment — skarp conformance (TASK-146.4 mönster 1)',
     expect(body.record.fields.Räckvidd).toBe('Gemensam');
     expect(body.record.fields.Event).toBeUndefined();
 
-    const attachment = StagingAttachmentSchema.parse(JSON.parse(raw).attachment) as Attachment;
+    const attachment = parsaAttachment(JSON.parse(raw).attachment) as Attachment;
     expect(attachment.eventId).toBeNull();
 
     const delRes = await request.post(`${config.baseUrl}${DELETE_ENDPOINT}`, {
@@ -635,7 +639,7 @@ test.describe('upload-attachment — skarp conformance (TASK-146.4 mönster 1)',
     expect(body.record.fields.Kursfamilj).toBeUndefined();
     expect(body.record.fields.Kursnivå).toBeUndefined();
 
-    const attachment = StagingAttachmentSchema.parse(JSON.parse(raw).attachment) as Attachment;
+    const attachment = parsaAttachment(JSON.parse(raw).attachment) as Attachment;
     expect(attachment.plats).toEqual({ id: PLATS_ID, namn: PLATS_NAMN });
   });
 
@@ -661,7 +665,7 @@ test.describe('upload-attachment — skarp conformance (TASK-146.4 mönster 1)',
     expect(body.record.fields.Kursnivå).toBeUndefined();
     expect(body.record.fields.Plats).toBeUndefined();
 
-    const attachment = StagingAttachmentSchema.parse(JSON.parse(raw).attachment) as Attachment;
+    const attachment = parsaAttachment(JSON.parse(raw).attachment) as Attachment;
     expect(attachment.plats).toBeNull();
   });
 

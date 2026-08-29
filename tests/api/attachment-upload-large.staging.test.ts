@@ -27,7 +27,11 @@
 // redan uttömmande testad i upload-attachment.staging.test.ts — HÄR bevisas
 // bara att TRÅDNINGEN genom ticket→PUT→finalize fungerar, inte varje
 // validerings-gren igen):
-//   5. allow: rackvidd Kurstyp trär igenom finalize → Räckvidd/Kursfamilj skrivna.
+//   5. allow: rackvidd Kurstyp trär igenom finalize → Räckvidd/Kursfamilj
+//      skrivna. [TASK-338.4] Räckvidden landar som 'Gemensam' — legacy-
+//      värdet normaliseras av `buildScopeFields` sedan TASK-338.2, med
+//      `Kursfamilj` bevarad. Kontraktet ACCEPTERAR fortfarande 'Kurstyp'
+//      från en installerad PWA-klient; det är lagringen som bär en modell.
 //   6. deny: rackvidd Kurstyp UTAN kursfamilj i finalize-anropet → 400.
 //
 // SENTINEL + TEARDOWN: samma mönster som upload-attachment.staging.test.ts —
@@ -436,7 +440,9 @@ test.describe('create-attachment-upload-ticket + finalize-attachment-upload — 
 
   // TASK-275.2 (ADR-118) — räckviddsparametrarna trär igenom mönster 2:s
   // finalize-steg (se filhuvudets tillägg-stycke för avgränsningen).
-  test('allow: rackvidd Kurstyp trär igenom finalize → Räckvidd/Kursfamilj skrivna', async ({
+  // [TASK-338.4, ADR-125 § Beslut 1] Vad som SKRIVS är numera 'Gemensam' —
+  // se assertionen nedan.
+  test('allow: rackvidd Kurstyp trär igenom finalize → sparas som Gemensam med Kursfamilj bevarad', async ({
     request,
   }) => {
     const config = getApiConfig();
@@ -469,7 +475,14 @@ test.describe('create-attachment-upload-ticket + finalize-attachment-upload — 
     const raw = await finalizeRes.text();
     expect(finalizeRes.status(), raw).toBe(201);
     const body = JSON.parse(raw) as { record: { fields: Record<string, unknown> } };
-    expect(body.record.fields.Räckvidd).toBe('Kurstyp');
+    // [TASK-338.4] SPARAS SOM 'Gemensam', inte 'Kurstyp'. Sedan TASK-338.2
+    // (#2084) NORMALISERAR `buildScopeFields` legacy-värdet på VÄGEN IN —
+    // basen bär EN modell (ADR-063), toleransen sitter i kontraktet, inte i
+    // lagringen. `Kursfamilj` bevaras: det var precis vad Kurstyp-räckvidden
+    // betydde, och axlarna följer med (rackvidd-matchning.ts §
+    // normaliseraRackvidd). Denna förväntan stod kvar på 'Kurstyp' och gjorde
+    // staging-klassen RÖD på main tills detta kort landade.
+    expect(body.record.fields.Räckvidd).toBe('Gemensam');
     expect(body.record.fields.Kursfamilj).toBe('RIM');
     expect(body.record.fields.Event).toEqual([BELAGGNING_EVENT_ID]);
   });

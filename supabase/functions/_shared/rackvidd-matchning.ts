@@ -211,3 +211,156 @@ export function matcharEvent(bilaga: BilagansRackvidd, event: EventetsAxlar): bo
 
   return true;
 }
+
+// ═══════════════════════════════════════════════════════════════════════
+// RÄCKVIDDSBYTET (TASK-338.4) — får DENNA rad byta räckvidd, och till vad?
+// ═══════════════════════════════════════════════════════════════════════
+
+/**
+ * `Dokumentklass`-optionerna (TASK-147.12, staging `fldr2CwboZ3M4USCX`).
+ *
+ * [TASK-338.4] FLYTTADE HIT från `attachments.ts` av EXAKT samma skäl som
+ * scope-konstanterna ovan flyttades i TASK-338.2: `provaRackviddsbyte`
+ * nedan konsumerar dem, och den funktionen MÅSTE vara Node-importerbar för
+ * sin deterministiska enhetstestsvit (`attachments.ts` importerar zod från
+ * esm.sh och kan inte importeras i ett `tests/api`-test). RE-EXPORTERAS
+ * oförändrat ur `attachments.ts`, så INGEN av de EF:er som redan importerar
+ * dem därifrån behöver ändra sin importsats.
+ *
+ * DUPLICERAS MEDVETET mot `src/domain/types/Status.ts`s `AttachmentClass` —
+ * samma Deno↔Vite-dubblerings-mönster som `BILAGOR_BUCKET_ID` (Deno-EF:erna
+ * delar ingen build-kedja med Vite-bygget). Skrivande EF:er importerar
+ * DESSA konstanter, aldrig en bokstavlig sträng inline.
+ */
+export const ATTACHMENT_CLASS_UPPLADDAD = 'Uppladdad';
+export const ATTACHMENT_CLASS_EVENT_MALLAD = 'Event-mallad';
+export const ATTACHMENT_CLASS_PERSON_GENERERAD = 'Person-genererad';
+
+/** Giltiga `Dokumentklass`-optionsnamn — allt annat mappas till `null`. */
+export const VALID_ATTACHMENT_CLASSES: readonly string[] = [
+  ATTACHMENT_CLASS_UPPLADDAD,
+  ATTACHMENT_CLASS_EVENT_MALLAD,
+  ATTACHMENT_CLASS_PERSON_GENERERAD,
+];
+
+/** Varför ett räckviddsbyte nekades — bär statuskoden EF:en ska svara med. */
+export type RackviddsbyteHinder =
+  | { kod: 'ej-gemensam'; status: 403; skal: string }
+  | { kod: 'fel-dokumentklass'; status: 403; skal: string }
+  | { kod: 'ankar-flytt'; status: 409; skal: string };
+
+/** Utfallet av `provaRackviddsbyte` — tillåtet, eller ETT hinder. */
+export type RackviddsbytePrövning = { tillatet: true } | { tillatet: false; hinder: RackviddsbyteHinder };
+
+/**
+ * FÅR DENNA RAD BYTA RÄCKVIDD? — `update-attachment-scope`s hela
+ * rad-beroende auktorisation, som EN ren funktion.
+ *
+ * ═══ VARFÖR REN, OCH INTE TRE `if`-SATSER I EF:EN ═══
+ * Ett av de tre hindren går INTE att framkalla via någon EF vi har.
+ * `fel-dokumentklass` kräver en rad som är BÅDE gemensam OCH
+ * mall-/person-genererad, och ingen skrivväg producerar den kombinationen:
+ * `generate-event-attachment` skriver `Dokumentklass: Event-mallad` men
+ * ALDRIG något `Räckvidd` alls (verifierat 2026-08-29 — noll `Räckvidd`-
+ * skrivningar i den filen), så en sådan rad fälls redan av `ej-gemensam`.
+ * Kombinationen kan bara uppstå i BASEN, för hand — och ADR-063 säger
+ * uttryckligen att Lotta och Marcus arbetar direkt där, så den ÄR nåbar i
+ * drift även om ingen EF kan skapa den.
+ *
+ * Ett staging-test kan alltså inte bevisa den vakten. En ren funktion kan —
+ * deterministiskt, i `tests/api/rackvidds-byte.test.ts`, precis som
+ * `matcharEvent` ovan bevisas utan staging (TASK-338.2 AC #1). Det är
+ * skälet: vakten är inte svagare för att den är otestbar skarpt, den är
+ * flyttad dit den ÄR bevisbar (ADR-057 — beslutet bor i EF/_shared).
+ *
+ * ═══ DE TRE HINDREN ═══
+ *
+ * **`ej-gemensam` (403).** Radens EGEN räckvidd måste normalisera till
+ * `Gemensam`. Läser det delade `arGemensam`-predikatet, aldrig en egen
+ * uppräkning av legacy-värdena — exakt den drift som gjorde varje
+ * `Gemensam`-rad ORADERBAR i `delete-attachment` innan TASK-338.2 rättade
+ * den där. `null`/tomt `Räckvidd` är fail-closed (se `arGemensam`s docblock:
+ * 34 av 49 staging-rader bar tomt `Räckvidd` och var event-bundna).
+ *
+ * **`fel-dokumentklass` (403).** Bara `Uppladdad` får byta räckvidd. En
+ * `Event-mallad` bilaga fylls ur mall-renderaren och hör ALLTID till sitt
+ * event (ADR-125 § Beslut 3); en `Person-genererad` hör till en anmälan.
+ * Att ge någon av dem en filter-räckvidd hade lagt ETT events kvitto eller
+ * bekräftelsebilaga i VARJE matchande events dokumentlista — och därmed i
+ * utskicken. Dokumentklassen är ortogonal mot räckvidden (ADR-118 beslut
+ * 4); detta är den enda platsen de möts, och de möts fail-closed: `null`
+ * och okänd klass nekas också, eftersom en rad vi inte kan klassa inte
+ * heller kan bedömas som säker att bredda.
+ *
+ * **`ankar-flytt` (409).** Storage-path-ankaret (`buildStorageAnchor`,
+ * `attachments.ts`) härleds ur radens EGNA fält och beror inom
+ * Gemensam-grenen på `Kursfamilj` (`kurstyp/<slug>` när satt, annars
+ * `alla-event`). Ett byte som flyttar ankaret lämnar BYTESEN kvar på den
+ * gamla pathen medan `get-attachment-download-url` och `delete-attachment`
+ * härleder den nya — filen blir tyst oöppningsbar OCH oraderbar, utan
+ * felmeddelande någonstans. Ankaren beräknas av anroparen (den behöver
+ * `buildStorageAnchor`, som bor i den zod-importerande filen) och jämförs
+ * HÄR, så hela beslutet ändå syns på ett ställe.
+ *
+ * 409 CONFLICT och inte 400: anropet är VÄLFORMAT och vore giltigt för en
+ * annan rad — det är radens nuvarande lagringsläge som står i vägen, och
+ * klienten kan inte rätta det genom att ändra sin input.
+ *
+ * ORDNINGEN ÄR MENINGSFULL: `ej-gemensam` före `fel-dokumentklass` före
+ * `ankar-flytt` — grövst först, så felmeddelandet Lotta ser beskriver det
+ * mest grundläggande skälet i stället för en följdeffekt av det.
+ */
+export function provaRackviddsbyte(params: {
+  /** `Räckvidd` som den står på raden (före normalisering). */
+  radensRackvidd: string | null;
+  /** `Dokumentklass` som den står på raden. */
+  radensDokumentklass: string | null;
+  /** `buildStorageAnchor` för radens NUVARANDE fält. */
+  ankarNu: string | null;
+  /** `buildStorageAnchor` för radens fält EFTER det önskade bytet. */
+  ankarEfter: string | null;
+}): RackviddsbytePrövning {
+  const normaliserad = normaliseraRackvidd({
+    rackvidd: params.radensRackvidd,
+    kursfamilj: null,
+    kursniva: null,
+    platsIds: [],
+  });
+
+  if (!arGemensam(normaliserad.rackvidd)) {
+    return {
+      tillatet: false,
+      hinder: {
+        kod: 'ej-gemensam',
+        status: 403,
+        skal: 'Bara delade dokument kan byta räckvidd. Det här hör till ett enskilt event.',
+      },
+    };
+  }
+
+  if (params.radensDokumentklass !== ATTACHMENT_CLASS_UPPLADDAD) {
+    return {
+      tillatet: false,
+      hinder: {
+        kod: 'fel-dokumentklass',
+        status: 403,
+        skal: 'Bara uppladdade dokument kan byta räckvidd. Mall-genererade bilagor följer sitt event.',
+      },
+    };
+  }
+
+  if (params.ankarNu !== params.ankarEfter) {
+    return {
+      tillatet: false,
+      hinder: {
+        kod: 'ankar-flytt',
+        status: 409,
+        skal:
+          'Familjen kan inte ändras på det här dokumentet — filen ligger sparad under den ' +
+          'nuvarande familjen. Ladda upp filen på nytt med rätt familj i stället.',
+      },
+    };
+  }
+
+  return { tillatet: true };
+}

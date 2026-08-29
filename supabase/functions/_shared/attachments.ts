@@ -44,17 +44,24 @@ export const PLATSER_TABLE = 'Platser';
 
 /**
  * Bilagor.Dokumentklass-optionerna (TASK-147.12, additivt fält, staging
- * `fldr2CwboZ3M4USCX`) — DUPLICERAS MEDVETET mot `src/domain/types/Status.ts`s
- * `AttachmentClass`, samma duplicerings-mönster som BILAGOR_BUCKET_ID/
- * SMALL_UPLOAD_MAX_BYTES ovan (Deno-EF:erna delar ingen build-kedja med
- * Vite-bygget). Skrivande EF:er importerar DESSA konstanter, aldrig en
- * bokstavlig sträng inline — en stavfel-drift mellan de två sidorna hade
- * annars gett en tyst 400 (findDisallowedField) eller ett osynkat
- * options-val i UI:t.
+ * `fldr2CwboZ3M4USCX`).
+ *
+ * [TASK-338.4] FLYTTADE till `./rackvidd-matchning.ts` (den zod-FRIA,
+ * Node-importerbara filen) och RE-EXPORTERADE härifrån oförändrat — samma
+ * flytt och samma skäl som TASK-338.2 gjorde för scope-konstanterna, och
+ * som TASK-309.22 gjorde för `attachment-filename.ts`: `provaRackviddsbyte`
+ * konsumerar dem och måste kunna enhetstestas i `tests/api` (denna fil
+ * importerar zod från esm.sh och kan inte Node-importeras). INGEN av de
+ * EF:er som importerar dem via `'../_shared/attachments.ts'` behöver ändra
+ * sin importsats. Se den filens docblock för dupliceringen mot
+ * `src/domain/types/Status.ts`s `AttachmentClass`.
  */
-export const ATTACHMENT_CLASS_UPPLADDAD = 'Uppladdad';
-export const ATTACHMENT_CLASS_EVENT_MALLAD = 'Event-mallad';
-export const ATTACHMENT_CLASS_PERSON_GENERERAD = 'Person-genererad';
+export {
+  ATTACHMENT_CLASS_EVENT_MALLAD,
+  ATTACHMENT_CLASS_PERSON_GENERERAD,
+  ATTACHMENT_CLASS_UPPLADDAD,
+  provaRackviddsbyte,
+} from './rackvidd-matchning.ts';
 
 /**
  * [TASK-338.2, ADR-125 § Beslut 1] Bilagor.Räckvidd-optionerna och den rena
@@ -98,6 +105,7 @@ import {
   ATTACHMENT_SCOPE_KURSTYP,
   lasPlatsIds,
   normaliseraRackvidd,
+  VALID_ATTACHMENT_CLASSES,
   VALID_ATTACHMENT_SCOPES,
 } from './rackvidd-matchning.ts';
 
@@ -536,12 +544,6 @@ export function toBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
-/** Giltiga `Dokumentklass`-optionsnamn — allt annat (inkl. `undefined`/tomt) mappas till `null`. */
-const VALID_ATTACHMENT_CLASSES: readonly string[] = [
-  ATTACHMENT_CLASS_UPPLADDAD,
-  ATTACHMENT_CLASS_EVENT_MALLAD,
-  ATTACHMENT_CLASS_PERSON_GENERERAD,
-];
 
 /**
  * Mappar en skapad Bilagor-rad → domän-Attachment (samma shape som
