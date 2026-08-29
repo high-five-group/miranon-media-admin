@@ -219,7 +219,7 @@ const platsValjare = (page: Page) => page.locator('button[aria-label="Plats"]');
 
 /** Räckviddsradions två etiketter, på ETT ställe (TASK-338.3). */
 const EVENT_RADIO = 'Bara detta event';
-const DELAT_RADIO = 'Delat dokument - gäller flera event';
+const DELAT_RADIO = 'Delad bilaga - gäller flera event';
 
 /**
  * RAC:s `<Radio>` renderar sin `<input>` VISUELLT täckt av ett dekorativt

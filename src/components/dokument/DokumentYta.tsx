@@ -1444,12 +1444,23 @@ function metaDelar(current: BilageRad['current']): (string | null)[] {
  * [TASK-309.26 AC #4 / TASK-309.38] Fönstret får en momentan laddningssida
  * direkt — annars står det tomt (`about:blank`) under hela hämtningen, samma
  * "abrupt tomt fönster" Marcus avvisade 2026-08-22 för genereringsvyn.
- * Väntetexten är personlig men bär det GENERISKA "dokumentet", inte namnet i
+ * Väntetexten är personlig men bär ett GENERISKT substantiv, inte namnet i
  * bestämd form: vägen är delad mellan fritt uppladdade filnamn
  * ("kontrakt_signerat.pdf" — inte en böjbar substantivfras) och katalogens
  * fasta namn, och svensk bestämd form bildas inte med en enda regel över
  * substantiv-klasser (`GenereringsVy.tsx`s `MALL_META` bär därför en
  * uppslagstabell i stället — den vägen har ett känt, litet antal namn).
+ *
+ * ═══ [T176, 2026-08-29] SUBSTANTIVET VÄLJS AV KÄLLAN, INTE FAST ═══
+ *
+ * Texten sade "dokumentet" åt BÅDA anroparna. Efter namnbytet (ORDLISTA
+ * rad 179: en BILAGA är den PDF Lotta bifogar i ett utskick) stämmer det
+ * bara för den ena: `typ: 'bilaga'` ÄR en bilaga, medan `typ: 'generator'`
+ * (kvittots förhandsvisning) uttryckligen INTE är det — den når aldrig
+ * Storage, Bilagor-raden eller ett allokerat kvittonummer
+ * (`SkapaDokumentMeny`s docblock, `preview-receipt/index.ts` § PERSONDATA).
+ * Att byta båda till "bilagan" hade alltså gjort den ena texten osann.
+ * `kalla.typ` är den enda uppgift som skiljer dem, och den finns redan här.
  */
 function oppnaDokument({
   kalla,
@@ -1461,11 +1472,12 @@ function oppnaDokument({
   mutation: ReturnType<typeof useForhandsvisaDokument>;
 }) {
   const handle = window.open('', '_blank');
+  const substantiv = kalla.typ === 'bilaga' ? 'bilagan' : 'dokumentet';
   skrivLaddningssida(handle, {
-    titel: 'Öppnar dokument…',
+    titel: kalla.typ === 'bilaga' ? 'Öppnar bilagan…' : 'Öppnar dokument…',
     text: forNamn
-      ? `Ett ögonblick ${forNamn}, dokumentet öppnas här om några sekunder.`
-      : 'Ett ögonblick, dokumentet öppnas här om några sekunder.',
+      ? `Ett ögonblick ${forNamn}, ${substantiv} öppnas här om några sekunder.`
+      : `Ett ögonblick, ${substantiv} öppnas här om några sekunder.`,
   });
   mutation.mutate({ kalla, handle });
 }
@@ -2736,12 +2748,12 @@ function RackviddsDialog({
         // RUBRIKEN SÄGER VILKEN FRÅGA SOM STÄLLS. I ändra-läget finns ingen
         // fil att ladda upp — "Vad ska filen gälla?" hade läst som att en
         // uppladdning pågick. Samma fråga, rätt tempus.
-        title={andrar ? 'Vad ska dokumentet gälla?' : 'Vad ska filen gälla?'}
+        title={andrar ? 'Vad ska bilagan gälla?' : 'Vad ska filen gälla?'}
         size="md"
         aria-description={
           andrar
-            ? 'Ändra vilka event det delade dokumentet ska gälla. Välj familj, steg och plats. Tomma val betyder ingen begränsning.'
-            : 'Välj om filen gäller bara det valda eventet eller är ett delat dokument som gäller flera event.'
+            ? 'Ändra vilka event den delade bilagan ska gälla. Välj familj, steg och plats. Tomma val betyder ingen begränsning.'
+            : 'Välj om filen gäller bara det valda eventet eller är en delad bilaga som gäller flera event.'
         }
       >
         <div className="flex flex-col gap-4">
@@ -2764,7 +2776,7 @@ function RackviddsDialog({
               "En familj"/"Alla event" var två av ADR-118:s tre räckvidder;
               med ADR-125 § 1 är de samma räckvidd (`Gemensam`) med respektive
               utan axlar, så valet är binärt: hör filen till DETTA event, eller
-              är den delad? Etiketterna är hela satser ("Delat dokument -
+              är den delad? Etiketterna är hela satser ("Delad bilaga -
               gäller flera event") och ryms inte bredvid varandra på 375 px,
               därav `vertical` i stället för den tidigare `horizontal`. */}
           <RadioGroup
@@ -2805,7 +2817,7 @@ function RackviddsDialog({
                 streck; regeln och grinden slår bokstaven, och ett undantag i
                 `.langa-streck-policy.json` vore fel väg — policyn reserverar
                 dem för tom-markören, inte för text som kan skrivas om. */}
-            <Radio value={AttachmentScope.GEMENSAM}>Delat dokument - gäller flera event</Radio>
+            <Radio value={AttachmentScope.GEMENSAM}>Delad bilaga - gäller flera event</Radio>
           </RadioGroup>
 
           {/* ═══ DE TRE AXLARNA + SAMMANFATTNINGEN — ALLTID RENDERADE ═══
@@ -2935,7 +2947,7 @@ function RackviddsDialog({
                 DEN DELADE VÄGEN STÄNGS INTE AV, och det är ett medvetet val
                 mot en näraliggande frestelse: i räckviddsläget är "Bara
                 detta event" redan avstängd (inget event att koppla mot), så
-                ett avstängt "Delat dokument" hade lämnat dialogen UTAN något
+                ett avstängt "Delad bilaga" hade lämnat dialogen UTAN något
                 giltigt val alls — en återvändsgränd där Lotta inte kan ladda
                 upp någonting. Dessutom är en axellös gemensam bilaga ("alla
                 event") ett FULLT LEGITIMT val som inte behöver platslistan.
@@ -2955,7 +2967,7 @@ function RackviddsDialog({
                 eventläget (och dialogen initieras till EVENT när `harEvent`).
                 `inert` tar bort hela underträdet ur tillgänglighetsträdet, så
                 alerten fyrade i ett läge där ingen kunde höra den — och när
-                Lotta sedan växlade till "Delat dokument" fanns noden redan,
+                Lotta sedan växlade till "Delad bilaga" fanns noden redan,
                 så det fyrade inget då heller. Felet var alltså SYNLIGT men
                 aldrig ANNONSERAT: tyst för en skärmläsaranvändare, vilket är
                 precis den grupp som inte kan se den avstängda Plats-selecten.
@@ -3136,12 +3148,12 @@ function GemensamtLage({
             att först fråga; raden är beslutad bort, inte tappad. */}
         {laddar ? (
           <div role="status" aria-busy="true" className="flex flex-col gap-2">
-            <span className="sr-only">Laddar gemensamma dokument…</span>
+            <span className="sr-only">Laddar delade bilagor…</span>
             <Skeleton variant="listRow" />
             <Skeleton variant="listRow" />
           </div>
         ) : fel ? (
-          <MessageBox intent="error" title="Kunde inte hämta gemensamma dokument">
+          <MessageBox intent="error" title="Kunde inte hämta delade bilagor">
             {felmeddelande}
           </MessageBox>
         ) : (
@@ -3180,7 +3192,7 @@ function GemensamtLage({
               ))}
               {rader.length === 0 && (
                 // Tomt läge = inget kort — se eventlägets motsvarighet.
-                <li className="px-3 py-4 text-small text-text-muted">Inga delade dokument än.</li>
+                <li className="px-3 py-4 text-small text-text-muted">Inga delade bilagor än.</li>
               )}
             </DokumentListRam>
           </div>

@@ -213,7 +213,7 @@ function mockaFlodet(
       return json({ url: nedladdningsUrl(nedladdningsAnrop), expiresInSeconds: 300 });
     }),
     mockaLagradPdf(PREVIEW_URL),
-    // TVÅ adresser, inte tre: den enda vägen som klickar "Visa dokumentet"
+    // TVÅ adresser, inte tre: den enda vägen som klickar "Visa bilagan"
     // gör det EXAKT två gånger (färsk-URL-beviset). En tredje handler hade
     // varit en registrering ingen väg kan nå.
     mockaLagradPdf(nedladdningsUrl(1)),
@@ -346,11 +346,11 @@ test.describe('Genereringsvyn — bekräftelsen på plats (TASK-340.2)', () => {
     // EXAKT TVÅ VAL — inte tre, inte en. Räknat inom ytan, så sidkromets
     // tillbaka-knapp inte smyger med.
     await expect(bekraftelse.getByRole('button')).toHaveCount(2);
-    await expect(bekraftelse.getByRole('button', { name: 'Visa dokumentet' })).toBeVisible();
+    await expect(bekraftelse.getByRole('button', { name: 'Visa bilagan' })).toBeVisible();
     await expect(bekraftelse.getByRole('button', { name: 'Till bilagorna' })).toBeVisible();
   });
 
-  test('review-runda 2: "Visa dokumentet" hämtar en FÄRSK signerad URL vid VARJE klick', async ({
+  test('review-runda 2: "Visa bilagan" hämtar en FÄRSK signerad URL vid VARJE klick', async ({
     page,
     context,
     network,
@@ -387,7 +387,7 @@ test.describe('Genereringsvyn — bekräftelsen på plats (TASK-340.2)', () => {
     //     läsbar laddningssida, och navigerar till den nyss hämtade adressen.
     const [forstaFliken] = await Promise.all([
       context.waitForEvent('page'),
-      page.getByRole('button', { name: 'Visa dokumentet' }).click(),
+      page.getByRole('button', { name: 'Visa bilagan' }).click(),
     ]);
     await expect.poll(() => forstaFliken.url(), { timeout: 10_000 }).toBe(nedladdningsUrl(1));
     expect(nedladdningsAnrop()).toBe(1);
@@ -395,14 +395,14 @@ test.describe('Genereringsvyn — bekräftelsen på plats (TASK-340.2)', () => {
     // (3) Andra klicket: en NY adress, inte den lagrade.
     const [andraFliken] = await Promise.all([
       context.waitForEvent('page'),
-      page.getByRole('button', { name: 'Visa dokumentet' }).click(),
+      page.getByRole('button', { name: 'Visa bilagan' }).click(),
     ]);
     await expect.poll(() => andraFliken.url(), { timeout: 10_000 }).toBe(nedladdningsUrl(2));
     expect(nedladdningsAnrop()).toBe(2);
     expect(nedladdningsUrl(2)).not.toBe(nedladdningsUrl(1));
   });
 
-  test('review-runda 2: blockerat fönster vid "Visa dokumentet" visar felet I YTAN', async ({
+  test('review-runda 2: blockerat fönster vid "Visa bilagan" visar felet I YTAN', async ({
     page,
     network,
   }) => {
@@ -418,7 +418,7 @@ test.describe('Genereringsvyn — bekräftelsen på plats (TASK-340.2)', () => {
     await page.evaluate(() => {
       window.open = () => null;
     });
-    await page.getByRole('button', { name: 'Visa dokumentet' }).click();
+    await page.getByRole('button', { name: 'Visa bilagan' }).click();
 
     await expect(
       page.getByText('Webbläsaren blockerade den nya fliken.', { exact: false }),
@@ -436,7 +436,7 @@ test.describe('Genereringsvyn — bekräftelsen på plats (TASK-340.2)', () => {
     const bekraftelse = page.getByTestId('bekraftelse');
     await expect(bekraftelse.getByText('Bekräftelsebilagan är sparad')).toBeVisible();
     await expect(
-      bekraftelse.getByText('Den ligger nu bland eventets dokument, redo att bifogas i utskick.'),
+      bekraftelse.getByText('Den ligger nu bland eventets bilagor, redo att bifogas i utskick.'),
     ).toBeVisible();
     // `promoverad` bär MEDVETET ingen egen mening (se `GenereringsVy.tsx`s
     // bekräftelse-docblock): normalfallet berättas inte, avvikelserna gör det.
@@ -458,7 +458,7 @@ test.describe('Genereringsvyn — bekräftelsen på plats (TASK-340.2)', () => {
       page
         .getByTestId('bekraftelse')
         .getByText(
-          'Underlaget hade ändrats sedan förhandsgranskningen, så dokumentet gjordes om. Förhandsgranska gärna igen.',
+          'Underlaget hade ändrats sedan förhandsgranskningen, så bilagan gjordes om. Förhandsgranska gärna igen.',
         ),
     ).toBeVisible();
   });
@@ -546,7 +546,7 @@ test.describe('Genereringsvyn — bekräftelsen på plats (TASK-340.2)', () => {
     // Genereringsvyns adress är helt borta — inte bara överskuggad.
     expect(new URL(page.url()).searchParams.get('vy')).toBeNull();
     expect(new URL(page.url()).searchParams.get('mall')).toBeNull();
-    // Eventet följer med: Lotta ska se DET här eventets dokument.
+    // Eventet följer med: Lotta ska se DET här eventets bilagor.
     expect(new URL(page.url()).searchParams.get('event')).toBe(VISUAL_EVENT_ID);
   });
 
@@ -563,7 +563,7 @@ test.describe('Genereringsvyn — bekräftelsen på plats (TASK-340.2)', () => {
     expect(results.violations).toEqual([]);
   });
 
-  test('AC #2: tangentbordsvandringen går fokus → Visa dokumentet → Till bilagorna', async ({
+  test('AC #2: tangentbordsvandringen går fokus → Visa bilagan → Till bilagorna', async ({
     page,
     network,
   }) => {
@@ -581,14 +581,14 @@ test.describe('Genereringsvyn — bekräftelsen på plats (TASK-340.2)', () => {
     expect(efterEttTab).toBe('bekraftelse');
 
     await page.keyboard.press('Tab');
-    await expect(page.getByRole('button', { name: 'Visa dokumentet' })).toBeFocused();
+    await expect(page.getByRole('button', { name: 'Visa bilagan' })).toBeFocused();
 
     await page.keyboard.press('Tab');
     await expect(page.getByRole('button', { name: 'Till bilagorna' })).toBeFocused();
 
     // Bakåt igen — ordningen är symmetrisk, inget fokusfällt-mönster.
     await page.keyboard.press('Shift+Tab');
-    await expect(page.getByRole('button', { name: 'Visa dokumentet' })).toBeFocused();
+    await expect(page.getByRole('button', { name: 'Visa bilagan' })).toBeFocused();
   });
 
   test('AC #2: 375 px bär bekräftelsen utan horisontell scroll', async ({ page, network }) => {

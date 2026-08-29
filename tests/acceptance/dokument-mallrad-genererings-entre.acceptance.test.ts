@@ -11,7 +11,7 @@ import { expect, test } from './acceptance-bas';
  * "Bekräftelsebilaga"/"Deltagarinformation" faktiskt navigerar in i
  * `GenereringsVy` (inte bara att ariaSnapshot-paret matchar OM man redan
  * står i genereringsvyn — se `dokument-generering-promoverings-grind.spec.ts`
- * för den delen), och att "Tillbaka till Dokument" tar Lotta hela vägen
+ * för den delen), och att "Tillbaka till Bilagor" tar Lotta hela vägen
  * tillbaka till listan.
  *
  * [T176, 2026-08-29] KATALOGEN ÄR EN MENY, INTE LISTRADER. `MallRad` är
@@ -91,7 +91,7 @@ test.describe('Dokument-ytan — mallkatalogens entré in i genereringsvyn (TASK
     // — navigeringen in i genereringsvyn tappar inte vilket event Lotta stod på.
     await expect(page).toHaveURL(new RegExp(`event=${VISUAL_EVENT_ID}`));
 
-    await page.getByRole('button', { name: 'Tillbaka till Dokument' }).click();
+    await page.getByRole('button', { name: 'Tillbaka till Bilagor' }).click();
     await expect(page.getByTestId('dokument-yta')).toBeVisible();
     await expect(page.getByRole('button', { name: 'Skapa bilaga' })).toBeVisible();
   });

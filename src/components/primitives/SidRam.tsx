@@ -168,7 +168,7 @@ export interface SidRamKnappProps {
  *
  * @example
  * ```tsx
- * <SidRamKnapp tillbakaEtikett="Tillbaka till Dokument" onTillbaka={stang} />
+ * <SidRamKnapp tillbakaEtikett="Tillbaka till Bilagor" onTillbaka={stang} />
  * ```
  */
 export function SidRamKnapp({ tillbakaEtikett, onTillbaka }: SidRamKnappProps) {

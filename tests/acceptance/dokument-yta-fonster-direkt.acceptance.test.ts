@@ -97,7 +97,7 @@ function mockaLagradFil(url: string) {
 }
 
 test.describe('Dokument-ytan — förhandsvisningens fönster bär laddningssidan (TASK-309.26, AC #4)', () => {
-  test('Öppna-knappen: fönstret öppnas direkt med "Öppnar dokument…", navigerar till den signerade URL:en när hämtningen är klar', async ({
+  test('Öppna-knappen: fönstret öppnas direkt med "Öppnar bilagan…", navigerar till den signerade URL:en när hämtningen är klar', async ({
     page,
     context,
     network,
@@ -128,9 +128,9 @@ test.describe('Dokument-ytan — förhandsvisningens fönster bär laddningssida
     // navigering ännu)...
     await expect.poll(() => nyFlik.url()).toBe('about:blank');
     // ...MEN INNEHÅLLET är INTE tomt: laddningssidan syns REDAN här.
-    await expect(nyFlik).toHaveTitle('Öppnar dokument…');
+    await expect(nyFlik).toHaveTitle('Öppnar bilagan…');
     await expect(
-      nyFlik.getByText('Ett ögonblick Lotta, dokumentet öppnas här om några sekunder.'),
+      nyFlik.getByText('Ett ögonblick Lotta, bilagan öppnas här om några sekunder.'),
     ).toBeVisible();
 
     // Efter att hämtningen löst ut: SAMMA fönster navigerar till filen.
@@ -139,7 +139,7 @@ test.describe('Dokument-ytan — förhandsvisningens fönster bär laddningssida
       .toBe(SIGNERAD_URL);
   });
 
-  test('review-runda 2: EF-fel ERSÄTTER laddningssidan med felsidan — ingen stapling av "Öppnar dokument…" och felmeddelandet', async ({
+  test('review-runda 2: EF-fel ERSÄTTER laddningssidan med felsidan — ingen stapling av "Öppnar bilagan…" och felmeddelandet', async ({
     page,
     context,
     network,
@@ -164,9 +164,9 @@ test.describe('Dokument-ytan — förhandsvisningens fönster bär laddningssida
     const [nyFlik] = await Promise.all([context.waitForEvent('page'), knapp.click()]);
 
     // Laddningssidan syns DIREKT.
-    await expect(nyFlik).toHaveTitle('Öppnar dokument…');
+    await expect(nyFlik).toHaveTitle('Öppnar bilagan…');
     await expect(
-      nyFlik.getByText('Ett ögonblick Lotta, dokumentet öppnas här om några sekunder.'),
+      nyFlik.getByText('Ett ögonblick Lotta, bilagan öppnas här om några sekunder.'),
     ).toBeVisible();
 
     // Efter felet: felsidan ERSÄTTER (inte APPENDAS efter) laddningssidan —
@@ -179,7 +179,7 @@ test.describe('Dokument-ytan — förhandsvisningens fönster bär laddningssida
       nyFlik.getByText('Kunde inte öppna dokumentet. Stäng fliken och försök igen.'),
     ).toBeVisible({ timeout: SVARSFORDROJNING_MS + 10_000 });
     await expect(
-      nyFlik.getByText('Ett ögonblick Lotta, dokumentet öppnas här om några sekunder.'),
+      nyFlik.getByText('Ett ögonblick Lotta, bilagan öppnas här om några sekunder.'),
     ).toHaveCount(0);
 
     // Appens egen felruta (befintligt beteende, oförändrat av denna fix).
@@ -210,7 +210,7 @@ test.describe('Dokument-ytan — förhandsvisningens fönster bär laddningssida
 
     const knapp = page.getByRole('button', { name: `Öppna ${FIL_NAMN}` });
     const [nyFlik] = await Promise.all([context.waitForEvent('page'), knapp.click()]);
-    await expect(nyFlik).toHaveTitle('Öppnar dokument…');
+    await expect(nyFlik).toHaveTitle('Öppnar bilagan…');
 
     // Lotta stänger fliken SJÄLV — INNAN get-attachment-download-url (1 s
     // fördröjd) svarar. `handle` i mutationFn är därefter icke-null men
@@ -255,11 +255,11 @@ test.describe('Dokument-ytan — förhandsvisningens fönster bär laddningssida
     const [nyFlik] = await Promise.all([context.waitForEvent('page'), knapp.click()]);
 
     // `<title>` är oförändrad — den bär ingen personlig hälsning.
-    await expect(nyFlik).toHaveTitle('Öppnar dokument…');
+    await expect(nyFlik).toHaveTitle('Öppnar bilagan…');
     // Ingen `displayName` → "Ett ögonblick, " utan namn — inget hängande
     // komma, inget dubbelt mellanslag (AC #1).
     await expect(
-      nyFlik.getByText('Ett ögonblick, dokumentet öppnas här om några sekunder.'),
+      nyFlik.getByText('Ett ögonblick, bilagan öppnas här om några sekunder.'),
     ).toBeVisible();
   });
 });

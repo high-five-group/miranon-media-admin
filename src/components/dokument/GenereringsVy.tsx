@@ -686,7 +686,8 @@ export function GenereringsVy({
   const andraKnappRef = useRef<HTMLButtonElement>(null);
   const [resultat, setResultat] = useState<Resultat | null>(null);
   const forhandsgranska = useForhandsgranskaBilaga();
-  /* [review-runda 2] Bekräftelsens "Visa dokumentet" går husets befintliga
+  /* [review-runda 2] Bekräftelsens "Visa bilagan" (hette "Visa dokumentet"
+     fram till T176) går husets befintliga
      öppna-väg i stället för att öppna en URL som frystes vid Skapa — se
      knappens egen kommentar nedan för TTL-resonemanget. Hooken ÅTERANVÄNDS
      (`DokumentYta.tsx` § IKONPAR är dess andra anropare); ingen egen
@@ -1037,7 +1038,7 @@ export function GenereringsVy({
     return (
       <div className="flex flex-col gap-6" data-testid="generering-vy">
         <div className="flex flex-col gap-4">
-          <SidRamKnapp tillbakaEtikett="Tillbaka till Dokument" onTillbaka={onTillbaka} />
+          <SidRamKnapp tillbakaEtikett="Tillbaka till Bilagor" onTillbaka={onTillbaka} />
           <div role="status" aria-live="polite" aria-busy="true" className="flex flex-col gap-1">
             <span className="sr-only">Hämtar underlag …</span>
             <span className="font-semibold text-3xl">
@@ -1068,7 +1069,7 @@ export function GenereringsVy({
   if (!sources) {
     return (
       <div className="flex flex-col gap-4" data-testid="generering-vy">
-        <SidRamKnapp tillbakaEtikett="Tillbaka till Dokument" onTillbaka={onTillbaka} />
+        <SidRamKnapp tillbakaEtikett="Tillbaka till Bilagor" onTillbaka={onTillbaka} />
         <MessageBox intent="error">
           {sourcesQuery.error instanceof Error
             ? sourcesQuery.error.message
@@ -1120,7 +1121,7 @@ export function GenereringsVy({
     return (
       <div className="flex flex-col gap-6" data-testid="generering-vy">
         <div className="flex flex-col gap-4">
-          <SidRamKnapp tillbakaEtikett="Tillbaka till Dokument" onTillbaka={onTillbaka} />
+          <SidRamKnapp tillbakaEtikett="Tillbaka till Bilagor" onTillbaka={onTillbaka} />
           <header className="flex flex-col gap-1">
             <h1 className="font-semibold text-3xl">{meta.namn}</h1>
             <p className="text-small text-text-secondary">
@@ -1142,10 +1143,10 @@ export function GenereringsVy({
               Det som ALLTID sägs är avvikelserna — att dokumentet gjordes om,
               att något ersattes, att en standard sparades. */}
           <MessageBox intent="success" title={`${meningsStart(meta.namnBestamd)} är sparad`}>
-            Den ligger nu bland eventets dokument, redo att bifogas i utskick.
+            Den ligger nu bland eventets bilagor, redo att bifogas i utskick.
             {skapad.utelamnade.length > 0 && ` Utan ${ochLista(skapad.utelamnade)}.`}
             {skapad.underlagAndrat &&
-              ' Underlaget hade ändrats sedan förhandsgranskningen, så dokumentet gjordes om. Förhandsgranska gärna igen.'}
+              ' Underlaget hade ändrats sedan förhandsgranskningen, så bilagan gjordes om. Förhandsgranska gärna igen.'}
             {skapad.ersatte && ' Den ersatte den tidigare bilagan.'}
             {skapad.sparade.length > 0 &&
               ` ${event.ort} har nu ${ochLista(skapad.sparade)} som standard.`}
@@ -1161,7 +1162,7 @@ export function GenereringsVy({
             <MessageBox intent="error">
               {forhandsvisa.error instanceof Error
                 ? forhandsvisa.error.message
-                : 'Dokumentet kunde inte öppnas. Försök igen.'}
+                : 'Bilagan kunde inte öppnas. Försök igen.'}
             </MessageBox>
           )}
           <div className="flex flex-wrap items-center gap-2">
@@ -1193,8 +1194,8 @@ export function GenereringsVy({
                 if (forhandsvisa.isPending) return;
                 const handle = window.open('', '_blank');
                 skrivLaddningssida(handle, {
-                  titel: 'Öppnar dokument…',
-                  text: `${vantehalsning(forNamn)}dokumentet öppnas här om några sekunder.`,
+                  titel: 'Öppnar bilagan…',
+                  text: `${vantehalsning(forNamn)}bilagan öppnas här om några sekunder.`,
                 });
                 forhandsvisa.mutate({
                   kalla: { typ: 'bilaga', eventId: event.id, attachmentId: skapad.attachmentId },
@@ -1211,7 +1212,7 @@ export function GenereringsVy({
               ) : (
                 <ExternalLink aria-hidden="true" size={16} className="shrink-0" />
               )}
-              Visa dokumentet
+              Visa bilagan
             </Button>
             <Button intent="secondary" onPress={onTillDokumenten}>
               Till bilagorna
@@ -1225,7 +1226,7 @@ export function GenereringsVy({
   return (
     <div className="flex flex-col gap-6" data-testid="generering-vy">
       <div className="flex flex-col gap-4">
-        <SidRamKnapp tillbakaEtikett="Tillbaka till Dokument" onTillbaka={onTillbaka} />
+        <SidRamKnapp tillbakaEtikett="Tillbaka till Bilagor" onTillbaka={onTillbaka} />
         <header className="flex flex-col gap-1">
           <h1 className="font-semibold text-3xl">{meta.namn}</h1>
           <p className="text-small text-text-secondary">
@@ -1459,7 +1460,7 @@ export function GenereringsVy({
                 DokumentYta § IKONPAR). */}
             {/* TVÅ KNAPPAR, TVÅ MÖNSTER — och skillnaden är avsiktlig
                 (review-runda 2 INFO). DENNA knapp öppnar den LAGRADE
-                utkast-URL:en rakt av; bekräftelsens "Visa dokumentet"
+                utkast-URL:en rakt av; bekräftelsens "Visa bilagan"
                 signerar i stället FÄRSKT vid varje klick. Skälet är ytornas
                 olika livslängd:
 

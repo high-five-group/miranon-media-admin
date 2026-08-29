@@ -528,7 +528,7 @@ test.describe('GemensamtLage (räckviddsläge) — samma regel (tidigare saknad,
   }) => {
     network.use(hojdlasHandler(0, 0));
     await gotoRackviddslage(page);
-    await expect(page.getByText('Inga delade dokument än.')).toBeVisible();
+    await expect(page.getByText('Inga delade bilagor än.')).toBeVisible();
 
     const geometri = await mataGeometri(page);
     // Regel 2 (runda 2): höjden är ALLTID låst, även vid 0 rader — INGEN
@@ -718,9 +718,9 @@ test.describe('GemensamtLage (räckviddsläge) — samma regel (tidigare saknad,
     //
     // [TASK-338.3] INGET RADIOKLICK BEHÖVS LÄNGRE. Testet klickade tidigare
     // radion "Alla event"; den räckvidden finns inte som eget val sedan
-    // ADR-125 § 1 (den ÄR "Delat dokument" utan satta axlar). I
+    // ADR-125 § 1 (den ÄR "Delad bilaga" utan satta axlar). I
     // räckviddsläget är dessutom "Bara detta event" avstängd — inget event
-    // att koppla mot — så dialogen öppnar redan förvald på "Delat dokument"
+    // att koppla mot — så dialogen öppnar redan förvald på "Delad bilaga"
     // med noll axlar, vilket är exakt den räckvidd detta test vill ha.
     await page
       .getByTestId('ladda-upp-ny-fil')
@@ -736,7 +736,7 @@ test.describe('GemensamtLage (räckviddsläge) — samma regel (tidigare saknad,
     // en framtida ändring av defaultlogiken fälls här i stället för att
     // tyst ladda upp med fel räckvidd.
     await expect(
-      dialog.getByRole('radio', { name: 'Delat dokument - gäller flera event' }),
+      dialog.getByRole('radio', { name: 'Delad bilaga - gäller flera event' }),
     ).toBeChecked();
     await dialog.getByRole('button', { name: 'Ladda upp' }).click();
     await expect(dialog).not.toBeVisible();
@@ -795,7 +795,7 @@ test.describe('GemensamtLage vid 375 px — samma tre nivåer som desktop (revie
     await page.setViewportSize({ width: 375, height: 800 });
     network.use(hojdlasHandler(0, 0));
     await gotoRackviddslage(page);
-    await expect(page.getByText('Inga delade dokument än.')).toBeVisible();
+    await expect(page.getByText('Inga delade bilagor än.')).toBeVisible();
 
     const geometri = await mataGeometri(page);
     expect(geometri.scrollHeight).toBe(geometri.clientHeight);
