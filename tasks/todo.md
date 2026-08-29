@@ -15,7 +15,8 @@
 
 ## Aktuellt fokus
 
-**Session 113 ⏸️ PAUSAD (paus 2, 2026-08-29 ~17:35 UTC, `lifecycle: paused`;
+**Session 113 🔄 ÅTERUPPTAGEN (paus 2 avslutad 2026-08-29 ~17:45 UTC,
+`lifecycle: active`; paus-PR `#2121` mergad, `origin/main` `46cb00d5`;
 prod-momentet i mål, väntar Marcus prod-vandring) —
 BILAGESPÅRETS PROD-RÖKTEST: SJU AV ÅTTA PUNKTER AVGJORDA, PROD SKARPT,
 TESTRUNDAN VÄNTAR.** Marcus fem+tre röktest-noteringar → 30+ landade PR:er
@@ -40,7 +41,8 @@ aldrig `.prod-functions-allowlist.conf`; `excluded`-grenen är icke-fällande) �
 och granskad mot sju källkort — **16 avvikelser rättade**.
 **NÄSTA:** resume → Marcus prod-vandring (30 poster, 3 domar) → fynd-kort →
 Done-flippar → facit-baslinjer → skörd → `session-end` (114).
-HANDOFF: sessionsdok S113 § PAUSLÄGE (paus 2). Full narrativ: Del 1–7.
+HANDOFF: sessionsdok S113 § Paushistorik (paus 2, historik-form efter resume).
+Full narrativ: Del 1–7.
 
 **Session 112 ⏸️ PAUSAD (paus 3, 2026-08-28 ~16:30, `lifecycle: paused`; resume 2 körd AFK på
 fullt mandat — "du bestämmer") — AFK-VÅG 5 LANDAD: FLASKHALSEN BRUTEN, REVIEW-GRINDEN MEKANISK,
