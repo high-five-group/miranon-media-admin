@@ -15,34 +15,28 @@
 
 ## Aktuellt fokus
 
-**Session 113 🔄 ÅTERUPPTAGEN (paus 2 avslutad 2026-08-29 ~17:45 UTC,
-`lifecycle: active`; paus-PR `#2121` mergad, `origin/main` `46cb00d5`;
-prod-momentet i mål, väntar Marcus prod-vandring) —
-BILAGESPÅRETS PROD-RÖKTEST: SJU AV ÅTTA PUNKTER AVGJORDA, PROD SKARPT,
-TESTRUNDAN VÄNTAR.** Marcus fem+tre röktest-noteringar → 30+ landade PR:er
-samma dag (`#2074`–`#2120`): `309.38` väntetext + Förhandsgranska · `309.39` höjdlåset
-(två rotorsaker) · `309.40` typfilter · `339` pillen bort · `340.1`
-promovering+ersätt (EF) · `340.2` bekräftelse på plats · `340.3`/`340.4` ·
-`338.1`/`338.2`/`338.5`/`338.6`-skriptet. Research-passet
-(`forhandsgranska-spara-atervand-bilageflodet-2026-08-29.md`, Opus): 8/8
-leverantörer promoverar, DocRaptor slumpar `/ID`. PRD `338` (platsbundna
-delade bilagor, väg A) + PRD `340` (skapa-flödet A+E). **Granskade klara i
-draft:** `#2094` (`338.3`) + `#2103` (`338.4`) — landar EFTER Marcus
-prod-moment (`338.6` runbook i kortet, briefing i chatten). Trådar `T176`,
-`T177`; kort `309.41`, `341`, `342`; 8 lessons-fragment. **Numrering:** ADR
-128 · kort 346/309.42 · L655 · T178 · 9 fragment · session 113.
-**PROD ÄR SKARPT:** schema + **46/46 EF** (deploy 2 kl 17:12,
-`update-attachment-scope` v1) + 2 rader migrerade; klient och EF i takt.
-Sju av åtta morgonpunkter avgjorda — punkt 5 (`T176`) är en dom, ingen skiva.
-**Allowlist-luckan fångad före deployen** (`#2103` levererade EF:en men rörde
-aldrig `.prod-functions-allowlist.conf`; `excluded`-grenen är icke-fällande) →
-`#2117`, tre rundor. Nya kort: `343` (stale test på main), `344`
-(`.review-policy.json`-luckan), `345` (regex-paritet). Testplanen publicerad
-och granskad mot sju källkort — **16 avvikelser rättade**.
-**NÄSTA:** resume → Marcus prod-vandring (30 poster, 3 domar) → fynd-kort →
-Done-flippar → facit-baslinjer → skörd → `session-end` (114).
-HANDOFF: sessionsdok S113 § Paushistorik (paus 2, historik-form efter resume).
-Full narrativ: Del 1–7.
+**Session 113 🔄 AKTIV, AFK-läge (resume 2, 2026-08-29 ~17:45 → 2026-08-30 ~22:30 UTC;
+`lifecycle: active`) — DOKUMENTYTAN BLEV BILAGOR: KORTFORM, ⋯-MENY, HANDLINGSRAD,
+BILAGA-SUBSTANTIVET — LANDAT OCH VERIFIERAT I PROD.** Marcus tre anmärkningar
+före vandringen (T176 · "Event-mallad" · knapparna) → orkestrerarens
+designbedömning mot prod (sex fynd: listan saknade hierarki) → Marcus GO
+(*"Gör om direkt i prod"*, sedan kortform + "bilaga" som substantiv +
+Mer-fliken "Bilagor", explicit kvittens på att höjdlåsets separator-halva
+rivs) → *"fullt AFK-läge … Gör detta ORDENTLIGT!"*. Elva commits, PR `#2123`
+(26 filer), två granskningsrundor (risk låg, loop konvergerad), backstopp
+grön, landade `50c6493d` 22:17Z, Vercel prod success 22:18Z, **prod
+verifierad med eget skript + egna ögon** (h1 Bilagor · Skapa bilaga · kort
+124 px · ingen filterrad · inget Event-mallad). Hookens kod byte-identisk
+med main. Beslut under mandat: kvittots Ladda ner utgår · URL kvar ·
+rullningsskugga · en-radsnamn på mobil. `T176` stängd · `T178` ny (HMR) ·
+`TASK-309.42` Done · 4 lessons-fragment (13 totalt) · ORDLISTA § Bilaga.
+**Numrering:** ADR 128 · kort 346/309.43 · L655 · T179 · 13 fragment ·
+session 113. **NÄSTA:** Marcus vaknar → ser prod → veto-lista (strängbytena i
+`93dbf275`, tomytan under fyra-korts-låset vid 2–3 bilagor, URL-bytet som
+kort) → prod-vandringen (testplanen delvis inaktuell efter formbytet) → domar
+`340.5`/`340.4` → skörd → `session-end` (114). Arbetssätts-frågan (45 %
+bokförings-PR:er, 38 % eskaleringar) är en grillnings-kandidat, Marcus start.
+HANDOFF: sessionsdok S113 Del 8 (+ § Paushistorik paus 2). Full narrativ: Del 1–8.
 
 **Session 112 ⏸️ PAUSAD (paus 3, 2026-08-28 ~16:30, `lifecycle: paused`; resume 2 körd AFK på
 fullt mandat — "du bestämmer") — AFK-VÅG 5 LANDAD: FLASKHALSEN BRUTEN, REVIEW-GRINDEN MEKANISK,
