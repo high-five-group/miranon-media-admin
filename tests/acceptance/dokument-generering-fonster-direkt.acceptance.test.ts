@@ -504,4 +504,43 @@ test.describe('Genereringsvyn — förhandsgranskningens fönster öppnas direkt
       ),
     ).toBeVisible();
   });
+
+  test('TASK-309.38 AC #1: väntetexten faller tillbaka till den anonyma formen utan visningsnamn — deltagarinformation', async ({
+    page,
+    context,
+    network,
+  }) => {
+    // Matrisens fjärde cell (INFO, review-runda 2): fallback-utan-namn var
+    // tidigare bara bevisad för bekräftelsebilagan — AC #1 kräver BÅDA
+    // dokumenttyperna, och det gäller korsprodukten (med/utan namn) ×
+    // (bekräftelse/deltagarinfo), inte bara var axel för sig.
+    await patchStoredDisplayName(page, null);
+
+    network.use(
+      http.get(EF('get-document-sources'), () =>
+        json(MOCK_SOURCES as unknown as Record<string, unknown>),
+      ),
+      http.post(EF('generate-event-attachment'), async () => {
+        await delay(SVARSFORDROJNING_MS);
+        return json({
+          url: 'https://storage.example.test/preview-deltagarinfo-utan-namn.pdf',
+          utgar: new Date(Date.now() + 300_000).toISOString(),
+        });
+      }),
+    );
+
+    await page.goto(`/mer/dokument?event=${VISUAL_EVENT_ID}&vy=generering&mall=deltagarinfo`);
+    await expect(page.getByTestId('generering-vy')).toBeVisible();
+
+    const [nyFlik] = await Promise.all([
+      context.waitForEvent('page'),
+      page.getByRole('button', { name: 'Förhandsgranska' }).click(),
+    ]);
+    await expect(nyFlik).toHaveTitle('Skapar förhandsgranskningen…');
+    await expect(
+      nyFlik.getByText(
+        'Ett ögonblick, förhandsgranskningen av deltagarinformationen skapas och visas här om några sekunder.',
+      ),
+    ).toBeVisible();
+  });
 });

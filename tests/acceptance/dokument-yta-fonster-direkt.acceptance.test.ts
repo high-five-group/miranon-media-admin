@@ -1,7 +1,33 @@
 import { delay, HttpResponse, http } from 'msw';
 import { VISUAL_EVENT_ID } from '../support/fixturvarld/fixture-data';
 import { EF, json } from '../support/fixturvarld/handlers';
-import { expect, test } from './acceptance-bas';
+import { expect, type Page, test } from './acceptance-bas';
+
+/**
+ * Patchar den lagrade sessionens `display_name` FÖRE app-boot (samma teknik
+ * som `hem.acceptance.test.ts`s `patchStoredDisplayName`, TASK-220, och
+ * `dokument-generering-fonster-direkt.acceptance.test.ts`s kopia — ingen
+ * delad testhjälpare finns ännu, duplicerad med avsikt, samma litenhet).
+ * Fixturvärldens session bär `display_name: 'Lotta'` som DEFAULT
+ * (`tests/support/fixturvarld/hermetic.ts:91`), så BARA fallback-testet
+ * (TASK-309.38, review-runda 2) behöver detta — `null` tar bort fältet helt.
+ */
+function patchStoredDisplayName(page: Page, displayName: string | null) {
+  return page.addInitScript((name) => {
+    for (let i = 0; i < localStorage.length; i += 1) {
+      const key = localStorage.key(i);
+      if (!key?.startsWith('sb-') || !key.endsWith('-auth-token')) continue;
+      const raw = localStorage.getItem(key);
+      if (!raw) continue;
+      const session = JSON.parse(raw);
+      if (!session?.user) continue;
+      session.user.user_metadata = { ...session.user.user_metadata };
+      if (name === null) delete session.user.user_metadata.display_name;
+      else session.user.user_metadata.display_name = name;
+      localStorage.setItem(key, JSON.stringify(session));
+    }
+  }, displayName);
+}
 
 /**
  * TASK-309.26, review-runda 1, AC #4 — Dokument-ytans förhandsvisning
@@ -103,7 +129,9 @@ test.describe('Dokument-ytan — förhandsvisningens fönster bär laddningssida
     await expect.poll(() => nyFlik.url()).toBe('about:blank');
     // ...MEN INNEHÅLLET är INTE tomt: laddningssidan syns REDAN här.
     await expect(nyFlik).toHaveTitle('Öppnar dokument…');
-    await expect(nyFlik.getByText('Öppnar dokument…')).toBeVisible();
+    await expect(
+      nyFlik.getByText('Ett ögonblick Lotta, dokumentet öppnas här om några sekunder.'),
+    ).toBeVisible();
 
     // Efter att hämtningen löst ut: SAMMA fönster navigerar till filen.
     await expect
@@ -137,7 +165,9 @@ test.describe('Dokument-ytan — förhandsvisningens fönster bär laddningssida
 
     // Laddningssidan syns DIREKT.
     await expect(nyFlik).toHaveTitle('Öppnar dokument…');
-    await expect(nyFlik.getByText('Öppnar dokument…')).toBeVisible();
+    await expect(
+      nyFlik.getByText('Ett ögonblick Lotta, dokumentet öppnas här om några sekunder.'),
+    ).toBeVisible();
 
     // Efter felet: felsidan ERSÄTTER (inte APPENDAS efter) laddningssidan —
     // det granskade felet (review-runda 2, severity ERROR, empiriskt
@@ -148,7 +178,9 @@ test.describe('Dokument-ytan — förhandsvisningens fönster bär laddningssida
     await expect(
       nyFlik.getByText('Kunde inte öppna dokumentet. Stäng fliken och försök igen.'),
     ).toBeVisible({ timeout: SVARSFORDROJNING_MS + 10_000 });
-    await expect(nyFlik.getByText('Öppnar dokument…')).toHaveCount(0);
+    await expect(
+      nyFlik.getByText('Ett ögonblick Lotta, dokumentet öppnas här om några sekunder.'),
+    ).toHaveCount(0);
 
     // Appens egen felruta (befintligt beteende, oförändrat av denna fix).
     await expect(page.getByText('Kunde inte öppna filen')).toBeVisible();
@@ -195,5 +227,39 @@ test.describe('Dokument-ytan — förhandsvisningens fönster bär laddningssida
 
     // Ingen JS-exception i appens sida.
     expect(sidfel).toEqual([]);
+  });
+
+  test('TASK-309.38 review-runda 2: väntetexten faller tillbaka till den anonyma formen utan visningsnamn', async ({
+    page,
+    context,
+    network,
+  }) => {
+    const SIGNERAD_URL = 'https://storage.example.test/deltagarlista-utan-namn.pdf';
+    const SVARSFORDROJNING_MS = 4000;
+
+    await patchStoredDisplayName(page, null);
+
+    network.use(
+      http.get(EF('get-event-attachments'), () => json({ attachments: [uppladdRad()] })),
+      http.get(EF('get-attachment-download-url'), async () => {
+        await delay(SVARSFORDROJNING_MS);
+        return json({ url: SIGNERAD_URL, expiresInSeconds: 300 });
+      }),
+      mockaLagradFil(SIGNERAD_URL),
+    );
+
+    await page.goto(`/mer/dokument?event=${VISUAL_EVENT_ID}`);
+    await expect(page.getByTestId('dokument-yta')).toBeVisible();
+
+    const knapp = page.getByRole('button', { name: `Öppna ${FIL_NAMN}` });
+    const [nyFlik] = await Promise.all([context.waitForEvent('page'), knapp.click()]);
+
+    // `<title>` är oförändrad — den bär ingen personlig hälsning.
+    await expect(nyFlik).toHaveTitle('Öppnar dokument…');
+    // Ingen `displayName` → "Ett ögonblick, " utan namn — inget hängande
+    // komma, inget dubbelt mellanslag (AC #1).
+    await expect(
+      nyFlik.getByText('Ett ögonblick, dokumentet öppnas här om några sekunder.'),
+    ).toBeVisible();
   });
 });

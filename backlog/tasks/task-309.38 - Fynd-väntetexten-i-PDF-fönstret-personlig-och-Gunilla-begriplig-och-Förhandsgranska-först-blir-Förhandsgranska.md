@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-29 07:34'
-updated_date: '2026-08-29 08:25'
+updated_date: '2026-08-29 08:52'
 labels:
   - ready-for-agent
 dependencies: []
@@ -163,4 +163,42 @@ Grindar omkörda (nakna exitkoder): typecheck=0, biome check .=0,
 dokument-generering-fonster-direkt.acceptance.test.ts +
 dokument-forhandsgranskning-popup-policy.acceptance.test.ts (mot äkta
 Google Chrome)=0 (8/8 gröna), check-facit.sh=0, check-langa-streck.mjs=0.
+
+REVIEW-RUNDA 2 (review-agenten + CI, samma dag): ERROR-fynd fixat, CI
+rödgrund åtgärdad, INFO-fynd stängt.
+
+1. ERROR: `tests/acceptance/dokument-yta-fonster-direkt.acceptance.test.ts`
+rad 106/140/151 asserterade fortfarande den GAMLA laddningssidetexten
+("Öppnar dokument…") som kropps-text, medan review-runda 1s fix (DokumentAtgardsKnappar)
+bytte kroppstexten till "Ett ögonblick Lotta, dokumentet öppnas här om några
+sekunder." — `getByText` är substrängsmatch och den gamla strängen fanns inte
+längre i den nya, så testerna föll. Rättat: alla tre assertions uppdaterade
+till den nya texten (rad 151 är en `.toHaveCount(0)`-negativ-kontroll efter
+felsidan ersatt laddningssidan, uppdaterad symmetriskt). `<title>` orörd
+("Öppnar dokument…", ingen personlig hälsning där — bara kroppstexten
+ändrades i review-runda 1). Ett fjärde, NYTT test tillagt (filen saknade
+fallback-utan-namn-fallet): patchar `display_name` till `null` via en lokal
+`patchStoredDisplayName`-hjälpare (samma teknik som `hem.acceptance.test.ts`
+och den redan tillagda kopian i `dokument-generering-fonster-direkt...`),
+bevisar "Ett ögonblick, dokumentet öppnas här om några sekunder." och att
+titeln förblir oförändrad.
+
+2. INFO: AC #1:s matris (med/utan namn) × (bekräftelse/deltagarinfo) hade en
+otäckt cell — fallback-utan-namn var bara bevisad för bekräftelsebilagan.
+Nytt test i `dokument-generering-fonster-direkt.acceptance.test.ts`:
+mall=deltagarinfo + `patchStoredDisplayName(page, null)`, bevisar "Ett
+ögonblick, förhandsgranskningen av deltagarinformationen skapas och visas
+här om några sekunder." — alla fyra celler i matrisen nu bevisade.
+
+Grindar (nakna exitkoder): typecheck=0, biome check .=0,
+check-langa-streck.mjs=0. HELA `tests/acceptance/dokument-*.acceptance.test.ts`
+(8 filer, 51 tester) körd två gånger: `--workers=2` (standard) gav 3
+FALSKA fällningar i filer jag INTE rörde
+(dokument-forhandsgranskning-popup-policy.acceptance.test.ts:
+beforeAll-hookens Chrome-probe timeout 60s; dokument-lista-hojdlas.
+acceptance.test.ts + dokument-rackviddsval.acceptance.test.ts: element
+hittades inte inom 15s) — resurskonkurrens vid parallell körning av 8 tunga
+Playwright-filer, INTE en regression: samtliga tre gav grönt vid omkörning
+isolerat/serialiserat. Den auktoritativa körningen (`--workers=1`, samma
+8 filer): 51/51 gröna, exit 0.
 <!-- SECTION:NOTES:END -->
