@@ -147,6 +147,7 @@ export const RACKVIDD_FIELD_NAME = 'Räckvidd';
 export const PLATS_FIELD_NAME = 'Plats';
 export const PLATSNAMN_FIELD_NAME = 'Platsnamn';
 export const PLATSER_NAMN_FIELD_NAME = 'Namn';
+export const EVENT_FIELD_NAME = 'Event';
 export const GEMENSAM_CHOICE_NAME = 'Gemensam';
 export const LEGACY_RACKVIDD_VARDEN = ['Kurstyp', 'Alla event'];
 export const RECORD_BATCH_SIZE = 10; // Airtables PATCH/POST-tak per anrop.
@@ -311,11 +312,24 @@ export function buildKontrolleraReport({ tables, bilagorRecords }) {
   const rackviddFordelning = {};
   let attMigrera = 0;
   let redanGemensam = 0;
+  // Review-runda 3, punkt 2: en föräldralös kastbar rad (createThrowawayAndDelete
+  // vars DELETE fallerade) bär {Räckvidd:"Gemensam"} och INGET annat — varken
+  // Namn (alltid satt av upload-attachment/finalize-attachment-upload) eller
+  // Event-länk (FÖRBLIR satt oavsett räckvidd, se create-bilagor-table.mjs §
+  // filhuvud). En rad som saknar BÅDA är därför signaturen för en kvarleva —
+  // en riktig Gemensam-rad har alltid minst ett av de två.
+  let foraldralosaGemensamRader = 0;
   for (const r of bilagorRecords) {
     const varde = r.fields?.[RACKVIDD_FIELD_NAME] ?? '(tomt)';
     rackviddFordelning[varde] = (rackviddFordelning[varde] ?? 0) + 1;
     if (LEGACY_RACKVIDD_VARDEN.includes(varde)) attMigrera += 1;
-    if (varde === GEMENSAM_CHOICE_NAME) redanGemensam += 1;
+    if (varde === GEMENSAM_CHOICE_NAME) {
+      redanGemensam += 1;
+      const harNamn = Boolean(r.fields?.Namn);
+      const harEvent =
+        Boolean(r.fields?.[EVENT_FIELD_NAME]) && r.fields[EVENT_FIELD_NAME].length > 0;
+      if (!harNamn && !harEvent) foraldralosaGemensamRader += 1;
+    }
   }
 
   return {
@@ -329,6 +343,7 @@ export function buildKontrolleraReport({ tables, bilagorRecords }) {
     rackviddFordelning,
     attMigrera,
     redanGemensam,
+    foraldralosaGemensamRader,
   };
 }
 
@@ -346,6 +361,7 @@ export function formatKontrolleraReport(report, basId) {
     ...Object.entries(report.rackviddFordelning).map(([v, n]) => `  Räckvidd="${v}": ${n}`),
     `Att migrera (Kurstyp/Alla event → Gemensam): ${report.attMigrera}`,
     `Redan Gemensam: ${report.redanGemensam}`,
+    `Gemensam-rader utan Namn/Event-länk: ${report.foraldralosaGemensamRader}`,
   ];
   return rader.join('\n');
 }
@@ -643,7 +659,24 @@ async function patchRackvidd(baseId, bilagorTableId, recordsToken, recordIds) {
   });
 }
 
-async function createThrowawayAndDelete(baseId, bilagorTableId, recordsToken) {
+/**
+ * Skapar en kastbar rad ({Räckvidd:"Gemensam"}, typecast) och raderar den
+ * omedelbart — se filhuvudets § PLATTFORMSVÄGG. Review-runda 3, punkt 2:
+ * ID:t LOGGAS innan DELETE-försöket (så en kvarleva går att hitta manuellt
+ * om DELETE faller) och en DELETE-miss kastar en ApiError med ID:t
+ * inbakat i meddelandet — aldrig ett tyst svalt fel. `apiOpts` injicerbar
+ * (fetchImpl/sleepImpl/logImpl) för hermetisk testning, samma mönster som
+ * airtableRequest självt — en global console.log-monkeypatch hade racat mot
+ * andra asynkront körande tester i samma svit.
+ *
+ * @param {object} [apiOpts]
+ */
+export async function createThrowawayAndDelete(baseId, bilagorTableId, recordsToken, apiOpts = {}) {
+  // logImpl injicerbar av EXAKT samma skäl som fetchImpl/sleepImpl — en
+  // global console.log-monkeypatch hade racat mot repots övriga ASYNKRONT
+  // körande tester (flera test()-anrop startar synkront och interfolieras,
+  // se testsvitens § filhuvud), så loggningen går via DI i stället.
+  const { logImpl = console.log } = apiOpts;
   const created = await airtableRequest(
     `${AIRTABLE_RECORDS_URL}/${baseId}/${bilagorTableId}`,
     recordsToken,
@@ -654,18 +687,32 @@ async function createThrowawayAndDelete(baseId, bilagorTableId, recordsToken) {
         records: [{ fields: { [RACKVIDD_FIELD_NAME]: GEMENSAM_CHOICE_NAME } }],
       }),
     },
+    apiOpts,
   );
   const id = created.records?.[0]?.id;
   if (!id) throw new ApiError('createThrowawayAndDelete: inget record-id i svaret.');
+  logImpl(
+    `   ↳ Kastbar rad skapad: ${id} — raderas nu. Faller DELETE: städa bort ${id} manuellt i ` +
+      'Airtable-konsolen (Bilagor-tabellen), eller kör --kontrollera för att se den räknad under ' +
+      '"Gemensam-rader utan Namn/Event-länk".',
+  );
   const params = new URLSearchParams();
   params.append('records[]', id);
-  await airtableRequest(
-    `${AIRTABLE_RECORDS_URL}/${baseId}/${bilagorTableId}?${params.toString()}`,
-    recordsToken,
-    {
-      method: 'DELETE',
-    },
-  );
+  try {
+    await airtableRequest(
+      `${AIRTABLE_RECORDS_URL}/${baseId}/${bilagorTableId}?${params.toString()}`,
+      recordsToken,
+      {
+        method: 'DELETE',
+      },
+      apiOpts,
+    );
+  } catch (err) {
+    throw new ApiError(
+      `createThrowawayAndDelete: skapade rad ${id} men DELETE misslyckades (${err.message}). ` +
+        `KVARLEVA — radera ${id} manuellt i Airtable-konsolen (Bilagor-tabellen).`,
+    );
+  }
 }
 
 async function createFieldApi(baseId, tableId, schemaToken, body) {
@@ -753,7 +800,7 @@ async function main() {
 
     if (args.mode === 'kontrollera') {
       const bilagorRecords = await listAllRecords(targetBaseId, bilagorTable.id, recordsToken, {
-        fields: ['Namn', RACKVIDD_FIELD_NAME],
+        fields: ['Namn', RACKVIDD_FIELD_NAME, EVENT_FIELD_NAME],
       });
       const report = buildKontrolleraReport({ tables, bilagorRecords });
       console.log(formatKontrolleraReport(report, targetBaseId));

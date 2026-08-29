@@ -37,6 +37,7 @@ import {
   buildPlatsFieldBody,
   buildPlatsnamnFieldBody,
   chunk,
+  createThrowawayAndDelete,
   findFieldByName,
   findTableByName,
   formatKontrolleraReport,
@@ -370,6 +371,26 @@ test('buildKontrolleraReport: räknar Räckvidd-fördelningen och att-migrera ko
     Event: 1,
     '(tomt)': 1,
   });
+});
+
+test('buildKontrolleraReport: räknar föräldralösa Gemensam-rader (varken Namn eller Event-länk) — review-runda 3, punkt 2', () => {
+  const tables = [
+    bilagorTable({ medGemensam: true, medPlats: true, medPlatsnamn: true }),
+    SYNTETISK_PLATSER_TABLE,
+  ];
+  const records = [
+    { id: 'recForaldralos', fields: { Räckvidd: 'Gemensam' } }, // varken Namn eller Event — kvarleva
+    {
+      id: 'recRiktig1',
+      fields: { Namn: 'Parkeringsbilaga.pdf', Räckvidd: 'Gemensam', Event: ['recEvent1'] },
+    },
+    { id: 'recRiktig2', fields: { Namn: 'Sushimeny.pdf', Räckvidd: 'Gemensam' } }, // Namn men inget Event — INTE föräldralös
+    { id: 'recRiktig3', fields: { Räckvidd: 'Gemensam', Event: ['recEvent2'] } }, // Event men inget Namn — INTE föräldralös
+    { id: 'recTomEventArray', fields: { Namn: '', Räckvidd: 'Gemensam', Event: [] } }, // tomt Namn OCH tom Event-array — kvarleva
+  ];
+  const report = buildKontrolleraReport({ tables, bilagorRecords: records });
+  assert.equal(report.redanGemensam, 5);
+  assert.equal(report.foraldralosaGemensamRader, 2);
 });
 
 test('buildKontrolleraReport: saknad Bilagor-tabell → GuardError', () => {
@@ -894,6 +915,88 @@ test('airtableRequest: 4xx (icke-429) kastar DIREKT, ingen retry alls', async ()
     ApiError,
   );
   assert.equal(calls, 1);
+});
+
+// ---------------------------------------------------------------------------
+// createThrowawayAndDelete — REVIEW-RUNDA 3, PUNKT 2: ID:t måste loggas
+// FÖRE DELETE-försöket (kvarleva-spårbarhet), och en DELETE-miss måste kasta
+// ett fel som BÄR ID:t (aldrig ett tyst svalt fel). Loggningen fångas via
+// INJICERAD logImpl (samma DI-mönster som fetchImpl/sleepImpl) — INTE via
+// global console.log-monkeypatch: flera async-tester i denna svit startar
+// synkront och interfolieras (se test()-hjälparens § filhuvud), så en delad
+// mutabel console.log hade racat mellan test-instanser.
+// ---------------------------------------------------------------------------
+
+test('createThrowawayAndDelete: loggar record-id FÖRE DELETE-försöket lyckas', async () => {
+  let deleteAnropad = false;
+  const loggat = [];
+  const fetchStub = async (_url, opts) => {
+    if (opts.method === 'POST') return fakeRes(200, { records: [{ id: 'recKASTBAR123' }] });
+    if (opts.method === 'DELETE') {
+      deleteAnropad = true;
+      return fakeRes(200, { records: [{ id: 'recKASTBAR123' }] });
+    }
+    throw new Error(`oväntad metod: ${opts.method}`);
+  };
+  await createThrowawayAndDelete('appXXX', 'tblXXX', 'tok', {
+    fetchImpl: fetchStub,
+    sleepImpl: async () => {},
+    logImpl: (msg) => loggat.push(String(msg)),
+  });
+  assert.ok(deleteAnropad, 'DELETE måste faktiskt anropas');
+  assert.ok(
+    loggat.some((r) => r.includes('recKASTBAR123')),
+    'record-id:t måste vara loggat',
+  );
+});
+
+test('createThrowawayAndDelete: DELETE misslyckas → ApiError BÄR ID:t, och ID:t var loggat INNAN felet (kvarleva spårbar i båda riktningar)', async () => {
+  const loggat = [];
+  const fetchStub = async (_url, opts) => {
+    if (opts.method === 'POST') return fakeRes(200, { records: [{ id: 'recKVARLEVA99' }] });
+    if (opts.method === 'DELETE') return fakeRes(404); // 4xx: airtableRequest kastar direkt, ingen retry
+    throw new Error(`oväntad metod: ${opts.method}`);
+  };
+  await assert.rejects(
+    () =>
+      createThrowawayAndDelete('appXXX', 'tblXXX', 'tok', {
+        fetchImpl: fetchStub,
+        sleepImpl: async () => {},
+        logImpl: (msg) => loggat.push(String(msg)),
+      }),
+    (err) => {
+      assert.ok(err instanceof ApiError);
+      assert.ok(err.message.includes('recKVARLEVA99'), 'felmeddelandet måste bära ID:t');
+      assert.ok(
+        err.message.includes('KVARLEVA'),
+        'felmeddelandet måste flagga att det är en kvarleva',
+      );
+      return true;
+    },
+  );
+  assert.ok(
+    loggat.some((r) => r.includes('recKVARLEVA99')),
+    'ID:t måste ha loggats FÖRE DELETE-felet, inte bara finnas i felmeddelandet',
+  );
+});
+
+test('createThrowawayAndDelete: inget record-id i POST-svaret → ApiError, DELETE anropas ALDRIG', async () => {
+  let deleteAnropad = false;
+  const fetchStub = async (_url, opts) => {
+    if (opts.method === 'POST') return fakeRes(200, { records: [] }); // inget id
+    deleteAnropad = true;
+    return fakeRes(200, {});
+  };
+  await assert.rejects(
+    () =>
+      createThrowawayAndDelete('appXXX', 'tblXXX', 'tok', {
+        fetchImpl: fetchStub,
+        sleepImpl: async () => {},
+        logImpl: () => {},
+      }),
+    ApiError,
+  );
+  assert.equal(deleteAnropad, false);
 });
 
 // ---------------------------------------------------------------------------
