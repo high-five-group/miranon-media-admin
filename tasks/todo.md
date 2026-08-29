@@ -15,8 +15,8 @@
 
 ## Aktuellt fokus
 
-**Session 113 🔄 AKTIV, AFK-läge (resume 2, 2026-08-29 ~17:45 → 2026-08-30 ~22:30 UTC;
-`lifecycle: active`) — DOKUMENTYTAN BLEV BILAGOR: KORTFORM, ⋯-MENY, HANDLINGSRAD,
+**Session 113 ⏸️ PAUSAD (paus 3, 2026-08-30 ~22:35 UTC, `lifecycle: paused`;
+AFK-landning efter prod-promoveringen, väntar Marcus blick på prod) — DOKUMENTYTAN BLEV BILAGOR: KORTFORM, ⋯-MENY, HANDLINGSRAD,
 BILAGA-SUBSTANTIVET — LANDAT OCH VERIFIERAT I PROD.** Marcus tre anmärkningar
 före vandringen (T176 · "Event-mallad" · knapparna) → orkestrerarens
 designbedömning mot prod (sex fynd: listan saknade hierarki) → Marcus GO
@@ -36,7 +36,7 @@ session 113. **NÄSTA:** Marcus vaknar → ser prod → veto-lista (strängbyten
 kort) → prod-vandringen (testplanen delvis inaktuell efter formbytet) → domar
 `340.5`/`340.4` → skörd → `session-end` (114). Arbetssätts-frågan (45 %
 bokförings-PR:er, 38 % eskaleringar) är en grillnings-kandidat, Marcus start.
-HANDOFF: sessionsdok S113 Del 8 (+ § Paushistorik paus 2). Full narrativ: Del 1–8.
+HANDOFF: sessionsdok S113 § PAUSLÄGE (paus 3). Full narrativ: Del 1–8.
 
 **Session 112 ⏸️ PAUSAD (paus 3, 2026-08-28 ~16:30, `lifecycle: paused`; resume 2 körd AFK på
 fullt mandat — "du bestämmer") — AFK-VÅG 5 LANDAD: FLASKHALSEN BRUTEN, REVIEW-GRINDEN MEKANISK,
