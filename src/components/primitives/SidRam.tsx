@@ -63,7 +63,7 @@ import {
  * <SidRam
  *   to="/mer"
  *   tillbakaEtikett="Tillbaka till Mer"
- *   rubrik="Dokument"
+ *   rubrik="Bilagor"
  *   rubrikRef={headingRef}
  * />
  * ```
