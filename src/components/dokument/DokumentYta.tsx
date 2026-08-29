@@ -2409,7 +2409,7 @@ function RackviddsDialog({
         size="md"
         aria-description={
           andrar
-            ? 'Ändra vilka event det delade dokumentet ska gälla. Välj familj, steg och plats — tomma val betyder ingen begränsning.'
+            ? 'Ändra vilka event det delade dokumentet ska gälla. Välj familj, steg och plats. Tomma val betyder ingen begränsning.'
             : 'Välj om filen gäller bara det valda eventet eller är ett delat dokument som gäller flera event.'
         }
       >

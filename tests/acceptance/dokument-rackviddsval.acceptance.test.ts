@@ -1212,3 +1212,258 @@ test.describe('TASK-309.40 — typfiltret nollställs vid byte av räckvidd', ()
     await expect(page).toHaveURL(/typ=bilaga/);
   });
 });
+
+/**
+ * TASK-338.4 — "ÄNDRA RÄCKVIDD" (ADR-125 § Beslut 1, PRD TASK-338 berättelse 8)
+ *
+ * Lotta laddade upp parkeringsbilagan som "alla event" när den egentligen bara
+ * gäller Rönninge. Före denna skiva var enda vägen tillbaka att radera raden
+ * och ladda upp filen igen. Nu öppnar hon SAMMA räckviddsdialog, förifylld med
+ * radens nuvarande axlar, ändrar och sparar — filen rör sig aldrig.
+ *
+ * VAD SVITEN PRÖVAR, och varför var och en:
+ *   1. Åtgärden finns BARA i räckviddsläget (ADR-118 beslut 3 gäller vidare —
+ *      ur ett events kontext är en delad bilaga oredigerbar).
+ *   2. Dialogen öppnar FÖRIFYLLD med radens axlar, inte i nolläget. Utan det
+ *      vore "ändra" i praktiken "skriv om från början".
+ *   3. Alla event → Rönninge: EF-KROPPEN bär `plats`, och badgen byter.
+ *   4. Rönninge → alla event: tomma axlar UTELÄMNAS ur kroppen (servern
+ *      rensar dem, `buildScopeUpdateFields`) — riktningen som avslöjar en
+ *      fältbyggare som råkat återanvända CREATE-formen.
+ *   5. "Bara detta event" är AVSTÄNGD — servern svarar 400 på räckvidd Event
+ *      här, så ett valbart alternativ vore en fälla.
+ *   6. Serverns fel SYNS i dialogen, och dialogen står kvar.
+ *   7. Tangentbord + axe.
+ *
+ * KROPPS-FÅNGSTEN följer samma rigg som "Ersätt"-testerna ovan: en egen
+ * MSW-handler som sparar undan `request.json()` och listan av NYCKLAR —
+ * nycklarna är hela poängen i fall 4, eftersom en utelämnad nyckel och en
+ * `null`-nyckel ser identiska ut för `toMatchObject`.
+ */
+test.describe('TASK-338.4 — Ändra räckvidd på en delad bilaga', () => {
+  /** Radens "Ändra räckvidd"-knapp i räckviddsläget. */
+  const andraKnapp = (page: Page) =>
+    page
+      .getByTestId('dokument-fil')
+      .filter({ hasText: BILAGA_GEMENSAM.namn })
+      .getByRole('button', { name: `Ändra räckvidd för ${BILAGA_GEMENSAM.namn}` });
+
+  /**
+   * Fångar `update-attachment-scope`-anropets kropp OCH dess nyckel-lista.
+   * Svarar med den bilaga anroparen bad om, så den optimistiska cachen och
+   * serversvaret säger samma sak (annars hade `onSettled`-invalideringen
+   * dragit tillbaka badgen och gjort testet flakigt av rätt skäl).
+   */
+  function fangaScopeAnrop(network: NetworkFixture) {
+    const fangst: { kropp: Record<string, unknown> | null; nycklar: string[] } = {
+      kropp: null,
+      nycklar: [],
+    };
+    network.use(
+      http.post(EF('update-attachment-scope'), async ({ request }) => {
+        const kropp = (await request.json()) as Record<string, unknown>;
+        fangst.kropp = kropp;
+        fangst.nycklar = Object.keys(kropp);
+        return json({
+          attachment: {
+            ...BILAGA_GEMENSAM,
+            kursfamilj: (kropp.kursfamilj as string | undefined) ?? null,
+            kursniva: (kropp.kursniva as string | undefined) ?? null,
+            plats: kropp.plats ? { id: kropp.plats as string, namn: 'Rönninge' } : null,
+          },
+        });
+      }),
+    );
+    return fangst;
+  }
+
+  test('åtgärden finns BARA i räckviddsläget — aldrig i eventläget (ADR-118 beslut 3)', async ({
+    page,
+    network,
+  }) => {
+    network.use(bilagorHandler());
+
+    // EVENTLÄGET: samma bilaga, samma id — ingen "Ändra räckvidd".
+    await gotoEventlage(page);
+    const radIEventlage = page
+      .getByTestId('dokument-fil')
+      .filter({ hasText: BILAGA_GEMENSAM.namn });
+    await expect(radIEventlage).toBeVisible();
+    await expect(radIEventlage.getByRole('button', { name: /Ändra räckvidd/ })).toHaveCount(0);
+
+    // RÄCKVIDDSLÄGET: här FINNS den.
+    await gotoRackviddslage(page);
+    await expect(andraKnapp(page)).toBeVisible();
+  });
+
+  test('dialogen öppnar FÖRIFYLLD med radens axlar, inte i nolläget', async ({ page, network }) => {
+    network.use(bilagorHandler());
+    await gotoRackviddslage(page);
+    await andraKnapp(page).click();
+
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+    // Radens namn står i dialogen — svaret gäller något konkret.
+    await expect(dialog.getByText(BILAGA_GEMENSAM.namn)).toBeVisible();
+
+    // FÖRIFYLLNINGEN: raden bär RIM + Rönninge, ingen nivå. Triggerns TEXT är
+    // beviset — ett nolläge hade sagt "Alla familjer"/"Alla platser".
+    await expect(familjValjare(page)).toContainText('RIM');
+    await expect(platsValjare(page)).toContainText('Rönninge');
+    await expect(stegValjare(page)).toContainText('Alla steg');
+
+    // Sammanfattningen speglar samma sak i klartext (PRD berättelse 6).
+    await expect(dialog.getByText('Gäller: RIM-event i Rönninge')).toBeVisible();
+  });
+
+  test('"Bara detta event" är AVSTÄNGD i ändra-läget — en delad bilaga kan inte göras event-egen', async ({
+    page,
+    network,
+  }) => {
+    network.use(bilagorHandler());
+    await gotoRackviddslage(page);
+    await andraKnapp(page).click();
+
+    const dialog = page.getByRole('dialog');
+    await expect(dialog.getByRole('radio', { name: EVENT_RADIO })).toBeDisabled();
+    await expect(dialog.getByRole('radio', { name: DELAT_RADIO })).toBeChecked();
+    // Knappen säger "Spara", inte "Ladda upp" — ingen fil rör sig här.
+    await expect(dialog.getByRole('button', { name: 'Spara' })).toBeVisible();
+  });
+
+  test('Alla event → Rönninge: kroppen bär plats-ID, och badgen byter', async ({
+    page,
+    network,
+  }) => {
+    // En AXELLÖS gemensam bilaga ("Alla event") är utgångsläget PRD:n
+    // beskriver: de två dokument Marcus laddade upp 2026-08-29.
+    const AXELLOS = {
+      ...BILAGA_GEMENSAM,
+      id: 'recBilagaAxellos01',
+      namn: 'Parkering.pdf',
+      kursfamilj: null,
+      kursniva: null,
+      plats: null,
+    };
+    network.use(http.get(EF('get-event-attachments'), () => json({ attachments: [AXELLOS] })));
+    const fangst = fangaScopeAnrop(network);
+
+    await page.goto('/mer/dokument');
+    await expect(page.getByTestId('dokument-yta')).toBeVisible();
+    const rad = page.getByTestId('dokument-fil').filter({ hasText: AXELLOS.namn });
+    await expect(rad).toBeVisible();
+    // BADGEN FÖRE: axellös = "Alla event".
+    await expect(rad.getByText('Alla event')).toBeVisible();
+
+    await rad.getByRole('button', { name: `Ändra räckvidd för ${AXELLOS.namn}` }).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await valjIAxel(page, platsValjare, 'Rönninge');
+    await expect(page.getByRole('dialog').getByText('Gäller: alla event i Rönninge')).toBeVisible();
+    await page.getByRole('dialog').getByRole('button', { name: 'Spara' }).click();
+
+    // EF-KROPPEN — plats som RECORD-ID, aldrig ett namn.
+    await expect.poll(() => fangst.kropp).not.toBeNull();
+    expect(fangst.kropp).toMatchObject({ rackvidd: 'Gemensam', plats: 'recPlatsRonninge01' });
+    // Tomma axlar UTELÄMNAS ur kroppen (servern rensar dem server-side).
+    expect(fangst.nycklar).not.toContain('kursfamilj');
+    expect(fangst.nycklar).not.toContain('kursniva');
+
+    // Dialogen stänger vid framgång, och badgen bär den nya räckvidden.
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect(rad.getByText('Rönninge')).toBeVisible();
+  });
+
+  test('Rönninge → alla event: tomma axlar UTELÄMNAS, badgen breddas', async ({
+    page,
+    network,
+  }) => {
+    network.use(bilagorHandler());
+    const fangst = fangaScopeAnrop(network);
+
+    await gotoRackviddslage(page);
+    const rad = page.getByTestId('dokument-fil').filter({ hasText: BILAGA_GEMENSAM.namn });
+    // BADGEN FÖRE: den kombinerade formen.
+    await expect(rad.getByText('RIM · Rönninge')).toBeVisible();
+
+    await andraKnapp(page).click();
+    // Tillbaka till nolläget på BÅDA axlarna — riktningen som avslöjar en
+    // fältbyggare som utelämnar i stället för att rensa.
+    await valjIAxel(page, familjValjare, 'Alla familjer');
+    await valjIAxel(page, platsValjare, 'Alla platser');
+    await expect(page.getByRole('dialog').getByText('Gäller: alla event')).toBeVisible();
+    await page.getByRole('dialog').getByRole('button', { name: 'Spara' }).click();
+
+    await expect.poll(() => fangst.kropp).not.toBeNull();
+    expect(fangst.kropp).toMatchObject({ rackvidd: 'Gemensam' });
+    // KÄRNAN: INGEN av de tre axlarna får följa med. Att pröva NYCKLARNA och
+    // inte värdena är avsiktligt — `{ plats: undefined }` och en utelämnad
+    // nyckel ser identiska ut för `toMatchObject`.
+    expect(fangst.nycklar).not.toContain('kursfamilj');
+    expect(fangst.nycklar).not.toContain('kursniva');
+    expect(fangst.nycklar).not.toContain('plats');
+
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect(rad.getByText('Alla event')).toBeVisible();
+  });
+
+  test('serverns fel SYNS i dialogen, och dialogen står kvar', async ({ page, network }) => {
+    network.use(bilagorHandler());
+    // Serverns dokumentklass-vakt (403) — ett skäl Lotta faktiskt behöver
+    // läsa medan valet fortfarande syns.
+    network.use(
+      http.post(EF('update-attachment-scope'), () =>
+        json(
+          {
+            error:
+              'Bara uppladdade dokument kan byta räckvidd. Mall-genererade bilagor följer sitt event.',
+          },
+          403,
+        ),
+      ),
+    );
+
+    await gotoRackviddslage(page);
+    await andraKnapp(page).click();
+    await valjIAxel(page, platsValjare, 'Alla platser');
+    await page.getByRole('dialog').getByRole('button', { name: 'Spara' }).click();
+
+    const dialog = page.getByRole('dialog');
+    await expect(dialog.getByText('Räckvidden kunde inte ändras')).toBeVisible();
+    // DIALOGEN STÅR KVAR — felet bor intill valet som orsakade det, till
+    // skillnad mot uppladdningsfelet som bor på sidan (dialogen rivs där).
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole('button', { name: 'Spara' })).toBeEnabled();
+  });
+
+  test('tangentbord: knappen nås med fokus, dialogen öppnar med Enter och stänger med Escape', async ({
+    page,
+    network,
+  }) => {
+    network.use(bilagorHandler());
+    await gotoRackviddslage(page);
+
+    await andraKnapp(page).focus();
+    await expect(andraKnapp(page)).toBeFocused();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('dialog')).toBeVisible();
+
+    // Fokus flyttas IN i dialogen (react-arias fokusfälla) — utan det hade
+    // en skärmläsaranvändare stått kvar bakom overlayen.
+    await expect(page.getByRole('dialog')).toContainText(BILAGA_GEMENSAM.namn);
+
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+  });
+
+  test('ändra-dialogen är axe-ren', async ({ page, network }) => {
+    network.use(bilagorHandler());
+    await gotoRackviddslage(page);
+    await andraKnapp(page).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+
+    const resultat = await new AxeBuilder({ page })
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa'])
+      .analyze();
+    expect(resultat.violations).toEqual([]);
+  });
+});
