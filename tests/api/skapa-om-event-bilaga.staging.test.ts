@@ -26,6 +26,15 @@
 // generate-event-attachment.staging.test.ts § filhuvud — purge-policyn
 // (`.purge-staging-policy.json`) täcker redan detta namnmönster).
 //
+// [TASK-340.1] STEG 1 GÅR NU ERSÄTT-VÄGEN AV SIG SJÄLV. PRD `TASK-340` § E
+// lät EF:en välja ersätt-vägen när eventet redan bär en Event-mallad rad för
+// mallen, vilket den permanenta fixturen gör — så det "första" anropet nedan
+// regenererar en befintlig rad i stället för att skapa en ny, och svarar 200
+// i stället för 201. LIVSCYKELN TESTET BEVISAR ÄR OFÖRÄNDRAD (skapa/uppdatera
+// → ändra block → INAKTUELL → skapa om → aktuell igen); det enda som
+// justerats är statuskodens assertion, som nu binder koden till UTFALLET
+// (`ersatte`) i stället för till anropets form. Se `generate`-hjälparen.
+//
 // Auth via getValidUserJWT — samma mönster som syskonfilerna.
 
 import { type APIRequestContext, expect, test } from '@playwright/test';
@@ -40,6 +49,10 @@ const SAVE_EVENT_TEXT_ENDPOINT = '/functions/v1/save-event-text';
 
 interface GenerateResponse {
   attachment: { id: string; kallhash: string | null };
+  /** [TASK-340.1, PRD `TASK-340` § E] Sant när skrivningen gick ersätt-vägen
+   *  — antingen på klientens EXPLICITA `ersatt` (steg 5 nedan) eller på
+   *  EF:ens EGET uppslag (steg 1, eftersom fixturen redan bär rader). */
+  ersatte: boolean;
 }
 
 function authHeaders(jwt: string): Record<string, string> {
@@ -82,10 +95,21 @@ async function generate(
       ...(ersatt ? { ersatt } : {}),
     },
   });
-  expect(res.status(), `generate-event-attachment misslyckades: ${await res.text()}`).toBe(
-    ersatt ? 200 : 201,
+  const raw = await res.text();
+  // [TASK-340.1] Statuskoden är INTE längre `ersatt ? 200 : 201`. Sedan PRD
+  // `TASK-340` § E väljer EF:en ersätt-vägen SJÄLV när eventet redan har en
+  // Event-mallad rad för mallen — och den permanenta fixturen har det — så
+  // även ett anrop UTAN `ersatt` svarar 200. Invarianten som håller i båda
+  // fallen: `201 ⇔ ersatte === false`. Den är starkare än den gamla raden,
+  // som band koden till ANROPETS form i stället för till UTFALLET.
+  expect([200, 201], `generate-event-attachment misslyckades: ${raw}`).toContain(res.status());
+  const body = JSON.parse(raw) as GenerateResponse;
+  expect(res.status(), `statuskoden måste följa ersatte-flaggan: ${raw}`).toBe(
+    body.ersatte ? 200 : 201,
   );
-  return (await res.json()) as GenerateResponse;
+  // Ett EXPLICIT `ersatt` måste ALLTID landa i ersätt-vägen.
+  if (ersatt) expect(body.ersatte).toBe(true);
+  return body;
 }
 
 test.describe('skapa-om-event-bilaga — hash-paritet + livscykel (TASK-309.6, ADR-125 § 3+5)', () => {
