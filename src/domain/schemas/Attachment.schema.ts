@@ -34,12 +34,28 @@ import { AttachmentClass, AttachmentScope, LEGACY_ATTACHMENT_SCOPES } from '../t
  * värde-översättning (`Alla event` betyder per definition inga axlar), inte
  * ett filter.
  *
- * Grenarna är BYTE FÖR BYTE samma tre som EF:ens `normaliseraRackvidd`
- * (`_shared/rackvidd-matchning.ts`) — medveten Deno↔Vite-dubblering, samma
- * mönster som `AttachmentClass`/`AttachmentScope` själva. Driver de isär
- * ser Lotta en badge som säger något annat än vad servern faktiskt matchar
- * på; `tests/api/rackvidds-text.test.ts` § Legacy låser därför BÅDA sidornas
- * utfall mot samma fall-tabell.
+ * ═══ VAD SOM SPEGLAR VAD — TVÅ EF-FUNKTIONER, INTE EN ═══
+ *
+ * De TRE första grenarna (`Kurstyp` → Gemensam med axlar, `Alla event` →
+ * Gemensam utan axlar, levande värden orörda) är byte för byte samma som
+ * EF:ens `normaliseraRackvidd` (`_shared/rackvidd-matchning.ts`). Den
+ * FJÄRDE — okänt optionsnamn → `null` — finns INTE i den funktionen; den
+ * speglar `mapAttachmentRecord` (`_shared/attachments.ts`), som defusar
+ * okända värden mot `VALID_ATTACHMENT_SCOPES` innan svaret lämnar EF:en.
+ * Klienten gör båda stegen här därför att den inte kan veta vilken
+ * EF-version som är deployad.
+ *
+ * Dubbleringen är medveten (Deno↔Vite, samma mönster som
+ * `AttachmentClass`/`AttachmentScope` själva). Driver sidorna isär ser
+ * Lotta en badge som säger något annat än vad servern faktiskt matchar på.
+ *
+ * INGEN KORSJÄMFÖRELSE ÄR MEKANISERAD — och det ska denna rad inte påstå
+ * (ADR-083). `tests/api/rackvidds-text.test.ts` § Legacy importerar bara
+ * KLIENTfunktionen och låser dess utfall; EF-sidan låses separat i
+ * `tests/api/rackvidd-matchning.test.ts` med sin EGEN fall-tabell. De två
+ * tabellerna hålls i synk för hand. Att mekanisera jämförelsen (en delad
+ * fall-tabell båda sviterna läser) är en egen skiva, inte en bieffekt av
+ * denna — bokförd, inte byggd.
  */
 export function normaliseraRaAttachment(ra: unknown): unknown {
   if (ra === null || typeof ra !== 'object') return ra;

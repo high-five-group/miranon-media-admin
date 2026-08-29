@@ -288,6 +288,48 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
     await expect(sammanfattning).toHaveText('Gäller: RIM-event, Steg 1');
   });
 
+  test('platslistan fallerar: felet SYNS, Plats-axeln stängs av, och sammanfattningen ljuger inte', async ({
+    page,
+    network,
+  }) => {
+    // ═══ FRÅNVARON AV BESKED ÄR FARLIGARE ÄN BESKEDET ═══
+    //
+    // `usePlacesList` som fallerar ger `data === undefined` → tom lista →
+    // visuellt oskiljbar från "basen har inga platser". Lotta hade kunnat
+    // ladda upp en bilaga hon TROR blir platsbunden, medan den blir
+    // `Gemensam` utan axlar = ALLA event (PRD TASK-338 berättelse 3).
+    network.use(bilagorHandler());
+    network.use(http.get(EF('get-places'), () => new Response(null, { status: 500 })));
+
+    await gotoEventlage(page);
+    await oppnaRackviddsdialog(page);
+    const dialog = page.getByRole('dialog');
+    await valjRackvidd(page, DELAT_RADIO);
+
+    // Notistrappans klass "uppgiftsgenererat fel, knutet till en yta"
+    // (DESIGN-SYSTEM-SPEC.md § 21, ADR-121 beslut 4): inline MessageBox,
+    // intill det som gick fel.
+    await expect(dialog.getByText('Platserna kunde inte hämtas')).toBeVisible();
+
+    // Plats-axeln är AVSTÄNGD i stället för tomt lockande.
+    await expect(platsValjare(page)).toBeDisabled();
+
+    // Den DELADE vägen stängs INTE av — en axellös gemensam bilaga ("alla
+    // event") är ett fullt legitimt val som inte behöver platslistan, och i
+    // räckviddsläget hade ett avstängt "Delat dokument" (där "Bara detta
+    // event" redan är avstängd) lämnat dialogen utan något giltigt val alls.
+    await expect(dialog.getByRole('radio', { name: DELAT_RADIO })).toBeEnabled();
+    await expect(dialog.getByRole('button', { name: 'Ladda upp' })).toBeEnabled();
+
+    // Och sammanfattningen säger fortfarande SANNINGEN om vad som skickas,
+    // så ingen kan tro att en plats är vald.
+    await expect(dialog.locator('[aria-live="polite"]')).toHaveText('Gäller: alla event');
+
+    // De två axlar som INTE beror på platslistan fungerar oförändrat.
+    await valjIAxel(page, familjValjare, 'RIM');
+    await expect(dialog.locator('[aria-live="polite"]')).toHaveText('Gäller: RIM-event');
+  });
+
   test('AC #2: räckviddsläget (utan valt event) visar gemensamma dokument, "Bara detta event" avstängd', async ({
     page,
     network,
@@ -330,6 +372,110 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
       .filter({ hasText: BILAGA_GEMENSAM.namn });
     await expect(gemensamRadRackviddslage.getByRole('button', { name: 'Ersätt' })).toBeVisible();
     await expect(gemensamRadRackviddslage.getByRole('button', { name: 'Radera' })).toBeVisible();
+  });
+
+  // ═══ "ERSÄTT" FÅR ALDRIG TAPPA EN AXEL (runda 2, WARNING) ═══
+  //
+  // `useReplaceAttachment` laddar upp den NYA filen med DEN GAMLA radens
+  // räckvidd och raderar sedan den gamla posten. Tappas `plats` på vägen blir
+  // den nya raden `Gemensam` med noll axlar — vilket per ADR-125 § 1 betyder
+  // ALLA EVENT. Lotta hade alltså bytt en fil och oavsiktligt lagt
+  // Rönninge-parkeringsbilagan på varje Falköping- och Gotland-event (PRD
+  // TASK-338 berättelse 3). En tyst UPPVIDGNING syns inte i UI:t och fångas
+  // inte av något annat test — därför dessa två.
+
+  test('Ersätt i räckviddsläget bär den ersatta radens ALLA axlar vidare (plats inkluderad)', async ({
+    page,
+    network,
+  }) => {
+    network.use(bilagorHandler());
+
+    let skickadKropp: Record<string, unknown> | null = null;
+    let skickadeNycklar: string[] = [];
+    let raderadId: string | null = null;
+    network.use(
+      http.post(EF('upload-attachment'), async ({ request }) => {
+        skickadKropp = (await request.json()) as Record<string, unknown>;
+        skickadeNycklar = Object.keys(skickadKropp);
+        return json({ attachment: { ...BILAGA_GEMENSAM, id: 'recBilagaErsatt0001' } });
+      }),
+      http.post(EF('delete-attachment'), async ({ request }) => {
+        const kropp = (await request.json()) as { attachmentId?: string };
+        raderadId = kropp.attachmentId ?? null;
+        return json({ deleted: true });
+      }),
+    );
+
+    // RÄCKVIDDSLÄGET är enda platsen en gemensam bilaga FÅR ersättas
+    // (ADR-118 beslut 3, oförändrat) — därför prövas fallet här.
+    await gotoRackviddslage(page);
+    const rad = page.getByTestId('dokument-fil').filter({ hasText: BILAGA_GEMENSAM.namn });
+    await expect(rad.getByRole('button', { name: 'Ersätt' })).toBeVisible();
+
+    // "Ersätt" är en egen `FileTrigger` per rad — inputen SCOPAS till raden,
+    // annars träffar `setInputFiles` vilken som helst av ytans filväljare.
+    await rad.locator('input[type="file"]').setInputFiles({
+      name: 'Parkering-v2.pdf',
+      mimeType: 'application/pdf',
+      buffer: Buffer.from('%PDF-1.4 ersatt-fixtur'),
+    });
+
+    await expect.poll(() => raderadId).toBe(BILAGA_GEMENSAM.id);
+
+    // HELA räckvidden följer med — inte bara `rackvidd`.
+    expect(skickadKropp).toMatchObject({
+      rackvidd: 'Gemensam',
+      kursfamilj: 'RIM',
+      plats: 'recPlatsRonninge01',
+    });
+    // Plats-axeln bär den ERSATTA radens rec-ID, aldrig platsnamnet.
+    const kropp: Record<string, unknown> = { ...(skickadKropp ?? {}) };
+    expect(kropp.plats).toBe(BILAGA_GEMENSAM.plats.id);
+    // Tom axel förblir UTELÄMNAD (raden har ingen kursnivå).
+    expect(skickadeNycklar).not.toContain('kursniva');
+  });
+
+  test('Ersätt på en EVENT-EGEN rad skickar INGEN plats-axel (negativ kontroll)', async ({
+    page,
+    network,
+  }) => {
+    network.use(bilagorHandler());
+
+    let skickadKropp: Record<string, unknown> | null = null;
+    let skickadeNycklar: string[] = [];
+    let raderadId: string | null = null;
+    network.use(
+      http.post(EF('upload-attachment'), async ({ request }) => {
+        skickadKropp = (await request.json()) as Record<string, unknown>;
+        skickadeNycklar = Object.keys(skickadKropp);
+        return json({ attachment: { ...BILAGA_EGEN, id: 'recBilagaErsatt0002' } });
+      }),
+      http.post(EF('delete-attachment'), async ({ request }) => {
+        const kropp = (await request.json()) as { attachmentId?: string };
+        raderadId = kropp.attachmentId ?? null;
+        return json({ deleted: true });
+      }),
+    );
+
+    // Eventläget: den EGNA raden bär Ersätt (den gemensamma gör det inte,
+    // AC #4 ovan).
+    await gotoEventlage(page);
+    const rad = page.getByTestId('dokument-fil').filter({ hasText: BILAGA_EGEN.namn });
+    await rad.locator('input[type="file"]').setInputFiles({
+      name: 'Program-v2.pdf',
+      mimeType: 'application/pdf',
+      buffer: Buffer.from('%PDF-1.4 ersatt-fixtur'),
+    });
+
+    await expect.poll(() => raderadId).toBe(BILAGA_EGEN.id);
+
+    expect(skickadKropp).toMatchObject({ rackvidd: 'Event' });
+    // Axlarna får INTE läcka in på en event-egen rad — EF:ens write-schema
+    // avvisar dem uttryckligen för räckvidd Event, så en läcka blir en 400
+    // i drift, inte ett testfel.
+    expect(skickadeNycklar).not.toContain('plats');
+    expect(skickadeNycklar).not.toContain('kursfamilj');
+    expect(skickadeNycklar).not.toContain('kursniva');
   });
 
   test('AC #5: eventläget är axe-rent (badge + räckviddsval synliga)', async ({

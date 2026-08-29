@@ -2153,6 +2153,14 @@ function RackviddsDialog({
   // saknats i dialogen tills sidan laddades om.
   const platserQuery = usePlacesList();
   const platser = platserQuery.data ?? [];
+  // [TASK-338.3 runda 2] FELET MÅSTE SYNAS, inte tolkas som "inga platser".
+  // `usePlacesList` som fallerar ger `data === undefined`, alltså en TOM
+  // lista — visuellt oskiljbar från en bas utan platser. Lotta hade då
+  // kunnat ladda upp en bilaga hon TROR blir platsbunden, medan den i
+  // själva verket blir `Gemensam` utan axlar = ALLA event (PRD TASK-338
+  // berättelse 3: fel information går ut). Frånvaron av ett besked är här
+  // farligare än beskedet självt.
+  const platserFel = platserQuery.isError;
 
   const gemensam = rackvidd === AttachmentScope.GEMENSAM;
   const kursfamiljHarNivaer = kursfamilj != null && KURSFAMILJ_MED_NIVAER.has(kursfamilj);
@@ -2345,6 +2353,7 @@ function RackviddsDialog({
             <Select
               label="Plats"
               hideLabel
+              isDisabled={platserFel}
               selectedKey={platsId ?? ALLA_AXEL}
               onSelectionChange={(key) => setPlatsId(axelVarde(key))}
             >
@@ -2355,6 +2364,37 @@ function RackviddsDialog({
                 </SelectItem>
               ))}
             </Select>
+
+            {/* ═══ PLATSLISTANS FEL — INLINE, INTILL DEN AXEL SOM GICK FEL ═══
+                (kortets runda 2, INFO-fyndet.)
+
+                KLASSEN ÄR GIVEN, INTE VALD: "uppgiftsgenererat fel, knutet
+                till en yta" i notistrappan (`DESIGN-SYSTEM-SPEC.md` § 21,
+                ADR-121 beslut 4) → `MessageBox`, inline intill det som gick
+                fel. Samma primitiv och samma `intent="error"` som ytans
+                övriga fel ("Kunde inte hämta bilagor", "Kunde inte ladda upp
+                filen"). Trappans egen kolumn "Förskjuter layout?" säger JA
+                för denna klass — felet får alltså kosta höjd, till skillnad
+                mot allt annat i denna dialog.
+
+                DEN DELADE VÄGEN STÄNGS INTE AV, och det är ett medvetet val
+                mot en näraliggande frestelse: i räckviddsläget är "Bara
+                detta event" redan avstängd (inget event att koppla mot), så
+                ett avstängt "Delat dokument" hade lämnat dialogen UTAN något
+                giltigt val alls — en återvändsgränd där Lotta inte kan ladda
+                upp någonting. Dessutom är en axellös gemensam bilaga ("alla
+                event") ett FULLT LEGITIMT val som inte behöver platslistan.
+                Skyddet ligger i stället i att (a) felet syns, (b)
+                Plats-selecten är avstängd i stället för tomt lockande, och
+                (c) sammanfattningsraden nedan fortsätter säga sanningen
+                ("Gäller: alla event") — hon kan alltså inte tro att hon valt
+                en plats. */}
+            {platserFel && (
+              <MessageBox intent="error" title="Platserna kunde inte hämtas">
+                Försök igen om en stund. Du kan fortfarande ladda upp filen, men inte koppla den
+                till en plats.
+              </MessageBox>
+            )}
 
             {/* ═══ SAMMANFATTNINGEN — VAD VALET BETYDER, I KLARTEXT ═══
                 (kortets AC #1; PRD TASK-338 berättelse 6: *"se i klartext vad

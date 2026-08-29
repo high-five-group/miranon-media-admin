@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-29 08:03'
-updated_date: '2026-08-29 10:09'
+updated_date: '2026-08-29 10:46'
 labels:
   - ready-for-agent
 dependencies:
@@ -73,4 +73,26 @@ FIXTURVÄRLDEN: get-places saknade handler. Dialogen läser usePlacesList vid va
 EJ RÖRDA MED AVSIKT: supabase/ (338.2 äger EF:en), scripts/seed-dokument-fixture.mjs (skriver legacy-värden mot staging via EF:en, som fortfarande accepterar och normaliserar dem på skrivvägen).
 
 GRINDAR (nakna exitkoder, mätta): typecheck 0 · biome 0 · build 0 · test:api:pure 0 (860 test, varav nya tests/api/rackvidds-text.test.ts 25 och attachment-layer-independence 7) · check-langa-streck 0 (263 filer) · check-facit 0 · acceptance --workers=1 över dokument-* + atgarder-bilageval-send: 68 passed, exit 0. En flake observerad i ett mellanliggande varv (dokument-forhandsgranskning-popup-policy, ERR_CONNECTION_REFUSED på page.goto — dev-servern, inte ett assert); grön i isolerad omkörning och i den slutliga batchen.
+
+RUNDA 2 (granskad d029c7d1) — tre rättelser, alla i denna commit.
+
+1. WARNING/auto-fix, Ersätt-fixen saknade test. Två nya fall i dokument-rackviddsval.acceptance.test.ts, samma rigg som "flödet ände-till-ände":
+   - "Ersätt i räckviddsläget bär den ersatta radens ALLA axlar vidare (plats inkluderad)" — fångar upload-attachment-kroppen vid Ersätt på BILAGA_GEMENSAM (rackvidd Gemensam, kursfamilj RIM, plats Rönninge) och assertar rackvidd 'Gemensam' + kursfamilj 'RIM' + plats === den ersatta radens rec-ID (recPlatsRonninge01, läst ur fixturens plats.id, inte en literal). Assertar dessutom att tom axel (kursniva) förblir UTELÄMNAD, och att delete-attachment fick den gamla radens id.
+   - "Ersätt på en EVENT-EGEN rad skickar INGEN plats-axel (negativ kontroll)" — eventläget, BILAGA_EGEN: rackvidd 'Event' och varken plats, kursfamilj eller kursniva i kroppen (EF:ens write-schema avvisar dem för räckvidd Event, så en läcka blir 400 i drift).
+   TVÅSIDIGT BEVIS: med `plats: current.plats?.id ?? undefined` borttagen ur GemensamBilageRadRow föll det positiva testet (exit 1, toMatchObject "- Expected - 1 / + Received + 0" på plats-nyckeln); efter revert exit 0 (3 passed). Mutationen återställd, verifierad med grep (2 förekomster kvar, en per anropsställe).
+
+2. WARNING/auto-fix, ADR-083-prosa i src/domain/schemas/Attachment.schema.ts § normaliseraRaAttachment. Båda påståendena rättade, ingen kodändring:
+   (a) "BYTE FÖR BYTE samma tre som EF:ens normaliseraRackvidd" — nu uppdelat: de TRE första grenarna speglar normaliseraRackvidd, den FJÄRDE (okänt optionsnamn -> null) speglar mapAttachmentRecord (_shared/attachments.ts), som defusar mot VALID_ATTACHMENT_SCOPES. Klienten gör båda stegen eftersom den inte kan veta vilken EF-version som är deployad.
+   (b) "rackvidds-text.test.ts § Legacy låser BÅDA sidornas utfall mot samma fall-tabell" — FALSKT, struket. Ny text säger rakt ut att ingen korsjämförelse är mekaniserad: klientsviten importerar bara klientfunktionen, EF-sidan låses separat i tests/api/rackvidd-matchning.test.ts (verifierad att den finns på 338.2-grenen, git cat-file mot FETCH_HEAD) med sin EGEN fall-tabell, och de två hålls i synk för hand. En delad fall-tabell båda sviterna läser är BOKFÖRD som egen skiva, inte byggd.
+
+3. INFO, platslistans felfall. usePlacesList som fallerar gav data === undefined -> tom lista, visuellt oskiljbar från "basen har inga platser".
+   BYGGT: platserQuery.isError konsumeras; inline MessageBox intent="error" "Platserna kunde inte hämtas" INUTI axelblocket (notistrappans klass "uppgiftsgenererat fel, knutet till en yta", DESIGN-SYSTEM-SPEC.md § 21 / ADR-121 beslut 4 — samma primitiv som ytans övriga fel; trappans egen kolumn "Förskjuter layout?" säger JA för klassen). Plats-selecten får isDisabled i felfallet.
+   AVVIKELSE MOT INSTRUKTIONEN, medveten: den DELADE vägen stängs INTE av. I räckviddsläget är "Bara detta event" redan avstängd (inget event att koppla mot), så ett avstängt "Delat dokument" hade lämnat dialogen UTAN något giltigt val alls — en återvändsgränd där Lotta inte kan ladda upp någonting. Dessutom är en axellös gemensam bilaga ("alla event") ett fullt legitimt val som inte behöver platslistan. Instruktionens "eller motsvarande minsta form" tagen: felet syns, Plats-axeln är avstängd i stället för tomt lockande, och sammanfattningsraden fortsätter säga sanningen ("Gäller: alla event") så ingen kan tro att en plats är vald.
+   TEST: "platslistan fallerar: felet SYNS, Plats-axeln stängs av, och sammanfattningen ljuger inte" (MSW 500 på get-places) — assertar felrutan, disabled Plats-select, ENABLED delat-radio + Ladda upp-knapp, sammanfattningen "Gäller: alla event", och att de två platsoberoende axlarna fungerar oförändrat ("Gäller: RIM-event").
+
+GEOMETRILÅSET HÅLLER: de fem lägena mäts fortfarande identiska (desktop 1280x720 och mobil 375 px, båda gröna). Felrutan bor inuti axelblocket och är därmed reserverad/inert i event-läget som allt annat; den renderas bara i felfallet, vilket är en annan session än geometritestets.
+
+GRINDAR runda 2 (nakna exitkoder): typecheck 0 · biome 0 · test:api:pure 0 (860) · check-langa-streck 0 (263 filer) · check-facit 0 · acceptance --workers=1 över dokument-* + atgarder-bilageval-send: 71 passed, exit 0 (var 68 i runda 1; +3 nya fall). Ingen flake denna gång.
+
+EJ GJORT, per instruktion: main är INTE inmergad (orkestreraren säger till när #2093 landat, konflikt väntas i DokumentYta.tsx/Attachment.schema.ts). supabase/ orört. Ej armerad.
 <!-- SECTION:NOTES:END -->
