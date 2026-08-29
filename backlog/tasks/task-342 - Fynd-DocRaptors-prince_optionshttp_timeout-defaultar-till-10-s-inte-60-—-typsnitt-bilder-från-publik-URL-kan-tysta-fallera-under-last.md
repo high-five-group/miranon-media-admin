@@ -3,10 +3,10 @@ id: TASK-342
 title: >-
   Fynd: DocRaptors prince_options[http_timeout] defaultar till 10 s, inte 60 —
   typsnitt/bilder från publik URL kan tysta fallera under last
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-29 14:33'
-updated_date: '2026-08-29 15:42'
+updated_date: '2026-08-29 17:28'
 labels:
   - ready-for-agent
 dependencies: []

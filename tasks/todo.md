@@ -15,11 +15,11 @@
 
 ## Aktuellt fokus
 
-**Session 113 🔄 ÅTERUPPTAGEN (paus 1 avslutad 2026-08-29 ~15:00 UTC,
-`lifecycle: active`; paus-PR `#2108` mergad, `origin/main` `1b0b091f`) —
-BILAGESPÅRETS PROD-RÖKTEST: ÅTTA PUNKTER, SEX I PROD-BYGGET, TVÅ VÄNTAR MARCUS
-PROD-MOMENT.** Marcus fem+tre röktest-noteringar → 20 landade PR:er samma dag
-(`#2074`–`#2107`): `309.38` väntetext + Förhandsgranska · `309.39` höjdlåset
+**Session 113 ⏸️ PAUSAD (paus 2, 2026-08-29 ~17:35 UTC, `lifecycle: paused`;
+prod-momentet i mål, väntar Marcus prod-vandring) —
+BILAGESPÅRETS PROD-RÖKTEST: SJU AV ÅTTA PUNKTER AVGJORDA, PROD SKARPT,
+TESTRUNDAN VÄNTAR.** Marcus fem+tre röktest-noteringar → 30+ landade PR:er
+samma dag (`#2074`–`#2120`): `309.38` väntetext + Förhandsgranska · `309.39` höjdlåset
 (två rotorsaker) · `309.40` typfilter · `339` pillen bort · `340.1`
 promovering+ersätt (EF) · `340.2` bekräftelse på plats · `340.3`/`340.4` ·
 `338.1`/`338.2`/`338.5`/`338.6`-skriptet. Research-passet
@@ -29,10 +29,18 @@ delade bilagor, väg A) + PRD `340` (skapa-flödet A+E). **Granskade klara i
 draft:** `#2094` (`338.3`) + `#2103` (`338.4`) — landar EFTER Marcus
 prod-moment (`338.6` runbook i kortet, briefing i chatten). Trådar `T176`,
 `T177`; kort `309.41`, `341`, `342`; 8 lessons-fragment. **Numrering:** ADR
-128 · kort 343/309.42 · L655 · T178 · session 113. **NÄSTA:** resume →
-Marcus prod-steg → armera `#2094`/`#2103` → andra EF-deploy → testrundan.
-HANDOFF: sessionsdok S113 § Paushistorik (historik-form efter resume).
-Full narrativ: Del 1–5.
+128 · kort 346/309.42 · L655 · T178 · 9 fragment · session 113.
+**PROD ÄR SKARPT:** schema + **46/46 EF** (deploy 2 kl 17:12,
+`update-attachment-scope` v1) + 2 rader migrerade; klient och EF i takt.
+Sju av åtta morgonpunkter avgjorda — punkt 5 (`T176`) är en dom, ingen skiva.
+**Allowlist-luckan fångad före deployen** (`#2103` levererade EF:en men rörde
+aldrig `.prod-functions-allowlist.conf`; `excluded`-grenen är icke-fällande) →
+`#2117`, tre rundor. Nya kort: `343` (stale test på main), `344`
+(`.review-policy.json`-luckan), `345` (regex-paritet). Testplanen publicerad
+och granskad mot sju källkort — **16 avvikelser rättade**.
+**NÄSTA:** resume → Marcus prod-vandring (30 poster, 3 domar) → fynd-kort →
+Done-flippar → facit-baslinjer → skörd → `session-end` (114).
+HANDOFF: sessionsdok S113 § PAUSLÄGE (paus 2). Full narrativ: Del 1–7.
 
 **Session 112 ⏸️ PAUSAD (paus 3, 2026-08-28 ~16:30, `lifecycle: paused`; resume 2 körd AFK på
 fullt mandat — "du bestämmer") — AFK-VÅG 5 LANDAD: FLASKHALSEN BRUTEN, REVIEW-GRINDEN MEKANISK,
