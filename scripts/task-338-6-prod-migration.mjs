@@ -97,6 +97,7 @@
 // Airtable-API-fel (nätverk/HTTP).
 
 import { pathToFileURL } from 'node:url';
+import { kravStagingLedigt } from './lib/staging-preflight.mjs';
 
 // ---------------------------------------------------------------------------
 // Konstanter — projekt-specifika. Logiken nedanför är universell.
@@ -601,6 +602,14 @@ async function main() {
       'ℹ️  --utfor körs. Har --kontrollera <bas-id> körts först för att granska planen? Inte obligatoriskt, ' +
         'men rekommenderat (TASK-338.6).',
     );
+  }
+
+  // Staging-mutexen (TASK-91/TASK-84) bevakar staging-kontention — irrelevant
+  // för en prod-körning (samma undantag som create-eventinnehall-modell.mjs
+  // § TASK-309.9). Körs EFTER policy-/token-guards ovan (ett saknat token ska
+  // synas som DET felet) och FÖRE första Airtable-anropet nedan.
+  if (!korMotProd) {
+    kravStagingLedigt(`lokal task-338-6-prod-migration (${args.mode})`);
   }
 
   try {
