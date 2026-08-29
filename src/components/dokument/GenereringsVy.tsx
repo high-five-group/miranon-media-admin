@@ -961,7 +961,7 @@ export function GenereringsVy({
    * (inte en banner mitt i ett pågående arbete). Genereringsvyn är just en
    * linjär uppgift: den öppnas för att skapa ETT dokument och är slut när
    * dokumentet finns. Nästa steg är därför Lottas VAL i bekräftelsen —
-   * "Visa dokumentet" eller "Till dokumenten" — inte ett fönster appen
+   * "Visa dokumentet" eller "Till bilagorna" — inte ett fönster appen
    * öppnar åt henne.
    *
    * FÖRHANDSGRANSKNINGENS fönster är OFÖRÄNDRAT (se `startaForhandsgranskning`
@@ -1214,7 +1214,7 @@ export function GenereringsVy({
               Visa dokumentet
             </Button>
             <Button intent="secondary" onPress={onTillDokumenten}>
-              Till dokumenten
+              Till bilagorna
             </Button>
           </div>
         </div>

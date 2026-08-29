@@ -833,7 +833,7 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
 
     const rullande = page.getByTestId('dokument-lista');
     await expect(rullande).toHaveAttribute('tabindex', '0');
-    await expect(rullande).toHaveAttribute('aria-label', 'Dokument');
+    await expect(rullande).toHaveAttribute('aria-label', 'Bilagor');
     // ═══ EXAKT FYRA KORT, DET FEMTE HELT UTANFÖR KANTEN ═══
     //
     // Marcus 2026-08-18: *"se till att listan visar exakt 4 dokumentrader,
@@ -960,7 +960,7 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
   // smyga tillbaka vid en framtida ändring), och att väljarvägen faktiskt
   // fungerar i båda riktningarna.
 
-  test('räckvidds-axeln: väljaren bär "Delade dokument" och tar en till förvaltningsläget', async ({
+  test('räckvidds-axeln: väljaren bär "Delade bilagor" och tar en till förvaltningsläget', async ({
     page,
     network,
   }) => {
@@ -971,7 +971,7 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
     await expect(page.getByRole('button', { name: 'Visa gemensamma dokument' })).toHaveCount(0);
 
     await page.getByTestId('event-valjare-trigger').click();
-    const alternativ = page.getByRole('option', { name: 'Delade dokument', exact: true });
+    const alternativ = page.getByRole('option', { name: 'Delade bilagor', exact: true });
     await expect(alternativ).toBeVisible();
     await alternativ.click();
 
@@ -998,7 +998,7 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
     // Före denna ändring stod "Välj event" här — vilket läser som ett ogjort
     // val trots att förvaltningsläget ÄR ett valt läge.
     const trigger = page.getByTestId('event-valjare-trigger');
-    await expect(trigger).toContainText('Delade dokument');
+    await expect(trigger).toContainText('Delade bilagor');
     await expect(trigger).not.toContainText('Välj event');
 
     // Och vägen tillbaka in i ett event fungerar från samma kontroll.
@@ -1274,7 +1274,8 @@ test.describe('TASK-309.23 — uppladdningsdialogens geometri är låst', () => 
  * sedan mallarna och generatorerna flyttat upp i kortets handlingsrad
  * (`DokumentLista` § docblock, `SkapaDokumentMeny`), och nyckeln är riven i
  * samma drag — både `handleRackviddsByte`s nollställning och `dokument.tsx`s
- * `setTyp('bilaga')` i "Till dokumenten".
+ * `setTyp('bilaga')` i "Till bilagorna" (knappen hette "Till dokumenten"
+ * fram till T176).
  *
  * DEFEKTEN DEN SKYDDADE MOT KAN INTE UPPSTÅ IGEN: den krävde ett filter som
  * överlevde ett räckviddsbyte osynligt. Att `?typ` inte SÄTTS av "Till

@@ -325,7 +325,8 @@ body {
    tangentbord och globalen målar — även när stängningen skedde med MUS.
    MÄTT vid 390 px före regeln, mus-öppna + musklick utanför:
    `data-focus-visible: null` (RAC säger PEKARE) men `outline: solid 2px
-   rgb(27, 73, 101)`. Gällde `Skapa dokument ▾`, radernas ⋯ OCH
+   rgb(27, 73, 101)`. Gällde `Skapa bilaga ▾` (hette `Skapa dokument ▾`
+   vid mätningen), radernas ⋯ OCH
    eventväljaren — `aria-haspopup` är `"true"` för menyer och `"listbox"`
    för Select/EventValjare, så attributets NÄRVARO är det som träffar exakt
    popover-triggers och inget annat.

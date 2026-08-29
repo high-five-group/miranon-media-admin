@@ -8,12 +8,18 @@ import { useDataSource } from '@/data/useDataSource';
 import { queryKeys } from '@/queries/keys';
 
 export const Route = createFileRoute('/_authenticated/mer/dokument')({
-  staticData: { title: 'Dokument' },
+  staticData: { title: 'Bilagor' },
   component: DokumentPage,
 });
 
-// Mer — Dokument-ytan (`T131`): /mer/dokument. Ytan där bilagor förvaltas
-// (ORDLISTA § Bilaga: "Dokument är YTAN i Mer där bilagor hanteras").
+// Mer — Bilagor-ytan (`T131`): /mer/dokument. Ytan där bilagor förvaltas.
+//
+// [T176, 2026-08-29] ETIKETTEN är "Bilagor" (Mer-fliken, `<h1>` och
+// `staticData.title`), SÖKVÄGEN är oförändrad `/mer/dokument`. ORDLISTA
+// § Bilaga säger *"Dokument är YTAN i Mer där bilagor hanteras"* — den
+// meningen beskriver den GAMLA etiketten och är Marcus att uppdatera; koden
+// föregriper den inte. Filnamn, komponentnamn och `data-testid` följer
+// sökvägen, inte etiketten.
 //
 // [PROMOVERAD, TASK-309.8, ADR-103 B2 + ADR-125 § 6] Routen bär nu SJÄLV
 // dispatchen mellan de två skarpa lägena — tidigare bakom `?variant=a`,

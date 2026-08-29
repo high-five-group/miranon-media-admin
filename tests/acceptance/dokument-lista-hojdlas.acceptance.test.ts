@@ -367,7 +367,7 @@ test.describe('DokumentLista (eventläge) — låst fyra-radershöjd, nu UTAN fi
     expect(sju.antalKort).toBe(7);
     provaKortkanter(sju);
     await expect(page.getByTestId('dokument-lista')).toHaveAttribute('tabindex', '0');
-    await expect(page.getByTestId('dokument-lista')).toHaveAttribute('aria-label', 'Dokument');
+    await expect(page.getByTestId('dokument-lista')).toHaveAttribute('aria-label', 'Bilagor');
   });
 
   test('AC #1 / regel 6: samma invariant vid 375 px', async ({ page, network }) => {
@@ -626,7 +626,7 @@ test.describe('GemensamtLage (räckviddsläge) — samma regel (tidigare saknad,
     await expect(page.getByTestId('dokument-lista')).toHaveAttribute('tabindex', '0');
     await expect(page.getByTestId('dokument-lista')).toHaveAttribute(
       'aria-label',
-      'Delade dokument',
+      'Delade bilagor',
     );
 
     // `goto` i stället för `reload()` — samma stabilitetsskäl som

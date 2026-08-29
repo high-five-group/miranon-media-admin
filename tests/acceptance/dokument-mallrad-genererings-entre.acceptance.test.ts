@@ -17,15 +17,15 @@ import { expect, test } from './acceptance-bas';
  * [T176, 2026-08-29] KATALOGEN ÄR EN MENY, INTE LISTRADER. `MallRad` är
  * riven: mallarna är HANDLINGAR (man skapar ett dokument), inte dokument,
  * och de bodde tidigare som rader i dokumentlistan där två av sex poster låg
- * under rullningskanten i prod. Entrén är nu `Skapa dokument ▾` i kortets
+ * under rullningskanten i prod. Entrén är nu `Skapa bilaga ▾` i kortets
  * handlingsrad (`SkapaDokumentMeny` i `DokumentYta.tsx`), med en `menuitem`
  * per mall. VÄGEN är oförändrad — samma nuqs-nycklar `?vy=generering` +
  * `?mall=` — så testerna nedan är SELEKTOR-uppdaterade, inte omskrivna.
  */
 
-/** Öppnar "Skapa dokument"-menyn och väljer posten `namn`. */
+/** Öppnar "Skapa bilaga"-menyn och väljer posten `namn`. */
 async function valjSkapaDokument(page: Page, namn: string) {
-  await page.getByRole('button', { name: 'Skapa dokument' }).click();
+  await page.getByRole('button', { name: 'Skapa bilaga' }).click();
   await page.getByRole('menuitem', { name: namn }).click();
 }
 
@@ -93,7 +93,7 @@ test.describe('Dokument-ytan — mallkatalogens entré in i genereringsvyn (TASK
 
     await page.getByRole('button', { name: 'Tillbaka till Dokument' }).click();
     await expect(page.getByTestId('dokument-yta')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Skapa dokument' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Skapa bilaga' })).toBeVisible();
   });
 
   test('"Skapa Deltagarinformation" navigerar in i genereringsvyn med rätt mall', async ({

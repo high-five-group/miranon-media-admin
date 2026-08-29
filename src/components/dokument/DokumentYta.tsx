@@ -178,7 +178,7 @@
  */
 import { useQuery } from '@tanstack/react-query';
 import {
-  // [T176] "Skapa dokument ▾" — chevronen säger att knappen öppnar något,
+  // [T176] "Skapa bilaga ▾" — chevronen säger att knappen öppnar något,
   // samma affordans `Select`s trigger bär.
   ChevronDown,
   Download,
@@ -188,7 +188,7 @@ import {
   // som "fler val i den här raden" (samma val som `Files`/`Target` gjordes på
   // — ikonen ska läsa som det den gör).
   Ellipsis,
-  // [T176] "Skapa dokument"-triggerns ikon — ett dokument som TILLKOMMER.
+  // [T176] "Skapa bilaga"-triggerns ikon — en bilaga som TILLKOMMER.
   FilePlus,
   Files,
   // Radens ledande typglyf — `FileText` för pdf/okänt, `Image` för bilder.
@@ -473,7 +473,7 @@ export function DokumentYta() {
    * RÄCKVIDDSVÄXLINGEN — EN HANDLER, båda anropsvägarna.
    *
    * `onByte` (event → event, delade → event) och `gemensamtAlternativ.onValj`
-   * ("Delade dokument") är `EventValjare`s ENDA två vägar in i ett
+   * ("Delade bilagor") är `EventValjare`s ENDA två vägar in i ett
    * räckviddsbyte (se dess `onSelectionChange` — sentinel-grenen ELLER
    * event-grenen, aldrig båda för samma klick), och båda pekar hit.
    *
@@ -561,7 +561,7 @@ export function DokumentYta() {
           hon ändå."* Sidans tydlighet bärs i stället av strukturen — ett val,
           en knapp, en lista. Återinför den inte utan att fråga. */}
       <header className="flex flex-col gap-1 px-4">
-        <h1 className="font-semibold text-3xl">Dokument</h1>
+        <h1 className="font-semibold text-3xl">Bilagor</h1>
       </header>
 
       {/* Eventväljaren (Fynd 2): fundamentet är event-scopat, så ytan
@@ -571,7 +571,7 @@ export function DokumentYta() {
           default-vald här. TOMT LÄGE är sedan TASK-275.3 INTE längre "väntar
           på val" — det ÄR räckviddsläget (se GemensamtLage nedan). */}
       {/* VÄLJAREN ÄGER HELA RÄCKVIDDS-AXELN (Marcus 2026-08-18). Listan har
-          ett kontextlöst alternativ överst — "Delade dokument" — som är
+          ett kontextlöst alternativ överst — "Delade bilagor" — som är
           valt när `?event=` saknas. Ett val, en kontroll.
 
           Det ersätter knappen "Visa gemensamma dokument" som stod längst ner
@@ -601,7 +601,7 @@ export function DokumentYta() {
         <EventValjare
           // Den STORA, luftiga rutan — samma geometri som manuell anmälans
           // tomma läge (Marcus 2026-08-18). Dokument-ytans väljare är sidans
-          // primära val och står per konstruktion ALDRIG tom ("Delade dokument"
+          // primära val och står per konstruktion ALDRIG tom ("Delade bilagor"
           // är valt när `?event=` saknas), så pillformen var den enda den
           // någonsin visade. Se `EventValjare`s `form`-prop för hela motivet.
           form="fristaende"
@@ -609,11 +609,14 @@ export function DokumentYta() {
           valtEvent={valtEvent}
           onByte={(id) => handleRackviddsByte(id)}
           gemensamtAlternativ={{
-            // "Delade dokument", inte "Gemensamma dokument" (Marcus 2026-08-18).
-            // MODELLBEGREPPET är oförändrat: ORDLISTA.md § Gemensam bilaga och
-            // `AttachmentScope`-värdena rörs inte — detta är UI-språk, samma
-            // skillnad som `Nivå`→`Steg` redan bär (nivaSprak.ts).
-            etikett: 'Delade dokument',
+            // "Delade bilagor" (T176, 2026-08-29). Var "Delade dokument" —
+            // aldrig "Gemensamma dokument" (Marcus 2026-08-18) — och blev
+            // "bilagor" när BILAGA gjordes till ytans substantiv (ORDLISTA.md
+            // rad 179). MODELLBEGREPPET är oförändrat: ORDLISTA.md § Gemensam
+            // bilaga och `AttachmentScope`-värdena rörs inte — detta är
+            // UI-språk, samma skillnad som `Nivå`→`Steg` redan bär
+            // (nivaSprak.ts).
+            etikett: 'Delade bilagor',
             // `Files` — FLERA dokument, vilket är precis vad räckvidden betyder
             // (ORDLISTA.md § Gemensam bilaga: syns i varje berört events lista).
             // Kalender vore fel: den betyder event, och detta är valet UTAN
@@ -678,7 +681,7 @@ export function DokumentYta() {
                           giltigt drag så fort listan fick låst höjd och
                           inline-rullning
               2026-08-29  IN I KORTET, ovanför listan, tillsammans med
-                          "Skapa dokument" — handlingarna hör ihop som ETT
+                          "Skapa bilaga" — handlingarna hör ihop som ETT
                           block ("vad kan jag göra här?") och listan som ett
                           annat ("vad finns här?"); två handlingszoner på var
                           sin sida om listan var en zon för mycket
@@ -1968,12 +1971,12 @@ function BilageRadRow({
  * Raden bär TVÅ handlingar, i den ordning Lotta gör dem (*"Tror hon kommer
  * ladda upp mest"*, Marcus 2026-08-17):
  *
- *   1. `Ladda upp fil` — samma `FileTrigger`-flöde och samma
+ *   1. `Ladda upp bilaga` — samma `FileTrigger`-flöde och samma
  *      `uploadMutation` som knappen under listan hade. Den knappen är riven:
  *      två uppladdningsvägar på samma sida hade varit två ställen att hålla
  *      i synk, och `UppladdningsFel` bor kvar på SIDAN (dialogen rivs vid
  *      framgång och hade tagit felet med sig).
- *   2. `Skapa dokument ▾` — samma `Meny`-primitiv som radernas ⋯, med
+ *   2. `Skapa bilaga ▾` — samma `Meny`-primitiv som radernas ⋯, med
  *      mallarna och kvittot som poster.
  *
  * ── RÄCKVIDDSLÄGET FÅR BARA UPPLADDNINGEN, OCH DET ÄR DAGENS BETEENDE ──
@@ -2000,7 +2003,7 @@ function ListHandlingsRad({
   uploadMutation,
   onValjFil,
 }: {
-  /** `null` = räckviddsläget: bara uppladdning, ingen "Skapa dokument". */
+  /** `null` = räckviddsläget: bara uppladdning, ingen "Skapa bilaga". */
   eventId: string | null;
   uploadMutation: UploadMutation;
   onValjFil: (filer: FileList | null) => void;
@@ -2056,7 +2059,7 @@ function ListHandlingsRad({
             isDisabled={uploadMutation.isPending}
           >
             <Upload aria-hidden="true" size={IKON_STORLEK} className="shrink-0" />
-            {uploadMutation.isPending ? 'Laddar upp…' : 'Ladda upp fil'}
+            {uploadMutation.isPending ? 'Laddar upp…' : 'Ladda upp bilaga'}
           </Button>
         </FileTrigger>
       </div>
@@ -2066,8 +2069,9 @@ function ListHandlingsRad({
 }
 
 /**
- * "Skapa dokument ▾" — mallkatalogen plus kvittot, som meny i stället för
- * listrader.
+ * "Skapa bilaga ▾" — mallkatalogen plus kvittot, som meny i stället för
+ * listrader. (Komponentnamnet `SkapaDokumentMeny` är MEDVETET oförändrat:
+ * T176:s namnbyte gäller USER-SYNLIG text, inte symbolnamn.)
  *
  * MALLPOSTERNA gör EXAKT vad `MallRad`s chevron-knapp gjorde: sätter
  * `?mall=` och `?vy=generering` via nuqs, så `dokument.tsx`s routekomponent
@@ -2101,7 +2105,7 @@ function SkapaDokumentMeny({ eventId }: { eventId: string }) {
   return (
     <>
       <Meny
-        etikett="Skapa dokument"
+        etikett="Skapa bilaga"
         // `bottom start` (inte radernas `bottom end`): triggern står till
         // VÄNSTER i sin rad, så menyn ska växa åt höger.
         placement="bottom start"
@@ -2118,7 +2122,7 @@ function SkapaDokumentMeny({ eventId }: { eventId: string }) {
             className="min-h-11 w-full sm:w-auto"
           >
             <FilePlus aria-hidden="true" size={IKON_STORLEK} className="shrink-0" />
-            Skapa dokument
+            Skapa bilaga
             <ChevronDown aria-hidden="true" size={IKON_STORLEK} className="shrink-0" />
           </Button>
         }
@@ -2407,7 +2411,7 @@ function DokumentListRam({
  *   • TASK-309.40:s nollställning av `?typ` vid räckviddsbyte
  *     (`handleRackviddsByte`) — den fanns för att filtret annars överlevde
  *     ett byte osynligt.
- *   • TASK-340.2:s `setTyp('bilaga')` i `dokument.tsx`s "Till dokumenten"
+ *   • TASK-340.2:s `setTyp('bilaga')` i `dokument.tsx`s "Till bilagorna"
  *     (`GenereringsVy`s bekräftelseyta). NAVIGERINGEN är kvar — bara
  *     parametern är borta, och landningen visar nu bilagorna ändå eftersom
  *     listan inte kan visa något annat.
@@ -2498,7 +2502,7 @@ function DokumentLista({
             listRef={listRef}
             matadHojd={matadHojd}
             kanRulla={kanRulla}
-            ariaLabel="Dokument"
+            ariaLabel="Bilagor"
           >
             {/* ═══ RÄNNAN BOR INUTI `<li>` (`py-1`), ALDRIG SOM `gap-*` PÅ
                 `<ul>` — OCH DET ÄR HÖJDLÅSET SOM KRÄVER DET ═══
@@ -3081,7 +3085,7 @@ function RackviddsDialog({
  *
  * [T176, 2026-08-29] LÄGENA DELAR NU SKELETT HELT: samma `GRUPPKORT_KLASS`,
  * samma `DokumentListRam`, samma `ListHandlingsRad`. Den enda skillnaden är
- * att handlingsraden här saknar "Skapa dokument" — mallar och kvitto härleds
+ * att handlingsraden här saknar "Skapa bilaga" — mallar och kvitto härleds
  * ur ett events data och har inget meningsfullt läge utan valt event (samma
  * skäl som filterraden aldrig fanns här). Att lägena bar identiska men
  * SEPARATA klass-strängar var precis det som lät `sistaRadenBarLinje` saknas
@@ -3157,7 +3161,7 @@ function GemensamtLage({
               listRef={listRef}
               matadHojd={matadHojd}
               kanRulla={kanRulla}
-              ariaLabel="Delade dokument"
+              ariaLabel="Delade bilagor"
             >
               {/* `py-1` — se eventlägets kommentar på samma rad för varför
                   rännan bor i `<li>` och inte i ett `gap`. */}

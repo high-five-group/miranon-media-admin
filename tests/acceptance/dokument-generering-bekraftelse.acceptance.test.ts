@@ -28,13 +28,13 @@ import { expect, type Page, test } from './acceptance-bas';
  *
  *   AC #2 — bekräftelsen ersätter formuläret · tar fokus · bär EXAKT två
  *     val · rätt textvariant per svarsform (promoverad / underlagAndrat /
- *     ersatte / platsstandard, en MSW-fixtur per fall) · "Till dokumenten"
+ *     ersatte / platsstandard, en MSW-fixtur per fall) · "Till bilagorna"
  *     landar på dokumentvyn (T176: UTAN `?typ=bilaga` — filtret är rivet,
  *     se AC #2-testet) · axe 0 · tangentbords-
  *     vandringen bokförd · 375 px utan horisontell scroll.
  *   AC #3 — knappens etikett i BÅDA lägena, och att `kallhash` följer med
  *     anropet EFTER en förhandsgranskning (men inte utan).
- *   AC #4 — exakt EN annonsering vid bekräftelsen, och vad "Till dokumenten"
+ *   AC #4 — exakt EN annonsering vid bekräftelsen, och vad "Till bilagorna"
  *     faktiskt annonserar (mätt, se `annonseringsvakten` nedan).
  *
  * ── ETT NÄTVERKSPÅSTÅENDE, MED AVSIKT ────────────────────────────────────
@@ -347,7 +347,7 @@ test.describe('Genereringsvyn — bekräftelsen på plats (TASK-340.2)', () => {
     // tillbaka-knapp inte smyger med.
     await expect(bekraftelse.getByRole('button')).toHaveCount(2);
     await expect(bekraftelse.getByRole('button', { name: 'Visa dokumentet' })).toBeVisible();
-    await expect(bekraftelse.getByRole('button', { name: 'Till dokumenten' })).toBeVisible();
+    await expect(bekraftelse.getByRole('button', { name: 'Till bilagorna' })).toBeVisible();
   });
 
   test('review-runda 2: "Visa dokumentet" hämtar en FÄRSK signerad URL vid VARJE klick', async ({
@@ -525,7 +525,7 @@ test.describe('Genereringsvyn — bekräftelsen på plats (TASK-340.2)', () => {
     ).toBeVisible();
   });
 
-  test('AC #2: "Till dokumenten" landar på dokumentvyn med eventet kvar', async ({
+  test('AC #2: "Till bilagorna" landar på dokumentvyn med eventet kvar', async ({
     page,
     network,
   }) => {
@@ -534,7 +534,7 @@ test.describe('Genereringsvyn — bekräftelsen på plats (TASK-340.2)', () => {
     await page.getByRole('button', { name: 'Skapa bekräftelsebilaga' }).click();
     await expect(page.getByTestId('bekraftelse')).toBeVisible();
 
-    await page.getByRole('button', { name: 'Till dokumenten' }).click();
+    await page.getByRole('button', { name: 'Till bilagorna' }).click();
 
     await expect(page.getByTestId('dokument-yta')).toBeVisible();
     // [T176, 2026-08-29] `?typ=bilaga` SÄTTS INTE LÄNGRE — och nyckeln får
@@ -563,7 +563,7 @@ test.describe('Genereringsvyn — bekräftelsen på plats (TASK-340.2)', () => {
     expect(results.violations).toEqual([]);
   });
 
-  test('AC #2: tangentbordsvandringen går fokus → Visa dokumentet → Till dokumenten', async ({
+  test('AC #2: tangentbordsvandringen går fokus → Visa dokumentet → Till bilagorna', async ({
     page,
     network,
   }) => {
@@ -584,7 +584,7 @@ test.describe('Genereringsvyn — bekräftelsen på plats (TASK-340.2)', () => {
     await expect(page.getByRole('button', { name: 'Visa dokumentet' })).toBeFocused();
 
     await page.keyboard.press('Tab');
-    await expect(page.getByRole('button', { name: 'Till dokumenten' })).toBeFocused();
+    await expect(page.getByRole('button', { name: 'Till bilagorna' })).toBeFocused();
 
     // Bakåt igen — ordningen är symmetrisk, inget fokusfällt-mönster.
     await page.keyboard.press('Shift+Tab');
@@ -692,7 +692,7 @@ test.describe('Genereringsvyn — bekräftelsen på plats (TASK-340.2)', () => {
     expect(efterSkapa.map((a) => a.text).join(' | ')).not.toContain('har skapats');
   });
 
-  test('AC #4: "Till dokumenten" annonserar högst en gång, aldrig dubbelt', async ({
+  test('AC #4: "Till bilagorna" annonserar högst en gång, aldrig dubbelt', async ({
     page,
     network,
   }) => {
@@ -705,12 +705,12 @@ test.describe('Genereringsvyn — bekräftelsen på plats (TASK-340.2)', () => {
      * ändras — men bara när det SATTA MEDDELANDET faktiskt byter värde
      * (`setMessage(title)`; samma sträng ger ingen DOM-ändring och därmed
      * ingen annonsering). Genereringsvyn och dokumentlistan är SAMMA route
-     * ("Dokument"), så antalet beror på vilket värde regionen redan bär:
+     * ("Bilagor"), så antalet beror på vilket värde regionen redan bär:
      *
      *   · Direktlänk hit (detta test): regionen är TOM, och navigeringen
-     *     sätter "Dokument" → EXAKT EN annonsering.
+     *     sätter "Bilagor" → EXAKT EN annonsering.
      *   · Inifrån appen (Lotta klickade sig hit från listan): regionen bär
-     *     redan "Dokument" → INGEN ny annonsering.
+     *     redan "Bilagor" → INGEN ny annonsering.
      *
      * BÅDA är förenliga med AC #4:s syfte, som är att bekräftelsen inte ska
      * krocka med en route-annonsering. Det som INTE får hända — två
@@ -726,15 +726,15 @@ test.describe('Genereringsvyn — bekräftelsen på plats (TASK-340.2)', () => {
     await expect(page.getByTestId('bekraftelse')).toBeVisible();
 
     await nollstallAnnonseringar(page);
-    await page.getByRole('button', { name: 'Till dokumenten' }).click();
+    await page.getByRole('button', { name: 'Till bilagorna' }).click();
     await expect(page.getByTestId('dokument-yta')).toBeVisible();
 
     const efterNavigering = await lasAnnonseringar(page);
     expect(efterNavigering.length).toBeLessThanOrEqual(1);
-    expect(efterNavigering).toEqual([{ roll: 'polite', text: 'Dokument' }]);
+    expect(efterNavigering).toEqual([{ roll: 'polite', text: 'Bilagor' }]);
   });
 
-  test('AC #4: inifrån appen annonserar "Till dokumenten" HÖGST en gång, och noll när regionen redan bär titeln', async ({
+  test('AC #4: inifrån appen annonserar "Till bilagorna" HÖGST en gång, och noll när regionen redan bär titeln', async ({
     page,
     network,
   }) => {
@@ -746,10 +746,10 @@ test.describe('Genereringsvyn — bekräftelsen på plats (TASK-340.2)', () => {
      * `RouteAnnouncer` annonserar routens TITEL vid varje `href`-ändring — men
      * bara när det SATTA MEDDELANDET faktiskt byter värde (`setMessage(title)`;
      * samma sträng ger ingen DOM-ändring och därmed ingenting att läsa upp).
-     * Dokumentlistan och genereringsvyn är SAMMA route ("Dokument"), så
-     * utfallet vid "Till dokumenten" beror på vad regionen redan bär:
+     * Bilagelistan och genereringsvyn är SAMMA route ("Bilagor"), så
+     * utfallet vid "Till bilagorna" beror på vad regionen redan bär:
      *
-     *   · bär den redan "Dokument"  → 0 annonseringar
+     *   · bär den redan "Bilagor"  → 0 annonseringar
      *   · är den tom                → 1 annonsering
      *
      * VILKETDERA som gäller avgörs av om någon TIDIGARE href-ändring hann sätta
@@ -773,7 +773,7 @@ test.describe('Genereringsvyn — bekräftelsen på plats (TASK-340.2)', () => {
     await expect(page.getByTestId('dokument-yta')).toBeVisible();
 
     // [T176] Mallkatalogen är en meny i kortets handlingsrad, inte en listrad.
-    await page.getByRole('button', { name: 'Skapa dokument' }).click();
+    await page.getByRole('button', { name: 'Skapa bilaga' }).click();
     await page.getByRole('menuitem', { name: 'Bekräftelsebilaga' }).click();
     await expect(page.getByTestId('generering-vy')).toBeVisible();
     await expect(page.getByText('Hämtar underlag …')).toHaveCount(0);
@@ -783,10 +783,10 @@ test.describe('Genereringsvyn — bekräftelsen på plats (TASK-340.2)', () => {
 
     // TILLSTÅNDET FÖRE — det som avgör utfallet.
     const regionFore = await lasAnnonseringsregion(page);
-    const vantatAntal = regionFore === 'Dokument' ? 0 : 1;
+    const vantatAntal = regionFore === 'Bilagor' ? 0 : 1;
 
     await nollstallAnnonseringar(page);
-    await page.getByRole('button', { name: 'Till dokumenten' }).click();
+    await page.getByRole('button', { name: 'Till bilagorna' }).click();
     await expect(page.getByTestId('dokument-yta')).toBeVisible();
     // [T176] `?typ` sätts inte längre — se AC #2-testet ovan.
     expect(new URL(page.url()).searchParams.get('typ')).toBeNull();
@@ -797,8 +797,8 @@ test.describe('Genereringsvyn — bekräftelsen på plats (TASK-340.2)', () => {
     // …och exakt det som regionens tillstånd förutsade.
     expect(efter.length).toBe(vantatAntal);
     // Kom en annonsering, var den routens titel och inget annat.
-    if (efter.length === 1) expect(efter[0]).toEqual({ roll: 'polite', text: 'Dokument' });
-    // Regionen bär "Dokument" efteråt, oavsett väg — Lotta är på dokumentvyn.
-    expect(await lasAnnonseringsregion(page)).toBe('Dokument');
+    if (efter.length === 1) expect(efter[0]).toEqual({ roll: 'polite', text: 'Bilagor' });
+    // Regionen bär "Bilagor" efteråt, oavsett väg — Lotta är på bilagevyn.
+    expect(await lasAnnonseringsregion(page)).toBe('Bilagor');
   });
 });

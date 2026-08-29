@@ -527,7 +527,7 @@ export function AnmalningarSida({
             gemensamtAlternativ={{
               etikett: ALLA_EVENT,
               // Ikon på det kontextlösa alternativet, samma grepp som
-              // dokumentytans "Delade dokument" bär `Files` (Marcus samma dag:
+              // bilageytans "Delade bilagor" bär `Files` (Marcus samma dag:
               // *"'Alla event' kan väl få en ikon då precis som 'Delade
               // dokument' har"*). `CalendarRange` — spannet över ALLA event,
               // kommande och tidigare (`omfattning="alla"`). `CalendarDays` är
