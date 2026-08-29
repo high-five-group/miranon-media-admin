@@ -212,9 +212,11 @@ function mockaFlodet(
       return json({ url: nedladdningsUrl(nedladdningsAnrop), expiresInSeconds: 300 });
     }),
     mockaLagradPdf(PREVIEW_URL),
+    // TVÅ adresser, inte tre: den enda vägen som klickar "Visa dokumentet"
+    // gör det EXAKT två gånger (färsk-URL-beviset). En tredje handler hade
+    // varit en registrering ingen väg kan nå.
     mockaLagradPdf(nedladdningsUrl(1)),
     mockaLagradPdf(nedladdningsUrl(2)),
-    mockaLagradPdf(nedladdningsUrl(3)),
   );
 
   return { skarpKropp: () => skarpKropp, nedladdningsAnrop: () => nedladdningsAnrop };
@@ -284,6 +286,24 @@ const nollstallAnnonseringar = (page: Page) =>
   page.evaluate(() => {
     (window as unknown as FonsterMedVakt).__annonseringar.length = 0;
   });
+
+/**
+ * `RouteAnnouncer`s region SOM TILLSTÅND, inte som händelse
+ * (`AppShell/RouteAnnouncer.tsx`: `<div aria-live="polite" aria-atomic="true"
+ * className="sr-only">`). Vakten ovan mäter FÖRÄNDRINGAR; denna läser vad
+ * regionen bär just nu.
+ *
+ * Skillnaden är hela poängen i testet nedan: annonseringen uteblir EXAKT när
+ * regionen redan bär det värde navigeringen skulle ha satt, och det är ett
+ * tillstånd man kan läsa av — till skillnad från frånvaron av en händelse,
+ * som aldrig går att skilja från "inte än".
+ */
+const lasAnnonseringsregion = (page: Page) =>
+  page.evaluate(
+    () =>
+      document.querySelector('div[aria-live="polite"][aria-atomic="true"]')?.textContent?.trim() ??
+      '',
+  );
 
 /* ══════════════════════════════════════════════════════════════════════ */
 
@@ -708,23 +728,36 @@ test.describe('Genereringsvyn — bekräftelsen på plats (TASK-340.2)', () => {
     expect(efterNavigering).toEqual([{ roll: 'polite', text: 'Dokument' }]);
   });
 
-  test('AC #4: inifrån appen annonserar "Till dokumenten" NOLL gånger — mätt, inte antaget', async ({
+  test('AC #4: inifrån appen annonserar "Till dokumenten" HÖGST en gång, och noll när regionen redan bär titeln', async ({
     page,
     network,
   }) => {
     /*
      * DEN ANDRA VÄGEN, mätt i stället för resonerad. Lotta kommer normalt
      * INTE via en direktlänk: hon står på dokumentlistan och klickar sig in i
-     * genereringsvyn. Då bär `RouteAnnouncer`s region redan "Dokument" när
-     * hon trycker "Till dokumenten", och `setMessage('Dokument')` ger ingen
-     * DOM-ändring — alltså ingen annonsering.
+     * genereringsvyn.
      *
-     * NOLL ÄR INTE ETT FEL I DENNA SKIVA. Det är `RouteAnnouncer`s egen,
-     * äldre egenskap: den annonserar routens TITEL, och listan och
-     * genereringsvyn är samma route ("Dokument"). Det som AC #4 skyddar mot
-     * — att bekräftelsen och en route-annonsering krockar — kan alltså inte
-     * hända i någondera vägen. Fyndet är bokfört i skivans slutrapport i
-     * stället för att jämnas ut i en assertion som påstår "exakt en".
+     * `RouteAnnouncer` annonserar routens TITEL vid varje `href`-ändring — men
+     * bara när det SATTA MEDDELANDET faktiskt byter värde (`setMessage(title)`;
+     * samma sträng ger ingen DOM-ändring och därmed ingenting att läsa upp).
+     * Dokumentlistan och genereringsvyn är SAMMA route ("Dokument"), så
+     * utfallet vid "Till dokumenten" beror på vad regionen redan bär:
+     *
+     *   · bär den redan "Dokument"  → 0 annonseringar
+     *   · är den tom                → 1 annonsering
+     *
+     * VILKETDERA som gäller avgörs av om någon TIDIGARE href-ändring hann sätta
+     * värdet — och den frågan är genuint tidsberoende: nuqs kan normalisera
+     * adressen redan när listan monteras, eller inte, beroende på när
+     * bilage-frågan landar. Ett tidigare varv av detta test PÅSTOD noll och
+     * föll när cachen var kall (mätt två gånger: en gång med "Laddar bilagor…"
+     * i loggen, en gång utan).
+     *
+     * Testet mäter därför REGELN i stället för ett av dess två utfall: läs
+     * regionens tillstånd FÖRE navigeringen, och kräv exakt det antal den
+     * avläsningen förutsäger. Båda utfallen är förenliga med AC #4 — det som
+     * inte får hända, TVÅ annonseringar för en handling, kan inte hända i
+     * någondera.
      */
     mockaFlodet(network);
     await installeraAnnonseringsvakt(page);
@@ -733,31 +766,30 @@ test.describe('Genereringsvyn — bekräftelsen på plats (TASK-340.2)', () => {
     await page.goto(`/mer/dokument?event=${VISUAL_EVENT_ID}`);
     await expect(page.getByTestId('dokument-yta')).toBeVisible();
 
-    // Mallkatalogens entré sätter `?vy`/`?mall` → href ändras → regionen får
-    // "Dokument". KONTROLLPUNKT: mekanismen ÄR igång innan vi mäter nollan.
-    //
-    // Loggen NOLLSTÄLLS INTE här, med avsikt. Exakt VILKEN href-ändring som
-    // först ger regionen sitt värde är inte fastställt — nuqs kan normalisera
-    // adressen redan vid montering av listan, alltså före klicket (mätt: en
-    // reset före klicket gjorde kontrollpunkten tom, medan hela loggen bar
-    // annonseringen). Kontrollpunkten gäller ATT regionen bär "Dokument" när
-    // vi står i genereringsvyn, inte vid vilket av två likvärdiga ögonblick
-    // den fick det. Mätningen som AC #4 hänger på — nollan nedan — har sin
-    // egen reset omedelbart före sin egen handling.
     await page.getByRole('button', { name: 'Skapa Bekräftelsebilaga' }).first().click();
     await expect(page.getByTestId('generering-vy')).toBeVisible();
     await expect(page.getByText('Hämtar underlag …')).toHaveCount(0);
-    expect(await lasAnnonseringar(page)).toContainEqual({ roll: 'polite', text: 'Dokument' });
 
     await page.getByRole('button', { name: 'Skapa bekräftelsebilaga' }).click();
     await expect(page.getByTestId('bekraftelse')).toBeVisible();
+
+    // TILLSTÅNDET FÖRE — det som avgör utfallet.
+    const regionFore = await lasAnnonseringsregion(page);
+    const vantatAntal = regionFore === 'Dokument' ? 0 : 1;
 
     await nollstallAnnonseringar(page);
     await page.getByRole('button', { name: 'Till dokumenten' }).click();
     await expect(page.getByTestId('dokument-yta')).toBeVisible();
     await expect.poll(() => new URL(page.url()).searchParams.get('typ')).toBe('bilaga');
 
-    // MÄTT UTFALL: noll. Regionen bar redan "Dokument".
-    expect(await lasAnnonseringar(page)).toEqual([]);
+    const efter = await lasAnnonseringar(page);
+    // ALDRIG TVÅ — det är hela AC #4.
+    expect(efter.length).toBeLessThanOrEqual(1);
+    // …och exakt det som regionens tillstånd förutsade.
+    expect(efter.length).toBe(vantatAntal);
+    // Kom en annonsering, var den routens titel och inget annat.
+    if (efter.length === 1) expect(efter[0]).toEqual({ roll: 'polite', text: 'Dokument' });
+    // Regionen bär "Dokument" efteråt, oavsett väg — Lotta är på dokumentvyn.
+    expect(await lasAnnonseringsregion(page)).toBe('Dokument');
   });
 });

@@ -300,7 +300,6 @@ test.describe('Genereringsvyn — förhandsgranskningens fönster öppnas direkt
      */
     const ATTACHMENT_ID = 'recNySkarpBilaga1';
     const PREVIEW_URL = 'https://storage.example.test/preview-innan-skapa.pdf';
-    const NEDLADDNINGS_URL = 'https://storage.example.test/bekraftelsebilaga.pdf';
 
     network.use(
       http.get(EF('get-document-sources'), () =>
@@ -334,11 +333,22 @@ test.describe('Genereringsvyn — förhandsgranskningens fönster öppnas direkt
           ersatte: false,
         });
       }),
-      http.get(EF('get-attachment-download-url'), () =>
-        json({ url: NEDLADDNINGS_URL, expiresInSeconds: 300 }),
-      ),
+      /* INGEN `get-attachment-download-url`-överskuggning här, och det är en
+         ÄNDRING (TASK-340.2 review-runda 2 → runda 4). Skapa slog tidigare upp
+         filens nedladdnings-URL i samma andetag som den skapade raden; sedan
+         den frysta URL:en revs (bekräftelsen lagrar `attachmentId` och
+         signerar färskt per klick) görs det uppslaget inte längre — så
+         handlern satt kvar som en DÖD registrering och fälldes av
+         överskuggnings-vakten i CI (run 33249389118).
+
+         Den är BORTTAGEN, inte märkt `medvetetOanvand`. Märkningen är till för
+         en negativ sensor där frånvaron av anropet ÄR beviset; här är
+         frånvaron redan MÄTT på ett starkare sätt, med en räknare, i
+         `dokument-generering-bekraftelse.acceptance.test.ts` ("0 anrop vid
+         Skapa"). En andra, svagare sensor i en fil som handlar om FÖNSTER
+         hade varit brus. Samma skäl gäller `mockaLagradPdf`-handlern för
+         nedladdnings-URL:en: ingen flik navigerar dit i detta test. */
       mockaLagradPdf(PREVIEW_URL),
-      mockaLagradPdf(NEDLADDNINGS_URL),
     );
 
     await page.goto(`/mer/dokument?event=${VISUAL_EVENT_ID}&vy=generering&mall=bekraftelse`);
