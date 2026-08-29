@@ -3,10 +3,10 @@ id: TASK-338.2
 title: >-
   Skiva: EF read + write — matcharen i kod, en hämtning i get-event-attachments,
   skrivvägens tre axlar
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-29 08:03'
-updated_date: '2026-08-29 09:02'
+updated_date: '2026-08-29 09:56'
 labels:
   - ready-for-agent
 dependencies:
@@ -84,3 +84,9 @@ Efter skivan returnerar get-event-attachments för ett event unionen av (a) even
 
 **DoD-noter:** #4 N/A — inget prod-anrop gjordes (deploy och Airtable-läsning gick uteslutande mot `apphjj8Q7lkXCMsL4`/`pqtshyierkdgwdnxuirz`). #5 uppfyllt via sub-fas-mönstret: `Plats` tillagd i `create-attachment`s allowlist med allow-bevis (fältet skrivet som länk) och deny-bevis (okänd rad 404, fel form 400, fel räckvidd 400) i `upload-attachment.staging.test.ts`. Lookup-fältet `Platsnamn` står MEDVETET INTE i allowlisten — ett `multipleLookupValues`-fält är beräknat och kan inte skrivas. #6 grön: `tests/api/attachment-layer-independence.test.ts`, `ef-metod-vakt` och `mutation-hemvist-vakt` gröna i api-pure-körningen; all matchning och validering bor i `_shared`, ingen klientfil rörd.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landning: PR #2084 (mergad 2026-08-29 09:30:08Z, main eeef0b54). Ren matchare (_shared/rackvidd-matchning.ts, 34 fall), get-event-attachments = egna + Räckvidd ≠ Event i EN hämtning med matchning i kod på länk-ID, svar med plats {id, namn}; skrivvägen Event|Gemensam + legacy-mappning + Plats-existenskontroll (404); delete-attachment/get-attachment-download-url rättade (arGemensam — annars oraderbar/403 för nya delade). Review-grinden: runda 1 konvergerad (risk låg, 2 info/ask-user avgjorda på Marcus mandat: tomt Räckvidd+tom Event-länk = känt randfall → 338.5; biome-diskrepansen = granskarens mätning exit 0 auktoritativ). Klient-skarv: AttachmentScope saknar GEMENSAM tills 338.3.
+<!-- SECTION:FINAL_SUMMARY:END -->

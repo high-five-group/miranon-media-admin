@@ -3,10 +3,10 @@ id: TASK-338.5
 title: >-
   Skiva: dokumentationen — ADR-118 § Updates, ADR-125 § Updates, ORDLISTA,
   data-model, T153
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-29 08:04'
-updated_date: '2026-08-29 09:45'
+updated_date: '2026-08-29 09:56'
 labels:
   - ready-for-agent
 dependencies:
@@ -61,3 +61,9 @@ Efter skivan bokför repot ersättningen öppet: ADR-118 får en § Updates-sekt
 - #5 N/A — ingen EF-operation ändrad, inga kodändringar (ren docs-skiva).
 - #6 N/A — ingen matchnings-/valideringskod skriven eller ändrad; ADR/ORDLISTA/data-model beskriver befintlig, redan landad kod (TASK-338.2).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landning: PR #2089 (mergad 2026-08-29 09:54:00Z, main 9b9c1d9f). ADR-118 fick § Updates (beslut 1/4/5 ersatta, 2 amenderat per TASK-339, 3 gäller), ADR-125 § Updates med lagringsformen, ORDLISTA § Räckvidd/§ Gemensam bilaga (värdet Gemensam, badge-formerna med 'Steg' — aldrig 'Nivå' — ordlistan vann över PRD:ns exempelsträngar), data-model § Bilagor, T153 → TASK-338. check:docs 14/14.
+<!-- SECTION:FINAL_SUMMARY:END -->

@@ -3,10 +3,10 @@ id: TASK-340.1
 title: >-
   Skiva: EF — hash i preview-svaret, Skapa promoverar utkastet via Storage copy,
   upprepat Skapa går ersätt-vägen
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-29 08:18'
-updated_date: '2026-08-29 09:25'
+updated_date: '2026-08-29 09:56'
 labels:
   - ready-for-agent
 dependencies: []
@@ -71,3 +71,9 @@ REVIEW-RUNDA 2 (PR #2083, granskad 0f101a0d, risk medel, inga error/warning) —
 
 EJ OMKÖRDA: staging-sviterna. Staging bär just nu TASK-338.2:s EF:er plus mains generate-event-attachment, inte denna gren — orkestreraren sekvenserar staging, och att köra sviterna mot fel EF-version hade gett ett meningslöst resultat. De kördes gröna mot denna kod i runda 1 (23 + 2 passed), och rättelse 1 och 2 rör vägar som täcks av dem; rättelse 2:s ordning bevisas mekaniskt i api-pure i stället.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landning: PR #2083 (mergad 2026-08-29 09:54:00Z, main 9b9c1d9f). Preview-svaret bär kallhash; Skapa promoverar utkastet via REST copy + x-upsert (storage-js copy() ger 409 på befintlig destination — mätt) vid server-verifierad hash-likhet, annars omrendering + underlagAndrat; upprepat Skapa går ersätt-vägen via eventets omvända Bilagor-länk (201 ⇔ ny rad, 200 ⇔ ersatte); byte-identitet bevisad SHA-256 över faktiska bytes. Review-grinden: runda 1 risk medel (5 info, 4 ask-user avgjorda på mandat) → runda 2 (formel-vakt via escapeFormulaValue + rec-ID-form, storlek läses FÖRE kopiering — mekaniskt bevisat, AC #3 omformulerad mätbart) konvergerad, risk medel kvarstår som informativ (service-role Storage-REST + ersätt-automatik) — bokförs i prod-deploy-briefingen.
+<!-- SECTION:FINAL_SUMMARY:END -->
