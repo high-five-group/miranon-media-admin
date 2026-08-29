@@ -1310,32 +1310,103 @@ test.describe('TASK-338.4 — Ändra räckvidd på en delad bilaga', () => {
       .getByRole('button', { name: `Ändra räckvidd för ${BILAGA_GEMENSAM.namn}` });
 
   /**
-   * Fångar `update-attachment-scope`-anropets kropp OCH dess nyckel-lista.
-   * Svarar med den bilaga anroparen bad om, så den optimistiska cachen och
-   * serversvaret säger samma sak (annars hade `onSettled`-invalideringen
-   * dragit tillbaka badgen och gjort testet flakigt av rätt skäl).
+   * ═══ STATEFUL FIXTURVÄRLD FÖR SKRIVVÄGEN ═══
+   *
+   * VARFÖR STATEFUL, och inte en handler som svarar samma sak varje gång.
+   * MÄTT, inte antaget (CI-körning 33254282367, head 82edb19d): två av
+   * testen nedan föll i CI men gick grönt lokalt med `--workers=1`. Orsaken
+   * var INTE timing i UI:t utan att listnings-handlern var STATISK: den
+   * returnerade oförändrad fixturdata även efter en lyckad skrivning.
+   *
+   * Kedjan blir då: `onMutate` skriver badgen optimistiskt →
+   * `onSettled` invaliderar `attachments.all` → refetchen hämtar den GAMLA
+   * raden → badgen går TILLBAKA. Assertionen efter Spara mätte alltså ett
+   * ÖVERGÅENDE tillstånd, och utfallet avgjordes av om assertionen hann före
+   * refetchen. På en obelastad maskin hann den; under CI:s parallella last
+   * gjorde den inte det. Ett rent race, inbyggt i riggen.
+   *
+   * Fixen är inte att vänta längre eller att polla — det hade bara flyttat
+   * racet. Fixen är att fixturen BETER SIG SOM EN SERVER: skrivningen
+   * uppdaterar den rad efterföljande listningar serverar. Då är
+   * sluttillståndet stabilt och assertionen mäter hela kedjan
+   * (skrivning → refetch → badge) i stället för ett ögonblick i den.
+   *
+   * `slappSvar` finns för de fall som behöver observera det OPTIMISTISKA
+   * fönstret: POST-svaret hålls tillbaka tills testet släpper det. En FAST
+   * fördröjning hade återinfört samma klass av race under last.
+   *
+   * ═══ VÄNTA PÅ REFETCHEN, ALDRIG PÅ TID ═══
+   * Den stateful fixturen gör de två utfallen IDENTISKA (optimistisk badge
+   * och post-refetch-badge säger samma sak), vilket ensamt räcker för att
+   * fälla ut racet. Testen väntar ÄNDÅ explicit på att `listningar` ökat
+   * efter en skrivning innan badgen assertas. Skälet är mätt: lokalt stod
+   * räknaren kvar på 1 genom hela testet, alltså kördes post-refetch-vägen
+   * bara i CI — och det var just den vägen som föll där. Med väntan körs
+   * BÅDA vägarna på varje maskin, och assertionen mäter det Lotta faktiskt
+   * ser en sekund senare i stället för ett ögonblick i mitten.
    */
-  function fangaScopeAnrop(network: NetworkFixture) {
-    const fangst: { kropp: Record<string, unknown> | null; nycklar: string[] } = {
-      kropp: null,
-      nycklar: [],
+  function riggaScopeVarld(
+    network: NetworkFixture,
+    startrad: Record<string, unknown> = { ...BILAGA_GEMENSAM },
+    val: { hallTillbakaSvar?: boolean; svarStatus?: number; svarFel?: string } = {},
+  ) {
+    const rigg = {
+      /** Raden som listnings-handlern serverar just nu. */
+      aktuell: { ...startrad } as Record<string, unknown>,
+      /** Sista skrivningens kropp och dess NYCKLAR (utelämnade axlar syns bara här). */
+      kropp: null as Record<string, unknown> | null,
+      nycklar: [] as string[],
+      /** Antal LISTNINGS-hämtningar. Testen väntar på att denna ökar efter
+       *  en skrivning, i stället för på tid — se § VÄNTA PÅ REFETCHEN. */
+      listningar: 0,
+      /** Anropas för att släppa ett tillbakahållet POST-svar. */
+      slappSvar: () => {},
     };
+
+    let vantaPaSlapp: Promise<void> = Promise.resolve();
+    if (val.hallTillbakaSvar) {
+      vantaPaSlapp = new Promise<void>((resolve) => {
+        rigg.slappSvar = resolve;
+      });
+    }
+
     network.use(
+      http.get(EF('get-event-attachments'), ({ request }) => {
+        rigg.listningar += 1;
+        // Eventläget ser eventets egna + den gemensamma; räckviddsläget bara
+        // den gemensamma — samma grening som `bilagorHandler()`.
+        const eventId = new URL(request.url).searchParams.get('eventId');
+        if (eventId) return json({ attachments: [BILAGA_EGEN, rigg.aktuell] });
+        return json({ attachments: [rigg.aktuell] });
+      }),
       http.post(EF('update-attachment-scope'), async ({ request }) => {
         const kropp = (await request.json()) as Record<string, unknown>;
-        fangst.kropp = kropp;
-        fangst.nycklar = Object.keys(kropp);
-        return json({
-          attachment: {
-            ...BILAGA_GEMENSAM,
-            kursfamilj: (kropp.kursfamilj as string | undefined) ?? null,
-            kursniva: (kropp.kursniva as string | undefined) ?? null,
-            plats: kropp.plats ? { id: kropp.plats as string, namn: 'Rönninge' } : null,
-          },
-        });
+        rigg.kropp = kropp;
+        rigg.nycklar = Object.keys(kropp);
+        await vantaPaSlapp;
+
+        if (val.svarStatus && val.svarStatus >= 400) {
+          // FELVÄG: raden ändras INTE, precis som servern inte skriver något
+          // när en vakt fäller. Det är vad som gör rollbacken observerbar som
+          // ett stabilt sluttillstånd.
+          return json({ error: val.svarFel ?? 'Nekad.' }, val.svarStatus);
+        }
+
+        // LYCKAD SKRIVNING: fixturen uppdateras som en riktig server hade
+        // gjort — tomma axlar RENSADE, aldrig kvarlämnade (samma semantik som
+        // `buildScopeUpdateFields`, se dess docblock).
+        rigg.aktuell = {
+          ...rigg.aktuell,
+          rackvidd: kropp.rackvidd ?? 'Gemensam',
+          kursfamilj: (kropp.kursfamilj as string | undefined) ?? null,
+          kursniva: (kropp.kursniva as string | undefined) ?? null,
+          plats: kropp.plats ? { id: kropp.plats as string, namn: 'Rönninge' } : null,
+        };
+        return json({ attachment: rigg.aktuell });
       }),
     );
-    return fangst;
+
+    return rigg;
   }
 
   test('åtgärden finns BARA i räckviddsläget — aldrig i eventläget (ADR-118 beslut 3)', async ({
@@ -1406,8 +1477,11 @@ test.describe('TASK-338.4 — Ändra räckvidd på en delad bilaga', () => {
       kursniva: null,
       plats: null,
     };
-    network.use(http.get(EF('get-event-attachments'), () => json({ attachments: [AXELLOS] })));
-    const fangst = fangaScopeAnrop(network);
+    // STATEFUL rigg — skrivningen uppdaterar den rad listningen serverar, så
+    // badge-assertionen nedan mäter ett STABILT sluttillstånd i stället för
+    // att kapplöpa med `onSettled`-refetchen (se riggaScopeVarld § VARFÖR
+    // STATEFUL för CI-fallet som avslöjade racet).
+    const rigg = riggaScopeVarld(network, AXELLOS);
 
     await page.goto('/mer/dokument');
     await expect(page.getByTestId('dokument-yta')).toBeVisible();
@@ -1420,26 +1494,30 @@ test.describe('TASK-338.4 — Ändra räckvidd på en delad bilaga', () => {
     await expect(page.getByRole('dialog')).toBeVisible();
     await valjIAxel(page, platsValjare, 'Rönninge');
     await expect(page.getByRole('dialog').getByText('Gäller: alla event i Rönninge')).toBeVisible();
+    const listningarFore = rigg.listningar;
     await page.getByRole('dialog').getByRole('button', { name: 'Spara' }).click();
 
-    // EF-KROPPEN — plats som RECORD-ID, aldrig ett namn.
-    await expect.poll(() => fangst.kropp).not.toBeNull();
-    expect(fangst.kropp).toMatchObject({ rackvidd: 'Gemensam', plats: 'recPlatsRonninge01' });
-    // Tomma axlar UTELÄMNAS ur kroppen (servern rensar dem server-side).
-    expect(fangst.nycklar).not.toContain('kursfamilj');
-    expect(fangst.nycklar).not.toContain('kursniva');
-
-    // Dialogen stänger vid framgång, och badgen bär den nya räckvidden.
     await expect(page.getByRole('dialog')).toHaveCount(0);
+    // VÄNTA PÅ REFETCHEN, inte på tid (se riggens docblock): först när
+    // `onSettled`-invalideringen faktiskt hämtat om listan mäter assertionen
+    // nedan hela kedjan skrivning → listning → badge. Utan detta kunde ett
+    // grönt utfall komma enbart ur det optimistiska fönstret.
+    await expect.poll(() => rigg.listningar).toBeGreaterThan(listningarFore);
     await expect(rad.getByText('Rönninge')).toBeVisible();
+    await expect(rad.getByText('Alla event')).toHaveCount(0);
+
+    // EF-KROPPEN — plats som RECORD-ID, aldrig ett namn.
+    expect(rigg.kropp).toMatchObject({ rackvidd: 'Gemensam', plats: 'recPlatsRonninge01' });
+    // Tomma axlar UTELÄMNAS ur kroppen (servern rensar dem server-side).
+    expect(rigg.nycklar).not.toContain('kursfamilj');
+    expect(rigg.nycklar).not.toContain('kursniva');
   });
 
   test('Rönninge → alla event: tomma axlar UTELÄMNAS, badgen breddas', async ({
     page,
     network,
   }) => {
-    network.use(bilagorHandler());
-    const fangst = fangaScopeAnrop(network);
+    const rigg = riggaScopeVarld(network);
 
     await gotoRackviddslage(page);
     const rad = page.getByTestId('dokument-fil').filter({ hasText: BILAGA_GEMENSAM.namn });
@@ -1452,43 +1530,44 @@ test.describe('TASK-338.4 — Ändra räckvidd på en delad bilaga', () => {
     await valjIAxel(page, familjValjare, 'Alla familjer');
     await valjIAxel(page, platsValjare, 'Alla platser');
     await expect(page.getByRole('dialog').getByText('Gäller: alla event')).toBeVisible();
+    const listningarFore = rigg.listningar;
     await page.getByRole('dialog').getByRole('button', { name: 'Spara' }).click();
 
-    await expect.poll(() => fangst.kropp).not.toBeNull();
-    expect(fangst.kropp).toMatchObject({ rackvidd: 'Gemensam' });
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    // VÄNTA PÅ REFETCHEN (se riggens docblock) — sedan är sluttillståndet
+    // stabilt: fixturen har skrivits om, så badgen står kvar på "Alla event"
+    // även efter att listningen hämtats om.
+    await expect.poll(() => rigg.listningar).toBeGreaterThan(listningarFore);
+    await expect(rad.getByText('Alla event')).toBeVisible();
+    await expect(rad.getByText('RIM · Rönninge')).toHaveCount(0);
+
+    expect(rigg.kropp).toMatchObject({ rackvidd: 'Gemensam' });
     // KÄRNAN: INGEN av de tre axlarna får följa med. Att pröva NYCKLARNA och
     // inte värdena är avsiktligt — `{ plats: undefined }` och en utelämnad
     // nyckel ser identiska ut för `toMatchObject`.
-    expect(fangst.nycklar).not.toContain('kursfamilj');
-    expect(fangst.nycklar).not.toContain('kursniva');
-    expect(fangst.nycklar).not.toContain('plats');
-
-    await expect(page.getByRole('dialog')).toHaveCount(0);
-    await expect(rad.getByText('Alla event')).toBeVisible();
+    expect(rigg.nycklar).not.toContain('kursfamilj');
+    expect(rigg.nycklar).not.toContain('kursniva');
+    expect(rigg.nycklar).not.toContain('plats');
   });
 
   test('serverns fel: dialogen står kvar, den optimistiska badgen skrivs OCH tas tillbaka', async ({
     page,
     network,
   }) => {
-    network.use(bilagorHandler());
-    // Serverns dokumentklass-vakt (403), FÖRDRÖJD 1,5 s. Fördröjningen är
-    // inte kosmetisk: utan den hinner den optimistiska badgen aldrig
-    // observeras, och testet hade bara mätt sluttillståndet. Notera att UI:t
-    // renderar husets `EdgeFunctionError`-form runt skälet (`Edge Function
-    // "…" 403: <skäl>`, se DokumentYta.tsx § VAD FELRUTAN FAKTISKT VISAR) —
-    // testet ankrar därför på RUBRIKEN, den del Lotta faktiskt kan läsa.
-    network.use(
-      http.post(EF('update-attachment-scope'), async () => {
-        await new Promise((r) => setTimeout(r, 1500));
-        return json(
-          {
-            error:
-              'Bara uppladdade dokument kan byta räckvidd. Mall-genererade bilagor följer sitt event.',
-          },
-          403,
-        );
-      }),
+    // Serverns dokumentklass-vakt (403), med svaret HÅLLET TILLBAKA tills
+    // testet släpper det. En FAST fördröjning (1,5 s stod här förut) är samma
+    // klass av race som CI avslöjade i de två testen ovan: under last kan
+    // vilken tidsgräns som helst passeras. En signal är deterministisk
+    // oavsett maskin.
+    const rigg = riggaScopeVarld(
+      network,
+      { ...BILAGA_GEMENSAM },
+      {
+        hallTillbakaSvar: true,
+        svarStatus: 403,
+        svarFel:
+          'Bara uppladdade dokument kan byta räckvidd. Mall-genererade bilagor följer sitt event.',
+      },
     );
 
     await gotoRackviddslage(page);
@@ -1499,14 +1578,18 @@ test.describe('TASK-338.4 — Ändra räckvidd på en delad bilaga', () => {
     // Nollställ BÅDA axlarna, så den optimistiska badgen blir "Alla event".
     await valjIAxel(page, familjValjare, 'Alla familjer');
     await valjIAxel(page, platsValjare, 'Alla platser');
+    const listningarFore = rigg.listningar;
     await page.getByRole('dialog').getByRole('button', { name: 'Spara' }).click();
 
-    // ═══ ARM 1: onMutate SKRIVER FAKTISKT (isolerbar, mätt) ═══
-    // Medan servern fortfarande tänker bär badgen det nya valet. Det är den
-    // optimistiska skrivningen i `useUpdateAttachmentScope.onMutate`, och den
-    // är den enda möjliga källan här — inget serversvar har kommit än.
+    // ═══ ARM 1: onMutate SKRIVER FAKTISKT (isolerbar, tvåsidigt bevisad) ═══
+    // Servern har tagit emot anropet men svarar inte förrän vi säger till, så
+    // badgen kan bara bära det nya valet genom den optimistiska skrivningen i
+    // `useUpdateAttachmentScope.onMutate`. Inget serversvar har kommit än.
     await expect(rad.getByText('Alla event')).toBeVisible();
     await expect(rad.getByText('RIM · Rönninge')).toHaveCount(0);
+
+    // Släpp 403:an.
+    rigg.slappSvar();
 
     const dialog = page.getByRole('dialog');
     await expect(dialog.getByText('Räckvidden kunde inte ändras')).toBeVisible();
@@ -1516,24 +1599,22 @@ test.describe('TASK-338.4 — Ändra räckvidd på en delad bilaga', () => {
     await expect(dialog.getByRole('button', { name: 'Spara' })).toBeEnabled();
 
     // ═══ ARM 2: BADGEN LJUGER INTE EFTER FELET ═══
-    // VAD DENNA ASSERTION BEVISAR, exakt: sluttillståndet. Badgen är tillbaka
-    // på radens verkliga räckvidd, så ytan påstår aldrig en spridning basen
-    // inte har (PRD TASK-338 berättelse 3).
+    // Riggen lämnar raden ORÖRD på felvägen (precis som servern inte skriver
+    // något när en vakt fäller), så detta är ett STABILT sluttillstånd:
+    // badgen är tillbaka på radens verkliga räckvidd, och ytan påstår aldrig
+    // en spridning basen inte har (PRD TASK-338 berättelse 3).
     //
     // VAD DEN INTE BEVISAR, och det är MÄTT, inte antaget: att just
     // `onError`-grenens `setQueryData(key, context.previous)` är det som
     // återställde den. En mutation som tog BORT hela `onError`-kroppen fällde
-    // INTE detta test (9 passed, exit 0) — `onSettled`-invalideringen hämtar
-    // om listan och skriver över cachen inom millisekunder, så rollbacken och
-    // refetchen ger samma synliga utfall. Ett försök att isolera grenen genom
-    // att låta den andra listnings-hämtningen hänga misslyckades också
-    // (räknaren visade att en andra hämtning aldrig nådde överskuggningen).
-    //
-    // Rollbacken är alltså ett FLIMMER-skydd i fönstret före refetchen, inte
-    // den enda sanningskällan — och just därför inte isolerbar på denna yta.
-    // Att skriva "rollback-armen bevisad" här hade varit ett påstående testet
-    // inte bär (ADR-083). Arm 1 ovan är den del av mutationen som ÄR
-    // isolerbar, och den är bevisad.
+    // INTE detta test — `onSettled`-invalideringen hämtar om listan, och
+    // eftersom felvägen lämnar fixturen orörd ger rollbacken och refetchen
+    // samma synliga utfall. Rollbacken är ett FLIMMER-skydd i fönstret före
+    // refetchen, inte den enda sanningskällan, och därför inte isolerbar på
+    // denna yta. Att skriva "rollback-armen bevisad" här hade varit ett
+    // påstående testet inte bär (ADR-083). Arm 1 ovan är den del som ÄR
+    // isolerbar, och den är bevisad i båda riktningar.
+    await expect.poll(() => rigg.listningar).toBeGreaterThan(listningarFore);
     await expect(rad.getByText('RIM · Rönninge')).toBeVisible();
     await expect(rad.getByText('Alla event')).toHaveCount(0);
   });
@@ -1578,7 +1659,7 @@ test.describe('TASK-338.4 — Ändra räckvidd på en delad bilaga', () => {
     network,
   }) => {
     network.use(bilagorHandler());
-    fangaScopeAnrop(network);
+    riggaScopeVarld(network);
 
     await gotoRackviddslage(page);
     await andraKnapp(page).focus();
