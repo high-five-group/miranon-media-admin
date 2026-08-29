@@ -3,10 +3,10 @@ id: TASK-309.38
 title: >-
   Fynd: väntetexten i PDF-fönstret personlig och Gunilla-begriplig, och
   'Förhandsgranska först' blir 'Förhandsgranska'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-29 07:34'
-updated_date: '2026-08-29 08:52'
+updated_date: '2026-08-29 09:15'
 labels:
   - ready-for-agent
 dependencies: []
@@ -202,3 +202,9 @@ Playwright-filer, INTE en regression: samtliga tre gav grönt vid omkörning
 isolerat/serialiserat. Den auktoritativa körningen (`--workers=1`, samma
 8 filer): 51/51 gröna, exit 0.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landning: PR #2077 (mergad 2026-08-29 09:1x, main 73d23930). Väntetexten personlig ('Ett ögonblick <Förnamn>, …' via user.displayName + fornamn() lyft till src/lib/fornamn.ts), fallback utan namn, bestämd form per mall via MALL_META.namnBestamd (dubbel-n-buggen 'deltagarinformationn' rättad i review-runda 1), 'Förhandsgranska'/'Förhandsgranskar …'. Review-grinden: runda 1 error (stale assertion i dokument-yta-fonster-direkt) → runda 2 konvergerad, risk låg.
+<!-- SECTION:FINAL_SUMMARY:END -->

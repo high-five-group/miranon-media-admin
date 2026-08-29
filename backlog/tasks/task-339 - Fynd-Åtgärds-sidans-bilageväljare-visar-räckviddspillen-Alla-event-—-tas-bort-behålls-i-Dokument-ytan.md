@@ -3,10 +3,10 @@ id: TASK-339
 title: >-
   Fynd: Åtgärds-sidans bilageväljare visar räckviddspillen ('Alla event') — tas
   bort, behålls i Dokument-ytan
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-29 08:10'
-updated_date: '2026-08-29 08:49'
+updated_date: '2026-08-29 09:15'
 labels:
   - ready-for-agent
 dependencies: []
@@ -36,3 +36,9 @@ VERIFIERAT LÄGE (main 86c343bb): badgen renderas i src/components/events/atgard
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landning: PR #2082 (mergad 2026-08-29 09:1x, main 51e22c69). Räckviddspillen borttagen ur Åtgärds-sidans bilageväljare, kvar i Dokument-ytan; negativt bevis i båda riktningar (testet fäller med badgen kvar). Review-grinden: runda 1 konvergerad, risk låg, 5 info (ORDLISTA § Gemensam bilaga stale → TASK-338.5).
+<!-- SECTION:FINAL_SUMMARY:END -->
