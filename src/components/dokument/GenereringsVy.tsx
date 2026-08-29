@@ -428,8 +428,23 @@ function stangOanvantFonster(fonster: Window | null) {
  * Väntetextens personliga hälsning (TASK-309.38, Marcus prod-röktest
  * 2026-08-29): "Ett ögonblick <Förnamn>, " med `forNamn`, annars "Ett
  * ögonblick, " — utan hängande komma eller dubbelt mellanslag i endera
- * formen. Delad mellan förhandsgransknings- och skapa-grenen i
- * `skapaDokument` nedan.
+ * formen.
+ *
+ * TRE ANVÄNDARE, OCH SKAPA-GRENEN ÄR INTE EN AV DEM (rättat i
+ * review-runda 2; raden sade tidigare "delad mellan förhandsgransknings-
+ * och skapa-grenen i `skapaDokument`", vilket blev falskt i två steg —
+ * `skapaDokument` delades i `startaForhandsgranskning`/`startaSkapande`,
+ * och den senare öppnar sedan dess inget fönster alls och skriver därför
+ * ingen väntetext). Hälsningen bärs nu av:
+ *
+ *   1. `startaForhandsgranskning` — laddningssidan i förhandsgranskningens
+ *      egna fönster.
+ *   2. Bekräftelseytans "Visa dokumentet" — laddningssidan i den flik som
+ *      öppnas medan en färsk signerad URL hämtas.
+ *
+ * (`DokumentYta.tsx`s Öppna-ikon skriver SAMMA sträng men bygger den
+ * inline — en tredje, oberoende kopia. Att konsolidera den hit är ett eget
+ * litet beslut, inte något denna skiva gör i förbifarten.)
  */
 function vantehalsning(forNamn: string | null): string {
   return forNamn ? `Ett ögonblick ${forNamn}, ` : 'Ett ögonblick, ';
@@ -917,8 +932,16 @@ export function GenereringsVy({
 
   /**
    * SKAPA — den PERSISTERANDE grenen (`useGenereraEventBilaga`): en
-   * Bilagor-rad skrivs (ny ELLER ersatt, servern avgör), ev. platsstandard
-   * sparas i samma andetag, och filens nedladdnings-URL slås upp.
+   * Bilagor-rad skrivs (ny ELLER ersatt, servern avgör) och ev.
+   * platsstandard sparas i samma andetag.
+   *
+   * INGEN NEDLADDNINGS-URL SLÅS UPP HÄR. Raden sade så fram till
+   * review-runda 2, och den formen var en tidsinställd defekt: en signerad
+   * Storage-URL lever 300 sekunder (`SIGNED_DOWNLOAD_URL_TTL_SECONDS`),
+   * medan bekräftelsen nedan är en yta Lotta får STÅ KVAR på. Bekräftelsen
+   * lagrar därför bara `attachmentId`, och en FÄRSK signering sker vid
+   * varje klick på "Visa dokumentet" (`useForhandsvisaDokument`, se
+   * knappens egen kommentar i bekräftelseytan).
    *
    * ── INGET FÖNSTER, INGEN LADDNINGSSIDA (TASK-340.2, AC #1) ──
    *
@@ -1431,6 +1454,28 @@ export function GenereringsVy({
                 `dokumentKalla.ts`s filhuvud — ALDRIG längre en `blob:`-URL),
                 aldrig en främmande adress (samma resonemang som
                 DokumentYta § IKONPAR). */}
+            {/* TVÅ KNAPPAR, TVÅ MÖNSTER — och skillnaden är avsiktlig
+                (review-runda 2 INFO). DENNA knapp öppnar den LAGRADE
+                utkast-URL:en rakt av; bekräftelsens "Visa dokumentet"
+                signerar i stället FÄRSKT vid varje klick. Skälet är ytornas
+                olika livslängd:
+
+                · HÄR är knappen en OMEDELBAR återhämtning från ett
+                  fönsteröppnande som just misslyckades. Sekunder har gått,
+                  inte minuter, och URL:en kommer ur samma svar som nyss
+                  landade — den är per konstruktion färsk. Att signera om
+                  hade dessutom krävt ett nytt EF-anrop som SKRIVER ETT NYTT
+                  UTKAST (`preview: true` är hela vägen till en utkast-URL,
+                  `ADR-124`), alltså en ny rendering för att visa ett
+                  dokument som redan ligger färdigt i bucketen.
+                · MÅLET ÄR TRANSIENT. Utkastet lever tills nästa
+                  förhandsgranskning eller skarp generering städar det
+                  (`rensaUtkast`) — det finns ingen stabil identitet att
+                  hämta om mot senare, bara denna URL, nu.
+                · BEKRÄFTELSEN är motsatsen: en yta Lotta får stå kvar på
+                  hur länge hon vill, mot en PERSISTERAD Bilagor-rad med ett
+                  `attachmentId` som går att signera om när som helst. Där
+                  vore en lagrad URL en död flik efter fem minuter. */}
             {resultat.blockerad && (
               <span className="mt-3 block">
                 <Button
