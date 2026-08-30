@@ -187,19 +187,53 @@ language plpgsql
 set search_path = ''
 as $$
 begin
-  -- `now()` bor i pg_catalog, som alltid är implicit i search_path — kroppen
-  -- behöver därför ingen ytterligare kvalificering trots det tomma sökvägen.
-  new.uppdaterad_nar := now();
+  -- `clock_timestamp()`, INTE `now()` — och skillnaden är inte kosmetisk.
+  --
+  -- `now()` (= `transaction_timestamp()`) är TRANSAKTIONSSTABIL: den ger
+  -- samma värde vid varje anrop inom en och samma transaktion. En rad som
+  -- skapas och sedan uppdateras i SAMMA transaktion får därför IDENTISK
+  -- `skapad_nar` och `uppdaterad_nar`, trots att triggern faktiskt körde.
+  -- Kolumnen blir då oskiljbar från sin insert-default, och det finns inget
+  -- sätt att skilja "triggern avfyrade" från "triggern avfyrade inte".
+  --
+  -- Mätt, inte befarat: kontroll G3 i
+  -- `scripts/task-346-3-staging-verifiering.sql` fälldes i skarp körning mot
+  -- staging (orkestreraren, 2026-08-30) med "triggern satte inte
+  -- uppdaterad_nar vid UPDATE" — trots att triggern satte den. Hela
+  -- DO-blocket är en transaktion, så `uppdaterad_nar > skapad_nar` kunde
+  -- strukturellt aldrig bli sant.
+  --
+  -- `clock_timestamp()` läser väggklockan vid VARJE anrop. Det är dessutom
+  -- semantiskt ärligare för en "senast ändrad"-kolumn: den ska svara på när
+  -- raden faktiskt rördes, inte när den omgivande transaktionen började.
+  --
+  -- KOPPLINGEN TILL INSERT-DEFAULTEN ÄR AVSIKTLIG OCH FÅR INTE "STÄDAS":
+  -- `uppdaterad_nar`s default är fortsatt `now()`, samma som `skapad_nar`s,
+  -- så en NYSS INSATT rad har de två EXAKT lika. Först en UPDATE skiljer dem
+  -- åt. Byttes defaulten till `clock_timestamp()` skulle två separata
+  -- klockavläsningar i samma insert kunna göra `uppdaterad_nar > skapad_nar`
+  -- sant direkt — och G3:s strikta `>` skulle sluta diskriminera äkta
+  -- trigger-avfyrning.
+  --
+  -- Båda funktionerna bor i pg_catalog, som alltid är implicit i
+  -- search_path — kroppen behöver ingen kvalificering trots den tomma.
+  new.uppdaterad_nar := clock_timestamp();
   return new;
 end;
 $$;
 
 comment on function public.satt_uppdaterad_nar() is
   'Håller jobb_rad.uppdaterad_nar sann utan att någon skrivväg behöver '
-  'minnas den. INTE security definer — den rör bara NEW-raden i den '
-  'anropandes egen transaktion. Den bär ändå en TOM search_path, därför att '
-  'Supabases linter fäller function_search_path_mutable på varje funktion '
-  'utan, oavsett om den är security definer eller inte.';
+  'minnas den. Använder clock_timestamp(), inte now(): now() är '
+  'transaktionsstabil och hade gett en rad som skapas och uppdateras i samma '
+  'transaktion identisk skapad_nar och uppdaterad_nar — kolumnen hade då '
+  'varit oskiljbar från sin insert-default även när triggern körde. '
+  'Insert-defaulten förblir now() med avsikt, så att en nyss insatt rad har '
+  'de två exakt lika och först en UPDATE skiljer dem åt. '
+  'INTE security definer — den rör bara NEW-raden i den anropandes egen '
+  'transaktion. Den bär ändå en TOM search_path, därför att Supabases linter '
+  'fäller function_search_path_mutable på varje funktion utan, oavsett om '
+  'den är security definer eller inte.';
 
 create trigger jobb_rad_satt_uppdaterad_nar
   before update on public.jobb_rad

@@ -392,9 +392,10 @@ begin
   v_sekvensnamn := 'kvittoserie_' || p_ar::text;
 
   -- Lazy skapelse: en sekvens PER ÅR utan att migrationen behöver gissa
-  -- vilka år som kommer. `if not exists` gör satsen idempotent; att två
-  -- allokeringar skulle nå hit samtidigt är designat bort av ADR-129
-  -- beslut 9 (numren allokeras sekventiellt inom en jobbkörning).
+  -- vilka år som kommer. ADR-129 beslut 9 allokerar sekventiellt inom en
+  -- jobbkörning, vilket gör samtidiga allokeringar OSANNOLIKA — men inte
+  -- omöjliga (två jobbkörningar kan överlappa). Den kvarvarande racen är
+  -- accepterad och beskriven vid grenen nedan, inte bortdesignad.
   --
   -- Golvet läses BARA när sekvensen skapas. Ändras golvet efteråt får det
   -- ingen effekt — det är avsikten: golvet är en startpunkt, inte en
@@ -425,11 +426,20 @@ begin
   -- hoppas över av en senare körning.
   --
   -- ACCEPTERAD RACE, en gång per år: två samtidiga FÖRSTA allokeringar för
-  -- ett nytt år kan båda ta grenen. `if not exists` gör den enas create till
-  -- en no-op, och de kan kollidera på revoken — transaktionen rullar då
-  -- tillbaka rent FÖRE `nextval`, så inget nummer bränns och jobbmotorns
-  -- svep plockar upp raden igen. Accepterad, inte designad bort: ADR-129
-  -- beslut 9 allokerar ändå sekventiellt inom en jobbkörning.
+  -- ett nytt år kan båda passera `to_regclass`-kontrollen, eftersom ingen av
+  -- dem ser den andras ÄNNU OCOMMITTADE rad i `pg_class`.
+  --
+  -- Vad som då händer är en CREATE-kollision, inte en revoke-kollision, och
+  -- `if not exists` räddar INTE den andra: dess existenskontroll gjordes före
+  -- låset. Den andra transaktionen blockerar på unique-indexet över
+  -- (relname, relnamespace) tills den första avgjorts, och får sedan en
+  -- unique-violation om den första committade. (Revoke-kollisionen kräver ett
+  -- smalare och annat fönster — den är inte det troliga felläget här.)
+  --
+  -- Slutsatsen är densamma oavsett vilken av dem som träffar: transaktionen
+  -- rullar tillbaka rent FÖRE `nextval`, så inget kvittonummer bränns, och
+  -- jobbmotorns självläkande svep plockar upp raden igen. Accepterad, inte
+  -- bortdesignad.
   if to_regclass('public.' || quote_ident(v_sekvensnamn)) is null then
     execute format(
       'create sequence if not exists public.%I as bigint start with %s minvalue %s no cycle',

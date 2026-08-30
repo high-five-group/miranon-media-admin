@@ -262,6 +262,18 @@ begin
   end;
 
   -- G3: uppdaterad_nar sätts av triggern, inte av skrivvägen.
+  --
+  -- Det strikta `>` nedan är BEVISETS KÄRNA, och det fungerar bara därför att
+  -- triggern använder `clock_timestamp()` medan insert-defaulten använder
+  -- `now()`. En nyss insatt rad har `uppdaterad_nar` EXAKT lika med
+  -- `skapad_nar` (samma transaktionsstämpel); avfyrar triggern flyttas den
+  -- framåt till väggklockan. Alltså: `>` är sant om och endast om triggern
+  -- körde.
+  --
+  -- Denna kontroll fällde skarpt 2026-08-30 när triggern använde `now()` —
+  -- hela DO-blocket är EN transaktion, så stämplarna var identiska trots att
+  -- triggern körde. Rotorsaken satt i triggern, inte här; se
+  -- `public.satt_uppdaterad_nar()` i migration 20260830195900.
   update public.jobb_rad
      set status = 'pagar', paborjad_nar = now()
    where jobb_id = v_jobb;
