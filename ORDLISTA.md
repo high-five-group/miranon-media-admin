@@ -53,6 +53,18 @@ följer Roger & Lotta; mappningen är PRD-materia.
 *Undvik:* bokning, registrering.
 *I koden:* `Registration`.
 
+**Inbetalning** — en betalning som faktiskt kommit in på Miranon Medias konto
+(Swish, Bankgiro eller Plusgiro): en post per bankrad, med belopp, betalsätt,
+datum och den anmälan den gäller. Inbetalningen är ARBETSENHETEN i Lottas
+betalningsflöde (grillad samsyn S113, 2026-08-30): anmälans fack
+Anmälningsavgift/Slutbetalning härleds ur inbetalningarna mot eventets
+numeriska pris, och ett kvitto avser exakt en inbetalning. Handlingen att
+skapa en inbetalning i appen heter *registrera betalning*.
+*Undvik:* avstämning (betyder NÄRVARO i basen — se Deltagande), avprickning
+(den gamla handlingen att flippa facket för hand), transaktion, betalning
+(överbegreppet; säg inbetalning när pengarna kommit in).
+*I koden:* `Inbetalning` (tabell `Inbetalningar`, planerad).
+
 **Användarinbjudan** — en engångs- och tidsbegränsad inbjudan som ger en
 människa ett konto i appen, med roll och e-postadress låsta av inbjudan
 (mottagaren väljer inget själv). Skild från *Anmälan*, som gäller deltagande

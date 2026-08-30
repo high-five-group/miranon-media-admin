@@ -39,10 +39,13 @@ session 113 (disk-verifierat 2026-08-30 ~15:10 UTC, resume 4). Fyra skivor i pro
 rensad site data. **Resume 4 levererat (Del 10):** appvandring (31 skärmdumpar, 6 klick till knappen,
 7 klick + 1 belopp per kvitto, ≈143 för en kurs) + branschresearch (SFL 39:5 verifierat,
 Pretix ordagrant) + `docs/research/kvitto-beslutsunderlag-2026-08-30.md` + artefakten
-*Lottas kvittovandring*. **NÄSTA:** **kvitto-grillningen** (Marcus startar `/grill-me`;
-ingång = beslutsunderlaget: sex beslut A–F, ADR-109 (a) prövas mot förbockad kryssruta
-vid avprickningen, B = numeriskt pris i basen först; fixtur `ZZ-GRANSKNING-S113` kvar
-till 2026-09-13) → veto-lista (Marcus: "vi släpper det lite"; +
+*Lottas kvittovandring*. **Grillningen KÖRD (Del 11):** tretton beslut kvitterade — Inbetalningar-tabell i
+Supabase Postgres + spegel i basen, global inkorg, registrera-först-skicka-sedan, kö + cron +
+kick, Swish-import från början, kreditkvitto i v1, universell härledning + backfill; tre
+research-pass + adversarial verifiering (sju blockerare, vågordning). **NÄSTA:** Marcus
+mandatsvar (B3 facit/ADR-103 B5, B4 `hog`-armering) → `/to-prd` → `/to-issues` →
+`session-paus` med nattens AFK-mandat → resume bygger allt i staging → morgon: Marcus
+tittar, justerar, promoverar (prod-fält, prod-migrationer, EF-deploy, flagga, backfill-GO) → veto-lista (Marcus: "vi släpper det lite"; +
 ny version-kontroll vid flik-fokus?) (strängbytena i `93dbf275`, tomytan under
 fyra-korts-låset vid 2–3 bilagor — `min(4, n)` föreslaget, URL-bytet som
 kort) → prod-vandringen (testplanen delvis inaktuell efter formbytet) → domar
