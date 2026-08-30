@@ -383,6 +383,48 @@ async function mataGeometri(page: Page) {
  * gör listan rullbar vid fyra rader av (1), och en som råkar lägga en HEL
  * extra rad i innehållet av (2).
  */
+/**
+ * [TASK-309.47] RULLNINGSSKUGGANS COMPUTED STYLE — den bor i `<ul>::after`.
+ *
+ * Skuggan var till och med 309.46 ett SYSKON till `<ul>` med
+ * `data-testid="lista-uttoning"`, alltså en nod att hitta med en lokator.
+ * Den är nu ett PSEUDO-ELEMENT och finns inte i DOM: den enda vägen till den
+ * är `getComputedStyle(el, '::after')`.
+ *
+ * VARFÖR DEN FLYTTADE (Marcus skärmavbild 2026-08-30): som syskon satt
+ * skuggans egen `rounded-b-2xl`-kurva vid KORTKANTEN medan `<ul>`:ets
+ * klippkurva satt vid ul-kanten 11 px längre ut. I glappet lyste nästa korts
+ * rundade övre hörn igenom oskuggat — en vit kil. Inuti `<ul>` finns bara EN
+ * kurva, och skuggan behöver ingen egen.
+ *
+ * `display` ÄR SIGNALEN att skuggan visas: `block` när den ska synas, `none`
+ * när `data-vid-botten` står. Renderas den inte alls (listan rullar inte) har
+ * pseudo-elementet ingen `content` och `display` faller till `inline` — det
+ * är webbläsarens default för ett tomt `::after`, inte en synlig skugga.
+ */
+async function matSkugga(page: Page) {
+  return page.getByTestId('dokument-lista').evaluate((ul) => {
+    const efter = getComputedStyle(ul, '::after');
+    const kort = ul.querySelector('[data-testid="dokument-fil"]');
+    return {
+      display: efter.display,
+      position: efter.position,
+      bottom: efter.bottom,
+      hojd: efter.height,
+      bredd: efter.width,
+      pointerEvents: efter.pointerEvents,
+      bakgrundsbild: efter.backgroundImage,
+      bakgrundsfarg: efter.backgroundColor,
+      // Bredden är STRUKTURELL: ett pseudo-element i block-flöde får
+      // content-boxens bredd, och rullningsrännan ligger utanför den.
+      ulClientWidth: ul.clientWidth,
+      kortBredd: kort ? Math.round(kort.getBoundingClientRect().width) : null,
+      ulBottom: Math.round(ul.getBoundingClientRect().bottom * 100) / 100,
+      vidBotten: ul.getAttribute('data-vid-botten'),
+    };
+  });
+}
+
 function provaExaktFyraRader(g: Awaited<ReturnType<typeof mataGeometri>>) {
   expect(g.antalKort, 'exakt fyra kort').toBe(4);
   expect(g.femteKortTop, 'inget femte kort att klippa').toBeNull();
@@ -581,23 +623,34 @@ test.describe('DokumentLista (eventläge) — låst fyra-radershöjd, nu UTAN fi
     // UTTONINGEN ÄR EN SIGNAL, INTE DEKORATION: prod 2026-08-29 visade sex
     // rader med `scrollHeight 594 / clientHeight 395` utan någon antydan om
     // att två låg under kanten (macOS overlay-scrollbars syns först vid
-    // rullning). Den ligger på WRAPPERN, aldrig i `<ul>` — därför prövas
-    // också att `<ul>`:ets barnräkning är oförändrad.
+    // rullning).
+    //
+    // [TASK-309.47] Den bor sedan dess INUTI `<ul>`, som `::after` — se
+    // `matSkugga`s docblock för varför. Barnräkningen prövas fortfarande, och
+    // är nu MER intressant än förut: ett pseudo-element får inte dyka upp i
+    // `ul.children`, för då hade `useLastaListhojd` räknat det som en rad.
     network.use(hojdlasHandler(6, 0));
     await gotoEventlage(page);
     await expect(page.getByText('Bilaga 1.pdf')).toBeVisible();
 
-    const uttoning = page.getByTestId('lista-uttoning');
-    await expect(uttoning).toBeVisible();
-    // Uttoningen är ett SYSKON till `<ul>`, inte ett barn — annars hade
-    // `useLastaListhojd` räknat den som en rad.
-    await expect(page.getByTestId('dokument-lista').getByTestId('lista-uttoning')).toHaveCount(0);
+    const synlig = await matSkugga(page);
+    expect(synlig.display, 'skuggan ska synas när listan rullar').toBe('block');
+    expect(synlig.position, 'sticky är det som håller den vid scrollportens kant').toBe('sticky');
+    expect(synlig.bottom).toBe('0px');
+    expect(synlig.pointerEvents).toBe('none');
+    // Barnräkningen: sex `<li>`, inget mer — pseudo-elementet syns inte här.
     await expect(page.getByTestId('dokument-lista').locator('> li')).toHaveCount(6);
+    await expect(page.getByTestId('dokument-lista')).not.toHaveAttribute('data-vid-botten', '');
 
     await page.getByTestId('dokument-lista').evaluate((ul) => {
       ul.scrollTo({ top: ul.scrollHeight });
     });
-    await expect(uttoning).toHaveCount(0);
+    await expect(page.getByTestId('dokument-lista')).toHaveAttribute('data-vid-botten', '');
+    await expect
+      .poll(async () => (await matSkugga(page)).display, {
+        message: 'skuggan ska släckas när man rullat hela vägen ner',
+      })
+      .toBe('none');
   });
 
   test('T176: EXAKT fyra rader bär INGEN uttoning (listan rullar inte)', async ({
@@ -607,7 +660,51 @@ test.describe('DokumentLista (eventläge) — låst fyra-radershöjd, nu UTAN fi
     network.use(hojdlasHandler(4, 0));
     await gotoEventlage(page);
     await expect(page.getByText('Bilaga 4.pdf')).toBeVisible();
-    await expect(page.getByTestId('lista-uttoning')).toHaveCount(0);
+    // [TASK-309.47] `after:`-klasserna sätts bara när `kanRulla`. Utan dem har
+    // pseudo-elementet ingen `content` alls, och `display` faller till
+    // webbläsarens default `inline` — det ÄR "ingen skugga". `block` vore
+    // regressionen.
+    const ingen = await matSkugga(page);
+    expect(ingen.display, 'ingen skugga när listan inte rullar').not.toBe('block');
+    expect(ingen.bakgrundsbild, 'ingen gradient heller').toBe('none');
+  });
+
+  /**
+   * [TASK-309.47] `prefers-contrast: more` — SKRIM BYTS MOT LIST, oförändrat.
+   *
+   * Ett 6 %-skrim är per definition låg kontrast, och en användare som bett om
+   * hög kontrast har bett bort just den signalklassen. Formen har därför alltid
+   * varit "4 px solid `border-strong` i stället för gradient" — och den skulle
+   * kunna falla bort tyst när skuggan flyttar från ett `<span>` till ett
+   * `::after`, eftersom varje `contrast-more:`-klass måste skrivas om till
+   * `contrast-more:after:`.
+   *
+   * Tonen läses ur en LEVANDE token-probe, inte hårdkodad: en medveten
+   * token-ändring ska inte fälla testet som om den vore en bugg.
+   */
+  test('TASK-309.47: prefers-contrast: more ger en solid list utan gradient', async ({
+    page,
+    network,
+  }) => {
+    await page.emulateMedia({ contrast: 'more' });
+    network.use(hojdlasHandler(6, 0));
+    await gotoEventlage(page);
+    await expect(page.getByText('Bilaga 1.pdf')).toBeVisible();
+
+    const stark = await page.evaluate(() => {
+      const probe = document.createElement('span');
+      probe.style.color = 'var(--mm-border-strong)';
+      document.body.append(probe);
+      const farg = getComputedStyle(probe).color;
+      probe.remove();
+      return farg;
+    });
+
+    const skugga = await matSkugga(page);
+    expect(skugga.display, 'signalen finns kvar i hög kontrast').toBe('block');
+    expect(skugga.hojd, 'en 4 px list, inte ett 24 px skrim').toBe('4px');
+    expect(skugga.bakgrundsbild, 'ingen gradient under prefers-contrast: more').toBe('none');
+    expect(skugga.bakgrundsfarg, 'listen bär --mm-border-strong').toBe(stark);
   });
 });
 
@@ -656,7 +753,6 @@ test.describe('TASK-309.43:s beteenden — hover-ton, reserverad ränna, skuggan
       const ul = document.querySelector('[data-testid="dokument-lista"]') as HTMLElement | null;
       if (!ul) return null;
       const kort = ul.querySelector('[data-testid="dokument-fil"]');
-      const skugga = document.querySelector('[data-testid="lista-uttoning"]');
       return {
         // `borderLeft/RightWidth` är 0 på `<ul>` sedan T176, så
         // `offsetWidth − clientWidth` ÄR rännan — ingen kant att dra bort.
@@ -668,7 +764,14 @@ test.describe('TASK-309.43:s beteenden — hover-ton, reserverad ränna, skuggan
         overflowY: getComputedStyle(ul).overflowY,
         kortBredd: kort ? rund(kort.getBoundingClientRect().width) : null,
         kortHoger: kort ? rund(kort.getBoundingClientRect().right) : null,
-        skuggaHoger: skugga ? rund(skugga.getBoundingClientRect().right) : null,
+        // [TASK-309.47] Skuggan är `<ul>::after` och har ingen egen box att
+        // mäta högerkanten på. Bredden är i stället STRUKTURELL: ett
+        // pseudo-element i block-flöde får content-boxens bredd, och rännan
+        // ligger per definition utanför den. `skuggaBredd` läses därför ur
+        // computed style och jämförs mot kortbredden — samma fråga (*"ligger
+        // skuggan bara på det vita kortet?"*), besvarad där svaret nu bor.
+        skuggaBredd: Number.parseFloat(getComputedStyle(ul, '::after').width) || 0,
+        clientWidth: ul.clientWidth,
       };
     });
   }
@@ -748,14 +851,21 @@ test.describe('TASK-309.43:s beteenden — hover-ton, reserverad ränna, skuggan
     network.use(hojdlasHandler(6, 0));
     await gotoEventlage(page);
     await expect(page.getByText('Bilaga 1.pdf')).toBeVisible();
-    await expect(page.getByTestId('lista-uttoning')).toBeVisible();
+    await expect.poll(async () => (await matSkugga(page)).display).toBe('block');
 
     const g = await mataRanna(page);
-    expect(g?.skuggaHoger).not.toBeNull();
+    // Marcus krav är oförändrat: *"Skuggningen ska ju bara synas på vita
+    // kortet."* Formen som uppfyller det är ny — bredden kommer ur
+    // content-boxen i stället för ur ett mätt `right` — så assertionen jämför
+    // skuggans bredd mot kortets i stället för två högerkanter.
     expect(
-      Math.abs((g?.skuggaHoger ?? 0) - (g?.kortHoger ?? 0)),
-      `skuggan slutar vid ${g?.skuggaHoger} px, kortet vid ${g?.kortHoger} px — skuggan får aldrig lägga sig över rännan`,
-    ).toBeLessThanOrEqual(1);
+      g?.skuggaBredd,
+      `skuggan är ${g?.skuggaBredd} px bred, kortet ${g?.kortBredd} px — rännan får aldrig ligga under skuggan`,
+    ).toBe(g?.kortBredd);
+    // Och att den bredden ÄR content-boxen, inte en slump: rännan är
+    // exkluderad per konstruktion.
+    expect(g?.skuggaBredd).toBe(g?.clientWidth);
+    expect(g?.ranna ?? 0).toBeGreaterThan(0);
   });
 
   /**
@@ -792,19 +902,25 @@ test.describe('TASK-309.43:s beteenden — hover-ton, reserverad ränna, skuggan
     network.use(hojdlasHandler(6, 0));
     await gotoEventlage(page);
     await expect(page.getByText('Bilaga 1.pdf')).toBeVisible();
-    await expect(page.getByTestId('lista-uttoning')).toBeVisible();
+    await expect.poll(async () => (await matSkugga(page)).display).toBe('block');
 
     const kanter = await page.evaluate(() => {
       const rund = (n: number) => Math.round(n * 100) / 100;
       const ul = document.querySelector('[data-testid="dokument-lista"]') as HTMLElement | null;
       if (!ul) return null;
       const kort = Array.from(ul.querySelectorAll('[data-testid="dokument-fil"]'));
-      const skugga = document.querySelector('[data-testid="lista-uttoning"]');
       return {
         ulBottom: rund(ul.getBoundingClientRect().bottom),
         kort4Bottom: kort[3] ? rund(kort[3].getBoundingClientRect().bottom) : null,
         kort5Top: kort[4] ? rund(kort[4].getBoundingClientRect().top) : null,
-        skuggaBottom: skugga ? rund(skugga.getBoundingClientRect().bottom) : null,
+        // [TASK-309.47] Skuggans underkant ÄR `<ul>`:ets sedan den blev
+        // `::after` med `sticky bottom-0` — definitionsmässigt, inte som
+        // resultat av en offset som måste hållas i synk. Det som återstår att
+        // pröva är att `sticky` faktiskt står kvar (en `static` hade lagt
+        // skuggan vid INNEHÅLLETS underkant, alltså utanför synfältet under
+        // rullning) och att bottenavståndet är noll.
+        skuggaPosition: getComputedStyle(ul, '::after').position,
+        skuggaBottom: getComputedStyle(ul, '::after').bottom,
         // Klippningen ska följa kortens radie, inte vara rak.
         ulRadieBotten: Number.parseFloat(getComputedStyle(ul).borderBottomLeftRadius),
       };
@@ -812,15 +928,15 @@ test.describe('TASK-309.43:s beteenden — hover-ton, reserverad ränna, skuggan
 
     expect(kanter).not.toBeNull();
     expect(kanter?.kort4Bottom).not.toBeNull();
-    expect(kanter?.skuggaBottom).not.toBeNull();
+    expect(
+      kanter?.skuggaPosition,
+      'sticky är det som binder skuggans underkant till scrollportens',
+    ).toBe('sticky');
+    expect(kanter?.skuggaBottom).toBe('0px');
 
     expect(
       Math.abs((kanter?.kort4Bottom ?? 0) - (kanter?.ulBottom ?? 0)),
       `fjärde kortet slutar vid ${kanter?.kort4Bottom} px, listboxen vid ${kanter?.ulBottom} px — varje px emellan blir en klippt remsa vid rullning`,
-    ).toBeLessThanOrEqual(1);
-    expect(
-      Math.abs((kanter?.skuggaBottom ?? 0) - (kanter?.ulBottom ?? 0)),
-      `skuggan slutar vid ${kanter?.skuggaBottom} px, listboxen vid ${kanter?.ulBottom} px`,
     ).toBeLessThanOrEqual(1);
     expect(
       kanter?.ulRadieBotten ?? 0,
