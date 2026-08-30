@@ -4,10 +4,10 @@ title: >-
   Fynd: Bilagor-ytan efter 309.44 — fokusringens 2 px-radie gör runda knappar
   fyrkantiga, fokusring i ⋯-menyn, korten klipps fyrkantigt under
   rullningsskuggan (Marcus 5173-granskning 2026-08-30)
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-30 08:47'
-updated_date: '2026-08-30 09:18'
+updated_date: '2026-08-30 09:53'
 labels: []
 dependencies: []
 parent_task_id: TASK-309
@@ -24,9 +24,9 @@ Marcus granskade 309.44 på dev-servern 5173 (2026-08-30 ~08:50 UTC): 'Klar för
 <!-- AC:BEGIN -->
 - [x] #1 Den globala fokusring-regeln i base.css sätter inte längre border-radius på element som bär en egen radie: radie-deklarationen flyttad till @layer base (utilities vinner) eller motsvarande rot-fix, med docblock som förklarar kaskaden; mätt: ⋯-knappen bär border-radius 9999px OCH synlig ring under tangentbordsfokus, och hover-plattan är rund efter klick + Escape; namnknappen behåller rounded-lg under fokus; inga andra fokusringar tappar synlighet (outline orörd, olagrad)
 - [x] #2 Ingen fokusring visas i ⋯-menyn vid MUS-öppning (varken på menybehållaren eller första posten), inte heller vid andra öppningen efter Escape-stängning; tangentbordsöppning (Enter/ArrowDown) markerar första posten som förut; mätt med data-focus-visible-inventering + skärmdump per steg
-- [ ] #3 Rännan bor helt ÖVER kortet: li pt-2 (inte py-1), wrappern -mt-2 (inte -my-1); ul bär rounded-2xl; skuggan bottom-0; mätt vid 1280 och 390: tray-luft 8 px runtom, 8 px mellan korten, fjärde kortets bottom === ul.bottom === skuggans bottom i vila, li 124 uniform, hookens kod byte-identisk; mitt i scroll (scrollTop 60) klipps kortet med kortets radie och skuggans hörn sammanfaller med klippningens (×3-crop granskad); rullens tumme klipps inte synligt i hörnen
+- [x] #3 Rännan bor helt ÖVER kortet: li pt-2 (inte py-1), wrappern -mt-2 (inte -my-1); ul bär rounded-2xl; skuggan bottom-0; mätt vid 1280 och 390: tray-luft 8 px runtom, 8 px mellan korten, fjärde kortets bottom === ul.bottom === skuggans bottom i vila, li 124 uniform, hookens kod byte-identisk; mitt i scroll (scrollTop 60) klipps kortet med kortets radie och skuggans hörn sammanfaller med klippningens (×3-crop granskad); rullens tumme klipps inte synligt i hörnen
 - [x] #4 Docblocken som beskriver py-1/-my-1/bottom-1 (DokumentListRam, DokumentLista:s li-kommentar, GRUPPKORT_KLASS, § RULLNINGSSKUGGAN) omskrivna mot den nya formen; befintliga assertioner (fjärde kortets bottom ≤ ul bottom, skugga.right = kort.right) gröna; typecheck 0 · biome 0 · build grön · alla dokument-acceptance gröna
-- [ ] #5 Landat via review-grinden (ADR-105) och prod-verifierat read-only av orkestreraren: ⋯ rund efter klick+Escape+hover, ingen ring i menyn vid mus, skuggan sammanfaller med kortkanten i vila och scroll
+- [x] #5 Landat via review-grinden (ADR-105) och prod-verifierat read-only av orkestreraren: ⋯ rund efter klick+Escape+hover, ingen ring i menyn vid mus, skuggan sammanfaller med kortkanten i vila och scroll
 <!-- AC:END -->
 
 ## Definition of Done
@@ -47,3 +47,9 @@ KLAUSULEN SOM INTE GAR ATT MATA HAR: 'rullens tumme klipps inte synligt i hornen
 Och min egen harledning pekar at FEL hall: rannan ar 11 px bred, ul:s nedre horn-radie 16 px, sa rannans nedersta ~16 px ligger innanfor hornkurvan — en malad tumme skulle formodligen fa sin nedre ande avrundad. Det ar inneboende i att runda en rullbox; enda alternativet ar att ta bort radien, vilket ger tillbaka det fyrkantiga hornet fixen finns for.
 Att bocka en AC vars enda oprovade klausul min egen geometri talar EMOT vore att pasta mer an jag vet. Orkestrerarens matning mot 5173 i en riktig webblasare avgor — bocka #3 dar, eller ta ett beslut om radien om tummen ser trasig ut.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landat via review-grinden: PR #2131 (4a4a026a kod+tester, 6070b4c3 kort; rebasad på main e50ee1c3), runda 1 risk låg med ett info/auto-fix (ArrowDown-vägen inte explicit testad — RAC:s modalitet är interaktionsbaserad, bokfört), loop konvergerad, backstopp exit 0, merge-kö → main fe3b2b9f 2026-08-30 09:50 UTC; Vercel production READY 09:50. AC #3:s sista klausul (tummen i hörnen) mätt av orkestreraren på 5173 med synlig scrollbar (×3-crops topp/botten, vila/scroll/botten): tummens rundade ändar intakta, ingen synlig klippning — bockad på den mätningen, inte på antagande. Prod-verifierat read-only (smoke-kontot, event RIM 1 Rönninge + Delade bilagor): ⋯ efter klick+Escape+hover = radie full + ring solid + platta #edeee9; hovrad menypost vid mus-öppning outline none (första OCH andra öppningen), Enter-öppning outline solid med data-focus-visible; ul border-radius 16px, li 124, 8 px mellan korten, ränna 11; scroll-fallet (≥5 kort) finns inte i prod-datan — verifierat på 5173 (799/799/799, rundad klippning) och låst av acceptance-assertion. Tre rot-fixar, ingen lapp: radien till @layer base (outline kvar olagrad), släckaren utökad till [role=menuitem], rännan över kortet (pt-2/-mt-2/rounded-2xl/bottom-0).
+<!-- SECTION:FINAL_SUMMARY:END -->
