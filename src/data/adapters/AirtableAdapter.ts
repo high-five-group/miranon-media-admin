@@ -42,10 +42,17 @@ import {
   EventinnehallListItemSchema,
   EventNoteSchema,
   EventSchema,
+  type HanteraInbetalningResult,
+  type Inbetalningslista,
   type Intresserad,
   IntresseradSchema,
+  type Jobbstatus,
+  type KoaKvittonInput,
+  type KoaKvittonResult,
+  type Kvittolank,
   MailLogEntrySchema,
   MailSendResultSchema,
+  type OppnaBetalningar,
   type PersonDetail,
   PersonDetailSchema,
   PersonNoteSchema,
@@ -60,6 +67,8 @@ import {
   type RegistrationDetail,
   RegistrationDetailSchema,
   RegistrationSchema,
+  type RegistreraInbetalningInput,
+  type RegistreraInbetalningResult,
   type SavedSegment,
   SavedSegmentSchema,
   type SaveEventContentInput,
@@ -79,6 +88,8 @@ import {
   type SendReceiptInput,
   type SendReceiptResult,
   SendReceiptResultSchema,
+  type SkickaKvittoIgenInput,
+  type SkickaKvittoIgenResult,
   type UpdateEventInput,
   WaitlistEntrySchema,
 } from '../../domain/schemas';
@@ -96,6 +107,7 @@ import {
   formatMB,
   SMALL_UPLOAD_MAX_BYTES,
 } from './attachmentUpload';
+import * as betalningsportar from './betalningsportar';
 import type { DataSourceAdapter, MallId } from './DataSourceAdapter';
 import {
   arKanoniskKallhash,
@@ -1173,5 +1185,62 @@ export class AirtableAdapter implements DataSourceAdapter {
         ? { total: data.total }
         : {}),
     };
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // BETALNINGSDOMÄNEN (TASK-346.4, ADR-128/ADR-129)
+  // ═══════════════════════════════════════════════════════════════════════
+  //
+  // NIO DELEGERINGAR till den DELADE implementationen
+  // (`./betalningsportar.ts`). Samma klass som `recordActivity` ovan:
+  // inbetalningar, kvittoledger och jobbtabeller bor i Supabase Postgres och
+  // har ALDRIG legat i Airtable (ADR-128 beslut 3), så metoderna är
+  // IDENTISKA i båda adaptrarna och ingår inte i Fas E-migrationens
+  // swap-yta.
+  //
+  // `recordActivity` löste samma sak med två ordagrant lika metodkroppar.
+  // Nio portar gånger två adaptrar hade gjort det valet till arton kroppar
+  // att hålla i synk för hand — se `betalningsportar.ts` § filhuvud.
+
+  fetchOppnaBetalningar(): Promise<OppnaBetalningar> {
+    return betalningsportar.hamtaOppnaBetalningar();
+  }
+
+  registreraInbetalning(input: RegistreraInbetalningInput): Promise<RegistreraInbetalningResult> {
+    return betalningsportar.registreraInbetalning(input);
+  }
+
+  raderaInbetalning(inbetalningId: string): Promise<HanteraInbetalningResult> {
+    return betalningsportar.raderaInbetalning(inbetalningId);
+  }
+
+  makuleraInbetalning(input: {
+    inbetalningId: string;
+    skal: string;
+  }): Promise<HanteraInbetalningResult> {
+    return betalningsportar.makuleraInbetalning(input);
+  }
+
+  fetchInbetalningar(params: {
+    anmalanRecordId?: string;
+    personId?: string;
+  }): Promise<Inbetalningslista> {
+    return betalningsportar.hamtaInbetalningar(params);
+  }
+
+  koaKvitton(input: KoaKvittonInput): Promise<KoaKvittonResult> {
+    return betalningsportar.koaKvitton(input);
+  }
+
+  fetchJobbstatus(params?: { jobbId?: string }): Promise<Jobbstatus> {
+    return betalningsportar.hamtaJobbstatus(params);
+  }
+
+  fetchKvittolank(kvittoId: string): Promise<Kvittolank> {
+    return betalningsportar.hamtaKvittolank(kvittoId);
+  }
+
+  skickaKvittoIgen(input: SkickaKvittoIgenInput): Promise<SkickaKvittoIgenResult> {
+    return betalningsportar.skickaKvittoIgen(input);
   }
 }

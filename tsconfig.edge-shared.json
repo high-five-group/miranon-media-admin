@@ -48,6 +48,17 @@
     "types": []
   },
   "include": [
+    // TASK-346.4 (betalningsdomänen, ADR-128/ADR-129). Fem moduler, samtliga
+    // transitivt Deno-fria: `betalningsbelopp` och `jobb-tillstand` och
+    // `aktivitetslogg` har INGEN import alls; `betalningsharledning`
+    // importerar bara `betalningsbelopp`; `kvittojobb` bara `jobb-tillstand`.
+    // Grafen stannar alltså inom denna lista, vilket är villkoret filhuvudet
+    // ställer.
+    "supabase/functions/_shared/aktivitetslogg.ts",
+    "supabase/functions/_shared/betalningsbelopp.ts",
+    "supabase/functions/_shared/betalningsharledning.ts",
+    "supabase/functions/_shared/jobb-tillstand.ts",
+    "supabase/functions/_shared/kvittojobb.ts",
     "supabase/functions/_shared/airtable-filter.ts",
     "supabase/functions/_shared/airtable-retry.ts",
     "supabase/functions/_shared/attachment-filename.ts",

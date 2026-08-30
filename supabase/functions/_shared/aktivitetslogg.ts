@@ -1,0 +1,188 @@
+// Aktivitetsloggens SERVER-SIDA för betalningsdomänen — TASK-346.4 AC #2
+// ("aktivitetsloggen får poster (registrerade/makulerade/raderade)"),
+// ADR-110/ADR-111.
+//
+// REN MODUL, TRANSITIVT DENO-FRI (ingen import alls) → Node-typkollad via
+// `tsconfig.edge-shared.json`.
+//
+// ═══════════════════════════════════════════════════════════════════════════
+// VARFÖR STATEMENTET BYGGS PÅ SERVERN OCH INTE SKICKAS IN AV KLIENTEN
+// ═══════════════════════════════════════════════════════════════════════════
+// Repots etablerade väg är klient → `log-activity`-EF → Postgres
+// (`recordActivity`, `src/data/activityLog/recordActivity.ts`). Den vägen
+// förutsätter en KLIENT som bygger statementet, och `log-activity` binder
+// identiteten hårt: `statement.actor.account.name` MÅSTE vara den anropande
+// JWT:ns `user.id`, annars 403.
+//
+// Betalningsdomänens skrivningar sker i EF:er som redan har den verifierade
+// anroparen i handen (`requireUser`) och som utför handlingen SJÄLVA. Att
+// låta klienten skicka ett statement för en handling SERVERN utförde vore att
+// göra loggen beroende av att varje framtida anropare minns att logga —
+// exakt den hemvists-lucka `TASK-201.15`s mutation-hemvist-vakt byggdes för
+// att stänga på klientsidan. Statementet byggs därför HÄR, ur den verifierade
+// identiteten, och skrivs med `service_role` (som har SELECT+INSERT på
+// `activity_log`, migration `20260812143131`).
+//
+// ═══════════════════════════════════════════════════════════════════════════
+// DUPLICERINGEN MOT `log-activity/index.ts` ÄR MEDVETEN OCH BOKFÖRD
+// ═══════════════════════════════════════════════════════════════════════════
+// `log-activity/index.ts` bär sin egen, INLINE rad-mappning (statement →
+// `activity_log`-kolumner). `statementTillRad` nedan är samma mappning.
+// Att bryta ut den ur `log-activity` och låta båda dela hade varit renare —
+// men `log-activity` är en PROD-DEPLOYAD funktion i `.prod-functions-
+// allowlist.conf`, och en refaktorering av den i denna skiva hade utökat
+// blast-radien från "nya funktioner" till "en fungerande prod-väg", på en
+// natt utan mänsklig granskning.
+//
+// DRIFTRISKEN ÄR REELL och namnges hellre än tystas: ändras `activity_log`-
+// tabellens kolumner måste BÅDA ställena följa med. Sammanslagningen är
+// flaggad i slutrapporten som uppföljning, inte gjord här.
+
+/** xAPI-basen. IDENTISK med `src/domain/schemas/ActivityStatement.schema.ts`
+ * och `_shared/activity-statement-schema.ts` — samma medvetna duplicering de
+ * två redan bär mot varandra (se den senares filhuvud). */
+export const XAPI_IRI_BASE = 'https://admin.miranon.dev/xapi';
+export const REQUEST_ID_EXTENSION_IRI = `${XAPI_IRI_BASE}/extensions/requestId`;
+
+/**
+ * Kategori-axeln. `betalning` och `kvitto` FANNS redan i klientens katalog
+ * (`src/data/activityLog/activityTypes.ts` § ACTIVITY_OBJECT_TYPES) — ingen
+ * ny kategori mintas här. En inbetalning ÄR en betalning; ett kvitto ÄR ett
+ * kvitto.
+ */
+export const AKTIVITETSTYP = {
+  betalning: `${XAPI_IRI_BASE}/activity-types/betalning`,
+  kvitto: `${XAPI_IRI_BASE}/activity-types/kvitto`,
+} as const;
+
+/** Objekt-IRI för en anmälan — SAMMA form som klientens `registrationObjectId`. */
+export function anmalanObjektId(anmalanRecordId: string): string {
+  return `${XAPI_IRI_BASE}/objects/registrations/${anmalanRecordId}`;
+}
+
+export type Verb = { id: string; display: Record<string, string> };
+
+/**
+ * Betalningsdomänens verb. Svensk dåtidsform (loggen berättar vad någon HAR
+ * gjort), samma stil som klientkatalogens `SKAPADE_ANMALAN_VERB` m.fl.
+ *
+ * INGET INNEHÅLL I VERBET: makuleringens SKÄL är fritext Lotta skrivit och
+ * hör inte hemma i loggen (samma integritetsgaranti som `ANTECKNADE_VERB`
+ * bär för anteckningar, S105 Del 2 beslut 2). Loggen bär ATT en inbetalning
+ * makulerades, aldrig varför.
+ */
+export const INBETALNING_VERB = {
+  registrerade: {
+    id: `${XAPI_IRI_BASE}/verbs/registrerade-inbetalning`,
+    display: { 'sv-SE': 'registrerade inbetalning' },
+  },
+  makulerade: {
+    id: `${XAPI_IRI_BASE}/verbs/makulerade-inbetalning`,
+    display: { 'sv-SE': 'makulerade inbetalning' },
+  },
+  raderade: {
+    id: `${XAPI_IRI_BASE}/verbs/raderade-inbetalning`,
+    display: { 'sv-SE': 'raderade inbetalning' },
+  },
+  koade_kvitton: {
+    id: `${XAPI_IRI_BASE}/verbs/koade-kvitton`,
+    display: { 'sv-SE': 'köade kvitton' },
+  },
+  skickade_kvitto_igen: {
+    id: `${XAPI_IRI_BASE}/verbs/skickade-kvitto-igen`,
+    display: { 'sv-SE': 'skickade kvitto igen' },
+  },
+} as const satisfies Record<string, Verb>;
+
+export type Statement = {
+  id: string;
+  actor: {
+    objectType: 'Agent';
+    name: string;
+    account: { homePage: string; name: string };
+  };
+  verb: Verb;
+  object: {
+    objectType: 'Activity';
+    id: string;
+    definition: { name: Record<string, string>; type: string };
+  };
+  context: { extensions: Record<string, unknown> };
+  timestamp: string;
+};
+
+/** Raden i `activity_log`, kolumn för kolumn. Se filhuvudets § DUPLICERINGEN. */
+export type AktivitetsRad = {
+  id: string;
+  actor_name: string;
+  actor_account_name: string;
+  verb_id: string;
+  verb_display: string;
+  object_id: string;
+  object_type: string;
+  object_name: string;
+  request_id: string;
+  occurred_at: string;
+  statement: Statement;
+};
+
+export type StatementSpec = {
+  /** Statementets egen UUID. Injicerad, så ett test slipper slumpen. */
+  statementId: string;
+  /** Korrelations-ID:t (ADR-111) — EF:ens `generateRequestId()`. */
+  requestId: string;
+  /** Den VERIFIERADE anroparens Supabase-user-id. Aldrig klient-buret. */
+  actorAccountId: string;
+  /** Anroparens visningsnamn, härlett server-side ur JWT/e-post. */
+  actorName: string;
+  verb: Verb;
+  objektId: string;
+  objektNamn: string;
+  aktivitetstyp: string;
+  timestamp: string;
+};
+
+/** Auktoritetens hemvist i xAPI-actorns `account.homePage`. */
+const HOME_PAGE = 'https://admin.miranon.dev';
+
+export function byggStatement(spec: StatementSpec): Statement {
+  return {
+    id: spec.statementId,
+    actor: {
+      objectType: 'Agent',
+      name: spec.actorName,
+      account: { homePage: HOME_PAGE, name: spec.actorAccountId },
+    },
+    verb: spec.verb,
+    object: {
+      objectType: 'Activity',
+      id: spec.objektId,
+      definition: { name: { 'sv-SE': spec.objektNamn }, type: spec.aktivitetstyp },
+    },
+    context: { extensions: { [REQUEST_ID_EXTENSION_IRI]: spec.requestId } },
+    timestamp: spec.timestamp,
+  };
+}
+
+/** Första nyckelns värde ur en Language Map — `sv-SE` först. IDENTISK i sak
+ * med `firstDisplayValue` i `log-activity/index.ts`. */
+function forstaVardet(map: Record<string, string>): string {
+  return map['sv-SE'] ?? Object.values(map)[0] ?? '';
+}
+
+export function statementTillRad(statement: Statement): AktivitetsRad {
+  const requestId = statement.context.extensions[REQUEST_ID_EXTENSION_IRI];
+  return {
+    id: statement.id,
+    actor_name: statement.actor.name,
+    actor_account_name: statement.actor.account.name,
+    verb_id: statement.verb.id,
+    verb_display: forstaVardet(statement.verb.display),
+    object_id: statement.object.id,
+    object_type: statement.object.definition.type,
+    object_name: forstaVardet(statement.object.definition.name),
+    request_id: typeof requestId === 'string' ? requestId : '',
+    occurred_at: statement.timestamp,
+    statement,
+  };
+}

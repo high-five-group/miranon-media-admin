@@ -28,11 +28,20 @@ import type {
   CreateEventInput,
   EventFormat,
   EventinnehallListItem,
+  HanteraInbetalningResult,
+  Inbetalningslista,
   Intresserad,
+  Jobbstatus,
+  KoaKvittonInput,
+  KoaKvittonResult,
+  Kvittolank,
+  OppnaBetalningar,
   PersonDetail,
   PlaceListItem,
   RecordActivityResult,
   RegistrationDetail,
+  RegistreraInbetalningInput,
+  RegistreraInbetalningResult,
   SavedSegment,
   SaveEventContentInput,
   SaveEventTextInput,
@@ -47,6 +56,8 @@ import type {
   SendActionTestEmailResult,
   SendReceiptInput,
   SendReceiptResult,
+  SkickaKvittoIgenInput,
+  SkickaKvittoIgenResult,
   UpdateEventInput,
 } from '../../domain/schemas';
 import type {
@@ -647,6 +658,113 @@ export interface DataSourceAdapter {
    * (se get-activity-log-EF:ens filhuvud för den fulla motiveringen).
    */
   fetchActivityLog(params?: ActivityLogParams): Promise<ActivityLogPage>;
+
+  // ═════════════════════════════════════════════════════════════════════════
+  // BETALNINGSDOMÄNEN (TASK-346.4, ADR-128/ADR-129)
+  // ═════════════════════════════════════════════════════════════════════════
+  //
+  // NIO PORTAR, SAMMA KLASS SOM `recordActivity`: inbetalningar, kvittoledger
+  // och jobbtabeller bor i Supabase Postgres och har ALDRIG legat i Airtable
+  // (ADR-128 beslut 3). Edge Function-vägen skriver därför mot Supabase
+  // OAVSETT vilken adapter som är live, och BÅDA implementationerna är
+  // funktionella och identiska — till skillnad från adapterns övriga metoder
+  // är de inte en del av Fas E-migrationens swap-yta.
+  //
+  // Implementationen är EN, delad: `src/data/adapters/betalningsportar.ts`.
+  // Adaptrarnas metoder delegerar dit. Se den filens huvud för varför nio
+  // portar inte fick bli arton handhållna kopior — och för varför
+  // port-pariteten (ADR-057 klausul c) ändå är oförändrad.
+  //
+  // VAD SOM ÄNDÅ NÅR AIRTABLE: läsvägarna korsläser basen, eftersom anmälan,
+  // event och priser fortsatt bor där (ADR-128 beslut 5), och skrivvägarna
+  // skriver SPEGELN via `write-registration-payment-mirror`. Riktningen är
+  // enkelriktad, Postgres → basen (beslut 6) — ingen av portarna härleder
+  // pengar ur spegelvärdena.
+
+  /**
+   * Alla ÖPPNA betalningar över alla event (PRD berättelse 1) — inkorgens
+   * lista. "Öppen" = `Saknas (kr) > 0` och anmälans status varken Avbokad
+   * eller Ombokad (ADR-128 beslut 2).
+   *
+   * Posterna bär BÅDE basens `Saknas (kr)` och Postgres-summan, plus
+   * `spegelIFas`. Det är inte redundans: `Saknas (kr)` är en Airtable-formel
+   * över spegelvärden och därför exakt så färsk som spegeln är, aldrig
+   * färskare (ADR-128 § Konsekvenser).
+   */
+  fetchOppnaBetalningar(): Promise<OppnaBetalningar>;
+
+  /**
+   * Registrera EN inbetalning: raden skrivs i Postgres, facken härleds ur
+   * summan mot priset (ADR-128 beslut 2 — Lotta väljer aldrig fack), och
+   * spegeln skrivs till basen med omförsök.
+   *
+   * BELOPPET ÄR EN STRÄNG, inte ett tal. Normaliseringen av "2 500,00" sker
+   * SERVER-SIDE (`_shared/betalningsbelopp.ts`), där den kan bevisas
+   * hermetiskt — se `RegistreraInbetalningInput` för hela resonemanget.
+   */
+  registreraInbetalning(input: RegistreraInbetalningInput): Promise<RegistreraInbetalningResult>;
+
+  /**
+   * Radera en felregistrerad inbetalning (PRD berättelse 16) — tillåtet
+   * ENDAST innan ett kvitto utfärdats. Server-side fäller försöket med 409
+   * när ledgern redan bär ett kvitto (databasen gör det dessutom
+   * strukturellt: `kvitton.inbetalning_id` har `on delete restrict`).
+   */
+  raderaInbetalning(inbetalningId: string): Promise<HanteraInbetalningResult>;
+
+  /**
+   * Makulera en inbetalning MED SKÄL (PRD berättelse 17) — vägen efter att
+   * kvittot gått: "sanningen rättas utan att kvittot försvinner ur
+   * bokföringen". Raden består, märkt makulerad, och räknas inte längre in
+   * i summan.
+   *
+   * SKÄLET ÄR OBLIGATORISKT, inte av artighet: check-constrainten
+   * `inbetalningar_makulering_kraver_skal` fäller en makulering utan skäl.
+   */
+  makuleraInbetalning(input: {
+    inbetalningId: string;
+    skal: string;
+  }): Promise<HanteraInbetalningResult>;
+
+  /**
+   * Inbetalningarna för EN anmälan eller EN person (PRD berättelse 24;
+   * Åtgärds-panelen, anmälans detaljvy, personkortet). Exakt ett av de två
+   * argumenten ska anges.
+   */
+  fetchInbetalningar(params: {
+    anmalanRecordId?: string;
+    personId?: string;
+  }): Promise<Inbetalningslista>;
+
+  /**
+   * "Skicka N kvitton" (PRD berättelse 8) — köar ETT jobb med N rader och
+   * svarar DIREKT. Kvittona genereras och skickas i bakgrunden av
+   * jobbmotorn; klienten väntar aldrig (ADR-129 beslut 3).
+   */
+  koaKvitton(input: KoaKvittonInput): Promise<KoaKvittonResult>;
+
+  /**
+   * Jobbets läge per rad (PRD berättelse 10). LÄSES VID APPÖPPNING och inte
+   * bara vid Realtime-push: "Push är en snabbhet, aldrig en sanning — en
+   * webbläsare som var stängd får sitt läge ur läsningen" (ADR-129 beslut 8).
+   * Utan `jobbId` returneras det senaste jobbet.
+   */
+  fetchJobbstatus(params?: { jobbId?: string }): Promise<Jobbstatus>;
+
+  /**
+   * Signerad, tidsbegränsad länk till kvittots sparade PDF ("Visa", PRD
+   * berättelse 12). Samma leveransform som `getAttachmentDownloadUrl` —
+   * bucketen är privat och klienten rör aldrig lagrings-API:t (ADR-057
+   * klausul a).
+   */
+  fetchKvittolank(kvittoId: string): Promise<Kvittolank>;
+
+  /**
+   * "Skicka igen" (PRD berättelse 12 och 13) — SAMMA PDF, SAMMA nummer,
+   * valfri annan adress. Ett nytt nummer hade gjort kvittot till ett annat
+   * kvitto och brutit verifikationskedjan.
+   */
+  skickaKvittoIgen(input: SkickaKvittoIgenInput): Promise<SkickaKvittoIgenResult>;
 }
 
 /**
