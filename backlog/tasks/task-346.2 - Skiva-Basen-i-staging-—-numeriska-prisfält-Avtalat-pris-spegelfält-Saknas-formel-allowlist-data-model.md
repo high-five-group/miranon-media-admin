@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-30 18:45'
-updated_date: '2026-08-30 20:14'
+updated_date: '2026-08-30 20:40'
 labels:
   - ready-for-agent
 dependencies:
@@ -60,4 +60,6 @@ AC 4: priser satta for ZZ-GRANSKNING-S113 (Event-14061, recSahYCeTbEzFFe6): Pris
 AC 3: field-allowlists.ts fick ny operation write-registration-payment-mirror (tableId Anmalningar, falten Summa inbetalt (kr) / Kvittonummer / Anmalningsavgift / Slutbetalning / Avtalat pris (kr)) - deny-by-default kvar, EF byggs TASK-346.4.
 
 AC 5 OPPET for Marcus (agenten ror aldrig prod, app8uGPrVCVOm6LfD forbjuden). Skapa EXAKT samma NIO falt i prod-basen, samma typer/precision/ordning (Eventinnehall/Eventplanering FORE lookupen, lookupen FORE formeln): 1) Eventinnehall (tblfwqsNPSYd6o44L): Pris (kr) - number precision 2. 2) Eventinnehall (tblfwqsNPSYd6o44L): Anmalningsavgift (kr) - number precision 2. 3) Eventplanering (tblVE3UKWl1CKrphV): Pris (kr) - number precision 2. 4) Eventplanering (tblVE3UKWl1CKrphV): Anmalningsavgift (kr) - number precision 2. 5) Anmalningar (tbloOcrppVoyrHbrq): Avtalat pris (kr) - number precision 2. 6) Anmalningar: Summa inbetalt (kr) - number precision 2. 7) Anmalningar: Kvittonummer - singleLineText (INGEN options-nyckel). 8) Anmalningar: Pris (kr) (from Event) - multipleLookupValues, recordLinkFieldId = prodens Event-falt-ID, fieldIdInLinkedTable = prodens Eventplanering.Pris (kr)-falt-ID (las efter steg 3). 9) Anmalningar: Saknas (kr) - formula, EXAKT samma formeltext som ovan (faltnamnen ar identiska i prod). Fullt recept: docs/reference/data-model.md paragraf Stagingbasens additiva tillskott 2026-08-30, prod-tabellen.
+
+RUNDA 2 (review-fynd, risk hog, loop exit 20): Saknas (kr)-formeln behandlade explicit 0-pris som okant (Airtables OR()/IF() laser talet 0 som falskt). Fixad med narvaro-test {Falt} & "" != "" (Airtable saknar ISBLANK) i stallet for sanningsvarde. mcp__airtable__update_field kan INTE andra ett formelfalts formula (bara name/description, verifierat empiriskt: en options-payload accepterades av verktyget men ignorerades server-side) och MCP-servern saknar delete_field/delete_table helt (verifierat mot hela verktygslistan) - darfor doptes det GAMLA faltet om till Saknas (kr) [ERSATT 2026-08-30 - 0-pris-bugg] (fldSJCJwXnqwBIX2b, kvarlamnat orort i staging, ofarligt) och ett NYTT falt Saknas (kr) = fldAjVbTtNo1IMkW6 skapades med den korrekta formeln.
 <!-- SECTION:NOTES:END -->

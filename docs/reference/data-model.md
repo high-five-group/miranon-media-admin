@@ -808,41 +808,71 @@ Pris/Anmälningsavgift/Resterande belopp, § Schema cheat sheet ovan) rört.
 | Anmälningar | `Summa inbetalt (kr)` (`fldI73u3UYN5vGsN6`) | number, precision 2 | **APP-SKRIVET spegelfält** — TALFÄLT, INTE rollup (beslut 5). Skrivväg: `write-registration-payment-mirror` (byggs TASK-346.4) |
 | Anmälningar | `Kvittonummer` (`fldkqFkqL3N5nopAL`) | singleLineText | **APP-SKRIVET spegelfält** — skild från länkfältet `Kvitton` (`fld2Axx3FsfXndJ39`) |
 | Anmälningar | `Pris (kr) (from Event)` (`fldtZSeHg3ubwStzK`) | multipleLookupValues | **ADDITIVT HJÄLPFÄLT** (ej i AC #1:s lista, uttryckligen tillåtet av uppdraget) — lookup av Eventplanering.`Pris (kr)` via länken `Event` (`fldi3enUaMdbuGSlm`). Namnkonvention: samma `(from Event)`-suffix som `Ort (from Event)`/`Kurs (from Event)` m.fl. |
-| Anmälningar | `Saknas (kr)` (`fldSJCJwXnqwBIX2b`) | formula | Se formeln nedan |
+| Anmälningar | `Saknas (kr)` (`fldAjVbTtNo1IMkW6`) | formula | Se formeln nedan (RUNDA 2-FIX) |
 
-**`Saknas (kr)`-formeln, verbatim** (fältnamn i klammerform — Airtable
-resolvade dem till `referencedFieldIds` `fldZHwxOXOQqkFx33`/
-`fldtZSeHg3ubwStzK`/`fldI73u3UYN5vGsN6` vid skapelsen, `isValid: true`):
+**RUNDA 2-FIX (review-fynd, 2026-08-30): 0-pris behandlades som "okänt".**
+Den ursprungliga formeln (`OR({Avtalat pris (kr)}, {Pris (kr) (from Event)})`)
+använde fältens SANNINGSVÄRDE — och Airtable tolkar talet `0` som falskt i
+`OR()`/`IF()`, precis som JavaScript. Ett explicit 0-pris (gratis-/comp-event,
+eller ett avtalat 0-pris) lästes därför som "inget pris känt" i stället för
+"priset är 0". Airtable saknar `ISBLANK()`; fixen testar fältens NÄRVARO via
+textform-tvång (`{Fält} & "" != ""`, tomt blir `""`, `0` blir `"0"`) i stället
+för sanningsvärde. **Mekaniskt tvång, bokfört öppet:** `mcp__airtable__update_field`
+kan INTE ändra ett formelfälts `options.formula` (verifierat empiriskt — ett
+anrop med en `options`-payload accepterades av verktygsgränssnittet men
+IGNORERADES helt server-side, samma "wrappern stryper okända fält"-mönster
+redan dokumenterat för `singleSelect`-choices ovan) och denna MCP-server
+saknar `delete_field`/`delete_table` helt (verifierat mot hela verktygslistan).
+Vägen: det GAMLA fältet döptes om till **`Saknas (kr) [ERSATT 2026-08-30 —
+0-pris-bugg]`** (`fldSJCJwXnqwBIX2b`, kvarlämnat orört i staging — ofarligt,
+ingen kod läser det, `Saknas (kr)` är inte i någon allowlist) och ett NYTT
+fält skapades med det korrekta namnet och den korrekta formeln.
+
+**`Saknas (kr)`-formeln, verbatim, som den STÅR LIVE** (`fldAjVbTtNo1IMkW6`;
+fältnamn i klammerform — Airtable resolvade dem till `referencedFieldIds`
+`fldZHwxOXOQqkFx33`/`fldtZSeHg3ubwStzK`/`fldI73u3UYN5vGsN6` vid skapelsen,
+`isValid: true`):
 
 ```text
 IF(
-  OR({Avtalat pris (kr)}, {Pris (kr) (from Event)}),
-  IF({Avtalat pris (kr)}, {Avtalat pris (kr)}, {Pris (kr) (from Event)}) - {Summa inbetalt (kr)},
+  OR({Avtalat pris (kr)} & "" != "", {Pris (kr) (from Event)} & "" != ""),
+  IF({Avtalat pris (kr)} & "" != "", {Avtalat pris (kr)}, {Pris (kr) (from Event)}) - {Summa inbetalt (kr)},
   BLANK()
 )
 ```
 
-**Empiriskt verifierat live mot staging (fyra fall, samtliga mätta —
-`rec0houPcRjsPBGVz` "Cecilia Ödman" testad och ÅTERSTÄLLD till blankt
-tillstånd efteråt, `mutera-och-återställ`-mönstret):**
+**Empiriskt verifierat LIVE mot staging (fem case + en bråkdels-kontroll,
+samtliga mätta på `rec0houPcRjsPBGVz` "Cecilia Ödman" och det länkade eventet
+ZZ-GRANSKNING-S113 (`recSahYCeTbEzFFe6`), muterade och ÅTERSTÄLLDA till sina
+ursprungliga värden efteråt — `mutera-och-återställ`-mönstret):**
 
-| Fall | Indata | Utfall | Vad det bevisar |
-|---|---|---|---|
-| Inget pris känt | Avtalat pris tomt, `Pris (kr) (from Event)` tomt (ej ZZ-GRANSKNING-S113-länkat) | **BLANK** (verifierat på 3 slumpade rader — `Saknas (kr)` saknas helt i API-svaret) | Guarden mot skräp-negativa värden fungerar — INTE `0 - 0` eller ett negativt tal |
-| Eventets pris-fallback | Avtalat pris tomt, `Pris (kr) (from Event)` = 2500, Summa = 0 | `2500` | Fallback till eventets pris när Avtalat pris inte är satt |
-| Avtalat pris VINNER | Avtalat pris = 2000, `Pris (kr) (from Event)` = 2500, Summa = 500 | `1500` (= 2000−500, INTE 2500−500) | Avtalat pris har företräde framför eventets pris (beslut 2) |
-| Genuin överbetalning | Avtalat pris = 2000, Summa = 2500 | `-500` | Ett NEGATIVT resultat är TILLÅTET när det är ett äkta överskott — guarden gäller bara "inget pris känt", inte alla negativa utfall |
+| # | Fall | Indata | NYTT fält | GAMLA fältet (negativ kontroll) | Vad det bevisar |
+|---|---|---|---|---|---|
+| i | Inget pris känt | Avtalat pris tomt, `Pris (kr) (from Event)` tomt (ej ZZ-länkad rad, `rec09CDc3OkrdFutj` "Petra Kvist") | **BLANK** | BLANK (oförändrat) | Guarden mot skräp-negativa värden håller |
+| ii | Eventets pris-fallback | Avtalat pris tomt, `Pris (kr) (from Event)` = 2500, Summa = 0 | `2500` | 2500 (oförändrat) | Fallback till eventets pris |
+| iii | Avtalat pris VINNER, ÄVEN vid 0 | Avtalat pris (kr) = **0**, `Pris (kr) (from Event)` = 2500, Summa = 500 | **`-500`** (= 0−500) | **`2000`** (= 2500−500, IGNORERADE 0:an — BUGGEN) | 0 räknas nu som "satt" och vinner över eventpriset |
+| iv | Explicit 0-pris (eventprisledet) | Avtalat pris tomt, `Pris (kr) (from Event)` = **0** (Eventplanering.`Pris (kr)` temporärt satt till 0), Summa = 300 | **`-300`** (= 0−300) | **BLANK** (fältet saknades helt i API-svaret — BUGGEN) | Ett genuint 0-pris ger `0 − summa`, aldrig BLANK |
+| v | Genuin överbetalning | Avtalat pris = 2000, Summa = 2500 | `-500` | -500 (oförändrat) | Negativt TILLÅTET vid äkta överskott — guarden gäller bara "inget pris känt" |
+| bråkdel | Rå precision, inte lookupens displayprecision | Eventplanering.`Pris (kr)` temporärt = **2500.55**, Summa = **0.05** | **`2500.5`** (exakt — INGEN avrundning till heltal) | — | Se kosmetisk-kant-noten nedan: bevisar att beräkningen använder RÅDATA |
 
-**Känd kosmetisk kant, ej blockerande:** lookup-fältets `result.options.precision`
-rapporteras som `0` av Meta-API:t trots att källfältet (Eventplanering.
-`Pris (kr)`) har precision 2 — verifierat via `describe_table` direkt efter
-skapelsen. Detta är en Airtable-**visningsegenskap**, inte en lagringsbegränsning:
-formelberäkningen ovan använder det råa (ej avrundade) värdet oavsett
-lookup-fältets egen displayprecision (bekräftat empiriskt — testfallet
-"Avtalat pris VINNER" hade gett `1500.00` felfritt om något decimalvärde
-hade förekommit; inga bråkdelar testades eftersom alla verkliga priser i
-staging är heltal). Påverkar bara hur `Pris (kr) (from Event)` VISAS i ett
-grid-view, aldrig ett beräknat resultat.
+Fall (iii) och (iv) är negativa kontroller i sig: samma indata mot det GAMLA
+(nu bortdöpta) fältet reproducerar precis den bugg review-rundan flaggade —
+`2000` i stället för `-500`, respektive `BLANK` i stället för `-300`.
+
+**Känd kosmetisk kant, ej blockerande — gäller BÅDA `fldtZSeHg3ubwStzK` OCH
+`Saknas (kr)` självt.** Meta-API:t rapporterar `result.options.precision: 0`
+för lookup-fältet `Pris (kr) (from Event)` TROTS att källfältet (Eventplanering.
+`Pris (kr)`) har precision 2 — och samma sak gäller `Saknas (kr)`-formelfältets
+EGNA `result.options.precision` (verifierat via `describe_table` direkt efter
+skapelsen av BÅDA fälten: `fldtZSeHg3ubwStzK.result.options.precision = 0` och
+`fldAjVbTtNo1IMkW6.result.options.precision = 0`, trots att formelns utdata
+härrör från precision-2-fält). Detta är en Airtable-**visningsegenskap**, INTE
+en lagringsbegränsning — **bevisat, inte längre obevisat för bråkdelar**:
+bråkdels-fallet ovan (2500.55 − 0.05) gav exakt `2500.5`, inte `2500` eller
+`2501`. Både lookup-svaret (`"Pris (kr) (from Event)":[2500.55]`, rå JSON) och
+formelresultatet (`"Saknas (kr)":2500.5`) bar full precision i API-svaret.
+Påverkar bara hur fälten VISAS i ett grid-view, aldrig ett beräknat resultat
+eller den råa datan.
 
 **Priser ifyllda (AC #4), källa bokförd per event:**
 
@@ -899,7 +929,7 @@ etablerar, eller Airtable-konsolen direkt):
 | Anmälningar (`tbloOcrppVoyrHbrq`) | `Summa inbetalt (kr)` | number, precision 2 |
 | Anmälningar (`tbloOcrppVoyrHbrq`) | `Kvittonummer` | singleLineText (INGEN options-nyckel vid skapelse — se skriptets kommentar) |
 | Anmälningar (`tbloOcrppVoyrHbrq`) | `Pris (kr) (from Event)` | multipleLookupValues — `recordLinkFieldId` = prodens `Event`-fält-ID, `fieldIdInLinkedTable` = prodens Eventplanering.`Pris (kr)`-fält-ID (läs efter skapelse, samma ordning som skriptet: Eventplanering FÖRE lookupen) |
-| Anmälningar (`tbloOcrppVoyrHbrq`) | `Saknas (kr)` | formula — EXAKT formeln ovan (fältnamnen är identiska i prod, Airtable resolvar per bas) |
+| Anmälningar (`tbloOcrppVoyrHbrq`) | `Saknas (kr)` | formula — EXAKT den KORRIGERADE (runda 2) formeln ovan, med `& "" != ""`-narvarotestet — INTE den ursprungliga formen (den hade samma 0-pris-bugg i prod som i staging) |
 
 Ordningen är en invariant (samma som skriptet): Eventinnehåll/Eventplanering
 FÖRE lookupen, lookupen FÖRE formeln. Även prod-basens `Eventplanering.
@@ -2370,3 +2400,4 @@ Code kan ta dessa när de blir relevanta för en specifik uppgift.
 | 2026-08-29 (`TASK-338.6`, steg (i)) | **§ Bilagornas Gemensam-räckvidd — Plats-axel: prod-kolumnen ifylld** (PROD-halvan av samma tabell, Marcus GO citerat i kortets Implementation Notes). `Bilagor.Plats` = `fldiRBrqROTJ7fnFs`, `Bilagor.Platsnamn` = `fldFgcCtK8gRRm2m8`; Räckvidd-choicen "Gemensam" och Platsers auto-födda spegelfält bekräftat NÄRVARANDE (konvergens-verifierat namnbaserat) men deras ID:n fångas inte av migreringsskriptet — bokfört öppet i tabellen, inte gissat. Steg (ii) EF-deploy och (iii) radmigrering är INTE gjorda i denna skiva. |
 | 2026-08-29 (`TASK-338.6`, steg (i), komplettering) | **De två återstående prod-ID:na ifyllda** — Räckvidd-choicen "Gemensam" (`selsABHUcAQJqGd0M`, färg `blueLight2` — Airtables egen typecast-tilldelning, inte avsiktlig) och Platsers auto-födda spegelfält (`fld1yaGrVppKh9fyh`, läst ur `Plats.options.inverseLinkFieldId`), mätta via `describe_table` mot prod 2026-08-29 (Marcus stående GO för prod-läsning) sedan migreringsskriptet bevisligen inte fångar dem (kvarstående tooling-lucka, bokförd i § Bilagornas Gemensam-räckvidd, inte stängd av mätningen). Bonus: `Platsnamn`s `fieldIdInLinkedTable` i prod (`fld9CfDq4rqTAGGpw`) och `Plats`-fältets `prefersSingleRecordLink: false` i prod — bekräftar staging, stänger `TASK-338.6` § Premiss-pass punkt 2. |
 | 2026-08-30 (`TASK-346.2`, ADR-128 §§ 2/5/7) | **§ Stagingbasens additiva tillskott 2026-08-30 tillagd** — nio nya fält (Eventinnehåll/Eventplanering `Pris (kr)`+`Anmälningsavgift (kr)`, Anmälningar `Avtalat pris (kr)`/`Summa inbetalt (kr)`/`Kvittonummer`/`Pris (kr) (from Event)`-lookup/`Saknas (kr)`-formel), skapade live via Airtable MCP; deklarativ hemvist `scripts/create-betalningsfalt.mjs`. `Saknas (kr)`-formeln empiriskt fyrfallstestad live (inget pris → BLANK, eventpris-fallback, Avtalat pris-företräde, genuin överbetalning tillåten negativ). Priser satta för ZZ-GRANSKNING-S113 (2500/1000, källa-divergens bokförd öppet) och Eventinnehåll-standarden `Resor i medvetandet 1 · Utbildning` (parsat ur egen fritext). Ny allowlist-operation `write-registration-payment-mirror` i `field-allowlists.ts` (byggs på av `TASK-346.4`). Prod-fältlistan (§ AC #5) skriven som öppet Marcus-moment. |
+| 2026-08-30 (`TASK-346.2` runda 2, review-fynd) | **§ Stagingbasens additiva tillskott: `Saknas (kr)`-formeln RÄTTAD** — den ursprungliga formeln behandlade explicit 0-pris som "okänt" (Airtables `OR()`/`IF()` läser talet 0 som falskt); fixad med ett närvaro-test (`{Fält} & "" != ""`) i stället för sanningsvärde. `mcp__airtable__update_field` kan inte ändra ett formelfälts formula och MCP-servern saknar `delete_field` — det gamla fältet döptes om till `Saknas (kr) [ERSATT 2026-08-30 — 0-pris-bugg]` (`fldSJCJwXnqwBIX2b`, kvarlämnat orört) och ett nytt `Saknas (kr)` (`fldAjVbTtNo1IMkW6`) skapades med den korrekta formeln. Fem fall + en bråkdels-kontroll verifierade live, inklusive två negativa kontroller mot det gamla fältet. Kosmetisk-kant-noten utökad till att gälla `Saknas (kr)` självt; "obevisat för bråkdelar"-frågan stängd med ett faktiskt bråkdels-test (2500.55 − 0.05 = 2500.5, exakt). Prod-fältlistan uppdaterad till att peka på den korrigerade formeln. |

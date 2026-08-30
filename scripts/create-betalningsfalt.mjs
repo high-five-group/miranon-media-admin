@@ -46,15 +46,27 @@
 //       Namnkonvention: samma "(from Event)"-suffix som tabellens befintliga
 //       lookuper (Ort (from Event), Kurs (from Event), …).
 //   Anmälningar."Saknas (kr)"
-//     → formel: Avtalat pris (kr) om satt, annars "Pris (kr) (from Event)",
-//       minus Summa inbetalt (kr). BLANK() (INTE ett negativt tal) när INGET
-//       pris är känt än — skyddar mot skräp-negativa värden ur saknad
-//       prisdata. Ett GENUINT överskott (summa > pris) FÅR bli negativt —
-//       det är ett legitimt signal-värde (överbetalning), inte skräp.
-//       Empiriskt verifierat live mot staging (TASK-346.2 slutrapport):
-//       (a) inget pris känt → BLANK, inte -N, (b) eventets pris-fallback när
-//       Avtalat pris är tomt, (c) Avtalat pris VINNER över eventets pris när
-//       satt, (d) en genuin överbetalning ger ett negativt Saknas-värde.
+//     → formel: Avtalat pris (kr) om SATT (närvaro, inte sanningsvärde),
+//       annars "Pris (kr) (from Event)", minus Summa inbetalt (kr). BLANK()
+//       (INTE ett negativt tal) när INGET pris är känt alls — skyddar mot
+//       skräp-negativa värden ur saknad prisdata. Ett GENUINT överskott
+//       (summa > pris) FÅR bli negativt — legitimt signal-värde
+//       (överbetalning), inte skräp.
+//       RUNDA 2-FIX (review-fynd, TASK-346.2): den FÖRSTA versionen
+//       (`OR({X},{Y})` rakt av) läste explicit 0-pris som "okänt" — Airtable
+//       tolkar talet 0 som falskt i OR()/IF(). Fixad med ett NÄRVARO-test
+//       (`{Fält} & "" != ""`, Airtable saknar ISBLANK()) i stället för
+//       sanningsvärde. Fem fall + en bråkdels-kontroll empiriskt verifierade
+//       live mot staging (TASK-346.2 slutrapport runda 2): (i) inget pris
+//       känt → BLANK, (ii) eventets pris-fallback, (iii) Avtalat pris VINNER
+//       ÄVEN vid 0 (negativ kontroll: gamla formeln ignorerade 0:an), (iv) ett
+//       genuint 0-pris ger `0 − summa` (negativ kontroll: gamla formeln gav
+//       BLANK), (v) en genuin överbetalning ger ett negativt värde. Mekaniskt
+//       tvång vid rättningen: `mcp__airtable__update_field` kan inte ändra
+//       ett formelfälts formula (bara name/description) och denna MCP-server
+//       saknar delete_field — det gamla fältet döptes om
+//       ("Saknas (kr) [ERSATT 2026-08-30 — 0-pris-bugg]", kvarlämnat orört)
+//       och ett nytt "Saknas (kr)" skapades med den korrekta formeln.
 //
 // API-FORMEN, TOKEN-SEPARATIONEN och PROD-SPÄRREN: identiska med
 // create-bilagor-table.mjs/create-kvitton-table.mjs § filhuvud. Lookup-
@@ -194,17 +206,23 @@ export const CONFIG = {
     formula: {
       name: 'Saknas (kr)',
       description:
-        'ADR-128 beslut 2/5 — pris-ledet är Avtalat pris (kr) om satt, ' +
-        'annars eventets Pris (kr) (via lookupen "Pris (kr) (from Event)"), ' +
-        'minus Summa inbetalt (kr). BLANK() (inte ett negativt tal) när ' +
-        'INGET pris är känt ännu — skyddar mot skräp-negativa värden från ' +
-        'saknad prisdata (bokfört TASK-346.2). Så färsk som spegeln ' +
-        '(Summa inbetalt (kr)), aldrig färskare.',
+        'ADR-128 beslut 2/5 — pris-ledet är Avtalat pris (kr) om SATT ' +
+        '(närvaro, inte sanningsvärde), annars eventets Pris (kr) (via ' +
+        'lookupen "Pris (kr) (from Event)"), minus Summa inbetalt (kr). ' +
+        'BLANK() när INGET pris är känt alls — skyddar mot skräp-negativa ' +
+        'värden från saknad prisdata (bokfört TASK-346.2). RUNDA 2-FIX ' +
+        '(review-fynd): föregående version läste explicit 0-pris som ' +
+        '"okänt" (Airtables OR()/IF() tolkar 0 som falskt) — fixad med ett ' +
+        'närvaro-test ({Fält} & "" != "") i stället för sanningsvärde. Så ' +
+        'färsk som spegeln (Summa inbetalt (kr)), aldrig färskare.',
       // Fältnamn i klammerform — Airtable resolvar namn→ID vid create-anropet.
+      // RUNDA 2-FIX: narvaro-test via textform-tvang (Airtable saknar
+      // ISBLANK()), inte sanningsvarde — sa att ett explicit 0-pris raknas
+      // som "kant", inte "okant" (se filhuvudet ovan).
       text:
         'IF(\n' +
-        '  OR({Avtalat pris (kr)}, {Pris (kr) (from Event)}),\n' +
-        '  IF({Avtalat pris (kr)}, {Avtalat pris (kr)}, {Pris (kr) (from Event)}) - {Summa inbetalt (kr)},\n' +
+        '  OR({Avtalat pris (kr)} & "" != "", {Pris (kr) (from Event)} & "" != ""),\n' +
+        '  IF({Avtalat pris (kr)} & "" != "", {Avtalat pris (kr)}, {Pris (kr) (from Event)}) - {Summa inbetalt (kr)},\n' +
         '  BLANK()\n' +
         ')',
     },
