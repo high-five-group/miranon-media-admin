@@ -4,10 +4,10 @@ title: >-
   Fynd: Bilagor-ytans hierarki — handlingsraden ut ur blocket, ⋯ som ghost med
   rund hover, delad-pill med ikon + info-ton, namn-hover (Marcus mandat
   2026-08-30)
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-30 06:37'
-updated_date: '2026-08-30 08:35'
+updated_date: '2026-08-30 09:03'
 labels: []
 dependencies: []
 parent_task_id: TASK-309
@@ -26,7 +26,7 @@ Marcus 2026-08-30 efter prod-titt (S113 resume 3): knapparna 'Ladda upp bilaga'/
 - [x] #2 ⋯-knappen: computed background-color transparent i vila och ikonfärg = --mm-text-secondary; synlig platta vid hover (page.hover) och när menyn är öppen (aria-expanded=true); border-radius 9999px; 44×44 px; fokusring vid tangentbord kvar, ingen ring efter musstängning (regeln från e99a5aee oförändrad); contrast-more ger synlig kant
 - [x] #3 RackviddBadge: GEMENSAM-pillen bär aria-hidden Layers-ikon + bg-info-bg (mätt rgb(239,246,255)) + ikon i text-info; 'Detta event'-pillen oförändrad neutral; texten oförändrad (rackviddsBadgeText, title kvar); contrast-more ger info-kant; li-höjden 124 px orörd
 - [x] #4 Namnknappen: text-decoration-line underline vid hover (data-hovered) med underline-offset, ingen platta, ingen understrykning i vila; fokusring oförändrad; cursor pointer
-- [ ] #5 Höjdlåset orört (useLastaListhojd byte-identisk med main; li 124 uniform; fjärde kortets bottom ≤ ul bottom); alla tests/acceptance/dokument-*-sviter gröna; typecheck 0 · biome 0 · build grön; orkestrerarens egen mätning + skärmdumpar 1280/390 godkända; landat via review-grinden (ADR-105) och prod-verifierat read-only
+- [x] #5 Höjdlåset orört (useLastaListhojd byte-identisk med main; li 124 uniform; fjärde kortets bottom ≤ ul bottom); alla tests/acceptance/dokument-*-sviter gröna; typecheck 0 · biome 0 · build grön; orkestrerarens egen mätning + skärmdumpar 1280/390 godkända; landat via review-grinden (ADR-105) och prod-verifierat read-only
 <!-- AC:END -->
 
 ## Definition of Done
@@ -70,3 +70,9 @@ EN ASSERTION UTAN ISOLERAD KONTROLL, oppet bokfort: B:s 'fokus atterlamnas till 
 
 GRINDAR efter tillaggen, matta exitkoder: typecheck 0 - biome 0 - build 0 - check-langa-streck 0 (267 filer) - npm run test:acceptance -- dokument: 103 passed (3.6m), exit 0. Talet var 98 fore denna runda, 95 fore skivan.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landat via review-grinden: PR #2130 (fyra + tre commits, head ec62cc6e), runda 1 risk medel med ett warning/auto-fix (AC #1–#4 saknade permanenta assertioner) → fem nya tester + fjorton isolerade negativa kontroller (en vacuös wrapper-mätning fångad och rättad) → runda 2 inkrementell (--foregaende-sha fc99f4b5) 0 fynd risk låg, loop konvergerad, backstopp exit 0, merge-kö → main e50ee1c3 2026-08-30 09:01 UTC. Vercel production READY 09:01. Prod-verifierat read-only av orkestreraren (smoke-kontot, 1280 + 390, event + delade): handlingsraden utanför blocket (grupp-kort har exakt ett barn; vänsterkanter 372 = väljare = block; rytm 226→242→286→302 = 16/16), ⋯ transparent i vila med rund platta #edeee9 vid hover, delad pill #eff6ff med Layers-ikon mot neutral #f5f5f3 'Detta event', namnknapp cursor pointer + understrykning vid hover, li 124, ränna 11. Två avvikelser från uppdraget godkända: raden i sidkolumnen (syns även under laddning/fel) och Layers trots segment-ytans reservation (öppet bokförd). Marcus på 5173: 'Klar förbättring' + tre fynd → TASK-309.45 (fokusringens 2 px-radie, ring i menyn, skuggklipp).
+<!-- SECTION:FINAL_SUMMARY:END -->

@@ -15,8 +15,8 @@
 
 ## Aktuellt fokus
 
-**Session 113 ▶️ ÅTERUPPTAGEN (resume 3, 2026-08-30 ~06:30 UTC, `lifecycle: active`;
-Marcus tittade på prod och gav tre direktiv på bilagekorten + två designfrågor) — DOKUMENTYTAN BLEV BILAGOR: KORTFORM, ⋯-MENY, HANDLINGSRAD,
+**Session 113 ▶️ AKTIV (resume 3, 2026-08-30; Del 9 landad ~10:00 UTC:
+tre skivor till prod på Marcus mandat — 309.43/44/45, PR #2128/#2130/#2131 → `fe3b2b9f`) — DOKUMENTYTAN BLEV BILAGOR: KORTFORM, ⋯-MENY, HANDLINGSRAD,
 BILAGA-SUBSTANTIVET — LANDAT OCH VERIFIERAT I PROD.** Marcus tre anmärkningar
 före vandringen (T176 · "Event-mallad" · knapparna) → orkestrerarens
 designbedömning mot prod (sex fynd: listan saknade hierarki) → Marcus GO
@@ -30,15 +30,15 @@ verifierad med eget skript + egna ögon** (h1 Bilagor · Skapa bilaga · kort
 med main. Beslut under mandat: kvittots Ladda ner utgår · URL kvar ·
 rullningsskugga · en-radsnamn på mobil. `T176` stängd · `T178` ny (HMR) ·
 `TASK-309.42` Done · 4 lessons-fragment (13 totalt) · ORDLISTA § Bilaga.
-**Numrering:** ADR 128 · kort 346/309.44 · L655 · T179 · 13 fragment ·
-session 113 (disk-verifierat vid resume 3). **NÄSTA:** `TASK-309.43` (hover
-bort · reserverad ljusgrå rulle i rännan, mätt 11 px i båda overflow-lägena ·
-skugga bara på kortet) byggs av bygg-agent i huvudkatalogen, orkestreraren
-mäter på 5173 → Marcus dom på ⋯-knappens vikt (ghost-förslag) och
-räckvidds-särskiljningen (ikon + ton i pillen) → veto-lista (strängbytena i
-`93dbf275`, tomytan under fyra-korts-låset vid 2–3 bilagor, URL-bytet som
+**Numrering:** ADR 128 · kort 346/309.46 · L655 · T179 · 17 fragment ·
+session 113 (disk-verifierat 2026-08-30). **NÄSTA:** Marcus tittar på prod
+(`fe3b2b9f`: hover bort · rulle i rännan · handlingsrad ut · ghost-⋯ · blå
+delad-pill · namn-understrykning · runda fokusringar · ingen ring i menyn ·
+rännan över kortet) → veto-lista (strängbytena i `93dbf275`, tomytan under
+fyra-korts-låset vid 2–3 bilagor — `min(4, n)` föreslaget, URL-bytet som
 kort) → prod-vandringen (testplanen delvis inaktuell efter formbytet) → domar
-`340.5`/`340.4` → skörd → `session-end` (114). Arbetssätts-frågan (45 %
+`340.5`/`340.4` → skörd (17 fragment) → arbetsforms-grillningen (Del 9 §
+Tidsfrågan) → `session-end` (114). Arbetssätts-frågan (45 %
 bokförings-PR:er, 38 % eskaleringar) är en grillnings-kandidat, Marcus start.
 HANDOFF (historik): sessionsdok S113 § Paushistorik (paus 3). Full narrativ: Del 1–8.
 

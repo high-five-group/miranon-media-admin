@@ -3,10 +3,10 @@ id: TASK-309.43
 title: >-
   Fynd: bilagekorten — hover bort, reserverad rulle i rännan, skugga bara på
   kortet (Marcus prod-titt 2026-08-30)
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-30 06:26'
-updated_date: '2026-08-30 06:57'
+updated_date: '2026-08-30 09:03'
 labels: []
 dependencies: []
 parent_task_id: TASK-309
@@ -25,7 +25,7 @@ Marcus prod-titt 2026-08-30 på Bilagor-ytan efter #2123 (S113 resume 3): (1) ho
 - [x] #2 <ul> bär scrollbar-inline: mätt offsetWidth − clientWidth = 11 px vid 1280 i både overflow auto (>4 kort) och hidden (≤4 kort); kortbredd identisk i båda lägena (507 px vid 1280); tummen är --mm-border-strong på transparent spår (husets ljusgrå, samma som NyaAnmalningar/Deltagare) och ligger till höger om korten på behållarens grå yta
 - [x] #3 Rullningsskuggan (lista-uttoning) slutar vid kortets högerkant: right = mätt rännbredd, satt från <ul>:s offsetWidth − clientWidth (useLayoutEffect, ingen hårdkodad px); mätt skugga.right === kort.right (±1 px) vid 1280 och 390; vid 0 ränna (overlay-scrollbar/Firefox) full bredd som förut
 - [x] #4 Höjdlåset orört: useLastaListhojd-kroppen byte-identisk med origin/main (bara docblock får ändras); li 124 px uniform; fjärde kortets bottom ≤ ul bottom, femte top ≥ ul bottom; höjdlås-, tidpunkt- och räckviddsval-acceptance gröna
-- [ ] #5 DokumentYta § LISTANS RAM:s docblock rättat mot mätningen (scrollbar-stycket vänt: reserverad ränna är nu beslutet, med Marcus-citatet och mätdatan; skugg-stycket bär rännexklusionen); typecheck 0 · biome 0 · build grön; landat via review-grinden (ADR-105) och prod-verifierat read-only
+- [x] #5 DokumentYta § LISTANS RAM:s docblock rättat mot mätningen (scrollbar-stycket vänt: reserverad ränna är nu beslutet, med Marcus-citatet och mätdatan; skugg-stycket bär rännexklusionen); typecheck 0 · biome 0 · build grön; landat via review-grinden (ADR-105) och prod-verifierat read-only
 <!-- AC:END -->
 
 ## Definition of Done
@@ -63,3 +63,9 @@ GRINDAR: typecheck exit 0 · biome exit 0 · build exit 0 · check-langa-streck 
 
 AC #5 EJ BOCKAD: docblock-rättelsen och de tre grindarna är klara, men 'landat via review-grinden och prod-verifierat read-only' sker efter landning och ägs av orkestreraren.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landat via review-grinden: PR #2128 (två commits e34035e7 + 07abe570), runda 1 risk låg med ett info/auto-fix (permanenta assertioner — taget i 309.44:s PR #2130), loop konvergerad, backstopp exit 0, merge-kö → main fd0a5dc4 2026-08-30 07:29 UTC. Vercel production READY 07:29. Prod-verifierat read-only av orkestreraren (smoke-kontot, 1280 + 390, event RIM 1 Rönninge + Delade bilagor): ränna 11 px även vid ≤4 kort (overflow hidden) — kortbredden hoppar inte när en femte bilaga kommer; kort.right 888/338 mot ul.right 899/349; kortets bg vit i vila och hover, transition 0s; tumme rgb(196,196,194) = --mm-border-strong; li 124; h1 Bilagor. Orkestrerarens egen mätning på 5173 (grenen utcheckad detached) bekräftade agentens tal exakt före granskningen. Docblockets 2026-08-29-påstående 'bara vid auto' rättat öppet (kanten som revs). Marcus efterföljande 5173-granskning gav tre nya fynd (fokusradie, menyring, skuggklipp) → TASK-309.45.
+<!-- SECTION:FINAL_SUMMARY:END -->
