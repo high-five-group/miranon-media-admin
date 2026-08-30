@@ -7,7 +7,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-08-30 06:37'
-updated_date: '2026-08-30 07:52'
+updated_date: '2026-08-30 08:35'
 labels: []
 dependencies: []
 parent_task_id: TASK-309
@@ -39,16 +39,34 @@ Marcus 2026-08-30 efter prod-titt (S113 resume 3): knapparna 'Ladda upp bilaga'/
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
-AC #5 — MATT DEL KLAR, EJ BOCKAD (landning/prod-del ags av orkestreraren).
-HOJDLASET ORORT: useLastaListhojd-kroppen BYTE-IDENTISK med origin/main — md5 f32cec45283372c922981daa02123651 pa bada, 131 rader vardera (samma tal 309.43 rapporterade). li-hojd 124 px uniform i alla matta lagen (eventlage 9/3 kort, rackviddslage 9 kort, 1280 + 390); ul.clientHeight 496 = 4 x 124. Fjarde kortets bottom <= ul bottom provas av filens egen provaKortkanter, gron.
-GRINDAR, mätta exitkoder (fangade separat, aldrig via pipe): npm run typecheck 0 - npx @biomejs/biome check . 0 - npm run build 0 - node scripts/check-langa-streck.mjs 0 (267 filer, 0 ofangade) - npm run test:acceptance -- dokument: 98 passed (3.1m), exit 0. Talet var 95 fore skivan; +3 ar de nya assertionerna nedan.
-KVAR TILL ORKESTRERAREN: egen matning + skarmdumpar 1280/390, landning via review-grinden, prod-verifiering read-only.
+GRANSKARFYND PR #2130 RUNDA 1 (warning/auto-fix, granskad SHA fc99f4b5) — ATGARDAT. Skivans EGNA fyra beslut saknade permanenta assertioner; de tre testerna fran forra rundan tackte bara det OVERTAGNA #2128-fyndet.
 
-GRANSKARFYND #2128 RUNDA 1 (info/auto-fix) — TAGET HAR, ingen AC bockad for det. 309.43:s tre matta beteenden saknade permanenta assertioner (sviten provade bara att lista-uttoning visas/doljs). Tre nya tester i dokument-lista-hojdlas.acceptance.test.ts:
-  1. kortets background-color identisk i vila och under hover (rgb(255,255,255) bada)
-  2. rannan reserverad (> 0) OCH exakt lika bred i overflow auto som i hidden, kortbredden oforandrad mellan lagena, plus att <ul> ar kantlos (sa offsetWidth - clientWidth FAKTISKT ar rannan)
-  3. skuggans hogerkant === kortets hogerkant (+/- 1 px)
-Talet 11 lases INTE — rannans bredd ar plattformens (scrollbar-gutter reserverar for en KLASSISK scrollbar; bredden avgors av OS/webblasarbygge, CSS Overflow 3 sager inget om talet), medan STABILITETEN mellan overflow-lagena ar var. Skalet star i describe-docblocket.
-TVASIDIGT BEVISADE, var for sig: (1) hover-ton aterinford pa kortet -> toHaveCSS foll; (2) scrollbar-inline borttagen -> 'rannan ska vara reserverad i overflow auto (matt 0 px)'; (3) skuggans right hardkodad till 0 -> 'skuggan slutar vid 899 px, kortet vid 888 px'. Test 3 kravde ISOLERAD brytning: med bade rannan och skuggan brutna samtidigt maskerade de varandra och testet blev gront — noterat som mattfalla.
-KAND KANT i test 2: '> 0' forutsatter klassiska scrollbars i riggen. Matt 11 px i denna rigg (headless Chromium, macOS); CI kor Linux-Chromium, dar talet kan skilja men > 0 bor halla. Skulle det inte gora det ar ratt atgard att prova BADA utfallen, aldrig att mildra till '>= 0'.
+HEMVIST, bokford: A/B/D i dokument-lista-hojdlas (geometri + tillstand i listytan, samma fragedass filen redan ager, samma handler for bada lagena). C i dokument-rackviddsval hos den befintliga pill-vakten — bilagorHandler() ar den ENDA fixturen som ger BADA rackviddstyperna pa samma sida, vilket kravs for den tvasidiga provningen 'delad ser annorlunda ut an event-egen'. Hojdlas-svitens handler ger en pill-typ per lage.
+
+FEM NYA TESTER, alla grona: A eventlage - A rackviddslage - B - D (hojdlas), C (rackviddsval).
+Tonerna jamfors mot LEVANDE token-prober i samma dokument, inte hardkodade rgb-strangar: en hardkodad farg faller en medveten token-andring som om den vore en bugg, och faller INTE en klass som slutat peka pa tokenen sa lange nagon annan regel rakar ge samma farg. 16 px assertas exakt — det ar kolumnens gap-4, vart eget tal.
+B:s oppna-lage provas med MUSEN BORTFLYTTAD (data-hovered borta, aria-expanded true) — annars hade hover-regeln ensam kunnat forklara fargen och det oppna laget aldrig provats.
+
+FOURTEEN ISOLERADE NEGATIVA KONTROLLER, en bruten invariant per korning (drivrutin som aterstaller kallan mellan varje fall — 309.43:s maskeringsfalla kodad bort). ALLA FJORTON FALLDE:
+  A-i   extra barn i grupp-kort            -> 'exakt EN handlingsrad pa sidan'
+  A-ii  gap-4 -> gap-6                     -> 'valjare.bottom 226 -> knappar.top 250 ska vara 16 px'
+  A-iii pl-2 pa raden                      -> 'knapparnas vansterkant === valjarens'
+  A-iv  extra barn i delade lagets block   -> 'exakt EN handlingsrad pa sidan'
+  A-v   pt-2 pa raden                      -> 'valjare.bottom 226 -> knappar.top 250 ska vara 16 px'
+  B-i   vilo-ikonfargen borttagen          -> toHaveCSS color
+  B-ii  hover-plattan borttagen            -> toHaveCSS background-color
+  B-iii oppen-plattan borttagen            -> toHaveCSS background-color
+  B-iv  rounded-full borttagen             -> 'plattan ska vara RUND'
+  C-i   delad pill -> bg-bg-muted          -> toHaveCSS background-color
+  C-ii  Layers borttagen                   -> toHaveCount
+  C-iii event-egen pill FAR en ikon        -> toHaveCount
+  C-iv  ikonstorlek 13 -> 40               -> 'ikonen far inte vaxa raden — hojdlaset ar 124 px'
+  D-i   data-[hovered]:underline borttagen -> toHaveCSS text-decoration-line
+  D-ii  cursor-pointer borttagen           -> toHaveCSS cursor
+
+KONTROLLEN FANGADE EN VACUOS ASSERTION, vilket ar hela skalet att kora dem. A-iii var forst GRON: matningen last radens WRAPPER, och pl-2 ligger innanfor border-boxen sa wrapperns kanter star stilla medan knapparna flyttar sig. Samma hal fanns lodratt — och det var precis ett pt-1 pa wrappern som revs i denna skiva. mataHierarki laser nu radens EGNA knappar (min left, min top, max bottom); A-iii och nya A-v faller bada efter fixen.
+
+EN ASSERTION UTAN ISOLERAD KONTROLL, oppet bokfort: B:s 'fokus atterlamnas till triggern efter Escape'. Beteendet levereras av react-arias MenuTrigger och gar inte att bryta med en lokal enradsmutation utan att skriva om Meny.tsx-primitiven; ingen realistisk regressionsmutation fanns att kora. Assertionen star kvar (den fangar en framtida handbyggd meny), men den ar INTE negativt kontrollerad — sag inte att den ar det.
+
+GRINDAR efter tillaggen, matta exitkoder: typecheck 0 - biome 0 - build 0 - check-langa-streck 0 (267 filer) - npm run test:acceptance -- dokument: 103 passed (3.6m), exit 0. Talet var 98 fore denna runda, 95 fore skivan.
 <!-- SECTION:NOTES:END -->
