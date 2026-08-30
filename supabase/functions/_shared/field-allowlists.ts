@@ -525,6 +525,42 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
       'Lagringsnyckel',
     ],
   },
+  // Betalningens app-skrivna spegel på Anmälningar (ADR-128 beslut 5, förberett
+  // TASK-346.2 — den faktiska skrivande EF:en byggs i TASK-346.4). Inbetalningen
+  // SJÄLV bor i Postgres (ADR-128 beslut 3); denna operation är BARA spegeln
+  // tillbaka till basen så Lottas Airtable-vyer, automation A7 och rollups
+  // fungerar orörda (ADR-128 § Beslut 5/6, användarberättelse 35). UNIONEN av
+  // vad spegel-skrivningen kan sätta över sin livscykel (samma "en operation,
+  // unionen av vad den kan skriva"-form som send-action-email/create-receipt
+  // ovan): 'Summa inbetalt (kr)' (TALFÄLT, INTE en rollup — en rollup kan inte
+  // summera rader i en annan databas, beslut 5) skrivet av appen ur Postgres i
+  // samma operation som inbetalningen; 'Kvittonummer' (singleLineText,
+  // skild från länkfältet 'Kvitton') satt när ett kvitto utfärdats;
+  // 'Anmälningsavgift'/'Slutbetalning' (de två VALFÄLTEN, redan individuellt
+  // allowlistade av mark-registration-fee-paid/mark-final-payment-paid ovan —
+  // unionen här ger INGEN ny skrivbehörighet utöver vad de operationerna redan
+  // tillåter, den låter bara SAMMA spegel-anrop sätta båda facken atomärt i
+  // stället för två separata update-record-anrop) härledda ur summan mot
+  // priset (beslut 2); 'Avtalat pris (kr)' när Lotta sätter ett rabatterat
+  // pris via betalningsformuläret (beslut 2, frivilligt, förvalt = eventets
+  // pris). `Saknas (kr)` ligger MEDVETET UTANFÖR — den är en Airtable-FORMEL
+  // (basen räknar själv, beslut 5), aldrig ett skrivbart fält. De numeriska
+  // standardprisfälten (Eventinnehåll/Eventplanering "Pris (kr)"/
+  // "Anmälningsavgift (kr)", beslut 7) ligger också UTANFÖR — de är Lottas
+  // egna prissättningsfält, satta via eventredigeringen (save-event-content/
+  // save-event-text-klassen), inte en del av betalnings-spegeln. Fält-ID:n:
+  // data-model.md § "Stagingbasens additiva tillskott 2026-08-30 (TASK-346.2)".
+  // Tabell per NAMN (ADR-050 bas-portabilitet).
+  'write-registration-payment-mirror': {
+    tableId: 'Anmälningar',
+    allowedFields: [
+      'Summa inbetalt (kr)',
+      'Kvittonummer',
+      'Anmälningsavgift',
+      'Slutbetalning',
+      'Avtalat pris (kr)',
+    ],
+  },
   // Sätt närvarostatus på ett Deltagande (check-in-vertikalen, TASK-214.1). Dörrens BINÄRA
   // toggle (Ej avstämt ↔ Närvarande) OCH registrets fyra övriga statusvärden går
   // genom SAMMA operation — allowlisten gatar FÄLTET, inte VÄRDET (samma princip

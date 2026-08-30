@@ -39,6 +39,7 @@
     "schema:bilagor": "node --env-file-if-exists=.env.seed scripts/create-bilagor-table.mjs",
     "schema:kvitton": "node --env-file-if-exists=.env.seed scripts/create-kvitton-table.mjs",
     "schema:eventinnehall": "node --env-file-if-exists=.env.seed scripts/create-eventinnehall-modell.mjs",
+    "schema:betalningsfalt": "node --env-file-if-exists=.env.seed scripts/create-betalningsfalt.mjs",
     "migration:task-338-6": "node --env-file-if-exists=.env.seed scripts/task-338-6-prod-migration.mjs",
     "seed:eventinnehall": "node --env-file-if-exists=.env.seed scripts/seed-eventinnehall-modell.mjs",
     "seed:review": "node --env-file-if-exists=.env.seed scripts/seed-review-fixture.mjs",
