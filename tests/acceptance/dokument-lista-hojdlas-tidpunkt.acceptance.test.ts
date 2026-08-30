@@ -115,6 +115,23 @@ function handler(antalEgna: number, antalGemensamma: number, latensMs = 0) {
  */
 const RANNA = 8;
 
+/**
+ * [TASK-309.46] ÖVRE TOLERANS FÖR NIVÅ 3:s HÖJD — 2 px, inte 8.
+ *
+ * SKÄRPT PÅ EN NEGATIV KONTROLL, inte på en känsla. Bandet var
+ * `FALLBACK × 4 + 8`, valt när "fel svar" låg långt utanför det. Sedan
+ * TASK-309.46 är det NÄRMASTE felsvaret exakt EN RÄNNA fel (konstanten 124 i
+ * stället för 122 ⇒ 496 i stället för 488), alltså precis 8 px — och den
+ * gamla toleransen SVALDE det: en isolerad kontroll som satte tillbaka 124
+ * lämnade testet GRÖNT.
+ *
+ * `<ul>` bär ingen kant (mätt), så `kantjustering` är 0 och den uppmätta
+ * höjden är exakt 488 vid både 1280 och 390 px. 2 px räcker för sub-pixel-brus
+ * och utesluter ränn-felet. Vidga inte bandet igen utan att först fråga vilket
+ * felsvar som då släpps in.
+ */
+const TOLERANS = 2;
+
 const PERSIST_KEY = 'REACT_QUERY_OFFLINE_CACHE';
 
 /**
@@ -341,7 +358,7 @@ test.describe('S1 — höjden är låst från listans FÖRSTA målade ram', () =
     // ur låset. Uppmätt i denna rigg vid både 1280 px och 375 px.
     const FALLBACK = 122;
     expect(geometri.hojd).toBeGreaterThanOrEqual(FALLBACK * 4);
-    expect(geometri.hojd).toBeLessThanOrEqual(FALLBACK * 4 + 8);
+    expect(geometri.hojd).toBeLessThanOrEqual(FALLBACK * 4 + TOLERANS);
     expect(geometri.scrollHeight).toBe(geometri.clientHeight);
   });
 

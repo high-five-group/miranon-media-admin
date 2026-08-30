@@ -869,9 +869,15 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
     // ERSÄTTAREN PRÖVAR SAMMA SAK DIREKT, INTE SVAGARE: fjärde kortet ska
     // ligga HELT innanför klippkanten och det femte HELT utanför. Ett halvt
     // kort i underkanten är den regression regeln finns för, och den fångas
-    // nu utan att gå omvägen via en linje. Rännan bor INUTI `<li>` (`py-1`),
-    // så `fjarde.bottom - forsta.top` är fyra hela li-höjder och `listHojd`
-    // ska matcha det exakt.
+    // nu utan att gå omvägen via en linje.
+    //
+    // [TASK-309.46] REFERENSEN DRAR BORT FJÄRDE RADENS RÄNNA. Rännan bor
+    // fortfarande INUTI `<li>`, men som transparent `border-bottom` — och
+    // hookens NIVÅ 1 EXKLUDERAR den fjärde radens ur låset (`separatorBredd`),
+    // vilket är det som gör att listytan börjar OCH slutar vid korten.
+    // `fjarde.bottom - forsta.top` är därför fyra li-höjder INKLUSIVE en ränna
+    // som låset inte räknar; utan avdraget jämför testet `clientHeight` mot
+    // ett tal som är exakt en ränna för stort (mätt: 488 mot 496).
     const geometri = await rullande.evaluate((ul) => {
       const items = Array.from(ul.children) as HTMLElement[];
       const kort = Array.from(ul.querySelectorAll('[data-testid="dokument-fil"]'));
@@ -882,7 +888,10 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
       const femteKort = kort[4] ? kort[4].getBoundingClientRect() : null;
       return {
         listHojd: ul.clientHeight,
-        fyraRader: fjarde.bottom - forsta.top,
+        fyraRader:
+          fjarde.bottom -
+          forsta.top -
+          (Number.parseFloat(getComputedStyle(items[3]).borderBottomWidth) || 0),
         antalKort: kort.length,
         // Innehållsytans nederkant i samma rymd som kortens kanter.
         innehallBottom: Number.parseFloat(getComputedStyle(ul).borderTopWidth) + ul.clientHeight,

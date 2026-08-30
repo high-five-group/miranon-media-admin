@@ -235,6 +235,23 @@ const FALLBACK_RADHOJD = 122;
 const RANNA = 8;
 
 /**
+ * [TASK-309.46] ÖVRE TOLERANS FÖR NIVÅ 3:s HÖJD — 2 px, inte 8.
+ *
+ * SKÄRPT PÅ EN NEGATIV KONTROLL, inte på en känsla. Bandet var
+ * `FALLBACK × 4 + 8`, valt när "fel svar" låg långt utanför det. Sedan
+ * TASK-309.46 är det NÄRMASTE felsvaret exakt EN RÄNNA fel (konstanten 124 i
+ * stället för 122 ⇒ 496 i stället för 488), alltså precis 8 px — och den
+ * gamla toleransen SVALDE det: en isolerad kontroll som satte tillbaka 124
+ * lämnade testet GRÖNT.
+ *
+ * `<ul>` bär ingen kant (mätt), så `kantjustering` är 0 och den uppmätta
+ * höjden är exakt 488 vid både 1280 och 390 px. 2 px räcker för sub-pixel-brus
+ * och utesluter ränn-felet. Vidga inte bandet igen utan att först fråga vilket
+ * felsvar som då släpps in.
+ */
+const TOLERANS = 2;
+
+/**
  * Tom cache-arrangemang (ADR-072) — persist-nyckeln bort FÖRE app-boot.
  *
  * SAMMA form och skäl som systerfilens `arrangeraTomCache`
@@ -514,7 +531,7 @@ test.describe('DokumentLista (eventläge) — låst fyra-radershöjd, nu UTAN fi
     expect(tomt.scrollHeight).toBe(tomt.clientHeight);
     expect(tomt.antalKort).toBe(0);
     expect(tomt.hojd).toBeGreaterThanOrEqual(FALLBACK_RADHOJD * 4);
-    expect(tomt.hojd).toBeLessThanOrEqual(FALLBACK_RADHOJD * 4 + 8);
+    expect(tomt.hojd).toBeLessThanOrEqual(FALLBACK_RADHOJD * 4 + TOLERANS);
     await expect(page.getByTestId('dokument-lista')).not.toHaveAttribute('tabindex', '0');
   });
 
@@ -897,7 +914,7 @@ test.describe('GemensamtLage (räckviddsläge) — samma regel (tidigare saknad,
     // långt under vad en NATURLIG (o-låst) tomt-lägesrad hade mätt (en
     // enda `py-3`-textrad, typiskt < 60 px), vilket är den regression
     // denna gräns skulle fånga.
-    expect(geometri.hojd).toBeLessThanOrEqual(FALLBACK_RADHOJD * 4 + 8);
+    expect(geometri.hojd).toBeLessThanOrEqual(FALLBACK_RADHOJD * 4 + TOLERANS);
     await expect(page.getByTestId('dokument-lista')).not.toHaveAttribute('tabindex', '0');
 
     const resultat = await new AxeBuilder({ page })
@@ -1214,7 +1231,7 @@ test.describe('GemensamtLage vid 375 px — samma tre nivåer som desktop (revie
     // ovan — `<li>` är 124) och `<ul>` bär ingen kant, så
     // väntad höjd är exakt 488 px.
     expect(geometri.hojd).toBeGreaterThanOrEqual(FALLBACK_RADHOJD * 4);
-    expect(geometri.hojd).toBeLessThanOrEqual(FALLBACK_RADHOJD * 4 + 8);
+    expect(geometri.hojd).toBeLessThanOrEqual(FALLBACK_RADHOJD * 4 + TOLERANS);
   });
 
   test('NIVÅ 2 (ESTIMAT): 2 rader — låst höjd bevisad mot radens EGEN uppmätta höjd', async ({
