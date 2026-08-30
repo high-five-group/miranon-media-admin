@@ -102,6 +102,36 @@ function handler(antalEgna: number, antalGemensamma: number, latensMs = 0) {
   });
 }
 
+/**
+ * [TASK-309.46] RÄNNAN MELLAN KORTEN, i px — radens transparenta
+ * `border-bottom` (`border-b-8`).
+ *
+ * DUPLICERAS MEDVETET, samma disciplin som `FALLBACK` nedan: hookens NIVÅ 1
+ * och 2 DRAR BORT den sista mätta radens ränna ur låset (`separatorBredd`
+ * läser `border-bottom-width`), så en assertion mot `radhöjd × 4` utan avdrag
+ * kodar den form som gällde när rännan var en padding och separatorn 0 px.
+ * Talet står här så att en ändring av rännan fäller testet i stället för att
+ * tyst göra det till en tautologi.
+ */
+const RANNA = 8;
+
+/**
+ * [TASK-309.46] ÖVRE TOLERANS FÖR NIVÅ 3:s HÖJD — 2 px, inte 8.
+ *
+ * SKÄRPT PÅ EN NEGATIV KONTROLL, inte på en känsla. Bandet var
+ * `FALLBACK × 4 + 8`, valt när "fel svar" låg långt utanför det. Sedan
+ * TASK-309.46 är det NÄRMASTE felsvaret exakt EN RÄNNA fel (konstanten 124 i
+ * stället för 122 ⇒ 496 i stället för 488), alltså precis 8 px — och den
+ * gamla toleransen SVALDE det: en isolerad kontroll som satte tillbaka 124
+ * lämnade testet GRÖNT.
+ *
+ * `<ul>` bär ingen kant (mätt), så `kantjustering` är 0 och den uppmätta
+ * höjden är exakt 488 vid både 1280 och 390 px. 2 px räcker för sub-pixel-brus
+ * och utesluter ränn-felet. Vidga inte bandet igen utan att först fråga vilket
+ * felsvar som då släpps in.
+ */
+const TOLERANS = 2;
+
 const PERSIST_KEY = 'REACT_QUERY_OFFLINE_CACHE';
 
 /**
@@ -231,6 +261,7 @@ async function matGeometri(page: Page) {
     hojd: Math.round(ul.getBoundingClientRect().height * 100) / 100,
     last: ul instanceof HTMLElement ? ul.style.height !== '' : false,
     scrollHeight: ul.scrollHeight,
+    overflowY: getComputedStyle(ul).overflowY,
     clientHeight: ul.clientHeight,
     radHojder: Array.from(ul.children).map((li) => li.getBoundingClientRect().height),
   }));
@@ -280,9 +311,15 @@ test.describe('S1 — höjden är låst från listans FÖRSTA målade ram', () =
     // Slutläget: fyra raders låst höjd trots att bara två rader finns.
     const slut = await matGeometri(page);
     expect(slut.last).toBe(true);
+    // [TASK-309.46] AVDRAGET ÄR NYTT I TALEN, INTE I HOOKEN. NIVÅ 2 har
+    // alltid satt `radhöjd × 4 − radens egen separator`; separatorn var bara
+    // 0 px så länge rännan låg som padding. Sedan rännan blev en transparent
+    // `border-bottom` (8 px) har avdraget ett föremål, och den låsta höjden är
+    // 488 = 124 × 4 − 8. Att skriva `maxRad * 4` utan avdrag hade alltså
+    // kodat den GAMLA formen — bounds:en är oförändrade i sin bredd.
     const maxRad = Math.max(...slut.radHojder);
-    expect(slut.hojd).toBeGreaterThanOrEqual(maxRad * 4 - 2);
-    expect(slut.hojd).toBeLessThanOrEqual(maxRad * 4 + 4);
+    expect(slut.hojd).toBeGreaterThanOrEqual(maxRad * 4 - RANNA - 2);
+    expect(slut.hojd).toBeLessThanOrEqual(maxRad * 4 - RANNA + 4);
   });
 
   // [T176, 2026-08-29] TESTET "sidladdning direkt i ?typ=mall" ÄR RIVET, INTE
@@ -313,13 +350,15 @@ test.describe('S1 — höjden är låst från listans FÖRSTA målade ram', () =
     const geometri = await matGeometri(page);
     expect(geometri.last).toBe(true);
     // Talet DUPLICERAS medvetet, samma disciplin som systerfilens
-    // `FALLBACK_RADHOJD` — se dess kommentar. [T176] 99 → 107 → 124:
-    // referensraden `MallRad` är riven, och en bilagerad är sedan
-    // kortformen 124 px hög som `<li>` (kort 116 px + 8 px ränna). Uppmätt
-    // i denna rigg vid både 1280 px och 375 px.
-    const FALLBACK = 124;
+    // `FALLBACK_RADHOJD` — se dess kommentar. [T176] 99 → 107 → 124, och
+    // [TASK-309.46] 124 → 122: konstanten är NIVÅ 3:s reserv för den
+    // SEPARATOR-FRIA per-rad-höjden (488 / 4), inte för `<li>`-höjden 124.
+    // `<li>` är fortfarande 124 (kort 116 + 8 px ränna); det som ändrades är
+    // att rännan ligger som transparent `border-bottom` och därmed dras bort
+    // ur låset. Uppmätt i denna rigg vid både 1280 px och 375 px.
+    const FALLBACK = 122;
     expect(geometri.hojd).toBeGreaterThanOrEqual(FALLBACK * 4);
-    expect(geometri.hojd).toBeLessThanOrEqual(FALLBACK * 4 + 8);
+    expect(geometri.hojd).toBeLessThanOrEqual(FALLBACK * 4 + TOLERANS);
     expect(geometri.scrollHeight).toBe(geometri.clientHeight);
   });
 
@@ -419,8 +458,23 @@ test.describe('S2 — fjärde kortet ligger HELT innanför klippkanten, femte HE
     await page.goto('/mer/dokument');
     await expect(page.getByText('Delad 4.pdf')).toBeVisible();
 
+    // [TASK-309.46] `scrollHeight === clientHeight` STOD HÄR och skulle nu
+    // fälla på en KORREKT app. Rännan är sedan dess en transparent
+    // `border-bottom`, och låset EXKLUDERAR fjärde radens (det är det som gör
+    // att spåret börjar OCH slutar vid korten) medan rännan ligger kvar i
+    // innehållet — fyra rader mäter alltså 496 px innehåll i en 488 px box.
+    //
+    // Invarianten skrivs därför ut i stället för att mätas indirekt, och blir
+    // strängare: listan går inte att rulla (`overflow-y: hidden`, alltså ingen
+    // scrollbar), övermåttet är EXAKT en ränna och inget annat, och fjärde
+    // kortet ligger helt innanför kanten. Se systerfilens
+    // `provaExaktFyraRader` för hela resonemanget.
     const geometri = await matGeometri(page);
-    expect(geometri.scrollHeight).toBe(geometri.clientHeight);
+    expect(geometri.overflowY, 'vid fyra rader ska listan inte kunna rullas alls').toBe('hidden');
+    expect(
+      geometri.scrollHeight - geometri.clientHeight,
+      `övermåttet ska vara EXAKT fjärde radens transparenta ränna — mätt ${geometri.scrollHeight} − ${geometri.clientHeight}`,
+    ).toBe(RANNA);
     const lage = await kortensLage(page);
     expect(lage?.antalKort).toBe(4);
     expect(lage?.femteTop).toBeNull();
