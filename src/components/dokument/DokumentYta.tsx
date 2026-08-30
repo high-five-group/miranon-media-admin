@@ -1930,6 +1930,28 @@ function DokumentRadSkal({
           // egen kontrast-regel, så utan denna rad hade 11-golvet fallit bort
           // med intent-bytet — en transparent knapp utan kant är osynlig i
           // hög-kontrastläge.
+          //
+          // KÄND KANT, MÄTT OCH BOKFÖRD — INTE LAPPAD. Under TANGENTBORDS-
+          // fokus blir knappen en rundad FYRKANT: `base.css` § `*:focus-visible`
+          // sätter `border-radius: 2px` utöver ringen, så att ringen får en
+          // konsekvent form på element som saknar egen radie. Mätt i denna
+          // skiva: `borderTopLeftRadius` 3,35544e+07px i vila/hover/öppen →
+          // **2px** när `data-focus-visible` står (Escape-stängning, mus kvar
+          // över knappen: bg #edeee9 i en 2px-ruta).
+          //
+          // DET GÅR INTE ATT ÖVERSKUGGA MED EN UTILITY, och det är prövat:
+          // `focus-visible:rounded-full` ligger i `@layer utilities` medan den
+          // globala regeln är OLAGRAD author-CSS, och olagrat besegrar allt
+          // lagrat oavsett specificitet (`base.css` dokumenterar exakt den
+          // kaskad-ordningen vid sina egna `@layer`-noter). Klassen mättes till
+          // NOLL effekt och är därför borttagen igen i stället för att lämnas
+          // kvar som död kod som ser ut att göra något. Vägarna som ÅTERSTÅR
+          // — en `!`-utility, eller att smalna den globala regeln — ändrar
+          // appens fokus-grammatik för mer än denna knapp och är alltså ett
+          // eget beslut, inte en detalj i denna skiva. Bokfört för orkestrerar-
+          // triage; kanten är dessutom SMAL: utan mus är plattan transparent,
+          // så det enda som skiljer mot före denna skiva är ringens radie
+          // (4 px → 2 px var redan sant för den gamla `rounded`-formen).
           <Button
             intent="ghost"
             size="sm"

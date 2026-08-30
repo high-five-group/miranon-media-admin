@@ -521,6 +521,154 @@ test.describe('DokumentLista (eventläge) — låst fyra-radershöjd, nu UTAN fi
   });
 });
 
+/**
+ * ═══ TASK-309.43:s TRE BETEENDEN — PERMANENTA ASSERTIONER ═══
+ *
+ * Granskarfynd på PR #2128 (runda 1, info/auto-fix), taget i TASK-309.44:s PR
+ * eftersom den redan rör denna svit: 309.43 landade tre mätta beteenden —
+ * ingen hover-ton på kortet, reserverad ränna i BÅDA overflow-lägena, och en
+ * rullningsskugga vars högerkant är låst till den MÄTTA rännbredden — men
+ * ingen av dem hade en assertion. Sviten prövade bara att `lista-uttoning`
+ * VISAS respektive DÖLJS, aldrig dess geometri, och kortets bakgrund prövades
+ * inte alls. Tre beteenden vars enda bevis var en engångsmätning i en agents
+ * scratchpad är tre beteenden som kan tyst regrediera.
+ *
+ * ═══ VARFÖR TALET 11 INTE LÅSES — OCH VAD SOM LÅSES I STÄLLET ═══
+ *
+ * Rännans bredd i px är en EGENSKAP HOS PLATTFORMEN, inte hos vår kod:
+ * `scrollbar-gutter: stable` reserverar plats för en KLASSISK scrollbar, och
+ * hur bred den är avgörs av operativsystem och webbläsarbygge (CSS Overflow
+ * Module Level 3 säger ingenting om talet). 309.43 mätte 11 px i denna rigg på
+ * macOS; Linux-Chromium i CI kan mycket väl ge ett annat tal, och ett test som
+ * låser 11 hade då fällt en GRÖN app — precis den falska signal
+ * `CONTRIBUTING.md` § Rött-först finns för att förhindra.
+ *
+ * INVARIANTEN ÄR STABILITETEN, och den är vår: rännan ska vara reserverad
+ * (> 0) och EXAKT LIKA BRED i `overflow-y: auto` (fler än fyra kort) som i
+ * `hidden` (fyra eller färre), så att kortbredden inte hoppar när listan får
+ * sin femte post. Det var hela skälet till att `stable` valdes — se
+ * `DokumentYta.tsx` § LISTANS RAM, där det gamla motsatta påståendet också
+ * står rättat mot mätning.
+ *
+ * KÄND KANT, bokförd i stället för dold: `> 0` förutsätter att riggens
+ * webbläsare använder KLASSISKA scrollbars. En miljö med overlay-scrollbars
+ * (riktiga mobiler, Firefox) reserverar per spec ingenting — där är 0 rätt
+ * svar och skuggan går ut i full bredd (kodvägen finns, `DokumentListRam`).
+ * Den miljön finns inte i acceptance-klassen, så testet nedan prövar den
+ * inte; skulle riggen någon gång byta till overlay är rätt åtgärd att pröva
+ * BÅDA utfallen, aldrig att mildra assertionen till `>= 0`.
+ */
+test.describe('TASK-309.43:s beteenden — hover-ton, reserverad ränna, skuggans högerkant', () => {
+  /** `<ul>`:ets ränna + kortets och skuggans kanter, i ETT synkront steg. */
+  async function mataRanna(page: Page) {
+    return page.evaluate(() => {
+      const rund = (n: number) => Math.round(n * 100) / 100;
+      const ul = document.querySelector('[data-testid="dokument-lista"]') as HTMLElement | null;
+      if (!ul) return null;
+      const kort = ul.querySelector('[data-testid="dokument-fil"]');
+      const skugga = document.querySelector('[data-testid="lista-uttoning"]');
+      return {
+        // `borderLeft/RightWidth` är 0 på `<ul>` sedan T176, så
+        // `offsetWidth − clientWidth` ÄR rännan — ingen kant att dra bort.
+        // Mätt i 309.43; prövas här igen så slutsatsen inte tyst blir falsk.
+        kantBredd:
+          Number.parseFloat(getComputedStyle(ul).borderLeftWidth) +
+          Number.parseFloat(getComputedStyle(ul).borderRightWidth),
+        ranna: ul.offsetWidth - ul.clientWidth,
+        overflowY: getComputedStyle(ul).overflowY,
+        kortBredd: kort ? rund(kort.getBoundingClientRect().width) : null,
+        kortHoger: kort ? rund(kort.getBoundingClientRect().right) : null,
+        skuggaHoger: skugga ? rund(skugga.getBoundingClientRect().right) : null,
+      };
+    });
+  }
+
+  test('kortet bär INGEN hover-ton: background-color är identisk i vila och under hover', async ({
+    page,
+    network,
+  }) => {
+    // Marcus 2026-08-30: *"Ta bort hover på korten."* Tonen
+    // (`--mm-bilagekort-bg-hover`, #edeee9) är riven ur BÅDE klassen och
+    // `components.css`. Assertionen är tvåsidig i sak: samma element, samma
+    // egenskap, före och under hover — en återinförd ton fälls oavsett vilken
+    // den är, och `toHaveCSS` retryar så en eventuell övergång hinner landa
+    // innan mätningen läses (`transition-colors` revs i 309.43, men den
+    // egenskapen är inte denna assertions att lita på).
+    network.use(hojdlasHandler(6, 0));
+    await gotoEventlage(page);
+    await expect(page.getByText('Bilaga 1.pdf')).toBeVisible();
+
+    const kort = page.getByTestId('dokument-fil').first();
+    const vila = await kort.evaluate((el) => getComputedStyle(el).backgroundColor);
+    expect(vila).toBe('rgb(255, 255, 255)');
+
+    await kort.hover();
+    await expect(kort).toHaveCSS('background-color', vila);
+  });
+
+  test('rännan är RESERVERAD och LIKA BRED i båda overflow-lägena — kortbredden hoppar aldrig', async ({
+    page,
+    network,
+  }) => {
+    // TVÅ laddningar ⇒ samma cache-arrangemang som filens 5-vs-6-test.
+    await arrangeraTomCache(page);
+
+    network.use(hojdlasHandler(6, 0));
+    await gotoEventlage(page);
+    await expect(page.getByText('Bilaga 1.pdf')).toBeVisible();
+    const rullar = await mataRanna(page);
+    expect(rullar).not.toBeNull();
+    expect(rullar?.overflowY).toBe('auto');
+
+    network.use(hojdlasHandler(3, 0));
+    await gotoEventlage(page);
+    await expect(page.getByText('Bilaga 3.pdf')).toBeVisible();
+    const rullarInte = await mataRanna(page);
+    expect(rullarInte).not.toBeNull();
+    expect(rullarInte?.overflowY).toBe('hidden');
+
+    // `offsetWidth − clientWidth` ÄR rännan bara så länge `<ul>` är kantlös.
+    expect(rullar?.kantBredd, '<ul> ska sakna kant sedan T176').toBe(0);
+    expect(rullarInte?.kantBredd).toBe(0);
+
+    // Reserverad — talet självt är plattformens, se describe-docblocket.
+    expect(
+      rullar?.ranna ?? 0,
+      `rännan ska vara reserverad i overflow auto (mätt ${rullar?.ranna} px)`,
+    ).toBeGreaterThan(0);
+    // …och EXAKT lika bred när listan inte rullar. Det är invarianten.
+    expect(
+      rullarInte?.ranna,
+      `rännan ska vara lika bred i hidden (${rullarInte?.ranna} px) som i auto (${rullar?.ranna} px)`,
+    ).toBe(rullar?.ranna);
+    expect(
+      rullarInte?.kortBredd,
+      'kortbredden får inte hoppa när listan går från fler än fyra till färre',
+    ).toBe(rullar?.kortBredd);
+  });
+
+  test('rullningsskuggan slutar vid KORTETS högerkant, inte vid rännans', async ({
+    page,
+    network,
+  }) => {
+    // Marcus 2026-08-30: *"sitter den inuti listytan så blir det fult med
+    // skuggningen längst ner."* Skuggans `right` sätts i en `useLayoutEffect`
+    // ur den MÄTTA rännbredden — aldrig ur ett hårdkodat tal — så assertionen
+    // jämför två renderade kanter mot varandra i stället för mot en konstant.
+    network.use(hojdlasHandler(6, 0));
+    await gotoEventlage(page);
+    await expect(page.getByText('Bilaga 1.pdf')).toBeVisible();
+    await expect(page.getByTestId('lista-uttoning')).toBeVisible();
+
+    const g = await mataRanna(page);
+    expect(g?.skuggaHoger).not.toBeNull();
+    expect(
+      Math.abs((g?.skuggaHoger ?? 0) - (g?.kortHoger ?? 0)),
+      `skuggan slutar vid ${g?.skuggaHoger} px, kortet vid ${g?.kortHoger} px — skuggan får aldrig lägga sig över rännan`,
+    ).toBeLessThanOrEqual(1);
+  });
+});
+
 test.describe('GemensamtLage (räckviddsläge) — samma regel (tidigare saknad, TASK-309.24)', () => {
   test('AC #1/#3: 0 rader — tomt läge inom LÅST höjd (nivå 3, FALLBACK), inga kort, axe-rent', async ({
     page,
