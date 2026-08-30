@@ -1026,11 +1026,14 @@ const LISTA_SYNLIGA_RADER = 4;
  *
  * Konstanten mäter numera `<li>`, inte kortet — och det är ingen
  * detaljskillnad utan hela poängen. Sedan raden blev ett KORT bor RÄNNAN
- * mellan korten INUTI `<li>` (`py-1`, 4 + 4 px), just för att hookens två
- * mätvägar ska se samma tal: NIVÅ 1 mäter SPANNET rad1.top → rad4.bottom
- * (ränna inräknad), NIVÅ 2 mäter MAX av radernas EGNA höjder. Ett `gap-*`
- * på `<ul>` hade legat mellan raderna — med i spannet, utanför radhöjden —
- * och de två nivåerna hade gett olika svar.
+ * mellan korten INUTI `<li>` (`pt-2`, 8 px ÖVER kortet — se
+ * `DokumentListRam`s docblock för varför hela rännan ligger ovanför och
+ * inte delas i halvor), just för att hookens två mätvägar ska se samma tal:
+ * NIVÅ 1 mäter SPANNET rad1.top → rad4.bottom (ränna inräknad), NIVÅ 2
+ * mäter MAX av radernas EGNA höjder. Ett `gap-*` på `<ul>` hade legat
+ * mellan raderna — med i spannet, utanför radhöjden — och de två nivåerna
+ * hade gett olika svar. Talet 124 är oförändrat: 8 + 116 i stället för
+ * 4 + 116 + 4.
  *
  * UPPMÄTT, INTE RÄKNAT (acceptance-riggen, 2026-08-29): `radHojder` =
  * [124, 124, 124, 124] vid 1280×720 och [124, 124] vid 375×800, med
@@ -1065,7 +1068,7 @@ const LISTA_FALLBACK_RADHOJD = 124;
  * finns kvar den dag en radform med egen underkant återinförs.
  *
  * HÖJDMATEMATIKEN BÄRS NU AV RÄNNAN I STÄLLET, och den ligger INUTI
- * `<li>` (`py-1`, se `DokumentListRam`s docblock) just för att hookens
+ * `<li>` (`pt-2`, se `DokumentListRam`s docblock) just för att hookens
  * mätningar — NIVÅ 1:s spann rad1.top→rad4.bottom och NIVÅ 2:s
  * MAX-av-radhöjder — ska se SAMMA tal. Ett `gap-*` på `<ul>` hade legat
  * mellan raderna: med i spannet, utanför radhöjden, alltså två olika
@@ -2439,8 +2442,12 @@ function ErsattningsFel({ replaceMutation }: { replaceMutation: ReplaceMutation 
  * [T176, 2026-08-29] BEHÅLLAREN ÄR NU OCKSÅ RÄNNAN. Listan har ingen egen
  * `bg-surface`-yta längre — bilagekorten bär den (`DokumentRadSkal`), och
  * den grå tonen syns mellan dem. Samma 8 px runtom OCH mellan korten:
- * radens `py-1` ger 4+4 px och wrapperns `-my-1` tar bort halvorna som
- * annars hade lagt sig ovanpå ramen (se `DokumentListRam`).
+ * radens `pt-2` lägger HELA rännan ÖVER kortet och wrapperns `-mt-2` tar
+ * bort den enda som annars hade lagt sig ovanpå ramen (se
+ * `DokumentListRam`). [TASK-309.45] Formen var tidigare `py-1` + `-my-1`
+ * — samma 8 px i alla riktningar, men med `<ul>`:ets underkant 4 px UNDER
+ * fjärde kortets. Den skillnaden syntes när man rullade; hela resonemanget
+ * står i `DokumentListRam`.
  *
  * DELAD KONSTANT, INTE TVÅ STRÄNGAR: eventläget och räckviddsläget bar
  * identiska men separata klass-strängar för både kortet och `<ul>`:et. De hade
@@ -2592,8 +2599,23 @@ const GRUPPKORT_KLASS =
  * som en rad, och en padding/margin hade förskjutit spannet. En absolut
  * positionerad syskon-`<span>` i en `relative` wrapper rör ingendera.
  *
- * [T176] Den slutar vid FJÄRDE KORTETS underkant (`bottom-1`), inte vid
- * `<ul>`:ets — de skiljer sig 4 px sedan rännan bor inuti `<li>`.
+ * [TASK-309.45, 2026-08-30] DEN SLUTAR VID `bottom-0` — OCH DET ÄR SAMMA
+ * REGEL SOM FÖRUT, INTE EN NY. Kravet har alltid varit "skuggan slutar vid
+ * FJÄRDE KORTETS underkant". Här stod `bottom-1` med motiveringen att
+ * `<ul>`:ets underkant låg 4 px under kortets (radens `py-1` lade en halv
+ * ränna nedanför sista kortet), så skuggan lyftes 4 px för att träffa
+ * kortkanten.
+ *
+ * Rännan bor sedan denna skiva HELT ÖVER kortet (`pt-2`), så `<ul>`:ets
+ * underkant ÄR fjärde kortets underkant. Kompensationen har därmed inget
+ * kvar att kompensera för, och `bottom-0` uttrycker samma krav utan en
+ * offset som måste hållas i synk med radens padding.
+ *
+ * VARFÖR DET SPELADE ROLL, mätt: mitt i en rullning klipptes korten av
+ * `<ul>`:ets kant 4 px UNDER skuggans rundade underkant, så en vit remsa av
+ * det klippta kortet syntes under skuggans hörn. Marcus 5173-granskning:
+ * *"skuggan längst ner ser konstig ut när man scrollar."* Nu sammanfaller
+ * skuggans, klippningens och kortets underkanter — i vila OCH i rullning.
  *
  * [2026-08-30] SAMMA REGEL PÅ DEN LODRÄTA AXELN: den slutar också vid
  * kortets HÖGERKANT, inte vid wrapperns. Marcus, om skuggan under den
@@ -2670,18 +2692,46 @@ function DokumentListRam({
     setRannbredd(ul.offsetWidth - ul.clientWidth);
   }, [kanRulla, matadHojd, listRef]);
   return (
-    // `-my-1` NEUTRALISERAR RADENS HALVA RÄNNA MOT BEHÅLLARENS RAM. Varje
-    // `<li>` bär `py-1` (4 px över + 4 px under = 8 px ränna MELLAN korten),
-    // vilket också lägger 4 px överst och nederst i `<ul>`. Utan
-    // kompensationen hade den grå ramen mätt 12 px över/under mot 8 px på
-    // sidorna — exakt den asymmetri Marcus fångade 2026-08-18 (*"den grå
-    // ramen ser bredare ut på sidorna än vad den är över och under"*), fast
-    // spegelvänd. Med den mäter ramen 8 px runtom och rännan 8 px.
+    // `-mt-2` NEUTRALISERAR RADENS RÄNNA MOT BEHÅLLARENS ÖVERKANT. Varje
+    // `<li>` bär `pt-2` (8 px ÖVER kortet = 8 px ränna MELLAN korten), vilket
+    // också lägger 8 px överst i `<ul>`. Utan kompensationen hade den grå
+    // ramen mätt 16 px upptill mot 8 px på sidorna — samma asymmetri Marcus
+    // fångade 2026-08-18 (*"den grå ramen ser bredare ut på sidorna än vad
+    // den är över och under"*). Med den mäter ramen 8 px runtom och rännan
+    // 8 px.
+    //
+    // ═══ [TASK-309.45] HELA RÄNNAN ÖVER KORTET, INGEN HALVA UNDER ═══
+    //
+    // Formen var `py-1` + `-my-1`: en halv ränna över och en halv under varje
+    // kort, med båda halvorna neutraliserade mot ramen. Samma 8 px överallt,
+    // och geometriskt oantastligt i VILA — men `<ul>`:ets underkant låg då
+    // 4 px UNDER fjärde kortets, eftersom den halva rännan under sista kortet
+    // hörde till `<ul>`:et.
+    //
+    // Den skillnaden var osynlig tills man rullade. MÄTT (Marcus 5173-
+    // granskning 2026-08-30, ×3-crops): mitt i en rullning klipper `<ul>`
+    // korten vid sin egen kant — 4 px under skuggans rundade underkant — så
+    // en VIT REMSA av det klippta kortet syntes under skuggans hörn, med en
+    // rak fyrkantig kant tvärs över ett i övrigt runt kort.
+    //
+    // `pt-2` + `-mt-2` lägger hela rännan ÖVER kortet. Följden är att
+    // `<ul>`:ets underkant ÄR fjärde kortets underkant, exakt — och därmed
+    // kan skuggan (`bottom-0`), klippningen och kortkanten sammanfalla i
+    // stället för att ligga 4 px isär.
+    //
+    // AVVISAD KANDIDAT, med skäl: att bara runda `<ul>` och sätta skuggan
+    // `bottom-0` utan att flytta rännan gav ren klippning mitt i rullning,
+    // men lade gradientens mörkaste 4 px på rännans GRÅ yta i vila — alltså
+    // ett synligt streck under sista kortet, precis den defekt Marcus fångade
+    // 2026-08-29. Att flytta rännan löser båda på en gång.
+    //
+    // RADHÖJDEN ÄR OFÖRÄNDRAD: 124 px = 8 + 116, tidigare 4 + 116 + 4.
+    // Hookens kod är orörd, och båda mätvägarna ser samma tal som förut.
     //
     // MARGINALEN, INTE `gap-*`, BÄR RÄNNAN — se `<li>`-kommentaren i
     // `DokumentLista`: ett `gap` hade legat MELLAN raderna och därmed synts i
     // höjdlåsets NIVÅ 1-spann men inte i dess NIVÅ 2-radhöjd.
-    <div className="relative -my-1">
+    <div className="relative -mt-2">
       <ul
         ref={listRef}
         data-testid="dokument-lista"
@@ -2703,7 +2753,7 @@ function DokumentListRam({
         // [T176] INGEN egen yta kvar: `bg-surface`, `rounded-xl`, `px-3`,
         // `border` och `divide-y` är rivna. Korten ÄR ytorna; `<ul>` är den
         // genomskinliga rullningsboxen omkring dem.
-        className={`scrollbar-inline focus-ring-inset ${kanRulla ? 'overflow-y-auto' : 'overflow-y-hidden'}`}
+        className={`scrollbar-inline focus-ring-inset rounded-2xl ${kanRulla ? 'overflow-y-auto' : 'overflow-y-hidden'}`}
       >
         {children}
       </ul>
@@ -2711,20 +2761,16 @@ function DokumentListRam({
         <span
           aria-hidden="true"
           data-testid="lista-uttoning"
-          // `bottom-1` — inte `bottom-px`: `<ul>` slutar 4 px under fjärde
-          // kortets underkant (radens `py-1`), och en skugga som lade sig i
-          // den grå rännan hade läst som ett streck i ramen. Nu slutar den
-          // exakt vid kortets kant, med `rounded-b-2xl` som följer kortets
-          // egen radie.
+          // `bottom-0` — `<ul>`:ets underkant ÄR fjärde kortets underkant
+          // sedan rännan flyttade helt över kortet (TASK-309.45, se
+          // wrapper-kommentaren ovan). Här stod `bottom-1` när de två
+          // skiljde sig 4 px; offseten har inget kvar att kompensera för.
           //
           // `left-0` + `right: rannbredd` — INTE `inset-x-0`: samma regel på
-          // den lodräta axeln. Wrappern är lika bred som `<ul>` INKLUSIVE
-          // rullningsrännan, så `inset-x-0` hade dragit skuggan tvärs över
-          // rännan och lagt ett grått skrim på behållarytan bredvid korten.
-          // Marcus 2026-08-30: *"skuggningen ska ju bara synas på vita
-          // kortet."* Talet är MÄTT (se `rannbredd` ovan), aldrig
-          // hårdkodat — vid 0 ränna blir detta identiskt med `inset-x-0`.
-          className="pointer-events-none absolute bottom-1 left-0 h-6 rounded-b-2xl bg-linear-to-t from-(--mm-state-hover) to-transparent contrast-more:h-1 contrast-more:rounded-none contrast-more:bg-border-strong contrast-more:bg-none"
+          // den lodräta axeln. Marcus: *"Skuggningen ska ju bara synas på
+          // vita kortet."* Talet är MÄTT (se `rannbredd` ovan), aldrig
+          // hårdkodat, och 0 är ett giltigt utfall.
+          className="pointer-events-none absolute bottom-0 left-0 h-6 rounded-b-2xl bg-linear-to-t from-(--mm-state-hover) to-transparent contrast-more:h-1 contrast-more:rounded-none contrast-more:bg-border-strong contrast-more:bg-none"
           style={{ right: rannbredd }}
         />
       )}
@@ -2839,7 +2885,7 @@ function DokumentLista({
             kanRulla={kanRulla}
             ariaLabel="Bilagor"
           >
-            {/* ═══ RÄNNAN BOR INUTI `<li>` (`py-1`), ALDRIG SOM `gap-*` PÅ
+            {/* ═══ RÄNNAN BOR INUTI `<li>` (`pt-2`), ALDRIG SOM `gap-*` PÅ
                 `<ul>` — OCH DET ÄR HÖJDLÅSET SOM KRÄVER DET ═══
 
                 `useLastaListhojd` mäter på TVÅ sätt: NIVÅ 1 tar SPANNET
@@ -2851,13 +2897,20 @@ function DokumentLista({
                 nivåerna samma tal (kort + 8 px), och hookens kropp plus
                 `LISTA_SYNLIGA_RADER` står orörda.
 
-                `py-1` (4 px + 4 px) och INTE `pb-2` på alla utom den sista:
-                den formen hade gett raderna två olika höjder (sista utan
-                ränna), vilket bryter samma likhet igen — fyra och fem
-                poster hade då fått olika låst höjd. Halvorna över och under
-                tas ut av wrapperns `-my-1`, se `DokumentListRam`. */}
+                `pt-2` (8 px ÖVER varje kort) och INTE `pb-2` (8 px under):
+                de är likvärdiga för höjdlåset — varje rad blir 124 px hur
+                som helst — men INTE för rullningen. Med `pb-2` hade `<ul>`
+                slutat 8 px under fjärde kortet, och skuggan, klippningen och
+                kortkanten hade legat isär igen (TASK-309.45). Med `pt-2` är
+                `<ul>`:ets underkant fjärde kortets underkant, exakt.
+
+                Och INTE `pb-2` på alla utom den sista heller: den formen hade
+                gett raderna två olika höjder (sista utan ränna), vilket bryter
+                likheten ovan — fyra och fem poster hade fått olika låst höjd.
+                Den enda rännan som blir över, den ovanför FÖRSTA kortet, tas
+                ut av wrapperns `-mt-2`; se `DokumentListRam`. */}
             {rader.map((r) => (
-              <li key={r.current.id} className="py-1">
+              <li key={r.current.id} className="pt-2">
                 <BilageRadRow
                   eventId={eventId}
                   rad={r}
@@ -3491,10 +3544,11 @@ function GemensamtLage({
               kanRulla={kanRulla}
               ariaLabel="Delade bilagor"
             >
-              {/* `py-1` — se eventlägets kommentar på samma rad för varför
-                  rännan bor i `<li>` och inte i ett `gap`. */}
+              {/* `pt-2` — se eventlägets kommentar på samma rad för varför
+                  rännan bor i `<li>`, inte i ett `gap`, och varför den ligger
+                  ÖVER kortet i stället för att delas i halvor. */}
               {rader.map((r) => (
-                <li key={r.current.id} className="py-1">
+                <li key={r.current.id} className="pt-2">
                   <GemensamBilageRadRow
                     rad={r}
                     onReplace={onReplace}

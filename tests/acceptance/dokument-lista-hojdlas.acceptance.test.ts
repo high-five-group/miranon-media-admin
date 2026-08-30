@@ -667,6 +667,77 @@ test.describe('TASK-309.43:s beteenden — hover-ton, reserverad ränna, skuggan
       `skuggan slutar vid ${g?.skuggaHoger} px, kortet vid ${g?.kortHoger} px — skuggan får aldrig lägga sig över rännan`,
     ).toBeLessThanOrEqual(1);
   });
+
+  /**
+   * [TASK-309.45] TRE KANTER SOM MÅSTE SAMMANFALLA — fjärde kortets, `<ul>`:ets
+   * och skuggans underkant.
+   *
+   * Marcus 5173-granskning 2026-08-30: *"skuggan längst ner ser konstig ut när
+   * man scrollar."* Orsaken var 4 px: radens ränna låg som `py-1` (en halv över,
+   * en halv under), så `<ul>`:ets underkant hamnade 4 px UNDER fjärde kortets.
+   * I VILA syntes det inte — där ligger bara grå behållarton i mellanrummet —
+   * men MITT I EN RULLNING klipper `<ul>` sitt innehåll vid sin egen kant, och
+   * då stack en vit remsa av det klippta kortet ut under skuggans rundade hörn,
+   * med rak kant tvärs över ett i övrigt runt kort.
+   *
+   * Rännan bor sedan dess HELT ÖVER kortet (`pt-2` + wrapperns `-mt-2`), så de
+   * tre kanterna är samma tal. Assertionen låser just det: inte "skuggan finns"
+   * (det prövas ovan) utan att de tre sammanfaller, vilket är det enda som gör
+   * klippningen osynlig.
+   *
+   * `<ul>` bär dessutom `rounded-2xl` så klippningen följer KORTETS radie i
+   * stället för att vara rak — utan den hade fixen bytt en vit remsa mot ett
+   * fyrkantigt hörn på ett runt kort.
+   *
+   * ±1 px mot sub-pixel-avrundning, samma marginal som filens övriga
+   * kantjämförelser.
+   */
+  test('fjärde kortets, listboxens och skuggans underkant SAMMANFALLER (annars klipps kortet fyrkantigt vid rullning)', async ({
+    page,
+    network,
+  }) => {
+    network.use(hojdlasHandler(6, 0));
+    await gotoEventlage(page);
+    await expect(page.getByText('Bilaga 1.pdf')).toBeVisible();
+    await expect(page.getByTestId('lista-uttoning')).toBeVisible();
+
+    const kanter = await page.evaluate(() => {
+      const rund = (n: number) => Math.round(n * 100) / 100;
+      const ul = document.querySelector('[data-testid="dokument-lista"]') as HTMLElement | null;
+      if (!ul) return null;
+      const kort = Array.from(ul.querySelectorAll('[data-testid="dokument-fil"]'));
+      const skugga = document.querySelector('[data-testid="lista-uttoning"]');
+      return {
+        ulBottom: rund(ul.getBoundingClientRect().bottom),
+        kort4Bottom: kort[3] ? rund(kort[3].getBoundingClientRect().bottom) : null,
+        kort5Top: kort[4] ? rund(kort[4].getBoundingClientRect().top) : null,
+        skuggaBottom: skugga ? rund(skugga.getBoundingClientRect().bottom) : null,
+        // Klippningen ska följa kortens radie, inte vara rak.
+        ulRadieBotten: Number.parseFloat(getComputedStyle(ul).borderBottomLeftRadius),
+      };
+    });
+
+    expect(kanter).not.toBeNull();
+    expect(kanter?.kort4Bottom).not.toBeNull();
+    expect(kanter?.skuggaBottom).not.toBeNull();
+
+    expect(
+      Math.abs((kanter?.kort4Bottom ?? 0) - (kanter?.ulBottom ?? 0)),
+      `fjärde kortet slutar vid ${kanter?.kort4Bottom} px, listboxen vid ${kanter?.ulBottom} px — varje px emellan blir en klippt remsa vid rullning`,
+    ).toBeLessThanOrEqual(1);
+    expect(
+      Math.abs((kanter?.skuggaBottom ?? 0) - (kanter?.ulBottom ?? 0)),
+      `skuggan slutar vid ${kanter?.skuggaBottom} px, listboxen vid ${kanter?.ulBottom} px`,
+    ).toBeLessThanOrEqual(1);
+    expect(
+      kanter?.ulRadieBotten ?? 0,
+      'listboxen ska klippa med kortens radie, inte rakt',
+    ).toBeGreaterThan(0);
+
+    // Femte kortet ligger fortfarande HELT utanför — fixen får inte ha
+    // förskjutit klippkanten så att ett halvt kort blir synligt.
+    expect(kanter?.kort5Top ?? 0).toBeGreaterThanOrEqual((kanter?.ulBottom ?? 0) - 0.5);
+  });
 });
 
 test.describe('GemensamtLage (räckviddsläge) — samma regel (tidigare saknad, TASK-309.24)', () => {
@@ -1228,5 +1299,148 @@ test.describe('TASK-309.44:s beslut — hierarkin, ⋯-knappen, namnknappen', ()
     await namn.hover();
     await expect(namn).toHaveCSS('text-decoration-line', 'underline');
     await expect(namn).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+  });
+
+  /**
+   * [TASK-309.45 fel 1] KNAPPEN BEHÅLLER SIN FORM UNDER TANGENTBORDSFOKUS.
+   *
+   * Marcus 5173-granskning 2026-08-30: *"hover på ⋯-knappen är rund i
+   * utgångsläget men fyrkantig efter att man tryckt på den en gång."*
+   *
+   * Orsaken låg inte i knappen utan i `base.css`: den globala
+   * `*:focus-visible`-regeln satte `border-radius: 2px` i OLAGRAD author-CSS,
+   * och olagrat besegrar varje cascade-lager oavsett specificitet. Varje
+   * element med egen radie tappade alltså sin form vid fokus — mätt på denna
+   * knapp: 3.35544e+07px → 2px. Radien ligger sedan 309.45 i `@layer base`,
+   * där `rounded-*`-utilities vinner; `outline` är kvar olagrad så ingen
+   * utility kan släcka ringen.
+   *
+   * TESTET PRÖVAR MARCUS EGET FALL, inte en abstraktion: klick (öppnar menyn)
+   * → Escape (stänger, ger tangentbordsmodalitet) → knappen ska fortfarande
+   * vara RUND, bära hover-plattan, OCH visa ringen. Alla tre samtidigt — en
+   * fix som räddat radien genom att offra ringen vore en regression, inte en
+   * lösning.
+   */
+  test('fel 1: ⋯-knappen är RUND även under tangentbordsfokus — och ringen finns kvar', async ({
+    page,
+    network,
+  }) => {
+    network.use(hojdlasHandler(6, 0));
+    await gotoEventlage(page);
+    await expect(page.getByText('Bilaga 6.pdf')).toBeVisible();
+
+    const betonad = await tokenFarg(page, '--mm-bg-emphasized');
+    const dots = page.getByRole('button', { name: 'Fler val för Bilaga 6.pdf' });
+
+    await dots.click();
+    await expect(page.getByRole('menu')).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('menu')).toHaveCount(0);
+    await expect(dots).toHaveAttribute('data-focus-visible', 'true');
+
+    const efter = await dots.evaluate((el) => {
+      const cs = getComputedStyle(el);
+      return {
+        radie: Number.parseFloat(cs.borderTopLeftRadius),
+        outlineStyle: cs.outlineStyle,
+        outlineWidth: cs.outlineWidth,
+      };
+    });
+    expect(
+      efter.radie,
+      `knappen ska vara rund även med fokusringen på — mätt ${efter.radie} px`,
+    ).toBeGreaterThanOrEqual(9999);
+    expect(efter.outlineStyle, 'fokusringen får ALDRIG offras för radiens skull').toBe('solid');
+    expect(Number.parseFloat(efter.outlineWidth)).toBeGreaterThan(0);
+    // Plattan (musen står kvar över knappen efter klicket) ska vara rund, inte
+    // en 2 px-ruta — det var det Marcus såg.
+    await expect(dots).toHaveCSS('background-color', betonad);
+  });
+
+  /**
+   * [TASK-309.45 fel 1, andra halvan] NAMNKNAPPEN BEHÅLLER `rounded-lg`.
+   *
+   * Samma globala regel drabbade varje element med egen radie, så fixen prövas
+   * på ett ANDRA element med en ANNAN radie — annars kunde en lapp som bara
+   * gällde `rounded-full` se ut som en rot-fix.
+   */
+  test('fel 1: namnknappen behåller rounded-lg under fokus', async ({ page, network }) => {
+    network.use(hojdlasHandler(6, 0));
+    await gotoEventlage(page);
+    await expect(page.getByText('Bilaga 6.pdf')).toBeVisible();
+
+    const namn = page.getByRole('button', { name: 'Öppna Bilaga 6.pdf' });
+    // Referensen läses ur en FÄRSK `rounded-lg`-nod, inte hårdkodad: skalans
+    // px-värde är Tailwinds, inte vårt, och ska kunna ändras utan att detta
+    // test fäller på fel grund.
+    const referens = await page.evaluate(() => {
+      const p = document.createElement('span');
+      p.className = 'rounded-lg';
+      document.body.append(p);
+      const v = getComputedStyle(p).borderTopLeftRadius;
+      p.remove();
+      return v;
+    });
+    await namn.focus();
+    await expect(namn).toHaveCSS('border-top-left-radius', referens);
+  });
+
+  /**
+   * [TASK-309.45 fel 2] INGEN RING I ⋯-MENYN VID MUS — MEN RING VID TANGENTBORD.
+   *
+   * Marcus: *"den blå fokusringen kommer fram i menyn. Inte okej."*
+   *
+   * KEDJAN, mätt: musklick öppnar menyn → RAC skript-fokuserar behållaren
+   * asynkront → Chrome klassar skript-fokus som tangentbord i sin
+   * `:focus-visible`-heuristik → musen glider över en post, RAC flyttar fokus
+   * dit (focus-follows-hover) → posten matchar `:focus-visible` UTAN att bära
+   * `data-focus-visible`, och den globala ringen målades. Släckaren i base.css
+   * täckte behållaren men inte posterna.
+   *
+   * TESTET ÄR TVÅSIDIGT I SIG SJÄLVT, och måste vara det: en släckare som tar
+   * ringen även vid TANGENTBORD hade "löst" fyndet genom att bryta WCAG 2.4.7.
+   * Därför prövas båda modaliteterna i samma test — mus ⇒ ingen ring, Enter ⇒
+   * ring. `data-focused`-plattan ska finnas i BÅDA (den bär markeringen när
+   * ringen är släckt).
+   */
+  test('fel 2: menyposten bär ingen ring vid mus-öppning, men ring vid tangentbordsöppning', async ({
+    page,
+    network,
+  }) => {
+    network.use(hojdlasHandler(6, 0));
+    await gotoEventlage(page);
+    await expect(page.getByText('Bilaga 6.pdf')).toBeVisible();
+
+    const dots = page.getByRole('button', { name: 'Fler val för Bilaga 6.pdf' });
+    const post = page.getByRole('menuitem', { name: 'Ladda ner' });
+
+    // MUS: klick + hovra posten.
+    await dots.click();
+    await expect(page.getByRole('menu')).toBeVisible();
+    await post.hover();
+    await expect(post).toHaveAttribute('data-focused', 'true');
+    await expect(post).toHaveCSS('outline-style', 'none');
+    // Behållaren likaså — släckaren för den är äldre, men den ska inte
+    // regrediera i tysthet när posternas selektor läggs till.
+    await expect(page.getByRole('menu')).toHaveCSS('outline-style', 'none');
+
+    // ANDRA mus-öppningen efter en Escape — det var i det läget defekten
+    // först syntes, så den prövas explicit och inte bara den första.
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('menu')).toHaveCount(0);
+    await dots.click();
+    await expect(page.getByRole('menu')).toBeVisible();
+    await post.hover();
+    await expect(post).toHaveCSS('outline-style', 'none');
+
+    // TANGENTBORD: Escape, flytta musen bort, fokusera triggern, Enter.
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('menu')).toHaveCount(0);
+    await page.mouse.move(5, 5);
+    await dots.focus();
+    await page.keyboard.press('Enter');
+    await expect(page.getByRole('menu')).toBeVisible();
+    await expect(post).toHaveAttribute('data-focus-visible', 'true');
+    await expect(post).toHaveCSS('outline-style', 'solid');
   });
 });
