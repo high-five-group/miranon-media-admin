@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-30 18:45'
+updated_date: '2026-08-30 20:30'
 labels:
   - ready-for-agent
 dependencies:
@@ -24,11 +25,11 @@ Modell: Opus@xhigh (ADR-089; avvikelse från agent-default bokförd här). Nattm
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Migrationer i supabase/migrations skapar: inbetalningar (anmälan-record-id, ögonblicksbild namn/event/eventdatum, belopp (negativt = återbetalning), betalsatt, betalningsdatum, typ, status aktiv/makulerad + skäl, bankreferens unik när satt, kvitto-id, skapad av/när), kvitton (kvittonummer unikt, år, löpnummer, inbetalning-id UNIK, lagringsnyckel, skickad-tid, mottagare, typ kvitto/kreditkvitto, original-kvitto-id, status), kvittonummer-sekvens per år startande efter högsta befintliga (staging 1002; prod tom), jobb + jobb_rad (jobbtyp, rad-id, status väntar/pågår/skickat/fel, skäl, försök, tidsstämplar)
-- [ ] #2 pgmq, pg_cron, pg_net aktiverade via migration; kö skapad; cron-post var ~10 s anropar konsumentfunktionen med delad hemlighet ur Vault (staging seedad av agenten med anon-JWT/delad hemlighet; prod = Marcus, bokfört som öppet AC); konsumentvägen kräver inget dashboard-steg (security definer-wrapper i public eller funktion mot SUPABASE_DB_URL)
-- [ ] #3 RLS: autentiserad admin läser; skrivning endast via service_role; grant-form dokumenterad (append-only för kvitton); jobb- och inbetalningstabeller i supabase_realtime-publikationen
+- [x] #1 Migrationer i supabase/migrations skapar: inbetalningar (anmälan-record-id, ögonblicksbild namn/event/eventdatum, belopp (negativt = återbetalning), betalsatt, betalningsdatum, typ, status aktiv/makulerad + skäl, bankreferens unik när satt, kvitto-id, skapad av/när), kvitton (kvittonummer unikt, år, löpnummer, inbetalning-id UNIK, lagringsnyckel, skickad-tid, mottagare, typ kvitto/kreditkvitto, original-kvitto-id, status), kvittonummer-sekvens per år startande efter högsta befintliga (staging 1002; prod tom), jobb + jobb_rad (jobbtyp, rad-id, status väntar/pågår/skickat/fel, skäl, försök, tidsstämplar)
+- [x] #2 pgmq, pg_cron, pg_net aktiverade via migration; kö skapad; cron-post var ~10 s anropar konsumentfunktionen med delad hemlighet ur Vault (staging seedad av agenten med anon-JWT/delad hemlighet; prod = Marcus, bokfört som öppet AC); konsumentvägen kräver inget dashboard-steg (security definer-wrapper i public eller funktion mot SUPABASE_DB_URL)
+- [x] #3 RLS: autentiserad admin läser; skrivning endast via service_role; grant-form dokumenterad (append-only för kvitton); jobb- och inbetalningstabeller i supabase_realtime-publikationen
 - [ ] #4 Staging-tester (*.staging.test.ts) bevisar RLS och kontrakt-mot-tom; sekvensen bevisas tät, unik och startande efter högsta med hermetiskt test + negativ kontroll; unik nyckel inbetalning-id på kvitton bevisad (andra insättningen fäller)
-- [ ] #5 .purge-staging-policy.json bär Postgres-targets för testrader (sentinel-form) så nattens staging-tester inte ackumulerar; supabase/migrations/README.md uppdaterad med db push-formen (echo "" | npx supabase link --project-ref <staging>)
+- [x] #5 .purge-staging-policy.json bär Postgres-targets för testrader (sentinel-form) så nattens staging-tester inte ackumulerar; supabase/migrations/README.md uppdaterad med db push-formen (echo "" | npx supabase link --project-ref <staging>)
 - [ ] #6 db push mot staging utförd av ORKESTRERAREN före armering (B5) — agenten bokför exakt kommando i PR-kroppen
 <!-- AC:END -->
 
