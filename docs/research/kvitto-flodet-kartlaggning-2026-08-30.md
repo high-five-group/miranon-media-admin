@@ -81,9 +81,15 @@ revs i S113 Del 8 för kvittoseriens integritet (`DokumentYta.tsx:2340–2353`).
 bilagor (klass A/B) till alla markerade, aldrig något unikt per person.
 
 **Datan:** `ADR-109:58–63` — inget prisfält i `Anmälningar`/`Eventplanering`.
-Nyans: `Eventinnehåll` (`tblwqaBrkm6hJPITd`) och `Platser` (`tbl7ER0wNqAZ9ZhEq`)
-bär `Pris`/`Anmälningsavgift`/`Resterande belopp` — som **fritext**
-(`singleLineText`, `data-model.md:517`, `:539`), inte belopp per anmälan.
+Nyans: `Eventinnehåll` (`tblwqaBrkm6hJPITd`) och **Eventplanerings
+`(bilagetext)`-fält** bär `Pris`/`Anmälningsavgift`/`Resterande belopp` — som
+**fritext** (`singleLineText`, `data-model.md:517`, `:539`), inte belopp per
+anmälan. **Rättelse 2026-08-30 (appvandringen, S113 resume 4):** denna rad
+sade tidigare att `Platser` (`tbl7ER0wNqAZ9ZhEq`) bar prisfälten — fel;
+Platser bär Namn/Adress/Parkering/Transport/Kläder och en
+Eventplanering-spegel (`data-model.md:526–530`), inga priser. Rad 539 är
+Eventplanerings `(bilagetext)`-kopia. I staging är fritextpriserna dessutom
+tomma för Fjärrskådning/Utbildning (vandringens skärmdump 25).
 
 ## (d) Styrande beslut, kort, trådar
 

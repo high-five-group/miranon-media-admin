@@ -36,10 +36,13 @@ rullningsskugga · en-radsnamn på mobil. `T176` stängd · `T178` ny (HMR) ·
 sade 19 — det tjugonde landade i paus-commiten `5998f879` själv) ·
 session 113 (disk-verifierat 2026-08-30 ~15:10 UTC, resume 4). Fyra skivor i prod
 (`01c84076`: 309.43/44/45/46), Marcus: *"nu funkar det perfekt"* efter
-rensad site data. **NÄSTA:** appvandringens rapport + `docs/research/kvitto-branschpraxis-och-svensk-ratt-2026-08-30.md`
-→ syntes som beslutsunderlag → **kvitto-grillningen** (Marcus startar; underlag
-`docs/research/kvitto-flodet-kartlaggning-2026-08-30.md`: bulk i Åtgärder · numeriskt
-pris i basen · fel mitt i serien · ADR-109 beslut (a) "aktiv handling" prövas mot branschpraxis) → veto-lista (Marcus: "vi släpper det lite"; +
+rensad site data. **Resume 4 levererat (Del 10):** appvandring (31 skärmdumpar, 6 klick till knappen,
+7 klick + 1 belopp per kvitto, ≈143 för en kurs) + branschresearch (SFL 39:5 verifierat,
+Pretix ordagrant) + `docs/research/kvitto-beslutsunderlag-2026-08-30.md` + artefakten
+*Lottas kvittovandring*. **NÄSTA:** **kvitto-grillningen** (Marcus startar `/grill-me`;
+ingång = beslutsunderlaget: sex beslut A–F, ADR-109 (a) prövas mot förbockad kryssruta
+vid avprickningen, B = numeriskt pris i basen först; fixtur `ZZ-GRANSKNING-S113` kvar
+till 2026-09-13) → veto-lista (Marcus: "vi släpper det lite"; +
 ny version-kontroll vid flik-fokus?) (strängbytena i `93dbf275`, tomytan under
 fyra-korts-låset vid 2–3 bilagor — `min(4, n)` föreslaget, URL-bytet som
 kort) → prod-vandringen (testplanen delvis inaktuell efter formbytet) → domar
