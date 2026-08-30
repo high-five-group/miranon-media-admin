@@ -406,3 +406,166 @@ datum och adress; raden är oförändrad i både `kvittoRader()` och mallen.
 Updates-posternas moms-/org-/beloppsinnehåll är i övrigt ORÖRDA — org-namnet,
 org-numret och momsregistreringsnumret är samma strängar som innan, bara
 adressfältet är omformat. § Öppna punkter kvarstår oförändrade.
+
+### 2026-08-30 — Kvittot blir per INBETALNING och skickas som ett jobb: (a) omformas, beslut 2, 5 och 7 rivs, (d) tas in i v1, beloppspunkten stängs (S113 Del 11)
+
+Grillningen om Lottas betalningsflöde (S113 Del 11, tretton kvitterade
+beslut) river fyra av denna ADR:s premisser samtidigt. Rivningen sker
+ÖPPET här; § Beslut och § Öppna punkter ovan står ORÖRDA (frysta
+beslutstexter ändras aldrig i efterhand — samma disciplin `ADR-081`
+§ Updates etablerade och de tre föregående posterna följer).
+Lagringsvalet som gör rivningen möjlig bor i
+[`ADR-128`](ADR-128-inbetalningen-som-sanning-postgres-och-spegeln.md),
+jobbmotorn i [`ADR-129`](ADR-129-jobbmotorn-ko-cron-och-kick.md).
+
+**Vad som faktiskt ändrades i verkligheten:** appen får en domänpost
+`Inbetalning` — en post per bankrad, i Supabase Postgres — och kvittot
+avser exakt EN sådan post. Den posten fanns inte när denna ADR skrevs
+2026-08-10; basen hade inte ens ett prisfält (§ Kontext säger det rakt
+ut). Fyra av besluten nedan vilar på just den avsaknaden.
+
+#### Beslut (a) OMFORMAS: registrera först, skicka sedan
+
+Marcus ursprungliga beslut (a) sade att kvittot är *"en AKTIV handling —
+aldrig automatik som följer på avprickningen"*. **Den principen står och
+förstärks.** Vad som omformas är HANDLINGEN: avprickningen finns inte
+längre som begrepp, och den aktiva handlingen är inte längre "tryck på
+kvittoknappen på en betalningsrad".
+
+Ny form (Del 11 beslut 3, reviderad av Marcus egen fråga *"klickar hon på
+skicka kvitto så går kvittot iväg till alla 8 samtidigt eller?"* — som
+avslöjade den bättre formen): Enter **registrerar** inbetalningen utan
+att skicka något. Rutan *Skicka kvitto* är **förbockad** och betyder *ta
+med i nästa sändning*, inte *skicka nu*. En stående knapp *Skicka N
+kvitton* skickar alla väntande som ETT jobb. `⌘`/`Ctrl`+Enter =
+*Registrera och skicka* för den enstaka tisdags-Swishen.
+
+Kvittot är alltså fortfarande aldrig automatik — men granskningen kommer
+före skicket, vilket den inte gjorde förut. Beslut (a):s andra hälft
+(*"en betalning kvitteras i exakt ETT system"*) är oförändrad; sällsynta
+fakturafall kvitteras fortsatt hos Roger utan app-kvitto.
+
+#### Beslut 2 RIVS: allokeringsprotokollet ersätts av en databassekvens
+
+Beslut 2:s läs-högsta + skriv-med-verifikation + deterministisk retry är
+korrekt och hermetiskt bevisat — och en **kompensation för en vägg som
+inte finns i Postgres**. Protokollet existerar enbart därför att Airtable
+saknar unique-constraint och transaktioner
+([`airtable-constraints.md`](../reference/airtable-constraints.md) §A,
+P1–P3), vilket § Kontext ovan säger uttryckligen.
+
+Med kvittoledgern i Postgres (`ADR-128` beslut 3–4) tas numret ur en
+**sekvens per år**, och dubbelskick stängs av en **unik nyckel per
+inbetalning** i stället för av ett protokoll. Sekvensen startar efter det
+högsta befintliga numret i respektive miljö (prod: 0 kvitton, mätt
+read-only 2026-08-30; staging: max `MM-2026-1002`).
+
+**Vad rivningen INTE innebär:** den samtidighetsegenskap beslut 2 fick
+bevisa är inte uppgiven, den är flyttad från kod till databas.
+`tests/api/receipt-numbering.test.ts` och dess negativa kontroll behåller
+sitt värde som historik över varför Airtable-vägen såg ut som den gjorde;
+den nya vägen bär sitt eget bevis i `TASK-346.3`/`346.4`.
+
+#### Beslut 5 RIVS: ledgern är inte längre Airtable-tabellen `Kvitton`
+
+Beslut 5 slog fast att ledgern och kvittots beständiga metadata är SAMMA
+Airtable-tabell (`Kvitton`, staging `tblk8fZcArXPpRYnX`). Ledgern flyttar
+till Postgres (`ADR-128` beslut 3). Reservation-och-finalisering-i-samma-
+rad-formen (skälet i beslut 5:s andra hälft: en avvisad sändning ska inte
+lämna en spårlös reservation) **bevaras** i den nya tabellen — det var
+formens poäng, inte tabellens hemvist.
+
+Airtable-tabellen `Kvitton` pensioneras i `TASK-346.12`, efter promovering
+— inte i denna post, och inte förrän den nya ledgern bär allt.
+
+#### Beslut 7 RIVS: ett kvitto avser en INBETALNING, inte ett `Betalning`-val
+
+Beslut 7 realiserade *"en betalning kvitteras i exakt ETT system"* som ETT
+`Betalning`-val per kvitto (Anmälningsavgift ELLER Slutbetalning), med
+UI-ingången per betalningsrad, synlig endast när just den betalningen
+redan var Mottagen.
+
+Hela den konstruktionen bygger på att facken är något man BOCKAR I. Efter
+Del 11 beslut 7 **härleds** facken ur summan mot priset (`ADR-128`
+beslut 2) — Lotta väljer aldrig fack, så det finns inget val att fästa ett
+kvitto vid. Kvittot fäster i stället vid inbetalningen, som är en verklig
+händelse med ett belopp och ett datum.
+
+Beslut 7:s SKÄL — att en betalning kvitteras i exakt ett system — står
+oförändrat och bärs nu av den unika nyckeln per inbetalning.
+
+#### Beslut 6: GARANTIN står, MEKANISMEN rivs
+
+Beslut 6 sade *"Ingen fält-skrivning på Anmälningar"* och byggde kvittots
+beständighet på att de två tabellerna aldrig kopplas ihop av någon
+skrivande operation.
+
+**Garantin står och förstärks:** kvittoledgern ligger nu i en HELT ANNAN
+DATABAS än anmälan, så ingen Airtable-operation kan strukturellt påverka
+en utfärdad kvittopost. Beständigheten är fortfarande en egenskap av
+arkitekturen, inte kod som kan glömmas.
+
+**Mekanismen rivs:** appen skriver numera fält på `Anmälningar` — de två
+valfälten, `Summa inbetalt (kr)` och kvittonumret — som en **spegel**
+(`ADR-128` beslut 5), så att Lottas vyer, automation A7 och rollups
+fungerar orörda. Meningen *"Ett kvitto stämplar INGET fält på den
+betalning det avser"* är därmed FALSK som beskrivning av kodens tillstånd
+framåt. Spegeln är dock aldrig sanningen, bara en projektion: raderas ett
+spegelvärde ändras inget kvitto.
+
+**Divergens mellan källorna, bokförd öppet (ADR-086).** Kortet
+`TASK-346.1` AC #4 och PRD:ns § ADR-koppling listar *"beslut 1, 3, 4, 6
+står"* och river 2, 5, 7. Verifieringsrapporten
+([`verifiering-kvittoskivning-afk-natt-2026-08-30.md`](../research/verifiering-kvittoskivning-afk-natt-2026-08-30.md)
+§ 3.1 punkt 3) listar i stället 5, 6, 7 — och pekar uttryckligen ut att
+*"spegeln är exakt det"* beslut 6 förbjuder. Båda har rätt om olika saker:
+kortet om garantin, rapporten om mekanismen. Denna post följer därför
+unionen — 2, 5 och 7 rivs helt, 6 rivs till sin mekanism med garantin
+kvar — i stället för att välja en källa och tysta den andra.
+
+#### Beslut (d) UTÖKAS: kreditkvitto tas in i v1
+
+Marcus ursprungliga (d) deferrade kreditrutinen: *"Kreditrutin och
+bokförings-export defereras till Roger-feedback senare, EJ v1."*
+
+Del 11 beslut 9 tar in **kreditkvittot i v1** (orkestrerarens andra
+reversering under grillningen; skälet till att det låg utanför var *ärvt
+scope, inget tekniskt*). Formen: radera före kvitto; makulera efter
+(med skäl — kvittot består, märkt makulerat); återbetalning = en negativ
+inbetalning; kreditkvitto med **nästa nummer i samma serie** och
+hänvisning till originalet, samma trigger som kvittot.
+
+**Bokförings-exporten till Roger är fortsatt deferrad** — den halvan av
+(d) står oförändrad.
+
+#### Öppen punkt STÄNGD: "belopp och betalsätt är Lotta-inmatade"
+
+Den öppna punkten löd: *"Belopp och betalsätt är Lotta-inmatade i UI:t,
+inte serverhärledda — en DIREKT konsekvens av att basen saknar ett
+prisfält"*, och pekade själv ut lösningen: *"ett framtida prisfält på
+Eventplanering/Anmälningar skulle kunna förfylla värdet"*.
+
+Det fältet byggs nu (`ADR-128` beslut 7, skiva `TASK-346.2`): numeriska
+`Pris (kr)` och `Anmälningsavgift (kr)` BREDVID fritexten, plus ett
+frivilligt `Avtalat pris` per anmälan. Beloppet blir därmed **härlett och
+föreslaget** — belopps-knappar `1 000 · anmälningsavgift`, `2 500 · allt`,
+`annat…` — i stället för fritt inskrivet. Betalsättet är förvalt till det
+senast använda.
+
+**Punkten stängs, men inte till "serverhärlett".** Lotta kan alltid skriva
+ett annat belopp (banken visar vad den visar, och `2 500,00` ska tas emot
+som det står). Skillnaden är att gissningen är borta: appen vet priset och
+föreslår, i stället för att kräva ett handskrivet tal utan facit.
+
+#### Vad som INTE ändras av denna post
+
+§ Beslut **1** (formatet `MM-<år>-<löpnummer>`, start 1001 per år), **3**
+(ingen retroaktiv omnumrering av utfärdade kvitton; hoppade nummer
+återanvänds aldrig) och **4** (allokeringen är SERVER-SIDE uteslutande —
+konsumenten i `ADR-129` är en Edge Function, alltså fortsatt server-side)
+är ORÖRDA. De tre föregående Updates-posternas moms-, org-, belopps- och
+datumformat är likaså orörda. Kvarvarande öppna punkter — klient-retry-
+gapet, facit-/ARIA-deltat och Airtables läs-efter-skriv-konsistens —
+kvarstår formellt, men de två sistnämnda får ny hemvist när ytan byggs om
+(`TASK-346.7`) respektive förlorar sin grund i takt med att ledgern
+lämnar basen.
