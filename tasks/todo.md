@@ -44,8 +44,8 @@ Pretix ordagrant) + `docs/research/kvitto-beslutsunderlag-2026-08-30.md` + artef
 Supabase Postgres + spegel i basen, global inkorg, registrera-först-skicka-sedan, kö + cron +
 kick, Swish-import från början, kreditkvitto i v1, universell härledning + backfill; tre
 research-pass + adversarial verifiering (sju blockerare, vågordning). Marcus: *"B4 ja, B3 ja"* → PRD `TASK-346` + 13 skivor (`#2141`). **NÄSTA:**
-NATTENS MANDAT pågår (sessionsdok § Paushistorik paus 5 + Del 12): våg 0 klar → våg 1 `346.1`
-(Opus) → våg 2–7, modell per skiva, seriell staging-applicering, `hog` armeras bara vid
+NATTENS MANDAT pågår (sessionsdok § Paushistorik paus 5 + Del 12): våg 0–1 klara (ADR-128/129
+landade `6433d482`, 346.1 Done) → våg 2 pågår (`346.2` ‖ `346.3`) → våg 3–7, modell per skiva, seriell staging-applicering, `hog` armeras bara vid
 konvergerad loop, slutvandring i browsern före paus 6 → morgon: Marcus tittar, justerar, promoverar (prod-fält,
 prod-Postgres per runbook 346.11, EF-deploy, flagga, backfill-GO, facit-stämplar) → veto-lista (Marcus: "vi släpper det lite"; +
 ny version-kontroll vid flik-fokus?) (strängbytena i `93dbf275`, tomytan under
