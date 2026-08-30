@@ -1024,29 +1024,47 @@ const LISTA_SYNLIGA_RADER = 4;
  *
  * ═══ [T176, ANDRA STEGET SAMMA DAG] 107 → 124: TALET ÄR LI-HÖJDEN ═══
  *
- * Konstanten mäter numera `<li>`, inte kortet — och det är ingen
- * detaljskillnad utan hela poängen. Sedan raden blev ett KORT bor RÄNNAN
- * mellan korten INUTI `<li>` (`pt-2`, 8 px ÖVER kortet — se
- * `DokumentListRam`s docblock för varför hela rännan ligger ovanför och
- * inte delas i halvor), just för att hookens två mätvägar ska se samma tal:
- * NIVÅ 1 mäter SPANNET rad1.top → rad4.bottom (ränna inräknad), NIVÅ 2
- * mäter MAX av radernas EGNA höjder. Ett `gap-*` på `<ul>` hade legat
- * mellan raderna — med i spannet, utanför radhöjden — och de två nivåerna
- * hade gett olika svar. Talet 124 är oförändrat: 8 + 116 i stället för
- * 4 + 116 + 4.
+ * Konstanten mäter `<li>`, inte kortet — och det är ingen detaljskillnad
+ * utan hela poängen. Sedan raden blev ett KORT bor RÄNNAN mellan korten
+ * INUTI `<li>`, just för att hookens två mätvägar ska se samma tal: NIVÅ 1
+ * mäter SPANNET rad1.top → rad4.bottom, NIVÅ 2 mäter MAX av radernas EGNA
+ * höjder. Ett `gap-*` på `<ul>` hade legat mellan raderna — med i spannet,
+ * utanför radhöjden — och de två nivåerna hade gett olika svar.
  *
- * UPPMÄTT, INTE RÄKNAT (acceptance-riggen, 2026-08-29): `radHojder` =
- * [124, 124, 124, 124] vid 1280×720 och [124, 124] vid 375×800, med
- * `<ul>`s låsta `hojd` = 496 px = 124 × 4 i båda fallen. Kortet självt
+ * ═══ [TASK-309.46, 2026-08-30] 124 → 122: KONSTANTEN ÄR SEPARATOR-FRI ═══
+ *
+ * `<li>` är fortfarande 124 px hög. Konstanten är det INTE, och skillnaden
+ * är hela denna skiva: rännan ligger sedan nu som en TRANSPARENT
+ * `border-bottom` på raden (`border-b-8 border-transparent`) i stället för
+ * som `pt-2`, och hooken DRAR BORT den fjärde radens ränna ur låset
+ * (`separatorBredd`). Låset är därmed 488 px = rad1.top → rad4.bottom, inte
+ * 496 — och `senastUppmattRadhojd`, som NIVÅ 3 läser, bär den SEPARATOR-FRIA
+ * per-rad-höjden 488 / 4 = **122**. Konstanten är NIVÅ 3:s reserv för exakt
+ * det talet och måste därför vara 122, inte li-höjden 124.
+ *
+ * SKRIV ALDRIG TILLBAKA 124 HÄR "för att li är 124". Det är samma
+ * förväxling som gav hooken sitt latenta separator-fel (se § NIVÅ 2/3):
+ * li-höjden och den lagrade per-rad-höjden är två olika tal så fort raden
+ * bär en separator, och de sammanföll bara så länge separatorn var 1 px.
+ *
+ * VARFÖR RÄNNAN BLEV EN BORDER, i en mening: ett spår (`<ul>`s padding-box)
+ * som ska börja vid FÖRSTA KORTETS överkant får ingen ränna innanför sig
+ * ovanför det kortet, och en border ligger utanför padding-boxen medan en
+ * padding ligger innanför. Marcus prod-titt 2026-08-30: *"scrollbaren …
+ * börjar för högt upp, den bör ju börja vid kortet precis."* Hela
+ * resonemanget bor i `DokumentListRam`s wrapper-kommentar.
+ *
+ * UPPMÄTT, INTE RÄKNAT (acceptance-riggen): `radHojder` = [124 × n] vid
+ * både 1280 och 390, med `<ul>`s låsta `hojd` = **488** px. Kortet självt
  * mäter 116 px (`p-3` + 1 px kant runt tre led vars första är namnknappens
- * 44 px träffyta); 124 = 116 + 8.
+ * 44 px träffyta); 124 = 116 + 8, och 488 = 3 × 124 + 116.
  *
  * FÖLJDEN ÄR ATT ALLA TRE NIVÅER GER EXAKT SAMMA HÖJD: 0 rader (NIVÅ 3,
- * konstanten × 4), 1–3 rader (NIVÅ 2, MAX × 4) och 4+ (NIVÅ 1, spannet)
- * landar alla på 496 px. `<ul>` bär dessutom ingen kant längre, så
+ * 122 × 4), 1–3 rader (NIVÅ 2, 124 × 4 − 8) och 4+ (NIVÅ 1, spannet minus
+ * fjärde radens separator) landar alla på 488 px. `<ul>` bär ingen kant, så
  * `kantjustering` är 0 — talet är rent.
  */
-const LISTA_FALLBACK_RADHOJD = 124;
+const LISTA_FALLBACK_RADHOJD = 122;
 
 /**
  * En rads EGEN separatorlinje i px — `border-bottom-width`, läst ur
@@ -1068,7 +1086,8 @@ const LISTA_FALLBACK_RADHOJD = 124;
  * finns kvar den dag en radform med egen underkant återinförs.
  *
  * HÖJDMATEMATIKEN BÄRS NU AV RÄNNAN I STÄLLET, och den ligger INUTI
- * `<li>` (`pt-2`, se `DokumentListRam`s docblock) just för att hookens
+ * `<li>` (som transparent `border-bottom` sedan TASK-309.46, se
+ * `DokumentListRam`s wrapper-kommentar) just för att hookens
  * mätningar — NIVÅ 1:s spann rad1.top→rad4.bottom och NIVÅ 2:s
  * MAX-av-radhöjder — ska se SAMMA tal. Ett `gap-*` på `<ul>` hade legat
  * mellan raderna: med i spannet, utanför radhöjden, alltså två olika
@@ -1253,6 +1272,27 @@ function separatorBredd(rad: Element): number {
  * MELLAN rader. NIVÅ 3 gör inget avdrag: den läser `senastUppmattRadhojd`,
  * som NIVÅ 1/2 redan skrivit separator-fri.
  *
+ * ═══ [TASK-309.46] STYCKET OVAN VAR SANT FÖR NIVÅ 1 OCH FALSKT FÖR NIVÅ 2
+ *     — EN RAD, RÄTTAD ═══
+ *
+ * NIVÅ 1 skrev `spann / 4`, alltså efter avdraget: separator-fritt, precis
+ * som beskrivet. NIVÅ 2 skrev `radhojd` RAKT AV — med sin egen separator
+ * kvar — trots att den drar bort den i samma andetag när den sätter höjden.
+ * Prosan beskrev alltså ett kontrakt bara den ena av två skribenter höll.
+ *
+ * FELET VAR OSYNLIGT SÅ LÄNGE SEPARATORN VAR 1 px: en lista som gick från
+ * 1–3 rader till NOLL rader låste sig på 4 px för högt, vilket ingen mätning
+ * hade anledning att titta efter. Med 309.46:s 8 px-ränna blir samma
+ * övergång 496 i stället för 488 — samma buggklass, nu synlig.
+ *
+ * FIXEN ÄR ATT LAGRA SAMMA TAL SOM NIVÅ 1 LAGRAR:
+ * `(radhojd × 4 − radensSeparator) / 4`. Uttrycket är dessutom en NO-OP i
+ * NIVÅ 3 (där `radensSeparator` är 0 och `radhojd` redan separator-fri), så
+ * en gren räcker för båda vägarna genom koden.
+ *
+ * DET ÄR HOOKENS ENDA KODÄNDRING I DENNA SKIVA — allt annat i kroppen är
+ * byte-identiskt med `origin/main`, verifierat med diff.
+ *
  * `ResizeObserver` på RADERNA (upp till fyra, eller färre om listan har
  * färre), inte på `<ul>` självt — samma val som `BlockDialog.tsx`s
  * uttoningsmätning gör och av samma skäl: när höjden väl är LÅST slutar
@@ -1377,7 +1417,8 @@ function useLastaListhojd(
         // viewport-oberoende, sedan runda 2:s andra varv).
         radhojd = senastUppmattRadhojd.current ?? LISTA_FALLBACK_RADHOJD;
       }
-      senastUppmattRadhojd.current = radhojd;
+      senastUppmattRadhojd.current =
+        (radhojd * LISTA_SYNLIGA_RADER - radensSeparator) / LISTA_SYNLIGA_RADER;
       harMattAlls.current = true;
       setHojd(radhojd * LISTA_SYNLIGA_RADER - radensSeparator + kantjustering);
     };
@@ -2442,12 +2483,14 @@ function ErsattningsFel({ replaceMutation }: { replaceMutation: ReplaceMutation 
  * [T176, 2026-08-29] BEHÅLLAREN ÄR NU OCKSÅ RÄNNAN. Listan har ingen egen
  * `bg-surface`-yta längre — bilagekorten bär den (`DokumentRadSkal`), och
  * den grå tonen syns mellan dem. Samma 8 px runtom OCH mellan korten:
- * radens `pt-2` lägger HELA rännan ÖVER kortet och wrapperns `-mt-2` tar
- * bort den enda som annars hade lagt sig ovanpå ramen (se
- * `DokumentListRam`). [TASK-309.45] Formen var tidigare `py-1` + `-my-1`
- * — samma 8 px i alla riktningar, men med `<ul>`:ets underkant 4 px UNDER
- * fjärde kortets. Den skillnaden syntes när man rullade; hela resonemanget
- * står i `DokumentListRam`.
+ * radens transparenta `border-b-8` bär rännan MELLAN korten, och eftersom
+ * en border ligger UTANFÖR padding-boxen behövs ingen kompensation alls på
+ * wrappern — behållarens `p-2` ensam ger de 8 px runtom.
+ * [TASK-309.46] Formen har varit `py-1` + `-my-1` (halv ränna över och
+ * under) och `pt-2` + `-mt-2` (hela rännan över kortet, men innanför
+ * `<ul>`:ets padding-box, så rullningslistens spår började 8 px för högt).
+ * Hela historiken med mätvärden står i `DokumentListRam`s
+ * wrapper-kommentar.
  *
  * DELAD KONSTANT, INTE TVÅ STRÄNGAR: eventläget och räckviddsläget bar
  * identiska men separata klass-strängar för både kortet och `<ul>`:et. De hade
@@ -2606,10 +2649,13 @@ const GRUPPKORT_KLASS =
  * ränna nedanför sista kortet), så skuggan lyftes 4 px för att träffa
  * kortkanten.
  *
- * Rännan bor sedan denna skiva HELT ÖVER kortet (`pt-2`), så `<ul>`:ets
+ * Rännan ligger sedan TASK-309.46 som en transparent `border-bottom` på
+ * raden, och hooken drar bort den FJÄRDE radens ur låset — så `<ul>`:ets
  * underkant ÄR fjärde kortets underkant. Kompensationen har därmed inget
  * kvar att kompensera för, och `bottom-0` uttrycker samma krav utan en
- * offset som måste hållas i synk med radens padding.
+ * offset som måste hållas i synk med radens ränna. (Mellansteget 309.45 nådde
+ * samma underkant med `pt-2` + `-mt-2`; det som ändrades i 309.46 var
+ * `<ul>`:ets ÖVERkant, se wrapper-kommentaren.)
  *
  * VARFÖR DET SPELADE ROLL, mätt: mitt i en rullning klipptes korten av
  * `<ul>`:ets kant 4 px UNDER skuggans rundade underkant, så en vit remsa av
@@ -2692,46 +2738,78 @@ function DokumentListRam({
     setRannbredd(ul.offsetWidth - ul.clientWidth);
   }, [kanRulla, matadHojd, listRef]);
   return (
-    // `-mt-2` NEUTRALISERAR RADENS RÄNNA MOT BEHÅLLARENS ÖVERKANT. Varje
-    // `<li>` bär `pt-2` (8 px ÖVER kortet = 8 px ränna MELLAN korten), vilket
-    // också lägger 8 px överst i `<ul>`. Utan kompensationen hade den grå
-    // ramen mätt 16 px upptill mot 8 px på sidorna — samma asymmetri Marcus
-    // fångade 2026-08-18 (*"den grå ramen ser bredare ut på sidorna än vad
-    // den är över och under"*). Med den mäter ramen 8 px runtom och rännan
-    // 8 px.
+    // ═══ RÄNNAN ÄR EN TRANSPARENT `border-bottom` PÅ RADEN ═══
+    // [TASK-309.46, Marcus prod-titt 2026-08-30]
     //
-    // ═══ [TASK-309.45] HELA RÄNNAN ÖVER KORTET, INGEN HALVA UNDER ═══
+    // *"scrollbaren … börjar för högt upp, den bör ju börja vid kortet
+    // precis."* MÄTT i prod före fixen: `ul.top` 303, `kort1.top` 311 — spåret
+    // började 8 px ovanför kortet.
     //
-    // Formen var `py-1` + `-my-1`: en halv ränna över och en halv under varje
-    // kort, med båda halvorna neutraliserade mot ramen. Samma 8 px överallt,
-    // och geometriskt oantastligt i VILA — men `<ul>`:ets underkant låg då
-    // 4 px UNDER fjärde kortets, eftersom den halva rännan under sista kortet
-    // hörde till `<ul>`:et.
+    // ORSAKEN ÄR EN BOXMODELL-DETALJ, inte en slarvig siffra: rullningslistens
+    // SPÅR spänner alltid `<ul>`:ets PADDING-box. En ränna som ligger som
+    // `padding-top` på raden ligger därmed INNANFÖR spåret — även rännan
+    // ovanför FÖRSTA kortet, som inte har något kort att skilja från. En
+    // `border` ligger utanför padding-boxen. Samma 8 px, annan sida av kanten,
+    // och spåret börjar exakt vid kortet.
     //
-    // Den skillnaden var osynlig tills man rullade. MÄTT (Marcus 5173-
-    // granskning 2026-08-30, ×3-crops): mitt i en rullning klipper `<ul>`
-    // korten vid sin egen kant — 4 px under skuggans rundade underkant — så
-    // en VIT REMSA av det klippta kortet syntes under skuggans hörn, med en
-    // rak fyrkantig kant tvärs över ett i övrigt runt kort.
+    // FORMEN ÄR `border-b-8 border-transparent` PÅ VARJE `<li>`:
+    //   • li-höjden är oförändrad 124 px (116 + 8) — uniform, alla rader
+    //   • ingen ledande ränna finns kvar, så wrapperns `-mt-2` är RIVEN
+    //     (det fanns inget att neutralisera; tray-luften bärs nu av
+    //     behållarens `p-2` ensam, 8 px + 1 px transparent kant runtom)
+    //   • `<ul>`:ets padding-box = spåret = EXAKT korten
     //
-    // `pt-2` + `-mt-2` lägger hela rännan ÖVER kortet. Följden är att
-    // `<ul>`:ets underkant ÄR fjärde kortets underkant, exakt — och därmed
-    // kan skuggan (`bottom-0`), klippningen och kortkanten sammanfalla i
-    // stället för att ligga 4 px isär.
+    // OCH HOOKEN VAR REDAN BYGGD FÖR DET. `separatorBredd(rad)` läser
+    // `border-bottom-width`; NIVÅ 1 låser `rad4.bottom − rad1.top −
+    // separatorBredd(rad4)` och NIVÅ 2 `radhöjd × 4 − radens separator`. Med
+    // `pt-2` var separatorn 0 och avdragen no-ops; med border-formen gör de
+    // exakt det de skrevs för. Låset går därmed 496 → **488** = kort1.top →
+    // kort4.bottom, i ALLA tre nivåerna.
     //
-    // AVVISAD KANDIDAT, med skäl: att bara runda `<ul>` och sätta skuggan
-    // `bottom-0` utan att flytta rännan gav ren klippning mitt i rullning,
-    // men lade gradientens mörkaste 4 px på rännans GRÅ yta i vila — alltså
-    // ett synligt streck under sista kortet, precis den defekt Marcus fångade
-    // 2026-08-29. Att flytta rännan löser båda på en gång.
+    // ── VARFÖR INTE `last:border-b-0` ──
     //
-    // RADHÖJDEN ÄR OFÖRÄNDRAD: 124 px = 8 + 116, tidigare 4 + 116 + 4.
-    // Hookens kod är orörd, och båda mätvägarna ser samma tal som förut.
+    // Det ser ut som den städade formen (ingen ränna efter sista kortet) och
+    // är fel, räknat: med EN rad är den raden också den sista, bär då ingen
+    // separator, och NIVÅ 2 ger `116 × 4 − 0` = **464** mot de andra
+    // radantalens 488. Samma sak för tomläget efter en 1-rads-mätning. Låset
+    // ska vara ETT tal oavsett hur många bilagor eventet har — det är hela
+    // dess uppgift — så varje rad bär sin ränna, undantagslöst.
     //
-    // MARGINALEN, INTE `gap-*`, BÄR RÄNNAN — se `<li>`-kommentaren i
+    // ── KÄND KANT, BOKFÖRD I STÄLLET FÖR LAPPAD ──
+    //
+    // Vid MAXIMAL rullning (≥ 5 kort) ligger sista radens transparenta ränna
+    // inuti det rullbara innehållet, så sista kortet slutar 8 px ovanför
+    // spårets slut i det läget. Det är normal bottom-padding i en
+    // rullningsvy, skuggan är borta där (`vidBotten`), och alternativet är
+    // `last:border-b-0` med sitt 464-fel ovan.
+    //
+    // ── HISTORIKEN, för den som undrar varför rännan flyttat tre gånger ──
+    //
+    //   `py-1` + `-my-1`   halv ränna över och under varje kort. Symmetriskt
+    //                      i vila, men `<ul>`:ets underkant låg 4 px under
+    //                      fjärde kortets, och MITT I EN RULLNING klipptes
+    //                      kortet där — en vit remsa med rak kant under
+    //                      skuggans rundade hörn (Marcus 2026-08-30).
+    //   `pt-2` + `-mt-2`   hela rännan över kortet (TASK-309.45). Löste
+    //                      klippningen: skuggans, klippningens och kortets
+    //                      underkanter sammanföll. Men rännan låg fortfarande
+    //                      innanför padding-boxen, alltså ovanför första
+    //                      kortet — spåret började för högt.
+    //   `border-b-8`       rännan utanför padding-boxen (denna skiva). Spåret
+    //                      börjar vid kortet, underkanterna sammanfaller
+    //                      fortfarande, och hookens avdrag får äntligen
+    //                      föremål.
+    //
+    // AVVISAD KANDIDAT (309.45), fortfarande giltig: att bara runda `<ul>` och
+    // sätta skuggan `bottom-0` utan att röra rännan gav ren klippning mitt i
+    // rullning men lade gradientens mörkaste 4 px på rännans GRÅ yta i vila —
+    // ett synligt streck under sista kortet.
+    //
+    // BORDERN, INTE `gap-*`, BÄR RÄNNAN — se `<li>`-kommentaren i
     // `DokumentLista`: ett `gap` hade legat MELLAN raderna och därmed synts i
-    // höjdlåsets NIVÅ 1-spann men inte i dess NIVÅ 2-radhöjd.
-    <div className="relative -mt-2">
+    // höjdlåsets NIVÅ 1-spann men inte i dess NIVÅ 2-radhöjd, och hooken hade
+    // inte kunnat dra bort den fjärde radens.
+    <div className="relative">
       <ul
         ref={listRef}
         data-testid="dokument-lista"
@@ -2885,8 +2963,8 @@ function DokumentLista({
             kanRulla={kanRulla}
             ariaLabel="Bilagor"
           >
-            {/* ═══ RÄNNAN BOR INUTI `<li>` (`pt-2`), ALDRIG SOM `gap-*` PÅ
-                `<ul>` — OCH DET ÄR HÖJDLÅSET SOM KRÄVER DET ═══
+            {/* ═══ RÄNNAN BOR INUTI `<li>` (transparent `border-bottom`),
+                ALDRIG SOM `gap-*` PÅ `<ul>` — HÖJDLÅSET KRÄVER DET ═══
 
                 `useLastaListhojd` mäter på TVÅ sätt: NIVÅ 1 tar SPANNET
                 rad1.top → rad4.bottom, NIVÅ 2 tar MAX av radernas EGNA
@@ -2897,20 +2975,25 @@ function DokumentLista({
                 nivåerna samma tal (kort + 8 px), och hookens kropp plus
                 `LISTA_SYNLIGA_RADER` står orörda.
 
-                `pt-2` (8 px ÖVER varje kort) och INTE `pb-2` (8 px under):
-                de är likvärdiga för höjdlåset — varje rad blir 124 px hur
-                som helst — men INTE för rullningen. Med `pb-2` hade `<ul>`
-                slutat 8 px under fjärde kortet, och skuggan, klippningen och
-                kortkanten hade legat isär igen (TASK-309.45). Med `pt-2` är
-                `<ul>`:ets underkant fjärde kortets underkant, exakt.
+                `border-b-8 border-transparent` och INTE en padding
+                (`pt-2`/`pb-2`): alla tre ger 124 px hög rad, men bara bordern
+                ligger UTANFÖR `<ul>`:ets padding-box — och padding-boxen ÄR
+                rullningslistens spår. Med `pt-2` började spåret 8 px ovanför
+                första kortet (mätt i prod: `ul.top` 303 mot `kort1.top` 311);
+                med `pb-2` hade `<ul>` i stället slutat 8 px under fjärde
+                kortet och brutit skuggans, klippningens och kortkantens
+                sammanfall (TASK-309.45). Bordern ger båda kanterna rätt på
+                en gång, och hookens `separatorBredd`-avdrag — som fanns men
+                var en no-op mot 0 px padding — får äntligen föremål.
 
-                Och INTE `pb-2` på alla utom den sista heller: den formen hade
-                gett raderna två olika höjder (sista utan ränna), vilket bryter
-                likheten ovan — fyra och fem poster hade fått olika låst höjd.
-                Den enda rännan som blir över, den ovanför FÖRSTA kortet, tas
-                ut av wrapperns `-mt-2`; se `DokumentListRam`. */}
+                OCH ALLA RADER BÄR SIN, även den sista: `last:border-b-0` ser
+                städat ut men ger EN rad låset 116 × 4 = 464 mot de andra
+                radantalens 488. Låset ska vara ett tal oavsett antal bilagor.
+                Priset är den bokförda kanten i `DokumentListRam`: vid maximal
+                rullning ligger sista radens ränna inuti det rullbara
+                innehållet. */}
             {rader.map((r) => (
-              <li key={r.current.id} className="pt-2">
+              <li key={r.current.id} className="border-transparent border-b-8">
                 <BilageRadRow
                   eventId={eventId}
                   rad={r}
@@ -3544,11 +3627,11 @@ function GemensamtLage({
               kanRulla={kanRulla}
               ariaLabel="Delade bilagor"
             >
-              {/* `pt-2` — se eventlägets kommentar på samma rad för varför
-                  rännan bor i `<li>`, inte i ett `gap`, och varför den ligger
-                  ÖVER kortet i stället för att delas i halvor. */}
+              {/* `border-b-8 border-transparent` — se eventlägets kommentar
+                  på samma rad för varför rännan bor i `<li>`, inte i ett
+                  `gap`, och varför den är en BORDER och inte en padding. */}
               {rader.map((r) => (
-                <li key={r.current.id} className="pt-2">
+                <li key={r.current.id} className="border-transparent border-b-8">
                   <GemensamBilageRadRow
                     rad={r}
                     onReplace={onReplace}
