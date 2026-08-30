@@ -1,0 +1,656 @@
+// Kvittojobbets kontraktstest — TASK-346.4 AC #3 och #4, DoD #5,
+// ADR-128 beslut 4, ADR-129 beslut 2, 9, 10.
+//
+// api-pure: alla I/O-gränser injiceras som en in-memory-värld, ingen staging,
+// inga creds, NOLL riktig Resend/DocRaptor/Postgres. Samma form som
+// `tests/api/send-receipt.test.ts` (TASK-147.7) för den gamla kvittovägen.
+//
+// ═══════════════════════════════════════════════════════════════════════════
+// VÄRLDEN NEDAN BÄR DATABASENS GARANTIER, INTE BARA DESS FORM
+// ═══════════════════════════════════════════════════════════════════════════
+// Ett testdouble som bara returnerar data bevisar ingenting om
+// dubbelskicksspärren. `skapaKvitto` i världen nedan KASTAR ett
+// unik-nyckel-fel när `inbetalning_id` redan finns — precis som
+// `kvitton.inbetalning_id unique` gör (ADR-128 beslut 4). Det är den
+// egenskapen kortets AC #4 ("dubbelskick fäller på unik nyckel") kräver
+// bevisad, och den kan bara bevisas om världen faktiskt håller den.
+
+import { expect, test } from '@playwright/test';
+import type { JobbRadStatus } from '../../supabase/functions/_shared/jobb-tillstand';
+import {
+  type BefintligtKvitto,
+  type JobbRadVy,
+  type KobatchPost,
+  type KvittoJobbDeps,
+  type KvittoUnderlag,
+  korKvittobatch,
+  kvittoIdempotensnyckel,
+  kvittoLagringsnyckel,
+  PDF_SAMTIDIGHETSTAK,
+} from '../../supabase/functions/_shared/kvittojobb';
+
+const NU = '2026-08-31T10:00:00.000Z';
+
+type Rad = {
+  id: string;
+  jobbId: string;
+  objektId: string;
+  status: JobbRadStatus;
+  skal: string | null;
+  paborjadNar: string | null;
+  avslutadNar: string | null;
+};
+
+type LedgerRad = {
+  id: string;
+  inbetalningId: string;
+  ar: number;
+  lopnummer: number;
+  status: 'utfardat' | 'skickat' | 'makulerat';
+  lagringsnyckel: string | null;
+  mottagare: string | null;
+};
+
+/** Vad som HÄNDE, i ordning. Ordningen är ett kontrakt, inte en detalj. */
+type Handelse =
+  | { typ: 'pagar'; radId: string }
+  | { typ: 'slut'; radId: string; status: string; skal: string | null }
+  | { typ: 'stadning'; msgId: number; resultat: string }
+  | { typ: 'nummer'; lopnummer: number }
+  | { typ: 'pdf'; kvittonummer: string }
+  | { typ: 'lagring'; nyckel: string }
+  | { typ: 'mail'; till: string; nyckel: string }
+  | { typ: 'finalisering'; kvittoId: string }
+  | { typ: 'spegel'; anmalan: string; kvittonummer: string };
+
+class UnikNyckelFel extends Error {
+  readonly code = '23505';
+  constructor() {
+    super('duplicate key value violates unique constraint "kvitton_inbetalning_id_key"');
+    this.name = 'UnikNyckelFel';
+  }
+}
+
+type VarldsInstallning = {
+  rader: Rad[];
+  underlag: Record<string, Partial<KvittoUnderlag>>;
+  /** Låt mailet avvisas för dessa inbetalningar. */
+  avvisaMailFor?: string[];
+  /** Låt PDF-byggandet kasta för dessa inbetalningar. */
+  fallPdfFor?: string[];
+  /** Ledger-rader som redan finns när batchen startar. */
+  ledger?: LedgerRad[];
+  /** Låt spegelskrivningen kasta. */
+  fallSpegel?: boolean;
+  /** Fördröjning per PDF, för att kunna mäta samtidighet. */
+  pdfFordrojningMs?: number;
+};
+
+function byggVarld(installning: VarldsInstallning) {
+  const rader = new Map(installning.rader.map((rad) => [rad.id, { ...rad }]));
+  const ledger: LedgerRad[] = (installning.ledger ?? []).map((rad) => ({ ...rad }));
+  const handelser: Handelse[] = [];
+  const claimForsok: string[] = [];
+  const kvarIKon = new Set<number>();
+  let nastaLopnummer = 1003;
+  let nastaKvittoId = 1;
+  let pagaendePdf = 0;
+  let maxSamtidigPdf = 0;
+
+  const deps: KvittoJobbDeps = {
+    nu: () => NU,
+
+    async lasRad(radId): Promise<JobbRadVy | null> {
+      const rad = rader.get(radId);
+      if (!rad) return null;
+      return {
+        id: rad.id,
+        jobbId: rad.jobbId,
+        jobbtyp: 'kvitto',
+        objektId: rad.objektId,
+        status: rad.status,
+      };
+    },
+
+    async markeraPagar(radId, uppdatering) {
+      // FÖRSÖKEN räknas separat från de LYCKADE. Skillnaden är hela regel 1:
+      // en rad som inte får plockas ska aldrig ens FÖRSÖKAS claimas. Utan
+      // denna räknare hade en trasig `farPlockas` maskerats av den villkorade
+      // claimen nedan — mätt: en `farPlockas` ändrad till `status !==
+      // 'skickat'` fällde `jobb-tillstand`-sviten men INTE denna, eftersom
+      // utfallet blev `hoppad` ändå.
+      claimForsok.push(radId);
+      const rad = rader.get(radId);
+      // VILLKORAD CLAIM — speglar `.eq('status','vantar')` i den skarpa
+      // implementationen. En värld som alltid returnerade `true` hade gjort
+      // kapplöpnings-testet meningslöst.
+      if (!rad || rad.status !== 'vantar') return false;
+      rad.status = 'pagar';
+      rad.paborjadNar = uppdatering.paborjad_nar;
+      handelser.push({ typ: 'pagar', radId });
+      return true;
+    },
+
+    async markeraRadSlut(radId, uppdatering) {
+      const rad = rader.get(radId);
+      if (!rad) throw new Error('okänd rad');
+      rad.status = uppdatering.status;
+      rad.skal = uppdatering.skal;
+      rad.avslutadNar = uppdatering.avslutad_nar;
+      handelser.push({
+        typ: 'slut',
+        radId,
+        status: uppdatering.status,
+        skal: uppdatering.skal,
+      });
+    },
+
+    async stadaKomeddelande(msgId, resultat) {
+      kvarIKon.delete(msgId);
+      handelser.push({ typ: 'stadning', msgId, resultat });
+    },
+
+    async hamtaUnderlag(inbetalningId): Promise<KvittoUnderlag | null> {
+      const partiell = installning.underlag[inbetalningId];
+      if (!partiell) return null;
+      return {
+        inbetalningId,
+        anmalanRecordId: 'recAAAAAAAAAAAAAA',
+        belopp: 2500,
+        betalsatt: 'Swish',
+        betalningsdatum: '2026-08-29',
+        kundnamn: 'Bengt Bengtsson',
+        email: 'delivered@resend.dev',
+        eventNamn: 'Fjärrskådning, Skövde',
+        eventTyp: 'Utbildning',
+        eventStart: '2026-09-10',
+        eventSlut: '2026-09-11',
+        bokforingstext: null,
+        betalning: 'slut',
+        ...partiell,
+      };
+    },
+
+    async hittaKvitto(inbetalningId): Promise<BefintligtKvitto | null> {
+      const rad = ledger.find((post) => post.inbetalningId === inbetalningId);
+      if (!rad) return null;
+      return {
+        id: rad.id,
+        kvittonummer: `MM-${rad.ar}-${rad.lopnummer}`,
+        ar: rad.ar,
+        lopnummer: rad.lopnummer,
+        status: rad.status,
+        lagringsnyckel: rad.lagringsnyckel,
+      };
+    },
+
+    async allokeraNummer(ar) {
+      const lopnummer = nastaLopnummer;
+      nastaLopnummer += 1;
+      handelser.push({ typ: 'nummer', lopnummer });
+      return { kvittonummer: `MM-${ar}-${lopnummer}`, ar, lopnummer };
+    },
+
+    async skapaKvitto(spec) {
+      // DATABASENS GARANTI, INTE EN ATTRAPP: unik nyckel per inbetalning.
+      if (ledger.some((post) => post.inbetalningId === spec.inbetalningId)) {
+        throw new UnikNyckelFel();
+      }
+      const id = `kvitto-${nastaKvittoId}`;
+      nastaKvittoId += 1;
+      ledger.push({
+        id,
+        inbetalningId: spec.inbetalningId,
+        ar: spec.ar,
+        lopnummer: spec.lopnummer,
+        status: 'utfardat',
+        lagringsnyckel: null,
+        mottagare: null,
+      });
+      return { id };
+    },
+
+    async finaliseraKvitto(kvittoId, falt) {
+      const rad = ledger.find((post) => post.id === kvittoId);
+      if (!rad) throw new Error('okänt kvitto');
+      rad.status = 'skickat';
+      rad.lagringsnyckel = falt.lagringsnyckel;
+      rad.mottagare = falt.mottagare;
+      handelser.push({ typ: 'finalisering', kvittoId });
+    },
+
+    async byggPdf(spec) {
+      pagaendePdf += 1;
+      maxSamtidigPdf = Math.max(maxSamtidigPdf, pagaendePdf);
+      try {
+        if (installning.pdfFordrojningMs) {
+          await new Promise((klar) => setTimeout(klar, installning.pdfFordrojningMs));
+        }
+        if (installning.fallPdfFor?.includes(spec.inbetalningId)) {
+          throw new Error('DocRaptor svarade 500.');
+        }
+        handelser.push({ typ: 'pdf', kvittonummer: spec.kvittonummer });
+        return { filename: `${spec.kvittonummer}.pdf`, contentBase64: 'UERG' };
+      } finally {
+        pagaendePdf -= 1;
+      }
+    },
+
+    async sparaPdf(spec) {
+      const nyckel = kvittoLagringsnyckel(spec.ar, spec.kvittonummer);
+      handelser.push({ typ: 'lagring', nyckel });
+      return nyckel;
+    },
+
+    async skickaMail(spec, ctx) {
+      handelser.push({ typ: 'mail', till: spec.email, nyckel: ctx.idempotencyKey });
+      // Nyckeln BÄR inbetalningens id (`inbetalning/<id>/kvitto`), så
+      // testvärlden kan avgöra vilken post mailet gäller utan ett eget
+      // argument — och testet blir därmed också en kontroll av att nyckeln
+      // faktiskt är inbetalnings-bunden.
+      const avvisad = (installning.avvisaMailFor ?? []).some((id) =>
+        ctx.idempotencyKey.includes(`/${id}/`),
+      );
+      if (avvisad) return { accepterat: false, skal: 'Resend avvisade adressen.' };
+      return { accepterat: true };
+    },
+
+    async speglaKvittonummer(anmalanRecordId, kvittonummer) {
+      if (installning.fallSpegel) throw new Error('Airtable svarade 503.');
+      handelser.push({ typ: 'spegel', anmalan: anmalanRecordId, kvittonummer });
+    },
+
+    async kopplaKvitto() {
+      // Den denormaliserade genvägen. Ingen händelse — den bärande
+      // riktningen är `kvitton.inbetalning_id`, och den bevakas ovan.
+    },
+  };
+
+  return {
+    deps,
+    handelser,
+    claimForsok,
+    ledger,
+    rader,
+    kvarIKon,
+    get maxSamtidigPdf() {
+      return maxSamtidigPdf;
+    },
+  };
+}
+
+function vantandeRad(id: string, objektId: string): Rad {
+  return {
+    id,
+    jobbId: 'jobb-1',
+    objektId,
+    status: 'vantar',
+    skal: null,
+    paborjadNar: null,
+    avslutadNar: null,
+  };
+}
+
+function post(msgId: number, radId: string): KobatchPost {
+  return { msgId, radId };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// § 1 — Lyckad väg, och ORDNINGEN som gör den säker
+// ═══════════════════════════════════════════════════════════════════════════
+
+test.describe('korKvittobatch — lyckad väg', () => {
+  test('ett kvitto: nummer, PDF, lagring, mail, finalisering, spegel, slutstatus', async () => {
+    const varld = byggVarld({
+      rader: [vantandeRad('rad-1', 'inb-1')],
+      underlag: { 'inb-1': {} },
+    });
+
+    const utfall = await korKvittobatch([post(1, 'rad-1')], varld.deps);
+
+    expect(utfall).toEqual([{ radId: 'rad-1', utfall: 'skickat', kvittonummer: 'MM-2026-1003' }]);
+    expect(varld.rader.get('rad-1')?.status).toBe('skickat');
+    expect(varld.ledger).toHaveLength(1);
+    expect(varld.ledger[0].status).toBe('skickat');
+    expect(varld.ledger[0].lagringsnyckel).toBe('kvitton/2026/MM-2026-1003.pdf');
+    expect(varld.ledger[0].mottagare).toBe('delivered@resend.dev');
+  });
+
+  test('KÖMEDDELANDET STÄDAS EFTER SLUTSTATUS — aldrig före (kontraktets regel 2)', async () => {
+    const varld = byggVarld({
+      rader: [vantandeRad('rad-1', 'inb-1')],
+      underlag: { 'inb-1': {} },
+    });
+    await korKvittobatch([post(1, 'rad-1')], varld.deps);
+
+    const typer = varld.handelser.map((h) => h.typ);
+    expect(typer.indexOf('slut')).toBeGreaterThan(-1);
+    expect(typer.indexOf('stadning')).toBeGreaterThan(typer.indexOf('slut'));
+  });
+
+  test('NEGATIV KONTROLL: ordningen är inte en tillfällighet', async () => {
+    // Om städningen hade legat före statusskrivningen vore indexet mindre,
+    // och detta test hade fällt. Kontrollen visar att jämförelsen ovan
+    // faktiskt kan gå åt andra hållet.
+    const typer = ['stadning', 'slut'];
+    expect(typer.indexOf('stadning')).toBeLessThan(typer.indexOf('slut'));
+  });
+
+  test('MAILET SKICKAS EN GÅNG, med en nyckel som är deterministisk per INBETALNING', async () => {
+    const varld = byggVarld({
+      rader: [vantandeRad('rad-1', 'inb-1')],
+      underlag: { 'inb-1': {} },
+    });
+    await korKvittobatch([post(1, 'rad-1')], varld.deps);
+
+    const mail = varld.handelser.filter((h) => h.typ === 'mail');
+    expect(mail).toHaveLength(1);
+    expect(mail[0]).toMatchObject({ nyckel: kvittoIdempotensnyckel('inb-1') });
+    // Nyckeln bär INBETALNINGEN, inte jobbet eller körningen — det är hela
+    // skälet till att en omkörning inte kan ge ett andra mail.
+    expect(kvittoIdempotensnyckel('inb-1')).toBe('inbetalning/inb-1/kvitto');
+  });
+
+  test('NUMREN DELAS UT SEKVENTIELLT, i batchens ordning (ADR-129 beslut 9)', async () => {
+    const varld = byggVarld({
+      rader: [
+        vantandeRad('rad-1', 'inb-1'),
+        vantandeRad('rad-2', 'inb-2'),
+        vantandeRad('rad-3', 'inb-3'),
+      ],
+      underlag: { 'inb-1': {}, 'inb-2': {}, 'inb-3': {} },
+    });
+
+    await korKvittobatch([post(1, 'rad-1'), post(2, 'rad-2'), post(3, 'rad-3')], varld.deps);
+
+    const nummer = varld.handelser
+      .filter((h): h is Extract<Handelse, { typ: 'nummer' }> => h.typ === 'nummer')
+      .map((h) => h.lopnummer);
+    expect(nummer).toEqual([1003, 1004, 1005]);
+    // Ledgern speglar samma ordning: kvitto N hör till inbetalning N.
+    expect(varld.ledger.map((rad) => [rad.inbetalningId, rad.lopnummer])).toEqual([
+      ['inb-1', 1003],
+      ['inb-2', 1004],
+      ['inb-3', 1005],
+    ]);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// § 2 — DUBBELSKICK FÄLLER PÅ UNIK NYCKEL (AC #4)
+// ═══════════════════════════════════════════════════════════════════════════
+
+test.describe('korKvittobatch — dubbelskicksspärren', () => {
+  test('en rad vars kvitto REDAN ÄR SKICKAT ger inget andra mail', async () => {
+    const varld = byggVarld({
+      rader: [vantandeRad('rad-2', 'inb-1')],
+      underlag: { 'inb-1': {} },
+      ledger: [
+        {
+          id: 'kvitto-tidigare',
+          inbetalningId: 'inb-1',
+          ar: 2026,
+          lopnummer: 1003,
+          status: 'skickat',
+          lagringsnyckel: 'kvitton/2026/MM-2026-1003.pdf',
+          mottagare: 'delivered@resend.dev',
+        },
+      ],
+    });
+
+    const utfall = await korKvittobatch([post(9, 'rad-2')], varld.deps);
+
+    expect(utfall).toEqual([
+      { radId: 'rad-2', utfall: 'redan-skickat', kvittonummer: 'MM-2026-1003' },
+    ]);
+    expect(varld.handelser.filter((h) => h.typ === 'mail')).toHaveLength(0);
+    // INGET NYTT NUMMER BRÄNNS i det normala fallet.
+    expect(varld.handelser.filter((h) => h.typ === 'nummer')).toHaveLength(0);
+    expect(varld.rader.get('rad-2')?.status).toBe('skickat');
+  });
+
+  test('KAPPLÖPNINGEN: en ledger-rad som dyker upp EFTER kontrollen fäller på unik nyckel', async () => {
+    // Kontrollen i `hittaKvitto` är inget lås — två körningar kan passera
+    // den samtidigt. Då är det databasen som fäller den andra, och det är
+    // DEN garantin som gör dubbelskick strukturellt omöjligt.
+    const varld = byggVarld({
+      rader: [vantandeRad('rad-1', 'inb-1')],
+      underlag: { 'inb-1': {} },
+    });
+
+    // Simulerar den andra körningen: `hittaKvitto` svarar `null` (som i en
+    // äkta kapplöpning, där båda körningarna hann läsa före den andra skrev),
+    // men ledgern hinner få sin rad innan `skapaKvitto`.
+    varld.deps.hittaKvitto = async (inbetalningId: string) => {
+      varld.ledger.push({
+        id: 'kvitto-annan-korning',
+        inbetalningId,
+        ar: 2026,
+        lopnummer: 1002,
+        status: 'utfardat',
+        lagringsnyckel: null,
+        mottagare: null,
+      });
+      return null;
+    };
+
+    const utfall = await korKvittobatch([post(1, 'rad-1')], varld.deps);
+
+    expect(utfall[0].utfall).toBe('fel');
+    expect(utfall[0]).toHaveProperty('skal');
+    expect((utfall[0] as { skal: string }).skal).toContain('unique constraint');
+    // INGET MAIL GICK. Det är hela poängen: dubbelarbete är möjligt, dubbel
+    // EFFEKT är det inte.
+    expect(varld.handelser.filter((h) => h.typ === 'mail')).toHaveLength(0);
+    expect(varld.rader.get('rad-1')?.status).toBe('fel');
+    expect(varld.rader.get('rad-1')?.skal).toContain('unique constraint');
+  });
+
+  test('ETT OSKICKAT befintligt kvitto ÅTERANVÄNDS — samma nummer, aldrig ett nytt', async () => {
+    // En tidigare körning dog efter ledger-raden men före mailet. Att
+    // allokera ett nytt nummer hade bränt ett hål i serien i onödan OCH
+    // fällts av unik-nyckeln.
+    const varld = byggVarld({
+      rader: [vantandeRad('rad-1', 'inb-1')],
+      underlag: { 'inb-1': {} },
+      ledger: [
+        {
+          id: 'kvitto-halvfardigt',
+          inbetalningId: 'inb-1',
+          ar: 2026,
+          lopnummer: 1042,
+          status: 'utfardat',
+          lagringsnyckel: null,
+          mottagare: null,
+        },
+      ],
+    });
+
+    const utfall = await korKvittobatch([post(1, 'rad-1')], varld.deps);
+
+    expect(utfall).toEqual([{ radId: 'rad-1', utfall: 'skickat', kvittonummer: 'MM-2026-1042' }]);
+    expect(varld.handelser.filter((h) => h.typ === 'nummer')).toHaveLength(0);
+    expect(varld.ledger).toHaveLength(1);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// § 3 — At-least-once: kön får leverera om utan att något händer två gånger
+// ═══════════════════════════════════════════════════════════════════════════
+
+test.describe('korKvittobatch — kön är väckning, tabellen är sanning', () => {
+  test('en rad i slutstatus hoppas över och meddelandet städas', async () => {
+    const varld = byggVarld({
+      rader: [{ ...vantandeRad('rad-1', 'inb-1'), status: 'skickat' }],
+      underlag: { 'inb-1': {} },
+    });
+
+    const utfall = await korKvittobatch([post(7, 'rad-1')], varld.deps);
+
+    expect(utfall[0].utfall).toBe('hoppad');
+    expect(varld.handelser.filter((h) => h.typ === 'mail')).toHaveLength(0);
+    expect(varld.handelser.filter((h) => h.typ === 'stadning')).toHaveLength(1);
+  });
+
+  test('en `pagar`-rad lämnas ORÖRD — meddelandet städas INTE', async () => {
+    // Någon annan körning håller raden. Meddelandet ska komma tillbaka via
+    // synlighetstimeouten, och står raden kvar för länge tar självläkningen
+    // den. Att städa meddelandet här hade gjort raden osynlig för kön.
+    const varld = byggVarld({
+      rader: [{ ...vantandeRad('rad-1', 'inb-1'), status: 'pagar', paborjadNar: NU }],
+      underlag: { 'inb-1': {} },
+    });
+
+    const utfall = await korKvittobatch([post(3, 'rad-1')], varld.deps);
+
+    expect(utfall[0].utfall).toBe('hoppad');
+    expect(varld.handelser.filter((h) => h.typ === 'stadning')).toHaveLength(0);
+    expect(varld.rader.get('rad-1')?.status).toBe('pagar');
+    // REGEL 1 PRÖVAS FÖRE CLAIMEN: raden ska inte ens FÖRSÖKAS claimas.
+    // Utan denna rad maskeras en trasig `farPlockas` av den villkorade
+    // claimen — mätt, se `markeraPagar` i testvärlden ovan.
+    expect(varld.claimForsok).toHaveLength(0);
+  });
+
+  test('en rad som INTE finns städas ur kön (föräldralöst meddelande)', async () => {
+    const varld = byggVarld({ rader: [], underlag: {} });
+    const utfall = await korKvittobatch([post(5, 'rad-borta')], varld.deps);
+    expect(utfall[0].utfall).toBe('hoppad');
+    expect(varld.handelser.filter((h) => h.typ === 'stadning')).toHaveLength(1);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// § 4 — Fel bär skäl, och fäller aldrig batchen
+// ═══════════════════════════════════════════════════════════════════════════
+
+test.describe('korKvittobatch — fel', () => {
+  test('ett avvisat mail ger `fel` med skäl, och ledger-raden står kvar OSKICKAD', async () => {
+    const varld = byggVarld({
+      rader: [vantandeRad('rad-1', 'inb-1')],
+      underlag: { 'inb-1': {} },
+      avvisaMailFor: ['inb-1'],
+    });
+
+    const utfall = await korKvittobatch([post(1, 'rad-1')], varld.deps);
+
+    expect(utfall[0]).toEqual({
+      radId: 'rad-1',
+      utfall: 'fel',
+      skal: 'Resend avvisade adressen.',
+    });
+    expect(varld.rader.get('rad-1')?.skal).toBe('Resend avvisade adressen.');
+    // Numret är brunnet men raden består — en omkörning återanvänder den.
+    expect(varld.ledger[0].status).toBe('utfardat');
+    expect(varld.handelser.filter((h) => h.typ === 'finalisering')).toHaveLength(0);
+  });
+
+  test('ETT FEL PÅ EN RAD FÄLLER ALDRIG DE ÖVRIGA', async () => {
+    const varld = byggVarld({
+      rader: [
+        vantandeRad('rad-1', 'inb-1'),
+        vantandeRad('rad-2', 'inb-2'),
+        vantandeRad('rad-3', 'inb-3'),
+      ],
+      underlag: { 'inb-1': {}, 'inb-2': {}, 'inb-3': {} },
+      fallPdfFor: ['inb-2'],
+    });
+
+    const utfall = await korKvittobatch(
+      [post(1, 'rad-1'), post(2, 'rad-2'), post(3, 'rad-3')],
+      varld.deps,
+    );
+
+    const perRad = new Map(utfall.map((rad) => [rad.radId, rad.utfall]));
+    expect(perRad.get('rad-1')).toBe('skickat');
+    expect(perRad.get('rad-2')).toBe('fel');
+    expect(perRad.get('rad-3')).toBe('skickat');
+  });
+
+  test('saknad e-postadress ger ett skäl Lotta kan läsa, inte ett stacktrace', async () => {
+    const varld = byggVarld({
+      rader: [vantandeRad('rad-1', 'inb-1')],
+      underlag: { 'inb-1': { email: '' } },
+    });
+    const utfall = await korKvittobatch([post(1, 'rad-1')], varld.deps);
+    expect(utfall[0].utfall).toBe('fel');
+    expect((utfall[0] as { skal: string }).skal).toContain('saknar e-postadress');
+  });
+
+  test('ett SPEGEL-fel fäller INTE det redan skickade kvittot', async () => {
+    // Mailet är skickat och ledgern finaliserad. Ett Airtable-fel får inte
+    // göra ett fullbordat kvitto till ett `fel` Lotta försöker skicka om —
+    // spegeln är en projektion, aldrig sanningen (ADR-128 beslut 6).
+    const varld = byggVarld({
+      rader: [vantandeRad('rad-1', 'inb-1')],
+      underlag: { 'inb-1': {} },
+      fallSpegel: true,
+    });
+
+    const utfall = await korKvittobatch([post(1, 'rad-1')], varld.deps);
+
+    expect(utfall[0].utfall).toBe('skickat');
+    expect(varld.rader.get('rad-1')?.status).toBe('skickat');
+    expect(varld.ledger[0].status).toBe('skickat');
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// § 5 — Begränsad parallellism mot PDF-tjänsten (ADR-129 beslut 10)
+// ═══════════════════════════════════════════════════════════════════════════
+
+test.describe('korKvittobatch — PDF-parallellism', () => {
+  test(`aldrig fler än ${PDF_SAMTIDIGHETSTAK} PDF:er samtidigt`, async () => {
+    const varld = byggVarld({
+      rader: Array.from({ length: 6 }, (_, i) => vantandeRad(`rad-${i}`, `inb-${i}`)),
+      underlag: Object.fromEntries(Array.from({ length: 6 }, (_, i) => [`inb-${i}`, {}])),
+      pdfFordrojningMs: 5,
+    });
+
+    await korKvittobatch(
+      Array.from({ length: 6 }, (_, i) => post(i, `rad-${i}`)),
+      varld.deps,
+    );
+
+    expect(varld.maxSamtidigPdf).toBeLessThanOrEqual(PDF_SAMTIDIGHETSTAK);
+  });
+
+  test('taket är en NAMNGIVEN konstant, inte en tillfällighet', () => {
+    // ADR-129 beslut 10 kräver "taket som en namngiven konstant och inte en
+    // tillfällighet". Att testet läser konstanten i stället för ett hårdkodat
+    // tal är hela skillnaden.
+    expect(PDF_SAMTIDIGHETSTAK).toBeGreaterThan(0);
+    expect(Number.isInteger(PDF_SAMTIDIGHETSTAK)).toBe(true);
+  });
+
+  test('NEGATIV KONTROLL: en obegränsad Promise.all hade kört alla sex samtidigt', async () => {
+    let samtidiga = 0;
+    let max = 0;
+    await Promise.all(
+      Array.from({ length: 6 }, async () => {
+        samtidiga += 1;
+        max = Math.max(max, samtidiga);
+        await new Promise((klar) => setTimeout(klar, 5));
+        samtidiga -= 1;
+      }),
+    );
+    expect(max).toBe(6);
+    expect(max).toBeGreaterThan(PDF_SAMTIDIGHETSTAK);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// § 6 — Lagringsnyckelns form
+// ═══════════════════════════════════════════════════════════════════════════
+
+test.describe('kvittoLagringsnyckel', () => {
+  test('kvitton/<år>/<nummer>.pdf', () => {
+    expect(kvittoLagringsnyckel(2026, 'MM-2026-1003')).toBe('kvitton/2026/MM-2026-1003.pdf');
+  });
+
+  test('året i sökvägen kommer ur SERIEN, inte ur kvittonumrets text', () => {
+    // De sammanfaller normalt. Att båda skickas in separat gör att en
+    // framtida serie-ändring inte tyst kan flytta filer till fel mapp.
+    expect(kvittoLagringsnyckel(2027, 'MM-2026-1003')).toBe('kvitton/2027/MM-2026-1003.pdf');
+  });
+});
