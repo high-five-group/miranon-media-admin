@@ -3,12 +3,13 @@ id: TASK-346.2
 title: >-
   Skiva: Basen i staging — numeriska prisfält, Avtalat pris, spegelfält,
   Saknas-formel, allowlist, data-model
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-30 18:45'
-updated_date: '2026-08-30 20:40'
+updated_date: '2026-08-30 21:10'
 labels:
   - ready-for-agent
+  - intentionally-unchecked
 dependencies:
   - TASK-346.1
 parent_task_id: TASK-346
@@ -34,10 +35,10 @@ Modell: Sonnet@xhigh (ADR-089; avvikelse från agent-default bokförd här). Nat
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #4 ADR-128 och ADR-129 är Accepted och landade FÖRE första kodskiva armeras
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 ADR-128 och ADR-129 är Accepted och landade FÖRE första kodskiva armeras
 - [ ] #5 Pengalogikens regler (härledning, sekvens, unik kvittonyckel, matchning, dubbletter, jobbets tillstånd) har var sin negativ kontroll bokförd — testet fäller en trasig implementation
 - [ ] #6 Orkestrerarens egen vandring av Lottas lördag mot staging (fixtur ZZ-GRANSKNING-S113) är bokförd med skärmdumpar i tasks/sessions/bilagor/ före session-paus, och en oberoende granskningsagent har gått samma vandring
 - [ ] #7 Nya ytor ligger bakom miljöflaggan och är avstängda i prod tills Marcus slår på den
@@ -63,3 +64,9 @@ AC 5 OPPET for Marcus (agenten ror aldrig prod, app8uGPrVCVOm6LfD forbjuden). Sk
 
 RUNDA 2 (review-fynd, risk hog, loop exit 20): Saknas (kr)-formeln behandlade explicit 0-pris som okant (Airtables OR()/IF() laser talet 0 som falskt). Fixad med narvaro-test {Falt} & "" != "" (Airtable saknar ISBLANK) i stallet for sanningsvarde. mcp__airtable__update_field kan INTE andra ett formelfalts formula (bara name/description, verifierat empiriskt: en options-payload accepterades av verktyget men ignorerades server-side) och MCP-servern saknar delete_field/delete_table helt (verifierat mot hela verktygslistan) - darfor doptes det GAMLA faltet om till Saknas (kr) [ERSATT 2026-08-30 - 0-pris-bugg] (fldSJCJwXnqwBIX2b, kvarlamnat orort i staging, ofarligt) och ett NYTT falt Saknas (kr) = fldAjVbTtNo1IMkW6 skapades med den korrekta formeln.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad · Landning: PR #2146 (merge f760e81c, 2026-08-30 ~21:15 UTC) · CI grön per jobb via merge-kön · byggd av Sonnet@xhigh (bokförd ADR-089-avvikelse) · Granskningsloop 2 rundor (ADR-105): runda 1 fann 0-pris-buggen i Saknas (kr)-formeln (warning) → fixad med närvaro-test-guard, nytt fält fldAjVbTtNo1IMkW6, fem fall + bråkdelsfall mätta live med negativa kontroller mot gamla fältet; runda 2 verifierade fixen live — inga error/warning · Risknivå hog, armerad under nattmandat B4 (S113, ADR-105 § Updates 2026-08-30) efter orkestrerarens B3-avgörande av kvarvarande info/ask-user (kvarlämnat ERSATT-fält → Marcus morgonpunkt: radera 'Saknas (kr) [ERSATT 2026-08-30 — 0-pris-bugg]' fldSJCJwXnqwBIX2b i staging-UI:t; ingen API-väg finns) · AC #4:s premiss om fritext-källa för ZZ-GRANSKNING-S113 var felställd (båda källorna blanka) — talen satta per AC-kravet, divergens öppet bokförd · OBOCKAT MED AVSIKT: DoD #5–#8 är PRD-nivå-krav (pengalogikens negativa kontroller, slutvandringen, miljöflaggan, AMENDERING-sidofiler) som prövas på kodskivorna och QA-kortet 346.13.
+<!-- SECTION:FINAL_SUMMARY:END -->
