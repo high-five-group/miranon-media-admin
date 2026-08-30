@@ -404,6 +404,18 @@ begin
     v_sekvensnamn, v_golv, v_golv
   );
 
+  -- SEKVENSEN ÄRVER DEFAULT-GRANTARNA — samma mätning som funktions-revoken
+  -- längre ned vilar på: `pg_default_acl` i `public` bär objtyp 'S' med
+  -- {postgres=rwU, anon=rwU, authenticated=rwU, service_role=rwU} satt av
+  -- `supabase_admin` (r = SELECT, w = UPDATE, U = USAGE). En sekvens som
+  -- skapas här får alltså USAGE till anon/authenticated, och USAGE räcker
+  -- för `nextval` — en klient hade kunnat brända kvittonummer förbi
+  -- allokeraren, trots att allokeraren själv är låst.
+  --
+  -- Revoken måste ligga HÄR och inte i migrationens grant-block: sekvenserna
+  -- skapas lazily, ett år i taget, långt efter att migrationen kört.
+  execute format('revoke all on sequence public.%I from anon, authenticated', v_sekvensnamn);
+
   execute format('select nextval(%L)', 'public.' || quote_ident(v_sekvensnamn))
      into v_lopnummer;
 
@@ -488,7 +500,22 @@ grant update (lagringsnyckel, skickad_nar, mottagare, status)
 -- bara kunna LÄSA den för diagnos — aldrig skriva den.
 grant select on public.kvittoserie_golv to service_role;
 
+-- TVÅ REVOKES KRÄVS, INTE EN — mätt, inte antaget (2026-08-30, staging).
+-- `pg_default_acl` i schemat `public` bär, satt av `supabase_admin`:
+--   objtyp 'f' (funktioner): {postgres=X, anon=X, authenticated=X, service_role=X}
+-- `X` är EXECUTE, och det är ett EXPLICIT ROLL-GRANT — inte PUBLIC. En
+-- `revoke ... from public` rör det därför INTE: varje ny funktion i `public`
+-- är anropbar av `anon` och `authenticated` via PostgREST-RPC tills de två
+-- rollerna revokas VID NAMN.
+--
+-- Det är exakt samma tvålagersform som tabellerna ovan redan följer (deras
+-- rad i samma katalog är objtyp 'r' med `arwdDxtm` till samma fyra roller,
+-- vilket är varför `revoke all on ... from anon, authenticated` står där).
+-- Utan raden nedan hade varje inloggad användare kunnat bränna kvittonummer
+-- ur bokföringsserien — allokeringen är server-side, UTESLUTANDE (ADR-109
+-- beslut 4).
 revoke execute on function public.allokera_kvittonummer(integer) from public;
+revoke execute on function public.allokera_kvittonummer(integer) from anon, authenticated;
 grant execute on function public.allokera_kvittonummer(integer) to service_role;
 
 -- ───────────────────────────────────────────────────────────────────────────

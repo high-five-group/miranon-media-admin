@@ -128,7 +128,26 @@ comment on function public.purga_testrader(integer) is
   'scripts/purge-staging-sentinels.mjs med test-admins JWT, samma väg '
   'storage-purgen redan går.';
 
+-- GRANT-FORMEN SKILJER SIG FRÅN DE ÖVRIGA SERVER-SIDE-FUNKTIONERNA, med
+-- avsikt. De sex andra (allokera_kvittonummer, jobb_ko_* och jobb_cron_tick)
+-- revokas från BÅDE `anon` och `authenticated`, eftersom Supabases
+-- default-privileges ger EXECUTE till båda som ett EXPLICIT roll-grant som
+-- `revoke ... from public` inte rör (mätt 2026-08-30: `pg_default_acl`
+-- objtyp 'f' i `public` = {postgres=X, anon=X, authenticated=X,
+-- service_role=X}, satt av `supabase_admin`).
+--
+-- Här revokas ENDAST `anon`. `authenticated` BEHÅLLER sitt EXECUTE, och det
+-- är hela poängen: `scripts/purge-staging-sentinels.mjs` når funktionen med
+-- test-admins JWT, precis som storage-purgen når sin test-EF. Ett
+-- committat test vaktar den riktningen (betalningsdomanen-rls.staging.
+-- test.ts § "purga_testrader ÄR anropbar av authenticated"), så en framtida
+-- revoke här skulle fälla en grind i stället för att gå obemärkt förbi.
+--
+-- Att den ytan är ofarlig vilar INTE på vem som får anropa den, utan på att
+-- mönstret, ålders-golvet och tabellistan är hårdkodade i kroppen — se
+-- filhuvudets § Säkerhetsformen.
 revoke execute on function public.purga_testrader(integer) from public;
+revoke execute on function public.purga_testrader(integer) from anon;
 grant execute on function public.purga_testrader(integer) to authenticated;
 grant execute on function public.purga_testrader(integer) to service_role;
 

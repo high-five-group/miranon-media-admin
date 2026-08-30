@@ -184,8 +184,11 @@ create unique index jobb_rad_oppen_per_objekt_idx
 create or replace function public.satt_uppdaterad_nar()
 returns trigger
 language plpgsql
+set search_path = ''
 as $$
 begin
+  -- `now()` bor i pg_catalog, som alltid är implicit i search_path — kroppen
+  -- behöver därför ingen ytterligare kvalificering trots det tomma sökvägen.
   new.uppdaterad_nar := now();
   return new;
 end;
@@ -194,7 +197,9 @@ $$;
 comment on function public.satt_uppdaterad_nar() is
   'Håller jobb_rad.uppdaterad_nar sann utan att någon skrivväg behöver '
   'minnas den. INTE security definer — den rör bara NEW-raden i den '
-  'anropandes egen transaktion.';
+  'anropandes egen transaktion. Den bär ändå en TOM search_path, därför att '
+  'Supabases linter fäller function_search_path_mutable på varje funktion '
+  'utan, oavsett om den är security definer eller inte.';
 
 create trigger jobb_rad_satt_uppdaterad_nar
   before update on public.jobb_rad
@@ -342,6 +347,30 @@ begin
   -- konsumenten finns. Ett jobb som dog mitt i plockas upp igen; det är
   -- hela svaret på användarberättelse 31 och motsvarigheten till Pretix
   -- läkningssvep (ADR-129 beslut 4).
+  --
+  -- ═══ KONTRAKTET MELLAN KÖN OCH TABELLEN — LÄS DETTA FÖRE TASK-346.4 ═══
+  -- Svepet nedan är korrekt ENDAST om konsumenten håller tre regler. De
+  -- står här, vid koden som förutsätter dem, och inte bara i ADR-129:
+  --
+  --   1. TABELLEN ÄR SANNING, KÖN ÄR VÄCKNING (ADR-129 beslut 1–2). Ett
+  --      kömeddelande bär bara {jobbtyp, radId} och får aldrig tolkas som
+  --      arbetets tillstånd. Konsumenten läser ALLTID raden innan den
+  --      arbetar — en rad som redan är `skickat` ska hoppas över även om
+  --      meddelandet dyker upp igen (kön är at-least-once).
+  --   2. KOMEDDELANDET RADERAS ALDRIG FÖRE RADENS SLUTSTATUS. Ordningen är:
+  --      sätt raden till `skickat`/`fel` (med skäl) och FÖRST DÄREFTER
+  --      `jobb_ko_radera`/`jobb_ko_arkivera`. Raderas meddelandet först och
+  --      konsumenten dör innan raden skrivs, blir raden en `pagar` som
+  --      ingen kö längre kan väcka — och då är svepet nedan det ENDA som
+  --      räddar den. Det är därför svepet finns, inte en bonus.
+  --   3. `pagar` SÄTTS MED `paborjad_nar`, ALLTID. Svepet mäter mot den
+  --      kolumnen; en `pagar`-rad utan tidsstämpel är osynlig för
+  --      självläkningen (och fälls dessutom av check-constrainten
+  --      `jobb_rad_pagar_har_start`).
+  --
+  -- Följden av 1+2 tillsammans: dubbelarbete är möjligt (två körningar av
+  -- samma rad), dubbel EFFEKT är det inte — kvittots unika nyckel per
+  -- inbetalning (ADR-128 beslut 4) fäller den andra insättningen.
   update public.jobb_rad
      set status = 'vantar',
          paborjad_nar = null
@@ -447,14 +476,35 @@ create policy jobb_rad_las_authenticated
 grant select, insert, update, delete on public.jobb to service_role;
 grant select, insert, update, delete on public.jobb_rad to service_role;
 
--- Kö-wrappers och cron-ticket är SERVER-SIDE, uteslutande. Funktioner får
--- EXECUTE till PUBLIC som default i Postgres — utan dessa revokes hade
--- varje inloggad klient kunnat köa jobb och läsa kön via PostgREST-RPC.
+-- Kö-wrappers och cron-ticket är SERVER-SIDE, uteslutande.
+--
+-- TVÅ REVOKES KRÄVS, INTE EN — mätt 2026-08-30 mot staging. Postgres ger
+-- EXECUTE till PUBLIC som default, MEN Supabase lägger dessutom ett
+-- EXPLICIT roll-grant ovanpå: `pg_default_acl` i `public` bär objtyp 'f'
+-- med {postgres=X, anon=X, authenticated=X, service_role=X}, satt av
+-- `supabase_admin`. Ett `revoke ... from public` rör inte det explicita
+-- grantet — rollerna måste revokas VID NAMN.
+--
+-- Utan andra raden i varje par hade varje inloggad klient kunnat köa jobb,
+-- läsa och radera kömeddelanden, och trigga cron-ticket via PostgREST-RPC.
+-- Samma tvålagersform som tabellerna nedan redan följer.
 revoke execute on function public.jobb_ko_skicka(text, uuid) from public;
+revoke execute on function public.jobb_ko_skicka(text, uuid) from anon, authenticated;
 revoke execute on function public.jobb_ko_las(integer, integer) from public;
+revoke execute on function public.jobb_ko_las(integer, integer) from anon, authenticated;
 revoke execute on function public.jobb_ko_radera(bigint) from public;
+revoke execute on function public.jobb_ko_radera(bigint) from anon, authenticated;
 revoke execute on function public.jobb_ko_arkivera(bigint) from public;
+revoke execute on function public.jobb_ko_arkivera(bigint) from anon, authenticated;
 revoke execute on function public.jobb_cron_tick() from public;
+revoke execute on function public.jobb_cron_tick() from anon, authenticated;
+
+-- `satt_uppdaterad_nar()` står MEDVETET utanför listan: dess returtyp är
+-- `trigger`, vilket gör den oanropbar via PostgREST-RPC, och den är inte
+-- `security definer` — den kör med anroparens egna rättigheter inuti den
+-- anropandes transaktion. Den bär ändå `set search_path = ''` (se dess
+-- definition) eftersom Supabases egen linter fäller
+-- `function_search_path_mutable` på varje funktion utan.
 
 grant execute on function public.jobb_ko_skicka(text, uuid) to service_role;
 grant execute on function public.jobb_ko_las(integer, integer) to service_role;

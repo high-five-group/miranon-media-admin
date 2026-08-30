@@ -47,6 +47,7 @@ declare
   v_inbetalning uuid;
   v_inbetalning_b uuid;
   v_jobb uuid;
+  v_msg_id bigint;
 begin
   -- ═══ A. NEGATIV KONTROLL: utan golv allokeras INGET nummer ═══
   -- Fail-closed-egenskapen är hela skyddet mot att en glömd seed ger 1001 i
@@ -249,7 +250,8 @@ begin
   end if;
 
   -- G4: kö-wrappern bygger den LÅSTA meddelandeformen (ADR-129 beslut 1).
-  perform public.jobb_ko_skicka('kvitto', v_inbetalning_b);
+  -- msg_id FÅNGAS här så att steg H kan ta bort exakt DETTA meddelande.
+  select public.jobb_ko_skicka('kvitto', v_inbetalning_b) into v_msg_id;
   if not exists (
     select 1
       from pgmq.read('jobbko', 1, 1) m
@@ -266,7 +268,15 @@ begin
   end if;
 
   -- ═══ H. STÄDNING — inga spår, i FK-säker ordning ═══
-  perform pgmq.purge_queue('jobbko');
+  --
+  -- BARA VÅRT EGET MEDDELANDE. Här stod tidigare `pgmq.purge_queue('jobbko')`,
+  -- som tömmer HELA kön — i staging hade den raderat riktiga, väntande jobb
+  -- som en parallell session köat, och det är precis den klass av
+  -- "städverktyg som städar för mycket" som `.purge-staging-policy.json`s
+  -- länk-guard finns för på Airtable-sidan. `pgmq.delete` fungerar trots att
+  -- G4:s `pgmq.read` gjort meddelandet osynligt: osynligheten är en
+  -- synlighets-timeout (vt), inte ett lås.
+  perform pgmq.delete('jobbko', v_msg_id);
   delete from public.jobb_rad where objekt_id in (v_inbetalning, v_inbetalning_b);
   delete from public.jobb where id = v_jobb;
   update public.inbetalningar set kvitto_id = null
@@ -281,15 +291,56 @@ begin
 end
 $$;
 
--- Slutkontroll: inga spår kvar, och 2026-serien orörd (sekvensen ska INTE
--- finnas — den skapas av det första riktiga kvittot).
-select
-  (select count(*) from public.inbetalningar
-    where ogonblicksbild_namn like 'ZZ-TASK-346.3%') as kvar_inbetalningar,
-  (select count(*) from public.jobb
-    where skapad_av like 'ZZ-TASK-346.3%') as kvar_jobb,
-  (select count(*) from public.kvittoserie_golv where ar = 2999) as kvar_testgolv,
-  (select count(*) from pg_sequences
-    where schemaname = 'public' and sequencename in ('kvittoserie_2026', 'kvittoserie_2999', 'kvittoserie_2100')) as kvar_sekvenser,
-  (select forsta_lopnummer from public.kvittoserie_golv where ar = 2026) as golv_2026,
-  'TASK-346.3 staging-verifiering: ALLA KONTROLLER PASSERADE' as resultat;
+-- ═══ SLUTKONTROLLEN — HÄRLEDD, INTE PÅSTÅDD ═══
+--
+-- Här stod tidigare en literal slutrad ("ALLA KONTROLLER PASSERADE") bredvid
+-- räknarna. Den var sann bara av en indirekt anledning (do-blocket ovan
+-- kastar vid fel, så select:en nås inte då) och sade INGENTING om städningen:
+-- en kvarlämnad testrad eller en oväntad sekvens hade rapporterats som ett
+-- tal i en kolumn, med "PASSERADE" bredvid. Frånvaro presenterad som data —
+-- repots egen återkommande felklass.
+--
+-- Nu FÄLLER städkontrollen. Blocket nedan kastar om något spår kvarstår
+-- eller om 2026-golvet inte är det mätta 1003; först när det passerat
+-- körs slutraden.
+do $$
+declare
+  v_kvar_inbetalningar integer;
+  v_kvar_jobb integer;
+  v_kvar_jobbrader integer;
+  v_kvar_testgolv integer;
+  v_kvar_sekvenser integer;
+  v_golv_2026 integer;
+begin
+  select count(*) into v_kvar_inbetalningar from public.inbetalningar
+   where ogonblicksbild_namn like 'ZZ-TASK-346.3%';
+  select count(*) into v_kvar_jobb from public.jobb
+   where skapad_av like 'ZZ-TASK-346.3%';
+  select count(*) into v_kvar_jobbrader from public.jobb_rad r
+   where exists (select 1 from public.jobb j
+                  where j.id = r.jobb_id and j.skapad_av like 'ZZ-TASK-346.3%');
+  select count(*) into v_kvar_testgolv from public.kvittoserie_golv where ar = 2999;
+  select count(*) into v_kvar_sekvenser from pg_sequences
+   where schemaname = 'public'
+     and sequencename in ('kvittoserie_2026', 'kvittoserie_2999', 'kvittoserie_2100');
+  select forsta_lopnummer into v_golv_2026 from public.kvittoserie_golv where ar = 2026;
+
+  if v_kvar_inbetalningar <> 0 or v_kvar_jobb <> 0 or v_kvar_jobbrader <> 0
+     or v_kvar_testgolv <> 0 or v_kvar_sekvenser <> 0 then
+    raise exception
+      'STADNINGEN OFULLSTANDIG: inbetalningar=%, jobb=%, jobb_rad=%, testgolv=%, sekvenser=% (alla ska vara 0)',
+      v_kvar_inbetalningar, v_kvar_jobb, v_kvar_jobbrader, v_kvar_testgolv, v_kvar_sekvenser;
+  end if;
+
+  -- 2026-serien ska vara ORÖRD: golvet seedat till 1003, och INGEN sekvens
+  -- kvar (den skapas av det första RIKTIGA kvittot, inte av verifieringen).
+  if v_golv_2026 is distinct from 1003 then
+    raise exception
+      'GOLVET FOR 2026 AR % (vantade 1003 — stagings Airtable-ledger bar hogst MM-2026-1002)',
+      v_golv_2026;
+  end if;
+end
+$$;
+
+select 'TASK-346.3 staging-verifiering: ALLA KONTROLLER PASSERADE, inga spar kvar, 2026-serien orord'
+  as resultat;

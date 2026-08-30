@@ -21,12 +21,15 @@
 // `plats-uppslag.test.ts` § NEGATIVKONTROLL: visa att detektorn inte
 // degenererar till "alltid samma svar".
 
+import { readFileSync } from 'node:fs';
 import { expect, test } from '@playwright/test';
 import {
   arTatOchStigande,
   formatKvittonummer,
   harledGolv,
   harledGolvUrLedger,
+  KVITTOSERIE_AR_MAX,
+  KVITTOSERIE_AR_MIN,
   KVITTOSERIE_START,
   tolkaKvittonummer,
 } from '../../supabase/functions/_shared/kvittoserie';
@@ -339,5 +342,126 @@ test.describe('negativ kontroll — mutanter måste fällas', () => {
     expect(() =>
       kravSkiljbar(harledGolv, { namn: 'identitet', muterad: harledGolv }, [null, 1002]),
     ).toThrow();
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// § 5 — DRIFT-VAKTEN: TypeScript-konstanterna mot migrationens SQL
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// Seriens tre tal (start 1001, åren 2026–2999) och dess FORMAT finns på TVÅ
+// ställen: som konstanter här i `_shared/kvittoserie.ts` och som
+// check-constraints plus en genererad kolumn i migration 20260830195728.
+// TypeScript och SQL kan inte dela modul.
+//
+// Går de isär blir felet TYST och skevt: TS accepterar ett år som databasen
+// avvisar (eller tvärtom), och kvittonumret i den genererade kolumnen slutar
+// matcha det numret koden visade för användaren — ett kvitto vars PDF och
+// ledgerrad bär olika nummer. Samma felklass, och samma lösning, som
+// sentinel-mönstrets korsläsning i `scripts/test-purge-staging-sentinels.mjs`
+// och `KASTBARA_POSTER_FIL` i samma fil.
+//
+// Vakten läser migrationen som TEXT. Den bevisar inte att databasen beter sig
+// som texten säger — det gör `scripts/task-346-3-staging-verifiering.sql` mot
+// skarp staging. Den bevisar att de två KÄLLORNA säger samma sak, vilket är
+// exakt vad ingen annan grind kan se.
+
+const MIGRATION_SQL = readFileSync(
+  new URL(
+    '../../supabase/migrations/20260830195728_betalningsdomanen_inbetalningar_kvitton.sql',
+    import.meta.url,
+  ),
+  'utf8',
+);
+
+/** Plockar EN grupp ur migrationen, eller fäller med ett läsbart skäl. */
+function urMigrationen(monster: RegExp, vad: string): RegExpExecArray {
+  const traff = monster.exec(MIGRATION_SQL);
+  if (traff === null) {
+    throw new Error(
+      `drift-vakten hittade inte ${vad} i migration 20260830195728 — ` +
+        `har satsen skrivits om? Uppdatera mönstret ELLER konstanten, aldrig ` +
+        `bara den ena.`,
+    );
+  }
+  return traff;
+}
+
+test.describe('drift-vakt: TS-konstanterna mot migrationens check-constraints', () => {
+  test('kvitton.ar-intervallet matchar KVITTOSERIE_AR_MIN/MAX', () => {
+    const m = urMigrationen(
+      /constraint kvitton_ar_intervall\s+check \(ar between (\d{4}) and (\d{4})\)/,
+      'kvitton_ar_intervall',
+    );
+    expect(Number(m[1]), 'kvitton.ar undre gräns').toBe(KVITTOSERIE_AR_MIN);
+    expect(Number(m[2]), 'kvitton.ar övre gräns').toBe(KVITTOSERIE_AR_MAX);
+  });
+
+  test('kvittoserie_golv.ar-intervallet matchar samma konstanter', () => {
+    const m = urMigrationen(
+      /constraint kvittoserie_golv_ar_intervall\s+check \(ar between (\d{4}) and (\d{4})\)/,
+      'kvittoserie_golv_ar_intervall',
+    );
+    expect(Number(m[1])).toBe(KVITTOSERIE_AR_MIN);
+    expect(Number(m[2])).toBe(KVITTOSERIE_AR_MAX);
+  });
+
+  test('allokerarens egen årskontroll matchar samma konstanter', () => {
+    const m = urMigrationen(
+      /p_ar < (\d{4}) or p_ar > (\d{4})/,
+      'allokera_kvittonummer:s årsintervall',
+    );
+    expect(Number(m[1])).toBe(KVITTOSERIE_AR_MIN);
+    expect(Number(m[2])).toBe(KVITTOSERIE_AR_MAX);
+  });
+
+  test('kvitton.lopnummer-golvet matchar KVITTOSERIE_START', () => {
+    const m = urMigrationen(
+      /constraint kvitton_lopnummer_golv\s+check \(lopnummer >= (\d+)\)/,
+      'kvitton_lopnummer_golv',
+    );
+    expect(Number(m[1])).toBe(KVITTOSERIE_START);
+  });
+
+  test('kvittoserie_golv.forsta_lopnummer-golvet matchar KVITTOSERIE_START', () => {
+    const m = urMigrationen(
+      /constraint kvittoserie_golv_minst_start\s+check \(forsta_lopnummer >= (\d+)\)/,
+      'kvittoserie_golv_minst_start',
+    );
+    expect(Number(m[1])).toBe(KVITTOSERIE_START);
+  });
+
+  test('den GENERERADE kolumnen bygger samma sträng som formatKvittonummer', () => {
+    // Den viktigaste raden i vakten. Databasen bygger kvittonumret själv
+    // (generated always as … stored); koden bygger det i formatKvittonummer.
+    // Skiljer sig prefix eller separator, bär PDF:en ett annat nummer än
+    // ledgerraden — och det upptäcks först av Roger, i bokföringen.
+    const m = urMigrationen(
+      /generated always as \('([^']*)' \|\| ar::text \|\| '([^']*)' \|\| lopnummer::text\) stored/,
+      'kvittonummer-kolumnens generated-uttryck',
+    );
+    const [, prefix, separator] = m;
+
+    for (const [ar, lopnummer] of [
+      [KVITTOSERIE_AR_MIN, KVITTOSERIE_START],
+      [2026, 1003],
+      [2030, 12345],
+      [KVITTOSERIE_AR_MAX, 99999],
+    ] as const) {
+      const sqlBygger = `${prefix}${ar}${separator}${lopnummer}`;
+      expect(
+        formatKvittonummer(ar, lopnummer),
+        `SQL bygger "${sqlBygger}" för (${ar}, ${lopnummer})`,
+      ).toBe(sqlBygger);
+    }
+  });
+
+  test('NEGATIV KONTROLL: vakten fäller när ett mönster inte längre finns', () => {
+    // Utan detta fall vore `urMigrationen` förenlig med att tyst returnera
+    // något för en sats som skrivits om — och då hade vakten varit grön
+    // medan den inte längre läste något alls.
+    expect(() =>
+      urMigrationen(/constraint kvitton_finns_inte\s+check \((\d+)\)/, 'påhittad'),
+    ).toThrow(/drift-vakten hittade inte/);
   });
 });
