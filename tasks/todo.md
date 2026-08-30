@@ -15,8 +15,10 @@
 
 ## Aktuellt fokus
 
-**Session 113 ⏸️ PAUSAD (paus 4, 2026-08-30 ~14:45 UTC, `lifecycle: paused`;
-fem skivor till prod på Marcus mandat — 309.43–47, main `055bc8a7`; nästa resume börjar med kvitto-grillningen) — DOKUMENTYTAN BLEV BILAGOR: KORTFORM, ⋯-MENY, HANDLINGSRAD,
+**Session 113 ▶️ ÅTERUPPTAGEN (resume 4, 2026-08-30 ~15:10 UTC, `lifecycle: active`;
+Marcus: *"Vi måste verkligen fixa detta med kvitton för Lotta"* — appvandring +
+branschresearch spawnade som grillnings-underlag; paus 4 var 2026-08-30 ~14:45 UTC efter
+fem skivor till prod på Marcus mandat — 309.43–47, main `055bc8a7`) — DOKUMENTYTAN BLEV BILAGOR: KORTFORM, ⋯-MENY, HANDLINGSRAD,
 BILAGA-SUBSTANTIVET — LANDAT OCH VERIFIERAT I PROD.** Marcus tre anmärkningar
 före vandringen (T176 · "Event-mallad" · knapparna) → orkestrerarens
 designbedömning mot prod (sex fynd: listan saknade hierarki) → Marcus GO
@@ -30,12 +32,14 @@ verifierad med eget skript + egna ögon** (h1 Bilagor · Skapa bilaga · kort
 med main. Beslut under mandat: kvittots Ladda ner utgår · URL kvar ·
 rullningsskugga · en-radsnamn på mobil. `T176` stängd · `T178` ny (HMR) ·
 `TASK-309.42` Done · 4 lessons-fragment (13 totalt) · ORDLISTA § Bilaga.
-**Numrering:** ADR 128 · kort 346/309.47 · L655 · T179 · 19 fragment ·
-session 113 (disk-verifierat 2026-08-30 ~11:30 UTC). Fyra skivor i prod
+**Numrering:** ADR 128 · kort 346/309.48 · L655 · T179 · **20** fragment (handoffen
+sade 19 — det tjugonde landade i paus-commiten `5998f879` själv) ·
+session 113 (disk-verifierat 2026-08-30 ~15:10 UTC, resume 4). Fyra skivor i prod
 (`01c84076`: 309.43/44/45/46), Marcus: *"nu funkar det perfekt"* efter
-rensad site data. **NÄSTA:** `session-resume` → **kvitto-grillningen** (Marcus startar; underlag
+rensad site data. **NÄSTA:** appvandringens rapport + `docs/research/kvitto-branschpraxis-och-svensk-ratt-2026-08-30.md`
+→ syntes som beslutsunderlag → **kvitto-grillningen** (Marcus startar; underlag
 `docs/research/kvitto-flodet-kartlaggning-2026-08-30.md`: bulk i Åtgärder · numeriskt
-pris i basen · fel mitt i serien) → veto-lista (Marcus: "vi släpper det lite"; +
+pris i basen · fel mitt i serien · ADR-109 beslut (a) "aktiv handling" prövas mot branschpraxis) → veto-lista (Marcus: "vi släpper det lite"; +
 ny version-kontroll vid flik-fokus?) (strängbytena i `93dbf275`, tomytan under
 fyra-korts-låset vid 2–3 bilagor — `min(4, n)` föreslaget, URL-bytet som
 kort) → prod-vandringen (testplanen delvis inaktuell efter formbytet) → domar
