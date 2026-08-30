@@ -126,5 +126,21 @@
       "bucket": "bilagor",
       "pathPrefix": "utkast"
     }
+  ],
+  "postgresTargets": [
+    {
+      "name": "task-346-betalningsdomanen-sentineler",
+      "_TASK-346.3": "Betalningsdomänen och jobbmotorn bor i Supabase Postgres (ADR-128/ADR-129), inte i Airtable — de kan därför varken listas eller raderas av targets-klassen ovan. Städningen går via en security definer-funktion som migration 20260830200100 skapar; skriptet har ingen service_role-nyckel och authenticated har medvetet varken UPDATE eller DELETE på tabellerna. SENTINEL-MÖNSTRET NEDAN ÄR EN SPEGEL av konstanten v_sentinel i den migrationen — de två korsläses av scripts/test-purge-staging-sentinels.mjs vid varje CI-körning, samma lösning som redan vaktar KASTBARA_POSTER_FIL. Går de isär tyst rapporterar purgen noll raderade rader medan raderna ligger kvar, utan att något ser fel ut. (Prosan här undviker medvetet enkelcitat: listparitets-grinden läser VARJE enkelciterad sträng i denna fil som en sentinel-markör som måste namnges i CONTRIBUTING.md, och en citerad fras i en kommentar hade blivit ett falskt positivt.)",
+      "rpc": "purga_testrader",
+      "exactMatchPattern": "^ZZ-TASK-346[.-][0-9A-Za-z._+-]{1,80}$",
+      "sentinelKolumner": {
+        "inbetalningar": "ogonblicksbild_namn",
+        "jobb": "skapad_av"
+      },
+      "arvsvagar": {
+        "kvitton": "inbetalning_id -> inbetalningar (unik)",
+        "jobb_rad": "jobb_id -> jobb (on delete cascade) samt objekt_id -> inbetalningar"
+      }
+    }
   ]
 }

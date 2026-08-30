@@ -1128,6 +1128,151 @@ t('den nya targeten gör INTE någon ANNAN targets mönster bredare', () => {
   );
 });
 
+// ═══════════════════════════════════════════════════════════════════════════
+// [TASK-346.3] postgresTargets — betalningsdomänen och jobbmotorn i Postgres
+// ═══════════════════════════════════════════════════════════════════════════
+
+const PG_TARGET = POLICY_PA_DISK.postgresTargets?.find(
+  (x) => x.name === 'task-346-betalningsdomanen-sentineler',
+);
+
+t('POLICYN PÅ DISK bär postgresTargets för betalningsdomänen', () => {
+  // Samma klass-argument som TASK-87:s target-fråga ovan: en kopia av
+  // targetet i denna fil hade svarat på om MOTORN klassar rätt, aldrig på
+  // om policyn faktiskt BÄR posten. Utan den städas ingenting.
+  assert.ok(PG_TARGET, 'postgresTargets saknar task-346-betalningsdomanen-sentineler');
+  assert.equal(PG_TARGET.rpc, 'purga_testrader');
+  assert.deepEqual(PG_TARGET.sentinelKolumner, {
+    inbetalningar: 'ogonblicksbild_namn',
+    jobb: 'skapad_av',
+  });
+});
+
+/**
+ * DRIFT-VAKTEN, samma form och samma skäl som KASTBARA_POSTER_FIL ovan.
+ * Sentinel-mönstret finns på TVÅ ställen: som konstanten `v_sentinel` i
+ * migration 20260830200100 (den som FAKTISKT raderar) och som
+ * `exactMatchPattern` i policyn (den som beskriver vad som raderas). SQL och
+ * JSON kan inte dela modul.
+ *
+ * Går de isär rapporterar purgen "0 rader raderade" medan raderna ligger kvar
+ * — frånvaro presenterad som data, exakt den felklass som gör ett städverktyg
+ * farligare än inget.
+ */
+t('postgres-sentinelmönstret är IDENTISKT med migrationens v_sentinel', () => {
+  const sql = readFileSync(
+    new URL(
+      '../supabase/migrations/20260830200100_purga_testrader_sentineler.sql',
+      import.meta.url,
+    ),
+    'utf8',
+  );
+  const m = /v_sentinel constant text := '([^']+)'/.exec(sql);
+  assert.ok(m, 'hittade ingen v_sentinel-konstant i migration 20260830200100');
+  assert.equal(
+    m[1],
+    PG_TARGET.exactMatchPattern,
+    'policyns exactMatchPattern och migrationens v_sentinel har DRIFAT ISÄR',
+  );
+});
+
+t('sentinelmönstret matchar de former testerna faktiskt skriver', () => {
+  const re = new RegExp(PG_TARGET.exactMatchPattern);
+  for (const namn of [
+    `ZZ-TASK-346.3-deny-probe-${UUID}`,
+    'ZZ-TASK-346.3-verifiering-A',
+    'ZZ-TASK-346.3-verifiering',
+    `ZZ-TASK-346.4-kvittojobb-${UUID}`,
+    'ZZ-TASK-346-backfill',
+  ]) {
+    assert.equal(re.test(namn), true, `matchade inte: ${namn}`);
+  }
+});
+
+t('sentinelmönstret rör ALDRIG riktiga namn eller andra fixturer', () => {
+  const re = new RegExp(PG_TARGET.exactMatchPattern);
+  for (const namn of [
+    'Anna Andersson',
+    'Cecilia Lund',
+    '', // en tom ögonblicksbild är inte en sentinel
+    'ZZ-GRANSKNING-S113', // granskningsfixturen — CLAUDE.md § seed:review
+    'ZZ-create-event-test',
+    'ZZ-TASK-201.5 Probe', // aktivitetsloggens egen sentinel-familj
+    'ZZ-TASK-3465-hittepa', // saknar avgränsaren efter 346
+    'prefix-ZZ-TASK-346.3-x', // inte ankrat i början
+    'ZZ-TASK-346.3-x suffix', // blanksteg ingår inte i teckenklassen
+    'ZZ-TASK-346', // markören ensam, utan avgränsare och kropp
+    'ZZ-TASK-346.', // avgränsare utan kropp
+  ]) {
+    assert.equal(re.test(namn), false, `matchade felaktigt: "${namn}"`);
+  }
+});
+
+t('validatePolicy: postgresTargets är optionellt (ingen nyckel = OK)', () => {
+  assert.equal(validatePolicy(VALID_POLICY).postgresTargets, undefined);
+});
+
+t('validatePolicy: en giltig postgresTarget passerar', () => {
+  const p = { ...VALID_POLICY, postgresTargets: [PG_TARGET] };
+  assert.equal(validatePolicy(p), p);
+});
+
+t('validatePolicy: tomt postgresTargets fälls (ta bort nyckeln i stället)', () => {
+  assert.throws(
+    () => validatePolicy({ ...VALID_POLICY, postgresTargets: [] }),
+    /postgresTargets är satt men tomt/,
+  );
+});
+
+t('validatePolicy: postgresTarget utan rpc fälls', () => {
+  assert.throws(
+    () =>
+      validatePolicy({
+        ...VALID_POLICY,
+        postgresTargets: [{ name: 'x', exactMatchPattern: '^ZZ-x$' }],
+      }),
+    /saknar obligatoriska fält/,
+  );
+});
+
+t('validatePolicy: postgresTarget utan exactMatchPattern fälls', () => {
+  assert.throws(
+    () =>
+      validatePolicy({ ...VALID_POLICY, postgresTargets: [{ name: 'x', rpc: 'purga_testrader' }] }),
+    /saknar obligatoriska fält/,
+  );
+});
+
+t('validatePolicy: ett rpc-namn som inte är en identifierare fälls', () => {
+  // Namnet går rakt in i en URL-path. Ett värde som "purga; drop table" eller
+  // "../rest/v1/inbetalningar" hör inte hemma där, ens om servern skulle
+  // avvisa det — guarden fäller före anropet.
+  for (const rpc of ['purga testrader', 'purga;drop', '../annat', 'Purga_Testrader', '1purga']) {
+    assert.throws(
+      () =>
+        validatePolicy({
+          ...VALID_POLICY,
+          postgresTargets: [{ name: 'x', rpc, exactMatchPattern: '^ZZ-x$' }],
+        }),
+      /giltig Postgres-identifierare/,
+      `rpc-namnet "${rpc}" borde ha fällts`,
+    );
+  }
+});
+
+t('validatePolicy: ett exactMatchPattern som inte kompilerar fälls', () => {
+  assert.throws(
+    () =>
+      validatePolicy({
+        ...VALID_POLICY,
+        postgresTargets: [
+          { name: 'x', rpc: 'purga_testrader', exactMatchPattern: '^ZZ-[unclosed' },
+        ],
+      }),
+    /ogiltigt exactMatchPattern/,
+  );
+});
+
 process.on('beforeExit', () => {
   if (failed > 0) {
     console.error(`\n${failed} test(er) RÖDA`);

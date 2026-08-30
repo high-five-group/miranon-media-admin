@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-28
+updated: 2026-08-30
 review_by: 2027-02-08
 status: stable
 ---
@@ -72,7 +72,7 @@ kanoniska kommandona separat:
 | `npm run test:visual` | Visuella regressionstester |
 | `npm run vakt:kontrakt` | Kontraktsvakten: fixturvärlden mot skarp staging (nattlig i CI, körbar lokalt med `.env.test` — se § Nattnätet) |
 | `npm run test:preview:staging` | Byggt staging-bygge på preview-porten 4173: bygge → bundelgrind → login/Hem-bevis (TASK-10) |
-| `npm run purge:staging` | Sentinel-purge av staging-basen (setup-purge, ADR-060) — kräver `.env.seed`; `-- --dry-run` för plan utan radering |
+| `npm run purge:staging` | Sentinel-purge av staging-basen (setup-purge, ADR-060) — kräver `.env.seed`; `-- --dry-run` för plan utan radering. Städar TRE klasser: Airtable-sentineler, Storage-objekt under `utkast`, och sedan `TASK-346.3` Postgres-testrader i betalningsdomänen (`ZZ-TASK-346…`, via `purga_testrader`) |
 | `npm run seed:review` | Granskningsfixtur i staging: kommande event + bekräftade/obekräftade anmälningar för design-review — kräver `.env.seed`; `-- --dry-run` för plan utan skrivning |
 | `npm run seed:review:clean` | Raderar granskningsfixturen igen (samma guards, samma `--dry-run`) |
 

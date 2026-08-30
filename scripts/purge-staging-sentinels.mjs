@@ -129,7 +129,14 @@ export function validatePolicy(policy) {
   if (!policy || typeof policy !== 'object') {
     throw new Error('policy: förväntade ett objekt');
   }
-  const { expectedBaseId, forbiddenBaseIds, minAgeMinutes, targets, storageTargets } = policy;
+  const {
+    expectedBaseId,
+    forbiddenBaseIds,
+    minAgeMinutes,
+    targets,
+    storageTargets,
+    postgresTargets,
+  } = policy;
   if (!BASE_ID_PATTERN.test(expectedBaseId ?? '')) {
     throw new Error(`bas-guard: expectedBaseId "${expectedBaseId}" är inte app-formad`);
   }
@@ -164,6 +171,38 @@ export function validatePolicy(policy) {
     for (const st of storageTargets) {
       if (!st.name || !st.bucket || !st.pathPrefix) {
         throw new Error(`policy: storageTarget "${st.name ?? '?'}" saknar obligatoriska fält`);
+      }
+    }
+  }
+  // [TASK-346.3] postgresTargets är OPTIONELLT, samma klass-form som
+  // storageTargets. Den FAKTISKA spärren mot "något annat än en gammal
+  // ZZ-TASK-346-testrad" sitter server-side i migrationens
+  // `public.purga_testrader` (hårdkodat mönster + hårdkodat 10-minutersgolv)
+  // — den är INTE duplicerad hit. Mönstret nedan är en SPEGEL som korsläses
+  // mot migrationen av scripts/test-purge-staging-sentinels.mjs; att det
+  // valideras här är en form-guard, inte ett säkerhetslager.
+  if (postgresTargets !== undefined) {
+    if (!Array.isArray(postgresTargets) || postgresTargets.length === 0) {
+      throw new Error('policy: postgresTargets är satt men tomt — ta bort nyckeln helt i stället');
+    }
+    for (const pt of postgresTargets) {
+      if (!pt.name || !pt.rpc || !pt.exactMatchPattern) {
+        throw new Error(`policy: postgresTarget "${pt.name ?? '?'}" saknar obligatoriska fält`);
+      }
+      if (!/^[a-z_][a-z0-9_]*$/.test(pt.rpc)) {
+        throw new Error(
+          `policy: postgresTarget "${pt.name}" har ett rpc-namn som inte är en giltig ` +
+            `Postgres-identifierare: "${pt.rpc}"`,
+        );
+      }
+      // Ett mönster som inte kompilerar hade gjort korsläsningen mot
+      // migrationen meningslös — den jämför strängar, inte semantik.
+      try {
+        new RegExp(pt.exactMatchPattern);
+      } catch (err) {
+        throw new Error(
+          `policy: postgresTarget "${pt.name}" har ett ogiltigt exactMatchPattern: ${err.message}`,
+        );
       }
     }
   }
@@ -682,6 +721,72 @@ async function purgeStorageTarget(baseUrl, jwt, target, minAgeMinutes, nowMs, dr
 }
 
 // ---------------------------------------------------------------------------
+// [TASK-346.3] Postgres-targets — betalningsdomänen och jobbmotorn
+//
+// Samma tre-lagers-form som storage-purgen ovan (samma fyra TEST_*-secrets,
+// samma test-admin-JWT, samma ApiError-klass), men målet är en RPC i stället
+// för en test-EF: `public.purga_testrader` (migration 20260830200100).
+//
+// VARFÖR EN RPC OCH INTE EN RAK DELETE: skriptet har ingen service_role-nyckel
+// (inte en CI-secret — se supabase/migrations/README.md § RLS-beviset), och
+// `authenticated` har medvetet varken UPDATE eller DELETE på någon av
+// tabellerna. Funktionen är `security definer` med HÅRDKODAT sentinel-mönster,
+// hårdkodat 10-minutersgolv och hårdkodad tabellista — den kan alltså inte
+// fås att röra något annat, oavsett vad denna kodväg skickar.
+//
+// ÅLDERS-GUARDEN skickas som argument men KAN INTE SÄNKAS under funktionens
+// eget golv. Skyddsräcke 2 gäller därmed även här, och det gör det på den
+// säkra sidan av gränsen.
+//
+// DRY RUN: funktionen har medvetet inget dry-run-läge — ett sådant hade
+// krävt en andra kodväg genom samma raderingslogik, alltså exakt den
+// divergens-risk som gör städverktyg farliga. I --dry-run RAPPORTERAS
+// targetet i stället utan att anropas.
+// ---------------------------------------------------------------------------
+
+/** Samma fyra env-variabler som storage-purgen — Postgres-purgen delar inloggning. */
+const POSTGRES_PURGE_ENV_VARS = STORAGE_PURGE_ENV_VARS;
+
+/** Anropar ETT postgres-target via PostgREST-RPC. Kastar ApiError på icke-2xx. */
+async function purgePostgresTarget(baseUrl, anonKey, jwt, target, minAgeMinutes, dryRun) {
+  if (dryRun) {
+    console.log(
+      `▸ ${target.name} (rpc ${target.rpc}): DRY RUN — anropas inte. ` +
+        `Sentinel-mönster: ${target.exactMatchPattern}`,
+    );
+    return;
+  }
+
+  const res = await fetch(`${baseUrl}/rest/v1/rpc/${target.rpc}`, {
+    method: 'POST',
+    headers: {
+      apikey: anonKey,
+      Authorization: `Bearer ${jwt}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ p_min_alder_minuter: minAgeMinutes }),
+  });
+  const body = await res.text();
+
+  if (!res.ok) {
+    throw new ApiError(`${target.rpc} ${res.status}: ${body.slice(0, 300)}`, {
+      status: res.status,
+      body,
+    });
+  }
+
+  const rader = JSON.parse(body);
+  const totalt = rader.reduce((summa, rad) => summa + (rad.raderade ?? 0), 0);
+  console.log(
+    `▸ ${target.name} (rpc ${target.rpc}, ålders-guard: > ${minAgeMinutes} min): ` +
+      `${totalt} rader raderade`,
+  );
+  for (const rad of rader) {
+    if ((rad.raderade ?? 0) > 0) console.log(`   🗑  ${rad.tabell}: ${rad.raderade}`);
+  }
+}
+
+// ---------------------------------------------------------------------------
 // [TASK-309.15] Efter-körning-purgen — manifest-driven, ålders-guard ersatt av
 // ägarskap. Se filhuvudets § TVÅ LÄGEN för hela resonemanget.
 // ---------------------------------------------------------------------------
@@ -945,6 +1050,22 @@ async function main() {
     }
   }
 
+  // Storage- och Postgres-klasserna delar test-admin-inloggning: EN
+  // GoTrue-token per körning, inte en per klass (samma skäl som T24-b:s
+  // "authenticate once in setup, reuse" i tests/api/helpers.ts).
+  let adminJwt = null;
+  const hamtaAdminJwt = async () => {
+    if (adminJwt === null) {
+      adminJwt = await loginTestAdmin(
+        process.env.TEST_SUPABASE_URL,
+        process.env.TEST_SUPABASE_ANON_KEY,
+        process.env.TEST_ADMIN_EMAIL,
+        process.env.TEST_ADMIN_PASSWORD,
+      );
+    }
+    return adminJwt;
+  };
+
   // [TASK-302.3] Storage-targets — se § "Storage-purge" ovan för gaten och
   // varför en saknad TEST_*-env är ett SKIP, inte ett fel.
   if (Array.isArray(policy.storageTargets) && policy.storageTargets.length > 0) {
@@ -958,12 +1079,7 @@ async function main() {
       );
     } else {
       try {
-        const jwt = await loginTestAdmin(
-          process.env.TEST_SUPABASE_URL,
-          process.env.TEST_SUPABASE_ANON_KEY,
-          process.env.TEST_ADMIN_EMAIL,
-          process.env.TEST_ADMIN_PASSWORD,
-        );
+        const jwt = await hamtaAdminJwt();
         for (const target of policy.storageTargets) {
           await purgeStorageTarget(
             process.env.TEST_SUPABASE_URL,
@@ -978,6 +1094,37 @@ async function main() {
         if (!(err instanceof ApiError)) throw err;
         hadApiError = true;
         console.error(`❌ storageTargets: ${err.message}`);
+      }
+    }
+  }
+
+  // [TASK-346.3] Postgres-targets — se § "Postgres-targets" ovan. Samma
+  // env-gate och samma SKIP-semantik som storage-klassen: en saknad
+  // TEST_*-secret är inte ett fel, den är en miljö utan Supabase-credentials.
+  if (Array.isArray(policy.postgresTargets) && policy.postgresTargets.length > 0) {
+    const missingEnv = POSTGRES_PURGE_ENV_VARS.filter((name) => !process.env[name]);
+    if (missingEnv.length > 0) {
+      console.log(
+        `ⓘ  postgresTargets hoppas över — saknar ${missingEnv.join(', ')} i env ` +
+          `(${missingEnv.length}/${POSTGRES_PURGE_ENV_VARS.length}). Lokalt: källa .env.test.`,
+      );
+    } else {
+      try {
+        const jwt = await hamtaAdminJwt();
+        for (const target of policy.postgresTargets) {
+          await purgePostgresTarget(
+            process.env.TEST_SUPABASE_URL,
+            process.env.TEST_SUPABASE_ANON_KEY,
+            jwt,
+            target,
+            minAgeMinutes,
+            dryRun,
+          );
+        }
+      } catch (err) {
+        if (!(err instanceof ApiError)) throw err;
+        hadApiError = true;
+        console.error(`❌ postgresTargets: ${err.message}`);
       }
     }
   }
