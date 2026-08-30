@@ -343,3 +343,22 @@ prod-planens gränser kunde inte mätas av en agent (prod-ref fälls av
 - [`verifiering-kvittoskivning-afk-natt-2026-08-30.md`](../research/verifiering-kvittoskivning-afk-natt-2026-08-30.md)
   § 4 — den adversariella granskningen av ADR-snittet, vars rättelse av
   ordet "undantag" alternativ E följer.
+
+## Updates
+
+### 2026-08-30 — Precisering av beslut 3: läsvägen är authenticated SELECT, inte deny-all (S113 natt, våg 2)
+
+Beslut 3 ovan skrev *"RLS … är aktiv med deny-all för `anon` och
+`authenticated`"*. Den formuleringen var en förskrivningsglidning i
+ADR-texten, inte samsynens innehåll: PRD `TASK-346` § Testbeslut och
+kortet `TASK-346.3` AC #3 (båda Marcus-kvitterade) säger *"autentiserad
+admin läser; skrivning endast via service_role"* — och
+[`ADR-129`](ADR-129-jobbmotorn-ko-cron-och-kick.md) beslut 8 FÖRUTSÄTTER
+läsvägen: Realtime Postgres Changes levererar bara rader prenumeranten
+får `SELECT`:a under RLS, så deny-all hade tyst dödat varje push till
+klienten (användarberättelse 10). Divergensen fångades av
+`TASK-346.3`-byggarens premiss-pass (ADR-086 i funktion) och bokfördes
+öppet i PR `#2147`. Gällande form, som `#2147` bygger: `anon` deny-all ·
+`authenticated` SELECT (admin-appens läsning + Realtime) · all skrivning
+uteslutande via `service_role` (Edge Functions). Beslutstexten ovan rörs
+inte (immutabilitet); denna post är den gällande läsningen.
