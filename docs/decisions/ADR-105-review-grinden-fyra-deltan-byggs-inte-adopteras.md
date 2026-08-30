@@ -91,3 +91,71 @@ ribb-flytt.
 - Falsifieras rundtaket eller D0-undantaget av egen mätdata ändras de
   öppet mot mätningen — startvärdena är beslutets empiriska
   utgångsläge, inte eviga sanningar.
+
+## Updates
+
+### 2026-08-30 — Nattmandat: orkestreraren får armera `hog` när loopen konvergerat, natten 2026-08-30 (Marcus-mandat, EN natt — inte ny norm)
+
+**Beslut 5 ovan står oförändrat som norm.** Denna post bokför ett
+tidsavgränsat avsteg, så att det inte sker tyst. Beslutstexten rörs inte.
+
+**Vad beslut 5 säger.** *"HÖG styr formellt från dag ett: armering väntar
+på Marcus explicita granskning."* Konsekvensen för PRD `TASK-346` (Lottas
+betalningsflöde) mättes i förväg av den adversariella verifieringen
+([`verifiering-kvittoskivning-afk-natt-2026-08-30.md`](../research/verifiering-kvittoskivning-afk-natt-2026-08-30.md)
+§ 2 B4): review-agentens eget kontrakt sätter `hog` på bland annat
+*betalningsflöden* och schemaändringar, och skivorna 346.3, 346.4, 346.8,
+346.9 och 346.10 är per definition båda. Utan mandat hade fyra till fem
+färdiga PR:er stått som drafts på morgonen.
+
+**Marcus mandat, verbatim.** Frågan ställdes som markeringsbar text i
+chatten (S113 Del 11 § Öppet vid landning), och svaret kom ~18:35 UTC
+2026-08-30: *"B4 ja, B3 ja — kör vidare."*
+
+**Mandatets exakta räckvidd** (S113 § NATTENS MANDAT, verbatim):
+*"`hog` får armeras i natt ENDAST när loopen konvergerat (exit 0: alla
+fynd åtgärdade, inget `ask-user`, ingen kvarstående `error`); nivån
+bokförs i Del-texten per PR."*
+
+Fyra villkor måste alltså hålla SAMTIDIGT för att en `hog`-PR ska få
+armeras utan Marcus:
+
+1. `scripts/review-loop-beslut.mjs` returnerar **exit 0** (konvergerad).
+2. Inget `ask-user`-fynd finns kvar — ett sådant eskalerar oavsett runda
+   enligt beslut 5 och `TASK-173.5` AC #3, och mandatet upphäver inte det.
+3. Ingen kvarstående `error`.
+4. Risknivån **bokförs per PR** i sessionens Del-text.
+
+**Vad mandatet INTE upphäver.**
+
+- **Rundtaket (beslut 4).** Exit 20 är fortsatt STOPPA-OCH-FRÅGA. Ett
+  `hog` vid exit 20 armeras aldrig — mandatet gäller uteslutande det
+  konvergerade fallet.
+- **`ask-user` om pengar, prod eller data.** Nattmandatet är uttryckligt:
+  ett sådant fynd ger draft plus en STOPPA-rad i handoffen. Endast ett
+  `ask-user` som rör *smak* avgörs av orkestreraren (B3) och bokförs.
+- **CI-backstoppen (`TASK-173.4`).** Den kräver att ett utlåtande FINNS
+  och är FÄRSKT (`granskadSha` = PR:ens head), aldrig att det bär en viss
+  nivå. Den är oberörd av denna post och fäller i kön precis som förut.
+- **Placeringen (beslut 2).** Granskaren spawnas fortsatt i FÄRSK
+  kontext, av orkestreraren, aldrig av bygg-agenten och aldrig i samma
+  session som byggde.
+- **Instrumenteringen (`TASK-173.6`).** Varje beslut loggas som förut, och
+  en Marcus-fångst på en `hog`-PR som armerades under detta mandat bokförs
+  som grind-miss på vanligt sätt. Mandatet är alltså mätbart i efterhand.
+
+**Prejudikat i båda riktningar, bokförda.** Motsatt utfall: S108 Del 25
+(`#1983`) parkerade en `hog`-PR som draft med skälet *"risk hög per
+prod-EF-klassen … Marcus granskar → armera"*. Samma riktning som denna
+post: S113 Del 2/4 bokförde mandat-beslut på loop-exit 20 under Marcus
+explicita mandat (*"Du har mandat att ta besluten"*), och `#2094` runda 1
+med nivå **hög** avgjordes av orkestreraren. Formen — mandat i klartext,
+avsteg bokfört i ADR:n — är alltså etablerad; det som är nytt här är att
+mandatet skrivs ned som en **tidsavgränsad** post i stället för att bara
+leva i ett sessionsdok.
+
+**Detta är ingen ny norm.** Mandatet gäller natten 2026-08-30 och PRD
+`TASK-346`. Nästa `hog` utanför den natten möter beslut 5 som det står.
+Flytt av ribban är fortsatt ett SEPARAT framtida Marcus-beslut mot
+siffror ur instrumenteringen — aldrig en tyst konsekvens av att ett
+nattmandat en gång getts.

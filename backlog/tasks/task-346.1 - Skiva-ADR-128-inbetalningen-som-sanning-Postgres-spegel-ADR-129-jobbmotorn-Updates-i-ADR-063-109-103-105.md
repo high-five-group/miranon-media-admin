@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-30 18:45'
+updated_date: '2026-08-30 19:31'
 labels:
   - ready-for-agent
 dependencies: []
@@ -23,13 +24,13 @@ Modell: Opus@xhigh (ADR-089; avvikelse från agent-default bokförd här). Nattm
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 ADR-128 skriven per docs/decisions/README.md-formen med ADR-bar-stycke, indexrad, § Relaterat (ADR-057, ADR-110); Status Accepted per Marcus kvittens S113 Del 11
-- [ ] #2 ADR-129 bemöter öppet research-passets B-rekommendation (asynkront-kvittojobb-byggstenar § 7) och river den med skälen ur Del 11; bär konsumentväg utan dashboard-steg, Vault-seed per miljö, auth-form cron→funktion, per_worker-fällan vid lokal test, Realtime-publikationen
-- [ ] #3 Minimaltest i staging utfört och bokfört i ADR-129 § Kontext: pgmq, pg_cron, pg_net aktiverade via SQL, en kö skapad, ett cron-jobb med sekundintervall anropar en befintlig funktion via net.http_post, allt städat efteråt
-- [ ] #4 ADR-109 § Updates: (a) omformad till registrera-först-skicka-sedan med förbockad ruta; beslut 2, 5, 7 rivna öppet; (d) kreditkvitto in i v1; öppna punkten 'belopp Lotta-inmatat' stängd; beslut 1, 3, 4, 6 står
-- [ ] #5 ADR-063 § Updates: öppen rivning av beslut 2/6 för betalningsdomänen (kvittoledgern flyttar ut; basen förblir förstklassig leverabel för anmälan/event/priser och bär spegeln) — inte 'undantag'
-- [ ] #6 ADR-103 § Updates: en prototypvariant byggd skarpt AFK för denna PRD, Marcus-beslut citerat; ADR-105 § Updates: nattmandatet B4 för 2026-08-30, en natt, inte ny norm
-- [ ] #7 npm run check:docs 14 gröna; ORDLISTA oförändrad (posten Inbetalning finns)
+- [x] #1 ADR-128 skriven per docs/decisions/README.md-formen med ADR-bar-stycke, indexrad, § Relaterat (ADR-057, ADR-110); Status Accepted per Marcus kvittens S113 Del 11
+- [x] #2 ADR-129 bemöter öppet research-passets B-rekommendation (asynkront-kvittojobb-byggstenar § 7) och river den med skälen ur Del 11; bär konsumentväg utan dashboard-steg, Vault-seed per miljö, auth-form cron→funktion, per_worker-fällan vid lokal test, Realtime-publikationen
+- [x] #3 Minimaltest i staging utfört och bokfört i ADR-129 § Kontext: pgmq, pg_cron, pg_net aktiverade via SQL, en kö skapad, ett cron-jobb med sekundintervall anropar en befintlig funktion via net.http_post, allt städat efteråt
+- [x] #4 ADR-109 § Updates: (a) omformad till registrera-först-skicka-sedan med förbockad ruta; beslut 2, 5, 7 rivna öppet; (d) kreditkvitto in i v1; öppna punkten 'belopp Lotta-inmatat' stängd; beslut 1, 3, 4, 6 står
+- [x] #5 ADR-063 § Updates: öppen rivning av beslut 2/6 för betalningsdomänen (kvittoledgern flyttar ut; basen förblir förstklassig leverabel för anmälan/event/priser och bär spegeln) — inte 'undantag'
+- [x] #6 ADR-103 § Updates: en prototypvariant byggd skarpt AFK för denna PRD, Marcus-beslut citerat; ADR-105 § Updates: nattmandatet B4 för 2026-08-30, en natt, inte ny norm
+- [x] #7 npm run check:docs 14 gröna; ORDLISTA oförändrad (posten Inbetalning finns)
 <!-- AC:END -->
 
 ## Definition of Done

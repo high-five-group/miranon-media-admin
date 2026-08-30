@@ -135,3 +135,59 @@ havererade genom apparaten (150 min/skiva, 500–620k tokens).
   `ADR-044` (Storybook-avvisandet med ompröv-trigger).
 - `tasks/sessions/archive/2026-08/2026-08-02-session-93.md` Del 12 (grillnings-trail med
   samtliga sex kvittenser).
+
+## Updates
+
+### 2026-08-30 — B5-avsteg för PRD `TASK-346`: EN variant byggs skarp AFK, Marcus justerar på morgonen (Marcus-mandat, denna PRD)
+
+**B5 ovan står oförändrat som norm.** Denna post bokför ett namngivet
+avsteg för EN arbetsenhet — PRD `TASK-346` (Lottas betalningsflöde) — så
+att det inte sker tyst. Beslutstexten i § Beslut rörs inte
+(immutabilitet).
+
+**Vad B5 säger, och vad som avviker.** B5 lägger *divergens + konvergens*
+(formen itereras mot Marcus öga) i HITL: Marcus plus Code direkt mot
+dev-servern, ingen skiva, ingen agent-spawn per våg. För `TASK-346` byggs
+formen i stället **direkt som EN skarp variant av agenter, AFK**, och
+Marcus möter den färdig på morgonen.
+
+**Marcus beslut, verbatim.** Frågan ställdes som en av två mandatfrågor i
+klartext i chatten (S113 Del 11 § Öppet vid landning, den adversariella
+verifieringens blockerare B3), och svaret kom ~18:35 UTC 2026-08-30:
+*"B4 ja, B3 ja — kör vidare."* Under grillningen hade Marcus redan
+formulerat formen själv: *"vi kan bygga 'variant D' direkt"* (Del 11
+beslut 13), och om morgonen: *"jag kommer se hur det ser ut i appen och
+be dig justera"*.
+
+**Varför avsteget är hanterbart just här — och varför det inte är
+gratis.** Skälet är inte att formen blivit mindre viktig, utan att
+underlaget denna gång redan bär den: tretton grillade och kvitterade
+beslut beskriver ytorna i detalj (inkorgens gruppering, formulärets
+fältordning, belopps-knapparnas härledning, Hem-kortets tre tal), så
+divergensfasens fråga — *vilken form?* — är i praktiken besvarad före
+bygget. Vad som INTE är besvarat är hur formen känns i handen, och det är
+precis det Marcus gör på morgonen. Avsteget flyttar alltså
+konvergensfasen i tid; det avskaffar den inte.
+
+**Villkoren som håller avsteget ärligt (nattmandatet, S113 § NATTENS
+MANDAT):**
+
+- **EN variant, inte tre halvfärdiga.** Divergensens tre-varianters-form
+  används inte — det vore att ta kostnaden utan att ha Marcus öga att
+  välja med.
+- **De facit-stämplade ytorna skyddas av sidofiler, inte av tystnad.**
+  Hem, Åtgärds-sidan och persondetalj bär `ariaSnapshot`-lås
+  (`ADR-102` § Updates 2026-08-22, `scripts/check-facit.sh` invariant
+  (d)). Varje rörd stämplad yta får en `AMENDERING-…`-sidofil med klassen
+  *ny form, förhandsmandat S113 Del 11*.
+- **Inga stämplar sätts av agenter.** `godkand`-fältet är fortsatt Marcus
+  kanal (`ADR-104`), och `deny-facit-godkand-skrivning.sh` fäller
+  försöket. Sidofilen håller grinden grön; den godkänner ingenting.
+- **Marcus justerar, och stämplarna uppdateras av honom** vid
+  morgongranskningen. Promoveringsordningen i B2 steg 2–4 (granska →
+  godkänn → riv flaggan) körs alltså i sin vanliga ordning; det är bara
+  steg 1 som gjorts av agenter i stället för i sittande läge.
+
+**Detta är ingen ny norm.** Avsteget gäller `TASK-346` och den natt det
+byggdes (2026-08-30). Nästa arbetsenhet börjar på B5 som den står, om
+inte Marcus säger annat i klartext för just den.
