@@ -2636,45 +2636,58 @@ const GRUPPKORT_KLASS =
  * DÄMPAS inte, den får en svag skugga bakom sig — samma avläsning som
  * Material 3:s scroll-edge och Lea Verous klassiska "scrolling shadows".
  *
- * SKUGGAN LIGGER PÅ WRAPPERN, ALDRIG PÅ `<ul>`. Höjdlåset mäter `<ul>`:ets
- * bounding box och dess `border-*`-bredder (`useLastaListhojd` § kantjustering)
- * — ett element INUTI `<ul>` hade blivit ett femte "barn" som `mat()` räknar
- * som en rad, och en padding/margin hade förskjutit spannet. En absolut
- * positionerad syskon-`<span>` i en `relative` wrapper rör ingendera.
+ * ═══ [TASK-309.47] SKUGGAN BOR INUTI `<ul>`, SOM `::after` ═══
  *
- * [TASK-309.45, 2026-08-30] DEN SLUTAR VID `bottom-0` — OCH DET ÄR SAMMA
- * REGEL SOM FÖRUT, INTE EN NY. Kravet har alltid varit "skuggan slutar vid
- * FJÄRDE KORTETS underkant". Här stod `bottom-1` med motiveringen att
- * `<ul>`:ets underkant låg 4 px under kortets (radens `py-1` lade en halv
- * ränna nedanför sista kortet), så skuggan lyftes 4 px för att träffa
- * kortkanten.
+ * Marcus skärmavbild 2026-08-30 15:50: *"rundningen på skuggningen i högre
+ * nedre hörn täcker inte helt nästa kort när det scrollas fram."*
  *
- * Rännan ligger sedan TASK-309.46 som en transparent `border-bottom` på
- * raden, och hooken drar bort den FJÄRDE radens ur låset — så `<ul>`:ets
- * underkant ÄR fjärde kortets underkant. Kompensationen har därmed inget
- * kvar att kompensera för, och `bottom-0` uttrycker samma krav utan en
- * offset som måste hållas i synk med radens ränna. (Mellansteget 309.45 nådde
- * samma underkant med `pt-2` + `-mt-2`; det som ändrades i 309.46 var
- * `<ul>`:ets ÖVERkant, se wrapper-kommentaren.)
+ * ORSAKEN VAR TVÅ KURVOR MED OLIKA CENTRUM. Skuggan var ett SYSKON till
+ * `<ul>` — en absolut `<span>` i wrappern med `left-0`, ett `right` satt till
+ * den mätta rännbredden (11 px) och `rounded-b-2xl`. Dess hörnkurva satt
+ * därmed vid KORTKANTEN (x 888) medan `<ul>`:ets egen klippkurva
+ * (`rounded-2xl`) satt vid ul-kanten (x 899). I glappet mellan de två
+ * kurvorna lyste nästa korts rundade övre högra hörn igenom OSKUGGAT — en vit
+ * kil under skuggans hörn, synlig så fort ett kort sköt upp underifrån.
+ * Reproducerat i ×3 vid `scrollTop` 12 och 24.
  *
- * VARFÖR DET SPELADE ROLL, mätt: mitt i en rullning klipptes korten av
- * `<ul>`:ets kant 4 px UNDER skuggans rundade underkant, så en vit remsa av
- * det klippta kortet syntes under skuggans hörn. Marcus 5173-granskning:
- * *"skuggan längst ner ser konstig ut när man scrollar."* Nu sammanfaller
- * skuggans, klippningens och kortets underkanter — i vila OCH i rullning.
+ * TVÅ KURVOR KAN INTE HÅLLAS I SYNK GENOM ATT JUSTERA DEN ENA. Så länge
+ * skuggan ligger UTANFÖR rullboxen måste dess rundning gissa sig till
+ * boxens, och varje ändring av rännan eller radien öppnar glappet igen. Som
+ * `::after` INUTI `<ul>` finns bara EN kurva: `<ul>`:ets `overflow` klipper
+ * pseudo-elementet med exakt samma `rounded-2xl` som klipper korten. Skuggan
+ * behöver därför ingen egen rundning alls, och `rounded-b-2xl` är riven.
  *
- * [2026-08-30] SAMMA REGEL PÅ DEN LODRÄTA AXELN: den slutar också vid
- * kortets HÖGERKANT, inte vid wrapperns. Marcus, om skuggan under den
- * reserverade rullningsrännan: *"För sitter den 'inuti' listytan så blir
- * det fult med 'fadningen' eller 'skuggningen' vi har längst ner.
- * Skuggningen ska ju bara synas på vita kortet."* Wrappern är lika bred
- * som `<ul>` INKLUSIVE rännan, så `inset-x-0` lade skrimmet tvärs över
- * rännan och ut på behållarens grå yta (mätt 2026-08-30: spannet gick
- * 381–899 medan korten slutade vid 888). Formen är därför `left-0` plus
- * ett `right` satt till den MÄTTA rännbredden — se `rannbredd` i
- * komponentkroppen för varför talet mäts och aldrig hårdkodas, och varför
- * 0 är ett giltigt utfall. `rounded-b-2xl` följer därmed kortets egen
- * kant exakt i stället för att kröka sig 11 px utanför den.
+ * BREDDEN BLIR STRUKTURELL I STÄLLET FÖR MÄTT. Ett pseudo-element i ett
+ * block-flöde får CONTENT-boxens bredd, och rullningsrännan ligger per
+ * definition utanför den. Mätt: `getComputedStyle(ul, '::after').width` =
+ * 507 = `ul.clientWidth` = kortbredden. `rannbredd`-state och dess
+ * `useLayoutEffect` är därmed RIVNA — inte för att mätningen var fel, utan
+ * för att frågan den svarade på inte längre ställs. Marcus krav står kvar
+ * oförändrat: *"Skuggningen ska ju bara synas på vita kortet."*
+ *
+ * FORMEN: `content-['']` + `block` + `h-6` + `-mt-6` + `sticky bottom-0`.
+ * Den negativa marginalen neutraliserar höjden, så pseudo-elementet lägger
+ * NOLL till innehållet — höjdlåset och `scrollHeight` är opåverkade.
+ * `sticky bottom-0` klistrar det vid scrollportens underkant i stället för
+ * vid innehållets, vilket är vad som gör att det följer med under rullning.
+ *
+ * ═══ HÖJDLÅSETS SKÄL ÄR UPPFYLLT, INTE ÖVERGIVET ═══
+ *
+ * Här stod *"SKUGGAN LIGGER PÅ WRAPPERN, ALDRIG PÅ `<ul>`"* med motiveringen
+ * att ett element INUTI `<ul>` hade blivit ett femte "barn" som `mat()`
+ * räknar som en rad. Skälet är RIKTIGT och gäller fortfarande — men det
+ * gäller ELEMENT. `mat()` läser `ul.children`, en `HTMLCollection` av
+ * element, och ett pseudo-element finns inte i DOM-trädet. Regeln är alltså
+ * uppfylld på ett annat sätt, inte upphävd: skriv aldrig in ett riktigt
+ * `<span>` här igen. Bevisat, inte antaget: hookens kod är byte-identisk med
+ * `origin/main` och låset mäter 488 med `::after` på plats, i alla radantal.
+ *
+ * [TASK-309.45/46, historik] Skuggan har suttit på `bottom-1` (när `<ul>`:ets
+ * underkant låg 4 px under fjärde kortets, radens `py-1`) och sedan
+ * `bottom-0` (när rännan flyttat helt över kortet). Båda offseterna fanns för
+ * att träffa en kant skuggan låg UTANFÖR. Med `sticky bottom-0` inuti boxen
+ * ÄR skuggans underkant scrollportens, definitionsmässigt — det finns ingen
+ * offset kvar att hålla i synk.
  *
  * DEN FÖRSVINNER VID BOTTEN. En skugga som ligger kvar när man rullat hela
  * vägen ner ljuger — den säger "mer finns" om ett tomt slut. `onScroll`
@@ -2702,41 +2715,6 @@ function DokumentListRam({
   children: React.ReactNode;
 }) {
   const [vidBotten, setVidBotten] = useState(false);
-  // RÄNNBREDDEN ÄR MÄTT, ALDRIG HÅRDKODAD — se docblockets skugg-stycke.
-  // `offsetWidth - clientWidth` är rännan PLUS eventuella lodräta kanter;
-  // `<ul>` bär ingen kant sedan T176 rev `border` (verifierat med
-  // `getComputedStyle` vid mätningen 2026-08-30: `borderLeftWidth` och
-  // `borderRightWidth` båda `0px`), så differensen ÄR rännan. Får `<ul>`
-  // en kant igen måste de två bredderna dras bort här — annars kryper
-  // skuggan inåt med kantens bredd.
-  //
-  // NOLL ÄR ETT GILTIGT SVAR, inte ett mätfel: Firefox, macOS
-  // overlay-scrollbars och riktiga mobiler reserverar ingen ränna alls
-  // (CSS Overflow Module Level 3 — `scrollbar-gutter` reserverar bara för
-  // KLASSISKA scrollbars). Då blir `right: 0` och skuggan spänner full
-  // bredd, exakt som före denna ändring.
-  const [rannbredd, setRannbredd] = useState(0);
-  useLayoutEffect(() => {
-    // Läses aldrig — `kanRulla` och `matadHojd` står i beroendelistan
-    // uteslutande för att TVINGA en ommätning när listans rullningsläge
-    // kan ha ändrats: `kanRulla` flippar `overflow-y` mellan `auto` och
-    // `hidden`, och `matadHojd` är höjdlåsets mätning (som är det som
-    // avgör om innehållet överhuvudtaget svämmar över). `void` gör
-    // referensen explicit i stället för att bara stå i listan — annars
-    // flaggar biomes `useExhaustiveDependencies` dem som ONÖDIGA
-    // beroenden (mätt: "This hook specifies more dependencies than
-    // necessary"). Samma mönster, och samma skäl, som
-    // `useLastaListhojd`s `ommatningsSignal`.
-    void kanRulla;
-    void matadHojd;
-    const ul = listRef.current;
-    if (!ul) return;
-    // Rännans BREDD är en plattformskonstant — den ändras inte mellan
-    // renderingar, bara mellan webbläsare. Ommätningen ovan är alltså ett
-    // skyddsnät mot att antagandet "stable reserverar i BÅDA lägena"
-    // någon gång slutar hålla, inte en förväntad växling.
-    setRannbredd(ul.offsetWidth - ul.clientWidth);
-  }, [kanRulla, matadHojd, listRef]);
   return (
     // ═══ RÄNNAN ÄR EN TRANSPARENT `border-bottom` PÅ RADEN ═══
     // [TASK-309.46, Marcus prod-titt 2026-08-30]
@@ -2831,27 +2809,31 @@ function DokumentListRam({
         // [T176] INGEN egen yta kvar: `bg-surface`, `rounded-xl`, `px-3`,
         // `border` och `divide-y` är rivna. Korten ÄR ytorna; `<ul>` är den
         // genomskinliga rullningsboxen omkring dem.
-        className={`scrollbar-inline focus-ring-inset rounded-2xl ${kanRulla ? 'overflow-y-auto' : 'overflow-y-hidden'}`}
+        // ═══ [TASK-309.47] SKUGGAN ÄR `::after` INUTI `<ul>` ═══
+        //
+        // `data-vid-botten` bär den enda dynamiska biten: när man rullat hela
+        // vägen ner släcks skuggan (`data-[vid-botten]:after:hidden`). Attributet
+        // finns bara när det är sant — `undefined` renderar inget attribut alls,
+        // vilket är vad Tailwinds närvaro-selektor `[data-vid-botten]` läser.
+        //
+        // `after:-mt-6` neutraliserar `after:h-6`: pseudo-elementet lägger noll
+        // till innehållets höjd och kan därför inte röra höjdlåset eller
+        // `scrollHeight`. `after:sticky after:bottom-0` klistrar det vid
+        // scrollportens underkant i stället för vid innehållets.
+        //
+        // `after:content-['']` ÄR REDUNDANT — och står kvar med avsikt. MÄTT i
+        // en probe: Tailwind v4:s `after:`-variant injicerar själv
+        // `content: var(--tw-content)` med `""` som default, så ett element med
+        // bara `after:block` rapporterar redan `content: '""'`. Klassen skrivs
+        // ändå ut därför att `content` är det som avgör om pseudo-elementet
+        // EXISTERAR, och en läsare ska inte behöva känna till variantens
+        // implicita beteende för att se att skuggan renderas. Riv den inte som
+        // "död kod": den kostar noll och bär betydelsen.
+        data-vid-botten={vidBotten ? '' : undefined}
+        className={`scrollbar-inline focus-ring-inset rounded-2xl ${kanRulla ? 'overflow-y-auto' : 'overflow-y-hidden'} ${kanRulla ? "after:pointer-events-none after:sticky after:bottom-0 after:-mt-6 after:block after:h-6 after:bg-linear-to-t after:from-(--mm-state-hover) after:to-transparent after:content-[''] data-[vid-botten]:after:hidden contrast-more:after:h-1 contrast-more:after:bg-border-strong contrast-more:after:bg-none" : ''}`}
       >
         {children}
       </ul>
-      {kanRulla && !vidBotten && (
-        <span
-          aria-hidden="true"
-          data-testid="lista-uttoning"
-          // `bottom-0` — `<ul>`:ets underkant ÄR fjärde kortets underkant
-          // sedan rännan flyttade helt över kortet (TASK-309.45, se
-          // wrapper-kommentaren ovan). Här stod `bottom-1` när de två
-          // skiljde sig 4 px; offseten har inget kvar att kompensera för.
-          //
-          // `left-0` + `right: rannbredd` — INTE `inset-x-0`: samma regel på
-          // den lodräta axeln. Marcus: *"Skuggningen ska ju bara synas på
-          // vita kortet."* Talet är MÄTT (se `rannbredd` ovan), aldrig
-          // hårdkodat, och 0 är ett giltigt utfall.
-          className="pointer-events-none absolute bottom-0 left-0 h-6 rounded-b-2xl bg-linear-to-t from-(--mm-state-hover) to-transparent contrast-more:h-1 contrast-more:rounded-none contrast-more:bg-border-strong contrast-more:bg-none"
-          style={{ right: rannbredd }}
-        />
-      )}
     </div>
   );
 }
