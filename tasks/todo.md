@@ -15,8 +15,8 @@
 
 ## Aktuellt fokus
 
-**Session 113 ▶️ AKTIV (resume 3, 2026-08-30; Del 9 landad ~10:00 UTC:
-tre skivor till prod på Marcus mandat — 309.43/44/45, PR #2128/#2130/#2131 → `fe3b2b9f`) — DOKUMENTYTAN BLEV BILAGOR: KORTFORM, ⋯-MENY, HANDLINGSRAD,
+**Session 113 ⏸️ PAUSAD (paus 4, 2026-08-30 ~14:45 UTC, `lifecycle: paused`;
+fem skivor till prod på Marcus mandat — 309.43–47, main `055bc8a7`; nästa resume börjar med kvitto-grillningen) — DOKUMENTYTAN BLEV BILAGOR: KORTFORM, ⋯-MENY, HANDLINGSRAD,
 BILAGA-SUBSTANTIVET — LANDAT OCH VERIFIERAT I PROD.** Marcus tre anmärkningar
 före vandringen (T176 · "Event-mallad" · knapparna) → orkestrerarens
 designbedömning mot prod (sex fynd: listan saknade hierarki) → Marcus GO
@@ -33,14 +33,16 @@ rullningsskugga · en-radsnamn på mobil. `T176` stängd · `T178` ny (HMR) ·
 **Numrering:** ADR 128 · kort 346/309.47 · L655 · T179 · 19 fragment ·
 session 113 (disk-verifierat 2026-08-30 ~11:30 UTC). Fyra skivor i prod
 (`01c84076`: 309.43/44/45/46), Marcus: *"nu funkar det perfekt"* efter
-rensad site data. **NÄSTA:** Marcus tittar på scrollbar-starten (⌘⇧R först) → veto-lista
-(+ uppdateringsvägens osynlighet för Lotta) (strängbytena i `93dbf275`, tomytan under
+rensad site data. **NÄSTA:** `session-resume` → **kvitto-grillningen** (Marcus startar; underlag
+`docs/research/kvitto-flodet-kartlaggning-2026-08-30.md`: bulk i Åtgärder · numeriskt
+pris i basen · fel mitt i serien) → veto-lista (Marcus: "vi släpper det lite"; +
+ny version-kontroll vid flik-fokus?) (strängbytena i `93dbf275`, tomytan under
 fyra-korts-låset vid 2–3 bilagor — `min(4, n)` föreslaget, URL-bytet som
 kort) → prod-vandringen (testplanen delvis inaktuell efter formbytet) → domar
 `340.5`/`340.4` → skörd (17 fragment) → arbetsforms-grillningen (Del 9 §
 Tidsfrågan) → `session-end` (114). Arbetssätts-frågan (45 %
 bokförings-PR:er, 38 % eskaleringar) är en grillnings-kandidat, Marcus start.
-HANDOFF (historik): sessionsdok S113 § Paushistorik (paus 3). Full narrativ: Del 1–8.
+HANDOFF: sessionsdok S113 § PAUSLÄGE (paus 4). Full narrativ: Del 1–9 (+ tillägg).
 
 **Session 112 ⏸️ PAUSAD (paus 3, 2026-08-28 ~16:30, `lifecycle: paused`; resume 2 körd AFK på
 fullt mandat — "du bestämmer") — AFK-VÅG 5 LANDAD: FLASKHALSEN BRUTEN, REVIEW-GRINDEN MEKANISK,
