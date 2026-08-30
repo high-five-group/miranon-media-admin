@@ -15,8 +15,8 @@
 
 ## Aktuellt fokus
 
-**Session 113 ⏸️ PAUSAD (paus 3, 2026-08-30 ~22:35 UTC, `lifecycle: paused`;
-AFK-landning efter prod-promoveringen, väntar Marcus blick på prod) — DOKUMENTYTAN BLEV BILAGOR: KORTFORM, ⋯-MENY, HANDLINGSRAD,
+**Session 113 ▶️ ÅTERUPPTAGEN (resume 3, 2026-08-30 ~06:30 UTC, `lifecycle: active`;
+Marcus tittade på prod och gav tre direktiv på bilagekorten + två designfrågor) — DOKUMENTYTAN BLEV BILAGOR: KORTFORM, ⋯-MENY, HANDLINGSRAD,
 BILAGA-SUBSTANTIVET — LANDAT OCH VERIFIERAT I PROD.** Marcus tre anmärkningar
 före vandringen (T176 · "Event-mallad" · knapparna) → orkestrerarens
 designbedömning mot prod (sex fynd: listan saknade hierarki) → Marcus GO
@@ -30,13 +30,17 @@ verifierad med eget skript + egna ögon** (h1 Bilagor · Skapa bilaga · kort
 med main. Beslut under mandat: kvittots Ladda ner utgår · URL kvar ·
 rullningsskugga · en-radsnamn på mobil. `T176` stängd · `T178` ny (HMR) ·
 `TASK-309.42` Done · 4 lessons-fragment (13 totalt) · ORDLISTA § Bilaga.
-**Numrering:** ADR 128 · kort 346/309.43 · L655 · T179 · 13 fragment ·
-session 113. **NÄSTA:** Marcus vaknar → ser prod → veto-lista (strängbytena i
+**Numrering:** ADR 128 · kort 346/309.44 · L655 · T179 · 13 fragment ·
+session 113 (disk-verifierat vid resume 3). **NÄSTA:** `TASK-309.43` (hover
+bort · reserverad ljusgrå rulle i rännan, mätt 11 px i båda overflow-lägena ·
+skugga bara på kortet) byggs av bygg-agent i huvudkatalogen, orkestreraren
+mäter på 5173 → Marcus dom på ⋯-knappens vikt (ghost-förslag) och
+räckvidds-särskiljningen (ikon + ton i pillen) → veto-lista (strängbytena i
 `93dbf275`, tomytan under fyra-korts-låset vid 2–3 bilagor, URL-bytet som
 kort) → prod-vandringen (testplanen delvis inaktuell efter formbytet) → domar
 `340.5`/`340.4` → skörd → `session-end` (114). Arbetssätts-frågan (45 %
 bokförings-PR:er, 38 % eskaleringar) är en grillnings-kandidat, Marcus start.
-HANDOFF: sessionsdok S113 § PAUSLÄGE (paus 3). Full narrativ: Del 1–8.
+HANDOFF (historik): sessionsdok S113 § Paushistorik (paus 3). Full narrativ: Del 1–8.
 
 **Session 112 ⏸️ PAUSAD (paus 3, 2026-08-28 ~16:30, `lifecycle: paused`; resume 2 körd AFK på
 fullt mandat — "du bestämmer") — AFK-VÅG 5 LANDAD: FLASKHALSEN BRUTEN, REVIEW-GRINDEN MEKANISK,
