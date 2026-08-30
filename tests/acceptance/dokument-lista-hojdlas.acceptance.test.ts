@@ -407,6 +407,22 @@ async function matSkugga(page: Page) {
     const efter = getComputedStyle(ul, '::after');
     const kort = ul.querySelector('[data-testid="dokument-fil"]');
     return {
+      // `content` ÄR EXISTENSEN. Ett `::after` utan `content` renderas inte
+      // alls, medan `getComputedStyle` ändå rapporterar varje deklarerad
+      // egenskap — `display: block` ensamt bevisar därför ingenting.
+      //
+      // MÄTT, inte antaget (probe i denna rigg): Tailwind v4:s `after:`-variant
+      // injicerar SJÄLV `content: var(--tw-content)` med `""` som default. Ett
+      // element med bara `after:block after:h-6` rapporterar alltså
+      // `content: '""'` — precis som ett med `after:content-['']`. Utan NÅGON
+      // `after:`-klass rapporteras `content: 'none'`.
+      //
+      // Följden för assertionerna: `content` skiljer "pseudo-elementet finns"
+      // från "det finns inte alls" (vilket är exakt frågan när `kanRulla` är
+      // falskt och hela klass-strängen uteblir), medan `display` skiljer
+      // `block` från Tailwinds övriga lägen. Båda behövs — ingen av dem räcker
+      // ensam.
+      content: efter.content,
       display: efter.display,
       position: efter.position,
       bottom: efter.bottom,
@@ -634,6 +650,7 @@ test.describe('DokumentLista (eventläge) — låst fyra-radershöjd, nu UTAN fi
     await expect(page.getByText('Bilaga 1.pdf')).toBeVisible();
 
     const synlig = await matSkugga(page);
+    expect(synlig.content, 'utan content renderas pseudo-elementet inte alls').not.toBe('none');
     expect(synlig.display, 'skuggan ska synas när listan rullar').toBe('block');
     expect(synlig.position, 'sticky är det som håller den vid scrollportens kant').toBe('sticky');
     expect(synlig.bottom).toBe('0px');
@@ -665,6 +682,7 @@ test.describe('DokumentLista (eventläge) — låst fyra-radershöjd, nu UTAN fi
     // webbläsarens default `inline` — det ÄR "ingen skugga". `block` vore
     // regressionen.
     const ingen = await matSkugga(page);
+    expect(ingen.content, 'utan `content` finns pseudo-elementet inte alls').toBe('none');
     expect(ingen.display, 'ingen skugga när listan inte rullar').not.toBe('block');
     expect(ingen.bakgrundsbild, 'ingen gradient heller').toBe('none');
   });
@@ -701,6 +719,7 @@ test.describe('DokumentLista (eventläge) — låst fyra-radershöjd, nu UTAN fi
     });
 
     const skugga = await matSkugga(page);
+    expect(skugga.content, 'signalen renderas faktiskt').not.toBe('none');
     expect(skugga.display, 'signalen finns kvar i hög kontrast').toBe('block');
     expect(skugga.hojd, 'en 4 px list, inte ett 24 px skrim').toBe('4px');
     expect(skugga.bakgrundsbild, 'ingen gradient under prefers-contrast: more').toBe('none');

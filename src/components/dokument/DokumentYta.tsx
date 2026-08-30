@@ -2820,6 +2820,15 @@ function DokumentListRam({
         // till innehållets höjd och kan därför inte röra höjdlåset eller
         // `scrollHeight`. `after:sticky after:bottom-0` klistrar det vid
         // scrollportens underkant i stället för vid innehållets.
+        //
+        // `after:content-['']` ÄR REDUNDANT — och står kvar med avsikt. MÄTT i
+        // en probe: Tailwind v4:s `after:`-variant injicerar själv
+        // `content: var(--tw-content)` med `""` som default, så ett element med
+        // bara `after:block` rapporterar redan `content: '""'`. Klassen skrivs
+        // ändå ut därför att `content` är det som avgör om pseudo-elementet
+        // EXISTERAR, och en läsare ska inte behöva känna till variantens
+        // implicita beteende för att se att skuggan renderas. Riv den inte som
+        // "död kod": den kostar noll och bär betydelsen.
         data-vid-botten={vidBotten ? '' : undefined}
         className={`scrollbar-inline focus-ring-inset rounded-2xl ${kanRulla ? 'overflow-y-auto' : 'overflow-y-hidden'} ${kanRulla ? "after:pointer-events-none after:sticky after:bottom-0 after:-mt-6 after:block after:h-6 after:bg-linear-to-t after:from-(--mm-state-hover) after:to-transparent after:content-[''] data-[vid-botten]:after:hidden contrast-more:after:h-1 contrast-more:after:bg-border-strong contrast-more:after:bg-none" : ''}`}
       >
