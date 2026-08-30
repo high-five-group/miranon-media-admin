@@ -930,17 +930,42 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
     // Varje instans har hittills fångats av Marcus öga eller av en kommentar
     // som ingen läste. Detta är vakten: den mäter FAKTISK `backgroundColor` i
     // renderad yta och bryr sig inte om vilka klassnamn som råkar stå där.
+    // [TASK-309.44] SELEKTORN ÄR `getByTitle`, INTE `getByText` — OCH BYTET ÄR
+    // EN SKÄRPNING, INTE EN ANPASSNING. Pillen bär sin text i ett INRE
+    // `<span class="min-w-0 truncate">` sedan den delade grenen fick ikon
+    // (ikonen måste ligga UTANFÖR den trunkerande noden för att aldrig klippas
+    // bort). `getByText` löser till den INNERSTA noden som bär texten, alltså
+    // det inre spannet — vars bakgrund är transparent, eftersom plattan sitter
+    // på pillen. Testet mätte då fel element och föll: `rgba(0,0,0,0)` mot
+    // `<ul>`:ets `rgba(0,0,0,0)`.
+    //
+    // `title` sitter på PILLEN och bara där (det inre spannet bär ingen), så
+    // `getByTitle` binder mätningen till elementet som faktiskt äger
+    // bakgrunden — oberoende av hur pillens inre struktur ser ut i framtiden.
+    // En `getByText` som råkar peka på ett transparent barn är exakt den tysta
+    // urholkning denna vakt finns för att förhindra.
+    //
+    // UNDERLAGET ÄR KORTET, INTE `<ul>` — också en skärpning. `<ul>` är
+    // GENOMSKINLIG sedan T176 (den vita ytan bor i varje `<li>`s kort), så en
+    // jämförelse mot den prövade i praktiken bara "pillen är inte
+    // transparent". Pillen ligger PÅ kortet; det är den nästlingen felklassen
+    // handlar om. Båda jämförelserna görs nedan, så ingen täckning tappas.
     network.use(bilagorHandler());
     await gotoEventlage(page);
 
-    const pill = page.getByText('RIM · Rönninge');
+    const pill = page.getByTitle('RIM · Rönninge');
     await expect(pill).toBeVisible();
     const pillFarg = await pill.evaluate((el) => getComputedStyle(el).backgroundColor);
     const listFarg = await page
       .getByTestId('dokument-lista')
       .evaluate((el) => getComputedStyle(el).backgroundColor);
+    const kortFarg = await page
+      .getByTestId('dokument-fil')
+      .first()
+      .evaluate((el) => getComputedStyle(el).backgroundColor);
 
-    expect(pillFarg).not.toBe(listFarg);
+    expect(pillFarg, 'pillen får inte vara osynlig mot listytan').not.toBe(listFarg);
+    expect(pillFarg, 'pillen får inte vara osynlig mot kortet den ligger på').not.toBe(kortFarg);
   });
 
   // ═══ RÄCKVIDDS-AXELN ÄR EN KONTROLL (Marcus 2026-08-18, S107 QA-vandringen) ═══
