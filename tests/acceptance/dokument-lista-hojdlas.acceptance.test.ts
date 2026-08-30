@@ -1060,14 +1060,31 @@ test.describe('TASK-309.44:s beslut — hierarkin, ⋯-knappen, namnknappen', ()
       const block = document.querySelector('[data-testid="grupp-kort"]');
       // Handlingsradens rot är `ladda-upp-ny-fil`-ankarets förälder.
       const rad = document.querySelector('[data-testid="ladda-upp-ny-fil"]')?.parentElement ?? null;
+      // KANTERNA LÄSES PÅ SJÄLVA KNAPPARNA, ALDRIG PÅ RADENS WRAPPER — och
+      // det är mätt, inte principiellt. En negativ kontroll med `pl-2` på
+      // wrappern lämnade testet GRÖNT: padding ligger innanför border-boxen,
+      // så wrapperns kanter står stilla medan knapparna flyttar sig. Samma
+      // hål fanns lodrätt: det var precis ett `pt-1` på wrappern som revs i
+      // denna skiva, och en rytm-mätning på wrappern hade inte sett det.
+      // `knappar` är radens EGNA knappar (uppladdningen ligger i sitt
+      // testid-ankare, "Skapa bilaga" är ett direkt syskon).
+      const knappar = rad ? Array.from(rad.querySelectorAll('button')) : [];
+      const rutor = knappar.map((k) => k.getBoundingClientRect());
       return {
         ankareTotalt: document.querySelectorAll('[data-testid="ladda-upp-ny-fil"]').length,
         ankareIBlocket: block
           ? block.querySelectorAll('[data-testid="ladda-upp-ny-fil"]').length
           : null,
         blockBarn: block ? block.children.length : null,
+        antalKnappar: knappar.length,
         valjare: kant(document.querySelector('[data-testid="event-valjare-trigger"]')),
-        rad: kant(rad),
+        knappar: rutor.length
+          ? {
+              top: rund(Math.min(...rutor.map((b) => b.top))),
+              bottom: rund(Math.max(...rutor.map((b) => b.bottom))),
+              left: rund(Math.min(...rutor.map((b) => b.left))),
+            }
+          : null,
         block: kant(block),
       };
     });
@@ -1088,22 +1105,22 @@ test.describe('TASK-309.44:s beslut — hierarkin, ⋯-knappen, namnknappen', ()
     expect(h.blockBarn, 'blocket bär BARA listan (DokumentListRam)').toBe(1);
 
     expect(h.valjare).not.toBeNull();
-    expect(h.rad).not.toBeNull();
+    expect(h.knappar, 'handlingsraden ska bära minst en knapp').not.toBeNull();
     expect(h.block).not.toBeNull();
 
     // VÄNSTERKANTERNA — syskon i samma `px-4`-kolumn kan strukturellt inte
     // hamna ur linje, och det är precis den strukturen som prövas här.
-    expect(h.rad?.left, 'knapparnas vänsterkant === väljarens').toBe(h.valjare?.left);
+    expect(h.knappar?.left, 'knapparnas vänsterkant === väljarens').toBe(h.valjare?.left);
     expect(h.block?.left, 'blockets vänsterkant === väljarens').toBe(h.valjare?.left);
 
     // RYTMEN — 16 px är kolumnens `gap-4`, alltså vårt eget tal. Exakt.
     expect(
-      (h.rad?.top ?? 0) - (h.valjare?.bottom ?? 0),
-      `väljare.bottom ${h.valjare?.bottom} → knappar.top ${h.rad?.top} ska vara 16 px`,
+      (h.knappar?.top ?? 0) - (h.valjare?.bottom ?? 0),
+      `väljare.bottom ${h.valjare?.bottom} → knappar.top ${h.knappar?.top} ska vara 16 px`,
     ).toBe(16);
     expect(
-      (h.block?.top ?? 0) - (h.rad?.bottom ?? 0),
-      `knappar.bottom ${h.rad?.bottom} → block.top ${h.block?.top} ska vara 16 px`,
+      (h.block?.top ?? 0) - (h.knappar?.bottom ?? 0),
+      `knappar.bottom ${h.knappar?.bottom} → block.top ${h.block?.top} ska vara 16 px`,
     ).toBe(16);
   }
 
