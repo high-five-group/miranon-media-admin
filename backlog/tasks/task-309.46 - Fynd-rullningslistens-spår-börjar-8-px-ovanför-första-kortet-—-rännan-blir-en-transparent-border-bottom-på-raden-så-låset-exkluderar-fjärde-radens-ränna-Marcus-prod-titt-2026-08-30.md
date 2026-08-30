@@ -4,10 +4,10 @@ title: >-
   Fynd: rullningslistens spår börjar 8 px ovanför första kortet — rännan blir en
   transparent border-bottom på raden så låset exkluderar fjärde radens ränna
   (Marcus prod-titt 2026-08-30)
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-30 10:09'
-updated_date: '2026-08-30 10:42'
+updated_date: '2026-08-30 11:26'
 labels: []
 dependencies: []
 parent_task_id: TASK-309
@@ -26,7 +26,7 @@ Marcus prod-titt 2026-08-30 ~10:20 UTC: 'scrollbaren … börjar för högt upp,
 - [x] #2 Låset är 488 i ALLA nivåer: 0 rader (NIVÅ 3, LISTA_FALLBACK_RADHOJD = 122 × 4), 1–3 rader (NIVÅ 2, radhöjd × 4 − separator), 4+ (NIVÅ 1, spann − fjärde radens separator) — mätt i fixturvärlden för 0, 1, 3, 4 och 6 rader, och för övergången rader → 0 rader (NIVÅ 2 lagrar separator-fritt: hookens enda kodändring, bokförd öppet med skälet ur dess eget docblock)
 - [x] #3 Mitt i rullning (scrollTop 60) klipps kortet med kortets radie och skuggans hörn sammanfaller; vid maximal rullning slutar sista kortet 8 px ovanför spårets slut (bokförd kant, inte fel) och skuggan är borta; skugga.right = kort.right kvar; rännan 11 px kvar i båda overflow-lägena
 - [x] #4 Docblocken (LISTA_FALLBACK_RADHOJD, useLastaListhojd § NIVÅ 2/3, DokumentListRam wrapper + skugga, DokumentLista:s li-kommentar, GRUPPKORT_KLASS § rännan, 309.45-styckena om pt-2/-mt-2) omskrivna mot border-formen; lessons-fragmentet rannan-bor-i-li-… får en not (rännan är fortfarande INUTI li, som border); befintliga assertioner uppdaterade där de kodade 496/pt-2 (aldrig mildrade); typecheck 0 · biome 0 · build grön · alla dokument-acceptance + a11y gröna
-- [ ] #5 Landat via review-grinden (ADR-105) och prod-verifierat read-only av orkestreraren: spåret börjar vid kortet, låset 488, ⋯/meny-fixarna från 309.45 intakta
+- [x] #5 Landat via review-grinden (ADR-105) och prod-verifierat read-only av orkestreraren: spåret börjar vid kortet, låset 488, ⋯/meny-fixarna från 309.45 intakta
 <!-- AC:END -->
 
 ## Definition of Done
@@ -71,3 +71,9 @@ N6 FANGADE EN FOR VID TOLERANS — precis det kontrollerna finns for. Bandet 'FA
 
 GRINDAR, matta exitkoder: typecheck 0 - biome 0 - build 0 - check-langa-streck 0 (267 filer) - npm run test:a11y 117 passed exit 0 - npm run test:acceptance -- dokument 109 passed exit 0 (var 107 fore skivan, +2 nya).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landat via review-grinden: PR #2134 (7a00e78c, tre commits), runda 1 risk låg 0 fynd (granskaren räknade om hookens tre nivåer rad för rad och körde långa-streck-grinden oberoende), loop konvergerad, backstopp exit 0, merge-kö → main 01c84076 2026-08-30 11:11 UTC; Vercel production READY 11:11:41. Prod-verifierat read-only (smoke-kontot, event + delade, bundle index-CPs34une.css): ul.top === kort1.top (311/311), clientHeight 488, li 124 med border-bottom 8, 8 px mellan korten, ränna 11, ul radius 16. Orkestrerarens 5173-mätning före granskningen: 311/311 · 279/279 · 331/331, ul.bottom === kort4.bottom === skugga.bottom, tray 9/9/9, tummen startar i nivå med kortets övre hörn (×3-crop). RATIFICERAT under Marcus mandat: 309.24 AC #5:s bokstav (scrollHeight === clientHeight vid exakt fyra rader) ersatt av tre starkare assertioner (overflow hidden, scrollHeight − clientHeight === rännan, kortkanterna) — Marcus informerad, öppet i Del 9. Bokförd kant: vid maxscroll slutar sista kortet 8 px ovanför spårets slut. Sidofynd under prod-kontrollen: en curl-loop mot sajten utlöste Vercels Security Checkpoint för IP:n (fragment skrivet).
+<!-- SECTION:FINAL_SUMMARY:END -->

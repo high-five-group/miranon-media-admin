@@ -30,11 +30,11 @@ verifierad med eget skript + egna ögon** (h1 Bilagor · Skapa bilaga · kort
 med main. Beslut under mandat: kvittots Ladda ner utgår · URL kvar ·
 rullningsskugga · en-radsnamn på mobil. `T176` stängd · `T178` ny (HMR) ·
 `TASK-309.42` Done · 4 lessons-fragment (13 totalt) · ORDLISTA § Bilaga.
-**Numrering:** ADR 128 · kort 346/309.46 · L655 · T179 · 17 fragment ·
-session 113 (disk-verifierat 2026-08-30). **NÄSTA:** Marcus tittar på prod
-(`fe3b2b9f`: hover bort · rulle i rännan · handlingsrad ut · ghost-⋯ · blå
-delad-pill · namn-understrykning · runda fokusringar · ingen ring i menyn ·
-rännan över kortet) → veto-lista (strängbytena i `93dbf275`, tomytan under
+**Numrering:** ADR 128 · kort 346/309.47 · L655 · T179 · 19 fragment ·
+session 113 (disk-verifierat 2026-08-30 ~11:30 UTC). Fyra skivor i prod
+(`01c84076`: 309.43/44/45/46), Marcus: *"nu funkar det perfekt"* efter
+rensad site data. **NÄSTA:** Marcus tittar på scrollbar-starten (⌘⇧R först) → veto-lista
+(+ uppdateringsvägens osynlighet för Lotta) (strängbytena i `93dbf275`, tomytan under
 fyra-korts-låset vid 2–3 bilagor — `min(4, n)` föreslaget, URL-bytet som
 kort) → prod-vandringen (testplanen delvis inaktuell efter formbytet) → domar
 `340.5`/`340.4` → skörd (17 fragment) → arbetsforms-grillningen (Del 9 §
