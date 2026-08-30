@@ -1,3 +1,8 @@
+// [TASK-309.44] `Layers` = "den här filen ligger i FLERA lager", vilket är
+// precis vad en delad räckvidd ÄR. Ikonvalet bryter en reservation som stått
+// i denna fils grannar — se § TRE KANALER i docblocket nedan för varför den
+// inte gäller här.
+import { Layers } from 'lucide-react';
 import { rackviddsBadgeText } from '@/components/dokument/rackviddsText';
 import type { Attachment } from '@/domain/models/Attachment';
 import { AttachmentScope, type AttachmentScopeValue } from '@/domain/types/Status';
@@ -24,18 +29,61 @@ import { AttachmentScope, type AttachmentScopeValue } from '@/domain/types/Statu
  * (`AtgardsSida.tsx`s docblock vid det gamla anropsstället bär motivet).
  *
  * HUSETS PILL-GRAMMATIK, INGEN NY FORMUPPFINNING (Marcus kvalitetsdirektiv
- * 2026-08-17): EXAKT samma klass-sträng som den neutrala metadata-pillen på
- * tre andra ställen i appen (`Gruppdynamik.tsx` rad ~160, `AtgardsSida.tsx`
- * rad ~915, `Deltagare.tsx` rad ~1099) — `rounded-full border
- * border-transparent bg-bg-muted px-2 py-0.5 font-medium text-caption
- * text-text-secondary contrast-more:border-border-strong`. Samma
- * `sm`-steg som `StatusBadge.tsx`s Pill-skala dokumenterar (list-/kortmiljö,
- * `px-2 py-0.5 text-caption`) — men INTE `StatusBadge` självt: den bär bara
- * success/warning-toner, och en räckviddsbadge är ren METADATA (varken
- * lyckat eller varnande), samma semantiska klass som "Klass"-pillen den
- * härmar. `border-transparent` reserverar plats för `contrast-more:border`
- * utan layout-hopp — samma tre-regels-disciplin `StatusBadge.tsx` § PILL_
- * STORLEK dokumenterar.
+ * 2026-08-17): samma `sm`-steg som `StatusBadge.tsx`s Pill-skala dokumenterar
+ * (list-/kortmiljö, `px-2 py-0.5 text-caption`), samma `rounded-full`, och
+ * samma `border border-transparent` som reserverar plats för
+ * `contrast-more:border` utan layout-hopp (tre-regels-disciplinen i
+ * `StatusBadge.tsx` § PILL_STORLEK).
+ *
+ * "Detta event"-pillen är därutöver EXAKT den neutrala metadata-strängen som
+ * på tre andra ställen i appen (`Gruppdynamik.tsx` rad ~160,
+ * `AtgardsSida.tsx` rad ~915, `Deltagare.tsx` rad ~1099): `bg-bg-muted` +
+ * `text-text-secondary` + `contrast-more:border-border-strong`.
+ *
+ * ═══ [TASK-309.44, 2026-08-30] TRE KANALER PÅ DEN DELADE PILLEN ═══
+ *
+ * DE TVÅ PILLARNA ÄR INTE LÄNGRE SAMMA STRÄNG, och det är hela poängen.
+ * Marcus mandat 2026-08-30 (Bilagor-ytans hierarki): den delade bilagan är
+ * det AVVIKANDE fallet och ska synas som det. På en eventsida är "detta
+ * event" normalfallet — det Lotta måste kunna se på en halv sekund är
+ * *"påverkar jag ANDRA event om jag rör den här filen?"*. Den frågan bars
+ * tidigare av texten ensam, i en pill som såg identisk ut med normalfallets.
+ *
+ * Signalen går nu på TRE kanaler, vilket är WCAG 1.4.1 (färg aldrig ensam
+ * bärare) plus en marginal:
+ *   1. IKON  — `Layers`, aria-hidden (texten bär redan betydelsen)
+ *   2. TON   — `bg-info-bg` + ikonen i `text-info`
+ *   3. TEXT  — `rackviddsBadgeText`, OFÖRÄNDRAD ("Alla event", "RIM · Steg 1
+ *              · Rönninge" …), liksom `title`
+ * Formen är `StatusBadge`s: tonal platta, ikon i tonfärgen, text i DEFAULT-
+ * färgen. Ikonen bär ingen egen information — den är en igenkännings-
+ * förstärkning, precis som `StatusBadge`s bock/triangel.
+ *
+ * TONEN ÄR `info`, INTE `warning`. En delad bilaga är ingen varning — den är
+ * ett faktum om filens spridning. `--mm-info` är dessutom appens enda
+ * neutrala icke-status-ton, vilket håller pillen utanför success/warning-
+ * grammatiken där den inte hör hemma.
+ *
+ * MÄTT (node, WCAG 2.x-formeln, TASK-309.44) — inte ögonmätt:
+ *   `--mm-text` #242424 mot `--mm-info-bg` #eff6ff → **14,26:1** (1.4.3 AA
+ *      kräver 4,5:1 för `text-caption`, som inte är "large text")
+ *   `--mm-info` #4a6b8a mot #eff6ff             → **5,13:1** (1.4.11 kräver
+ *      3:1 för ett grafiskt objekt — ikonen håller med marginal, ingen
+ *      mörkare ton ur blå-skalan behövdes)
+ *   #eff6ff mot kortets #ffffff → ΔE00 **5,06** (neutrala pillens platta mot
+ *      samma kort ligger på ΔE00 2,30 — den delade sticker alltså ut ~2×)
+ *
+ * `Layers`-RESERVATIONEN, ÖPPET BRUTEN: `DokumentYta.tsx` rad ~206 och ~623
+ * samt `AnmalningarSida.tsx` rad ~534 avstår alla från `Layers` med
+ * motiveringen att den är *"upptagen av segment-byggarens lager-begrepp"*
+ * (`segment/prototyp/VariantD.tsx`). Reservationen gällde VÄLJAR- och
+ * MENY-ikoner på ytor där segment-språket kan dyka upp; den gäller inte en
+ * räckviddspill på Bilagor-ytan, där inget lager-begrepp finns och där
+ * "flera lager" ÄR den bokstavliga betydelsen. `Files` — väljarens egen
+ * ikon för delade bilagor — avvisades här av en annan orsak: raden bär redan
+ * en filtyps-glyf (`TypGlyf`) längst till vänster, och två dokument-ikoner
+ * på samma rad läser som två olika filer. Ändras segment-ytan någon gång så
+ * att de två möts på samma skärm är detta stället att ompröva.
  *
  * TEXTEN, GUNILLA-LÄSBAR — [OMBYGGD, TASK-338.3, ADR-125 § Beslut 1] den
  * KOMPONERAS numera ur de tre axlarna i stället för att vara en fast sträng
@@ -182,11 +230,30 @@ export function RackviddBadge({
     // pillens rundade kant. Behållaren måste ÄVEN vara bredd-bunden
     // (`DokumentYta.tsx`s badge-rad bär nu `w-full min-w-0` av samma skäl) —
     // annars finns inget "tillgängligt utrymme" att krympa MOT.
+    //
+    // ═══ [TASK-309.44] TONEN ÄR `info`, OCH TRUNKERINGEN HAR FLYTTAT IN ═══
+    //
+    // Hela `bg-surface`/`bg-bg-muted`-historiken ovan gäller den NEUTRALA
+    // strängen, som "Detta event"-grenen fortfarande bär oförändrad. Den
+    // DELADE pillen har lämnat den (se docblocket § TRE KANALER): `bg-info-bg`
+    // är varken kortets vita eller behållarens grå, så den token-identitets-
+    // fälla styckena ovan handlar om kan strukturellt inte träffa den —
+    // mätt ΔE00 5,06 mot kortet, alltså mer än dubbla den neutrala pillens
+    // 2,30. Regeln som föll ut ("tokenvalet följer NÄSTLINGEN … och 'syns
+    // den?' besvaras med en mätning") är alltså följd, inte kringgången.
+    //
+    // `truncate` sitter nu på det INRE spannet, inte på pillen. Ikonen ligger
+    // utanför den trunkerande noden med `shrink-0`, så ett långt platsnamn
+    // ("RIM · Steg 1 · Rönninge") klipps med ellips medan ikonen ALDRIG kan
+    // klippas bort — hade `truncate` legat kvar på ytterspannet vore ikonen
+    // en del av det överflödande innehållet. `min-w-0` på det inre spannet
+    // river dess implicita `min-width: auto` av samma skäl som ovan.
     <span
-      className="inline-flex min-w-0 max-w-full items-center truncate rounded-full border border-transparent bg-bg-muted px-2 py-0.5 font-medium text-caption text-text-secondary contrast-more:border-border-strong"
+      className="inline-flex min-w-0 max-w-full items-center gap-1.5 rounded-full border border-transparent bg-info-bg px-2 py-0.5 font-medium text-caption text-text contrast-more:border-info"
       title={text}
     >
-      {text}
+      <Layers aria-hidden="true" size={13} className="shrink-0 text-info" />
+      <span className="min-w-0 truncate">{text}</span>
     </span>
   );
 }

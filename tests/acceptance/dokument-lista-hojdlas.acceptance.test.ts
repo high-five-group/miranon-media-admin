@@ -521,6 +521,154 @@ test.describe('DokumentLista (eventläge) — låst fyra-radershöjd, nu UTAN fi
   });
 });
 
+/**
+ * ═══ TASK-309.43:s TRE BETEENDEN — PERMANENTA ASSERTIONER ═══
+ *
+ * Granskarfynd på PR #2128 (runda 1, info/auto-fix), taget i TASK-309.44:s PR
+ * eftersom den redan rör denna svit: 309.43 landade tre mätta beteenden —
+ * ingen hover-ton på kortet, reserverad ränna i BÅDA overflow-lägena, och en
+ * rullningsskugga vars högerkant är låst till den MÄTTA rännbredden — men
+ * ingen av dem hade en assertion. Sviten prövade bara att `lista-uttoning`
+ * VISAS respektive DÖLJS, aldrig dess geometri, och kortets bakgrund prövades
+ * inte alls. Tre beteenden vars enda bevis var en engångsmätning i en agents
+ * scratchpad är tre beteenden som kan tyst regrediera.
+ *
+ * ═══ VARFÖR TALET 11 INTE LÅSES — OCH VAD SOM LÅSES I STÄLLET ═══
+ *
+ * Rännans bredd i px är en EGENSKAP HOS PLATTFORMEN, inte hos vår kod:
+ * `scrollbar-gutter: stable` reserverar plats för en KLASSISK scrollbar, och
+ * hur bred den är avgörs av operativsystem och webbläsarbygge (CSS Overflow
+ * Module Level 3 säger ingenting om talet). 309.43 mätte 11 px i denna rigg på
+ * macOS; Linux-Chromium i CI kan mycket väl ge ett annat tal, och ett test som
+ * låser 11 hade då fällt en GRÖN app — precis den falska signal
+ * `CONTRIBUTING.md` § Rött-först finns för att förhindra.
+ *
+ * INVARIANTEN ÄR STABILITETEN, och den är vår: rännan ska vara reserverad
+ * (> 0) och EXAKT LIKA BRED i `overflow-y: auto` (fler än fyra kort) som i
+ * `hidden` (fyra eller färre), så att kortbredden inte hoppar när listan får
+ * sin femte post. Det var hela skälet till att `stable` valdes — se
+ * `DokumentYta.tsx` § LISTANS RAM, där det gamla motsatta påståendet också
+ * står rättat mot mätning.
+ *
+ * KÄND KANT, bokförd i stället för dold: `> 0` förutsätter att riggens
+ * webbläsare använder KLASSISKA scrollbars. En miljö med overlay-scrollbars
+ * (riktiga mobiler, Firefox) reserverar per spec ingenting — där är 0 rätt
+ * svar och skuggan går ut i full bredd (kodvägen finns, `DokumentListRam`).
+ * Den miljön finns inte i acceptance-klassen, så testet nedan prövar den
+ * inte; skulle riggen någon gång byta till overlay är rätt åtgärd att pröva
+ * BÅDA utfallen, aldrig att mildra assertionen till `>= 0`.
+ */
+test.describe('TASK-309.43:s beteenden — hover-ton, reserverad ränna, skuggans högerkant', () => {
+  /** `<ul>`:ets ränna + kortets och skuggans kanter, i ETT synkront steg. */
+  async function mataRanna(page: Page) {
+    return page.evaluate(() => {
+      const rund = (n: number) => Math.round(n * 100) / 100;
+      const ul = document.querySelector('[data-testid="dokument-lista"]') as HTMLElement | null;
+      if (!ul) return null;
+      const kort = ul.querySelector('[data-testid="dokument-fil"]');
+      const skugga = document.querySelector('[data-testid="lista-uttoning"]');
+      return {
+        // `borderLeft/RightWidth` är 0 på `<ul>` sedan T176, så
+        // `offsetWidth − clientWidth` ÄR rännan — ingen kant att dra bort.
+        // Mätt i 309.43; prövas här igen så slutsatsen inte tyst blir falsk.
+        kantBredd:
+          Number.parseFloat(getComputedStyle(ul).borderLeftWidth) +
+          Number.parseFloat(getComputedStyle(ul).borderRightWidth),
+        ranna: ul.offsetWidth - ul.clientWidth,
+        overflowY: getComputedStyle(ul).overflowY,
+        kortBredd: kort ? rund(kort.getBoundingClientRect().width) : null,
+        kortHoger: kort ? rund(kort.getBoundingClientRect().right) : null,
+        skuggaHoger: skugga ? rund(skugga.getBoundingClientRect().right) : null,
+      };
+    });
+  }
+
+  test('kortet bär INGEN hover-ton: background-color är identisk i vila och under hover', async ({
+    page,
+    network,
+  }) => {
+    // Marcus 2026-08-30: *"Ta bort hover på korten."* Tonen
+    // (`--mm-bilagekort-bg-hover`, #edeee9) är riven ur BÅDE klassen och
+    // `components.css`. Assertionen är tvåsidig i sak: samma element, samma
+    // egenskap, före och under hover — en återinförd ton fälls oavsett vilken
+    // den är, och `toHaveCSS` retryar så en eventuell övergång hinner landa
+    // innan mätningen läses (`transition-colors` revs i 309.43, men den
+    // egenskapen är inte denna assertions att lita på).
+    network.use(hojdlasHandler(6, 0));
+    await gotoEventlage(page);
+    await expect(page.getByText('Bilaga 1.pdf')).toBeVisible();
+
+    const kort = page.getByTestId('dokument-fil').first();
+    const vila = await kort.evaluate((el) => getComputedStyle(el).backgroundColor);
+    expect(vila).toBe('rgb(255, 255, 255)');
+
+    await kort.hover();
+    await expect(kort).toHaveCSS('background-color', vila);
+  });
+
+  test('rännan är RESERVERAD och LIKA BRED i båda overflow-lägena — kortbredden hoppar aldrig', async ({
+    page,
+    network,
+  }) => {
+    // TVÅ laddningar ⇒ samma cache-arrangemang som filens 5-vs-6-test.
+    await arrangeraTomCache(page);
+
+    network.use(hojdlasHandler(6, 0));
+    await gotoEventlage(page);
+    await expect(page.getByText('Bilaga 1.pdf')).toBeVisible();
+    const rullar = await mataRanna(page);
+    expect(rullar).not.toBeNull();
+    expect(rullar?.overflowY).toBe('auto');
+
+    network.use(hojdlasHandler(3, 0));
+    await gotoEventlage(page);
+    await expect(page.getByText('Bilaga 3.pdf')).toBeVisible();
+    const rullarInte = await mataRanna(page);
+    expect(rullarInte).not.toBeNull();
+    expect(rullarInte?.overflowY).toBe('hidden');
+
+    // `offsetWidth − clientWidth` ÄR rännan bara så länge `<ul>` är kantlös.
+    expect(rullar?.kantBredd, '<ul> ska sakna kant sedan T176').toBe(0);
+    expect(rullarInte?.kantBredd).toBe(0);
+
+    // Reserverad — talet självt är plattformens, se describe-docblocket.
+    expect(
+      rullar?.ranna ?? 0,
+      `rännan ska vara reserverad i overflow auto (mätt ${rullar?.ranna} px)`,
+    ).toBeGreaterThan(0);
+    // …och EXAKT lika bred när listan inte rullar. Det är invarianten.
+    expect(
+      rullarInte?.ranna,
+      `rännan ska vara lika bred i hidden (${rullarInte?.ranna} px) som i auto (${rullar?.ranna} px)`,
+    ).toBe(rullar?.ranna);
+    expect(
+      rullarInte?.kortBredd,
+      'kortbredden får inte hoppa när listan går från fler än fyra till färre',
+    ).toBe(rullar?.kortBredd);
+  });
+
+  test('rullningsskuggan slutar vid KORTETS högerkant, inte vid rännans', async ({
+    page,
+    network,
+  }) => {
+    // Marcus 2026-08-30: *"sitter den inuti listytan så blir det fult med
+    // skuggningen längst ner."* Skuggans `right` sätts i en `useLayoutEffect`
+    // ur den MÄTTA rännbredden — aldrig ur ett hårdkodat tal — så assertionen
+    // jämför två renderade kanter mot varandra i stället för mot en konstant.
+    network.use(hojdlasHandler(6, 0));
+    await gotoEventlage(page);
+    await expect(page.getByText('Bilaga 1.pdf')).toBeVisible();
+    await expect(page.getByTestId('lista-uttoning')).toBeVisible();
+
+    const g = await mataRanna(page);
+    expect(g?.skuggaHoger).not.toBeNull();
+    expect(
+      Math.abs((g?.skuggaHoger ?? 0) - (g?.kortHoger ?? 0)),
+      `skuggan slutar vid ${g?.skuggaHoger} px, kortet vid ${g?.kortHoger} px — skuggan får aldrig lägga sig över rännan`,
+    ).toBeLessThanOrEqual(1);
+  });
+});
+
 test.describe('GemensamtLage (räckviddsläge) — samma regel (tidigare saknad, TASK-309.24)', () => {
   test('AC #1/#3: 0 rader — tomt läge inom LÅST höjd (nivå 3, FALLBACK), inga kort, axe-rent', async ({
     page,
@@ -842,5 +990,243 @@ test.describe('GemensamtLage vid 375 px — samma tre nivåer som desktop (revie
     expect(geometri.scrollHeight).toBeGreaterThan(geometri.clientHeight);
     provaKortkanter(geometri);
     await expect(page.getByTestId('dokument-lista')).toHaveAttribute('tabindex', '0');
+  });
+});
+
+/**
+ * ═══ TASK-309.44:s EGNA FYRA BESLUT — PERMANENTA ASSERTIONER ═══
+ *
+ * Granskarfynd på PR #2130 (runda 1, warning/auto-fix): skivan landade fyra
+ * MÄTTA UI-beslut och tre nya tester — men de tre testerna täckte uteslutande
+ * det ÖVERTAGNA fyndet från #2128. Skivans egna beslut vilade alltså på samma
+ * grund de själva ersatte: en engångsmätning i en agents scratchpad. En
+ * refaktor av `DokumentYta`, `RackviddBadge` eller `Button` hade kunnat riva
+ * något av dem utan att en enda grind fällde.
+ *
+ * HEMVISTEN, bokförd: A (hierarkin), B (⋯-knappen) och D (namnknappen) bor
+ * HÄR, eftersom de är GEOMETRI och TILLSTÅND i listytan — samma frågeklass
+ * denna fil redan äger, med samma fixturhandler för båda lägena. C (pillens
+ * ton och ikon) bor i `dokument-rackviddsval.acceptance.test.ts`, hos den
+ * befintliga pill-vakten och hos den ENDA fixturen som ger BÅDA pill-typerna
+ * på samma sida (`bilagorHandler` i eventläget) — en tvåsidig prövning
+ * ("delad ser annorlunda ut än event-egen") är omöjlig i denna fils handler,
+ * som ger en pill-typ per läge.
+ *
+ * ═══ VAD SOM JÄMFÖRS EXAKT OCH VAD SOM JÄMFÖRS MOT EN LEVANDE TOKEN ═══
+ *
+ * Samma disciplin som 309.43-blocket ovan. **16 px är VÅRT** — det är
+ * innehållskolumnens `gap-4`, en siffra vi valt, och den assertas exakt.
+ * **Färgerna är också våra, men deras rgb-form är det inte** — de bor i
+ * tokens som kan bytas — så de läses ur en LEVANDE token-probe i samma
+ * dokument och jämförs mot elementets `getComputedStyle`. En hårdkodad
+ * `rgb(82, 81, 81)` hade fällt en medveten token-ändring som om den vore en
+ * bugg, och (värre) hade INTE fällt en klass som slutat peka på tokenen så
+ * länge någon annan regel råkade ge samma färg.
+ *
+ * ═══ ÖVERGÅNGSFÄLLAN — LÄS DEN INNAN DU SKRIVER FLER HOVER-TESTER ═══
+ *
+ * `Button.tsx`s bas-klass bär `transition-colors`. En `getComputedStyle`-
+ * läsning DIREKT efter `hover()` returnerar därför VILO-värdet mitt i
+ * övergången: mätt under TASK-309.44 gav en fungerande hover
+ * `rgba(0, 0, 0, 0)` och `rgb(82, 81, 81)` trots `data-hovered="true"` —
+ * vilket såg ut som en trasig hover men var en mätpunkt vid t≈0. Varje
+ * tillstånds-assertion nedan går därför genom `toHaveCSS`, som RETRYAR tills
+ * övergången landat. Läs aldrig en färg efter hover med `evaluate`.
+ */
+test.describe('TASK-309.44:s beslut — hierarkin, ⋯-knappen, namnknappen', () => {
+  /** Levande token-värde ur samma dokument som elementet mäts i. Samma
+      probe-teknik som `dokument-visual.spec.ts`s `strongToken`. */
+  async function tokenFarg(page: Page, namn: string) {
+    return page.evaluate((n) => {
+      const probe = document.createElement('span');
+      probe.style.color = `var(${n})`;
+      document.body.appendChild(probe);
+      const farg = getComputedStyle(probe).color;
+      probe.remove();
+      return farg;
+    }, namn);
+  }
+
+  /** Hierarkin i ETT synkront steg — ingen av kanterna får läsas mot ett
+      tillstånd som hunnit ändra sig mellan två `evaluate`-anrop. */
+  async function mataHierarki(page: Page) {
+    return page.evaluate(() => {
+      const rund = (n: number) => Math.round(n * 100) / 100;
+      const kant = (el: Element | null) => {
+        if (!el) return null;
+        const b = el.getBoundingClientRect();
+        return { top: rund(b.top), bottom: rund(b.bottom), left: rund(b.left) };
+      };
+      const block = document.querySelector('[data-testid="grupp-kort"]');
+      // Handlingsradens rot är `ladda-upp-ny-fil`-ankarets förälder.
+      const rad = document.querySelector('[data-testid="ladda-upp-ny-fil"]')?.parentElement ?? null;
+      // KANTERNA LÄSES PÅ SJÄLVA KNAPPARNA, ALDRIG PÅ RADENS WRAPPER — och
+      // det är mätt, inte principiellt. En negativ kontroll med `pl-2` på
+      // wrappern lämnade testet GRÖNT: padding ligger innanför border-boxen,
+      // så wrapperns kanter står stilla medan knapparna flyttar sig. Samma
+      // hål fanns lodrätt: det var precis ett `pt-1` på wrappern som revs i
+      // denna skiva, och en rytm-mätning på wrappern hade inte sett det.
+      // `knappar` är radens EGNA knappar (uppladdningen ligger i sitt
+      // testid-ankare, "Skapa bilaga" är ett direkt syskon).
+      const knappar = rad ? Array.from(rad.querySelectorAll('button')) : [];
+      const rutor = knappar.map((k) => k.getBoundingClientRect());
+      return {
+        ankareTotalt: document.querySelectorAll('[data-testid="ladda-upp-ny-fil"]').length,
+        ankareIBlocket: block
+          ? block.querySelectorAll('[data-testid="ladda-upp-ny-fil"]').length
+          : null,
+        blockBarn: block ? block.children.length : null,
+        antalKnappar: knappar.length,
+        valjare: kant(document.querySelector('[data-testid="event-valjare-trigger"]')),
+        knappar: rutor.length
+          ? {
+              top: rund(Math.min(...rutor.map((b) => b.top))),
+              bottom: rund(Math.max(...rutor.map((b) => b.bottom))),
+              left: rund(Math.min(...rutor.map((b) => b.left))),
+            }
+          : null,
+        block: kant(block),
+      };
+    });
+  }
+
+  /**
+   * A — handlingsraden ligger i SIDFLÖDET, inte i listans block.
+   *
+   * Marcus 2026-08-30: *"knapparna inte sitter perfekt där dem sitter just nu,
+   * de har en annan rundning än blocket också"*. Fyra invarianter faller ut ur
+   * beslutet, och alla prövas: raden finns EN gång, den ligger UTANFÖR
+   * blocket, blocket bär bara listan, och de tre kanterna linjerar med 16 px
+   * rytm emellan.
+   */
+  function provaHierarki(h: Awaited<ReturnType<typeof mataHierarki>>) {
+    expect(h.ankareTotalt, 'exakt EN handlingsrad på sidan').toBe(1);
+    expect(h.ankareIBlocket, 'handlingsraden får aldrig ligga inuti grupp-kort').toBe(0);
+    expect(h.blockBarn, 'blocket bär BARA listan (DokumentListRam)').toBe(1);
+
+    expect(h.valjare).not.toBeNull();
+    expect(h.knappar, 'handlingsraden ska bära minst en knapp').not.toBeNull();
+    expect(h.block).not.toBeNull();
+
+    // VÄNSTERKANTERNA — syskon i samma `px-4`-kolumn kan strukturellt inte
+    // hamna ur linje, och det är precis den strukturen som prövas här.
+    expect(h.knappar?.left, 'knapparnas vänsterkant === väljarens').toBe(h.valjare?.left);
+    expect(h.block?.left, 'blockets vänsterkant === väljarens').toBe(h.valjare?.left);
+
+    // RYTMEN — 16 px är kolumnens `gap-4`, alltså vårt eget tal. Exakt.
+    expect(
+      (h.knappar?.top ?? 0) - (h.valjare?.bottom ?? 0),
+      `väljare.bottom ${h.valjare?.bottom} → knappar.top ${h.knappar?.top} ska vara 16 px`,
+    ).toBe(16);
+    expect(
+      (h.block?.top ?? 0) - (h.knappar?.bottom ?? 0),
+      `knappar.bottom ${h.knappar?.bottom} → block.top ${h.block?.top} ska vara 16 px`,
+    ).toBe(16);
+  }
+
+  test('A: eventläget — handlingsraden utanför blocket, lika vänsterkanter, 16 px rytm', async ({
+    page,
+    network,
+  }) => {
+    network.use(hojdlasHandler(6, 0));
+    await gotoEventlage(page);
+    await expect(page.getByText('Bilaga 1.pdf')).toBeVisible();
+    provaHierarki(await mataHierarki(page));
+  });
+
+  test('A: räckviddsläget — samma hierarki, samma rytm (lägena delar skelett)', async ({
+    page,
+    network,
+  }) => {
+    // Att BÅDA lägena prövas är inte dubbelarbete: raden bodde tidigare inuti
+    // respektive läges EGEN komponent, och det var just där de kunde glida
+    // isär (`sistaRadenBarLinje` saknades en gång helt i räckviddsläget,
+    // TASK-309.24). Nu delar de ETT anropsställe — och det är den likheten
+    // detta test låser fast.
+    network.use(hojdlasHandler(0, 6));
+    await gotoRackviddslage(page);
+    await expect(page.getByText('Delad 1.pdf')).toBeVisible();
+    provaHierarki(await mataHierarki(page));
+  });
+
+  test('B: ⋯-knappen — ghost i vila, rund platta vid hover OCH med menyn öppen, fokus återlämnas', async ({
+    page,
+    network,
+  }) => {
+    network.use(hojdlasHandler(6, 0));
+    await gotoEventlage(page);
+    await expect(page.getByText('Bilaga 6.pdf')).toBeVisible();
+
+    const sekundar = await tokenFarg(page, '--mm-text-secondary');
+    const betonad = await tokenFarg(page, '--mm-bg-emphasized');
+    // Första kortet i DOM — alltid inom viewport, aldrig under bottennavet.
+    const dots = page.getByRole('button', { name: 'Fler val för Bilaga 6.pdf' });
+
+    // VILA: ingen platta alls, bara ikonen i den dämpade tonen.
+    await expect(dots).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    await expect(dots).toHaveCSS('color', sekundar);
+
+    // RUND OCH 44×44. Radien läses som TAL: `rounded-full` kompilerar till
+    // `calc(infinity * 1px)` och renderas som `3.35544e+07px` — ett exakt
+    // strängjämförande test hade bundit sig till den representationen.
+    const geo = await dots.evaluate((el) => ({
+      radie: Number.parseFloat(getComputedStyle(el).borderTopLeftRadius),
+      bredd: Math.round(el.getBoundingClientRect().width),
+      hojd: Math.round(el.getBoundingClientRect().height),
+    }));
+    expect(
+      geo.radie,
+      'plattan ska vara RUND — aldrig en tredje radie mot blockets 16 px',
+    ).toBeGreaterThanOrEqual(9999);
+    expect(geo.bredd).toBe(44);
+    expect(geo.hojd).toBe(44);
+
+    // HOVER: plattan tänds i den EGNA komponent-tokenen, aldrig i ghost-
+    // tokenen (den ÄR behållarens ton, ΔE00 0,00 — se IKONKNAPP_KLASS).
+    // `toHaveCSS` retryar, se describe-docblockets övergångsfälla.
+    await dots.hover();
+    await expect(dots).toHaveCSS('background-color', betonad);
+
+    // ÖPPEN MENY: plattan står KVAR även när pekaren lämnat knappen. Musen
+    // flyttas medvetet bort först — annars hade hover-regeln ensam kunnat
+    // förklara färgen, och testet hade inte prövat det öppna läget alls.
+    await dots.click();
+    await expect(page.getByRole('menu')).toBeVisible();
+    await expect(dots).toHaveAttribute('aria-expanded', 'true');
+    await page.mouse.move(5, 5);
+    await expect(dots).not.toHaveAttribute('data-hovered', 'true');
+    await expect(dots).toHaveCSS('background-color', betonad);
+
+    // FOKUS ÅTERLÄMNAS till triggern vid Escape — react-arias `MenuTrigger`
+    // ger det utan egen kod, och det är den delen handbyggda menyer tappar.
+    await page.keyboard.press('Escape');
+    await expect(page.getByRole('menu')).toHaveCount(0);
+    await expect(dots).toBeFocused();
+  });
+
+  test('D: namnknappen — understruken vid hover, aldrig i vila, aldrig en platta', async ({
+    page,
+    network,
+  }) => {
+    network.use(hojdlasHandler(6, 0));
+    await gotoEventlage(page);
+    await expect(page.getByText('Bilaga 6.pdf')).toBeVisible();
+
+    const namn = page.getByRole('button', { name: 'Öppna Bilaga 6.pdf' });
+
+    // VILA: ingen understrykning, ingen platta — men `cursor: pointer`, som är
+    // det enda som säger "detta går att trycka på" innan man siktar.
+    // Webbläsarens default för `<button>` är `cursor: default`; avsteget är
+    // medvetet och motiverat i `DokumentRadSkal`s docblock.
+    await expect(namn).toHaveCSS('text-decoration-line', 'none');
+    await expect(namn).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    await expect(namn).toHaveCSS('cursor', 'pointer');
+
+    // HOVER: understrykningen ÄR affordansen sedan kortets hover revs
+    // (309.43). Bakgrunden prövas igen — en återinförd platta ska fälla här,
+    // inte bara understrykningens frånvaro.
+    await namn.hover();
+    await expect(namn).toHaveCSS('text-decoration-line', 'underline');
+    await expect(namn).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
   });
 });

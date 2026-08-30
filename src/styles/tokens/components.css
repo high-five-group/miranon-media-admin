@@ -293,6 +293,37 @@
   --mm-bilagekort-border: transparent;
   --mm-bilagekort-border-contrast: var(--mm-border-strong);
 
+  /* ── Bilagekortets ⋯-knapp (TASK-309.44, 2026-08-30) ──
+     Knappen är GHOST i vila (ingen platta, bara ikonen) och får sin runda
+     platta först vid hover/pressed/öppen meny. Ghost-INTENTEN är rätt form,
+     men ghost-TOKENEN är det inte: --mm-button-ghost-bg-hover ÄR
+     --mm-bg-muted, alltså EXAKT den grå ton kortet LIGGER PÅ men inte bär
+     (ΔE00 0,00 mot behållaren) — en hover-platta i behållarens färg mitt i
+     ett vitt kort läser som ett hål, inte som återkoppling. Det är den
+     token-identitetsfälla DokumentYta.tsx:s filhuvud räknar sex instanser
+     av, och skälet att IKONKNAPP_KLASS:s docblock i tre ronder argumenterat
+     MOT ghost.
+
+     Egen komponent-token bryter identiteten utan att byta intent. Mätt
+     (node, CIEDE2000 + WCAG-formeln, TASK-309.44):
+       #edeee9 mot kortets #ffffff  → ΔE00 4,52  (den vi väljer)
+       #f5f5f3 mot kortets #ffffff  → ΔE00 2,30  (ghost-tokenen, avvisad)
+       #edeee9 mot behållarens #f5f5f3 → ΔE00 2,30  (skild från BÅDA)
+     Plattan är alltså dubbelt så tydlig mot kortet som ghost-tokenen, och
+     till skillnad från den kan den aldrig kollapsa in i behållaren.
+
+     Tonen är INTE nyvald: det är exakt --mm-bg-emphasized (#edeee9) som
+     mättes mot båda grannarna 2026-08-29 när kortet självt hade hover.
+     Den hovern är riven (Marcus 2026-08-30, se ovan) — tonen återanvänds
+     nu på KNAPPEN i stället för på kortet, vilket är där återkopplingen
+     hör hemma när kortet är statiskt.
+
+     Ikonen står i --mm-text-secondary i vila (7,91:1 mot kortets vita) och
+     går till --mm-text vid hover (13,31:1 mot plattan) — båda långt över
+     WCAG 1.4.11:s 3:1-golv för ett grafiskt objekt. */
+  --mm-bilagekort-ikonknapp-text: var(--mm-text-secondary);
+  --mm-bilagekort-ikonknapp-bg-hover: var(--mm-bg-emphasized);
+
   /* ── Åtgärdskö-markör (TASK-291 — QA-fynd 284.5, ADR-122 §22 "Markören") ──
      Fylld cirkel/pill-behållare: bär BÅDE åtgärdskö-radens ledande
      ikon-markör (variant A) och den friliggande räkne-badgen (TASK-303

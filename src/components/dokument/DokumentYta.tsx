@@ -627,6 +627,51 @@ export function DokumentYta() {
           }}
         />
 
+        {/* ═══ [TASK-309.44, 2026-08-30] HANDLINGSRADEN BOR PÅ SIDAN, INTE I
+            LISTANS BLOCK ═══
+
+            Marcus prod-titt: *"knapparna inte sitter perfekt där dem sitter
+            just nu, de har en annan rundning än blocket också"*. TVÅ fel i
+            ett, båda mätta av orkestreraren på 1280×900 innan flytten:
+
+              RADIE-NÄSTLING. Knapparna hade `border-radius: 4px` inuti ett
+              block med 16 px radie, bredvid kort med 16 px radie. Tre radier
+              i tre nästlade lager läser som tre olika hus. Att bara runda
+              knapparna mer hade varit att lösa symptomet — 44 px-knappar med
+              16 px radie är en annan knappform än husets.
+
+              ROLL-FÖRVÄXLING. `Ladda upp bilaga` är SIDANS primärhandling
+              (solid guld, den tyngsta ytan på skärmen) och stod inne i
+              listans grå bricka, vänsterställd, med en tom grå yta till
+              höger. Blocket svarar på "vad FINNS här?"; knapparna svarar på
+              "vad kan jag GÖRA här?" — och den frågan hör till sidan.
+
+            RADEN LIGGER DÄRFÖR HÄR, som syskon till `EventValjare` och till
+            lägena, inte inuti något av dem. Formen bär tre egenskaper GRATIS
+            i stället för att behöva mätas fram:
+
+              • RYTMEN. Kolumnens egen `gap-4` ger 16 px väljare → rad →
+                block, utan att någon sektion behöver justeras.
+              • VÄNSTERKANTEN. Väljare, knappar och block är syskon i samma
+                `px-4`-kolumn, så de kan strukturellt inte hamna ur linje.
+                (Före flytten låg knapparna på 381 mot väljarens 372 — 1 px
+                blockkant + 8 px `p-2`.)
+              • SYMMETRIN. Raden renderas i BÅDA lägena och i ALLA
+                query-tillstånd. Låg den kvar i listkomponenterna hade den
+                funnits under laddning i räckviddsläget (som äger sin egen
+                skelett-gren) men saknats under laddning i eventläget (vars
+                skelett ligger nedanför) — plus ett layout-hopp när datan
+                landade och raden dök upp ovanför listan.
+
+            Att den syns under laddning och vid fel är en FÖRBÄTTRING, inte
+            en bieffekt: uppladdningsvägen är oberoende av att listan kunde
+            hämtas, och var otillgänglig i felläget förut. */}
+        <ListHandlingsRad
+          eventId={eventId}
+          uploadMutation={uploadMutation}
+          onValjFil={setValdaFiler}
+        />
+
         {eventId == null ? (
           <GemensamtLage
             rader={gemensammaRader}
@@ -643,8 +688,6 @@ export function DokumentYta() {
             deleteMutation={deleteMutation}
             onAndraRackvidd={setAndrasRackvidd}
             scopeMutation={scopeMutation}
-            uploadMutation={uploadMutation}
-            onValjFil={setValdaFiler}
           />
         ) : attachmentsQuery.isPending ? (
           <div role="status" aria-busy="true" className="flex flex-col gap-2">
@@ -664,15 +707,12 @@ export function DokumentYta() {
             rader={rader}
             onReplace={handleReplace}
             replaceMutation={replaceMutation}
-            uploadMutation={uploadMutation}
-            onValjFil={setValdaFiler}
           />
         )}
 
         {/* [T176, 2026-08-29] UPPLADDNINGSKNAPPEN STOD HÄR — den bor nu i
-            kortets handlingsrad ovanför listan (`ListHandlingsRad`), samma
-            plats filterraden lämnade. Historiken, för den som undrar varför
-            den flyttat två gånger:
+            `ListHandlingsRad` OVANFÖR lägena (se dess placering ovan).
+            Historiken, för den som undrar varför den flyttat fyra gånger:
 
               2026-08-17  ÖVER listan (listans längd var obegränsad, så en
                           knapp under den kunde hamna utanför skärmen)
@@ -685,12 +725,20 @@ export function DokumentYta() {
                           block ("vad kan jag göra här?") och listan som ett
                           annat ("vad finns här?"); två handlingszoner på var
                           sin sida om listan var en zon för mycket
+              2026-08-30  UT UR KORTET igen, till sidflödet mellan väljaren
+                          och blocket (TASK-309.44, Marcus mandat). Steget
+                          2026-08-29 grupperade rätt saker men i fel
+                          BEHÅLLARE: handlingarna hör ihop, och de hör till
+                          SIDAN — inte till listans bricka. Skälen (radie-
+                          nästling + roll-förväxling) står i sin helhet vid
+                          `ListHandlingsRad`s anropsställe ovan.
 
-            Flödet är ORÖRT: knappen öppnar filväljaren DIREKT och
-            räckviddsfrågan ställs efteråt i dialogen, när det finns en fil att
-            ställa den om (Marcus 2026-08-18 — före det stod ett permanent
+            Flödet är ORÖRT genom alla fyra: knappen öppnar filväljaren DIREKT
+            och räckviddsfrågan ställs efteråt i dialogen, när det finns en fil
+            att ställa den om (Marcus 2026-08-18 — före det stod ett permanent
             tvåstegs-block som frågade om spridning innan filen fanns).
-            `data-testid="ladda-upp-ny-fil"` följde med oförändrat. */}
+            `data-testid="ladda-upp-ny-fil"` har följt med oförändrat varje
+            gång, så uppladdningstesterna har aldrig behövt röras. */}
 
         {/* Uppladdningsfelet bor på SIDAN, inte i dialogen: dialogen stänger
             vid framgång och rivs, så ett fel som uppstår i sista ögonblicket
@@ -786,7 +834,41 @@ export function DokumentYta() {
  * mekaniskt låst på annat håll i huset (`tests/a11y/NavCard.spec.ts`:
  * "träffyta: raden är ≈58 px hög (≥44 px-golvet)").
  *
- * ── 2. FORMEN ÄR `primary`+`subtle` — RÖR DEN INTE TILL `ghost` ══
+ * ── 2. FORMEN ÄR `ghost` I VILA MED EGEN PLATT-TOKEN — OCH DET ÄR EN
+ *      OMPRÖVNING AV INVARIANTEN NEDAN, INTE ETT BROTT MOT DEN ──
+ *
+ * [TASK-309.44, 2026-08-30, Marcus mandat] Knappen bar `primary`+`subtle`
+ * fram till denna skiva. Formen var korrekt för sin tid men fel för kortet:
+ * en permanent guldtonad platta (mätt `color(srgb 0.157 0.161 0.157 / 0.1)`)
+ * på VARJE rad gör listan till en knapprad, och plattans `border-radius: 4px`
+ * satt inuti ett kort med 16 px radie — samma radie-nästling som fällde
+ * handlingsraden i samma skiva.
+ *
+ * NYA FORMEN, tre delar:
+ *   • VILA: `intent="ghost"` (transparent botten) och bara ikonen, i
+ *     `--mm-bilagekort-ikonknapp-text` (= `--mm-text-secondary`). Ingen
+ *     platta alls — raden läser som text tills man siktar på den.
+ *   • HOVER / PRESSED / ÖPPEN MENY: en platta i
+ *     `--mm-bilagekort-ikonknapp-bg-hover` (= `--mm-bg-emphasized`, #edeee9)
+ *     och ikonen i `--mm-text`.
+ *   • FORMEN: `rounded-full`. En rund platta kan aldrig krocka med kortets
+ *     16 px-radie — det finns ingen tredje radie att läsa fel.
+ *
+ * INVARIANTEN NEDAN GÄLLER OFÖRÄNDRAT, och det är därför formen fungerar:
+ * problemet var ALDRIG `ghost` som intent, utan `ghost`s HOVER-TOKEN. Den
+ * (`--mm-button-ghost-bg-hover`) ÄR `--mm-bg-muted`, alltså behållarens egen
+ * ton — ΔE00 0,00, mätt. Vi byter därför inte tillbaka till ghost-tokenen; vi
+ * överskuggar den med en EGEN komponent-token som är skild från BÅDA
+ * grannarna (ΔE00 4,52 mot kortets vita, 2,30 mot behållaren; hela
+ * mätserien i `components.css` § Bilagekortets ⋯-knapp). Ghost-tokenen hade
+ * gett 2,30 mot kortet och 0,00 mot behållaren — alltså hälften så tydlig,
+ * och osynlig så fort knappen råkar ligga mot den grå ytan.
+ *
+ * `contrast-more:border contrast-more:border-current` bär den kant `subtle`
+ * gav gratis via sin compound-variant — 11-golvet får inte falla bort med
+ * intent-bytet, och `ghost` har ingen egen kontrast-regel.
+ *
+ * ── 2b. DEN GAMLA FORMENS HISTORIK — LÄS DEN INNAN DU "FÖRENKLAR" ══
  *
  * FLYTTAD HIT från den rivna `DokumentAtgardsKnappar`s docblock (T176), för
  * att invarianten gäller ⋯-knappen precis som den gällde ikonparet. Detta är
@@ -806,26 +888,35 @@ export function DokumentYta() {
  *      alltså samma bakgrund som visa-knappen hade, samma hover också
  *      liksom". Samma defekt, andra ronden.
  *
- * INVARIANTEN, formulerad så den överlever nästa ombyggnad: en knapp som
- * sitter INUTI `grupp-kort` (`bg-bg-muted`) får aldrig bära `ghost`, för
- * `ghost`s hover ÄR `bg-bg-muted`. `subtle` är dessutom primitivens egen
- * deklarerade form för just denna ytklass ("tabellrader/toolbars, kompakt:
- * svag intent-tonad platta", `Button.tsx` § subtle) och tänder en kant i
- * intent-färgen under `prefers-contrast: more` — 11-golvet, som `ghost`
- * (transparent botten) inte kan ge här.
+ * INVARIANTEN, formulerad så den överlever nästa ombyggnad: en knapp i denna
+ * yta får aldrig bära `ghost`s HOVER-TOKEN, för `--mm-button-ghost-bg-hover`
+ * ÄR `--mm-bg-muted` — behållarens egen ton, och därmed osynlig mot den och
+ * halvsynlig mot kortet.
  *
- * [T176-TILLÄGG, uppdaterat vid kortformen 2026-08-29] Invarianten har en
- * TREDJE grund sedan raden blev ett KORT: `ghost`s hover ÄR `--mm-bg-muted`,
- * alltså EXAKT den grå behållarton kortet ligger PÅ men inte bär — en
- * knapp-platta i behållarens färg mitt i ett vitt kort. Namnknappen löser
- * samma sak åt andra hållet: den bär INGEN platta alls.
+ * [T176-TILLÄGG, uppdaterat vid kortformen 2026-08-29] Invarianten fick en
+ * TREDJE grund när raden blev ett KORT: en knapp-platta i behållarens färg
+ * mitt i ett vitt kort. Namnknappen löser samma sak åt andra hållet: den bär
+ * INGEN platta alls.
  *
- * [2026-08-30] Namnknappens platt-löshet var tidigare motiverad med att
- * KORTET bar återkopplingen i stället (`--mm-bilagekort-bg-hover`,
+ * [2026-08-30, TASK-309.43] Namnknappens platt-löshet var tidigare motiverad
+ * med att KORTET bar återkopplingen i stället (`--mm-bilagekort-bg-hover`,
  * #edeee9). Den tonen är riven på Marcus mandat (*"Ta bort hover på
- * korten"*) — kortet är statiskt. Slutsatsen för ⋯-knappen står ändå
- * oförändrad: invarianten nedan handlar om att `ghost`s hover-token ÄR
- * behållarens ton, vilket är sant oavsett om kortet självt hovrar.
+ * korten"*) — kortet är statiskt. Namnknappen bär sedan TASK-309.44 en
+ * UNDERSTRYKNING vid hover i stället, se `DokumentRadSkal`s docblock.
+ *
+ * [2026-08-30, TASK-309.44] INVARIANTEN VAR EN GÅNG FÖR BRETT SKRIVEN, och
+ * det är värt att veta varför den nu står som den gör. Den löd: *"en knapp
+ * som sitter INUTI `grupp-kort` får aldrig bära `ghost`"* — alltså ett
+ * förbud mot INTENTEN. Men vad de tre instanserna ovan faktiskt fällde var
+ * varje gång TOKENEN, aldrig intenten; formuleringen generaliserade från
+ * fyndet till hela varianten. Följden var att den enda rätta formen för en
+ * ikonknapp i ett kort — platt i vila, tonad vid hover — stod förbjuden på
+ * fel grund, och ytan bar i stället en permanent platta i tre ronder.
+ * Invarianten är därför omformulerad mot vad som mättes, inte mot vad som
+ * antogs, och `subtle`-argumentet (primitivens deklarerade form för
+ * "tabellrader/toolbars", `Button.tsx` § subtle) gäller fortfarande — det
+ * beskriver bara en ANNAN ytklass än ett vitt kort i en grå behållare.
+ * Kontrast-kanten som `subtle` gav gratis bärs nu explicit, se § 2 ovan.
  */
 const IKONKNAPP_KLASS = 'size-11 shrink-0 p-0';
 
@@ -1583,18 +1674,54 @@ function oppnaDokument({
  *     platta — en lista som ser ut som en knapprad.
  *
  * `data-[hovered]:bg-transparent data-[pressed]:bg-transparent` står alltså
- * KVAR på knappen. Den är transparent i alla lägen; AFFORDANSEN bärs nu av
- * `cursor` och av fokusringen ur den globala `*:focus-visible`-regeln
- * (base.css), inte av någon yttoning. ⋯-knappen behåller `primary`+`subtle`
- * — dess hover (`--mm-button-primary-subtle-bg-hover`) skiljer sig från
- * kortets vita, så invarianten i `IKONKNAPP_KLASS`s docblock hålls.
+ * KVAR på knappen.
  *
- * KORTPADDINGEN ÄR 12 px (`p-3`) OCH DET ÄR MÄTT MOT HANDLINGSRADEN:
- * kortets och knapparnas YTTERKANTER linjerar exakt (0 px, båda ligger vid
- * behållarens innerkant), och kortets innehållskant (1 px kant + 12 px
- * padding = 13 px) linjerar med "Skapa bilaga"-knappens (`outline`, alltså
- * också 1 px kant + `px-3`). Mot "Ladda upp bilaga" (`solid`, ingen kant)
- * blir det 1 px — kantens bredd, inte ett val.
+ * ═══ [TASK-309.44, 2026-08-30] MEN PLATT-LÖS ÄR INTE SAMMA SAK SOM
+ *     SIGNAL-LÖS — HOVERN ÄR EN UNDERSTRYKNING ═══
+ *
+ * Fram till 309.43 bar KORTET återkopplingen: pekaren låg någonstans på
+ * raden och hela kortet tonade. Den tonen är riven (*"Ta bort hover på
+ * korten"*), och raden stod därefter helt utan mus-affordans — ett kort som
+ * ser statiskt ut, med ett filnamn som ÄR en knapp men inte ser ut som en.
+ *
+ * `data-[hovered]:underline underline-offset-4` + `cursor-pointer` löser det
+ * med den enda grammatik som inte behöver en yta: titeln är LÄNK-LIK, och
+ * beter sig som en länk när man siktar på den. Understrykningen ändrar
+ * varken box eller höjd (den ritas i textens egen rad), så höjdlåsets 124 px
+ * kan strukturellt inte röras — till skillnad från en platta, som hade krävt
+ * padding och därmed mätning.
+ *
+ * `underline-offset-4` och inte default: standardavståndet lägger linjen i
+ * bokstävernas underhäng (p, g, j) i `text-body`/`font-medium`, vilket läser
+ * som en stavningsmarkering. 4 px lyfter den fri.
+ *
+ * `cursor-pointer` PÅ EN KNAPP är ett medvetet avsteg från husets form:
+ * `Button.tsx`s bas-klass bär ingen cursor-regel (bara `data-[disabled]` och
+ * `data-[loading]`), och repots fjorton `cursor-pointer` sitter alla på
+ * label/summary/div — inte på `Button`. Webbläsarens default för `<button>`
+ * är `cursor: default`, vilket är rätt för en knapp som SER ut som en knapp.
+ * Denna gör inte det: den ser ut som en rubrik. Avsteget är alltså till för
+ * exakt den egenskap som skiljer den från husets övriga knappar, och det
+ * generaliseras inte till dem.
+ *
+ * ⋯-knappen är sedan samma skiva `ghost` i vila med en egen platt-token vid
+ * hover — se `IKONKNAPP_KLASS`s docblock för varför det INTE bryter
+ * token-identitets-invarianten.
+ *
+ * KORTPADDINGEN ÄR 12 px (`p-3`), MÄTT MOT BLOCKETS INNERKANT:
+ * kortets ytterkant ligger vid behållarens innerkant (`grupp-kort`s `p-2`),
+ * alltså 0 px förskjutning, och kortets innehållskant landar 13 px in
+ * (1 px kant + 12 px padding).
+ *
+ * [TASK-309.44] REFERENSEN VAR TIDIGARE HANDLINGSRADEN. Här stod att
+ * paddingen var *"MÄTT MOT HANDLINGSRADEN"* och att kortets innehållskant
+ * linjerade med "Skapa bilaga"-knappens (`outline`: 1 px kant + `px-3`),
+ * med 1 px avvikelse mot "Ladda upp bilaga" (`solid`, kantlös). Den
+ * mätningen var riktig men gäller inte längre: handlingsraden ligger sedan
+ * 2026-08-30 UTANFÖR blocket, i sidkolumnen, alltså 8 px + 1 px till vänster
+ * om kortens ytterkant. Referensen är därför blockets innerkant — den enda
+ * kant kortet numera har en relation till. Skriv inte tillbaka den gamla
+ * formuleringen; den beskriver en nästling som inte finns.
  *
  * ═══ RADENS FORM ÄR LÅST TILL TRE LED (Marcus 2026-08-17, OFÖRÄNDRAT) ═══
  *
@@ -1713,7 +1840,7 @@ function DokumentRadSkal({
         <Button
           intent="ghost"
           size="sm"
-          className="-mx-2 min-h-11 w-full min-w-0 justify-start rounded-lg px-2 font-medium text-body data-[hovered]:bg-transparent data-[pressed]:bg-transparent"
+          className="-mx-2 min-h-11 w-full min-w-0 cursor-pointer justify-start rounded-lg px-2 font-medium text-body underline-offset-4 data-[hovered]:bg-transparent data-[pressed]:bg-transparent data-[hovered]:underline"
           // `aria-disabled`, INTE `isDisabled`: ett native `disabled` tar
           // knappen ur tabordningen mitt i klicket. Vakten i onPress bär
           // dubbelklicks-skyddet i stället.
@@ -1784,11 +1911,51 @@ function DokumentRadSkal({
       <Meny
         etikett={`Fler val för ${namn}`}
         trigger={
+          // [TASK-309.44] GHOST I VILA, RUND PLATTA VID HOVER/PRESSED/ÖPPEN.
+          // Hela resonemanget (varför ghost-INTENTEN är rätt medan
+          // ghost-TOKENEN aldrig får användas här) bor i `IKONKNAPP_KLASS`s
+          // docblock; tonerna och mätvärdena i `components.css`
+          // § Bilagekortets ⋯-knapp.
+          //
+          // `data-[pressed]` TÄCKER DET ÖPPNA LÄGET, och det är verifierat i
+          // biblioteket — inte antaget: react-aria-components `MenuTrigger`
+          // lindar sin trigger i en `PressResponder` med `isPressed:
+          // state.isOpen` (`react-aria-components/dist/private/Menu.mjs`), och
+          // RAC:s `Button` renderar `data-pressed` ur `ctx.isPressed ||
+          // isPressed` (`.../Button.mjs`). Plattan står alltså kvar hela tiden
+          // menyn är uppe, utan en egen `aria-expanded`-regel.
+          //
+          // `contrast-more:border border-current` ersätter den kant
+          // `primary`+`subtle` gav via sin compound-variant. `ghost` har ingen
+          // egen kontrast-regel, så utan denna rad hade 11-golvet fallit bort
+          // med intent-bytet — en transparent knapp utan kant är osynlig i
+          // hög-kontrastläge.
+          //
+          // KÄND KANT, MÄTT OCH BOKFÖRD — INTE LAPPAD. Under TANGENTBORDS-
+          // fokus blir knappen en rundad FYRKANT: `base.css` § `*:focus-visible`
+          // sätter `border-radius: 2px` utöver ringen, så att ringen får en
+          // konsekvent form på element som saknar egen radie. Mätt i denna
+          // skiva: `borderTopLeftRadius` 3,35544e+07px i vila/hover/öppen →
+          // **2px** när `data-focus-visible` står (Escape-stängning, mus kvar
+          // över knappen: bg #edeee9 i en 2px-ruta).
+          //
+          // DET GÅR INTE ATT ÖVERSKUGGA MED EN UTILITY, och det är prövat:
+          // `focus-visible:rounded-full` ligger i `@layer utilities` medan den
+          // globala regeln är OLAGRAD author-CSS, och olagrat besegrar allt
+          // lagrat oavsett specificitet (`base.css` dokumenterar exakt den
+          // kaskad-ordningen vid sina egna `@layer`-noter). Klassen mättes till
+          // NOLL effekt och är därför borttagen igen i stället för att lämnas
+          // kvar som död kod som ser ut att göra något. Vägarna som ÅTERSTÅR
+          // — en `!`-utility, eller att smalna den globala regeln — ändrar
+          // appens fokus-grammatik för mer än denna knapp och är alltså ett
+          // eget beslut, inte en detalj i denna skiva. Bokfört för orkestrerar-
+          // triage; kanten är dessutom SMAL: utan mus är plattan transparent,
+          // så det enda som skiljer mot före denna skiva är ringens radie
+          // (4 px → 2 px var redan sant för den gamla `rounded`-formen).
           <Button
-            intent="primary"
-            emphasis="subtle"
+            intent="ghost"
             size="sm"
-            className={IKONKNAPP_KLASS}
+            className={`${IKONKNAPP_KLASS} text-(color:--mm-bilagekort-ikonknapp-text) data-[hovered]:text-(color:--mm-text) data-[pressed]:text-(color:--mm-text) rounded-full data-[hovered]:bg-(--mm-bilagekort-ikonknapp-bg-hover) data-[pressed]:bg-(--mm-bilagekort-ikonknapp-bg-hover) contrast-more:border contrast-more:border-current`}
             aria-label={`Fler val för ${namn}`}
           >
             <Ellipsis aria-hidden="true" size={IKON_STORLEK} />
@@ -2022,7 +2189,7 @@ function BilageRadRow({
  * `eventId` är `null` — hellre ingen knapp än en avstängd som lovar något
  * ytan inte kan hålla.
  *
- * ── PLACERINGEN ÄRVER FILTERRADENS PLATS, INTE UPPLADDNINGSKNAPPENS ──
+ * ── PLACERINGEN: SIDFLÖDET MELLAN VÄLJAREN OCH BLOCKET ──
  *
  * Marcus 2026-08-18 om varför uppladdningen stod UNDER listan: *"detta gör
  * det logiskt att sätta Ladda upp-knappen under dokumentlistan"* — och skälet
@@ -2030,8 +2197,18 @@ function BilageRadRow({
  * Argumentet håller fortfarande för en knapp under listan, men handlingarna
  * hör ihop som ETT block ("vad kan jag göra här?") och listan som ett annat
  * ("vad finns här?"). Att splittra dem på var sin sida om listan hade gett
- * två handlingszoner. Filterraden lämnade dessutom exakt den platsen
- * (`DokumentLista` nedan), så kortets överkant stod tom.
+ * två handlingszoner.
+ *
+ * [TASK-309.44, 2026-08-30] RADEN LIGGER INTE LÄNGRE I KORTET. Den bor i
+ * `DokumentYta`s innehållskolumn, som syskon till `EventValjare` och till
+ * lägena — h1 → väljare → handlingsrad → block. Grupperingen ovan är
+ * oförändrad (handlingarna hör fortfarande ihop); det som ändrades är vilken
+ * BEHÅLLARE de hör till. Hela skälet med mätvärden står vid anropsstället i
+ * `DokumentYta` (radie-nästling + roll-förväxling, Marcus mandat).
+ *
+ * Att raden inte längre ärver filterradens plats i kortet betyder att kortets
+ * överkant står tom igen — men kortet är sedan T176 en ren behållare för
+ * listan, inte en panel med egna kontroller, så tom överkant är rätt läge nu.
  */
 function ListHandlingsRad({
   eventId,
@@ -2044,17 +2221,21 @@ function ListHandlingsRad({
   onValjFil: (filer: FileList | null) => void;
 }) {
   return (
-    // `pt-1`, INGEN horisontell padding — knapparnas kanter ska LINJERA
-    // EXAKT med listans. Här stod `px-1` med motiveringen att knapparna
-    // "behöver egen luft för att inte klistra i ramens kant"; den var fel.
-    // Listan själv ligger vid ramens kant (kortets `p-2`), så 4 px extra
-    // indrag gav en synlig förskjutning mot listan i stället för luft —
-    // mätt i skärmdump: knappens vänsterkant 385 mot listans 381 vid
-    // 1280 px, 45 mot 41 (och högerkanten 345 mot 349) vid 390 px. Knappar
-    // som linjerar med listan läser som en rad i samma kolumn; 4 px
-    // förskjutning läser som ett fel. Den vertikala luften (`pt-1`) står
-    // kvar — den skiljer handlingsraden från kortets överkant utan att
-    // röra kolumnen.
+    // INGEN PADDING ALLS — varken horisontell eller vertikal.
+    //
+    // HORISONTELLT: knapparnas vänsterkant ska LINJERA med väljarens och
+    // blockets. Här stod `px-1` med motiveringen att knapparna "behöver egen
+    // luft för att inte klistra i ramens kant"; den var fel redan då (4 px
+    // indrag mot listan läste som ett fel, inte som luft — mätt: knappkant
+    // 385 mot listans 381 vid 1280 px). Nu är den dessutom omöjlig att
+    // motivera: raden är syskon till väljaren i samma `px-4`-kolumn, så
+    // kanten är kolumnens och all extra padding vore en avvikelse från den.
+    //
+    // VERTIKALT: `pt-1` stod här och KOMPENSERADE för kortets innerkant —
+    // "den skiljer handlingsraden från kortets överkant". Raden ligger inte
+    // i något kort längre, så de 4 px hade brutit den 16 px-rytm kolumnens
+    // `gap-4` ger (16 → 20 px mellan väljare och knappar). Riven med
+    // referensen den kompenserade för (TASK-309.44).
     //
     // ═══ STAPLADE I FULL BREDD UNDER `sm`, SIDA VID SIDA FRÅN `sm` ═══
     //
@@ -2072,7 +2253,7 @@ function ListHandlingsRad({
     // (fragment + dold input), men den ligger inuti `data-testid`-ankaret
     // nedan, så DEN diven måste också bära `w-full sm:w-auto` — annars
     // sträcker sig ankaret men inte knappen.
-    <div className="flex flex-col gap-2 pt-1 sm:flex-row sm:items-center">
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
       {/* `data-testid` på WRAPPERN, inte på knappen: `FileTrigger` renderar
           sin dolda `<input type="file">` som SYSKON till knappen, och det är
           inputen testet behöver nå (`setInputFiles`). Sidan bär flera
@@ -2266,6 +2447,22 @@ function ErsattningsFel({ replaceMutation }: { replaceMutation: ReplaceMutation 
  * redan glidit isär en gång (`sistaRadenBarLinje` saknades helt i
  * räckviddsläget, TASK-309.24) — samma lärdom `DokumentRadSkal` och
  * `HandlingsRad` bär i sina egna huvuden.
+ *
+ * ═══ [TASK-309.44, 2026-08-30] BLOCKET BÄR BARA LISTAN NU ═══
+ *
+ * `ListHandlingsRad` låg här inne från 2026-08-29 till 2026-08-30 och är
+ * flyttad ut till sidflödet (Marcus mandat — radie-nästling + roll-
+ * förväxling, hela skälet vid `ListHandlingsRad`s anropsställe i
+ * `DokumentYta`). Blocket har därmed EXAKT ETT barn: `DokumentListRam`.
+ *
+ * KLASS-STRÄNGEN ÄR ÄNDÅ ORÖRD, och det är ett val. `gap-2` har inget att
+ * verka på med ett enda barn, men den beskriver behållarens form ("8 px
+ * mellan innehållsblock, samma tal som `p-2` runtom") och kostar noll
+ * renderat. Att riva den hade sparat sex tecken och tagit bort svaret på
+ * frågan "vad händer om något läggs tillbaka här?" — och den frågan har nu
+ * ställts två gånger på två dagar. `p-2`, radien och kontrast-kanten är
+ * oförändrade av samma skäl som de en gång sattes: de tillhör kortet, inte
+ * dess innehåll.
  */
 const GRUPPKORT_KLASS =
   'flex flex-col gap-2 rounded-2xl border border-transparent bg-bg-muted p-2 contrast-more:border-border-strong';
@@ -2332,6 +2529,17 @@ const GRUPPKORT_KLASS =
  * inte — overlay-scrollbars reserverar ingen ränna alls (CSS Overflow
  * Module Level 3: `scrollbar-gutter` reserverar bara för KLASSISKA
  * scrollbars).
+ *
+ * [TASK-309.44, 2026-08-30] BÅDA STYCKENA OVAN GÄLLER FORTFARANDE, MEN MOT
+ * EN ANNAN REFERENS. Handlingsraden ligger inte längre i blocket, så
+ * jämförelsen är knapparna mot BLOCKET (samma vänsterkant, syskon i
+ * sidkolumnen) i stället för knapparna mot listan (som satt 9 px in). Den
+ * kända kanten under `sm` finns kvar OFÖRÄNDRAD i sak — knapparna sträcker
+ * sig kolumnens fulla bredd, korten är rännans bredd smalare — men avståndet
+ * har vuxit med blockets 1 px kant + 8 px `p-2`, alltså ~9 px utöver rännan.
+ * Det är fortfarande en desktop-Chromium-artefakt: på riktiga mobiler är
+ * rännan 0 och skillnaden alltså exakt blockets egen padding, vilket är den
+ * normala nästlingen och inte en felinriktning.
  *
  * RULLEN LIGGER UTANFÖR KORTEN, PÅ DEN GRÅ BEHÅLLAREN. `<ul>` är
  * genomskinlig sedan T176, så rännan visar behållarens egen ton — rullen
@@ -2578,15 +2786,11 @@ function DokumentLista({
   rader,
   onReplace,
   replaceMutation,
-  uploadMutation,
-  onValjFil,
 }: {
   eventId: string;
   rader: BilageRad[];
   onReplace: (files: FileList | null, oldAttachmentId: string, scope: UploadScopeVal) => void;
   replaceMutation: ReplaceMutation;
-  uploadMutation: UploadMutation;
-  onValjFil: (filer: FileList | null) => void;
 }) {
   // [TASK-309.6] "Skapa om" (AC #4) — EN mutation-instans för HELA listan,
   // samma "bara denna rads post lyser"-mönster som `replaceMutation`
@@ -2612,8 +2816,16 @@ function DokumentLista({
         {/* INGEN RUBRIK I KORTET — BESLUTAD BORT, INTE TAPPAD (Marcus,
             QA 273.5 steg 5, 2026-08-18: *"Ta bort rubriken 'Dokument för
             eventet' i eventläget … Man ser ju vad de olika ytorna är för
-            något ändå."*). `<h1>Dokument` står redan i sidhuvudet och
-            `EventValjare` direkt ovanför visar VILKET event listan gäller.
+            något ändå."*). `<h1>Bilagor` står redan i sidhuvudet, och
+            `EventValjare` ovanför visar VILKET event listan gäller.
+
+            [TASK-309.44] "direkt ovanför" stämmer inte längre bokstavligt:
+            `ListHandlingsRad` ligger sedan 2026-08-30 EMELLAN väljaren och
+            detta block (se `DokumentYta`s anropsställe). Väljaren är
+            fortfarande den enda bäraren av kontext-frågan "vilket event?" —
+            handlingsraden svarar på en annan fråga och konkurrerar inte om
+            rollen — men avståndet är inte längre noll, och en rubrik som
+            hade tjänat på det är fortfarande beslutad bort.
 
             `<section>` står UTAN `aria-labelledby` — husets etablerade form
             för sektioner utan egen rubrik (`Waitlist.tsx`, `Hem.tsx`,
@@ -2621,11 +2833,6 @@ function DokumentLista({
             inte som landmark, vilket är rätt: den ÄR inte en självständig
             region. */}
         <div data-testid="grupp-kort" className={GRUPPKORT_KLASS}>
-          <ListHandlingsRad
-            eventId={eventId}
-            uploadMutation={uploadMutation}
-            onValjFil={onValjFil}
-          />
           <DokumentListRam
             listRef={listRef}
             matadHojd={matadHojd}
@@ -3230,8 +3437,6 @@ function GemensamtLage({
   deleteMutation,
   onAndraRackvidd,
   scopeMutation,
-  uploadMutation,
-  onValjFil,
 }: {
   rader: BilageRad[];
   laddar: boolean;
@@ -3243,8 +3448,6 @@ function GemensamtLage({
   deleteMutation: DeleteMutation;
   onAndraRackvidd: (rad: Attachment) => void;
   scopeMutation: ScopeMutation;
-  uploadMutation: UploadMutation;
-  onValjFil: (filer: FileList | null) => void;
 }) {
   // Förvaltningsläget har aldrig haft någon filterrad, så höjdlåsningen har
   // varit OVILLKORAD här sedan TASK-309.24 (`matbar` konstant sant). Sedan
@@ -3278,13 +3481,10 @@ function GemensamtLage({
                 steg 5, 2026-08-18: *"Ta även bort rubriken 'Dokument' i
                 förvaltningsläget."*). Den hette först "Gemensamma dokument",
                 kortades till "Dokument" 2026-08-17 — och blev därmed en ren
-                dubblett av sidhuvudets `<h1>Dokument` en skärmhöjd ovanför.
-                Se eventlägets sektionskommentar för `section`-formen. */}
-            <ListHandlingsRad
-              eventId={null}
-              uploadMutation={uploadMutation}
-              onValjFil={onValjFil}
-            />
+                dubblett av sidhuvudets `<h1>Bilagor` en skärmhöjd ovanför.
+                Se eventlägets sektionskommentar för `section`-formen, och
+                `DokumentYta`s anropsställe för varför `ListHandlingsRad`
+                sedan TASK-309.44 inte längre står här inne. */}
             <DokumentListRam
               listRef={listRef}
               matadHojd={matadHojd}

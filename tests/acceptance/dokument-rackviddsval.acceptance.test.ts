@@ -930,17 +930,131 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
     // Varje instans har hittills fångats av Marcus öga eller av en kommentar
     // som ingen läste. Detta är vakten: den mäter FAKTISK `backgroundColor` i
     // renderad yta och bryr sig inte om vilka klassnamn som råkar stå där.
+    // [TASK-309.44] SELEKTORN ÄR `getByTitle`, INTE `getByText` — OCH BYTET ÄR
+    // EN SKÄRPNING, INTE EN ANPASSNING. Pillen bär sin text i ett INRE
+    // `<span class="min-w-0 truncate">` sedan den delade grenen fick ikon
+    // (ikonen måste ligga UTANFÖR den trunkerande noden för att aldrig klippas
+    // bort). `getByText` löser till den INNERSTA noden som bär texten, alltså
+    // det inre spannet — vars bakgrund är transparent, eftersom plattan sitter
+    // på pillen. Testet mätte då fel element och föll: `rgba(0,0,0,0)` mot
+    // `<ul>`:ets `rgba(0,0,0,0)`.
+    //
+    // `title` sitter på PILLEN och bara där (det inre spannet bär ingen), så
+    // `getByTitle` binder mätningen till elementet som faktiskt äger
+    // bakgrunden — oberoende av hur pillens inre struktur ser ut i framtiden.
+    // En `getByText` som råkar peka på ett transparent barn är exakt den tysta
+    // urholkning denna vakt finns för att förhindra.
+    //
+    // UNDERLAGET ÄR KORTET, INTE `<ul>` — också en skärpning. `<ul>` är
+    // GENOMSKINLIG sedan T176 (den vita ytan bor i varje `<li>`s kort), så en
+    // jämförelse mot den prövade i praktiken bara "pillen är inte
+    // transparent". Pillen ligger PÅ kortet; det är den nästlingen felklassen
+    // handlar om. Båda jämförelserna görs nedan, så ingen täckning tappas.
     network.use(bilagorHandler());
     await gotoEventlage(page);
 
-    const pill = page.getByText('RIM · Rönninge');
+    const pill = page.getByTitle('RIM · Rönninge');
     await expect(pill).toBeVisible();
     const pillFarg = await pill.evaluate((el) => getComputedStyle(el).backgroundColor);
     const listFarg = await page
       .getByTestId('dokument-lista')
       .evaluate((el) => getComputedStyle(el).backgroundColor);
+    const kortFarg = await page
+      .getByTestId('dokument-fil')
+      .first()
+      .evaluate((el) => getComputedStyle(el).backgroundColor);
 
-    expect(pillFarg).not.toBe(listFarg);
+    expect(pillFarg, 'pillen får inte vara osynlig mot listytan').not.toBe(listFarg);
+    expect(pillFarg, 'pillen får inte vara osynlig mot kortet den ligger på').not.toBe(kortFarg);
+  });
+
+  /**
+   * [TASK-309.44 beslut C] DE TVÅ PILLARNA SKA SE OLIKA UT — TVÅSIDIGT.
+   *
+   * Granskarfynd på PR #2130 (runda 1): beslutet att ge den DELADE pillen ikon
+   * och info-ton landade utan permanent assertion. Vakten ovan prövar att
+   * pillen SYNS mot sitt underlag; den säger ingenting om att den delade
+   * skiljer sig från den event-egna — och det är hela poängen med beslutet.
+   *
+   * Marcus mandat 2026-08-30: på en eventsida är "detta event" NORMALFALLET,
+   * och det Lotta måste kunna se på en halv sekund är *"påverkar jag andra
+   * event om jag rör den här filen?"*. Signalen går på tre kanaler (ikon, ton,
+   * text) per WCAG 1.4.1 — texten fanns redan, ikonen och tonen är nya.
+   *
+   * TESTET LIGGER HÄR OCH INTE I `dokument-lista-hojdlas`, och det är ett val
+   * med ett skäl: `bilagorHandler()` är den ENDA fixturen i sviterna som ger
+   * BÅDA räckviddstyperna på SAMMA sida (eventläget unionerar eventets egna
+   * med de delade). Höjdlås-svitens handler ger en typ per läge, och en
+   * tvåsidig jämförelse hade där krävt två sidladdningar — alltså cache-
+   * arrangemang och två mätögonblick för en fråga som ska ställas i ett.
+   *
+   * TONERNA JÄMFÖRS MOT LEVANDE TOKENS, inte mot hårdkodade rgb-strängar.
+   * Skälet är samma som systerfilens motsvarande block: en hårdkodad färg
+   * fäller en medveten token-ändring som om den vore en bugg, och fäller INTE
+   * en klass som slutat peka på tokenen så länge någon annan regel råkar ge
+   * samma färg.
+   */
+  test('täckningspillarna skiljer sig: delad bär ikon + info-ton, event-egen är neutral utan ikon', async ({
+    page,
+    network,
+  }) => {
+    network.use(bilagorHandler());
+    await gotoEventlage(page);
+
+    const token = (namn: string) =>
+      page.evaluate((n) => {
+        const probe = document.createElement('span');
+        probe.style.color = `var(${n})`;
+        document.body.appendChild(probe);
+        const farg = getComputedStyle(probe).color;
+        probe.remove();
+        return farg;
+      }, namn);
+
+    const infoBg = await token('--mm-info-bg');
+    const infoFarg = await token('--mm-info');
+    const neutralBg = await token('--mm-bg-muted');
+
+    // `getByTitle` binder till PILLEN — `getByText` löser till den innersta
+    // noden, alltså det inre `truncate`-spannet, vars bakgrund är transparent.
+    // Samma skäl som vakten ovan; se dess kommentar.
+    const delad = page.getByTitle('RIM · Rönninge');
+    const egen = page.getByTitle('Detta event');
+
+    await expect(delad).toBeVisible();
+    await expect(egen).toBeVisible();
+
+    // DELAD: tonal platta + ikon i tonfärgen. Ikonen är `aria-hidden` —
+    // texten bär betydelsen, ikonen förstärker igenkänningen (samma
+    // arbetsfördelning som `StatusBadge`s bock/triangel).
+    await expect(delad).toHaveCSS('background-color', infoBg);
+    await expect(delad.locator('svg')).toHaveCount(1);
+    await expect(delad.locator('svg')).toHaveCSS('color', infoFarg);
+    await expect(delad.locator('svg')).toHaveAttribute('aria-hidden', 'true');
+
+    // EVENT-EGEN: OFÖRÄNDRAD neutral metadata-pill, och INGEN ikon. Den
+    // halvan är lika viktig som den första — får normalfallet också en ikon
+    // försvinner kontrasten, och beslutet är tillbaka på ruta ett.
+    await expect(egen).toHaveCSS('background-color', neutralBg);
+    await expect(egen.locator('svg')).toHaveCount(0);
+
+    // TEXTEN ÄR ORÖRD — tredje kanalen, och den enda skärmläsaren hör.
+    await expect(delad).toHaveText('RIM · Rönninge');
+    await expect(egen).toHaveText('Detta event');
+
+    // HÖJDLÅSET: en 13 px-ikon i en `text-caption`-pill (radhöjd 18 px) får
+    // strukturellt inte växa raden. Mätt, inte resonerat — 124 px är samma
+    // tal `dokument-lista-hojdlas` låser, och det ska gälla ÄVEN på en rad
+    // som bär den nya pillen.
+    const liHojder = await page
+      .getByTestId('dokument-lista')
+      .evaluate((ul) =>
+        Array.from(ul.children).map((li) => Math.round(li.getBoundingClientRect().height)),
+      );
+    expect(liHojder.length).toBeGreaterThan(0);
+    expect(liHojder, 'ikonen får inte växa raden — höjdlåset är 124 px').toEqual(
+      liHojder.map(() => 124),
+    );
   });
 
   // ═══ RÄCKVIDDS-AXELN ÄR EN KONTROLL (Marcus 2026-08-18, S107 QA-vandringen) ═══
