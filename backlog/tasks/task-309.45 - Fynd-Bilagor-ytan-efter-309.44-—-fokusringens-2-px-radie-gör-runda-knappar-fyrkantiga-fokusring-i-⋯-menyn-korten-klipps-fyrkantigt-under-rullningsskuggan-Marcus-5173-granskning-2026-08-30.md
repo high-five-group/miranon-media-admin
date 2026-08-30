@@ -7,7 +7,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-08-30 08:47'
-updated_date: '2026-08-30 09:01'
+updated_date: '2026-08-30 09:18'
 labels: []
 dependencies: []
 parent_task_id: TASK-309
@@ -22,10 +22,10 @@ Marcus granskade 309.44 på dev-servern 5173 (2026-08-30 ~08:50 UTC): 'Klar för
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Den globala fokusring-regeln i base.css sätter inte längre border-radius på element som bär en egen radie: radie-deklarationen flyttad till @layer base (utilities vinner) eller motsvarande rot-fix, med docblock som förklarar kaskaden; mätt: ⋯-knappen bär border-radius 9999px OCH synlig ring under tangentbordsfokus, och hover-plattan är rund efter klick + Escape; namnknappen behåller rounded-lg under fokus; inga andra fokusringar tappar synlighet (outline orörd, olagrad)
-- [ ] #2 Ingen fokusring visas i ⋯-menyn vid MUS-öppning (varken på menybehållaren eller första posten), inte heller vid andra öppningen efter Escape-stängning; tangentbordsöppning (Enter/ArrowDown) markerar första posten som förut; mätt med data-focus-visible-inventering + skärmdump per steg
+- [x] #1 Den globala fokusring-regeln i base.css sätter inte längre border-radius på element som bär en egen radie: radie-deklarationen flyttad till @layer base (utilities vinner) eller motsvarande rot-fix, med docblock som förklarar kaskaden; mätt: ⋯-knappen bär border-radius 9999px OCH synlig ring under tangentbordsfokus, och hover-plattan är rund efter klick + Escape; namnknappen behåller rounded-lg under fokus; inga andra fokusringar tappar synlighet (outline orörd, olagrad)
+- [x] #2 Ingen fokusring visas i ⋯-menyn vid MUS-öppning (varken på menybehållaren eller första posten), inte heller vid andra öppningen efter Escape-stängning; tangentbordsöppning (Enter/ArrowDown) markerar första posten som förut; mätt med data-focus-visible-inventering + skärmdump per steg
 - [ ] #3 Rännan bor helt ÖVER kortet: li pt-2 (inte py-1), wrappern -mt-2 (inte -my-1); ul bär rounded-2xl; skuggan bottom-0; mätt vid 1280 och 390: tray-luft 8 px runtom, 8 px mellan korten, fjärde kortets bottom === ul.bottom === skuggans bottom i vila, li 124 uniform, hookens kod byte-identisk; mitt i scroll (scrollTop 60) klipps kortet med kortets radie och skuggans hörn sammanfaller med klippningens (×3-crop granskad); rullens tumme klipps inte synligt i hörnen
-- [ ] #4 Docblocken som beskriver py-1/-my-1/bottom-1 (DokumentListRam, DokumentLista:s li-kommentar, GRUPPKORT_KLASS, § RULLNINGSSKUGGAN) omskrivna mot den nya formen; befintliga assertioner (fjärde kortets bottom ≤ ul bottom, skugga.right = kort.right) gröna; typecheck 0 · biome 0 · build grön · alla dokument-acceptance gröna
+- [x] #4 Docblocken som beskriver py-1/-my-1/bottom-1 (DokumentListRam, DokumentLista:s li-kommentar, GRUPPKORT_KLASS, § RULLNINGSSKUGGAN) omskrivna mot den nya formen; befintliga assertioner (fjärde kortets bottom ≤ ul bottom, skugga.right = kort.right) gröna; typecheck 0 · biome 0 · build grön · alla dokument-acceptance gröna
 - [ ] #5 Landat via review-grinden (ADR-105) och prod-verifierat read-only av orkestreraren: ⋯ rund efter klick+Escape+hover, ingen ring i menyn vid mus, skuggan sammanfaller med kortkanten i vila och scroll
 <!-- AC:END -->
 
@@ -35,3 +35,15 @@ Marcus granskade 309.44 på dev-servern 5173 (2026-08-30 ~08:50 UTC): 'Klar för
 - [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+AC #3 AVBOCKAD IGEN, medvetet — inte for att nagot mattes fel utan for att EN delklausul inte gar att mata i denna rigg och jag inte overstiger belagget.
+
+ALLT UTOM EN KLAUSUL AR MATT OCH GRONT (talen star i den foregaende noteringen): li pt-2 / wrapper -mt-2 / ul rounded-2xl / skuggan bottom-0, tray-luft 9/9/9 + 8 px mellan korten, kort4.bottom === ul.bottom === skugga.bottom vid BADA bredder, li 124 uniform, hooken byte-identisk, x3-crops mitt i scroll visar rund klippning utan vit remsa.
+
+KLAUSULEN SOM INTE GAR ATT MATA HAR: 'rullens tumme klipps inte synligt i hornen'. Acceptance-projektets headless Chromium malar ingen scrollbar-tumme alls — rannan ar reserverad (11 px, matt) men en x6-uppskalad strimma over hela rannans yta visar enfargad gra. Jag kan alltsa varken bekrafta eller falsifiera klausulen.
+Och min egen harledning pekar at FEL hall: rannan ar 11 px bred, ul:s nedre horn-radie 16 px, sa rannans nedersta ~16 px ligger innanfor hornkurvan — en malad tumme skulle formodligen fa sin nedre ande avrundad. Det ar inneboende i att runda en rullbox; enda alternativet ar att ta bort radien, vilket ger tillbaka det fyrkantiga hornet fixen finns for.
+Att bocka en AC vars enda oprovade klausul min egen geometri talar EMOT vore att pasta mer an jag vet. Orkestrerarens matning mot 5173 i en riktig webblasare avgor — bocka #3 dar, eller ta ett beslut om radien om tummen ser trasig ut.
+<!-- SECTION:NOTES:END -->
