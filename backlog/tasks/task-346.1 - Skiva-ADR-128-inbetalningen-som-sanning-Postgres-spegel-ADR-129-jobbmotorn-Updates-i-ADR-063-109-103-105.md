@@ -3,12 +3,13 @@ id: TASK-346.1
 title: >-
   Skiva: ADR-128 (inbetalningen som sanning, Postgres, spegel) + ADR-129
   (jobbmotorn) + Updates i ADR-063/109/103/105
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-30 18:45'
-updated_date: '2026-08-30 19:31'
+updated_date: '2026-08-30 19:47'
 labels:
   - ready-for-agent
+  - intentionally-unchecked
 dependencies: []
 parent_task_id: TASK-346
 ordinal: 638000
@@ -35,12 +36,18 @@ Modell: Opus@xhigh (ADR-089; avvikelse från agent-default bokförd här). Nattm
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #4 ADR-128 och ADR-129 är Accepted och landade FÖRE första kodskiva armeras
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 ADR-128 och ADR-129 är Accepted och landade FÖRE första kodskiva armeras
 - [ ] #5 Pengalogikens regler (härledning, sekvens, unik kvittonyckel, matchning, dubbletter, jobbets tillstånd) har var sin negativ kontroll bokförd — testet fäller en trasig implementation
 - [ ] #6 Orkestrerarens egen vandring av Lottas lördag mot staging (fixtur ZZ-GRANSKNING-S113) är bokförd med skärmdumpar i tasks/sessions/bilagor/ före session-paus, och en oberoende granskningsagent har gått samma vandring
 - [ ] #7 Nya ytor ligger bakom miljöflaggan och är avstängda i prod tills Marcus slår på den
 - [ ] #8 Facit-stämplade ytor (Hem, Åtgärds-sidan, persondetalj) bär AMENDERING-sidofil per yta med klassen ny form, förhandsmandat S113 Del 11
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad · Landning: PR #2144 (merge 6433d482, 2026-08-30 ~19:45 UTC) · CI grön per jobb via merge-kön · byggd av Opus@xhigh (bokförd ADR-089-avvikelse) · AC 1–7 bockade med mätta värden (ADR-128 + ADR-129 Accepted; Updates i ADR-063/109/103/105; minimaltest pgmq/pg_cron/pg_net i staging utfört och städat till byte-identiskt utgångsläge; check:docs 14 gröna) · Två mätfynd ändrade ADR-129:s beslut: pgmq_public skapas INTE av extensionen (→ security definer-wrapper) och anon-JWT passerar verify_jwt (→ delad hemlighet som auktorisation) · D0-landning utan granskningsgrind per kortets beskrivning; orkestreraren läste båda ADR:erna + alla fyra Updates-poster i sin helhet före armering · OBOCKAT MED AVSIKT: DoD #5–#8 är PRD-nivå-krav (pengalogikens negativa kontroller, orkestrerarens slutvandring, miljöflaggan, AMENDERING-sidofiler) som en docs-only ADR-skiva strukturellt inte kan uppfylla — de prövas på kodskivorna och QA-kortet 346.13.
+<!-- SECTION:FINAL_SUMMARY:END -->
