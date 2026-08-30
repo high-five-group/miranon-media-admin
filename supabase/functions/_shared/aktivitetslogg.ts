@@ -170,6 +170,43 @@ function forstaVardet(map: Record<string, string>): string {
   return map['sv-SE'] ?? Object.values(map)[0] ?? '';
 }
 
+/**
+ * Läser `user_metadata.display_name` ur den REDAN VERIFIERADE JWT:ns payload.
+ *
+ * IDENTISK I SAK med `readDisplayNameFromJwt` i `log-activity/index.ts` och
+ * dess tre syskon i `create-person-note`/`create-event-note`/`invite-user`.
+ * `ADR-026`s ≥3-tröskel för `_shared`-extraktion var alltså passerad långt
+ * före denna kopia; det som skiljer HÄR är att funktionen faktiskt LIGGER i
+ * `_shared` och därmed är den plats framtida EF:er kan dela.
+ *
+ * De fyra befintliga kopiorna migreras INTE i denna skiva: tre av dem bor i
+ * prod-deployade funktioner, och en refaktorering av dem hade utökat
+ * blast-radien från "nya funktioner" till fyra fungerande skrivvägar, på en
+ * natt utan mänsklig granskning. Bokfört som uppföljning, inte gjort.
+ *
+ * DEKODAR BARA — VERIFIERAR ALDRIG. Anroparen MÅSTE ha kört `requireUser`
+ * först; denna funktion läser en payload som redan bevisats äkta. Att
+ * använda den på en overifierad token vore att lita på vad avsändaren
+ * påstår om sig själv.
+ */
+export function lasVisningsnamnUrJwt(authHeader: string | null): string | null {
+  if (!authHeader?.startsWith('Bearer ')) return null;
+  const delar = authHeader.slice('Bearer '.length).trim().split('.');
+  if (delar.length !== 3) return null;
+  try {
+    const b64 = delar[1].replace(/-/g, '+').replace(/_/g, '/');
+    const paddad = b64 + '='.repeat((4 - (b64.length % 4)) % 4);
+    const bytes = Uint8Array.from(atob(paddad), (tecken) => tecken.charCodeAt(0));
+    const claims = JSON.parse(new TextDecoder().decode(bytes)) as {
+      user_metadata?: { display_name?: unknown };
+    };
+    const ra = claims.user_metadata?.display_name;
+    return typeof ra === 'string' && ra.trim() !== '' ? ra.trim() : null;
+  } catch {
+    return null;
+  }
+}
+
 export function statementTillRad(statement: Statement): AktivitetsRad {
   const requestId = statement.context.extensions[REQUEST_ID_EXTENSION_IRI];
   return {

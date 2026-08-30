@@ -276,7 +276,12 @@ export type Inbetalningslista = z.infer<typeof InbetalningslistaSchema>;
 export type KoaKvittonInput = { inbetalningIds: string[] };
 
 export const KoaKvittonResultSchema = z.object({
-  jobbId: z.string().uuid(),
+  /**
+   * `null` när INGEN post var köbar (alla redan skickade, makulerade eller
+   * redan i kön). Inget tomt jobb skapas då: ett jobb utan rader hade legat
+   * kvar som `oppet` för alltid och gjort Hem-kortets räknare fel.
+   */
+  jobbId: z.string().uuid().nullable(),
   /** Rader som faktiskt köades. */
   koade: z.number().int(),
   /**

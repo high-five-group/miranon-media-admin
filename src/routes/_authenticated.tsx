@@ -2,6 +2,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { createFileRoute, Outlet, redirect } from '@tanstack/react-router';
 import { useEffect, useRef, useState } from 'react';
 import { AppShell, FORBEREDELSESKARM_VANTAR, Forberedelseskarm } from '@/components/AppShell';
+import { JobbLyssnare } from '@/components/betalningar/JobbLyssnare';
 import { useDataSource } from '@/data/useDataSource';
 import type { StartvarmningForlopp, StartvarmningHandle } from '@/data/warmup/startvarmningen';
 import { arCacheVarm, lasVarmningTimeoutOverride, starta } from '@/data/warmup/startvarmningen';
@@ -189,8 +190,23 @@ function AuthenticatedLayout() {
   }
 
   return (
-    <AppShell>
-      <Outlet />
-    </AppShell>
+    <>
+      {/* [TASK-346.4 AC #5] Kvittojobbets Realtime-lyssnare + läsningen vid
+          appöppning (ADR-129 beslut 8). RENDERAR `null` — den ligger som
+          SYSKON till AppShell, inte inuti den, så den varken kan påverka
+          skalets layout eller lägga en nod i skärmläsarträdet.
+
+          HÄR OCH INTE I `__root`: prenumerationen kräver en inloggad session
+          (Realtime levererar bara rader RLS släpper igenom), och
+          `_authenticated`-layouten monteras per konstruktion aldrig förrän
+          `beforeLoad`-guarden ovan passerat. På `__root` hade den försökt
+          koppla upp sig på inloggningssidan.
+
+          Miljöflaggan gatar båda effekterna — se `JobbLyssnare`. */}
+      <JobbLyssnare />
+      <AppShell>
+        <Outlet />
+      </AppShell>
+    </>
   );
 }
