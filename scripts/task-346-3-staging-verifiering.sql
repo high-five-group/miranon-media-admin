@@ -110,12 +110,35 @@ begin
     raise exception 'KONTROLL C MISSLYCKADES: serien blev % (vantade {1003,1004,1005})', v_serie;
   end if;
 
+  -- ═══ SENTINEL-RECORD-ID:NA — EXAKT 14 TECKEN EFTER `rec` ═══
+  --
+  -- `inbetalningar_anmalan_record_id_form` kräver `^rec[A-Za-z0-9]{14}$`
+  -- (Airtables egen record-ID-form). Här stod tidigare `recZZTASK3463AA` och
+  -- tre syskon med TOLV tecken efter `rec`. Skarp körning efter `db push`
+  -- (orkestreraren, 2026-08-30) fällde D-blocket på
+  -- `23514 ... violates check constraint "inbetalningar_anmalan_record_id_form"`.
+  --
+  -- OCH DET VÄRRE, som den fällningen dolde: F1 och F2 fångar
+  -- `check_violation`. Med ett ogiltigt record-ID hade BÅDA blivit gröna av
+  -- FEL SKÄL — de hade fällts av formkontrollen i stället för av tecken-
+  -- regeln respektive makuleringsregeln de finns för att bevisa. Ett grönt
+  -- utfall från ett prov som aldrig nådde sin egen regel är värre än ett
+  -- rött, eftersom ingen tittar igen.
+  --
+  -- Id:na är därför formgiltiga men uppenbart fejk. Sentinel-IGENKÄNNINGEN
+  -- som `public.purga_testrader()` matchar sitter i `ogonblicksbild_namn`
+  -- och `skapad_av` (`ZZ-TASK-346.3-…`), aldrig i record-ID:t — det behöver
+  -- bara passera formen.
+  --
+  -- F3 nedan är UNDANTAGET: dess record-ID (`Anna Andersson`) ska förbli
+  -- ogiltigt, för det är exakt vad den kontrollen bevisar. Rör den inte.
+
   -- ═══ D. UNIK NYCKEL PER INBETALNING: andra kvittot FÄLLER ═══
   insert into public.inbetalningar (
     anmalan_record_id, ogonblicksbild_namn, ogonblicksbild_event,
     belopp, betalsatt, typ, skapad_av
   ) values (
-    'recZZTASK3463AA', 'ZZ-TASK-346.3-verifiering-A', 'ZZ-TASK-346.3 verifiering',
+    'recZZTASK346300AA', 'ZZ-TASK-346.3-verifiering-A', 'ZZ-TASK-346.3 verifiering',
     2500.00, 'Swish', 'inbetalning', 'ZZ-TASK-346.3-verifiering'
   ) returning id into v_inbetalning;
 
@@ -159,7 +182,7 @@ begin
       anmalan_record_id, ogonblicksbild_namn, ogonblicksbild_event,
       belopp, betalsatt, typ, skapad_av
     ) values (
-      'recZZTASK3463BB', 'ZZ-TASK-346.3-verifiering-F1', 'ZZ-TASK-346.3 verifiering',
+      'recZZTASK346300BB', 'ZZ-TASK-346.3-verifiering-F1', 'ZZ-TASK-346.3 verifiering',
       -500.00, 'Swish', 'inbetalning', 'ZZ-TASK-346.3-verifiering'
     );
     raise exception 'KONTROLL F1 MISSLYCKADES: negativt belopp med typ inbetalning gick igenom';
@@ -173,7 +196,7 @@ begin
       anmalan_record_id, ogonblicksbild_namn, ogonblicksbild_event,
       belopp, betalsatt, typ, status, skapad_av
     ) values (
-      'recZZTASK3463CC', 'ZZ-TASK-346.3-verifiering-F2', 'ZZ-TASK-346.3 verifiering',
+      'recZZTASK346300CC', 'ZZ-TASK-346.3-verifiering-F2', 'ZZ-TASK-346.3 verifiering',
       100.00, 'Swish', 'inbetalning', 'makulerad', 'ZZ-TASK-346.3-verifiering'
     );
     raise exception 'KONTROLL F2 MISSLYCKADES: makulerad post utan skal gick igenom';
@@ -209,7 +232,7 @@ begin
     anmalan_record_id, ogonblicksbild_namn, ogonblicksbild_event,
     belopp, betalsatt, typ, skapad_av
   ) values (
-    'recZZTASK3463DD', 'ZZ-TASK-346.3-verifiering-B', 'ZZ-TASK-346.3 verifiering',
+    'recZZTASK346300DD', 'ZZ-TASK-346.3-verifiering-B', 'ZZ-TASK-346.3 verifiering',
     1000.00, 'Bankgiro', 'inbetalning', 'ZZ-TASK-346.3-verifiering'
   ) returning id into v_inbetalning_b;
 

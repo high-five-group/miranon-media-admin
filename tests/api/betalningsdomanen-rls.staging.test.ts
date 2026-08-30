@@ -131,8 +131,51 @@ interface PostgrestErrorBody {
   message?: string;
 }
 
-function url(config: ApiConfig, tabell: string, query = '?select=id&limit=1'): string {
-  return `${config.baseUrl}/rest/v1/${tabell}${query}`;
+/**
+ * PROBKOLUMNEN PER TABELL — en kolumn som FAKTISKT finns.
+ *
+ * Deny-proberna frågar `?select=<kolumn>&limit=1`. PostgREST löser
+ * kolumnnamnet FÖRE behörighetsprövningen, så en kolumn som inte existerar
+ * ger `400 / 42703 column ... does not exist` i stället för det `42501` som
+ * deny-beviset vilar på — provet når då aldrig sin egen regel och kan varken
+ * bli grönt av rätt skäl eller rött av rätt skäl.
+ *
+ * Det var precis vad som hände: proben frågade `id` för ALLA tabeller, men
+ * `kvittoserie_golv` har ingen `id` — dess primärnyckel är `ar` (migration
+ * 20260830195728 rad 334). Två fall föll på 42703 i den första skarpa
+ * körningen efter `db push` (orkestreraren, 2026-08-30, 27/29 gröna).
+ *
+ * Korsläst mot migrationerna 2026-08-30: `inbetalningar`, `kvitton`, `jobb`
+ * och `jobb_rad` bär alla `id uuid primary key`; `kvittoserie_golv` bär
+ * `ar integer primary key` och ingenting som heter `id`.
+ */
+const PROB_KOLUMN: Record<string, string> = {
+  inbetalningar: 'id',
+  kvitton: 'id',
+  jobb: 'id',
+  jobb_rad: 'id',
+  kvittoserie_golv: 'ar',
+};
+
+/**
+ * Fail-loud på den vanligaste framtida glidningen: en ny tabell läggs till i
+ * LASBARA utan att få en probkolumn. Utan detta hade `undefined` hamnat i
+ * URL:en och gett ännu ett 42703 som ser ut som ett RLS-fel.
+ */
+function probKolumn(tabell: string): string {
+  const kolumn = PROB_KOLUMN[tabell];
+  if (kolumn === undefined) {
+    throw new Error(
+      `betalningsdomanen-rls: ingen probkolumn deklarerad för "${tabell}". ` +
+        'Lägg till den i PROB_KOLUMN — en kolumn som FAKTISKT finns i tabellen.',
+    );
+  }
+  return kolumn;
+}
+
+function url(config: ApiConfig, tabell: string, query?: string): string {
+  const fraga = query ?? `?select=${probKolumn(tabell)}&limit=1`;
+  return `${config.baseUrl}/rest/v1/${tabell}${fraga}`;
 }
 
 /**
