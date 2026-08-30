@@ -124,18 +124,33 @@ export function Meny({
           className,
         )}
       >
-        {/* ═══ MENYBEHÅLLAREN MÅLAR ALDRIG FOKUSRINGEN ═══
-            Den ÄR en composite-widget: fokus bor på behållaren, men
-            fokus-INDIKATIONEN bärs av den markerade POSTEN (`data-[focused]`
-            + postens egen ring), precis som `Select`s ListBox/option-par.
+        {/* ═══ VARKEN BEHÅLLAREN ELLER POSTERNA MÅLAR EN RING VID MUS ═══
+            Menyn ÄR en composite-widget: fokus bor på behållaren, men
+            fokus-INDIKATIONEN bärs av den markerade POSTEN, precis som
+            `Select`s ListBox/option-par.
+
+            [TASK-309.45, 2026-08-30] INDIKATIONEN ÄR TVÅDELAD, och det är
+            skillnaden som gör mus-läget rätt:
+              `data-[focused]`-PLATTAN — bärs ALLTID, i båda modaliteterna.
+                 Den är det som visar vilken post pekaren eller piltangenten
+                 står på, och den rörs aldrig av någon släckare.
+              RINGEN — bara vid TANGENTBORD. Vid musöppning skript-fokuserar
+                 RAC menyn, musen glider över en post, RAC flyttar fokus dit
+                 (focus-follows-hover) — och webbläsaren klassar skript-fokus
+                 som tangentbord. Posten matchade då `:focus-visible` utan
+                 `data-focus-visible`, och den globala regeln målade en blå
+                 ring mitt i en ren musinteraktion. Marcus: *"Inte okej.
+                 Något är fel där."*
 
             SLÄCKAREN BOR I `base.css`, INTE HÄR, och det är MÄTT och inte
             valt: en Tailwind-klass kan inte vinna över den globala
             `*:focus-visible`-regeln, eftersom utilities ligger i
             `@layer utilities` och olagrad author-CSS besegrar varje lagrad
-            regel oavsett specificitet. Se base.css § `[role="menu"]`-släckaren
-            för hela mätningen. `outline-none` nedan står kvar för
-            NON-focus-visible-läget (RAC:s egen default-outline). */}
+            regel oavsett specificitet. Selektorlistan täcker sedan 309.45
+            BÅDE behållaren (`[role="menu"]`) och posterna
+            (`[role="menuitem"]`) — se base.css för hela den uppmätta
+            kedjan. `outline-none` nedan står kvar för NON-focus-visible-
+            läget (RAC:s egen default-outline). */}
         <AriaMenu aria-label={etikett} className="max-h-72 overflow-auto outline-none">
           {children}
         </AriaMenu>
