@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-29
+updated: 2026-08-30
 review_by: 2026-11-24
 status: stable
 ---
@@ -784,6 +784,128 @@ blockDefinitioner.ts`. Mer-sidans två ytor importerar härifrån i stället
 för att uppfinna en egen dialogform (AC #2/#3: "ingen andra dialogform") —
 se modulernas egna filhuvuden för den fullständiga motiveringen och den
 enda avsiktliga tillägget (`BlockDialog`s `caption`-prop).
+
+#### Stagingbasens additiva tillskott 2026-08-30 (TASK-346.2, ADR-128 §§ 2/5/7) — numeriska prisfält, spegel, Saknas (kr)
+
+Betalningsflödets numeriska prisfält, den app-skrivna spegeln och
+`Saknas (kr)`-formeln — ADR-128 beslut 5 (spegeln) och beslut 7 (numeriska
+priser BREDVID fritexten). Skapade LIVE via Airtable MCP
+(`mcp__airtable__create_field`, staging `apphjj8Q7lkXCMsL4`, 2026-08-30) —
+`AIRTABLE_SCHEMA_TOKEN` saknades lokalt (samma lucka som `TASK-147.12`/
+`TASK-309.2`); `scripts/create-betalningsfalt.mjs` är den deklarativa
+hemvisten som speglar exakt denna spec för framtida idempotenta körningar
+(samma form som `create-kvitton-table.mjs`, `npm run schema:betalningsfalt`).
+Enbart additivt — inget befintligt fält (inklusive alla fritext-fälten
+Pris/Anmälningsavgift/Resterande belopp, § Schema cheat sheet ovan) rört.
+
+| Tabell | Fält (staging-ID) | Typ | Roll |
+|---|---|---|---|
+| Eventinnehåll | `Pris (kr)` (`fldyFLfa0RhzY1qH1`) | number, precision 2 | Numerisk standard, BREDVID fritexten `Pris` (`fldaNE6ZU42lVNyrS`) |
+| Eventinnehåll | `Anmälningsavgift (kr)` (`fldvMVViBjpXW9Abe`) | number, precision 2 | Numerisk standard, BREDVID fritexten `Anmälningsavgift` (`fldih0ePhJqD8raEa`) |
+| Eventplanering | `Pris (kr)` (`fldCGsGP3QDtaAoho`) | number, precision 2 | Per-event-override, BREDVID `Pris (bilagetext)` (`fld6SoKgMvTsgicDm`). Tomt = Eventinnehållets standard gäller (härleds i KOD — ingen lagrad länk Eventplanering→Eventinnehåll finns) |
+| Eventplanering | `Anmälningsavgift (kr)` (`fldQL5eNuGNHwQ7tq`) | number, precision 2 | Per-event-override, BREDVID `Anmälningsavgift (bilagetext)` (`fld2DSzLOcXn1REBK`) |
+| Anmälningar | `Avtalat pris (kr)` (`fldZHwxOXOQqkFx33`) | number, precision 2 | Frivilligt, vinner över eventets pris (beslut 2) |
+| Anmälningar | `Summa inbetalt (kr)` (`fldI73u3UYN5vGsN6`) | number, precision 2 | **APP-SKRIVET spegelfält** — TALFÄLT, INTE rollup (beslut 5). Skrivväg: `write-registration-payment-mirror` (byggs TASK-346.4) |
+| Anmälningar | `Kvittonummer` (`fldkqFkqL3N5nopAL`) | singleLineText | **APP-SKRIVET spegelfält** — skild från länkfältet `Kvitton` (`fld2Axx3FsfXndJ39`) |
+| Anmälningar | `Pris (kr) (from Event)` (`fldtZSeHg3ubwStzK`) | multipleLookupValues | **ADDITIVT HJÄLPFÄLT** (ej i AC #1:s lista, uttryckligen tillåtet av uppdraget) — lookup av Eventplanering.`Pris (kr)` via länken `Event` (`fldi3enUaMdbuGSlm`). Namnkonvention: samma `(from Event)`-suffix som `Ort (from Event)`/`Kurs (from Event)` m.fl. |
+| Anmälningar | `Saknas (kr)` (`fldSJCJwXnqwBIX2b`) | formula | Se formeln nedan |
+
+**`Saknas (kr)`-formeln, verbatim** (fältnamn i klammerform — Airtable
+resolvade dem till `referencedFieldIds` `fldZHwxOXOQqkFx33`/
+`fldtZSeHg3ubwStzK`/`fldI73u3UYN5vGsN6` vid skapelsen, `isValid: true`):
+
+```text
+IF(
+  OR({Avtalat pris (kr)}, {Pris (kr) (from Event)}),
+  IF({Avtalat pris (kr)}, {Avtalat pris (kr)}, {Pris (kr) (from Event)}) - {Summa inbetalt (kr)},
+  BLANK()
+)
+```
+
+**Empiriskt verifierat live mot staging (fyra fall, samtliga mätta —
+`rec0houPcRjsPBGVz` "Cecilia Ödman" testad och ÅTERSTÄLLD till blankt
+tillstånd efteråt, `mutera-och-återställ`-mönstret):**
+
+| Fall | Indata | Utfall | Vad det bevisar |
+|---|---|---|---|
+| Inget pris känt | Avtalat pris tomt, `Pris (kr) (from Event)` tomt (ej ZZ-GRANSKNING-S113-länkat) | **BLANK** (verifierat på 3 slumpade rader — `Saknas (kr)` saknas helt i API-svaret) | Guarden mot skräp-negativa värden fungerar — INTE `0 - 0` eller ett negativt tal |
+| Eventets pris-fallback | Avtalat pris tomt, `Pris (kr) (from Event)` = 2500, Summa = 0 | `2500` | Fallback till eventets pris när Avtalat pris inte är satt |
+| Avtalat pris VINNER | Avtalat pris = 2000, `Pris (kr) (from Event)` = 2500, Summa = 500 | `1500` (= 2000−500, INTE 2500−500) | Avtalat pris har företräde framför eventets pris (beslut 2) |
+| Genuin överbetalning | Avtalat pris = 2000, Summa = 2500 | `-500` | Ett NEGATIVT resultat är TILLÅTET när det är ett äkta överskott — guarden gäller bara "inget pris känt", inte alla negativa utfall |
+
+**Känd kosmetisk kant, ej blockerande:** lookup-fältets `result.options.precision`
+rapporteras som `0` av Meta-API:t trots att källfältet (Eventplanering.
+`Pris (kr)`) har precision 2 — verifierat via `describe_table` direkt efter
+skapelsen. Detta är en Airtable-**visningsegenskap**, inte en lagringsbegränsning:
+formelberäkningen ovan använder det råa (ej avrundade) värdet oavsett
+lookup-fältets egen displayprecision (bekräftat empiriskt — testfallet
+"Avtalat pris VINNER" hade gett `1500.00` felfritt om något decimalvärde
+hade förekommit; inga bråkdelar testades eftersom alla verkliga priser i
+staging är heltal). Påverkar bara hur `Pris (kr) (from Event)` VISAS i ett
+grid-view, aldrig ett beräknat resultat.
+
+**Priser ifyllda (AC #4), källa bokförd per event:**
+
+- **Eventinnehåll `Resor i medvetandet 1 · Utbildning`** (`rec2MZrLMKWAzxarB`)
+  — enda Eventinnehåll-raden med fritext ifylld sedan tidigare (§ "Uppslaget
+  Event (source) × Typ"). `Pris (kr)` = 2500, `Anmälningsavgift (kr)` = 1000,
+  parsat DIREKT ur radens EGEN fritext (`Pris` = `"2.500"`, `Anmälningsavgift`
+  = `"1000:-"`) — källan är alltså denna rads egen fritext, ordagrant.
+- **Eventplanering ZZ-GRANSKNING-S113** (Event-14061, `recSahYCeTbEzFFe6`)
+  — `Pris (kr)` = 2500, `Anmälningsavgift (kr)` = 1000 satta som PER-EVENT-
+  ÖVERRIDE. **Premiss-divergens, bokförd öppet (ADR-086):** uppdraget antog
+  ett existerande fritext-värde att kopiera från, men verifierat live
+  (2026-08-30) är BÅDA fritext-källorna för detta event blanka — eventets
+  EGEN `Pris (bilagetext)` (tom) och dess Eventinnehåll-standard
+  `Fjärrskådning · Utbildning` (`recyjQG7OjNHMPDmm`, samtliga fritextfält
+  tomma). Talen 2500/1000 sattes därför DIREKT per AC #4:s explicita krav,
+  utan en fritext-källa på DETTA event — de matchar (och är medvetet valda
+  för att matcha) det enda verkliga fritext-exemplet i basen, ovanstående
+  `Resor i medvetandet 1 · Utbildning`-rad.
+- **"Kommande staging-event":** ingen ytterligare icke-ZZ `Planerat`-rad med
+  startdatum efter 2026-08-30 finns i staging (mätt:
+  `AND(IS_AFTER({Startdatum},TODAY()),NOT(REGEX_MATCH({Ort},'^ZZ')))` → 0
+  träffar; de två närmaste icke-ZZ `Planerat`-eventen, Falköping 2026-08-18
+  och Varberg 2026-08-22, ligger redan BAKOM dagens datum). AC #4:s andra
+  klausul tolkas därför som täckt av Eventinnehåll-backfillen ovan — den
+  STANDARDEN är källan varje framtida `Resor i medvetandet 1`-event ärver.
+  En fullständig events-prisbackfill hör till `TASK-346.8` (utanför denna
+  skivas scope).
+
+**Skrivväg (allowlist, AC #3):** `supabase/functions/_shared/field-allowlists.ts`
+bär operationen `write-registration-payment-mirror` (tabell `Anmälningar`,
+fälten `Summa inbetalt (kr)` / `Kvittonummer` / `Anmälningsavgift` /
+`Slutbetalning` / `Avtalat pris (kr)`) — deny-by-default kvar, EF:en som
+faktiskt anropar den byggs i `TASK-346.4`. `Saknas (kr)` ligger MEDVETET
+UTANFÖR (Airtable-formel, basen räknar själv). De numeriska
+standardprisfälten (Eventinnehåll/Eventplanering ovan) ligger UTANFÖR denna
+operation — de hör till Lottas egen prissättning via eventredigeringen, inte
+betalnings-spegeln; en framtida skrivväg dit (om Lotta ska kunna redigera
+`Pris (kr)` från appen) är en egen, ej ännu beslutad operation.
+
+**Prod-fälten — ÖPPET AC #5 för Marcus.** Agenten rör aldrig prod
+(`app8uGPrVCVOm6LfD` förbjuden). Exakt samma NIO fält, samma typer/precision,
+skapas i prod-basen på Marcus GO (t.ex. via `AIRTABLE_PROD_GODKAND_AV_MARCUS`-
+vägen `create-eventinnehall-modell.mjs`/`create-betalningsfalt.mjs` redan
+etablerar, eller Airtable-konsolen direkt):
+
+| Tabell (prod-ID) | Fält | Typ |
+|---|---|---|
+| Eventinnehåll (`tblfwqsNPSYd6o44L`) | `Pris (kr)` | number, precision 2 |
+| Eventinnehåll (`tblfwqsNPSYd6o44L`) | `Anmälningsavgift (kr)` | number, precision 2 |
+| Eventplanering (`tblVE3UKWl1CKrphV`) | `Pris (kr)` | number, precision 2 |
+| Eventplanering (`tblVE3UKWl1CKrphV`) | `Anmälningsavgift (kr)` | number, precision 2 |
+| Anmälningar (`tbloOcrppVoyrHbrq`) | `Avtalat pris (kr)` | number, precision 2 |
+| Anmälningar (`tbloOcrppVoyrHbrq`) | `Summa inbetalt (kr)` | number, precision 2 |
+| Anmälningar (`tbloOcrppVoyrHbrq`) | `Kvittonummer` | singleLineText (INGEN options-nyckel vid skapelse — se skriptets kommentar) |
+| Anmälningar (`tbloOcrppVoyrHbrq`) | `Pris (kr) (from Event)` | multipleLookupValues — `recordLinkFieldId` = prodens `Event`-fält-ID, `fieldIdInLinkedTable` = prodens Eventplanering.`Pris (kr)`-fält-ID (läs efter skapelse, samma ordning som skriptet: Eventplanering FÖRE lookupen) |
+| Anmälningar (`tbloOcrppVoyrHbrq`) | `Saknas (kr)` | formula — EXAKT formeln ovan (fältnamnen är identiska i prod, Airtable resolvar per bas) |
+
+Ordningen är en invariant (samma som skriptet): Eventinnehåll/Eventplanering
+FÖRE lookupen, lookupen FÖRE formeln. Även prod-basens `Eventplanering.
+Pris (bilagetext)`/`Anmälningsavgift (bilagetext)` (§ "Prod-ID:n" ovan) och
+fritext-fälten på Eventinnehåll/Anmälningar förblir ORÖRDA — samma
+additivitetsprincip som resten av denna sektion.
 
 ### Aktiva event
 
@@ -2247,3 +2369,4 @@ Code kan ta dessa när de blir relevanta för en specifik uppgift.
 | 2026-08-29 (`TASK-338.1`) | **§ Bilagornas Gemensam-räckvidd — Plats-axel tillagd** (STAGING-halvan av `ADR-125` § Beslut 1, ersätter `ADR-118` beslut 1 för räckviddsVALET; beslut 2/3 gäller vidare). Ny 4:e option "Gemensam" på `Bilagor.Räckvidd` (choice `selxFObtdzHsUJiun`), ny länk `Bilagor.Plats` → `Platser` (`fldmkHUxPNRRA0Rxi`), lookup `Bilagor.Platsnamn` (`fldyEDJD3Y3InHJ7J`, `Platser.Namn` via `Plats`), auto-född spegel `Platser.Bilagor` (`fldbdACukM1V52mZT`). Migrerade 9 rader (6 "Kurstyp" + 3 "Alla event") → "Gemensam", `Kursfamilj`/`Kursnivå` oförändrade, räkneverifierat 9→0/9 med `filterByFormula`. **Plattformsvägg mätt:** `mcp__airtable__update_field` kan inte ändra en singleSelects `options.choices` (wrappern stryper okända fält); en direkt Web-API-PATCH mot samma fält (samma PAT som MCP-servern) gav Airtables egen 422 `"Changing a field's type or number precision is not currently supported"` — plattformen tillåter det inte alls via Metadata-API:t. Vägen som fungerade: `mcp__airtable__update_records` med ett okänt strängvärde, Airtables typecast-beteende skapade choicen automatiskt. Ingen ny `.purge-staging-policy.json`-target (migreringen skapade inga nya rader). Prod-kolumnen väntar `TASK-338.6` (Marcus GO per tabell, `ADR-125` § 8). |
 | 2026-08-29 (`TASK-338.6`, steg (i)) | **§ Bilagornas Gemensam-räckvidd — Plats-axel: prod-kolumnen ifylld** (PROD-halvan av samma tabell, Marcus GO citerat i kortets Implementation Notes). `Bilagor.Plats` = `fldiRBrqROTJ7fnFs`, `Bilagor.Platsnamn` = `fldFgcCtK8gRRm2m8`; Räckvidd-choicen "Gemensam" och Platsers auto-födda spegelfält bekräftat NÄRVARANDE (konvergens-verifierat namnbaserat) men deras ID:n fångas inte av migreringsskriptet — bokfört öppet i tabellen, inte gissat. Steg (ii) EF-deploy och (iii) radmigrering är INTE gjorda i denna skiva. |
 | 2026-08-29 (`TASK-338.6`, steg (i), komplettering) | **De två återstående prod-ID:na ifyllda** — Räckvidd-choicen "Gemensam" (`selsABHUcAQJqGd0M`, färg `blueLight2` — Airtables egen typecast-tilldelning, inte avsiktlig) och Platsers auto-födda spegelfält (`fld1yaGrVppKh9fyh`, läst ur `Plats.options.inverseLinkFieldId`), mätta via `describe_table` mot prod 2026-08-29 (Marcus stående GO för prod-läsning) sedan migreringsskriptet bevisligen inte fångar dem (kvarstående tooling-lucka, bokförd i § Bilagornas Gemensam-räckvidd, inte stängd av mätningen). Bonus: `Platsnamn`s `fieldIdInLinkedTable` i prod (`fld9CfDq4rqTAGGpw`) och `Plats`-fältets `prefersSingleRecordLink: false` i prod — bekräftar staging, stänger `TASK-338.6` § Premiss-pass punkt 2. |
+| 2026-08-30 (`TASK-346.2`, ADR-128 §§ 2/5/7) | **§ Stagingbasens additiva tillskott 2026-08-30 tillagd** — nio nya fält (Eventinnehåll/Eventplanering `Pris (kr)`+`Anmälningsavgift (kr)`, Anmälningar `Avtalat pris (kr)`/`Summa inbetalt (kr)`/`Kvittonummer`/`Pris (kr) (from Event)`-lookup/`Saknas (kr)`-formel), skapade live via Airtable MCP; deklarativ hemvist `scripts/create-betalningsfalt.mjs`. `Saknas (kr)`-formeln empiriskt fyrfallstestad live (inget pris → BLANK, eventpris-fallback, Avtalat pris-företräde, genuin överbetalning tillåten negativ). Priser satta för ZZ-GRANSKNING-S113 (2500/1000, källa-divergens bokförd öppet) och Eventinnehåll-standarden `Resor i medvetandet 1 · Utbildning` (parsat ur egen fritext). Ny allowlist-operation `write-registration-payment-mirror` i `field-allowlists.ts` (byggs på av `TASK-346.4`). Prod-fältlistan (§ AC #5) skriven som öppet Marcus-moment. |

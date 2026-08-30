@@ -109,6 +109,11 @@
       "skäl": "Bilage-datamodellens schema-skript (schema:eventinnehall, TASK-309.2, ADR-125 §2). Samma Metadata-API-skrivväg mot samma delade staging-bas som create-bilagor-table.mjs/create-kvitton-table.mjs — identisk risk, identisk motivering."
     },
     {
+      "sökväg": "scripts/create-betalningsfalt.mjs",
+      "funktion": "main",
+      "skäl": "Betalningsflödets prisfält/spegel/Saknas-formel-skript (schema:betalningsfalt, TASK-346.2, ADR-128 §§ 2/5/7). Samma Metadata-API-skrivväg mot samma delade staging-bas som create-bilagor-table.mjs/create-kvitton-table.mjs/create-eventinnehall-modell.mjs — identisk risk, identisk motivering."
+    },
+    {
       "sökväg": "scripts/seed-eventinnehall-modell.mjs",
       "funktion": "main",
       "skäl": "Bilage-datamodellens permanenta seed (seed:eventinnehall, TASK-309.2, ADR-125 §2). Skriver Platser-/Eventinnehåll-/Agendapunkter-records via samma delade staging-bas som backfill-bilagor-dokumentklass.mjs — en lokal körning samtidigt med ett CI-staging-jobb ska stoppas av samma skäl."
