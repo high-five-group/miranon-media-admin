@@ -399,22 +399,44 @@ begin
   -- Golvet läses BARA när sekvensen skapas. Ändras golvet efteråt får det
   -- ingen effekt — det är avsikten: golvet är en startpunkt, inte en
   -- löpande sanning som får flytta en serie som redan delats ut.
-  execute format(
-    'create sequence if not exists public.%I as bigint start with %s minvalue %s no cycle',
-    v_sekvensnamn, v_golv, v_golv
-  );
-
+  -- SKAPANDET OCH REVOKEN KÖRS EN GÅNG PER ÅR, inte en gång per kvitto.
+  --
   -- SEKVENSEN ÄRVER DEFAULT-GRANTARNA — samma mätning som funktions-revoken
   -- längre ned vilar på: `pg_default_acl` i `public` bär objtyp 'S' med
   -- {postgres=rwU, anon=rwU, authenticated=rwU, service_role=rwU} satt av
   -- `supabase_admin` (r = SELECT, w = UPDATE, U = USAGE). En sekvens som
   -- skapas här får alltså USAGE till anon/authenticated, och USAGE räcker
-  -- för `nextval` — en klient hade kunnat brända kvittonummer förbi
-  -- allokeraren, trots att allokeraren själv är låst.
+  -- för `nextval` — en klient hade kunnat bränna kvittonummer förbi
+  -- allokeraren, trots att allokeraren själv är låst. Revoken måste därför
+  -- ligga HÄR och inte i migrationens grant-block: sekvenserna skapas
+  -- lazily, ett år i taget, långt efter att migrationen kört.
   --
-  -- Revoken måste ligga HÄR och inte i migrationens grant-block: sekvenserna
-  -- skapas lazily, ett år i taget, långt efter att migrationen kört.
-  execute format('revoke all on sequence public.%I from anon, authenticated', v_sekvensnamn);
+  -- VARFÖR HELA PARET LIGGER I EN `to_regclass`-GREN: en `revoke` är en
+  -- katalog-UPDATE på `pg_class.relacl`, och PostgreSQL tar bara
+  -- AccessShareLock på målobjektet i `aclchk.c`. Kördes revoken ovillkorligt
+  -- skulle VARJE kvitto skriva om katalograden, och två samtidiga
+  -- allokeringar kunde falla på `tuple concurrently updated`. Grenen gör
+  -- katalogskrivningen till en engångshändelse per år.
+  --
+  -- Att `to_regclass` är säker som villkor är STRUKTURELLT, inte statistiskt:
+  -- sekvensen kan bara skapas av denna funktion, och create + revoke ligger
+  -- i SAMMA transaktion. Rullar den tillbaka försvinner båda tillsammans —
+  -- en skapad men o-revokad sekvens kan alltså aldrig persisteras och sedan
+  -- hoppas över av en senare körning.
+  --
+  -- ACCEPTERAD RACE, en gång per år: två samtidiga FÖRSTA allokeringar för
+  -- ett nytt år kan båda ta grenen. `if not exists` gör den enas create till
+  -- en no-op, och de kan kollidera på revoken — transaktionen rullar då
+  -- tillbaka rent FÖRE `nextval`, så inget nummer bränns och jobbmotorns
+  -- svep plockar upp raden igen. Accepterad, inte designad bort: ADR-129
+  -- beslut 9 allokerar ändå sekventiellt inom en jobbkörning.
+  if to_regclass('public.' || quote_ident(v_sekvensnamn)) is null then
+    execute format(
+      'create sequence if not exists public.%I as bigint start with %s minvalue %s no cycle',
+      v_sekvensnamn, v_golv, v_golv
+    );
+    execute format('revoke all on sequence public.%I from anon, authenticated', v_sekvensnamn);
+  end if;
 
   execute format('select nextval(%L)', 'public.' || quote_ident(v_sekvensnamn))
      into v_lopnummer;

@@ -250,15 +250,39 @@ begin
   end if;
 
   -- G4: kö-wrappern bygger den LÅSTA meddelandeformen (ADR-129 beslut 1).
-  -- msg_id FÅNGAS här så att steg H kan ta bort exakt DETTA meddelande.
+  -- msg_id FÅNGAS här så att både denna kontroll och steg H träffar exakt
+  -- VÅRT meddelande.
   select public.jobb_ko_skicka('kvitto', v_inbetalning_b) into v_msg_id;
+
+  -- KONTROLLEN LÄSER KÖTABELLEN DIREKT PÅ msg_id, inte via `pgmq.read`.
+  -- Här stod tidigare `pgmq.read('jobbko', 1, 1)`, vilket var fel på två sätt
+  -- samtidigt:
+  --   1. `pgmq.read` returnerar de ÄLDSTA meddelandena först (ORDER BY msg_id
+  --      ASC LIMIT n). Med en parallell sessions jobb i kön prövade
+  --      kontrollen alltså NÅGON ANNANS meddelande — och blev ändå grön,
+  --      eftersom predikatet aldrig band `radId` till vår egen inbetalning.
+  --      Den kunde med andra ord passera utan att `jobb_ko_skicka` ens hade
+  --      fungerat.
+  --   2. `pgmq.read` sätter en synlighets-timeout på det den läser. En
+  --      verifiering ska inte göra en parallell sessions väntande jobb
+  --      osynliga, ens i en sekund — samma "rör aldrig bredare än ditt eget"
+  --      som steg H följer.
+  -- Att läsa `pgmq.q_<kö>` direkt löser båda: exakt vårt meddelande, noll
+  -- bieffekt på kön. Tabellnamnet är pgmq:s dokumenterade konvention och
+  -- används redan av migrationens egen idempotens-vakt
+  -- (`to_regclass('pgmq.q_jobbko')`), så formen är inte ny här.
   if not exists (
     select 1
-      from pgmq.read('jobbko', 1, 1) m
-     where m.message ? 'jobbtyp' and m.message ? 'radId'
+      from pgmq.q_jobbko m
+     where m.msg_id = v_msg_id
+       and m.message ? 'jobbtyp'
+       and m.message ? 'radId'
        and m.message ->> 'jobbtyp' = 'kvitto'
+       and (m.message ->> 'radId') = v_inbetalning_b::text
   ) then
-    raise exception 'KONTROLL G4 MISSLYCKADES: komeddelandet bar inte formen {"jobbtyp","radId"}';
+    raise exception
+      'KONTROLL G4 MISSLYCKADES: meddelande % bar inte formen {"jobbtyp":"kvitto","radId":"%"}',
+      v_msg_id, v_inbetalning_b;
   end if;
 
   -- G5: cron-ticket är ofarligt utan Vault-värden och utan konsument.
@@ -273,9 +297,10 @@ begin
   -- som tömmer HELA kön — i staging hade den raderat riktiga, väntande jobb
   -- som en parallell session köat, och det är precis den klass av
   -- "städverktyg som städar för mycket" som `.purge-staging-policy.json`s
-  -- länk-guard finns för på Airtable-sidan. `pgmq.delete` fungerar trots att
-  -- G4:s `pgmq.read` gjort meddelandet osynligt: osynligheten är en
-  -- synlighets-timeout (vt), inte ett lås.
+  -- länk-guard finns för på Airtable-sidan. `v_msg_id` kommer från G4:s
+  -- `jobb_ko_skicka` och är därmed bevisligen vårt eget; meddelandet är
+  -- dessutom aldrig läst med `pgmq.read`, så det har varken synlighets-
+  -- timeout eller read_ct när det tas bort.
   perform pgmq.delete('jobbko', v_msg_id);
   delete from public.jobb_rad where objekt_id in (v_inbetalning, v_inbetalning_b);
   delete from public.jobb where id = v_jobb;
