@@ -14,8 +14,13 @@ flik kör bundlen från före deployen tills användaren laddar om — Marcus
 rensade site data och *"nu funkar det perfekt"*. Regel: efter varje
 prod-landning av en UI-ändring ska beskedet till granskaren bära
 omladdnings-instruktionen (⌘⇧R / rensa site data) i samma andetag som
-"titta", och verifieringen ska SÄGA att den gjordes som färsk klient. En
-uppdateringsväg utan synlig signal till användaren (ingen komponent lyssnar
-på `APP_UPPDATERING_EVENT` i `src/components/`, grep 2026-08-30) är en egen
-fråga för Marcus veto-lista — Lotta kommer också att sitta med en gammal
-flik utan att veta om det.
+"titta", och verifieringen ska SÄGA att den gjordes som färsk klient. RÄTTELSE av
+en första formulering här (samma dag): appen HAR en synlig uppdateringsnotis
+(`Uppdateringsnotis.tsx`, *"Ny version av appen — Ladda om"*, ADR-121) —
+grep på händelsenamnet missade den eftersom notisen prenumererar via
+`prenumereraPaAppUppdatering`, inte via strängen. Det som faktiskt gäller:
+en flik som redan var öppen upptäcker den nya versionen först vid nästa
+sidladdning eller vid timintervallet (`UPPDATERINGS_INTERVALL_MS` = 60 min;
+ingen kontroll vid `visibilitychange`/fokus), så upp till en timme kan gå
+utan signal — det var Marcus fall. Grep på ett konstantnamn bevisar inte
+att ingen lyssnar.

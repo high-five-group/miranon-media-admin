@@ -3,10 +3,10 @@ id: TASK-309.47
 title: >-
   Fynd: rullningsskuggans rundade hörn täcker inte nästa korts topp — skuggan
   flyttar in i rullboxen som ::after (Marcus skärmavbild 2026-08-30 15:50)
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-30 13:56'
-updated_date: '2026-08-30 14:17'
+updated_date: '2026-08-30 14:45'
 labels: []
 dependencies: []
 parent_task_id: TASK-309
@@ -25,7 +25,7 @@ Marcus prod-titt 2026-08-30 15:50 (skärmavbild): 'skuggningen nere i högra hö
 - [x] #2 Mätt vid 1280 och 390 i ×3-crops av nedre högra hörnet vid scrollTop 0/12/24/60: ingen oskuggad kil — skuggan följer ul:ets klippkurva exakt; ::after computed width === ul.clientWidth === kortbredd (507/297), position sticky, height 24; vid maximal rullning är ::after dold; rännan 11 px kvar; li 124; ul.top === kort1.top; låset 488
 - [x] #3 prefers-contrast: more (emulerat) visar en 4 px border-strong-list utan gradient; prefers-reduced-motion oförändrat (ingen animation); ingen ny fokus-/tabb-påverkan (pointer-events none, aria-hidden är irrelevant för pseudo-element)
 - [x] #4 Alla assertioner som läste lista-uttoning (T176 visas/döljs, 309.43 skugga.right = kort.right, 309.45/46 skugga.bottom) omskrivna mot ::after (display/height/position via getComputedStyle(ul, '::after'); bredd via ul.clientWidth === kortbredd; underkant via ul.bottom) — aldrig mildrade, med isolerad negativ kontroll per ny assertion; docblocken (§ RULLNINGSSKUGGAN 'SKUGGAN LIGGER PÅ WRAPPERN, ALDRIG PÅ ul' → 'INUTI ul SOM ::after', rannbredd-styckena, 309.43/45/46-noterna) omskrivna; typecheck 0 · biome 0 · build grön · alla dokument-acceptance + a11y gröna
-- [ ] #5 Landat via review-grinden (ADR-105) och prod-verifierat read-only av orkestreraren (×3-crop i prod vid scroll): kilen borta
+- [x] #5 Landat via review-grinden (ADR-105) och prod-verifierat read-only av orkestreraren (×3-crop i prod vid scroll): kilen borta
 <!-- AC:END -->
 
 ## Definition of Done
@@ -62,3 +62,9 @@ DOCBLOCK omskrivna: § RULLNINGSSKUGGAN (hela avsnittet — de tva kurvorna, var
 
 GRINDAR, matta exitkoder var for sig: typecheck 0 - biome 0 - build 0 - check-langa-streck 0 (267 filer) - a11y 117 passed 0 - dokument-acceptance 110 passed 0 (var 108 fore skivan, +2 nya).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landat via review-grinden: PR #2136 (fd651f10, tre commits), runda 1 risk låg, två info (exakt breddjämförelse utan tolerans-not; självrapporterat +2 tester var +1), loop konvergerad, backstopp exit 0, merge-kö → main 055bc8a7 2026-08-30 14:42 UTC; Vercel production READY 14:43. Orkestrerarens 5173-mätning före granskningen: ::after content '' · display block · sticky · bottom 0 · height 24 · width 507 = ul.clientWidth = kortbredd; ×3-crops vid scrollTop 12/24: kilen borta (jämfört mot bas-crops med kilen). Prod-verifierat read-only (smoke-kontot, bundle index-C_X-ps1F.css): CSS bär data-vid-botten-selektorn och after:sticky; inget lista-uttoning-spann; eventet RIM 1 Rönninge hade vid kontrollen FEM bilagor så skuggan renderas skarpt i prod (overflow auto, ::after block, clientHeight 488, ul.top === kort1.top). Hooken byte-identisk (md5 eb5a28bb…). Tailwind-fynd bokfört i docblock: after:-varianten injicerar content själv.
+<!-- SECTION:FINAL_SUMMARY:END -->
