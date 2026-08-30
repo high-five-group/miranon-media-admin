@@ -818,8 +818,14 @@ export function DokumentYta() {
  * TREDJE grund sedan raden blev ett KORT: `ghost`s hover ÄR `--mm-bg-muted`,
  * alltså EXAKT den grå behållarton kortet ligger PÅ men inte bär — en
  * knapp-platta i behållarens färg mitt i ett vitt kort. Namnknappen löser
- * samma sak åt andra hållet: den bär INGEN platta alls och låter kortet
- * bära återkopplingen (`--mm-bilagekort-bg-hover`, #edeee9).
+ * samma sak åt andra hållet: den bär INGEN platta alls.
+ *
+ * [2026-08-30] Namnknappens platt-löshet var tidigare motiverad med att
+ * KORTET bar återkopplingen i stället (`--mm-bilagekort-bg-hover`,
+ * #edeee9). Den tonen är riven på Marcus mandat (*"Ta bort hover på
+ * korten"*) — kortet är statiskt. Slutsatsen för ⋯-knappen står ändå
+ * oförändrad: invarianten nedan handlar om att `ghost`s hover-token ÄR
+ * behållarens ton, vilket är sant oavsett om kortet självt hovrar.
  */
 const IKONKNAPP_KLASS = 'size-11 shrink-0 p-0';
 
@@ -1356,10 +1362,15 @@ function berakaListgeometri(antalSynliga: number) {
  * den vita ytan under pillen är numera BILAGEKORTET, inte `<ul>` (som är
  * genomskinlig). `bg-bg-muted` står alltså kvar — men prövningen gjordes
  * om, inte antogs: mätt i renderad yta bär pillen #f5f5f3 mot kortets
- * #ffffff i vila och mot kortets hover-ton #edeee9 vid hover. Vid HOVER
- * är pillen alltså LJUSARE än sin bakgrund i stället för mörkare —
- * fortfarande ett synligt steg, men riktningen kastas om. Rör någon
- * kortets hover-ton måste pillen mätas om igen.
+ * #ffffff.
+ *
+ * [2026-08-30] PRÖVNINGEN HAR BARA ETT FALL KVAR. Här stod tidigare att
+ * pillen vid HOVER mättes mot kortets hover-ton #edeee9, och att den då
+ * blev LJUSARE än sin bakgrund i stället för mörkare. Den tonen är riven
+ * (Marcus: *"Ta bort hover på korten"*) — kortet är statiskt vitt i alla
+ * lägen, så riktningen kastas aldrig om längre och steget är detsamma i
+ * vila som under pekaren. Regeln som gjorde noten värd att skriva står
+ * kvar: byter kortet bakgrund igen måste pillen mätas om.
  *
  * Det är sjätte gången samma token-identitet gjort något osynligt på DENNA
  * yta (ghost-hovern ×2, Ersätt/Radera, räckviddspillen, uppladdningsskalet
@@ -1545,13 +1556,25 @@ function oppnaDokument({
  * kort i ett kort, med linjer inuti. Nu ligger `<ul>` direkt på behållaren
  * och den grå ytan syns bara som RÄNNAN mellan korten.
  *
- * ── HOVERN LIGGER PÅ KORTET, INTE PÅ NAMNKNAPPEN ──
+ * ── KORTET ÄR STATISKT: INGEN HOVER-TON, VARKEN PÅ KORTET ELLER PÅ
+ *    NAMNKNAPPEN (Marcus 2026-08-30) ──
  *
- * Kortet hovrar `--mm-bilagekort-bg` (#ffffff) → `--mm-bilagekort-bg-hover`
- * (#edeee9). Tonen är vald mot BÅDA grannarna, inte efter vana:
- * `bg-bg-muted` (#f5f5f3) hade varit IDENTISK med behållaren korten ligger
- * i, och `bg-bg-subtle` (#fafaf8) för nära den. NAMNKNAPPEN bär därför
- * INGEN egen platta:
+ * *"Ta bort hover på korten."* — Marcus prod-titt 2026-08-30. Kortet bär
+ * sedan dess ENBART `--mm-bilagekort-bg` (#ffffff); `hover:bg-*` och
+ * `motion-safe:transition-colors` är rivna ur klassen, och
+ * `--mm-bilagekort-bg-hover` är riven ur `components.css`. Övergången hade
+ * inget kvar att animera när tonen försvann — en `transition-colors` utan
+ * färgskifte är död kod, inte en kvarlämnad finess.
+ *
+ * [HISTORIK, 2026-08-29 → 2026-08-30] Kortet hovrade tidigare #ffffff →
+ * `--mm-bilagekort-bg-hover` (#edeee9), en ton vald mot BÅDA grannarna
+ * (`bg-bg-muted` #f5f5f3 var identisk med behållaren, `bg-bg-subtle`
+ * #fafaf8 för nära den). Tonen var alltså inte fel — den var oönskad.
+ * Raden står kvar som historik just för att nästa läsare inte ska
+ * återinföra den i tron att den föll bort av misstag.
+ *
+ * NAMNKNAPPEN BÄR FORTSATT INGEN EGEN PLATTA, och skälen är OFÖRÄNDRADE av
+ * rivningen — de handlar om token-identitet, inte om kortets ton:
  *
  *   • `ghost` hade gett hover `--mm-bg-muted` — alltså behållarens egen
  *     ton, mitt i ett kort som INTE bär den. Samma token-identitets-fälla
@@ -1559,12 +1582,12 @@ function oppnaDokument({
  *   • `primary`+`subtle` hade gett varje rads NAMN en permanent guldtonad
  *     platta — en lista som ser ut som en knapprad.
  *
- * Knappen är alltså transparent i alla lägen och låter kortet bära
- * återkopplingen; tangentbordet får sin egen ring ur den globala
- * `*:focus-visible`-regeln (base.css). ⋯-knappen behåller däremot
- * `primary`+`subtle` — dess hover (`--mm-button-primary-subtle-bg-hover`)
- * skiljer sig från BÅDE kortets vita och dess hover-ton, så invarianten i
- * `IKONKNAPP_KLASS`s docblock hålls.
+ * `data-[hovered]:bg-transparent data-[pressed]:bg-transparent` står alltså
+ * KVAR på knappen. Den är transparent i alla lägen; AFFORDANSEN bärs nu av
+ * `cursor` och av fokusringen ur den globala `*:focus-visible`-regeln
+ * (base.css), inte av någon yttoning. ⋯-knappen behåller `primary`+`subtle`
+ * — dess hover (`--mm-button-primary-subtle-bg-hover`) skiljer sig från
+ * kortets vita, så invarianten i `IKONKNAPP_KLASS`s docblock hålls.
  *
  * KORTPADDINGEN ÄR 12 px (`p-3`) OCH DET ÄR MÄTT MOT HANDLINGSRADEN:
  * kortets och knapparnas YTTERKANTER linjerar exakt (0 px, båda ligger vid
@@ -1680,7 +1703,7 @@ function DokumentRadSkal({
   return (
     <div
       data-testid="dokument-fil"
-      className="flex flex-nowrap items-start gap-2 rounded-2xl border border-(--mm-bilagekort-border) bg-(--mm-bilagekort-bg) p-3 hover:bg-(--mm-bilagekort-bg-hover) motion-safe:transition-colors contrast-more:border-(--mm-bilagekort-border-contrast)"
+      className="flex flex-nowrap items-start gap-2 rounded-2xl border border-(--mm-bilagekort-border) bg-(--mm-bilagekort-bg) p-3 contrast-more:border-(--mm-bilagekort-border-contrast)"
     >
       <TypGlyf namn={namn} />
       <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
@@ -2274,19 +2297,55 @@ const GRUPPKORT_KLASS =
  * `--mm-bg-muted` (behållarens egen ton) och inte `NavCard`s tokens (som
  * ÄR `--mm-bg-muted`) — se `--mm-bilagekort-*` i `components.css`.
  *
- * SCROLLBAREN ÄR PLATTFORMENS, INTE HUSETS `scrollbar-inline` — OCH DET
- * ÄR MÄTT. `scrollbar-inline` sätter `scrollbar-width: thin` +
- * `scrollbar-gutter: stable`, vilket i Chromium på macOS äter 11 px ur
- * `<ul>`s CONTENT-box (mätt 2026-08-29: `offsetWidth` 518 mot
- * `clientWidth` 505 = 2 px kant + 11 px ränna) — men BARA när
- * `overflow-y` är `auto`. Med kortformen hade korten därmed blivit 11 px
- * smalare på höger sida så fort listan råkade ha fem poster i stället för
- * fyra, alltså olika kortbredd för olika event och en synlig
- * felinriktning mot handlingsradens knappar ovanför. Utan klassen
- * använder Chromium på macOS sin OVERLAY-scrollbar: noll reserverad
- * bredd, korten linjerar med knapparna i BÅDA lägena, och tumven tonar
- * in vid rullning. Affordansen vid vila bärs av uttoningen nedan — den
- * finns till just för att overlay-scrollbaren inte syns då.
+ * SCROLLBAREN ÄR HUSETS `scrollbar-inline` MED RESERVERAD RÄNNA — beslutet
+ * är VÄNT sedan 2026-08-29, och det gamla stod på en felaktig mätning.
+ *
+ * Marcus 2026-08-30: *"Reservera plats för scrollbaren på listytan eller?
+ * Ska vi inte de? Det kommer bli mer än fyra delade bilagor väldigt snart.
+ * Scrollbaren ska va den ljusgråa som vi använder i appen. Jag vill nog
+ * också att den sitter utanför listytan på den gråa bakgrunden."*
+ *
+ * MÄTT 2026-08-30 (dev-server, 1280×900, headless Chromium): med
+ * `scrollbar-inline` går `<ul>`s `offsetWidth` 518 → `clientWidth` 507,
+ * alltså **11 px ränna, i BÅDA overflow-lägena** — `auto` (fler än fyra
+ * kort) OCH `hidden` (fyra eller färre). Kortbredden är därmed 507 px
+ * oavsett hur många bilagor eventet har.
+ *
+ * [RÄTTELSE, 2026-08-30] Här stod att rännan reserveras *"BARA när
+ * `overflow-y` är `auto`"*. Det är FALSIFIERAT. Påståendet kom ur en
+ * mätning 2026-08-29 (`offsetWidth` 518 mot `clientWidth` 505 = 2 px kant
+ * + 11 px ränna) som gjordes när `<ul>` ännu bar en `border` — den kanten
+ * revs i samma T176-drag som gav korten deras form, och slutsatsen följde
+ * aldrig med. `scrollbar-gutter: stable` reserverar per specifikation
+ * rännan i BÅDA lägena; det är hela poängen med `stable`. Den gamla
+ * farhågan — att korten skulle byta bredd så fort listan råkade få en
+ * femte post — byggde alltså på ett fel, och rännan ger tvärtom EXAKT den
+ * stabilitet farhågan efterlyste.
+ *
+ * DEN BEFARADE FELINRIKTNINGEN MOT HANDLINGSRADEN FINNS INTE PÅ DESKTOP:
+ * `ListHandlingsRad`s knappar är VÄNSTERSTÄLLDA (mätt 2026-08-30:
+ * knappkanter vid 540,75 respektive 703,45 mot listkanten 899), så de
+ * linjerar aldrig med kortens högerkant till att börja med.
+ * KÄND KANT, bokförd i stället för lappad: under `sm` (< 640 px) staplas
+ * knapparna i full bredd, och i desktop-Chromium vid smal viewport blir
+ * korten då 11 px smalare än knapparna. På riktiga mobiler uppstår det
+ * inte — overlay-scrollbars reserverar ingen ränna alls (CSS Overflow
+ * Module Level 3: `scrollbar-gutter` reserverar bara för KLASSISKA
+ * scrollbars).
+ *
+ * RULLEN LIGGER UTANFÖR KORTEN, PÅ DEN GRÅ BEHÅLLAREN. `<ul>` är
+ * genomskinlig sedan T176, så rännan visar behållarens egen ton — rullen
+ * sitter alltså bredvid de vita korten, inte ovanpå dem, vilket är exakt
+ * den placering Marcus beskriver. Tummen är `--mm-border-strong` på
+ * transparent spår (`scrollbar-inline` i `tailwind.css`), samma ljusgrå
+ * som `NyaAnmalningar`, `ForfallnaBetalningar` och `Deltagare`.
+ *
+ * AFFORDANSEN BÄRS INTE LÄNGRE ENSAM AV SKUGGAN. Med en KLASSISK rulle
+ * syns tummen redan i vila; overlay-scrollbaren gjorde det inte, och det
+ * var därför uttoningen nedan en gång fick hela ansvaret för att antyda
+ * att listan rullar. Skuggan finns kvar — de två signalerna säger olika
+ * saker (rullen: "det går att rulla"; skuggan: "det finns mer NEDANFÖR
+ * kanten") — men skuggan är inte längre den enda.
  *
  * INLINE-RULLNING är i övrigt husets etablerade form (`NyaAnmalningar.tsx`,
  * `ForfallnaBetalningar.tsx` ×3, `Deltagare.tsx`, `EventValjare`s listbox).
@@ -2328,6 +2387,19 @@ const GRUPPKORT_KLASS =
  * [T176] Den slutar vid FJÄRDE KORTETS underkant (`bottom-1`), inte vid
  * `<ul>`:ets — de skiljer sig 4 px sedan rännan bor inuti `<li>`.
  *
+ * [2026-08-30] SAMMA REGEL PÅ DEN LODRÄTA AXELN: den slutar också vid
+ * kortets HÖGERKANT, inte vid wrapperns. Marcus, om skuggan under den
+ * reserverade rullningsrännan: *"För sitter den 'inuti' listytan så blir
+ * det fult med 'fadningen' eller 'skuggningen' vi har längst ner.
+ * Skuggningen ska ju bara synas på vita kortet."* Wrappern är lika bred
+ * som `<ul>` INKLUSIVE rännan, så `inset-x-0` lade skrimmet tvärs över
+ * rännan och ut på behållarens grå yta (mätt 2026-08-30: spannet gick
+ * 381–899 medan korten slutade vid 888). Formen är därför `left-0` plus
+ * ett `right` satt till den MÄTTA rännbredden — se `rannbredd` i
+ * komponentkroppen för varför talet mäts och aldrig hårdkodas, och varför
+ * 0 är ett giltigt utfall. `rounded-b-2xl` följer därmed kortets egen
+ * kant exakt i stället för att kröka sig 11 px utanför den.
+ *
  * DEN FÖRSVINNER VID BOTTEN. En skugga som ligger kvar när man rullat hela
  * vägen ner ljuger — den säger "mer finns" om ett tomt slut. `onScroll`
  * (billig: listan har fyra synliga rader, ingen virtualisering) sätter
@@ -2354,6 +2426,41 @@ function DokumentListRam({
   children: React.ReactNode;
 }) {
   const [vidBotten, setVidBotten] = useState(false);
+  // RÄNNBREDDEN ÄR MÄTT, ALDRIG HÅRDKODAD — se docblockets skugg-stycke.
+  // `offsetWidth - clientWidth` är rännan PLUS eventuella lodräta kanter;
+  // `<ul>` bär ingen kant sedan T176 rev `border` (verifierat med
+  // `getComputedStyle` vid mätningen 2026-08-30: `borderLeftWidth` och
+  // `borderRightWidth` båda `0px`), så differensen ÄR rännan. Får `<ul>`
+  // en kant igen måste de två bredderna dras bort här — annars kryper
+  // skuggan inåt med kantens bredd.
+  //
+  // NOLL ÄR ETT GILTIGT SVAR, inte ett mätfel: Firefox, macOS
+  // overlay-scrollbars och riktiga mobiler reserverar ingen ränna alls
+  // (CSS Overflow Module Level 3 — `scrollbar-gutter` reserverar bara för
+  // KLASSISKA scrollbars). Då blir `right: 0` och skuggan spänner full
+  // bredd, exakt som före denna ändring.
+  const [rannbredd, setRannbredd] = useState(0);
+  useLayoutEffect(() => {
+    // Läses aldrig — `kanRulla` och `matadHojd` står i beroendelistan
+    // uteslutande för att TVINGA en ommätning när listans rullningsläge
+    // kan ha ändrats: `kanRulla` flippar `overflow-y` mellan `auto` och
+    // `hidden`, och `matadHojd` är höjdlåsets mätning (som är det som
+    // avgör om innehållet överhuvudtaget svämmar över). `void` gör
+    // referensen explicit i stället för att bara stå i listan — annars
+    // flaggar biomes `useExhaustiveDependencies` dem som ONÖDIGA
+    // beroenden (mätt: "This hook specifies more dependencies than
+    // necessary"). Samma mönster, och samma skäl, som
+    // `useLastaListhojd`s `ommatningsSignal`.
+    void kanRulla;
+    void matadHojd;
+    const ul = listRef.current;
+    if (!ul) return;
+    // Rännans BREDD är en plattformskonstant — den ändras inte mellan
+    // renderingar, bara mellan webbläsare. Ommätningen ovan är alltså ett
+    // skyddsnät mot att antagandet "stable reserverar i BÅDA lägena"
+    // någon gång slutar hålla, inte en förväntad växling.
+    setRannbredd(ul.offsetWidth - ul.clientWidth);
+  }, [kanRulla, matadHojd, listRef]);
   return (
     // `-my-1` NEUTRALISERAR RADENS HALVA RÄNNA MOT BEHÅLLARENS RAM. Varje
     // `<li>` bär `py-1` (4 px över + 4 px under = 8 px ränna MELLAN korten),
@@ -2388,7 +2495,7 @@ function DokumentListRam({
         // [T176] INGEN egen yta kvar: `bg-surface`, `rounded-xl`, `px-3`,
         // `border` och `divide-y` är rivna. Korten ÄR ytorna; `<ul>` är den
         // genomskinliga rullningsboxen omkring dem.
-        className={`focus-ring-inset ${kanRulla ? 'overflow-y-auto' : 'overflow-y-hidden'}`}
+        className={`scrollbar-inline focus-ring-inset ${kanRulla ? 'overflow-y-auto' : 'overflow-y-hidden'}`}
       >
         {children}
       </ul>
@@ -2401,7 +2508,16 @@ function DokumentListRam({
           // den grå rännan hade läst som ett streck i ramen. Nu slutar den
           // exakt vid kortets kant, med `rounded-b-2xl` som följer kortets
           // egen radie.
-          className="pointer-events-none absolute inset-x-0 bottom-1 h-6 rounded-b-2xl bg-linear-to-t from-(--mm-state-hover) to-transparent contrast-more:h-1 contrast-more:rounded-none contrast-more:bg-border-strong contrast-more:bg-none"
+          //
+          // `left-0` + `right: rannbredd` — INTE `inset-x-0`: samma regel på
+          // den lodräta axeln. Wrappern är lika bred som `<ul>` INKLUSIVE
+          // rullningsrännan, så `inset-x-0` hade dragit skuggan tvärs över
+          // rännan och lagt ett grått skrim på behållarytan bredvid korten.
+          // Marcus 2026-08-30: *"skuggningen ska ju bara synas på vita
+          // kortet."* Talet är MÄTT (se `rannbredd` ovan), aldrig
+          // hårdkodat — vid 0 ränna blir detta identiskt med `inset-x-0`.
+          className="pointer-events-none absolute bottom-1 left-0 h-6 rounded-b-2xl bg-linear-to-t from-(--mm-state-hover) to-transparent contrast-more:h-1 contrast-more:rounded-none contrast-more:bg-border-strong contrast-more:bg-none"
+          style={{ right: rannbredd }}
         />
       )}
     </div>
