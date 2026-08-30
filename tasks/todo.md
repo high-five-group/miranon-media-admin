@@ -15,10 +15,10 @@
 
 ## Aktuellt fokus
 
-**Session 113 ▶️ ÅTERUPPTAGEN (resume 4, 2026-08-30 ~15:10 UTC, `lifecycle: active`;
-Marcus: *"Vi måste verkligen fixa detta med kvitton för Lotta"* — appvandring +
-branschresearch spawnade som grillnings-underlag; paus 4 var 2026-08-30 ~14:45 UTC efter
-fem skivor till prod på Marcus mandat — 309.43–47, main `055bc8a7`) — DOKUMENTYTAN BLEV BILAGOR: KORTFORM, ⋯-MENY, HANDLINGSRAD,
+**Session 113 ⏸️ PAUSAD (paus 5, 2026-08-30 ~18:50 UTC, `lifecycle: paused`; DUKAD FÖR
+AFK-NATTEN: PRD `TASK-346` Lottas betalningsflöde + skivor 346.1–346.13, nattmandat B3/B4 i
+sessionsdokets HANDOFF — nästa resume bygger allt i staging, Marcus promoverar på morgonen;
+resume 4 var 2026-08-30 ~15:10 UTC: appvandring + research + grillning Del 10–11) — DOKUMENTYTAN BLEV BILAGOR: KORTFORM, ⋯-MENY, HANDLINGSRAD,
 BILAGA-SUBSTANTIVET — LANDAT OCH VERIFIERAT I PROD.** Marcus tre anmärkningar
 före vandringen (T176 · "Event-mallad" · knapparna) → orkestrerarens
 designbedömning mot prod (sex fynd: listan saknade hierarki) → Marcus GO
@@ -32,9 +32,9 @@ verifierad med eget skript + egna ögon** (h1 Bilagor · Skapa bilaga · kort
 med main. Beslut under mandat: kvittots Ladda ner utgår · URL kvar ·
 rullningsskugga · en-radsnamn på mobil. `T176` stängd · `T178` ny (HMR) ·
 `TASK-309.42` Done · 4 lessons-fragment (13 totalt) · ORDLISTA § Bilaga.
-**Numrering:** ADR 128 · kort 346/309.48 · L655 · T179 · **20** fragment (handoffen
-sade 19 — det tjugonde landade i paus-commiten `5998f879` själv) ·
-session 113 (disk-verifierat 2026-08-30 ~15:10 UTC, resume 4). Fyra skivor i prod
+**Numrering:** ADR 128 (346.1 mintar 128+129) · kort 347/346.14 · L655 · T179 · 20
+fragment (RÄTTELSE: resume 4:s "20, inte 19" var fel — README räknades; 19 stämde, nu 20
+efter lagrum-fragmentet) · session 113 (disk-verifierat 2026-08-30 ~18:50 UTC, paus 5). Fyra skivor i prod
 (`01c84076`: 309.43/44/45/46), Marcus: *"nu funkar det perfekt"* efter
 rensad site data. **Resume 4 levererat (Del 10):** appvandring (31 skärmdumpar, 6 klick till knappen,
 7 klick + 1 belopp per kvitto, ≈143 för en kurs) + branschresearch (SFL 39:5 verifierat,
@@ -42,10 +42,11 @@ Pretix ordagrant) + `docs/research/kvitto-beslutsunderlag-2026-08-30.md` + artef
 *Lottas kvittovandring*. **Grillningen KÖRD (Del 11):** tretton beslut kvitterade — Inbetalningar-tabell i
 Supabase Postgres + spegel i basen, global inkorg, registrera-först-skicka-sedan, kö + cron +
 kick, Swish-import från början, kreditkvitto i v1, universell härledning + backfill; tre
-research-pass + adversarial verifiering (sju blockerare, vågordning). **NÄSTA:** Marcus
-mandatsvar (B3 facit/ADR-103 B5, B4 `hog`-armering) → `/to-prd` → `/to-issues` →
-`session-paus` med nattens AFK-mandat → resume bygger allt i staging → morgon: Marcus
-tittar, justerar, promoverar (prod-fält, prod-migrationer, EF-deploy, flagga, backfill-GO) → veto-lista (Marcus: "vi släpper det lite"; +
+research-pass + adversarial verifiering (sju blockerare, vågordning). Marcus: *"B4 ja, B3 ja"* → PRD `TASK-346` + 13 skivor (`#2141`). **NÄSTA:**
+`session-resume` → NATTENS MANDAT (sessionsdok § PAUSLÄGE paus 5): våg 0–7, modell per
+skiva, seriell staging-applicering, `hog` armeras bara vid konvergerad loop, slutvandring
+i browsern före paus 6 → morgon: Marcus tittar, justerar, promoverar (prod-fält,
+prod-Postgres per runbook 346.11, EF-deploy, flagga, backfill-GO, facit-stämplar) → veto-lista (Marcus: "vi släpper det lite"; +
 ny version-kontroll vid flik-fokus?) (strängbytena i `93dbf275`, tomytan under
 fyra-korts-låset vid 2–3 bilagor — `min(4, n)` föreslaget, URL-bytet som
 kort) → prod-vandringen (testplanen delvis inaktuell efter formbytet) → domar
