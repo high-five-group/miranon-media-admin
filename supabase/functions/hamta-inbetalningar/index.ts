@@ -148,6 +148,17 @@ Deno.serve(async (req) => {
       // Obefintlig person → `fetchAirtableRecord` returnerar `null` (samma
       // 404-normalisering som resten av `_shared/airtable-client.ts`) → tom
       // lista → samma tomma 200-form nedan, precis som formeln gav förut.
+      //
+      // AVSIKTLIGT ODISKRIMINERAT (R1-granskning `TASK-351`): "personId finns
+      // inte" och "personen finns men har noll anmälningar" ger IDENTISKT
+      // tomt 200-svar — ingen 404 för det förra. Detta SPEGLAR
+      // `anmalanRecordId`-vägen (rad ~144 ovan): den kollapsar `anmalanIds`
+      // till `[anmalanRecordId]` OFÖRSETT om raden existerar, och en obefintlig
+      // anmälan ger likaså 200 med tomma listor (KONSISTENSVAKTEN nedan larmar
+      // bara om Postgres FAKTISKT har inbetalningar mot en försvunnen anmälan —
+      // annars tyst 200, samma mönster). Svarets kontrakt är "betalningar för
+      // X", och en tom lista är rätt svar oavsett OM X saknas eller är tom —
+      // ett medvetet, konsekvent val, inte en förbisedd genväg.
       const personRecord = await fetchAirtableRecord(PERSONER_TABELL_BAS, personId as string);
       const allaAnmalanIds = personRecord ? stringArray(personRecord.fields[PERSON_ANMALNINGAR_FALT]) : [];
       anmalanIds = allaAnmalanIds.slice(0, MAX_ANMALNINGAR_PER_PERSON);

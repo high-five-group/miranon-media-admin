@@ -7,7 +7,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-31 10:04'
-updated_date: '2026-08-31 10:11'
+updated_date: '2026-08-31 10:25'
 labels:
   - ready-for-agent
 dependencies: []
@@ -62,3 +62,37 @@ ordinal: 655000
 - [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+## R1-granskning (review-agent, orkestrerarens svep) — 2 fynd, båda åtgärdade
+
+**WARNING (rättad):** ursprungliga §Kända fällor-posten 53 + PR-kroppen påstod
+felaktigt att get-attendance och _shared/segment-resolution.ts var "andra
+callers" av buildLinkedRecordFilter som gjorde säker existens-läsning.
+Grep-verifierat FALSKT — ingen av de två anropar helpern över huvud taget.
+get-attendance undviker den MEDVETET (egen kommentar, citerar uttryckligen
+"T15-klass-bugg"); segment-resolution.ts läser fältvärdet direkt utan filter.
+
+**Viktigt sidofynd under rättelsen:** detta ÄR tasks/threads/README.md §T15
+igen — en tråd stängd Session 26 (6c-completion) som redan dokumenterade
+EXAKT samma ARRAYJOIN-mekanism och konstaterade "buildLinkedRecordFilter har
+noll live-callers, dormant kod". hamta-inbetalningar (TASK-346.4, commit
+23e74c01, långt efter T15s stängning) återinförde en live-caller utan att
+kopplas till T15s varning. Efter denna PRs fix har buildLinkedRecordFilter
+ÅTER noll live-callers repo-brett — samma läge som vid T15s stängning.
+
+Avvecklings-kandidat registrerad här (INTE åtgärdad i denna skiva, ren
+targeted bug-fix): ta bort den dormanta buildLinkedRecordFilter-helpern, eller
+@deprecated + lint-vakt mot nya callers, så klassen inte kan återinföras tyst
+en tredje gång. Öppen fråga till orkestreraren: bör tasks/threads/README.md
+§T15 uppdateras/återöppnas för att fånga denna återkomst? Bedömt utanför
+scopet för en riktad review-fix i denna PR — flaggat i stället för att ändras
+ensidigt.
+
+**INFO (åtgärdat):** person-vägens identiska tomma 200-svar för "person
+saknas" vs "person finns men har noll anmälningar" är AVSIKTLIGT — speglar
+anmalanRecordId-vägens beteende (samma fil). Dokumenterat med docstring-
+kommentar i hamta-inbetalningar/index.ts vid person-branchen.
+<!-- SECTION:NOTES:END -->
