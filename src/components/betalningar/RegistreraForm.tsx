@@ -6,7 +6,30 @@ import { useRegistreraInbetalning } from '@/data/mutations/inbetalningar';
 import { VALBARA_BETALSATT } from '@/domain/schemas';
 import { beloppsFel, normaliseraBeloppKlient, visaKronor } from './belopp-inmatning';
 import type { Betalsatt } from './betalsatt-minne';
-import { beloppsutfall, harledBeloppsknappar, type InkorgsRad } from './inkorg-harledningar';
+import {
+  type Beloppsutfall,
+  beloppsutfall,
+  harledBeloppsknappar,
+  type InkorgsRad,
+} from './inkorg-harledningar';
+
+/**
+ * [TASK-346.14, designfynd 5] Status-radens visuella vikt — utfallets EGNA
+ * `ton` (redan härlett i `beloppsutfall`, se dess docblock) styr nu FÄRG/VIKT
+ * i stället för att varje utfall (täcker hela priset, för mycket, för lite,
+ * okänt pris) rendera identiskt dämpat. `tacker`/`over` väger tyngst — de är
+ * de två lägen Lotta faktiskt behöver reagera på (spara som är, eller ändra
+ * beloppet); `delvis`/`okant` förblir informativa utan att skrika. Inga NYA
+ * ord eller meningar — bara vikten på den TEXT `beloppsutfall` redan skriver.
+ * `Record` (inte `switch`) så TypeScript fäller om `Beloppsutfall['ton']`
+ * någonsin får ett femte läge — en glömd branch här ska vara ett byggfel.
+ */
+const BELOPPSUTFALL_KLASS: Record<Beloppsutfall['ton'], string> = {
+  tacker: 'font-medium text-success',
+  over: 'font-medium text-warning',
+  delvis: 'text-text-secondary',
+  okant: 'text-text-muted',
+};
 
 export type RegistreringsUtfall = {
   inbetalningId: string;
@@ -244,7 +267,12 @@ export function RegistreraForm({ rad, idag, betalsatt, onBetalsatt, onAvbryt, on
           Regionen är ALLTID monterad så att skärmläsaren har något att
           annonsera IN i - en region som monteras samtidigt som sin text
           annonseras inte (Roselli-anatomin, se primitives/FilterRad.tsx). */}
-      <p id={felId} role="status" aria-live="polite" className="min-h-5 text-small text-text-muted">
+      <p
+        id={felId}
+        role="status"
+        aria-live="polite"
+        className={`min-h-5 text-small ${utfall ? BELOPPSUTFALL_KLASS[utfall.ton] : 'text-text-muted'}`}
+      >
         {utfall?.text ?? ''}
       </p>
 

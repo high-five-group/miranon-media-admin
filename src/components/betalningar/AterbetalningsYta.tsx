@@ -86,16 +86,26 @@ export function AterbetalningsYta({ anmalanRecordId }: Props) {
 
   return (
     <div className="flex flex-col gap-2">
+      {/* KNAPPBREDDEN (designfynd 3c/4b): triggern stod tidigare som ENDA
+          barnet i denna `flex flex-col`-behållare, och flex-columns default
+          `align-items: stretch` sträckte den till FULL bredd — samma
+          `<Button>` som `RegistreraYta`s (`intent … emphasis="outline"
+          size="sm"`) blev därmed en helt annan form beroende på VILKEN
+          förälder den råkade stå i, inte på avsikt. `flex flex-wrap
+          items-center` runt triggern (samma rad-mönster `RegistreraYta`
+          redan använder) ger knappen sin egen intrinsic bredd i BÅDA ytorna. */}
       {!oppen && (
-        <Button
-          ref={triggerRef}
-          intent="secondary"
-          emphasis="outline"
-          size="sm"
-          onPress={() => setOppen(true)}
-        >
-          Registrera återbetalning
-        </Button>
+        <div className="flex flex-wrap items-center">
+          <Button
+            ref={triggerRef}
+            intent="secondary"
+            emphasis="outline"
+            size="sm"
+            onPress={() => setOppen(true)}
+          >
+            Registrera återbetalning
+          </Button>
+        </div>
       )}
 
       {kvittens && (

@@ -12,6 +12,7 @@ import {
 } from 'react-aria-components';
 import {
   Button,
+  InitialAvatar,
   MessageBox,
   SidRam,
   Skeleton,
@@ -292,11 +293,28 @@ export function BetalningsInkorg() {
         {`${rader.length} öppna betalningar laddade.`}
       </p>
 
-      <header className="flex flex-col gap-1 px-4">
-        <h1 className="font-semibold text-3xl">Betalningar</h1>
-        <p className="text-small text-text-muted">
-          {`${sammanfattning.oppna} öppna · ${sammanfattning.forfallna} förfallna · ${sammanfattning.kvittonAttSkicka} kvitton i kö`}
-        </p>
+      {/* SIDHUVUDETS HANDLINGSYTA (designfynd 2c): "Importera bankrapport" var
+          en ensam strö-knapp mellan segmentväljaren och listan — flyttad hit,
+          bredvid rubriken, samma rad. Knappen göms medan importytan är
+          öppen (oförändrat beteende) — se `visaImport`-villkoret nedan. */}
+      <header className="flex flex-wrap items-start justify-between gap-3 px-4">
+        <div className="flex flex-col gap-1">
+          <h1 className="font-semibold text-3xl">Betalningar</h1>
+          <p className="text-small text-text-muted">
+            {`${sammanfattning.oppna} öppna · ${sammanfattning.forfallna} förfallna · ${sammanfattning.kvittonAttSkicka} kvitton i kö`}
+          </p>
+        </div>
+        {!visaImport && (
+          <Button
+            ref={importKnappRef}
+            intent="secondary"
+            emphasis="outline"
+            size="sm"
+            onPress={() => setVisaImport(true)}
+          >
+            Importera bankrapport
+          </Button>
+        )}
       </header>
 
       {/* Realtidsfelet (TASK-346.4:s namngivna TODO, betald här). Byggd på
@@ -349,22 +367,9 @@ export function BetalningsInkorg() {
 
       {/* [TASK-346.10] Importen ligger FÖRE "Skicka N kvitton", i den ordning
           Lottas lördag faktiskt går: läs banken, bekräfta raderna, skicka
-          kvittona. Knappen göms medan ytan är öppen - den skulle inte göra
-          något nytt, och en knapp som inte gör något är brus. */}
-      {!visaImport && (
-        <div className="px-4">
-          <Button
-            ref={importKnappRef}
-            intent="secondary"
-            emphasis="outline"
-            size="sm"
-            onPress={() => setVisaImport(true)}
-          >
-            Importera bankrapport
-          </Button>
-        </div>
-      )}
-
+          kvittona. Triggerknappen bor sedan TASK-346.14 i sidhuvudet
+          (designfynd 2c, se `<header>` ovan) — bara panelen själv monteras
+          här. */}
       {visaImport && (
         <SwishImport
           oppna={rader}
@@ -442,23 +447,30 @@ export function BetalningsInkorg() {
           {traffar.length === 0 && (
             <p className="text-small text-text-muted">Ingen öppen betalning matchar sökningen.</p>
           )}
-          <ul className="flex flex-col gap-2">
-            {traffar.map((rad) => (
-              <BetalningsradKort
-                key={rad.nyckel}
-                rad={rad}
-                idag={idag}
-                visaEvent
-                oppen={oppenRad === rad.nyckel}
-                kvittens={kvittenser[rad.nyckel]}
-                betalsatt={betalsatt}
-                onBetalsatt={setBetalsatt}
-                onOppna={() => setOppenRad(rad.nyckel)}
-                onAvbryt={() => setOppenRad(null)}
-                onKlar={(resultat) => vidRegistrerad(rad, resultat)}
-              />
-            ))}
-          </ul>
+          {/* EN CONTAINER MED HÅRLINJER (designfynd 2a) — samma
+              `divide-y`-kortform som `AnmalningarSida.tsx`s "Mer-lista", inte
+              separata grå kort med gap mellan sig. Villkorad på längd: en tom
+              `<ul>` hade annars ritat en tom rundad ruta under
+              "Ingen öppen betalning matchar sökningen." ovan. */}
+          {traffar.length > 0 && (
+            <ul className="divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong">
+              {traffar.map((rad) => (
+                <BetalningsradKort
+                  key={rad.nyckel}
+                  rad={rad}
+                  idag={idag}
+                  visaEvent
+                  oppen={oppenRad === rad.nyckel}
+                  kvittens={kvittenser[rad.nyckel]}
+                  betalsatt={betalsatt}
+                  onBetalsatt={setBetalsatt}
+                  onOppna={() => setOppenRad(rad.nyckel)}
+                  onAvbryt={() => setOppenRad(null)}
+                  onKlar={(resultat) => vidRegistrerad(rad, resultat)}
+                />
+              ))}
+            </ul>
+          )}
 
           {ovrigaPersoner.length > 0 && (
             <div className="flex flex-col gap-2">
@@ -507,22 +519,28 @@ export function BetalningsInkorg() {
                   </span>
                 )}
               </h2>
-              <ul className="flex flex-col gap-2">
-                {grupp.oppna.map((rad) => (
-                  <BetalningsradKort
-                    key={rad.nyckel}
-                    rad={rad}
-                    idag={idag}
-                    oppen={oppenRad === rad.nyckel}
-                    kvittens={kvittenser[rad.nyckel]}
-                    betalsatt={betalsatt}
-                    onBetalsatt={setBetalsatt}
-                    onOppna={() => setOppenRad(rad.nyckel)}
-                    onAvbryt={() => setOppenRad(null)}
-                    onKlar={(resultat) => vidRegistrerad(rad, resultat)}
-                  />
-                ))}
-              </ul>
+              {/* Villkorad på längd (samma skäl som träfflistans egen `<ul>`
+                  ovan): en grupp kan bestå av ENDAST `klara`-rader, och en
+                  tom `divide-y`-ruta hade då stått kvar utan innehåll ovanför
+                  "Klara"-fällningen. */}
+              {grupp.oppna.length > 0 && (
+                <ul className="divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong">
+                  {grupp.oppna.map((rad) => (
+                    <BetalningsradKort
+                      key={rad.nyckel}
+                      rad={rad}
+                      idag={idag}
+                      oppen={oppenRad === rad.nyckel}
+                      kvittens={kvittenser[rad.nyckel]}
+                      betalsatt={betalsatt}
+                      onBetalsatt={setBetalsatt}
+                      onOppna={() => setOppenRad(rad.nyckel)}
+                      onAvbryt={() => setOppenRad(null)}
+                      onKlar={(resultat) => vidRegistrerad(rad, resultat)}
+                    />
+                  ))}
+                </ul>
+              )}
 
               {grupp.klara.length > 0 && (
                 // KLARA HOPFÄLLDA (PRD § Inkorgen). Raderna finns kvar i
@@ -631,46 +649,79 @@ function BetalningsradKort({
   }
 
   return (
-    <li className="overflow-hidden rounded border border-border bg-bg-muted">
-      <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-3">
-        <div className="flex min-w-0 flex-col gap-1">
-          <span className="font-medium">{rad.namn}</span>
-          <span className="text-caption text-text-muted">
-            {visaEvent && rad.betalning.eventNamn ? `${rad.betalning.eventNamn} · ` : ''}
-            {saknas === null ? 'Pris saknas i basen' : `Saknas ${visaKronor(saknas)} kr`}
-          </span>
-          <div className="flex flex-wrap items-center gap-2">
-            {rad.forfallen && (
-              <span className="inline-flex items-center gap-1 rounded border border-transparent bg-bg px-2 py-0.5 text-caption">
-                <Clock aria-hidden size={13} />
-                Förfallen
-              </span>
-            )}
-            {rad.obekraftad && (
-              <StatusBadge ton="warning" storlek="sm">
-                Obekräftad
-              </StatusBadge>
-            )}
-            {rad.spegelSlapar && (
-              <span
-                className="inline-flex items-center gap-1 rounded border border-transparent bg-bg px-2 py-0.5 text-caption text-text-muted"
-                title="Basen har inte hunnit uppdateras än"
-              >
-                <AlertTriangle aria-hidden size={13} />
-                Basen släpar
-              </span>
-            )}
+    // Kortets EGEN kant/bakgrund (`rounded border bg-bg-muted`) är riven
+    // (designfynd 2a): containern är nu `<ul>`s `divide-y`-yta, en hårlinje
+    // per rad i stället för ett eget kort per person. `overflow-hidden`
+    // kvarstår — formuläret som fälls ut nedan har egen `border-t`, och den
+    // ska inte läcka utanför radens rundade hörn högst upp/längst ner i
+    // listan.
+    <li className="overflow-hidden">
+      {/* AVATAR-CHIP + GRID-ALIGNAD KOMPOSITION (designfynd 2b/2d) — samma
+          grammatik som `ForfallnaBetalningar.tsx`s `ForfallenRadInnehall`:
+          avatar · namn/meta-kolumn (flex-1) · trailing knapp.
+
+          [TASK-346.14 fix-runda D, D2] STAPLAD PÅ SMALA BRYTPUNKTER, TVÅ
+          KOLUMNER FRÅN `sm` — orkestrerarens visuella dom på 375×812 mätte
+          namnet och saknas-beloppet trunkerade till "Beng…"/"Saknas …" när
+          "Registrera betalning" delade raden med info-kolumnen
+          (`dom-inkorg-375.png`). Lotta ska se VEM som saknar VAD; namnet får
+          aldrig trunkeras bort. Raden är därför `flex-col` (mobil, `stretch`
+          ger info-blocket och knappen var sin FULLA radbredd, `namn`/`meta`
+          bär inget `truncate` och wrappar i stället) och `sm:flex-row` (den
+          tidigare tvåkolumnsformen, godkänd i domen på 1440×900 — `truncate`
+          återinförs bara där, eftersom bara DÄR delar raden utrymme med
+          knappen). `self-start` på knappen förhindrar att `flex-col`s
+          default `align-items: stretch` sträcker den till full bredd på
+          mobil — den ska stå på sin egen rad, inte bli en helbredds-yta. */}
+      <div className="flex flex-col gap-3 py-3 sm:flex-row sm:flex-wrap sm:items-center">
+        <div className="flex min-w-0 items-center gap-3 sm:flex-1">
+          <InitialAvatar namn={rad.namn} />
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
+            <span className="font-medium text-body sm:truncate">{rad.namn}</span>
+            <span className="text-caption text-text-muted sm:truncate">
+              {visaEvent && rad.betalning.eventNamn ? `${rad.betalning.eventNamn} · ` : ''}
+              {saknas === null ? 'Pris saknas i basen' : `Saknas ${visaKronor(saknas)} kr`}
+            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              {rad.forfallen && (
+                <span className="inline-flex items-center gap-1 rounded border border-transparent bg-bg px-2 py-0.5 text-caption">
+                  <Clock aria-hidden size={13} />
+                  Förfallen
+                </span>
+              )}
+              {rad.obekraftad && (
+                <StatusBadge ton="warning" storlek="sm">
+                  Obekräftad
+                </StatusBadge>
+              )}
+              {rad.spegelSlapar && (
+                <span
+                  className="inline-flex items-center gap-1 rounded border border-transparent bg-bg px-2 py-0.5 text-caption text-text-muted"
+                  title="Basen har inte hunnit uppdateras än"
+                >
+                  <AlertTriangle aria-hidden size={13} />
+                  Basen släpar
+                </span>
+              )}
+            </div>
           </div>
         </div>
         {!oppen && (
-          <Button ref={triggerRef} intent="primary" emphasis="outline" size="sm" onPress={onOppna}>
+          <Button
+            ref={triggerRef}
+            intent="primary"
+            emphasis="outline"
+            size="sm"
+            onPress={onOppna}
+            className="self-start sm:self-auto"
+          >
             Registrera betalning
           </Button>
         )}
       </div>
 
       {kvittens && (
-        <p role="status" className="px-3 pb-3 text-small text-text-muted">
+        <p role="status" className="pb-3 text-small text-text-muted">
           {kvittens}
         </p>
       )}

@@ -74,38 +74,58 @@ export function PanelBetalningar({ anmalanRecordId, namn, rad }: Props) {
        `divide-y`-behållare, som redan ritar avdelaren mellan raderna. En
        egen `border-t` här hade gett två linjer på samma plats. */
     <div className="flex flex-col gap-2 py-3">
-      <div className="flex flex-wrap items-center gap-2 text-small">
-        <span className={saknas !== null && saknas > 0 ? 'font-medium' : 'text-text-muted'}>
-          {saknas === null
-            ? 'Inget öppet belopp enligt basen'
-            : saknas > 0
-              ? `Saknas ${visaKronor(saknas)} kr`
-              : 'Allt betalt'}
+      {/* [TASK-346.14, designfynd 4b] Samma viktade radform som
+          `AnmalansBetalningar.tsx` § "SAKNAS X KR" — det öppna beloppet är
+          NYCKELTALET (Marcus ordagrant) och får radstrukturens vikt
+          (etikett dämpad vänster, värdet högerställt och `font-semibold`).
+          De två lugna lägena (null/allt betalt) förblir enkel text. */}
+      {saknas !== null && saknas > 0 ? (
+        <div className="flex items-center justify-between gap-4">
+          <span className="text-small text-text-muted">Saknas</span>
+          <span className="text-right font-semibold text-body">{`${visaKronor(saknas)} kr`}</span>
+        </div>
+      ) : (
+        <span className="text-small text-text-muted">
+          {saknas === null ? 'Inget öppet belopp enligt basen' : 'Allt betalt'}
         </span>
+      )}
 
-        {rad?.forfallen && (
-          <span className="inline-flex items-center gap-1 rounded border border-transparent bg-bg px-2 py-0.5 text-caption">
-            <Clock aria-hidden size={13} />
-            Förfallen
-          </span>
-        )}
+      {(rad?.forfallen || rad?.spegelSlapar) && (
+        <div className="flex flex-wrap items-center gap-2 text-small">
+          {rad?.forfallen && (
+            <span className="inline-flex items-center gap-1 rounded border border-transparent bg-bg px-2 py-0.5 text-caption">
+              <Clock aria-hidden size={13} />
+              Förfallen
+            </span>
+          )}
 
-        {rad?.spegelSlapar && (
-          <span
-            className="inline-flex items-center gap-1 rounded border border-transparent bg-bg px-2 py-0.5 text-caption text-text-muted"
-            title="Basen har inte hunnit uppdateras än"
-          >
-            <AlertTriangle aria-hidden size={13} />
-            Basen släpar
-          </span>
-        )}
+          {rad?.spegelSlapar && (
+            <span
+              className="inline-flex items-center gap-1 rounded border border-transparent bg-bg px-2 py-0.5 text-caption text-text-muted"
+              title="Basen har inte hunnit uppdateras än"
+            >
+              <AlertTriangle aria-hidden size={13} />
+              Basen släpar
+            </span>
+          )}
+        </div>
+      )}
+
+      {/* [TASK-346.14 fix-runda D, D1] HORISONTELL KNAPPGRUPP PÅ ≥sm — samma
+          fix och samma motivering som `AnmalansBetalningar.tsx` (se dess
+          docblock för hela resonemanget: `DokumentYta.tsx`-mönstret, gap
+          återanvänt från panelens egen `flex-col gap-2`, `sm:items-start`
+          mot ojämn kolumnhöjd). Denna yta är DEL av det facit-låsta
+          `atgarder-granskning`/`atgarder`-manifestet
+          (`tasks/sessions/bilagor/s93-atgardssida-promovering/facit.json`,
+          `s93-hallplats-prototyp/facit.json`) — se AMENDERING-sidofilerna i
+          båda katalogerna. */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-start">
+        {rad !== null && <RegistreraYta rad={rad} />}
+        {/* [TASK-346.9 AC #3] Se `AnmalansBetalningar.tsx` — samma skäl att
+            återbetalningen inte gates på `rad !== null`. */}
+        <AterbetalningsYta anmalanRecordId={anmalanRecordId} />
       </div>
-
-      {rad !== null && <RegistreraYta rad={rad} />}
-
-      {/* [TASK-346.9 AC #3] Se `AnmalansBetalningar.tsx` — samma skäl att
-          återbetalningen inte gates på `rad !== null`. */}
-      <AterbetalningsYta anmalanRecordId={anmalanRecordId} />
 
       <div>
         <button
