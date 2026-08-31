@@ -577,6 +577,42 @@ function BetalningsradKort({
 }: KortProps) {
   const saknas = rad.kvar ?? rad.betalning.saknas;
 
+  /* ═══════════════════════════════════════════════════════════════════════
+   * FOKUS-RETUR: ALLA VÄGAR UT UTOM DEN SOM MEDVETET GÅR ÅT ANNAT HÅLL
+   * ═══════════════════════════════════════════════════════════════════════
+   * Granskningsfynd runda 1. Formuläret ERSÄTTER trigger-knappen i DOM:en,
+   * så när raden öppnas rivs den nod fokus stod på och fokus faller till
+   * `document.body`. Samma felklass som `Deltagare.tsx` § "alla vägar ut"
+   * beskriver för batch-baren: "Lotta börjar om från sidans topp, och en
+   * skärmläsaranvändare tappar sin plats mitt i arbetet."
+   *
+   * Mönstret är husets: en `buttonRef` som fokus-retur-mål
+   * (`DetaljGrupp.tsx` § `AndraRad`, "tangentbordskontinuitet") plus en
+   * effekt som körs EFTER commit, när knappen åter finns i DOM.
+   *
+   * VARFÖR EN FLAGGA OCH INTE RETUR VID VARJE STÄNGNING: registreringens väg
+   * ut flyttar fokus till SÖKFÄLTET med avsikt (AC #3: "efter Enter kvitterar
+   * raden, listan uppdateras, fokus åter i tomt sökfält"). En ovillkorlig
+   * retur hade konkurrerat med den och gett en kapplöpning mellan två
+   * fokus-anrop i samma commit. Flaggan sätts därför bara av Avbryt och Esc.
+   */
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const varOppen = useRef(false);
+  const skaAterfaFokus = useRef(false);
+
+  useEffect(() => {
+    if (varOppen.current && !oppen && skaAterfaFokus.current) {
+      skaAterfaFokus.current = false;
+      triggerRef.current?.focus();
+    }
+    varOppen.current = oppen;
+  }, [oppen]);
+
+  function avbryt() {
+    skaAterfaFokus.current = true;
+    onAvbryt();
+  }
+
   return (
     <li className="overflow-hidden rounded border border-border bg-bg-muted">
       <div className="flex flex-wrap items-center justify-between gap-2 px-3 py-3">
@@ -610,7 +646,7 @@ function BetalningsradKort({
           </div>
         </div>
         {!oppen && (
-          <Button intent="primary" emphasis="outline" size="sm" onPress={onOppna}>
+          <Button ref={triggerRef} intent="primary" emphasis="outline" size="sm" onPress={onOppna}>
             Registrera betalning
           </Button>
         )}
@@ -628,7 +664,7 @@ function BetalningsradKort({
           idag={idag}
           betalsatt={betalsatt}
           onBetalsatt={onBetalsatt}
-          onAvbryt={onAvbryt}
+          onAvbryt={avbryt}
           onKlar={onKlar}
         />
       )}

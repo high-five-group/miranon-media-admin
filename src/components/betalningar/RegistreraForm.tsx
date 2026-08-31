@@ -1,5 +1,5 @@
 import { Check } from 'lucide-react';
-import { type FormEvent, type KeyboardEvent, useId, useRef, useState } from 'react';
+import { type FormEvent, type KeyboardEvent, useEffect, useId, useRef, useState } from 'react';
 import { Checkbox } from 'react-aria-components';
 import { Button, Input, Select, SelectItem } from '@/components/primitives';
 import { useRegistreraInbetalning } from '@/data/mutations/inbetalningar';
@@ -61,6 +61,14 @@ type Props = {
  * och texten försvinner utan ett ord. Fältet utelämnas därför, och gapet är
  * rapporterat i stället för tyst lappat — EF-ytan ägs av TASK-346.4, och en
  * ändring där ligger utanför denna skivas mandat.
+ *
+ * AVGJORT: fältet byggs med `avtalat_pris`-kolumnen i en uppföljningsmigration
+ * på Marcus GO (S113 natt, orkestrerar-beslut). Gapet är ett SAMSYNS-gap i
+ * 346.4:s schema — PRD § Inkorgen listar notering, schemat bär det inte — och
+ * inte denna skivas fel. Det byggs inte i natt därför att en ny kolumn plus en
+ * EF-ändring bryter B5-disciplinen (seriell staging-applicering, en olandad
+ * schemaversion i taget), exakt samma klass som `avtalat_pris`. De två buntas
+ * därför till samma migration.
  */
 export function RegistreraForm({ rad, idag, betalsatt, onBetalsatt, onAvbryt, onKlar }: Props) {
   const [belopp, setBelopp] = useState('');
@@ -68,10 +76,43 @@ export function RegistreraForm({ rad, idag, betalsatt, onBetalsatt, onAvbryt, on
   const [medKvitto, setMedKvitto] = useState(true);
   const [rort, setRort] = useState(false);
   const beloppRef = useRef<HTMLInputElement>(null);
+  const forstaKnappRef = useRef<HTMLButtonElement>(null);
   const felId = useId();
 
   const registrera = useRegistreraInbetalning();
   const knappar = harledBeloppsknappar(rad);
+
+  /* ═══════════════════════════════════════════════════════════════════════
+   * FOKUS IN VID ÖPPNING - FÖRSTA BELOPPS-KNAPPEN, ANNARS FÄLTET
+   * ═══════════════════════════════════════════════════════════════════════
+   * Granskningsfynd runda 1: formuläret ersätter trigger-knappen i DOM:en, så
+   * utan detta faller fokus till `document.body` när raden öppnas.
+   *
+   * VALET, OCH VARFÖR (granskningen bad om att det bokförs): fokus går till
+   * FÖRSTA BELOPPS-KNAPPEN när det finns någon, annars till beloppsfältet.
+   *
+   *   - Knappen är PRD:ns primära handling: "tryck på det belopp banken visar
+   *     (1 000, 2 500 eller annat) i stället för att skriva det" (berättelse
+   *     3). De tre handlingarna i berättelse 6 är öppna raden, tryck på ett
+   *     belopp, tryck Enter - och den andra av dem är just denna knapp.
+   *   - TAB-ORDNINGEN AVGÖR RESTEN. Knapparna står FÖRE fältet i DOM, så ett
+   *     fokus i fältet hade lagt dem BAKOM användaren: en tangentbords-Lotta
+   *     som tabbar framåt hade aldrig mött dem, bara Shift+Tab hade nått dem.
+   *     Fokus på första knappen gör hela formuläret nåbart framåt.
+   *   - Fältet är fallbacken därför att det är den enda kontroll som finns i
+   *     VARJE läge: är priset okänt härleds noll knappar, och då hade en
+   *     regel som bara pekade på knappen lämnat fokus i tomma intet.
+   *
+   * Effekten körs EN gång, vid montering: formuläret monteras när raden
+   * öppnas och avmonteras när den stängs, så "vid montering" och "vid
+   * öppning" är samma ögonblick. `knappar.length` läses inne i effekten och
+   * inte som beroende - antalet kan ändras när Lotta registrerar, och en
+   * omfokusering då hade ryckt markören ur fältet hon skriver i.
+   */
+  useEffect(() => {
+    if (forstaKnappRef.current) forstaKnappRef.current.focus();
+    else beloppRef.current?.focus();
+  }, []);
   const talet = normaliseraBeloppKlient(belopp);
   const fel = rort ? beloppsFel(belopp) : null;
   const utfall = talet !== null && talet !== 0 ? beloppsutfall(rad, talet) : null;
@@ -129,10 +170,26 @@ export function RegistreraForm({ rad, idag, betalsatt, onBetalsatt, onAvbryt, on
 
   // ⌘/Ctrl+Enter = registrera OCH skicka (AC #3, PRD berättelse 9). Fångas på
   // formuläret och inte per fält: genvägen ska fungera var markören än står.
+  //
+  // ESC = AVBRYT, samma väg ut som knappen (granskningsfynd runda 1). Ett
+  // formulär som öppnas på plats och tar fokus MÅSTE gå att lämna med
+  // tangentbordet utan att leta upp en knapp - `Deltagare.tsx` § "alla vägar
+  // ut" räknar upp Esc vid sidan av Avbryt av precis det skälet. Fokus-returen
+  // till trigger-knappen sköts av `BetalningsradKort`, som äger knappen.
+  //
+  // `stopPropagation` därför att Esc är en delad genväg: utan den hade
+  // tangenttryckningen fortsatt uppåt och kunnat stänga en omgivande yta
+  // samtidigt som formuläret stängs.
   function vidTangent(event: KeyboardEvent<HTMLFormElement>) {
     if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
       event.preventDefault();
       void spara(true);
+      return;
+    }
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
+      onAvbryt();
     }
   }
 
@@ -145,9 +202,11 @@ export function RegistreraForm({ rad, idag, betalsatt, onBetalsatt, onAvbryt, on
     >
       {knappar.length > 0 && (
         <div className="flex flex-wrap gap-2">
-          {knappar.map((knapp) => (
+          {knappar.map((knapp, index) => (
             <Button
               key={knapp.nyckel}
+              // Fokus-in-målet vid öppning — se docblocket vid `useEffect`.
+              ref={index === 0 ? forstaKnappRef : undefined}
               intent="secondary"
               emphasis="outline"
               size="sm"
