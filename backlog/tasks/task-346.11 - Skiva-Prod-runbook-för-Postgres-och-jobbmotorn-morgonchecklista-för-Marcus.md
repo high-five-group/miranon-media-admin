@@ -1,12 +1,13 @@
 ---
 id: TASK-346.11
 title: 'Skiva: Prod-runbook för Postgres och jobbmotorn + morgonchecklista för Marcus'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-30 18:46'
-updated_date: '2026-08-31 04:37'
+updated_date: '2026-08-31 05:00'
 labels:
   - ready-for-agent
+  - intentionally-unchecked
 dependencies:
   - TASK-346.3
   - TASK-346.4
@@ -45,4 +46,6 @@ Modell: Sonnet@xhigh (ADR-089; avvikelse från agent-default bokförd här). Nat
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
 Levererad. Byggd av Sonnet 5 (Sonnet@xhigh, bokford modell). Ny fil docs/reference/prod-driftsattning-betalningsflodet-runbook.md (samma form som prod-driftsattning-runbook.md): 16 steg (lanka, tre migrationer, kvittoseriens golv 1001 plus arssteg, Vault-hemligheterna med digest-verifikat, sekundintervall-kontroll plus cron.alter_job-fallback, Realtime-publikationen, allowlist-forutsattning for nio EF:er, funktionsdeploy, deny-smoke 9x3=27 utfall, prod-falten i basen inkl korrigerad Saknas-formel, priser pa kommande event, backfill-GO-pekare, miljoflaggan i Vercel, valfritt rok-test, facit-stamplar) plus Morgonchecklista (7 punkter) plus Rullbakat R1-R5 plus Fallor-tabell (9 poster). Tva pekare uppdaterade (backfill-inbetalningar.md, supabase/migrations/README.md) fran bar TASK-346.11-referens till konkret lank. PREMISS-DIVERGENS funnen och bokford oppet i runbooken: data-model.md pastar att BADA scripts/create-eventinnehall-modell.mjs OCH scripts/create-betalningsfalt.mjs bar AIRTABLE_PROD_GODKAND_AV_MARCUS-vagen mot prod - verifierat mot kallkod att bara den FORSTA gor det; runbooken ger Marcus tva vagar i stallet for att latsas skriptet redan fungerar mot prod. check:docs 14/14 grona (markdownlint MD031 fallde 17 ganger initialt, fixat). git status ren, tre filer rorda, inga orelaterade. OBOCKAT MED AVSIKT: DoD 5-8 ar PRD-niva-krav som provas pa kodskivorna och QA-kortet 346.13, inte pa en docs-only runbook-skiva.
+
+Landning: PR #2161 (merge e38226ba, 2026-08-31 ~04:50 UTC) · CI grön per jobb via merge-kön · D0 — orkestreraren läste hela runbooken (1030 rader) före armering i stället för review-agent · Runbookens divergensfynd (create-betalningsfalt.mjs saknar prod-vägen data-model påstod) bokfört med två Marcus-vägar · ÅRSSTEGET (P0002-fällan) ägs nu av runbooken som stående årligt steg · OBOCKAT MED AVSIKT: DoD #5–#8 är PRD-nivå-krav som prövas på kodskivorna och QA-kortet 346.13.
 <!-- SECTION:FINAL_SUMMARY:END -->
