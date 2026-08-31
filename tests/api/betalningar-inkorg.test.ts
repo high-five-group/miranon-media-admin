@@ -408,7 +408,20 @@ test('alla skickade ger success', () => {
 });
 
 test('ETT skickat kvitto sägs i singular', () => {
-  expect(jobbDelutfall(jobbstatus([{ status: 'skickat' }]))?.rubrik).toBe('1 kvitto skickade');
+  expect(jobbDelutfall(jobbstatus([{ status: 'skickat' }]))?.rubrik).toBe('1 kvitto skickat');
+
+  // NEGATIV KONTROLL: mätt fynd, S113-slutvandringen 2026-08-31 — "1 kvitto
+  // skickade" (participet i FEL numerus, plural mot ett singulart huvudord)
+  // var faktiskt produktionsbeteende fram till denna fix.
+  const trasigRubrik = (n: number) => `${n} ${n === 1 ? 'kvitto' : 'kvitton'} skickade`;
+  expect(trasigRubrik(1)).toBe('1 kvitto skickade');
+  expect(trasigRubrik(1)).not.toBe(jobbDelutfall(jobbstatus([{ status: 'skickat' }]))?.rubrik);
+
+  // PLURALFORMEN (N>1) ÄR OFÖRÄNDRAD av kongruensfixen — "alla skickade ger
+  // success" ovan bevisar det redan ('2 kvitton skickade'); denna rad säger
+  // det uttryckligen så båda formerna är testade i samma svep.
+  const flera = jobbDelutfall(jobbstatus([{ status: 'skickat' }, { status: 'skickat' }]));
+  expect(flera?.rubrik).toBe('2 kvitton skickade');
 });
 
 test('delutfall är ALDRIG grönt - ett halvt utfall får inte se helt ut', () => {

@@ -5,7 +5,11 @@ import {
   useInbetalningarPerAnmalan,
   useInbetalningarPerPerson,
 } from '@/data/betalningar/useBetalningar';
-import { useMakuleraInbetalning, useRaderaInbetalning } from '@/data/mutations/inbetalningar';
+import {
+  useKoaKvitton,
+  useMakuleraInbetalning,
+  useRaderaInbetalning,
+} from '@/data/mutations/inbetalningar';
 import { useKvittolank, useSkickaKvittoIgen } from '@/data/mutations/kvitton';
 import type { Inbetalning, Kvitto } from '@/domain/schemas';
 import { skrivLaddningssida } from '@/lib/skriv-laddningssida';
@@ -42,8 +46,8 @@ type Props = {
 };
 
 /**
- * [TASK-346.7 AC #2/#3/#4] Inbetalningsraderna med KVITTOSTATUS, plus Visa
- * och Skicka igen.
+ * [TASK-346.7 AC #2/#3/#4, TASK-352] Inbetalningsraderna med KVITTOSTATUS,
+ * plus Visa och Skicka igen.
  *
  * ═══════════════════════════════════════════════════════════════════════════
  * VAD RADEN SVARAR PÅ
@@ -54,10 +58,15 @@ type Props = {
  * datumet OCH kvittots läge - inte bara en summa.
  *
  * VILKEN KNAPP SOM ERBJUDS ÄR EN HÄRLEDNING, INTE EN BEDÖMNING I JSX.
- * `kvittolage` (`panel-harledningar.ts`) avgör `kanVisa`/`kanSkickaIgen` och
- * har egna tester med negativa kontroller. Ett kvitto som ännu bara är
- * UTFÄRDAT får ingen "Skicka igen" - det väntar på jobbmotorn, och en knapp
- * där hade bett Lotta åtgärda något som redan är på väg.
+ * `kvittolage` (`panel-harledningar.ts`) avgör `kanVisa`/`kanSkickaIgen`/
+ * `kanKoaOm` och har egna tester med negativa kontroller. Ett kvitto som
+ * ännu bara är UTFÄRDAT får ALDRIG "Skicka igen" (`skickaKvittoIgen` - den
+ * förutsätter ett REDAN utskickat kvitto och en knapp där hade bett Lotta
+ * åtgärda något som redan är på väg) - men får sedan TASK-352 en EGEN
+ * "Skicka igen" via `koaKvitton` (`kanKoaOm`), eftersom raden annars var den
+ * enda ytan i appen där ett FALLERAT kvittoutskick blev osynligt så fort
+ * Lotta lämnade inkorgens transienta utfallsregion (S113-slutvandringen
+ * 2026-08-31, se `panel-harledningar.ts` § `kanKoaOm`).
  *
  * ═══════════════════════════════════════════════════════════════════════════
  * "VISA" FÖLJER HUSETS POPUP-SÄKRA MÖNSTER, INTE SITT EGET
@@ -106,6 +115,10 @@ export function InbetalningsLista({ kalla, aktiv, max, tomText }: Props) {
   const alla = sorteraInbetalningar(query.data.inbetalningar);
   const rader = max === undefined ? alla : alla.slice(0, max);
   const spegel = query.data.spegel;
+  // [TASK-352] EN uppslagning för hela listan, aldrig en sökning per rad —
+  // samma princip som kvittona ovan. `kvittolage` tar bara emot resultatet
+  // (se dess docblock).
+  const jobbfelPerInbetalning = new Map(query.data.jobbfel.map((f) => [f.inbetalningId, f.skal]));
 
   if (rader.length === 0) {
     return (
@@ -131,6 +144,7 @@ export function InbetalningsLista({ kalla, aktiv, max, tomText }: Props) {
             key={inbetalning.id}
             inbetalning={inbetalning}
             kvitton={query.data.kvitton}
+            felskal={jobbfelPerInbetalning.get(inbetalning.id) ?? null}
           />
         ))}
       </ul>
@@ -150,16 +164,21 @@ type Radatgard = 'vy' | 'radera-bekrafta' | 'makulera-skal';
 function InbetalningsRad({
   inbetalning,
   kvitton,
+  felskal,
 }: {
   inbetalning: Inbetalning;
   kvitton: readonly Kvitto[];
+  /** [TASK-352] Senaste kvittojobbets felskäl för DENNA rad, om något fallerat. */
+  felskal: string | null;
 }) {
-  const lage = kvittolage(inbetalning, kvitton);
+  const lage = kvittolage(inbetalning, kvitton, felskal);
   const lank = useKvittolank();
   const skickaIgen = useSkickaKvittoIgen();
+  const koaOm = useKoaKvitton();
   const radera = useRaderaInbetalning();
   const makulera = useMakuleraInbetalning();
   const [skickatTill, setSkickatTill] = useState<string | null>(null);
+  const [koaUtfall, setKoaUtfall] = useState<string | null>(null);
   const [atgard, setAtgard] = useState<Radatgard>('vy');
   const [skal, setSkal] = useState('');
   const [skalRort, setSkalRort] = useState(false);
@@ -320,6 +339,39 @@ function InbetalningsRad({
               Skicka igen
             </Button>
           )}
+          {/* [TASK-352] Ett kvitto som ALDRIG gått i väg — utfärdat men inte
+              skickat, eller inte ens skapat efter ett fallerat försök — köas
+              om via SAMMA EF-väg (koaKvitton) som utfallsregionens egna
+              "Skicka igen"-knapp i BetalningsInkorg.tsx, inte via
+              `skickaKvittoIgen` (den kräver ett redan utskickat kvitto, se
+              `lage.kanSkickaIgen` ovan). `lage.kanKoaOm` avgör; se dess
+              docblock i panel-harledningar.ts för de två grenarna. */}
+          {lage.kanKoaOm && (
+            <Button
+              intent="secondary"
+              emphasis="outline"
+              size="sm"
+              isDisabled={koaOm.isPending}
+              onPress={() => {
+                koaOm.mutate(
+                  { inbetalningIds: [inbetalning.id] },
+                  {
+                    onSuccess: (svar) => {
+                      const hoppadSkal = svar.hoppade[0]?.skal;
+                      setKoaUtfall(
+                        svar.koade > 0
+                          ? 'Kvittot köades för nytt utskick.'
+                          : (hoppadSkal ?? 'Kvittot kunde inte köas.'),
+                      );
+                    },
+                  },
+                );
+              }}
+              aria-label={`Skicka igen - ${lage.kvitto ? `kvitto ${lage.kvitto.kvittonummer}` : inbetalningsText(inbetalning)}`}
+            >
+              Skicka igen
+            </Button>
+          )}
           {/* [TASK-346.9 AC #1/#2] Radera/Makulera — bara EN av knapparna kan
               någonsin vara sann samtidigt (`kanRadera`/`kanMakulera` är
               varandras motsatser via `kvittoId`), men villkoren skrivs var
@@ -351,6 +403,23 @@ function InbetalningsRad({
       {makulerad && inbetalning.makuleradSkal && (
         <span className="text-caption text-text-muted">
           {`Makulerad: ${inbetalning.makuleradSkal}`}
+        </span>
+      )}
+
+      {/* [TASK-352] Felskälet i klartext, SAMMA visuella klass som
+          makulerings-noten ovan — mätt fynd ur S113-slutvandringen: raden
+          teg helt om ett fallerat kvittojobb (entydighets-guarden, eller
+          adressvakten i staging) och visade bara "Inget kvitto" eller
+          "väntar på att skickas". */}
+      {lage.felskal !== null && (
+        <span className="text-caption text-text-muted">
+          {`Kvittot kunde inte skickas: ${lage.felskal}`}
+        </span>
+      )}
+
+      {koaUtfall !== null && (
+        <span role="status" className="text-caption text-text-muted">
+          {koaUtfall}
         </span>
       )}
 
@@ -431,6 +500,11 @@ function InbetalningsRad({
       {skickaIgen.isError && (
         <span role="alert" className="text-(color:--mm-input-error-text) text-caption">
           {skickaIgen.error.message}
+        </span>
+      )}
+      {koaOm.isError && (
+        <span role="alert" className="text-(color:--mm-input-error-text) text-caption">
+          {koaOm.error.message}
         </span>
       )}
       {radera.isError && (

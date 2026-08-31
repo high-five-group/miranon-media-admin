@@ -46,6 +46,7 @@ import { lasAnmalan, REC_ID_RE } from '../_shared/betalningar-bas.ts';
 import {
   INBETALNING_KOLUMNER,
   INBETALNINGAR_TABELL,
+  JOBB_RAD_TABELL,
   KVITTO_KOLUMNER,
   KVITTON_TABELL,
   radTillInbetalning,
@@ -58,6 +59,8 @@ const LOGG = '[hamta-inbetalningar]';
 const ANMALNINGAR_TABELL_BAS = 'Anmälningar';
 /** Personkortet visar en persons betalningar över ALLA event — men inte tusen. */
 const MAX_ANMALNINGAR_PER_PERSON = 200;
+/** Samma jobbtyp-sträng som `koa-kvitton/index.ts` skriver — `jobb_rad.objekt_id` är inbetalningens id. */
+const JOBBTYP_KVITTO = 'kvitto';
 
 function jsonResponse(body: unknown, status: number, corsHeaders: Record<string, string>): Response {
   return new Response(JSON.stringify(body), {
@@ -123,6 +126,7 @@ Deno.serve(async (req) => {
         {
           inbetalningar: [],
           kvitton: [],
+          jobbfel: [],
           spegel: { summaPostgres: 0, summaBasen: null, iFas: true },
         },
         200,
@@ -153,6 +157,51 @@ Deno.serve(async (req) => {
         );
       if (kvittoFel) throw kvittoFel;
       kvitton = (kvittoRadar ?? []).map(radTillKvitto);
+    }
+
+    // ═══ SENASTE KVITTOJOBBETS FELSKÄL (TASK-352) ═══════════════════════════
+    //
+    // Mätt fynd, S113-slutvandringen 2026-08-31: ett kvittojobb som fallerar
+    // skriver ett Gunilla-klart skäl i `jobb_rad.skal` (t.ex. entydighets-
+    // guardens "Anmälan har flera kvitton som skulle kunna vara originalet"),
+    // men den skriften nådde aldrig klienten — raden visade tyst "Inget
+    // kvitto" eller "väntar på att skickas", utan att säga VARFÖR.
+    //
+    // ENDAST DEN SENASTE jobbraden per inbetalning räknas, inte historiken:
+    // en lyckad omkörning ska tysta ett gammalt fel, inte lämna det stående.
+    // Radarna hämtas i FALLANDE `skapad_nar`-ordning och Map.set skriver
+    // aldrig över en befintlig nyckel (`.has`-vakten), så den FÖRSTA träffen
+    // per `objekt_id` är den SENASTE raden.
+    //
+    // `objekt_id` PÅ `jobb_rad` ÄR INBETALNINGENS ID, inte kvittots — samma
+    // koppling `koa-kvitton/index.ts` skriver
+    // (`objekt_id: inbetalningId`) och `hamta-jobbstatus/index.ts` redan
+    // läser ur. En EN fråga för alla rader i svaret, aldrig en per rad.
+    let jobbfel: { inbetalningId: string; skal: string }[] = [];
+    if (inbetalningar.length > 0) {
+      const { data: jobbRadar, error: jobbFel } = await db
+        .from(JOBB_RAD_TABELL)
+        .select('objekt_id, status, skal')
+        .in(
+          'objekt_id',
+          inbetalningar.map((post) => post.id),
+        )
+        .eq('jobbtyp', JOBBTYP_KVITTO)
+        .order('skapad_nar', { ascending: false });
+      if (jobbFel) throw jobbFel;
+
+      const senasteJobbPerInbetalning = new Map<string, { status: string; skal: string | null }>();
+      for (const rad of jobbRadar ?? []) {
+        if (senasteJobbPerInbetalning.has(rad.objekt_id)) continue;
+        senasteJobbPerInbetalning.set(rad.objekt_id, { status: rad.status, skal: rad.skal });
+      }
+
+      jobbfel = [...senasteJobbPerInbetalning.entries()]
+        .filter((post): post is [string, { status: 'fel'; skal: string }] => {
+          const [, jobb] = post;
+          return jobb.status === 'fel' && jobb.skal !== null;
+        })
+        .map(([inbetalningId, jobb]) => ({ inbetalningId, skal: jobb.skal }));
     }
 
     // ── Spegelns färskhet ─────────────────────────────────────────────────
@@ -190,11 +239,12 @@ Deno.serve(async (req) => {
 
     console.log(
       `${LOGG} OK | caller_user_id=${user.id} | requestId=${requestId} | ` +
-        `anmalningar=${anmalanIds.length} | inbetalningar=${inbetalningar.length} | iFas=${iFas}`,
+        `anmalningar=${anmalanIds.length} | inbetalningar=${inbetalningar.length} | iFas=${iFas} | ` +
+        `jobbfel=${jobbfel.length}`,
     );
 
     return jsonResponse(
-      { inbetalningar, kvitton, spegel: { summaPostgres, summaBasen, iFas } },
+      { inbetalningar, kvitton, jobbfel, spegel: { summaPostgres, summaBasen, iFas } },
       200,
       corsHeaders,
     );

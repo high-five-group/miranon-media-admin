@@ -187,6 +187,81 @@ test('UTFÄRDAT kvitto väntar på jobbmotorn — Skicka igen erbjuds ALDRIG', (
   expect(trasigSkickaIgen(lage.kvitto)).not.toBe(lage.kanSkickaIgen);
 });
 
+/* ═══════════ TASK-352: KÖA OM ETT ALDRIG-SKICKAT/FALLERAT KVITTO ═══════════ */
+//
+// Mätt fynd, S113-slutvandringen 2026-08-31: den enda "Skicka igen"-knappen
+// för en fallerad rad levde i inkorgens TRANSIENTA utfallsregion (borta efter
+// navigering). Anmälans egen rad ("väntar på att skickas") hade ENDAST
+// Makulera — inget sätt att köa om, och inget sätt att se VARFÖR ett försök
+// hade fallerat innan ett kvitto ens hann skapas.
+
+test('UTFÄRDAT kvitto (aldrig skickat): KÖA OM erbjuds ÄVEN utan känt felskäl — servern avgör om raden är köbar', () => {
+  const lage = kvittolage(inbetalning(), [kvitto({ status: 'utfardat', skickadNar: null })]);
+  expect(lage.kanKoaOm).toBe(true);
+  expect(lage.felskal).toBeNull();
+  // Den GAMLA vägen (skickaKvittoIgen) förblir stängd — det är en annan knapp.
+  expect(lage.kanSkickaIgen).toBe(false);
+
+  // NEGATIV KONTROLL: buggen ur vandringen var att `kanKoaOm` alltid var
+  // `false` för denna gren — raden hade ingen skicka-handling alls.
+  const trasigKanKoaOm = () => false;
+  expect(trasigKanKoaOm()).not.toBe(lage.kanKoaOm);
+});
+
+test('inget jobb har fallerat: inget felskäl och ingen köa-om-knapp på en obesökt rad utan kvitto', () => {
+  const lage = kvittolage(inbetalning(), []);
+  expect(lage.felskal).toBeNull();
+  expect(lage.kanKoaOm).toBe(false);
+});
+
+test('senaste kvittojobbet FALLERADE innan ett kvitto hann skapas: felskälet syns, och köa-om erbjuds', () => {
+  const skal =
+    'Anmälan har flera kvitton som skulle kunna vara originalet (2 st) — Hör av dig till Roger eller Marcus.';
+  const lage = kvittolage(inbetalning(), [], skal);
+
+  expect(lage.kvitto).toBeNull();
+  expect(lage.text).toBe('Inget kvitto');
+  expect(lage.felskal).toBe(skal);
+  expect(lage.kanKoaOm).toBe(true);
+
+  // NEGATIV KONTROLL: mätt fynd — raden teg helt om att ett försök redan
+  // fallerat, trots att `jobb_rad.skal` bar ett Gunilla-klart skäl.
+  const trasigFelskal = () => null;
+  expect(trasigFelskal()).not.toBe(lage.felskal);
+});
+
+test('SKICKAT kvitto: aldrig felskäl och aldrig köa-om, oavsett vad ett gammalt jobbförsök säger', () => {
+  const lage = kvittolage(inbetalning(), [kvitto()], 'ett gammalt fel som inte längre gäller');
+  expect(lage.felskal).toBeNull();
+  expect(lage.kanKoaOm).toBe(false);
+  // Ett kvitto som FAKTISKT gick fram tystar ett eventuellt äldre felförsök.
+});
+
+test('MAKULERAT kvitto: aldrig felskäl och aldrig köa-om', () => {
+  const lage = kvittolage(inbetalning(), [kvitto({ status: 'makulerat' })], 'ett gammalt fel');
+  expect(lage.felskal).toBeNull();
+  expect(lage.kanKoaOm).toBe(false);
+});
+
+test('MAKULERAD INBETALNING: varken felskäl eller köa-om, trots ett känt jobbfel', () => {
+  const makulerad = inbetalning({
+    status: 'makulerad',
+    makuleradSkal: 'S113 kedjebevis, teststäd',
+  });
+
+  expect(kvittolage(makulerad, [], 'ett fel som inte längre är aktionabelt').kanKoaOm).toBe(false);
+  expect(kvittolage(makulerad, [], 'ett fel som inte längre är aktionabelt').felskal).toBeNull();
+  expect(kvittolage(makulerad, [kvitto({ status: 'utfardat', skickadNar: null })]).kanKoaOm).toBe(
+    false,
+  );
+
+  // Och en AKTIV inbetalning med samma kvittoläge får fortfarande knappen —
+  // regeln får inte ha stängt av köa-om för alla.
+  expect(
+    kvittolage(inbetalning(), [kvitto({ status: 'utfardat', skickadNar: null })]).kanKoaOm,
+  ).toBe(true);
+});
+
 test('MAKULERAD INBETALNING skickar aldrig om sitt kvitto — även när kvittot står som skickat', () => {
   // MÄTT I ACCEPTANSVANDRINGEN 2026-08-31 mot staging: Cecilia Ödmans två
   // inbetalningar är makulerade (städade testposter) medan deras kvitton står
