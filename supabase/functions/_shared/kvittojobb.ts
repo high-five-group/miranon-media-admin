@@ -128,6 +128,24 @@ export type KvittoPdfSpec = KvittoUnderlag & {
   hanvisningTillKvittonummer: string | null;
 };
 
+/**
+ * [Orkestrerar-beslut under Marcus mandat, 2026-08-31 — ENTYDIGHETS-GUARDEN]
+ * Utfallet av `hittaOriginalKvitto`. Se den funktionens docstring
+ * (`KvittoJobbDeps`) för hela resonemanget.
+ *
+ * `'entydigt'` returneras ENDAST när exakt EN levande kandidat finns — och
+ * då är den, per definition, kvittot för den inbetalning som krediteras
+ * (Marcus beslutade semantik, TASK-346.9 fix-runda 2): finns bara en
+ * kandidat kan den inte vara fel. `'flertydigt'` betyder att fler än en
+ * levande kandidat finns och koden VÄGRAR gissa vilken — `forbered()`
+ * fäller raden högljutt i stället för att tyst välja "senaste" (den bugg
+ * granskningsfynd runda 1 hittade).
+ */
+export type OriginalKvittoUppslag =
+  | { utfall: 'inget' }
+  | { utfall: 'entydigt'; id: string; kvittonummer: string }
+  | { utfall: 'flertydigt'; antal: number };
+
 /** En befintlig ledger-rad, som `hittaKvitto` returnerar den. */
 export type BefintligtKvitto = {
   id: string;
@@ -216,36 +234,82 @@ export type KvittoJobbDeps = {
    * via den inbetalningens id (`kvitton.inbetalning_id` är unik — högst en
    * kandidat), ALDRIG "senaste icke-makulerade kvitto för anmälan".
    *
-   * VARFÖR DET INTE ÄR IMPLEMENTERAT ÄN: att bära den krediterade
-   * inbetalningens id genom kedjan (UI → EF → jobb-payload → detta
-   * uppslag) kräver ny persisterad state MELLAN `koa-kvitton`s köning och
-   * denna funktions körning (som kan ske sekunder eller minuter senare, via
-   * cron-självläkningen). Mätt, inte antaget: varken `jobb_rad` (bär bara
-   * `objekt_id uuid` — EN kolumn, redan upptagen av återbetalningens EGEN
-   * id) eller kömeddelandets form (`jobb_ko_skicka` låser
-   * `{"jobbtyp","radId"}` i redan applicerad SQL) har rum för ett andra id
-   * utan en schemaändring. `inbetalningar`/`kvitton` saknar likaså en ledig
-   * kolumn att återanvända. Kortets mandat förbjuder uttryckligen en NY
-   * migration för detta ("ingen ny migration"). Dessutom mättes UI-antagandet
-   * i uppdraget («UI-handlingen görs på en specifik inbetalningsrad») vara
-   * FALSKT mot denna gren: `AterbetalningsYta`/`AterbetalningsForm`
-   * (`src/components/betalningar/`) tar bara `anmalanRecordId` — ingen
-   * enskild inbetalning väljs av Lotta i dagens UI.
+   * VARFÖR FULL PER-INBETALNINGS-REFERENS INTE ÄR IMPLEMENTERAD ÄN: att
+   * bära den krediterade inbetalningens id genom kedjan (UI → EF →
+   * jobb-payload → detta uppslag) kräver ny persisterad state MELLAN
+   * `koa-kvitton`s köning och denna funktions körning (som kan ske sekunder
+   * eller minuter senare, via cron-självläkningen). Mätt, inte antaget:
+   * varken `jobb_rad` (bär bara `objekt_id uuid` — EN kolumn, redan
+   * upptagen av återbetalningens EGEN id) eller kömeddelandets form
+   * (`jobb_ko_skicka` låser `{"jobbtyp","radId"}` i redan applicerad SQL)
+   * har rum för ett andra id utan en schemaändring. `inbetalningar`/
+   * `kvitton` saknar likaså en ledig kolumn att återanvända. Kortets mandat
+   * förbjuder uttryckligen en NY migration för detta ("ingen ny
+   * migration"). Dessutom mättes UI-antagandet i uppdraget («UI-handlingen
+   * görs på en specifik inbetalningsrad») vara FALSKT mot denna gren:
+   * `AterbetalningsYta`/`AterbetalningsForm` (`src/components/betalningar/`)
+   * tar bara `anmalanRecordId` — ingen enskild inbetalning väljs av Lotta i
+   * dagens UI.
    *
-   * STATUS: STOPPAT i fix-runda 2, rapporterat till orkestreraren/Marcus
-   * som en öppen divergens — ingen egen fallback-heuristik är införd i
-   * detta pass (uppdragets uttryckliga instruktion). Heuristiken ovan står
-   * alltså KVAR, med sin kända begränsning nu ärligt dokumenterad i stället
-   * för gömd bakom en falsk motivering.
+   * Full per-inbetalnings-referens (schemaändring + ev. UI-val av vilken
+   * inbetalning som krediteras) ligger på den redan aviserade
+   * uppföljningsmigrationen, samma spår som `notering`/`avtalat_pris`
+   * (bokfört i sessionsdok S113 Del 12, våg 4) — på Marcus GO, INTE
+   * implementerad här.
    *
-   * `null` = inget att kreditera hittades — AC #4:s negativa kontroll
-   * ("kreditkvitto utan original fäller") kräver att `forbered()` då
-   * FÄLLER raden i stället för att skapa ett kreditkvitto utan hänvisning
-   * (vilket `kvitton_kreditkvitto_har_original`-constrainten ändå hade
-   * stoppat, men med ett rått databasfel i stället för ett skäl Lotta
-   * förstår).
+   * ═══════════════════════════════════════════════════════════════════════
+   * ENTYDIGHETS-GUARDEN [Orkestrerar-beslut under Marcus mandat, 2026-08-31]
+   * ═══════════════════════════════════════════════════════════════════════
+   * Full id-threading kräver migration (ovan) — men beslutets KÄRNA ("aldrig
+   * fel länk") går att bevara UTAN migration och utan UI-omdesign: räkna
+   * anmälans LEVANDE kandidat-kvitton i stället för att bara ta den senaste.
+   *
+   *   EXAKT EN → använd den. Det är per definition RÄTT enligt Marcus
+   *   beslutade semantik (kvittot för den inbetalning som krediteras):
+   *   finns bara en kandidat KAN den inte vara fel, oavsett vilken
+   *   inbetalning Lotta faktiskt avsåg — det finns inget annat kvitto det
+   *   skulle kunna vara.
+   *
+   *   FLER ÄN EN → INGET kreditkvitto skapas. `forbered()` fäller raden
+   *   högljutt med ett skäl Lotta förstår (`OriginalKvittoUppslag`,
+   *   `utfall: 'flertydigt'`) — samma fail-loud-mönster som "inget
+   *   original hittades": fel-rad, ledger ofinaliserad, inget nummer
+   *   bränt. ALDRIG ett tyst val av "senaste" — det var precis
+   *   granskningsfyndets ursprungliga bugg.
+   *
+   * VILKEN STATUSMÄNGD RÄKNAS SOM "LEVANDE KANDIDAT"? Granskningsfynd
+   * runda 1 pekade explicit ut att filtret `neq('status','makulerat')`
+   * släpper in `utfardat`-kvitton (aldrig levererade till kunden) som
+   * giltiga kandidater. Guarden HÅLLER FAST vid `neq('status','makulerat')`
+   * — alltså BÅDE `utfardat` OCH `skickat` räknas som levande — av två skäl,
+   * bokförda öppet i stället för tyst valda:
+   *
+   *   (1) Ett kvitto FINNS i ledgern (en identitet, ett nummer) från och
+   *       med `skapaKvitto`, inte från och med mailet. ADR-128 § Kvittot:
+   *       "ett utfärdat kvitto är en verifikation" — mail-leveransstatus
+   *       ändrar inte VILKEN inbetalning kvittot hör till.
+   *   (2) Att UTESLUTA `utfardat` hade infört ett race: en återbetalning
+   *       registrerad medan originalets kvitto ännu köar för utskick (helt
+   *       normalt — jobbmotorn är asynkron) hade sett "0 kandidater" och
+   *       fällt kreditkvittot med "inget original hittades", trots att
+   *       kvittot FAKTISKT finns. Det är ett SÄMRE felläge än det guarden
+   *       ger.
+   *
+   * Kritiskt: att `utfardat` räknas med gör INTE uppslaget mindre säkert
+   * UNDER guarden — det gjorde det bara osäkert under den GAMLA "senaste"-
+   * logiken (som tyst kunde välja ett omailat kvitto som "originalet" utan
+   * att fråga om det fanns konkurrenter). Guarden själv är skyddet: ett
+   * `utfardat`-kvitto används ALDRIG tyst när ett `skickat`-kvitto också är
+   * en kandidat — då är utfallet `flertydigt`, och raden fälls i stället.
+   *
+   * `OriginalKvittoUppslag` (se den typen) bär utfallet: `'inget'` (AC #4:s
+   * negativa kontroll, "kreditkvitto utan original fäller") · `'entydigt'`
+   * (den nya, korrekta vägen — ersätter det gamla `{id,kvittonummer}|null`)
+   * · `'flertydigt'` (NY, denna guard). `forbered()` fäller raden på både
+   * `'inget'` och `'flertydigt'`, aldrig på `'entydigt'` — se den funktionen
+   * för den fullständiga grenlogiken.
    */
-  hittaOriginalKvitto(anmalanRecordId: string): Promise<{ id: string; kvittonummer: string } | null>;
+  hittaOriginalKvitto(anmalanRecordId: string): Promise<OriginalKvittoUppslag>;
   allokeraNummer(ar: number): Promise<AllokeratNummer>;
   /**
    * Skriver ledger-raden. KASTAR vid unik-nyckel-brott (dubbelskicksspärren).
@@ -557,15 +621,21 @@ async function forbered(
     }
 
     // NY RAD: originalet slås upp här, en gång, INNAN numret allokeras.
+    //
+    // ENTYDIGHETS-GUARDEN [orkestrerar-beslut under Marcus mandat,
+    // 2026-08-31] — se `KvittoJobbDeps.hittaOriginalKvitto`s docstring för
+    // hela resonemanget. `original` sätts ENDAST vid `utfall: 'entydigt'`
+    // (exakt en levande kandidat — per definition rätt, se docstringen);
+    // `'inget'` och `'flertydigt'` fäller båda raden HÖGLJUTT här, före
+    // `skapaKvitto` ens anropas — aldrig ett tyst val av "senaste".
     let original: { id: string; kvittonummer: string } | null = null;
     if (arAterbetalning) {
-      original = await deps.hittaOriginalKvitto(underlag.anmalanRecordId);
-      if (original === null) {
+      const uppslag = await deps.hittaOriginalKvitto(underlag.anmalanRecordId);
+      if (uppslag.utfall === 'inget') {
         // AC #4:s negativa kontroll: "kreditkvitto utan original fäller".
         // Databasens `kvitton_kreditkvitto_har_original`-constraint hade
         // stoppat ett INSERT utan `original_kvitto_id` ändå — men med ett
-        // rått databasfel i stället för ett skäl Lotta förstår. Fäll HÄR,
-        // före `skapaKvitto` ens anropas.
+        // rått databasfel i stället för ett skäl Lotta förstår.
         return {
           typ: 'utfall',
           utfall: await avslutaMedFel(
@@ -575,6 +645,21 @@ async function forbered(
           ),
         };
       }
+      if (uppslag.utfall === 'flertydigt') {
+        // Fler än en levande kandidat — guarden vägrar gissa vilken.
+        return {
+          typ: 'utfall',
+          utfall: await avslutaMedFel(
+            post,
+            `Anmälan har flera kvitton som skulle kunna vara originalet (${uppslag.antal} st) — ` +
+              'det går inte att avgöra automatiskt vilket som ska krediteras. Kreditkvittot ' +
+              'skickas inte. Hör av dig till Roger eller Marcus för att reda ut vilket kvitto ' +
+              'återbetalningen avser.',
+            deps,
+          ),
+        };
+      }
+      original = { id: uppslag.id, kvittonummer: uppslag.kvittonummer };
     }
     const kvittoTyp: 'kvitto' | 'kreditkvitto' = arAterbetalning ? 'kreditkvitto' : 'kvitto';
     const hanvisningTillKvittonummer = arAterbetalning ? (original?.kvittonummer ?? null) : null;

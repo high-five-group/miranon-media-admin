@@ -329,11 +329,16 @@ Deno.serve(async (req) => {
         };
       },
 
-      // [TASK-346.9] Kreditkvittots hänvisning — se `kvittojobb.ts`s
-      // `KvittoJobbDeps.hittaOriginalKvitto`-docstring för DESIGNVALET
-      // (senast utfärdade, icke-makulerade `typ: 'kvitto'` för samma
-      // anmälan). Två steg därför att `kvitton` saknar `anmalan_record_id`
-      // — kopplingen går via `inbetalningar`.
+      // [TASK-346.9, ENTYDIGHETS-GUARDEN — orkestrerar-beslut under Marcus
+      // mandat, 2026-08-31] Kreditkvittots hänvisning — se `kvittojobb.ts`s
+      // `KvittoJobbDeps.hittaOriginalKvitto`-docstring för HELA resonemanget
+      // (varför `utfardat` räknas som levande, varför flertydigt fäller i
+      // stället för att gissa). Två steg därför att `kvitton` saknar
+      // `anmalan_record_id` — kopplingen går via `inbetalningar`.
+      //
+      // INGEN `.order()`/`.limit(1)`/`.maybeSingle()` längre — den gamla
+      // "ta senaste"-formen är precis vad guarden ersätter. ALLA levande
+      // kandidater hämtas, och ANTALET (inte ordningen) avgör utfallet.
       async hittaOriginalKvitto(anmalanRecordId) {
         const { data: inbetalningsRadar, error: inbetalningsFel } = await db
           .from(INBETALNINGAR_TABELL)
@@ -341,21 +346,20 @@ Deno.serve(async (req) => {
           .eq('anmalan_record_id', anmalanRecordId);
         if (inbetalningsFel) throw inbetalningsFel;
         const inbetalningIds = (inbetalningsRadar ?? []).map((rad) => rad.id as string);
-        if (inbetalningIds.length === 0) return null;
+        if (inbetalningIds.length === 0) return { utfall: 'inget' };
 
         const { data, error } = await db
           .from(KVITTON_TABELL)
           .select(KVITTO_KOLUMNER)
           .in('inbetalning_id', inbetalningIds)
           .eq('typ', 'kvitto')
-          .neq('status', 'makulerat')
-          .order('skapad_nar', { ascending: false })
-          .limit(1)
-          .maybeSingle();
+          .neq('status', 'makulerat');
         if (error) throw error;
-        if (!data) return null;
-        const kvitto = radTillKvitto(data);
-        return { id: kvitto.id, kvittonummer: kvitto.kvittonummer };
+        const kandidater = (data ?? []).map(radTillKvitto);
+        if (kandidater.length === 0) return { utfall: 'inget' };
+        if (kandidater.length > 1) return { utfall: 'flertydigt', antal: kandidater.length };
+        const [kvitto] = kandidater;
+        return { utfall: 'entydigt', id: kvitto.id, kvittonummer: kvitto.kvittonummer };
       },
 
       async allokeraNummer(ar) {
