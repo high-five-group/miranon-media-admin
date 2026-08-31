@@ -78,7 +78,22 @@ export function kvittolage(inbetalning: Inbetalning, kvitton: readonly Kvitto[])
       kvitto,
       text: `Kvitto ${kvitto.kvittonummer} · skickat`,
       kanVisa: harPdf,
-      kanSkickaIgen: true,
+      // ═══ EN MAKULERAD INBETALNING SKICKAR ALDRIG OM SITT KVITTO ═══
+      //
+      // MÄTT I ACCEPTANSVANDRINGEN 2026-08-31, inte befarat: Cecilia Ödmans
+      // två inbetalningar i staging är MAKULERADE (städade testposter), men
+      // deras kvitton står kvar som `skickat` - och raden erbjöd "Skicka
+      // igen". Ett tryck hade skickat om ett kvitto för en betalning som
+      // inte längre gäller, till deltagaren.
+      //
+      // Läget är inte en bugg i datan. ADR-128 säger att kvittot BESTÅR när
+      // inbetalningen makuleras ("sanningen rättas utan att kvittot
+      // försvinner ur bokföringen") - ledgern ska ha kvar sin verifikation.
+      // Men det som består är ARKIVET, inte en levande utskicksväg.
+      //
+      // `kanVisa` står därför kvar: Lotta ska kunna se vad som en gång
+      // skickades, och raden säger redan "Makulerad: <skäl>" bredvid.
+      kanSkickaIgen: inbetalning.status !== 'makulerad',
     };
   }
 

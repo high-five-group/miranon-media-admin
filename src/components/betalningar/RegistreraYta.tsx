@@ -125,7 +125,28 @@ export function RegistreraYta({ rad, etikett = 'Registrera betalning' }: Props) 
     );
   }
 
-  const utfall = jobbDelutfall(jobb.data);
+  /* ═══ BARA DENNA YTAS EGET JOBB, ALDRIG DET SENASTE I APPEN ═══
+   *
+   * MÄTT I ACCEPTANSVANDRINGEN 2026-08-31, inte befarat: personkortet visade
+   * "3 kvitton skickade" innan Lotta rört någonting. Skälet är subtilt och
+   * värt att skriva ut, eftersom nästa yta som monterar denna komponent
+   * annars går i samma fälla:
+   *
+   *   `useJobbstatus(jobbId, jobbId !== undefined)` gör inget NÄTVERKSANROP
+   *   när `jobbId` är `undefined` (`enabled: false`) - men React Query
+   *   returnerar ändå den CACHADE datan för nyckeln, och nyckeln är då
+   *   `jobbstatus(null)`, alltså DET SENASTE JOBBET. `JobbLyssnare` håller
+   *   precis den nyckeln färsk för hela appen (det är dess uppgift), så
+   *   `jobb.data` är fylld från första renderingen.
+   *
+   * `enabled: false` stänger av HÄMTNINGEN, aldrig LÄSNINGEN. Villkoret
+   * nedan är därför på `jobbId`, inte på `jobb.data`: utfallet visas bara när
+   * DENNA yta faktiskt köade ett jobb i denna session.
+   *
+   * Samma felklass som `BetalningsInkorg.tsx` § "ETT FÄRDIGT JOBB FRÅN EN
+   * TIDIGARE SESSION ÄR INTE DAGENS NYHET" redan bokför för sin egen
+   * banderoll - här återupptäckt på en annan yta. */
+  const utfall = jobbId !== undefined ? jobbDelutfall(jobb.data) : null;
 
   return (
     <div className="flex flex-col gap-2">

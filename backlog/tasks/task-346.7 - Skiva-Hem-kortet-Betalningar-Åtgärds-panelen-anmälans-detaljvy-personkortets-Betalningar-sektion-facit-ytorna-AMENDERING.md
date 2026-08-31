@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-30 18:45'
+updated_date: '2026-08-31 04:03'
 labels:
   - ready-for-agent
 dependencies:
@@ -24,11 +25,11 @@ Modell: Opus@xhigh (ADR-089; avvikelse från agent-default bokförd här). Nattm
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Hem: kortet Betalningar ERSÄTTER kortet Förfallna betalningar (inte ovanpå): N öppna · M förfallna · K kvitton att skicka; knappar Registrera betalning (→ inkorgen) och Skicka påminnelse till alla (befintlig); AMENDERING-sidofil i tasks/sessions/bilagor/s102-hem-konvergens/ klass ny form, förhandsmandat S113 Del 11; promoverings-grinden grön via sidofilen
-- [ ] #2 Åtgärds-sidans panel 'Pricka av och notera': per person saknas-belopp, knappen Registrera betalning (samma formulär, förvald person), inbetalningsrader med kvittostatus + Visa/Skicka igen; kryssen är läsande (härledda) och kan inte flippas; noteringsfälten kvar; betalningspåminnelsen läser den härledda statusen; gamla Skicka kvitto-dialogen riven; AMENDERING-sidofil i tasks/sessions/bilagor/s93-atgardssida-promovering/
-- [ ] #3 Anmälans detaljvy: Betalningar-sektion med saknas, inbetalningar, kvitton, Registrera betalning
-- [ ] #4 Personkortet: ny Betalningar-sektion (öppna över alla event + senaste inbetalningar + Registrera betalning); AMENDERING-sidofil i tasks/sessions/bilagor/s103-persondetalj-konvergens/
-- [ ] #5 Eventsidans 'Öppna detaljer' visar samma härledda läge läsande
+- [x] #1 Hem: kortet Betalningar ERSÄTTER kortet Förfallna betalningar (inte ovanpå): N öppna · M förfallna · K kvitton att skicka; knappar Registrera betalning (→ inkorgen) och Skicka påminnelse till alla (befintlig); AMENDERING-sidofil i tasks/sessions/bilagor/s102-hem-konvergens/ klass ny form, förhandsmandat S113 Del 11; promoverings-grinden grön via sidofilen
+- [x] #2 Åtgärds-sidans panel 'Pricka av och notera': per person saknas-belopp, knappen Registrera betalning (samma formulär, förvald person), inbetalningsrader med kvittostatus + Visa/Skicka igen; kryssen är läsande (härledda) och kan inte flippas; noteringsfälten kvar; betalningspåminnelsen läser den härledda statusen; gamla Skicka kvitto-dialogen riven; AMENDERING-sidofil i tasks/sessions/bilagor/s93-atgardssida-promovering/
+- [x] #3 Anmälans detaljvy: Betalningar-sektion med saknas, inbetalningar, kvitton, Registrera betalning
+- [x] #4 Personkortet: ny Betalningar-sektion (öppna över alla event + senaste inbetalningar + Registrera betalning); AMENDERING-sidofil i tasks/sessions/bilagor/s103-persondetalj-konvergens/
+- [x] #5 Eventsidans 'Öppna detaljer' visar samma härledda läge läsande
 - [ ] #6 Alla ytor bakom miljöflaggan; acceptanstest: registrera från panel, anmälan och personkort ger samma resultat som inkorgen; axe 0; skärmdumpar desktop + iPad
 <!-- AC:END -->
 

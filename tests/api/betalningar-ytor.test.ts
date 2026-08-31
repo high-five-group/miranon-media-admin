@@ -185,6 +185,33 @@ test('UTFÄRDAT kvitto väntar på jobbmotorn — Skicka igen erbjuds ALDRIG', (
   expect(trasigSkickaIgen(lage.kvitto)).not.toBe(lage.kanSkickaIgen);
 });
 
+test('MAKULERAD INBETALNING skickar aldrig om sitt kvitto — även när kvittot står som skickat', () => {
+  // MÄTT I ACCEPTANSVANDRINGEN 2026-08-31 mot staging: Cecilia Ödmans två
+  // inbetalningar är makulerade (städade testposter) medan deras kvitton står
+  // kvar som `skickat`. Raden erbjöd "Skicka igen" innan denna regel fanns —
+  // ett tryck hade skickat om ett kvitto för en betalning som inte gäller.
+  const makulerad = inbetalning({
+    status: 'makulerad',
+    makuleradSkal: 'S113 kedjebevis, teststäd',
+  });
+  const lage = kvittolage(makulerad, [kvitto({ status: 'skickat' })]);
+
+  expect(lage.kanSkickaIgen).toBe(false);
+  // ARKIVET BESTÅR (ADR-128): kvittot ska fortfarande gå att SE.
+  expect(lage.kanVisa).toBe(true);
+  expect(lage.text).toBe('Kvitto MM-2026-1007 · skickat');
+
+  // NEGATIV KONTROLL: en regel som bara läser KVITTOTS status — vilket var
+  // precis vad implementationen gjorde innan vandringen — säger ja här.
+  const trasigRegel = (k: Kvitto) => k.status === 'skickat';
+  expect(trasigRegel(kvitto({ status: 'skickat' }))).toBe(true);
+  expect(trasigRegel(kvitto({ status: 'skickat' }))).not.toBe(lage.kanSkickaIgen);
+
+  // Och en AKTIV inbetalning med samma kvitto får fortfarande sin knapp —
+  // regeln får inte ha stängt av "Skicka igen" för alla.
+  expect(kvittolage(inbetalning(), [kvitto({ status: 'skickat' })]).kanSkickaIgen).toBe(true);
+});
+
 test('MAKULERAT kvitto: syns och kan visas, men skickas aldrig om', () => {
   const lage = kvittolage(inbetalning(), [kvitto({ status: 'makulerat' })]);
   expect(lage.text).toBe('Kvitto MM-2026-1007 · makulerat');

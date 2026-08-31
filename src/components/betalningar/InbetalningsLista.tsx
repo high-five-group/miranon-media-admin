@@ -160,9 +160,16 @@ function InbetalningsRad({
   }
 
   return (
-    <li
-      className={`flex flex-col gap-1 rounded bg-bg-muted px-3 py-2 text-small ${makulerad ? 'opacity-70' : ''}`}
-    >
+    /* INGEN `opacity` PÅ EN MAKULERAD RAD - MÄTT, INTE RESONERAT.
+       Raden bar `opacity-70` fram till acceptansvandringen 2026-08-31. Axe
+       fällde den då med FYRA `color-contrast`-överträdelser (serious): den
+       nedtonade texten (`text-text-muted`, #949494 mot #f5f5f3) föll till
+       2,77:1, långt under WCAG 2 AA:s 4,5:1 - opaciteten multiplicerar mot en
+       färg som redan är dämpad, och just de raderna bär den viktigaste texten
+       på ytan ("Makulerad: <skäl>").
+       Makuleringen sägs i stället med genomstruken text OCH i klartext på egen
+       rad. Båda överlever nedsatt syn; en opacitet gör det inte. */
+    <li className="flex flex-col gap-1 rounded bg-bg-muted px-3 py-2 text-small">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className={makulerad ? 'line-through' : undefined}>
           {inbetalningsText(inbetalning)}
