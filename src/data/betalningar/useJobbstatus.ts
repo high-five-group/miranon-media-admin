@@ -1,9 +1,9 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useEffect } from 'react';
+import { useEffect, useSyncExternalStore } from 'react';
 import { useDataSource } from '@/data/useDataSource';
 import type { Jobbstatus } from '@/domain/schemas';
 import { queryKeys } from '@/queries/keys';
-import { prenumereraPaJobbrader } from './jobbRealtime';
+import { lasRealtidsfel, prenumereraPaJobbrader, prenumereraPaRealtidsfel } from './jobbRealtime';
 
 /**
  * [TASK-346.4 AC #5, ADR-129 beslut 8] Kvittojobbets läge i klienten —
@@ -95,4 +95,27 @@ export function useJobbRealtime(aktiv: boolean): void {
       void queryClient.invalidateQueries({ queryKey: queryKeys.betalningar.all });
     });
   }, [aktiv, queryClient]);
+}
+
+/**
+ * [TASK-346.6] Läser om prenumerationen är nere, för ytor som VISAR jobbet.
+ *
+ * SKILD FRÅN `useJobbRealtime` MED AVSIKT. Den hooken ÄGER kanalen och
+ * monteras exakt en gång (av `JobbLyssnare`); denna hook LÄSER bara ett
+ * delat värde och kan därför monteras av hur många vyer som helst utan att
+ * en enda extra WebSocket öppnas. Hade felytan hämtat sitt tillstånd genom
+ * att själv prenumerera, hade varje sådan vy blivit en andra prenumeration
+ * på samma kanalnamn — precis det `jobbRealtime.ts` § KANAL varnar för.
+ *
+ * `useSyncExternalStore` och inte `useState` + effekt: värdet lever utanför
+ * React och kan ändras innan komponenten hunnit montera sin effekt. Reacts
+ * egen dokumentation pekar ut just den formen för externa stores, och den
+ * ger dessutom rätt beteende vid samtidig rendering.
+ *
+ * Returnerar status-strängen (`CHANNEL_ERROR`, `TIMED_OUT`, `CLOSED`) eller
+ * `null` när allt är som det ska. Strängen är för loggen och felsökningen -
+ * ytan säger något Lotta förstår, inte status-värdet.
+ */
+export function useRealtidsfel(): string | null {
+  return useSyncExternalStore(prenumereraPaRealtidsfel, lasRealtidsfel, () => null);
 }

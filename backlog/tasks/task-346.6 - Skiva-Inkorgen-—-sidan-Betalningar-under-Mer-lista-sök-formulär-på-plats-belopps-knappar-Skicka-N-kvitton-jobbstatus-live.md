@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-30 18:45'
+updated_date: '2026-08-31 02:05'
 labels:
   - ready-for-agent
 dependencies:
@@ -24,13 +25,13 @@ Modell: Opus@xhigh (ADR-089; avvikelse från agent-default bokförd här). Nattm
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Route /mer/betalningar bakom miljöflaggan; Mer-listan får raden Betalningar (AMENDERING-sidofil i tasks/sessions/bilagor/s64-mer-konvergens/ med klassen ny form, förhandsmandat S113 Del 11; övriga ytor i manifestet identiska med facit)
-- [ ] #2 Listan = öppna betalningar (Saknas > 0, status ≠ Avbokad/Ombokad) grupperade per kommande event närmast först; Klara hopfällda; Tidigare event under eget filter; obekräftade märkta; förfallen-märke när slutbetalningens deadline passerat; sökfältet har fokus vid öppning och filtrerar på namn/telefon/belopp; personer med öppna betalningar rankas först, övriga sist med 'registrera ändå'
-- [ ] #3 Formuläret öppnas på plats i raden: belopps-knappar härledda ([1 000 · anmälningsavgift] [2 500 · allt] [annat…], anpassade efter redan inbetalt), fritt fält som accepterar '2 500,00', betalsätt (senast använda), datum (i dag), ruta Skicka kvitto (förbockad), notering; Enter registrerar; ⌘/Ctrl+Enter och knappen 'Registrera och skicka' gör båda; fel som text vid fältet + aria-live; efter Enter kvitterar raden, listan uppdateras, fokus åter i tomt sökfält
-- [ ] #4 Stående knapp 'Skicka N kvitton' när kvitton väntar: klicket kvitteras direkt, raderna tickar skickat/fel med skäl (Delutfall-formen), Skicka igen på fallerade; notis '8 kvitton skickade' via Realtime och vid appöppning
-- [ ] #5 Belopp som täcker båda facken sägs rakt ut ('2 500 kr täcker anmälningsavgift + slutbetalning'); udda belopp visar saknas-rest
-- [ ] #6 Designsystemet rakt av (SidRam, kort, pill, steg-räknare, Delutfall, dra-reglage där relevant); prefers-reduced-motion, prefers-contrast, iPad 820 px (numeriskt tangentbord, radhöjd); axe 0 överträdelser
-- [ ] #7 Acceptanstest i browsern mot staging-fixturen: sök → tre registreringar (1 000 / 2 500 / annat) → Skicka 3 kvitton → utfall per rad; skärmdumpar desktop + iPad i PR-kroppen
+- [x] #1 Route /mer/betalningar bakom miljöflaggan; Mer-listan får raden Betalningar (AMENDERING-sidofil i tasks/sessions/bilagor/s64-mer-konvergens/ med klassen ny form, förhandsmandat S113 Del 11; övriga ytor i manifestet identiska med facit)
+- [x] #2 Listan = öppna betalningar (Saknas > 0, status ≠ Avbokad/Ombokad) grupperade per kommande event närmast först; Klara hopfällda; Tidigare event under eget filter; obekräftade märkta; förfallen-märke när slutbetalningens deadline passerat; sökfältet har fokus vid öppning och filtrerar på namn/telefon/belopp; personer med öppna betalningar rankas först, övriga sist med 'registrera ändå'
+- [x] #3 Formuläret öppnas på plats i raden: belopps-knappar härledda ([1 000 · anmälningsavgift] [2 500 · allt] [annat…], anpassade efter redan inbetalt), fritt fält som accepterar '2 500,00', betalsätt (senast använda), datum (i dag), ruta Skicka kvitto (förbockad), notering; Enter registrerar; ⌘/Ctrl+Enter och knappen 'Registrera och skicka' gör båda; fel som text vid fältet + aria-live; efter Enter kvitterar raden, listan uppdateras, fokus åter i tomt sökfält
+- [x] #4 Stående knapp 'Skicka N kvitton' när kvitton väntar: klicket kvitteras direkt, raderna tickar skickat/fel med skäl (Delutfall-formen), Skicka igen på fallerade; notis '8 kvitton skickade' via Realtime och vid appöppning
+- [x] #5 Belopp som täcker båda facken sägs rakt ut ('2 500 kr täcker anmälningsavgift + slutbetalning'); udda belopp visar saknas-rest
+- [x] #6 Designsystemet rakt av (SidRam, kort, pill, steg-räknare, Delutfall, dra-reglage där relevant); prefers-reduced-motion, prefers-contrast, iPad 820 px (numeriskt tangentbord, radhöjd); axe 0 överträdelser
+- [x] #7 Acceptanstest i browsern mot staging-fixturen: sök → tre registreringar (1 000 / 2 500 / annat) → Skicka 3 kvitton → utfall per rad; skärmdumpar desktop + iPad i PR-kroppen
 <!-- AC:END -->
 
 ## Definition of Done

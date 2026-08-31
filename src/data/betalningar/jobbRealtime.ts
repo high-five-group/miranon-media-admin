@@ -1,5 +1,6 @@
 import type { RealtimeChannel } from '@supabase/supabase-js';
 import { supabase } from '../config/supabase-client';
+import { skapaNedstangningsvakt, stangNer } from './nedstangningsvakt';
 
 /**
  * [TASK-346.4 AC #5, ADR-129 beslut 8] Realtime-prenumerationen på
@@ -48,6 +49,45 @@ const JOBB_RAD_TABELL = 'jobb_rad';
  */
 const KANAL = 'betalningar-jobb-rad';
 
+/* ═══════════════════════════════════════════════════════════════════════════
+ * REALTIDSFELET SOM DELAD YTA (TASK-346.6)
+ * ═══════════════════════════════════════════════════════════════════════════
+ * TASK-346.4 lämnade en namngiven TODO här: "koppla status till en synlig
+ * felyta - och bygg den på DETTA predikat, inte på råa status-värden."
+ *
+ * Ytan som ska VISA felet (inkorgen) är inte den som ÄGER prenumerationen.
+ * `JobbLyssnare` monteras en gång per app och håller den enda kanalen;
+ * kanalnamnet är delat, så en andra prenumeration från inkorgen hade gett
+ * dubbla invalideringar utan att tillföra något (se hookens docblock).
+ *
+ * Tillståndet bor därför i en modul-lokal store som vilken vy som helst kan
+ * läsa via `useSyncExternalStore`. Det är samma form Reacts egen
+ * dokumentation föreskriver för värden utanför React, och den kostar noll
+ * extra anslutningar.
+ * ═══════════════════════════════════════════════════════════════════════════ */
+
+let sistaFelstatus: string | null = null;
+const felLyssnare = new Set<() => void>();
+
+function sattFelstatus(status: string | null): void {
+  if (sistaFelstatus === status) return;
+  sistaFelstatus = status;
+  for (const lyssnare of felLyssnare) lyssnare();
+}
+
+/** Snapshot för `useSyncExternalStore`. `null` = prenumerationen mår bra. */
+export function lasRealtidsfel(): string | null {
+  return sistaFelstatus;
+}
+
+/** Prenumerera på ändringar i felstatusen. Returnerar avslutaren. */
+export function prenumereraPaRealtidsfel(vidAndring: () => void): () => void {
+  felLyssnare.add(vidAndring);
+  return () => {
+    felLyssnare.delete(vidAndring);
+  };
+}
+
 /**
  * Startar prenumerationen och returnerar en avslutare.
  *
@@ -69,7 +109,14 @@ export function prenumereraPaJobbrader(vidAndring: () => void): () => void {
   // kommer därefter — inte bara `'CLOSED'`. Det är avsiktligt bredare: också
   // ett `CHANNEL_ERROR` som råkar landa mitt i nedrivningen är ett eko av
   // nedstängningen, inte ett fel någon kan åtgärda.
-  let avsiktligNedstangning = false;
+  //
+  // [TASK-346.6] Flaggan och predikatet bor sedan denna skiva i
+  // `nedstangningsvakt.ts` — en modul UTAN importer, och därmed testbar rakt
+  // i Node. Granskningen av PR #2150 bokförde ordningsinvarianten som
+  // lastbärande utan testskydd; `stangNer()` nedan gör ordningen omöjlig att
+  // skriva fel, och `tests/api/nedstangningsvakt.test.ts` bevisar båda
+  // riktningarna.
+  const vakt = skapaNedstangningsvakt();
 
   const kanal: RealtimeChannel = supabase
     .channel(KANAL)
@@ -95,38 +142,37 @@ export function prenumereraPaJobbrader(vidAndring: () => void): () => void {
       // hon får rätt läge nästa gång ytan monteras — men ingenting hade
       // förklarat VARFÖR det inte uppdaterades i realtid.
       //
-      // Loggen är i dag hela åtgärden, och det är medvetet: en synlig
-      // FELYTA ("realtidsuppdateringen är nere") hör till ytorna som visar
-      // jobbet, och de byggs av TASK-346.6 och TASK-346.7.
-      //
-      // TODO(TASK-346.6/346.7): koppla status till en synlig felyta — och
-      // bygg den på DETTA predikat, inte på råa status-värden. Ett villkor
-      // som bara läser `status` fyrar vid varje avmontering (se flaggan
-      // ovan), och en felyta som blinkar rött vid varje navigering är värre
-      // än ingen felyta alls.
-      if (avsiktligNedstangning) return;
-
-      // `CLOSED` ingår FORTFARANDE i villkoret, och det är en medveten
-      // skillnad mot att bara lyfta ut det: en kanal som stängs UTAN att
-      // någon bett om det (servern kopplar ner, tokenet går ut) är ett
-      // verkligt fel Lotta bör kunna få veta om. Flaggan ovan skiljer de två
-      // fallen åt; status-värdet ensamt kan inte göra det.
-      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
-        console.warn(
-          '[jobbRealtime] prenumerationen på jobb_rad är inte aktiv | status=' +
-            status +
-            ' | jobbets läge läses fortfarande vid appöppning (useJobbstatus)',
-        );
+      // [TASK-346.6] TODO:n som stod här är BETALD: predikatet nedan matar
+      // både loggen och den delade store ovan, som inkorgen renderar som en
+      // synlig felyta. Ytan bygger alltså på PREDIKATET (vakten), aldrig på
+      // råa status-värden — precis som 346.4 föreskrev.
+      if (!vakt.arFel(status)) {
+        // Ett `SUBSCRIBED` efter ett fel betyder att kanalen kommit tillbaka.
+        // Felytan ska då försvinna av sig själv, utan att någon klickar bort
+        // den: en varning om ett tillstånd som upphört är brus.
+        if (status === 'SUBSCRIBED') sattFelstatus(null);
+        return;
       }
+
+      console.warn(
+        '[jobbRealtime] prenumerationen på jobb_rad är inte aktiv | status=' +
+          status +
+          ' | jobbets läge läses fortfarande vid appöppning (useJobbstatus)',
+      );
+      sattFelstatus(status);
     });
 
-  return () => {
-    // ORDNINGEN ÄR LASTBÄRANDE: flaggan FÖRE nedrivningen. Sätts den efteråt
-    // hinner close-eventet fram först, och varningen fyrar ändå.
-    avsiktligNedstangning = true;
+  return () =>
+    // ORDNINGEN ÄR LASTBÄRANDE: flaggan FÖRE nedrivningen. `stangNer` utför
+    // båda i rätt ordning, så den kan inte längre skrivas fel av misstag.
     // `removeChannel` returnerar ett löfte som ingen väntar på: avslutaren
     // körs i en `useEffect`-cleanup, som är synkron. Ett fel här kan inte
     // åtgärdas av någon och får inte kasta i en unmount.
-    void supabase.removeChannel(kanal);
-  };
+    stangNer(vakt, () => {
+      // Felytan hör till en LEVANDE prenumeration. Rivs kanalen avsiktligt
+      // finns inget fel kvar att visa, och en kvarlämnad varning hade följt
+      // med till nästa montering.
+      sattFelstatus(null);
+      void supabase.removeChannel(kanal);
+    });
 }
