@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-30 18:46'
+updated_date: '2026-08-31 05:45'
 labels:
   - ready-for-agent
 dependencies:
@@ -25,9 +26,9 @@ Modell: Opus@xhigh (ADR-089; avvikelse från agent-default bokförd här). Nattm
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [ ] #1 Intern typ transaktion (datum, belopp, namn, telefon, meddelande, bankreferens); parser läser CSV/txt med kolumnmappning; Handelsbankens exempelfiler (docs/research/swish-rapport-exempel/) är fixtur för komma- och semikolon-varianterna; mappningen sparas per bank (lokalt + i basen) efter första importen; okänt format ger mappningsdialog, aldrig gissning
-- [ ] #2 Matchning: telefon (normaliserat +46) mot anmälans Mobilnummer → säker; annars namn + belopp mot öppna betalningar → osäker med kandidater; annars omatchad; hermetiska tester + negativ kontroll per steg
-- [ ] #3 Dubbletter: bankreferens som redan finns på en inbetalning hoppas över och räknas synligt ('3 rader redan registrerade'); omimport av samma fil skapar 0 nya (bevisat)
-- [ ] #4 Bekräftelselistan är inkorgen: säkra rader förbockade, osäkra visar kandidater, omatchade får sökfältet; bekräftelse skapar inbetalningarna (kvittorutan per rad) och visar 'Skicka N kvitton'
+- [x] #2 Matchning: telefon (normaliserat +46) mot anmälans Mobilnummer → säker; annars namn + belopp mot öppna betalningar → osäker med kandidater; annars omatchad; hermetiska tester + negativ kontroll per steg
+- [x] #3 Dubbletter: bankreferens som redan finns på en inbetalning hoppas över och räknas synligt ('3 rader redan registrerade'); omimport av samma fil skapar 0 nya (bevisat)
+- [x] #4 Bekräftelselistan är inkorgen: säkra rader förbockade, osäkra visar kandidater, omatchade får sökfältet; bekräftelse skapar inbetalningarna (kvittorutan per rad) och visar 'Skicka N kvitton'
 - [ ] #5 Matchning mot Lottas verkliga bankfil är HITL (bank okänd) — bokfört som öppet AC för Marcus; acceptanstest med Handelsbankens exempelfil mot staging-fixturen (telefonnummer i fixturen anpassade i staging, aldrig prod)
 <!-- AC:END -->
 

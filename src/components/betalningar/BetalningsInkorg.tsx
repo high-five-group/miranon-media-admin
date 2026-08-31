@@ -39,6 +39,7 @@ import {
   sammanfattaBetalningar,
 } from './inkorg-harledningar';
 import { RegistreraForm, type RegistreringsUtfall } from './RegistreraForm';
+import { SwishImport } from './SwishImport';
 
 /**
  * [TASK-346.6, PRD TASK-346 § Inkorgen och formuläret] Sidan Betalningar
@@ -104,7 +105,14 @@ export function BetalningsInkorg() {
   const [vantande, setVantande] = useState<VantandeKvitto[]>([]);
   const [jobbId, setJobbId] = useState<string | undefined>(undefined);
   const [betalsatt, setBetalsatt] = useState<Betalsatt>(lasSenasteBetalsatt);
+  // [TASK-346.10] Importytan bor HÄR, inte på en egen route - kortets egen
+  // rubrik säger "samma inkorg, ingen ny yta". Två följder: miljöflaggan
+  // gäller utan ny kod (routens `beforeLoad` bär `betalningarPa()`), och
+  // "Skicka N kvitton" nedan är samma knapp för importerade och handskrivna
+  // registreringar. Se `SwishImport.tsx` § INGEN NY YTA.
+  const [visaImport, setVisaImport] = useState(false);
   const sokRef = useRef<HTMLInputElement>(null);
+  const importKnappRef = useRef<HTMLButtonElement>(null);
   const annonseratRef = useRef(false);
   const idag = useMemo(idagIso, []);
 
@@ -210,6 +218,23 @@ export function BetalningsInkorg() {
     // filter hade dolt henne.
     setSokterm('');
     sokRef.current?.focus();
+  }
+
+  /**
+   * [TASK-346.10 AC #4] Importens registrerade rader lyfts in i SAMMA
+   * väntande-lista som formulärets, så att "Skicka N kvitton" nedan blir en
+   * enda knapp för hela lördagen - oavsett om raden kom ur banken eller ur
+   * Lottas huvud. Fokus går till importknappen när ytan stängs; den nod
+   * fokus stod på rivs annars ur DOM och fokus faller till `document.body`
+   * (samma felklass som radens `skaAterfaFokus` bär).
+   */
+  function vidImporterade(kvitton: VantandeKvitto[]) {
+    setVantande((tidigare) => [...tidigare, ...kvitton]);
+  }
+
+  function stangImport() {
+    setVisaImport(false);
+    importKnappRef.current?.focus();
   }
 
   function skickaKvitton() {
@@ -321,6 +346,34 @@ export function BetalningsInkorg() {
           </ToggleButtonGroup>
         )}
       </div>
+
+      {/* [TASK-346.10] Importen ligger FÖRE "Skicka N kvitton", i den ordning
+          Lottas lördag faktiskt går: läs banken, bekräfta raderna, skicka
+          kvittona. Knappen göms medan ytan är öppen - den skulle inte göra
+          något nytt, och en knapp som inte gör något är brus. */}
+      {!visaImport && (
+        <div className="px-4">
+          <Button
+            ref={importKnappRef}
+            intent="secondary"
+            emphasis="outline"
+            size="sm"
+            onPress={() => setVisaImport(true)}
+          >
+            Importera bankrapport
+          </Button>
+        </div>
+      )}
+
+      {visaImport && (
+        <SwishImport
+          oppna={rader}
+          idag={idag}
+          betalsatt={betalsatt}
+          onRegistrerade={vidImporterade}
+          onStang={stangImport}
+        />
+      )}
 
       {vantande.length > 0 && (
         <div className="px-4">

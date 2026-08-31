@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-30
+updated: 2026-08-31
 review_by: 2027-01-02
 status: stable
 ---
@@ -61,9 +61,22 @@ Anmälningsavgift/Slutbetalning härleds ur inbetalningarna mot eventets
 numeriska pris, och ett kvitto avser exakt en inbetalning. Handlingen att
 skapa en inbetalning i appen heter *registrera betalning*.
 *Undvik:* avstämning (betyder NÄRVARO i basen — se Deltagande), avprickning
-(den gamla handlingen att flippa facket för hand), transaktion, betalning
-(överbegreppet; säg inbetalning när pengarna kommit in).
+(den gamla handlingen att flippa facket för hand), betalning (överbegreppet;
+säg inbetalning när pengarna kommit in), transaktion om VÅR bokföringspost
+(transaktion är bankens rad, se nästa post — skillnaden är att inbetalningen
+har en anmälan och en plats i bokföringen).
 *I koden:* `Inbetalning` (tabell `Inbetalningar`, planerad).
+
+**Transaktion** — EN rad i en fil eller ett svar från banken: datum, belopp,
+namn, telefon, meddelande och bankens egen referens. Transaktionen är
+BANKENS påstående, innan någon avgjort vad den gäller — den har ingen anmälan,
+ingen plats i bokföringen och inget kvitto. Vid import matchas den mot öppna
+betalningar och blir en *Inbetalning* först när Lotta bekräftar. Samma typ
+bär Swish-rapporten, girofilen och ett framtida bank-API (TASK-346.10,
+PRD TASK-346 beslut 8: "en typ, inget ramverk").
+*Undvik:* inbetalning (det är vad transaktionen BLIR, inte vad den är),
+betalning, bankrad (talspråk).
+*I koden:* `Transaktion` (`src/domain/models/Transaktion.ts`).
 
 **Användarinbjudan** — en engångs- och tidsbegränsad inbjudan som ger en
 människa ett konto i appen, med roll och e-postadress låsta av inbjudan
