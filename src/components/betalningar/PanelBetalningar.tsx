@@ -111,11 +111,21 @@ export function PanelBetalningar({ anmalanRecordId, namn, rad }: Props) {
         </div>
       )}
 
-      {rad !== null && <RegistreraYta rad={rad} />}
-
-      {/* [TASK-346.9 AC #3] Se `AnmalansBetalningar.tsx` — samma skäl att
-          återbetalningen inte gates på `rad !== null`. */}
-      <AterbetalningsYta anmalanRecordId={anmalanRecordId} />
+      {/* [TASK-346.14 fix-runda D, D1] HORISONTELL KNAPPGRUPP PÅ ≥sm — samma
+          fix och samma motivering som `AnmalansBetalningar.tsx` (se dess
+          docblock för hela resonemanget: `DokumentYta.tsx`-mönstret, gap
+          återanvänt från panelens egen `flex-col gap-2`, `sm:items-start`
+          mot ojämn kolumnhöjd). Denna yta är DEL av det facit-låsta
+          `atgarder-granskning`/`atgarder`-manifestet
+          (`tasks/sessions/bilagor/s93-atgardssida-promovering/facit.json`,
+          `s93-hallplats-prototyp/facit.json`) — se AMENDERING-sidofilerna i
+          båda katalogerna. */}
+      <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-start">
+        {rad !== null && <RegistreraYta rad={rad} />}
+        {/* [TASK-346.9 AC #3] Se `AnmalansBetalningar.tsx` — samma skäl att
+            återbetalningen inte gates på `rad !== null`. */}
+        <AterbetalningsYta anmalanRecordId={anmalanRecordId} />
+      </div>
 
       <div>
         <button

@@ -658,40 +658,63 @@ function BetalningsradKort({
     <li className="overflow-hidden">
       {/* AVATAR-CHIP + GRID-ALIGNAD KOMPOSITION (designfynd 2b/2d) — samma
           grammatik som `ForfallnaBetalningar.tsx`s `ForfallenRadInnehall`:
-          avatar · namn/meta-kolumn (flex-1) · trailing knapp. */}
-      <div className="flex flex-wrap items-center gap-3 py-3">
-        <InitialAvatar namn={rad.namn} />
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <span className="truncate font-medium text-body">{rad.namn}</span>
-          <span className="truncate text-caption text-text-muted">
-            {visaEvent && rad.betalning.eventNamn ? `${rad.betalning.eventNamn} · ` : ''}
-            {saknas === null ? 'Pris saknas i basen' : `Saknas ${visaKronor(saknas)} kr`}
-          </span>
-          <div className="flex flex-wrap items-center gap-2">
-            {rad.forfallen && (
-              <span className="inline-flex items-center gap-1 rounded border border-transparent bg-bg px-2 py-0.5 text-caption">
-                <Clock aria-hidden size={13} />
-                Förfallen
-              </span>
-            )}
-            {rad.obekraftad && (
-              <StatusBadge ton="warning" storlek="sm">
-                Obekräftad
-              </StatusBadge>
-            )}
-            {rad.spegelSlapar && (
-              <span
-                className="inline-flex items-center gap-1 rounded border border-transparent bg-bg px-2 py-0.5 text-caption text-text-muted"
-                title="Basen har inte hunnit uppdateras än"
-              >
-                <AlertTriangle aria-hidden size={13} />
-                Basen släpar
-              </span>
-            )}
+          avatar · namn/meta-kolumn (flex-1) · trailing knapp.
+
+          [TASK-346.14 fix-runda D, D2] STAPLAD PÅ SMALA BRYTPUNKTER, TVÅ
+          KOLUMNER FRÅN `sm` — orkestrerarens visuella dom på 375×812 mätte
+          namnet och saknas-beloppet trunkerade till "Beng…"/"Saknas …" när
+          "Registrera betalning" delade raden med info-kolumnen
+          (`dom-inkorg-375.png`). Lotta ska se VEM som saknar VAD; namnet får
+          aldrig trunkeras bort. Raden är därför `flex-col` (mobil, `stretch`
+          ger info-blocket och knappen var sin FULLA radbredd, `namn`/`meta`
+          bär inget `truncate` och wrappar i stället) och `sm:flex-row` (den
+          tidigare tvåkolumnsformen, godkänd i domen på 1440×900 — `truncate`
+          återinförs bara där, eftersom bara DÄR delar raden utrymme med
+          knappen). `self-start` på knappen förhindrar att `flex-col`s
+          default `align-items: stretch` sträcker den till full bredd på
+          mobil — den ska stå på sin egen rad, inte bli en helbredds-yta. */}
+      <div className="flex flex-col gap-3 py-3 sm:flex-row sm:flex-wrap sm:items-center">
+        <div className="flex min-w-0 items-center gap-3 sm:flex-1">
+          <InitialAvatar namn={rad.namn} />
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
+            <span className="font-medium text-body sm:truncate">{rad.namn}</span>
+            <span className="text-caption text-text-muted sm:truncate">
+              {visaEvent && rad.betalning.eventNamn ? `${rad.betalning.eventNamn} · ` : ''}
+              {saknas === null ? 'Pris saknas i basen' : `Saknas ${visaKronor(saknas)} kr`}
+            </span>
+            <div className="flex flex-wrap items-center gap-2">
+              {rad.forfallen && (
+                <span className="inline-flex items-center gap-1 rounded border border-transparent bg-bg px-2 py-0.5 text-caption">
+                  <Clock aria-hidden size={13} />
+                  Förfallen
+                </span>
+              )}
+              {rad.obekraftad && (
+                <StatusBadge ton="warning" storlek="sm">
+                  Obekräftad
+                </StatusBadge>
+              )}
+              {rad.spegelSlapar && (
+                <span
+                  className="inline-flex items-center gap-1 rounded border border-transparent bg-bg px-2 py-0.5 text-caption text-text-muted"
+                  title="Basen har inte hunnit uppdateras än"
+                >
+                  <AlertTriangle aria-hidden size={13} />
+                  Basen släpar
+                </span>
+              )}
+            </div>
           </div>
         </div>
         {!oppen && (
-          <Button ref={triggerRef} intent="primary" emphasis="outline" size="sm" onPress={onOppna}>
+          <Button
+            ref={triggerRef}
+            intent="primary"
+            emphasis="outline"
+            size="sm"
+            onPress={onOppna}
+            className="self-start sm:self-auto"
+          >
             Registrera betalning
           </Button>
         )}

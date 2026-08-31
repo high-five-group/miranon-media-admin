@@ -85,13 +85,31 @@ export function AnmalansBetalningar({
         </p>
       )}
 
-      {rad !== null && <RegistreraYta rad={rad} />}
+      {/* [TASK-346.14 fix-runda D, D1] HORISONTELL KNAPPGRUPP PÅ ≥sm —
+          orkestrerarens dom (1440×900) mätte "Registrera betalning" och
+          "Registrera återbetalning" staplade vänsterställda med olika
+          naturlig bredd (varje `*Yta` är en egen `flex-col`-behållare, så de
+          blev vertikala syskon i denna sidas EGEN `flex-col`). Husets
+          etablerade mönster för en knappgrupp som ska bli sida-vid-sida på
+          desktop men stapla på mobil är `flex-col … sm:flex-row`
+          (`DokumentYta.tsx` § "STAPLADE I FULL BREDD UNDER sm, SIDA VID SIDA
+          FRÅN sm") — här UTAN `w-full`/`sm:w-auto`, eftersom mobilformen ska
+          förbli OFÖRÄNDRAD (knapparnas egen intrinsic bredd, precis som
+          idag). `gap-3` är samma värde containerns egen `flex-col gap-3`
+          redan gav mellan raderna, så mobilens vertikala avstånd är
+          opåverkat — bara riktningen växlar vid `sm`. `sm:items-start`
+          förhindrar att en kvittens-rad under den ena triggern (annan höjd
+          än den andra) sträcker kolumnerna till samma höjd.
 
-      {/* [TASK-346.9 AC #3] Fristående av `rad` (och alltså av "öppet
-          belopp") — se `AterbetalningsForm`s docblock för varför: en
-          återbetalning gäller ofta en anmälan som redan är fullbetald och nu
-          avbokas, alltså precis det läge `RegistreraYta` inte visas i. */}
-      <AterbetalningsYta anmalanRecordId={anmalanRecordId} />
+          [TASK-346.9 AC #3] `AterbetalningsYta` är fristående av `rad` (och
+          alltså av "öppet belopp") — se `AterbetalningsForm`s docblock för
+          varför: en återbetalning gäller ofta en anmälan som redan är
+          fullbetald och nu avbokas, alltså precis det läge `RegistreraYta`
+          inte visas i. */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start">
+        {rad !== null && <RegistreraYta rad={rad} />}
+        <AterbetalningsYta anmalanRecordId={anmalanRecordId} />
+      </div>
 
       <div className="flex flex-col gap-2">
         <h3 className="font-medium text-caption text-text-secondary uppercase tracking-wide">
