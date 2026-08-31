@@ -1423,7 +1423,7 @@ function SkrivRad({
         className={
           harNotering
             ? undefined
-            : '[&_input]:border-transparent [&_input]:bg-transparent focus-within:[&_input]:border-(--mm-input-border) focus-within:[&_input]:bg-(--mm-input-bg) hover:[&_input]:border-(--mm-input-border) hover:[&_input]:bg-(--mm-input-bg)'
+            : '[&_input]:border-transparent [&_input]:bg-transparent focus-within:[&_input]:border-(--mm-input-border) focus-within:[&_input]:bg-(--mm-input-bg) hover:[&_input]:border-(--mm-input-border) hover:[&_input]:bg-(--mm-input-bg) contrast-more:[&_input]:border-border-strong'
         }
       />
     </div>
