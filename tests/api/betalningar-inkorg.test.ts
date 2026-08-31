@@ -222,7 +222,12 @@ test('för korta siffersträngar läses INTE som telefon - annars blir småbelop
   // '10' finns i telefonnumret, men får inte ge en telefonträff.
   // Den enda vägen till true här är beloppsmatchningen mot avgiften.
   expect(matcharSokning(r, '10')).toBe(true);
-  const utanBelopp = rad({ personTelefon: '070-100 10 11', anmalningsavgift: null, gallandePris: null, saknas: null });
+  const utanBelopp = rad({
+    personTelefon: '070-100 10 11',
+    anmalningsavgift: null,
+    gallandePris: null,
+    saknas: null,
+  });
   expect(matcharSokning(utanBelopp, '10')).toBe(false);
 });
 
@@ -304,7 +309,7 @@ test('fullbetald rad ger noll knappar', () => {
 test('AC #5: ett belopp som täcker båda facken sägs rakt ut', () => {
   const utfall = beloppsutfall(rad({ summaInbetalt: 0 }), 2500);
   expect(utfall.ton).toBe('tacker');
-  expect(utfall.text).toBe(kr('2 500') + ' kr täcker anmälningsavgift + slutbetalning.');
+  expect(utfall.text).toBe(`${kr('2 500')} kr täcker anmälningsavgift + slutbetalning.`);
 });
 
 test('AC #5: udda belopp visar saknas-resten', () => {
@@ -356,9 +361,7 @@ test('ören räknas utan flyttalsdrift', () => {
 
 /* ═══════════════════════════ JOBBETS DELUTFALL ═══════════════════════════ */
 
-function jobbstatus(
-  rader: { status: 'vantar' | 'pagar' | 'skickat' | 'fel' }[],
-): Jobbstatus {
+function jobbstatus(rader: { status: 'vantar' | 'pagar' | 'skickat' | 'fel' }[]): Jobbstatus {
   const skickade = rader.filter((r) => r.status === 'skickat').length;
   const fel = rader.filter((r) => r.status === 'fel').length;
   return {

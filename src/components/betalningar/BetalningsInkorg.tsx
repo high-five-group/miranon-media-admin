@@ -133,6 +133,27 @@ export function BetalningsInkorg() {
   } = useQuery({
     queryKey: queryKeys.betalningar.oppna,
     queryFn: () => dataSource.fetchOppnaBetalningar(),
+    // ═══ INKORGEN MÅSTE LÄSAS OM VID VARJE ÖPPNING ═══
+    //
+    // Samma rad, samma skäl och samma granskningsfynd som `useJobbstatus`
+    // redan bär (TASK-346.4 runda 1): routerns globala `staleTime` är 5
+    // minuter och hela cachen persistas i 24 timmar (`src/router.ts`,
+    // ADR-072). Utan denna rad serveras ytan HELT ur den persisterade cachen
+    // när Lotta öppnar appen igen inom fönstret.
+    //
+    // MÄTT, INTE BEFARAT (acceptansvandringen 2026-08-31): efter att tre
+    // testinbetalningar makulerats i Postgres visade inkorgen fortfarande de
+    // gamla beloppen - "Saknas 1 500 kr" på en rad där 2 500 saknades, och en
+    // rad saknades helt. En inkorg vars hela uppgift är att svara på "vad är
+    // öppet just nu" får inte svara med gårdagens läge; Lotta hade registrerat
+    // mot en rad som redan var betald.
+    //
+    // `'always'` OCH INTE `staleTime: 0`: den senare hade gjort varje
+    // fönsterfokus till en omhämtning (`refetchOnWindowFocus: true` globalt),
+    // alltså en tyst pollare. Denna form hämtar om vid MONTERING - appöppning
+    // och navigering hit - och överlåter löpande färskhet åt Realtime, som är
+    // den mekanism som ska bära den.
+    refetchOnMount: 'always',
   });
 
   // Personregistret är redan förladdat av startvärmningen (ADR-123) och har
@@ -173,7 +194,23 @@ export function BetalningsInkorg() {
 
   const forfallnaTotalt = rader.filter((r) => r.forfallen && !r.klar).length;
   const kvittonIKo = (oppna?.betalningar ?? []).reduce((n, b) => n + b.kvittonAttSkicka, 0);
-  const utfall = jobbDelutfall(jobb.data);
+
+  // ═══ ETT FÄRDIGT JOBB FRÅN EN TIDIGARE SESSION ÄR INTE DAGENS NYHET ═══
+  //
+  // Mätt i vandringen mot staging 2026-08-31: inkorgen visade "1 kvitto
+  // skickade" INNAN Lotta gjort något, därför att `JobbLyssnare` håller
+  // `jobbstatus(null)` (det SENASTE jobbet) färsk för hela appen och denna vy
+  // läser samma cache-nyckel. Kvittot i fråga hade skickats av TASK-346.4:s
+  // egen provkörning dagen innan.
+  //
+  // Banderollen visas därför i EXAKT två lägen: (a) jobbet är MITT jobb -
+  // denna session tryckte på knappen - eller (b) det senaste jobbet arbetar
+  // fortfarande, vilket är något Lotta behöver se oavsett vem som startade
+  // det (PRD berättelse 31: appen kan stängas mitt i ett kvittojobb). Ett
+  // AVSLUTAT jobb från i går är varken, och tystas.
+  const senasteUtfall = jobbDelutfall(jobb.data);
+  const utfall =
+    senasteUtfall && (jobbId !== undefined || senasteUtfall.kvar > 0) ? senasteUtfall : null;
 
   useEffect(() => {
     if (oppna && !annonseratRef.current) {
@@ -343,7 +380,7 @@ export function BetalningsInkorg() {
                 className="flex flex-wrap items-center justify-between gap-2 rounded bg-bg-muted px-3 py-2 text-small"
               >
                 <span>{jobbrad.kvittonummer ?? 'Kvitto utan nummer än'}</span>
-                <span className="text-text-muted">
+                <span className="flex flex-wrap items-center gap-2 text-text-muted">
                   {jobbrad.status === 'skickat'
                     ? 'Skickat'
                     : jobbrad.status === 'fel'
@@ -351,6 +388,30 @@ export function BetalningsInkorg() {
                       : jobbrad.status === 'pagar'
                         ? 'Skickas ...'
                         : 'Väntar'}
+                  {/* SKICKA IGEN, bara på en FALLERAD rad (AC #4).
+                      `koaKvitton` och inte `skickaKvittoIgen`: den senare
+                      skickar om ett kvitto som REDAN gått i väg (samma PDF,
+                      samma nummer). En fallerad rad har per definition inget
+                      utskickat kvitto - den ska köas på nytt, och servern
+                      avgör om raden är köbar. Idempotensen bärs av den unika
+                      nyckeln per inbetalning (ADR-128), så ett dubbeltryck kan
+                      inte ge två kvitton. */}
+                  {jobbrad.status === 'fel' && (
+                    <Button
+                      intent="secondary"
+                      emphasis="outline"
+                      size="sm"
+                      isDisabled={koa.isPending}
+                      onPress={() =>
+                        koa.mutate(
+                          { inbetalningIds: [jobbrad.objektId] },
+                          { onSuccess: (svar) => setJobbId(svar.jobbId ?? jobbId) },
+                        )
+                      }
+                    >
+                      Skicka igen
+                    </Button>
+                  )}
                 </span>
               </li>
             ))}
@@ -419,7 +480,12 @@ export function BetalningsInkorg() {
               <h2 className="font-semibold text-lg">
                 {grupp.eventNamn}
                 {grupp.eventStartdatum && (
+                  // Avdelaren är en riktig TEXTNOD, inte bara en marginal:
+                  // rubrikens tillgängliga namn är sammanslagen text, och utan
+                  // den läste skärmläsaren "ZZ-GRANSKNING-S1132026-09-07" i ett
+                  // svep (mätt i vandringen 2026-08-31).
                   <span className="ml-2 font-normal text-small text-text-muted">
+                    {' · '}
                     {grupp.eventStartdatum}
                   </span>
                 )}
