@@ -4,7 +4,7 @@ title: 'Skiva: Backfill av inbetalningar — staging mätt och kört; prod på M
 status: To Do
 assignee: []
 created_date: '2026-08-30 18:46'
-updated_date: '2026-08-31 02:03'
+updated_date: '2026-08-31 02:43'
 labels:
   - ready-for-agent
 dependencies:
@@ -122,4 +122,30 @@ Utfallet bevisade båda invarianterna skarpt, mot data som inte fanns när skrip
   · redan-backfillad = 1 (Sofia Isakssons post känns igen).
 
 Mätningens tal i denna anteckning är alltså en ÖGONBLICKSBILD av en rörlig population, inte ett stabilt tillstånd. FÖRE/EFTER-paret ovan (97 → 97, 1 → 2) mättes inom samma körning och är därför internt konsistent; ett senare `npm run backfill:inbetalningar` kommer visa andra absoluta tal utan att något är fel.
+
+GRANSKNINGSRUNDA 1 — ÅTGÄRDAD (2026-08-31, risk hög: 1 error + 4 warning + 1 info)
+
+1. (error) PROD-SKRIVVÄGENS PREFLIGHT. Fyndet var riktigt och min ursprungliga motivering var för svag: jag hade MÄTT att `db query --linked --project-ref` fungerar mot ett OLÄNKAT träd, men behandlade det som bevis för att flaggan tar FÖRETRÄDE över ett befintligt `supabase/.temp/project-ref`. Det följer inte, och åt säkerhetshållet är skillnaden hela poängen. Åtgärd per fas4-prod-deploy-precedentet: `provaLanktillstand` (ren) + `lasLanktillstand` (I/O), wirade i main() FÖRE allt annat och före semaforen. Kontrakt: filen saknas ⇒ olänkat läge OK; filen bär målrefen ⇒ OK; allt annat ⇒ exit 1 med skäl. korSql-kommentaren beskriver nu mekanismen i stället för risken.
+   SKARPBEVIS, fyra grenar mot det VERKLIGA CLI:t (prod-refen läst ur .prod-ref-policy.conf av ett node-skript, aldrig i en bash-kommandosträng — deny-prod-ref.sh förblir verksam):
+     A prod-refen i filen  → exit 1, skälet nämner PROD — ÄVEN med korrekt --projekt-ref
+     B annat projekt       → exit 1, "Fail-closed"
+     C målrefen            → passerar preflighten
+     D filen saknas        → passerar preflighten
+   C/D gav exit 76 (staging-semaforen höll basen just då), vilket i sig bevisar passagen: semaforen ligger EFTER preflighten i main(). `supabase/.temp` städades bort efteråt (verifierat).
+
+2. (warning) 0-KR OCH NEGATIVA BELOPP. Ny grind `beslutForBelopp` mellan härledning och insert: 0 kr ⇒ HOPPAS ÖVER (kod `noll-belopp`) — ett gratisevent har "allt betalt" sant redan utan rader, `harledBetalning([], pris 0)` ger alltKlart; negativt ⇒ AVVIKELSE (kod `negativt-pris`) — ett negativt pris är ett datafel, inte en återbetalning. Fail-closed även i SQL-vägen: `sqlBelopp(v, { mastePositivt: true })` kastar, anropad så från byggInsertSats. Skälet att ha grinden på två ställen: en enda dålig rad fäller HELA batchen (satserna körs i en db query-fil) via inbetalningar_belopp_ej_noll / inbetalningar_tecken_foljer_typ.
+
+3. (warning) IDEMPOTENSNYCKELN SÅG BARA Historik. Riktigt fynd: `where not exists (… betalsatt = 'Historik')` skyddar mot att backfillen skriver ovanpå SIG SJÄLV, men inte mot en inbetalning Lotta redan registrerat i appen. Ny avvikelseklass `har-aktiva-inbetalningar`: en anmälan med AKTIVA icke-Historik-poster hoppas över och listas med record-ID + summan. Makulerade poster påverkar inte (rättade, inte betalda). Testfall N2 bevisar konsekvensen av att INTE ha grinden: 1000 (befintlig) + 2500 (backfill) = summa 3500 av 2500, saknas −1000, och spegeln hade sagt "allt betalt" på ett belopp ingen betalat. Valet skip-vs-topp-upp för prod är Marcus (STOPPA-rad i orkestrerarens handoff); min leverans är att dubbelräkning är strukturellt omöjlig och listan synlig.
+
+4. (warning) SPEGELN REPARERADES ALDRIG EFTER AVBROTT + PROSAN ÖVERLOVADE. Del C itererar nu backfill ∪ redanBackfillad, så en anmälan vars Postgres-rad skrevs men vars spegel fallerade i en tidigare körning får spegeln omskriven. Säkert per definition: spegeln är en PROJEKTION ur Postgres-sanningen (ADR-128 beslut 6) och räknas om från grunden ur hela postmängden — idempotent OCH konvergent. Motiveringen står som kommentar vid loopen. BÅDA prosaställena rättade (ADR-083): filhuvudet och docs sade "kan köras om rakt av" om båda halvorna; de skiljer nu strukturell idempotens (Postgres, databasgaranti) från konvergens (spegeln, via Del C:s breddade iteration). Testfall O4 vaktar att formuleringen inte kryper tillbaka.
+
+5. (warning) AC #4-DOKENS PROD-ANVISNING VAR FEL. Min ursprungliga text antydde att prod-körning bara krävde argument och en policy-rad. Sanningen: fyra OBEROENDE lager låser prod — `forbiddenBaseIds` prövas FÖRE `expectedBaseId`; prod-refen fälls ur `.prod-ref-policy.conf` oberoende av backfill-policyn; länkpreflighten fäller en prod-länkning även med korrekt argument; och deny-prod-ref.sh fäller varje agent-kommando. § Prod är omskriven till detta, med en tabell över lagren, och säger nu att prod-körning kräver ett eget Marcus-beslut och en medveten upplåsning vars FORM Marcus väljer — med hemvist i TASK-346.11:s runbook, inte i denna fil. "Förväntade tal" är omskrivna från påhittade siffror till FORM + var de hämtas (prod är omätt av agenten och kan inte vara annat).
+
+6. (info) verify:ci-parity KÖRD (läge 1: jag ändrade ci.yml själv). `npm run verify:ci-parity:fast` → exit 0, 33 gröna, 3 skippade (--fast), total 494,9 s, diff-klassning KOD. PARITETS-GRINDEN passerade: den kör FÖRST och fäller fail-closed (exit 2) vid drift mellan ci.yml/ci-suite.yml och .ci-parity-policy.json — ingen drift. Fast-läget är INTE full CI-parity (Acceptance + Webblasarbeteende hoppades); det är den medvetna nedskalningen för iteration.
+
+SVITEN: 96 → 118 fall (fyra nya sektioner: L länktillstånd, M beloppsgrinden, N aktiva inbetalningar, O spegelns konvergens). MUTATIONSBEVIS runda 2: 18 av 18 fällda, var och en med namngivet testfall (M13→L5, M14→L4, M15→M1, M16→N1+N5, M17→O3, M18→M3+M4+M5). Originalfilen återställd, sha256 verifierad.
+
+GRINDAR runda 2 (mätta exitkoder): biome 0 · typecheck 0 · build 0 · check:docs 0 (14) · actionlint 0 · staging-preflight-wiring 0 · egen svit 0 (118 fall, median 171 ms) · verify:ci-parity:fast 0.
+
+Dry-run efter fixen: Del A och Del B tomma, `redan-backfillad` 1 — idempotensen håller med den nya koden. Populationen fortsätter röra sig av 346.6:s parallella tester (exkluderat-event 49 → 53 → 57 över natten); alla nya hamnar i fixturskyddet.
 <!-- SECTION:NOTES:END -->

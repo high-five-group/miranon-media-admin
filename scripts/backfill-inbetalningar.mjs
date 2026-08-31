@@ -81,8 +81,23 @@
 // Varje rad skrivs som `insert … select … where not exists (… betalsatt =
 // 'Historik' …)`. Omkörningen skapar noll rader därför att DATABASEN avgör
 // det i samma sats som insert-en, inte därför att skriptet minns vad det
-// gjorde förra gången. En avbruten körning kan alltså köras om rakt av, och
-// två körningar kan inte racea in en dubblett.
+// gjorde förra gången, och två körningar kan inte racea in en dubblett.
+//
+// VAR PRECIS OM VAD SOM ÄR IDEMPOTENT — de två halvorna skiljer sig, och att
+// säga "körs om rakt av" om båda vore att överlova (ADR-083):
+//
+//   POSTGRES-RADEN är STRUKTURELLT idempotent. Predikatet ovan gör en
+//   omkörning till en no-op i databasen, oavsett vad skriptet tror.
+//
+//   SPEGELN är KONVERGENT, inte idempotent i samma mening. Den skrivs i en
+//   ANDRA operation mot ett ANNAT system, så ett avbrott emellan lämnar raden
+//   skriven och spegeln oskriven. Del C itererar därför backfill ∪
+//   redanBackfillad och skriver om spegeln även för anmälningar som redan bär
+//   sin Historik-post — säkert per ADR-128 beslut 6 (spegeln är en projektion
+//   ur Postgres, aldrig sanningen), så en avbruten körning LÄKER vid nästa.
+//
+// En avbruten körning kan alltså köras om och båda halvorna hamnar rätt — men
+// av två olika skäl, och bara den ena är en databasgaranti.
 //
 // Nyckeln är (anmalan_record_id, betalsatt='Historik') och INTE bankreferens-
 // kolumnen, trots att den bär ett partiellt unikt index som hade gett samma
@@ -108,7 +123,7 @@
 // hur Lottas lista används som facit.
 
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
@@ -194,6 +209,73 @@ export function validateProjectRef(policy, ref, prodRef) {
     throw new Error(`Project-ref ${ref} står inte i tillatnaProjectRefs`);
   }
   return true;
+}
+
+/**
+ * Länktillståndets fil, relativt repo-roten. `supabase link` skriver den.
+ */
+export const LANKTILLSTAND_FIL = 'supabase/.temp/project-ref';
+
+/**
+ * PREFLIGHT MOT STICKY LÄNKTILLSTÅND — fail-closed.
+ *
+ * ═══ VARFÖR DEN MÅSTE FINNAS, TROTS `--project-ref` ═══
+ * Skriptet väljer sitt mål med `db query --linked --project-ref <ref>`, och
+ * den formen är MÄTT att fungera mot ett olänkat träd (2026-08-31). Men den
+ * mätningen visar bara att flaggan fungerar när INGET tillstånd finns — att
+ * flaggan skulle ta FÖRETRÄDE över ett befintligt `.temp/project-ref` är
+ * OBEVISAT åt säkerhetshållet, och ett antagande om företräde är exakt den
+ * klass av tyst fel CLAUDE.md § Prod-EF-deploy bokför: "`link`-tillståndet är
+ * sticky och osynligt, så nästa `db push` i samma katalog går mot prod".
+ *
+ * Formen är `scripts/fas4-prod-deploy.sh`s precedent: den verifierar
+ * `supabase/.temp/project-ref` FÖRE varje skarp operation i stället för att
+ * lita på att argumentet vinner. Denna funktion gör samma sak.
+ *
+ * Kontraktet:
+ *   - filen SAKNAS  ⇒ olänkat läge, den mätta vägen — OK
+ *   - filen bär MÅLREFEN ⇒ OK (länkning och argument pekar åt samma håll)
+ *   - filen bär NÅGOT ANNAT ⇒ VÄGRA, oavsett hur rätt argumentet är
+ *
+ * REN funktion — anroparen läser filen, så prövningen kan bevisas hermetiskt.
+ */
+export function provaLanktillstand({ lanktRef, malRef, prodRef }) {
+  if (lanktRef === null || lanktRef === undefined) {
+    return { ok: true, lage: 'olankat', skal: null };
+  }
+  const lankt = String(lanktRef).trim();
+  if (lankt === '') return { ok: true, lage: 'olankat', skal: null };
+
+  if (prodRef && lankt === prodRef) {
+    return {
+      ok: false,
+      lage: 'lankat-till-prod',
+      skal:
+        `${LANKTILLSTAND_FIL} pekar på PROD (${lankt}). Ett korrekt --projekt-ref ` +
+        'räddar INTE detta: att flaggan tar företräde över ett sticky länktillstånd ' +
+        'är obevisat, och priset för att ha fel är en prod-skrivning. Kör ' +
+        `\`npx supabase link --project-ref ${malRef}\` (eller ta bort filen) först.`,
+    };
+  }
+  if (lankt !== malRef) {
+    return {
+      ok: false,
+      lage: 'lankat-till-annat',
+      skal:
+        `${LANKTILLSTAND_FIL} pekar på ${lankt}, men målet är ${malRef}. ` +
+        'Fail-closed: skriptet vägrar hellre än gissar vilket av de två som vinner.',
+    };
+  }
+  return { ok: true, lage: 'lankat-till-mal', skal: null };
+}
+
+/** Läser länktillståndet, eller `null` när filen saknas (olänkat läge). */
+export function lasLanktillstand(rot = REPO_ROT) {
+  try {
+    return readFileSync(join(rot, LANKTILLSTAND_FIL), 'utf8').trim();
+  } catch {
+    return null;
+  }
 }
 
 // ───────────────────────────────────────────────────────────────────────────
@@ -381,7 +463,15 @@ export const FORELASNING = 'Föreläsning';
  *      En FÖRELÄSNING har ett pris utan fack (ADR-128 beslut 2) — där ger
  *      vilket mottaget fack som helst hela priset.
  */
-export function klassificera({ anmalan, event, standard, harNarvaro, harHistorik, policy }) {
+export function klassificera({
+  anmalan,
+  event,
+  standard,
+  harNarvaro,
+  harHistorik,
+  aktivSummaIckeHistorik = 0,
+  policy,
+}) {
   const mottaget = policy?.mottagetVarde ?? 'Mottagen';
 
   if (!anmalan?.eventId) {
@@ -399,6 +489,34 @@ export function klassificera({ anmalan, event, standard, harNarvaro, harHistorik
       beslut: BESLUT.redanBackfillad,
       kod: 'redan-backfillad',
       skal: 'En Historik-post finns redan för anmälan',
+    };
+  }
+
+  // ═══ IDEMPOTENSNYCKELN SER BARA Historik — DÄRFÖR DENNA GRIND ═══
+  // `where not exists (… betalsatt = 'Historik')` skyddar mot att backfillen
+  // skriver ovanpå SIG SJÄLV. Den ser INTE en inbetalning Lotta redan
+  // registrerat i appen (Swish/Bankgiro/Plusgiro). Utan denna grind hade en
+  // anmälan med en riktig Swish-post på 1 000 kr fått en Historik-post på
+  // hela priset ovanpå — summan hade blivit 3 500 av 2 500, och spegeln hade
+  // sagt "allt betalt" på ett belopp ingen betalat.
+  //
+  // FAIL-CLOSED: vi HOPPAR ÖVER och LISTAR, aldrig backfillar ovanpå. Valet
+  // mellan att hoppa över och att fylla upp till priset ("topp-upp") är ett
+  // MARCUS-beslut för prod — det kräver kunskap om vad de befintliga posterna
+  // betyder, som varken skriptet eller basen bär. Det som är otvetydigt är
+  // att dubbelräkning ska vara strukturellt omöjlig och listan synlig.
+  //
+  // MAKULERADE poster räknas inte in (anroparen filtrerar på `status = 'aktiv'`):
+  // en makulerad post är rättad, inte betald, och ska inte blockera backfillen.
+  if (aktivSummaIckeHistorik > 0) {
+    return {
+      beslut: BESLUT.avvikelse,
+      kod: 'har-aktiva-inbetalningar',
+      skal:
+        `Anmälan har redan ${aktivSummaIckeHistorik} kr i AKTIVA inbetalningar som inte är ` +
+        'Historik-poster. En backfill ovanpå dem hade dubbelräknat. Marcus avgör om raden ' +
+        'ska hoppas över eller fyllas upp till priset.',
+      aktivSummaIckeHistorik,
     };
   }
 
@@ -441,35 +559,32 @@ export function klassificera({ anmalan, event, standard, harNarvaro, harHistorik
 
   // NÄRVARO ⇒ hela priset (regeln står över facken).
   if (harNarvaro) {
-    return {
-      beslut: BESLUT.backfilla,
-      kod: 'narvaro',
+    return beslutForBelopp({
       belopp: avrundaOre(prisbild.pris),
+      kod: 'narvaro',
       skal: 'Närvarande deltagande ⇒ hela dåvarande priset betalt',
       prisbild,
-    };
+    });
   }
 
   // En föreläsning har ett pris UTAN fack — vilket mottaget fack som helst
   // betyder att hela priset är betalt (ADR-128 beslut 2).
   if (arForelasning) {
-    return {
-      beslut: BESLUT.backfilla,
-      kod: 'forelasning',
+    return beslutForBelopp({
       belopp: avrundaOre(prisbild.pris),
+      kod: 'forelasning',
       skal: 'Föreläsning: ett pris utan fack, mottaget fack ⇒ hela priset',
       prisbild,
-    };
+    });
   }
 
   if (avgiftMottagen && slutMottagen) {
-    return {
-      beslut: BESLUT.backfilla,
-      kod: 'bada-facken',
+    return beslutForBelopp({
       belopp: avrundaOre(prisbild.pris),
+      kod: 'bada-facken',
       skal: 'Båda facken Mottagen ⇒ hela priset',
       prisbild,
-    };
+    });
   }
 
   // Bara avgiften är mottagen — då MÅSTE avgiftens eget pris vara känt.
@@ -484,13 +599,65 @@ export function klassificera({ anmalan, event, standard, harNarvaro, harHistorik
     };
   }
 
-  return {
-    beslut: BESLUT.backfilla,
-    kod: 'anmalningsavgift',
+  return beslutForBelopp({
     belopp: avrundaOre(prisbild.anmalningsavgift),
+    kod: 'anmalningsavgift',
     skal: 'Anmälningsavgift Mottagen ⇒ avgiftens dåvarande pris',
     prisbild,
-  };
+  });
+}
+
+/**
+ * Sista grinden mellan ett härlett belopp och en insert-sats.
+ *
+ * Postgres har TVÅ check-constraints som fäller hela batchen om ett otillåtet
+ * belopp slinker igenom (`inbetalningar_belopp_ej_noll`,
+ * `inbetalningar_tecken_foljer_typ` — backfillen skriver alltid
+ * `typ = 'inbetalning'`, som kräver `belopp > 0`). En rad räcker för att ta
+ * ned de andra, eftersom satserna körs i EN `db query`-fil. De två fallen är
+ * dessutom OLIKA saker och ska inte behandlas lika:
+ *
+ *   0 kr  ⇒ HOPPAS ÖVER, inte en avvikelse. Ett gratis- eller comp-event har
+ *           priset 0, och då är "allt betalt" redan sant UTAN inbetalningar:
+ *           `harledBetalning` ger `summa 0 >= gallandePris 0`, alltså
+ *           `alltKlart`. Att skriva en nollrad hade varit både förbjudet och
+ *           onödigt. (Noll-är-ett-satt-pris-regeln är samma som gäller i
+ *           `valjPris` och i basens `Saknas (kr)`-formel.)
+ *
+ *   < 0   ⇒ AVVIKELSE. Ett negativt PRIS är ett datafel i basen, inte en
+ *           återbetalning — återbetalningar är en egen typ (ADR-128 beslut 1)
+ *           som backfillen aldrig skapar. Listas för Marcus.
+ */
+export function beslutForBelopp({ belopp, kod, skal, prisbild }) {
+  if (typeof belopp !== 'number' || !Number.isFinite(belopp)) {
+    return {
+      beslut: BESLUT.avvikelse,
+      kod: 'belopp-otolkbart',
+      skal: `Det härledda beloppet är inte ett ändligt tal (${JSON.stringify(belopp)})`,
+      prisbild,
+    };
+  }
+  if (belopp === 0) {
+    return {
+      beslut: BESLUT.hoppa,
+      kod: 'noll-belopp',
+      skal:
+        'Priset är 0 kr — "allt betalt" är redan sant utan inbetalningar, och en ' +
+        'nollrad fälls av inbetalningar_belopp_ej_noll.',
+      prisbild,
+    };
+  }
+  if (belopp < 0) {
+    return {
+      beslut: BESLUT.avvikelse,
+      kod: 'negativt-pris',
+      skal:
+        `Det härledda beloppet är negativt (${belopp} kr). Ett negativt pris är ett ` +
+        'datafel i basen, inte en återbetalning — backfillen skapar aldrig återbetalningar.',
+      prisbild,
+    };
+  }
+  return { beslut: BESLUT.backfilla, kod, belopp, skal, prisbild };
 }
 
 export function arExkluderat(event, policy) {
@@ -541,10 +708,26 @@ export function sqlDatum(varde) {
   return `date ${escapeSqlText(text)}`;
 }
 
-/** Ett belopp som SQL-numeriskt. Kastar på allt som inte är ett ändligt tal. */
-export function sqlBelopp(varde) {
+/**
+ * Ett belopp som SQL-numeriskt. Kastar på allt som inte är ett ändligt tal.
+ *
+ * `mastePositivt` är SISTA försvaret mot de två check-constraints som fäller
+ * hela batchen (`inbetalningar_belopp_ej_noll`,
+ * `inbetalningar_tecken_foljer_typ`). Klassificeringen ska redan ha fångat
+ * fallen (`beslutForBelopp`), men en grind som bara finns på ett ställe är en
+ * grind som försvinner vid nästa refaktorering — och priset här är att ETT
+ * dåligt belopp tar ned alla andra satser i samma `db query`-fil.
+ */
+export function sqlBelopp(varde, { mastePositivt = false } = {}) {
   if (typeof varde !== 'number' || !Number.isFinite(varde)) {
     throw new Error(`Belopp är inte ett tal: ${JSON.stringify(varde)}`);
+  }
+  if (mastePositivt && varde <= 0) {
+    throw new Error(
+      `Beloppet måste vara > 0 för typ='inbetalning' (fick ${varde}). ` +
+        'Noll fälls av inbetalningar_belopp_ej_noll, negativt av ' +
+        'inbetalningar_tecken_foljer_typ — och en enda sådan rad tar ned hela batchen.',
+    );
   }
   return varde.toFixed(2);
 }
@@ -572,7 +755,7 @@ export function byggInsertSats(post, policy) {
     '  (anmalan_record_id, ogonblicksbild_namn, ogonblicksbild_event,',
     '   ogonblicksbild_eventdatum, belopp, betalsatt, betalningsdatum, typ, status, skapad_av)',
     `select ${anmalan}, ${escapeSqlText(post.ogonblicksbildNamn)}, ${escapeSqlText(post.ogonblicksbildEvent)},`,
-    `       ${sqlDatum(post.ogonblicksbildEventdatum)}, ${sqlBelopp(post.belopp)}, ${bet},`,
+    `       ${sqlDatum(post.ogonblicksbildEventdatum)}, ${sqlBelopp(post.belopp, { mastePositivt: true })}, ${bet},`,
     // BETALNINGSDATUM ÄR ALLTID `null` HÄR. Kortets AC #1: "betalningsdatum
     // tomt". Kolumnen är nullable; EF:en kan inte göra detta (filhuvudet).
     "       null, 'inbetalning', 'aktiv',",
@@ -675,12 +858,16 @@ export function planera({
   standarder,
   narvaroPerAnmalan,
   historikPerAnmalan,
+  aktivIckeHistorikPerAnmalan,
   policy,
 }) {
   const eventMap = new Map(event.map((e) => [e.id, e]));
   const backfill = [];
   const avvikelser = [];
   const hoppade = [];
+  // EGEN lista, inte bara en post i `hoppade`: Del C speglar om DEM också, så
+  // en spegel som fallerade i en tidigare körning repareras (fynd 4).
+  const redanBackfillad = [];
 
   for (const a of anmalningar) {
     const e = a.eventId ? (eventMap.get(a.eventId) ?? null) : null;
@@ -691,6 +878,7 @@ export function planera({
       standard: std,
       harNarvaro: narvaroPerAnmalan.has(a.id),
       harHistorik: historikPerAnmalan.has(a.id),
+      aktivSummaIckeHistorik: aktivIckeHistorikPerAnmalan?.get(a.id) ?? 0,
       policy,
     });
 
@@ -719,6 +907,9 @@ export function planera({
       });
     } else if (utfall.beslut === BESLUT.avvikelse) {
       avvikelser.push(rad);
+    } else if (utfall.beslut === BESLUT.redanBackfillad) {
+      redanBackfillad.push(rad);
+      hoppade.push(rad);
     } else {
       hoppade.push(rad);
     }
@@ -728,6 +919,7 @@ export function planera({
     backfill,
     avvikelser,
     hoppade,
+    redanBackfillad,
     eventpriser: planeraEventpriser({ event, standarder, anmalningar, policy }),
   };
 }
@@ -909,10 +1101,16 @@ export async function lasProdRef() {
  * `--linked --project-ref <ref>` är den enda formen som når ett fjärrprojekt
  * UTAN att först köra `supabase link` — mätt 2026-08-31: `--project-ref`
  * ensamt faller med `LegacyDbQueryMutuallyExclusiveFlagsError`, medan paret
- * fungerar mot ett OLÄNKAT träd. Det är avgörande här: `supabase link` skriver
- * `supabase/.temp/project-ref`, och det tillståndet är STICKY och osynligt
- * (CLAUDE.md § Prod-EF-deploy). En backfill ska inte lämna en länkning efter
- * sig som nästa kommando i katalogen ärver.
+ * fungerar mot ett OLÄNKAT träd. Skriptet kör därför aldrig `link` och lämnar
+ * inget sticky tillstånd efter sig.
+ *
+ * MÅLET GARANTERAS INTE AV FLAGGAN ENSAM, och det är därför denna funktion
+ * inte bär hela ansvaret: mätningen ovan visar att flaggan fungerar när INGET
+ * länktillstånd finns, inte att den tar FÖRETRÄDE över ett befintligt.
+ * `provaLanktillstand` (körd i `main()` före allt annat) stänger den luckan
+ * mekaniskt — den läser `supabase/.temp/project-ref` och VÄGRAR när värdet
+ * inte är exakt målrefen. När denna funktion anropas är alltså antingen
+ * trädet olänkat, eller länkat till samma projekt som argumentet pekar på.
  */
 function korSql(sql, { ref, cliVersion, timeoutMs = 240_000 }) {
   const katalog = mkdtempSync(join(tmpdir(), 'backfill-inbetalningar-'));
@@ -1039,7 +1237,8 @@ function skrivRapport({ plan, fore, efter, utfor, ref, basId }) {
     for (const a of rader) {
       r.push(
         `      ${a.anmalanRecordId}  ${(a.namn || '(namnlös)').padEnd(20)} ` +
-          `${a.event ?? '?'} · ${a.ort ?? '?'}  avg=${a.fackAvgift ?? '-'} slut=${a.fackSlut ?? '-'}`,
+          `${a.event ?? '?'} · ${a.ort ?? '?'}  avg=${a.fackAvgift ?? '-'} slut=${a.fackSlut ?? '-'}` +
+          `${a.aktivSummaIckeHistorik ? `  redan inbetalt=${a.aktivSummaIckeHistorik} kr` : ''}`,
       );
     }
   }
@@ -1142,6 +1341,17 @@ async function main() {
     process.exit(1);
   }
 
+  // LÄNKTILLSTÅNDET prövas FÖRE varje skarp operation — se provaLanktillstand
+  // för varför argumentet ensamt inte räcker. Gäller även dry-run: en körning
+  // som inte får skriva ska inte heller LÄSA ur fel projekt och presentera
+  // planen som om den gällde målet.
+  const lankt = lasLanktillstand();
+  const lankUtfall = provaLanktillstand({ lanktRef: lankt, malRef: ref, prodRef });
+  if (!lankUtfall.ok) {
+    console.error(`❌ Länktillstånd: ${lankUtfall.skal}`);
+    process.exit(1);
+  }
+
   const token = process.env.STAGING_AIRTABLE_TOKEN ?? (await lasTokenUrEnvFil());
   if (!token) {
     console.error('❌ STAGING_AIRTABLE_TOKEN saknas (env eller .env.seed)');
@@ -1182,12 +1392,14 @@ async function main() {
 
   let inbetalningarPerAnmalan;
   let historikPerAnmalan;
+  let aktivIckeHistorikPerAnmalan;
   try {
-    ({ inbetalningarPerAnmalan, historikPerAnmalan } = await lasInbetalningar({
-      ref,
-      cliVersion,
-      betalsatt: policy.betalsatt ?? 'Historik',
-    }));
+    ({ inbetalningarPerAnmalan, historikPerAnmalan, aktivIckeHistorikPerAnmalan } =
+      await lasInbetalningar({
+        ref,
+        cliVersion,
+        betalsatt: policy.betalsatt ?? 'Historik',
+      }));
   } catch (fel) {
     console.error(`❌ Postgres: ${fel.message}`);
     process.exit(2);
@@ -1199,6 +1411,7 @@ async function main() {
     standarder,
     narvaroPerAnmalan,
     historikPerAnmalan,
+    aktivIckeHistorikPerAnmalan,
     policy,
   });
 
@@ -1241,7 +1454,21 @@ async function main() {
     );
     const eventMapEfter = new Map(eventEfter.map((e) => [e.id, e]));
 
-    for (const p of plan.backfill) {
+    // ═══ VARFÖR redanBackfillad ÄR MED HÄR ═══
+    // Postgres-raden och spegelskrivningen är två operationer mot två system;
+    // ett avbrott emellan (nätverksfel, ett Airtable-tak, en dödad process)
+    // lämnar raden skriven och spegeln oskriven. Nästa körning ser en
+    // Historik-post, klassar anmälan som `redan-backfillad` och hade utan
+    // denna breddning ALDRIG rört spegeln igen — felet vore permanent.
+    //
+    // Att skriva om spegeln är per definition säkert: den är en PROJEKTION ur
+    // Postgres-sanningen (ADR-128 beslut 6, "spegeln är en projektion, aldrig
+    // sanningen"), och `harledBetalning` räknar om den från grunden ur hela
+    // postmängden. Operationen är därmed idempotent OCH konvergent — samma
+    // indata ger samma patch, och en släpande spegel hinner ikapp. Det är
+    // samma självläkning `registrera-inbetalning` § ASYMMETRIN redan bygger
+    // på för sina fyra härledda fält.
+    for (const p of [...plan.backfill, ...plan.redanBackfillad]) {
       const a = anmalningar.find((x) => x.id === p.anmalanRecordId);
       const e = a?.eventId ? (eventMapEfter.get(a.eventId) ?? null) : null;
       const std = e ? (standarder.get(standardNyckel(e.namn, e.typ)) ?? null) : null;
@@ -1255,7 +1482,10 @@ async function main() {
       });
       const patch = byggSpegelPatch(harledning);
       await airtablePatch(basId, 'Anmälningar', p.anmalanRecordId, patch, token);
-      console.log(`  ✅ spegel ${p.anmalanRecordId} ${JSON.stringify(patch)}`);
+      console.log(
+        `  ✅ spegel ${p.anmalanRecordId} ${JSON.stringify(patch)}` +
+          `${p.kod === 'redan-backfillad' ? ' (omskriven — konvergens)' : ''}`,
+      );
       await paus(pausMs);
     }
 
@@ -1284,14 +1514,25 @@ async function lasInbetalningar({ ref, cliVersion, betalsatt }) {
   );
   const inbetalningarPerAnmalan = new Map();
   const historikPerAnmalan = new Set();
+  // AKTIVA poster som INTE är backfillens egna — grinden mot dubbelräkning
+  // (`klassificera` § IDEMPOTENSNYCKELN SER BARA Historik). Makulerade räknas
+  // aldrig: en makulerad post är rättad, inte betald.
+  const aktivIckeHistorikPerAnmalan = new Map();
   for (const rad of rader) {
     const id = rad.anmalan_record_id;
     const belopp = Number(rad.belopp);
     if (!inbetalningarPerAnmalan.has(id)) inbetalningarPerAnmalan.set(id, []);
     inbetalningarPerAnmalan.get(id).push({ belopp, status: rad.status });
-    if (rad.betalsatt === betalsatt) historikPerAnmalan.add(id);
+    if (rad.betalsatt === betalsatt) {
+      historikPerAnmalan.add(id);
+    } else if (rad.status === 'aktiv') {
+      aktivIckeHistorikPerAnmalan.set(
+        id,
+        avrundaOre((aktivIckeHistorikPerAnmalan.get(id) ?? 0) + belopp),
+      );
+    }
   }
-  return { inbetalningarPerAnmalan, historikPerAnmalan };
+  return { inbetalningarPerAnmalan, historikPerAnmalan, aktivIckeHistorikPerAnmalan };
 }
 
 async function lasTokenUrEnvFil() {

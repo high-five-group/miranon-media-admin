@@ -59,9 +59,12 @@ import {
   escapeSqlText,
   harledPrisbild,
   klassificera,
+  LANKTILLSTAND_FIL,
+  lasLanktillstand,
   parsaDbQuerySvar,
   planera,
   planeraEventpriser,
+  provaLanktillstand,
   SPEGEL_OPERATION,
   sqlBelopp,
   sqlDatum,
@@ -956,6 +959,210 @@ test('K4: betalningsdatum-kolumnen ÄR nullable — AC #1:s förutsättning', ()
     'utf8',
   );
   assert.match(migration, /^\s*betalningsdatum date,$/m);
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// L — LÄNKTILLSTÅNDETS PREFLIGHT (granskningsrunda 1, fynd 1)
+// ═══════════════════════════════════════════════════════════════════════════
+
+const STAGING = POLICY.tillatnaProjectRefs[0];
+const PROD_REF = readFileSync(join(REPO_ROT, '.prod-ref-policy.conf'), 'utf8').match(
+  /^PROD_REF_PROD="([^"]+)"/m,
+)?.[1];
+
+test('L1: filen SAKNAS ⇒ olänkat läge, körningen släpps (den mätta vägen)', () => {
+  const u = provaLanktillstand({ lanktRef: null, malRef: STAGING, prodRef: PROD_REF });
+  assert.equal(u.ok, true);
+  assert.equal(u.lage, 'olankat');
+});
+
+test('L2: tom fil behandlas som olänkat, inte som en ref', () => {
+  assert.equal(
+    provaLanktillstand({ lanktRef: '   ', malRef: STAGING, prodRef: PROD_REF }).ok,
+    true,
+  );
+});
+
+test('L3: filen bär MÅLREFEN ⇒ släpps', () => {
+  const u = provaLanktillstand({ lanktRef: STAGING, malRef: STAGING, prodRef: PROD_REF });
+  assert.equal(u.ok, true);
+  assert.equal(u.lage, 'lankat-till-mal');
+});
+
+test('L4: NEGATIV — filen bär ett ANNAT projekt ⇒ VÄGRAR (fail-closed)', () => {
+  const u = provaLanktillstand({
+    lanktRef: 'abcdefghijklmnopqrst',
+    malRef: STAGING,
+    prodRef: PROD_REF,
+  });
+  assert.equal(u.ok, false);
+  assert.equal(u.lage, 'lankat-till-annat');
+  assert.match(u.skal, /Fail-closed/);
+});
+
+test('L5: NEGATIV — filen bär PROD ⇒ VÄGRAR ÄVEN med korrekt --projekt-ref', () => {
+  // Detta är fyndets kärna: argumentet är helt rätt (staging), och körningen
+  // ska ändå stoppas, eftersom flaggans företräde över sticky länktillstånd
+  // är obevisat åt säkerhetshållet.
+  assert.ok(PROD_REF, 'PROD_REF_PROD saknas i .prod-ref-policy.conf');
+  const u = provaLanktillstand({ lanktRef: PROD_REF, malRef: STAGING, prodRef: PROD_REF });
+  assert.equal(u.ok, false);
+  assert.equal(u.lage, 'lankat-till-prod');
+  assert.match(u.skal, /PROD/);
+});
+
+test('L6: trailing newline i filen tolkas bort (link skriver den)', () => {
+  assert.equal(
+    provaLanktillstand({ lanktRef: `${STAGING}\n`, malRef: STAGING, prodRef: PROD_REF }).ok,
+    true,
+  );
+});
+
+test('L7: lasLanktillstand ger null när filen saknas (ingen krasch)', () => {
+  assert.equal(lasLanktillstand('/tmp/finns-inte-t3468'), null);
+  assert.equal(LANKTILLSTAND_FIL, 'supabase/.temp/project-ref');
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// M — BELOPPSGRINDEN (granskningsrunda 1, fynd 2)
+// ═══════════════════════════════════════════════════════════════════════════
+
+test('M1: 0-pris HOPPAS ÖVER — "allt betalt" är redan sant utan rader', () => {
+  const u = klass({
+    anmalan: anm({ anmalningsavgiftFack: 'Mottagen', slutbetalningFack: 'Mottagen' }),
+    event: ev({ pris: 0, anmalningsavgift: 0 }),
+  });
+  assert.equal(u.beslut, BESLUT.hoppa);
+  assert.equal(u.kod, 'noll-belopp');
+  // Kontrasten som gör hoppet rätt: härledningen säger redan alltKlart.
+  const h = harledBetalning([], {
+    avtalatPris: null,
+    eventPris: 0,
+    anmalningsavgift: 0,
+    eventTyp: 'Utbildning',
+  });
+  assert.equal(h.alltKlart, true);
+  assert.equal(h.saknas, 0);
+});
+
+test('M2: NEGATIV — negativt pris är en AVVIKELSE, aldrig en rad', () => {
+  const u = klass({
+    anmalan: anm({ anmalningsavgiftFack: 'Mottagen', slutbetalningFack: 'Mottagen' }),
+    event: ev({ pris: -500 }),
+  });
+  assert.equal(u.beslut, BESLUT.avvikelse);
+  assert.equal(u.kod, 'negativt-pris');
+});
+
+test('M3: NEGATIV — sqlBelopp FÄLLER 0 när positivt krävs (belopp_ej_noll)', () => {
+  assert.throws(() => sqlBelopp(0, { mastePositivt: true }), /måste vara > 0/);
+});
+
+test('M4: NEGATIV — sqlBelopp FÄLLER negativt när positivt krävs (tecken_foljer_typ)', () => {
+  assert.throws(() => sqlBelopp(-100, { mastePositivt: true }), /måste vara > 0/);
+});
+
+test('M5: byggInsertSats FÄLLER en nollrad innan den når databasen', () => {
+  assert.throws(() => byggInsertSats(post({ belopp: 0 }), POLICY), /måste vara > 0/);
+  assert.throws(() => byggInsertSats(post({ belopp: -2500 }), POLICY), /måste vara > 0/);
+});
+
+test('M6: sqlBelopp utan flaggan är oförändrad (0 är ett giltigt tal att rendera)', () => {
+  assert.equal(sqlBelopp(0), '0.00');
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// N — AKTIVA ICKE-HISTORIK-INBETALNINGAR (granskningsrunda 1, fynd 3)
+// ═══════════════════════════════════════════════════════════════════════════
+
+test('N1: NEGATIV — en aktiv Swish-post gör anmälan till avvikelse, inte backfill', () => {
+  const u = klass({
+    anmalan: anm({ anmalningsavgiftFack: 'Mottagen', slutbetalningFack: 'Mottagen' }),
+    event: ev({ pris: 2500, anmalningsavgift: 1000 }),
+    aktivSummaIckeHistorik: 1000,
+  });
+  assert.equal(u.beslut, BESLUT.avvikelse);
+  assert.equal(u.kod, 'har-aktiva-inbetalningar');
+  assert.equal(u.aktivSummaIckeHistorik, 1000);
+  assert.match(u.skal, /dubbelräknat/);
+});
+
+test('N2: KONSEKVENSEN — utan grinden hade summan blivit 3500 av 2500', () => {
+  // Bevisar VARFÖR N1 är en avvikelse: den befintliga posten plus en
+  // backfill av hela priset ger en summa som ingen betalat, och spegeln hade
+  // sagt "allt betalt" på den.
+  const h = harledBetalning(
+    [
+      { belopp: 1000, status: 'aktiv' },
+      { belopp: 2500, status: 'aktiv' },
+    ],
+    { avtalatPris: null, eventPris: 2500, anmalningsavgift: 1000, eventTyp: 'Utbildning' },
+  );
+  assert.equal(h.summa, 3500);
+  assert.equal(h.saknas, -1000);
+});
+
+test('N3: en MAKULERAD post påverkar inte (rättad, inte betald)', () => {
+  // Anroparen summerar bara status === 'aktiv', så en makulerad post ger 0.
+  const u = klass({
+    anmalan: anm({ anmalningsavgiftFack: 'Mottagen', slutbetalningFack: 'Mottagen' }),
+    event: ev({ pris: 2500, anmalningsavgift: 1000 }),
+    aktivSummaIckeHistorik: 0,
+  });
+  assert.equal(u.beslut, BESLUT.backfilla);
+  assert.equal(u.belopp, 2500);
+});
+
+test('N4: grinden ligger EFTER redan-backfillad (en egen Historik-post vinner)', () => {
+  const u = klass({
+    anmalan: anm({ anmalningsavgiftFack: 'Mottagen', slutbetalningFack: 'Mottagen' }),
+    event: ev({ pris: 2500 }),
+    harHistorik: true,
+    aktivSummaIckeHistorik: 1000,
+  });
+  assert.equal(u.beslut, BESLUT.redanBackfillad);
+});
+
+test('N5: planen listar avvikelsen med record-ID och summa', () => {
+  const indata = planIndata();
+  indata.aktivIckeHistorikPerAnmalan = new Map([['recAAAAAAAAAAAAAA', 1500]]);
+  const p = planera(indata);
+  assert.equal(p.backfill.length, 0);
+  assert.equal(p.avvikelser.length, 1);
+  assert.equal(p.avvikelser[0].kod, 'har-aktiva-inbetalningar');
+  assert.equal(p.avvikelser[0].anmalanRecordId, 'recAAAAAAAAAAAAAA');
+  assert.equal(p.avvikelser[0].aktivSummaIckeHistorik, 1500);
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// O — SPEGELNS KONVERGENS (granskningsrunda 1, fynd 4)
+// ═══════════════════════════════════════════════════════════════════════════
+
+test('O1: en redan backfillad anmälan hamnar i EGEN lista, inte bara i hoppade', () => {
+  // Del C itererar backfill ∪ redanBackfillad; utan den egna listan hade en
+  // spegel som fallerade i en tidigare körning aldrig reparerats.
+  const p = planera(planIndata(['recAAAAAAAAAAAAAA']));
+  assert.equal(p.redanBackfillad.length, 1);
+  assert.equal(p.redanBackfillad[0].anmalanRecordId, 'recAAAAAAAAAAAAAA');
+  assert.equal(p.backfill.length, 0);
+});
+
+test('O2: listan är tom när inget är backfillat sedan tidigare', () => {
+  const p = planera(planIndata());
+  assert.equal(p.redanBackfillad.length, 0);
+});
+
+test('O3: Del C:s iteration täcker BÅDA listorna (kopplingsvakt mot koden)', () => {
+  const kalla = readFileSync(join(REPO_ROT, 'scripts/backfill-inbetalningar.mjs'), 'utf8');
+  assert.match(kalla, /for \(const p of \[\.\.\.plan\.backfill, \.\.\.plan\.redanBackfillad\]\)/);
+});
+
+test('O4: prosan överlovar inte — filhuvudet skiljer strukturell från konvergent', () => {
+  // ADR-083: en text som säger "körs om rakt av" om BÅDA halvorna påstår en
+  // garanti spegeln inte har.
+  const kalla = readFileSync(join(REPO_ROT, 'scripts/backfill-inbetalningar.mjs'), 'utf8');
+  assert.match(kalla, /SPEGELN är KONVERGENT, inte idempotent i samma mening/);
+  assert.ok(!/En avbruten körning kan alltså köras om rakt av/.test(kalla));
 });
 
 // ═══════════════════════════════════════════════════════════════════════════

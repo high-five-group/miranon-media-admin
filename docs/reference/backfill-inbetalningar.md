@@ -162,7 +162,21 @@ det som redan är gjort.
 Varje rad skrivs som `insert … select … where not exists (… betalsatt =
 'Historik' …)`. Omkörningen skapar noll rader därför att **databasen** avgör
 det i samma sats som insert-en, inte därför att skriptet minns vad det gjorde.
-En avbruten körning kan därför köras om rakt av.
+
+**De två halvorna är idempotenta av OLIKA skäl, och bara den ena är en
+databasgaranti:**
+
+| Halva | Egenskap | Varför |
+|---|---|---|
+| Postgres-raden | **strukturellt idempotent** | `where not exists` — databasen avgör, oavsett vad skriptet tror |
+| Spegeln i basen | **konvergent** | skrivs i en andra operation mot ett annat system; ett avbrott emellan lämnar raden skriven och spegeln oskriven |
+
+Spegeln repareras därför av **Del C, som itererar backfill ∪
+redan-backfillade** — en anmälan som redan bär sin Historik-post får spegeln
+omskriven ändå. Det är säkert per definition: spegeln är en **projektion** ur
+Postgres-sanningen (ADR-128 beslut 6), och `harledBetalning` räknar om den
+från grunden ur hela postmängden. En avbruten körning läker alltså vid nästa
+körning i stället för att lämna ett permanent fel.
 
 Nyckeln är `(anmalan_record_id, betalsatt = 'Historik')` och **inte**
 `bankreferens`, trots att den kolumnen bär ett partiellt unikt index som hade
@@ -221,36 +235,60 @@ I prod väntas bilden vara en annan; se nedan.
 
 ## Prod — ÖPPET AC för Marcus (`TASK-346.8` AC #4)
 
-Agenten kör aldrig prod. Backfillen vägrar prod-refen (`validateProjectRef`)
-och prod-basen (`validateBaseGuard`), och `scripts/deny-prod-ref.sh` fäller
-dessutom varje agent-kommando som bär prod-refen.
+**Agenten kör aldrig prod, och skriptet kan inte fås att göra det med en
+flagga.** Prod är låst av fyra oberoende lager, och det är viktigt att läsa
+dem som just oberoende — inget av dem är "inställningen som ska ändras":
 
-**Steg 1 — förutsättningen.** Prod-basens nio betalningsfält måste finnas
-innan backfillen kan köras (`data-model.md` § Prod-fälten — ÖPPET AC #5 för
-Marcus).
+| Lager | Vad det gör | Kan en flagga kringgå det? |
+|---|---|---|
+| `validateBaseGuard` | `forbiddenBaseIds` prövas **före** `expectedBaseId`, så prod-basen fälls även om den skulle stå som förväntad | Nej |
+| `validateProjectRef` | prod-refen läses ur `.prod-ref-policy.conf` och fälls **oberoende** av backfill-policyns egen lista | Nej |
+| `provaLanktillstand` | vägrar om `supabase/.temp/project-ref` pekar någon annanstans än målet — inklusive prod, även med korrekt `--projekt-ref` | Nej |
+| `scripts/deny-prod-ref.sh` | fäller varje **agent**-kommando som bär prod-refen i kommandosträngen | Nej |
 
-**Steg 2 — dry-run, läs planen.** Kör i egen terminal, med prod-basen och
-prod-refen som argument:
+**En prod-körning kräver därför ett eget Marcus-beslut och en medveten
+upplåsning** — inte ett kommando. Vilken FORM upplåsningen ska ha är
+Marcus val och är **inte bestämt här**: det kan vara en kodändring, en
+policy-PR som lägger prod-basen i `expectedBaseId` och prod-refen i
+`tillatnaProjectRefs`, eller en egen väg. Notera att sviten (§ A11) aktivt
+**låser att prod-refen inte står i backfill-policyn** — den posten är avsiktlig
+och skulle behöva rivas medvetet, eftersom en kopia dit gör
+`deny-prod-ref.sh` verkningslös för varje agent som läser repot.
 
-```bash
-npm run backfill:inbetalningar -- --bas <prod-bas-id> --projekt-ref <prod-ref>
-```
+**Formbeslutet hör hemma i prod-runbooken** — `TASK-346.11` (Prod-runbook för
+Postgres och jobbmotorn + morgonchecklista för Marcus). Skriv det där, inte
+här: denna fil beskriver backfillens regel, runbooken äger prod-sekvensen.
 
-Skriptet vägrar tills prod-basen står som tillåten i
-`.backfill-inbetalningar-policy.json` — det är avsiktligt: prod-körningen
-kräver ett medvetet, committat beslut, inte en flagga.
+### Ordningen när beslutet väl är fattat
 
-**Steg 3 — läs avvikelselistan mot Lottas lista** innan något skrivs. Det är
-här arbetet ligger; själva körningen är sekunder.
+1. **Förutsättningen:** prod-basens nio betalningsfält måste finnas
+   (`data-model.md` § Prod-fälten — ÖPPET AC #5 för Marcus). Utan dem kan
+   inget pris härledas och varje rad blir `pris-okant`.
+2. **Upplåsningen** enligt den form Marcus valt (ovan).
+3. **Dry-run, och läs planen.** Det är här arbetet ligger; själva körningen
+   är sekunder.
+4. **Avvikelselistan mot Lottas lista** — rätta priserna i basen, kör om
+   dry-run, upprepa tills listan är förstådd.
+5. **Skarpt**, med `--utfor`.
 
-**Steg 4 — skarpt**, med `--utfor` tillagt.
+### "Förväntade tal" — formen, och var de hämtas
 
-**Förväntade tal att kontrollera mot** (fyll i vid körning): antal
-anmälningar, antal `pris-okant` (bör vara lågt om prod-basens priser är
-ifyllda), antal backfillade, summa. Blir `pris-okant` stort är svaret att
-fylla priserna i basen först — aldrig att sänka kravet i skriptet.
+**Prod är OMÄTT av agenten och kan inte vara annat.** Det finns därför inga
+förväntade tal att skriva av här; att gissa dem vore precis den
+kopierings-drift som gör ett tal fel utan att någon märker det. Formen är i
+stället denna — Marcus fyller den vid körningen, ur skriptets egen
+FÖRE-mätning (dry-run skriver ut den utan att röra något):
 
----
+| Tal | Hämtas ur | Vad som är ett rimligt utfall |
+|---|---|---|
+| antal anmälningar | rapportens FÖRE-rad | prod-basens verkliga population |
+| antal `pris-okant` | avvikelselistan | **lågt** om steg 1 är gjort; stort ⇒ priserna saknas i basen |
+| antal `har-aktiva-inbetalningar` | avvikelselistan | 0 vid första körningen (prod-ledgern är tom, mätt 2026-08-30) |
+| antal backfillade | Del B | resten av dem med mottaget fack eller närvaro |
+| summa (kr) | EFTER-raden | ska stämma mot Lottas lista |
+
+Blir `pris-okant` stort är svaret att fylla priserna **i basen** och köra om
+— aldrig att sänka kravet i skriptet.
 
 ## Vad som INTE är gjort
 
