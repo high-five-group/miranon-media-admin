@@ -96,9 +96,22 @@ export function InbetalningsLista({ kalla, aktiv, max, tomText }: Props) {
   }
 
   if (query.isError) {
+    // [TASK-346.7.1] Gunilla-klar text, ALDRIG query.error.message rakt ut
+    // (T177-klassen: tekniska "Edge Function "…" 500: …"-strängar hör inte
+    // hemma i Lottas UI). Försök igen-knappen speglar husmönstret
+    // (SectionError.tsx, AtgardsSida.tsx) — MessageBox `actions`-slotten,
+    // aldrig en egenplacerad knapp bredvid rutan.
     return (
-      <MessageBox intent="error" title="Inbetalningarna kunde inte hämtas">
-        {query.error instanceof Error ? query.error.message : 'Okänt fel.'}
+      <MessageBox
+        intent="error"
+        title="Inbetalningarna kunde inte hämtas"
+        actions={
+          <Button intent="secondary" size="sm" onPress={() => void query.refetch()}>
+            Försök igen
+          </Button>
+        }
+      >
+        Kontrollera att du är uppkopplad och försök igen.
       </MessageBox>
     );
   }
