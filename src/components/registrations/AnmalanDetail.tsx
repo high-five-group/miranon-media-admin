@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { Bell, ChevronLeft, ChevronRight, Inbox, Mail, UserPlus } from 'lucide-react';
 import { useEffect, useRef } from 'react';
+import { AnmalansBetalningar } from '@/components/betalningar/AnmalansBetalningar';
 import { DetaljGrupp, EtikettVardeRad } from '@/components/events/detail/DetaljGrupp';
 import { Button } from '@/components/primitives/Button';
 import { MessageBox } from '@/components/primitives/MessageBox';
@@ -12,6 +13,7 @@ import { useDataSource } from '@/data/useDataSource';
 import type { Registration } from '@/domain/models/Registration';
 import type { RegistrationDetail } from '@/domain/schemas';
 import { PaymentStatus, RegistrationSource, RegistrationStatus } from '@/domain/types/Status';
+import { betalningarPa } from '@/lib/funktionsflaggor';
 import { kursfargForKurs } from '@/lib/kursfarg';
 import { queryKeys } from '@/queries/keys';
 import { harledBehorighet } from './behorighet';
@@ -486,6 +488,16 @@ export function AnmalanDetail({
                 )}
               </EtikettVardeRad>
             </dl>
+            {/* [TASK-346.7 AC #3] Saknas-belopp, inbetalningar, kvitton och
+                Registrera betalning — bakom miljöflaggan. Blocket ligger
+                UTANFÖR `<dl>`:en med avsikt: en `<dl>` får bara bära
+                `<dt>`/`<dd>`-par (axe `definition-list`/`only-dlitems`), och
+                detta är en yta med rubrik, knapp och lista, inte ett
+                term-värde-par.
+
+                MED FLAGGAN AV ÄR GRUPPEN EXAKT DAGENS: de fem raderna ovan,
+                oförändrade. */}
+            {betalningarPa() && <AnmalansBetalningar anmalanRecordId={reg.id} />}
           </DetaljGrupp>
 
           {/* Uppgifter (byggkrav 7): platser + bor över + RELATIONERNA som

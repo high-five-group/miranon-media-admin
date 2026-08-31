@@ -117,6 +117,50 @@ export function harledRad(betalning: OppenBetalning, idag: IsoDatum): InkorgsRad
   };
 }
 
+/* ═══════════════════════════ SAMMANFATTNINGEN ═══════════════════════════ */
+
+export type Betalningssammanfattning = {
+  /** Anmälningar som fortfarande saknar pengar enligt Postgres. */
+  oppna: number;
+  /** Hur många av dem vars slutbetalning passerat sin deadline. */
+  forfallna: number;
+  /** Kvitton som ligger i kön (`vantar`/`pagar`) och alltså ska skickas. */
+  kvittonAttSkicka: number;
+};
+
+/**
+ * [TASK-346.7 AC #1] De TRE talen Hem-kortet och inkorgens rubrik båda visar.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * EN FUNKTION, TVÅ YTOR - OCH DET ÄR HELA POÄNGEN
+ * ═══════════════════════════════════════════════════════════════════════════
+ * PRD berättelse 11 ger Hem samma tre tal som inkorgens rubrik redan bar
+ * inline. Två oberoende uttryck för samma mening hade kunnat glida isär utan
+ * att någon mekanism märkte det - och AC #6 kräver uttryckligen att ytorna
+ * ger SAMMA resultat. Talen härleds därför på ETT ställe, och båda ytorna
+ * läser det.
+ *
+ * `oppna` RÄKNAR ICKE-KLARA RADER, inte listans längd. EF:en returnerar rader
+ * där basens `Saknas (kr) > 0`, men basens formel läser SPEGELN och spegeln
+ * kan släpa (ADR-128 § Konsekvenser). En rad som Postgres redan vet är
+ * fullbetald är alltså inte öppen, hur listan än ser ut - samma skillnad
+ * "Klara hopfällda" bygger på.
+ *
+ * `kvittonAttSkicka` är kö-talet (`OppenBetalning.kvittonAttSkicka`), alltså
+ * kvitton Lotta REDAN tryckt på och som jobbmotorn arbetar av. Det är INTE
+ * detsamma som inkorgens session-lokala "väntande"-lista, som räknar
+ * registreringar gjorda i denna flik med kvittorutan i men utan att knappen
+ * tryckts än (`BetalningsInkorg.tsx` § "SKICKA N KVITTON"). De två talen
+ * svarar på olika frågor och slås aldrig ihop.
+ */
+export function sammanfattaBetalningar(rader: readonly InkorgsRad[]): Betalningssammanfattning {
+  return {
+    oppna: rader.filter((rad) => !rad.klar).length,
+    forfallna: rader.filter((rad) => rad.forfallen && !rad.klar).length,
+    kvittonAttSkicka: rader.reduce((summa, rad) => summa + rad.betalning.kvittonAttSkicka, 0),
+  };
+}
+
 /* ═══════════════════════════ GRUPPERINGEN ═══════════════════════════ */
 
 /**

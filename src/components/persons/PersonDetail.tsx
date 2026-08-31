@@ -40,12 +40,14 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { CalendarCheck, ChevronRight, Download, UserPlus } from 'lucide-react';
 import { type ComponentType, useEffect, useRef } from 'react';
+import { PersonBetalningar } from '@/components/betalningar/PersonBetalningar';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { SidRam } from '@/components/primitives/SidRam';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useDataSource } from '@/data/useDataSource';
 import type { PersonDetail as PersonDetailType, PersonHistoryEntry } from '@/domain/schemas';
+import { betalningarPa } from '@/lib/funktionsflaggor';
 import { type KursfargKlass, kursfargForKurs } from '@/lib/kursfarg';
 import { queryKeys } from '@/queries/keys';
 // D-variantens SKARPA ytor (`#1151`). a/b/c rör dem aldrig — de behåller sina
@@ -1243,6 +1245,26 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
           )}
         </div>
       </section>
+
+      {/* BETALNINGAR — NY SEKTION (TASK-346.7 AC #4), bakom miljöflaggan.
+
+          PLACERINGEN ÄR ETT FORMBESLUT FÖR MORGONGRANSKNINGEN, inte ett
+          fastställt facit: sektionen står EFTER "Just nu" och FÖRE "Flagga",
+          därför att en öppen betalning hör till personens NULÄGE — det är
+          samma fråga som "Just nu" svarar på ("vad pågår med den här
+          personen"), bara i pengar i stället för i anmälningar. Facitet
+          (S103, variant D) låser sju block i Marcus egen ordning och känner
+          inte detta; avsteget är bokfört i
+          `tasks/sessions/bilagor/s103-persondetalj-konvergens/AMENDERING-2026-08-31-*.md`
+          med klassen "ny form, förhandsmandat S113 Del 11 (B3)".
+
+          MED FLAGGAN AV RENDERAS INGENTING — persondetaljen är då byte för
+          byte den promoverade formen. */}
+      {betalningarPa() && (
+        <Sektion id="proto-d-betalningar" rubrik="Betalningar">
+          <PersonBetalningar person={person} />
+        </Sektion>
+      )}
 
       {/* FLAGGAN — eget block sedan 2026-08-12. Marcus 2026-08-10: *"Manuell
           flagga är ju bra att kunna skapa här, så den sedan kan 'fästas' på

@@ -5,9 +5,8 @@ import { Button, Input, Select, SelectItem } from '@/components/primitives';
 import { useRegistreraInbetalning } from '@/data/mutations/inbetalningar';
 import { VALBARA_BETALSATT } from '@/domain/schemas';
 import { beloppsFel, normaliseraBeloppKlient, visaKronor } from './belopp-inmatning';
+import type { Betalsatt } from './betalsatt-minne';
 import { beloppsutfall, harledBeloppsknappar, type InkorgsRad } from './inkorg-harledningar';
-
-export type Betalsatt = (typeof VALBARA_BETALSATT)[number];
 
 export type RegistreringsUtfall = {
   inbetalningId: string;
