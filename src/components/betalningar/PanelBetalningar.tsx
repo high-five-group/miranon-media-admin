@@ -108,7 +108,7 @@ export function PanelBetalningar({ anmalanRecordId, namn, rad }: Props) {
           onClick={() => setOppen((v) => !v)}
           aria-expanded={oppen}
           aria-controls={panelId}
-          className="mm-fokusring-vid-fokus flex items-center gap-1 rounded text-caption text-text-muted hover:text-text"
+          className="flex items-center gap-1 rounded text-caption text-text-muted hover:text-text"
         >
           {oppen ? 'Dölj inbetalningarna' : 'Visa inbetalningarna'}
           <span className="sr-only">{` för ${namn}`}</span>

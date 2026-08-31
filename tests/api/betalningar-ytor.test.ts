@@ -259,14 +259,18 @@ test('senast betald först; saknat betalningsdatum hamnar SIST', () => {
   const ordning = sorteraInbetalningar([gammal, backfill, ny]).map((i) => i.id);
   expect(ordning).toEqual(['b', 'a', 'c']);
 
-  // NEGATIV KONTROLL: en ren `localeCompare`-sortering utan null-hantering
-  // behandlar den tomma strängen som det TIDIGASTE datumet och lägger
-  // backfill-posten först — alltså överst, som om den vore färskast.
-  const trasigSortering = [gammal, backfill, ny]
-    .slice()
-    .sort((x, y) => (y.betalningsdatum ?? '').localeCompare(x.betalningsdatum ?? ''))
-    .map((i) => i.id);
-  expect(trasigSortering).toEqual(['b', 'a', 'c']);
+  // NEGATIV KONTROLL: en STIGANDE sortering (äldst först) lägger den
+  // datumlösa backfill-posten ÖVERST, där den läses som den färskaste
+  // betalningen — precis tvärtemot vad raden ska säga.
+  //
+  // ÄRLIG AVGRÄNSNING, bokförd i stället för utjämnad: en naiv FALLANDE
+  // sortering med `?? ''` ger av en slump samma ordning som den riktiga
+  // implementationen för dessa indata (tomma strängen är minst, alltså sist
+  // även fallande). Ett sådant `expect` hade sett ut som en negativ kontroll
+  // utan att diskriminera något, och stod här till granskningsrunda 1 av
+  // PR #2156. Null-placeringen i FALLANDE riktning skyddas därför inte av
+  // ett test — den skillnaden finns inte att mäta. Det som mäts är
+  // riktningen, och tie-breaket har sitt eget test nedan.
   const trasigStigande = [gammal, backfill, ny]
     .slice()
     .sort((x, y) => (x.betalningsdatum ?? '').localeCompare(y.betalningsdatum ?? ''))

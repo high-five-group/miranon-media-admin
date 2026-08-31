@@ -121,10 +121,11 @@ ingen egen flagga, till skillnad från acceptance/visual). Kryss-klicken i
 `tests/e2e/atgarder-betalningar.staging.test.ts` kan därför inte längre avfyra
 någon skrivning.
 
-**Sex tester är `test.describe.skip`:ade, inte raderade** (avprickning avgift,
-avprickning slutbetalning, ångra, aktivitetsloggens två riktningar,
-log-activity-500-fallet), plus rollback-testet och taktvaktens test, plus
-hela `atgarder-kvitto.staging.test.ts`. Var och en har ett docblock som säger
+**TIO tester är `test.describe.skip`:ade, inte raderade** — räknat, inte
+uppskattat: SEX i skrivvertikalens block (avprickning avgift, avprickning
+slutbetalning, ångra, aktivitetsloggens två riktningar, log-activity-500-
+fallet), ETT rollback-test, ETT taktvakts-test och TVÅ i
+`atgarder-kvitto.staging.test.ts`. Var och en har ett docblock som säger
 varför och vem som stänger det (`TASK-346.12`).
 
 Skäl: skrivvägen (`useSetPaymentStatus`, taktvakten, aktivitetsloggen,
@@ -136,7 +137,7 @@ testrapport.
 **Öppen fråga till dig:** med flaggan på finns ingen e2e-täckning kvar för
 skrivvägen, eftersom dess enda affordans är borta i den miljö e2e kör i.
 Alternativet — att sätta flaggan till `av` på e2e-webServern — hade bevarat de
-sex testerna men brutit `mer-index.staging.test.ts` (TASK-346.6 räknar elva
+tio testerna men brutit `mer-index.staging.test.ts` (TASK-346.6 räknar elva
 rader i Mer-listan just för att flaggan är på) och gjort hela
 betalningsdomänen osynlig för e2e-klassen.
 
@@ -144,7 +145,7 @@ betalningsdomänen osynlig för e2e-klassen.
 `aria-readonly` på kryssen, noll skrivningar vid klick, ett mottaget kryss som
 inte går att bocka ur, kvitto-knappen borta, saknas-beskedet och fällningen
 per person, plus axe 0. Härledningarna prövas hermetiskt i
-`tests/api/betalningar-ytor.test.ts` (22 fall, negativ kontroll per regel).
+`tests/api/betalningar-ytor.test.ts` (23 fall, negativ kontroll per regel).
 
 ## Omstämplings-läge
 

@@ -152,7 +152,7 @@ föll mätt 48 av 48 autentiserade acceptance-tester). Ingetdera byggs i denna
 skiva, och raden lämnas därför orörd.
 
 Nya härledningar prövas i stället hermetiskt i
-`tests/api/betalningar-ytor.test.ts` (22 fall, var och en med negativ
+`tests/api/betalningar-ytor.test.ts` (23 fall, var och en med negativ
 kontroll — PRD DoD #5).
 
 ## Omstämplings-läge
