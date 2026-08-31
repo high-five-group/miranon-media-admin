@@ -1,7 +1,26 @@
 import { useQuery } from '@tanstack/react-query';
+import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useDataSource } from '@/data/useDataSource';
 import type { Inbetalningslista, OppnaBetalningar } from '@/domain/schemas';
 import { queryKeys } from '@/queries/keys';
+
+/**
+ * [TASK-346.7.1] Husets etablerade EdgeFunctionError-medvetna retry-policy —
+ * SAMMA lambda-form som `PersonDetail.tsx`/`EventDetail.tsx`/
+ * `EventRegistrations.tsx` m.fl. redan bär, kopierad hit i stället för
+ * abstraherad: majoriteten av husets EF-backade queries duplicerar denna
+ * exakta form inline (`useDashboardData.ts`s lokala `noRetryOn4xx` är
+ * undantaget, inte normen), och att extrahera en delad export här hade varit
+ * att uppfinna ett fjärde mönster där tre redan finns.
+ *
+ * UTAN denna rad ärvde de tre hookarna nedan routerns naiva globala
+ * `retry: 3` (router.ts) — som retryar BLINT även på 4xx (ett fel Lotta
+ * aldrig kan läka genom att vänta). Fynd: `TASK-346.7.1`, orkestrerarens
+ * S113-slutvandring 2026-08-31 (persondetalj `rec2JwV3Bh0x5qlvl`,
+ * `hamta-inbetalningar` 500, felläget syntes aldrig inom 14+ s).
+ */
+const husetsRetryPolicy = (failureCount: number, err: Error): boolean =>
+  !(err instanceof EdgeFunctionError && err.status >= 400 && err.status < 500) && failureCount < 3;
 
 /**
  * [TASK-346.7] Läsningarna som de FYRA ytorna utanför inkorgen delar:
@@ -43,6 +62,7 @@ export function useOppnaBetalningar(aktiv = true) {
     queryFn: () => dataSource.fetchOppnaBetalningar(),
     enabled: aktiv,
     refetchOnMount: 'always',
+    retry: husetsRetryPolicy,
   });
 }
 
@@ -62,6 +82,7 @@ export function useInbetalningarPerAnmalan(anmalanRecordId: string, aktiv: boole
     queryFn: () => dataSource.fetchInbetalningar({ anmalanRecordId }),
     enabled: aktiv,
     refetchOnMount: 'always',
+    retry: husetsRetryPolicy,
   });
 }
 
@@ -79,5 +100,6 @@ export function useInbetalningarPerPerson(personId: string, aktiv: boolean) {
     queryFn: () => dataSource.fetchInbetalningar({ personId }),
     enabled: aktiv,
     refetchOnMount: 'always',
+    retry: husetsRetryPolicy,
   });
 }
