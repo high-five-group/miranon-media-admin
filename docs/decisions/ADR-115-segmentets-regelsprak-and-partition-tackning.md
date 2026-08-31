@@ -130,3 +130,28 @@ basstrukturen byggs · expansionen predikat→par-lista sker i klienten
   research-underlaget för mall-lagret och terminologi-domen.
 - T50 (utskicks-härdningen) — lager (b) är skälet till att server-sidan
   äger både expansion och konjunktion.
+
+## Updates
+
+### 2026-08-31 — Domängränsen mot populationer utan deltaganden (S114 våg B-grillningen)
+
+**Beslut (Marcus, S114 Del 3 beslut 2):** regelspråket och
+membership-motorn modellerar **deltagarhistorik enbart**. Populationer
+utan deltaganden — i dag *Intresserade* (hämtat erbjudande, noll
+anmälningar; ORDLISTA § Intresserad) — blir ALDRIG en källtyp i
+regelspråket. De nås som **egna publiktyper i utskicksvyn** (först ut:
+"Alla intresserade", byggs i 6h/`task-271`:s sändningsdel), serverlöst
+ur sina egna läsvägar (`get-leads`).
+
+**Skäl:** en källtyp för "aldrig deltagit" böjer grammatiken runt sin
+egen motsats, gör täckningskvittensen suddig (täckning resonerar över
+deltagarpopulationen) och inför en permanent specialgren i motor,
+server och täckningsmodell. ORDLISTA:ns segment-definition bar redan
+gränsen ("medlemskap beräknas on-demand från Deltaganden — aldrig en
+lagrad mottagarlista", ADR-062) — detta beslut bekräftar den öppet.
+
+**Decline-rationale (durabel):** alternativet "ny källtyp i
+regelspråket" avböjdes efter grillning; det återföreslås inte utan ny
+evidens, och rivs i så fall öppet. T35 (winback) är en FRAMTIDA
+deltagar-population (avbokade-som-aldrig-deltog) och prövas mot denna
+gräns när den designas. Full kontext: sessionsdok S114 Del 3.
