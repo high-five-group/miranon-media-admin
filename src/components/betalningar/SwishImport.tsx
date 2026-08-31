@@ -1,0 +1,665 @@
+import { AlertTriangle, Check, Upload } from 'lucide-react';
+import { useId, useRef, useState } from 'react';
+import { Input as AriaInput, Checkbox, SearchField } from 'react-aria-components';
+import { Button, MessageBox, Select, SelectItem } from '@/components/primitives';
+import { useRegistreraInbetalning } from '@/data/mutations/inbetalningar';
+import {
+  analyseraFil,
+  type Filanalys,
+  type Kolumnmappning,
+  mappningsFel,
+  parsaTransaktioner,
+  TRANSAKTIONSFALT,
+  type Transaktionsfalt,
+} from './bankimport-parser';
+import {
+  arDubblettfel,
+  attHantera,
+  byggImportrader,
+  type Importradstillstand,
+  raderAttRegistrera,
+  radnyckel,
+  redanImporterade,
+  sammanfattaImport,
+} from './bankimport-rader';
+import {
+  bokforImporterade,
+  importloggKarta,
+  lasMappningar,
+  sparaMappning,
+} from './bankmappning-minne';
+import { visaKronor } from './belopp-inmatning';
+import type { Betalsatt } from './betalsatt-minne';
+import { type InkorgsRad, rankaTraffar } from './inkorg-harledningar';
+
+/**
+ * [TASK-346.10 AC #1, #3, #4, PRD berättelse 19-22] Swish-importen: från
+ * "åtta rader i banken" till "åtta bekräftelser", i SAMMA inkorg.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * INGEN NY YTA, OCH INGEN NY EDGE FUNCTION
+ * ═══════════════════════════════════════════════════════════════════════════
+ * Kortets egen rubrik säger "samma inkorg, ingen ny yta". Komponenten
+ * renderas därför INUTI `BetalningsInkorg`, ovanför listan - inte som en egen
+ * route. Två följder, båda avsiktliga:
+ *
+ *   1. MILJÖFLAGGAN GÄLLER UTAN NY KOD. Inkorgens route bär `betalningarPa()`
+ *      i sin `beforeLoad` (`routes/_authenticated/mer/betalningar.tsx`), så
+ *      importen är avstängd i prod på exakt samma villkor (PRD berättelse 36,
+ *      DoD #7).
+ *   2. "SKICKA N KVITTON" ÄR INKORGENS EGEN KNAPP. Registrerade rader lyfts
+ *      upp via `onRegistrerade`, hamnar i inkorgens väntande-lista, och Lotta
+ *      trycker på knappen hon redan känner. En andra knapp för samma sak hade
+ *      gett två köer att hålla reda på.
+ *
+ * INGEN Edge Function behövde ändras eller deployas för denna skiva.
+ * `registrera-inbetalning` tog redan emot `bankreferens` (dess `index.ts`
+ * § "Dubblettnyckeln vid import") och svarade redan 409
+ * `dubblett_bankreferens` på ett brott mot det partiella unika indexet.
+ * Uppdraget väntade sig en EF-utvidgning; premiss-passet visade att den
+ * redan var byggd i TASK-346.4.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * DUBBLETTERNA - TVÅ VÄGAR, EN SANNING
+ * ═══════════════════════════════════════════════════════════════════════════
+ * AC #3: "bankreferens som redan finns hoppas över och räknas synligt".
+ *
+ *   FÖRE bekräftelsen: den lokala importloggen märker rader denna webbläsare
+ *   redan tagit, och de hamnar i en egen hopfälld hög. Det är ett hjälpmedel
+ *   för ögat - utan det hade en omimport visat raderna som OMATCHADE, därför
+ *   att matchningen söker bland öppna betalningar och en betald anmälan inte
+ *   längre är öppen.
+ *
+ *   UNDER bekräftelsen: servern avvisar med 409 om referensen finns i
+ *   databasen. Det är den enda källa som vet sanningen om alla enheter och
+ *   alla användare, och den gäller även när loggen är tom eller rensad.
+ *
+ * Båda räknas i SAMMA tal ("N rader redan registrerade"), eftersom det för
+ * Lotta är ett och samma faktum.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * REGISTRERINGEN ÄR SEKVENTIELL, MED AVSIKT
+ * ═══════════════════════════════════════════════════════════════════════════
+ * Raderna skickas en i taget, inte som ett `Promise.all`. Skälet är inte
+ * försiktighet utan RIKTIGHET: varje registrering räknar om anmälans
+ * härledning ur HELA inbetalningsmängden och skriver om spegeln
+ * (`registrera-inbetalning` § Steg 2-3). Två parallella anrop mot SAMMA
+ * anmälan - vilket händer så fort någon swishat två gånger, PRD berättelse 5
+ * - hade läst samma utgångsläge och skrivit två spegelvärden där det senare
+ * skriver över det tidigare med ett för lågt tal.
+ *
+ * Ett fel på en rad stoppar inte de andra. Åtta rader ger åtta utfall.
+ */
+
+type Props = {
+  /** Inkorgens öppna betalningar - matchningens sökrymd. */
+  oppna: readonly InkorgsRad[];
+  idag: string;
+  betalsatt: Betalsatt;
+  /** Lyfter registrerade rader till inkorgens "Skicka N kvitton". */
+  onRegistrerade: (kvitton: { inbetalningId: string; namn: string; belopp: number }[]) => void;
+  onStang: () => void;
+};
+
+type Steg = 'val' | 'mappning' | 'lista';
+
+const FALTETIKETT: Record<Transaktionsfalt, string> = {
+  datum: 'Betalningsdatum',
+  belopp: 'Belopp',
+  namn: 'Namn',
+  telefon: 'Telefonnummer',
+  meddelande: 'Meddelande',
+  bankreferens: 'Bankens referens',
+};
+
+/** Ett tomt utkast, för en fil vi inte känner igen. Inget är förvalt. */
+function tomMappning(analys: Filanalys): Kolumnmappning {
+  return {
+    bank: '',
+    avgransare: analys.avgransare,
+    harRubrikrad: analys.harRubrikrad,
+    radfilter: [],
+    kolumner: {
+      datum: null,
+      belopp: null,
+      namn: null,
+      telefon: null,
+      meddelande: null,
+      bankreferens: null,
+    },
+  };
+}
+
+export function SwishImport({ oppna, idag, betalsatt, onRegistrerade, onStang }: Props) {
+  const [steg, setSteg] = useState<Steg>('val');
+  const [filnamn, setFilnamn] = useState('');
+  const [innehall, setInnehall] = useState('');
+  const [analys, setAnalys] = useState<Filanalys | null>(null);
+  const [utkast, setUtkast] = useState<Kolumnmappning | null>(null);
+  const [mappning, setMappning] = useState<Kolumnmappning | null>(null);
+  const [rader, setRader] = useState<Importradstillstand[]>([]);
+  const [bortfiltrerade, setBortfiltrerade] = useState(0);
+  const [fel, setFel] = useState<{ radnummer: number; skal: string }[]>([]);
+  const [lasfel, setLasfel] = useState<string | null>(null);
+  const [korning, setKorning] = useState<'nej' | 'pagar' | 'klar'>('nej');
+  const [visaRedan, setVisaRedan] = useState(false);
+
+  const inputRef = useRef<HTMLInputElement>(null);
+  const registrera = useRegistreraInbetalning();
+  const banknamnId = useId();
+
+  /**
+   * `value = ''` FÖRE klicket är inte kosmetik här - det är AC #3:s bevis.
+   * Utan nollställningen fyrar `change` inte när SAMMA fil väljs två gånger i
+   * rad, och "omimport av samma fil skapar 0 nya" hade varit omöjligt att
+   * visa i webbläsaren. Samma form `DokumentYta.tsx` § `oppnaFilvaljare` bär,
+   * av ett besläktat skäl (Lotta väljer om en fil hon råkat välja fel).
+   */
+  function valjFil() {
+    const input = inputRef.current;
+    if (!input) return;
+    input.value = '';
+    input.click();
+  }
+
+  async function laddaFil(fil: File) {
+    setLasfel(null);
+    setKorning('nej');
+    setFilnamn(fil.name);
+
+    let text: string;
+    try {
+      text = await fil.text();
+    } catch {
+      setLasfel('Filen gick inte att läsa. Prova att ladda ner rapporten på nytt.');
+      return;
+    }
+
+    setInnehall(text);
+    const nyAnalys = analyseraFil(text, lasMappningar());
+    setAnalys(nyAnalys);
+
+    if (nyAnalys.igenkand) {
+      visaRader(text, nyAnalys.igenkand);
+      return;
+    }
+    // AC #1: okänt format ger mappningsdialog, ALDRIG en gissning.
+    setUtkast(tomMappning(nyAnalys));
+    setSteg('mappning');
+  }
+
+  function visaRader(text: string, vald: Kolumnmappning) {
+    const parsat = parsaTransaktioner(text, vald);
+    setMappning(vald);
+    setRader(byggImportrader(parsat, oppna, importloggKarta()));
+    setBortfiltrerade(parsat.bortfiltrerade.length);
+    setFel(parsat.fel);
+    setSteg('lista');
+  }
+
+  function bekraftaMappning() {
+    if (!utkast || mappningsFel(utkast) !== null) return;
+    sparaMappning(utkast);
+    visaRader(innehall, utkast);
+  }
+
+  function andraRad(nyckel: string, andring: Partial<Importradstillstand>) {
+    setRader((tidigare) =>
+      tidigare.map((rad) => (radnyckel(rad.rad) === nyckel ? { ...rad, ...andring } : rad)),
+    );
+  }
+
+  /**
+   * Kör bekräftelsen. Sekventiellt - se filhuvudet för varför.
+   *
+   * Utfallen samlas i en LOKAL karta och skrivs till tillståndet EN gång, i
+   * stället för ett `setRader` per varv: en uppdatering per rad hade gett
+   * React åtta omritningar av en lista Lotta tittar på, och en halvfärdig
+   * lista som ändrar sig under handen är svårare att följa än en som byter
+   * läge en gång.
+   */
+  async function bekrafta() {
+    const attKora = raderAttRegistrera(rader);
+    if (attKora.length === 0) return;
+
+    setKorning('pagar');
+    const utfall = new Map<string, Importradstillstand['utfall']>();
+    const kvitton: { inbetalningId: string; namn: string; belopp: number }[] = [];
+    const nyaReferenser: string[] = [];
+
+    for (const rad of attKora) {
+      const nyckel = radnyckel(rad.rad);
+      const { transaktion } = rad.rad;
+      try {
+        const svar = await registrera.mutateAsync({
+          anmalanRecordId: rad.vald as string,
+          // Beloppet skickas som STRÄNG och normaliseras server-side, precis
+          // som formulärets (`Betalningar.schema.ts` § RegistreraInbetalningInput).
+          belopp: String(transaktion.belopp),
+          betalsatt,
+          ...(transaktion.datum !== null ? { betalningsdatum: transaktion.datum } : {}),
+          ...(transaktion.bankreferens !== null ? { bankreferens: transaktion.bankreferens } : {}),
+        });
+
+        utfall.set(nyckel, {
+          klass: 'registrerad',
+          inbetalningId: svar.inbetalning.id,
+          kvittens: `${visaKronor(svar.inbetalning.belopp)} kr registrerat.`,
+        });
+        if (transaktion.bankreferens !== null) nyaReferenser.push(transaktion.bankreferens);
+        if (rad.medKvitto) {
+          kvitton.push({
+            inbetalningId: svar.inbetalning.id,
+            namn: rad.matchning.kandidater[0]?.namn ?? transaktion.namn ?? 'Okänt namn',
+            belopp: svar.inbetalning.belopp,
+          });
+        }
+      } catch (error) {
+        utfall.set(
+          nyckel,
+          arDubblettfel(error)
+            ? { klass: 'dubblett' }
+            : {
+                klass: 'fel',
+                skal: error instanceof Error ? error.message : 'Okänt fel.',
+              },
+        );
+      }
+    }
+
+    bokforImporterade(nyaReferenser, idag);
+    setRader((tidigare) =>
+      tidigare.map((rad) => {
+        const nytt = utfall.get(radnyckel(rad.rad));
+        return nytt === undefined ? rad : { ...rad, utfall: nytt, ibockad: false };
+      }),
+    );
+    setKorning('klar');
+    if (kvitton.length > 0) onRegistrerade(kvitton);
+  }
+
+  const summa = sammanfattaImport(rader);
+  const arbetsyta = attHantera(rader);
+  const redan = redanImporterade(rader);
+  const utkastfel = utkast ? mappningsFel(utkast) : null;
+
+  return (
+    <section
+      aria-label="Importera bankrapport"
+      className="mx-4 flex flex-col gap-3 rounded border border-border bg-surface p-4"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="font-semibold text-lg">Importera bankrapport</h2>
+        <Button intent="ghost" size="sm" onPress={onStang}>
+          Stäng
+        </Button>
+      </div>
+
+      {/* Dold input plus en knapp som klickar den. `hidden` ger display:none,
+          alltså varken synlig, tabbstopp eller nåbar för skärmläsaren -
+          precis den form react-arias FileTrigger själv renderar. */}
+      <input
+        ref={inputRef}
+        type="file"
+        accept=".csv,.txt,text/csv,text/plain"
+        hidden
+        onChange={(event) => {
+          const fil = event.target.files?.[0];
+          if (fil) void laddaFil(fil);
+        }}
+      />
+
+      {steg === 'val' && (
+        <div className="flex flex-col gap-2">
+          <p className="text-small text-text-muted">
+            Ladda ner Swish-rapporten från din bank och välj filen här. Kolumnerna behöver bara
+            pekas ut en gång per bank.
+          </p>
+          <div>
+            <Button intent="primary" emphasis="outline" onPress={valjFil}>
+              <Upload aria-hidden size={16} className="shrink-0" />
+              Välj rapportfil
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {lasfel !== null && (
+        <MessageBox intent="error" title="Filen kunde inte läsas">
+          {lasfel}
+        </MessageBox>
+      )}
+
+      {steg === 'mappning' && analys && utkast && (
+        <div className="flex flex-col gap-3">
+          <MessageBox intent="info" title={`Okänt format: ${filnamn}`}>
+            Appen känner inte igen filen, så den gissar inte. Peka ut vilken kolumn som är vad, en
+            gång, så sparas det till nästa import.
+          </MessageBox>
+
+          <div className="flex flex-col gap-1">
+            <label htmlFor={banknamnId} className="font-medium text-small">
+              Vilken bank kommer rapporten från?
+            </label>
+            <input
+              id={banknamnId}
+              value={utkast.bank}
+              onChange={(event) => setUtkast({ ...utkast, bank: event.target.value })}
+              placeholder="Till exempel Nordea"
+              className="mm-fokusring-vid-fokus text-(color:--mm-input-text) min-h-10 w-full max-w-80 rounded border border-(--mm-input-border) bg-(--mm-input-bg) px-3 text-body"
+            />
+          </div>
+
+          <ul className="flex flex-col gap-2">
+            {TRANSAKTIONSFALT.map((falt) => (
+              <li key={falt} className="flex flex-wrap items-center gap-2">
+                <Select
+                  label={FALTETIKETT[falt]}
+                  selectedKey={
+                    utkast.kolumner[falt] === null ? 'ingen' : String(utkast.kolumner[falt])
+                  }
+                  onSelectionChange={(nyckel) =>
+                    setUtkast({
+                      ...utkast,
+                      kolumner: {
+                        ...utkast.kolumner,
+                        [falt]: nyckel === 'ingen' ? null : Number(nyckel),
+                      },
+                    })
+                  }
+                  className="min-w-64"
+                >
+                  <SelectItem id="ingen">Finns inte i filen</SelectItem>
+                  {analys.kolumner.map((kolumn) => (
+                    <SelectItem key={kolumn.index} id={String(kolumn.index)}>
+                      {kolumnEtikett(kolumn.index, kolumn.rubrik, kolumn.exempel)}
+                    </SelectItem>
+                  ))}
+                </Select>
+              </li>
+            ))}
+          </ul>
+
+          {utkastfel !== null && (
+            <p role="status" className="text-(color:--mm-input-error-text) text-small">
+              {utkastfel}
+            </p>
+          )}
+
+          <div className="flex flex-wrap gap-2">
+            <Button isDisabled={utkastfel !== null} onPress={bekraftaMappning}>
+              Läs filen
+            </Button>
+            <Button intent="ghost" onPress={onStang}>
+              Avbryt
+            </Button>
+          </div>
+        </div>
+      )}
+
+      {steg === 'lista' && (
+        <div className="flex flex-col gap-3">
+          <p role="status" aria-live="polite" className="text-small text-text-muted">
+            {sammanfattningstext(summa, filnamn, mappning?.bank ?? '')}
+          </p>
+
+          {(bortfiltrerade > 0 || fel.length > 0) && (
+            <ul className="flex flex-col gap-1 text-caption text-text-muted">
+              {bortfiltrerade > 0 && (
+                <li>{`${bortfiltrerade} rader i filen var inte inbetalningar och togs inte med.`}</li>
+              )}
+              {fel.map((post) => (
+                <li key={post.radnummer} className="flex items-center gap-1">
+                  <AlertTriangle aria-hidden size={13} className="shrink-0" />
+                  {`Rad ${post.radnummer}: ${post.skal}`}
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {arbetsyta.length === 0 && redan.length > 0 && korning === 'nej' && (
+            <MessageBox intent="success" title="Allt i filen är redan registrerat">
+              Ingen ny inbetalning skapas. Du kan importera samma rapport hur många gånger som
+              helst.
+            </MessageBox>
+          )}
+
+          <ul className="flex flex-col gap-2">
+            {arbetsyta.map((rad) => (
+              <Importrad
+                key={radnyckel(rad.rad)}
+                rad={rad}
+                oppna={oppna}
+                idag={idag}
+                onAndra={(andring) => andraRad(radnyckel(rad.rad), andring)}
+              />
+            ))}
+          </ul>
+
+          {redan.length > 0 && (
+            <div className="flex flex-col gap-2">
+              <div>
+                <Button
+                  intent="ghost"
+                  size="sm"
+                  onPress={() => setVisaRedan((v) => !v)}
+                  aria-expanded={visaRedan}
+                >
+                  {`Redan registrerade (${redan.length})`}
+                </Button>
+              </div>
+              {visaRedan && (
+                <ul className="flex flex-col gap-1 px-3 text-small text-text-muted">
+                  {redan.map((rad) => (
+                    <li key={radnyckel(rad.rad)}>
+                      {`${rad.rad.transaktion.namn ?? 'Okänt namn'} · ${visaKronor(
+                        rad.rad.transaktion.belopp,
+                      )} kr · importerad ${rad.tidigareImporterad}`}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+
+          <div className="flex flex-wrap gap-2">
+            <Button
+              isDisabled={summa.attRegistrera === 0 || korning === 'pagar'}
+              isLoading={korning === 'pagar'}
+              onPress={() => void bekrafta()}
+            >
+              {`Registrera ${summa.attRegistrera} ${
+                summa.attRegistrera === 1 ? 'betalning' : 'betalningar'
+              }`}
+            </Button>
+            <Button intent="ghost" onPress={valjFil}>
+              Välj en annan fil
+            </Button>
+            <Button intent="ghost" onPress={onStang}>
+              {korning === 'klar' ? 'Klar' : 'Avbryt'}
+            </Button>
+          </div>
+        </div>
+      )}
+    </section>
+  );
+}
+
+/** Kolumnens etikett i dialogen: plats, rubrik och vad den faktiskt bär. */
+function kolumnEtikett(index: number, rubrik: string | null, exempel: string[]): string {
+  const namn = rubrik !== null && rubrik !== '' ? rubrik : `Kolumn ${index + 1}`;
+  const prov = exempel.slice(0, 2).join(', ');
+  return prov === '' ? namn : `${namn} (${prov})`;
+}
+
+function sammanfattningstext(
+  summa: ReturnType<typeof sammanfattaImport>,
+  filnamn: string,
+  bank: string,
+): string {
+  if (summa.registrerade > 0 || summa.misslyckade > 0 || summa.redanRegistrerade > 0) {
+    const delar = [`${summa.registrerade} registrerade`];
+    if (summa.redanRegistrerade > 0) {
+      delar.push(`${summa.redanRegistrerade} redan registrerade`);
+    }
+    if (summa.misslyckade > 0) delar.push(`${summa.misslyckade} misslyckades`);
+    return delar.join(' · ');
+  }
+  const kalla = bank === '' ? filnamn : `${filnamn}, läst som ${bank}`;
+  return `${kalla}: ${summa.lasta} rader · ${summa.sakra} säkra · ${summa.osakra} osäkra · ${summa.omatchade} omatchade`;
+}
+
+/* ═══════════════════════════ EN RAD ═══════════════════════════ */
+
+type RadProps = {
+  rad: Importradstillstand;
+  oppna: readonly InkorgsRad[];
+  idag: string;
+  onAndra: (andring: Partial<Importradstillstand>) => void;
+};
+
+/**
+ * EN bankrad i bekräftelselistan.
+ *
+ * DE TRE LÄGENA ÄR AC #4, ORD FÖR ORD: "säkra rader förbockade, osäkra visar
+ * kandidater, omatchade får sökfältet". Kryssrutan för kvitto finns på VARJE
+ * rad med samma default som formuläret (i), så att Lotta kan ta bort den för
+ * en enskild rad utan att röra de andra.
+ *
+ * VALET OCH BOCKEN HÖR IHOP. Väljer Lotta en anmälan på en osäker rad bockas
+ * den i automatiskt - annars hade hon behövt två handlingar för det som är
+ * ett beslut. Väljer hon bort anmälan igen bockas raden ur, eftersom en
+ * ibockad rad utan anmälan inte kan registreras (`raderAttRegistrera`
+ * § KRAVET PÅ `vald`).
+ */
+function Importrad({ rad, oppna, idag, onAndra }: RadProps) {
+  const [sokterm, setSokterm] = useState('');
+  const { transaktion } = rad.rad;
+  const klass = rad.matchning.klass;
+
+  // Omatchade rader får sökfältet, och söker i SAMMA rankning som inkorgen
+  // (`rankaTraffar`): personer med öppna betalningar först. Att bygga en egen
+  // sökordning här hade gett Lotta två olika svar på samma fråga.
+  const traffar = sokterm.trim() === '' ? [] : rankaTraffar([...oppna], sokterm, idag).slice(0, 8);
+  const valbara = klass === 'omatchad' ? traffar : rad.matchning.kandidater;
+
+  function valj(anmalanRecordId: string | null) {
+    onAndra({ vald: anmalanRecordId, ibockad: anmalanRecordId !== null });
+  }
+
+  return (
+    <li className="flex flex-col gap-2 rounded border border-border bg-bg-muted px-3 py-3">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="flex min-w-0 flex-col gap-0.5">
+          <span className="font-medium">
+            {`${transaktion.namn ?? 'Utan namn'} · ${visaKronor(transaktion.belopp)} kr`}
+          </span>
+          <span className="text-caption text-text-muted">
+            {radbeskrivning(transaktion.datum, transaktion.telefon, transaktion.meddelande)}
+          </span>
+          <span className="text-caption text-text-muted">{rad.matchning.grund}</span>
+        </div>
+        <span className="shrink-0 rounded border border-transparent bg-bg px-2 py-0.5 text-caption">
+          {klass === 'saker' ? 'Säker' : klass === 'osaker' ? 'Osäker' : 'Omatchad'}
+        </span>
+      </div>
+
+      {rad.utfall === null ? (
+        <>
+          {klass === 'omatchad' && (
+            <SearchField
+              aria-label={`Sök anmälan för ${transaktion.namn ?? 'raden'}`}
+              value={sokterm}
+              onChange={setSokterm}
+            >
+              <AriaInput
+                placeholder="Sök på namn, telefon eller belopp"
+                className="mm-fokusring-vid-fokus text-(color:--mm-input-text) placeholder:text-(color:--mm-input-text-placeholder) min-h-10 w-full rounded border border-(--mm-input-border) bg-(--mm-input-bg) px-3 text-body"
+              />
+            </SearchField>
+          )}
+
+          {valbara.length > 0 && (
+            <Select
+              label="Registrera på anmälan"
+              selectedKey={rad.vald ?? 'ingen'}
+              onSelectionChange={(nyckel) => valj(nyckel === 'ingen' ? null : String(nyckel))}
+            >
+              <SelectItem id="ingen">Välj anmälan ...</SelectItem>
+              {valbara.map((kandidat) => (
+                <SelectItem key={kandidat.nyckel} id={kandidat.betalning.anmalanRecordId}>
+                  {kandidatEtikett(kandidat)}
+                </SelectItem>
+              ))}
+            </Select>
+          )}
+
+          {klass === 'omatchad' && sokterm.trim() !== '' && traffar.length === 0 && (
+            <p className="text-caption text-text-muted">Ingen öppen betalning matchar sökningen.</p>
+          )}
+
+          <div className="flex flex-wrap items-center gap-4">
+            <Checkbox
+              isSelected={rad.ibockad}
+              isDisabled={rad.vald === null}
+              onChange={(vald) => onAndra({ ibockad: vald })}
+              className="group flex cursor-pointer items-center gap-2 text-small data-[disabled]:cursor-not-allowed data-[disabled]:opacity-60"
+            >
+              <span className="flex size-5 shrink-0 items-center justify-center rounded border border-(--mm-input-border) bg-(--mm-input-bg) group-data-[selected]:border-text group-data-[selected]:bg-text">
+                <Check
+                  aria-hidden="true"
+                  size={14}
+                  className="text-text-inverse opacity-0 group-data-[selected]:opacity-100"
+                />
+              </span>
+              <span>Ta med</span>
+            </Checkbox>
+
+            {/* Samma kryssruta och samma default som `RegistreraForm` (i). */}
+            <Checkbox
+              isSelected={rad.medKvitto}
+              onChange={(vald) => onAndra({ medKvitto: vald })}
+              className="group flex cursor-pointer items-center gap-2 text-small"
+            >
+              <span className="flex size-5 shrink-0 items-center justify-center rounded border border-(--mm-input-border) bg-(--mm-input-bg) group-data-[selected]:border-text group-data-[selected]:bg-text">
+                <Check
+                  aria-hidden="true"
+                  size={14}
+                  className="text-text-inverse opacity-0 group-data-[selected]:opacity-100"
+                />
+              </span>
+              <span>Skicka kvitto</span>
+            </Checkbox>
+          </div>
+        </>
+      ) : (
+        <p role="status" className="text-small">
+          {utfallstext(rad.utfall)}
+        </p>
+      )}
+    </li>
+  );
+}
+
+function radbeskrivning(
+  datum: string | null,
+  telefon: string | null,
+  meddelande: string | null,
+): string {
+  const delar = [datum ?? 'Datum saknas i filen'];
+  if (telefon !== null) delar.push(telefon);
+  if (meddelande !== null && meddelande !== '') delar.push(meddelande);
+  return delar.join(' · ');
+}
+
+function kandidatEtikett(kandidat: InkorgsRad): string {
+  const saknas = kandidat.kvar;
+  const belopp = saknas === null ? 'pris saknas' : `saknas ${visaKronor(saknas)} kr`;
+  return `${kandidat.namn} · ${kandidat.betalning.eventNamn ?? 'Utan event'} · ${belopp}`;
+}
+
+function utfallstext(utfall: NonNullable<Importradstillstand['utfall']>): string {
+  if (utfall.klass === 'registrerad') return utfall.kvittens;
+  if (utfall.klass === 'dubblett') return 'Redan registrerad. Ingen ny inbetalning skapades.';
+  return `Kunde inte registreras: ${utfall.skal}`;
+}

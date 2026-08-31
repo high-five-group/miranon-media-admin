@@ -28,6 +28,7 @@ import {
 } from '@/components/betalningar/bankimport-matchning';
 import type { ImporteradRad, Parsresultat } from '@/components/betalningar/bankimport-parser';
 import {
+  arDubblettfel,
   attHantera,
   byggImportrader,
   type Importradstillstand,
@@ -564,6 +565,29 @@ test.describe('dubbletter — hoppas över och RÄKNAS', () => {
       (r, i): Importradstillstand => (i === 1 ? { ...r, utfall: { klass: 'dubblett' } } : r),
     );
     expect(sammanfattaImport(efterKorning).redanRegistrerade).toBe(2);
+  });
+
+  test('arDubblettfel känner igen serverns 409, och bara den', () => {
+    // `registrera-inbetalning` svarar 409 med code `dubblett_bankreferens`
+    // när det partiella unika indexet avvisar referensen. Det är den enda
+    // källan som vet sanningen om HELA databasen.
+    expect(arDubblettfel({ status: 409, message: 'dubblett' })).toBe(true);
+    expect(arDubblettfel({ status: 400, message: 'formfel' })).toBe(false);
+    expect(arDubblettfel({ status: 500 })).toBe(false);
+    expect(arDubblettfel(new Error('nätverket bröt'))).toBe(false);
+    expect(arDubblettfel(null)).toBe(false);
+    expect(arDubblettfel(undefined)).toBe(false);
+  });
+
+  test('NEGATIV KONTROLL: "allt som kastar är en dubblett" gömmer riktiga fel', () => {
+    // Den enkla genvägen i en catch-sats. Ett nätverksfel eller ett 400 hade
+    // då räknats som "redan registrerad", och Lotta hade trott att raden var
+    // tagen när den aldrig nådde fram. Det är det farligaste utfallet i hela
+    // importen: pengar som ser bokförda ut men inte är det.
+    const trasigCatch = () => true;
+    expect(trasigCatch()).toBe(true);
+    expect(arDubblettfel(new Error('nätverket bröt'))).toBe(false);
+    expect(arDubblettfel({ status: 400 })).toBe(false);
   });
 
   test('en rad UTAN bankreferens kan aldrig kännas igen av loggen', () => {

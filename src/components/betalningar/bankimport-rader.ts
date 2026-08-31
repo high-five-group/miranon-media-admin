@@ -189,3 +189,33 @@ export function sammanfattaImport(rader: readonly Importradstillstand[]): Import
     attRegistrera: raderAttRegistrera(rader).length,
   };
 }
+
+/* ═══════════════════════════ SERVERNS DUBBLETTSVAR ═══════════════════════════ */
+
+/**
+ * Är felet serverns dubblett-avvisning (AC #3)?
+ *
+ * `registrera-inbetalning` svarar HTTP 409 med `code:
+ * 'dubblett_bankreferens'` när Postgres partiella unika index avvisar en
+ * referens som redan finns. Det är den ENDA vägen som vet sanningen om HELA
+ * databasen; importloggen känner bara till denna webbläsare.
+ *
+ * KONTROLLEN ÄR STRUKTURELL, INTE `instanceof`. Två skäl: modulen förblir ren
+ * och testbar utan att dra in nätverkslagret, och en dubblett känns igen även
+ * om felet passerat en gräns som tappat prototypkedjan.
+ *
+ * `status` ensamt räcker som signal, och det är avsiktligt trots att kroppens
+ * `code`-fält finns: `registrera-inbetalning` har EXAKT ett 409-svar (sök
+ * `409` i dess `index.ts`), så ingen annan avvisning kan förväxlas. Skulle
+ * ett andra 409 tillkomma måste denna funktion läsa `code` - och det är
+ * skälet till att kontrollen bor här, i en testad funktion, i stället för som
+ * ett `err.status === 409` i en JSX-gren.
+ */
+export function arDubblettfel(fel: unknown): boolean {
+  return (
+    typeof fel === 'object' &&
+    fel !== null &&
+    'status' in fel &&
+    (fel as { status?: unknown }).status === 409
+  );
+}
