@@ -101,7 +101,24 @@ export type Harledning = {
   gallandePris: number | null;
   /** Gränsen för att avgiften ska räknas klar. För föreläsning: hela priset. `null` = okänd. */
   avgiftsgrans: number | null;
-  /** `gallandePris - summa`, eller `null` när priset är okänt. Samma tal som basens `Saknas (kr)`. */
+  /**
+   * `gallandePris - summa`, eller `null` när priset är okänt.
+   *
+   * NORMALT samma tal som basens `Saknas (kr)` — men INTE per definition, och
+   * avvikelsen har två oberoende källor (granskningsfynd runda 1):
+   *
+   *   1. FÄRSKHET. Basens formel räknar på SPEGELVÄRDET `Summa inbetalt (kr)`;
+   *      detta tal räknas på Postgres-raderna. Släpar spegeln skiljer de sig
+   *      tills nästa lyckade spegelskrivning (ADR-128 § Konsekvenser).
+   *   2. PRISKÄLLA. Basens formel läser `Avtalat pris (kr)` och lookupen
+   *      `Pris (kr) (from Event)` — alltså EVENTETS pris, aldrig
+   *      Eventinnehåll-standarden. `gallandePris` här faller dessutom tillbaka
+   *      på standarden (`valjPris`, tre nivåer). För ett event vars pris bara
+   *      finns i standarden är basens tal BLANK medan detta är satt.
+   *
+   * Använd detta tal för appens egna beslut; basens för att förstå vad Lottas
+   * vyer visar.
+   */
   saknas: number | null;
   avgiftKlar: boolean;
   alltKlart: boolean;
@@ -142,7 +159,19 @@ export function harledBetalning(
   const saknas = gallandePris === null ? null : avrundaOre(gallandePris - summa);
 
   // Egenskap 3: okänd gräns ⇒ `null` (rör inte fältet), aldrig 'Ej mottagen'.
-  const avgiftKanAvgoras = avgiftsgrans !== null || gallandePris !== null;
+  //
+  // VILLKORET ÄR `|| alltKlart`, INTE `|| gallandePris !== null` — och den
+  // skillnaden ÄR egenskapen (granskningsfynd, runda 1). Med pris-ledet blir
+  // en anmälan där HELPRISET är känt men AVGIFTENS pris saknas märkt
+  // "Ej mottagen" så snart summan understiger helpriset — ett påstående om
+  // ett fack vars gräns vi inte känner. Sonderingen: summa 1000, pris 2500,
+  // avgift okänd ⇒ pris-ledet ger 'Ej mottagen', detta led ger `null`.
+  //
+  // Att `alltKlart` ändå gör facket avgörbart följer av ADR-128 beslut 2:
+  // "allt är klart när summan når hela priset". Är allt betalt ÄR avgiften
+  // betald — samma implikation `avgiftKlar` bär en rad ovanför, och i det
+  // fallet blir värdet 'Mottagen', aldrig 'Ej mottagen'.
+  const avgiftKanAvgoras = avgiftsgrans !== null || alltKlart;
   const anmalningsavgiftVarde: AnmalningsavgiftVarde | null = avgiftKlar
     ? 'Mottagen'
     : avgiftKanAvgoras

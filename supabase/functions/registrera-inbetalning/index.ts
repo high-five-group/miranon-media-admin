@@ -237,6 +237,27 @@ Deno.serve(async (req) => {
     );
 
     // ── Steg 3: spegeln (kastar aldrig, se `skrivSpegel`) ─────────────────
+    //
+    // ═══ EN ASYMMETRI SOM MÅSTE LÄSAS (granskningsfynd runda 1) ═══
+    // Fyra av spegelns fält är HÄRLEDDA ur Postgres och därför
+    // SJÄLVLÄKANDE: `Summa inbetalt (kr)` och de två valfälten räknas om från
+    // grunden vid VARJE efterföljande skrivning (registrering, radering,
+    // makulering, kvittots spegling), så en fallerad patch rättar sig själv
+    // nästa gång Lotta rör anmälan.
+    //
+    // `Avtalat pris (kr)` gör det INTE. Det värdet finns bara i DENNA
+    // request — det bor varken i `inbetalningar` eller någon annanstans i
+    // Postgres — så fallerar patchen är det BORTA. Ingen senare skrivning
+    // kan återskapa det, och Lotta måste sätta rabatten igen. Konsekvensen
+    // är dessutom tystare än den ser ut: nästa spegling räknar då om
+    // `Saknas (kr)` mot EVENTETS pris, inte mot det avtalade, så beloppet
+    // blir fel utan att något ser trasigt ut.
+    //
+    // ÅTGÄRDEN I DAG är att göra förlusten SYNLIG (se `skal`-hanteringen
+    // nedan), inte att lagra värdet. En `avtalat_pris`-kolumn i Postgres är
+    // rätt lösning på sikt men en SCHEMAÄNDRING, och schemat är
+    // `TASK-346.3`:s och redan applicerat i staging — den tas inte i denna
+    // skiva. Bokförd som öppen punkt i PR-kroppen.
     const spegel = await skrivSpegel(
       anmalanRecordId,
       {
@@ -247,6 +268,20 @@ Deno.serve(async (req) => {
       },
       LOGG,
     );
+
+    // Särskilj fallet i svaret: en fallerad spegling som BAR ett avtalat pris
+    // är en annan sak för Lotta än en som inte gjorde det — den förra kräver
+    // att hon gör om något, den senare läker av sig själv.
+    if (!spegel.skrivet && avtalatPris !== undefined) {
+      spegel.skal =
+        `${spegel.skal ?? 'Okänt fel'} — OBS: det avtalade priset (${avtalatPris} kr) ` +
+        'ingick i den fallerade skrivningen och är INTE sparat någonstans. ' +
+        'Sätt det igen. Summan och betalningsfacken rättar sig själva vid nästa registrering.';
+      console.warn(
+        `${LOGG} SPEGEL-FEL MED AVTALAT PRIS | caller_user_id=${user.id} | ` +
+          `anmalan=${anmalanRecordId} | avtalatPris ej sparat`,
+      );
+    }
 
     // ── Steg 4: aktivitetsloggen (best-effort, se `skrivAktivitet`) ───────
     await skrivAktivitet(

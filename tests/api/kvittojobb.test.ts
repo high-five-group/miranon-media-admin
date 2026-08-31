@@ -16,7 +16,10 @@
 // bevisad, och den kan bara bevisas om världen faktiskt håller den.
 
 import { expect, test } from '@playwright/test';
-import type { JobbRadStatus } from '../../supabase/functions/_shared/jobb-tillstand';
+import {
+  farStadaKomeddelande,
+  type JobbRadStatus,
+} from '../../supabase/functions/_shared/jobb-tillstand';
 import {
   type BefintligtKvitto,
   type JobbRadVy,
@@ -55,7 +58,13 @@ type LedgerRad = {
 type Handelse =
   | { typ: 'pagar'; radId: string }
   | { typ: 'slut'; radId: string; status: string; skal: string | null }
-  | { typ: 'stadning'; msgId: number; resultat: string }
+  | {
+      typ: 'stadning';
+      msgId: number;
+      resultat: string;
+      /** Radernas status I DET ÖGONBLICK städningen kördes — kontraktets regel 2. */
+      radStatus: Record<string, JobbRadStatus>;
+    }
   | { typ: 'nummer'; lopnummer: number }
   | { typ: 'pdf'; kvittonummer: string }
   | { typ: 'lagring'; nyckel: string }
@@ -147,7 +156,13 @@ function byggVarld(installning: VarldsInstallning) {
 
     async stadaKomeddelande(msgId, resultat) {
       kvarIKon.delete(msgId);
-      handelser.push({ typ: 'stadning', msgId, resultat });
+      // ÖGONBLICKSBILDEN, inte bara ordningen. Ett index-test bevisar att
+      // händelserna kom i rätt följd; detta bevisar att RADEN faktiskt var
+      // avslutad när kön städades — egenskapen regel 2 handlar om, och den
+      // överlever att någon lägger till en händelse emellan.
+      const radStatus: Record<string, JobbRadStatus> = {};
+      for (const [id, rad] of rader.entries()) radStatus[id] = rad.status;
+      handelser.push({ typ: 'stadning', msgId, resultat, radStatus });
     },
 
     async hamtaUnderlag(inbetalningId): Promise<KvittoUnderlag | null> {
@@ -328,12 +343,31 @@ test.describe('korKvittobatch — lyckad väg', () => {
     expect(typer.indexOf('stadning')).toBeGreaterThan(typer.indexOf('slut'));
   });
 
-  test('NEGATIV KONTROLL: ordningen är inte en tillfällighet', async () => {
-    // Om städningen hade legat före statusskrivningen vore indexet mindre,
-    // och detta test hade fällt. Kontrollen visar att jämförelsen ovan
-    // faktiskt kan gå åt andra hållet.
-    const typer = ['stadning', 'slut'];
-    expect(typer.indexOf('stadning')).toBeLessThan(typer.indexOf('slut'));
+  test('RADEN VAR REDAN AVSLUTAD när kön städades — inte bara "efteråt i listan"', async () => {
+    // Granskningsfynd runda 1 ersatte här ett tautologi-test (en jämförelse
+    // mellan två index i en litteral array, som aldrig rörde produktionskod).
+    //
+    // Denna kontroll prövar samma regel men som TILLSTÅND i stället för
+    // ordning: när `stadaKomeddelande` kördes, vilken status BAR raden? Ett
+    // index-test kan luras av en ny händelse som skjuts in emellan; en
+    // ögonblicksbild av radens faktiska status kan det inte.
+    const varld = byggVarld({
+      rader: [vantandeRad('rad-1', 'inb-1')],
+      underlag: { 'inb-1': {} },
+    });
+    await korKvittobatch([post(1, 'rad-1')], varld.deps);
+
+    const stadning = varld.handelser.find(
+      (h): h is Extract<Handelse, { typ: 'stadning' }> => h.typ === 'stadning',
+    );
+    expect(stadning, 'kömeddelandet städades aldrig').toBeDefined();
+    expect(stadning?.radStatus['rad-1']).toBe('skickat');
+    // Och `farStadaKomeddelande` — produktionskodens egen grind — håller med
+    // om att just det tillståndet får städas.
+    expect(farStadaKomeddelande({ status: stadning?.radStatus['rad-1'] ?? 'vantar' })).toBe(true);
+    // Motsatsen, för att visa att grinden diskriminerar: en `pagar`-rad hade
+    // inte fått städas.
+    expect(farStadaKomeddelande({ status: 'pagar' })).toBe(false);
   });
 
   test('MAILET SKICKAS EN GÅNG, med en nyckel som är deterministisk per INBETALNING', async () => {

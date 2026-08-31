@@ -22,11 +22,18 @@
 //      write-fält). En inställd anmälans betalning är rimligen inte "öppen"
 //      för Lotta, men ADR-128 beslut 2 nämner ENBART Avbokad/Ombokad. Att
 //      lägga till ett värde här hade varit ett scope-beslut på egen hand.
-//   2. `Saknas (kr)` är BLANK när inget pris är känt, och `BLANK() > 0` är
-//      falskt i Airtable. Anmälningar utan pris faller alltså UT ur listan.
-//      Det är korrekt enligt definitionen (utan pris finns inget saknat
-//      belopp att visa) men värt att veta: prisbackfillen (TASK-346.8) är
-//      det som gör dem synliga.
+//   2. `Saknas (kr)` är BLANK när BASEN inte kan räkna fram ett pris, och
+//      `BLANK() > 0` är falskt i Airtable. Sådana anmälningar faller alltså
+//      UT ur listan.
+//
+//      FORMULERINGEN "anmälningar utan pris" VORE FEL, och rättas här
+//      (granskningsfynd runda 1): appen kan mycket väl VETA priset i just
+//      det fallet. Basens formel läser bara två nivåer — `Avtalat pris (kr)`
+//      och lookupen `Pris (kr) (from Event)` — medan `valjPris`
+//      (`betalningsharledning.ts`) läser TRE och faller tillbaka på
+//      Eventinnehåll-standarden. Ett event vars pris bara finns i
+//      standarden har alltså ett känt pris i appen och BLANK i basen.
+//      Det är FÖNSTRET som namnges i beslutet nedan.
 //
 // ═══════════════════════════════════════════════════════════════════════════
 // TVÅ KÄLLOR, TVÅ TAL — OCH VARFÖR BÅDA SKICKAS MED
@@ -74,6 +81,32 @@ const EVENTINNEHALL_TABELL = 'Eventinnehåll';
  * ADR-128 beslut 2 i Airtable-syntax. `Avbokad/Ombokad` är ETT valvärde med
  * ett snedstreck i namnet (`data-model.md` § Anmälningar write-fält), inte
  * två värden.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * TVÅ PRISNIVÅER I BASEN, TRE I APPEN — BESLUTAT, INTE ÖVERSETT
+ * ═══════════════════════════════════════════════════════════════════════════
+ * Granskningsrunda 1 lyfte asymmetrin som en öppen fråga. Orkestreraren
+ * avgjorde den under nattmandatet B3, och beslutet är VÄG (a):
+ *
+ *   BASENS `Saknas (kr)` FÖRBLIR ÖPPENHETS-DEFINITIONEN. Det är S113 Del 11
+ *   beslut 12 ordagrant, och det är därför filtret nedan frågar basen i
+ *   stället för att räkna om öppenheten här.
+ *
+ * FÖNSTRET som beslutet lämnar öppet, namngivet så att ingen behöver
+ * återupptäcka det: en anmälan till ett event vars pris finns ENBART i
+ * Eventinnehåll-standarden — inte som per-event-override och inte som
+ * `Avtalat pris (kr)` — får BLANK i basens formel (den läser bara lookupen
+ * `Pris (kr) (from Event)`, alltså Eventplanering) och faller därmed ur
+ * listan, trots att appens `valjPris` skulle ha hittat priset på tredje
+ * nivån.
+ *
+ * FÖNSTRET STÄNGS AV DATA, INTE AV KOD: pris-backfillen (`TASK-346.8`) sätter
+ * per-event-priser i staging, och prod täcks av morgonchecklistans punkt
+ * "priser på kommande event" (`TASK-346.11`). Att i stället bredda filtret
+ * här hade gjort öppenheten till TVÅ konkurrerande definitioner — en i basen
+ * som Lottas vyer läser, och en i appen — vilket är precis vad ADR-128
+ * beslut 6 (spegeln är en projektion, aldrig sanningen) finns för att
+ * förhindra.
  */
 const OPPEN_BETALNING_FILTER = 'AND({Saknas (kr)} > 0, {Status} != "Avbokad/Ombokad")';
 

@@ -69,7 +69,31 @@ export function prenumereraPaJobbrader(vidAndring: () => void): () => void {
         vidAndring();
       },
     )
-    .subscribe();
+    .subscribe((status) => {
+      // ═══ EN TYST PRENUMERATION ÄR VÄRRE ÄN INGEN ═══
+      //
+      // Granskningsfynd runda 1. Utan denna callback svalde `subscribe()`
+      // varje anslutningsfel: kanalen kunde gå till CHANNEL_ERROR eller
+      // TIMED_OUT och Lotta hade sett en rad som helt enkelt aldrig tickade,
+      // utan ett spår någonstans. Läsningen vid appöppning
+      // (`useJobbstatus`, `refetchOnMount: 'always'`) räddar riktigheten —
+      // hon får rätt läge nästa gång ytan monteras — men ingenting hade
+      // förklarat VARFÖR det inte uppdaterades i realtid.
+      //
+      // Loggen är i dag hela åtgärden, och det är medvetet: en synlig
+      // FELYTA ("realtidsuppdateringen är nere") hör till ytorna som visar
+      // jobbet, och de byggs av TASK-346.6 och TASK-346.7. Den skivan bör
+      // ersätta konsolen nedan med sitt eget tillstånd.
+      //
+      // TODO(TASK-346.6/346.7): koppla status till en synlig felyta.
+      if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
+        console.warn(
+          '[jobbRealtime] prenumerationen på jobb_rad är inte aktiv | status=' +
+            status +
+            ' | jobbets läge läses fortfarande vid appöppning (useJobbstatus)',
+        );
+      }
+    });
 
   return () => {
     // `removeChannel` returnerar ett löfte som ingen väntar på: avslutaren

@@ -27,12 +27,26 @@
 //      `jobb_rad_pagar_har_start`).
 //      → `byggPagarUppdatering`
 //
-// SJÄLVLÄKNINGEN ÄR SPEGLAD, INTE FLYTTAD. `public.jobb_cron_tick()` äger
-// svepet i Postgres; `skaLakas` nedan är samma predikat i TypeScript, och
-// finns av två skäl: konsumenten kan diagnostisera en rad utan ett
-// databasanrop, och predikatet blir hermetiskt bevisbart. Håll de två
-// synkroniserade för hand — taket bor på BÅDA ställena, och SQL-sidan är
-// den som faktiskt läker.
+// ═══════════════════════════════════════════════════════════════════════════
+// SJÄLVLÄKNINGEN ÄR SPEGLAD, INTE FLYTTAD — OCH SPEGELN HAR NOLL KONSUMENTER
+// ═══════════════════════════════════════════════════════════════════════════
+// `public.jobb_cron_tick()` äger svepet i Postgres. `skaLakas` och
+// `byggLakningsUppdatering` nedan är samma predikat respektive uppdatering i
+// TypeScript.
+//
+// SÄG DET RAKT UT (granskningsfynd runda 1): de två funktionerna har NOLL
+// produktionskonsumenter i denna skiva. Ingen Edge Function anropar dem —
+// `jobb-konsument` läker aldrig själv, den låter cron göra det. Enda
+// anroparen är `tests/api/jobb-tillstand.test.ts`.
+//
+// Vad sviten då faktiskt bevisar, exakt: den LÅSER SPEGELNS FORM (gränsen är
+// strikt, `pagar` utan tidsstämpel läks aldrig, ingen annan status läks) så
+// att en framtida konsument ärver rätt beteende och en oavsiktlig ändring
+// fälls. DRIFTEN — att rader faktiskt återställs var tionde sekund — bevisas
+// av SQL:en, aldrig av denna modul.
+//
+// Håll de två synkroniserade för hand: taket bor på BÅDA ställena, och
+// SQL-sidan är den som läker på riktigt.
 
 /** Radens fyra tillstånd, VERBATIM ur `jobb_rad_status_varden`. */
 export const JOBB_RAD_STATUS = ['vantar', 'pagar', 'skickat', 'fel'] as const;

@@ -308,6 +308,76 @@ test.describe('harledBetalning — okänt pris', () => {
       harledBetalning(poster(2500), { ...UTBILDNING, anmalningsavgift: null }).avgiftKlar,
     ).toBe(true);
   });
+
+  // ── Granskningsfynd runda 1: falskt "Ej mottagen" när bara avgiften saknas ──
+  //
+  // KÄNT HELPRIS men OKÄND AVGIFT är inte samma sak som "inget pris känt", och
+  // det är precis där den ursprungliga implementationen påstod för mycket.
+  // `avgiftKanAvgoras` löd `avgiftsgrans !== null || gallandePris !== null`, så
+  // helprisets närvaro ensam gjorde avgiftsfacket "avgörbart" — och en
+  // delbetalning märktes "Ej mottagen" trots att ingen visste vad avgiften
+  // kostade.
+
+  test('SONDERINGEN: summa 1000, pris 2500, avgift OKÄND ⇒ avgiftsfacket rörs INTE', () => {
+    const ut = harledBetalning(poster(1000), { ...UTBILDNING, anmalningsavgift: null });
+    expect(ut.gallandePris).toBe(2500);
+    expect(ut.avgiftsgrans).toBeNull();
+    expect(ut.alltKlart).toBe(false);
+    // Kärnan: `null` betyder "rör inte fältet", INTE "Ej mottagen".
+    expect(ut.anmalningsavgiftVarde).toBeNull();
+    // Slutbetalningen är däremot avgörbar — DESS gräns är helpriset, som är känt.
+    expect(ut.slutbetalningVarde).toBe('Ej mottagen');
+  });
+
+  test('SAMMA prisbild, summa 2500 ⇒ avgiftsfacket blir Mottagen (allt klart implicerar det)', () => {
+    const ut = harledBetalning(poster(2500), { ...UTBILDNING, anmalningsavgift: null });
+    expect(ut.alltKlart).toBe(true);
+    expect(ut.anmalningsavgiftVarde).toBe('Mottagen');
+    expect(ut.slutbetalningVarde).toBe('Mottagen');
+  });
+
+  test('NEGATIV KONTROLL: granskarens mutation (|| gallandePris !== null) DÖDAS av sonderingen', () => {
+    // Den muterade formen, skriven här och aldrig i produktionskoden. Den är
+    // inte en halmgubbe — den ÄR koden som låg i filen före denna fix-runda.
+    const muteradKanAvgoras = (avgiftsgrans: number | null, gallandePris: number | null) =>
+      avgiftsgrans !== null || gallandePris !== null;
+    const gallandeKanAvgoras = (avgiftsgrans: number | null, alltKlart: boolean) =>
+      avgiftsgrans !== null || alltKlart;
+
+    // Sonderingens indata: avgiftsgräns okänd, helpris 2500, summa 1000.
+    expect(muteradKanAvgoras(null, 2500)).toBe(true); // ⇒ hade gett 'Ej mottagen'
+    expect(gallandeKanAvgoras(null, false)).toBe(false); // ⇒ ger null
+
+    // Och den riktiga implementationen följer den senare, inte den förra.
+    expect(
+      harledBetalning(poster(1000), { ...UTBILDNING, anmalningsavgift: null })
+        .anmalningsavgiftVarde,
+    ).toBeNull();
+  });
+
+  test('de två formerna skiljer sig ENBART i detta hörn — inte i de vanliga fallen', () => {
+    // Om mutationen hade gett samma svar överallt vore fixen kosmetisk. Den
+    // gör det inte, och den gör det bara här: när avgiftsgränsen saknas OCH
+    // summan understiger helpriset.
+    const fall: { avgiftsgrans: number | null; gallandePris: number | null; alltKlart: boolean }[] =
+      [
+        { avgiftsgrans: 1000, gallandePris: 2500, alltKlart: false },
+        { avgiftsgrans: 1000, gallandePris: 2500, alltKlart: true },
+        { avgiftsgrans: null, gallandePris: 2500, alltKlart: true },
+        { avgiftsgrans: null, gallandePris: null, alltKlart: false },
+      ];
+    for (const f of fall) {
+      const muterad = f.avgiftsgrans !== null || f.gallandePris !== null;
+      const gallande = f.avgiftsgrans !== null || f.alltKlart;
+      expect(muterad, JSON.stringify(f)).toBe(gallande);
+    }
+    // Hörnet, där de skiljer sig: avgiftsgräns okänd, helpris känt, inte allt betalt.
+    const horn = { avgiftsgrans: null, gallandePris: 2500, alltKlart: false } as const;
+    const muteradHorn = horn.avgiftsgrans !== null || horn.gallandePris !== null;
+    const gallandeHorn = horn.avgiftsgrans !== null || horn.alltKlart;
+    expect(muteradHorn).toBe(true);
+    expect(gallandeHorn).toBe(false);
+  });
 });
 
 // ═══════════════════════════════════════════════════════════════════════════

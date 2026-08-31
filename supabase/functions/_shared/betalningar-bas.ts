@@ -186,6 +186,12 @@ export type SpegelFalt = {
   avtalatPris?: number;
 };
 
+/**
+ * Spegelskrivningens utfall. `skal` är MUTERBAR med avsikt: anroparen får
+ * skärpa texten med kontext bara den känner till — se
+ * `registrera-inbetalning` § asymmetrin kring `Avtalat pris (kr)`, där ett
+ * fallerat fält är PERMANENT förlorat till skillnad från de självläkande.
+ */
 export type SpegelUtfall = { skrivet: boolean; forsok: number; skal: string | null };
 
 /** Hur många gånger spegelskrivningen försöks innan eftersläpningen bokförs. */

@@ -179,14 +179,38 @@ Deno.serve(async (req) => {
           corsHeaders,
         );
       }
-      const { error: makuleraFel } = await db
+      const { data: makulerade, error: makuleraFel } = await db
         .from(INBETALNINGAR_TABELL)
         .update({ status: 'makulerad', makulerad_skal: skal, makulerad_nar: nu })
         .eq('id', inbetalningId)
         // VILLKORET LIGGER I FRÅGAN, inte i en tidigare läsning: två
         // samtidiga makuleringar ska inte kunna skriva över varandras skäl.
-        .eq('status', 'aktiv');
+        .eq('status', 'aktiv')
+        // ── UTFALLET LÄSES, INTE BARA FELET (granskningsfynd runda 1) ──
+        // Ett villkorat UPDATE som träffar NOLL rader är inte ett fel för
+        // Postgres — `error` är null och svaret är tomt. Utan `.select('id')`
+        // hade den förlorande parten i kapplöpningen fått 200 OK med ett
+        // `skal` som aldrig skrevs, och Lotta hade trott att HENNES skäl stod
+        // på raden. Samma form som konsumentens `markeraPagar`
+        // (`jobb-konsument/index.ts`): villkoret i frågan, längden som svar.
+        .select('id');
       if (makuleraFel) throw makuleraFel;
+      if ((makulerade ?? []).length === 0) {
+        // Raden var 'aktiv' vid läsningen men inte längre vid skrivningen —
+        // någon annan hann makulera den emellan. 409, samma kod som
+        // förhandskontrollen ovan: för anroparen har exakt samma sak hänt.
+        console.warn(
+          `${LOGG} KAPPLOPNING makulering | caller_user_id=${user.id} | inbetalning=${inbetalningId}`,
+        );
+        return jsonResponse(
+          {
+            error: 'Inbetalningen makulerades av någon annan medan åtgärden pågick.',
+            code: 'redan_makulerad',
+          },
+          409,
+          corsHeaders,
+        );
+      }
     }
 
     // ── Räkna om och spegla, exakt som vid registrering ───────────────────

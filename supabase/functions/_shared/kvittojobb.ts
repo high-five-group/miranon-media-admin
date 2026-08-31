@@ -207,6 +207,28 @@ export type KvittoJobbDeps = {
  * `<jobId>/kvitto/<registrationId>/<betalning>`): den gamla vägen kvitterar
  * en BETALNINGSMARKERING i Airtable, den här en INBETALNING i Postgres. Två
  * olika saker får aldrig dela nyckel.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * FÖNSTRET ÄR 24 TIMMAR — INTE FÖR EVIGT (granskningsfynd runda 1)
+ * ═══════════════════════════════════════════════════════════════════════════
+ * Resends idempotensnycklar gäller i ETT DYGN. Nyckeln ovan är alltså
+ * deterministisk för alltid, men LEVERANTÖRENS minne av den är det inte, och
+ * prosan får inte lova mer än mekanismen håller.
+ *
+ * NORMALVÄGEN ÄR SÄKRAD UTAN FÖNSTRET. Ett kvitto som utfärdats men inte
+ * finaliserats plockas upp av självläkningens svep inom fem minuter
+ * (`jobb_cron_tick()`), alltså långt innanför dygnet — och en omkörning
+ * DÄRINNE får samma nyckel och ger inget andra mail.
+ *
+ * RESTRISKEN, utskriven i stället för bortdesignad: körs samma rad om MER än
+ * 24 timmar efter att ett kvitto blivit `utfardat` men aldrig `skickat`
+ * (raden manuellt återställd till `vantar`, eller ett jobb som legat stilla
+ * över ett dygn) kan mottagaren få ett andra mail med SAMMA kvittonummer.
+ * Ledgern förblir korrekt — numret och kopplingen är oförändrade, och
+ * `kvitton.inbetalning_id` är fortsatt unik — så det är en DUBBLETT I
+ * INKORGEN, aldrig ett andra kvitto i bokföringen. Vill man stänga även den
+ * krävs ett eget "senast skickad"-fält och en tidskontroll före sändning;
+ * det är en schemaändring och togs medvetet inte i denna skiva.
  */
 export function kvittoIdempotensnyckel(inbetalningId: string): string {
   return `inbetalning/${inbetalningId}/kvitto`;
@@ -351,6 +373,21 @@ async function forbered(
     }
 
     // Dubbelskickspärren, del (a) — se filhuvudet.
+    //
+    // ═══ ANTAGANDET SOM 346.9 MÅSTE PRÖVA (granskningsfynd runda 1) ═══
+    // Skip-villkoret nedan täcker BARA `skickat`. Ett kvitto med status
+    // `makulerat` faller alltså igenom och behandlas som "oskickat" — raden
+    // återanvänds, PDF:en byggs om och mailet går.
+    //
+    // I DENNA SKIVA ÄR DET ONÅBART: ingen kodväg sätter `makulerat` (grep:
+    // noll skrivningar av det värdet), så tillståndet kan inte uppstå.
+    // Villkoret är därför korrekt SOM DET STÅR i dag, inte av tur.
+    //
+    // `TASK-346.9` (kreditkvitto, återbetalning, makulera i UI) inför det
+    // tillståndet. DEN skivan MÅSTE då antingen utvidga villkoret till
+    // `status !== 'utfardat'` eller MEDVETET välja att ett makulerat kvitto
+    // får skickas om — och skriva ned vilket. Att låta detta stå oförändrat
+    // och oläst är den enda vägen som är fel.
     const befintligt = await deps.hittaKvitto(underlag.inbetalningId);
     if (befintligt !== null && befintligt.status === 'skickat') {
       await deps.markeraRadSlut(post.radId, byggSlutUppdatering({ status: 'skickat' }, deps.nu()));
@@ -538,6 +575,23 @@ async function korMedTak<T extends { post: KobatchPost }>(
  * Kvittoseriens år. Betalningsdatumet vinner över dagens datum: serien är
  * bokföringens, och en betalning som kom in i december hör till december års
  * serie även när kvittot utfärdas i januari.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * ÅRSSKIFTET KRÄVER ETT MÄNSKLIGT STEG — OCH DET ÄGS AV PROD-RUNBOOKEN
+ * ═══════════════════════════════════════════════════════════════════════════
+ * Granskningsfynd runda 1. `public.allokera_kvittonummer()` är FAIL-CLOSED
+ * mot ett saknat golv: finns ingen rad i `kvittoserie_golv` för året kastar
+ * den `P0002` i stället för att gissa 1001 (migrationens egen motivering:
+ * en gissning hade kunnat kollidera med den gamla Airtable-serien).
+ *
+ * Följden är att det FÖRSTA kvittot 2027 fallerar med "golv saknas for ar
+ * 2027" om ingen seedat raden — ett tydligt fel vid rätt tillfälle, alltså
+ * exakt det fail-closed betyder, men ett fel ändå.
+ *
+ * Steget ägs av prod-runbooken (`TASK-346.11`), inte av denna kod: att låta
+ * en Edge Function seeda golvet själv hade återinfört gissningen fail-closed
+ * finns för att förhindra. Kravet är infört i `346.11`:s uppdrag av
+ * orkestreraren.
  */
 export function arForKvitto(betalningsdatum: string | null, nu: string): number {
   const kalla = betalningsdatum ?? nu;

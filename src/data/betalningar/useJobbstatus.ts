@@ -48,6 +48,26 @@ export function useJobbstatus(jobbId?: string, aktiv = true) {
     queryKey: queryKeys.betalningar.jobbstatus(jobbId ?? null),
     queryFn: () => dataSource.fetchJobbstatus(jobbId ? { jobbId } : undefined),
     enabled: aktiv,
+    // ═══ "LÄSER LÄGET VID APPÖPPNING" MÅSTE VARA EN FAKTISK LÄSNING ═══
+    //
+    // Granskningsfynd runda 1. Utan denna rad kunde ADR-129 beslut 8:s krav
+    // uppfyllas BARA I SKENET: routerns globala `staleTime` är 5 minuter och
+    // hela cachen persistas i 24 h (`src/router.ts`, ADR-072). En iPad som
+    // öppnas igen inom fem minuter hade därför serverats HELT ur den
+    // persisterade cachen — samma inaktuella läge som var sant när fliken
+    // stängdes, utan ett enda nätverksanrop.
+    //
+    // Det är precis det fall beslut 8 pekar ut: "Push är en snabbhet, aldrig
+    // en sanning: en webbläsare som var stängd får sitt läge ur läsningen."
+    // Var den läsningen ett cache-svar hade meningen varit tom.
+    //
+    // `'always'` OCH INTE `staleTime: 0`: den senare hade dessutom gjort VARJE
+    // fönsterfokus till en omhämtning (`refetchOnWindowFocus: true` globalt),
+    // alltså en tyst pollare i allt utom namn. Denna form hämtar om vid
+    // MONTERING — appöppning och navigering till en yta som visar jobbet —
+    // och överlåter resten åt Realtime, som är den mekanism som ska bära
+    // löpande färskhet.
+    refetchOnMount: 'always',
   });
 }
 
