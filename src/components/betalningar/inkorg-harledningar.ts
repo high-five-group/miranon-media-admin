@@ -1,0 +1,487 @@
+import type { Jobbstatus, OppenBetalning } from '@/domain/schemas';
+import { normaliseraBeloppKlient, summeraKronorKlient, visaKronor } from './belopp-inmatning';
+
+/**
+ * [TASK-346.6, PRD TASK-346 § Inkorgen och formuläret] Inkorgens RENA
+ * härledningar: gruppering, rankning, sökning, belopps-knappar och den text
+ * som säger vad ett belopp täcker.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * VARFÖR EN EGEN MODUL OCH INTE LOGIK I KOMPONENTEN
+ * ═══════════════════════════════════════════════════════════════════════════
+ * Samma val som `hem-derivations.ts` gjorde för Morgonkollen, av samma skäl:
+ * det här är reglerna Lotta faktiskt lutar sig mot när hon prickar av
+ * lördagens åtta, och de måste kunna bevisas UTAN en webbläsare. PRD:ns
+ * testbeslut kräver dessutom en NEGATIV KONTROLL per regel (DoD #5) - ett
+ * test som visar att en trasig implementation fälls. Det går att skriva mot
+ * en funktion; det går inte att skriva mot en JSX-gren.
+ *
+ * INGEN FUNKTION HÄR LÄSER KLOCKAN. `idag` trädas in som ISO-datum av
+ * anroparen, precis som `hem-derivations.ts` trär in `idagStartMs`. En
+ * härledning som läser `new Date()` går inte att testa två dagar i rad.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * TVÅ TAL, TVÅ KÄLLOR - OCH VILKET SOM VINNER
+ * ═══════════════════════════════════════════════════════════════════════════
+ * `saknas` kommer ur Airtable-formeln och är exakt så färsk som spegeln;
+ * `summaInbetalt` kommer ur Postgres och är alltid sann (ADR-128 §
+ * Konsekvenser, citerat i `Betalningar.schema.ts`). Varje härledning här som
+ * behöver veta hur mycket som FAKTISKT är betalt räknar därför ur
+ * `gallandePris - summaInbetalt`, aldrig ur `saknas`. `saknas` används bara
+ * där basens egen syn är det intressanta, och `spegelIFas` gör skillnaden
+ * synlig i stället för att dölja den.
+ */
+
+/** ISO-datum, `YYYY-MM-DD`. Samma form som basens datumfält levererar. */
+export type IsoDatum = string;
+
+/** En rad i inkorgen: den öppna betalningen plus allt som härleds ur den. */
+export type InkorgsRad = {
+  betalning: OppenBetalning;
+  /** Radens stabila nyckel. Anmälan är unik i listan (en rad per anmälan). */
+  nyckel: string;
+  namn: string;
+  /**
+   * Vad som faktiskt återstår enligt POSTGRES (sanningen), inte enligt
+   * spegeln. `null` när priset är okänt.
+   */
+  kvar: number | null;
+  /** Vad som återstår av anmälningsavgiften. `null` när avgift saknas. */
+  avgiftKvar: number | null;
+  /**
+   * Klar = hela priset är betalt enligt Postgres. En sådan rad kan finnas
+   * KVAR i listan trots att EF:en bara returnerar `Saknas (kr) > 0`: basens
+   * formel läser spegeln, och spegeln kan släpa. Det är precis det fallet
+   * "Klara hopfällda" (PRD § Inkorgen) finns för.
+   */
+  klar: boolean;
+  /** Slutbetalningens deadline har passerat (ADR-128 beslut 2). */
+  forfallen: boolean;
+  /** Obekräftad anmälan - räknas med och MÄRKS (ADR-128 beslut 2). */
+  obekraftad: boolean;
+  /** Basens spegel har inte hunnit ifatt Postgres. */
+  spegelSlapar: boolean;
+};
+
+export type EventGrupp = {
+  nyckel: string;
+  eventNamn: string;
+  eventStartdatum: IsoDatum | null;
+  /** Raderna som fortfarande saknar pengar. */
+  oppna: InkorgsRad[];
+  /** Raderna som är fullbetalda enligt Postgres. Renderas hopfällda. */
+  klara: InkorgsRad[];
+  /** Hur många av de öppna som är förfallna. */
+  forfallna: number;
+};
+
+export type Inkorgsfilter = 'kommande' | 'tidigare';
+
+export type InkorgsVy = {
+  kommande: EventGrupp[];
+  tidigare: EventGrupp[];
+};
+
+/* ═══════════════════════════ RADEN ═══════════════════════════ */
+
+/**
+ * En saknad `deadlineSlutbetalning` är ALDRIG förfallen. Fail-open är rätt
+ * här och bara här: ett förfallen-märke är en anklagelse mot Lottas deltagare
+ * ("den här är sen"), och att sätta det på en anmälan vars deadline vi inte
+ * känner vore att hitta på. Jämför beloppen, där fail-closed gäller.
+ */
+function arForfallen(deadline: string | null, idag: IsoDatum): boolean {
+  if (!deadline) return false;
+  return deadline < idag;
+}
+
+export function harledRad(betalning: OppenBetalning, idag: IsoDatum): InkorgsRad {
+  const { gallandePris, anmalningsavgift, summaInbetalt } = betalning;
+
+  const kvar = gallandePris === null ? null : summeraKronorKlient([gallandePris, -summaInbetalt]);
+  const avgiftKvar =
+    anmalningsavgift === null
+      ? null
+      : Math.max(0, summeraKronorKlient([anmalningsavgift, -summaInbetalt]));
+
+  return {
+    betalning,
+    nyckel: betalning.anmalanRecordId,
+    namn: betalning.personNamn,
+    kvar,
+    avgiftKvar,
+    klar: kvar !== null && kvar <= 0,
+    forfallen: arForfallen(betalning.deadlineSlutbetalning, idag),
+    obekraftad: betalning.anmalanStatus === 'Obekräftad',
+    spegelSlapar: !betalning.spegelIFas,
+  };
+}
+
+/* ═══════════════════════════ GRUPPERINGEN ═══════════════════════════ */
+
+/**
+ * Sorterar kommande event NÄRMAST FÖRST och tidigare event SENAST FÖRST -
+ * alltså i båda fallen "det som ligger närmast i dag överst".
+ *
+ * Event utan startdatum hamnar SIST i sin hink i stället för att sorteras som
+ * om de låg vid tidens början. Ett saknat datum är inte ett tidigt datum.
+ */
+function sorteraGrupper(grupper: EventGrupp[], riktning: 1 | -1): EventGrupp[] {
+  return [...grupper].sort((a, b) => {
+    if (a.eventStartdatum === null && b.eventStartdatum === null) {
+      return a.eventNamn.localeCompare(b.eventNamn, 'sv');
+    }
+    if (a.eventStartdatum === null) return 1;
+    if (b.eventStartdatum === null) return -1;
+    if (a.eventStartdatum === b.eventStartdatum) {
+      return a.eventNamn.localeCompare(b.eventNamn, 'sv');
+    }
+    return a.eventStartdatum < b.eventStartdatum ? -riktning : riktning;
+  });
+}
+
+/**
+ * Inom en grupp: FÖRFALLNA först (de brådskar), därefter namn i svensk
+ * ordning. Ett rent alfabetiskt urval hade begravt de sena raderna mitt i
+ * listan, vilket är motsatsen till vad Hem-kortets förfallo-räknare lovar.
+ */
+function sorteraRader(rader: InkorgsRad[]): InkorgsRad[] {
+  return [...rader].sort((a, b) => {
+    if (a.forfallen !== b.forfallen) return a.forfallen ? -1 : 1;
+    return a.namn.localeCompare(b.namn, 'sv');
+  });
+}
+
+const UTAN_EVENT_NYCKEL = 'utan-event';
+
+/**
+ * Grupperar raderna per event och delar dem i KOMMANDE och TIDIGARE
+ * (PRD § Inkorgen: "Listan grupperas per kommande event, närmast först; Klara
+ * hopfällda; Tidigare event med saknat belopp under eget filter").
+ *
+ * GRÄNSEN GÅR VID EVENTETS STARTDATUM, inte vid slutdatum eller deadline: det
+ * är den axel Lotta själv tänker i ("lördagens kurs", "kursen i våras"). Ett
+ * event som startar I DAG räknas som kommande - det har inte varit.
+ *
+ * Ett event UTAN startdatum hamnar bland de kommande. Motiveringen är samma
+ * fail-open som förfallo-märket: ett okänt datum får inte tysta ned en rad i
+ * ett filter Lotta inte tittar i som förstahandsval.
+ */
+export function grupperaPerEvent(rader: InkorgsRad[], idag: IsoDatum): InkorgsVy {
+  const kommandeKarta = new Map<string, EventGrupp>();
+  const tidigareKarta = new Map<string, EventGrupp>();
+
+  for (const rad of rader) {
+    const { eventId, eventNamn, eventStartdatum } = rad.betalning;
+    const nyckel = eventId ?? eventNamn ?? UTAN_EVENT_NYCKEL;
+    const tidigare = eventStartdatum !== null && eventStartdatum < idag;
+    const karta = tidigare ? tidigareKarta : kommandeKarta;
+
+    let grupp = karta.get(nyckel);
+    if (!grupp) {
+      grupp = {
+        nyckel,
+        eventNamn: eventNamn ?? 'Utan event',
+        eventStartdatum,
+        oppna: [],
+        klara: [],
+        forfallna: 0,
+      };
+      karta.set(nyckel, grupp);
+    }
+    if (rad.klar) grupp.klara.push(rad);
+    else grupp.oppna.push(rad);
+  }
+
+  const fardigstall = (grupp: EventGrupp): EventGrupp => ({
+    ...grupp,
+    oppna: sorteraRader(grupp.oppna),
+    klara: sorteraRader(grupp.klara),
+    forfallna: grupp.oppna.filter((r) => r.forfallen).length,
+  });
+
+  return {
+    kommande: sorteraGrupper([...kommandeKarta.values()].map(fardigstall), 1),
+    tidigare: sorteraGrupper([...tidigareKarta.values()].map(fardigstall), -1),
+  };
+}
+
+/* ═══════════════════════════ SÖKNINGEN ═══════════════════════════ */
+
+/**
+ * Telefonnummer jämförs på SIFFRORNA ENSAMMA. Basen bär `070-102 12 17`,
+ * banken visar `0701021217` och Lotta skriver `070 102`. Tre former, samma
+ * nummer - och en jämförelse på råtext hade gett noll träffar på alla tre.
+ */
+function baraSiffror(text: string): string {
+  return text.replace(/\D+/g, '');
+}
+
+/**
+ * Beloppen ett sökt tal rimligen kan syfta på. Lotta ser ETT tal i banken och
+ * vill veta vem det passar: hela priset, anmälningsavgiften, det som återstår
+ * totalt, eller det som återstår av avgiften.
+ *
+ * `summaInbetalt` ingår MEDVETET INTE. Det är vad som redan kommit in, aldrig
+ * något Lotta kan se på en ny banktransaktion, och att matcha på det hade
+ * gett träffar som ser rätt ut men betyder fel sak.
+ */
+function beloppskandidater(rad: InkorgsRad): number[] {
+  const { gallandePris, anmalningsavgift, saknas } = rad.betalning;
+  const kandidater: number[] = [];
+  if (gallandePris !== null) kandidater.push(gallandePris);
+  if (anmalningsavgift !== null) kandidater.push(anmalningsavgift);
+  if (saknas !== null) kandidater.push(saknas);
+  if (rad.kvar !== null) kandidater.push(rad.kvar);
+  if (rad.avgiftKvar !== null && rad.avgiftKvar > 0) kandidater.push(rad.avgiftKvar);
+  return kandidater;
+}
+
+/**
+ * Träffar sökningen raden? Namn, telefon och belopp, per PRD § Inkorgen.
+ *
+ * TOM SÖKNING TRÄFFAR ALLT. Det är inte en specialregel utan sökfältets
+ * viloläge: listan visas i sin helhet tills Lotta börjar skriva.
+ */
+export function matcharSokning(rad: InkorgsRad, sokterm: string): boolean {
+  const term = sokterm.trim();
+  if (term === '') return true;
+
+  if (rad.namn.toLocaleLowerCase('sv').includes(term.toLocaleLowerCase('sv'))) return true;
+
+  const siffror = baraSiffror(term);
+  const telefon = rad.betalning.personTelefon;
+  // Minst tre siffror innan ett tal får läsas som ett telefonnummer: "10"
+  // matchar annars varje nummer som råkar innehålla de två siffrorna, vilket
+  // gör beloppssökningen oanvändbar för små belopp.
+  if (siffror.length >= 3 && telefon && baraSiffror(telefon).includes(siffror)) return true;
+
+  const belopp = normaliseraBeloppKlient(term);
+  if (belopp !== null && beloppskandidater(rad).some((k) => Math.abs(k - belopp) < 0.005)) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Rankar träffarna. Personer med öppna betalningar först, klara sist
+ * (PRD § Inkorgen: "personer med öppna betalningar rankas först").
+ *
+ * Rankningen gäller SÖKLÄGET, där gruppering vore i vägen: Lotta har skrivit
+ * ett namn eller ett belopp och vill ha svaret överst, inte inbäddat i rätt
+ * event-grupp.
+ */
+export function rankaTraffar(rader: InkorgsRad[], sokterm: string, idag: IsoDatum): InkorgsRad[] {
+  const traffar = rader.filter((rad) => matcharSokning(rad, sokterm));
+  return [...traffar].sort((a, b) => {
+    if (a.klar !== b.klar) return a.klar ? 1 : -1;
+    if (a.forfallen !== b.forfallen) return a.forfallen ? -1 : 1;
+    const aDatum = a.betalning.eventStartdatum;
+    const bDatum = b.betalning.eventStartdatum;
+    // Kommande event före tidigare, sedan närmast först.
+    const aKommande = aDatum === null || aDatum >= idag;
+    const bKommande = bDatum === null || bDatum >= idag;
+    if (aKommande !== bKommande) return aKommande ? -1 : 1;
+    if (aDatum !== null && bDatum !== null && aDatum !== bDatum) {
+      return aKommande ? aDatum.localeCompare(bDatum) : bDatum.localeCompare(aDatum);
+    }
+    return a.namn.localeCompare(b.namn, 'sv');
+  });
+}
+
+/* ═══════════════════════════ BELOPPS-KNAPPARNA ═══════════════════════════ */
+
+export type Beloppsknapp = {
+  /** Stabil nyckel, oberoende av beloppet (som ändras med inbetalt). */
+  nyckel: 'avgift' | 'allt';
+  belopp: number;
+  /** Vad knappen betalar: `anmälningsavgift`, `allt`, `resten`. */
+  etikett: string;
+};
+
+/**
+ * Belopps-knapparna, HÄRLEDDA ur pris och redan inbetalt (PRD berättelse 3
+ * och AC #3: "belopps-knappar härledda, anpassade efter redan inbetalt").
+ *
+ * Med inget inbetalt och priset 2 500 / avgiften 1 000 ger detta exakt PRD:ns
+ * form: `1 000 · anmälningsavgift` och `2 500 · allt`. Med 1 000 redan
+ * inbetalt faller avgifts-knappen bort (den är betald) och allt-knappen blir
+ * `1 500 · resten`.
+ *
+ * TRE FALL SOM MEDVETET GER FÄRRE ÄN TVÅ KNAPPAR:
+ *   1. Avgiften är redan täckt  -> bara resten-knappen.
+ *   2. Avgift och pris är samma belopp (föreläsning har ETT pris utan fack,
+ *      ADR-128 beslut 6) -> en knapp, och den heter `allt`, inte
+ *      `anmälningsavgift`. Två knappar med samma tal hade varit ett val utan
+ *      skillnad.
+ *   3. Priset är okänt -> noll knappar, bara det fria fältet. Att gissa en
+ *      knapp ur ett okänt pris vore att uppfinna ett belopp.
+ */
+export function harledBeloppsknappar(rad: InkorgsRad): Beloppsknapp[] {
+  const knappar: Beloppsknapp[] = [];
+  const harBetaltNagot = rad.betalning.summaInbetalt > 0;
+
+  const avgiftKvar = rad.avgiftKvar;
+  const kvar = rad.kvar;
+
+  if (avgiftKvar !== null && avgiftKvar > 0 && !(kvar !== null && avgiftKvar === kvar)) {
+    knappar.push({
+      nyckel: 'avgift',
+      belopp: avgiftKvar,
+      etikett: harBetaltNagot ? 'resten av anmälningsavgiften' : 'anmälningsavgift',
+    });
+  }
+
+  if (kvar !== null && kvar > 0) {
+    knappar.push({
+      nyckel: 'allt',
+      belopp: kvar,
+      etikett: harBetaltNagot ? 'resten' : 'allt',
+    });
+  }
+
+  return knappar;
+}
+
+/* ═══════════════════════════ VAD BELOPPET TÄCKER ═══════════════════════════ */
+
+export type Beloppsutfall = {
+  text: string;
+  ton: 'tacker' | 'delvis' | 'over' | 'okant';
+};
+
+/**
+ * Meningen som säger rakt ut vad beloppet gör (AC #5: "Belopp som täcker båda
+ * facken sägs rakt ut ('2 500 kr täcker anmälningsavgift + slutbetalning');
+ * udda belopp visar saknas-rest").
+ *
+ * FACKEN NÄMNS BARA NÄR DE FAKTISKT ÄR TVÅ. Ett event vars avgift är hela
+ * priset har inga fack (ADR-128 beslut 6), och en text som ändå räknade upp
+ * dem hade beskrivit en modell Lotta inte har framför sig.
+ *
+ * ÖVERBETALNING SÄGS OCKSÅ RAKT UT, i stället för att avrundas bort. Ett
+ * belopp som är större än priset är antingen ett skrivfel eller något Lotta
+ * behöver veta om innan hon sparar - båda kräver att det syns.
+ */
+export function beloppsutfall(rad: InkorgsRad, belopp: number): Beloppsutfall {
+  const { gallandePris, anmalningsavgift, summaInbetalt } = rad.betalning;
+  const visat = visaKronor(belopp);
+
+  if (gallandePris === null) {
+    return {
+      ton: 'okant',
+      text: `${visat} kr registreras. Priset saknas i basen, så appen kan inte säga vad det täcker.`,
+    };
+  }
+
+  const nySumma = summeraKronorKlient([summaInbetalt, belopp]);
+  const nyttSaknas = summeraKronorKlient([gallandePris, -nySumma]);
+  const tvaFack =
+    anmalningsavgift !== null && anmalningsavgift > 0 && anmalningsavgift < gallandePris;
+
+  if (nyttSaknas < 0) {
+    return {
+      ton: 'over',
+      text: `${visat} kr är ${visaKronor(Math.abs(nyttSaknas))} kr mer än vad som saknas.`,
+    };
+  }
+
+  if (nyttSaknas === 0) {
+    if (tvaFack && summaInbetalt < anmalningsavgift) {
+      return { ton: 'tacker', text: `${visat} kr täcker anmälningsavgift + slutbetalning.` };
+    }
+    return { ton: 'tacker', text: `${visat} kr täcker hela priset.` };
+  }
+
+  if (tvaFack && summaInbetalt < anmalningsavgift && nySumma >= anmalningsavgift) {
+    return {
+      ton: 'delvis',
+      text: `${visat} kr täcker anmälningsavgiften. Saknas ${visaKronor(nyttSaknas)} kr.`,
+    };
+  }
+
+  return { ton: 'delvis', text: `${visat} kr registreras. Saknas ${visaKronor(nyttSaknas)} kr.` };
+}
+
+/* ═══════════════════════════ JOBBETS DELUTFALL ═══════════════════════════ */
+
+export type JobbUtfallsklass = 'vantar' | 'pagar' | 'allt-skickat' | 'delutfall' | 'inget-skickat';
+
+export type JobbDelutfall = {
+  klass: JobbUtfallsklass;
+  rubrik: string;
+  /** MessageBox-intent. Noll skickade är ALDRIG grönt (ADR-067 D3-formen). */
+  intent: 'info' | 'success' | 'warning';
+  skickade: number;
+  fel: number;
+  kvar: number;
+  totalt: number;
+};
+
+/**
+ * Jobbets läge i Delutfallets fyra klasser (ORDLISTA § Delutfall, samma form
+ * `atgardsutfall.ts` bär för utskicken).
+ *
+ * DEN LÅSTA REGELN, ordagrant övertagen från `svep/ResultatVy.tsx`: noll
+ * lyckade renderas ALDRIG som grön framgång. Ett halvt utfall får aldrig se
+ * helt ut (PRD berättelse 10).
+ *
+ * SKILLNADEN MOT UTSKICKENS UTFALL: jobbet är ASYNKRONT, så det finns två
+ * klasser till - `vantar` och `pagar`. Ett jobb som inte är färdigt är varken
+ * lyckat eller misslyckat, och att tvinga in det i en av de tre slutliga
+ * klasserna hade gjort raden osann under hela den tid den faktiskt arbetar.
+ */
+export function jobbDelutfall(status: Jobbstatus | undefined): JobbDelutfall | null {
+  if (!status?.jobb) return null;
+  const { totalt, skickade, fel, kvar } = status.sammanfattning;
+
+  if (kvar > 0) {
+    const pagar = status.rader.some((rad) => rad.status === 'pagar');
+    return {
+      klass: pagar ? 'pagar' : 'vantar',
+      rubrik: pagar
+        ? `Skickar kvitton, ${skickade} av ${totalt} klara`
+        : `${kvar} av ${totalt} kvitton väntar`,
+      intent: 'info',
+      skickade,
+      fel,
+      kvar,
+      totalt,
+    };
+  }
+
+  if (fel === 0) {
+    return {
+      klass: 'allt-skickat',
+      rubrik: `${skickade} ${skickade === 1 ? 'kvitto' : 'kvitton'} skickade`,
+      intent: 'success',
+      skickade,
+      fel,
+      kvar,
+      totalt,
+    };
+  }
+
+  if (skickade === 0) {
+    return {
+      klass: 'inget-skickat',
+      rubrik: 'Inget kvitto gick fram',
+      intent: 'warning',
+      skickade,
+      fel,
+      kvar,
+      totalt,
+    };
+  }
+
+  return {
+    klass: 'delutfall',
+    rubrik: `${skickade} av ${totalt} kvitton skickade, ${fel} misslyckades`,
+    intent: 'warning',
+    skickade,
+    fel,
+    kvar,
+    totalt,
+  };
+}

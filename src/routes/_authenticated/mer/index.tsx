@@ -1,5 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
 import {
+  Banknote,
   ClipboardList,
   Filter,
   History,
@@ -15,6 +16,7 @@ import {
 import { useAuth } from '@/auth/useAuth';
 import { Button, NavCard } from '@/components/primitives';
 import { markeraAvsiktligUtloggning } from '@/lib/auth/utloggningsavsikt';
+import { betalningarPa } from '@/lib/funktionsflaggor';
 
 export const Route = createFileRoute('/_authenticated/mer/')({
   staticData: { title: 'Mer' },
@@ -81,6 +83,29 @@ function MerPage() {
           <li>
             <NavCard to="/mer/aktivitetshistorik" icon={History} label="Aktivitetshistorik" />
           </li>
+          {/* Betalningar (TASK-346.6 AC #1, PRD TASK-346 § Inkorgen). SIST i
+              listorna-gruppen enligt samma konvention Aktivitetshistoriken
+              följde ("nyaste tillskottet"), inte först: ordningen i grupp 1
+              är facit-låst från M6 och ett nytt tillskott lägger sig efter
+              den, det byter inte plats på det som redan står.
+
+              BAKOM MILJÖFLAGGAN. Raden renderas inte alls i prod förrän
+              Marcus slår på flaggan (PRD berättelse 36); routen är gatad
+              för sig i `betalningar.tsx`, så en gissad adress leder ingen
+              vart heller. Rivs av TASK-346.12 tillsammans med flaggan -
+              villkoret tas bort, raden blir ovillkorlig.
+
+              Banknote och INTE Receipt: `Receipt` är lucides kvittoikon och
+              är redan tagen för just kvitton (`dokument/DokumentYta.tsx`
+              § T176). Ytan handlar om INBETALNINGAR - kvittot är en följd av
+              en betalning, inte samma sak (ORDLISTA § Inbetalning). Samma
+              ikon-krocksdisciplin som bar Bygg segment till Filter i stället
+              för Users. */}
+          {betalningarPa() && (
+            <li>
+              <NavCard to="/mer/betalningar" icon={Banknote} label="Betalningar" />
+            </li>
+          )}
         </ul>
         <ul className="flex flex-col gap-2.5">
           {/* Skapa nytt event-raden RIVEN ÖPPET (task-19.2, PRD task-19
