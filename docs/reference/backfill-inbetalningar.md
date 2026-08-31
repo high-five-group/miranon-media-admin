@@ -178,6 +178,25 @@ Postgres-sanningen (ADR-128 beslut 6), och `harledBetalning` räknar om den
 från grunden ur hela postmängden. En avbruten körning läker alltså vid nästa
 körning i stället för att lämna ett permanent fel.
 
+### Vad konvergensen kostar, och vad som betalar ned den
+
+Den breddade iterationen har ett pris som är värt att säga rakt ut: spegeln
+räknas om för **hela den backfillade populationen vid varje körning** —
+linjärt i antal backfillade anmälningar, betalt i Airtable-anrop mot ett delat
+tak på 5 req/s. Priset är avsiktligt (alternativet är ett permanent fel efter
+ett avbrott), men det halveras billigt:
+
+> **En patch vars värden REDAN står i basen hoppas över.** Skriptet jämför den
+> beräknade patchen mot anmälans nuvarande spegelvärden (`patchArIdentisk`) och
+> skickar ingen `PATCH` när de är lika. Vid en stabil population är andra
+> körningen därför nästan gratis.
+
+Hoppet **bokförs**, aldrig tyst: varje överhoppad rad skrivs som
+`spegel <recID> oförändrad — PATCH hoppad`, och körningen avslutas med en
+summering (`speglar: N skrivna, M hoppade`). Jämförelsen är **fail-open** —
+saknas ett värde att jämföra mot skrivs patchen ändå, eftersom att skriva i
+onödan är ofarligt medan att hoppa över en nödvändig skrivning inte är det.
+
 Nyckeln är `(anmalan_record_id, betalsatt = 'Historik')` och **inte**
 `bankreferens`, trots att den kolumnen bär ett partiellt unikt index som hade
 gett samma garanti: bankreferensen är bankens transaktionsreferens

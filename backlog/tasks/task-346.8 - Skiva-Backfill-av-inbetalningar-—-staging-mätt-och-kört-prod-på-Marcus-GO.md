@@ -4,7 +4,7 @@ title: 'Skiva: Backfill av inbetalningar — staging mätt och kört; prod på M
 status: To Do
 assignee: []
 created_date: '2026-08-30 18:46'
-updated_date: '2026-08-31 02:43'
+updated_date: '2026-08-31 03:15'
 labels:
   - ready-for-agent
 dependencies:
@@ -148,4 +148,33 @@ SVITEN: 96 → 118 fall (fyra nya sektioner: L länktillstånd, M beloppsgrinden
 GRINDAR runda 2 (mätta exitkoder): biome 0 · typecheck 0 · build 0 · check:docs 0 (14) · actionlint 0 · staging-preflight-wiring 0 · egen svit 0 (118 fall, median 171 ms) · verify:ci-parity:fast 0.
 
 Dry-run efter fixen: Del A och Del B tomma, `redan-backfillad` 1 — idempotensen håller med den nya koden. Populationen fortsätter röra sig av 346.6:s parallella tester (exkluderat-event 49 → 53 → 57 över natten); alla nya hamnar i fixturskyddet.
+
+GRANSKNINGSRUNDA 2 — ÅTGÄRDAD (2026-08-31; inga error, 3 warning + 5 info)
+
+1. (warning) DUBBELRÄKNINGSGRINDEN PRÖVADE NETTO, INTE FÖREKOMST. Granskaren skarpbevisade: en aktiv inbetalning +2500 och en aktiv återbetalning −2500 ger netto 0, passerade `summa > 0` och hade backfillats med hela priset — spegeln hade sagt alltKlart för någon som netto betalat noll. Grinden prövar nu ANTAL (`aktivaIckeHistorik.antal > 0`), och bär både antal och summa så skälet kan redovisa nettot. Förekomst-formen täcker även negativt netto utan eget specialfall. Testfall P4 (indexeringen ger antal 2, summa 0) + P5 (grinden fäller ändå) + P6 (negativt netto).
+
+2. (warning) PREFLIGHTENS WIRNING SAKNADE KOPPLINGSVAKT. Riktigt fynd: en `{ ok: true }`-mutation i main() överlevde 118/118, eftersom sviten bara prövade den RENA funktionen. Ny sektion Q med fyra källkodsvakter av O3-klass: Q1 (anropet finns och dess fel-gren exitar), Q2 (preflighten ligger FÖRE `kravStagingLedigt` — ordningen är lastbärande, semaforen kan avsluta processen med 76/77), Q3 (tillståndet LÄSES från disk), Q4 (patch-hoppet inkopplat). Mutationsbevis: M21 (kortsluten) → Q1+Q2, M22 (anropet borttaget) → Q1+Q2+Q3.
+
+3. (warning) STATUS-FILTRET VAR OBEVAKAT. `else if (true)`-mutationen överlevde, eftersom indexeringen satt inne i `lasInbetalningar` bakom ett db query-anrop. Enligt DoD #5 valdes UTBRYTNINGEN, inte omdöpningen: ny ren exporterad `indexeraInbetalningar(rader, betalsatt)` med egen sektion P (8 fall). P2 är den negativa kontrollen — en makulerad post räknas inte som aktiv men finns kvar i mängden härledningen räknar på. N3 döptes samtidigt om ärligt ("grindens andra sida"), eftersom det fallet skickar in värdet färdigt och aldrig prövade filtret.
+
+4a. (info) CI-KOMMENTARENS MUTATIONSRÄKNING MOTSADE SIG SJÄLV (16/12/18). Rättad mot faktisk körning: TJUGOFYRA mutationer, 24 av 24 fällda, var och en med namngivet fällande testfall. Fall-antalet 118 → 137 och tidsraden ommätt (median 179 ms av 172/199/179).
+
+4b. (info) SVITENS SEKTIONSFÖRTECKNING slutade vid K. Nu A–R, med runda-märkning per sektion.
+
+4c. (info) SPEGEL-KONVERGENSENS KOSTNAD BOKFÖRD + billigt hopp inlagt. Kostnaden: Del C räknar om spegeln för HELA den backfillade populationen vid varje körning — linjärt, betalt mot Airtables 5 rps. Står nu i både filhuvudet och docs. Hoppet: `patchArIdentisk` jämför beräknad patch mot anmälans nuvarande spegelvärden och skippar PATCH:en när de är lika — FAIL-OPEN (saknat värde ⇒ skriv ändå), och hoppet BOKFÖRS per rad plus en summering. Sektion R (4 fall) + mutation M23.
+
+4d. (info) PROD-REFEN MASKERAD i länkpreflightens två felmeddelanden. `maskeraRef` ger fyra tecken + längd ("lvjs…(20 tecken)") — nog för att känna igen projektet, för lite för att klistra in i ett kommando. Testfall R5/R6/R7 (ingen av de två meddelandena bär hela refen, varken prod- eller staging-refen) + mutation M24.
+
+4e. (info) SKARP `--utfor` KÖRD MED KODEN SOM LANDAR. Staging-semaforen höll först (post-merge-körning 33352399800) — väntan skedde AVGRÄNSAT I FÖRGRUNDEN, aldrig med MM_STAGING_PREFLIGHT=off och aldrig som bakgrundsvakt. Försök 2 gick igenom, exit 0.
+   UTFALLET BEVISAR BÅDA RUNDA 2-FIXARNA SKARPT, mot verklig data:
+     ⏭  spegel recdExZSnTTHap9c0 oförändrad — PATCH hoppad
+     📊 speglar: 0 skrivna, 1 hoppade (redan korrekta)
+   Att raden över huvud taget itererades bevisar Del C:s breddning (den är `redan-backfillad`, inte `backfill`); att den hoppades bevisar patch-hoppet och dess bokföring. Del A och Del B tomma — idempotensen håller.
+   MÄTNING: 97 anmälningar, 5 inbetalningar, summa 2500 kr, 23 med känt pris, 1 "allt betalt" (4,3 % av dem med känt pris) — oförändrat före/efter, vilket är det korrekta utfallet för en redan körd backfill.
+   POSTGRES-VERIFIERING efter FYRA skarpa körningar totalt: `select … where betalsatt = 'Historik'` ger historik_rader=1, unika_anmalningar=1, summa=2500.00, med_datum=0. Ingen dubblering, datumet fortfarande tomt.
+   Ingen `har-aktiva-inbetalningar` föll ut: de aktiva icke-Historik-posterna i staging ligger på ZZ-anmälningar, som exkluderas FÖRE den grinden. Prioriteringen är avsiktlig — en fixtur ska inte röras alls.
+
+SVITEN: 118 → 137 fall (sektion P, Q, R). MUTATIONSBEVIS runda 3: 24 av 24 fällda med namngivna testfall — M19 (förekomst→netto) → P5/P6; M20 (status-filtret) → P2; M21/M22 (preflightens wirning) → Q1/Q2/Q3; M23 (patch-hoppet hoppar allt) → R2/R3/R4; M24 (maskeringen) → R5/R6/R7. Originalfilen återställd, sha256 verifierad.
+
+GRINDAR runda 3 (mätta exitkoder): biome 0 · typecheck 0 · build 0 · check:docs 0 (14) · actionlint 0 · check-langa-streck 0 · staging-preflight-wiring 0 · egen svit 0 (137 fall, median 179 ms).
 <!-- SECTION:NOTES:END -->

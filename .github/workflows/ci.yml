@@ -1399,22 +1399,41 @@ jobs:
         # annars blivit 3500 av 2500) och O (spegelns konvergens: Del C
         # itererar backfill ∪ redanBackfillad, O4 vaktar att prosan inte
         # överlovar per ADR-083).
-        # 118 fall (MÄTT 2026-08-31, sviten kördes och dess egen slutrad
+        #
+        # Granskningsrunda 2 lade tre till, var och en efter ett fynd där en
+        # mutation ÖVERLEVDE den dåvarande sviten — alltså tre mätta luckor,
+        # inte tre påhitt: P (indexeringen bruten ur `lasInbetalningar` till
+        # en ren funktion, så status-filtret blir testbart; P4/P5 bär
+        # granskarens motexempel mot netto-formen: +2500 och −2500 ger netto 0
+        # men ANTAL 2, och grinden prövar nu FÖREKOMST), Q (kopplingsvakter
+        # som binder de rena funktionerna till anropsstället i main() —
+        # en `{ ok: true }`-mutation överlevde 118/118 innan Q1 fanns, och Q2
+        # låser att preflighten körs FÖRE staging-semaforen) och R (patch-
+        # hoppet som betalar ned konvergensens linjära kostnad, plus att
+        # länkpreflightens felmeddelanden aldrig bär en kopierbar ref).
+        #
+        # 137 fall (MÄTT 2026-08-31, sviten kördes och dess egen slutrad
         # lästes — aldrig avskrivet, TASK-106). Hermetisk: inga fetch-anrop,
         # ingen Airtable-token, inget supabase-CLI, ingen nätverkstrafik —
         # skriptets main() körs inte vid import (körvakten längst ned i det).
-        # Mutationsprövad 2026-08-31 (SEXTON mutationer efter runda 1; de tolv
-        # ursprungliga plus länktillståndets prod-gren, beloppsgrindens
-        # noll-gren, aktiv-inbetalnings-grinden och Del C:s breddade
-        # iteration): idempotens-predikatet
-        # bortkopplat, betalningsdatum satt till current_date, fack-motsägelsen
-        # backfillad, tusental-regeln bortkopplad, prod-ref-guarden bortkopplad,
-        # okänt avgiftspris gissat, exkluderadeEventIds bortkopplad, spegelns
-        # null-hopp bortkopplat, redan-backfillad-kontrollen bortkopplad,
-        # bas-guardens prod-spärr bortkopplad, NUL-vakten bortkopplad,
-        # makulerade poster räknade som betalda) — 12 av 12 FÄLLDA av sviten.
-        # 0,17 s LOKALT mätt (macOS, 2026-08-31, median av tre körningar
-        # EFTER runda 1:s utökning: 171/171/177 ms) — CI-tiden är INTE mätt
+        #
+        # Mutationsprövad 2026-08-31: TJUGOFYRA mutationer, 24 av 24 FÄLLDA,
+        # var och en med namngivet fällande testfall. Tolv från bygget
+        # (idempotens-predikatet bortkopplat, betalningsdatum satt till
+        # current_date, fack-motsägelsen backfillad, tusental-regeln
+        # bortkopplad, prod-ref-guarden bortkopplad, okänt avgiftspris gissat,
+        # exkluderadeEventIds bortkopplad, spegelns null-hopp bortkopplat,
+        # redan-backfillad-kontrollen bortkopplad, bas-guardens prod-spärr
+        # bortkopplad, NUL-vakten bortkopplad, makulerade poster räknade som
+        # betalda); sex från runda 1 (länktillståndets två grenar,
+        # beloppsgrindens noll-gren, aktiv-inbetalnings-grinden, Del C:s
+        # breddning, sqlBelopps positivt-krav); sex från runda 2 (förekomst→
+        # netto ⇒ P5/P6, status-filtret ⇒ P2, preflightens wirning kortsluten
+        # respektive borttagen ⇒ Q1/Q2/Q3, patch-hoppet hoppar allt ⇒ R2/R3/R4,
+        # maskeringen bortkopplad ⇒ R5/R6/R7).
+        #
+        # 0,18 s LOKALT mätt (macOS, 2026-08-31, median av tre körningar
+        # EFTER runda 2:s utökning: 172/199/179 ms) — CI-tiden är INTE mätt
         # av mig och kan avvika.
         run: |
           bash scripts/test-check-frontmatter.sh

@@ -99,6 +99,15 @@
 // En avbruten körning kan alltså köras om och båda halvorna hamnar rätt — men
 // av två olika skäl, och bara den ena är en databasgaranti.
 //
+// KONVERGENSENS KOSTNAD, öppet bokförd: Del C:s breddade iteration betyder att
+// spegeln räknas om för HELA den backfillade populationen vid varje körning —
+// linjärt i antal backfillade anmälningar, betalt i Airtable-anrop mot ett
+// delat tak på 5 req/s. Det priset är avsiktligt (alternativet är ett
+// permanent fel efter ett avbrott), men det halveras billigt: en patch vars
+// värden REDAN står i basen hoppas över (`patchArIdentisk`), och hoppet
+// bokförs i utskriften i stället för att ske tyst. Vid en stabil population
+// blir andra körningen därför nästan gratis.
+//
 // Nyckeln är (anmalan_record_id, betalsatt='Historik') och INTE bankreferens-
 // kolumnen, trots att den bär ett partiellt unikt index som hade gett samma
 // garanti. Bankreferensen är BANKENS transaktionsreferens (migrationens
@@ -212,6 +221,23 @@ export function validateProjectRef(policy, ref, prodRef) {
 }
 
 /**
+ * Maskerar en project-ref för UTSKRIFT.
+ *
+ * Felmeddelandet ska säga TILLRÄCKLIGT för att den som läser ska känna igen
+ * vilket projekt som är länkat, men inte vara en KOPIERBAR ref. Formen är
+ * fyra tecken plus längd — nog för att skilja två projekt åt, för lite för
+ * att klistra in i ett kommando. Samma riktning som repots övriga
+ * hemlighets-disciplin (`scripts/deny-hemlighet-utskrift.sh`): en ref är inte
+ * en hemlighet, men en utskrift som råkar bli en mall för nästa kommando är
+ * en risk vi inte behöver ta.
+ */
+export function maskeraRef(ref) {
+  const s = String(ref ?? '');
+  if (s === '') return '(tom)';
+  return `${s.slice(0, 4)}…(${s.length} tecken)`;
+}
+
+/**
  * Länktillståndets fil, relativt repo-roten. `supabase link` skriver den.
  */
 export const LANKTILLSTAND_FIL = 'supabase/.temp/project-ref';
@@ -251,10 +277,10 @@ export function provaLanktillstand({ lanktRef, malRef, prodRef }) {
       ok: false,
       lage: 'lankat-till-prod',
       skal:
-        `${LANKTILLSTAND_FIL} pekar på PROD (${lankt}). Ett korrekt --projekt-ref ` +
+        `${LANKTILLSTAND_FIL} pekar på PROD (${maskeraRef(lankt)}). Ett korrekt --projekt-ref ` +
         'räddar INTE detta: att flaggan tar företräde över ett sticky länktillstånd ' +
         'är obevisat, och priset för att ha fel är en prod-skrivning. Kör ' +
-        `\`npx supabase link --project-ref ${malRef}\` (eller ta bort filen) först.`,
+        `\`npx supabase link --project-ref <målprojektet>\` (eller ta bort filen) först.`,
     };
   }
   if (lankt !== malRef) {
@@ -262,7 +288,8 @@ export function provaLanktillstand({ lanktRef, malRef, prodRef }) {
       ok: false,
       lage: 'lankat-till-annat',
       skal:
-        `${LANKTILLSTAND_FIL} pekar på ${lankt}, men målet är ${malRef}. ` +
+        `${LANKTILLSTAND_FIL} pekar på ${maskeraRef(lankt)}, men målet är ` +
+        `${maskeraRef(malRef)}. ` +
         'Fail-closed: skriptet vägrar hellre än gissar vilket av de två som vinner.',
     };
   }
@@ -469,7 +496,7 @@ export function klassificera({
   standard,
   harNarvaro,
   harHistorik,
-  aktivSummaIckeHistorik = 0,
+  aktivaIckeHistorik = INGA_AKTIVA,
   policy,
 }) {
   const mottaget = policy?.mottagetVarde ?? 'Mottagen';
@@ -508,15 +535,19 @@ export function klassificera({
   //
   // MAKULERADE poster räknas inte in (anroparen filtrerar på `status = 'aktiv'`):
   // en makulerad post är rättad, inte betald, och ska inte blockera backfillen.
-  if (aktivSummaIckeHistorik > 0) {
+  // FÖREKOMST, inte netto — se `indexeraInbetalningar` § FÖREKOMST för det
+  // skarpbevisade motexemplet (+2500 och −2500 ger netto 0 och hade passerat).
+  if ((aktivaIckeHistorik?.antal ?? 0) > 0) {
+    const { antal, summa } = aktivaIckeHistorik;
     return {
       beslut: BESLUT.avvikelse,
       kod: 'har-aktiva-inbetalningar',
       skal:
-        `Anmälan har redan ${aktivSummaIckeHistorik} kr i AKTIVA inbetalningar som inte är ` +
-        'Historik-poster. En backfill ovanpå dem hade dubbelräknat. Marcus avgör om raden ' +
-        'ska hoppas över eller fyllas upp till priset.',
-      aktivSummaIckeHistorik,
+        `Anmälan har redan ${antal} AKTIV${antal === 1 ? '' : 'A'} inbetalning` +
+        `${antal === 1 ? '' : 'ar'} som inte är Historik-poster (netto ${summa} kr). ` +
+        'En backfill ovanpå dem hade dubbelräknat. Marcus avgör om raden ska hoppas ' +
+        'över eller fyllas upp till priset.',
+      aktivaIckeHistorik,
     };
   }
 
@@ -878,7 +909,7 @@ export function planera({
       standard: std,
       harNarvaro: narvaroPerAnmalan.has(a.id),
       harHistorik: historikPerAnmalan.has(a.id),
-      aktivSummaIckeHistorik: aktivIckeHistorikPerAnmalan?.get(a.id) ?? 0,
+      aktivaIckeHistorik: aktivIckeHistorikPerAnmalan?.get(a.id) ?? INGA_AKTIVA,
       policy,
     });
 
@@ -1161,9 +1192,97 @@ export function parsaDbQuerySvar(stdout) {
   return Array.isArray(kropp?.rows) ? kropp.rows : [];
 }
 
+/**
+ * Indexerar Postgres-raderna till de tre uppslag planeringen behöver.
+ *
+ * REN och exporterad MED AVSIKT (granskningsrunda 2, fynd 3): logiken satt
+ * tidigare inne i `lasInbetalningar`, bakom ett `db query`-anrop, och kunde
+ * därför inte prövas hermetiskt — en mutation av status-filtret överlevde hela
+ * sviten. Nu är den ett eget kontrakt med egna testfall.
+ *
+ * ═══ FÖREKOMST, INTE NETTO (granskningsrunda 2, fynd 1) ═══
+ * `aktivaIckeHistorik` bär både ANTAL och SUMMA, och grinden i
+ * `klassificera` prövar ANTALET. Netto-formen var falsifierad av granskaren:
+ * en aktiv inbetalning på +2500 och en aktiv återbetalning på −2500 ger netto
+ * 0, hade passerat en `summa > 0`-grind och backfillats med hela priset — så
+ * att spegeln sagt "allt betalt" för någon som netto betalat noll. Förekomst
+ * täcker dessutom negativt netto utan ett eget specialfall.
+ *
+ * STATUS-FILTRET är bärande: bara `aktiv` räknas. En makulerad post är rättad,
+ * inte betald, och ska aldrig blockera en backfill.
+ */
+export function indexeraInbetalningar(rader, betalsatt) {
+  const inbetalningarPerAnmalan = new Map();
+  const historikPerAnmalan = new Set();
+  const aktivIckeHistorikPerAnmalan = new Map();
+
+  for (const rad of rader ?? []) {
+    const id = rad.anmalan_record_id;
+    const belopp = Number(rad.belopp);
+    if (!inbetalningarPerAnmalan.has(id)) inbetalningarPerAnmalan.set(id, []);
+    inbetalningarPerAnmalan.get(id).push({ belopp, status: rad.status });
+
+    if (rad.betalsatt === betalsatt) {
+      historikPerAnmalan.add(id);
+    } else if (rad.status === 'aktiv') {
+      const forut = aktivIckeHistorikPerAnmalan.get(id) ?? { antal: 0, summa: 0 };
+      aktivIckeHistorikPerAnmalan.set(id, {
+        antal: forut.antal + 1,
+        summa: avrundaOre(forut.summa + belopp),
+      });
+    }
+  }
+  return { inbetalningarPerAnmalan, historikPerAnmalan, aktivIckeHistorikPerAnmalan };
+}
+
+/** Neutralt värde för en anmälan utan aktiva icke-Historik-poster. */
+export const INGA_AKTIVA = { antal: 0, summa: 0 };
+
 // ───────────────────────────────────────────────────────────────────────────
 // Spegeln
 // ───────────────────────────────────────────────────────────────────────────
+
+/**
+ * Är patchen redan sann i basen?
+ *
+ * ═══ KOSTNADEN DETTA BETALAR NED (granskningsrunda 2, fynd 4c) ═══
+ * Del C skriver om spegeln för backfill ∪ redanBackfillad, alltså för HELA
+ * den backfillade populationen vid VARJE körning — en linjär kostnad i antal
+ * backfillade anmälningar, betald i Airtable-anrop mot ett delat tak på
+ * 5 req/s. Konvergensen (fynd 4 i runda 1) kräver att omskrivningen KAN ske,
+ * inte att den sker i onödan.
+ *
+ * Jämförelsen är därför den billiga halvan: en patch vars värden redan står i
+ * basen ändrar ingenting, och att hoppa över den kostar noll korrekthet.
+ * Talen jämförs numeriskt (basen levererar `Summa inbetalt (kr)` som number)
+ * och valfälten som strängar; ett fält som INTE ingår i patchen jämförs inte,
+ * eftersom `byggSpegelPatch` utelämnar just de fack härledningen inte kan
+ * avgöra — och de ska förbli orörda.
+ *
+ * FAIL-OPEN MED AVSIKT: saknas anmälans lästa värden (t.ex. en rad som
+ * tillkommit sedan läsningen) returneras `false`, alltså "skriv ändå".
+ * Att skriva i onödan är ofarligt; att hoppa över en nödvändig skrivning är
+ * det inte.
+ */
+export function patchArIdentisk(patch, anmalan) {
+  if (!patch || !anmalan) return false;
+  const nuvarande = {
+    'Summa inbetalt (kr)': anmalan.summaInbetaltSpegel,
+    Anmälningsavgift: anmalan.anmalningsavgiftFack,
+    Slutbetalning: anmalan.slutbetalningFack,
+  };
+  for (const [falt, varde] of Object.entries(patch)) {
+    if (!(falt in nuvarande)) return false;
+    const har = nuvarande[falt];
+    if (har === null || har === undefined) return false;
+    if (typeof varde === 'number') {
+      if (typeof har !== 'number' || avrundaOre(har) !== avrundaOre(varde)) return false;
+    } else if (har !== varde) {
+      return false;
+    }
+  }
+  return true;
+}
 
 /**
  * Bygger spegelpatchen och validerar den mot EF-lagrets allowlist.
@@ -1238,7 +1357,7 @@ function skrivRapport({ plan, fore, efter, utfor, ref, basId }) {
       r.push(
         `      ${a.anmalanRecordId}  ${(a.namn || '(namnlös)').padEnd(20)} ` +
           `${a.event ?? '?'} · ${a.ort ?? '?'}  avg=${a.fackAvgift ?? '-'} slut=${a.fackSlut ?? '-'}` +
-          `${a.aktivSummaIckeHistorik ? `  redan inbetalt=${a.aktivSummaIckeHistorik} kr` : ''}`,
+          `${a.aktivaIckeHistorik?.antal ? `  redan ${a.aktivaIckeHistorik.antal} aktiva, netto ${a.aktivaIckeHistorik.summa} kr` : ''}`,
       );
     }
   }
@@ -1468,6 +1587,8 @@ async function main() {
     // indata ger samma patch, och en släpande spegel hinner ikapp. Det är
     // samma självläkning `registrera-inbetalning` § ASYMMETRIN redan bygger
     // på för sina fyra härledda fält.
+    let skrivnaSpeglar = 0;
+    let hoppadeSpeglar = 0;
     for (const p of [...plan.backfill, ...plan.redanBackfillad]) {
       const a = anmalningar.find((x) => x.id === p.anmalanRecordId);
       const e = a?.eventId ? (eventMapEfter.get(a.eventId) ?? null) : null;
@@ -1481,13 +1602,29 @@ async function main() {
         eventTyp: prisbild.eventTyp,
       });
       const patch = byggSpegelPatch(harledning);
+
+      // Det billiga hoppet: en patch vars värden redan står i basen ändrar
+      // ingenting. Se `patchArIdentisk` för kostnaden det betalar ned —
+      // konvergensen kräver att omskrivningen KAN ske, inte att den sker i
+      // onödan. Hoppet BOKFÖRS i utskriften; det får aldrig vara tyst.
+      if (patchArIdentisk(patch, a)) {
+        hoppadeSpeglar += 1;
+        console.log(`  ⏭  spegel ${p.anmalanRecordId} oförändrad — PATCH hoppad`);
+        continue;
+      }
+
       await airtablePatch(basId, 'Anmälningar', p.anmalanRecordId, patch, token);
+      skrivnaSpeglar += 1;
       console.log(
         `  ✅ spegel ${p.anmalanRecordId} ${JSON.stringify(patch)}` +
           `${p.kod === 'redan-backfillad' ? ' (omskriven — konvergens)' : ''}`,
       );
       await paus(pausMs);
     }
+
+    console.log(
+      `  📊 speglar: ${skrivnaSpeglar} skrivna, ${hoppadeSpeglar} hoppade (redan korrekta)`,
+    );
 
     const anmalningarEfter = (await airtableHamtaAlla(basId, 'Anmälningar', token, pausMs)).map(
       lasAnmalanRad,
@@ -1512,27 +1649,7 @@ async function lasInbetalningar({ ref, cliVersion, betalsatt }) {
     'select anmalan_record_id, belopp, status, betalsatt from public.inbetalningar;',
     { ref, cliVersion },
   );
-  const inbetalningarPerAnmalan = new Map();
-  const historikPerAnmalan = new Set();
-  // AKTIVA poster som INTE är backfillens egna — grinden mot dubbelräkning
-  // (`klassificera` § IDEMPOTENSNYCKELN SER BARA Historik). Makulerade räknas
-  // aldrig: en makulerad post är rättad, inte betald.
-  const aktivIckeHistorikPerAnmalan = new Map();
-  for (const rad of rader) {
-    const id = rad.anmalan_record_id;
-    const belopp = Number(rad.belopp);
-    if (!inbetalningarPerAnmalan.has(id)) inbetalningarPerAnmalan.set(id, []);
-    inbetalningarPerAnmalan.get(id).push({ belopp, status: rad.status });
-    if (rad.betalsatt === betalsatt) {
-      historikPerAnmalan.add(id);
-    } else if (rad.status === 'aktiv') {
-      aktivIckeHistorikPerAnmalan.set(
-        id,
-        avrundaOre((aktivIckeHistorikPerAnmalan.get(id) ?? 0) + belopp),
-      );
-    }
-  }
-  return { inbetalningarPerAnmalan, historikPerAnmalan, aktivIckeHistorikPerAnmalan };
+  return indexeraInbetalningar(rader, betalsatt);
 }
 
 async function lasTokenUrEnvFil() {

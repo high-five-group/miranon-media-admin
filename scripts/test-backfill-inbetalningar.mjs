@@ -38,6 +38,13 @@
 //   I  eventprisernas plan
 //   J  db query-svarets parsning
 //   K  korsläsningen mot de delade EF-modulerna
+//   L  länktillståndets preflight            (runda 1, fynd 1)
+//   M  beloppsgrinden: 0 kr och negativt     (runda 1, fynd 2)
+//   N  aktiva icke-Historik-inbetalningar    (runda 1, fynd 3)
+//   O  spegelns konvergens                   (runda 1, fynd 4)
+//   P  indexeringen: förekomst och filter    (runda 2, fynd 1 + 3)
+//   Q  kopplingsvakter mot main()            (runda 2, fynd 2)
+//   R  patch-hoppet och ref-maskeringen      (runda 2, fynd 4c/4d)
 
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -58,10 +65,14 @@ import {
   byggSpegelPatch,
   escapeSqlText,
   harledPrisbild,
+  INGA_AKTIVA,
+  indexeraInbetalningar,
   klassificera,
   LANKTILLSTAND_FIL,
   lasLanktillstand,
+  maskeraRef,
   parsaDbQuerySvar,
+  patchArIdentisk,
   planera,
   planeraEventpriser,
   provaLanktillstand,
@@ -1079,11 +1090,12 @@ test('N1: NEGATIV — en aktiv Swish-post gör anmälan till avvikelse, inte bac
   const u = klass({
     anmalan: anm({ anmalningsavgiftFack: 'Mottagen', slutbetalningFack: 'Mottagen' }),
     event: ev({ pris: 2500, anmalningsavgift: 1000 }),
-    aktivSummaIckeHistorik: 1000,
+    aktivaIckeHistorik: { antal: 1, summa: 1000 },
   });
   assert.equal(u.beslut, BESLUT.avvikelse);
   assert.equal(u.kod, 'har-aktiva-inbetalningar');
-  assert.equal(u.aktivSummaIckeHistorik, 1000);
+  assert.equal(u.aktivaIckeHistorik.antal, 1);
+  assert.equal(u.aktivaIckeHistorik.summa, 1000);
   assert.match(u.skal, /dubbelräknat/);
 });
 
@@ -1102,12 +1114,13 @@ test('N2: KONSEKVENSEN — utan grinden hade summan blivit 3500 av 2500', () => 
   assert.equal(h.saknas, -1000);
 });
 
-test('N3: en MAKULERAD post påverkar inte (rättad, inte betald)', () => {
-  // Anroparen summerar bara status === 'aktiv', så en makulerad post ger 0.
+test('N3: utan aktiva poster backfillas anmälan normalt (grindens andra sida)', () => {
+  // Att MAKULERADE poster inte räknas in bevisas i § P, mot den FAKTISKA
+  // indexeringen — inte här, där värdet skickas in färdigt.
   const u = klass({
     anmalan: anm({ anmalningsavgiftFack: 'Mottagen', slutbetalningFack: 'Mottagen' }),
     event: ev({ pris: 2500, anmalningsavgift: 1000 }),
-    aktivSummaIckeHistorik: 0,
+    aktivaIckeHistorik: INGA_AKTIVA,
   });
   assert.equal(u.beslut, BESLUT.backfilla);
   assert.equal(u.belopp, 2500);
@@ -1118,20 +1131,21 @@ test('N4: grinden ligger EFTER redan-backfillad (en egen Historik-post vinner)',
     anmalan: anm({ anmalningsavgiftFack: 'Mottagen', slutbetalningFack: 'Mottagen' }),
     event: ev({ pris: 2500 }),
     harHistorik: true,
-    aktivSummaIckeHistorik: 1000,
+    aktivaIckeHistorik: { antal: 1, summa: 1000 },
   });
   assert.equal(u.beslut, BESLUT.redanBackfillad);
 });
 
 test('N5: planen listar avvikelsen med record-ID och summa', () => {
   const indata = planIndata();
-  indata.aktivIckeHistorikPerAnmalan = new Map([['recAAAAAAAAAAAAAA', 1500]]);
+  indata.aktivIckeHistorikPerAnmalan = new Map([['recAAAAAAAAAAAAAA', { antal: 2, summa: 1500 }]]);
   const p = planera(indata);
   assert.equal(p.backfill.length, 0);
   assert.equal(p.avvikelser.length, 1);
   assert.equal(p.avvikelser[0].kod, 'har-aktiva-inbetalningar');
   assert.equal(p.avvikelser[0].anmalanRecordId, 'recAAAAAAAAAAAAAA');
-  assert.equal(p.avvikelser[0].aktivSummaIckeHistorik, 1500);
+  assert.equal(p.avvikelser[0].aktivaIckeHistorik.antal, 2);
+  assert.equal(p.avvikelser[0].aktivaIckeHistorik.summa, 1500);
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1163,6 +1177,196 @@ test('O4: prosan överlovar inte — filhuvudet skiljer strukturell från konver
   const kalla = readFileSync(join(REPO_ROT, 'scripts/backfill-inbetalningar.mjs'), 'utf8');
   assert.match(kalla, /SPEGELN är KONVERGENT, inte idempotent i samma mening/);
   assert.ok(!/En avbruten körning kan alltså köras om rakt av/.test(kalla));
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// P — INDEXERINGEN (granskningsrunda 2, fynd 1 + 3)
+// ═══════════════════════════════════════════════════════════════════════════
+
+const pgRad = (over = {}) => ({
+  anmalan_record_id: 'recAAAAAAAAAAAAAA',
+  belopp: '2500.00',
+  status: 'aktiv',
+  betalsatt: 'Swish',
+  ...over,
+});
+
+test('P1: en aktiv Swish-post räknas som förekomst med sitt belopp', () => {
+  const i = indexeraInbetalningar([pgRad()], 'Historik');
+  assert.deepEqual(i.aktivIckeHistorikPerAnmalan.get('recAAAAAAAAAAAAAA'), {
+    antal: 1,
+    summa: 2500,
+  });
+});
+
+test('P2: NEGATIV — status-filtret håller: en MAKULERAD post räknas inte', () => {
+  // Fallet som tidigare var obevakat: en mutation av `rad.status === 'aktiv'`
+  // överlevde hela sviten (granskningsrunda 2, fynd 3).
+  const i = indexeraInbetalningar([pgRad({ status: 'makulerad' })], 'Historik');
+  assert.equal(i.aktivIckeHistorikPerAnmalan.has('recAAAAAAAAAAAAAA'), false);
+  // Men posten finns kvar i mängden härledningen räknar på:
+  assert.equal(i.inbetalningarPerAnmalan.get('recAAAAAAAAAAAAAA').length, 1);
+});
+
+test('P3: NEGATIV — en Historik-post räknas som backfillad, inte som "aktiv annan"', () => {
+  const i = indexeraInbetalningar([pgRad({ betalsatt: 'Historik' })], 'Historik');
+  assert.equal(i.historikPerAnmalan.has('recAAAAAAAAAAAAAA'), true);
+  assert.equal(i.aktivIckeHistorikPerAnmalan.has('recAAAAAAAAAAAAAA'), false);
+});
+
+test('P4: KÄRNFALLET — +2500 och −2500 ger netto 0 men ANTAL 2', () => {
+  // Granskarens skarpbevisade motexempel mot netto-formen. En `summa > 0`-grind
+  // hade släppt igenom detta och backfillat hela priset ovanpå — spegeln hade
+  // sagt "allt betalt" för någon som netto betalat noll.
+  const i = indexeraInbetalningar(
+    [pgRad({ belopp: '2500.00' }), pgRad({ belopp: '-2500.00' })],
+    'Historik',
+  );
+  const v = i.aktivIckeHistorikPerAnmalan.get('recAAAAAAAAAAAAAA');
+  assert.equal(v.summa, 0, 'nettot ÄR noll — det är hela poängen');
+  assert.equal(v.antal, 2);
+});
+
+test('P5: KÄRNFALLET, andra halvan — netto 0 FÄLLER ändå (förekomst, inte netto)', () => {
+  const u = klass({
+    anmalan: anm({ anmalningsavgiftFack: 'Mottagen', slutbetalningFack: 'Mottagen' }),
+    event: ev({ pris: 2500, anmalningsavgift: 1000 }),
+    aktivaIckeHistorik: { antal: 2, summa: 0 },
+  });
+  assert.equal(u.beslut, BESLUT.avvikelse);
+  assert.equal(u.kod, 'har-aktiva-inbetalningar');
+});
+
+test('P6: NEGATIV — negativt netto fälls av samma grind, utan specialfall', () => {
+  const u = klass({
+    anmalan: anm({ anmalningsavgiftFack: 'Mottagen', slutbetalningFack: 'Mottagen' }),
+    event: ev({ pris: 2500 }),
+    aktivaIckeHistorik: { antal: 1, summa: -500 },
+  });
+  assert.equal(u.beslut, BESLUT.avvikelse);
+  assert.equal(u.kod, 'har-aktiva-inbetalningar');
+});
+
+test('P7: flera anmälningar hålls isär', () => {
+  const i = indexeraInbetalningar(
+    [pgRad(), pgRad({ anmalan_record_id: 'recBBBBBBBBBBBBBB', belopp: '1000.00' })],
+    'Historik',
+  );
+  assert.equal(i.aktivIckeHistorikPerAnmalan.get('recAAAAAAAAAAAAAA').summa, 2500);
+  assert.equal(i.aktivIckeHistorikPerAnmalan.get('recBBBBBBBBBBBBBB').summa, 1000);
+});
+
+test('P8: tom indata ger tomma uppslag (ingen krasch)', () => {
+  const i = indexeraInbetalningar([], 'Historik');
+  assert.equal(i.inbetalningarPerAnmalan.size, 0);
+  assert.equal(i.historikPerAnmalan.size, 0);
+  assert.equal(i.aktivIckeHistorikPerAnmalan.size, 0);
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Q — KOPPLINGSVAKTER MOT main() (granskningsrunda 2, fynd 2)
+// ═══════════════════════════════════════════════════════════════════════════
+
+const KALLA = readFileSync(join(REPO_ROT, 'scripts/backfill-inbetalningar.mjs'), 'utf8');
+
+test('Q1: preflighten är FAKTISKT anropad i main(), inte bara definierad', () => {
+  // Fyndet: en `{ ok: true }`-mutation i main() överlevde 118/118, eftersom
+  // ingen vakt band den rena funktionen till anropsstället.
+  assert.match(KALLA, /const lankUtfall = provaLanktillstand\(\{/);
+  assert.match(KALLA, /if \(!lankUtfall\.ok\) \{/);
+  assert.match(KALLA, /Länktillstånd: \$\{lankUtfall\.skal\}/);
+});
+
+test('Q2: preflighten körs FÖRE staging-semaforen (ordningen är lastbärande)', () => {
+  // Semaforen kan avsluta processen med 76/77; ligger länkkontrollen efter den
+  // blir den aldrig nådd när CI håller basen.
+  const iPreflight = KALLA.indexOf('const lankUtfall = provaLanktillstand(');
+  const iSemafor = KALLA.indexOf("kravStagingLedigt('backfill-inbetalningar')");
+  assert.ok(iPreflight > 0, 'provaLanktillstand-anropet saknas i main()');
+  assert.ok(iSemafor > 0, 'kravStagingLedigt-anropet saknas i main()');
+  assert.ok(iPreflight < iSemafor, 'länkpreflighten måste ligga FÖRE semaforen');
+});
+
+test('Q3: länktillståndet LÄSES från disk, inte antaget', () => {
+  assert.match(KALLA, /const lankt = lasLanktillstand\(\);/);
+});
+
+test('Q4: identisk-patch-hoppet är inkopplat i Del C', () => {
+  assert.match(KALLA, /if \(patchArIdentisk\(patch, a\)\) \{/);
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// R — PATCH-HOPPET OCH REF-MASKERINGEN (granskningsrunda 2, fynd 4c/4d)
+// ═══════════════════════════════════════════════════════════════════════════
+
+test('R1: en patch vars värden redan står i basen är identisk', () => {
+  assert.equal(
+    patchArIdentisk(
+      { 'Summa inbetalt (kr)': 2500, Anmälningsavgift: 'Mottagen', Slutbetalning: 'Mottagen' },
+      anm({
+        summaInbetaltSpegel: 2500,
+        anmalningsavgiftFack: 'Mottagen',
+        slutbetalningFack: 'Mottagen',
+      }),
+    ),
+    true,
+  );
+});
+
+test('R2: NEGATIV — ett avvikande tal gör patchen icke-identisk', () => {
+  assert.equal(
+    patchArIdentisk({ 'Summa inbetalt (kr)': 2500 }, anm({ summaInbetaltSpegel: 1000 })),
+    false,
+  );
+});
+
+test('R3: NEGATIV — ett avvikande FACK gör patchen icke-identisk', () => {
+  assert.equal(
+    patchArIdentisk(
+      { 'Summa inbetalt (kr)': 2500, Slutbetalning: 'Mottagen' },
+      anm({ summaInbetaltSpegel: 2500, slutbetalningFack: 'Ej mottagen' }),
+    ),
+    false,
+  );
+});
+
+test('R4: FAIL-OPEN — saknat värde i basen ⇒ skriv ändå', () => {
+  assert.equal(
+    patchArIdentisk({ 'Summa inbetalt (kr)': 2500 }, anm({ summaInbetaltSpegel: null })),
+    false,
+  );
+  assert.equal(patchArIdentisk({ 'Summa inbetalt (kr)': 0 }, null), false);
+});
+
+test('R5: maskeraRef ger igenkänning utan en kopierbar ref', () => {
+  const m = maskeraRef('pqtshyierkdgwdnxuirz');
+  assert.equal(m, 'pqts…(20 tecken)');
+  assert.ok(!m.includes('pqtshyierkdgwdnxuirz'));
+});
+
+test('R6: NEGATIV — länkpreflightens meddelanden bär ALDRIG hela refen', () => {
+  const PROD_I_CONF = readFileSync(join(REPO_ROT, '.prod-ref-policy.conf'), 'utf8').match(
+    /^PROD_REF_PROD="([^"]+)"/m,
+  )?.[1];
+  const u = provaLanktillstand({
+    lanktRef: PROD_I_CONF,
+    malRef: STAGING,
+    prodRef: PROD_I_CONF,
+  });
+  assert.equal(u.ok, false);
+  assert.ok(!u.skal.includes(PROD_I_CONF), 'prod-refen får inte stå okodad i utskriften');
+  assert.ok(u.skal.includes(maskeraRef(PROD_I_CONF)));
+});
+
+test('R7: NEGATIV — inte heller fel-projekt-meddelandet bär hela refen', () => {
+  const u = provaLanktillstand({
+    lanktRef: 'abcdefghijklmnopqrst',
+    malRef: STAGING,
+    prodRef: null,
+  });
+  assert.equal(u.ok, false);
+  assert.ok(!u.skal.includes('abcdefghijklmnopqrst'));
+  assert.ok(!u.skal.includes(STAGING));
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
