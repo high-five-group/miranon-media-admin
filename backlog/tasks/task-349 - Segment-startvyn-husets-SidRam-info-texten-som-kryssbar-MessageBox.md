@@ -1,10 +1,10 @@
 ---
 id: TASK-349
 title: 'Segment-startvyn: husets SidRam + info-texten som kryssbar MessageBox'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-08-31 08:51'
-updated_date: '2026-08-31 09:38'
+updated_date: '2026-08-31 10:39'
 labels:
   - ready-for-agent
 dependencies: []
@@ -80,4 +80,6 @@ build/langa-streck gröna; test:api 1682/1683 (en orelaterad, pre-existing
 flake i generate-event-attachment.staging.test.ts, grön i isolering);
 segment-promoverings-grind.spec.ts 14/14; mer-segment.acceptance.test.ts
 8/8 (inkl. axe 0 violations).
+
+Landning: PR #2172 (merge 3bac4ca9fbbddea4788980e66a24df362b18f654, 2026-08-31 ~10:09 UTC) · post-merge-verifikat mätt av stängningsbatchen: merge_group CI run 33380173479 conclusion success, kört direkt mot 3bac4ca9. OVÄNTAT, bokfört öppet: INGEN separat push-triggad CI/Post-merge-körning finns för 3bac4ca9 specifikt — nästa landning (PR #2173, merge 1a0fd816) skedde ~2 sekunder senare och GitHubs push-webhook mot main konsoliderade båda till EN körning mot 1a0fd816 (push CI run 33381120523 success, Post-merge run 33381120434 success). git merge-base --is-ancestor 3bac4ca9 origin/main bekräftar 3bac4ca9 som ancestor till 1a0fd816 — koden är därmed täckt av den gröna post-merge-körningen på 1a0fd816, men bär ingen egen isolerad post-merge-signal.
 <!-- SECTION:FINAL_SUMMARY:END -->
