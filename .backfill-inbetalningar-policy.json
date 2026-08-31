@@ -1,0 +1,75 @@
+{
+  "_kommentar": [
+    ".backfill-inbetalningar-policy.json — per-projekt config för",
+    "scripts/backfill-inbetalningar.mjs (TASK-346.8, ADR-128 beslut 8).",
+    "",
+    "Skriptets LOGIK är universell (kan dupliceras till ett annat spoke utan",
+    "refactor); VÄRDENA här är projektspecifik data. Samma config-driven",
+    "grindvakts-konvention som .purge-staging-policy.json och",
+    ".langa-streck-policy.json (CLAUDE.md, Lesson #6 UNIVERSAL).",
+    "",
+    "PROD-REFEN STÅR MEDVETET INTE HÄR. Supabase-prod-refen bor på EXAKT ETT",
+    "ställe i repot — .prod-ref-policy.conf PROD_REF_PROD — och skriptet läser",
+    "den DÄRIFRÅN. Att kopiera hit den hade gjort det bekvämt att bygga ett",
+    "anrop som läser prod-refen ur en fil i stället för ur kommandoraden, och",
+    "därmed gjort scripts/deny-prod-ref.sh verkningslös för varje agent som",
+    "läser repot (CLAUDE.md § Prod-EF-deploy: 'Project-refen anges som",
+    "ARGUMENT, aldrig ur config — och det är avsiktligt').",
+    "",
+    "Airtables PROD-BAS står däremot i forbiddenBaseIds. Den asymmetrin är",
+    "avsiktlig och matchar husets befintliga mönster: bas-ID:t är den BÄRANDE",
+    "skyddslinjen på Airtable-sidan (staging och prod delar tabell-/fält-ID:n,",
+    "data-model.md § ID-topologi), så guarden MÅSTE känna till vad den ska",
+    "vägra. Samma form som scripts/backfill-bilagor-dokumentklass.mjs CONFIG",
+    "och .purge-staging-policy.json."
+  ],
+
+  "expectedBaseId": "apphjj8Q7lkXCMsL4",
+  "forbiddenBaseIds": ["app8uGPrVCVOm6LfD"],
+
+  "_kommentar_ref": [
+    "Supabase-projektet backfillens Postgres-rader skrivs till. Skriptet",
+    "vägrar varje ref som inte står här, och läser dessutom",
+    ".prod-ref-policy.conf för att kunna säga VARFÖR när målet är prod."
+  ],
+  "tillatnaProjectRefs": ["pqtshyierkdgwdnxuirz"],
+  "prodRefPolicyFil": ".prod-ref-policy.conf",
+
+  "_kommentar_uteslutning": [
+    "ZZ-* är repots sentinel-/fixturnamnrymd. BÅDA dess klasser ska hållas",
+    "utanför en backfill, av motsatta skäl som pekar åt samma håll:",
+    "  - en PURGE-BAR sentinel raderas ändå av setup-purgen, så en",
+    "    inbetalning skriven mot den blir en föräldralös Postgres-rad vars",
+    "    anmälan försvunnit (precis vad ADR-128 beslut 6:s konsistensvakt",
+    "    finns för att larma om);",
+    "  - en PERMANENT fixtur (ZZ-GRANSKNING-*, ZZ-plats-*, ZZ-Checkin-*) har",
+    "    ett LÅST förväntat tillstånd som andra testsviter mäter mot.",
+    "Backfillens syfte är att göra härledningen sann för LOTTAS anmälningar",
+    "(PRD TASK-346 berättelse 5/32/35), inte för testdata.",
+    "",
+    "exkluderadeEventIds bär dessutom fixturen ZZ-GRANSKNING-S113 explicit —",
+    "orten är redan ZZ-prefixad, så posten är en SPÄRR I DJUPLED som håller",
+    "även om fixturens Ort skulle döpas om."
+  ],
+  "exkluderadeOrtPrefix": ["ZZ-"],
+  "exkluderadeEventIds": ["recSahYCeTbEzFFe6"],
+
+  "_kommentar_regel": [
+    "ADR-128 beslut 8 / PRD TASK-346 § Datamodell: 'Närvarande ⇒ betalt,",
+    "Mottagen ⇒ betalt, belopp = dåvarande pris, betalsätt Historik, datum",
+    "okänt'. narvaroStatus speglar Deltaganden.Närvaropoäng = 1",
+    "(data-model.md § Status-värden — Deltaganden: Närvarande och Deltog",
+    "online är de två värden som ger poäng)."
+  ],
+  "narvaroStatus": ["Närvarande", "Deltog online"],
+  "mottagetVarde": "Mottagen",
+  "betalsatt": "Historik",
+  "kallaPrefix": "Backfill TASK-346.8",
+
+  "_kommentar_tempo": [
+    "Airtables anropstak är 5 req/s per bas (developers-docs, verifierat",
+    "2026-07-19 i scripts/purge-staging-sentinels.mjs). 220 ms mellan anrop",
+    "ger ~4,5 req/s med marginal — samma värde purge-skriptet redan kör."
+  ],
+  "airtablePausMs": 220
+}

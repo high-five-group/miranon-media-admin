@@ -1375,6 +1375,35 @@ jobs:
         # nätverkstrafik i sviten. 74 fall. 1,25 s LOKALT mätt (macOS,
         # 2026-08-29, `time node scripts/test-task-338-6-prod-migration.mjs`)
         # — CI-tiden är INTE mätt av mig och kan avvika.
+        #
+        # test-backfill-inbetalningar.mjs (TASK-346.8) hör hit av samma
+        # ADR-039-skäl som syskonen ovan, med ett tillägg som är kortets egen
+        # DoD #5: pengalogikens regler ska ha var sin NEGATIV kontroll som
+        # fäller en trasig implementation. Sviten är därför byggd i
+        # KONTRASTPAR — tydligast § B17, där samma sträng ('2.500') prövas mot
+        # BÅDA parsrarna och måste ge OLIKA svar (2500 respektive null),
+        # eftersom det är hela skälet till att prisfritextens tolkning finns
+        # vid sidan av _shared/betalningsbelopp.ts normaliseraBelopp; och
+        # § D6, som bevisar VARFÖR fack-motsägelsen listas i stället för att
+        # backfillas (beloppet hade flippat båda facken i basen).
+        # Sektionerna K1–K4 är KOPPLINGS-vakter mot ytor skriptet inte äger:
+        # att härledningen importeras ur EF-lagret och inte kopieras, att
+        # policyns betalsätt finns i migrationens check-constraint, och att
+        # betalningsdatum-kolumnen ÄR nullable — faller den sista är kortets
+        # "datum tomt"-krav omöjligt och skivan måste ritas om.
+        # 96 fall (MÄTT 2026-08-31, sviten kördes och dess egen slutrad
+        # lästes — aldrig avskrivet, TASK-106). Hermetisk: inga fetch-anrop,
+        # ingen Airtable-token, inget supabase-CLI, ingen nätverkstrafik —
+        # skriptets main() körs inte vid import (körvakten längst ned i det).
+        # Mutationsprövad 2026-08-31: TOLV mutationer (idempotens-predikatet
+        # bortkopplat, betalningsdatum satt till current_date, fack-motsägelsen
+        # backfillad, tusental-regeln bortkopplad, prod-ref-guarden bortkopplad,
+        # okänt avgiftspris gissat, exkluderadeEventIds bortkopplad, spegelns
+        # null-hopp bortkopplat, redan-backfillad-kontrollen bortkopplad,
+        # bas-guardens prod-spärr bortkopplad, NUL-vakten bortkopplad,
+        # makulerade poster räknade som betalda) — 12 av 12 FÄLLDA av sviten.
+        # 0,17 s LOKALT mätt (macOS, 2026-08-31, median av tre körningar:
+        # 167/206/160 ms) — CI-tiden är INTE mätt av mig och kan avvika.
         run: |
           bash scripts/test-check-frontmatter.sh
           bash scripts/test-check-public-checklists.sh
@@ -1425,6 +1454,7 @@ jobs:
           node scripts/test-verify-ci-parity.mjs
           node scripts/test-task-338-6-prod-migration.mjs
           node scripts/test-docraptor-sjalvbarande.mjs
+          node scripts/test-backfill-inbetalningar.mjs
 
       - name: Test post-merge-lagrets ärvda klassning (TASK-73)
         # Per ADR-039 § lesson→grind (L43): en grind är inte en grind förrän
