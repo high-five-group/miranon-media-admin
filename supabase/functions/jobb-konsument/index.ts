@@ -307,6 +307,35 @@ Deno.serve(async (req) => {
         };
       },
 
+      // [TASK-346.9] Kreditkvittots hänvisning — se `kvittojobb.ts`s
+      // `KvittoJobbDeps.hittaOriginalKvitto`-docstring för DESIGNVALET
+      // (senast utfärdade, icke-makulerade `typ: 'kvitto'` för samma
+      // anmälan). Två steg därför att `kvitton` saknar `anmalan_record_id`
+      // — kopplingen går via `inbetalningar`.
+      async hittaOriginalKvitto(anmalanRecordId) {
+        const { data: inbetalningsRadar, error: inbetalningsFel } = await db
+          .from(INBETALNINGAR_TABELL)
+          .select('id')
+          .eq('anmalan_record_id', anmalanRecordId);
+        if (inbetalningsFel) throw inbetalningsFel;
+        const inbetalningIds = (inbetalningsRadar ?? []).map((rad) => rad.id as string);
+        if (inbetalningIds.length === 0) return null;
+
+        const { data, error } = await db
+          .from(KVITTON_TABELL)
+          .select(KVITTO_KOLUMNER)
+          .in('inbetalning_id', inbetalningIds)
+          .eq('typ', 'kvitto')
+          .neq('status', 'makulerat')
+          .order('skapad_nar', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+        if (error) throw error;
+        if (!data) return null;
+        const kvitto = radTillKvitto(data);
+        return { id: kvitto.id, kvittonummer: kvitto.kvittonummer };
+      },
+
       async allokeraNummer(ar) {
         // ADR-128 beslut 4: sekvens per år, FAIL-CLOSED mot ett saknat golv.
         // Saknas golvet kastar funktionen (P0002) i stället för att gissa
@@ -326,13 +355,17 @@ Deno.serve(async (req) => {
         // KASTAR vid unik-nyckel-brott — det ÄR dubbelskicksspärren
         // (`kvitton.inbetalning_id unique`, ADR-128 beslut 4).
         // `kvittonummer` skrivs ALDRIG: den är en genererad kolumn.
+        // [TASK-346.9] `typ`/`original_kvitto_id`: `kvittojobb.ts`s `forbered()`
+        // har redan avgjort båda — `kvitton_kreditkvitto_har_original`-
+        // constrainten är facit, inte en kontroll vi duplicerar här.
         const { data, error } = await db
           .from(KVITTON_TABELL)
           .insert({
             inbetalning_id: spec.inbetalningId,
             ar: spec.ar,
             lopnummer: spec.lopnummer,
-            typ: 'kvitto',
+            typ: spec.typ,
+            original_kvitto_id: spec.originalKvittoId,
             status: 'utfardat',
           })
           .select('id')
@@ -389,6 +422,12 @@ Deno.serve(async (req) => {
           eventStart: spec.eventStart,
           eventSlut: spec.eventSlut,
           bokforingstext: spec.bokforingstext,
+          // [TASK-346.9] AKTIVERAR TASK-346.5:s förberedda tokenyta — se
+          // `receipt-content.ts`/`mall-data.ts` för `kvittoRubrik`/
+          // `kvittoHanvisning`. `spec.typ`/`spec.hanvisningTillKvittonummer`
+          // kommer alltid satta ur `kvittojobb.ts`s `forbered()`.
+          typ: spec.typ,
+          hanvisningTillKvittonummer: spec.hanvisningTillKvittonummer,
         });
 
         const bytes = await renderaMallPdf('kvitto', kvittoData, {
@@ -437,14 +476,19 @@ Deno.serve(async (req) => {
 
         const replyTo = Deno.env.get('RESEND_REPLY_TO');
         const resend = new Resend(apiKey);
+        // [TASK-346.9] Rubriken skiljer kvitto från kreditkvitto i mailet —
+        // samma distinktion som `kvittoRubrik()` gör på PDF:en (`receipt-
+        // content.ts`). Mottagaren ska aldrig läsa "kvitto" om det den fick
+        // var en kreditering.
+        const dokumentord = spec.typ === 'kreditkvitto' ? 'kreditkvitto' : 'kvitto';
         const text =
-          `Hej ${spec.kundnamn},\n\nHär kommer ditt kvitto (${spec.kvittonummer}), bifogat som PDF.\n\n` +
+          `Hej ${spec.kundnamn},\n\nHär kommer ditt ${dokumentord} (${spec.kvittonummer}), bifogat som PDF.\n\n` +
           'Roger och Lotta, Miranon Media';
         const { error } = await resend.emails.send(
           {
             from,
             to: [spec.email],
-            subject: `Kvitto ${spec.kvittonummer}`,
+            subject: `${dokumentord === 'kreditkvitto' ? 'Kreditkvitto' : 'Kvitto'} ${spec.kvittonummer}`,
             text,
             html: text.replace(/\n/g, '<br>'),
             // ETT ANROP PER KVITTO. Resends batch-API stödjer inte bilagor

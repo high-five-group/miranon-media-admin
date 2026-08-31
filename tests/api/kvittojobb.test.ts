@@ -52,6 +52,9 @@ type LedgerRad = {
   status: 'utfardat' | 'skickat' | 'makulerat';
   lagringsnyckel: string | null;
   mottagare: string | null;
+  /** [TASK-346.9] `undefined` i befintliga fixturer betyder `'kvitto'`. */
+  typ?: 'kvitto' | 'kreditkvitto';
+  originalKvittoId?: string | null;
 };
 
 /** Vad som HÄNDE, i ordning. Ordningen är ett kontrakt, inte en detalj. */
@@ -66,9 +69,15 @@ type Handelse =
       radStatus: Record<string, JobbRadStatus>;
     }
   | { typ: 'nummer'; lopnummer: number }
-  | { typ: 'pdf'; kvittonummer: string }
+  | {
+      typ: 'pdf';
+      kvittonummer: string;
+      /** [TASK-346.9] Vad `forbered()` faktiskt skickade in i `byggPdf`. */
+      dokumenttyp: 'kvitto' | 'kreditkvitto';
+      hanvisning: string | null;
+    }
   | { typ: 'lagring'; nyckel: string }
-  | { typ: 'mail'; till: string; nyckel: string }
+  | { typ: 'mail'; till: string; nyckel: string; dokumenttyp: 'kvitto' | 'kreditkvitto' }
   | { typ: 'finalisering'; kvittoId: string }
   | { typ: 'spegel'; anmalan: string; kvittonummer: string };
 
@@ -93,6 +102,12 @@ type VarldsInstallning = {
   fallSpegel?: boolean;
   /** Fördröjning per PDF, för att kunna mäta samtidighet. */
   pdfFordrojningMs?: number;
+  /**
+   * [TASK-346.9] Vad `hittaOriginalKvitto` svarar. `undefined`/`null` =
+   * inget original hittades (AC #4:s negativa kontroll för kreditkvitton
+   * utan ett kvitto att kreditera).
+   */
+  original?: { id: string; kvittonummer: string } | null;
 };
 
 function byggVarld(installning: VarldsInstallning) {
@@ -199,6 +214,10 @@ function byggVarld(installning: VarldsInstallning) {
       };
     },
 
+    async hittaOriginalKvitto() {
+      return installning.original ?? null;
+    },
+
     async allokeraNummer(ar) {
       const lopnummer = nastaLopnummer;
       nastaLopnummer += 1;
@@ -221,6 +240,8 @@ function byggVarld(installning: VarldsInstallning) {
         status: 'utfardat',
         lagringsnyckel: null,
         mottagare: null,
+        typ: spec.typ,
+        originalKvittoId: spec.originalKvittoId,
       });
       return { id };
     },
@@ -244,7 +265,12 @@ function byggVarld(installning: VarldsInstallning) {
         if (installning.fallPdfFor?.includes(spec.inbetalningId)) {
           throw new Error('DocRaptor svarade 500.');
         }
-        handelser.push({ typ: 'pdf', kvittonummer: spec.kvittonummer });
+        handelser.push({
+          typ: 'pdf',
+          kvittonummer: spec.kvittonummer,
+          dokumenttyp: spec.typ,
+          hanvisning: spec.hanvisningTillKvittonummer,
+        });
         return { filename: `${spec.kvittonummer}.pdf`, contentBase64: 'UERG' };
       } finally {
         pagaendePdf -= 1;
@@ -258,7 +284,12 @@ function byggVarld(installning: VarldsInstallning) {
     },
 
     async skickaMail(spec, ctx) {
-      handelser.push({ typ: 'mail', till: spec.email, nyckel: ctx.idempotencyKey });
+      handelser.push({
+        typ: 'mail',
+        till: spec.email,
+        nyckel: ctx.idempotencyKey,
+        dokumenttyp: spec.typ,
+      });
       // Nyckeln BÄR inbetalningens id (`inbetalning/<id>/kvitto`), så
       // testvärlden kan avgöra vilken post mailet gäller utan ett eget
       // argument — och testet blir därmed också en kontroll av att nyckeln
@@ -505,6 +536,171 @@ test.describe('korKvittobatch — dubbelskicksspärren', () => {
     expect(utfall).toEqual([{ radId: 'rad-1', utfall: 'skickat', kvittonummer: 'MM-2026-1042' }]);
     expect(varld.handelser.filter((h) => h.typ === 'nummer')).toHaveLength(0);
     expect(varld.ledger).toHaveLength(1);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// § 2b — Makulerat kvitto: ALDRIG återupplivat (TASK-346.9, AC #4)
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// Fram till denna skiva täckte dubbelskicksspärren bara `status === 'skickat'`
+// — se `_shared/kvittojobb.ts`s tidigare "ANTAGANDET SOM 346.9 MÅSTE PRÖVA".
+// Ett `makulerat` kvitto föll då igenom skip-villkoret och behandlades som
+// "oskickat, återanvänd raden": PDF ombyggd, nytt mail skickat, med SAMMA
+// kvittonummer som redan står makulerat i bokföringen. Testerna nedan bevisar
+// att den vägen nu är stängd, och att den ALDRIG rör kvittonumret (AC #4:s
+// "makulerad rad påverkar inte kvittots nummer").
+
+test.describe('korKvittobatch — makulerat kvitto återupplivas aldrig', () => {
+  test('kvitto med status makulerat: raden fäller, inget mail, ingen PDF, numret orört', async () => {
+    const varld = byggVarld({
+      rader: [vantandeRad('rad-1', 'inb-1')],
+      underlag: { 'inb-1': {} },
+      ledger: [
+        {
+          id: 'kvitto-makulerat',
+          inbetalningId: 'inb-1',
+          ar: 2026,
+          lopnummer: 1042,
+          status: 'makulerat',
+          lagringsnyckel: 'kvitton/2026/MM-2026-1042.pdf',
+          mottagare: 'delivered@resend.dev',
+        },
+      ],
+    });
+
+    const utfall = await korKvittobatch([post(1, 'rad-1')], varld.deps);
+
+    expect(utfall[0].utfall).toBe('fel');
+    expect((utfall[0] as { skal: string }).skal).toContain('makulerat');
+    // INGET MAIL, INGEN PDF, INGET NYTT NUMMER — kvittot behandlas som en
+    // avslutad post, aldrig som "väntar på att skickas".
+    expect(varld.handelser.filter((h) => h.typ === 'mail')).toHaveLength(0);
+    expect(varld.handelser.filter((h) => h.typ === 'pdf')).toHaveLength(0);
+    expect(varld.handelser.filter((h) => h.typ === 'nummer')).toHaveLength(0);
+    expect(varld.handelser.filter((h) => h.typ === 'lagring')).toHaveLength(0);
+    // Ledger-raden är HELT ORÖRD — samma nummer, samma status, ingen ny post.
+    expect(varld.ledger).toEqual([
+      {
+        id: 'kvitto-makulerat',
+        inbetalningId: 'inb-1',
+        ar: 2026,
+        lopnummer: 1042,
+        status: 'makulerat',
+        lagringsnyckel: 'kvitton/2026/MM-2026-1042.pdf',
+        mottagare: 'delivered@resend.dev',
+      },
+    ]);
+    expect(varld.rader.get('rad-1')?.status).toBe('fel');
+  });
+
+  test('NEGATIV KONTROLL: ett skip-villkor som bara läser status === "skickat" släpper igenom det makulerade fallet', () => {
+    // Reproducerar EXAKT den trasiga logiken denna skiva stänger, isolerat
+    // från I/O — beviset att testet ovan faktiskt fäller en trasig
+    // implementation, inte bara råkar vara grönt.
+    const trasigSkipVillkor = (status: 'utfardat' | 'skickat' | 'makulerat') =>
+      status === 'skickat';
+    expect(trasigSkipVillkor('makulerat')).toBe(false);
+    // Med den trasiga logiken faller `makulerat` igenom till "reuse och
+    // skicka om" — precis grenen som skulle byggt om PDF:en och mailat.
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// § 2c — Kreditkvitto (TASK-346.9, AC #3/#4)
+// ═══════════════════════════════════════════════════════════════════════════
+
+test.describe('korKvittobatch — kreditkvitto', () => {
+  test('negativt belopp: kreditkvitto skapas med hänvisning till originalet, aktiveras i PDF och mail', async () => {
+    const varld = byggVarld({
+      rader: [vantandeRad('rad-1', 'inb-aterbetalning')],
+      underlag: { 'inb-aterbetalning': { belopp: -1500, anmalanRecordId: 'recBBBBBBBBBBBBB' } },
+      original: { id: 'kvitto-original-1', kvittonummer: 'MM-2026-1007' },
+    });
+
+    const utfall = await korKvittobatch([post(1, 'rad-1')], varld.deps);
+
+    expect(utfall).toEqual([{ radId: 'rad-1', utfall: 'skickat', kvittonummer: 'MM-2026-1003' }]);
+    // Ledger-raden är ett KREDITKVITTO som pekar på originalet.
+    expect(varld.ledger).toHaveLength(1);
+    expect(varld.ledger[0]).toMatchObject({
+      typ: 'kreditkvitto',
+      originalKvittoId: 'kvitto-original-1',
+    });
+    // PDF:en och mailet fick BÅDA veta att detta är ett kreditkvitto, med
+    // rätt hänvisningsnummer — det är TASK-346.5:s förberedda tokenyta som
+    // denna skiva aktiverar.
+    const pdfHandelse = varld.handelser.find((h) => h.typ === 'pdf');
+    expect(pdfHandelse).toMatchObject({ dokumenttyp: 'kreditkvitto', hanvisning: 'MM-2026-1007' });
+    const mailHandelse = varld.handelser.find((h) => h.typ === 'mail');
+    expect(mailHandelse).toMatchObject({ dokumenttyp: 'kreditkvitto' });
+  });
+
+  test('AC #4 NEGATIV KONTROLL: kreditkvitto utan original fäller — inget nummer bränns, ingen ledger-rad', async () => {
+    const varld = byggVarld({
+      rader: [vantandeRad('rad-1', 'inb-aterbetalning')],
+      underlag: { 'inb-aterbetalning': { belopp: -1500, anmalanRecordId: 'recBBBBBBBBBBBBB' } },
+      original: null, // inget kvitto att kreditera hittades
+    });
+
+    const utfall = await korKvittobatch([post(1, 'rad-1')], varld.deps);
+
+    expect(utfall[0].utfall).toBe('fel');
+    expect((utfall[0] as { skal: string }).skal.toLowerCase()).toContain('kreditera');
+    // `skapaKvitto` anropades ALDRIG — den databas-constraint
+    // (`kvitton_kreditkvitto_har_original`) som annars hade fällt detta med
+    // ett rått fel prövas aldrig, för koden fäller FÖRE anropet.
+    expect(varld.ledger).toHaveLength(0);
+    expect(varld.handelser.filter((h) => h.typ === 'nummer')).toHaveLength(0);
+    expect(varld.handelser.filter((h) => h.typ === 'mail')).toHaveLength(0);
+    expect(varld.rader.get('rad-1')?.status).toBe('fel');
+  });
+
+  test('positivt belopp: kvittoTyp förblir "kvitto" och ingen hänvisning skrivs — oförändrat beteende', async () => {
+    const varld = byggVarld({
+      rader: [vantandeRad('rad-1', 'inb-1')],
+      underlag: { 'inb-1': {} }, // default-underlaget har belopp: 2500 (positivt)
+      original: { id: 'kvitto-som-ALDRIG-ska-las', kvittonummer: 'MM-2026-9999' },
+    });
+
+    const utfall = await korKvittobatch([post(1, 'rad-1')], varld.deps);
+
+    expect(utfall[0].utfall).toBe('skickat');
+    expect(varld.ledger[0]).toMatchObject({ typ: 'kvitto', originalKvittoId: null });
+    const pdfHandelse = varld.handelser.find((h) => h.typ === 'pdf');
+    expect(pdfHandelse).toMatchObject({ dokumenttyp: 'kvitto', hanvisning: null });
+  });
+
+  test('ÅTERUPPTAGEN kreditkvitto (halvfärdig ledger-rad, status utfardat) bär fortsatt hänvisningen', async () => {
+    // En tidigare körning skapade kreditkvittots ledger-rad men dog innan
+    // mailet gick (samma klass av omkörning som "ETT OSKICKAT befintligt
+    // kvitto ÅTERANVÄNDS" ovan) — hänvisningen måste finnas kvar i fas 2:s
+    // PDF-bygge trots att `skapaKvitto` inte anropas denna gång.
+    const varld = byggVarld({
+      rader: [vantandeRad('rad-1', 'inb-aterbetalning')],
+      underlag: { 'inb-aterbetalning': { belopp: -1500, anmalanRecordId: 'recBBBBBBBBBBBBB' } },
+      original: { id: 'kvitto-original-1', kvittonummer: 'MM-2026-1007' },
+      ledger: [
+        {
+          id: 'kredit-halvfardigt',
+          inbetalningId: 'inb-aterbetalning',
+          ar: 2026,
+          lopnummer: 1050,
+          status: 'utfardat',
+          lagringsnyckel: null,
+          mottagare: null,
+          typ: 'kreditkvitto',
+          originalKvittoId: 'kvitto-original-1',
+        },
+      ],
+    });
+
+    const utfall = await korKvittobatch([post(1, 'rad-1')], varld.deps);
+
+    expect(utfall).toEqual([{ radId: 'rad-1', utfall: 'skickat', kvittonummer: 'MM-2026-1050' }]);
+    expect(varld.handelser.filter((h) => h.typ === 'nummer')).toHaveLength(0);
+    const pdfHandelse = varld.handelser.find((h) => h.typ === 'pdf');
+    expect(pdfHandelse).toMatchObject({ dokumenttyp: 'kreditkvitto', hanvisning: 'MM-2026-1007' });
   });
 });
 

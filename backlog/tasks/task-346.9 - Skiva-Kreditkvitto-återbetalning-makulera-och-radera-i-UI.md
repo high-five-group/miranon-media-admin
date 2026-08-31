@@ -4,6 +4,7 @@ title: 'Skiva: Kreditkvitto, återbetalning, makulera och radera i UI'
 status: To Do
 assignee: []
 created_date: '2026-08-30 18:46'
+updated_date: '2026-08-31 05:38'
 labels:
   - ready-for-agent
 dependencies:
@@ -23,10 +24,10 @@ Modell: Sonnet@xhigh (ADR-089; avvikelse från agent-default bokförd här). Nat
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Radera: inbetalning utan kvitto kan raderas från raden (bekräftelse), facken räknas om, aktivitetslogg-post
-- [ ] #2 Makulera: inbetalning med kvitto får 'Makulera' med skäl (obligatoriskt); raden visar makulerad + skäl; kvittot består i ledgern märkt makulerat; summan räknas om; aktivitetslogg
-- [ ] #3 Återbetalning: 'Registrera återbetalning' på anmälan/rad skapar negativ inbetalning (belopp, betalsätt, datum) med ruta 'Skicka kreditkvitto' förbockad; kreditkvittot får nästa nummer i samma serie, hänvisar till originalkvittot, negativa belopp med samma momsdelning; går via samma jobbmotor
-- [ ] #4 Hermetiska tester + negativ kontroll: makulerad rad påverkar inte kvittots nummer; kreditkvitto utan original fäller; summan efter återbetalning öppnar facket igen
+- [x] #1 Radera: inbetalning utan kvitto kan raderas från raden (bekräftelse), facken räknas om, aktivitetslogg-post
+- [x] #2 Makulera: inbetalning med kvitto får 'Makulera' med skäl (obligatoriskt); raden visar makulerad + skäl; kvittot består i ledgern märkt makulerat; summan räknas om; aktivitetslogg
+- [x] #3 Återbetalning: 'Registrera återbetalning' på anmälan/rad skapar negativ inbetalning (belopp, betalsätt, datum) med ruta 'Skicka kreditkvitto' förbockad; kreditkvittot får nästa nummer i samma serie, hänvisar till originalkvittot, negativa belopp med samma momsdelning; går via samma jobbmotor
+- [x] #4 Hermetiska tester + negativ kontroll: makulerad rad påverkar inte kvittots nummer; kreditkvitto utan original fäller; summan efter återbetalning öppnar facket igen
 - [ ] #5 Acceptanstest: makulera ett kvitto, registrera en återbetalning, kreditkvitto skickat till testadress, PDF visar hänvisningen
 <!-- AC:END -->
 

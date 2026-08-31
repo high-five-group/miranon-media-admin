@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useDataSource } from '@/data/useDataSource';
 import type {
+  HanteraInbetalningResult,
   KoaKvittonInput,
   KoaKvittonResult,
   RegistreraInbetalningInput,
@@ -66,6 +67,44 @@ export function useKoaKvitton() {
     mutationFn: (input) => dataSource.koaKvitton(input),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: queryKeys.betalningar.all });
+    },
+  });
+}
+
+/**
+ * [TASK-346.9 AC #1] Radera — tillåtet ENDAST innan ett kvitto utfärdats
+ * (se `hantera-inbetalning/index.ts`s filhuvud). Samma bredda invalidering
+ * som `useRegistreraInbetalning`, av samma skäl: en raderad rad ändrar
+ * inkorgens lista, anmälans egen rad, personens rad och (via spegeln)
+ * basens `Saknas (kr)`.
+ */
+export function useRaderaInbetalning() {
+  const dataSource = useDataSource();
+  const queryClient = useQueryClient();
+
+  return useMutation<HanteraInbetalningResult, Error, string>({
+    mutationFn: (inbetalningId) => dataSource.raderaInbetalning(inbetalningId),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.betalningar.all });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.registrations.all });
+    },
+  });
+}
+
+/**
+ * [TASK-346.9 AC #2] Makulera — skälet är obligatoriskt (EF:en fäller utan
+ * det). Kvittot BESTÅR i ledgern, märkt makulerat i samma operation
+ * (`hantera-inbetalning/index.ts` § "Kvittot BESTÅR, märkt makulerat").
+ */
+export function useMakuleraInbetalning() {
+  const dataSource = useDataSource();
+  const queryClient = useQueryClient();
+
+  return useMutation<HanteraInbetalningResult, Error, { inbetalningId: string; skal: string }>({
+    mutationFn: (input) => dataSource.makuleraInbetalning(input),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: queryKeys.betalningar.all });
+      void queryClient.invalidateQueries({ queryKey: queryKeys.registrations.all });
     },
   });
 }

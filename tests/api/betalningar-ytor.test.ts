@@ -25,6 +25,8 @@ import {
 } from '@/components/betalningar/inkorg-harledningar';
 import {
   inbetalningsText,
+  kanMakulera,
+  kanRadera,
   kvittolage,
   personOversikt,
   sorteraInbetalningar,
@@ -247,6 +249,59 @@ test('kvittot paras mot RÄTT inbetalning, aldrig mot listans första', () => {
   // rad — och "Visa" hade öppnat fel persons kvitto.
   const trasigPar = (k: Kvitto[]) => k[0];
   expect(trasigPar([annans, mitt]).kvittonummer).toBe('MM-2026-1007');
+});
+
+/* ═══════════════════ RADERA / MAKULERA (TASK-346.9 AC #1/#2) ═══════════════ */
+
+test('RADERA: erbjuds för en aktiv inbetalning UTAN kvitto', () => {
+  expect(kanRadera(inbetalning({ kvittoId: null, status: 'aktiv' }))).toBe(true);
+});
+
+test('RADERA: erbjuds ALDRIG när ett kvitto finns', () => {
+  expect(kanRadera(inbetalning({ kvittoId: kvitto().id, status: 'aktiv' }))).toBe(false);
+
+  // NEGATIV KONTROLL: "det finns en rad, alltså kan den raderas" är den
+  // enklaste trasiga regeln — den hade låtit Lotta radera en post vars kvitto
+  // redan gått ut till en deltagare (`kvitton.inbetalning_id on delete
+  // restrict` hade fällt DATABASEN, men UI:t hade visat en knapp som alltid
+  // fäller, i stället för att aldrig erbjudas).
+  const trasigRadera = () => true;
+  expect(trasigRadera()).toBe(true);
+  expect(trasigRadera()).not.toBe(kanRadera(inbetalning({ kvittoId: kvitto().id })));
+});
+
+test('RADERA: erbjuds ALDRIG för en redan makulerad rad', () => {
+  expect(kanRadera(inbetalning({ kvittoId: null, status: 'makulerad' }))).toBe(false);
+});
+
+test('MAKULERA: erbjuds för en aktiv inbetalning MED kvitto', () => {
+  expect(kanMakulera(inbetalning({ kvittoId: kvitto().id, status: 'aktiv' }))).toBe(true);
+});
+
+test('MAKULERA: erbjuds ALDRIG utan kvitto — det är RADERAS yta', () => {
+  expect(kanMakulera(inbetalning({ kvittoId: null, status: 'aktiv' }))).toBe(false);
+
+  // NEGATIV KONTROLL: en regel som ENDAST läser `status === 'aktiv'` hade
+  // erbjudit Makulera på en rad utan kvitto också — bägge knapparna synliga
+  // på samma rad, en motsägelse i gränssnittet.
+  const trasigMakulera = (i: Inbetalning) => i.status === 'aktiv';
+  expect(trasigMakulera(inbetalning({ kvittoId: null, status: 'aktiv' }))).toBe(true);
+  expect(trasigMakulera(inbetalning({ kvittoId: null, status: 'aktiv' }))).not.toBe(
+    kanMakulera(inbetalning({ kvittoId: null, status: 'aktiv' })),
+  );
+});
+
+test('MAKULERA: erbjuds ALDRIG för en redan makulerad rad — EF:en ger 409', () => {
+  expect(kanMakulera(inbetalning({ kvittoId: kvitto().id, status: 'makulerad' }))).toBe(false);
+});
+
+test('RADERA och MAKULERA är ALDRIG båda sanna för samma rad', () => {
+  for (const kvittoId of [null, kvitto().id]) {
+    for (const status of ['aktiv', 'makulerad'] as const) {
+      const post = inbetalning({ kvittoId, status });
+      expect(kanRadera(post) && kanMakulera(post)).toBe(false);
+    }
+  }
 });
 
 /* ═══════════════════════ RADERNAS ORDNING (AC #3/#4) ═══════════════════════ */

@@ -205,6 +205,15 @@ function byggAtervandningsVarld(
 
     hittaKvitto: (inbetalningId) => hittaKvittoImpl(ledger, inbetalningId),
 
+    // [TASK-346.9] Denna värld bär bara positiva belopp (2500) — aldrig en
+    // återbetalning — så `forbered()` anropar aldrig detta. Stubben finns
+    // bara för att uppfylla kontraktet.
+    async hittaOriginalKvitto() {
+      throw new Error(
+        'hittaOriginalKvitto ska inte anropas i detta testfall (inget negativt belopp).',
+      );
+    },
+
     async allokeraNummer(ar) {
       nyaAllokeringar += 1;
       const lopnummer = nastaLopnummer;

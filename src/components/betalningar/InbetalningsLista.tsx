@@ -1,15 +1,25 @@
 import { AlertTriangle } from 'lucide-react';
-import { useState } from 'react';
-import { Button, MessageBox, Skeleton } from '@/components/primitives';
+import { type FormEvent, type KeyboardEvent, useId, useRef, useState } from 'react';
+import { Button, Input, MessageBox, Skeleton } from '@/components/primitives';
 import {
   useInbetalningarPerAnmalan,
   useInbetalningarPerPerson,
 } from '@/data/betalningar/useBetalningar';
+import { useMakuleraInbetalning, useRaderaInbetalning } from '@/data/mutations/inbetalningar';
 import { useKvittolank, useSkickaKvittoIgen } from '@/data/mutations/kvitton';
 import type { Inbetalning, Kvitto } from '@/domain/schemas';
 import { skrivLaddningssida } from '@/lib/skriv-laddningssida';
 import { visaKronor } from './belopp-inmatning';
-import { inbetalningsText, kvittolage, sorteraInbetalningar } from './panel-harledningar';
+import {
+  inbetalningsText,
+  kanMakulera,
+  kanRadera,
+  kvittolage,
+  sorteraInbetalningar,
+} from './panel-harledningar';
+
+/** Skälets längdgräns — speglar `hantera-inbetalning/index.ts`s `SKAL_MIN_LANGD`/`SKAL_MAX_LANGD`. */
+const SKAL_MIN_LANGD = 3;
 
 export type Inbetalningskalla = { anmalanRecordId: string } | { personId: string };
 
@@ -127,6 +137,9 @@ export function InbetalningsLista({ kalla, aktiv, max, tomText }: Props) {
   );
 }
 
+/** Vilket inline-underläge raden befinner sig i. Bara ETT åt gången (AC #1/#2). */
+type Radatgard = 'vy' | 'radera-bekrafta' | 'makulera-skal';
+
 function InbetalningsRad({
   inbetalning,
   kvitton,
@@ -137,9 +150,68 @@ function InbetalningsRad({
   const lage = kvittolage(inbetalning, kvitton);
   const lank = useKvittolank();
   const skickaIgen = useSkickaKvittoIgen();
+  const radera = useRaderaInbetalning();
+  const makulera = useMakuleraInbetalning();
   const [skickatTill, setSkickatTill] = useState<string | null>(null);
+  const [atgard, setAtgard] = useState<Radatgard>('vy');
+  const [skal, setSkal] = useState('');
+  const [skalRort, setSkalRort] = useState(false);
+  const skalId = useId();
 
   const makulerad = inbetalning.status === 'makulerad';
+  const visaRadera = kanRadera(inbetalning);
+  const visaMakulera = kanMakulera(inbetalning);
+
+  // FOKUS-RETUR TILL TRIGGER-KNAPPEN — bara vid AVBRYT/ESC (samma anatomi som
+  // `RegistreraYta`/`AterbetalningsYta`). En LYCKAD radering tar bort raden
+  // helt (ur listan efter invalidering) och en lyckad makulering tar bort
+  // knappen som öppnade panelen (`kanMakulera` blir falsk) — i BÅDA de fallen
+  // finns inget meningsfullt fokusmål kvar att återgå till, och det är
+  // BOKFÖRT här, inte förbisett: statusraden nedan (`role="status"`) bär då
+  // annonseringen i stället för fokus.
+  const raderaTriggerRef = useRef<HTMLButtonElement>(null);
+  const makuleraTriggerRef = useRef<HTMLButtonElement>(null);
+
+  function avbrytAtgard(returTill?: 'radera' | 'makulera') {
+    setAtgard('vy');
+    setSkal('');
+    setSkalRort(false);
+    if (returTill === 'radera') raderaTriggerRef.current?.focus();
+    else if (returTill === 'makulera') makuleraTriggerRef.current?.focus();
+  }
+
+  function vidRaderaTangent(event: KeyboardEvent<HTMLElement>) {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
+      avbrytAtgard('radera');
+    }
+  }
+
+  function vidMakuleraTangent(event: KeyboardEvent<HTMLElement>) {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
+      avbrytAtgard('makulera');
+    }
+  }
+
+  const skalFel =
+    skalRort && skal.trim().length < SKAL_MIN_LANGD
+      ? `Skriv ett skäl (minst ${SKAL_MIN_LANGD} tecken).`
+      : null;
+
+  function vidMakuleraSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
+    if (skal.trim().length < SKAL_MIN_LANGD) {
+      setSkalRort(true);
+      return;
+    }
+    makulera.mutate(
+      { inbetalningId: inbetalning.id, skal: skal.trim() },
+      { onSuccess: () => setAtgard('vy') },
+    );
+  }
 
   function visaKvitto() {
     if (lage.kvitto === null) return;
@@ -205,6 +277,31 @@ function InbetalningsRad({
               Skicka igen
             </Button>
           )}
+          {/* [TASK-346.9 AC #1/#2] Radera/Makulera — bara EN av knapparna kan
+              någonsin vara sann samtidigt (`kanRadera`/`kanMakulera` är
+              varandras motsatser via `kvittoId`), men villkoren skrivs var
+              för sig i stället för `else if`: härledningarna bor i
+              `panel-harledningar.ts`, inte i denna JSX. */}
+          {atgard === 'vy' && visaRadera && (
+            <Button
+              ref={raderaTriggerRef}
+              intent="ghost"
+              size="sm"
+              onPress={() => setAtgard('radera-bekrafta')}
+            >
+              Radera
+            </Button>
+          )}
+          {atgard === 'vy' && visaMakulera && (
+            <Button
+              ref={makuleraTriggerRef}
+              intent="ghost"
+              size="sm"
+              onPress={() => setAtgard('makulera-skal')}
+            >
+              Makulera
+            </Button>
+          )}
         </span>
       </div>
 
@@ -220,6 +317,63 @@ function InbetalningsRad({
         </span>
       )}
 
+      {/* AC #1: "kan raderas från raden (bekräftelse)". Inline, samma
+          "öppnas på plats"-mönster som `RegistreraForm`/`AterbetalningsForm`
+          — ingen modal för en engångsfråga. */}
+      {atgard === 'radera-bekrafta' && (
+        <fieldset
+          onKeyDown={vidRaderaTangent}
+          className="flex flex-wrap items-center gap-2 rounded border border-border bg-surface px-2 py-2"
+        >
+          <legend className="sr-only">{`Radera inbetalningen: ${inbetalningsText(inbetalning)}?`}</legend>
+          <span className="text-caption">Radera denna inbetalning? Det går inte att ångra.</span>
+          <Button
+            intent="danger"
+            size="sm"
+            isLoading={radera.isPending}
+            onPress={() => radera.mutate(inbetalning.id, { onSuccess: () => setAtgard('vy') })}
+          >
+            Radera
+          </Button>
+          <Button intent="ghost" size="sm" onPress={() => avbrytAtgard('radera')}>
+            Avbryt
+          </Button>
+        </fieldset>
+      )}
+
+      {/* AC #2: "får 'Makulera' med skäl (obligatoriskt)". */}
+      {atgard === 'makulera-skal' && (
+        <form
+          onSubmit={vidMakuleraSubmit}
+          onKeyDown={vidMakuleraTangent}
+          aria-label={`Makulera inbetalningen: ${inbetalningsText(inbetalning)}`}
+          className="flex flex-col gap-2 rounded border border-border bg-surface px-2 py-2"
+        >
+          <Input
+            label="Skäl till makuleringen"
+            value={skal}
+            onChange={(v) => {
+              setSkal(v);
+              setSkalRort(true);
+            }}
+            isInvalid={skalFel !== null}
+            errorMessage={skalFel ?? undefined}
+            aria-describedby={skalId}
+          />
+          <p id={skalId} className="sr-only">
+            Skälet läses av Roger i efterhand och syns på raden.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button type="submit" intent="danger" size="sm" isLoading={makulera.isPending}>
+              Makulera
+            </Button>
+            <Button intent="ghost" size="sm" onPress={() => avbrytAtgard('makulera')}>
+              Avbryt
+            </Button>
+          </div>
+        </form>
+      )}
+
       {lank.isError && (
         <span role="alert" className="text-(color:--mm-input-error-text) text-caption">
           {lank.error.message}
@@ -228,6 +382,16 @@ function InbetalningsRad({
       {skickaIgen.isError && (
         <span role="alert" className="text-(color:--mm-input-error-text) text-caption">
           {skickaIgen.error.message}
+        </span>
+      )}
+      {radera.isError && (
+        <span role="alert" className="text-(color:--mm-input-error-text) text-caption">
+          {radera.error.message}
+        </span>
+      )}
+      {makulera.isError && (
+        <span role="alert" className="text-(color:--mm-input-error-text) text-caption">
+          {makulera.error.message}
         </span>
       )}
     </li>

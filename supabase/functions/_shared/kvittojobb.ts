@@ -114,8 +114,19 @@ export type KvittoUnderlag = {
 
 /** Specen `byggPdf` får. Egen typ, MEDVETET inte `KvittoradSpec` importerad:
  * den bor i `receipt-content.ts`, som denna skiva inte får röra
- * (kollisionsyta med TASK-346.5). Mappningen sker hos EF:en. */
-export type KvittoPdfSpec = KvittoUnderlag & { kvittonummer: string; datum: string };
+ * (kollisionsyta med TASK-346.5). Mappningen sker hos EF:en.
+ *
+ * `typ`/`hanvisningTillKvittonummer` [TASK-346.9, AKTIVERAR TASK-346.5:s
+ * förberedda tokenyta i `receipt-content.ts`/`mall-data.ts`] — ALLTID satta
+ * av `forbered()` nedan, aldrig `undefined`: ett vanligt kvitto får
+ * `typ: 'kvitto'` och `hanvisningTillKvittonummer: null`, ett kreditkvitto
+ * `typ: 'kreditkvitto'` och originalets kvittonummer. */
+export type KvittoPdfSpec = KvittoUnderlag & {
+  kvittonummer: string;
+  datum: string;
+  typ: 'kvitto' | 'kreditkvitto';
+  hanvisningTillKvittonummer: string | null;
+};
 
 /** En befintlig ledger-rad, som `hittaKvitto` returnerar den. */
 export type BefintligtKvitto = {
@@ -164,12 +175,45 @@ export type KvittoJobbDeps = {
 
   hamtaUnderlag(inbetalningId: string): Promise<KvittoUnderlag | null>;
   hittaKvitto(inbetalningId: string): Promise<BefintligtKvitto | null>;
+  /**
+   * [TASK-346.9, ADR-128 § Kvittot: "kreditkvittot hänvisar till
+   * originalet"] Kvittot en KREDITKVITTO ska referera, för EN anmälan.
+   *
+   * DESIGNVAL, bokfört (schemat bär ingen egen "avser"-kolumn för detta,
+   * och kortets mandat medvetet lämnade avgörandet öppet, "designa mot
+   * hittaKvitto/förbered-flödet"): originalet är det SENAST utfärdade
+   * `typ: 'kvitto'`-kvittot, INTE makulerat, bland de inbetalningar som
+   * delar `anmalanRecordId` — inte en explicit vald rad. Skälet är
+   * schemat: `inbetalningar` bär ingen länk till "vilken tidigare
+   * inbetalning denna återbetalning avser", och att lägga till en sådan
+   * kolumn är en schemaändring `TASK-346.9` uttryckligen INTE fick göra
+   * (uppdragets "ingen ny migration"). `anmalanRecordId` är den enda
+   * länk som redan finns och som entydigt identifierar "den bokförings-
+   * post detta gäller" i det VANLIGA fallet (en anmälan har som regel
+   * högst en levande kvitto-serie åt gången).
+   *
+   * `null` = inget att kreditera hittades — AC #4:s negativa kontroll
+   * ("kreditkvitto utan original fäller") kräver att `forbered()` då
+   * FÄLLER raden i stället för att skapa ett kreditkvitto utan hänvisning
+   * (vilket `kvitton_kreditkvitto_har_original`-constrainten ändå hade
+   * stoppat, men med ett rått databasfel i stället för ett skäl Lotta
+   * förstår).
+   */
+  hittaOriginalKvitto(anmalanRecordId: string): Promise<{ id: string; kvittonummer: string } | null>;
   allokeraNummer(ar: number): Promise<AllokeratNummer>;
-  /** Skriver ledger-raden. KASTAR vid unik-nyckel-brott (dubbelskicksspärren). */
+  /**
+   * Skriver ledger-raden. KASTAR vid unik-nyckel-brott (dubbelskicksspärren).
+   *
+   * `typ`/`originalKvittoId` [TASK-346.9]: `'kvitto'`/`null` för en vanlig
+   * betalning, `'kreditkvitto'`/originalets id för en återbetalning — se
+   * `hittaOriginalKvitto` ovan för hur originalet avgörs.
+   */
   skapaKvitto(spec: {
     inbetalningId: string;
     ar: number;
     lopnummer: number;
+    typ: 'kvitto' | 'kreditkvitto';
+    originalKvittoId: string | null;
   }): Promise<{ id: string }>;
   finaliseraKvitto(
     kvittoId: string,
@@ -179,8 +223,15 @@ export type KvittoJobbDeps = {
   byggPdf(spec: KvittoPdfSpec): Promise<KvittoPdf>;
   /** Sparar PDF:en i den privata bucketen och returnerar lagringsnyckeln. */
   sparaPdf(spec: { ar: number; kvittonummer: string; pdf: KvittoPdf }): Promise<string>;
+  /** `typ` [TASK-346.9]: mailets ämne/text skiljer "kvitto" från "kreditkvitto". */
   skickaMail(
-    spec: { email: string; kundnamn: string; kvittonummer: string; pdf: KvittoPdf },
+    spec: {
+      email: string;
+      kundnamn: string;
+      kvittonummer: string;
+      pdf: KvittoPdf;
+      typ: 'kvitto' | 'kreditkvitto';
+    },
     ctx: { idempotencyKey: string },
   ): Promise<{ accepterat: boolean; skal?: string }>;
 
@@ -247,6 +298,10 @@ type Forberedd = {
   nummer: AllokeratNummer;
   /** Satt när en tidigare körning redan sparat PDF:en (omkörning efter fel). */
   befintligLagringsnyckel: string | null;
+  /** [TASK-346.9] `'kreditkvitto'` för en återbetalning (`underlag.belopp < 0`), annars `'kvitto'`. */
+  kvittoTyp: 'kvitto' | 'kreditkvitto';
+  /** [TASK-346.9] Originalets kvittonummer för ett kreditkvitto, annars `null`. */
+  hanvisningTillKvittonummer: string | null;
   pdf?: KvittoPdf;
   lagringsnyckel?: string;
 };
@@ -278,6 +333,8 @@ export async function korKvittobatch(
       ...item.underlag,
       kvittonummer: item.nummer.kvittonummer,
       datum: deps.nu(),
+      typ: item.kvittoTyp,
+      hanvisningTillKvittonummer: item.hanvisningTillKvittonummer,
     });
     item.pdf = pdf;
     // En omkörning efter ett mailfel behöver inte ladda upp PDF:en igen —
@@ -374,20 +431,15 @@ async function forbered(
 
     // Dubbelskickspärren, del (a) — se filhuvudet.
     //
-    // ═══ ANTAGANDET SOM 346.9 MÅSTE PRÖVA (granskningsfynd runda 1) ═══
-    // Skip-villkoret nedan täcker BARA `skickat`. Ett kvitto med status
-    // `makulerat` faller alltså igenom och behandlas som "oskickat" — raden
-    // återanvänds, PDF:en byggs om och mailet går.
-    //
-    // I DENNA SKIVA ÄR DET ONÅBART: ingen kodväg sätter `makulerat` (grep:
-    // noll skrivningar av det värdet), så tillståndet kan inte uppstå.
-    // Villkoret är därför korrekt SOM DET STÅR i dag, inte av tur.
-    //
-    // `TASK-346.9` (kreditkvitto, återbetalning, makulera i UI) inför det
-    // tillståndet. DEN skivan MÅSTE då antingen utvidga villkoret till
-    // `status !== 'utfardat'` eller MEDVETET välja att ett makulerat kvitto
-    // får skickas om — och skriva ned vilket. Att låta detta stå oförändrat
-    // och oläst är den enda vägen som är fel.
+    // ═══ ANTAGANDET LÖST (granskningsfynd runda 1 → TASK-346.9) ═══
+    // Skip-villkoret täckte fram till denna skiva BARA `skickat`. Ett kvitto
+    // med status `makulerat` föll då igenom och hade behandlats som
+    // "oskickat" — raden återanvänd, PDF:en ombyggd, mailet skickat. TASK-346.9
+    // inför `makulerat` (via `hantera-inbetalning`s nya kvitto-skrivning), och
+    // det tillståndet får ALDRIG återupplivas: ett återanvänt nummer plus ett
+    // omskick av en ogiltig verifikation. Grenen nedan fäller raden i stället
+    // — MEDVETET VAL, inte ett skickat-om-igen-försök: ett makulerat kvitto är
+    // en avslutad bokföringspost, aldrig en väntande.
     const befintligt = await deps.hittaKvitto(underlag.inbetalningId);
     if (befintligt !== null && befintligt.status === 'skickat') {
       await deps.markeraRadSlut(post.radId, byggSlutUppdatering({ status: 'skickat' }, deps.nu()));
@@ -401,8 +453,53 @@ async function forbered(
         },
       };
     }
+    if (befintligt !== null && befintligt.status === 'makulerat') {
+      return {
+        typ: 'utfall',
+        utfall: await avslutaMedFel(
+          post,
+          'Kvittot är makulerat och kan inte skickas eller byggas om.',
+          deps,
+        ),
+      };
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // KREDITKVITTO [TASK-346.9] — ADR-128 § Kvittot, PRD berättelse 18/33
+    // ═══════════════════════════════════════════════════════════════════════
+    // Tecknet BÄR typen (samma invariant som `inbetalningar_tecken_foljer_typ`
+    // i schemat): ett negativt belopp är strukturellt alltid en återbetalning,
+    // aldrig ett vanligt kvitto med råkat negativt tal. Originalet slås upp
+    // INNAN dubbelskicksspärrens `befintligt`-gren avgör om raden är NY eller
+    // en omkörning — annars hade en omkörning av ett halvfärdigt kreditkvitto
+    // (ledger-raden skapad, mailet aldrig skickat) saknat sin hänvisning i
+    // fas 2:s PDF-bygge.
+    const arAterbetalning = underlag.belopp < 0;
+    let original: { id: string; kvittonummer: string } | null = null;
+    if (arAterbetalning) {
+      original = await deps.hittaOriginalKvitto(underlag.anmalanRecordId);
+      if (original === null) {
+        // AC #4:s negativa kontroll: "kreditkvitto utan original fäller".
+        // Databasens `kvitton_kreditkvitto_har_original`-constraint hade
+        // stoppat ett INSERT utan `original_kvitto_id` ändå — men med ett
+        // rått databasfel i stället för ett skäl Lotta förstår. Fäll HÄR,
+        // före `skapaKvitto` ens anropas.
+        return {
+          typ: 'utfall',
+          utfall: await avslutaMedFel(
+            post,
+            'Inget kvitto att kreditera hittades för anmälan — kreditkvittot kan inte utfärdas.',
+            deps,
+          ),
+        };
+      }
+    }
+    const kvittoTyp: 'kvitto' | 'kreditkvitto' = arAterbetalning ? 'kreditkvitto' : 'kvitto';
+    const hanvisningTillKvittonummer = arAterbetalning ? (original?.kvittonummer ?? null) : null;
 
     if (befintligt !== null) {
+      // Enda kvarvarande statusen här är `utfardat` — en tidigare körning dog
+      // efter ledger-raden men före mailet. SAMMA nummer återanvänds.
       return {
         typ: 'klar',
         forberedd: {
@@ -415,6 +512,8 @@ async function forbered(
             lopnummer: befintligt.lopnummer,
           },
           befintligLagringsnyckel: befintligt.lagringsnyckel,
+          kvittoTyp,
+          hanvisningTillKvittonummer,
         },
       };
     }
@@ -429,6 +528,8 @@ async function forbered(
       inbetalningId: underlag.inbetalningId,
       ar: nummer.ar,
       lopnummer: nummer.lopnummer,
+      typ: kvittoTyp,
+      originalKvittoId: arAterbetalning ? (original?.id ?? null) : null,
     });
 
     return {
@@ -439,6 +540,8 @@ async function forbered(
         kvittoId: skapat.id,
         nummer,
         befintligLagringsnyckel: null,
+        kvittoTyp,
+        hanvisningTillKvittonummer,
       },
     };
   } catch (fel) {
@@ -466,6 +569,7 @@ async function skickaOchFinalisera(
         kundnamn: underlag.kundnamn,
         kvittonummer: nummer.kvittonummer,
         pdf,
+        typ: item.kvittoTyp,
       },
       { idempotencyKey: kvittoIdempotensnyckel(underlag.inbetalningId) },
     );

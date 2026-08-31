@@ -105,6 +105,31 @@ export function kvittolage(inbetalning: Inbetalning, kvitton: readonly Kvitto[])
   };
 }
 
+/* ═══════════════════════════ RADERA / MAKULERA (TASK-346.9 AC #1/#2) ═══ */
+
+/**
+ * Får RADERA erbjudas på raden? AC #1, ordagrant: "inbetalning utan kvitto
+ * kan raderas från raden". `hantera-inbetalning/index.ts`s egen kontroll är
+ * bredare (den stoppar bara på `kvittoId !== null`) — UI:t lägger till
+ * `status === 'aktiv'` för att inte erbjuda en handling på en rad som redan
+ * ÄR resolverad (raden visar redan "Makulerad: <skäl>"; ett radera-alternativ
+ * bredvid hade varit en andra, motsägande väg ut ur samma post).
+ */
+export function kanRadera(inbetalning: Inbetalning): boolean {
+  return inbetalning.kvittoId === null && inbetalning.status === 'aktiv';
+}
+
+/**
+ * Får MAKULERA erbjudas på raden? AC #2, ordagrant: "inbetalning med kvitto
+ * får 'Makulera' med skäl (obligatoriskt)". Samma UI-skärpning som
+ * `kanRadera`: en redan makulerad rad erbjuds inte makulering igen (EF:en
+ * själv fäller det försöket med 409 `redan_makulerad`, se
+ * `hantera-inbetalning/index.ts`).
+ */
+export function kanMakulera(inbetalning: Inbetalning): boolean {
+  return inbetalning.kvittoId !== null && inbetalning.status === 'aktiv';
+}
+
 /* ═══════════════════════════ RADERNAS ORDNING ═══════════════════════════ */
 
 /**
