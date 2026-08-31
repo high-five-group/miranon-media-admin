@@ -1,5 +1,5 @@
 import { AlertTriangle } from 'lucide-react';
-import { type FormEvent, type KeyboardEvent, useId, useRef, useState } from 'react';
+import { type FormEvent, type KeyboardEvent, useEffect, useId, useRef, useState } from 'react';
 import { Button, Input, MessageBox, Skeleton } from '@/components/primitives';
 import {
   useInbetalningarPerAnmalan,
@@ -18,8 +18,15 @@ import {
   sorteraInbetalningar,
 } from './panel-harledningar';
 
-/** Skälets längdgräns — speglar `hantera-inbetalning/index.ts`s `SKAL_MIN_LANGD`/`SKAL_MAX_LANGD`. */
+/**
+ * Skälets längdgränser — speglar `hantera-inbetalning/index.ts`s
+ * `SKAL_MIN_LANGD`/`SKAL_MAX_LANGD`. RÄTTAD, granskningsfynd runda 2, I7:
+ * kommentaren påstod tidigare att BÅDA speglades, men bara MIN användes —
+ * ett skäl över 500 tecken upptäcktes först efter submit (EF:ens 400 "Skälet
+ * får vara högst 500 tecken."), i stället för direkt i fältet.
+ */
 const SKAL_MIN_LANGD = 3;
+const SKAL_MAX_LANGD = 500;
 
 export type Inbetalningskalla = { anmalanRecordId: string } | { personId: string };
 
@@ -159,8 +166,8 @@ function InbetalningsRad({
   const skalId = useId();
 
   const makulerad = inbetalning.status === 'makulerad';
-  const visaRadera = kanRadera(inbetalning);
-  const visaMakulera = kanMakulera(inbetalning);
+  const visaRadera = kanRadera(inbetalning, kvitton);
+  const visaMakulera = kanMakulera(inbetalning, kvitton);
 
   // FOKUS-RETUR TILL TRIGGER-KNAPPEN — bara vid AVBRYT/ESC (samma anatomi som
   // `RegistreraYta`/`AterbetalningsYta`). En LYCKAD radering tar bort raden
@@ -171,6 +178,39 @@ function InbetalningsRad({
   // annonseringen i stället för fokus.
   const raderaTriggerRef = useRef<HTMLButtonElement>(null);
   const makuleraTriggerRef = useRef<HTMLButtonElement>(null);
+
+  // ── FOKUS IN när en panel öppnas (granskningsfynd runda 2, W5) ──────────
+  //
+  // Samma anatomi som `AterbetalningsForm`/`RegistreraForm`: trigger-knappen
+  // som ÄGDE fokus AVMONTERAS i samma render som panelen visas (`atgard ===
+  // 'vy' && ...` slutar rendera de knapparna ovan) — utan en explicit
+  // flytt faller webbläsaren tillbaka på `document.body`, och varken
+  // skärmläsaren annonserar kontextväxlingen eller Escape-hanterarna
+  // (`vidRaderaTangent`/`vidMakuleraTangent`, som sitter PÅ fieldset/form)
+  // tar emot något förrän Lotta tabbat in för hand.
+  //
+  // DETTA ÄR INGEN MOUNT-EFFEKT: `AterbetalningsForm` är en EGEN komponent
+  // som monteras/avmonteras när den öppnas, så dess `useEffect(fn, [])`
+  // räcker. Panelerna här är i stället villkorad JSX i SAMMA
+  // komponentinstans (`InbetalningsRad` byter bara `atgard`-state) — en
+  // tom dependency-lista hade bara fokuserat vid FÖRSTA render, aldrig vid
+  // en senare övergång 'vy' → 'radera-bekrafta'. Effekten är därför keyad
+  // på `atgard` och körs om vid VARJE övergång.
+  //
+  // RADERA-PANELEN FOKUSERAR "Avbryt", INTE "Radera": WAI-ARIA APG:s
+  // alertdialog-mönster ("Initial focus placement... on the least
+  // destructive action button") gäller ordagrant här — panelens egen text
+  // säger "Det går inte att ångra", och ett fokuserat "Radera" hade gjort
+  // ett oavsiktligt Enter-tryck direkt efter öppning till en oåterkallelig
+  // radering. MAKULERA-PANELEN fokuserar skäl-fältet i stället: åtgärden
+  // KRÄVER ändå att Lotta skriver något innan den går att skicka, så
+  // fältet är den naturliga första stoppen.
+  const raderaAvbrytRef = useRef<HTMLButtonElement>(null);
+  const makuleraSkalRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (atgard === 'radera-bekrafta') raderaAvbrytRef.current?.focus();
+    else if (atgard === 'makulera-skal') makuleraSkalRef.current?.focus();
+  }, [atgard]);
 
   function avbrytAtgard(returTill?: 'radera' | 'makulera') {
     setAtgard('vy');
@@ -196,14 +236,17 @@ function InbetalningsRad({
     }
   }
 
+  const skalLangd = skal.trim().length;
   const skalFel =
-    skalRort && skal.trim().length < SKAL_MIN_LANGD
+    skalRort && skalLangd < SKAL_MIN_LANGD
       ? `Skriv ett skäl (minst ${SKAL_MIN_LANGD} tecken).`
-      : null;
+      : skalRort && skalLangd > SKAL_MAX_LANGD
+        ? `Skälet får vara högst ${SKAL_MAX_LANGD} tecken.`
+        : null;
 
   function vidMakuleraSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (skal.trim().length < SKAL_MIN_LANGD) {
+    if (skalLangd < SKAL_MIN_LANGD || skalLangd > SKAL_MAX_LANGD) {
       setSkalRort(true);
       return;
     }
@@ -335,7 +378,12 @@ function InbetalningsRad({
           >
             Radera
           </Button>
-          <Button intent="ghost" size="sm" onPress={() => avbrytAtgard('radera')}>
+          <Button
+            ref={raderaAvbrytRef}
+            intent="ghost"
+            size="sm"
+            onPress={() => avbrytAtgard('radera')}
+          >
             Avbryt
           </Button>
         </fieldset>
@@ -350,6 +398,7 @@ function InbetalningsRad({
           className="flex flex-col gap-2 rounded border border-border bg-surface px-2 py-2"
         >
           <Input
+            ref={makuleraSkalRef}
             label="Skäl till makuleringen"
             value={skal}
             onChange={(v) => {

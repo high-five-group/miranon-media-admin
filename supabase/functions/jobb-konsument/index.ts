@@ -297,6 +297,25 @@ Deno.serve(async (req) => {
         if (error) throw error;
         if (!data) return null;
         const kvitto = radTillKvitto(data);
+
+        // [TASK-346.9 fix-runda 2, W4] Läs den PERSISTERADE hänvisningens
+        // NUMMER — `kvittojobb.ts`s `forbered()` behöver den (inte bara
+        // `original_kvitto_id`) för att kunna återuppta en halvfärdig
+        // kreditkvitto-rad utan att räkna om via `hittaOriginalKvitto`. En
+        // andra, liten läsning i stället för en PostgREST-embed
+        // (`original:original_kvitto_id(kvittonummer)`) — samma raka
+        // frågeform som resten av filen, ingen ny mönster.
+        let originalKvittonummer: string | null = null;
+        if (kvitto.originalKvittoId !== null) {
+          const { data: originalData, error: originalFel } = await db
+            .from(KVITTON_TABELL)
+            .select('kvittonummer')
+            .eq('id', kvitto.originalKvittoId)
+            .maybeSingle();
+          if (originalFel) throw originalFel;
+          originalKvittonummer = (originalData?.kvittonummer as string | null) ?? null;
+        }
+
         return {
           id: kvitto.id,
           kvittonummer: kvitto.kvittonummer,
@@ -304,6 +323,9 @@ Deno.serve(async (req) => {
           lopnummer: kvitto.lopnummer,
           status: kvitto.status,
           lagringsnyckel: kvitto.lagringsnyckel,
+          typ: kvitto.typ,
+          originalKvittoId: kvitto.originalKvittoId,
+          originalKvittonummer,
         };
       },
 

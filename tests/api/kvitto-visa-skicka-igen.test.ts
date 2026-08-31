@@ -313,6 +313,13 @@ async function korrektHittaKvitto(
     lopnummer: post.lopnummer,
     status: post.status,
     lagringsnyckel: post.lagringsnyckel,
+    // [TASK-346.9] Denna svit prövar bara VANLIGA kvitton — `LedgerRad`
+    // bär ingen `typ`/`originalKvittoId`, så ett vanligt kvittos värden
+    // hårdkodas här i stället för att utvidga en fixturtyp den återstående
+    // sviten aldrig läser.
+    typ: 'kvitto',
+    originalKvittoId: null,
+    originalKvittonummer: null,
   };
 }
 

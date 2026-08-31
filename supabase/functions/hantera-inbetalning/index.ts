@@ -22,11 +22,14 @@
 //   inte längre in i summan (`harledBetalning` filtrerar på `status ===
 //   'aktiv'`). Kvittot står kvar i ledgern — ett utfärdat kvitto är en
 //   verifikation och raderas aldrig — men [TASK-346.9] märks `makulerat`
-//   i SAMMA operation, om ett finns (`inbetalning.kvittoId !== null`). Se
-//   "§ Kvittot BESTÅR, märkt makulerat" nedan för varför detta inte bara är
-//   kosmetiskt: utan skrivningen kan ett ännu-inte-skickat kvitto (status
-//   `utfardat`) plockas upp och SKICKAS av jobbmotorn efter att
-//   inbetalningen redan makulerats.
+//   i SAMMA operation, om ett finns. Se "§ Kvittot BESTÅR, märkt makulerat"
+//   nedan för VAD skrivningen faktiskt ger (bokföringssanning i ledgern och
+//   UI:t) — RÄTTAD PROSA, granskningsfynd runda 2, W2: den beskrev
+//   tidigare felaktigt skrivningen som en SEND-SPÄRR. Ingen sådan spärr
+//   byggs här: den finns redan, oberoende, i `jobb-konsument`s
+//   `hamtaUnderlag` (kastar när inbetalningens EGNA status inte är `aktiv`,
+//   oavsett kvittots status — och det sker FÖRE `hittaKvitto` ens anropas i
+//   `kvittojobb.ts`s `forbered()`).
 //
 // SKÄLET ÄR OBLIGATORISKT vid makulering. Check-constrainten
 // `inbetalningar_makulering_kraver_skal` fäller en makulering utan skäl —
@@ -220,17 +223,31 @@ Deno.serve(async (req) => {
 
       // ── [TASK-346.9, AC #2] Kvittot BESTÅR, märkt makulerat ─────────────
       //
-      // Filhuvudets löfte ("ett utfärdat kvitto är en verifikation och
-      // raderas aldrig") krävde fram till denna skiva bara att koden lät
-      // ledger-raden vara ORÖRD. Det räcker inte: `kvittojobb.ts`s
-      // dubbelskicksspärr läste tidigare BARA `status === 'skickat'` som
-      // "redan klar" — ett kvitto som stod kvar `utfardat` (allokerat,
-      // ANNU inte mailat) hade då kunnat plockas upp av en senare
-      // jobbkörning och SKICKAS trots att inbetalningen just makulerats.
-      // Skrivningen här stänger det fönstret: kvittot märks `makulerat`
-      // i SAMMA operation som inbetalningen, och `kvittojobb.ts`s
-      // `forbered()` fäller (utan att skicka) varje rad vars kvitto redan
-      // är `makulerat` (se den filens "ANTAGANDET LÖST"-kommentar).
+      // ═══ RÄTTAD PROSA (granskningsfynd runda 2, W2) — VAD SKRIVNINGEN
+      // FAKTISKT GER, INTE VAD EN TIDIGARE VERSION AV DENNA KOMMENTAR
+      // PÅSTOD ═══
+      //
+      // Skrivningen är INGEN send-spärr. Den spärren finns redan, oberoende
+      // av denna kod: `jobb-konsument`s `hamtaUnderlag` läser inbetalningens
+      // EGNA status och KASTAR om den inte är `aktiv` — INNAN `hittaKvitto`
+      // ens anropas i `kvittojobb.ts`s `forbered()`. Ett kvitto vars
+      // inbetalning just makulerats plockas alltså aldrig upp av en
+      // jobbkörning, oavsett vad kvittots EGEN `status`-kolumn säger, och
+      // `koa-kvitton` vägrar dessutom köa ett NYTT jobb för en makulerad
+      // inbetalning (samma kontroll, en annan fil). En tidigare version av
+      // detta stycke påstod att skrivningen stängde ett "fönster" där ett
+      // `utfardat` kvitto kunde plockas upp och skickas EFTER makulering —
+      // det fönstret fanns aldrig, av skälet ovan.
+      //
+      // Vad skrivningen FAKTISKT ger är BOKFÖRINGSSANNING: utan den står
+      // ledger-raden kvar som `utfardat`/`skickat` för en betalning som inte
+      // längre gäller, och `kvittolage()` (`panel-harledningar.ts`) hade
+      // visat "väntar på att skickas" eller "skickat" på en rad där inget
+      // mer någonsin skickas — missvisande för Lotta, inte farligt. (Att
+      // "Skicka igen" inte erbjuds på en makulerad rad är för övrigt REDAN
+      // garanterat oberoende av denna skrivning: `kvittolage`s
+      // `kanSkickaIgen` villkorar på `inbetalning.status !== 'makulerad'`,
+      // se den filens egen kommentar.)
       //
       // NUMRET, ÅRET OCH LÖPNUMRET RÖRS ALDRIG — `service_role`s
       // kolumn-scopade UPDATE-grant på `kvitton` omfattar bara
@@ -240,18 +257,37 @@ Deno.serve(async (req) => {
       // "makulerad rad påverkar inte kvittots nummer" är alltså en
       // DATABASGARANTI, inte något denna skrivning kan bryta.
       //
-      // BEST-EFFORT vore fel här, till skillnad från spegeln nedan: en
-      // fallerad kvitto-skrivning måste fälla HELA anropet (kastas), annars
-      // står inbetalningen som makulerad medan kvittot fortfarande ser
-      // aktivt ut för jobbmotorn — precis den motsägelse denna skiva finns
-      // för att stänga.
-      if (inbetalning.kvittoId !== null) {
-        const { error: kvittoFel } = await db
-          .from(KVITTON_TABELL)
-          .update({ status: 'makulerat' })
-          .eq('id', inbetalning.kvittoId);
-        if (kvittoFel) throw kvittoFel;
-      }
+      // KASTAR VID FEL — INTE FÖR ATT DET RULLAR NÅGOT TILLBAKA (de två
+      // skrivningarna är separata PostgREST-anrop, ingen gemensam
+      // transaktion; makuleringen ovan står redan skriven och rullas INTE
+      // tillbaka av ett kast här). Skälet är SYNLIGHET: sväljs felet i
+      // stället (best-effort, som spegeln nedan) får Lotta ett 200 OK som
+      // ser lyckat ut medan ledger-raden tyst blir inkonsekvent — och en
+      // förnyad makulering kan ALDRIG läka det: nästa försök 409:ar
+      // omedelbart på `redan_makulerad` (kontrollen längst upp i denna
+      // gren) INNAN koden ens når kvitto-skrivningen igen. Ett kastat fel
+      // är alltså den enda chansen någon (Roger/support) upptäcker och
+      // rättar ledger-raden för hand — samma "syns i stället för tystas"-
+      // princip som ADR-128 beslut 5 (spegeln).
+      //
+      // FRÅGAR PÅ `inbetalning_id`, INTE PÅ `inbetalning.kvittoId` (rättad,
+      // granskningsfynd runda 2, W1 tredje lagret): `kvitto_id` på
+      // INBETALNINGEN sätts först av `kopplaKvitto()`, som körs EFTER
+      // mailet skickats — ett kvitto som ännu bara är `utfardat` (allokerat,
+      // inte mailat) har alltså `kvitto_id === null` på inbetalningen TROTS
+      // att raden finns i ledgern. Ett villkor på `inbetalning.kvittoId !==
+      // null` hade då hoppat över skrivningen helt för just det
+      // tillståndet, och AC #2:s "kvittot består i ledgern märkt makulerat"
+      // hade aldrig inträffat för ett kvitto som ännu inte hunnit mailas.
+      // `kvitton.inbetalning_id` är den SANNA, alltid aktuella kopplingen
+      // (unik, `on delete restrict`) — UPDATE:en frågar på den i stället,
+      // och matchar noll rader (inget fel) när inbetalningen genuint saknar
+      // kvitto.
+      const { error: kvittoFel } = await db
+        .from(KVITTON_TABELL)
+        .update({ status: 'makulerat' })
+        .eq('inbetalning_id', inbetalningId);
+      if (kvittoFel) throw kvittoFel;
     }
 
     // ── Räkna om och spegla, exakt som vid registrering ───────────────────
