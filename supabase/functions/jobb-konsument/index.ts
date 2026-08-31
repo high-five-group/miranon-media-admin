@@ -377,8 +377,14 @@ Deno.serve(async (req) => {
           betalning: spec.betalning,
           eventNamn: spec.eventNamn,
           // Kvittots "Datum" är utfärdandedagen; betalningsdatumet är
-          // mallens egen rad (TASK-346.5).
+          // mallens egen rad (TASK-346.5) — `spec.betalningsdatum` fanns
+          // redan på `KvittoPdfSpec` (346.4:s port, se kvittojobb.ts) men
+          // tråddes inte vidare hit förrän nu; 346.4 lämnade denna rad
+          // MEDVETET omärkt (se filhuvudets kommentar ovan) för 346.5 att
+          // slutföra, eftersom `byggKvittoData`/mallens tokenyta är den
+          // skivans egendom, inte 346.4:s.
           datum: spec.datum,
+          betalningsdatum: spec.betalningsdatum,
           eventTyp: spec.eventTyp,
           eventStart: spec.eventStart,
           eventSlut: spec.eventSlut,

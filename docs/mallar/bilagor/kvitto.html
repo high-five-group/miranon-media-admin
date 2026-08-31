@@ -23,20 +23,42 @@
   `kvittoBenamning`/`MIRANON_ORG`) — se README.md § Kvittots dynamiska
   yta för den fullständiga käll-tabellen.
 
-  FÖRLAGE-FÄLT UTAN KÄLLA I `receipt-content.ts` (Förfallodatum, Vårt
-  ordernr, Öresavr, Telefon/Plusgiro/Swish/Webb/Epost-raderna i sidfoten) är
-  BYGGDA i markupen men bokförda som GAP - se README.md § Gap mot
-  receipt-content.ts. Inget av dem är hittat på i kod; värdena som INTE är
-  tokens är antingen strukturellt konstanta för ett KVITTO (Förfallodatum:
-  "-", Öresavr: "0,00" - `beraknaMoms` avrundar momsen till hela ören FÖRST,
-  så differensen är alltid exakt noll, se dess docstring) eller Miranons
-  egna, redan publicerade kontaktuppgifter (T170), samma klass av statisk
-  organisationsdata som bekraftelsebilaga.html redan hårdkodar
-  (Swish/Plusgiro). "Vår referens" (`<%= data.orgReferens %>`) var tidigare
-  en GAP här (skrev `{{orgNamn}}`, Rogers egen personattribuering saknade
-  motsvarighet) - STÄNGD (TASK-306 rättelsevarv, Marcus dom 3, 2026-08-23):
-  `MIRANON_ORG.varReferens` bär nu Lottas egen skrivning
+  FÖRLAGE-FÄLT UTAN KÄLLA I `receipt-content.ts` (Vårt ordernr, Öresavr,
+  Telefon/Plusgiro/Swish/Webb/Epost-raderna i sidfoten) är BYGGDA i markupen
+  men bokförda som GAP - se README.md § Gap mot receipt-content.ts. Inget av
+  dem är hittat på i kod; värdena som INTE är tokens är antingen strukturellt
+  konstanta för ett KVITTO (Öresavr: "0,00" - `beraknaMoms` avrundar momsen
+  till hela ören FÖRST, så differensen är alltid exakt noll, se dess
+  docstring) eller Miranons egna, redan publicerade kontaktuppgifter (T170),
+  samma klass av statisk organisationsdata som bekraftelsebilaga.html redan
+  hårdkodar (Swish/Plusgiro). "Vår referens" (`<%= data.orgReferens %>`) var
+  tidigare en GAP här (skrev `{{orgNamn}}`, Rogers egen personattribuering
+  saknade motsvarighet) - STÄNGD (TASK-306 rättelsevarv, Marcus dom 3,
+  2026-08-23): `MIRANON_ORG.varReferens` bär nu Lottas egen skrivning
   ("Miranon Media/Lotta Gotthardsson").
+
+  [TASK-346.5] "FÖRFALLODATUM" ÄR OCKSÅ GAP-STÄNGT — bytt till
+  "Betalningsdatum" (`<%= data.betalningsdatum %>`). Kvittot avser sedan
+  ADR-128 EN inbetalning, som bär sitt eget datum
+  (`inbetalningar.betalningsdatum`) — raden är alltså inte längre
+  "strukturellt konstant för ett KVITTO", den beskrivningen gällde bara
+  innan datamodellen fanns. `-` visas när betalningsdatumet är okänt (en
+  backfillad historisk post, ADR-128 beslut 8), se
+  `receipt-content.ts` § `formatBetalningsdatum`.
+
+  [TASK-346.5, FÖRBEREDD — AKTIVERAS I TASK-346.9, ADR-109 § Updates
+  2026-08-30 beslut d] KREDITKVITTOTS TVÅ TOKEN. Rubriken
+  (`<%= data.rubrik %>`, ersätter den tidigare hårdkodade "Kvitto"-texten)
+  är "Kvitto" för varje anropssite i dag (`kvittoRubrik()` defaultar till
+  det när `spec.typ` utelämnas) — INGEN kodväg sätter `'kreditkvitto'` än.
+  "Hänvisning"-raden nedan är mallens ENDA villkor (`<% if (data.hanvisning)
+  %>`, ett medvetet undantag från den annars rena flat-substitutionen som
+  denna fils tidigare filhuvud beskrev som "kvitto.html bär INGA
+  villkor/loopar" — se `mall-render.test.ts`s motsvarande kommentar,
+  uppdaterad i samma skiva) — döljs helt för ett vanligt kvitto
+  (`hanvisning === ''`, aldrig `null`/`undefined`, se `KvittoMallData`s
+  "varje fält en sträng"-konvention) och visas bara när ett kreditkvitto
+  sätter `hanvisningTillKvittonummer`.
 
   Ingen persondata förekommer här (samma disciplin som de två andra
   mallarna) - köparens namn kommer från `<%= data.kundnamn %>`-token,
@@ -57,7 +79,7 @@
   <header class="kvitto-sidhuvud">
     <img class="logga" src="../../../public/miranon-media-ordmarke-original.svg" alt="MiranonMedia" />
     <div class="kvitto-rubrikblock">
-      <h1 class="kvitto-rubrik">Kvitto</h1>
+      <h1 class="kvitto-rubrik"><%= data.rubrik %></h1>
       <dl class="kvitto-metarad">
         <div class="kvitto-metarad-rad">
           <dt>Kvitto-/OCR-nr:</dt>
@@ -82,13 +104,19 @@
         <dd><%= data.kundnamn %></dd>
       </div>
       <div class="kvitto-referensblock-rad">
-        <dt>Förfallodatum</dt>
-        <dd>-</dd>
+        <dt>Betalningsdatum</dt>
+        <dd><%= data.betalningsdatum %></dd>
       </div>
       <div class="kvitto-referensblock-rad">
         <dt>Vårt ordernr</dt>
         <dd><%= data.kvittonummer %></dd>
       </div>
+      <% if (data.hanvisning) { %>
+      <div class="kvitto-referensblock-rad">
+        <dt>Hänvisning</dt>
+        <dd><%= data.hanvisning %></dd>
+      </div>
+      <% } %>
     </dl>
     <div class="kvitto-fakturaadress">
       <p class="kvitto-fakturaadress-etikett">Fakturaadress:</p>

@@ -50,9 +50,12 @@
 import {
   beraknaMoms,
   formatBelopp,
+  formatBetalningsdatum,
   formatKvittoDatum,
   kvittoBenamning,
+  kvittoHanvisning,
   type KvittoradSpec,
+  kvittoRubrik,
   MIRANON_ORG,
 } from './receipt-content.ts';
 import { fetMarkera } from './fet-markering.ts';
@@ -303,13 +306,30 @@ export function byggDeltagarinfoData(sources: DocumentSourcesResult): Deltagarin
  * tabellen) — lägg ALDRIG till ett fält här utan en motsvarande
  * `<%= data.x %>` i mallen (samma "1:1"-krav § Beslut 4 redan ställer för
  * de två andra mallarna).
+ *
+ * [TASK-346.5] `betalningsdatum` TILLKOM här — kortets AC #1 pekar bara ut
+ * `kvitto.html`/`kvitto.css`/`receipt-content.ts` som rörda filer, men
+ * tokenet måste igenom DENNA byggsten för att nå mallen (samma väg som
+ * varje annat fält ovan). Bokfört öppet i slutrapporten, inte tyst utökat
+ * scope.
+ *
+ * [TASK-346.5, förberedd för 346.9, AC #5] `rubrik`/`hanvisning` TILLKOM
+ * också — kreditkvittots mallvariant förberedd som TOKEN, inte aktiverad.
+ * BÅDA fälten är, liksom alla andra här, ALLTID en `string` (aldrig
+ * `null`/`undefined`) — `hanvisning` är TOM STRÄNG när ingen hänvisning
+ * finns, se `kvitto.html`s villkorade block (`<% if (data.hanvisning) %>`,
+ * det ENDA villkoret i annars flat-substitution-mallen).
  */
 export interface KvittoMallData {
   kvittonummer: string;
   datum: string;
+  /** [TASK-346.5] "Betalningsdatum"-raden — `formatBetalningsdatum(spec.betalningsdatum)`, `-` när okänt. */
+  betalningsdatum: string;
   orgReferens: string;
   kundnamn: string;
   kundEpost: string;
+  /** [TASK-346.5, förberedd för 346.9] "Kvitto" eller "Kreditkvitto" — `kvittoRubrik(spec.typ)`. */
+  rubrik: string;
   benamning: string;
   netto: string;
   moms: string;
@@ -320,6 +340,8 @@ export interface KvittoMallData {
   orgLand: string;
   orgNummer: string;
   orgMomsregnummer: string;
+  /** [TASK-346.5, förberedd för 346.9] "Kvitto <nummer>" eller `''` — `kvittoHanvisning(spec.hanvisningTillKvittonummer)`. */
+  hanvisning: string;
 }
 
 /**
@@ -339,9 +361,11 @@ export function byggKvittoData(spec: KvittoradSpec): KvittoMallData {
   return {
     kvittonummer: spec.kvittonummer,
     datum: formatKvittoDatum(spec.datum),
+    betalningsdatum: formatBetalningsdatum(spec.betalningsdatum),
     orgReferens: MIRANON_ORG.varReferens,
     kundnamn: spec.kundnamn,
     kundEpost: spec.kundEpost,
+    rubrik: kvittoRubrik(spec.typ),
     benamning: kvittoBenamning(spec),
     netto: formatBelopp(netto),
     moms: formatBelopp(moms),
@@ -352,5 +376,6 @@ export function byggKvittoData(spec: KvittoradSpec): KvittoMallData {
     orgLand: MIRANON_ORG.land,
     orgNummer: MIRANON_ORG.orgnummer,
     orgMomsregnummer: MIRANON_ORG.momsregnummer,
+    hanvisning: kvittoHanvisning(spec.hanvisningTillKvittonummer),
   };
 }

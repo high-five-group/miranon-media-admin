@@ -254,6 +254,11 @@ function kvittoSpec(overrides: Partial<KvittoradSpec> = {}): KvittoradSpec {
     eventStart: '2026-07-25',
     eventSlut: '2026-07-26',
     bokforingstext: 'personlig utveckling, meditation',
+    // [TASK-346.5] Default satt (INTE null) — samma fixturvärde som
+    // `docs/mallar/bilagor/fixtures/kvitto.exempel.json`, medvetet skilt
+    // från `datum` för att bevisa att raderna kan avvika (se testerna
+    // nedan för `null`-fallet).
+    betalningsdatum: '2026-08-01',
     ...overrides,
   };
 }
@@ -269,6 +274,43 @@ test.describe('byggKvittoData (TASK-309.5, ADR-125 § Beslut 4-5)', () => {
   test('datum är ISO (formatKvittoDatum) — kvittot är en bokföringshandling', () => {
     const data = byggKvittoData(kvittoSpec({ datum: '2026-08-03T00:00:00.000Z' }));
     expect(data.datum).toBe('2026-08-03');
+  });
+
+  // [TASK-346.5, ADR-128 § Beslut 1/9] "Betalningsdatum"-raden — ett SKILT
+  // fält från `datum` (utfärdandedagen). Fixturens värden avviker medvetet
+  // (2026-08-01 vs 2026-08-03) för att bevisa att de INTE är samma fält
+  // som råkar formateras lika.
+  test('betalningsdatum är ISO och SKILT från datum — de kan avvika', () => {
+    const data = byggKvittoData(
+      kvittoSpec({ datum: '2026-08-03T00:00:00.000Z', betalningsdatum: '2026-08-01' }),
+    );
+    expect(data.betalningsdatum).toBe('2026-08-01');
+    expect(data.datum).toBe('2026-08-03');
+    expect(data.betalningsdatum).not.toBe(data.datum);
+  });
+
+  test('betalningsdatum: null (backfillad historisk inbetalning, ADR-128 beslut 8) ger "-", inte "undefined"/"null"', () => {
+    const data = byggKvittoData(kvittoSpec({ betalningsdatum: null }));
+    expect(data.betalningsdatum).toBe('-');
+  });
+
+  // [TASK-346.5, förberedd för 346.9, AC #5] Kreditkvittots mallvariant —
+  // TOKEN förberedd, INTE aktiverad: `typ`/`hanvisningTillKvittonummer`
+  // utelämnas av VARJE befintlig anropssite i dag.
+  test('rubrik/hanvisning DEFAULTAR till ett vanligt kvitto när typ/hanvisningTillKvittonummer utelämnas (nuvarande läge, ingen anropssite sätter dem)', () => {
+    const data = byggKvittoData(kvittoSpec());
+    expect(data.rubrik).toBe('Kvitto');
+    expect(data.hanvisning).toBe('');
+  });
+
+  test('rubrik blir "Kreditkvitto" när typ === "kreditkvitto" (346.9 aktiverar detta senare)', () => {
+    const data = byggKvittoData(kvittoSpec({ typ: 'kreditkvitto' }));
+    expect(data.rubrik).toBe('Kreditkvitto');
+  });
+
+  test('hanvisning byggs som "Kvitto <nummer>" när hanvisningTillKvittonummer är satt', () => {
+    const data = byggKvittoData(kvittoSpec({ hanvisningTillKvittonummer: 'MM-2026-1001' }));
+    expect(data.hanvisning).toBe('Kvitto MM-2026-1001');
   });
 
   test('benamning byggs via kvittoBenamning (TASK-306 rättelsevarv-formen)', () => {
@@ -300,14 +342,16 @@ test.describe('byggKvittoData (TASK-309.5, ADR-125 § Beslut 4-5)', () => {
     expect(data.orgMomsregnummer).toBe('SE559540549801');
   });
 
-  test('samtliga femton fält i KvittoMallData är satta (inget "undefined")', () => {
+  test('samtliga arton fält i KvittoMallData är satta (inget "undefined")', () => {
     const data = byggKvittoData(kvittoSpec());
     const nycklar = [
       'kvittonummer',
       'datum',
+      'betalningsdatum',
       'orgReferens',
       'kundnamn',
       'kundEpost',
+      'rubrik',
       'benamning',
       'netto',
       'moms',
@@ -318,8 +362,9 @@ test.describe('byggKvittoData (TASK-309.5, ADR-125 § Beslut 4-5)', () => {
       'orgLand',
       'orgNummer',
       'orgMomsregnummer',
+      'hanvisning',
     ] as const;
-    expect(nycklar).toHaveLength(15);
+    expect(nycklar).toHaveLength(18);
     for (const nyckel of nycklar) {
       expect(data[nyckel]).not.toBeUndefined();
       expect(typeof data[nyckel]).toBe('string');

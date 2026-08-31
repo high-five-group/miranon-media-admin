@@ -200,11 +200,20 @@
 
 .kvitto-referensblock dt {
   flex: 0 0 auto;
-  min-width: 17.78mm; /* PRINCE-PRIMITIV (TASK-304): ersätter grid:ets
-    auto-kolumndelning (kolumn 1 = bredaste dt-cellens bredd, här
-    "Förfallodatum") - se .kvitto-metarad dt ovan för samma resonemang.
-    Mätt (analys.mjs): "Förfallodatum" (Carlito 400 9pt) bläckbredd i
-    Chrome-renderingen FÖRE denna ombyggnad = 105px @150dpi = 17,78mm. */
+  min-width: 21.8mm; /* PRINCE-PRIMITIV (TASK-304): ersätter grid:ets
+    auto-kolumndelning (kolumn 1 = bredaste dt-cellens bredd) - se
+    .kvitto-metarad dt ovan för samma resonemang. URSPRUNGLIGEN 17,78mm,
+    mätt mot "Förfallodatum" (Carlito 400 9pt) bläckbredd i
+    Chrome-renderingen = 105px @150dpi.
+    [TASK-346.5] OMMÄTT mot NYA bredaste raden "Betalningsdatum" (ersätter
+    "Förfallodatum", se kvitto.html) - Playwright/Chrome
+    getBoundingClientRect() på den FAKTISKA renderade cellen (samma metod
+    som README.md § "Kvittots benämning" använder för kapacitetsgränsen):
+    82,38px @96dpi = 21,7963mm, avrundat till 21,8mm. UTAN denna
+    uppdatering hade "Betalningsdatum"-radens dd-kolumn börjat ~4mm längre
+    till höger än de tre andra raderna (mätt: dd.left 410,94px mot
+    395,75px vid den GAMLA 17,78mm-floren) - en verklig vertikal
+    kolumn-misslinjering, inte en kosmetisk detalj. */
   margin-right: 6mm;
   font-weight: 400;
 }

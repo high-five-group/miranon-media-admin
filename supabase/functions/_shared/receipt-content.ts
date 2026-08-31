@@ -84,6 +84,19 @@
 // `makeRealFinalizer`) fortfarande skriver det — (3) `MIRANON_ORG` får ett
 // eget `varReferens`-fält, separat från sidfotens `namn` (oförändrad
 // "Miranon Media AB").
+//
+// [TASK-346.5, ADR-128 § Beslut 1/9] KVITTOT AVSER EN INBETALNING —
+// "FÖRFALLODATUM" BLIR "BETALNINGSDATUM". Kvittots referensblock hade sedan
+// TASK-147.7 en statisk `Förfallodatum: -`-rad, bokförd i
+// `docs/mallar/bilagor/README.md` § "Förlage-fält utan källa" som en
+// medveten platshållare — "strukturellt konstant för ett KVITTO", eftersom
+// ingen datamodell för en enskild betalnings datum fanns. Den modellen
+// finns nu (`inbetalningar.betalningsdatum`, ADR-128 beslut 1/3): kvittot
+// avser EXAKT EN inbetalning, och den bär ett eget datum. Raden är därför
+// GAP-STÄNGD, inte längre en platshållare — `KvittoradSpec.betalningsdatum`
+// + `formatBetalningsdatum` nedan. `datum` (ovan) förblir OFÖRÄNDRAT
+// utfärdandedagen ("Datum: …") — de två fälten kan avvika, och gör det
+// medvetet (ett kvitto utfärdat dagar efter en Swish-betalning).
 
 import type { Betalning, Betalsatt } from './send-receipt.ts';
 
@@ -122,6 +135,17 @@ export function formatKvittoDatum(iso: string): string {
 }
 
 /**
+ * [TASK-346.5] Kvittots "Betalningsdatum"-rad — `formatKvittoDatum` (samma
+ * ISO-form som "Datum:") när betalningsdatumet är känt, annars `-`, samma
+ * platshållare raden bar innan den fick en källa (se
+ * `KvittoradSpec.betalningsdatum`s docstring för VARFÖR `null` kan
+ * förekomma — en backfillad historisk inbetalning, ADR-128 beslut 8).
+ */
+export function formatBetalningsdatum(betalningsdatum: string | null): string {
+  return betalningsdatum === null ? '-' : formatKvittoDatum(betalningsdatum);
+}
+
+/**
  * "2 500,00" — Rogers format (T170, Marcus-beslut 2026-08-22): sv-SE
  * tusentalsavgränsare, ALLTID två decimaler, INGEN `kr`-suffix. Valutan är
  * konsumentens ansvar — `kvittoRader()` prefixar `SEK` EN gång på
@@ -139,13 +163,24 @@ export function formatKvittoDatum(iso: string): string {
  * Normalisera därför ALLTID till ett vanligt mellanslag (U+0020), oavsett
  * vilket av de två tecknen körmiljön ger — garanterat pdf-lib- och
  * HTML-säkert, oberoende av ICU-version.
+ *
+ * [TASK-346.5, förberedd för kreditkvittot i 346.9] SAMMA NORMALISERING
+ * GÄLLER MINUSTECKNET. `Intl.NumberFormat('sv-SE')` skriver ett NEGATIVT
+ * belopp med U+2212 (MINUS SIGN, det matematiska tecknet), INTE U+002D
+ * (HYPHEN-MINUS) — mätt lokalt (`formatBelopp(-2500)` ger ett belopp med
+ * U+2212, inte en vanlig bindestreck-minus). Kreditkvittot (ADR-109 §
+ * Updates 2026-08-30, beslut d: "återbetalning = en negativ inbetalning")
+ * är den FÖRSTA konsumenten av ett negativt `KvittoradSpec.belopp` — samma
+ * försiktighetsprincip som grupperingstecknet: normalisera till det vanliga
+ * ASCII-tecknet i stället för att lita på att varje typsnitt/rendermotor
+ * bär ett glyf för det matematiska minustecknet.
  */
 export function formatBelopp(belopp: number): string {
   const formaterat = new Intl.NumberFormat('sv-SE', {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(belopp);
-  return formaterat.replace(/[  ]/g, ' ');
+  return formaterat.replace(/[\u00a0\u202f]/g, ' ').replace(/\u2212/g, '-');
 }
 
 export type KvittoradSpec = {
@@ -178,7 +213,56 @@ export type KvittoradSpec = {
    * `Bokföringstext (kvitto)`. Ifyllt → sist i benämningen (`kvittoBenamning`
    * nedan); tomt → utelämnat. */
   bokforingstext: string | null;
+  /** [TASK-346.5, ADR-128 § Beslut 1/9] ISO-datum (`YYYY-MM-DD`) ur
+   * INBETALNINGEN — skrivs på kvittots "Betalningsdatum"-rad (ersätter
+   * den tidigare statiska "Förfallodatum: -"-raden, se
+   * `formatBetalningsdatum` nedan). SKILT från `datum` ovan, som förblir
+   * UTFÄRDANDEDAGEN ("Datum: …") — de två kan avvika (ett kvitto som
+   * utfärdas dagar efter en Swish-betalning). `null` när betalningsdatumet
+   * är okänt — en backfillad historisk inbetalning utan känt datum
+   * (ADR-128 beslut 8, betalsätt `Historik`) — raden visar då `-`, samma
+   * platshållartext fältet bar innan det fick en källa. */
+  betalningsdatum: string | null;
+  /** [TASK-346.5 FÖRBEREDER, TASK-346.9 AKTIVERAR — ADR-109 § Updates
+   * 2026-08-30 beslut d] Dokumenttyp: `'kvitto'` (default) eller
+   * `'kreditkvitto'`. Styr ENDAST rubriken (`kvittoRubrik` nedan) —
+   * INGEN anropare sätter `'kreditkvitto'` ännu (`jobb-konsument/index.ts`,
+   * `preview-receipt/index.ts`, `send-receipt-email/index.ts` bygger alla
+   * fortfarande bara vanliga kvitton). Valfritt fält, EXAKT för att inte
+   * tvinga en ändring på de tre befintliga anropssiterna för en funktion
+   * som ännu inte finns — se `byggKvittoData`s default nedan.
+   */
+  typ?: 'kvitto' | 'kreditkvitto';
+  /** [TASK-346.5 FÖRBEREDER, TASK-346.9 AKTIVERAR — ADR-109 § Updates
+   * 2026-08-30 beslut d: "kreditkvitto med nästa nummer i samma serie och
+   * hänvisning till originalet"] Originalkvittots nummer, satt av
+   * kreditkvittot. `null`/utelämnat för ett vanligt kvitto (`hanvisning`-
+   * raden döljs helt, se `kvitto.html`s villkorade block). INGEN anropare
+   * sätter detta ännu — se `typ` ovan för samma resonemang.
+   */
+  hanvisningTillKvittonummer?: string | null;
 };
+
+/**
+ * [TASK-346.5, förberedd för 346.9] Kvittots rubrik — "Kvitto" (default)
+ * eller "Kreditkvitto" när `spec.typ === 'kreditkvitto'`. Ren, egen
+ * funktion (samma mönster som `formatBetalningsdatum`) så 346.9 kan
+ * enhetstesta den isolerat utan att röra `byggKvittoData`.
+ */
+export function kvittoRubrik(typ: KvittoradSpec['typ']): string {
+  return typ === 'kreditkvitto' ? 'Kreditkvitto' : 'Kvitto';
+}
+
+/**
+ * [TASK-346.5, förberedd för 346.9] Kreditkvittots hänvisningstext —
+ * `''` (INTE `null`, se `KvittoMallData`s "varje fält en sträng"-
+ * konvention) när `hanvisningTillKvittonummer` saknas, annars "Kvitto
+ * <nummer>" — samma prefix-form som README-tabellens "Vårt ordernr"/
+ * "Kvitto-/OCR-nr" redan använder för att referera till ett kvittonummer.
+ */
+export function kvittoHanvisning(hanvisningTillKvittonummer: string | null | undefined): string {
+  return hanvisningTillKvittonummer ? `Kvitto ${hanvisningTillKvittonummer}` : '';
+}
 
 /** Momssatsen i procent, för visning på kvittot ("Moms (25 %)"). Källa: filhuvudet. */
 export const MOMSSATS_PROCENT = 25;

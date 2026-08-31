@@ -76,14 +76,20 @@ const MINIMAL_DELTAGARINFO_DATA = {
   utrustning: null as string | null,
 };
 
-// [TASK-309.5] kvitto.html bär INGA villkor/loopar (ren flat substitution,
-// samma som förlagans {{}}-form) — se KvittoMallData i _shared/mall-data.ts.
+// [TASK-309.5] kvitto.html var HELT fri från villkor/loopar (ren flat
+// substitution, samma som förlagans {{}}-form) — se KvittoMallData i
+// _shared/mall-data.ts. [TASK-346.5] EN ändring av det: "Hänvisning"-raden
+// är sedan denna skiva mallens ENDA villkor (`<% if (data.hanvisning) %>`,
+// kreditkvittot, förberedd för TASK-346.9) — `hanvisning: ''` nedan håller
+// den dolt, precis som för varje befintligt kvitto i dag.
 const MINIMAL_KVITTO_DATA = {
   kvittonummer: 'x',
   datum: 'x',
+  betalningsdatum: 'x',
   orgReferens: 'x',
   kundnamn: 'x',
   kundEpost: 'x',
+  rubrik: 'x',
   benamning: 'x',
   netto: 'x',
   moms: 'x',
@@ -94,6 +100,7 @@ const MINIMAL_KVITTO_DATA = {
   orgLand: 'x',
   orgNummer: 'x',
   orgMomsregnummer: 'x',
+  hanvisning: '',
 };
 
 test.describe('Escaping — Airtable-härledd fritext kan aldrig injicera HTML (ADR-125 § 4)', () => {
@@ -236,13 +243,21 @@ test.describe('Ifyllnad — mallens villkor och loopar (samma AC #1, "ifyllnad"-
   // [TASK-309.5] kvitto.html — ren flat substitution, samma AC-form som de
   // två andra mallarna. Bevisar mot den FAKTISKA mallen (inte en syntetisk
   // sträng) att varenda `<%= data.x %>`-token faktiskt fylls i.
-  test('kvitto.html: samtliga femton token fylls i från KvittoMallData', () => {
+  test('kvitto.html: samtliga arton token fylls i från KvittoMallData', () => {
     const data = {
       kvittonummer: 'MM-2026-1001',
       datum: '2026-08-03',
+      // [TASK-346.5] Medvetet SKILT värde från `datum` — bevisar att
+      // "Betalningsdatum"-raden inte råkar återanvända utfärdandedagen.
+      betalningsdatum: '2026-08-01',
       orgReferens: 'Miranon Media/Lotta Gotthardsson',
       kundnamn: 'Anna Andersson',
       kundEpost: 'anna.andersson@example.com',
+      // [TASK-346.5, förberedd för 346.9] Icke-default värde ('Kreditkvitto'
+      // + en satt hänvisning) — testar SAMTIDIGT att den flata substitutionen
+      // fylls OCH att mallens enda villkor (`<% if (data.hanvisning) %>`)
+      // faktiskt renderar raden när fältet är satt.
+      rubrik: 'Kreditkvitto',
       benamning: 'Utbildning 2026-07-25/26, personlig utveckling, meditation',
       netto: '2 000,00',
       moms: '500,00',
@@ -253,6 +268,7 @@ test.describe('Ifyllnad — mallens villkor och loopar (samma AC #1, "ifyllnad"-
       orgLand: 'Sverige',
       orgNummer: '559540-5498',
       orgMomsregnummer: 'SE559540549801',
+      hanvisning: 'Kvitto MM-2026-0500',
     };
     const html = eta.renderString(kvittoHtml, data) as string;
     for (const varde of Object.values(data)) {
@@ -265,6 +281,23 @@ test.describe('Ifyllnad — mallens villkor och loopar (samma AC #1, "ifyllnad"-
     const kropp = html.slice(html.indexOf('<body>'));
     expect(kropp).not.toMatch(/\{\{\s*[\w]+\s*\}\}/);
     expect(kropp).not.toMatch(/<%[=~]?/);
+  });
+
+  // [TASK-346.5, förberedd för 346.9, AC #5] NEGATIV KONTROLL mot en
+  // permanent visuell regression: ETT VANLIGT kvitto (hanvisning === '',
+  // det värde varje befintlig anropssite ger i dag, se
+  // `KvittoradSpec.hanvisningTillKvittonummer`s docstring) får INTE visa
+  // en tom "Hänvisning"-rad. Utan detta test hade en trasig `<% if %>`
+  // (t.ex. `if (data.hanvisning !== undefined)`, sant även för `''`)
+  // kunnat smyga in en synlig men tom rad på VARJE kvitto som går ut i dag.
+  test('kvitto.html: "Hänvisning"-raden är HELT FRÅNVARANDE för ett vanligt kvitto (hanvisning === "")', () => {
+    const html = eta.renderString(kvittoHtml, MINIMAL_KVITTO_DATA) as string;
+    // Slicen från <body> är AVSIKTLIG (samma mönster som testet ovan) —
+    // mallens EGEN filhuvud-KOMMENTAR (före <body>) nämner ordet
+    // "Hänvisning" i sin dokumentation av villkoret, vilket annars hade
+    // gett en falsk träff här.
+    const kropp = html.slice(html.indexOf('<body>'));
+    expect(kropp).not.toContain('Hänvisning');
   });
 });
 

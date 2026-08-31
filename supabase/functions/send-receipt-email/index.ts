@@ -139,6 +139,12 @@ function makeRealPdfBuilder(): ReceiptPdfBuilder {
       eventStart: spec.eventStart,
       eventSlut: spec.eventSlut,
       bokforingstext: spec.bokforingstext,
+      // [TASK-346.5] `ReceiptPdfBuilder` (den GAMLA ADR-109-vägen,
+      // `_shared/send-receipt.ts`) bär inget betalningsdatum — den domänen
+      // föregår Inbetalning/ADR-128. `null` bevarar den tidigare synliga
+      // "-"-texten oförändrad (raden visade en statisk platshållare innan
+      // fältet fanns) i stället för att läcka `undefined` i PDF:en.
+      betalningsdatum: null,
     });
 
     const apiKey = Deno.env.get('DOCRAPTOR_API_KEY');
