@@ -11,6 +11,14 @@
 > Implementation-journal i `docs/BUILD-LOG.md`.
 > Styrande dokument: [`docs/byggplan.md`](../docs/byggplan.md)
 
+**PÅGÅENDE (2026-08-31, S113-slutvandringen — ny orkestrerar-session efter
+natthaveriet, se sessionsdok S113 Del 13):** 346.9 + 346.10 MERGADE (alla sex
+kodskivor i TASK-346 på main) · slutvandringen steg 1–9 GRÖN (personkortet
+väntar TASK-351-EF-deploy) · i luften: PR #2174 (armerad) · #2175 · #2176 ·
+därefter design-fix per `tasks/sessions/bilagor/s113-natt-slutvandring/designfynd-2026-08-31.md`
+→ visuell omverifiering → stängningsbatch (Done-flippar 346.7/346.9/346.10,
+Del 12/13-final, T15-återfallsnot, CI-marginal-kort, instrumenteringslogg).
+
 ---
 
 ## Aktuellt fokus
