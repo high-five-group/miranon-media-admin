@@ -36,12 +36,44 @@
 // upp i basen först, och deras record-ID:n används som `in`-filter mot
 // Postgres. Alternativet (en person-kolumn i Postgres) hade skapat en ANDRA
 // brygga att hålla i synk.
+//
+// ═══════════════════════════════════════════════════════════════════════════
+// FYND (TASK-351, 2026-08-31): INGEN FORMEL PÅ PERSON-VÄGEN — ETT RECORD-GET
+// ═══════════════════════════════════════════════════════════════════════════
+// Ursprunget slog upp personens anmälningar med
+// `FIND(personId, ARRAYJOIN({Person (länk)}))` mot Anmälningar. Två fel,
+// mätta live 2026-08-31 (staging `apphjj8Q7lkXCMsL4`):
+//
+//  1) Fältnamnet var fel. `fldQekqRlLfup8x5K` heter `Person` i BÅDA baserna
+//     (staging OCH prod, `describe_table`-verifierat) — `data-model.md` rad
+//     ~1053 bar det felaktiga namnet `Person (länk)` (raden ovanför, rad
+//     950, hade redan rätt namn — de två raderna motsade varandra). Formeln
+//     föll med `422 INVALID_FILTER_BY_FORMULA: Unknown field names: person
+//     (länk)`, vilket EF:en mappade till en generisk `500`.
+//
+//  2) Ett rent namnbyte (`Person (länk)` → `Person`) hade INTE räckt — och
+//     hade varit en VÄRRE bugg: `FIND("rec2JwV3Bh0x5qlvl",
+//     ARRAYJOIN({Person}))` mot samma tabell gav **0 träffar**, trots att
+//     `rec2JwV3Bh0x5qlvl` faktiskt är den länkade personen på en verklig
+//     rad. `ARRAYJOIN` på ett länkfält i en Airtable-FORMEL renderar de
+//     länkade posternas PRIMÄRFÄLT (personens NAMN — `FIND("Cecilia
+//     Ödman", ...)` MATCHADE samma rad), aldrig record-ID:n. Ett filter på
+//     personId kan alltså aldrig matcha via den vägen — en tyst TOM sektion
+//     för varje person, i stället för en 500.
+//
+// Fixen läser i stället Personens EGEN rad och dess reverse-länk
+// `Anmälningar (länkat fält)` (`fld8pOivka8YdiywK`, samma fält-ID i
+// staging OCH prod). Ett API-READ (record-GET, inte en formel) av ett
+// länkfält returnerar record-ID:n rakt av — motsatsen till hur samma fält
+// renderas INUTI en formel. Se `docs/reference/data-model.md` §Kända
+// fällor för den generaliserade noten (övriga formel-callers mot länkfält
+// är en öppen, separat granskningsfråga — ändras INTE här).
 
 import { requireUser } from '../_shared/auth.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
 import { generateRequestId, mapErrorToResponse } from '../_shared/errors.ts';
-import { buildLinkedRecordFilter } from '../_shared/airtable-filter.ts';
-import { fetchFromAirtable } from '../_shared/airtable-client.ts';
+import { fetchAirtableRecord } from '../_shared/airtable-client.ts';
+import { stringArray } from '../_shared/coerce.ts';
 import { lasAnmalan, REC_ID_RE } from '../_shared/betalningar-bas.ts';
 import {
   INBETALNING_KOLUMNER,
@@ -55,7 +87,9 @@ import {
 import { summeraKronor } from '../_shared/betalningsbelopp.ts';
 
 const LOGG = '[hamta-inbetalningar]';
-const ANMALNINGAR_TABELL_BAS = 'Anmälningar';
+const PERSONER_TABELL_BAS = 'Personer';
+/** Reverse-länken på Personer — `fld8pOivka8YdiywK`, samma i staging och prod. */
+const PERSON_ANMALNINGAR_FALT = 'Anmälningar (länkat fält)';
 /** Personkortet visar en persons betalningar över ALLA event — men inte tusen. */
 const MAX_ANMALNINGAR_PER_PERSON = 200;
 
@@ -110,12 +144,24 @@ Deno.serve(async (req) => {
     if (anmalanRecordId !== null) {
       anmalanIds = [anmalanRecordId];
     } else {
-      const rader = await fetchFromAirtable(ANMALNINGAR_TABELL_BAS, {
-        filterByFormula: buildLinkedRecordFilter('Person (länk)', personId as string),
-        fields: ['Förnamn'],
-        maxRecords: MAX_ANMALNINGAR_PER_PERSON,
-      });
-      anmalanIds = rader.map((rad) => rad.id);
+      // Se filhuvudets §FYND: EN record-GET på Personen själv, ingen formel.
+      // Obefintlig person → `fetchAirtableRecord` returnerar `null` (samma
+      // 404-normalisering som resten av `_shared/airtable-client.ts`) → tom
+      // lista → samma tomma 200-form nedan, precis som formeln gav förut.
+      //
+      // AVSIKTLIGT ODISKRIMINERAT (R1-granskning `TASK-351`): "personId finns
+      // inte" och "personen finns men har noll anmälningar" ger IDENTISKT
+      // tomt 200-svar — ingen 404 för det förra. Detta SPEGLAR
+      // `anmalanRecordId`-vägen (rad ~144 ovan): den kollapsar `anmalanIds`
+      // till `[anmalanRecordId]` OFÖRSETT om raden existerar, och en obefintlig
+      // anmälan ger likaså 200 med tomma listor (KONSISTENSVAKTEN nedan larmar
+      // bara om Postgres FAKTISKT har inbetalningar mot en försvunnen anmälan —
+      // annars tyst 200, samma mönster). Svarets kontrakt är "betalningar för
+      // X", och en tom lista är rätt svar oavsett OM X saknas eller är tom —
+      // ett medvetet, konsekvent val, inte en förbisedd genväg.
+      const personRecord = await fetchAirtableRecord(PERSONER_TABELL_BAS, personId as string);
+      const allaAnmalanIds = personRecord ? stringArray(personRecord.fields[PERSON_ANMALNINGAR_FALT]) : [];
+      anmalanIds = allaAnmalanIds.slice(0, MAX_ANMALNINGAR_PER_PERSON);
     }
 
     if (anmalanIds.length === 0) {
