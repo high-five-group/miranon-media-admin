@@ -4,10 +4,10 @@ title: >-
   Fynd: hamta-inbetalningar 500 på person-vägen — data-model bar fel fältnamn
   (Person (länk) ≠ Person) för fldQekqRlLfup8x5K, och ARRAYJOIN-i-formel matchar
   aldrig record-ID
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-31 10:04'
-updated_date: '2026-08-31 10:25'
+updated_date: '2026-08-31 13:07'
 labels:
   - ready-for-agent
 dependencies: []

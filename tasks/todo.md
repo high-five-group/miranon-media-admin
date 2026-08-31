@@ -11,13 +11,15 @@
 > Implementation-journal i `docs/BUILD-LOG.md`.
 > Styrande dokument: [`docs/byggplan.md`](../docs/byggplan.md)
 
-**PÅGÅENDE (2026-08-31, S113-slutvandringen — ny orkestrerar-session efter
-natthaveriet, se sessionsdok S113 Del 13):** 346.9 + 346.10 MERGADE (alla sex
-kodskivor i TASK-346 på main) · slutvandringen steg 1–9 GRÖN (personkortet
-väntar TASK-351-EF-deploy) · i luften: PR #2174 (armerad) · #2175 · #2176 ·
-därefter design-fix per `tasks/sessions/bilagor/s113-natt-slutvandring/designfynd-2026-08-31.md`
-→ visuell omverifiering → stängningsbatch (Done-flippar 346.7/346.9/346.10,
-Del 12/13-final, T15-återfallsnot, CI-marginal-kort, instrumenteringslogg).
+**PÅGÅENDE (2026-08-31 em, S113-stängningen — se sessionsdok S113 Del 13):**
+ALLT LANDAT utom design-PR:en i kön: #2174/#2175/#2176/#2177 mergade ·
+slutvandringen steg 1–9 HELT gröna (personkortet stängt efter EF-omdeploy) ·
+design-passet `#2183` (TASK-346.14) genom r1→fix→r2→dom-fynden D1/D2→fix-runda
+D→r3 + aria-sviten 40/40 — perfektionsdomen GRÖN, PR:en ARMERAD i kön ·
+Done-flippade: 346.7/346.9/346.10/346.7.1/351/352 · nya kort 353–356 ·
+T15-återfall + T177-instans noterade · kvar: #2183-mergen → 346.14 Done →
+stängningsbatch-PR (denna fil + Del 13 + kort + instrumenteringslogg +
+lessons-fragmentet) → slutrapport → paus.
 
 ---
 

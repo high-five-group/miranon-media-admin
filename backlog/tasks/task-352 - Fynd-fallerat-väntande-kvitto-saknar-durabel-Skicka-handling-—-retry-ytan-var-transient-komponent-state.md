@@ -3,10 +3,10 @@ id: TASK-352
 title: >-
   Fynd: fallerat/väntande kvitto saknar durabel Skicka-handling — retry-ytan var
   transient komponent-state
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-31 10:10'
-updated_date: '2026-08-31 10:26'
+updated_date: '2026-08-31 13:07'
 labels:
   - ready-for-agent
 dependencies: []
