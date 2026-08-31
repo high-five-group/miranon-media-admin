@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import { CircleCheck } from 'lucide-react';
+import { Banknote, CircleCheck, Clock, Mail } from 'lucide-react';
 import { useMemo } from 'react';
 import { idagIso } from '@/components/betalningar/idag';
 import {
@@ -8,6 +8,11 @@ import {
   sammanfattaBetalningar,
 } from '@/components/betalningar/inkorg-harledningar';
 import { MessageBox, Skeleton } from '@/components/primitives';
+import {
+  HANDLINGSRAD_KLASS,
+  HANDLINGSRAD_OMSLAG_KLASS,
+  HandlingsRadInnehall,
+} from '@/components/primitives/HandlingsRad';
 import { useOppnaBetalningar } from '@/data/betalningar/useBetalningar';
 import { useJobbstatus } from '@/data/betalningar/useJobbstatus';
 import { BulkAtgardsknapp } from './BulkAtgardsknapp';
@@ -48,6 +53,43 @@ import { BulkAtgardsknapp } from './BulkAtgardsknapp';
  * urvalet bakom den (`paminnelseRader` → "Att påminna"-läget) räknas
  * fortfarande i `Hem.tsx`. AC #1 säger uttryckligen: befintlig funktion -
  * flytta eller återanvänd, riv inte.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * FORMEN (TASK-346.14, designfynd 1a–1d) — KOPIERAD UR HUSETS EGNA GRANNAR
+ * ═══════════════════════════════════════════════════════════════════════════
+ * Marcus dom (S113-slutvandringen, `designfynd-2026-08-31.md`): sektionen var
+ * NAKEN mellan två grannar som bär sina egna kortytor (Nästa event,
+ * Genvägar), bar TVÅ fullbreddsknappar i identisk vikt trots att den ena
+ * ("Registrera betalning") är NAVIGATION, och räknarraden var platt text utan
+ * hierarki. De fyra fynden (1a–1d) löses i EN komposition, inte fyra separata
+ * lappar:
+ *
+ *   1a) Kortytan är `NastaEvent`s NEUTRALA syskon — samma `rounded-2xl
+ *       border-transparent bg-bg-muted px-4`-skal som `Genvagar.tsx`s
+ *       `HandlingsRadKort` och `DetaljGrupp`s kort bär, INTE hero-kortets
+ *       cream `bg-primary-tint` (den tonen är reserverad för "Nästa event",
+ *       ADR-motiverat av att den är Morgonkollens ENDA hero-block).
+ *   1b) "Registrera betalning" var en mörk knapp som i sak NAVIGERAR till
+ *       inkorgen — huset navigerar med `HandlingsRad`-formen (samma primitiv
+ *       `Genvagar.tsx` delar med eventsidan), inte med en knappkostym. Den
+ *       ENDA kvarvarande fullbreddsknappen är "Skicka påminnelse till alla" —
+ *       den faktiska handlingen, och EN primär CTA per sektion.
+ *   1c) De tre räknarna får en NYCKELTALSHIERARKI: "N öppna" som
+ *       display-storlek (samma `font-semibold text-3xl` som `NastaEvent`s
+ *       eventnamn), förfallna/kvitton som en ikon-metadata-rad under (samma
+ *       `flex flex-wrap gap-x-6 gap-y-1`-grammatik `NastaEvent` bär för
+ *       ort/datum) — inte tre tal i en och samma platta mening.
+ *   1d) Overline-etiketten "BETALNINGAR" ersätter den forna `text-2xl`-h2:n
+ *       (samma `font-medium text-caption text-text-secondary uppercase
+ *       tracking-wide` som `NastaEvent`s "NÄSTA EVENT") — rubriken bär nu
+ *       samma tvånivå-vikt (etikett → display) som grannkortet.
+ *
+ * Ikonerna är LÅNADE, inte uppfunna: `Clock` är samma ikon `ForfallnaBetalningar.tsx`/
+ * `PanelBetalningar.tsx` redan använder för "Förfallen", `Mail` är samma ikon
+ * `events/detail/Betalningar.tsx`s utskickslogg använder för utskickade
+ * kvitton/bekräftelser, och `Banknote` är Mer-navigeringens egen ikon för
+ * `/mer/betalningar` (`routes/_authenticated/mer/index.tsx`) — samma
+ * destination, samma ikon.
  */
 export function BetalningarKort({
   onSkickaPaminnelseAlla,
@@ -86,10 +128,17 @@ export function BetalningarKort({
      jobb, så villkoret är det strängare av inkorgens två: visa bara ett jobb
      som fortfarande ARBETAR. Ett avslutat jobb tystas. */
   const utfall = senaste && senaste.kvar > 0 ? senaste : null;
+  const tomt = sammanfattning.oppna === 0 && sammanfattning.kvittonAttSkicka === 0;
 
   return (
-    <section aria-labelledby="hem-betalningar" className="flex min-w-0 flex-col gap-4">
-      <h2 id="hem-betalningar" className="font-semibold text-2xl">
+    <section
+      aria-labelledby="hem-betalningar"
+      className="flex min-w-0 flex-col gap-4 rounded-2xl border border-transparent bg-bg-muted px-4 py-4 contrast-more:border-border-strong"
+    >
+      <h2
+        id="hem-betalningar"
+        className="font-medium text-caption text-text-secondary uppercase tracking-wide"
+      >
         Betalningar
       </h2>
 
@@ -106,18 +155,34 @@ export function BetalningarKort({
            oförändrad när flaggan en gång slås på i fixturvärlden. */
         <div role="status" aria-busy="true" className="flex flex-col gap-3">
           <span className="sr-only">Laddar betalningar…</span>
-          <Skeleton variant="text" aria-hidden />
+          <Skeleton variant="text" className="w-1/2" aria-hidden />
           <Skeleton variant="listRow" aria-hidden />
         </div>
-      ) : sammanfattning.oppna === 0 && sammanfattning.kvittonAttSkicka === 0 ? (
+      ) : tomt ? (
         <p className="flex items-center gap-2 text-body text-text-secondary">
           <CircleCheck aria-hidden="true" size={20} className="shrink-0 text-success" />
           Inga öppna betalningar.
         </p>
       ) : (
-        <p className="text-body text-text-secondary">
-          {`${sammanfattning.oppna} öppna · ${sammanfattning.forfallna} förfallna · ${sammanfattning.kvittonAttSkicka} kvitton att skicka`}
-        </p>
+        // NYCKELTALSHIERARKIN (designfynd 1c/1d) — "N öppna" bär displayvikt
+        // (samma text-3xl som NastaEvent:s eventnamn), förfallna/kvitton är
+        // en ikon-metadatarad under, samma grammatik som NastaEvent:s
+        // ort/datum-rad. Se filens docblock § FORMEN.
+        <div className="flex flex-col gap-1">
+          <span className="font-semibold text-3xl">
+            {`${sammanfattning.oppna} ${sammanfattning.oppna === 1 ? 'öppen' : 'öppna'}`}
+          </span>
+          <div className="flex flex-wrap gap-x-6 gap-y-1 text-body text-text-secondary">
+            <span className="flex items-center gap-1.5">
+              <Clock aria-hidden="true" size={16} className="shrink-0" />
+              {`${sammanfattning.forfallna} ${sammanfattning.forfallna === 1 ? 'förfallen' : 'förfallna'}`}
+            </span>
+            <span className="flex items-center gap-1.5">
+              <Mail aria-hidden="true" size={16} className="shrink-0" />
+              {`${sammanfattning.kvittonAttSkicka} kvitton att skicka`}
+            </span>
+          </div>
+        </div>
       )}
 
       {utfall && (
@@ -126,28 +191,33 @@ export function BetalningarKort({
         </MessageBox>
       )}
 
-      <div className="flex flex-col gap-3">
-        {/* EN ÄKTA LÄNK, INTE EN KNAPP SOM NAVIGERAR. Samma val och samma
-            motivering som `valkommen.tsx`s `PrimarLankKnapp`: cmd/ctrl-klick,
-            "kopiera länk" och `role="link"` för skärmläsare. `buttonVariants`
-            är avsiktligt privat i `Button.tsx`, så de synliga klasserna
-            dubbleras - det är husets etablerade val här, inte ett hack. */}
-        <Link
-          to="/mer/betalningar"
-          className="text-(color:--mm-button-primary-text) inline-flex min-h-11 select-none items-center justify-center gap-2 rounded bg-(--mm-button-primary-bg) px-5 text-center text-body transition-colors hover:bg-(--mm-button-primary-bg-hover)"
-        >
-          Registrera betalning
-        </Link>
+      {/* EN PRIMÄR CTA (designfynd 1b): knappen renderas BARA när det finns
+          någon att påminna - annars hade den öppnat en sändyta utan
+          mottagare. Det är exakt den invariant
+          `svep-paminnelse-send.acceptance.test.ts` § "tomt urval strukturellt
+          onåbart via UI" bevisar, och den överlever kortbytet. */}
+      {harPaminnelser && (
+        <BulkAtgardsknapp label="Skicka påminnelse till alla" onPress={onSkickaPaminnelseAlla} />
+      )}
 
-        {/* Knappen renderas BARA när det finns någon att påminna - annars
-            hade den öppnat en sändyta utan mottagare. Det är exakt den
-            invariant `svep-paminnelse-send.acceptance.test.ts` § "tomt urval
-            strukturellt onåbart via UI" bevisar, och den överlever
-            kortbytet. */}
-        {harPaminnelser && (
-          <BulkAtgardsknapp label="Skicka påminnelse till alla" onPress={onSkickaPaminnelseAlla} />
-        )}
-      </div>
+      {/* NAVIGATION, INTE EN KNAPP (designfynd 1b) — samma `HandlingsRad`-form
+          `Genvagar.tsx` bär för sina egna rader, delad primitiv, ingen egen
+          uppfinning. Kortskalet är redan ritat av sektionens egen `<section>`
+          ovan (px-4/rounded-2xl), så raden monteras direkt utan en andra,
+          inbäddad `HandlingsRadKort`. */}
+      <nav aria-label="Betalningar">
+        <ul className="flex flex-col">
+          <li className={HANDLINGSRAD_OMSLAG_KLASS}>
+            <Link to="/mer/betalningar" className={HANDLINGSRAD_KLASS}>
+              <HandlingsRadInnehall
+                ledande={<Banknote aria-hidden="true" size={16} className="shrink-0" />}
+              >
+                Registrera betalning
+              </HandlingsRadInnehall>
+            </Link>
+          </li>
+        </ul>
+      </nav>
     </section>
   );
 }

@@ -1346,6 +1346,8 @@ function SkrivRad({
   const label = BETALNING_LABEL[betalning];
   /** Lokalt utkast medan Lotta skriver; null = inget utkast (visa cache-värdet). */
   const [utkast, setUtkast] = useState<string | null>(null);
+  /** [designfynd 4a] Styr GHOST-STYLINGEN nedan — se `<Input>`s docblock. */
+  const harNotering = (utkast ?? notering ?? '').trim() !== '';
 
   const spara = () => {
     if (utkast === null) return;
@@ -1392,15 +1394,37 @@ function SkrivRad({
           ritar en låda, och en låda som börjar 28 px in ser ut att sakna sin
           vänstra fjärdedel. Kortets egen `px-4` är nu enda marginalen, så
           fältet står kant i kant med rutan ovanför — samma vänsterlinje som
-          kryssrutan, hela vägen ut till höger. */}
+          kryssrutan, hela vägen ut till höger.
+
+          ON-DEMAND-AFFORDANS, INTE 16 PERMANENT TOMMA FÄLT (TASK-346.14,
+          designfynd 4a). Marcus: "noteringen ska vara on-demand (affordance),
+          inte permanent" — men fältet kan INTE göras strukturellt dolt
+          (`display:none`/villkorad rendering) bakom ett avslöjande klick:
+          `tests/e2e/atgarder-betalningar.staging.test.ts` § "Betalningarnas
+          noteringsfält" fyller fältet direkt via `getByRole('textbox', …)`
+          utan ett föregående klick, och en interaktion som kräver ETT extra
+          steg för att nå ett fält som idag är direkt nåbart är en
+          BETEENDEändring — precis det uppdraget förbjuder testerna att
+          kräva. Lösningen är en GHOST-STYLING i stället: fältet är alltid
+          samma `<input>` i DOM:en (samma roll, samma `aria-label`, samma
+          `.fill()`-kontrakt), men saknar kant/bakgrund tills det antingen
+          BÄR innehåll eller får hover/fokus — då tonas det upp till en
+          vanlig, synlig ruta. Samma `[&_input]:`-descendant-teknik som
+          `GenereringsVy.tsx` redan använder för att styra `Input`-
+          primitivens inre `<input>` utan att ändra primitiven själv. */}
       <Input
         size="sm"
         label={`Notering ${label.toLowerCase()} för ${namn}`}
         hideLabel
-        placeholder="Notering…"
+        placeholder={harNotering ? 'Notering…' : '+ Lägg till notering'}
         value={utkast ?? notering ?? ''}
         onChange={setUtkast}
         onBlur={spara}
+        className={
+          harNotering
+            ? undefined
+            : '[&_input]:border-transparent [&_input]:bg-transparent focus-within:[&_input]:border-(--mm-input-border) focus-within:[&_input]:bg-(--mm-input-bg) hover:[&_input]:border-(--mm-input-border) hover:[&_input]:bg-(--mm-input-bg)'
+        }
       />
     </div>
   );
@@ -1458,74 +1482,86 @@ function BetalningsSkrivYta({
           Försök igen.
         </MessageBox>
       )}
-      {registreringar.map((r) => (
-        <div key={r.id} className="flex min-w-0 flex-col gap-2">
-          {/* Namnet UTANFÖR kortet — `DetaljGrupp`s h2-position, men medvetet
-              inget rubrikelement: femton syskon-rubriker under en enda h2 vore
-              en semantisk lögn (läsytans egen motivering). */}
-          <span className="min-w-0 px-4 font-semibold text-lg">{displayName(r)}</span>
-          <div className="divide-y divide-border rounded-2xl border border-transparent bg-surface px-4 contrast-more:border-border-strong">
-            <SkrivRad
-              registration={r}
-              eventId={eventId}
-              betalning="avgift"
-              vald={r.anmalningsavgift === PaymentStatus.MOTTAGEN}
-              lasande={lasande}
-              notering={r.noteringAnmalningsavgift ?? null}
-              onStatus={(v) =>
-                status.mutate({
-                  registration: r,
-                  betalning: 'avgift',
-                  value: v ? PaymentStatus.MOTTAGEN : PaymentStatus.EJ_MOTTAGEN,
-                })
-              }
-              onNotering={(text) =>
-                notering.mutate({ registration: r, betalning: 'avgift', notering: text })
-              }
-            />
-            {r.slutbetalning === PaymentStatus.EJ_RELEVANT ? (
-              /* VAKT 1: "Ej relevant" får radens form men ALDRIG ett kryss —
-                 en av-bock hade skrivit "Ej mottagen" och rivit basens
-                 föreläsnings-semantik. `pl-7` = kryssets 20 px + gap-2:s 8 px,
-                 så ordet står på grannradernas vänsterlinje ändå. */
-              <p className="py-3 pl-7 text-small text-text-muted">
-                Slutbetalning · Ej relevant (föreläsning)
-              </p>
-            ) : (
+      {/* KOMPAKT RADFORM, INTE VITA KORT I GRÅ CONTAINER (designfynd 4c):
+          varje person bar tidigare en EGEN `bg-surface rounded-2xl`-kortyta
+          nästlad i panelens `bg-bg-muted`-skal (`KORT_KLASS`) — åtta sådana
+          vita väggar radade under varandra läste tyngre än sidans egen
+          etablerade kompakta radform (ÅTGÄRD-listans numrerade rader,
+          `rounded-xl bg-surface px-3 py-2.5`). Personerna delar nu EN
+          `divide-y`-lista (samma hårlinje-grammatik som `DetaljGrupp`/
+          `AnmalningarSida`s Mer-lista) i stället för en kortyta per person —
+          panelens EGEN `bg-bg-muted` syns rakt igenom, ingen nästlad
+          bakgrund. */}
+      <ul className="divide-y divide-border">
+        {registreringar.map((r) => (
+          <li key={r.id} className="flex min-w-0 flex-col gap-2 py-3">
+            {/* Namnet UTANFÖR den inre radgruppen — `DetaljGrupp`s h2-position,
+                men medvetet inget rubrikelement: femton syskon-rubriker under
+                en enda h2 vore en semantisk lögn (läsytans egen motivering). */}
+            <span className="min-w-0 px-4 font-semibold text-body">{displayName(r)}</span>
+            <div className="divide-y divide-border px-4">
               <SkrivRad
                 registration={r}
                 eventId={eventId}
-                betalning="slut"
-                vald={r.slutbetalning === PaymentStatus.MOTTAGEN}
+                betalning="avgift"
+                vald={r.anmalningsavgift === PaymentStatus.MOTTAGEN}
                 lasande={lasande}
-                notering={r.noteringSlutbetalning ?? null}
+                notering={r.noteringAnmalningsavgift ?? null}
                 onStatus={(v) =>
                   status.mutate({
                     registration: r,
-                    betalning: 'slut',
+                    betalning: 'avgift',
                     value: v ? PaymentStatus.MOTTAGEN : PaymentStatus.EJ_MOTTAGEN,
                   })
                 }
                 onNotering={(text) =>
-                  notering.mutate({ registration: r, betalning: 'slut', notering: text })
+                  notering.mutate({ registration: r, betalning: 'avgift', notering: text })
                 }
               />
-            )}
-            {/* [TASK-346.7 AC #2] Saknas-beloppet, Registrera betalning och
-                inbetalningsraderna. Sist i kortet, UNDER facken: facken säger
-                VAD som är klart, detta säger vad som återstår och vad Lotta
-                kan göra åt det. Inbetalningarna hämtas först när raden fälls
-                ut — se komponentens docblock för anropsbudgeten. */}
-            {lasande && (
-              <PanelBetalningar
-                anmalanRecordId={r.id}
-                namn={displayName(r)}
-                rad={raderPerAnmalan.get(r.id) ?? null}
-              />
-            )}
-          </div>
-        </div>
-      ))}
+              {r.slutbetalning === PaymentStatus.EJ_RELEVANT ? (
+                /* VAKT 1: "Ej relevant" får radens form men ALDRIG ett kryss —
+                   en av-bock hade skrivit "Ej mottagen" och rivit basens
+                   föreläsnings-semantik. `pl-7` = kryssets 20 px + gap-2:s 8 px,
+                   så ordet står på grannradernas vänsterlinje ändå. */
+                <p className="py-3 pl-7 text-small text-text-muted">
+                  Slutbetalning · Ej relevant (föreläsning)
+                </p>
+              ) : (
+                <SkrivRad
+                  registration={r}
+                  eventId={eventId}
+                  betalning="slut"
+                  vald={r.slutbetalning === PaymentStatus.MOTTAGEN}
+                  lasande={lasande}
+                  notering={r.noteringSlutbetalning ?? null}
+                  onStatus={(v) =>
+                    status.mutate({
+                      registration: r,
+                      betalning: 'slut',
+                      value: v ? PaymentStatus.MOTTAGEN : PaymentStatus.EJ_MOTTAGEN,
+                    })
+                  }
+                  onNotering={(text) =>
+                    notering.mutate({ registration: r, betalning: 'slut', notering: text })
+                  }
+                />
+              )}
+              {/* [TASK-346.7 AC #2] Saknas-beloppet, Registrera betalning och
+                  inbetalningsraderna. Sist i raden, UNDER facken: facken säger
+                  VAD som är klart, detta säger vad som återstår och vad Lotta
+                  kan göra åt det. Inbetalningarna hämtas först när raden fälls
+                  ut — se komponentens docblock för anropsbudgeten. */}
+              {lasande && (
+                <PanelBetalningar
+                  anmalanRecordId={r.id}
+                  namn={displayName(r)}
+                  rad={raderPerAnmalan.get(r.id) ?? null}
+                />
+              )}
+            </div>
+          </li>
+        ))}
+      </ul>
     </div>
   );
 }

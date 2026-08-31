@@ -1,7 +1,14 @@
 import { AlertTriangle, Check, Upload } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { Input as AriaInput, Checkbox, SearchField } from 'react-aria-components';
-import { Button, Input, MessageBox, Select, SelectItem } from '@/components/primitives';
+import {
+  Button,
+  InitialAvatar,
+  Input,
+  MessageBox,
+  Select,
+  SelectItem,
+} from '@/components/primitives';
 import { useRegistreraInbetalning } from '@/data/mutations/inbetalningar';
 import {
   analyseraFil,
@@ -524,17 +531,24 @@ export function SwishImport({ oppna, idag, betalsatt, onRegistrerade, onStang }:
             </MessageBox>
           )}
 
-          <ul className="flex flex-col gap-2">
-            {arbetsyta.map((rad) => (
-              <Importrad
-                key={radnyckel(rad.rad)}
-                rad={rad}
-                oppna={oppna}
-                idag={idag}
-                onAndra={(andring) => andraRad(radnyckel(rad.rad), andring)}
-              />
-            ))}
-          </ul>
+          {/* SAMMA RADFORMSKLASS SOM INKORGEN (designfynd 6) —
+              `divide-y`-container i stället för separata bordade kort per
+              rad, se `BetalningsInkorg.tsx`s `BetalningsradKort`. Villkorad
+              på längd av samma skäl som den listan: en tom `<ul>` hade annars
+              stått kvar under "Allt i filen är redan registrerat" ovan. */}
+          {arbetsyta.length > 0 && (
+            <ul className="divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong">
+              {arbetsyta.map((rad) => (
+                <Importrad
+                  key={radnyckel(rad.rad)}
+                  rad={rad}
+                  oppna={oppna}
+                  idag={idag}
+                  onAndra={(andring) => andraRad(radnyckel(rad.rad), andring)}
+                />
+              ))}
+            </ul>
+          )}
 
           {redan.length > 0 && (
             <div className="flex flex-col gap-2">
@@ -605,8 +619,16 @@ function sammanfattningstext(
     if (summa.misslyckade > 0) delar.push(`${summa.misslyckade} misslyckades`);
     return delar.join(' · ');
   }
+  // [TASK-346.14, designfynd 3/språkfynd 2] Kongruens vid N=1 — "1 rader"
+  // läste fel. Räknelogiken (VAD som räknas, ramrads-frågan §3 bullet 3) är
+  // ORÖRD, uppdraget säger uttryckligen "rör den inte" — bara ordformen
+  // ändras utifrån talet som redan finns.
   const kalla = bank === '' ? filnamn : `${filnamn}, läst som ${bank}`;
-  return `${kalla}: ${summa.lasta} rader · ${summa.sakra} säkra · ${summa.osakra} osäkra · ${summa.omatchade} omatchade`;
+  const radOrd = summa.lasta === 1 ? 'rad' : 'rader';
+  const sakraOrd = summa.sakra === 1 ? 'säker' : 'säkra';
+  const osakraOrd = summa.osakra === 1 ? 'osäker' : 'osäkra';
+  const omatchadeOrd = summa.omatchade === 1 ? 'omatchad' : 'omatchade';
+  return `${kalla}: ${summa.lasta} ${radOrd} · ${summa.sakra} ${sakraOrd} · ${summa.osakra} ${osakraOrd} · ${summa.omatchade} ${omatchadeOrd}`;
 }
 
 /* ═══════════════════════════ EN RAD ═══════════════════════════ */
@@ -648,9 +670,12 @@ function Importrad({ rad, oppna, idag, onAndra }: RadProps) {
   }
 
   return (
-    <li className="flex flex-col gap-2 rounded border border-border bg-bg-muted px-3 py-3">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div className="flex min-w-0 flex-col gap-0.5">
+    // Egen kant/bakgrund riven (designfynd 6) — raden lever nu i förälderns
+    // `divide-y`-container, samma hårlinje-rytm som inkorgens rader.
+    <li className="flex flex-col gap-2 py-3">
+      <div className="flex flex-wrap items-start gap-3">
+        <InitialAvatar namn={transaktion.namn ?? 'Utan namn'} />
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <span className="font-medium">
             {`${transaktion.namn ?? 'Utan namn'} · ${visaKronor(transaktion.belopp)} kr`}
           </span>

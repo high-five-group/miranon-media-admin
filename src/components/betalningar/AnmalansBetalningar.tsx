@@ -1,3 +1,4 @@
+import { CircleCheck } from 'lucide-react';
 import { useMemo } from 'react';
 import { useOppnaBetalningar } from '@/data/betalningar/useBetalningar';
 import { AterbetalningsYta } from './AterbetalningsYta';
@@ -27,6 +28,26 @@ import { RegistreraYta } from './RegistreraYta';
  * fällning. Anmälans detaljvy visar EN anmälan som Lotta uttryckligen
  * navigerat till - ett anrop, för det hon kom hit för att se. En fällning
  * här hade varit ett extra klick utan att spara något.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * "SAKNAS X KR" SOM VIKTAD RAD (TASK-346.14, designfynd 3a/3b)
+ * ═══════════════════════════════════════════════════════════════════════════
+ * `DetaljGrupp`s dt/dd-rader ovanför (Anmälningsavgift/Slutbetalning/
+ * deadline/noteringar) håller `EtikettVardeRad`s form (etikett dämpad
+ * vänster, VÄRDET primärt höger, py-3). Den öppna sladden här — nyckeltalet
+ * "Saknas 500 kr." — var en naken vänsterställd mening utan den vikten.
+ * Formen nedan LÅNAR `EtikettVardeRad`s klasser rakt av (samma
+ * `text-small text-text-muted` etikett, samma högerställda `font-semibold
+ * text-body`-värde) men renderas ALDRIG i en `<dl>`: en dt/dd-rad kan bara
+ * bära EN ordagrann term ("Saknas"), och de tre lägena här ("Saknas X kr" /
+ * "Allt betalt" / "enligt basen: okänt") är tre OLIKA meningar, inte tre
+ * värden på samma fråga — att tvinga in dem i dt/dd hade krävt att antingen
+ * hitta på en konstlad gemensam etikett eller byta etikett per läge (`axe`
+ * `definition-list` kräver dessutom att VARJE `<dl>`-barn är ett dt/dd-par,
+ * inte fri text). De två "lugna" lägena (null/allt betalt) förblir därför
+ * enkel text utan radstruktur — bara det FAKTISKT öppna beloppet, det Marcus
+ * kallade "NYCKELTALET", får radens vikt. Ordvalet (svenska meningarna) är
+ * OFÖRÄNDRAT — bara kompositionen är ny.
  */
 export function AnmalansBetalningar({
   anmalanRecordId,
@@ -46,16 +67,23 @@ export function AnmalansBetalningar({
 
   return (
     <div className="flex flex-col gap-3 pt-4">
-      <p className="text-small">
-        {/* "enligt basen" när ingen rad finns - se `PanelBetalningar` §
-            `rad === null` för varför frånvaron är tvetydig och inte får
-            påstås vara "allt betalt". */}
-        {saknas === null
-          ? 'Inget öppet belopp enligt basen.'
-          : saknas > 0
-            ? `Saknas ${visaKronor(saknas)} kr.`
-            : 'Allt betalt.'}
-      </p>
+      {/* "enligt basen" när ingen rad finns - se `PanelBetalningar` §
+          `rad === null` för varför frånvaron är tvetydig och inte får
+          påstås vara "allt betalt". Se filens docblock § "SAKNAS X KR" för
+          varför bara det öppna beloppet får radstrukturens vikt. */}
+      {saknas === null ? (
+        <p className="text-small text-text-muted">Inget öppet belopp enligt basen.</p>
+      ) : saknas > 0 ? (
+        <div className="flex items-center justify-between gap-4 py-1">
+          <span className="text-small text-text-muted">Saknas</span>
+          <span className="text-right font-semibold text-body">{`${visaKronor(saknas)} kr`}</span>
+        </div>
+      ) : (
+        <p className="flex items-center gap-2 text-small text-text-secondary">
+          <CircleCheck aria-hidden="true" size={16} className="shrink-0 text-success" />
+          Allt betalt.
+        </p>
+      )}
 
       {rad !== null && <RegistreraYta rad={rad} />}
 

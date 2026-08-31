@@ -151,7 +151,12 @@ export function InbetalningsLista({ kalla, aktiv, max, tomText }: Props) {
         </p>
       )}
 
-      <ul className="flex flex-col gap-1">
+      {/* RADSTRUKTUR MED HÅRLINJER (designfynd 3d/4): ingen egen bakgrund/
+          rundning per rad — komponenten monteras alltid inuti en förälders
+          egen kortyta (DetaljGrupp/AtgardsSida:s person-kort), så en andra,
+          nästlad kortyta hade gett kort-i-kort. `divide-y` ger i stället
+          samma hårlinje-rytm som DetaljGrupp:s `EtikettVardeRad`. */}
+      <ul className="divide-y divide-border">
         {rader.map((inbetalning) => (
           <InbetalningsRad
             key={inbetalning.id}
@@ -200,6 +205,14 @@ function InbetalningsRad({
   const makulerad = inbetalning.status === 'makulerad';
   const visaRadera = kanRadera(inbetalning, kvitton);
   const visaMakulera = kanMakulera(inbetalning, kvitton);
+  // [TASK-346.14, designfynd 3d] Har raden NÅGON handling att visa på sin
+  // egen rad? En makulerad rad utan kvitto kan sakna alla fem — utan detta
+  // villkoret hade en tom, högerställd rad ändå lagt till ett `gap-2`-mellanrum.
+  const harHandlingar =
+    lage.kanVisa ||
+    (lage.kanSkickaIgen && lage.kvitto !== null) ||
+    lage.kanKoaOm ||
+    (atgard === 'vy' && (visaRadera || visaMakulera));
 
   // FOKUS-RETUR TILL TRIGGER-KNAPPEN — bara vid AVBRYT/ESC (samma anatomi som
   // `RegistreraYta`/`AterbetalningsYta`). En LYCKAD radering tar bort raden
@@ -316,13 +329,22 @@ function InbetalningsRad({
        på ytan ("Makulerad: <skäl>").
        Makuleringen sägs i stället med genomstruken text OCH i klartext på egen
        rad. Båda överlever nedsatt syn; en opacitet gör det inte. */
-    <li className="flex flex-col gap-1 rounded bg-bg-muted px-3 py-2 text-small">
+    <li className="flex flex-col gap-2 py-3 text-small">
+      {/* TEXTRADEN (belopp/betalsätt/datum + kvittostatus) — ALLTID rad 1. */}
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className={makulerad ? 'line-through' : undefined}>
           {inbetalningsText(inbetalning)}
         </span>
-        <span className="flex flex-wrap items-center gap-2 text-text-muted">
-          <span>{lage.text}</span>
+        <span className="text-text-muted">{lage.text}</span>
+      </div>
+
+      {/* HANDLINGSRADEN (designfynd 3d) — EGEN rad, HÖGERSTÄLLD. Tre
+          flytande knappar inline i löptexten gjorde att handlingarna
+          landade på olika X-position beroende på hur lång textraden
+          ovanför var; en egen rad ger samma vänster/högerkant på VARJE
+          inbetalning oavsett belopp- eller statustextens längd. */}
+      {harHandlingar && (
+        <div className="flex flex-wrap items-center justify-end gap-2 text-text-muted">
           {lage.kanVisa && (
             <Button
               intent="secondary"
@@ -410,8 +432,8 @@ function InbetalningsRad({
               Makulera
             </Button>
           )}
-        </span>
-      </div>
+        </div>
+      )}
 
       {makulerad && inbetalning.makuleradSkal && (
         <span className="text-caption text-text-muted">
