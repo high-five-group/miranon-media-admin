@@ -1,10 +1,11 @@
 import { AlertTriangle, Check, Upload } from 'lucide-react';
-import { useId, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Input as AriaInput, Checkbox, SearchField } from 'react-aria-components';
-import { Button, MessageBox, Select, SelectItem } from '@/components/primitives';
+import { Button, Input, MessageBox, Select, SelectItem } from '@/components/primitives';
 import { useRegistreraInbetalning } from '@/data/mutations/inbetalningar';
 import {
   analyseraFil,
+  beraknaSignatur,
   type Filanalys,
   type Kolumnmappning,
   mappningsFel,
@@ -112,7 +113,7 @@ const FALTETIKETT: Record<Transaktionsfalt, string> = {
   bankreferens: 'Bankens referens',
 };
 
-/** Ett tomt utkast, för en fil vi inte känner igen. Inget är förvalt. */
+/** Ett tomt utkast, för en fil vi inte känner igen alls. Inget är förvalt. */
 function tomMappning(analys: Filanalys): Kolumnmappning {
   return {
     bank: '',
@@ -127,6 +128,25 @@ function tomMappning(analys: Filanalys): Kolumnmappning {
       meddelande: null,
       bankreferens: null,
     },
+    signatur: null,
+  };
+}
+
+/**
+ * Dialogens startläge. `analys.bastaGissning` är ALDRIG tillämpad
+ * automatiskt (se `Filanalys.bastaGissning`) - bara ett förslag Lotta ser,
+ * kan rätta, och måste EXPLICIT bekräfta genom att trycka "Läs filen"
+ * (`bekraftaMappning`). Signaturen nollställs: den beräknas på nytt mot
+ * DENNA fil när hon bekräftar, aldrig återanvänds från gissningens källa.
+ */
+function utkastFor(analys: Filanalys): Kolumnmappning {
+  const gissning = analys.bastaGissning;
+  if (gissning === null) return tomMappning(analys);
+  return {
+    ...gissning,
+    avgransare: analys.avgransare,
+    harRubrikrad: analys.harRubrikrad,
+    signatur: null,
   };
 }
 
@@ -146,7 +166,29 @@ export function SwishImport({ oppna, idag, betalsatt, onRegistrerade, onStang }:
 
   const inputRef = useRef<HTMLInputElement>(null);
   const registrera = useRegistreraInbetalning();
-  const banknamnId = useId();
+
+  const mappningPanelRef = useRef<HTMLDivElement>(null);
+  const listaPanelRef = useRef<HTMLDivElement>(null);
+
+  /**
+   * FLYTTAR FOKUS DETERMINISTISKT vid stegbyte 'val' → 'mappning'/'lista'.
+   *
+   * Knappen "Välj rapportfil" (steg 'val') AVMONTERAS när `laddaFil` byter
+   * steg, och utan detta faller fokus till `document.body` - en
+   * tangentbords- eller skärmläsaranvändare tappar sin plats mitt i ett
+   * pengaflöde. Samma felklass, samma fix-mönster som
+   * `BetalningsInkorg.tsx` § `stangImport` (`importKnappRef.current?.focus()`)
+   * bär åt andra hållet.
+   *
+   * `useEffect`, inte ett anrop direkt efter `setSteg(...)`: React har inte
+   * målat det NYA stegets DOM förrän efter renderingen, så en synkron
+   * `.focus()`-anrop omedelbart efter `setSteg` hade träffat FÖREGÅENDE
+   * stegs träd.
+   */
+  useEffect(() => {
+    if (steg === 'mappning') mappningPanelRef.current?.focus();
+    else if (steg === 'lista') listaPanelRef.current?.focus();
+  }, [steg]);
 
   /**
    * `value = ''` FÖRE klicket är inte kosmetik här - det är AC #3:s bevis.
@@ -183,8 +225,11 @@ export function SwishImport({ oppna, idag, betalsatt, onRegistrerade, onStang }:
       visaRader(text, nyAnalys.igenkand);
       return;
     }
-    // AC #1: okänt format ger mappningsdialog, ALDRIG en gissning.
-    setUtkast(tomMappning(nyAnalys));
+    // AC #1: okänt format (noll ELLER FLERA strukturellt matchande
+    // kandidater) ger mappningsdialog, ALDRIG en tyst gissning - se
+    // `Filanalys.igenkand`. `utkastFor` förifyller med bästa gissning, men
+    // Lotta bekräftar alltid explicit innan något sparas eller läses.
+    setUtkast(utkastFor(nyAnalys));
     setSteg('mappning');
   }
 
@@ -197,10 +242,23 @@ export function SwishImport({ oppna, idag, betalsatt, onRegistrerade, onStang }:
     setSteg('lista');
   }
 
+  /**
+   * Bekräftar mappningen. Signaturen beräknas HÄR, mot DEN HÄR FILEN
+   * (`analys`) - aldrig mot en tidigare gissnings ursprungsfil - så att en
+   * framtida import bara matchar automatiskt när formen faktiskt är
+   * densamma (`Strukturensignatur`, fix-runda 2).
+   */
   function bekraftaMappning() {
-    if (!utkast || mappningsFel(utkast) !== null) return;
-    sparaMappning(utkast);
-    visaRader(innehall, utkast);
+    if (!utkast || !analys || mappningsFel(utkast) !== null) return;
+    const signatur = beraknaSignatur(
+      analys.rader,
+      analys.avgransare,
+      analys.harRubrikrad,
+      analys.kolumner,
+    );
+    const attSpara: Kolumnmappning = { ...utkast, signatur };
+    sparaMappning(attSpara);
+    visaRader(innehall, attSpara);
   }
 
   function andraRad(nyckel: string, andring: Partial<Importradstillstand>) {
@@ -250,20 +308,37 @@ export function SwishImport({ oppna, idag, betalsatt, onRegistrerade, onStang }:
         if (rad.medKvitto) {
           kvitton.push({
             inbetalningId: svar.inbetalning.id,
-            namn: rad.matchning.kandidater[0]?.namn ?? transaktion.namn ?? 'Okänt namn',
+            // RAD.VALD, INTE `kandidater[0]`: en osäker rad kan ha fått en
+            // ANNAN kandidat vald än den första, och en omatchad rad har
+            // ALLTID en tom kandidatlista - `kandidater[0]` hade då varit
+            // `undefined` och alltid fallit till bankens (Swish-ägarens)
+            // namn i stället för deltagarens. `oppna` bär hela sökrymden,
+            // inklusive de rader Lotta hittat via sökfältet (som aldrig
+            // hamnar i `rad.matchning.kandidater`).
+            namn:
+              namnForVal(rad.vald, rad.matchning.kandidater, oppna) ??
+              transaktion.namn ??
+              'Okänt namn',
             belopp: svar.inbetalning.belopp,
           });
         }
       } catch (error) {
-        utfall.set(
-          nyckel,
-          arDubblettfel(error)
-            ? { klass: 'dubblett' }
-            : {
-                klass: 'fel',
-                skal: error instanceof Error ? error.message : 'Okänt fel.',
-              },
-        );
+        if (arDubblettfel(error)) {
+          utfall.set(nyckel, { klass: 'dubblett' });
+          // LOGGAS ÄVEN HÄR: en server-avvisad dubblett är precis det
+          // importloggen finns för att göra synligt vid NÄSTA import (se
+          // `bankmappning-minne.ts` § "VAD DEN ÄR TILL FÖR"). Utan detta
+          // bokfördes bara de rader SOM LYCKADES i try-grenen, och en
+          // referens databasen redan kände till men denna webbläsares logg
+          // inte gjorde (annan dator, rensad lagring) hade fallit ut som
+          // OMATCHAD nästa gång i stället för "redan registrerad".
+          if (transaktion.bankreferens !== null) nyaReferenser.push(transaktion.bankreferens);
+        } else {
+          utfall.set(nyckel, {
+            klass: 'fel',
+            skal: error instanceof Error ? error.message : 'Okänt fel.',
+          });
+        }
       }
     }
 
@@ -282,6 +357,12 @@ export function SwishImport({ oppna, idag, betalsatt, onRegistrerade, onStang }:
   const arbetsyta = attHantera(rader);
   const redan = redanImporterade(rader);
   const utkastfel = utkast ? mappningsFel(utkast) : null;
+  // AC #3-ytan (`Transaktion.ts` § `bankreferens`): en rad UTAN referens har
+  // inget dubblettskydd - varken indexet i databasen eller den lokala
+  // loggen kan känna igen den vid en omimport. Räknas bland ARBETSYTAN
+  // (raderna Lotta faktiskt kan bocka i just nu), inte bland redan
+  // registrerade, som redan är ofarliga oavsett.
+  const utanReferens = arbetsyta.filter((rad) => rad.rad.transaktion.bankreferens === null).length;
 
   return (
     <section
@@ -331,24 +412,29 @@ export function SwishImport({ oppna, idag, betalsatt, onRegistrerade, onStang }:
       )}
 
       {steg === 'mappning' && analys && utkast && (
-        <div className="flex flex-col gap-3">
-          <MessageBox intent="info" title={`Okänt format: ${filnamn}`}>
-            Appen känner inte igen filen, så den gissar inte. Peka ut vilken kolumn som är vad, en
-            gång, så sparas det till nästa import.
+        // `tabIndex={-1}` + `ref`: fokusmål för `useEffect`-svepet ovan. Se
+        // dess docblock för VARFÖR (a11y-golvet, tidigare oåtgärdat).
+        <div ref={mappningPanelRef} tabIndex={-1} className="flex flex-col gap-3 outline-none">
+          <MessageBox intent="info" title={`Kontrollera mappningen: ${filnamn}`}>
+            {analys.bastaGissning === null
+              ? 'Appen känner inte igen filen. Peka ut vilken kolumn som är vad, en gång, så sparas det till nästa import.'
+              : 'Appen är inte säker på vilken sparad mappning som gäller. Kolumnerna nedan är en GISSNING, förifylld men aldrig tillämpad automatiskt. Kontrollera dem, rätta det som skiljer sig, och bekräfta.'}
           </MessageBox>
 
-          <div className="flex flex-col gap-1">
-            <label htmlFor={banknamnId} className="font-medium text-small">
-              Vilken bank kommer rapporten från?
-            </label>
-            <input
-              id={banknamnId}
-              value={utkast.bank}
-              onChange={(event) => setUtkast({ ...utkast, bank: event.target.value })}
-              placeholder="Till exempel Nordea"
-              className="mm-fokusring-vid-fokus text-(color:--mm-input-text) min-h-10 w-full max-w-80 rounded border border-(--mm-input-border) bg-(--mm-input-bg) px-3 text-body"
-            />
-          </div>
+          <Input
+            label="Vilken bank kommer rapporten från?"
+            value={utkast.bank}
+            onChange={(varde) => setUtkast({ ...utkast, bank: varde })}
+            placeholder="Till exempel Nordea"
+            // `mappningsFel` returnerar EN sträng, antingen om banknamnet
+            // eller om en obligatorisk kolumn - aldrig båda. Fältet visar
+            // felet bara när det FAKTISKT gäller banknamnet; ett fel om en
+            // saknad kolumn visas i stället i kolumnlistans egen fotnot
+            // nedan (samma utkastfel, olika plats beroende på VAD det gäller).
+            isInvalid={utkastfel !== null && utkast.bank.trim() === ''}
+            errorMessage={utkast.bank.trim() === '' ? (utkastfel ?? undefined) : undefined}
+            className="max-w-80"
+          />
 
           <ul className="flex flex-col gap-2">
             {TRANSAKTIONSFALT.map((falt) => (
@@ -380,7 +466,11 @@ export function SwishImport({ oppna, idag, betalsatt, onRegistrerade, onStang }:
             ))}
           </ul>
 
-          {utkastfel !== null && (
+          {/* Felmeddelandet visas nu av `Input`s egen `FieldError` (kopplad
+              via `aria-describedby`/`aria-invalid`, ADR-046) - se fältet
+              ovan. Ett fel som gäller ENDAST kolumnvalen (bankfältet är
+              ifyllt men ingen kolumn pekar ut beloppet) syns bara här. */}
+          {utkastfel !== null && utkast.bank.trim() !== '' && (
             <p role="status" className="text-(color:--mm-input-error-text) text-small">
               {utkastfel}
             </p>
@@ -398,10 +488,20 @@ export function SwishImport({ oppna, idag, betalsatt, onRegistrerade, onStang }:
       )}
 
       {steg === 'lista' && (
-        <div className="flex flex-col gap-3">
+        // `tabIndex={-1}` + `ref`: fokusmål för `useEffect`-svepet ovan. Se
+        // dess docblock för VARFÖR (a11y-golvet, tidigare oåtgärdat).
+        <div ref={listaPanelRef} tabIndex={-1} className="flex flex-col gap-3 outline-none">
           <p role="status" aria-live="polite" className="text-small text-text-muted">
             {sammanfattningstext(summa, filnamn, mappning?.bank ?? '')}
           </p>
+
+          {utanReferens > 0 && (
+            <MessageBox intent="warning" title="Rader utan bankreferens">
+              {`${utanReferens} ${utanReferens === 1 ? 'rad saknar' : 'rader saknar'} bankreferens och har inget dubblettskydd. Importeras samma rapport igen kan ${
+                utanReferens === 1 ? 'den' : 'de'
+              } registreras en gång till.`}
+            </MessageBox>
+          )}
 
           {(bortfiltrerade > 0 || fel.length > 0) && (
             <ul className="flex flex-col gap-1 text-caption text-text-muted">
@@ -639,6 +739,26 @@ function Importrad({ rad, oppna, idag, onAndra }: RadProps) {
       )}
     </li>
   );
+}
+
+/**
+ * Namnet på anmälan Lotta FAKTISKT valde för raden - inte gissat ur index 0.
+ *
+ * Sökordningen speglar var valet kan ha kommit ifrån: `kandidater` är
+ * matchningens egna förslag (säkra/osäkra rader), `oppna` är HELA
+ * sökrymden och täcker även ett fritt sökval på en omatchad rad (vars
+ * kandidatlista alltid är tom per `Matchning`-invarianten).
+ */
+function namnForVal(
+  vald: string | null,
+  kandidater: readonly InkorgsRad[],
+  oppna: readonly InkorgsRad[],
+): string | null {
+  if (vald === null) return null;
+  const traff =
+    kandidater.find((k) => k.betalning.anmalanRecordId === vald) ??
+    oppna.find((k) => k.betalning.anmalanRecordId === vald);
+  return traff?.namn ?? null;
 }
 
 function radbeskrivning(

@@ -2,6 +2,26 @@ import { z } from 'zod';
 import { AVGRANSARE, type Kolumnmappning, TRANSAKTIONSFALT } from './bankimport-parser';
 
 /**
+ * [Fix-runda 2, TASK-346.10] `Strukturensignatur`s lagringsform.
+ *
+ * VALFRI I INDATA (`.default(null)`): en post skriven INNAN denna skiva
+ * saknar fältet helt, och den ska INTE slängas av `MappningSchema.safeParse`
+ * (`lasMappningar` § "poster som inte längre håller schemat SLÄNGS tyst") -
+ * bara sakna signatur. `matcharSignatur(null, ...)` returnerar alltid
+ * `false`, så en sådan post kan aldrig väljas automatiskt igen; den
+ * behandlas som icke-matchande och filen går till dialogen (Marcus beslut
+ * 2026-08-31, punkt 5 - noll sparade mappningar i drift i dag, så detta är
+ * defensiv korrekthet, inte en migrering av verklig data).
+ */
+const SignaturSchema = z
+  .union([
+    z.object({ typ: z.literal('rubrik'), falt: z.array(z.string().nullable()) }),
+    z.object({ typ: z.literal('postmarkorer'), forstaFalt: z.string(), sistaFalt: z.string() }),
+    z.null(),
+  ])
+  .default(null);
+
+/**
  * [TASK-346.10 AC #1, PRD berättelse 22] Kolumnmappningen per bank, och
  * loggen över vad denna webbläsare redan importerat.
  *
@@ -80,6 +100,7 @@ const MappningSchema = z.object({
   harRubrikrad: z.boolean(),
   radfilter: z.array(RadfilterSchema),
   kolumner: KolumnerSchema,
+  signatur: SignaturSchema,
 });
 
 const MAPPNINGAR_NYCKEL = 'mm.betalningar.bankmappningar';

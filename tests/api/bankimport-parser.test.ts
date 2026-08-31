@@ -45,6 +45,7 @@ import { expect, test } from '@playwright/test';
 import {
   analyseraFil,
   arHandelsbanksformat,
+  beraknaSignatur,
   delaFil,
   delaRad,
   gissaAvgransare,
@@ -53,6 +54,7 @@ import {
   type Kolumnmappning,
   lasDatum,
   mappningsFel,
+  matcharSignatur,
   parsaTransaktioner,
 } from '@/components/betalningar/bankimport-parser';
 
@@ -257,17 +259,25 @@ test.describe('lasDatum — ISO eller ingenting', () => {
     expect(lasDatum('i går')).toBeNull();
   });
 
-  test('NEGATIV KONTROLL: new Date(...) gör 3 augusti till 7 mars', () => {
+  test('NEGATIV KONTROLL: new Date(...) tolkar 3 augusti som mars — och testet är TIDSZONSOBEROENDE', () => {
     // Talet blir ett datum, och datumet hamnar på kvittot. Det är ett fel som
     // ser ut som ett svar.
     //
-    // MÄTT, och värre än den uppenbara halvan: `new Date('03/08/2026')` läser
-    // strängen som amerikansk (mars, inte augusti) OCH som lokal midnatt, så
-    // `toISOString` drar av tidszonsförskjutningen och landar på DAGEN INNAN.
-    // Sviten kör i Europe/Stockholm (playwright.config.ts § use.timezoneId),
-    // alltså är utfallet 2026-03-07: fel månad OCH fel dag.
+    // RÄTTAD (fix-runda 2, granskning runda 1, ERROR-fyndet): asserten fick
+    // INTE peka på ett exakt resultatdatum. `new Date('03/08/2026')` läser
+    // strängen som amerikansk (mars, inte augusti) och som LOKAL midnatt, så
+    // `toISOString().slice(0, 10)` drar av körningens tidszonsförskjutning —
+    // `2026-03-07` i Europe/Stockholm, `2026-03-08` i UTC. `api-pure` är
+    // SERVERFRI (playwright.config.ts § "API-projekten... är serverfria: pure
+    // är rena enhetstester") och läser därför INTE `use.timezoneId` (den
+    // sätter webbläsarkontextens tidszon) — `new Date()` följer i stället
+    // Node-processens egen TZ, som är UTC på CI-runnern men Europe/Stockholm
+    // lokalt. Ett test som pekade på EXAKT `2026-03-07` var därför grönt
+    // lokalt och rött i CI (tre identiska fällningar, deterministiskt — inte
+    // flakigt). Kontrollen är i stället att resultatet inte är det KORREKTA
+    // datumet (`2026-08-03`), oavsett vilken tidszon körningen råkar ha.
     const trasigtDatum = (text: string) => new Date(text).toISOString().slice(0, 10);
-    expect(trasigtDatum('03/08/2026')).toBe('2026-03-07');
+    expect(trasigtDatum('03/08/2026')).not.toBe('2026-08-03');
     expect(lasDatum('03/08/2026')).toBeNull();
   });
 });
@@ -417,6 +427,7 @@ test.describe('rader som inte går att läsa SYNS, de försvinner inte', () => {
       meddelande: null,
       bankreferens: 4,
     },
+    signatur: null,
   };
 
   test('tomt belopp, oläsligt belopp och nollbelopp hamnar var för sig i felhögen', () => {
@@ -490,6 +501,7 @@ test.describe('mappningsFel — fångas FÖRE läsningen', () => {
       meddelande: null,
       bankreferens: null,
     },
+    signatur: null,
   };
 
   test('en komplett mappning har inget fel', () => {
@@ -536,11 +548,56 @@ test.describe('analyseraFil — vad dialogen får se', () => {
     expect(analys.kolumner[10].exempel).toContain('Anna Swish');
   });
 
-  test('en SPARAD mappning vinner över den inbyggda profilen', () => {
-    // Har Lotta en gång rättat mappningen för sin bank ska rättelsen gälla,
-    // även om filen ytligt liknar ett format vi känner igen.
+  test('en SPARAD mappning som matchar STRUKTURELLT vinner — ensam kandidat, ingen ambiguitet', () => {
+    // En sparad mappning för en RUBRIK-CSV (t.ex. Nordea) är den enda
+    // kandidaten: den inbyggda Handelsbanken-profilen är posttypsbaserad och
+    // blir aldrig ens en kandidat för en fil med rubrikrad
+    // (`arHandelsbanksformat` kräver `01`/`03`-ramposter, som en rubrikrad
+    // aldrig bär). Signaturen är beräknad UR SAMMA FIL mappningen prövas
+    // mot, precis som `bekraftaMappning` gör i produktionskoden.
+    const filinnehall = 'Datum,Namn,Belopp\r\n2026-08-30,Anna,1500\r\n2026-08-31,Bo,2500\r\n';
+    const forstaAnalys = analyseraFil(filinnehall);
+    const signatur = beraknaSignatur(
+      forstaAnalys.rader,
+      forstaAnalys.avgransare,
+      forstaAnalys.harRubrikrad,
+      forstaAnalys.kolumner,
+    );
+
     const egen: Kolumnmappning = {
       bank: 'Min bank',
+      avgransare: ',',
+      harRubrikrad: true,
+      radfilter: [],
+      kolumner: {
+        datum: 0,
+        belopp: 2,
+        namn: 1,
+        telefon: null,
+        meddelande: null,
+        bankreferens: null,
+      },
+      signatur,
+    };
+
+    const analys = analyseraFil(filinnehall, [egen]);
+    expect(analys.igenkand?.bank).toBe('Min bank');
+  });
+
+  test('NEGATIV KONTROLL: rätt avgränsare, rätt bredd, FEL bank — signaturen stoppar pengafällan', () => {
+    // Skarpt demonstrerad i granskningen av runda 1 (TASK-346.10): en sparad
+    // mappning för en ANNAN bank vann tidigare över den inbyggda,
+    // strukturellt verifierade Handelsbanken-profilen bara för att
+    // avgränsare och kolumnbredd RÅKADE passa. Utfallet var
+    // `belopp = 1 235 524 400 kr` i stället för `1500`, och
+    // `bankreferens = 5566778899` på BÅDA raderna i stället för de två
+    // unika referenserna — utan någon felsignal.
+    //
+    // Denna mappning har EXAKT samma avgränsare och kolumnindex som den
+    // förra testens `egen` (skulle alltså ha "passat" under den gamla
+    // kontrollen) men en signatur sparad för en ANNAN, posttypslös fil.
+    const felBank: Kolumnmappning = {
+      bank: 'Fel bank (sparad för en annan fil)',
       avgransare: ',',
       harRubrikrad: false,
       radfilter: [],
@@ -552,14 +609,58 @@ test.describe('analyseraFil — vad dialogen får se', () => {
         meddelande: 12,
         bankreferens: 11,
       },
+      signatur: { typ: 'postmarkorer', forstaFalt: '99', sistaFalt: '99' },
     };
-    const analys = analyseraFil(las(KOMMA_DAGLIG), [egen]);
-    expect(analys.igenkand?.bank).toBe('Min bank');
+
+    const analys = analyseraFil(las(KOMMA_DAGLIG), [felBank]);
+
+    // Fel bank utesluts ur kandidaterna. Den inbyggda profilen är kvar som
+    // EXAKT EN kandidat och väljs i stället — korrekt, inte en gissning.
+    expect(analys.igenkand?.bank).toBe(HANDELSBANKEN_SWISH.bank);
+    expect(analys.igenkand?.bank).not.toBe(felBank.bank);
+
+    // Och läsningen ger rätt belopp och rätt, UNIKA bankreferenser — inte
+    // granskningens 1 235 524 400 kr / dubblerad referens.
+    const lasta = parsaTransaktioner(las(KOMMA_DAGLIG), analys.igenkand as Kolumnmappning);
+    expect(lasta.rader.map((r) => r.transaktion.belopp)).toEqual([1500, 2300.5]);
+    expect(new Set(lasta.rader.map((r) => r.transaktion.bankreferens)).size).toBe(2);
+  });
+
+  test('flera strukturellt matchande kandidater → igenkand null, bästa gissning är SPARAD (ordningen inom kandidater)', () => {
+    // En sparad mappning kan RÅKA vara en äkta strukturell match för samma
+    // fil som den inbyggda profilen redan känner igen (Lotta har manuellt
+    // konfigurerat om exakt samma format). Två kandidater är en tvetydighet,
+    // och Marcus beslut (2026-08-31) är att en tvetydighet aldrig tystas —
+    // dialogen visas, aldrig en tyst gissning, oavsett hur "rätt" båda är.
+    const egenMedRattSignatur: Kolumnmappning = {
+      bank: 'Min bank (samma format som Handelsbanken)',
+      avgransare: ',',
+      harRubrikrad: false,
+      radfilter: [],
+      kolumner: {
+        datum: 5,
+        belopp: 7,
+        namn: 10,
+        telefon: 9,
+        meddelande: 12,
+        bankreferens: 11,
+      },
+      signatur: { typ: 'postmarkorer', forstaFalt: '01', sistaFalt: '03' },
+    };
+
+    const analys = analyseraFil(las(KOMMA_DAGLIG), [egenMedRattSignatur]);
+
+    expect(analys.igenkand).toBeNull();
+    // "SPARAD FÖRE INBYGGD" lever vidare som ORDNING inom kandidaterna —
+    // bästa gissningen (dialogens förifyllnad) är den sparade, inte den
+    // inbyggda, trots att båda strukturellt matchar.
+    expect(analys.bastaGissning?.bank).toBe('Min bank (samma format som Handelsbanken)');
   });
 
   test('en sparad mappning med FEL avgränsare används INTE', () => {
     // Att köra en semikolonmappning på en kommafil hade läst beloppet ur en
-    // kolumn som inte finns — tyst, och för varenda rad.
+    // kolumn som inte finns — tyst, och för varenda rad. Avgränsarvillkoret
+    // fäller FÖRE signaturen ens kontrolleras.
     const semikolonmappning: Kolumnmappning = {
       bank: 'Min bank',
       avgransare: ';',
@@ -573,6 +674,7 @@ test.describe('analyseraFil — vad dialogen får se', () => {
         meddelande: 12,
         bankreferens: 11,
       },
+      signatur: { typ: 'postmarkorer', forstaFalt: '01', sistaFalt: '03' },
     };
     const analys = analyseraFil(las(KOMMA_DAGLIG), [semikolonmappning]);
     expect(analys.igenkand?.bank).toBe(HANDELSBANKEN_SWISH.bank);
@@ -592,8 +694,110 @@ test.describe('analyseraFil — vad dialogen får se', () => {
         meddelande: null,
         bankreferens: null,
       },
+      signatur: null,
     };
     const analys = analyseraFil('Datum,Namn,Belopp\r\n2026-08-30,Anna,1500\r\n', [forBred]);
     expect(analys.igenkand).toBeNull();
+  });
+});
+
+/* ═══════════════════════════ STRUKTURENSIGNATUREN ═══════════════════════════ */
+// Fix-runda 2 (TASK-346.10, granskning runda 1, fynd 2/ask-user + Marcus
+// beslut 2026-08-31): avgränsare+bredd räcker bevisligen inte. Dessa test
+// prövar `beraknaSignatur`/`matcharSignatur` isolerat, utanför
+// `analyseraFil`s kandidatval ovan.
+
+test.describe('Strukturensignatur — signaturen stoppar "avgränsare+bredd räcker"-fällan', () => {
+  test('matcharSignatur(null, ...) matchar ALDRIG', () => {
+    // En mappning utan lagrad signatur (gammalt förskiva-format, eller ett
+    // obekräftat working-utkast) är ICKE-matchande, inte "matchar allt".
+    const analys = analyseraFil(las(KOMMA_DAGLIG));
+    expect(
+      matcharSignatur(null, analys.rader, analys.avgransare, analys.harRubrikrad, analys.kolumner),
+    ).toBe(false);
+  });
+
+  test('postmarkorer: samma första/sista fält matchar, ett annat par gör det inte', () => {
+    const analys = analyseraFil(las(KOMMA_DAGLIG));
+    const signatur = beraknaSignatur(
+      analys.rader,
+      analys.avgransare,
+      analys.harRubrikrad,
+      analys.kolumner,
+    );
+    expect(signatur).toEqual({ typ: 'postmarkorer', forstaFalt: '01', sistaFalt: '03' });
+    expect(
+      matcharSignatur(
+        signatur,
+        analys.rader,
+        analys.avgransare,
+        analys.harRubrikrad,
+        analys.kolumner,
+      ),
+    ).toBe(true);
+    expect(
+      matcharSignatur(
+        { typ: 'postmarkorer', forstaFalt: '99', sistaFalt: '99' },
+        analys.rader,
+        analys.avgransare,
+        analys.harRubrikrad,
+        analys.kolumner,
+      ),
+    ).toBe(false);
+  });
+
+  test('rubrik: fälten måste vara identiska, ordagrant — annan rubriktext matchar inte', () => {
+    const filA = analyseraFil('Datum,Namn,Belopp\r\n2026-08-30,Anna,1500\r\n');
+    const filB = analyseraFil('Bokföringsdag,Namn,Summa\r\n2026-08-31,Bo,2500\r\n');
+    const signaturA = beraknaSignatur(
+      filA.rader,
+      filA.avgransare,
+      filA.harRubrikrad,
+      filA.kolumner,
+    );
+    expect(signaturA).toEqual({ typ: 'rubrik', falt: ['Datum', 'Namn', 'Belopp'] });
+    expect(
+      matcharSignatur(signaturA, filA.rader, filA.avgransare, filA.harRubrikrad, filA.kolumner),
+    ).toBe(true);
+    expect(
+      matcharSignatur(signaturA, filB.rader, filB.avgransare, filB.harRubrikrad, filB.kolumner),
+    ).toBe(false);
+  });
+
+  test('en rubrik-signatur matchar aldrig en rubriklös fil, och tvärtom', () => {
+    const medRubrik = analyseraFil('Datum,Namn,Belopp\r\n2026-08-30,Anna,1500\r\n');
+    const rubrikSignatur = beraknaSignatur(
+      medRubrik.rader,
+      medRubrik.avgransare,
+      medRubrik.harRubrikrad,
+      medRubrik.kolumner,
+    );
+
+    const utanRubrik = analyseraFil(las(KOMMA_DAGLIG));
+    expect(
+      matcharSignatur(
+        rubrikSignatur,
+        utanRubrik.rader,
+        utanRubrik.avgransare,
+        utanRubrik.harRubrikrad,
+        utanRubrik.kolumner,
+      ),
+    ).toBe(false);
+
+    const postmarkorSignatur = beraknaSignatur(
+      utanRubrik.rader,
+      utanRubrik.avgransare,
+      utanRubrik.harRubrikrad,
+      utanRubrik.kolumner,
+    );
+    expect(
+      matcharSignatur(
+        postmarkorSignatur,
+        medRubrik.rader,
+        medRubrik.avgransare,
+        medRubrik.harRubrikrad,
+        medRubrik.kolumner,
+      ),
+    ).toBe(false);
   });
 });

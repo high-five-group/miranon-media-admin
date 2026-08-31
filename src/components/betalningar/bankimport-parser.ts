@@ -88,6 +88,32 @@ export type Radfilter = {
   skal: string;
 };
 
+/**
+ * Mappningens strukturella fingeravtryck, taget ur FILEN den sparades för
+ * (`beraknaSignatur`) och krävt vid ÅTERANVÄNDNING (`matcharSignatur`).
+ *
+ * Avgränsare + kolumnbredd räcker bevisligen INTE (skarpt demonstrerat: en
+ * sparad mappning för en annan bank vann över den inbyggda,
+ * strukturellt-verifierade Handelsbanken-profilen och läste
+ * `belopp = 1 235 524 400 kr` i stället för `1500`/`2300.50` - utan någon
+ * felsignal). Signaturen är ett ANDRA, oberoende villkor OVANPÅ
+ * avgränsare+bredd, aldrig en ersättning för dem.
+ *
+ * `rubrik`: filen har en rubrikrad (`harRubrikrad`), och signaturen är
+ * RUBRIKRADENS FÄLT ordagrant - samma text dialogen redan läser för att
+ * föreslå index (`Kolumnprov.rubrik`). Två banker råkar sällan skriva
+ * exakt samma rubriktext.
+ *
+ * `postmarkorer`: filen saknar rubrikrad (posttypsbaserat, som
+ * Handelsbankens `01`/`02`/`03`-ramverk). Signaturen är FÖRSTA KOLUMNENS
+ * värde på filens FÖRSTA och SISTA rad - exakt samma slags kontroll
+ * `arHandelsbanksformat` redan gör för den inbyggda profilen, generaliserad
+ * till en sparad mappning för ett ANNAT posttypsbaserat format.
+ */
+export type Strukturensignatur =
+  | { typ: 'rubrik'; falt: (string | null)[] }
+  | { typ: 'postmarkorer'; forstaFalt: string; sistaFalt: string };
+
 export type Kolumnmappning = {
   /** Bankens namn som Lotta skrev det. Nyckeln mappningen sparas under. */
   bank: string;
@@ -97,6 +123,17 @@ export type Kolumnmappning = {
   radfilter: Radfilter[];
   /** Kolumnindex per internt fält, 0-baserat. `null` = källan saknar fältet. */
   kolumner: Record<Transaktionsfalt, number | null>;
+  /**
+   * Filens strukturella fingeravtryck vid sparandet, eller `null`.
+   *
+   * `null` är INTE "matchar allt" - det är motsatsen: en mappning utan
+   * signatur (ett gammalt, förskiva-format på disk, eller ett working-utkast
+   * som ännu inte bekräftats) behandlas som ICKE-matchande av
+   * `matcharSignatur` och kan alltså aldrig väljas automatiskt. Den enda
+   * vägen till en giltig signatur är `beraknaSignatur`, körd mot den fil
+   * mappningen faktiskt sparas för.
+   */
+  signatur: Strukturensignatur | null;
 };
 
 /** En läst rad, med sitt ursprung kvar så att den kan pekas ut i UI. */
@@ -234,6 +271,11 @@ export function delaFil(innehall: string): { radnummer: number; text: string }[]
 export const HANDELSBANKEN_SWISH: Omit<Kolumnmappning, 'avgransare'> = {
   bank: 'Handelsbanken (Swish-rapport)',
   harRubrikrad: false,
+  // Ingen lagrad signatur: profilen verifieras direkt mot FILEN varje gång
+  // via `arHandelsbanksformat`, som är en STARKARE kontroll än
+  // `matcharSignatur` (tre villkor: ramposter + minst en giltig databasrad).
+  // Ett lagrat fingeravtryck vore en svagare, redundant kopia av det.
+  signatur: null,
   radfilter: [
     {
       kolumn: 0,
@@ -304,12 +346,23 @@ export type Filanalys = {
   rader: { radnummer: number; text: string }[];
   kolumner: Kolumnprov[];
   /**
-   * En igenkänd, verifierad profil - eller `null`, vilket betyder att filen
-   * går till mappningsdialogen.
+   * EXAKT EN kandidat matchade strukturellt - eller `null`, vilket betyder
+   * att filen går till mappningsdialogen (noll kandidater, eller flera).
    */
   igenkand: Kolumnmappning | null;
   /** Filen hade en rubrikrad (härlett; inte ett antagande om innehållet). */
   harRubrikrad: boolean;
+  /**
+   * Bästa gissning att FÖRIFYLLA dialogen med, när `igenkand` är `null`.
+   *
+   * ALDRIG applicerad automatiskt - bara ett startläge Lotta ser, kan rätta
+   * och måste EXPLICIT bekräfta (`SwishImport.tsx` § `bekraftaMappning`).
+   * Prioritet: den kandidat `igenkand` skulle blivit om det bara funnits en
+   * (flera-kandidater-fallet), annars den bäst matchande SPARADE mappningen
+   * på enbart avgränsare+bredd (svagare villkor, för att ge Lotta något att
+   * utgå från), annars `null` - ett helt okänt format, tomt utkast.
+   */
+  bastaGissning: Kolumnmappning | null;
 };
 
 /**
@@ -359,13 +412,25 @@ export function harRubrikrad(rader: { text: string }[], avgransare: Avgransare):
 }
 
 /**
- * Läser filen tillräckligt för att antingen köra direkt (igenkänt format
- * eller sparad mappning) eller visa mappningsdialogen.
+ * Läser filen tillräckligt för att antingen köra direkt (EXAKT EN kandidat
+ * matchar strukturellt) eller visa mappningsdialogen (noll eller flera).
  *
- * `sparade` är Lottas tidigare mappningar. En sparad mappning används när
- * dess avgränsare och kolumnantal PASSAR filen - inte enbart för att den
- * finns. Att köra en Nordea-mappning på en Handelsbanken-fil hade läst
- * beloppet ur fel kolumn utan att något såg trasigt ut.
+ * `sparade` är Lottas tidigare mappningar. RÄTTAT (denna skiva, fix-runda 2):
+ * "avgränsare och kolumnantal passar filen" räcker INTE ensamt - det är
+ * exakt vad som gjorde att en Swedbank-mappning kunde köras på en
+ * Handelsbanken-fil och läsa `belopp = 1 235 524 400 kr` utan felsignal (se
+ * `Strukturensignatur`). En sparad mappning är därför bara en KANDIDAT när
+ * BÅDA håller: avgränsare+bredd (som förut) OCH dess sparade
+ * `Strukturensignatur` matchar DENNA fil (`matcharSignatur`).
+ *
+ * SPARAD FÖRE INBYGGD gäller fortfarande, men bara som ORDNING inom de
+ * strukturellt matchande kandidaterna (`bastaGissning` nedan) - har Lotta en
+ * gång rättat en mappning för sin bank ska den föredras framför den inbyggda
+ * profilen NÄR BÅDA passar strukturellt. Den avgör aldrig ENSAM längre:
+ * matchar mer än en kandidat strukturellt är filen tvetydig, och Marcus
+ * beslut (2026-08-31) är att en tvetydighet aldrig får tystas - dialogen
+ * visas, med den föredragna kandidaten förifylld, och Lotta bekräftar
+ * bankvalet explicit.
  */
 export function analyseraFil(innehall: string, sparade: readonly Kolumnmappning[] = []): Filanalys {
   const rader = delaFil(innehall);
@@ -385,31 +450,30 @@ export function analyseraFil(innehall: string, sparade: readonly Kolumnmappning[
       .slice(0, 3),
   }));
 
-  const igenkand = valjMappning(rader, avgransare, bredd, sparade);
+  // SPARADE FÖRST (prioritetsordningen), sedan den inbyggda profilen - så att
+  // `kandidater[0]` alltid är den föredragna vid flera träffar.
+  const kandidater: Kolumnmappning[] = [];
+  for (const mappning of sparade) {
+    if (mappning.avgransare !== avgransare) continue;
+    if (!rymsIBredd(mappning, bredd)) continue;
+    if (!matcharSignatur(mappning.signatur, rader, avgransare, rubrikrad, kolumner)) continue;
+    kandidater.push(mappning);
+  }
+  if (arHandelsbanksformat(rader, avgransare)) {
+    kandidater.push({ ...HANDELSBANKEN_SWISH, avgransare });
+  }
 
-  return { avgransare, rader, kolumner, igenkand, harRubrikrad: rubrikrad };
-}
+  const igenkand = kandidater.length === 1 ? kandidater[0] : null;
 
-/**
- * Vilken mappning gäller för filen? SPARAD FÖRE INBYGGD, med avsikt: har
- * Lotta en gång rättat en mappning för sin bank ska den rättelsen gälla, även
- * om filen ytligt liknar ett format vi känner igen.
- */
-function valjMappning(
-  rader: { text: string }[],
-  avgransare: Avgransare,
-  bredd: number,
-  sparade: readonly Kolumnmappning[],
-): Kolumnmappning | null {
-  const passar = sparade.find(
+  // Svag reserv för FÖRIFYLLNADEN när ingen kandidat matchade strukturellt:
+  // avgränsare+bredd ensamt, precis det villkor som INTE längre räcker för
+  // att köra automatiskt - men gott nog för att spara Lotta lite skrivande.
+  const svagReserv = sparade.find(
     (mappning) => mappning.avgransare === avgransare && rymsIBredd(mappning, bredd),
   );
-  if (passar) return passar;
+  const bastaGissning = igenkand ?? kandidater[0] ?? svagReserv ?? null;
 
-  if (arHandelsbanksformat(rader, avgransare)) {
-    return { ...HANDELSBANKEN_SWISH, avgransare };
-  }
-  return null;
+  return { avgransare, rader, kolumner, igenkand, harRubrikrad: rubrikrad, bastaGissning };
 }
 
 /** Ryms mappningens högsta index i filens faktiska kolumnantal? */
@@ -419,6 +483,60 @@ function rymsIBredd(mappning: Kolumnmappning, bredd: number): boolean {
     ...mappning.radfilter.map((f) => f.kolumn),
   ];
   return index.length > 0 && Math.max(...index) < bredd;
+}
+
+/**
+ * Beräknar en mappnings strukturella signatur UR DEN FIL den sparas för.
+ * Körs vid bekräftelsen (`SwishImport.tsx` § `bekraftaMappning`), aldrig vid
+ * läsning - signaturen fryser filens form vid SPARANDET, så en framtida fil
+ * jämförs mot den, inte mot sig själv.
+ */
+export function beraknaSignatur(
+  rader: { text: string }[],
+  avgransare: Avgransare,
+  harRubrikradVarde: boolean,
+  kolumner: readonly Kolumnprov[],
+): Strukturensignatur {
+  if (harRubrikradVarde) {
+    return { typ: 'rubrik', falt: kolumner.map((k) => k.rubrik) };
+  }
+  return {
+    typ: 'postmarkorer',
+    forstaFalt: delaRad(rader[0]?.text ?? '', avgransare)[0]?.trim() ?? '',
+    sistaFalt: delaRad(rader[rader.length - 1]?.text ?? '', avgransare)[0]?.trim() ?? '',
+  };
+}
+
+/**
+ * Matchar en SPARAD mappnings signatur mot DENNA fil? `null` (ingen
+ * lagrad signatur) matchar ALDRIG - se `Kolumnmappning.signatur`.
+ *
+ * En `rubrik`-signatur kräver att filen fortfarande har en rubrikrad OCH att
+ * rubrikfälten är IDENTISKA, fält för fält (trimmat). En `postmarkorer`-
+ * signatur kräver att filen fortfarande saknar rubrikrad OCH att första/sista
+ * radens första fält är EXAKT samma markörer som vid sparandet - samma
+ * kontroll `arHandelsbanksformat` gör för den inbyggda profilen, tillämpad
+ * på en godtycklig sparad mappning.
+ */
+export function matcharSignatur(
+  signatur: Strukturensignatur | null,
+  rader: { text: string }[],
+  avgransare: Avgransare,
+  harRubrikradVarde: boolean,
+  kolumner: readonly Kolumnprov[],
+): boolean {
+  if (signatur === null) return false;
+
+  if (signatur.typ === 'rubrik') {
+    if (!harRubrikradVarde) return false;
+    if (kolumner.length !== signatur.falt.length) return false;
+    return kolumner.every((k, i) => (k.rubrik ?? '') === (signatur.falt[i] ?? ''));
+  }
+
+  if (harRubrikradVarde || rader.length === 0) return false;
+  const forsta = delaRad(rader[0].text, avgransare)[0]?.trim() ?? '';
+  const sista = delaRad(rader[rader.length - 1].text, avgransare)[0]?.trim() ?? '';
+  return forsta === signatur.forstaFalt && sista === signatur.sistaFalt;
 }
 
 /* ═══════════════════════════ LÄSNINGEN ═══════════════════════════ */
