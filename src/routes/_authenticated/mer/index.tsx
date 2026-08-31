@@ -37,8 +37,9 @@ export const Route = createFileRoute('/_authenticated/mer/')({
  * (pt-2 lg:pt-10) · Logga ut-blocket med extra topp-luft (pt-4).
  *
  * Ikonvalen är domänbegrepps-mappade och Marcus-kvitterade (PRD beslut 5) —
- * Bygg segment bär Filter, INTE Users (Personer-flikens ikon; krocken funnen
- * i M6-detaljsvepet): segment byggs med filter.
+ * Segment (etiketten döptes om från sin ursprungsform i TASK-348) bär
+ * Filter, INTE Users (Personer-flikens ikon; krocken funnen i
+ * M6-detaljsvepet): segment byggs med filter.
  *
  * TREDJE gruppen (Inställningar) tillkom task-126.3: tråd T47:s parkerade
  * Inställnings-hemvist ("Ingen Inställningar (de-scopad, T47)" — noten stod
@@ -99,8 +100,9 @@ function MerPage() {
               är redan tagen för just kvitton (`dokument/DokumentYta.tsx`
               § T176). Ytan handlar om INBETALNINGAR - kvittot är en följd av
               en betalning, inte samma sak (ORDLISTA § Inbetalning). Samma
-              ikon-krocksdisciplin som bar Bygg segment till Filter i stället
-              för Users. */}
+              ikon-krocksdisciplin som bar Segment (etiketten döptes om från
+              sin ursprungsform i TASK-348) till Filter i stället för
+              Users. */}
           {betalningarPa() && (
             <li>
               <NavCard to="/mer/betalningar" icon={Banknote} label="Betalningar" />
@@ -113,7 +115,7 @@ function MerPage() {
               utökningen K74) och sidan på /event/skapa (hemvist-flytten,
               Marcus-kvitterad 2026-07-21); gamla routen omdirigerar. */}
           <li>
-            <NavCard to="/mer/segment" icon={Filter} label="Bygg segment" />
+            <NavCard to="/mer/segment" icon={Filter} label="Segment" />
           </li>
           {/* Bilagor (`T131`, promoverad TASK-164-rivningen, ADR-103 B2 steg
               4). Hör till HANDLING/VERKTYG-gruppen, inte listorna: den

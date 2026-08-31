@@ -16,8 +16,9 @@ import { expect, type Page, test } from './acceptance-bas';
  * `TASK-249.5` flippade routen till `VariantD` (ADR-103 B2 steg 1) och
  * `TASK-249.6` rev divergens-passets ställning (`SegmentPrototyp`-växeln,
  * varianterna a/b/c, `PrototypRigg`/`SkalprovsVaxel`). Den gamla
- * `SegmentBuilder`-ytan — "Bygg segment"-rubriken, en `RadioGroup` per
- * kurs-par med Inkludera/Exkludera/Ignorera, "Räkna antal"-knappen,
+ * `SegmentBuilder`-ytan — dess egen sidrubrik (samma ord som Mer-flikens
+ * etikett bar innan TASK-348 döpte om den till "Segment"), en `RadioGroup`
+ * per kurs-par med Inkludera/Exkludera/Ignorera, "Räkna antal"-knappen,
  * SKOOL-exporten och spara-fältet — finns inte längre på någon route.
  *
  * De nio SegmentBuilder-specifika testerna i denna fil BORTTOGS i 249.5

@@ -4,6 +4,7 @@ title: 'Mer-flikens etikett: Bygg segment → Segment'
 status: To Do
 assignee: []
 created_date: '2026-08-31 08:50'
+updated_date: '2026-08-31 09:24'
 labels:
   - ready-for-agent
 dependencies: []
@@ -19,15 +20,15 @@ Marcus S114-scope punkt 1 (kvitterad 2026-08-31, sessionsdok S114 Del 1). Mer-me
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Mer-fliken visar etiketten Segment; route /mer/segment oförändrad
-- [ ] #2 Inga kvarvarande 'Bygg segment'-förekomster i src/ eller tests/ (historiska dok undantagna)
-- [ ] #3 Ev. berörda facit-referenser amenderade per ADR-102 med utskriven klassning
+- [x] #1 Mer-fliken visar etiketten Segment; route /mer/segment oförändrad
+- [x] #2 Inga kvarvarande 'Bygg segment'-förekomster i src/ eller tests/ (historiska dok undantagna)
+- [x] #3 Ev. berörda facit-referenser amenderade per ADR-102 med utskriven klassning
 - [ ] #4 DoD-grindarna gröna (test:api, typecheck, biome, build)
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
