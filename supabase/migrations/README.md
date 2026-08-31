@@ -250,7 +250,9 @@ npx supabase db query --linked "insert into public.kvittoserie_golv (ar, forsta_
 
 Staging: **1003** (ledgern bär `MM-2026-1001` och `MM-2026-1002`, mätt
 2026-08-30). Prod: **1001** (ledgern är tom, mätt read-only samma dag) — det
-steget är Marcus, i prod-runbooken (`TASK-346.11`).
+steget är Marcus, i prod-runbooken (`TASK-346.11`,
+[`docs/reference/prod-driftsattning-betalningsflodet-runbook.md`](../../docs/reference/prod-driftsattning-betalningsflodet-runbook.md)
+§ Steg 3).
 
 **2. Vault-hemligheterna.** Cron-ticket ringer inte ut förrän alla tre finns
 (ADR-129 beslut 7). Namnen är `jobbmotor_funktions_url`,
