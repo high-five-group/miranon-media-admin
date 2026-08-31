@@ -41,8 +41,9 @@ import { expect, test } from '../support/test-bas';
  * ingång): SJUNDE raden, sist i grupp 1 (listorna). Höjer raderna till SJU.
  *
  * DOKUMENT TILLKOM TASK-164-RIVNINGEN (2026-08-16, ADR-103 B2 steg 4):
- * ÅTTONDE raden, sist i grupp 2 (handling/verktyg, efter "Bygg segment").
- * Ytan var tidigare DEV-grindad (`visaDokumentPrototyp`, S100/T131) och
+ * ÅTTONDE raden, sist i grupp 2 (handling/verktyg, efter "Segment", som
+ * döptes om från sin ursprungsform i TASK-348). Ytan var tidigare
+ * DEV-grindad (`visaDokumentPrototyp`, S100/T131) och
  * osynlig för detta test; efter Marcus godkännande av facit-låset
  * (`tasks/sessions/archive/bilagor/s102-dokument-konvergens/facit.json` —
  * PENSIONERAT och arkivflyttat i TASK-309.29, se `ARKIVERAD.md` i samma
@@ -245,7 +246,7 @@ test.describe('Mer-landningen till M6-facitet (task-9.2)', () => {
     // Grupp 1 = listorna, grupp 2 = handling före verktyg, grupp 3 =
     // Inställningar — exakt ordning. Skapa nytt event-raden RIVEN
     // (task-19.2 — se rivnings-bokföringen i fil-huvudet); grupp 2 bär
-    // numera Bygg segment + Dokument + Eventinnehåll + Platser (TASK-164-
+    // numera Segment + Dokument + Eventinnehåll + Platser (TASK-164-
     // rivningen + TASK-309.7, se fil-huvudets "TILLKOM"-noter), grupp 3
     // (task-126.3) enbart Installera appen. Aktivitetshistorik (TASK-201.6,
     // AC #2) tillkom sist i grupp 1 — höjer SJU rader till ÅTTA,
@@ -260,7 +261,10 @@ test.describe('Mer-landningen till M6-facitet (task-9.2)', () => {
       'Betalningar',
     ]);
     await expect(grupper.nth(1).getByRole('link')).toHaveText([
-      'Bygg segment',
+      // [TASK-348, 2026-08-31] Etiketten döptes om från sin ursprungsform
+      // (S114 Del 1, väg A punkt 1). Sökvägen `/mer/segment` är oförändrad;
+      // det är etiketten som bytt, inte raden.
+      'Segment',
       // [T176, 2026-08-29] Etiketten var 'Dokument' — Marcus: *"Mer-fliken
       // 'Dokument' kanske borde heta 'Bilagor'"*. Sökvägen `/mer/dokument`
       // är oförändrad; det är etiketten som bytt, inte raden.
