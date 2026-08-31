@@ -44,6 +44,14 @@ function poster(...belopp: number[]): InbetalningsBidrag[] {
   return belopp.map((b) => ({ belopp: b, status: 'aktiv' as const }));
 }
 
+/** Föreläsningens prisbild: ETT pris, ingen avgiftsnivå (ADR-128 beslut 2). */
+const FORELASNINGSPRISBILD: Prisbild = {
+  avtalatPris: null,
+  eventPris: 450,
+  anmalningsavgift: null,
+  eventTyp: FORELASNING,
+};
+
 // ═══════════════════════════════════════════════════════════════════════════
 // § 1 — Härledningens FYRA FALL (AC #4)
 // ═══════════════════════════════════════════════════════════════════════════
@@ -224,12 +232,8 @@ test.describe('harledBetalning — makulering', () => {
 // ═══════════════════════════════════════════════════════════════════════════
 
 test.describe('harledBetalning — föreläsning', () => {
-  const FORELASNINGSPRIS: Prisbild = {
-    avtalatPris: null,
-    eventPris: 450,
-    anmalningsavgift: null,
-    eventTyp: FORELASNING,
-  };
+  // Delad med § 6:s mutantjämförelse — se toppen av filen.
+  const FORELASNINGSPRIS = FORELASNINGSPRISBILD;
 
   test('avgiftens gräns ÄR hela priset — inget delbetalningssteg finns', () => {
     const halvt = harledBetalning(poster(200), FORELASNINGSPRIS);
@@ -355,28 +359,53 @@ test.describe('harledBetalning — okänt pris', () => {
     ).toBeNull();
   });
 
-  test('de två formerna skiljer sig ENBART i detta hörn — inte i de vanliga fallen', () => {
+  test('de två formerna skiljer sig ENBART i detta hörn — mätt genom harledBetalning', () => {
     // Om mutationen hade gett samma svar överallt vore fixen kosmetisk. Den
-    // gör det inte, och den gör det bara här: när avgiftsgränsen saknas OCH
-    // summan understiger helpriset.
-    const fall: { avgiftsgrans: number | null; gallandePris: number | null; alltKlart: boolean }[] =
-      [
-        { avgiftsgrans: 1000, gallandePris: 2500, alltKlart: false },
-        { avgiftsgrans: 1000, gallandePris: 2500, alltKlart: true },
-        { avgiftsgrans: null, gallandePris: 2500, alltKlart: true },
-        { avgiftsgrans: null, gallandePris: null, alltKlart: false },
-      ];
-    for (const f of fall) {
-      const muterad = f.avgiftsgrans !== null || f.gallandePris !== null;
-      const gallande = f.avgiftsgrans !== null || f.alltKlart;
-      expect(muterad, JSON.stringify(f)).toBe(gallande);
+    // gör det inte — och den gör det bara i ETT hörn: avgiftsgränsen saknas
+    // OCH summan understiger helpriset.
+    //
+    // VARJE FALL GÅR GENOM PRODUKTIONSKODEN (granskningsfynd runda 2 ersatte
+    // en tidigare version som jämförde två lokala uttryck med varandra och
+    // därför kunde ha varit grön mot vilken implementation som helst).
+    // Mutantens svar räknas fram ur harledBetalnings EGNA utdata
+    // (`avgiftKlar`, `avgiftsgrans`, `gallandePris`), så jämförelsen är
+    // mellan den riktiga funktionen och den enda rad som skiljer mutanten
+    // från den.
+    const somMutanten = (ut: ReturnType<typeof harledBetalning>) =>
+      ut.avgiftKlar
+        ? 'Mottagen'
+        : ut.avgiftsgrans !== null || ut.gallandePris !== null
+          ? 'Ej mottagen'
+          : null;
+
+    const vanligaFall: { namn: string; belopp: number[]; pris: Prisbild }[] = [
+      { namn: 'avgift känd, delbetalt', belopp: [500], pris: UTBILDNING },
+      { namn: 'avgift känd, avgiften betald', belopp: [1000], pris: UTBILDNING },
+      { namn: 'avgift känd, allt betalt', belopp: [2500], pris: UTBILDNING },
+      {
+        namn: 'avgift okänd, allt betalt',
+        belopp: [2500],
+        pris: { ...UTBILDNING, anmalningsavgift: null },
+      },
+      {
+        namn: 'inget pris alls känt',
+        belopp: [1000],
+        pris: { ...UTBILDNING, eventPris: null, anmalningsavgift: null },
+      },
+      { namn: 'föreläsning, allt betalt', belopp: [450], pris: FORELASNINGSPRISBILD },
+      { namn: 'föreläsning, delbetalt', belopp: [200], pris: FORELASNINGSPRISBILD },
+    ];
+
+    for (const fall of vanligaFall) {
+      const ut = harledBetalning(poster(...fall.belopp), fall.pris);
+      expect(ut.anmalningsavgiftVarde, fall.namn).toBe(somMutanten(ut));
     }
-    // Hörnet, där de skiljer sig: avgiftsgräns okänd, helpris känt, inte allt betalt.
-    const horn = { avgiftsgrans: null, gallandePris: 2500, alltKlart: false } as const;
-    const muteradHorn = horn.avgiftsgrans !== null || horn.gallandePris !== null;
-    const gallandeHorn = horn.avgiftsgrans !== null || horn.alltKlart;
-    expect(muteradHorn).toBe(true);
-    expect(gallandeHorn).toBe(false);
+
+    // HÖRNET: avgiftsgräns okänd, helpris känt, summan under det.
+    const horn = harledBetalning(poster(1000), { ...UTBILDNING, anmalningsavgift: null });
+    expect(horn.anmalningsavgiftVarde).toBeNull();
+    expect(somMutanten(horn)).toBe('Ej mottagen');
+    expect(horn.anmalningsavgiftVarde).not.toBe(somMutanten(horn));
   });
 });
 

@@ -167,10 +167,23 @@ export function harledBetalning(
   // ett fack vars gräns vi inte känner. Sonderingen: summa 1000, pris 2500,
   // avgift okänd ⇒ pris-ledet ger 'Ej mottagen', detta led ger `null`.
   //
-  // Att `alltKlart` ändå gör facket avgörbart följer av ADR-128 beslut 2:
-  // "allt är klart när summan når hela priset". Är allt betalt ÄR avgiften
-  // betald — samma implikation `avgiftKlar` bär en rad ovanför, och i det
-  // fallet blir värdet 'Mottagen', aldrig 'Ej mottagen'.
+  // ANDRA LEDET (`|| alltKlart`) ÄR OPERATIVT OÅTKOMLIGT — SAGT RAKT UT
+  // (granskningsfynd runda 2). Är `alltKlart` sant är `avgiftKlar` sant
+  // (raden ovanför), och då tas 'Mottagen'-grenen i ternären nedan innan
+  // `avgiftKanAvgoras` någonsin får betydelse. Ledet ändrar alltså inget
+  // utfall i dag, och det är INTE det som gör beteendet rätt — det gör
+  // ternärens ordning.
+  //
+  // Det står kvar ändå, som DOKUMENTATION OCH FÖRSVAR I DJUPLED: invarianten
+  // "allt betalt ⇒ avgiften avgörbar" (ADR-128 beslut 2, "allt är klart när
+  // summan når hela priset") blir läsbar HÄR, vid predikatet den handlar om,
+  // i stället för att bara vara en följd av två grenars inbördes ordning tre
+  // rader ned. Skrivs ternären om — och den ordningen är lätt att röra utan
+  // att märka vad man rör — bär predikatet fortfarande regeln.
+  //
+  // Alternativet vore att stryka ledet och lita på ordningen plus sviten
+  // (`betalningsharledning.test.ts` § 6 låser båda riktningarna). Det hade
+  // varit korrekt men tystare; valet är bokfört, inte råkat.
   const avgiftKanAvgoras = avgiftsgrans !== null || alltKlart;
   const anmalningsavgiftVarde: AnmalningsavgiftVarde | null = avgiftKlar
     ? 'Mottagen'

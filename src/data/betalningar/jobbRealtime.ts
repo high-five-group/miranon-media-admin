@@ -56,6 +56,21 @@ const KANAL = 'betalningar-jobb-rad';
  * form som inte kan glömmas bort är bättre än en som måste kommas ihåg.
  */
 export function prenumereraPaJobbrader(vidAndring: () => void): () => void {
+  // ═══ AVSIKTLIG NEDSTÄNGNING ÄR INTE ETT FEL (granskningsfynd runda 2) ═══
+  //
+  // `removeChannel()` river kanalen via phoenix `leave()`, och det close-event
+  // som följer levereras till SAMMA status-callback som ett verkligt
+  // anslutningsfel — som `'CLOSED'` (realtime-js 2.111.0). En varning på det
+  // status-värdet hade därför fyrat vid VARJE avmontering: varje navigering
+  // bort från en autentiserad yta, och i dev redan vid appstart, eftersom
+  // StrictMode monterar och avmonterar effekten en extra gång.
+  //
+  // Flaggan sätts av avslutaren FÖRE `removeChannel` och tystar allt som
+  // kommer därefter — inte bara `'CLOSED'`. Det är avsiktligt bredare: också
+  // ett `CHANNEL_ERROR` som råkar landa mitt i nedrivningen är ett eko av
+  // nedstängningen, inte ett fel någon kan åtgärda.
+  let avsiktligNedstangning = false;
+
   const kanal: RealtimeChannel = supabase
     .channel(KANAL)
     .on(
@@ -82,10 +97,20 @@ export function prenumereraPaJobbrader(vidAndring: () => void): () => void {
       //
       // Loggen är i dag hela åtgärden, och det är medvetet: en synlig
       // FELYTA ("realtidsuppdateringen är nere") hör till ytorna som visar
-      // jobbet, och de byggs av TASK-346.6 och TASK-346.7. Den skivan bör
-      // ersätta konsolen nedan med sitt eget tillstånd.
+      // jobbet, och de byggs av TASK-346.6 och TASK-346.7.
       //
-      // TODO(TASK-346.6/346.7): koppla status till en synlig felyta.
+      // TODO(TASK-346.6/346.7): koppla status till en synlig felyta — och
+      // bygg den på DETTA predikat, inte på råa status-värden. Ett villkor
+      // som bara läser `status` fyrar vid varje avmontering (se flaggan
+      // ovan), och en felyta som blinkar rött vid varje navigering är värre
+      // än ingen felyta alls.
+      if (avsiktligNedstangning) return;
+
+      // `CLOSED` ingår FORTFARANDE i villkoret, och det är en medveten
+      // skillnad mot att bara lyfta ut det: en kanal som stängs UTAN att
+      // någon bett om det (servern kopplar ner, tokenet går ut) är ett
+      // verkligt fel Lotta bör kunna få veta om. Flaggan ovan skiljer de två
+      // fallen åt; status-värdet ensamt kan inte göra det.
       if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT' || status === 'CLOSED') {
         console.warn(
           '[jobbRealtime] prenumerationen på jobb_rad är inte aktiv | status=' +
@@ -96,6 +121,9 @@ export function prenumereraPaJobbrader(vidAndring: () => void): () => void {
     });
 
   return () => {
+    // ORDNINGEN ÄR LASTBÄRANDE: flaggan FÖRE nedrivningen. Sätts den efteråt
+    // hinner close-eventet fram först, och varningen fyrar ändå.
+    avsiktligNedstangning = true;
     // `removeChannel` returnerar ett löfte som ingen väntar på: avslutaren
     // körs i en `useEffect`-cleanup, som är synkron. Ett fel här kan inte
     // åtgärdas av någon och får inte kasta i en unmount.
