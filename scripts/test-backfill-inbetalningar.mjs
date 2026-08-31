@@ -672,6 +672,9 @@ const planIndata = (historik = []) => ({
   standarder: new Map(),
   narvaroPerAnmalan: new Set(),
   historikPerAnmalan: new Set(historik),
+  // KRÄVS av `planera` sedan granskningsrunda 3 — en utelämnad Map stängde
+  // tidigare dubbelräkningsgrinden tyst. N5 skriver över den med innehåll.
+  aktivIckeHistorikPerAnmalan: new Map(),
   policy: POLICY,
 });
 
@@ -1295,6 +1298,47 @@ test('Q4: identisk-patch-hoppet är inkopplat i Del C', () => {
   assert.match(KALLA, /if \(patchArIdentisk\(patch, a\)\) \{/);
 });
 
+test('Q5: aktiv-indexet är FAKTISKT med i planera-anropet i main()', () => {
+  // Granskningsrunda 3: en mutation som kapade `aktivIckeHistorikPerAnmalan`
+  // ur anropet gav 137/137 gröna med dubbelräkningsgrinden tyst avstängd.
+  // Vakten binder argumentet till anropsstället, precis som Q1 binder
+  // preflighten.
+  const anrop = KALLA.match(/const plan = planera\(\{[\s\S]*?\}\);/);
+  assert.ok(anrop, 'planera-anropet i main() hittades inte');
+  for (const arg of [
+    'anmalningar',
+    'event',
+    'standarder',
+    'narvaroPerAnmalan',
+    'historikPerAnmalan',
+    'aktivIckeHistorikPerAnmalan',
+    'policy',
+  ]) {
+    assert.match(anrop[0], new RegExp(`\\b${arg},`), `planera-anropet saknar ${arg}`);
+  }
+});
+
+test('Q6: KRAVFORMEN — planera KASTAR när aktiv-indexet saknas (djupare fixen)', () => {
+  // Vakten ovan är källkodsläsning; detta är körbar semantik. Tillsammans
+  // täcker de både "argumentet kapades" och "en ny anropare glömde det".
+  const indata = planIndata();
+  indata.aktivIckeHistorikPerAnmalan = undefined;
+  assert.throws(() => planera(indata), /aktivIckeHistorikPerAnmalan krävs/);
+});
+
+test('Q7: KRAVFORMEN — fel TYP kastar också (en tom array räddar ingen)', () => {
+  const indata = planIndata();
+  indata.aktivIckeHistorikPerAnmalan = [];
+  assert.throws(() => planera(indata), /måste vara en Map/);
+});
+
+test('Q8: en anmälan som SAKNAS i indexet är normalt, inte ett fel', () => {
+  // Nivåskillnaden: hela uppslaget saknas ⇒ kastar (Q6). En enskild anmälan
+  // utan aktiva poster ⇒ INGA_AKTIVA och backfillas normalt.
+  const p = planera(planIndata());
+  assert.equal(p.backfill.length, 1);
+});
+
 // ═══════════════════════════════════════════════════════════════════════════
 // R — PATCH-HOPPET OCH REF-MASKERINGEN (granskningsrunda 2, fynd 4c/4d)
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1356,6 +1400,30 @@ test('R6: NEGATIV — länkpreflightens meddelanden bär ALDRIG hela refen', () 
   assert.equal(u.ok, false);
   assert.ok(!u.skal.includes(PROD_I_CONF), 'prod-refen får inte stå okodad i utskriften');
   assert.ok(u.skal.includes(maskeraRef(PROD_I_CONF)));
+});
+
+test('R8: NEGATIV — validateProjectRef ekar aldrig en GILTIG ref okodad', () => {
+  // Granskningsrunda 3, punkt 2: de två grenar där värdet ÄR en giltig ref
+  // maskerar nu. Formkontrollens gren gör det MEDVETET inte — en sträng som
+  // fallit formkontrollen är ingen ref, och den som stavat fel behöver se vad
+  // som togs emot.
+  const PROD_I_CONF = readFileSync(join(REPO_ROT, '.prod-ref-policy.conf'), 'utf8').match(
+    /^PROD_REF_PROD="([^"]+)"/m,
+  )?.[1];
+  assert.throws(
+    () => validateProjectRef(POLICY, PROD_I_CONF, PROD_I_CONF),
+    (fel) => fel.message.includes(maskeraRef(PROD_I_CONF)) && !fel.message.includes(PROD_I_CONF),
+  );
+  assert.throws(
+    () => validateProjectRef(POLICY, 'abcdefghijklmnopqrst', null),
+    (fel) =>
+      fel.message.includes(maskeraRef('abcdefghijklmnopqrst')) &&
+      !fel.message.includes('abcdefghijklmnopqrst'),
+  );
+});
+
+test('R9: formkontrollens gren visar värdet OKODAT — bokfört undantag', () => {
+  assert.throws(() => validateProjectRef(POLICY, 'inte-en-ref', null), /inte-en-ref/);
 });
 
 test('R7: NEGATIV — inte heller fel-projekt-meddelandet bär hela refen', () => {

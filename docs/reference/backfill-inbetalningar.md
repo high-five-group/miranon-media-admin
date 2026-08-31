@@ -96,6 +96,18 @@ appen kör. Nivå 4 är backfillens egen, och dess tolkningsregel är bokförd:
 **Den gissar aldrig ett pris.** En anmälan vars pris inte kan härledas listas
 för Marcus i stället för att backfillas (`TASK-346.8` AC #2).
 
+**Den skriver aldrig ovanpå en inbetalning som redan finns.** En anmälan med
+AKTIVA inbetalningar som inte är backfillens egna (`Historik`) hoppas över och
+listas som `har-aktiva-inbetalningar`. Grinden prövar **förekomst**, inte
+netto, och det är inte teoretiskt: granskningsrunda 3 mätte att
+netto-noll-mönstret **finns i verklig staging-data** — en aktiv inbetalning och
+en lika stor aktiv återbetalning på samma anmälan summerar till 0. En
+netto-grind hade släppt igenom den och backfillat hela priset ovanpå, så att
+spegeln sagt "allt betalt" för någon som netto betalat noll. I dag är det
+`ZZ`-exkluderingen som skyddar (raderna ligger på fixtur-anmälningar), alltså
+ett skydd som gäller av en annan anledning än den här grinden — i prod finns
+ingen sådan exkludering, och förekomst-formen är det enda som bär.
+
 **Den skriver aldrig en rad för fack-motsägelsen.** Kombinationen
 `Anmälningsavgift: Ej mottagen` + `Slutbetalning: Mottagen` är i sig
 motsägelsefull — man betalar inte slutbetalningen före avgiften. Härledningen
@@ -225,6 +237,15 @@ ett ensamt tal hade dolt att **nämnaren är det som saknas**. I stagings fall �
 det hela poängen — se nedan.
 
 ### Staging-mätningen 2026-08-31
+
+> **Vilken körning talen gäller:** den FÖRSTA skarpa körningen (2026-08-31,
+> ~02:5x UTC), där backfillen faktiskt skrev. Senare körningar visar andra
+> absoluta tal utan att något är fel — dels för att backfillen redan är gjord
+> (FÖRE = EFTER), dels för att staging-populationen är RÖRLIG: `TASK-346.6`
+> skapade och städade testdata mot `ZZ-GRANSKNING-S113` under samma natt, och
+> `exkluderat-event` mättes till 49 → 53 → 57 → 49 i fyra på varandra följande
+> körningar. Kortets notes bär den senare körningens tal med egen etikett.
+> Jämför alltid FÖRE mot EFTER **inom samma körning** — aldrig mellan två.
 
 | Mått | FÖRE | EFTER |
 |---|--:|--:|

@@ -4,7 +4,7 @@ title: 'Skiva: Backfill av inbetalningar — staging mätt och kört; prod på M
 status: To Do
 assignee: []
 created_date: '2026-08-30 18:46'
-updated_date: '2026-08-31 03:15'
+updated_date: '2026-08-31 03:37'
 labels:
   - ready-for-agent
 dependencies:
@@ -177,4 +177,25 @@ GRANSKNINGSRUNDA 2 — ÅTGÄRDAD (2026-08-31; inga error, 3 warning + 5 info)
 SVITEN: 118 → 137 fall (sektion P, Q, R). MUTATIONSBEVIS runda 3: 24 av 24 fällda med namngivna testfall — M19 (förekomst→netto) → P5/P6; M20 (status-filtret) → P2; M21/M22 (preflightens wirning) → Q1/Q2/Q3; M23 (patch-hoppet hoppar allt) → R2/R3/R4; M24 (maskeringen) → R5/R6/R7. Originalfilen återställd, sha256 verifierad.
 
 GRINDAR runda 3 (mätta exitkoder): biome 0 · typecheck 0 · build 0 · check:docs 0 (14) · actionlint 0 · check-langa-streck 0 · staging-preflight-wiring 0 · egen svit 0 (137 fall, median 179 ms).
+
+GRANSKNINGSRUNDA 3 — ÅTGÄRDAD (2026-08-31; 1 warning + 2 info)
+
+1. (warning) Q5-KOPPLINGSVAKT FÖR AKTIV-INDEXET — och kravformen som djupare fix. Granskaren kapade `aktivIckeHistorikPerAnmalan` ur planera-anropet i main() och fick 137/137 gröna med dubbelräkningsgrinden TYST avstängd, eftersom `?? INGA_AKTIVA` per anmälan fick varje uppslag att se ut som "inga aktiva poster". Två åtgärder, båda gjorda:
+   (a) VAKTEN: Q5 läser planera-anropets argumentlista i källan och kräver alla sju namnen. Q1/Q4-klass.
+   (b) KRAVFORMEN (den djupare fixen, valet bokfört): `planera` KASTAR nu när `aktivIckeHistorikPerAnmalan` inte är en Map. Skälet att välja kravet framför fallbacken: `historikPerAnmalan` är naturligt högljudd (en utelämnad Set ger TypeError på `.has()`), och den asymmetrin var godtycklig — inte designad. Nu ger båda samma högljuddhet, med ett meddelande som säger VAD som är fel.
+   NIVÅSKILLNADEN ÄR AVSIKTLIG och står som kommentar i koden: HELA uppslaget saknas = programmeringsfel, kastar. En ENSKILD anmälan som saknas i uppslaget = normalt (hon har inga aktiva poster), faller på `?? INGA_AKTIVA`. Att slå ihop de två hade betytt antingen kasta på det normala eller tiga om det trasiga. Testfall Q6 (undefined kastar), Q7 (fel typ kastar), Q8 (saknad anmälan är normalt).
+   MUTATIONSBEVIS: granskarens EXAKTA mutation (M25, argumentet kapat ur anropet) fälls nu av Q5; kravformen bortkopplad (M26) fälls av Q6+Q7.
+
+2. (info) DEN TREDJE UTSKRIFTEN MASKERAD. `validateProjectRef` ekade refen okodad i två grenar (prod-grenen och tillatnaProjectRefs-grenen) — båda går nu genom `maskeraRef`. Formkontrollens gren (`Project-ref har fel form`) maskerar MEDVETET INTE: en sträng som fallit formkontrollen är per definition ingen giltig ref, och den som stavat fel behöver se vad som togs emot. Valet är bokfört som kommentar i koden och låst av testfall R9. Nya vakter: R8 (båda de giltiga-ref-grenarna maskerar) + R9 (formkontrollen visar okodat). Mutationsbevis M27/M28.
+
+3. (info) MÄTNINGARNA ETIKETTERADE. Doks § Staging-mätningen bär nu en etikettrad: talen gäller den FÖRSTA skarpa körningen (~02:5x UTC), och läsaren varnas för att jämföra mellan körningar i stället för inom en. Kortets notes 4e bär redan sin egen etikett ("efter fjärde körningen"). Bakgrunden är mätt: `exkluderat-event` gick 49 → 53 → 57 → 49 över fyra körningar samma natt, eftersom TASK-346.6 skapade och städade testdata mot ZZ-GRANSKNING-S113 parallellt.
+   GRANSKARENS SIDOFYND BOKFÖRT i doks § Vad backfillen ALDRIG gör: netto-noll-mönstret (en aktiv inbetalning + en lika stor aktiv återbetalning på samma anmälan) EXISTERAR i verklig staging-data. Det gör förekomst-grinden till ett levande motiv, inte ett teoretiskt. Noterat öppet att det i dag är ZZ-exkluderingen som skyddar — ett skydd som gäller av en ANNAN anledning än grinden, och som inte finns i prod.
+
+SVITEN: 137 → 143 fall (Q5–Q8, R8–R9). MUTATIONSBEVIS runda 4: 28 av 28 fällda med namngivna testfall.
+
+GRINDAR runda 4 (mätta exitkoder): biome 0 · typecheck 0 · build 0 · check:docs 0 (14) · actionlint 0 · check-langa-streck 0 · staging-preflight-wiring 0 · egen svit 0 (143 fall).
+
+DRY-RUN EFTER FIXEN, exit 0 — och den är mer än en rökkontroll: kravformen gör att `planera` KASTAR om main() inte skickar aktiv-indexet, så en grön ände-till-ände-körning bevisar att wiringen Q5 vaktar faktiskt håller i den körande koden (Del A/B tomma, redan-backfillad 1, idempotensen intakt).
+
+INGEN ny skarp körning i denna runda: ändringarna rör vakter, kravform och utskriftsmaskering — ingen av dem ändrar vad backfillen SKRIVER. Runda 2:s skarpa körning står därför som AC #3:s körning, och Postgres-verifieringen efter den (1 Historik-rad, 1 unik anmälan, 2500.00 kr, 0 med datum) gäller oförändrat.
 <!-- SECTION:NOTES:END -->

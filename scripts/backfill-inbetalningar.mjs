@@ -206,16 +206,20 @@ export function validateProjectRef(policy, ref, prodRef) {
     throw new Error('Policyn saknar tillatnaProjectRefs — vägrar köra utan mål-spärr');
   }
   if (!PROJECT_REF_PATTERN.test(ref ?? '')) {
+    // MASKERAS INTE, med avsikt: en sträng som fallit formkontrollen är per
+    // definition ingen giltig project-ref, och den som skrev fel behöver se
+    // exakt vad som togs emot för att hitta sitt eget stavfel. Grenarna nedan
+    // — där värdet ÄR en giltig ref — maskerar.
     throw new Error(`Project-ref har fel form: ${JSON.stringify(ref)}`);
   }
   if (prodRef && ref === prodRef) {
     throw new Error(
-      `BLOCKERAD project-ref: ${ref} är PROD enligt .prod-ref-policy.conf. ` +
+      `BLOCKERAD project-ref: ${maskeraRef(ref)} är PROD enligt .prod-ref-policy.conf. ` +
         'Prod-backfillen är AC #4 — ett öppet kriterium för Marcus, aldrig en agent-körning.',
     );
   }
   if (!tillatna.includes(ref)) {
-    throw new Error(`Project-ref ${ref} står inte i tillatnaProjectRefs`);
+    throw new Error(`Project-ref ${maskeraRef(ref)} står inte i tillatnaProjectRefs`);
   }
   return true;
 }
@@ -892,6 +896,32 @@ export function planera({
   aktivIckeHistorikPerAnmalan,
   policy,
 }) {
+  // ═══ ARGUMENTET KRÄVS — TYSTNAD ÄR DEN FARLIGA FELFORMEN ═══
+  // Granskningsrunda 3: en mutation som kapade `aktivIckeHistorikPerAnmalan`
+  // ur anropet i main() gav 137/137 GRÖNA med dubbelräkningsgrinden tyst
+  // avstängd — `?? INGA_AKTIVA` per anmälan gjorde att varje uppslag såg ut
+  // som "inga aktiva poster". Det är precis den klass av fel som inte syns:
+  // planen ser normal ut, körningen lyckas, och backfillen skriver ovanpå
+  // riktiga inbetalningar.
+  //
+  // `historikPerAnmalan` är NATURLIGT högljudd — utelämnas den kastar
+  // `.has()` en TypeError direkt. Denna kontroll ger samma högljuddhet, fast
+  // med ett meddelande som säger VAD som är fel i stället för att lämna en
+  // rå TypeError tre lager ned.
+  //
+  // NIVÅSKILLNADEN ÄR AVSIKTLIG och värd att läsa: HELA uppslaget saknas är
+  // ett programmeringsfel och kastar här. En ENSKILD anmälan som saknas i
+  // uppslaget är normalt (hon har inga aktiva poster) och faller därför på
+  // `?? INGA_AKTIVA` nedan. Att blanda ihop de två vore att antingen kasta på
+  // det normala eller tiga om det trasiga.
+  if (!(aktivIckeHistorikPerAnmalan instanceof Map)) {
+    throw new Error(
+      'planera: aktivIckeHistorikPerAnmalan krävs och måste vara en Map ' +
+        `(fick ${aktivIckeHistorikPerAnmalan === undefined ? 'undefined' : typeof aktivIckeHistorikPerAnmalan}). ` +
+        'Utan den stängs dubbelräkningsgrinden av TYST — se kommentaren ovan.',
+    );
+  }
+
   const eventMap = new Map(event.map((e) => [e.id, e]));
   const backfill = [];
   const avvikelser = [];
