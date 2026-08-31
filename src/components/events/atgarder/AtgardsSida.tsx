@@ -161,6 +161,12 @@ import {
 import { type ReactNode, useEffect, useId, useMemo, useState } from 'react';
 import { Checkbox } from 'react-aria-components';
 import { useAuth } from '@/auth/useAuth';
+/* [TASK-346.7 AC #2] Betalningsdomänens delade delar. Panelen bygger inget
+   eget formulär — `PanelBetalningar` monterar samma `RegistreraForm` som
+   inkorgen (PRD § Ytorna: "samma formulär, förvald person"). */
+import { idagIso } from '@/components/betalningar/idag';
+import { harledRad, type InkorgsRad } from '@/components/betalningar/inkorg-harledningar';
+import { PanelBetalningar } from '@/components/betalningar/PanelBetalningar';
 import { Button } from '@/components/primitives/Button';
 import { Dialog, DialogTrigger } from '@/components/primitives/Dialog';
 import { Input } from '@/components/primitives/Input';
@@ -172,6 +178,7 @@ import { SlideToConfirm } from '@/components/primitives/SlideToConfirm';
 import { TextArea } from '@/components/primitives/TextArea';
 import { displayName } from '@/components/registrations/registration-display';
 import { formatMB } from '@/data/adapters/attachmentUpload';
+import { useOppnaBetalningar } from '@/data/betalningar/useBetalningar';
 import { useSendActionEmail, useSendActionTestEmail } from '@/data/mutations/actionEmail';
 import { useSendReceipt } from '@/data/mutations/receipts';
 /* VARV 13 REV VARV 12:s MONTERING AV `BetalningsDetaljer`.
@@ -195,6 +202,7 @@ import type { Registration } from '@/domain/models/Registration';
 import { BETALSATT_VARDEN, type Betalsatt } from '@/domain/schemas';
 import { PaymentStatus, RegistrationSource, RegistrationStatus } from '@/domain/types/Status';
 import { alertScreenReader } from '@/lib/alert-screen-reader';
+import { betalningarPa } from '@/lib/funktionsflaggor';
 import { queryKeys } from '@/queries/keys';
 import { AndraRad, DetaljGrupp } from '../detail/DetaljGrupp';
 import { EventValjare } from '../EventValjare';
@@ -1110,20 +1118,40 @@ function SkrivKryss({
   text,
   namn,
   vald,
+  lasande,
   onChange,
 }: {
   text: string;
   /** Accessible name blir "<text> för <namn>" — WCAG 2.5.3-säkert, förlagans form. */
   namn: string;
   vald: boolean;
+  /**
+   * [TASK-346.7 AC #2] LÄSANDE läge — krysset visar den härledda statusen och
+   * kan inte flippas.
+   *
+   * PRD § Ytorna (beslut 10): "kryssen flippas inte längre för hand." Sedan
+   * ADR-128 härleds facken Anmälningsavgift/Slutbetalning ur inbetalningarna
+   * mot eventets pris, och basens två valfält är en APP-SKRIVEN SPEGEL av
+   * den härledningen (ADR-128 beslut 5) — inte längre något Lotta sätter.
+   * Ett kryss som gick att flippa hade skrivit över härledningen med en
+   * gissning, och nästa spegelskrivning hade tyst skrivit tillbaka den.
+   *
+   * `isReadOnly` OCH INTE `isDisabled`: ett inaktiverat kryss tas ur
+   * tabordningen och blir osynligt för skärmläsaren som gick igenom raden —
+   * statusen ÄR informationen här, så den måste gå att nå och läsa. React
+   * Aria sätter `aria-readonly` och blockerar `onChange`; värdet annonseras
+   * fortfarande.
+   */
+  lasande?: boolean;
   onChange: (v: boolean) => void;
 }) {
   return (
     <Checkbox
       isSelected={vald}
+      isReadOnly={lasande}
       onChange={onChange}
       aria-label={`${text} för ${namn}`}
-      className="group flex cursor-pointer items-center gap-2 text-small"
+      className={`group flex items-center gap-2 text-small ${lasande ? '' : 'cursor-pointer'}`}
     >
       <span className={KRYSSRUTA_KLASS}>
         <Check
@@ -1299,6 +1327,7 @@ function SkrivRad({
   eventId,
   betalning,
   vald,
+  lasande,
   notering,
   onStatus,
   onNotering,
@@ -1307,6 +1336,8 @@ function SkrivRad({
   eventId: string;
   betalning: Betalning;
   vald: boolean;
+  /** [TASK-346.7 AC #2] Krysset är härlett; kvitto-dialogen är riven. */
+  lasande: boolean;
   notering: string | null;
   onStatus: (v: boolean) => void;
   onNotering: (text: string) => void;
@@ -1327,10 +1358,27 @@ function SkrivRad({
   return (
     <div className="flex flex-col gap-2 py-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <SkrivKryss text={label} namn={namn} vald={vald} onChange={onStatus} />
+        <SkrivKryss text={label} namn={namn} vald={vald} lasande={lasande} onChange={onStatus} />
         {/* [TASK-147.7] Synlig ENDAST när betalningen redan är Mottagen — se
-            SkickaKvittoKnapp-docblocken för varför (Marcus-beslut a). */}
-        {vald && (
+            SkickaKvittoKnapp-docblocken för varför (Marcus-beslut a).
+
+            [TASK-346.7 AC #2] RIVEN NÄR MILJÖFLAGGAN ÄR PÅ. Dialogen bygger
+            på ADR-109 beslut 7-flödet (Lotta skriver beloppet för hand i en
+            ruta utan felmeddelanden), och det beslutet är rivet: kvittot
+            avser numera exakt EN inbetalning, med dess belopp och datum
+            (ADR-128). Ett kvitto med ett handskrivet belopp kan inte längre
+            peka på en inbetalning, och Roger får en verifikation utan
+            motpost.
+
+            VARFÖR VILLKORAD OCH INTE BORTTAGEN: AC #6 och PRD § Miljöflagga
+            (B2) kräver att flaggan AV ger dagens beteende EXAKT. `send-
+            receipt-email` är fortfarande deployad i prod och är där Lottas
+            enda kvittoväg tills Marcus slår på flaggan. En ovillkorlig
+            rivning hade tagit bort funktionen ur prod i natt. Den slutliga
+            rivningen — komponenten, `useSendReceipt` och deras importer —
+            hör till TASK-346.12, som river flaggan och därmed den här
+            grenen. */}
+        {vald && !lasande && (
           <SkickaKvittoKnapp registration={registration} eventId={eventId} betalning={betalning} />
         )}
       </div>
@@ -1368,6 +1416,26 @@ function BetalningsSkrivYta({
   const status = useSetPaymentStatus(eventId);
   const notering = useUpdatePaymentNote(eventId);
 
+  /* [TASK-346.7 AC #2] Miljöflaggan avgör om panelen SKRIVER facken eller
+     LÄSER dem. Läses en gång per rendering, aldrig i en effekt: den är ett
+     byggtidsvärde och kan inte ändras i drift (`funktionsflaggor.ts`). */
+  const lasande = betalningarPa();
+
+  /* Den globala listan över öppna betalningar, samma cache-nyckel som
+     inkorgen och Hem — inte en fråga per person. `enabled` följer flaggan, så
+     panelen gör noll extra anrop i prod. Uppslaget sker på anmälans
+     record-ID: `OppenBetalning` bär inget person-ID, men anmälan ÄR nyckeln
+     här och kan inte råka vara en namne. */
+  const { data: oppna } = useOppnaBetalningar(lasande);
+  const idag = useMemo(idagIso, []);
+  const raderPerAnmalan = useMemo(() => {
+    const karta = new Map<string, InkorgsRad>();
+    for (const betalning of oppna?.betalningar ?? []) {
+      karta.set(betalning.anmalanRecordId, harledRad(betalning, idag));
+    }
+    return karta;
+  }, [oppna, idag]);
+
   const fel = status.isError ? status : notering.isError ? notering : null;
 
   if (registreringar.length === 0) {
@@ -1402,6 +1470,7 @@ function BetalningsSkrivYta({
               eventId={eventId}
               betalning="avgift"
               vald={r.anmalningsavgift === PaymentStatus.MOTTAGEN}
+              lasande={lasande}
               notering={r.noteringAnmalningsavgift ?? null}
               onStatus={(v) =>
                 status.mutate({
@@ -1428,6 +1497,7 @@ function BetalningsSkrivYta({
                 eventId={eventId}
                 betalning="slut"
                 vald={r.slutbetalning === PaymentStatus.MOTTAGEN}
+                lasande={lasande}
                 notering={r.noteringSlutbetalning ?? null}
                 onStatus={(v) =>
                   status.mutate({
@@ -1439,6 +1509,18 @@ function BetalningsSkrivYta({
                 onNotering={(text) =>
                   notering.mutate({ registration: r, betalning: 'slut', notering: text })
                 }
+              />
+            )}
+            {/* [TASK-346.7 AC #2] Saknas-beloppet, Registrera betalning och
+                inbetalningsraderna. Sist i kortet, UNDER facken: facken säger
+                VAD som är klart, detta säger vad som återstår och vad Lotta
+                kan göra åt det. Inbetalningarna hämtas först när raden fälls
+                ut — se komponentens docblock för anropsbudgeten. */}
+            {lasande && (
+              <PanelBetalningar
+                anmalanRecordId={r.id}
+                namn={displayName(r)}
+                rad={raderPerAnmalan.get(r.id) ?? null}
               />
             )}
           </div>

@@ -14,6 +14,8 @@ import type { SvepTyp } from '@/components/svep/types';
 import type { Event } from '@/domain/models/Event';
 import type { Registration } from '@/domain/models/Registration';
 import { fornamn } from '@/lib/fornamn';
+import { betalningarPa } from '@/lib/funktionsflaggor';
+import { BetalningarKort } from './BetalningarKort';
 import { Bevakningsrad } from './Bevakningsrad';
 import { ForfallnaBetalningar } from './ForfallnaBetalningar';
 import { Genvagar } from './Genvagar';
@@ -379,16 +381,34 @@ export function Hem() {
           nyligenSkickade={nyligenSkickadeRader}
         />
 
-        {/* 4. FÖRFALLNA BETALNINGAR */}
-        <ForfallnaBetalningar
-          anmalDataPending={anmalDataPending}
-          regsError={regsError}
-          registrationsQuery={registrationsQuery}
-          forfallna={forfallna}
-          nuMs={nuMs}
-          onSkickaPaminnelseAlla={() => setAktivtSvep('paminnelse')}
-          nyligenPaminda={nyligenPaminda}
-        />
+        {/* 4. BETALNINGAR — ERSÄTTER "Förfallna betalningar" när miljöflaggan
+            är på (TASK-346.7 AC #1, PRD § Inkorgen och formuläret: "ersätter
+            dagens kort … (inte ovanpå det)").
+
+            VÄXELN ÄR ETT TERNÄRT VAL, INTE TVÅ VILLKORADE BLOCK. Skrivet som
+            två `{flagga && …}`/`{!flagga && …}` hade de två korten kunnat
+            renderas samtidigt om villkoren någon gång drev isär — och
+            "inte ovanpå det" är hela poängen med raden i PRD:n.
+
+            MED FLAGGAN AV ÄR PROD-BETEENDET EXAKT DAGENS: samma komponent,
+            samma props, samma påminnelsesvep. Ingen av det gamla kortets
+            props har ändrats. */}
+        {betalningarPa() ? (
+          <BetalningarKort
+            onSkickaPaminnelseAlla={() => setAktivtSvep('paminnelse')}
+            harPaminnelser={paminnelseRaderList.length > 0}
+          />
+        ) : (
+          <ForfallnaBetalningar
+            anmalDataPending={anmalDataPending}
+            regsError={regsError}
+            registrationsQuery={registrationsQuery}
+            forfallna={forfallna}
+            nuMs={nuMs}
+            onSkickaPaminnelseAlla={() => setAktivtSvep('paminnelse')}
+            nyligenPaminda={nyligenPaminda}
+          />
+        )}
 
         {/* 5. GENVÄGAR */}
         <Genvagar />

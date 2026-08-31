@@ -19,12 +19,15 @@ import {
   ToggleButtonGroup,
 } from '@/components/primitives';
 import { StatusBadge } from '@/components/registrations/StatusBadge';
+import { useOppnaBetalningar } from '@/data/betalningar/useBetalningar';
 import { useJobbstatus, useRealtidsfel } from '@/data/betalningar/useJobbstatus';
 import { useKoaKvitton } from '@/data/mutations/inbetalningar';
 import { useDataSource } from '@/data/useDataSource';
 import { filtreraPersonregister, personVisningsnamn } from '@/lib/person-sok';
 import { queryKeys } from '@/queries/keys';
 import { visaKronor } from './belopp-inmatning';
+import { type Betalsatt, lasSenasteBetalsatt, sparaBetalsatt } from './betalsatt-minne';
+import { idagIso } from './idag';
 import {
   type EventGrupp,
   grupperaPerEvent,
@@ -33,8 +36,9 @@ import {
   type InkorgsRad,
   jobbDelutfall,
   rankaTraffar,
+  sammanfattaBetalningar,
 } from './inkorg-harledningar';
-import { type Betalsatt, RegistreraForm, type RegistreringsUtfall } from './RegistreraForm';
+import { RegistreraForm, type RegistreringsUtfall } from './RegistreraForm';
 
 /**
  * [TASK-346.6, PRD TASK-346 § Inkorgen och formuläret] Sidan Betalningar
@@ -80,35 +84,14 @@ import { type Betalsatt, RegistreraForm, type RegistreringsUtfall } from './Regi
  * kvitton Lotta redan tryckt på. Det talet visas separat i sammanfattningen.
  */
 
-const BETALSATT_NYCKEL = 'mm.betalningar.senasteBetalsatt';
-
-/** Läser senast använda betalsätt. Kastar aldrig - privat läge blockerar. */
-function lasSenasteBetalsatt(): Betalsatt {
-  try {
-    const sparat = window.localStorage.getItem(BETALSATT_NYCKEL);
-    if (sparat === 'Swish' || sparat === 'Bankgiro' || sparat === 'Plusgiro') return sparat;
-  } catch {
-    // Privat läge, blockerade cookies, eller en webbläsare som kastar på
-    // access. Standardvärdet duger; detta är en bekvämlighet, inte data.
-  }
-  return 'Swish';
-}
-
-function sparaBetalsatt(varde: Betalsatt): void {
-  try {
-    window.localStorage.setItem(BETALSATT_NYCKEL, varde);
-  } catch {
-    // Se ovan.
-  }
-}
-
-/** Dagens datum som ISO. Enda stället i betalningsytan som läser klockan. */
-function idagIso(): string {
-  const nu = new Date();
-  const manad = `${nu.getMonth() + 1}`.padStart(2, '0');
-  const dag = `${nu.getDate()}`.padStart(2, '0');
-  return `${nu.getFullYear()}-${manad}-${dag}`;
-}
+/* BETALSÄTTS-MINNET OCH `idagIso` FLYTTADE UT (TASK-346.7).
+ *
+ * Båda låg privat i denna fil så länge inkorgen var den enda ytan med
+ * formuläret. TASK-346.7 ger samma formulär fyra ingångar till, och PRD
+ * berättelse 6 lovar "det jag använde senast" - inte "senast på den här
+ * sidan". De bor därför i `betalsatt-minne.ts` respektive `idag.ts`, som
+ * båda bär motiveringen i sina egna docblock. Beteendet här är oförändrat:
+ * samma localStorage-nyckel, samma standardvärde, samma lokala datum. */
 
 type VantandeKvitto = { inbetalningId: string; namn: string; belopp: number };
 
@@ -125,36 +108,12 @@ export function BetalningsInkorg() {
   const annonseratRef = useRef(false);
   const idag = useMemo(idagIso, []);
 
-  const {
-    data: oppna,
-    isPending,
-    isError,
-    error,
-  } = useQuery({
-    queryKey: queryKeys.betalningar.oppna,
-    queryFn: () => dataSource.fetchOppnaBetalningar(),
-    // ═══ INKORGEN MÅSTE LÄSAS OM VID VARJE ÖPPNING ═══
-    //
-    // Samma rad, samma skäl och samma granskningsfynd som `useJobbstatus`
-    // redan bär (TASK-346.4 runda 1): routerns globala `staleTime` är 5
-    // minuter och hela cachen persistas i 24 timmar (`src/router.ts`,
-    // ADR-072). Utan denna rad serveras ytan HELT ur den persisterade cachen
-    // när Lotta öppnar appen igen inom fönstret.
-    //
-    // MÄTT, INTE BEFARAT (acceptansvandringen 2026-08-31): efter att tre
-    // testinbetalningar makulerats i Postgres visade inkorgen fortfarande de
-    // gamla beloppen - "Saknas 1 500 kr" på en rad där 2 500 saknades, och en
-    // rad saknades helt. En inkorg vars hela uppgift är att svara på "vad är
-    // öppet just nu" får inte svara med gårdagens läge; Lotta hade registrerat
-    // mot en rad som redan var betald.
-    //
-    // `'always'` OCH INTE `staleTime: 0`: den senare hade gjort varje
-    // fönsterfokus till en omhämtning (`refetchOnWindowFocus: true` globalt),
-    // alltså en tyst pollare. Denna form hämtar om vid MONTERING - appöppning
-    // och navigering hit - och överlåter löpande färskhet åt Realtime, som är
-    // den mekanism som ska bära den.
-    refetchOnMount: 'always',
-  });
+  // [TASK-346.7] Läsningen bor nu i `useOppnaBetalningar`, delad med Hem,
+  // Åtgärds-panelen, anmälans detaljvy och personkortet. Hooken bär
+  // `refetchOnMount: 'always'` och HELA motiveringen för den (den mätta
+  // eftersläpningen i acceptansvandringen 2026-08-31) i sitt eget docblock.
+  // Beteendet här är oförändrat: samma cache-nyckel, samma färskhetsregel.
+  const { data: oppna, isPending, isError, error } = useOppnaBetalningar();
 
   // Personregistret är redan förladdat av startvärmningen (ADR-123) och har
   // 5 min staleTime - att läsa det här kostar därför normalt noll anrop. Det
@@ -192,8 +151,13 @@ export function BetalningsInkorg() {
       .slice(0, 10);
   }, [soker, register, sokterm, traffar]);
 
-  const forfallnaTotalt = rader.filter((r) => r.forfallen && !r.klar).length;
-  const kvittonIKo = (oppna?.betalningar ?? []).reduce((n, b) => n + b.kvittonAttSkicka, 0);
+  // [TASK-346.7 AC #1] De tre talen härleds nu av `sammanfattaBetalningar`,
+  // som Hem-kortet läser med. Uttrycken var tidigare inline här; två
+  // oberoende uttryck för samma mening kan glida isär utan att någon
+  // mekanism märker det, och AC #6 kräver att ytorna säger samma sak.
+  // Räkningen är oförändrad - se funktionens docblock för de två talens
+  // exakta innebörd.
+  const sammanfattning = useMemo(() => sammanfattaBetalningar(rader), [rader]);
 
   // ═══ ETT FÄRDIGT JOBB FRÅN EN TIDIGARE SESSION ÄR INTE DAGENS NYHET ═══
   //
@@ -306,7 +270,7 @@ export function BetalningsInkorg() {
       <header className="flex flex-col gap-1 px-4">
         <h1 className="font-semibold text-3xl">Betalningar</h1>
         <p className="text-small text-text-muted">
-          {`${rader.filter((r) => !r.klar).length} öppna · ${forfallnaTotalt} förfallna · ${kvittonIKo} kvitton i kö`}
+          {`${sammanfattning.oppna} öppna · ${sammanfattning.forfallna} förfallna · ${sammanfattning.kvittonAttSkicka} kvitton i kö`}
         </p>
       </header>
 
