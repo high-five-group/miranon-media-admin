@@ -603,6 +603,53 @@ test.describe('dubbletter — hoppas över och RÄKNAS', () => {
     expect(radnyckel(rader[0].rad)).toBe('rad-2');
   });
 
+  test('radnyckel är ALLTID radnummer-baserad — den kolliderar aldrig när flera rader delar bankreferens', () => {
+    // Fix-runda 2 (granskning runda 1, fynd 7): mappningsdialogen låter Lotta
+    // peka ut VILKEN kolumn som helst som "Bankens referens" — pekar hon på
+    // en kolumn med ett konstant värde får flera rader SAMMA bankreferens.
+    // Nyckeln bär tre laster (React-key, `andraRad`-uppslag, utfallskartan i
+    // `bekrafta()`), så en kollision hade lett en ändring på EN rad till en
+    // ANNAN, och den sista radens utfall skrivit över den förstas.
+    const deladReferens = '5566778899';
+    const rader = byggImportrader(
+      parsat([
+        transaktion({ bankreferens: deladReferens, namn: 'Anna Swish' }),
+        transaktion({ bankreferens: deladReferens, namn: 'Sven Svensson' }),
+      ]),
+      [rad(), rad({ anmalanRecordId: 'recBBBBBBBBBBBBBB', personNamn: 'Sven Svensson' })],
+      new Map(),
+    );
+
+    expect(rader).toHaveLength(2);
+    // Samma bankreferens på båda — precis scenariot som kolliderade förut.
+    expect(rader[0].rad.transaktion.bankreferens).toBe(rader[1].rad.transaktion.bankreferens);
+
+    const nycklar = rader.map((r) => radnyckel(r.rad));
+    expect(nycklar).toEqual(['rad-2', 'rad-3']);
+    expect(new Set(nycklar).size).toBe(2);
+  });
+
+  test('NEGATIV KONTROLL: bankreferens-baserad nyckel kolliderar på samma indata', () => {
+    // Den TRASIGA varianten (den gamla implementationen), skriven här —
+    // aldrig i produktionskoden — visar att kollisionen är verklig, inte
+    // hypotetisk: två olika rader ger EN gemensam nyckel.
+    const trasigRadnyckel = (r: ImporteradRad) =>
+      r.transaktion.bankreferens ?? `rad-${r.radnummer}`;
+    const deladReferens = '5566778899';
+    const rader = parsat([
+      transaktion({ bankreferens: deladReferens, namn: 'Anna Swish' }),
+      transaktion({ bankreferens: deladReferens, namn: 'Sven Svensson' }),
+    ]).rader;
+
+    const trasigaNycklar = rader.map(trasigRadnyckel);
+    expect(trasigaNycklar).toEqual([deladReferens, deladReferens]);
+    expect(new Set(trasigaNycklar).size).toBe(1);
+
+    // Den riktiga implementationen ger två olika nycklar på samma indata.
+    const rattaNycklar = rader.map(radnyckel);
+    expect(new Set(rattaNycklar).size).toBe(2);
+  });
+
   test('en registrerad rad skickas inte igen i samma körning', () => {
     const rader = byggImportrader(parsat(tre), [rad()], new Map());
     const efter = rader.map(

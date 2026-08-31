@@ -70,9 +70,26 @@ export type Importradstillstand = {
   utfall: Radutfall | null;
 };
 
-/** Radens stabila nyckel. Bankreferensen när den finns, annars radnumret. */
+/**
+ * Radens stabila nyckel — ALLTID radnumret, aldrig bankreferensen.
+ *
+ * RÄTTAT (fix-runda 2, granskning runda 1, fynd 7): nyckeln bar tidigare
+ * `bankreferens ?? 'rad-<n>'`, och kolliderar när FLERA rader delar samma
+ * bankreferens — vilket mappningsdialogen gör möjligt (Lotta kan peka ut
+ * VILKEN kolumn som helst som "Bankens referens", inklusive en med ett
+ * konstant värde). Nyckeln bär TRE laster samtidigt (React-`key` i
+ * bekräftelselistan, uppslaget i `andraRad`, och nyckeln i `bekrafta()`s
+ * utfallskarta), så en kollision hade låtit en ändring på EN rad träffa en
+ * ANNAN, och den sista radens utfall skriva över den förstas — en faktiskt
+ * registrerad rad hade kunnat visas som "Redan registrerad". Radnumret
+ * (`ImporteradRad.radnummer`, 1-baserat, filens egen radräkning) är per
+ * definition UNIKT inom en och samma import, oavsett vad bankreferensen
+ * råkar bära. Bankreferensen förblir dubblettnyckeln mot DATABASEN
+ * (`inbetalningar_bankreferens_unik_idx`) — den behöver aldrig vara
+ * React-nyckeln för att fylla den rollen.
+ */
 export function radnyckel(rad: ImporteradRad): string {
-  return rad.transaktion.bankreferens ?? `rad-${rad.radnummer}`;
+  return `rad-${rad.radnummer}`;
 }
 
 /**
