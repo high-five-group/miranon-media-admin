@@ -1,10 +1,10 @@
 ---
 id: TASK-346.9
 title: 'Skiva: Kreditkvitto, återbetalning, makulera och radera i UI'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-30 18:46'
-updated_date: '2026-08-31 05:38'
+updated_date: '2026-08-31 13:07'
 labels:
   - ready-for-agent
 dependencies:

@@ -3,10 +3,10 @@ id: TASK-346.7.1
 title: >-
   Fynd: personkortets Betalningar-sektion saknar felläge — evig retry-storm +
   kvarstående sr-only-Laddar när hamta-inbetalningar felar
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-31 10:08'
-updated_date: '2026-08-31 10:21'
+updated_date: '2026-08-31 13:07'
 labels:
   - ready-for-agent
 dependencies: []

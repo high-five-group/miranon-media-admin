@@ -1,10 +1,10 @@
 ---
 id: TASK-346.14
 title: 'Design-polish: betalningsytorna till husets formspråk (S113-designfynden)'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-31 10:49'
-updated_date: '2026-08-31 12:01'
+updated_date: '2026-08-31 13:20'
 labels:
   - ready-for-agent
 dependencies: []
@@ -25,7 +25,7 @@ Marcus dom under S113-slutvandringen: grundformen ok men ytorna är utkast/kladd
 - [x] #3 Inga hårdkodade färger/avstånd — allt via tokens; a11y-strukturer, prefers-contrast/reduced-motion/print består
 - [x] #4 AMENDERING-sidofiler uppdaterade för varje ändrad facit-yta
 - [x] #5 Egen sida-vid-sida-bedömning i PR-kroppen per yta mot facit-skärmdumparna
-- [ ] #6 Orkestrerarens visuella slutdom (1440x900 + 375x812 + prefers-contrast/reduced-motion) godkänd
+- [x] #6 Orkestrerarens visuella slutdom (1440x900 + 375x812 + prefers-contrast/reduced-motion) godkänd
 <!-- AC:END -->
 
 ## Definition of Done

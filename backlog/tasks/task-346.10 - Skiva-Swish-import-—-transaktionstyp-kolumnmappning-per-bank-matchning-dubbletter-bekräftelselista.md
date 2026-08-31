@@ -3,10 +3,10 @@ id: TASK-346.10
 title: >-
   Skiva: Swish-import — transaktionstyp, kolumnmappning per bank, matchning,
   dubbletter, bekräftelselista
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-30 18:46'
-updated_date: '2026-08-31 05:45'
+updated_date: '2026-08-31 13:07'
 labels:
   - ready-for-agent
 dependencies:

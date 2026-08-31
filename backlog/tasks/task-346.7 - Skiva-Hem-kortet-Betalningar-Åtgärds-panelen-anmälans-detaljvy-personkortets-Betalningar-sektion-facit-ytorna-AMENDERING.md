@@ -3,10 +3,10 @@ id: TASK-346.7
 title: >-
   Skiva: Hem-kortet Betalningar, Åtgärds-panelen, anmälans detaljvy,
   personkortets Betalningar-sektion (facit-ytorna, AMENDERING)
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-30 18:45'
-updated_date: '2026-08-31 04:03'
+updated_date: '2026-08-31 13:07'
 labels:
   - ready-for-agent
 dependencies:
@@ -30,7 +30,7 @@ Modell: Opus@xhigh (ADR-089; avvikelse från agent-default bokförd här). Nattm
 - [x] #3 Anmälans detaljvy: Betalningar-sektion med saknas, inbetalningar, kvitton, Registrera betalning
 - [x] #4 Personkortet: ny Betalningar-sektion (öppna över alla event + senaste inbetalningar + Registrera betalning); AMENDERING-sidofil i tasks/sessions/bilagor/s103-persondetalj-konvergens/
 - [x] #5 Eventsidans 'Öppna detaljer' visar samma härledda läge läsande
-- [ ] #6 Alla ytor bakom miljöflaggan; acceptanstest: registrera från panel, anmälan och personkort ger samma resultat som inkorgen; axe 0; skärmdumpar desktop + iPad
+- [x] #6 Alla ytor bakom miljöflaggan; acceptanstest: registrera från panel, anmälan och personkort ger samma resultat som inkorgen; axe 0; skärmdumpar desktop + iPad
 <!-- AC:END -->
 
 ## Definition of Done
