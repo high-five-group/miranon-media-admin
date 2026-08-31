@@ -188,6 +188,10 @@ Deno.serve(async (req) => {
       eventStart,
       eventSlut,
       bokforingstext,
+      // [TASK-346.5] Förhandsvisningen bygger på TYPEXEMPEL, som föregår
+      // Inbetalning/ADR-128 — samma `null` som `send-receipt-email/index.ts`
+      // gör, se den filens motsvarande kommentar.
+      betalningsdatum: null,
     });
 
     const apiKey = Deno.env.get('DOCRAPTOR_API_KEY');

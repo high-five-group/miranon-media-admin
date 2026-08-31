@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-30 18:45'
+updated_date: '2026-08-31 02:01'
 labels:
   - ready-for-agent
 dependencies:
@@ -24,11 +25,11 @@ Modell: Sonnet@xhigh (ADR-089; avvikelse från agent-default bokförd här). Nat
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 kvitto.html/css + receipt-content: en rad med inbetalningens belopp (netto/moms/betalt oförändrat), raden Förfallodatum ersatt av Betalningsdatum ur inbetalningen, Datum = utfärdande; kursnamn/etikett orörda (TASK-306 rättelsevarv); fixtur och _kalla uppdaterade
-- [ ] #2 Bundlad kopia synkad (scripts/synka-bilagemallar.mjs) och scripts/check-mallparitet.sh grön; docs/mallar/bilagor/README.md § Kvittots FORM uppdaterad (tokenytan 1:1)
-- [ ] #3 Prince ≡ Chrome inom 0,5 mm mätt med npm run mall:pdf + pdftotext -bbox på ny fixtur; benämningen radbryts inte vid 72 tecken
-- [ ] #4 Visa kvitto ger signerad länk till sparad PDF; Skicka igen skickar samma PDF med samma nummer till angiven adress utan ny allokering (hermetiskt test + negativ kontroll: ett nytt nummer fäller)
-- [ ] #5 Kreditkvittots mallvariant förberedd som token (rubrik, hänvisning, negativa belopp) men aktiveras i skiva 346.9
+- [x] #1 kvitto.html/css + receipt-content: en rad med inbetalningens belopp (netto/moms/betalt oförändrat), raden Förfallodatum ersatt av Betalningsdatum ur inbetalningen, Datum = utfärdande; kursnamn/etikett orörda (TASK-306 rättelsevarv); fixtur och _kalla uppdaterade
+- [x] #2 Bundlad kopia synkad (scripts/synka-bilagemallar.mjs) och scripts/check-mallparitet.sh grön; docs/mallar/bilagor/README.md § Kvittots FORM uppdaterad (tokenytan 1:1)
+- [x] #3 Prince ≡ Chrome inom 0,5 mm mätt med npm run mall:pdf + pdftotext -bbox på ny fixtur; benämningen radbryts inte vid 72 tecken
+- [x] #4 Visa kvitto ger signerad länk till sparad PDF; Skicka igen skickar samma PDF med samma nummer till angiven adress utan ny allokering (hermetiskt test + negativ kontroll: ett nytt nummer fäller)
+- [x] #5 Kreditkvittots mallvariant förberedd som token (rubrik, hänvisning, negativa belopp) men aktiveras i skiva 346.9
 <!-- AC:END -->
 
 ## Definition of Done

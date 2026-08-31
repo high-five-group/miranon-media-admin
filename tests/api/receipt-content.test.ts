@@ -38,10 +38,13 @@ import { expect, test } from '@playwright/test';
 import {
   beraknaMoms,
   formatBelopp,
+  formatBetalningsdatum,
   formatKvittoDatum,
   type KvittoradSpec,
   kvittoBenamning,
+  kvittoHanvisning,
   kvittoRader,
+  kvittoRubrik,
   MIRANON_ORG,
   MOMSSATS_PROCENT,
 } from '../../supabase/functions/_shared/receipt-content';
@@ -77,6 +80,10 @@ function spec(overrides: Partial<KvittoradSpec> = {}): KvittoradSpec {
     eventStart: null,
     eventSlut: null,
     bokforingstext: null,
+    // [TASK-346.5] Default null (samma golv-princip som fälten ovan) —
+    // tester som vill se `formatBetalningsdatum`/mallens "Betalningsdatum"-
+    // rad sätter fältet explicit via `overrides`.
+    betalningsdatum: null,
     ...overrides,
   };
 }
@@ -131,6 +138,18 @@ test.describe('beraknaMoms — invarianten netto + moms === brutto (LÅST ordnin
       checked++;
     }
     expect(checked).toBeGreaterThan(900); // sanity: loopen körde faktiskt
+  });
+
+  // [TASK-346.5, förberedd för kreditkvittot i 346.9, ADR-109 § Updates
+  // 2026-08-30 beslut d] "återbetalning = en negativ inbetalning" —
+  // `beraknaMoms` måste hålla samma invariant för ett NEGATIVT brutto,
+  // eftersom kreditkvittots belopp trådas oförändrat (jobb-konsument.ts:
+  // "beloppet trådas oförändrat och absolutvärdet tas INTE här").
+  test('NEGATIVT brutto (kreditkvitto/återbetalning) — invarianten håller med samma tecken på moms och netto', () => {
+    const { moms, netto } = beraknaMoms(-2500);
+    expect(moms).toBe(-500);
+    expect(netto).toBe(-2000);
+    expect(netto + moms).toBe(-2500); // invarianten, strikt ===, samma tecken genomgående
   });
 });
 
@@ -364,6 +383,7 @@ test.describe('kvittoRader — org-uppgifter + moms-rader', () => {
       betalsatt: 'Swish' as const,
       betalning: 'avgift' as const,
       kundEpost: 'a@example.com',
+      betalningsdatum: null,
     };
     const radA = kvittoRader({
       ...gemensam,
@@ -417,6 +437,52 @@ test.describe('formatKvittoDatum / formatBelopp — beteendegolv', () => {
     expect(formatKvittoDatum('2026-01-05T12:00:00.000Z')).toBe('2026-01-05');
   });
 
+  // [TASK-346.5, ADR-128 § Beslut 1/9] "Betalningsdatum"-radens formatering
+  // — ersätter den tidigare statiska "Förfallodatum: -".
+  test('formatBetalningsdatum: känt datum → samma ISO-form som formatKvittoDatum', () => {
+    expect(formatBetalningsdatum('2026-08-01')).toBe('2026-08-01');
+    expect(formatBetalningsdatum('2026-08-01T00:00:00.000Z')).toBe('2026-08-01');
+  });
+
+  test('formatBetalningsdatum: null (backfillad historisk post, ADR-128 beslut 8) → "-", INTE "null"/"undefined"', () => {
+    expect(formatBetalningsdatum(null)).toBe('-');
+  });
+
+  // NEGATIV KONTROLL: en trasig implementation som glömmer null-fallet och
+  // bara anropar formatKvittoDatum rakt av hade läckt `Invalid Date`-
+  // artefakter till kunden i stället för en läsbar platshållare — testet
+  // ovan fäller den klassen genom att kräva EXAKT "-", inte "Invalid Date"
+  // eller det ograverade `null`-värdet omvandlat till strängen "null".
+  test('formatBetalningsdatum: NEGATIV KONTROLL — den trasiga vägen (formatKvittoDatum utan null-koll) läcker fel text', () => {
+    const trasigFormatBetalningsdatum = (betalningsdatum: string | null): string =>
+      formatKvittoDatum(betalningsdatum as unknown as string);
+    // Den trasiga vägen ger INTE "-": new Date(null) är epoch (1970-01-01),
+    // inte ett fel — precis den typen av tyst felaktig utdata som visar
+    // VARFÖR ett explicit null-fall (den riktiga implementationen) behövs.
+    expect(trasigFormatBetalningsdatum(null)).not.toBe('-');
+    expect(trasigFormatBetalningsdatum(null)).toBe('1970-01-01');
+    expect(formatBetalningsdatum(null)).toBe('-');
+  });
+
+  // [TASK-346.5, förberedd för 346.9, AC #5] Kreditkvittots rubrik och
+  // hänvisningstext — TOKEN förberedd, INTE aktiverad (se
+  // `KvittoradSpec.typ`/`hanvisningTillKvittonummer`s docstring för
+  // vilken skiva som faktiskt sätter dem).
+  test('kvittoRubrik: default (utelämnad/"kvitto") → "Kvitto", "kreditkvitto" → "Kreditkvitto"', () => {
+    expect(kvittoRubrik(undefined)).toBe('Kvitto');
+    expect(kvittoRubrik('kvitto')).toBe('Kvitto');
+    expect(kvittoRubrik('kreditkvitto')).toBe('Kreditkvitto');
+  });
+
+  test('kvittoHanvisning: null/undefined → tom sträng (ALDRIG "null"/"undefined" i mallen)', () => {
+    expect(kvittoHanvisning(null)).toBe('');
+    expect(kvittoHanvisning(undefined)).toBe('');
+  });
+
+  test('kvittoHanvisning: satt originalnummer → "Kvitto <nummer>"', () => {
+    expect(kvittoHanvisning('MM-2026-1001')).toBe('Kvitto MM-2026-1001');
+  });
+
   // [S108, Marcus-beslut 2026-08-22] Rogers format: sv-SE-tusentalsavgränsare
   // (ALLTID ett vanligt mellanslag, U+0020 — normaliserat oavsett vilket
   // grupperingstecken Intl.NumberFormat('sv-SE') råkar ge i körmiljön, se
@@ -437,5 +503,32 @@ test.describe('formatKvittoDatum / formatBelopp — beteendegolv', () => {
     // NBSP/NNBSP-varning som bara syns vid kodpunkts-inspektion.
     const separatorIndex = formaterat.indexOf(' ');
     expect(formaterat.codePointAt(separatorIndex)).toBe(0x20);
+  });
+
+  // [TASK-346.5, förberedd för kreditkvittot i 346.9, ADR-109 § Updates
+  // 2026-08-30 beslut d] Ett kreditkvitto avser en NEGATIV inbetalning
+  // (återbetalning) — `formatBelopp` måste alltså hantera negativa belopp
+  // säkert. `Intl.NumberFormat('sv-SE')` skriver negativa tal med U+2212
+  // (MINUS SIGN), inte U+002D (HYPHEN-MINUS) — samma klass Unicode-fälla
+  // som grupperingstecknet ovan.
+  test('formatBelopp: NEGATIVA belopp (kreditkvitto, TASK-346.9) — minustecknet är GARANTERAT vanlig hyphen-minus (U+002D), aldrig U+2212', () => {
+    expect(formatBelopp(-2500)).toBe('-2 500,00');
+    expect(formatBelopp(-0.5)).toBe('-0,50');
+    const formaterat = formatBelopp(-2500);
+    expect(formaterat).not.toMatch(/−/);
+    expect(formaterat.codePointAt(0)).toBe(0x2d); // U+002D, inte U+2212
+  });
+
+  test('formatBelopp: NEGATIV KONTROLL — utan normaliseringen skulle Intl ge U+2212 (bevisar att testet ovan inte är vacuously true)', () => {
+    const raFormaterat = new Intl.NumberFormat('sv-SE', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2,
+    }).format(-2500);
+    // DEN RÅA Intl-utdatan bär FAKTISKT U+2212 — det är EXAKT vad
+    // `formatBelopp` normaliserar bort. Om detta antagande någon gång
+    // slutar hålla (en ICU-uppdatering byter grundbeteende) blir denna
+    // rad den första att fälla, INTE en tyst regression i produktionen.
+    expect(raFormaterat.codePointAt(0)).toBe(0x2212);
+    expect(formatBelopp(-2500).codePointAt(0)).not.toBe(0x2212);
   });
 });

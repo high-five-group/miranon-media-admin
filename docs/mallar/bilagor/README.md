@@ -72,7 +72,7 @@ deltagarinformationen, är nu likaså dynamiska — hämtade ur Eventinnehåll
 |---|---|
 | Bekräftelsebilagan | `kursnamn`, `datumTid`, `plats`, `pris`, `anmalningsavgift`, `visaResterande`, `resterandeBelopp`, `sistaBetalningsdatum`, `beskrivning[]`, `dagEttAgenda[]`, `dagTvaAgenda[]` |
 | Deltagarinformationen | `kursnamn`, `datumTid`, `plats`, `forberedelser`, `klader`, `tagMed`, `rokning`, `parfym`, `mat`, `overnattning`, `parkering`, `transport`, `utrustning` (var och en `string \| null` — `null` utelämnar ämnesstycket helt) |
-| Kvittot [TASK-309.5] | `kvittonummer`, `datum`, `orgReferens`, `kundnamn`, `kundEpost`, `benamning`, `netto`, `moms`, `brutto`, `orgNamn`, `orgGatuadress`, `orgPostadress`, `orgLand`, `orgNummer`, `orgMomsregnummer` — byggs av `byggKvittoData(spec: KvittoradSpec)`, ANNAN indataform än de två ovan (`KvittoradSpec` ur `_shared/receipt-content.ts`, inte `DocumentSourcesResult`) — se § "Kvittots dynamiska yta" nedan för käll-tabellen |
+| Kvittot [TASK-309.5, `betalningsdatum`/`rubrik`/`hanvisning` TASK-346.5] | `kvittonummer`, `datum`, `betalningsdatum`, `orgReferens`, `kundnamn`, `kundEpost`, `rubrik`, `benamning`, `netto`, `moms`, `brutto`, `orgNamn`, `orgGatuadress`, `orgPostadress`, `orgLand`, `orgNummer`, `orgMomsregnummer`, `hanvisning` — byggs av `byggKvittoData(spec: KvittoradSpec)`, ANNAN indataform än de två ovan (`KvittoradSpec` ur `_shared/receipt-content.ts`, inte `DocumentSourcesResult`) — se § "Kvittots dynamiska yta" nedan för käll-tabellen |
 
 **Ingen persondata förekommer i någon mall** (AC #2) — mottagarens namn hör
 till mailkroppen, aldrig till bilagan. Swish/Plusgiro-numren i
@@ -421,8 +421,10 @@ alltså helt i sin ordning; en mall-token utan källa är den regeln FÄLLER.
 |---|---|
 | `kvittonummer` | `KvittoradSpec.kvittonummer` |
 | `datum` | `formatKvittoDatum(spec.datum)` - ISO `YYYY-MM-DD` sedan S108 (Marcus-beslut 2026-08-22, "Kör dina rekommendationer": kvittot är en bokföringshandling; se ADR-109 § Updates 2026-08-22) - VERIFIERAT mot `tests/api/receipt-content.test.ts` (`formatKvittoDatum('2026-08-03T00:00:00.000Z')` -> `'2026-08-03'`) |
+| `betalningsdatum` | [TASK-346.5, ADR-128 § Beslut 1/9] `formatBetalningsdatum(spec.betalningsdatum)` - "Betalningsdatum"-raden (ERSATTE "Förfallodatum: -", se § "Förlage-fält utan källa" nedan för GAP-historiken). ISO `YYYY-MM-DD` (samma form som `datum`) när kvittots inbetalning bär ett känt datum, annars `-` (backfillad historisk post, ADR-128 beslut 8). Skilt fält från `datum` - de två avviker medvetet (Swish-betalningen kan komma dagar innan kvittot utfärdas) |
 | `kundnamn` | `KvittoradSpec.kundnamn` |
 | `kundEpost` | `KvittoradSpec.kundEpost` (PR #1791, Marcus-beslut 2026-08-22) - skrivs under kundnamnet i Fakturaadress-blocket, Rogers ordning namn -> e-post |
+| `rubrik` | [TASK-346.5, förberedd för TASK-346.9, ADR-109 § Updates 2026-08-30 beslut d] `kvittoRubrik(spec.typ)` - "Kvitto" (default, `spec.typ` utelämnad) eller "Kreditkvitto". INGEN anropssite sätter `'kreditkvitto'` ännu - se § "Kreditkvittots mallvariant" nedan |
 | `benamning` | [TASK-306 rättelsevarv] `kvittoBenamning(spec)` — `<Typ> <Datumspann>, <Bokföringstext>`, INGET kursnamn längre, se § nedan för formen |
 | `netto` | `beraknaMoms(spec.belopp).netto`, formaterat via `formatBelopp()` - [TASK-306] även A-pris/Summa i radposten (beslut b, se § nedan); TIDIGARE `{{brutto}}` på båda cellerna, en verklig FEL-avvikelse mot totalrutans egen Netto-rad, inte en smaksak |
 | `moms` | `beraknaMoms(spec.belopp).moms`, formaterat via `formatBelopp()` |
@@ -434,6 +436,7 @@ alltså helt i sin ordning; en mall-token utan källa är den regeln FÄLLER.
 | `orgPostadress` | `MIRANON_ORG.postadress` |
 | `orgLand` | `MIRANON_ORG.land` |
 | `orgMomsregnummer` | `MIRANON_ORG.momsregnummer` |
+| `hanvisning` | [TASK-346.5, förberedd för TASK-346.9, ADR-109 § Updates 2026-08-30 beslut d] `kvittoHanvisning(spec.hanvisningTillKvittonummer)` - `''` (tom sträng, ALDRIG `null`) för ett vanligt kvitto, annars `"Kvitto <originalnummer>"`. Mallens ENDA villkor (`<% if (data.hanvisning) %>`) - raden är HELT FRÅNVARANDE när fältet är tomt, se § "Kreditkvittots mallvariant" nedan |
 
 **`momssatsProcent`-token BORTTAGEN ur markupen (S108, uppföljning av PR #1781,
 RAPPORT.md § 2b).** Totalrutans etikett skrev tidigare
@@ -476,12 +479,55 @@ Uppdraget kräver att dessa byggs i mallen men aldrig hittas på i kod:
 | Fält | I mallen | Källa/motivering |
 |---|---|---|
 | Vår referens | `{{orgReferens}}` (= "Miranon Media/Lotta Gotthardsson") | **GAP STÄNGT** (TASK-306 rättelsevarv, Marcus dom 3, 2026-08-23): tidigare skrev raden `{{orgNamn}}` ("Miranon Media AB") eftersom ingen per-transaktion personattribuering fanns - Marcus granskade förlagan igen och pekade ut att den skriver "Miranon Media/Lotta Gotthardsson". `MIRANON_ORG.varReferens` bär nu det värdet, separat från `namn` (sidfoten, oförändrad) |
-| Förfallodatum | Statisk `-` | Strukturellt konstant för ett KVITTO - `T170` rekommenderade uttryckligen att INTE ärva fältet som ett riktigt datafält |
+| ~~Förfallodatum~~ Betalningsdatum | `{{betalningsdatum}}` | **GAP STÄNGT** (TASK-346.5, ADR-128 § Beslut 1/9, 2026-08-31): raden beskrev sig själv som "Strukturellt konstant för ett KVITTO" eftersom ingen datamodell för en enskild betalnings datum fanns när `T170` skrev rekommendationen. Kvittot avser sedan ADR-128 EXAKT EN inbetalning, som bär sitt eget `betalningsdatum` (`inbetalningar`-tabellen, Postgres) - raden bytte etikett från "Förfallodatum" till "Betalningsdatum" och läser nu `formatBetalningsdatum(spec.betalningsdatum)` (`-` när okänt, en backfillad historisk post utan känt datum, ADR-128 beslut 8) |
 | Vårt ordernr | `{{kvittonummer}}` (samma token som Kvitto-/OCR-nr) | Ingen egen "ordernr"-modell finns; Rogers EGET dokument duplicerar samma nummer i båda fälten |
 | Öresavr | Statisk `0,00` | `beraknaMoms()` avrundar momsen till hela ören FÖRST (se dess docstring), så `netto + moms === brutto` alltid EXAKT - resten är matematiskt garanterat noll |
 | Köparens e-post | `{{kundEpost}}` | **GAP STÄNGT** (S108 resume 5, PR #1791): `KvittoradSpec.kundEpost` finns sedan Marcus-beslutet 2026-08-22 och trådas från `send-receipt-email`s `email` - raden ovan beskrev läget före beslutet |
 | Telefon/Plusgiro/Swish/Webb/Epost (sidfoten) | Statisk text | Källa `T170` (samma redan publicerade org-uppgifter). `MIRANON_ORG` bär bara `namn`/`orgnummer`/`gatuadress`/`postadress`/`land`/`momsregnummer` - INTE dessa fyra. Samma klass statisk data som `bekraftelsebilaga.html` redan hårdkodar (Swish/Plusgiro ovan) |
 | "Godkänd för F-skatt" | Statisk text | Boilerplate, källa `T170`, ingen datamodell behövs |
+
+### Kreditkvittots mallvariant — FÖRBEREDD som token, AKTIVERAS i TASK-346.9
+
+TASK-346.5 AC #5 (ADR-109 § Updates 2026-08-30 beslut d: "kreditkvitto med
+nästa nummer i samma serie och hänvisning till originalet, samma trigger
+som kvittot"). Tre delar, alla på PLATS men INTE KOPPLADE till någon
+skarp körväg:
+
+1. **Rubriken** (`rubrik`-token, `kvittoRubrik(spec.typ)` i
+   `receipt-content.ts`) — "Kvitto" (default) eller "Kreditkvitto".
+   `KvittoradSpec.typ` är VALFRITT och ingen av de tre anropssiterna
+   (`jobb-konsument/index.ts`, `preview-receipt/index.ts`,
+   `send-receipt-email/index.ts`) sätter `'kreditkvitto'` i dag.
+2. **Hänvisningen** (`hanvisning`-token, `kvittoHanvisning(spec.
+   hanvisningTillKvittonummer)`) — `"Kvitto <originalnummer>"` eller `''`.
+   Detta är mallens ENDA `<% if %>` (`kvitto.html`, raden efter "Vårt
+   ordernr") — ett MEDVETET undantag från den annars rena
+   flat-substitutionen (se § "Kvittots dynamiska yta" ovan och
+   `mall-render.test.ts`s motsvarande kommentar), eftersom raden måste
+   vara HELT FRÅNVARANDE för alla dagens kvitton, inte bara tom — en
+   permanent tom rad hade varit en synlig layoutregression mot förlagan
+   för 100 % av dagens sändningar. Bevisat i båda riktningar:
+   `tests/api/mall-render.test.ts` visar BÅDE att raden renderas när
+   `hanvisning` är satt OCH att den är helt frånvarande (`not.toContain`)
+   när den är `''` (dagens läge).
+3. **Negativa belopp** — `beraknaMoms`/`formatBelopp` hanterar redan ett
+   negativt `belopp` matematiskt korrekt (invarianten `netto + moms ===
+   brutto` håller med samma tecken genomgående, enhetstestat), men
+   `formatBelopp` normaliserar nu ÄVEN minustecknet:
+   `Intl.NumberFormat('sv-SE')` skriver ett negativt belopp med U+2212
+   (MINUS SIGN), INTE U+002D (HYPHEN-MINUS) — samma Unicode-fälla som
+   grupperingstecknet (se `formatBelopp`s docstring), normaliserad av
+   samma försiktighetsprincip. Detta var en ORIKTAD LUCKA innan denna
+   skiva (ingen konsument hade någonsin skickat ett negativt belopp genom
+   funktionen) — stängd här, INTE en del av kreditkvittots aktivering i
+   sig.
+
+**Vad TASK-346.9 faktiskt måste göra:** sätta `typ: 'kreditkvitto'` och
+`hanvisningTillKvittonummer` från den nya ledger-kolumnen
+(`kvitton.original_kvitto_id`, ADR-128/ADR-129), och Prince/Chrome-mäta
+den AKTIVERADE renderingen mot förlagan (denna skiva mäter bara den
+INAKTIVERADE, normala vägen — se § AC #3 nedan). Token-ytan är klar;
+kopplingen till en verklig återbetalning är inte.
 
 ### Visuell jämförelse och mätunderlag
 
