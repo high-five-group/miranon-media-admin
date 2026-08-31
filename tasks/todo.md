@@ -11,15 +11,15 @@
 > Implementation-journal i `docs/BUILD-LOG.md`.
 > Styrande dokument: [`docs/byggplan.md`](../docs/byggplan.md)
 
-**PÅGÅENDE (2026-08-31 em, S113-stängningen — se sessionsdok S113 Del 13):**
-ALLT LANDAT utom design-PR:en i kön: #2174/#2175/#2176/#2177 mergade ·
-slutvandringen steg 1–9 HELT gröna (personkortet stängt efter EF-omdeploy) ·
-design-passet `#2183` (TASK-346.14) genom r1→fix→r2→dom-fynden D1/D2→fix-runda
-D→r3 + aria-sviten 40/40 — perfektionsdomen GRÖN, PR:en ARMERAD i kön ·
-Done-flippade: 346.7/346.9/346.10/346.7.1/351/352 · nya kort 353–356 ·
-T15-återfall + T177-instans noterade · kvar: #2183-mergen → 346.14 Done →
-stängningsbatch-PR (denna fil + Del 13 + kort + instrumenteringslogg +
-lessons-fragmentet) → slutrapport → paus.
+**S113 ⏸️ PAUSAD (paus 6, 2026-08-31 ~13:40 UTC — ALLT LANDAT, redo för
+Marcus ögon):** hela TASK-346-leveransen på main inkl. design-polish `#2183`
+(`cc3fb46d`) genom full review-loop + orkestrerarens perfektionsdom (GRÖN,
+dombevis i `tasks/sessions/bilagor/s113-natt-slutvandring/`) · #2174–#2177
+och #2184 mergade · Done: 346.7/346.9/346.10/346.7.1/351/352/346.14 · nya kort
+353–356 · staging klar (EF v2, fixturen intakt, dev-servern på 5173 igång) ·
+**KVAR = MARCUS-MOMENTEN:** titta → prod-promovering per runbook 346.11 →
+frågelistan (PAUSLÄGE-blockets MARCUS-SEKVENS i sessionsdok S113). Resume
+via `session-resume` (N=113).
 
 ---
 
