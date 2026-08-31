@@ -297,6 +297,25 @@ Deno.serve(async (req) => {
         if (error) throw error;
         if (!data) return null;
         const kvitto = radTillKvitto(data);
+
+        // [TASK-346.9 fix-runda 2, W4] Läs den PERSISTERADE hänvisningens
+        // NUMMER — `kvittojobb.ts`s `forbered()` behöver den (inte bara
+        // `original_kvitto_id`) för att kunna återuppta en halvfärdig
+        // kreditkvitto-rad utan att räkna om via `hittaOriginalKvitto`. En
+        // andra, liten läsning i stället för en PostgREST-embed
+        // (`original:original_kvitto_id(kvittonummer)`) — samma raka
+        // frågeform som resten av filen, ingen ny mönster.
+        let originalKvittonummer: string | null = null;
+        if (kvitto.originalKvittoId !== null) {
+          const { data: originalData, error: originalFel } = await db
+            .from(KVITTON_TABELL)
+            .select('kvittonummer')
+            .eq('id', kvitto.originalKvittoId)
+            .maybeSingle();
+          if (originalFel) throw originalFel;
+          originalKvittonummer = (originalData?.kvittonummer as string | null) ?? null;
+        }
+
         return {
           id: kvitto.id,
           kvittonummer: kvitto.kvittonummer,
@@ -304,7 +323,43 @@ Deno.serve(async (req) => {
           lopnummer: kvitto.lopnummer,
           status: kvitto.status,
           lagringsnyckel: kvitto.lagringsnyckel,
+          typ: kvitto.typ,
+          originalKvittoId: kvitto.originalKvittoId,
+          originalKvittonummer,
         };
+      },
+
+      // [TASK-346.9, ENTYDIGHETS-GUARDEN — orkestrerar-beslut under Marcus
+      // mandat, 2026-08-31] Kreditkvittots hänvisning — se `kvittojobb.ts`s
+      // `KvittoJobbDeps.hittaOriginalKvitto`-docstring för HELA resonemanget
+      // (varför `utfardat` räknas som levande, varför flertydigt fäller i
+      // stället för att gissa). Två steg därför att `kvitton` saknar
+      // `anmalan_record_id` — kopplingen går via `inbetalningar`.
+      //
+      // INGEN `.order()`/`.limit(1)`/`.maybeSingle()` längre — den gamla
+      // "ta senaste"-formen är precis vad guarden ersätter. ALLA levande
+      // kandidater hämtas, och ANTALET (inte ordningen) avgör utfallet.
+      async hittaOriginalKvitto(anmalanRecordId) {
+        const { data: inbetalningsRadar, error: inbetalningsFel } = await db
+          .from(INBETALNINGAR_TABELL)
+          .select('id')
+          .eq('anmalan_record_id', anmalanRecordId);
+        if (inbetalningsFel) throw inbetalningsFel;
+        const inbetalningIds = (inbetalningsRadar ?? []).map((rad) => rad.id as string);
+        if (inbetalningIds.length === 0) return { utfall: 'inget' };
+
+        const { data, error } = await db
+          .from(KVITTON_TABELL)
+          .select(KVITTO_KOLUMNER)
+          .in('inbetalning_id', inbetalningIds)
+          .eq('typ', 'kvitto')
+          .neq('status', 'makulerat');
+        if (error) throw error;
+        const kandidater = (data ?? []).map(radTillKvitto);
+        if (kandidater.length === 0) return { utfall: 'inget' };
+        if (kandidater.length > 1) return { utfall: 'flertydigt', antal: kandidater.length };
+        const [kvitto] = kandidater;
+        return { utfall: 'entydigt', id: kvitto.id, kvittonummer: kvitto.kvittonummer };
       },
 
       async allokeraNummer(ar) {
@@ -326,13 +381,17 @@ Deno.serve(async (req) => {
         // KASTAR vid unik-nyckel-brott — det ÄR dubbelskicksspärren
         // (`kvitton.inbetalning_id unique`, ADR-128 beslut 4).
         // `kvittonummer` skrivs ALDRIG: den är en genererad kolumn.
+        // [TASK-346.9] `typ`/`original_kvitto_id`: `kvittojobb.ts`s `forbered()`
+        // har redan avgjort båda — `kvitton_kreditkvitto_har_original`-
+        // constrainten är facit, inte en kontroll vi duplicerar här.
         const { data, error } = await db
           .from(KVITTON_TABELL)
           .insert({
             inbetalning_id: spec.inbetalningId,
             ar: spec.ar,
             lopnummer: spec.lopnummer,
-            typ: 'kvitto',
+            typ: spec.typ,
+            original_kvitto_id: spec.originalKvittoId,
             status: 'utfardat',
           })
           .select('id')
@@ -389,6 +448,12 @@ Deno.serve(async (req) => {
           eventStart: spec.eventStart,
           eventSlut: spec.eventSlut,
           bokforingstext: spec.bokforingstext,
+          // [TASK-346.9] AKTIVERAR TASK-346.5:s förberedda tokenyta — se
+          // `receipt-content.ts`/`mall-data.ts` för `kvittoRubrik`/
+          // `kvittoHanvisning`. `spec.typ`/`spec.hanvisningTillKvittonummer`
+          // kommer alltid satta ur `kvittojobb.ts`s `forbered()`.
+          typ: spec.typ,
+          hanvisningTillKvittonummer: spec.hanvisningTillKvittonummer,
         });
 
         const bytes = await renderaMallPdf('kvitto', kvittoData, {
@@ -437,14 +502,19 @@ Deno.serve(async (req) => {
 
         const replyTo = Deno.env.get('RESEND_REPLY_TO');
         const resend = new Resend(apiKey);
+        // [TASK-346.9] Rubriken skiljer kvitto från kreditkvitto i mailet —
+        // samma distinktion som `kvittoRubrik()` gör på PDF:en (`receipt-
+        // content.ts`). Mottagaren ska aldrig läsa "kvitto" om det den fick
+        // var en kreditering.
+        const dokumentord = spec.typ === 'kreditkvitto' ? 'kreditkvitto' : 'kvitto';
         const text =
-          `Hej ${spec.kundnamn},\n\nHär kommer ditt kvitto (${spec.kvittonummer}), bifogat som PDF.\n\n` +
+          `Hej ${spec.kundnamn},\n\nHär kommer ditt ${dokumentord} (${spec.kvittonummer}), bifogat som PDF.\n\n` +
           'Roger och Lotta, Miranon Media';
         const { error } = await resend.emails.send(
           {
             from,
             to: [spec.email],
-            subject: `Kvitto ${spec.kvittonummer}`,
+            subject: `${dokumentord === 'kreditkvitto' ? 'Kreditkvitto' : 'Kvitto'} ${spec.kvittonummer}`,
             text,
             html: text.replace(/\n/g, '<br>'),
             // ETT ANROP PER KVITTO. Resends batch-API stödjer inte bilagor

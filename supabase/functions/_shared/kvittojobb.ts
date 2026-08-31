@@ -114,8 +114,37 @@ export type KvittoUnderlag = {
 
 /** Specen `byggPdf` får. Egen typ, MEDVETET inte `KvittoradSpec` importerad:
  * den bor i `receipt-content.ts`, som denna skiva inte får röra
- * (kollisionsyta med TASK-346.5). Mappningen sker hos EF:en. */
-export type KvittoPdfSpec = KvittoUnderlag & { kvittonummer: string; datum: string };
+ * (kollisionsyta med TASK-346.5). Mappningen sker hos EF:en.
+ *
+ * `typ`/`hanvisningTillKvittonummer` [TASK-346.9, AKTIVERAR TASK-346.5:s
+ * förberedda tokenyta i `receipt-content.ts`/`mall-data.ts`] — ALLTID satta
+ * av `forbered()` nedan, aldrig `undefined`: ett vanligt kvitto får
+ * `typ: 'kvitto'` och `hanvisningTillKvittonummer: null`, ett kreditkvitto
+ * `typ: 'kreditkvitto'` och originalets kvittonummer. */
+export type KvittoPdfSpec = KvittoUnderlag & {
+  kvittonummer: string;
+  datum: string;
+  typ: 'kvitto' | 'kreditkvitto';
+  hanvisningTillKvittonummer: string | null;
+};
+
+/**
+ * [Orkestrerar-beslut under Marcus mandat, 2026-08-31 — ENTYDIGHETS-GUARDEN]
+ * Utfallet av `hittaOriginalKvitto`. Se den funktionens docstring
+ * (`KvittoJobbDeps`) för hela resonemanget.
+ *
+ * `'entydigt'` returneras ENDAST när exakt EN levande kandidat finns — och
+ * då är den, per definition, kvittot för den inbetalning som krediteras
+ * (Marcus beslutade semantik, TASK-346.9 fix-runda 2): finns bara en
+ * kandidat kan den inte vara fel. `'flertydigt'` betyder att fler än en
+ * levande kandidat finns och koden VÄGRAR gissa vilken — `forbered()`
+ * fäller raden högljutt i stället för att tyst välja "senaste" (den bugg
+ * granskningsfynd runda 1 hittade).
+ */
+export type OriginalKvittoUppslag =
+  | { utfall: 'inget' }
+  | { utfall: 'entydigt'; id: string; kvittonummer: string }
+  | { utfall: 'flertydigt'; antal: number };
 
 /** En befintlig ledger-rad, som `hittaKvitto` returnerar den. */
 export type BefintligtKvitto = {
@@ -125,6 +154,18 @@ export type BefintligtKvitto = {
   lopnummer: number;
   status: 'utfardat' | 'skickat' | 'makulerat';
   lagringsnyckel: string | null;
+  /**
+   * [TASK-346.9 fix-runda 2, granskningsfynd W4] `typ`/`originalKvittoId`/
+   * `originalKvittonummer` — den PERSISTERADE hänvisningen, läst tillbaka
+   * i stället för omräknad när `forbered()` återupptar en halvfärdig
+   * kreditkvitto-rad (ledgern skriven, mailet aldrig gått). Se
+   * `forbered()`s `befintligt !== null`-gren för varför en omräkning här
+   * kan divergera från vad som redan står i ledgern.
+   */
+  typ: 'kvitto' | 'kreditkvitto';
+  originalKvittoId: string | null;
+  /** Originalets kvittonummer — `null` för ett vanligt kvitto (`typ: 'kvitto'`). */
+  originalKvittonummer: string | null;
 };
 
 /** En post ur kön: kömeddelandets id plus radens id. Nyttolasten bor i tabellen. */
@@ -164,12 +205,125 @@ export type KvittoJobbDeps = {
 
   hamtaUnderlag(inbetalningId: string): Promise<KvittoUnderlag | null>;
   hittaKvitto(inbetalningId: string): Promise<BefintligtKvitto | null>;
+  /**
+   * [TASK-346.9, ADR-128 § Kvittot: "kreditkvittot hänvisar till
+   * originalet"] Kvittot en KREDITKVITTO ska referera, för EN anmälan.
+   *
+   * ═══════════════════════════════════════════════════════════════════════
+   * KÄND BEGRÄNSNING, ÖPPEN — RÄTTAD PREMISS (granskningsfynd runda 1 → 2,
+   * TASK-346.9 fix-runda 2, 2026-08-31). Detta stycke stod tidigare med en
+   * FALSK motivering ("en anmälan har som regel högst en levande
+   * kvitto-serie åt gången") — falsifierad av ADR-128 beslut 2 rad 142,
+   * ordagrant: facken härleds "oavsett i vilken ordning och i hur många
+   * poster pengarna kom". Domänen är byggd kring anmälningsavgift +
+   * slutbetalning som SEPARATA inbetalningar, var och en med sitt eget
+   * kvitto (`kvitton.inbetalning_id` är unik) — TVÅ levande kvitton per
+   * anmälan är alltså NORMALFALLET, inte en kant.
+   * ═══════════════════════════════════════════════════════════════════════
+   *
+   * NUVARANDE IMPLEMENTATION (`jobb-konsument/index.ts`s port): originalet
+   * är det SENAST utfärdade, icke-makulerade `typ: 'kvitto'`-kvittot bland
+   * de inbetalningar som delar `anmalanRecordId` — en HEURISTIK, inte en
+   * exakt matchning mot "den inbetalning som faktiskt krediteras". Den
+   * kan referera FEL kvitto: en återbetalning av anmälningsavgiften efter
+   * att slutbetalningens kvitto utfärdats hänvisar felaktigt till
+   * SLUTBETALNINGENS kvitto.
+   *
+   * MARCUS BESLUT (2026-08-31, i klartext): originalet SKA vara kvittot
+   * för den SPECIFIKA inbetalning som krediteras, uppslaget deterministiskt
+   * via den inbetalningens id (`kvitton.inbetalning_id` är unik — högst en
+   * kandidat), ALDRIG "senaste icke-makulerade kvitto för anmälan".
+   *
+   * VARFÖR FULL PER-INBETALNINGS-REFERENS INTE ÄR IMPLEMENTERAD ÄN: att
+   * bära den krediterade inbetalningens id genom kedjan (UI → EF →
+   * jobb-payload → detta uppslag) kräver ny persisterad state MELLAN
+   * `koa-kvitton`s köning och denna funktions körning (som kan ske sekunder
+   * eller minuter senare, via cron-självläkningen). Mätt, inte antaget:
+   * varken `jobb_rad` (bär bara `objekt_id uuid` — EN kolumn, redan
+   * upptagen av återbetalningens EGEN id) eller kömeddelandets form
+   * (`jobb_ko_skicka` låser `{"jobbtyp","radId"}` i redan applicerad SQL)
+   * har rum för ett andra id utan en schemaändring. `inbetalningar`/
+   * `kvitton` saknar likaså en ledig kolumn att återanvända. Kortets mandat
+   * förbjuder uttryckligen en NY migration för detta ("ingen ny
+   * migration"). Dessutom mättes UI-antagandet i uppdraget («UI-handlingen
+   * görs på en specifik inbetalningsrad») vara FALSKT mot denna gren:
+   * `AterbetalningsYta`/`AterbetalningsForm` (`src/components/betalningar/`)
+   * tar bara `anmalanRecordId` — ingen enskild inbetalning väljs av Lotta i
+   * dagens UI.
+   *
+   * Full per-inbetalnings-referens (schemaändring + ev. UI-val av vilken
+   * inbetalning som krediteras) ligger på den redan aviserade
+   * uppföljningsmigrationen, samma spår som `notering`/`avtalat_pris`
+   * (bokfört i sessionsdok S113 Del 12, våg 4) — på Marcus GO, INTE
+   * implementerad här.
+   *
+   * ═══════════════════════════════════════════════════════════════════════
+   * ENTYDIGHETS-GUARDEN [Orkestrerar-beslut under Marcus mandat, 2026-08-31]
+   * ═══════════════════════════════════════════════════════════════════════
+   * Full id-threading kräver migration (ovan) — men beslutets KÄRNA ("aldrig
+   * fel länk") går att bevara UTAN migration och utan UI-omdesign: räkna
+   * anmälans LEVANDE kandidat-kvitton i stället för att bara ta den senaste.
+   *
+   *   EXAKT EN → använd den. Det är per definition RÄTT enligt Marcus
+   *   beslutade semantik (kvittot för den inbetalning som krediteras):
+   *   finns bara en kandidat KAN den inte vara fel, oavsett vilken
+   *   inbetalning Lotta faktiskt avsåg — det finns inget annat kvitto det
+   *   skulle kunna vara.
+   *
+   *   FLER ÄN EN → INGET kreditkvitto skapas. `forbered()` fäller raden
+   *   högljutt med ett skäl Lotta förstår (`OriginalKvittoUppslag`,
+   *   `utfall: 'flertydigt'`) — samma fail-loud-mönster som "inget
+   *   original hittades": fel-rad, ledger ofinaliserad, inget nummer
+   *   bränt. ALDRIG ett tyst val av "senaste" — det var precis
+   *   granskningsfyndets ursprungliga bugg.
+   *
+   * VILKEN STATUSMÄNGD RÄKNAS SOM "LEVANDE KANDIDAT"? Granskningsfynd
+   * runda 1 pekade explicit ut att filtret `neq('status','makulerat')`
+   * släpper in `utfardat`-kvitton (aldrig levererade till kunden) som
+   * giltiga kandidater. Guarden HÅLLER FAST vid `neq('status','makulerat')`
+   * — alltså BÅDE `utfardat` OCH `skickat` räknas som levande — av två skäl,
+   * bokförda öppet i stället för tyst valda:
+   *
+   *   (1) Ett kvitto FINNS i ledgern (en identitet, ett nummer) från och
+   *       med `skapaKvitto`, inte från och med mailet. ADR-128 § Kvittot:
+   *       "ett utfärdat kvitto är en verifikation" — mail-leveransstatus
+   *       ändrar inte VILKEN inbetalning kvittot hör till.
+   *   (2) Att UTESLUTA `utfardat` hade infört ett race: en återbetalning
+   *       registrerad medan originalets kvitto ännu köar för utskick (helt
+   *       normalt — jobbmotorn är asynkron) hade sett "0 kandidater" och
+   *       fällt kreditkvittot med "inget original hittades", trots att
+   *       kvittot FAKTISKT finns. Det är ett SÄMRE felläge än det guarden
+   *       ger.
+   *
+   * Kritiskt: att `utfardat` räknas med gör INTE uppslaget mindre säkert
+   * UNDER guarden — det gjorde det bara osäkert under den GAMLA "senaste"-
+   * logiken (som tyst kunde välja ett omailat kvitto som "originalet" utan
+   * att fråga om det fanns konkurrenter). Guarden själv är skyddet: ett
+   * `utfardat`-kvitto används ALDRIG tyst när ett `skickat`-kvitto också är
+   * en kandidat — då är utfallet `flertydigt`, och raden fälls i stället.
+   *
+   * `OriginalKvittoUppslag` (se den typen) bär utfallet: `'inget'` (AC #4:s
+   * negativa kontroll, "kreditkvitto utan original fäller") · `'entydigt'`
+   * (den nya, korrekta vägen — ersätter det gamla `{id,kvittonummer}|null`)
+   * · `'flertydigt'` (NY, denna guard). `forbered()` fäller raden på både
+   * `'inget'` och `'flertydigt'`, aldrig på `'entydigt'` — se den funktionen
+   * för den fullständiga grenlogiken.
+   */
+  hittaOriginalKvitto(anmalanRecordId: string): Promise<OriginalKvittoUppslag>;
   allokeraNummer(ar: number): Promise<AllokeratNummer>;
-  /** Skriver ledger-raden. KASTAR vid unik-nyckel-brott (dubbelskicksspärren). */
+  /**
+   * Skriver ledger-raden. KASTAR vid unik-nyckel-brott (dubbelskicksspärren).
+   *
+   * `typ`/`originalKvittoId` [TASK-346.9]: `'kvitto'`/`null` för en vanlig
+   * betalning, `'kreditkvitto'`/originalets id för en återbetalning — se
+   * `hittaOriginalKvitto` ovan för hur originalet avgörs.
+   */
   skapaKvitto(spec: {
     inbetalningId: string;
     ar: number;
     lopnummer: number;
+    typ: 'kvitto' | 'kreditkvitto';
+    originalKvittoId: string | null;
   }): Promise<{ id: string }>;
   finaliseraKvitto(
     kvittoId: string,
@@ -179,8 +333,15 @@ export type KvittoJobbDeps = {
   byggPdf(spec: KvittoPdfSpec): Promise<KvittoPdf>;
   /** Sparar PDF:en i den privata bucketen och returnerar lagringsnyckeln. */
   sparaPdf(spec: { ar: number; kvittonummer: string; pdf: KvittoPdf }): Promise<string>;
+  /** `typ` [TASK-346.9]: mailets ämne/text skiljer "kvitto" från "kreditkvitto". */
   skickaMail(
-    spec: { email: string; kundnamn: string; kvittonummer: string; pdf: KvittoPdf },
+    spec: {
+      email: string;
+      kundnamn: string;
+      kvittonummer: string;
+      pdf: KvittoPdf;
+      typ: 'kvitto' | 'kreditkvitto';
+    },
     ctx: { idempotencyKey: string },
   ): Promise<{ accepterat: boolean; skal?: string }>;
 
@@ -247,6 +408,10 @@ type Forberedd = {
   nummer: AllokeratNummer;
   /** Satt när en tidigare körning redan sparat PDF:en (omkörning efter fel). */
   befintligLagringsnyckel: string | null;
+  /** [TASK-346.9] `'kreditkvitto'` för en återbetalning (`underlag.belopp < 0`), annars `'kvitto'`. */
+  kvittoTyp: 'kvitto' | 'kreditkvitto';
+  /** [TASK-346.9] Originalets kvittonummer för ett kreditkvitto, annars `null`. */
+  hanvisningTillKvittonummer: string | null;
   pdf?: KvittoPdf;
   lagringsnyckel?: string;
 };
@@ -278,6 +443,8 @@ export async function korKvittobatch(
       ...item.underlag,
       kvittonummer: item.nummer.kvittonummer,
       datum: deps.nu(),
+      typ: item.kvittoTyp,
+      hanvisningTillKvittonummer: item.hanvisningTillKvittonummer,
     });
     item.pdf = pdf;
     // En omkörning efter ett mailfel behöver inte ladda upp PDF:en igen —
@@ -374,20 +541,15 @@ async function forbered(
 
     // Dubbelskickspärren, del (a) — se filhuvudet.
     //
-    // ═══ ANTAGANDET SOM 346.9 MÅSTE PRÖVA (granskningsfynd runda 1) ═══
-    // Skip-villkoret nedan täcker BARA `skickat`. Ett kvitto med status
-    // `makulerat` faller alltså igenom och behandlas som "oskickat" — raden
-    // återanvänds, PDF:en byggs om och mailet går.
-    //
-    // I DENNA SKIVA ÄR DET ONÅBART: ingen kodväg sätter `makulerat` (grep:
-    // noll skrivningar av det värdet), så tillståndet kan inte uppstå.
-    // Villkoret är därför korrekt SOM DET STÅR i dag, inte av tur.
-    //
-    // `TASK-346.9` (kreditkvitto, återbetalning, makulera i UI) inför det
-    // tillståndet. DEN skivan MÅSTE då antingen utvidga villkoret till
-    // `status !== 'utfardat'` eller MEDVETET välja att ett makulerat kvitto
-    // får skickas om — och skriva ned vilket. Att låta detta stå oförändrat
-    // och oläst är den enda vägen som är fel.
+    // ═══ ANTAGANDET LÖST (granskningsfynd runda 1 → TASK-346.9) ═══
+    // Skip-villkoret täckte fram till denna skiva BARA `skickat`. Ett kvitto
+    // med status `makulerat` föll då igenom och hade behandlats som
+    // "oskickat" — raden återanvänd, PDF:en ombyggd, mailet skickat. TASK-346.9
+    // inför `makulerat` (via `hantera-inbetalning`s nya kvitto-skrivning), och
+    // det tillståndet får ALDRIG återupplivas: ett återanvänt nummer plus ett
+    // omskick av en ogiltig verifikation. Grenen nedan fäller raden i stället
+    // — MEDVETET VAL, inte ett skickat-om-igen-försök: ett makulerat kvitto är
+    // en avslutad bokföringspost, aldrig en väntande.
     const befintligt = await deps.hittaKvitto(underlag.inbetalningId);
     if (befintligt !== null && befintligt.status === 'skickat') {
       await deps.markeraRadSlut(post.radId, byggSlutUppdatering({ status: 'skickat' }, deps.nu()));
@@ -401,7 +563,44 @@ async function forbered(
         },
       };
     }
+    if (befintligt !== null && befintligt.status === 'makulerat') {
+      return {
+        typ: 'utfall',
+        utfall: await avslutaMedFel(
+          post,
+          'Kvittot är makulerat och kan inte skickas eller byggas om.',
+          deps,
+        ),
+      };
+    }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // KREDITKVITTO [TASK-346.9] — ADR-128 § Kvittot, PRD berättelse 18/33
+    // ═══════════════════════════════════════════════════════════════════════
+    // Tecknet BÄR typen (samma invariant som `inbetalningar_tecken_foljer_typ`
+    // i schemat): ett negativt belopp är strukturellt alltid en återbetalning,
+    // aldrig ett vanligt kvitto med råkat negativt tal.
+    const arAterbetalning = underlag.belopp < 0;
+
+    // ═══ ÅTERUPPTAGEN RAD: LÄS DEN PERSISTERADE HÄNVISNINGEN, RÄKNA ALDRIG
+    // OM (RÄTTAD, granskningsfynd runda 2, W4) ═══
+    //
+    // Fram till denna fix slog koden HÄR upp `hittaOriginalKvitto` OVILLKORAT
+    // — även när `befintligt !== null` (en tidigare körning dog efter
+    // ledger-raden men före mailet, samma klass omkörning som det vanliga
+    // kvittots "ETT OSKICKAT befintligt kvitto ÅTERANVÄNDS" nedan). Det är
+    // fel: hänvisningen är redan VALD och PERSISTERAD på ledger-raden
+    // (`kvitton.original_kvitto_id`), och en omräkning kan svara ett ANNAT
+    // kvitto om ett nyare hunnit utfärdas för samma anmälan mellan
+    // körningarna — PDF:ens "Hänvisning"-rad hade då sagt något annat än
+    // vad ledgern faktiskt pekar på, en verifikationskedja som ljuger om
+    // sig själv. `befintligt.typ`/`befintligt.originalKvittonummer` LÄSES
+    // TILLBAKA i stället för att räknas om.
+    //
+    // `kvitton_kreditkvitto_har_original`-constrainten garanterar redan att
+    // en persisterad `kreditkvitto`-rad bär en hänvisning, så det finns
+    // inget att fälla på i den här grenen — AC #4:s negativa kontroll gäller
+    // bara vid FÖRSTA skapandet, nedan.
     if (befintligt !== null) {
       return {
         typ: 'klar',
@@ -415,9 +614,55 @@ async function forbered(
             lopnummer: befintligt.lopnummer,
           },
           befintligLagringsnyckel: befintligt.lagringsnyckel,
+          kvittoTyp: befintligt.typ,
+          hanvisningTillKvittonummer: befintligt.originalKvittonummer,
         },
       };
     }
+
+    // NY RAD: originalet slås upp här, en gång, INNAN numret allokeras.
+    //
+    // ENTYDIGHETS-GUARDEN [orkestrerar-beslut under Marcus mandat,
+    // 2026-08-31] — se `KvittoJobbDeps.hittaOriginalKvitto`s docstring för
+    // hela resonemanget. `original` sätts ENDAST vid `utfall: 'entydigt'`
+    // (exakt en levande kandidat — per definition rätt, se docstringen);
+    // `'inget'` och `'flertydigt'` fäller båda raden HÖGLJUTT här, före
+    // `skapaKvitto` ens anropas — aldrig ett tyst val av "senaste".
+    let original: { id: string; kvittonummer: string } | null = null;
+    if (arAterbetalning) {
+      const uppslag = await deps.hittaOriginalKvitto(underlag.anmalanRecordId);
+      if (uppslag.utfall === 'inget') {
+        // AC #4:s negativa kontroll: "kreditkvitto utan original fäller".
+        // Databasens `kvitton_kreditkvitto_har_original`-constraint hade
+        // stoppat ett INSERT utan `original_kvitto_id` ändå — men med ett
+        // rått databasfel i stället för ett skäl Lotta förstår.
+        return {
+          typ: 'utfall',
+          utfall: await avslutaMedFel(
+            post,
+            'Inget kvitto att kreditera hittades för anmälan — kreditkvittot kan inte utfärdas.',
+            deps,
+          ),
+        };
+      }
+      if (uppslag.utfall === 'flertydigt') {
+        // Fler än en levande kandidat — guarden vägrar gissa vilken.
+        return {
+          typ: 'utfall',
+          utfall: await avslutaMedFel(
+            post,
+            `Anmälan har flera kvitton som skulle kunna vara originalet (${uppslag.antal} st) — ` +
+              'det går inte att avgöra automatiskt vilket som ska krediteras. Kreditkvittot ' +
+              'skickas inte. Hör av dig till Roger eller Marcus för att reda ut vilket kvitto ' +
+              'återbetalningen avser.',
+            deps,
+          ),
+        };
+      }
+      original = { id: uppslag.id, kvittonummer: uppslag.kvittonummer };
+    }
+    const kvittoTyp: 'kvitto' | 'kreditkvitto' = arAterbetalning ? 'kreditkvitto' : 'kvitto';
+    const hanvisningTillKvittonummer = arAterbetalning ? (original?.kvittonummer ?? null) : null;
 
     // ADR-129 beslut 9: sekventiell allokering. Året tas ur betalningsdatumet
     // när det finns — ett kvitto för en betalning i december ska ligga i
@@ -429,6 +674,8 @@ async function forbered(
       inbetalningId: underlag.inbetalningId,
       ar: nummer.ar,
       lopnummer: nummer.lopnummer,
+      typ: kvittoTyp,
+      originalKvittoId: arAterbetalning ? (original?.id ?? null) : null,
     });
 
     return {
@@ -439,6 +686,8 @@ async function forbered(
         kvittoId: skapat.id,
         nummer,
         befintligLagringsnyckel: null,
+        kvittoTyp,
+        hanvisningTillKvittonummer,
       },
     };
   } catch (fel) {
@@ -466,6 +715,7 @@ async function skickaOchFinalisera(
         kundnamn: underlag.kundnamn,
         kvittonummer: nummer.kvittonummer,
         pdf,
+        typ: item.kvittoTyp,
       },
       { idempotencyKey: kvittoIdempotensnyckel(underlag.inbetalningId) },
     );

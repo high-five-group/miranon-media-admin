@@ -205,6 +205,15 @@ function byggAtervandningsVarld(
 
     hittaKvitto: (inbetalningId) => hittaKvittoImpl(ledger, inbetalningId),
 
+    // [TASK-346.9] Denna värld bär bara positiva belopp (2500) — aldrig en
+    // återbetalning — så `forbered()` anropar aldrig detta. Stubben finns
+    // bara för att uppfylla kontraktet.
+    async hittaOriginalKvitto() {
+      throw new Error(
+        'hittaOriginalKvitto ska inte anropas i detta testfall (inget negativt belopp).',
+      );
+    },
+
     async allokeraNummer(ar) {
       nyaAllokeringar += 1;
       const lopnummer = nastaLopnummer;
@@ -304,6 +313,13 @@ async function korrektHittaKvitto(
     lopnummer: post.lopnummer,
     status: post.status,
     lagringsnyckel: post.lagringsnyckel,
+    // [TASK-346.9] Denna svit prövar bara VANLIGA kvitton — `LedgerRad`
+    // bär ingen `typ`/`originalKvittoId`, så ett vanligt kvittos värden
+    // hårdkodas här i stället för att utvidga en fixturtyp den återstående
+    // sviten aldrig läser.
+    typ: 'kvitto',
+    originalKvittoId: null,
+    originalKvittonummer: null,
   };
 }
 

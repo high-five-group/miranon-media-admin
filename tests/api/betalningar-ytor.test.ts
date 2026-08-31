@@ -25,6 +25,8 @@ import {
 } from '@/components/betalningar/inkorg-harledningar';
 import {
   inbetalningsText,
+  kanMakulera,
+  kanRadera,
   kvittolage,
   personOversikt,
   sorteraInbetalningar,
@@ -247,6 +249,81 @@ test('kvittot paras mot RÄTT inbetalning, aldrig mot listans första', () => {
   // rad — och "Visa" hade öppnat fel persons kvitto.
   const trasigPar = (k: Kvitto[]) => k[0];
   expect(trasigPar([annans, mitt]).kvittonummer).toBe('MM-2026-1007');
+});
+
+/* ═══════════════════ RADERA / MAKULERA (TASK-346.9 AC #1/#2) ═══════════════ */
+
+test('RADERA: erbjuds för en aktiv inbetalning UTAN kvitto', () => {
+  expect(kanRadera(inbetalning({ status: 'aktiv' }), [])).toBe(true);
+});
+
+test('RADERA: erbjuds ALDRIG när ett kvitto finns', () => {
+  expect(kanRadera(inbetalning({ status: 'aktiv' }), [kvitto()])).toBe(false);
+
+  // NEGATIV KONTROLL: "det finns en rad, alltså kan den raderas" är den
+  // enklaste trasiga regeln — den hade låtit Lotta radera en post vars kvitto
+  // redan gått ut till en deltagare (`kvitton.inbetalning_id on delete
+  // restrict` hade fällt DATABASEN, men UI:t hade visat en knapp som alltid
+  // fäller, i stället för att aldrig erbjudas).
+  const trasigRadera = () => true;
+  expect(trasigRadera()).toBe(true);
+  expect(trasigRadera()).not.toBe(kanRadera(inbetalning({ status: 'aktiv' }), [kvitto()]));
+});
+
+test('RADERA: erbjuds ALDRIG för en redan makulerad rad', () => {
+  expect(kanRadera(inbetalning({ status: 'makulerad' }), [])).toBe(false);
+});
+
+test('MAKULERA: erbjuds för en aktiv inbetalning MED kvitto', () => {
+  expect(kanMakulera(inbetalning({ status: 'aktiv' }), [kvitto()])).toBe(true);
+});
+
+test('MAKULERA: erbjuds ALDRIG utan kvitto — det är RADERAS yta', () => {
+  expect(kanMakulera(inbetalning({ status: 'aktiv' }), [])).toBe(false);
+
+  // NEGATIV KONTROLL: en regel som ENDAST läser `status === 'aktiv'` hade
+  // erbjudit Makulera på en rad utan kvitto också — bägge knapparna synliga
+  // på samma rad, en motsägelse i gränssnittet.
+  const trasigMakulera = (i: Inbetalning) => i.status === 'aktiv';
+  expect(trasigMakulera(inbetalning({ status: 'aktiv' }))).toBe(true);
+  expect(trasigMakulera(inbetalning({ status: 'aktiv' }))).not.toBe(
+    kanMakulera(inbetalning({ status: 'aktiv' }), []),
+  );
+});
+
+test('MAKULERA: erbjuds ALDRIG för en redan makulerad rad — EF:en ger 409', () => {
+  expect(kanMakulera(inbetalning({ status: 'makulerad' }), [kvitto()])).toBe(false);
+});
+
+test('RADERA och MAKULERA är ALDRIG båda sanna för samma rad', () => {
+  for (const kvitton of [[], [kvitto()]] as Kvitto[][]) {
+    for (const status of ['aktiv', 'makulerad'] as const) {
+      const post = inbetalning({ status });
+      expect(kanRadera(post, kvitton) && kanMakulera(post, kvitton)).toBe(false);
+    }
+  }
+});
+
+test('RADERA/MAKULERA: ett UTFÄRDAT (ännu ej skickat) kvitto räknas som "har kvitto" — granskningsfynd runda 2, W1', () => {
+  // `kvitto_id` på INBETALNINGEN kopplas av `kopplaKvitto()` EFTER mailet
+  // skickats (`kvittojobb.ts`). En rad vars kvitto står `utfardat` (allokerat,
+  // inte mailat än) har alltså `kvittoId === null` på inbetalningen trots att
+  // kvittot FINNS i ledgern — exakt det tillstånd den gamla proxyn missade.
+  const post = inbetalning({ kvittoId: null, status: 'aktiv' });
+  const utfardat = kvitto({ status: 'utfardat', skickadNar: null, lagringsnyckel: null });
+
+  expect(kanRadera(post, [utfardat])).toBe(false);
+  expect(kanMakulera(post, [utfardat])).toBe(true);
+
+  // NEGATIV KONTROLL: den GAMLA proxyn (`inbetalning.kvittoId === null`)
+  // hade sagt raka motsatsen på BÅDA — precis granskningsfyndets scenario:
+  // Radera erbjuds (EF:en 409:ar), Makulera göms (återvändsgränd).
+  const trasigKanRadera = (i: Inbetalning) => i.kvittoId === null && i.status === 'aktiv';
+  const trasigKanMakulera = (i: Inbetalning) => i.kvittoId !== null && i.status === 'aktiv';
+  expect(trasigKanRadera(post)).toBe(true);
+  expect(trasigKanRadera(post)).not.toBe(kanRadera(post, [utfardat]));
+  expect(trasigKanMakulera(post)).toBe(false);
+  expect(trasigKanMakulera(post)).not.toBe(kanMakulera(post, [utfardat]));
 });
 
 /* ═══════════════════════ RADERNAS ORDNING (AC #3/#4) ═══════════════════════ */

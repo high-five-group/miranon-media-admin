@@ -1,5 +1,6 @@
 import { AlertTriangle, ChevronDown, Clock } from 'lucide-react';
 import { useId, useState } from 'react';
+import { AterbetalningsYta } from './AterbetalningsYta';
 import { visaKronor } from './belopp-inmatning';
 import { InbetalningsLista } from './InbetalningsLista';
 import type { InkorgsRad } from './inkorg-harledningar';
@@ -101,6 +102,10 @@ export function PanelBetalningar({ anmalanRecordId, namn, rad }: Props) {
       </div>
 
       {rad !== null && <RegistreraYta rad={rad} />}
+
+      {/* [TASK-346.9 AC #3] Se `AnmalansBetalningar.tsx` — samma skäl att
+          återbetalningen inte gates på `rad !== null`. */}
+      <AterbetalningsYta anmalanRecordId={anmalanRecordId} />
 
       <div>
         <button

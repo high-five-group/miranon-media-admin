@@ -105,6 +105,43 @@ export function kvittolage(inbetalning: Inbetalning, kvitton: readonly Kvitto[])
   };
 }
 
+/* ═══════════════════════════ RADERA / MAKULERA (TASK-346.9 AC #1/#2) ═══ */
+
+/**
+ * Får RADERA erbjudas på raden? AC #1, ordagrant: "inbetalning utan kvitto
+ * kan raderas från raden". UI:t lägger till `status === 'aktiv'` för att
+ * inte erbjuda en handling på en rad som redan ÄR resolverad (raden visar
+ * redan "Makulerad: <skäl>"; ett radera-alternativ bredvid hade varit en
+ * andra, motsägande väg ut ur samma post).
+ *
+ * ANVÄNDER `kvittolage`, INTE `inbetalning.kvittoId` (rättad,
+ * granskningsfynd runda 2, W1 — grundorsaksfix). `kvitto_id` på
+ * INBETALNINGEN sätts först av `kopplaKvitto()` i `kvittojobb.ts`, som körs
+ * EFTER mailet skickats — den ENDA skrivvägen i hela `supabase/functions`.
+ * Ett kvitto vars jobb ännu bara hunnit `utfardat` (allokerat, inte mailat)
+ * har alltså `kvittoId === null` på inbetalningen TROTS att kvittot finns i
+ * ledgern. Den gamla proxyn erbjöd då "Radera" på en rad EF:en ändå fäller
+ * med 409 `kvitto_finns`, och gömde samtidigt "Makulera" — den enda
+ * åtgärden 409-svaret faktiskt uppmanar till (återvändsgränd). `kvittolage`
+ * slår i stället upp den FAKTISKA ledger-raden, oavsett dess status.
+ */
+export function kanRadera(inbetalning: Inbetalning, kvitton: readonly Kvitto[]): boolean {
+  return kvittolage(inbetalning, kvitton).kvitto === null && inbetalning.status === 'aktiv';
+}
+
+/**
+ * Får MAKULERA erbjudas på raden? AC #2, ordagrant: "inbetalning med kvitto
+ * får 'Makulera' med skäl (obligatoriskt)". Samma UI-skärpning som
+ * `kanRadera`: en redan makulerad rad erbjuds inte makulering igen (EF:en
+ * själv fäller det försöket med 409 `redan_makulerad`, se
+ * `hantera-inbetalning/index.ts`).
+ *
+ * Samma `kvittolage`-fix som `kanRadera` — se den funktionens docstring.
+ */
+export function kanMakulera(inbetalning: Inbetalning, kvitton: readonly Kvitto[]): boolean {
+  return kvittolage(inbetalning, kvitton).kvitto !== null && inbetalning.status === 'aktiv';
+}
+
 /* ═══════════════════════════ RADERNAS ORDNING ═══════════════════════════ */
 
 /**

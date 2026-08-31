@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { useOppnaBetalningar } from '@/data/betalningar/useBetalningar';
+import { AterbetalningsYta } from './AterbetalningsYta';
 import { visaKronor } from './belopp-inmatning';
 import { InbetalningsLista } from './InbetalningsLista';
 import { idagIso } from './idag';
@@ -57,6 +58,12 @@ export function AnmalansBetalningar({
       </p>
 
       {rad !== null && <RegistreraYta rad={rad} />}
+
+      {/* [TASK-346.9 AC #3] Fristående av `rad` (och alltså av "öppet
+          belopp") — se `AterbetalningsForm`s docblock för varför: en
+          återbetalning gäller ofta en anmälan som redan är fullbetald och nu
+          avbokas, alltså precis det läge `RegistreraYta` inte visas i. */}
+      <AterbetalningsYta anmalanRecordId={anmalanRecordId} />
 
       <div className="flex flex-col gap-2">
         <h3 className="font-medium text-caption text-text-secondary uppercase tracking-wide">
