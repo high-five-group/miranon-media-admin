@@ -22,6 +22,7 @@ etablerade ytor i 1440×900. Skärmdumparna i denna katalog är beviset.
 ## Avvikelserna, per yta
 
 ### 1. Hem-kortet Betalningar (`design-hem-betalningskort.png` + kontext)
+
 - a) Sektionen är NAKEN — ingen kortyta/container medan grannarna (Nästa
   event, bevakningar, Genvägar) bär sina; ser ohemmastadd ut.
 - b) TVÅ mörka fullbreddsknappar staplade i identisk vikt — huset använder EN
@@ -33,6 +34,7 @@ etablerade ytor i 1440×900. Skärmdumparna i denna katalog är beviset.
   NÄSTA EVENT-overline + display-rubrik).
 
 ### 2. Betalningsinkorgen /mer/betalningar (`design-inkorg-1440.png` vs `design-anmalningar-1440.png`)
+
 - a) Radform: separata grå kort per person med gap — Mer-listspråket är EN
   container med hårlinjeavdelade rader.
 - b) Inga avatar-chips (initialer) — alla etablerade personlistor leder med dem.
@@ -42,6 +44,7 @@ etablerade ytor i 1440×900. Skärmdumparna i denna katalog är beviset.
   utan grid-alignment.
 
 ### 3. Anmälans detaljvy, Betalningar-sektionen (`design-anmalan-detalj-1440.png`)
+
 - a) Sektionen börjar korrekt i dt/dd-språket (avgift/slutbetalning/deadline)
   men degraderar därefter.
 - b) "Saknas 500 kr." — NYCKELTALET — är en naken vänsterställd textrad utan
@@ -54,6 +57,7 @@ etablerade ytor i 1440×900. Skärmdumparna i denna katalog är beviset.
   konsekvent indrag) saknas.
 
 ### 4. Åtgärds-panelen "Pricka av och notera" (`design-atgarder-panel-1440.png`)
+
 - a) Åtta personer × två ALLTID synliga tomma noteringsfält = 16 tomma inputs
   i en vägg — noteringen ska vara on-demand (affordance), inte permanent.
 - b) Samma knappbredds-kaos som detaljvyn (liten outline + fullbredd blandat).
@@ -61,16 +65,19 @@ etablerade ytor i 1440×900. Skärmdumparna i denna katalog är beviset.
   etablerade kompakta radform; hierarkin mellan person/fält/knappar är platt.
 
 ### 5. Formulären (registrera/återbetalning/makulera) — strukturellt goda
+
 - Belopps-knappar, live-status, feltexter och fokusföring håller. Putsbehov:
   visuell vikt på status-raden och konsekvent knappordning
   (primär höger/vänster enligt husets konvention — mät den först).
 
 ### 6. Swish-importen (bekräftelselistan)
+
 - Strukturen och texterna är starka (läst som X, Säker/Omatchad, redan
   registrerade-gruppen). Putsbehov: samma radforms-klass som inkorgen (2a/2d)
-  + "1 rader"-kongruensen.
+  och "1 rader"-kongruensen.
 
 ## Språkfynd (Gunilla-klass, till fix)
+
 - "1 kvitto skickade" → "1 kvitto skickat" (kongruens; N>1 = "skickade").
 - "1 rader · 1 säkra · 0 osäkra · 0 omatchade" → kongruens vid N=1.
 - Ramrader (posttyp 01/03) räknas in i "N rader i filen var inte
@@ -80,6 +87,7 @@ etablerade ytor i 1440×900. Skärmdumparna i denna katalog är beviset.
   Marcus-fråga (346.7 fråga 4); designpasset inför inget nytt ordval.
 
 ## Vad som INTE ska röras
+
 - Flödeslogik, härledningar, EF-vägar — funktionsvandringen verifierade dem.
 - Facit-ytornas INNEHÅLL (kryss-semantik, saknas-läsning) — endast komposition.
 - AMENDERING-sidofilerna uppdateras när formen ändras (facit-disciplinen).
