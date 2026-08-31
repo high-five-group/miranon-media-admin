@@ -50,8 +50,10 @@ på #2147, 7 verklighetsfångade buggar fixade; morgonpunkt: radera ERSATT-fält
 Done `5b9ded1a`: nio EF:er deployade, kedjebeviset grönt i sex steg, 3+3 granskningsrundor;
 TASK-347 mintat) → våg 4 KLAR (`346.5`/`346.6`/`346.8`
 Done — kvittomall 0,23 mm, inkorgen med staging-vandring, backfillen efter 4 granskningsrundor
-inkl. prod-preflight + förekomst-grind; datafynd: staging saknar priser utanför ZZ) → våg 5
-pågår (`346.7` facit-ytorna) → våg 6–7, modell per skiva, seriell staging-applicering, `hog` armeras bara vid
+inkl. prod-preflight + förekomst-grind; datafynd: staging saknar priser utanför ZZ) → våg 5 KLAR (`346.7`
+landad f575d4d1 — Hem/Åtgärder/anmälan/personkort bakom flaggan, 4 sidofiler, 3 egna vandringsfynd
+rättade; `346.11` Done — morgon-runbook 16 steg + färdig checklista) → våg 6 pågår (`346.9` ‖
+`346.10`) → våg 7: slutvandringen → paus 6, seriell staging-applicering, `hog` armeras bara vid
 konvergerad loop, slutvandring i browsern före paus 6 → morgon: Marcus tittar, justerar, promoverar (prod-fält,
 prod-Postgres per runbook 346.11, EF-deploy, flagga, backfill-GO, facit-stämplar) → veto-lista (Marcus: "vi släpper det lite"; +
 ny version-kontroll vid flik-fokus?) (strängbytena i `93dbf275`, tomytan under
