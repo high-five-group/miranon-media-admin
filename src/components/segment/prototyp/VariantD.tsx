@@ -214,11 +214,9 @@
  */
 import { parseDate } from '@internationalized/date';
 import { useQueries, useQuery } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
 import {
   Check,
   ChevronDown,
-  ChevronLeft,
   ChevronRight,
   CircleCheck,
   Group,
@@ -238,6 +236,7 @@ import { DatumFalt } from '@/components/primitives/DatumFalt';
 import { Input } from '@/components/primitives/Input';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Radio, RadioGroup } from '@/components/primitives/RadioGroup';
+import { SidRam, SidRamKnapp } from '@/components/primitives/SidRam';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { StegSektion } from '@/components/primitives/StegSektion';
 import { TextArea } from '@/components/primitives/TextArea';
@@ -254,6 +253,7 @@ import type {
   SegmentRuleDnf,
 } from '@/domain/schemas';
 import { deriveTaxonomy, labelForPar, parKey } from '@/lib/segment-taxonomy';
+import { lasSegmentStartinfoDold, sparaSegmentStartinfoDold } from './segment-startinfo-minne';
 
 /* ================================================================== *
  * DIMENSIONSMODELLEN — den nya regelformens råmaterial
@@ -988,8 +988,6 @@ const KORT_KLASS =
   'rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong';
 const RAD_KLASS =
   '-mx-2 flex w-auto items-center gap-2 rounded-lg px-2 py-1.5 text-left font-medium text-body hover:bg-bg-emphasized motion-safe:transition-colors';
-const TILLBAKA_KLASS =
-  'mx-4 flex size-11 shrink-0 items-center justify-center self-start rounded-full bg-bg-muted hover:bg-bg-emphasized motion-safe:transition-colors';
 const KAPSEL_KLASS =
   'inline-flex shrink-0 items-center gap-1.5 rounded-full border border-transparent bg-bg-muted px-3.5 py-2 font-medium text-small hover:bg-bg-emphasized motion-safe:transition-colors';
 
@@ -1124,35 +1122,18 @@ function useVyFokus(rubrikRef: React.RefObject<HTMLHeadingElement | null>, dataK
   }, []);
 }
 
-function SidRam({
-  onTillbaka,
-  tillbakaEtikett,
-  children,
-}: {
-  onTillbaka?: () => void;
-  tillbakaEtikett: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="flex flex-col gap-6 pt-2 lg:pt-10">
-      {onTillbaka ? (
-        <button
-          type="button"
-          onClick={onTillbaka}
-          aria-label={tillbakaEtikett}
-          className={`${TILLBAKA_KLASS} print:hidden`}
-        >
-          <ChevronLeft aria-hidden="true" size={26} />
-        </button>
-      ) : (
-        <Link to="/mer" aria-label={tillbakaEtikett} className={`${TILLBAKA_KLASS} print:hidden`}>
-          <ChevronLeft aria-hidden="true" size={26} />
-        </Link>
-      )}
-      {children}
-    </section>
-  );
-}
+/* Den lokala `SidRam`-funktionen bodde här — RIVEN i TASK-349 (ADR-126).
+ *
+ * Den var en EGEN kopia av husets sidkrom-geometri (samma klasser som
+ * `PersonDetail.tsx`/`EventCheckin.tsx` bar innan `TASK-299.1` samlade dem),
+ * och delade namn med `primitives/SidRam.tsx` utan att vara den — ADR-126
+ * § "Kvarvarande kopior" namngav uttryckligen just detta som "den värsta
+ * varianten: en grep efter SidRam ger en falsk träff som ser ut som en
+ * konsument". Startvyns egen chevron (till `/mer`) SAKNADES helt — filen
+ * bar bara den interna, knapp-baserade grenen; ingen av de sju ytorna
+ * navigerade ut ur segment-ytan. Bygg inte tillbaka en lokal kopia: husets
+ * `SidRam` (route-länk) och `SidRamKnapp` (state-baserad "tillbaka") bär
+ * geometrin nu, delad av `CHEVRON_KLASS` i `primitives/SidRam.tsx`. */
 
 /* `PrototypNot` ÄR RIVEN (TASK-259, Marcus QA-fynd 2026-08-17). Noten satt
    på sju ställen och sa "Prototyp. Inget sparas, inget skickas." på en yta
@@ -1872,6 +1853,15 @@ function SegmentLista({
   const rubrikRef = useRef<HTMLHeadingElement>(null);
   useVyFokus(rubrikRef, !laddar);
   const uppsattningar = useMemo(() => harledUppsattningar(poster), [poster]);
+  // [TASK-349] Dismiss minns per ENHET (localStorage), inte per flik — se
+  // `segment-startinfo-minne.ts` för varför den skiljer sig från
+  // `AppUpdateBanner.tsx`s sessionsskopade "Inte nu". Lazy initializer: läses
+  // en gång vid mount, aldrig på varje rendering.
+  const [infoDold, setInfoDold] = useState(() => lasSegmentStartinfoDold());
+  const doljInfo = () => {
+    setInfoDold(true);
+    sparaSegmentStartinfoDold();
+  };
 
   const markerbara = poster.length;
   const allaValda = markerbara > 0 && valda.size === markerbara;
@@ -1893,27 +1883,46 @@ function SegmentLista({
   );
 
   return (
-    <section className="flex flex-col gap-6 pt-2 lg:pt-10">
+    <section className="flex flex-col gap-6">
+      {/* [TASK-349, ADR-126] Husets sidkrom — chevron till `/mer`, den enda
+          utgången ur segment-ytan. Saknades helt innan denna skiva: filen
+          bar bara den interna, knapp-baserade `onTillbaka`-grenen, så det
+          gick inte att lämna startvyn annat än via TabBar. Smalare
+          omfattning (ingen `rubrik`-prop) — sidan äger sitt eget
+          rubrikblock nedan, samma anatomi som `Intresserade.tsx`. */}
+      <SidRam to="/mer" tillbakaEtikett="Tillbaka till Mer" />
       <header className="flex flex-col gap-1.5 border-border border-b px-4 pb-5">
         <h1 ref={rubrikRef} tabIndex={-1} className="font-semibold text-3xl">
           Segment
         </h1>
-        {/* Marcus text verbatim - men NY text sedan 2026-08-16
-            (begreppsrenheten), inte den från 2026-08-10. Den ersatta lydelsen
-            löd "Grupper av personer som du kan skicka riktade mail till. Spara
-            en grupp och återanvänd den - …" och kallade alltså ett SEGMENT för
-            en grupp. Det ordet är sedan uppdelnings-generatorn finns upptaget
-            av något annat: en grupp är en av de delar publiken delas upp i.
-            Ingressen säger därför "urval", och ordet segment står kvar som
-            sidans egen term. Den tidigare tredje meningen ("Flera grupper i
-            samma utskick: markera dem") ströks redan 2026-08-10 - markera-
-            funktionen får bära sig själv - och återinförs inte här. */}
-        <p className="text-small text-text-muted">
-          Urval av personer som du kan skicka riktade mail till. Spara ett segment och återanvänd
-          det - antalet räknas upp automatiskt, så antalet stämmer även när fler personer tillfaller
-          segmentet.
-        </p>
       </header>
+
+      {/* [TASK-349] Marcus text verbatim - men NY text sedan 2026-08-16
+          (begreppsrenheten), inte den från 2026-08-10. Den ersatta lydelsen
+          löd "Grupper av personer som du kan skicka riktade mail till. Spara
+          en grupp och återanvänd den - …" och kallade alltså ett SEGMENT för
+          en grupp. Det ordet är sedan uppdelnings-generatorn finns upptaget
+          av något annat: en grupp är en av de delar publiken delas upp i.
+          Ingressen säger därför "urval", och ordet segment står kvar som
+          sidans egen term. Den tidigare tredje meningen ("Flera grupper i
+          samma utskick: markera dem") ströks redan 2026-08-10 - markera-
+          funktionen får bära sig själv - och återinförs inte här.
+
+          KRYSSBAR sedan TASK-349 (KRYSS-REGELN, MessageBox.tsx): `info` får
+          avfärdas, till skillnad från `error`/`warning`. Dismiss minns per
+          enhet (`segment-startinfo-minne.ts`, localStorage). Utanför
+          `data-testid="segment-listan"`-scopet nedan, precis som headern
+          — ariaSnapshot-referenserna för de sju facit-ytorna är därför
+          oförändrade av detta. */}
+      {!infoDold && (
+        <div className="px-4">
+          <MessageBox intent="info" onDismiss={doljInfo}>
+            Urval av personer som du kan skicka riktade mail till. Spara ett segment och återanvänd
+            det - antalet räknas upp automatiskt, så antalet stämmer även när fler personer
+            tillfaller segmentet.
+          </MessageBox>
+        </div>
+      )}
 
       {/* [TASK-249.1] Wrappern bär grindens ariaSnapshot-fäste
           (`data-testid="segment-listan"`, ADR-103 B4) — samma
@@ -2516,10 +2525,15 @@ function SegmentDetalj({
   const tomRegel = rule.include.length === 0;
 
   return (
-    <SidRam onTillbaka={onTillbaka} tillbakaEtikett="Tillbaka till segmenten">
+    <section className="flex flex-col gap-6">
+      {/* [TASK-349, ADR-126] Husets `SidRamKnapp` — state-baserad "tillbaka"
+          (byter vy, byter aldrig route), ersätter den lokala `SidRam`-kopian.
+          Geometrin är identisk (delad `CHEVRON_KLASS`), bara hemvisten
+          flyttad. */}
+      <SidRamKnapp tillbakaEtikett="Tillbaka till segmenten" onTillbaka={onTillbaka} />
       {/* [TASK-249.1] Wrappern bär grindens ariaSnapshot-fäste
           (`data-testid="segment-detaljvyn"`, ADR-103 B4) — `gap-6` speglar
-          `SidRam`s egen `<section>`-klass exakt, så DETTA extra DOM-lager
+          den omslutande sektionens klass exakt, så DETTA extra DOM-lager
           ändrar inget synligt avstånd (samma grepp som `granskning-yta`/
           `segment-listan` ovan). [TASK-259] `PrototypNot`, som stod sist i
           funktionen som en egen syskon-div av samma skäl, är riven.
@@ -2641,7 +2655,7 @@ function SegmentDetalj({
           </div>
         </DetaljGrupp>
       </div>
-    </SidRam>
+    </section>
   );
 }
 
@@ -3255,9 +3269,12 @@ function RegelVerkstad({
     setPred((p) => ({ ...p, utan: p.utan.filter((v) => v.id !== id) }));
 
   return (
-    <SidRam onTillbaka={onTillbaka} tillbakaEtikett="Tillbaka till segmentet">
+    <section className="flex flex-col gap-6">
+      {/* [TASK-349, ADR-126] Husets `SidRamKnapp` ersätter den lokala
+          `SidRam`-kopian — samma geometri, delad `CHEVRON_KLASS`. */}
+      <SidRamKnapp tillbakaEtikett="Tillbaka till segmentet" onTillbaka={onTillbaka} />
       {/* [TASK-249.1] `data-testid="verkstaden"` (ADR-103 B4) — `gap-6`
-          speglar `SidRam`s `<section>`-klass, samma noll-synligt-avstånd-
+          speglar den omslutande sektionens klass, samma noll-synligt-avstånd-
           grepp som övriga sex ytor. Riggarna förekom aldrig i denna vy —
           bara `PrototypNot` behövde uteslutas ur scopet, och den är sedan
           TASK-259 riven helt (TASK-249.6 rev `PrototypRigg`/
@@ -3424,7 +3441,7 @@ function RegelVerkstad({
           )}
         </div>
       </div>
-    </SidRam>
+    </section>
   );
 }
 
@@ -3619,9 +3636,12 @@ function DelaUppIGrupper({
   }
 
   return (
-    <SidRam onTillbaka={onTillbaka} tillbakaEtikett="Tillbaka till segmenten">
+    <section className="flex flex-col gap-6">
+      {/* [TASK-349, ADR-126] Husets `SidRamKnapp` ersätter den lokala
+          `SidRam`-kopian — samma geometri, delad `CHEVRON_KLASS`. */}
+      <SidRamKnapp tillbakaEtikett="Tillbaka till segmenten" onTillbaka={onTillbaka} />
       {/* [TASK-249.1] `data-testid="generatorn"` (ADR-103 B4) — `gap-6`
-          speglar `SidRam`s `<section>`-klass. Omsluter BÅDA de befintliga
+          speglar den omslutande sektionens klass. Omsluter BÅDA de befintliga
           topp-nivå-divarna (stegkorten + Avbryt-raden, redan syskon till
           varandra). `PrototypNot`, som låg i en egen syskon-div sist just
           för att hållas utanför scopet, är riven (TASK-259). Riggarna
@@ -3868,7 +3888,7 @@ function DelaUppIGrupper({
           </div>
         </div>
       </div>
-    </SidRam>
+    </section>
   );
 }
 
@@ -4100,9 +4120,12 @@ function NyttSegmentVy({
       ));
 
   return (
-    <SidRam onTillbaka={onTillbaka} tillbakaEtikett="Tillbaka till segmenten">
+    <section className="flex flex-col gap-6">
+      {/* [TASK-349, ADR-126] Husets `SidRamKnapp` ersätter den lokala
+          `SidRam`-kopian — samma geometri, delad `CHEVRON_KLASS`. */}
+      <SidRamKnapp tillbakaEtikett="Tillbaka till segmenten" onTillbaka={onTillbaka} />
       {/* [TASK-249.1] `data-testid="nytt-segment-mallvyn"` (ADR-103 B4) —
-          `gap-6` speglar `SidRam`s `<section>`-klass. `PrototypNot`, som
+          `gap-6` speglar den omslutande sektionens klass. `PrototypNot`, som
           stod sist i funktionen som egen syskon-div utanför scopet, är
           riven (TASK-259). Riggarna förekom aldrig i denna vy (och är
           rivna sedan TASK-249.6). */}
@@ -4245,7 +4268,7 @@ function NyttSegmentVy({
           </div>
         </div>
       </div>
-    </SidRam>
+    </section>
   );
 }
 
@@ -4490,7 +4513,10 @@ function UtskicksVy({
   if (lage === 'resultat' && visatUtfall) {
     const u = visatUtfall;
     return (
-      <SidRam onTillbaka={onTillbaka} tillbakaEtikett={tillbakaEtikett}>
+      <section className="flex flex-col gap-6">
+        {/* [TASK-349, ADR-126] Husets `SidRamKnapp` ersätter den lokala
+            `SidRam`-kopian — samma geometri, delad `CHEVRON_KLASS`. */}
+        <SidRamKnapp tillbakaEtikett={tillbakaEtikett} onTillbaka={onTillbaka} />
         {/* [TASK-249.1] `data-testid="utskicksvyn"` (ADR-103 B4) — DELAS
             med `granska`-lägets gren nedan (mutuellt uteslutande DOM-träd,
             samma mönster som `granskning-yta` i
@@ -4542,12 +4568,15 @@ function UtskicksVy({
             </div>
           </div>
         </div>
-      </SidRam>
+      </section>
     );
   }
 
   return (
-    <SidRam onTillbaka={onTillbaka} tillbakaEtikett={tillbakaEtikett}>
+    <section className="flex flex-col gap-6">
+      {/* [TASK-349, ADR-126] Husets `SidRamKnapp` ersätter den lokala
+          `SidRam`-kopian — samma geometri, delad `CHEVRON_KLASS`. */}
+      <SidRamKnapp tillbakaEtikett={tillbakaEtikett} onTillbaka={onTillbaka} />
       {/* [TASK-249.1] `data-testid="utskicksvyn"` — samma testid som
           `resultat`-grenen ovan (mutuellt uteslutande DOM-träd). Se
           docblocket där för fullständig motivering. */}
@@ -4922,7 +4951,7 @@ function UtskicksVy({
           </div>
         </div>
       </div>
-    </SidRam>
+    </section>
   );
 }
 
