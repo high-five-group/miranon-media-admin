@@ -295,9 +295,10 @@ policy-PR som lägger prod-basen i `expectedBaseId` och prod-refen i
 och skulle behöva rivas medvetet, eftersom en kopia dit gör
 `deny-prod-ref.sh` verkningslös för varje agent som läser repot.
 
-**Formbeslutet hör hemma i prod-runbooken** — `TASK-346.11` (Prod-runbook för
-Postgres och jobbmotorn + morgonchecklista för Marcus). Skriv det där, inte
-här: denna fil beskriver backfillens regel, runbooken äger prod-sekvensen.
+**Formbeslutet hör hemma i prod-runbooken** — `TASK-346.11`,
+[`prod-driftsattning-betalningsflodet-runbook.md`](prod-driftsattning-betalningsflodet-runbook.md)
+§ Steg 13. Skriv det där, inte här: denna fil beskriver backfillens regel,
+runbooken äger prod-sekvensen.
 
 ### Ordningen när beslutet väl är fattat
 
