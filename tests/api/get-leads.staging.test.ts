@@ -23,6 +23,10 @@
 //   3. CURSOR (ADR-056): pageSize=1 → sida 1 returnerar EXAKT 1 (ej full-walk) med
 //      opak non-null nextCursor; walk till null-terminering ackumulerar HELA
 //      lead-set:et (ordnings-agnostiskt — båda fixturer saknar interaktionsdatum).
+//   3b. TASK-350: SAMMA walk, men körd via produktionsalgoritmen
+//      (`samlaCursorSidor`, `AirtableAdapter.fetchIntresserade`s riktiga
+//      sidvandringslogik) i stället för en hand-rullad loop — se testets
+//      egen kommentar för varför adaptern själv inte kan köras här.
 //   4/5. auth 401 utan token; CORS speglar tillåten origin.
 //
 // Auth via getValidUserJWT → persisterad api-token-artefakt (T24-b). Lokalt
@@ -51,6 +55,7 @@
 
 import { type APIRequestContext, expect, test } from '@playwright/test';
 import { z } from 'zod';
+import { samlaCursorSidor } from '../../src/data/adapters/cursorWalk';
 import { IntresseradSchema } from '../../src/domain/schemas';
 import { type ApiConfig, classify401Body, getApiConfig, getValidUserJWT } from './helpers';
 
@@ -172,6 +177,38 @@ test.describe('get-leads — skarp conformance (Fas 6e, Intresserade)', () => {
     // Hela det kända lead-set:et ackumulerat, sista sidan nextCursor === null.
     expect(seen.has(LEAD_01_EMAIL), 'lead 01 ackumulerad över walk').toBe(true);
     expect(seen.has(LEAD_02_EMAIL), 'lead 02 ackumulerad över walk').toBe(true);
+  });
+
+  // TASK-350 — PRODUKTIONSALGORITMEN (`samlaCursorSidor`, den `AirtableAdapter.
+  // fetchIntresserade` faktiskt kör), inte en hand-rullad kopia som testet
+  // ovan, mot den VERKLIGA deployade EF:en. `AirtableAdapter` självt kan inte
+  // köras här (dess `callEdgeFunction` kräver en levande webbläsar-session
+  // via `supabase.auth.getSession()`, se `cursorWalk.ts`s filhuvud) — denna
+  // test återanvänder därför samma rå-HTTP-hämtare (`fetchLeads`) som resten
+  // av filen, trådad genom den delade, testade sidvandringslogiken.
+  //
+  // ⚠️ ENDA KÄNDA STAGING-LEADS ÄR DE TVÅ FIXTURERNA OVAN (2, inte >50) — se
+  // TASK-350-kortets AC #1-not: den mätta klassen ("fler än en sida, >50
+  // poster") bevisas mot MOCKAD data i `tests/api/cursor-walk.test.ts` §2;
+  // detta test bevisar i stället att SAMMA algoritm null-terminerar och
+  // ackumulerar KORREKT mot den skarpa, deployade EF:en — `pageSize=1` tvingar
+  // fram en äkta två-sidig walk trots att bara 2 leads finns idag.
+  test('samlaCursorSidor mot verklig staging: ackumulerar hela (idag: 2) lead-set:et', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+
+    const alla = await samlaCursorSidor<Intresserad>(async (cursor) => {
+      const sida = await fetchLeads(request, config, jwt, { pageSize: 1, cursor });
+      expect(sida.status).toBe(200);
+      return { poster: sida.intresserade, nextCursor: sida.nextCursor };
+    });
+
+    const emails = new Set(alla.map((i) => i.email));
+    expect(emails.has(LEAD_01_EMAIL), 'lead 01 ackumulerad via samlaCursorSidor').toBe(true);
+    expect(emails.has(LEAD_02_EMAIL), 'lead 02 ackumulerad via samlaCursorSidor').toBe(true);
+    expect(alla.length, 'minst de två kända fixturerna, ingen klampning').toBeGreaterThanOrEqual(2);
   });
 
   test('anon (ingen JWT) → 401', async ({ request }) => {

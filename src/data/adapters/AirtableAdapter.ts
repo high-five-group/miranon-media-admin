@@ -108,6 +108,7 @@ import {
   SMALL_UPLOAD_MAX_BYTES,
 } from './attachmentUpload';
 import * as betalningsportar from './betalningsportar';
+import { samlaCursorSidor } from './cursorWalk';
 import type { DataSourceAdapter, MallId } from './DataSourceAdapter';
 import {
   arKanoniskKallhash,
@@ -121,6 +122,13 @@ import {
 // operation → tabell sker i Edge Function via getOperation(), inte
 // längre i klient-koden (M4 K9-respekt: domännamn i klient, table-IDs
 // i Edge Function-implementationen).
+
+// TASK-350 — `fetchIntresserade`s sidstorlek vid cursor-walken (se metoden
+// nedan). SAMMA tak som `get-leads/index.ts`s `MAX_PAGE_SIZE` (ADR-056:
+// Airtables `pageSize` ≤ 100/svar) — satt till taket, inte defaulten (50),
+// för att minimera antalet sekventiella Airtable-anrop klienten behöver
+// göra för att hämta hela Intresserade-mängden.
+const INTRESSERADE_MAX_PAGE_SIZE = 100;
 
 export class AirtableAdapter implements DataSourceAdapter {
   // === Befintliga metoder (oförändrade) ===
@@ -319,18 +327,36 @@ export class AirtableAdapter implements DataSourceAdapter {
   }
 
   /**
-   * Hämta Intresserade (Fas 6e L1). GLOBAL läs-lista: get-leads filtrerar
-   * serverside på den strikta lead-formeln (hämtat något, noll Anmälningar
-   * totalt — Läsning 2) och sorterar 'Senaste interaktion (datum)' desc.
-   * `.parse()` validerar vid datagränsen (ADR-026; z.array — en LISTA).
+   * Hämta HELA Intresserade-mängden (Fas 6e L1, TASK-350). GLOBAL läs-lista:
+   * get-leads filtrerar serverside på den strikta lead-formeln (hämtat
+   * något, noll Anmälningar totalt — Läsning 2) och sorterar 'Senaste
+   * interaktion (datum)' desc — server-sorteringen bevaras, `samlaCursorSidor`
+   * omsorterar aldrig. `.parse()` validerar vid datagränsen (ADR-026;
+   * z.array — en LISTA), EN gång över hela den ackumulerade mängden.
    *
-   * v1 visar FÖRSTA sidan (pageSize default 50 server-side). Lead-mängden är
-   * liten; full cursor-paginering (nextCursor finns i svaret) deferreras till
-   * en useInfiniteQuery-väg vid behov (jfr persons). Inga filters i v1.
+   * [TASK-350, fixad] Stod tidigare som `callEdgeFunction('get-leads')` utan
+   * cursor — hämtade bokstavligen bara FÖRSTA sidan och klampade listan till
+   * EF:ens `DEFAULT_PAGE_SIZE = 50` oavsett verkligt antal (samma felklass
+   * som S109:s get-persons-incident). `samlaCursorSidor` (`./cursorWalk.ts`,
+   * dess filhuvud) väljer varje sida över den REDAN deployade cursor-porten
+   * (ADR-056) tills `nextCursor` är null — ingen EF-ändring, ingen andra
+   * server-gren (kontrastera ADR-123 beslut 1s `register=true` för
+   * Personer: den motiveras av sök/index/svensk sortering i klienten, som
+   * Intresserade saknar helt — se `cursorWalk.ts`s filhuvud för hela
+   * motiveringen). `pageSize` sätts till EF:ens eget tak (`MAX_PAGE_SIZE`,
+   * `get-leads/index.ts`) för att minimera antalet sekventiella anrop.
    */
   async fetchIntresserade(): Promise<Intresserad[]> {
-    const data = await callEdgeFunction<{ intresserade: unknown }>('get-leads');
-    return z.array(IntresseradSchema).parse(data.intresserade);
+    const alla = await samlaCursorSidor<unknown>(async (cursor) => {
+      const params: Record<string, string> = { pageSize: String(INTRESSERADE_MAX_PAGE_SIZE) };
+      if (cursor) params.cursor = cursor;
+      const data = await callEdgeFunction<{ intresserade: unknown[]; nextCursor: string | null }>(
+        'get-leads',
+        params,
+      );
+      return { poster: data.intresserade, nextCursor: data.nextCursor };
+    });
+    return z.array(IntresseradSchema).parse(alla);
   }
 
   /**
