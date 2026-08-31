@@ -32,6 +32,28 @@ export const env = createEnv({
     // `.positive()` är avsiktligt: 0 kastar här och kraschar appen — golvet
     // är därför satt till 50, inte 0.
     VITE_E2E_WARMUP_TIMEOUT_MS: z.coerce.number().int().positive().optional(),
+    /**
+     * [TASK-346.4 AC #6, PRD TASK-346 § Miljöflagga (B2)] Betalningsflödets
+     * miljöflagga: `pa` i dev och staging, FRÅNVARANDE i prod tills Marcus
+     * slår på den efter prod-migrationerna.
+     *
+     * TRE VÄRDEN, INTE TVÅ: `pa`, `av` och frånvarande. Skälet är att en
+     * uttrycklig avstängning ska kunna stå kvar i en mode-fil som
+     * dokumentation ("flaggan finns, den är av här") i stället för att
+     * behöva raderas — och att ett STAVFEL ska krascha uppstarten
+     * högljutt i stället för att tyst tolkas som avstängt.
+     * `z.coerce.boolean()` hade gjort motsatsen: den läser VARJE icke-tom
+     * sträng som `true`, alltså även `'av'`.
+     *
+     * `emptyStringAsUndefined: true` (nedan) gör en tom rad likvärdig med
+     * en frånvarande, vilket är rätt: båda betyder "inte påslagen".
+     *
+     * RIVNINGSNOT: flaggan RIVS av TASK-346.12 efter promoveringen — då
+     * försvinner denna rad, `src/lib/funktionsflaggor.ts` och varje
+     * `betalningarPa()`-anrop tillsammans. Se den filen för vad rivningen
+     * omfattar.
+     */
+    VITE_FEATURE_BETALNINGAR: z.enum(['pa', 'av']).optional(),
   },
   runtimeEnv: import.meta.env,
   emptyStringAsUndefined: true,

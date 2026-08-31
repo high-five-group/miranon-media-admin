@@ -357,6 +357,31 @@ export default defineConfig({
                 // Devtools-knapparna (dev-läge) hör inte hemma i baselines
                 // och deras versioner får aldrig driva pixlar (__root.tsx).
                 VITE_DEVTOOLS: '0',
+                // [TASK-346.4] Betalningsflödets miljöflagga AV i fixturvärlden.
+                //
+                // MÄTT, INTE ANTAGET: utan denna rad ärver dev-servern
+                // `.env.development`s `pa` (fixtur-env:en vinner över
+                // .env-filer, men bara för de nycklar den FAKTISKT sätter),
+                // och `JobbLyssnare` — monterad som syskon till AppShell på
+                // varje autentiserad sida — öppnar en Realtime-WebSocket mot
+                // `VISUAL_SUPABASE_URL`. WebSocket-vakten
+                // (`tests/support/fixturvarld/websocket-vakt.ts`) fäller den
+                // som `OmockadWebSocketError`, och eftersom lyssnaren sitter i
+                // SKALET fälls varenda autentiserad test i klassen: mätt
+                // 48 av 48 i `hem.acceptance.test.ts` innan denna rad fanns.
+                //
+                // `av`, inte "utelämnad": flaggan har tre lägen (se
+                // `src/env.ts`), och ett EXPLICIT `av` säger att frånvaron är
+                // ett val. Att i stället mocka WS-handlern hade varit fel
+                // ordning — den hermetiska världen bär inga betalnings-EF-
+                // mockar ännu, så en mockad kanal hade gett en prenumeration
+                // utan data att prenumerera på. TASK-346.6/346.7 lägger
+                // mockarna när deras ytor faktiskt testas här, och flippar då
+                // raden.
+                //
+                // Att flaggan är PER MILJÖ är dess design (AC #6): på i
+                // dev/staging, frånvarande i prod, av i fixturvärlden.
+                VITE_FEATURE_BETALNINGAR: 'av',
                 // TASK-239 — SAMMA SEAM SOM TASK-236, ANDRA TESTKLASSEN.
                 //
                 // Varv 2 av task-236 satte `VITE_E2E_WARMUP_TIMEOUT_MS: '50'`

@@ -28,12 +28,21 @@ import {
   type CreateEventInput,
   type EventFormat,
   type EventinnehallListItem,
+  type HanteraInbetalningResult,
+  type Inbetalningslista,
   type Intresserad,
+  type Jobbstatus,
+  type KoaKvittonInput,
+  type KoaKvittonResult,
+  type Kvittolank,
+  type OppnaBetalningar,
   type PersonDetail,
   type PlaceListItem,
   type RecordActivityResult,
   RecordActivityResultSchema,
   type RegistrationDetail,
+  type RegistreraInbetalningInput,
+  type RegistreraInbetalningResult,
   type SavedSegment,
   type SaveEventContentInput,
   type SaveEventTextInput,
@@ -48,6 +57,8 @@ import {
   type SendActionTestEmailResult,
   type SendReceiptInput,
   type SendReceiptResult,
+  type SkickaKvittoIgenInput,
+  type SkickaKvittoIgenResult,
   type UpdateEventInput,
 } from '../../domain/schemas';
 import type {
@@ -57,6 +68,7 @@ import type {
 } from '../../domain/types/Filters';
 import type { ActivityLogPage, ActivityLogParams } from '../../domain/types/Pagination';
 import { postEdgeFunction } from '../config/supabase-client';
+import * as betalningsportar from './betalningsportar';
 import type { DataSourceAdapter, MallId } from './DataSourceAdapter';
 
 const NOT_IMPLEMENTED = 'SupabaseAdapter: Not implemented - migrate Edge Functions first';
@@ -289,5 +301,64 @@ export class SupabaseAdapter implements DataSourceAdapter {
 
   async fetchActivityLog(_params?: ActivityLogParams): Promise<ActivityLogPage> {
     throw new Error(NOT_IMPLEMENTED);
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // BETALNINGSDOMÄNEN (TASK-346.4, ADR-128/ADR-129)
+  // ═══════════════════════════════════════════════════════════════════════
+  //
+  // FUNKTIONELLA här, till skillnad från nästan allt annat i denna Fas
+  // E-stub-klass — av EXAKT samma skäl som `recordActivity` ovan:
+  // inbetalningar, kvittoledger och jobbtabeller har ALDRIG legat i Airtable
+  // (ADR-128 beslut 3), så Edge Function-vägen skriver mot Supabase oavsett
+  // vilken adapter som är "live". Ingen migration behövs för att de ska
+  // fungera i Fas E.
+  //
+  // NIO DELEGERINGAR, byte-identiska med `AirtableAdapter`s, till den delade
+  // implementationen (`./betalningsportar.ts`). Att BÅDA adaptrarna bär exakt
+  // samma metoduppsättning är ADR-056:s swappbarhet och ADR-057 klausul c
+  // (port-paritet); att kroppen bor på ETT ställe är vad som gör pariteten
+  // omöjlig att drifta isär.
+
+  fetchOppnaBetalningar(): Promise<OppnaBetalningar> {
+    return betalningsportar.hamtaOppnaBetalningar();
+  }
+
+  registreraInbetalning(input: RegistreraInbetalningInput): Promise<RegistreraInbetalningResult> {
+    return betalningsportar.registreraInbetalning(input);
+  }
+
+  raderaInbetalning(inbetalningId: string): Promise<HanteraInbetalningResult> {
+    return betalningsportar.raderaInbetalning(inbetalningId);
+  }
+
+  makuleraInbetalning(input: {
+    inbetalningId: string;
+    skal: string;
+  }): Promise<HanteraInbetalningResult> {
+    return betalningsportar.makuleraInbetalning(input);
+  }
+
+  fetchInbetalningar(params: {
+    anmalanRecordId?: string;
+    personId?: string;
+  }): Promise<Inbetalningslista> {
+    return betalningsportar.hamtaInbetalningar(params);
+  }
+
+  koaKvitton(input: KoaKvittonInput): Promise<KoaKvittonResult> {
+    return betalningsportar.koaKvitton(input);
+  }
+
+  fetchJobbstatus(params?: { jobbId?: string }): Promise<Jobbstatus> {
+    return betalningsportar.hamtaJobbstatus(params);
+  }
+
+  fetchKvittolank(kvittoId: string): Promise<Kvittolank> {
+    return betalningsportar.hamtaKvittolank(kvittoId);
+  }
+
+  skickaKvittoIgen(input: SkickaKvittoIgenInput): Promise<SkickaKvittoIgenResult> {
+    return betalningsportar.skickaKvittoIgen(input);
   }
 }

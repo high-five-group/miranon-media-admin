@@ -7,6 +7,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-30 18:45'
+updated_date: '2026-08-30 23:37'
 labels:
   - ready-for-agent
 dependencies:
@@ -26,12 +27,12 @@ Modell: Opus@xhigh (ADR-089; avvikelse från agent-default bokförd här). Nattm
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Domänmodell Inbetalning/Kvitto/Jobb + zod-scheman; DataSourceAdapter får portar (lista öppna betalningar, registrera inbetalning, radera, makulera, lista inbetalningar per anmälan/person, köa kvitton, jobbstatus, visa kvitto (signerad länk), skicka igen) — port-paritet i båda adaptrarna (SupabaseAdapter kastar NOT_IMPLEMENTED där så gäller, ADR-057)
-- [ ] #2 Funktion registrera-inbetalning: skapar raden i Postgres i en transaktion, härleder facken (avgift klar vid summa ≥ anmälningsavgift, allt vid summa ≥ pris; avtalat pris först; föreläsning = ett pris) och skriver spegeln till Airtable (två valfält, Summa inbetalt, kvittonummer) med omförsök; eftersläpning bokförs på raden; aktivitetsloggen får poster (registrerade/makulerade/raderade)
-- [ ] #3 Kvittojobbet: enqueue-funktion köar N rad-ID:n, svarar direkt och kickar konsumenten (EdgeRuntime.waitUntil); konsumenten läser batch ur kön, allokerar nummer sekventiellt, renderar PDF med begränsad parallellism, skickar via Resend ett anrop per kvitto med idempotensnyckel per inbetalning, sparar PDF:en i privat bucket, finaliserar ledgern, uppdaterar jobb_rad; fel bär skäl; självläkning: pågår äldre än 5 min → väntar; funktionerna döps INTE send-*
-- [ ] #4 Hermetiska tester med negativ kontroll för: härledningens fyra fall + avtalat pris + återbetalning + föreläsning; beloppsnormalisering ('2 500,00', '2500,50', 'abc', '1e3'); jobbets tillståndsmaskin inkl. självläkning; dubbelskick fäller på unik nyckel
-- [ ] #5 Realtime: klienten prenumererar på jobb_rad-ändringar; läser läget vid appöppning
-- [ ] #6 Miljöflaggan VITE_FEATURE_BETALNINGAR införd (på i .env.development/.env.staging, frånvarande i prod), med rivningsnot
+- [x] #1 Domänmodell Inbetalning/Kvitto/Jobb + zod-scheman; DataSourceAdapter får portar (lista öppna betalningar, registrera inbetalning, radera, makulera, lista inbetalningar per anmälan/person, köa kvitton, jobbstatus, visa kvitto (signerad länk), skicka igen) — port-paritet i båda adaptrarna (SupabaseAdapter kastar NOT_IMPLEMENTED där så gäller, ADR-057)
+- [x] #2 Funktion registrera-inbetalning: skapar raden i Postgres i en transaktion, härleder facken (avgift klar vid summa ≥ anmälningsavgift, allt vid summa ≥ pris; avtalat pris först; föreläsning = ett pris) och skriver spegeln till Airtable (två valfält, Summa inbetalt, kvittonummer) med omförsök; eftersläpning bokförs på raden; aktivitetsloggen får poster (registrerade/makulerade/raderade)
+- [x] #3 Kvittojobbet: enqueue-funktion köar N rad-ID:n, svarar direkt och kickar konsumenten (EdgeRuntime.waitUntil); konsumenten läser batch ur kön, allokerar nummer sekventiellt, renderar PDF med begränsad parallellism, skickar via Resend ett anrop per kvitto med idempotensnyckel per inbetalning, sparar PDF:en i privat bucket, finaliserar ledgern, uppdaterar jobb_rad; fel bär skäl; självläkning: pågår äldre än 5 min → väntar; funktionerna döps INTE send-*
+- [x] #4 Hermetiska tester med negativ kontroll för: härledningens fyra fall + avtalat pris + återbetalning + föreläsning; beloppsnormalisering ('2 500,00', '2500,50', 'abc', '1e3'); jobbets tillståndsmaskin inkl. självläkning; dubbelskick fäller på unik nyckel
+- [x] #5 Realtime: klienten prenumererar på jobb_rad-ändringar; läser läget vid appöppning
+- [x] #6 Miljöflaggan VITE_FEATURE_BETALNINGAR införd (på i .env.development/.env.staging, frånvarande i prod), med rivningsnot
 - [ ] #7 Funktioner deployade till staging av ORKESTRERAREN före armering (B5); ände-till-ände i staging: registrera → kvitto → mail till Resend-testadress → PDF i bucket → ledgerrad, bokfört i PR-kroppen
 <!-- AC:END -->
 
