@@ -4,12 +4,13 @@ title: >-
   Skiva: Domän + adapter + Edge Functions — registrera inbetalning, härledning,
   spegel, makulera/radera, kvittojobb (kö + kick + konsument), Realtime,
   miljöflagga
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-30 18:45'
-updated_date: '2026-08-30 23:37'
+updated_date: '2026-08-31 01:21'
 labels:
   - ready-for-agent
+  - intentionally-unchecked
 dependencies:
   - TASK-346.2
   - TASK-346.3
@@ -33,17 +34,23 @@ Modell: Opus@xhigh (ADR-089; avvikelse från agent-default bokförd här). Nattm
 - [x] #4 Hermetiska tester med negativ kontroll för: härledningens fyra fall + avtalat pris + återbetalning + föreläsning; beloppsnormalisering ('2 500,00', '2500,50', 'abc', '1e3'); jobbets tillståndsmaskin inkl. självläkning; dubbelskick fäller på unik nyckel
 - [x] #5 Realtime: klienten prenumererar på jobb_rad-ändringar; läser läget vid appöppning
 - [x] #6 Miljöflaggan VITE_FEATURE_BETALNINGAR införd (på i .env.development/.env.staging, frånvarande i prod), med rivningsnot
-- [ ] #7 Funktioner deployade till staging av ORKESTRERAREN före armering (B5); ände-till-ände i staging: registrera → kvitto → mail till Resend-testadress → PDF i bucket → ledgerrad, bokfört i PR-kroppen
+- [x] #7 Funktioner deployade till staging av ORKESTRERAREN före armering (B5); ände-till-ände i staging: registrera → kvitto → mail till Resend-testadress → PDF i bucket → ledgerrad, bokfört i PR-kroppen
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #4 ADR-128 och ADR-129 är Accepted och landade FÖRE första kodskiva armeras
-- [ ] #5 Pengalogikens regler (härledning, sekvens, unik kvittonyckel, matchning, dubbletter, jobbets tillstånd) har var sin negativ kontroll bokförd — testet fäller en trasig implementation
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 ADR-128 och ADR-129 är Accepted och landade FÖRE första kodskiva armeras
+- [x] #5 Pengalogikens regler (härledning, sekvens, unik kvittonyckel, matchning, dubbletter, jobbets tillstånd) har var sin negativ kontroll bokförd — testet fäller en trasig implementation
 - [ ] #6 Orkestrerarens egen vandring av Lottas lördag mot staging (fixtur ZZ-GRANSKNING-S113) är bokförd med skärmdumpar i tasks/sessions/bilagor/ före session-paus, och en oberoende granskningsagent har gått samma vandring
-- [ ] #7 Nya ytor ligger bakom miljöflaggan och är avstängda i prod tills Marcus slår på den
+- [x] #7 Nya ytor ligger bakom miljöflaggan och är avstängda i prod tills Marcus slår på den
 - [ ] #8 Facit-stämplade ytor (Hem, Åtgärds-sidan, persondetalj) bär AMENDERING-sidofil per yta med klassen ny form, förhandsmandat S113 Del 11
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad · Landning: PR #2150 (merge 5b9ded1a, 2026-08-31 ~01:55 UTC) · CI grön per jobb via merge-kön · byggd av Opus@xhigh (bokförd ADR-089-avvikelse) · Nattens största skiva: 39+ filer, nio Edge Functions, nio adapterportar (paritet 9/9/9), domänmodell + zod, jobbmotor-konsument, Realtime-klient, miljöflagga VITE_FEATURE_BETALNINGAR, 92 hermetiska fall · Granskningsloop TRE rundor + TRE fix-rundor (ADR-105/B4): r1 fann 2 error (hermetik-regressionen — flaggan nådde fixturvärlden via delade fixtur-envens allowlist-natur; CI aldrig grön) + 6 warning + 6 info; fixade inkl. falskt 'Ej mottagen' i härledningen (mutationsbevisad negativ kontroll), cache-serverad jobbstatus (refetchOnMount always), tyst makulerings-kapplöpning (.select-mönstret), CLOSED-vid-avsiktlig-nedstängning (flagga före removeChannel, SDK-källbelagd ordning); r2 inga error, risk hög→medel; r3 KONVERGERAD exit 0 (2 info bokförda till 346.6/7) · ask-user-fyndet (inkorgs-filtrets prisnivåer) AVGJORT av orkestreraren under B3: väg (a) — basens Saknas (kr) förblir öppenhets-definitionen (Del 11 beslut 12), fönstret stängs av pris-backfillen · AC #7 UTFÖRT av orkestreraren: nio EF:er deployade till staging (f4732ce3, omdeploy 14dc98d6), KEDJEBEVISET grönt i alla sex steg inkl. spärr-vägen och retry-vägen — registrera 201/härledning/spegel, köa 202/kick, kvitto MM-2026-1003 skickat till delivered@resend.dev med PDF-bilaga (Resend delivered, 51761 bytes), signerad länk PDF-magic, ledger finaliserad, makulerat + fixtur återställd fält för fält (full tabell i PR-kommentaren) · Sidofynd: det kända röda test:api-fallet var INTE TASK-343 utan generate-event-attachment:520 → fynd-kort TASK-347 mintat · OBOCKAT MED AVSIKT: DoD #6 (orkestrerarens slutvandring — sker efter våg 6) och DoD #8 (AMENDERING-sidofiler — 346.6/346.7:s ytor).
+<!-- SECTION:FINAL_SUMMARY:END -->

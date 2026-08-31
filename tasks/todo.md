@@ -46,8 +46,9 @@ kick, Swish-import från början, kreditkvitto i v1, universell härledning + ba
 research-pass + adversarial verifiering (sju blockerare, vågordning). Marcus: *"B4 ja, B3 ja"* → PRD `TASK-346` + 13 skivor (`#2141`). **NÄSTA:**
 NATTENS MANDAT pågår (sessionsdok § Paushistorik paus 5 + Del 12): våg 0–2 KLARA (`346.1`–`346.3`
 Done; ADR-128/129 + basen + Postgres-schemat landade och skarpt bevisade i staging — 5 granskningsrundor
-på #2147, 7 verklighetsfångade buggar fixade; morgonpunkt: radera ERSATT-fältet) → våg 3 pågår
-(`346.4` domän+adapter+EF, Opus) → våg 4–7, modell per skiva, seriell staging-applicering, `hog` armeras bara vid
+på #2147, 7 verklighetsfångade buggar fixade; morgonpunkt: radera ERSATT-fältet) → våg 3 KLAR (`346.4`
+Done `5b9ded1a`: nio EF:er deployade, kedjebeviset grönt i sex steg, 3+3 granskningsrundor;
+TASK-347 mintat) → våg 4 pågår (`346.5` ‖ `346.6` ‖ `346.8`) → våg 5–7, modell per skiva, seriell staging-applicering, `hog` armeras bara vid
 konvergerad loop, slutvandring i browsern före paus 6 → morgon: Marcus tittar, justerar, promoverar (prod-fält,
 prod-Postgres per runbook 346.11, EF-deploy, flagga, backfill-GO, facit-stämplar) → veto-lista (Marcus: "vi släpper det lite"; +
 ny version-kontroll vid flik-fokus?) (strängbytena i `93dbf275`, tomytan under
