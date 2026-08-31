@@ -498,7 +498,14 @@ export function jobbDelutfall(status: Jobbstatus | undefined): JobbDelutfall | n
   if (fel === 0) {
     return {
       klass: 'allt-skickat',
-      rubrik: `${skickade} ${skickade === 1 ? 'kvitto' : 'kvitton'} skickade`,
+      // [TASK-352] KONGRUENSEN, INTE BARA NUMERUSET: "skickade" är particip-
+      // formen (plural, kollektivt "kvitton skickade"), inte verbets
+      // preteritum (som är formlikt "skickade" oavsett numerus i modern
+      // svenska - därför var felet lätt att missa). Vid N=1 är huvudordet
+      // "kvitto" (singular, neutrum), och participet ska då böjas "skickat" -
+      // mätt fynd, S113-slutvandringen 2026-08-31: regionen visade "1 kvitto
+      // skickade" efter ett enda lyckat utskick.
+      rubrik: skickade === 1 ? '1 kvitto skickat' : `${skickade} kvitton skickade`,
       intent: 'success',
       skickade,
       fel,

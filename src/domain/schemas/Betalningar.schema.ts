@@ -264,6 +264,19 @@ export type HanteraInbetalningResult = z.infer<typeof HanteraInbetalningResultSc
 export const InbetalningslistaSchema = z.object({
   inbetalningar: z.array(InbetalningSchema),
   kvitton: z.array(KvittoSchema),
+  /**
+   * [TASK-352] Senaste kvittojobbets FELSKÄL, per inbetalning — bara för de
+   * inbetalningar vars SENASTE jobbrad (`jobb_rad`, `jobbtyp = 'kvitto'`)
+   * faktiskt fallerade. En lyckad omkörning gör att raden försvinner
+   * härifrån: det är den SENASTE jobbraden som räknas, inte historiken (se
+   * `hamta-inbetalningar/index.ts` § SENASTE KVITTOJOBBETS FELSKÄL).
+   *
+   * Mätt fynd, S113-slutvandringen 2026-08-31: `jobb_rad.skal` bar redan ett
+   * Gunilla-klart felskäl (t.ex. entydighets-guardens
+   * "Anmälan har flera kvitton som skulle kunna vara originalet") men nådde
+   * aldrig klienten via denna port — raden visade tyst "Inget kvitto".
+   */
+  jobbfel: z.array(z.object({ inbetalningId: z.string().uuid(), skal: z.string() })),
   spegel: z.object({
     summaPostgres: z.number(),
     summaBasen: z.number().nullable(),

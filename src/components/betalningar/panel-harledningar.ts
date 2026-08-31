@@ -46,6 +46,41 @@ export type Kvittolage = {
    * (samma skillnad `BetalningsInkorg.tsx` § SKICKA IGEN redan bokför).
    */
   kanSkickaIgen: boolean;
+  /**
+   * [TASK-352] Senaste kvittojobbets FELSKÄL, i klartext för Lotta, när det
+   * är AKTIONABELT på just denna rad. `null` när inget jobb fallerat, jobbet
+   * lyckades sedan dess, eller kvittot redan är skickat/makulerat — en gammal
+   * felrad ur ett läge som inte längre gäller är brus, inte information.
+   *
+   * MÄTT FYND, S113-slutvandringen 2026-08-31: en återbetalnings kreditkvitto
+   * fälldes av entydighets-guarden (`jobb_rad.status = 'fel'`, `skal` satt),
+   * och raden visade tyst "Inget kvitto" — Lotta fick ALDRIG veta att något
+   * ens hade försökts, eller varför det inte gick.
+   */
+  felskal: string | null;
+  /**
+   * [TASK-352] Får raden KÖAS OM (`koaKvitton`) erbjudas? Sant i två fall,
+   * båda förutsätter en AKTIV inbetalning:
+   *
+   *  1. Kvittot är UTFÄRDAT men aldrig skickat (raden "väntar på att
+   *     skickas") — oavsett om ett bakomliggande jobb just nu väntar, pågår
+   *     eller fallerat: den skillnaden känner denna funktion inte till (den
+   *     ser bara ledgern, inte jobbköns rader), och det är okej. Servern
+   *     avgör om raden faktiskt är köbar - ett dubbeltryck eller en redan
+   *     köad rad ger ett begripligt `hoppade`-skäl i stället för ett andra
+   *     jobb (samma princip `BetalningsInkorg.tsx` § SKICKA IGEN bygger på).
+   *  2. `felskal` finns: senaste försöket fallerade INNAN ett kvitto ens
+   *     hann skapas (`kvitto === null`). Ett nytt försök är säkert att
+   *     erbjuda även om orsaken kräver manuell rättelse först (t.ex.
+   *     entydighets-guarden) - misslyckas det igen visas samma skäl,
+   *     `koaKvitton`s idempotens (ADR-128) hindrar en dubblett.
+   *
+   * SKILT FRÅN `kanSkickaIgen`: den vägen (`skickaKvittoIgen`) förutsätter
+   * ETT REDAN SKICKAT kvitto (samma PDF, samma nummer) och rör aldrig
+   * jobbkön. Denna väg (`koaKvitton`) skapar/återupptar SÄNDNINGEN av ett
+   * kvitto som aldrig kommit i väg.
+   */
+  kanKoaOm: boolean;
 };
 
 /**
@@ -55,13 +90,32 @@ export type Kvittolage = {
  * är det det Lotta behöver veta först; kvittot består och är fortfarande
  * synligt (ADR-128: "sanningen rättas utan att kvittot försvinner ur
  * bokföringen"), men raden ska inte se ut som en levande betalning.
+ *
+ * `jobbfelSkal` [TASK-352] är SENASTE kvittojobbets felskäl för DENNA
+ * inbetalning, om något fallerat — `undefined`/`null` när inget har det.
+ * Anroparen (`InbetalningsLista.tsx`) slår upp värdet ur EF-svarets
+ * `jobbfel`-lista; denna funktion tar bara emot RESULTATET, den känner inte
+ * till jobbkön (samma lager-gräns som `inkorg-harledningar.ts`s syskonmodul
+ * håller för klockan - "läs inget själv, ta emot allt som argument").
  */
-export function kvittolage(inbetalning: Inbetalning, kvitton: readonly Kvitto[]): Kvittolage {
+export function kvittolage(
+  inbetalning: Inbetalning,
+  kvitton: readonly Kvitto[],
+  jobbfelSkal: string | null = null,
+): Kvittolage {
   const kvitto = kvitton.find((k) => k.inbetalningId === inbetalning.id) ?? null;
   const harPdf = kvitto !== null && kvitto.lagringsnyckel !== null;
+  const aktiv = inbetalning.status === 'aktiv';
 
   if (kvitto === null) {
-    return { kvitto: null, text: 'Inget kvitto', kanVisa: false, kanSkickaIgen: false };
+    return {
+      kvitto: null,
+      text: 'Inget kvitto',
+      kanVisa: false,
+      kanSkickaIgen: false,
+      felskal: aktiv ? jobbfelSkal : null,
+      kanKoaOm: aktiv && jobbfelSkal !== null,
+    };
   }
 
   if (kvitto.status === 'makulerat') {
@@ -70,6 +124,8 @@ export function kvittolage(inbetalning: Inbetalning, kvitton: readonly Kvitto[])
       text: `Kvitto ${kvitto.kvittonummer} · makulerat`,
       kanVisa: harPdf,
       kanSkickaIgen: false,
+      felskal: null,
+      kanKoaOm: false,
     };
   }
 
@@ -93,7 +149,11 @@ export function kvittolage(inbetalning: Inbetalning, kvitton: readonly Kvitto[])
       //
       // `kanVisa` står därför kvar: Lotta ska kunna se vad som en gång
       // skickades, och raden säger redan "Makulerad: <skäl>" bredvid.
-      kanSkickaIgen: inbetalning.status !== 'makulerad',
+      kanSkickaIgen: aktiv,
+      // Ett kvitto som FAKTISKT gick fram tystar ett eventuellt äldre
+      // felförsök - det är den SENASTE sanningen som gäller, inte historiken.
+      felskal: null,
+      kanKoaOm: false,
     };
   }
 
@@ -102,6 +162,8 @@ export function kvittolage(inbetalning: Inbetalning, kvitton: readonly Kvitto[])
     text: `Kvitto ${kvitto.kvittonummer} · väntar på att skickas`,
     kanVisa: harPdf,
     kanSkickaIgen: false,
+    felskal: aktiv ? jobbfelSkal : null,
+    kanKoaOm: aktiv,
   };
 }
 
