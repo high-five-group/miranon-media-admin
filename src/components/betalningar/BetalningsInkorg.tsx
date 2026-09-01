@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { AlertTriangle, Clock, X } from 'lucide-react';
+import { AlertTriangle, CalendarRange, Clock, X } from 'lucide-react';
+import { parseAsString, parseAsStringEnum, useQueryState } from 'nuqs';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Button as AriaButton,
@@ -10,20 +11,20 @@ import {
   Heading,
   SearchField,
 } from 'react-aria-components';
+import { EventValjare } from '@/components/events/EventValjare';
+import { Button, InitialAvatar, MessageBox, SidRam, Skeleton } from '@/components/primitives';
 import {
-  Button,
-  InitialAvatar,
-  MessageBox,
-  SidRam,
-  Skeleton,
-  ToggleButton,
-  ToggleButtonGroup,
-} from '@/components/primitives';
+  antalAktivaFilter,
+  type FilterDimension,
+  FilterRad,
+  filterRaknartext,
+} from '@/components/primitives/FilterRad';
 import { StatusBadge } from '@/components/registrations/StatusBadge';
 import { useOppnaBetalningar } from '@/data/betalningar/useBetalningar';
 import { useJobbstatus, useRealtidsfel } from '@/data/betalningar/useJobbstatus';
 import { useKoaKvitton } from '@/data/mutations/inbetalningar';
 import { useDataSource } from '@/data/useDataSource';
+import type { Event } from '@/domain/models/Event';
 import { filtreraPersonregister, personVisningsnamn } from '@/lib/person-sok';
 import { queryKeys } from '@/queries/keys';
 import { visaKronor } from './belopp-inmatning';
@@ -33,8 +34,8 @@ import {
   type EventGrupp,
   grupperaPerEvent,
   harledRad,
-  type Inkorgsfilter,
   type InkorgsRad,
+  type IsoDatum,
   jobbDelutfall,
   rankaTraffar,
   sammanfattaBetalningar,
@@ -97,10 +98,89 @@ import { SwishImport } from './SwishImport';
 
 type VantandeKvitto = { inbetalningId: string; namn: string; belopp: number };
 
+/* ═══════════════════════════ FILTRERINGENS AXLAR ═══════════════════════════
+ *
+ * Marcus dom 2026-09-01, om den kommande/tidigare-toggel som stod här:
+ * *"Varför är togglen 'kommande event' och 'tidigare event' så ihoptryckt?"*
+ * följt av *"Borde vi inte sätta in filtreringen vi har på Anmälnings-sidan?
+ * … Då bör vi ta bort togglen, eller?"* — ja. Period blir en DIMENSION i
+ * `FilterRad`-panelen, precis som på anmälningssidan, och togglen är riven i
+ * stället för att få sin spacing lappad. En kontroll som är trång är ofta
+ * fel kontroll, inte fel marginal.
+ *
+ * URL-KONTRAKTET ÄR DELAT MED `AnmalningarSida.tsx`: `?period=alla|upcoming|
+ * past` plus `?typ`/`?ort`/`?event`, samma parsers, samma `history: 'push'`.
+ * Konstanterna nedan är MEDVETET lokala kopior och inte en delad modul: de är
+ * små, och en utbrytning hade rört den promoverade anmälningssidan
+ * (ADR-103 B4:s `ariaSnapshot`-grind) i ett pass som bara äger inkorgens
+ * filteryta. En TREDJE konsument lyfter ut dem — då är dubbleringen ett
+ * mönster och inte längre två instanser.
+ */
+type PeriodFilter = 'alla' | 'upcoming' | 'past';
+const PERIOD_FILTER_VALUES: PeriodFilter[] = ['alla', 'upcoming', 'past'];
+
+/**
+ * Etikett per periodvärde. Orden är den rivna toggelns EGNA
+ * ("Kommande event"/"Tidigare event") — Lotta ska känna igen valet, inte lära
+ * om det.
+ *
+ * ETIKETTERNA MÅSTE VARA IDENTISKA MED DIMENSIONENS `alternativ` nedan.
+ * `FilterRad` jämför `valda[nyckel]` mot `alternativ` och renderar ett värde
+ * som INTE finns i listan som ett extra, okänt alternativ (dess `okantVarde`-
+ * gren, byggd för handskrivna URL:er). Divergerar de två listorna får
+ * dropdownen alltså ett fjärde alternativ som ser ut som ett val men är en
+ * artefakt.
+ */
+const PERIOD_FILTER_LABEL: Record<PeriodFilter, string> = {
+  alla: 'Alla perioder',
+  upcoming: 'Kommande event',
+  past: 'Tidigare event',
+};
+const PERIOD_ALTERNATIV = [PERIOD_FILTER_LABEL.upcoming, PERIOD_FILTER_LABEL.past];
+/** Etikett → URL-nyckel. Panelen visar svenska ord, URL:en bär sitt kontrakt. */
+const PERIOD_FRAN_ETIKETT: Record<string, PeriodFilter> = {
+  [PERIOD_FILTER_LABEL.upcoming]: 'upcoming',
+  [PERIOD_FILTER_LABEL.past]: 'past',
+};
+
+/** Räknarens substantiv (böjs efter nämnaren i `filterRaknartext`). */
+const BETALNINGS_ENHET = { ental: 'betalning', flertal: 'betalningar' };
+
+/** Event-dimensionens nolläge — bärs BÅDE av dimensionens `nollage` och av
+    `EventValjare`s `gemensamtAlternativ`, så de aldrig kan glida isär. */
+const ALLA_EVENT = 'Alla event';
+
+/**
+ * Radens period, med `grupperaPerEvent`s EGEN regel — inte en andra tolkning.
+ *
+ * Gränsen går vid eventets startdatum, och ett event UTAN startdatum räknas
+ * som kommande (fail-open, motiverad i `grupperaPerEvent`s docblock: ett okänt
+ * datum får inte tysta ned en rad i ett filter Lotta inte tittar i som
+ * förstahandsval). Att spegla regeln i stället för att uppfinna en egen är
+ * vad som garanterar att en rad som passerar periodfiltret också hamnar i en
+ * SYNLIG grupp — filtret och grupperingen kan inte säga emot varandra.
+ */
+function radensPeriod(rad: InkorgsRad, idag: IsoDatum): 'upcoming' | 'past' {
+  const start = rad.betalning.eventStartdatum;
+  return start !== null && start < idag ? 'past' : 'upcoming';
+}
+
+/** Radens uppslagna event, eller `undefined` när det inte går att slå upp. */
+function radensEvent(rad: InkorgsRad, eventsById: Map<string, Event>): Event | undefined {
+  return rad.betalning.eventId ? eventsById.get(rad.betalning.eventId) : undefined;
+}
+
+/** Tomlägets copy per period. De två första strängarna är ORDAGRANT den rivna
+    toggelns egna; `alla` är den nya, tredje formen. */
+function tomtText(period: PeriodFilter): string {
+  if (period === 'upcoming') return 'Inga öppna betalningar på kommande event.';
+  if (period === 'past') return 'Inga öppna betalningar på tidigare event.';
+  return 'Inga öppna betalningar.';
+}
+
 export function BetalningsInkorg() {
   const dataSource = useDataSource();
   const [sokterm, setSokterm] = useState('');
-  const [filter, setFilter] = useState<Inkorgsfilter>('kommande');
   const [oppenRad, setOppenRad] = useState<string | null>(null);
   const [kvittenser, setKvittenser] = useState<Record<string, string>>({});
   const [vantande, setVantande] = useState<VantandeKvitto[]>([]);
@@ -117,6 +197,40 @@ export function BetalningsInkorg() {
   const annonseratRef = useRef(false);
   const idag = useMemo(idagIso, []);
 
+  /* ═══ PERIODEN STARTAR PÅ KOMMANDE — MARCUS BESLUT, INTE FÖRLAGANS ═══
+   *
+   * `AnmalningarSida.tsx` startar OFILTRERAT (`'alla'`), och konsekvens med
+   * förlagan var utgångsförslaget. Marcus dömde annorlunda, ordagrant
+   * 2026-09-01: *"Kommande givetvis, hur ofta kommer hon regga en betalning i
+   * efterhand, typ aldrig."* Inkorgens fråga är lördagsmorgonens — vem har
+   * inte betalat för det som kommer — och den ställs nästan aldrig bakåt.
+   *
+   * Defaulten bevarar därmed EXAKT den rivna toggelns startläge
+   * (`useState<Inkorgsfilter>('kommande')`): ingen som öppnar sidan i dag ser
+   * någon skillnad i urvalet, bara i kontrollen. `'alla'` finns kvar som
+   * nolläge i panelen — det är dit `Rensa filter` går.
+   *
+   * FÖLJDEN ÄR SYNLIG OCH AVSIKTLIG: eftersom `'upcoming'` inte är
+   * dimensionens nolläge räknas den som ETT AKTIVT FILTER, så tratten bär
+   * badgen "1" direkt vid sidladdning. Det är ärligare än alternativet — en
+   * lista som ÄR filtrerad utan att säga det. Övriga axlar startar tomma.
+   */
+  const [period, setPeriod] = useQueryState(
+    'period',
+    parseAsStringEnum<PeriodFilter>(PERIOD_FILTER_VALUES).withDefault('upcoming'),
+  );
+  // Samma kontrakt som anmälningssidan: `history: 'push'` ⇒ delbart OCH
+  // back-bart; `null` tar bort parametern helt. `?event` bär ett RECORD-ID,
+  // aldrig ett namn — två event kan heta likadant (samma kurs i två orter),
+  // och ett namnfilter hade slagit ihop dem.
+  const [typ, setTyp] = useQueryState('typ', parseAsString.withOptions({ history: 'push' }));
+  const [ort, setOrt] = useQueryState('ort', parseAsString.withOptions({ history: 'push' }));
+  const [valtEvent, setValtEvent] = useQueryState(
+    'event',
+    parseAsString.withOptions({ history: 'push' }),
+  );
+  const filterKnappRef = useRef<HTMLButtonElement>(null);
+
   // [TASK-346.7] Läsningen bor nu i `useOppnaBetalningar`, delad med Hem,
   // Åtgärds-panelen, anmälans detaljvy och personkortet. Hooken bär
   // `refetchOnMount: 'always'` och HELA motiveringen för den (den mätta
@@ -132,6 +246,21 @@ export function BetalningsInkorg() {
     queryFn: () => dataSource.fetchPersonsRegister(),
   });
 
+  // SAMMA `events.list`-nyckel som EventsList/EventValjare/AnmalningarSida —
+  // dedupar mot startvärmningen (`src/data/warmup/startvarmningen.ts`), så
+  // filtret kostar normalt ingen extra EF-rundtur. Den bär typ/ort-axlarnas
+  // värderymd och `EventValjare`s stängda läge.
+  //
+  // DIMENSIONERNA ÄR EVENTETS FÄLT, inte betalningens: en öppen betalning bär
+  // `eventTyp` men INGEN ort (`Betalningar.schema.ts`), så axlarna måste läsa
+  // det uppslagna eventet ändå. Att då hämta typ ur betalningen och ort ur
+  // eventet hade gett två källor för samma fråga — båda läses ur eventet.
+  const { data: events } = useQuery({
+    queryKey: queryKeys.events.list,
+    queryFn: () => dataSource.fetchEvents(),
+  });
+  const eventsById = useMemo(() => new Map((events ?? []).map((e) => [e.id, e])), [events]);
+
   const jobb = useJobbstatus(jobbId, jobbId !== undefined);
   const realtidsfel = useRealtidsfel();
   const koa = useKoaKvitton();
@@ -140,7 +269,119 @@ export function BetalningsInkorg() {
     () => (oppna?.betalningar ?? []).map((b) => harledRad(b, idag)),
     [oppna, idag],
   );
-  const vy = useMemo(() => grupperaPerEvent(rader, idag), [rader, idag]);
+  /* ═══ FILTRERINGEN: PERIOD → DIMENSIONER → GRUPPERING ═══
+   *
+   * Ordningen är anmälningssidans, och den är inte godtycklig. Periodfiltret
+   * först, dimensionsfiltren på det resultatet, och grupperingen SIST — på
+   * exakt de rader som faktiskt visas. Grupperas det före filtreringen kan en
+   * grupprubrik stå kvar utan rader under sig.
+   *
+   * SÖKNINGEN RÖRS INTE. `traffar` nedan läser fortfarande `rader` i sin
+   * helhet: söker Lotta på ett namn eller ett belopp ur banken vill hon ha
+   * svaret, inte svaret-inom-filtret. Det är samma val den rivna toggeln
+   * gjorde (den doldes vid sökning), och filterraden döljs på samma villkor.
+   */
+  const periodRader = useMemo(
+    () => (period === 'alla' ? rader : rader.filter((rad) => radensPeriod(rad, idag) === period)),
+    [rader, period, idag],
+  );
+
+  const valda: Record<string, string | null> = {
+    period: period === 'alla' ? null : PERIOD_FILTER_LABEL[period],
+    typ: typ || null,
+    ort: ort || null,
+    event: valtEvent || null,
+  };
+
+  /* Alternativen för typ/ort härleds ur de event RADERNA faktiskt pekar på —
+     inte ur hela eventlistan. Ett värde utan öppna betalningar vore en död
+     kontroll. Härledningen sker på `rader`, FÖRE periodfiltret, så rymden är
+     stabil över periodbyte (EventsLists byggkrav 2). En dimension utan värden
+     renderar ingen dropdown alls — `FilterRad`s egen degradering, som också
+     är det snälla beteendet innan `events`-frågan landat.
+
+     EVENT-AXELN BRYTER MEDVETET MOT DEN REGELN och listar hela eventrymden
+     (`omfattning="alla"`): ett `Typ`-värde som saknas är självförklarande,
+     medan ett EVENT som saknas är omöjligt att skilja från "jag hittar det
+     inte". Med hela rymden kan Lotta söka fram ett event och få det sanna
+     svaret "0 betalningar" via panelfotens räknare. Samma resonemang, samma
+     ord, som `AnmalningarSida.tsx` § EVENT-DIMENSIONEN. */
+  const dimensioner = useMemo<FilterDimension[]>(() => {
+    const lankade = rader
+      .map((rad) => radensEvent(rad, eventsById))
+      .filter((e): e is Event => e != null);
+    const uniq = (vals: (string | null | undefined)[]) =>
+      [...new Set(vals.filter((v): v is string => v != null))].sort((a, b) =>
+        a.localeCompare(b, 'sv'),
+      );
+    return [
+      {
+        nyckel: 'period',
+        etikett: 'Period',
+        nollage: PERIOD_FILTER_LABEL.alla,
+        alternativ: PERIOD_ALTERNATIV,
+      },
+      {
+        nyckel: 'typ',
+        etikett: 'Typ',
+        nollage: 'Alla typer',
+        alternativ: uniq(lankade.map((e) => e.typ)),
+      },
+      {
+        nyckel: 'ort',
+        etikett: 'Ort',
+        nollage: 'Alla orter',
+        alternativ: uniq(lankade.map((e) => e.ort)),
+      },
+      {
+        nyckel: 'event',
+        etikett: 'Event',
+        nollage: ALLA_EVENT,
+        // KONTROLLEN, inte en alternativlista: eventrymden är hundratals
+        // poster (mätt: 108 i staging 2026-08-23) där typ/ort är en handfull,
+        // och en naken dropdown tappar fotfästet långt innan dess. Se
+        // `FilterDimension.kontroll`.
+        kontroll: (
+          <EventValjare
+            valtEventId={valtEvent || undefined}
+            valtEvent={valtEvent ? eventsById.get(valtEvent) : undefined}
+            onByte={(id) => setValtEvent(id)}
+            // Öppna betalningar finns för event som VARIT — panelen har en
+            // `Tidigare`-period, så väljarens default (endast kommande) hade
+            // tystat bort precis det den perioden finns för.
+            omfattning="alla"
+            form="fristaende"
+            gemensamtAlternativ={{
+              etikett: ALLA_EVENT,
+              ikon: <CalendarRange aria-hidden="true" size={18} className="shrink-0" />,
+              onValj: () => setValtEvent(null),
+            }}
+          />
+        ),
+      },
+    ];
+  }, [rader, eventsById, valtEvent, setValtEvent]);
+  const aktivaFilter = antalAktivaFilter(dimensioner, valda);
+
+  /* Dimensionsfiltret läses ur EVENTET, aldrig ur betalningen: "visa
+     betalningar vars event har typ X". En rad utan uppslagbart event bär
+     inget sådant attribut och matchar därför aldrig ett aktivt
+     dimensionsfilter — den försvinner inte ur systemet, den ligger kvar under
+     nolläget och räknas numeriskt i panelfotens "Visar X av Y". */
+  const visasRader = useMemo(
+    () =>
+      periodRader.filter((rad) => {
+        const ev = radensEvent(rad, eventsById);
+        return (
+          (valda.typ == null || ev?.typ === valda.typ) &&
+          (valda.ort == null || ev?.ort === valda.ort) &&
+          (valda.event == null || ev?.id === valda.event)
+        );
+      }),
+    [periodRader, eventsById, valda.typ, valda.ort, valda.event],
+  );
+
+  const vy = useMemo(() => grupperaPerEvent(visasRader, idag), [visasRader, idag]);
   const soker = sokterm.trim() !== '';
   const traffar = useMemo(
     () => (soker ? rankaTraffar(rader, sokterm, idag) : []),
@@ -184,6 +425,34 @@ export function BetalningsInkorg() {
   const senasteUtfall = jobbDelutfall(jobb.data);
   const utfall =
     senasteUtfall && (jobbId !== undefined || senasteUtfall.kvar > 0) ? senasteUtfall : null;
+
+  /* Rensa-knapparna unmountas i samma tryck (aktiva → 0), så fokus flyttas
+     programmatiskt till tratt-knappen — filter-ytans stabila ankare — i
+     stället för att falla till `document.body`. Perioden går till `'alla'`,
+     inte tillbaka till `'upcoming'`: "Rensa filter" betyder nolläget, och
+     defaulten är ett STARTVÄRDE, inte ett golv. */
+  const rensaFilter = () => {
+    void setPeriod('alla');
+    void setTyp(null);
+    void setOrt(null);
+    void setValtEvent(null);
+    filterKnappRef.current?.focus();
+  };
+
+  /* Live-bekräftelsen av filtret. EGEN region, skild från
+     "…öppna betalningar laddade."-statusen nedan (Roselli-anatomin: en region
+     per ANSVAR, aldrig återanvänd för två olika besked) — men period och
+     dimensioner DELAR region, eftersom båda svarar på samma fråga: "vad visas
+     nu?". Skip-first via ref, så sidladdningen inte annonserar sig själv.
+     Punkten skiljer annonsen från panelfotens synliga räknartext. */
+  const [filterAnnons, setFilterAnnons] = useState('');
+  const filterNyckel = `${period}|${valda.typ}|${valda.ort}|${valda.event}`;
+  const prevFilterNyckel = useRef(filterNyckel);
+  useEffect(() => {
+    if (prevFilterNyckel.current === filterNyckel) return;
+    prevFilterNyckel.current = filterNyckel;
+    setFilterAnnons(`${filterRaknartext(visasRader.length, rader.length, BETALNINGS_ENHET)}.`);
+  }, [filterNyckel, visasRader.length, rader.length]);
 
   useEffect(() => {
     if (oppna && !annonseratRef.current) {
@@ -284,7 +553,11 @@ export function BetalningsInkorg() {
     );
   }
 
-  const grupper: EventGrupp[] = filter === 'kommande' ? vy.kommande : vy.tidigare;
+  /* Båda hinkarna, alltid — periodfiltret har redan gjort urvalet FÖRE
+     grupperingen, så med `upcoming` är `tidigare` tom och tvärtom. Under
+     `alla` läses de i den ordning `grupperaPerEvent` sorterat dem: kommande
+     närmast först, därefter tidigare senast först. */
+  const grupper: EventGrupp[] = [...vy.kommande, ...vy.tidigare];
 
   return (
     <section className="flex flex-col gap-4">
@@ -349,19 +622,36 @@ export function BetalningsInkorg() {
           </div>
         </SearchField>
 
+        {/* FILTRET ERSÄTTER DEN RIVNA TOGGELN (Marcus 2026-09-01) — samma
+            `FilterRad`-primitiv som anmälningssidan och eventlistan, med
+            period som en dimension i panelen i stället för ett pillpar på
+            raden. Se § FILTRERINGENS AXLAR ovan för hela motiveringen.
+
+            DÖLJS VID SÖKNING, exakt som togglen gjorde: sökningen läser hela
+            radmängden (`rankaTraffar` på `rader`), så en synlig filterkontroll
+            hade lovat något den inte gör i det läget. */}
         {!soker && (
-          <ToggleButtonGroup
-            label="Visa betalningar för"
-            selectedKey={filter}
-            onSelectionChange={(nyckel) => setFilter(nyckel as Inkorgsfilter)}
-          >
-            <ToggleButton id="kommande" size="sm">
-              Kommande event
-            </ToggleButton>
-            <ToggleButton id="tidigare" size="sm">
-              Tidigare event
-            </ToggleButton>
-          </ToggleButtonGroup>
+          <>
+            <FilterRad
+              dimensioner={dimensioner}
+              valda={valda}
+              onValj={(nyckel, varde) => {
+                if (nyckel === 'period') {
+                  void setPeriod(varde ? PERIOD_FRAN_ETIKETT[varde] : 'alla');
+                } else if (nyckel === 'typ') void setTyp(varde);
+                else if (nyckel === 'ort') void setOrt(varde);
+                else void setValtEvent(varde);
+              }}
+              onRensa={rensaFilter}
+              visade={visasRader.length}
+              totalt={rader.length}
+              enhet={BETALNINGS_ENHET}
+              triggerRef={filterKnappRef}
+            />
+            <p className="sr-only" aria-live="polite">
+              {filterAnnons}
+            </p>
+          </>
         )}
       </div>
 
@@ -497,13 +787,26 @@ export function BetalningsInkorg() {
         </div>
       ) : (
         <div className="flex flex-col gap-6 px-4">
-          {grupper.length === 0 && (
-            <p className="text-small text-text-muted">
-              {filter === 'kommande'
-                ? 'Inga öppna betalningar på kommande event.'
-                : 'Inga öppna betalningar på tidigare event.'}
-            </p>
-          )}
+          {/* TVÅ TOMLÄGEN, INTE ETT (anmälningssidans form). Finns det rader i
+              perioden men dimensionsfiltren matchar inga, är RENSA återvägen —
+              och då ska den erbjudas, inte bara konstateras. Är själva
+              perioden tom finns inget att rensa fram, och den vanliga copyn
+              gäller. Utan skillnaden hade en filtrerad återvändsgränd sett ut
+              som "det finns inget". */}
+          {visasRader.length === 0 &&
+            (aktivaFilter > 0 && periodRader.length > 0 ? (
+              <div className="flex flex-col items-start gap-3">
+                <p className="text-small text-text-muted">Ingen betalning matchar filtren.</p>
+                <AriaButton
+                  onPress={rensaFilter}
+                  className="rounded-full bg-bg-muted px-3.5 py-2 font-medium text-small hover:bg-bg-emphasized motion-safe:transition-colors"
+                >
+                  Rensa filter
+                </AriaButton>
+              </div>
+            ) : (
+              <p className="text-small text-text-muted">{tomtText(period)}</p>
+            ))}
           {grupper.map((grupp) => (
             <div key={grupp.nyckel} className="flex flex-col gap-2">
               <h2 className="font-semibold text-lg">
