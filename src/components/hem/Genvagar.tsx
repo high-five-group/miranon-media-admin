@@ -1,11 +1,12 @@
 import { Link } from '@tanstack/react-router';
-import { ListChecks, UserPlus } from 'lucide-react';
+import { Banknote, ListChecks, UserPlus } from 'lucide-react';
 import {
   HANDLINGSRAD_KLASS,
   HANDLINGSRAD_OMSLAG_KLASS,
   HandlingsRadInnehall,
   HandlingsRadKort,
 } from '@/components/primitives/HandlingsRad';
+import { betalningarPa } from '@/lib/funktionsflaggor';
 
 /**
  * Genvägar — manuell anmälan + Åtgärds-sidan (TASK-243.1, promoverad ur
@@ -30,6 +31,28 @@ import {
  * för sig ska leva upp till.
  *
  * `NavCard` är orörd och bär fortsatt Mer-vyns åtta rader (M6-facitet).
+ *
+ * ═══ TREDJE RADEN: "REGISTRERA BETALNING", BAKOM MILJÖFLAGGAN ═══
+ *
+ * Raden bodde till 2026-09-01 i Hem-blocket `BetalningarKort`, som Marcus
+ * underkände och `Hem.tsx` inte längre renderar (se dess § 4 för domen). Den
+ * FÖRSVANN inte med kortet: den flyttade hit, eftersom det är exakt vad den
+ * är — en genväg till en yta, inte en handling på Hems egen data. Formen är
+ * oförändrad (`HandlingsRad`, `Banknote`, `/mer/betalningar`); `Banknote` är
+ * Mer-navigeringens egen ikon för samma destination
+ * (`routes/_authenticated/mer/index.tsx`), inte en ny ikon för ett nytt
+ * ställe.
+ *
+ * VILLKORAD PÅ `betalningarPa()` AV SAMMA SKÄL SOM ROUTEN ÄR DET: målet
+ * `/mer/betalningar` kastar `redirect` till `/mer` med flaggan av
+ * (`routes/_authenticated/mer/betalningar.tsx` § FLAGGAN GATAR ROUTEN), så en
+ * ovillkorlig rad hade varit en synlig genväg som studsar tillbaka. Prod är
+ * därmed oförändrad tills Marcus slår på flaggan — samma villkor som styrde
+ * blockvalet på Hem innan växeln revs, och samma villkor som redan bär
+ * Mer-vyns egen betalningsrad.
+ *
+ * Rivs av `TASK-346.12` tillsammans med resten av flaggan: villkoret tas
+ * bort, raden blir ovillkorlig (`funktionsflaggor.ts` § RIVNINGSNOT punkt 4).
  */
 export function Genvagar() {
   return (
@@ -58,6 +81,17 @@ export function Genvagar() {
                 </HandlingsRadInnehall>
               </Link>
             </li>
+            {betalningarPa() && (
+              <li className={HANDLINGSRAD_OMSLAG_KLASS}>
+                <Link to="/mer/betalningar" className={HANDLINGSRAD_KLASS}>
+                  <HandlingsRadInnehall
+                    ledande={<Banknote aria-hidden="true" size={16} className="shrink-0" />}
+                  >
+                    Registrera betalning
+                  </HandlingsRadInnehall>
+                </Link>
+              </li>
+            )}
           </ul>
         </HandlingsRadKort>
       </nav>
