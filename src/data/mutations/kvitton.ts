@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useDataSource } from '@/data/useDataSource';
+import type { DocumentPreview } from '@/domain/models/Attachment';
 import type { Kvittolank, SkickaKvittoIgenInput, SkickaKvittoIgenResult } from '@/domain/schemas';
 import { queryKeys } from '@/queries/keys';
 
@@ -24,6 +25,48 @@ export function useKvittolank() {
   const dataSource = useDataSource();
   return useMutation<Kvittolank, Error, string>({
     mutationFn: (kvittoId) => dataSource.fetchKvittolank(kvittoId),
+  });
+}
+
+/**
+ * [TASK-353] "Förhandsgranska" — se kvittot INNAN det skickas.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * EN MUTATION, AV SAMMA SKÄL SOM `useKvittolank` OVAN
+ * ═══════════════════════════════════════════════════════════════════════════
+ * Svaret bär en SIGNERAD, tidsbegränsad URL (`DocumentPreview.utgar`). En
+ * query hade cachat den, och React Querys 24-timmars persisterade cache
+ * (ADR-072) hade kunnat servera en garanterat död länk. Mutationen kör vid
+ * TRYCKET och cachar ingenting.
+ *
+ * Dessutom RENDERAR varje anrop en ny PDF server-sidigt — en cachad "senaste
+ * förhandsgranskning" hade kunnat visa ett belopp Lotta hunnit ändra.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * SKILD FRÅN `useKvittolank` — OCH SKILLNADEN ÄR LASTBÄRANDE
+ * ═══════════════════════════════════════════════════════════════════════════
+ * `useKvittolank` HÄMTAR en redan lagrad PDF för ett kvitto som FINNS
+ * (kräver `lagringsnyckel`, se `panel-harledningar.ts` § `kanVisa: harPdf`).
+ * Denna RENDERAR ett kvitto som ännu inte finns: Kvitton-raden INSERTas
+ * först av jobbkonsumenten (`_shared/kvittojobb.ts` FAS 1), PDF:en i FAS 2.
+ * De två får ALDRIG slås ihop — en "smart" gemensam hook hade behövt gissa
+ * vilket läge raden är i, och det är precis den bedömning härledningarna
+ * (`kanForhandsgranska`/`kanVisa`) finns för att hålla utanför JSX.
+ *
+ * INGEN INVALIDERING: en förhandsgranskning ändrar ingenting. Inget
+ * kvittonummer allokeras, ingen ledger-rad skrivs, inget mail går.
+ * `invalidateQueries` här hade varit en lögn om att något förändrats.
+ *
+ * ANROPAREN ÄGER FÖNSTRET, precis som för `useKvittolank`/
+ * `useForhandsgranskaBilaga`: öppna `window.open('', '_blank')` SYNKRONT i
+ * klickets tick och sätt `location.href` när svaret kommer. Hooken öppnar
+ * ingenting själv — popup-blockeraren stoppar annars fönstret, mätt skarpt
+ * 2026-08-26 (`useForhandsgranskaBilaga.ts` § HISTORIK).
+ */
+export function useForhandsgranskaKvitto() {
+  const dataSource = useDataSource();
+  return useMutation<DocumentPreview, Error, string>({
+    mutationFn: (inbetalningId) => dataSource.previewKvittoForInbetalning(inbetalningId),
   });
 }
 

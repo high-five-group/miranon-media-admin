@@ -23,6 +23,7 @@ import {
   harledRad,
   type InkorgsRad,
   jobbDelutfall,
+  kanForhandsgranska,
   matcharSokning,
   rankaTraffar,
 } from '@/components/betalningar/inkorg-harledningar';
@@ -489,4 +490,77 @@ test('ett jobb som ARBETAR är varken lyckat eller misslyckat', () => {
   const trasigKlass = (fel: number) => (fel === 0 ? 'allt-skickat' : 'delutfall');
   expect(trasigKlass(0)).toBe('allt-skickat');
   expect(vantar?.klass).toBe('vantar');
+});
+
+/* ═══════════════════ FÖRHANDSGRANSKNINGEN (TASK-353) ═══════════════════
+ *
+ * Marcus order 2026-09-01: en "Förhandsgranska"-knapp bredvid "Skicka X
+ * kvitton". `kanForhandsgranska` äger regeln för NÄR knappen får erbjudas,
+ * så den bedömningen aldrig blir en villkorskedja i JSX.
+ *
+ * SAMMA TVÅ-RIKTNINGS-DISCIPLIN som resten av filen: varje regel prövas
+ * både mot den riktiga implementationen och mot den trasiga variant någon
+ * skulle skriva i förbifarten. Den mest närliggande trasiga formen här är
+ * "visa knappen på varje rad" — den hade erbjudit förhandsgranskning av
+ * kvitton som redan gått i väg, alltså en efterhandsgranskning som utger
+ * sig för att kunna ändra något.
+ */
+
+test('en rad som ligger i kön med kvitto FÅR förhandsgranskas', () => {
+  const rad = { medKvitto: true, inbetalningId: 'i1' };
+  expect(kanForhandsgranska(rad, ['i1'])).toBe(true);
+});
+
+test('en rad UTAN kvitto får aldrig förhandsgranskas, ens om id:t råkar stå i kön', () => {
+  // Kryssrutan var ur ⇒ det finns inget kvitto att granska. Att id:t skulle
+  // kunna stå i kön samtidigt är ett omöjligt tillstånd i dag (kön fylls
+  // bara av rader med `medKvitto`), och regeln prövas ändå mot det: en
+  // härledning som bara läste kön hade sagt `true` här.
+  const rad = { medKvitto: false, inbetalningId: 'i1' };
+  expect(kanForhandsgranska(rad, ['i1'])).toBe(false);
+
+  // NEGATIV KONTROLL: den trasiga formen "står den i kön så visa knappen".
+  const trasig = (id: string, ko: string[]) => ko.includes(id);
+  expect(trasig('i1', ['i1'])).toBe(true);
+  expect(kanForhandsgranska(rad, ['i1'])).toBe(false);
+});
+
+test('en rad vars kvitto REDAN köats får inte förhandsgranskas — kön är tömd', () => {
+  // Efter "Skicka N kvitton" töms `vantande`. Raden står kvar i loggen med
+  // sitt kvitto på väg, och då är det för sent att granska: en
+  // förhandsgranskning som inte kan ändra något är ingen granskning.
+  const rad = { medKvitto: true, inbetalningId: 'i1' };
+  expect(kanForhandsgranska(rad, [])).toBe(false);
+
+  // NEGATIV KONTROLL: "har raden begärt kvitto?" ensamt hade sagt `true`
+  // för varje rad Lotta någonsin registrerat i sessionen — alltså en knapp
+  // på skickade kvitton, som är `kanVisa`s uppgift (`panel-harledningar.ts`)
+  // och en HELT annan väg: den hämtar en lagrad PDF, denna renderar ett
+  // utkast som ännu inte finns.
+  const trasig = (r: { medKvitto: boolean }) => r.medKvitto;
+  expect(trasig(rad)).toBe(true);
+  expect(kanForhandsgranska(rad, [])).toBe(false);
+});
+
+test('bara den egna raden — ett annat id i kön öppnar ingen knapp', () => {
+  const rad = { medKvitto: true, inbetalningId: 'i1' };
+  expect(kanForhandsgranska(rad, ['i2', 'i3'])).toBe(false);
+
+  // NEGATIV KONTROLL: "är kön icke-tom?" hade gett varje rad en knapp så
+  // fort NÅGON rad väntade.
+  const trasig = (ko: string[]) => ko.length > 0;
+  expect(trasig(['i2', 'i3'])).toBe(true);
+  expect(kanForhandsgranska(rad, ['i2', 'i3'])).toBe(false);
+});
+
+test('regeln är stabil över flera rader i kön — var och en bedöms för sig', () => {
+  const ko = ['i1', 'i3'];
+  const rader = [
+    { medKvitto: true, inbetalningId: 'i1' },
+    { medKvitto: true, inbetalningId: 'i2' },
+    { medKvitto: false, inbetalningId: 'i3' },
+    { medKvitto: true, inbetalningId: 'i3' },
+  ];
+
+  expect(rader.map((r) => kanForhandsgranska(r, ko))).toEqual([true, false, false, true]);
 });

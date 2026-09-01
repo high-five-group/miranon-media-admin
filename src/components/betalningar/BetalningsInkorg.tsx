@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { AlertTriangle, CalendarRange, Clock, X } from 'lucide-react';
+import { AlertTriangle, CalendarRange, Clock, Loader2, X } from 'lucide-react';
 import { parseAsString, parseAsStringEnum, useQueryState } from 'nuqs';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -23,10 +23,12 @@ import { StatusBadge } from '@/components/registrations/StatusBadge';
 import { useOppnaBetalningar } from '@/data/betalningar/useBetalningar';
 import { useJobbstatus, useRealtidsfel } from '@/data/betalningar/useJobbstatus';
 import { useKoaKvitton, useRaderaInbetalning } from '@/data/mutations/inbetalningar';
+import { useForhandsgranskaKvitto } from '@/data/mutations/kvitton';
 import { useDataSource } from '@/data/useDataSource';
 import type { Event } from '@/domain/models/Event';
 import type { Jobbstatus } from '@/domain/schemas';
 import { filtreraPersonregister, personVisningsnamn } from '@/lib/person-sok';
+import { skrivLaddningssida } from '@/lib/skriv-laddningssida';
 import { queryKeys } from '@/queries/keys';
 import { visaKronor } from './belopp-inmatning';
 import { type Betalsatt, lasSenasteBetalsatt, sparaBetalsatt } from './betalsatt-minne';
@@ -38,6 +40,7 @@ import {
   type InkorgsRad,
   type IsoDatum,
   jobbDelutfall,
+  kanForhandsgranska,
   rankaTraffar,
   sammanfattaBetalningar,
 } from './inkorg-harledningar';
@@ -391,6 +394,8 @@ export function BetalningsInkorg() {
   const jobb = useJobbstatus(jobbId, jobbId !== undefined);
   const realtidsfel = useRealtidsfel();
   const koa = useKoaKvitton();
+  /** [TASK-353] Renderar ett VÄNTANDE kvitto som utkast — skickar ingenting. */
+  const forhandsgranska = useForhandsgranskaKvitto();
 
   const rader = useMemo(
     () => (oppna?.betalningar ?? []).map((b) => harledRad(b, idag)),
@@ -730,6 +735,61 @@ export function BetalningsInkorg() {
     );
   }
 
+  /**
+   * [TASK-353] FÖRHANDSGRANSKA ETT VÄNTANDE KVITTO — husets fönster-först-
+   * mönster, kopierat och inte uppfunnet.
+   *
+   * ═══════════════════════════════════════════════════════════════════════
+   * FÖNSTRET ÖPPNAS SYNKRONT, FÖRE `mutate()` — DET ÄR HELA POÄNGEN
+   * ═══════════════════════════════════════════════════════════════════════
+   * Länken är signerad och PDF:en RENDERAS av EF:en (DocRaptor), så adressen
+   * finns inte när Lotta klickar — det tar sekunder. `GenereringsVy.tsx`
+   * (`startaForhandsgranskning`), `DokumentYta.tsx` och
+   * `InbetalningsLista.tsx` (`visaKvitto`) löste redan exakt detta: öppna
+   * fönstret i klickets EGNA tick, skriv en laddningssida i det, sätt
+   * adressen när svaret kommer.
+   *
+   * ATT VÄNTA MED `window.open` TILLS SVARET KOMMER ÄR MÄTT FEL, inte
+   * befarat: Marcus prod-röktest 2026-08-26 fick fönstret blockerat när
+   * renderingen tog några sekunder (*"Skarpt så måste ju ett chromefönster
+   * öppnas direkt"*) — se `useForhandsgranskaBilaga.ts` § HISTORIK för hela
+   * den läxan. Denna yta upprepar inte det felet.
+   *
+   * `fonster.closed`-VAKTEN vid den SENARE href-sättningen är obligatorisk:
+   * Lotta kan hinna stänga fliken medan EF:en renderar, och att skriva
+   * `location.href` på ett stängt fönster kan kasta.
+   *
+   * (Vakten är nu husets TREDJE inlinade instans — `GenereringsVy` bär den
+   * som `stangOanvantFonster`, `InbetalningsLista` inlinar den. Den är
+   * medvetet INTE utbruten här: en enrads-vakt är ingen abstraktion värd
+   * en modul, och att röra två redan levererade ytor kvällen före en demo
+   * är fel tillfälle. Noterat som kandidat för ett senare pass.)
+   */
+  function forhandsgranskaKvitto(inbetalningId: string, namn: string) {
+    // Dubbelklicks-vakt. Knapparna bär `aria-disabled` och INTE `isDisabled`
+    // (se knapparnas egen kommentar), så spärren måste ligga här.
+    if (forhandsgranska.isPending) return;
+
+    // MÅSTE ske synkront, före mutate() och all await — se docblocket.
+    const fonster = window.open('', '_blank');
+    skrivLaddningssida(fonster, {
+      titel: 'Skapar förhandsgranskningen …',
+      text: `Ett ögonblick, kvittot till ${namn} renderas och visas här om några sekunder.`,
+    });
+
+    forhandsgranska.mutate(inbetalningId, {
+      onSuccess: ({ url }) => {
+        if (fonster && !fonster.closed) fonster.location.href = url;
+      },
+      onError: () => {
+        // Stäng det tomma fönstret — felet sägs på SIDAN (`role="alert"`
+        // nedan), där Lotta faktiskt är. Ett kvarlämnat fönster med en
+        // laddningstext som aldrig blir något är ett löfte som inte infrias.
+        if (fonster && !fonster.closed) fonster.close();
+      },
+    });
+  }
+
   const sidRam = <SidRam to="/mer" tillbakaEtikett="Tillbaka till Mer" />;
 
   if (isPending) {
@@ -783,6 +843,42 @@ export function BetalningsInkorg() {
   const ovrigaJobbrader = (jobb.data?.rader ?? []).filter(
     (jobbrad) => !registrerade.some((post) => post.inbetalningId === jobbrad.objektId),
   );
+
+  /* [TASK-353] FORMVALET, MÄTT MOT DEN FAKTISKA UI-STRUKTUREN OCH BOKFÖRT.
+     Marcus order: *"en knapp bredvid 'Skicka X kvitton' som heter
+     'Förhandsgranska'"*, och vid FLERA kvitton per-rad i granskningsblocket.
+
+     VAD MÄTNINGEN VISADE: granskningsblocket (C1) renderar EN rad per
+     registrering med namn, betalsätt/status och belopp, plus en åtgärdsslot
+     till höger som redan bär "Ångra" respektive "Skicka igen". "Skicka N
+     kvitton" står ENSAM under listan (`self-start`). Det finns alltså redan
+     en per-rad-slot att hänga en tredje åtgärd i — ingen ny struktur behövs.
+
+     VALD FORM, och varför den inte är godtycklig:
+       • EXAKT ETT väntande kvitto → knappen står BREDVID "Skicka 1 kvitto".
+         Där är den entydig: det finns bara ett kvitto den kan avse, och
+         Lottas blick är redan på knappraden hon ska trycka på.
+       • FLERA väntande → INGEN knapp vid "Skicka N kvitton", utan en per
+         RAD. En ensam "Förhandsgranska" bredvid "Skicka 8 kvitton" hade
+         varit tvetydig (granska vilket av de åtta?), och att öppna åtta
+         flikar på ett klick är inte en granskning utan ett översvämmat
+         fönsterfält.
+
+     KNAPPEN FLYTTAR ALLTSÅ, den dupliceras inte — de två lägena är
+     ömsesidigt uteslutande (`vantande.length === 1` respektive `> 1`), så
+     samma kvitto kan aldrig ha två förhandsgransknings-knappar. */
+  const vantandeIds = vantande.map((v) => v.inbetalningId);
+  const enSamKo = vantande.length === 1;
+
+  /* Ett-kvitto-fallets rad, slagen upp i LOGGEN (`registrerade`) och inte
+     antagen ur kön. Kön bär bara `{ inbetalningId, namn, belopp }` — den vet
+     inget om `medKvitto`, som är `kanForhandsgranska`s första villkor. Att
+     skicka in ett påhittat `medKvitto: true` hade varit att flytta regeln från
+     härledningen till JSX, alltså precis tvärtemot varför härledningen finns.
+     `?? null` gör uppslaget totalt: hittas ingen rad visas ingen knapp. */
+  const ensamKandidat = enSamKo
+    ? (registrerade.find((post) => post.inbetalningId === vantande[0].inbetalningId) ?? null)
+    : null;
 
   return (
     <section className="flex flex-col gap-4">
@@ -1231,6 +1327,42 @@ export function BetalningsInkorg() {
                     </span>
 
                     <span className="flex shrink-0 items-center gap-2">
+                      {/* [TASK-353] FÖRHANDSGRANSKA — bara på en rad vars kvitto
+                          ännu INTE gått i väg, och bara när kön har FLERA rader
+                          (se `vantandeIds`/`enSamKo` ovan för formvalet).
+                          `kanForhandsgranska` äger regeln; JSX bedömer inte.
+
+                          EGET TILLGÄNGLIGT NAMN PER RAD. Åtta knappar som alla
+                          heter "Förhandsgranska" är åtta identiska namn i
+                          skärmläsarens knapplista — `aria-label` namnger
+                          personen, samma grepp som `InbetalningsLista`s
+                          `Fler val för …`. Den SYNLIGA texten är kort, som
+                          husets övriga radknappar.
+
+                          `aria-disabled` OCH INTE `isDisabled`: ett native
+                          `disabled` tar knappen ur tabordningen mitt i klicket
+                          och kastar fokus till `document.body`. Dubbelklicks-
+                          spärren bor i `forhandsgranskaKvitto` i stället —
+                          samma mönster som `GenereringsVy.tsx` rad ~1505. */}
+                      {!enSamKo && kanForhandsgranska(post, vantandeIds) && (
+                        <Button
+                          intent="secondary"
+                          emphasis="outline"
+                          size="sm"
+                          aria-disabled={forhandsgranska.isPending}
+                          aria-label={`Förhandsgranska kvittot till ${post.namn}`}
+                          onPress={() => forhandsgranskaKvitto(post.inbetalningId, post.namn)}
+                        >
+                          {forhandsgranska.isPending && (
+                            <Loader2
+                              aria-hidden="true"
+                              size={14}
+                              className="shrink-0 motion-safe:animate-spin"
+                            />
+                          )}
+                          Förhandsgranska
+                        </Button>
+                      )}
                       {/* SKICKA IGEN, bara på en FALLERAD rad — samma regel och
                           samma mutation (`koaKvitton`, inte `skickaKvittoIgen`)
                           som jobbrads-listan nedan bär; se dess docblock för
@@ -1353,14 +1485,57 @@ export function BetalningsInkorg() {
               storlek, text och `onPress` är BYTE FÖR BYTE oförändrade — bara
               placeringen. */}
           {vantande.length > 0 && (
-            <Button
-              intent="success"
-              onPress={skickaKvitton}
-              isLoading={koa.isPending}
-              className="self-start"
-            >
-              {`Skicka ${vantande.length} ${vantande.length === 1 ? 'kvitto' : 'kvitton'}`}
-            </Button>
+            /* [TASK-353] KNAPPRADEN, inte längre en ensam knapp. `self-start`
+               flyttade från knappen till detta svep — knappen behåller exakt
+               sin vänsterlinje (blocket är `flex flex-col`, så `self-start` på
+               raden ger samma horisontella läge som på knappen), och
+               "Förhandsgranska" hamnar bredvid den i stället för under.
+               `flex-wrap` gör att paret bryter snyggt på en smal iPad-kolumn i
+               stället för att trycka ihop knapparna under träffytegolvet. */
+            <div className="flex flex-wrap items-center gap-2 self-start">
+              <Button intent="success" onPress={skickaKvitton} isLoading={koa.isPending}>
+                {`Skicka ${vantande.length} ${vantande.length === 1 ? 'kvitto' : 'kvitton'}`}
+              </Button>
+
+              {/* [TASK-353] BREDVID SKICKA-KNAPPEN — men BARA när kön har
+                  exakt ETT kvitto (se `enSamKo` ovan för hela formvalet).
+                  Ordningen är avsiktlig: Skicka först, Förhandsgranska efter.
+                  Den primära handlingen behåller sin plats och sin
+                  vänsterlinje; granskningen är ett steg man tar FÖRE, men den
+                  får inte knuffa undan knappen Lotta trycker på varje lördag.
+
+                  `intent="secondary" emphasis="outline"` är husets form för
+                  just denna knapp (`GenereringsVy.tsx` rad ~1505) — sage-
+                  knappen (`intent="success"`) är reserverad för det externa
+                  utskicket och får inte färgmatchas av en granskningsknapp. */}
+              {ensamKandidat !== null && kanForhandsgranska(ensamKandidat, vantandeIds) && (
+                <Button
+                  intent="secondary"
+                  emphasis="outline"
+                  aria-disabled={forhandsgranska.isPending}
+                  aria-label={`Förhandsgranska kvittot till ${vantande[0].namn}`}
+                  onPress={() => forhandsgranskaKvitto(vantande[0].inbetalningId, vantande[0].namn)}
+                >
+                  {forhandsgranska.isPending && (
+                    <Loader2
+                      aria-hidden="true"
+                      size={16}
+                      className="shrink-0 motion-safe:animate-spin"
+                    />
+                  )}
+                  {forhandsgranska.isPending ? 'Förhandsgranskar …' : 'Förhandsgranska'}
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* FELET SÄGS PÅ SIDAN, inte i det fönster som stängdes. `role="alert"`
+              därför att Lotta just tryckte och väntar på något som inte kom —
+              samma form och samma klass som blockets övriga fel ovan. */}
+          {forhandsgranska.isError && (
+            <p role="alert" className="text-(color:--mm-input-error-text) text-caption">
+              {`Kvittot kunde inte förhandsgranskas: ${forhandsgranska.error.message}`}
+            </p>
           )}
         </section>
       )}

@@ -1173,6 +1173,22 @@ export class AirtableAdapter implements DataSourceAdapter {
   }
 
   /**
+   * [TASK-353] Förhandsgranskning av EN KONKRET inbetalnings kvitto — samma
+   * EF som `previewReceipt` ovan, additiv body. Se
+   * `DataSourceAdapter.previewKvittoForInbetalning` för varför detta är en
+   * egen metod och inte en valfri parameter.
+   *
+   * `eventId` skickas MEDVETET INTE med: EF:en härleder eventet ur anmälan,
+   * så en klient kan inte para ihop en inbetalning med fel events
+   * bokföringstext. Samma svarsschema (`DocumentPreviewSchema`) i båda
+   * lägena — leveransvägen är identisk (signerad utkast-URL, ADR-124).
+   */
+  async previewKvittoForInbetalning(inbetalningId: string): Promise<DocumentPreview> {
+    const data = await postEdgeFunction<unknown>('preview-receipt', { inbetalningId });
+    return DocumentPreviewSchema.parse(data);
+  }
+
+  /**
    * Hämta en cursor-paginerad sida av Aktivitetsloggen (TASK-201.5). Läsning
    * via get-activity-log: DIREKT ur Postgres-tabellen `activity_log`
    * (ADR-110) — ingen Airtable-tabell inblandad, till skillnad mot övriga

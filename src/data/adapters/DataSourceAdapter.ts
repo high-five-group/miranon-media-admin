@@ -647,6 +647,40 @@ export interface DataSourceAdapter {
   previewReceipt(eventId: string): Promise<DocumentPreview>;
 
   /**
+   * [TASK-353] Sidoeffektsfri förhandsgranskning av EN KONKRET INBETALNINGS
+   * kvitto — det Lotta ska se INNAN hon trycker "Skicka N kvitton".
+   *
+   * ═══════════════════════════════════════════════════════════════════════
+   * EGEN METOD, INTE EN VALFRI PARAMETER PÅ `previewReceipt`
+   * ═══════════════════════════════════════════════════════════════════════
+   * De två svarar på OLIKA frågor och har olika sanningsvärde:
+   * `previewReceipt` visar hur ett kvitto SER UT för ett event (typexempel,
+   * generator-katalogen); denna visar vad DEN HÄR personen faktiskt kommer
+   * att få. Att göra den andra till ett valfritt fält på den första hade
+   * gjort returtypens sanningshalt beroende av ett argument — en anropare
+   * kunde inte längre läsa av anropet om den fick riktig eller påhittad
+   * data. Två namn, två kontrakt.
+   *
+   * Bakåtkompatibiliteten blir dessutom skarp i BÅDA lagren: `previewReceipt`
+   * är byte för byte oförändrad, och `dokumentKalla.ts` rörs inte alls.
+   *
+   * SAMMA EF (`preview-receipt`), additiv body (`{ inbetalningId }` i stället
+   * för `{ eventId }`). Eventet härleds SERVER-SIDIGT ur anmälan — klienten
+   * får medvetet inte para ihop en inbetalning med ett event den valt själv.
+   *
+   * SIDOEFFEKTSFRIHETEN ÄR OFÖRÄNDRAD: inget allokerat kvittonummer, ingen
+   * `kvitton`-rad, inget mail. Kvittonumret är platshållaren
+   * "FÖRHANDSVISNING" — se `preview-receipt/index.ts` § filhuvud.
+   *
+   * VARFÖR INTE `fetchKvittolank`: det kvittot FINNS INTE ÄNNU. Kvitton-raden
+   * INSERTas först av jobbkonsumenten (`_shared/kvittojobb.ts` FAS 1) och
+   * PDF:en renderas i FAS 2 — `hamta-kvittolank` svarar 409 `pdf_saknas` för
+   * allt som ännu inte gått i väg. Förhandsgranskningen RENDERAR, den hämtar
+   * inte.
+   */
+  previewKvittoForInbetalning(inbetalningId: string): Promise<DocumentPreview>;
+
+  /**
    * Hämta en cursor-paginerad sida av Aktivitetsloggen (TASK-201.5, PRD
    * TASK-201). Läsning via get-activity-log: DIREKT ur Postgres-tabellen
    * `activity_log` (ADR-110) — ingen Airtable-interaktion, till skillnad

@@ -44,11 +44,39 @@
 // källfiler för uppladdning) — det är en deploy-tids-artefakt, inte ett
 // runtime-beroende. Resend importeras ALDRIG någonstans i denna kedjan.
 //
+// ═══════════════════════════════════════════════════════════════════════════
+// [TASK-353, 2026-09-01] TVÅ GRENAR SEDAN DENNA SKIVA — LÄS DETTA FÖRST
+// ═══════════════════════════════════════════════════════════════════════════
+// EF:en bär NU TVÅ lägen, valda av request-bodyn:
+//
+//   • `{ eventId }` (OFÖRÄNDRAT, dagens enda läge) → TYPEXEMPEL. Detta är
+//     Dokument-ytans generator-katalog, och stycket "PERSONDATA" nedan gäller
+//     ORDAGRANT för den grenen.
+//   • `{ inbetalningId }` (NYTT, ADDITIVT) → den KONKRETA inbetalningens
+//     kvitto, med riktigt kundnamn, riktigt belopp, riktigt betalsätt och
+//     riktigt betalningsdatum. Se `hamtaRiktigtUnderlag`s docblock för HELA
+//     motiveringen och för den mätta premiss-fällning som gjorde grenen
+//     nödvändig.
+//
+// PERSONDATA-STYCKET NEDAN ÄR DÄRMED AMENDERAT, INTE RIVET. Dess mening
+// "Kundnamn/belopp/betalsätt kan STRUKTURELLT inte vara verkliga här" var
+// sann om den ENDA yta som fanns när den skrevs (generator-katalogen), och är
+// fortsatt sann OM den grenen. Den är INTE längre sann om EF:en som helhet:
+// betalningsflödets granskningssteg HAR en inbetalning vald, och då faller
+// varje punkt i uppräkningen (det finns en vald betalning, beloppet är det
+// Lotta själv registrerade, och personen har per definition en betalning
+// under behandling). Att låta stycket stå oförändrat hade gjort det till en
+// tyst osanning om den nya grenen — ADR-083-disciplinen kräver amendering.
+//
+// SIDOEFFEKTSFRIHETEN ÄR INVARIANT ÖVER BÅDA GRENARNA: inget allokerat
+// kvittonummer, ingen `kvitton`-rad, ingen `jobb_rad`-rad, inget Resend-anrop.
+// Endast det transienta Storage-utkastet, i båda fallen.
+//
 // PERSONDATA: TYPEXEMPEL, INTE en verklig anmälan (bokfört beslut, kortets
-// notes, AC #2). Eventet ÄR verkligt (samma eventId som Dokument-ytans
-// redan valda event — samma "riktig PDF ur eventets verkliga data"-linje
-// som klass B). Kundnamn/belopp/betalsätt kan STRUKTURELLT inte vara
-// verkliga här:
+// notes, AC #2) — GÄLLER `{ eventId }`-GRENEN. Eventet ÄR verkligt (samma
+// eventId som Dokument-ytans redan valda event — samma "riktig PDF ur
+// eventets verkliga data"-linje som klass B). Kundnamn/belopp/betalsätt kan
+// STRUKTURELLT inte vara verkliga I DEN GRENEN:
 //   - Dokument-ytans generator-katalog (GeneratorRad) har ingen anmälan/
 //     betalning VALD — det är en generisk katalogvy, inte betalnings-
 //     flödet (`BetalningsSkrivYta` § `SkrivRad`, AtgardsSida.tsx).
@@ -94,10 +122,18 @@
 // EF1–EF6-ribba (SECURITY-SPEC §6.10) som generate-event-attachment/
 // get-attachment-download-url.
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { fetchAirtableRecord } from '../_shared/airtable-client.ts';
 import { isValidEventId } from '../_shared/attachments.ts';
 import { requireUser } from '../_shared/auth.ts';
+import { byggPrisbild, lasAnmalan, lasEvent } from '../_shared/betalningar-bas.ts';
+import {
+  INBETALNING_KOLUMNER,
+  INBETALNINGAR_TABELL,
+  lasInbetalningarForAnmalan,
+  radTillInbetalning,
+  skapaAdminKlient,
+} from '../_shared/betalningar-db.ts';
+import { harledBetalning } from '../_shared/betalningsharledning.ts';
 import { scalarString, selectName } from '../_shared/coerce.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
 import { generateRequestId, HttpError, mapErrorToResponse, ValidationError } from '../_shared/errors.ts';
@@ -112,6 +148,9 @@ const EVENTS_TABLE = 'Eventplanering';
 
 /** Ärlig platshållare — ALDRIG ett riktigt allokerat kvittonummer (se filhuvudet). */
 const FORHANDSVISNING_KVITTONUMMER = 'FÖRHANDSVISNING';
+
+/** Inbetalningens id-form. Samma uttryck som `hamta-kvittolank/index.ts`. */
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**
  * Typexemplet (se filhuvudets PERSONDATA-stycke för varför persondata inte
@@ -129,6 +168,117 @@ const TYPEXEMPEL = {
   betalsatt: 'Swish' as const,
   betalning: 'avgift' as const,
 };
+
+/**
+ * [TASK-353] RIKTIGT UNDERLAG FÖR EN KONKRET INBETALNING — den additiva
+ * `inbetalningId`-grenen.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * VARFÖR GRENEN ÖVER HUVUD TAGET FINNS
+ * ═══════════════════════════════════════════════════════════════════════════
+ * Marcus order 2026-09-01: en "Förhandsgranska"-knapp bredvid "Skicka N
+ * kvitton", med *"exakt samma metod som … för våra bilagor"*. Bilagornas
+ * metod ÄR en EF som renderar EVENTETS RIKTIGA DATA som ett transient utkast
+ * (`generate-event-attachment`, `preview: true`). Typexemplet ovan kunde inte
+ * bära den ordern: granskningssteget finns för att fånga fel, och en PDF som
+ * säger "Exempelperson · 500 kr" när Lotta granskar Bengts 1 200 kr är
+ * fabricerad data i exakt det steg som ska fånga fabrikat.
+ *
+ * DEN MÄTTA PREMISSEN SOM GJORDE GRENEN NÖDVÄNDIG (ADR-086 premiss-pass):
+ * uppdraget antog att "kvittona existerar som dokument i kön" och att
+ * `hamta-kvittolank` kunde återanvändas rakt av. BÅDA föll mot källan.
+ * Kvitton-raden INSERTas först av jobbkonsumenten (`_shared/kvittojobb.ts`
+ * FAS 1), PDF:en renderas i FAS 2 — och `hamta-kvittolank` kräver ett
+ * `kvittoId` vars `lagringsnyckel` är satt (409 `pdf_saknas` annars). När
+ * Lotta står framför knappen finns alltså VARKEN kvitto-post eller PDF.
+ * Förhandsgranskningen måste därför RENDERA, inte hämta.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * SIDOEFFEKTSFRIHETEN ÄR INVARIANT — GRENEN ÄNDRAR INGENTING DÄR
+ * ═══════════════════════════════════════════════════════════════════════════
+ * Denna gren LÄSER `inbetalningar` (Postgres) + `Anmälningar`/`Eventplanering`
+ * (Airtable) och skriver, precis som typexempel-grenen, ETT TRANSIENT
+ * Storage-utkast. Den allokerar ALDRIG ett kvittonummer, skriver ALDRIG en
+ * `kvitton`- eller `jobb_rad`-rad, och rör ALDRIG Resend. Kvittonumret är
+ * `FÖRHANDSVISNING` i BÅDA grenarna — ett andra anrop ger exakt samma
+ * platshållartext, vilket ÄR beviset att ingen ledger rörts.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * FORMEN SPEGLAR `jobb-konsument`s `hamtaUnderlag` — MEDVETET, INTE SLARV
+ * ═══════════════════════════════════════════════════════════════════════════
+ * Fält för fält samma härledning som `jobb-konsument/index.ts` § `hamtaUnderlag`
+ * (rad ~244–289), av EN anledning: det Lotta granskar ska vara det som går i
+ * väg. En egen, "enklare" avläsning här hade varit en andra sanning om vad ett
+ * kvitto innehåller, och den hade glidit isär tyst.
+ *
+ * TVÅ MEDVETNA SKILLNADER, båda bokförda:
+ *   1. MAKULERAD INBETALNING KASTAR INTE HÄR. Konsumenten vägrar skicka
+ *      kvitto för en makulerad inbetalning (rätt — det vore en skarp
+ *      sidoeffekt). En FÖRHANDSGRANSKNING är läsning, och Lotta ska kunna
+ *      titta på vad som en gång skulle ha gått. Frontenden erbjuder ändå
+ *      aldrig knappen i det läget (`kanForhandsgranska`,
+ *      `inkorg-harledningar.ts`), så detta är försvar i djup, inte en ny väg.
+ *   2. `betalning: 'avgift' | 'slut'` HÄRLEDS ÄNDÅ, trots att fältet är
+ *      INERT för kvittots synliga text sedan TASK-306:s rättelsevarv (MÄTT,
+ *      inte antaget: `spec.betalning` läses INGENSTANS i `receipt-content.ts`/
+ *      `mall-data.ts` — bara omnämnt i kommentarer). Härledningen kostar EN
+ *      extra Postgres-läsning och gör förhandsgranskningen byte-trogen ÄVEN
+ *      om fältet någon gång blir levande igen. Ett hårdkodat `'avgift'` hade
+ *      varit rätt i dag och en tyst lögn den dag etiketten återinförs.
+ *
+ * `eventId` HÄRLEDS UR ANMÄLAN, inte ur anropet: `SessionsRad` i
+ * `BetalningsInkorg.tsx` bär inget eventId, och att låta klienten skicka ett
+ * hade öppnat för att förhandsgranska en inbetalning mot FEL events
+ * bokföringstext. Anmälan äger kopplingen; servern läser den.
+ */
+async function hamtaRiktigtUnderlag(inbetalningId: string) {
+  const db = skapaAdminKlient();
+
+  const { data, error } = await db
+    .from(INBETALNINGAR_TABELL)
+    .select(INBETALNING_KOLUMNER)
+    .eq('id', inbetalningId)
+    .maybeSingle();
+  if (error) throw error;
+  if (!data) throw new HttpError(404, `Inbetalningen hittades inte: ${inbetalningId}`);
+  const post = radTillInbetalning(data);
+
+  const anmalan = await lasAnmalan(post.anmalanRecordId);
+  if (!anmalan) {
+    throw new HttpError(404, 'Anmälan finns inte längre i basen — kvittot kan inte förhandsgranskas.');
+  }
+
+  // Utkastets Storage-path kräver ett event (`utkast/<eventId>/kvitto.pdf`).
+  // Fail-closed med ett skäl Lotta förstår, i stället för en path som inte
+  // går att bygga.
+  if (!anmalan.eventId) {
+    throw new ValidationError('Anmälan saknar event — kvittot kan inte förhandsgranskas.');
+  }
+  const event = await lasEvent(anmalan.eventId);
+
+  // Facket kvittots ledger-rad skulle bära. HÄRLETT, aldrig valt — samma
+  // regel som spegeln (ADR-128 beslut 2). Se docblocket § skillnad 2.
+  const alla = await lasInbetalningarForAnmalan(db, post.anmalanRecordId);
+  const harledning = harledBetalning(
+    alla.map((rad) => ({ belopp: rad.belopp, status: rad.status })),
+    byggPrisbild(anmalan, event),
+  );
+
+  return {
+    eventId: anmalan.eventId,
+    kundnamn: anmalan.namn || post.ogonblicksbildNamn,
+    kundEpost: anmalan.epost ?? '',
+    belopp: post.belopp,
+    betalsatt: post.betalsatt,
+    betalningsdatum: post.betalningsdatum,
+    eventNamn: event?.namn ?? post.ogonblicksbildEvent,
+    eventTyp: event?.typ ?? null,
+    eventStart: event?.startdatum ?? null,
+    eventSlut: event?.slutdatum ?? null,
+    bokforingstext: event?.bokforingstext ?? null,
+    betalning: harledning.alltKlart ? ('slut' as const) : ('avgift' as const),
+  };
+}
 
 Deno.serve(async (req) => {
   const corsResponse = handleCors(req);
@@ -150,49 +300,90 @@ Deno.serve(async (req) => {
 
   try {
     const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
-    const eventId = body?.eventId;
+    const inbetalningId = body?.inbetalningId;
 
-    if (!isValidEventId(eventId)) {
-      throw new ValidationError('eventId is required and must be an Airtable record ID (rec…)');
-    }
+    /* [TASK-353] TVÅ GRENAR, EN SVARSFORM. `inbetalningId` är ADDITIVT:
+       utelämnas det är beteendet BYTE FÖR BYTE dagens (typexemplet ur
+       eventet), vilket är vad `DokumentYta.tsx`s generator-katalog anropar.
+       Ges det renderas den KONKRETA inbetalningens kvitto — se
+       `hamtaRiktigtUnderlag`s docblock. `eventId` blir då VALFRITT, eftersom
+       anmälan äger event-kopplingen; skickas det ändå IGNORERAS det medvetet
+       (klienten får inte kunna para ihop en inbetalning med fel events
+       bokföringstext). */
+    const villRiktigtKvitto = inbetalningId !== undefined && inbetalningId !== null;
 
-    const eventRecord = await fetchAirtableRecord(EVENTS_TABLE, eventId);
-    if (!eventRecord) {
-      return new Response(JSON.stringify({ error: 'Event not found' }), {
-        status: 404,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    let utkastEventId: string;
+    let kvittoData: unknown;
+
+    if (villRiktigtKvitto) {
+      if (typeof inbetalningId !== 'string' || !UUID_RE.test(inbetalningId)) {
+        throw new ValidationError('inbetalningId must be a UUID');
+      }
+      const underlag = await hamtaRiktigtUnderlag(inbetalningId);
+      utkastEventId = underlag.eventId;
+      kvittoData = byggKvittoData({
+        kvittonummer: FORHANDSVISNING_KVITTONUMMER,
+        kundnamn: underlag.kundnamn,
+        kundEpost: underlag.kundEpost,
+        belopp: underlag.belopp,
+        betalsatt: underlag.betalsatt,
+        betalning: underlag.betalning,
+        eventNamn: underlag.eventNamn,
+        datum: new Date().toISOString(),
+        eventTyp: underlag.eventTyp,
+        eventStart: underlag.eventStart,
+        eventSlut: underlag.eventSlut,
+        bokforingstext: underlag.bokforingstext,
+        // RIKTIGT betalningsdatum, till skillnad från typexemplets `null`:
+        // det är en av raderna Lotta granskar (`Betalningsdatum:`).
+        betalningsdatum: underlag.betalningsdatum,
+      });
+    } else {
+      const eventId = body?.eventId;
+
+      if (!isValidEventId(eventId)) {
+        throw new ValidationError('eventId is required and must be an Airtable record ID (rec…)');
+      }
+
+      const eventRecord = await fetchAirtableRecord(EVENTS_TABLE, eventId);
+      if (!eventRecord) {
+        return new Response(JSON.stringify({ error: 'Event not found' }), {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      // [TASK-306] Läses BY NAME, INTE by ID — se send-receipt-email/index.ts
+      // § readEventKvittoFalt för det fulla resonemanget (samma fem fält,
+      // samma ADR-086-avvikelse mot uppdragsdirektivet, bokförd i slutrapporten).
+      const eventNamn = selectName(eventRecord.fields['Event (source)']);
+      const eventTyp = selectName(eventRecord.fields['Typ']);
+      const eventStart = scalarString(eventRecord.fields['Startdatum']);
+      const eventSlut = scalarString(eventRecord.fields['Slutdatum']);
+      const bokforingstext = scalarString(eventRecord.fields['Bokföringstext (kvitto)']);
+
+      utkastEventId = eventId;
+      // [TASK-309.5] byggKvittoData + renderaMallPdf('kvitto', …) ERSÄTTER
+      // kvittoRader + renderKvittoPdf (pdf-lib, nu riven) — se
+      // `_shared/receipt-content.ts`:s filhuvud för hela historiken.
+      kvittoData = byggKvittoData({
+        kvittonummer: FORHANDSVISNING_KVITTONUMMER,
+        kundnamn: TYPEXEMPEL.kundnamn,
+        kundEpost: TYPEXEMPEL.kundEpost,
+        belopp: TYPEXEMPEL.belopp,
+        betalsatt: TYPEXEMPEL.betalsatt,
+        betalning: TYPEXEMPEL.betalning,
+        eventNamn,
+        datum: new Date().toISOString(),
+        eventTyp,
+        eventStart,
+        eventSlut,
+        bokforingstext,
+        // [TASK-346.5] Förhandsvisningen bygger på TYPEXEMPEL, som föregår
+        // Inbetalning/ADR-128 — samma `null` som `send-receipt-email/index.ts`
+        // gör, se den filens motsvarande kommentar.
+        betalningsdatum: null,
       });
     }
-    // [TASK-306] Läses BY NAME, INTE by ID — se send-receipt-email/index.ts
-    // § readEventKvittoFalt för det fulla resonemanget (samma fem fält,
-    // samma ADR-086-avvikelse mot uppdragsdirektivet, bokförd i slutrapporten).
-    const eventNamn = selectName(eventRecord.fields['Event (source)']);
-    const eventTyp = selectName(eventRecord.fields['Typ']);
-    const eventStart = scalarString(eventRecord.fields['Startdatum']);
-    const eventSlut = scalarString(eventRecord.fields['Slutdatum']);
-    const bokforingstext = scalarString(eventRecord.fields['Bokföringstext (kvitto)']);
-
-    // [TASK-309.5] byggKvittoData + renderaMallPdf('kvitto', …) ERSÄTTER
-    // kvittoRader + renderKvittoPdf (pdf-lib, nu riven) — se
-    // `_shared/receipt-content.ts`:s filhuvud för hela historiken.
-    const kvittoData = byggKvittoData({
-      kvittonummer: FORHANDSVISNING_KVITTONUMMER,
-      kundnamn: TYPEXEMPEL.kundnamn,
-      kundEpost: TYPEXEMPEL.kundEpost,
-      belopp: TYPEXEMPEL.belopp,
-      betalsatt: TYPEXEMPEL.betalsatt,
-      betalning: TYPEXEMPEL.betalning,
-      eventNamn,
-      datum: new Date().toISOString(),
-      eventTyp,
-      eventStart,
-      eventSlut,
-      bokforingstext,
-      // [TASK-346.5] Förhandsvisningen bygger på TYPEXEMPEL, som föregår
-      // Inbetalning/ADR-128 — samma `null` som `send-receipt-email/index.ts`
-      // gör, se den filens motsvarande kommentar.
-      betalningsdatum: null,
-    });
 
     const apiKey = Deno.env.get('DOCRAPTOR_API_KEY');
     if (!apiKey) {
@@ -213,17 +404,37 @@ Deno.serve(async (req) => {
     // klienten — se filhuvudets LEVERANSVÄGEN-ÄNDRAD-stycke. `laggUtkast` är
     // den GEMENSAMMA formeln (`_shared/utkast.ts`), samma som den (nu rivna,
     // TASK-309.4) `test-docraptor-render`s utkast-gren använde (TASK-302.1).
-    const supabaseAdmin = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-    );
+    // `skapaAdminKlient()` ERSÄTTER det tidigare inlinade `createClient(…)` —
+    // byte-identisk konstruktion (samma URL, samma service-role-nyckel), men
+    // husets egen hjälpare, som nu ändå importeras för underlags-läsningen.
+    const supabaseAdmin = skapaAdminKlient();
     const { url, utgar } = await laggUtkast(supabaseAdmin, {
-      eventId,
+      // [TASK-353] KÄND KANT, MEDVETET INTE LAPPAD I DENNA SKIVA: pathen är
+      // `utkast/<eventId>/kvitto.pdf` (`_shared/utkast.ts` § byggUtkastPath),
+      // alltså per EVENT och typ — inte per inbetalning. Två
+      // förhandsgranskningar av OLIKA personer på SAMMA event skriver därför
+      // över varandras utkast. Ofarligt sekventiellt (Lotta tittar på en i
+      // taget, och varje klick renderar om), men en samtidig granskning i två
+      // flikar kan visa fel persons kvitto i den äldre fliken. Att göra pathen
+      // inbetalnings-unik är en egen skiva — den rör förfallo-städningen av
+      // utkast och hör inte hemma i en UI-skiva dagen före demon.
+      eventId: utkastEventId,
       typ: 'kvitto',
       bytes: pdfBytes,
     });
 
-    console.log(`[preview-receipt] ALLOW | caller_user_id=${user.id} | event=${eventId}`);
+    /* `utkastEventId` OCH INTE `eventId` — den senare är sedan TASK-353
+       block-scopad till typexempel-grenen och hade kastat ReferenceError i
+       den nya. Filen bär `@ts-nocheck`, så varken tsc eller Biome hade fällt
+       det; raden är rättad mot LÄSNING, inte mot en grind.
+
+       `lage=` skiljer grenarna åt i loggen (staging-deployens
+       verifieringspunkt). INGEN PERSONDATA loggas — inbetalningens UUID är
+       en nyckel, aldrig kundnamnet eller e-posten. */
+    console.log(
+      `[preview-receipt] ALLOW | caller_user_id=${user.id} | event=${utkastEventId} | ` +
+        `lage=${villRiktigtKvitto ? `inbetalning:${inbetalningId}` : 'typexempel'}`,
+    );
 
     return new Response(JSON.stringify({ url, utgar, requestId }), {
       status: 200,
