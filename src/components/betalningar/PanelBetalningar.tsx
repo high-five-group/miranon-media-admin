@@ -1,5 +1,6 @@
 import { AlertTriangle, ChevronDown, Clock } from 'lucide-react';
 import { useId, useState } from 'react';
+import { StatusBadge } from '@/components/registrations/StatusBadge';
 import { AterbetalningsYta } from './AterbetalningsYta';
 import { visaKronor } from './belopp-inmatning';
 import { InbetalningsLista } from './InbetalningsLista';
@@ -103,13 +104,16 @@ export function PanelBetalningar({ anmalanRecordId, namn, rad }: Props) {
       {(rad?.forfallen || rad?.spegelSlapar) && (
         <div className="flex flex-wrap items-center gap-2 text-small">
           {rad?.forfallen && (
-            /* VARNINGSTON — samma ändring, samma mätvärden och samma skäl som
-               `BetalningsInkorg.tsx`s Förfallen-pill (pass 11). De två ytorna
-               visar SAMMA märke och måste se likadana ut. */
-            <span className="text-(color:--mm-warning) inline-flex items-center gap-1 rounded border border-transparent bg-(--mm-warning-bg) px-2 py-0.5 text-caption contrast-more:border-(--mm-warning)">
-              <Clock aria-hidden size={13} />
+            /* SAMMA PILL SOM INKORGEN, NU BOKSTAVLIGT (Marcus dom 2026-09-01).
+               Raden bar tidigare en handrullad KOPIA av inkorgens span — samma
+               klasser, två ställen — med noten att "de två ytorna visar SAMMA
+               märke och måste se likadana ut". Nu är det ingen kopia längre:
+               båda går genom `StatusBadge`, så likheten är strukturell i
+               stället för en överenskommelse två filer måste minnas.
+               Se `BetalningsInkorg.tsx` § EN PILL-ANATOMI för hela domen. */
+            <StatusBadge ton="warning" storlek="sm" ikon={Clock}>
               Förfallen
-            </span>
+            </StatusBadge>
           )}
 
           {rad?.spegelSlapar && (

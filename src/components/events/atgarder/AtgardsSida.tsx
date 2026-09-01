@@ -177,6 +177,7 @@ import { Skeleton } from '@/components/primitives/Skeleton';
 import { SlideToConfirm } from '@/components/primitives/SlideToConfirm';
 import { TextArea } from '@/components/primitives/TextArea';
 import { displayName } from '@/components/registrations/registration-display';
+import { StatusBadge } from '@/components/registrations/StatusBadge';
 import { formatMB } from '@/data/adapters/attachmentUpload';
 import { useOppnaBetalningar } from '@/data/betalningar/useBetalningar';
 import { useSendActionEmail, useSendActionTestEmail } from '@/data/mutations/actionEmail';
@@ -553,10 +554,13 @@ function DeltagarKortInnehall({
         </span>
         {/* Reserverad pill-slot — se blockets docblock (sågtand-mätningen). */}
         <span className="flex w-30 shrink-0 flex-wrap items-center justify-end gap-1.5 sm:w-[45%]">
+          {/* NEUTRAL `StatusBadge`, inte en röd handrullad pill (Marcus dom
+              2026-09-01) — samma rivning och samma skäl som
+              `events/detail/Deltagare.tsx`, se dess not för hela historiken. */}
           {!arBekraftad(reg) && !vald && !doljStatusPill && (
-            <span className="rounded-full bg-(--mm-error-bg) px-2 py-0.5 font-medium text-caption text-error">
+            <StatusBadge ton="neutral" storlek="sm">
               Obekräftad
-            </span>
+            </StatusBadge>
           )}
           {pill && (
             <span className="rounded-full bg-bg-muted px-2 py-0.5 font-medium text-caption text-text-secondary">

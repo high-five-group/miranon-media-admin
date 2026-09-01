@@ -1608,26 +1608,33 @@ function BetalningsradKort({
               {saknas === null ? 'Pris saknas i basen' : `${visaKronor(saknas)} kr kvar att betala`}
             </span>
             <div className="flex flex-wrap items-center gap-2">
+              {/* ═══ EN PILL-ANATOMI, TVÅ BETYDELSER (Marcus dom 2026-09-01) ═══
+                  Marcus såg "Förfallen" och "Obekräftad" sida vid sida HÄR och
+                  kallade dem inkonsekventa. De var det på två sätt samtidigt:
+                    • olika ANATOMI — "Förfallen" var en handrullad span med
+                      `rounded` (4 px) och kopparfärgad TEXT, "Obekräftad" en
+                      `StatusBadge` med `rounded-full` och default-text;
+                    • TVÅ VARNINGSSIGNALER på samma rad — klocka OCH
+                      varningstriangel, i nästan samma kopparton.
+                  Båda pillarna går nu genom `StatusBadge`, och regeln är MAX EN
+                  VARNINGSSIGNAL PER RAD: "Förfallen" behåller warning/koppar
+                  (en passerad deadline ÄR brådska), "Obekräftad" blir neutral
+                  (den har ett eget bekräftelseflöde och är det normala läget
+                  för en ny anmälan — inte samma allvar).
+                  Se `StatusBadge.tsx` § TON_FORM för hela resonemanget. */}
               {rad.forfallen && (
-                /* VARNINGSTON, INTE NEUTRAL (pass 11, Marcus dom
-                     2026-09-01). Pillen bar `bg-bg` — vitt, alltså vitt på ett
-                     vitt kort: ett märke som inte märkte något. Den bär nu
-                     husets varnings-roller, samma par `StatusBadge` använder
-                     för sin `warning`-ton. MÄTT ur `semantic.css`:
-                     `--mm-warning` = `--p-copper-500` = #a3491c mot
-                     `--mm-warning-bg` = `--p-copper-100` = #fdf4ee ⇒ 5,49:1,
-                     över AA-golvet 4,5:1 för den här caption-storleken.
-                     TONEN ÄR KOPPARNS, INTE GULDETS: uppdraget gissade
-                     "gold/amber-familjen", men `semantic.css` är auktoriteten
-                     och den mappar warning till koppar. Ingen primitiv slås
-                     upp direkt härifrån. */
-                <span className="text-(color:--mm-warning) inline-flex items-center gap-1 rounded border border-transparent bg-(--mm-warning-bg) px-2 py-0.5 text-caption contrast-more:border-(--mm-warning)">
-                  <Clock aria-hidden size={13} />
+                /* KLOCKAN BEHÅLLS via `ikon`-proppen: det är TIDEN som gått
+                   fel, inte ett generellt larm. Tonen är kopparns och inte
+                   guldets — `semantic.css` mappar warning till koppar, och den
+                   är auktoriteten. Ikonens storlek sätts nu av skalsteget
+                   (`sm` ⇒ 13), inte av anropet: samma 13 px som förut, men
+                   omöjlig att sätta fel. */
+                <StatusBadge ton="warning" storlek="sm" ikon={Clock}>
                   Förfallen
-                </span>
+                </StatusBadge>
               )}
               {rad.obekraftad && (
-                <StatusBadge ton="warning" storlek="sm">
+                <StatusBadge ton="neutral" storlek="sm">
                   Obekräftad
                 </StatusBadge>
               )}

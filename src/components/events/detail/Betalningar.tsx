@@ -475,7 +475,11 @@ function BetalningsPersonRad({ registration }: { registration: Registration }) {
         {(arObekraftad || kategoriPill) && (
           <span className="flex shrink-0 flex-wrap items-center justify-end gap-1.5">
             {arObekraftad && (
-              <StatusBadge ton="warning" storlek="sm">
+              /* NEUTRAL, INTE WARNING (Marcus dom 2026-09-01). "Obekräftad"
+                 har ett eget bekräftelseflöde och är det NORMALA läget för en
+                 ny anmälan — den ska inte ropa lika högt som en verklig
+                 brådska. Se `StatusBadge.tsx` § TON_FORM. */
+              <StatusBadge ton="neutral" storlek="sm">
                 Obekräftad
               </StatusBadge>
             )}
