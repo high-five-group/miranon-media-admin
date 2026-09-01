@@ -787,8 +787,41 @@ export function BetalningsInkorg() {
           en ensam strö-knapp mellan segmentväljaren och listan — flyttad hit,
           bredvid rubriken, samma rad. Knappen göms medan importytan är
           öppen (oförändrat beteende) — se `visaImport`-villkoret nedan. */}
-      <header className="flex flex-wrap items-start justify-between gap-3 px-4">
-        <div className="flex flex-col gap-1">
+      {/* ═══ SIDHUVUDET SPEGLAR FILTERRADENS RUTNÄT (Marcus 2026-09-01) ═══
+          Ordagrant: *"Jag tycker 'Importera kontoutdrag'-knappen ska sitta
+          liksom centrerat på rubrik-raden men kant i kant med sökrutan."*
+
+          VAD SOM VAR FEL, MÄTT I RUTNÄTET (inre kolumn 568 px, se
+          `FilterRad`-anropet nedan för härledningen av det talet):
+            sökrutans högerkant .... x=514   (568 − 16 gap − 38 tratt)
+            trattens högerkant ..... x=568
+            knappens högerkant ..... x=552   ← låg MITT EMELLAN de två
+          Knappen linjerade alltså med ingenting alls. Den satt på
+          `<header px-4>`s innerkant (552), en linje ingen annan yta på sidan
+          bär. Det är den raggade högerkanten Marcus såg.
+
+          LÖSNINGEN ÄR STRUKTURELL, INTE EN MARGINAL: headern får SAMMA
+          tre-delade rytm som filterraden — `[innehåll flex-1][gap-4][rund
+          ändknapp]`. Filterradens ändknapp är tratten; headern har ingen, så
+          den RESERVERAR spåret med en tom spegel av trattens egna mått
+          (`p-2.5` + 18 px ikon — samma klasser som `FilterRad.tsx:254-258`,
+          inte en uträknad pixel). Följden: knappens högerkant hamnar på 514,
+          alltså exakt sökrutans.
+
+          `pl-4` I STÄLLET FÖR `px-4`: högerkanten måste nå 568 för att
+          speglingen ska gälla, precis som filterraden når dit via sitt
+          `-mx-4`. Vänsterkanten är ORÖRD (16 px) — rubrikens placering var
+          aldrig det Marcus klagade på.
+
+          `items-center` (var `items-start`) ÄR "centrerat på rubrik-raden":
+          knappen är `size="sm"` medan rubriken är `text-3xl`, så toppjustering
+          klistrade den i överkant. Nu delar de mittlinje.
+
+          KNAPPEN OCH SPEGELN LIGGER I EN EGEN GRUPP så `flex-wrap` flyttar dem
+          TILLSAMMANS på smal skärm — annars hade spåret kunnat brytas ner på en
+          egen rad och lämnat 38 px tomrum. */}
+      <header className="flex flex-wrap items-center gap-4 pl-4">
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
           <h1 className="font-semibold text-3xl">Betalningar</h1>
           {/* KÖ-RADEN ERSÄTTER TRE-TALS-RADEN (Marcus 2026-09-01, om
               "5 öppna · 5 förfallna · 0 kvitton i kö"): *"vad betyder det?
@@ -817,19 +850,35 @@ export function BetalningsInkorg() {
           )}
         </div>
         {!visaImport && (
-          <Button
-            ref={importKnappRef}
-            intent="secondary"
-            emphasis="outline"
-            size="sm"
-            onPress={() => setVisaImport(true)}
-          >
-            {/* TERMEN ÄR "KONTOUTDRAG" (Marcus dom 2026-09-01) — se
-                `SwishImport.tsx`s `aria-label` för hela skälet. Knappen och
-                dialogens rubrik bär SAMMA ord, så Lotta känner igen ytan hon
-                just öppnade. */}
-            Importera kontoutdrag
-          </Button>
+          <div className="flex shrink-0 items-center gap-4">
+            <Button
+              ref={importKnappRef}
+              intent="secondary"
+              emphasis="outline"
+              size="sm"
+              onPress={() => setVisaImport(true)}
+            >
+              {/* TERMEN ÄR "KONTOUTDRAG" (Marcus dom 2026-09-01) — se
+                  `SwishImport.tsx`s `aria-label` för hela skälet. Knappen och
+                  dialogens rubrik bär SAMMA ord, så Lotta känner igen ytan hon
+                  just öppnade. */}
+              Importera kontoutdrag
+            </Button>
+            {/* TRATT-SPÅRET, TOMT. Speglar `FilterRad.tsx`s trigger-knapp
+                (`inline-flex shrink-0 items-center justify-center ... p-2.5`
+                med en 18 px `Filter`-ikon) så att headerns innehållskolumn
+                slutar på SAMMA x som filterradens gör. `aria-hidden` +
+                `pointer-events-none`: rent rutnät, aldrig något att läsa eller
+                träffa. Ändras trattens storlek i primitiven ska denna spegel
+                följa med — den korrespondensen är hela skälet att måtten står
+                som trattens EGNA klasser i stället för som en summa. */}
+            <span
+              aria-hidden="true"
+              className="pointer-events-none inline-flex shrink-0 items-center justify-center p-2.5"
+            >
+              <span className="block size-[18px]" />
+            </span>
+          </div>
         )}
       </header>
 
