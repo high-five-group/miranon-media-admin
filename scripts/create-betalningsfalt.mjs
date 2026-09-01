@@ -37,7 +37,10 @@
 //       summera rader i en annan databas, beslut 5).
 //   Anmälningar.Kvittonummer
 //     → APP-SKRIVET spegelfält (singleLineText) — skild från det befintliga
-//       länkfältet "Kvitton" (fld2Axx3FsfXndJ39, multipleRecordLinks).
+//       länkfältet "Kvitton" (multipleRecordLinks; fält-ID:t är BAS-
+//       SPECIFIKT, samma skäl som findTableByName-omskrivningen nedan gäller
+//       tabeller — staging fld2Axx3FsfXndJ39, prod fld16sYUYDqN1AUeT,
+//       live-verifierat 2026-09-01).
 //   Anmälningar."Pris (kr) (from Event)"
 //     → ADDITIVT HJÄLPFÄLT (lookup), inte i AC #1:s lista men uttryckligen
 //       tillåtet av uppdraget ("behövs ett additivt hjälpfält (lookup) för
@@ -83,6 +86,57 @@
 // omkastad ordning ger "fält hittades inte"-fel från Airtable, inte tyst fel
 // data.
 //
+// ─────────────────────────────────────────────────────────────────────────
+// PROD-VÄGEN (TASK-346-familjen; kopierad hit av
+// docs/reference/prod-driftsattning-betalningsflodet-runbook.md § Steg 11
+// "Två vägar", väg A — Marcus mandat 2026-09-01, verbatim i
+// tasks/sessions/2026-08-29-session-113.md § MANDAT: "Gällande dina frågor
+// om mandat så har du alla mandat du kan ha", täcker uttryckligen "Airtable
+// prod-fälten via AIRTABLE_PROD_GODKAND_AV_MARCUS-mönstret")
+// ─────────────────────────────────────────────────────────────────────────
+// SAMMA MÖNSTER som scripts/create-eventinnehall-modell.mjs § filhuvud
+// (TASK-309.9, ADR-125 § 8): basen anges som ARGUMENT (`--bas <baseId>`),
+// ALDRIG ur config. `CONFIG.expectedBaseId` förblir staging (oförändrat —
+// den STATISKA CONFIG-formen är och förblir staging-bara). Utan `--bas` körs
+// skriptet mot staging precis som tidigare. Anges `--bas <baseId>` med ett
+// värde SOM SKILJER SIG FRÅN staging krävs DESSUTOM miljövariabeln
+// AIRTABLE_PROD_GODKAND_AV_MARCUS satt till EXAKT samma bas-ID på
+// kommandoraden — Marcus GO i klartext är kommandot han själv kör, inte en
+// flagga en agent kan sätta åt honom (samma disciplin som
+// scripts/deny-prod-ref.sh § header). Saknas eller skiljer sig värdet:
+// VÄGRAR med tydligt skäl (`resolveTargetBaseId`).
+//
+// Token: samma AIRTABLE_SCHEMA_TOKEN-variabel, men värdet måste vara en PAT
+// med schema.bases:read+write mot MÅLBASEN — `.env.seed`s token är scopad
+// ENDAST till staging, så en prod-körning kräver att Marcus temporärt sätter
+// en prod-scopad PAT inline på kommandoraden (aldrig i .env.seed). Se
+// docs/reference/atkomst-och-nycklar.md.
+//
+// Staging-mutexen (kravStagingLedigt) är IRRELEVANT för en prod-körning —
+// den bevakar staging-kontention, inte prod — och hoppas därför över när
+// target skiljer sig från staging.
+//
+// AVVIKELSE FRÅN FÖREBILDEN, BOKFÖRD (skäl, inte tyst): create-eventinnehall-
+// modell.mjs identifierar tabeller via NAMN (findTableByName) genomgående,
+// eftersom det skriptet SKAPAR nya tabeller där inget ID ännu finns. Detta
+// skript identifierade ursprungligen tabeller via HÅRDKODAT STAGING-tableId
+// (findTableById) — en form som är korrekt för staging men INTE bär över
+// till prod. Live-verifierat (read-only mcp__airtable__list_tables/
+// describe_table mot prod, 2026-09-01, tillåtet per runbookens § Steg 11 —
+// schemaläsning är ofarlig): Eventplanering (`tblVE3UKWl1CKrphV`) och
+// Anmälningar (`tbloOcrppVoyrHbrq`) RÅKAR ha samma tabell-ID i båda baserna,
+// men Eventinnehåll gör INTE det (staging `tblwqaBrkm6hJPITd` vs prod
+// `tblfwqsNPSYd6o44L` — skapad separat i respektive bas, TASK-309.2/S108
+// resume 9, data-model.md rad 83). Att lita på att de två förstnämnda RÅKAR
+// sammanfalla vore att bygga in en tyst bräcklighet; skriptet är därför
+// omskrivet till NAMN-baserad tabellidentifiering (samma `findTableByName`-
+// form som förebilden) för SAMTLIGA tre tabeller — enhetligt, inte en
+// specialgren bara för Eventinnehåll. `tableId`-fälten i CONFIG kvarstår som
+// dokumentation av de KÄNDA staging-ID:na (oförändrade), men styr inte
+// längre uppslaget. Beteendet mot staging är oförändrat: samma tabeller
+// hittas, samma fält planeras/skapas — bara uppslagsmekanismen internt är
+// en annan.
+//
 // Exit: 0 = OK (inklusive "redan i synk, inget att göra"), 1 = guard-/
 // konfigurations-/argument-/schemamissmatch-fel, 2 = Airtable-API-fel.
 
@@ -99,7 +153,7 @@ export const CONFIG = {
   forbiddenBaseIds: ['app8uGPrVCVOm6LfD'],
 
   eventinnehall: {
-    tableId: 'tblwqaBrkm6hJPITd',
+    tableId: 'tblwqaBrkm6hJPITd', // STAGING-ID, dokumentation — prod har ANNAT ID (se filhuvudet). Uppslag sker via tableName.
     tableName: 'Eventinnehåll',
     fields: [
       {
@@ -125,7 +179,7 @@ export const CONFIG = {
   },
 
   eventplanering: {
-    tableId: 'tblVE3UKWl1CKrphV',
+    tableId: 'tblVE3UKWl1CKrphV', // staging OCH prod (samma ID i båda, se filhuvudet).
     tableName: 'Eventplanering',
     fields: [
       {
@@ -154,7 +208,7 @@ export const CONFIG = {
   },
 
   anmalningar: {
-    tableId: 'tbloOcrppVoyrHbrq',
+    tableId: 'tbloOcrppVoyrHbrq', // staging OCH prod (samma ID i båda, se filhuvudet).
     tableName: 'Anmälningar',
     /** Fält UTAN cross-table-beroende — skapas i valfri ordning, FÖRE lookup/formel. */
     egnaFält: [
@@ -184,9 +238,9 @@ export const CONFIG = {
         description:
           'APP-SKRIVET spegelfält (ADR-128 beslut 5) — MM-<år>-<löpnummer>, ' +
           'satt av appen när ett kvitto utfärdats. Skild från länkfältet ' +
-          '"Kvitton" (fld2Axx3FsfXndJ39, multipleRecordLinks → ' +
-          'Kvitton-tabellen) — detta är en snabb läsbar text-spegel, inte ' +
-          'en länk.',
+          '"Kvitton" (multipleRecordLinks → Kvitton-tabellen; fält-ID:t är ' +
+          'BAS-SPECIFIKT, refereras därför via NAMN här, inte hårdkodat ' +
+          'ID) — detta är en snabb läsbar text-spegel, inte en länk.',
         // INGEN options-nyckel: singleLineText avvisar `options: {}` med
         // 422 INVALID_FIELD_TYPE_OPTIONS_FOR_CREATE (mätt live, TASK-346.2)
         // — samma "options UTELÄMNAS helt när den är tom"-regel som
@@ -257,12 +311,18 @@ export function validateConfig(config) {
     if (typeof entry?.tableId !== 'string' || entry.tableId.trim().length === 0) {
       throw new Error(`${key}.tableId saknas`);
     }
+    if (typeof entry?.tableName !== 'string' || entry.tableName.trim().length === 0) {
+      throw new Error(`${key}.tableName saknas`);
+    }
     if (!Array.isArray(entry.fields) || entry.fields.length === 0) {
       throw new Error(`${key}.fields måste vara en icke-tom lista`);
     }
   }
   if (typeof anmalningar?.tableId !== 'string' || anmalningar.tableId.trim().length === 0) {
     throw new Error('anmalningar.tableId saknas');
+  }
+  if (typeof anmalningar?.tableName !== 'string' || anmalningar.tableName.trim().length === 0) {
+    throw new Error('anmalningar.tableName saknas');
   }
   if (!Array.isArray(anmalningar.egnaFält) || anmalningar.egnaFält.length === 0) {
     throw new Error('anmalningar.egnaFält måste vara en icke-tom lista');
@@ -279,14 +339,56 @@ export function validateConfig(config) {
   return config;
 }
 
-/** Tolka argv. Enda flaggan är --dry-run: planera, skriv inget. */
+/** Miljövariabeln som bär Marcus GO i klartext för en icke-staging-körning
+ *  (samma mönster som create-eventinnehall-modell.mjs, TASK-309.9/ADR-125 §
+ *  8 — se filhuvudet för denna körnings egen källa, TASK-346-familjen). */
+export const PROD_GODKAND_ENV_VAR = 'AIRTABLE_PROD_GODKAND_AV_MARCUS';
+
+/** Tolka argv. --dry-run: planera, skriv inget. --bas <baseId>: rikta
+ *  körningen mot en annan bas än staging (prod-vägen, se filhuvudet) —
+ *  anges explicit, aldrig ur config. */
 export function parseArgs(argv) {
-  return { dryRun: argv.includes('--dry-run') };
+  const basIndex = argv.indexOf('--bas');
+  const bas = basIndex === -1 ? undefined : argv[basIndex + 1];
+  return { dryRun: argv.includes('--dry-run'), bas };
 }
 
-/** Hitta en tabell efter ID i schema-svarets tables-array. */
-export function findTableById(tables, id) {
-  return (tables ?? []).find((t) => t.id === id);
+/**
+ * Löser vilken bas körningen faktiskt ska rikta sig mot.
+ *
+ * Ingen `--bas`, eller `--bas` = staging-basen: returnerar staging rakt av,
+ * ingen extra gate. `--bas` pekar mot NÅGON ANNAN bas (prod, eller en
+ * felskriven bas-ID): kräver att `godkandEnv` är satt till EXAKT samma
+ * bas-ID — annars VÄGRAR (fail-closed generellt, inte en enumererad
+ * prod-allowlist, så en felskriven bas-ID aldrig råkar glida igenom).
+ *
+ * SAMMA FUNKTION, verbatim, som scripts/create-eventinnehall-modell.mjs
+ * exporterar (se filhuvudet ovan för varför den kopierades hit oförändrad).
+ *
+ * @param {{ bas: string|undefined, stagingBaseId: string, godkandEnv: string|undefined }} args
+ * @returns {string} den faktiska bas-ID:t att köra mot.
+ */
+export function resolveTargetBaseId({ bas, stagingBaseId, godkandEnv }) {
+  if (bas === undefined || bas === stagingBaseId) {
+    return stagingBaseId;
+  }
+  if (godkandEnv !== bas) {
+    throw new Error(
+      `VÄGRAR: basen "${bas}" skiljer sig från staging ("${stagingBaseId}"). Skrivning mot en ` +
+        `icke-staging-bas kräver miljövariabeln ${PROD_GODKAND_ENV_VAR}=<baseId> satt till EXAKT ` +
+        `samma bas-ID på kommandoraden — Marcus GO i klartext (ADR-125 § 8). Satt värde: ` +
+        `${godkandEnv === undefined ? '(saknas)' : `"${godkandEnv}"`}.`,
+    );
+  }
+  return bas;
+}
+
+/** Hitta en tabell efter NAMN (case-sensitive exakt) i schema-svarets
+ *  tables-array — NAMN-baserat, inte ID-baserat: tabell-ID:n är BAS-
+ *  SPECIFIKA (Eventinnehåll har olika ID i staging/prod, se filhuvudet),
+ *  namnet är den enda invarianten som håller oavsett målbas. */
+export function findTableByName(tables, name) {
+  return (tables ?? []).find((t) => t.name === name);
 }
 
 /** Hitta ett fält efter NAMN i en tabells fields-array. */
@@ -429,41 +531,55 @@ async function createMissingFields(baseId, tableId, plan, token, throttleMs, dry
 
 async function main() {
   let args;
+  let targetBaseId;
   try {
     validateConfig(CONFIG);
     args = parseArgs(process.argv.slice(2));
+    targetBaseId = resolveTargetBaseId({
+      bas: args.bas,
+      stagingBaseId: CONFIG.expectedBaseId,
+      godkandEnv: process.env[PROD_GODKAND_ENV_VAR],
+    });
   } catch (err) {
     console.error(`❌ Guard-/konfigurationsfel: ${err.message}`);
     process.exit(1);
   }
+
+  const korMotProd = targetBaseId !== CONFIG.expectedBaseId;
 
   const token = process.env.AIRTABLE_SCHEMA_TOKEN;
   if (!token) {
     console.error(
       '❌ AIRTABLE_SCHEMA_TOKEN saknas i env. Lokalt: .env.seed (gitignorad; se ' +
         '.env.seed.example). Token behöver schema.bases:read + schema.bases:write ' +
-        'mot staging-basen (apphjj8Q7lkXCMsL4). SKILD från STAGING_AIRTABLE_TOKEN — ' +
-        'se create-kvitton-table.mjs § filhuvud.',
+        `mot målbasen (${targetBaseId}). ${
+          korMotProd
+            ? '.env.seed-tokenet är staging-scopat — en prod-körning kräver en prod-scopad ' +
+              'PAT satt inline på kommandoraden, aldrig i .env.seed (se ' +
+              'docs/reference/atkomst-och-nycklar.md).'
+            : 'SKILD från STAGING_AIRTABLE_TOKEN — se create-kvitton-table.mjs § filhuvud.'
+        }`,
     );
     process.exit(1);
   }
 
-  kravStagingLedigt('lokal schema:betalningsfalt');
+  // Staging-mutexen bevakar staging-kontention — irrelevant för en prod-körning.
+  if (!korMotProd) {
+    kravStagingLedigt('lokal schema:betalningsfalt');
+  }
 
   try {
-    console.log(`🔍 Läser schema för ${CONFIG.expectedBaseId} …`);
-    let tables = await getBaseSchema(CONFIG.expectedBaseId, token, CONFIG.requestThrottleMs);
+    console.log(`🔍 Läser schema för ${targetBaseId}${korMotProd ? ' (PROD)' : ''} …`);
+    let tables = await getBaseSchema(targetBaseId, token, CONFIG.requestThrottleMs);
 
     // 1) Eventinnehåll — inga cross-table-beroenden.
-    const eventinnehallTable = findTableById(tables, CONFIG.eventinnehall.tableId);
+    const eventinnehallTable = findTableByName(tables, CONFIG.eventinnehall.tableName);
     if (!eventinnehallTable) {
-      throw new GuardError(
-        `tabellen "${CONFIG.eventinnehall.tableId}" (Eventinnehåll) hittades inte`,
-      );
+      throw new GuardError(`tabellen "${CONFIG.eventinnehall.tableName}" hittades inte`);
     }
     await createMissingFields(
-      CONFIG.expectedBaseId,
-      CONFIG.eventinnehall.tableId,
+      targetBaseId,
+      eventinnehallTable.id,
       planFields(eventinnehallTable, CONFIG.eventinnehall.fields),
       token,
       CONFIG.requestThrottleMs,
@@ -473,15 +589,13 @@ async function main() {
 
     // 2) Eventplanering — inga cross-table-beroenden, MEN dess "Pris (kr)"-
     //    fält-ID krävs av Anmälningars lookup nedan. Läs om schemat efteråt.
-    const eventplaneringTable = findTableById(tables, CONFIG.eventplanering.tableId);
+    const eventplaneringTable = findTableByName(tables, CONFIG.eventplanering.tableName);
     if (!eventplaneringTable) {
-      throw new GuardError(
-        `tabellen "${CONFIG.eventplanering.tableId}" (Eventplanering) hittades inte`,
-      );
+      throw new GuardError(`tabellen "${CONFIG.eventplanering.tableName}" hittades inte`);
     }
     await createMissingFields(
-      CONFIG.expectedBaseId,
-      CONFIG.eventplanering.tableId,
+      targetBaseId,
+      eventplaneringTable.id,
       planFields(eventplaneringTable, CONFIG.eventplanering.fields),
       token,
       CONFIG.requestThrottleMs,
@@ -502,8 +616,8 @@ async function main() {
     }
 
     // Läs om schemat: Eventplanering kan ha fått ett nytt fält-ID i steg 2.
-    tables = await getBaseSchema(CONFIG.expectedBaseId, token, CONFIG.requestThrottleMs);
-    const eventplaneringEfter = findTableById(tables, CONFIG.eventplanering.tableId);
+    tables = await getBaseSchema(targetBaseId, token, CONFIG.requestThrottleMs);
+    const eventplaneringEfter = findTableByName(tables, CONFIG.eventplanering.tableName);
     const prisFältEventplanering = findFieldByName(eventplaneringEfter, 'Pris (kr)');
     if (!prisFältEventplanering) {
       throw new GuardError(
@@ -512,13 +626,13 @@ async function main() {
     }
 
     // 3) Anmälningar — egna fält (ingen cross-table-beroende) FÖRST.
-    const anmalningarTable = findTableById(tables, CONFIG.anmalningar.tableId);
+    const anmalningarTable = findTableByName(tables, CONFIG.anmalningar.tableName);
     if (!anmalningarTable) {
-      throw new GuardError(`tabellen "${CONFIG.anmalningar.tableId}" (Anmälningar) hittades inte`);
+      throw new GuardError(`tabellen "${CONFIG.anmalningar.tableName}" hittades inte`);
     }
     await createMissingFields(
-      CONFIG.expectedBaseId,
-      CONFIG.anmalningar.tableId,
+      targetBaseId,
+      anmalningarTable.id,
       planFields(anmalningarTable, CONFIG.anmalningar.egnaFält),
       token,
       CONFIG.requestThrottleMs,
@@ -527,8 +641,8 @@ async function main() {
     );
 
     // 4) Lookupen — beror på Eventplanering."Pris (kr)"s fält-ID (steg 2/ovan).
-    tables = await getBaseSchema(CONFIG.expectedBaseId, token, CONFIG.requestThrottleMs);
-    let anmalningarEfter = findTableById(tables, CONFIG.anmalningar.tableId);
+    tables = await getBaseSchema(targetBaseId, token, CONFIG.requestThrottleMs);
+    let anmalningarEfter = findTableByName(tables, CONFIG.anmalningar.tableName);
     const befintligLookup = findFieldByName(anmalningarEfter, CONFIG.anmalningar.lookup.name);
     if (befintligLookup) {
       if (befintligLookup.type !== 'multipleLookupValues') {
@@ -547,8 +661,8 @@ async function main() {
       });
       console.log(`🛠️  Skapar lookupen "${CONFIG.anmalningar.lookup.name}" …`);
       const skapad = await createField(
-        CONFIG.expectedBaseId,
-        CONFIG.anmalningar.tableId,
+        targetBaseId,
+        anmalningarEfter.id,
         lookupBody,
         token,
         CONFIG.requestThrottleMs,
@@ -557,8 +671,8 @@ async function main() {
     }
 
     // 5) Formeln — beror på lookupens NAMN (steg 4), refererat i formula.text.
-    tables = await getBaseSchema(CONFIG.expectedBaseId, token, CONFIG.requestThrottleMs);
-    anmalningarEfter = findTableById(tables, CONFIG.anmalningar.tableId);
+    tables = await getBaseSchema(targetBaseId, token, CONFIG.requestThrottleMs);
+    anmalningarEfter = findTableByName(tables, CONFIG.anmalningar.tableName);
     const befintligFormel = findFieldByName(anmalningarEfter, CONFIG.anmalningar.formula.name);
     if (befintligFormel) {
       if (befintligFormel.type !== 'formula') {
@@ -576,8 +690,8 @@ async function main() {
       });
       console.log(`🛠️  Skapar formeln "${CONFIG.anmalningar.formula.name}" …`);
       const skapad = await createField(
-        CONFIG.expectedBaseId,
-        CONFIG.anmalningar.tableId,
+        targetBaseId,
+        anmalningarEfter.id,
         formulaBody,
         token,
         CONFIG.requestThrottleMs,
