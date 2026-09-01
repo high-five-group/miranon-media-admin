@@ -1,35 +1,57 @@
-import { Check } from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import { Check, CircleCheck, Info, TriangleAlert } from 'lucide-react';
 import { type FormEvent, type KeyboardEvent, useEffect, useId, useRef, useState } from 'react';
 import { Checkbox } from 'react-aria-components';
-import { Button, Input, Select, SelectItem } from '@/components/primitives';
+import { Button, Input, MessageBox, Select, SelectItem } from '@/components/primitives';
 import { useRegistreraInbetalning } from '@/data/mutations/inbetalningar';
 import { VALBARA_BETALSATT } from '@/domain/schemas';
 import { beloppsFel, normaliseraBeloppKlient, visaKronor } from './belopp-inmatning';
 import type { Betalsatt } from './betalsatt-minne';
-import {
-  type Beloppsutfall,
-  beloppsutfall,
-  harledBeloppsknappar,
-  type InkorgsRad,
-} from './inkorg-harledningar';
+import { type Beloppsutfall, beloppsutfall, type InkorgsRad } from './inkorg-harledningar';
 
 /**
- * [TASK-346.14, designfynd 5] Status-radens visuella vikt — utfallets EGNA
- * `ton` (redan härlett i `beloppsutfall`, se dess docblock) styr nu FÄRG/VIKT
- * i stället för att varje utfall (täcker hela priset, för mycket, för lite,
- * okänt pris) rendera identiskt dämpat. `tacker`/`over` väger tyngst — de är
- * de två lägen Lotta faktiskt behöver reagera på (spara som är, eller ändra
- * beloppet); `delvis`/`okant` förblir informativa utan att skrika. Inga NYA
- * ord eller meningar — bara vikten på den TEXT `beloppsutfall` redan skriver.
+ * UTFALLET ÄR EN BOX, INTE EN VIKTVÄXLANDE TEXTRAD (Marcus dom 2026-09-01):
+ * *"typsnittet behöver ju inte växla i vikt, endast färg … boxa in texten och
+ * så är det själva boxen som blir grön, gul eller röd, med ikon framför,
+ * bock, info, och varning"*.
+ *
+ * Utfallets EGNA `ton` (härledd i `beloppsutfall`, se dess docblock) mappas
+ * därför till husets `MessageBox`-intent i stället för till en font-vikt.
+ * `tacker` → grön bock, `over` → gul varning, `delvis`/`okant` → info.
+ * TEXTEN ÄR OFÖRÄNDRAD — bara bäraren är ny, och vikten är nu konstant över
+ * alla fyra lägen.
+ *
+ * IKONEN LIGGER I `children`, INTE I PRIMITIVEN. Mätt 2026-09-01:
+ * `MessageBox` bär INGEN ikon (den bär `border-l-4` i intent-färg plus tonad
+ * bakgrund, S109-facit varv 4). Formen är LÅST av ADR-103 B2 steg 1, så
+ * ikonen får inte adderas till primitiven i ett iterationspass — den bor i
+ * konsumentens innehåll, där den inte kan läcka in i de andra ~30
+ * konsumenterna.
+ *
  * `Record` (inte `switch`) så TypeScript fäller om `Beloppsutfall['ton']`
  * någonsin får ett femte läge — en glömd branch här ska vara ett byggfel.
  */
-const BELOPPSUTFALL_KLASS: Record<Beloppsutfall['ton'], string> = {
-  tacker: 'font-medium text-success',
-  over: 'font-medium text-warning',
-  delvis: 'text-text-secondary',
-  okant: 'text-text-muted',
+const UTFALL_FORM: Record<
+  Beloppsutfall['ton'],
+  { intent: 'success' | 'warning' | 'info'; Ikon: LucideIcon }
+> = {
+  tacker: { intent: 'success', Ikon: CircleCheck },
+  over: { intent: 'warning', Ikon: TriangleAlert },
+  delvis: { intent: 'info', Ikon: Info },
+  okant: { intent: 'info', Ikon: Info },
 };
+
+/**
+ * Fördröjningen innan utfallet byts (Marcus: *"kanske 1 sekunds fördröjning"*).
+ *
+ * VARFÖR DEN INTE BARA ÄR KOSMETIK: utfallsregionen är en `aria-live`-yta.
+ * Utan fördröjning annonserades den vid VARJE tangenttryck — "2 kr
+ * registreras", "25 kr registreras", "250 kr registreras" — vilket är precis
+ * den skräpannonsering WAI-ARIA APG varnar för i sitt live-region-avsnitt.
+ * Fördröjningen gör alltså två saker med en ratt: boxen slutar blinka, och
+ * skärmläsaren får ETT besked per belopp i stället för ett per siffra.
+ */
+const UTFALL_FORDROJNING_MS = 1000;
 
 export type RegistreringsUtfall = {
   inbetalningId: string;
@@ -57,12 +79,15 @@ type Props = {
  * PÅ PLATS I RADEN.
  *
  * ═══════════════════════════════════════════════════════════════════════════
- * TRE HANDLINGAR, INTE SEX
+ * TVÅ HANDLINGAR, INTE SEX
  * ═══════════════════════════════════════════════════════════════════════════
  * PRD berättelse 6, ordagrant: "Som Lotta vill jag att betalsättet är förvalt
  * till det jag använde senast och datumet till i dag, så att en registrering
- * är tre handlingar." De tre är: öppna raden, tryck på ett belopp, tryck
- * Enter. Allt annat i formuläret är redan ifyllt.
+ * är tre handlingar." De tre VAR: öppna raden, tryck på ett belopp, tryck
+ * Enter. Sedan Marcus rev beloppschipsen (2026-09-01, se `forifyllt` nedan)
+ * är de TVÅ: öppna raden, tryck Enter — beloppsfältet bär redan resten-talet
+ * som chipset tryckte in. PRD:ns löfte är alltså inte sänkt utan överträffat;
+ * raden står här i sin ursprungliga ordalydelse för att skillnaden ska synas.
  *
  * ═══════════════════════════════════════════════════════════════════════════
  * BELOPPET SKICKAS SOM RÅ STRÄNG
@@ -93,64 +118,97 @@ type Props = {
  * därför till samma migration.
  */
 export function RegistreraForm({ rad, idag, betalsatt, onBetalsatt, onAvbryt, onKlar }: Props) {
-  const [belopp, setBelopp] = useState('');
+  /* ═══════════════════════════════════════════════════════════════════════
+   * INGA SNABBVAL — FÄLTET ÄR FÖRIFYLLT MED RESTEN (Marcus dom 2026-09-01)
+   * ═══════════════════════════════════════════════════════════════════════
+   * Ordagrant: *"Vi behöver inte ha några 'snabb-val' som '1500 - resten'
+   * eller 'annat…'"*. Beloppschipsen (`harledBeloppsknappar`) är därför rivna
+   * ur formuläret.
+   *
+   * DE TRE HANDLINGARNA BLIR TVÅ. PRD berättelse 6 räknade "öppna raden,
+   * tryck på ett belopp, tryck Enter". Chipset var handling nummer två — och
+   * i det vanligaste fallet av alla tryckte det in exakt det tal fältet nu
+   * redan bär. Kvar är: öppna raden, tryck Enter.
+   *
+   * FÖRIFYLLNADEN ÄR RESTEN, aldrig avgiften: `rad.kvar` är vad som återstår
+   * av HELA priset enligt Postgres (`harledRad`), alltså det chipset kallade
+   * "allt"/"resten". Avgifts-chipset hade ingen motsvarighet här — delbetalar
+   * Lotta skriver hon talet, precis som hon skrev det i "annat belopp".
+   *
+   * TOMT FÄLT NÄR PRISET ÄR OKÄNT (`rad.kvar === null`) eller redan täckt
+   * (`<= 0`). Att förifylla ett belopp ur ett okänt pris vore att hitta på ett
+   * tal — samma regel `harledBeloppsknappar` bar när den härledde noll chips.
+   *
+   * FÖRSLAGET ÄR ORKESTRERARENS, inte Marcus egna ord — han bad om att chipsen
+   * skulle bort, inte uttryckligen om en förifyllnad. Bokfört som eget
+   * designval så att det kan rivas utan att chipsen behöver tillbaka.
+   */
+  const forifyllt = rad.kvar !== null && rad.kvar > 0 ? visaKronor(rad.kvar) : '';
+  const [belopp, setBelopp] = useState(forifyllt);
+  /** Beloppet UTFALLSBOXEN visar — `belopp` fördröjt, se `UTFALL_FORDROJNING_MS`. */
+  const [visatBelopp, setVisatBelopp] = useState(forifyllt);
   const [datum, setDatum] = useState(idag);
   const [medKvitto, setMedKvitto] = useState(true);
   const [rort, setRort] = useState(false);
   const beloppRef = useRef<HTMLInputElement>(null);
-  const forstaKnappRef = useRef<HTMLButtonElement>(null);
   const felId = useId();
 
   const registrera = useRegistreraInbetalning();
-  const knappar = harledBeloppsknappar(rad);
 
   /* ═══════════════════════════════════════════════════════════════════════
-   * FOKUS IN VID ÖPPNING - FÖRSTA BELOPPS-KNAPPEN, ANNARS FÄLTET
+   * FOKUS IN VID ÖPPNING — BELOPPSFÄLTET, MED TEXTEN MARKERAD
    * ═══════════════════════════════════════════════════════════════════════
    * Granskningsfynd runda 1: formuläret ersätter trigger-knappen i DOM:en, så
    * utan detta faller fokus till `document.body` när raden öppnas.
    *
-   * VALET, OCH VARFÖR (granskningen bad om att det bokförs): fokus går till
-   * FÖRSTA BELOPPS-KNAPPEN när det finns någon, annars till beloppsfältet.
+   * MÅLET ÄR NU ALLTID FÄLTET. Tidigare gick fokus till första belopps-chipet
+   * med motiveringen att chipsen stod FÖRE fältet i DOM och annars hade legat
+   * bakom användaren i tab-ordningen. Chipsen finns inte längre, så det skälet
+   * är borta med dem — och fältet var redan den fallback som fanns i varje
+   * läge.
    *
-   *   - Knappen är PRD:ns primära handling: "tryck på det belopp banken visar
-   *     (1 000, 2 500 eller annat) i stället för att skriva det" (berättelse
-   *     3). De tre handlingarna i berättelse 6 är öppna raden, tryck på ett
-   *     belopp, tryck Enter - och den andra av dem är just denna knapp.
-   *   - TAB-ORDNINGEN AVGÖR RESTEN. Knapparna står FÖRE fältet i DOM, så ett
-   *     fokus i fältet hade lagt dem BAKOM användaren: en tangentbords-Lotta
-   *     som tabbar framåt hade aldrig mött dem, bara Shift+Tab hade nått dem.
-   *     Fokus på första knappen gör hela formuläret nåbart framåt.
-   *   - Fältet är fallbacken därför att det är den enda kontroll som finns i
-   *     VARJE läge: är priset okänt härleds noll knappar, och då hade en
-   *     regel som bara pekade på knappen lämnat fokus i tomma intet.
+   * `select()` GÖR ÖVERSKRIVNINGEN TILL EN HANDLING: förifyllnaden är ett
+   * FÖRSLAG, inte ett facit. Med texten markerad ersätter första siffran hela
+   * talet — Lotta behöver aldrig radera först. Är förslaget rätt trycker hon
+   * bara Enter.
    *
-   * Effekten körs EN gång, vid montering: formuläret monteras när raden
-   * öppnas och avmonteras när den stängs, så "vid montering" och "vid
-   * öppning" är samma ögonblick. `knappar.length` läses inne i effekten och
-   * inte som beroende - antalet kan ändras när Lotta registrerar, och en
-   * omfokusering då hade ryckt markören ur fältet hon skriver i.
+   * Effekten körs EN gång, vid montering: formuläret monteras när raden öppnas
+   * och avmonteras när den stängs, så "vid montering" och "vid öppning" är
+   * samma ögonblick.
    */
   useEffect(() => {
-    if (forstaKnappRef.current) forstaKnappRef.current.focus();
-    else beloppRef.current?.focus();
+    const falt = beloppRef.current;
+    if (!falt) return;
+    falt.focus();
+    falt.select();
   }, []);
+
+  /* FÖRDRÖJNINGEN, ETT `setTimeout` PER TANGENTTRYCK — och det är avsikten:
+     effekten städar sitt eget timeout i cleanup, så en ny tangenttryckning
+     nollställer klockan i stället för att köa ännu ett byte. Utfallet byts
+     alltså EN sekund efter att Lotta slutat skriva, inte en sekund efter att
+     hon börjat. Vaktsatsen (`belopp === visatBelopp`) gör att monteringen med
+     förifyllt värde inte kostar ett timeout alls — boxen står rätt direkt. */
+  useEffect(() => {
+    if (belopp === visatBelopp) return;
+    const id = window.setTimeout(() => setVisatBelopp(belopp), UTFALL_FORDROJNING_MS);
+    return () => window.clearTimeout(id);
+  }, [belopp, visatBelopp]);
+
+  /** Hoppar över fördröjningen. Marcus: *"vid Enter/blur visas utfallet direkt"*. */
+  function visaUtfallNu() {
+    setVisatBelopp(belopp);
+  }
+
   const talet = normaliseraBeloppKlient(belopp);
+  // FELET ÄR LIVE, UTFALLET ÄR FÖRDRÖJT — två olika frågor, två olika takter.
+  // "abc" ska säga ifrån vid fältet medan hon skriver (felvägen är oförändrad);
+  // "vad täcker beloppet" är ett besked som bara är intressant när talet är
+  // färdigskrivet.
   const fel = rort ? beloppsFel(belopp) : null;
-  const utfall = talet !== null && talet !== 0 ? beloppsutfall(rad, talet) : null;
+  const visatTalet = normaliseraBeloppKlient(visatBelopp);
+  const utfall = visatTalet !== null && visatTalet !== 0 ? beloppsutfall(rad, visatTalet) : null;
   const kanSpara = talet !== null && talet !== 0 && !registrera.isPending;
-
-  function valjBelopp(varde: number) {
-    setBelopp(visaKronor(varde));
-    setRort(true);
-    beloppRef.current?.focus();
-  }
-
-  function annatBelopp() {
-    setBelopp('');
-    setRort(false);
-    beloppRef.current?.focus();
-  }
 
   async function spara(skickaNu: boolean) {
     if (!kanSpara || talet === null) return;
@@ -189,6 +247,7 @@ export function RegistreraForm({ rad, idag, betalsatt, onBetalsatt, onAvbryt, on
 
   function vidSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    visaUtfallNu();
     void spara(false);
   }
 
@@ -207,6 +266,7 @@ export function RegistreraForm({ rad, idag, betalsatt, onBetalsatt, onAvbryt, on
   function vidTangent(event: KeyboardEvent<HTMLFormElement>) {
     if (event.key === 'Enter' && (event.metaKey || event.ctrlKey)) {
       event.preventDefault();
+      visaUtfallNu();
       void spara(true);
       return;
     }
@@ -239,84 +299,71 @@ export function RegistreraForm({ rad, idag, betalsatt, onBetalsatt, onAvbryt, on
          rutnät" betyder. */
       className="flex flex-col gap-3 border-border border-t py-3"
     >
-      {knappar.length > 0 && (
-        /* BELOPPSVALEN ÄR SYSKON I SAMMA VIKT (Marcus dom 2026-09-01).
-           "annat ..." var `intent="ghost"` — naken text bredvid två
-           outlined-knappar, alltså ett tredje val som såg ut som en
-           bortglömd länk. Alla tre är nu samma `secondary`/`outline`-chip.
-           Etiketten är dessutom en riktig etikett: "Annat belopp", versal
-           och utan hängande punkter. */
-        <div className="flex flex-wrap gap-2">
-          {knappar.map((knapp, index) => (
-            <Button
-              key={knapp.nyckel}
-              // Fokus-in-målet vid öppning — se docblocket vid `useEffect`.
-              ref={index === 0 ? forstaKnappRef : undefined}
-              intent="secondary"
-              emphasis="outline"
-              size="sm"
-              onPress={() => valjBelopp(knapp.belopp)}
-            >
-              {visaKronor(knapp.belopp)} · {knapp.etikett}
-            </Button>
-          ))}
-          <Button intent="secondary" emphasis="outline" size="sm" onPress={annatBelopp}>
-            Annat belopp
-          </Button>
-        </div>
-      )}
+      <Input
+        ref={beloppRef}
+        label="Belopp i kronor"
+        value={belopp}
+        onChange={(v) => {
+          setBelopp(v);
+          setRort(true);
+        }}
+        // Lämnar hon fältet är talet färdigskrivet — då ska beskedet stå där,
+        // inte komma en sekund senare när blicken redan flyttat.
+        onBlur={visaUtfallNu}
+        // `decimal` och inte `numeric`: iPad ska ge decimaltecken, eftersom
+        // banken visar "2 500,00" och det är precis den formen Lotta klistrar
+        // in (PRD berättelse 4, AC #6 iPad-kravet).
+        inputMode="decimal"
+        autoComplete="off"
+        placeholder="2 500,00"
+        isInvalid={fel !== null}
+        errorMessage={fel ?? undefined}
+        aria-describedby={utfall ? felId : undefined}
+      />
 
-      {/* BELOPPSFÄLTET OCH DESS UTFALLSRAD ÄR ETT BLOCK — och det är fixen
-          för det tomma hålet (Marcus dom 2026-09-01).
+      {/* ═══ UTFALLET: EN ALLTID-MONTERAD LIVE-REGION + EN SYNLIG BOX ═══
+          Vad beloppet täcker (AC #5), i två separata bärare — och separationen
+          är hela poängen.
 
-          ROTORSAK, mätt i koden: utfallsraden är ALLTID monterad (a11y-krav,
-          se nedan) och bar `min-h-5`. Tom blev den alltså ett 20 px högt
-          osynligt block som dessutom låg som EGET flex-syskon i formulärets
-          `gap-3` — 12 px före + 20 px block + 12 px efter = 44 px död yta
-          mellan beloppsfältet och Betalsätt-raden, i det vanligaste läget
-          av alla (innan Lotta valt ett belopp).
+          LIVE-REGIONEN (`sr-only`) är ALLTID monterad, med `role="status"` som
+          ALDRIG byter värde. Roselli-anatomin (se `primitives/FilterRad.tsx`)
+          kräver att regionen finns i DOM innan texten stoppas in — en region
+          som monteras samtidigt som sin text annonseras inte. Boxen nedan är
+          däremot VILLKORAD (den ska inte stå tom och grön innan Lotta skrivit
+          något), och `MessageBox` byter dessutom `role` mellan `status` och
+          `alert` med sin intent. Båda egenskaperna är oförenliga med en
+          tillförlitlig live-region, så annonseringen görs inte av boxen.
 
-          Fältet och raden bor nu i ett eget `gap-1`-block, och `min-h-5` är
-          borta: tom kollapsar raden till noll och kostar 4 px i stället för
-          44. Att texten sedan skjuter Betalsätt-raden 20 px nedåt när den
-          dyker upp är ett medvetet byte — det sker EN gång, vid det första
-          beloppsvalet, alltså innan Lotta tittar på Betalsätt. */}
-      <div className="flex flex-col gap-1">
-        <Input
-          ref={beloppRef}
-          label="Belopp i kronor"
-          value={belopp}
-          onChange={(v) => {
-            setBelopp(v);
-            setRort(true);
-          }}
-          // `decimal` och inte `numeric`: iPad ska ge decimaltecken, eftersom
-          // banken visar "2 500,00" och det är precis den formen Lotta klistrar
-          // in (PRD berättelse 4, AC #6 iPad-kravet).
-          inputMode="decimal"
-          autoComplete="off"
-          placeholder="2 500,00"
-          isInvalid={fel !== null}
-          errorMessage={fel ?? undefined}
-          aria-describedby={utfall ? felId : undefined}
-        />
+          BOXEN ÄR DÄRFÖR `aria-hidden` — texten är ordagrant densamma i
+          regionen ovan, så ingenting går förlorat; utan den hade samma besked
+          annonserats två gånger. `sr-only` är `position: absolute` och alltså
+          inget flex-item, så den alltid-monterade regionen kostar noll höjd i
+          formulärets rytm (den tomma-hålet-fällan från pass 6 kan inte
+          återuppstå).
 
-        {/* Vad beloppet täcker (AC #5). `role="status"` och inte `alert`: det är
-            en upplysning som uppdateras medan Lotta skriver, inte ett fel.
-            Regionen är ALLTID monterad så att skärmläsaren har något att
-            annonsera IN i - en region som monteras samtidigt som sin text
-            annonseras inte (Roselli-anatomin, se primitives/FilterRad.tsx).
-            Den MONTERINGEN är oförändrad; bara den reserverade höjden är
-            borta. */}
-        <p
-          id={felId}
-          role="status"
-          aria-live="polite"
-          className={`text-small ${utfall ? BELOPPSUTFALL_KLASS[utfall.ton] : 'text-text-muted'}`}
-        >
-          {utfall?.text ?? ''}
-        </p>
-      </div>
+          ANNONSERINGEN SKER EFTER FÖRDRÖJNINGEN, aldrig per tangenttryck: båda
+          bärarna läser `utfall`, som är härlett ur det FÖRDRÖJDA `visatBelopp`.
+
+          LUFTEN kommer ur formulärets egen `gap-3` — boxen är ett eget
+          flex-syskon (inte inklämd i ett `gap-1`-block med fältet), plus
+          `MessageBox` egen `px-4 py-3`. */}
+      <p id={felId} role="status" aria-live="polite" className="sr-only">
+        {utfall?.text ?? ''}
+      </p>
+      {utfall &&
+        (() => {
+          const { intent, Ikon } = UTFALL_FORM[utfall.ton];
+          return (
+            <div aria-hidden="true">
+              <MessageBox intent={intent}>
+                <span className="flex items-start gap-2">
+                  <Ikon aria-hidden="true" size={18} className="mt-0.5 shrink-0" />
+                  <span>{utfall.text}</span>
+                </span>
+              </MessageBox>
+            </div>
+          );
+        })()}
 
       <div className="flex flex-wrap gap-3">
         <Select
