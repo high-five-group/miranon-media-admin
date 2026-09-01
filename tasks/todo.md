@@ -11,23 +11,24 @@
 > Implementation-journal i `docs/BUILD-LOG.md`.
 > Styrande dokument: [`docs/byggplan.md`](../docs/byggplan.md)
 
-**Session 113 ▶️ ÅTERUPPTAGEN (resume 7, 2026-09-01 ~11:40 UTC,
-`lifecycle: active`; Marcus: *"Återuppta S113"*; paus 7 var 2026-09-01
-~11:20 UTC — dukad för promoveringen, Lotta-demo IMORGON):**
-PROMOVERINGSSEKVENSEN KÖRS autonomt per paus 7-mandaten (*"du har alla
-mandat du kan ha"* — armering vid hög, baselines, Airtable-fälten, flaggan,
-backfillen): grindar → PR → review-loop → armering → main → baselines →
-runbook-verifiering → prod-fält → **Marcus terminal-block steg 1–10
-(grinden för Lotta)** → flagga+backfill+facit — de 9 stegen i sessionsdok
-S113 § Paushistorik paus 7. Grenen `fix/hem-betalningskort-marcus-iteration`
-HEAD `6d5e46c3` verifierad (40 commits från merge-base, handoffens "48" var
-räknefel), INGEN PR än. Resume-verifikat: numrering ADR 130 · kort 357 ·
-L655 · T181 · 23 fragment (ett tillkommet under pausen); resume arbetar i
-egen worktree `s113-resume-7` (ADR-090 — S114 äger huvudkatalogen).
-Paus 7-leveransen (Marcus designvandring, FJORTON fix-pass, Hem-blocket,
-inkorgen, noteringskedjan, avtalat pris, Pricka av-rivningen): sessionsdok
-S113 § Paushistorik paus 7. Ny tråd `T180` (kvitto som bilagetyp —
-grillning post-promovering). `#2050`/`#2180` väntar Marcus.
+**Session 113 ▶️ AKTIV — PROMOVERINGEN KÖRD TILL MARCUS-GRINDEN (resume 7,
+2026-09-01 ~11:40–14:00 UTC, autonomt per paus 7-MANDATEN; Lotta-demo
+IMORGON):** promoverings-PR **`#2193` MERGAD** (`9dca0e56`, 44 commits —
+hela TASK-346-leveransen + steg 1b Förhandsgranska kvitton, vars
+"ren frontend"-premiss falsifierades och löstes som sidoeffektsfri
+`preview-receipt`-utökning, staging-skarpbevisad 23/23) · `#2192`
+(steg 11-skriptvägen + runbook-rättelser, `9c1fced2`) · `#2194` (steg 8-
+allowlistens nio EF:er + intern-auth-klassen i ef-metod-vakten, `a2a9b232`)
+· `#2196` baselines (36 bilder, själv-blessad per MANDAT, armerad i kön) —
+samtliga genom full review-loop (konvergens, sektion, backstopp; hög
+mandat-armerad). **Steg 6 UTFÖRT:** alla nio Airtable-prod-fält skapade +
+describe_table-verifierade (formeln exakt). **NÄSTA = STEG 7, MARCUS
+TERMINAL-BLOCK steg 1–10 (grinden för Lotta)** — allt dukat: runbooken
+aktuell (FYRA migrationer), allowlisten landad, prod-fälten på plats.
+Därefter per MANDAT: steg 14 Vercel-flaggan → steg 13 backfillen → steg 16
+facit → röktest-listan. Bokfört: TASK-357 mintad (seed-review-prisfälten) ·
+346.7 redan Done · T180/T181 grillnings-kandidater post-promovering ·
+`#2050`/`#2180` väntar Marcus. Full narrativ: sessionsdok S113 Del 15.
 
 ---
 
