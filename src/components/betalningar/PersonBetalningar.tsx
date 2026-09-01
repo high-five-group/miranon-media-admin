@@ -65,7 +65,26 @@ export function PersonBetalningar({ person }: { person: PersonDetail }) {
 
   return (
     <div className="flex flex-col gap-4 py-3">
-      <div className="flex flex-col gap-3">
+      {/* ═══ STATUSKORTET: STATUS + EVENT + KNAPP SOM EN ENHET (pass 8) ═══
+          Marcus dom 2026-09-01: *"Det är något med den översta raden i
+          betalningsblocket som stör mig, borde vi inte boxa in den snyggare?"*
+
+          MÄTT VAD SOM STÖRDE: sammanfattningsmeningen låg direkt på sektionens
+          grå botten (vänsterkant 0), medan varje event-rad låg i ett eget
+          `bg-bg-muted px-3`-kort — alltså en andra vänsterlinje 12 px in, i
+          samma ton som botten bakom den. Tre fragment, tre kanter, ingen av dem
+          en yta.
+
+          KORTFORMEN ÄR INBETALNINGSRADERNAS, inte en ny: `rounded-2xl border
+          border-transparent bg-surface p-3 contrast-more:border-border-strong`
+          (`InbetalningsLista.tsx` § KORTYTAN). Vit yta på den grå botten, precis
+          som raderna längre ned — så sektionen läser som en familj i stället för
+          som två uppfinningar.
+
+          EVENT-KORTENS EGNA `bg-bg-muted`-ytor ÄR RIVNA: de låg på en botten i
+          exakt samma ton och avgränsade därför ingenting. Nu delar status, event
+          och knapp EN vänsterlinje — kortets `p-3`. */}
+      <div className="flex flex-col gap-4 rounded-2xl border border-transparent bg-surface p-3 contrast-more:border-border-strong">
         <p className="text-body">
           {oversikt.rader.length === 0
             ? 'Inget kvar att betala.'
@@ -91,7 +110,7 @@ export function PersonBetalningar({ person }: { person: PersonDetail }) {
             gemensamt formulär hade tvingat Lotta att välja event i en
             rullgardin som ytan inte behöver. */}
         {oversikt.rader.map((rad) => (
-          <div key={rad.nyckel} className="flex flex-col gap-2 rounded bg-bg-muted px-3 py-2">
+          <div key={rad.nyckel} className="flex flex-col gap-2">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <span className="font-medium text-small">
                 {rad.betalning.eventNamn ?? 'Utan event'}
@@ -108,13 +127,31 @@ export function PersonBetalningar({ person }: { person: PersonDetail }) {
         ))}
       </div>
 
-      <div className="flex flex-col gap-2">
-        {/* NORMAL UNDERRUBRIK, INTE VERSAL-OVERLINE (Marcus dom 2026-09-01).
-            `font-medium text-caption uppercase tracking-wide` är samma
-            viskande etikettklass han rev på Hem-blocket samma dag: den läses
-            som en fotnot, inte som rubriken över en lista man ska agera på.
-            `font-semibold text-body` är husets underrubrik ett steg under
-            `Sektion`s egen `text-lg`-h2. */}
+      {/* ═══ BLOCK INUTI BLOCKET (pass 8) ═══
+          Marcus dom 2026-09-01: *"Borde inte 'Senaste inbetalningar' mer vara
+          ett block inuti blocket?"* — rubriken var en lös etikett följd av
+          svävande kort, inte en grupp.
+
+          FORMEN ÄR BILAGE-YTANS `GRUPPKORT_KLASS` (`DokumentYta.tsx`): en tonad
+          behållare vars padding ÄR rännan, med vita kort inuti som den tonade
+          ytan syns mellan. TVÅ MEDVETNA AVSTEG från förlagan, båda tvingade av
+          att vi redan står på en tonad botten:
+
+           • TONEN ÄR `bg-bg-emphasized`, inte `bg-bg-muted`. `Sektion`s egen
+             behållare (`PersonDetail.tsx`) ÄR `bg-bg-muted` — en grupp i samma
+             ton hade varit osynlig. Samma felklass som `RackviddBadge`
+             dokumenterar två gånger i sitt eget huvud (mätt ΔE00 0,00 när en
+             pill bar samma token som ytan bakom).
+           • RUBRIKEN LIGGER INUTI behållaren, medan `Sektion`/`DetaljGrupp`
+             lägger sin `h2` utanför. Det är precis vad Marcus bad om: det är
+             etikettens LÖSHET som är felet, och en rubrik utanför lådan förblir
+             lös. Husets form gäller sektionsnivån; detta är nivån under.
+
+          Rubrikens klass är oförändrad — `font-semibold text-body`, husets
+          underrubrik ett steg under `Sektion`s `text-lg`-h2 (och INTE den
+          viskande `text-caption uppercase`-etiketten Marcus rev på Hem-blocket
+          samma dag). */}
+      <div className="flex flex-col gap-2 rounded-2xl border border-transparent bg-bg-emphasized p-3 contrast-more:border-border-strong">
         <h3 className="font-semibold text-body">Senaste inbetalningar</h3>
         <InbetalningsLista
           kalla={{ personId: person.id }}

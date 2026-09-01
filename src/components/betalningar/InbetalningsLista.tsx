@@ -1,14 +1,4 @@
-import {
-  AlertTriangle,
-  Ban,
-  Banknote,
-  Ellipsis,
-  ExternalLink,
-  Loader2,
-  Send,
-  Trash2,
-  Undo2,
-} from 'lucide-react';
+import { AlertTriangle, Ban, Ellipsis, ExternalLink, Loader2, Send, Trash2 } from 'lucide-react';
 import { type FormEvent, type KeyboardEvent, useEffect, useId, useRef, useState } from 'react';
 import { Button, Input, MessageBox, Skeleton } from '@/components/primitives';
 import { Meny, MenyAvdelare, MenyPost } from '@/components/primitives/Meny';
@@ -148,6 +138,10 @@ type Props = {
  *     träffyta) — `TypGlyf`s roll och geometri. `aria-hidden`: glyfen är ett
  *     skanningsstöd, aldrig budskapet (WCAG 1.4.1) — makuleringen sägs i
  *     TEXT och med genomstrykning, precis som förut.
+ *     [PASS 8, 2026-09-01] KOLUMNEN FINNS NU BARA PÅ EN MAKULERAD RAD. Marcus:
+ *     *"fruktansvärt ful swish-ikon/betalningsikon"*. Sedel- och
+ *     återbetalnings-glyferna bar ingen information de andra leden inte redan
+ *     bar; `Ban` gör det. Hela resonemanget vid renderingen nedan.
  *   • BELOPPET ÄR PRIMÄRLEDET (`font-medium text-body`), metadatan ETT
  *     sekundärt svep under (`text-caption text-text-muted`): betalsätt ·
  *     datum · kvittostatus. Kvittostatusen svävar alltså inte längre — den
@@ -300,11 +294,18 @@ function InbetalningsRad({
   // [TASK-346.14, designfynd 3d] Har raden NÅGON handling att visa på sin
   // egen rad? En makulerad rad utan kvitto kan sakna alla fem — utan detta
   // villkoret hade en tom, högerställd rad ändå lagt till ett `gap-2`-mellanrum.
-  const harHandlingar =
-    lage.kanVisa ||
-    (lage.kanSkickaIgen && lage.kvitto !== null) ||
-    lage.kanKoaOm ||
-    (atgard === 'vy' && (visaRadera || visaMakulera));
+  /* MENYNS ICKE-DESTRUKTIVA POSTER, som en egen härledning — den avgör både
+     `harHandlingar` nedan och om avdelaren före Radera/Makulera ska ritas.
+     Marcus dom 2026-09-01: *"Varför är det en separatorlinje över 'radera'?"*
+     En avdelare mellan EN grupp och ingenting avdelar inte, den ser bara ut som
+     en bugg — och det läget är det VANLIGA på en färsk inbetalning utan kvitto,
+     där Radera är enda posten. */
+  const harOvrePoster =
+    lage.kanVisa || (lage.kanSkickaIgen && lage.kvitto !== null) || lage.kanKoaOm;
+  // [TASK-346.14, designfynd 3d] Har raden NÅGON handling att visa på sin
+  // egen rad? En makulerad rad utan kvitto kan sakna alla fem — utan detta
+  // villkoret hade en tom, högerställd rad ändå lagt till ett `gap-2`-mellanrum.
+  const harHandlingar = harOvrePoster || (atgard === 'vy' && (visaRadera || visaMakulera));
 
   // FOKUS-RETUR TILL ⋯-KNAPPEN — bara vid AVBRYT/ESC (samma anatomi som
   // `RegistreraYta`/`AterbetalningsYta`). En LYCKAD radering tar bort raden
@@ -442,18 +443,34 @@ function InbetalningsRad({
       {/* KORTYTAN — bilage-kortets skal, semantiska klasser i stället för
           dess komponent-tokens (se komponentens docblock § RADENS ANATOMI). */}
       <div className="flex flex-nowrap items-start gap-2 rounded-2xl border border-transparent bg-surface p-3 text-small contrast-more:border-border-strong">
-        {/* LEDANDE GLYF — `TypGlyf`s roll och geometri (`w-6`, höjd-centrerad
-            mot primärledet). `aria-hidden`: den är ett skanningsstöd, och
-            makuleringen sägs i text nedan (WCAG 1.4.1). */}
-        <span className="flex h-6 w-6 shrink-0 items-center justify-center text-text-secondary">
-          {makulerad ? (
+        {/* LEDANDE GLYF — BARA PÅ EN MAKULERAD RAD (Marcus dom 2026-09-01:
+            *"fruktansvärt ful swish-ikon/betalningsikon"*).
+
+            SEDEL-GLYFEN (`Banknote`) BAR INGEN INFORMATION. Den satt på VARJE
+            normal rad i en lista som per definition består av inbetalningar —
+            en ikon som är likadan på alla rader skiljer inga rader åt. Beloppet
+            är primärledet och betalsättet står i klartext i sekundärledet.
+
+            `Undo2` (återbetalning) FÖLJDE MED, och det är mätt och inte antaget:
+            `inbetalningsBelopp` skriver redan "1 000 kr återbetalt" för den
+            typen (`panel-harledningar.ts`), så glyfen sade en andra gång exakt
+            det texten redan sade. Uppdraget namngav bara sedeln; glyfen togs
+            med därför att samma skäl gäller ordagrant för den.
+
+            `Ban` STÅR KVAR, tillsammans med genomstrykningen: den bär
+            information ingen annan del av raden bär i alla lägen
+            (`makuleradSkal` kan vara tomt, `line-through` ensam är en svag
+            signal). `aria-hidden` är oförändrat — den är ett skanningsstöd, och
+            makuleringen sägs i text nedan (WCAG 1.4.1).
+
+            KOLUMNEN FÖRSVINNER HELT när glyfen inte renderas: föräldern är
+            `flex … gap-2`, och en `gap` verkar bara MELLAN existerande barn.
+            Utan span finns ingen kolumn och inget mellanrum att städa. */}
+        {makulerad && (
+          <span className="flex h-6 w-6 shrink-0 items-center justify-center text-text-secondary">
             <Ban aria-hidden="true" size={18} />
-          ) : inbetalning.typ === 'aterbetalning' ? (
-            <Undo2 aria-hidden="true" size={18} />
-          ) : (
-            <Banknote aria-hidden="true" size={18} />
-          )}
-        </span>
+          </span>
+        )}
 
         <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
           {/* PRIMÄRLEDET: beloppet, ensamt och viktat. */}
@@ -712,8 +729,16 @@ function InbetalningsRad({
 
                 DESTRUKTIVT SIST, EFTER EN AVDELARE — `Meny`-primitivens egen
                 konvention (`ton="fara"`, se dess docblock). Avdelaren
-                exponeras som `separator`, så skärmläsaren hör gruppbytet. */}
-            {atgard === 'vy' && (visaRadera || visaMakulera) && <MenyAvdelare />}
+                exponeras som `separator`, så skärmläsaren hör gruppbytet.
+
+                AVDELAREN KRÄVER NU ATT DET FINNS NÅGOT ATT AVDELA FRÅN
+                (`harOvrePoster`, Marcus dom 2026-09-01). Villkoret var
+                tidigare bara "finns en destruktiv post", vilket ritade en linje
+                ovanför en ENSAM Radera-post — det vanligaste läget av alla, en
+                färsk inbetalning utan kvitto. En avdelare som inte avdelar två
+                grupper är inte en gruppmarkör, den är en artefakt; och för
+                skärmläsaren blev det ett annonserat gruppbyte som inte hände. */}
+            {atgard === 'vy' && harOvrePoster && (visaRadera || visaMakulera) && <MenyAvdelare />}
             {atgard === 'vy' && visaRadera && (
               <MenyPost
                 ton="fara"

@@ -70,26 +70,36 @@ export function AnmalansBetalningar({
   const saknas = rad === null ? null : (rad.kvar ?? rad.betalning.saknas);
 
   return (
-    <div className="flex flex-col gap-3 pt-4">
-      {/* "enligt basen" när ingen rad finns - se `PanelBetalningar` §
+    <div className="flex flex-col gap-4 pt-4">
+      {/* ═══ STATUSKORTET (pass 8) — se `PersonBetalningar.tsx`s motsvarande
+          block för Marcus dom och hela resonemanget. Samma fyra fragment låg
+          löst här: "Kvar att betala"-raden på gruppens vänsterkant, knapparna
+          under den, ingen yta som höll ihop dem.
+
+          GROUNDEN BÄR VALET: `AnmalanDetail`s Betalningar-grupp är en
+          `DetaljGrupp`, alltså `bg-bg-muted` (`DetaljGrupp.tsx`) — en vit
+          kortyta syns mot den, precis som på personkortet. Samma kortform som
+          inbetalningsraderna längre ned, så vyn läser som en familj. */}
+      <div className="flex flex-col gap-3 rounded-2xl border border-transparent bg-surface p-3 contrast-more:border-border-strong">
+        {/* "enligt basen" när ingen rad finns - se `PanelBetalningar` §
           `rad === null` för varför frånvaron är tvetydig och inte får
           påstås vara "allt betalt". Se filens docblock § "SAKNAS X KR" för
           varför bara det öppna beloppet får radstrukturens vikt. */}
-      {saknas === null ? (
-        <p className="text-small text-text-muted">Inget kvar att betala.</p>
-      ) : saknas > 0 ? (
-        <div className="flex items-center justify-between gap-4 py-1">
-          <span className="text-small text-text-muted">Kvar att betala</span>
-          <span className="text-right font-semibold text-body">{`${visaKronor(saknas)} kr`}</span>
-        </div>
-      ) : (
-        <p className="flex items-center gap-2 text-small text-text-secondary">
-          <CircleCheck aria-hidden="true" size={16} className="shrink-0 text-success" />
-          Allt betalt.
-        </p>
-      )}
+        {saknas === null ? (
+          <p className="text-small text-text-muted">Inget kvar att betala.</p>
+        ) : saknas > 0 ? (
+          <div className="flex items-center justify-between gap-4 py-1">
+            <span className="text-small text-text-muted">Kvar att betala</span>
+            <span className="text-right font-semibold text-body">{`${visaKronor(saknas)} kr`}</span>
+          </div>
+        ) : (
+          <p className="flex items-center gap-2 text-small text-text-secondary">
+            <CircleCheck aria-hidden="true" size={16} className="shrink-0 text-success" />
+            Allt betalt.
+          </p>
+        )}
 
-      {/* [TASK-346.14 fix-runda D, D1] HORISONTELL KNAPPGRUPP PÅ ≥sm —
+        {/* [TASK-346.14 fix-runda D, D1] HORISONTELL KNAPPGRUPP PÅ ≥sm —
           orkestrerarens dom (1440×900) mätte "Registrera betalning" och
           "Registrera återbetalning" staplade vänsterställda med olika
           naturlig bredd (varje `*Yta` är en egen `flex-col`-behållare, så de
@@ -110,14 +120,20 @@ export function AnmalansBetalningar({
           varför: en återbetalning gäller ofta en anmälan som redan är
           fullbetald och nu avbokas, alltså precis det läge `RegistreraYta`
           inte visas i. */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start">
-        {rad !== null && <RegistreraYta rad={rad} />}
-        <AterbetalningsYta anmalanRecordId={anmalanRecordId} />
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start">
+          {rad !== null && <RegistreraYta rad={rad} />}
+          <AterbetalningsYta anmalanRecordId={anmalanRecordId} />
+        </div>
       </div>
 
-      <div className="flex flex-col gap-2">
-        {/* NORMAL UNDERRUBRIK, INTE VERSAL-OVERLINE — se `PersonBetalningar.tsx`s
-            motsvarande rad för Marcus dom 2026-09-01 och klassvalet. */}
+      {/* ═══ BLOCK INUTI BLOCKET (pass 8) — samma form och samma två avsteg som
+          `PersonBetalningar.tsx` § "BLOCK INUTI BLOCKET"; se det blocket för
+          varför tonen är `bg-bg-emphasized` och varför rubriken bor INUTI
+          behållaren här men utanför på sektionsnivå.
+
+          NORMAL UNDERRUBRIK, INTE VERSAL-OVERLINE — se `PersonBetalningar.tsx`s
+          motsvarande rad för Marcus dom 2026-09-01 och klassvalet. */}
+      <div className="flex flex-col gap-2 rounded-2xl border border-transparent bg-bg-emphasized p-3 contrast-more:border-border-strong">
         <h3 className="font-semibold text-body">Inbetalningar</h3>
         <InbetalningsLista kalla={{ anmalanRecordId }} aktiv />
       </div>
