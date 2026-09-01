@@ -110,23 +110,45 @@ type Props = {
  * är det som skickas, alltid.
  *
  * ═══════════════════════════════════════════════════════════════════════════
- * NOTERINGSFÄLTET SAKNAS — MEDVETET, OCH BOKFÖRT
+ * NOTERINGSFÄLTET SAKNAS — MEDVETET, OCH MÄTT (uppdaterat 2026-09-01)
  * ═══════════════════════════════════════════════════════════════════════════
  * AC #3 räknar upp "notering" bland fälten. `RegistreraInbetalningInput`
- * (TASK-346.4, `Betalningar.schema.ts`) bär INGET sådant fält, och
- * `registrera-inbetalning` skriver ingen noteringskolumn. Ett fält som inte
- * kan nå servern hade varit en låtsas-kontroll: Lotta skriver, trycker Enter,
- * och texten försvinner utan ett ord. Fältet utelämnas därför, och gapet är
- * rapporterat i stället för tyst lappat — EF-ytan ägs av TASK-346.4, och en
- * ändring där ligger utanför denna skivas mandat.
+ * (TASK-346.4, `Betalningar.schema.ts`) bär INGET sådant fält,
+ * `registrera-inbetalning` skriver ingen noteringskolumn, och `inbetalningar`
+ * i Postgres har ingen (`grep -rn "notering" supabase/migrations/*.sql` =
+ * noll träffar, mätt 2026-09-01). Ett fält som inte kan nå servern hade varit
+ * en låtsas-kontroll: Lotta skriver, trycker Enter, och texten försvinner
+ * utan ett ord.
  *
- * AVGJORT: fältet byggs med `avtalat_pris`-kolumnen i en uppföljningsmigration
- * på Marcus GO (S113 natt, orkestrerar-beslut). Gapet är ett SAMSYNS-gap i
- * 346.4:s schema — PRD § Inkorgen listar notering, schemat bär det inte — och
- * inte denna skivas fel. Det byggs inte i natt därför att en ny kolumn plus en
- * EF-ändring bryter B5-disciplinen (seriell staging-applicering, en olandad
- * schemaversion i taget), exakt samma klass som `avtalat_pris`. De två buntas
- * därför till samma migration.
+ * MARCUS DOM 2026-09-01: *"det är HÄR lotta noterar något, inte på pricka
+ * av-blocket"*. Mätningen inför den flytten gav tre fynd som tillsammans
+ * stoppar den i detta pass:
+ *
+ *  1. PANELENS NOTERINGSFÄLT SKRIVER INTE TILL EN INBETALNING. Det bor i
+ *     `events/atgarder/AtgardsSida.tsx` § `SkrivRad` — TVÅ fält per person —
+ *     och går via `useUpdatePaymentNote` → `update-registration-payment-note`
+ *     till ANMÄLANS Airtable-fält `Notering anmälningsavgift` respektive
+ *     `Notering slutbetalning` (`data/mutations/registrationPayments.ts`
+ *     § `NOTERING_FALT`, allowlistad i `_shared/field-allowlists.ts`). Det
+ *     rör aldrig inbetalningsdomänen.
+ *  2. EN NOTERING PÅ SJÄLVA INBETALNINGEN kräver hela kedjan: kolumn i
+ *     `inbetalningar` + fält på inputen + insert i EF:en. Alltså migration.
+ *  3. ATT I STÄLLET FLYTTA ANMÄLANS notering hit är inte heller en ren
+ *     UI-flytt: formuläret får en `InkorgsRad`, och `OppenBetalning` bär
+ *     varken noteringsvärdena eller ett `Registration` (som hookens
+ *     optimistiska cache-patch kräver). Att få hit dem betyder att utöka
+ *     `hamta-oppna-betalningar` — en EF-ändring. Och de två fälten är
+ *     FACK-bundna (avgift/slut) medan formuläret registrerar ett fritt
+ *     belopp utan fack: vilket av dem som ska skrivas är ett öppet
+ *     designbeslut, inte en detalj.
+ *
+ * RÄTTELSE AV DEN TIDIGARE FORMULERINGEN HÄR: raden påstod att fältet
+ * "buntas till samma migration" som `avtalat_pris`. Den buntningen är
+ * FALSIFIERAD — `avtalatPris` finns redan på inputen, EF:en normaliserar den
+ * och `betalningar-bas.ts` speglar den till `Avtalat pris (kr)`; sedan A5
+ * (2026-09-01) fyller utfallsboxen fältet, helt utan serverändring. Det som
+ * fortfarande saknas för PRISET är bara durabiliteten (Postgres-kolumnen).
+ * NOTERINGEN har ingen sådan halvväg — där saknas hela kedjan.
  */
 export function RegistreraForm({
   rad,
