@@ -56,7 +56,6 @@
   --color-primary-tint: var(--mm-primary-tint);
   --color-primary-pale: var(--mm-primary-pale);
   --color-primary-muted: var(--mm-primary-muted);
-  --color-primary-border: var(--mm-primary-border);
 
   /* Accent (CTA / handling) */
   --color-accent: var(--mm-accent);

@@ -1141,38 +1141,34 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
         <h2 id="proto-d-nulage" className="px-4 font-semibold text-lg">
           Just nu
         </h2>
-        {/* ═══ GULD-KONTUR, INTE GULD-FOND (Marcus dom 2026-09-01) ═══
-            Ordagrant: *"'Just nu-blocket' på persondetalj-sidan måste justeras,
-            det funkar inte att ha gul bakgrund på det, det skär sig med
-            färgerna som 'event-raderna' har. Jag tror det bästa är att kanske
-            enbart ha gul kontur."*
+        {/* ═══ INGEN GULD-SIGNAL ALLS — HUSETS NEUTRALA BLOCKFORM ═══
+            Marcus dom 2026-09-01, ordagrant: *"Ta bort den oranga konturen på
+            just nu blocket, jag vill inte ha den."*
 
-            KROCKEN VAR ÄKTA, och den satt i lagren: blocket bar `bg-primary-tint`
-            (#fbf3e0, varm gul) medan raderna INUTI bär `bg-bg-emphasized`
-            (#edeee9, kall neutralgrå) plus en KURSFÄRGAD vänsterkant (blå, grön,
-            koppar — `kursfargForKurs`). Tre kulörfamiljer på tre lager ovanpå
-            varandra. Fonden var det enda av de tre som inte bar information.
+            BÅDA GULD-VARIANTERNA ÄR PRÖVADE OCH RIVNA, i den ordningen, och
+            historiken står kvar därför att den är hela skälet att inte försöka
+            en tredje gång:
 
-            NU: vit botten + guld-kontur. Raderna är ORÖRDA — grå yta,
-            kursfärgad kant, hover-formen, allt — det var aldrig de som var fel.
+              1. GULD-FOND (`bg-primary-tint`, promoverad ur prototypen).
+                 Revs samma dag: *"det funkar inte att ha gul bakgrund på det,
+                 det skär sig med färgerna som 'event-raderna' har. Jag tror
+                 det bästa är att kanske enbart ha gul kontur."* Krocken satt i
+                 lagren — varm gul fond, kall neutralgrå rader
+                 (`bg-bg-emphasized`), och en KURSFÄRGAD vänsterkant per rad
+                 (`kursfargForKurs`). Tre kulörfamiljer på tre lager.
+              2. GULD-KONTUR på vit botten (commit `02e9f9af`), byggd på hans
+                 egen "kanske enbart ha gul kontur". Riven i detta pass.
 
-            TOKEN-NIVÅN ÄR VALD MED AVSIKT: `bg-primary-tint` stod som en LOKAL
-            utility-klass här, inte som en delad komponent-token, så bytet
-            träffar exakt detta block. Hems "Nästa event"-hero bär sin egen
-            `bg-primary-tint` och är ORÖRD (verifierat: tonen har sex
-            konsumenter, var och en med egen klass).
+            SLUTSATSEN ÄR INTE "fel ton" UTAN "ingen ton": blocket behöver ingen
+            egen signal. Det är en sektion bland systrarna, inte en hero.
 
-            KANTEN ÄR EN NY SEMANTISK ROLL, `--mm-primary-border`
-            (`semantic.css`), och den behövdes: en kant som bär en yta ENSAM
-            måste klara 1.4.11-golvet 3:1, och INGEN befintlig primär-roll gör
-            det mot vitt — gold-300 1,43:1 · gold-400 2,33:1 · `--mm-primary`
-            2,57:1. Den nya rollen ger 3,43:1. Exakt samma resonemang som
-            `--mm-border-field` redan bär för fältkanter.
-
-            `contrast-more:border-text` (15,52:1): i högkontrastläge viker
-            identiteten för läsbarheten — guldet är en kulör, kanten är en
-            gräns, och i det läget är gränsen viktigare. */}
-        <div className="flex flex-col gap-3 rounded-2xl border border-primary-border bg-surface px-4 py-4 contrast-more:border-text">
+            FORMEN ÄR SYSKONENS, ÅTERANVÄND OCH INTE OMSKRIVEN: `kortKlass`
+            (definierad i denna komponent) är exakt samma sträng "Ström"- och
+            tomläges-blocken bär, och samma form som `Sektion`s behållare
+            använder — `bg-bg-muted` med transparent kant och
+            `contrast-more:border-border-strong`. Raderna INUTI är ORÖRDA i
+            alla tre varianterna; det var aldrig de som var fel. */}
+        <div className={`flex flex-col gap-3 ${kortKlass}`}>
           {aktivaAnmalningar.length > 0 ? (
             <>
               <p className="font-semibold text-body">
