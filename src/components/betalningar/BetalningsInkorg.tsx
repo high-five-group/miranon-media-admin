@@ -1180,6 +1180,27 @@ export function BetalningsInkorg() {
                       <span className="w-full text-caption text-text-muted">
                         {[post.betalsatt, lage.text].join(' · ')}
                       </span>
+
+                      {/* VARFÖR ÅNGRA SAKNAS, i klartext. Ett kvitto som gått
+                          i väg går inte att radera bort — då är makulering
+                          vägen, och den bor på inbetalningsraderna. Att tiga
+                          hade lämnat Lotta med en rad hon inte förstår varför
+                          hon inte kan röra.
+
+                          RADEN ÄR INFORMATION, INTE EN TRANSIENT PANEL, och
+                          bor därför INUTI kärnradens textkolumn — till
+                          skillnad från bekräftelsen och felrutan nedan. Det
+                          är vad som gör att beloppet och åtgärdsknappen
+                          centreras mot den också (Marcus 2026-09-01:
+                          *"Priset och åtgärdsknappen … borde sitta centrerade
+                          på raden, höjdmässigt"*). Samma gränsdragning som
+                          `InbetalningsLista` gör mellan sina sekundärrader
+                          och sina paneler. */}
+                      {!lage.kanAngra && lage.angraSkal !== null && (
+                        <span className="w-full text-caption text-text-muted">
+                          {lage.angraSkal}
+                        </span>
+                      )}
                     </span>
 
                     {/* BELOPPSKOLUMNEN — samma sifferpelare som
@@ -1282,15 +1303,6 @@ export function BetalningsInkorg() {
                     >
                       {radera.error.message}
                     </span>
-                  )}
-
-                  {/* VARFÖR ÅNGRA SAKNAS, i klartext. Ett kvitto som gått
-                      i väg går inte att radera bort — då är makulering
-                      vägen, och den bor på inbetalningsraderna. Att tiga
-                      hade lämnat Lotta med en rad hon inte förstår varför
-                      hon inte kan röra. */}
-                  {!lage.kanAngra && lage.angraSkal !== null && (
-                    <span className="block text-caption text-text-muted">{lage.angraSkal}</span>
                   )}
                 </li>
               );

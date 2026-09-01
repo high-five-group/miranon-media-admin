@@ -122,7 +122,7 @@ type Props = {
  *
  *   1. EN SAMMANHÄNGANDE LISTYTA, inte ett kort per rad. Behållaren bär
  *      kortformen; raderna inuti skiljs av TUNNA HÅRLINJER.
- *   2. BELOPPET I EGEN HÖGERKOLUMN, på titelradens baslinje.
+ *   2. BELOPPET I EGEN HÖGERKOLUMN, vertikalt centrerad mot radens höjd.
  *   3. VÄNSTERKOLUMNEN TÄT: rad 1 = betalsättet, rad 2 = datum ·
  *      kvittostatus i sekundär ton.
  *   4. TÄTARE RADRYTM än kortformens.
@@ -486,18 +486,36 @@ function InbetalningsRad({
        på ytan ("Makulerad: <skäl>").
        Makuleringen sägs i stället med genomstruken text OCH i klartext på egen
        rad. Båda överlever nedsatt syn; en opacitet gör det inte. */
-    <li>
-      {/* RADEN — bankens tre kolumner (se komponentens docblock § RADENS
-          ANATOMI). `items-start`: beloppet och ⋯ hör till TITELRADEN, inte
-          till radens mitt. En rad med en utfälld panel växer nedåt, och en
-          `items-center` här hade dragit ned både beloppet och menyn till
-          mitten av den panelen.
+    <li className="py-2 text-small">
+      {/* KÄRNRADEN — bankens tre kolumner (se komponentens docblock § RADENS
+          ANATOMI).
 
-          `py-2` ÄR TÄTHETSVALET. Husets täthetsreferens är
-          `hem/NyaAnmalningar.tsx` (`py-3` runt ett tvåradigt led ≈ 66 px);
-          denna rad landar på ≈ 60 px — tätare än referensen, som bankformen
-          kräver, utan att träffytorna krymper (se ⋯-knappen nedan). */}
-      <div className="flex flex-nowrap items-start gap-3 py-2 text-small">
+          ═══ `items-center`, INTE `items-start` (Marcus 2026-09-01) ═══
+          Ordagrant: *"Priset och åtgärdsknappen (de tre prickarna) borde sitta
+          centrerade på raden, höjdmässigt."*
+
+          DETTA RIVER ETT VAL SOM STOD I DENNA KOMMENTAR. Formen var
+          `items-start` med beloppet på titelradens baslinje, och skälet som
+          stod här var att en `items-center` skulle dra ned beloppet och menyn
+          i mitten av en utfälld panel. Skälet var giltigt — men lösningen var
+          fel: den offrade den VANLIGA raden för att skydda mot den SÄLLSYNTA.
+          På en rad med flera sekundärrader (felskäl, makuleringsskäl,
+          notering) hängde beloppet toppat i ett högt fält, och bankens egen
+          referens centrerar det.
+
+          RÄTT LÖSNING VAR STRUKTURELL, INTE EN FLAGGA: panelerna ligger nu
+          UTANFÖR kärnraden (se noderna efter denna `div`), så centreringen
+          gäller radens INFORMATION — titel plus alla sekundärrader — och kan
+          inte längre glida ned i en transient panel. Båda kraven håller
+          samtidigt. Exakt samma struktur och samma skäl som
+          `BetalningsInkorg.tsx`s granskningsrad fick i samma pass.
+
+          `py-2` BOR NU PÅ `<li>` i stället för på kärnraden — annars hade
+          panelerna nedan legat utanför radens egen luft. Täthetsvalet är
+          oförändrat: husets referens är `hem/NyaAnmalningar.tsx` (`py-3` runt
+          ett tvåradigt led ≈ 66 px), denna rad landar på ≈ 60 px, och
+          träffytorna krymper inte (se ⋯-knappen nedan). */}
+      <div className="flex flex-nowrap items-center gap-3">
         <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
           {/* TITELLEDET: betalsättet. `w-full` krävs för att `truncate` ska ha
               en bredd att förhålla sig till — kolumnen är `items-start`, så
@@ -560,102 +578,13 @@ function InbetalningsRad({
               {`Kvittot skickades till ${skickatTill}.`}
             </span>
           )}
-
-          {/* AC #1: "kan raderas från raden (bekräftelse)". Inline, samma
-              "öppnas på plats"-mönster som `RegistreraForm`/`AterbetalningsForm`
-              — ingen modal för en engångsfråga.
-
-              PANELERNA BOR I TEXTKOLUMNEN, inte utanför kortet: samma val som
-              bilage-kortet gör för sina felrutor (`DokumentRadSkal` §
-              "FELEN BOR I TEXTKOLUMNEN"). `w-full` behövs eftersom kolumnen
-              är `items-start` — utan den krymper panelen till sitt innehåll. */}
-          {atgard === 'radera-bekrafta' && (
-            <fieldset
-              onKeyDown={vidRaderaTangent}
-              className="mt-1 flex w-full flex-wrap items-center gap-2 rounded border border-border bg-bg-muted px-2 py-2"
-            >
-              <legend className="sr-only">{`Radera inbetalningen: ${inbetalningsText(inbetalning)}?`}</legend>
-              <span className="text-caption">
-                Radera denna inbetalning? Det går inte att ångra.
-              </span>
-              <Button
-                intent="danger"
-                size="sm"
-                isLoading={radera.isPending}
-                onPress={() => radera.mutate(inbetalning.id, { onSuccess: () => setAtgard('vy') })}
-              >
-                Radera
-              </Button>
-              <Button ref={raderaAvbrytRef} intent="ghost" size="sm" onPress={avbrytAtgard}>
-                Avbryt
-              </Button>
-            </fieldset>
-          )}
-
-          {/* AC #2: "får 'Makulera' med skäl (obligatoriskt)". */}
-          {atgard === 'makulera-skal' && (
-            <form
-              onSubmit={vidMakuleraSubmit}
-              onKeyDown={vidMakuleraTangent}
-              aria-label={`Makulera inbetalningen: ${inbetalningsText(inbetalning)}`}
-              className="mt-1 flex w-full flex-col gap-2 rounded border border-border bg-bg-muted px-2 py-2"
-            >
-              <Input
-                ref={makuleraSkalRef}
-                label="Skäl till makuleringen"
-                value={skal}
-                onChange={(v) => {
-                  setSkal(v);
-                  setSkalRort(true);
-                }}
-                isInvalid={skalFel !== null}
-                errorMessage={skalFel ?? undefined}
-                aria-describedby={skalId}
-              />
-              <p id={skalId} className="sr-only">
-                Skälet läses av Roger i efterhand och syns på raden.
-              </p>
-              <div className="flex flex-wrap gap-2">
-                <Button type="submit" intent="danger" size="sm" isLoading={makulera.isPending}>
-                  Makulera
-                </Button>
-                <Button intent="ghost" size="sm" onPress={avbrytAtgard}>
-                  Avbryt
-                </Button>
-              </div>
-            </form>
-          )}
-
-          {lank.isError && (
-            <span role="alert" className="text-(color:--mm-input-error-text) w-full text-caption">
-              {lank.error.message}
-            </span>
-          )}
-          {skickaIgen.isError && (
-            <span role="alert" className="text-(color:--mm-input-error-text) w-full text-caption">
-              {skickaIgen.error.message}
-            </span>
-          )}
-          {koaOm.isError && (
-            <span role="alert" className="text-(color:--mm-input-error-text) w-full text-caption">
-              {koaOm.error.message}
-            </span>
-          )}
-          {radera.isError && (
-            <span role="alert" className="text-(color:--mm-input-error-text) w-full text-caption">
-              {radera.error.message}
-            </span>
-          )}
-          {makulera.isError && (
-            <span role="alert" className="text-(color:--mm-input-error-text) w-full text-caption">
-              {makulera.error.message}
-            </span>
-          )}
         </span>
 
         {/* BELOPPSKOLUMNEN — bankens sifferpelare. `text-body` matchar
-            titelledet, så de två delar baslinje i en `items-start`-rad utan
-            att någon offset behöver räknas fram.
+            titelledet i vikt och storlek, och kärnradens `items-center`
+            centrerar kolumnen mot radens hela informationshöjd — titel plus
+            alla sekundärrader (Marcus 2026-09-01, se `<li>`-kommentaren för
+            hela domen och för varför panelerna flyttades ut).
 
             `Ban` SITTER HÄR, INTE I VÄNSTERKANTEN (pass 14): makuleringens
             plats är bredvid det tal den upphäver. `aria-hidden` oförändrat —
@@ -682,14 +611,15 @@ function InbetalningsRad({
             högerkant inte är en linje är ingen pelare. Det är hela skälet att
             en tom kolumn får kosta 44 px här.
 
-            `-my-2.5` LYFTER KNAPPEN TILL TITELRADENS LINJE UTAN ATT KRYMPA
-            TRÄFFYTAN. `size-11` är 44 px — husets träffytegolv och en
-            icke förhandlingsbar iPad-egenskap. Marginalen drar in 10 px i
-            över- och underkant, så knappens LAYOUT-fotavtryck blir 24 px
-            (titelradens radhöjd, `text-body` × 1.5) medan dess TRÄFFYTA
-            förblir 44 px och växer ut i radens `py-2`-luft. Två grannknappar
-            kan inte överlappa: raderna ligger ≈ 60 px isär och knapparna är
-            44 px höga, alltså ≈ 16 px mellanrum.
+`-my-2.5` ÄR RIVEN med centreringsdomen. Marginalen fanns för att
+            LYFTA knappen till titelradens linje när kärnraden var
+            `items-start`; med `items-center` centrerar `size-11` sig själv,
+            och en negativ marginal hade bara gjort geometrin svårare att läsa
+            utan att flytta glyfen. `size-11` (44 px) är husets träffytegolv
+            och en icke förhandlingsbar iPad-egenskap — den var aldrig
+            förhandlingsbar och är orörd. På en tvåradig rad sätter knappen
+            därmed radhöjden (44 px mot textens 42 px); 2 px ligger under vad
+            ögat skiljer.
 
             VILLKOREN ÄR OFÖRÄNDRADE: samma `lage.kanVisa`/`kanSkickaIgen`/
             `kanKoaOm`/`visaRadera`/`visaMakulera` som förut. Särskilt: en
@@ -706,7 +636,7 @@ function InbetalningsRad({
                   ref={menyTriggerRef}
                   intent="ghost"
                   size="sm"
-                  className={`${IKONKNAPP_KLASS} -my-2.5`}
+                  className={IKONKNAPP_KLASS}
                   aria-label={`Fler val för ${inbetalningsText(inbetalning)}`}
                 >
                   <Ellipsis aria-hidden="true" size={IKON_STORLEK} />
@@ -848,6 +778,108 @@ function InbetalningsRad({
           )}
         </span>
       </div>
+
+      {/* ═══ PANELERNA OCH FELEN BOR UTANFÖR KÄRNRADEN (Marcus 2026-09-01) ═══
+          De låg i TEXTKOLUMNEN fram till centreringsdomen, med bilage-kortets
+          `DokumentRadSkal` § "FELEN BOR I TEXTKOLUMNEN" som förlaga. Det var
+          rätt så länge kärnraden var `items-start`; med `items-center` blir
+          det fel, eftersom en utfälld panel då hade förlängt den kolumn
+          beloppet centreras mot och dragit ned både belopp och ⋯ i mitten av
+          panelen.
+
+          FLYTTEN ÄR ALLTSÅ VAD SOM GÖR CENTRERINGEN SÄKER, inte en kosmetisk
+          omflyttning. Den ger dessutom panelerna och felen FULL RADBREDD i
+          stället för textkolumnens — en bekräftelse och ett felmeddelande hör
+          till HELA raden, inte till betalsätts-kolumnen.
+
+          "ÖPPNAS PÅ PLATS"-MÖNSTRET ÄR OFÖRÄNDRAT: samma inline-form som
+          `RegistreraForm`/`AterbetalningsForm`, ingen modal för en
+          engångsfråga. `w-full` behövs inte längre och är borttaget —
+          noderna är nu direkta barn till `<li>`, alltså blocknivå. */}
+      {/* AC #1: "kan raderas från raden (bekräftelse)". Formen och motivet
+          bor i blockkommentaren ovan; den tidigare noten här sade "PANELERNA
+          BOR I TEXTKOLUMNEN" med bilage-kortets `DokumentRadSkal` som förlaga,
+          och den meningen är inte längre sann om denna nod. */}
+      {atgard === 'radera-bekrafta' && (
+        <fieldset
+          onKeyDown={vidRaderaTangent}
+          className="mt-2 flex flex-wrap items-center gap-2 rounded border border-border bg-bg-muted px-2 py-2"
+        >
+          <legend className="sr-only">{`Radera inbetalningen: ${inbetalningsText(inbetalning)}?`}</legend>
+          <span className="text-caption">Radera denna inbetalning? Det går inte att ångra.</span>
+          <Button
+            intent="danger"
+            size="sm"
+            isLoading={radera.isPending}
+            onPress={() => radera.mutate(inbetalning.id, { onSuccess: () => setAtgard('vy') })}
+          >
+            Radera
+          </Button>
+          <Button ref={raderaAvbrytRef} intent="ghost" size="sm" onPress={avbrytAtgard}>
+            Avbryt
+          </Button>
+        </fieldset>
+      )}
+
+      {/* AC #2: "får 'Makulera' med skäl (obligatoriskt)". */}
+      {atgard === 'makulera-skal' && (
+        <form
+          onSubmit={vidMakuleraSubmit}
+          onKeyDown={vidMakuleraTangent}
+          aria-label={`Makulera inbetalningen: ${inbetalningsText(inbetalning)}`}
+          className="mt-2 flex flex-col gap-2 rounded border border-border bg-bg-muted px-2 py-2"
+        >
+          <Input
+            ref={makuleraSkalRef}
+            label="Skäl till makuleringen"
+            value={skal}
+            onChange={(v) => {
+              setSkal(v);
+              setSkalRort(true);
+            }}
+            isInvalid={skalFel !== null}
+            errorMessage={skalFel ?? undefined}
+            aria-describedby={skalId}
+          />
+          <p id={skalId} className="sr-only">
+            Skälet läses av Roger i efterhand och syns på raden.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button type="submit" intent="danger" size="sm" isLoading={makulera.isPending}>
+              Makulera
+            </Button>
+            <Button intent="ghost" size="sm" onPress={avbrytAtgard}>
+              Avbryt
+            </Button>
+          </div>
+        </form>
+      )}
+
+      {lank.isError && (
+        <span role="alert" className="text-(color:--mm-input-error-text) block text-caption">
+          {lank.error.message}
+        </span>
+      )}
+      {skickaIgen.isError && (
+        <span role="alert" className="text-(color:--mm-input-error-text) block text-caption">
+          {skickaIgen.error.message}
+        </span>
+      )}
+      {koaOm.isError && (
+        <span role="alert" className="text-(color:--mm-input-error-text) block text-caption">
+          {koaOm.error.message}
+        </span>
+      )}
+      {radera.isError && (
+        <span role="alert" className="text-(color:--mm-input-error-text) block text-caption">
+          {radera.error.message}
+        </span>
+      )}
+      {makulera.isError && (
+        <span role="alert" className="text-(color:--mm-input-error-text) block text-caption">
+          {makulera.error.message}
+        </span>
+      )}
     </li>
   );
 }
