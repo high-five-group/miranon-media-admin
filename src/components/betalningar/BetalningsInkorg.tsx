@@ -666,6 +666,20 @@ export function BetalningsInkorg() {
           totalt={rader.length}
           enhet={BETALNINGS_ENHET}
           triggerRef={filterKnappRef}
+          /* SAMMA BREDD SOM LISTAN OCH MENYBAREN (Marcus dom 2026-09-01:
+             *"hela listan är för smal, det ska vara lika bred som menybaren.
+             Även filtreringskomponenten"*).
+
+             MÄTT: `<main>` bär `max-w-[600px] px-4` (AppShell), alltså en inre
+             kolumn på 568 px, och `TabBar` speglar den exakt med
+             `max-w-[568px]` — de två är redan i synk. Det som gjorde ytan smal
+             var ett ANDRA `px-4` på blocket här omkring: allt inuti stod på
+             536 px, 32 px smalare än menybaren rakt under.
+
+             `-mx-4` tar bort exakt det andra lagret, aldrig det första. Ingen
+             ny hårdkodad siffra införs — bredden följer menybaren vid varje
+             viewport, och identiskt idiom med `AnmalningarSida.tsx`. */
+          className="-mx-4"
         >
           <SearchField
             aria-label="Sök på namn, telefon eller belopp"
@@ -785,8 +799,9 @@ export function BetalningsInkorg() {
               separata grå kort med gap mellan sig. Villkorad på längd: en tom
               `<ul>` hade annars ritat en tom rundad ruta under
               "Ingen öppen betalning matchar sökningen." ovan. */}
+          {/* `-mx-4`: samma bredd som menybaren, se FilterRad-anropet ovan. */}
           {traffar.length > 0 && (
-            <ul className="divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong">
+            <ul className="-mx-4 divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong">
               {traffar.map((rad) => (
                 <BetalningsradKort
                   key={rad.nyckel}
@@ -870,7 +885,8 @@ export function BetalningsInkorg() {
                   tom `divide-y`-ruta hade då stått kvar utan innehåll ovanför
                   "Klara"-fällningen. */}
               {grupp.oppna.length > 0 && (
-                <ul className="divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong">
+                /* `-mx-4`: samma bredd som menybaren, se FilterRad ovan. */
+                <ul className="-mx-4 divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong">
                   {grupp.oppna.map((rad) => (
                     <BetalningsradKort
                       key={rad.nyckel}
