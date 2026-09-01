@@ -305,7 +305,12 @@ export function BetalningsInkorg() {
   const [registrerade, setRegistrerade] = useState<SessionsRad[]>([]);
   /** Inbetalnings-ID vars Ångra-bekräftelse står öppen; `null` = ingen. */
   const [angraId, setAngraId] = useState<string | null>(null);
-  const granskningsRubrikRef = useRef<HTMLHeadingElement>(null);
+  /* FOKUS-MÅLET ÄR NU BLOCKET SJÄLVT, inte dess rubrik (Marcus rev rubriken
+     2026-09-01). Blocket är en `<section aria-label>` med `tabIndex={-1}`, så
+     det är både fokuserbart programmatiskt och har ett tillgängligt namn att
+     annonsera när fokus landar där efter en ångrad rad. `HTMLElement` och inte
+     `HTMLDivElement`: noden är ett `<section>`. */
+  const granskningsBlockRef = useRef<HTMLElement>(null);
   const [jobbId, setJobbId] = useState<string | undefined>(undefined);
   const [betalsatt, setBetalsatt] = useState<Betalsatt>(lasSenasteBetalsatt);
   // [TASK-346.10] Importytan bor HÄR, inte på en egen route - kortets egen
@@ -699,7 +704,7 @@ export function BetalningsInkorg() {
           });
         }
         setAngraId(null);
-        granskningsRubrikRef.current?.focus();
+        granskningsBlockRef.current?.focus();
       },
     });
   }
@@ -978,22 +983,82 @@ export function BetalningsInkorg() {
            lös text som svävade. Exakt samma rotorsak som fynd 1 i listan.
 
            Behållaren är nu bilage-ytans `GRUPPKORT`-form (tonad yta vars
-           padding ÄR rännan mellan korten) med rubriken INUTI — samma
-           block-i-block-grepp som pass 8 gav "Senaste inbetalningar" på
-           personkortet och anmälans detaljvy. Radformen är oförändrad; det
-           var aldrig den som var fel. */
+           padding ÄR rännan mellan korten) — samma block-i-block-grepp som
+           pass 8 gav "Senaste inbetalningar" på personkortet och anmälans
+           detaljvy. Radformen är oförändrad; det var aldrig den som var fel.
+
+           (Denna not sade tidigare "med rubriken INUTI". Rubriken revs
+           2026-09-01, se `<div>`-noden nedan — greppet är oförändrat, men
+           formuleringen beskrev en nod som inte längre finns.) */
+        /* ═══ GULD-TONAD YTA MED KONTUR (Marcus 2026-09-01) ═══
+           Ordagrant: *"Kanske ska vi ha gul bakgrund med kontur på
+           granskningsblocket, så det syns tydligare? Eller guld/gul eller vad
+           vi har"*.
+
+           TOKENVALET, ur husets EGEN familj — ingen ny token, ingen hårdkodad
+           färg:
+             yta    `bg-primary-tint`   = `--mm-primary-tint` = `--p-gold-100`
+             kontur `border-primary-muted` = `--mm-primary-muted` = `--p-gold-400`
+             kontrast-more `border-primary` = `--mm-primary` = `--p-gold-500`
+           Guldet ÄR husets primärfärg (`semantic.css` § Primär), så "gul" och
+           "vad vi har" pekar på samma ställe.
+
+           HERO-RESERVATIONEN GÄLLER INTE HÄR — mätt, inte antaget.
+           `NastaEvent.tsx` bär `bg-primary-tint` med en not om att vara Hems
+           enda hero. Den reservationen handlar om HERO-ROLLEN på Hem, inte om
+           tonen: `bg-primary-tint` används redan på sex ytor utanför Hem
+           (`PersonDetail.tsx:1144` block, `EventCheckin.tsx:439` kort,
+           `PersonsList.tsx` rader, `PrototypeSwitcher.tsx`). Tonen är alltså
+           husets tonala yta, och betalningssidan har ingen hero att konkurrera
+           med.
+
+           MÄTVÄRDEN (WCAG 2, sRGB, mot `--p-gold-100` #fbf3e0):
+             `--mm-text` #242424 ......... 14,04:1  (var 15,52:1 mot vitt)
+             `--mm-text-secondary` ....... 7,16:1
+             `--mm-text-muted` #6b6b6b ... 4,82:1   ✓ AA normal text (4,5:1)
+             sage-knappen #606b57 ........ 5,08:1   ✓ 1.4.11 icke-text (3:1)
+                                                    (var 5,15:1 mot bg-muted —
+                                                     alltså ingen regression)
+             vit text PÅ sage ............ 5,62:1   ✓ oförändrad, knappens egen yta
+             vita kort mot ytan .......... 1,11:1   (var 1,09:1 mot bg-muted —
+                                                     kortens avgränsning bärs som
+                                                     förut av `contrast-more`)
+             konturen mot vit sida ....... 2,33:1, och 2,57:1 i contrast-more
+           SAGE-KNAPPEN ÄR OFÖRÄNDRAD I FÄRG OCH FORM — den är husets standard
+           för externa utskick och får inte färgändras. Den mättes MOT den nya
+           ytan, den ändrades inte.
+
+           KONTUREN ÄR SYNLIG I VILA, till skillnad från repots vanliga
+           `border-transparent` + `contrast-more`-idiom. Det är hela poängen med
+           Marcus beställning ("så det syns tydligare"): den tonade ytan ensam
+           ligger på 1,11:1 mot den vita sidan och bär inte avgränsningen. */
         /* INGEN `mx-4`: blocket ska ha SAMMA bredd som kortlistorna och
            menybaren (B1). Listorna når 568 px genom `-mx-4` ur en `px-4`-
            förälder; detta block hänger direkt i `<section>`, som redan ÄR den
            bredden — en marginal här hade gjort granskningen 32 px smalare än
            listan den granskar. */
-        <div className="flex flex-col gap-3 rounded-2xl border border-transparent bg-bg-muted p-3 contrast-more:border-border-strong">
-          {/* `tabIndex={-1}`: fokus-mål efter en ångrad rad, se
-              `angraRegistrering`. Rubriken är den enda nod som säkert finns
-              kvar när raden fokus stod på rivs ur DOM. */}
-          <h2 ref={granskningsRubrikRef} tabIndex={-1} className="font-semibold text-lg">
-            Registrerat nu
-          </h2>
+        <section
+          /* RUBRIKEN "Registrerat nu" ÄR RIVEN (Marcus: *"känns överflödig"*).
+             Den var blockets tillgängliga namn OCH fokus-mål efter en ångrad
+             rad, så båda rollerna flyttade hit i samma andetag: `aria-label`
+             ger namnet, `tabIndex={-1}` gör noden fokuserbar programmatiskt.
+             Utan dem hade rivningen tagit med sig en a11y-egenskap Marcus
+             aldrig bad om att förlora — texten försvann ur SYNFÄLTET, inte ur
+             tillgänglighetsträdet.
+
+             `<section>` OCH INTE `<div role="group">`: den senare formen var
+             första försöket och fälldes av `lint/a11y/useSemanticElements`,
+             som föreslår `<fieldset>` — men detta är ingen formulärgrupp, så
+             det förslaget är fel för ytan. En `<section>` MED tillgängligt namn
+             är i stället en `region`-landmark, vilket är exakt vad blocket är:
+             en namngiven del av betalningssidan. Samma form som
+             `NastaEvent.tsx` bär (`<section aria-labelledby>`); här blir det
+             `aria-label` eftersom det inte finns någon rubrik-nod att peka på. */
+          ref={granskningsBlockRef}
+          tabIndex={-1}
+          aria-label="Registrerat nu"
+          className="flex flex-col gap-3 rounded-2xl border border-primary-muted bg-primary-tint p-3 contrast-more:border-primary"
+        >
           <ul className="flex flex-col gap-2">
             {registrerade.map((post) => {
               const lage = kvittolage(post, vantande, jobb.data?.rader ?? []);
@@ -1098,18 +1163,31 @@ export function BetalningsInkorg() {
           </ul>
           {/* KNAPPEN HÖR TILL BLOCKET, inte till sidan: den skickar exakt de
               rader som står ovanför med "väntar på att skickas". Den försvinner
-              när kön är tom — loggen står kvar. */}
+              när kön är tom — loggen står kvar.
+
+              HÖGERSTÄLLD (Marcus 2026-09-01: *"Jag tycker nog att 'skicka 1
+              kvitto'-knappen ska sitta till höger och inte till vänster"*).
+              Det är husets form för en avslutande handling i ett kort eller en
+              dialog: `Dialog.tsx:70` (`mt-6 flex justify-end gap-3`),
+              `MessageBox.tsx:157` och `Notis.tsx:123` (`mt-3 flex justify-end
+              gap-2`) placerar alla sin knapprad i högerkant.
+
+              `self-end` OCH INTE ETT `justify-end`-omslag: blocket är redan en
+              `flex flex-col`, och i en kolumn styr `self-*` tväraxeln — alltså
+              horisontellt. Ett extra wrapper-element hade gjort exakt samma sak
+              med en nod till. Färg (`intent="success"`, sage), storlek, text
+              och `onPress` är BYTE FÖR BYTE oförändrade — bara placeringen. */}
           {vantande.length > 0 && (
             <Button
               intent="success"
               onPress={skickaKvitton}
               isLoading={koa.isPending}
-              className="self-start"
+              className="self-end"
             >
               {`Skicka ${vantande.length} ${vantande.length === 1 ? 'kvitto' : 'kvitton'}`}
             </Button>
           )}
-        </div>
+        </section>
       )}
 
       {utfall && (
