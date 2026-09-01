@@ -453,7 +453,11 @@ function InbetalningsRad({
       return;
     }
     makulera.mutate(
-      { inbetalningId: inbetalning.id, skal: skal.trim() },
+      {
+        inbetalningId: inbetalning.id,
+        skal: skal.trim(),
+        anmalanRecordId: inbetalning.anmalanRecordId,
+      },
       { onSuccess: () => setAtgard('vy') },
     );
   }
@@ -811,7 +815,17 @@ function InbetalningsRad({
             intent="danger"
             size="sm"
             isLoading={radera.isPending}
-            onPress={() => radera.mutate(inbetalning.id, { onSuccess: () => setAtgard('vy') })}
+            onPress={() =>
+              radera.mutate(
+                {
+                  inbetalningId: inbetalning.id,
+                  // Låter mutationen skriva serverns omräkning rakt in i
+                  // inkorgens cache, så kortet där uppdateras i samma tick.
+                  anmalanRecordId: inbetalning.anmalanRecordId,
+                },
+                { onSuccess: () => setAtgard('vy') },
+              )
+            }
           >
             Radera
           </Button>

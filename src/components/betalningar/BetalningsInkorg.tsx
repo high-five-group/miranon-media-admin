@@ -691,22 +691,30 @@ export function BetalningsInkorg() {
   const radera = useRaderaInbetalning();
 
   function angraRegistrering(post: SessionsRad) {
-    radera.mutate(post.inbetalningId, {
-      onSuccess: () => {
-        setVantande((tidigare) => tidigare.filter((v) => v.inbetalningId !== post.inbetalningId));
-        setRegistrerade((tidigare) =>
-          tidigare.filter((p) => p.inbetalningId !== post.inbetalningId),
-        );
-        if (post.radNyckel !== undefined) {
-          setKvittenser((tidigare) => {
-            const { [post.radNyckel as string]: _borttagen, ...kvar } = tidigare;
-            return kvar;
-          });
-        }
-        setAngraId(null);
-        granskningsBlockRef.current?.focus();
+    /* `radNyckel` ÄR anmälans record-ID (`rad.nyckel`), och den skickas med
+       så att mutationen kan skriva serverns omräkning rakt in i cachen —
+       personens kort återuppstår i listan i samma tick som granskningsraden
+       försvinner. Den är `undefined` för rader som kom in via SwishImport;
+       då hoppas patchen över och invalideringen sköter jobbet som förut. */
+    radera.mutate(
+      { inbetalningId: post.inbetalningId, anmalanRecordId: post.radNyckel },
+      {
+        onSuccess: () => {
+          setVantande((tidigare) => tidigare.filter((v) => v.inbetalningId !== post.inbetalningId));
+          setRegistrerade((tidigare) =>
+            tidigare.filter((p) => p.inbetalningId !== post.inbetalningId),
+          );
+          if (post.radNyckel !== undefined) {
+            setKvittenser((tidigare) => {
+              const { [post.radNyckel as string]: _borttagen, ...kvar } = tidigare;
+              return kvar;
+            });
+          }
+          setAngraId(null);
+          granskningsBlockRef.current?.focus();
+        },
       },
-    });
+    );
   }
 
   function skickaKvitton() {

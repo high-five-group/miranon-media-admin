@@ -1,9 +1,10 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { type QueryClient, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useDataSource } from '@/data/useDataSource';
 import type {
   HanteraInbetalningResult,
   KoaKvittonInput,
   KoaKvittonResult,
+  OppnaBetalningar,
   RegistreraInbetalningInput,
   RegistreraInbetalningResult,
 } from '@/domain/schemas';
@@ -38,13 +39,89 @@ import { queryKeys } from '@/queries/keys';
  * annat råkade invalidera den.
  */
 
+/**
+ * Skriv in SERVERNS EGEN omräkning i listan över öppna betalningar, direkt.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * VILKET PROBLEM DEN LÖSER (Marcus 2026-09-01, mätt kedja)
+ * ═══════════════════════════════════════════════════════════════════════════
+ * Ordagrant: *"När jag registrerar en betalning … så ska ju raden dyka upp i
+ * granskningsblocket, och kortet i listan försvinna, men det är en delay på
+ * att kortet i listan försvinner"*, och därefter: *"det är samma sak när man
+ * ångrar en betalningsregistrering, det måste vara instant också ju."*
+ *
+ * KEDJAN, SPÅRAD I KODEN OCH BEKRÄFTAD:
+ *   1. `RegistreraForm` → `onKlar` → `BetalningsInkorg.vidRegistrerad`
+ *      sätter `registrerade`/`kvittenser` ur LOKALT state — omedelbart.
+ *   2. Kortets försvinnande styrs av något helt annat: `rader` härleds ur
+ *      `useOppnaBetalningar` (`harledRad` → `klar: kvar <= 0`), och den
+ *      queryn hade bara invaliderats. Invalidering betyder REFETCH, alltså
+ *      en full nätverksrundtur mot `hamta-oppna-betalningar` (som i sin tur
+ *      läser Airtable).
+ * Två state-vägar med olika latens i samma handling — därav delayn. Samma
+ * asymmetri gällde Ångra-vägen spegelvänt: granskningsraden försvann
+ * omedelbart ur lokalt state medan kortet återuppstod först vid refetch.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * DETTA ÄR INTE EN OPTIMISTISK GISSNING — DET ÄR SERVERNS SVAR, TIDIGARE
+ * ═══════════════════════════════════════════════════════════════════════════
+ * Både `RegistreraInbetalningResult` och `HanteraInbetalningResult` bär ett
+ * `harledning`-objekt med serverns EGNA omräknade `summa` och
+ * `gallandePris` (`Betalningar.schema.ts`). Det är exakt de två fält
+ * `harledRad` räknar `kvar`/`klar` ur. Vi skriver alltså in tal servern
+ * redan beräknat och skickat — ingen parallell pengalogik uppstår här, och
+ * kravet "uppfinn ingen egen beräkning" är uppfyllt strukturellt, inte av
+ * disciplin.
+ *
+ * Det gör också kravet "bara vid LYCKAD mutation" trivialt uppfyllt: talen
+ * FINNS inte förrän servern svarat. En `onMutate`-variant hade varit
+ * omöjlig att skriva utan att gissa, vilket är precis vad pengalogik inte
+ * ska göra.
+ *
+ * SERVERN FÖRBLIR FACIT. Anroparen behåller sin `invalidateQueries` efter
+ * detta anrop, så en refetch skriver över med sanningen. React Query
+ * behåller den patchade datan medan refetchen pågår, så ytan hinner aldrig
+ * blinka tillbaka.
+ *
+ * `anmalanRecordId` ÄR FRIVILLIG MED AVSIKT. Kan anroparen inte peka ut
+ * raden (t.ex. en väg där bara inbetalnings-ID:t är känt) hoppas patchen
+ * över och invalideringen sköter jobbet som förut — långsammare, aldrig
+ * fel. Att hitta på en koppling hade varit värre än en fördröjning.
+ */
+function skrivHarledningTillOppna(
+  queryClient: QueryClient,
+  anmalanRecordId: string | undefined,
+  harledning: { summa: number; gallandePris: number | null },
+) {
+  if (anmalanRecordId === undefined) return;
+  queryClient.setQueryData<OppnaBetalningar>(queryKeys.betalningar.oppna, (gammal) =>
+    gammal === undefined
+      ? gammal
+      : {
+          ...gammal,
+          betalningar: gammal.betalningar.map((b) =>
+            b.anmalanRecordId === anmalanRecordId
+              ? {
+                  ...b,
+                  summaInbetalt: harledning.summa,
+                  gallandePris: harledning.gallandePris,
+                }
+              : b,
+          ),
+        },
+  );
+}
+
 export function useRegistreraInbetalning() {
   const dataSource = useDataSource();
   const queryClient = useQueryClient();
 
   return useMutation<RegistreraInbetalningResult, Error, RegistreraInbetalningInput>({
     mutationFn: (input) => dataSource.registreraInbetalning(input),
-    onSuccess: () => {
+    onSuccess: (resultat, input) => {
+      // Kortet i inkorgen ska försvinna i SAMMA tick — se
+      // `skrivHarledningTillOppna` för den uppmätta kedjan.
+      skrivHarledningTillOppna(queryClient, input.anmalanRecordId, resultat.harledning);
       void queryClient.invalidateQueries({ queryKey: queryKeys.betalningar.all });
       void queryClient.invalidateQueries({ queryKey: queryKeys.registrations.all });
     },
@@ -82,9 +159,16 @@ export function useRaderaInbetalning() {
   const dataSource = useDataSource();
   const queryClient = useQueryClient();
 
-  return useMutation<HanteraInbetalningResult, Error, string>({
-    mutationFn: (inbetalningId) => dataSource.raderaInbetalning(inbetalningId),
-    onSuccess: () => {
+  return useMutation<
+    HanteraInbetalningResult,
+    Error,
+    { inbetalningId: string; anmalanRecordId?: string }
+  >({
+    mutationFn: ({ inbetalningId }) => dataSource.raderaInbetalning(inbetalningId),
+    onSuccess: (resultat, input) => {
+      // ÅNGRA-RIKTNINGEN, symmetriskt med registreringen: kortet ska
+      // återuppstå i listan direkt, inte vid nästa refetch.
+      skrivHarledningTillOppna(queryClient, input.anmalanRecordId, resultat.harledning);
       void queryClient.invalidateQueries({ queryKey: queryKeys.betalningar.all });
       void queryClient.invalidateQueries({ queryKey: queryKeys.registrations.all });
     },
@@ -100,9 +184,17 @@ export function useMakuleraInbetalning() {
   const dataSource = useDataSource();
   const queryClient = useQueryClient();
 
-  return useMutation<HanteraInbetalningResult, Error, { inbetalningId: string; skal: string }>({
-    mutationFn: (input) => dataSource.makuleraInbetalning(input),
-    onSuccess: () => {
+  return useMutation<
+    HanteraInbetalningResult,
+    Error,
+    { inbetalningId: string; skal: string; anmalanRecordId?: string }
+  >({
+    mutationFn: ({ inbetalningId, skal }) =>
+      dataSource.makuleraInbetalning({ inbetalningId, skal }),
+    onSuccess: (resultat, input) => {
+      // Makulering ändrar summan precis som radering gör — samma väg, så de
+      // två inte kan divergera.
+      skrivHarledningTillOppna(queryClient, input.anmalanRecordId, resultat.harledning);
       void queryClient.invalidateQueries({ queryKey: queryKeys.betalningar.all });
       void queryClient.invalidateQueries({ queryKey: queryKeys.registrations.all });
     },
