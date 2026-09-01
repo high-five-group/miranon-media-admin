@@ -33,7 +33,7 @@
 // Marcus: *"det är HÄR lotta noterar något, inte på pricka av-blocket"*. Fältet
 // är FRIVILLIGT och skrivs till `inbetalningar.notering` (migration
 // `20260901111500_inbetalning_notering.sql`). Frånvaro och tom sträng blir
-// BÅDA NULL — se `lasNotering` i `_shared/betalningar-db.ts`.
+// BÅDA NULL — se `lasNotering` i `_shared/inbetalning-notering.ts`.
 //
 // ⚠️ MIGRATIONEN MÅSTE VARA APPLICERAD FÖRE DENNA FUNKTION DEPLOYAS. Kolumnen
 // står nu i `INBETALNING_KOLUMNER`, som varje `select` mot tabellen använder,
@@ -186,7 +186,7 @@ Deno.serve(async (req) => {
   }
 
   /* NOTERINGEN ÄR FRIVILLIG, OCH FRÅNVARO HAR EXAKT ETT SVAR I DATABASEN.
-     `lasNotering` (`_shared/betalningar-db.ts`) trimmar, gör tom sträng till
+     `lasNotering` (`_shared/inbetalning-notering.ts`) trimmar, gör tom sträng till
      NULL och skiljer de två felen åt — se dess docblock. Bakåtkompatibiliteten
      är alltså strukturell och inte ett löfte: en payload UTAN `notering` ger
      `varde: null`, och en insert med `notering: null` är byte för byte samma

@@ -1366,13 +1366,22 @@ export function BetalningsInkorg() {
                       {/* SKICKA IGEN, bara på en FALLERAD rad — samma regel och
                           samma mutation (`koaKvitton`, inte `skickaKvittoIgen`)
                           som jobbrads-listan nedan bär; se dess docblock för
-                          varför. En rad som aldrig fallerat får ingen knapp. */}
+                          varför. En rad som aldrig fallerat får ingen knapp.
+
+                          EGET TILLGÄNGLIGT NAMN, samma skäl och samma mönster
+                          som Förhandsgranska ovan (granskningsfynd runda 1,
+                          PR #2193): blocket kan bära ett tjugotal rader, och
+                          utan namnet blir varje knapp "Skicka igen" i
+                          skärmläsarens knapplista — omöjliga att skilja åt,
+                          och det är en DESTRUKTIV-intilliggande handling som
+                          köar ett riktigt utskick. */}
                       {lage.fel && (
                         <Button
                           intent="secondary"
                           emphasis="outline"
                           size="sm"
                           isDisabled={koa.isPending}
+                          aria-label={`Skicka kvittot till ${post.namn} igen`}
                           onPress={() =>
                             koa.mutate(
                               { inbetalningIds: [post.inbetalningId] },
@@ -1391,9 +1400,15 @@ export function BetalningsInkorg() {
                           åtgärderna fler hör de hemma i `Meny`, precis som på
                           inbetalningsraderna. */}
                       {lage.kanAngra && !angrarDenna && (
+                        /* EGET TILLGÄNGLIGT NAMN — se Skicka igen ovan.
+                           Formuleringen speglar bekräftelsepanelens egen text
+                           ("Ångra registreringen? Inbetalningen raderas."), så
+                           knappens namn och det som händer när man trycker
+                           säger samma sak. */
                         <Button
                           intent="ghost"
                           size="sm"
+                          aria-label={`Ångra registreringen för ${post.namn}`}
                           onPress={() => setAngraId(post.inbetalningId)}
                         >
                           Ångra

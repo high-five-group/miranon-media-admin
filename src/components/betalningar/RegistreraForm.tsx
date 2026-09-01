@@ -147,7 +147,7 @@ type Props = {
  *   `notering` (detta fält) → `RegistreraInbetalningInput.notering`
  *   (`Betalningar.schema.ts`) → porten spreadar inputen
  *   (`betalningsportar.ts`) → `registrera-inbetalning` normaliserar via
- *   `lasNotering` (`_shared/betalningar-db.ts`) → `inbetalningar.notering`
+ *   `lasNotering` (`_shared/inbetalning-notering.ts`) → `inbetalningar.notering`
  *   (migration `20260901111500_inbetalning_notering.sql`) → läses tillbaka i
  *   `INBETALNING_KOLUMNER` och visas på raden i `InbetalningsLista`.
  *

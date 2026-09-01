@@ -244,7 +244,7 @@ export type RegistreraInbetalningInput = {
   /**
    * Lottas fria anteckning om inbetalningen (Marcus 2026-09-01). Frivillig.
    * Rå text — servern trimmar, gör tomt till NULL och fäller över 500 tecken
-   * (`_shared/betalningar-db.ts` § `lasNotering`). Utelämnad = ingen notering,
+   * (`_shared/inbetalning-notering.ts` § `lasNotering`). Utelämnad = ingen notering,
    * vilket är byte för byte samma rad som före fältet fanns.
    */
   notering?: string;

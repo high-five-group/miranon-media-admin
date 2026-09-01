@@ -89,6 +89,12 @@ const EF_KALLA = utanKommentarer(
 const ADAPTER_KALLA = utanKommentarer(
   readFileSync(path.join(REPO_ROOT, 'src', 'data', 'adapters', 'AirtableAdapter.ts'), 'utf8'),
 );
+const INKORG_KALLA = utanKommentarer(
+  readFileSync(
+    path.join(REPO_ROOT, 'src', 'components', 'betalningar', 'BetalningsInkorg.tsx'),
+    'utf8',
+  ),
+);
 
 /**
  * Plockar ut EN metods kropp ur adapterkällan.
@@ -290,4 +296,57 @@ test('förbudslistan diskriminerar — negativ kontroll', () => {
   expect(traffade).toContain('receipt-numbering');
   expect(traffade).toContain('KVITTON_TABELL');
   expect(trasigKalla.includes('.insert(')).toBe(true);
+});
+
+/* ═════════════ E. A11Y-GOLVET I GRANSKNINGSBLOCKET ═════════════ */
+
+/**
+ * Varje rad-åtgärd i granskningsblocket MÅSTE bära ett eget tillgängligt
+ * namn som innehåller personens namn.
+ *
+ * VARFÖR EN GRIND OCH INTE BARA EN RÄTTNING: granskningsfynd runda 1 på
+ * PR #2193 hittade att "Förhandsgranska" fick sin `aria-label` medan
+ * "Ångra" och "Skicka igen" inte fick det — alltså blev de senare upp till
+ * ett tjugotal identiskt namngivna knappar i skärmläsarens knapplista, på
+ * en yta där två av tre handlingar är irreversibla (Ångra RADERAR
+ * inbetalningen, Skicka igen köar ett riktigt utskick). Asymmetrin uppstod
+ * för att labeln lades till per knapp, för hand, i olika pass. En grind
+ * fångar nästa knapp som läggs till utan label — en rättning gör det inte.
+ *
+ * KÄLLKODS-NIVÅ av samma skäl som resten av filen: att rendera
+ * `BetalningsInkorg` kräver router, React Query, dataadapter och
+ * miljöflagga — en acceptance-yta, inte en `api-pure`-svit. Grinden är
+ * medvetet SMAL: den prövar att labeln finns och interpolerar `post.namn`,
+ * inte hur den låter.
+ */
+const RAD_ATGARDERS_LABELS = [
+  'aria-label={`Förhandsgranska kvittot till ${post.namn}`}',
+  'aria-label={`Skicka kvittot till ${post.namn} igen`}',
+  'aria-label={`Ångra registreringen för ${post.namn}`}',
+];
+
+test('granskningsblockets tre rad-åtgärder bär var sitt per-rad aria-label', () => {
+  for (const label of RAD_ATGARDERS_LABELS) {
+    expect(
+      INKORG_KALLA.includes(label),
+      `BetalningsInkorg.tsx saknar ${label} — varje rad-åtgärd måste namnge personen (granskningsfynd runda 1, PR #2193).`,
+    ).toBe(true);
+  }
+});
+
+test('a11y-grinden diskriminerar — negativ kontroll', () => {
+  // En källa där knappen finns men labeln saknas ska FÄLLA. Utan detta fall
+  // kunde grinden ovan vara grön mot vilken sträng som helst som råkade
+  // innehålla orden.
+  const utanLabel = [
+    '<Button intent="ghost" size="sm" onPress={angra}>',
+    '  Ångra',
+    '</Button>',
+  ].join('\n');
+
+  expect(RAD_ATGARDERS_LABELS.some((l) => utanLabel.includes(l))).toBe(false);
+  // ... och den riktiga källan innehåller faktiskt knapparna, så grinden
+  // inte är grön av att ytan försvunnit.
+  expect(INKORG_KALLA).toContain('Skicka igen');
+  expect(INKORG_KALLA).toContain('Förhandsgranska');
 });
