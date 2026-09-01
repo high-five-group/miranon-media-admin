@@ -997,12 +997,44 @@ function BetalningsradKort({
   return (
     // Kortets EGEN kant/bakgrund (`rounded border bg-bg-muted`) är riven
     // (designfynd 2a): containern är nu `<ul>`s `divide-y`-yta, en hårlinje
-    // per rad i stället för ett eget kort per person. `overflow-hidden`
-    // kvarstår — formuläret som fälls ut nedan har egen `border-t`, och den
-    // ska inte läcka utanför radens rundade hörn högst upp/längst ner i
-    // listan.
-    <li className="overflow-hidden">
-      {/* AVATAR-CHIP + GRID-ALIGNAD KOMPOSITION (designfynd 2b/2d) — samma
+    // per rad i stället för ett eget kort per person.
+    //
+    // `overflow-hidden` GÄLLER BARA DEN STÄNGDA RADEN. Den fanns för att
+    // formulärets `border-t` inte skulle läcka utanför listans rundade hörn.
+    // Den ÖPPNA raden bär sedan Marcus dom 2026-09-01 ett markerat kort som
+    // med avsikt bryter ut ur radens bredd (`-mx-3`), och en klippning hade
+    // ätit upp precis den ram som är hela poängen — samtidigt som formulärets
+    // linje är avstängd där (`visaAvdelare={false}`), så skälet till
+    // klippningen är borta i exakt det läge den skulle ha skadat.
+    <li className={oppen ? undefined : 'overflow-hidden'}>
+      {/* ═══ DEN ÖPPNA RADEN ÄR ETT MARKERAT KORT (Marcus dom 2026-09-01) ═══
+          Ordagrant: *"Lotta måste se att … det är på cecilia ödman hon står …
+          kanske rama in eller använda vår gröna markeringsruta"*.
+
+          FORMEN ÄR HUSETS, INTE NY. Exakt samma klasser som `Deltagare.tsx`s
+          `MarkerbartKort` (S73-facit) bär för ett valt deltagarkort:
+          `border-(--mm-success) bg-(--mm-success-bg)` på `rounded-xl border`.
+          `contrast-more`-kanten upprepas i den gröna tonen — utan den vinner
+          Tailwinds contrast-variant och ger kortet en NEUTRAL kant i förhöjd
+          kontrast, alltså tappar precis de användare regeln finns för
+          markerings-signalen (review-fynd 6 i förlagan).
+
+          PERSON-HEADER + KVITTENS + FORMULÄR LIGGER INNE I KORTET, så det är
+          EN enhet: namnet Lotta står på syns ovanför fälten hon fyller i,
+          inuti samma ram. Formulärets egen hårlinje är avstängd av samma skäl.
+
+          `-mx-3 px-3` GER RAMEN UTAN ATT FLYTTA RUTNÄTET: kortet växer 12 px
+          åt vardera hållet och betalar tillbaka lika mycket i padding, så
+          avatar, namn och fält står kvar på exakt samma vänsterlinje som i den
+          stängda raden. Ingenting hoppar i sidled när raden öppnas. */}
+      <div
+        className={
+          oppen
+            ? '-mx-3 my-2 rounded-xl border border-(--mm-success) bg-(--mm-success-bg) px-3 contrast-more:border-(--mm-success)'
+            : undefined
+        }
+      >
+        {/* AVATAR-CHIP + GRID-ALIGNAD KOMPOSITION (designfynd 2b/2d) — samma
           grammatik som `ForfallnaBetalningar.tsx`s `ForfallenRadInnehall`:
           avatar · namn/meta-kolumn (flex-1) · trailing knapp.
 
@@ -1020,75 +1052,80 @@ function BetalningsradKort({
           knappen). `self-start` på knappen förhindrar att `flex-col`s
           default `align-items: stretch` sträcker den till full bredd på
           mobil — den ska stå på sin egen rad, inte bli en helbredds-yta. */}
-      <div className="flex flex-col gap-3 py-3 sm:flex-row sm:flex-wrap sm:items-center">
-        <div className="flex min-w-0 items-center gap-3 sm:flex-1">
-          <InitialAvatar namn={rad.namn} />
-          <div className="flex min-w-0 flex-1 flex-col gap-1">
-            <span className="font-medium text-body sm:truncate">{rad.namn}</span>
-            <span className="text-caption text-text-muted sm:truncate">
-              {visaEvent && rad.betalning.eventNamn ? `${rad.betalning.eventNamn} · ` : ''}
-              {/* LÖPANDE TEXT ⇒ BELOPPET FÖRST (Marcus 2026-09-01, samma
+        <div className="flex flex-col gap-3 py-3 sm:flex-row sm:flex-wrap sm:items-center">
+          <div className="flex min-w-0 items-center gap-3 sm:flex-1">
+            <InitialAvatar namn={rad.namn} />
+            <div className="flex min-w-0 flex-1 flex-col gap-1">
+              <span className="font-medium text-body sm:truncate">{rad.namn}</span>
+              <span className="text-caption text-text-muted sm:truncate">
+                {visaEvent && rad.betalning.eventNamn ? `${rad.betalning.eventNamn} · ` : ''}
+                {/* LÖPANDE TEXT ⇒ BELOPPET FÖRST (Marcus 2026-09-01, samma
                   domänterm över alla betalningsytor): "1 500 kr kvar att
                   betala" läser som svenska efter eventnamnet, medan
                   etikett-först hade läst som en tabellrad i en mening.
                   Etikett-formen ("Kvar att betala" + högerställt värde) bär
                   panelen och anmälans detaljvy. */}
-              {saknas === null ? 'Pris saknas i basen' : `${visaKronor(saknas)} kr kvar att betala`}
-            </span>
-            <div className="flex flex-wrap items-center gap-2">
-              {rad.forfallen && (
-                <span className="inline-flex items-center gap-1 rounded border border-transparent bg-bg px-2 py-0.5 text-caption">
-                  <Clock aria-hidden size={13} />
-                  Förfallen
-                </span>
-              )}
-              {rad.obekraftad && (
-                <StatusBadge ton="warning" storlek="sm">
-                  Obekräftad
-                </StatusBadge>
-              )}
-              {rad.spegelSlapar && (
-                <span
-                  className="inline-flex items-center gap-1 rounded border border-transparent bg-bg px-2 py-0.5 text-caption text-text-muted"
-                  title="Basen har inte hunnit uppdateras än"
-                >
-                  <AlertTriangle aria-hidden size={13} />
-                  Basen släpar
-                </span>
-              )}
+                {saknas === null
+                  ? 'Pris saknas i basen'
+                  : `${visaKronor(saknas)} kr kvar att betala`}
+              </span>
+              <div className="flex flex-wrap items-center gap-2">
+                {rad.forfallen && (
+                  <span className="inline-flex items-center gap-1 rounded border border-transparent bg-bg px-2 py-0.5 text-caption">
+                    <Clock aria-hidden size={13} />
+                    Förfallen
+                  </span>
+                )}
+                {rad.obekraftad && (
+                  <StatusBadge ton="warning" storlek="sm">
+                    Obekräftad
+                  </StatusBadge>
+                )}
+                {rad.spegelSlapar && (
+                  <span
+                    className="inline-flex items-center gap-1 rounded border border-transparent bg-bg px-2 py-0.5 text-caption text-text-muted"
+                    title="Basen har inte hunnit uppdateras än"
+                  >
+                    <AlertTriangle aria-hidden size={13} />
+                    Basen släpar
+                  </span>
+                )}
+              </div>
             </div>
           </div>
+          {!oppen && (
+            <Button
+              ref={triggerRef}
+              intent="primary"
+              emphasis="outline"
+              size="sm"
+              onPress={onOppna}
+              className="self-start sm:self-auto"
+            >
+              Registrera betalning
+            </Button>
+          )}
         </div>
-        {!oppen && (
-          <Button
-            ref={triggerRef}
-            intent="primary"
-            emphasis="outline"
-            size="sm"
-            onPress={onOppna}
-            className="self-start sm:self-auto"
-          >
-            Registrera betalning
-          </Button>
+
+        {kvittens && (
+          <p role="status" className="pb-3 text-small text-text-muted">
+            {kvittens}
+          </p>
+        )}
+
+        {oppen && (
+          <RegistreraForm
+            rad={rad}
+            idag={idag}
+            betalsatt={betalsatt}
+            onBetalsatt={onBetalsatt}
+            onAvbryt={avbryt}
+            onKlar={onKlar}
+            // Kortets gröna ram ÄR grupperingen — se docblocket vid kortet.
+            visaAvdelare={false}
+          />
         )}
       </div>
-
-      {kvittens && (
-        <p role="status" className="pb-3 text-small text-text-muted">
-          {kvittens}
-        </p>
-      )}
-
-      {oppen && (
-        <RegistreraForm
-          rad={rad}
-          idag={idag}
-          betalsatt={betalsatt}
-          onBetalsatt={onBetalsatt}
-          onAvbryt={avbryt}
-          onKlar={onKlar}
-        />
-      )}
     </li>
   );
 }

@@ -72,6 +72,17 @@ type Props = {
   onBetalsatt: (b: Betalsatt) => void;
   onAvbryt: () => void;
   onKlar: (utfall: RegistreringsUtfall) => void;
+  /**
+   * Hårlinjen mot innehållet ovanför. Default PÅ — den bär avgränsningen i de
+   * konsumenter där formuläret fälls ut under något annat utan egen ram
+   * (`RegistreraYta`: Åtgärds-panelen, anmälans detaljvy, personkortet).
+   *
+   * INKORGEN SLÅR AV DEN (Marcus dom 2026-09-01): där ligger formuläret inne i
+   * ett grönt markerat kort tillsammans med sin person-header, och kortets ram
+   * ÄR grupperingen. En linje mitt i kortet hade delat den enhet ramen precis
+   * satt ihop — *"Inga fält som ser frikopplade ut under en separatorlinje"*.
+   */
+  visaAvdelare?: boolean;
 };
 
 /**
@@ -117,7 +128,15 @@ type Props = {
  * schemaversion i taget), exakt samma klass som `avtalat_pris`. De två buntas
  * därför till samma migration.
  */
-export function RegistreraForm({ rad, idag, betalsatt, onBetalsatt, onAvbryt, onKlar }: Props) {
+export function RegistreraForm({
+  rad,
+  idag,
+  betalsatt,
+  onBetalsatt,
+  onAvbryt,
+  onKlar,
+  visaAvdelare = true,
+}: Props) {
   /* ═══════════════════════════════════════════════════════════════════════
    * INGA SNABBVAL — FÄLTET ÄR FÖRIFYLLT MED RESTEN (Marcus dom 2026-09-01)
    * ═══════════════════════════════════════════════════════════════════════
@@ -389,7 +408,7 @@ export function RegistreraForm({ rad, idag, betalsatt, onBetalsatt, onAvbryt, on
          anmälans detaljvy, personkortet). Utan horisontell padding ärver
          det förälderns kant i båda fallen — vilket är precis vad "ett
          rutnät" betyder. */
-      className="flex flex-col gap-3 border-border border-t py-3"
+      className={`flex flex-col gap-3 py-3 ${visaAvdelare ? 'border-border border-t' : ''}`}
     >
       <Input
         ref={beloppRef}
