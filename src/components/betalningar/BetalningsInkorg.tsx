@@ -22,7 +22,7 @@ import {
 import { StatusBadge } from '@/components/registrations/StatusBadge';
 import { useOppnaBetalningar } from '@/data/betalningar/useBetalningar';
 import { useJobbstatus, useRealtidsfel } from '@/data/betalningar/useJobbstatus';
-import { useKoaKvitton } from '@/data/mutations/inbetalningar';
+import { useKoaKvitton, useRaderaInbetalning } from '@/data/mutations/inbetalningar';
 import { useDataSource } from '@/data/useDataSource';
 import type { Event } from '@/domain/models/Event';
 import type { Jobbstatus } from '@/domain/schemas';
@@ -116,10 +116,44 @@ type SessionsRad = {
   betalsatt: Betalsatt;
   /** Lottas kryss vid registreringen. Falskt ⇒ raden ska aldrig få ett kvitto. */
   medKvitto: boolean;
+  /**
+   * Inkorgsradens nyckel (anmälans record-ID), när registreringen kom därifrån.
+   * `undefined` för importerade rader, som inte hör till en synlig rad.
+   *
+   * Den finns HÄR bara för Ångra: kvittenstexten ("500 kr registrerat …") bor i
+   * `kvittenser` under den nyckeln, och en ångrad registrering måste ta med sig
+   * sin kvittens. Annars står ett kvitto kvar på personens kort och påstår att
+   * något registrerades som inte längre finns.
+   */
+  radNyckel?: string;
 };
 
-/** Vad granskningsraden säger om kvittot, plus om raden får erbjudas omkörning. */
-type Kvittolage = { text: string; fel: boolean };
+/**
+ * Vad granskningsraden säger om kvittot, plus vilka åtgärder raden får erbjuda.
+ *
+ * `kanAngra` ÄR AVSIKTLIGT SNÄV (pass 11, Marcus: *"jag kan ju inte ens ta bort
+ * Bengt Lindqvist som ligger i granskningsblocket nu, det måste ju gå, eller?"*).
+ * Ångra RADERAR inbetalningen — den får bara erbjudas när vi VET att inget
+ * kvitto gått i väg:
+ *
+ *   • inget kvitto begärt (kryssrutan var ur) ⇒ det finns inget att hinna före
+ *   • raden ligger i den SESSION-LOKALA kön ⇒ Lotta har inte tryckt på knappen
+ *
+ * Allt annat får `kanAngra: false`, och skälet står i `angraSkal`. Särskilt
+ * `vantar` (köad på SERVERN) är medvetet utesluten trots att kvittot ännu inte
+ * skickats: jobbmotorn kan plocka raden i samma sekund, och en radering som
+ * kapplöper med en utskickande worker är exakt det vi inte ska bjuda in till.
+ * Servern är ändå sista instans — `hantera-inbetalning` skiljer radera (före
+ * kvitto) från makulera (efter) — men grinden ska inte förlita sig på att en
+ * skarp operation fallerar snyggt.
+ */
+type Kvittolage = {
+  text: string;
+  fel: boolean;
+  kanAngra: boolean;
+  /** Varför Ångra inte erbjuds, i klartext för Lotta. `null` när den erbjuds. */
+  angraSkal: string | null;
+};
 
 /**
  * Kvittots läge för EN registrerad rad, läst ur de TVÅ källor som redan finns
@@ -144,9 +178,14 @@ function kvittolage(
   vantande: readonly VantandeKvitto[],
   jobbrader: readonly Jobbstatus['rader'][number][],
 ): Kvittolage {
-  if (!rad.medKvitto) return { text: 'Inget kvitto', fel: false };
+  const angrabar = { fel: false, kanAngra: true, angraSkal: null };
+  /** Kvittot är ute eller på väg — undo går via makulering, inte radering. */
+  const makuleringsvag =
+    'Kvittot är på väg eller skickat. Ångra genom att makulera inbetalningen på anmälans betalningsrader.';
+
+  if (!rad.medKvitto) return { text: 'Inget kvitto', ...angrabar };
   if (vantande.some((v) => v.inbetalningId === rad.inbetalningId)) {
-    return { text: 'Kvitto väntar på att skickas', fel: false };
+    return { text: 'Kvitto väntar på att skickas', ...angrabar };
   }
 
   const jobbrad = jobbrader.find((j) => j.objektId === rad.inbetalningId);
@@ -154,15 +193,26 @@ function kvittolage(
     return {
       text: jobbrad.kvittonummer ? `Kvitto skickat · ${jobbrad.kvittonummer}` : 'Kvitto skickat',
       fel: false,
+      kanAngra: false,
+      angraSkal: makuleringsvag,
     };
   }
-  if (jobbrad?.status === 'pagar') return { text: 'Kvitto skickas ...', fel: false };
-  if (jobbrad?.status === 'vantar') return { text: 'Kvitto köat', fel: false };
+  if (jobbrad?.status === 'pagar') {
+    return { text: 'Kvitto skickas ...', fel: false, kanAngra: false, angraSkal: makuleringsvag };
+  }
+  if (jobbrad?.status === 'vantar') {
+    return { text: 'Kvitto köat', fel: false, kanAngra: false, angraSkal: makuleringsvag };
+  }
   if (jobbrad?.status === 'fel') {
-    return { text: `Kvittot kunde inte skickas: ${jobbrad.skal ?? 'okänt skäl'}`, fel: true };
+    return {
+      text: `Kvittot kunde inte skickas: ${jobbrad.skal ?? 'okänt skäl'}`,
+      fel: true,
+      kanAngra: false,
+      angraSkal: makuleringsvag,
+    };
   }
 
-  return { text: 'Kvitto köat', fel: false };
+  return { text: 'Kvitto köat', fel: false, kanAngra: false, angraSkal: makuleringsvag };
 }
 
 /* ═══════════════════════════ FILTRERINGENS AXLAR ═══════════════════════════
@@ -253,6 +303,9 @@ export function BetalningsInkorg() {
   const [vantande, setVantande] = useState<VantandeKvitto[]>([]);
   /** Granskningsblockets logg — se `SessionsRad` för varför den inte är kön. */
   const [registrerade, setRegistrerade] = useState<SessionsRad[]>([]);
+  /** Inbetalnings-ID vars Ångra-bekräftelse står öppen; `null` = ingen. */
+  const [angraId, setAngraId] = useState<string | null>(null);
+  const granskningsRubrikRef = useRef<HTMLHeadingElement>(null);
   const [jobbId, setJobbId] = useState<string | undefined>(undefined);
   const [betalsatt, setBetalsatt] = useState<Betalsatt>(lasSenasteBetalsatt);
   // [TASK-346.10] Importytan bor HÄR, inte på en egen route - kortets egen
@@ -548,6 +601,7 @@ export function BetalningsInkorg() {
         belopp: resultat.belopp,
         betalsatt,
         medKvitto: resultat.medKvitto,
+        radNyckel: rad.nyckel,
       },
     ]);
 
@@ -598,6 +652,56 @@ export function BetalningsInkorg() {
   function stangImport() {
     setVisaImport(false);
     importKnappRef.current?.focus();
+  }
+
+  /* ═══════════════════════ ÅNGRA EN REGISTRERING (pass 11) ═══════════════════
+   * Marcus: *"jag kan ju inte ens ta bort Bengt Lindqvist som ligger i
+   * granskningsblocket nu, det måste ju gå, eller?"*
+   *
+   * DEN ÅNGRAR REGISTRERINGEN, INTE RADEN. Att bara plocka bort posten ur
+   * loggen hade varit en lögn: inbetalningen ligger i ledgern och kvittot i
+   * kön, och en yta som säger "borta" om något som finns kvar är värre än
+   * ingen yta alls. `useRaderaInbetalning` är samma väg inbetalningsraderna
+   * redan använder (`hantera-inbetalning`, atgard `radera`) — ingen ny
+   * serverlogik, ingen ny EF.
+   *
+   * TRE TILLSTÅND STÄDAS I SAMMA ANDETAG, och alla tre behövs:
+   *   1. `vantande` — annars räknar "Skicka N kvitton" en betalning som inte
+   *      längre finns, och nästa tryck hade köat ett kvitto för en raderad
+   *      inbetalning.
+   *   2. `registrerade` — loggen speglar då verkligheten igen.
+   *   3. `kvittenser` — kvittenstexten på personens rad ("500 kr
+   *      registrerat …") måste bort med sin registrering, annars står ett
+   *      påstående kvar om något som är ogjort.
+   *
+   * ORDNINGEN ÄR SERVERN FÖRST. Städningen sker i `onSuccess`, aldrig
+   * optimistiskt: fallerar raderingen ska raden stå kvar exakt som den var,
+   * och felet synas vid raden.
+   *
+   * FOKUS EFTER BORTTAGNING går till blockets rubrik (`tabIndex={-1}`), som är
+   * den enda nod som säkert finns kvar när raden fokus stod på rivs ur DOM.
+   * Utan det faller fokus till `document.body` — samma felklass som radens
+   * `skaAterfaFokus` och `stangImport` redan vaktar.
+   */
+  const radera = useRaderaInbetalning();
+
+  function angraRegistrering(post: SessionsRad) {
+    radera.mutate(post.inbetalningId, {
+      onSuccess: () => {
+        setVantande((tidigare) => tidigare.filter((v) => v.inbetalningId !== post.inbetalningId));
+        setRegistrerade((tidigare) =>
+          tidigare.filter((p) => p.inbetalningId !== post.inbetalningId),
+        );
+        if (post.radNyckel !== undefined) {
+          setKvittenser((tidigare) => {
+            const { [post.radNyckel as string]: _borttagen, ...kvar } = tidigare;
+            return kvar;
+          });
+        }
+        setAngraId(null);
+        granskningsRubrikRef.current?.focus();
+      },
+    });
   }
 
   function skickaKvitton() {
@@ -864,11 +968,36 @@ export function BetalningsInkorg() {
           betalningar; (b) ingen ledande glyf — beloppet bär raden och betalsättet
           står i klartext i sekundärledet. */}
       {registrerade.length > 0 && (
-        <div className="flex flex-col gap-3 px-4">
-          <h2 className="font-semibold text-lg">Registrerat nu</h2>
-          <ul className="-mx-4 flex flex-col gap-2 px-4">
+        /* ETT RIKTIGT BLOCK-I-BLOCK (pass 11, Marcus: *"VA FAN är det här för
+           granskningsblock? FAN va dåligt"*).
+
+           ROTORSAKEN, MÄTT: raderna BAR redan inbetalningsradernas kortform
+           (`rounded-2xl … bg-surface p-3`) — men behållaren var genomskinlig
+           och `body` bär `--mm-bg` = `--p-neutral-0`, alltså VITT. Vita kort
+           på en vit botten är osynliga kort, och det Marcus såg var därför
+           lös text som svävade. Exakt samma rotorsak som fynd 1 i listan.
+
+           Behållaren är nu bilage-ytans `GRUPPKORT`-form (tonad yta vars
+           padding ÄR rännan mellan korten) med rubriken INUTI — samma
+           block-i-block-grepp som pass 8 gav "Senaste inbetalningar" på
+           personkortet och anmälans detaljvy. Radformen är oförändrad; det
+           var aldrig den som var fel. */
+        /* INGEN `mx-4`: blocket ska ha SAMMA bredd som kortlistorna och
+           menybaren (B1). Listorna når 568 px genom `-mx-4` ur en `px-4`-
+           förälder; detta block hänger direkt i `<section>`, som redan ÄR den
+           bredden — en marginal här hade gjort granskningen 32 px smalare än
+           listan den granskar. */
+        <div className="flex flex-col gap-3 rounded-2xl border border-transparent bg-bg-muted p-3 contrast-more:border-border-strong">
+          {/* `tabIndex={-1}`: fokus-mål efter en ångrad rad, se
+              `angraRegistrering`. Rubriken är den enda nod som säkert finns
+              kvar när raden fokus stod på rivs ur DOM. */}
+          <h2 ref={granskningsRubrikRef} tabIndex={-1} className="font-semibold text-lg">
+            Registrerat nu
+          </h2>
+          <ul className="flex flex-col gap-2">
             {registrerade.map((post) => {
               const lage = kvittolage(post, vantande, jobb.data?.rader ?? []);
+              const angrarDenna = angraId === post.inbetalningId;
               return (
                 <li key={post.inbetalningId}>
                   <div className="flex flex-wrap items-start justify-between gap-2 rounded-2xl border border-transparent bg-surface p-3 contrast-more:border-border-strong">
@@ -877,27 +1006,91 @@ export function BetalningsInkorg() {
                       <span className="w-full text-caption text-text-muted">
                         {[`${visaKronor(post.belopp)} kr`, post.betalsatt, lage.text].join(' · ')}
                       </span>
+
+                      {/* BEKRÄFTELSEN BOR I TEXTKOLUMNEN, inline — samma
+                          "öppnas på plats"-mönster som `InbetalningsLista`s
+                          radera-bekräftelse och `RegistreraForm`. Ingen modal
+                          för en engångsfråga. `w-full` behövs eftersom
+                          kolumnen är `items-start`. */}
+                      {angrarDenna && (
+                        <div className="mt-2 flex w-full flex-wrap items-center gap-2 rounded border border-border bg-bg-muted px-2 py-2">
+                          <span className="text-caption">
+                            Ångra registreringen? Inbetalningen raderas.
+                          </span>
+                          <Button
+                            intent="danger"
+                            size="sm"
+                            isDisabled={radera.isPending}
+                            isLoading={radera.isPending}
+                            onPress={() => angraRegistrering(post)}
+                          >
+                            Ja, ångra
+                          </Button>
+                          <Button intent="ghost" size="sm" onPress={() => setAngraId(null)}>
+                            Behåll
+                          </Button>
+                        </div>
+                      )}
+
+                      {radera.isError && angrarDenna && (
+                        <span
+                          role="alert"
+                          className="text-(color:--mm-input-error-text) w-full text-caption"
+                        >
+                          {radera.error.message}
+                        </span>
+                      )}
+
+                      {/* VARFÖR ÅNGRA SAKNAS, i klartext. Ett kvitto som gått
+                          i väg går inte att radera bort — då är makulering
+                          vägen, och den bor på inbetalningsraderna. Att tiga
+                          hade lämnat Lotta med en rad hon inte förstår varför
+                          hon inte kan röra. */}
+                      {!lage.kanAngra && lage.angraSkal !== null && (
+                        <span className="w-full text-caption text-text-muted">
+                          {lage.angraSkal}
+                        </span>
+                      )}
                     </span>
-                    {/* SKICKA IGEN, bara på en FALLERAD rad — samma regel och
-                        samma mutation (`koaKvitton`, inte `skickaKvittoIgen`)
-                        som jobbrads-listan nedan bär; se dess docblock för
-                        varför. En rad som aldrig fallerat får ingen knapp. */}
-                    {lage.fel && (
-                      <Button
-                        intent="secondary"
-                        emphasis="outline"
-                        size="sm"
-                        isDisabled={koa.isPending}
-                        onPress={() =>
-                          koa.mutate(
-                            { inbetalningIds: [post.inbetalningId] },
-                            { onSuccess: (svar) => setJobbId(svar.jobbId ?? jobbId) },
-                          )
-                        }
-                      >
-                        Skicka igen
-                      </Button>
-                    )}
+
+                    <span className="flex shrink-0 flex-wrap items-center gap-2">
+                      {/* SKICKA IGEN, bara på en FALLERAD rad — samma regel och
+                          samma mutation (`koaKvitton`, inte `skickaKvittoIgen`)
+                          som jobbrads-listan nedan bär; se dess docblock för
+                          varför. En rad som aldrig fallerat får ingen knapp. */}
+                      {lage.fel && (
+                        <Button
+                          intent="secondary"
+                          emphasis="outline"
+                          size="sm"
+                          isDisabled={koa.isPending}
+                          onPress={() =>
+                            koa.mutate(
+                              { inbetalningIds: [post.inbetalningId] },
+                              { onSuccess: (svar) => setJobbId(svar.jobbId ?? jobbId) },
+                            )
+                          }
+                        >
+                          Skicka igen
+                        </Button>
+                      )}
+                      {/* EN ENKEL KNAPP, INTE EN ⋯-MENY — bokfört val (pass 11
+                          bad om det ena eller det andra). Raden har som mest
+                          EN åtgärd i detta läge, och pass 8:s egen lärdom om
+                          menyavdelaren gäller i samma anda: en meny som bara
+                          rymmer en post är ceremoni, inte struktur. Blir
+                          åtgärderna fler hör de hemma i `Meny`, precis som på
+                          inbetalningsraderna. */}
+                      {lage.kanAngra && !angrarDenna && (
+                        <Button
+                          intent="ghost"
+                          size="sm"
+                          onPress={() => setAngraId(post.inbetalningId)}
+                        >
+                          Ångra
+                        </Button>
+                      )}
+                    </span>
                   </div>
                 </li>
               );
