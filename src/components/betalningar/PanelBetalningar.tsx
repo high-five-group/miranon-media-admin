@@ -103,7 +103,10 @@ export function PanelBetalningar({ anmalanRecordId, namn, rad }: Props) {
       {(rad?.forfallen || rad?.spegelSlapar) && (
         <div className="flex flex-wrap items-center gap-2 text-small">
           {rad?.forfallen && (
-            <span className="inline-flex items-center gap-1 rounded border border-transparent bg-bg px-2 py-0.5 text-caption">
+            /* VARNINGSTON — samma ändring, samma mätvärden och samma skäl som
+               `BetalningsInkorg.tsx`s Förfallen-pill (pass 11). De två ytorna
+               visar SAMMA märke och måste se likadana ut. */
+            <span className="text-(color:--mm-warning) inline-flex items-center gap-1 rounded border border-transparent bg-(--mm-warning-bg) px-2 py-0.5 text-caption contrast-more:border-(--mm-warning)">
               <Clock aria-hidden size={13} />
               Förfallen
             </span>

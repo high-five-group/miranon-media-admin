@@ -248,6 +248,34 @@
   --mm-messagebox-error-bg: var(--mm-error-bg);
   --mm-messagebox-error-border: var(--mm-error);
   --mm-messagebox-error-text: var(--mm-error);
+
+  /* ── Markerat betalningskort (pass 11, Marcus dom 2026-09-01) ──
+     Marcus: *"du använder samma grön på markeringen som gröna notis-rutan,
+     så notisrutan syns inte"*.
+
+     MÄTT, INTE RESONERAT: markeringen bar `--mm-success-bg` och
+     MessageBox success-ytan är `--mm-messagebox-success-bg`, som ÄR
+     `--mm-success-bg` (raden ovan). Samma token, samma hex — #f0fdf4 mot
+     #f0fdf4. Rutan var alltså inte svårläst, den var bokstavligen osynlig.
+
+     TVÅ SEPARATA GREPP löser det, och båda behövs:
+      1. KORTET FÅR EN SVAGARE TINT (nedan). 50 % mot vit ⇒ ~#f8fefa. Den
+         gröna signalen bärs av RAMEN, inte av ytan — vilket är vad Marcus
+         beställde ("grön RAM + svag tint").
+      2. NOTISRUTAN FÅR EN HEL KANT (`border-y border-r` på konsumentens
+         `className`, se `RegistreraForm.tsx`). Fyllnadsskillnaden mot kortet
+         är liten i sig — #f0fdf4 mot #f8fefa är knappt 1,02:1 i luminans,
+         eftersom `--p-green-100` redan ligger nära vitt — så det är KANTEN
+         som gör rutan till en ruta. Att bara justera tinten hade inte räckt,
+         och det är värt att veta innan någon "förenklar" bort kanten.
+
+     KONTRASTER RÄKNADE (WCAG 1.4.11, 3:1-golvet för icke-text):
+       ramen #606b57 mot kortets tint ~#f8fefa → 5,46:1 ✓
+       ramen #606b57 mot notisrutans #f0fdf4  → 5,37:1 ✓
+     `contrast-more` tänder dessutom full intent-färg på båda, så golvet
+     stiger i det läget i stället för att falla. */
+  --mm-betalningskort-markerad-bg: color-mix(in srgb, var(--mm-success-bg) 50%, var(--mm-surface));
+  --mm-betalningskort-markerad-border: var(--mm-success);
   --mm-messagebox-body-text: var(--mm-text);
 
   /* ── Modal/Dialog (Fas 3 K3) ── */

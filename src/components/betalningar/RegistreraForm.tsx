@@ -430,7 +430,12 @@ export function RegistreraForm({
          anmälans detaljvy, personkortet). Utan horisontell padding ärver
          det förälderns kant i båda fallen — vilket är precis vad "ett
          rutnät" betyder. */
-      className={`flex flex-col gap-3 py-3 ${visaAvdelare ? 'border-border border-t' : ''}`}
+      /* UTAN AVDELARE BÄR KORTET BOTTENPADDINGEN (pass 11). Med avdelare är
+         `py-3` oförändrat — den vägen ligger i `RegistreraYta`s konsumenter och
+         får inte röras. Utan avdelare bor formuläret i inkorgens markerade
+         kort, vars egen `p-3` redan ger 12 px under; `pt-3` ensam undviker
+         dubbel botten. */
+      className={`flex flex-col gap-3 ${visaAvdelare ? 'border-border border-t py-3' : 'pt-3'}`}
     >
       <Input
         ref={beloppRef}
@@ -493,7 +498,36 @@ export function RegistreraForm({
         (() => {
           const { intent, Ikon } = UTFALL_FORM[utfall.ton];
           return (
-            <MessageBox intent={intent}>
+            <MessageBox
+              intent={intent}
+              /* ═══ EN RIKTIG BOX, INTE EN KANTLINJE-DEKORATION (pass 11) ═══
+                 Marcus, om skärmavbilden 10:22: utfallet blev *"en tunn
+                 vänsterkant + ikon"*, medan beställningen var *"boxa in texten
+                 och så är det själva boxen som blir grön, gul eller röd"*.
+
+                 `MessageBox` bär `rounded border-l-4` — 4 px accentkant till
+                 VÄNSTER, och ingenting runt om (S109-facit varv 4, där Marcus
+                 uttryckligen FÖRKASTADE en heltäckande kontur för primitiven).
+                 `border-y border-r` sluter därför rutan HÄR, hos konsumenten:
+                 1 px topp/höger/botten i den intent-färg varianten redan satt
+                 som `border-color`. Ingen ny färg, ingen ny token, ingen
+                 hårdkodning — bara tre kantbredder.
+
+                 VARFÖR INTE I PRIMITIVEN: formen är LÅST av ADR-103 B2 och har
+                 ~30 konsumenter. Att ändra den globalt vore att riva ett
+                 stämplat Marcus-beslut åt alla ytor i ett iterationspass. Att
+                 S113-Marcus nu vill ha en sluten box och S109-Marcus valde bort
+                 den är en äkta spänning värd hans dom — flaggad i rapporten. Så
+                 länge den är öppen bor avvikelsen på den ENDA yta han pekade
+                 på.
+
+                 DEN GÖR DESSUTOM JOBBET I FÄRGKROCKEN (fynd 2): rutan ligger
+                 inuti ett grönt markerat kort, och när både kort och ruta är
+                 gröna är det kanten — inte fyllnaden — som säger var rutan
+                 börjar. Se `--mm-betalningskort-markerad-bg` i components.css
+                 för mätvärdena. */
+              className="border-y border-r"
+            >
               <span aria-hidden="true" className="flex items-start gap-2">
                 <Ikon size={18} className="mt-0.5 shrink-0" />
                 <span>{utfall.text}</span>

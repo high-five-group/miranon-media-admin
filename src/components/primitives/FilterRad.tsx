@@ -230,7 +230,18 @@ export function FilterRad({
       onExpandedChange={setOppen}
       className={cn('flex flex-col print:hidden', className)}
     >
-      <div className="flex items-center gap-2">
+      {/* `gap-4`, INTE `gap-2` (pass 11, Marcus dom 2026-09-01: *"Mer luft
+          mellan sökrutan och filter-ikonen"*). Sökfältet är en fullbredds-låda
+          med synlig kant och tratten en rund platta — 8 px mellan dem läste som
+          att de satt ihop. 16 px är nästa steg i 4 px-basen och ger ett tydligt
+          andrum utan att bryta rytmen.
+
+          GÄLLER ALLA `FilterRad`-KONSUMENTER: betalningssidan, anmälningssidan
+          och eventlistan delar primitiven. Det är avsikten — samma kontroll ska
+          se likadan ut överallt — men det gör ändringen bredare än den yta
+          Marcus tittade på. Bokfört; en yta-lokal variant vore en ratt utan
+          efterfrågan. */}
+      <div className="flex items-center gap-4">
         <div className="min-w-0 flex-1">{children}</div>
         {/* Tratt-ingången: öppen/aktiv bär bg-text-svärtan (facit k02);
             badgen är dekor (aria-hidden) — sr-only-namnet bär antalet.
