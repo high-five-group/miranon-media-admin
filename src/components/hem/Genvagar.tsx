@@ -40,8 +40,8 @@ import { betalningarPa } from '@/lib/funktionsflaggor';
  * är — en genväg till en yta, inte en handling på Hems egen data. Formen är
  * oförändrad (`HandlingsRad`, `/mer/betalningar`). Ikonen är `Coins` på
  * Marcus explicita order 2026-09-01 ("en ikon med pengar, mynt staplade på
- * varann") — ett medvetet avsteg från Mer-navigeringens `Banknote` för samma
- * destination (`routes/_authenticated/mer/index.tsx`).
+ * varann") — och Mer-navigeringen bär SAMMA `Coins` för samma destination
+ * (`routes/_authenticated/mer/index.tsx`): en destination, en ikon.
  *
  * VILLKORAD PÅ `betalningarPa()` AV SAMMA SKÄL SOM ROUTEN ÄR DET: målet
  * `/mer/betalningar` kastar `redirect` till `/mer` med flaggan av
