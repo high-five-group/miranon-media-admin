@@ -527,7 +527,7 @@ export function RegistreraForm({
        den inte. Ingen versionssniffning, ingen flagga att städa. */
     const noteringsnot =
       noteringAttSkicka !== null && resultat.inbetalning.notering === null
-        ? ' Noteringen sparades INTE — den delen är inte utrullad än.'
+        ? ' Noteringen sparades INTE. Den delen är inte utrullad än.'
         : '';
 
     onKlar({
