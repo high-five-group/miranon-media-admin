@@ -173,6 +173,10 @@
       {
         "sökväg": "scripts/test-task-338-6-prod-migration.mjs",
         "skäl": "Hermetisk testsvit (TASK-338.6) — de flesta fallen importerar bara de pura funktionerna (parseArgs, resolveTargetBaseId, planUtfor, runUtfor m.fl.) och anropar aldrig fetch; apphjj8Q7lkXCMsL4 förekommer enbart som strängvärde i assertions, identiskt mönster som test-create-eventinnehall-modell.mjs. Barnprocessdelen (§ EXIT-KODER) spawnar VERKLIGA CLI-anrop mot skriptet, men uteslutande på grenar som exitar vid argument-/bas-ID-/prod-guard-/token-fel — samtliga STRIKT FÖRE task-338-6-prod-migration.mjs:s egen kravStagingLedigt-anrop (som sitter EFTER token-checkarna) och FÖRE all fetch. Ingen av barnprocesserna når preflighten eller basen."
+      },
+      {
+        "sökväg": "scripts/test-create-betalningsfalt.mjs",
+        "skäl": "Hermetisk testsvit (TASK-346-familjen, prod-vägens tillägg) — importerar bara de pura väg­vals-funktionerna ur create-betalningsfalt.mjs (validateConfig, parseArgs, resolveTargetBaseId, findTableByName, PROD_GODKAND_ENV_VAR), anropar aldrig fetch. apphjj8Q7lkXCMsL4 förekommer enbart som strängvärde i assertions mot CONFIG.expectedBaseId, identiskt mönster som test-create-eventinnehall-modell.mjs/test-create-kvitton-table.mjs."
       }
     ]
   }
