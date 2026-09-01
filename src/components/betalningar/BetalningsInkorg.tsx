@@ -290,9 +290,9 @@ function radensEvent(rad: InkorgsRad, eventsById: Map<string, Event>): Event | u
 /** Tomlägets copy per period. De två första strängarna är ORDAGRANT den rivna
     toggelns egna; `alla` är den nya, tredje formen. */
 function tomtText(period: PeriodFilter): string {
-  if (period === 'upcoming') return 'Inga öppna betalningar på kommande event.';
-  if (period === 'past') return 'Inga öppna betalningar på tidigare event.';
-  return 'Inga öppna betalningar.';
+  if (period === 'upcoming') return 'Inga kvarvarande betalningar på kommande event.';
+  if (period === 'past') return 'Inga kvarvarande betalningar på tidigare event.';
+  return 'Inga kvarvarande betalningar.';
 }
 
 export function BetalningsInkorg() {
@@ -567,7 +567,7 @@ export function BetalningsInkorg() {
   };
 
   /* Live-bekräftelsen av filtret. EGEN region, skild från
-     "…öppna betalningar laddade."-statusen nedan (Roselli-anatomin: en region
+     "…kvarvarande betalningar laddade."-statusen nedan (Roselli-anatomin: en region
      per ANSVAR, aldrig återanvänd för två olika besked) — men period och
      dimensioner DELAR region, eftersom båda svarar på samma fråga: "vad visas
      nu?". Skip-first via ref, så sidladdningen inte annonserar sig själv.
@@ -788,7 +788,7 @@ export function BetalningsInkorg() {
     <section className="flex flex-col gap-4">
       {sidRam}
       <p className="sr-only" role="status" aria-live="polite">
-        {`${rader.length} öppna betalningar laddade.`}
+        {`${rader.length} kvarvarande betalningar laddade.`}
       </p>
 
       {/* SIDHUVUDETS HANDLINGSYTA (designfynd 2c): "Importera kontoutdrag" var
@@ -1435,13 +1435,15 @@ export function BetalningsInkorg() {
             {`${traffar.length} ${traffar.length === 1 ? 'träff' : 'träffar'}`}
           </h2>
           {traffar.length === 0 && (
-            <p className="text-small text-text-muted">Ingen öppen betalning matchar sökningen.</p>
+            <p className="text-small text-text-muted">
+              Ingen kvarvarande betalning matchar sökningen.
+            </p>
           )}
           {/* EN CONTAINER MED HÅRLINJER (designfynd 2a) — samma
               `divide-y`-kortform som `AnmalningarSida.tsx`s "Mer-lista", inte
               separata grå kort med gap mellan sig. Villkorad på längd: en tom
               `<ul>` hade annars ritat en tom rundad ruta under
-              "Ingen öppen betalning matchar sökningen." ovan. */}
+              "Ingen kvarvarande betalning matchar sökningen." ovan. */}
           {/* `-mx-4`: samma bredd som menybaren, se FilterRad-anropet ovan.
               BEHÅLLAREN ÄR TONAD OCH RÄNNAN ÄR DESS PADDING (pass 11) —
               bilage-ytans `GRUPPKORT`-form (`DokumentYta.tsx`): korten bär den
@@ -1471,7 +1473,11 @@ export function BetalningsInkorg() {
 
           {ovrigaPersoner.length > 0 && (
             <div className="flex flex-col gap-2">
-              <h2 className="font-semibold text-lg">Utan öppen betalning</h2>
+              {/* TERMEN ÄR HUSETS KVAR-ATT-BETALA-SPRÅK (Marcus 2026-09-01:
+                  *"jag vill byta ut rubriken till 'Utan kvarvarande betalning',
+                  det går väl mer i linje med vårt nya språk?"*). Rubriken bar
+                  den gamla "öppen"-jargongen som pass 3-svepet missade. */}
+              <h2 className="font-semibold text-lg">Utan kvarvarande betalning</h2>
               <ul className="flex flex-col gap-2">
                 {ovrigaPersoner.map((person) => (
                   <li

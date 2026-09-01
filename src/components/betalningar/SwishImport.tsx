@@ -743,7 +743,9 @@ function Importrad({ rad, oppna, idag, onAndra }: RadProps) {
           )}
 
           {klass === 'omatchad' && sokterm.trim() !== '' && traffar.length === 0 && (
-            <p className="text-caption text-text-muted">Ingen öppen betalning matchar sökningen.</p>
+            <p className="text-caption text-text-muted">
+              Ingen kvarvarande betalning matchar sökningen.
+            </p>
           )}
 
           <div className="flex flex-wrap items-center gap-4">
