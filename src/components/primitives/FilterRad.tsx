@@ -291,12 +291,27 @@ export function FilterRad({
                   alternativ så triggern kommunicerar vad som faktiskt
                   filtreras på — aldrig RAC:s råa placeholder. */}
               {dimensioner.map((dim) => {
-                // KONSUMENT-ÄGD KONTROLL: etiketten renderas i dropdownens
-                // egen etikett-grammatik (samma klasser som `Select`s
-                // `Label`) så kolumnerna i rutnätet linjerar, men som ett
-                // `span` — ett `label`-element utan kontroll att peka på
-                // hade varit en tom utfästelse. Kontrollen bär sitt eget
-                // tillgängliga namn.
+                // KONSUMENT-ÄGD KONTROLL: etiketten är `sr-only` sedan
+                // 2026-09-01 (Marcus: *"ta bort rubriken 'Event' över
+                // eventväljaren … på komponenten, den behövs inte på
+                // anmälningssidan heller"* — alltså på PRIMITIVEN, så den
+                // försvinner på båda ytorna samtidigt).
+                //
+                // BARA DEN VISUELLA RUBRIKEN GÅR. Texten står kvar i
+                // tillgänglighetsträdet, så en skärmläsare som läser panelen
+                // i ordning fortfarande hör vilken axel kontrollen gäller.
+                // Det är också varför detta INTE är en regression: spannet
+                // var aldrig ett `label`-element och namngav aldrig
+                // kontrollen programmatiskt (kontrollen bär sitt eget
+                // tillgängliga namn) — det var ren visuell rubrik, och det
+                // är exakt den delen som tas bort.
+                //
+                // Skälet att kontroll-dimensionen inte behöver sin rubrik
+                // medan dropdown-dimensionerna gör det: en `Select` visar
+                // bara sitt VALDA värde ("Kurs"), medan `EventValjare`s
+                // stängda trigger säger vad den är ("Alla event", eller
+                // eventets namn med ikon). Rubriken upprepade alltså vad
+                // kontrollen redan sa.
                 if (dim.kontroll != null) {
                   return (
                     <div
@@ -304,9 +319,7 @@ export function FilterRad({
                       data-testid={`filter-${dim.nyckel}`}
                       className="flex w-full flex-col gap-1 sm:col-span-full"
                     >
-                      <span className="text-(color:--mm-input-label-text) text-small">
-                        {dim.etikett}
-                      </span>
+                      <span className="sr-only">{dim.etikett}</span>
                       {dim.kontroll}
                     </div>
                   );

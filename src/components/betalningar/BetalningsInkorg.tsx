@@ -573,9 +573,31 @@ export function BetalningsInkorg() {
       <header className="flex flex-wrap items-start justify-between gap-3 px-4">
         <div className="flex flex-col gap-1">
           <h1 className="font-semibold text-3xl">Betalningar</h1>
-          <p className="text-small text-text-muted">
-            {`${sammanfattning.oppna} öppna · ${sammanfattning.forfallna} förfallna · ${sammanfattning.kvittonAttSkicka} kvitton i kö`}
-          </p>
+          {/* KÖ-RADEN ERSÄTTER TRE-TALS-RADEN (Marcus 2026-09-01, om
+              "5 öppna · 5 förfallna · 0 kvitton i kö"): *"vad betyder det?
+              … 5 förfallna hör väl inte hit, det hör väl till
+              påminnelse-blocket"*. Båda invändningarna håller:
+
+                • FÖRFALLNA-talet hör till påminnelse-arbetet, som bor i
+                  Hem-blocket `ForfallnaBetalningar`. Här var det ett tal utan
+                  handling — förfallo-MÄRKET per rad finns kvar och är det som
+                  faktiskt hjälper när Lotta prickar av.
+                • ÖPPNA-talet sades redan två gånger till: av listan själv och
+                  av filterpanelens "Visar X av Y betalningar".
+                • KVITTON I KÖ var det enda talet som bar något Lotta inte
+                  kunde se någon annanstans — men "i kö" är jargong för en
+                  jobbmotor hon inte känner till.
+
+              Raden renderas därför BARA när det finns något i kön, och säger
+              vad som händer i stället för att räkna en datastruktur. Noll
+              kvitton är inget besked; det är frånvaron av ett. */}
+          {sammanfattning.kvittonAttSkicka > 0 && (
+            <p className="text-small text-text-muted">
+              {`${sammanfattning.kvittonAttSkicka} ${
+                sammanfattning.kvittonAttSkicka === 1 ? 'kvitto väntar' : 'kvitton väntar'
+              } på att skickas`}
+            </p>
+          )}
         </div>
         {!visaImport && (
           <Button
@@ -601,58 +623,74 @@ export function BetalningsInkorg() {
       )}
 
       <div className="flex flex-col gap-3 px-4">
-        <SearchField
-          aria-label="Sök på namn, telefon eller belopp"
-          value={sokterm}
-          onChange={setSokterm}
-          className="group flex flex-col"
+        {/* SÖKFÄLTET OCH TRATTEN DELAR RAD (Marcus 2026-09-01: *"sätta
+            filterikonen till höger om sökrutan på samma rad, tror det blir
+            snyggare"*).
+
+            INGEN NY LAYOUT-KOD BEHÖVDES: `FilterRad`s `children` ÄR den
+            slotten — "kontrollen till VÄNSTER om tratt-ingången … Den får
+            radens fria bredd; tratten är `shrink-0` bredvid den"
+            (`FilterRad.tsx` § `children`). Eventlistan lade sina period-pill
+            där; inkorgen lägger sitt sökfält. Sökfältets egen markup,
+            `sokRef` och fokus-kontraktet (AC #3: "fokus åter i tomt sökfält")
+            är byte för byte oförändrade — bara föräldern är ny.
+
+            OCH DÄRMED ÄR TRATTEN SYNLIG ÄVEN UNDER SÖKNING. Det var tidigare
+            villkorat på `!soker`, ärvt från den rivna toggeln, och den kanten
+            var bokförd som en öppen fråga i pass 2B ("ett satt filter är
+            osynligt medan sökningen pågår"). Marcus layoutbeslut avgör den:
+            en kontroll som sitter PÅ sökraden kan inte försvinna när man
+            skriver i den utan att raden hoppar.
+
+            KVARSTÅENDE SPÄNNING, ÖPPET BOKFÖRD: sökningen läser fortfarande
+            HELA radmängden (`rankaTraffar` på `rader`, inte på `visasRader`),
+            så filtren gäller listan — inte träffarna. Det är MEDVETET och
+            oförändrat: Lotta söker upp ett namn eller ett belopp ur banken
+            och ska hitta personen oavsett vilken period panelen råkar stå på,
+            vilket är precis det "registrera i efterhand"-fall som annars gett
+            noll träffar. Panelens räknare beskriver alltså listan även medan
+            träffarna visas. Ändras detta ska det vara ett eget beslut, inte
+            en följd av en layoutflytt. */}
+        <FilterRad
+          dimensioner={dimensioner}
+          valda={valda}
+          onValj={(nyckel, varde) => {
+            if (nyckel === 'period') {
+              void setPeriod(varde ? PERIOD_FRAN_ETIKETT[varde] : 'alla');
+            } else if (nyckel === 'typ') void setTyp(varde);
+            else if (nyckel === 'ort') void setOrt(varde);
+            else void setValtEvent(varde);
+          }}
+          onRensa={rensaFilter}
+          visade={visasRader.length}
+          totalt={rader.length}
+          enhet={BETALNINGS_ENHET}
+          triggerRef={filterKnappRef}
         >
-          <div className="relative">
-            <AriaInput
-              ref={sokRef}
-              placeholder="Sök på namn, telefon eller belopp"
-              className="mm-fokusring-vid-fokus text-(color:--mm-input-text) placeholder:text-(color:--mm-input-text-placeholder) min-h-10 w-full rounded border border-(--mm-input-border) bg-(--mm-input-bg) px-3 pr-10 text-body [&::-webkit-search-cancel-button]:[-webkit-appearance:none]"
-            />
-            <AriaButton
-              aria-label="Rensa sökningen"
-              className="absolute top-1/2 right-2 flex size-6 -translate-y-1/2 items-center justify-center rounded text-text-muted hover:text-text group-data-[empty]:hidden"
-            >
-              <X aria-hidden="true" size={16} className="shrink-0" />
-            </AriaButton>
-          </div>
-        </SearchField>
-
-        {/* FILTRET ERSÄTTER DEN RIVNA TOGGELN (Marcus 2026-09-01) — samma
-            `FilterRad`-primitiv som anmälningssidan och eventlistan, med
-            period som en dimension i panelen i stället för ett pillpar på
-            raden. Se § FILTRERINGENS AXLAR ovan för hela motiveringen.
-
-            DÖLJS VID SÖKNING, exakt som togglen gjorde: sökningen läser hela
-            radmängden (`rankaTraffar` på `rader`), så en synlig filterkontroll
-            hade lovat något den inte gör i det läget. */}
-        {!soker && (
-          <>
-            <FilterRad
-              dimensioner={dimensioner}
-              valda={valda}
-              onValj={(nyckel, varde) => {
-                if (nyckel === 'period') {
-                  void setPeriod(varde ? PERIOD_FRAN_ETIKETT[varde] : 'alla');
-                } else if (nyckel === 'typ') void setTyp(varde);
-                else if (nyckel === 'ort') void setOrt(varde);
-                else void setValtEvent(varde);
-              }}
-              onRensa={rensaFilter}
-              visade={visasRader.length}
-              totalt={rader.length}
-              enhet={BETALNINGS_ENHET}
-              triggerRef={filterKnappRef}
-            />
-            <p className="sr-only" aria-live="polite">
-              {filterAnnons}
-            </p>
-          </>
-        )}
+          <SearchField
+            aria-label="Sök på namn, telefon eller belopp"
+            value={sokterm}
+            onChange={setSokterm}
+            className="group flex flex-col"
+          >
+            <div className="relative">
+              <AriaInput
+                ref={sokRef}
+                placeholder="Sök på namn, telefon eller belopp"
+                className="mm-fokusring-vid-fokus text-(color:--mm-input-text) placeholder:text-(color:--mm-input-text-placeholder) min-h-10 w-full rounded border border-(--mm-input-border) bg-(--mm-input-bg) px-3 pr-10 text-body [&::-webkit-search-cancel-button]:[-webkit-appearance:none]"
+              />
+              <AriaButton
+                aria-label="Rensa sökningen"
+                className="absolute top-1/2 right-2 flex size-6 -translate-y-1/2 items-center justify-center rounded text-text-muted hover:text-text group-data-[empty]:hidden"
+              >
+                <X aria-hidden="true" size={16} className="shrink-0" />
+              </AriaButton>
+            </div>
+          </SearchField>
+        </FilterRad>
+        <p className="sr-only" aria-live="polite">
+          {filterAnnons}
+        </p>
       </div>
 
       {/* [TASK-346.10] Importen ligger FÖRE "Skicka N kvitton", i den ordning
