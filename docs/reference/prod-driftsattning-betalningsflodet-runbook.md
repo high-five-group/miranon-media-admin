@@ -54,8 +54,9 @@ och var Marcus tar vid.
    npx supabase migration list
    ```
 
-   Förväntat: `20260830195728`, `20260830195900`, `20260830200100` visar
-   `local` **och** `remote` ifyllda (se § Steg 2 för fullständig utdata).
+   Förväntat: `20260830195728`, `20260830195900`, `20260830200100`,
+   `20260901111500` visar `local` **och** `remote` ifyllda (se § Steg 2 för
+   fullständig utdata).
 3. **Prod-basens fält + priser + backfill:** § Steg 11–13. Förutsättningen
    för allt annat: de nio fälten i tabellen i § Steg 11 måste finnas INNAN
    backfillen (§ Steg 13) kan hitta ett enda pris.
@@ -136,16 +137,20 @@ Utöver diagnosen, tre saker specifika för denna driftsättning:
 
    `git status --short` tomt; de två SHA:erna identiska.
 
-2. **De tre migrationsfilerna finns på disk** (de landade med `TASK-346.3`,
-   PR `#2147`):
+2. **De fyra migrationsfilerna finns på disk** (de tre första landade med
+   `TASK-346.3`, PR `#2147`; den fjärde — `20260901111500_inbetalning_notering.sql`
+   — landar med promoverings-PR:n `fix/hem-betalningskort-marcus-iteration`
+   och finns alltså på disk först EFTER att den PR:en är mergad till `main`,
+   inte i dagsläget):
 
    ```bash
    ls supabase/migrations/20260830195728_betalningsdomanen_inbetalningar_kvitton.sql \
       supabase/migrations/20260830195900_jobbmotorn_ko_cron_jobbtabeller.sql \
-      supabase/migrations/20260830200100_purga_testrader_sentineler.sql
+      supabase/migrations/20260830200100_purga_testrader_sentineler.sql \
+      supabase/migrations/20260901111500_inbetalning_notering.sql
    ```
 
-   Alla tre listas. Saknas en: `main` är inte fast-forwardad tillräckligt
+   Alla fyra listas. Saknas en: `main` är inte fast-forwardad tillräckligt
    långt — kör `git fetch` + `git merge --ff-only origin/main` innan du
    fortsätter.
 
@@ -211,7 +216,7 @@ prod-referensen. Läs den raden varje gång.
 
 ## Steg 2 — Applicera migrationerna
 
-**Detta är INTE en scopad push av bara dessa tre filer.** `db push` applicerar
+**Detta är INTE en scopad push av bara dessa fyra filer.** `db push` applicerar
 VARJE migration som ännu inte är registrerad som applicerad i prod — om andra
 PRD:er landat migrationer på `main` sedan senaste prod-driftsättningen
 applicerar de OCKSÅ. Läs hela listan `db push` skriver ut, inte bara raderna
@@ -229,14 +234,16 @@ npx supabase migration list
 Applying migration 20260830195728_betalningsdomanen_inbetalningar_kvitton.sql...
 Applying migration 20260830195900_jobbmotorn_ko_cron_jobbtabeller.sql...
 Applying migration 20260830200100_purga_testrader_sentineler.sql...
+Applying migration 20260901111500_inbetalning_notering.sql...
 ```
 
 och i EXAKT den ordningen (tidsstämpel-sorterat, `20260830195728` <
-`20260830195900` < `20260830200100` — ordningen är bindande: se
-`supabase/migrations/README.md` § Betalningsdomänen för varför).
+`20260830195900` < `20260830200100` < `20260901111500` — ordningen är
+bindande: se `supabase/migrations/README.md` § Betalningsdomänen för
+varför).
 
 **Steget lyckades när:** andra `migration list` visar `local` **och**
-`remote` ifyllda för alla tre versionerna. Bekräfta att objekten faktiskt
+`remote` ifyllda för alla fyra versionerna. Bekräfta att objekten faktiskt
 finns, aldrig ur exit 0 ensamt:
 
 ```bash
@@ -251,7 +258,7 @@ kommandot ska ge tre rader. Mätt i staging 2026-08-30: `pgmq 1.5.1`,
 ett fel** — Supabase versionerar extensions plattformsvis — men notera
 avvikelsen om du ser en, den är en bra sak att ha bokförd.
 
-**Om det inte lyckades:** `migration list` säger exakt vilken av de tre som
+**Om det inte lyckades:** `migration list` säger exakt vilken av de fyra som
 gick igenom. Se § Rullbakåt R1 — läs den innan du river något, kvitton är
 append-only och tabellerna kan bära verkliga rader så fort steg 9–10 är
 körda.
@@ -618,36 +625,55 @@ IF(
 )
 ```
 
-**KÄND LUCKA i skriptvägen — läs innan du väljer metod.** `data-model.md`
-säger att prod-fälten kan skapas "t.ex. via `AIRTABLE_PROD_GODKAND_AV_MARCUS`-
-vägen `create-eventinnehall-modell.mjs`/`create-betalningsfalt.mjs` redan
-etablerar". **Det stämmer bara för HALVA det påståendet, verifierat av denna
-runbooks författare 2026-08-31:** `scripts/create-eventinnehall-modell.mjs`
-HAR den vägen (`--bas <baseId>` + miljövariabeln, se dess eget filhuvud rad
-78–98). **`scripts/create-betalningsfalt.mjs` har den INTE** — dess enda
-CLI-flagga är `--dry-run` (`parseArgs`, rad 282–284), och `CONFIG.
-expectedBaseId` är hårdkodad till staging med prod i `forbiddenBaseIds` (rad
-98–99) utan någon parameter för att rikta om den. Att köra skriptet mot prod
-som det står i dag är därför inte möjligt utan en kodändring.
+**KÄND LUCKA i skriptvägen, STÄNGD 2026-09-01 (PR `#2192`) — historiken
+bokförd, inte bara facit.** `data-model.md` sa att prod-fälten kan skapas
+"t.ex. via `AIRTABLE_PROD_GODKAND_AV_MARCUS`-vägen
+`create-eventinnehall-modell.mjs`/`create-betalningsfalt.mjs` redan
+etablerar" — det stämde bara för HALVA det påståendet fram till PR `#2192`:
+`scripts/create-eventinnehall-modell.mjs` hade vägen (`--bas <baseId>` +
+miljövariabeln) sedan `TASK-309.9`, men `scripts/create-betalningsfalt.mjs`s
+enda CLI-flagga var `--dry-run` och `CONFIG.expectedBaseId` var hårdkodad
+till staging utan någon parameter för att rikta om den (verifierat av denna
+runbooks författare 2026-08-31 — se PR:ens beskrivning för den fulla
+diff:en). Väg A nedan (av de "Två vägar" som stod här) valdes av Marcus
+mandat 2026-09-01 (verbatim i
+`tasks/sessions/2026-08-29-session-113.md` § MANDAT) och implementerades i
+PR `#2192`, `feat/betalningsfalt-prod-vagen`.
 
-**Två vägar, Marcus val — denna runbook väljer inte:**
+**Nuläget: `create-betalningsfalt.mjs` bär samma `--bas`/
+`AIRTABLE_PROD_GODKAND_AV_MARCUS`-mönster som `create-eventinnehall-modell.mjs`**
+(`resolveTargetBaseId`/`PROD_GODKAND_ENV_VAR`, `scripts/create-betalningsfalt.mjs`
+kring rad 342–386 — radnumren kan glida, verifiera mot faktisk kod). Utan
+`--bas` körs skriptet mot staging precis som tidigare, prod förblir
+blockerad i `forbiddenBaseIds`. Mot prod:
 
-- **A — Utvidga `create-betalningsfalt.mjs`** med samma `--bas`/
-  `AIRTABLE_PROD_GODKAND_AV_MARCUS`-mönster som
-  `create-eventinnehall-modell.mjs` redan bär (kopiera formen, se dess
-  `resolveTargetBaseId`/`PROD_GODKAND_ENV_VAR`). Ger en repeterbar,
-  granskningsbar körning — men är en kodändring som i sig går via PR + merge-kö
-  innan den kan köras mot prod.
-- **B — Airtable-konsolen direkt**, fält för fält enligt tabellen ovan.
-  Snabbare för en engångskörning, men lämnar ingen körbar artefakt bakom sig
-  (samma avvägning som `data-model.md` redan bokfört).
+```bash
+AIRTABLE_PROD_GODKAND_AV_MARCUS=app8uGPrVCVOm6LfD \
+AIRTABLE_SCHEMA_TOKEN=<prod-scopad-PAT> \
+node scripts/create-betalningsfalt.mjs --bas app8uGPrVCVOm6LfD --dry-run
+```
 
-Oavsett väg: prod-token för schemaändringar kräver en PAT scopad mot
-PROD-basen, inte `.env.seed`s stagingscopade token (samma begränsning som
+Kör först UTAN `--dry-run`-flaggan borttagen (dvs. med den kvar, som ovan)
+för att se planen; ta bort `--dry-run` för att faktiskt skriva. Miljövariabelns
+värde måste vara EXAKT samma bas-ID som `--bas`, satt av Marcus på
+kommandoraden i klartext — annars VÄGRAR skriptet (fail-closed,
+`resolveTargetBaseId`).
+
+**Sidoeffekt av implementationen, värd att känna till:** tabellidentifieringen
+i `create-betalningsfalt.mjs` byttes från hårdkodat staging-`tableId` till
+NAMN-baserad uppslagning (`findTableByName`) för samtliga tre tabeller —
+Eventinnehåll har nämligen OLIKA tabell-ID i staging (`tblwqaBrkm6hJPITd`)
+och prod (`tblfwqsNPSYd6o44L`, samma ID som tabellen nedan), medan
+Eventplanering/Anmälningar råkar dela ID mellan baserna. Ändrar inget i
+tabellen nedan — bara HUR skriptet internt hittar rätt tabell i vilken bas
+som helst.
+
+Prod-token för schemaändringar kräver en PAT scopad mot PROD-basen, inte
+`.env.seed`s stagingscopade token (samma begränsning som
 `create-eventinnehall-modell.mjs`s filhuvud beskriver för sin egen
 `--bas`-väg) — se [`atkomst-och-nycklar.md`](atkomst-och-nycklar.md).
 
-**Steget lyckades när** — oavsett väg — en läsning bekräftar alla nio fält:
+**Steget lyckades när** en läsning bekräftar alla nio fält:
 
 ```bash
 npx backlog task 346.2 --plain   # AC-listan att korsläsa mot
@@ -889,7 +915,7 @@ formulerad så att den rör så lite som möjligt.
 
 ### R1 — Migrationen gick fel halvvägs
 
-`migration list` (§ Steg 2) säger exakt vilken av de tre som applicerades.
+`migration list` (§ Steg 2) säger exakt vilken av de fyra som applicerades.
 
 **Säkert att riva ENDAST om ingen av tabellerna bär en rad ännu** (dvs. före
 § Steg 9/15 och innan Lotta registrerat något):
@@ -903,10 +929,17 @@ npx supabase db query --linked "select cron.unschedule('jobbmotor-tick')" 2>/dev
 npx supabase db query --linked "drop table if exists public.kvitton cascade"
 npx supabase db query --linked "drop table if exists public.inbetalningar cascade"
 npx supabase db query --linked "drop table if exists public.kvittoserie_golv"
+npx supabase migration repair --status reverted 20260901111500 --linked
 npx supabase migration repair --status reverted 20260830200100 --linked
 npx supabase migration repair --status reverted 20260830195900 --linked
 npx supabase migration repair --status reverted 20260830195728 --linked
 ```
+
+Den fjärde migrationen (`20260901111500_inbetalning_notering.sql`) lägger
+bara till en kolumn (`notering`) på `public.inbetalningar` — `drop table …
+inbetalningar cascade` ovan river den redan implicit, ingen egen DROP-rad
+behövs. Repair-raden är ändå med (nyast-först, samma ordning som de tre
+övriga) så migrationshistoriken stämmer efteråt.
 
 (Se varje migrationsfils egen "NEDÅT"-kommentar för den fullständiga,
 auktoritativa listan — ovanstående är en sammanslagning i rätt ordning,

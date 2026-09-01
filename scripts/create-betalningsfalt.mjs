@@ -37,7 +37,10 @@
 //       summera rader i en annan databas, beslut 5).
 //   Anmälningar.Kvittonummer
 //     → APP-SKRIVET spegelfält (singleLineText) — skild från det befintliga
-//       länkfältet "Kvitton" (fld2Axx3FsfXndJ39, multipleRecordLinks).
+//       länkfältet "Kvitton" (multipleRecordLinks; fält-ID:t är BAS-
+//       SPECIFIKT, samma skäl som findTableByName-omskrivningen nedan gäller
+//       tabeller — staging fld2Axx3FsfXndJ39, prod fld16sYUYDqN1AUeT,
+//       live-verifierat 2026-09-01).
 //   Anmälningar."Pris (kr) (from Event)"
 //     → ADDITIVT HJÄLPFÄLT (lookup), inte i AC #1:s lista men uttryckligen
 //       tillåtet av uppdraget ("behövs ett additivt hjälpfält (lookup) för
@@ -235,9 +238,9 @@ export const CONFIG = {
         description:
           'APP-SKRIVET spegelfält (ADR-128 beslut 5) — MM-<år>-<löpnummer>, ' +
           'satt av appen när ett kvitto utfärdats. Skild från länkfältet ' +
-          '"Kvitton" (fld2Axx3FsfXndJ39, multipleRecordLinks → ' +
-          'Kvitton-tabellen) — detta är en snabb läsbar text-spegel, inte ' +
-          'en länk.',
+          '"Kvitton" (multipleRecordLinks → Kvitton-tabellen; fält-ID:t är ' +
+          'BAS-SPECIFIKT, refereras därför via NAMN här, inte hårdkodat ' +
+          'ID) — detta är en snabb läsbar text-spegel, inte en länk.',
         // INGEN options-nyckel: singleLineText avvisar `options: {}` med
         // 422 INVALID_FIELD_TYPE_OPTIONS_FOR_CREATE (mätt live, TASK-346.2)
         // — samma "options UTELÄMNAS helt när den är tom"-regel som
@@ -373,7 +376,7 @@ export function resolveTargetBaseId({ bas, stagingBaseId, godkandEnv }) {
     throw new Error(
       `VÄGRAR: basen "${bas}" skiljer sig från staging ("${stagingBaseId}"). Skrivning mot en ` +
         `icke-staging-bas kräver miljövariabeln ${PROD_GODKAND_ENV_VAR}=<baseId> satt till EXAKT ` +
-        `samma bas-ID på kommandoraden — Marcus GO i klartext. Satt värde: ` +
+        `samma bas-ID på kommandoraden — Marcus GO i klartext (ADR-125 § 8). Satt värde: ` +
         `${godkandEnv === undefined ? '(saknas)' : `"${godkandEnv}"`}.`,
     );
   }
