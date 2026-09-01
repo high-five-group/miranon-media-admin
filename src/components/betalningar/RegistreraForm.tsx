@@ -110,45 +110,46 @@ type Props = {
  * är det som skickas, alltid.
  *
  * ═══════════════════════════════════════════════════════════════════════════
- * NOTERINGSFÄLTET SAKNAS — MEDVETET, OCH MÄTT (uppdaterat 2026-09-01)
+ * NOTERINGSFÄLTET — BYGGT SOM HEL KEDJA (2026-09-01, ersätter "saknas"-noten)
  * ═══════════════════════════════════════════════════════════════════════════
- * AC #3 räknar upp "notering" bland fälten. `RegistreraInbetalningInput`
- * (TASK-346.4, `Betalningar.schema.ts`) bär INGET sådant fält,
- * `registrera-inbetalning` skriver ingen noteringskolumn, och `inbetalningar`
- * i Postgres har ingen (`grep -rn "notering" supabase/migrations/*.sql` =
- * noll träffar, mätt 2026-09-01). Ett fält som inte kan nå servern hade varit
- * en låtsas-kontroll: Lotta skriver, trycker Enter, och texten försvinner
- * utan ett ord.
+ * Marcus dom, ordagrant och ställd två gånger: *"det är HÄR lotta noterar
+ * något, inte på pricka av-blocket"*. Fältet finns nu, och det skriver till
+ * en EGEN kolumn på inbetalningen — hela vägen:
  *
- * MARCUS DOM 2026-09-01: *"det är HÄR lotta noterar något, inte på pricka
- * av-blocket"*. Mätningen inför den flytten gav tre fynd som tillsammans
- * stoppar den i detta pass:
+ *   `notering` (detta fält) → `RegistreraInbetalningInput.notering`
+ *   (`Betalningar.schema.ts`) → porten spreadar inputen
+ *   (`betalningsportar.ts`) → `registrera-inbetalning` normaliserar via
+ *   `lasNotering` (`_shared/betalningar-db.ts`) → `inbetalningar.notering`
+ *   (migration `20260901111500_inbetalning_notering.sql`) → läses tillbaka i
+ *   `INBETALNING_KOLUMNER` och visas på raden i `InbetalningsLista`.
  *
- *  1. PANELENS NOTERINGSFÄLT SKRIVER INTE TILL EN INBETALNING. Det bor i
- *     `events/atgarder/AtgardsSida.tsx` § `SkrivRad` — TVÅ fält per person —
- *     och går via `useUpdatePaymentNote` → `update-registration-payment-note`
- *     till ANMÄLANS Airtable-fält `Notering anmälningsavgift` respektive
- *     `Notering slutbetalning` (`data/mutations/registrationPayments.ts`
- *     § `NOTERING_FALT`, allowlistad i `_shared/field-allowlists.ts`). Det
- *     rör aldrig inbetalningsdomänen.
- *  2. EN NOTERING PÅ SJÄLVA INBETALNINGEN kräver hela kedjan: kolumn i
- *     `inbetalningar` + fält på inputen + insert i EF:en. Alltså migration.
- *  3. ATT I STÄLLET FLYTTA ANMÄLANS notering hit är inte heller en ren
- *     UI-flytt: formuläret får en `InkorgsRad`, och `OppenBetalning` bär
- *     varken noteringsvärdena eller ett `Registration` (som hookens
- *     optimistiska cache-patch kräver). Att få hit dem betyder att utöka
- *     `hamta-oppna-betalningar` — en EF-ändring. Och de två fälten är
- *     FACK-bundna (avgift/slut) medan formuläret registrerar ett fritt
- *     belopp utan fack: vilket av dem som ska skrivas är ett öppet
- *     designbeslut, inte en detalj.
+ * DEN TIDIGARE NOTEN HÄR SADE ATT FÄLTET INTE KUNDE BYGGAS. Den var korrekt
+ * när den skrevs — kedjan saknades — men skälet var att kedjan INTE FANNS, inte
+ * att den var fel att bygga. Den byggdes i stället för att flyttas, och de tre
+ * mätta fynden som stoppade FLYTTEN står kvar som skäl till varför:
  *
- * RÄTTELSE AV DEN TIDIGARE FORMULERINGEN HÄR: raden påstod att fältet
- * "buntas till samma migration" som `avtalat_pris`. Den buntningen är
- * FALSIFIERAD — `avtalatPris` finns redan på inputen, EF:en normaliserar den
- * och `betalningar-bas.ts` speglar den till `Avtalat pris (kr)`; sedan A5
- * (2026-09-01) fyller utfallsboxen fältet, helt utan serverändring. Det som
- * fortfarande saknas för PRISET är bara durabiliteten (Postgres-kolumnen).
- * NOTERINGEN har ingen sådan halvväg — där saknas hela kedjan.
+ *  1. Panelens noteringsfält (`events/atgarder/AtgardsSida.tsx` § `SkrivRad`)
+ *     skriver till ANMÄLANS Airtable-fält `Notering anmälningsavgift` /
+ *     `Notering slutbetalning`, via `update-registration-payment-note`. Det rör
+ *     aldrig inbetalningsdomänen — de två noteringarna är alltså OLIKA SAKER
+ *     och lever vidare sida vid sida, inte som en dubblett.
+ *  2. De fälten är FACK-BUNDNA (avgift/slutbetalning) medan detta formulär
+ *     bokför ett FRITT belopp utan fack. Vilket fack en notering här skulle
+ *     hamna i var ett öppet designbeslut — den frågan försvinner helt när
+ *     anteckningen bor på inbetalningen.
+ *  3. Anteckningen hör till BOKFÖRINGSPOSTEN. Samma verifikationskrav som
+ *     ögonblicksbilden bär (ADR-128 beslut 1): posten ska kunna läsas ensam,
+ *     år efter att anmälan ändrats. En notering på anmälan dör med anmälan.
+ *
+ * ⚠️ FÖNSTRET FÖRE DEPLOYEN, ÖPPET BOKFÖRT. Migration + EF-deploy är en
+ * SERIELL handling som ägs av orkestreraren och INTE ingår i denna commit.
+ * Tills båda landat i miljön gäller: fältet syns och går att skriva i, texten
+ * skickas med i payloaden, och den gamla Edge Function-versionen IGNORERAR
+ * den okända nyckeln — inbetalningen registreras alltså korrekt, men
+ * anteckningen sparas inte. Ingenting kraschar (`InbetalningSchema.notering`
+ * bär `.default(null)` just för detta svar), och `spara` nedan säger det i
+ * KLARTEXT i kvittensen i stället för att kvittera tyst — se `noteringsnot`.
+ * Efter deployen är den grenen död kod som aldrig träffas.
  */
 export function RegistreraForm({
   rad,
@@ -189,6 +190,8 @@ export function RegistreraForm({
   const [datum, setDatum] = useState(idag);
   const [medKvitto, setMedKvitto] = useState(true);
   const [rort, setRort] = useState(false);
+  /** Lottas fria anteckning om DENNA inbetalning. Se filhuvudet § NOTERINGSFÄLTET. */
+  const [notering, setNotering] = useState('');
 
   /* ═══════════════════════════════════════════════════════════════════════
    * AVTALAT PRIS — DEN ANDRA SANNINGEN OM ETT RESTBELOPP (Marcus JA 2026-09-01)
@@ -335,12 +338,18 @@ export function RegistreraForm({
 
   async function spara(skickaNu: boolean) {
     if (!kanSpara || talet === null) return;
+    /* TOM NOTERING SKICKAS INTE ALLS. Servern gör visserligen `''` → NULL
+       (`lasNotering`), men en utelämnad nyckel gör payloaden IDENTISK med den
+       före fältet fanns — vilket är exakt vad "bakåtkompatibelt" ska betyda,
+       och vad som gör en jämförelse mot en äldre logg meningsfull. */
+    const noteringAttSkicka = notering.trim() !== '' ? notering : null;
     const resultat = await registrera.mutateAsync({
       anmalanRecordId: rad.betalning.anmalanRecordId,
       belopp,
       betalsatt,
       betalningsdatum: datum,
       ...(prisAttSkicka !== null ? { avtalatPris: prisAttSkicka } : {}),
+      ...(noteringAttSkicka !== null ? { notering: noteringAttSkicka } : {}),
     });
 
     // KVITTENSEN LÄSER SERVERNS SVAR, ALDRIG FÄLTET. Servern normaliserar
@@ -368,13 +377,29 @@ export function RegistreraForm({
         ? ' Basen har inte hunnit uppdateras än, och det avtalade priset sparades INTE — sätt om det.'
         : ' Basen har inte hunnit uppdateras än.';
 
+    /* NOTERINGEN KVITTERAS BARA NÄR DEN FALLERAT — och den grenen är död kod
+       efter deployen. Skrev Lotta en anteckning men svaret bär `null` tillbaka,
+       då kör miljön en Edge Function-version UTAN noteringsstöd (se filhuvudet
+       § FÖNSTRET FÖRE DEPLOYEN): den ignorerar den okända nyckeln tyst, och
+       utan denna rad hade texten försvunnit "utan ett ord" — precis den
+       låtsas-kontroll som var skälet att fältet inte byggdes tidigare.
+
+       VILLKORET ÄR EXAKT, inte en gissning: `resultat.inbetalning.notering` är
+       serverns EGET svar om den sparade raden. Har den sparats kommer texten
+       tillbaka; kommer `null` tillbaka trots att vi skickade något, sparades
+       den inte. Ingen versionssniffning, ingen flagga att städa. */
+    const noteringsnot =
+      noteringAttSkicka !== null && resultat.inbetalning.notering === null
+        ? ' Noteringen sparades INTE — den delen är inte utrullad än.'
+        : '';
+
     onKlar({
       inbetalningId: resultat.inbetalning.id,
       namn: rad.namn,
       belopp: sparat,
       medKvitto,
       skickaNu,
-      kvittens: `${kvittens}${spegelnot}`,
+      kvittens: `${kvittens}${spegelnot}${noteringsnot}`,
     });
   }
 
@@ -600,6 +625,42 @@ export function RegistreraForm({
           className="min-w-40 flex-1"
         />
       </div>
+
+      {/* ═══ NOTERINGEN — DÄR LOTTA FAKTISKT NOTERAR NÅGOT ═══
+          Marcus, två gånger: *"det är HÄR lotta noterar något, inte på pricka
+          av-blocket"*. Hela datavägen och deploy-fönstret: filhuvudet
+          § NOTERINGSFÄLTET.
+
+          PLACERINGEN ÄR EFTER BETALSÄTT/DATUM OCH FÖRE KVITTOKRYSSET, med
+          avsikt: fälten ovanför beskriver BETALNINGEN (vad, hur, när) och
+          kryssrutan nedanför är en HANDLING (skicka kvitto). Anteckningen hör
+          till beskrivningen, inte till handlingen — och den ligger därmed sist
+          bland fälten, vilket är rätt för det enda frivilliga fältet i
+          formuläret. Tab-ordningen följer DOM och blir alltså belopp → (pris)
+          → betalsätt → datum → notering → kryss → knappar.
+
+          `hideLabel` GÖR PLATSHÅLLAREN TILL DEN SYNLIGA ETIKETTEN — Marcus
+          beställda form ("placeholder 'Notering…'"). `label` finns kvar och blir
+          `aria-label` via primitivens egen mekanism, så fältet har ett
+          tillgängligt namn (WCAG 4.1.2) trots att ingen `<Label>` renderas.
+          BOKFÖRD AVVÄGNING: en platshållare försvinner när Lotta börjat skriva,
+          och fältet står då som det enda i formuläret utan synlig etikett. Det
+          är den kända kostnaden för den kompakta formen; vill Marcus ha en
+          synlig etikett är ändringen att ta bort `hideLabel` och ge
+          `placeholder` ett exempel i stället.
+
+          INGEN `maxLength`: taket (500) bärs av servern OCH av databasens
+          `inbetalningar_notering_form`. Ett hårt stopp i fältet hade tyst ätit
+          tecken Lotta klistrade in; serverns svar säger i stället vad som gick
+          fel, i klartext. */}
+      <Input
+        label="Notering"
+        hideLabel
+        value={notering}
+        onChange={setNotering}
+        placeholder="Notering…"
+        autoComplete="off"
+      />
 
       {/* Rå RAC-Checkbox: huset har ingen Checkbox-primitiv, och det är en
           etablerad precedent (BorOverRad, task-18.8). Formen är kopierad ur

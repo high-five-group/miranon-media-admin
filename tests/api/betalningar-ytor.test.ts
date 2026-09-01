@@ -80,6 +80,7 @@ function inbetalning(over: Partial<Inbetalning> = {}): Inbetalning {
     makuleradNar: null,
     bankreferens: null,
     kvittoId: null,
+    notering: null,
     skapadAv: 'lotta@miranonmedia.se',
     skapadNar: '2026-08-30T09:00:00.000Z',
     ...over,

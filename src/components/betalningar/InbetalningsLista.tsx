@@ -527,6 +527,28 @@ function InbetalningsRad({
             </span>
           )}
 
+          {/* NOTERINGEN — Lottas egen anteckning om DENNA inbetalning
+              (Marcus 2026-09-01). Exakt samma visuella klass som
+              makulerings-noten ovan och felskälet nedan: en sekundär rad i
+              `text-caption text-text-muted`, `w-full` därför att kolumnen är
+              `items-start`.
+
+              INGEN GENOMSTRYKNING PÅ EN MAKULERAD RAD, och det är ett val:
+              primärledet stryks över för att säga att BELOPPET inte längre
+              räknas, men anteckningen är fortfarande sann och ofta det enda
+              som förklarar varför raden makulerades. Samma skäl som
+              makulerings-skälet självt står oöverstruket.
+
+              PREFIXET "Notering:" STÅR KVAR ÄVEN NÄR TEXTEN ÄR UPPENBAR.
+              Raden bär redan tre andra sekundärrader (metadata-svepet,
+              makuleringen, felskälet), och en fri text utan etikett hade varit
+              den enda av dem som inte säger vad den är. */}
+          {inbetalning.notering && (
+            <span className="w-full text-caption text-text-muted">
+              {`Notering: ${inbetalning.notering}`}
+            </span>
+          )}
+
           {/* [TASK-352] Felskälet i klartext, SAMMA visuella klass som
               makulerings-noten ovan — mätt fynd ur S113-slutvandringen: raden
               teg helt om ett fallerat kvittojobb (entydighets-guarden, eller

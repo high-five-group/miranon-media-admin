@@ -28,6 +28,20 @@
 // en släpande spegel är synlig och självläkande vid nästa skrivning.
 //
 // ═══════════════════════════════════════════════════════════════════════════
+// NOTERINGEN (2026-09-01) — OCH DEPLOY-ORDNINGEN DEN KRÄVER
+// ═══════════════════════════════════════════════════════════════════════════
+// Marcus: *"det är HÄR lotta noterar något, inte på pricka av-blocket"*. Fältet
+// är FRIVILLIGT och skrivs till `inbetalningar.notering` (migration
+// `20260901111500_inbetalning_notering.sql`). Frånvaro och tom sträng blir
+// BÅDA NULL — se `lasNotering` i `_shared/betalningar-db.ts`.
+//
+// ⚠️ MIGRATIONEN MÅSTE VARA APPLICERAD FÖRE DENNA FUNKTION DEPLOYAS. Kolumnen
+// står nu i `INBETALNING_KOLUMNER`, som varje `select` mot tabellen använder,
+// och PostgREST fäller hela anropet om kolumnen saknas. Det gäller inte bara
+// denna EF: NIO funktioner importerar konstanten. Ordningen är alltså
+// `supabase db push` FÖRST, `functions deploy` SEDAN — aldrig tvärtom.
+//
+// ═══════════════════════════════════════════════════════════════════════════
 // BELOPPET KOMMER SOM STRÄNG, MED AVSIKT
 // ═══════════════════════════════════════════════════════════════════════════
 // Klienten skickar Lottas RÅA inmatning ('2 500,00'), och `normaliseraBelopp`
@@ -62,6 +76,7 @@ import {
   skapaAdminKlient,
   skrivAktivitet,
 } from '../_shared/betalningar-db.ts';
+import { NOTERING_MAX_LANGD, lasNotering } from '../_shared/inbetalning-notering.ts';
 import { normaliseraBelopp } from '../_shared/betalningsbelopp.ts';
 import { harledBetalning } from '../_shared/betalningsharledning.ts';
 
@@ -170,6 +185,23 @@ Deno.serve(async (req) => {
     avtalatPris = parsat;
   }
 
+  /* NOTERINGEN ÄR FRIVILLIG, OCH FRÅNVARO HAR EXAKT ETT SVAR I DATABASEN.
+     `lasNotering` (`_shared/betalningar-db.ts`) trimmar, gör tom sträng till
+     NULL och skiljer de två felen åt — se dess docblock. Bakåtkompatibiliteten
+     är alltså strukturell och inte ett löfte: en payload UTAN `notering` ger
+     `varde: null`, och en insert med `notering: null` är byte för byte samma
+     rad som före denna ändring. */
+  const noteringsLasning = lasNotering(body?.notering);
+  if (!noteringsLasning.ok) {
+    return badRequest(
+      noteringsLasning.skal === 'typ'
+        ? 'notering måste vara text.'
+        : `Noteringen får vara högst ${NOTERING_MAX_LANGD} tecken (var ${noteringsLasning.langd}).`,
+      corsHeaders,
+    );
+  }
+  const notering = noteringsLasning.varde;
+
   try {
     const anmalan = await lasAnmalan(anmalanRecordId);
     if (!anmalan) {
@@ -198,6 +230,7 @@ Deno.serve(async (req) => {
         typ,
         status: 'aktiv',
         bankreferens,
+        notering,
         skapad_av: visningsnamn,
       })
       .select(INBETALNING_KOLUMNER)

@@ -107,6 +107,7 @@ function inbetalning(overrides: Partial<InbetalningMock> = {}): InbetalningMock 
     makuleradNar: null,
     bankreferens: null,
     kvittoId: null,
+    notering: null,
     skapadAv: 'test@example.test',
     skapadNar: '2026-05-20T10:00:00.000Z',
     ...overrides,

@@ -50,10 +50,25 @@ export function skapaAdminKlient() {
 }
 
 /** Kolumnerna varje läsning av `inbetalningar` behöver. Explicit, aldrig `*`. */
+/*
+ * ⚠️ DENNA LISTA BINDER DEPLOY-ORDNINGEN. Nio Edge Functions importerar
+ * konstanten, och PostgREST fäller HELA `select`-anropet om EN kolumn i den
+ * saknas i databasen. En kolumn får därför ALDRIG läggas till här förrän dess
+ * migration är applicerad i miljön: migration FÖRST, EF-deploy SEDAN. Åt andra
+ * hållet finns ingen risk — en applicerad kolumn som ingen EF ännu läser är
+ * bara en oanvänd kolumn.
+ */
 export const INBETALNING_KOLUMNER =
   'id, anmalan_record_id, ogonblicksbild_namn, ogonblicksbild_event, ' +
   'ogonblicksbild_eventdatum, belopp, betalsatt, betalningsdatum, typ, status, ' +
-  'makulerad_skal, makulerad_nar, bankreferens, kvitto_id, skapad_av, skapad_nar';
+  'makulerad_skal, makulerad_nar, bankreferens, kvitto_id, notering, ' +
+  'skapad_av, skapad_nar';
+
+/*
+ * Noteringens normalisering och tak bor i `inbetalning-notering.ts` — en modul
+ * UTAN fjärr-import, så att den kan bevisas hermetiskt i `tests/api/`. Se den
+ * filens huvud för varför den inte ligger här.
+ */
 
 export const KVITTO_KOLUMNER =
   'id, kvittonummer, ar, lopnummer, inbetalning_id, lagringsnyckel, skickad_nar, ' +
@@ -80,6 +95,7 @@ export function radTillInbetalning(rad: Record<string, unknown>) {
     makuleradNar: (rad.makulerad_nar as string | null) ?? null,
     bankreferens: (rad.bankreferens as string | null) ?? null,
     kvittoId: (rad.kvitto_id as string | null) ?? null,
+    notering: (rad.notering as string | null) ?? null,
     skapadAv: rad.skapad_av as string,
     skapadNar: rad.skapad_nar as string,
   };
