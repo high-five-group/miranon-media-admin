@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import { Banknote, ListChecks, UserPlus } from 'lucide-react';
+import { Coins, ListChecks, UserPlus } from 'lucide-react';
 import {
   HANDLINGSRAD_KLASS,
   HANDLINGSRAD_OMSLAG_KLASS,
@@ -38,10 +38,10 @@ import { betalningarPa } from '@/lib/funktionsflaggor';
  * underkände och `Hem.tsx` inte längre renderar (se dess § 4 för domen). Den
  * FÖRSVANN inte med kortet: den flyttade hit, eftersom det är exakt vad den
  * är — en genväg till en yta, inte en handling på Hems egen data. Formen är
- * oförändrad (`HandlingsRad`, `Banknote`, `/mer/betalningar`); `Banknote` är
- * Mer-navigeringens egen ikon för samma destination
- * (`routes/_authenticated/mer/index.tsx`), inte en ny ikon för ett nytt
- * ställe.
+ * oförändrad (`HandlingsRad`, `/mer/betalningar`). Ikonen är `Coins` på
+ * Marcus explicita order 2026-09-01 ("en ikon med pengar, mynt staplade på
+ * varann") — ett medvetet avsteg från Mer-navigeringens `Banknote` för samma
+ * destination (`routes/_authenticated/mer/index.tsx`).
  *
  * VILLKORAD PÅ `betalningarPa()` AV SAMMA SKÄL SOM ROUTEN ÄR DET: målet
  * `/mer/betalningar` kastar `redirect` till `/mer` med flaggan av
@@ -85,7 +85,7 @@ export function Genvagar() {
               <li className={HANDLINGSRAD_OMSLAG_KLASS}>
                 <Link to="/mer/betalningar" className={HANDLINGSRAD_KLASS}>
                   <HandlingsRadInnehall
-                    ledande={<Banknote aria-hidden="true" size={16} className="shrink-0" />}
+                    ledande={<Coins aria-hidden="true" size={16} className="shrink-0" />}
                   >
                     Registrera betalning
                   </HandlingsRadInnehall>
