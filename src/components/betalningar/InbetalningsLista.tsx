@@ -1,6 +1,17 @@
-import { AlertTriangle } from 'lucide-react';
+import {
+  AlertTriangle,
+  Ban,
+  Banknote,
+  Ellipsis,
+  ExternalLink,
+  Loader2,
+  Send,
+  Trash2,
+  Undo2,
+} from 'lucide-react';
 import { type FormEvent, type KeyboardEvent, useEffect, useId, useRef, useState } from 'react';
 import { Button, Input, MessageBox, Skeleton } from '@/components/primitives';
+import { Meny, MenyAvdelare, MenyPost } from '@/components/primitives/Meny';
 import {
   useInbetalningarPerAnmalan,
   useInbetalningarPerPerson,
@@ -15,12 +26,32 @@ import type { Inbetalning, Kvitto } from '@/domain/schemas';
 import { skrivLaddningssida } from '@/lib/skriv-laddningssida';
 import { visaKronor } from './belopp-inmatning';
 import {
+  inbetalningsBelopp,
+  inbetalningsMetadelar,
   inbetalningsText,
   kanMakulera,
   kanRadera,
   kvittolage,
   sorteraInbetalningar,
 } from './panel-harledningar';
+
+/** Menyposternas ikonstorlek — samma 16 px som bilage-kortens `IKON_STORLEK`. */
+const IKON_STORLEK = 16;
+
+/**
+ * ⋯-knappens geometri — samma `size-11 shrink-0 p-0` som bilage-kortets
+ * `IKONKNAPP_KLASS` (`DokumentYta.tsx`). 44 px är husets träffytegolv.
+ *
+ * TONERNA ÄR SEMANTISKA, INTE BILAGEKORTETS KOMPONENT-TOKENS. Bilage-kortet
+ * når dem via `--mm-bilagekort-ikonknapp-*`, men de tokens tillhör DEN
+ * komponenten — att konsumera dem här vore den lager-3-läcka
+ * `semantic.css` § "Kant som finns men inte syns" uttryckligen namnger. De
+ * upplösta värdena (`--mm-text-secondary`, `--mm-bg-emphasized`) är
+ * disk-verifierade i `components.css` rad 324–325 och skrivs därför som sina
+ * semantiska klasser i stället.
+ */
+const IKONKNAPP_KLASS =
+  'size-11 shrink-0 rounded-full p-0 text-text-secondary data-[hovered]:bg-bg-emphasized data-[hovered]:text-text data-[pressed]:bg-bg-emphasized data-[pressed]:text-text contrast-more:border contrast-more:border-current';
 
 /**
  * Skälets längdgränser — speglar `hantera-inbetalning/index.ts`s
@@ -82,6 +113,68 @@ type Props = {
  * `fonster.closed`-VAKTEN är obligatorisk vid den SENARE, asynkrona
  * href-sättningen: Lotta kan hinna stänga fliken medan EF:en signerar, och
  * att skriva `location.href` på ett stängt fönster kan kasta.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * RADENS ANATOMI — BILAGE-KORTETS GRAMMATIK (Marcus dom 2026-09-01)
+ * ═══════════════════════════════════════════════════════════════════════════
+ * Marcus, om den föregående formen: *"Det är något som är fundamentalt fel.
+ * … Vi borde kunna få hämta lite inspiration från dokumentlistan eller
+ * dokumentkorten."* Fyra fel i ett:
+ *
+ *   1. INGEN ANATOMI. Raden bar `inbetalningsText()` — belopp, betalsätt och
+ *      datum som EN sträng — till vänster och kvittostatusen `justify-between`
+ *      långt till höger. Två textklumpar i varsin ände med ett hål emellan,
+ *      utan att något av leden var primärt.
+ *   2. KNAPPSOPPA. Upp till fyra knappar i TRE vikter (två `outline`, två
+ *      `ghost`) på en egen högerställd rad, alltså ännu ett hål.
+ *   3. VISKANDE VERSAL-ETIKETT ovanför listan ("SENASTE INBETALNINGAR") —
+ *      samma overline-klass Marcus redan rev på Hem-blocket samma dag.
+ *   4. ALLT I EN GRÅ BLOBB: raderna delade förälderns `bg-bg-muted` och
+ *      skildes bara av `divide-y`.
+ *
+ * FORMEN ÄR NU `DokumentRadSkal`s (`DokumentYta.tsx`), led för led:
+ *
+ *   • KORTYTA per rad — `rounded-2xl border-transparent bg-surface p-3
+ *     contrast-more:border-border-strong`. Tonerna är MÄTTA, inte gissade:
+ *     bilage-kortets `--mm-bilagekort-bg`/`-border`/`-border-contrast` löser
+ *     upp till exakt `--mm-surface`/`transparent`/`--mm-border-strong`
+ *     (`components.css` rad 292–294), och de SEMANTISKA klasserna skrivs här
+ *     i stället för komponent-tokensen — se `IKONKNAPP_KLASS` ovan för
+ *     lager-argumentet. Alla tre konsumenter monterar listan i en
+ *     `bg-bg-muted`-behållare (`Sektion` i `PersonDetail.tsx`, `DetaljGrupp`
+ *     i anmälans detaljvy, panelens egen `bg-bg-muted` i `AtgardsSida.tsx`),
+ *     så vita kort läser mot samma botten som på dokumentytan.
+ *   • LEDANDE GLYF i egen kolumn (`w-6`, `h-11`-centrerad mot primärledets
+ *     träffyta) — `TypGlyf`s roll och geometri. `aria-hidden`: glyfen är ett
+ *     skanningsstöd, aldrig budskapet (WCAG 1.4.1) — makuleringen sägs i
+ *     TEXT och med genomstrykning, precis som förut.
+ *   • BELOPPET ÄR PRIMÄRLEDET (`font-medium text-body`), metadatan ETT
+ *     sekundärt svep under (`text-caption text-text-muted`): betalsätt ·
+ *     datum · kvittostatus. Kvittostatusen svävar alltså inte längre — den
+ *     är ett led bland de andra. Uppdelningen bor i härledningarna
+ *     (`inbetalningsBelopp`/`inbetalningsMetadelar`), inte i JSX.
+ *   • ⋯-MENY för handlingarna, husets `Meny`-primitiv (React Aria
+ *     `MenuTrigger`/`Menu`/`MenuItem`): piltangenter, typeahead, Escape och
+ *     fokus-återlämning utan egen kod. Destruktiva poster bär `ton="fara"`
+ *     efter en `MenyAvdelare`, konventionen primitivens egen docblock slår
+ *     fast.
+ *
+ * EN AVVIKELSE FRÅN FÖRLAGAN, MEDVETEN: metaraden TRUNKERAS INTE. Bilage-
+ * kortets `MetaRad` gör det, men bara för att dokumentlistan bär ett MÄTT
+ * höjdlås (`useLastaListhojd`) som kräver att varje led är ett svep. Denna
+ * yta har inget sådant lås, och kvittostatusen är svaret på PRD berättelse
+ * 12 ("vad skickade vi till Bengt?") — att klippa bort den på en smal skärm,
+ * där `title` dessutom inte nås utan hover, vore att offra information för
+ * en symmetri ingen mekanism här kräver.
+ *
+ * SPÄNNING SOM BOKFÖRS I STÄLLET FÖR ATT TIGAS IHJÄL: `AtgardsSida.tsx`
+ * § designfynd 4c rev VITA KORT I GRÅ CONTAINER för PERSON-raderna på
+ * Åtgärds-sidan ("åtta sådana vita väggar radade under varandra läste
+ * tyngre"). Argumentet var en TÄTHETS-invändning mot den primära listan;
+ * inbetalningarna ligger två nivåer ned, bakom en fällning, och är normalt
+ * en till tre. Formen är ändå densamma klass 4c avvisade, och Marcus dömer
+ * den på skärmen — den bor i EN klass-sträng nedan och kan växlas tillbaka
+ * till `divide-y` med en rad om han föredrar det där.
  */
 export function InbetalningsLista({ kalla, aktiv, max, tomText }: Props) {
   const anmalanId = 'anmalanRecordId' in kalla ? kalla.anmalanRecordId : '';
@@ -151,12 +244,11 @@ export function InbetalningsLista({ kalla, aktiv, max, tomText }: Props) {
         </p>
       )}
 
-      {/* RADSTRUKTUR MED HÅRLINJER (designfynd 3d/4): ingen egen bakgrund/
-          rundning per rad — komponenten monteras alltid inuti en förälders
-          egen kortyta (DetaljGrupp/AtgardsSida:s person-kort), så en andra,
-          nästlad kortyta hade gett kort-i-kort. `divide-y` ger i stället
-          samma hårlinje-rytm som DetaljGrupp:s `EtikettVardeRad`. */}
-      <ul className="divide-y divide-border">
+      {/* KORTFORM, INTE HÅRLINJER (Marcus dom 2026-09-01) — se komponentens
+          docblock § RADENS ANATOMI. Korten separeras av luft, inte av
+          `divide-y`: en kortyta som ändå bär sin egen kant behöver ingen
+          linje mellan sig och nästa. */}
+      <ul className="flex flex-col gap-2">
         {rader.map((inbetalning) => (
           <InbetalningsRad
             key={inbetalning.id}
@@ -214,15 +306,24 @@ function InbetalningsRad({
     lage.kanKoaOm ||
     (atgard === 'vy' && (visaRadera || visaMakulera));
 
-  // FOKUS-RETUR TILL TRIGGER-KNAPPEN — bara vid AVBRYT/ESC (samma anatomi som
+  // FOKUS-RETUR TILL ⋯-KNAPPEN — bara vid AVBRYT/ESC (samma anatomi som
   // `RegistreraYta`/`AterbetalningsYta`). En LYCKAD radering tar bort raden
   // helt (ur listan efter invalidering) och en lyckad makulering tar bort
-  // knappen som öppnade panelen (`kanMakulera` blir falsk) — i BÅDA de fallen
+  // posten som öppnade panelen (`kanMakulera` blir falsk) — i BÅDA de fallen
   // finns inget meningsfullt fokusmål kvar att återgå till, och det är
   // BOKFÖRT här, inte förbisett: statusraden nedan (`role="status"`) bär då
   // annonseringen i stället för fokus.
-  const raderaTriggerRef = useRef<HTMLButtonElement>(null);
-  const makuleraTriggerRef = useRef<HTMLButtonElement>(null);
+  //
+  // EN REF, INTE TVÅ — OCH DET RÄTTAR EN LATENT DEFEKT. Här stod tidigare
+  // `raderaTriggerRef`/`makuleraTriggerRef` på de två trigger-KNAPPARNA, som
+  // renderades under `atgard === 'vy'`. De avmonterades alltså i samma
+  // render som panelen öppnades, så deras `.current` var `null` när
+  // `avbrytAtgard()` senare försökte fokusera dem — Avbryt och Escape
+  // lämnade fokus på `document.body`. Trigger är nu ⋯-knappen, som står
+  // kvar så länge raden har någon handling alls, och återgången sker i
+  // effekten nedan (efter att React monterat om menyn) i stället för
+  // synkront i avbryt-anropet.
+  const menyTriggerRef = useRef<HTMLButtonElement>(null);
 
   // ── FOKUS IN när en panel öppnas (granskningsfynd runda 2, W5) ──────────
   //
@@ -250,26 +351,34 @@ function InbetalningsRad({
   // radering. MAKULERA-PANELEN fokuserar skäl-fältet i stället: åtgärden
   // KRÄVER ändå att Lotta skriver något innan den går att skicka, så
   // fältet är den naturliga första stoppen.
+  //
+  // ÅTERGÅNGEN BOR I SAMMA EFFEKT, inte i `avbrytAtgard`: ⋯-knappen kan vara
+  // avmonterad i det ögonblick avbrytet sker (stängs panelen är den kvar bara
+  // om raden har någon handling alls), och en synkron `.focus()` skulle då
+  // träffa en ref som ännu inte pekar på det ommonterade elementet. Effekten
+  // kör EFTER commit, alltså när menyn finns igen. `foregaendeAtgard` gör att
+  // återgången bara sker vid en FAKTISK stängning — aldrig vid första render.
   const raderaAvbrytRef = useRef<HTMLButtonElement>(null);
   const makuleraSkalRef = useRef<HTMLInputElement>(null);
+  const foregaendeAtgard = useRef<Radatgard>('vy');
   useEffect(() => {
     if (atgard === 'radera-bekrafta') raderaAvbrytRef.current?.focus();
     else if (atgard === 'makulera-skal') makuleraSkalRef.current?.focus();
+    else if (foregaendeAtgard.current !== 'vy') menyTriggerRef.current?.focus();
+    foregaendeAtgard.current = atgard;
   }, [atgard]);
 
-  function avbrytAtgard(returTill?: 'radera' | 'makulera') {
+  function avbrytAtgard() {
     setAtgard('vy');
     setSkal('');
     setSkalRort(false);
-    if (returTill === 'radera') raderaTriggerRef.current?.focus();
-    else if (returTill === 'makulera') makuleraTriggerRef.current?.focus();
   }
 
   function vidRaderaTangent(event: KeyboardEvent<HTMLElement>) {
     if (event.key === 'Escape') {
       event.preventDefault();
       event.stopPropagation();
-      avbrytAtgard('radera');
+      avbrytAtgard();
     }
   }
 
@@ -277,7 +386,7 @@ function InbetalningsRad({
     if (event.key === 'Escape') {
       event.preventDefault();
       event.stopPropagation();
-      avbrytAtgard('makulera');
+      avbrytAtgard();
     }
   }
 
@@ -329,229 +438,305 @@ function InbetalningsRad({
        på ytan ("Makulerad: <skäl>").
        Makuleringen sägs i stället med genomstruken text OCH i klartext på egen
        rad. Båda överlever nedsatt syn; en opacitet gör det inte. */
-    <li className="flex flex-col gap-2 py-3 text-small">
-      {/* TEXTRADEN (belopp/betalsätt/datum + kvittostatus) — ALLTID rad 1. */}
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className={makulerad ? 'line-through' : undefined}>
-          {inbetalningsText(inbetalning)}
+    <li>
+      {/* KORTYTAN — bilage-kortets skal, semantiska klasser i stället för
+          dess komponent-tokens (se komponentens docblock § RADENS ANATOMI). */}
+      <div className="flex flex-nowrap items-start gap-2 rounded-2xl border border-transparent bg-surface p-3 text-small contrast-more:border-border-strong">
+        {/* LEDANDE GLYF — `TypGlyf`s roll och geometri (`w-6`, höjd-centrerad
+            mot primärledet). `aria-hidden`: den är ett skanningsstöd, och
+            makuleringen sägs i text nedan (WCAG 1.4.1). */}
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center text-text-secondary">
+          {makulerad ? (
+            <Ban aria-hidden="true" size={18} />
+          ) : inbetalning.typ === 'aterbetalning' ? (
+            <Undo2 aria-hidden="true" size={18} />
+          ) : (
+            <Banknote aria-hidden="true" size={18} />
+          )}
         </span>
-        <span className="text-text-muted">{lage.text}</span>
-      </div>
 
-      {/* HANDLINGSRADEN (designfynd 3d) — EGEN rad, HÖGERSTÄLLD. Tre
-          flytande knappar inline i löptexten gjorde att handlingarna
-          landade på olika X-position beroende på hur lång textraden
-          ovanför var; en egen rad ger samma vänster/högerkant på VARJE
-          inbetalning oavsett belopp- eller statustextens längd. */}
-      {harHandlingar && (
-        <div className="flex flex-wrap items-center justify-end gap-2 text-text-muted">
-          {lage.kanVisa && (
-            <Button
-              intent="secondary"
-              emphasis="outline"
-              size="sm"
-              isLoading={lank.isPending}
-              onPress={visaKvitto}
-            >
-              Visa
-            </Button>
+        <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
+          {/* PRIMÄRLEDET: beloppet, ensamt och viktat. */}
+          <span className={`font-medium text-body ${makulerad ? 'line-through' : ''}`}>
+            {inbetalningsBelopp(inbetalning)}
+          </span>
+
+          {/* SEKUNDÄRLEDET: betalsätt · datum · kvittostatus, ETT svep.
+              Kvittostatusen svävar inte längre högerställd — den är ett led
+              bland de andra. Ingen `truncate`: se docblocket § EN AVVIKELSE. */}
+          <span className="w-full text-caption text-text-muted">
+            {[...inbetalningsMetadelar(inbetalning), lage.text].join(' · ')}
+          </span>
+
+          {makulerad && inbetalning.makuleradSkal && (
+            <span className="w-full text-caption text-text-muted">
+              {`Makulerad: ${inbetalning.makuleradSkal}`}
+            </span>
           )}
-          {lage.kanSkickaIgen && lage.kvitto && (
-            <Button
-              intent="secondary"
-              emphasis="outline"
-              size="sm"
-              isDisabled={skickaIgen.isPending}
-              onPress={() => {
-                const kvittoId = lage.kvitto?.id;
-                if (kvittoId === undefined) return;
-                skickaIgen.mutate(
-                  { kvittoId },
-                  { onSuccess: (svar) => setSkickatTill(svar.mottagare) },
-                );
-              }}
-            >
-              Skicka igen
-            </Button>
+
+          {/* [TASK-352] Felskälet i klartext, SAMMA visuella klass som
+              makulerings-noten ovan — mätt fynd ur S113-slutvandringen: raden
+              teg helt om ett fallerat kvittojobb (entydighets-guarden, eller
+              adressvakten i staging) och visade bara "Inget kvitto" eller
+              "väntar på att skickas". */}
+          {lage.felskal !== null && (
+            <span className="w-full text-caption text-text-muted">
+              {`Kvittot kunde inte skickas: ${lage.felskal}`}
+            </span>
           )}
-          {/* [TASK-352] Ett kvitto som ALDRIG gått i väg — utfärdat men inte
-              skickat, eller inte ens skapat efter ett fallerat försök — köas
-              om via SAMMA EF-väg (koaKvitton) som utfallsregionens egna
-              "Skicka igen"-knapp i BetalningsInkorg.tsx, inte via
-              `skickaKvittoIgen` (den kräver ett redan utskickat kvitto, se
-              `lage.kanSkickaIgen` ovan). `lage.kanKoaOm` avgör; se dess
-              docblock i panel-harledningar.ts för de två grenarna. */}
-          {lage.kanKoaOm && (
-            <Button
-              intent="secondary"
-              emphasis="outline"
-              size="sm"
-              isDisabled={koaOm.isPending}
-              onPress={() => {
-                koaOm.mutate(
-                  { inbetalningIds: [inbetalning.id] },
-                  {
-                    onSuccess: (svar) => {
-                      const hoppadSkal = svar.hoppade[0]?.skal;
-                      setKoaUtfall(
-                        svar.koade > 0
-                          ? 'Kvittot köades för nytt utskick.'
-                          : (hoppadSkal ?? 'Kvittot kunde inte köas.'),
-                      );
+
+          {koaUtfall !== null && (
+            <span role="status" className="w-full text-caption text-text-muted">
+              {koaUtfall}
+            </span>
+          )}
+
+          {skickatTill !== null && (
+            <span role="status" className="w-full text-caption text-text-muted">
+              {`Kvittot skickades till ${skickatTill}.`}
+            </span>
+          )}
+
+          {/* AC #1: "kan raderas från raden (bekräftelse)". Inline, samma
+              "öppnas på plats"-mönster som `RegistreraForm`/`AterbetalningsForm`
+              — ingen modal för en engångsfråga.
+
+              PANELERNA BOR I TEXTKOLUMNEN, inte utanför kortet: samma val som
+              bilage-kortet gör för sina felrutor (`DokumentRadSkal` §
+              "FELEN BOR I TEXTKOLUMNEN"). `w-full` behövs eftersom kolumnen
+              är `items-start` — utan den krymper panelen till sitt innehåll. */}
+          {atgard === 'radera-bekrafta' && (
+            <fieldset
+              onKeyDown={vidRaderaTangent}
+              className="mt-1 flex w-full flex-wrap items-center gap-2 rounded border border-border bg-bg-muted px-2 py-2"
+            >
+              <legend className="sr-only">{`Radera inbetalningen: ${inbetalningsText(inbetalning)}?`}</legend>
+              <span className="text-caption">
+                Radera denna inbetalning? Det går inte att ångra.
+              </span>
+              <Button
+                intent="danger"
+                size="sm"
+                isLoading={radera.isPending}
+                onPress={() => radera.mutate(inbetalning.id, { onSuccess: () => setAtgard('vy') })}
+              >
+                Radera
+              </Button>
+              <Button ref={raderaAvbrytRef} intent="ghost" size="sm" onPress={avbrytAtgard}>
+                Avbryt
+              </Button>
+            </fieldset>
+          )}
+
+          {/* AC #2: "får 'Makulera' med skäl (obligatoriskt)". */}
+          {atgard === 'makulera-skal' && (
+            <form
+              onSubmit={vidMakuleraSubmit}
+              onKeyDown={vidMakuleraTangent}
+              aria-label={`Makulera inbetalningen: ${inbetalningsText(inbetalning)}`}
+              className="mt-1 flex w-full flex-col gap-2 rounded border border-border bg-bg-muted px-2 py-2"
+            >
+              <Input
+                ref={makuleraSkalRef}
+                label="Skäl till makuleringen"
+                value={skal}
+                onChange={(v) => {
+                  setSkal(v);
+                  setSkalRort(true);
+                }}
+                isInvalid={skalFel !== null}
+                errorMessage={skalFel ?? undefined}
+                aria-describedby={skalId}
+              />
+              <p id={skalId} className="sr-only">
+                Skälet läses av Roger i efterhand och syns på raden.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button type="submit" intent="danger" size="sm" isLoading={makulera.isPending}>
+                  Makulera
+                </Button>
+                <Button intent="ghost" size="sm" onPress={avbrytAtgard}>
+                  Avbryt
+                </Button>
+              </div>
+            </form>
+          )}
+
+          {lank.isError && (
+            <span role="alert" className="text-(color:--mm-input-error-text) w-full text-caption">
+              {lank.error.message}
+            </span>
+          )}
+          {skickaIgen.isError && (
+            <span role="alert" className="text-(color:--mm-input-error-text) w-full text-caption">
+              {skickaIgen.error.message}
+            </span>
+          )}
+          {koaOm.isError && (
+            <span role="alert" className="text-(color:--mm-input-error-text) w-full text-caption">
+              {koaOm.error.message}
+            </span>
+          )}
+          {radera.isError && (
+            <span role="alert" className="text-(color:--mm-input-error-text) w-full text-caption">
+              {radera.error.message}
+            </span>
+          )}
+          {makulera.isError && (
+            <span role="alert" className="text-(color:--mm-input-error-text) w-full text-caption">
+              {makulera.error.message}
+            </span>
+          )}
+        </span>
+
+        {/* ⋯-MENYN — husets `Meny`-primitiv. VILLKOREN ÄR OFÖRÄNDRADE: samma
+            `lage.kanVisa`/`kanSkickaIgen`/`kanKoaOm`/`visaRadera`/
+            `visaMakulera` som styrde de gamla knapparna, bara i en annan
+            behållare. Särskilt: en MAKULERAD inbetalning erbjuder ALDRIG
+            "Skicka igen" — `kvittolage` sätter `kanSkickaIgen: aktiv` och
+            `kanKoaOm: false` för ett skickat kvitto, och den invarianten är
+            mätt (se `panel-harledningar.ts` § EN MAKULERAD INBETALNING). */}
+        {harHandlingar && (
+          <Meny
+            etikett={`Fler val för ${inbetalningsText(inbetalning)}`}
+            trigger={
+              <Button
+                ref={menyTriggerRef}
+                intent="ghost"
+                size="sm"
+                className={IKONKNAPP_KLASS}
+                aria-label={`Fler val för ${inbetalningsText(inbetalning)}`}
+              >
+                <Ellipsis aria-hidden="true" size={IKON_STORLEK} />
+              </Button>
+            }
+          >
+            {lage.kanVisa && (
+              <MenyPost
+                ikon={
+                  lank.isPending ? (
+                    <Loader2
+                      aria-hidden="true"
+                      size={IKON_STORLEK}
+                      className="motion-safe:animate-spin"
+                    />
+                  ) : (
+                    <ExternalLink aria-hidden="true" size={IKON_STORLEK} />
+                  )
+                }
+                isDisabled={lank.isPending}
+                textValue="Visa"
+                onAction={visaKvitto}
+              >
+                {lank.isPending ? 'Öppnar…' : 'Visa'}
+              </MenyPost>
+            )}
+            {lage.kanSkickaIgen && lage.kvitto && (
+              <MenyPost
+                ikon={
+                  skickaIgen.isPending ? (
+                    <Loader2
+                      aria-hidden="true"
+                      size={IKON_STORLEK}
+                      className="motion-safe:animate-spin"
+                    />
+                  ) : (
+                    <Send aria-hidden="true" size={IKON_STORLEK} />
+                  )
+                }
+                isDisabled={skickaIgen.isPending}
+                textValue="Skicka igen"
+                onAction={() => {
+                  const kvittoId = lage.kvitto?.id;
+                  if (kvittoId === undefined) return;
+                  skickaIgen.mutate(
+                    { kvittoId },
+                    { onSuccess: (svar) => setSkickatTill(svar.mottagare) },
+                  );
+                }}
+              >
+                {skickaIgen.isPending ? 'Skickar…' : 'Skicka igen'}
+              </MenyPost>
+            )}
+            {/* [TASK-352] Ett kvitto som ALDRIG gått i väg — utfärdat men inte
+                skickat, eller inte ens skapat efter ett fallerat försök — köas
+                om via SAMMA EF-väg (koaKvitton) som utfallsregionens egna
+                "Skicka igen"-knapp i BetalningsInkorg.tsx, inte via
+                `skickaKvittoIgen` (den kräver ett redan utskickat kvitto, se
+                `lage.kanSkickaIgen` ovan). `lage.kanKoaOm` avgör; se dess
+                docblock i panel-harledningar.ts för de två grenarna.
+
+                DE TVÅ ÄR ÖMSESIDIGT UTESLUTANDE — `kvittolage` returnerar
+                exakt EN gren, och i 'skickat'-grenen är `kanKoaOm` falsk medan
+                `kanSkickaIgen` är falsk i alla andra. Menyn kan alltså aldrig
+                visa två poster som båda heter "Skicka igen". */}
+            {lage.kanKoaOm && (
+              <MenyPost
+                ikon={
+                  koaOm.isPending ? (
+                    <Loader2
+                      aria-hidden="true"
+                      size={IKON_STORLEK}
+                      className="motion-safe:animate-spin"
+                    />
+                  ) : (
+                    <Send aria-hidden="true" size={IKON_STORLEK} />
+                  )
+                }
+                isDisabled={koaOm.isPending}
+                textValue="Skicka igen"
+                onAction={() => {
+                  koaOm.mutate(
+                    { inbetalningIds: [inbetalning.id] },
+                    {
+                      onSuccess: (svar) => {
+                        const hoppadSkal = svar.hoppade[0]?.skal;
+                        setKoaUtfall(
+                          svar.koade > 0
+                            ? 'Kvittot köades för nytt utskick.'
+                            : (hoppadSkal ?? 'Kvittot kunde inte köas.'),
+                        );
+                      },
                     },
-                  },
-                );
-              }}
-              aria-label={`Skicka igen - ${lage.kvitto ? `kvitto ${lage.kvitto.kvittonummer}` : inbetalningsText(inbetalning)}`}
-            >
-              Skicka igen
-            </Button>
-          )}
-          {/* [TASK-346.9 AC #1/#2] Radera/Makulera — bara EN av knapparna kan
-              någonsin vara sann samtidigt (`kanRadera`/`kanMakulera` är
-              varandras motsatser via `kvittoId`), men villkoren skrivs var
-              för sig i stället för `else if`: härledningarna bor i
-              `panel-harledningar.ts`, inte i denna JSX. */}
-          {atgard === 'vy' && visaRadera && (
-            <Button
-              ref={raderaTriggerRef}
-              intent="ghost"
-              size="sm"
-              onPress={() => setAtgard('radera-bekrafta')}
-            >
-              Radera
-            </Button>
-          )}
-          {atgard === 'vy' && visaMakulera && (
-            <Button
-              ref={makuleraTriggerRef}
-              intent="ghost"
-              size="sm"
-              onPress={() => setAtgard('makulera-skal')}
-            >
-              Makulera
-            </Button>
-          )}
-        </div>
-      )}
+                  );
+                }}
+              >
+                {koaOm.isPending ? 'Skickar…' : 'Skicka igen'}
+              </MenyPost>
+            )}
+            {/* [TASK-346.9 AC #1/#2] Radera/Makulera — bara EN kan någonsin
+                vara sann samtidigt (`kanRadera`/`kanMakulera` är varandras
+                motsatser via kvittots existens), men villkoren skrivs var för
+                sig i stället för `else if`: härledningarna bor i
+                `panel-harledningar.ts`, inte i denna JSX.
 
-      {makulerad && inbetalning.makuleradSkal && (
-        <span className="text-caption text-text-muted">
-          {`Makulerad: ${inbetalning.makuleradSkal}`}
-        </span>
-      )}
-
-      {/* [TASK-352] Felskälet i klartext, SAMMA visuella klass som
-          makulerings-noten ovan — mätt fynd ur S113-slutvandringen: raden
-          teg helt om ett fallerat kvittojobb (entydighets-guarden, eller
-          adressvakten i staging) och visade bara "Inget kvitto" eller
-          "väntar på att skickas". */}
-      {lage.felskal !== null && (
-        <span className="text-caption text-text-muted">
-          {`Kvittot kunde inte skickas: ${lage.felskal}`}
-        </span>
-      )}
-
-      {koaUtfall !== null && (
-        <span role="status" className="text-caption text-text-muted">
-          {koaUtfall}
-        </span>
-      )}
-
-      {skickatTill !== null && (
-        <span role="status" className="text-caption text-text-muted">
-          {`Kvittot skickades till ${skickatTill}.`}
-        </span>
-      )}
-
-      {/* AC #1: "kan raderas från raden (bekräftelse)". Inline, samma
-          "öppnas på plats"-mönster som `RegistreraForm`/`AterbetalningsForm`
-          — ingen modal för en engångsfråga. */}
-      {atgard === 'radera-bekrafta' && (
-        <fieldset
-          onKeyDown={vidRaderaTangent}
-          className="flex flex-wrap items-center gap-2 rounded border border-border bg-surface px-2 py-2"
-        >
-          <legend className="sr-only">{`Radera inbetalningen: ${inbetalningsText(inbetalning)}?`}</legend>
-          <span className="text-caption">Radera denna inbetalning? Det går inte att ångra.</span>
-          <Button
-            intent="danger"
-            size="sm"
-            isLoading={radera.isPending}
-            onPress={() => radera.mutate(inbetalning.id, { onSuccess: () => setAtgard('vy') })}
-          >
-            Radera
-          </Button>
-          <Button
-            ref={raderaAvbrytRef}
-            intent="ghost"
-            size="sm"
-            onPress={() => avbrytAtgard('radera')}
-          >
-            Avbryt
-          </Button>
-        </fieldset>
-      )}
-
-      {/* AC #2: "får 'Makulera' med skäl (obligatoriskt)". */}
-      {atgard === 'makulera-skal' && (
-        <form
-          onSubmit={vidMakuleraSubmit}
-          onKeyDown={vidMakuleraTangent}
-          aria-label={`Makulera inbetalningen: ${inbetalningsText(inbetalning)}`}
-          className="flex flex-col gap-2 rounded border border-border bg-surface px-2 py-2"
-        >
-          <Input
-            ref={makuleraSkalRef}
-            label="Skäl till makuleringen"
-            value={skal}
-            onChange={(v) => {
-              setSkal(v);
-              setSkalRort(true);
-            }}
-            isInvalid={skalFel !== null}
-            errorMessage={skalFel ?? undefined}
-            aria-describedby={skalId}
-          />
-          <p id={skalId} className="sr-only">
-            Skälet läses av Roger i efterhand och syns på raden.
-          </p>
-          <div className="flex flex-wrap gap-2">
-            <Button type="submit" intent="danger" size="sm" isLoading={makulera.isPending}>
-              Makulera
-            </Button>
-            <Button intent="ghost" size="sm" onPress={() => avbrytAtgard('makulera')}>
-              Avbryt
-            </Button>
-          </div>
-        </form>
-      )}
-
-      {lank.isError && (
-        <span role="alert" className="text-(color:--mm-input-error-text) text-caption">
-          {lank.error.message}
-        </span>
-      )}
-      {skickaIgen.isError && (
-        <span role="alert" className="text-(color:--mm-input-error-text) text-caption">
-          {skickaIgen.error.message}
-        </span>
-      )}
-      {koaOm.isError && (
-        <span role="alert" className="text-(color:--mm-input-error-text) text-caption">
-          {koaOm.error.message}
-        </span>
-      )}
-      {radera.isError && (
-        <span role="alert" className="text-(color:--mm-input-error-text) text-caption">
-          {radera.error.message}
-        </span>
-      )}
-      {makulera.isError && (
-        <span role="alert" className="text-(color:--mm-input-error-text) text-caption">
-          {makulera.error.message}
-        </span>
-      )}
+                DESTRUKTIVT SIST, EFTER EN AVDELARE — `Meny`-primitivens egen
+                konvention (`ton="fara"`, se dess docblock). Avdelaren
+                exponeras som `separator`, så skärmläsaren hör gruppbytet. */}
+            {atgard === 'vy' && (visaRadera || visaMakulera) && <MenyAvdelare />}
+            {atgard === 'vy' && visaRadera && (
+              <MenyPost
+                ton="fara"
+                ikon={<Trash2 aria-hidden="true" size={IKON_STORLEK} />}
+                textValue="Radera"
+                onAction={() => setAtgard('radera-bekrafta')}
+              >
+                Radera
+              </MenyPost>
+            )}
+            {atgard === 'vy' && visaMakulera && (
+              <MenyPost
+                ton="fara"
+                ikon={<Ban aria-hidden="true" size={IKON_STORLEK} />}
+                textValue="Makulera"
+                onAction={() => setAtgard('makulera-skal')}
+              >
+                Makulera
+              </MenyPost>
+            )}
+          </Meny>
+        )}
+      </div>
     </li>
   );
 }

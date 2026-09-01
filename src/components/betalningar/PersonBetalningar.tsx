@@ -109,9 +109,13 @@ export function PersonBetalningar({ person }: { person: PersonDetail }) {
       </div>
 
       <div className="flex flex-col gap-2">
-        <h3 className="font-medium text-caption text-text-secondary uppercase tracking-wide">
-          Senaste inbetalningar
-        </h3>
+        {/* NORMAL UNDERRUBRIK, INTE VERSAL-OVERLINE (Marcus dom 2026-09-01).
+            `font-medium text-caption uppercase tracking-wide` är samma
+            viskande etikettklass han rev på Hem-blocket samma dag: den läses
+            som en fotnot, inte som rubriken över en lista man ska agera på.
+            `font-semibold text-body` är husets underrubrik ett steg under
+            `Sektion`s egen `text-lg`-h2. */}
+        <h3 className="font-semibold text-body">Senaste inbetalningar</h3>
         <InbetalningsLista
           kalla={{ personId: person.id }}
           aktiv

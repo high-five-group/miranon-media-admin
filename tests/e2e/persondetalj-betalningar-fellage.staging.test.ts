@@ -266,9 +266,14 @@ test.describe('Personkortets Betalningar-sektion — felläge (TASK-346.7.1)', (
     const sektion = betalningsSektion(page);
     await expect(sektion.getByRole('heading', { name: 'Betalningar' })).toBeVisible();
 
-    // Raden renderas som EN sträng (`inbetalningsText`,
-    // `panel-harledningar.ts`): "1 500 kr · Swish · 2026-05-20".
-    await expect(sektion.getByText(/1\s500\skr.*Swish/)).toBeVisible();
+    // Raden renderas sedan 2026-09-01 i TVÅ led (Marcus dom över radens
+    // layout, `InbetalningsLista.tsx` § RADENS ANATOMI): beloppet är
+    // primärledet och betalsätt/datum/kvittostatus ett sekundärt svep under.
+    // Före det var allt EN sträng ur `inbetalningsText` — som lever kvar,
+    // men numera som radens TILLGÄNGLIGA namn (⋯-menyns etikett), inte som
+    // dess synliga form. Leden prövas därför var för sig.
+    await expect(sektion.getByText('1 500 kr', { exact: true })).toBeVisible();
+    await expect(sektion.getByText(/Swish.*2026-05-20/)).toBeVisible();
 
     // INGEN sr-only-laddtext kvarstår, och inget felläge visas.
     await expect(sektion.getByText(/^Laddar/)).toHaveCount(0);

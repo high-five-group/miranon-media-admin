@@ -116,9 +116,9 @@ export function AnmalansBetalningar({
       </div>
 
       <div className="flex flex-col gap-2">
-        <h3 className="font-medium text-caption text-text-secondary uppercase tracking-wide">
-          Inbetalningar
-        </h3>
+        {/* NORMAL UNDERRUBRIK, INTE VERSAL-OVERLINE — se `PersonBetalningar.tsx`s
+            motsvarande rad för Marcus dom 2026-09-01 och klassvalet. */}
+        <h3 className="font-semibold text-body">Inbetalningar</h3>
         <InbetalningsLista kalla={{ anmalanRecordId }} aktiv />
       </div>
     </div>

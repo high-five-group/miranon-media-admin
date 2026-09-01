@@ -237,18 +237,44 @@ export function sorteraInbetalningar(inbetalningar: readonly Inbetalning[]): Inb
 /* ═══════════════════════════ RADENS EGEN TEXT ═══════════════════════════ */
 
 /**
- * Radens sammanfattning: belopp, betalsätt och datum, i den ordningen.
+ * Radens NYCKELTAL: beloppet, ensamt.
  *
  * ÅTERBETALNINGEN SÄGS RAKT UT i stället för att visas som ett minustecken
  * ensamt. Ett `-500` i en lista med positiva tal läses lätt som ett fel;
  * ordet gör handlingen entydig (PRD berättelse 18).
+ *
+ * SKILD FRÅN METADATAN SEDAN 2026-09-01 (Marcus dom över radens layout, se
+ * `InbetalningsLista.tsx` § RADENS ANATOMI). Raden bar tidigare alla tre
+ * leden som EN sträng, vilket gjorde beloppet omöjligt att ge egen vikt.
+ */
+export function inbetalningsBelopp(inbetalning: Inbetalning): string {
+  const belopp = visaKronor(Math.abs(inbetalning.belopp));
+  return inbetalning.typ === 'aterbetalning' ? `${belopp} kr återbetalt` : `${belopp} kr`;
+}
+
+/**
+ * Radens SEKUNDÄRA led: betalsätt och datum, i den ordningen.
+ *
+ * Returnerar delarna var för sig i stället för en färdig sträng — konsumenten
+ * fogar ihop dem med sina egna (kvittostatusen), och en halvfogad sträng som
+ * ska fogas igen är en inbjudan till dubbla avdelare.
+ */
+export function inbetalningsMetadelar(inbetalning: Inbetalning): string[] {
+  return [inbetalning.betalsatt, inbetalning.betalningsdatum ?? 'datum okänt'];
+}
+
+/**
+ * Radens sammanfattning: belopp, betalsätt och datum, i den ordningen.
+ *
+ * KOMPONERAD UR DE TVÅ HÄRLEDNINGARNA OVAN, aldrig en tredje formulering:
+ * strängen bär numera radens TILLGÄNGLIGA namn (menyns etikett, panelernas
+ * legend/aria-label) medan ytan renderar leden var för sig. Två oberoende
+ * uttryck för samma mening hade kunnat glida isär utan att någon mekanism
+ * märkte det — och det är precis den skillnaden en skärmläsaranvändare
+ * skulle drabbas av först.
  */
 export function inbetalningsText(inbetalning: Inbetalning): string {
-  const belopp = visaKronor(Math.abs(inbetalning.belopp));
-  const ord = inbetalning.typ === 'aterbetalning' ? 'återbetalt' : 'kr';
-  const huvud = inbetalning.typ === 'aterbetalning' ? `${belopp} kr ${ord}` : `${belopp} ${ord}`;
-  const datum = inbetalning.betalningsdatum ?? 'datum okänt';
-  return `${huvud} · ${inbetalning.betalsatt} · ${datum}`;
+  return [inbetalningsBelopp(inbetalning), ...inbetalningsMetadelar(inbetalning)].join(' · ');
 }
 
 /* ═══════════════════════════ PERSONENS ÖVERSIKT ═══════════════════════════ */
