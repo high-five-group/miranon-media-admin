@@ -1,7 +1,7 @@
 import type { LucideIcon } from 'lucide-react';
 import { Check, CircleCheck, Info, TriangleAlert } from 'lucide-react';
 import { type FormEvent, type KeyboardEvent, useEffect, useId, useRef, useState } from 'react';
-import { Checkbox } from 'react-aria-components';
+import { Button as AriaButton, Checkbox } from 'react-aria-components';
 import { Button, Input, MessageBox, Select, SelectItem } from '@/components/primitives';
 import { useRegistreraInbetalning } from '@/data/mutations/inbetalningar';
 import { VALBARA_BETALSATT } from '@/domain/schemas';
@@ -145,12 +145,50 @@ export function RegistreraForm({ rad, idag, betalsatt, onBetalsatt, onAvbryt, on
    */
   const forifyllt = rad.kvar !== null && rad.kvar > 0 ? visaKronor(rad.kvar) : '';
   const [belopp, setBelopp] = useState(forifyllt);
-  /** Beloppet UTFALLSBOXEN visar — `belopp` fördröjt, se `UTFALL_FORDROJNING_MS`. */
-  const [visatBelopp, setVisatBelopp] = useState(forifyllt);
   const [datum, setDatum] = useState(idag);
   const [medKvitto, setMedKvitto] = useState(true);
   const [rort, setRort] = useState(false);
+
+  /* ═══════════════════════════════════════════════════════════════════════
+   * AVTALAT PRIS — DEN ANDRA SANNINGEN OM ETT RESTBELOPP (Marcus JA 2026-09-01)
+   * ═══════════════════════════════════════════════════════════════════════
+   * Scenariot: Lotta och deltagaren har kommit överens om ett LÄGRE pris.
+   * Registreringen lämnar då ett restbelopp som inte är en skuld — "500 kr
+   * kvar att betala" är helt enkelt fel bild tills det avtalade priset satts.
+   * Ytan öppnas därför just i det läget (`ton === 'delvis'`), som en diskret
+   * andra rad i utfallsboxen.
+   *
+   * MÄTT FÖRE BYGGET, och båda grenarna i uppdraget föll:
+   *   • Det finns INGEN befintlig redigeringsyta att länka till. `avtalatPris`
+   *     har noll UI-konsumenter i hela `src/` — fältet sätts i dag direkt i
+   *     Airtable (`Avtalat pris (kr)`, `fldZHwxOXOQqkFx33`, vanligt talfält).
+   *     Anmälningsdetaljen visar inget pris alls, så en länk dit hade lovat en
+   *     kontroll som inte finns.
+   *   • Inline-sättning kräver INGEN EF-ändring. Hela skrivvägen är redan
+   *     byggd och allowlistad: `RegistreraInbetalningInput.avtalatPris`
+   *     (`Betalningar.schema.ts`) → porten spreadar inputen
+   *     (`betalningsportar.ts`) → `registrera-inbetalning` normaliserar
+   *     (`index.ts` § avtalatPris) → `betalningar-bas.ts` patchar
+   *     `Avtalat pris (kr)`. Det enda som saknades var en kontroll som fyller
+   *     fältet.
+   *
+   * TVÅ KÄNDA GRÄNSER, ÖPPET BOKFÖRDA:
+   *   1. Priset kan bara sättas I SAMMA OPERATION som en inbetalning
+   *      registreras — det finns ingen EF som sätter enbart priset. Vill Lotta
+   *      ändra pris UTAN att bokföra en betalning finns ingen väg än.
+   *   2. Värdet bor inte i Postgres (kolumnen `avtalat_pris` finns inte). Går
+   *      spegelskrivningen till Airtable fel är priset BORTA, och EF:en säger
+   *      det själv i `spegel.skal`. Kvittensen nedan säger det därför rakt ut i
+   *      stället för att kvittera tyst.
+   */
+  const [visaPris, setVisaPris] = useState(false);
+  const [avtalatPris, setAvtalatPris] = useState('');
+
+  /** Vad UTFALLSBOXEN visar — `belopp`/`avtalatPris` fördröjda, se `UTFALL_FORDROJNING_MS`. */
+  const [visat, setVisat] = useState({ belopp: forifyllt, pris: '' });
   const beloppRef = useRef<HTMLInputElement>(null);
+  const prisRef = useRef<HTMLInputElement>(null);
+  const prisKnappRef = useRef<HTMLButtonElement>(null);
   const felId = useId();
 
   const registrera = useRegistreraInbetalning();
@@ -187,17 +225,24 @@ export function RegistreraForm({ rad, idag, betalsatt, onBetalsatt, onAvbryt, on
      effekten städar sitt eget timeout i cleanup, så en ny tangenttryckning
      nollställer klockan i stället för att köa ännu ett byte. Utfallet byts
      alltså EN sekund efter att Lotta slutat skriva, inte en sekund efter att
-     hon börjat. Vaktsatsen (`belopp === visatBelopp`) gör att monteringen med
-     förifyllt värde inte kostar ett timeout alls — boxen står rätt direkt. */
+     hon börjat. Vaktsatsen gör att monteringen med förifyllt värde inte kostar
+     ett timeout alls — boxen står rätt direkt.
+
+     BÅDA FÄLTEN DELAR KLOCKA. Avtalat pris räknar om SAMMA box som beloppet
+     (se `radForUtfall` nedan), så två oberoende fördröjningar hade kunnat visa
+     ett mellanläge där det ena talet hunnit fram och det andra inte. */
   useEffect(() => {
-    if (belopp === visatBelopp) return;
-    const id = window.setTimeout(() => setVisatBelopp(belopp), UTFALL_FORDROJNING_MS);
+    if (visat.belopp === belopp && visat.pris === avtalatPris) return;
+    const id = window.setTimeout(
+      () => setVisat({ belopp, pris: avtalatPris }),
+      UTFALL_FORDROJNING_MS,
+    );
     return () => window.clearTimeout(id);
-  }, [belopp, visatBelopp]);
+  }, [belopp, avtalatPris, visat]);
 
   /** Hoppar över fördröjningen. Marcus: *"vid Enter/blur visas utfallet direkt"*. */
   function visaUtfallNu() {
-    setVisatBelopp(belopp);
+    setVisat({ belopp, pris: avtalatPris });
   }
 
   const talet = normaliseraBeloppKlient(belopp);
@@ -206,9 +251,46 @@ export function RegistreraForm({ rad, idag, betalsatt, onBetalsatt, onAvbryt, on
   // "vad täcker beloppet" är ett besked som bara är intressant när talet är
   // färdigskrivet.
   const fel = rort ? beloppsFel(belopp) : null;
-  const visatTalet = normaliseraBeloppKlient(visatBelopp);
-  const utfall = visatTalet !== null && visatTalet !== 0 ? beloppsutfall(rad, visatTalet) : null;
-  const kanSpara = talet !== null && talet !== 0 && !registrera.isPending;
+  const prisFel = visaPris ? beloppsFel(avtalatPris) : null;
+  /** Priset som faktiskt skickas — `null` när ytan är stängd eller fältet tomt. */
+  const prisAttSkicka =
+    visaPris && avtalatPris.trim() !== '' && normaliseraBeloppKlient(avtalatPris) !== null
+      ? avtalatPris
+      : null;
+
+  /* BOXEN RÄKNAR MOT DET AVTALADE PRISET SÅ FORT DET ÄR SKRIVET — annars hade
+     Lotta satt priset till 1 000, registrerat 1 000, och ändå fått läsa
+     "500 kr kvar att betala" av den ruta som finns för att berätta vad hon
+     just gjort. Överskrivningen är LOKAL och läses aldrig av `spara`: servern
+     får råtexten och normaliserar själv (samma regel som beloppet). */
+  const visatPrisTalet = visaPris ? normaliseraBeloppKlient(visat.pris) : null;
+  const radForUtfall =
+    visatPrisTalet !== null && visatPrisTalet >= 0
+      ? { ...rad, betalning: { ...rad.betalning, gallandePris: visatPrisTalet } }
+      : rad;
+
+  const visatTalet = normaliseraBeloppKlient(visat.belopp);
+  const utfall =
+    visatTalet !== null && visatTalet !== 0 ? beloppsutfall(radForUtfall, visatTalet) : null;
+  const kanSpara = talet !== null && talet !== 0 && prisFel === null && !registrera.isPending;
+
+  /** Ytan öppnas där den betyder något: en registrering som lämnar en rest. */
+  const erbjudPris = utfall?.ton === 'delvis' || visaPris;
+
+  function oppnaPris() {
+    setVisaPris(true);
+    // Fokus följer med in i fältet som just monterades — annars står markören
+    // kvar på en knapp som försvann ur DOM (samma felklass som radens
+    // `skaAterfaFokus` bär). `requestAnimationFrame` för att fältet ska finnas.
+    requestAnimationFrame(() => prisRef.current?.focus());
+  }
+
+  function stangPris() {
+    setVisaPris(false);
+    setAvtalatPris('');
+    setVisat({ belopp, pris: '' });
+    requestAnimationFrame(() => prisKnappRef.current?.focus());
+  }
 
   async function spara(skickaNu: boolean) {
     if (!kanSpara || talet === null) return;
@@ -217,6 +299,7 @@ export function RegistreraForm({ rad, idag, betalsatt, onBetalsatt, onAvbryt, on
       belopp,
       betalsatt,
       betalningsdatum: datum,
+      ...(prisAttSkicka !== null ? { avtalatPris: prisAttSkicka } : {}),
     });
 
     // KVITTENSEN LÄSER SERVERNS SVAR, ALDRIG FÄLTET. Servern normaliserar
@@ -233,15 +316,24 @@ export function RegistreraForm({ rad, idag, betalsatt, onBetalsatt, onAvbryt, on
             `${visaKronor(sparat)} kr registrerat. ${visaKronor(saknasEfter)} kr kvar att betala.`
           : `${visaKronor(sparat)} kr registrerat. Allt betalt.`;
 
+    /* SPEGELFEL ÄR INTE SAMMA SAK FÖR DE TVÅ VÄRDENA — och kvittensen får inte
+       låtsas att det är det. Inbetalningen ligger i Postgres och kommer med
+       nästa spegling; det AVTALADE PRISET finns bara i denna request (ingen
+       `avtalat_pris`-kolumn), så en fallerad patch betyder att priset är BORTA
+       och måste sättas om. EF:en varnar för exakt det i sitt eget docblock. */
+    const spegelnot = resultat.spegel.skrivet
+      ? ''
+      : prisAttSkicka !== null
+        ? ' Basen har inte hunnit uppdateras än, och det avtalade priset sparades INTE — sätt om det.'
+        : ' Basen har inte hunnit uppdateras än.';
+
     onKlar({
       inbetalningId: resultat.inbetalning.id,
       namn: rad.namn,
       belopp: sparat,
       medKvitto,
       skickaNu,
-      kvittens: resultat.spegel.skrivet
-        ? kvittens
-        : `${kvittens} Basen har inte hunnit uppdateras än.`,
+      kvittens: `${kvittens}${spegelnot}`,
     });
   }
 
@@ -334,15 +426,21 @@ export function RegistreraForm({ rad, idag, betalsatt, onBetalsatt, onAvbryt, on
           `alert` med sin intent. Båda egenskaperna är oförenliga med en
           tillförlitlig live-region, så annonseringen görs inte av boxen.
 
-          BOXEN ÄR DÄRFÖR `aria-hidden` — texten är ordagrant densamma i
-          regionen ovan, så ingenting går förlorat; utan den hade samma besked
-          annonserats två gånger. `sr-only` är `position: absolute` och alltså
-          inget flex-item, så den alltid-monterade regionen kostar noll höjd i
-          formulärets rytm (den tomma-hålet-fällan från pass 6 kan inte
-          återuppstå).
+          `aria-hidden` SITTER PÅ TEXTEN, INTE PÅ BOXEN — och den skillnaden är
+          inte kosmetisk. Texten döljs för AT därför att den redan sägs av
+          regionen ovan (utan det hade samma besked annonserats två gånger),
+          men boxen SJÄLV måste förbli exponerad: den bär sedan A5 en
+          interaktiv kontroll, och ett fokuserbart element inne i en
+          `aria-hidden`-yta är en `serious`-överträdelse (axe
+          `aria-hidden-focus`) — kontrollen hade gått att tabba till men inte
+          gått att läsa.
+
+          `sr-only` är `position: absolute` och alltså inget flex-item, så den
+          alltid-monterade regionen kostar noll höjd i formulärets rytm (den
+          tomma-hålet-fällan från pass 6 kan inte återuppstå).
 
           ANNONSERINGEN SKER EFTER FÖRDRÖJNINGEN, aldrig per tangenttryck: båda
-          bärarna läser `utfall`, som är härlett ur det FÖRDRÖJDA `visatBelopp`.
+          bärarna läser `utfall`, som är härlett ur det FÖRDRÖJDA `visat`.
 
           LUFTEN kommer ur formulärets egen `gap-3` — boxen är ett eget
           flex-syskon (inte inklämd i ett `gap-1`-block med fältet), plus
@@ -354,14 +452,55 @@ export function RegistreraForm({ rad, idag, betalsatt, onBetalsatt, onAvbryt, on
         (() => {
           const { intent, Ikon } = UTFALL_FORM[utfall.ton];
           return (
-            <div aria-hidden="true">
-              <MessageBox intent={intent}>
-                <span className="flex items-start gap-2">
-                  <Ikon aria-hidden="true" size={18} className="mt-0.5 shrink-0" />
-                  <span>{utfall.text}</span>
-                </span>
-              </MessageBox>
-            </div>
+            <MessageBox intent={intent}>
+              <span aria-hidden="true" className="flex items-start gap-2">
+                <Ikon size={18} className="mt-0.5 shrink-0" />
+                <span>{utfall.text}</span>
+              </span>
+
+              {/* AVTALAT PRIS — DISKRET ANDRA RAD, ALDRIG EN ANDRA KNAPP.
+                  Marcus: *"en sekundär rad/länk"*, och orkestreraren skärpte
+                  det: ingen knappvikt som konkurrerar med Registrera. Formen är
+                  därför husets diskreta länkform (`text-small underline`, samma
+                  som `PersonBetalningar.tsx` och radens "registrera ändå") — en
+                  `AriaButton` och inte en `Link`, eftersom den öppnar ett fält
+                  på plats i stället för att navigera. Färgen ärvs ur boxens egen
+                  brödtext, så ingen hårdkodad ton och ingen egen token behövs. */}
+              {erbjudPris &&
+                (visaPris ? (
+                  <div className="mt-3 flex flex-col gap-2">
+                    <Input
+                      ref={prisRef}
+                      label="Avtalat pris i kronor"
+                      description="Sätts på anmälan när betalningen registreras."
+                      value={avtalatPris}
+                      onChange={setAvtalatPris}
+                      onBlur={visaUtfallNu}
+                      inputMode="decimal"
+                      autoComplete="off"
+                      placeholder={
+                        rad.betalning.gallandePris !== null
+                          ? visaKronor(rad.betalning.gallandePris)
+                          : '2 500,00'
+                      }
+                      size="sm"
+                      isInvalid={prisFel !== null}
+                      errorMessage={prisFel ?? undefined}
+                    />
+                    <AriaButton onPress={stangPris} className="self-start text-small underline">
+                      Behåll det gamla priset
+                    </AriaButton>
+                  </div>
+                ) : (
+                  <AriaButton
+                    ref={prisKnappRef}
+                    onPress={oppnaPris}
+                    className="mt-2 block text-left text-small underline"
+                  >
+                    Har ni kommit överens om ett nytt pris? Sätt avtalat pris
+                  </AriaButton>
+                ))}
+            </MessageBox>
           );
         })()}
 
