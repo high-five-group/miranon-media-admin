@@ -294,6 +294,8 @@ export function RegistreraForm({
   const prisRef = useRef<HTMLInputElement>(null);
   const prisKnappRef = useRef<HTMLButtonElement>(null);
   const felId = useId();
+  /** Kopplar Spara-knappen till sin osparat-beskrivning (sr-only). */
+  const osparatId = useId();
 
   const registrera = useRegistreraInbetalning();
   /* PRISETS EGEN SKRIVVÄG — skild från registreringen sedan 2026-09-01. Se
@@ -735,27 +737,50 @@ export function RegistreraForm({
                         boxen hade gjort ytan tvåhövdad — exakt det fel Marcus
                         rev i "EN PRIMÄR, INTE TVÅ" längre ned samma dag.
 
-                        FORMEN ÄR HUSETS FÖR KNAPPAR I EN RUTA:
-                        `secondary/outline` + `ghost`, båda `size="sm"` — samma
-                        par som `BetalningsInkorg`s granskningsrad ("Skicka
-                        igen"/"Ångra") och samma storlek som `MessageBox`
-                        `actions`-slotten bär i `InbetalningsLista`. */}
+VIKT UPP, INTE STORLEK UPP (Marcus 2026-09-01: *"Borde inte
+                        spara knappen synas lite mer?"*). Knappen bar
+                        `secondary/outline` och lästes som ett alternativ
+                        snarare än som handlingen. Den är nu husets PRIMÄRA
+                        form — fylld, mörk — men i `size="sm"`, alltså exakt
+                        samma familj som formulärets "Registrera" i mindre
+                        format. Det är storleken, inte vikten, som håller isär
+                        de två: en liten fylld knapp inuti en ruta kan inte
+                        förväxlas med formulärets fullstora submit.
+                        Avbryt förblir `ghost`. */}
                     <div className="flex flex-wrap items-center gap-2">
                       <Button
-                        intent="secondary"
-                        emphasis="outline"
                         size="sm"
                         isDisabled={!kanSparaPris}
                         isLoading={sattPris.isPending}
                         onPress={sparaPris}
+                        aria-describedby={
+                          osparatPris && !sattPris.isPending ? osparatId : undefined
+                        }
                       >
                         Spara
                       </Button>
                       <Button intent="ghost" size="sm" onPress={stangPris}>
                         Avbryt
                       </Button>
+                      {/* OSPARAT-SIGNALEN ÄR KVAR — MEN BARA FÖR SKÄRMLÄSARE
+                          (Marcus: *"'Priset är inte sparat än' kan vi ta bort"*).
+
+                          VAD SOM REVS ÄR DET SYNLIGA, inte semantiken. Texten
+                          stod som en synlig `text-caption`-rad bredvid
+                          knapparna och var visuellt brus i en ruta som redan
+                          bär en tydlig Spara-knapp.
+
+                          DEN BLIR STARKARE AV FLYTTEN, inte svagare: som
+                          lös synlig text var den inte kopplad till någonting
+                          alls i tillgänglighetsträdet — en skärmläsaranvändare
+                          som tabbade till Spara hörde bara "Spara". Nu är den
+                          knappens `aria-describedby`, så samma användare hör
+                          "Spara — Priset är inte sparat än." precis när det
+                          betyder något. Ingen live-region revs: noden var
+                          aldrig en (`role="status"` sitter på KVITTENSEN, som
+                          är orörd). */}
                       {osparatPris && !sattPris.isPending && (
-                        <span className="text-caption text-text-muted">
+                        <span id={osparatId} className="sr-only">
                           Priset är inte sparat än.
                         </span>
                       )}
