@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import {
-  Coins,
   ClipboardList,
+  Coins,
   Filter,
   History,
   Hourglass,
