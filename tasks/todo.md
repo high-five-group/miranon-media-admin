@@ -11,9 +11,13 @@
 > Implementation-journal i `docs/BUILD-LOG.md`.
 > Styrande dokument: [`docs/byggplan.md`](../docs/byggplan.md)
 
-**Session 113 ▶️ AKTIV — PROMOVERINGEN KÖRD TILL MARCUS-GRINDEN (resume 7,
-2026-09-01 ~11:40–14:00 UTC, autonomt per paus 7-MANDATEN; Lotta-demo
-IMORGON):** promoverings-PR **`#2193` MERGAD** (`9dca0e56`, 44 commits —
+**S113 ⏸️ PAUSAD (paus 8, 2026-09-01 ~22:05 UTC / 2026-09-02 ~00:05 CEST —
+PROMOVERINGEN LANDAD, MARCUS-BLOCKET ÅTERSTÅR; Lotta-demo I DAG):**
+handoffen (sessionsdok S113 § PAUSLÄGE paus 8) bär HELA återstoden:
+MARCUS-SEKVENS (terminal-blocket steg 1–10, körklart med kommandon) +
+resume 8:s autonoma steg (verifiera blocket → steg 14 Vercel-flaggan →
+steg 13 backfillen → steg 16 facit → steg 15 röktest-lista) per paus 7-
+MANDATET som KVARSTÅR. Resume via `session-resume` (N=113). promoverings-PR **`#2193` MERGAD** (`9dca0e56`, 44 commits —
 hela TASK-346-leveransen + steg 1b Förhandsgranska kvitton, vars
 "ren frontend"-premiss falsifierades och löstes som sidoeffektsfri
 `preview-receipt`-utökning, staging-skarpbevisad 23/23) · `#2192`
