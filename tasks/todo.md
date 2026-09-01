@@ -11,18 +11,24 @@
 > Implementation-journal i `docs/BUILD-LOG.md`.
 > Styrande dokument: [`docs/byggplan.md`](../docs/byggplan.md)
 
-**Session 113 ▶️ ÅTERUPPTAGEN (resume 6, 2026-09-01 ~05:51 UTC,
-`lifecycle: active`; Marcus: *"Återuppta S113"*; paus 6 var 2026-08-31
-~13:40 UTC — allt landat):** paus 6-läget verifierat vid resume — paus-PR
-`#2186` MERGED, `main` ff:ad `4d682063` · numrering disk-verifierad utan
-divergens (ADR 130 · kort 357 · L655 · 22 fragment · T180) · S114 löper
-parallellt i egen worktree (`s114-segment`), huvudkatalogen S113:s. Paus
-6-leveransen (hela TASK-346 inkl. design-polish `#2183` genom full
-review-loop + perfektionsdom GRÖN, Done: 346.7/346.9/346.10/346.7.1/351/
-352/346.14, nya kort 353–356): sessionsdok S113 § Paushistorik paus 6.
-**KVAR = MARCUS-MOMENTEN:** titta → prod-promovering per runbook 346.11 →
-frågelistan (Paushistorik paus 6-blockets MARCUS-SEKVENS i sessionsdok
-S113).
+**S113 ⏸️ PAUSAD (paus 7, 2026-09-01 ~13:20 UTC — DUKAD FÖR PROMOVERINGEN,
+Marcus nöjd, Lotta-demo IMORGON):** Marcus designvandring genomförd —
+FJORTON fix-pass i lokal HMR-loop (fyra bygg-agenter i serie + läs-agent +
+bokföringsagent), grenen `fix/hem-betalningskort-marcus-iteration` =
+**48 commits pushad, HEAD `6d5e46c3`, INGEN PR än** (resume skapar den).
+Huvudleveranser: Hem-blocket rivet (gamla tillbaka + Coins-genväg) ·
+inkorgens FilterRad/kortlista/granskningsblock med Ångra · bank-anatomi ·
+noteringskedjan på inbetalningen (STAGING-deployad) · avtalat pris egen
+skrivväg · optimistik båda hållen · Pricka av-vertikalen riven (flagg-PÅ) ·
+terminologi-/pill-/hover-svep · full landningsbokföring (5 amenderingar,
+ORDLISTA ×3, CHANGELOG, testplan-synk). **MANDAT verbatim:** *"du har alla
+mandat du kan ha"* — armering vid hög, baselines, Airtable-fälten, flaggan,
+backfillen. **NÄSTA RESUME = PROMOVERINGSSEKVENSEN** (9 steg i PAUSLÄGE-
+blocket, autonom): grindar → PR → review-loop → armering → main →
+baselines → runbook-verifiering → prod-fält → **Marcus terminal-block
+steg 1–10 (grinden för Lotta)** → flagga+backfill+facit. Ny tråd `T180`
+(kvitto som bilagetyp — grillning post-promovering). `#2050`/`#2180` väntar
+Marcus. Resume via `session-resume` (N=113).
 
 ---
 
