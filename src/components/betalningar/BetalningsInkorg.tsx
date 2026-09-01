@@ -771,7 +771,12 @@ export function BetalningsInkorg() {
 
       {soker ? (
         <div className="flex flex-col gap-4 px-4">
-          <h2 className="font-semibold text-lg">{`Träffar (${traffar.length})`}</h2>
+          {/* HUSETS NUMERUS-FORM (Marcus 2026-09-01), samma grammatik som
+              "42 nya anmälningar att bekräfta" — inte ett tal i parentes
+              efter en rubrik. */}
+          <h2 className="font-semibold text-lg">
+            {`${traffar.length} ${traffar.length === 1 ? 'träff' : 'träffar'}`}
+          </h2>
           {traffar.length === 0 && (
             <p className="text-small text-text-muted">Ingen öppen betalning matchar sökningen.</p>
           )}

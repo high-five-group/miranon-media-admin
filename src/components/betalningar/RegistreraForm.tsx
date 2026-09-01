@@ -222,9 +222,30 @@ export function RegistreraForm({ rad, idag, betalsatt, onBetalsatt, onAvbryt, on
       onSubmit={vidSubmit}
       onKeyDown={vidTangent}
       aria-label={`Registrera betalning för ${rad.namn}`}
-      className="flex flex-col gap-3 border-border border-t bg-surface px-3 py-3"
+      /* ETT RUTNÄT, INTE TRE VÄNSTERKANTER (Marcus dom 2026-09-01).
+         Formuläret bar `px-3` OCH `bg-surface`, alltså en vit panel vars
+         innehåll började 12 px in i raden — medan radens avatar började på
+         0 och namn/metadata på 48 px (avatarens `size-9` + `gap-3`). Tre
+         linjer i samma kort. Den horisontella paddingen och den vita
+         panelen är därför borta: formuläret delar nu radens EGEN
+         vänsterkant, och `border-t` ensam bär avgränsningen mot raden
+         ovanför. Fälten är fortfarande vita (`--mm-input-bg` =
+         `--mm-surface`), så kontrasten mot den tonade botten är oförändrad.
+
+         GÄLLER BÅDA KONSUMENTERNA: formuläret monteras både av inkorgens
+         `BetalningsradKort` och av `RegistreraYta` (Åtgärds-panelen,
+         anmälans detaljvy, personkortet). Utan horisontell padding ärver
+         det förälderns kant i båda fallen — vilket är precis vad "ett
+         rutnät" betyder. */
+      className="flex flex-col gap-3 border-border border-t py-3"
     >
       {knappar.length > 0 && (
+        /* BELOPPSVALEN ÄR SYSKON I SAMMA VIKT (Marcus dom 2026-09-01).
+           "annat ..." var `intent="ghost"` — naken text bredvid två
+           outlined-knappar, alltså ett tredje val som såg ut som en
+           bortglömd länk. Alla tre är nu samma `secondary`/`outline`-chip.
+           Etiketten är dessutom en riktig etikett: "Annat belopp", versal
+           och utan hängande punkter. */
         <div className="flex flex-wrap gap-2">
           {knappar.map((knapp, index) => (
             <Button
@@ -239,44 +260,63 @@ export function RegistreraForm({ rad, idag, betalsatt, onBetalsatt, onAvbryt, on
               {visaKronor(knapp.belopp)} · {knapp.etikett}
             </Button>
           ))}
-          <Button intent="ghost" size="sm" onPress={annatBelopp}>
-            annat ...
+          <Button intent="secondary" emphasis="outline" size="sm" onPress={annatBelopp}>
+            Annat belopp
           </Button>
         </div>
       )}
 
-      <Input
-        ref={beloppRef}
-        label="Belopp i kronor"
-        value={belopp}
-        onChange={(v) => {
-          setBelopp(v);
-          setRort(true);
-        }}
-        // `decimal` och inte `numeric`: iPad ska ge decimaltecken, eftersom
-        // banken visar "2 500,00" och det är precis den formen Lotta klistrar
-        // in (PRD berättelse 4, AC #6 iPad-kravet).
-        inputMode="decimal"
-        autoComplete="off"
-        placeholder="2 500,00"
-        isInvalid={fel !== null}
-        errorMessage={fel ?? undefined}
-        aria-describedby={utfall ? felId : undefined}
-      />
+      {/* BELOPPSFÄLTET OCH DESS UTFALLSRAD ÄR ETT BLOCK — och det är fixen
+          för det tomma hålet (Marcus dom 2026-09-01).
 
-      {/* Vad beloppet täcker (AC #5). `role="status"` och inte `alert`: det är
-          en upplysning som uppdateras medan Lotta skriver, inte ett fel.
-          Regionen är ALLTID monterad så att skärmläsaren har något att
-          annonsera IN i - en region som monteras samtidigt som sin text
-          annonseras inte (Roselli-anatomin, se primitives/FilterRad.tsx). */}
-      <p
-        id={felId}
-        role="status"
-        aria-live="polite"
-        className={`min-h-5 text-small ${utfall ? BELOPPSUTFALL_KLASS[utfall.ton] : 'text-text-muted'}`}
-      >
-        {utfall?.text ?? ''}
-      </p>
+          ROTORSAK, mätt i koden: utfallsraden är ALLTID monterad (a11y-krav,
+          se nedan) och bar `min-h-5`. Tom blev den alltså ett 20 px högt
+          osynligt block som dessutom låg som EGET flex-syskon i formulärets
+          `gap-3` — 12 px före + 20 px block + 12 px efter = 44 px död yta
+          mellan beloppsfältet och Betalsätt-raden, i det vanligaste läget
+          av alla (innan Lotta valt ett belopp).
+
+          Fältet och raden bor nu i ett eget `gap-1`-block, och `min-h-5` är
+          borta: tom kollapsar raden till noll och kostar 4 px i stället för
+          44. Att texten sedan skjuter Betalsätt-raden 20 px nedåt när den
+          dyker upp är ett medvetet byte — det sker EN gång, vid det första
+          beloppsvalet, alltså innan Lotta tittar på Betalsätt. */}
+      <div className="flex flex-col gap-1">
+        <Input
+          ref={beloppRef}
+          label="Belopp i kronor"
+          value={belopp}
+          onChange={(v) => {
+            setBelopp(v);
+            setRort(true);
+          }}
+          // `decimal` och inte `numeric`: iPad ska ge decimaltecken, eftersom
+          // banken visar "2 500,00" och det är precis den formen Lotta klistrar
+          // in (PRD berättelse 4, AC #6 iPad-kravet).
+          inputMode="decimal"
+          autoComplete="off"
+          placeholder="2 500,00"
+          isInvalid={fel !== null}
+          errorMessage={fel ?? undefined}
+          aria-describedby={utfall ? felId : undefined}
+        />
+
+        {/* Vad beloppet täcker (AC #5). `role="status"` och inte `alert`: det är
+            en upplysning som uppdateras medan Lotta skriver, inte ett fel.
+            Regionen är ALLTID monterad så att skärmläsaren har något att
+            annonsera IN i - en region som monteras samtidigt som sin text
+            annonseras inte (Roselli-anatomin, se primitives/FilterRad.tsx).
+            Den MONTERINGEN är oförändrad; bara den reserverade höjden är
+            borta. */}
+        <p
+          id={felId}
+          role="status"
+          aria-live="polite"
+          className={`text-small ${utfall ? BELOPPSUTFALL_KLASS[utfall.ton] : 'text-text-muted'}`}
+        >
+          {utfall?.text ?? ''}
+        </p>
+      </div>
 
       <div className="flex flex-wrap gap-3">
         <Select
@@ -325,12 +365,29 @@ export function RegistreraForm({ rad, idag, betalsatt, onBetalsatt, onAvbryt, on
         </p>
       )}
 
-      <div className="flex flex-wrap gap-2">
+      {/* EN PRIMÄR, INTE TVÅ (Marcus dom 2026-09-01). "Registrera" (submit)
+          och "Registrera och skicka" bar tidigare primär- respektive
+          `success`-vikt — två mättade, konkurrerande knappar sida vid sida,
+          och ögat kunde inte avgöra vilken som var vägen framåt. Submit
+          behåller primärvikten; syskonet går ner till samma
+          `secondary`/`outline` som beloppschipsen; "Avbryt" är kvar `ghost`.
+
+          FUNKTION, ORDNING OCH KORTKOMMANDON ÄR ORÖRDA: samma `spara(true)`,
+          samma plats i raden, samma ⌘/Ctrl+Enter-genväg (den lever på
+          formulärets `onKeyDown`, inte på knappen), samma `isDisabled={!kanSpara}`.
+          Husets `Button` bär sitt eget disabled-uttryck via `data-[disabled]`
+          — ingen egen nedtoning här.
+
+          `pt-2` GER KRYSSRUTAN ANDRUM (Marcus punkt 6): "Skicka kvitto" hör
+          ihop med fälten ovanför, inte med knapparna. Utan den låg den lika
+          nära knappraden som fälten låg varandra, och lästes som en del av
+          handlingszonen. */}
+      <div className="flex flex-wrap gap-2 pt-2">
         <Button type="submit" isDisabled={!kanSpara} isLoading={registrera.isPending}>
           Registrera
         </Button>
         <Button
-          intent="success"
+          intent="secondary"
           emphasis="outline"
           isDisabled={!kanSpara}
           onPress={() => void spara(true)}
