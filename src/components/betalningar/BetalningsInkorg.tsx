@@ -674,7 +674,7 @@ export function BetalningsInkorg() {
         {`${rader.length} öppna betalningar laddade.`}
       </p>
 
-      {/* SIDHUVUDETS HANDLINGSYTA (designfynd 2c): "Importera bankrapport" var
+      {/* SIDHUVUDETS HANDLINGSYTA (designfynd 2c): "Importera kontoutdrag" var
           en ensam strö-knapp mellan segmentväljaren och listan — flyttad hit,
           bredvid rubriken, samma rad. Knappen göms medan importytan är
           öppen (oförändrat beteende) — se `visaImport`-villkoret nedan. */}
@@ -715,7 +715,11 @@ export function BetalningsInkorg() {
             size="sm"
             onPress={() => setVisaImport(true)}
           >
-            Importera bankrapport
+            {/* TERMEN ÄR "KONTOUTDRAG" (Marcus dom 2026-09-01) — se
+                `SwishImport.tsx`s `aria-label` för hela skälet. Knappen och
+                dialogens rubrik bär SAMMA ord, så Lotta känner igen ytan hon
+                just öppnade. */}
+            Importera kontoutdrag
           </Button>
         )}
       </header>
