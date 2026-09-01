@@ -1346,8 +1346,6 @@ function SkrivRad({
   const label = BETALNING_LABEL[betalning];
   /** Lokalt utkast medan Lotta skriver; null = inget utkast (visa cache-värdet). */
   const [utkast, setUtkast] = useState<string | null>(null);
-  /** [designfynd 4a] Styr GHOST-STYLINGEN nedan — se `<Input>`s docblock. */
-  const harNotering = (utkast ?? notering ?? '').trim() !== '';
 
   const spara = () => {
     if (utkast === null) return;
@@ -1396,35 +1394,41 @@ function SkrivRad({
           fältet står kant i kant med rutan ovanför — samma vänsterlinje som
           kryssrutan, hela vägen ut till höger.
 
-          ON-DEMAND-AFFORDANS, INTE 16 PERMANENT TOMMA FÄLT (TASK-346.14,
-          designfynd 4a). Marcus: "noteringen ska vara on-demand (affordance),
-          inte permanent" — men fältet kan INTE göras strukturellt dolt
-          (`display:none`/villkorad rendering) bakom ett avslöjande klick:
-          `tests/e2e/atgarder-betalningar.staging.test.ts` § "Betalningarnas
-          noteringsfält" fyller fältet direkt via `getByRole('textbox', …)`
-          utan ett föregående klick, och en interaktion som kräver ETT extra
-          steg för att nå ett fält som idag är direkt nåbart är en
-          BETEENDEändring — precis det uppdraget förbjuder testerna att
-          kräva. Lösningen är en GHOST-STYLING i stället: fältet är alltid
-          samma `<input>` i DOM:en (samma roll, samma `aria-label`, samma
-          `.fill()`-kontrakt), men saknar kant/bakgrund tills det antingen
-          BÄR innehåll eller får hover/fokus — då tonas det upp till en
-          vanlig, synlig ruta. Samma `[&_input]:`-descendant-teknik som
-          `GenereringsVy.tsx` redan använder för att styra `Input`-
-          primitivens inre `<input>` utan att ändra primitiven själv. */}
+          FÄLTET ÄR ALLTID SYNLIGT — GHOST-STYLINGEN ÄR RIVEN (Marcus dom
+          2026-09-01: *"Varför syns inte det vita fältet där man skriver
+          noteringen förens man hovrar? Så var det inte förut."*).
+
+          TASK-346.14 (designfynd 4a) gjorde fältet till en on-demand-
+          affordans: samma `<input>` i DOM:en hela tiden, men utan kant och
+          bakgrund tills det bar innehåll eller fick hover/fokus. Avsikten var
+          att slippa "16 permanent tomma fält". Utfallet blev att ett fält
+          Lotta använder varje morgon inte gick att SE — och en kontroll som
+          måste letas fram med musen är dyrare än den visuella ron den köper.
+          Formen är därför tillbaka i sitt läge före design-passet: husets
+          vanliga `Input`, med sin vanliga kant, alltid.
+
+          TILLGÄNGLIGHETSGOLVET HÖJS AV RIVNINGEN, det sänks inte. Ghost-
+          formen krävde en egen a11y-lapp (`contrast-more:[&_input]:border-
+          border-strong`, commit `120276ee`) just för att viloläget satte
+          `border-transparent`. Utan ghost bär fältet primitivens egen
+          `--mm-input-border` = `--mm-border-field` (`p-neutral-400`), som
+          `semantic.css` dokumenterar som ≥3:1 mot vit yta (WCAG 1.4.11) — i
+          ALLA kontrastlägen. Lappen pekade dessutom på `border-strong`
+          (`p-neutral-300`, 1,55:1), alltså en SVAGARE kant än den fältet nu
+          bär ovillkorligt.
+
+          Placeholdern är också tillbaka i sin ursprungliga form
+          ("Notering…"): "+ Lägg till notering" var affordansens egen text,
+          den som skulle avslöja ett osynligt fält. En synlig ruta behöver
+          ingen sådan inbjudan. */}
       <Input
         size="sm"
         label={`Notering ${label.toLowerCase()} för ${namn}`}
         hideLabel
-        placeholder={harNotering ? 'Notering…' : '+ Lägg till notering'}
+        placeholder="Notering…"
         value={utkast ?? notering ?? ''}
         onChange={setUtkast}
         onBlur={spara}
-        className={
-          harNotering
-            ? undefined
-            : '[&_input]:border-transparent [&_input]:bg-transparent focus-within:[&_input]:border-(--mm-input-border) focus-within:[&_input]:bg-(--mm-input-bg) hover:[&_input]:border-(--mm-input-border) hover:[&_input]:bg-(--mm-input-bg) contrast-more:[&_input]:border-border-strong'
-        }
       />
     </div>
   );

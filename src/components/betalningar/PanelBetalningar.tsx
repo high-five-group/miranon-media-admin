@@ -48,11 +48,21 @@ type Props = {
  * vars pris bara finns i Eventinnehåll-standarden har ett känt pris i appen
  * men BLANK i basen.
  *
- * Texten säger därför "enligt basen" i stället för att påstå "allt betalt".
- * Att gissa vilket av de två fallen som gäller hade krävt priset, som denna
- * yta inte har - och att påstå det starkare av dem hade varit att hitta på.
- * Fönstret stängs av DATA (pris-backfillen, TASK-346.8), inte av en gissning
- * här.
+ * Texten sade därför länge "Inget öppet belopp enligt basen" i stället för
+ * att påstå "Allt betalt". Att gissa vilket av de två fallen som gäller hade
+ * krävt priset, som denna yta inte har - och att påstå det starkare av dem
+ * hade varit att hitta på. Fönstret stängs av DATA (pris-backfillen,
+ * TASK-346.8), inte av en gissning här.
+ *
+ * MARCUS DOM 2026-09-01 BYTTE ORDEN, och vad det kostar sägs rakt ut:
+ * *"'enligt basen' är tekniksvenska - får inte nå Lotta."* Strängen är nu
+ * "Inget kvar att betala". Hedgen är därmed TUNNARE - texten pekar inte
+ * längre ut basen som den som talar - men den är inte borta: de två lägena
+ * har fortfarande OLIKA meningar ("Inget kvar att betala" vid `rad === null`,
+ * "Allt betalt" vid ett känt, fullbetalt pris), så ytan påstår aldrig det
+ * starkare av dem om ett okänt pris. Att Lotta förstår raden vägde tyngre än
+ * att den bar sin egen epistemologi (Gunilla-principen). Den fulla
+ * tvetydigheten bor kvar här, i koden, och stängs fortfarande av DATA.
  *
  * ═══════════════════════════════════════════════════════════════════════════
  * INBETALNINGARNA HÄMTAS FÖRST NÄR RADEN FÄLLS UT
@@ -81,12 +91,12 @@ export function PanelBetalningar({ anmalanRecordId, namn, rad }: Props) {
           De två lugna lägena (null/allt betalt) förblir enkel text. */}
       {saknas !== null && saknas > 0 ? (
         <div className="flex items-center justify-between gap-4">
-          <span className="text-small text-text-muted">Saknas</span>
+          <span className="text-small text-text-muted">Kvar att betala</span>
           <span className="text-right font-semibold text-body">{`${visaKronor(saknas)} kr`}</span>
         </div>
       ) : (
         <span className="text-small text-text-muted">
-          {saknas === null ? 'Inget öppet belopp enligt basen' : 'Allt betalt'}
+          {saknas === null ? 'Inget kvar att betala' : 'Allt betalt'}
         </span>
       )}
 

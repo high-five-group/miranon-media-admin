@@ -315,13 +315,13 @@ test('AC #5: ett belopp som täcker båda facken sägs rakt ut', () => {
 test('AC #5: udda belopp visar saknas-resten', () => {
   const utfall = beloppsutfall(rad({ summaInbetalt: 0 }), 700);
   expect(utfall.ton).toBe('delvis');
-  expect(utfall.text).toBe(`700 kr registreras. Saknas ${kr('1 800')} kr.`);
+  expect(utfall.text).toBe(`700 kr registreras. ${kr('1 800')} kr kvar att betala.`);
 });
 
 test('ett belopp som täcker exakt avgiften säger det, och resten', () => {
   const utfall = beloppsutfall(rad({ summaInbetalt: 0 }), 1000);
   expect(utfall.text).toBe(
-    `${kr('1 000')} kr täcker anmälningsavgiften. Saknas ${kr('1 500')} kr.`,
+    `${kr('1 000')} kr täcker anmälningsavgiften. ${kr('1 500')} kr kvar att betala.`,
   );
 });
 
@@ -340,7 +340,7 @@ test('föreläsning utan fack nämner aldrig anmälningsavgift', () => {
 test('överbetalning sägs rakt ut i stället för att avrundas bort', () => {
   const utfall = beloppsutfall(rad({ summaInbetalt: 0 }), 3000);
   expect(utfall.ton).toBe('over');
-  expect(utfall.text).toBe(`${kr('3 000')} kr är 500 kr mer än vad som saknas.`);
+  expect(utfall.text).toBe(`${kr('3 000')} kr är 500 kr mer än vad som är kvar att betala.`);
 
   // NEGATIV KONTROLL: en implementation som klampade resten till noll hade
   // sagt "täcker hela priset" och dolt skrivfelet.

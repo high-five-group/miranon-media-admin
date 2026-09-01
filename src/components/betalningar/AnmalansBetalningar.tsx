@@ -30,24 +30,28 @@ import { RegistreraYta } from './RegistreraYta';
  * här hade varit ett extra klick utan att spara något.
  *
  * ═══════════════════════════════════════════════════════════════════════════
- * "SAKNAS X KR" SOM VIKTAD RAD (TASK-346.14, designfynd 3a/3b)
+ * "KVAR ATT BETALA" SOM VIKTAD RAD (TASK-346.14, designfynd 3a/3b)
  * ═══════════════════════════════════════════════════════════════════════════
  * `DetaljGrupp`s dt/dd-rader ovanför (Anmälningsavgift/Slutbetalning/
  * deadline/noteringar) håller `EtikettVardeRad`s form (etikett dämpad
  * vänster, VÄRDET primärt höger, py-3). Den öppna sladden här — nyckeltalet
- * "Saknas 500 kr." — var en naken vänsterställd mening utan den vikten.
- * Formen nedan LÅNAR `EtikettVardeRad`s klasser rakt av (samma
- * `text-small text-text-muted` etikett, samma högerställda `font-semibold
- * text-body`-värde) men renderas ALDRIG i en `<dl>`: en dt/dd-rad kan bara
- * bära EN ordagrann term ("Saknas"), och de tre lägena här ("Saknas X kr" /
- * "Allt betalt" / "enligt basen: okänt") är tre OLIKA meningar, inte tre
- * värden på samma fråga — att tvinga in dem i dt/dd hade krävt att antingen
- * hitta på en konstlad gemensam etikett eller byta etikett per läge (`axe`
- * `definition-list` kräver dessutom att VARJE `<dl>`-barn är ett dt/dd-par,
- * inte fri text). De två "lugna" lägena (null/allt betalt) förblir därför
- * enkel text utan radstruktur — bara det FAKTISKT öppna beloppet, det Marcus
- * kallade "NYCKELTALET", får radens vikt. Ordvalet (svenska meningarna) är
- * OFÖRÄNDRAT — bara kompositionen är ny.
+ * — var en naken vänsterställd mening utan den vikten. Formen nedan LÅNAR
+ * `EtikettVardeRad`s klasser rakt av (samma `text-small text-text-muted`
+ * etikett, samma högerställda `font-semibold text-body`-värde) men renderas
+ * ALDRIG i en `<dl>`: en dt/dd-rad kan bara bära EN ordagrann term, och de
+ * tre lägena här (öppet belopp / "Allt betalt" / okänt pris) är tre OLIKA
+ * meningar, inte tre värden på samma fråga — att tvinga in dem i dt/dd hade
+ * krävt att antingen hitta på en konstlad gemensam etikett eller byta etikett
+ * per läge (`axe` `definition-list` kräver dessutom att VARJE `<dl>`-barn är
+ * ett dt/dd-par, inte fri text). De två "lugna" lägena (null/allt betalt)
+ * förblir därför enkel text utan radstruktur — bara det FAKTISKT öppna
+ * beloppet, det Marcus kallade "NYCKELTALET", får radens vikt.
+ *
+ * ORDVALET BYTTES 2026-09-01 (Marcus): etiketten "Saknas" är nu "Kvar att
+ * betala", och nolläget "Inget öppet belopp enligt basen." är "Inget kvar att
+ * betala." Termen är KONSEKVENT över alla betalningsytor — panelen, denna vy,
+ * personkortet, inkorgens rader och registreringens kvittens — så samma sak
+ * heter samma sak var Lotta än står. Kompositionen är oförändrad.
  */
 export function AnmalansBetalningar({
   anmalanRecordId,
@@ -72,10 +76,10 @@ export function AnmalansBetalningar({
           påstås vara "allt betalt". Se filens docblock § "SAKNAS X KR" för
           varför bara det öppna beloppet får radstrukturens vikt. */}
       {saknas === null ? (
-        <p className="text-small text-text-muted">Inget öppet belopp enligt basen.</p>
+        <p className="text-small text-text-muted">Inget kvar att betala.</p>
       ) : saknas > 0 ? (
         <div className="flex items-center justify-between gap-4 py-1">
-          <span className="text-small text-text-muted">Saknas</span>
+          <span className="text-small text-text-muted">Kvar att betala</span>
           <span className="text-right font-semibold text-body">{`${visaKronor(saknas)} kr`}</span>
         </div>
       ) : (

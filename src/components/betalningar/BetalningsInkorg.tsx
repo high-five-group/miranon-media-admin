@@ -965,7 +965,8 @@ function BetalningsradKort({
 
           [TASK-346.14 fix-runda D, D2] STAPLAD PÅ SMALA BRYTPUNKTER, TVÅ
           KOLUMNER FRÅN `sm` — orkestrerarens visuella dom på 375×812 mätte
-          namnet och saknas-beloppet trunkerade till "Beng…"/"Saknas …" när
+          namnet och det öppna beloppet trunkerade till "Beng…"/"Saknas …"
+          (radens dåvarande ordalydelse, se sekundärraden nedan) när
           "Registrera betalning" delade raden med info-kolumnen
           (`dom-inkorg-375.png`). Lotta ska se VEM som saknar VAD; namnet får
           aldrig trunkeras bort. Raden är därför `flex-col` (mobil, `stretch`
@@ -983,7 +984,13 @@ function BetalningsradKort({
             <span className="font-medium text-body sm:truncate">{rad.namn}</span>
             <span className="text-caption text-text-muted sm:truncate">
               {visaEvent && rad.betalning.eventNamn ? `${rad.betalning.eventNamn} · ` : ''}
-              {saknas === null ? 'Pris saknas i basen' : `Saknas ${visaKronor(saknas)} kr`}
+              {/* LÖPANDE TEXT ⇒ BELOPPET FÖRST (Marcus 2026-09-01, samma
+                  domänterm över alla betalningsytor): "1 500 kr kvar att
+                  betala" läser som svenska efter eventnamnet, medan
+                  etikett-först hade läst som en tabellrad i en mening.
+                  Etikett-formen ("Kvar att betala" + högerställt värde) bär
+                  panelen och anmälans detaljvy. */}
+              {saknas === null ? 'Pris saknas i basen' : `${visaKronor(saknas)} kr kvar att betala`}
             </span>
             <div className="flex flex-wrap items-center gap-2">
               {rad.forfallen && (

@@ -170,7 +170,9 @@ export function RegistreraForm({ rad, idag, betalsatt, onBetalsatt, onAvbryt, on
       saknasEfter === null
         ? `${visaKronor(sparat)} kr registrerat.`
         : saknasEfter > 0
-          ? `${visaKronor(sparat)} kr registrerat. Saknas ${visaKronor(saknasEfter)} kr.`
+          ? // Löpande text ⇒ beloppet först (Marcus 2026-09-01, delad
+            // domänterm "kvar att betala" över alla betalningsytor).
+            `${visaKronor(sparat)} kr registrerat. ${visaKronor(saknasEfter)} kr kvar att betala.`
           : `${visaKronor(sparat)} kr registrerat. Allt betalt.`;
 
     onKlar({

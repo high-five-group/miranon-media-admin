@@ -68,13 +68,21 @@ export function PersonBetalningar({ person }: { person: PersonDetail }) {
       <div className="flex flex-col gap-3">
         <p className="text-body">
           {oversikt.rader.length === 0
-            ? 'Inget öppet belopp enligt basen.'
+            ? 'Inget kvar att betala.'
             : // BÅDA räkneorden böjs. Mätt i acceptansvandringen 2026-08-31:
               // meningen löd "Saknas 2 500 kr på 1 anmälan, varav 1 förfallna"
               // - substantivet var böjt, adjektivet inte. Gunilla-principen
               // gäller texten Lotta läser varje morgon, inte bara de svåra
               // orden.
-              `Saknas ${visaKronor(oversikt.saknasTotalt)} kr på ${oversikt.rader.length} ${oversikt.rader.length === 1 ? 'anmälan' : 'anmälningar'}${oversikt.forfallna > 0 ? `, varav ${oversikt.forfallna} ${oversikt.forfallna === 1 ? 'förfallen' : 'förfallna'}` : ''}.`}
+              //
+              // TERMEN BYTTES 2026-09-01 (Marcus): "Saknas X kr på …" är nu
+              // "X kr kvar att betala på …". I LÖPANDE TEXT står beloppet
+              // först — "2 500 kr kvar att betala på 2 anmälningar" läser som
+              // svenska, medan etikett-först ("Kvar att betala 2 500 kr på …")
+              // läser som en tabellrad som råkat hamna i en mening. Som
+              // ETIKETT (panelen, anmälans detaljvy) står termen först; det är
+              // samma term, böjd efter sin plats.
+              `${visaKronor(oversikt.saknasTotalt)} kr kvar att betala på ${oversikt.rader.length} ${oversikt.rader.length === 1 ? 'anmälan' : 'anmälningar'}${oversikt.forfallna > 0 ? `, varav ${oversikt.forfallna} ${oversikt.forfallna === 1 ? 'förfallen' : 'förfallna'}` : ''}.`}
         </p>
 
         {/* EN RAD PER ÖPPEN ANMÄLAN, var och en med sitt eget formulär.
@@ -89,7 +97,9 @@ export function PersonBetalningar({ person }: { person: PersonDetail }) {
                 {rad.betalning.eventNamn ?? 'Utan event'}
               </span>
               <span className="text-caption text-text-muted">
-                {rad.kvar === null ? 'Pris saknas i basen' : `Saknas ${visaKronor(rad.kvar)} kr`}
+                {rad.kvar === null
+                  ? 'Pris saknas i basen'
+                  : `${visaKronor(rad.kvar)} kr kvar att betala`}
                 {rad.forfallen ? ' · förfallen' : ''}
               </span>
             </div>

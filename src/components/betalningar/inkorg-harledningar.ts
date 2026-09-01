@@ -427,7 +427,10 @@ export function beloppsutfall(rad: InkorgsRad, belopp: number): Beloppsutfall {
   if (nyttSaknas < 0) {
     return {
       ton: 'over',
-      text: `${visat} kr är ${visaKronor(Math.abs(nyttSaknas))} kr mer än vad som saknas.`,
+      // Samma termbyte som nedan: verbet "saknas" är den gamla domäntermens
+      // form och byts med den, så överbetalningen mäts mot samma begrepp som
+      // resten av ytorna namnger.
+      text: `${visat} kr är ${visaKronor(Math.abs(nyttSaknas))} kr mer än vad som är kvar att betala.`,
     };
   }
 
@@ -438,14 +441,21 @@ export function beloppsutfall(rad: InkorgsRad, belopp: number): Beloppsutfall {
     return { ton: 'tacker', text: `${visat} kr täcker hela priset.` };
   }
 
+  // DOMÄNTERMEN ÄR "KVAR ATT BETALA" (Marcus 2026-09-01), och i löpande text
+  // står beloppet först. Samma term som panelen, anmälans detaljvy,
+  // personkortet, inkorgens rader och registreringens kvittens bär — samma
+  // sak heter samma sak var Lotta än står.
   if (tvaFack && summaInbetalt < anmalningsavgift && nySumma >= anmalningsavgift) {
     return {
       ton: 'delvis',
-      text: `${visat} kr täcker anmälningsavgiften. Saknas ${visaKronor(nyttSaknas)} kr.`,
+      text: `${visat} kr täcker anmälningsavgiften. ${visaKronor(nyttSaknas)} kr kvar att betala.`,
     };
   }
 
-  return { ton: 'delvis', text: `${visat} kr registreras. Saknas ${visaKronor(nyttSaknas)} kr.` };
+  return {
+    ton: 'delvis',
+    text: `${visat} kr registreras. ${visaKronor(nyttSaknas)} kr kvar att betala.`,
+  };
 }
 
 /* ═══════════════════════════ JOBBETS DELUTFALL ═══════════════════════════ */

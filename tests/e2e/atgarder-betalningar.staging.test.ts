@@ -606,8 +606,14 @@ test.describe('Åtgärds-panelen med miljöflaggan PÅ — läsande kryss (TASK-
 
     // Ingen av personerna har en öppen rad i den (tomma) listan, så beskedet
     // är det tvetydighets-ärliga — aldrig ett påstått "Allt betalt".
+    //
+    // ORDALYDELSEN BYTTES 2026-09-01 (Marcus: "'enligt basen' är
+    // tekniksvenska — får inte nå Lotta"). Skillnaden mot "Allt betalt" är
+    // vad testet vaktar, och den står kvar: `rad === null` säger "Inget kvar
+    // att betala", ett känt fullbetalt pris säger "Allt betalt". Se
+    // `PanelBetalningar.tsx` § `rad === null` för vad hedgen kostade.
     const panel = betalningsPanel(page);
-    await expect(panel.getByText('Inget öppet belopp enligt basen').first()).toBeVisible();
+    await expect(panel.getByText('Inget kvar att betala').first()).toBeVisible();
 
     // Fällningen finns per person och är STÄNGD från början (anropsbudgeten:
     // en läsning per person vid öppning hade blivit tjugo EF-anrop).

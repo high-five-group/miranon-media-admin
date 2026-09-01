@@ -799,7 +799,10 @@ function radbeskrivning(
 
 function kandidatEtikett(kandidat: InkorgsRad): string {
   const saknas = kandidat.kvar;
-  const belopp = saknas === null ? 'pris saknas' : `saknas ${visaKronor(saknas)} kr`;
+  // Delad domänterm (Marcus 2026-09-01): "kvar att betala", beloppet först i
+  // löpande text. Etiketten är en ` · `-fogad rad, så ledet står versal-löst
+  // och börjar ändå med en siffra.
+  const belopp = saknas === null ? 'pris saknas' : `${visaKronor(saknas)} kr kvar att betala`;
   return `${kandidat.namn} · ${kandidat.betalning.eventNamn ?? 'Utan event'} · ${belopp}`;
 }
 
