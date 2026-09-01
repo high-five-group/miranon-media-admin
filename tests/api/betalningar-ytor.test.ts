@@ -24,7 +24,9 @@ import {
   sammanfattaBetalningar,
 } from '@/components/betalningar/inkorg-harledningar';
 import {
+  inbetalningsBeloppKolumn,
   inbetalningsText,
+  inbetalningsUnderdelar,
   kanMakulera,
   kanRadera,
   kvittolage,
@@ -482,6 +484,50 @@ test('återbetalning SÄGS ut i ord, inte som ett ensamt minustecken', () => {
 test('saknat betalningsdatum SÄGS vara okänt, det tystas inte', () => {
   const text = inbetalningsText(inbetalning({ betalningsdatum: null, betalsatt: 'Historik' }));
   expect(text).toContain('datum okänt');
+});
+
+/* ═══════════ BANK-ANATOMINS TVÅ LED (pass 14, 2026-09-01) ═══════════
+   Raden renderar sedan bank-anatomin beloppet i en HÖGERKOLUMN med datans
+   eget tecken, medan `inbetalningsText` ovan lever kvar som radens
+   TILLGÄNGLIGA namn i ord. De två testas var för sig, eftersom det är
+   skillnaden mellan dem som är designen — inte en av dem. */
+
+test('beloppskolumnen bär DATANS EGET TECKEN, inte ett absolutbelopp', () => {
+  expect(inbetalningsBeloppKolumn(inbetalning({ belopp: 2500 }))).toBe(`${kr('2 500')} kr`);
+
+  // MINUSTECKNET ÄR TYPOGRAFISKT (U+2212), inte ASCII-bindestreck — det är
+  // vad `toLocaleString('sv-SE')` skriver, och kolumnen ärver det i stället
+  // för att formatera om talet själv.
+  const ater = inbetalningsBeloppKolumn(
+    inbetalning({ belopp: -500, typ: 'aterbetalning', betalsatt: 'Bankgiro' }),
+  );
+  expect(ater).toBe('−500 kr');
+  expect(ater).not.toContain('-500');
+
+  // NEGATIV KONTROLL: en implementation som tog `Math.abs` (som
+  // `inbetalningsBelopp` gör, med avsikt) hade gjort ett uttag och en
+  // insättning omöjliga att skilja åt i sifferpelaren.
+  expect(ater).not.toBe('500 kr');
+});
+
+test('sekundärledet SÄGER "Återbetalning" — minustecknet står aldrig ensamt', () => {
+  // PRD berättelse 18 lever kvar: ordet finns på raden, det har bara flyttat
+  // från sifferkolumnen till textkolumnen.
+  expect(inbetalningsUnderdelar(inbetalning({ belopp: -500, typ: 'aterbetalning' }))).toEqual([
+    'Återbetalning',
+    '2026-08-30',
+  ]);
+
+  // En vanlig inbetalning bär INGET typord — "Inbetalning · 2026-08-30" hade
+  // varit brus på varje rad i en lista som per definition är inbetalningar.
+  expect(inbetalningsUnderdelar(inbetalning())).toEqual(['2026-08-30']);
+
+  // BETALSÄTTET SAKNAS I BÅDA: det är radens TITELLED sedan bank-anatomin.
+  // Utan denna kontroll hade en återinförd `betalsatt` gett "Swish · Swish".
+  expect(inbetalningsUnderdelar(inbetalning({ betalsatt: 'Bankgiro' }))).not.toContain('Bankgiro');
+
+  // Okänt datum SÄGS, precis som i `inbetalningsText`.
+  expect(inbetalningsUnderdelar(inbetalning({ betalningsdatum: null }))).toEqual(['datum okänt']);
 });
 
 /* ═══════════════════════ PERSONENS ÖVERSIKT (AC #4) ═══════════════════════ */

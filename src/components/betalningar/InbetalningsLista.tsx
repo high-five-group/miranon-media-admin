@@ -16,9 +16,9 @@ import type { Inbetalning, Kvitto } from '@/domain/schemas';
 import { skrivLaddningssida } from '@/lib/skriv-laddningssida';
 import { visaKronor } from './belopp-inmatning';
 import {
-  inbetalningsBelopp,
-  inbetalningsMetadelar,
+  inbetalningsBeloppKolumn,
   inbetalningsText,
+  inbetalningsUnderdelar,
   kanMakulera,
   kanRadera,
   kvittolage,
@@ -114,70 +114,78 @@ type Props = {
  * att skriva `location.href` på ett stängt fönster kan kasta.
  *
  * ═══════════════════════════════════════════════════════════════════════════
- * RADENS ANATOMI — BILAGE-KORTETS GRAMMATIK (Marcus dom 2026-09-01)
+ * RADENS ANATOMI — BANKENS TRANSAKTIONSLISTA (Marcus dom 2026-09-01, pass 14)
  * ═══════════════════════════════════════════════════════════════════════════
- * Marcus, om den föregående formen: *"Det är något som är fundamentalt fel.
- * … Vi borde kunna få hämta lite inspiration från dokumentlistan eller
- * dokumentkorten."* Fyra fel i ett:
+ * Marcus jämförde listan med sin egen banks transaktionslista och dömde vår
+ * form *"barnsligt … inte klart"*. Facit är alltså bankens anatomi, byggd i
+ * ljust tema med husets egna tokens — INTE en ny uppfinning:
  *
- *   1. INGEN ANATOMI. Raden bar `inbetalningsText()` — belopp, betalsätt och
- *      datum som EN sträng — till vänster och kvittostatusen `justify-between`
- *      långt till höger. Två textklumpar i varsin ände med ett hål emellan,
- *      utan att något av leden var primärt.
- *   2. KNAPPSOPPA. Upp till fyra knappar i TRE vikter (två `outline`, två
- *      `ghost`) på en egen högerställd rad, alltså ännu ett hål.
- *   3. VISKANDE VERSAL-ETIKETT ovanför listan ("SENASTE INBETALNINGAR") —
- *      samma overline-klass Marcus redan rev på Hem-blocket samma dag.
- *   4. ALLT I EN GRÅ BLOBB: raderna delade förälderns `bg-bg-muted` och
- *      skildes bara av `divide-y`.
+ *   1. EN SAMMANHÄNGANDE LISTYTA, inte ett kort per rad. Behållaren bär
+ *      kortformen; raderna inuti skiljs av TUNNA HÅRLINJER.
+ *   2. BELOPPET I EGEN HÖGERKOLUMN, på titelradens baslinje.
+ *   3. VÄNSTERKOLUMNEN TÄT: rad 1 = betalsättet, rad 2 = datum ·
+ *      kvittostatus i sekundär ton.
+ *   4. TÄTARE RADRYTM än kortformens.
+ *   5. ⋯-MENYN ytterst till höger. Ingen chevron — raderna navigerar inte.
  *
- * FORMEN ÄR NU `DokumentRadSkal`s (`DokumentYta.tsx`), led för led:
+ * VAD SOM REVS, OCH VARFÖR DET INTE ÄR EN OLYCKA:
+ * Föregående form (pass 8) var bilage-kortets grammatik — `rounded-2xl
+ * border-transparent bg-surface p-3` per rad, beloppet som primärled i
+ * vänsterkolumnen, metadatan som ett `·`-svep under. Den var RÄTT mot sin
+ * egen förlaga (dokumentlistan) och löste de fyra fel den ersatte. Men en
+ * dokumentlista och en transaktionslista är olika djur: dokumentet ÄR ett
+ * objekt man öppnar, transaktionen är ett BELOPP man skannar. En pelare av
+ * vita rutor tvingar ögat att läsa varje rad; en hårlinjelista med
+ * högerställda tal låter ögat läsa kolumnen. Spänningen mot `AtgardsSida.tsx`
+ * § designfynd 4c ("åtta sådana vita väggar radade under varandra läste
+ * tyngre") stod bokförd i denna docblock i sex pass — den är nu upplöst åt
+ * 4c:s håll, inte längre en öppen fråga.
  *
- *   • KORTYTA per rad — `rounded-2xl border-transparent bg-surface p-3
- *     contrast-more:border-border-strong`. Tonerna är MÄTTA, inte gissade:
- *     bilage-kortets `--mm-bilagekort-bg`/`-border`/`-border-contrast` löser
- *     upp till exakt `--mm-surface`/`transparent`/`--mm-border-strong`
- *     (`components.css` rad 292–294), och de SEMANTISKA klasserna skrivs här
- *     i stället för komponent-tokensen — se `IKONKNAPP_KLASS` ovan för
- *     lager-argumentet. Alla tre konsumenter monterar listan i en
- *     `bg-bg-muted`-behållare (`Sektion` i `PersonDetail.tsx`, `DetaljGrupp`
- *     i anmälans detaljvy, panelens egen `bg-bg-muted` i `AtgardsSida.tsx`),
- *     så vita kort läser mot samma botten som på dokumentytan.
- *   • LEDANDE GLYF i egen kolumn (`w-6`, `h-11`-centrerad mot primärledets
- *     träffyta) — `TypGlyf`s roll och geometri. `aria-hidden`: glyfen är ett
- *     skanningsstöd, aldrig budskapet (WCAG 1.4.1) — makuleringen sägs i
- *     TEXT och med genomstrykning, precis som förut.
- *     [PASS 8, 2026-09-01] KOLUMNEN FINNS NU BARA PÅ EN MAKULERAD RAD. Marcus:
- *     *"fruktansvärt ful swish-ikon/betalningsikon"*. Sedel- och
- *     återbetalnings-glyferna bar ingen information de andra leden inte redan
- *     bar; `Ban` gör det. Hela resonemanget vid renderingen nedan.
- *   • BELOPPET ÄR PRIMÄRLEDET (`font-medium text-body`), metadatan ETT
- *     sekundärt svep under (`text-caption text-text-muted`): betalsätt ·
- *     datum · kvittostatus. Kvittostatusen svävar alltså inte längre — den
- *     är ett led bland de andra. Uppdelningen bor i härledningarna
- *     (`inbetalningsBelopp`/`inbetalningsMetadelar`), inte i JSX.
+ * FORMEN ÄR HUSETS EGEN, KOPIERAD OCH INTE UPPFUNNEN. Klassuppsättningen
+ * `divide-y divide-border rounded-xl border border-transparent bg-surface
+ * px-3 contrast-more:border-border-strong` är ORDAGRANT den
+ * `EventinnehallYta.tsx` (rad 180, 221) och `PlatserYta.tsx` (rad 137, 228)
+ * redan bär för exakt detta: en sammanhängande listyta med hårlinjer. Enda
+ * tilläggen är inline-scrollens fyra klasser (nedan) och
+ * `contrast-more:divide-border-strong`, som förlagorna saknar — hårlinjen
+ * `--mm-border` mot `--mm-surface` mäter **1,29:1**, och den som bett om
+ * förstärkt kontrast ska få hårlinjen förstärkt, inte bara ytterkanten
+ * (`--mm-border-strong` ger 1,75:1).
+ *
+ * KOLUMNERNA, led för led:
+ *
+ *   • TITELLEDET är BETALSÄTTET (`font-medium text-body`) — "Swish",
+ *     "Bankgiro", "Historik". Det är radens identitet på samma plats som
+ *     banken sätter mottagaren.
+ *   • SEKUNDÄRLEDET är `inbetalningsUnderdelar` + kvittostatusen, ETT
+ *     `·`-svep i `text-caption text-text-muted`: datum · kvittostatus, och
+ *     ordet "Återbetalning" först på de rader typen är det. Uppdelningen bor
+ *     i härledningarna (`panel-harledningar.ts`), aldrig i denna JSX.
+ *   • BELOPPSKOLUMNEN (`font-medium text-body tabular-nums`, högerställd)
+ *     bär `inbetalningsBeloppKolumn` — beloppet med DATANS EGET TECKEN, se
+ *     den funktionens docblock för varför ordet "återbetalt" flyttade till
+ *     sekundärledet i stället för att försvinna. `tabular-nums` är vad som
+ *     gör pelaren till en pelare: proportionella siffror ger olika bred
+ *     "1 111" och "8 888", och då slutar högerkanten vara en linje.
+ *   • `Ban`-GLYFEN FÖLJDE MED BELOPPET till högerkolumnen. Den satt som
+ *     ledande glyf i vänsterkanten fram till pass 14; makuleringens plats är
+ *     bredvid det tal den upphäver, inte i en egen kolumn tre led bort.
+ *     `aria-hidden` oförändrat — makuleringen sägs i TEXT nedan (WCAG 1.4.1),
+ *     glyfen är ett skanningsstöd. Genomstrykningen sitter på SIFFRAN, inte
+ *     på svepet som rymmer glyfen: ett streck genom en förbudsikon läser som
+ *     grafiskt brus.
  *   • ⋯-MENY för handlingarna, husets `Meny`-primitiv (React Aria
  *     `MenuTrigger`/`Menu`/`MenuItem`): piltangenter, typeahead, Escape och
  *     fokus-återlämning utan egen kod. Destruktiva poster bär `ton="fara"`
  *     efter en `MenyAvdelare`, konventionen primitivens egen docblock slår
  *     fast.
  *
- * EN AVVIKELSE FRÅN FÖRLAGAN, MEDVETEN: metaraden TRUNKERAS INTE. Bilage-
- * kortets `MetaRad` gör det, men bara för att dokumentlistan bär ett MÄTT
- * höjdlås (`useLastaListhojd`) som kräver att varje led är ett svep. Denna
- * yta har inget sådant lås, och kvittostatusen är svaret på PRD berättelse
- * 12 ("vad skickade vi till Bengt?") — att klippa bort den på en smal skärm,
- * där `title` dessutom inte nås utan hover, vore att offra information för
- * en symmetri ingen mekanism här kräver.
- *
- * SPÄNNING SOM BOKFÖRS I STÄLLET FÖR ATT TIGAS IHJÄL: `AtgardsSida.tsx`
- * § designfynd 4c rev VITA KORT I GRÅ CONTAINER för PERSON-raderna på
- * Åtgärds-sidan ("åtta sådana vita väggar radade under varandra läste
- * tyngre"). Argumentet var en TÄTHETS-invändning mot den primära listan;
- * inbetalningarna ligger två nivåer ned, bakom en fällning, och är normalt
- * en till tre. Formen är ändå densamma klass 4c avvisade, och Marcus dömer
- * den på skärmen — den bor i EN klass-sträng nedan och kan växlas tillbaka
- * till `divide-y` med en rad om han föredrar det där.
+ * DE LÅNGA SEKUNDÄRRADERNA (makulering, notering, felskäl, kvittenser) och
+ * de inline panelerna BOR KVAR I TEXTKOLUMNEN och trunkeras inte. Bankens
+ * rader är enradiga; våra bär ibland ett skäl som är hela svaret på "varför
+ * gick det inte?". Att klippa dem för en symmetri ingen mekanism kräver vore
+ * att offra information — samma avvägning som stod här före pass 14, och den
+ * gäller ordagrant fortfarande.
  */
 export function InbetalningsLista({ kalla, aktiv, listEtikett = 'Inbetalningar', tomText }: Props) {
   const anmalanId = 'anmalanRecordId' in kalla ? kalla.anmalanRecordId : '';
@@ -246,10 +254,12 @@ export function InbetalningsLista({ kalla, aktiv, listEtikett = 'Inbetalningar',
         </p>
       )}
 
-      {/* KORTFORM, INTE HÅRLINJER (Marcus dom 2026-09-01) — se komponentens
-          docblock § RADENS ANATOMI. Korten separeras av luft, inte av
-          `divide-y`: en kortyta som ändå bär sin egen kant behöver ingen
-          linje mellan sig och nästa.
+      {/* HÅRLINJER, INTE KORTFORM (Marcus dom 2026-09-01, pass 14) — se
+          komponentens docblock § RADENS ANATOMI. Listytan är EN yta med
+          `divide-y`-hårlinjer; kortformen bor på behållaren, inte på raden.
+          Klassuppsättningen är `EventinnehallYta.tsx`/`PlatserYta.tsx`
+          ordagrant, plus inline-scrollens fyra klasser och
+          `contrast-more:divide-border-strong`.
 
           ═══ INLINE SCROLL I STÄLLET FÖR ETT TAK (pass 12, 2026-09-01) ═══
           Marcus: *"Jag tror vi måste ha inline scroll som vi har på så många
@@ -257,12 +267,13 @@ export function InbetalningsLista({ kalla, aktiv, listEtikett = 'Inbetalningar',
           personer."*
 
           FÖRLAGAN ÄR KOPIERAD, INTE UPPFUNNEN: `focus-ring-inset
-          scrollbar-inline flex max-h-96 flex-col overflow-y-auto pr-3` är
+          scrollbar-inline flex max-h-96 flex-col overflow-y-auto` är
           ordagrant klassuppsättningen `hem/NyaAnmalningar.tsx` och
-          `hem/ForfallnaBetalningar.tsx` (tre listor) redan bär. Enda
-          skillnaden är `gap-2` i stället för `gap-1`, eftersom raderna här är
-          KORT och inte hårlinjerader — luften mellan dem är radformens egen,
-          satt av Marcus samma dag.
+          `hem/ForfallnaBetalningar.tsx` (tre listor) redan bär. Förlagornas
+          `pr-3` (luft mot scrollmarkören) är sedan pass 14 ersatt av
+          listytans egen `px-3` — samma 12 px, men symmetriskt, eftersom
+          behållaren nu ÄR en yta med två synliga kanter i stället för en
+          transparent stapel.
 
           `tabIndex={0}` + `aria-label` ÄR WCAG-GOLVET, inte pynt: en
           rullningsbar region måste gå att nå och rulla med tangentbord (axe
@@ -283,7 +294,7 @@ export function InbetalningsLista({ kalla, aktiv, listEtikett = 'Inbetalningar',
         // biome-ignore lint/a11y/noNoninteractiveTabindex: fokuserbar scrollregion är WCAG 2.1.1-golvet (axe scrollable-region-focusable) — samma motiv och samma form som hem/NyaAnmalningar.tsx.
         tabIndex={0}
         aria-label={listEtikett}
-        className="focus-ring-inset scrollbar-inline flex max-h-96 flex-col gap-2 overflow-y-auto pr-3"
+        className="focus-ring-inset scrollbar-inline flex max-h-96 flex-col divide-y divide-border overflow-y-auto rounded-xl border border-transparent bg-surface px-3 contrast-more:divide-border-strong contrast-more:border-border-strong"
       >
         {alla.map((inbetalning) => (
           <InbetalningsRad
@@ -476,49 +487,27 @@ function InbetalningsRad({
        Makuleringen sägs i stället med genomstruken text OCH i klartext på egen
        rad. Båda överlever nedsatt syn; en opacitet gör det inte. */
     <li>
-      {/* KORTYTAN — bilage-kortets skal, semantiska klasser i stället för
-          dess komponent-tokens (se komponentens docblock § RADENS ANATOMI). */}
-      <div className="flex flex-nowrap items-start gap-2 rounded-2xl border border-transparent bg-surface p-3 text-small contrast-more:border-border-strong">
-        {/* LEDANDE GLYF — BARA PÅ EN MAKULERAD RAD (Marcus dom 2026-09-01:
-            *"fruktansvärt ful swish-ikon/betalningsikon"*).
+      {/* RADEN — bankens tre kolumner (se komponentens docblock § RADENS
+          ANATOMI). `items-start`: beloppet och ⋯ hör till TITELRADEN, inte
+          till radens mitt. En rad med en utfälld panel växer nedåt, och en
+          `items-center` här hade dragit ned både beloppet och menyn till
+          mitten av den panelen.
 
-            SEDEL-GLYFEN (`Banknote`) BAR INGEN INFORMATION. Den satt på VARJE
-            normal rad i en lista som per definition består av inbetalningar —
-            en ikon som är likadan på alla rader skiljer inga rader åt. Beloppet
-            är primärledet och betalsättet står i klartext i sekundärledet.
-
-            `Undo2` (återbetalning) FÖLJDE MED, och det är mätt och inte antaget:
-            `inbetalningsBelopp` skriver redan "1 000 kr återbetalt" för den
-            typen (`panel-harledningar.ts`), så glyfen sade en andra gång exakt
-            det texten redan sade. Uppdraget namngav bara sedeln; glyfen togs
-            med därför att samma skäl gäller ordagrant för den.
-
-            `Ban` STÅR KVAR, tillsammans med genomstrykningen: den bär
-            information ingen annan del av raden bär i alla lägen
-            (`makuleradSkal` kan vara tomt, `line-through` ensam är en svag
-            signal). `aria-hidden` är oförändrat — den är ett skanningsstöd, och
-            makuleringen sägs i text nedan (WCAG 1.4.1).
-
-            KOLUMNEN FÖRSVINNER HELT när glyfen inte renderas: föräldern är
-            `flex … gap-2`, och en `gap` verkar bara MELLAN existerande barn.
-            Utan span finns ingen kolumn och inget mellanrum att städa. */}
-        {makulerad && (
-          <span className="flex h-6 w-6 shrink-0 items-center justify-center text-text-secondary">
-            <Ban aria-hidden="true" size={18} />
-          </span>
-        )}
-
+          `py-2` ÄR TÄTHETSVALET. Husets täthetsreferens är
+          `hem/NyaAnmalningar.tsx` (`py-3` runt ett tvåradigt led ≈ 66 px);
+          denna rad landar på ≈ 60 px — tätare än referensen, som bankformen
+          kräver, utan att träffytorna krymper (se ⋯-knappen nedan). */}
+      <div className="flex flex-nowrap items-start gap-3 py-2 text-small">
         <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
-          {/* PRIMÄRLEDET: beloppet, ensamt och viktat. */}
-          <span className={`font-medium text-body ${makulerad ? 'line-through' : ''}`}>
-            {inbetalningsBelopp(inbetalning)}
-          </span>
+          {/* TITELLEDET: betalsättet. `w-full` krävs för att `truncate` ska ha
+              en bredd att förhålla sig till — kolumnen är `items-start`, så
+              barnen är annars krymp-till-innehåll. */}
+          <span className="w-full truncate font-medium text-body">{inbetalning.betalsatt}</span>
 
-          {/* SEKUNDÄRLEDET: betalsätt · datum · kvittostatus, ETT svep.
-              Kvittostatusen svävar inte längre högerställd — den är ett led
-              bland de andra. Ingen `truncate`: se docblocket § EN AVVIKELSE. */}
+          {/* SEKUNDÄRLEDET: (Återbetalning ·) datum · kvittostatus, ETT svep.
+              Ingen `truncate`: se docblocket § DE LÅNGA SEKUNDÄRRADERNA. */}
           <span className="w-full text-caption text-text-muted">
-            {[...inbetalningsMetadelar(inbetalning), lage.text].join(' · ')}
+            {[...inbetalningsUnderdelar(inbetalning), lage.text].join(' · ')}
           </span>
 
           {makulerad && inbetalning.makuleradSkal && (
@@ -664,76 +653,114 @@ function InbetalningsRad({
           )}
         </span>
 
-        {/* ⋯-MENYN — husets `Meny`-primitiv. VILLKOREN ÄR OFÖRÄNDRADE: samma
-            `lage.kanVisa`/`kanSkickaIgen`/`kanKoaOm`/`visaRadera`/
-            `visaMakulera` som styrde de gamla knapparna, bara i en annan
-            behållare. Särskilt: en MAKULERAD inbetalning erbjuder ALDRIG
-            "Skicka igen" — `kvittolage` sätter `kanSkickaIgen: aktiv` och
-            `kanKoaOm: false` för ett skickat kvitto, och den invarianten är
-            mätt (se `panel-harledningar.ts` § EN MAKULERAD INBETALNING). */}
-        {harHandlingar && (
-          <Meny
-            etikett={`Fler val för ${inbetalningsText(inbetalning)}`}
-            trigger={
-              <Button
-                ref={menyTriggerRef}
-                intent="ghost"
-                size="sm"
-                className={IKONKNAPP_KLASS}
-                aria-label={`Fler val för ${inbetalningsText(inbetalning)}`}
-              >
-                <Ellipsis aria-hidden="true" size={IKON_STORLEK} />
-              </Button>
-            }
-          >
-            {lage.kanVisa && (
-              <MenyPost
-                ikon={
-                  lank.isPending ? (
-                    <Loader2
-                      aria-hidden="true"
-                      size={IKON_STORLEK}
-                      className="motion-safe:animate-spin"
-                    />
-                  ) : (
-                    <ExternalLink aria-hidden="true" size={IKON_STORLEK} />
-                  )
-                }
-                isDisabled={lank.isPending}
-                textValue="Visa"
-                onAction={visaKvitto}
-              >
-                {lank.isPending ? 'Öppnar…' : 'Visa'}
-              </MenyPost>
-            )}
-            {lage.kanSkickaIgen && lage.kvitto && (
-              <MenyPost
-                ikon={
-                  skickaIgen.isPending ? (
-                    <Loader2
-                      aria-hidden="true"
-                      size={IKON_STORLEK}
-                      className="motion-safe:animate-spin"
-                    />
-                  ) : (
-                    <Send aria-hidden="true" size={IKON_STORLEK} />
-                  )
-                }
-                isDisabled={skickaIgen.isPending}
-                textValue="Skicka igen"
-                onAction={() => {
-                  const kvittoId = lage.kvitto?.id;
-                  if (kvittoId === undefined) return;
-                  skickaIgen.mutate(
-                    { kvittoId },
-                    { onSuccess: (svar) => setSkickatTill(svar.mottagare) },
-                  );
-                }}
-              >
-                {skickaIgen.isPending ? 'Skickar…' : 'Skicka igen'}
-              </MenyPost>
-            )}
-            {/* [TASK-352] Ett kvitto som ALDRIG gått i väg — utfärdat men inte
+        {/* BELOPPSKOLUMNEN — bankens sifferpelare. `text-body` matchar
+            titelledet, så de två delar baslinje i en `items-start`-rad utan
+            att någon offset behöver räknas fram.
+
+            `Ban` SITTER HÄR, INTE I VÄNSTERKANTEN (pass 14): makuleringens
+            plats är bredvid det tal den upphäver. `aria-hidden` oförändrat —
+            makuleringen sägs i TEXT på egen rad nedan (WCAG 1.4.1), glyfen är
+            ett skanningsstöd.
+
+            GENOMSTRYKNINGEN SITTER PÅ SIFFRAN, inte på svepet: `line-through`
+            på föräldern hade dragit strecket genom förbudsikonen också, vilket
+            läser som grafiskt brus i stället för som ett upphävt belopp.
+
+            INGEN `opacity` — se `<li>`-kommentaren ovan för mätningen. */}
+        <span className="flex shrink-0 items-center gap-1 font-medium text-body">
+          {makulerad && (
+            <Ban aria-hidden="true" size={16} className="shrink-0 text-text-secondary" />
+          )}
+          <span className={`tabular-nums ${makulerad ? 'line-through' : ''}`}>
+            {inbetalningsBeloppKolumn(inbetalning)}
+          </span>
+        </span>
+
+        {/* ⋯-KOLUMNEN HAR ALLTID SIN BREDD (`w-11`), även när raden saknar
+            handlingar. Utan den hade beloppets högerkant hoppat 44 px i sidled
+            mellan en rad med meny och en utan — och en sifferpelare vars
+            högerkant inte är en linje är ingen pelare. Det är hela skälet att
+            en tom kolumn får kosta 44 px här.
+
+            `-my-2.5` LYFTER KNAPPEN TILL TITELRADENS LINJE UTAN ATT KRYMPA
+            TRÄFFYTAN. `size-11` är 44 px — husets träffytegolv och en
+            icke förhandlingsbar iPad-egenskap. Marginalen drar in 10 px i
+            över- och underkant, så knappens LAYOUT-fotavtryck blir 24 px
+            (titelradens radhöjd, `text-body` × 1.5) medan dess TRÄFFYTA
+            förblir 44 px och växer ut i radens `py-2`-luft. Två grannknappar
+            kan inte överlappa: raderna ligger ≈ 60 px isär och knapparna är
+            44 px höga, alltså ≈ 16 px mellanrum.
+
+            VILLKOREN ÄR OFÖRÄNDRADE: samma `lage.kanVisa`/`kanSkickaIgen`/
+            `kanKoaOm`/`visaRadera`/`visaMakulera` som förut. Särskilt: en
+            MAKULERAD inbetalning erbjuder ALDRIG "Skicka igen" — `kvittolage`
+            sätter `kanSkickaIgen: aktiv` och `kanKoaOm: false` för ett skickat
+            kvitto, och den invarianten är mätt (se `panel-harledningar.ts`
+            § EN MAKULERAD INBETALNING). */}
+        <span className="flex w-11 shrink-0 justify-end">
+          {harHandlingar && (
+            <Meny
+              etikett={`Fler val för ${inbetalningsText(inbetalning)}`}
+              trigger={
+                <Button
+                  ref={menyTriggerRef}
+                  intent="ghost"
+                  size="sm"
+                  className={`${IKONKNAPP_KLASS} -my-2.5`}
+                  aria-label={`Fler val för ${inbetalningsText(inbetalning)}`}
+                >
+                  <Ellipsis aria-hidden="true" size={IKON_STORLEK} />
+                </Button>
+              }
+            >
+              {lage.kanVisa && (
+                <MenyPost
+                  ikon={
+                    lank.isPending ? (
+                      <Loader2
+                        aria-hidden="true"
+                        size={IKON_STORLEK}
+                        className="motion-safe:animate-spin"
+                      />
+                    ) : (
+                      <ExternalLink aria-hidden="true" size={IKON_STORLEK} />
+                    )
+                  }
+                  isDisabled={lank.isPending}
+                  textValue="Visa"
+                  onAction={visaKvitto}
+                >
+                  {lank.isPending ? 'Öppnar…' : 'Visa'}
+                </MenyPost>
+              )}
+              {lage.kanSkickaIgen && lage.kvitto && (
+                <MenyPost
+                  ikon={
+                    skickaIgen.isPending ? (
+                      <Loader2
+                        aria-hidden="true"
+                        size={IKON_STORLEK}
+                        className="motion-safe:animate-spin"
+                      />
+                    ) : (
+                      <Send aria-hidden="true" size={IKON_STORLEK} />
+                    )
+                  }
+                  isDisabled={skickaIgen.isPending}
+                  textValue="Skicka igen"
+                  onAction={() => {
+                    const kvittoId = lage.kvitto?.id;
+                    if (kvittoId === undefined) return;
+                    skickaIgen.mutate(
+                      { kvittoId },
+                      { onSuccess: (svar) => setSkickatTill(svar.mottagare) },
+                    );
+                  }}
+                >
+                  {skickaIgen.isPending ? 'Skickar…' : 'Skicka igen'}
+                </MenyPost>
+              )}
+              {/* [TASK-352] Ett kvitto som ALDRIG gått i väg — utfärdat men inte
                 skickat, eller inte ens skapat efter ett fallerat försök — köas
                 om via SAMMA EF-väg (koaKvitton) som utfallsregionens egna
                 "Skicka igen"-knapp i BetalningsInkorg.tsx, inte via
@@ -745,41 +772,41 @@ function InbetalningsRad({
                 exakt EN gren, och i 'skickat'-grenen är `kanKoaOm` falsk medan
                 `kanSkickaIgen` är falsk i alla andra. Menyn kan alltså aldrig
                 visa två poster som båda heter "Skicka igen". */}
-            {lage.kanKoaOm && (
-              <MenyPost
-                ikon={
-                  koaOm.isPending ? (
-                    <Loader2
-                      aria-hidden="true"
-                      size={IKON_STORLEK}
-                      className="motion-safe:animate-spin"
-                    />
-                  ) : (
-                    <Send aria-hidden="true" size={IKON_STORLEK} />
-                  )
-                }
-                isDisabled={koaOm.isPending}
-                textValue="Skicka igen"
-                onAction={() => {
-                  koaOm.mutate(
-                    { inbetalningIds: [inbetalning.id] },
-                    {
-                      onSuccess: (svar) => {
-                        const hoppadSkal = svar.hoppade[0]?.skal;
-                        setKoaUtfall(
-                          svar.koade > 0
-                            ? 'Kvittot köades för nytt utskick.'
-                            : (hoppadSkal ?? 'Kvittot kunde inte köas.'),
-                        );
+              {lage.kanKoaOm && (
+                <MenyPost
+                  ikon={
+                    koaOm.isPending ? (
+                      <Loader2
+                        aria-hidden="true"
+                        size={IKON_STORLEK}
+                        className="motion-safe:animate-spin"
+                      />
+                    ) : (
+                      <Send aria-hidden="true" size={IKON_STORLEK} />
+                    )
+                  }
+                  isDisabled={koaOm.isPending}
+                  textValue="Skicka igen"
+                  onAction={() => {
+                    koaOm.mutate(
+                      { inbetalningIds: [inbetalning.id] },
+                      {
+                        onSuccess: (svar) => {
+                          const hoppadSkal = svar.hoppade[0]?.skal;
+                          setKoaUtfall(
+                            svar.koade > 0
+                              ? 'Kvittot köades för nytt utskick.'
+                              : (hoppadSkal ?? 'Kvittot kunde inte köas.'),
+                          );
+                        },
                       },
-                    },
-                  );
-                }}
-              >
-                {koaOm.isPending ? 'Skickar…' : 'Skicka igen'}
-              </MenyPost>
-            )}
-            {/* [TASK-346.9 AC #1/#2] Radera/Makulera — bara EN kan någonsin
+                    );
+                  }}
+                >
+                  {koaOm.isPending ? 'Skickar…' : 'Skicka igen'}
+                </MenyPost>
+              )}
+              {/* [TASK-346.9 AC #1/#2] Radera/Makulera — bara EN kan någonsin
                 vara sann samtidigt (`kanRadera`/`kanMakulera` är varandras
                 motsatser via kvittots existens), men villkoren skrivs var för
                 sig i stället för `else if`: härledningarna bor i
@@ -796,29 +823,30 @@ function InbetalningsRad({
                 färsk inbetalning utan kvitto. En avdelare som inte avdelar två
                 grupper är inte en gruppmarkör, den är en artefakt; och för
                 skärmläsaren blev det ett annonserat gruppbyte som inte hände. */}
-            {atgard === 'vy' && harOvrePoster && (visaRadera || visaMakulera) && <MenyAvdelare />}
-            {atgard === 'vy' && visaRadera && (
-              <MenyPost
-                ton="fara"
-                ikon={<Trash2 aria-hidden="true" size={IKON_STORLEK} />}
-                textValue="Radera"
-                onAction={() => setAtgard('radera-bekrafta')}
-              >
-                Radera
-              </MenyPost>
-            )}
-            {atgard === 'vy' && visaMakulera && (
-              <MenyPost
-                ton="fara"
-                ikon={<Ban aria-hidden="true" size={IKON_STORLEK} />}
-                textValue="Makulera"
-                onAction={() => setAtgard('makulera-skal')}
-              >
-                Makulera
-              </MenyPost>
-            )}
-          </Meny>
-        )}
+              {atgard === 'vy' && harOvrePoster && (visaRadera || visaMakulera) && <MenyAvdelare />}
+              {atgard === 'vy' && visaRadera && (
+                <MenyPost
+                  ton="fara"
+                  ikon={<Trash2 aria-hidden="true" size={IKON_STORLEK} />}
+                  textValue="Radera"
+                  onAction={() => setAtgard('radera-bekrafta')}
+                >
+                  Radera
+                </MenyPost>
+              )}
+              {atgard === 'vy' && visaMakulera && (
+                <MenyPost
+                  ton="fara"
+                  ikon={<Ban aria-hidden="true" size={IKON_STORLEK} />}
+                  textValue="Makulera"
+                  onAction={() => setAtgard('makulera-skal')}
+                >
+                  Makulera
+                </MenyPost>
+              )}
+            </Meny>
+          )}
+        </span>
       </div>
     </li>
   );

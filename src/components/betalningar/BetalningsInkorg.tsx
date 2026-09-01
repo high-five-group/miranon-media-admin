@@ -1014,13 +1014,14 @@ export function BetalningsInkorg() {
           session-lokala). Ett durabelt svar kräver ett fält på `OppenBetalning`,
           se filens huvud-docblock § "SKICKA N KVITTON".
 
-          RADFORMEN ÄR INBETALNINGSRADERNAS (`InbetalningsLista.tsx` § KORTYTAN):
-          vitt kort på tonad botten, primärled i `text-body`-vikt, sekundärled
-          som ETT `·`-svep i `text-caption text-text-muted`. TVÅ MEDVETNA
-          AVSTEG: (a) primärledet är NAMNET och inte beloppet — det är personen
-          som skiljer raderna åt här, medan förlagan listar en enda persons
-          betalningar; (b) ingen ledande glyf — beloppet bär raden och betalsättet
-          står i klartext i sekundärledet. */}
+          RADFORMEN ÄR INBETALNINGSRADERNAS (`InbetalningsLista.tsx` § RADENS
+          ANATOMI): bankens tre kolumner — titelled i `text-body`-vikt,
+          sekundärled som ETT `·`-svep i `text-caption text-text-muted`, och
+          beloppet högerställt i egen kolumn på titelradens baslinje. ETT
+          MEDVETET AVSTEG: titelledet är NAMNET och inte betalsättet — det är
+          personen som skiljer raderna åt här, medan förlagan listar en enda
+          persons betalningar och därför kan låta betalsättet vara identiteten.
+          Betalsättet står i klartext i sekundärledet. */}
       {registrerade.length > 0 && (
         /* ETT RIKTIGT BLOCK-I-BLOCK (pass 11, Marcus: *"VA FAN är det här för
            granskningsblock? FAN va dåligt"*).
@@ -1086,6 +1087,33 @@ export function BetalningsInkorg() {
            `border-transparent` + `contrast-more`-idiom. Det är hela poängen med
            Marcus beställning ("så det syns tydligare"): den tonade ytan ensam
            ligger på 1,11:1 mot den vita sidan och bär inte avgränsningen. */
+        /* ═══ INGA VITA KORT I BLOCKET (Marcus 2026-09-01, pass 14) ═══
+           Ordagrant: *"Cecilias kort borde gå i samma ton/färg-familj som
+           bakgrunden och konturen på granskningsblocket"*.
+
+           Raderna låg som vita `bg-surface`-kort på guld-tinten — alltså en
+           tredje ton i ett block som bara har två. De ligger nu DIREKT på
+           guldytan, skilda av hårlinjer i blockets EGEN konturton, vilket är
+           samma bank-anatomi som `InbetalningsLista.tsx` fick i samma pass.
+
+           HÅRLINJENS TON ÄR MÄTT, INTE VALD PÅ KÄNSLA (WCAG 2, sRGB, mot
+           `--p-gold-100` #fbf3e0):
+             `--mm-border` (neutral-200) ..... 1,17:1  ← husets vanliga
+                                                        hårlinje SYNS INTE på
+                                                        guld
+             `--mm-primary-pale` (gold-300) .. 1,29:1  ← för svag
+             `--mm-primary-muted` (gold-400) . 2,11:1  ← VALD, och det är
+                                                        blockets egen kontur
+             `--mm-primary` (gold-500) ....... 2,33:1  ← `contrast-more`
+           Valet är alltså inte bara "en gyllene linje" utan EXAKT samma token
+           konturen bär — vilket är vad Marcus bad om ordagrant, och samtidigt
+           det enda värde i familjen som faktiskt läser på tinten.
+
+           BEKRÄFTELSEPANELEN FÖLJDE MED UR NEUTRALFAMILJEN: den bar
+           `border-border bg-bg-muted`, och `--mm-bg-muted` (#f5f5f3) mot
+           tinten mäter 1,09:1 — en panel som praktiskt taget inte syns. Den
+           bär nu transparent fond med `border-primary-muted`, alltså samma
+           2,11:1 som hårlinjerna, och sin avgränsning i tonfamiljen. */
         /* INGEN `mx-4`: blocket ska ha SAMMA bredd som kortlistorna och
            menybaren (B1). Listorna når 568 px genom `-mx-4` ur en `px-4`-
            förälder; detta block hänger direkt i `<section>`, som redan ÄR den
@@ -1111,68 +1139,69 @@ export function BetalningsInkorg() {
           ref={granskningsBlockRef}
           tabIndex={-1}
           aria-label="Registrerat nu"
-          className="flex flex-col gap-3 rounded-2xl border border-primary-muted bg-primary-tint p-3 contrast-more:border-primary"
+          /* ═══ SYMMETRISK LUFT (Marcus 2026-09-01, pass 14) ═══
+             Ordagrant: *"mer luft över första kortet … lika mycket luft ovan
+             som det är under sista kortet"*.
+
+             MÄTT VAD SOM VAR SNETT: blocket bar `p-3` och raderna sina egna
+             `p-3`, så avståndet från blockets överkant till första radens TEXT
+             var 12 + 12 = 24 px, medan avståndet från knappen till underkanten
+             var 12 px. Två olika luftband i samma block.
+
+             LÖSNINGEN BOR I BLOCKETS PADDING, INTE PER RAD (det senare hade
+             gjort första och sista raden olika höga än de mellanliggande).
+             `p-4` sätter bandet till 16 px, och listans `-my-2` drar tillbaka
+             exakt radernas egen `py-2` vid ändarna — så mätpunkterna blir:
+               överkant → första radens text .... 16 px
+               sista radens text → knappen ...... 16 px  (blockets `gap-4`)
+               knappen → underkant .............. 16 px
+             Tre lika band. Radernas inbördes rytm är orörd. */
+          className="flex flex-col gap-4 rounded-2xl border border-primary-muted bg-primary-tint p-4 contrast-more:border-primary"
         >
-          <ul className="flex flex-col gap-2">
+          <ul className="-my-2 flex flex-col divide-y divide-primary-muted contrast-more:divide-primary">
             {registrerade.map((post) => {
               const lage = kvittolage(post, vantande, jobb.data?.rader ?? []);
               const angrarDenna = angraId === post.inbetalningId;
               return (
-                <li key={post.inbetalningId}>
-                  <div className="flex flex-wrap items-start justify-between gap-2 rounded-2xl border border-transparent bg-surface p-3 contrast-more:border-border-strong">
-                    <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
-                      <span className="font-medium text-body">{post.namn}</span>
+                <li key={post.inbetalningId} className="py-2">
+                  {/* KÄRNRADEN — titel/sekundärled, belopp, åtgärd. EGEN NOD,
+                      skild från panelerna nedan, och det är vad som gör Marcus
+                      andra fynd lösbart: *"'Ångra'-knappen sitter inte
+                      centrerat höjdmässigt på kortet"*.
+
+                      `items-center` CENTRERAR MOT KÄRNRADEN, inte mot hela
+                      `<li>`. Låg knappen kvar i samma flexrad som panelerna
+                      hade en `items-center` dragit ned den till mitten av en
+                      utfälld bekräftelse — alltså rätt i vila och fel i det
+                      läge Lotta faktiskt tittar på. Skilda noder ger båda. */}
+                  <div className="flex flex-nowrap items-center gap-3">
+                    <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+                      <span className="w-full truncate font-medium text-body">{post.namn}</span>
                       <span className="w-full text-caption text-text-muted">
-                        {[`${visaKronor(post.belopp)} kr`, post.betalsatt, lage.text].join(' · ')}
+                        {[post.betalsatt, lage.text].join(' · ')}
                       </span>
-
-                      {/* BEKRÄFTELSEN BOR I TEXTKOLUMNEN, inline — samma
-                          "öppnas på plats"-mönster som `InbetalningsLista`s
-                          radera-bekräftelse och `RegistreraForm`. Ingen modal
-                          för en engångsfråga. `w-full` behövs eftersom
-                          kolumnen är `items-start`. */}
-                      {angrarDenna && (
-                        <div className="mt-2 flex w-full flex-wrap items-center gap-2 rounded border border-border bg-bg-muted px-2 py-2">
-                          <span className="text-caption">
-                            Ångra registreringen? Inbetalningen raderas.
-                          </span>
-                          <Button
-                            intent="danger"
-                            size="sm"
-                            isDisabled={radera.isPending}
-                            isLoading={radera.isPending}
-                            onPress={() => angraRegistrering(post)}
-                          >
-                            Ja, ångra
-                          </Button>
-                          <Button intent="ghost" size="sm" onPress={() => setAngraId(null)}>
-                            Behåll
-                          </Button>
-                        </div>
-                      )}
-
-                      {radera.isError && angrarDenna && (
-                        <span
-                          role="alert"
-                          className="text-(color:--mm-input-error-text) w-full text-caption"
-                        >
-                          {radera.error.message}
-                        </span>
-                      )}
-
-                      {/* VARFÖR ÅNGRA SAKNAS, i klartext. Ett kvitto som gått
-                          i väg går inte att radera bort — då är makulering
-                          vägen, och den bor på inbetalningsraderna. Att tiga
-                          hade lämnat Lotta med en rad hon inte förstår varför
-                          hon inte kan röra. */}
-                      {!lage.kanAngra && lage.angraSkal !== null && (
-                        <span className="w-full text-caption text-text-muted">
-                          {lage.angraSkal}
-                        </span>
-                      )}
                     </span>
 
-                    <span className="flex shrink-0 flex-wrap items-center gap-2">
+                    {/* BELOPPSKOLUMNEN — samma sifferpelare som
+                        `InbetalningsLista`. `tabular-nums` är vad som gör
+                        högerkanten till en linje.
+
+                        DEN KÄNDA KANTEN, BOKFÖRD: åtgärdsslotten till höger är
+                        en TEXTKNAPP med varierande bredd ("Ångra" ≈ 60 px,
+                        "Skicka igen" ≈ 90 px), inte inbetalningsradernas
+                        ⋯-knapp med sin fasta 44 px. Beloppets högerkant kan
+                        därför förskjutas mellan en rad med "Ångra" och en med
+                        "Skicka igen". En fast slot-bredd hade krävt ett magiskt
+                        px-tal utan förankring (⋯-slotten har sina 44 px ur
+                        träffytegolvet); knappformen är dessutom ett bokfört val
+                        sedan pass 11 (se knappen nedan). Kanten står här i
+                        stället för att lappas — "Skicka igen" visas bara på en
+                        FALLERAD rad, alltså sällan. */}
+                    <span className="shrink-0 font-medium text-body tabular-nums">
+                      {`${visaKronor(post.belopp)} kr`}
+                    </span>
+
+                    <span className="flex shrink-0 items-center gap-2">
                       {/* SKICKA IGEN, bara på en FALLERAD rad — samma regel och
                           samma mutation (`koaKvitton`, inte `skickaKvittoIgen`)
                           som jobbrads-listan nedan bär; se dess docblock för
@@ -1211,6 +1240,58 @@ export function BetalningsInkorg() {
                       )}
                     </span>
                   </div>
+
+                  {/* PANELEN OCH SEKUNDÄRRADERNA LIGGER UNDER KÄRNRADEN, i
+                      FULL BREDD — inte längre inuti textkolumnen.
+
+                      DET ÄR SAMMA ÄNDRING SOM GÖR MARCUS ANDRA FYND LÖSBART
+                      (se kärnradens kommentar ovan): så länge panelen låg i
+                      samma flexrad som knappen kunde knappen inte centreras
+                      mot radens tvåradiga kärna utan att glida ned i mitten av
+                      en utfälld panel. Full bredd är dessutom rätt form för
+                      innehållet: bekräftelsen och felmeddelandena hör till
+                      HELA raden, inte till namnkolumnen.
+
+                      "ÖPPNAS PÅ PLATS"-MÖNSTRET ÄR OFÖRÄNDRAT — samma inline-
+                      form som `InbetalningsLista`s radera-bekräftelse och
+                      `RegistreraForm`. Ingen modal för en engångsfråga. */}
+                  {angrarDenna && (
+                    <div className="mt-2 flex flex-wrap items-center gap-2 rounded border border-primary-muted px-2 py-2 contrast-more:border-primary">
+                      <span className="text-caption">
+                        Ångra registreringen? Inbetalningen raderas.
+                      </span>
+                      <Button
+                        intent="danger"
+                        size="sm"
+                        isDisabled={radera.isPending}
+                        isLoading={radera.isPending}
+                        onPress={() => angraRegistrering(post)}
+                      >
+                        Ja, ångra
+                      </Button>
+                      <Button intent="ghost" size="sm" onPress={() => setAngraId(null)}>
+                        Behåll
+                      </Button>
+                    </div>
+                  )}
+
+                  {radera.isError && angrarDenna && (
+                    <span
+                      role="alert"
+                      className="text-(color:--mm-input-error-text) block text-caption"
+                    >
+                      {radera.error.message}
+                    </span>
+                  )}
+
+                  {/* VARFÖR ÅNGRA SAKNAS, i klartext. Ett kvitto som gått
+                      i väg går inte att radera bort — då är makulering
+                      vägen, och den bor på inbetalningsraderna. Att tiga
+                      hade lämnat Lotta med en rad hon inte förstår varför
+                      hon inte kan röra. */}
+                  {!lage.kanAngra && lage.angraSkal !== null && (
+                    <span className="block text-caption text-text-muted">{lage.angraSkal}</span>
+                  )}
                 </li>
               );
             })}
@@ -1219,24 +1300,36 @@ export function BetalningsInkorg() {
               rader som står ovanför med "väntar på att skickas". Den försvinner
               när kön är tom — loggen står kvar.
 
-              HÖGERSTÄLLD (Marcus 2026-09-01: *"Jag tycker nog att 'skicka 1
-              kvitto'-knappen ska sitta till höger och inte till vänster"*).
-              Det är husets form för en avslutande handling i ett kort eller en
-              dialog: `Dialog.tsx:70` (`mt-6 flex justify-end gap-3`),
-              `MessageBox.tsx:157` och `Notis.tsx:123` (`mt-3 flex justify-end
-              gap-2`) placerar alla sin knapprad i högerkant.
+              VÄNSTERSTÄLLD — OCH DET ÄR EN REVERSERING, INTE EN NY DESIGN.
+              Pass 13 flyttade knappen till HÖGER på Marcus egen beställning
+              samma dag (*"Jag tycker nog att 'skicka 1 kvitto'-knappen ska
+              sitta till höger och inte till vänster"*), med husets
+              dialog-mönster som stöd: `Dialog.tsx:70` (`mt-6 flex justify-end
+              gap-3`), `MessageBox.tsx:157` och `Notis.tsx:123` (`mt-3 flex
+              justify-end gap-2`). Efter att ha sett den på skärmen rev han
+              beslutet i pass 14: *"skicka-knappen ska flyttas tillbaka till
+              vänster sidan"*.
 
-              `self-end` OCH INTE ETT `justify-end`-omslag: blocket är redan en
-              `flex flex-col`, och i en kolumn styr `self-*` tväraxeln — alltså
-              horisontellt. Ett extra wrapper-element hade gjort exakt samma sak
-              med en nod till. Färg (`intent="success"`, sage), storlek, text
-              och `onPress` är BYTE FÖR BYTE oförändrade — bara placeringen. */}
+              BÅDA DOMARNA STÅR KVAR I TEXTEN MED AVSIKT. Den senare gäller —
+              men en historik som tyst skriver om sin egen tidigare mening
+              lämnar nästa läsare att "rätta tillbaka" till dialog-mönstret och
+              göra om varvet. Argumentet för höger var giltigt för en DIALOG:s
+              avslutande knapprad; detta block är en LISTA man granskar, och
+              dess knapp ligger nu i samma vänsterlinje som raderna den
+              skickar.
+
+              `self-start` OCH INTE ETT `justify-start`-omslag: blocket är redan
+              en `flex flex-col`, och i en kolumn styr `self-*` tväraxeln —
+              alltså horisontellt. Ett extra wrapper-element hade gjort exakt
+              samma sak med en nod till. Färg (`intent="success"`, sage),
+              storlek, text och `onPress` är BYTE FÖR BYTE oförändrade — bara
+              placeringen. */}
           {vantande.length > 0 && (
             <Button
               intent="success"
               onPress={skickaKvitton}
               isLoading={koa.isPending}
-              className="self-end"
+              className="self-start"
             >
               {`Skicka ${vantande.length} ${vantande.length === 1 ? 'kvitto' : 'kvitton'}`}
             </Button>
