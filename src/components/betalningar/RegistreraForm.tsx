@@ -3,6 +3,7 @@ import { Check, CircleCheck, Info, TriangleAlert } from 'lucide-react';
 import { type FormEvent, type KeyboardEvent, useEffect, useId, useRef, useState } from 'react';
 import { Button as AriaButton, Checkbox } from 'react-aria-components';
 import { Button, Input, MessageBox, Select, SelectItem } from '@/components/primitives';
+import { useSattAvtalatPris } from '@/data/mutations/avtalatPris';
 import { useRegistreraInbetalning } from '@/data/mutations/inbetalningar';
 import { VALBARA_BETALSATT } from '@/domain/schemas';
 import { beloppsFel, normaliseraBeloppKlient, visaKronor } from './belopp-inmatning';
@@ -52,6 +53,33 @@ const UTFALL_FORM: Record<
  * skärmläsaren får ETT besked per belopp i stället för ett per siffra.
  */
 const UTFALL_FORDROJNING_MS = 1000;
+
+/**
+ * PRISETS EGEN FELREGEL — som beloppets, men NOLL ÄR GILTIGT.
+ *
+ * MÄTT FYND (2026-09-01, när priset fick sin egen Spara-knapp): fältet
+ * validerades med `beloppsFel`, som avvisar noll med "Beloppet kan inte vara
+ * noll." Det är rätt för en INBETALNING — en betalning på 0 kr är ingen
+ * betalning. Det är fel för ett PRIS: `betalningsharledning.ts` § `valjPris`
+ * behandlar uttryckligen `avtalatPris: 0` som ett VINNANDE värde ("ett
+ * avtalat pris med sanningsvärde — och `avtalatPris: 0` VINNER över eventets
+ * pris"), alltså en gratisplats, och regeln har en egen negativ kontroll i
+ * `tests/api/betalningsharledning.test.ts` (den trasiga varianten `avtalatPris
+ * || eventPris` ger 2500 där den riktiga ger 0).
+ *
+ * Ytan blockerade alltså ett värde servern är byggd för att ta emot. Felet var
+ * latent så länge priset buntades med registreringen (`kanSpara` bar
+ * `prisFel === null`, så en gratisplats stoppade hela registreringen tyst);
+ * med en egen Spara-knapp hade det i stället blivit ett rött fältfel bredvid
+ * en fungerande knapp. Regeln bor här, inte i `beloppsFel`: den delade
+ * funktionen är korrekt för sitt eget bruk och har flera andra konsumenter.
+ */
+function prisFelText(ratext: string): string | null {
+  if (ratext.trim() === '') return null;
+  return normaliseraBeloppKlient(ratext) === null
+    ? 'Skriv priset med siffror, till exempel 2 500 eller 2 500,00.'
+    : null;
+}
 
 export type RegistreringsUtfall = {
   inbetalningId: string;
@@ -202,31 +230,63 @@ export function RegistreraForm({
    * Ytan öppnas därför just i det läget (`ton === 'delvis'`), som en diskret
    * andra rad i utfallsboxen.
    *
-   * MÄTT FÖRE BYGGET, och båda grenarna i uppdraget föll:
-   *   • Det finns INGEN befintlig redigeringsyta att länka till. `avtalatPris`
-   *     har noll UI-konsumenter i hela `src/` — fältet sätts i dag direkt i
-   *     Airtable (`Avtalat pris (kr)`, `fldZHwxOXOQqkFx33`, vanligt talfält).
-   *     Anmälningsdetaljen visar inget pris alls, så en länk dit hade lovat en
-   *     kontroll som inte finns.
-   *   • Inline-sättning kräver INGEN EF-ändring. Hela skrivvägen är redan
-   *     byggd och allowlistad: `RegistreraInbetalningInput.avtalatPris`
-   *     (`Betalningar.schema.ts`) → porten spreadar inputen
-   *     (`betalningsportar.ts`) → `registrera-inbetalning` normaliserar
-   *     (`index.ts` § avtalatPris) → `betalningar-bas.ts` patchar
-   *     `Avtalat pris (kr)`. Det enda som saknades var en kontroll som fyller
-   *     fältet.
+   * MÄTT FÖRE BYGGET: det finns INGEN befintlig redigeringsyta att länka
+   * till. `avtalatPris` hade noll UI-konsumenter i hela `src/` — fältet sattes
+   * i dag direkt i Airtable (`Avtalat pris (kr)`, `fldZHwxOXOQqkFx33`, vanligt
+   * talfält). Anmälningsdetaljen visar inget pris alls, så en länk dit hade
+   * lovat en kontroll som inte finns.
    *
-   * TVÅ KÄNDA GRÄNSER, ÖPPET BOKFÖRDA:
-   *   1. Priset kan bara sättas I SAMMA OPERATION som en inbetalning
-   *      registreras — det finns ingen EF som sätter enbart priset. Vill Lotta
-   *      ändra pris UTAN att bokföra en betalning finns ingen väg än.
-   *   2. Värdet bor inte i Postgres (kolumnen `avtalat_pris` finns inte). Går
-   *      spegelskrivningen till Airtable fel är priset BORTA, och EF:en säger
-   *      det själv i `spegel.skal`. Kvittensen nedan säger det därför rakt ut i
-   *      stället för att kvittera tyst.
+   * ═══════════════════════════════════════════════════════════════════════
+   * PRISET HAR EN EGEN SPARA-KNAPP OCH EN EGEN SKRIVVÄG (Marcus 2026-09-01)
+   * ═══════════════════════════════════════════════════════════════════════
+   * Ordagrant: *"det finns ingen 'spara-knapp' ju?"*, *"'Behåll det gamla
+   * priset' kan ersättas av en Avbrytknapp"*, *"texten 'Sätts på anmälan
+   * när...' kan tas bort"*.
+   *
+   * VAD SOM REVS: priset BUNTADES tidigare med registreringen —
+   * `RegistreraInbetalningInput.avtalatPris` skickades med i samma request och
+   * sattes först när Lotta tryckte "Registrera". Buntningen är BORTA ur denna
+   * yta (fältet finns kvar i schemat och i EF:en, orört — se nedan), och
+   * priset skrivs i stället av `useSattAvtalatPris` direkt när hon trycker
+   * Spara.
+   *
+   * VARFÖR BUNTNINGEN INTE FÅR STÅ KVAR "FÖR SÄKERHETS SKULL": två skrivvägar
+   * till samma fält i samma flöde är inte redundans utan förvirring. Skrivningen
+   * är visserligen idempotent (samma värde två gånger ger samma fält), men
+   * felbilden är det inte: den bundna vägen har en EGEN felsemantik
+   * (`spegel.skrivet === false` ⇒ priset BORTA, se den rivna spegelnoten
+   * nedan) som skulle kunna larma om ett pris som redan sparats korrekt av
+   * Spara-knappen. En väg, en sanning.
+   *
+   * DEN BOKFÖRDA GRÄNSEN "det finns ingen EF som sätter enbart priset" ÄR
+   * FALSIFIERAD och riven. Den stämde för de dedikerade betalnings-EF:erna,
+   * men missade den generiska `update-record`-ytan: operationen
+   * `write-registration-payment-mirror` bär `'Avtalat pris (kr)'` i sin
+   * allowlist mot `Anmälningar`, och allowlisten gatar FÄLT, inte kombination.
+   * Hela mätningen — inklusive den OVERIFIERADE utrullningsfrågan — bor i
+   * `src/data/mutations/avtalatPris.ts` filhuvud.
+   *
+   * KVAR SOM KÄND GRÄNS: värdet bor inte i Postgres (kolumnen `avtalat_pris`
+   * finns inte), utan bara i Airtable. Går skrivningen fel är priset inte satt
+   * — och det syns nu direkt vid knappen (`role="alert"`) i stället för i en
+   * kvittens efter registreringen.
    */
   const [visaPris, setVisaPris] = useState(false);
   const [avtalatPris, setAvtalatPris] = useState('');
+  /**
+   * Priset som FAKTISKT sparats i denna session, i kronor.
+   *
+   * BÄR FÖRDRÖJNINGEN MELLAN SKRIVNING OCH REFETCH. `useSattAvtalatPris`
+   * invaliderar `betalningar.all`, men Airtable-skrivningen plus refetchen tar
+   * tid; utan detta hade utfallsboxen och "kvar att betala" hoppat tillbaka
+   * till det GAMLA priset i det fönstret — direkt efter en kvittens som sagt
+   * att priset sparats. Värdet blir överflödigt så fort refetchen landat (det
+   * är då samma som `rad.betalning.gallandePris`) och kostar inget att låta
+   * stå kvar tills formuläret avmonteras.
+   */
+  const [sparatPris, setSparatPris] = useState<number | null>(null);
+  /** Kvittensen efter en lyckad prissparning. Läses av en `role="status"`. */
+  const [prisKvittens, setPrisKvittens] = useState<string | null>(null);
 
   /** Vad UTFALLSBOXEN visar — `belopp`/`avtalatPris` fördröjda, se `UTFALL_FORDROJNING_MS`. */
   const [visat, setVisat] = useState({ belopp: forifyllt, pris: '' });
@@ -236,6 +296,10 @@ export function RegistreraForm({
   const felId = useId();
 
   const registrera = useRegistreraInbetalning();
+  /* PRISETS EGEN SKRIVVÄG — skild från registreringen sedan 2026-09-01. Se
+     komponentens docblock § PRISET HAR EN EGEN SPARA-KNAPP, och hookens eget
+     filhuvud för allowlist-mätningen och den öppna utrullningsfrågan. */
+  const sattPris = useSattAvtalatPris();
 
   /* ═══════════════════════════════════════════════════════════════════════
    * FOKUS IN VID ÖPPNING — BELOPPSFÄLTET, MED TEXTEN MARKERAD
@@ -295,28 +359,58 @@ export function RegistreraForm({
   // "vad täcker beloppet" är ett besked som bara är intressant när talet är
   // färdigskrivet.
   const fel = rort ? beloppsFel(belopp) : null;
-  const prisFel = visaPris ? beloppsFel(avtalatPris) : null;
-  /** Priset som faktiskt skickas — `null` när ytan är stängd eller fältet tomt. */
-  const prisAttSkicka =
-    visaPris && avtalatPris.trim() !== '' && normaliseraBeloppKlient(avtalatPris) !== null
-      ? avtalatPris
-      : null;
+  const prisFel = visaPris ? prisFelText(avtalatPris) : null;
+  /** Priset Spara-knappen skulle skriva — `null` när fältet är tomt/ogiltigt. */
+  const prisAttSpara =
+    visaPris && avtalatPris.trim() !== '' ? normaliseraBeloppKlient(avtalatPris) : null;
+  const kanSparaPris = prisAttSpara !== null && prisAttSpara >= 0 && !sattPris.isPending;
 
   /* BOXEN RÄKNAR MOT DET AVTALADE PRISET SÅ FORT DET ÄR SKRIVET — annars hade
      Lotta satt priset till 1 000, registrerat 1 000, och ändå fått läsa
      "500 kr kvar att betala" av den ruta som finns för att berätta vad hon
-     just gjort. Överskrivningen är LOKAL och läses aldrig av `spara`: servern
-     får råtexten och normaliserar själv (samma regel som beloppet). */
+     just gjort. Överskrivningen är LOKAL.
+
+     TVÅ KÄLLOR, I DEN ORDNINGEN (sedan Spara-knappen finns): det SPARADE
+     priset vinner, och det som just skrivs i fältet gäller annars. Ordningen
+     spelar roll först i sekunderna efter en sparning — då är fältet tömt och
+     ytan stängd, men refetchen har ännu inte landat, och utan `sparatPris`
+     hade boxen fallit tillbaka till det gamla priset direkt efter kvittensen
+     "Avtalat pris sparat". */
   const visatPrisTalet = visaPris ? normaliseraBeloppKlient(visat.pris) : null;
+  const gallandeOverdrag =
+    sparatPris ?? (visatPrisTalet !== null && visatPrisTalet >= 0 ? visatPrisTalet : null);
   const radForUtfall =
-    visatPrisTalet !== null && visatPrisTalet >= 0
-      ? { ...rad, betalning: { ...rad.betalning, gallandePris: visatPrisTalet } }
+    gallandeOverdrag !== null
+      ? { ...rad, betalning: { ...rad.betalning, gallandePris: gallandeOverdrag } }
       : rad;
 
   const visatTalet = normaliseraBeloppKlient(visat.belopp);
   const utfall =
     visatTalet !== null && visatTalet !== 0 ? beloppsutfall(radForUtfall, visatTalet) : null;
-  const kanSpara = talet !== null && talet !== 0 && prisFel === null && !registrera.isPending;
+  /* PRISFÄLTET GATAR INTE LÄNGRE REGISTRERINGEN. `prisFel === null` stod här
+     medan priset BUNTADES med registreringen — då var en ogiltig prissträng
+     ett fel i den payload som skulle skickas, och att stoppa submit var rätt.
+     Sedan priset har en egen skrivväg är de två operationerna oberoende, och
+     en halvskriven prissträng har inget med en inbetalning att göra. Sista
+     resten av buntningen, riven med den. */
+  const kanSpara = talet !== null && talet !== 0 && !registrera.isPending;
+
+  /**
+   * Har Lotta skrivit ett pris hon INTE tryckt Spara på?
+   *
+   * DEN ENDA VERKLIGA FÄLLAN FRIKOPPLINGEN SKAPAR, och därför bokförd och
+   * hanterad i stället för bortresonerad: under buntningen sparades ett
+   * skrivet pris automatiskt när hon tryckte Registrera. Nu gör det inte det,
+   * och utan en signal hade värdet försvunnit tyst i exakt det ögonblick hon
+   * trodde att allt gick igenom.
+   *
+   * SIGNALEN BLOCKERAR INGENTING — den påstår inte att hon gjort fel, för det
+   * har hon inte: att öppna prisytan och sedan låta bli att spara är ett
+   * giltigt val. Den säger bara vad läget är. Att i stället spärra Registrera
+   * hade byggt tillbaka en koppling mellan de två operationerna, alltså
+   * buntningen igen fast som en grind.
+   */
+  const osparatPris = visaPris && prisAttSpara !== null && prisAttSpara !== sparatPris;
 
   /** Ytan öppnas där den betyder något: en registrering som lämnar en rest. */
   const erbjudPris = utfall?.ton === 'delvis' || visaPris;
@@ -329,11 +423,51 @@ export function RegistreraForm({
     requestAnimationFrame(() => prisRef.current?.focus());
   }
 
+  /**
+   * AVBRYT — stänger prisdelen utan ändring (Marcus: *"'Behåll det gamla
+   * priset' kan ersättas av en Avbrytknapp"*).
+   *
+   * `sparatPris` NOLLSTÄLLS INTE HÄR, och det är avsiktligt: har Lotta redan
+   * tryckt Spara ÄR priset skrivet till anmälan, och ett Avbryt efteråt
+   * stänger fältet — det ångrar ingen skrivning. Att nolla överdraget hade
+   * fått boxen att visa det gamla priset igen fast basen bär det nya.
+   */
   function stangPris() {
     setVisaPris(false);
     setAvtalatPris('');
     setVisat({ belopp, pris: '' });
+    sattPris.reset();
     requestAnimationFrame(() => prisKnappRef.current?.focus());
+  }
+
+  /**
+   * SPARA — skriver priset till anmälan DIREKT, utan att bokföra en betalning.
+   *
+   * FOKUS EFTER LYCKAD SPARNING är trigger-länken, samma mål och samma
+   * `requestAnimationFrame`-form som `stangPris` använder: fältet och
+   * Spara-knappen avmonteras när ytan stängs, så utan en explicit flytt
+   * faller fokus till `document.body`. Kvittensen renderas i en
+   * `role="status"` så skärmläsaren hör utfallet utan att fokus rycks dit.
+   *
+   * VID FEL STÄNGS INGENTING. Fältet, värdet och knappen står kvar så att
+   * Lotta kan försöka igen; felet visas i en `role="alert"` intill knappen.
+   * Att stänga ytan vid fel hade gömt både orsaken och det hon skrev.
+   */
+  function sparaPris() {
+    if (prisAttSpara === null || !kanSparaPris) return;
+    sattPris.mutate(
+      { anmalanRecordId: rad.betalning.anmalanRecordId, avtalatPris: prisAttSpara },
+      {
+        onSuccess: () => {
+          setSparatPris(prisAttSpara);
+          setPrisKvittens(`Avtalat pris sparat: ${visaKronor(prisAttSpara)} kr.`);
+          setVisaPris(false);
+          setAvtalatPris('');
+          setVisat({ belopp, pris: '' });
+          requestAnimationFrame(() => prisKnappRef.current?.focus());
+        },
+      },
+    );
   }
 
   async function spara(skickaNu: boolean) {
@@ -348,7 +482,11 @@ export function RegistreraForm({
       belopp,
       betalsatt,
       betalningsdatum: datum,
-      ...(prisAttSkicka !== null ? { avtalatPris: prisAttSkicka } : {}),
+      /* INGET `avtalatPris` HÄR LÄNGRE (Marcus 2026-09-01) — priset har en
+         egen Spara-knapp och en egen skrivväg. Se komponentens docblock
+         § PRISET HAR EN EGEN SPARA-KNAPP för varför buntningen inte får stå
+         kvar parallellt. Fältet finns kvar i `RegistreraInbetalningInput` och
+         i EF:en, orört: det är UI:ts bruk som rivits, inte kontraktet. */
       ...(noteringAttSkicka !== null ? { notering: noteringAttSkicka } : {}),
     });
 
@@ -366,16 +504,13 @@ export function RegistreraForm({
             `${visaKronor(sparat)} kr registrerat. ${visaKronor(saknasEfter)} kr kvar att betala.`
           : `${visaKronor(sparat)} kr registrerat. Allt betalt.`;
 
-    /* SPEGELFEL ÄR INTE SAMMA SAK FÖR DE TVÅ VÄRDENA — och kvittensen får inte
-       låtsas att det är det. Inbetalningen ligger i Postgres och kommer med
-       nästa spegling; det AVTALADE PRISET finns bara i denna request (ingen
-       `avtalat_pris`-kolumn), så en fallerad patch betyder att priset är BORTA
-       och måste sättas om. EF:en varnar för exakt det i sitt eget docblock. */
-    const spegelnot = resultat.spegel.skrivet
-      ? ''
-      : prisAttSkicka !== null
-        ? ' Basen har inte hunnit uppdateras än, och det avtalade priset sparades INTE — sätt om det.'
-        : ' Basen har inte hunnit uppdateras än.';
+    /* SPEGELNOTEN ÄR NU ENKEL IGEN. Här stod en tvågrenad text som varnade
+       för att det AVTALADE PRISET var borta när spegelskrivningen fallerat —
+       den grenen hörde till buntningen och är riven med den. Priset skrivs
+       sedan 2026-09-01 av `useSattAvtalatPris` i ett EGET anrop med sitt eget
+       felläge vid Spara-knappen, så denna kvittens kan inte längre säga
+       något sant om priset och ska därför inte säga något alls om det. */
+    const spegelnot = resultat.spegel.skrivet ? '' : ' Basen har inte hunnit uppdateras än.';
 
     /* NOTERINGEN KVITTERAS BARA NÄR DEN FALLERAT — och den grenen är död kod
        efter deployen. Skrev Lotta en anteckning men svaret bär `null` tillbaka,
@@ -569,10 +704,16 @@ export function RegistreraForm({
               {erbjudPris &&
                 (visaPris ? (
                   <div className="mt-3 flex flex-col gap-2">
+                    {/* HJÄLPTEXTEN ÄR RIVEN (Marcus: *"texten 'Sätts på
+                        anmälan när...' kan tas bort"*). Den löd "Sätts på
+                        anmälan när betalningen registreras." och beskrev
+                        BUNTNINGEN — en mekanik som inte finns längre. En
+                        hjälptext som förklarar en riven mekanik är värre än
+                        ingen: den lär ut fel modell. Vad knappen gör säger
+                        knappen själv. */}
                     <Input
                       ref={prisRef}
                       label="Avtalat pris i kronor"
-                      description="Sätts på anmälan när betalningen registreras."
                       value={avtalatPris}
                       onChange={setAvtalatPris}
                       onBlur={visaUtfallNu}
@@ -587,18 +728,72 @@ export function RegistreraForm({
                       isInvalid={prisFel !== null}
                       errorMessage={prisFel ?? undefined}
                     />
-                    <AriaButton onPress={stangPris} className="self-start text-small underline">
-                      Behåll det gamla priset
-                    </AriaButton>
+
+                    {/* VIKTERNA ÄR VALDA SÅ ATT PRISET ALDRIG KONKURRERAR MED
+                        REGISTRERA. Formulärets primära handling är submit-
+                        knappen "Registrera" i full storlek; en andra primär i
+                        boxen hade gjort ytan tvåhövdad — exakt det fel Marcus
+                        rev i "EN PRIMÄR, INTE TVÅ" längre ned samma dag.
+
+                        FORMEN ÄR HUSETS FÖR KNAPPAR I EN RUTA:
+                        `secondary/outline` + `ghost`, båda `size="sm"` — samma
+                        par som `BetalningsInkorg`s granskningsrad ("Skicka
+                        igen"/"Ångra") och samma storlek som `MessageBox`
+                        `actions`-slotten bär i `InbetalningsLista`. */}
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button
+                        intent="secondary"
+                        emphasis="outline"
+                        size="sm"
+                        isDisabled={!kanSparaPris}
+                        isLoading={sattPris.isPending}
+                        onPress={sparaPris}
+                      >
+                        Spara
+                      </Button>
+                      <Button intent="ghost" size="sm" onPress={stangPris}>
+                        Avbryt
+                      </Button>
+                      {osparatPris && !sattPris.isPending && (
+                        <span className="text-caption text-text-muted">
+                          Priset är inte sparat än.
+                        </span>
+                      )}
+                    </div>
+
+                    {/* FELET BOR VID KNAPPEN, inte i registreringens kvittens.
+                        Skrivningen är sin egen operation nu, så dess utfall
+                        hör hemma där den avfyrades — och det är den enda
+                        signalen som säger att priset INTE sparades. */}
+                    {sattPris.isError && (
+                      <span role="alert" className="text-(color:--mm-input-error-text) text-small">
+                        {`Priset sparades inte: ${sattPris.error.message}`}
+                      </span>
+                    )}
                   </div>
                 ) : (
-                  <AriaButton
-                    ref={prisKnappRef}
-                    onPress={oppnaPris}
-                    className="mt-2 block text-left text-small underline"
-                  >
-                    Har ni kommit överens om ett nytt pris? Sätt avtalat pris
-                  </AriaButton>
+                  <>
+                    <AriaButton
+                      ref={prisKnappRef}
+                      onPress={oppnaPris}
+                      className="mt-2 block text-left text-small underline"
+                    >
+                      {sparatPris !== null
+                        ? 'Ändra det avtalade priset'
+                        : 'Har ni kommit överens om ett nytt pris? Sätt avtalat pris'}
+                    </AriaButton>
+                    {/* KVITTENSEN LEVER KVAR EFTER ATT YTAN STÄNGTS — den är
+                        det enda beviset Lotta får på att skrivningen gick
+                        igenom, eftersom fältet är tömt och boxens omräkning
+                        ensam inte skiljer "sparat" från "lokalt överdrag".
+                        `role="status"` annonserar utan att rycka fokus, som
+                        just flyttats till länken ovan. */}
+                    {prisKvittens !== null && (
+                      <span role="status" className="mt-1 block text-small">
+                        {prisKvittens}
+                      </span>
+                    )}
+                  </>
                 ))}
             </MessageBox>
           );
