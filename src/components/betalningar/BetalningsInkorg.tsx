@@ -25,6 +25,7 @@ import { useJobbstatus, useRealtidsfel } from '@/data/betalningar/useJobbstatus'
 import { useKoaKvitton } from '@/data/mutations/inbetalningar';
 import { useDataSource } from '@/data/useDataSource';
 import type { Event } from '@/domain/models/Event';
+import type { Jobbstatus } from '@/domain/schemas';
 import { filtreraPersonregister, personVisningsnamn } from '@/lib/person-sok';
 import { queryKeys } from '@/queries/keys';
 import { visaKronor } from './belopp-inmatning';
@@ -97,6 +98,72 @@ import { SwishImport } from './SwishImport';
  * samma localStorage-nyckel, samma standardvärde, samma lokala datum. */
 
 type VantandeKvitto = { inbetalningId: string; namn: string; belopp: number };
+
+/**
+ * EN rad i granskningsblocket — allt Lotta registrerat i DENNA session.
+ *
+ * SKILD FRÅN `VantandeKvitto`, med avsikt. `vantande` är en KÖ: den bär bara
+ * det som ska skickas, och den TÖMS när knappen trycks. Granskningsblocket är
+ * en LOGG: den bär varje registrering, även de utan kvitto och de som redan
+ * gått i väg, och den töms aldrig under sessionen. Att låta kön bära båda
+ * rollerna hade betytt att raderna försvann i samma tryck som skickade dem —
+ * alltså precis när Lotta vill se vad som hände.
+ */
+type SessionsRad = {
+  inbetalningId: string;
+  namn: string;
+  belopp: number;
+  betalsatt: Betalsatt;
+  /** Lottas kryss vid registreringen. Falskt ⇒ raden ska aldrig få ett kvitto. */
+  medKvitto: boolean;
+};
+
+/** Vad granskningsraden säger om kvittot, plus om raden får erbjudas omkörning. */
+type Kvittolage = { text: string; fel: boolean };
+
+/**
+ * Kvittots läge för EN registrerad rad, läst ur de TVÅ källor som redan finns
+ * — ingen ny state, ingen ny serverlogik (C1 är en presentationsyta).
+ *
+ * ORDNINGEN ÄR EN PRIORITETSORDNING, inte en slump:
+ *  1. INGET KVITTO vinner allt. Kryssrutan var ur vid registreringen, och då
+ *     ska raden aldrig säga något om skickning.
+ *  2. KÖN (`vantande`) går före jobbet. Ligger raden i den session-lokala kön
+ *     har Lotta ännu inte tryckt på knappen — jobbet vet inte om den.
+ *  3. JOBBRADEN är sanningen om arbetet (ADR-129 beslut 2, se
+ *     `JobbRadSchema`s docblock). Den nås på `objektId`, som ÄR
+ *     inbetalningens id.
+ *  4. FALLBACKEN SÄGER ALDRIG "SKICKAT". Raden kan ha köats i ett TIDIGARE
+ *     jobb i samma session (varje "Registrera och skicka" skapar ett nytt
+ *     jobb och `jobbId` pekar bara på det senaste), och då finns ingen jobbrad
+ *     att läsa. "Köat" är då allt vi vet — att skriva "skickat" hade varit ett
+ *     påstående utan täckning.
+ */
+function kvittolage(
+  rad: SessionsRad,
+  vantande: readonly VantandeKvitto[],
+  jobbrader: readonly Jobbstatus['rader'][number][],
+): Kvittolage {
+  if (!rad.medKvitto) return { text: 'Inget kvitto', fel: false };
+  if (vantande.some((v) => v.inbetalningId === rad.inbetalningId)) {
+    return { text: 'Kvitto väntar på att skickas', fel: false };
+  }
+
+  const jobbrad = jobbrader.find((j) => j.objektId === rad.inbetalningId);
+  if (jobbrad?.status === 'skickat') {
+    return {
+      text: jobbrad.kvittonummer ? `Kvitto skickat · ${jobbrad.kvittonummer}` : 'Kvitto skickat',
+      fel: false,
+    };
+  }
+  if (jobbrad?.status === 'pagar') return { text: 'Kvitto skickas ...', fel: false };
+  if (jobbrad?.status === 'vantar') return { text: 'Kvitto köat', fel: false };
+  if (jobbrad?.status === 'fel') {
+    return { text: `Kvittot kunde inte skickas: ${jobbrad.skal ?? 'okänt skäl'}`, fel: true };
+  }
+
+  return { text: 'Kvitto köat', fel: false };
+}
 
 /* ═══════════════════════════ FILTRERINGENS AXLAR ═══════════════════════════
  *
@@ -184,6 +251,8 @@ export function BetalningsInkorg() {
   const [oppenRad, setOppenRad] = useState<string | null>(null);
   const [kvittenser, setKvittenser] = useState<Record<string, string>>({});
   const [vantande, setVantande] = useState<VantandeKvitto[]>([]);
+  /** Granskningsblockets logg — se `SessionsRad` för varför den inte är kön. */
+  const [registrerade, setRegistrerade] = useState<SessionsRad[]>([]);
   const [jobbId, setJobbId] = useState<string | undefined>(undefined);
   const [betalsatt, setBetalsatt] = useState<Betalsatt>(lasSenasteBetalsatt);
   // [TASK-346.10] Importytan bor HÄR, inte på en egen route - kortets egen
@@ -467,6 +536,21 @@ export function BetalningsInkorg() {
     setOppenRad(null);
     sparaBetalsatt(betalsatt);
 
+    /* GRANSKNINGSLOGGEN FÅR VARJE REGISTRERING, inte bara de med kvitto
+       (Marcus dom 2026-09-01: *"rader för varje betalning hon registrerar"*).
+       Beloppet är SERVERNS (`resultat.belopp` läser `inbetalning.belopp`), inte
+       fältets råtext — samma regel kvittensen redan följer. */
+    setRegistrerade((tidigare) => [
+      ...tidigare,
+      {
+        inbetalningId: resultat.inbetalningId,
+        namn: resultat.namn,
+        belopp: resultat.belopp,
+        betalsatt,
+        medKvitto: resultat.medKvitto,
+      },
+    ]);
+
     if (resultat.medKvitto && resultat.skickaNu) {
       koa.mutate(
         { inbetalningIds: [resultat.inbetalningId] },
@@ -500,6 +584,15 @@ export function BetalningsInkorg() {
    */
   function vidImporterade(kvitton: VantandeKvitto[]) {
     setVantande((tidigare) => [...tidigare, ...kvitton]);
+    /* Importerade rader hör hemma i SAMMA granskningsblock som de handskrivna
+       — knappen under blocket är redan en enda för båda (se `vidImporterade`s
+       docblock). Betalsättet är det `SwishImport` fick som prop och registrerade
+       med, alltså detta värde; importen bär inget eget. Kvitto per definition:
+       raderna landar i `vantande`, som bara bär det som ska skickas. */
+    setRegistrerade((tidigare) => [
+      ...tidigare,
+      ...kvitton.map((k) => ({ ...k, betalsatt, medKvitto: true })),
+    ]);
   }
 
   function stangImport() {
@@ -558,6 +651,21 @@ export function BetalningsInkorg() {
      `alla` läses de i den ordning `grupperaPerEvent` sorterat dem: kommande
      närmast först, därefter tidigare senast först. */
   const grupper: EventGrupp[] = [...vy.kommande, ...vy.tidigare];
+
+  /* JOBBRADER SOM GRANSKNINGSBLOCKET INTE REDAN VISAR.
+     Sedan C1 bär varje rad Lotta registrerat i denna session sin egen
+     kvittostatus i granskningsblocket, med namn och belopp — alltså det den
+     gamla jobbrads-listan sade, fast läsbart ("Kvitto utan nummer än"
+     identifierar ingen). Att visa båda hade sagt samma sak två gånger.
+
+     LISTAN RIVS ÄNDÅ INTE: `jobbstatus(null)` är det SENASTE jobbet för hela
+     appen, och det kan ha startats någon annanstans (en annan flik, en annan
+     session — se filens docblock § "ETT FÄRDIGT JOBB FRÅN EN TIDIGARE
+     SESSION"). Ett sådant jobbs rader finns inte i vår logg, och de ska
+     fortfarande synas med sin "Skicka igen". */
+  const ovrigaJobbrader = (jobb.data?.rader ?? []).filter(
+    (jobbrad) => !registrerade.some((post) => post.inbetalningId === jobbrad.objektId),
+  );
 
   return (
     <section className="flex flex-col gap-4">
@@ -722,11 +830,88 @@ export function BetalningsInkorg() {
         />
       )}
 
-      {vantande.length > 0 && (
-        <div className="px-4">
-          <Button intent="success" onPress={skickaKvitton} isLoading={koa.isPending}>
-            {`Skicka ${vantande.length} ${vantande.length === 1 ? 'kvitto' : 'kvitton'}`}
-          </Button>
+      {/* ═══════════════════════ GRANSKNINGSBLOCKET (C1) ═══════════════════════
+          Marcus dom 2026-09-01, ordagrant: *"När man trycker 'Registrera' så
+          kommer knappen 'Skicka 1 kvitto'. Det räcker ju inte. Vi behöver ju ha
+          en granskningsvy … ett 'granskningsblock' och rader för varje betalning
+          hon registrerar"*.
+
+          Här stod tidigare EN naken knapp. En knapp som säger "Skicka 8 kvitton"
+          utan att visa VILKA åtta är inte granskningsbar — PRD berättelse 7 + 8
+          lovar "registrera alla åtta först, GRANSKA, tryck EN gång", och
+          granskningssteget saknade yta.
+
+          INGEN NY SERVERLOGIK, INGEN NY KÖ. Blocket är en presentationsyta över
+          state som redan fanns: `registrerade` (sessionsloggen), `vantande`
+          (kön) och `jobb.data.rader` (jobbets sanning). `skickaKvitton`,
+          `koa.mutate` och idempotensen per inbetalning (ADR-128) är byte för
+          byte orörda — avbrottskontraktet är alltså detsamma som före passet.
+
+          DEN KÄNDA GRÄNSEN ÄR OFÖRÄNDRAD och ärvs, inte utökas: stängs fliken
+          innan knappen tryckts är både kön och loggen borta (båda är
+          session-lokala). Ett durabelt svar kräver ett fält på `OppenBetalning`,
+          se filens huvud-docblock § "SKICKA N KVITTON".
+
+          RADFORMEN ÄR INBETALNINGSRADERNAS (`InbetalningsLista.tsx` § KORTYTAN):
+          vitt kort på tonad botten, primärled i `text-body`-vikt, sekundärled
+          som ETT `·`-svep i `text-caption text-text-muted`. TVÅ MEDVETNA
+          AVSTEG: (a) primärledet är NAMNET och inte beloppet — det är personen
+          som skiljer raderna åt här, medan förlagan listar en enda persons
+          betalningar; (b) ingen ledande glyf — beloppet bär raden och betalsättet
+          står i klartext i sekundärledet. */}
+      {registrerade.length > 0 && (
+        <div className="flex flex-col gap-3 px-4">
+          <h2 className="font-semibold text-lg">Registrerat nu</h2>
+          <ul className="-mx-4 flex flex-col gap-2 px-4">
+            {registrerade.map((post) => {
+              const lage = kvittolage(post, vantande, jobb.data?.rader ?? []);
+              return (
+                <li key={post.inbetalningId}>
+                  <div className="flex flex-wrap items-start justify-between gap-2 rounded-2xl border border-transparent bg-surface p-3 contrast-more:border-border-strong">
+                    <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
+                      <span className="font-medium text-body">{post.namn}</span>
+                      <span className="w-full text-caption text-text-muted">
+                        {[`${visaKronor(post.belopp)} kr`, post.betalsatt, lage.text].join(' · ')}
+                      </span>
+                    </span>
+                    {/* SKICKA IGEN, bara på en FALLERAD rad — samma regel och
+                        samma mutation (`koaKvitton`, inte `skickaKvittoIgen`)
+                        som jobbrads-listan nedan bär; se dess docblock för
+                        varför. En rad som aldrig fallerat får ingen knapp. */}
+                    {lage.fel && (
+                      <Button
+                        intent="secondary"
+                        emphasis="outline"
+                        size="sm"
+                        isDisabled={koa.isPending}
+                        onPress={() =>
+                          koa.mutate(
+                            { inbetalningIds: [post.inbetalningId] },
+                            { onSuccess: (svar) => setJobbId(svar.jobbId ?? jobbId) },
+                          )
+                        }
+                      >
+                        Skicka igen
+                      </Button>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ul>
+          {/* KNAPPEN HÖR TILL BLOCKET, inte till sidan: den skickar exakt de
+              rader som står ovanför med "väntar på att skickas". Den försvinner
+              när kön är tom — loggen står kvar. */}
+          {vantande.length > 0 && (
+            <Button
+              intent="success"
+              onPress={skickaKvitton}
+              isLoading={koa.isPending}
+              className="self-start"
+            >
+              {`Skicka ${vantande.length} ${vantande.length === 1 ? 'kvitto' : 'kvitton'}`}
+            </Button>
+          )}
         </div>
       )}
 
@@ -735,10 +920,18 @@ export function BetalningsInkorg() {
           <MessageBox intent={utfall.intent} title={utfall.rubrik}>
             {utfall.klass === 'allt-skickat'
               ? 'Alla kvitton gick fram.'
-              : 'Raderna nedan visar utfallet per kvitto.'}
+              : /* VAR utfallet per kvitto står beror på om raderna är VÅRA.
+                   Sedan C1 bär granskningsblocket ovan status per rad för allt
+                   Lotta registrerat i denna session, och då finns inga rader
+                   kvar under rutan att peka på. Texten sade tidigare
+                   ovillkorligt "Raderna nedan" — vilket blivit en hänvisning
+                   till en tom lista i det vanligaste fallet av alla. */
+                ovrigaJobbrader.length > 0
+                ? 'Raderna nedan visar utfallet per kvitto.'
+                : 'Utfallet per kvitto står på raderna ovan.'}
           </MessageBox>
           <ul className="flex flex-col gap-1 px-4">
-            {(jobb.data?.rader ?? []).map((jobbrad) => (
+            {ovrigaJobbrader.map((jobbrad) => (
               <li
                 key={jobbrad.id}
                 className="flex flex-wrap items-center justify-between gap-2 rounded bg-bg-muted px-3 py-2 text-small"
