@@ -5,6 +5,20 @@
   --mm-primary-tint: var(--p-gold-100);
   --mm-primary-pale: var(--p-gold-300);
   --mm-primary-muted: var(--p-gold-400);
+  /* Guld-kant som BÄR EN YTA ENSAM — ≥3:1 mot vit botten (WCAG 1.4.11-golvet).
+     Samma skäl och samma form som --mm-border-field nedan, bara i primärkulören:
+     en kant som är ytans enda avgränsning måste klara golvet, medan en kant som
+     bara förstärker en tonad fyllnad inte gör det.
+
+     MÄTT (sRGB mot #ffffff), och det är därför rollen behövdes: gold-300 1,43:1 ·
+     gold-400 2,33:1 · gold-500 (--mm-primary) 2,57:1 — INGEN av de befintliga
+     primär-rollerna når 3:1. gold-600 ger 3,43:1.
+
+     Samma primitiv som --mm-primary-hover pekar på, och det är avsiktligt: två
+     semantiska ROLLER får dela värde (jfr --mm-surface-inverse/--mm-text nedan).
+     Att låna hover-rollen för en kant hade i stället gjort varje framtida
+     hover-justering till en tyst kantändring. */
+  --mm-primary-border: var(--p-gold-600);
 
   /* ── Accent (CTA / handling) ── */
   --mm-accent: var(--p-copper-500);

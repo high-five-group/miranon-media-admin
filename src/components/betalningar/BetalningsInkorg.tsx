@@ -1055,11 +1055,16 @@ export function BetalningsInkorg() {
            HERO-RESERVATIONEN GÄLLER INTE HÄR — mätt, inte antaget.
            `NastaEvent.tsx` bär `bg-primary-tint` med en not om att vara Hems
            enda hero. Den reservationen handlar om HERO-ROLLEN på Hem, inte om
-           tonen: `bg-primary-tint` används redan på sex ytor utanför Hem
-           (`PersonDetail.tsx:1144` block, `EventCheckin.tsx:439` kort,
-           `PersonsList.tsx` rader, `PrototypeSwitcher.tsx`). Tonen är alltså
-           husets tonala yta, och betalningssidan har ingen hero att konkurrera
-           med.
+           tonen: `bg-primary-tint` används på FEM ytor utanför Hem
+           (`EventCheckin.tsx:439` kort, `PersonsList.tsx` rader ×2,
+           `PrototypeSwitcher.tsx` ×2). Tonen är alltså husets tonala yta, och
+           betalningssidan har ingen hero att konkurrera med.
+
+           (Räkningen sade SEX när detta skrevs. `PersonDetail.tsx`s "Just
+           nu"-block lämnade tinten senare samma dag — Marcus: fonden *"skär
+           sig med färgerna som event-raderna har"* — och bär nu guld-KONTUR på
+           vit botten i stället. Talet är rättat i stället för att stå kvar som
+           en tyst osanning; slutsatsen är oförändrad.)
 
            MÄTVÄRDEN (WCAG 2, sRGB, mot `--p-gold-100` #fbf3e0):
              `--mm-text` #242424 ......... 14,04:1  (var 15,52:1 mot vitt)

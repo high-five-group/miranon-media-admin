@@ -1141,7 +1141,38 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
         <h2 id="proto-d-nulage" className="px-4 font-semibold text-lg">
           Just nu
         </h2>
-        <div className="flex flex-col gap-3 rounded-2xl border border-transparent bg-primary-tint px-4 py-4 contrast-more:border-border-strong">
+        {/* ═══ GULD-KONTUR, INTE GULD-FOND (Marcus dom 2026-09-01) ═══
+            Ordagrant: *"'Just nu-blocket' på persondetalj-sidan måste justeras,
+            det funkar inte att ha gul bakgrund på det, det skär sig med
+            färgerna som 'event-raderna' har. Jag tror det bästa är att kanske
+            enbart ha gul kontur."*
+
+            KROCKEN VAR ÄKTA, och den satt i lagren: blocket bar `bg-primary-tint`
+            (#fbf3e0, varm gul) medan raderna INUTI bär `bg-bg-emphasized`
+            (#edeee9, kall neutralgrå) plus en KURSFÄRGAD vänsterkant (blå, grön,
+            koppar — `kursfargForKurs`). Tre kulörfamiljer på tre lager ovanpå
+            varandra. Fonden var det enda av de tre som inte bar information.
+
+            NU: vit botten + guld-kontur. Raderna är ORÖRDA — grå yta,
+            kursfärgad kant, hover-formen, allt — det var aldrig de som var fel.
+
+            TOKEN-NIVÅN ÄR VALD MED AVSIKT: `bg-primary-tint` stod som en LOKAL
+            utility-klass här, inte som en delad komponent-token, så bytet
+            träffar exakt detta block. Hems "Nästa event"-hero bär sin egen
+            `bg-primary-tint` och är ORÖRD (verifierat: tonen har sex
+            konsumenter, var och en med egen klass).
+
+            KANTEN ÄR EN NY SEMANTISK ROLL, `--mm-primary-border`
+            (`semantic.css`), och den behövdes: en kant som bär en yta ENSAM
+            måste klara 1.4.11-golvet 3:1, och INGEN befintlig primär-roll gör
+            det mot vitt — gold-300 1,43:1 · gold-400 2,33:1 · `--mm-primary`
+            2,57:1. Den nya rollen ger 3,43:1. Exakt samma resonemang som
+            `--mm-border-field` redan bär för fältkanter.
+
+            `contrast-more:border-text` (15,52:1): i högkontrastläge viker
+            identiteten för läsbarheten — guldet är en kulör, kanten är en
+            gräns, och i det läget är gränsen viktigare. */}
+        <div className="flex flex-col gap-3 rounded-2xl border border-primary-border bg-surface px-4 py-4 contrast-more:border-text">
           {aktivaAnmalningar.length > 0 ? (
             <>
               <p className="font-semibold text-body">
@@ -1214,9 +1245,14 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
                   // transparent)` (semantic.css 46) och används som skrim av
                   // `ToggleButtonGroup.tsx:73`. Den token kan inte användas rakt
                   // av här — den ERSÄTTER bakgrunden, så skrimmet hade lagt sig
-                  // mot kortets guld-tint i stället för mot den grå raden och
+                  // mot BLOCKETS egen yta i stället för mot den grå raden och
                   // ljusnat igen. Samma 6 % blandas därför direkt in i
                   // `bg-emphasized`. Steget är appens, ytan är radens.
+                  //
+                  // (Noten sade "kortets guld-tint" fram till 2026-09-01, då
+                  // fonden byttes mot en guld-KONTUR på vit botten — se
+                  // blockets egen not ovan. Resonemanget är oförändrat: felet
+                  // vore fortfarande att skrimmet läggs mot fel lager.)
                   const radKlass = 'flex items-center gap-3';
                   return (
                     <li key={grupp.nyckel} className="flex flex-col py-1.5 first:pt-0">
