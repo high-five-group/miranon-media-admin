@@ -237,18 +237,105 @@ export function sorteraInbetalningar(inbetalningar: readonly Inbetalning[]): Inb
 /* ═══════════════════════════ RADENS EGEN TEXT ═══════════════════════════ */
 
 /**
- * Radens sammanfattning: belopp, betalsätt och datum, i den ordningen.
+ * Radens NYCKELTAL: beloppet, ensamt.
  *
  * ÅTERBETALNINGEN SÄGS RAKT UT i stället för att visas som ett minustecken
  * ensamt. Ett `-500` i en lista med positiva tal läses lätt som ett fel;
  * ordet gör handlingen entydig (PRD berättelse 18).
+ *
+ * SKILD FRÅN METADATAN SEDAN 2026-09-01 (Marcus dom över radens layout, se
+ * `InbetalningsLista.tsx` § RADENS ANATOMI). Raden bar tidigare alla tre
+ * leden som EN sträng, vilket gjorde beloppet omöjligt att ge egen vikt.
+ */
+export function inbetalningsBelopp(inbetalning: Inbetalning): string {
+  const belopp = visaKronor(Math.abs(inbetalning.belopp));
+  return inbetalning.typ === 'aterbetalning' ? `${belopp} kr återbetalt` : `${belopp} kr`;
+}
+
+/**
+ * BELOPPSKOLUMNENS värde — beloppet med DATANS EGET TECKEN.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * VARFÖR DEN LEVER BREDVID `inbetalningsBelopp` OCH INTE I STÄLLET FÖR DEN
+ * ═══════════════════════════════════════════════════════════════════════════
+ * De två svarar på olika frågor och har olika publik:
+ *
+ *   • `inbetalningsBelopp` ("500 kr återbetalt") bär radens TILLGÄNGLIGA
+ *     namn via `inbetalningsText` — ⋯-menyns etikett, panelernas `legend`
+ *     och `aria-label`. Där är ORDET rätt: ett minustecken är typografi, och
+ *     hur en skärmläsare uttalar U+2212 varierar mellan uppläsare och
+ *     röstsyntes. Regeln har ett eget test med negativ kontroll
+ *     (`betalningar-ytor.test.ts` § "återbetalning SÄGS ut i ord").
+ *
+ *   • Denna funktion bär den SYNLIGA högerkolumnen sedan bank-anatomin
+ *     (2026-09-01): en högerställd sifferpelare där tecknet är det som
+ *     skiljer ett uttag från en insättning på ett ögonkast. Ett efterhängt
+ *     ord hade brutit pelaren — kolumnen hade blivit olika bred på varje rad
+ *     och högerkanten hade slutat vara en linje.
+ *
+ * TECKNET ÄR MÄTT, INTE PÅHITTAT. `InbetalningSchema.belopp` bär kommentaren
+ * "Kronor. Negativt för en återbetalning." (`Betalningar.schema.ts`), och
+ * `visaKronor` formaterar via `toLocaleString('sv-SE')`, som skriver
+ * TYPOGRAFISKT minus U+2212 plus U+00A0 som tusentalsavgränsare — verifierat
+ * i node mot den installerade ICU:n: `visaKronor(-1000)` ⇒ `"−1 000"`
+ * (kodpunkter `2212 31 a0 30 30 30`), inte ASCII-bindestrecket `-`.
+ *
+ * PRD BERÄTTELSE 18 ÄR INTE RIVEN, DEN ÄR FLYTTAD. Invändningen mot ett
+ * ensamt minustecken ("ett `-500` i en lista med positiva tal läses lätt som
+ * ett fel") gäller ordagrant fortfarande — och det är därför raden ALDRIG
+ * bär tecknet ensamt: `inbetalningsUnderdelar` nedan sätter ordet
+ * "Återbetalning" först i radens sekundärled på exakt de rader tecknet är
+ * negativt. Ordet finns kvar; det har bara flyttat från sifferkolumnen till
+ * textkolumnen, där det inte bryter pelaren.
+ */
+export function inbetalningsBeloppKolumn(inbetalning: Inbetalning): string {
+  return `${visaKronor(inbetalning.belopp)} kr`;
+}
+
+/**
+ * Radens SEKUNDÄRLED i bank-anatomin, utan kvittostatusen (den fogar
+ * konsumenten på sist — samma skäl som `inbetalningsMetadelar` returnerar
+ * delar och inte en färdig sträng).
+ *
+ * BETALSÄTTET SAKNAS HÄR MED AVSIKT: sedan bank-anatomin är det radens
+ * TITELLED (`InbetalningsLista.tsx` § RADENS ANATOMI), alltså det översta,
+ * viktade ledet i vänsterkolumnen — precis som bankens transaktionslista
+ * ställer mottagaren överst och detaljerna under. Att upprepa det här hade
+ * gett "Swish · Swish · 2026-08-30".
+ *
+ * "ÅTERBETALNING" STÅR FÖRST NÄR TYPEN ÄR DET, och det är bärande, inte
+ * dekoration: det är ordet som gör det negativa beloppet i högerkolumnen
+ * entydigt (se `inbetalningsBeloppKolumn` ovan). Utan det hade raden visat
+ * ett ensamt minustecken — exakt det PRD berättelse 18 avvisar.
+ */
+export function inbetalningsUnderdelar(inbetalning: Inbetalning): string[] {
+  const datum = inbetalning.betalningsdatum ?? 'datum okänt';
+  return inbetalning.typ === 'aterbetalning' ? ['Återbetalning', datum] : [datum];
+}
+
+/**
+ * Radens SEKUNDÄRA led: betalsätt och datum, i den ordningen.
+ *
+ * Returnerar delarna var för sig i stället för en färdig sträng — konsumenten
+ * fogar ihop dem med sina egna (kvittostatusen), och en halvfogad sträng som
+ * ska fogas igen är en inbjudan till dubbla avdelare.
+ */
+export function inbetalningsMetadelar(inbetalning: Inbetalning): string[] {
+  return [inbetalning.betalsatt, inbetalning.betalningsdatum ?? 'datum okänt'];
+}
+
+/**
+ * Radens sammanfattning: belopp, betalsätt och datum, i den ordningen.
+ *
+ * KOMPONERAD UR DE TVÅ HÄRLEDNINGARNA OVAN, aldrig en tredje formulering:
+ * strängen bär numera radens TILLGÄNGLIGA namn (menyns etikett, panelernas
+ * legend/aria-label) medan ytan renderar leden var för sig. Två oberoende
+ * uttryck för samma mening hade kunnat glida isär utan att någon mekanism
+ * märkte det — och det är precis den skillnaden en skärmläsaranvändare
+ * skulle drabbas av först.
  */
 export function inbetalningsText(inbetalning: Inbetalning): string {
-  const belopp = visaKronor(Math.abs(inbetalning.belopp));
-  const ord = inbetalning.typ === 'aterbetalning' ? 'återbetalt' : 'kr';
-  const huvud = inbetalning.typ === 'aterbetalning' ? `${belopp} kr ${ord}` : `${belopp} ${ord}`;
-  const datum = inbetalning.betalningsdatum ?? 'datum okänt';
-  return `${huvud} · ${inbetalning.betalsatt} · ${datum}`;
+  return [inbetalningsBelopp(inbetalning), ...inbetalningsMetadelar(inbetalning)].join(' · ');
 }
 
 /* ═══════════════════════════ PERSONENS ÖVERSIKT ═══════════════════════════ */

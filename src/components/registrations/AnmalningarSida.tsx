@@ -755,6 +755,21 @@ export function AnmalningarSida({
           totalt={rader.length}
           enhet={ANMALNINGS_ENHET}
           triggerRef={filterKnappRef}
+          /* SAMMA BREDD SOM LISTAN OCH MENYBAREN (Marcus dom 2026-09-01:
+             *"hela listan är för smal, det ska vara lika bred som menybaren.
+             Även filtreringskomponenten … även på anmälnings-sidan"*).
+
+             MÄTT: `<main>` bär `max-w-[600px] px-4` (AppShell), alltså en inre
+             kolumn på 568 px, och `TabBar` speglar den pixel för pixel med
+             `max-w-[568px]`. Ankaret ovan lägger ett ANDRA `px-4`, så allt
+             inuti det stod på 536 px. Listan flydde redan med `-mx-4` (se
+             `<ul>` nedan); filterraden gjorde det inte, och stod därför 32 px
+             smalare än listan den filtrerar.
+
+             `-mx-4` ÄR HUSETS FLYKTIDIOM och tar bort exakt det andra lagret
+             — inte det första. Bredden blir alltså menybarens vid varje
+             viewport, inte en ny hårdkodad siffra. */
+          className="-mx-4"
         ></FilterRad>
         <p className="sr-only" aria-live="polite">
           {periodAnnouncement}

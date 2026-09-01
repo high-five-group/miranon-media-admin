@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-31
+updated: 2026-09-01
 review_by: 2027-01-02
 status: stable
 ---
@@ -77,6 +77,22 @@ PRD TASK-346 beslut 8: "en typ, inget ramverk").
 *Undvik:* inbetalning (det är vad transaktionen BLIR, inte vad den är),
 betalning, bankrad (talspråk).
 *I koden:* `Transaktion` (`src/domain/models/Transaktion.ts`).
+
+**Kontoutdrag** — den fil Lotta laddar ner ur internetbanken och matar in i
+appen: en rad per *Transaktion*. Termen är UI-språket sedan 2026-09-01 (Marcus
+ordagrant: *"'bankrapport' är typiskt dålig svensk översättning av 'bank
+statement'"*) och står på öppningsknappen ("Importera kontoutdrag"), på
+dialogens rubrik och i dialogens tillgängliga namn — `aria-label` räknas som
+UI-text, den ÄR ytans namn. Swish-hänvisningen står kvar i brödtexten; utan den
+vet Lotta inte vilken av bankens filer som avses. Kvalificeringen "per bank" är
+struken på Marcus order (*"Ta bort 'per bank', de har bara en bank."*) — koden
+bär visserligen ett bankmappnings-minne per banknamn, men generaliteten fick en
+engångsuppgift att låta återkommande.
+*Undvik:* bankrapport (den ersatta termen), rapportfil (den ersatta
+knapptexten — knappen heter "Ladda upp fil"), bank statement.
+*I koden:* identifierarna är ORÖRDA — `SwishImport`, `bankimport-*`. Docblocket
+i `bankimport-parser.ts` använder fortfarande "bankrapport" om FORMATET; det är
+kod-intern prosa, inte UI-text.
 
 **Användarinbjudan** — en engångs- och tidsbegränsad inbjudan som ger en
 människa ett konto i appen, med roll och e-postadress låsta av inbjudan
@@ -597,3 +613,44 @@ skrivningen går först när fönstret löpt ut (grillad samsyn S103 Del 15).
 incheckade; ångra efter kvittensfönstret bor här (bocka ur = vanlig
 statusskrivning tillbaka).
 *Undvik:* klarlista, historik (upptaget av andra ytor).
+
+**Kvar att betala** — det belopp som återstår på en anmälan: gällande pris
+minus summan av dess inbetalningar. Kanoniserad UI-term över SAMTLIGA
+betalningsytor 2026-09-01 (Marcus-iterationen) och ersätter både *Saknas* och
+*öppen/öppna*. Böjs efter plats: som ETIKETT står termen först ("Kvar att
+betala · 1 500 kr"), i LÖPANDE TEXT står beloppet först ("1 500 kr kvar att
+betala") — etikett-först läser annars som en tabellrad som hamnat i en mening.
+Noll uttrycks **"Inget kvar att betala"**, som är ett svagare påstående än
+"Allt betalt" och därför det som används när priset kan vara okänt: basens
+`Saknas (kr)` är BLANK när formeln inte kan räkna fram ett pris, och
+`BLANK() > 0` är falskt i Airtable. De två meningarna hålls isär med avsikt —
+ytan påstår aldrig det starkare av dem om ett okänt pris.
+*Undvik:* Saknas (den ersatta etiketten), öppen/öppna betalning (den ersatta
+jargongen — i UI heter det numera *kvarvarande betalning*), obetalt, restskuld,
+"täcker hela priset" (den ersatta heltäcknings-meningen; den mätte en
+täckningsgrad mot ett pris Lotta inte har framför sig).
+*I koden:* identifierarna är ORÖRDA — `saknas`, `saknasTotalt`,
+`useOppnaBetalningar`, `OppenBetalning`, `queryKeys.betalningar.oppna`, och
+basens fält `Saknas (kr)`. Två strängar med SAMMA ord men annan betydelse är
+också orörda: "Saknas" som tomvärdesmarkör för e-post i deltagarregistret, och
+"Öppna" som VERB ("Öppna detaljer", "Öppnar kvittot …") — det är inte
+domänjargong, det är vad knappen gör.
+
+**Granskningsblocket** — betalningsinkorgens block över de betalningar Lotta
+registrerat i den PÅGÅENDE sessionen: en rad per registrering (namn · belopp ·
+betalsätt · kvittostatus) med "Skicka N kvitton" som blockets egen avslutande
+handling. Det är svaret på PRD-berättelse 7–8 — registrera alla åtta först,
+GRANSKA, tryck EN gång — och ersätter den nakna knapp som stod här förut
+("Skicka 8 kvitton" utan att visa VILKA åtta är inte granskningsbart).
+Blockets **logg är skild från kvittokön**, med avsikt: kön bär bara det som ska
+skickas och TÖMS vid tryck, medan loggen bär varje registrering (även de utan
+kvitto och de som redan gått i väg) och töms aldrig under sessionen — hade kön
+burit båda rollerna försvunnit raderna i samma tryck som skickade dem. *Ångra*
+på en rad ångrar REGISTRERINGEN, inte raden: inbetalningen ligger i ledgern och
+kvittot i kön, så att bara plocka bort posten hade varit en lögn.
+Session-lokalt i strikt mening — en stängd flik tar kön med sig.
+*Undvik:* kvittokö (kön är den andra halvan, se ovan), granskningsvy (blocket
+är en del av inkorgen, inte en egen vy), "Registrerat nu" (den rivna rubriken;
+blockets tillgängliga namn bärs numera av behållarens `aria-label`).
+*I koden:* `SessionsRad` + `registrerade` i
+`src/components/betalningar/BetalningsInkorg.tsx`.

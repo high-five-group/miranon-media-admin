@@ -427,7 +427,10 @@ export function beloppsutfall(rad: InkorgsRad, belopp: number): Beloppsutfall {
   if (nyttSaknas < 0) {
     return {
       ton: 'over',
-      text: `${visat} kr är ${visaKronor(Math.abs(nyttSaknas))} kr mer än vad som saknas.`,
+      // Samma termbyte som nedan: verbet "saknas" är den gamla domäntermens
+      // form och byts med den, så överbetalningen mäts mot samma begrepp som
+      // resten av ytorna namnger.
+      text: `${visat} kr är ${visaKronor(Math.abs(nyttSaknas))} kr mer än vad som är kvar att betala.`,
     };
   }
 
@@ -435,17 +438,39 @@ export function beloppsutfall(rad: InkorgsRad, belopp: number): Beloppsutfall {
     if (tvaFack && summaInbetalt < anmalningsavgift) {
       return { ton: 'tacker', text: `${visat} kr täcker anmälningsavgift + slutbetalning.` };
     }
-    return { ton: 'tacker', text: `${visat} kr täcker hela priset.` };
+    // HELTÄCKNINGEN SÄGS SOM ETT UTFALL, INTE SOM EN TÄCKNINGSGRAD (Marcus dom
+    // 2026-09-01): *"'500 kr täcker hela priset' tycker jag är otydlig. kanske
+    // 'Inget kvar att betala' är tydligare?"*.
+    //
+    // "täcker hela priset" tvingade Lotta att själv räkna ut vad det BETYDER —
+    // beloppet ställdes mot ett pris hon inte har framför sig, och slutsatsen
+    // ("alltså är hon klar") lämnades åt henne. Den nya formen säger slutsatsen
+    // direkt, med SAMMA domänterm som resten av betalningsytorna redan bär:
+    // "kvar att betala" står i `delvis`-grenen nedan, i `over`-grenen ovan, i
+    // registreringens kvittens och på inkorgens rader. Heltäckningen är alltså
+    // inte längre den enda meningen som mäter något annat än de andra.
+    //
+    // BELOPPET NÄMNS INTE, och det är avsiktligt: talet står i beloppsfältet
+    // direkt ovanför boxen, oförändrat sedan Lotta skrev det. Att upprepa det
+    // hade gjort meningen längre utan att göra den säkrare.
+    return { ton: 'tacker', text: 'Inget kvar att betala.' };
   }
 
+  // DOMÄNTERMEN ÄR "KVAR ATT BETALA" (Marcus 2026-09-01), och i löpande text
+  // står beloppet först. Samma term som panelen, anmälans detaljvy,
+  // personkortet, inkorgens rader och registreringens kvittens bär — samma
+  // sak heter samma sak var Lotta än står.
   if (tvaFack && summaInbetalt < anmalningsavgift && nySumma >= anmalningsavgift) {
     return {
       ton: 'delvis',
-      text: `${visat} kr täcker anmälningsavgiften. Saknas ${visaKronor(nyttSaknas)} kr.`,
+      text: `${visat} kr täcker anmälningsavgiften. ${visaKronor(nyttSaknas)} kr kvar att betala.`,
     };
   }
 
-  return { ton: 'delvis', text: `${visat} kr registreras. Saknas ${visaKronor(nyttSaknas)} kr.` };
+  return {
+    ton: 'delvis',
+    text: `${visat} kr registreras. ${visaKronor(nyttSaknas)} kr kvar att betala.`,
+  };
 }
 
 /* ═══════════════════════════ JOBBETS DELUTFALL ═══════════════════════════ */
@@ -535,4 +560,68 @@ export function jobbDelutfall(status: Jobbstatus | undefined): JobbDelutfall | n
     kvar,
     totalt,
   };
+}
+
+/* ═══════════════════════ FÖRHANDSGRANSKNINGEN (TASK-353) ═══════════════════════ */
+
+/**
+ * Den minsta form `kanForhandsgranska` behöver av en granskningsrad.
+ *
+ * STRUKTURELL, INTE `SessionsRad` IMPORTERAD: `SessionsRad` bor i
+ * `BetalningsInkorg.tsx`, en komponentfil som drar in React och hela
+ * vy-trädet. Denna modul är `api-pure` (körs rakt i Node av `tests/api/`,
+ * se `betalningar-inkorg.test.ts` § api-pure) och får därför inte importera
+ * åt det hållet. Två fält räcker, och en strukturell typ håller beroendet
+ * enkelriktat.
+ */
+export type ForhandsgranskningsRad = {
+  /** Lottas kryss vid registreringen. Falskt ⇒ raden får aldrig ett kvitto. */
+  medKvitto: boolean;
+  inbetalningId: string;
+};
+
+/**
+ * [TASK-353, Marcus order 2026-09-01] Får DENNA rad förhandsgranskas?
+ *
+ * Marcus ordagrant: *"lägga en knapp bredvid 'Skicka X kvitton' som heter
+ * 'Förhandsgranska' och så tillämpar vi exakt samma metod som … för våra
+ * bilagor."*
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * REGELN ÄR SNÄV MED AVSIKT: BARA DET SOM ÄNNU INTE GÅTT I VÄG
+ * ═══════════════════════════════════════════════════════════════════════════
+ * Förhandsgranskningen svarar på EN fråga — *"är det här rätt innan jag
+ * trycker?"*. Den får därför erbjudas i exakt ett läge:
+ *
+ *   • kvitto är begärt (kryssrutan var i), OCH
+ *   • raden ligger kvar i den SESSION-LOKALA kön (`vantande`), alltså har
+ *     Lotta ännu inte tryckt på "Skicka N kvitton"
+ *
+ * Allt annat får `false`, och skälen är olika för olika lägen:
+ *
+ *   – INGET KVITTO BEGÄRT: det finns ingenting att granska. En knapp här
+ *     hade antytt att ett kvitto var på väg.
+ *   – REDAN KÖAT/PÅGÅR/SKICKAT: för sent — granskningen skulle inte kunna
+ *     ändra någonting, och en "förhandsgranskning" av något som redan gått
+ *     är en efterhandsgranskning. Det läget har sin EGNA, riktiga väg:
+ *     `kvittolage`s `kanVisa` på inbetalningsraderna
+ *     (`panel-harledningar.ts`), som visar den FAKTISKT SKICKADE PDF:en ur
+ *     Storage. DE TVÅ FÅR ALDRIG BLANDAS IHOP: denna renderar ett utkast som
+ *     ännu inte finns, den andra hämtar en fil som finns. `kanVisa: harPdf`
+ *     är orörd av denna skiva.
+ *   – FALLERAD RAD: medvetet UTANFÖR denna skiva. Raden har lämnat kön, och
+ *     dess fel handlar om SÄNDNINGEN (adress, spärr), inte om innehållet —
+ *     en innehållsgranskning svarar inte på varför den föll. Att utvidga
+ *     hit är ett eget beslut, inte något denna funktion ska glida in i.
+ *
+ * `vantandeIds` OCH INTE HELA `VantandeKvitto[]`: funktionen behöver bara
+ * veta OM raden står i kön, aldrig namn eller belopp. En smalare indata är en
+ * mindre yta att hålla synkroniserad.
+ */
+export function kanForhandsgranska(
+  rad: ForhandsgranskningsRad,
+  vantandeIds: readonly string[],
+): boolean {
+  if (!rad.medKvitto) return false;
+  return vantandeIds.includes(rad.inbetalningId);
 }

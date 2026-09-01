@@ -16,6 +16,7 @@ import { Button } from '@/components/primitives/Button';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { displayName, inskickadTid } from '@/components/registrations/registration-display';
+import { StatusBadge } from '@/components/registrations/StatusBadge';
 import { useSetBorOver } from '@/data/mutations/registrationLodging';
 import { useDataSource } from '@/data/useDataSource';
 import type { Event } from '@/domain/models/Event';
@@ -836,7 +837,12 @@ function KortInnehall({
 
             7,5rem = 120 px rymmer den bredaste pillen med marginal — uppmätta
             naturliga bredder: "Från väntelistan" 110,95 · "Manuellt tillagd"
-            107,42 · "Medföljande" 90,09 · "Obekräftad" 82,67. Två pillar
+            107,42 · "Medföljande" 90,09 · "Obekräftad" 82,67. (Obekräftad-talet
+            är ~2 px lågt sedan 2026-09-01: pillen går nu genom `StatusBadge`,
+            som bär `border border-transparent` — den reserverade px:en som gör
+            att `contrast-more` inte hoppar. Marginalen till 120 px är
+            oförändrat god, så slot-bredden rörs inte; talet står kvar med sin
+            avvikelse noterad i stället för att skrivas om utan ommätning.) Två pillar
             samtidigt ryms aldrig på en rad här och staplas som förr (den
             avsiktliga 390-px-lösningen). En framtida bredare pill radbryter
             inuti sin egen pill (två pill-rader = 50 px < identitetens 67) och
@@ -850,10 +856,20 @@ function KortInnehall({
               information ("Väntar på bekräftelse") som denna röda status-pill.
               Två märken på samma axel för samma person var dubbel-etikettering
               (granskningsfynd); steg-märket ERSÄTTER pillen i variant-läge. */}
+          {/* DEN RÖDA HANDRULLADE PILLEN ÄR RIVEN (Marcus dom 2026-09-01).
+              Samma ord bar TRE former i appen: röd `bg-error-bg`/`text-error`
+              här och i `AtgardsSida.tsx`, kopparfärgad `StatusBadge
+              ton="warning"` på betalningsytorna och anmälans detaljsida.
+              `events/detail/Betalningar.tsx` bokförde konflikten redan
+              2026-08-06 ("Ett ord, en färg, hela appen") men konverterade bara
+              sin egen yta — dessa två blev kvar. Nu går alla genom
+              `StatusBadge`, och tonen är NEUTRAL: "Obekräftad" har ett eget
+              bekräftelseflöde och är det normala läget för en ny anmälan.
+              Rött sade "fel har inträffat" om något som inte är ett fel. */}
           {!arBekraftad(reg) && !vald && !hallplatsMarke && (
-            <span className="rounded-full bg-(--mm-error-bg) px-2 py-0.5 font-medium text-caption text-error">
+            <StatusBadge ton="neutral" storlek="sm">
               Obekräftad
-            </span>
+            </StatusBadge>
           )}
           {/* ITERATIONSVÅG (Marcus 2026-08-05): "De här pillsen som sitter på
               kortet 'Medföljande' och 'Manuell' kan vi då ersätta med

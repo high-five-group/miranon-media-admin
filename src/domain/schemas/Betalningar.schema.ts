@@ -70,6 +70,23 @@ export const InbetalningSchema = z.object({
   makuleradNar: z.string().nullable(),
   bankreferens: z.string().nullable(),
   kvittoId: z.string().uuid().nullable(),
+  /**
+   * Lottas fria anteckning om DENNA inbetalning (Marcus 2026-09-01). Frivillig.
+   *
+   * `.default(null)` OCH INTE BARA `.nullable()` — och skillnaden är
+   * lastbärande. `.nullable()` ensamt kräver att nyckeln FINNS i svaret;
+   * saknas den kastar `RegistreraInbetalningResultSchema.parse` och hela
+   * registreringen ser ut att ha misslyckats för Lotta trots att raden ligger
+   * i Postgres. Med `.default(null)` tolereras ett svar från en Edge Function
+   * som ännu inte deployats med noteringsstödet: fältet blir `null`, allt
+   * annat fungerar exakt som förut.
+   *
+   * Detta är alltså inte defensiv kod "ifall" — det är fönstret mellan att
+   * denna commit finns och att migration + EF-deploy landat i miljön. När
+   * bägge landat är defaulten aldrig aktiv, och den kostar ingenting att
+   * lämna kvar som skydd vid en framtida rollback av EF-lagret.
+   */
+  notering: z.string().nullable().default(null),
   skapadAv: z.string(),
   skapadNar: z.string(),
 });
@@ -224,6 +241,13 @@ export type RegistreraInbetalningInput = {
   bankreferens?: string;
   /** Frivilligt avtalat pris att sätta på anmälan i samma operation. */
   avtalatPris?: string;
+  /**
+   * Lottas fria anteckning om inbetalningen (Marcus 2026-09-01). Frivillig.
+   * Rå text — servern trimmar, gör tomt till NULL och fäller över 500 tecken
+   * (`_shared/inbetalning-notering.ts` § `lasNotering`). Utelämnad = ingen notering,
+   * vilket är byte för byte samma rad som före fältet fanns.
+   */
+  notering?: string;
 };
 
 export const RegistreraInbetalningResultSchema = z.object({

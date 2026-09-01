@@ -340,7 +340,11 @@ export function AnmalanDetail({
               {bekraftadTid && <span className="text-small text-text-muted">{bekraftadTid}</span>}
             </>
           )}
-          {lage === 'obekraftad' && <StatusBadge ton="warning">Obekräftad</StatusBadge>}
+          {/* NEUTRAL, INTE WARNING (Marcus dom 2026-09-01) — samma byte som på
+              betalningsytorna, av samma skäl: "Obekräftad" är det normala läget
+              för en ny anmälan, inte ett larm. Se `StatusBadge.tsx` § TON_FORM.
+              `md`-steget är oförändrat; detta är detaljsidans statusrad. */}
+          {lage === 'obekraftad' && <StatusBadge ton="neutral">Obekräftad</StatusBadge>}
           {lage === 'avvikande' && (
             <span className="rounded-full bg-bg-muted px-2.5 py-1 font-medium text-small text-text-secondary">
               {reg.status ?? 'Okänd status'}

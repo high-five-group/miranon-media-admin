@@ -1,6 +1,39 @@
 import { createFileRoute, redirect } from '@tanstack/react-router';
+import { z } from 'zod';
 import { BetalningsInkorg } from '@/components/betalningar/BetalningsInkorg';
 import { betalningarPa } from '@/lib/funktionsflaggor';
+
+/**
+ * FILTER-AXLARNA DEKLARERAS EXPLICIT — samma kontrakt som
+ * `/mer/anmalningar` (TASK-299.5), av samma skäl fast i förebyggande form.
+ *
+ * Inkorgens list-filtrering bär fyra axlar via `nuqs`
+ * (`?period`/`?typ`/`?ort`/`?event`), och `nuqs` skriver dem genom ROUTERN
+ * (`NuqsAdapter` från `nuqs/adapters/tanstack-router` i `__root.tsx`), inte
+ * direkt mot `window.location`. TanStack Router använder `validateSearch`s
+ * RETURVÄRDE som sidans search-state, och `z.object()` STRIPPAR okända
+ * nycklar — så på anmälningssidan dog varje filterval i samma andetag det
+ * gjordes, tills axlarna deklarerades.
+ *
+ * SKILLNADEN HÄR, ÖPPET SAGD: denna route hade INGEN `validateSearch` alls
+ * före denna ändring, så ingenting ströps — nuqs hade fungerat utan
+ * schemat. Deklarationen tillför alltså inget beteende i dag; den gör
+ * kontraktet EXPLICIT och gör en framtida parameter på denna route säker att
+ * lägga till. Att i stället införa schemat vid det tillfället är precis den
+ * ordning som kostade anmälningssidan en felsökning.
+ *
+ * `z.string()` och inte snävare typer: värderymden ägs av `FilterRad`/
+ * `EventValjare` och härleds ur DATAN (eventens typ/ort, record-ID:n), inte
+ * av routen. Ett okänt värde är redan inert i komponenten — det matchar ingen
+ * rad — så en andra, duplicerad validering här hade bara kunnat glida isär
+ * från den första.
+ */
+const betalningarSearchSchema = z.object({
+  period: z.string().optional(),
+  typ: z.string().optional(),
+  ort: z.string().optional(),
+  event: z.string().optional(),
+});
 
 /**
  * [TASK-346.6 AC #1] Inkorgen: `/mer/betalningar`, BAKOM MILJÖFLAGGAN.
@@ -26,6 +59,7 @@ import { betalningarPa } from '@/lib/funktionsflaggor';
  */
 export const Route = createFileRoute('/_authenticated/mer/betalningar')({
   staticData: { title: 'Betalningar' },
+  validateSearch: betalningarSearchSchema,
   beforeLoad: () => {
     if (!betalningarPa()) throw redirect({ to: '/mer' });
   },

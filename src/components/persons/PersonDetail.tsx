@@ -1141,7 +1141,34 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
         <h2 id="proto-d-nulage" className="px-4 font-semibold text-lg">
           Just nu
         </h2>
-        <div className="flex flex-col gap-3 rounded-2xl border border-transparent bg-primary-tint px-4 py-4 contrast-more:border-border-strong">
+        {/* ═══ INGEN GULD-SIGNAL ALLS — HUSETS NEUTRALA BLOCKFORM ═══
+            Marcus dom 2026-09-01, ordagrant: *"Ta bort den oranga konturen på
+            just nu blocket, jag vill inte ha den."*
+
+            BÅDA GULD-VARIANTERNA ÄR PRÖVADE OCH RIVNA, i den ordningen, och
+            historiken står kvar därför att den är hela skälet att inte försöka
+            en tredje gång:
+
+              1. GULD-FOND (`bg-primary-tint`, promoverad ur prototypen).
+                 Revs samma dag: *"det funkar inte att ha gul bakgrund på det,
+                 det skär sig med färgerna som 'event-raderna' har. Jag tror
+                 det bästa är att kanske enbart ha gul kontur."* Krocken satt i
+                 lagren — varm gul fond, kall neutralgrå rader
+                 (`bg-bg-emphasized`), och en KURSFÄRGAD vänsterkant per rad
+                 (`kursfargForKurs`). Tre kulörfamiljer på tre lager.
+              2. GULD-KONTUR på vit botten (commit `02e9f9af`), byggd på hans
+                 egen "kanske enbart ha gul kontur". Riven i detta pass.
+
+            SLUTSATSEN ÄR INTE "fel ton" UTAN "ingen ton": blocket behöver ingen
+            egen signal. Det är en sektion bland systrarna, inte en hero.
+
+            FORMEN ÄR SYSKONENS, ÅTERANVÄND OCH INTE OMSKRIVEN: `kortKlass`
+            (definierad i denna komponent) är exakt samma sträng "Ström"- och
+            tomläges-blocken bär, och samma form som `Sektion`s behållare
+            använder — `bg-bg-muted` med transparent kant och
+            `contrast-more:border-border-strong`. Raderna INUTI är ORÖRDA i
+            alla tre varianterna; det var aldrig de som var fel. */}
+        <div className={`flex flex-col gap-3 ${kortKlass}`}>
           {aktivaAnmalningar.length > 0 ? (
             <>
               <p className="font-semibold text-body">
@@ -1214,9 +1241,14 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
                   // transparent)` (semantic.css 46) och används som skrim av
                   // `ToggleButtonGroup.tsx:73`. Den token kan inte användas rakt
                   // av här — den ERSÄTTER bakgrunden, så skrimmet hade lagt sig
-                  // mot kortets guld-tint i stället för mot den grå raden och
+                  // mot BLOCKETS egen yta i stället för mot den grå raden och
                   // ljusnat igen. Samma 6 % blandas därför direkt in i
                   // `bg-emphasized`. Steget är appens, ytan är radens.
+                  //
+                  // (Noten sade "kortets guld-tint" fram till 2026-09-01, då
+                  // fonden byttes mot en guld-KONTUR på vit botten — se
+                  // blockets egen not ovan. Resonemanget är oförändrat: felet
+                  // vore fortfarande att skrimmet läggs mot fel lager.)
                   const radKlass = 'flex items-center gap-3';
                   return (
                     <li key={grupp.nyckel} className="flex flex-col py-1.5 first:pt-0">

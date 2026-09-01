@@ -180,7 +180,7 @@ export function SwishImport({ oppna, idag, betalsatt, onRegistrerade, onStang }:
   /**
    * FLYTTAR FOKUS DETERMINISTISKT vid stegbyte 'val' → 'mappning'/'lista'.
    *
-   * Knappen "Välj rapportfil" (steg 'val') AVMONTERAS när `laddaFil` byter
+   * Knappen "Ladda upp fil" (steg 'val') AVMONTERAS när `laddaFil` byter
    * steg, och utan detta faller fokus till `document.body` - en
    * tangentbords- eller skärmläsaranvändare tappar sin plats mitt i ett
    * pengaflöde. Samma felklass, samma fix-mönster som
@@ -373,11 +373,20 @@ export function SwishImport({ oppna, idag, betalsatt, onRegistrerade, onStang }:
 
   return (
     <section
-      aria-label="Importera bankrapport"
+      /* TERMEN ÄR "KONTOUTDRAG", INTE "BANKRAPPORT" (Marcus dom 2026-09-01):
+         *"'Importera kontoutdrag' är mer rätt namn på knappen … 'bankrapport'
+         är typiskt dålig svensk översättning av 'bank statement'"*. Han har
+         rätt i sak: "bank statement" heter kontoutdrag på svenska, och
+         "bankrapport" är inget ord Lotta möter i sin internetbank
+         (Gunilla-principen). `aria-label` räknas som UI-text och byts med
+         resten — den ÄR ytans tillgängliga namn. Kodidentifierare och filnamn
+         (`SwishImport`, `bankimport-*`) är orörda: de är inte text Lotta
+         läser. */
+      aria-label="Importera kontoutdrag"
       className="mx-4 flex flex-col gap-3 rounded border border-border bg-surface p-4"
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h2 className="font-semibold text-lg">Importera bankrapport</h2>
+        <h2 className="font-semibold text-lg">Importera kontoutdrag</h2>
         <Button intent="ghost" size="sm" onPress={onStang}>
           Stäng
         </Button>
@@ -399,14 +408,28 @@ export function SwishImport({ oppna, idag, betalsatt, onRegistrerade, onStang }:
 
       {steg === 'val' && (
         <div className="flex flex-col gap-2">
+          {/* "PER BANK" ÄR STRUKET (Marcus: *"Ta bort 'per bank', de har bara
+              en bank"*). Kvalificeringen beskrev en generalitet koden bär
+              (`bankmappning-minne.ts` sparar faktiskt mappningen per banknamn)
+              men som Lotta aldrig möter — hon har en bank, och "per bank" fick
+              en engångsuppgift att låta som en återkommande.
+
+              SWISH-HÄNVISNINGEN ÄR KVAR, omskriven till den nya termen: utan
+              den vet Lotta inte VILKEN av bankens filer som avses. Vald
+              formulering: "Ladda ner kontoutdraget för Swish från din bank och
+              välj filen här." — kontoutdrag som huvudord, Swish som
+              bestämning, alltså samma sak hon letar efter i banken. */}
           <p className="text-small text-text-muted">
-            Ladda ner Swish-rapporten från din bank och välj filen här. Kolumnerna behöver bara
-            pekas ut en gång per bank.
+            Ladda ner kontoutdraget för Swish från din bank och välj filen här. Kolumnerna behöver
+            bara pekas ut en gång.
           </p>
           <div>
             <Button intent="primary" emphasis="outline" onPress={valjFil}>
               <Upload aria-hidden size={16} className="shrink-0" />
-              Välj rapportfil
+              {/* *"Byt ut 'Välj rapportfil' till 'Ladda upp fil'"* — och
+                  "rapportfil" försvinner därmed ur UI:t helt, i samma andetag
+                  som "bankrapport". Ikonen (`Upload`) är oförändrad. */}
+              Ladda upp fil
             </Button>
           </div>
         </div>
@@ -720,7 +743,9 @@ function Importrad({ rad, oppna, idag, onAndra }: RadProps) {
           )}
 
           {klass === 'omatchad' && sokterm.trim() !== '' && traffar.length === 0 && (
-            <p className="text-caption text-text-muted">Ingen öppen betalning matchar sökningen.</p>
+            <p className="text-caption text-text-muted">
+              Ingen kvarvarande betalning matchar sökningen.
+            </p>
           )}
 
           <div className="flex flex-wrap items-center gap-4">
@@ -799,7 +824,10 @@ function radbeskrivning(
 
 function kandidatEtikett(kandidat: InkorgsRad): string {
   const saknas = kandidat.kvar;
-  const belopp = saknas === null ? 'pris saknas' : `saknas ${visaKronor(saknas)} kr`;
+  // Delad domänterm (Marcus 2026-09-01): "kvar att betala", beloppet först i
+  // löpande text. Etiketten är en ` · `-fogad rad, så ledet står versal-löst
+  // och börjar ändå med en siffra.
+  const belopp = saknas === null ? 'pris saknas' : `${visaKronor(saknas)} kr kvar att betala`;
   return `${kandidat.namn} · ${kandidat.betalning.eventNamn ?? 'Utan event'} · ${belopp}`;
 }
 

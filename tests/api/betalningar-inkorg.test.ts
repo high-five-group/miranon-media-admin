@@ -23,6 +23,7 @@ import {
   harledRad,
   type InkorgsRad,
   jobbDelutfall,
+  kanForhandsgranska,
   matcharSokning,
   rankaTraffar,
 } from '@/components/betalningar/inkorg-harledningar';
@@ -315,32 +316,64 @@ test('AC #5: ett belopp som täcker båda facken sägs rakt ut', () => {
 test('AC #5: udda belopp visar saknas-resten', () => {
   const utfall = beloppsutfall(rad({ summaInbetalt: 0 }), 700);
   expect(utfall.ton).toBe('delvis');
-  expect(utfall.text).toBe(`700 kr registreras. Saknas ${kr('1 800')} kr.`);
+  expect(utfall.text).toBe(`700 kr registreras. ${kr('1 800')} kr kvar att betala.`);
 });
 
 test('ett belopp som täcker exakt avgiften säger det, och resten', () => {
   const utfall = beloppsutfall(rad({ summaInbetalt: 0 }), 1000);
   expect(utfall.text).toBe(
-    `${kr('1 000')} kr täcker anmälningsavgiften. Saknas ${kr('1 500')} kr.`,
+    `${kr('1 000')} kr täcker anmälningsavgiften. ${kr('1 500')} kr kvar att betala.`,
   );
 });
 
 test('slutbetalningen efter avgiften nämner INTE facken - de är redan förbi', () => {
   const utfall = beloppsutfall(rad({ summaInbetalt: 1000 }), 1500);
   expect(utfall.ton).toBe('tacker');
-  expect(utfall.text).toBe(`${kr('1 500')} kr täcker hela priset.`);
+  expect(utfall.text).toBe('Inget kvar att betala.');
 });
 
 test('föreläsning utan fack nämner aldrig anmälningsavgift', () => {
   const utfall = beloppsutfall(rad({ gallandePris: 500, anmalningsavgift: 500 }), 500);
-  expect(utfall.text).toBe('500 kr täcker hela priset.');
+  expect(utfall.text).toBe('Inget kvar att betala.');
   expect(utfall.text).not.toContain('anmälningsavgift');
+});
+
+/* HELTÄCKNINGEN SÄGER SLUTSATSEN, INTE TÄCKNINGSGRADEN (Marcus 2026-09-01).
+   Texten var `<belopp> kr täcker hela priset.`; den formen ställde beloppet mot
+   ett pris Lotta inte har framför sig och lämnade slutsatsen åt henne. */
+test('heltäckning använder domäntermen "kvar att betala", inte "täcker hela priset"', () => {
+  // `summaInbetalt: 1000` (avgiften redan betald) + 1500 = den rena
+  // heltäckningsgrenen. Fixturen defaultar till `summaInbetalt: 0`, och DÅ
+  // träffar 2 500 kr i stället två-facks-grenen nedan — samma `ton`, annan text.
+  const utfall = beloppsutfall(rad({ summaInbetalt: 1000 }), 1500);
+  expect(utfall.ton).toBe('tacker');
+  expect(utfall.text).not.toContain('täcker hela priset');
+  expect(utfall.text).toContain('kvar att betala');
+});
+
+/* DE ANDRA GRENARNA ÄR ORÖRDA — regressionsvakt. Marcus bytte heltäckningen
+   och ingenting annat; två-facks-texten och de två delfallen nämner fortfarande
+   facket respektive resten. Utan detta hade en framtida förenkling kunnat dra
+   med sig dem i samma svep. */
+test('övriga grenar behåller sina texter när heltäckningen byter form', () => {
+  // Två fack, båda täckta i ett svep (AC #5:s ordagranna krav).
+  expect(beloppsutfall(rad({ summaInbetalt: 0 }), 2500).text).toBe(
+    `${kr('2 500')} kr täcker anmälningsavgift + slutbetalning.`,
+  );
+  // Delfall 1: exakt avgiften, resten kvar.
+  expect(beloppsutfall(rad({ summaInbetalt: 0 }), 1000).text).toBe(
+    `${kr('1 000')} kr täcker anmälningsavgiften. ${kr('1 500')} kr kvar att betala.`,
+  );
+  // Delfall 2: udda belopp.
+  expect(beloppsutfall(rad({ summaInbetalt: 0 }), 700).text).toBe(
+    `700 kr registreras. ${kr('1 800')} kr kvar att betala.`,
+  );
 });
 
 test('överbetalning sägs rakt ut i stället för att avrundas bort', () => {
   const utfall = beloppsutfall(rad({ summaInbetalt: 0 }), 3000);
   expect(utfall.ton).toBe('over');
-  expect(utfall.text).toBe(`${kr('3 000')} kr är 500 kr mer än vad som saknas.`);
+  expect(utfall.text).toBe(`${kr('3 000')} kr är 500 kr mer än vad som är kvar att betala.`);
 
   // NEGATIV KONTROLL: en implementation som klampade resten till noll hade
   // sagt "täcker hela priset" och dolt skrivfelet.
@@ -457,4 +490,77 @@ test('ett jobb som ARBETAR är varken lyckat eller misslyckat', () => {
   const trasigKlass = (fel: number) => (fel === 0 ? 'allt-skickat' : 'delutfall');
   expect(trasigKlass(0)).toBe('allt-skickat');
   expect(vantar?.klass).toBe('vantar');
+});
+
+/* ═══════════════════ FÖRHANDSGRANSKNINGEN (TASK-353) ═══════════════════
+ *
+ * Marcus order 2026-09-01: en "Förhandsgranska"-knapp bredvid "Skicka X
+ * kvitton". `kanForhandsgranska` äger regeln för NÄR knappen får erbjudas,
+ * så den bedömningen aldrig blir en villkorskedja i JSX.
+ *
+ * SAMMA TVÅ-RIKTNINGS-DISCIPLIN som resten av filen: varje regel prövas
+ * både mot den riktiga implementationen och mot den trasiga variant någon
+ * skulle skriva i förbifarten. Den mest närliggande trasiga formen här är
+ * "visa knappen på varje rad" — den hade erbjudit förhandsgranskning av
+ * kvitton som redan gått i väg, alltså en efterhandsgranskning som utger
+ * sig för att kunna ändra något.
+ */
+
+test('en rad som ligger i kön med kvitto FÅR förhandsgranskas', () => {
+  const rad = { medKvitto: true, inbetalningId: 'i1' };
+  expect(kanForhandsgranska(rad, ['i1'])).toBe(true);
+});
+
+test('en rad UTAN kvitto får aldrig förhandsgranskas, ens om id:t råkar stå i kön', () => {
+  // Kryssrutan var ur ⇒ det finns inget kvitto att granska. Att id:t skulle
+  // kunna stå i kön samtidigt är ett omöjligt tillstånd i dag (kön fylls
+  // bara av rader med `medKvitto`), och regeln prövas ändå mot det: en
+  // härledning som bara läste kön hade sagt `true` här.
+  const rad = { medKvitto: false, inbetalningId: 'i1' };
+  expect(kanForhandsgranska(rad, ['i1'])).toBe(false);
+
+  // NEGATIV KONTROLL: den trasiga formen "står den i kön så visa knappen".
+  const trasig = (id: string, ko: string[]) => ko.includes(id);
+  expect(trasig('i1', ['i1'])).toBe(true);
+  expect(kanForhandsgranska(rad, ['i1'])).toBe(false);
+});
+
+test('en rad vars kvitto REDAN köats får inte förhandsgranskas — kön är tömd', () => {
+  // Efter "Skicka N kvitton" töms `vantande`. Raden står kvar i loggen med
+  // sitt kvitto på väg, och då är det för sent att granska: en
+  // förhandsgranskning som inte kan ändra något är ingen granskning.
+  const rad = { medKvitto: true, inbetalningId: 'i1' };
+  expect(kanForhandsgranska(rad, [])).toBe(false);
+
+  // NEGATIV KONTROLL: "har raden begärt kvitto?" ensamt hade sagt `true`
+  // för varje rad Lotta någonsin registrerat i sessionen — alltså en knapp
+  // på skickade kvitton, som är `kanVisa`s uppgift (`panel-harledningar.ts`)
+  // och en HELT annan väg: den hämtar en lagrad PDF, denna renderar ett
+  // utkast som ännu inte finns.
+  const trasig = (r: { medKvitto: boolean }) => r.medKvitto;
+  expect(trasig(rad)).toBe(true);
+  expect(kanForhandsgranska(rad, [])).toBe(false);
+});
+
+test('bara den egna raden — ett annat id i kön öppnar ingen knapp', () => {
+  const rad = { medKvitto: true, inbetalningId: 'i1' };
+  expect(kanForhandsgranska(rad, ['i2', 'i3'])).toBe(false);
+
+  // NEGATIV KONTROLL: "är kön icke-tom?" hade gett varje rad en knapp så
+  // fort NÅGON rad väntade.
+  const trasig = (ko: string[]) => ko.length > 0;
+  expect(trasig(['i2', 'i3'])).toBe(true);
+  expect(kanForhandsgranska(rad, ['i2', 'i3'])).toBe(false);
+});
+
+test('regeln är stabil över flera rader i kön — var och en bedöms för sig', () => {
+  const ko = ['i1', 'i3'];
+  const rader = [
+    { medKvitto: true, inbetalningId: 'i1' },
+    { medKvitto: true, inbetalningId: 'i2' },
+    { medKvitto: false, inbetalningId: 'i3' },
+    { medKvitto: true, inbetalningId: 'i3' },
+  ];
+
+  expect(rader.map((r) => kanForhandsgranska(r, ko))).toEqual([true, false, false, true]);
 });

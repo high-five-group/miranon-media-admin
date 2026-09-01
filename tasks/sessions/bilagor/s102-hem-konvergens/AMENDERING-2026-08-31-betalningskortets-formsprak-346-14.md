@@ -1,5 +1,18 @@
 # Amendering 2026-08-31 — Betalningskortets formspråk (TASK-346.14)
 
+> **⚠️ ÖVERSPELAD 2026-09-01 av
+> [`AMENDERING-2026-09-01-betalningsblocket-rivet-genvagsraden-kvar.md`](AMENDERING-2026-09-01-betalningsblocket-rivet-genvagsraden-kvar.md).**
+> Komponenten denna sidofil beskriver — `src/components/hem/BetalningarKort.tsx`
+> — är **borttagen från disk** (commit `42f1edd6`), och Hem renderar
+> `ForfallnaBetalningar` ovillkorligt igen. Punkterna 1 (kortyta) och 4
+> (overline) revs redan dessförinnan av `01255446` på Marcus dom, och därefter
+> revs hela kortet: *"Nej det här håller inte. Lotta kommer bli så sjukt
+> förvirrad."*
+>
+> Filen står kvar med avsikt — den är beviset för att formen prövades innan
+> den revs, och därmed skälet att inte försöka samma sak igen. Läs den som
+> historik, aldrig som beskrivning av nuvarande yta.
+
 **Yta:** `hem-vyn V1 "Lugna morgonen"` i
 `tasks/sessions/bilagor/s102-hem-konvergens/facit.json`. Skarp källa:
 `src/components/hem/BetalningarKort.tsx`.

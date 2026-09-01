@@ -30,24 +30,28 @@ import { RegistreraYta } from './RegistreraYta';
  * här hade varit ett extra klick utan att spara något.
  *
  * ═══════════════════════════════════════════════════════════════════════════
- * "SAKNAS X KR" SOM VIKTAD RAD (TASK-346.14, designfynd 3a/3b)
+ * "KVAR ATT BETALA" SOM VIKTAD RAD (TASK-346.14, designfynd 3a/3b)
  * ═══════════════════════════════════════════════════════════════════════════
  * `DetaljGrupp`s dt/dd-rader ovanför (Anmälningsavgift/Slutbetalning/
  * deadline/noteringar) håller `EtikettVardeRad`s form (etikett dämpad
  * vänster, VÄRDET primärt höger, py-3). Den öppna sladden här — nyckeltalet
- * "Saknas 500 kr." — var en naken vänsterställd mening utan den vikten.
- * Formen nedan LÅNAR `EtikettVardeRad`s klasser rakt av (samma
- * `text-small text-text-muted` etikett, samma högerställda `font-semibold
- * text-body`-värde) men renderas ALDRIG i en `<dl>`: en dt/dd-rad kan bara
- * bära EN ordagrann term ("Saknas"), och de tre lägena här ("Saknas X kr" /
- * "Allt betalt" / "enligt basen: okänt") är tre OLIKA meningar, inte tre
- * värden på samma fråga — att tvinga in dem i dt/dd hade krävt att antingen
- * hitta på en konstlad gemensam etikett eller byta etikett per läge (`axe`
- * `definition-list` kräver dessutom att VARJE `<dl>`-barn är ett dt/dd-par,
- * inte fri text). De två "lugna" lägena (null/allt betalt) förblir därför
- * enkel text utan radstruktur — bara det FAKTISKT öppna beloppet, det Marcus
- * kallade "NYCKELTALET", får radens vikt. Ordvalet (svenska meningarna) är
- * OFÖRÄNDRAT — bara kompositionen är ny.
+ * — var en naken vänsterställd mening utan den vikten. Formen nedan LÅNAR
+ * `EtikettVardeRad`s klasser rakt av (samma `text-small text-text-muted`
+ * etikett, samma högerställda `font-semibold text-body`-värde) men renderas
+ * ALDRIG i en `<dl>`: en dt/dd-rad kan bara bära EN ordagrann term, och de
+ * tre lägena här (öppet belopp / "Allt betalt" / okänt pris) är tre OLIKA
+ * meningar, inte tre värden på samma fråga — att tvinga in dem i dt/dd hade
+ * krävt att antingen hitta på en konstlad gemensam etikett eller byta etikett
+ * per läge (`axe` `definition-list` kräver dessutom att VARJE `<dl>`-barn är
+ * ett dt/dd-par, inte fri text). De två "lugna" lägena (null/allt betalt)
+ * förblir därför enkel text utan radstruktur — bara det FAKTISKT öppna
+ * beloppet, det Marcus kallade "NYCKELTALET", får radens vikt.
+ *
+ * ORDVALET BYTTES 2026-09-01 (Marcus): etiketten "Saknas" är nu "Kvar att
+ * betala", och nolläget "Inget öppet belopp enligt basen." är "Inget kvar att
+ * betala." Termen är KONSEKVENT över alla betalningsytor — panelen, denna vy,
+ * personkortet, inkorgens rader och registreringens kvittens — så samma sak
+ * heter samma sak var Lotta än står. Kompositionen är oförändrad.
  */
 export function AnmalansBetalningar({
   anmalanRecordId,
@@ -66,26 +70,36 @@ export function AnmalansBetalningar({
   const saknas = rad === null ? null : (rad.kvar ?? rad.betalning.saknas);
 
   return (
-    <div className="flex flex-col gap-3 pt-4">
-      {/* "enligt basen" när ingen rad finns - se `PanelBetalningar` §
+    <div className="flex flex-col gap-4 pt-4">
+      {/* ═══ STATUSKORTET (pass 8) — se `PersonBetalningar.tsx`s motsvarande
+          block för Marcus dom och hela resonemanget. Samma fyra fragment låg
+          löst här: "Kvar att betala"-raden på gruppens vänsterkant, knapparna
+          under den, ingen yta som höll ihop dem.
+
+          GROUNDEN BÄR VALET: `AnmalanDetail`s Betalningar-grupp är en
+          `DetaljGrupp`, alltså `bg-bg-muted` (`DetaljGrupp.tsx`) — en vit
+          kortyta syns mot den, precis som på personkortet. Samma kortform som
+          inbetalningsraderna längre ned, så vyn läser som en familj. */}
+      <div className="flex flex-col gap-3 rounded-2xl border border-transparent bg-surface p-3 contrast-more:border-border-strong">
+        {/* "enligt basen" när ingen rad finns - se `PanelBetalningar` §
           `rad === null` för varför frånvaron är tvetydig och inte får
           påstås vara "allt betalt". Se filens docblock § "SAKNAS X KR" för
           varför bara det öppna beloppet får radstrukturens vikt. */}
-      {saknas === null ? (
-        <p className="text-small text-text-muted">Inget öppet belopp enligt basen.</p>
-      ) : saknas > 0 ? (
-        <div className="flex items-center justify-between gap-4 py-1">
-          <span className="text-small text-text-muted">Saknas</span>
-          <span className="text-right font-semibold text-body">{`${visaKronor(saknas)} kr`}</span>
-        </div>
-      ) : (
-        <p className="flex items-center gap-2 text-small text-text-secondary">
-          <CircleCheck aria-hidden="true" size={16} className="shrink-0 text-success" />
-          Allt betalt.
-        </p>
-      )}
+        {saknas === null ? (
+          <p className="text-small text-text-muted">Inget kvar att betala.</p>
+        ) : saknas > 0 ? (
+          <div className="flex items-center justify-between gap-4 py-1">
+            <span className="text-small text-text-muted">Kvar att betala</span>
+            <span className="text-right font-semibold text-body">{`${visaKronor(saknas)} kr`}</span>
+          </div>
+        ) : (
+          <p className="flex items-center gap-2 text-small text-text-secondary">
+            <CircleCheck aria-hidden="true" size={16} className="shrink-0 text-success" />
+            Allt betalt.
+          </p>
+        )}
 
-      {/* [TASK-346.14 fix-runda D, D1] HORISONTELL KNAPPGRUPP PÅ ≥sm —
+        {/* [TASK-346.14 fix-runda D, D1] HORISONTELL KNAPPGRUPP PÅ ≥sm —
           orkestrerarens dom (1440×900) mätte "Registrera betalning" och
           "Registrera återbetalning" staplade vänsterställda med olika
           naturlig bredd (varje `*Yta` är en egen `flex-col`-behållare, så de
@@ -106,16 +120,22 @@ export function AnmalansBetalningar({
           varför: en återbetalning gäller ofta en anmälan som redan är
           fullbetald och nu avbokas, alltså precis det läge `RegistreraYta`
           inte visas i. */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start">
-        {rad !== null && <RegistreraYta rad={rad} />}
-        <AterbetalningsYta anmalanRecordId={anmalanRecordId} />
+        <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start">
+          {rad !== null && <RegistreraYta rad={rad} />}
+          <AterbetalningsYta anmalanRecordId={anmalanRecordId} />
+        </div>
       </div>
 
+      {/* ═══ INGEN EGEN BAKGRUNDSYTA, RUBRIKEN ÄR EN EYEBROW (pass 12) ═══
+          Samma ändring, samma skäl och samma roll-distinktion mot Hem-domen
+          som `PersonBetalningar.tsx` § "INGEN EGEN BAKGRUNDSYTA" — läs den
+          innan du rättar tillbaka något här. De två ytorna visar SAMMA lista
+          och måste se likadana ut. */}
       <div className="flex flex-col gap-2">
         <h3 className="font-medium text-caption text-text-secondary uppercase tracking-wide">
           Inbetalningar
         </h3>
-        <InbetalningsLista kalla={{ anmalanRecordId }} aktiv />
+        <InbetalningsLista kalla={{ anmalanRecordId }} aktiv listEtikett="Inbetalningar" />
       </div>
     </div>
   );

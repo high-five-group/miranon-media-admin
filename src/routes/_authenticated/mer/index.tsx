@@ -1,7 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import {
-  Banknote,
   ClipboardList,
+  Coins,
   Filter,
   History,
   Hourglass,
@@ -96,7 +96,8 @@ function MerPage() {
               vart heller. Rivs av TASK-346.12 tillsammans med flaggan -
               villkoret tas bort, raden blir ovillkorlig.
 
-              Banknote och INTE Receipt: `Receipt` är lucides kvittoikon och
+              Coins (Marcus order 2026-09-01, samma ikon som Hem-genvägen -
+              en destination, en ikon) och INTE Receipt: `Receipt` är lucides kvittoikon och
               är redan tagen för just kvitton (`dokument/DokumentYta.tsx`
               § T176). Ytan handlar om INBETALNINGAR - kvittot är en följd av
               en betalning, inte samma sak (ORDLISTA § Inbetalning). Samma
@@ -105,7 +106,7 @@ function MerPage() {
               Users. */}
           {betalningarPa() && (
             <li>
-              <NavCard to="/mer/betalningar" icon={Banknote} label="Betalningar" />
+              <NavCard to="/mer/betalningar" icon={Coins} label="Betalningar" />
             </li>
           )}
         </ul>

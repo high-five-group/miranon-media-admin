@@ -213,12 +213,23 @@ function betalningsPanel(page: Page) {
   return page.locator('section[aria-labelledby="grupp-betalningar"]');
 }
 
+/**
+ * [PASS 10, 2026-09-01] FÄLLNINGEN KLICKAS INTE LÄNGRE — den finns inte.
+ *
+ * Hjälparen hette (och heter) "öppna sidan OCH betalningarna" därför att
+ * betalningsytan låg bakom fällknappen "Pricka av och notera". Med miljöflaggan
+ * PÅ är den knappen riven tillsammans med kryss-vertikalen (Marcus GO
+ * 2026-09-01): sektionen ÄR betalningsytan, synlig direkt. Namnet står kvar
+ * eftersom kontraktet — "efter detta anrop är betalningsytan tillgänglig" — är
+ * oförändrat; bara vägen dit är kortare.
+ *
+ * Väntan på sektionen ersätter klicket som synk-punkt. Utan den hade testerna
+ * kunnat läsa en tom sektion innan React hunnit rendera personerna.
+ */
 async function oppnaSidanOchBetalningar(page: Page): Promise<void> {
   await page.goto(`/event/${EVENT_ID}/atgarder`);
   await expect(page.getByTestId('eventet-block')).toBeVisible();
-  await betalningsPanel(page)
-    .getByRole('button', { name: /Pricka av och notera/ })
-    .click();
+  await expect(betalningsPanel(page)).toBeVisible();
 }
 
 function avgiftKryss(page: Page, namn: string) {
@@ -492,8 +503,11 @@ test.describe('Ej relevant-vakten — föreläsnings-semantiken (TASK-147.4 AC #
     const { skrivningar } = await mocka(page, FACIT);
     await oppnaSidanOchBetalningar(page);
 
-    // Den stilla textraden ersätter krysset, precis som förlagans (rivna)
-    // läsyte-bevis — samma text, ny plats.
+    // [PASS 10] UPPLYSNINGEN ÖVERLEVDE RIVNINGEN. Raden som bar den (SkrivRads
+    // form utan kryss) finns inte kvar, men texten gör det — nu som en
+    // kvalificering direkt under personens namn. Föreläsnings-semantiken
+    // förklarar varför den här personen aldrig får en slutbetalning; utan den
+    // ser frånvaron ut som en lucka.
     await expect(
       betalningsPanel(page).getByText('Slutbetalning · Ej relevant (föreläsning)'),
     ).toBeVisible();
@@ -507,13 +521,15 @@ test.describe('Ej relevant-vakten — föreläsnings-semantiken (TASK-147.4 AC #
       }),
     ).toHaveCount(0);
 
-    // [TASK-346.7] Slutraden mätte tidigare att personens EGEN avgiftskryss
-    // gick att flippa medan slutbetalningens fält förblev orört. Med
-    // miljöflaggan på är INGET kryss flippbart, så påståendet är omskrivet
-    // till det som numera gäller — och det är ett STARKARE bevis för samma
-    // sak: ett klick på föreläsningspersonens avgiftskryss skriver
-    // ingenting alls, alltså kan slutbetalningens fält omöjligt röras.
-    await klicka(avgiftKryss(page, 'Föreläsnings Person'));
+    // [PASS 10] SLUTBEVISET ÄR NU STRUKTURELLT, INTE BETEENDEMÄSSIGT. Raden
+    // klickade tidigare på personens EGNA avgiftskryss och mätte att
+    // ingenting skrevs. Det krysset finns inte längre — hela vertikalen är
+    // riven — så klicket kan inte utföras, och det är ett STARKARE bevis för
+    // samma sak: när ingen skrivande affordans existerar kan
+    // föreläsnings-semantiken omöjligt skrivas över. Noll skrivningar mäts
+    // efter att sidan renderat färdigt, alltså utan att någon interaktion
+    // behövde provoceras.
+    await expect(betalningsPanel(page).getByRole('checkbox')).toHaveCount(0);
     await expect(page.getByRole('alert')).toHaveCount(0);
     expect(skrivningar).toHaveLength(0);
   });
@@ -527,19 +543,22 @@ test.describe('Ej relevant-vakten — föreläsnings-semantiken (TASK-147.4 AC #
 });
 
 /**
- * TASK-346.7 — DET NYA KONTRAKTET FÖR PANELEN.
+ * PASS 10 (2026-09-01) — SEKTIONENS KONTRAKT EFTER RIVNINGEN.
  *
- * Blocket ovan bevisade att kryssen SKRIVER. Detta bevisar att de INTE gör
- * det längre, plus att de tre nya affordanserna finns: saknas-beloppet,
- * "Registrera betalning" och inbetalningarnas fällning (AC #2).
+ * Blocket hette tidigare "läsande kryss" och bevisade att kryssen inte längre
+ * SKREV. Marcus GO 2026-09-01 rev dem helt: en kontroll som ser ut som en
+ * kontroll men inte är det är sämre än ingen kontroll. Testerna prövar därför
+ * inte längre kryssens BETEENDE utan deras FRÅNVARO, plus att det som ersatte
+ * dem faktiskt finns — och, viktigast, att noteringarna INTE följde med i
+ * rivningen.
  *
- * `hamta-oppna-betalningar` mockas TOMT med avsikt. Panelen ska fungera —
+ * `hamta-oppna-betalningar` mockas TOMT med avsikt. Sektionen ska fungera —
  * och säga något sant — även när ingen av personerna har en öppen rad; det
  * är exakt det tvetydiga läge `PanelBetalningar` § `rad === null` bokför
  * (fullbetald ELLER okänt pris i basen). Ett mockat innehåll här hade
  * dessutom knutit denna svit till EF-svarets form, som ägs av TASK-346.4.
  */
-test.describe('Åtgärds-panelen med miljöflaggan PÅ — läsande kryss (TASK-346.7 AC #2)', () => {
+test.describe('Åtgärds-sidans betalningssektion med miljöflaggan PÅ (pass 10)', () => {
   const OPPNA_BETALNINGAR = '**/functions/v1/hamta-oppna-betalningar*';
 
   async function mockaTomBetalningslista(page: Page): Promise<void> {
@@ -552,40 +571,69 @@ test.describe('Åtgärds-panelen med miljöflaggan PÅ — läsande kryss (TASK-
     );
   }
 
-  test('kryssen är LÄSANDE: aria-readonly, och ett klick skriver ingenting', async ({ page }) => {
+  /* ERSÄTTER DE TVÅ `aria-readonly`-TESTERNA. De prövade att ett läsande kryss
+     varken flippade eller skrev; med vertikalen riven finns inget kryss att
+     pröva, och frånvaron är ett starkare och enklare påstående. Noll
+     kryssrutor i sektionen ⇒ noll skrivvägar via kryss, oavsett vad någon
+     klickar på. */
+  test('kryss-vertikalen är RIVEN: noll kryssrutor i sektionen, noll skrivningar', async ({
+    page,
+  }) => {
     const { skrivningar } = await mocka(page, FACIT);
     await mockaTomBetalningslista(page);
     await oppnaSidanOchBetalningar(page);
 
-    const kryss = avgiftKryss(page, 'Eva Lindqvist');
-    // STATUSEN ÄR FORTFARANDE LÄSBAR. `isReadOnly` och inte `isDisabled`:
-    // ett inaktiverat kryss tas ur tabordningen och blir osynligt för den
-    // som läser raden med skärmläsare — och statusen ÄR informationen här.
-    await expect(kryss).toHaveAttribute('aria-readonly', 'true');
-    await expect(kryss).not.toBeChecked();
-
-    await klicka(kryss);
-
-    // DEN NEGATIVA KONTROLLEN: krysset ändrar sig inte, och ingen skrivning
-    // når basen. Utan `isReadOnly` hade båda inträffat.
-    await expect(kryss).not.toBeChecked();
+    await expect(betalningsPanel(page).getByRole('checkbox')).toHaveCount(0);
     await expect(page.getByRole('alert')).toHaveCount(0);
     expect(skrivningar).toHaveLength(0);
   });
 
-  test('ett MOTTAGET kryss går inte heller att bocka ur', async ({ page }) => {
+  /* FÄLLKNAPPEN ÄR RIVEN, OCH RÄKNAREN ÖVERLEVDE HOS RUBRIKEN. Talet satt på
+     knappen "Pricka av och notera"; överblicken får inte försvinna med sin
+     bärare. Mönstret matchas i stället för ett exakt tal — testet vaktar att
+     räknaren FINNS på sin nya plats, inte FACIT:s aritmetik (den ägs av
+     `obetald`-predikatets egna tester). */
+  test('fällknappen är riven och "N saknar" bor i sektionsrubriken', async ({ page }) => {
+    await mocka(page, FACIT);
+    await mockaTomBetalningslista(page);
+    await oppnaSidanOchBetalningar(page);
+
+    await expect(
+      betalningsPanel(page).getByRole('button', { name: /Pricka av och notera/ }),
+    ).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: /Betalningar · \d+ saknar/ })).toBeVisible();
+  });
+
+  /* NOTERINGARNA ÄR DET HÅRDA VILLKORET I HELA RIVNINGEN. Panelens två
+     noteringsfält är Lottas ENDA skrivväg till anmälans
+     `Notering anmälningsavgift`/`Notering slutbetalning` — pass 7 A3 mätte att
+     de inte kan nås från registreringsformuläret utan en EF-ändring, och
+     stannade därför. Ett kryss som försvinner är ett designbeslut; en
+     skrivväg som försvinner är en förlust. Testet vaktar att båda fälten
+     finns kvar i den nya formen. */
+  test('BÅDA noteringsfälten överlevde rivningen och är skrivbara', async ({ page }) => {
     const { skrivningar } = await mocka(page, FACIT);
     await mockaTomBetalningslista(page);
     await oppnaSidanOchBetalningar(page);
 
-    const kryss = avgiftKryss(page, 'Johan Berg');
-    await expect(kryss).toBeChecked(); // Johan startar Mottagen (FACIT).
-    await klicka(kryss);
-    await expect(kryss).toBeChecked();
-    expect(skrivningar).toHaveLength(0);
+    const panel = betalningsPanel(page);
+    await expect(
+      panel.getByRole('textbox', { name: 'Notering anmälningsavgift för Eva Lindqvist' }),
+    ).toBeVisible();
+    await expect(
+      panel.getByRole('textbox', { name: 'Notering slutbetalning för Eva Lindqvist' }),
+    ).toBeVisible();
+
+    const falt = avgiftNotering(page, 'Eva Lindqvist');
+    await falt.fill('Ringer på fredag');
+    await falt.blur();
+
+    await expect.poll(() => skrivningar.length).toBe(1);
+    expect(skrivningar[0].operationKey).toBe('update-registration-payment-note');
+    expect(skrivningar[0].fields).toEqual({ 'Notering anmälningsavgift': 'Ringer på fredag' });
   });
 
-  test('gamla "Skicka kvitto"-dialogen är RIVEN ur panelen', async ({ page }) => {
+  test('gamla "Skicka kvitto"-dialogen är RIVEN ur sektionen', async ({ page }) => {
     await mocka(page, FACIT);
     await mockaTomBetalningslista(page);
     await oppnaSidanOchBetalningar(page);
@@ -606,16 +654,25 @@ test.describe('Åtgärds-panelen med miljöflaggan PÅ — läsande kryss (TASK-
 
     // Ingen av personerna har en öppen rad i den (tomma) listan, så beskedet
     // är det tvetydighets-ärliga — aldrig ett påstått "Allt betalt".
+    //
+    // ORDALYDELSEN BYTTES 2026-09-01 (Marcus: "'enligt basen' är
+    // tekniksvenska — får inte nå Lotta"). Skillnaden mot "Allt betalt" är
+    // vad testet vaktar, och den står kvar: `rad === null` säger "Inget kvar
+    // att betala", ett känt fullbetalt pris säger "Allt betalt". Se
+    // `PanelBetalningar.tsx` § `rad === null` för vad hedgen kostade.
+    //
+    // [PASS 10] Beskedet syns nu UTAN att någon fällning öppnas först —
+    // sektionen ÄR betalningsytan. Inbetalnings-fällningen per person är
+    // däremot kvar och fortfarande stängd: anropsbudgeten (en läsning per
+    // person = tjugo EF-anrop) gäller oförändrat.
     const panel = betalningsPanel(page);
-    await expect(panel.getByText('Inget öppet belopp enligt basen').first()).toBeVisible();
+    await expect(panel.getByText('Inget kvar att betala').first()).toBeVisible();
 
-    // Fällningen finns per person och är STÄNGD från början (anropsbudgeten:
-    // en läsning per person vid öppning hade blivit tjugo EF-anrop).
     const fallning = panel.getByRole('button', { name: /Visa inbetalningarna för Eva Lindqvist/ });
     await expect(fallning).toHaveAttribute('aria-expanded', 'false');
   });
 
-  test('axe: 0 överträdelser med de nya läsande kryssen och panelens tillägg', async ({ page }) => {
+  test('axe: 0 överträdelser på den nya sektionen', async ({ page }) => {
     await mocka(page, FACIT);
     await mockaTomBetalningslista(page);
     await oppnaSidanOchBetalningar(page);

@@ -14,8 +14,6 @@ import type { SvepTyp } from '@/components/svep/types';
 import type { Event } from '@/domain/models/Event';
 import type { Registration } from '@/domain/models/Registration';
 import { fornamn } from '@/lib/fornamn';
-import { betalningarPa } from '@/lib/funktionsflaggor';
-import { BetalningarKort } from './BetalningarKort';
 import { Bevakningsrad } from './Bevakningsrad';
 import { ForfallnaBetalningar } from './ForfallnaBetalningar';
 import { Genvagar } from './Genvagar';
@@ -31,6 +29,7 @@ import {
   obekraftadeAnmalningar,
   velNastaEvent,
 } from './hem-derivations';
+import { KvittojobbBanderoll } from './KvittojobbBanderoll';
 import { NastaEvent } from './NastaEvent';
 import { NyaAnmalningar } from './NyaAnmalningar';
 import { SenasteAktivitetKompakt } from './SenasteAktivitetKompakt';
@@ -381,34 +380,51 @@ export function Hem() {
           nyligenSkickade={nyligenSkickadeRader}
         />
 
-        {/* 4. BETALNINGAR — ERSÄTTER "Förfallna betalningar" när miljöflaggan
-            är på (TASK-346.7 AC #1, PRD § Inkorgen och formuläret: "ersätter
-            dagens kort … (inte ovanpå det)").
+        {/* 4. FÖRFALLNA BETALNINGAR — OVILLKORLIGT, ÄVEN MED MILJÖFLAGGAN PÅ.
 
-            VÄXELN ÄR ETT TERNÄRT VAL, INTE TVÅ VILLKORADE BLOCK. Skrivet som
-            två `{flagga && …}`/`{!flagga && …}` hade de två korten kunnat
-            renderas samtidigt om villkoren någon gång drev isär — och
-            "inte ovanpå det" är hela poängen med raden i PRD:n.
+            HÄR STOD EN VÄXEL (TASK-346.7): med flaggan på renderades
+            `BetalningarKort`, PRD:ns tre-tal-kort, i stället för detta block.
+            Marcus dom 2026-09-01, efter två iterationer på den formen, river
+            växeln: "Nej det här håller inte. Lotta kommer bli så sjukt
+            förvirrad."
 
-            MED FLAGGAN AV ÄR PROD-BETEENDET EXAKT DAGENS: samma komponent,
-            samma props, samma påminnelsesvep. Ingen av det gamla kortets
-            props har ändrats. */}
-        {betalningarPa() ? (
-          <BetalningarKort
-            onSkickaPaminnelseAlla={() => setAktivtSvep('paminnelse')}
-            harPaminnelser={paminnelseRaderList.length > 0}
-          />
-        ) : (
-          <ForfallnaBetalningar
-            anmalDataPending={anmalDataPending}
-            regsError={regsError}
-            registrationsQuery={registrationsQuery}
-            forfallna={forfallna}
-            nuMs={nuMs}
-            onSkickaPaminnelseAlla={() => setAktivtSvep('paminnelse')}
-            nyligenPaminda={nyligenPaminda}
-          />
-        )}
+            GRUNDFELET VAR INTE FORMEN UTAN ATT BLOCKET BLANDADE TVÅ JOBB.
+            Kortet LISTADE alla öppna betalningar, medan dess enda knapp
+            ("Skicka påminnelse till alla") opererade på en DELMÄNGD — de
+            rader som är i "Att påminna"-läget. Listan och knappen svarade
+            alltså på olika frågor under samma rubrik, och ingen omdesign av
+            typografin kunde laga det. Det gamla blocket har inte den
+            tvetydigheten: dess tre grupper ÄR påminnelse-modellens tillstånd,
+            och knappen sitter i den grupp den opererar på.
+
+            `BetalningarKort.tsx` är därmed BORTTAGEN, inte parkerad —
+            git-historiken bär den (senast `01255446`), och en oanvänd
+            komponent på disk är en inbjudan att återinföra ett underkänt
+            beslut. PRD:ns kort-rad är inte längre gällande; PRD-texten
+            speglas i skivans amendering, inte här.
+
+            REGISTRERA-INGÅNGEN FLYTTADE, DEN FÖRSVANN INTE: den bor nu som
+            en flagg-gatad rad i `Genvagar` — genvägar är precis vad den är.
+            Kvittojobbets banderoll bor i `KvittojobbBanderoll` strax nedan.
+
+            Komponenten själv är ORÖRD, liksom dess props och
+            påminnelsesvepets urval. Med flaggan av är beteendet exakt vad
+            det alltid varit; med flaggan på är det nu detsamma. */}
+        <ForfallnaBetalningar
+          anmalDataPending={anmalDataPending}
+          regsError={regsError}
+          registrationsQuery={registrationsQuery}
+          forfallna={forfallna}
+          nuMs={nuMs}
+          onSkickaPaminnelseAlla={() => setAktivtSvep('paminnelse')}
+          nyligenPaminda={nyligenPaminda}
+        />
+
+        {/* 4b. KVITTOJOBBET — fristående, och osynligt utom medan ett jobb
+            faktiskt arbetar. Samma klass som Bevakningsraden: en yta som inte
+            finns när den inte har något att säga, och därför inte kan störa
+            blockordningen. Gatar sig själv på miljöflaggan. */}
+        <KvittojobbBanderoll />
 
         {/* 5. GENVÄGAR */}
         <Genvagar />
