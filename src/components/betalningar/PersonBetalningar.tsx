@@ -9,8 +9,12 @@ import { harledRad } from './inkorg-harledningar';
 import { personOversikt } from './panel-harledningar';
 import { RegistreraYta } from './RegistreraYta';
 
-/** Hur många av personens senaste inbetalningar som visas utan omväg. */
-const SENASTE_ANTAL = 5;
+/* [PASS 12] `SENASTE_ANTAL = 5` ÄR RIVEN. Konstanten kapade listan till fem
+   rader och lät `InbetalningsLista`s "Visar 5 av 7"-rad förklara resten bort.
+   Marcus 2026-09-01: *"Jag tror vi måste ha inline scroll … det kommer bli
+   många inbetalningar på många personer."* Rullningen håller listan kort utan
+   att gömma rader, så taket har inget jobb kvar — och en rad som finns ska gå
+   att nå. */
 
 /**
  * [TASK-346.7 AC #4] Personkortets Betalningar-sektion: vad personen har
@@ -127,36 +131,39 @@ export function PersonBetalningar({ person }: { person: PersonDetail }) {
         ))}
       </div>
 
-      {/* ═══ BLOCK INUTI BLOCKET (pass 8) ═══
-          Marcus dom 2026-09-01: *"Borde inte 'Senaste inbetalningar' mer vara
-          ett block inuti blocket?"* — rubriken var en lös etikett följd av
-          svävande kort, inte en grupp.
+      {/* ═══ INGEN EGEN BAKGRUNDSYTA (pass 12, 2026-09-01) ═══
+          Marcus: *"Det funkar inte, ta bort den mörkare grå bakgrund på
+          'senaste inbetalningar'."*
 
-          FORMEN ÄR BILAGE-YTANS `GRUPPKORT_KLASS` (`DokumentYta.tsx`): en tonad
-          behållare vars padding ÄR rännan, med vita kort inuti som den tonade
-          ytan syns mellan. TVÅ MEDVETNA AVSTEG från förlagan, båda tvingade av
-          att vi redan står på en tonad botten:
+          VAD SOM REVS: pass 8 gav gruppen en `bg-bg-emphasized`-behållare för
+          att binda ihop rubrik och lista. Utfallet blev TRE nivåer nesting —
+          sektionens ljusgrå yta, ett mörkare grått omslag, och vita kort inuti
+          det. Grupperingen bärs nu i stället av eyebrow-etiketten plus listans
+          egen sammanhållning; korten ligger direkt på samma botten som
+          statuskortet ovanför, alltså två nivåer i stället för tre.
 
-           • TONEN ÄR `bg-bg-emphasized`, inte `bg-bg-muted`. `Sektion`s egen
-             behållare (`PersonDetail.tsx`) ÄR `bg-bg-muted` — en grupp i samma
-             ton hade varit osynlig. Samma felklass som `RackviddBadge`
-             dokumenterar två gånger i sitt eget huvud (mätt ΔE00 0,00 när en
-             pill bar samma token som ytan bakom).
-           • RUBRIKEN LIGGER INUTI behållaren, medan `Sektion`/`DetaljGrupp`
-             lägger sin `h2` utanför. Det är precis vad Marcus bad om: det är
-             etikettens LÖSHET som är felet, och en rubrik utanför lådan förblir
-             lös. Husets form gäller sektionsnivån; detta är nivån under.
+          RUBRIKEN ÄR EN EYEBROW — OCH DET MOTSÄGER INTE HEM-DOMEN. Marcus rev
+          `font-medium text-caption uppercase tracking-wide` på Hem-blocket
+          2026-09-01, och den rivningen står. Skillnaden är ROLLEN, inte
+          formen: på Hem var eyebrown ENDA rubriken över en lista man skulle
+          agera på, alltså en huvudrubrik som viskade. Här sitter den som
+          UNDER-etikett under sektionens riktiga `h2` ("Betalningar",
+          `PersonDetail.tsx` § `Sektion`) — samma roll som "NÄSTA EVENT"-
+          overlinen har. Rätt form för rätt nivå. Skriv inte tillbaka den till
+          `font-semibold text-body` utan att läsa båda domarna.
 
-          Rubrikens klass är oförändrad — `font-semibold text-body`, husets
-          underrubrik ett steg under `Sektion`s `text-lg`-h2 (och INTE den
-          viskande `text-caption uppercase`-etiketten Marcus rev på Hem-blocket
-          samma dag). */}
-      <div className="flex flex-col gap-2 rounded-2xl border border-transparent bg-bg-emphasized p-3 contrast-more:border-border-strong">
-        <h3 className="font-semibold text-body">Senaste inbetalningar</h3>
+          SEMANTIKEN BESTÅR: elementet är fortfarande ett `h3`, alltså en
+          rubrik för listan i tillgänglighetsträdet — bara dess visuella vikt
+          är etikettens. Rullningsregionen bär dessutom sitt eget namn via
+          `listEtikett`. */}
+      <div className="flex flex-col gap-2">
+        <h3 className="font-medium text-caption text-text-secondary uppercase tracking-wide">
+          Senaste inbetalningar
+        </h3>
         <InbetalningsLista
           kalla={{ personId: person.id }}
           aktiv
-          max={SENASTE_ANTAL}
+          listEtikett="Senaste inbetalningar"
           tomText="Ingen inbetalning registrerad på personen än."
         />
       </div>

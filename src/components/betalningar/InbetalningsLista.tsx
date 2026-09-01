@@ -60,8 +60,17 @@ type Props = {
   kalla: Inbetalningskalla;
   /** Hämta först när ytan faktiskt visas - se hookarnas docblock. */
   aktiv: boolean;
-  /** Högst så här många rader. Utelämnad = alla. */
-  max?: number;
+  /**
+   * Rullningsregionens tillgängliga namn.
+   *
+   * [PASS 12] ERSÄTTER DEN RIVNA `max`-PROPEN. `max` kapade listan till N
+   * rader och lät en "Visar 5 av 7"-rad förklara resten bort; sedan listan
+   * fick inline scroll (se renderingen) finns alla rader, och det som behövs i
+   * stället är ett NAMN på den fokuserbara rullningsboxen. Konsumenten
+   * bestämmer det, eftersom rubriken ovanför listan varierar per yta
+   * ("Senaste inbetalningar" på personkortet, "Inbetalningar" på anmälan).
+   */
+  listEtikett?: string;
   /** Vad som står när det inte finns någon inbetalning alls. */
   tomText?: string;
 };
@@ -170,7 +179,7 @@ type Props = {
  * den på skärmen — den bor i EN klass-sträng nedan och kan växlas tillbaka
  * till `divide-y` med en rad om han föredrar det där.
  */
-export function InbetalningsLista({ kalla, aktiv, max, tomText }: Props) {
+export function InbetalningsLista({ kalla, aktiv, listEtikett = 'Inbetalningar', tomText }: Props) {
   const anmalanId = 'anmalanRecordId' in kalla ? kalla.anmalanRecordId : '';
   const personId = 'personId' in kalla ? kalla.personId : '';
 
@@ -213,14 +222,13 @@ export function InbetalningsLista({ kalla, aktiv, max, tomText }: Props) {
   }
 
   const alla = sorteraInbetalningar(query.data.inbetalningar);
-  const rader = max === undefined ? alla : alla.slice(0, max);
   const spegel = query.data.spegel;
   // [TASK-352] EN uppslagning för hela listan, aldrig en sökning per rad —
   // samma princip som kvittona ovan. `kvittolage` tar bara emot resultatet
   // (se dess docblock).
   const jobbfelPerInbetalning = new Map(query.data.jobbfel.map((f) => [f.inbetalningId, f.skal]));
 
-  if (rader.length === 0) {
+  if (alla.length === 0) {
     return (
       <p className="text-small text-text-muted">{tomText ?? 'Ingen inbetalning registrerad än.'}</p>
     );
@@ -241,9 +249,43 @@ export function InbetalningsLista({ kalla, aktiv, max, tomText }: Props) {
       {/* KORTFORM, INTE HÅRLINJER (Marcus dom 2026-09-01) — se komponentens
           docblock § RADENS ANATOMI. Korten separeras av luft, inte av
           `divide-y`: en kortyta som ändå bär sin egen kant behöver ingen
-          linje mellan sig och nästa. */}
-      <ul className="flex flex-col gap-2">
-        {rader.map((inbetalning) => (
+          linje mellan sig och nästa.
+
+          ═══ INLINE SCROLL I STÄLLET FÖR ETT TAK (pass 12, 2026-09-01) ═══
+          Marcus: *"Jag tror vi måste ha inline scroll som vi har på så många
+          andra ställen här, det kommer bli många inbetalningar på många
+          personer."*
+
+          FÖRLAGAN ÄR KOPIERAD, INTE UPPFUNNEN: `focus-ring-inset
+          scrollbar-inline flex max-h-96 flex-col overflow-y-auto pr-3` är
+          ordagrant klassuppsättningen `hem/NyaAnmalningar.tsx` och
+          `hem/ForfallnaBetalningar.tsx` (tre listor) redan bär. Enda
+          skillnaden är `gap-2` i stället för `gap-1`, eftersom raderna här är
+          KORT och inte hårlinjerader — luften mellan dem är radformens egen,
+          satt av Marcus samma dag.
+
+          `tabIndex={0}` + `aria-label` ÄR WCAG-GOLVET, inte pynt: en
+          rullningsbar region måste gå att nå och rulla med tangentbord (axe
+          `scrollable-region-focusable`, WCAG 2.1.1). Samma `biome-ignore` och
+          samma motiv som förlagan bär.
+
+          ⋯-MENYERNA KLIPPS INTE — MÄTT, INTE ANTAGET: `DokumentYta.tsx`
+          (rad ~2833) kör redan husets `Meny` med `Ellipsis` i rader inuti en
+          `scrollbar-inline`-lista med `overflow-y-auto`. Det är en levererad,
+          granskad yta, alltså ett empiriskt bevis som väger tyngre än att läsa
+          bundlad RAC-källa: popovern portalas ut ur rullningsboxen.
+
+          TAKET OCH "VISAR X AV Y" ÄR RIVNA med scrollen. `max`-propen hade
+          exakt EN konsument (personkortets `SENASTE_ANTAL = 5`) och dess enda
+          syfte var att hålla listan kort — vilket rullningen nu gör utan att
+          gömma rader. En rad som finns ska gå att nå. */}
+      <ul
+        // biome-ignore lint/a11y/noNoninteractiveTabindex: fokuserbar scrollregion är WCAG 2.1.1-golvet (axe scrollable-region-focusable) — samma motiv och samma form som hem/NyaAnmalningar.tsx.
+        tabIndex={0}
+        aria-label={listEtikett}
+        className="focus-ring-inset scrollbar-inline flex max-h-96 flex-col gap-2 overflow-y-auto pr-3"
+      >
+        {alla.map((inbetalning) => (
           <InbetalningsRad
             key={inbetalning.id}
             inbetalning={inbetalning}
@@ -252,12 +294,6 @@ export function InbetalningsLista({ kalla, aktiv, max, tomText }: Props) {
           />
         ))}
       </ul>
-
-      {max !== undefined && alla.length > rader.length && (
-        <p className="text-caption text-text-muted">
-          {`Visar ${rader.length} av ${alla.length} inbetalningar.`}
-        </p>
-      )}
     </div>
   );
 }

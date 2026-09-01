@@ -126,16 +126,16 @@ export function AnmalansBetalningar({
         </div>
       </div>
 
-      {/* ═══ BLOCK INUTI BLOCKET (pass 8) — samma form och samma två avsteg som
-          `PersonBetalningar.tsx` § "BLOCK INUTI BLOCKET"; se det blocket för
-          varför tonen är `bg-bg-emphasized` och varför rubriken bor INUTI
-          behållaren här men utanför på sektionsnivå.
-
-          NORMAL UNDERRUBRIK, INTE VERSAL-OVERLINE — se `PersonBetalningar.tsx`s
-          motsvarande rad för Marcus dom 2026-09-01 och klassvalet. */}
-      <div className="flex flex-col gap-2 rounded-2xl border border-transparent bg-bg-emphasized p-3 contrast-more:border-border-strong">
-        <h3 className="font-semibold text-body">Inbetalningar</h3>
-        <InbetalningsLista kalla={{ anmalanRecordId }} aktiv />
+      {/* ═══ INGEN EGEN BAKGRUNDSYTA, RUBRIKEN ÄR EN EYEBROW (pass 12) ═══
+          Samma ändring, samma skäl och samma roll-distinktion mot Hem-domen
+          som `PersonBetalningar.tsx` § "INGEN EGEN BAKGRUNDSYTA" — läs den
+          innan du rättar tillbaka något här. De två ytorna visar SAMMA lista
+          och måste se likadana ut. */}
+      <div className="flex flex-col gap-2">
+        <h3 className="font-medium text-caption text-text-secondary uppercase tracking-wide">
+          Inbetalningar
+        </h3>
+        <InbetalningsLista kalla={{ anmalanRecordId }} aktiv listEtikett="Inbetalningar" />
       </div>
     </div>
   );
