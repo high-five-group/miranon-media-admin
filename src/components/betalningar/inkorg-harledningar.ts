@@ -438,7 +438,22 @@ export function beloppsutfall(rad: InkorgsRad, belopp: number): Beloppsutfall {
     if (tvaFack && summaInbetalt < anmalningsavgift) {
       return { ton: 'tacker', text: `${visat} kr täcker anmälningsavgift + slutbetalning.` };
     }
-    return { ton: 'tacker', text: `${visat} kr täcker hela priset.` };
+    // HELTÄCKNINGEN SÄGS SOM ETT UTFALL, INTE SOM EN TÄCKNINGSGRAD (Marcus dom
+    // 2026-09-01): *"'500 kr täcker hela priset' tycker jag är otydlig. kanske
+    // 'Inget kvar att betala' är tydligare?"*.
+    //
+    // "täcker hela priset" tvingade Lotta att själv räkna ut vad det BETYDER —
+    // beloppet ställdes mot ett pris hon inte har framför sig, och slutsatsen
+    // ("alltså är hon klar") lämnades åt henne. Den nya formen säger slutsatsen
+    // direkt, med SAMMA domänterm som resten av betalningsytorna redan bär:
+    // "kvar att betala" står i `delvis`-grenen nedan, i `over`-grenen ovan, i
+    // registreringens kvittens och på inkorgens rader. Heltäckningen är alltså
+    // inte längre den enda meningen som mäter något annat än de andra.
+    //
+    // BELOPPET NÄMNS INTE, och det är avsiktligt: talet står i beloppsfältet
+    // direkt ovanför boxen, oförändrat sedan Lotta skrev det. Att upprepa det
+    // hade gjort meningen längre utan att göra den säkrare.
+    return { ton: 'tacker', text: 'Inget kvar att betala.' };
   }
 
   // DOMÄNTERMEN ÄR "KVAR ATT BETALA" (Marcus 2026-09-01), och i löpande text

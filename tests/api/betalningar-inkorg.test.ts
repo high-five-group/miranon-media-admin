@@ -328,13 +328,45 @@ test('ett belopp som täcker exakt avgiften säger det, och resten', () => {
 test('slutbetalningen efter avgiften nämner INTE facken - de är redan förbi', () => {
   const utfall = beloppsutfall(rad({ summaInbetalt: 1000 }), 1500);
   expect(utfall.ton).toBe('tacker');
-  expect(utfall.text).toBe(`${kr('1 500')} kr täcker hela priset.`);
+  expect(utfall.text).toBe('Inget kvar att betala.');
 });
 
 test('föreläsning utan fack nämner aldrig anmälningsavgift', () => {
   const utfall = beloppsutfall(rad({ gallandePris: 500, anmalningsavgift: 500 }), 500);
-  expect(utfall.text).toBe('500 kr täcker hela priset.');
+  expect(utfall.text).toBe('Inget kvar att betala.');
   expect(utfall.text).not.toContain('anmälningsavgift');
+});
+
+/* HELTÄCKNINGEN SÄGER SLUTSATSEN, INTE TÄCKNINGSGRADEN (Marcus 2026-09-01).
+   Texten var `<belopp> kr täcker hela priset.`; den formen ställde beloppet mot
+   ett pris Lotta inte har framför sig och lämnade slutsatsen åt henne. */
+test('heltäckning använder domäntermen "kvar att betala", inte "täcker hela priset"', () => {
+  // `summaInbetalt: 1000` (avgiften redan betald) + 1500 = den rena
+  // heltäckningsgrenen. Fixturen defaultar till `summaInbetalt: 0`, och DÅ
+  // träffar 2 500 kr i stället två-facks-grenen nedan — samma `ton`, annan text.
+  const utfall = beloppsutfall(rad({ summaInbetalt: 1000 }), 1500);
+  expect(utfall.ton).toBe('tacker');
+  expect(utfall.text).not.toContain('täcker hela priset');
+  expect(utfall.text).toContain('kvar att betala');
+});
+
+/* DE ANDRA GRENARNA ÄR ORÖRDA — regressionsvakt. Marcus bytte heltäckningen
+   och ingenting annat; två-facks-texten och de två delfallen nämner fortfarande
+   facket respektive resten. Utan detta hade en framtida förenkling kunnat dra
+   med sig dem i samma svep. */
+test('övriga grenar behåller sina texter när heltäckningen byter form', () => {
+  // Två fack, båda täckta i ett svep (AC #5:s ordagranna krav).
+  expect(beloppsutfall(rad({ summaInbetalt: 0 }), 2500).text).toBe(
+    `${kr('2 500')} kr täcker anmälningsavgift + slutbetalning.`,
+  );
+  // Delfall 1: exakt avgiften, resten kvar.
+  expect(beloppsutfall(rad({ summaInbetalt: 0 }), 1000).text).toBe(
+    `${kr('1 000')} kr täcker anmälningsavgiften. ${kr('1 500')} kr kvar att betala.`,
+  );
+  // Delfall 2: udda belopp.
+  expect(beloppsutfall(rad({ summaInbetalt: 0 }), 700).text).toBe(
+    `700 kr registreras. ${kr('1 800')} kr kvar att betala.`,
+  );
 });
 
 test('överbetalning sägs rakt ut i stället för att avrundas bort', () => {
