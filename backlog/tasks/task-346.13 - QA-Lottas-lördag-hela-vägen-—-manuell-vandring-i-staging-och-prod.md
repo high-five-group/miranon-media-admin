@@ -4,7 +4,7 @@ title: 'QA: Lottas lördag hela vägen — manuell vandring i staging och prod'
 status: To Do
 assignee: []
 created_date: '2026-08-30 18:46'
-updated_date: '2026-09-01 10:56'
+updated_date: '2026-09-01 11:01'
 labels:
   - ready-for-human
 dependencies:
@@ -29,10 +29,10 @@ ordinal: 650000
 <!-- SECTION:DESCRIPTION:BEGIN -->
 Manuell testplan (Marcus, iPad + dator, staging först, sedan prod efter promovering):
 1. Hem: det gamla blocket Förfallna betalningar står kvar med sina tre grupper (Att påminna · Väntar · Dags att ringa) och Skicka påminnelse till alla i den grupp knappen opererar på — kortet Betalningar är rivet (Marcus dom 2026-09-01). Genvägar har en tredje rad, Registrera betalning, som öppnar inkorgen med fokus i sökfältet. Kvittojobbets banderoll syns bara medan ett jobb faktiskt arbetar.
-2. Skriv 'Ceci' → bara Cecilias rad; tryck [1 000 · anmälningsavgift], Swish, Enter → raden säger anmälningsavgift klar · 1 500 saknas · kvitto väntar; fokus åter i tomt sökfält.
-3. Registrera 2 500 för en annan person → 'täcker anmälningsavgift + slutbetalning'; registrera 2 000 för en tredje → 'saknas 500'; sätt Avtalat pris 2 000 → allt betalt.
+2. Skriv 'Ceci' → bara Cecilias rad; öppna den → HELA kortet markeras grönt. Snabbvalen är rivna: beloppsfältet är alltid synligt och förifyllt med hela resten, markerat vid fokus, så 1 000 skriver över talet. Swish, Enter → kvittensen säger '1 000 kr registrerat. 1 500 kr kvar att betala.', kortet i listan uppdateras i samma tick (ingen fördröjning), fokus åter i tomt sökfält.
+3. Registrera 2 500 för en annan person → utfallsboxen säger '2 500 kr täcker anmälningsavgift + slutbetalning.'; registrera 2 000 för en tredje → '2 000 kr registreras. 500 kr kvar att betala.'. Följ boxens länk Sätt avtalat pris, skriv 2 000 och tryck Spara — priset har egen knapp och egen skrivväg sedan 2026-09-01, alltså sparas det INTE av Registrera; boxen räknar om mot det nya priset medan du skriver, och ett skrivet men osparat pris sägs ut vid knappen.
 4. Skriv '2 500,00' i annat-fältet → accepteras; 'abc' → feltext vid fältet.
-5. Skicka 3 kvitton → omedelbar kvittens, raderna tickar skickat, Hem säger '3 kvitton skickade'; öppna Visa kvitto: en rad, rätt belopp, Betalningsdatum = registreringsdatumet; Skicka igen till egen adress → samma nummer.
+5. Tryck Skicka 3 kvitton i granskningsblocket → omedelbar kvittens, raderna tickar skickat. Hem visar kvittojobbets banderoll ENBART medan jobbet arbetar ('Skickar kvitton, N av 3 klara' eller 'N av 3 kvitton väntar') — ett avslutat jobb tystas, även ett lyckat, så inget '3 kvitton skickade' ska stå kvar på Hem efteråt. Öppna Visa kvitto: en rad, rätt belopp, Betalningsdatum = registreringsdatumet; Skicka igen till egen adress → samma nummer.
 6. Makulera ett kvitto med skäl → raden makulerad, kvittot kvar i ledgern; registrera en återbetalning → kreditkvitto med hänvisning.
 7. Importera Handelsbankens exempelfil → säkra/osäkra/omatchade rader; bekräfta → inbetalningar + Skicka N kvitton; importera samma fil igen → 0 nya, '… redan registrerade'.
 8. Åtgärds-sidan: sektionen heter 'Betalningar · N saknar' och visar per person ett statuskort (kvar att betala, med Förfallen/Basen släpar när de gäller), Registrera betalning, Registrera återbetalning och inbetalningshistoriken i en fällning per person. INGA kryss att flippa och ingen fällknapp 'Pricka av och notera' — vertikalen är riven i den flaggade världen (Marcus GO 2026-09-01); noteringsfälten finns kvar under betalningsytan och skriver fortfarande. Påminnelsen räknar rätt. Anmälans detaljvy och personkortet visar inbetalningar och kvitton.
