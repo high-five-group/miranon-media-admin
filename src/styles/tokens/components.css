@@ -42,8 +42,44 @@
   --mm-button-danger-bg-pressed: color-mix(in srgb, var(--mm-error), black 15%);
   --mm-button-ghost-bg: transparent;
   --mm-button-ghost-text: var(--mm-text);
-  --mm-button-ghost-bg-hover: var(--mm-bg-muted);
-  --mm-button-ghost-bg-pressed: color-mix(in srgb, var(--mm-bg-muted), black 8%);
+  /* ── Ghost-knappens hover/pressed: GENOMSKINLIG SKRIM, inte opak platta ──
+     (Marcus 2026-09-01: *"Behåll kan ju inte ha vit hover"*, *"Även
+     Ångra-knappen hade vit hover, funkar ju inte på denna bakgrund"*.)
+
+     ROTORSAKEN ÄR IDENTITETSFÄLLAN, INTE DE TVÅ KNAPPARNA. En OPAK hover
+     har en fast ton, så dess synlighet beror på vilken yta den råkar hamna
+     på — och `--mm-bg-muted` är samma ton som flera av husets egna ytor.
+     Mätt (WCAG-kontrast mellan hover-plattan och ytan under den):
+
+       yta                        opak #f5f5f3      skrim 6 %
+       vit surface #ffffff .......... 1,092 ....... 1,119
+       guld-tint #fbf3e0 ............ 1,013 ....... 1,116   ← osynlig förut
+       bg-muted #f5f5f3 ............. 1,000 ....... 1,123   ← IDENTISK förut
+       bg-emphasized #edeee9 ........ 1,068 ....... 1,117
+
+     En skrim är RELATIV till det som ligger under: den mörknar ytan i
+     stället för att måla över den, så samma token ger samma upplevda
+     återkoppling på alla fyra ytorna. Det är därför fixen bor HÄR och inte
+     som en klass per knapp eller per tonad behållare — hade den lappats per
+     yta hade nästa tonade yta ärvt buggen igen.
+
+     6 % ÄR VALT MOT NULÄGET PÅ VITT, inte gripet ur luften: vitt är den
+     vanligaste ghost-ytan, och 6 % (1,119) ligger närmast den etablerade
+     opaka hovern där (1,092). Skillnaden är 0,027 i kontrastkvot — under
+     vad ögat skiljer — så den stora installerade basen av ghost-knappar på
+     vit yta ser i praktiken oförändrad ut.
+
+     KULÖREN ÄR HUSETS VARMA MÖRKER (--p-neutral-900), inte ren svart:
+     en svart skrim hade kylt ned den varma guld- och neutralpaletten.
+
+     SIDOEFFEKT VÄRD ATT KÄNNA TILL: raden "1,000" ovan är den fälla
+     `DokumentYta.tsx` (§ ghost-tokenens identitet) räknar SEX instanser av
+     och som `--mm-bilagekort-ikonknapp-*` mintades för att gå runt. Den är
+     löst vid källan nu. De befintliga komponent-tokensen är ORÖRDA — de
+     fungerar fortfarande och att riva dem är ett eget beslut, inte en
+     bieffekt av ett iterationspass. */
+  --mm-button-ghost-bg-hover: color-mix(in srgb, var(--p-neutral-900) 6%, transparent);
+  --mm-button-ghost-bg-pressed: color-mix(in srgb, var(--p-neutral-900) 10%, transparent);
   /* success = GRÖN primär (task-19.3; S73-facit K77, Marcus: skapa-knappen i
      sage-grönt i stället för primärknappens svärta). Vit text mot --mm-success
      (#606B57) ≈ 5,6:1 → WCAG AA. Samma hover/pressed-grammatik som danger. */

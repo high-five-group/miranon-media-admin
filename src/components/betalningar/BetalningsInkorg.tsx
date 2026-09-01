@@ -1277,7 +1277,15 @@ export function BetalningsInkorg() {
                       form som `InbetalningsLista`s radera-bekräftelse och
                       `RegistreraForm`. Ingen modal för en engångsfråga. */}
                   {angrarDenna && (
-                    <div className="mt-2 flex flex-wrap items-center gap-2 rounded border border-primary-muted px-2 py-2 contrast-more:border-primary">
+                    /* INGEN KONTUR (Marcus 2026-09-01: *"Ta bort konturen som
+                       blir runt 'Ångra registreringen'"*). Bekräftelsen låg i
+                       en egen inramad ruta på guldytan — en tredje kant i ett
+                       block som redan har sin egen kontur och sina hårlinjer.
+                       Den ligger nu direkt på ytan som en rad i listrytmen:
+                       frågan står i text och allvaret bärs av "Ja, ångra" i
+                       röd fylld vikt, vilket är den signal en kant ändå bara
+                       upprepade. */
+                    <div className="mt-2 flex flex-wrap items-center gap-2">
                       <span className="text-caption">
                         Ångra registreringen? Inbetalningen raderas.
                       </span>
