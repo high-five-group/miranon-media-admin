@@ -11,15 +11,18 @@
 > Implementation-journal i `docs/BUILD-LOG.md`.
 > Styrande dokument: [`docs/byggplan.md`](../docs/byggplan.md)
 
-**S113 ⏸️ PAUSAD (paus 6, 2026-08-31 ~13:40 UTC — ALLT LANDAT, redo för
-Marcus ögon):** hela TASK-346-leveransen på main inkl. design-polish `#2183`
-(`cc3fb46d`) genom full review-loop + orkestrerarens perfektionsdom (GRÖN,
-dombevis i `tasks/sessions/bilagor/s113-natt-slutvandring/`) · #2174–#2177
-och #2184 mergade · Done: 346.7/346.9/346.10/346.7.1/351/352/346.14 · nya kort
-353–356 · staging klar (EF v2, fixturen intakt, dev-servern på 5173 igång) ·
+**Session 113 ▶️ ÅTERUPPTAGEN (resume 6, 2026-09-01 ~05:51 UTC,
+`lifecycle: active`; Marcus: *"Återuppta S113"*; paus 6 var 2026-08-31
+~13:40 UTC — allt landat):** paus 6-läget verifierat vid resume — paus-PR
+`#2186` MERGED, `main` ff:ad `4d682063` · numrering disk-verifierad utan
+divergens (ADR 130 · kort 357 · L655 · 22 fragment · T180) · S114 löper
+parallellt i egen worktree (`s114-segment`), huvudkatalogen S113:s. Paus
+6-leveransen (hela TASK-346 inkl. design-polish `#2183` genom full
+review-loop + perfektionsdom GRÖN, Done: 346.7/346.9/346.10/346.7.1/351/
+352/346.14, nya kort 353–356): sessionsdok S113 § Paushistorik paus 6.
 **KVAR = MARCUS-MOMENTEN:** titta → prod-promovering per runbook 346.11 →
-frågelistan (PAUSLÄGE-blockets MARCUS-SEKVENS i sessionsdok S113). Resume
-via `session-resume` (N=113).
+frågelistan (Paushistorik paus 6-blockets MARCUS-SEKVENS i sessionsdok
+S113).
 
 ---
 
