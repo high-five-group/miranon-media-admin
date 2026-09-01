@@ -11,24 +11,23 @@
 > Implementation-journal i `docs/BUILD-LOG.md`.
 > Styrande dokument: [`docs/byggplan.md`](../docs/byggplan.md)
 
-**S113 ⏸️ PAUSAD (paus 7, 2026-09-01 ~13:20 UTC — DUKAD FÖR PROMOVERINGEN,
-Marcus nöjd, Lotta-demo IMORGON):** Marcus designvandring genomförd —
-FJORTON fix-pass i lokal HMR-loop (fyra bygg-agenter i serie + läs-agent +
-bokföringsagent), grenen `fix/hem-betalningskort-marcus-iteration` =
-**48 commits pushad, HEAD `6d5e46c3`, INGEN PR än** (resume skapar den).
-Huvudleveranser: Hem-blocket rivet (gamla tillbaka + Coins-genväg) ·
-inkorgens FilterRad/kortlista/granskningsblock med Ångra · bank-anatomi ·
-noteringskedjan på inbetalningen (STAGING-deployad) · avtalat pris egen
-skrivväg · optimistik båda hållen · Pricka av-vertikalen riven (flagg-PÅ) ·
-terminologi-/pill-/hover-svep · full landningsbokföring (5 amenderingar,
-ORDLISTA ×3, CHANGELOG, testplan-synk). **MANDAT verbatim:** *"du har alla
+**Session 113 ▶️ ÅTERUPPTAGEN (resume 7, 2026-09-01 ~11:40 UTC,
+`lifecycle: active`; Marcus: *"Återuppta S113"*; paus 7 var 2026-09-01
+~11:20 UTC — dukad för promoveringen, Lotta-demo IMORGON):**
+PROMOVERINGSSEKVENSEN KÖRS autonomt per paus 7-mandaten (*"du har alla
 mandat du kan ha"* — armering vid hög, baselines, Airtable-fälten, flaggan,
-backfillen. **NÄSTA RESUME = PROMOVERINGSSEKVENSEN** (9 steg i PAUSLÄGE-
-blocket, autonom): grindar → PR → review-loop → armering → main →
-baselines → runbook-verifiering → prod-fält → **Marcus terminal-block
-steg 1–10 (grinden för Lotta)** → flagga+backfill+facit. Ny tråd `T180`
-(kvitto som bilagetyp — grillning post-promovering). `#2050`/`#2180` väntar
-Marcus. Resume via `session-resume` (N=113).
+backfillen): grindar → PR → review-loop → armering → main → baselines →
+runbook-verifiering → prod-fält → **Marcus terminal-block steg 1–10
+(grinden för Lotta)** → flagga+backfill+facit — de 9 stegen i sessionsdok
+S113 § Paushistorik paus 7. Grenen `fix/hem-betalningskort-marcus-iteration`
+HEAD `6d5e46c3` verifierad (40 commits från merge-base, handoffens "48" var
+räknefel), INGEN PR än. Resume-verifikat: numrering ADR 130 · kort 357 ·
+L655 · T181 · 23 fragment (ett tillkommet under pausen); resume arbetar i
+egen worktree `s113-resume-7` (ADR-090 — S114 äger huvudkatalogen).
+Paus 7-leveransen (Marcus designvandring, FJORTON fix-pass, Hem-blocket,
+inkorgen, noteringskedjan, avtalat pris, Pricka av-rivningen): sessionsdok
+S113 § Paushistorik paus 7. Ny tråd `T180` (kvitto som bilagetyp —
+grillning post-promovering). `#2050`/`#2180` väntar Marcus.
 
 ---
 
