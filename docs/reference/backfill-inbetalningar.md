@@ -278,7 +278,7 @@ I prod väntas bilden vara en annan; se nedan.
 Marcus mandat, verbatim, 2026-09-02: *"Kör backfill. Gör det ordentligt."*
 
 **Agenten kör aldrig prod själv, och skriptet kan inte fås att göra det med en
-gissad flagga.** Prod är låst av fyra oberoende lager, och det är viktigt att
+gissad flagga.** Prod är låst av fem oberoende lager, och det är viktigt att
 läsa dem som just oberoende — inget av dem är "inställningen som ska ändras".
 Kolumnen nedan stod tidigare "Nej" rakt av; det var korrekt för AC #4:s
 öppna läge men är numera en förenkling — varje lager har fått en EGEN,
@@ -293,6 +293,7 @@ honom:
 | `validateProjectRef` | prod-refen läses ur `.prod-ref-policy.conf` och fälls **oberoende** av backfill-policyns egen lista | **Nej** — men släpper när miljövariabeln `.prod-ref-policy.conf`s `PROD_REF_BYPASS_VAR` namnger == den EXAKTA refen |
 | `provaLanktillstand` | vägrar om `supabase/.temp/project-ref` pekar någon annanstans än målet — inklusive prod, ÄVEN med korrekt `--projekt-ref` (den HÅRDASTE grenen: den prövar `lankt === prodRef` oavsett `malRef`) | **Nej** — men släpper ENDAST kombinationen länk=PROD + mål=PROD, och ENDAST när BÅDA raderna ovan redan godkänt sin egen bypass (`prodGodkand`, TASK-360) |
 | `scripts/deny-prod-ref.sh` | fäller varje **agent**-kommando som bär prod-refen i kommandosträngen | **Nej** — orörd av denna skiva, samma `PROD_REF_BYPASS_VAR`-prefix som redan fanns |
+| `losToken` (TASK-360, review r2 PR #2208) | i prod-läge (`korMotProd`) krävs `STAGING_AIRTABLE_TOKEN` satt EXPLICIT i miljön — `.env.seed`s fallback läses ALDRIG, så ett staging-scopat token kan inte råka följa med in i en prod-körning | **Nej** — token-axeln har ingen bypass alls: saknas variabeln vägrar skriptet (tester S1–S5) |
 
 Ingen kopia av prod-refens VÄRDE tillkom: `.backfill-inbetalningar-policy.json`
 bär den fortfarande inte (§ A11 i testsviten låser det, oförändrat), och
