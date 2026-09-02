@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-02 10:49'
+updated_date: '2026-09-02 10:52'
 labels:
   - ready-for-agent
 dependencies: []
@@ -33,3 +34,9 @@ FYND (S113 resume 8, 2026-09-02): tests/e2e/persondetalj-betalningar-fellage.sta
 - [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+RÄTTELSE 2026-09-02 (review r1 PR #2218): premissen 'post-merge-körningen avbröts/skippades efter #2175' är FALSIFIERAD — Post-merge körde direkt efter #2175:s merge (53681e08, 2026-08-31 10:50Z) och föll 11:05 (run 33384227389) med samma strict-mode-fel. Concurrency-avbrottet gällde #2193:s körning (9dca0e56, cancelled av docs-pushen 2d3647f2) — den delen står. Den PRIMÄRA luckan är larmkedjan: jobbet 'Larm vid rött post-merge' avslutades success i minst sex röda körningar (~47 h) utan att en människa eller orkestreraren agerade. AC (c) 'nattnätets rött når heartbeat-svepet' ska breddas till: post-merge-rött OCH nightly-rött rapporteras som RÖTT-rad i svepet, och larm-jobbets faktiska mottagare kartläggs.
+<!-- SECTION:NOTES:END -->
