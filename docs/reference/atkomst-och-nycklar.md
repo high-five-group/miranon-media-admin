@@ -119,6 +119,7 @@ märkta så; övriga är källmärkta till uppdragets orkestrerar-mätning.
 | GitHub repo-secrets | `gh secret list` (GitHub, inte lokal maskin) | Repo-scopade CI-secrets | Testkonton + Airtable-token för CI-körningar | `gh secret list` | 2026-08-12, bygg-agentens egen körning: `STAGING_AIRTABLE_TOKEN`, `TEST_ADMIN_EMAIL`, `TEST_ADMIN_PASSWORD`, `TEST_REGISTRATION_RECORD_ID`, `TEST_SUPABASE_ANON_KEY`, `TEST_SUPABASE_URL`, `TEST_USER_EMAIL`, `TEST_USER_PASSWORD` |
 | Lokala `.env`-filer | Repo-roten, 9 filer (`.env.local`, `.env.development`, `.env.staging`, `.env.production`, `.env.test`, `.env.seed` + tre `.example`-mallar) | Projektnycklar (bl.a. `VITE_SUPABASE_ANON_KEY` per miljö) | Lokal dev/build/test mot rätt Supabase-projekt | `ls -1 .env* \| wc -l` (ska vara 9 i repo-roten) | 2026-08-12, bygg-agentens egen körning: exakt 9 filer |
 | Vercel CLI-inloggning | Vercel CLI:ts egen auth-lagring (globalt installerad + via `npx vercel`), konto `marcus-2914`; repot länkat via `.vercel/project.json` (projekt `miranon-media-admin`, team `marcus-johanssons-projects-1d6d2a3a`) | Kontonyckel | Deploy-listor, `vercel inspect` med byggloggar, alias-läge — hela frontend-driftytan som `TASK-199` § 5 trodde saknade åtkomst | `npx vercel whoami` (svarar direkt) | 2026-08-14, orkestreraterns egen körning (S105 Del 10): `marcus-2914`; posten SAKNADES i registret och "ingen Vercel-åtkomst" hade hunnit påstås två gånger — exakt Rotorsak 1-klassen, omgivningen antogs i stället för att åtkomsten mättes |
+| `INVITE_REDIRECT_URL` | Supabase secrets, BÅDA projekten (staging + prod) | Runtime-konfiguration (ett offentligt URL-värde, inte en hemlighet i vanlig mening) | Styr `redirectTo` i `invite-user`-Edge Function (`supabase/functions/invite-user/index.ts:260`/269) — saknas den faller Supabase Auth tillbaka på projektets bara Site URL utan sökväg, och inbjudningslänken hoppar över `/valkommen`-accept-flödet | `bash scripts/fas4-prod-deploy.sh --kontrollera <ref>` (mekanisk ✓/✗-kontroll av namnet, `TASK-359`; värdet kan som alltid inte läsas via `secrets list`) | 2026-09-02, orkestrerarens egen körning (S113 resume 8): satt i BÅDA miljöerna, sha256-digest `9b7efb779ddeb80236ff89f3e4aaadf275e86d0ccc2410a2091a59406373330c` matchar `https://admin.miranon.dev/valkommen` — se § "ÅTGÄRDAT 2026-09-02" nedan för hela historiken |
 
 **Bevis-kommandon som INTE får hänga:** `npx supabase projects list` svarar
 direkt och duger som bevis-kommando. `supabase link` (utan styrd stdin) duger
@@ -377,22 +378,52 @@ verifierad i prod, sätt om båda secrets"*). Med (f) grönt:
    ändrad, ingen värdeläsning möjlig — samma begränsning som § "Prod-
    provisionering..." ovan redan noterar).
 
-### Bifynd, bokfört — inte åtgärdat i denna skiva
+### `INVITE_REDIRECT_URL` — ÅTGÄRDAT 2026-09-02 (`TASK-359`)
 
-**`INVITE_REDIRECT_URL` saknas i prod-secrets** (mätt 2026-08-23 av
-`fas4-prod-deploy.sh --kontrollera` — `secrets list` visar NAMN, inte
-värden, se § ovan; detta bifynd är inte oberoende re-verifierat av
-bygg-agenten som skrev denna rad, eftersom `scripts/deny-prod-ref.sh`
-strukturellt hindrar en agent från att rikta kommandon mot prod-refen).
-`invite-user/index.ts:260` faller tillbaka på `undefined` när variabeln
-saknas — `redirectTo` skickas då inte alls, och Supabase Auth faller
-tillbaka på projektets bara `site_url`
-(`https://admin.miranon.dev`, verifierat satt i `supabase/config.toml`
-rad 376) i stället för den avsedda accept-sidan `/valkommen`
-(`additional_redirect_urls`, ADR-092). Ingen 500, inget hårt fel — men
-inbjudningslänken landar på appens rotsida i stället för accept-flödet.
-Pre-existing, orört av `TASK-309.9` — bokförs här så att nästa som rör
-auth-/inbjudningsytan i prod inte behöver återupptäcka det.
+**Historik:** `INVITE_REDIRECT_URL` saknades i prod-secrets sedan mätningen
+2026-08-23 (`fas4-prod-deploy.sh --kontrollera` — `secrets list` visar NAMN,
+inte värden, se § ovan). `invite-user/index.ts:260` faller tillbaka på
+`undefined` när variabeln saknas — `redirectTo` skickas då inte alls (rad
+269), och Supabase Auth faller tillbaka på projektets bara `site_url`
+(`https://admin.miranon.dev`, `supabase/config.toml` rad 459) UTAN sökväg, i
+stället för den avsedda accept-sidan `/valkommen`. Ingen 500, inget hårt fel
+— men inbjudningslänken landade på appens rotsida i stället för
+accept-flödet. `TASK-270` (Done, 2026-08-17) hade bokfört frågan som
+*"KVARSTÅENDE ROBUSTHETS-FRÅGA, INTE BLOCKERANDE (deferrad)"* — se den
+kortets Implementation Notes för hela den ursprungliga mätningen (samtliga
+16 lästa prod-secrets, ingen `INVITE_REDIRECT_URL` bland dem).
+
+**Åtgärdat 2026-09-02 av orkestreraren (S113 resume 8, Marcus-order i
+klartext).** Kommandot:
+
+```bash
+npx supabase secrets set INVITE_REDIRECT_URL=https://admin.miranon.dev/valkommen --project-ref <ref>
+```
+
+kördes mot **staging** (`07:54:07Z`) och mot **prod** (`07:56:00Z`, via
+prod-ref-låsets diktering-bypass — se § "Medveten väg förbi" i
+`.prod-ref-policy.conf`, den enda vägen en agent kan köra ett prod-riktat
+kommando på Marcus egen instruktion). Verifierat i BÅDA miljöerna via
+`secrets list`: sha256-digest `9b7efb779ddeb80236ff89f3e4aaadf275e86d0ccc2410a2091a59406373330c`,
+identisk med `printf '%s' 'https://admin.miranon.dev/valkommen' | shasum -a 256`
+— två oberoende källor (staging + prod), ingen gissning.
+
+**Kontrollen är sedan `TASK-359` MEKANISK, inte längre bara en prosa-notis
+att läsa.** `fas4-prod-deploy.sh --kontrollera` skrev redan tidigare en
+prosa-notis om exakt denna variabel ("LÄS DETTA I UTDATAN OVAN") — mätt TRE
+gånger (S107, S108, S113) att den INTE fångades som åtgärdbart innan Marcus
+själv körde `--kontrollera` och läste raden 2026-08-17. Sedan `TASK-359`
+verifierar `scripts/kontrollera-hemlighets-namn.sh` en config-driven mängd
+krävda hemlighets-namn (`.hemlighets-namn-policy.conf`, `INVITE_REDIRECT_URL`
+ibland dem) mot `secrets list`-utdatan och skriver ✓/✗ per namn — ett
+saknat namn gör att `--kontrollera` avslutar exit ≠ 0. Bevis-kommando:
+
+```bash
+bash scripts/fas4-prod-deploy.sh --kontrollera <ref>
+```
+
+Genererar en röd `✗ INVITE_REDIRECT_URL SAKNAS`-rad ENDAST om variabeln
+faktiskt saknas i det angivna projektet.
 
 ## Fil-åtkomstmatris per värdapp — MÄTNING, inte förklaring
 

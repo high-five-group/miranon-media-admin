@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-17 11:53'
-updated_date: '2026-08-24 13:07'
+updated_date: '2026-09-02 08:12'
 labels:
   - ready-for-human
 dependencies: []
@@ -90,6 +90,8 @@ SITE URL AVLÄST 2026-08-17 (Marcus, Supabase-dashboarden): https://admin.mirano
 AC3 bockad: destinationen är verifierad nåbar (HTTP 200) OCH bevisad vara den appen faktiskt bor på, från TRE oberoende håll — DNS/HTTP, Supabase auth-konfigurationens rpId, och Marcus avläsning av Site URL.
 
 KVARSTÅENDE ROBUSTHETS-FRÅGA, INTE BLOCKERANDE (deferrad): INVITE_REDIRECT_URL saknas fortfarande som explicit hemlighet, så destinationen ägs av Site URL. Det fungerar, men bäraren är en auth-inställning som kan ändras som sidoeffekt av annat dashboard-arbete utan att något i repot märker det. Att sätta variabeln explicit gör destinationen till ett driftvärde som läses i samma svep som allt annat driftläge. Förkastas INTE — bokförs som öppen förbättring att ta när go-live-trycket släppt.
+
+STÄNGT 2026-09-02 (TASK-359): den deferrade robusthets-frågan ovan (INVITE_REDIRECT_URL saknar mekanisk kontroll) är nu åtgärdad. Variabeln SATT i BÅDA Supabase-projekten (staging + prod), verifierat via matchande sha256-digest (9b7efb779ddeb80236ff89f3e4aaadf275e86d0ccc2410a2091a59406373330c) mot https://admin.miranon.dev/valkommen. scripts/fas4-prod-deploy.sh --kontrollera bär sedan TASK-359 en MEKANISK ✓/✗-kontroll av en config-driven mängd krävda hemlighets-namn (.hemlighets-namn-policy.conf), som INVITE_REDIRECT_URL nu ingår i — ett saknat namn gör att --kontrollera avslutar exit ≠ 0 i stället för att förlita sig på en prosa-notis en människa måste läsa. Se docs/reference/atkomst-och-nycklar.md § ÅTGÄRDAT 2026-09-02 för fullständig historik.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

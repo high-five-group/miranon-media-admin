@@ -45,9 +45,22 @@
 #   --deploya      Hela sekvensen: länka → deploya allowlisten → verifiera →
 #                  länka tillbaka till staging.
 #
-# EXITKODER: 0 = allt gick igenom · 1 = felaktig användning eller preflight
-#   fällde · 2 = en skarp operation avbröts (läs utdatan; återlänkningen har
+# EXITKODER: 0 = allt gick igenom · 1 = felaktig användning, preflight
+#   fällde, ELLER (--kontrollera) en krävd hemlighet SAKNAS (TASK-359, se
+#   nedan) · 2 = en skarp operation avbröts (läs utdatan; återlänkningen har
 #   ändå körts via trappen).
+#
+# --kontrollera:s HEMLIGHETS-NAMN-KONTROLL (TASK-359, 2026-09-02): en
+#   config-driven mängd krävda Supabase-secret-NAMN (.hemlighets-namn-
+#   policy.conf, konsumerad av scripts/kontrollera-hemlighets-namn.sh)
+#   verifieras mot `secrets list`-utdatan, ✓/✗ per namn. Ersätter en ren
+#   prosa-notis som mätts missad TRE gånger (S107, S108, S113) —
+#   `INVITE_REDIRECT_URL` saknades i BÅDA Supabase-projekten i över tre
+#   veckor trots att notisen namngav exakt den variabeln. Ett saknat namn
+#   gör att DENNA --kontrollera-körning avslutar exit 1 (samma felklass som
+#   `--deploya`:s hårda vägran på bucket-raden nedan: en avvikelse som
+#   deployas utan fel men beter sig fel i skarpt läge) — se § "Hemligheter:
+#   krävd namnmängd" i --kontrollera-blocket för den fulla motiveringen.
 #
 # Etablerad: TASK-272 (S102 resume 8, 2026-08-17), Marcus GO "Ja skript är
 #   väl mycket bättre".
@@ -192,6 +205,23 @@ if [[ "${LAGE}" = "--kontrollera" ]]; then
     supabase_cli secrets list --project-ref "${ANGIVEN_REF}" \
         || doden "Kunde inte lista hemligheter." 2
 
+    # ── Mekanisk kontroll av krävd namnmängd (TASK-359) ─────────────────────
+    # VARFÖR MEKANISK OCH INTE BARA PROSA: en tidigare version av detta
+    # skript nöjde sig med en prosa-notis ("LÄS DETTA I UTDATAN OVAN") som
+    # pekade ut INVITE_REDIRECT_URL — mätt TRE gånger (S107, S108, S113) att
+    # ingen som läste den fångade avsaknaden som åtgärdbart innan Marcus
+    # själv körde --kontrollera och läste raden. Denna kontroll läser SAMMA
+    # `secrets list`-utdata programmatiskt mot en config-driven mängd namn
+    # (.hemlighets-namn-policy.conf) och skriver en ✓/✗-rad per namn.
+    printf '\n--- Hemligheter: krävd namnmängd (TASK-359) ---\n'
+    HEMLIGHETER_NAMN_OK=1
+    if bash "${SCRIPT_DIR}/kontrollera-hemlighets-namn.sh" "${ANGIVEN_REF}"; then
+        gront "✓ Alla krävda hemlighets-namn finns (namn verifierat — värde kan som alltid inte läsas här)."
+    else
+        rott "❌ Minst en krävd hemlighet SAKNAS i ${ANGIVEN_REF} — se ✗-raden/-raderna ovan."
+        HEMLIGHETER_NAMN_OK=0
+    fi
+
     printf '\n--- Bucket "bilagor" (Storage, TASK-308) ---\n'
     if bash "${SCRIPT_DIR}/kontrollera-bilagor-bucket.sh" "${ANGIVEN_REF}"; then
         gront "✓ Bucket \"bilagor\" konvergerad mot önskad config."
@@ -204,24 +234,36 @@ if [[ "${LAGE}" = "--kontrollera" ]]; then
 ──────────────────────────────────────────────────────────────────────
 LÄS DETTA I UTDATAN OVAN:
 
-  INVITE_REDIRECT_URL   Dit inbjudningsmailets länk pekar. Ska vara
-                        appens publika adress (admin.miranon.dev).
-  CORS_ALLOWED_ORIGINS  Saknas prod-origin här ser appen HELT DÖD ut
-                        för användaren — och deploy-verifieringens
-                        curl-test upptäcker det INTE (curl skickar
-                        ingen Origin-header).
+  Hemligheter: krävd    Se ✓/✗-raderna för INVITE_REDIRECT_URL,
+  namnmängd (ovan)      CORS_ALLOWED_ORIGINS m.fl. — MEKANISKT
+                        kontrollerat sedan TASK-359 (namnmängden bor i
+                        .hemlighets-namn-policy.conf), inte längre bara
+                        en prosa-notis att läsa. Ett rött namn gör att
+                        DENNA --kontrollera-körning avslutar ≠ 0 (samma
+                        felklass som bucket-raden: funktionen deployas
+                        men beter sig fel i skarpt läge).
   Bucket "bilagor"      Saknas den, faller varje Storage-beroende EF
                         (preview-receipt m.fl.) med 502 "Bucket not
                         found" i skarpt läge — mätt TASK-308, 2026-08-23.
-                        `--deploya` VÄGRAR om denna rad är röd.
+                        `--deploya` VÄGRAR om denna rad är röd (samma
+                        felklass som hemlighets-kontrollen ovan: en
+                        avvikelse som INTE syns som ett fel förrän
+                        appen körs skarpt). Denna rad ger bara en
+                        VARNING i --kontrollera — den skarpa vägran
+                        sitter i --deploya, se den grenens egen
+                        `doden`-gate.
 
 OBS: `secrets list` visar NAMN och DIGEST, inte värden. Syns inget
 värde måste det läsas i Supabase-dashboarden:
 Project Settings → Edge Functions → Secrets.
 ──────────────────────────────────────────────────────────────────────
 NOT
-    gront "✓ Kontrollen klar. Inget ändrat, länkläget orört."
-    exit 0
+    if [[ "${HEMLIGHETER_NAMN_OK}" -eq 1 ]]; then
+        gront "✓ Kontrollen klar. Inget ändrat, länkläget orört."
+        exit 0
+    fi
+    rott "❌ Kontrollen klar men minst en krävd hemlighet saknas (se raderna ovan) — --kontrollera avslutar rött."
+    exit 1
 fi
 
 # ── DEPLOYA: den skarpa vägen ───────────────────────────────────────────────
