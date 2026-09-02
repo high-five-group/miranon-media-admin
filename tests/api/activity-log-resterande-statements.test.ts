@@ -83,6 +83,33 @@ test.describe('Aktivitetsloggens återstående statement-former (TASK-201.4 AC #
     expect(result.success, JSON.stringify(!result.success && result.error.issues)).toBe(true);
   });
 
+  test('TASK-363: skapa anmälan-objektets namn bär EVENTNAMNET när eventNamn är satt — regression mot "(okänt event)"', () => {
+    // `useCreateRegistration.ts`s onSuccess (och sju andra mutationer) bygger
+    // objektnamnet med SAMMA inlinade mall: `${displayName(created)} (${created
+    // .eventNamn ?? 'okänt event'})` — egen lokal kopia här, samma precedent
+    // som `statementFor()` ovan. Rotorsaken (TASK-363, Marcus prod-observation
+    // 2026-09-02): en MANUELL anmälan lämnade `eventNamn` null (Event (namn)-
+    // formeln läser den tomma `Vill anmäla sig till`), så mallen föll till
+    // "(okänt event)" trots att Event-länken faktiskt var satt. EF-fixet
+    // (create-registration/index.ts `mapCreatedRegistration` + `_shared/
+    // registration-read.ts` `mapRegistration`) garanterar att `eventNamn`
+    // aldrig är null när länken finns (fallback-kedja: `Kurs (from Event)` →
+    // `Event (namn)` → EF:ens redan hämtade eventnamn) — DETTA test bevisar
+    // bara att KLIENTENS mall-sammansättning korrekt speglar ett satt
+    // eventNamn (den rena null-fallback-vägen testas redan via
+    // `eventActivityName` ovan, men den delade mallen här är en ANNAN
+    // funktion — ingen tidigare test i denna svit gav den ett NON-null värde).
+    const byggObjektnamn = (namn: string, eventNamn: string | null) =>
+      `${namn} (${eventNamn ?? 'okänt event'})`;
+
+    expect(byggObjektnamn('Marcus Test', 'Resor i medvetandet 1')).toBe(
+      'Marcus Test (Resor i medvetandet 1)',
+    );
+    // Ren fallback-vägen (eventNamn faktiskt null, t.ex. Event-länk helt saknas)
+    // — INTE TASK-363:s bugg, men mallen ska fortsatt hantera den defensivt.
+    expect(byggObjektnamn('Marcus Test', null)).toBe('Marcus Test (okänt event)');
+  });
+
   test('boende MARKERAD: "markerade bor över", passerar schemat', () => {
     const stmt = statementFor(
       registrationObjectId(REG_ID),
