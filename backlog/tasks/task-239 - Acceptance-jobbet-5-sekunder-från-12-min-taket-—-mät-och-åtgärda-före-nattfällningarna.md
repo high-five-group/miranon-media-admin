@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-16 07:07'
-updated_date: '2026-09-02 10:20'
+updated_date: '2026-09-02 10:35'
 labels:
   - ready-for-agent
 dependencies: []
@@ -22,7 +22,7 @@ Forensik 2026-08-16 (R5, nyupptäckt obokförd rot): acceptance-väggklockan vä
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [x] #1 Tillväxtens orsak identifierad med mätning (Acceptance-steget på 817979a8^1 vs 817979a8, eller metrics:ci-serien) — inte antagen
-- [ ] #2 Åtgärd som återtar marginalen (>2 min till taket) utan reflexmässig takhöjning
+- [x] #2 Åtgärd som återtar marginalen (>2 min till taket) utan reflexmässig takhöjning
 - [ ] #3 Acceptance grön i nattnätet tre nätter i rad efter åtgärd (belägg: run-ID:n)
 - [x] #4 Webblasarbeteende-jobbets artefaktsteg (ci-suite.yml ~rad 433) får samma failure() || cancelled()-villkor — fynd ur task-237 2026-08-16: identiskt mönster, timeout-minutes: 8, samma blindhet vid takfällning
 <!-- AC:END -->
@@ -187,4 +187,40 @@ task-236:s AC4): kriteriet kräver >2 min marginal MÄTT ur PR-CI:ns
 `gh run view --json jobs`, och den mätningen finns först efter push. Följs
 upp i en uppföljningscommit med de riktiga shard-tiderna om marginalen
 håller.
+
+AC #2 BOCKAD — MÄTT UR PR #2216:s EGEN CI-KÖRNING (run 33619073362,
+pull_request-ytan, ingen samtidig kö-last), gh api .../actions/runs/
+33619073362/jobs:
+
+  Acceptance (hermetisk) (1) — 155 tester: 10:22:11→10:26:44 = 4m33s
+    (273s) → marginal 7m27s (~7,45 min) mot 12-min-taket
+  Acceptance (hermetisk) (2) — 166 tester: 10:22:10→10:26:24 = 4m14s
+    (254s) → marginal 7m46s (~7,77 min)
+  Acceptance (hermetisk) (3) — 140 tester: 10:22:10→10:26:19 = 4m9s
+    (249s) → marginal 7m51s (~7,85 min)
+
+Samtliga tre shards >7 min marginal — långt över AC #2:s krav (>2 min),
+taket 12 min ORÖRT. CI grönt per jobb på PR:en: Lint+Audit+TypeCheck,
+Pure+Build, Webblasarbeteende (2m8s), samtliga tre Acceptance-shards,
+Acceptance-sjalvtest, CI Passed or Skipped.
+
+OVÄNTAT FYND (ADR-053, registrerat — INTE åtgärdat i denna skiva,
+uppdraget scopade explicit bort acceptance-sjalvtest-jobbet): SAMMA
+CI-run visar acceptance-sjalvtest-jobbet (oshardat, kör hela 461-
+testklassen) på 11m15s (675s) — bara 45 SEKUNDERS marginal mot sitt
+EGNA, oförändrade 12-min-tak, i en RENODLAD pull_request-körning UTAN
+kö-last (alltså ett golv, inte ett värsta-fall). Samma organiska
+tillväxt-mekanism som orsakade acceptance-jobbets cancellation gäller
+detta jobb lika mycket, och det har ingen shard-marginal alls kvar.
+Rekommendation till orkestreraren: mint ett uppföljningskort som
+applicerar samma (eller motsvarande) sharding-mönster på
+acceptance-sjalvtest INNAN nästa organiska tillväxt-våg — annars är det
+sannolikt nästa jobb som kö-sparkar en PR, samma mönster som denna
+skiva just löste för acceptance-jobbet.
+
+AC #3 (tre gröna nätter) kvarstår öppen — kan inte bockas idag, kräver
+nattnätets tre körningar EFTER denna PR landat.
+
+PR: #2216, branch ci/task-239-acceptance-marginal-shard, head
+b8d97bcf (uppdaterad PR-kropp, ingen ny commit för denna anteckning).
 <!-- SECTION:NOTES:END -->
