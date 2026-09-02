@@ -44,7 +44,15 @@
     "",
     "En ny regel kräver samma källmärkning som posterna nedan: `kalla` ska peka",
     "på en styrande yta som faktiskt finns, och `monster` ska matcha sökvägar",
-    "som faktiskt existerar i repot."
+    "som faktiskt existerar i repot.",
+    "",
+    "═══ SCOPE-RÄTTELSE 2026-09-02 (S113 resume 8, review r1 av PR #2208) ═══",
+    "`prod-och-hemligheter` matchade `scripts/*prod*` — och missade därmed",
+    "`scripts/backfill-inbetalningar.mjs` i exakt den PR som öppnade en ny",
+    "prod-skrivväg i filen (review:policy gav noll regler). Tio skript bär en",
+    "prod-väg utan 'prod' i namnet (backfill-*, create-*, seed-*, purge-*).",
+    "Mönstret är därför `scripts/**`: skript-lagret ÄR det lager som talar med",
+    "prod, och regelns tre frågor är billiga att pröva på varje skript-PR."
   ],
   "version": 1,
   "regler": [
@@ -85,7 +93,7 @@
       "rubrik": "Prod-vägar och hemligheter",
       "monster": [
         ".env*",
-        "scripts/*prod*",
+        "scripts/**",
         "supabase/functions/**/*.ts",
         "*-policy.conf",
         "*-policy.json"
