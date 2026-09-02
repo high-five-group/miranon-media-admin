@@ -1827,7 +1827,13 @@ jobs:
         # separat nedan av samma skäl som supabase-cli.sh ovan) och till
         # trettio i SAMMA TASK-312-wiring (.gh-version-policy.conf —
         # pinnad LÄGSTA gh-version, scripts/lib/gh-guard.sh, samma
-        # separat-räkning som de två andra sourcade .sh-kodfilerna).
+        # separat-räkning som de två andra sourcade .sh-kodfilerna) och till
+        # trettioett i TASK-359-wiringen (.hemlighets-namn-policy.conf —
+        # config-driven mängd krävda Supabase-secret-namn,
+        # scripts/kontrollera-hemlighets-namn.sh — se filens egen header:
+        # INVITE_REDIRECT_URL saknades i BÅDA Supabase-projekten i flera
+        # veckor trots att en prosa-notis redan namngav variabeln, mätt
+        # missad tre gånger, S107/S108/S113).
         # Pre-aktiverings-state (post-K3.2 commit d86d846): 0/0/0/0.
         run: |
           shellcheck \
@@ -1867,7 +1873,8 @@ jobs:
             .prod-ref-policy.conf \
             .supabase-cli-policy.conf \
             .jq-version-policy.conf \
-            .gh-version-policy.conf
+            .gh-version-policy.conf \
+            .hemlighets-namn-policy.conf
 
   # Job 3: Tung testsvit — anropar den reusable ci-suite.yml (EN KÄLLA,
   # delad med nightly.yml OCH post-merge.yml; task-36.2 / ADR-077). Villkorat på

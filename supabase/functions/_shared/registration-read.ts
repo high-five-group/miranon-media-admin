@@ -114,7 +114,18 @@ export function mapRegistration(record: { id: string; fields: Record<string, unk
     efternamn: f['Efternamn'] ?? null, // text
     email: f['E-post'] ?? null, // text
     telefon: f['Mobilnummer'] ?? null, // text
-    eventNamn: f['Event (namn)'] ?? null, // formula
+    // TASK-363: `Kurs (from Event)` (lookup via Event-länken, eventets
+    // KANONISKA kursnamn) FÖRST — samma källa `get-person`s `mapMotiveringEntry`
+    // (TASK-184) och basens egen "Senaste anmälan (sammanfattning)"-formel
+    // föredrar. Fallback till `Event (namn)` (formeln `{Vill anmäla sig till}`
+    // — anmälans EGNA, self-reported val) för raden som saknar Event-länken helt
+    // (backfill/orörda anmälningar utan länk — `Kurs (from Event)` är då tom
+    // eftersom det inte finns något att slå upp). En MANUELL create (TASK-363)
+    // lämnar `Vill anmäla sig till` osatt, så `Event (namn)` är alltid tom för
+    // den raden — före denna ändring blev `eventNamn` därmed `null` så fort en
+    // admin skapade anmälan manuellt ("(okänt event)" i aktivitetsloggen); nu
+    // löses den via lookupen precis som webbformulär-anmälningar redan gör.
+    eventNamn: scalarString(f['Kurs (from Event)']) ?? f['Event (namn)'] ?? null,
     ort: scalarString(f['Ort']), // text (eget fält, skalärt)
     status: selectName(f['Status']), // singleSelect
     flagga: selectName(f['Flagga']), // singleSelect

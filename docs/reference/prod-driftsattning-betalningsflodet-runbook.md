@@ -258,6 +258,10 @@ kommandot ska ge tre rader. Mätt i staging 2026-08-30: `pgmq 1.5.1`,
 ett fel** — Supabase versionerar extensions plattformsvis — men notera
 avvikelsen om du ser en, den är en bra sak att ha bokförd.
 
+**Mätt i prod 2026-09-02 (`TASK-359`): `pg_net 0.20.0`** — en tillåten
+avvikelse mot stagings `0.20.3` per exakt samma resonemang som ovan; `pgmq`
+och `pg_cron` omättes inte separat i det passet.
+
 **Om det inte lyckades:** `migration list` säger exakt vilken av de fyra som
 gick igenom. Se § Rullbakåt R1 — läs den innan du river något, kvitton är
 append-only och tabellerna kan bära verkliga rader så fort steg 9–10 är
@@ -416,18 +420,35 @@ npx supabase db query --linked "select cron.alter_job(job_id := (select jobid fr
 Verifiera om med samma `select … from cron.job …` som ovan — `schedule` ska
 nu visa `* * * * *`.
 
-**Läs körningsloggen** (visar `anrop: false, skal: "inget-vantar"` tills en
-riktig inbetalning skapar ett jobb — det är FÖRVÄNTAT, inte ett fel, se
-migrationens § 5 kommentar):
+**Läs körningsloggen** — men läs INTE `return_message` som funktionens svar.
+Cron-jobbets kommando är `select public.jobb_cron_tick();`
+(`supabase/migrations/20260830195900_jobbmotorn_ko_cron_jobbtabeller.sql`
+rad 487) — en ren `SELECT`, och pg_cron bokför i `return_message` sin EGEN
+exekverings-bokföring för en SELECT (t.ex. `1 row`), INTE värdet raden
+faktiskt returnerade. **Mätt i prod 2026-09-02 (`TASK-359`):**
+`return_message = '1 row'`, `status = 'succeeded'` — en tidigare version av
+detta stycke påstod att `return_message` visar funktionens JSON
+(`"skal":"inget-vantar"` / `"vault-saknar-varden"`) direkt; det stämmer
+INTE för denna jobbtyp.
 
 ```bash
 npx supabase db query --linked "select status, return_message, start_time from cron.job_run_details where jobid = (select jobid from cron.job where jobname='jobbmotor-tick') order by start_time desc limit 5"
 ```
 
-**Steget lyckades när:** minst en rad visar `status = 'succeeded'`. Ett
-`return_message` med `"skal":"vault-saknar-varden"` betyder att § Steg 4 inte
-är klart än — gå tillbaka dit. `"skal":"inget-vantar"` är det NORMALA läget
-tills en verklig inbetalning finns.
+**Läs den FAKTISKA JSON:en genom att anropa funktionen direkt** — det är
+FÖRVÄNTAT, inte ett fel, att den visar `anrop: false, skal: "inget-vantar"`
+tills en riktig inbetalning skapar ett jobb (se migrationens § 5 kommentar):
+
+```bash
+npx supabase db query --linked "select public.jobb_cron_tick() as tick"
+```
+
+**Steget lyckades när:** körningsloggen visar minst en rad med
+`status = 'succeeded'` (bevisar att cron faktiskt TICKAR), OCH det direkta
+anropet ovan svarar med giltig JSON. Ett svar med
+`"skal":"vault-saknar-varden"` betyder att § Steg 4 inte är klart än — gå
+tillbaka dit. `"skal":"inget-vantar"` är det NORMALA läget tills en verklig
+inbetalning finns.
 
 ## Steg 6 — Realtime-publikationen
 
@@ -724,31 +745,80 @@ DENNA runbook äger bara PROD-SEKVENSEN, per den filens egen hänvisning
 beslutet väl är fattat"):
 
 1. Förutsättningen: § Steg 11 (fälten) och § Steg 12 (priserna) klara.
-2. **Upplåsningen** — prod är låst av FYRA oberoende lager
-   (`validateBaseGuard`, `validateProjectRef`, `provaLanktillstand`,
-   `scripts/deny-prod-ref.sh`), och ingen flagga kringgår något av dem.
-   **Formen på upplåsningen är Marcus eget val, inte bestämd här** — en
-   kodändring som lägger prod-basen i `expectedBaseId` och prod-refen i
-   `tillatnaProjectRefs` för en enda körning, eller en egen väg. Läs
-   `backfill-inbetalningar.md` § Prod innan du väljer — sviten (§ A11) LÅSER
-   AKTIVT att prod-refen inte redan står i backfill-policyn, så det är ett
-   medvetet steg att riva, inte ett förbiseende att fixa i förbifarten.
-3. **Dry-run, läs planen** (efter upplåsningen):
+2. **Upplåsningen — formen är BESTÄMD sedan `TASK-360`** (Marcus mandat
+   2026-09-02, "Kör backfill. Gör det ordentligt.") — samma typa-för-att-
+   bekräfta-klass som `--bas`/`AIRTABLE_PROD_GODKAND_AV_MARCUS` fick i
+   `scripts/create-betalningsfalt.mjs` (PR #2192). Prod förblir låst av
+   FYRA oberoende lager (`validateBaseGuard`, `validateProjectRef`,
+   `provaLanktillstand`, `scripts/deny-prod-ref.sh`) — ingen rivs, var och
+   en får sin EGEN override. **Kör i din EGEN terminal, utanför Claude
+   Code** (samma skäl som resten av denna runbook: `scripts/deny-prod-ref.sh`
+   fäller varje agent-kommando som bär project-refen, oavsett om det är en
+   skarp körning eller bara ett `grep`):
 
    ```bash
-   npm run backfill:inbetalningar
+   AIRTABLE_PROD_GODKAND_AV_MARCUS=<prod-bas-id> \
+   PROD_REF_GODKAND_AV_MARCUS=<prod-ref> \
+     npm run backfill:inbetalningar -- --bas <prod-bas-id> --projekt-ref <prod-ref>
+   ```
+
+   `<prod-bas-id>` = Airtable-prodbasens ID (`.backfill-inbetalningar-policy.json`s
+   `forbiddenBaseIds`, samma värde som `docs/reference/atkomst-och-nycklar.md`
+   § Register). `<prod-ref>` = Supabase-prodprojektets ref (denna runbooks
+   § Projekt-referenserna-tabell, ELLER `.prod-ref-policy.conf`s
+   `PROD_REF_PROD` — läs filen, klistra inte in värdet i ett Bash-kommando som
+   inte redan bär bypass-prefixet). BÅDA miljövariablerna krävs SAMTIDIGT —
+   backfillen skriver till Airtable-spegeln OCH Postgres i samma körning, och
+   `validateMiljoKonsistens` (TASK-360) vägrar en kombination där bara den
+   ena är satt (t.ex. `--bas` prod men `--projekt-ref` staging).
+   `PROD_REF_GODKAND_AV_MARCUS` är SAMMA variabel `scripts/deny-prod-ref.sh`
+   redan kräver för Bash-anropet självt — namnet läses ur
+   `.prod-ref-policy.conf`s `PROD_REF_BYPASS_VAR`, inte hårdkodat i skriptet,
+   så det finns EN bypass-form i huset.
+
+   **Airtable-token:** `STAGING_AIRTABLE_TOKEN` (samma variabelnamn, missvisande
+   men oförändrat) måste peka på en PAT med LÄS+SKRIV mot prod-basen —
+   `.env.seed`s token är staging-scopat (samma begränsning som § Steg 11 redan
+   bokför för `AIRTABLE_SCHEMA_TOKEN`), så sätt den inline på SAMMA kommandorad,
+   aldrig i `.env.seed`:
+
+   ```bash
+   AIRTABLE_PROD_GODKAND_AV_MARCUS=<prod-bas-id> \
+   PROD_REF_GODKAND_AV_MARCUS=<prod-ref> \
+   STAGING_AIRTABLE_TOKEN=<prod-scopad-PAT> \
+     npm run backfill:inbetalningar -- --bas <prod-bas-id> --projekt-ref <prod-ref>
+   ```
+
+   Se `docs/reference/atkomst-och-nycklar.md` för var en prod-scopad PAT
+   hämtas. Sviten (§ A11) LÅSER AKTIVT att prod-refens VÄRDE inte står i
+   backfill-policyn — den posten rörs inte av denna form, eftersom bypass-
+   värdena alltid kommer från miljön, aldrig från en fil i repot.
+3. **Dry-run, läs planen** (utelämna `-- --utfor` — samma kommando som ovan,
+   fast utan `--utfor`. Detta är det FÖRSTA du kör mot prod):
+
+   ```bash
+   AIRTABLE_PROD_GODKAND_AV_MARCUS=<prod-bas-id> \
+   PROD_REF_GODKAND_AV_MARCUS=<prod-ref> \
+   STAGING_AIRTABLE_TOKEN=<prod-scopad-PAT> \
+     npm run backfill:inbetalningar -- --bas <prod-bas-id> --projekt-ref <prod-ref>
    ```
 
    Läs `pris-okant`- och `fack-motsagelse`-listorna. Är `pris-okant` stort:
-   tillbaka till § Steg 12, fyll fler priser, kör om dry-run.
+   tillbaka till § Steg 12, fyll fler priser, kör om dry-run. Varje rad där en
+   override faktiskt släpper igenom skrivs synligt till stderr
+   ("BYPASS ANVÄND", TASK-360) — läs dem, de ska stämma med det du precis
+   dikterade.
 4. **Avvikelselistan mot Lottas lista** (har hon fört en) — rätta priserna
    och facken i BASEN (aldrig i inbetalningen, se `backfill-inbetalningar.md`
    § "Vad backfillen ALDRIG gör"), kör om dry-run, upprepa tills listan är
    förstådd.
-5. **Skarpt:**
+5. **Skarpt** — lägg till `-- --utfor` sist:
 
    ```bash
-   npm run backfill:inbetalningar -- --utfor
+   AIRTABLE_PROD_GODKAND_AV_MARCUS=<prod-bas-id> \
+   PROD_REF_GODKAND_AV_MARCUS=<prod-ref> \
+   STAGING_AIRTABLE_TOKEN=<prod-scopad-PAT> \
+     npm run backfill:inbetalningar -- --bas <prod-bas-id> --projekt-ref <prod-ref> --utfor
    ```
 
 **"Skip vs. topp-upp" — en öppen fråga denna runbook inte avgör.**
@@ -1007,7 +1077,7 @@ framåt (makulera, korrigera, rätta i basen), riv aldrig.
 | # | Symptom | Rotorsak | Skyddsräcke |
 |---|---|---|---|
 | 1 | `allokera_kvittonummer()` kastar `P0002` på årets FÖRSTA kvitto | Golvet finns bara för år som EXPLICIT seedats | § Steg 3 § ÅRSSTEGET — sätt en kalenderpåminnelse, ingen kod påminner |
-| 2 | Cron tickar men "gör ingenting" i veckor | `jobb_cron_tick()` ringer ALDRIG när `vantar = 0` — det är avsiktligt, inte trasigt | § Steg 5, läs `return_message`, förvänta `"skal":"inget-vantar"` tills en verklig inbetalning finns |
+| 2 | Cron tickar men "gör ingenting" i veckor | `jobb_cron_tick()` ringer ALDRIG när `vantar = 0` — det är avsiktligt, inte trasigt | § Steg 5, anropa `select public.jobb_cron_tick() as tick` direkt (INTE `return_message` — den bär bara pg_crons egen `SELECT`-bokföring, t.ex. `1 row`), förvänta `"skal":"inget-vantar"` tills en verklig inbetalning finns |
 | 3 | `create-betalningsfalt.mjs` vägrar köra mot prod | Skriptet saknar (verifierat) den `--bas`-väg `create-eventinnehall-modell.mjs` har | § Steg 11 § "Känd lucka" — två vägar, inget skript gör det i dag |
 | 4 | `db push` applicerar fler migrationer än väntat | `db push` är inte scopad till en PRD — den applicerar ALLT som inte redan är registrerat i prod | § Steg 2, läs HELA `db push`-utskriften |
 | 5 | Miljöflaggan "satt" men syns inte i appen | Vite bakar in `VITE_`-värden vid BYGGTID — en ny Vercel-env-var kräver en NY deploy | § Steg 14, kör `npx vercel --prod` efter `env add` |

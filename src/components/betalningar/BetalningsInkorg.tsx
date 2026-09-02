@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { AlertTriangle, CalendarRange, Clock, Loader2, X } from 'lucide-react';
+import { AlertTriangle, CalendarRange, Clock, X } from 'lucide-react';
 import { parseAsString, parseAsStringEnum, useQueryState } from 'nuqs';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
@@ -1491,27 +1491,28 @@ export function BetalningsInkorg() {
                           `Fler val för …`. Den SYNLIGA texten är kort, som
                           husets övriga radknappar.
 
-                          `aria-disabled` OCH INTE `isDisabled`: ett native
-                          `disabled` tar knappen ur tabordningen mitt i klicket
-                          och kastar fokus till `document.body`. Dubbelklicks-
-                          spärren bor i `forhandsgranskaKvitto` i stället —
-                          samma mönster som `GenereringsVy.tsx` rad ~1505. */}
+                          `isLoading`/`loadingText` I STÄLLET FÖR handbyggd
+                          `aria-disabled` + villkorad `Loader2` (TASK-361):
+                          den gamla formen bytte ENDAST ikonen villkorat in/ut
+                          ur `children` — samma bredd-hopp-bugg som fixades på
+                          biblioteksnivå i `Button.tsx`, fast handbyggd HÄR
+                          också. `Button`s `isLoading` löser BÅDA (stabil
+                          bredd OCH stänger klick strukturellt under
+                          `forhandsgranska.isPending` — den gamla
+                          `aria-disabled`-formen var bara semantisk och
+                          spärrade ALDRIG `onPress` på primitiv-nivå;
+                          dubbelklicks-skyddet i `forhandsgranskaKvitto`
+                          nedan är oförändrat, detta är ett EXTRA lager). */}
                       {!enSamKo && kanForhandsgranska(post, vantandeIds) && (
                         <Button
                           intent="secondary"
                           emphasis="outline"
                           size="sm"
-                          aria-disabled={forhandsgranska.isPending}
+                          isLoading={forhandsgranska.isPending}
+                          loadingText="Förhandsgranskar …"
                           aria-label={`Förhandsgranska kvittot till ${post.namn}`}
                           onPress={() => forhandsgranskaKvitto(post.inbetalningId, post.namn)}
                         >
-                          {forhandsgranska.isPending && (
-                            <Loader2
-                              aria-hidden="true"
-                              size={14}
-                              className="shrink-0 motion-safe:animate-spin"
-                            />
-                          )}
                           Förhandsgranska
                         </Button>
                       )}
@@ -1769,25 +1770,30 @@ export function BetalningsInkorg() {
                       `intent="secondary" emphasis="outline"` är husets form för
                       just denna knapp (`GenereringsVy.tsx` rad ~1505) — sage-
                       knappen (`intent="success"`) är reserverad för det externa
-                      utskicket och får inte färgmatchas av en granskningsknapp. */}
+                      utskicket och får inte färgmatchas av en granskningsknapp.
+
+                      `isLoading`/`loadingText` I STÄLLET FÖR handbyggd
+                      `aria-disabled` + villkorad `Loader2`/text-swap
+                      (TASK-361, landad som #2212 medan denna PR var i
+                      granskning — inmergad här, `git merge origin/main`):
+                      den gamla formen ändrade BÅDE ikon OCH SYNLIG TEXT
+                      utan att `aria-label` (fixerad per person) någonsin
+                      ändrades, så bredden hoppade i klienten men
+                      skärmläsaren fick ALDRIG någon annonsering av att
+                      laddning pågick. Samma migrering som per-rad-knappen
+                      ovan (~rad 1500) redan bär. */}
                   {ensamKandidat !== null && kanForhandsgranska(ensamKandidat, vantandeIds) && (
                     <Button
                       intent="secondary"
                       emphasis="outline"
-                      aria-disabled={forhandsgranska.isPending}
+                      isLoading={forhandsgranska.isPending}
+                      loadingText="Förhandsgranskar …"
                       aria-label={`Förhandsgranska kvittot till ${vantande[0].namn}`}
                       onPress={() =>
                         forhandsgranskaKvitto(vantande[0].inbetalningId, vantande[0].namn)
                       }
                     >
-                      {forhandsgranska.isPending && (
-                        <Loader2
-                          aria-hidden="true"
-                          size={16}
-                          className="shrink-0 motion-safe:animate-spin"
-                        />
-                      )}
-                      {forhandsgranska.isPending ? 'Förhandsgranskar …' : 'Förhandsgranska'}
+                      Förhandsgranska
                     </Button>
                   )}
                 </div>
