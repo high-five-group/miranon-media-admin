@@ -160,7 +160,11 @@ test.describe('Personkortets Betalningar-sektion — felläge (TASK-346.7.1)', (
 
     await page.goto(`/personer/${PERSON_ID}`);
     const sektion = betalningsSektion(page);
-    await expect(sektion.getByRole('heading', { name: 'Betalningar' })).toBeVisible();
+    // [TASK-364] exact: true — utan den matchar Playwrights delsträngs-
+    // sökning ÄVEN h3:an "Senaste inbetalningar" (PersonBetalningar.tsx) och
+    // ger ett strict mode violation-fel (två träffar). Testet och h3:an kom
+    // i samma commit (286c9a3d, PR #2193) — testet var rött från födseln.
+    await expect(sektion.getByRole('heading', { name: 'Betalningar', exact: true })).toBeVisible();
 
     // Felläget måste hinna fram INNAN retryerna är klara. TIMING, MÄTT INTE
     // GISSAD: React Querys retry-policy (failureCount < 3 ⇒ 4 queryFn-försök,
@@ -208,7 +212,17 @@ test.describe('Personkortets Betalningar-sektion — felläge (TASK-346.7.1)', (
     // inte hela den nya 16-cykeln (samma bevispoäng till halva väntetiden).
     await fel.getByRole('button', { name: 'Försök igen' }).click();
     await expect.poll(() => antalAnrop, { timeout: 15_000 }).toBeGreaterThan(16);
-    await expect(fel).toBeVisible();
+    // [TASK-364] {timeout: 30_000} — INTE default (5 000 ms). `hasData` är
+    // false hela vägen (svaret har ALDRIG lyckats), så TanStack Query v5
+    // klassar denna refetch som `isLoadingError` (isPending under fetchen),
+    // inte `isRefetchError` (kräver hasData=true — se query-core/
+    // queryObserver.ts: `isRefetchError: isError && hasData`). Alertet
+    // FÖRSVINNER alltså till förmån för laddläget under HELA den nya
+    // upp-till-16-anrops-cykeln, precis som vid första hämtningen (rad
+    // 183), och kommer inte tillbaka förrän den cykeln också tar slut.
+    // Mätt: default-timeouten (5 000 ms) fällde detta deterministiskt (0/2)
+    // — cykeln tar längre än så.
+    await expect(fel).toBeVisible({ timeout: 30_000 });
 
     // Axe 0 på det renderade felläget — role=alert + Försök igen-knappen ska
     // vara fullt tillgängliga, inte bara visuellt korrekta.
@@ -258,6 +272,14 @@ test.describe('Personkortets Betalningar-sektion — felläge (TASK-346.7.1)', (
         body: JSON.stringify({
           inbetalningar: [inbetalning()],
           kvitton: [],
+          // [TASK-364] `jobbfel` är ETT KRAV i InbetalningslistaSchema sedan
+          // TASK-352 (Betalningar.schema.ts) — utan nyckeln kastar zod-parsen
+          // och hela svaret tolkas som ett fetch-fel (samma felyta som en
+          // riktig 500:a). Mätt: denna rad saknades och gav "Inbetalningarna
+          // kunde inte hämtas" trots en mockad 200:a — testet nådde aldrig
+          // sitt eget påstående. Tom lista = inga kända jobbfel, korrekt för
+          // detta lyckade scenario.
+          jobbfel: [],
           spegel: { summaPostgres: 1500, summaBasen: 1500, iFas: true },
         }),
       });
@@ -265,7 +287,8 @@ test.describe('Personkortets Betalningar-sektion — felläge (TASK-346.7.1)', (
 
     await page.goto(`/personer/${PERSON_ID}`);
     const sektion = betalningsSektion(page);
-    await expect(sektion.getByRole('heading', { name: 'Betalningar' })).toBeVisible();
+    // [TASK-364] exact: true — se motiveringen vid filens första förekomst.
+    await expect(sektion.getByRole('heading', { name: 'Betalningar', exact: true })).toBeVisible();
 
     // Raden renderas sedan bank-anatomin (2026-09-01 pass 14,
     // `InbetalningsLista.tsx` § RADENS ANATOMI) i TRE kolumner: betalsättet
