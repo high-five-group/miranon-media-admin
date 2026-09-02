@@ -59,8 +59,29 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
  * `RegistrationSchema.parse()` validerar i adaptern, ADR-026). Lokalt definierad:
  * under ADR-026:s ≥3-tröskel för _shared-extraktion (endast get-registrations +
  * denna; extrahera vid tredje konsument).
+ *
+ * `eventNamn` (TASK-363): en MANUELL/+1/väntelista-create lämnar Anmälans EGNA
+ * `Vill anmäla sig till` osatt (endast webbformuläret fyller det) — formeln
+ * `Event (namn)` (`{Vill anmäla sig till}`) blir därför ALLTID tom här, precis
+ * som `Kurs (from Event)`-lookupen (`_shared/registration-read.ts` § eventNamn)
+ * redan hanterar för läsvägen. Samma idiom här: föredra lookupen
+ * `Kurs (from Event)` (eventets kanoniska kursnamn — samma källa get-person och
+ * basens egen "Senaste anmälan (sammanfattning)"-formel föredrar, TASK-184) med
+ * fallback till formeln, och SIST till `eventNamnFallback` — namnet EF:en redan
+ * läste ur Eventplanering-posten (`Event (text)`, identisk källa som lookupen
+ * pekar på) innan skrivningen, för det osannolika fallet att Airtables
+ * lookup-uppdateringskedja ännu inte hunnit slå igenom i CREATE-svaret (fälla
+ * 17/18, data-model.md). `??`-kedjan garanterar alltså aldrig `null` här när
+ * Event-länken är satt — vilket den alltid är vid en create (`fields.Event`
+ * ovan). STOPP-BESLUT (ADR-086-premisspasset): `Vill anmäla sig till` skrivs
+ * INTE vid create — fältet bär en ANNAN semantik (self-reported form-claim,
+ * `Eventmatchning`s PÅSTÅENDE-sida, källa för `Antal tidigare genomförda
+ * utbildningar`-rollupen på Personer) än "eventets namn", se PR-beskrivningen.
  */
-function mapCreatedRegistration(record: { id: string; fields: Record<string, unknown> }) {
+function mapCreatedRegistration(
+  record: { id: string; fields: Record<string, unknown> },
+  eventNamnFallback: string | null,
+) {
   const f = record.fields;
   return {
     id: record.id,
@@ -69,7 +90,7 @@ function mapCreatedRegistration(record: { id: string; fields: Record<string, unk
     efternamn: f['Efternamn'] ?? null, // text
     email: f['E-post'] ?? null, // text
     telefon: f['Mobilnummer'] ?? null, // text
-    eventNamn: f['Event (namn)'] ?? null, // formula
+    eventNamn: scalarString(f['Kurs (from Event)']) ?? f['Event (namn)'] ?? eventNamnFallback ?? null,
     ort: scalarString(f['Ort']), // text
     status: selectName(f['Status']), // singleSelect
     flagga: selectName(f['Flagga']), // singleSelect
@@ -196,6 +217,13 @@ Deno.serve(async (req) => {
       // EventKey är en alltid-beräknad formel). Oväntat → 500 (generic body).
       throw new Error(`Eventplanering ${eventId} saknar EventKey-formelvärde`);
     }
+    // TASK-363: sista-utväg-fallback för mapCreatedRegistration's eventNamn.
+    // `Event (text)` (fldNIc8I2ynUoLkNn) är formel-KÄLLAN `Kurs (from Event)`
+    // slår upp via Event-länken — samma värde, läst direkt ur den redan
+    // hämtade (och redan beräknade — Eventplanering-raden är INTE just
+    // skapad) Eventplanering-posten. Behövs bara om lookupen på den NYSKAPADE
+    // Anmälnings-raden av någon anledning ännu inte hunnit slå igenom.
+    const eventNamnFallback = scalarString(eventRecord.fields['Event (text)']);
 
     // 409-dedup (affärs-unikhet): Normaliserad e-post (LOWER(TRIM), replikerad) +
     // EventKey-STRÄNGEN. FILTRERAR ALDRIG på Event-länken (T15-lärdom). Injektions-
@@ -274,7 +302,7 @@ Deno.serve(async (req) => {
     // Event-länk + Källa faktiskt skrevs (de ligger ej i domän-modellen).
     return new Response(
       JSON.stringify({
-        registration: mapCreatedRegistration(created),
+        registration: mapCreatedRegistration(created, eventNamnFallback),
         record: { id: created.id, fields: created.fields },
       }),
       { status: 201, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
