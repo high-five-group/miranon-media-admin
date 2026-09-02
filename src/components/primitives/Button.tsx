@@ -19,13 +19,12 @@ import { cn } from '@/lib/cn';
 // emphasis-dimensionen (secondary ÄR en neutral outline, ghost ÄR en
 // neutral subtle) — emphasis-propen är en dokumenterad no-op för dem.
 const buttonVariants = cva(
-  // `inline-grid` (INTE `inline-flex`, sedan TASK-361): bärare av
-  // laddlägets STABILA-MÅTT-stapling, se `ButtonProps` §isLoading och
-  // render-funktionens kommentar. `inline-` bevarar knappens
-  // krymp-till-innehåll-storlek (shrink-to-fit, samma flödesroll som
-  // `inline-flex` hade) — bara DISPLAY-motorn byts, inte hur knappen sitter
-  // i sidflödet.
-  'inline-grid select-none items-center justify-center rounded font-sans transition-colors data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 data-[loading]:cursor-progress',
+  // `relative` (TASK-361 r2): förankrar ladd-lagrets `absolute`-overlay
+  // (se render-funktionens kommentar). `inline-flex` är tillbaka till
+  // FÖRLAGANS motor (r1:s `inline-grid` + stapel-teknik ÄR RIVEN, se
+  // `ButtonProps` §isLoading-amenderingen och docblockets § "STABILA
+  // MÅTT UNDER LADDLÄGE" för varför).
+  'relative inline-flex select-none items-center justify-center rounded font-sans transition-colors data-[disabled]:cursor-not-allowed data-[disabled]:opacity-50 data-[loading]:cursor-progress',
   {
     variants: {
       intent: {
@@ -44,11 +43,12 @@ const buttonVariants = cva(
         outline: '',
         subtle: '',
       },
-      // `gap-*` BOR INTE här längre (TASK-361) — se `CONTENT_GAP` nedan.
-      // Motivet: `gap` verkar mellan GRID-SPÅR, och stapel-lagren delar
-      // ETT enda spår (`[grid-area:1/1]`), så ett `gap` på denna nivå vore
-      // dött CSS. Samma gap-VÄRDEN per storlek lever kvar, bara flyttade
-      // till lagren som faktiskt har två sida-vid-sida-barn (ikon + text).
+      // `gap-*` BOR INTE här (TASK-361, oförändrat sedan r1) — se
+      // `CONTENT_GAP` nedan. `gap` verkar mellan FLEX-BARN i den yttre
+      // knappen, men etikett-lagret är knappens ENDA flödes-deltagande
+      // barn (ladd-overlayn är `absolute`, utanför flödet — se
+      // render-kommentaren) — ett `gap` här vore därför dött CSS.
+      // Gap-VÄRDENA lever kvar oförändrade, bara på rätt nivå.
       size: {
         sm: 'min-h-8 px-3 text-small',
         md: 'min-h-10 px-4 text-body',
@@ -124,11 +124,10 @@ const buttonVariants = cva(
   },
 );
 
-// Gap-VÄRDET per storlek som `size`-varianten bar innan TASK-361 flyttade
-// det ned till de två stapel-lagren (etikett-laget och ladd-laget) — se
-// `buttonVariants`s size-kommentar. Egen konstant, inte en tredje cva, för
-// att båda lagren garanterat använder EXAKT samma gap-skala som förut utan
-// att duplicera talen på två ställen.
+// Gap-VÄRDET per storlek (TASK-361, oförändrat sedan r1) — etikett-lagret
+// är knappens enda flex-lager med SIDA-VID-SIDA-barn (t.ex. en konsuments
+// egen ikon + text), och behöver därför sin egen gap-skala. Egen konstant,
+// inte en tredje cva, så värdena inte duplicerar sig.
 const CONTENT_GAP: Record<'sm' | 'md' | 'lg', string> = {
   sm: 'gap-1.5',
   md: 'gap-2',
@@ -143,11 +142,9 @@ export interface ButtonProps
   /**
    * SMALARE ÄN `AriaButtonProps['children']` (TASK-361): ren `ReactNode`,
    * INTE render-prop-formen (`(renderProps) => ReactNode`) React Aria
-   * tillåter på sin egen `<Button>`. Stapel-tekniken (se render-kommentaren
+   * tillåter på sin egen `<Button>`. Etikett-lagret (se render-kommentaren
    * nedan) monterar `children` i en PLAIN `<span>`, som bara accepterar
-   * `ReactNode` — och render-prop-formen (hover/press/focus-state) passar
-   * oavsett inte kontraktet "samma innehåll syns i två lager, ett åt
-   * gången". Ingen befintlig konsument använder funktionsformen (grep,
+   * `ReactNode`. Ingen befintlig konsument använder funktionsformen (grep,
    * 2026-09-02); en framtida konsument som vill åt press/hover-state i sin
    * knapptext bygger det UTANFÖR `children` (t.ex. eget state via `Button`s
    * `data-pressed`/`data-hovered` på ett omslutande element).
@@ -176,18 +173,45 @@ export interface ButtonProps
    * (stoppar webbläsarens implicita andra-submit via Enter i ETT annat
    * fält, utan att röra fokus).
    *
-   * AMENDERING (TASK-361, 2026-09-02): knappen bytte tidigare `children` MOT
-   * spinner+`loadingText` — två helt olika innehåll med två olika bredder,
-   * så knappen hoppade i bredd (och ibland höjd) exakt i det ögonblick den
-   * gick in i laddläge (Marcus prod-röktest-fynd, S113 resume 8). Fixad på
-   * BIBLIOTEKSNIVÅ, se `Button`s render-kommentar för stapel-tekniken —
-   * denna props kontrakt (namn, default, annonsering) är OFÖRÄNDRAT.
+   * AMENDERING r1 (TASK-361, 2026-09-02): knappen bytte tidigare `children`
+   * MOT spinner+`loadingText` — två helt olika innehåll med två olika
+   * bredder, så knappen hoppade i bredd (och ibland höjd) exakt i det
+   * ögonblick den gick in i laddläge (Marcus prod-röktest-fynd, S113 resume
+   * 8).
+   *
+   * AMENDERING r2 (TASK-361, samma dag, granskningsfynd PR #2212 runda 1,
+   * risk HÖG): r1:s fix (CSS Grid-stapling, båda lagren alltid monterade
+   * och staplade i samma cell) löste laddläges-hoppet men införde en NY,
+   * ALLVARLIGARE bugg — knappens mått blev PERMANENT MAX(etikett,
+   * ladd-lager) ÄVEN I VILA, eftersom grid-spårets storlek beräknas av
+   * BÅDA lagren oavsett synlighet. En knapp som `<Button isLoading={x}
+   * loadingText="Loggar in …">Logga in</Button>` blev därför BREDARE än
+   * "Logga in" REDAN INNAN `x` någonsin blivit sant — exakt den
+   * knappbredd-klass Marcus dömde ut, fast permanent i stället för ett
+   * hopp, och otäckt av någon visuell baseline (ingen av de 42 CI-spårade
+   * baselinerna renderar en `Button isLoading`-instans). Se `Button`s
+   * render-kommentar för den rättade tekniken (etiketten äger måttet
+   * ensam, ladd-laget är `absolute` och kan aldrig påverka layouten).
+   *
+   * Propens kontrakt (namn, default, annonsering) är OFÖRÄNDRAT genom båda
+   * amenderingarna.
    */
   isLoading?: boolean;
   /**
-   * Texten som visas OCH annonseras (polite, `role="status"`) medan
+   * Texten som ANNONSERAS (polite, `role="status"`, sr-only) medan
    * `isLoading` är true — t.ex. "Loggar in …". Default "Laddar …" för
    * konsumenter som inte bryr sig om ordvalet.
+   *
+   * SYNS ALDRIG (TASK-361 r2): en synlig `loadingText` kan vara LÄNGRE än
+   * etiketten och skulle då spränga knappens bredd — precis den bugg r1
+   * införde (se `isLoading`-amenderingen ovan). ADR-113 kräver inte synlig
+   * text: beslut 2 kräver "spinner + spärrat klickläge + skärmläsarbesked"
+   * (inget ord om VISUELL text), och beslut 4 sanktionerar uttryckligen
+   * "sr-only-besked parat med synlig indikator" som "fortsatt normformen"
+   * — precis vad detta är (spinnern är den synliga indikatorn,
+   * `loadingText` är sr-only-beskedet). Samma par som t.ex.
+   * `Waitlist.tsx`s redan etablerade `role="status" aria-live="polite"
+   * sr-only`-mönster.
    */
   loadingText?: string;
 }
@@ -216,39 +240,49 @@ export interface ButtonProps
  * Respekterar `prefers-reduced-motion` (spinnern animeras endast via
  * `motion-safe:`, samma gating som Skeleton-primitivens shimmer).
  *
- * STABILA MÅTT UNDER LADDLÄGE (TASK-361, `§ isLoading`-amenderingen ovan):
- * etiketten och ladd-innehållet (spinner + `loadingText`) STAPLAS i SAMMA
- * grid-cell (`inline-grid` + `[grid-area:1/1]` på båda lagren, se
- * render-funktionens kommentar) i stället för att ETT av dem villkorat
- * monteras. Knappens mått blir därmed alltid det BREDASTE/HÖGSTA av de två
- * lagren, oavsett vilket som är synligt — bredd och höjd är identiska i
- * vila och i laddläge, även när `loadingText` är LÄNGRE än etiketten (en
- * konsument som vill ha en smal viloknapp väljer själv en kort
- * `loadingText` — knappen är i så fall lika bred i vila som i laddläge,
- * det är den medvetna avvägningen, inte en bugg).
+ * STABILA MÅTT UNDER LADDLÄGE (TASK-361 r2 — se `ButtonProps`
+ * §isLoading/§loadingText-amenderingarna för HELA historiken, inklusive
+ * varför r1:s teknik revs):
  *
- * VALD TEKNIK, mot tre branschkällor (`docs/research/...` kommer inte hit —
- * se PR-kroppen för fulla citat): React Aria Components egen
- * `isPending`-vägledning ("to reserve space for the label while pending,
- * either set it to `visibility: hidden`… or `opacity: 0`…" —
- * react-aria.adobe.com/Button) och MUI:s `LoadingButton` (spinnern
- * `position: absolute`, etiketten kvar i flödet men dold) löser samma
- * problem via ABSOLUT POSITIONERING av spinnern ovanpå en dold-men-
- * platsbevarande etikett. CSS Grid-stapling (denna fils val) är en
- * ekvivalent, MER EXPLICIT variant av samma idé — ingen `position:
- * relative`-förälder att komma ihåg, ingen risk att glömma `absolute` på
- * den nytillkomna spinner-noden — dokumenterad av bl.a. Wes Bos
- * (`grid-template-areas:stack` + `grid-area:stack` + `visibility`-toggle,
- * "allows the largest item to size the button, and keeps the button text
- * accessible") och matchar Chakra UI:s dokumenterade, explicita löfte att
- * `isLoading` "leave[s] the button's width unchanged". `visibility`
- * (Tailwinds `invisible`), INTE `opacity`/`display:none`: ett lager som
- * INTE animeras eller behöver vara i den tillgänglighets-trädet SAMTIDIGT
- * som det andra — RAC:s egen varning mot `visibility:hidden` gäller bara
- * när ett SYNLIGT-FÖRDRÖJT läge ska vara i a11y-trädet FÖRE det visas
- * (ett fall Button inte har: `isLoading` växlar synligt OCH
- * a11y-trädsmedlemskap i SAMMA ögonblick, exakt som den gamla
- * villkorade renderingen redan gjorde) — se § isLoading-amenderingen.
+ * ETIKETTEN (`children`) ÄGER KNAPPENS MÅTT ENSAM, ALLTID — i vila OCH i
+ * laddläge. Den renderas i det NORMALA FLÖDET oavsett `isLoading` (bara
+ * `invisible` under laddning, vilket döljer den UTAN att ta bort dess
+ * layout-utrymme). Ladd-lagret (spinner + sr-only `loadingText`) är
+ * `absolute inset-0` — HELT UTANFÖR FLÖDET — och kan därför STRUKTURELLT
+ * ALDRIG påverka knappens bredd eller höjd, i NÅGOT läge. Detta skiljer sig
+ * medvetet från r1:s "MAX av båda lagren"-stapling (som gjorde måttet
+ * `loadingText`-beroende även i vila — den nya buggen r2 fixar).
+ *
+ * VALD TEKNIK, mot branschkällorna (fulla citat i PR-kroppen för TASK-361):
+ * MUI:s `LoadingButton` positionerar sin `loadingIndicator` `position:
+ * absolute` ovanpå ett barn-spann vars synlighet togglas men som förblir i
+ * flödet och ensamt bestämmer bredden. React Aria Components egen
+ * `isPending`-vägledning (react-aria.adobe.com/Button) säger samma sak:
+ * "to reserve space for the button's label while pending... set it to
+ * `visibility: hidden`" — ETIKETTEN reserverar utrymmet, inte en
+ * sammanslagning av båda lagren. Shopify Polaris `Spinner`-dokumentationen
+ * bekräftar mönstret för knappar explicit. Chakra UI:s Button
+ * (`isLoading`) lovar uttryckligen "leave[s] the button's width unchanged"
+ * — konsistent med "bredden = etikettens bredd, punkt", inte
+ * "bredden = det bredaste av två alternativ".
+ *
+ * `loadingText` SYNS ALDRIG (se `ButtonProps`§loadingText) — bara ett
+ * `role="status" aria-live="polite" sr-only`-spann, sanktionerat av
+ * ADR-113 § Beslut punkt 4 ("sr-only-besked parat med synlig indikator är
+ * fortsatt normformen"). Ladd-lagret MONTERAS ENDAST när `isLoading` är
+ * sant (villkorad rendering, inte alltid-monterat + attribut-toggling) —
+ * det löser TVÅ sido-fynd från r1 PÅ EN GÅNG:
+ * - `role`/`aria-live` fanns tidigare KVAR som DOM-attribut i vila (dolda
+ *   för skärmläsare via `aria-hidden`, men fortfarande matchbara av en
+ *   CSS-attributselektor som `[aria-live="polite"]` — `InstallPrompt.spec.ts`
+ *   fällde exakt på detta).
+ * - `Loader2`s `motion-safe:animate-spin` fortsatte SNURRA i bakgrunden i
+ *   vila, eftersom `visibility:hidden` stoppar MÅLNING men INTE en pågående
+ *   CSS-animation — `notisfamiljen-rorelsefri.test.ts`s sidobreda
+ *   `document.getAnimations()`-räkning fällde tre orelaterade tester.
+ * Med villkorad montering existerar ladd-lagrets DOM-nod, attribut och
+ * animation bara medan `isLoading` faktiskt är sant — ingen toggling
+ * behövs, inget att glömma.
  *
  * @example
  * ```tsx
@@ -294,29 +328,14 @@ export function Button({
       ref={ref}
       className={cn(buttonVariants({ intent, size, emphasis }), className)}
     >
-      {/* STABILA MÅTT (TASK-361): BÅDA lagren renderas ALLTID — bara
-          `invisible` (visibility:hidden) + `aria-hidden` växlar mellan dem.
-          `[grid-area:1/1]` staplar dem i knappens ENDA grid-cell (satt av
-          `inline-grid` i `buttonVariants`), så cellens mått = MAX(bredd,
-          höjd) av de två lagren — identiskt oavsett vilket som syns. Se
-          komponentens docblock § "STABILA MÅTT UNDER LADDLÄGE" för
-          källorna bakom valet (RAC/MUI/Wes Bos/Chakra) och varför
-          `visibility` (inte `opacity`/`display:none`) är rätt val här.
-
-          `w-full` på båda: en grid-item stretchar normalt redan till
-          cellens fulla bredd (`justify-items: normal` ≈ `stretch` för
-          `width:auto`-boxar), men satt EXPLICIT i stället för att förlita
-          sig på det implicita grid-defaultvärdet — enklare att läsa och
-          garanterat samma resultat i varje motor.
-
-          `aria-hidden` växlar SYNKRONT med `invisible`, ALDRIG fördröjt:
-          det håller exakt samma timing som den gamla villkorade
-          renderingen (ett lager går ur/in i a11y-trädet i samma ögonblick
-          det slutar/börjar synas) — se docblockets RAC-varnings-stycke för
-          varför just DEN timingen är vad som gör `visibility` säkert här. */}
+      {/* ETIKETTEN ÄGER MÅTTET, ENSAM (TASK-361 r2) — `children` renderas
+          ALLTID i det normala flödet; `invisible` (visibility:hidden)
+          döljer den under laddning UTAN att ta bort dess layout-utrymme,
+          så knappens bredd/höjd är IDENTISKA i vila och laddläge. Se
+          docblockets § "STABILA MÅTT UNDER LADDLÄGE" för källorna. */}
       <span
         className={cn(
-          'inline-flex w-full items-center justify-center [grid-area:1/1]',
+          'inline-flex items-center justify-center',
           CONTENT_GAP[resolvedSize],
           isLoading && 'invisible',
         )}
@@ -324,51 +343,33 @@ export function Button({
       >
         {children}
       </span>
-      <span
-        className={cn(
-          'inline-flex w-full items-center justify-center [grid-area:1/1]',
-          CONTENT_GAP[resolvedSize],
-          !isLoading && 'invisible',
-        )}
-        aria-hidden={!isLoading || undefined}
-      >
-        {/* `motion-safe:animate-spin` VILLKORAT på `isLoading` (TASK-361,
-            upptäckt av denna PR:s EGEN `test:webblasarbeteende`-körning:
-            `notisfamiljen-rorelsefri.test.ts` fällde tre helt orelaterade
-            komponenter på `document.getAnimations().length` — en
-            SIDO-BRED räkning, inte scopad till testets eget element).
-            Rotorsaken: `visibility:hidden` (till skillnad från
-            `display:none`) STOPPAR INTE en pågående CSS-animation — bara
-            målningen. Ladd-laget är ALLTID monterat (stapel-tekniken), så
-            en ovillkorad `animate-spin` hade snurrat Loader2-ikonen
-            EVIGT i bakgrunden även när knappen aldrig laddar, en tyst
-            CPU/batteri-läcka OCH exakt den globala animationsräkning
-            rörelsefrihets-sviten vaktar. */}
-        <Loader2
-          aria-hidden="true"
-          className={cn('size-4 shrink-0', isLoading && 'motion-safe:animate-spin')}
-        />
-        {/* `role="status"` + `aria-live="polite"` VÄXLAR MED `isLoading`
-            (TASK-361, upptäckt av denna PR:s EGEN `test:a11y`-körning: en
-            första version av fixen höll dessa attribut PERMANENT satta,
-            vilket lämnade ett dolt men attribut-matchbart
-            `[aria-live="polite"]`/`[role="status"]` kvar i DOM:en även i
-            vila — `InstallPrompt.spec.ts`s egen `[aria-live="polite"]`-
-            räknare fällde på exakt detta, eftersom CSS-attributselektorer
-            inte respekterar `aria-hidden`/`visibility` som skärmläsare
-            gör). Elementet (spannet, texten)
-            är ALLTID monterat — det är stapel-teknikens hela poäng — men
-            själva LIVE-REGION-KONTRAKTET existerar bara medan `isLoading`
-            är sant, exakt som förlagans villkorade rendering: attribut OCH
-            ancestor-synlighet flippar i SAMMA render, vilket är den mest
-            tillförlitliga triggern för en AT-annonsering (se docblockets
-            RAC-stycke). Bär knappens tillgängliga NAMN (när ingen
-            `aria-label` är satt) och den oberoende
-            live-region-annonseringen — se `ButtonProps`§isLoading. */}
-        <span role={isLoading ? 'status' : undefined} aria-live={isLoading ? 'polite' : undefined}>
-          {loadingText}
+      {isLoading && (
+        // ÖVERLAGD, ALDRIG I FLÖDET (TASK-361 r2): `absolute inset-0` tar
+        // ladd-laget UR layout-beräkningen helt — till skillnad från r1:s
+        // stapel-lager (som DELADE knappens grid-spår med etiketten och
+        // därmed kunde breddsätta den) kan detta lager STRUKTURELLT aldrig
+        // påverka knappens mått, i något läge. `AriaButton`s `relative`
+        // (buttonVariants bas-sträng) är förankringen `inset-0` mäter mot.
+        // Villkorad montering (inte alltid-monterat + attribut-toggle):
+        // löser r1:s BÅDA sido-fynd i samma drag, se `Button`s docblock.
+        <span
+          className="pointer-events-none absolute inset-0 flex items-center justify-center"
+          data-testid="button-ladd-overlay"
+        >
+          <Loader2 aria-hidden="true" className="size-4 shrink-0 motion-safe:animate-spin" />
+          {/* `loadingText` SYNS ALDRIG — bara sr-only, se `ButtonProps`
+              §loadingText för ADR-113-motiveringen. Bär knappens
+              tillgängliga NAMN under laddläge (när ingen `aria-label` är
+              satt — etikett-spannet ovan är `invisible`, alltså uteslutet
+              ur namn-beräkningen) OCH den oberoende
+              live-region-annonseringen. Samma `role="status" aria-live=
+              "polite" sr-only`-mönster som redan etablerat i t.ex.
+              `Waitlist.tsx`. */}
+          <span role="status" aria-live="polite" className="sr-only">
+            {loadingText}
+          </span>
         </span>
-      </span>
+      )}
     </AriaButton>
   );
 }

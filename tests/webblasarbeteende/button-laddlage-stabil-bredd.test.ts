@@ -2,10 +2,11 @@ import type { Locator, Page } from '@playwright/test';
 import { expect, test } from '@playwright/test';
 
 /**
- * TASK-361 — Button-primitivens `isLoading` FÅR ALDRIG ändra knappens mått
- * (bredd/höjd). Marcus prod-röktest-fynd, verbatim (S113 resume 8,
- * 2026-09-02): *"när jag förhandsgranska... så växer knappen i bredd. Det
- * gillar jag INTE... det är inte OK, så gör inte proffs."*
+ * TASK-361 r2 — Button-primitivens `isLoading` FÅR ALDRIG ändra knappens
+ * mått (bredd/höjd), VARKEN i vila ELLER i laddläge. Marcus prod-röktest-
+ * fynd, verbatim (S113 resume 8, 2026-09-02): *"när jag förhandsgranska...
+ * så växer knappen i bredd. Det gillar jag INTE... det är inte OK, så gör
+ * inte proffs."*
  *
  * Rent DOM-mått-test (ADR-094-klassen: webblasarbeteende — fixturfritt,
  * noll nätverksanrop, samma familj som `forberedelseskarm-hojdkedja.test.ts`
@@ -18,116 +19,153 @@ import { expect, test } from '@playwright/test';
  * vanlig `boundingBox()` + auto-väntande assertions, ingen
  * MutationObserver/console-polling krävs.
  *
- * TVÅ RIKTNINGAR TÄCKS (Button.tsx:s docblock § "STABILA MÅTT UNDER
- * LADDLÄGE"s kontrakt "mått = bredaste/högsta av de två lagren"):
- * - KORT etikett + KORTARE `loadingText` — ladd-laget FÅR INTE bli smalare.
- * - Etikett + LÄNGRE `loadingText` — vila-laget FÅR INTE bli smalare än
- *   ladd-laget (den medvetna avvägningen docblocket beskriver: en
- *   konsument som vill ha en smal viloknapp väljer en kort `loadingText`).
+ * ═══ RUNDA 2 — VARFÖR TESTET SKREVS OM ═══
  *
- * NEGATIVT BEVIS: samma test kört mot FÖRLAGAN (`Button.tsx`s innehåll i
- * `origin/main` före denna PR, hämtat med `git show`, ALDRIG `git stash` —
- * se PR-kroppen för kommandot och det fällda utdraget). Ingen kod i denna
- * fil skiljer mellan de två lägena; skillnaden är ENDAST vilken
- * `Button.tsx` som är monterad när testet körs.
+ * Granskning av PR #2212 runda 1 (risk HÖG, warning-fynd som höll): r1:s
+ * teknik (CSS Grid-stapling, `[grid-area:1/1]` på två alltid-monterade
+ * lager) gjorde knappens mått = MAX(etikett, ladd-lager) — även i VILA,
+ * eftersom grid-spårets storlek beräknas av BÅDA lagren oavsett synlighet.
+ * En knapp som `login.tsx`s "Logga in" (`loadingText="Loggar in …"` + ikon)
+ * blev därför PERMANENT bredare än "Logga in" ensamt — exakt den
+ * knappbredd-klass Marcus dömde ut, fast permanent i stället för ett hopp.
+ * r1:s TVÅ tester (kort/lång `loadingText`) mätte bara att vila == laddläge
+ * för SAMMA knapp — de bevisade ALDRIG att vila-måttet var KORREKT (dvs.
+ * lika med etikettens EGET mått, oberoende av `loadingText`). Det kravet
+ * ställs nu explicit: varje `size` (sm/md/lg — r1:s demo/test täckte bara
+ * md, granskningens info-fynd) har en REFERENS-knapp (`Button` UTAN
+ * `isLoading`-prop alls, samma etikett) som facit — target-knappens mått
+ * jämförs mot referensen, inte bara mot sig själv.
+ *
+ * ═══ NEGATIVT BEVIS MOT BÅDA r1 OCH r2:s FÖRLAGA ═══
+ *
+ * Se PR-kroppen för TASK-361 för det fullständiga utdraget: samma testfil
+ * kört mot r1:s `Button.tsx` (commit `c4c65e40`, `git show c4c65e40:
+ * src/components/primitives/Button.tsx`, ALDRIG `git stash`) fäller på
+ * VILA-bredden — target-knappen är bredare än referensen INNAN `isLoading`
+ * någonsin blivit sant.
  */
 
+const STORLEKAR = ['sm', 'md', 'lg'] as const;
+type Storlek = (typeof STORLEKAR)[number];
+
 const TOGGLA = '[data-testid="task-361-toggla"]';
-const KORT = '[data-testid="task-361-kort-etikett"]';
-const LANG = '[data-testid="task-361-lang-loadingtext"]';
 
 interface Matt {
   bredd: number;
   hojd: number;
 }
 
+function referens(storlek: Storlek) {
+  return `[data-testid="task-361-referens-${storlek}"]`;
+}
+
+function target(storlek: Storlek) {
+  return `[data-testid="task-361-target-${storlek}"]`;
+}
+
 /** Väntar in att `data-loading` matchar förväntat läge INNAN mätning — annars
  * mäter `boundingBox()` ett mellanting mitt i Reacts commit. */
-async function vantaLaddlage(target: Locator, vantatLaddar: boolean) {
+async function vantaLaddlage(el: Locator, vantatLaddar: boolean) {
   if (vantatLaddar) {
-    await expect(target).toHaveAttribute('data-loading', 'true');
+    await expect(el).toHaveAttribute('data-loading', 'true');
   } else {
-    await expect(target).not.toHaveAttribute('data-loading', 'true');
+    await expect(el).not.toHaveAttribute('data-loading', 'true');
   }
 }
 
-async function matt(target: Locator): Promise<Matt> {
-  const box = await target.boundingBox();
+async function matt(el: Locator): Promise<Matt> {
+  const box = await el.boundingBox();
   if (!box) {
-    throw new Error('Målknappen saknar boundingBox — osynlig eller borttagen ur DOM');
+    throw new Error('Elementet saknar boundingBox — osynligt eller borttaget ur DOM');
   }
   return { bredd: box.width, hojd: box.height };
 }
 
 async function oppnaDemon(page: Page) {
   await page.goto('/dev/primitives');
-  await expect(page.locator(KORT)).toBeVisible();
-  await expect(page.locator(LANG)).toBeVisible();
   await expect(page.locator(TOGGLA)).toBeVisible();
+  for (const storlek of STORLEKAR) {
+    await expect(page.locator(referens(storlek))).toBeVisible();
+    await expect(page.locator(target(storlek))).toBeVisible();
+  }
+  // TASK-361 r2, flake mätt (repeat-each=5, 6/20 röda innan denna rad):
+  // ~2 px bredd-diff mellan referens och target, VARIABELT vilken storlek.
+  // Samma KÄNDA, redan diagnostiserade Google Fonts-race som
+  // `tests/support/mat-cls.ts` löser för samma demosida (`TASK-307`, se
+  // den filens fullständiga källbelägg) — `base.css`s `@import` upptäcks
+  // sent, "Spara"-etiketten byter fallback-typsnitt → Inter MITT I
+  // mätfönstret, och referens/target (mätta vid olika tidpunkter) hinner
+  // olika långt i bytet. `document.fonts.ready` ENSAM är bevisat
+  // otillräcklig (samma fils källor, #1082/#174030/#225790) — `networkidle`
+  // FÖRST täcker båda nätverksstegen (CSS-svaret + `woff2`-hämtningen)
+  // oavsett `FontFaceSet`-racets utfall.
+  await page.waitForLoadState('networkidle');
+  await page.evaluate(() => document.fonts.ready);
 }
 
-test.describe('Button — laddläge ändrar aldrig knappens mått (TASK-361)', () => {
-  test('KORT etikett, KORTARE loadingText: bredd och höjd identiska i vila → laddläge → vila', async ({
+test.describe('Button — laddläge ändrar aldrig knappens mått, i vila eller laddläge (TASK-361 r2)', () => {
+  for (const storlek of STORLEKAR) {
+    test(`size="${storlek}": target matchar en isLoading-lös REFERENS i vila, laddläge och tillbaka i vila`, async ({
+      page,
+    }) => {
+      await oppnaDemon(page);
+      const referensKnapp = page.locator(referens(storlek));
+      const targetKnapp = page.locator(target(storlek));
+      const toggla = page.locator(TOGGLA);
+
+      // Referensen har ALDRIG `isLoading` — dess mått är facit, oberoende
+      // av vad som händer med target under testet.
+      const facit = await matt(referensKnapp);
+
+      await vantaLaddlage(targetKnapp, false);
+      const vilaFore = await matt(targetKnapp);
+      expect(
+        vilaFore,
+        `target (${storlek}) ska ha EXAKT samma mått som en isLoading-lös referens i vila`,
+      ).toEqual(facit);
+
+      await toggla.click();
+      await vantaLaddlage(targetKnapp, true);
+      const laddar = await matt(targetKnapp);
+      expect(
+        laddar,
+        `target (${storlek}) får INTE ändra mått i laddläge — den längre loadingText:en får aldrig synas eller breddsätta knappen`,
+      ).toEqual(facit);
+
+      await toggla.click();
+      await vantaLaddlage(targetKnapp, false);
+      const vilaEfter = await matt(targetKnapp);
+      expect(vilaEfter, 'round-trip tillbaka till vila ska ge exakt samma mått igen').toEqual(
+        facit,
+      );
+    });
+  }
+
+  test('loadingText syns aldrig visuellt — bara sr-only — och annonseras (role=status, polite)', async ({
     page,
   }) => {
     await oppnaDemon(page);
-    const target = page.locator(KORT);
+    const targetKnapp = page.locator(target('md'));
     const toggla = page.locator(TOGGLA);
 
-    await vantaLaddlage(target, false);
-    const vilaFore = await matt(target);
+    await vantaLaddlage(targetKnapp, false);
+    // Ladd-overlayn är villkorat monterad (TASK-361 r2) — i vila finns
+    // varken `role="status"` eller ikonen i DOM:en alls.
+    await expect(targetKnapp.getByTestId('button-ladd-overlay')).toHaveCount(0);
+    await expect(targetKnapp.getByRole('status')).toHaveCount(0);
 
     await toggla.click();
-    await vantaLaddlage(target, true);
-    const laddar = await matt(target);
+    await vantaLaddlage(targetKnapp, true);
 
-    await toggla.click();
-    await vantaLaddlage(target, false);
-    const vilaEfter = await matt(target);
+    const overlay = targetKnapp.getByTestId('button-ladd-overlay');
+    await expect(overlay).toBeVisible();
 
-    expect(laddar.bredd, 'bredden ska vara IDENTISK i laddläge som i vila').toBe(vilaFore.bredd);
-    expect(laddar.hojd, 'höjden ska vara IDENTISK i laddläge som i vila').toBe(vilaFore.hojd);
-    expect(vilaEfter, 'round-trip tillbaka till vila ska ge exakt samma mått igen').toEqual(
-      vilaFore,
-    );
-  });
-
-  test('etikett + LÄNGRE loadingText: bredd och höjd identiska i vila → laddläge', async ({
-    page,
-  }) => {
-    await oppnaDemon(page);
-    const target = page.locator(LANG);
-    const toggla = page.locator(TOGGLA);
-
-    await vantaLaddlage(target, false);
-    const vila = await matt(target);
-
-    await toggla.click();
-    await vantaLaddlage(target, true);
-    const laddar = await matt(target);
-
-    expect(laddar.bredd, 'en LÄNGRE loadingText får inte göra knappen bredare').toBe(vila.bredd);
-    expect(laddar.hojd, 'en LÄNGRE loadingText får inte göra knappen högre').toBe(vila.hojd);
-  });
-
-  test('laddläget annonseras (role=status, polite) utan att bredden rörs eller döljs', async ({
-    page,
-  }) => {
-    await oppnaDemon(page);
-    const target = page.locator(KORT);
-    const toggla = page.locator(TOGGLA);
-
-    await vantaLaddlage(target, false);
-    // Vilo-laget bär den SYNLIGA etiketten och INGEN `role="status"` —
-    // ladd-lagets status-span ska vara `aria-hidden` (osynlig för AT) i
-    // vila, se Button.tsx render-kommentaren.
-    await expect(target.getByRole('status')).toBeHidden();
-
-    await toggla.click();
-    await vantaLaddlage(target, true);
-
-    const status = target.getByRole('status');
-    await expect(status).toBeVisible();
-    await expect(status).toHaveText('Laddar …');
+    const status = targetKnapp.getByRole('status');
+    await expect(status).toHaveText('Bearbetar och skickar bekräftelse till alla mottagare …');
+    // sr-only: i DOM:en och i a11y-trädet (`getByRole` hittade den precis
+    // ovan), men UPPTAR NOLL SYNLIG YTA — `Waitlist.tsx`s etablerade mönster.
+    const statusBox = await status.boundingBox();
+    expect(statusBox?.width ?? 0, 'sr-only-texten ska inte uppta synlig bredd').toBeLessThan(2);
+    expect(statusBox?.height ?? 0, 'sr-only-texten ska inte uppta synlig höjd').toBeLessThan(2);
   });
 });

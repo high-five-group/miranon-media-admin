@@ -106,17 +106,18 @@ function PrimitivesPage() {
           </div>
         </section>
       ))}
-      {/* TASK-361 — knappens laddläge ska ALDRIG ändra mått (bredd/höjd).
-          Två självständiga demo-knappar + en EXTERN togglingskontroll (INTE
-          knapparnas egna `onPress` — det speglar hur en riktig mutation
-          styr `isLoading` UTIFRÅN, se `BetalningsInkorg.tsx`s
-          `koa.isPending`) så `tests/webblasarbeteende/
-          button-laddlage-stabil-bredd.test.ts` kan mäta SAMMA element FÖRE
-          och EFTER `isLoading` växlar, utan en riktig mutation eller
-          staging. Kort etikett ("Förhandsgranska", `loadingText` KORTARE)
-          + lång `loadingText` ("Spara" med en `loadingText` LÄNGRE än
-          etiketten) täcker `Button`s docblock-kontrakt ("mått = det
-          bredaste/högsta av de två lagren") i BÅDA riktningarna. */}
+      {/* TASK-361 r2 — knappens laddläge ska ALDRIG ändra mått (bredd/höjd),
+          i VILA ELLER i laddläge (r1:s stapel-teknik höll bara det senare —
+          granskningsfynd PR #2212 runda 1, risk HÖG). En referens-knapp
+          (ingen `isLoading`-prop alls) + en target-knapp (samma etikett,
+          `loadingText` LÄNGRE än etiketten) PER storlek (sm/md/lg — r1:s
+          demo täckte bara md) + en EXTERN togglingskontroll (INTE
+          knapparnas egna `onPress` — speglar hur en riktig mutation styr
+          `isLoading` UTIFRÅN, se `BetalningsInkorg.tsx`s `koa.isPending`)
+          så `tests/webblasarbeteende/button-laddlage-stabil-bredd.test.ts`
+          kan mäta target MOT referensen, FÖRE och EFTER `isLoading`
+          växlar, för alla tre storlekar, utan en riktig mutation eller
+          staging. */}
       <section aria-labelledby="rubrik-laddlage-stabil-bredd" className="mt-8">
         <h2 id="rubrik-laddlage-stabil-bredd" className="text-xl">
           Button - laddläge, stabil bredd (TASK-361)
@@ -707,12 +708,28 @@ function MiranonSe() {
   return <span className="font-mono text-[0.95em] tracking-tight">miranon.se</span>;
 }
 
+const LADDLAGE_DEMO_STORLEKAR = ['sm', 'md', 'lg'] as const;
+
 /**
- * TASK-361 — test-krok för `Button`s stabila-mått-kontrakt under `isLoading`.
+ * TASK-361 r2 — test-krok för `Button`s stabila-mått-kontrakt under
+ * `isLoading`, EN referens- + EN target-knapp PER storlek (sm/md/lg —
+ * granskningsfynd PR #2212 runda 1, info: r1:s demo/test täckte bara md).
  *
- * `laddar` styrs ENDAST av knappen "Toggla laddläge" — INTE av de två
- * demo-knapparnas egna `onPress` — så `isLoading` växlar precis som hos en
- * riktig konsument där en `useMutation`s `isPending` styr flera knappar
+ * REFERENSEN saknar `isLoading`-prop helt — dess mått är FACIT för vad
+ * target-knappen (samma etikett, samma storlek) ska hålla i BÅDA lägena.
+ * En knapp som aldrig känner till `isLoading` kan strukturellt inte
+ * påverkas av grid-stapling eller overlay-tekniken — därför är den
+ * oberoende facit, inte bara "en till knapp".
+ *
+ * `loadingText` på target är MEDVETET LÄNGRE än etiketten ("Spara") —
+ * exakt det fall som fällde r1 (permanent bredare ÄVEN I VILA, se
+ * `Button`s docblock § isLoading-amenderingen r2). Med r2:s overlay-teknik
+ * (etiketten äger måttet ensam, `loadingText` är sr-only och syns aldrig)
+ * kan `loadingText`s längd strukturellt inte påverka måttet i något läge.
+ *
+ * `laddar` styrs ENDAST av knappen "Toggla laddläge" — INTE av
+ * target-knapparnas egna `onPress` — så `isLoading` växlar precis som hos
+ * en riktig konsument där en `useMutation`s `isPending` styr flera knappar
  * utifrån (`BetalningsInkorg.tsx`s `koa.isPending`/`forhandsgranska.isPending`).
  * `data-testid` per knapp är de STABILA ankarna
  * `button-laddlage-stabil-bredd.test.ts` mäter mot.
@@ -720,24 +737,22 @@ function MiranonSe() {
 function LaddlageStabilBreddDemo() {
   const [laddar, setLaddar] = useState(false);
   return (
-    <div className="mt-4 flex flex-wrap items-center gap-4">
-      {/* KORT etikett, `loadingText` KORTARE än etiketten — täcker fallet
-          där ladd-laget skulle kunna bli SMALARE än vila-laget om inte
-          stapel-tekniken garanterade "bredaste av de två". */}
-      <Button data-testid="task-361-kort-etikett" isLoading={laddar} loadingText="Laddar …">
-        Förhandsgranska
-      </Button>
-      {/* LÅNG `loadingText`, LÄNGRE än etiketten — täcker den andra
-          riktningen: vila-laget får INTE krympa knappen under ladd-lagets
-          bredd, docblockets uttryckliga "en konsument som vill ha en smal
-          viloknapp väljer en kort loadingText"-avvägning. */}
-      <Button
-        data-testid="task-361-lang-loadingtext"
-        isLoading={laddar}
-        loadingText="Bearbetar och skickar bekräftelse till alla mottagare …"
-      >
-        Spara
-      </Button>
+    <div className="mt-4 flex flex-col gap-4">
+      {LADDLAGE_DEMO_STORLEKAR.map((storlek) => (
+        <div key={storlek} className="flex flex-wrap items-center gap-4">
+          <Button data-testid={`task-361-referens-${storlek}`} size={storlek}>
+            Spara
+          </Button>
+          <Button
+            data-testid={`task-361-target-${storlek}`}
+            size={storlek}
+            isLoading={laddar}
+            loadingText="Bearbetar och skickar bekräftelse till alla mottagare …"
+          >
+            Spara
+          </Button>
+        </div>
+      ))}
       <Button
         intent="secondary"
         emphasis="outline"

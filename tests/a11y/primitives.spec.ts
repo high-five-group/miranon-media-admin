@@ -169,8 +169,11 @@ test.describe('Primitiver — axe-core 0 violations (ADR-045)', () => {
 
     // Laddläget — samma precedent som Skeleton-/Forberedelseskarm-sektionerna
     // ovan: axe ska ge 0 violations i BÅDA tillstånden, inte bara vila.
+    // `task-361-target-md` (TASK-361 r2 — sektionen bär numera EN
+    // referens- + EN target-knapp PER storlek, se
+    // `LaddlageStabilBreddDemo`) är ett av de tre target-ankarna.
     await page.locator('[data-testid="task-361-toggla"]').click();
-    await expect(page.locator('[data-testid="task-361-kort-etikett"]')).toHaveAttribute(
+    await expect(page.locator('[data-testid="task-361-target-md"]')).toHaveAttribute(
       'data-loading',
       'true',
     );
