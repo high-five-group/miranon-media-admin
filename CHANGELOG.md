@@ -7,6 +7,13 @@ och projektet följer [Semantic Versioning 2.0.0](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed — Manuell anmälan visade "(okänt event)" i aktivitetsloggen (Session 113, 2026-09-02)
+
+Marcus prod-observation (Hem-kortets aktivitetsrad): *"Marcus Johansson skapade en anmälan · Marcus Test (okänt event)"*. Rotorsaken satt i `create-registration`-EF:en — den skrev aldrig Anmälans egna `Vill anmäla sig till`, så formeln `Event (namn)` (`{Vill anmäla sig till}`) var alltid tom för en manuell/+1/väntelista-anmälan och `eventNamn` föll till `null` i EF-svaret. Samma tomma formel lästes av läsvägen (`get-registrations`/`get-registration`), så bugg-ytan var bredare än enbart skapelseögonblicket.
+
+- `create-registration/index.ts` (`mapCreatedRegistration`) och `_shared/registration-read.ts` (`mapRegistration`): `eventNamn` föredrar nu lookupen `Kurs (from Event)` (eventets kanoniska kursnamn — samma källa `get-person` och basens egen "Senaste anmälan (sammanfattning)"-formel redan föredrar, TASK-184) med fallback till formeln `Event (namn)`, och `create-registration` har en tredje sista-utväg-fallback (eventnamnet EF:en redan läste ur Eventplanering-posten innan skrivningen) — `eventNamn` är därmed aldrig `null` när Event-länken finns, utan att någon bas-skrivning ändrades
+- **STOPP-BESLUT (ADR-086-premisspasset):** uppdraget föreslog även att EF:en skulle skriva `Vill anmäla sig till` vid create. `docs/reference/data-model.md` visar att fältet bär en ANNAN semantik — anmälans egna self-reported form-claim, `Eventmatchning`-formelns PÅSTÅENDE-sida, och källa för `Antal tidigare genomförda utbildningar`-rollupen på Personer — så den skrivningen uteblev medvetet; endast läsvägarna rättades (TASK-363, PR #2211)
+
 ### Changed — Betalningsytorna omgjorda i iteration med Marcus (Session 113, 2026-09-01)
 
 En heldags iterationsloop där Marcus dömde varje yta i tur och ordning. Allt som rör betalningsflödet ligger bakom miljöflaggan `VITE_FEATURE_BETALNINGAR` och är avstängt i prod; de fyra prod-synliga punkterna är utmärkta med **PROD** nedan.
