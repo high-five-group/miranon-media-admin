@@ -156,6 +156,21 @@ type Kvittolage = {
   kanAngra: boolean;
   /** Varför Ångra inte erbjuds, i klartext för Lotta. `null` när den erbjuds. */
   angraSkal: string | null;
+  /**
+   * [TASK-362] Sant när raden är FÄRDIGBEHANDLAD och inte kräver
+   * uppmärksamhet — antingen bar registreringen aldrig ett kvitto, eller
+   * kvittot har GÅTT I VÄG. Falskt medan något fortfarande pågår (köat i
+   * sessionen, köat/pågår på servern) ELLER har fallerat.
+   *
+   * Detta är granskningsblockets EGEN varningston (Marcus 2026-09-02,
+   * S113 resume 8-röktestet: *"jag gillade inte riktigt allt som händer
+   * UNDER utskicket, den gula rutan förändrades i höjd"*) — blockets
+   * gold/varning-fond ska bara visas medan `registrerade.some(rad =>
+   * !kvittolage(...).vila)`. Ett kvitto som gått i väg är inte en
+   * varning; det är historia, och raden ska vila lika stilla som en rad
+   * utan kvitto alls.
+   */
+  vila: boolean;
 };
 
 /**
@@ -181,14 +196,14 @@ function kvittolage(
   vantande: readonly VantandeKvitto[],
   jobbrader: readonly Jobbstatus['rader'][number][],
 ): Kvittolage {
-  const angrabar = { fel: false, kanAngra: true, angraSkal: null };
+  const angrabar = { fel: false, kanAngra: true, angraSkal: null, vila: true };
   /** Kvittot är ute eller på väg — undo går via makulering, inte radering. */
   const makuleringsvag =
     'Kvittot är på väg eller skickat. Ångra genom att makulera inbetalningen på anmälans betalningsrader.';
 
   if (!rad.medKvitto) return { text: 'Inget kvitto', ...angrabar };
   if (vantande.some((v) => v.inbetalningId === rad.inbetalningId)) {
-    return { text: 'Kvitto väntar på att skickas', ...angrabar };
+    return { text: 'Kvitto väntar på att skickas', ...angrabar, vila: false };
   }
 
   const jobbrad = jobbrader.find((j) => j.objektId === rad.inbetalningId);
@@ -198,13 +213,26 @@ function kvittolage(
       fel: false,
       kanAngra: false,
       angraSkal: makuleringsvag,
+      vila: true,
     };
   }
   if (jobbrad?.status === 'pagar') {
-    return { text: 'Kvitto skickas ...', fel: false, kanAngra: false, angraSkal: makuleringsvag };
+    return {
+      text: 'Kvitto skickas ...',
+      fel: false,
+      kanAngra: false,
+      angraSkal: makuleringsvag,
+      vila: false,
+    };
   }
   if (jobbrad?.status === 'vantar') {
-    return { text: 'Kvitto köat', fel: false, kanAngra: false, angraSkal: makuleringsvag };
+    return {
+      text: 'Kvitto köat',
+      fel: false,
+      kanAngra: false,
+      angraSkal: makuleringsvag,
+      vila: false,
+    };
   }
   if (jobbrad?.status === 'fel') {
     return {
@@ -212,10 +240,17 @@ function kvittolage(
       fel: true,
       kanAngra: false,
       angraSkal: makuleringsvag,
+      vila: false,
     };
   }
 
-  return { text: 'Kvitto köat', fel: false, kanAngra: false, angraSkal: makuleringsvag };
+  return {
+    text: 'Kvitto köat',
+    fel: false,
+    kanAngra: false,
+    angraSkal: makuleringsvag,
+    vila: false,
+  };
 }
 
 /* ═══════════════════════════ FILTRERINGENS AXLAR ═══════════════════════════
@@ -315,6 +350,22 @@ export function BetalningsInkorg() {
      `HTMLDivElement`: noden är ett `<section>`. */
   const granskningsBlockRef = useRef<HTMLElement>(null);
   const [jobbId, setJobbId] = useState<string | undefined>(undefined);
+  /**
+   * [TASK-362] Synligheten på jobbUTFALLETS bekräftelse — SKILD från
+   * `jobbId` självt. Forskningspasset 2026-09-02
+   * (`docs/research/utskicksbekraftelse-inkorg-auto-dismiss-vs-persistent-2026-09-02.md`)
+   * mätte rotorsaken: `jobbId` nollställs aldrig, så en gammal bekräftelse
+   * stod kvar RESTEN AV BESÖKET. Lösningen är inte att nollställa `jobbId`
+   * (jobbstatus-frågan ska fortsätta läsa det senaste jobbet, ADR-129) utan
+   * att låta BEKRÄFTELSENS SYNLIGHET vara sin egen flagga:
+   *   • Stängs manuellt (kryss, bara `success` — kryss-regeln, S109-facit).
+   *   • Döljs AUTOMATISKT så fort Lotta gör nästa handling (ny registrering
+   *     ELLER en ny "Skicka") — den gamla bekräftelsen är då inaktuell.
+   *   • Visas AUTOMATISKT igen så fort ETT NYTT jobb faktiskt startar
+   *     (`jobbId` byter värde, se effekten nedan) — annars hade en
+   *     retry/ny sändning blivit stum.
+   */
+  const [bekraftelseSynlig, setBekraftelseSynlig] = useState(true);
   const [betalsatt, setBetalsatt] = useState<Betalsatt>(lasSenasteBetalsatt);
   // [TASK-346.10] Importytan bor HÄR, inte på en egen route - kortets egen
   // rubrik säger "samma inkorg, ingen ny yta". Två följder: miljöflaggan
@@ -558,6 +609,19 @@ export function BetalningsInkorg() {
   const utfall =
     senasteUtfall && (jobbId !== undefined || senasteUtfall.kvar > 0) ? senasteUtfall : null;
 
+  /* [TASK-362] Ett NYTT jobb (annat `jobbId` än förra rendern) gör den GAMLA
+     bekräftelsen inaktuell OCH gör att den NYA förtjänar att synas — annars
+     hade en stängd/inaktuell bekräftelse tyst blockerat nästa sändnings egen
+     status. `useRef` och inte ett andra `useState`: jämförelsen ska INTE
+     trigga en egen render, bara grinda EN `setBekraftelseSynlig`. */
+  const foregJobbId = useRef(jobbId);
+  useEffect(() => {
+    if (foregJobbId.current !== jobbId) {
+      foregJobbId.current = jobbId;
+      setBekraftelseSynlig(true);
+    }
+  }, [jobbId]);
+
   /* Rensa-knapparna unmountas i samma tryck (aktiva → 0), så fokus flyttas
      programmatiskt till tratt-knappen — filter-ytans stabila ankare — i
      stället för att falla till `document.body`. Perioden går till `'alla'`,
@@ -595,6 +659,11 @@ export function BetalningsInkorg() {
   }, [oppna]);
 
   function vidRegistrerad(rad: InkorgsRad, resultat: RegistreringsUtfall) {
+    /* [TASK-362] NÄSTA HANDLING gör en stående bekräftelse om ett TIDIGARE
+       jobb inaktuell — Lotta har gått vidare till en annan person. Startar
+       DENNA registrering själv ett nytt jobb (nedan) sätter jobbId-effekten
+       ovan tillbaka synligheten åt DEN sändningens egen status. */
+    setBekraftelseSynlig(false);
     setKvittenser((tidigare) => ({ ...tidigare, [rad.nyckel]: resultat.kvittens }));
     setOppenRad(null);
     sparaBetalsatt(betalsatt);
@@ -724,6 +793,9 @@ export function BetalningsInkorg() {
 
   function skickaKvitton() {
     if (vantande.length === 0) return;
+    // [TASK-362] Se `vidRegistrerad`s motsvarande rad — samma "nästa
+    // handling gör den gamla bekräftelsen inaktuell"-regel.
+    setBekraftelseSynlig(false);
     koa.mutate(
       { inbetalningIds: vantande.map((v) => v.inbetalningId) },
       {
@@ -842,6 +914,16 @@ export function BetalningsInkorg() {
      fortfarande synas med sin "Skicka igen". */
   const ovrigaJobbrader = (jobb.data?.rader ?? []).filter(
     (jobbrad) => !registrerade.some((post) => post.inbetalningId === jobbrad.objektId),
+  );
+
+  /* [TASK-362] BLOCKETS TON: varning SÅ LÄNGE något faktiskt pågår eller har
+     fallerat, annars vila. Marcus 2026-09-02 (S113 resume 8-röktestet): den
+     gula fonden stod kvar oavsett vad raderna faktiskt sa — en rad vars
+     kvitto redan gått i väg bär exakt lika mycket varningston som en rad som
+     fortfarande väntar. `some(!vila)` läser samma `kvittolage` raderna
+     redan visar, så tonen kan aldrig säga något annat än vad texten säger. */
+  const blockAktivt = registrerade.some(
+    (post) => !kvittolage(post, vantande, jobb.data?.rader ?? []).vila,
   );
 
   /* [TASK-353] FORMVALET, MÄTT MOT DEN FAKTISKA UI-STRUKTUREN OCH BOKFÖRT.
@@ -1259,10 +1341,32 @@ export function BetalningsInkorg() {
                överkant → första radens text .... 16 px
                sista radens text → knappen ...... 16 px  (blockets `gap-4`)
                knappen → underkant .............. 16 px
-             Tre lika band. Radernas inbördes rytm är orörd. */
-          className="flex flex-col gap-4 rounded-2xl border border-primary-muted bg-primary-tint p-4 contrast-more:border-primary"
+             Tre lika band. Radernas inbördes rytm är orörd.
+
+             [TASK-362] TONEN ÄR NU VILLKORAD PÅ `blockAktivt`, INTE STATISK.
+             Marcus 2026-09-02 (S113 resume 8-röktestet): *"jag gillade inte
+             riktigt allt som händer UNDER utskicket, den gula rutan
+             förändrades i höjd … det var liksom inte 'rent' eller
+             'elegant'"* — och skärmen han visade hade EN skickad rad kvar i
+             gult. Guld/varning är rätt ton MEDAN något pågår eller har
+             fallerat; ett kvitto som gått i väg är historia, inte en
+             varning, och blocket vilar då i SAMMA neutrala form
+             `PersonDetail.tsx`s `kortKlass` redan bär för sitt "Just nu"-
+             block (`border-transparent bg-bg-muted … contrast-more:
+             border-border-strong`) — samma konvention, inte en ny. */
+          className={
+            blockAktivt
+              ? 'flex flex-col gap-4 rounded-2xl border border-primary-muted bg-primary-tint p-4 contrast-more:border-primary'
+              : 'flex flex-col gap-4 rounded-2xl border border-transparent bg-bg-muted p-4 contrast-more:border-border-strong'
+          }
         >
-          <ul className="-my-2 flex flex-col divide-y divide-primary-muted contrast-more:divide-primary">
+          <ul
+            className={
+              blockAktivt
+                ? '-my-2 flex flex-col divide-y divide-primary-muted contrast-more:divide-primary'
+                : '-my-2 flex flex-col divide-y divide-border'
+            }
+          >
             {registrerade.map((post) => {
               const lage = kvittolage(post, vantande, jobb.data?.rader ?? []);
               const angrarDenna = angraId === post.inbetalningId;
@@ -1299,12 +1403,44 @@ export function BetalningsInkorg() {
                           *"Priset och åtgärdsknappen … borde sitta centrerade
                           på raden, höjdmässigt"*). Samma gränsdragning som
                           `InbetalningsLista` gör mellan sina sekundärrader
-                          och sina paneler. */}
-                      {!lage.kanAngra && lage.angraSkal !== null && (
-                        <span className="w-full text-caption text-text-muted">
-                          {lage.angraSkal}
-                        </span>
-                      )}
+                          och sina paneler.
+
+                          [TASK-362] NODEN ÄR NU ALLTID MONTERAD — bara
+                          SYNLIGHETEN växlar (`invisible`, inte ett villkorat
+                          `&&`). En rad som går från "väntar" (en textrad) till
+                          "skickat" (två textrader, den här läggs till) knuffade
+                          annars VARJE efterföljande rad i loggen, OCH listan
+                          under blocket, nedåt mitt under utskicket — exakt det
+                          layouthopp Marcus flaggade 2026-09-02.
+
+                          `min-h-9` (36 px = 2 × `text-caption`s egen
+                          `line-height: 1.5` på `0.75rem`, `tailwind.css` rad
+                          110–111), INTE en enradig nbsp-platshållare ensam
+                          — mätt fynd: makuleringsvägens text ("Kvittot är på
+                          väg eller skickat. Ångra genom att makulera …")
+                          RADBRYTS till två rader i kortets faktiska bredd, så
+                          en enradig platshållare reserverade FÖR LITE (mätt
+                          skillnad 172 px mot 154 px, exakt en `text-caption`-
+                          radhöjd, `tests/e2e/betalningar-inkorg-
+                          utskicksflode.staging.test.ts` § "höjd är IDENTISK"
+                          — rött innan `min-h-9` fanns, grönt efter). Två
+                          rader är alltså reserverade oavsett om texten faktiskt
+                          radbryter eller ej — `min-height` täcker båda
+                          fallen, en fast nbsp-höjd bara det ena.
+                          `aria-hidden` döljer platshållaren för skärmläsare
+                          när den inte bär information — ingen ny information
+                          tas bort, den flyttar bara till vila-läget osynlig
+                          tills den behövs. */}
+                      <span
+                        className={
+                          !lage.kanAngra && lage.angraSkal !== null
+                            ? 'block min-h-9 w-full text-caption text-text-muted'
+                            : 'invisible block min-h-9 w-full text-caption text-text-muted'
+                        }
+                        aria-hidden={lage.kanAngra || lage.angraSkal === null}
+                      >
+                        {lage.angraSkal ?? '\u00A0'}
+                      </span>
                     </span>
 
                     {/* BELOPPSKOLUMNEN — samma sifferpelare som
@@ -1471,75 +1607,146 @@ export function BetalningsInkorg() {
               );
             })}
           </ul>
-          {/* KNAPPEN HÖR TILL BLOCKET, inte till sidan: den skickar exakt de
-              rader som står ovanför med "väntar på att skickas". Den försvinner
-              när kön är tom — loggen står kvar.
+          {/* [TASK-362] EN STATUSYTA, RESERVERAD HÖJD, FRÅN KÖAT TILL KLART.
+              Marcus 2026-09-02 (S113 resume 8-röktestet): *"jag gillade inte
+              riktigt allt som händer UNDER utskicket, den gula rutan
+              förändrades i höjd, olika toastar etc, det var liksom inte
+              'rent' eller 'elegant'"*.
 
-              VÄNSTERSTÄLLD — OCH DET ÄR EN REVERSERING, INTE EN NY DESIGN.
-              Pass 13 flyttade knappen till HÖGER på Marcus egen beställning
-              samma dag (*"Jag tycker nog att 'skicka 1 kvitto'-knappen ska
-              sitta till höger och inte till vänster"*), med husets
-              dialog-mönster som stöd: `Dialog.tsx:70` (`mt-6 flex justify-end
-              gap-3`), `MessageBox.tsx:157` och `Notis.tsx:123` (`mt-3 flex
-              justify-end gap-2`). Efter att ha sett den på skärmen rev han
-              beslutet i pass 14: *"skicka-knappen ska flyttas tillbaka till
-              vänster sidan"*.
+              FÖRE denna ändring var knappraden och jobbUTFALLET två separata
+              noder på två separata ställen: knappen levde HÄR (i blocket) och
+              försvann i samma tick som `vantande` tömdes, medan utfallet levde
+              i en EGEN `<div>` under HELA `<section>`, och monterades färskt
+              när `utfall` first fick ett värde. Två monterings-/avmonterings-
+              händelser i snabb följd, i olika delar av trädet — exakt
+              mekaniken forskningspasset 2026-09-02
+              (`docs/research/utskicksbekraftelse-inkorg-auto-dismiss-vs-persistent-2026-09-02.md`
+              § 1) mätte som layouthoppets rotorsak, tillsammans med `utfall`
+              som aldrig nollställdes.
 
-              BÅDA DOMARNA STÅR KVAR I TEXTEN MED AVSIKT. Den senare gäller —
-              men en historik som tyst skriver om sin egen tidigare mening
-              lämnar nästa läsare att "rätta tillbaka" till dialog-mönstret och
-              göra om varvet. Argumentet för höger var giltigt för en DIALOG:s
-              avslutande knapprad; detta block är en LISTA man granskar, och
-              dess knapp ligger nu i samma vänsterlinje som raderna den
-              skickar.
+              EFTER: EN slot, `min-h-10` (matchar knappens egen höjd —
+              `Button.tsx` `size.md: 'min-h-10'`, husets default-storlek),
+              som visar EXAKT en av tre saker i sekvens: knappen (köat) → en
+              tyst statusrad (pågår/klart) → ingenting (dold, eller nästa
+              handling gjorde den inaktuell). Ingen extra montering, ingen
+              extra notis — bara EN nods innehåll som byter text.
 
-              `self-start` OCH INTE ETT `justify-start`-omslag: blocket är redan
-              en `flex flex-col`, och i en kolumn styr `self-*` tväraxeln —
-              alltså horisontellt. Ett extra wrapper-element hade gjort exakt
-              samma sak med en nod till. Färg (`intent="success"`, sage),
-              storlek, text och `onPress` är BYTE FÖR BYTE oförändrade — bara
-              placeringen. */}
-          {vantande.length > 0 && (
-            /* [TASK-353] KNAPPRADEN, inte längre en ensam knapp. `self-start`
-               flyttade från knappen till detta svep — knappen behåller exakt
-               sin vänsterlinje (blocket är `flex flex-col`, så `self-start` på
-               raden ger samma horisontella läge som på knappen), och
-               "Förhandsgranska" hamnar bredvid den i stället för under.
-               `flex-wrap` gör att paret bryter snyggt på en smal iPad-kolumn i
-               stället för att trycka ihop knapparna under träffytegolvet. */
-            <div className="flex flex-wrap items-center gap-2 self-start">
-              <Button intent="success" onPress={skickaKvitton} isLoading={koa.isPending}>
-                {`Skicka ${vantande.length} ${vantande.length === 1 ? 'kvitto' : 'kvitton'}`}
-              </Button>
+              DEN VANLIGA VÄGEN (Lottas EGEN session, `ovrigaJobbrader` tom)
+              håller sig alltså inom EN höjd hela vägen; en genuin varning
+              (delvis/inget skickat) växer utöver den — medvetet, NN/g:s regel
+              om att ett partiellt misslyckande INTE ska klämmas in i en
+              kompakt rad (forskningspasset § 3). Den korsflik-sällsynta
+              `ovrigaJobbrader > 0`-vägen behåller sin egen, oförändrade
+              `MessageBox`+lista under `</section>`, se nedan. */}
+          {(vantande.length > 0 ||
+            (utfall !== null && bekraftelseSynlig && ovrigaJobbrader.length === 0)) && (
+            <div className="flex min-h-10 flex-col justify-center gap-2">
+              {vantande.length > 0 ? (
+                /* [TASK-353] KNAPPRADEN, inte längre en ensam knapp. `self-start`
+                   flyttade från knappen till detta svep — knappen behåller exakt
+                   sin vänsterlinje (svepet ovan är `flex flex-col`, så
+                   `self-start` på raden ger samma horisontella läge som på
+                   knappen), och "Förhandsgranska" hamnar bredvid den i stället
+                   för under. `flex-wrap` gör att paret bryter snyggt på en smal
+                   iPad-kolumn i stället för att trycka ihop knapparna under
+                   träffytegolvet.
 
-              {/* [TASK-353] BREDVID SKICKA-KNAPPEN — men BARA när kön har
-                  exakt ETT kvitto (se `enSamKo` ovan för hela formvalet).
-                  Ordningen är avsiktlig: Skicka först, Förhandsgranska efter.
-                  Den primära handlingen behåller sin plats och sin
-                  vänsterlinje; granskningen är ett steg man tar FÖRE, men den
-                  får inte knuffa undan knappen Lotta trycker på varje lördag.
+                   VÄNSTERSTÄLLD — OCH DET ÄR EN REVERSERING, INTE EN NY DESIGN.
+                   Pass 13 flyttade knappen till HÖGER på Marcus egen beställning
+                   samma dag (*"Jag tycker nog att 'skicka 1 kvitto'-knappen ska
+                   sitta till höger och inte till vänster"*), med husets
+                   dialog-mönster som stöd. Efter att ha sett den på skärmen rev
+                   han beslutet i pass 14: *"skicka-knappen ska flyttas tillbaka
+                   till vänster sidan"*. BÅDA DOMARNA STÅR KVAR I TEXTEN MED
+                   AVSIKT — den senare gäller, men en historik som tyst skriver
+                   om sin egen tidigare mening lämnar nästa läsare att "rätta
+                   tillbaka" och göra om varvet. */
+                <div className="flex flex-wrap items-center gap-2 self-start">
+                  <Button intent="success" onPress={skickaKvitton} isLoading={koa.isPending}>
+                    {`Skicka ${vantande.length} ${vantande.length === 1 ? 'kvitto' : 'kvitton'}`}
+                  </Button>
 
-                  `intent="secondary" emphasis="outline"` är husets form för
-                  just denna knapp (`GenereringsVy.tsx` rad ~1505) — sage-
-                  knappen (`intent="success"`) är reserverad för det externa
-                  utskicket och får inte färgmatchas av en granskningsknapp. */}
-              {ensamKandidat !== null && kanForhandsgranska(ensamKandidat, vantandeIds) && (
-                <Button
-                  intent="secondary"
-                  emphasis="outline"
-                  aria-disabled={forhandsgranska.isPending}
-                  aria-label={`Förhandsgranska kvittot till ${vantande[0].namn}`}
-                  onPress={() => forhandsgranskaKvitto(vantande[0].inbetalningId, vantande[0].namn)}
-                >
-                  {forhandsgranska.isPending && (
-                    <Loader2
-                      aria-hidden="true"
-                      size={16}
-                      className="shrink-0 motion-safe:animate-spin"
-                    />
+                  {/* [TASK-353] BREDVID SKICKA-KNAPPEN — men BARA när kön har
+                      exakt ETT kvitto (se `enSamKo` ovan för hela formvalet).
+                      Ordningen är avsiktlig: Skicka först, Förhandsgranska efter.
+                      Den primära handlingen behåller sin plats och sin
+                      vänsterlinje; granskningen är ett steg man tar FÖRE, men den
+                      får inte knuffa undan knappen Lotta trycker på varje lördag.
+
+                      `intent="secondary" emphasis="outline"` är husets form för
+                      just denna knapp (`GenereringsVy.tsx` rad ~1505) — sage-
+                      knappen (`intent="success"`) är reserverad för det externa
+                      utskicket och får inte färgmatchas av en granskningsknapp. */}
+                  {ensamKandidat !== null && kanForhandsgranska(ensamKandidat, vantandeIds) && (
+                    <Button
+                      intent="secondary"
+                      emphasis="outline"
+                      aria-disabled={forhandsgranska.isPending}
+                      aria-label={`Förhandsgranska kvittot till ${vantande[0].namn}`}
+                      onPress={() =>
+                        forhandsgranskaKvitto(vantande[0].inbetalningId, vantande[0].namn)
+                      }
+                    >
+                      {forhandsgranska.isPending && (
+                        <Loader2
+                          aria-hidden="true"
+                          size={16}
+                          className="shrink-0 motion-safe:animate-spin"
+                        />
+                      )}
+                      {forhandsgranska.isPending ? 'Förhandsgranskar …' : 'Förhandsgranska'}
+                    </Button>
                   )}
-                  {forhandsgranska.isPending ? 'Förhandsgranskar …' : 'Förhandsgranska'}
-                </Button>
+                </div>
+              ) : (
+                utfall !== null &&
+                bekraftelseSynlig &&
+                ovrigaJobbrader.length === 0 &&
+                (utfall.intent === 'warning' ? (
+                  /* NN/g:s regel (forskningspasset § 3): ett DELVIS eller HELT
+                     misslyckat utskick är inte en toast-kandidat, oavsett
+                     visuell form — det kräver uppmärksamhet och stannar tills
+                     en ny handling gör det inaktuellt (`bekraftelseSynlig`
+                     ovan). `MessageBox`s kryss-regel förbjuder ändå
+                     `onDismiss` här (S109-facit) — konsekvent, ingen
+                     specialundantag skrivs in. */
+                  <MessageBox intent="warning" title={utfall.rubrik}>
+                    Utfallet per kvitto står på raderna ovan.
+                  </MessageBox>
+                ) : (
+                  /* [TASK-362] KOMPAKT STATUSRAD, INTE `MessageBox` — samma
+                     avvägning `RegistreraYta.tsx` redan gör för denna
+                     UNION (`utfall.intent !== 'warning'`): en `MessageBox`s
+                     kant+fond-vikt är rätt för en varning som kräver
+                     uppmärksamhet, fel för en lugn "klart"-bekräftelse Lotta
+                     bara ska kunna se och gå vidare från. En vanlig rad håller
+                     dessutom blockets höjd nära knappens (`min-h-10` ovan) i
+                     stället för att hoppa till en 70+ px hög ruta för det
+                     VANLIGASTE utfallet av alla (allt gick fram).
+
+                     `role="status"` — samma roll `MessageBox` själv sätter för
+                     info/success (S109-facit), aldrig `alert` här (ingen
+                     varning). Krysset syns ENDAST för `success`
+                     (kryss-regeln): `pagar`/`vantar` är progress utan
+                     handling att avfärda ännu. */
+                  <p
+                    role="status"
+                    className="flex items-center justify-between gap-3 text-small text-text-muted"
+                  >
+                    <span>{utfall.rubrik}</span>
+                    {utfall.intent === 'success' && (
+                      <Button
+                        intent="ghost"
+                        size="sm"
+                        aria-label="Stäng bekräftelse"
+                        onPress={() => setBekraftelseSynlig(false)}
+                        className="shrink-0"
+                      >
+                        <X aria-hidden="true" className="size-4" />
+                      </Button>
+                    )}
+                  </p>
+                ))
               )}
             </div>
           )}
@@ -1555,21 +1762,40 @@ export function BetalningsInkorg() {
         </section>
       )}
 
-      {utfall && (
+      {/* [TASK-362] DEN KORSFLIK-SÄLLSYNTA VÄGEN — ett jobb startat i en ANNAN
+          flik/session, vars rader INTE finns i vår egen `registrerade`-logg
+          (se `ovrigaJobbrader`s docblock ovan). Denna box är OFÖRÄNDRAD i sin
+          form (fanns redan innan denna skiva); den delar bara samma
+          `bekraftelseSynlig`-flagga så en dismiss/nästa-handling beter sig
+          konsekvent oavsett vilken väg som visas. Den vanliga vägen
+          (`ovrigaJobbrader.length === 0`) visas i stället i slotten OVAN,
+          inuti granskningsblocket — se dess docblock. */}
+      {utfall && bekraftelseSynlig && ovrigaJobbrader.length > 0 && (
         <div className="flex flex-col gap-2">
-          <MessageBox intent={utfall.intent} title={utfall.rubrik}>
-            {utfall.klass === 'allt-skickat'
-              ? 'Alla kvitton gick fram.'
-              : /* VAR utfallet per kvitto står beror på om raderna är VÅRA.
-                   Sedan C1 bär granskningsblocket ovan status per rad för allt
-                   Lotta registrerat i denna session, och då finns inga rader
-                   kvar under rutan att peka på. Texten sade tidigare
-                   ovillkorligt "Raderna nedan" — vilket blivit en hänvisning
-                   till en tom lista i det vanligaste fallet av alla. */
-                ovrigaJobbrader.length > 0
-                ? 'Raderna nedan visar utfallet per kvitto.'
-                : 'Utfallet per kvitto står på raderna ovan.'}
-          </MessageBox>
+          {/* [TASK-362] TVÅ SEPARATA `MessageBox`-ANROP, INTE ETT MED
+              VILLKORAD `onDismiss` — `MessageBox`s generiska typ (kryss-
+              regeln, `MessageBox.tsx` rad 85–88) diskriminerar per ANROP,
+              inte per fält: ett enda anrop med `intent={utfall.intent}`
+              (en union) och en villkorad `onDismiss` kan inte typas korrekt
+              (mätt, `npm run typecheck` — TS2322, `intent` föll till en
+              INSKRÄNKT `"success"`-typ som `utfall.intent` inte är
+              tilldelningsbar till). Två grenar med var sin LITERALA
+              `intent` löser det utan att `as`-tvinga bort felet. */}
+          {utfall.intent === 'success' ? (
+            <MessageBox
+              intent="success"
+              title={utfall.rubrik}
+              onDismiss={() => setBekraftelseSynlig(false)}
+            >
+              {utfall.klass === 'allt-skickat'
+                ? 'Alla kvitton gick fram.'
+                : 'Raderna nedan visar utfallet per kvitto.'}
+            </MessageBox>
+          ) : (
+            <MessageBox intent={utfall.intent} title={utfall.rubrik}>
+              {'Raderna nedan visar utfallet per kvitto.'}
+            </MessageBox>
+          )}
           <ul className="flex flex-col gap-1 px-4">
             {ovrigaJobbrader.map((jobbrad) => (
               <li

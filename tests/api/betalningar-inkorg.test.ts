@@ -484,6 +484,13 @@ test('ett jobb som ARBETAR är varken lyckat eller misslyckat', () => {
   const pagar = jobbDelutfall(jobbstatus([{ status: 'pagar' }, { status: 'skickat' }]));
   expect(pagar?.klass).toBe('pagar');
   expect(pagar?.rubrik).toBe('Skickar kvitton, 1 av 2 klara');
+  // [TASK-362] `pagar` bär SAMMA intent som `vantar` ('info', aldrig
+  // 'warning') — det är därför `BetalningsInkorg.tsx`s kompakta, höjd-
+  // reserverade statusrad (se `betalningar-inkorg-statusyta-form.test.ts`)
+  // kan visa BÅDA klasserna genom samma `min-h-10`-slot utan att en levande
+  // "pågår"-fas behöver observeras i DOM för att bevisa att den delar
+  // formen: den delar `intent`, och `intent` är vad som styr grenvalet.
+  expect(pagar?.intent).toBe('info');
 
   // NEGATIV KONTROLL: en klassning som bara läste `fel === 0` hade sagt
   // "allt skickat" om ett jobb som knappt börjat.
