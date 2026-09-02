@@ -3,10 +3,10 @@ id: TASK-364
 title: >-
   Persondetalj-betalningar E2E: rubrikväljaren strict-mode-krockar med h3'ans
   delsträng
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-02 10:06'
-updated_date: '2026-09-02 10:41'
+updated_date: '2026-09-02 12:16'
 labels: []
 dependencies: []
 ordinal: 663000
@@ -46,3 +46,9 @@ STAGING-MUTEX: lokala korningar mot chromium-authenticated stotte upprepat pa st
 
 EVENT-DETAIL-KLASSNING (AC #4): tests/e2e/event-detail.staging.test.ts "grupp-grammatiken: rubriker UTANFOR tonala kort; facit-ordningen" (rad 175) failade i 09:25-korningen (run 33614012309, attempt 1) med en saknad "Belaggning"-h2 (deep equality, -1/+0). Testet ar HELT page.route-mockat (GET_EVENT/UPDATE_EVENT, fejkat EVENT_ID recDETAIL0000001) och roc aldrig verklig staging-data for denna assertion - komponentens Belaggning-grupp visar bara skeleton nar isPlaceholderData ar true (seedad ur events.list-cachen), vilket stukturellt inte kan intraffa for ett pahittat ID som aldrig finns i en verklig lista. Kort staging-genomsokning av Eventplanering (sok "ZZ-") visade bara kanda, namngivna fixturer (ZZ-create-event-test, ZZ-TASK-309.3-*, ZZ-belaggning-fixtur "PERMANENT") - inga tecken pa fardsk kontaminering fran 09:00-09:45-fonstret, och ingen koppling ar mojlig eftersom testet inte laser Eventplanering. Testet korde GRONT tva ganger i isolering (npx playwright test --project=chromium-authenticated tests/e2e/event-detail.staging.test.ts -g "grupp-grammatiken", 2/2, ~1.8s vardera). En korning av HELA filen (300+ tester) kraschade lokalt med net::ERR_CONNECTION_REFUSED efter ~2 minuter - lokal dev-server-instabilitet under tung fleet-last, inte en produktdefekt (bekraftat separat fran malltestet ovan). Klassning: TRANSIENT CI-FLAKE, INTE regression och INTE kontamination - ingen kodandring foreslagen for event-detail.staging.test.ts i denna PR. Notera: nightly.yml 2026-09-01 06:10 hade en ANNAN Belaggningen-relaterad flaky-post ("K16-modellen renderad mot facit: radordning, varden, vantelistan alltid med", 1 flaky pa retry) - annan assertion, samma allmanna testfil, svagt korrelerande signal om att Belaggningen-omradet i event-detail-sviten har nagon historik av timing-kanslighet, men inget som pekar pa en specifik regression att fixa har.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad · commit e9ab7cd4 · PR #2218 (MERGED 2026-09-02T11:27:14Z) · CI-run-familjen grön (Lint+Audit+TypeCheck, Pure+Build, Acceptance ×2, Webblasarbeteende, Docs link, CodeQL — samtliga SUCCESS). Verifierat mot origin/main HEAD 59c3f7e3 vid denna Done-flippbatch: tests/e2e/persondetalj-betalningar-fellage.staging.test.ts rad 173 och 297 bär exact: true på båda getByRole('heading', { name: 'Betalningar' })-anropen (AC1) · repo-brett grep efter samma väljar-mönster utan exact visar noll träffar utanför de två redan fixade raderna (AC2, inga fler kollisionsrisker) · isolerad testkörning + Marcus/orkestrerarens dokumenterade STAGING-MUTEX-hantering (kortets Implementation Notes) bevisar testfilen grön efter fixen (AC3) · event-detail.staging.test.ts-flaket är klassat TRANSIENT CI-FLAKE med mätt underlag (2/2 grönt i isolering, ingen kontaminationskoppling — Eventplanering läses aldrig av testet) (AC4). Post-merge-CI-run 33624671547 (headSha e9ab7cd4, denna PR:s egen commit) är GRÖN inklusive Test suite/Staging (API + E2E) — den STARKASTE tillgängliga bekräftelsen att fixen håller i den miljö där de tre ursprungliga strict-mode-fällningarna (e99ed65b, fc91f0be, 56ae3c46) inträffade. OBETALT/ej mätt av mig: kortets egen premiss om ett kommande nightly.yml-grönt (nästa körning ~06:10 UTC dagen efter fixen) är INTE verifierad av mig — fixen landade 2026-09-02T11:27Z, så nästa nightly-körning som skulle bekräfta detta i just den kontexten har inte hunnit köra vid denna stängning. Post-merge-CI (annan men jämförbar kontext) är dock grön. Landning: PR #2218. Avvikelse: nightly-bekräftelsen kvarstår obelagd, bokförd öppet.
+<!-- SECTION:FINAL_SUMMARY:END -->

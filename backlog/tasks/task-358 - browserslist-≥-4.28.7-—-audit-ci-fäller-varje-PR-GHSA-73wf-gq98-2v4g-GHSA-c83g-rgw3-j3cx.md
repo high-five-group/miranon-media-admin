@@ -3,10 +3,10 @@ id: TASK-358
 title: >-
   browserslist ≥ 4.28.7 — audit-ci fäller varje PR (GHSA-73wf-gq98-2v4g +
   GHSA-c83g-rgw3-j3cx)
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-02 07:29'
-updated_date: '2026-09-02 07:34'
+updated_date: '2026-09-02 12:14'
 labels: []
 dependencies: []
 ordinal: 661000
@@ -50,3 +50,9 @@ npm update browserslist för att lyfta den hoistade versionen till >= 4.28.7 (al
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad · commit e99ed65b · PR #2203 (MERGED 2026-09-02T08:00:31Z) · CI-run 33564666846-familjen grön (Lint+Audit+TypeCheck, Pure+Build, Acceptance ×2, Webblasarbeteende, Docs link, CodeQL — samtliga SUCCESS, gh pr view --json statusCheckRollup). Verifierat mot origin/main HEAD 59c3f7e3 vid denna Done-flippbatch (2026-09-02, kort 358/359/360/361/363/364): browserslist 4.28.8 i varje förekomst i package-lock.json (AC1) · npx audit-ci --config audit-ci.jsonc exit 0, 0 high/critical (AC2) · audit-ci.jsonc oförändrad, ingen ny allowlist-post (AC3) · node scripts/check-langa-streck.mjs exit 0 lokalt (AC4, del av DoD) · PR:ens historiska AC5 (pushad/ej-armerad/ej-draft) var sant vid byggtillfället och sedan legitimt superskrivet av den efterföljande armeringen/mergen. Landning: PR #2203. Ingen avvikelse funnen.
+<!-- SECTION:FINAL_SUMMARY:END -->
