@@ -724,31 +724,80 @@ DENNA runbook äger bara PROD-SEKVENSEN, per den filens egen hänvisning
 beslutet väl är fattat"):
 
 1. Förutsättningen: § Steg 11 (fälten) och § Steg 12 (priserna) klara.
-2. **Upplåsningen** — prod är låst av FYRA oberoende lager
-   (`validateBaseGuard`, `validateProjectRef`, `provaLanktillstand`,
-   `scripts/deny-prod-ref.sh`), och ingen flagga kringgår något av dem.
-   **Formen på upplåsningen är Marcus eget val, inte bestämd här** — en
-   kodändring som lägger prod-basen i `expectedBaseId` och prod-refen i
-   `tillatnaProjectRefs` för en enda körning, eller en egen väg. Läs
-   `backfill-inbetalningar.md` § Prod innan du väljer — sviten (§ A11) LÅSER
-   AKTIVT att prod-refen inte redan står i backfill-policyn, så det är ett
-   medvetet steg att riva, inte ett förbiseende att fixa i förbifarten.
-3. **Dry-run, läs planen** (efter upplåsningen):
+2. **Upplåsningen — formen är BESTÄMD sedan `TASK-360`** (Marcus mandat
+   2026-09-02, "Kör backfill. Gör det ordentligt.") — samma typa-för-att-
+   bekräfta-klass som `--bas`/`AIRTABLE_PROD_GODKAND_AV_MARCUS` fick i
+   `scripts/create-betalningsfalt.mjs` (PR #2192). Prod förblir låst av
+   FYRA oberoende lager (`validateBaseGuard`, `validateProjectRef`,
+   `provaLanktillstand`, `scripts/deny-prod-ref.sh`) — ingen rivs, var och
+   en får sin EGEN override. **Kör i din EGEN terminal, utanför Claude
+   Code** (samma skäl som resten av denna runbook: `scripts/deny-prod-ref.sh`
+   fäller varje agent-kommando som bär project-refen, oavsett om det är en
+   skarp körning eller bara ett `grep`):
 
    ```bash
-   npm run backfill:inbetalningar
+   AIRTABLE_PROD_GODKAND_AV_MARCUS=<prod-bas-id> \
+   PROD_REF_GODKAND_AV_MARCUS=<prod-ref> \
+     npm run backfill:inbetalningar -- --bas <prod-bas-id> --projekt-ref <prod-ref>
+   ```
+
+   `<prod-bas-id>` = Airtable-prodbasens ID (`.backfill-inbetalningar-policy.json`s
+   `forbiddenBaseIds`, samma värde som `docs/reference/atkomst-och-nycklar.md`
+   § Register). `<prod-ref>` = Supabase-prodprojektets ref (denna runbooks
+   § Projekt-referenserna-tabell, ELLER `.prod-ref-policy.conf`s
+   `PROD_REF_PROD` — läs filen, klistra inte in värdet i ett Bash-kommando som
+   inte redan bär bypass-prefixet). BÅDA miljövariablerna krävs SAMTIDIGT —
+   backfillen skriver till Airtable-spegeln OCH Postgres i samma körning, och
+   `validateMiljoKonsistens` (TASK-360) vägrar en kombination där bara den
+   ena är satt (t.ex. `--bas` prod men `--projekt-ref` staging).
+   `PROD_REF_GODKAND_AV_MARCUS` är SAMMA variabel `scripts/deny-prod-ref.sh`
+   redan kräver för Bash-anropet självt — namnet läses ur
+   `.prod-ref-policy.conf`s `PROD_REF_BYPASS_VAR`, inte hårdkodat i skriptet,
+   så det finns EN bypass-form i huset.
+
+   **Airtable-token:** `STAGING_AIRTABLE_TOKEN` (samma variabelnamn, missvisande
+   men oförändrat) måste peka på en PAT med LÄS+SKRIV mot prod-basen —
+   `.env.seed`s token är staging-scopat (samma begränsning som § Steg 11 redan
+   bokför för `AIRTABLE_SCHEMA_TOKEN`), så sätt den inline på SAMMA kommandorad,
+   aldrig i `.env.seed`:
+
+   ```bash
+   AIRTABLE_PROD_GODKAND_AV_MARCUS=<prod-bas-id> \
+   PROD_REF_GODKAND_AV_MARCUS=<prod-ref> \
+   STAGING_AIRTABLE_TOKEN=<prod-scopad-PAT> \
+     npm run backfill:inbetalningar -- --bas <prod-bas-id> --projekt-ref <prod-ref>
+   ```
+
+   Se `docs/reference/atkomst-och-nycklar.md` för var en prod-scopad PAT
+   hämtas. Sviten (§ A11) LÅSER AKTIVT att prod-refens VÄRDE inte står i
+   backfill-policyn — den posten rörs inte av denna form, eftersom bypass-
+   värdena alltid kommer från miljön, aldrig från en fil i repot.
+3. **Dry-run, läs planen** (utelämna `-- --utfor` — samma kommando som ovan,
+   fast utan `--utfor`. Detta är det FÖRSTA du kör mot prod):
+
+   ```bash
+   AIRTABLE_PROD_GODKAND_AV_MARCUS=<prod-bas-id> \
+   PROD_REF_GODKAND_AV_MARCUS=<prod-ref> \
+   STAGING_AIRTABLE_TOKEN=<prod-scopad-PAT> \
+     npm run backfill:inbetalningar -- --bas <prod-bas-id> --projekt-ref <prod-ref>
    ```
 
    Läs `pris-okant`- och `fack-motsagelse`-listorna. Är `pris-okant` stort:
-   tillbaka till § Steg 12, fyll fler priser, kör om dry-run.
+   tillbaka till § Steg 12, fyll fler priser, kör om dry-run. Varje rad där en
+   override faktiskt släpper igenom skrivs synligt till stderr
+   ("BYPASS ANVÄND", TASK-360) — läs dem, de ska stämma med det du precis
+   dikterade.
 4. **Avvikelselistan mot Lottas lista** (har hon fört en) — rätta priserna
    och facken i BASEN (aldrig i inbetalningen, se `backfill-inbetalningar.md`
    § "Vad backfillen ALDRIG gör"), kör om dry-run, upprepa tills listan är
    förstådd.
-5. **Skarpt:**
+5. **Skarpt** — lägg till `-- --utfor` sist:
 
    ```bash
-   npm run backfill:inbetalningar -- --utfor
+   AIRTABLE_PROD_GODKAND_AV_MARCUS=<prod-bas-id> \
+   PROD_REF_GODKAND_AV_MARCUS=<prod-ref> \
+   STAGING_AIRTABLE_TOKEN=<prod-scopad-PAT> \
+     npm run backfill:inbetalningar -- --bas <prod-bas-id> --projekt-ref <prod-ref> --utfor
    ```
 
 **"Skip vs. topp-upp" — en öppen fråga denna runbook inte avgör.**

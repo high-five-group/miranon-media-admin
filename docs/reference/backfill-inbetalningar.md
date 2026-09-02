@@ -273,29 +273,39 @@ I prod väntas bilden vara en annan; se nedan.
 
 ---
 
-## Prod — ÖPPET AC för Marcus (`TASK-346.8` AC #4)
+## Prod — formen är BESTÄMD (`TASK-360`)
 
-**Agenten kör aldrig prod, och skriptet kan inte fås att göra det med en
-flagga.** Prod är låst av fyra oberoende lager, och det är viktigt att läsa
-dem som just oberoende — inget av dem är "inställningen som ska ändras":
+Marcus mandat, verbatim, 2026-09-02: *"Kör backfill. Gör det ordentligt."*
+
+**Agenten kör aldrig prod själv, och skriptet kan inte fås att göra det med en
+gissad flagga.** Prod är låst av fyra oberoende lager, och det är viktigt att
+läsa dem som just oberoende — inget av dem är "inställningen som ska ändras".
+Kolumnen nedan stod tidigare "Nej" rakt av; det var korrekt för AC #4:s
+öppna läge men är numera en förenkling — varje lager har fått en EGEN,
+oberoende typa-för-att-bekräfta-gate (samma klass som
+`scripts/create-betalningsfalt.mjs`/`scripts/create-eventinnehall-modell.mjs`
+fick i `TASK-309.9`/PR #2192), inte en gissad flagga en agent kan sätta åt
+honom:
 
 | Lager | Vad det gör | Kan en flagga kringgå det? |
 |---|---|---|
-| `validateBaseGuard` | `forbiddenBaseIds` prövas **före** `expectedBaseId`, så prod-basen fälls även om den skulle stå som förväntad | Nej |
-| `validateProjectRef` | prod-refen läses ur `.prod-ref-policy.conf` och fälls **oberoende** av backfill-policyns egen lista | Nej |
-| `provaLanktillstand` | vägrar om `supabase/.temp/project-ref` pekar någon annanstans än målet — inklusive prod, även med korrekt `--projekt-ref` | Nej |
-| `scripts/deny-prod-ref.sh` | fäller varje **agent**-kommando som bär prod-refen i kommandosträngen | Nej |
+| `validateBaseGuard` | `forbiddenBaseIds` prövas **före** `expectedBaseId`, så prod-basen fälls även om den skulle stå som förväntad | **Nej** — men släpper när `AIRTABLE_PROD_GODKAND_AV_MARCUS` == den EXAKTA bas-ID:n |
+| `validateProjectRef` | prod-refen läses ur `.prod-ref-policy.conf` och fälls **oberoende** av backfill-policyns egen lista | **Nej** — men släpper när miljövariabeln `.prod-ref-policy.conf`s `PROD_REF_BYPASS_VAR` namnger == den EXAKTA refen |
+| `provaLanktillstand` | vägrar om `supabase/.temp/project-ref` pekar någon annanstans än målet — inklusive prod, ÄVEN med korrekt `--projekt-ref` (den HÅRDASTE grenen: den prövar `lankt === prodRef` oavsett `malRef`) | **Nej** — men släpper ENDAST kombinationen länk=PROD + mål=PROD, och ENDAST när BÅDA raderna ovan redan godkänt sin egen bypass (`prodGodkand`, TASK-360) |
+| `scripts/deny-prod-ref.sh` | fäller varje **agent**-kommando som bär prod-refen i kommandosträngen | **Nej** — orörd av denna skiva, samma `PROD_REF_BYPASS_VAR`-prefix som redan fanns |
 
-**En prod-körning kräver därför ett eget Marcus-beslut och en medveten
-upplåsning** — inte ett kommando. Vilken FORM upplåsningen ska ha är
-Marcus val och är **inte bestämt här**: det kan vara en kodändring, en
-policy-PR som lägger prod-basen i `expectedBaseId` och prod-refen i
-`tillatnaProjectRefs`, eller en egen väg. Notera att sviten (§ A11) aktivt
-**låser att prod-refen inte står i backfill-policyn** — den posten är avsiktlig
-och skulle behöva rivas medvetet, eftersom en kopia dit gör
-`deny-prod-ref.sh` verkningslös för varje agent som läser repot.
+Ingen kopia av prod-refens VÄRDE tillkom: `.backfill-inbetalningar-policy.json`
+bär den fortfarande inte (§ A11 i testsviten låser det, oförändrat), och
+`AIRTABLE_PROD_GODKAND_AV_MARCUS`/`PROD_REF_BYPASS_VAR` är miljövariabel-NAMN,
+inte hemliga värden — värdena kommer alltid från miljön, aldrig från en fil i
+repot. Varje gång en override faktiskt släpper igenom skrivs en synlig
+`BYPASS ANVÄND`-rad till stderr (samma stil som `scripts/deny-prod-ref.sh`),
+aldrig tyst.
 
-**Formbeslutet hör hemma i prod-runbooken** — `TASK-346.11`,
+**En prod-körning kräver därför fortfarande ett eget Marcus-beslut** — inte
+ett kommando en agent konstruerar på eget initiativ. Det körbara kommandot
+och den fullständiga miljövariabel-listan bor i prod-runbooken —
+`TASK-346.11`/`TASK-360`,
 [`prod-driftsattning-betalningsflodet-runbook.md`](prod-driftsattning-betalningsflodet-runbook.md)
 § Steg 13. Skriv det där, inte här: denna fil beskriver backfillens regel,
 runbooken äger prod-sekvensen.
@@ -305,7 +315,10 @@ runbooken äger prod-sekvensen.
 1. **Förutsättningen:** prod-basens nio betalningsfält måste finnas
    (`data-model.md` § Prod-fälten — ÖPPET AC #5 för Marcus). Utan dem kan
    inget pris härledas och varje rad blir `pris-okant`.
-2. **Upplåsningen** enligt den form Marcus valt (ovan).
+2. **Upplåsningen** — sätt BÅDA miljövariablerna (tabellen ovan) på
+   kommandoraden, exakt till bas-ID:t respektive project-refen som
+   `--bas`/`--projekt-ref` pekar på. Det exakta kommandot bor i
+   prod-runbooken § Steg 13, inte här.
 3. **Dry-run, och läs planen.** Det är här arbetet ligger; själva körningen
    är sekunder.
 4. **Avvikelselistan mot Lottas lista** — rätta priserna i basen, kör om

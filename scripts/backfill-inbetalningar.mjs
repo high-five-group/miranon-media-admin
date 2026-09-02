@@ -160,6 +160,44 @@ export const PROJECT_REF_PATTERN = /^[a-z]{20}$/;
 /** CLI-version som pinnas för `supabase db query` — EN sanning, i policyfilen. */
 export const SUPABASE_CLI_POLICY_FIL = '.supabase-cli-policy.conf';
 
+// ─────────────────────────────────────────────────────────────────────────
+// PROD-VÄGEN (TASK-360; samma typa-för-att-bekräfta-KLASS som
+// scripts/create-betalningsfalt.mjs / scripts/create-eventinnehall-modell.mjs
+// fick i TASK-309.9/#2192, Marcus mandat 2026-09-02 "Kör backfill. Gör det
+// ordentligt." — se docs/reference/backfill-inbetalningar.md § Prod och
+// docs/reference/prod-driftsattning-betalningsflodet-runbook.md § Steg 13)
+// ─────────────────────────────────────────────────────────────────────────
+// De FYRA lagren (backfill-inbetalningar.md § Prod) förblir fyra —
+// ingen rivs. Var och en får sin EGEN, oberoende typa-för-att-bekräfta-
+// gate i stället:
+//
+//   1. validateBaseGuard   — `forbiddenBaseIds`-basen släpps ENDAST när
+//      AIRTABLE_PROD_GODKAND_AV_MARCUS === den EXAKTA bas-ID:n (SAMMA
+//      variabelnamn som create-betalningsfalt.mjs — EN bypass-form i huset).
+//   2. validateProjectRef  — prod-refen släpps ENDAST när miljövariabeln
+//      NAMNGIVEN av `.prod-ref-policy.conf`s PROD_REF_BYPASS_VAR (läst, inte
+//      hårdkodat — samma variabel `scripts/deny-prod-ref.sh` kräver, alltså
+//      fortfarande EN bypass-form) === den EXAKTA refen.
+//   3. provaLanktillstand  — den HÅRDA "länken pekar på PROD"-vägran (som
+//      annars gäller OAVSETT `malRef`, se funktionens eget kontrakt) släpps
+//      ENDAST när `prodGodkand` är sant OCH länken FAKTISKT matchar målet.
+//      `prodGodkand` sätts av `main()` ENDAST när BÅDA lager 1+2 ovan redan
+//      godkänt bypass — samma "två env-villkor" som uppdraget kräver.
+//   4. scripts/deny-prod-ref.sh — orörd, mekaniskt oberoende av denna fil.
+//
+// `.backfill-inbetalningar-policy.json` bär FORTFARANDE INTE prod-refen —
+// § A11 i testsviten låser den invarianten oförändrad. Bypass-VÄRDENA kommer
+// alltid från miljön, aldrig från en fil i repot.
+//
+// Varje gång en override faktiskt släpper igenom skrivs EN synlig rad till
+// stderr (aldrig tyst) — se `main()`.
+// ─────────────────────────────────────────────────────────────────────────
+
+/** Miljövariabeln som bär Marcus GO i klartext för en icke-staging Airtable-
+ *  bas (SAMMA variabelnamn och mönster som scripts/create-betalningsfalt.mjs
+ *  / scripts/create-eventinnehall-modell.mjs, ADR-125 § 8 — TASK-360). */
+export const PROD_GODKAND_ENV_VAR = 'AIRTABLE_PROD_GODKAND_AV_MARCUS';
+
 // ───────────────────────────────────────────────────────────────────────────
 // Guards
 // ───────────────────────────────────────────────────────────────────────────
@@ -169,8 +207,14 @@ export const SUPABASE_CLI_POLICY_FIL = '.supabase-cli-policy.conf';
  * och `purge-staging-sentinels.mjs`: staging och prod delar tabell- och
  * fält-ID:n (`data-model.md` § ID-topologi), så BAS-ID:t är den enda bärande
  * skyddslinjen — ett tabellnamn säger ingenting om vilken bas man är i.
+ *
+ * `godkandEnv` (TASK-360): typa-för-att-bekräfta-override. En bas i
+ * `forbiddenBaseIds` släpps ENDAST när `godkandEnv` är EXAKT samma bas-ID —
+ * annars oförändrat BLOCKERAD, precis som innan denna skiva. Ingen ändring
+ * för det normala staging-fallet (ingen tredje arg = samma beteende som
+ * tidigare).
  */
-export function validateBaseGuard(policy, basId) {
+export function validateBaseGuard(policy, basId, { godkandEnv } = {}) {
   const forbidden = policy?.forbiddenBaseIds;
   if (!Array.isArray(forbidden) || forbidden.length === 0) {
     throw new Error('Policyn saknar forbiddenBaseIds — vägrar köra utan prod-spärr');
@@ -179,6 +223,9 @@ export function validateBaseGuard(policy, basId) {
     throw new Error(`Bas-ID har fel form: ${JSON.stringify(basId)}`);
   }
   if (forbidden.includes(basId)) {
+    if (godkandEnv === basId) {
+      return true;
+    }
     throw new Error(`BLOCKERAD bas: ${basId} står i forbiddenBaseIds (prod är förbjuden)`);
   }
   if (basId !== policy.expectedBaseId) {
@@ -199,8 +246,14 @@ export function validateBaseGuard(policy, basId) {
  * vilket är precis vad `scripts/deny-prod-ref.sh` finns för att omöjliggöra
  * (CLAUDE.md § Prod-EF-deploy: "Project-refen anges som ARGUMENT, aldrig ur
  * config").
+ *
+ * `godkandEnv` (TASK-360): typa-för-att-bekräfta-override. Anroparen läser
+ * SJÄLV vilket miljövariabel-NAMN som gäller (`.prod-ref-policy.conf`s
+ * `PROD_REF_BYPASS_VAR` — samma variabel `scripts/deny-prod-ref.sh` kräver)
+ * och skickar in dess VÄRDE här. Prod-refen släpps ENDAST när `godkandEnv`
+ * är EXAKT samma ref — annars oförändrat BLOCKERAD.
  */
-export function validateProjectRef(policy, ref, prodRef) {
+export function validateProjectRef(policy, ref, prodRef, { godkandEnv } = {}) {
   const tillatna = policy?.tillatnaProjectRefs;
   if (!Array.isArray(tillatna) || tillatna.length === 0) {
     throw new Error('Policyn saknar tillatnaProjectRefs — vägrar köra utan mål-spärr');
@@ -213,6 +266,9 @@ export function validateProjectRef(policy, ref, prodRef) {
     throw new Error(`Project-ref har fel form: ${JSON.stringify(ref)}`);
   }
   if (prodRef && ref === prodRef) {
+    if (godkandEnv === ref) {
+      return true;
+    }
     throw new Error(
       `BLOCKERAD project-ref: ${maskeraRef(ref)} är PROD enligt .prod-ref-policy.conf. ` +
         'Prod-backfillen är AC #4 — ett öppet kriterium för Marcus, aldrig en agent-körning.',
@@ -266,10 +322,25 @@ export const LANKTILLSTAND_FIL = 'supabase/.temp/project-ref';
  *   - filen SAKNAS  ⇒ olänkat läge, den mätta vägen — OK
  *   - filen bär MÅLREFEN ⇒ OK (länkning och argument pekar åt samma håll)
  *   - filen bär NÅGOT ANNAT ⇒ VÄGRA, oavsett hur rätt argumentet är
+ *   - filen bär PROD ⇒ VÄGRA, OAVSETT `malRef` — DEN HÄRDASTE grenen, se
+ *     `prodGodkand` nedan för dess ENDA väg förbi.
+ *
+ * `prodGodkand` (TASK-360): en genuin, dubbelt godkänd prod-körning LÄNKAR
+ * katalogen mot prod MED AVSIKT innan den kör (runbookens § Steg 13) — den
+ * vanliga "lankat-till-prod"-grenen ovan skulle då VÄGRA en helt avsedd,
+ * redan godkänd körning, eftersom den prövar `lankt === prodRef` OAVSETT
+ * `malRef`. `prodGodkand` släpper igenom DENNA specifika kombination —
+ * länken är PROD OCH målet är PROD — men ENDAST när anroparen (`main()`)
+ * redan har bevisat att BÅDA de oberoende bypass-villkoren i
+ * `validateBaseGuard`/`validateProjectRef` var uppfyllda (default `false`,
+ * så varje befintligt anrop utan denna flagga är oförändrat). Är målet INTE
+ * prod (t.ex. länken råkar peka på prod medan `--projekt-ref` pekar på
+ * staging) gäller den hårda vägran fortfarande — `prodGodkand` räddar bara
+ * den exakta, avsedda kombinationen.
  *
  * REN funktion — anroparen läser filen, så prövningen kan bevisas hermetiskt.
  */
-export function provaLanktillstand({ lanktRef, malRef, prodRef }) {
+export function provaLanktillstand({ lanktRef, malRef, prodRef, prodGodkand = false }) {
   if (lanktRef === null || lanktRef === undefined) {
     return { ok: true, lage: 'olankat', skal: null };
   }
@@ -277,6 +348,9 @@ export function provaLanktillstand({ lanktRef, malRef, prodRef }) {
   if (lankt === '') return { ok: true, lage: 'olankat', skal: null };
 
   if (prodRef && lankt === prodRef) {
+    if (prodGodkand && malRef === prodRef) {
+      return { ok: true, lage: 'lankat-till-prod-godkand', skal: null };
+    }
     return {
       ok: false,
       lage: 'lankat-till-prod',
@@ -1157,6 +1231,42 @@ export async function lasProdRef() {
 }
 
 /**
+ * Läser miljövariabel-NAMNET som bär prod-ref-bypassen, ur
+ * `.prod-ref-policy.conf`s egen `PROD_REF_BYPASS_VAR` — INTE hårdkodat
+ * (TASK-360). Samma skäl som `lasProdRef` läser refen från exakt ETT ställe:
+ * `scripts/deny-prod-ref.sh` kräver samma variabel, och en andra kopia av
+ * NAMNET hade kunnat glida isär från hookens utan att någon grind såg det.
+ */
+export async function lasProdRefBypassVar() {
+  try {
+    const innehall = await readFile(join(REPO_ROT, '.prod-ref-policy.conf'), 'utf8');
+    return innehall.match(/^PROD_REF_BYPASS_VAR="([^"]+)"/m)?.[1] ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Skydd mot en OMÖJLIG kombination (TASK-360): backfillen skriver till BÅDA
+ * systemen (Airtable-spegeln OCH Postgres) i SAMMA körning, så `--bas` och
+ * `--projekt-ref` måste peka åt SAMMA håll — båda prod-godkända, eller ingen.
+ * En kombination där bara den ena är godkänd är aldrig en giltig avsikt,
+ * bara ett ofullständigt kommando — och att köra den hade läst från en miljö
+ * och skrivit till en annan.
+ */
+export function validateMiljoKonsistens({ basGodkand, refGodkand }) {
+  if (basGodkand !== refGodkand) {
+    throw new Error(
+      `BLOCKERAD kombination: --bas pekar mot ${basGodkand ? 'PROD' : 'staging'} men ` +
+        `--projekt-ref pekar mot ${refGodkand ? 'PROD' : 'staging'}. Backfillen skriver till ` +
+        'BÅDA systemen för samma körning — sätt BÅDA override-miljövariablerna för en ' +
+        'prod-körning, eller ingen för en staging-körning.',
+    );
+  }
+  return true;
+}
+
+/**
  * Kör SQL via `supabase db query`.
  *
  * `--linked --project-ref <ref>` är den enda formen som når ett fjärrprojekt
@@ -1453,7 +1563,12 @@ Flaggor:
   --projekt-ref <ref>  Supabase-projekt (default: policyns enda tillåtna)
   --bas <appXXXX>      Airtable-bas (default: policyns expectedBaseId)
 
-Prod är AC #4 — ett ÖPPET kriterium för Marcus. Skriptet vägrar prod-refen.
+Prod är AC #4 — ett ÖPPET kriterium för Marcus, aldrig en agent-körning
+(CLAUDE.md § "Kör ALDRIG skriptet mot prod själv"). En prod-körning kräver
+BÅDA (typa-för-att-bekräfta, TASK-360):
+  AIRTABLE_PROD_GODKAND_AV_MARCUS=<prod-bas-ID>   (== --bas)
+  <PROD_REF_BYPASS_VAR ur .prod-ref-policy.conf>=<prod-ref>  (== --projekt-ref)
+Se docs/reference/backfill-inbetalningar.md § Prod.
 `;
 
 async function main() {
@@ -1482,34 +1597,101 @@ async function main() {
   const ref = args.ref ?? policy.tillatnaProjectRefs?.[0];
   const prodRef = await lasProdRef();
 
+  // TASK-360 PROD-VÄGEN — typa-för-att-bekräfta, två OBEROENDE miljövariabler
+  // (samma mönster som scripts/create-betalningsfalt.mjs). `godkand*`
+  // beräknas HÄR, en gång, så samma booleska värde styr både guardsens
+  // override, bypass-loggningen och `provaLanktillstand`s `prodGodkand`.
+  const airtableGodkandEnv = process.env[PROD_GODKAND_ENV_VAR];
+  const prodRefBypassVar = await lasProdRefBypassVar();
+  const refGodkandEnv = prodRefBypassVar ? process.env[prodRefBypassVar] : undefined;
+  const basGodkand =
+    Array.isArray(policy.forbiddenBaseIds) &&
+    policy.forbiddenBaseIds.includes(basId) &&
+    airtableGodkandEnv === basId;
+  const refGodkand =
+    Boolean(prodRef) && ref === prodRef && Boolean(prodRefBypassVar) && refGodkandEnv === ref;
+
   try {
-    validateBaseGuard(policy, basId);
-    validateProjectRef(policy, ref, prodRef);
+    validateBaseGuard(policy, basId, { godkandEnv: airtableGodkandEnv });
+    validateProjectRef(policy, ref, prodRef, { godkandEnv: refGodkandEnv });
+    validateMiljoKonsistens({ basGodkand, refGodkand });
   } catch (fel) {
     console.error(`❌ Guard: ${fel.message}`);
     process.exit(1);
   }
 
+  // Synlig logg VARJE gång en override faktiskt släpper igenom — aldrig
+  // tyst, samma stil som scripts/deny-prod-ref.sh:s "BYPASS ANVÄND"-rad.
+  if (basGodkand) {
+    console.error(
+      `BAS-GUARD (TASK-360): BYPASS ANVÄND — ${PROD_GODKAND_ENV_VAR}=${basId} släpptes igenom ` +
+        'mot en bas i forbiddenBaseIds. Detta ska ENDAST ha skett på Marcus egen, uttryckliga ' +
+        'diktering. Om du ser denna rad utan att minnas att Marcus bad om just detta: stanna ' +
+        'och fråga honom innan du fortsätter.',
+    );
+  }
+  if (refGodkand) {
+    console.error(
+      `PROJEKT-REF-GUARD (TASK-360): BYPASS ANVÄND — ${prodRefBypassVar}=${maskeraRef(ref)} ` +
+        'släpptes igenom mot prod-project-refen. Detta ska ENDAST ha skett på Marcus egen, ' +
+        'uttryckliga diktering. Om du ser denna rad utan att minnas att Marcus bad om just ' +
+        'detta: stanna och fråga honom innan du fortsätter.',
+    );
+  }
+
+  // `korMotProd`: BÅDA de oberoende bypassen är alltid lika efter
+  // `validateMiljoKonsistens` ovan (annars hade den redan kastat), så det
+  // räcker att läsa den ena.
+  const korMotProd = basGodkand;
+
   // LÄNKTILLSTÅNDET prövas FÖRE varje skarp operation — se provaLanktillstand
   // för varför argumentet ensamt inte räcker. Gäller även dry-run: en körning
   // som inte får skriva ska inte heller LÄSA ur fel projekt och presentera
-  // planen som om den gällde målet.
+  // planen som om den gällde målet. `prodGodkand: korMotProd` släpper
+  // ENDAST den exakta "länk=PROD och mål=PROD"-kombinationen, och bara när
+  // båda guardsen ovan redan godkänt bypass (TASK-360).
   const lankt = lasLanktillstand();
-  const lankUtfall = provaLanktillstand({ lanktRef: lankt, malRef: ref, prodRef });
+  const lankUtfall = provaLanktillstand({
+    lanktRef: lankt,
+    malRef: ref,
+    prodRef,
+    prodGodkand: korMotProd,
+  });
   if (!lankUtfall.ok) {
     console.error(`❌ Länktillstånd: ${lankUtfall.skal}`);
     process.exit(1);
   }
+  if (lankUtfall.lage === 'lankat-till-prod-godkand') {
+    console.error(
+      'LÄNK-GUARD (TASK-360): BYPASS ANVÄND — sticky-länken till PROD godkändes eftersom ' +
+        'BÅDA override-miljövariablerna ovan var satta korrekt. Detta ska ENDAST ha skett på ' +
+        'Marcus egen, uttryckliga diktering. Om du ser denna rad utan att minnas att Marcus bad ' +
+        'om just detta: stanna och fråga honom innan du fortsätter.',
+    );
+  }
 
   const token = process.env.STAGING_AIRTABLE_TOKEN ?? (await lasTokenUrEnvFil());
   if (!token) {
-    console.error('❌ STAGING_AIRTABLE_TOKEN saknas (env eller .env.seed)');
+    console.error(
+      `❌ STAGING_AIRTABLE_TOKEN saknas (env eller .env.seed).${
+        korMotProd
+          ? ' .env.seed-tokenet är staging-scopat — en prod-körning kräver en prod-scopad PAT ' +
+            'satt inline på kommandoraden (STAGING_AIRTABLE_TOKEN=<prod-PAT> ...), aldrig i ' +
+            '.env.seed (docs/reference/atkomst-och-nycklar.md).'
+          : ''
+      }`,
+    );
     process.exit(1);
   }
 
+  // Staging-mutexen bevakar staging-KONTENTION — irrelevant för en
+  // prod-körning, och hoppas därför över när target skiljer sig från
+  // staging (samma resonemang som scripts/create-betalningsfalt.mjs § main).
   // Semaforen EFTER de egna guardsen och FÖRE första Airtable-anropet — samma
   // ordning `purge-staging-sentinels.mjs` och `seed-review-fixture.mjs` följer.
-  kravStagingLedigt('backfill-inbetalningar');
+  if (!korMotProd) {
+    kravStagingLedigt('backfill-inbetalningar');
+  }
 
   const cliVersion = await lasSupabaseCliVersion();
   const pausMs = policy.airtablePausMs ?? 220;
