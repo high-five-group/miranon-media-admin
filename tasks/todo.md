@@ -11,13 +11,18 @@
 > Implementation-journal i `docs/BUILD-LOG.md`.
 > Styrande dokument: [`docs/byggplan.md`](../docs/byggplan.md)
 
-**S113 ⏸️ PAUSAD (paus 8, 2026-09-01 ~22:05 UTC / 2026-09-02 ~00:05 CEST —
-PROMOVERINGEN LANDAD, MARCUS-BLOCKET ÅTERSTÅR; Lotta-demo I DAG):**
-handoffen (sessionsdok S113 § PAUSLÄGE paus 8) bär HELA återstoden:
+**Session 113 ▶️ ÅTERUPPTAGEN (resume 8, 2026-09-02 ~07:25 UTC, `lifecycle: active`;
+Marcus: *"Återuppta S113 … jag behöver din vägledning"* — MARCUS-BLOCKET KÖRS
+MED VÄGLEDNING; Lotta-demo I DAG):** paus 8-landningen `#2201` var RÖD
+(audit-ci: två browserslist-advisories publicerade efter `main`s sista gröna
+körning, patchade i `4.28.7`) → låsfils-bump som egen kod-PR via bygg-agent;
+resume 8 + paus 8 landar tillsammans i `#2201`. Numrering re-verifierad
+(ADR 130 · kort 358 · L655 · T182 · 23 fragment, inga divergenser).
+Handoffen (sessionsdok S113 § Paushistorik paus 8) bär HELA återstoden:
 MARCUS-SEKVENS (terminal-blocket steg 1–10, körklart med kommandon) +
 resume 8:s autonoma steg (verifiera blocket → steg 14 Vercel-flaggan →
 steg 13 backfillen → steg 16 facit → steg 15 röktest-lista) per paus 7-
-MANDATET som KVARSTÅR. Resume via `session-resume` (N=113). promoverings-PR **`#2193` MERGAD** (`9dca0e56`, 44 commits —
+MANDATET som KVARSTÅR. promoverings-PR **`#2193` MERGAD** (`9dca0e56`, 44 commits —
 hela TASK-346-leveransen + steg 1b Förhandsgranska kvitton, vars
 "ren frontend"-premiss falsifierades och löstes som sidoeffektsfri
 `preview-receipt`-utökning, staging-skarpbevisad 23/23) · `#2192`
