@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-16 07:07'
-updated_date: '2026-09-02 10:35'
+updated_date: '2026-09-02 11:55'
 labels:
   - ready-for-agent
 dependencies: []
@@ -223,4 +223,14 @@ nattnätets tre körningar EFTER denna PR landat.
 
 PR: #2216, branch ci/task-239-acceptance-marginal-shard, head
 b8d97bcf (uppdaterad PR-kropp, ingen ny commit för denna anteckning).
+
+═══════════════════════════════════════════════════════════════
+MERGEBAR-GÖRNING (2026-09-02) — r1-fyndet betalt, PR #2216 uppdaterad.
+═══════════════════════════════════════════════════════════════
+
+Granskningens runda 1-fynd (orelaterade rader i docs/reference/review-instrumentering.jsonl, DoD #4 felaktigt bockad) åtgärdat: mergade origin/main (701cfc9c) in i grenen och löste konflikten i den filen genom att ta main-versionen rakt av (git checkout origin/main -- <fil>) — diffen mot origin/main för filen var TOM direkt efter, verifierat. DoD #4 nu sann.
+
+Full npm run verify:ci-parity kördes (info-fyndets krav: fullt läge, inte --fast, eftersom PR:en ändrar ci-suite.yml). Utfall: 34 gröna, 2 röda, 1711,8 s. Röda: Acceptance 459/461 (hem.acceptance.test.ts:313, mer-platser.acceptance.test.ts:68), Webblasarbeteende 108/109 (forberedelseskarm-hojdkedja.test.ts:166) — samtliga tre filer ligger UTANFÖR denna PR:s diff. Isolerad omkörning via fil:rad gav ERR_CONNECTION_REFUSED (dev-servern på port 18399 startas inte tillförlitligt av en delmängdskörning — samma klass av lokal-loadavg-artefakt som varv 1 redan bokförde ovan för test-ci-wait/acceptance-specs). CI på PR-ytans egen körning (0ddcc3f0) är grön: tre gröna Acceptance-shards + Webblasarbeteende pass. Klassat av orkestreraren som last-/timing-flake under den 28-minuters lokala helkörningen, inte en regression av denna PR:s diff.
+
+PR-kroppens grindtabell uppdaterad: :fast-raden ersatt med den fulla körningens faktiska utfall (se ovan).
 <!-- SECTION:NOTES:END -->
