@@ -3,10 +3,10 @@ id: TASK-363
 title: >-
   Manuell anmälan visade '(okänt event)' i aktivitetsloggen — eventNamn föll
   till null i create-registration + läsvägen
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-02 09:23'
-updated_date: '2026-09-02 09:23'
+updated_date: '2026-09-02 12:16'
 labels: []
 dependencies: []
 ordinal: 662000
@@ -28,7 +28,13 @@ Rotorsak: create-registration-EF:en skrev aldrig Anmälans egna 'Vill anmäla si
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad · commit 1a256f58 · PR #2211 (MERGED 2026-09-02T09:58:17Z) · CI-run-familjen grön (Lint+Audit+TypeCheck, Pure+Build, Acceptance ×2, Webblasarbeteende, Docs link, CodeQL — samtliga SUCCESS). Verifierat mot origin/main HEAD 59c3f7e3 vid denna Done-flippbatch: supabase/functions/create-registration/index.ts mapCreatedRegistration prioriterar 'Kurs (from Event)' → fallback 'Event (namn)' → fallback eventNamnFallback (läst ur Eventplanering-posten), aldrig null när Event-länken finns (AC1) · _shared/registration-read.ts mapRegistration använder identisk prioritetsordning 'Kurs (from Event)' ?? 'Event (namn)' ?? null (AC2, parity bekräftad läsning) · 'Vill anmäla sig till' grep-verifierat FRÅNVARANDE som skrivfält i create-registration/index.ts (AC3, STOPP-BESLUTET hållet) · frontend-fallbacken '(okänt event)' finns kvar oförändrad i 8 mutations-filer + useCreateRegistration.ts (AC4, defensiv kod behållen men ska inte längre triggas för länkade anmälningar). AC1:s 'skarp staging-conformance' bär en namngiven, live test:api-staging-test: tests/api/create-registration.staging.test.ts describe 'create-registration — skarp conformance', testet 'eventNamn ska aldrig vara null när Event-länken är satt (TASK-363)' jämför en ny manuell creates eventNamn mot en seedad webbformulär-anmälans eventNamn (facit). Testfilens klass (staging) körs i CI:s 'Test suite / Staging (API + E2E)'-jobb — SKIPPED på PR #2211 själv (D0/concurrency-klassning) men bekräftat GRÖNT i den kumulativa post-merge-körningen på e9ab7cd4 (run 33624671547), som inkluderar denna PR:s commit. Landning: PR #2211. Ingen avvikelse funnen.
+<!-- SECTION:FINAL_SUMMARY:END -->
