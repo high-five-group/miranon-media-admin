@@ -70,6 +70,7 @@ import {
   klassificera,
   LANKTILLSTAND_FIL,
   lasLanktillstand,
+  losToken,
   maskeraRef,
   PROD_GODKAND_ENV_VAR,
   parsaDbQuerySvar,
@@ -78,6 +79,7 @@ import {
   planeraEventpriser,
   provaLanktillstand,
   SPEGEL_OPERATION,
+  skrivRapport,
   sqlBelopp,
   sqlDatum,
   standardNyckel,
@@ -98,6 +100,23 @@ let failed = 0;
 function test(namn, fn) {
   try {
     fn();
+    passed += 1;
+    console.log(`✅ ${namn}`);
+  } catch (fel) {
+    failed += 1;
+    console.error(`❌ ${namn}`);
+    console.error(`   ${fel.message}`);
+  }
+}
+
+/** Samma kontrakt som `test`, men AWAIT:ar `fn()` — för `losToken` m.fl. som
+ *  är async (TASK-360 runda 2). `test()` fångar bara SYNKRONA kast; ett kast
+ *  inuti en async-funktion når aldrig dess try/catch, det blir en
+ *  unhandled rejection i stället för en röd rad. Filen körs som ESM med
+ *  top-level await, så `await testAsync(...)` vid anropsstället räcker. */
+async function testAsync(namn, fn) {
+  try {
+    await fn();
     passed += 1;
     console.log(`✅ ${namn}`);
   } catch (fel) {
@@ -1617,6 +1636,137 @@ test('R7: NEGATIV — inte heller fel-projekt-meddelandet bär hela refen', () =
   assert.equal(u.ok, false);
   assert.ok(!u.skal.includes('abcdefghijklmnopqrst'));
   assert.ok(!u.skal.includes(STAGING));
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// S — TASK-360 RUNDA 2 (review-fynd A + B, PR #2208 granskad SHA 0dfade88)
+// ═══════════════════════════════════════════════════════════════════════════
+
+const S_MINIMAL_PLAN = { eventpriser: [], backfill: [], avvikelser: [], hoppade: [] };
+const S_MINIMAL_FORE = {
+  antalAnmalningar: 0,
+  antalInbetalningar: 0,
+  summaKronor: 0,
+  antalMedKantPris: 0,
+  antalAlltBetalt: 0,
+  andelAlltBetaltAvAlla: 0,
+  andelAlltBetaltAvKantPris: 0,
+};
+
+await testAsync(
+  'S1: losToken — FYND A: prod-läge UTAN env-token vägrar UTAN att läsa .env.seed-fallbacken',
+  async () => {
+    let anropad = false;
+    const resultat = await losToken({
+      korMotProd: true,
+      envToken: undefined,
+      lasFallback: async () => {
+        anropad = true;
+        return 'FALLBACK-VARDE-UR-ENV-SEED';
+      },
+    });
+    assert.equal(resultat, null);
+    assert.equal(anropad, false, 'fallbacken fick ALDRIG anropas i prod-läge');
+  },
+);
+
+await testAsync(
+  'S2: losToken — FYND A: prod-läge MED env-token fortsätter, fallbacken anropas ändå inte',
+  async () => {
+    let anropad = false;
+    const resultat = await losToken({
+      korMotProd: true,
+      envToken: 'ETT-PROD-SCOPAT-TOKEN',
+      lasFallback: async () => {
+        anropad = true;
+        return 'FALLBACK';
+      },
+    });
+    assert.equal(resultat, 'ETT-PROD-SCOPAT-TOKEN');
+    assert.equal(anropad, false);
+  },
+);
+
+await testAsync(
+  'S3: losToken — staging-läge UTAN env-token läser fallbacken (OFÖRÄNDRAT beteende)',
+  async () => {
+    let anropad = false;
+    const resultat = await losToken({
+      korMotProd: false,
+      envToken: undefined,
+      lasFallback: async () => {
+        anropad = true;
+        return 'STAGING-VARDE-UR-ENV-SEED';
+      },
+    });
+    assert.equal(resultat, 'STAGING-VARDE-UR-ENV-SEED');
+    assert.equal(anropad, true, 'staging-läget SKA läsa fallbacken, precis som innan');
+  },
+);
+
+await testAsync(
+  'S4: losToken — staging-läge MED env-token vinner över fallbacken utan att anropa den',
+  async () => {
+    let anropad = false;
+    const resultat = await losToken({
+      korMotProd: false,
+      envToken: 'ETT-STAGING-TOKEN',
+      lasFallback: async () => {
+        anropad = true;
+        return 'FALLBACK';
+      },
+    });
+    assert.equal(resultat, 'ETT-STAGING-TOKEN');
+    assert.equal(anropad, false);
+  },
+);
+
+test('S5: kopplingsvakt — main() anropar losToken med lasFallback: lasTokenUrEnvFil', () => {
+  assert.match(KALLA, /const token = await losToken\(\{/);
+  assert.match(KALLA, /envToken: process\.env\.STAGING_AIRTABLE_TOKEN,/);
+  assert.match(KALLA, /lasFallback: lasTokenUrEnvFil,/);
+});
+
+test('S6: skrivRapport — FYND B: refen skrivs MASKERAD, aldrig okodad', () => {
+  const rapport = skrivRapport({
+    plan: S_MINIMAL_PLAN,
+    fore: S_MINIMAL_FORE,
+    efter: null,
+    utfor: false,
+    ref: PROD_REF,
+    basId: 'app8uGPrVCVOm6LfD',
+  });
+  assert.ok(PROD_REF, 'PROD_REF_PROD saknas i .prod-ref-policy.conf');
+  assert.ok(!rapport.includes(PROD_REF), 'rapporten får ALDRIG bära den okodade refen');
+  assert.ok(rapport.includes(maskeraRef(PROD_REF)), 'rapporten ska bära den MASKERADE refen');
+});
+
+test('S7: NEGATIV — skrivRapport maskerar ÄVEN en helt vanlig staging-ref (inte bara prod)', () => {
+  const rapport = skrivRapport({
+    plan: S_MINIMAL_PLAN,
+    fore: S_MINIMAL_FORE,
+    efter: null,
+    utfor: false,
+    ref: STAGING,
+    basId: POLICY.expectedBaseId,
+  });
+  assert.ok(!rapport.includes(STAGING), 'rapporten får inte bära den okodade STAGING-refen heller');
+  assert.ok(rapport.includes(maskeraRef(STAGING)));
+});
+
+test('S8: skrivRapport lämnar Airtable-bas-ID:t OKODAT (bokfört undantag, samma som resten av filen)', () => {
+  const rapport = skrivRapport({
+    plan: S_MINIMAL_PLAN,
+    fore: S_MINIMAL_FORE,
+    efter: null,
+    utfor: false,
+    ref: STAGING,
+    basId: 'app8uGPrVCVOm6LfD',
+  });
+  // Bas-ID:n maskeras INTE i denna fil (se t.ex. "BLOCKERAD bas: ${basId}") —
+  // detta test bevisar att fynd B:s fix inte råkade utvidgas dit den inte
+  // bads om.
+  assert.ok(rapport.includes('app8uGPrVCVOm6LfD'));
 });
 
 // ═══════════════════════════════════════════════════════════════════════════

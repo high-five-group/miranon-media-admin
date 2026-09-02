@@ -1458,13 +1458,13 @@ export function byggSpegelPatch(harledning) {
 // Rapporten
 // ───────────────────────────────────────────────────────────────────────────
 
-function skrivRapport({ plan, fore, efter, utfor, ref, basId }) {
+export function skrivRapport({ plan, fore, efter, utfor, ref, basId }) {
   const r = [];
   r.push('');
   r.push('═══ BACKFILL AV INBETALNINGAR (TASK-346.8) ═══');
   r.push(`  Läge:            ${utfor ? 'SKARPT (--utfor)' : 'DRY-RUN (default)'}`);
   r.push(`  Airtable-bas:    ${basId}`);
-  r.push(`  Supabase-projekt: ${ref}`);
+  r.push(`  Supabase-projekt: ${maskeraRef(ref)}`);
   r.push('');
   r.push('── Del A: eventpriser att fylla ──');
   if (plan.eventpriser.length === 0) {
@@ -1670,16 +1670,20 @@ async function main() {
     );
   }
 
-  const token = process.env.STAGING_AIRTABLE_TOKEN ?? (await lasTokenUrEnvFil());
+  // TASK-360 runda 2 (review-fynd A): `losToken` LÄSER ALDRIG .env.seed-
+  // fallbacken när `korMotProd` — se funktionens eget kontrakt.
+  const token = await losToken({
+    korMotProd,
+    envToken: process.env.STAGING_AIRTABLE_TOKEN,
+    lasFallback: lasTokenUrEnvFil,
+  });
   if (!token) {
     console.error(
-      `❌ STAGING_AIRTABLE_TOKEN saknas (env eller .env.seed).${
-        korMotProd
-          ? ' .env.seed-tokenet är staging-scopat — en prod-körning kräver en prod-scopad PAT ' +
-            'satt inline på kommandoraden (STAGING_AIRTABLE_TOKEN=<prod-PAT> ...), aldrig i ' +
-            '.env.seed (docs/reference/atkomst-och-nycklar.md).'
-          : ''
-      }`,
+      korMotProd
+        ? '❌ STAGING_AIRTABLE_TOKEN saknas. En prod-körning LÄSER ALDRIG .env.seed (det är ' +
+            'staging-scopat, TASK-360) — sätt en prod-scopad PAT inline på kommandoraden ' +
+            '(STAGING_AIRTABLE_TOKEN=<prod-PAT> ...). Se docs/reference/atkomst-och-nycklar.md.'
+        : '❌ STAGING_AIRTABLE_TOKEN saknas (env eller .env.seed).',
     );
     process.exit(1);
   }
@@ -1871,6 +1875,34 @@ async function lasTokenUrEnvFil() {
   } catch {
     return null;
   }
+}
+
+/**
+ * Löser vilket Airtable-token körningen ska använda (TASK-360 runda 2,
+ * review-fynd A). En PROD-körning LÄSER ALDRIG `.env.seed`-fallbacken — den
+ * är staging-scopad (samma begränsning `AIRTABLE_SCHEMA_TOKEN` redan har i
+ * `scripts/create-betalningsfalt.mjs`), och en tyst fallback dit hade gjort
+ * prod-vägens "varje lager har sin egen override"-löfte falskt för just
+ * TOKEN-axeln: en agent utan ett explicit prod-token hade ändå kunnat läsa
+ * (och skriva) prod med STAGINGENS token, om den råkade ha rättigheter dit.
+ *
+ * `lasFallback` INJICERAS i stället för att anropas direkt, så ett test kan
+ * BEVISA att filen aldrig läses i prod-läge — inte bara att källkoden SER UT
+ * att skippa den (samma disciplin som `provaLanktillstand`: en ren funktion
+ * som kan prövas hermetiskt).
+ *
+ * Kontraktet:
+ *   - `korMotProd` sant  ⇒ ENDAST `envToken`, `lasFallback` anropas ALDRIG.
+ *   - `korMotProd` falskt ⇒ oförändrat: `envToken` vinner, annars `lasFallback()`.
+ *
+ * @param {{ korMotProd: boolean, envToken: string|undefined, lasFallback: () => Promise<string|null> }} args
+ * @returns {Promise<string|null>}
+ */
+export async function losToken({ korMotProd, envToken, lasFallback }) {
+  if (korMotProd) {
+    return envToken ?? null;
+  }
+  return envToken ?? (await lasFallback());
 }
 
 // Kör bara som CLI, aldrig vid import från testsviten.
