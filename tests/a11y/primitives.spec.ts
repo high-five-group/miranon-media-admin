@@ -157,4 +157,26 @@ test.describe('Primitiver — axe-core 0 violations (ADR-045)', () => {
     await expect(page.getByTestId('appfel-fallback-skarp').getByRole('alert')).toBeVisible();
     await checkA11y({ include: ['[aria-labelledby="rubrik-appfel"]'] });
   });
+
+  test('Button — laddläge stabil bredd-demo (TASK-361): vila OCH laddläge, 0 violations', async ({
+    page,
+    checkA11y,
+  }) => {
+    // Vila-tillståndet — samma sektion `Button`s huvud-intent-skanningarna
+    // ovan INTE täcker (den här sektionen är en separat demo, se
+    // `LaddlageStabilBreddDemo` i `dev/primitives.tsx`).
+    await checkA11y({ include: ['[aria-labelledby="rubrik-laddlage-stabil-bredd"]'] });
+
+    // Laddläget — samma precedent som Skeleton-/Forberedelseskarm-sektionerna
+    // ovan: axe ska ge 0 violations i BÅDA tillstånden, inte bara vila.
+    // `task-361-target-md` (TASK-361 r2 — sektionen bär numera EN
+    // referens- + EN target-knapp PER storlek, se
+    // `LaddlageStabilBreddDemo`) är ett av de tre target-ankarna.
+    await page.locator('[data-testid="task-361-toggla"]').click();
+    await expect(page.locator('[data-testid="task-361-target-md"]')).toHaveAttribute(
+      'data-loading',
+      'true',
+    );
+    await checkA11y({ include: ['[aria-labelledby="rubrik-laddlage-stabil-bredd"]'] });
+  });
 });
