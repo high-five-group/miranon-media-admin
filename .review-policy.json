@@ -49,10 +49,13 @@
     "═══ SCOPE-RÄTTELSE 2026-09-02 (S113 resume 8, review r1 av PR #2208) ═══",
     "`prod-och-hemligheter` matchade `scripts/*prod*` — och missade därmed",
     "`scripts/backfill-inbetalningar.mjs` i exakt den PR som öppnade en ny",
-    "prod-skrivväg i filen (review:policy gav noll regler). Tio skript bär en",
-    "prod-väg utan 'prod' i namnet (backfill-*, create-*, seed-*, purge-*).",
-    "Mönstret är därför `scripts/**`: skript-lagret ÄR det lager som talar med",
-    "prod, och regelns tre frågor är billiga att pröva på varje skript-PR."
+    "prod-skrivväg i filen (review:policy gav noll regler). Nio skript bär en",
+    "prod-väg utan 'prod' i namnet (backfill-*, create-*, seed-*, purge-*;",
+    "räknat av review r1 på PR #2209). Mönstret är därför `scripts/**`:",
+    "skript-lagret ÄR det lager som talar med prod, och regelns tre frågor är",
+    "billiga att pröva på varje skript-PR. Testfiler under scripts/ ingår",
+    "MEDVETET (inget undantag): review r1 på PR #2206 fann ett verkligt",
+    "hygienfynd i just en testfil (fixtur-digest = prefix av riktig digest)."
   ],
   "version": 1,
   "regler": [
