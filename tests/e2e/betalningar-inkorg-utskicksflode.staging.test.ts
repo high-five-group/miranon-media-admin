@@ -305,31 +305,50 @@ test.describe('TASK-362 — betalningsinkorgens utskicksflöde', () => {
     ).toBeVisible();
   });
 
-  test('EN statusyta, reserverad höjd — blockets höjd är IDENTISK köat och klart', async ({
-    page,
-  }) => {
-    await mocka(page);
-    await page.goto('/mer/betalningar');
+  /* [REVIEW RUNDA 1, FYND 2] TRE VIEWPORTS, INTE EN — runda 1 mätte bara
+     1280×720 (Desktop Chrome-defaulten). En smalare kolumn kan tvinga
+     radens makuleringsväg ("Kvittot är på väg eller skickat. Ångra genom
+     att makulera …") att radbryta till FLER rader än den `min-h-9`-golv
+     (36 px, TASK-362 huvudfixen) reserverade för — vilket är exakt den
+     klass regression höjd-golvet finns för att förhindra, prövad bara vid
+     EN bredd. Desktop/iPad/mobil täcker husets tre brytpunkter
+     (`sm`/`md`-Tailwind-stegen denna vy själv använder, se
+     `BetalningsradKort`s `sm:flex-row`). */
+  const VIEWPORTS: { namn: string; width: number; height: number }[] = [
+    { namn: 'desktop (1280×900)', width: 1280, height: 900 },
+    { namn: 'iPad (820×1180)', width: 820, height: 1180 },
+    { namn: 'mobil (375×800)', width: 375, height: 800 },
+  ];
 
-    await page.getByRole('button', { name: 'Registrera betalning' }).click();
-    await page
-      .getByRole('form', { name: /Registrera betalning för/ })
-      .getByRole('button', { name: 'Registrera', exact: true })
-      .click();
+  for (const { namn, width, height } of VIEWPORTS) {
+    test(`EN statusyta, reserverad höjd — blockets höjd är IDENTISK köat och klart @ ${namn}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize({ width, height });
+      await mocka(page);
+      await page.goto('/mer/betalningar');
 
-    const block = page.locator(`section[aria-label="${REGION}"]`);
-    await expect(block.getByRole('button', { name: 'Skicka 1 kvitto' })).toBeVisible();
-    const kootHojd = await block.evaluate((el) => el.getBoundingClientRect().height);
+      await page.getByRole('button', { name: 'Registrera betalning' }).click();
+      await page
+        .getByRole('form', { name: /Registrera betalning för/ })
+        .getByRole('button', { name: 'Registrera', exact: true })
+        .click();
 
-    await block.getByRole('button', { name: 'Skicka 1 kvitto' }).click();
-    await expect(block.getByText('Kvitto skickat · MM-2026-1001')).toBeVisible();
-    const klarHojd = await block.evaluate((el) => el.getBoundingClientRect().height);
+      const block = page.locator(`section[aria-label="${REGION}"]`);
+      await expect(block.getByRole('button', { name: 'Skicka 1 kvitto' })).toBeVisible();
+      const kootHojd = await block.evaluate((el) => el.getBoundingClientRect().height);
 
-    // Toleransen är 0 — `min-h-10` gör slotten exakt lika hög i båda
-    // lägena (Button.tsx `size.md: 'min-h-10'`), och radens EGEN
-    // tillväxt (två reserverade rader från start) tillför inget extra.
-    expect(klarHojd).toBe(kootHojd);
-  });
+      await block.getByRole('button', { name: 'Skicka 1 kvitto' }).click();
+      await expect(block.getByText('Kvitto skickat · MM-2026-1001')).toBeVisible();
+      const klarHojd = await block.evaluate((el) => el.getBoundingClientRect().height);
+
+      // Toleransen är 0 — `min-h-10` gör slotten exakt lika hög i båda
+      // lägena (Button.tsx `size.md: 'min-h-10'`), och radens EGEN
+      // tillväxt (`min-h-9` på makuleringsväg-platshållaren) tillför
+      // inget extra, VID INGEN AV DE TRE BREDDERNA.
+      expect(klarHojd, `${namn}: köat=${kootHojd}px, klart=${klarHojd}px`).toBe(kootHojd);
+    });
+  }
 
   test('bekräftelsen (grön, "1 kvitto skickat") kan stängas med kryss OCH nollställs av nästa registrering', async ({
     page,
@@ -435,5 +454,247 @@ test.describe('TASK-362 — betalningsinkorgens utskicksflöde', () => {
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
       .analyze();
     expect(vilaResultat.violations).toEqual([]);
+  });
+
+  /**
+   * [REVIEW RUNDA 1, FYND 1] TVÅSIDIGT BEVIS för orkestrerarens beslut:
+   * kryss-regeln (S109-facit) — en varning försvinner när ORSAKEN är borta,
+   * ALDRIG av en obesläktad handling. Egen `mocka`-variant: `koa-kvitton`
+   * svarar OLIKA per anrop (första sändningen fallerar, andra lyckas), så
+   * testet kan bevisa BÅDA hälfterna av regeln i EN sekvens:
+   *   (a) en `warning` överlever en ORELATERAD registrering
+   *   (b) en `warning` ERSÄTTS av ETT NYTT jobbs eget utfall (här: success)
+   * Se `betalningar-inkorg-utskicksflode.staging.test.ts` filhuvud och
+   * `BetalningsInkorg.tsx`s `bekraftelseSynlig`-docblock för resonemanget.
+   */
+  test('en warning-banderoll överlever en orelaterad registrering (FYND 1a) och ersätts av ett NYTT jobb (FYND 1b)', async ({
+    page,
+  }) => {
+    await mockValjarLista(page, [
+      valjarRad({ id: EVENT_ID, namn: 'Task362-kurs', startdatum: '2099-06-01' }),
+    ]);
+    await page.route(HAMTA_OPPNA_BETALNINGAR, async (route) => {
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          betalningar: [
+            oppenBetalning(),
+            oppenBetalning({ anmalanRecordId: ANMALAN_ID_2, personNamn: 'Task362 Andrasson' }),
+          ],
+          forfallna: 0,
+        }),
+      });
+    });
+    await page.route(REGISTRERA_INBETALNING, async (route) => {
+      const nu = new Date().toISOString();
+      const body = route.request().postDataJSON() as { anmalanRecordId: string };
+      const svar = ANMALAN_TILL_SVAR[body.anmalanRecordId];
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          inbetalning: {
+            id: svar.inbetalningId,
+            anmalanRecordId: body.anmalanRecordId,
+            ogonblicksbildNamn: svar.namn,
+            ogonblicksbildEvent: 'Task362-kurs',
+            ogonblicksbildEventdatum: '2099-06-01',
+            belopp: 500,
+            betalsatt: 'Swish',
+            betalningsdatum: nu.slice(0, 10),
+            typ: 'inbetalning',
+            status: 'aktiv',
+            makuleradSkal: null,
+            makuleradNar: null,
+            bankreferens: null,
+            kvittoId: null,
+            notering: null,
+            skapadAv: 'staging-user@miranon.test',
+            skapadNar: nu,
+          },
+          harledning: {
+            summa: 500,
+            gallandePris: 500,
+            saknas: 0,
+            avgiftKlar: true,
+            alltKlart: true,
+            arForelasning: false,
+          },
+          spegel: { skrivet: true, forsok: 1, skal: null },
+        }),
+      });
+    });
+
+    // EN karta jobbId → jobbstatus-svar, en ny post per `koa-kvitton`-anrop.
+    // FÖRSTA sändningen (Rad A) FALLERAR — jobbet är klart men noll gick
+    // fram. ANDRA sändningen (Rad B) LYCKAS.
+    const jobb = new Map<string, Json>();
+    let sandningsnummer = 0;
+    const JOBB_A = 'c1d2e3f4-0005-4005-8005-00000000000a';
+    const JOBB_B = 'c1d2e3f4-0006-4006-8006-00000000000b';
+    await page.route(KOA_KVITTON, async (route) => {
+      const nu = new Date().toISOString();
+      const body = route.request().postDataJSON() as { inbetalningIds: string[] };
+      sandningsnummer += 1;
+      const jobbId = sandningsnummer === 1 ? JOBB_A : JOBB_B;
+      const misslyckas = sandningsnummer === 1;
+      jobb.set(jobbId, {
+        jobb: {
+          id: jobbId,
+          jobbtyp: 'kvitto',
+          status: 'avslutat',
+          skapadAv: 'staging-user@miranon.test',
+          skapadNar: nu,
+          avslutadNar: nu,
+        },
+        rader: body.inbetalningIds.map((id, i) => ({
+          id: `d1e2f3a4-0007-4007-8007-00000000000${i}`,
+          jobbId,
+          jobbtyp: 'kvitto',
+          objektId: id,
+          status: misslyckas ? 'fel' : 'skickat',
+          skal: misslyckas ? 'Bankfel: kontot avvisade överföringen' : null,
+          forsok: 1,
+          skapadNar: nu,
+          paborjadNar: nu,
+          avslutadNar: nu,
+          uppdateradNar: nu,
+          kvittonummer: misslyckas ? null : 'MM-2026-1002',
+        })),
+        sammanfattning: {
+          totalt: body.inbetalningIds.length,
+          skickade: misslyckas ? 0 : body.inbetalningIds.length,
+          fel: misslyckas ? body.inbetalningIds.length : 0,
+          kvar: 0,
+        },
+      });
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({
+          jobbId,
+          koade: body.inbetalningIds.length,
+          hoppade: [],
+          kickad: true,
+        }),
+      });
+    });
+    await page.route(HAMTA_JOBBSTATUS, async (route) => {
+      const url = new URL(route.request().url());
+      const jobbId = url.searchParams.get('jobbId');
+      const svar = jobbId !== null ? jobb.get(jobbId) : undefined;
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify(
+          svar ?? {
+            jobb: null,
+            rader: [],
+            sammanfattning: { totalt: 0, skickade: 0, fel: 0, kvar: 0 },
+          },
+        ),
+      });
+    });
+
+    await page.goto('/mer/betalningar');
+
+    // STEG 1 — Rad A: registrera OCH skicka direkt. Jobbet fallerar.
+    const rad1 = page.getByRole('listitem').filter({ hasText: 'Task362 Testsson' });
+    await rad1.getByRole('button', { name: 'Registrera betalning' }).click();
+    await page
+      .getByRole('form', { name: /Registrera betalning för/ })
+      .getByRole('button', { name: 'Registrera och skicka' })
+      .click();
+
+    const block = page.locator(`section[aria-label="${REGION}"]`);
+    const varning = block.getByText('Inget kvitto gick fram');
+    await expect(varning).toBeVisible();
+
+    // STEG 2 — Rad B: registrera UTAN att skicka (FYND 1a: en obesläktad
+    // handling). Varningen ska stå orörd kvar.
+    const rad2 = page.getByRole('listitem').filter({ hasText: 'Task362 Andrasson' });
+    await rad2.getByRole('button', { name: 'Registrera betalning' }).click();
+    await page
+      .getByRole('form', { name: /Registrera betalning för/ })
+      .getByRole('button', { name: 'Registrera', exact: true })
+      .click();
+
+    await expect(varning).toBeVisible();
+
+    // STEG 3 — skicka Rad B (kön har nu exakt en rad: Rad B, eftersom Rad A
+    // redan skickades i steg 1). Jobbet lyckas — ETT NYTT jobb, och FYND 1b
+    // säger att DET (inte en obesläktad handling) får ersätta varningen.
+    await block.getByRole('button', { name: 'Skicka 1 kvitto' }).click();
+
+    await expect(varning).not.toBeVisible();
+    await expect(block.getByText('1 kvitto skickat')).toBeVisible();
+  });
+
+  /**
+   * [REVIEW RUNDA 1, FYND 4] Notis.tsx-mönstret: "Den yttre `role="status"`-
+   * regionen är ALLTID monterad — bara detta växlar" (MDN: "Start with an
+   * empty live region, then – in a separate step – change the content
+   * inside the region"). Två separata bevis i EN sekvens:
+   *   (i)  regionen finns kvar i DOM:en I VILA (efter dismiss), tom —
+   *        `data-testid="inkorg-sandstatus"` hittas, men bär ingen text.
+   *   (ii) SAMMA DOM-NOD bärs genom köat → klart → avfärdat — aldrig
+   *        avmonterad och återmonterad. Bevisat med ett unikt, av testet
+   *        självt injicerat attribut: en nod som skrivs om (unmount/
+   *        remount) tappar attributet, en nod vars INNEHÅLL bara byts
+   *        behåller det. Det är den starkaste identitetsprövning Playwright
+   *        kan göra utan att instrumentera en skärmläsare direkt — samma
+   *        gräns som resten av repots aria-live-tester håller sig innanför
+   *        (ingen fil i `tests/` räknar faktiska AT-annonseringar).
+   */
+  test('FYND 4: sändstatus-regionen är ALLTID MONTERAD (tom i vila) och är SAMMA DOM-nod genom köat → klart → avfärdat', async ({
+    page,
+  }) => {
+    await mocka(page);
+    await page.goto('/mer/betalningar');
+
+    await page.getByRole('button', { name: 'Registrera betalning' }).click();
+    await page
+      .getByRole('form', { name: /Registrera betalning för/ })
+      .getByRole('button', { name: 'Registrera', exact: true })
+      .click();
+
+    const block = page.locator(`section[aria-label="${REGION}"]`);
+    const region = block.getByTestId('inkorg-sandstatus');
+
+    // KÖAT: `utfall` är fortfarande `null` (inget jobb startat än) — per
+    // konstruktion är regionen INTE monterad förrän sändlivscykeln börjat.
+    // Se `BetalningsInkorg.tsx`s docblock vid slotten: "reservera plats" och
+    // "alltid montera en tom region" är två olika åtaganden, och det senare
+    // gäller FRÅN sändningens start, inte från sidladdningen.
+    await expect(block.getByRole('button', { name: 'Skicka 1 kvitto' })).toBeVisible();
+    await expect(region).toHaveCount(0);
+
+    // MÄRK NODEN SÅ FORT DEN FINNS (unikt attribut, inte en React-prop) —
+    // om React av någon anledning skulle avmontera och återmontera noden
+    // (t.ex. en nyckel-ändring) försvinner märket med den gamla DOM:en.
+    await block.getByRole('button', { name: 'Skicka 1 kvitto' }).click();
+    await expect(region).toBeVisible();
+    await region.evaluate((el) => el.setAttribute('data-test-marker', 'samma-nod'));
+    await expect(region).toHaveText('1 kvitto skickat');
+    await expect(region).toHaveAttribute('data-test-marker', 'samma-nod');
+
+    // AVFÄRDA (kryss) — regionen ska bli TOM men INTE försvinna, och
+    // FORTFARANDE bära märket: samma nod, bara innehållet rensat.
+    //
+    // `.toBeAttached()`, INTE `.toBeVisible()`, är rätt prövning HÄR — och
+    // skillnaden är sakligt lastbärande, inte en teknikalitet. En tom
+    // `role="status"`-nod (`flex`, noll barn) har en 0×0-boxmodell:
+    // Playwright klassar den som "hidden" av EXAKT samma skäl en
+    // skärmläsare ändå hör den (regionen är i DOM:en, `aria-live` triggas
+    // av INNEHÅLLSÄNDRINGEN, inte av CSS-synlighet — samma distinktion
+    // `Notis.tsx`s alltid-monterade `role="status"`-div gör, vars kort
+    // också kan vara `display:none`-osynligt i vila utan att regionen
+    // slutar existera). "I vila" i FYND 4 betyder DOM-NÄRVARO, inte en
+    // synlig ruta — en synlig tom ruta hade dessutom varit fel form.
+    await region.getByRole('button', { name: 'Stäng bekräftelse' }).click();
+    await expect(region).toBeAttached();
+    await expect(region).toHaveText('');
+    await expect(region).toHaveAttribute('data-test-marker', 'samma-nod');
   });
 });

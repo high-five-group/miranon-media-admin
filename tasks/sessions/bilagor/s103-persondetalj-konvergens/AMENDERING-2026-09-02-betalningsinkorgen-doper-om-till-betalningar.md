@@ -71,6 +71,62 @@ test som matchar på länktexten (verifierat med repo-bred grep före ändringen
 — `tests/e2e/atgarder-betalningar.staging.test.ts` § note-block); ingen
 testuppdatering behövdes för själva namnbytet.
 
+## Tillägg 2026-09-02 (review-runda 1) — kryss-regelns gräns mot ett historiskt utfall
+
+**Varför detta tillägg står HÄR och inte i en egen fil:** ändringen nedan rör
+`BetalningsInkorg.tsx`, som INTE är `kallor` i NÅGOT facit-manifest (mätt:
+repo-bred `grep -rl "BetalningsInkorg.tsx" tasks/sessions/bilagor/*/facit.json`
+gav noll träffar, innan denna fil skrevs). Ordern ("bokför beslutet + skälet
+i AMENDERING-filen") pekade alltså på en fil som inte objektivt existerar för
+den här ytan — denna fil är den ENDA AMENDERING-sidofil PR:en producerat, och
+tillägget läggs här snarare än att lämnas obokfört. Den fullständiga,
+auktoritativa dokumentationen av beslutet bor i koden själv
+(`BetalningsInkorg.tsx`s `bekraftelseSynlig`-docblock och sändstatus-slottens
+docblock, "[REVIEW RUNDA 1, FYND 1]") — det här är en sammanfattning, inte en
+andra källa som kan glida isär från den.
+
+**Beslutet (Marcus mandat, review-runda 1):** kryss-regeln (S109-facit) säger
+att en varning försvinner när ORSAKEN är borta, ALDRIG av en obesläktad
+handling. Runda 1s första version delade EN flagga (`bekraftelseSynlig`)
+mellan success- och warning-utfallet och nollställde den ovillkorligt vid
+varje ny registrering/sändning — vilket hade dolt en genuin
+"N kvitton misslyckades"-varning bara för att Lotta registrerade en annan
+betalning. Rättat: `bekraftelseSynlig` styr ENDAST success-radens synlighet.
+`warning` (och, som en egen, explicit flaggad avvägning som utökar SAMMA
+princip: `info`, ett pågående utskick) har ingen egen dölj-flagga — de finns
+kvar så länge `utfall` beskriver dem, och `utfall` byter bara innehåll när
+ETT NYTT jobb faktiskt startar.
+
+**En andra, egen bugg hittades UNDER byggandet av beviset för beslutet ovan**
+(inte i uppdraget, mätt av den nya e2e-svitens eget röda utfall): den
+FÖRSTA implementationen av rättningen ovan använde fortfarande en
+`vantande.length > 0 ? knapp : (warning|status)`-ternary, som gjorde
+knappraden och `warning`/`info` ömsesidigt uteslutande — en warning
+FÖRSVANN så fort Lotta köade en NY, obesläktad rad (samma symptom som
+review-fyndet, fast orsakat av JSX-STRUKTUREN, inte av
+`bekraftelseSynlig`). Rättat till tre OBEROENDE `&&`-villkorade grenar
+(knapprad, warning, kompakt statusrad) som kan samexistera. Tvåsidigt
+bevisat: `tests/e2e/betalningar-inkorg-utskicksflode.staging.test.ts`s
+FYND 1a/1b-test (en warning överlever en orelaterad registrering OCH
+ersätts av ett nytt jobb) och `tests/api/betalningar-inkorg-statusyta-
+form.test.ts`s `treOberoendeGrenar`-grind (med den FAKTISKA regressionen
+som negativ kontroll).
+
+**"EN statusyta"-löftet håller för DET VANLIGA fallet, med en bokförd
+avvikelse:** när en warning/info samexisterar med en nyköad rads knapp
+(sällsynt — kräver att Lotta agerar på en annan rad medan ett tidigare
+utfall fortfarande är relevant) visas BÅDA samtidigt, och blockets höjd
+växer utöver `min-h-22`/`sm:min-h-10`-golvet. Det är samma, redan
+dokumenterade undantag som gäller en ensam warning (NN/g:s regel, ett
+partiellt misslyckande klämmer inte in i en höjd-låst rad) — inte en ny
+regel, bara en till situation den redan täcker.
+
+**Öppen fråga, inte avgjord här:** att `info` fick samma behandling som
+`warning` var mitt eget, explicit flaggade beslut under mandatet
+("Flaggad för samma grillning som resten av forskningspassets öppna
+frågor") — uppdraget adresserade bara success/warning. Grillningsvärdig,
+inte en tyst utvidgning.
+
 ## Omstämplings-läge
 
 **Inget är omstämplat, och inget stämpel-fält är rört.** `godkand` står kvar

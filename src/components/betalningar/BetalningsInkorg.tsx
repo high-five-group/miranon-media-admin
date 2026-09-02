@@ -351,8 +351,10 @@ export function BetalningsInkorg() {
   const granskningsBlockRef = useRef<HTMLElement>(null);
   const [jobbId, setJobbId] = useState<string | undefined>(undefined);
   /**
-   * [TASK-362] Synligheten på jobbUTFALLETS bekräftelse — SKILD från
-   * `jobbId` självt. Forskningspasset 2026-09-02
+   * [TASK-362] Synligheten på jobbUTFALLETS SUCCESS-BEKRÄFTELSE — SKILD
+   * från `jobbId` självt, och (sedan review-runda 1, FYND 1) SKILD från
+   * `warning`/`info`-utfallet, som INTE har någon egen dölj-flagga (se
+   * `utfall`-konsumenterna nedan). Forskningspasset 2026-09-02
    * (`docs/research/utskicksbekraftelse-inkorg-auto-dismiss-vs-persistent-2026-09-02.md`)
    * mätte rotorsaken: `jobbId` nollställs aldrig, så en gammal bekräftelse
    * stod kvar RESTEN AV BESÖKET. Lösningen är inte att nollställa `jobbId`
@@ -364,6 +366,16 @@ export function BetalningsInkorg() {
    *   • Visas AUTOMATISKT igen så fort ETT NYTT jobb faktiskt startar
    *     (`jobbId` byter värde, se effekten nedan) — annars hade en
    *     retry/ny sändning blivit stum.
+   *
+   * VARFÖR `warning`/`info` INTE DELAR DENNA FLAGGA (review-runda 1,
+   * FYND 1 — Marcus mandat): kryss-regeln (S109-facit) säger att en
+   * varning försvinner när ORSAKEN är borta, aldrig av en obesläktad
+   * handling. Nollställer `vidRegistrerad`/`skickaKvitton` en DELAD flagga
+   * ovillkorligt döljs en genuin "N kvitton misslyckades"-varning bara för
+   * att Lotta registrerar en annan betalning — mätt fel i runda 1 av denna
+   * PR. `warning` (och `info`, av samma princip) visas i stället så länge
+   * `utfall` beskriver den, och `utfall` byter bara innehåll när ETT NYTT
+   * jobb faktiskt startar.
    */
   const [bekraftelseSynlig, setBekraftelseSynlig] = useState(true);
   const [betalsatt, setBetalsatt] = useState<Betalsatt>(lasSenasteBetalsatt);
@@ -659,10 +671,13 @@ export function BetalningsInkorg() {
   }, [oppna]);
 
   function vidRegistrerad(rad: InkorgsRad, resultat: RegistreringsUtfall) {
-    /* [TASK-362] NÄSTA HANDLING gör en stående bekräftelse om ett TIDIGARE
-       jobb inaktuell — Lotta har gått vidare till en annan person. Startar
-       DENNA registrering själv ett nytt jobb (nedan) sätter jobbId-effekten
-       ovan tillbaka synligheten åt DEN sändningens egen status. */
+    /* [TASK-362, review-runda 1 FYND 1] NÄSTA HANDLING gör en stående
+       SUCCESS-bekräftelse om ett TIDIGARE jobb inaktuell — Lotta har gått
+       vidare till en annan person. Rör ALDRIG en `warning`/`info`-yta (de
+       har ingen egen dölj-flagga, se `bekraftelseSynlig`s docblock).
+       Startar DENNA registrering själv ett nytt jobb (nedan) sätter
+       jobbId-effekten ovan tillbaka synligheten åt DEN sändningens egen
+       status. */
     setBekraftelseSynlig(false);
     setKvittenser((tidigare) => ({ ...tidigare, [rad.nyckel]: resultat.kvittens }));
     setOppenRad(null);
@@ -794,7 +809,8 @@ export function BetalningsInkorg() {
   function skickaKvitton() {
     if (vantande.length === 0) return;
     // [TASK-362] Se `vidRegistrerad`s motsvarande rad — samma "nästa
-    // handling gör den gamla bekräftelsen inaktuell"-regel.
+    // handling gör den gamla SUCCESS-bekräftelsen inaktuell"-regel. Rör
+    // aldrig `warning`/`info` (FYND 1).
     setBekraftelseSynlig(false);
     koa.mutate(
       { inbetalningIds: vantande.map((v) => v.inbetalningId) },
@@ -1631,17 +1647,82 @@ export function BetalningsInkorg() {
               handling gjorde den inaktuell). Ingen extra montering, ingen
               extra notis — bara EN nods innehåll som byter text.
 
+              [REVIEW RUNDA 1, FYND 1 — bekraftelseSynlig gäller nu ENDAST
+              `success`.] Kryss-regeln (S109-facit): en varning försvinner när
+              ORSAKEN är borta, ALDRIG av en obesläktad handling. Den gamla
+              koden nollställde EN delad flagga ovillkorligt i både
+              `vidRegistrerad` och `skickaKvitton`, vilket hade dolt en genuin
+              "N kvitton misslyckades"-varning bara för att Lotta registrerade
+              en annan, orelaterad betalning. Nu: `bekraftelseSynlig` styr
+              ENDAST success-radens synlighet (döljs av nästa handling ELLER
+              manuellt kryss, återställs av ETT NYTT jobb). En `warning` (och
+              en `info`, av samma princip — se nedan) har INGEN egen dölj-
+              flagga alls: den finns kvar SÅ LÄNGE `utfall` beskriver den, och
+              `utfall` byter bara innehåll när ETT NYTT jobb faktiskt startar
+              (ny `jobbId` → `jobb.data` läses om). Det är alltså `utfall`
+              SJÄLVT, inte en extra boolean, som bär "ersatt av nytt jobb"-
+              semantiken FYND 1 efterfrågade — en andra flagga hade bara
+              kunnat glida isär från den redan existerande sanningskällan.
+
+              `info` (pågår/köat på servern) FICK SAMMA BEHANDLING SOM
+              `warning`, INTE SOM `success` — en egen avvägning (uppdraget
+              adresserade bara success/warning explicit). Skälet: ett
+              AKTIVT pågående utskick är lika lite en "handlingslös
+              bekräftelse man kan gå vidare från" som en varning är — att
+              dölja "Skickar kvitton …" bara för att Lotta registrerar en
+              annan betalning hade gömt information om ett jobb som
+              fortfarande arbetar. Flaggad för samma grillning som resten av
+              forskningspassets öppna frågor; se AMENDERING-sidofilen.
+
+              [REVIEW RUNDA 1, FYND 4 — Notis.tsx-mönstret.] Den kompakta
+              statusraden (`<p role="status">` nedan) är nu ALLTID MONTERAD
+              så snart sändlivscykeln överhuvudtaget börjat (`utfall !==
+              null`, oavsett `bekraftelseSynlig`) — bara INNEHÅLLET växlar
+              mellan tomt och `utfall.rubrik`, exakt `Notis.tsx`s egna
+              dokumenterade form ("Den yttre `role="status"`-regionen är
+              ALLTID monterad — bara detta växlar", MDN: "Start with an
+              empty live region, then – in a separate step – change the
+              content inside the region"). FÖRE denna rättning avmonterades
+              hela slotten (knapp OCH statusrad) så fort `bekraftelseSynlig`
+              blev falsk — en avfärdad bekräftelse tog den RESERVERADE HÖJDEN
+              med sig, vilket var en mindre, kvarstående instans av exakt det
+              layouthopp huvudfixen finns för att förhindra. Det yttre
+              villkoret nedan är därför `utfall !== null` (utan
+              `bekraftelseSynlig`) — regionen finns kvar tom i vila, i
+              stället för att försvinna.
+
               DEN VANLIGA VÄGEN (Lottas EGEN session, `ovrigaJobbrader` tom)
               håller sig alltså inom EN höjd hela vägen; en genuin varning
               (delvis/inget skickat) växer utöver den — medvetet, NN/g:s regel
               om att ett partiellt misslyckande INTE ska klämmas in i en
               kompakt rad (forskningspasset § 3). Den korsflik-sällsynta
               `ovrigaJobbrader > 0`-vägen behåller sin egen, oförändrade
-              `MessageBox`+lista under `</section>`, se nedan. */}
-          {(vantande.length > 0 ||
-            (utfall !== null && bekraftelseSynlig && ovrigaJobbrader.length === 0)) && (
-            <div className="flex min-h-10 flex-col justify-center gap-2">
-              {vantande.length > 0 ? (
+              `MessageBox`+lista under `</section>`, se nedan.
+
+              [REVIEW RUNDA 1, FYND 2 — golvet är RESPONSIVT, `min-h-22
+              sm:min-h-10`.] Runda 1 mätte höjd-identiteten bara vid
+              1280×720. Vid mobilbredd (375 px, under Tailwinds `sm`
+              (640 px)) WRAPPAR knapparaden ("Skicka 1 kvitto" +
+              "Förhandsgranska", TASK-353 — den senare erbjuds bara vid
+              EXAKT en kö-rad, `enSamKo`) till TVÅ rader (mätt: slotten går
+              från 40 px till 88 px), medan `klart`-läget (den kompakta
+              statusraden) stannar på 40 px — en 48 px skillnad, mätt live
+              med `getBoundingClientRect()` FÖRE denna rättning
+              (`tests/e2e/betalningar-inkorg-utskicksflode.staging.test.ts`
+              röd vid mobil-varianten). DET VAR ALLTSÅ INTE
+              makuleringsväg-texten (`min-h-9` på raderna ovan) som
+              radbröt till en tredje rad — den håller exakt sina två rader
+              vid alla tre bredderna, mätt och skärmdumpat. `sm:min-h-10`
+              (40 px, ≥640 px — täcker iPad 820 px och desktop) är golvet
+              enknappsfallet redan höll; `min-h-22` (88 px, <640 px) är
+              EXAKT den mätta tvåknapps-wrap-höjden, ingen marginal utöver
+              det uppmätta. En `klart`-rad reserverar därmed 88 px även på
+              mobil trots att den bara BEHÖVER 40 — samma avvägning som
+              `min-h-10` alltid gjort (reservera för det TALLASTE av de
+              tillstånd som delar slotten, inte bara det egna). */}
+          {(vantande.length > 0 || (utfall !== null && ovrigaJobbrader.length === 0)) && (
+            <div className="flex min-h-22 flex-col justify-center gap-2 sm:min-h-10">
+              {vantande.length > 0 && (
                 /* [TASK-353] KNAPPRADEN, inte längre en ensam knapp. `self-start`
                    flyttade från knappen till detta svep — knappen behåller exakt
                    sin vänsterlinje (svepet ovan är `flex flex-col`, så
@@ -1660,7 +1741,19 @@ export function BetalningsInkorg() {
                    till vänster sidan"*. BÅDA DOMARNA STÅR KVAR I TEXTEN MED
                    AVSIKT — den senare gäller, men en historik som tyst skriver
                    om sin egen tidigare mening lämnar nästa läsare att "rätta
-                   tillbaka" och göra om varvet. */
+                   tillbaka" och göra om varvet.
+
+                   [REVIEW RUNDA 1, FYND 1] `&&` I STÄLLET FÖR `? :` MOT
+                   status-noderna nedan — INTE längre en TERNARY som
+                   ömsesidigt uteslöt knapp och utfall. Mätt fynd (denna
+                   PR, runda 2): en ternary hade DOLT en `warning` så fort
+                   Lotta köade EN NY, obesläktad rad (`vantande.length`
+                   blev > 0 igen) — exakt den regression FYND 1 varnade
+                   för, fast orsakad av STRUKTUREN, inte av
+                   `bekraftelseSynlig`. Knapp och `warning`/`info` kan nu
+                   samexistera i slotten: båda är sanna samtidigt (ett
+                   jobb fallerade ELLER pågår OCH en ny rad väntar), och
+                   ska synas samtidigt. */
                 <div className="flex flex-wrap items-center gap-2 self-start">
                   <Button intent="success" onPress={skickaKvitton} isLoading={koa.isPending}>
                     {`Skicka ${vantande.length} ${vantande.length === 1 ? 'kvitto' : 'kvitton'}`}
@@ -1698,55 +1791,75 @@ export function BetalningsInkorg() {
                     </Button>
                   )}
                 </div>
-              ) : (
-                utfall !== null &&
-                bekraftelseSynlig &&
-                ovrigaJobbrader.length === 0 &&
-                (utfall.intent === 'warning' ? (
-                  /* NN/g:s regel (forskningspasset § 3): ett DELVIS eller HELT
-                     misslyckat utskick är inte en toast-kandidat, oavsett
-                     visuell form — det kräver uppmärksamhet och stannar tills
-                     en ny handling gör det inaktuellt (`bekraftelseSynlig`
-                     ovan). `MessageBox`s kryss-regel förbjuder ändå
-                     `onDismiss` här (S109-facit) — konsekvent, ingen
-                     specialundantag skrivs in. */
-                  <MessageBox intent="warning" title={utfall.rubrik}>
-                    Utfallet per kvitto står på raderna ovan.
-                  </MessageBox>
-                ) : (
-                  /* [TASK-362] KOMPAKT STATUSRAD, INTE `MessageBox` — samma
-                     avvägning `RegistreraYta.tsx` redan gör för denna
-                     UNION (`utfall.intent !== 'warning'`): en `MessageBox`s
-                     kant+fond-vikt är rätt för en varning som kräver
-                     uppmärksamhet, fel för en lugn "klart"-bekräftelse Lotta
-                     bara ska kunna se och gå vidare från. En vanlig rad håller
-                     dessutom blockets höjd nära knappens (`min-h-10` ovan) i
-                     stället för att hoppa till en 70+ px hög ruta för det
-                     VANLIGASTE utfallet av alla (allt gick fram).
+              )}
 
-                     `role="status"` — samma roll `MessageBox` själv sätter för
-                     info/success (S109-facit), aldrig `alert` här (ingen
-                     varning). Krysset syns ENDAST för `success`
-                     (kryss-regeln): `pagar`/`vantar` är progress utan
-                     handling att avfärda ännu. */
-                  <p
-                    role="status"
-                    className="flex items-center justify-between gap-3 text-small text-text-muted"
-                  >
-                    <span>{utfall.rubrik}</span>
-                    {utfall.intent === 'success' && (
-                      <Button
-                        intent="ghost"
-                        size="sm"
-                        aria-label="Stäng bekräftelse"
-                        onPress={() => setBekraftelseSynlig(false)}
-                        className="shrink-0"
-                      >
-                        <X aria-hidden="true" className="size-4" />
-                      </Button>
-                    )}
-                  </p>
-                ))
+              {/* WARNING — EGEN NOD, HELT OBEROENDE AV `vantande` (FYND 1,
+                 skärpt runda 2 — se kommentaren ovan). `MessageBox`s
+                 kryss-regel förbjuder ändå `onDismiss` här (S109-facit) —
+                 konsekvent, ingen specialundantag skrivs in. NN/g:s regel
+                 (forskningspasset § 3): ett DELVIS eller HELT misslyckat
+                 utskick är inte en toast-kandidat, oavsett visuell form —
+                 det kräver uppmärksamhet och stannar tills ETT NYTT JOBB
+                 gör det inaktuellt. */}
+              {utfall !== null && utfall.intent === 'warning' && ovrigaJobbrader.length === 0 && (
+                <MessageBox intent="warning" title={utfall.rubrik}>
+                  Utfallet per kvitto står på raderna ovan.
+                </MessageBox>
+              )}
+
+              {/* [TASK-362/FYND 4] KOMPAKT STATUSRAD — ALLTID MONTERAD
+                 (samma yttre villkor som blockets `<div>`, `utfall !==
+                 null`), OBEROENDE av `vantande` (FYND 1, samma skäl som
+                 warning-noden ovan: en `info` — "Skickar kvitton …" —
+                 ska inte försvinna för att en NY, obesläktad rad köas).
+                 Bara INNEHÅLLET växlar mellan tomt och `utfall.rubrik` —
+                 samma "empty live region"-form `Notis.tsx` dokumenterar.
+
+                 INTE `MessageBox` — samma avvägning `RegistreraYta.tsx`
+                 redan gör för denna UNION (`intent !== 'warning'`): en
+                 `MessageBox`s kant+fond-vikt är rätt för en varning som
+                 kräver uppmärksamhet, fel för en lugn "klart"-bekräftelse
+                 Lotta bara ska kunna se och gå vidare från. En vanlig rad
+                 håller dessutom blockets höjd nära knappens (`min-h-10`
+                 ovan) i stället för att hoppa till en 70+ px hög ruta för
+                 det VANLIGASTE utfallet av alla (allt gick fram).
+
+                 `role="status"` + `aria-live="polite"` — samma roll
+                 `MessageBox` själv sätter för info/success (S109-facit),
+                 aldrig `alert` här (ingen varning). TOM när: utfallet är
+                 en varning (MessageBoxen ovan bär den redan), `success`
+                 är avfärdad (`bekraftelseSynlig === false` — vilket också
+                 är fallet SÅ FORT `vantande` blir icke-tom igen, eftersom
+                 `vidRegistrerad`/`skickaKvitton` sätter den flaggan i
+                 SAMMA andetag som de fyller kön), eller inget utfall
+                 finns alls. Krysset syns ENDAST för `success`
+                 (kryss-regeln): `pagar`/`vantar` är progress utan
+                 handling att avfärda ännu. */}
+              {utfall !== null && ovrigaJobbrader.length === 0 && (
+                <p
+                  role="status"
+                  aria-live="polite"
+                  data-testid="inkorg-sandstatus"
+                  className="flex items-center justify-between gap-3 text-small text-text-muted"
+                >
+                  {(utfall.intent === 'info' ||
+                    (utfall.intent === 'success' && bekraftelseSynlig)) && (
+                    <>
+                      <span>{utfall.rubrik}</span>
+                      {utfall.intent === 'success' && (
+                        <Button
+                          intent="ghost"
+                          size="sm"
+                          aria-label="Stäng bekräftelse"
+                          onPress={() => setBekraftelseSynlig(false)}
+                          className="shrink-0"
+                        >
+                          <X aria-hidden="true" className="size-4" />
+                        </Button>
+                      )}
+                    </>
+                  )}
+                </p>
               )}
             </div>
           )}
@@ -1765,12 +1878,16 @@ export function BetalningsInkorg() {
       {/* [TASK-362] DEN KORSFLIK-SÄLLSYNTA VÄGEN — ett jobb startat i en ANNAN
           flik/session, vars rader INTE finns i vår egen `registrerade`-logg
           (se `ovrigaJobbrader`s docblock ovan). Denna box är OFÖRÄNDRAD i sin
-          form (fanns redan innan denna skiva); den delar bara samma
-          `bekraftelseSynlig`-flagga så en dismiss/nästa-handling beter sig
-          konsekvent oavsett vilken väg som visas. Den vanliga vägen
+          form (fanns redan innan denna skiva). Den vanliga vägen
           (`ovrigaJobbrader.length === 0`) visas i stället i slotten OVAN,
-          inuti granskningsblocket — se dess docblock. */}
-      {utfall && bekraftelseSynlig && ovrigaJobbrader.length > 0 && (
+          inuti granskningsblocket — se dess docblock.
+
+          [REVIEW RUNDA 1, FYND 1] Ytterkonditionen bär INTE längre
+          `bekraftelseSynlig` — samma rättning som slotten ovan: en
+          `warning`/`info` här får inte döljas av en obesläktad handling,
+          bara av att ETT NYTT jobb ersätter `utfall`. `bekraftelseSynlig`
+          flyttade IN i `success`-grenen nedan, där den hör hemma. */}
+      {utfall && ovrigaJobbrader.length > 0 && (
         <div className="flex flex-col gap-2">
           {/* [TASK-362] TVÅ SEPARATA `MessageBox`-ANROP, INTE ETT MED
               VILLKORAD `onDismiss` — `MessageBox`s generiska typ (kryss-
@@ -1780,17 +1897,24 @@ export function BetalningsInkorg() {
               (mätt, `npm run typecheck` — TS2322, `intent` föll till en
               INSKRÄNKT `"success"`-typ som `utfall.intent` inte är
               tilldelningsbar till). Två grenar med var sin LITERALA
-              `intent` löser det utan att `as`-tvinga bort felet. */}
+              `intent` löser det utan att `as`-tvinga bort felet.
+
+              `success`-grenen ENSAM läser `bekraftelseSynlig` (kryss +
+              nästa-handling-dölj); `info`/`warning`-grenen har ingen
+              dölj-flagga alls (FYND 1) — den finns kvar tills `utfall`
+              själv byter innehåll. */}
           {utfall.intent === 'success' ? (
-            <MessageBox
-              intent="success"
-              title={utfall.rubrik}
-              onDismiss={() => setBekraftelseSynlig(false)}
-            >
-              {utfall.klass === 'allt-skickat'
-                ? 'Alla kvitton gick fram.'
-                : 'Raderna nedan visar utfallet per kvitto.'}
-            </MessageBox>
+            bekraftelseSynlig && (
+              <MessageBox
+                intent="success"
+                title={utfall.rubrik}
+                onDismiss={() => setBekraftelseSynlig(false)}
+              >
+                {utfall.klass === 'allt-skickat'
+                  ? 'Alla kvitton gick fram.'
+                  : 'Raderna nedan visar utfallet per kvitto.'}
+              </MessageBox>
+            )
           ) : (
             <MessageBox intent={utfall.intent} title={utfall.rubrik}>
               {'Raderna nedan visar utfallet per kvitto.'}

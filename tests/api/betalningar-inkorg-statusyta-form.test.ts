@@ -21,6 +21,20 @@
 // `klart` LIVE, denna fil bevisar att `pågår` matematiskt MÅSTE dela
 // `klart`s DOM-form eftersom koden har EN gren, inte tre.
 //
+// ═══════════════════════════════════════════════════════════════════════════
+// UPPDATERAD REVIEW-RUNDA 1 (FYND 1 + FYND 2 + FYND 4)
+// ═══════════════════════════════════════════════════════════════════════════
+// Runda 1s första version av denna fil prövade en TERNARY-struktur
+// (`vantande.length > 0 ? knapp : (warning ELLER statusrad)`). Runda 2 rev
+// den strukturen: en ternary gjorde knappen och `warning`/`info` ömsesidigt
+// uteslutande, vilket MÄTT (denna PR:s egen e2e-svit, röd innan fixen) dolde
+// en genuin "N kvitton misslyckades"-varning så fort en NY, obesläktad rad
+// köades — exakt den regression FYND 1 förbjuder. De tre grenarna
+// (knapprad, `warning`, kompakt statusrad) är nu OBEROENDE `&&`-villkorade
+// syskon, inte en ömsesidigt uteslutande `? :`. Testerna nedan är
+// omskrivna för att pröva DEN formen, och prövar EXPLICIT att den gamla
+// ternary-formen inte återkommit.
+//
 // TVÅ RIKTNINGAR PER GRIND (samma disciplin som `kvitto-forhandsgranskning.
 // test.ts` § filhuvud): varje kontroll prövas mot en KONSTRUERAD sträng som
 // ska falla, aldrig bara mot riktig källkod som råkar vara grön.
@@ -39,6 +53,14 @@ const INKORG_KALLA = readFileSync(
   'utf8',
 );
 
+/** De tre villkors-strängarna, ordagrant ur källan (`BetalningsInkorg.tsx`
+    § sändstatus-slotten). Byts något av dem i en refaktor ska denna fil
+    fällas — det ÄR grindens jobb. */
+const KNAPP_VILLKOR = '{vantande.length > 0 && (';
+const WARNING_VILLKOR =
+  "utfall !== null && utfall.intent === 'warning' && ovrigaJobbrader.length === 0 && (";
+const STATUSRAD_VILLKOR = 'utfall !== null && ovrigaJobbrader.length === 0 && (';
+
 /**
  * INDEX-BASERAD, INTE EN ENDA REGEX ÖVER HELA GRENEN — och det är avsiktligt.
  * Filens kommentarsblock mellan noderna är LÅNGA (flera hundra tecken,
@@ -47,35 +69,63 @@ const INKORG_KALLA = readFileSync(
  * på nästa oskyldiga kommentarsredigering, inte på en verklig regression.
  * `indexOf`-kedjan bryr sig bara om ORDNINGEN mellan markörerna, aldrig om
  * hur långt det är mellan dem.
+ *
+ * PRÖVAR (review-runda 2, FYND 1): knapprad, `warning` och kompakt
+ * statusrad är TRE OBEROENDE `&&`-villkorade syskon — INGEN av dem
+ * exkluderar de andra två. Specifikt: `warning`-blocket och statusraden
+ * ska INTE stå i en `vantande.length > 0 ? … : (…)`-ternary (den gamla,
+ * trasiga formen som dolde en varning bakom en köad rad).
  */
-function grenarKorrekt(kalla: string): boolean {
-  const villkor = kalla.indexOf("utfall.intent === 'warning' ?");
-  if (villkor === -1) return false;
-  const warningBox = kalla.indexOf('<MessageBox intent="warning"', villkor);
+function treOberoendeGrenar(kalla: string): boolean {
+  const knapp = kalla.indexOf(KNAPP_VILLKOR);
+  if (knapp === -1) return false;
+
+  const warningVillkor = kalla.indexOf(WARNING_VILLKOR, knapp);
+  if (warningVillkor === -1) return false;
+  const warningBox = kalla.indexOf('<MessageBox intent="warning"', warningVillkor);
   if (warningBox === -1) return false;
-  // ") : (" skiljer sant-grenen (MessageBox) från falskt-grenen (den
-  // kompakta statusraden) i denna specifika ternary.
-  const elseGren = kalla.indexOf(') : (', warningBox);
-  if (elseGren === -1) return false;
-  const statusRad = kalla.indexOf('<p', elseGren);
+
+  const statusVillkor = kalla.indexOf(STATUSRAD_VILLKOR, warningBox);
+  if (statusVillkor === -1) return false;
+  const statusRad = kalla.indexOf('<p', statusVillkor);
   if (statusRad === -1) return false;
-  // `role="status"` ska stå på/nära SAMMA `<p`-nod (inom en kort räckvidd —
-  // JSX-attribut ligger typiskt inom några rader från taggens öppning).
   const roleStatus = kalla.indexOf('role="status"', statusRad);
-  return roleStatus !== -1 && roleStatus - statusRad < 100;
+  if (roleStatus === -1 || roleStatus - statusRad > 200) return false;
+
+  // NEGATIV GARD: den GAMLA ternary-formen (`) : (` mellan knappblocket och
+  // statusraden) får inte förekomma — den är precis vad som gjorde
+  // `warning`/`info` ömsesidigt uteslutande mot knappen.
+  const gammalTernary = kalla.indexOf(') : (', knapp);
+  if (gammalTernary !== -1 && gammalTernary < statusRad) return false;
+
+  return true;
 }
 
-test('sändstatus-slotten grenar EXAKT på intent === "warning" — info/success delar samma kompakta rad', () => {
-  // Den kompakta statusraden (`role="status"`, ingen `MessageBox`) MÅSTE stå
-  // i den GREN som körs när `utfall.intent` INTE är `'warning'` — alltså för
-  // BÅDE `'info'` (vantar/pagar) och `'success'` (allt-skickat).
-  expect(grenarKorrekt(INKORG_KALLA)).toBe(true);
+test('knapprad, warning och kompakt statusrad är TRE OBEROENDE grenar — ingen utesluter de andra (review-runda 2, FYND 1)', () => {
+  expect(treOberoendeGrenar(INKORG_KALLA)).toBe(true);
 
-  // NEGATIV KONTROLL: en trasig variant som i stället grenar per KLASS
-  // ('pagar' | 'vantar' | 'allt-skickat' var för sig) hade INTE matchat
-  // mönstret ovan — den skulle ge tre separata `<p role="status">`-noder,
-  // ingen gemensam garanti om att de delar exakt samma JSX-nod/höjd-slot.
-  const trasigVariant = `
+  // NEGATIV KONTROLL 1: DEN FAKTISKA runda 1-REGRESSIONEN — en ternary som
+  // gör knappraden och (warning|status) ömsesidigt uteslutande. Detta är
+  // ORDAGRANT den form som fanns i denna PR:s FÖRSTA push och som mättes
+  // dölja en warning-banderoll bakom en nyköad rad.
+  const rundaEnRegressionen = `
+    {vantande.length > 0 ? (
+      <div>knapprad</div>
+    ) : (
+      <>
+        {utfall !== null && utfall.intent === 'warning' && ovrigaJobbrader.length === 0 && (
+          <MessageBox intent="warning" title={utfall.rubrik}>x</MessageBox>
+        )}
+        <p role="status">status</p>
+      </>
+    )}
+  `;
+  expect(treOberoendeGrenar(rundaEnRegressionen)).toBe(false);
+
+  // NEGATIV KONTROLL 2: klass-uppdelad ternary (samma felklass som
+  // ursprungsversionen av DENNA fil varnade för) — tre separata
+  // `<p role="status">`-noder i stället för en delad.
+  const klassUppdelad = `
     {utfall.klass === 'allt-skickat' ? (
       <p role="status">klart</p>
     ) : utfall.klass === 'pagar' ? (
@@ -84,7 +134,7 @@ test('sändstatus-slotten grenar EXAKT på intent === "warning" — info/success
       <MessageBox intent="warning">varning</MessageBox>
     )}
   `;
-  expect(grenarKorrekt(trasigVariant)).toBe(false);
+  expect(treOberoendeGrenar(klassUppdelad)).toBe(false);
 });
 
 test('warning-grenen (och bara den) använder MessageBox — kryss-regeln kan aldrig nås av info/success-raden', () => {
@@ -104,20 +154,46 @@ test('warning-grenen (och bara den) använder MessageBox — kryss-regeln kan al
   expect(trasigtAntal).toBe(3);
 });
 
-test('sändstatus-slotten reserverar min-h-10 — samma höjd som Button size="md" (Button.tsx)', () => {
-  expect(INKORG_KALLA).toMatch(/flex min-h-10 flex-col justify-center gap-2/);
+test('sändstatus-slotten reserverar min-h-22 sm:min-h-10 (review-runda 1, FYND 2 — responsivt golv)', () => {
+  // `min-h-22` (88 px, <640 px): EXAKT den mätta höjden när "Skicka 1
+  // kvitto" + "Förhandsgranska" WRAPPAR till två rader vid mobilbredd
+  // (375 px) — mätt live med `getBoundingClientRect()` i
+  // `tests/e2e/betalningar-inkorg-utskicksflode.staging.test.ts`s
+  // viewport-matris, röd innan detta golv fanns (238 px köat mot 190 px
+  // klart). `sm:min-h-10` (40 px, ≥640 px) är golvet enknappsfallet redan
+  // höll (Button.tsx `size.md: 'min-h-10'`) — täcker iPad (820 px) och
+  // desktop, båda gröna i samma viewport-matris.
+  expect(INKORG_KALLA).toMatch(/flex min-h-22 flex-col justify-center gap-2 sm:min-h-10/);
 
   const BUTTON_KALLA = readFileSync(
     path.join(REPO_ROOT, 'src', 'components', 'primitives', 'Button.tsx'),
     'utf8',
   );
   // Källan för husets DEFAULT-knappstorlek ('md') ska bära SAMMA `min-h-10`
-  // — annars är "matchar knappens egen höjd" ett obelagt påstående i
-  // BetalningsInkorg.tsx:s egen kommentar.
+  // — annars är "matchar knappens egen höjd vid ≥640 px" ett obelagt
+  // påstående i BetalningsInkorg.tsx:s egen kommentar.
   expect(BUTTON_KALLA).toMatch(/md:\s*'min-h-10/);
 
-  // NEGATIV KONTROLL: en slot utan reserverad höjd (bara `flex flex-col
-  // gap-2`, ingen `min-h-*`) hade INTE matchat första mönstret.
-  const trasigVariant = 'flex flex-col gap-2';
-  expect(trasigVariant).not.toMatch(/flex min-h-10 flex-col justify-center gap-2/);
+  // NEGATIV KONTROLL 1: en slot utan reserverad höjd alls hade INTE
+  // matchat mönstret.
+  const ingenHojd = 'flex flex-col gap-2';
+  expect(ingenHojd).not.toMatch(/flex min-h-22 flex-col justify-center gap-2 sm:min-h-10/);
+
+  // NEGATIV KONTROLL 2: runda 1:s FÖRSTA (icke-responsiva) golv,
+  // `min-h-10` utan `sm:`-brytpunkt — mätt otillräckligt vid mobilbredd,
+  // ska INTE matcha det nya, responsiva mönstret.
+  const rundaEttsGolv = 'flex min-h-10 flex-col justify-center gap-2';
+  expect(rundaEttsGolv).not.toMatch(/flex min-h-22 flex-col justify-center gap-2 sm:min-h-10/);
+});
+
+test('sändstatus-regionen bär data-testid="inkorg-sandstatus" (review-runda 1, FYND 4 — stabil identitet för DOM-nod-provet)', () => {
+  expect(INKORG_KALLA).toContain('data-testid="inkorg-sandstatus"');
+
+  // NEGATIV KONTROLL: utan test-id:t kan e2e-sviten inte skilja "samma nod,
+  // tomt innehåll" från "avmonterad och åter monterad nod" (se
+  // `tests/e2e/betalningar-inkorg-utskicksflode.staging.test.ts`s FYND
+  // 4-test, som förlitar sig på exakt detta attribut för sin
+  // identitetsprövning).
+  const utanTestId = INKORG_KALLA.replace('data-testid="inkorg-sandstatus"', '');
+  expect(utanTestId).not.toContain('data-testid="inkorg-sandstatus"');
 });
