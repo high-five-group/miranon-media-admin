@@ -168,8 +168,14 @@ export function PersonBetalningar({ person }: { person: PersonDetail }) {
         />
       </div>
 
+      {/* [TASK-362] "Betalningsinkorgen" → "Betalningar" (Marcus 2026-09-02:
+          *"ändra namn på 'Öppna betalningsinkorgen' till … 'Öppna
+          betalningar', ja så gör vi, det är ännu renare"*). Enda
+          användarsynliga förekomsten av den gamla termen i `src/` (mätt med
+          repo-bred grep); komponentnamnet `BetalningsInkorg`/filnamnet är
+          kodidentifierare och orörda. */}
       <Link to="/mer/betalningar" className="text-small underline">
-        Öppna betalningsinkorgen
+        Öppna betalningar
       </Link>
     </div>
   );
