@@ -12,8 +12,12 @@
 > Styrande dokument: [`docs/byggplan.md`](../docs/byggplan.md)
 
 **Session 113 ▶️ ÅTERUPPTAGEN (resume 8, 2026-09-02 ~07:25 UTC, `lifecycle: active`;
-Marcus: *"Återuppta S113 … jag behöver din vägledning"* — MARCUS-BLOCKET KÖRS
-MED VÄGLEDNING; Lotta-demo I DAG):** paus 8-landningen `#2201` var RÖD
+Marcus: *"Återuppta S113 … jag behöver din vägledning"* → *"Jag vill att du kör
+runbooken!"* — **PROD-DRIFTSÄTTNINGEN KÖRD: steg 1–7 + 10 av orkestreraren
+(bypass per Marcus diktering), steg 9 av Marcus, steg 14 flaggan PÅ i prod
+(bundel-verifierad); `INVITE_REDIRECT_URL` rättad i båda miljöer
+(`TASK-359`-PR i bygge); kvar = steg 12/13/15-beslut hos Marcus**; Lotta-demo
+I DAG. Full narrativ: sessionsdok S113 Del 16):** paus 8-landningen `#2201` var RÖD
 (audit-ci: två browserslist-advisories publicerade efter `main`s sista gröna
 körning, patchade i `4.28.7`) → låsfils-bump som egen kod-PR via bygg-agent;
 resume 8 + paus 8 landar tillsammans i `#2201`. Numrering re-verifierad
