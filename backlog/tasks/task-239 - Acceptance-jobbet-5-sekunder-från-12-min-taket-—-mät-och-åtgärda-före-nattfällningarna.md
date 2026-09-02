@@ -3,10 +3,10 @@ id: TASK-239
 title: >-
   Acceptance-jobbet 5 sekunder från 12-min-taket — mät och åtgärda före
   nattfällningarna
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-16 07:07'
-updated_date: '2026-09-02 11:55'
+updated_date: '2026-09-02 12:56'
 labels:
   - ready-for-agent
 dependencies: []
@@ -31,7 +31,7 @@ Forensik 2026-08-16 (R5, nyupptäckt obokförd rot): acceptance-väggklockan vä
 <!-- DOD:BEGIN -->
 - [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
@@ -234,3 +234,17 @@ Full npm run verify:ci-parity kördes (info-fyndets krav: fullt läge, inte --fa
 
 PR-kroppens grindtabell uppdaterad: :fast-raden ersatt med den fulla körningens faktiska utfall (se ovan).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad · commit 680173e1 · PR #2216 (MERGED 2026-09-02T12:22:02Z, senast granskad SHA 284f82ae r2) · Post-merge-workflow för 680173e1 (run 33629519948) COMPLETED SUCCESS, 11m53s. Granskningsloop konvergerad: r1 LÅG (2 fynd: orelaterade instrumenteringsrader i docs/reference/review-instrumentering.jsonl + full paritet ej körd), r2 LÅG (2 info, båda r1-fynd verifierat stängda — merge-commiten tog origin/main:s version av jsonl-filen rakt av, tvåparents-diff tom).
+
+AC-status: AC1 håller — tillväxtens orsak (organisk testantal-tillväxt 233→461, +98 %) identifierad med mätning, inte antagen (kortets Implementation Notes VARV 3). AC2 håller — åtgärden (Playwrights inbyggda --shard=I/N, 3 shards vid tomt urval / 1 shard oförändrat vid PR-scopat urval) återtar marginalen utan att röra 12-min-taket: MÄTT ur PR #2216:s egen CI-körning (run 33619073362), samtliga tre shards >7 min marginal (shard 1 4m33s→7m27s marginal, shard 2 4m14s→7m46s, shard 3 4m9s→7m51s). AC4 håller — ci-suite.yml:s webblasarbeteende-artefaktsteg fick samma failure()||cancelled()-villkor (kortets Implementation Notes VARV 1, oförändrat sedan dess). AC3 (Acceptance grön i nattnätet TRE nätter i rad efter åtgärd) är EJ BOCKNINGSBAR i denna stängning — kräver nattnätets tre körningar EFTER landning (680173e1, 2026-09-02T12:22Z); ingen nightly har hunnit köra tre gånger. Lämnad OBOCKAD med avsikt, samma precedent som kortets egen AC2-hantering i varv 2/3. DoD #1 (alla AC avbockade) lämnas därför också obockad — den är sann först när AC3 är det. DoD #3 (CI grön per jobb på pushad commit) BOCKAD: PR #2216:s statusCheckRollup är grön per jobb (Lint+Audit+TypeCheck, Pure+Build, tre Acceptance-shards, hermetik-självtest, Webblasarbeteende, Docs link check, CodeQL, CI Passed or Skipped; Staging/A11y SKIPPED per D0-klassning).
+
+MERGEBAR-GÖRNING (samma dag, dokumenterad i kortet): full npm run verify:ci-parity kördes (fullt läge, eftersom PR:en ändrar ci-suite.yml) — 34 gröna, 2 röda, 1711,8 s under loadavg ~21. De två röda låg i tre testfiler HELT UTANFÖR denna PR:s diff (hem.acceptance.test.ts, mer-platser.acceptance.test.ts, forberedelseskarm-hojdkedja.test.ts) — klassat som last-/timing-flake under den 28-minuters lokala helkörningen, inte en regression av diffen; PR-ytans egen CI (0ddcc3f0) var grön med tre Acceptance-shards + Webblasarbeteende.
+
+Oväntat fynd, registrerat i kortet men EJ åtgärdat i denna skiva (uppdraget scopade explicit bort det): samma CI-run visar acceptance-sjalvtest-jobbet (oshardat, kör hela 461-testklassen) på 11m15s — bara 45 sekunders marginal mot sitt eget oförändrade 12-min-tak, i en renodlad pull_request-körning utan kö-last. Samma organiska tillväxt-mekanism riskerar att kö-sparka detta jobb näst. Rekommendation (redan i kortet): mint ett uppföljningskort för sharding av acceptance-sjalvtest.
+
+Landning: PR #2216. Avvikelse: AC3 kvarstår öppen och obockad — dokumenterat ovan, inte en tyst brist.
+<!-- SECTION:FINAL_SUMMARY:END -->
