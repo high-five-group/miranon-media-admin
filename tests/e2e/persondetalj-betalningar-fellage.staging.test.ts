@@ -162,8 +162,14 @@ test.describe('Personkortets Betalningar-sektion — felläge (TASK-346.7.1)', (
     const sektion = betalningsSektion(page);
     // [TASK-364] exact: true — utan den matchar Playwrights delsträngs-
     // sökning ÄVEN h3:an "Senaste inbetalningar" (PersonBetalningar.tsx) och
-    // ger ett strict mode violation-fel (två träffar). Testet och h3:an kom
-    // i samma commit (286c9a3d, PR #2193) — testet var rött från födseln.
+    // ger ett strict mode violation-fel (två träffar). KÄLLA (rättad,
+    // se TASK-364 § Implementation Notes): testfilen tillkom i PR #2175
+    // (d1097ce9, TASK-346.7.1, 2026-08-31 12:24), h3:an sju timmar
+    // tidigare i TASK-346.7 (d0f20337, 2026-08-31 05:42) — INTE i samma
+    // commit som 286c9a3d/PR #2193 (en orelaterad långt-streck-lintfix
+    // som git log -S råkade matcha pga en rebase-radförskjutning).
+    // Testet var alltså rött från födseln redan i PR #2175: post-merge-
+    // sviten föll direkt efter mergen, 2026-08-31 11:05 (run 33384227389).
     await expect(sektion.getByRole('heading', { name: 'Betalningar', exact: true })).toBeVisible();
 
     // Felläget måste hinna fram INNAN retryerna är klara. TIMING, MÄTT INTE
