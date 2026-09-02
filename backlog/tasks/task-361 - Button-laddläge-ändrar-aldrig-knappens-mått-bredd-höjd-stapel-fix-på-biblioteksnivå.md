@@ -1,12 +1,12 @@
 ---
 id: TASK-361
 title: >-
-  Button: laddläge ändrar aldrig knappens mått (bredd/höjd) - stapel-fix på
-  biblioteksnivå
+  Button: laddläge ändrar aldrig knappens mått — etiketten äger måttet, spinnern
+  ligger ovanpå (overlay-form, ADR-113 punkt 4)
 status: To Do
 assignee: []
 created_date: '2026-09-02 09:08'
-updated_date: '2026-09-02 09:27'
+updated_date: '2026-09-02 10:50'
 labels: []
 dependencies: []
 ordinal: 662000
@@ -15,18 +15,7 @@ ordinal: 662000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-Marcus prod-röktest 2026-09-02 (S113 resume 8): en knapp växer i bredd när
-den går in i laddläge (isLoading). Rotorsak: Button.tsx bytte hela
-`children` MOT spinner+loadingText — två olika bredder, ett hopp.
-
-Fix på biblioteksnivå (Button.tsx): CSS Grid-stapling (inline-grid +
-grid-area:1/1 på två alltid-monterade lager, visibility-toggle), så
-knappens mått = MAX(bredd/höjd) av de två lagren oavsett vilket som syns.
-Migrerar även BetalningsInkorg.tsx:s två handbyggda Förhandsgranska-knappar
-(bar inte tidigare Button.isLoading) till samma prop.
-
-Se PR-kroppen för research-citat (RAC/MUI/Chakra/Wes Bos), negativt bevis
-och visual-diff-lista.
+Marcus 2026-09-02 (prod-röktest): 'när man trycker på knappen och den ändrar till laddläge så växer knappen i bredd … så gör inte proffs.' Rotorsak: Button.tsx isLoading ersatte innehållet med spinner + loadingText, så måttet följde det innehåll som råkade visas. FORM (efter review r1 på PR #2212 som fällde första ansatsen): etiketten (children) renderas ALLTID i flödet och äger bredd/höjd ensam (invisible under laddning); ladd-lagret (Loader2) är absolute inset-0 ovanpå och kan strukturellt aldrig påverka måttet; loadingText visas aldrig synligt utan går enbart till skärmläsaren (role=status aria-live=polite sr-only) — ADR-113 § Beslut punkt 4. Första ansatsen (CSS-grid-stapel med visibility, MAX av båda lagren) FÖRKASTADES i review r1: den gjorde knappar med längre loadingText än etikett permanent bredare i VILA (login 'Logga in', Radera/Makulera, Spara/Registrera) — negativt bevis sm 108→401 px, md 126→458, lg 142→511. De två Förhandsgranska-knapparna i inkorgen var handbyggda utan isLoading och migrerades. Landad: PR #2212, main 2bf26258.
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria

@@ -292,12 +292,84 @@ jobs:
     #      av det gamla "beviset körs efter sviten med avsikt" är öppet
     #      motiverad vid det nya jobbet, inte tyst.
     #
-    # DÄRFÖR LIGGER TALET 12 KVAR. Efter (1) och (2) mäter taket detta jobbs
-    # skarpa svit ensam: svansen 352 s minus gatens ~62 s ≈ 290 s ≈ 4,8 min,
-    # alltså ~7 min marginal mot ett orört tak. En höjning hade köpt samma
-    # andrum genom att göra skyddsnätet slappare i stället för arbetet
-    # mindre; task-239 AC #2 kräver uttryckligen det förra utan det senare.
+    # DÄRFÖR LIGGER TALET 12 KVAR (2026-08-17). Efter (1) och (2) mäter taket
+    # detta jobbs skarpa svit ensam: svansen 352 s minus gatens ~62 s ≈ 290 s
+    # ≈ 4,8 min, alltså ~7 min marginal mot ett orört tak. En höjning hade
+    # köpt samma andrum genom att göra skyddsnätet slappare i stället för
+    # arbetet mindre; task-239 AC #2 kräver uttryckligen det förra utan det
+    # senare.
+    #
+    # ═══ TASK-239 VARV 3 (2026-09-02) — ANDRUMMET TOG SLUT IGEN, SHARDAT ═══
+    #
+    # ORGANISK TILLVÄXT FORTSATTE, PRECIS SOM FÖRUTSPÅTT. Klassen gick
+    # 233 → 461 tester (+98 %) mellan 2026-08-17 och 2026-09-02 — INTE
+    # warmup-gaten, som redan var stängd. Mätt i en RENODLAD (ej kö-belastad)
+    # PR-CI-körning samma dag: den skarpa sviten ensam tog 461 s (7m41s,
+    # run 33612071306, job 100189512738) — redan mer än HELA den marginal
+    # föregående varv projicerade. Under samtidig kö-last blev det värre: PR
+    # #2209:s två merge_group-körningar (33613134860, 33614762259) fick
+    # jobbet `cancelled` på TAKET båda gångerna — 09:15:58→09:28:09 (12m11s)
+    # och 09:33:50→09:45:59 (12m09s) — medan tre andra fulla sviter körde
+    # parallellt på samma runner-flotta (kö-poster #2211/#2214 + PR-CI för
+    # samtidiga agent-PR:er). Kön tolkade båda som `failed_checks` och
+    # sparkade PR:en ur kön två gånger (`RemovedFromMergeQueueEvent
+    # reason=failed_checks`, 09:28:39 och 09:46:11).
+    #
+    # ÅTGÄRDEN ÄR PLAYWRIGHTS EGEN SHARDING (`--shard=I/N`), INTE EN TREDJE
+    # STRUKTUR-KLYVNING. Varv 2 delade en SEKVENTIELL A+B till max(A,B) genom
+    # att göra hermetik-självtestet till ett eget jobb — den hävstången är
+    # förbrukad (det finns bara EN skarp svit kvar i det här jobbet). Nästa
+    # steg är att dela SVITEN SJÄLV, vilket `acceptance`-jobbets egen
+    # kommentar ovan pekat ut sedan task-59.7 som "den varaktiga häven" MEN
+    # krävde mätning innan aktivering: mätningen finns nu (861 rader ovan),
+    # och kostnaden är verifierad noll — `--shard` splittrar på FIL-gränser
+    # (playwright/lib/runner/index.js:s `createTestGroups`, läst i källan i
+    # den installerade 1.62.1:an), så INGEN fil delas mellan shards och
+    # `overskuggnings-rapport.ts`s per-fil-invariant (task-62) hålls. En shard
+    # utan tilldelade tester är per DESIGN inget fel: samma källa
+    # (`runner/index.js` rad ~6178) undantar uttryckligen `config.shard`-läget
+    # från "no tests found"-fällningen, så URVAL-grenen (en handfull
+    # spec-filer på PR-ytan) kan aldrig råka ut för en tom, fällande shard.
+    #
+    # MATRISEN ÄR VILLKORAD PÅ `inputs.acceptance_selection`, INTE STATISK.
+    # Tom urval (post-merge/nightly/merge_group — full klass, den ENDA ytan
+    # som faktiskt sett cancellationerna ovan) ⇒ 3 shards. Ett satt urval
+    # (PR-ytans delmängd, redan snabb) ⇒ 1 shard, oförändrat beteende och
+    # ingen extra runner-uppstart för en körning som redan har marginal. Detta
+    # är samma "kör MER aldrig MINDRE"-asymmetri som `acceptance-urval.sh`
+    # själv bär — matrisen lägger ingen egen bedömning ovanpå den, den LÄSER
+    # samma `inputs.acceptance_selection` steget nedan redan konsumerar.
+    #
+    # TALET 3 ÄR EN MARGINALBERÄKNING, INTE EN GISSNING. 461 s / 3 ≈ 154 s
+    # testtid per shard + samma ~30 s infrastruktur (checkout/npm ci/
+    # Playwright-cache) som resten av jobbet mäter ≈ 184 s (~3 min) mot ett
+    # ORÖRT 12-min-tak — cirka 9 min marginal i en RENODLAD körning, en
+    # bredare säkerhetsmarginal än föregående varvs ~7 min gav mot samma
+    # sortens organiska tillväxt som just åt upp den. PR:ens egen shardade
+    # CI-körning (se PR-kroppen) bär den FÖRSTA skarpa mätningen av faktisk
+    # per-shard-väggklocka; siffran 3 omprövas om den mätningen visar
+    # obalans eller otillräcklig marginal.
+    #
+    # `strategy.job-total` (INTE ett hårdkodat "3" i steget nedan) håller
+    # nämnaren i `--shard=I/N` i synk med matrisens FAKTISKA storlek —
+    # skiftar `[1,2,3]` till fler/färre element någon gång behöver bara
+    # matris-uttrycket ändras, aldrig två ställen.
+    #
+    # `.ci-parity-policy.json`s `exprSubstitutions` fick två nya poster
+    # (`${{ matrix.shard }}` → `"1"`, `${{ strategy.job-total }}` → `"1"`) —
+    # `1/1` är Playwrights no-op-shard (hela sviten i en enda shard, samma
+    # `filterForShard`-källa), så `npm run verify:ci-parity`s lokala FULLA
+    # körning fortsätter täcka HELA klassen i EN process, precis som förut.
+    # Lokal paritet tappar därmed INTE djup — den prövar bara aldrig
+    # sharding-TOPOLOGIN (det gör CI:s tre parallella jobb).
     timeout-minutes: 12
+    strategy:
+      fail-fast: false
+      # Villkorad på SAMMA input steget `Acceptance tests (hermetiska)` redan
+      # läser (`ACCEPTANCE_URVAL`, se nedan) — se motiveringen ovan för
+      # varför urval-ytan medvetet INTE shardas.
+      matrix:
+        shard: ${{ fromJson(inputs.acceptance_selection == '' && '[1,2,3]' || '[1]') }}
     permissions:
       contents: read
     steps:
@@ -341,9 +413,18 @@ jobs:
       # och expanderas citerad, så en post med oväntat innehåll blir ETT
       # argument i stället för ett skal-uttryck. Angriparstyrbarheten är reell —
       # posterna härrör ur filnamn i en PR.
+      # TASK-239 VARV 3: SHARD-VARIABLERNA. `ACCEPTANCE_SHARD_INDEX` +
+      # `ACCEPTANCE_SHARD_TOTAL` går bara in i `--shard=I/N` när urvalet är
+      # tomt (full klass) — grenen `-n "${ACCEPTANCE_URVAL}"` nedan är
+      # OFÖRÄNDRAD och rör dem aldrig, så PR-ytans urval-körning beter sig
+      # exakt som förut. `strategy.job-total` (inte ett hårdkodat tal) håller
+      # nämnaren i synk med matrisens faktiska storlek, se jobbets kommentar
+      # ovan för hela härledningen.
       - name: Acceptance tests (hermetiska)
         env:
           ACCEPTANCE_URVAL: ${{ inputs.acceptance_selection }}
+          ACCEPTANCE_SHARD_INDEX: ${{ matrix.shard }}
+          ACCEPTANCE_SHARD_TOTAL: ${{ strategy.job-total }}
         run: |
           set -euo pipefail
           if [ -n "${ACCEPTANCE_URVAL}" ]; then
@@ -352,15 +433,20 @@ jobs:
             echo "  Full klass körs på det mergade trädet av post-merge.yml."
             npm run test:acceptance -- "${urval[@]}"
           else
-            echo "▶ FULL ACCEPTANCE-KLASS — inget urval."
-            npm run test:acceptance
+            echo "▶ FULL ACCEPTANCE-KLASS — shard ${ACCEPTANCE_SHARD_INDEX}/${ACCEPTANCE_SHARD_TOTAL}."
+            npm run test:acceptance -- --shard="${ACCEPTANCE_SHARD_INDEX}/${ACCEPTANCE_SHARD_TOTAL}"
           fi
 
+      # Artefaktnamnet bär shard-index (TASK-239 VARV 3): `upload-artifact@v4+`
+      # kräver unika namn INOM en körning, och tre matrix-jobb som alla hette
+      # `playwright-acceptance-artefakter` hade kollaterat på den andra
+      # uppladdningen. Samma form som `acceptance-sjalvtest`s EGNA namn löste
+      # kollisionen mot DETTA jobb i varv 2.
       - name: Ladda upp Playwright-artefakter vid rött
         if: failure() || cancelled()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
-          name: playwright-acceptance-artefakter
+          name: playwright-acceptance-artefakter-${{ matrix.shard }}
           path: |
             test-results/
             playwright-report/
