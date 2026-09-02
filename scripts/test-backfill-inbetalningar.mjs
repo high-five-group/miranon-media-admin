@@ -70,18 +70,22 @@ import {
   klassificera,
   LANKTILLSTAND_FIL,
   lasLanktillstand,
+  losToken,
   maskeraRef,
+  PROD_GODKAND_ENV_VAR,
   parsaDbQuerySvar,
   patchArIdentisk,
   planera,
   planeraEventpriser,
   provaLanktillstand,
   SPEGEL_OPERATION,
+  skrivRapport,
   sqlBelopp,
   sqlDatum,
   standardNyckel,
   tolkaPrisFritext,
   validateBaseGuard,
+  validateMiljoKonsistens,
   validateProjectRef,
 } from './backfill-inbetalningar.mjs';
 
@@ -96,6 +100,23 @@ let failed = 0;
 function test(namn, fn) {
   try {
     fn();
+    passed += 1;
+    console.log(`✅ ${namn}`);
+  } catch (fel) {
+    failed += 1;
+    console.error(`❌ ${namn}`);
+    console.error(`   ${fel.message}`);
+  }
+}
+
+/** Samma kontrakt som `test`, men AWAIT:ar `fn()` — för `losToken` m.fl. som
+ *  är async (TASK-360 runda 2). `test()` fångar bara SYNKRONA kast; ett kast
+ *  inuti en async-funktion når aldrig dess try/catch, det blir en
+ *  unhandled rejection i stället för en röd rad. Filen körs som ESM med
+ *  top-level await, så `await testAsync(...)` vid anropsstället räcker. */
+async function testAsync(namn, fn) {
+  try {
+    await fn();
     passed += 1;
     console.log(`✅ ${namn}`);
   } catch (fel) {
@@ -217,6 +238,89 @@ test('A11: POLICYN INNEHÅLLER INTE prod-refen — låset förblir verksamt', ()
   const prodRef = conf.match(/^PROD_REF_PROD="([^"]+)"/m)?.[1];
   const policyText = readFileSync(join(REPO_ROT, '.backfill-inbetalningar-policy.json'), 'utf8');
   assert.ok(!policyText.includes(prodRef), 'prod-refen får inte stå i backfill-policyn');
+});
+
+// ─────────────────────────────────────────────────────────────────────────
+// A12–A17: PROD-VÄGEN (TASK-360) — typa-för-att-bekräfta-override
+// ─────────────────────────────────────────────────────────────────────────
+
+const A_PROD_REF = readFileSync(join(REPO_ROT, '.prod-ref-policy.conf'), 'utf8').match(
+  /^PROD_REF_PROD="([^"]+)"/m,
+)?.[1];
+const A_PROD_BAS = 'app8uGPrVCVOm6LfD';
+
+test('A12: validateBaseGuard SLÄPPER prod-basen NÄR godkandEnv matchar EXAKT', () => {
+  assert.equal(validateBaseGuard(POLICY, A_PROD_BAS, { godkandEnv: A_PROD_BAS }), true);
+});
+
+test('A13: NEGATIV — validateBaseGuard FÄLLER prod-basen med FEL godkandEnv-värde', () => {
+  assert.throws(() => validateBaseGuard(POLICY, A_PROD_BAS, { godkandEnv: 'true' }), /BLOCKERAD/);
+  assert.throws(
+    () => validateBaseGuard(POLICY, A_PROD_BAS, { godkandEnv: POLICY.expectedBaseId }),
+    /BLOCKERAD/,
+  );
+});
+
+test('A14: NEGATIV — validateBaseGuard FÄLLER prod-basen UTAN godkandEnv (oförändrat)', () => {
+  assert.throws(() => validateBaseGuard(POLICY, A_PROD_BAS), /BLOCKERAD/);
+  assert.throws(() => validateBaseGuard(POLICY, A_PROD_BAS, {}), /BLOCKERAD/);
+});
+
+test('A15: validateProjectRef SLÄPPER prod-refen NÄR godkandEnv matchar EXAKT', () => {
+  assert.ok(A_PROD_REF, 'PROD_REF_PROD saknas i .prod-ref-policy.conf');
+  assert.equal(
+    validateProjectRef(POLICY, A_PROD_REF, A_PROD_REF, { godkandEnv: A_PROD_REF }),
+    true,
+  );
+});
+
+test('A16: NEGATIV — validateProjectRef FÄLLER prod-refen med FEL godkandEnv-värde', () => {
+  assert.throws(
+    () => validateProjectRef(POLICY, A_PROD_REF, A_PROD_REF, { godkandEnv: '1' }),
+    /BLOCKERAD.*PROD/s,
+  );
+  assert.throws(
+    () =>
+      validateProjectRef(POLICY, A_PROD_REF, A_PROD_REF, {
+        godkandEnv: POLICY.tillatnaProjectRefs[0],
+      }),
+    /BLOCKERAD.*PROD/s,
+  );
+});
+
+test('A17: NEGATIV — validateProjectRef FÄLLER prod-refen UTAN godkandEnv (oförändrat)', () => {
+  assert.throws(() => validateProjectRef(POLICY, A_PROD_REF, A_PROD_REF), /BLOCKERAD.*PROD/s);
+  assert.throws(() => validateProjectRef(POLICY, A_PROD_REF, A_PROD_REF, {}), /BLOCKERAD.*PROD/s);
+});
+
+test('A18: PROD_GODKAND_ENV_VAR är SAMMA variabelnamn som create-betalningsfalt.mjs', () => {
+  // Uppdragets krav: "EN bypass-form i huset" — samma namn, inte en egen
+  // uppfinning för denna skiva.
+  assert.equal(PROD_GODKAND_ENV_VAR, 'AIRTABLE_PROD_GODKAND_AV_MARCUS');
+  const precedent = readFileSync(join(REPO_ROT, 'scripts/create-betalningsfalt.mjs'), 'utf8');
+  assert.match(precedent, /PROD_GODKAND_ENV_VAR = 'AIRTABLE_PROD_GODKAND_AV_MARCUS'/);
+});
+
+test('A19: validateMiljoKonsistens SLÄPPER när båda pekar mot staging', () => {
+  assert.equal(validateMiljoKonsistens({ basGodkand: false, refGodkand: false }), true);
+});
+
+test('A20: validateMiljoKonsistens SLÄPPER när båda pekar mot prod', () => {
+  assert.equal(validateMiljoKonsistens({ basGodkand: true, refGodkand: true }), true);
+});
+
+test('A21: NEGATIV — validateMiljoKonsistens FÄLLER bas=PROD men ref=staging', () => {
+  assert.throws(
+    () => validateMiljoKonsistens({ basGodkand: true, refGodkand: false }),
+    /BLOCKERAD kombination/,
+  );
+});
+
+test('A22: NEGATIV — validateMiljoKonsistens FÄLLER bas=staging men ref=PROD', () => {
+  assert.throws(
+    () => validateMiljoKonsistens({ basGodkand: false, refGodkand: true }),
+    /BLOCKERAD kombination/,
+  );
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1037,6 +1141,54 @@ test('L7: lasLanktillstand ger null när filen saknas (ingen krasch)', () => {
   assert.equal(LANKTILLSTAND_FIL, 'supabase/.temp/project-ref');
 });
 
+// ─────────────────────────────────────────────────────────────────────────
+// L8–L11: prodGodkand (TASK-360) — den HÅRDA "länk=PROD"-vägran gäller ändå
+// för VARJE annan kombination, och släpper ENDAST länk=PROD + mål=PROD.
+// ─────────────────────────────────────────────────────────────────────────
+
+test('L8: prodGodkand SLÄPPER ENDAST när länk=PROD OCH mål=PROD', () => {
+  assert.ok(PROD_REF, 'PROD_REF_PROD saknas i .prod-ref-policy.conf');
+  const u = provaLanktillstand({
+    lanktRef: PROD_REF,
+    malRef: PROD_REF,
+    prodRef: PROD_REF,
+    prodGodkand: true,
+  });
+  assert.equal(u.ok, true);
+  assert.equal(u.lage, 'lankat-till-prod-godkand');
+});
+
+test('L9: NEGATIV — prodGodkand UTAN flaggan (default false) är OFÖRÄNDRAT samma som L5', () => {
+  const u = provaLanktillstand({ lanktRef: PROD_REF, malRef: PROD_REF, prodRef: PROD_REF });
+  assert.equal(u.ok, false);
+  assert.equal(u.lage, 'lankat-till-prod');
+});
+
+test('L10: NEGATIV — prodGodkand=true räddar INTE länk=PROD + mål=staging (samma som L5)', () => {
+  // Kärnan i fyndet: godkännandet gäller den EXAKTA "båda pekar mot prod"
+  // -kombinationen, aldrig "länken råkar vara prod men ingen bad om det".
+  const u = provaLanktillstand({
+    lanktRef: PROD_REF,
+    malRef: STAGING,
+    prodRef: PROD_REF,
+    prodGodkand: true,
+  });
+  assert.equal(u.ok, false);
+  assert.equal(u.lage, 'lankat-till-prod');
+  assert.match(u.skal, /PROD/);
+});
+
+test('L11: prodGodkand=true stör INTE det normala länk=mål-fallet (staging, oförändrat)', () => {
+  const u = provaLanktillstand({
+    lanktRef: STAGING,
+    malRef: STAGING,
+    prodRef: PROD_REF,
+    prodGodkand: true,
+  });
+  assert.equal(u.ok, true);
+  assert.equal(u.lage, 'lankat-till-mal');
+});
+
 // ═══════════════════════════════════════════════════════════════════════════
 // M — BELOPPSGRINDEN (granskningsrunda 1, fynd 2)
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1339,6 +1491,55 @@ test('Q8: en anmälan som SAKNAS i indexet är normalt, inte ett fel', () => {
   assert.equal(p.backfill.length, 1);
 });
 
+// ─────────────────────────────────────────────────────────────────────────
+// Q9–Q14: PROD-VÄGENS KOPPLINGSVAKTER MOT main() (TASK-360)
+// main() gör nätverksanrop (Airtable/Postgres) och kan inte köras hermetiskt
+// — samma begränsning Q1–Q8 redan löser genom att pröva KÄLLTEXTEN i stället
+// för att exekvera. Samma form här.
+// ─────────────────────────────────────────────────────────────────────────
+
+test('Q9: validateBaseGuard/validateProjectRef anropas MED override-objektet i main()', () => {
+  assert.match(KALLA, /validateBaseGuard\(policy, basId, \{ godkandEnv: airtableGodkandEnv \}\)/);
+  assert.match(
+    KALLA,
+    /validateProjectRef\(policy, ref, prodRef, \{ godkandEnv: refGodkandEnv \}\)/,
+  );
+});
+
+test('Q10: validateMiljoKonsistens är FAKTISKT anropad i main(), inte bara definierad', () => {
+  assert.match(KALLA, /validateMiljoKonsistens\(\{ basGodkand, refGodkand \}\)/);
+});
+
+test('Q11: bypass-loggningen är villkorad på basGodkand/refGodkand, ALDRIG ovillkorlig', () => {
+  assert.match(KALLA, /if \(basGodkand\) \{\s*\n\s*console\.error\(\s*\n\s*`BAS-GUARD/);
+  assert.match(KALLA, /if \(refGodkand\) \{\s*\n\s*console\.error\(\s*\n\s*`PROJEKT-REF-GUARD/);
+  assert.match(
+    KALLA,
+    /if \(lankUtfall\.lage === 'lankat-till-prod-godkand'\) \{\s*\n\s*console\.error\(/,
+  );
+});
+
+test('Q12: provaLanktillstand får prodGodkand: korMotProd — inte en fri sträng', () => {
+  assert.match(KALLA, /prodGodkand: korMotProd,/);
+});
+
+test('Q13: staging-semaforen hoppas ÖVER när korMotProd — aldrig ovillkorligt', () => {
+  // Ordningen (Q2) gäller fortfarande: preflighten ligger FÖRE denna gren.
+  assert.match(
+    KALLA,
+    /if \(!korMotProd\) \{\s*\n\s*kravStagingLedigt\('backfill-inbetalningar'\);/,
+  );
+});
+
+test('Q14: PROD_GODKAND_ENV_VAR läses ur process.env — aldrig hårdkodat värde', () => {
+  assert.match(KALLA, /const airtableGodkandEnv = process\.env\[PROD_GODKAND_ENV_VAR\];/);
+  assert.match(KALLA, /const prodRefBypassVar = await lasProdRefBypassVar\(\);/);
+  assert.match(
+    KALLA,
+    /const refGodkandEnv = prodRefBypassVar \? process\.env\[prodRefBypassVar\] : undefined;/,
+  );
+});
+
 // ═══════════════════════════════════════════════════════════════════════════
 // R — PATCH-HOPPET OCH REF-MASKERINGEN (granskningsrunda 2, fynd 4c/4d)
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1435,6 +1636,137 @@ test('R7: NEGATIV — inte heller fel-projekt-meddelandet bär hela refen', () =
   assert.equal(u.ok, false);
   assert.ok(!u.skal.includes('abcdefghijklmnopqrst'));
   assert.ok(!u.skal.includes(STAGING));
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// S — TASK-360 RUNDA 2 (review-fynd A + B, PR #2208 granskad SHA 0dfade88)
+// ═══════════════════════════════════════════════════════════════════════════
+
+const S_MINIMAL_PLAN = { eventpriser: [], backfill: [], avvikelser: [], hoppade: [] };
+const S_MINIMAL_FORE = {
+  antalAnmalningar: 0,
+  antalInbetalningar: 0,
+  summaKronor: 0,
+  antalMedKantPris: 0,
+  antalAlltBetalt: 0,
+  andelAlltBetaltAvAlla: 0,
+  andelAlltBetaltAvKantPris: 0,
+};
+
+await testAsync(
+  'S1: losToken — FYND A: prod-läge UTAN env-token vägrar UTAN att läsa .env.seed-fallbacken',
+  async () => {
+    let anropad = false;
+    const resultat = await losToken({
+      korMotProd: true,
+      envToken: undefined,
+      lasFallback: async () => {
+        anropad = true;
+        return 'FALLBACK-VARDE-UR-ENV-SEED';
+      },
+    });
+    assert.equal(resultat, null);
+    assert.equal(anropad, false, 'fallbacken fick ALDRIG anropas i prod-läge');
+  },
+);
+
+await testAsync(
+  'S2: losToken — FYND A: prod-läge MED env-token fortsätter, fallbacken anropas ändå inte',
+  async () => {
+    let anropad = false;
+    const resultat = await losToken({
+      korMotProd: true,
+      envToken: 'ETT-PROD-SCOPAT-TOKEN',
+      lasFallback: async () => {
+        anropad = true;
+        return 'FALLBACK';
+      },
+    });
+    assert.equal(resultat, 'ETT-PROD-SCOPAT-TOKEN');
+    assert.equal(anropad, false);
+  },
+);
+
+await testAsync(
+  'S3: losToken — staging-läge UTAN env-token läser fallbacken (OFÖRÄNDRAT beteende)',
+  async () => {
+    let anropad = false;
+    const resultat = await losToken({
+      korMotProd: false,
+      envToken: undefined,
+      lasFallback: async () => {
+        anropad = true;
+        return 'STAGING-VARDE-UR-ENV-SEED';
+      },
+    });
+    assert.equal(resultat, 'STAGING-VARDE-UR-ENV-SEED');
+    assert.equal(anropad, true, 'staging-läget SKA läsa fallbacken, precis som innan');
+  },
+);
+
+await testAsync(
+  'S4: losToken — staging-läge MED env-token vinner över fallbacken utan att anropa den',
+  async () => {
+    let anropad = false;
+    const resultat = await losToken({
+      korMotProd: false,
+      envToken: 'ETT-STAGING-TOKEN',
+      lasFallback: async () => {
+        anropad = true;
+        return 'FALLBACK';
+      },
+    });
+    assert.equal(resultat, 'ETT-STAGING-TOKEN');
+    assert.equal(anropad, false);
+  },
+);
+
+test('S5: kopplingsvakt — main() anropar losToken med lasFallback: lasTokenUrEnvFil', () => {
+  assert.match(KALLA, /const token = await losToken\(\{/);
+  assert.match(KALLA, /envToken: process\.env\.STAGING_AIRTABLE_TOKEN,/);
+  assert.match(KALLA, /lasFallback: lasTokenUrEnvFil,/);
+});
+
+test('S6: skrivRapport — FYND B: refen skrivs MASKERAD, aldrig okodad', () => {
+  const rapport = skrivRapport({
+    plan: S_MINIMAL_PLAN,
+    fore: S_MINIMAL_FORE,
+    efter: null,
+    utfor: false,
+    ref: PROD_REF,
+    basId: 'app8uGPrVCVOm6LfD',
+  });
+  assert.ok(PROD_REF, 'PROD_REF_PROD saknas i .prod-ref-policy.conf');
+  assert.ok(!rapport.includes(PROD_REF), 'rapporten får ALDRIG bära den okodade refen');
+  assert.ok(rapport.includes(maskeraRef(PROD_REF)), 'rapporten ska bära den MASKERADE refen');
+});
+
+test('S7: NEGATIV — skrivRapport maskerar ÄVEN en helt vanlig staging-ref (inte bara prod)', () => {
+  const rapport = skrivRapport({
+    plan: S_MINIMAL_PLAN,
+    fore: S_MINIMAL_FORE,
+    efter: null,
+    utfor: false,
+    ref: STAGING,
+    basId: POLICY.expectedBaseId,
+  });
+  assert.ok(!rapport.includes(STAGING), 'rapporten får inte bära den okodade STAGING-refen heller');
+  assert.ok(rapport.includes(maskeraRef(STAGING)));
+});
+
+test('S8: skrivRapport lämnar Airtable-bas-ID:t OKODAT (bokfört undantag, samma som resten av filen)', () => {
+  const rapport = skrivRapport({
+    plan: S_MINIMAL_PLAN,
+    fore: S_MINIMAL_FORE,
+    efter: null,
+    utfor: false,
+    ref: STAGING,
+    basId: 'app8uGPrVCVOm6LfD',
+  });
+  // Bas-ID:n maskeras INTE i denna fil (se t.ex. "BLOCKERAD bas: ${basId}") —
+  // detta test bevisar att fynd B:s fix inte råkade utvidgas dit den inte
+  // bads om.
+  assert.ok(rapport.includes('app8uGPrVCVOm6LfD'));
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
