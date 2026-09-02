@@ -249,7 +249,7 @@ cat > "${FIXTUR_ALLA}" <<'FIXTUR'
 cat <<'TABELL'
         NAME                       |                             DIGEST | UPDATED_AT (UTC)
   ---------------------------------|-------------------------------------|---------------------
-    INVITE_REDIRECT_URL            | 9b7efb779ddeb80236ff89f3e4aaadf2758 | 2026-09-02 07:56:00
+    INVITE_REDIRECT_URL            | deadbeef00112233                    | 2026-09-02 07:56:00
     CORS_ALLOWED_ORIGINS           | abc123def456                        | 2026-08-05 15:06:09
     DOCRAPTOR_API_KEY              | def456abc789                        | 2026-08-23 10:00:00
     JOBBMOTOR_DELAD_HEMLIGHET      | 1234567890abcdef                    | 2026-08-30 20:00:00
