@@ -11,7 +11,7 @@
 > Implementation-journal i `docs/BUILD-LOG.md`.
 > Styrande dokument: [`docs/byggplan.md`](../docs/byggplan.md)
 
-**S113 ⏸️ PAUSAD (paus 9, 2026-09-02 ~11:00 UTC — kontext 90 %, pre-compact STOPPAD per ADR-101 (andra impulsen), pipelinen medvetet EJ dränerad: `#2215`/`#2216`/`#2218` i review-loop, handoff i sessionsdok S113 § PAUSLÄGE paus 9; prod i nivå: front `2bf26258`, 55 EF deployade 10:49Z, backfill 327/812 000 kr; kort 358–366 + 346.15 + T182). Resume 8 var:** (resume 8, 2026-09-02 ~07:25 UTC, `lifecycle: active`;
+**Session 113 ▶️ ÅTERUPPTAGEN (resume 9, 2026-09-02 ~11:05 UTC, `lifecycle: active`; Marcus: *"Återuppta S113"* efter `/clear`; paus 9-PR `#2220` landad `701cfc9c`; pipelinen återtagen: `#2218`/`#2215` r2-granskare omspawnade i färsk kontext, `#2216` CONFLICTING efter `#2220` → main-versionen av instrumenteringsloggen + full paritet i bygge; post-merge-rött på `2bf26258` = `generate-event-attachment` "Internal error" ×3, omkörning startad; mandatet KVARSTÅR). Paus 9 var:** (paus 9, 2026-09-02 ~11:00 UTC — kontext 90 %, pre-compact STOPPAD per ADR-101 (andra impulsen), pipelinen medvetet EJ dränerad: `#2215`/`#2216`/`#2218` i review-loop, handoff i sessionsdok S113 § PAUSLÄGE paus 9; prod i nivå: front `2bf26258`, 55 EF deployade 10:49Z, backfill 327/812 000 kr; kort 358–366 + 346.15 + T182). Resume 8 var: (resume 8, 2026-09-02 ~07:25 UTC, `lifecycle: active`;
 Marcus: *"Återuppta S113 … jag behöver din vägledning"* → *"Jag vill att du kör
 runbooken!"* — **PROD-DRIFTSÄTTNINGEN KÖRD: steg 1–7 + 10 av orkestreraren
 (bypass per Marcus diktering), steg 9 av Marcus, steg 14 flaggan PÅ i prod
