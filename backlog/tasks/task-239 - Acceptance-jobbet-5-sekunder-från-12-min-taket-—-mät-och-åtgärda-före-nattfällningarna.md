@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-16 07:07'
-updated_date: '2026-08-17 07:46'
+updated_date: '2026-09-02 11:55'
 labels:
   - ready-for-agent
 dependencies: []
@@ -22,7 +22,7 @@ Forensik 2026-08-16 (R5, nyupptäckt obokförd rot): acceptance-väggklockan vä
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [x] #1 Tillväxtens orsak identifierad med mätning (Acceptance-steget på 817979a8^1 vs 817979a8, eller metrics:ci-serien) — inte antagen
-- [ ] #2 Åtgärd som återtar marginalen (>2 min till taket) utan reflexmässig takhöjning
+- [x] #2 Åtgärd som återtar marginalen (>2 min till taket) utan reflexmässig takhöjning
 - [ ] #3 Acceptance grön i nattnätet tre nätter i rad efter åtgärd (belägg: run-ID:n)
 - [x] #4 Webblasarbeteende-jobbets artefaktsteg (ci-suite.yml ~rad 433) får samma failure() || cancelled()-villkor — fynd ur task-237 2026-08-16: identiskt mönster, timeout-minutes: 8, samma blindhet vid takfällning
 <!-- AC:END -->
@@ -114,4 +114,123 @@ AC #2 EJ AVBOCKAD HÄRIFRÅN, med avsikt — samma precedent som task-236:s AC4:
 #1476-BENET: bedömt att INTE tillhöra detta korts klass (annat jobb, annan testklass, annan mekanism) → eget kort TASK-256 mintat i stället för en post här.
 
 GRINDAR (varv 2, lokalt, exitkoder fångade separat): actionlint -color -ignore 'unexpected key "queue"...' = 0 · yamllint -c .yamllint.yml ci-suite.yml = 0 · npm run typecheck = 0 · npx @biomejs/biome check . = 0 · npm run build = 0 · npm run test:api = 0 (862 passed, 2.2m) · npm run verify:ci-parity -- --list = 0 (och 2 i den riggade negativa kontrollen) · acceptance-delmängd 8 filer/66 tester = 0 · hermetik-självtest 7 filer/65 tester = 0.
+
+═══════════════════════════════════════════════════════════════
+VARV 3 (2026-09-02) — ORGANISK TILLVÄXT ÅT UPP MARGINALEN IGEN, SHARDAT.
+
+PREMISS-PASS (ADR-086): uppdragets run-ID:n och tider PRÖVADE mot gh api,
+INTE antagna. #2209:s två merge_group-körningar bekräftade exakt:
+33613134860 (Acceptance-jobbet 09:15:58→09:28:09 = 12m11s, cancelled) och
+33614762259 (09:33:50→09:45:59 = 12m09s, cancelled) — mönstret matchade,
+men de EXAKTA sekundtalen i uppdraget var en approximation ("12m9s" för
+den andra) mot mätta 12m09s (nästan exakt). Ingen substantiell divergens.
+
+NY MÄTNING (organisk tillväxt, INTE varv 2:s warmup-gate): acceptance-
+klassen växte 233 → 461 tester (+98 %) mellan 2026-08-17 (varv 2:s
+mätpunkt) och 2026-09-02 (npx playwright test --project=acceptance --list,
+disk-verifierat). En RENODLAD (icke kö-belastad) PR-CI-körning för PR #2209
+tog 461 s (7m41s) i den skarpa sviten ENSAM — redan mer än HELA varv 2:s
+projicerade ~7 min marginal. Under samtidig kö-last (flera parallella fulla
+sviter, se Del "PREMISS-PASS") blev det värre: cancelled på taket båda
+gångerna.
+
+ÅTGÄRD: Playwrights INBYGGDA `--shard=I/N` (INTE en tredje strukturell
+jobb-klyvning — den hävstången, som varv 2 använde för att separera
+hermetik-självtestet, är förbrukad: det finns bara EN skarp svit kvar i
+`acceptance`-jobbet). `strategy.matrix.shard` i ci-suite.yml, villkorad på
+SAMMA `inputs.acceptance_selection` steget redan konsumerar: tom urval
+(full klass, den enda ytan som sett cancellationerna) ⇒ 3 shards; satt
+urval (PR-ytans delmängd) ⇒ 1 shard, oförändrat beteende.
+
+KORREKTHET VERIFIERAD LOKALT (--list, ingen körning, disk-fakta):
+  shard 1/3: 155 tester, 21 filer
+  shard 2/3: 166 tester, 13 filer
+  shard 3/3: 140 tester, 19 filer
+  SUMMA: 461 tester, 53 filer — matchar full klass EXAKT, ingen
+  fil delad mellan shards (Playwrights `createTestGroups` grupperar per
+  fil, läst i den installerade 1.62.1:ans källkod:
+  node_modules/playwright/lib/runner/index.js). `--shard=1/1` gav 461/53
+  — bekräftar no-op-shard-egenskapen `.ci-parity-policy.json`s nya
+  exprSubstitutions (matrix.shard→"1", strategy.job-total→"1") vilar på.
+  Tom shard fäller ALDRIG "no tests found" (samma källa rad ~6178
+  undantar uttryckligen `config.shard`-läget), så URVAL-grenen (alltid
+  1 shard i denna design) är riskfri även om den någon gång skulle sköta.
+
+REAL KÖRNING LOKALT (inte CI, labeled därefter): shard 1/3 (155 tester)
+kördes skarpt — 155 passed (3.0m lokalt, 705 % CPU, flera workers). Bevisar
+att `npm run test:acceptance -- --shard=I/N`-formen fungerar end-to-end
+(dev-server, hermetik-vakt, warmup-gate). Lokal tid är INTE en CI-mätning
+(CLAUDE.md § "En lokal mätning projicerad till CI är inte en mätning") —
+den riktiga per-shard-väggklockan hämtas ur DENNA PR:s egen CI-körning,
+se PR-kroppen.
+
+TAKET RÖRDES INTE (12 min, oförändrat på båda jobben — AC #2:s krav
+"utan reflexmässig takhöjning").
+
+GRINDAR (varv 3, lokalt, exitkoder fångade separat):
+  actionlint -color -ignore 'unexpected key "queue"...' = 0
+  yamllint -c .yamllint.yml ci-suite.yml = 0
+  npm run verify:ci-parity:fast = 0 (33 gröna, 3 skippade --fast, 814,2 s)
+  npm run typecheck = 0
+  npx @biomejs/biome check . = 0 (pre-existing 14 warnings/81 infos, inga
+  nya, inga i rörda filer)
+  npm run build = 0
+  Direkt funktionsverifiering av exprSubstitutions (losStegEnv +
+  hittaOhanteradeUttryck importerade från scripts/verify-ci-parity.mjs):
+  ACCEPTANCE_SHARD_INDEX/TOTAL → "1"/"1", noll ohanterade uttryck.
+  test:api EJ körd — diffen rör uteslutande .github/workflows/ci-suite.yml
+  + .ci-parity-policy.json, inga src/-filer. check-langa-streck.mjs EJ
+  körd av samma skäl (grinden gäller src/, orört).
+
+AC #2 EJ AVBOCKAD HÄRIFRÅN, med samma precedent som varv 2 (och
+task-236:s AC4): kriteriet kräver >2 min marginal MÄTT ur PR-CI:ns
+`gh run view --json jobs`, och den mätningen finns först efter push. Följs
+upp i en uppföljningscommit med de riktiga shard-tiderna om marginalen
+håller.
+
+AC #2 BOCKAD — MÄTT UR PR #2216:s EGEN CI-KÖRNING (run 33619073362,
+pull_request-ytan, ingen samtidig kö-last), gh api .../actions/runs/
+33619073362/jobs:
+
+  Acceptance (hermetisk) (1) — 155 tester: 10:22:11→10:26:44 = 4m33s
+    (273s) → marginal 7m27s (~7,45 min) mot 12-min-taket
+  Acceptance (hermetisk) (2) — 166 tester: 10:22:10→10:26:24 = 4m14s
+    (254s) → marginal 7m46s (~7,77 min)
+  Acceptance (hermetisk) (3) — 140 tester: 10:22:10→10:26:19 = 4m9s
+    (249s) → marginal 7m51s (~7,85 min)
+
+Samtliga tre shards >7 min marginal — långt över AC #2:s krav (>2 min),
+taket 12 min ORÖRT. CI grönt per jobb på PR:en: Lint+Audit+TypeCheck,
+Pure+Build, Webblasarbeteende (2m8s), samtliga tre Acceptance-shards,
+Acceptance-sjalvtest, CI Passed or Skipped.
+
+OVÄNTAT FYND (ADR-053, registrerat — INTE åtgärdat i denna skiva,
+uppdraget scopade explicit bort acceptance-sjalvtest-jobbet): SAMMA
+CI-run visar acceptance-sjalvtest-jobbet (oshardat, kör hela 461-
+testklassen) på 11m15s (675s) — bara 45 SEKUNDERS marginal mot sitt
+EGNA, oförändrade 12-min-tak, i en RENODLAD pull_request-körning UTAN
+kö-last (alltså ett golv, inte ett värsta-fall). Samma organiska
+tillväxt-mekanism som orsakade acceptance-jobbets cancellation gäller
+detta jobb lika mycket, och det har ingen shard-marginal alls kvar.
+Rekommendation till orkestreraren: mint ett uppföljningskort som
+applicerar samma (eller motsvarande) sharding-mönster på
+acceptance-sjalvtest INNAN nästa organiska tillväxt-våg — annars är det
+sannolikt nästa jobb som kö-sparkar en PR, samma mönster som denna
+skiva just löste för acceptance-jobbet.
+
+AC #3 (tre gröna nätter) kvarstår öppen — kan inte bockas idag, kräver
+nattnätets tre körningar EFTER denna PR landat.
+
+PR: #2216, branch ci/task-239-acceptance-marginal-shard, head
+b8d97bcf (uppdaterad PR-kropp, ingen ny commit för denna anteckning).
+
+═══════════════════════════════════════════════════════════════
+MERGEBAR-GÖRNING (2026-09-02) — r1-fyndet betalt, PR #2216 uppdaterad.
+═══════════════════════════════════════════════════════════════
+
+Granskningens runda 1-fynd (orelaterade rader i docs/reference/review-instrumentering.jsonl, DoD #4 felaktigt bockad) åtgärdat: mergade origin/main (701cfc9c) in i grenen och löste konflikten i den filen genom att ta main-versionen rakt av (git checkout origin/main -- <fil>) — diffen mot origin/main för filen var TOM direkt efter, verifierat. DoD #4 nu sann.
+
+Full npm run verify:ci-parity kördes (info-fyndets krav: fullt läge, inte --fast, eftersom PR:en ändrar ci-suite.yml). Utfall: 34 gröna, 2 röda, 1711,8 s. Röda: Acceptance 459/461 (hem.acceptance.test.ts:313, mer-platser.acceptance.test.ts:68), Webblasarbeteende 108/109 (forberedelseskarm-hojdkedja.test.ts:166) — samtliga tre filer ligger UTANFÖR denna PR:s diff. Isolerad omkörning via fil:rad gav ERR_CONNECTION_REFUSED (dev-servern på port 18399 startas inte tillförlitligt av en delmängdskörning — samma klass av lokal-loadavg-artefakt som varv 1 redan bokförde ovan för test-ci-wait/acceptance-specs). CI på PR-ytans egen körning (0ddcc3f0) är grön: tre gröna Acceptance-shards + Webblasarbeteende pass. Klassat av orkestreraren som last-/timing-flake under den 28-minuters lokala helkörningen, inte en regression av denna PR:s diff.
+
+PR-kroppens grindtabell uppdaterad: :fast-raden ersatt med den fulla körningens faktiska utfall (se ovan).
 <!-- SECTION:NOTES:END -->
