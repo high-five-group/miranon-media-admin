@@ -343,6 +343,21 @@ export function BetalningsInkorg() {
   const [registrerade, setRegistrerade] = useState<SessionsRad[]>([]);
   /** Inbetalnings-ID vars Ångra-bekräftelse står öppen; `null` = ingen. */
   const [angraId, setAngraId] = useState<string | null>(null);
+  /**
+   * [TASK-369] PER-INBETALNING förhandsgransknings-status — se hela
+   * resonemanget i `forhandsgranskaKvitto`s docblock. `forhandsgranska`s
+   * EGEN `isPending`/`isError` (nedan) bär bara den SENAST STARTADE
+   * mutationens läge och kan därför aldrig svara på "väntar DEN HÄR raden?".
+   */
+  const [forhandsgranskaPagar, setForhandsgranskaPagar] = useState<ReadonlySet<string>>(
+    () => new Set(),
+  );
+  /** Senaste förhandsgransknings-felet — namngivet, så flera samtidiga fel
+   *  kan visas EN gång (senaste) utan att blanda ihop VEMs fel det är. */
+  const [forhandsgranskaFel, setForhandsgranskaFel] = useState<{
+    namn: string;
+    message: string;
+  } | null>(null);
   /* FOKUS-MÅLET ÄR NU BLOCKET SJÄLVT, inte dess rubrik (Marcus rev rubriken
      2026-09-01). Blocket är en `<section aria-label>` med `tabIndex={-1}`, så
      det är både fokuserbart programmatiskt och har ett tillgängligt namn att
@@ -852,30 +867,91 @@ export function BetalningsInkorg() {
    * medvetet INTE utbruten här: en enrads-vakt är ingen abstraktion värd
    * en modul, och att röra två redan levererade ytor kvällen före en demo
    * är fel tillfälle. Noterat som kandidat för ett senare pass.)
+   *
+   * ═══════════════════════════════════════════════════════════════════════
+   * [TASK-369] DEN DELADE `forhandsgranska.isPending`-VAKTEN ÄR RIVEN — OCH
+   * DEN VAR INTE BARA EN VISUELL BUGG
+   * ═══════════════════════════════════════════════════════════════════════
+   * Marcus prod (S116 start): tryckte Förhandsgranska på EN rad, och en HELT
+   * ANNAN rads knapp gick i laddläge också — bara ETT kvitto renderades.
+   * Rotorsaken sitter DJUPARE än `isPending`-fältet: `useForhandsgranskaKvitto()`s
+   * ENA mutation delas av ALLA rader, och `.mutate(id, { onSuccess, onError })`
+   * -formen (per-anrops-callbacks som ANDRA argument) lagras på TanStack
+   * Querys OBSERVATÖR — INTE på den enskilda mutationen. Källan
+   * (`@tanstack/query-core` `mutationObserver.js`, verifierad mot den
+   * installerade 5.101.4): `mutate()` skriver `this.#mutateOptions`
+   * OVILLKORAT och kör `this.#currentMutation?.removeObserver(this)` INNAN
+   * den nya mutationen kopplas på. Två överlappande klick skriver alltså
+   * över VARANDRAS callbacks och kopplar loss den FÖRSTA mutationens
+   * observatör — när rad A:s svar kommer tillbaka har den redan tappat sin
+   * lyssnare (rad B:s `.mutate()` kopplade loss den), så rad A:s FÖNSTER FÅR
+   * ALDRIG SIN ADRESS SATT. Det underliggande nätverksanropet
+   * (`mutationFn`) körde HELA TIDEN oberoende per anrop — det var aldrig
+   * problemet, bara vad Lotta SÅG av det.
+   *
+   * FIXEN: `mutateAsync()` I STÄLLET FÖR `.mutate(id, { onSuccess, onError })`.
+   * `mutateAsync` returnerar `Mutation.execute()`s EGEN promise — samma
+   * instans som ALDRIG passerar den delade observatören/`#mutateOptions` —
+   * så varje anrops `.then()` löser ut med SINA EGNA data oavsett hur många
+   * andra anrop som startat eller löst ut emellan. Den delade
+   * `useForhandsgranskaKvitto()`-mutationen i `kvitton.ts` är OFÖRÄNDRAD —
+   * bara ANROPSFORMEN här är ny.
+   *
+   * Laddläge och dubbelklicks-spärr läser nu `forhandsgranskaPagar` (ett
+   * lokalt `Set<inbetalningId>`) I STÄLLET FÖR `forhandsgranska.isPending`:
+   * den delade boolean:en visar ändå bara den SENAST STARTADE mutationens
+   * läge (samma `#currentMutation`-ersättning som ovan), så den hade aldrig
+   * kunnat bära per-rad-sanning ens om callback-bugen fixades för sig. Felet
+   * namnger nu personen (`forhandsgranskaFel`) i stället för att bara läsa
+   * `forhandsgranska.error` — av samma skäl: den delade mutationen vet inte
+   * VILKEN rad som senast felade.
+   *
+   * GRILLAD SAMSYN (S116 fråga 5, Marcus valde A "Oberoende"): bara den
+   * TRYCKTA knappen laddar, övriga är fria omedelbart; samma rad kan inte
+   * startas två gånger medan den renderar.
    */
   function forhandsgranskaKvitto(inbetalningId: string, namn: string) {
-    // Dubbelklicks-vakt. Knapparna bär `aria-disabled` och INTE `isDisabled`
-    // (se knapparnas egen kommentar), så spärren måste ligga här.
-    if (forhandsgranska.isPending) return;
+    // Per-inbetalning dubbelklicks-vakt — ERSÄTTER den rivna delade
+    // `forhandsgranska.isPending`-vakten. Knapparna bär `aria-disabled` och
+    // INTE `isDisabled` (se knapparnas egen kommentar), så spärren måste
+    // ligga här. Bara SAMMA rad spärras medan den renderar — övriga rader
+    // är fria (S116 beslut 5).
+    if (forhandsgranskaPagar.has(inbetalningId)) return;
 
-    // MÅSTE ske synkront, före mutate() och all await — se docblocket.
+    // MÅSTE ske synkront, före mutateAsync() och all await — se docblocket.
     const fonster = window.open('', '_blank');
     skrivLaddningssida(fonster, {
       titel: 'Skapar förhandsgranskningen …',
       text: `Ett ögonblick, kvittot till ${namn} renderas och visas här om några sekunder.`,
     });
 
-    forhandsgranska.mutate(inbetalningId, {
-      onSuccess: ({ url }) => {
-        if (fonster && !fonster.closed) fonster.location.href = url;
-      },
-      onError: () => {
-        // Stäng det tomma fönstret — felet sägs på SIDAN (`role="alert"`
-        // nedan), där Lotta faktiskt är. Ett kvarlämnat fönster med en
-        // laddningstext som aldrig blir något är ett löfte som inte infrias.
-        if (fonster && !fonster.closed) fonster.close();
-      },
-    });
+    setForhandsgranskaPagar((tidigare) => new Set(tidigare).add(inbetalningId));
+
+    void forhandsgranska
+      .mutateAsync(inbetalningId)
+      .then(
+        ({ url }) => {
+          if (fonster && !fonster.closed) fonster.location.href = url;
+        },
+        (fel: unknown) => {
+          // Stäng det tomma fönstret — felet sägs på SIDAN (`role="alert"`
+          // nedan), där Lotta faktiskt är. Ett kvarlämnat fönster med en
+          // laddningstext som aldrig blir något är ett löfte som inte infrias.
+          if (fonster && !fonster.closed) fonster.close();
+          setForhandsgranskaFel({
+            namn,
+            message: fel instanceof Error ? fel.message : 'Okänt fel',
+          });
+        },
+      )
+      .finally(() => {
+        setForhandsgranskaPagar((tidigare) => {
+          if (!tidigare.has(inbetalningId)) return tidigare;
+          const nasta = new Set(tidigare);
+          nasta.delete(inbetalningId);
+          return nasta;
+        });
+      });
   }
 
   const sidRam = <SidRam to="/mer" tillbakaEtikett="Tillbaka till Mer" />;
@@ -1497,18 +1573,22 @@ export function BetalningsInkorg() {
                           ur `children` — samma bredd-hopp-bugg som fixades på
                           biblioteksnivå i `Button.tsx`, fast handbyggd HÄR
                           också. `Button`s `isLoading` löser BÅDA (stabil
-                          bredd OCH stänger klick strukturellt under
-                          `forhandsgranska.isPending` — den gamla
-                          `aria-disabled`-formen var bara semantisk och
-                          spärrade ALDRIG `onPress` på primitiv-nivå;
-                          dubbelklicks-skyddet i `forhandsgranskaKvitto`
-                          nedan är oförändrat, detta är ett EXTRA lager). */}
+                          bredd OCH stänger klick strukturellt).
+
+                          [OMBYGGD TASK-369] `isLoading` läser
+                          `forhandsgranskaPagar.has(post.inbetalningId)` — ETT
+                          lokalt per-rad Set, INTE längre den delade
+                          `forhandsgranska.isPending` (den bar en ANNAN rads
+                          laddläge så fort två klick överlappade, se hela
+                          resonemanget i `forhandsgranskaKvitto`s docblock).
+                          Dubbelklicks-skyddet ligger DÄR (samma per-rad Set)
+                          — detta är ett EXTRA, strukturellt lager ovanpå. */}
                       {!enSamKo && kanForhandsgranska(post, vantandeIds) && (
                         <Button
                           intent="secondary"
                           emphasis="outline"
                           size="sm"
-                          isLoading={forhandsgranska.isPending}
+                          isLoading={forhandsgranskaPagar.has(post.inbetalningId)}
                           loadingText="Förhandsgranskar …"
                           aria-label={`Förhandsgranska kvittot till ${post.namn}`}
                           onPress={() => forhandsgranskaKvitto(post.inbetalningId, post.namn)}
@@ -1781,12 +1861,20 @@ export function BetalningsInkorg() {
                       ändrades, så bredden hoppade i klienten men
                       skärmläsaren fick ALDRIG någon annonsering av att
                       laddning pågick. Samma migrering som per-rad-knappen
-                      ovan (~rad 1500) redan bär. */}
+                      ovan (~rad 1500) redan bär.
+
+                      [OMBYGGD TASK-369] `isLoading` läser samma per-rad
+                      `forhandsgranskaPagar`-Set som radknappen ovan, INTE
+                      längre den delade `forhandsgranska.isPending` — se
+                      `forhandsgranskaKvitto`s docblock. Detta läge och
+                      radknappens läge är fortfarande ömsesidigt uteslutande
+                      (`enSamKo`), så samma inbetalningId förekommer aldrig i
+                      båda knapparna samtidigt. */}
                   {ensamKandidat !== null && kanForhandsgranska(ensamKandidat, vantandeIds) && (
                     <Button
                       intent="secondary"
                       emphasis="outline"
-                      isLoading={forhandsgranska.isPending}
+                      isLoading={forhandsgranskaPagar.has(vantande[0].inbetalningId)}
                       loadingText="Förhandsgranskar …"
                       aria-label={`Förhandsgranska kvittot till ${vantande[0].namn}`}
                       onPress={() =>
@@ -1872,10 +1960,21 @@ export function BetalningsInkorg() {
 
           {/* FELET SÄGS PÅ SIDAN, inte i det fönster som stängdes. `role="alert"`
               därför att Lotta just tryckte och väntar på något som inte kom —
-              samma form och samma klass som blockets övriga fel ovan. */}
-          {forhandsgranska.isError && (
+              samma form och samma klass som blockets övriga fel ovan.
+
+              [OMBYGGD TASK-369] Läser `forhandsgranskaFel` (lokalt state satt
+              av `forhandsgranskaKvitto`s `mutateAsync`-fel-gren), INTE längre
+              `forhandsgranska.isError`/`.error` — den delade mutationen vet
+              inte VILKEN rad som senast felade om två råkar överlappa
+              (samma `#currentMutation`-ersättning som docblocket vid
+              `forhandsgranskaKvitto` beskriver). Texten NAMNGER personen
+              (AC #4) — den gamla texten gjorde det inte. Fälar flera rader
+              samtidigt visas SENASTE, det räcker (S116 beslut 5, bokfört i
+              kortet): ingen kö av fel behövs, bara ett fel i taget blockerar
+              ingen annan rads knapp. */}
+          {forhandsgranskaFel && (
             <p role="alert" className="text-(color:--mm-input-error-text) text-caption">
-              {`Kvittot kunde inte förhandsgranskas: ${forhandsgranska.error.message}`}
+              {`Kvittot till ${forhandsgranskaFel.namn} kunde inte förhandsgranskas: ${forhandsgranskaFel.message}`}
             </p>
           )}
         </section>

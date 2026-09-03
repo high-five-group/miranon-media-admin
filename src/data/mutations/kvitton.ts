@@ -62,6 +62,23 @@ export function useKvittolank() {
  * klickets tick och sätt `location.href` när svaret kommer. Hooken öppnar
  * ingenting själv — popup-blockeraren stoppar annars fönstret, mätt skarpt
  * 2026-08-26 (`useForhandsgranskaBilaga.ts` § HISTORIK).
+ *
+ * [TASK-369] EN mutation delas av ALLA rader i `BetalningsInkorg.tsx` (bara
+ * EN `useForhandsgranskaKvitto()`-instans monteras, inte en per rad) — det
+ * är MEDVETET och OFÖRÄNDRAT av TASK-369. Anroparen MÅSTE dock använda
+ * `mutateAsync(inbetalningId).then(onFulfilled, onRejected)` — ALDRIG
+ * `mutate(id, { onSuccess, onError })` — så fort mer än en rad kan vara
+ * pending samtidigt. TanStack Querys `MutationObserver` lagrar
+ * `.mutate()`s ANDRA argument (per-anrops-callbacks) på OBSERVATÖREN, inte
+ * på den enskilda mutationen (`@tanstack/query-core` `mutationObserver.js`,
+ * verifierad mot installerad 5.101.4) — två överlappande `.mutate()`-anrop
+ * skriver då över VARANDRAS callbacks och kopplar loss den förstas
+ * observatör, så dess `onSuccess`/`onError` ALDRIG kallas. `mutateAsync`
+ * returnerar i stället `Mutation.execute()`s EGEN promise, som aldrig
+ * passerar den delade observatören. Se `BetalningsInkorg.tsx`s
+ * `forhandsgranskaKvitto`-docblock för hela resonemanget och den skarpa
+ * bugg detta ersatte (Marcus prod, S116 start: en obesläktad rad gick i
+ * laddläge och bara ETT av två kvitton renderades).
  */
 export function useForhandsgranskaKvitto() {
   const dataSource = useDataSource();
