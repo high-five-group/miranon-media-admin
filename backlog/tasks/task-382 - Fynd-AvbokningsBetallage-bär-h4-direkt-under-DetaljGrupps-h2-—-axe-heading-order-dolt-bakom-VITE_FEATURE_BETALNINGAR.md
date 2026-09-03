@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-03 12:43'
+updated_date: '2026-09-03 13:16'
 labels:
   - ready-for-agent
 dependencies: []
@@ -20,13 +21,13 @@ Symptom (källa: 368.5-byggarens slutrapport, PR #2267, 2026-09-03; HYPOTES till
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 AvbokningsBetallage renderar rubriken på rätt nivå; axe heading-order noll överträdelser med VITE_FEATURE_BETALNINGAR på
-- [ ] #2 Ett test prövar betalläget i avbokningssteget med flaggan på (hermetiskt), så regressionen fälls i CI
+- [x] #1 AvbokningsBetallage renderar rubriken på rätt nivå; axe heading-order noll överträdelser med VITE_FEATURE_BETALNINGAR på
+- [x] #2 Ett test prövar betalläget i avbokningssteget med flaggan på (hermetiskt), så regressionen fälls i CI
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->

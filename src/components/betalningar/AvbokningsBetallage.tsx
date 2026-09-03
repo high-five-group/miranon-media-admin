@@ -105,9 +105,9 @@ export function AvbokningsBetallage({ anmalanRecordId }: { anmalanRecordId: stri
 
   return (
     <div className="flex flex-col gap-2 rounded-xl bg-surface p-3">
-      <h4 className="my-0 font-medium text-caption text-text-secondary uppercase tracking-wide">
+      <h3 className="my-0 font-medium text-caption text-text-secondary uppercase tracking-wide">
         Betalläge
-      </h4>
+      </h3>
 
       {isPending ? (
         <p className="my-0 text-small text-text-muted" role="status">
