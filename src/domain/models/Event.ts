@@ -36,6 +36,18 @@ export interface Event {
   /** Kursnivå (Intro/Nivå 1-3) — se `kursfamilj` för formens fulla rationale. */
   kursniva?: string | null;
 
+  /**
+   * Eventets pris i kronor (TASK-368.7) — `Eventplanering.Pris (kr)` med
+   * `Eventinnehåll.Pris (kr)` som standard, löst server-side med SAMMA
+   * `valjPris` som ombokningens prisskillnad använder
+   * (`supabase/functions/_shared/event-map.ts` § EVENTETS PRIS).
+   *
+   * `null` = varken eventet eller standarden bär ett pris. `0` är ett SATT
+   * pris — pröva `=== null`, aldrig sanningsvärde. Optional speglar schemat:
+   * bakåtkompatibilitet mot cache/svar från före denna leverans.
+   */
+  pris?: number | null;
+
   // Beläggningens innehållsmodell (task-18.2; K16 — mappar basen 1-till-1).
   // Optional-fälten speglar schemat (utelämnas-vid-saknas, aldrig null —
   // 18.1:s eventKey-form): endast get-event aggregerar; get-events/

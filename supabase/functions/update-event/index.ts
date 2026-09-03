@@ -3,6 +3,7 @@ import { requireUser } from '../_shared/auth.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
 import { generateRequestId, mapErrorToResponse } from '../_shared/errors.ts';
 import { deriveManadAr, mapEventBas, mapEventKategorifalt } from '../_shared/event-map.ts';
+import { hamtaStandardpriser, standardprisFor } from '../_shared/eventpris.ts';
 import { findDisallowedField, getOperation } from '../_shared/field-allowlists.ts';
 
 // update-event — uppdaterar ett BEFINTLIGT event i Eventplanering (task-18.1,
@@ -58,6 +59,9 @@ import { findDisallowedField, getOperation } from '../_shared/field-allowlists.t
 
 const OPERATION_KEY = 'update-event';
 
+/** Loggprefix för uppslagets varning (`_shared/eventpris.ts` § ETT UPPSLAG SOM FALLERAR). */
+const LOGG = '[update-event]';
+
 // ISO-datum YYYY-MM-DD (Airtable date-fält-form; samma pragmatiska format-grind
 // som create-event — exakt kalender-validitet vilar på Airtable).
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
@@ -71,9 +75,19 @@ const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 // MEDVETET INTE till här — write-EF:en förblir ETT Airtable-anrop (fälten är ADDITIVT-
 // OPTIONAL i EventSchema); klienten MERGE-cachar (useUpdateEvent) och onSettled-
 // refetchen mot get-event bär hela modellen.
-function mapEvent(record: { id: string; fields: Record<string, unknown> }) {
+function mapEvent(
+  record: { id: string; fields: Record<string, unknown> },
+  standardPris: number | null,
+) {
   return {
-    ...mapEventBas(record),
+    // EVENTINNEHÅLL-STANDARDEN SLÅS UPP ÄVEN HÄR (TASK-368.7), trots att
+    // kortets AC #1 bara nämner get-event/get-events. Skälet är cachen, inte
+    // symmetrin: `useUpdateEvent` MERGE-cachar svaret
+    // (`{ ...prev, ...updated }`), så ett `pris: null` härifrån hade skrivit
+    // över ett korrekt uppslaget pris i detaljcachen med ett falskt tomt värde
+    // så fort Lotta redigerat eventet. Uppslaget kostar noll extra anrop när
+    // eventet har ett eget pris (`hamtaStandardpriser` frågar då inte alls).
+    ...mapEventBas(record, standardPris),
     ...mapEventKategorifalt(record),
   };
 }
@@ -243,13 +257,19 @@ Deno.serve(async (req) => {
 
     const updated = await updateAirtableRecord(operation.tableId, eventId, fields);
 
+    // Eventinnehåll-standarden (TASK-368.7) läses ur PATCH-SVARET, inte ur
+    // `existing`: svaret bär raden EFTER skrivningen, och en av de skrivbara
+    // nycklarna (`Typ`) ingår i uppslagsparet. Att slå upp mot förbilden hade
+    // gett standarden för eventets GAMLA typ.
+    const standardpriser = await hamtaStandardpriser([updated], LOGG);
+
     // Dubbel retur (create-event-mönstret): `event` = berikad domän-shape (adaptern
     // parse:ar denna i L2 och kan cache-sätta detaljen direkt); `record` = rått
     // skriv-bevis (id + fields) så staging-testet kan asserta att fälten sattes och
     // Månad/år omhärleddes.
     return new Response(
       JSON.stringify({
-        event: mapEvent(updated),
+        event: mapEvent(updated, standardprisFor(standardpriser, updated)),
         record: { id: updated.id, fields: updated.fields },
       }),
       {

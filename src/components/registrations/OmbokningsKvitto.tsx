@@ -5,7 +5,11 @@ import { visaKronor } from '@/components/betalningar/belopp-inmatning';
 import { REGISTRERA_TRIGGER_ID } from '@/components/betalningar/RegistreraYta';
 import { Button, MessageBox } from '@/components/primitives';
 import { betalningarPa } from '@/lib/funktionsflaggor';
-import { type Prisvag, prisbesked } from './ombokning-kvitto';
+// Se `OmbokningsSteg` § samma import: typen drar in
+// `HistoryState`-augmenteringen, som annars inte gäller i denna
+// kompileringsenhet och skulle göra `l.state.mmOmbokningsKvitto` okänd.
+import type { OmbokningsKvittoData } from './ombokning-kvitto';
+import { type Prisvag, prisbesked } from './ombokning-pris';
 
 /**
  * [TASK-368.5 AC #2/#3] Kvittot i klartext på den NYA anmälans sida, direkt
@@ -89,7 +93,9 @@ function TillBetalning({ vag }: { vag: Exclude<Prisvag, null> }) {
 }
 
 export function OmbokningsKvitto({ registrationId }: { registrationId: string }) {
-  const fran = useLocation({ select: (l) => l.state.mmOmbokningsKvitto });
+  const fran: OmbokningsKvittoData | undefined = useLocation({
+    select: (l) => l.state.mmOmbokningsKvitto,
+  });
   const [stangdFor, setStangdFor] = useState<string | null>(null);
 
   const kvitto = fran?.nyAnmalanId === registrationId ? fran : undefined;

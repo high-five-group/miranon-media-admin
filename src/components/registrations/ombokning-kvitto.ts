@@ -1,14 +1,17 @@
-import { visaKronor } from '@/components/betalningar/belopp-inmatning';
-
 /**
- * [TASK-368.5] Ombokningens kvitto: formen som bärs från bekräftelsesteget
- * till den NYA anmälans sida, och de rena funktioner som formulerar dess text.
+ * [TASK-368.5] Ombokningens kvitto: FORMEN som bärs från bekräftelsesteget till
+ * den NYA anmälans sida, plus routerns `HistoryState`-augmentering.
  *
  * Modulen är avsiktligt fri från React: den importeras av BÅDA sidorna av
  * navigeringen (`OmbokningsSteg` sätter kvittot, `OmbokningsKvitto` läser det),
  * och det är importen som gör `HistoryState`-augmenteringen nedan laddad i
  * båda. En augmentering i en av komponenterna hade varit osynlig för den andra
  * tills någon råkade importera den.
+ *
+ * TEXT- OCH TALLOGIKEN BOR I `ombokning-pris.ts` sedan `TASK-368.7` — se den
+ * filens huvud för varför augmenteringen nedan tvingar fram det snittet
+ * (`TS2664` i tests-projektet). Konsumenter importerar därifrån; denna fil bär
+ * bara typen och augmenteringen.
  */
 
 /**
@@ -45,78 +48,4 @@ declare module '@tanstack/react-router' {
         URL:en (URL-STATE-SPEC § "allt som påverkar VAD som visas"). */
     mmOmbokningsKvitto?: OmbokningsKvittoData;
   }
-}
-
-/** Vilken betalningsväg prisskillnaden pekar mot, om någon. */
-export type Prisvag = 'inbetalning' | 'aterbetalning' | null;
-
-export type Prisbesked = {
-  /** Meningen Lotta läser. Alltid en hel mening, alltid utan valuta-gissning. */
-  text: string;
-  vag: Prisvag;
-};
-
-/**
- * [AC #3] Prisskillnaden sagd rakt ut, i EN formulering som används både i
- * bekräftelsesteget och i kvittot efteråt — "efter bekräftelse visas SAMMA
- * text" är kortets ordalydelse, och två kopior hade kunnat glida isär.
- *
- * TECKNET ÄR SERVERNS: `prisskillnad` är `harledBetalning`s `saknas` för den
- * NYA anmälan, alltså nytt pris minus de aktiva inbetalningar som nu sitter
- * där. Positiv ⇒ personen ska betala mellanskillnaden; negativ ⇒ pengar ska
- * tillbaka; `0` ⇒ jämnt ut. Ingen egen prisregel härleds här.
- *
- * `null` PÅSTÅS ALDRIG VARA NOLL. Saknas priset (eventet har varken eget pris
- * eller en Eventinnehåll-standard) kan vi inte veta om något saknas — och
- * "samma pris" hade då varit ett påstående utan täckning. Texten säger i
- * stället att priset är okänt, och pekar mot ingen betalningsväg alls.
- */
-export function prisbesked(nyttPris: number | null, prisskillnad: number | null): Prisbesked {
-  if (prisskillnad === null) {
-    return {
-      text: 'Priset på det nya eventet är inte satt, så prisskillnaden går inte att räkna ut.',
-      vag: null,
-    };
-  }
-
-  const kostar = nyttPris === null ? null : `Nya eventet kostar ${visaKronor(nyttPris)} kr`;
-
-  if (prisskillnad === 0) {
-    // Kort bindestreck finns inte här, och det är inte kosmetik:
-    // `scripts/check-langa-streck.mjs` (CI-wirad) fäller långt streck i varje
-    // användar-synlig sträng, `TemplateElement` inkluderad. Kommatecknet bär
-    // samma paus och matchar AC #3:s egen ordform ("… eller 'samma pris'").
-    return { text: kostar === null ? 'Samma pris.' : `${kostar}, samma pris.`, vag: null };
-  }
-
-  const belopp = `${visaKronor(Math.abs(prisskillnad))} kr`;
-  const slut =
-    prisskillnad < 0 ? `${belopp} blir att återbetala.` : `${belopp} saknas på den nya anmälan.`;
-
-  return {
-    text: kostar === null ? slut.charAt(0).toUpperCase() + slut.slice(1) : `${kostar}, ${slut}`,
-    vag: prisskillnad < 0 ? 'aterbetalning' : 'inbetalning',
-  };
-}
-
-/**
- * Skälets text, EXAKT som servern kommer att skriva den — mål-delen av
- * `byggOmbokningsrad` (`supabase/functions/_shared/rebook-registration.ts`
- * § `byggOmbokningsmal`), utan dess datum-/aktörsstämpel.
- *
- * KÄLLPARITETEN ÄR MÄTT, INTE ANTAGEN (2026-09-03): serverns `lasEvent` läser
- * `namn` ur `selectName(f['Event (source)'])` och `startdatum` ur
- * `f['Startdatum']`; klientens `Event.eventNamn`/`startdatum` kommer ur
- * `_shared/event-map.ts` § `mapEventBas` — SAMMA två Airtable-fält, samma
- * coercion. Därför kan förhandsvisningen vara en sann utsaga om vad som
- * kommer att stå i Noteringen, i stället för en ungefärlig.
- *
- * DATUMET LÄMNAS I ISO-FORM med avsikt: serverns rad bär `Startdatum` rått
- * (`byggOmbokningsmal` gör ingen formatering), och ett svenskt långdatum här
- * hade gjort förhandsvisningen visuellt trevligare och sakligt falsk.
- */
-export function ombokningsskal(eventNamn: string | null, startdatum: string | null): string {
-  const namn = eventNamn?.trim() ? eventNamn.trim() : 'okänt event';
-  const datumDel = startdatum?.trim() ? `, ${startdatum.trim()}` : '';
-  return `Ombokad till ${namn}${datumDel}`;
 }

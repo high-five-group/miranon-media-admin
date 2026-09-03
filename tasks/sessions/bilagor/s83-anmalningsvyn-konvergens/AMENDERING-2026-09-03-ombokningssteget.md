@@ -1,4 +1,11 @@
-# Amendering 2026-09-03 — Ombokningssteget och väntelistepåminnelsen tillkommer på anmälans detaljsida (TASK-368.5)
+# Amendering 2026-09-03 — Ombokningssteget, väntelistepåminnelsen och prisbeskedet före bekräftelsen tillkommer på anmälans detaljsida (TASK-368.5, TASK-368.7)
+
+> **Denna fil bär TVÅ skivor på samma yta.** `TASK-368.5` lade steget;
+> `TASK-368.7` lade prisbeskedet FÖRE bekräftelsen och stängde därmed den
+> gräns `368.5` bokförde här (§ Gränser, andra punkten — omskriven, inte
+> struken). Ingen ny amenderingsfil skapades: `ADR-102` § A3 klass (c)
+> bokför ÄNDRINGEN AV YTAN, och två filer om samma steg hade gjort det
+> omöjligt att läsa vad som faktiskt står där i dag.
 
 > **Varför denna sidofil, och varför i DENNA katalog.** Samma skäl som
 > [`AMENDERING-2026-09-03-avbokningssteget.md`](AMENDERING-2026-09-03-avbokningssteget.md)
@@ -72,9 +79,25 @@ förklarande text, ett frivilligt skäl, betalläget (flaggat) och knappraden
   (`OmbokningsSteg.tsx`): en egen `<fieldset>` med `<legend class="sr-only">`
   *"Boka om anmälan för `<namn>` till ett annat event"*, innehållande husets
   `EventValjare` i `form="fristaende"` (kommande event, default-omfattningen),
-  en **läsbar** skälrad, en mening om vad som händer med pengarna,
-  väntelistepåminnelsen, en felrad och knappraden **Avbryt · Boka om
-  anmälan**.
+  en **läsbar** skälrad, en **prisruta** (se nedan), väntelistepåminnelsen,
+  en felrad och knappraden **Avbryt · Boka om anmälan**.
+- **Prisrutan (`TASK-368.7`)**, mellan skälraden och väntelistepåminnelsen:
+  samma inramning som skälrutan (`rounded-xl bg-bg-muted p-3`) med rubriken
+  **Pris** som `<h3>` — SAMMA rubriknivå som Skäl, och av samma mätta skäl
+  (axes `heading-order` fäller ett hopp från `DetaljGrupp`s `<h2>`). Rutan bär
+  prisbeskedet i EXAKT kvittots ordalydelse (`prisbesked`, en funktion med två
+  anropare) plus raden *"Inbetalningarna som sitter på den här anmälan flyttas
+  till den nya. Servern räknar om beloppet vid bekräftelsen."*
+
+  **Rutan står inte alltid framme, och det är avsiktligt.** Beskedets andra
+  led är de aktiva inbetalningar som följer med, hämtat ur
+  `hamta-inbetalningar` bakom `VITE_FEATURE_BETALNINGAR`. Är summan okänd —
+  flaggan av, hämtningen pågår, EF:en föll — visas i stället `368.5`:s
+  ursprungliga mening (*"Inbetalningarna … Prisskillnaden räknas ut av servern
+  och visas på den nya anmälans sida."*). Att i det läget skicka `null` in i
+  `prisbesked` hade gett *"Priset på det nya eventet är inte satt"*, alltså en
+  FALSK utsaga om ett event som bevisligen är prissatt. Två skilda okändheter
+  får inte säga samma sak.
 - **Väntelistepåminnelsen** (`VantelistePaminnelse.tsx`) i BÅDA
   bekräftelsestegen, mellan betalläget och felraden: *"N personer väntar på
   plats."* plus länken *"Öppna väntelistan"* (`/mer/vantelista`). Raden
@@ -120,9 +143,10 @@ klass (c) och avgörs av Marcus, inte av B1."* Osäkerhetsregeln ("osäkert ⇒
 klass (c)") pekar åt samma håll.
 
 **Mätningen som klassningen vilar på** (hermetisk fixturvärld,
-`tests/acceptance/anmalan-ombokning.acceptance.test.ts`, **16/16 gröna**
-2026-09-03, plus `anmalan-avbokning` + `anmalan-detalj` **16/16 gröna** som
-regressionskontroll):
+`tests/acceptance/anmalan-ombokning.acceptance.test.ts` — **16/16 gröna** vid
+`368.5`, **19/19 gröna** efter `368.7`s tillägg, båda 2026-09-03; plus
+`anmalan-avbokning` + `anmalan-detalj` **16/16 gröna** som regressionskontroll
+i båda omgångarna):
 
 - knappraden i avbokningssteget har tre knappar i den ordning som anges ovan;
 - ombokningsvyn ersätter avbokningsformen (`toHaveCount(0)` på både
@@ -131,7 +155,10 @@ regressionskontroll):
 - kvittot syns på den NYA anmälans URL och aldrig på den gamlas;
 - väntelisteraden visas vid 3 väntande och uteblir helt vid 0;
 - `axe` **0 violations** i ombokningssteget och i kvittot, på 1280 px och
-  768 px.
+  768 px — omkört efter `368.7`s prisruta, med dess `<h3>` på plats;
+- prisrutan står INTE framme när inbetalningssumman är okänd, och steget
+  påstår då varken ett belopp eller ett osatt pris (`368.7`s eget
+  acceptansfall).
 
 ## Vad som INTE är amenderat
 
@@ -170,15 +197,24 @@ regressionskontroll):
   båda sidor, `ombokning-kvitto.ts` § KÄLLPARITETEN). **Avgörs av Marcus:**
   antingen stryks "(redigerbart)" ur AC #2, eller så får EF:en ett `skal`-fält
   i en egen skiva.
-- **Prisskillnaden sägs i siffror EFTER bekräftelsen, inte före** — mot
-  kortets AC #3, som vill ha den i båda lägena. Ingen klient-läsbar yta bär
-  eventets pris: `get-event`/`get-events` returnerar inget prisfält
-  (disk-verifierat mot `supabase/functions/_shared/event-map.ts` och
-  `src/domain/schemas/Event.schema.ts`, 2026-09-03), och `rebook-registration`
-  har inget torrkörningsläge. Steget säger därför vad som HÄNDER med pengarna;
-  kvittot säger beloppet, med serverns egna `nyttPris`/`prisskillnad`. **Vägen
-  fram är ett serverbeslut** (ett prisfält i `get-event`, eller ett
-  torrkörningsläge i EF:en) och tas inte av denna skiva.
+- ~~**Prisskillnaden sägs i siffror EFTER bekräftelsen, inte före**~~ —
+  **STÄNGD av `TASK-368.7` (2026-09-03).** `368.5` bokförde här att ingen
+  klient-läsbar yta bar eventets pris och att vägen fram var ett serverbeslut.
+  Det beslutet togs: `get-event`/`get-events`/`update-event` bär nu `pris`
+  (prisets nivå 2 med Eventinnehåll-standarden som nivå 3, löst med SAMMA
+  `valjPris` som serverns egen prisskillnad — `_shared/event-map.ts`
+  § EVENTETS PRIS + `_shared/eventpris.ts`), och steget räknar beskedet ur
+  `pris` minus de aktiva inbetalningar som följer med. Torrkörningsläget i
+  EF:en behövdes aldrig.
+
+  **Vad som ÅTERSTÅR av gränsen, öppet:** beskedet kräver
+  inbetalningssumman, som ligger bakom `VITE_FEATURE_BETALNINGAR`. I
+  fixturvärlden är flaggan `'av'`, så acceptansklassen kan inte visa
+  beskedets tre grenar — de prövas i stället uttömmande mot serverns egen
+  härledning i `tests/api/ombokning-prisparitet.test.ts` (**117 fall gröna**
+  tillsammans med `event-map.test.ts`, 2026-09-03). Flaggflippen är
+  `TASK-346.6/346.7`s arbete, som `playwright.config.ts`s egen rad redan
+  pekar ut.
 - **Knappen till Registrera betalning/återbetalning i kvittot ligger bakom
   miljöflaggan `VITE_FEATURE_BETALNINGAR`** och saknar därför
   acceptans-täckning: `playwright.config.ts` sätter flaggan till `'av'` för
@@ -200,6 +236,31 @@ därför aldrig prövats av axe. Fyndet är rapporterat till orkestreraren, inte
 tyst lagat: filen tillhör betalningsdomänen och ändringen hör hemma i en egen
 landning (`ADR-053` § blockerar ej + värdefullt).
 
+## Skuld som `TASK-368.7` lämnar efter sig — INTE betald av dess PR
+
+**Staging-EF:erna är inte deployade med prisfältet.** ADR-050 § Konsekvenser:
+*"Ingen deploy-automatik (manuell `supabase functions deploy`)"* — och ingen
+workflow i `.github/workflows/` deployar Edge Functions till staging
+(disk-verifierat 2026-09-03). De tre nya conformance-fallen i
+`tests/api/get-event.staging.test.ts` faller därför tills `get-event`,
+`get-events` och `update-event` deployats till staging-projektet.
+
+**Det är mätt, inte befarat, och det är ett TVÅSIDIGT bevis att grinden
+biter:** körningen 2026-09-03 mot den då deployade (gamla) EF:en gav
+**12 passade, 3 fällda**, och fällningsskälet var exakt rätt —
+`get-events utelämnade \`pris\` för en rad: {"id":"rec1VuPVUPH7a3bq7", …}`.
+Efter deploy ska samtliga 15 passera.
+
+**PR:ens egen CI påverkas inte:** `ci.yml` skickar `run_staging: false`
+villkorslöst (rad ~2001), så staging-klassen körs inte på PR-ytan. Skulden
+träffar i stället `post-merge`/`nightly`, och den betalas av en deploy — inte
+av en ändring i testet.
+
+Deployen är INTE utförd av byggagenten, med avsikt: den är en skarp operation
+mot en delad miljö där `supabase link`-tillståndet är sticky och osynligt
+(`CLAUDE.md` § Prod-EF-deploy beskriver samma fällklass), och andra agenters
+staging-körningar delar basen. Åtgärden ligger hos orkestreraren.
+
 ## Omstämplings-läge
 
 **Väntar på Marcus omstämpling** (`ADR-104` beslut 1–2), tillsammans med
@@ -209,4 +270,4 @@ stämpel-fält är rört av denna commit: ytan har inget manifest att röra, och
 `cb7ad681`.
 
 `bash scripts/check-facit.sh` → **exit 0**, före och efter denna commit
-(mätt 2026-09-03).
+(mätt 2026-09-03, om efter `TASK-368.7`s tillägg).
