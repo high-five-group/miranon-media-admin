@@ -71,6 +71,33 @@ import { VantelistePaminnelse } from './VantelistePaminnelse';
  * (avtalat pris vinner per anmälan). Vägen fram — ett prisfält i `get-event`
  * eller ett torrkörningsläge i EF:en — är ett serverbeslut och rapporterat
  * som sådant.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * STEGET STÄNGS INTE AV `bekrafta()` — DET AVMONTERAS AV NAVIGERINGEN
+ * ═══════════════════════════════════════════════════════════════════════════
+ * Till skillnad från `AvbokningsYta.bekraftaAvbokning()`, som anropar
+ * `stangSteget()` i sin `onSuccess`, gör denna funktion ingenting med
+ * `AvbokningsYta`s `oppen`/`vy` — den navigerar bara. Den asymmetrin är
+ * medveten och MÄTT, inte förbisedd (review `#2267` runda 1 reste exakt denna
+ * fråga, härledd ur koden):
+ *
+ * En ombokning byter BÅDE `$eventId` och `$registrationId` i routen, och
+ * `AnmalanDetail` med hela sitt underträd remountas då — `AvbokningsYta`s
+ * state nollställs alltså av React, inte av ett anrop. Mätt 2026-09-03 med ett
+ * tillfälligt mount-instrument (slumpat id på gruppens rot, avläst före och
+ * efter navigeringen) i BÅDA cache-lägena: en förstagångs-ombokning
+ * (`remount=true`) och en andra ombokning till en mål-anmälan vars detalj
+ * redan låg färsk i cachen (`remount=true`). Instrumentet är borttaget;
+ * beteendet bevakas i stället av tre acceptansfall i
+ * `anmalan-ombokning.acceptance.test.ts` — steget stängt efter landning, samma
+ * sak när målsidan är cachad, och att varken skältexten eller det valda
+ * eventet läcker till den nya anmälan.
+ *
+ * VAD DET HÄNGER PÅ, öppet deklarerat: att målet ALLTID är ett annat event.
+ * Servern garanterar det (`beslutaOmbokning` avvisar samma event med 409
+ * `samma_event`), men om den regeln någon gång mjukas upp faller remounten och
+ * steget skulle stå kvar öppet. Vakterna ovan fäller då — de finns just för
+ * att korrektheten här vilar på en mekanism denna fil inte äger.
  */
 export function OmbokningsSteg({
   registrationId,

@@ -370,8 +370,125 @@ test.describe('Boka om till annat event (TASK-368.5)', () => {
     await expect(kvitto.getByRole('button', { name: 'Registrera betalning' })).toHaveCount(0);
     await expect(kvitto.getByRole('button', { name: 'Registrera återbetalning' })).toHaveCount(0);
 
+    // AVBOKNINGSGRUPPEN ÄR I SITT VILOLÄGE PÅ DEN NYA ANMÄLAN (review #2267
+    // runda 1). Navigeringen går till SAMMA route-mönster med bara nya
+    // param-värden, och ett param-byte remountar inte komponenten
+    // (`OmbokningsKvitto` § HÄRLETT VID VARJE RENDER, mätt i denna svit). Utan
+    // en identitetsbunden nollställning hade `AvbokningsYta`s `oppen`/`vy` och
+    // `OmbokningsSteg`s `nyttEventId` överlevt hit — Lotta hade landat på den
+    // NYA anmälan med ombokningsformuläret öppet och det FÖREGÅENDE målet
+    // ifyllt, ett tryck från att boka om den nyss skapade anmälan.
+    await expect(page.getByRole('group', STEG_NAMN)).toHaveCount(0);
+    await expect(page.getByRole('group', { name: /^Avboka anmälan för/ })).toHaveCount(0);
+    await expect(page.getByRole('button', BEKRAFTA_KNAPP)).toHaveCount(0);
+    // Gruppen finns kvar i sitt STÄNGDA läge — den nya anmälan är aktiv.
+    await expect(page.getByRole('button', AVBOKA_KNAPP)).toBeVisible();
+
     // Kontraktet: EXAKT de två ID:na, ingenting annat (`RebookRegistrationInput`).
     expect(rebookCalls).toEqual([{ registrationId: ANNA, nyttEventId: EVENT_SAMMA }]);
+  });
+
+  /**
+   * REGRESSIONSVAKT, review #2267 runda 1 — det fall där kvarhängande
+   * steg-state FAKTISKT kan uppstå.
+   *
+   * Granskaren härledde ur koden att `AvbokningsYta`s `oppen`/`vy` och
+   * `OmbokningsSteg`s `nyttEventId` överlever navigeringen, eftersom ett
+   * param-byte inom samma route inte remountar. Fallet ovan ("samma pris")
+   * visar att det INTE sker på en förstagångs-ombokning — och mätningen
+   * förklarar varför: den nya anmälans detalj finns inte i cachen, så
+   * `AnmalanDetail` går genom sitt pending-läge, byter hela gruppträdet mot
+   * skeleton och AVMONTERAR `AvbokningsYta`. Avmonteringen nollställer state
+   * som en bieffekt.
+   *
+   * Den maskeringen faller bort så fort den nya anmälans detalj REDAN ligger
+   * färsk i cachen (persist-lagret, `staleTime` 5 min — `src/router.ts`): då
+   * finns inget pending-läge, ingen avmontering, och state överlever. Exakt
+   * det inträffade i denna fils axe-test under bygget: varv 2 nådde aldrig
+   * kvittot eftersom komponenten inte remountades. Granskarens hypotes var
+   * alltså riktig — den gällde bara ett smalare fall än den beskrev.
+   *
+   * Testet framkallar villkoret genom TVÅ ombokningar i rad utan omladdning:
+   * den första fyller cachen för mål-anmälan, den andra landar på en sida vars
+   * data redan är färsk.
+   */
+  test('andra ombokningen i rad: steget står INTE kvar öppet när målsidan redan är cachad', async ({
+    page,
+    network,
+  }) => {
+    mocka(network, {
+      detaljer: [detalj(), detalj({ id: ANNA_TVA, anmalanId: 249 })],
+      svar: { nyttPris: 2500, prisskillnad: 0, summaNyAnmalan: 2500 },
+    });
+
+    // Ombokning 1 — fyller `registrations.detail(NY_ANMALAN)` i cachen.
+    const forsta = await oppnaOmbokningen(page);
+    await valjEvent(page, 'Resor i medvetandet 3');
+    await forsta.getByRole('button', BEKRAFTA_KNAPP).click();
+    await expect(page).toHaveURL(`/event/${EVENT_SAMMA}/anmalan/${NY_ANMALAN}`);
+    await expect(page.getByTestId('ombokningskvitto')).toBeVisible();
+
+    // Ombokning 2 — SAMMA mål-anmälan, nu med färsk cache. Ingen omladdning
+    // mellan: `oppnaOmbokningen` navigerar client-side via `page.goto` till en
+    // annan anmälan, och cachen överlever i localStorage.
+    const andra = await oppnaOmbokningen(page, ANNA_TVA);
+    await valjEvent(page, 'Resor i medvetandet 3');
+    await andra.getByRole('button', BEKRAFTA_KNAPP).click();
+    await expect(page).toHaveURL(`/event/${EVENT_SAMMA}/anmalan/${NY_ANMALAN}`);
+
+    // Kvittot syns — och steget är STÄNGT. Utan identitetsbunden nollställning
+    // faller minst en av dessa.
+    await expect(page.getByTestId('ombokningskvitto')).toBeVisible();
+    await expect(page.getByRole('group', STEG_NAMN)).toHaveCount(0);
+    await expect(page.getByRole('button', BEKRAFTA_KNAPP)).toHaveCount(0);
+    await expect(page.getByRole('button', AVBOKA_KNAPP)).toBeVisible();
+  });
+
+  /**
+   * Samma felklass som ovan, prövad på det state som är LÄSBART utifrån:
+   * avbokningsvyns fritextskäl. Överlever det navigeringen bär `AvbokningsYta`
+   * med sig sitt tillstånd till en annan anmälan — och då gäller det `oppen`,
+   * `vy` och `OmbokningsSteg`s valda event lika mycket, eftersom allt sitter i
+   * samma komponentinstans.
+   *
+   * Detta är den DIREKTA mätningen av granskarens hypotes: skältexten är den
+   * enda av de fyra tillstånden som går att observera genom UI:t utan ett
+   * instrument i produktionskoden.
+   */
+  test('inget steg-tillstånd läcker mellan anmälningar över en ombokning', async ({
+    page,
+    network,
+  }) => {
+    mocka(network, {
+      detaljer: [detalj()],
+      svar: { nyttPris: 2500, prisskillnad: 0, summaNyAnmalan: 2500 },
+    });
+
+    // Skriv i avbokningsvyns skälfält, byt sedan till ombokningen och bekräfta.
+    await page.goto(`/event/${EVENT_FRAN}/anmalan/${ANNA}`);
+    await page.getByRole('button', AVBOKA_KNAPP).click();
+    await page
+      .getByRole('group', { name: 'Avboka anmälan för Anna Andersson' })
+      .getByRole('textbox', { name: 'Skäl (frivilligt)' })
+      .fill('Detta får aldrig följa med till en annan anmälan.');
+
+    await page.getByRole('button', BOKA_OM_KNAPP).click();
+    const steg = page.getByRole('group', STEG_NAMN);
+    await valjEvent(page, 'Resor i medvetandet 3');
+    await steg.getByRole('button', BEKRAFTA_KNAPP).click();
+    await expect(page).toHaveURL(`/event/${EVENT_SAMMA}/anmalan/${NY_ANMALAN}`);
+
+    // På den NYA anmälan: öppna avbokningssteget och läs fältet. Ett kvarhängande
+    // skäl vore samma läcka som ett kvarhängande ombokningsval.
+    await page.getByRole('button', AVBOKA_KNAPP).click();
+    const nyttSteg = page.getByRole('group', { name: 'Avboka anmälan för Anna Andersson' });
+    await expect(nyttSteg.getByRole('textbox', { name: 'Skäl (frivilligt)' })).toHaveValue('');
+
+    // Och ombokningsvyn börjar från noll — inget förvalt event.
+    await page.getByRole('button', BOKA_OM_KNAPP).click();
+    const nyttOmbokningssteg = page.getByRole('group', STEG_NAMN);
+    await expect(nyttOmbokningssteg).not.toContainText('Ombokad till');
+    await expect(nyttOmbokningssteg.getByRole('button', BEKRAFTA_KNAPP)).toBeDisabled();
   });
 
   test('dyrare event: kvittot säger att beloppet saknas', async ({ page, network }) => {
