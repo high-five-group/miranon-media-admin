@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-09-02
+updated: 2026-09-03
 review_by: 2026-11-30
 status: stable
 lifecycle: paused
@@ -68,6 +68,26 @@ meningslös loop? … det kanske händer jätteofta fast vi inte vet om det."*
 
 Klassning (ADR-053): blockerar inte nuvarande arbete, men värdefullt. Defer
 till detta register.
+
+## Instansdata S114 2026-09-03
+
+Marcus flaggade explicit att review-loopens tidsåtgång hör till
+arbetssätts-frågan denna tråd bär, mitt i TASK-374-promoveringen:
+*"Fan vilken tid det tar för en sådan enkel promovering eller?"* →
+orkestreraren föreslog hopvikning av tre skivor i en landning; Marcus:
+*"Okej kör på. Jag tror vi har reggat kort eller trådar på vårt
+'arbetssätt', så vi har planerat att kolla på hur vi jobbar för att
+kunna effektivisera."* Mätt tidtabell för en fristående skiva
+(`374.1`, sessionsdok S114 Del 6): bygge 30 min · review runda 1
+13 min · fix 13 min · review runda 2 5 min · kö 14 min · post-merge
+11 min ≈ **1 h 25 min per skiva**. Hopvikningen av tre skivor i en
+landning (`374.2`+`374.3`+`374.4`, anmälningssidans precedent)
+sparade uppskattningsvis cirka 1 timme mot att landa dem var för sig.
+Jämförelsepunkt: ADR-103 B5:s egen mätning låg på 150 min/skiva.
+
+Detta är instansdata till frågan "hur ofta/hur mycket tar
+review-loopen", inte en lösningsdesign — samma status som resten av
+kortet.
 
 ## Nästa steg
 

@@ -3,9 +3,10 @@ id: TASK-374
 title: >-
   PRD: Promovering av B3 — Intresserade-listan från konvergensyta till skarp vy
   (ADR-103 B2)
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-03 09:18'
+updated_date: '2026-09-03 14:25'
 labels: []
 dependencies: []
 ordinal: 675000
@@ -92,9 +93,32 @@ ADR-102 (prototypen är facit), ADR-103 (promoveringsformen; B2 ordningen, B4 be
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #4 check-facit.sh exit 0 efter skivan — markör-invarianten (c) är global, avregistrering i samma commit som rivning (ADR-102 B3)
-- [ ] #5 ariaSnapshot-paret grönt i BÅDA vyporterna där skivan rör ytan (ADR-103 B4)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 check-facit.sh exit 0 efter skivan — markör-invarianten (c) är global, avregistrering i samma commit som rivning (ADR-102 B3)
+- [x] #5 ariaSnapshot-paret grönt i BÅDA vyporterna där skivan rör ytan (ADR-103 B4)
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+B3 (Intresserade-listan) promoverad från stämplat facit
+(`tasks/sessions/bilagor/s114-intresserade-konvergens/facit.json`,
+`b391dffe`) till skarp vy i prod, genom fem skivor på Marcus fulla
+mandat (*"Du har mandat att bedöma skarvarna och gå vidare."*):
+
+- `374.1` referenser + härdning — PR #2248 → `bb793c86` (Done).
+- `374.2` flippen (rename till skarp form) — hopvikt med 374.3+374.4 i
+  PR #2263 → `2df040c6`, anmälningssidans precedent 299.5 (Done).
+- `374.3` Marcus-granskningen på mandat, kvittens ordagrant — samma
+  landning (Done).
+- `374.4` rivningen av prototyp-substratet + AC #4 (visuella
+  baslinjer) via riktad baseline-PR #2273 → `6a70368b` (Done).
+- `374.5` QA-vandring i staging, 12 punkter; prod-punkter som kräver
+  inloggning öppna åt Marcus (Vercel Deployment Protection) (Done).
+
+Prod-deployment `6245094695` för `2df040c6`: success, 2026-09-03
+13:34:00Z — B3 är i prod på admin.miranon.dev. Full narrativ:
+sessionsdok `tasks/sessions/2026-08-31-session-114.md` Del 5–6.
+<!-- SECTION:FINAL_SUMMARY:END -->

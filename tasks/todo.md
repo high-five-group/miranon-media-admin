@@ -53,28 +53,35 @@ facit → röktest-listan. Bokfört: TASK-357 mintad (seed-review-prisfälten) �
 
 **Session 115 ▶️ AKTIV (2026-09-03, `lifecycle: active`; kontrollerad kompaktering ~12:30 UTC, Del 6) — AVBOKNING I APPEN + RIM 3-FYNDEN.** Prod-incident (inbetalning försvann ur inkorgen = flikens minne, `TASK-367`), prod-läsväg via låsets bypass (research: läsroll), grillning → PRD `TASK-368` + sex skivor; 368.1 räknarfixen i prod (rollup + formler, 213.8/213.9 Done), 368.2 operationen landad, 368.3 i kön (`#2246`), 368.4 runda 2 (`#2247`, ADR-130, adoption begränsad på Marcus beslut), 368.5 nästa; RIM 3-fynden `TASK-372` (spökflagga, landad `#2244`) + `TASK-373` (mätaren, `#2245`); uppföljningskort 371, 375–377. **NÄSTA:** #2247 runda 2 → 368.5 (Opus) → 368.6 QA (Marcus) → prod-deploy (Marcus, fas4) → stängning + `session-end`. Numrering: ADR 131 · kort 378 · L655 · T184. Full narrativ: sessionsdok S115 Del 1–6.
 
-**Session 114 ▶️ ÅTERUPPTAGEN (resume 1, 2026-09-03, `lifecycle: active`; Marcus: *"Återuppta
-S114."* → *"Kör"* — paus-landningen `#2180` hade ALDRIG nått `main` [CONFLICTING, 119 bakom]:
-rebasad, resume 1 i SAMMA PR, docs-only; huvudkatalogen ägs av S115, S114 kör i worktrees
-`agent-a3598b0c76db67d14` [landning] + `s114-segment` [iteration]) — SEGMENT + INTRESSERADE:
-VÅG A LANDAD, VÅG B-SAMSYN GRILLAD, KONVERGENSYTORNA SCAFFOLDADE.** S114 körde i egen worktree
-(`s114-segment`) parallellt med S113.
-Våg A: `TASK-348` (Mer-fliken "Segment") · `TASK-349` (SidRam + kryssbar info-ruta) · `TASK-350`
-(Intresserade visar ALLA — get-leads-cursorloopen) — alla Done, PR `#2167`–`#2173` + `#2178`
-mergade, full review-grind per kod-PR (en exit 20-eskalation avgjord på Marcus AFK-mandat).
-Våg B-grillningen: sju beslut slutkvitterade (S114 Del 3) — publik nu/sändning i 6h ·
-intresserade blir ALDRIG segment (ADR-115 § Updates, domängränsen) · B2/B3-riktningarna ·
-spara-delen ur `271` indragen · konvergens-only · B3 först. Två PRD väntar STÄMPLARNA.
-Konvergensytorna scaffoldade på `feat/s114-b3-intresserade-konvergens` (opushad med avsikt,
-arbetsform iteration) med k1-snapshots i `bilagor/s114-*-konvergens/`. **Resume 1 (Del 5): B3
-itererad K2–K3 mot prod-mätning (112 intresserade, 63 namnlösa, 0 utan e-post; rader DOM-mätt 80 px)
-till STÄMPELKLAR — facit-manifest + bild landade med prototypen i `#2233` (review 2 rundor, låg risk,
-armerad). NÄSTA: Marcus stämplar `s114-intresserade-konvergens` via `!` när `#2233` mergat →
-PRD/skivor för promoveringen (ADR-103 B2, AFK) → B2 itereras parallellt (`/mer/segment?variant=a`)
-→ 6h/`271`-grillning.** Numrering re-verifierad vid resume 1: ADR 130 · kort 369 ·
-L655 (47 fragment) · T184 · session 115 aktiv parallellt. HANDOFF: sessionsdok S114 § Paushistorik
-(paus 1 + resume 1). Full narrativ: Del 1–4. **Paus 1 var:** (paus 1, 2026-08-31, AFK-mandatet
-slutfört — nästa steg Marcus granskning; landningen olandad fram till resume 1).
+**Session 114 ✅ AVSLUTAD (2026-09-03, AFK på mandat) — SEGMENT OCH
+INTRESSERADE: VÅG A, VÅG B-SAMSYN, B3 FRÅN KONVERGENS TILL PROD.** Marcus
+sex punkter om Segment-ytan och Intresserade-sidan drevs som våg A
+(mekaniska fixar, `TASK-348`/`349`/`350` Done) + våg B-grillning (sju
+kvitterade beslut, Del 3 — intresserade blir ALDRIG segment, ADR-115 §
+Updates). B3 (Intresserade-listan) itererades K1→K3 mot prod-mätning
+(112 intresserade, 63 namnlösa) till stämplat facit (`b391dffe`) → PRD
+`TASK-374` + fem skivor, promoverade på fullt mandat (*"Du har mandat
+att bedöma skarvarna och gå vidare."*): `374.1` (`#2248`→`bb793c86`),
+`374.2`+`374.3`+`374.4` hopvikta i en landning (`#2263`→`2df040c6`,
+anmälningssidans precedent), `374.4` AC #4 via riktad baseline-PR
+(`#2273`→`6a70368b`), `374.5` QA i staging (prod-punkter som kräver
+inloggning öppna åt Marcus). Prod-deployment `6245094695` success
+13:34 UTC — B3 är i prod. B2 (segmentlistan) togs över av S117
+parallellt. **Handover:** dubblett-e-posten i prod-basen
+(`Kallewestholm@hotmail.com`) · prod-QA-punkterna i `374.5` · VoiceOver-
+stickprovet · 6h-/`271`-grillningen · `#1883`/`#1926` baseline-PR:er ·
+Dependabot `#2050`/`#2159`/`#2160`/`#1826` · T183/arbetssätts-
+effektiviseringen (Marcus: *"vi har planerat att kolla på hur vi jobbar
+för att kunna effektivisera"* — instansdata bokförd på `T183`).
+**Numrering efter S114:** ADR 131 · kort 383 (`task-380` saknas som
+fil, mätt gap, ej utrett) · L655 (57 fragment efter denna landning) ·
+T184 · session 118. Full narrativ: sessionsdok S114 Del 1–6 + Avslut
+K-sista + BUILD-LOG S114-post. **Paus 1 var:**
+(paus 1, 2026-08-31, AFK-mandatet slutfört — nästa steg Marcus
+granskning; landningen olandad fram till resume 1, `#2180`). **Resume
+1 var:** (resume 1, 2026-09-03 — paus-landningen `#2180` hade ALDRIG
+nått `main` [CONFLICTING, 119 bakom], rebasad och landad; B3 itererad
+K2–K3 till stämpelklar, facit landat i `#2233`).
 
 **Session 113 ✅ AVSLUTAD (2026-09-02, K-sista på Marcus förhandskvittens; `lifecycle: closed`; block nedan är historik från resume 5, 2026-08-30 ~19:00 UTC, `lifecycle: active` vid den tidpunkten;
 Marcus: *"Återuppta S113 och kör nattens mandat"* — AFK-NATTEN KÖRS: PRD `TASK-346` Lottas
