@@ -7,16 +7,19 @@
  * desc — ingen klient-sortering av GRUNDORDNINGEN (sorteringskontrollen
  * nedan är ett explicit VAL, default = serverns ordning).
  *
- * [PROMOVERAD, TASK-374.2, ADR-103 B2 steg 1] Formen föddes som prototypen
- * `IntresseradeKonvergens` (S114 Del 3, K1–K3-varven, Marcus-stämplad
- * `tasks/sessions/bilagor/s114-intresserade-konvergens/facit.json`, sha
- * b391dffe, citat "Det blir bra, vi stämplar denna som klar") och är
- * git-mv:ad hit rakt av — denna commit rörde INGEN rad i render-logiken,
- * bara filens plats och det exporterade namnet (K0-baslinjens gamla
- * `Intresserade`, 194 rader, ersattes av samma git-mv). `git log --follow`
- * på DENNA fil spårar in i prototyp-passets fulla historik (K1-scaffold, K2
- * husets Select, K3 radanatomin, 374.1s härdning) — se PR-beskrivningen för
- * det körda beviset. Formen:
+ * [PROMOVERING SLUTFÖRD, TASK-374.4, ADR-103 B2 steg 4] Formen föddes som en
+ * S114-prototyp (Del 3, K1–K3-varven; det tidigare exportnamnet syns via
+ * `git log --follow` på DENNA fil), promoverades i TASK-374.2 (git-mv ur den
+ * dåvarande prototypmappen), och Marcus godkände den promoverade ytan i
+ * TASK-374.3 (2026-09-03, kvittens: "Den promoverade ytan är identisk med
+ * facit i läge fylld; det som rivs är växlar och villkor, aldrig formen") —
+ * manifestet `tasks/sessions/bilagor/s114-intresserade-konvergens/facit.json`
+ * (sha b391dffe) förblir det ursprungliga stämpel-kvittot. Prototyp-
+ * substratet (fyllnadsfabriken, den tidigare `data`-frågeparametern för
+ * fyllnadsläget, samtliga prototyp-markeringar) är rivet i denna skiva — se
+ * `git log --follow` för fullständig historik (K1-scaffold, K2 husets
+ * Select, K3 radanatomin, 374.1s härdning, 374.2s flipp, 374.4s rivning).
+ * Formen:
  *   (a) personlistans rad-anatomi (namn + e-post som identitetsblock,
  *       "N dagar sedan · handling" som aktivitetsrad, hämtnings-badge som
  *       egen högerkolumn, tre höjdreserverade rader — se KonvergensRad)
@@ -25,26 +28,11 @@
  *   (c) "Namnlös intresserad" — aldrig initialer ur platshållarsträngen
  *   (d) ingen utskicks-affordans (6h-kroken byggs inte här)
  *
- * KVAR MED AVSIKT TILL 374.4 (ADR-102 B3: rivning först efter Marcus
- * godkännande av den PROMOVERADE ytan i 374.3): fyllnadsfabriken
- * (`byggFyllnadsdata`) och dataläget `?data=fyll` nedan, bakom
- * `import.meta.env.DEV` — strukturellt onåbart i produktionsbygget
- * (verifierat: `npm run build` + grep i `dist/` hittar inga
- * `@exempel.invalid`-strängar). `IntresseradeKonvergens`-namnet lever också
- * kvar, som en alias-export ur barreln (`./index.ts`) — inte i denna fil —
- * eftersom `scripts/check-facit.sh` invariant (c) söker den markören
- * GLOBALT i `src/` så länge minst ett annat facit-manifest är ogodkänt.
- *
  * Datavägen är OFÖRÄNDRAD (underform A): `fetchIntresserade()` via
- * `useDataSource` — ingen egen adapter, inga mutationer. Fyllnadsläget
- * (`?data=fyll`) är DEV-lokal minnesdata för Marcus FORMBEDÖMNING (staging
- * bär endast 2 leads, mätt i TASK-350) — skalprovs-precedentets form:
- * syntetiska rader med `@exempel.invalid` + varningsruta som inte går att
- * missa.
+ * `useDataSource` — ingen egen adapter, inga mutationer.
  */
 import { useQuery } from '@tanstack/react-query';
 import { UserRound } from 'lucide-react';
-import { useQueryState } from 'nuqs';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { InitialAvatar } from '@/components/primitives/InitialAvatar';
 import { MessageBox } from '@/components/primitives/MessageBox';
@@ -163,86 +151,12 @@ function KonvergensRad({ person }: { person: Intresserad }) {
   );
 }
 
-/** DEV-fyllnadsdata för formbedömning (skalprovs-precedentet): 60 syntetiska
- * intresserade, varav var femte namnlös; deterministisk, ren minnesdata. */
-const FYLL_NAMN = [
-  'Eva Lindqvist',
-  'Johan Bergström',
-  'Maria Sandell',
-  'Per Åkesson',
-  'Karin Holm',
-  'Lars Öberg',
-  'Sofia Ek',
-  'Anders Nyström',
-  'Helena Falk',
-  'Mats Ljung',
-  'Åsa Vinter',
-  'Erik Sundin',
-];
-const FYLL_ERBJUDANDEN = [
-  'Pyramidernas Vajrar',
-  'Meditation för nybörjare',
-  'Fjärrskådningsguiden',
-  'Introduktion till RIM',
-];
-
-function byggFyllnadsdata(): Intresserad[] {
-  return Array.from({ length: 60 }, (_, i) => {
-    const namnlos = i % 5 === 4;
-    const namn = namnlos ? null : `${FYLL_NAMN[i % FYLL_NAMN.length]}`;
-    const erbjudande = FYLL_ERBJUDANDEN[i % FYLL_ERBJUDANDEN.length];
-    const antal = (i % 6) + 1;
-    const dagar = Math.floor(i * 5.2);
-    // Typriktig konstruktion (TASK-374.1 AC #5): `satisfies Intresserad`
-    // kräver varje fält `IntresseradSchema` (= `PersonSchema.extend({
-    // antalHamtningar, allaHamtningar })`) deklarerar, till skillnad från den
-    // rivna `as unknown as Intresserad` som gav bort typkontrollen helt.
-    // Fälten under är UTANFÖR `KonvergensRad`s läsmängd (namn, fornamn,
-    // efternamn, email, senasteInteraktion, dagarSedanSenaste,
-    // antalHamtningar — se komponenten ovan) och ändrar därför inte
-    // renderingen; de är leads per definition (`antalAnmalningar: 0`, se
-    // `Intresserad.schema.ts`s docblock) och bär i övrigt PersonSchemas
-    // null-golv.
-    return {
-      id: `fyll-${i}`,
-      namn,
-      fornamn: null,
-      efternamn: null,
-      // Alla bär e-post — speglar prod (0 av 112 intresserade saknar e-post,
-      // mätt 2026-09-03); den degenererade raden utan bådadera formbedöms inte.
-      email: `fyll-${i}@exempel.invalid`,
-      telefon: null,
-      ort: [],
-      manuellFlagga: null,
-      aiFlagga: null,
-      anteckningar: null,
-      antalAnmalningar: 0,
-      antalDeltaganden: 0,
-      erfarenhetsniva: null,
-      erfarenhetsbadge: null,
-      senasteInteraktion: `Hämtade ${erbjudande}`,
-      senasteInteraktionDatum: null,
-      dagarSedanSenaste: dagar,
-      harAktivAnmalan: null,
-      ejGodkandMail: false,
-      radSkapad: null,
-      anmalningIds: [],
-      deltagandeIds: [],
-      antalHamtningar: antal,
-      allaHamtningar: [erbjudande],
-    } satisfies Intresserad;
-  });
-}
-
 export function Intresserade() {
   const dataSource = useDataSource();
   const headingRef = useRef<HTMLHeadingElement>(null);
   const announceRef = useRef(false);
-  const [dataMode] = useQueryState('data');
   const [sok, setSok] = useState('');
   const [sortering, setSortering] = useState<Sortering>('interaktion');
-
-  const fyllnad = import.meta.env.DEV && dataMode === 'fyll';
 
   const {
     data: hamtade,
@@ -252,18 +166,14 @@ export function Intresserade() {
   } = useQuery({
     queryKey: queryKeys.intresserade.all,
     queryFn: () => dataSource.fetchIntresserade(),
-    enabled: !fyllnad,
     retry: (failureCount, err) =>
       !(err instanceof EdgeFunctionError && err.status >= 400 && err.status < 500) &&
       failureCount < 3,
   });
 
-  const intresserade = useMemo(
-    () => (fyllnad ? byggFyllnadsdata() : (hamtade ?? [])),
-    [fyllnad, hamtade],
-  );
+  const intresserade = useMemo(() => hamtade ?? [], [hamtade]);
 
-  const laddat = fyllnad || !isPending;
+  const laddat = !isPending;
 
   const synliga = useMemo(() => {
     const term = sok.trim().toLocaleLowerCase('sv');
@@ -317,7 +227,7 @@ export function Intresserade() {
     );
   }
 
-  if (!fyllnad && isError) {
+  if (isError) {
     return (
       <section className="flex flex-col gap-4">
         {sidRam}
@@ -350,15 +260,6 @@ export function Intresserade() {
         <p className="sr-only" role="status" aria-live="polite">
           Intresserade laddade.
         </p>
-
-        {fyllnad ? (
-          <div className="px-4">
-            <MessageBox intent="warning" title="Fyllnadsdata för formbedömning">
-              60 syntetiska intresserade (@exempel.invalid) visas i stället för verklig data. Växla
-              dataläget i prototyp-växlaren för verkliga rader.
-            </MessageBox>
-          </div>
-        ) : null}
 
         <header className="flex flex-col gap-1 px-4">
           <h1 ref={headingRef} tabIndex={-1} className="font-semibold text-3xl">
