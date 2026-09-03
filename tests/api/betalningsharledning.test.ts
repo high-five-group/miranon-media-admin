@@ -362,7 +362,12 @@ test.describe('harledBetalning — okänt pris', () => {
   test('de två formerna skiljer sig ENBART i detta hörn — mätt genom harledBetalning', () => {
     // Om mutationen hade gett samma svar överallt vore fixen kosmetisk. Den
     // gör det inte — och den gör det bara i ETT hörn: avgiftsgränsen saknas
-    // OCH summan understiger helpriset.
+    // OCH summan är STRIKT POSITIV men understiger helpriset.
+    //
+    // "Strikt positiv" tillkom i `TASK-372`: vid `summa <= 0` med känt
+    // helpris ger produktionskoden numera samma svar som mutanten
+    // ('Ej mottagen'), av ett helt annat skäl — se § 8. Hörnet krympte
+    // alltså, det flyttade inte; sonderingen nedan ligger kvar i det.
     //
     // VARJE FALL GÅR GENOM PRODUKTIONSKODEN (granskningsfynd runda 2 ersatte
     // en tidigare version som jämförde två lokala uttryck med varandra och
@@ -423,5 +428,153 @@ test.describe('harledBetalning — precision', () => {
     // 2500.55 - 0.05 ger 2500.4999999999995 i IEEE 754, och just det talet
     // hade skrivits rakt in i basens spegel utan avrundningen.
     expect(ut.saknas).toBe(2500.5);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// § 8 — SUMMA NOLL SKRIVER TILLBAKA (TASK-372)
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// Felet som mättes i prod 2026-09-03 (RIM 3 Rönninge, `recLJ3SuZz8A1UEND`):
+// helpriset registrerades och RADERADES, och `Anmälningsavgift` stod kvar på
+// `Mottagen` fast summan var 0. Härledningen var ENVÄGS för ett event utan
+// `Anmälningsavgift (kr)` — den kunde sätta facket men aldrig ta tillbaka det,
+// eftersom `null` betyder "rör inte fältet" och `skrivSpegel` hoppar över det.
+//
+// Regeln som prövas här: `summa <= 0` gör avgiftsfacket avgörbart NÄR
+// HELPRISET ÄR KÄNT. Hela härledningen och den medvetna avgränsningen står i
+// `betalningsharledning.ts` § SUMMA NOLL — sviten låser BÅDA riktningarna,
+// alltså både att facket nu återställs och att det INTE återställs där
+// avgränsningen säger nej.
+
+test.describe('harledBetalning — summa noll skriver tillbaka', () => {
+  /** RIM 3:s prisbild: helpriset känt, `Anmälningsavgift (kr)` tom i basen. */
+  const UTAN_AVGIFTSPRIS: Prisbild = { ...UTBILDNING, anmalningsavgift: null };
+  /** Ingen prisinformation alls — den klass fixen medvetet INTE rör. */
+  const UTAN_NAGOT_PRIS: Prisbild = { ...UTBILDNING, eventPris: null, anmalningsavgift: null };
+
+  test('ENVÄGSFELET, ände-till-ände: registrera helpris → radera ⇒ båda facken tillbaka', () => {
+    // Steg 1 — Marcus registrerar 2 500 kr. Egenskap 2 ger `Mottagen` trots
+    // att avgiftens egen gräns är okänd. Detta är och förblir korrekt.
+    const efterRegistrering = harledBetalning(poster(2500), UTAN_AVGIFTSPRIS);
+    expect(efterRegistrering.anmalningsavgiftVarde).toBe('Mottagen');
+    expect(efterRegistrering.slutbetalningVarde).toBe('Mottagen');
+
+    // Steg 2 — raden RADERAS. Postgres har noll rader kvar, alltså noll poster.
+    const efterRadering = harledBetalning([], UTAN_AVGIFTSPRIS);
+    expect(efterRadering.summa).toBe(0);
+    // Kärnan: FÖRE fixen var detta `null` ⇒ spegeln hoppade över fältet ⇒
+    // `Mottagen` stod kvar i basen. Spökflaggan.
+    expect(efterRadering.anmalningsavgiftVarde).toBe('Ej mottagen');
+    expect(efterRadering.slutbetalningVarde).toBe('Ej mottagen');
+  });
+
+  test('MAKULERING ger samma utfall som radering — summan är 0 i båda fallen', () => {
+    const ut = harledBetalning([{ belopp: 2500, status: 'makulerad' }], UTAN_AVGIFTSPRIS);
+    expect(ut.summa).toBe(0);
+    expect(ut.anmalningsavgiftVarde).toBe('Ej mottagen');
+    expect(ut.slutbetalningVarde).toBe('Ej mottagen');
+  });
+
+  test('NETTONEGATIV summa räknas som noll-fallet — därför `<= 0`, inte `=== 0`', () => {
+    // En återbetalning större än inbetalningarna bär exakt samma sanning:
+    // ingenting är betalt, och en okänd gräns är strikt positiv.
+    const ut = harledBetalning(poster(2500, -3000), UTAN_AVGIFTSPRIS);
+    expect(ut.summa).toBe(-500);
+    expect(ut.anmalningsavgiftVarde).toBe('Ej mottagen');
+    expect(ut.slutbetalningVarde).toBe('Ej mottagen');
+  });
+
+  test('REGRESSIONSVAKT: en DELBETALNING som står kvar rörs fortfarande INTE', () => {
+    // § 6:s sondering, oförändrad. Fixen gäller `summa <= 0` — inte varje
+    // summa under helpriset. Vore detta `Ej mottagen` hade granskningsfyndet
+    // från runda 1 återinförts.
+    const ut = harledBetalning(poster(1000), UTAN_AVGIFTSPRIS);
+    expect(ut.summa).toBe(1000);
+    expect(ut.anmalningsavgiftVarde).toBeNull();
+    expect(ut.slutbetalningVarde).toBe('Ej mottagen');
+  });
+
+  test('OKÄNT HELPRIS + summa 0 ⇒ facken rörs INTE — avgränsningen som skyddar Lottas flaggor', () => {
+    // Sanningsargumentet ("okänd gräns är strikt positiv") hade räckt för att
+    // skriva `Ej mottagen` även här. Villkoret är medvetet SMALARE: 305
+    // historiska anmälningar bär Lottas manuella `Mottagen` utan en enda
+    // inbetalningsrad, och för dem är basen enda källan. Utan känt helpris
+    // uttalar sig appen inte — samma linje som backfillens `pris-okant`-hopp.
+    const ut = harledBetalning([], UTAN_NAGOT_PRIS);
+    expect(ut.summa).toBe(0);
+    expect(ut.gallandePris).toBeNull();
+    expect(ut.anmalningsavgiftVarde).toBeNull();
+    expect(ut.slutbetalningVarde).toBeNull();
+  });
+
+  test('GRATISEVENT: pris 0, summa 0, avgift okänd ⇒ Mottagen — ternärens ordning bär det', () => {
+    // 0 är ett SATT pris (§ NOLL), så `alltKlart` är sant redan utan poster
+    // och `avgiftKlar`-grenen tas FÖRE noll-predikatet får betydelse. Vore
+    // ordningen omkastad hade ett gratisevent märkts "Ej mottagen".
+    const gratis: Prisbild = { ...UTBILDNING, eventPris: 0, anmalningsavgift: null };
+    const ut = harledBetalning([], gratis);
+    expect(ut.gallandePris).toBe(0);
+    expect(ut.alltKlart).toBe(true);
+    expect(ut.anmalningsavgiftVarde).toBe('Mottagen');
+    expect(ut.slutbetalningVarde).toBe('Mottagen');
+  });
+
+  test('FÖRELÄSNING vid summa 0: facket är `Ej relevant`, avgiften följer helpriset', () => {
+    const ut = harledBetalning([], FORELASNINGSPRISBILD);
+    expect(ut.summa).toBe(0);
+    // Föreläsningens avgiftsgräns ÄR helpriset, alltså känd — utfallet är
+    // detsamma före och efter fixen. Fallet står här för att en föreläsning
+    // aldrig ska kunna hamna i noll-grenen av misstag.
+    expect(ut.avgiftsgrans).toBe(450);
+    expect(ut.anmalningsavgiftVarde).toBe('Ej mottagen');
+    expect(ut.slutbetalningVarde).toBe('Ej relevant (för föreläsningar)');
+  });
+
+  test('NEGATIV KONTROLL: en fix UTAN prisvillkoret skriver över den prislösa anmälan', () => {
+    // Den bredare varianten, skriven här och aldrig i produktionskoden. Den
+    // löser RIM 3 lika bra — och skriver samtidigt `Ej mottagen` över en
+    // anmälan appen inget vet om. Det är skälet den valdes bort.
+    const utanPrisvillkor = (summa: number, avgiftsgrans: number | null, alltKlart: boolean) =>
+      avgiftsgrans !== null || alltKlart || summa <= 0;
+
+    // Prislös anmälan, summa 0: mutanten säger "avgörbar", koden säger nej.
+    expect(utanPrisvillkor(0, null, false)).toBe(true);
+    expect(harledBetalning([], UTAN_NAGOT_PRIS).anmalningsavgiftVarde).toBeNull();
+
+    // Och på RIM 3-fallet är de överens — skillnaden ligger BARA i hörnet ovan.
+    expect(harledBetalning([], UTAN_AVGIFTSPRIS).anmalningsavgiftVarde).toBe('Ej mottagen');
+  });
+
+  test('NEGATIV KONTROLL: `=== 0` i stället för `<= 0` missar den nettonegativa summan', () => {
+    const medLikhet = (summa: number, gallandePris: number | null) =>
+      summa === 0 && gallandePris !== null;
+    expect(medLikhet(-500, 2500)).toBe(false); // ⇒ hade gett `null`, alltså spökflagga
+    expect(harledBetalning(poster(2500, -3000), UTAN_AVGIFTSPRIS).anmalningsavgiftVarde).toBe(
+      'Ej mottagen',
+    );
+  });
+
+  test('INVARIANTEN: vid summa <= 0 med okänd avgift är facken avgörbara TILLSAMMANS', () => {
+    // Detta är regelns egentliga form: fixen ger avgiftsfacket exakt den
+    // avgörbarhet slutbetalningsfacket redan hade, aldrig mer. Prövas över
+    // hela korsprodukten summa × helpris, inte på ett enskilt fall.
+    const summor = [0, -0.5, -500, -2500];
+    const priser: (number | null)[] = [2500, 1, null];
+
+    for (const summa of summor) {
+      for (const eventPris of priser) {
+        const ut = harledBetalning(summa === 0 ? [] : poster(summa), {
+          ...UTBILDNING,
+          eventPris,
+          anmalningsavgift: null,
+        });
+        const etikett = `summa=${summa} pris=${eventPris}`;
+        expect(ut.summa, etikett).toBeLessThanOrEqual(0);
+        expect(ut.avgiftsgrans, etikett).toBeNull();
+        expect(ut.anmalningsavgiftVarde !== null, etikett).toBe(ut.slutbetalningVarde !== null);
+        expect(ut.anmalningsavgiftVarde, etikett).toBe(eventPris === null ? null : 'Ej mottagen');
+      }
+    }
   });
 });

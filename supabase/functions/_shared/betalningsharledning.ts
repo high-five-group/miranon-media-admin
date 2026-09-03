@@ -29,9 +29,18 @@
 //      implikationen hade en fullbetald anmälan utan ifylld
 //      `Anmälningsavgift (kr)` visat "avgift ej mottagen" — en synlig
 //      motsägelse i Lottas vy.
-//   3. ETT OKÄNT PRIS GER ETT OKÄNT FACK, ALDRIG "EJ MOTTAGEN". Ett fack
-//      vars gräns saknas kan inte avgöras, och att gissa "Ej mottagen" hade
-//      skrivit en osanning in i basen. `null` betyder "rör inte fältet".
+//   3. ETT OKÄNT PRIS GER ETT OKÄNT FACK — UTOM VID `summa <= 0` MED KÄNT
+//      HELPRIS. Ett fack vars gräns saknas kan i regel inte avgöras, och att
+//      gissa "Ej mottagen" hade skrivit en osanning in i basen; `null`
+//      betyder "rör inte fältet". Undantaget kräver att BÅDA villkoren
+//      håller — `summa <= 0` OCH `gallandePris !== null` — och det är ingen
+//      gissning: en OKÄND gräns är härledbart STRIKT POSITIV (0 är ett SATT
+//      pris, se § NOLL; ett pris kan inte vara negativt), alltså gäller
+//      `summa <= 0 < gräns` utan att någon vet vad gränsen är. Kravet på
+//      känt helpris är däremot en MEDVETEN avgränsning som sanningen INTE
+//      kräver: saknas helpriset rörs facket inte ens vid summa 0. Undantaget
+//      uttömmer egenskapen, det bryter den inte. Båda halvorna — och varför
+//      avgränsningen finns — står i § SUMMA NOLL.
 //
 // ═══════════════════════════════════════════════════════════════════════════
 // NOLL ÄR ETT SATT PRIS — SAMMA FÄLLA SOM `Saknas (kr)`-FORMELN GICK I
@@ -42,6 +51,56 @@
 // pris känt" (`data-model.md` § RUNDA 2-FIX, fall iii och iv). Samma fälla
 // gäller ordagrant här. Därför prövas priset ALLTID med `!== null`, aldrig
 // med sanningsvärde — och `avtalatPris: 0` VINNER över eventets pris.
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SUMMA NOLL MÅSTE KUNNA SKRIVA TILLBAKA — ASYMMETRIN SOM GAV SPÖKFLAGGOR
+// ═══════════════════════════════════════════════════════════════════════════
+// `TASK-372` mätte felet i prod 2026-09-03: tre anmälningar på RIM 3 Rönninge
+// (`recLJ3SuZz8A1UEND`) fick helpriset 2 500 kr registrerat och sedan RADERAT
+// via appen. Efteråt stod `Summa inbetalt (kr)` på 0 med noll rader i
+// `public.inbetalningar` — men `Anmälningsavgift` stod kvar på `Mottagen`.
+// Eventet saknade `Anmälningsavgift (kr)`.
+//
+// MEKANIKEN, HELT INOM DENNA FIL: helpriset täckte avgiften vid
+// registreringen (egenskap 2 ⇒ `Mottagen`). Vid raderingen var summan 0,
+// alltså under helpriset, och avgiftens EGEN gräns okänd — egenskap 3 i sin
+// GAMLA form gav då `null`, och `skrivSpegel` hoppar över `null` (den rensar
+// inte, `betalningar-bas.ts`). Flaggan kunde alltså flippas TILL `Mottagen`
+// men aldrig tillbaka. En ENVÄGS-funktion, och det är felet: en flagga appen
+// självt satte genom en inbetalning måste kunna följa med när inbetalningen
+// försvinner.
+//
+// FIXEN ÄR EN HÄRLEDNING, INGEN GISSNING — se egenskap 3 ovan: en okänd
+// gräns är strikt positiv, så `summa <= 0` understiger den bevisligen.
+// `<= 0` och inte `=== 0`, därför att en nettonegativ summa (återbetalning
+// större än inbetalningarna) bär exakt samma sanning.
+//
+// ═══ VARFÖR UNDANTAGET DESSUTOM KRÄVER ETT KÄNT HELPRIS ═══
+// Sanningsargumentet ovan behöver INTE `gallandePris !== null` — det håller
+// för varje anmälan med summa 0. Villkoret är alltså medvetet SMALARE än vad
+// sanningen tillåter, och skälet är data som inte bor i Postgres:
+//
+//   305 historiska anmälningar bär Lottas MANUELLA `Mottagen`-flaggor utan
+//   en enda inbetalningsrad (backfillen kunde inte prissätta dem —
+//   `docs/reference/backfill-inbetalningar.md`). För dem är basens flagga
+//   enda källan; summan 0 betyder "aldrig registrerad i det nya systemet",
+//   inte "aldrig betald".
+//
+// Med helpriset KÄNT skriver härledningen redan i dag `Ej mottagen` i
+// `slutbetalningVarde` för samma anmälan (ternären längst ned prövar exakt
+// `gallandePris !== null`). Undantaget lägger alltså INTE till en ny yta där
+// appen uttalar sig — det gör avgiftsfacket lika avgörbart som
+// slutbetalningsfacket redan är, vid summa 0. Är helpriset OKÄNT rörs
+// ingetdera facket, precis som förut.
+//
+// Samma linje som backfillen redan drar: en anmälan utan känt pris klassas
+// som AVVIKELSE med koden `pris-okant` (`BESLUT.avvikelse`, inte
+// `BESLUT.hoppa` — `scripts/backfill-inbetalningar.mjs`, låst av D8 i
+// `scripts/test-backfill-inbetalningar.mjs`) och hamnar i `plan.avvikelser`.
+// Spegel-loopen kör bara över `plan.backfill ∪ plan.redanBackfillad`, så
+// varken avvikelserna eller de hoppade skrivs. Under ADR-bar (en rad, ingen ny
+// yta, ingen ny kolumn) — beslutet bokförs här och i `data-model.md`
+// § Kända fällor 54, inte i en egen ADR.
 
 import { summeraKronor } from './betalningsbelopp.ts';
 
@@ -184,7 +243,20 @@ export function harledBetalning(
   // Alternativet vore att stryka ledet och lita på ordningen plus sviten
   // (`betalningsharledning.test.ts` § 6 låser båda riktningarna). Det hade
   // varit korrekt men tystare; valet är bokfört, inte råkat.
-  const avgiftKanAvgoras = avgiftsgrans !== null || alltKlart;
+  //
+  // TREDJE LEDET (`summa <= 0 && gallandePris !== null`) ÄR `TASK-372`:s FIX
+  // — hela härledningen och avgränsningen står i filhuvudet § SUMMA NOLL, och
+  // den läses innan detta rörs. I korthet: en okänd gräns är strikt positiv,
+  // så summa 0 understiger den BEVISLIGEN — `Ej mottagen` är därmed härlett,
+  // inte gissat, och egenskap 3 är intakt. `gallandePris !== null` är den
+  // medvetet smalare avgränsningen som skyddar de 305 historiska anmälningar
+  // vars `Mottagen` är Lottas manuella, inte appens.
+  //
+  // ORDNINGEN I TERNÄREN BÄR FORTFARANDE 0-PRISET: ett gratisevent har
+  // `alltKlart` sant redan vid summa 0, så `avgiftKlar`-grenen tas FÖRE detta
+  // predikat får betydelse och facket blir `Mottagen`, inte `Ej mottagen`.
+  const avgiftKanAvgoras =
+    avgiftsgrans !== null || alltKlart || (summa <= 0 && gallandePris !== null);
   const anmalningsavgiftVarde: AnmalningsavgiftVarde | null = avgiftKlar
     ? 'Mottagen'
     : avgiftKanAvgoras
