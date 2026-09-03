@@ -3,9 +3,10 @@ id: TASK-368.5
 title: >-
   Skiva: Ombokningssteget i appen — Boka om till annat event, prisskillnaden
   rakt ut med länkar, väntelistepåminnelsen (facit-amendering ADR-102)
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-03 07:57'
+updated_date: '2026-09-03 15:18'
 labels:
   - ready-for-agent
 dependencies:
@@ -37,3 +38,9 @@ Beteende ände-till-ände: Lotta trycker Avboka anmälan, väljer i stället Bok
 - [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #4 Facit-granskning mot tasks/sessions/bilagor/s111-anmalningssidan-konvergens/facit.json (ADR-102 R3): skarpa ytan jämförd bild för bild mot det amenderade facitet innan Done
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+S115 stängning (orkestrerare): PR #2267 landad 2026-09-03 efter tre review-rundor (runda 2 fällde byggarens remount-premiss mot TanStack Routers Match.js; key={registrationId} på AvbokningsYta, rött-först-bevisat; runda 3 risk låg, konvergerad). AC #1, #4, #5 bockade. AC #2 '(redigerbart)' är obockat: rebook-registration saknar skäl-fält, Marcus beslut i TASK-381. AC #3:s halva 'före bekräftelse' är obockad: get-event bär inget pris, byggs i TASK-368.7. Kortet flippas Done när 368.7 landat och 381 avgjorts.
+<!-- SECTION:NOTES:END -->
