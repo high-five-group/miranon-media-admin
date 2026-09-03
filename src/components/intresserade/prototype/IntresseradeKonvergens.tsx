@@ -57,6 +57,23 @@ function arNamnlos(person: Intresserad): boolean {
   return !person.namn && !person.fornamn && !person.efternamn;
 }
 
+/** Primärraden: namnet när det finns, annars e-posten — mailklienternas regel.
+ * Mätt i prod 2026-09-03 (EF:ens lead-filter, read-only): 63 av 112
+ * intresserade saknar namn, 0 saknar e-post. Platshållaren nås bara av den
+ * degenererade raden utan både namn och e-post. */
+function primarText(person: Intresserad): string {
+  if (!arNamnlos(person)) return displayName(person);
+  return person.email ?? 'Namnlös intresserad';
+}
+
+/** Sekundärraden: e-posten under ett namn; "Namnlös intresserad" dämpat under
+ * en e-post (Del 2 (c) i underordnad plats i stället för som rubrik); tom men
+ * höjdreserverad när inget av dem finns. */
+function sekundarText(person: Intresserad): string {
+  if (!arNamnlos(person)) return person.email ?? '';
+  return person.email ? 'Namnlös intresserad' : '';
+}
+
 /** "N dagar sedan"-texten — medvetet enkel (prototyp; personlistans exakta
  * form ärvs vid promoveringen). */
 function dagarText(dagar: number): string {
@@ -73,21 +90,28 @@ function KonvergensRad({ person }: { person: Intresserad }) {
   return (
     <li className="flex break-inside-avoid items-center gap-3 border-text-muted/20 border-b pb-3 contrast-more:border-border-strong">
       {namnlos ? (
+        // Samma 36 px som InitialAvatar (size-9) — 40 px här gav namnlösa rader
+        // fyra pixlar mer höjd än namngivna (Marcus varv 2).
         <span
           aria-hidden="true"
-          className="flex size-10 shrink-0 items-center justify-center rounded-full bg-bg-muted text-text-muted"
+          className="flex size-9 shrink-0 items-center justify-center rounded-full bg-bg-muted text-text-muted"
         >
           <UserRound className="size-5" />
         </span>
       ) : (
         <InitialAvatar namn={namn} />
       )}
+      {/* Enhetlig anatomi (Marcus varv 2): exakt tre rader per intresserad,
+          var och en höjdreserverad med min-h-[1lh] och trunkerad — tomt
+          innehåll eller lång text kan aldrig ändra radhöjden (samma grepp som
+          B2-ytans min-h-[2lh]). Ingen fast pixelhöjd behövs: alla rader har
+          samma antal reserverade rader och samma avatar. */}
       <div className="flex min-w-0 flex-1 flex-col">
-        <span className="truncate font-medium">{namn}</span>
-        {person.email ? (
-          <span className="truncate text-small text-text-muted">{person.email}</span>
-        ) : null}
-        <span className="mt-1 truncate text-caption">
+        <span className="min-h-[1lh] truncate font-medium">{primarText(person)}</span>
+        <span className="min-h-[1lh] truncate text-small text-text-muted">
+          {sekundarText(person)}
+        </span>
+        <span className="mt-1 min-h-[1lh] truncate text-caption">
           {person.senasteInteraktion ? (
             <>
               {person.dagarSedanSenaste != null && (
@@ -98,9 +122,7 @@ function KonvergensRad({ person }: { person: Intresserad }) {
               )}
               <span className="text-text-muted">{person.senasteInteraktion}</span>
             </>
-          ) : (
-            ' '
-          )}
+          ) : null}
         </span>
       </div>
       {/* Fast bredd: den osynliga storleksgivaren "00 hämtningar" ligger i samma
@@ -154,7 +176,9 @@ function byggFyllnadsdata(): Intresserad[] {
       namn,
       fornamn: null,
       efternamn: null,
-      email: namnlos && i % 2 === 0 ? null : `fyll-${i}@exempel.invalid`,
+      // Alla bär e-post — speglar prod (0 av 112 intresserade saknar e-post,
+      // mätt 2026-09-03); den degenererade raden utan bådadera formbedöms inte.
+      email: `fyll-${i}@exempel.invalid`,
       senasteInteraktion: `Hämtade ${erbjudande}`,
       senasteInteraktionDatum: null,
       dagarSedanSenaste: dagar,
@@ -199,12 +223,14 @@ export function IntresseradeKonvergens() {
     const term = sok.trim().toLocaleLowerCase('sv');
     const traffar = term
       ? intresserade.filter((p) =>
-          `${displayName(p)} ${p.email ?? ''}`.toLocaleLowerCase('sv').includes(term),
+          `${primarText(p)} ${p.email ?? ''}`.toLocaleLowerCase('sv').includes(term),
         )
       : intresserade;
     if (sortering === 'namn') {
       const collator = new Intl.Collator('sv');
-      return [...traffar].sort((a, b) => collator.compare(displayName(a), displayName(b)));
+      // Sorterar på primärraden (namn eller e-post) — namnlösa hamnar efter sin
+      // adress i stället för i en "Namnlös intresserad"-klump.
+      return [...traffar].sort((a, b) => collator.compare(primarText(a), primarText(b)));
     }
     return traffar;
   }, [intresserade, sok, sortering]);
