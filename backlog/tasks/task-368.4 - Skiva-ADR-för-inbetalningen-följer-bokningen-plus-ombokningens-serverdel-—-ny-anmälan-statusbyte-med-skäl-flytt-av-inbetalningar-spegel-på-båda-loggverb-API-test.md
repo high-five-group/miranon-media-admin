@@ -7,11 +7,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-09-03 07:57'
-<<<<<<< HEAD
-updated_date: '2026-09-03 11:43'
-=======
-updated_date: '2026-09-03 09:52'
->>>>>>> origin/main
+updated_date: '2026-09-03 12:46'
 labels:
   - ready-for-agent
 dependencies:
@@ -45,9 +41,6 @@ Beteende ände-till-ände: servern kan boka om en person från ett event till et
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
-<<<<<<< HEAD
-S115 stängning (orkestrerare): landad via PR #2247 (merge 292af681, 2026-09-03) efter två review-rundor, risk hög, Marcus hög-risk-GO. Review runda 2 bedömde AC #5 som felställd i bokstaven (prisskillnadens tre tecken bevisas hermetiskt, inte i staging, eftersom ingen EF kan sätta mål-eventets pris) men uppfyllt i sak över de två testfilerna (52 hermetiska + 9 staging-fall, räknade). Det nya 409-fallet redan_anmald_pa_malet kördes INTE lokalt av byggaren (staging-semaforen höll basen); skarpbeviset kom i kö-körningen (merge_group pr-2247, ci.yml completed success). Sidofyndet purge-sentinelns blanksteg bärs av TASK-378.
-=======
 ADR-130 mintad (docs/decisions/ADR-130-inbetalningen-foljer-bokningen-vid-ombokning.md): inbetalningen foljer bokningen, kvittot rors aldrig (kolumn-scopad UPDATE-grant pa kvitton - databasgaranti, inte konvention), flytten ar en rattelse av bokforingspost BFL 5 kap 5 § med tva spar (aktivitetsloggen + Notering-raden), prisskillnad bokfors som MELLANSKILLNAD via befintlig mekanik men aldrig automatiskt av ombokningen. Fyra alternativ forkastade med skal ur docs/research/kvitto-vid-ombokning-2026-09-03.md. README-raden i docs/decisions/README.md + rot-READMEs ADR-rakning 128 -> 129 i samma commit.
 
 EF-form: EGEN EF rebook-registration, INTE ett tredje atgard-varde pa cancel-registration. Motivering i EF:ens filhuvud: repots betalningsdoman drar redan gransen vid om operationen SKAPAR nagot (registrera-inbetalning vs hantera-inbetalning); ombokningen skapar en anmalan, ror Postgres, speglar tva anmalningar och svarar med ett annat innehall - plus att cancel-registration ar staging-deployad och pa vag till prod i leverans 1, sa blast-radien halls isar.
@@ -73,5 +66,6 @@ Postgres-stadning: staging-testet raderar sina egna inbetalningar via hantera-in
 tsconfig.edge-shared.json utokad med cancel-registration.ts + rebook-registration.ts (bada transitivt Deno-fria) - tackningen var tidigare bara en sidoeffekt av att tester rakade importera dem.
 
 DoD-grindarna kordes var for sig med exitkoden last direkt fran skalet, aldrig genom en pipe (L440): typecheck 0, biome 0, check-langa-streck 0 med noll ofangade, build 0, check:docs 0 med 14 grona, api-sviten 1946 passerade och 2 foll. De tva fallningarna: den kanda flaken generate-event-attachment.staging.test.ts, samt en 30-sekunders-timeout i send-registration-confirmation.staging.test.ts som sammanfoll med att en post-merge-korning tog staging mitt i sviten (staging-semaforen bekraftade CI-lasningen direkt efterat).
->>>>>>> origin/main
+
+S115 stängning (orkestrerare): landad via PR #2247 (merge 292af681, 2026-09-03) efter två review-rundor, risk hög, Marcus hög-risk-GO. Review runda 2 bedömde AC #5 som felställd i bokstaven (prisskillnadens tre tecken bevisas hermetiskt, inte i staging, eftersom ingen EF kan sätta mål-eventets pris) men uppfyllt i sak över de två testfilerna (52 hermetiska + 9 staging-fall, räknade). Det nya 409-fallet redan_anmald_pa_malet kördes INTE lokalt av byggaren (staging-semaforen höll basen); skarpbeviset kom i kö-körningen (merge_group pr-2247, ci.yml completed success). Sidofyndet purge-sentinelns blanksteg bärs av TASK-378.
 <!-- SECTION:NOTES:END -->
