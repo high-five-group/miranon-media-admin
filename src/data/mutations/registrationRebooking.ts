@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useDataSource } from '@/data/useDataSource';
 import type { RebookRegistrationInput, RebookRegistrationResult } from '@/domain/schemas';
 import { queryKeys } from '@/queries/keys';
+import { patchaAnmalansDetaljcache } from './anmalan-detaljcache';
 
 /**
  * Ombokningens mutation (TASK-368.4; PRD TASK-368 beslut 7-8, ADR-130).
@@ -61,7 +62,25 @@ export function useBokaOmAnmalan() {
   return useMutation<RebookRegistrationResult, Error, RebookMutationVariables>({
     mutationFn: ({ registrationId, nyttEventId }) =>
       dataSource.bokaOmAnmalan({ registrationId, nyttEventId }),
-    onSuccess: (_resultat, variables) => {
+    onSuccess: (resultat, variables) => {
+      // [TASK-368.5] DEN GAMLA ANMÄLANS DETALJ PATCHAS MED SERVERNS SVAR,
+      // exakt som `cancel-registration`s mutation redan gör. Invalideringen
+      // nedan räcker INTE för just den: Lotta navigerar bort till den NYA
+      // anmälan i samma andetag, så den gamla queryn är avmonterad och en
+      // invalidering av en inaktiv query hämtar inte om något. Med
+      // persist-lagret (ADR-072, `staleTime` 5 min) betyder det att den
+      // gamla anmälans sida kunde visa "Bekräftad" i upp till fem minuter
+      // efter en ombokning som redan var gjord i basen — mätt i den
+      // hermetiska fixturvärlden 2026-09-03, se `anmalan-detaljcache.ts`.
+      //
+      // Den NYA anmälan patchas INTE: den finns inte i cachen än (raden
+      // skapades just), och svaret bär inte dess fulla detalj-shape. Dess
+      // sida hämtar den friskt vid mount.
+      patchaAnmalansDetaljcache(queryClient, {
+        registrationId: resultat.gammalAnmalanId,
+        status: resultat.status,
+        notering: resultat.notering,
+      });
       void queryClient.invalidateQueries({ queryKey: queryKeys.registrations.all });
       void queryClient.invalidateQueries({
         queryKey: queryKeys.events.detail(variables.gammaltEventId),

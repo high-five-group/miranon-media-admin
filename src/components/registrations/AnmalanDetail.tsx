@@ -20,6 +20,7 @@ import { AvbokningsYta } from './AvbokningsYta';
 import { harledBehorighet } from './behorighet';
 import { FritextRad } from './FritextRad';
 import { IdChip } from './IdChip';
+import { OmbokningsKvitto } from './OmbokningsKvitto';
 import { PersonMiniKort } from './PersonMiniKort';
 import { displayName } from './registration-display';
 import { StatusBadge } from './StatusBadge';
@@ -353,6 +354,22 @@ export function AnmalanDetail({
           )}
         </p>
       </header>
+
+      {/* [TASK-368.5 AC #2/#3] OMBOKNINGSKVITTOT — den enda gruppen som får
+          stå OVANFÖR de nio låsta, och den enda som är TRANSIENT.
+
+          S83-låset bevakas genom att inget PERMANENT flyttas: kvittot
+          renderas bara direkt efter en ombokning (ett engångsfat ur
+          navigeringens history-state, se `OmbokningsKvitto`), och på varje
+          annan laddning av sidan returnerar komponenten null — då står
+          Kontakt kvar exakt där facit har den. `TASK-368.3` valde SIST för
+          avbokningsgruppen av precis samma skäl, men den gruppen är
+          permanent; ett kvitto Lotta måste rulla till botten för att hitta
+          hade inte varit "ett kvitto i klartext" (kortets AC #2).
+
+          `mx-4` matchar `DetaljGrupp`s egen sidmarginal, så rutan linjerar
+          med grupperna under den i stället för att sticka ut. */}
+      <OmbokningsKvitto registrationId={registrationId} />
 
       {/* Kontakt FÖRST (byggkrav 4): E-post finns ALLTID (Marcus-beslut — ingen
           saknas-gren); vid obekräftad bor bekräfta-åtgärden hos mailadressen den

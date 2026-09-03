@@ -13,7 +13,31 @@ type Props = {
   rad: InkorgsRad;
   /** Trigger-knappens etikett. ORDLISTA § Inbetalning: handlingen heter så. */
   etikett?: string;
+  /**
+   * [TASK-368.5] DOM-id på trigger-knappen, så en annan yta på samma sida kan
+   * skicka Lotta hit i ETT tryck. Utelämnat ⇒ knappen bär inget id alls, som
+   * förut. Se `REGISTRERA_TRIGGER_ID` nedan för hela kontraktet.
+   */
+  triggerId?: string;
 };
+
+/**
+ * [TASK-368.5] Det ENDA id:t huset använder för denna trigger — spegelbilden
+ * av `ATERBETALNINGS_TRIGGER_ID` (`AterbetalningsYta`, TASK-368.3), samma
+ * kontrakt och samma skäl.
+ *
+ * Ombokningskvittot (`OmbokningsKvitto`) behöver kunna ge Lotta en direkt väg
+ * till "Registrera betalning" när det nya eventet är dyrare, utan att bygga en
+ * andra registreringsyta. Ett DEKLARERAT id, satt av den anropare som faktiskt
+ * vill bli hittad, är det smalaste seamet: ytan förblir självständig, och den
+ * som inte skickar id:t exponerar ingenting.
+ *
+ * SÄTTS BARA AV `AnmalansBetalningar`. Ett id måste vara unikt i dokumentet,
+ * och anmälans sida är den enda vy där kvittot och registreringsytan står
+ * samtidigt. Inkorgens och panelens `RegistreraYta` lämnar propen utelämnad
+ * och kan därför aldrig kollidera.
+ */
+export const REGISTRERA_TRIGGER_ID = 'anmalan-registrera-betalning';
 
 /**
  * [TASK-346.7 AC #2/#3/#4] Registreringen som EN ÅTERANVÄNDBAR YTA - knappen,
@@ -60,7 +84,7 @@ type Props = {
  * säger "denna anmälan har inbetalningar utan kvitto", och den ytan ägs av
  * TASK-346.4:s Edge Functions - inte av denna skiva.
  */
-export function RegistreraYta({ rad, etikett = 'Registrera betalning' }: Props) {
+export function RegistreraYta({ rad, etikett = 'Registrera betalning', triggerId }: Props) {
   const [oppen, setOppen] = useState(false);
   const [kvittens, setKvittens] = useState<string | null>(null);
   const [betalsatt, setBetalsatt] = useState<Betalsatt>(lasSenasteBetalsatt);
@@ -154,6 +178,7 @@ export function RegistreraYta({ rad, etikett = 'Registrera betalning' }: Props) 
         <div className="flex flex-wrap items-center gap-2">
           <Button
             ref={triggerRef}
+            id={triggerId}
             intent="primary"
             emphasis="outline"
             size="sm"
