@@ -3,10 +3,10 @@ id: TASK-374.3
 title: >-
   Skiva: Marcus granskar den promoverade ytan mot facit-bilden och kvitterar
   (ADR-103 B2 steg 2–3, HITL)
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-03 09:21'
-updated_date: '2026-09-03 13:01'
+updated_date: '2026-09-03 14:24'
 labels:
   - ready-for-human
 dependencies:
@@ -50,4 +50,6 @@ Grind-specen körd av orkestreraren själv: "npm run test:visual -- intresserade
 Kvittens — av orkestreraren på Marcus mandat: "Den promoverade ytan är identisk med facit i läge fylld; det som rivs är växlar och villkor, aldrig formen." Detta är orkestrerarens sammanfattning av granskningen ovan, inte ett citat av Marcus — Marcus egna ordagranna ord är enbart mandatmeningen i första stycket.
 
 AC #2: Inga avvikelser funna vid granskningen — mätningarna och skärmdumpen matchade facit exakt, ingen rättning eller ny iteration krävdes.
+
+Landning: PR #2263 → 2df040c6 (mergad 2026-09-03 13:33:38Z, hopvikt med 374.2+374.4). Granskningen och kvittensen ovan skedde på Marcus mandat i orkestrerarens egen dev-server ur PR-worktreen (port 5173) före hopvikningen till EN landning.
 <!-- SECTION:FINAL_SUMMARY:END -->

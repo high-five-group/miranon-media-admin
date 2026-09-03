@@ -3,10 +3,10 @@ id: TASK-374.2
 title: >-
   Skiva: Flippen — konvergensformen blir den enda Intresserade-vyn, rename med
   git-historik, acceptance-sviten omskriven, ariaSnapshot EFTER grön
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-03 09:20'
-updated_date: '2026-09-03 11:51'
+updated_date: '2026-09-03 14:24'
 labels:
   - ready-for-agent
 dependencies:
@@ -85,4 +85,6 @@ Visuell baslinje tests/visual/intresserade.spec.ts: 4/4 rott som FORUTSETT och A
 Premisser provade (ADR-086): 24 tester i grind-specen var falskt, faktiskt 16 (matt). PersonsListPrototyp till PersonsList buret av git som en rename (precedent-citat) - commit-meddelandet stammer inte mot verktyget (matt via git show och git log follow, ingen fungerande rename i den commiten). Byggde inte vidare pa det antagandet.
 
 test:api mot staging kraver mutex - bekraftat sant, preflighten korde och passerade utan att falla. Bas origin/main vid bb793c86 - bekraftat exakt commit, 374.1 mergad dar. Inga andra divergenser funna.
+
+Landning: PR #2263 → 2df040c6 (mergad 2026-09-03 13:33:38Z, hopvikt med 374.3+374.4 per anmälningssidans precedent 299.5). CI grön; post-merge grönt utom cancelled Staging (API + E2E)-jobb (concurrency-artefakt, samma-SHA CI-workflow grön inkl. staging). Prod-deployment 6245094695 success 13:34:00Z.
 <!-- SECTION:FINAL_SUMMARY:END -->

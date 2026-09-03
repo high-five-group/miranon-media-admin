@@ -20,6 +20,7 @@ import { AvbokningsYta } from './AvbokningsYta';
 import { harledBehorighet } from './behorighet';
 import { FritextRad } from './FritextRad';
 import { IdChip } from './IdChip';
+import { OmbokningsKvitto } from './OmbokningsKvitto';
 import { PersonMiniKort } from './PersonMiniKort';
 import { displayName } from './registration-display';
 import { StatusBadge } from './StatusBadge';
@@ -354,6 +355,22 @@ export function AnmalanDetail({
         </p>
       </header>
 
+      {/* [TASK-368.5 AC #2/#3] OMBOKNINGSKVITTOT — den enda gruppen som får
+          stå OVANFÖR de nio låsta, och den enda som är TRANSIENT.
+
+          S83-låset bevakas genom att inget PERMANENT flyttas: kvittot
+          renderas bara direkt efter en ombokning (ett engångsfat ur
+          navigeringens history-state, se `OmbokningsKvitto`), och på varje
+          annan laddning av sidan returnerar komponenten null — då står
+          Kontakt kvar exakt där facit har den. `TASK-368.3` valde SIST för
+          avbokningsgruppen av precis samma skäl, men den gruppen är
+          permanent; ett kvitto Lotta måste rulla till botten för att hitta
+          hade inte varit "ett kvitto i klartext" (kortets AC #2).
+
+          `mx-4` matchar `DetaljGrupp`s egen sidmarginal, så rutan linjerar
+          med grupperna under den i stället för att sticka ut. */}
+      <OmbokningsKvitto registrationId={registrationId} />
+
       {/* Kontakt FÖRST (byggkrav 4): E-post finns ALLTID (Marcus-beslut — ingen
           saknas-gren); vid obekräftad bor bekräfta-åtgärden hos mailadressen den
           faktiskt skickar till. Grön knapp per 18.16-regeln (når utomstående). */}
@@ -652,7 +669,23 @@ export function AnmalanDetail({
               en tom rubrik "Avbokning" ovanför ett tomt kort för varje
               inställd anmälan. Ytan returnerar därför null FÖRE sitt eget
               gruppskal. */}
+          {/* [TASK-368.5, review #2267 runda 2] `key` PÅ ANMÄLANS ID — enda
+              mekanismen som nollställer ytans state vid ett anmälan-byte.
+
+              Routern remountar INTE på ett param-byte i sig: `MatchInner`s
+              `key` härleds uteslutande ur `route.options.remountDeps ??
+              router.options.defaultRemountDeps` (källäst i
+              `node_modules/@tanstack/react-router/dist/esm/Match.js`
+              1.170.21, rad 75-95), och ingen av dem är satt (`grep -rn
+              remountDeps src/` → noll träffar). Utan denna `key` faller
+              nollställningen alltså tillbaka på `isPending`-grenens
+              cache-miss-avmontering ovan som bieffekt — vilket inte inträffar
+              när mål-anmälans detalj redan ligger varm i cachen
+              (persist-lagret, `ADR-072`, normalfall snarare än kantfall), och
+              samma komponentinstans återanvänds då med gammalt
+              `oppen`/`vy`/`nyttEventId`-state. */}
           <AvbokningsYta
+            key={registrationId}
             eventId={eventId}
             registrationId={reg.id}
             namn={namn}

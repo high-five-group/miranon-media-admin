@@ -3,10 +3,10 @@ id: TASK-374.1
 title: >-
   Skiva: Referenserna och härdningen i variant-läge — testid-ankare, live-region
   för träffantal, promoverings-grind-spec med ariaSnapshot FÖRE (B4)
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-03 09:20'
-updated_date: '2026-09-03 10:28'
+updated_date: '2026-09-03 14:24'
 labels:
   - ready-for-agent
 dependencies: []
@@ -57,4 +57,6 @@ DEV-antagandet (premiss för hela AC #3-fixen) verifierades EMPIRISKT innan bygg
 Tvåsidigt bevis för den nya acceptance-filen: grön (aria-live/aria-atomic + sökuppdatering verifierade), och RÖD (exit 1) när attributen togs bort från prototypen — felmeddelandet pekade exakt på den saknade aria-live-attributen. Attributen återställda, grönt igen.
 
 Alla grindar omkörda efter runda 2 med identiskt resultat som runda 1 (se PR-kommentar/agent-svar för exitkoder): typecheck 0, biome 0, build 0, check-langa-streck.mjs 0, check-facit.sh 0 (identisk output mot ursprunglig baseline), grind-specen 12/12 (båda vyportar), K0-acceptance 9/9 orörd, ny acceptance-fil 1/1.
+
+Landning: PR #2248 → bb793c86 (mergad 2026-09-03 10:50:27Z). CI och post-merge gröna på huvudkatalogens verifiering.
 <!-- SECTION:FINAL_SUMMARY:END -->

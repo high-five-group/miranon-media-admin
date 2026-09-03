@@ -4,10 +4,10 @@ title: >-
   Skiva: Rivningen och regressionslåset — växel, variant-post, fyllnadsläge och
   prototypmapp bort, markören avregistrerad i samma commit, visual-baslinjen
   om-baselinjerad efter godkännandet
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-03 09:21'
-updated_date: '2026-09-03 13:04'
+updated_date: '2026-09-03 14:24'
 labels:
   - ready-for-agent
 dependencies:
@@ -27,13 +27,13 @@ ordinal: 679000
 - [x] #1 Prototyp-substratet rivet enligt ADR-103 B2 steg 4: variant-växeln, variant-posten i prototyp-railen, dataläget ?data=fyll och fyllnadsfabriken, prototypmappen tömd; inga [PROTOTYPE]-markörer eller ?variant-/?data-grenar kvar för intresserade (grep-svep bilagt i Final Summary)
 - [x] #2 Markören IntresseradeKonvergens avregistrerad ur .facit-policy.conf i SAMMA commit som koden rivs; bash scripts/check-facit.sh exit 0 efter (slutraden citerad)
 - [x] #3 Den promoverade formen är byte-identisk före och efter rivningen: ariaSnapshot per läge oförändrad i båda vyporterna, grind-specen grön
-- [ ] #4 Visual-baslinjerna för Intresserade (fyra bilder) om-baselinjerade via CI-workflowen visual-baselines.yml EFTER Marcus godkännande i 374.3, aldrig lokalt och aldrig före; ändringen bokförd i commit-meddelandet som avsiktlig; visual-sviten grön
+- [x] #4 Visual-baslinjerna för Intresserade (fyra bilder) om-baselinjerade via CI-workflowen visual-baselines.yml EFTER Marcus godkännande i 374.3, aldrig lokalt och aldrig före; ändringen bokförd i commit-meddelandet som avsiktlig; visual-sviten grön
 - [x] #5 Acceptance-, grind- och API-sviterna gröna på rivningscommiten
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #4 Facit-granskning utförd och bokförd mot tasks/sessions/bilagor/s114-intresserade-konvergens/facit.json ytan intresserade-lista (bild facit-intresserade-lista.png) — formen i bilden slår varje prosa (ADR-102 B1)
@@ -65,4 +65,6 @@ AC #4 (visual-baselines): LAMNAS OBOCKAD med avsikt - orkestreraren utfor om-bas
 AC #5 (matt PRE-REBAS, mot commit fore S117-inflytningen): acceptance-klassen 461/463 (2 orelaterade, forbestaende flakes i dokument-generering-bekraftelse.acceptance.test.ts och mer-aktivitetshistorik-filter.acceptance.test.ts, ingen fil dar rord av denna diff), test:api 1939/1945 (6 orelaterade staging-kontention-flakes, ingen fil dar rord). Dessa tva aggregat ar INTE omkorda mot post-rebas-headen (kostnad: 10-15 min vardera) - grind-specen och den intresserade-scopade acceptance-filen AR omkorda post-rebas (bagge gronda, se ovan/nedan), och de ar den yta denna skiva faktiskt andrar.
 
 Grindar (post-rebas, aktuell head): typecheck exit 0, biome exit 0, build exit 0 (dist-grep 0 traffar for fyllnadsstrangar), check-langa-streck.mjs exit 0 (303 filer skannade - talet steg fran 298 pre-rebas eftersom S117s inflyttade filer ocksa bar streck-tecken).
+
+Landning: PR #2263 → 2df040c6 (mergad 2026-09-03 13:33:38Z, hopvikt med 374.2+374.3) för rivningen; AC #4 (visuella baslinjer) via riktad baseline-PR #2273 → 6a70368b (mergad 2026-09-03 14:15:26Z), dispatch-run 33761887330 på main@2df040c6, 20/20 gröna, 4 bilder. Verifierat av mottagaren: gh pr view 2273 bekräftade MERGED.
 <!-- SECTION:FINAL_SUMMARY:END -->

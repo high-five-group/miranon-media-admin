@@ -6,10 +6,20 @@ import { useAtertaAvbokning, useAvbokaAnmalan } from '@/data/mutations/registrat
 import { RegistrationStatus, type RegistrationStatusValue } from '@/domain/types/Status';
 import { alertScreenReader } from '@/lib/alert-screen-reader';
 import { betalningarPa } from '@/lib/funktionsflaggor';
+import { OmbokningsSteg } from './OmbokningsSteg';
+import { begripligtServerfel } from './serverfel';
+import { VantelistePaminnelse } from './VantelistePaminnelse';
 
 /**
  * [TASK-368.3] Avbokningen på anmälans egen sida: knappen, bekräftelsesteget
  * med frivilligt skäl och betalläge, och återtagandet.
+ *
+ * [TASK-368.5] Samma steg bär nu TVÅ vägar och en påminnelse: en tredje knapp
+ * "Boka om till annat event" som växlar in `OmbokningsSteg` i stället för
+ * avbokningsformen (`vy`-state nedan), och väntelistepåminnelsen
+ * (`VantelistePaminnelse`) mellan betalläget och felraden. `begripligtServerfel`
+ * bodde tidigare i denna fil och är flyttad till `serverfel.ts` — samma kod,
+ * nu två konsumenter; se den filens huvud för varför.
  *
  * PRD `TASK-368` beslut 2 (grillad samsyn, sessionsdok S115 Del 3):
  * *"'Avboka anmälan' på anmälans egen sida, sekundär destruktiv ton,
@@ -69,29 +79,6 @@ import { betalningarPa } from '@/lib/funktionsflaggor';
  * § ÖVERGÅNGSTABELLEN — inte gissat härifrån.
  */
 
-/**
- * Serverns egen svenska mening, skalad ur `EdgeFunctionError`s tekniska hölje.
- *
- * `supabase-client.ts` § `edgeFunctionError` bygger meddelandet som
- * `Edge Function "<namn>" <status>: <serverns text> (requestId: <id>)`.
- * Serverns text ÄR redan begriplig — `cancel-registration` svarar t.ex.
- * "Anmälan är redan avbokad." (`_shared/cancel-registration.ts`
- * § `felmeddelande`) — men prefixet och requestId:t är för utvecklare, inte
- * för Lotta. AC #4 kräver "begriplig text", och det billigaste sättet att få
- * den är att visa det servern redan skrev, utan höljet.
- *
- * Matchar mönstret inte (nätverksfel, ett kast utanför EF-vägen) returneras
- * meddelandet ORÖRT — hellre en teknisk mening än ingen alls.
- */
-const EF_HOLJE_PREFIX = /^Edge Function "[^"]+" \d{3}: /;
-const EF_HOLJE_SUFFIX = / \(requestId: [^)]*\)$/;
-
-function begripligtServerfel(fel: Error): string {
-  const skalat = fel.message.replace(EF_HOLJE_PREFIX, '').replace(EF_HOLJE_SUFFIX, '').trim();
-  if (skalat === '') return 'Servern svarade utan förklaring.';
-  return /[.!?]$/.test(skalat) ? skalat : `${skalat}.`;
-}
-
 /** De tre statusar servern tillåter en avbokning FRÅN (EF:ens övergångstabell). */
 const AKTIVA_STATUSAR: readonly RegistrationStatusValue[] = [
   RegistrationStatus.OBEKRAFTAD,
@@ -122,6 +109,16 @@ export function AvbokningsYta({
   const lage = harledAvbokningslage(status);
 
   const [oppen, setOppen] = useState(false);
+  /**
+   * [TASK-368.5] Vilken av stegets TVÅ vägar som står framme. Boka om är ett
+   * ALTERNATIV till avbokningen, inte ett tillägg till den (PRD beslut 7:
+   * *"genvägen … i avbokningssteget"*), så vyerna ersätter varandra i stället
+   * för att staplas: avbokningens fritextskäl är meningslöst i ombokningen
+   * (servern skriver sitt eget skäl, `OmbokningsSteg` § SKÄLET VISAS), och två
+   * bekräftelseknappar i samma fieldset hade gjort det otydligt vilken
+   * handling Escape avbryter.
+   */
+  const [vy, setVy] = useState<'avboka' | 'bokaom'>('avboka');
   const [skal, setSkal] = useState('');
 
   const avboka = useAvbokaAnmalan();
@@ -170,6 +167,11 @@ export function AvbokningsYta({
   function stangSteget() {
     setOppen(false);
     setSkal('');
+    // Nästa öppning börjar ALLTID i avbokningsvyn: knappen som öppnar steget
+    // heter "Avboka anmälan", och att den ibland hade landat i ombokningen
+    // (för att Lotta råkade titta på den förra gången) vore en handling som
+    // inte matchar sin trigger.
+    setVy('avboka');
   }
 
   function avbryt() {
@@ -256,7 +258,16 @@ export function AvbokningsYta({
           </div>
         )}
 
-        {lage === 'aktiv' && oppen && (
+        {lage === 'aktiv' && oppen && vy === 'bokaom' && (
+          <OmbokningsSteg
+            registrationId={registrationId}
+            gammaltEventId={eventId}
+            namn={namn}
+            onAvbryt={avbryt}
+          />
+        )}
+
+        {lage === 'aktiv' && oppen && vy === 'avboka' && (
           <fieldset
             onKeyDown={vidTangent}
             className="flex flex-col gap-3 rounded-xl border border-border bg-surface p-3"
@@ -281,6 +292,13 @@ export function AvbokningsYta({
               hook-anropet, är det som villkoras. */}
             {betalningarPa() && <AvbokningsBetallage anmalanRecordId={registrationId} />}
 
+            {/* [TASK-368.5 AC #4] Väntelistepåminnelsen står MELLAN betalläget
+              och felraden: den svarar på Lottas nästa fråga ("kan jag erbjuda
+              platsen?") efter att hon sett pengarna, och före allt som kan gå
+              fel. Ordningen är uppdragets, inte vald här. Raden uteblir helt
+              när ingen väntar eller talet är okänt — se komponenten. */}
+            <VantelistePaminnelse eventId={eventId} />
+
             {avboka.isError && (
               <p role="alert" className="text-(color:--mm-input-error-text) my-0 text-small">
                 {`Avbokningen gick inte igenom: ${begripligtServerfel(avboka.error)} Anmälan är oförändrad.`}
@@ -301,6 +319,19 @@ export function AvbokningsYta({
                 onPress={bekraftaAvbokning}
               >
                 Avboka anmälan
+              </Button>
+              {/* [TASK-368.5] TREDJE knappen, sist i raden — inte andra.
+                Placeringen är uppdragets ("Boka om-valet = tredje knapp") och
+                den bevarar APG-formen ovan orörd: Avbryt först och närmast
+                till hands, den destruktiva handlingen näst, alternativet
+                sist. Att skjuta in ett val MELLAN Avbryt och Avboka hade
+                flyttat den destruktiva knappen längre bort från sin egen
+                etikett i tabbordningen utan att någon bett om det.
+
+                `secondary` och inte `danger`: ombokningen ger personen en
+                plats på ett annat event — den tar inte bort en. */}
+              <Button intent="secondary" size="sm" onPress={() => setVy('bokaom')}>
+                Boka om till annat event
               </Button>
             </div>
           </fieldset>

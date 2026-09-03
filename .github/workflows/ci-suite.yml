@@ -516,12 +516,24 @@ jobs:
   acceptance-sjalvtest:
     name: Acceptance — tvåsidigt bevis (hermetik-självtest)
     runs-on: ubuntu-latest
-    # SAMMA TAK SOM `acceptance`, av samma skäl: de två arbetsmängderna är
-    # jämnstora (mätserien ovan), och samma längd ska ha samma tak. Efter
-    # delningen mäter taket EN av dem i stället för summan — marginalen mot
-    # svansen (313 s beviset, 352 s sviten) går från ~1,0 min till ~5,7 min
-    # UTAN att taket rörts, vilket var hela poängen med task-239 AC #2.
-    timeout-minutes: 12
+    # SAMMA TAK SOM `acceptance` VAR TÄNKT ATT VARA, av samma skäl: de två
+    # arbetsmängderna är jämnstora (mätserien ovan), och samma längd ska ha
+    # samma tak. Efter delningen mäter taket EN av dem i stället för summan —
+    # marginalen mot svansen (313 s beviset, 352 s sviten) gick från ~1,0 min
+    # till ~5,7 min UTAN att taket rörts, vilket var hela poängen med
+    # task-239 AC #2.
+    #
+    # HÖJT 12→20 MIN 2026-09-03 (enabling-detour, S115): svit-growth i S115
+    # (`tests/acceptance/anmalan-avbokning.acceptance.test.ts` +9,
+    # `tests/acceptance/anmalan-ombokning.acceptance.test.ts` +18) åt upp
+    # marginalen. Fyra `cancelled`-avbrott samma dag (jobb-timeout, inte
+    # testfel): PR-run 33758913155 + 33763097230 (#2267), 33760261291
+    # (#2272), kö-run 33765539135 (#2267, 14:13:13→14:25:31 = 12 min 18 s).
+    # Gröna körningar samma dag: 9:02, 11:55, 11:21, 9:56 (`gh run view <id>
+    # --json jobs`). 20 min ≈ 2× typisk körtid — branschpraxis-headroom, ingen
+    # ny mätserie. Uppföljningskort (per-fil-mätning + delningsförslag):
+    # se backlog-kortet skapat i samma PR.
+    timeout-minutes: 20
     permissions:
       contents: read
     steps:

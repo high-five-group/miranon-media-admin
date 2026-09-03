@@ -179,6 +179,110 @@ test.describe('get-event — conformance (single-get-mall, Fas 6b L2)', () => {
     expect(event.kursniva).toBe(rim?.kursniva);
   });
 
+  // ── EVENTETS PRIS (TASK-368.7 AC #1) ──
+  // Fältet är prisets nivå 2 med Eventinnehåll-standarden (nivå 3) uppslagen
+  // server-side — SAMMA `valjPris` som ombokningens `prisskillnad` använder.
+  // Går de isär slutar prisbeskedet före bekräftelsen stämma med kvittot efter
+  // den, och ingen annan grind ser det.
+
+  test('priset (AC #1): get-events bär `pris` på VARJE event — number eller null, aldrig utelämnat', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const res = await fetchEventsList(request, config, jwt);
+    expect(res.status()).toBe(200);
+    const rader = ((await res.json()) as { events: { pris?: unknown }[] }).events;
+    expect(rader.length, 'staging-basen måste ha minst ETT event').toBeGreaterThan(0);
+
+    // NYCKELN MÅSTE FINNAS. Schemat har fältet `.optional()` för
+    // bakåtkompatibilitet mot cache från före denna leverans, så en `.parse()`
+    // ensam hade INTE fällt en EF som slutade bära det. Därför prövas den råa
+    // JSON-nyckeln här, före valideringen.
+    for (const rad of rader) {
+      expect(
+        Object.hasOwn(rad, 'pris'),
+        `get-events utelämnade \`pris\` för en rad: ${JSON.stringify(rad).slice(0, 120)}`,
+      ).toBe(true);
+      expect(rad.pris === null || typeof rad.pris === 'number').toBe(true);
+    }
+
+    // Och schemat håller för hela listan.
+    z.array(EventSchema).parse(rader);
+
+    // MINST ETT event måste ha ett SATT pris. Utan detta hade sviten varit
+    // grön även om mappningen alltid gav null — alltså grön med ett dött fält.
+    // Staging bär priser sedan TASK-346.2 (`data-model.md` § Stagingbasens
+    // additiva tillskott 2026-08-30); saknas de helt är det basen som
+    // regredierat, och det ska SYNAS.
+    const medPris = rader.filter((r) => typeof r.pris === 'number');
+    expect(
+      medPris.length,
+      'staging-basen måste ha minst ETT event med ett pris (eget eller via Eventinnehåll-standarden)',
+    ).toBeGreaterThan(0);
+  });
+
+  test('priset (AC #1): get-event (single) ger SAMMA tal som listan för samma rad', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+
+    // KORSVALIDERINGEN ÄR POÄNGEN, inte en formalitet: de två EF:erna löser
+    // Eventinnehåll-uppslaget på OLIKA vägar — get-events slår upp EN gång för
+    // hela listan, get-event för en enda rad — och en divergens där hade gett
+    // ombokningssteget (som läser LISTCACHEN) ett annat pris än eventsidan.
+    const listRes = await fetchEventsList(request, config, jwt);
+    const listEvents = z
+      .array(EventSchema)
+      .parse(((await listRes.json()) as { events: unknown }).events);
+    const medPris = listEvents.find((e) => typeof e.pris === 'number');
+    expect(medPris, 'staging-basen måste ha minst ETT event med ett satt pris').toBeDefined();
+
+    const res = await callGetEvent(request, config, jwt, medPris?.id);
+    expect(res.status()).toBe(200);
+    const event = EventSchema.parse(((await res.json()) as { event: unknown }).event);
+    expect(event.pris, 'get-event mot get-events för samma rad').toBe(medPris?.pris);
+  });
+
+  test('priset (AC #1): Eventinnehåll-standarden når fram — RIM-1-utbildningarna bär ett pris', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const res = await fetchEventsList(request, config, jwt);
+    const events = z.array(EventSchema).parse(((await res.json()) as { events: unknown }).events);
+
+    // BASFÖRUTSÄTTNINGEN, mätt 2026-09-03 mot staging (`apphjj8Q7lkXCMsL4`):
+    // Eventinnehåll-raden `Resor i medvetandet 1 × Utbildning` bär
+    // `Pris (kr)` = 2500 (satt av TASK-346.2), medan de flesta
+    // Eventplanering-rader för det paret saknar ett EGET `Pris (kr)`. Ett
+    // sådant event kan alltså BARA få ett pris via uppslaget — det är hela
+    // fallbackens bevis, och utan den skulle klienten visa "priset är inte
+    // satt" för ett event servern prissätter.
+    const rimEtt = events.filter(
+      (e) => e.eventNamn === 'Resor i medvetandet 1' && e.typ === 'Utbildning',
+    );
+    expect(
+      rimEtt.length,
+      'staging-basen måste ha minst ETT "Resor i medvetandet 1 × Utbildning"-event',
+    ).toBeGreaterThan(0);
+    for (const e of rimEtt) {
+      // `typeof === 'number'` och INTE `.not.toBeNull()`. Skillnaden är mätt,
+      // inte teoretisk: fältet är `.optional()` i schemat, så en EF som
+      // UTELÄMNAR nyckeln ger `undefined` — och `expect(undefined).not
+      // .toBeNull()` PASSERAR. Den svagare formen stod här först och var grön
+      // mot den ännu odeployade staging-EF:en, alltså grön utan att bevisa
+      // något (mätt 2026-09-03: de två fallen ovan föll, detta gjorde det
+      // inte). Ett fallback-bevis som inte kan skilja "saknas" från "finns"
+      // är inget bevis.
+      expect(
+        typeof e.pris,
+        `event ${e.id} (${e.eventlabel}) bär inget pris — Eventinnehåll-standarden nådde inte fram`,
+      ).toBe('number');
+    }
+  });
+
   // ── Beläggningens innehållsmodell (task-18.2; K16 — AC #1) ──
   // PERMANENT seedad fixtur (tests/api/fixtures.ts BELAGGNING_*) — den globala
   // stopp-grinden "seeda inte i onödan" är prövad och passerad: ingen EF kan
