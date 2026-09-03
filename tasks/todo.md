@@ -47,6 +47,9 @@ facit → röktest-listan. Bokfört: TASK-357 mintad (seed-review-prisfälten) �
 
 ## Aktuellt fokus
 
+**Session 115 ▶️ AKTIV (2026-09-03, `lifecycle: active`; kontrollerad kompaktering ~12:30 UTC, Del 6) — AVBOKNING I APPEN + RIM 3-FYNDEN.** Prod-incident (inbetalning försvann ur inkorgen = flikens minne, `TASK-367`), prod-läsväg via låsets bypass (research: läsroll), grillning → PRD `TASK-368` + sex skivor; 368.1 räknarfixen i prod (rollup + formler, 213.8/213.9 Done), 368.2 operationen landad, 368.3 i kön (`#2246`), 368.4 runda 2 (`#2247`, ADR-130, adoption begränsad på Marcus beslut), 368.5 nästa; RIM 3-fynden `TASK-372` (spökflagga, landad `#2244`) + `TASK-373` (mätaren, `#2245`); uppföljningskort 371, 375–377. **NÄSTA:** #2247 runda 2 → 368.5 (Opus) → 368.6 QA (Marcus) → prod-deploy (Marcus, fas4) → stängning + `session-end`. Numrering: ADR 131 · kort 378 · L655 · T184. Full narrativ: sessionsdok S115 Del 1–6.
+
+
 **Session 114 ▶️ ÅTERUPPTAGEN (resume 1, 2026-09-03, `lifecycle: active`; Marcus: *"Återuppta
 S114."* → *"Kör"* — paus-landningen `#2180` hade ALDRIG nått `main` [CONFLICTING, 119 bakom]:
 rebasad, resume 1 i SAMMA PR, docs-only; huvudkatalogen ägs av S115, S114 kör i worktrees
