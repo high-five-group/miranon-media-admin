@@ -59,7 +59,7 @@
  */
 import { Check, CircleCheck, Group, Layers, ListPlus, Users } from 'lucide-react';
 import { useQueryState } from 'nuqs';
-import { useId, useState } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { SidRam } from '@/components/primitives/SidRam';
 
@@ -226,12 +226,21 @@ export function SegmentListaKonvergens() {
   const tackningPanelId = useId();
   const tomt = dataMode === 'tom';
   const dina = tomt ? [] : DINA_DEMO;
+  // Rutt-fokus till rubriken vid mount — skarpa vyns `useVyFokus`-mönster
+  // (VariantD rad ~1112) i IntresseradeKonvergens-formen; datat är statiskt
+  // så ingen dataKlart-grind behövs. Granskningsfynd #2256 runda 1.
+  const rubrikRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    rubrikRef.current?.focus();
+  }, []);
 
   return (
     <section className="flex flex-col gap-6">
       <SidRam to="/mer" tillbakaEtikett="Tillbaka till Mer" />
       <header className="flex flex-col gap-1.5 border-border border-b px-4 pb-5">
-        <h1 className="font-semibold text-3xl">Segment</h1>
+        <h1 ref={rubrikRef} tabIndex={-1} className="font-semibold text-3xl">
+          Segment
+        </h1>
       </header>
 
       {infoDold ? null : (
@@ -245,8 +254,9 @@ export function SegmentListaKonvergens() {
       )}
 
       <div className="flex flex-col gap-6 px-4">
-        {/* Handlingsraden: facitets tre kapslar med ikoner, Markera högerankrad. */}
-        <div className="flex min-h-10 flex-wrap items-center gap-2">
+        {/* Handlingsraden: facitets tre kapslar med ikoner, Markera högerankrad.
+            `print:hidden` som skarpa vyn (VariantD rad ~1964). */}
+        <div className="flex min-h-10 flex-wrap items-center gap-2 print:hidden">
           <button type="button" className={KAPSEL_KLASS}>
             <ListPlus aria-hidden="true" size={18} className="shrink-0" />
             Nytt segment
@@ -300,7 +310,7 @@ export function SegmentListaKonvergens() {
               aria-expanded={tackningOppen}
               aria-controls={tackningPanelId}
               onClick={() => setTackningOppen((v) => !v)}
-              className={`-mx-2 flex items-center gap-2 rounded-lg px-2 py-1.5 font-medium text-small motion-safe:transition-colors ${
+              className={`-mx-2 flex items-center gap-2 rounded-lg px-2 py-1.5 font-medium text-small motion-safe:transition-colors print:hidden ${
                 tackningOppen ? 'bg-bg-emphasized' : 'text-text-secondary hover:bg-bg-emphasized'
               }`}
             >
