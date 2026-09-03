@@ -22,6 +22,7 @@ import { useDataSource } from '@/data/useDataSource';
 import type { Event } from '@/domain/models/Event';
 import type { Registration } from '@/domain/models/Registration';
 import { RegistrationSource, RegistrationStatus } from '@/domain/types/Status';
+import { arAktivAnmalan } from '@/lib/aktiv-anmalan';
 import { queryKeys } from '@/queries/keys';
 // Betalningars arbetsyta flyttade in i Anmälda deltagare (S93 konvergens-pass
 // Del 3 beslut 1) — se ArbetsKo:s "Öppna detaljer" nedan.
@@ -153,8 +154,10 @@ declare module '@tanstack/react-router' {
  * en UTSKICKS-logg, gruppen är anmälans TILLSTÅND. Divergerar de visas det som
  * det är — aldrig hopslaget.
  *
- * Avbokade/ombokade räknas bort ur SUMMERINGARNA och topp-räknarna (`arAktiv`,
- * samma basformel-disciplin som Betalningar-gruppen) — en avbokad anmälan är
+ * Avbokade/ombokade OCH inställda räknas bort ur SUMMERINGARNA och
+ * topp-räknarna (`arAktivAnmalan`, samma basformel-disciplin som
+ * Betalningar-gruppen — TASK-368.1/213.8 utökade predikatet till att även
+ * exkludera Inställt, 2026-09-03) — en avbokad eller inställd anmälan är
  * inte Lottas ARBETE. [ÄNDRAT, TASK-162.3 AC #2] Registret självt är
  * undantaget: avbokade syns numera i registrets bas (grå-märkta av
  * `HallplatsMarke`, sist i ordningen via `registerOrdning`s hink 6) —
@@ -172,11 +175,6 @@ declare module '@tanstack/react-router' {
  * egen text, färg aldrig ensam bärare; räknarna står som TEXT i etiketterna
  * (skärmläsaren får hela bilden); signal-badgen bär sin text likaså.
  */
-
-/** Aktiv anmälan (basens 'Är aktiv'-formel): endast Avbokad/Ombokad räknas bort. */
-function arAktiv(r: Registration): boolean {
-  return r.status !== RegistrationStatus.AVBOKAD;
-}
 
 /** Bekräftad ⟺ basens Status har lämnat 'Obekräftad' (ORDLISTA; S73 K53). */
 function arBekraftad(r: Registration): boolean {
@@ -1271,7 +1269,7 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
   // för skarpa vyn OCH `?variant=a`, i stället för två parallella tillstånd.
   const [registerFilter, setRegisterFilter] = useState<RegisterFilter>(TOMT_REGISTER_FILTER);
 
-  const aktiva = useMemo(() => registreringar.filter(arAktiv), [registreringar]);
+  const aktiva = useMemo(() => registreringar.filter(arAktivAnmalan), [registreringar]);
 
   // [PROTOTYPE] [S93] GEMENSAMT — avbokade (Del 3 fall C): tysta idag, en
   // diskret rad längst ned under hållplats-prototypen. Läser HELA

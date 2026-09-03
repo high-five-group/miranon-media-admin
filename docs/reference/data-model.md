@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-31
+updated: 2026-09-03
 review_by: 2026-11-24
 status: stable
 ---
@@ -1494,6 +1494,80 @@ ingen Event-länk → `Utan event`.
 
 ---
 
+## Fält tillagda 2026-09-03 — räknarfixen (TASK-368.1, TASK-213.8/213.9)
+
+**I BÅDA BASERNA 2026-09-03** — staging (`apphjj8Q7lkXCMsL4`) ändrad först,
+prod (`app8uGPrVCVOm6LfD`) därefter på Marcus explicita GO ("Du har GO på
+fältbytet i prodbasen sedan", 2026-09-03). Bas-halvan utfördes av
+orkestreraren via claude.ai-Airtable-connectorn (denna PR bär endast
+app-halvan + dokumentationen); talen nedan är rapporterade av orkestreraren
+till app-agenten, inte oberoende verifierade av den senare mot basen.
+
+**Två formler ändrade (samma ID i båda baser, ingen ny option/inget nytt
+fält för dem):**
+
+| Fält | ID | Ändring |
+|---|---|---|
+| `Anmälningar.Är aktiv (1/0)` | `fld4j7PeckDViTdIB` | `IF({Status}="Avbokad/Ombokad", 0, 1)` → `IF(OR({Status}="Avbokad/Ombokad", {Status}="Inställt"), 0, 1)` — stänger §Kända fällor post 27. |
+| `Eventplanering.Antal anmälda` | `fldTQkYOz9O2BGEIZ` | `{Antal anmälningar} + {Manuella platser}` → `{Antal aktiva anmälningar} + {Manuella platser}` — täljaren byter källa till det nya rollup-fältet nedan. |
+
+**Ett nytt fält** — `Eventplanering.Antal aktiva anmälningar`, rollup
+`SUM(values)` över länkfältet `fldUAjTutSM0fziMT` (Anmälningar) av `Är aktiv
+(1/0)`:
+
+| Bas | ID |
+|---|---|
+| Staging | `fld1LGJ6HVCLDJhFC` |
+| Prod | `fldO9pTic9Mm8G6P4` |
+
+**Varför ett NYTT fält i stället för att bygga om `Antal anmälningar`
+(`fldU5MCQmagdHtz4G`) till en rollup: R3, inte R1 (TASK-213.9-kortets egen
+term).** Airtables Meta-API kan inte byta ett fälts `type` (samma väggen som
+§Kända fällor 25 — `Manuella flagga`) — ett count-fält kan alltså inte
+omvandlas till en rollup in-place. `Antal anmälningar` lämnades därför
+**OFÖRÄNDRAT** (fortfarande `count`, räknar ALLA anmälningar inklusive
+Avbokad/Ombokad och Inställt) — det används medvetet så av
+Verksamhetspuls-interfacets bigNumber och linjediagram, som ska visa den
+RÅA anmälningsvolymen, inte den aktiva. `Antal anmälda`
+(`fldTQkYOz9O2BGEIZ`) pekar i stället om till det nya `Antal aktiva
+anmälningar`-fältet.
+
+**Blast radius — följdfälten på `Antal anmälda` ändrades inte själva, bara
+sitt indata:** `Anmäld beläggning (%)` (`fldqkyeE7cVHMNRpH`), `Platser kvar`
+(`fldaqwIdTNJ54Xn5P`) och `Antal slutbetalning saknas` (`fldgv8tekGEbNBZfw`)
+läser alla `Antal anmälda` och följer automatiskt med. **Automation A6**
+(`wfl0filPx4wyAcaQ8`, § Automationssekvenser) triggar på `Anmäld beläggning
+(%) = 1` — samma villkor, oförändrat, men fyrar nu vid en mindre nämnare
+(faktiskt AKTIVA anmälningar) i stället för alla, alltså vid genuin fullbokning
+i stället för en fullbokning som räknade avbokade/inställda med. Ingen ändring
+i A6 själv krävdes (bekräftat via `get_automation`-läsning, TASK-213.9 AC #2,
+se kortets Implementation Notes).
+
+**Staging-bevis (kortlivad fixtur `ZZ-GRANSKNING-S115`, 4 anmälningar varav
+en satt till Avbokad/Ombokad och en till Inställt, städad efter mätningen):**
+
+| Fält | Före | Efter |
+|---|---|---|
+| Antal anmälningar (oförändrat count-fält) | 4 | 4 |
+| Antal aktiva anmälningar (nytt) | 4 | 2 |
+| Antal anmälda | 4 | 2 |
+| Platser kvar | 16 | 18 |
+| Anmäld beläggning (%) | 20 % | 10 % |
+| Antal slutbetalning saknas | 3 | 1 |
+
+Prod-siffrorna (Psionautics-eventet, TASK-213.9 AC #3: `Antal anmälningar`
+88→79, `Platser kvar` 0→9 gäller `Antal aktiva anmälningar`/`Antal anmälda`,
+inte det oförändrade count-fältet) rapporteras separat av orkestreraren i
+`TASK-213.9`s Implementation Notes.
+
+**App-halvan (samma PR som denna dokumentation, B1-kravet i `TASK-213.8`):**
+de tre JS-predikaten som replikerade basens gamla `Är aktiv`-formel
+(`Deltagare.tsx`, `Gruppdynamik.tsx`, `AtgardsSida.tsx`) är konsoliderade
+till EN delad `arAktivAnmalan` (`src/lib/aktiv-anmalan.ts`) och exkluderar nu
+även `Inställt`, i synk med basformeln ovan.
+
+---
+
 ## Den kritiska distinktionen — två datakällor, två konsekvenser
 
 **Det här är den viktigaste insikten i hela modellen.** Rollup-fälten på Personer kommer från två olika tabeller, och det avgör helt vad datan faktiskt betyder.
@@ -2164,6 +2238,8 @@ Detta är saker som har bitit oss eller sannolikt kommer att bita oss.
 
     **Åtgärd-rekommendation:** Uppdatera formeln till `IF(OR({Status}="Avbokad/Ombokad", {Status}="Inställt"), 0, 1)`. Inte gjord 2026-04-26 — sannolikt missad i samband med att Inställt-option lades till.
 
+    **[ÅTGÄRDAD 2026-09-03, `TASK-368.1`/`TASK-213.8`/`TASK-213.9`, Marcus-GO för prod-mutationen.]** Formeln på `Är aktiv (1/0)` (`fld4j7PeckDViTdIB`, samma ID i båda baser) är exakt rekommendationen ovan: `IF(OR({Status}="Avbokad/Ombokad", {Status}="Inställt"), 0, 1)`. Samtidigt bytt: `Eventplanering.Antal anmälda` (`fldTQkYOz9O2BGEIZ`) bygger nu på ett NYTT rollup-fält `Antal aktiva anmälningar` i stället för det gamla ovillkorade `Antal anmälningar`-räknefältet (R3-vägen — API:t kan inte byta ett fälts typ, se § Fält tillagda 2026-09-03 nedan för fullständig mekanik och staging-bevis). App-halvans tre JS-predikat (Deltagare.tsx, Gruppdynamik.tsx, AtgardsSida.tsx — nu konsoliderade till `arAktivAnmalan` i `src/lib/aktiv-anmalan.ts`) landade i samma PR som bas-fixen (B1-kravet, TASK-213.8).
+
 28. **Två parallella `Antal genomförda event`-formler.** På Personer finns både:
     - `flddymQaYJGVCInzq` ("Antal genomförda event (gammal)") — gammal **rollup** på Deltaganden.Genomfört event
     - `flddy8JND3YnlgZxe` ("Antal genomförda event") — ny **formula** sedan 2026-04-26: summan av RIM 1 × + RIM 2 × + RIM 3 × + Fjärrskådning ×
@@ -2402,3 +2478,4 @@ Code kan ta dessa när de blir relevanta för en specifik uppgift.
 | 2026-08-29 (`TASK-338.6`, steg (i), komplettering) | **De två återstående prod-ID:na ifyllda** — Räckvidd-choicen "Gemensam" (`selsABHUcAQJqGd0M`, färg `blueLight2` — Airtables egen typecast-tilldelning, inte avsiktlig) och Platsers auto-födda spegelfält (`fld1yaGrVppKh9fyh`, läst ur `Plats.options.inverseLinkFieldId`), mätta via `describe_table` mot prod 2026-08-29 (Marcus stående GO för prod-läsning) sedan migreringsskriptet bevisligen inte fångar dem (kvarstående tooling-lucka, bokförd i § Bilagornas Gemensam-räckvidd, inte stängd av mätningen). Bonus: `Platsnamn`s `fieldIdInLinkedTable` i prod (`fld9CfDq4rqTAGGpw`) och `Plats`-fältets `prefersSingleRecordLink: false` i prod — bekräftar staging, stänger `TASK-338.6` § Premiss-pass punkt 2. |
 | 2026-08-30 (`TASK-346.2`, ADR-128 §§ 2/5/7) | **§ Stagingbasens additiva tillskott 2026-08-30 tillagd** — nio nya fält (Eventinnehåll/Eventplanering `Pris (kr)`+`Anmälningsavgift (kr)`, Anmälningar `Avtalat pris (kr)`/`Summa inbetalt (kr)`/`Kvittonummer`/`Pris (kr) (from Event)`-lookup/`Saknas (kr)`-formel), skapade live via Airtable MCP; deklarativ hemvist `scripts/create-betalningsfalt.mjs`. `Saknas (kr)`-formeln empiriskt fyrfallstestad live (inget pris → BLANK, eventpris-fallback, Avtalat pris-företräde, genuin överbetalning tillåten negativ). Priser satta för ZZ-GRANSKNING-S113 (2500/1000, källa-divergens bokförd öppet) och Eventinnehåll-standarden `Resor i medvetandet 1 · Utbildning` (parsat ur egen fritext). Ny allowlist-operation `write-registration-payment-mirror` i `field-allowlists.ts` (byggs på av `TASK-346.4`). Prod-fältlistan (§ AC #5) skriven som öppet Marcus-moment. |
 | 2026-08-30 (`TASK-346.2` runda 2, review-fynd) | **§ Stagingbasens additiva tillskott: `Saknas (kr)`-formeln RÄTTAD** — den ursprungliga formeln behandlade explicit 0-pris som "okänt" (Airtables `OR()`/`IF()` läser talet 0 som falskt); fixad med ett närvaro-test (`{Fält} & "" != ""`) i stället för sanningsvärde. `mcp__airtable__update_field` kan inte ändra ett formelfälts formula och MCP-servern saknar `delete_field` — det gamla fältet döptes om till `Saknas (kr) [ERSATT 2026-08-30 — 0-pris-bugg]` (`fldSJCJwXnqwBIX2b`, kvarlämnat orört) och ett nytt `Saknas (kr)` (`fldAjVbTtNo1IMkW6`) skapades med den korrekta formeln. Fem fall + en bråkdels-kontroll verifierade live, inklusive två negativa kontroller mot det gamla fältet. Kosmetisk-kant-noten utökad till att gälla `Saknas (kr)` självt; "obevisat för bråkdelar"-frågan stängd med ett faktiskt bråkdels-test (2500.55 − 0.05 = 2500.5, exakt). Prod-fältlistan uppdaterad till att peka på den korrigerade formeln. |
+| 2026-09-03 (`TASK-368.1`, `TASK-213.8`/`TASK-213.9`) | **§ Kända fällor post 27 ÅTGÄRDAD + ny § Fält tillagda 2026-09-03 tillagd.** `Är aktiv (1/0)` (`fld4j7PeckDViTdIB`) utökad till `IF(OR({Status}="Avbokad/Ombokad", {Status}="Inställt"), 0, 1)` i BÅDA baser. Nytt rollup-fält `Eventplanering.Antal aktiva anmälningar` (staging `fld1LGJ6HVCLDJhFC`, prod `fldO9pTic9Mm8G6P4`), `SUM(values)` av `Är aktiv (1/0)`. `Antal anmälda` (`fldTQkYOz9O2BGEIZ`) pekar nu på det nya fältet i stället för det ovillkorade `Antal anmälningar` (`fldU5MCQmagdHtz4G`, MEDVETET oförändrat — Verksamhetspuls-interfacets bigNumber/linjediagram). R3-vägen (nytt fält, inte typbyte — API:t kan inte byta ett fälts typ), samma väggklass som §Kända fällor 25. Bas-halvan utförd av orkestreraren via claude.ai-Airtable-connectorn på Marcus GO; app-halvan (denna PR) konsoliderar de tre JS-predikaten till `arAktivAnmalan` (`src/lib/aktiv-anmalan.ts`). Staging-bevis: fixtur `ZZ-GRANSKNING-S115` (4 anmälningar, en Avbokad/Ombokad + en Inställt) → Antal aktiva anmälningar 4→2, Antal anmälda 4→2, Platser kvar 16→18, Anmäld beläggning 20 %→10 %, Antal slutbetalning saknas 3→1; Antal anmälningar oförändrat 4. Prod-siffrorna (Psionautics) rapporteras separat i `TASK-213.9`s Implementation Notes. |
