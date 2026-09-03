@@ -3,10 +3,10 @@ id: TASK-370.2
 title: >-
   Skiva: Försättsbladet — kontrollblad med kvittots sidhuvud som första sida i
   det kombinerade dokumentet
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-03 08:31'
-updated_date: '2026-09-03 10:41'
+updated_date: '2026-09-03 11:26'
 labels:
   - ready-for-agent
 dependencies:
@@ -38,7 +38,7 @@ Beteende ände-till-ände: det kombinerade förhandsgranskningsdokumentet börja
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #4 Minimaltestet (två kvitton, en sidbrytning) verifierat med pdfinfo/pdftotext/pdffonts FÖRE EF-bygget, och renderingstiden vid N ≈ 30 mätt mot klienttaket (ärvd PRD-grind; markera N/A med motivering om skivan inte rör den)
+- [x] #4 Minimaltestet (två kvitton, en sidbrytning) verifierat med pdfinfo/pdftotext/pdffonts FÖRE EF-bygget, och renderingstiden vid N ≈ 30 mätt mot klienttaket (ärvd PRD-grind; markera N/A med motivering om skivan inte rör den)
 - [x] #5 ADR-124 § Updates amenderad med det kombinerade utkastets nyckelform; mallkatalogens README § Förlagorna bokför försättsbladet som mall utan förlaga (ärvd PRD-grind; N/A med motivering om skivan inte rör den)
 - [x] #6 Mallparitets-grinden och mall-synken körda om försättsbladets mall läggs i mallkatalogen (ärvd PRD-grind; N/A med motivering om skivan inte rör den)
 <!-- DOD:END -->
@@ -52,3 +52,9 @@ DoD 4 ar N/A for denna skiva: det arvda PRD-minimaltestet (tva KOMBINERADE kvitt
 
 Review runda 1 (PR 2253, risk lag) - tre fynd atgardade i en fix-commit pa samma gren: (1) WARNING byggForsattsbladData anvande ra flyttalsaddition, bytt till summeraKronor (_shared/betalningsbelopp.ts); negativt bevis: 1000.10 + 2000.20 + 0.30 med ra addition ger 3000.6000000000004, inte exakt 3000.6 (Node, mott mot den GAMLA raden innan bytet) - trots att den formaterade strangen SEK 3 000,60 rakar bli likadan i bada fallen (Intl avrundar bort felet); nytt testfall i mall-data.test.ts asserterar bada halvorna. (2) INFO tva kommentarer i kvitto-kombination.ts (rad 6 och kombineraFylldaKvittoSidor-docstringen) beskrev anropet som gorMallSjalvbarande(kvitto, ...) - ratade till att beskriva den faktiska formen (forsattsblad i den kombinerade grenen); 0 icke-kommentarrader andrade i den filen. (3) INFO PR-kroppens testrakning var fel (16 pastods for mall-data.test.ts) - raknat om mot origin/main: forsattsblad.test.ts +18 (ny fil), mall-data.test.ts +14 (13 ursprungligen + 1 ny), kvitto-forhandsgranskning.test.ts +4, mall-render-sjalvbarande-resurser.test.ts +0 kallrader men +2 runtime-fall (MALLAR-loopen vaxte 3 till 4 mallar, playwright --list bekraftade 9 till 11), mall-render.test.ts +0. PR-kroppen uppdaterad (gh pr edit), Riskbedomnings-sektionen mellan markorerna rord EJ.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad · PR #2253 (MERGED 2026-09-03T11:07:33Z, granskad head b2753b2c). Review-loop: runda 1 ett warning (rå flyttalssummering → summeraKronor, negativt bevis 3000.6000000000004 ≠ 3000.6) + två info (stale kommentarer, testräkning) → runda 2 konvergerad, 4 info, risk låg; backstopp grön. Försättsbladet: egen mall i kvittofamiljen med kvittots sidhuvud via tredje <link>, kvitto.html/kvitto.css/bilaga-delad.css 0 rader ändrade (diff-bevis), mallparitet 17/17, README § Förlagorna bokför mallen som utan förlaga med Marcus som facit (döms i 370.5). Mätt: N=2 och N=30 på EN sida, Carlito emb=yes, monoton radordning. Ärvd DoD-post 1 (kedje-minimaltest + N≈30-latens) ägs av 370.3. Staging: preview-receipt v25 deployad ur main 5d794eda 11:10Z av orkestreraren. Orkestrerare S116.
+<!-- SECTION:FINAL_SUMMARY:END -->
