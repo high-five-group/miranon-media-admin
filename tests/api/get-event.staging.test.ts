@@ -206,13 +206,21 @@ test.describe('get-event — conformance (single-get-mall, Fas 6b L2)', () => {
 
     // Per-källa-räkningarna: 2 × Källa TOM → viaFormular; 1 × '+1' → medfoljande;
     // fixturens Källa 'Manuell'-rad räknas i INGEN av dem (exkluderings-beviset —
-    // distinkta värden 2 ≠ 1 utesluter förväxlade räknare).
-    expect(event.viaFormular, 'viaFormular = länkade Anmälningar med Källa TOM').toBe(
+    // distinkta värden 2 ≠ 1 utesluter förväxlade räknare) utan i
+    // `ovrigaAnmalningar` (TASK-373).
+    expect(event.viaFormular, 'viaFormular = AKTIVA länkade Anmälningar med Källa TOM').toBe(
       BELAGGNING_EXPECTED.viaFormular,
     );
-    expect(event.medfoljande, "medfoljande = länkade Anmälningar med Källa '+1'").toBe(
+    expect(event.medfoljande, "medfoljande = AKTIVA länkade Anmälningar med Källa '+1'").toBe(
       BELAGGNING_EXPECTED.medfoljande,
     );
+    // TASK-373: restposten som stänger hålet — 'Manuell'/'Väntelista'/framtida
+    // Källa-värden. Var före fixen ingen nyckel alls i svaret, och anmälan
+    // saknades därmed i eventsidans mätare.
+    expect(
+      event.ovrigaAnmalningar,
+      "ovrigaAnmalningar = AKTIVA länkade Anmälningar med ÖVRIGA Källa-värden ('Manuell')",
+    ).toBe(BELAGGNING_EXPECTED.ovrigaAnmalningar);
 
     // Väntelistan via NYA länkfältet 'Event (länk)': 2 kopplade rader varav 1
     // Flyttad till anmälan → aktiv-filtret ger 1 (AC #3:s läs-bevis).
@@ -221,16 +229,33 @@ test.describe('get-event — conformance (single-get-mall, Fas 6b L2)', () => {
     );
 
     // SUMMERINGEN mot basens fält: basens formel 'Antal anmälda' =
-    // länkade Anmälningar (4: viaFormular 2 + medfoljande 1 + Manuell-raden 1)
-    // + 'Manuella platser' (1) = 5 — segmenten är konsistenta med basens egen
-    // aggregering, inte en parallell sanning.
+    // 'Antal aktiva anmälningar' (4: viaFormular 2 + medfoljande 1 +
+    // ovrigaAnmalningar 1) + 'Manuella platser' (1) = 5 — segmenten är
+    // konsistenta med basens egen aggregering, inte en parallell sanning.
     expect(event.antalAnmalda, "basens 'Antal anmälda'-formel (länkar + manuella)").toBe(
       BELAGGNING_EXPECTED.antalAnmalda,
     );
+    // TASK-373: INGEN handkorrigerad `+ 1` längre. Den konstanten var
+    // symptomet — testet kompenserade för att EF:en tappade Manuell-raden i
+    // stället för att fälla på det. Nu bär `ovrigaAnmalningar` talet, och
+    // uttrycket är den skarpa invarianten mätaren vilar på.
     expect(
-      (event.viaFormular ?? 0) + (event.medfoljande ?? 0) + 1 + (event.manuelltTillagda ?? 0),
-      'per-källa-delarna + Manuell-raden summerar mot basens Antal anmälda',
+      (event.viaFormular ?? 0) +
+        (event.medfoljande ?? 0) +
+        (event.ovrigaAnmalningar ?? 0) +
+        (event.manuelltTillagda ?? 0),
+      'per-källa-delarna summerar mot basens Antal anmälda — ingen aktiv anmälan tappas',
     ).toBe(event.antalAnmalda);
+    // Eventsidans mätare (`@/lib/belaggning`): upptagna = Antal anmälda +
+    // Extra platser. Räknas här ur EF-svaret så kontraktet bevisas skarpt.
+    expect(
+      (event.viaFormular ?? 0) +
+        (event.ovrigaAnmalningar ?? 0) +
+        (event.manuelltTillagda ?? 0) +
+        (event.medfoljande ?? 0) +
+        (event.reserverade ?? 0),
+      'mätarens upptagna === basens Antal anmälda + Extra platser',
+    ).toBe(event.antalAnmalda + (event.reserverade ?? 0));
   });
 
   test('beläggnings-fälten är ADDITIVT-optional: godtyckligt event bär räkningar ≥ 0', async ({
@@ -248,6 +273,7 @@ test.describe('get-event — conformance (single-get-mall, Fas 6b L2)', () => {
     // finns för get-events/äldre cache, inte för get-event-svaret.
     expect(event.viaFormular).toBeGreaterThanOrEqual(0);
     expect(event.medfoljande).toBeGreaterThanOrEqual(0);
+    expect(event.ovrigaAnmalningar).toBeGreaterThanOrEqual(0);
     expect(event.vantelista).toBeGreaterThanOrEqual(0);
   });
 

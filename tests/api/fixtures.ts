@@ -23,10 +23,13 @@ export const HISTORY_PERSON_ID = 'recqxaFNwHAdQlAqb';
  * per-källa-fall mot kända värden:
  *   Max antal platser 10 · Extra platser 2 (reserverade) · Manuella platser 1
  *   4 länkade Anmälningar: 2 × Källa TOM (via formulär) · 1 × Källa '+1'
- *   (medföljande) · 1 × Källa 'Manuell' (bevisar exkludering ur båda räkningarna)
+ *   (medföljande) · 1 × Källa 'Manuell' → `ovrigaAnmalningar` (TASK-373; raden
+ *   räknades FÖRE fixen i ingen del alls och försvann ur mätarens summa)
  *   2 Väntelista-rader via nya länkfältet 'Event (länk)': 1 aktiv + 1 med
  *   Flyttad till anmälan (bevisar aktiv-filtret i vantelista-räkningen)
- * Basens formel 'Antal anmälda' = 4 länkar + 1 manuella = 5 (summerings-beviset).
+ * Basens formel 'Antal anmälda' = 4 länkar + 1 manuella = 5 (summerings-beviset;
+ * samtliga 4 anmälningar är AKTIVA — ingen Avbokad/Ombokad eller Inställt —
+ * annars hade `Antal aktiva anmälningar` sedan TASK-368.1 sänkt talet).
  * Konsumeras av get-event.staging.test (per-källa-conformance, AC #1).
  * Ingen EF kan skriva Källa TOM/'+1' eller vänteliste-länken → seedad fixtur är
  * enda deterministiska vägen (get-waitlist-fixturens precedent). STÄDA INTE.
@@ -38,6 +41,8 @@ export const BELAGGNING_EXPECTED = {
   manuelltTillagda: 1,
   viaFormular: 2,
   medfoljande: 1,
+  /** TASK-373: fixturens Källa 'Manuell'-rad — 1 aktiv anmälan utanför TOM/'+1'. */
+  ovrigaAnmalningar: 1,
   vantelista: 1,
   antalAnmalda: 5,
 } as const;

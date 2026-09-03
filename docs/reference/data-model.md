@@ -1011,6 +1011,25 @@ Dessa är broarna som hela rollup-kedjan bygger på. Ändra aldrig utan att för
 | Väntelista | `sely4zQsuvnXYTKKI` | blueLight2 | `create-registration` när person flyttas från Väntelista |
 | *(tom)* | – | – | **Formuläranmälningar** (Huvudformulär, Expressformulär). Frånvaro = sanning. |
 
+**Vad eventsidans beläggnings-mätare räknar (`TASK-373`, 2026-09-03).** Mätaren
+visar `Antal anmälda` + `Extra platser`, alltså ALLA aktiva anmälningar oavsett
+Källa-värde, plus de två skrivbara platsfälten. `get-event` partitionerar
+anmälningarna i tre delar (`supabase/functions/_shared/belaggning.ts`):
+`viaFormular` (Källa TOM) · `medfoljande` (Källa `+1`) · `ovrigaAnmalningar`
+(**allt annat** — `Manuell`, `Väntelista` och varje framtida option). Den tredje
+delen är en FAIL-CLOSED restpost: en ny option i tabellen ovan hamnar där
+automatiskt och kan aldrig falla ur summan. Aktiv-filtret är basens egen
+`Är aktiv (1/0)`, så avbokade och inställda räknas inte.
+
+Fram till 2026-09-03 räknade EF:en bara de två första delarna, och en anmälan
+skapad via appens Ny anmälan (`Källa = 'Manuell'`) syntes därför inte i mätaren:
+prod visade "12 av 20 platser upptagna" på Event-25 medan `Antal anmälda` var 13.
+UI-sidan: `ovrigaAnmalningar` läggs till **"Anmälda deltagare"-raden**, inte till
+"Manuellt tillagda" — den raden är basens SKRIVBARA `Manuella platser` (platser
+utan anmälningsrad) och måste visa samma tal som Ändra-lägets "ändrar från".
+Deltagarkortens pill (`Manuellt tillagd` / `Från väntelistan`) beskriver en annan
+axel: hur personen kom in, inte vad som fyller taket.
+
 ### Status-värden — Deltaganden
 
 `Deltaganden.Status` (`fldRFOzNqVswqZ1mN`) — **6 val:**

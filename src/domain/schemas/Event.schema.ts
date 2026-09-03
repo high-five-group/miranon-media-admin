@@ -50,11 +50,19 @@ export const EventSchema = z.object({
   reserverade: z.number().optional(),
   // Manuellt tillagda = basens 'Manuella platser' (osatt → nyckeln utelämnas).
   manuelltTillagda: z.number().optional(),
-  // "Anmälda deltagare"-raden: antal länkade Anmälningar med Källa TOM
-  // (= formuläranmälningar; frånvaro är sanning — data-model §Källa-värden).
+  // Antal AKTIVA länkade Anmälningar med Källa TOM (= formuläranmälningar;
+  // frånvaro är sanning — data-model §Källa-värden).
   viaFormular: z.number().optional(),
-  // Antal länkade Anmälningar med Källa '+1' (CompanionModal-medföljande).
+  // Antal AKTIVA länkade Anmälningar med Källa '+1' (CompanionModal-medföljande).
   medfoljande: z.number().optional(),
+  // TASK-373: antal AKTIVA länkade Anmälningar med varje ANNAT Källa-värde —
+  // 'Manuell' (appens Ny anmälan), 'Väntelista' (uppflyttad ur kön) och varje
+  // framtida option. FAIL-CLOSED restpost: tillsammans med de två ovan är detta
+  // ALLA aktiva anmälningar, så mätaren aldrig kan tappa en plats (buggen kortet
+  // rättar: prod visade "12 av 20" mot basens 13). ADDITIVT-OPTIONAL i samma
+  // form som fälten omkring — en app mot en ÄLDRE deployad get-event läser
+  // `undefined → 0` i stället för att fälla parsen.
+  ovrigaAnmalningar: z.number().optional(),
   // Auto-utskicket för eventinfo (task-18.6; PRD task-18 beslut 14) — de två
   // ADDITIVA bas-fälten som eventsidans auto-utskicks-kryss läser och skriver:
   // 'Deltagarinfo schemalagd' (date ISO) respektive 'Deltagarinfo auto-utskick

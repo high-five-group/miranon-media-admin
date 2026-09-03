@@ -62,6 +62,9 @@
     "supabase/functions/_shared/airtable-filter.ts",
     "supabase/functions/_shared/airtable-retry.ts",
     "supabase/functions/_shared/attachment-filename.ts",
+    // TASK-373: beläggningens anmälnings-räkning (aktiv-filter + Källa-partition).
+    // Enda importen är `coerce.ts` nedan → transitivt Deno-fri, villkoret filhuvudet ställer.
+    "supabase/functions/_shared/belaggning.ts",
     "supabase/functions/_shared/coerce.ts",
     "supabase/functions/_shared/confirm-registrations.ts",
     "supabase/functions/_shared/cursor.ts",

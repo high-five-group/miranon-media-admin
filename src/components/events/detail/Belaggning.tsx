@@ -4,6 +4,7 @@ import { Button } from '@/components/primitives/Button';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { useUpdateEvent } from '@/data/mutations/useUpdateEvent';
 import type { Event } from '@/domain/models/Event';
+import { anmaldaDeltagare, belaggningsDelar } from '@/lib/belaggning';
 import { AntalFalt } from './AntalFalt';
 import { AndraRad, DetaljGrupp, EtikettVardeRad, RedigeringsRad } from './DetaljGrupp';
 
@@ -33,20 +34,17 @@ const KATEGORI = {
 /**
  * Beläggnings-kompositionen i K16-modellen (mappar basen 1-till-1) — delarna
  * som fyller taket, i den ordning de fyller det (deltagare först, reserverade
- * sist; segmentordningen == mätarens). Saknade fält (stale cache/osatt) → 0.
- *   formular    = viaFormular  (länkade Anmälningar, Källa TOM)
- *   manuell     = manuelltTillagda (basens 'Manuella platser')
- *   medfoljande = medfoljande  (länkade Anmälningar, Källa '+1')
- *   reserverad  = reserverade  (basens 'Extra platser')
+ * sist; segmentordningen == mätarens). ARITMETIKEN bor i `@/lib/belaggning`
+ * (ren, hermetiskt testad, TASK-373); här läggs bara kategorifärgen på.
+ *   formular    = viaFormular + ovrigaAnmalningar (ALLA aktiva anmälningar
+ *                 utom medföljande — se lib-modulens § segmentbeslutet)
+ *   manuell     = manuelltTillagda (basens SKRIVBARA 'Manuella platser')
+ *   medfoljande = medfoljande  (aktiva länkade Anmälningar, Källa '+1')
+ *   reserverad  = reserverade  (basens SKRIVBARA 'Extra platser')
  * Väntelista är ALDRIG en del — utanför taket (K22).
  */
-function belaggningsDelar(e: Event) {
-  return [
-    { nyckel: 'formular', klass: KATEGORI.formular, antal: e.viaFormular ?? 0 },
-    { nyckel: 'manuell', klass: KATEGORI.manuell, antal: e.manuelltTillagda ?? 0 },
-    { nyckel: 'medfoljande', klass: KATEGORI.medfoljande, antal: e.medfoljande ?? 0 },
-    { nyckel: 'reserverad', klass: KATEGORI.reserverad, antal: e.reserverade ?? 0 },
-  ];
+function delarMedFarg(e: Event) {
+  return belaggningsDelar(e).map((del) => ({ ...del, klass: KATEGORI[del.nyckel] }));
 }
 
 /**
@@ -57,10 +55,17 @@ function belaggningsDelar(e: Event) {
  * (a11y — färg/stapel aldrig ensam); stapeln dekorativ (aria-hidden), spill
  * klipps av spåret (överbokning). Utan satt tak står spåret tomt.
  * Delad mellan visnings- och Ändra-läget (morf-pariteten).
+ *
+ * INVARIANTEN (TASK-373): upptagna === basens `Antal anmälda` + `Extra platser`
+ * — ingen AKTIV anmälan får tappas, oavsett Källa-värde, och avbokade/inställda
+ * räknas aldrig. Härledningen och dess bevis: `@/lib/belaggning` +
+ * `supabase/functions/_shared/belaggning.ts`. Före fixen räknades bara Källa
+ * TOM och '+1', så en anmälan skapad via appens Ny anmälan (Källa 'Manuell')
+ * försvann ur summan: prod 2026-09-03 visade "12 av 20" mot basens 13.
  */
 function BelaggningsMatare({ event }: { event: Event }) {
   const max = event.maxPlatser;
-  const delar = belaggningsDelar(event);
+  const delar = delarMedFarg(event);
   const upptagna = delar.reduce((summa, del) => summa + del.antal, 0);
   const full = max != null && max > 0 && upptagna >= max;
   const procent = max != null && max > 0 ? Math.round((upptagna / max) * 100) : null;
@@ -154,7 +159,7 @@ function BelaggningForm({ event, onStang }: { event: Event; onStang: () => void 
           <AntalFalt label="Extra platser" value={reserverade} onChange={setReserverade} />
         </RedigeringsRad>
         <EtikettVardeRad term="Anmälda deltagare" streck={KATEGORI.formular}>
-          {String(event.viaFormular ?? 0)}
+          {String(anmaldaDeltagare(event))}
         </EtikettVardeRad>
         <RedigeringsRad
           term="Manuellt tillagda"
@@ -232,8 +237,12 @@ export function Belaggning({ event }: { event: Event }) {
             <EtikettVardeRad term="Extra platser" streck={KATEGORI.reserverad}>
               {event.reserverade != null ? String(event.reserverade) : null}
             </EtikettVardeRad>
+            {/* TASK-373: ALLA aktiva anmälningar utom de medföljande —
+                formuläranmälningar + manuellt skapade + uppflyttade från
+                väntelistan + varje framtida Källa-värde. Raden och segmentet
+                bär samma tal, så mätaren går att stämma av mot raderna. */}
             <EtikettVardeRad term="Anmälda deltagare" streck={KATEGORI.formular}>
-              {String(event.viaFormular ?? 0)}
+              {String(anmaldaDeltagare(event))}
             </EtikettVardeRad>
             <EtikettVardeRad term="Manuellt tillagda" streck={KATEGORI.manuell}>
               {event.manuelltTillagda != null ? String(event.manuelltTillagda) : null}
