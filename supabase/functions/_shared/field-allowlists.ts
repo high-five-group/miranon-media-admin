@@ -85,6 +85,25 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
     tableId: 'Anmälningar',
     allowedFields: ['Status', 'Bekräftelse skickad'],
   },
+  // Avboka/återta en anmälan (TASK-368.2, PRD TASK-368 beslut 1/3/4). EXAKT
+  // två fält: 'Status' (fldWr5cCPNx9HEKtL, singleSelect — exakt två tillåtna
+  // övergångar, prövade av `_shared/cancel-registration.ts` INNAN denna
+  // allowlist ens nås) och 'Notering' (fldPMsiRoLWcgUbsv, multilineText,
+  // append-skrivning som bevarar befintlig text). Till skillnad från
+  // `update-registration-payment-note` ovan är det den GAMLA, ODELADE
+  // Notering-kolumnen som skrivs här, MEDVETET: avbokningsskälet är inte en
+  // betalningsnotering, och anmälans sida (TASK-368.3) ska visa ETT fält
+  // med både Lottas fria text och avbokningshistoriken i samma flöde
+  // (grillad samsyn S115 Del 3, beslut 3–4). `fields` byggs SERVER-SIDE ur
+  // den UPPLÄSTA anmälan (klienten skickar bara record-ID + valfritt skäl)
+  // — listan är därför en SSOT-grind mot framtida kod-drift, samma form som
+  // `send-registration-confirmation` ovan. Båda fälten LIVE-VERIFIERADE
+  // (data-model.md, identiska fält-ID:n i staging och prod). Tabell per
+  // NAMN (ADR-050 bas-portabilitet).
+  'cancel-registration': {
+    tableId: 'Anmälningar',
+    allowedFields: ['Status', 'Notering'],
+  },
   // Bor över-markeringen per anmälan (task-18.7, PRD task-18 beslut 8 —
   // eventsidans kryss-läge). EXAKT ett fält: 'Bor över' (fldGYYNnQi7XlfbhP,
   // checkbox), ADDITIVT skapat i STAGING 2026-07-22 och skrivbarheten

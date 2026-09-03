@@ -22,6 +22,8 @@ import type { CreateRegistrationInput, Registration } from '../../domain/models/
 import type { WaitlistEntry } from '../../domain/models/WaitlistEntry';
 import {
   type ActivityStatement,
+  type CancelRegistrationInput,
+  type CancelRegistrationResult,
   type ConfirmRegistrationsInput,
   type ConfirmRegistrationsResult,
   type CreatedEvent,
@@ -211,6 +213,14 @@ export class SupabaseAdapter implements DataSourceAdapter {
   async confirmRegistrations(
     _input: ConfirmRegistrationsInput,
   ): Promise<ConfirmRegistrationsResult> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async avbokaAnmalan(_input: CancelRegistrationInput): Promise<CancelRegistrationResult> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async atertaAvbokning(_input: CancelRegistrationInput): Promise<CancelRegistrationResult> {
     throw new Error(NOT_IMPLEMENTED);
   }
 

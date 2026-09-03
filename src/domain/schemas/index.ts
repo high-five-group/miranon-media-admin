@@ -71,6 +71,13 @@ export {
   VALBARA_BETALSATT,
 } from './Betalningar.schema';
 export {
+  type CancelRegistrationAtgard,
+  CancelRegistrationAtgardSchema,
+  type CancelRegistrationInput,
+  type CancelRegistrationResult,
+  CancelRegistrationResultSchema,
+} from './CancelRegistration.schema';
+export {
   type ConfirmRegistrationsInput,
   type ConfirmRegistrationsResult,
   ConfirmRegistrationsResultSchema,
