@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-09-01
+updated: 2026-09-03
 review_by: 2027-01-02
 status: stable
 ---
@@ -77,6 +77,28 @@ PRD TASK-346 beslut 8: "en typ, inget ramverk").
 *Undvik:* inbetalning (det är vad transaktionen BLIR, inte vad den är),
 betalning, bankrad (talspråk).
 *I koden:* `Transaktion` (`src/domain/models/Transaktion.ts`).
+
+**Förhandsgranskning (kvitton)** — handlingen att se ett väntande kvitto
+som det kommer att se ut INNAN Lotta trycker "Skicka N kvitton", och
+dokumentet den öppnar. Renderas som utkast av `preview-receipt` med
+platshållaren "FÖRHANDSVISNING" i stället för kvittonummer (numret tilldelas
+först vid utskick). Två former, grillad samsyn S116 fråga 1: **per rad** (ett
+kvitto) och **alla** (ett dokument med försättsblad + en sida per väntande
+kvitto, i ett fönster). Skild från *visa* på en redan skickad rad, som hämtar
+den faktiskt skickade PDF:en ur Storage (`kanVisa`, `panel-harledningar.ts`).
+*Undvik:* förhandsvisning (knappen heter Förhandsgranska, TASK-353 — ordet
+står kvar bara i EF:ens platshållartext), efterhandsgranskning.
+*I koden:* `kanForhandsgranska` (`inkorg-harledningar.ts`),
+`useForhandsgranskaKvitto` (`data/mutations/kvitton.ts`).
+
+**Försättsblad** — första sidan i förhandsgranskningen av *alla* väntande
+kvitton: ett kontrollblad med kvittots sidhuvud (logga + rubrikblock),
+antal kvitton och tidpunkt, en tabell med namn · mottagarens e-post · event
+· belopp · betalsätt per kvitto, en summarad, och notraden "Kvittonummer
+tilldelas när kvittona skickas. Ingenting är skickat." Husets första mall
+utan förlaga hos Lotta — Marcus är facit (S116 fråga 2–3). Finns bara i
+förhandsgranskningen, aldrig i ett skickat kvitto.
+*Undvik:* sammanställning, omslag, cover.
 
 **Kontoutdrag** — den fil Lotta laddar ner ur internetbanken och matar in i
 appen: en rad per *Transaktion*. Termen är UI-språket sedan 2026-09-01 (Marcus
@@ -654,3 +676,20 @@ Session-lokalt i strikt mening — en stängd flik tar kön med sig.
 blockets tillgängliga namn bärs numera av behållarens `aria-label`).
 *I koden:* `SessionsRad` + `registrerade` i
 `src/components/betalningar/BetalningsInkorg.tsx`.
+
+**Avbokning** — handlingen att ta en Anmälan ur spel: statusen blir
+"Avbokad/Ombokad", personen lämnar inkorg och dörrlista, platsen räknas som
+ledig, och händelsen loggas med ett frivilligt skäl som även speglas till
+anmälans Notering. Görs på anmälans egen sida och kan återtas där (statusen
+härleds då ur bekräftelsedatumet). Ett avbokat och ett ombokat tillstånd
+delar samma statusvärde i basen (grillad samsyn S115 Del 3).
+*Undvik:* avanmälan, radering (en anmälan raderas aldrig, den avbokas).
+*I koden:* `RegistrationStatus.AVBOKAD`.
+
+**Ombokning** — en Avbokning där personen i samma steg får en ny Anmälan på
+ett annat event, med skälet ifyllt automatiskt och inbetalningen flyttad
+till den nya anmälan; en prisskillnad visas rakt ut som att återbetala eller
+saknas. Kvittots beteende vid flytten avgörs av research-passet
+`docs/research/kvitto-vid-ombokning-2026-09-03.md` (S115 Del 3, beslut 7–8).
+*Undvik:* byte, flytt (ordet Ombokning bär både avbokningen och den nya
+anmälan).
