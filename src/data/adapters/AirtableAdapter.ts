@@ -65,6 +65,9 @@ import {
   parsaAttachment,
   parsaAttachments,
   parsaSkapadEventBilaga,
+  type RebookRegistrationInput,
+  type RebookRegistrationResult,
+  RebookRegistrationResultSchema,
   type RecordActivityResult,
   RecordActivityResultSchema,
   type RegistrationDetail,
@@ -654,6 +657,22 @@ export class AirtableAdapter implements DataSourceAdapter {
       ...(input.skal !== undefined ? { skal: input.skal } : {}),
     });
     return CancelRegistrationResultSchema.parse(data);
+  }
+
+  /**
+   * Boka om en anmälan till ett annat event (TASK-368.4, ADR-130). EGEN EF
+   * (`rebook-registration`), inte ett tredje `atgard`-värde på
+   * `cancel-registration` — operationen SKAPAR en anmälan och rör Postgres,
+   * samma gräns betalningsdomänen redan drar mellan `registrera-inbetalning`
+   * och `hantera-inbetalning`; se EF:ens filhuvud. `.parse()` validerar vid
+   * datagränsen (ADR-026).
+   */
+  async bokaOmAnmalan(input: RebookRegistrationInput): Promise<RebookRegistrationResult> {
+    const data = await postEdgeFunction<unknown>('rebook-registration', {
+      registrationId: input.registrationId,
+      nyttEventId: input.nyttEventId,
+    });
+    return RebookRegistrationResultSchema.parse(data);
   }
 
   /**
