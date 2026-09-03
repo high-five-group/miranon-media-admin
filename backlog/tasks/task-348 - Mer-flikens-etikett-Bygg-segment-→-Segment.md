@@ -1,10 +1,10 @@
 ---
 id: TASK-348
 title: 'Mer-flikens etikett: Bygg segment → Segment'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-31 08:50'
-updated_date: '2026-08-31 09:51'
+updated_date: '2026-08-31 10:58'
 labels:
   - ready-for-agent
 dependencies: []
@@ -96,4 +96,6 @@ samma träd och gick grön.
 gröna är main:s post-merge-körning (`33376774347`, "Staging (API + E2E)"
 completed/success); en lokal serie körd under pågående fleet-drift mäter
 delad-stagings kontention, inte diffens korrekthet. Bockad på denna grund.
+
+Landning: PR #2170, merge a230ebe2. Post-merge: egen körning 33383464746 cancelled (avbruten av efterföljande main-push, concurrency) — täckt av konsoliderad post-merge run 33384414579 på 59072bee (success), samma konsoliderings-mönster som #2172 (bokfört i #2178).
 <!-- SECTION:NOTES:END -->

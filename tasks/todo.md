@@ -47,6 +47,26 @@ facit → röktest-listan. Bokfört: TASK-357 mintad (seed-review-prisfälten) �
 
 ## Aktuellt fokus
 
+**Session 114 ▶️ ÅTERUPPTAGEN (resume 1, 2026-09-03, `lifecycle: active`; Marcus: *"Återuppta
+S114."* → *"Kör"* — paus-landningen `#2180` hade ALDRIG nått `main` [CONFLICTING, 119 bakom]:
+rebasad, resume 1 i SAMMA PR, docs-only; huvudkatalogen ägs av S115, S114 kör i worktrees
+`agent-a3598b0c76db67d14` [landning] + `s114-segment` [iteration]) — SEGMENT + INTRESSERADE:
+VÅG A LANDAD, VÅG B-SAMSYN GRILLAD, KONVERGENSYTORNA SCAFFOLDADE.** S114 körde i egen worktree
+(`s114-segment`) parallellt med S113.
+Våg A: `TASK-348` (Mer-fliken "Segment") · `TASK-349` (SidRam + kryssbar info-ruta) · `TASK-350`
+(Intresserade visar ALLA — get-leads-cursorloopen) — alla Done, PR `#2167`–`#2173` + `#2178`
+mergade, full review-grind per kod-PR (en exit 20-eskalation avgjord på Marcus AFK-mandat).
+Våg B-grillningen: sju beslut slutkvitterade (S114 Del 3) — publik nu/sändning i 6h ·
+intresserade blir ALDRIG segment (ADR-115 § Updates, domängränsen) · B2/B3-riktningarna ·
+spara-delen ur `271` indragen · konvergens-only · B3 först. Två PRD väntar STÄMPLARNA.
+Konvergensytorna scaffoldade på `feat/s114-b3-intresserade-konvergens` (opushad med avsikt,
+arbetsform iteration) med k1-snapshots i `bilagor/s114-*-konvergens/`. **NÄSTA: dev-server ur
+`s114-segment` på 5173 → Marcus itererar B3 (`/mer/intresserade?variant=a&data=fyll`) → stämpel →
+PRD/skivor → B2 → 6h/`271`-grillning.** Numrering re-verifierad vid resume 1: ADR 130 · kort 369 ·
+L655 (47 fragment) · T184 · session 115 aktiv parallellt. HANDOFF: sessionsdok S114 § Paushistorik
+(paus 1 + resume 1). Full narrativ: Del 1–4. **Paus 1 var:** (paus 1, 2026-08-31, AFK-mandatet
+slutfört — nästa steg Marcus granskning; landningen olandad fram till resume 1).
+
 **Session 113 ✅ AVSLUTAD (2026-09-02, K-sista på Marcus förhandskvittens; `lifecycle: closed`; block nedan är historik från resume 5, 2026-08-30 ~19:00 UTC, `lifecycle: active` vid den tidpunkten;
 Marcus: *"Återuppta S113 och kör nattens mandat"* — AFK-NATTEN KÖRS: PRD `TASK-346` Lottas
 betalningsflöde, skivor 346.1–346.13 i våg 1–7 mot staging per sessionsdokets HANDOFF (paus 5,
