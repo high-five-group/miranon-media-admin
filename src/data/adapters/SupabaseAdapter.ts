@@ -313,6 +313,10 @@ export class SupabaseAdapter implements DataSourceAdapter {
     throw new Error(NOT_IMPLEMENTED);
   }
 
+  async previewKvittonForInbetalningar(_inbetalningIds: string[]): Promise<DocumentPreview> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
   async fetchActivityLog(_params?: ActivityLogParams): Promise<ActivityLogPage> {
     throw new Error(NOT_IMPLEMENTED);
   }

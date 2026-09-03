@@ -1221,6 +1221,17 @@ export class AirtableAdapter implements DataSourceAdapter {
   }
 
   /**
+   * [TASK-370.4] "Förhandsgranska alla N" — samma EF, TREDJE additiva body.
+   * Se `DataSourceAdapter.previewKvittonForInbetalningar` för hela
+   * motiveringen (egen metod, allt-eller-inget, taket, `requestId`-fältet
+   * som medvetet stryks av `DocumentPreviewSchema.parse`).
+   */
+  async previewKvittonForInbetalningar(inbetalningIds: string[]): Promise<DocumentPreview> {
+    const data = await postEdgeFunction<unknown>('preview-receipt', { inbetalningIds });
+    return DocumentPreviewSchema.parse(data);
+  }
+
+  /**
    * Hämta en cursor-paginerad sida av Aktivitetsloggen (TASK-201.5). Läsning
    * via get-activity-log: DIREKT ur Postgres-tabellen `activity_log`
    * (ADR-110) — ingen Airtable-tabell inblandad, till skillnad mot övriga
