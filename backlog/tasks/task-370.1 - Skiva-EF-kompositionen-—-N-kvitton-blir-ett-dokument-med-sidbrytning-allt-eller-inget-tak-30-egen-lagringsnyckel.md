@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-03 08:31'
-updated_date: '2026-09-03 09:09'
+updated_date: '2026-09-03 09:20'
 labels:
   - ready-for-agent
 dependencies: []
@@ -85,4 +85,17 @@ Slutsats: break-before:page fungerar som dokumenterat på VÅR .sida--kvitto (fl
 - #4 (ärvd PRD-grind, delad mellan skivor): minimaltestet (2 kvitton, 1 sidbrytning, pdfinfo/pdftotext/pdffonts) är GJORT och bokfört ovan, FÖRE EF-grenen byggdes. Renderingstiden vid N≈30 mätt mot klienttaket är EXPLICIT 370.3:s scope (PRD § Testbeslut punkt 2, "Staging-skarpbevis... + mätning vid 30, taket justerat") — N/A här, inte utfört av denna skiva.
 - #5 (ärvd PRD-grind): ADR-124 § Updates amenderad med den kombinerade nyckelformen och skälet (se ovan) — DENNA skivas del är klar. Mallkatalogens README § Förlagorna-bokföringen gäller FÖRSÄTTSBLADET, som är skiva 370.2:s mall (jag rör ingen fil i docs/mallar/bilagor/) — N/A här.
 - #6 (ärvd PRD-grind): mallparitets-grinden/mall-synken gäller när försättsbladets mall LÄGGS i mallkatalogen (370.2). Denna skiva lägger ingen mallfil — N/A, inget att köra.
+
+## Rättelse: CI röd på biome format (PR #2241, run 33737419765)
+
+Orkestreraren fångade detta — mekanismen bokförs här öppet.
+
+**Rotorsak, verifierad:** `npx @biomejs/biome check --write .` kördes EN gång under bygget, men EFTER det passet lade jag till sex nya källkods-tester (sektion E, "DEN KOMBINERADE GRENEN") i tests/api/kvitto-forhandsgranskning.test.ts via en separat Edit — och körde ALDRIG om --write efter den ändringen. Ett av de nya testfallens rad (`const posLoop = EF_KALLA.indexOf('let underlag: ...');`) blev för lång för Biomes radbredd och formaterades aldrig. Min egen slutrapport påstod "check . exit 0" — sant vid DEN tidpunkten (kört FÖRE sektion E-tillägget), men ogiltigt efter, eftersom jag inte körde grinden igen som sista steg innan push. Lärdom: kör format-grinden EFTER den allra sista kodändringen, inte bara en gång mitt i bygget.
+
+**Åtgärd:** `npx @biomejs/biome check --write .` körd på nytt. Fixade EXAKT en fil (tests/api/kvitto-forhandsgranskning.test.ts) — ren radbrytning av `posLoop`-anropet, ingen semantisk ändring (git diff granskad). Verifierat efteråt:
+- `npx @biomejs/biome check . --diagnostic-level=error`: exit 0, "Checked 769 files in 764ms. No fixes applied." — ingen "Found N errors"-rad alls (Biome skriver bara ut den raden när N>0), vilket bekräftar noll fel.
+- `npx @biomejs/biome check .` (CI:s exakta kommando, .github/workflows/ci.yml rad 535): exit 0, "Checked 769 files in 779ms. No fixes applied. Found 14 warnings. Found 81 infos." — samma 14/81 som innan, samtliga i filer denna skiva inte rör (verifierat tidigare).
+- `npm run test:api:pure`: 1396 passed, 0 failed (filen ändrad, omkörd).
+
+Ny commit pushad till samma gren, path-scopad (enbart tests/api/kvitto-forhandsgranskning.test.ts).
 <!-- SECTION:NOTES:END -->
