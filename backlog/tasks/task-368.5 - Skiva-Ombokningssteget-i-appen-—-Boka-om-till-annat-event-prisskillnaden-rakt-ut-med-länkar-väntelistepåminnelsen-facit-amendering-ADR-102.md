@@ -3,10 +3,10 @@ id: TASK-368.5
 title: >-
   Skiva: Ombokningssteget i appen — Boka om till annat event, prisskillnaden
   rakt ut med länkar, väntelistepåminnelsen (facit-amendering ADR-102)
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-03 07:57'
-updated_date: '2026-09-03 12:28'
+updated_date: '2026-09-03 16:16'
 labels:
   - ready-for-agent
 dependencies:
@@ -26,7 +26,7 @@ Beteende ände-till-ände: Lotta trycker Avboka anmälan, väljer i stället Bok
 <!-- AC:BEGIN -->
 - [x] #1 Anmälans sida är identisk med facit tasks/sessions/bilagor/s111-anmalningssidan-konvergens/facit.json ytan anmälningssidan, amenderat per ADR-102 med utskriven klassning + sidofil för ombokningsvalet och väntelistepåminnelsen; ariaSnapshot-referenser uppdaterade och gröna
 - [ ] #2 Avbokningssteget har valet Boka om till annat event: en eventväljare (kommande event, samma form som skapa-anmälan) och skälet förifyllt 'Ombokad till <event, datum>' (redigerbart); bekräftelsen anropar ombokningsoperationen och landar på den NYA anmälans sida med ett kvitto i klartext på vad som hände
-- [ ] #3 Prisskillnaden sägs rakt ut i steget innan bekräftelse: 'Nya eventet kostar X kr, Y kr blir att återbetala' eller 'saknas Y kr' eller 'samma pris'; efter bekräftelse visas samma text med länk till Registrera återbetalning respektive registrera inbetalning; inkorgen ändras inte
+- [x] #3 Prisskillnaden sägs rakt ut i steget innan bekräftelse: 'Nya eventet kostar X kr, Y kr blir att återbetala' eller 'saknas Y kr' eller 'samma pris'; efter bekräftelse visas samma text med länk till Registrera återbetalning respektive registrera inbetalning; inkorgen ändras inte
 - [x] #4 När eventet som avbokas har personer på väntelistan visar bekräftelsesteget 'N personer väntar på plats' med länk till väntelistan; ingen automatik, ingen skrivning
 - [x] #5 Acceptanstest i den hermetiska fixturvärlden prövar ombokning med samma pris, dyrare och billigare event, förifyllt och redigerat skäl, väntelistepåminnelsen med och utan väntande, felläget, axe noll överträdelser; desktop och iPad-bredd
 <!-- AC:END -->
@@ -57,4 +57,6 @@ MÄTT FYND under bygget: useBokaOmAnmalan invaliderade bara — den gamla anmäl
 RAPPORTERAT, EJ LAGAT HÄR: AvbokningsBetallage.tsx (368.3) bär rubriken 'Betalläge' som h4 direkt under DetaljGrupps h2 — axe heading-order-överträdelse, osynlig eftersom ytan ligger bakom VITE_FEATURE_BETALNINGAR och aldrig prövats av axe. Samma överträdelse fick denna skivas egen h4 i första körningen och är här rättad till h3. Betalningsdomänens fil, egen landning (ADR-053: blockerar ej, värdefullt).
 
 TESTER: tests/acceptance/anmalan-ombokning.acceptance.test.ts, 16 fall, 16/16 gröna (räknat ur sviten slutrad). Regression: anmalan-avbokning + anmalan-detalj 16/16 gröna. axe 0 violations i ombokningssteget och i kvittot, 1280 px och 768 px.
+
+S115 stängning (orkestrerare): PR #2267 landad 2026-09-03 (0fed8d7a) efter tre review-rundor (runda 2 fällde byggarens remount-premiss mot TanStack Routers Match.js; key={registrationId} på AvbokningsYta, rött-först-bevisat; runda 3 risk låg, konvergerad). AC #3:s 'före bekräftelse' byggdes i TASK-368.7 (PR #2280, landad a8c00733) och bockas här. AC #2 '(redigerbart)' är obockat: rebook-registration saknar skäl-fält, Marcus beslut i TASK-381. Kortet flippas Done när 381 avgjorts.
 <!-- SECTION:NOTES:END -->
