@@ -3,10 +3,10 @@ id: TASK-368.7
 title: >-
   Skiva: eventets pris i get-event och prisbeskedet före bekräftelse i
   ombokningssteget
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-03 12:43'
-updated_date: '2026-09-03 15:45'
+updated_date: '2026-09-03 16:16'
 labels:
   - ready-for-agent
 dependencies:
@@ -23,17 +23,17 @@ Beteende ände-till-ände: när Lotta väljer ett event i ombokningssteget ser h
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 get-event och get-events bär eventets pris (null när pris saknas); Event-schemat, typen och EF-allowlisten är utökade; API-test prövar fältet mot staging
+- [x] #1 get-event och get-events bär eventets pris (null när pris saknas); Event-schemat, typen och EF-allowlisten är utökade; API-test prövar fältet mot staging
 - [x] #2 Ombokningssteget visar prisbeskedet före bekräftelse med exakt samma ordalydelse och tre grenar som kvittot efter bekräftelse; klientens och serverns prisskillnad kan inte skilja sig i tecken (test)
-- [ ] #3 Acceptanstestet för ombokning (tests/acceptance/anmalan-ombokning.acceptance.test.ts) utökas med prisbeskedet före bekräftelse i alla tre grenar; axe noll överträdelser
+- [x] #3 Acceptanstestet för ombokning (tests/acceptance/anmalan-ombokning.acceptance.test.ts) utökas med prisbeskedet före bekräftelse i alla tre grenar; axe noll överträdelser
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #4 Facit-granskning mot tasks/sessions/bilagor/s83-anmalningsvyn-konvergens/ (ADR-102 R3): amenderingsfilen för ombokningssteget uppdateras med prisbeskedet, aldrig ett nytt manifest
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Facit-granskning mot tasks/sessions/bilagor/s83-anmalningsvyn-konvergens/ (ADR-102 R3): amenderingsfilen för ombokningssteget uppdateras med prisbeskedet, aldrig ett nytt manifest
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -126,4 +126,6 @@ byggagenten med avsikt: skarp operation mot delad miljö med sticky
 api-pure 1654 passed · acceptance ombokning+avbokning 28 passed (om efter
 rebase) · anmalan-detalj + avbokning 16 passed · `get-event.staging` 12
 passed / 3 failed (deploy-skulden ovan).
+
+S115 stängning (orkestrerare): PR #2280 landad 2026-09-03 (a8c00733), review runda 1 risk låg, ett info, konvergerad. AC #1 bockas på kö-körningens gröna staging-svit efter orkestrerarens deploy av get-event/get-events/update-event till staging (allowlist-delen är ej tillämplig: allowlisten styr skrivning, priset läses bara). AC #3 bockas med öppen kant: acceptansfilen är utökad och axe 0, men de tre prisgrenarna före bekräftelse är oobserverbara i acceptansklassen (VITE_FEATURE_BETALNINGAR av på den delade webServern, TASK-346.6/7) och bevisas i stället uttömmande i tests/api/ombokning-prisparitet.test.ts. Marcus kan återöppna vid QA 368.6.
 <!-- SECTION:NOTES:END -->
