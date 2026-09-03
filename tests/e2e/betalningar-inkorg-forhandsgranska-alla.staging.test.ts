@@ -446,10 +446,13 @@ test.describe('TASK-370.4 — "Förhandsgranska alla N" i betalningsinkorgen', (
     const allaKnapp = page.getByRole('button', { name: 'Förhandsgranska alla 3 kvitton' });
     const [fonsterAlla] = await Promise.all([context.waitForEvent('page'), allaKnapp.click()]);
 
-    // EF:ens FAKTISKA valideringstext (`_shared/kvitto-kombination.ts`s
-    // `valideraInbetalningIdLista`), ordagrant — testet mockar bara SVARET,
-    // inte den verkliga 30-gränsen (den bevisas hermetiskt i
-    // `tests/api/kvitto-kombination.test.ts`).
+    // EF:ens valideringstext (`_shared/kvitto-kombination.ts`s
+    // `valideraInbetalningIdLista`), HANDSKRIVEN HÄR — detta test mockar bara
+    // SVARET och bevisar RENDERINGEN av det begripliga meddelandet, INTE att
+    // regexen faktiskt matchar EF:ens VERKLIGA text (review-runda 1 FYND 1).
+    // Den bindningen — `tolkaTakfel` körd på EF-modulens FAKTISKT kastade
+    // fel, inget mockat — bevisas i
+    // `tests/api/forhandsgranska-alla-tak-bindning.test.ts`.
     preview.slappAlla({
       status: 400,
       body: { error: 'inbetalningIds may contain at most 30 entries (got 35)' },

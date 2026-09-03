@@ -43,6 +43,7 @@ import {
   kanForhandsgranska,
   rankaTraffar,
   sammanfattaBetalningar,
+  tolkaTakfel,
 } from './inkorg-harledningar';
 import { RegistreraForm, type RegistreringsUtfall } from './RegistreraForm';
 import { SwishImport } from './SwishImport';
@@ -319,18 +320,6 @@ const ALLA_EVENT = 'Alla event';
  * varandras nycklar.
  */
 const FORHANDSGRANSKA_ALLA_NYCKEL = '__alla__';
-
-/**
- * [TASK-370.4] Fångar TALET ur EF:ens (`_shared/kvitto-kombination.ts`s
- * `valideraInbetalningIdLista`) engelska tak-avvisning, "inbetalningIds may
- * contain at most 30 entries (got 35)" — LÄST UR FELET, inte en egen
- * klientkonstant för `MAX_KOMBINERADE_KVITTON`. Uppdragets egen motivering
- * (S116): "en klientkopia som kan glida är sämre än att läsa felet från
- * EF:en". Träffar den INTE (annat fel, eller EF:ens text ändras) visas
- * EF:ens råa meddelande i stället — se `forhandsgranskaAlla` nedan — aldrig
- * en tyst, felaktig gissning på talet.
- */
-const TAK_FELMATCH = /may contain at most (\d+) entries/;
 
 /**
  * Radens period, med `grupperaPerEvent`s EGEN regel — inte en andra tolkning.
@@ -1036,16 +1025,22 @@ export function BetalningsInkorg() {
    *   2. FELTOLKNINGEN: EF:en (`_shared/kvitto-kombination.ts`s
    *      `valideraInbetalningIdLista`) avvisar en kö längre än
    *      `MAX_KOMBINERADE_KVITTON` (30) med texten "inbetalningIds may
-   *      contain at most N entries (got M)". Denna funktion KÄNNER IGEN den
-   *      texten och visar ett begripligt, svenskt meddelande i stället för
-   *      att lägga fram EF:ens engelska valideringssträng för Lotta — se
-   *      `TAK_FELMATCH` nedan för VARFÖR talet LÄSES UR FELET i stället för
-   *      att dupliceras som en egen klientkonstant (S116-uppdragets egen
-   *      ordalydelse: "en klientkopia som kan glida är sämre än att läsa
-   *      felet från EF:en"). Ett underlagsfel (allt-eller-inget, EF:ens
-   *      `vem`-variabel) namnger redan personen INUTI meddelandet och
-   *      passerar HÄR OFÖRÄNDRAT — se `forhandsgranskaFel`s eget docblock
-   *      för varför `namn` är `null` i detta flödet.
+   *      contain at most N entries (got M)". `tolkaTakfel`
+   *      (`inkorg-harledningar.ts`) KÄNNER IGEN den texten och lämnar ut
+   *      TALET, så denna funktion kan visa ett begripligt, svenskt
+   *      meddelande i stället för att lägga fram EF:ens engelska
+   *      valideringssträng för Lotta — se `tolkaTakfel`s eget docblock för
+   *      VARFÖR talet LÄSES UR FELET i stället för att dupliceras som en
+   *      egen klientkonstant (S116-uppdragets egen ordalydelse: "en
+   *      klientkopia som kan glida är sämre än att läsa felet från EF:en"),
+   *      OCH för var BINDNINGEN mot EF:ens faktiska text bevisas
+   *      (`tests/api/forhandsgranska-alla-tak-bindning.test.ts`, review-
+   *      runda 1 FYND 1 — den e2e-mockade texten i denna funktions egna
+   *      tester bevisar bara att regexen matchar sin egen handskrivna
+   *      förlaga, inte EF:ens verkliga sträng). Ett underlagsfel (allt-
+   *      eller-inget, EF:ens `vem`-variabel) namnger redan personen INUTI
+   *      meddelandet och passerar HÄR OFÖRÄNDRAT — se `forhandsgranskaFel`s
+   *      eget docblock för varför `namn` är `null` i detta flödet.
    */
   function forhandsgranskaAlla(inbetalningIds: readonly string[]) {
     if (forhandsgranskaPagar.has(FORHANDSGRANSKA_ALLA_NYCKEL)) return;
@@ -1069,10 +1064,11 @@ export function BetalningsInkorg() {
         (fel: unknown) => {
           if (fonster && !fonster.closed) fonster.close();
           const ravaMeddelande = fel instanceof Error ? fel.message : 'Okänt fel';
-          const takTraff = ravaMeddelande.match(TAK_FELMATCH);
-          const message = takTraff
-            ? `Förhandsgranskningen klarar högst ${takTraff[1]} kvitton åt gången. Ta bort några från kön och försök igen.`
-            : ravaMeddelande;
+          const tak = tolkaTakfel(ravaMeddelande);
+          const message =
+            tak !== null
+              ? `Förhandsgranskningen klarar högst ${tak} kvitton åt gången. Ta bort några från kön och försök igen.`
+              : ravaMeddelande;
           setForhandsgranskaFel({ namn: null, message });
         },
       )
@@ -2081,8 +2077,9 @@ export function BetalningsInkorg() {
                       finns ändå (kön KAN spänna över fler än 30 utan att någon
                       hindrat registreringen), och EF:ens avvisning översätts
                       till det begripliga meddelandet av `forhandsgranskaAlla`
-                      själv (se dess docblock, `TAK_FELMATCH`) — ALDRIG en tyst
-                      delmängd (S116 beslut 6). */}
+                      själv (se dess docblock och `tolkaTakfel` i
+                      `inkorg-harledningar.ts`) — ALDRIG en tyst delmängd
+                      (S116 beslut 6). */}
                   {!enSamKo && (
                     <Button
                       intent="secondary"
@@ -2195,7 +2192,7 @@ export function BetalningsInkorg() {
               klientbyggt "Kvittot till X …"-prefix: EF:ens allt-eller-inget-
               fel namnger redan personen INUTI `message` när felet beror på
               ETT trasigt underlag, och taköverskridande-meddelandet
-              (`forhandsgranskaAlla`s `TAK_FELMATCH`-gren) namnger ingen
+              (`forhandsgranskaAlla`s `tolkaTakfel`-gren) namnger ingen
               alls — ett påhittat prefix hade i BÅDA fallen sagt något
               felaktigt eller överflödigt. */}
           {forhandsgranskaFel && (
