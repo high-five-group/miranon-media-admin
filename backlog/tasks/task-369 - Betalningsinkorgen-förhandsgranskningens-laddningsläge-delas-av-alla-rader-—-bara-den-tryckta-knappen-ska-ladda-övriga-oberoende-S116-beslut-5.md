@@ -3,10 +3,10 @@ id: TASK-369
 title: >-
   Betalningsinkorgen: förhandsgranskningens laddningsläge delas av alla rader —
   bara den tryckta knappen ska ladda, övriga oberoende (S116 beslut 5)
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-03 08:07'
-updated_date: '2026-09-03 08:44'
+updated_date: '2026-09-03 10:11'
 labels:
   - ready-for-agent
 dependencies: []
@@ -35,9 +35,9 @@ Marcus 2026-09-03 (prod, S116 start): registrerade två inbetalningar, tryckte F
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -92,3 +92,9 @@ fall är grönt mot BÅDA versionerna (den gamla delade vakten blockerar av
 ett annat skäl även samma rad två gånger) — ingen differentierande negativ
 kontroll för just det fallet, vilket är korrekt bokfört, inte en brist.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad · PR #2237 (MERGED 2026-09-03T09:58:02Z, granskad head 9df90ec6). Review-loop: runda 1 ett warning-fynd (felstatet nollställdes aldrig) → fix + nytt e2e-fall → runda 2 konvergerad, noll fynd, risk låg; backstopp-preflight grön. Djupare rotorsak än kortets: TanStacks per-anrops-callbacks skrevs över vid överlappande klick (mutateAsync i stället). AC #5 klassad felställd av granskaren: Acceptance-klassen kör med betalningsflaggan AV och kan inte rendera inkorgen — testet ligger i staging-e2e (chromium-authenticated, TASK-362-precedent), intenten uppfylld, negativt bevis kört manuellt (2 av 3 fall röda mot origin/main). CI-noten: körningen på 9df90ec6 avbröts när PR:en gick draft→ready och kördes om grön. Orkestrerare S116.
+<!-- SECTION:FINAL_SUMMARY:END -->
