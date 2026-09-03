@@ -202,6 +202,7 @@ import type { Event } from '@/domain/models/Event';
 import type { Registration } from '@/domain/models/Registration';
 import { BETALSATT_VARDEN, type Betalsatt } from '@/domain/schemas';
 import { PaymentStatus, RegistrationSource, RegistrationStatus } from '@/domain/types/Status';
+import { arAktivAnmalan } from '@/lib/aktiv-anmalan';
 import { alertScreenReader } from '@/lib/alert-screen-reader';
 import { betalningarPa } from '@/lib/funktionsflaggor';
 import { queryKeys } from '@/queries/keys';
@@ -3175,7 +3176,7 @@ export function AtgardsSida({ eventId }: { eventId?: string }) {
                 eventId && (
                   <BetalningsSkrivYta
                     eventId={eventId}
-                    registreringar={alla.filter((r) => r.status !== RegistrationStatus.AVBOKAD)}
+                    registreringar={alla.filter(arAktivAnmalan)}
                   />
                 )
               ) : (
@@ -3219,9 +3220,9 @@ export function AtgardsSida({ eventId }: { eventId?: string }) {
                     {eventId && (
                       <BetalningsSkrivYta
                         eventId={eventId}
-                        /* Basens 'Är aktiv'-formel: endast Avbokad räknas bort —
-                           samma predikat läsytan använder. */
-                        registreringar={alla.filter((r) => r.status !== RegistrationStatus.AVBOKAD)}
+                        /* Basens 'Är aktiv'-formel (`arAktivAnmalan`) — samma
+                           predikat läsytan använder. */
+                        registreringar={alla.filter(arAktivAnmalan)}
                       />
                     )}
                   </div>
