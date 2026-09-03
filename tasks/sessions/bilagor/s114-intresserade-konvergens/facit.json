@@ -6,9 +6,7 @@
   "ytor": [
     {
       "yta": "intresserade-lista",
-      "bilder": [
-        "facit-intresserade-lista.png"
-      ],
+      "bilder": ["facit-intresserade-lista.png"],
       "kallor": [
         "src/components/intresserade/prototype/IntresseradeKonvergens.tsx",
         "src/routes/_authenticated/mer/intresserade.tsx"
