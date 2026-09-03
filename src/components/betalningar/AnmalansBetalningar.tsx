@@ -1,7 +1,7 @@
 import { CircleCheck } from 'lucide-react';
 import { useMemo } from 'react';
 import { useOppnaBetalningar } from '@/data/betalningar/useBetalningar';
-import { AterbetalningsYta } from './AterbetalningsYta';
+import { ATERBETALNINGS_TRIGGER_ID, AterbetalningsYta } from './AterbetalningsYta';
 import { visaKronor } from './belopp-inmatning';
 import { InbetalningsLista } from './InbetalningsLista';
 import { idagIso } from './idag';
@@ -122,7 +122,15 @@ export function AnmalansBetalningar({
           inte visas i. */}
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start">
           {rad !== null && <RegistreraYta rad={rad} />}
-          <AterbetalningsYta anmalanRecordId={anmalanRecordId} />
+          {/* [TASK-368.3] `triggerId` sätts BARA här: avbokningssteget längre
+              ned på anmälans sida skickar Lotta hit i ett tryck när det finns
+              inbetalningar att betala tillbaka. Se `AterbetalningsYta` §
+              `ATERBETALNINGS_TRIGGER_ID` för kontraktet och för varför
+              personkortets/panelens instanser lämnar propen utelämnad. */}
+          <AterbetalningsYta
+            anmalanRecordId={anmalanRecordId}
+            triggerId={ATERBETALNINGS_TRIGGER_ID}
+          />
         </div>
       </div>
 
