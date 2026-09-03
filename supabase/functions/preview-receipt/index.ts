@@ -45,18 +45,23 @@
 // runtime-beroende. Resend importeras ALDRIG någonstans i denna kedjan.
 //
 // ═══════════════════════════════════════════════════════════════════════════
-// [TASK-353, 2026-09-01] TVÅ GRENAR SEDAN DENNA SKIVA — LÄS DETTA FÖRST
+// [TASK-353, 2026-09-01] TRE GRENAR SEDAN DENNA SKIVA — LÄS DETTA FÖRST
 // ═══════════════════════════════════════════════════════════════════════════
-// EF:en bär NU TVÅ lägen, valda av request-bodyn:
+// EF:en bär NU TRE lägen, valda av request-bodyn:
 //
-//   • `{ eventId }` (OFÖRÄNDRAT, dagens enda läge) → TYPEXEMPEL. Detta är
-//     Dokument-ytans generator-katalog, och stycket "PERSONDATA" nedan gäller
-//     ORDAGRANT för den grenen.
-//   • `{ inbetalningId }` (NYTT, ADDITIVT) → den KONKRETA inbetalningens
+//   • `{ eventId }` (OFÖRÄNDRAT, dagens enda läge fram till TASK-353) →
+//     TYPEXEMPEL. Detta är Dokument-ytans generator-katalog, och stycket
+//     "PERSONDATA" nedan gäller ORDAGRANT för den grenen.
+//   • `{ inbetalningId }` (TASK-353, ADDITIVT) → den KONKRETA inbetalningens
 //     kvitto, med riktigt kundnamn, riktigt belopp, riktigt betalsätt och
 //     riktigt betalningsdatum. Se `hamtaRiktigtUnderlag`s docblock för HELA
 //     motiveringen och för den mätta premiss-fällning som gjorde grenen
 //     nödvändig.
+//   • `{ inbetalningIds: string[] }` (TASK-370.1, ADDITIVT, PRD TASK-370
+//     § Implementationsbeslut, S116 Del 2 beslut 6) → "Förhandsgranska alla
+//     N": N kvitton, ETT kombinerat DocRaptor-dokument. Hanteras HELT
+//     SEPARAT och returnerar tidigt (se `Deno.serve`-kroppen) — grenarna
+//     ovan är BYTE FÖR BYTE OFÖRÄNDRADE (AC #1, `370.1`-kortet).
 //
 // PERSONDATA-STYCKET NEDAN ÄR DÄRMED AMENDERAT, INTE RIVET. Dess mening
 // "Kundnamn/belopp/betalsätt kan STRUKTURELLT inte vara verkliga här" var
@@ -140,9 +145,22 @@ import { generateRequestId, HttpError, mapErrorToResponse, ValidationError } fro
 // [TASK-309.5] byggKvittoData + renderaMallPdf ERSÄTTER kvittoRader +
 // renderKvittoPdf (pdf-lib, `_shared/receipt-pdf.ts`, nu RIVEN) — se
 // `_shared/receipt-content.ts`:s filhuvud för den fulla historiken.
+// [TASK-370.1] `valideraInbetalningIdLista`/`kombineraFylldaKvittoSidor` —
+// se den importfria modulens filhuvud för hela mönstret (fyll N gånger,
+// gör självbärande EN gång). Taket (`MAX_KOMBINERADE_KVITTON`) läses INTE
+// direkt här — `valideraInbetalningIdLista` äger både gränsen och felet.
+import { kombineraFylldaKvittoSidor, valideraInbetalningIdLista } from '../_shared/kvitto-kombination.ts';
 import { byggKvittoData } from '../_shared/mall-data.ts';
+// [TASK-353] OFÖRÄNDRAD IMPORTRAD — `mall-render.test.ts` källkods-grep:ar
+// EXAKT denna sträng (AC #2, "BÅDA anropssiterna använder SAMMA renderare").
+// De TVÅ ORÖRDA grenarna (`inbetalningId`/`eventId`) fortsätter anropa
+// `renderaMallPdf` precis som förut.
 import { renderaMallPdf } from '../_shared/mall-render.ts';
-import { laggUtkast } from '../_shared/utkast.ts';
+// [TASK-370.1] `fyllMall`/`gorMallSjalvbarande`/`renderaSjalvbarandeHtmlPdf`
+// — fyllning/självbärande/DocRaptor-post som separata primitiv, ENDAST för
+// den NYA kombinerade grenen. Se `mall-render.ts`s filhuvud.
+import { fyllMall, gorMallSjalvbarande, renderaSjalvbarandeHtmlPdf } from '../_shared/mall-render.ts';
+import { laggKombineratUtkast, laggUtkast } from '../_shared/utkast.ts';
 
 const EVENTS_TABLE = 'Eventplanering';
 
@@ -280,6 +298,33 @@ async function hamtaRiktigtUnderlag(inbetalningId: string) {
   };
 }
 
+/**
+ * [TASK-370.1] Bästa-försök-namnslagning för FELMEDDELANDEN i den
+ * KOMBINERADE grenen — anropas BARA när `hamtaRiktigtUnderlag` redan
+ * KASTAT (aldrig i lyckade vägen: den returnerar redan `kundnamn` då).
+ * Duplicerar en enda `.select()` mot `inbetalningar` i stället för att ändra
+ * `hamtaRiktigtUnderlag`s felmeddelanden — den ENSKILDA ID-grenens
+ * felmeddelanden (AC #1, "byte för byte oförändrad") rörs alltså ALDRIG.
+ * Returnerar `null` (kastar ALDRIG) om namnet inte går att slå upp — felet
+ * bär då bara positionen + id, fortfarande identifierbart mot Lottas lista
+ * (PRD TASK-370 användarberättelse 9).
+ */
+async function hamtaVisningsnamnBastaForsok(inbetalningId: string): Promise<string | null> {
+  try {
+    const db = skapaAdminKlient();
+    const { data, error } = await db
+      .from(INBETALNINGAR_TABELL)
+      .select(INBETALNING_KOLUMNER)
+      .eq('id', inbetalningId)
+      .maybeSingle();
+    if (error || !data) return null;
+    const post = radTillInbetalning(data);
+    return post.ogonblicksbildNamn || null;
+  } catch {
+    return null;
+  }
+}
+
 Deno.serve(async (req) => {
   const corsResponse = handleCors(req);
   if (corsResponse) return corsResponse;
@@ -300,6 +345,96 @@ Deno.serve(async (req) => {
 
   try {
     const body = (await req.json().catch(() => null)) as Record<string, unknown> | null;
+
+    /* ═══════════════════════════════════════════════════════════════════
+       [TASK-370.1] TREDJE GRENEN, PRÖVAD FÖRST: `{ inbetalningIds }` —
+       "Förhandsgranska alla N". HELT SEPARAT gren som RETURNERAR TIDIGT.
+       Koden nedan (`inbetalningId`/typexempel-grenarna) är BYTE FÖR BYTE
+       OFÖRÄNDRAD (AC #1) — denna gren läser bara ETT annat bodyfält och
+       delar INGEN kontrollflödesväg med dem.
+
+       Skickar klienten BÅDA `inbetalningIds` OCH `inbetalningId`/`eventId`
+       i samma anrop (inget legitimt kontrakt gör det — `AirtableAdapter.ts`
+       skickar exakt ett av de tre) vinner `inbetalningIds`: den nya,
+       explicit avsedda listformen.
+       ═══════════════════════════════════════════════════════════════════ */
+    if (body?.inbetalningIds !== undefined && body?.inbetalningIds !== null) {
+      const idLista = valideraInbetalningIdLista(body.inbetalningIds);
+
+      // Allt eller inget (S116 Del 2 beslut 4): varje underlag hämtas
+      // SEKVENTIELLT och ETT kastat fel avbryter loopen omedelbart — INGET
+      // DocRaptor-anrop görs och INGET utkast lagras förrän ALLA N lyckats.
+      const kvittoDataLista: Record<string, unknown>[] = [];
+      for (let i = 0; i < idLista.length; i++) {
+        const id = idLista[i];
+        let underlag: Awaited<ReturnType<typeof hamtaRiktigtUnderlag>>;
+        try {
+          underlag = await hamtaRiktigtUnderlag(id);
+        } catch (error) {
+          const namn = await hamtaVisningsnamnBastaForsok(id);
+          const vem = namn
+            ? `${namn} (kvitto ${i + 1} av ${idLista.length})`
+            : `kvitto ${i + 1} av ${idLista.length} (inbetalning ${id})`;
+          const bas = error instanceof Error ? error.message : String(error);
+          throw new HttpError(
+            error instanceof HttpError ? error.status : 500,
+            `${vem}: kvittot kunde inte skapas — ${bas}`,
+          );
+        }
+        kvittoDataLista.push(
+          byggKvittoData({
+            kvittonummer: FORHANDSVISNING_KVITTONUMMER,
+            kundnamn: underlag.kundnamn,
+            kundEpost: underlag.kundEpost,
+            belopp: underlag.belopp,
+            betalsatt: underlag.betalsatt,
+            betalning: underlag.betalning,
+            eventNamn: underlag.eventNamn,
+            datum: new Date().toISOString(),
+            eventTyp: underlag.eventTyp,
+            eventStart: underlag.eventStart,
+            eventSlut: underlag.eventSlut,
+            bokforingstext: underlag.bokforingstext,
+            betalningsdatum: underlag.betalningsdatum,
+          }) as unknown as Record<string, unknown>,
+        );
+      }
+
+      const apiKey = Deno.env.get('DOCRAPTOR_API_KEY');
+      if (!apiKey) {
+        throw new HttpError(500, 'DOCRAPTOR_API_KEY saknas i secrets');
+      }
+      const test = Deno.env.get('ENVIRONMENT') !== 'production';
+
+      // Fyll N gånger, gör självbärande EN gång, ETT DocRaptor-anrop
+      // (S116 Del 2 beslut 6 — se `_shared/kvitto-kombination.ts`s filhuvud
+      // för mätpunkt 4-motiveringen).
+      const fyllda = kvittoDataLista.map((data) => fyllMall('kvitto', data));
+      const kombineradHtml = kombineraFylldaKvittoSidor(fyllda);
+      const sjalvbarandeHtml = gorMallSjalvbarande('kvitto', kombineradHtml);
+      const pdfBytes = await renderaSjalvbarandeHtmlPdf(sjalvbarandeHtml, {
+        apiKey,
+        test,
+        namn: `Kombinerat kvitto (${idLista.length} st)`,
+      });
+
+      // [ADR-124 § Updates] Egen lagringsnyckel — `utkast/kombinerat/
+      // <requestId>.pdf` — eftersom kön kan spänna över flera event, se
+      // `_shared/utkast.ts`s `laggKombineratUtkast`-docblock.
+      const supabaseAdmin = skapaAdminKlient();
+      const { url, utgar } = await laggKombineratUtkast(supabaseAdmin, { requestId, bytes: pdfBytes });
+
+      console.log(
+        `[preview-receipt] ALLOW | caller_user_id=${user.id} | lage=kombinerat:${idLista.length} | ` +
+          `requestId=${requestId}`,
+      );
+
+      return new Response(JSON.stringify({ url, utgar, requestId }), {
+        status: 200,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     const inbetalningId = body?.inbetalningId;
 
     /* [TASK-353] TVÅ GRENAR, EN SVARSFORM. `inbetalningId` är ADDITIVT:

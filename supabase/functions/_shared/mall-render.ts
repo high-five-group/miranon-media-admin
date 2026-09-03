@@ -282,12 +282,39 @@ function gorSjalvbarande(ifylldHtml: string, css: string): string {
 // fil ser regeln absolut ut; den är det inte längre (review-fynd, #2025).
 const eta = new Eta({ autoEscape: true, varName: 'data' });
 
+/**
+ * [TASK-370.1] Fyller mallen med Eta — UTAN att göra resultatet
+ * självbärande. Ren funktion, inget nätverk. Utbruten ur
+ * `fyllOchGorSjalvbarande` (nedan, nu en tunn komposition av denna +
+ * `gorMallSjalvbarande`) så att `_shared/kvitto-kombination.ts` kan fylla
+ * mallen N GÅNGER (en per kvitto) och låta självbärande-görningen ske EN
+ * gång på det SAMMANSLAGNA dokumentet — se den filens filhuvud för hela
+ * mätpunkt 4-motiveringen (payload en gång vs N gånger självbärande).
+ */
+export function fyllMall(mall: MallNamn, data: Record<string, unknown>): string {
+  const { html } = MALL_TEMPLATES[mall];
+  return eta.renderString(html, data) as string;
+}
+
+/**
+ * [TASK-370.1] Gör en REDAN Eta-fylld HTML-sträng självbärande med `mall`s
+ * CSS. Utbruten av samma skäl som `fyllMall` ovan — kompositionsvägen
+ * anropar denna EN gång på det sammanslagna N-kvitto-dokumentet i stället
+ * för N gånger på varje enskilt kvitto (mätpunkt 4).
+ */
+export function gorMallSjalvbarande(mall: MallNamn, ifylldHtml: string): string {
+  const { css } = MALL_TEMPLATES[mall];
+  return gorSjalvbarande(ifylldHtml, css);
+}
+
 /** Fyller mallen med Eta och gör resultatet självbärande. Ren funktion,
- *  inget nätverk — den halva `renderaMallPdf` kallar innan DocRaptor. */
+ *  inget nätverk — den halva `renderaMallPdf` kallar innan DocRaptor.
+ *  [TASK-370.1] Nu en tunn komposition av `fyllMall` + `gorMallSjalvbarande`
+ *  — BETEENDET är oförändrat (samma två steg, samma ordning), bara
+ *  UTBRUTET så kompositionsvägen kan återanvända de två halvorna var för
+ *  sig. */
 export function fyllOchGorSjalvbarande(mall: MallNamn, data: Record<string, unknown>): string {
-  const { html, css } = MALL_TEMPLATES[mall];
-  const ifylld = eta.renderString(html, data) as string;
-  return gorSjalvbarande(ifylld, css);
+  return gorMallSjalvbarande(mall, fyllMall(mall, data));
 }
 
 const DOCRAPTOR_URL_BAS = 'https://api.docraptor.com/docs';
@@ -370,16 +397,18 @@ export interface RenderaMallPdfOpts {
 export { raknaSidor } from './hojdanpassning.ts';
 
 /**
- * Renderar `mall` med `data` (Eta, autoEscape) → självbärande HTML →
- * DocRaptor → PDF-bytes. EN retry på 5xx/timeout, aldrig på 4xx.
+ * [TASK-370.1] POST:ar en REDAN fylld och självbärande HTML-sträng till
+ * DocRaptor, med EN retry på 5xx/timeout (aldrig 4xx) — utbruten ur
+ * `renderaEttPass` (nedan, nu en tunn komposition av `fyllOchGorSjalvbarande`
+ * + denna) så att kompositionsvägen (`_shared/kvitto-kombination.ts`, redan
+ * fylld OCH självbärande INNAN detta anrop) kan återanvända samma
+ * retry-disciplin utan att gå via en `mall`+`data`-fyllning den redan gjort
+ * själv (N gånger, en per kvitto — se den filens filhuvud).
  */
-/** Ett DocRaptor-anrop med retry på 5xx/timeout — trappans enskilda steg. */
-async function renderaEttPass(
-  mall: MallNamn,
-  data: Record<string, unknown>,
+export async function renderaSjalvbarandeHtmlPdf(
+  html: string,
   opts: RenderaMallPdfOpts,
 ): Promise<Uint8Array> {
-  const html = fyllOchGorSjalvbarande(mall, data);
   try {
     return await postaTillDocRaptor(opts.apiKey, html, opts.namn, opts.test);
   } catch (error) {
@@ -388,6 +417,22 @@ async function renderaEttPass(
   }
 }
 
+/** Ett DocRaptor-anrop med retry på 5xx/timeout — trappans enskilda steg.
+ *  [TASK-370.1] Nu en tunn komposition av `fyllOchGorSjalvbarande` +
+ *  `renderaSjalvbarandeHtmlPdf` — BETEENDET är oförändrat. */
+async function renderaEttPass(
+  mall: MallNamn,
+  data: Record<string, unknown>,
+  opts: RenderaMallPdfOpts,
+): Promise<Uint8Array> {
+  const html = fyllOchGorSjalvbarande(mall, data);
+  return await renderaSjalvbarandeHtmlPdf(html, opts);
+}
+
+/**
+ * Renderar `mall` med `data` (Eta, autoEscape) → självbärande HTML →
+ * DocRaptor → PDF-bytes. EN retry på 5xx/timeout, aldrig på 4xx.
+ */
 export async function renderaMallPdf(
   mall: MallNamn,
   data: Record<string, unknown>,
