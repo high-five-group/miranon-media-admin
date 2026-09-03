@@ -10,7 +10,33 @@ import { jobbDelutfall } from './inkorg-harledningar';
 type Props = {
   /** Anmälans record-ID — den enda kontext återbetalningen behöver. */
   anmalanRecordId: string;
+  /**
+   * [TASK-368.3] DOM-id på trigger-knappen, så en annan yta på samma sida kan
+   * skicka Lotta hit i ETT tryck. Utelämnat ⇒ knappen bär inget id alls, som
+   * förut. Se `ATERBETALNINGS_TRIGGER_ID` nedan för hela kontraktet.
+   */
+  triggerId?: string;
 };
+
+/**
+ * [TASK-368.3] Det ENDA id:t huset använder för denna trigger, och därmed
+ * hela kontraktet mellan avbokningssteget och återbetalningsytan.
+ *
+ * Avbokningssteget (`AvbokningsBetallage`) behöver kunna ge Lotta en direkt
+ * väg till "Registrera återbetalning" utan att bygga en andra kopia av ytan.
+ * Alternativen var att lyfta `oppen`-state ur denna komponent (en kontrollerad
+ * prop bara en enda anropare skulle använda) eller att leta upp knappen på
+ * dess synliga text (som bryter så fort ordvalet ändras). Ett DEKLARERAT id,
+ * satt av den anropare som faktiskt vill bli hittad, är det smalaste seamet:
+ * ytan förblir självständig, och den som inte skickar id:t exponerar
+ * ingenting.
+ *
+ * SÄTTS BARA AV `AnmalansBetalningar`. Ett id måste vara unikt i dokumentet,
+ * och anmälans sida är den enda vy där avbokningssteget och återbetalningsytan
+ * står samtidigt. Personkortets och panelens `AterbetalningsYta` lämnar
+ * propen utelämnad och kan därför aldrig kollidera.
+ */
+export const ATERBETALNINGS_TRIGGER_ID = 'anmalan-registrera-aterbetalning';
 
 /**
  * [TASK-346.9 AC #3] "Registrera återbetalning" som EN ÅTERANVÄNDBAR YTA —
@@ -38,7 +64,7 @@ type Props = {
  * kvitto det hänvisar till — se `_shared/kvittojobb.ts`s
  * `KvittoJobbDeps.hittaOriginalKvitto`-docstring.
  */
-export function AterbetalningsYta({ anmalanRecordId }: Props) {
+export function AterbetalningsYta({ anmalanRecordId, triggerId }: Props) {
   const [oppen, setOppen] = useState(false);
   const [kvittens, setKvittens] = useState<string | null>(null);
   const [betalsatt, setBetalsatt] = useState<Betalsatt>(lasSenasteBetalsatt);
@@ -98,6 +124,7 @@ export function AterbetalningsYta({ anmalanRecordId }: Props) {
         <div className="flex flex-wrap items-center">
           <Button
             ref={triggerRef}
+            id={triggerId}
             intent="secondary"
             emphasis="outline"
             size="sm"

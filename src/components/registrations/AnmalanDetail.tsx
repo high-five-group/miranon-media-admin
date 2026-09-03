@@ -16,6 +16,7 @@ import { PaymentStatus, RegistrationSource, RegistrationStatus } from '@/domain/
 import { betalningarPa } from '@/lib/funktionsflaggor';
 import { kursfargForKurs } from '@/lib/kursfarg';
 import { queryKeys } from '@/queries/keys';
+import { AvbokningsYta } from './AvbokningsYta';
 import { harledBehorighet } from './behorighet';
 import { FritextRad } from './FritextRad';
 import { IdChip } from './IdChip';
@@ -619,13 +620,44 @@ export function AnmalanDetail({
             </DetaljGrupp>
           )}
 
-          {/* Händelser SIST (byggkrav 11): tidslinjen härledd ur tidsstämplarna,
-              senast överst. */}
+          {/* Händelser (byggkrav 11): tidslinjen härledd ur tidsstämplarna,
+              senast överst. STOD SIST fram till TASK-368.3 — se
+              Avbokning-gruppen nedan för varför den nya gruppen lades EFTER
+              och inte före. */}
           {handelser.length > 0 && (
             <DetaljGrupp id="grupp-handelser" rubrik="Händelser">
               <Tidslinje handelser={handelser} />
             </DetaljGrupp>
           )}
+
+          {/* [TASK-368.3] Avbokningen (PRD TASK-368 beslut 2). Ytan renderar
+              INGENTING för en anmälan som varken är aktiv eller avbokad
+              (Inställt, Flytta till väntelista) — S83-regeln om att avvikande
+              anmälningar inte bär åtgärder står kvar, med återtagandet som
+              enda tillägg.
+
+              PLACERAD ALLRA SIST, MED AVSIKT. Sidan är facit-låst sedan S83
+              (Marcus "Lås den" 2026-07-24) och varje tillägg är en klass
+              (c)-amendering (ADR-102 § A1/A4) som ska stämplas om av Marcus.
+              Sist är den enda placering som lämnar SAMTLIGA låsta grupper på
+              exakt sina positioner — en insättning mitt i sidan hade flyttat
+              allt under sig utan att någon bett om det. Att gruppen står
+              efter tidslinjen i stället för före den är alltså en följd av
+              den regeln, inte ett designval om läsordning; placeringen är
+              öppen för Marcus vid omstämplingen (se amenderings-sidofilen
+              tasks/sessions/bilagor/s83-anmalningsvyn-konvergens/).
+
+              GRUPPSKALET ÄGS AV YTAN SJÄLV, inte av denna fil: en
+              `DetaljGrupp` runt en komponent som kan rendera null hade gett
+              en tom rubrik "Avbokning" ovanför ett tomt kort för varje
+              inställd anmälan. Ytan returnerar därför null FÖRE sitt eget
+              gruppskal. */}
+          <AvbokningsYta
+            eventId={eventId}
+            registrationId={reg.id}
+            namn={namn}
+            status={reg.status}
+          />
         </>
       )}
     </>,
