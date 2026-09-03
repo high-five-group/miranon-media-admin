@@ -33,6 +33,7 @@ import { useQueryState } from 'nuqs';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { InitialAvatar } from '@/components/primitives/InitialAvatar';
 import { MessageBox } from '@/components/primitives/MessageBox';
+import { Select, SelectItem } from '@/components/primitives/Select';
 import { SidRam } from '@/components/primitives/SidRam';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
@@ -102,8 +103,17 @@ function KonvergensRad({ person }: { person: Intresserad }) {
           )}
         </span>
       </div>
-      <span className="shrink-0 rounded-full bg-bg-muted px-2.5 py-0.5 text-caption text-text-secondary tabular-nums">
-        {person.antalHamtningar === 1 ? '1 hämtning' : `${person.antalHamtningar} hämtningar`}
+      {/* Fast bredd: den osynliga storleksgivaren "00 hämtningar" ligger i samma
+          grid-cell som texten, så alla pills blir lika breda för en- och
+          tvåsiffriga tal (tabular-nums gör siffrorna lika breda); en tresiffrig
+          siffra växer cellen i stället för att klippas. */}
+      <span className="grid shrink-0 rounded-full bg-bg-muted px-2.5 py-0.5 text-caption text-text-secondary tabular-nums">
+        <span aria-hidden className="invisible col-start-1 row-start-1">
+          00 hämtningar
+        </span>
+        <span className="col-start-1 row-start-1 text-center">
+          {person.antalHamtningar === 1 ? '1 hämtning' : `${person.antalHamtningar} hämtningar`}
+        </span>
       </span>
     </li>
   );
@@ -281,17 +291,15 @@ export function IntresseradeKonvergens() {
             className="rounded-lg border border-border-strong/40 bg-bg px-3 py-2 text-body focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-2"
           />
         </label>
-        <label className="flex shrink-0 flex-col gap-1">
-          <span className="text-small text-text-muted">Sortera efter</span>
-          <select
-            value={sortering}
-            onChange={(e) => setSortering(e.target.value as Sortering)}
-            className="rounded-lg border border-border-strong/40 bg-bg px-3 py-2 text-body focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-2"
-          >
-            <option value="interaktion">Senaste interaktion</option>
-            <option value="namn">Namn A till Ö</option>
-          </select>
-        </label>
+        <Select
+          label="Sortera efter"
+          selectedKey={sortering}
+          onSelectionChange={(k) => setSortering(k as Sortering)}
+          className="shrink-0 sm:w-56"
+        >
+          <SelectItem id="interaktion">Senaste interaktion</SelectItem>
+          <SelectItem id="namn">Namn A till Ö</SelectItem>
+        </Select>
       </div>
 
       {synliga.length === 0 ? (
