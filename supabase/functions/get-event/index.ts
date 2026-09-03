@@ -4,6 +4,7 @@ import { BELAGGNING_ANMALAN_FALT, raknaAnmalningar } from '../_shared/belaggning
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
 import { generateRequestId, mapErrorToResponse } from '../_shared/errors.ts';
 import { mapEventBas, mapEventKategorifalt } from '../_shared/event-map.ts';
+import { hamtaStandardpriser, standardprisFor } from '../_shared/eventpris.ts';
 
 // Tabeller adresseras per NAMN (ej tbl-id) så samma kod fungerar mot prod- och
 // staging-bas — tbl-id:n är bas-unika och skiljer sig i en duplicerad bas (ADR-050).
@@ -11,6 +12,9 @@ import { mapEventBas, mapEventKategorifalt } from '../_shared/event-map.ts';
 const TABLE_NAME = 'Eventplanering';
 const REGISTRATIONS_TABLE = 'Anmälningar';
 const WAITLIST_TABLE = 'Väntelista';
+
+/** Loggprefix för uppslagets varning (`_shared/eventpris.ts` § ETT UPPSLAG SOM FALLERAR). */
+const LOGG = '[get-event]';
 
 // Max record-ID:n per batch-anrop — en chunk = en kort `OR(RECORD_ID()=…)`-formel
 // (≤50 IDs ≈ ~1.5 kB, väl under Airtables formel-/URL-längd) → ETT listanrop per
@@ -142,9 +146,14 @@ function mapEvent(
     vantelista: number;
     borOverAntal: number;
   },
+  standardPris: number | null,
 ) {
   return {
-    ...mapEventBas(record),
+    // `standardPris` = Eventinnehåll-standarden (prisets nivå 3, TASK-368.7),
+    // uppslagen av `hamtaStandardpriser` och noll anrop när eventet redan har
+    // ett eget pris. Samma tal som serverns `lasEvent` ger ombokningens
+    // prisskillnad — se `_shared/event-map.ts` § EVENTETS PRIS.
+    ...mapEventBas(record, standardPris),
     ...mapEventKategorifalt(record),
     viaFormular: belaggning.viaFormular, // AKTIVA länkade Anmälningar, Källa TOM
     medfoljande: belaggning.medfoljande, // AKTIVA länkade Anmälningar, Källa '+1'
@@ -217,8 +226,11 @@ Deno.serve(async (req) => {
 
     // Beläggnings-aggregationen (task-18.2): batch-hämtningarna körs efter
     // eventraden (ID-listorna kommer ur den).
-    const belaggning = await fetchBelaggning(record.fields);
-    const event = mapEvent(record, belaggning);
+    const [belaggning, standardpriser] = await Promise.all([
+      fetchBelaggning(record.fields),
+      hamtaStandardpriser([record], LOGG),
+    ]);
+    const event = mapEvent(record, belaggning, standardprisFor(standardpriser, record));
 
     return new Response(JSON.stringify({ event }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

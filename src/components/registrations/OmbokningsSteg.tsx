@@ -3,11 +3,19 @@ import { useNavigate } from '@tanstack/react-router';
 import { type KeyboardEvent, useEffect, useRef, useState } from 'react';
 import { EventValjare } from '@/components/events/EventValjare';
 import { Button } from '@/components/primitives';
+import { useInbetalningarPerAnmalan } from '@/data/betalningar/useBetalningar';
 import { useBokaOmAnmalan } from '@/data/mutations/registrationRebooking';
 import type { Event } from '@/domain/models/Event';
 import { alertScreenReader } from '@/lib/alert-screen-reader';
+import { betalningarPa } from '@/lib/funktionsflaggor';
 import { queryKeys } from '@/queries/keys';
-import { ombokningsskal } from './ombokning-kvitto';
+// TYP-IMPORTEN ÄR OCKSÅ AUGMENTERINGENS BÄRARE. `ombokning-kvitto.ts`
+// deklarerar `HistoryState.mmOmbokningsKvitto`, och en augmentering gäller bara
+// i de kompileringsenheter som faktiskt drar in modulen. `import type` räcker
+// (augmenteringen är ren typ-nivå) och gör samtidigt objektet nedan
+// TYPKONTROLLERAT vid konstruktionen i stället för först vid läsningen.
+import type { OmbokningsKvittoData } from './ombokning-kvitto';
+import { ombokningsskal, prisbesked, prisskillnadFore } from './ombokning-pris';
 import { begripligtServerfel } from './serverfel';
 import { VantelistePaminnelse } from './VantelistePaminnelse';
 
@@ -55,22 +63,51 @@ import { VantelistePaminnelse } from './VantelistePaminnelse';
  * rapporterad till orkestreraren; den avgörs av Marcus, inte här.
  *
  * ═══════════════════════════════════════════════════════════════════════════
- * PRISSKILLNADEN KAN INTE SÄGAS I SIFFROR FÖRE BEKRÄFTELSEN
+ * PRISBESKEDET FÖRE BEKRÄFTELSEN [TASK-368.7 AC #2]
  * ═══════════════════════════════════════════════════════════════════════════
- * AC #3 vill ha beloppet både före och efter. EFTER går utmärkt — servern
- * svarar med `nyttPris` och `prisskillnad`, och kvittot visar dem
- * (`OmbokningsKvitto`). FÖRE saknas underlaget helt: eventets pris finns i
- * basen (`Eventplanering.Pris (kr)`, `Eventinnehåll.Pris (kr)`) men INGEN
- * klient-läsbar yta bär det — `get-event` och `get-events` returnerar inget
- * prisfält (disk-verifierat 2026-09-03 mot `_shared/event-map.ts` och
- * `Event.schema.ts`), och `rebook-registration` har inget torrkörningsläge.
+ * 368.5 kunde inte säga beloppet före bekräftelsen: ingen klient-läsbar yta
+ * bar eventets pris. `TASK-368.7` lade fältet — `Event.pris`, prisets nivå 2
+ * med Eventinnehåll-standarden som nivå 3, löst server-side med SAMMA
+ * `valjPris` som ombokningens svar (`_shared/event-map.ts` § EVENTETS PRIS).
  *
- * Steget säger därför vad som HÄNDER med pengarna, vilket är sant och känt,
- * och lovar inte ett tal det inte har. Att i stället gissa priset ur någon
- * annans öppna betalning på samma event hade varit ett tal utan täckning
- * (avtalat pris vinner per anmälan). Vägen fram — ett prisfält i `get-event`
- * eller ett torrkörningsläge i EF:en — är ett serverbeslut och rapporterat
- * som sådant.
+ * Beskedet byggs av `prisbesked`, EXAKT samma funktion som kvittot efteråt
+ * använder (`OmbokningsKvitto`) — samma tre grenar, samma ordalydelse, noll
+ * duplicerade strängar. Talet kommer ur `prisskillnadFore`, vars paritet med
+ * serverns `harledBetalning(...).saknas` är tvåsidigt bevisad i
+ * `tests/api/ombokning-prisparitet.test.ts`; se den funktionens docblock för
+ * varför de två indataleden är parvis samma tal.
+ *
+ * ───────────────────────────────────────────────────────────────────────────
+ * VARFÖR SUMMAN LIGGER BAKOM `betalningarPa()` — OCH VAD DET KOSTAR
+ * ───────────────────────────────────────────────────────────────────────────
+ * Andra ledet i formeln är de aktiva inbetalningarna som följer med, och den
+ * ENDA källa som är sant identisk med serverns tal är
+ * `Inbetalningslista.spegel.summaPostgres` (`hamta-inbetalningar` räknar det
+ * med samma uttryck som `harledBetalning`). Basens `Summa inbetalt (kr)` hade
+ * varit oflaggad och lättare att nå, men den är en SPEGEL som kan släpa
+ * (ADR-128 beslut 6) — att bygga just den axel AC #2 handlar om på ett tal som
+ * får avvika hade varit att lova en garanti vi inte har.
+ *
+ * Betalnings-EF:erna kräver migrationerna, Vault-hemligheten och cron-posten i
+ * prod (`lib/funktionsflaggor.ts`), så hämtningen villkoras av flaggan. Den är
+ * DESSUTOM villkorad av att ett event faktiskt är valt: `enabled` är
+ * `betalningarPa() && nyttEventId !== null`, alltså noll nätverksanrop tills
+ * Lotta gjort sitt val, och inget alls med flaggan av.
+ *
+ * SUMMAN OKÄND ⇒ INGET TAL PÅSTÅS. Med flaggan av (eller medan hämtningen
+ * pågår) står den befintliga meningen kvar — att skicka `null` in i
+ * `prisbesked` hade gett *"Priset på det nya eventet är inte satt"*, vilket är
+ * FALSKT när priset är känt men summan inte hämtad. Det är två skilda okändheter
+ * och de får inte säga samma sak.
+ *
+ * KOSTNADEN, öppet: `playwright.config.ts` sätter `VITE_FEATURE_BETALNINGAR:
+ * 'av'` för hela acceptance-webServern (delad med visual/webblasarbeteende/
+ * manifest-screenshots), så acceptansfallen når stegets tre grenar först när
+ * fixturvärlden bär betalnings-EF-mockar — det arbete raden i
+ * `playwright.config.ts` redan pekar ut som `TASK-346.6/346.7`s. De tre
+ * grenarna prövas därför i `tests/api/ombokning-prisparitet.test.ts` (rena
+ * funktionen, alla utfall) medan acceptansfallet prövar det som ÄR observerbart
+ * med flaggan av: att steget inte gissar ett tal det saknar underlag för.
  *
  * ═══════════════════════════════════════════════════════════════════════════
  * STEGET STÄNGS INTE AV `bekrafta()` — MEKANISMEN ÄR CACHE-DRIVEN, INTE ROUTERN
@@ -158,6 +195,30 @@ export function OmbokningsSteg({
 
   const skalrad = ombokningsskal(valtEvent?.eventNamn ?? null, valtEvent?.startdatum ?? null);
 
+  /**
+   * PRISBESKEDETS ANDRA LED — de aktiva inbetalningar som följer med till den
+   * nya anmälan. Se filens docblock § PRISBESKEDET för varför källan är
+   * Postgres-summan och inte basens spegel, och varför `enabled` bär BÅDA
+   * villkoren. `undefined` (flaggan av, hämtningen pågår, EF:en föll) blir
+   * `null` här — ett tal vi inte har, aldrig en nolla vi hittat på.
+   */
+  const { data: inbetalningar } = useInbetalningarPerAnmalan(
+    registrationId,
+    betalningarPa() && nyttEventId !== null,
+  );
+  const summaSomFoljerMed = inbetalningar?.spegel.summaPostgres ?? null;
+
+  // `valtEvent?.pris ?? null` och inte `?? undefined`: fältet är OPTIONAL i
+  // schemat (bakåtkompatibilitet mot cache från före TASK-368.7), och en gammal
+  // cachad rad utan nyckeln ska läsas som "priset är okänt" — samma utfall som
+  // ett event vars pris faktiskt saknas.
+  const nyttPris = valtEvent?.pris ?? null;
+  const prisskillnad = prisskillnadFore(nyttPris, summaSomFoljerMed);
+  // BESKEDET VISAS BARA NÄR BÅDA LEDEN GÅR ATT AVGÖRA. `prisbesked(x, null)`
+  // säger "priset är inte satt", vilket är fel utsaga när det är SUMMAN som
+  // saknas — se docblocket § SUMMAN OKÄND.
+  const besked = summaSomFoljerMed === null ? null : prisbesked(nyttPris, prisskillnad);
+
   function vidTangent(event: KeyboardEvent<HTMLElement>) {
     if (event.key !== 'Escape') return;
     // Escape stängs INTE när väljarens popover står öppen: React Arias
@@ -178,6 +239,14 @@ export function OmbokningsSteg({
           alertScreenReader(
             `Anmälan är ombokad till ${valtEvent?.eventNamn ?? 'det nya eventet'}.`,
           );
+          const kvitto: OmbokningsKvittoData = {
+            nyAnmalanId: resultat.nyAnmalanId,
+            nyttEventNamn: valtEvent?.eventNamn ?? 'det nya eventet',
+            summaNyAnmalan: resultat.summaNyAnmalan,
+            nyttPris: resultat.nyttPris,
+            prisskillnad: resultat.prisskillnad,
+            aterupptaget: resultat.aterupptaget,
+          };
           // LANDNINGEN PÅ DEN NYA ANMÄLANS SIDA (AC #2) med kvittot i
           // navigeringens history-state — samma engångsfat-idiom som
           // `mmAvsloja`/`mmAtgardsUrval`, och spridningen bevarar routerns
@@ -186,17 +255,7 @@ export function OmbokningsSteg({
           void navigate({
             to: '/event/$eventId/anmalan/$registrationId',
             params: { eventId: resultat.nyttEventId, registrationId: resultat.nyAnmalanId },
-            state: (prev) => ({
-              ...prev,
-              mmOmbokningsKvitto: {
-                nyAnmalanId: resultat.nyAnmalanId,
-                nyttEventNamn: valtEvent?.eventNamn ?? 'det nya eventet',
-                summaNyAnmalan: resultat.summaNyAnmalan,
-                nyttPris: resultat.nyttPris,
-                prisskillnad: resultat.prisskillnad,
-                aterupptaget: resultat.aterupptaget,
-              },
-            }),
+            state: (prev) => ({ ...prev, mmOmbokningsKvitto: kvitto }),
           });
         },
       },
@@ -251,12 +310,30 @@ export function OmbokningsSteg({
             </p>
           </div>
 
-          {/* PENGARNA, UTAN ETT TAL VI INTE HAR — se filens docblock
-              § PRISSKILLNADEN. */}
-          <p className="my-0 text-small text-text-muted">
-            Inbetalningarna som sitter på den här anmälan flyttas till den nya. Prisskillnaden
-            räknas ut av servern och visas på den nya anmälans sida.
-          </p>
+          {/* PENGARNA — se filens docblock § PRISBESKEDET. Beskedet är
+              `prisbesked`s exakta text, samma funktion och samma tre grenar
+              som kvittot efter bekräftelsen. Saknas underlaget står den
+              gamla, sanna meningen kvar i stället för ett gissat tal. */}
+          {besked === null ? (
+            <p className="my-0 text-small text-text-muted">
+              Inbetalningarna som sitter på den här anmälan flyttas till den nya. Prisskillnaden
+              räknas ut av servern och visas på den nya anmälans sida.
+            </p>
+          ) : (
+            <div className="flex flex-col gap-1 rounded-xl bg-bg-muted p-3">
+              {/* `h3` av samma skäl som Skäl-rubriken ovan: närmast föregående
+                  rubrik är `DetaljGrupp`s `h2`, och axes `heading-order` fäller
+                  ett hopp över en nivå. */}
+              <h3 className="my-0 font-medium text-caption text-text-secondary uppercase tracking-wide">
+                Pris
+              </h3>
+              <p className="my-0 text-body">{besked.text}</p>
+              <p className="my-0 text-caption text-text-muted">
+                Inbetalningarna som sitter på den här anmälan flyttas till den nya. Servern räknar
+                om beloppet vid bekräftelsen.
+              </p>
+            </div>
+          )}
         </>
       )}
 

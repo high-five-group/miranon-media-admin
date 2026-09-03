@@ -3,11 +3,15 @@ import { requireUser } from '../_shared/auth.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
 import { generateRequestId, mapErrorToResponse } from '../_shared/errors.ts';
 import { mapEventBas } from '../_shared/event-map.ts';
+import { hamtaStandardpriser, standardprisFor } from '../_shared/eventpris.ts';
 
 // Tabeller adresseras per NAMN (ej tbl-id) så samma kod fungerar mot prod- och
 // staging-bas — tbl-id:n är bas-unika och skiljer sig i en duplicerad bas (ADR-050).
 const TABLE_NAME = 'Eventplanering';
 const REGISTRATIONS_TABLE = 'Anmälningar';
+
+/** Loggprefix för uppslagets varning (`_shared/eventpris.ts` § ETT UPPSLAG SOM FALLERAR). */
+const LOGG = '[get-events]';
 
 // Max record-ID:n per batch-anrop — en chunk = en kort `OR(RECORD_ID()=…)`-formel
 // (≤50 IDs, väl under Airtables formel-/URL-längd) → ETT listanrop per chunk (ej
@@ -91,9 +95,18 @@ async function fetchBorOverAntalByEvent(
 // ett nytt läs-fält landar på ETT ställe i stället för att kräva håll-i-synk-plikt i
 // tre kopior. Spread FÖRST, funktionsspecifika fält efter: nyckelordningen i svaret är
 // därmed oförändrad mot inline-kopian den ersätter.
-function mapEvent(record: { id: string; fields: Record<string, unknown> }, borOverAntal: number) {
+function mapEvent(
+  record: { id: string; fields: Record<string, unknown> },
+  borOverAntal: number,
+  standardPris: number | null,
+) {
   return {
-    ...mapEventBas(record),
+    // `standardPris` = Eventinnehåll-standarden (prisets nivå 3), uppslagen EN
+    // gång för hela listan (`hamtaStandardpriser`). Utan den hade ett event vars
+    // pris bara finns i standarden fått `pris: null` här medan servern efter en
+    // ombokning svarat med ett riktigt tal — exakt den inkonsekvens TASK-368.7
+    // finns för att ta bort.
+    ...mapEventBas(record, standardPris),
     // Bor över-summeringen (task-17.5): härlett antal ikryssade 'Bor över' bland
     // eventets länkade Anmälningar (listkortets säng-rad). Aggregeras per event ur
     // registrerings-batchen (fetchBorOverAntalByEvent) och skickas in här — get-event
@@ -123,8 +136,15 @@ Deno.serve(async (req) => {
     const records = await fetchFromAirtable(TABLE_NAME);
     // Bor över-summeringen (task-17.5): EN batch-läsning av alla events länkade
     // Anmälningar → antal ikryssade 'Bor över' per event (aldrig N+1).
-    const borOverByEvent = await fetchBorOverAntalByEvent(records);
-    const events = records.map((record) => mapEvent(record, borOverByEvent.get(record.id) ?? 0));
+    // Eventinnehåll-standarden (TASK-368.7): ETT anrop för hela listan, och
+    // noll anrop när varje event redan har ett eget pris.
+    const [borOverByEvent, standardpriser] = await Promise.all([
+      fetchBorOverAntalByEvent(records),
+      hamtaStandardpriser(records, LOGG),
+    ]);
+    const events = records.map((record) =>
+      mapEvent(record, borOverByEvent.get(record.id) ?? 0, standardprisFor(standardpriser, record)),
+    );
 
     return new Response(JSON.stringify({ events }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

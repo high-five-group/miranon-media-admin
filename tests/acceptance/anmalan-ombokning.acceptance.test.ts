@@ -100,6 +100,11 @@ function event(overrides: Partial<EventRow> & Pick<EventRow, 'id'>): EventRow {
     antalSlutbetalningar: 2,
     antalSlutbetalningFelande: 1,
     status: 'Planerat',
+    // TASK-368.7: `Event.pris` — prisets nivå 2/3, löst server-side. Mockarna
+    // bär det så att listcachen (som ombokningssteget läser eventet ur) speglar
+    // den skarpa EF:ens shape. Priserna nedan är valda så att de tre grenarna i
+    // `prisbesked` blir naturliga mot anmälans 2 500 kr.
+    pris: 2500,
     ...overrides,
   };
 }
@@ -107,8 +112,18 @@ function event(overrides: Partial<EventRow> & Pick<EventRow, 'id'>): EventRow {
 const EVENT_LISTA: EventRow[] = [
   event({ id: EVENT_FRAN, eventNamn: 'Resor i medvetandet 2', startdatum: '2026-10-01' }),
   event({ id: EVENT_SAMMA, eventNamn: 'Resor i medvetandet 3', startdatum: '2026-11-05' }),
-  event({ id: EVENT_DYRARE, eventNamn: 'Fjärrskådning steg 2', startdatum: '2026-11-20' }),
-  event({ id: EVENT_BILLIGARE, eventNamn: 'Introduktionskväll', startdatum: '2026-12-02' }),
+  event({
+    id: EVENT_DYRARE,
+    eventNamn: 'Fjärrskådning steg 2',
+    startdatum: '2026-11-20',
+    pris: 3200,
+  }),
+  event({
+    id: EVENT_BILLIGARE,
+    eventNamn: 'Introduktionskväll',
+    startdatum: '2026-12-02',
+    pris: 1800,
+  }),
 ];
 
 /** Bekräftad anmälan med en befintlig notering (så appendet syns som append). */
@@ -351,6 +366,58 @@ test.describe('Boka om till annat event (TASK-368.5)', () => {
     // (TASK-368.4 § INGET `skal`-FÄLT), så steget bär medvetet INGET fält —
     // ett som tog emot text och kastade den vore värre än inget.
     await expect(steg.getByRole('textbox')).toHaveCount(0);
+  });
+
+  /**
+   * TASK-368.7 AC #3 — PRISBESKEDET FÖRE BEKRÄFTELSEN, OCH DEN MÄTTA GRÄNSEN
+   * FÖR VAD DENNA KLASS KAN BEVISA OM DET.
+   *
+   * `368.7` gav klienten eventets pris (`Event.pris`) och räknar prisbeskedet
+   * före bekräftelsen ur `pris` minus de aktiva inbetalningar som följer med.
+   * ANDRA LEDET kommer ur `hamta-inbetalningar`
+   * (`Inbetalningslista.spegel.summaPostgres`) — den enda källa som är sant
+   * identisk med serverns tal (`OmbokningsSteg` § PRISBESKEDET). Den hämtningen
+   * ligger bakom `betalningarPa()`.
+   *
+   * `playwright.config.ts` sätter `VITE_FEATURE_BETALNINGAR: 'av'` för hela
+   * acceptance-webServern — delad av visual, acceptance, webblasarbeteende och
+   * manifest-screenshots — och den raden bär sitt eget skäl: fixturvärlden har
+   * inga betalnings-EF-mockar, så `JobbLyssnare`s Realtime-WebSocket fäller
+   * varenda autentiserad test i klassen (mätt 48 av 48). Att flippa flaggan här
+   * är alltså `TASK-346.6/346.7`s arbete, inte denna skivas.
+   *
+   * FÖLJDEN, öppet: de TRE GRENARNA (samma pris / saknas / återbetalas) kan
+   * inte visas i denna klass förrän flaggan flippar. De prövas uttömmande i
+   * `tests/api/ombokning-prisparitet.test.ts`, mot serverns egen härledning.
+   * Vad som ÄR observerbart här — och vad detta fall därför låser — är att
+   * steget inte GISSAR ett tal när underlaget saknas: eventet har ett pris i
+   * listcachen, men summan är okänd, och då står den sanna meningen kvar i
+   * stället för `prisbesked`s "priset är inte satt", som hade varit en falsk
+   * utsaga om ett event som bevisligen ÄR prissatt.
+   */
+  test('prisbeskedet före bekräftelsen gissar aldrig — okänd summa säger inte "okänt pris"', async ({
+    page,
+    network,
+  }) => {
+    mocka(network, { detaljer: [detalj()] });
+    const steg = await oppnaOmbokningen(page);
+    await valjEvent(page, 'Fjärrskådning steg 2');
+
+    // Eventet ÄR prissatt i listcachen (3 200 kr, se EVENT_LISTA) — men de
+    // aktiva inbetalningarna är okända med betalningsflaggan av.
+    await expect(steg).toContainText(
+      'Inbetalningarna som sitter på den här anmälan flyttas till den nya.',
+    );
+    await expect(steg).toContainText('Prisskillnaden räknas ut av servern');
+
+    // INGET TAL PÅSTÅS: varken beloppet, mellanskillnaden eller den falska
+    // "priset är inte satt"-meningen.
+    await expect(steg).not.toContainText('Nya eventet kostar');
+    await expect(steg).not.toContainText('saknas på den nya anmälan');
+    await expect(steg).not.toContainText('blir att återbetala');
+    await expect(steg).not.toContainText('Priset på det nya eventet är inte satt');
+    // Och ingen Pris-rubrik står tom.
+    await expect(steg.getByRole('heading', { name: 'Pris' })).toHaveCount(0);
   });
 
   test('samma pris: kvittot på den NYA anmälans sida säger det rakt ut', async ({
