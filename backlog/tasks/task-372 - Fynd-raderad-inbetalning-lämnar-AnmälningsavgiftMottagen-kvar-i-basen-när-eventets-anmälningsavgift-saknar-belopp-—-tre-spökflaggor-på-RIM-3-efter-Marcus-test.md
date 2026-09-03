@@ -4,9 +4,10 @@ title: >-
   Fynd: raderad inbetalning lämnar Anmälningsavgift='Mottagen' kvar i basen när
   eventets anmälningsavgift saknar belopp — tre spökflaggor på RIM 3 efter
   Marcus test
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-03 08:58'
+updated_date: '2026-09-03 11:25'
 labels:
   - ready-for-agent
 dependencies: []
@@ -31,7 +32,7 @@ S115 Del 5 (2026-09-03), prod-läsning via bypass + Airtable-connectorn; Marcus:
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->

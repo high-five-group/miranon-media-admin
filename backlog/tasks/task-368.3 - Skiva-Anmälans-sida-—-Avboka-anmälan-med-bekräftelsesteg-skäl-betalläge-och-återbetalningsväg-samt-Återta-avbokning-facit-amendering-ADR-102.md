@@ -3,10 +3,10 @@ id: TASK-368.3
 title: >-
   Skiva: Anmälans sida — Avboka anmälan med bekräftelsesteg, skäl, betalläge och
   återbetalningsväg, samt Återta avbokning (facit-amendering ADR-102)
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-03 07:57'
-updated_date: '2026-09-03 09:43'
+updated_date: '2026-09-03 11:26'
 labels:
   - ready-for-agent
 dependencies:
@@ -32,10 +32,10 @@ Beteende ände-till-ände: Lotta öppnar en anmälan, trycker Avboka anmälan, s
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #4 Facit-granskning mot tasks/sessions/bilagor/s111-anmalningssidan-konvergens/facit.json (ADR-102 R3): skarpa ytan jämförd bild för bild mot det amenderade facitet innan Done
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Facit-granskning mot tasks/sessions/bilagor/s111-anmalningssidan-konvergens/facit.json (ADR-102 R3): skarpa ytan jämförd bild för bild mot det amenderade facitet innan Done
 <!-- DOD:END -->
 
 ## Implementation Notes

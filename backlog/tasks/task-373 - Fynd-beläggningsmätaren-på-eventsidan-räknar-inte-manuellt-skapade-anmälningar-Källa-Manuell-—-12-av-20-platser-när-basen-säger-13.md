@@ -3,9 +3,10 @@ id: TASK-373
 title: >-
   Fynd: beläggningsmätaren på eventsidan räknar inte manuellt skapade
   anmälningar (Källa 'Manuell') — '12 av 20 platser' när basen säger 13
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-03 08:58'
+updated_date: '2026-09-03 11:26'
 labels:
   - ready-for-agent
 dependencies: []
@@ -30,7 +31,7 @@ S115 Del 5 (2026-09-03); Marcus: 'det borde väl stå 13 platser upptagna?'
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
