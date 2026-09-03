@@ -59,6 +59,14 @@
     "supabase/functions/_shared/betalningsharledning.ts",
     "supabase/functions/_shared/jobb-tillstand.ts",
     "supabase/functions/_shared/kvittojobb.ts",
+    // TASK-368.2/368.4 (avbokning + ombokning). `cancel-registration` har INGEN
+    // import alls; `rebook-registration` importerar bara `cancel-registration`
+    // och `betalningsbelopp` — grafen stannar inom denna lista, samma villkor
+    // filhuvudet ställer. Båda typkollades tidigare bara som SIDOEFFEKT av att
+    // tester råkade importera dem (den odeklarerade täckning filhuvudet varnar
+    // för); här blir den avsiktlig.
+    "supabase/functions/_shared/cancel-registration.ts",
+    "supabase/functions/_shared/rebook-registration.ts",
     "supabase/functions/_shared/airtable-filter.ts",
     "supabase/functions/_shared/airtable-retry.ts",
     "supabase/functions/_shared/attachment-filename.ts",

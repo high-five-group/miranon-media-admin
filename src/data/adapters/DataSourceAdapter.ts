@@ -40,6 +40,8 @@ import type {
   OppnaBetalningar,
   PersonDetail,
   PlaceListItem,
+  RebookRegistrationInput,
+  RebookRegistrationResult,
   RecordActivityResult,
   RegistrationDetail,
   RegistreraInbetalningInput,
@@ -314,6 +316,20 @@ export interface DataSourceAdapter {
    * återtas; allt annat avvisas med 409.
    */
   atertaAvbokning(input: CancelRegistrationInput): Promise<CancelRegistrationResult>;
+
+  /**
+   * Boka om en anmälan till ett annat event (TASK-368.4, PRD TASK-368
+   * beslut 7-8, ADR-130). EN operation (`rebook-registration`-EF:en) som
+   * skapar den nya anmälan på det valda eventet, flyttar personens AKTIVA
+   * inbetalningar dit (kvittot rörs aldrig), sätter den gamla till
+   * "Avbokad/Ombokad" med en datumstämplad Ombokad-rad i Notering, räknar om
+   * basens spegel på BÅDA anmälningarna och loggar handlingen.
+   *
+   * Endast en AKTIV anmälan kan bokas om, och aldrig till det event den redan
+   * sitter på; båda avvisas med 409. Ett omanrop är ofarligt — servern
+   * upptäcker vad som redan är gjort och svarar `aterupptaget: true`.
+   */
+  bokaOmAnmalan(input: RebookRegistrationInput): Promise<RebookRegistrationResult>;
 
   /**
    * Skicka ett åtgärdsutskick (TASK-147.2, ADR-067-revisionen): SERVERN skickar

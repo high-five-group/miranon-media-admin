@@ -45,6 +45,23 @@ export const XAPI_IRI_BASE = 'https://admin.miranon.dev/xapi';
 export const REQUEST_ID_EXTENSION_IRI = `${XAPI_IRI_BASE}/extensions/requestId`;
 
 /**
+ * IRI-nyckeln för den NYA anmälan vid en ombokning (TASK-368.4).
+ *
+ * En ombokning rör TVÅ anmälningar, och kortets AC #2 kräver att båda finns i
+ * statementet. `object` bär den GAMLA (det är den som bokades om); den nya
+ * bärs här, i `context.extensions`, som en anmälnings-IRI av samma form
+ * (`anmalanObjektId`) — inte som ett rått record-ID, så att de två
+ * identifierarna är jämförbara utan att någon konsument behöver veta vilken
+ * som är rå och vilken som är IRI.
+ *
+ * Formen KRÄVER ingen schemaändring på klientsidan:
+ * `ActivityStatement.schema.ts`s `ActivityContextExtensionsSchema` bär redan
+ * `.catchall(z.unknown())` för exakt detta (samma väg `EVENT_ID_EXTENSION_IRI`
+ * och `PERSON_ID_EXTENSION_IRI` tog).
+ */
+export const NY_ANMALAN_EXTENSION_IRI = `${XAPI_IRI_BASE}/extensions/nyAnmalanId`;
+
+/**
  * Kategori-axeln. `betalning` och `kvitto` FANNS redan i klientens katalog
  * (`src/data/activityLog/activityTypes.ts` § ACTIVITY_OBJECT_TYPES) — ingen
  * ny kategori mintas här. En inbetalning ÄR en betalning; ett kvitto ÄR ett
@@ -127,6 +144,15 @@ export const ANMALAN_VERB = {
     id: `${XAPI_IRI_BASE}/verbs/atertog-avbokning`,
     display: { 'sv-SE': 'återtog avbokning' },
   },
+  /**
+   * Ombokningen (TASK-368.4). Objektet är den GAMLA anmälan; den NYA bärs i
+   * `context.extensions` under `NY_ANMALAN_EXTENSION_IRI` — se den konstantens
+   * docblock för varför båda ska finnas i samma statement.
+   */
+  bokadeOm: {
+    id: `${XAPI_IRI_BASE}/verbs/bokade-om-anmalan`,
+    display: { 'sv-SE': 'bokade om anmälan' },
+  },
 } as const satisfies Record<string, Verb>;
 
 export type Statement = {
@@ -175,6 +201,17 @@ export type StatementSpec = {
   objektNamn: string;
   aktivitetstyp: string;
   timestamp: string;
+  /**
+   * Ytterligare IRI-nycklade `context.extensions` utöver `requestId`
+   * (TASK-368.4 — ombokningens andra anmälan). ADDITIVT och frivilligt:
+   * utelämnas fältet blir statementet BYTE FÖR BYTE detsamma som före
+   * tillägget, så samtliga befintliga anropare är opåverkade.
+   *
+   * `requestId` kan inte skrivas över härifrån — den sätts EFTER spridningen
+   * nedan, medvetet: ADR-111 gör korrelations-ID:t obligatoriskt, och en
+   * anropare ska inte kunna råka nolla det.
+   */
+  extraExtensions?: Record<string, unknown>;
 };
 
 /** Auktoritetens hemvist i xAPI-actorns `account.homePage`. */
@@ -194,7 +231,12 @@ export function byggStatement(spec: StatementSpec): Statement {
       id: spec.objektId,
       definition: { name: { 'sv-SE': spec.objektNamn }, type: spec.aktivitetstyp },
     },
-    context: { extensions: { [REQUEST_ID_EXTENSION_IRI]: spec.requestId } },
+    context: {
+      extensions: {
+        ...(spec.extraExtensions ?? {}),
+        [REQUEST_ID_EXTENSION_IRI]: spec.requestId,
+      },
+    },
     timestamp: spec.timestamp,
   };
 }

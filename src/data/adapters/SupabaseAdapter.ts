@@ -40,6 +40,8 @@ import {
   type OppnaBetalningar,
   type PersonDetail,
   type PlaceListItem,
+  type RebookRegistrationInput,
+  type RebookRegistrationResult,
   type RecordActivityResult,
   RecordActivityResultSchema,
   type RegistrationDetail,
@@ -221,6 +223,10 @@ export class SupabaseAdapter implements DataSourceAdapter {
   }
 
   async atertaAvbokning(_input: CancelRegistrationInput): Promise<CancelRegistrationResult> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async bokaOmAnmalan(_input: RebookRegistrationInput): Promise<RebookRegistrationResult> {
     throw new Error(NOT_IMPLEMENTED);
   }
 
