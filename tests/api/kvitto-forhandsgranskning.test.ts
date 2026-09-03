@@ -337,7 +337,9 @@ test('allt eller inget: laggKombineratUtkast anropas EFTER DocRaptor-rendern, al
   // `laggKombineratUtkast` — ett kastat fel i loopen når alltså aldrig fram
   // till lagringsanropet (samma "kastar = ingen sidoeffekt hann ske"-logik
   // som resten av filen bevisar för de andra två grenarna).
-  const posLoop = EF_KALLA.indexOf('let underlag: Awaited<ReturnType<typeof hamtaRiktigtUnderlag>>;');
+  const posLoop = EF_KALLA.indexOf(
+    'let underlag: Awaited<ReturnType<typeof hamtaRiktigtUnderlag>>;',
+  );
   const posRender = EF_KALLA.indexOf('renderaSjalvbarandeHtmlPdf(sjalvbarandeHtml');
   const posLagg = EF_KALLA.indexOf('laggKombineratUtkast(supabaseAdmin');
   expect(posLoop).toBeGreaterThan(-1);
