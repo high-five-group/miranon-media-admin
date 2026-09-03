@@ -62,6 +62,10 @@
 //     N": N kvitton, ETT kombinerat DocRaptor-dokument. Hanteras HELT
 //     SEPARAT och returnerar tidigt (se `Deno.serve`-kroppen) — grenarna
 //     ovan är BYTE FÖR BYTE OFÖRÄNDRADE (AC #1, `370.1`-kortet).
+//     [TASK-370.2, S116 Del 2 beslut 2-3] Dokumentet öppnar sedan med ETT
+//     försättsblad (kontrollblad, mallen 'forsattsblad') FÖRE de N
+//     kvittosidorna — byggt ur SAMMA `underlag`-loop, ingen extra
+//     datahämtning. Se `_shared/mall-data.ts`s `byggForsattsbladData`.
 //
 // PERSONDATA-STYCKET NEDAN ÄR DÄRMED AMENDERAT, INTE RIVET. Dess mening
 // "Kundnamn/belopp/betalsätt kan STRUKTURELLT inte vara verkliga här" var
@@ -150,7 +154,10 @@ import { generateRequestId, HttpError, mapErrorToResponse, ValidationError } fro
 // gör självbärande EN gång). Taket (`MAX_KOMBINERADE_KVITTON`) läses INTE
 // direkt här — `valideraInbetalningIdLista` äger både gränsen och felet.
 import { kombineraFylldaKvittoSidor, valideraInbetalningIdLista } from '../_shared/kvitto-kombination.ts';
-import { byggKvittoData } from '../_shared/mall-data.ts';
+// [TASK-370.2] `byggForsattsbladData` — försättsbladets Eta-ifyllnadsdata,
+// byggd ur SAMMA `underlag` som `byggKvittoData` nedan (ingen extra
+// datahämtning). Se `_shared/mall-data.ts`s docstring för formen.
+import { byggForsattsbladData, byggKvittoData } from '../_shared/mall-data.ts';
 // [TASK-353] OFÖRÄNDRAD IMPORTRAD — `mall-render.test.ts` källkods-grep:ar
 // EXAKT denna sträng (AC #2, "BÅDA anropssiterna använder SAMMA renderare").
 // De TVÅ ORÖRDA grenarna (`inbetalningId`/`eventId`) fortsätter anropa
@@ -364,7 +371,20 @@ Deno.serve(async (req) => {
       // Allt eller inget (S116 Del 2 beslut 4): varje underlag hämtas
       // SEKVENTIELLT och ETT kastat fel avbryter loopen omedelbart — INGET
       // DocRaptor-anrop görs och INGET utkast lagras förrän ALLA N lyckats.
+      //
+      // [TASK-370.2] `forsattsbladRader` byggs UR SAMMA `underlag` som
+      // `kvittoDataLista` i samma varv av loopen — ingen extra datahämtning
+      // (PRD TASK-370 § Implementationsbeslut). Rå (oformaterad) form:
+      // formateringen ("SEK 2 500,00") sker i `byggForsattsbladData`, se
+      // den funktionens docstring i `_shared/mall-data.ts`.
       const kvittoDataLista: Record<string, unknown>[] = [];
+      const forsattsbladRader: Array<{
+        namn: string;
+        epost: string;
+        event: string | null;
+        belopp: number;
+        betalsatt: string;
+      }> = [];
       for (let i = 0; i < idLista.length; i++) {
         const id = idLista[i];
         let underlag: Awaited<ReturnType<typeof hamtaRiktigtUnderlag>>;
@@ -398,6 +418,13 @@ Deno.serve(async (req) => {
             betalningsdatum: underlag.betalningsdatum,
           }) as unknown as Record<string, unknown>,
         );
+        forsattsbladRader.push({
+          namn: underlag.kundnamn,
+          epost: underlag.kundEpost,
+          event: underlag.eventNamn,
+          belopp: underlag.belopp,
+          betalsatt: underlag.betalsatt,
+        });
       }
 
       const apiKey = Deno.env.get('DOCRAPTOR_API_KEY');
@@ -406,12 +433,27 @@ Deno.serve(async (req) => {
       }
       const test = Deno.env.get('ENVIRONMENT') !== 'production';
 
+      // [TASK-370.2, S116 Del 2 beslut 2-3] Försättsbladet FÖRST i
+      // kompositionen — `kombineraFylldaKvittoSidor` behandlar index 0
+      // specialt (ALDRIG en sidbrytning framför den, se dess filhuvud), så
+      // att lägga försättsbladet allra först i `fyllda` räcker för att göra
+      // det till dokumentets första sida; VARJE kvittosida (även den som
+      // förut var index 0) får nu korrekt en sidbrytning framför sig.
+      const forsattsbladHtml = fyllMall(
+        'forsattsblad',
+        byggForsattsbladData(forsattsbladRader, new Date()) as unknown as Record<string, unknown>,
+      );
+
       // Fyll N gånger, gör självbärande EN gång, ETT DocRaptor-anrop
       // (S116 Del 2 beslut 6 — se `_shared/kvitto-kombination.ts`s filhuvud
       // för mätpunkt 4-motiveringen).
-      const fyllda = kvittoDataLista.map((data) => fyllMall('kvitto', data));
+      const fyllda = [forsattsbladHtml, ...kvittoDataLista.map((data) => fyllMall('kvitto', data))];
       const kombineradHtml = kombineraFylldaKvittoSidor(fyllda);
-      const sjalvbarandeHtml = gorMallSjalvbarande('kvitto', kombineradHtml);
+      // [TASK-370.2] 'forsattsblad', INTE 'kvitto' — dess registrerade CSS-
+      // bunt i `_shared/mall-render.ts` är en SUPERMÄNGD (bilaga-delad +
+      // kvitto + forsattsblad) som täcker ALLA klasser i det sammanslagna
+      // dokumentet (försättsbladets EGNA + varje kvittosidas `.kvitto-*`).
+      const sjalvbarandeHtml = gorMallSjalvbarande('forsattsblad', kombineradHtml);
       const pdfBytes = await renderaSjalvbarandeHtmlPdf(sjalvbarandeHtml, {
         apiKey,
         test,

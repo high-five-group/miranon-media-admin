@@ -38,6 +38,9 @@ import { expect, test } from '@playwright/test';
 import { bekraftelsebilagaHtml } from '../../supabase/functions/_shared/mallar/bekraftelsebilaga.html';
 import { bilagaDeladCss } from '../../supabase/functions/_shared/mallar/bilaga-delad.css';
 import { deltagarinformationHtml } from '../../supabase/functions/_shared/mallar/deltagarinformation.html';
+// [TASK-370.2] forsattsblad — fjärde mallen, samma mätning.
+import { forsattsbladCss } from '../../supabase/functions/_shared/mallar/forsattsblad.css';
+import { forsattsbladHtml } from '../../supabase/functions/_shared/mallar/forsattsblad.html';
 import { kvittoCss } from '../../supabase/functions/_shared/mallar/kvitto.css';
 import { kvittoHtml } from '../../supabase/functions/_shared/mallar/kvitto.html';
 
@@ -56,6 +59,15 @@ const MALLAR: MallSpec[] = [
   { namn: 'bekraftelse', html: bekraftelsebilagaHtml, css: bilagaDeladCss },
   { namn: 'deltagarinfo', html: deltagarinformationHtml, css: bilagaDeladCss },
   { namn: 'kvitto', html: kvittoHtml, css: `${bilagaDeladCss}\n${kvittoCss}` },
+  // [TASK-370.2] forsattsblad — CSS-bunten är en SUPERMÄNGD (bilaga-delad +
+  // kvitto + forsattsblad), samma ordning som MALL_TEMPLATES.forsattsblad i
+  // mall-render.ts (den kombinerade grenen gör HELA dokumentet, försättsblad
+  // + N kvittosidor, självbärande med denna bunt).
+  {
+    namn: 'forsattsblad',
+    html: forsattsbladHtml,
+    css: `${bilagaDeladCss}\n${kvittoCss}\n${forsattsbladCss}`,
+  },
 ];
 
 function cssUrlTraffar(css: string): string[] {
@@ -106,10 +118,12 @@ test.describe('Självbärande mallar — externa resurs-URL:er (TASK-342, källk
     expect(imgTraffar.some((src) => src.includes('miranon.se'))).toBe(false);
   });
 
-  test('deltagarinfo + kvitto: noll http(s)-strängar överhuvudtaget (varken resurs eller plaintext)', () => {
+  test('deltagarinfo + kvitto + forsattsblad: noll http(s)-strängar överhuvudtaget (varken resurs eller plaintext)', () => {
     expect([...deltagarinformationHtml.matchAll(/https?:\/\//gi)]).toEqual([]);
     expect([...kvittoHtml.matchAll(/https?:\/\//gi)]).toEqual([]);
     expect([...kvittoCss.matchAll(/https?:\/\//gi)]).toEqual([]);
+    expect([...forsattsbladHtml.matchAll(/https?:\/\//gi)]).toEqual([]);
+    expect([...forsattsbladCss.matchAll(/https?:\/\//gi)]).toEqual([]);
   });
 
   test('självtest — en KONSTRUERAD extern URL fälls av detektorn (bevisar att den diskriminerar)', () => {

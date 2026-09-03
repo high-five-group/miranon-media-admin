@@ -19,7 +19,7 @@
 // importerar den EGNA `eta`-modulen ur node_modules, inte denna fil — en
 // `https://`-import kan inte resolvas av Node/Playwright).
 //
-// EN RENDERARE, TRE MALLAR (`MallNamn`): `generate-event-attachment/
+// EN RENDERARE, FYRA MALLAR (`MallNamn`): `generate-event-attachment/
 // index.ts` anropar denna funktion för 'bekraftelse' och 'deltagarinfo'.
 // Kvittots renderingsväg ('kvitto', ADR-125 § Beslut 5) TILLKOM I
 // TASK-309.5: `preview-receipt/index.ts` och `send-receipt-email/
@@ -29,6 +29,12 @@
 // `_shared/receipt-content.ts`s rena hjälpfunktioner (beraknaMoms/
 // formatBelopp/formatKvittoDatum/kvittoBenamning/MIRANON_ORG) men bygger
 // en STRUKTURERAD Eta-data-form, inte en textrad-lista.
+//
+// [TASK-370.2] Försättsbladets renderingsväg ('forsattsblad') TILLKOM för
+// "Förhandsgranska alla N" (PRD TASK-370) — ENDAST konsumerad av
+// `preview-receipt/index.ts`s `inbetalningIds`-gren (`_shared/
+// kvitto-kombination.ts`), aldrig av `renderaMallPdf` direkt (mallen bär
+// inget eget en-sida-krav och går inte via höjdanpassningens trappa).
 //
 // KVITTO-MALLEN BÄR TVÅ `<link rel="stylesheet">`-TAGGAR (`bilaga-delad.css`
 // + `kvitto.css` — se docs/mallar/bilagor/kvitto.css § filhuvud för VARFÖR
@@ -171,6 +177,8 @@ import { selawikBoldFontBase64 } from './mallar/Selawik-Bold.font.ts';
 import { bekraftelsebilagaHtml } from './mallar/bekraftelsebilaga.html.ts';
 import { bilagaDeladCss } from './mallar/bilaga-delad.css.ts';
 import { deltagarinformationHtml } from './mallar/deltagarinformation.html.ts';
+import { forsattsbladCss } from './mallar/forsattsblad.css.ts';
+import { forsattsbladHtml } from './mallar/forsattsblad.html.ts';
 import { globeOutlinedImageDataUri } from './mallar/globe-outlined.image.ts';
 import { instagramGlyfGradientImageDataUri } from './mallar/instagram-glyf-gradient.image.ts';
 import { kvittoCss } from './mallar/kvitto.css.ts';
@@ -178,7 +186,7 @@ import { kvittoHtml } from './mallar/kvitto.html.ts';
 import { miranonMediaOrdmarkeOriginalImageDataUri } from './mallar/miranon-media-ordmarke-original.image.ts';
 import { utanforVerklighetenOmslagImageDataUri } from './mallar/utanfor-verkligheten-omslag.image.ts';
 
-export type MallNamn = 'bekraftelse' | 'deltagarinfo' | 'kvitto';
+export type MallNamn = 'bekraftelse' | 'deltagarinfo' | 'kvitto' | 'forsattsblad';
 
 const MALL_TEMPLATES: Record<MallNamn, { html: string; css: string }> = {
   bekraftelse: { html: bekraftelsebilagaHtml, css: bilagaDeladCss },
@@ -186,6 +194,17 @@ const MALL_TEMPLATES: Record<MallNamn, { html: string; css: string }> = {
   // Sammanslagen CSS, SAMMA ordning som mallens egna två <link>-taggar
   // (bilaga-delad.css FÖRE kvitto.css) — se filhuvudet.
   kvitto: { html: kvittoHtml, css: `${bilagaDeladCss}\n${kvittoCss}` },
+  // [TASK-370.2] Försättsbladet — SAMMA ordning som mallens EGNA tre
+  // <link>-taggar (bilaga-delad.css → kvitto.css → forsattsblad.css, se
+  // forsattsblad.html:s filhuvud). CSS-bunten är en SUPERMÄNGD av kvittots
+  // (bilaga-delad + kvitto), inte bara försättsbladets egen — den
+  // KOMBINERADE grenen i preview-receipt/index.ts anropar
+  // `gorMallSjalvbarande('forsattsblad', …)` på HELA det sammanslagna
+  // dokumentet (försättsblad + N kvittosidor), så bunten måste bära ALLA
+  // klasser som förekommer i det dokumentet — kvittosidornas `.kvitto-*`
+  // klasser INKLUDERAT, inte bara försättsbladets egna. Se
+  // `_shared/kvitto-kombination.ts`s filhuvud för hela kompositionskedjan.
+  forsattsblad: { html: forsattsbladHtml, css: `${bilagaDeladCss}\n${kvittoCss}\n${forsattsbladCss}` },
 };
 
 // De sex FRIA typsnittsfilerna (Cavolini bundlas ALDRIG — gitignorerad

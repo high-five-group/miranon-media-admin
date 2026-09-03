@@ -39,6 +39,20 @@ Kvittot är ett SEPARAT, kortlöst S108-prototyp-uppdrag (MARCUS-SEKVENS
 punkt 2, S108 Del 8 § D); se § Kvittots FORM nedan för dess egen scope,
 källor och mätunderlag.
 
+**`forsattsblad.html` (TASK-370.2, PRD TASK-370) är HUSETS FÖRSTA MALL UTAN
+FÖRLAGA HOS Lotta.** Den finns inte som ett handgjort dokument att mäta mot —
+den är ett kontrollblad appen själv hittar på för "Förhandsgranska alla N"
+(S116 Del 2 beslut 2-3): en sammanfattande första sida i det kombinerade
+förhandsgranskningsdokumentet, aldrig i ett skickat kvitto. **Marcus är
+facit i STÄLLET för en förlaga** — bedömningen görs mot RENDERAD PDF
+(`npm run mall:pdf -- forsattsblad`, samma verktyg som resten av tabellen
+ovan), inte mot ett existerande original, och doms i QA-skivan TASK-370.5.
+Mallen byggs ändå i HUSETS EGET formspråk, inte fritt: den återanvänder
+kvittomallens sidhuvud (logga + rubrikblock, `kvitto.css`, ORÖRD) och samma
+monokroma, gråa rundade rutor som resten av kvitto-familjen — se
+`forsattsblad.html`/`forsattsblad.css` § filhuvud för den fullständiga
+återanvändnings-motiveringen.
+
 ## Filer
 
 | Fil | Vad |
@@ -46,9 +60,11 @@ källor och mätunderlag.
 | `bekraftelsebilaga.html` | Mall - kursbeskrivning/betalningsvillkor (fyra sidor prisinfo + tvåkolumns innehållslista) |
 | `deltagarinformation.html` | Mall - praktisk info inför kursstart (tre infobox-rader + nio ämnesstycken) |
 | `kvitto.html` | Mall - kvitto på Rogers sektionsstruktur (referensblock, radtabell, totalruta, fyrkolumns sidfot). Se § Kvittots FORM. |
-| `bilaga-delad.css` | Delad CSS: typsnitt (`@font-face`), färgtokens, layout - för bekräftelsebilagan/deltagarinformationen. ETT ställe att ändra rubrikfont/färger på för de TVÅ mallarna. **Rörs INTE av kvittot**, se § Kvittots FORM för varför. |
-| `kvitto.css` | Kvittots EGNA CSS - monokrom svart/grå palett, tre gråfyllda rundade rutor. Delar bara `@page`/`.sida`-basboxen/Carlito-typsnittet med `bilaga-delad.css`, allt annat är eget. |
-| `fixtures/*.exempel.json` | Exempeldata - samma värden som i de riktiga förlagorna, så en granskning kan jämföras rad för rad. |
+| `forsattsblad.html` | Mall - kontrollblad för "Förhandsgranska alla N" (rubrik, antal + tidpunkt, tabell namn/e-post/event/belopp/betalsätt, summarad, notrad). HUSETS FÖRSTA MALL UTAN FÖRLAGA HOS Lotta — Marcus är facit mot renderad PDF (TASK-370.2, se ovan). |
+| `bilaga-delad.css` | Delad CSS: typsnitt (`@font-face`), färgtokens, layout - för bekräftelsebilagan/deltagarinformationen. ETT ställe att ändra rubrikfont/färger på för de TVÅ mallarna. **Rörs INTE av kvittot eller försättsbladet**, se § Kvittots FORM för varför. |
+| `kvitto.css` | Kvittots EGNA CSS - monokrom svart/grå palett, tre gråfyllda rundade rutor. Delar bara `@page`/`.sida`-basboxen/Carlito-typsnittet med `bilaga-delad.css`, allt annat är eget. **Rörs INTE av försättsbladet** (TASK-370.2) — försättsbladet ÅTERANVÄNDER sidhuvudets klasser via en andra `<link>`, i stället för att duplicera dem. |
+| `forsattsblad.css` | Försättsbladets EGNA CSS - tabellen (Prince-primitiven `table-layout:fixed` + `<col>`), summaraden, noteringen. Delar `kvitto.css`s custom properties (`--mm-kvitto-*`) och sidhuvudets klasser via en tredje `<link>`, allt annat eget. |
+| `fixtures/*.exempel.json` | Exempeldata - samma värden som i de riktiga förlagorna (`forsattsblad.exempel.json` undantaget, se ovan), så en granskning kan jämföras rad för rad. |
 | `lokala-typsnitt/` | **Gitignorerad symlänk**, se § Granska mallarna lokalt nedan. |
 | `*.granskning.html` / `*.granskning.png` | **Gitignorerat**, genereras av granskningsskriptet - checkas aldrig in. |
 

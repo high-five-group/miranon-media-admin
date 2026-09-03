@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<!--
+  Försättsbladet - TASK-370.2, PRD TASK-370 § Implementationsbeslut,
+  S116 Del 2 beslut 2-3 ("Förhandsgranska alla N": ett kombinerat dokument,
+  försättsblad + en sida per kvitto).
+
+  HUSETS FÖRSTA MALL UTAN FÖRLAGA HOS LOTTA. Det finns ingen PDF att mäta
+  mot - Marcus är facit mot RENDERAD PDF (`npm run mall:pdf -- forsattsblad`),
+  dömd i QA-skivan TASK-370.5. Se docs/mallar/bilagor/README.md § Förlagorna
+  för hela motiveringen.
+
+  SIDHUVUDET ÄR ORDAGRANT ÅTERANVÄNT UR kvitto.html (logga + kvitto-rubrikblock
+  + kvitto-metarad) - kvitto.html/kvitto.css ÄR ORÖRDA av denna mall (AC #3):
+  samma klasser (.kvitto-sidhuvud/.logga/.kvitto-rubrikblock/.kvitto-rubrik/
+  .kvitto-metarad*) nås via en ANDRA <link> till kvitto.css, samma mönster
+  kvitto.css självt använder mot bilaga-delad.css (docs/mallar/bilagor/
+  kvitto.css § filhuvud). Sidramen (.sida--kvitto: flex-kolumn, 12,9/16,6mm
+  padding, Carlito, monokrom) återanvänds LIKASÅ genom att bära klassen på
+  denna sidas rot-div, i stället för att duplicera samma deklarationer -
+  .sida--forsattsblad är en tom utökningskrok för en framtida avvikelse,
+  inte ett aktivt regelset i dag (se forsattsblad.css § filhuvud).
+
+  INNEHÅLL (S116 Del 2 beslut 3, ordagrant kvitterat): rubrik
+  "Förhandsgranskning", antal kvitton + tidpunkt (samma dl/dt/dd-mönster som
+  kvittots metarad), en tabell namn/e-post/event/belopp/betalsätt per kvitto
+  i visningsordning, en summarad, och notraden ORDAGRANT "Kvittonummer
+  tilldelas när kvittona skickas. Ingenting är skickat." Rubriken och
+  notraden är HÅRDKODADE (aldrig data-buret) - exakt samma mönster som
+  org-uppgifterna i kvitto.html: de varierar aldrig, en token hade bara
+  varit en indirektion utan syfte.
+
+  DATA: `_shared/mall-data.ts`s `byggForsattsbladData` (Eta-`data`-formen:
+  antal/tidpunkt/rader[]/summa - se den funktionens docstring). Byggs av
+  `preview-receipt/index.ts`s `inbetalningIds`-gren UR SAMMA underlag som
+  kvittosidorna (ingen extra datahämtning, PRD § Implementationsbeslut).
+
+  TABELLEN ÄR PRINCE-PRIMITIVEN (kvitto.css § TASK-304, se den filens
+  filhuvud för HELA bakgrunden): <table> med table-layout:fixed +
+  <col>-bredder i mm, INTE grid/flex-gap (Prince ignorerar/kollapsar dem,
+  mätt där). <thead> upprepas av Prince på en sidbrytning (Paged
+  Media-standardbeteende för table-header-group - ingen egen regel behövs);
+  varje <tr> bär break-inside:avoid (forsattsblad.css) så en rad aldrig
+  klyvs mitt itu. Taket (MAX_KOMBINERADE_KVITTON=30,
+  _shared/kvitto-kombination.ts) gör att tabellen inte behöver bryta i
+  praktiken idag - primitiven står ändå på plats om taket någon gång höjs.
+
+  Ingen persondata i själva mallfilen (samma disciplin som de tre andra
+  mallarna) - varje personburet fält är en <%= data.x %>-token.
+  `autoEscape: true` (mall-render.ts) escapar all Lotta/kund-buren fritext.
+-->
+<html lang="sv">
+<head>
+<meta charset="UTF-8" />
+<title>Förhandsgranskning</title>
+<link rel="stylesheet" href="./bilaga-delad.css" />
+<link rel="stylesheet" href="./kvitto.css" />
+<link rel="stylesheet" href="./forsattsblad.css" />
+</head>
+<body>
+<div class="sida sida--kvitto sida--forsattsblad">
+
+  <header class="kvitto-sidhuvud">
+    <img class="logga" src="../../../public/miranon-media-ordmarke-original.svg" alt="MiranonMedia" />
+    <div class="kvitto-rubrikblock">
+      <h1 class="kvitto-rubrik">Förhandsgranskning</h1>
+      <dl class="kvitto-metarad">
+        <div class="kvitto-metarad-rad">
+          <dt>Antal kvitton:</dt>
+          <dd><%= data.antal %></dd>
+        </div>
+        <div class="kvitto-metarad-rad">
+          <dt>Tidpunkt:</dt>
+          <dd><%= data.tidpunkt %></dd>
+        </div>
+      </dl>
+    </div>
+  </header>
+
+  <div class="forsattsblad-innehall">
+    <table class="forsattsblad-box forsattsblad-tabell">
+      <colgroup>
+        <col class="forsattsblad-col-namn" />
+        <col class="forsattsblad-col-epost" />
+        <col class="forsattsblad-col-event" />
+        <col class="forsattsblad-col-belopp" />
+        <col class="forsattsblad-col-betalsatt" />
+      </colgroup>
+      <thead>
+        <tr class="forsattsblad-tabellhuvud">
+          <th scope="col" class="forsattsblad-col-namn">Namn</th>
+          <th scope="col" class="forsattsblad-col-epost">E-post</th>
+          <th scope="col" class="forsattsblad-col-event">Event</th>
+          <th scope="col" class="forsattsblad-col-belopp">Belopp</th>
+          <th scope="col" class="forsattsblad-col-betalsatt">Betalsätt</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% for (const rad of data.rader) { %>
+        <tr class="forsattsblad-tabellrad">
+          <td class="forsattsblad-col-namn"><%= rad.namn %></td>
+          <td class="forsattsblad-col-epost"><%= rad.epost %></td>
+          <td class="forsattsblad-col-event"><%= rad.event %></td>
+          <td class="forsattsblad-col-belopp forsattsblad-belopp"><%= rad.belopp %></td>
+          <td class="forsattsblad-col-betalsatt"><%= rad.betalsatt %></td>
+        </tr>
+        <% } %>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="forsattsblad-box forsattsblad-summarad">
+    <span class="forsattsblad-summa-etikett">Summa</span>
+    <span class="forsattsblad-summa-varde"><%= data.summa %></span>
+  </div>
+
+  <p class="forsattsblad-notering">Kvittonummer tilldelas när kvittona skickas. Ingenting är skickat.</p>
+
+</div>
+</body>
+</html>

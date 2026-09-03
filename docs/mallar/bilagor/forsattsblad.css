@@ -1,0 +1,137 @@
+/*
+ * Försättsbladets EGNA CSS (TASK-370.2, PRD TASK-370 § Implementationsbeslut,
+ * S116 Del 2 beslut 2-3). HUSETS FÖRSTA MALL UTAN FÖRLAGA - se
+ * forsattsblad.html § filhuvud och docs/mallar/bilagor/README.md §
+ * Förlagorna för hela motiveringen (Marcus är facit mot RENDERAD PDF,
+ * dömd i TASK-370.5).
+ *
+ * ÅTERANVÄNDNING, INTE DUPLICERING: sidhuvudets klasser
+ * (.kvitto-sidhuvud/.logga/.kvitto-rubrikblock/.kvitto-rubrik/
+ * .kvitto-metarad*) och sidramen (.sida--kvitto) BOR i kvitto.css, ORÖRD -
+ * denna fil lägger BARA till det som är NYTT för försättsbladet: tabellen,
+ * summaraden och noteringen. Delar de MÄTTA custom properties'na `:root`
+ * i kvitto.css redan deklarerar (--mm-kvitto-gra/--mm-kvitto-ram/
+ * --mm-kvitto-ramtjocklek) - kvitto.css MÅSTE vara länkad (se
+ * forsattsblad.html:s <link>-ordning) för att dessa ska finnas.
+ *
+ * `.sida--forsattsblad` (klassen bärs på forsattsblad.html:s rot-div,
+ * TILLSAMMANS med .sida--kvitto) är en MEDVETET TOM utökningskrok - ingen
+ * regel definieras för den här, den finns bara som ett namngivet ställe
+ * att hänga en framtida, egen avvikelse från kvitto-sidramen på, utan att
+ * behöva ändra markupen i det läget.
+ *
+ * INGEN FÖRLAGA ATT MÄTA MOT - varje mm-mått nedan är ett DESIGNVAL, bedömt
+ * mot renderad PDF (`npm run mall:pdf -- forsattsblad`), inte en mätning
+ * av ett facit. Ändras det: kör om renderingen och jämför mot föregående -
+ * ingen "mätt fel"-motivering är möjlig här, bara "ser bättre ut"/Marcus dom.
+ *
+ * TABELLEN ÄR PRINCE-PRIMITIVEN (kvitto.css § TASK-304, se den filens
+ * filhuvud för hela bakgrunden): table-layout:fixed + <col>-bredder i mm,
+ * INTE grid/flex-gap. <thead> upprepas av Prince på en sidbrytning (Paged
+ * Media table-header-group, standardbeteende för <thead> - ingen egen
+ * regel behövs); `break-inside: avoid` på varje <tr> hindrar en enskild
+ * rad från att klyvas mitt itu om tabellen någon gång bryter (taket
+ * MAX_KOMBINERADE_KVITTON=30 gör det osannolikt i dag, men primitiven ska
+ * hålla om taket höjs).
+ *
+ * KOLUMNBREDDERNA (35/45/40/25mm, betalsätt absorberar resten): fördelade
+ * över den effektiva innehållsbredden (171,8mm - samma box-bredd kvittots
+ * .kvitto-box redan etablerar: 210mm sida - 2×16,6mm sidpadding -
+ * 2×2,5mm box-marginal). Namn/e-post/event tillåts radbryta
+ * (white-space:normal) eftersom de är fritext av varierande längd; belopp
+ * och betalsätt är korta, formaterade värden och hålls på en rad.
+ */
+
+.forsattsblad-innehall {
+  margin-top: 10mm;
+}
+
+.forsattsblad-box {
+  background: var(--mm-kvitto-gra);
+  border: var(--mm-kvitto-ramtjocklek) solid var(--mm-kvitto-ram);
+  margin-left: 2.5mm;
+  margin-right: 2.5mm;
+  border-radius: 1.5mm;
+}
+
+.forsattsblad-tabell {
+  table-layout: fixed;
+  width: 100%;
+  /* separate, INTE collapse: en table med border-collapse:collapse
+     ignorerar sin EGEN padding/border/border-radius (CSS2.1 § 17.6.1) -
+     samma skäl som kvitto.css § .kvitto-tabell. */
+  border-collapse: separate;
+  border-spacing: 0;
+  padding: 1.5mm 3mm;
+}
+
+.forsattsblad-tabell th,
+.forsattsblad-tabell td {
+  padding: 1mm 2mm;
+  margin: 0;
+  text-align: left;
+  font-size: 9pt;
+}
+
+.forsattsblad-tabellhuvud th {
+  font-weight: 700;
+}
+
+.forsattsblad-tabellrad {
+  break-inside: avoid;
+}
+
+col.forsattsblad-col-namn {
+  width: 35mm;
+}
+
+col.forsattsblad-col-epost {
+  width: 45mm;
+}
+
+col.forsattsblad-col-event {
+  width: 40mm;
+}
+
+col.forsattsblad-col-belopp {
+  width: 25mm;
+}
+
+/* forsattsblad-col-betalsatt bär ingen egen bredd - absorberar resten av
+   table:ens width:100%, samma teknik som kvitto.css:s kvitto-col-summa. */
+
+.forsattsblad-col-namn,
+.forsattsblad-col-epost,
+.forsattsblad-col-event {
+  white-space: normal;
+  word-break: break-word;
+}
+
+.forsattsblad-belopp {
+  white-space: nowrap;
+  text-align: right;
+}
+
+.forsattsblad-col-betalsatt {
+  white-space: nowrap;
+}
+
+.forsattsblad-summarad {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-top: 4mm;
+  padding: 3mm 6mm;
+  font-weight: 700;
+  font-size: 10pt;
+}
+
+.forsattsblad-summa-varde {
+  font-size: 12pt;
+}
+
+.forsattsblad-notering {
+  margin: 4mm 2.5mm 0;
+  font-size: 8pt;
+  font-style: italic;
+}
