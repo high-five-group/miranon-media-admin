@@ -44,10 +44,16 @@ export interface Event {
   reserverade?: number;
   /** Manuellt tillagda = basens 'Manuella platser' (osatt → utelämnas). */
   manuelltTillagda?: number;
-  /** Anmälda deltagare-raden: länkade Anmälningar med Källa TOM (formulär). */
+  /** AKTIVA länkade Anmälningar med Källa TOM (formulär). */
   viaFormular?: number;
-  /** Länkade Anmälningar med Källa '+1' (medföljande). */
+  /** AKTIVA länkade Anmälningar med Källa '+1' (medföljande). */
   medfoljande?: number;
+  /**
+   * TASK-373: AKTIVA länkade Anmälningar med varje ANNAT Källa-värde
+   * ('Manuell' · 'Väntelista' · framtida). Räknas in i "Anmälda deltagare"-raden
+   * tillsammans med `viaFormular` (se `src/lib/belaggning.ts`).
+   */
+  ovrigaAnmalningar?: number;
   /** Aktiva event-kopplade Väntelisteplatser via 'Event (länk)' (utanför taket). */
   vantelista?: number;
   /** Bor över-summeringen (task-17.5): härlett antal ikryssade 'Bor över' bland

@@ -1,6 +1,6 @@
 import { fetchAirtableRecord, fetchFromAirtable } from '../_shared/airtable-client.ts';
 import { requireUser } from '../_shared/auth.ts';
-import { selectName } from '../_shared/coerce.ts';
+import { BELAGGNING_ANMALAN_FALT, raknaAnmalningar } from '../_shared/belaggning.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
 import { generateRequestId, mapErrorToResponse } from '../_shared/errors.ts';
 import { mapEventBas, mapEventKategorifalt } from '../_shared/event-map.ts';
@@ -52,17 +52,33 @@ function linkedIds(value: unknown): string[] {
 /**
  * Beläggningens innehållsmodell (task-18.2; S73-facit K16, PRD task-18 beslut 5)
  * — mappar basen 1-till-1:
- *   viaFormular  = länkade Anmälningar med Källa TOM (formuläranmälningar;
- *                  frånvaro är sanning — data-model §Källa-värden)
- *   medfoljande  = länkade Anmälningar med Källa '+1' (CompanionModal)
- *   vantelista   = AKTIVA event-kopplade Väntelisteplatser via nya länkfältet
- *                  'Event (länk)' (additivt staging-först, ADR-063), räknade
- *                  från eventradens inverse-spegel 'Väntelista (länkat fält)'
- *                  med get-waitlist:s aktiv-semantik (NOT Flyttad till anmälan)
- * Övriga Källa-värden (Manuell/Väntelista) är MEDVETET inga rader i modellen —
- * K16:s Manuellt tillagda är basens NUMBER-fält 'Manuella platser', inte en
- * Källa-räkning. RECORD-ID-BATCH från event-hållet (get-registrations-mallen);
- * ALDRIG länk-filter i formel (T15-klassen — matchar primär-display, ej ID).
+ *   viaFormular       = AKTIVA länkade Anmälningar med Källa TOM
+ *                       (formuläranmälningar; frånvaro är sanning —
+ *                       data-model §Källa-värden)
+ *   medfoljande       = AKTIVA länkade Anmälningar med Källa '+1' (CompanionModal)
+ *   ovrigaAnmalningar = AKTIVA länkade Anmälningar med ALLT ANNAT Källa-värde:
+ *                       'Manuell' (appens Ny anmälan), 'Väntelista' (uppflyttad
+ *                       ur kön) och varje FRAMTIDA värde (TASK-373)
+ *   vantelista        = AKTIVA event-kopplade Väntelisteplatser via nya länkfältet
+ *                       'Event (länk)' (additivt staging-först, ADR-063), räknade
+ *                       från eventradens inverse-spegel 'Väntelista (länkat fält)'
+ *                       med get-waitlist:s aktiv-semantik (NOT Flyttad till anmälan)
+ *
+ * DE TRE FÖRSTA ÄR EN PARTITION av eventets aktiva anmälningar — ingen aktiv
+ * anmälan får tappas (TASK-373: `Källa = 'Manuell'` räknades tidigare i INGEN
+ * del, och prod-mätaren undervärderade med en plats per sådan anmälan). Delarna
+ * och aktiv-filtret bor i `_shared/belaggning.ts` (hermetiskt testade,
+ * `tests/api/belaggning.test.ts`); den här funktionen gör I/O:t.
+ *
+ * K16:s "Manuellt tillagda" förblir basens SKRIVBARA NUMBER-fält 'Manuella
+ * platser' (via `mapEventKategorifalt`) och är alltså INTE en Källa-räkning —
+ * en anmälan med Källa 'Manuell' är en anmäld DELTAGARE med egen rad och eget
+ * deltagarkort, ett Manuella platser-snäpp är en PLATS utan rad. Att lägga
+ * Källa-räkningen i det skrivbara fältets rad hade brutit Ändra-morfens
+ * "ändrar från"-tal på eventsidan (se `Belaggning.tsx` § segmentbeslutet).
+ *
+ * RECORD-ID-BATCH från event-hållet (get-registrations-mallen); ALDRIG
+ * länk-filter i formel (T15-klassen — matchar primär-display, ej ID).
  * Saknar basen länkfälten (t.ex. prod före den separat auktoriserade
  * fält-deployen) → tomma arrays → 0-räkningar, aldrig fel.
  *
@@ -72,10 +88,16 @@ function linkedIds(value: unknown): string[] {
  * fields-listan) → ingen extra rundtur. Checkbox: Airtable UTELÄMNAR en
  * okryssad ruta ur svaret → `=== true` normaliserar (aldrig null; samma
  * mappning som get-registrations, task-18.7). Inget lagrat räknefält (ADR-063).
+ * MEDVETET UTANFÖR TASK-373:s snitt: säng-räkningen tar fortfarande MED
+ * avbokade/inställda anmälningar. Samma härledning görs på list-nivå i
+ * get-events (`fetchBorOverAntalByEvent`), så en ändring hör hemma i en egen
+ * landning som rör båda EF:erna och deras e2e-facit — registrerad, ej tyst
+ * förkastad (ADR-053).
  */
 async function fetchBelaggning(f: Fields): Promise<{
   viaFormular: number;
   medfoljande: number;
+  ovrigaAnmalningar: number;
   vantelista: number;
   borOverAntal: number;
 }> {
@@ -84,27 +106,24 @@ async function fetchBelaggning(f: Fields): Promise<{
 
   const [regs, waits] = await Promise.all([
     regIds.length > 0
-      ? fetchByRecordIds(REGISTRATIONS_TABLE, regIds, ['Källa', 'Bor över'])
+      ? fetchByRecordIds(REGISTRATIONS_TABLE, regIds, [...BELAGGNING_ANMALAN_FALT, 'Bor över'])
       : Promise.resolve([]),
     waitIds.length > 0
       ? fetchByRecordIds(WAITLIST_TABLE, waitIds, ['Flyttad till anmälan'])
       : Promise.resolve([]),
   ]);
 
-  let viaFormular = 0;
-  let medfoljande = 0;
+  const { viaFormular, medfoljande, ovrigaAnmalningar } = raknaAnmalningar(regs);
+
   let borOverAntal = 0;
   for (const reg of regs) {
-    const kalla = selectName(reg.fields['Källa']);
-    if (kalla === null) viaFormular += 1;
-    else if (kalla === '+1') medfoljande += 1;
     // Bor över är checkbox-fältet på anmälan (task-18.7): true = bor över.
     if (reg.fields['Bor över'] === true) borOverAntal += 1;
   }
   // Checkbox: true = flyttad (historik, utanför kön); blank/false = aktiv.
   const vantelista = waits.filter((w) => w.fields['Flyttad till anmälan'] !== true).length;
 
-  return { viaFormular, medfoljande, vantelista, borOverAntal };
+  return { viaFormular, medfoljande, ovrigaAnmalningar, vantelista, borOverAntal };
 }
 
 // Fältnamn från Airtable → ren API-respons. Bas-shapen (21 fält) och beläggningens
@@ -119,6 +138,7 @@ function mapEvent(
   belaggning: {
     viaFormular: number;
     medfoljande: number;
+    ovrigaAnmalningar: number;
     vantelista: number;
     borOverAntal: number;
   },
@@ -126,8 +146,13 @@ function mapEvent(
   return {
     ...mapEventBas(record),
     ...mapEventKategorifalt(record),
-    viaFormular: belaggning.viaFormular, // länkade Anmälningar, Källa TOM
-    medfoljande: belaggning.medfoljande, // länkade Anmälningar, Källa '+1'
+    viaFormular: belaggning.viaFormular, // AKTIVA länkade Anmälningar, Källa TOM
+    medfoljande: belaggning.medfoljande, // AKTIVA länkade Anmälningar, Källa '+1'
+    // TASK-373: AKTIVA länkade Anmälningar med varje ANNAT Källa-värde
+    // ('Manuell' · 'Väntelista' · framtida). ADDITIVT-optional i klientschemat
+    // så en app mot en ÄLDRE deployad get-event får `undefined → 0` (samma
+    // beteende som före fixen) i stället för ett parse-fel.
+    ovrigaAnmalningar: belaggning.ovrigaAnmalningar,
     vantelista: belaggning.vantelista, // aktiva event-kopplade Väntelisteplatser
     // Bor över-summeringen (task-17.5): härlett antal ikryssade 'Bor över'
     // bland eventets Anmälningar (eventsidans säng-rad) — get-events härleder

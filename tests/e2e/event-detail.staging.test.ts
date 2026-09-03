@@ -841,6 +841,54 @@ test.describe('Beläggningen (task-18.2)', () => {
     }
   });
 
+  test('TASK-373: manuellt skapade/uppflyttade anmälningar räknas — RIM 3-formen ger "13 av 20"', async ({
+    page,
+  }) => {
+    // Prod-symptomet 2026-09-03 (RIM 3 Rönninge, Event-25) i mockad form:
+    // 12 formuläranmälningar + 1 skapad via appens Ny anmälan (Källa 'Manuell'
+    // → `ovrigaAnmalningar`), inga manuella platser, inga extra platser.
+    // FÖRE fixen visade mätaren 12 och "Anmälda deltagare"-raden 12; basens
+    // Antal anmälda var 13.
+    await mockEvent(
+      page,
+      eventDetail({
+        maxPlatser: 20,
+        antalAnmalda: 13,
+        platserKvar: 7,
+        viaFormular: 12,
+        ovrigaAnmalningar: 1,
+        medfoljande: 0,
+        manuelltTillagda: 0,
+        reserverade: 0,
+      }),
+    );
+    await page.goto(`/event/${EVENT_ID}`);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+
+    const grupp = page.locator('section[aria-labelledby="grupp-belaggning"]');
+
+    // Raden och mätaren bär SAMMA tal (avstämbarhet) och samma tal som basens
+    // Antal anmälda — event-listans stapel läser `antalAnmalda` och visar 13.
+    const varden = await grupp.locator('dd').allTextContents();
+    expect(varden).toEqual(['20', '0', '13', '0', '0', '0']);
+    await expect(grupp.getByText('13 av 20 platser upptagna')).toBeVisible();
+    await expect(grupp.getByText('65 %')).toBeVisible();
+  });
+
+  test('TASK-373: ovrigaAnmalningar UTELÄMNAD (äldre deployad get-event) → oförändrad summa', async ({
+    page,
+  }) => {
+    // Deploy-säkerheten: en app mot en get-event FÖRE fixen får ingen nyckel
+    // alls. Fältet är additivt-optional → `?? 0`, alltså exakt gamla talen
+    // (8+1+1+1 = 11 av 12), aldrig ett parse-fel eller NaN.
+    await mockEvent(page, eventDetail());
+    await page.goto(`/event/${EVENT_ID}`);
+    await expect(page.getByRole('heading', { level: 1 })).toBeVisible();
+
+    const grupp = page.locator('section[aria-labelledby="grupp-belaggning"]');
+    await expect(grupp.getByText('11 av 12 platser upptagna')).toBeVisible();
+  });
+
   test('fullt event: " · Fullt" i mätartexten; utan tak: tomt spår', async ({ page }) => {
     await mockEvent(
       page,
