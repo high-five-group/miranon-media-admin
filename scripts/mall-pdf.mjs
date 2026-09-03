@@ -79,7 +79,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const REPOROT = join(__dirname, '..');
 const MALLROT = join(REPOROT, 'docs', 'mallar', 'bilagor');
 const UTROT = join(REPOROT, 'test-results', 'mall-pdf');
-const KANDA_MALLAR = ['bekraftelsebilaga', 'deltagarinformation', 'kvitto'];
+const KANDA_MALLAR = ['bekraftelsebilaga', 'deltagarinformation', 'kvitto', 'forsattsblad'];
 
 const DOCRAPTOR_URL = 'https://api.docraptor.com/docs';
 const TIMEOUT_MS = 60_000;

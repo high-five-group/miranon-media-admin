@@ -22,14 +22,18 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect, test } from '@playwright/test';
+import { summeraKronor } from '../../supabase/functions/_shared/betalningsbelopp';
 import { fetMarkera } from '../../supabase/functions/_shared/fet-markering';
 import {
   byggBekraftelseData,
   byggDeltagarinfoData,
+  byggForsattsbladData,
   byggKvittoData,
   type DocumentSourcesResult,
+  type ForsattsbladRadSpec,
   formatSvenskDatum,
   formatSvenskDatumspann,
+  stockholmDatumTid,
   valjKopia,
 } from '../../supabase/functions/_shared/mall-data';
 import { berakaKallhash, serialiseraKanoniskt } from '../../supabase/functions/_shared/mall-hash';
@@ -390,6 +394,128 @@ test.describe('byggKvittoData (TASK-309.5, ADR-125 § Beslut 4-5)', () => {
     const dataB = byggKvittoData(kvittoSpec({ belopp: 1000 }));
     expect(dataA.brutto).not.toBe(dataB.brutto);
     expect(dataA.netto).not.toBe(dataB.netto);
+  });
+});
+
+test.describe('stockholmDatumTid (TASK-370.2)', () => {
+  test('sommartid (CEST, UTC+2) — 2026-09-03T12:00:00Z blir 2026-09-03 14:00', () => {
+    expect(stockholmDatumTid(new Date('2026-09-03T12:00:00.000Z'))).toBe('2026-09-03 14:00');
+  });
+
+  test('vintertid (CET, UTC+1) — 2026-01-15T12:00:00Z blir 2026-01-15 13:00', () => {
+    expect(stockholmDatumTid(new Date('2026-01-15T12:00:00.000Z'))).toBe('2026-01-15 13:00');
+  });
+
+  test('dygnsgräns — sen kväll UTC rullar över till nästa dag i Stockholm', () => {
+    // 2026-09-03T22:30:00Z är sommartid (+2) -> 2026-09-04 00:30 i Stockholm.
+    expect(stockholmDatumTid(new Date('2026-09-03T22:30:00.000Z'))).toBe('2026-09-04 00:30');
+  });
+
+  test('timme/minut är alltid två siffror (Intl 2-digit) — inte "9:5"', () => {
+    // 2026-01-01T08:05:00Z -> Stockholm CET (+1) -> 09:05.
+    expect(stockholmDatumTid(new Date('2026-01-01T08:05:00.000Z'))).toBe('2026-01-01 09:05');
+  });
+});
+
+function forsattsbladRad(overrides: Partial<ForsattsbladRadSpec> = {}): ForsattsbladRadSpec {
+  return {
+    namn: 'Anna Andersson',
+    epost: 'anna.andersson@example.com',
+    event: 'Resor i medvetandet 1',
+    belopp: 2500,
+    betalsatt: 'Swish',
+    ...overrides,
+  };
+}
+
+test.describe('byggForsattsbladData (TASK-370.2, PRD TASK-370 § Implementationsbeslut)', () => {
+  const NU = new Date('2026-09-03T12:00:00.000Z');
+
+  test('antal = radernas längd', () => {
+    const data = byggForsattsbladData([forsattsbladRad(), forsattsbladRad()], NU);
+    expect(data.antal).toBe(2);
+  });
+
+  test('rätt radantal och rätt fält per rad, i GIVEN ordning (PRD användarberättelse 8)', () => {
+    const rader = [
+      forsattsbladRad({ namn: 'Anna Andersson', belopp: 2500 }),
+      forsattsbladRad({ namn: 'Bengt Bengtsson', belopp: 1200, betalsatt: 'Bankgiro' }),
+    ];
+    const data = byggForsattsbladData(rader, NU);
+    expect(data.rader).toHaveLength(2);
+    expect(data.rader[0].namn).toBe('Anna Andersson');
+    expect(data.rader[1].namn).toBe('Bengt Bengtsson');
+    expect(data.rader[1].betalsatt).toBe('Bankgiro');
+  });
+
+  test('summan är RÄTT (2500 + 1200 = 3700), formaterad "SEK 3 700,00"', () => {
+    const data = byggForsattsbladData(
+      [forsattsbladRad({ belopp: 2500 }), forsattsbladRad({ belopp: 1200 })],
+      NU,
+    );
+    expect(data.summa).toBe('SEK 3 700,00');
+  });
+
+  test('summan räknas med summeraKronor (heltalsören) — INTE rå flyttalsaddition (review-fynd runda 1, regressionsbevis)', () => {
+    // NEGATIVT BEVIS, MÄTT (Node): 1000.10 + 2000.20 + 0.30 med rå
+    // flyttalsaddition är INTE exakt 3000.6 — `(1000.1 + 2000.2 + 0.3)`
+    // ger `3000.6000000000004`. Detta ÄR precis den drift
+    // `summeraKronor`s eget filhuvud citerar ("0.1 + 0.2 !== 0.3 gäller
+    // lika mycket för 1000.10 + 2000.20"). Körd mot den GAMLA raden
+    // (`rader.reduce((sum, rad) => sum + rad.belopp, 0)`) INNAN bytet till
+    // `summeraKronor` — bokfört utfall: `3000.6000000000004`, `!== 3000.6`.
+    const belopp = [1000.1, 2000.2, 0.3];
+    const raFlyttalsaddition = belopp.reduce((sum, kr) => sum + kr, 0);
+    expect(raFlyttalsaddition).not.toBe(3000.6); // den gamla formens fel, dokumenterat
+
+    // `summeraKronor` (den NYA, korrekta formen) ger den exakta summan —
+    // detta diskriminerar mellan de två implementationerna på ett sätt den
+    // FORMATERADE strängen INTE gör här: `Intl.NumberFormat` avrundar bort
+    // 4e-13-felet ovan så BÅDA formerna råkar formatera till "SEK 3 000,60"
+    // för just dessa tal (mätt: sträng-nivå-kontrollen ensam hade alltså
+    // INTE fällt en regression till rå addition för detta specifika fall).
+    expect(summeraKronor(belopp)).toBe(3000.6);
+
+    const data = byggForsattsbladData(
+      belopp.map((belopp) => forsattsbladRad({ belopp })),
+      NU,
+    );
+    expect(data.summa).toBe('SEK 3 000,60');
+  });
+
+  test('varje rads belopp formateras "SEK <formatBelopp>" — samma form som kvittots totalruta', () => {
+    const data = byggForsattsbladData([forsattsbladRad({ belopp: 2500 })], NU);
+    expect(data.rader[0].belopp).toBe('SEK 2 500,00');
+  });
+
+  test('event: null blir tom sträng, inte "null"/"undefined" (samma konvention som byggKvittoData)', () => {
+    const data = byggForsattsbladData([forsattsbladRad({ event: null })], NU);
+    expect(data.rader[0].event).toBe('');
+  });
+
+  test('tidpunkten är stockholmDatumTid(nu) — anroparen skickar klockan, funktionen läser den aldrig själv', () => {
+    const data = byggForsattsbladData([forsattsbladRad()], NU);
+    expect(data.tidpunkt).toBe(stockholmDatumTid(NU));
+    expect(data.tidpunkt).toBe('2026-09-03 14:00');
+  });
+
+  test('REN funktion — två separata anrop med samma indata-VÄRDEN ger djupt identiskt resultat', () => {
+    expect(byggForsattsbladData([forsattsbladRad()], NU)).toEqual(
+      byggForsattsbladData([forsattsbladRad()], NU),
+    );
+  });
+
+  test('tom lista (N=0, oåtkomlig i praktiken via valideraInbetalningIdLista) ger antal 0 och summa "SEK 0,00" — inget kastat fel', () => {
+    const data = byggForsattsbladData([], NU);
+    expect(data.antal).toBe(0);
+    expect(data.rader).toEqual([]);
+    expect(data.summa).toBe('SEK 0,00');
+  });
+
+  test('olika belopp ger olika summa (negativ kontroll — inte alltid samma svar)', () => {
+    const dataA = byggForsattsbladData([forsattsbladRad({ belopp: 2500 })], NU);
+    const dataB = byggForsattsbladData([forsattsbladRad({ belopp: 1000 })], NU);
+    expect(dataA.summa).not.toBe(dataB.summa);
   });
 });
 

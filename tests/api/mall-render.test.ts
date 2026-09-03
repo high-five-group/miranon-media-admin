@@ -319,7 +319,11 @@ const EF_DIR = path.join(REPO_ROOT, 'supabase', 'functions');
 test.describe('Kvittots renderingsväg — BÅDA anropssiterna använder SAMMA renderare (AC #2, källkods-nivå)', () => {
   test("preview-receipt/index.ts anropar byggKvittoData + renderaMallPdf('kvitto', …) — INTE kvittoRader/renderKvittoPdf", () => {
     const source = readFileSync(path.join(EF_DIR, 'preview-receipt', 'index.ts'), 'utf8');
-    expect(source).toContain("import { byggKvittoData } from '../_shared/mall-data.ts'");
+    // [TASK-370.2] Importraden bär numera ÄVEN `byggForsattsbladData` (samma
+    // modul, en kombinerad import) — kontrollen matchar suffixet i stället
+    // för HELA raden, så den inte bryts av att en syskonfunktion läggs till
+    // i samma import-sats.
+    expect(source).toContain("byggKvittoData } from '../_shared/mall-data.ts'");
     expect(source).toContain("import { renderaMallPdf } from '../_shared/mall-render.ts'");
     expect(source).toMatch(/renderaMallPdf\(\s*'kvitto'/);
     expect(source).not.toContain('kvittoRader(');

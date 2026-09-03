@@ -323,11 +323,62 @@ test('EF:en grenar på inbetalningIds FÖRE inbetalningId/eventId, och returnera
 
 test('EF:en komponerar med kombineraFylldaKvittoSidor och gör självbärande EN gång, INTE N gånger', () => {
   expect(EF_KALLA).toContain('kombineraFylldaKvittoSidor(fyllda)');
-  expect(EF_KALLA).toContain("gorMallSjalvbarande('kvitto', kombineradHtml)");
-  // `fyllMall` anropas i en `.map(...)` — EN gång per kvitto — medan
-  // `gorMallSjalvbarande` anropas EXAKT en gång på hela listan, inte inuti
-  // samma `.map(...)`.
+  // [TASK-370.2] 'forsattsblad', INTE 'kvitto' — den kombinerade grenens
+  // CSS-bunt måste täcka BÅDA försättsbladets egna klasser OCH varje
+  // kvittosidas `.kvitto-*` klasser (se mall-render.ts:s MALL_TEMPLATES).
+  expect(EF_KALLA).toContain("gorMallSjalvbarande('forsattsblad', kombineradHtml)");
+  expect(EF_KALLA).not.toContain("gorMallSjalvbarande('kvitto', kombineradHtml)");
+  // `fyllMall('kvitto', …)` anropas i en `.map(...)` — EN gång per kvitto —
+  // medan `gorMallSjalvbarande` anropas EXAKT en gång på hela listan, inte
+  // inuti samma `.map(...)`.
   expect(EF_KALLA).toMatch(/kvittoDataLista\.map\(\(data\)\s*=>\s*fyllMall\('kvitto', data\)\)/);
+});
+
+/* ═════════════ E2. FÖRSÄTTSBLADET (TASK-370.2) ═════════════ */
+
+test("försättsbladet byggs med byggForsattsbladData och fylls med fyllMall('forsattsblad', …)", () => {
+  expect(EF_KALLA).toContain('byggForsattsbladData(forsattsbladRader, new Date())');
+  expect(EF_KALLA).toMatch(/const forsattsbladHtml = fyllMall\(\s*'forsattsblad',/);
+});
+
+test('försättsbladet ligger FÖRST i fyllda — kvittosidorna kommer efter, oförändrad map', () => {
+  // Kompositionen (`kombineraFylldaKvittoSidor`) ger ALDRIG en sidbrytning
+  // framför index 0 — att lägga försättsbladet allra först i arrayen är
+  // alltså hela mekanismen för AC #1 ("försättsbladet renderas som första
+  // sida"). Denna form (`[forsattsbladHtml, ...kvittoDataLista.map(…)]`)
+  // bevisar båda hälfterna i EN sträng: positionen OCH att kvitto-mappningen
+  // är orörd.
+  expect(EF_KALLA).toContain(
+    "const fyllda = [forsattsbladHtml, ...kvittoDataLista.map((data) => fyllMall('kvitto', data))];",
+  );
+});
+
+test('forsattsbladRader byggs i SAMMA loop-varv som kvittoDataLista — ingen extra datahämtning', () => {
+  // `forsattsbladRader.push(...)` måste stå EFTER `kvittoDataLista.push(...)`
+  // men INUTI samma `for`-loop (ingen ny `hamtaRiktigtUnderlag`-körning) —
+  // positionsbeviset: `forsattsbladRader.push` finns, och `kvittoDataLista`
+  // deklareras (loopens container) FÖRE den.
+  const posKvittoDataLista = EF_KALLA.indexOf(
+    'const kvittoDataLista: Record<string, unknown>[] = [];',
+  );
+  const posForsattsbladPush = EF_KALLA.indexOf('forsattsbladRader.push({');
+  const posLoopSlut = EF_KALLA.indexOf('const apiKey = Deno.env.get(');
+  expect(posKvittoDataLista).toBeGreaterThan(-1);
+  expect(posForsattsbladPush).toBeGreaterThan(posKvittoDataLista);
+  expect(posLoopSlut).toBeGreaterThan(posForsattsbladPush);
+});
+
+test('diskrimineringskontroll — försättsblads-positionen fäller på en OMKASTAD källa', () => {
+  // Konstruerad källa där försättsbladet av misstag hamnat SIST i stället
+  // för FÖRST — den skulle (felaktigt) få en sidbrytning framför sig i
+  // stället för den första kvittosidan. Bevisar att toContain-kontrollen
+  // ovan faktiskt DISKRIMINERAR mellan rätt och fel ordning, inte bara är
+  // grön mot vilken array-konstruktion som helst.
+  const omkastadFyllda =
+    "const fyllda = [...kvittoDataLista.map((data) => fyllMall('kvitto', data)), forsattsbladHtml];";
+  expect(omkastadFyllda).not.toContain(
+    "const fyllda = [forsattsbladHtml, ...kvittoDataLista.map((data) => fyllMall('kvitto', data))];",
+  );
 });
 
 test('allt eller inget: laggKombineratUtkast anropas EFTER DocRaptor-rendern, aldrig före', () => {

@@ -58,6 +58,11 @@ import {
   kvittoRubrik,
   MIRANON_ORG,
 } from './receipt-content.ts';
+// [TASK-370.2, review-fynd runda 1] `summeraKronor` — samma "räkna i ören,
+// dela tillbaka"-disciplin som `beraknaMoms` redan följer. Transitivt
+// Deno-fri (`betalningsbelopp.ts`s eget filhuvud) — bryter alltså inte
+// denna fils Node/Deno dual-import-kontrakt.
+import { summeraKronor } from './betalningsbelopp.ts';
 import { fetMarkera } from './fet-markering.ts';
 
 /**
@@ -377,5 +382,102 @@ export function byggKvittoData(spec: KvittoradSpec): KvittoMallData {
     orgNummer: MIRANON_ORG.orgnummer,
     orgMomsregnummer: MIRANON_ORG.momsregnummer,
     hanvisning: kvittoHanvisning(spec.hanvisningTillKvittonummer),
+  };
+}
+
+/**
+ * [TASK-370.2, PRD TASK-370 § Implementationsbeslut, S116 Del 2 beslut 3]
+ * Försättsbladets FJÄRDE, STRUKTURELLT ANNORLUNDA mall (jfr `byggKvittoData`s
+ * docstring för samma resonemang om kvittots tredje) — indata är en LISTA av
+ * rader (ett kombinerat dokuments alla N kvitton), inte en enda `KvittoradSpec`.
+ *
+ * [ADR-083-disciplin] `event`/`betalsatt` är RÅ, redan-upplöst visningstext
+ * (samma form `underlag.eventNamn`/`underlag.betalsatt` har i
+ * `preview-receipt/index.ts`s `hamtaRiktigtUnderlag` — se den funktionens
+ * docblock), INTE `KvittoradSpec`s typade unions: försättsbladet visar bara
+ * texten, det räknar aldrig med den.
+ */
+export interface ForsattsbladRadSpec {
+  namn: string;
+  epost: string;
+  /** `null` när eventet saknas (samma fall `byggKvittoData`s `eventNamn` redan hanterar) — visas som tom sträng. */
+  event: string | null;
+  /** Rå kronsumma — formateras HÄR (samma "SEK 2 500,00"-form som kvittots totalruta). */
+  belopp: number;
+  betalsatt: string;
+}
+
+/** Försättsbladets Eta-ifyllnadsdata — se `docs/mallar/bilagor/forsattsblad.html`
+ *  för tokenytan. Rubriken ("Förhandsgranskning") och notraden är HÅRDKODADE
+ *  i mallen (aldrig data-buret) — samma mönster som org-uppgifterna i
+ *  kvitto.html: de varierar aldrig, en token hade bara varit en indirektion
+ *  utan syfte.
+ */
+export interface ForsattsbladMallData {
+  antal: number;
+  tidpunkt: string;
+  rader: Array<{
+    namn: string;
+    epost: string;
+    event: string;
+    belopp: string;
+    betalsatt: string;
+  }>;
+  summa: string;
+}
+
+/**
+ * [TASK-370.2] Dagens tidpunkt i Europe/Stockholm, "ÅÅÅÅ-MM-DD TT:MM" —
+ * SAMMA `formatToParts`-teknik som `_shared/cancel-registration.ts`s
+ * `stockholmDatum` (citerad, inte duplicerad blint: den funktionen ger bara
+ * datumdelen — försättsbladets "tidpunkt", S116 Del 2 beslut 3, behöver även
+ * klockslaget, eftersom det är en TIDPUNKT när dokumentet skapades, inte
+ * bara ett datum). `formatToParts` i stället för `.format()`s råa
+ * strängutdata av SAMMA skäl som förlagan: separatorn ska aldrig bero på
+ * hur ICU råkar rendera `sv-SE`s literal-tecken i den körande motorn (Deno
+ * i drift, Node i test) — bara siffror plockas ut och sätts ihop själva.
+ * `hour12: false` — kvittots datum/tid-konvention är genomgående 24-timmars.
+ */
+const STOCKHOLM_DATUMTID_FORMAT = new Intl.DateTimeFormat('sv-SE', {
+  timeZone: 'Europe/Stockholm',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: false,
+});
+
+export function stockholmDatumTid(nu: Date): string {
+  const delar = STOCKHOLM_DATUMTID_FORMAT.formatToParts(nu);
+  const del = (typ: string) => delar.find((d) => d.type === typ)?.value ?? '00';
+  return `${del('year')}-${del('month')}-${del('day')} ${del('hour')}:${del('minute')}`;
+}
+
+/**
+ * Bygger försättsbladets Eta-ifyllnadsdata. REN funktion av sina argument —
+ * `nu` skickas in explicit av anroparen i stället för att läsas härifrån
+ * (`Date.now()`), samma testbarhetsdisciplin som resten av filen: en ren
+ * funktion av sina argument går att enhetstesta utan att mocka klockan.
+ *
+ * [TASK-370.2, review-fynd runda 1] Summan räknas med `summeraKronor`
+ * (heltalsören, delas tillbaka), INTE med rå flyttalsaddition —
+ * `0.1 + 0.2 !== 0.3` gäller lika mycket för N kronbelopp här (upp till
+ * `MAX_KOMBINERADE_KVITTON`, `_shared/kvitto-kombination.ts`) som för
+ * `beraknaMoms`s momsdelning (`receipt-content.ts`), samma disciplin.
+ */
+export function byggForsattsbladData(rader: ForsattsbladRadSpec[], nu: Date): ForsattsbladMallData {
+  const summa = summeraKronor(rader.map((rad) => rad.belopp));
+  return {
+    antal: rader.length,
+    tidpunkt: stockholmDatumTid(nu),
+    rader: rader.map((rad) => ({
+      namn: rad.namn,
+      epost: rad.epost,
+      event: rad.event ?? '',
+      belopp: `SEK ${formatBelopp(rad.belopp)}`,
+      betalsatt: rad.betalsatt,
+    })),
+    summa: `SEK ${formatBelopp(summa)}`,
   };
 }

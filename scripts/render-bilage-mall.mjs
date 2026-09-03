@@ -45,7 +45,7 @@ import { Eta } from 'eta';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const MALLROT = join(__dirname, '..', 'docs', 'mallar', 'bilagor');
-const KANDA_MALLAR = ['bekraftelsebilaga', 'deltagarinformation', 'kvitto'];
+const KANDA_MALLAR = ['bekraftelsebilaga', 'deltagarinformation', 'kvitto', 'forsattsblad'];
 
 // Mallar som redan bär Eta-syntax (`<%= %>`/`<% %>`) — TASK-309.4. Ny mall
 // som konverteras (t.ex. kvitto i TASK-309.5) läggs till här ELLER, ännu
