@@ -27,6 +27,9 @@ import {
   AttachmentDownloadUrlSchema,
   AttachmentUploadTicketSchema,
   AttendanceSchema,
+  type CancelRegistrationInput,
+  type CancelRegistrationResult,
+  CancelRegistrationResultSchema,
   type ConfirmRegistrationsInput,
   type ConfirmRegistrationsResult,
   ConfirmRegistrationsResultSchema,
@@ -622,6 +625,35 @@ export class AirtableAdapter implements DataSourceAdapter {
       idempotencyKey: input.idempotencyKey,
     });
     return ConfirmRegistrationsResultSchema.parse(data);
+  }
+
+  /**
+   * Avboka en aktiv anmälan (TASK-368.2). POST mot cancel-registration-EF:en
+   * med `atgard: 'avboka'`. Servern läser den nuvarande statusen, avvisar
+   * övergången (409) om anmälan inte är aktiv, och skriver annars Status +
+   * Notering i EN operation. `.parse()` validerar vid datagränsen (ADR-026).
+   */
+  async avbokaAnmalan(input: CancelRegistrationInput): Promise<CancelRegistrationResult> {
+    const data = await postEdgeFunction<unknown>('cancel-registration', {
+      registrationId: input.registrationId,
+      atgard: 'avboka',
+      ...(input.skal !== undefined ? { skal: input.skal } : {}),
+    });
+    return CancelRegistrationResultSchema.parse(data);
+  }
+
+  /**
+   * Återta en avbokning (TASK-368.2). SAMMA EF som `avbokaAnmalan`, med
+   * `atgard: 'aterta'` — den nya statusen härleds server-side ur
+   * bekräftelsedatumet, aldrig vald här.
+   */
+  async atertaAvbokning(input: CancelRegistrationInput): Promise<CancelRegistrationResult> {
+    const data = await postEdgeFunction<unknown>('cancel-registration', {
+      registrationId: input.registrationId,
+      atgard: 'aterta',
+      ...(input.skal !== undefined ? { skal: input.skal } : {}),
+    });
+    return CancelRegistrationResultSchema.parse(data);
   }
 
   /**

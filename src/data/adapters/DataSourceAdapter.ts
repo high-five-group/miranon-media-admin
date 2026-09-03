@@ -22,6 +22,8 @@ import type { CreateRegistrationInput, Registration } from '../../domain/models/
 import type { WaitlistEntry } from '../../domain/models/WaitlistEntry';
 import type {
   ActivityStatement,
+  CancelRegistrationInput,
+  CancelRegistrationResult,
   ConfirmRegistrationsInput,
   ConfirmRegistrationsResult,
   CreatedEvent,
@@ -293,6 +295,25 @@ export interface DataSourceAdapter {
    * och Bekräfta alla (N ID:n); svaret är aldrig binärt.
    */
   confirmRegistrations(input: ConfirmRegistrationsInput): Promise<ConfirmRegistrationsResult>;
+
+  /**
+   * Avboka en aktiv anmälan (TASK-368.2, PRD TASK-368 beslut 1/3). Servern
+   * sätter Status till "Avbokad/Ombokad", speglar skälet som en datum-
+   * stämplad rad i anmälans Notering (befintlig text bevaras) och loggar
+   * handlingen — allt i EN operation (`cancel-registration`-EF:en). Endast
+   * en AKTIV anmälan (Bekräftad/Betalningspåminnelse/Obekräftad) kan
+   * avbokas; alla andra statusar avvisas med 409.
+   */
+  avbokaAnmalan(input: CancelRegistrationInput): Promise<CancelRegistrationResult>;
+
+  /**
+   * Återta en avbokning (TASK-368.2, PRD TASK-368 beslut 4). Samma EF som
+   * `avbokaAnmalan` (`atgard: 'aterta'`) — statusen härleds SERVER-SIDE ur
+   * bekräftelsedatumet (satt → "Bekräftad (mail skickat)", annars
+   * "Obekräftad"), aldrig vald av klienten. Endast en avbokad anmälan kan
+   * återtas; allt annat avvisas med 409.
+   */
+  atertaAvbokning(input: CancelRegistrationInput): Promise<CancelRegistrationResult>;
 
   /**
    * Skicka ett åtgärdsutskick (TASK-147.2, ADR-067-revisionen): SERVERN skickar

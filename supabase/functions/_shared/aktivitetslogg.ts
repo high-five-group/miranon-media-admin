@@ -49,10 +49,24 @@ export const REQUEST_ID_EXTENSION_IRI = `${XAPI_IRI_BASE}/extensions/requestId`;
  * (`src/data/activityLog/activityTypes.ts` § ACTIVITY_OBJECT_TYPES) — ingen
  * ny kategori mintas här. En inbetalning ÄR en betalning; ett kvitto ÄR ett
  * kvitto.
+ *
+ * `anmalan` (TASK-368.2) är den FÖRSTA icke-betalningskategorin denna modul
+ * bär — filhuvudet ovan beskriver modulen som "betalningsdomänens SERVER-
+ * SIDA", men `byggStatement`/`anmalanObjektId`/`skrivAktivitet` (via
+ * `betalningar-db.ts`) är redan domän-generella: ingen av dem nämner pengar.
+ * Avbokning/återtagning är server-loggad av samma skäl som betalningarna
+ * (uppdraget, S115 Del 3): servern utför handlingen själv och känner den
+ * verifierade anroparen, så statementet byggs HÄR i stället för att skickas
+ * in av klienten (samma resonemang som filhuvudets § "VARFÖR STATEMENTET
+ * BYGGS PÅ SERVERN"). IRI:en är IDENTISK med klientens
+ * `ACTIVITY_OBJECT_TYPES.anmalan` (samma `XAPI_IRI_BASE`-prefix) så
+ * `get-activity-log`s `category`-filter fungerar oavsett vilken sida som
+ * skrev raden.
  */
 export const AKTIVITETSTYP = {
   betalning: `${XAPI_IRI_BASE}/activity-types/betalning`,
   kvitto: `${XAPI_IRI_BASE}/activity-types/kvitto`,
+  anmalan: `${XAPI_IRI_BASE}/activity-types/anmalan`,
 } as const;
 
 /** Objekt-IRI för en anmälan — SAMMA form som klientens `registrationObjectId`. */
@@ -91,6 +105,27 @@ export const INBETALNING_VERB = {
   skickade_kvitto_igen: {
     id: `${XAPI_IRI_BASE}/verbs/skickade-kvitto-igen`,
     display: { 'sv-SE': 'skickade kvitto igen' },
+  },
+} as const satisfies Record<string, Verb>;
+
+/**
+ * Anmälan-domänens verb (TASK-368.2) — samma grupperingsform som
+ * `INBETALNING_VERB` ovan: TVÅ handlingar på samma entitet, en operation
+ * (`cancel-registration`) med ett `atgard`-fält. Svensk dåtidsform (samma
+ * stil som `INBETALNING_VERB`/klientens `SKAPADE_ANMALAN_VERB`).
+ *
+ * INGET SKÄL I LOGGEN, av samma integritetsskäl som `INBETALNING_VERB`s
+ * egen kommentar: Lottas fria avbokningsskäl hör hemma i basens Notering
+ * (`_shared/cancel-registration.ts`), aldrig i xAPI-statementet.
+ */
+export const ANMALAN_VERB = {
+  avbokade: {
+    id: `${XAPI_IRI_BASE}/verbs/avbokade-anmalan`,
+    display: { 'sv-SE': 'avbokade anmälan' },
+  },
+  atertogAvbokning: {
+    id: `${XAPI_IRI_BASE}/verbs/atertog-avbokning`,
+    display: { 'sv-SE': 'återtog avbokning' },
   },
 } as const satisfies Record<string, Verb>;
 
