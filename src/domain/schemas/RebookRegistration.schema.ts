@@ -24,29 +24,37 @@ export type RebookRegistrationInput = {
 /**
  * Serverns svar.
  *
- * `nyAnmalanSkapad` skiljer de två vägarna till en ny anmälan: en NYSKAPAD rad
- * (normalfallet) eller en BEFINTLIG som adopterades. Adoption sker när personen
- * redan hade en anmälan på mål-eventet — antingen för att hon faktiskt var
- * anmäld dit, eller för att ett tidigare ombokningsförsök avbröts efter att
- * raden skapats. Appen (TASK-368.5) kan säga det rakt ut i stället för att
- * låtsas att en ny rad skapades.
- *
  * `aterupptaget` är `true` när ALLT redan var gjort: ingen anmälan skapades,
- * noll rader flyttades, ingen status skrevs, ingen loggrad tillkom. Ett andra
- * identiskt anrop hamnar här.
+ * noll rader flyttades, ingen status skrevs, ingen loggrad tillkom. Dit hamnar
+ * ett andra identiskt anrop — och BARA det. Servern adopterar en befintlig
+ * anmälan på mål-eventet enbart när anropet bevisligen är samma request
+ * upprepad; i alla andra lägen avvisas ombokningen med 409
+ * `redan_anmald_pa_malet`, eftersom två anmälningars ekonomi aldrig slås ihop
+ * automatiskt (ADR-130 § Konsekvenser). `nyAnmalanSkapad` är därför den exakta
+ * komplementen till `aterupptaget`.
  *
  * `prisskillnad` är positiv när personen ska betala mellanskillnaden, negativ
  * när pengar ska tillbaka och `null` när priset inte går att avgöra. Talet är
- * nytt pris minus det som nu sitter på den nya anmälan (se EF:ens egen
- * kommentar för varför det är det sanna talet även vid adoption).
+ * nytt pris minus det som nu sitter på den nya anmälan.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * `flyttadeRader`/`flyttadSumma` ÄR PER ANROP — INTE ETT TILLSTÅND
+ * ═══════════════════════════════════════════════════════════════════════════
+ * De beskriver vad DETTA anrop flyttade, och är `0` vid en återupptagning
+ * trots att pengarna sitter rätt sedan förra gången. En text som säger
+ * "X kr flyttades" byggd på `flyttadSumma` skulle alltså påstå "0 kr" om en
+ * omkörning. Använd `summaNyAnmalan` — talet spegeln faktiskt skrev till den
+ * nya anmälan — för allt som beskriver ett TILLSTÅND.
  *
  * `spegelGammal`/`spegelNy` bär basens eftersläpning per anmälan — samma form
  * och samma skäl som betalningsdomänens övriga svar (ADR-128 beslut 5: en
- * eftersläpning SYNS i stället för att tystas).
+ * eftersläpning SYNS i stället för att tystas). De bär UTFALLET av skrivningen,
+ * inte beloppet; beloppet är `summaNyAnmalan`.
  */
 export const RebookRegistrationResultSchema = z.object({
   gammalAnmalanId: z.string(),
   nyAnmalanId: z.string(),
+  /** Skapades raden i detta anrop? Exakt komplementen till `aterupptaget`. */
   nyAnmalanSkapad: z.boolean(),
   aterupptaget: z.boolean(),
   nyttEventId: z.string(),
@@ -54,8 +62,12 @@ export const RebookRegistrationResultSchema = z.object({
   status: z.string(),
   /** Gamla anmälans Notering efter appendet (hela fältet). */
   notering: z.string(),
+  /** PER ANROP — se docblocket ovan innan talet visas. */
   flyttadeRader: z.number(),
+  /** PER ANROP — se docblocket ovan innan talet visas. */
   flyttadSumma: z.number(),
+  /** Aktiva inbetalningar på den NYA anmälan efter operationen. Stabilt över omkörningar. */
+  summaNyAnmalan: z.number(),
   nyttPris: z.number().nullable(),
   prisskillnad: z.number().nullable(),
   spegelGammal: SpegelUtfallSchema,

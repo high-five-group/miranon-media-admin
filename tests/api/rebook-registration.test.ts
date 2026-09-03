@@ -36,8 +36,10 @@ import {
   stockholmDatum,
 } from '../../supabase/functions/_shared/cancel-registration';
 import {
+  barOmbokningsradMot,
   beslutaOmbokning,
   byggFlyttadOgonblicksbild,
+  byggOmbokningsmal,
   byggOmbokningsrad,
   summeraFlyttat,
 } from '../../supabase/functions/_shared/rebook-registration';
@@ -57,8 +59,18 @@ function underlag(overrides: Partial<Parameters<typeof beslutaOmbokning>[0]> = {
     gammaltEventId: GAMMALT_EVENT as string | null,
     nyttEventId: NYTT_EVENT,
     malAnmalanFinns: false,
+    omkorningBekraftad: false,
     ...overrides,
   };
+}
+
+/** Läget efter en FULLBORDAD ombokning: avbokad + Ombokad-rad mot samma mål. */
+function efterUtfordOmbokning() {
+  return underlag({
+    aktuellStatus: STATUS_AVBOKAD,
+    malAnmalanFinns: true,
+    omkorningBekraftad: true,
+  });
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -107,27 +119,6 @@ test.describe('beslutaOmbokning: statusaxeln', () => {
     });
   }
 
-  test('aktiv status + mål-anmälan finns redan ger ÄNDÅ utfor (adoptionen görs av EF:en)', () => {
-    // Detta är halv-fel-återupptagningen: första försöket hann skapa raden men
-    // inte skriva statusen. Beslutet måste tillåta att resten körs klart.
-    const beslut = beslutaOmbokning(underlag({ malAnmalanFinns: true }));
-    expect(beslut.ok).toBe(true);
-    if (!beslut.ok) return;
-    expect(beslut.lage).toBe('utfor');
-    expect(beslut.statusSkaSkrivas).toBe(true);
-  });
-
-  test('redan avbokad + mål-anmälan finns ger aterupptagning UTAN statusskrivning', () => {
-    const beslut = beslutaOmbokning(
-      underlag({ aktuellStatus: STATUS_AVBOKAD, malAnmalanFinns: true }),
-    );
-    expect(beslut.ok).toBe(true);
-    if (!beslut.ok) return;
-    expect(beslut.lage).toBe('aterupptagning');
-    expect(beslut.statusSkaSkrivas).toBe(false);
-    expect(beslut.nyStatus).toBe(STATUS_AVBOKAD);
-  });
-
   test('redan avbokad UTAN mål-anmälan avvisas med redan_avbokad', () => {
     const beslut = beslutaOmbokning(underlag({ aktuellStatus: STATUS_AVBOKAD }));
     expect(beslut.ok).toBe(false);
@@ -153,16 +144,84 @@ test.describe('beslutaOmbokning: statusaxeln', () => {
     expect(beslut.kod).toBe('status_ej_tillaten');
     expect(beslut.felmeddelande).toContain('okänd');
   });
+});
 
-  test('en otillåten status som ändå har mål-anmälan blir inte aterupptagning', () => {
-    // Bara Avbokad/Ombokad kan vara en påbörjad ombokning. Ett Inställt event
-    // med en anmälan på mål-eventet är något annat, och ska avvisas.
+// ═══════════════════════════════════════════════════════════════════════════
+// 2b. ADOPTIONEN ÄR BEGRÄNSAD TILL OMKÖRNINGSFALLET (Marcus beslut 2026-09-03,
+//     granskningen av PR #2247) — ingen tyst sammanslagning av två ekonomier
+// ═══════════════════════════════════════════════════════════════════════════
+
+test.describe('beslutaOmbokning: befintlig anmälan på mål-eventet', () => {
+  test('AKTIV befintlig mål-anmälan avvisas med redan_anmald_pa_malet', () => {
+    // Det gamla beteendet adopterade raden här och flyttade pengarna dit.
+    // Efter Marcus beslut är det ett hårt fel — personen kan ha två genuina
+    // anmälningar, och deras ekonomi slås aldrig ihop på en knapptryckning.
+    const beslut = beslutaOmbokning(underlag({ malAnmalanFinns: true }));
+    expect(beslut.ok).toBe(false);
+    if (beslut.ok) return;
+    expect(beslut.kod).toBe('redan_anmald_pa_malet');
+    expect(beslut.felmeddelande).toContain('redan anmäld');
+    expect(beslut.felmeddelande).toContain('aldrig automatiskt');
+  });
+
+  test('AVBOKAD befintlig mål-anmälan UTAN ombokningsrad avvisas också', () => {
+    // Statusen räcker inte: utan Ombokad-raden mot detta mål är anropet inte
+    // bevisbart samma request, och då är adoption förbjuden.
+    const beslut = beslutaOmbokning(
+      underlag({ aktuellStatus: STATUS_AVBOKAD, malAnmalanFinns: true }),
+    );
+    expect(beslut.ok).toBe(false);
+    if (beslut.ok) return;
+    expect(beslut.kod).toBe('redan_anmald_pa_malet');
+  });
+
+  test('AKTIV gammal anmälan med ombokningsrad mot målet räcker INTE heller', () => {
+    // Båda villkoren krävs. En Ombokad-rad utan avbokad status betyder att
+    // något halvt har hänt — och då är 409 rätt svar, inte en adoption.
+    const beslut = beslutaOmbokning(underlag({ malAnmalanFinns: true, omkorningBekraftad: true }));
+    expect(beslut.ok).toBe(false);
+    if (beslut.ok) return;
+    expect(beslut.kod).toBe('redan_anmald_pa_malet');
+  });
+
+  test('INSTÄLLT med mål-anmälan avvisas som redan_anmald_pa_malet, inte status_ej_tillaten', () => {
+    // Mål-hindret prövas före statusaxeln: det är det mest specifika hindret
+    // och det enda Lotta kan agera på utan att först förstå gamla statusen.
     const beslut = beslutaOmbokning(
       underlag({ aktuellStatus: STATUS_INSTALLT, malAnmalanFinns: true }),
     );
     expect(beslut.ok).toBe(false);
     if (beslut.ok) return;
-    expect(beslut.kod).toBe('status_ej_tillaten');
+    expect(beslut.kod).toBe('redan_anmald_pa_malet');
+  });
+
+  test('GILTIG OMKÖRNING (avbokad + ombokningsrad mot målet) ger aterupptagning', () => {
+    const beslut = beslutaOmbokning(efterUtfordOmbokning());
+    expect(beslut.ok).toBe(true);
+    if (!beslut.ok) return;
+    expect(beslut.lage).toBe('aterupptagning');
+    expect(beslut.statusSkaSkrivas).toBe(false);
+    expect(beslut.nyStatus).toBe(STATUS_AVBOKAD);
+  });
+
+  test('omkorningBekraftad utan mål-anmälan ändrar ingenting (statusaxeln avgör)', () => {
+    // Skulle raden finnas men anmälan på målet vara raderad är det ingen
+    // omkörning att återuppta — det är en avbokad anmälan, som avvisas.
+    const beslut = beslutaOmbokning(
+      underlag({ aktuellStatus: STATUS_AVBOKAD, omkorningBekraftad: true }),
+    );
+    expect(beslut.ok).toBe(false);
+    if (beslut.ok) return;
+    expect(beslut.kod).toBe('redan_avbokad');
+  });
+
+  test('samma_event vinner även över mål-hindret', () => {
+    const beslut = beslutaOmbokning(
+      underlag({ nyttEventId: GAMMALT_EVENT, malAnmalanFinns: true }),
+    );
+    expect(beslut.ok).toBe(false);
+    if (beslut.ok) return;
+    expect(beslut.kod).toBe('samma_event');
   });
 });
 
@@ -170,15 +229,15 @@ test.describe('beslutaOmbokning: statusaxeln', () => {
 // 3. Idempotensen som SEKVENS (kortets AC #4)
 // ═══════════════════════════════════════════════════════════════════════════
 
-test.describe('idempotens: samma anrop två gånger', () => {
+test.describe('idempotens: samma anrop flera gånger', () => {
   test('anrop 1 utför, anrop 2 och 3 återupptar utan att skriva något', () => {
     const forsta = beslutaOmbokning(underlag());
     expect(forsta.ok && forsta.statusSkaSkrivas).toBe(true);
 
-    // Efter anrop 1: gamla anmälan är avbokad och mål-anmälan finns.
-    const efterlaget = underlag({ aktuellStatus: STATUS_AVBOKAD, malAnmalanFinns: true });
-    for (const varv of [2, 3]) {
-      const beslut = beslutaOmbokning(efterlaget);
+    // Efter anrop 1: gamla anmälan är avbokad, bär Ombokad-raden mot målet,
+    // och mål-anmälan finns. Varje ytterligare varv är en återupptagning.
+    for (const varv of [2, 3, 4]) {
+      const beslut = beslutaOmbokning(efterUtfordOmbokning());
       expect(beslut.ok, `varv ${varv}`).toBe(true);
       if (!beslut.ok) return;
       expect(beslut.lage, `varv ${varv}`).toBe('aterupptagning');
@@ -186,16 +245,72 @@ test.describe('idempotens: samma anrop två gånger', () => {
     }
   });
 
-  test('avbruten körning (rad skapad, status oskriven) kan köras klart', () => {
+  test('avbruten körning (rad skapad, status oskriven) är INTE längre omkörbar', () => {
+    // Medveten kostnad efter adoptions-begränsningen: läget är strukturellt
+    // oskiljbart från "personen var redan anmäld dit", och mellan de två
+    // tolkningarna väljs den som aldrig slår ihop någons pengar. Fönstret är
+    // smalt (mellan skapandet och statusskrivningen) och kräver ett ögonkast
+    // i basen — utskrivet i ADR-130 § Konsekvenser, inte dolt.
     const beslut = beslutaOmbokning(underlag({ malAnmalanFinns: true }));
-    expect(beslut.ok).toBe(true);
-    if (!beslut.ok) return;
-    expect(beslut.statusSkaSkrivas).toBe(true);
-    // …och nästa varv efter det är en ren återupptagning.
-    const efter = beslutaOmbokning(
-      underlag({ aktuellStatus: STATUS_AVBOKAD, malAnmalanFinns: true }),
+    expect(beslut.ok).toBe(false);
+    if (beslut.ok) return;
+    expect(beslut.kod).toBe('redan_anmald_pa_malet');
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// 3b. barOmbokningsradMot — adoptionens andra villkor
+// ═══════════════════════════════════════════════════════════════════════════
+
+test.describe('barOmbokningsradMot', () => {
+  const RAD = byggOmbokningsrad('2026-09-03', 'Lotta', 'Fjärrskådning', '2026-10-15');
+
+  test('känner igen raden den själv byggde (bygg och matchning delar mål-delen)', () => {
+    expect(barOmbokningsradMot(RAD, 'Fjärrskådning', '2026-10-15')).toBe(true);
+    expect(RAD.endsWith(byggOmbokningsmal('Fjärrskådning', '2026-10-15'))).toBe(true);
+  });
+
+  test('hittar raden mitt i ett Notering-fält med annan text runt omkring', () => {
+    const notering = appendNotering(
+      appendNotering('Lottas anteckning.', RAD),
+      '[Avbokad 2026-09-04 av Lotta] Ändrade sig',
     );
-    expect(efter.ok && efter.statusSkaSkrivas).toBe(false);
+    expect(barOmbokningsradMot(notering, 'Fjärrskådning', '2026-10-15')).toBe(true);
+  });
+
+  test('ANNAT målevent matchar inte — det är hela poängen', () => {
+    expect(barOmbokningsradMot(RAD, 'Grundkurs', '2026-10-15')).toBe(false);
+    expect(barOmbokningsradMot(RAD, 'Fjärrskådning', '2026-11-20')).toBe(false);
+    expect(barOmbokningsradMot(RAD, 'Fjärrskådning', null)).toBe(false);
+  });
+
+  test('en Avbokad-rad mot samma text räknas inte som ombokning', () => {
+    const avbokad = '[Avbokad 2026-09-03 av Lotta] till Fjärrskådning, 2026-10-15';
+    expect(barOmbokningsradMot(avbokad, 'Fjärrskådning', '2026-10-15')).toBe(false);
+  });
+
+  test('fri text som liknar en rad men saknar den låsta inledningen matchar inte', () => {
+    expect(
+      barOmbokningsradMot('Ombokad till Fjärrskådning, 2026-10-15', 'Fjärrskådning', '2026-10-15'),
+    ).toBe(false);
+    expect(
+      barOmbokningsradMot('till Fjärrskådning, 2026-10-15', 'Fjärrskådning', '2026-10-15'),
+    ).toBe(false);
+  });
+
+  test('ett längre eventnamn som SLUTAR med målets namn matchar inte', () => {
+    const annanRad = byggOmbokningsrad('2026-09-03', 'Lotta', 'Fördjupad Fjärrskådning', null);
+    expect(barOmbokningsradMot(annanRad, 'Fjärrskådning', null)).toBe(false);
+  });
+
+  test('tom eller frånvarande Notering ger false, kastar aldrig', () => {
+    expect(barOmbokningsradMot(null, 'Fjärrskådning', '2026-10-15')).toBe(false);
+    expect(barOmbokningsradMot('', 'Fjärrskådning', '2026-10-15')).toBe(false);
+    expect(barOmbokningsradMot('   \n  ', 'Fjärrskådning', '2026-10-15')).toBe(false);
+  });
+
+  test('raden hittas även med efterföljande blanksteg på raden', () => {
+    expect(barOmbokningsradMot(`${RAD}  `, 'Fjärrskådning', '2026-10-15')).toBe(true);
   });
 });
 

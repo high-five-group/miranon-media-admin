@@ -113,6 +113,7 @@ import {
 import { generateRequestId, mapErrorToResponse } from '../_shared/errors.ts';
 import { findDisallowedField, getOperation } from '../_shared/field-allowlists.ts';
 import {
+  barOmbokningsradMot,
   beslutaOmbokning,
   byggFlyttadOgonblicksbild,
   byggOmbokningsrad,
@@ -274,6 +275,15 @@ Deno.serve(async (req) => {
       gammaltEventId,
       nyttEventId,
       malAnmalanFinns: befintligMalAnmalan !== null,
+      // Adoptionens andra villkor: bär gamla anmälans Notering en Ombokad-rad
+      // mot PRECIS detta målevent? Namnet/datumet läses ur samma källa som
+      // raden en gång skrevs ur (`lasEvent`, med `hamtaEventNyckel`s
+      // `Event (text)` som fallback) — se `barOmbokningsradMot`.
+      omkorningBekraftad: barOmbokningsradMot(
+        befintligNotering,
+        nyttEvent?.namn ?? nyckel.eventNamnFallback,
+        nyttEvent?.startdatum ?? null,
+      ),
     });
     if (!beslut.ok) {
       // 409, inte 400: BÅDA ID:na är giltig indata — det är anmälans NUVARANDE
@@ -290,18 +300,20 @@ Deno.serve(async (req) => {
     const nu = new Date();
     const visningsnamn = lasVisningsnamnUrJwt(authHeader) ?? user.email ?? user.id;
 
-    // ── Steg 1: den nya anmälan (skapad eller adopterad) ───────────────────
+    // ── Steg 1: den nya anmälan ───────────────────────────────────────────
     //
-    // ADOPTION, inte 409: finns raden redan är det ANTINGEN ett omanrop efter
-    // ett avbrutet första försök, ELLER att personen redan var anmäld till
-    // mål-eventet. Båda har samma rätta utfall — pengarna ska sitta på den
-    // anmälan personen faktiskt har på det eventet — och en dubblett kan
-    // ändå inte skapas (affärs-unikheten). Vilket det var SYNS i svaret
-    // (`nyAnmalanSkapad`), så appen (TASK-368.5) kan säga det rakt ut.
+    // ADOPTION SKER ENDAST I ÅTERUPPTAGNINGSLÄGET (Marcus beslut 2026-09-03,
+    // granskningen av PR #2247). Varje annat läge där personen redan har en
+    // anmälan på mål-eventet har redan avvisats ovan med
+    // `redan_anmald_pa_malet` — pengar slås aldrig ihop mellan två anmälningar
+    // på en knapptryckning. Se `_shared/rebook-registration.ts`s filhuvud
+    // § ADOPTION och ADR-130 § Konsekvenser för vad det kostar.
     let nyAnmalanId: string;
     let nyAnmalanSkapad = false;
-    if (befintligMalAnmalan) {
-      nyAnmalanId = befintligMalAnmalan.id;
+    if (beslut.lage === 'aterupptagning') {
+      // `beslutaOmbokning` gav detta läge ENBART när mål-anmälan finns, så
+      // `befintligMalAnmalan` kan inte vara null här.
+      nyAnmalanId = (befintligMalAnmalan as { id: string }).id;
     } else {
       let skrivet;
       try {
@@ -511,6 +523,12 @@ Deno.serve(async (req) => {
       {
         gammalAnmalanId: registrationId,
         nyAnmalanId,
+        /**
+         * Skapades raden i DETTA anrop? Efter adoptions-begränsningen är detta
+         * den exakta komplementen till `aterupptaget` — fältet står kvar för
+         * att det namnger FAKTUM (en rad skrevs) där `aterupptaget` namnger
+         * LÄGET, och 368.5 behöver det förra för sin bekräftelsetext.
+         */
         nyAnmalanSkapad,
         /** `true` = allt var redan gjort; detta anrop ändrade ingenting. */
         aterupptaget: beslut.lage === 'aterupptagning',
@@ -519,8 +537,27 @@ Deno.serve(async (req) => {
         status: beslut.nyStatus,
         /** Gamla anmälans Notering EFTER appendet (hela fältet, som `cancel-registration`). */
         notering: nyNotering,
+        /**
+         * ═══ PER ANROP, INTE ETT TILLSTÅND — LÄS DETTA FÖRE DU VISAR TALET ═══
+         * `flyttadeRader`/`flyttadSumma` beskriver vad DETTA anrop flyttade.
+         * Vid en återupptagning är de därför `0`/`0` trots att pengarna sitter
+         * rätt sedan förra gången. En text som säger "X kr flyttades" byggd på
+         * `flyttadSumma` skulle alltså påstå "0 kr" om en omkörning.
+         *
+         * TASK-368.5 ska i stället visa `summaNyAnmalan` — beloppet spegeln
+         * faktiskt skrev till den nya anmälan (`spegelNy`) — för allt som
+         * beskriver ett TILLSTÅND ("så här mycket sitter nu på anmälan").
+         * `flyttadeRader`/`flyttadSumma` hör hemma i kvittensen på HANDLINGEN
+         * och i loggen, ingen annanstans.
+         */
         flyttadeRader,
         flyttadSumma,
+        /**
+         * Summan av de AKTIVA inbetalningarna på den NYA anmälan efter
+         * operationen — exakt talet `spegelNy` skrev till basens
+         * `Summa inbetalt (kr)`. Stabilt över omkörningar.
+         */
+        summaNyAnmalan: harledningNy.summa,
         /** Priset som gäller på den NYA anmälan. `null` = okänt pris. */
         nyttPris: harledningNy.gallandePris,
         /**

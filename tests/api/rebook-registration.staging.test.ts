@@ -3,11 +3,15 @@
 // FÖRSTA staging-sviten som skriver i betalningsdomänens Postgres-tabeller via
 // en Edge Function.
 //
-// Bevisar mot SKARP staging-data:
+// NIO test-block, ett per punkt nedan. Bevisar mot SKARP staging-data:
 //   1. säkerhets-kontraktet: anon → 401, GET → 405 (delad gateway/requireUser).
 //   2. input-grindar (deny-by-default): ogiltiga record-ID-format → 400.
 //   3. okända ID:n → 404 (anmälan respektive event), aldrig 500.
 //   4. samma event → 409 `samma_event`.
+//   4b. personen redan anmäld på MÅL-eventet → 409 `redan_anmald_pa_malet`,
+//      och den gamla anmälan står orörd. Marcus beslut 2026-09-03: adoption
+//      sker ENDAST när anropet bevisligen är samma request upprepad, aldrig
+//      som en tyst sammanslagning av två anmälningars ekonomi.
 //   5. FLERA INBETALNINGAR: två aktiva + en makulerad. Efter ombokningen sitter
 //      de TVÅ aktiva på den nya anmälan med uppdaterad ögonblicksbild, och den
 //      MAKULERADE ligger kvar på den gamla (kortets AC #3).
@@ -16,7 +20,9 @@
 //   7. PRISSKILLNADENS IDENTITET: `prisskillnad === nyttPris - summan på den
 //      nya anmälan`, och `null` när priset inte går att avgöra.
 //   8. IDEMPOTENSEN (AC #4): ett andra identiskt anrop skapar ingen anmälan,
-//      flyttar noll rader, ändrar ingen status och skriver ingen ny loggrad.
+//      flyttar noll rader, ändrar ingen status och skriver ingen ny loggrad —
+//      men `summaNyAnmalan` står kvar på rätt belopp, till skillnad från de
+//      PER-ANROP-räknare (`flyttadeRader`/`flyttadSumma`) som är noll där.
 //   9. LOGGVERBET `bokade om anmälan` med BÅDA anmälningarna i statementet
 //      (objektet = den gamla, `NY_ANMALAN_EXTENSION_IRI` = den nya).
 //  10. EN INBETALNING (AC #5:s andra hälft), i motsatt riktning.
@@ -101,6 +107,7 @@ type RebookSvar = {
   notering: string;
   flyttadeRader: number;
   flyttadSumma: number;
+  summaNyAnmalan: number;
   nyttPris: number | null;
   prisskillnad: number | null;
   spegelGammal: { skrivet: boolean };
@@ -175,8 +182,10 @@ async function createSentinelRegistration(
   jwt: string,
   eventId: string,
   efternamn: string,
+  /** Återanvänd adress när samma PERSON ska finnas på två event. */
+  aterianvandEmail?: string,
 ): Promise<{ id: string; email: string }> {
-  const email = `create-test+${randomUUID()}@staging.test`;
+  const email = aterianvandEmail ?? `create-test+${randomUUID()}@staging.test`;
   const res = await request.post(`${config.baseUrl}/functions/v1/create-registration`, {
     headers: { Authorization: `Bearer ${jwt}`, 'Content-Type': 'application/json' },
     data: {
@@ -386,6 +395,42 @@ test.describe('rebook-registration — skarp conformance (TASK-368.4)', () => {
     expect(efter.notering).toBe(SENTINEL_NOTERING);
   });
 
+  test('REDAN ANMÄLD PÅ MÅLET: 409 redan_anmald_pa_malet, ingen ekonomi slås ihop', async ({
+    request,
+  }) => {
+    // Marcus beslut 2026-09-03 (granskningen av PR #2247): adoption sker ENDAST
+    // när anropet bevisligen är samma request upprepad. Personen har här en
+    // GENUIN anmälan på båda eventen — då ska ombokningen fälla, inte flytta
+    // pengarna till den befintliga raden.
+    test.setTimeout(180_000);
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+
+    const gammaltEventId = await findSeededEventId(request, config, jwt);
+    const nyttEventId = await createSentinelEvent(request, config, jwt);
+    const { id: registrationId, email } = await createSentinelRegistration(
+      request,
+      config,
+      jwt,
+      gammaltEventId,
+      'Dubbelanmald',
+    );
+    // SAMMA person (samma e-post) på mål-eventet — affärs-unikheten ser den.
+    await createSentinelRegistration(request, config, jwt, nyttEventId, 'Dubbelanmald', email);
+
+    const res = await postRebook(request, config, jwt, { registrationId, nyttEventId });
+    const raw = await res.text();
+    expect(res.status(), raw).toBe(409);
+    const kropp = JSON.parse(raw) as { code?: string; error?: string };
+    expect(kropp.code).toBe('redan_anmald_pa_malet');
+    expect(kropp.error).toContain('redan anmäld');
+
+    // Den gamla anmälan står ORÖRD — ingen status, ingen Notering-rad.
+    const efter = await readRegistration(request, config, jwt, gammaltEventId, registrationId);
+    expect(efter.status).toBe('Obekräftad');
+    expect(efter.notering).toBe(SENTINEL_NOTERING);
+  });
+
   test('FLERA INBETALNINGAR: flytt, makulerad kvar, spegel på båda, loggverb, idempotens', async ({
     request,
   }) => {
@@ -434,6 +479,9 @@ test.describe('rebook-registration — skarp conformance (TASK-368.4)', () => {
       // AC #2/#3: exakt de TVÅ aktiva flyttades, den makulerade inte.
       expect(svar.flyttadeRader).toBe(2);
       expect(svar.flyttadSumma).toBe(1500);
+      // Tillståndstalet 368.5 ska visa — samma belopp här, men stabilt över
+      // omkörningar till skillnad från räknarna ovan (se idempotens-steget).
+      expect(svar.summaNyAnmalan).toBe(1500);
 
       // AC #3: prisskillnadens identitet (tecknen bevisas hermetiskt, se filhuvudet).
       if (svar.nyttPris === null) {
@@ -487,8 +535,12 @@ test.describe('rebook-registration — skarp conformance (TASK-368.4)', () => {
       expect(igenSvar.aterupptaget).toBe(true);
       expect(igenSvar.nyAnmalanSkapad).toBe(false);
       expect(igenSvar.nyAnmalanId).toBe(svar.nyAnmalanId);
+      // PER-ANROP-räknarna är noll här — och det är precis därför 368.5 inte
+      // får bygga "X kr flyttades" på dem.
       expect(igenSvar.flyttadeRader).toBe(0);
       expect(igenSvar.flyttadSumma).toBe(0);
+      // TILLSTÅNDSTALET står kvar på rätt belopp.
+      expect(igenSvar.summaNyAnmalan).toBe(1500);
       // Noteringen fick INGEN andra Ombokad-rad.
       const efterIgen = await readRegistration(
         request,
@@ -547,6 +599,7 @@ test.describe('rebook-registration — skarp conformance (TASK-368.4)', () => {
       expect(svar.nyAnmalanSkapad).toBe(true);
       expect(svar.flyttadeRader).toBe(1);
       expect(svar.flyttadSumma).toBe(2000);
+      expect(svar.summaNyAnmalan).toBe(2000);
       expect(svar.status).toBe('Avbokad/Ombokad');
       if (svar.nyttPris === null) {
         expect(svar.prisskillnad).toBeNull();

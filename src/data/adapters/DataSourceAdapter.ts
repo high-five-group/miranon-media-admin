@@ -325,9 +325,14 @@ export interface DataSourceAdapter {
    * "Avbokad/Ombokad" med en datumstämplad Ombokad-rad i Notering, räknar om
    * basens spegel på BÅDA anmälningarna och loggar handlingen.
    *
-   * Endast en AKTIV anmälan kan bokas om, och aldrig till det event den redan
-   * sitter på; båda avvisas med 409. Ett omanrop är ofarligt — servern
-   * upptäcker vad som redan är gjort och svarar `aterupptaget: true`.
+   * Endast en AKTIV anmälan kan bokas om, aldrig till det event den redan
+   * sitter på, och aldrig till ett event personen redan har en anmälan på
+   * (`redan_anmald_pa_malet`) — pengar slås aldrig ihop mellan två anmälningar
+   * automatiskt (ADR-130). Alla tre avvisas med 409.
+   *
+   * Ett omanrop av en REDAN UTFÖRD ombokning är däremot ofarligt: servern
+   * känner igen den på gamla anmälans status plus dess Ombokad-rad och svarar
+   * `aterupptaget: true` utan att skriva något.
    */
   bokaOmAnmalan(input: RebookRegistrationInput): Promise<RebookRegistrationResult>;
 

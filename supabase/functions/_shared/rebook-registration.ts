@@ -33,24 +33,37 @@
  * med den. Ett tillstånd som en människa får skriva över är inget facit.
  *
  * ═══════════════════════════════════════════════════════════════════════════
- * VARFÖR ÅTERUPPTAGNING FINNS (och varför den INTE är samma sak som ett 409)
+ * ADOPTION ÄR BEGRÄNSAD TILL OMKÖRNINGSFALLET (Marcus beslut 2026-09-03)
  * ═══════════════════════════════════════════════════════════════════════════
- * Ordningen (kortets AC #4) är: ny anmälan → flytt i Postgres → statusbyte →
- * spegel → logg. Den ordningen är vald så att allt som kan gå fel gör det
- * MEDAN gamla anmälan fortfarande är aktiv — då är läget läsbart och Lotta kan
- * göra om. Följden är att ett halvfärdigt läge kan se ut på två sätt:
+ * En TIDIGARE version av denna modul lät ombokningen ADOPTERA vilken
+ * befintlig mål-anmälan som helst: fanns personen redan på mål-eventet
+ * flyttades pengarna dit i stället för att operationen fällde. Det gjorde hela
+ * sekvensen omkörbar även efter ett avbrott mitt i — men det innebar också att
+ * TVÅ anmälningars ekonomi kunde slås ihop tyst, på en knapptryckning, utan
+ * att någon beslutat det. Granskningen av `PR #2247` lyfte det, och Marcus
+ * avgjorde: **ingen tyst sammanslagning.**
  *
- *   1. Gamla är AKTIV men mål-anmälan finns redan → första försöket kom förbi
- *      skapandet men inte hela vägen. Ett andra anrop ska då ADOPTERA den
- *      befintliga mål-anmälan och köra klart resten (som var för sig är
- *      idempotent: flytten matchar noll rader andra gången, spegeln räknas om
- *      från grunden). Det beslutas inte här — `lage: 'utfor'` täcker båda —
- *      men det är skälet till att ett dubblett-svar från skapandet inte får
- *      vara ett hårt fel i EF:en.
- *   2. Gamla är AVBOKAD och mål-anmälan finns → hela operationen är redan
- *      gjord. `lage: 'aterupptagning'` betyder: skriv INTE status igen, logga
- *      INTE igen, men räkna om spegeln och svara med samma fakta som första
- *      gången. Ingen dubbel anmälan, ingen dubbel flytt, ingen dubbel loggrad.
+ * Adoption sker därför ENDAST när anropet bevisligen är SAMMA REQUEST
+ * UPPREPAD — vilket kräver TVÅ oberoende fakta samtidigt:
+ *
+ *   (a) gamla anmälan är redan `Avbokad/Ombokad`, och
+ *   (b) dess Notering bär en Ombokad-rad som pekar på PRECIS DETTA målevent
+ *       (`barOmbokningsradMot`).
+ *
+ * Håller båda är ombokningen redan utförd, och `lage: 'aterupptagning'`
+ * betyder: skriv INTE status igen, logga INTE igen, men räkna om spegeln och
+ * svara med samma fakta som första gången. Ingen dubbel anmälan, ingen dubbel
+ * flytt, ingen dubbel loggrad — AC #4:s idempotens är bevarad.
+ *
+ * I ALLA andra lägen där personen redan har en anmälan på mål-eventet — den
+ * må vara aktiv, avbokad eller inställd — avvisas ombokningen med
+ * `redan_anmald_pa_malet` (409). Det gäller även det HALVFÄRDIGA läget där ett
+ * tidigare försök hann skapa raden men inte skriva statusen: läget är
+ * strukturellt oskiljbart från "personen var redan anmäld dit" (den nya raden
+ * bär Källa Manuell, status Obekräftad och tom Notering i båda fallen), och
+ * mellan de två tolkningarna väljer vi den som aldrig slår ihop någons pengar.
+ * Kostnaden — ett smalt fönster som kräver handpåläggning — står utskriven i
+ * ADR-130 § Konsekvenser i stället för att döljas.
  *
  * Är gamla AVBOKAD och mål-anmälan INTE finns är det ingen ombokning som
  * påbörjats — det är en vanlig avbokning som någon försöker boka om. Den
@@ -62,7 +75,11 @@ import { summeraKronor } from './betalningsbelopp.ts';
 import { beslutaCancelOvergang, STATUS_AVBOKAD } from './cancel-registration.ts';
 
 /** Maskinläsbar identitet på avvisningen (EF:ens `code`-fält). */
-export type OmbokningsAvvisningskod = 'samma_event' | 'redan_avbokad' | 'status_ej_tillaten';
+export type OmbokningsAvvisningskod =
+  | 'samma_event'
+  | 'redan_anmald_pa_malet'
+  | 'redan_avbokad'
+  | 'status_ej_tillaten';
 
 export type OmbokningsUnderlag = {
   /** Gamla anmälans nuvarande Status i basen. `null` = fältet är tomt. */
@@ -73,6 +90,13 @@ export type OmbokningsUnderlag = {
   nyttEventId: string;
   /** Finns redan en anmälan för samma person på mål-eventet? */
   malAnmalanFinns: boolean;
+  /**
+   * Bär gamla anmälans Notering en Ombokad-rad mot PRECIS detta målevent?
+   * Beräknas av anroparen med `barOmbokningsradMot`. Tillsammans med en
+   * `Avbokad/Ombokad`-status är detta det ENDA som gör en befintlig
+   * mål-anmälan adopterbar (se filhuvudets § ADOPTION).
+   */
+  omkorningBekraftad: boolean;
 };
 
 export type OmbokningsBeslut =
@@ -108,14 +132,14 @@ export function beslutaOmbokning(underlag: OmbokningsUnderlag): OmbokningsBeslut
     };
   }
 
-  const cancelBeslut = beslutaCancelOvergang('avboka', underlag.aktuellStatus, null);
-  if (cancelBeslut.ok) {
-    return { ok: true, lage: 'utfor', statusSkaSkrivas: true, nyStatus: cancelBeslut.nyStatus };
-  }
-
-  if (underlag.aktuellStatus === STATUS_AVBOKAD) {
-    if (underlag.malAnmalanFinns) {
-      // Hela operationen är redan gjord (se filhuvudets fall 2).
+  // MÅL-ANMÄLAN PRÖVAS FÖRE STATUSAXELN, och det är avsiktligt: att personen
+  // redan har en anmälan på mål-eventet är det MEST SPECIFIKA hindret och det
+  // enda Lotta kan göra något åt utan att först förstå den gamla anmälans
+  // status. Adoptionen är den enda vägen förbi, och den kräver båda fakta
+  // (se filhuvudets § ADOPTION).
+  if (underlag.malAnmalanFinns) {
+    if (underlag.aktuellStatus === STATUS_AVBOKAD && underlag.omkorningBekraftad) {
+      // Samma request upprepad — hela operationen är redan gjord.
       return {
         ok: true,
         lage: 'aterupptagning',
@@ -123,6 +147,21 @@ export function beslutaOmbokning(underlag: OmbokningsUnderlag): OmbokningsBeslut
         nyStatus: STATUS_AVBOKAD,
       };
     }
+    return {
+      ok: false,
+      kod: 'redan_anmald_pa_malet',
+      felmeddelande:
+        'Personen är redan anmäld till det eventet. Kontrollera de två anmälningarna i basen ' +
+        'innan du bokar om — pengar flyttas aldrig automatiskt mellan två anmälningar.',
+    };
+  }
+
+  const cancelBeslut = beslutaCancelOvergang('avboka', underlag.aktuellStatus, null);
+  if (cancelBeslut.ok) {
+    return { ok: true, lage: 'utfor', statusSkaSkrivas: true, nyStatus: cancelBeslut.nyStatus };
+  }
+
+  if (underlag.aktuellStatus === STATUS_AVBOKAD) {
     return {
       ok: false,
       kod: 'redan_avbokad',
@@ -156,9 +195,59 @@ export function byggOmbokningsrad(
   nyttEventNamn: string | null,
   nyttEventDatum: string | null,
 ): string {
+  return `[Ombokad ${datum} av ${aktor}] ${byggOmbokningsmal(nyttEventNamn, nyttEventDatum)}`;
+}
+
+/**
+ * Radens MÅL-del: `till <event>` eller `till <event>, <datum>`.
+ *
+ * Bruten ut ur `byggOmbokningsrad` så att BYGGANDET och IGENKÄNNANDET
+ * (`barOmbokningsradMot`) delar exakt en formulering. Två kopior hade kunnat
+ * glida isär tyst, och då hade en giltig omkörning tolkats som en främmande
+ * anmälan på mål-eventet — alltså ett 409 där idempotensen skulle gälla.
+ */
+export function byggOmbokningsmal(
+  nyttEventNamn: string | null,
+  nyttEventDatum: string | null,
+): string {
   const namn = nyttEventNamn?.trim() ? nyttEventNamn.trim() : 'okänt event';
   const datumDel = nyttEventDatum?.trim() ? `, ${nyttEventDatum.trim()}` : '';
-  return `[Ombokad ${datum} av ${aktor}] till ${namn}${datumDel}`;
+  return `till ${namn}${datumDel}`;
+}
+
+/** Radens INLEDNING, oberoende av aktör och dag. */
+const OMBOKNINGSRAD_INLEDNING = /^\[Ombokad \d{4}-\d{2}-\d{2} av .+\] /;
+
+/**
+ * Bär anmälans Notering en Ombokad-rad som pekar på PRECIS detta målevent?
+ *
+ * Detta är adoptionens andra villkor (se filhuvudets § ADOPTION): tillsammans
+ * med statusen `Avbokad/Ombokad` gör den ett anrop bevisbart till SAMMA
+ * REQUEST UPPREPAD, i stället för ett nytt anrop mot ett event personen råkar
+ * ha en anmälan på.
+ *
+ * Prövar rad för rad: inledningen (`[Ombokad ÅÅÅÅ-MM-DD av …] `) plus exakt
+ * den mål-del `byggOmbokningsmal` skulle producera för eventet. Aktören och
+ * dagen ingår MEDVETET inte i jämförelsen — en omkörning nästa dag, eller av
+ * någon annan, är fortfarande samma request.
+ *
+ * KÄND KANT, medvetet inte kompenserad: byter eventet namn eller startdatum
+ * mellan de två anropen matchar raden inte längre, och omkörningen avvisas som
+ * `redan_anmald_pa_malet`. Det är fel åt det säkra hållet — den avvisade
+ * omkörningen kräver ett ögonkast i basen, medan en luddigare matchning hade
+ * kunnat adoptera fel anmälan.
+ */
+export function barOmbokningsradMot(
+  notering: string | null,
+  nyttEventNamn: string | null,
+  nyttEventDatum: string | null,
+): boolean {
+  if (notering === null || notering.trim() === '') return false;
+  const mal = byggOmbokningsmal(nyttEventNamn, nyttEventDatum);
+  return notering
+    .split('\n')
+    .map((rad) => rad.trim())
+    .some((rad) => OMBOKNINGSRAD_INLEDNING.test(rad) && rad.endsWith(mal));
 }
 
 /**

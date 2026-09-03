@@ -188,13 +188,37 @@ på båda → logg. Den ordningen är vald så att allt som kan gå fel gör det
 den gamla anmälan fortfarande är aktiv — då är läget läsbart och Lotta kan göra
 om.
 
-Vad som redan är gjort avgörs av två fakta servern äger: den gamla anmälans
-STATUS, och om det redan finns en anmälan för personen på mål-eventet
-(affärs-unikheten Normaliserad e-post × EventKey, som `create-registration`
-redan bär). Varken en klient-buren `Idempotency-Key` (som repot bevisligen inte
-lagrar server-side) eller Notering-radens text (som Lotta får redigera i basen)
-duger som facit. Ett andra identiskt anrop skapar därför ingen anmälan, flyttar
-noll rader, skriver ingen status och loggar inget.
+Vad som redan är gjort avgörs av fakta servern äger: den gamla anmälans STATUS,
+om det redan finns en anmälan för personen på mål-eventet (affärs-unikheten
+Normaliserad e-post × EventKey, som `create-registration` redan bär), och om
+den gamla anmälans Notering bär en Ombokad-rad mot PRECIS detta målevent. En
+klient-buren `Idempotency-Key` duger inte som facit (repot lagrar den
+bevisligen inte server-side). Ett andra identiskt anrop skapar därför ingen
+anmälan, flyttar noll rader, skriver ingen status och loggar inget.
+
+### 7. Adoption sker ENDAST när anropet är samma request upprepad
+
+Finns det redan en anmälan för personen på mål-eventet får ombokningen använda
+den — **adoptera** den — bara när BÅDA dessa fakta håller samtidigt:
+
+1. den gamla anmälan är redan `Avbokad/Ombokad`, och
+2. dess Notering bär en Ombokad-rad som pekar på detta målevent.
+
+I alla andra lägen avvisas ombokningen med `redan_anmald_pa_malet` (409) — det
+gäller oavsett om den befintliga anmälan på målet är aktiv, avbokad eller
+inställd. **Två anmälningars ekonomi slås aldrig ihop automatiskt.**
+
+Detta är en INSKRÄNKNING av beslutets första form, gjord efter granskningen av
+`PR #2247` (Marcus, 2026-09-03). Den första formen adopterade vilken befintlig
+mål-anmälan som helst, vilket gjorde sekvensen omkörbar även efter ett avbrott
+mitt i — men innebar också att pengar kunde flyttas mellan två genuina
+anmälningar på en knapptryckning, utan att någon beslutat det. Mellan
+"alltid omkörbar" och "slår aldrig ihop någons pengar" väljer vi det senare;
+priset står i § Konsekvenser.
+
+Notering-raden är alltså INTE en idempotensnyckel i egen rätt — den är ett av
+två villkor, och det svagare av dem (Lotta får redigera fältet i basen). Ett
+anrop där bara raden finns, eller bara statusen, adopterar ingenting.
 
 ---
 
@@ -277,11 +301,17 @@ krav på att spåret faktiskt läses vid en granskning** — vilket är exakt va
 5 kap. 5 § tillåter, och exakt varför beslut 3 bygger två spår i stället för
 ett.
 
-**En ombokning kan ADOPTERA en befintlig anmälan.** Fanns personen redan på
-mål-eventet — antingen genuint, eller för att ett tidigare ombokningsförsök
-avbröts efter att raden skapats — flyttas pengarna dit i stället för att
-operationen fäller. Det är vad som gör hela sekvensen omkörbar, och det syns i
-svaret (`nyAnmalanSkapad: false`) i stället för att döljas.
+**Priset för beslut 7: ett smalt läge kräver handpåläggning.** Avbryts en
+ombokning EFTER att den nya anmälan skapats men FÖRE statusbytet skrivits, kan
+den inte köras om — nästa försök avvisas med `redan_anmald_pa_malet`. Läget är
+strukturellt oskiljbart från "personen var redan anmäld dit": den nyskapade
+raden bär `Källa: Manuell`, status `Obekräftad` och tom Notering, precis som en
+manuellt skapad. Fönstret är smalt (mellan två på varandra följande
+skrivningar) och utfallet är läsbart — den gamla anmälan står kvar aktiv med
+pengarna på sig, och båda raderna syns i basen — men det kräver att någon
+tittar. Alternativet vore att gissa, och en gissning som gissar fel flyttar
+någons pengar. **Felmeddelandet säger därför rakt ut vad som ska kontrolleras**
+i stället för att bara neka.
 
 **Vad som INTE löses här.** Ingen spårbar LÄNK mellan gammal och ny anmälan
 skapas i Airtable-basen (PRD `TASK-368` § Utanför omfattningen) — kopplingen
@@ -318,4 +348,12 @@ flyttades till `_shared/create-registration.ts`, oförändrad i sak).
 
 ## Updates
 
-Inga ännu — detta är beslutets första version.
+### 2026-09-03 — Adoptionen inskränkt till omkörningsfallet (granskningen av `PR #2247`)
+
+Beslutets första form lät ombokningen adoptera vilken befintlig mål-anmälan som
+helst. Granskningen av `PR #2247` bedömde det som hög risk, och Marcus avgjorde
+samma dag: **ingen tyst sammanslagning av två anmälningars ekonomi.** Beslut 7
+ovan är resultatet, och § Konsekvenser bär priset (ett smalt läge som kräver
+handpåläggning i stället för en omkörning). Ingen annan del av ADR:n ändrades —
+flytten, kvittots orörlighet, de två spåren och prisskillnadens hantering står
+som de skrevs.

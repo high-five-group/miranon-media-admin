@@ -31,6 +31,22 @@ import { queryKeys } from '@/queries/keys';
  * via React Querys prefix-matchning. `betalningar.all`: pengarna sitter på en
  * annan anmälan nu, så inkorgen och betalningsvyerna är inaktuella.
  * `activityLog.all`: servern skrev en ny rad.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * TILL TASK-368.5: VILKET TAL SOM VISAS FÖR "X KR FLYTTADES"
+ * ═══════════════════════════════════════════════════════════════════════════
+ * Använd `summaNyAnmalan` — beloppet spegeln faktiskt skrev till den nya
+ * anmälan — inte `flyttadSumma`/`flyttadeRader`. De två senare är PER ANROP
+ * och är `0` vid en återupptagning (ett omanrop av samma ombokning), trots att
+ * pengarna sitter rätt sedan förra gången; en text byggd på dem skulle då säga
+ * "0 kr flyttades" om något som gick igenom. Räknaren hör hemma i kvittensen
+ * på HANDLINGEN, aldrig i en text som beskriver ett tillstånd. Se
+ * `RebookRegistration.schema.ts`s docblock.
+ *
+ * Servern avvisar dessutom med 409 `redan_anmald_pa_malet` när personen redan
+ * har en anmälan på mål-eventet utan att anropet är en bevisbar omkörning —
+ * UI:t ska visa serverns felmeddelande, inte tolka om det (ADR-130
+ * § Konsekvenser: två anmälningars ekonomi slås aldrig ihop automatiskt).
  */
 
 type RebookMutationVariables = RebookRegistrationInput & {
