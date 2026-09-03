@@ -702,6 +702,51 @@ export interface DataSourceAdapter {
   previewKvittoForInbetalning(inbetalningId: string): Promise<DocumentPreview>;
 
   /**
+   * [TASK-370.4, PRD TASK-370 § Implementationsbeslut, S116 Del 2 beslut 1]
+   * "Förhandsgranska alla N" — ETT kombinerat dokument (försättsblad + en
+   * sida per kvitto) för HELA den väntande kön, i visningsordning.
+   *
+   * ═══════════════════════════════════════════════════════════════════════
+   * EGEN METOD, INTE EN LISTVARIANT AV `previewKvittoForInbetalning`
+   * ═══════════════════════════════════════════════════════════════════════
+   * Samma resonemang som skiljer `previewKvittoForInbetalning` från
+   * `previewReceipt` ovan: en anropare ska kunna läsa av KONTRAKTET av
+   * METODNAMNET, inte av hur många element en array råkar innehålla. Denna
+   * metod svarar dessutom på en tredje, EGEN fråga ("hur ser HELA kön ut
+   * som ETT dokument") med ett ANNAT felläge (allt-eller-inget — ett trasigt
+   * kvitto bland N fäller HELA anropet) och ett tak (`MAX_KOMBINERADE_
+   * KVITTON` i EF-lagrets `_shared/kvitto-kombination.ts`) som den enskilda
+   * varianten aldrig kan träffa.
+   *
+   * SAMMA EF (`preview-receipt`), TREDJE, additiv body: `{ inbetalningIds }`
+   * (en array, i stället för `inbetalningId`/`eventId`) — se `preview-
+   * receipt/index.ts`s egen gren-dokumentation för hela kedjan
+   * (validering → allt-eller-inget-hämtning → komposition → ETT DocRaptor-
+   * anrop → egen lagringsnyckel `utkast/kombinerat/<requestId>.pdf`).
+   *
+   * SIDOEFFEKTSFRIHETEN ÄR OFÖRÄNDRAD (samma invariant som ovan): inget
+   * allokerat kvittonummer, ingen `kvitton`-rad, inget mail — bara det
+   * transienta, kombinerade Storage-utkastet.
+   *
+   * SVARSFORMEN ÄR SAMMA `DocumentPreview` — EF:en returnerar dessutom ett
+   * `requestId` (lagringsnyckelns identitet), men det fältet är INTE del av
+   * detta kontrakt: `DocumentPreviewSchema.parse(...)` stryper okända
+   * nycklar (Zods default), och ingen klientkonsument behöver det — anroparen
+   * ÄGER fönstret precis som för `previewKvittoForInbetalning`
+   * (`window.open('', '_blank')` SYNKRONT i klickets tick, `location.href`
+   * satt när svaret kommer).
+   *
+   * TAKÖVERSKRIDANDE OCH ALLT-ELLER-INGET SVARAR MED ETT VANLIGT KASTAT FEL
+   * (`EdgeFunctionError`, samma väg som alla andra `postEdgeFunction`-anrop)
+   * — anroparen (`BetalningsInkorg.tsx`s `forhandsgranskaAlla`) tolkar
+   * felmeddelandet för att visa ett begripligt tak-meddelande i stället för
+   * EF:ens råa valideringstext; se den funktionens docblock för varför
+   * TOLKNINGEN sker KLIENT-sidigt (läser felet, i stället för en egen
+   * klientkopia av taket som kan glida ur synk med EF:ens).
+   */
+  previewKvittonForInbetalningar(inbetalningIds: string[]): Promise<DocumentPreview>;
+
+  /**
    * Hämta en cursor-paginerad sida av Aktivitetsloggen (TASK-201.5, PRD
    * TASK-201). Läsning via get-activity-log: DIREKT ur Postgres-tabellen
    * `activity_log` (ADR-110) — ingen Airtable-interaktion, till skillnad

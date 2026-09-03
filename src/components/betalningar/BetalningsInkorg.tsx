@@ -23,7 +23,7 @@ import { StatusBadge } from '@/components/registrations/StatusBadge';
 import { useOppnaBetalningar } from '@/data/betalningar/useBetalningar';
 import { useJobbstatus, useRealtidsfel } from '@/data/betalningar/useJobbstatus';
 import { useKoaKvitton, useRaderaInbetalning } from '@/data/mutations/inbetalningar';
-import { useForhandsgranskaKvitto } from '@/data/mutations/kvitton';
+import { useForhandsgranskaAllaKvitton, useForhandsgranskaKvitto } from '@/data/mutations/kvitton';
 import { useDataSource } from '@/data/useDataSource';
 import type { Event } from '@/domain/models/Event';
 import type { Jobbstatus } from '@/domain/schemas';
@@ -306,6 +306,33 @@ const BETALNINGS_ENHET = { ental: 'betalning', flertal: 'betalningar' };
 const ALLA_EVENT = 'Alla event';
 
 /**
+ * [TASK-370.4] SENTINEL-nyckel för "Förhandsgranska alla"-knappens
+ * laddläge/spärr i `forhandsgranskaPagar` — SAMMA `Set<string>` som
+ * radernas `inbetalningId`, inte ett eget state. Kollisionsfritt PER
+ * KONSTRUKTION: varje riktig `inbetalningId` är ett UUID
+ * (`[0-9a-f]{8}-...`, se `preview-receipt/index.ts`s `UUID_RE`), och denna
+ * sträng är strukturellt aldrig ett giltigt UUID. Att dela Setet i stället
+ * för att lägga till ett andra boolean-state innebär att "alla"-knappen
+ * automatiskt får SAMMA oberoende-semantik (S116 beslut 5) som raderna
+ * redan har, utan ny kod: `forhandsgranskaKvitto`s per-nyckel-vakt och
+ * `forhandsgranskaAlla`s nedan läser och skriver samma struktur, aldrig
+ * varandras nycklar.
+ */
+const FORHANDSGRANSKA_ALLA_NYCKEL = '__alla__';
+
+/**
+ * [TASK-370.4] Fångar TALET ur EF:ens (`_shared/kvitto-kombination.ts`s
+ * `valideraInbetalningIdLista`) engelska tak-avvisning, "inbetalningIds may
+ * contain at most 30 entries (got 35)" — LÄST UR FELET, inte en egen
+ * klientkonstant för `MAX_KOMBINERADE_KVITTON`. Uppdragets egen motivering
+ * (S116): "en klientkopia som kan glida är sämre än att läsa felet från
+ * EF:en". Träffar den INTE (annat fel, eller EF:ens text ändras) visas
+ * EF:ens råa meddelande i stället — se `forhandsgranskaAlla` nedan — aldrig
+ * en tyst, felaktig gissning på talet.
+ */
+const TAK_FELMATCH = /may contain at most (\d+) entries/;
+
+/**
  * Radens period, med `grupperaPerEvent`s EGEN regel — inte en andra tolkning.
  *
  * Gränsen går vid eventets startdatum, och ett event UTAN startdatum räknas
@@ -352,10 +379,23 @@ export function BetalningsInkorg() {
   const [forhandsgranskaPagar, setForhandsgranskaPagar] = useState<ReadonlySet<string>>(
     () => new Set(),
   );
-  /** Senaste förhandsgransknings-felet — namngivet, så flera samtidiga fel
-   *  kan visas EN gång (senaste) utan att blanda ihop VEMs fel det är. */
+  /**
+   * Senaste förhandsgransknings-felet — DELAD av rad-flödet OCH
+   * "alla"-flödet (TASK-370.4), av samma "senaste vinner, ingen kö"-skäl
+   * `forhandsgranskaKvitto`s docblock redan ger: bara ETT fel behöver synas
+   * åt gången, och ett NYTT försök (rad ELLER alla) gör ett gammalt
+   * inaktuellt oavsett vilket flöde som orsakade det.
+   *
+   * `namn: string | null` — `null` för "alla"-flödet: EF:ens allt-eller-
+   * inget-fel NAMNGER redan personen INUTI `message` (`preview-receipt/
+   * index.ts`s `vem`-variabel, "NAMN (kvitto I av N)"), så ett andra,
+   * klientbyggt "Kvittot till X …"-prefix hade sagt namnet två gånger eller
+   * — värre — sagt fel namn om EF:en inte kunde slå upp det (fallback-grenen
+   * "kvitto I av N (inbetalning ID)"). Se render-stället nedan för de två
+   * textformerna.
+   */
   const [forhandsgranskaFel, setForhandsgranskaFel] = useState<{
-    namn: string;
+    namn: string | null;
     message: string;
   } | null>(null);
   /* FOKUS-MÅLET ÄR NU BLOCKET SJÄLVT, inte dess rubrik (Marcus rev rubriken
@@ -474,6 +514,13 @@ export function BetalningsInkorg() {
   const koa = useKoaKvitton();
   /** [TASK-353] Renderar ett VÄNTANDE kvitto som utkast — skickar ingenting. */
   const forhandsgranska = useForhandsgranskaKvitto();
+  /** [TASK-370.4] "Förhandsgranska alla" — EGEN mutation, se `kvitton.ts`s
+   *  `useForhandsgranskaAllaKvitton`-docblock för varför den inte delar
+   *  instans med `forhandsgranska` ovan. Namngiven MED "Mutation"-suffix,
+   *  till skillnad från `forhandsgranska`, eftersom `forhandsgranskaAlla`
+   *  (utan suffix) är HANDLARFUNKTIONEN nedan — samma par-namngivning som
+   *  `forhandsgranska`/`forhandsgranskaKvitto` redan etablerar. */
+  const forhandsgranskaAllaMutation = useForhandsgranskaAllaKvitton();
 
   const rader = useMemo(
     () => (oppna?.betalningar ?? []).map((b) => harledRad(b, idag)),
@@ -973,6 +1020,72 @@ export function BetalningsInkorg() {
       });
   }
 
+  /**
+   * [TASK-370.4, PRD TASK-370 § Implementationsbeslut, S116 Del 2 beslut 1]
+   * "Förhandsgranska alla N" — SAMMA fönster-först-mönster och SAMMA
+   * per-nyckel-vakt/självläkningsfria-fel-disciplin som `forhandsgranskaKvitto`
+   * ovan (läs DEN funktionens docblock för hela TanStack-bakgrunden; den
+   * upprepas inte här). Denna funktion skiljer sig på TVÅ punkter, båda
+   * ärvda ur S116:s grillade beslut:
+   *
+   *   1. NYCKELN är `FORHANDSGRANSKA_ALLA_NYCKEL`, inte ett `inbetalningId`
+   *      — se konstantens eget docblock för kollisionsfriheten. "Alla" och
+   *      VARJE rad är OBEROENDE (beslut 5): ett radförsök spärrar aldrig
+   *      "alla" och tvärtom, eftersom de läser och skriver OLIKA nycklar i
+   *      SAMMA Set.
+   *   2. FELTOLKNINGEN: EF:en (`_shared/kvitto-kombination.ts`s
+   *      `valideraInbetalningIdLista`) avvisar en kö längre än
+   *      `MAX_KOMBINERADE_KVITTON` (30) med texten "inbetalningIds may
+   *      contain at most N entries (got M)". Denna funktion KÄNNER IGEN den
+   *      texten och visar ett begripligt, svenskt meddelande i stället för
+   *      att lägga fram EF:ens engelska valideringssträng för Lotta — se
+   *      `TAK_FELMATCH` nedan för VARFÖR talet LÄSES UR FELET i stället för
+   *      att dupliceras som en egen klientkonstant (S116-uppdragets egen
+   *      ordalydelse: "en klientkopia som kan glida är sämre än att läsa
+   *      felet från EF:en"). Ett underlagsfel (allt-eller-inget, EF:ens
+   *      `vem`-variabel) namnger redan personen INUTI meddelandet och
+   *      passerar HÄR OFÖRÄNDRAT — se `forhandsgranskaFel`s eget docblock
+   *      för varför `namn` är `null` i detta flödet.
+   */
+  function forhandsgranskaAlla(inbetalningIds: readonly string[]) {
+    if (forhandsgranskaPagar.has(FORHANDSGRANSKA_ALLA_NYCKEL)) return;
+
+    setForhandsgranskaFel(null);
+
+    const fonster = window.open('', '_blank');
+    skrivLaddningssida(fonster, {
+      titel: 'Skapar förhandsgranskningen …',
+      text: `Ett ögonblick, ${inbetalningIds.length} kvitton renderas och visas här om några sekunder.`,
+    });
+
+    setForhandsgranskaPagar((tidigare) => new Set(tidigare).add(FORHANDSGRANSKA_ALLA_NYCKEL));
+
+    void forhandsgranskaAllaMutation
+      .mutateAsync([...inbetalningIds])
+      .then(
+        ({ url }) => {
+          if (fonster && !fonster.closed) fonster.location.href = url;
+        },
+        (fel: unknown) => {
+          if (fonster && !fonster.closed) fonster.close();
+          const ravaMeddelande = fel instanceof Error ? fel.message : 'Okänt fel';
+          const takTraff = ravaMeddelande.match(TAK_FELMATCH);
+          const message = takTraff
+            ? `Förhandsgranskningen klarar högst ${takTraff[1]} kvitton åt gången. Ta bort några från kön och försök igen.`
+            : ravaMeddelande;
+          setForhandsgranskaFel({ namn: null, message });
+        },
+      )
+      .finally(() => {
+        setForhandsgranskaPagar((tidigare) => {
+          if (!tidigare.has(FORHANDSGRANSKA_ALLA_NYCKEL)) return tidigare;
+          const nasta = new Set(tidigare);
+          nasta.delete(FORHANDSGRANSKA_ALLA_NYCKEL);
+          return nasta;
+        });
+      });
+  }
+
   const sidRam = <SidRam to="/mer" tillbakaEtikett="Tillbaka till Mer" />;
 
   if (isPending) {
@@ -1037,29 +1150,47 @@ export function BetalningsInkorg() {
     (post) => !kvittolage(post, vantande, jobb.data?.rader ?? []).vila,
   );
 
-  /* [TASK-353] FORMVALET, MÄTT MOT DEN FAKTISKA UI-STRUKTUREN OCH BOKFÖRT.
-     Marcus order: *"en knapp bredvid 'Skicka X kvitton' som heter
-     'Förhandsgranska'"*, och vid FLERA kvitton per-rad i granskningsblocket.
+  /* [TASK-353 → OMSKRIVEN TASK-370.4] FORMVALET, MÄTT MOT DEN FAKTISKA
+     UI-STRUKTUREN OCH BOKFÖRT.
 
-     VAD MÄTNINGEN VISADE: granskningsblocket (C1) renderar EN rad per
-     registrering med namn, betalsätt/status och belopp, plus en åtgärdsslot
-     till höger som redan bär "Ångra" respektive "Skicka igen". "Skicka N
-     kvitton" står ENSAM under listan (`self-start`). Det finns alltså redan
-     en per-rad-slot att hänga en tredje åtgärd i — ingen ny struktur behövs.
+     ═══════════════════════════════════════════════════════════════════════
+     DETTA STYCKE ERSÄTTER DEN TIDIGARE MOTIVERINGEN, DET ÄR INTE ETT
+     TILLÄGG TILL DEN
+     ═══════════════════════════════════════════════════════════════════════
+     TASK-353s docblock argumenterade att "en ensam 'Förhandsgranska' bredvid
+     'Skicka 8 kvitton' hade varit tvetydig (granska vilket av de åtta?)" och
+     att öppna åtta flikar på ett klick "inte är en granskning utan ett
+     översvämmat fönsterfält" — och drog slutsatsen att flera väntande kvitton
+     ENDAST fick per-rad-knappar, ALDRIG en gemensam. Den slutsatsen är
+     UPPHÄVD av S116 Del 2 beslut 1 (grillad samsyn, Marcus: *"Båda"*): PRD
+     TASK-370 löser tvetydigheten på ETT ANNAT SÄTT än att förbjuda den
+     gemensamma knappen — "Förhandsgranska alla N" öppnar INTE åtta flikar,
+     den öppnar ETT fönster med ETT dokument (försättsblad + en sida per
+     kvitto, `TASK-370.1`s EF-komposition). Frågan "granska vilket av de
+     åtta?" har därmed svaret "alla åtta, i tur och ordning, i EN PDF" — inte
+     "omöjligt att veta".
 
-     VALD FORM, och varför den inte är godtycklig:
-       • EXAKT ETT väntande kvitto → knappen står BREDVID "Skicka 1 kvitto".
-         Där är den entydig: det finns bara ett kvitto den kan avse, och
-         Lottas blick är redan på knappraden hon ska trycka på.
-       • FLERA väntande → INGEN knapp vid "Skicka N kvitton", utan en per
-         RAD. En ensam "Förhandsgranska" bredvid "Skicka 8 kvitton" hade
-         varit tvetydig (granska vilket av de åtta?), och att öppna åtta
-         flikar på ett klick är inte en granskning utan ett översvämmat
-         fönsterfält.
+     VAD MÄTNINGEN VISADE (oförändrat sedan TASK-353): granskningsblocket
+     (C1) renderar EN rad per registrering med namn, betalsätt/status och
+     belopp, plus en åtgärdsslot till höger som redan bär "Ångra" respektive
+     "Skicka igen". "Skicka N kvitton" står under listan (`self-start`). Det
+     finns alltså redan en per-rad-slot OCH en gemensam knapprad att hänga
+     nya åtgärder i — ingen ny struktur behövs för någotdera.
 
-     KNAPPEN FLYTTAR ALLTSÅ, den dupliceras inte — de två lägena är
-     ömsesidigt uteslutande (`vantande.length === 1` respektive `> 1`), så
-     samma kvitto kan aldrig ha två förhandsgransknings-knappar. */
+     VALD FORM, S116 beslut 1 ("Båda"):
+       • EXAKT ETT väntande kvitto (`enSamKo`) → TASK-353s ursprungsform,
+         BYTE FÖR BYTE OFÖRÄNDRAD: "Förhandsgranska" (utan tal) står BREDVID
+         "Skicka 1 kvitto". Ingen "alla"-knapp för ett ensamt kvitto — den
+         hade varit en synonym till den redan befintliga.
+       • TVÅ ELLER FLER väntande (`!enSamKo`) → BÅDA finns: per-RAD-knappen
+         (oförändrad, ett enskilt kvitto i taget) OCH "Förhandsgranska alla
+         N" bredvid "Skicka N kvitton" (`TASK-370.4`, hela kön som ETT
+         dokument). De två täcker olika behov ("Annas kvitto, snabbt" kontra
+         "allihop, i ordning") och är inte varandras ersättning.
+
+     KNAPPARNA ÄR OBEROENDE (S116 beslut 5) — se `forhandsgranskaPagar`s och
+     `FORHANDSGRANSKA_ALLA_NYCKEL`s docblock: ett tryck på "alla" spärrar
+     ALDRIG en radknapp och tvärtom. */
   const vantandeIds = vantande.map((v) => v.inbetalningId);
   const enSamKo = vantande.length === 1;
 
@@ -1574,10 +1705,15 @@ export function BetalningsInkorg() {
                     </span>
 
                     <span className="flex shrink-0 items-center gap-2">
-                      {/* [TASK-353] FÖRHANDSGRANSKA — bara på en rad vars kvitto
-                          ännu INTE gått i väg, och bara när kön har FLERA rader
+                      {/* [TASK-353, oförändrad plats/villkor sedan TASK-370.4]
+                          FÖRHANDSGRANSKA — bara på en rad vars kvitto ännu
+                          INTE gått i väg, och bara när kön har FLERA rader
                           (se `vantandeIds`/`enSamKo` ovan för formvalet).
                           `kanForhandsgranska` äger regeln; JSX bedömer inte.
+                          Denna knapp och "Förhandsgranska alla N" (bredvid
+                          "Skicka N kvitton" nedan) är OBEROENDE syskon, inte
+                          varandras ersättning — se FORMVALET-kommentaren för
+                          S116 beslut 1.
 
                           EGET TILLGÄNGLIGT NAMN PER RAD. Åtta knappar som alla
                           heter "Förhandsgranska" är åtta identiska namn i
@@ -1819,7 +1955,18 @@ export function BetalningsInkorg() {
               det uppmätta. En `klart`-rad reserverar därmed 88 px även på
               mobil trots att den bara BEHÖVER 40 — samma avvägning som
               `min-h-10` alltid gjort (reservera för det TALLASTE av de
-              tillstånd som delar slotten, inte bara det egna). */}
+              tillstånd som delar slotten, inte bara det egna).
+
+              [TASK-370.4, ÖPPET, INTE OMÄTT-OCH-TYST] "Skicka N kvitton" +
+              "Förhandsgranska alla N" (`!enSamKo`-fallet) är ETT NYTT
+              tvåknappspar i SAMMA slot, längre text än "Förhandsgranska"
+              ensamt — samma `min-h-22 sm:min-h-10`-golv ÅTERANVÄNDS
+              (oförändrat, ingen ny mätning gjord i denna skiva). Mobil-
+              wrap-höjden för DETTA par är därför en RIMLIG ANTAGELSE, inte
+              en bekräftad mätning som ovanstående stycke är för
+              enkvitto-paret — verifieras i `TASK-370.5`s QA-vandring
+              (Marcus facit), samma ansvarsfördelning som försättsbladets
+              utseende. */}
           {(vantande.length > 0 || (utfall !== null && ovrigaJobbrader.length === 0)) && (
             <div className="flex min-h-22 flex-col justify-center gap-2 sm:min-h-10">
               {vantande.length > 0 && (
@@ -1901,6 +2048,51 @@ export function BetalningsInkorg() {
                       }
                     >
                       Förhandsgranska
+                    </Button>
+                  )}
+
+                  {/* [TASK-370.4, S116 beslut 1] "FÖRHANDSGRANSKA ALLA N" —
+                      BREDVID "Skicka N kvitton", precis som ett-kvitto-fallets
+                      knapp ovan, men bara när kön har TVÅ ELLER FLER väntande
+                      (`!enSamKo` — se den omskrivna FORMVALET-kommentaren ovan
+                      för varför TASK-353s "aldrig en gemensam knapp"-slutsats
+                      är upphävd). SAMMA ordning-avsiktlig-motivering som
+                      knappen ovan: Skicka först, Förhandsgranska(alla) efter.
+
+                      `!enSamKo` I STÄLLET FÖR `vantande.length >= 2`: detta
+                      HELA träd-svepet ligger redan inuti `vantande.length > 0`
+                      (den yttre villkoret några rader upp), så `!enSamKo`
+                      ("inte exakt ett") är exakt "två eller fler" här — samma
+                      härledning FORMVALET-kommentaren bygger på, ingen ny
+                      regel.
+
+                      INGET `kanForhandsgranska`-villkor här, TILL SKILLNAD
+                      FRÅN raderna/ett-kvitto-fallet ovan: den härledningen
+                      svarar "kan DEN HÄR specifika raden förhandsgranskas"
+                      (kräver `medKvitto` OCH medlemskap i `vantandeIds`) — en
+                      fråga om EN rad. "Alla" har ingen sådan enskild rad att
+                      pröva; kön (`vantande`) ÄR PER DEFINITION de kvitton som
+                      väntar (PRD § Implementationsbeslut, "läser dagens
+                      session-lokala kö"), så hela listan är alltid ett giltigt
+                      anrop så länge den inte är tom — vilket den yttre
+                      `vantande.length > 0`-vakten redan garanterar.
+
+                      TAKÖVERSKRIDANDE VISAS INTE HÄR SOM ETT VILLKOR: knappen
+                      finns ändå (kön KAN spänna över fler än 30 utan att någon
+                      hindrat registreringen), och EF:ens avvisning översätts
+                      till det begripliga meddelandet av `forhandsgranskaAlla`
+                      själv (se dess docblock, `TAK_FELMATCH`) — ALDRIG en tyst
+                      delmängd (S116 beslut 6). */}
+                  {!enSamKo && (
+                    <Button
+                      intent="secondary"
+                      emphasis="outline"
+                      isLoading={forhandsgranskaPagar.has(FORHANDSGRANSKA_ALLA_NYCKEL)}
+                      loadingText="Förhandsgranskar …"
+                      aria-label={`Förhandsgranska alla ${vantande.length} kvitton`}
+                      onPress={() => forhandsgranskaAlla(vantandeIds)}
+                    >
+                      {`Förhandsgranska alla ${vantande.length}`}
                     </Button>
                   )}
                 </div>
@@ -1995,10 +2187,22 @@ export function BetalningsInkorg() {
               [REVIEW RUNDA 1] Rutan nollställs INTE av sig själv (till
               skillnad från den gamla `forhandsgranska.isError`, som
               TanStack självläkte vid nästa `pending`) — `forhandsgranskaKvitto`
-              rensar den explicit vid varje NYTT försök, se dess docblock. */}
+              rensar den explicit vid varje NYTT försök, se dess docblock.
+
+              [TASK-370.4] SAMMA RUTA, NU DELAD MED "ALLA"-FLÖDET —
+              `forhandsgranskaFel.namn` avgör TEXTFORMEN, se statens eget
+              docblock för varför `null` (alla-flödet) inte får ett eget
+              klientbyggt "Kvittot till X …"-prefix: EF:ens allt-eller-inget-
+              fel namnger redan personen INUTI `message` när felet beror på
+              ETT trasigt underlag, och taköverskridande-meddelandet
+              (`forhandsgranskaAlla`s `TAK_FELMATCH`-gren) namnger ingen
+              alls — ett påhittat prefix hade i BÅDA fallen sagt något
+              felaktigt eller överflödigt. */}
           {forhandsgranskaFel && (
             <p role="alert" className="text-(color:--mm-input-error-text) text-caption">
-              {`Kvittot till ${forhandsgranskaFel.namn} kunde inte förhandsgranskas: ${forhandsgranskaFel.message}`}
+              {forhandsgranskaFel.namn
+                ? `Kvittot till ${forhandsgranskaFel.namn} kunde inte förhandsgranskas: ${forhandsgranskaFel.message}`
+                : `Förhandsgranskningen av alla kunde inte skapas: ${forhandsgranskaFel.message}`}
             </p>
           )}
         </section>

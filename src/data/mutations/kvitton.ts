@@ -88,6 +88,31 @@ export function useForhandsgranskaKvitto() {
 }
 
 /**
+ * [TASK-370.4] "Förhandsgranska alla N" — EGEN mutation, EGEN hook. Delar
+ * INGEN instans med `useForhandsgranskaKvitto()` ovan: S116 beslut 5
+ * ("Oberoende") gäller ÄVEN mellan raderna och "alla"-knappen, inte bara
+ * mellan raderna sinsemellan — en gemensam mutation hade återinfört exakt
+ * den `#currentMutation`-ersättningsbugg `useForhandsgranskaKvitto`s
+ * docblock beskriver, den här gången mellan en RAD och "ALLA" i stället för
+ * mellan två RADER.
+ *
+ * `mutateAsync`, INTE `.mutate(ids, { onSuccess, onError })` — samma skäl
+ * som ovan, tillämpat framåt: ETT enda anropsställe i dag (`BetalningsInkorg
+ * .tsx`s `forhandsgranskaAlla`) gör bugen overksam just nu, men `mutateAsync`
+ * är den KORREKTA formen oavsett antal anropare, och att skriva den rätt nu
+ * kräver noll extra kod.
+ *
+ * INGEN INVALIDERING, av samma skäl som `useForhandsgranskaKvitto`: en
+ * förhandsgranskning — kombinerad eller ej — ändrar ingenting.
+ */
+export function useForhandsgranskaAllaKvitton() {
+  const dataSource = useDataSource();
+  return useMutation<DocumentPreview, Error, string[]>({
+    mutationFn: (inbetalningIds) => dataSource.previewKvittonForInbetalningar(inbetalningIds),
+  });
+}
+
+/**
  * "Skicka igen" - SAMMA PDF, SAMMA nummer, valfri annan adress.
  *
  * ═══════════════════════════════════════════════════════════════════════════
