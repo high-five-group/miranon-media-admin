@@ -1,0 +1,10 @@
+- status: Intresserade laddade.
+- heading "Intresserade" [level=1]
+- paragraph: 2 intresserade
+- text: Sök intresserad
+- searchbox "Sök intresserad"
+- text: Sortera efter
+- button "Senaste interaktion Sortera efter"
+- list:
+  - listitem: Anna Andersson anna@example.se 5 dagar sedan · Laddade ner guide 2 hämtningar
+  - listitem: /bo@example\.se Namnlös intresserad \d+ dagar sedan · Hämtade Meditation för nybörjare 1 hämtning/

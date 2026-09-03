@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-03 09:20'
+updated_date: '2026-09-03 09:59'
 labels:
   - ready-for-agent
 dependencies: []
@@ -21,19 +22,19 @@ ordinal: 676000
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Ytan intresserade-listan i variant-läge (?variant=a, lägena fylld via ?data=fyll och tom) är identisk med facit tasks/sessions/bilagor/s114-intresserade-konvergens/facit.json ytan intresserade-lista — härdningen ändrar inte formen (ariaSnapshot före/efter härdningen identisk, bilagd i Final Summary)
-- [ ] #2 Ett testid-ankare finns på ytans alla tre render-grenar (laddar, fel, lista) och används av grind-specen
-- [ ] #3 Träffantalet vid sökning annonseras i en artig live-region; acceptance-sviten hävdar annonseringen
-- [ ] #4 Ny promoverings-grind-spec efter anmälningssidans mall: ariaSnapshot-referenser tagna FÖRE flippen ur variant-läget i egen commit, båda vyporterna, lägena fylld och tom; grinden tvåsidigt bevisad — grön på identisk yta, RÖD på avsiktligt muterad (bevis i Final Summary)
-- [ ] #5 Fyllnadsradernas typomvandling (as unknown as Intresserad) borta ur prototypen utan att formen ändras
+- [x] #1 Ytan intresserade-listan i variant-läge (?variant=a, lägena fylld via ?data=fyll och tom) är identisk med facit tasks/sessions/bilagor/s114-intresserade-konvergens/facit.json ytan intresserade-lista — härdningen ändrar inte formen (ariaSnapshot före/efter härdningen identisk, bilagd i Final Summary)
+- [x] #2 Ett testid-ankare finns på ytans alla tre render-grenar (laddar, fel, lista) och används av grind-specen
+- [x] #3 Träffantalet vid sökning annonseras i en artig live-region; acceptance-sviten hävdar annonseringen
+- [x] #4 Ny promoverings-grind-spec efter anmälningssidans mall: ariaSnapshot-referenser tagna FÖRE flippen ur variant-läget i egen commit, båda vyporterna, lägena fylld och tom; grinden tvåsidigt bevisad — grön på identisk yta, RÖD på avsiktligt muterad (bevis i Final Summary)
+- [x] #5 Fyllnadsradernas typomvandling (as unknown as Intresserad) borta ur prototypen utan att formen ändras
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #4 Facit-granskning utförd och bokförd mot tasks/sessions/bilagor/s114-intresserade-konvergens/facit.json ytan intresserade-lista (bild facit-intresserade-lista.png) — formen i bilden slår varje prosa (ADR-102 B1)
-- [ ] #5 check-facit.sh exit 0 efter skivan — markör-invarianten (c) är global, avregistrering i samma commit som rivning (ADR-102 B3)
-- [ ] #6 ariaSnapshot-paret grönt i BÅDA vyporterna där skivan rör ytan (ADR-103 B4)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Facit-granskning utförd och bokförd mot tasks/sessions/bilagor/s114-intresserade-konvergens/facit.json ytan intresserade-lista (bild facit-intresserade-lista.png) — formen i bilden slår varje prosa (ADR-102 B1)
+- [x] #5 check-facit.sh exit 0 efter skivan — markör-invarianten (c) är global, avregistrering i samma commit som rivning (ADR-102 B3)
+- [x] #6 ariaSnapshot-paret grönt i BÅDA vyporterna där skivan rör ytan (ADR-103 B4)
 <!-- DOD:END -->

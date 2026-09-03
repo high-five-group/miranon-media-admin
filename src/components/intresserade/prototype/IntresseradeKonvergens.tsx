@@ -41,6 +41,14 @@ import { useDataSource } from '@/data/useDataSource';
 import type { Intresserad } from '@/domain/schemas';
 import { queryKeys } from '@/queries/keys';
 
+/** Formens yttersta element — samma `<domän>-yta`-konvention som
+ * `AnmalningarSida.tsx`s `YTANS_ANKARE` (rad ~86). Ett attribut, ingen ny
+ * DOM-nod eller ARIA-roll: `data-testid` syns aldrig i `ariaSnapshot`, så
+ * ankaret ändrar inte formen (TASK-374.1 AC #1/#2). Namnet följer den
+ * skarpa ytans framtida plats efter promoveringen (`374.2`s rename), inte
+ * prototypfilens eget namn — ingen kollision mätt mot `src/`/`tests/`. */
+const YTANS_ANKARE = 'intresserade-yta';
+
 /** Sorteringslägen — konvergensens (b): interaktion (serverns ordning) | namn. */
 type Sortering = 'interaktion' | 'namn';
 
@@ -171,6 +179,16 @@ function byggFyllnadsdata(): Intresserad[] {
     const erbjudande = FYLL_ERBJUDANDEN[i % FYLL_ERBJUDANDEN.length];
     const antal = (i % 6) + 1;
     const dagar = Math.floor(i * 5.2);
+    // Typriktig konstruktion (TASK-374.1 AC #5): `satisfies Intresserad`
+    // kräver varje fält `IntresseradSchema` (= `PersonSchema.extend({
+    // antalHamtningar, allaHamtningar })`) deklarerar, till skillnad från den
+    // rivna `as unknown as Intresserad` som gav bort typkontrollen helt.
+    // Fälten under är UTANFÖR `KonvergensRad`s läsmängd (namn, fornamn,
+    // efternamn, email, senasteInteraktion, dagarSedanSenaste,
+    // antalHamtningar — se komponenten ovan) och ändrar därför inte
+    // renderingen; de är leads per definition (`antalAnmalningar: 0`, se
+    // `Intresserad.schema.ts`s docblock) och bär i övrigt PersonSchemas
+    // null-golv.
     return {
       id: `fyll-${i}`,
       namn,
@@ -179,12 +197,26 @@ function byggFyllnadsdata(): Intresserad[] {
       // Alla bär e-post — speglar prod (0 av 112 intresserade saknar e-post,
       // mätt 2026-09-03); den degenererade raden utan bådadera formbedöms inte.
       email: `fyll-${i}@exempel.invalid`,
+      telefon: null,
+      ort: [],
+      manuellFlagga: null,
+      aiFlagga: null,
+      anteckningar: null,
+      antalAnmalningar: 0,
+      antalDeltaganden: 0,
+      erfarenhetsniva: null,
+      erfarenhetsbadge: null,
       senasteInteraktion: `Hämtade ${erbjudande}`,
       senasteInteraktionDatum: null,
       dagarSedanSenaste: dagar,
+      harAktivAnmalan: null,
+      ejGodkandMail: false,
+      radSkapad: null,
+      anmalningIds: [],
+      deltagandeIds: [],
       antalHamtningar: antal,
       allaHamtningar: [erbjudande],
-    } as unknown as Intresserad;
+    } satisfies Intresserad;
   });
 }
 
@@ -249,7 +281,13 @@ export function IntresseradeKonvergens() {
     return (
       <section className="flex flex-col gap-6">
         {sidRam}
-        <div role="status" aria-live="polite" aria-busy="true" className="flex flex-col gap-4 px-4">
+        <div
+          data-testid={YTANS_ANKARE}
+          role="status"
+          aria-live="polite"
+          aria-busy="true"
+          className="flex flex-col gap-4 px-4"
+        >
           <span className="sr-only">Laddar intresserade…</span>
           <div className="flex flex-col gap-1">
             <Skeleton variant="text" className="w-40 text-3xl" />
@@ -269,7 +307,7 @@ export function IntresseradeKonvergens() {
     return (
       <section className="flex flex-col gap-4">
         {sidRam}
-        <div className="px-4">
+        <div data-testid={YTANS_ANKARE} className="px-4">
           <MessageBox intent="error" title="Kunde inte hämta intresserade">
             {error instanceof Error ? error.message : 'Inget felmeddelande angavs.'}
           </MessageBox>
@@ -282,63 +320,91 @@ export function IntresseradeKonvergens() {
     <section className="flex flex-col gap-6">
       {sidRam}
 
-      <p className="sr-only" role="status" aria-live="polite">
-        Intresserade laddade.
-      </p>
+      {/* Ankaret sitter på en NY, ren behållare — sidkromet (sidRam) står
+          kvar som SYSKON utanför den, precis som `AnmalningarSida.tsx`s
+          `YTANS_ANKARE`-kommentar föreskriver: en granskare som scopar sin
+          `ariaSnapshot` hit ska mäta FORMEN, aldrig sidkromet. Behållaren är
+          en ren `<div>` (ARIA-roll "generic") — den syns aldrig i
+          `ariaSnapshot` (verifierat mot samtliga incheckade referenser under
+          `tests/visual/__aria__/`: noll "generic"-noder), och `gap-6` här
+          reproducerar exakt den rytm den ENDA tidigare flex-behållaren gav,
+          eftersom `role="status"`-raden nedan redan låg utanför flödet
+          (`sr-only` ⇒ `position: absolute`) och därför aldrig konsumerade en
+          egen gap-rad. Nästlingen ändrar alltså varken form eller layout —
+          se Final Summary för det uppmätta ariaSnapshot-beviset. */}
+      <div data-testid={YTANS_ANKARE} className="flex flex-col gap-6">
+        <p className="sr-only" role="status" aria-live="polite">
+          Intresserade laddade.
+        </p>
 
-      {fyllnad ? (
-        <div className="px-4">
-          <MessageBox intent="warning" title="Fyllnadsdata för formbedömning">
-            60 syntetiska intresserade (@exempel.invalid) visas i stället för verklig data. Växla
-            dataläget i prototyp-växlaren för verkliga rader.
-          </MessageBox>
+        {fyllnad ? (
+          <div className="px-4">
+            <MessageBox intent="warning" title="Fyllnadsdata för formbedömning">
+              60 syntetiska intresserade (@exempel.invalid) visas i stället för verklig data. Växla
+              dataläget i prototyp-växlaren för verkliga rader.
+            </MessageBox>
+          </div>
+        ) : null}
+
+        <header className="flex flex-col gap-1 px-4">
+          <h1 ref={headingRef} tabIndex={-1} className="font-semibold text-3xl">
+            Intresserade
+          </h1>
+          {/* TRÄFFANTALET SOM ARTIG LIVE-REGION (TASK-374.1 AC #3). Formen
+              är `DokumentYta.tsx`s "aria-live + aria-atomic UTAN role=status"
+              (§ SAMMANFATTNINGEN, rad ~3436): `role="status"` implicerar
+              SAMMA politeness och att sätta båda är den kända
+              dubbelannonserings-fällan. Räknaren är redan en `<p>` (ARIA-roll
+              "paragraph") — att LÅTA den rollen stå orörd och bara lägga till
+              attributen håller `ariaSnapshot` byte-identisk (aria-live/
+              aria-atomic renderas inte i Playwrights ariaSnapshot-yaml,
+              verifierat mot samtliga incheckade referenser: noll
+              `[live]`-annoteringar i `tests/visual/__aria__/`), medan
+              skärmläsare ändå annonserar ändringen — `aria-live` fungerar
+              oavsett roll (WAI-ARIA; samma tekniks precedent:
+              `SegmentMailCompose.tsx` rad ~306). Formen ändras alltså inte
+              (AC #1); annonseringen är ett rent DOM-attributtillägg. */}
+          <p className="text-small text-text-muted" aria-live="polite" aria-atomic="true">
+            {sok.trim()
+              ? `${synliga.length} träffar av ${intresserade.length} intresserade`
+              : `${intresserade.length} intresserade`}
+          </p>
+        </header>
+
+        <div className="flex flex-col gap-3 px-4 sm:flex-row sm:items-end sm:justify-between">
+          <label className="flex w-full max-w-xs flex-col gap-1">
+            <span className="text-small text-text-muted">Sök intresserad</span>
+            <input
+              type="search"
+              value={sok}
+              onChange={(e) => setSok(e.target.value)}
+              placeholder="Namn eller e-post"
+              className="rounded-lg border border-border-strong/40 bg-bg px-3 py-2 text-body focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-2"
+            />
+          </label>
+          <Select
+            label="Sortera efter"
+            selectedKey={sortering}
+            onSelectionChange={(k) => setSortering(k as Sortering)}
+            className="shrink-0 sm:w-56"
+          >
+            <SelectItem id="interaktion">Senaste interaktion</SelectItem>
+            <SelectItem id="namn">Namn A till Ö</SelectItem>
+          </Select>
         </div>
-      ) : null}
 
-      <header className="flex flex-col gap-1 px-4">
-        <h1 ref={headingRef} tabIndex={-1} className="font-semibold text-3xl">
-          Intresserade
-        </h1>
-        <p className="text-small text-text-muted">
-          {sok.trim()
-            ? `${synliga.length} träffar av ${intresserade.length} intresserade`
-            : `${intresserade.length} intresserade`}
-        </p>
-      </header>
-
-      <div className="flex flex-col gap-3 px-4 sm:flex-row sm:items-end sm:justify-between">
-        <label className="flex w-full max-w-xs flex-col gap-1">
-          <span className="text-small text-text-muted">Sök intresserad</span>
-          <input
-            type="search"
-            value={sok}
-            onChange={(e) => setSok(e.target.value)}
-            placeholder="Namn eller e-post"
-            className="rounded-lg border border-border-strong/40 bg-bg px-3 py-2 text-body focus-visible:outline-2 focus-visible:outline-focus-ring focus-visible:outline-offset-2"
-          />
-        </label>
-        <Select
-          label="Sortera efter"
-          selectedKey={sortering}
-          onSelectionChange={(k) => setSortering(k as Sortering)}
-          className="shrink-0 sm:w-56"
-        >
-          <SelectItem id="interaktion">Senaste interaktion</SelectItem>
-          <SelectItem id="namn">Namn A till Ö</SelectItem>
-        </Select>
+        {synliga.length === 0 ? (
+          <p className="px-4 text-small text-text-muted">
+            {sok.trim() ? 'Inga träffar på sökningen.' : 'Inga intresserade än.'}
+          </p>
+        ) : (
+          <ul className="flex flex-col gap-3 px-4">
+            {synliga.map((person) => (
+              <KonvergensRad key={person.id} person={person} />
+            ))}
+          </ul>
+        )}
       </div>
-
-      {synliga.length === 0 ? (
-        <p className="px-4 text-small text-text-muted">
-          {sok.trim() ? 'Inga träffar på sökningen.' : 'Inga intresserade än.'}
-        </p>
-      ) : (
-        <ul className="flex flex-col gap-3 px-4">
-          {synliga.map((person) => (
-            <KonvergensRad key={person.id} person={person} />
-          ))}
-        </ul>
-      )}
     </section>
   );
 }

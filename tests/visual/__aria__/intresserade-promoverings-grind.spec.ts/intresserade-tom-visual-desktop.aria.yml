@@ -1,0 +1,8 @@
+- status: Intresserade laddade.
+- heading "Intresserade" [level=1]
+- paragraph: 0 intresserade
+- text: Sök intresserad
+- searchbox "Sök intresserad"
+- text: Sortera efter
+- button "Senaste interaktion Sortera efter"
+- paragraph: Inga intresserade än.
