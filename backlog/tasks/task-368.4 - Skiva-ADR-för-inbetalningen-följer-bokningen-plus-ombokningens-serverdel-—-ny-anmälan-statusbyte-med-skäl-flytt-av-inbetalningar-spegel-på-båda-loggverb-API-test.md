@@ -4,9 +4,10 @@ title: >-
   Skiva: ADR för inbetalningen-följer-bokningen plus ombokningens serverdel — ny
   anmälan, statusbyte med skäl, flytt av inbetalningar, spegel på båda,
   loggverb, API-test
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-03 07:57'
+updated_date: '2026-09-03 11:43'
 labels:
   - ready-for-agent
 dependencies:
@@ -32,7 +33,13 @@ Beteende ände-till-ände: servern kan boka om en person från ett event till et
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+S115 stängning (orkestrerare): landad via PR #2247 (merge 292af681, 2026-09-03) efter två review-rundor, risk hög, Marcus hög-risk-GO. Review runda 2 bedömde AC #5 som felställd i bokstaven (prisskillnadens tre tecken bevisas hermetiskt, inte i staging, eftersom ingen EF kan sätta mål-eventets pris) men uppfyllt i sak över de två testfilerna (52 hermetiska + 9 staging-fall, räknade). Det nya 409-fallet redan_anmald_pa_malet kördes INTE lokalt av byggaren (staging-semaforen höll basen); skarpbeviset kom i kö-körningen (merge_group pr-2247, ci.yml completed success). Sidofyndet purge-sentinelns blanksteg bärs av TASK-378.
+<!-- SECTION:NOTES:END -->
