@@ -1,0 +1,17 @@
+{
+  "prototyp": "s114-segmentlistan-konvergens",
+  "last": "2026-09-03",
+  "lasning": "Det blir bra, vi stämplar denna som klar.",
+  "godkand": null,
+  "ytor": [
+    {
+      "yta": "segment-startsidan",
+      "bilder": ["facit-segment-listan.png", "facit-segment-listan-tomlage.png"],
+      "kallor": [
+        "src/components/segment/prototyp/SegmentListaKonvergens.tsx",
+        "src/routes/_authenticated/mer/segment.tsx"
+      ],
+      "not": "Låst efter tre konvergensvarv i S117 (K1 scaffold S114 Del 4 → K2 → K3). Facit är FORMEN i SegmentListaKonvergens.tsx vid stämpel-commiten: SidRam + h1 'Segment' med hårlinje (border-b) · kryssbar info-MessageBox utan titel (349-texten) · handlingsraden med skarpa vyns tre kapslar med ikoner (Nytt segment, Dela upp i grupper, Markera högerankrad) · sektionen 'Dina segment' (h2 + antalsbricka i Hem-mönstret, ingen bricka vid noll; tomläge: 'Inga sparade segment än' + text + kapseln 'Skapa ditt första segment', ingen grå låda) · sektionen 'Färdiga grupper' (h2 + bricka '14') med täckningen som lågmäld textknapp på rubrikraden (Layers-ikon, etikett 'Full täckning · N av N', aria-expanded) som fäller ut skarpa vyns gröna kvittensrad · kort i skarpa vyns anatomi (rounded-2xl, p-4, gap-3 mellan kort): namn EN rad trunkerad med title / mening två reserverade rader (line-clamp-2 min-h-[2lh]) / antal med Users-ikon i caption längst ner (min-h-6) — fast höjd 132 px (DOM-mätt 1440 och 430), mot skarpa vyns 168; Marcus valde kompakt framför facithöjd (varv 2). Datat är STATISK formdata (S114 Del 4-beslutet): de fjorton ur prod-mätningen 2026-08-31 + tre demo-segment; promoveringen kopplar listSegments/compute-segment/save-segment och ärver 349:s localStorage-minne för krysset. Knapparna saknar handlers i prototypen — skarpa vyns handlers (Nytt segment, Dela upp, Markera-läget, täckningsläget) ärvs vid promoveringen, formen ändras inte. Promovering (ADR-103): växeln i mer/segment.tsx (?variant=a, PrototypeSwitcher-monteringen) och demodatat rivs FÖRST efter att godkand satts; korthöjdslåset 168 → 132 omstämplas därmed öppet (S114 Del 3 beslut 3). Ordval: tomlägets 'urval personer' (inte facitets 'grupp personer') per ORDLISTA:n."
+    }
+  ]
+}
