@@ -7,4 +7,4 @@
 - button "Senaste interaktion Sortera efter"
 - list:
   - listitem: Anna Andersson anna@example.se 5 dagar sedan · Laddade ner guide 2 hämtningar
-  - listitem: /bo@example\.se Namnlös intresserad \d+ dagar sedan · Hämtade Meditation för nybörjare 1 hämtning/
+  - listitem: bo@example.se Namnlös intresserad 12 dagar sedan · Hämtade Meditation för nybörjare 1 hämtning

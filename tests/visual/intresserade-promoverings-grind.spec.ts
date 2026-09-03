@@ -34,7 +34,7 @@ import { expect, test } from '../support/fixturvarld/hermetic';
  * `anmalningssidan-promoverings-grind.spec.ts` bär hör LIKASÅ till FAS 2 —
  * före flippen finns inget "stale" läge att bevisa (queryn är fortfarande
  * den ENDA vägen in i formen), så den describen står MEDVETET UTANFÖR denna
- * fil (TASK-374.1s uppdrag, § Källmärkta premisser: "stale-URL-describe
+ * fil (orkestrerarens uppdrag till TASK-374.1, 2026-09-03: "stale-URL-describe
  * LÄMNAS TILL 374.2").
  *
  * VARFÖR ARIASNAPSHOT OCH INTE PIXLAR (`ADR-103` B4): deterministiskt, noll
@@ -73,31 +73,44 @@ import { expect, test } from '../support/fixturvarld/hermetic';
  * `dataMode === 'fyll'`-villkor), så `useQuery` körs `enabled: true` och
  * träffar den mockade EF:en precis som den skarpa ytan gör efter `374.2`.
  *
- * ── AC #3 — LIVE-REGIONEN LÅSES HÄR, INTE I EN NY ACCEPTANCE-FIL ──────────
+ * ── AC #3 — LIVE-REGIONEN HÄVDAS BÅDE HÄR OCH I ACCEPTANCE-KLASSEN ────────
  *
- * Kortets § Källmärkta premisser gav valet öppet: "ett nytt acceptance-test
- * riktat mot `?variant=a`... annars i grind-specens a11y-describe — välj den
- * som faktiskt går att köra hermetiskt och bokför valet." Båda vägarna GÅR
- * tekniskt (webServer:et delar samma dev-läge mellan `acceptance`- och
- * `visual`-projekten, så `import.meta.env.DEV` är sant i båda), men denna
- * fil valdes av tre skäl:
+ * [RÄTTAT I RUNDA 2 — review-utlåtande PR #2248, fynd 2] Denna sektion
+ * citerade tidigare "Kortets § Källmärkta premisser" som källa för att
+ * lägga live-region-assertionen ENBART här. Den sektionen finns inte i
+ * något kort (`git grep -n "Källmärkta premisser" origin/main --
+ * 'backlog/tasks/*.md'` gav noll träffar) — rubriken stod i
+ * ORKESTRERARENS uppdragstext till bygg-agenten (2026-09-03, S114 resume 1),
+ * inte i backloggens kort. Ett citat mot en källa som inte finns är exakt
+ * den `ADR-086`-felklass repot bekämpar, så den rättas här i stället för
+ * att lämnas för `374.2`s implementerare att leta förgäves efter.
+ *
+ * Den FAKTISKA ändringen runda 2 gjorde: AC #3s ordalydelse ("acceptance-
+ * sviten hävdar annonseringen") gjordes SANN i stället för omformulerad.
+ * `tests/acceptance/mer-intresserade-konvergens.acceptance.test.ts` (ny fil,
+ * CI-blockerande Acceptance-klassen) navigerar till samma `?variant=a` och
+ * hävdar EXAKT samma sak som blocket nedan: `aria-live="polite"` +
+ * `aria-atomic="true"` på räknaren, och att texten uppdateras vid en
+ * sökning. Att `import.meta.env.DEV` är sant där är EMPIRISKT verifierat,
+ * inte antaget — samma `webServer`-gren (`isVisualRun || isAcceptanceRun ||
+ * …` i `playwright.config.ts`) startar `npm run dev` för BÅDA projekten, och
+ * en riktad körning mot `?variant=a` under `PLAYWRIGHT_ACCEPTANCE_DEV_SERVER=1`
+ * bekräftade att ankaret och räknaren renderar där precis som i `visual`.
+ *
+ * Blocket HÄR BEHÅLLS ändå (inte bara flyttat) av två skäl:
  *
  *   1. **Precedent.** `personer-promoverings-grind.spec.ts`s FAS 1-commit
- *      lade SIN a11y-svit i grind-specen, inte i en ny acceptance-fil — noll
- *      befintlig acceptance-fil i repot pekar mot ett `?variant=`-läge
- *      (verifierat: `grep -rln "variant=a" tests/acceptance/` gav en enda
- *      TRÄFF, en KOMMENTAR i `mer-anmalningar-form.acceptance.test.ts`, inte
- *      ett navigerande test).
- *   2. **Livslängd.** Denna route-gren rivs i `374.4` tillsammans med hela
- *      variant-växeln. Ett NYTT acceptance-test (CI-blockerande klass) mot
- *      en medvetet temporär DEV-route är fel investering — grind-specen är
- *      redan den yta som ackompanjerar formen genom hela promoveringen och
- *      försvinner med den, se § VAD FILEN INTE GÖR nedan.
- *   3. **Ärlighet om täckningen.** `tests/visual/` körs inte av blockerande
- *      CI (se § ÄRLIGHET nedan) — så valet läggs öppet: assertionen nedan
- *      är ett SKARPT, körbart bevis lokalt och i `visual-baselines.yml`,
- *      men den fäller inte en PR. Den `374.2`-skrivna EFTER-halvan ärver
- *      SAMMA assertion mot den promoverade, ovillkorliga ytan.
+ *      lade SIN a11y-svit i grind-specen, inte enbart i en acceptance-fil —
+ *      grind-specen är den yta som ackompanjerar formen genom HELA
+ *      promoveringen (se § VAD FILEN INTE GÖR nedan) och förblir ett
+ *      körbart bevis lokalt och i `visual-baselines.yml` oavsett vad
+ *      acceptance-klassen gör.
+ *   2. **Redundans är avsiktlig, inte dubbelarbete.** Acceptance-testet är
+ *      den CI-BLOCKERANDE grinden (gör AC #3 sann); detta block är den
+ *      snabba, hermetiska ariaSnapshot-granne-kontrollen som redan finns i
+ *      samma fil som formen den härrör ifrån. Den `374.2`-skrivna
+ *      EFTER-halvan ärver SAMMA assertion mot den promoverade, ovillkorliga
+ *      ytan.
  *
  * ── ÄRLIGHET OM VAR GRINDEN FAKTISKT FÄLLER ──────────────────────────────
  *
@@ -109,7 +122,9 @@ import { expect, test } from '../support/fixturvarld/hermetic';
  * `tests/acceptance/mer-intresserade.acceptance.test.ts` (rörs INTE av denna
  * skiva — skrivs om i `374.2` när formen blir skarp). Denna fil är B4:s
  * bevis-par, och den enda plats där `374.2` kan bevisa att flippen inte rörde
- * formen.
+ * formen. UNDANTAGET är AC #3: den claimen har SIN egna CI-blockerande lås i
+ * `tests/acceptance/mer-intresserade-konvergens.acceptance.test.ts` (ny fil,
+ * runda 2) — se § AC #3 ovan.
  */
 
 /** Formens yttersta element — `IntresseradeKonvergens.tsx` § YTANS_ANKARE. */
@@ -239,7 +254,10 @@ test.describe('promoverings-grinden — ariaSnapshot ur variant-läget (ADR-103 
  * repot), så paret ovan kan inte bevisa att räknaren annonseras — bara att
  * TEXTEN är rätt. Detta block hävdar attributen direkt och att texten
  * faktiskt UPPDATERAS vid en sökning, vilket är den beteendebiten AC #3
- * kräver ("Träffantalet vid sökning annonseras").
+ * kräver ("Träffantalet vid sökning annonseras"). Den CI-BLOCKERANDE
+ * motsvarigheten (samma två hävdanden, samma `?variant=a`) bor i
+ * `tests/acceptance/mer-intresserade-konvergens.acceptance.test.ts` — se
+ * filens § AC #3-docblock ovan för varför båda finns.
  */
 test.describe('AC #3 — träffantalet annonseras i en artig live-region', () => {
   test('räknaren bär aria-live/aria-atomic och uppdateras vid sökning', async ({
