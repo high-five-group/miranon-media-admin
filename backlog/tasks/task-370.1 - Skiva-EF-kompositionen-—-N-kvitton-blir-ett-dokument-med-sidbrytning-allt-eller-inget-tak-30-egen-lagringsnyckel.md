@@ -3,10 +3,10 @@ id: TASK-370.1
 title: >-
   Skiva: EF-kompositionen — N kvitton blir ett dokument med sidbrytning, allt
   eller inget, tak 30, egen lagringsnyckel
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-03 08:31'
-updated_date: '2026-09-03 09:20'
+updated_date: '2026-09-03 10:11'
 labels:
   - ready-for-agent
 dependencies: []
@@ -99,3 +99,9 @@ Orkestreraren fångade detta — mekanismen bokförs här öppet.
 
 Ny commit pushad till samma gren, path-scopad (enbart tests/api/kvitto-forhandsgranskning.test.ts).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Levererad · PR #2241 (MERGED 2026-09-03T09:46:32Z, granskad head 487024a7). Review-loop: runda 1 konvergerad (3 info, risk låg), runda 2 på formatfix + notes konvergerad (4 info); backstopp-preflight grön. Minimaltest FÖRE bygget: 2 kvitton → pdfinfo 2 sidor A4 (Prince 15.1), rätt namn/belopp per sida, Carlito emb=yes, DocRaptor-latens 4356 ms; payload 49,6 % mindre med självbärande-görning en gång. Lagringsnyckel utkast/kombinerat/<requestId>.pdf (TTL 1 h, opportunistisk sweep), ADR-124 § Updates amenderad. CI-incident: Lint-jobbet rött på bc5d51b5 (formatgrinden kördes mitt i bygget, inte sist) — rättat 2bfcc7f1, rotorsak bokförd i notes. Ärvd DoD-post 3 (mallparitet) N/A här — försättsbladets mall byggs i 370.2. Orkestrerare S116.
+<!-- SECTION:FINAL_SUMMARY:END -->
