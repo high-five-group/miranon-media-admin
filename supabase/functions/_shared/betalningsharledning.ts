@@ -29,14 +29,18 @@
 //      implikationen hade en fullbetald anmälan utan ifylld
 //      `Anmälningsavgift (kr)` visat "avgift ej mottagen" — en synlig
 //      motsägelse i Lottas vy.
-//   3. ETT OKÄNT PRIS GER ETT OKÄNT FACK — UTOM NÄR SUMMAN ÄR NOLL ELLER
-//      LÄGRE. Ett fack vars gräns saknas kan i regel inte avgöras, och att
+//   3. ETT OKÄNT PRIS GER ETT OKÄNT FACK — UTOM VID `summa <= 0` MED KÄNT
+//      HELPRIS. Ett fack vars gräns saknas kan i regel inte avgöras, och att
 //      gissa "Ej mottagen" hade skrivit en osanning in i basen; `null`
-//      betyder "rör inte fältet". Vid `summa <= 0` behövs ingen gissning:
-//      en OKÄND gräns är härledbart STRIKT POSITIV (0 är ett SATT pris, se
-//      § NOLL; ett pris kan inte vara negativt), alltså gäller
-//      `summa <= 0 < gräns` utan att någon vet vad gränsen är. Undantaget
-//      uttömmer egenskapen, det bryter den inte. Se § SUMMA NOLL.
+//      betyder "rör inte fältet". Undantaget kräver att BÅDA villkoren
+//      håller — `summa <= 0` OCH `gallandePris !== null` — och det är ingen
+//      gissning: en OKÄND gräns är härledbart STRIKT POSITIV (0 är ett SATT
+//      pris, se § NOLL; ett pris kan inte vara negativt), alltså gäller
+//      `summa <= 0 < gräns` utan att någon vet vad gränsen är. Kravet på
+//      känt helpris är däremot en MEDVETEN avgränsning som sanningen INTE
+//      kräver: saknas helpriset rörs facket inte ens vid summa 0. Undantaget
+//      uttömmer egenskapen, det bryter den inte. Båda halvorna — och varför
+//      avgränsningen finns — står i § SUMMA NOLL.
 //
 // ═══════════════════════════════════════════════════════════════════════════
 // NOLL ÄR ETT SATT PRIS — SAMMA FÄLLA SOM `Saknas (kr)`-FORMELN GICK I
@@ -90,8 +94,11 @@
 // ingetdera facket, precis som förut.
 //
 // Samma linje som backfillen redan drar: en anmälan utan känt pris klassas
-// `pris-okant` och HOPPAS ÖVER, den skrivs aldrig
-// (`scripts/backfill-inbetalningar.mjs`). Under ADR-bar (en rad, ingen ny
+// som AVVIKELSE med koden `pris-okant` (`BESLUT.avvikelse`, inte
+// `BESLUT.hoppa` — `scripts/backfill-inbetalningar.mjs`, låst av D8 i
+// `scripts/test-backfill-inbetalningar.mjs`) och hamnar i `plan.avvikelser`.
+// Spegel-loopen kör bara över `plan.backfill ∪ plan.redanBackfillad`, så
+// varken avvikelserna eller de hoppade skrivs. Under ADR-bar (en rad, ingen ny
 // yta, ingen ny kolumn) — beslutet bokförs här och i `data-model.md`
 // § Kända fällor 54, inte i en egen ADR.
 
