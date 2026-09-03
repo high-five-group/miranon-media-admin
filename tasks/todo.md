@@ -60,9 +60,12 @@ Våg B-grillningen: sju beslut slutkvitterade (S114 Del 3) — publik nu/sändni
 intresserade blir ALDRIG segment (ADR-115 § Updates, domängränsen) · B2/B3-riktningarna ·
 spara-delen ur `271` indragen · konvergens-only · B3 först. Två PRD väntar STÄMPLARNA.
 Konvergensytorna scaffoldade på `feat/s114-b3-intresserade-konvergens` (opushad med avsikt,
-arbetsform iteration) med k1-snapshots i `bilagor/s114-*-konvergens/`. **NÄSTA: dev-server ur
-`s114-segment` på 5173 → Marcus itererar B3 (`/mer/intresserade?variant=a&data=fyll`) → stämpel →
-PRD/skivor → B2 → 6h/`271`-grillning.** Numrering re-verifierad vid resume 1: ADR 130 · kort 369 ·
+arbetsform iteration) med k1-snapshots i `bilagor/s114-*-konvergens/`. **Resume 1 (Del 5): B3
+itererad K2–K3 mot prod-mätning (112 intresserade, 63 namnlösa, 0 utan e-post; rader DOM-mätt 80 px)
+till STÄMPELKLAR — facit-manifest + bild landade med prototypen i `#2233` (review 2 rundor, låg risk,
+armerad). NÄSTA: Marcus stämplar `s114-intresserade-konvergens` via `!` när `#2233` mergat →
+PRD/skivor för promoveringen (ADR-103 B2, AFK) → B2 itereras parallellt (`/mer/segment?variant=a`)
+→ 6h/`271`-grillning.** Numrering re-verifierad vid resume 1: ADR 130 · kort 369 ·
 L655 (47 fragment) · T184 · session 115 aktiv parallellt. HANDOFF: sessionsdok S114 § Paushistorik
 (paus 1 + resume 1). Full narrativ: Del 1–4. **Paus 1 var:** (paus 1, 2026-08-31, AFK-mandatet
 slutfört — nästa steg Marcus granskning; landningen olandad fram till resume 1).
