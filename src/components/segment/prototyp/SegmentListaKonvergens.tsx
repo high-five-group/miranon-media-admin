@@ -23,9 +23,19 @@
  *   - kortet återfår facitets anatomi (namn / mening / antal med ikon
  *     längst ner), `rounded-2xl`, `p-4`, `gap-3` mellan kort. Kompaktionen
  *     tas ur namnets radreservation (2 → 1 rad, trunkerad med title) och
- *     antalsradens höjd (min-h-8 → min-h-6): ~130 px mot facitets 166.
- *     Korthöjden VÄXLAS i rälsen (`?kort=kompakt|facit`) så värdet
- *     omstämplas i browsern, inte i koden.
+ *     antalsradens höjd (min-h-8 → min-h-6): 132 px mot facitets 168
+ *     (DOM-mätt). K2 bar en korthöjds-växel i rälsen (`?kort=`) så värdet
+ *     kunde omstämplas i browsern.
+ *
+ * K3 (S117, 2026-09-03). Marcus varv 2: *"Jag gillar prototyp variant 1
+ * mer än 2"* — korthöjden LÅST till 132 px, växeln riven. Sektionsantalen
+ * ("3", "14") som BRICKOR i Hem-mönstret (`ForfallnaBetalningar.tsx` §
+ * "Att påminna": `rounded-md bg-bg-emphasized px-1.5 py-0.5 font-semibold
+ * tabular-nums`), på Marcus fråga och orkestrerarens rekommendation. Två
+ * justeringar mot Hem: textstorleken sätts explicit liten (Hem ärver sin
+ * caption-rubrik; vår h2 är större och brickan får inte bli en andra
+ * rubrik), och ingen bricka vid noll (Hem renderar blocket bara när
+ * antalet är > 0; tomläget säger redan att inget finns).
  *   - hårlinjen under h1 och kapselklassen med ikoner är facitets; K1:s
  *     titel på infoboxen (tillägg utan beslut) är borta.
  *   - täckningen tar "Visa täckning"-radens plats och vikt (lågmäld
@@ -36,8 +46,8 @@
  *     segment" i facitets form (text + kapsel), ingen grå låda.
  *
  * Kastbar VÄXEL-kod (throwaway-kontraktet ii): formen promoveras vid
- * Marcus stämpel (ADR-102/103/104); det som rivs efteråt är varianten,
- * korthöjds-växeln och demodatat, aldrig formen.
+ * Marcus stämpel (ADR-102/103/104); det som rivs efteråt är varianten och
+ * demodatat, aldrig formen.
  *
  * DATAT ÄR STATISK FORMDATA — öppet bokfört beslut på AFK-mandat (S114
  * Del 4): de fjortons namn/meningar/antal är avskrivna ur prod-mätningen
@@ -54,7 +64,6 @@ import { MessageBox } from '@/components/primitives/MessageBox';
 import { SidRam } from '@/components/primitives/SidRam';
 
 type DemoSegment = { namn: string; mening: string; antal: number };
-type KortHojd = 'kompakt' | 'facit';
 
 /** Kopia av VariantD:s `KAPSEL_KLASS` (rad ~991) — promoveringen delar
  * konstanten, prototypen dubblerar den hellre än importerar ur 5 000
@@ -166,32 +175,22 @@ const TACKNING_DELTAGARE = 417;
 
 /**
  * Segmentkortet i facitets anatomi (VariantD § SegmentKort): namn /
- * mening / antal med ikon längst ner. `facit` reserverar namnet två rader
- * och antalsraden 32 px exakt som skarpa vyn; `kompakt` reserverar namnet
- * EN rad (trunkerad, fullt namn i title) och antalsraden 24 px. Meningen
- * behåller sina två reserverade rader i båda — den är ytans styrka (Del 2
- * fynd 6) och får inte kapas. Fast höjd i båda lägena, aldrig
- * innehållsberoende.
+ * mening / antal med ikon längst ner. Namnet reserverar EN rad (trunkerad,
+ * fullt namn i title; facitet reserverade två), antalsraden 24 px (facitet
+ * 32). Meningen behåller sina två reserverade rader — den är ytans styrka
+ * (Del 2 fynd 6) och får inte kapas. Fast höjd, 132 px, aldrig
+ * innehållsberoende (Marcus varv 2).
  */
-function SegmentKort({ segment, hojd }: { segment: DemoSegment; hojd: KortHojd }) {
-  const facit = hojd === 'facit';
+function SegmentKort({ segment }: { segment: DemoSegment }) {
   return (
-    <li
-      className={`relative flex flex-col rounded-2xl border border-transparent bg-bg-muted p-4 hover:bg-bg-emphasized motion-safe:transition-colors contrast-more:border-border-strong ${
-        facit ? 'gap-1.5' : 'gap-1'
-      }`}
-    >
-      {facit ? (
-        <span className="line-clamp-2 min-h-[2lh] font-semibold text-body">{segment.namn}</span>
-      ) : (
-        <span className="min-h-[1lh] truncate font-semibold text-body" title={segment.namn}>
-          {segment.namn}
-        </span>
-      )}
+    <li className="relative flex flex-col gap-1 rounded-2xl border border-transparent bg-bg-muted p-4 hover:bg-bg-emphasized motion-safe:transition-colors contrast-more:border-border-strong">
+      <span className="min-h-[1lh] truncate font-semibold text-body" title={segment.namn}>
+        {segment.namn}
+      </span>
       <span className="line-clamp-2 min-h-[2lh] text-small text-text-secondary">
         {segment.mening}
       </span>
-      <div className={`flex items-center ${facit ? 'min-h-8' : 'min-h-6'}`}>
+      <div className="flex min-h-6 items-center">
         <span className="flex items-center gap-1.5 text-caption text-text-secondary">
           <Users aria-hidden="true" size={14} className="shrink-0" />
           {personform(segment.antal)}
@@ -201,21 +200,25 @@ function SegmentKort({ segment, hojd }: { segment: DemoSegment; hojd: KortHojd }
   );
 }
 
-/** Sektionsrubrik: h2 + dämpat antal. Ingen ikon — lagerikonen betyder
- * täckning på denna yta och lånas inte ut. */
+/** Sektionsrubrik: h2 + antalet som BRICKA i Hem-mönstret
+ * (`ForfallnaBetalningar.tsx` § "Att påminna"), explicit liten text så den
+ * inte ärver h2:ans storlek; ingen bricka vid noll. Ingen ikon —
+ * lagerikonen betyder täckning på denna yta och lånas inte ut. */
 function SektionsRubrik({ namn, antal }: { namn: string; antal: number }) {
   return (
-    <div className="flex items-baseline gap-2">
+    <div className="flex items-center gap-2">
       <h2 className="font-semibold text-lg">{namn}</h2>
-      <span className="text-small text-text-muted tabular-nums">{antal}</span>
+      {antal > 0 && (
+        <span className="rounded-md bg-bg-emphasized px-1.5 py-0.5 font-semibold text-small text-text tabular-nums">
+          {antal}
+        </span>
+      )}
     </div>
   );
 }
 
 export function SegmentListaKonvergens() {
   const [dataMode] = useQueryState('data');
-  const [kortMode] = useQueryState('kort');
-  const hojd: KortHojd = kortMode === 'facit' ? 'facit' : 'kompakt';
   // Kryssets minne är sessions-lokalt i prototypen — 349:s skarpa
   // localStorage-form äger persistensen och ärvs vid promoveringen.
   const [infoDold, setInfoDold] = useState(false);
@@ -279,7 +282,7 @@ export function SegmentListaKonvergens() {
           ) : (
             <ul className="flex flex-col gap-3">
               {dina.map((s) => (
-                <SegmentKort key={s.namn} segment={s} hojd={hojd} />
+                <SegmentKort key={s.namn} segment={s} />
               ))}
             </ul>
           )}
@@ -315,7 +318,7 @@ export function SegmentListaKonvergens() {
           </div>
           <ul className="flex flex-col gap-3">
             {FARDIGA_GRUPPER.map((s) => (
-              <SegmentKort key={s.namn} segment={s} hojd={hojd} />
+              <SegmentKort key={s.namn} segment={s} />
             ))}
           </ul>
         </div>
