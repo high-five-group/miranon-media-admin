@@ -2,7 +2,12 @@
   "prototyp": "s114-intresserade-konvergens",
   "last": "2026-09-03",
   "lasning": "Det blir bra, vi stämplar denna som klar, den kan promoveras till prod direkt eller?",
-  "godkand": null,
+  "godkand": {
+    "av": "marcus",
+    "datum": "2026-09-03",
+    "citat": "Det blir bra, vi stämplar denna som klar",
+    "sha": "b391dffe230be42806867364eb6515ec9ff8b651"
+  },
   "ytor": [
     {
       "yta": "intresserade-lista",
