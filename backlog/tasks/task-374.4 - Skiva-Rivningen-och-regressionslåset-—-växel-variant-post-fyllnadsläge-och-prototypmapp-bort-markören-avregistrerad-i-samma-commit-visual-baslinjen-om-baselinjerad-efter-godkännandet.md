@@ -7,7 +7,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-03 09:21'
-updated_date: '2026-09-03 12:37'
+updated_date: '2026-09-03 13:04'
 labels:
   - ready-for-agent
 dependencies:
@@ -52,15 +52,17 @@ Grep-svep (fyra mönster: IntresseradeKonvergens, PROTOTYPE-taggen, data=fyll, e
 
 Kravde en omskrivning av tva historiska docblock-kommentarer (Intresserade.tsx, route-filen) som tidigare citerade det gamla prototypnamnet och markorerna i klartext - historiken finns kvar via git log foljning, bara inte som en literal strang i koden langre.
 
-AC #2: markören IntresseradeKonvergens avregistrerad ur FACIT_PROTO_MARKORER i .facit-policy.conf i samma commit. check-facit.sh exit 0, slutraden citerad: "Facit-manifest OK: 15 manifest, 30 ytor deklarerade, 2 ogodkanda (3 registrerade prototyp-markorer verifierade kvar i src/)."
+AC #2: markören IntresseradeKonvergens avregistrerad ur FACIT_PROTO_MARKORER i .facit-policy.conf i samma commit. check-facit.sh exit 0, POST-REBAS-slutraden citerad: "Facit-manifest OK: 16 manifest, 31 ytor deklarerade, 3 ogodkända (4 registrerade prototyp-markörer verifierade kvar i src/ — global kontroll, ingen koppling manifest→markör; se .facit-policy.conf)."
 
-Bevisat tvasidigt: grind rott (exit 1) nar markoren tillfalligt aterinfordes i policyn medan strangen redan var borta ur src/ (negativ kontroll), och gront igen efter aterstallning till den riktiga, avregistrerade versionen.
+Talet "15 manifest, 30 ytor, 2 ogodkända, 3 markörer" som stod här tidigare var korrekt PRE-REBAS (mätt före origin/main rebasades in) — main hade under tiden landat S117:s nya segment-manifest plus dess egen markör "K3 - brickor, korthöjd låst" (commit 52bd6d45, #2265), vilket höjde alla fyra tal med ett vardera. Bägge talen var sanna vid sin egen tidpunkt; det som citeras ovan är det som gäller på nuvarande head-SHA.
 
-AC #3: grind-specen (16 testfall, bada vyportar) kord mot exakt samma __aria__-referenser som fore rivningen (git status bekraftar de star ororda) - 16/16 gront, det mekaniska beviset att rivningen tog vaxlar och inte formen.
+Bevisat tvasidigt (fore rebasen): grind rott (exit 1) nar markoren tillfalligt aterinfordes i policyn medan strangen redan var borta ur src/ (negativ kontroll), och gront igen efter aterstallning. Konflikten mot main loste behall K3-markoren, ta bort IntresseradeKonvergens.
+
+AC #3: grind-specen (16 testfall, bada vyportar) kord mot exakt samma __aria__-referenser som fore rivningen (git status bekraftar de star ororda) - 16/16 gront, verifierat bade fore och efter rebasen mot main.
 
 AC #4 (visual-baselines): LAMNAS OBOCKAD med avsikt - orkestreraren utfor om-baselinjeringen efter landning via CI-workflowen visual-baselines.yml pa main, aldrig lokalt och aldrig fore Marcus godkannande (nu givet i 374.3).
 
-AC #5: acceptance-klassen 461/463 (2 orelaterade, forbestaende flakes i dokument-generering-bekraftelse.acceptance.test.ts och mer-aktivitetshistorik-filter.acceptance.test.ts, ingen fil dar rord av denna diff), grind-specen 16/16, test:api 1939/1945 (6 orelaterade staging-kontention-flakes: cancel-registration, generate-event-attachment x2, get-registrations x2, send-registration-confirmation - alla mot delad staging-bas, ingen fil dar rord).
+AC #5 (matt PRE-REBAS, mot commit fore S117-inflytningen): acceptance-klassen 461/463 (2 orelaterade, forbestaende flakes i dokument-generering-bekraftelse.acceptance.test.ts och mer-aktivitetshistorik-filter.acceptance.test.ts, ingen fil dar rord av denna diff), test:api 1939/1945 (6 orelaterade staging-kontention-flakes, ingen fil dar rord). Dessa tva aggregat ar INTE omkorda mot post-rebas-headen (kostnad: 10-15 min vardera) - grind-specen och den intresserade-scopade acceptance-filen AR omkorda post-rebas (bagge gronda, se ovan/nedan), och de ar den yta denna skiva faktiskt andrar.
 
-Grindar: typecheck exit 0, biome exit 0, build exit 0 (dist-grep 0 traffar for fyllnadsstrangar), check-langa-streck.mjs exit 0 (298 filer skannade, en fil forsvann ur rakningen eftersom fyllnadsfabrikens streck-tecken foljde med rivningen).
+Grindar (post-rebas, aktuell head): typecheck exit 0, biome exit 0, build exit 0 (dist-grep 0 traffar for fyllnadsstrangar), check-langa-streck.mjs exit 0 (303 filer skannade - talet steg fran 298 pre-rebas eftersom S117s inflyttade filer ocksa bar streck-tecken).
 <!-- SECTION:FINAL_SUMMARY:END -->

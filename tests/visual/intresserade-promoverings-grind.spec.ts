@@ -241,9 +241,13 @@ test.describe('promoverings-grinden — ariaSnapshot mot den promoverade ytan (A
  * utan halvbyggd yta (TASK-374.2 AC #4). Före flippen villkorade
  * `?variant=a` vilken form routen renderade; en länk som fortfarande bär
  * den gamla queryn (bokmärke, delad URL, öppen flik) träffar nu en app där
- * ingen KOMPONENT läser parametern längre (`PrototypeSwitcher`-railen läser
- * den fortfarande internt för sin egen aktiv-knapp, men det påverkar bara
- * railens highlight, inte den scopade `ariaSnapshot`-ytan nedan).
+ * INGEN kod läser parametern längre. [UPPDATERAT I TASK-374.4] Vid FAS 2
+ * (374.2) fanns `PrototypeSwitcher`-railen kvar på routen och läste
+ * `?variant=` internt för sin egen aktiv-knapp — det påverkade bara
+ * railens highlight, aldrig den scopade `ariaSnapshot`-ytan nedan. Efter
+ * rivningen (374.4, ADR-103 B2 steg 4) är railen borta från routen helt:
+ * ingen komponent, inte ens `PrototypeSwitcher`, monteras längre här, så
+ * `?variant=` är en helt inert parameter i alla led.
  *
  * Samma referens som regressionslåset ovan bevisar det MEKANISKT, inte bara
  * "sidan kraschar inte": en stale URL måste rendera byte för byte samma
