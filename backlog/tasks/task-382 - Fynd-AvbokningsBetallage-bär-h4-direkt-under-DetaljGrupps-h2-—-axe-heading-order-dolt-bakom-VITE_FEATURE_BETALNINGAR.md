@@ -3,10 +3,10 @@ id: TASK-382
 title: >-
   Fynd: AvbokningsBetallage bär h4 direkt under DetaljGrupps h2 — axe
   heading-order, dolt bakom VITE_FEATURE_BETALNINGAR
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-03 12:43'
-updated_date: '2026-09-03 13:16'
+updated_date: '2026-09-03 13:53'
 labels:
   - ready-for-agent
 dependencies: []
@@ -31,3 +31,9 @@ Symptom (källa: 368.5-byggarens slutrapport, PR #2267, 2026-09-03; HYPOTES till
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+S115 stängning (orkestrerare): landad via PR #2272 (merge 545a6ed7, 2026-09-03), review runda 1 risk låg, 0 fynd, konvergerad. AC #2:s '(hermetiskt)' bedömdes felställt av granskaren: flaggan är byggtidsvärde och den delade acceptance-webServern kör med flaggan av, så regressionsvakten är ett route-mockat staging-e2e-test i samma mönster som persondetalj-betalningar-fellage; bevisat i båda riktningar av byggaren.
+<!-- SECTION:NOTES:END -->
