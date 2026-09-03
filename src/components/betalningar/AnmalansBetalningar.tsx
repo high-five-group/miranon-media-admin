@@ -6,7 +6,7 @@ import { visaKronor } from './belopp-inmatning';
 import { InbetalningsLista } from './InbetalningsLista';
 import { idagIso } from './idag';
 import { harledRad } from './inkorg-harledningar';
-import { RegistreraYta } from './RegistreraYta';
+import { REGISTRERA_TRIGGER_ID, RegistreraYta } from './RegistreraYta';
 
 /**
  * [TASK-346.7 AC #3] Anmälans egen betalningsyta: vad som saknas, vilka
@@ -121,7 +121,13 @@ export function AnmalansBetalningar({
           fullbetald och nu avbokas, alltså precis det läge `RegistreraYta`
           inte visas i. */}
         <div className="flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-start">
-          {rad !== null && <RegistreraYta rad={rad} />}
+          {/* [TASK-368.5] `triggerId` sätts BARA här, spegelbilden av
+              `AterbetalningsYta`s rad nedan: ombokningskvittot högst upp på
+              anmälans sida skickar Lotta hit i ett tryck när det nya eventet
+              är dyrare. Se `RegistreraYta` § `REGISTRERA_TRIGGER_ID` för
+              kontraktet och för varför inkorgens/panelens instanser lämnar
+              propen utelämnad. */}
+          {rad !== null && <RegistreraYta rad={rad} triggerId={REGISTRERA_TRIGGER_ID} />}
           {/* [TASK-368.3] `triggerId` sätts BARA här: avbokningssteget längre
               ned på anmälans sida skickar Lotta hit i ett tryck när det finns
               inbetalningar att betala tillbaka. Se `AterbetalningsYta` §

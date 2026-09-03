@@ -1,12 +1,8 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useDataSource } from '@/data/useDataSource';
-import type {
-  CancelRegistrationInput,
-  CancelRegistrationResult,
-  RegistrationDetail,
-} from '@/domain/schemas';
-import { RegistrationStatus, type RegistrationStatusValue } from '@/domain/types/Status';
+import type { CancelRegistrationInput, CancelRegistrationResult } from '@/domain/schemas';
 import { queryKeys } from '@/queries/keys';
+import { patchaAnmalansDetaljcache } from './anmalan-detaljcache';
 
 /**
  * Avbokning/återtagning-vertikalens två mutationer (TASK-368.2; PRD TASK-368
@@ -42,46 +38,17 @@ import { queryKeys } from '@/queries/keys';
  * ═══════════════════════════════════════════════════════════════════════════
  * DETALJ-CACHEN PATCHAS MED SERVERNS SVAR (TASK-368.3)
  * ═══════════════════════════════════════════════════════════════════════════
- * Invalideringen ensam räcker inte för anmälans sida. Mellan serverns svar
- * och att `get-registration` hunnit svara igen (mätt golv ~1-3 s varm mot
- * staging, `AnmalanDetail.tsx` § INSTANT) hade sidan stått kvar med den
- * GAMLA statusen — alltså med knappen "Avboka anmälan" synlig på en redan
- * avbokad anmälan, ett andra klick bort från serverns 409 "Anmälan är redan
- * avbokad". Svaret bär både `status` och `notering` just för att slippa den
- * extra läsningen (`CancelRegistration.schema.ts` § svarsformen), så
- * patchen är serverns egen utsaga, aldrig en klientgissning.
- *
- * `notering` är HELA fältet efter appendet, inte bara den nya raden — den
- * skrivs därför rakt in, aldrig konkatenerad.
- *
- * STATUS SKRIVS BARA NÄR DEN ÄR ETT KÄNT BASVÄRDE. Svarets `status` är
- * `z.string()` (serverns ord), medan `RegistrationSchema.status` är
- * `z.enum(RegistrationStatus).nullable()`. Ett okänt värde skulle alltså
- * göra cachen schema-otrogen; då hoppas patchen över helt och
- * invalideringens omhämtning får bära bytet. Det är fail-safe åt rätt håll:
- * en utebliven patch kostar sekunder, en schema-otrogen cache kostar en
- * krasch i en vy som litar på enum:en.
+ * Invalideringen ensam räcker inte för anmälans sida — svaret bär både
+ * `status` och `notering` just för att slippa den extra läsningen
+ * (`CancelRegistration.schema.ts` § svarsformen), så patchen är serverns egen
+ * utsaga, aldrig en klientgissning. Patchen BODDE i denna fil till och med
+ * `TASK-368.3` och är flyttad till `anmalan-detaljcache.ts` i `TASK-368.5`:
+ * ombokningen behöver EXAKT samma patch på den gamla anmälan, och den filens
+ * huvud bär hela resonemanget — inklusive det ANDRA, längre fönstret
+ * (persist-lagret, `ADR-072`) som 368.5 mätte upp.
  */
 
 type CancelMutationVariables = CancelRegistrationInput & { eventId: string };
-
-/** Serverns statussträng, men bara om den är ett av basens sex kända värden. */
-function kandStatus(status: string): RegistrationStatusValue | null {
-  const kanda: readonly string[] = Object.values(RegistrationStatus);
-  return kanda.includes(status) ? (status as RegistrationStatusValue) : null;
-}
-
-function patchaDetaljcachen(
-  queryClient: ReturnType<typeof useQueryClient>,
-  resultat: CancelRegistrationResult,
-): void {
-  const status = kandStatus(resultat.status);
-  if (status === null) return;
-  queryClient.setQueryData<RegistrationDetail>(
-    queryKeys.registrations.detail(resultat.registrationId),
-    (gammal) => (gammal ? { ...gammal, status, notering: resultat.notering } : gammal),
-  );
-}
 
 function invalideraEfterCancel(
   queryClient: ReturnType<typeof useQueryClient>,
@@ -98,7 +65,7 @@ function efterLyckadCancel(
   resultat: CancelRegistrationResult,
   variables: CancelMutationVariables,
 ): void {
-  patchaDetaljcachen(queryClient, resultat);
+  patchaAnmalansDetaljcache(queryClient, resultat);
   invalideraEfterCancel(queryClient, variables);
 }
 
