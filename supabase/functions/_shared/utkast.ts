@@ -54,6 +54,15 @@
 
 import { ValidationError, HttpError } from './errors.ts';
 import { BILAGOR_BUCKET_ID, isValidEventId, SIGNED_DOWNLOAD_URL_TTL_SECONDS } from './attachments.ts';
+// [TASK-370.1] Det kombinerade utkastets nyckelform + ålders-predikat bor i
+// den IMPORTFRIA kompositionsmodulen (Node-testbar, se dess filhuvud) —
+// denna fil återanvänder dem för den faktiska Storage-åtkomsten i stället
+// för att duplicera path-formeln eller TTL-konstanten.
+import {
+  arKombineratUtkastForfallet,
+  byggKombineratUtkastPath,
+  KOMBINERAT_UTKAST_MAPP,
+} from './kvitto-kombination.ts';
 
 /** De tre dokumentklasserna utkast-vägen stödjer (TASK-302 § Designbeslut). */
 export const UTKAST_TYPER = ['bilaga', 'kvitto', 'deltagarinformation'] as const;
@@ -84,8 +93,11 @@ interface SupabaseAdminLike {
       // eget svar inte rapporterar den (`_shared/storage-kopiera.ts`).
       // Fältet är valfritt i typen: `rensaUtkast` läser bara `name`, och
       // Storage returnerar `metadata: null` för mapp-poster.
+      // [TASK-370.1] `updated_at` tillkom — `stadaKombineradeUtkast` nedan
+      // behöver objektets ålder (samma fält `test-attachments-storage/
+      // index.ts`s `collectObjectEntries` redan läser för sin egen listning).
       list(path: string): Promise<{
-        data: { name: string; metadata?: { size?: number } | null }[] | null;
+        data: { name: string; metadata?: { size?: number } | null; updated_at?: string | null }[] | null;
         error: { message: string } | null;
       }>;
       remove(paths: string[]): Promise<{ error: { message: string } | null }>;
@@ -279,4 +291,91 @@ export async function rensaUtkast(supabaseAdmin: SupabaseAdminLike, eventId: str
         `error=${message}`,
     );
   }
+}
+
+/**
+ * [TASK-370.1, ADR-124 § Updates] stadaKombineradeUtkast — BEST-EFFORT
+ * sweep av `utkast/kombinerat/` (samma "logga och svälj"-disciplin som
+ * `rensaUtkast` ovan: fäller ALDRIG anroparen). Tar bort varje objekt vars
+ * `updated_at` är äldre än `KOMBINERAT_UTKAST_TTL_MS`
+ * (`arKombineratUtkastForfallet`, `_shared/kvitto-kombination.ts` — ren
+ * ålders-predikat, testad i Node utan mock).
+ *
+ * OPPORTUNISTISK, INTE TIDSSTYRD: anropas av `laggKombineratUtkast` INNAN
+ * varje ny skrivning — repot har ingen storage-TTL-cron, och en "svepet
+ * körs när något annat körs"-disciplin är redan etablerad
+ * (`npm run seed:review -- --sweep`, se ADR-124 § Updates för hela
+ * motiveringen). Prefixet `utkast/kombinerat/` delar INGEN gemensam
+ * förälder med `utkast/<eventId>/` (`rensaUtkast` städar bara den senare),
+ * så de två sweeparna kan aldrig kollidera.
+ */
+export async function stadaKombineradeUtkast(supabaseAdmin: SupabaseAdminLike, nuMs: number = Date.now()): Promise<void> {
+  try {
+    const { data: entries, error: listError } = await supabaseAdmin.storage
+      .from(BILAGOR_BUCKET_ID)
+      .list(KOMBINERAT_UTKAST_MAPP);
+    if (listError) {
+      console.error(
+        `[stadaKombineradeUtkast] list("${KOMBINERAT_UTKAST_MAPP}") misslyckades ` +
+          `(fäller inte anroparen) | error=${listError.message}`,
+      );
+      return;
+    }
+    if (!entries || entries.length === 0) return;
+
+    const forfallna = entries.filter((entry) => arKombineratUtkastForfallet(entry.updated_at ?? null, nuMs));
+    if (forfallna.length === 0) return;
+
+    const paths = forfallna.map((entry) => `${KOMBINERAT_UTKAST_MAPP}/${entry.name}`);
+    const { error: removeError } = await supabaseAdmin.storage.from(BILAGOR_BUCKET_ID).remove(paths);
+    if (removeError) {
+      console.error(
+        `[stadaKombineradeUtkast] remove(${paths.length} objekt) misslyckades ` +
+          `(fäller inte anroparen) | error=${removeError.message}`,
+      );
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`[stadaKombineradeUtkast] oväntat fel (fäller inte anroparen) | error=${message}`);
+  }
+}
+
+/**
+ * [TASK-370.1] Skriver ett KOMBINERAT förhandsgransknings-utkast (N kvitton
+ * som ETT dokument) till `utkast/kombinerat/<requestId>.pdf` och returnerar
+ * en signerad URL + dess utgångstid — SAMMA svarsform som `laggUtkast`.
+ * Kör `stadaKombineradeUtkast` FÖRST, best-effort, innan skrivningen (se
+ * dess docblock för varför sweepen sitter här och inte i en cron).
+ *
+ * Kastar `ValidationError` (400) för ogiltig `requestId`-form (ur
+ * `byggKombineratUtkastPath`), `HttpError` (502) om Storage-skrivningen
+ * eller signeringen misslyckas — samma felkontrakt som `laggUtkast`.
+ */
+export async function laggKombineratUtkast(
+  supabaseAdmin: SupabaseAdminLike,
+  params: { requestId: string; bytes: Uint8Array },
+): Promise<UtkastResultat> {
+  const path = byggKombineratUtkastPath(params.requestId);
+
+  await stadaKombineradeUtkast(supabaseAdmin);
+
+  const { error: uploadError } = await supabaseAdmin.storage
+    .from(BILAGOR_BUCKET_ID)
+    .upload(path, params.bytes, { contentType: 'application/pdf', upsert: true });
+  if (uploadError) {
+    throw new HttpError(502, `Det kombinerade utkastet kunde inte sparas: ${uploadError.message}`);
+  }
+
+  const { data: signed, error: signError } = await supabaseAdmin.storage
+    .from(BILAGOR_BUCKET_ID)
+    .createSignedUrl(path, SIGNED_DOWNLOAD_URL_TTL_SECONDS);
+  if (signError || !signed) {
+    throw new HttpError(
+      502,
+      `Kunde inte skapa en nedladdningslänk: ${signError?.message ?? 'okänt fel'}`,
+    );
+  }
+
+  const utgar = new Date(Date.now() + SIGNED_DOWNLOAD_URL_TTL_SECONDS * 1000).toISOString();
+  return { url: signed.signedUrl, utgar };
 }

@@ -342,3 +342,56 @@ klausulen gäller inte den EF:en. Divergensen mellan EF-filhuvudet och detta
 § Beslut 3-blocks löptext är öppet bokförd här (ADR-083-klassen), inte
 tyst: § Beslut 3 rättas till den tredje lydelsen när kvittoflödet (utanför
 `TASK-340`s omfattning) ärver samma promoverings-mönster.
+
+**2026-09-03 (`TASK-370.1`, PRD `TASK-370`, S116 Del 2 beslut 6): § Beslut
+2:s "en fil per event och typ"-invariant AMENDERAS för ETT nytt fall —
+det KOMBINERADE förhandsgransknings-utkastet ("Förhandsgranska alla N").**
+
+**Skälet, mätt inte antaget:** `vantande`-kön i `BetalningsInkorg.tsx` är
+SID-omfattande state, inte per event (research-passet
+[`kvitto-forhandsgranskning-flera-som-ett-dokument-2026-09-03.md`](../research/kvitto-forhandsgranskning-flera-som-ett-dokument-2026-09-03.md)
+§ 0, "Oväntade fynd") — en "Skicka N kvitton"-omgång kan alltså spänna över
+FLERA events samtidigt. Nyckelformen `utkast/<eventId>/<typ>.pdf` bygger på
+exakt EN eventId per utkast och har därför STRUKTURELLT ingen plats att
+sätta ett dokument som består av kvitton från flera olika events.
+
+**Den nya formen: `utkast/kombinerat/<requestId>.pdf`, keyad på ANROPET.**
+`requestId` är samma `crypto.randomUUID()` (`generateRequestId()`,
+`_shared/errors.ts`) `preview-receipt/index.ts` REDAN genererar per anrop
+och REDAN returnerar till klienten (`{ url, utgar, requestId }`) — ingen ny
+identifierare uppfanns. Formeln (`byggKombineratUtkastPath`) och sweepen
+(`stadaKombineradeUtkast`) bor i `_shared/utkast.ts`; den rena
+nyckel-/ålders-logiken (import-fri, Node-testad utan mock) bor i den nya
+`_shared/kvitto-kombination.ts`.
+
+**Livstid och städning — OPPORTUNISTISK sweep, INTE en cron.** Beslut 2
+ovan valde "bundet per konstruktion, ingen klocka" eftersom mängden växer
+med antalet EVENTS — det argumentet håller inte här: mängden växer i
+stället med antalet KOMBINERADE FÖRHANDSGRANSKNINGSKLICK, ett tal utan
+naturligt tak. Att bygga en NY `pg_cron`-artefakt bara för denna skiva vore
+över-engineering för en enda, smal yta (`~/.claude/CLAUDE.md` §
+Dubbelriktad över-engineering-vakt) — repot har ingen storage-TTL-cron att
+haka i. Lösningen är i stället en OPPORTUNISTISK sweep:
+`laggKombineratUtkast` kör `stadaKombineradeUtkast` (best-effort, samma
+"logga och svälj"-disciplin som `rensaUtkast`) FÖRE varje ny skrivning —
+"svepet körs när något annat körs", samma princip som `npm run seed:review
+-- --sweep` redan etablerar för granskningsfixturer. Ett objekt är
+FÖRFALLET (`arKombineratUtkastForfallet`) när det är äldre än
+`KOMBINERAT_UTKAST_TTL_MS` (1 timme — tolv gånger `SIGNED_DOWNLOAD_URL_TTL_
+SECONDS`s 300 s): efter den tiden är objektets EGEN signerade URL redan
+bevisligen oåtkomlig, och ingen klient kan någonsin fråga efter SAMMA
+`requestId` igen (varje nytt anrop genererar ett nytt). Marginalen täcker
+nätverksfördröjning/klockskillnad utan att sopa undan ett utkast någon
+fortfarande skulle kunna öppna.
+
+**Prefixet `utkast/kombinerat/` delar INGEN gemensam förälder med
+`utkast/<eventId>/`** — `rensaUtkast` (beslut 2) och `stadaKombineradeUtkast`
+(denna amendering) kan alltså aldrig kollidera eller trampa på varandras
+objekt; de är två helt separata delträd under `utkast/`.
+
+**Vad som INTE ändras:** kvittomallen, dess CSS och det skarpa sändflödet
+rörs inte av denna skiva (S116 Del 2 beslut 6). Det EXISTERANDE
+`utkast/<eventId>/<typ>.pdf`-mönstret (beslut 2) är OFÖRÄNDRAT för de två
+äldre grenarna (`eventId`/`inbetalningId`) i `preview-receipt/index.ts` —
+den nya kombinerade grenen är en TREDJE, additiv gren som returnerar tidigt
+och delar ingen kodväg med dem (`TASK-370.1`-kortets AC #1).

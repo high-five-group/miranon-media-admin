@@ -72,6 +72,12 @@
     // mall-render.ts (som är esm.sh-/Deno-bunden). INGA importer alls —
     // samma klass som plats-uppslag.ts nedan.
     "supabase/functions/_shared/hojdanpassning.ts",
+    // TASK-370.1: kvitto-kompositionen (N fyllda kvitton -> ett dokument),
+    // valideringen och lagringsnyckelns form för "Förhandsgranska alla N".
+    // Utbruten import-fri av SAMMA skäl som hojdanpassning.ts ovan
+    // (mall-render.ts:s esm.sh-import gör den otestbar i Node) — enda
+    // importen är errors.ts, redan i denna lista.
+    "supabase/functions/_shared/kvitto-kombination.ts",
     // TASK-309.30: ren Ort-till-Plats-beslutslogik, transitivt Deno-fri
     // (ingen import alls) — samma klass som airtable-filter.ts ovan.
     "supabase/functions/_shared/plats-uppslag.ts",

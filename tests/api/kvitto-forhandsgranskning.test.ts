@@ -248,12 +248,14 @@ test('EF:en gör ingen skrivning mot någon tabell — bara .select()', () => {
   expect(EF_KALLA).toContain('.select(INBETALNING_KOLUMNER)');
 });
 
-test('kvittonumret är platshållaren i BÅDA grenarna — aldrig ett allokerat nummer', () => {
+test('kvittonumret är platshållaren i ALLA TRE grenarna — aldrig ett allokerat nummer', () => {
   // Ett andra anrop ger exakt samma text; det ÄR beviset att ingen ledger
-  // rörts (EF:ens filhuvud § KVITTONUMRET).
+  // rörts (EF:ens filhuvud § KVITTONUMRET). [TASK-370.1] Talet höjdes 2 → 3
+  // när den kombinerade grenen (`inbetalningIds`) tillkom — den sätter
+  // platshållaren PER KVITTO i listan (samma invariant, en tredje anropssite).
   expect(EF_KALLA).toContain("const FORHANDSVISNING_KVITTONUMMER = 'FÖRHANDSVISNING'");
   const antalAnvandningar = EF_KALLA.split('kvittonummer: FORHANDSVISNING_KVITTONUMMER').length - 1;
-  expect(antalAnvandningar, 'båda grenarna ska sätta platshållaren').toBe(2);
+  expect(antalAnvandningar, 'alla tre grenarna ska sätta platshållaren').toBe(3);
 });
 
 test('utanKommentarer diskriminerar — och tömmer inte källan', () => {
@@ -298,7 +300,74 @@ test('förbudslistan diskriminerar — negativ kontroll', () => {
   expect(trasigKalla.includes('.insert(')).toBe(true);
 });
 
-/* ═════════════ E. A11Y-GOLVET I GRANSKNINGSBLOCKET ═════════════ */
+/* ═════════════ E. DEN KOMBINERADE GRENEN (TASK-370.1) ═════════════ */
+//
+// "Förhandsgranska alla N" — `{ inbetalningIds: string[] }`. Källkods-nivå
+// av SAMMA skäl som resten av filen: den faktiska DocRaptor-/Storage-vägen
+// bevisas i `370.3`s staging-skarpbevis, kompositionen/valideringen/
+// nyckelformen bevisas hermetiskt av `tests/api/kvitto-kombination.test.ts`
+// (importerar produktionsmodulen direkt, ingen källkods-grep behövs där).
+// Denna sektion bevisar HÄR bara det som INTE går att bevisa i den filen:
+// att EF:en faktiskt KOPPLAR IHOP delarna i rätt ORDNING.
+
+test('EF:en grenar på inbetalningIds FÖRE inbetalningId/eventId, och returnerar tidigt', () => {
+  expect(EF_KALLA).toContain('body?.inbetalningIds');
+  expect(EF_KALLA).toContain('valideraInbetalningIdLista(body.inbetalningIds)');
+  // Grenen ligger FÖRE `const inbetalningId = body?.inbetalningId;` i källan
+  // — "prövad först" är inte bara ett påstående i kommentaren.
+  const posIds = EF_KALLA.indexOf('body?.inbetalningIds !== undefined');
+  const posSingel = EF_KALLA.indexOf('const inbetalningId = body?.inbetalningId;');
+  expect(posIds).toBeGreaterThan(-1);
+  expect(posSingel).toBeGreaterThan(posIds);
+});
+
+test('EF:en komponerar med kombineraFylldaKvittoSidor och gör självbärande EN gång, INTE N gånger', () => {
+  expect(EF_KALLA).toContain('kombineraFylldaKvittoSidor(fyllda)');
+  expect(EF_KALLA).toContain("gorMallSjalvbarande('kvitto', kombineradHtml)");
+  // `fyllMall` anropas i en `.map(...)` — EN gång per kvitto — medan
+  // `gorMallSjalvbarande` anropas EXAKT en gång på hela listan, inte inuti
+  // samma `.map(...)`.
+  expect(EF_KALLA).toMatch(/kvittoDataLista\.map\(\(data\)\s*=>\s*fyllMall\('kvitto', data\)\)/);
+});
+
+test('allt eller inget: laggKombineratUtkast anropas EFTER DocRaptor-rendern, aldrig före', () => {
+  // Positionsbeviset för "inget utkast lagras om ett underlag är trasigt":
+  // loopen som kan kasta (`hamtaRiktigtUnderlag`) står FÖRE
+  // `renderaSjalvbarandeHtmlPdf`, som i sin tur står FÖRE
+  // `laggKombineratUtkast` — ett kastat fel i loopen når alltså aldrig fram
+  // till lagringsanropet (samma "kastar = ingen sidoeffekt hann ske"-logik
+  // som resten av filen bevisar för de andra två grenarna).
+  const posLoop = EF_KALLA.indexOf(
+    'let underlag: Awaited<ReturnType<typeof hamtaRiktigtUnderlag>>;',
+  );
+  const posRender = EF_KALLA.indexOf('renderaSjalvbarandeHtmlPdf(sjalvbarandeHtml');
+  const posLagg = EF_KALLA.indexOf('laggKombineratUtkast(supabaseAdmin');
+  expect(posLoop).toBeGreaterThan(-1);
+  expect(posRender).toBeGreaterThan(posLoop);
+  expect(posLagg).toBeGreaterThan(posRender);
+});
+
+test('ett trasigt underlag kastar ett fel som identifierar VILKET kvitto i listan (position + namn/id)', () => {
+  expect(EF_KALLA).toContain('hamtaVisningsnamnBastaForsok(id)');
+  expect(EF_KALLA).toMatch(/kvitto \$\{i \+ 1\} av \$\{idLista\.length\}/);
+});
+
+test('den kombinerade grenen lagras under EN NY nyckelform — inte utkast/<eventId>/…', () => {
+  expect(EF_KALLA).toContain('laggKombineratUtkast(supabaseAdmin, { requestId, bytes: pdfBytes })');
+  expect(EF_KALLA).not.toMatch(/laggKombineratUtkast\([^)]*eventId/);
+});
+
+test('diskrimineringskontroll — ordningskontrollerna ovan fäller på en OMKASTAD källa', () => {
+  const omkastad = [
+    'const inbetalningId = body?.inbetalningId;',
+    'if (body?.inbetalningIds !== undefined) {}',
+  ].join('\n');
+  const posIds = omkastad.indexOf('body?.inbetalningIds !== undefined');
+  const posSingel = omkastad.indexOf('const inbetalningId = body?.inbetalningId;');
+  expect(posSingel).toBeLessThan(posIds); // motsatt ordning mot den riktiga källan
+});
+
+/* ═════════════ F. A11Y-GOLVET I GRANSKNINGSBLOCKET ═════════════ */
 
 /**
  * Varje rad-åtgärd i granskningsblocket MÅSTE bära ett eget tillgängligt
