@@ -1,7 +1,13 @@
 - button "Nytt segment"
 - button "Dela upp i grupper"
 - button "Markera"
-- button "Visa täckning"
+- heading "Dina segment" [level=2]
+- paragraph: Inga sparade segment än
+- paragraph: Ett segment är ett urval personer du kan skicka till om och om igen. Du bygger det som en regel - och regeln fortsätter gälla när nya utbildningar tillkommer.
+- button "Skapa ditt första segment"
+- heading "Färdiga grupper" [level=2]
+- text: /\d+/
+- button "Full täckning · 8 av 8"
 - list:
   - listitem:
     - button "RIM 1"

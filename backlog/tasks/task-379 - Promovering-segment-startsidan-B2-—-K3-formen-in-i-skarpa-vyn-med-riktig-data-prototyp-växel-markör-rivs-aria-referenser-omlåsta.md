@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-03 11:12'
+updated_date: '2026-09-03 12:15'
 labels:
   - ready-for-agent
 dependencies: []
@@ -21,11 +22,11 @@ SNABBVÄG PÅ MARCUS ORDER (S117, 2026-09-03: 'Se till att denna promovering gå
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Skarpa vyn /mer/segment (variant=null) renderar facitets form med RIKTIG data: 'Dina segment' (sparade ur get-segments; facitets tomläge när basen är tom) och 'Färdiga grupper' (de fjorton), h2 + antalsbricka (ingen bricka vid noll), kort i K3-anatomin (namn en rad trunkerad med title / mening två reserverade rader / antal med Users-ikon, min-h-6; 132 px DOM-mätt), täckningen som textknapp på Färdiga grupper-raden ('Full täckning · N av N' när frisk, annars skarpa vyns etikett) som togglar TackningsPanel; skarpa handlers och markera-läget oförändrade i funktion.
+- [x] #1 Skarpa vyn /mer/segment (variant=null) renderar facitets form med RIKTIG data: 'Dina segment' (sparade ur get-segments; facitets tomläge när basen är tom) och 'Färdiga grupper' (de fjorton), h2 + antalsbricka (ingen bricka vid noll), kort i K3-anatomin (namn en rad trunkerad med title / mening två reserverade rader / antal med Users-ikon, min-h-6; 132 px DOM-mätt), täckningen som textknapp på Färdiga grupper-raden ('Full täckning · N av N' när frisk, annars skarpa vyns etikett) som togglar TackningsPanel; skarpa handlers och markera-läget oförändrade i funktion.
 - [ ] #2 Prototyp-substratet borta i SAMMA landning: SegmentListaKonvergens.tsx, ?variant=a-grenen + PrototypeSwitcher-monteringen ur mer/segment.tsx, markören 'K3 - brickor, korthöjd låst' ur .facit-policy.conf (städas i samma landning, TASK-192-lärdomen). bash scripts/check-facit.sh grön med rivnings-klausulen (manifestet stämplat).
-- [ ] #3 Aria-referenserna segment-listan-visual-desktop.aria.yml + -mobile omlåsta mot den nya formen; diffen (gammal → ny) redovisad i klartext i PR-kroppen för Marcus kvittens; övriga fem referenser (detaljvyn, mallvyn, täckningsvyn m.fl.) OFÖRÄNDRADE — grinden bevisar att de ytorna står orörda.
-- [ ] #4 Visuella baselines för segment-listan hanterade: riktad baseline-run ur CI (visual-baselines.yml dispatch) eller motsvarande; PR-kroppen redovisar vägen och run-id.
-- [ ] #5 DoD-kommandona gröna (npm run test:api, typecheck, biome check, build) + node scripts/check-langa-streck.mjs + check-facit; review-loopen konvergerad; CI grön per jobb på pushad commit.
+- [x] #3 Aria-referenserna segment-listan-visual-desktop.aria.yml + -mobile omlåsta mot den nya formen; diffen (gammal → ny) redovisad i klartext i PR-kroppen för Marcus kvittens; övriga fem referenser (detaljvyn, mallvyn, täckningsvyn m.fl.) OFÖRÄNDRADE — grinden bevisar att de ytorna står orörda.
+- [x] #4 Visuella baselines för segment-listan hanterade: riktad baseline-run ur CI (visual-baselines.yml dispatch) eller motsvarande; PR-kroppen redovisar vägen och run-id.
+- [x] #5 DoD-kommandona gröna (npm run test:api, typecheck, biome check, build) + node scripts/check-langa-streck.mjs + check-facit; review-loopen konvergerad; CI grön per jobb på pushad commit.
 <!-- AC:END -->
 
 ## Definition of Done
@@ -34,3 +35,9 @@ SNABBVÄG PÅ MARCUS ORDER (S117, 2026-09-03: 'Se till att denna promovering gå
 - [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+AC #2 (rivningen) = PR 2 efter Marcus stämpel
+<!-- SECTION:NOTES:END -->
