@@ -154,8 +154,10 @@ declare module '@tanstack/react-router' {
  * en UTSKICKS-logg, gruppen är anmälans TILLSTÅND. Divergerar de visas det som
  * det är — aldrig hopslaget.
  *
- * Avbokade/ombokade räknas bort ur SUMMERINGARNA och topp-räknarna (`arAktivAnmalan`,
- * samma basformel-disciplin som Betalningar-gruppen) — en avbokad anmälan är
+ * Avbokade/ombokade OCH inställda räknas bort ur SUMMERINGARNA och
+ * topp-räknarna (`arAktivAnmalan`, samma basformel-disciplin som
+ * Betalningar-gruppen — TASK-368.1/213.8 utökade predikatet till att även
+ * exkludera Inställt, 2026-09-03) — en avbokad eller inställd anmälan är
  * inte Lottas ARBETE. [ÄNDRAT, TASK-162.3 AC #2] Registret självt är
  * undantaget: avbokade syns numera i registrets bas (grå-märkta av
  * `HallplatsMarke`, sist i ordningen via `registerOrdning`s hink 6) —
