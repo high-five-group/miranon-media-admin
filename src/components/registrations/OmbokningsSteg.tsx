@@ -73,31 +73,47 @@ import { VantelistePaminnelse } from './VantelistePaminnelse';
  * som sådant.
  *
  * ═══════════════════════════════════════════════════════════════════════════
- * STEGET STÄNGS INTE AV `bekrafta()` — DET AVMONTERAS AV NAVIGERINGEN
+ * STEGET STÄNGS INTE AV `bekrafta()` — MEKANISMEN ÄR CACHE-DRIVEN, INTE ROUTERN
  * ═══════════════════════════════════════════════════════════════════════════
  * Till skillnad från `AvbokningsYta.bekraftaAvbokning()`, som anropar
  * `stangSteget()` i sin `onSuccess`, gör denna funktion ingenting med
  * `AvbokningsYta`s `oppen`/`vy` — den navigerar bara. Den asymmetrin är
- * medveten och MÄTT, inte förbisedd (review `#2267` runda 1 reste exakt denna
- * fråga, härledd ur koden):
+ * medveten (review `#2267` runda 1 reste frågan; runda 2 rättade den
+ * FÖRSTA förklaringen — se nedan för vad som faktiskt håller den ihop).
  *
- * En ombokning byter BÅDE `$eventId` och `$registrationId` i routen, och
- * `AnmalanDetail` med hela sitt underträd remountas då — `AvbokningsYta`s
- * state nollställs alltså av React, inte av ett anrop. Mätt 2026-09-03 med ett
- * tillfälligt mount-instrument (slumpat id på gruppens rot, avläst före och
- * efter navigeringen) i BÅDA cache-lägena: en förstagångs-ombokning
- * (`remount=true`) och en andra ombokning till en mål-anmälan vars detalj
- * redan låg färsk i cachen (`remount=true`). Instrumentet är borttaget;
- * beteendet bevakas i stället av tre acceptansfall i
- * `anmalan-ombokning.acceptance.test.ts` — steget stängt efter landning, samma
- * sak när målsidan är cachad, och att varken skältexten eller det valda
- * eventet läcker till den nya anmälan.
+ * Ett param-byte i sig remountar INTE `AnmalanDetail`: `MatchInner`s `key`
+ * härleds uteslutande ur `route.options.remountDeps ??
+ * router.options.defaultRemountDeps` (källäst i
+ * `node_modules/@tanstack/react-router/dist/esm/Match.js` 1.170.21, rad
+ * 75-95), och ingen av dem är satt (`grep -rn remountDeps src/` → noll
+ * träffar). En tidigare version av detta stycke hävdade motsatsen; det
+ * påståendet var fel och är rättat.
+ *
+ * Det som FAKTISKT håller `AvbokningsYta`s state korrekt är TVÅ mekanismer
+ * tillsammans:
+ *   1. `AnmalanDetail`s `isPending`-gren (cache-miss): vid en förstagångs-
+ *      ombokning finns mål-anmälans detalj inte i cachen, hela grenen byts
+ *      mot en skeleton, och `AvbokningsYta` avmonteras som en BIEFFEKT.
+ *   2. `key={registrationId}` på `<AvbokningsYta>` (`AnmalanDetail.tsx`,
+ *      review `#2267` runda 2): en explicit remount-garanti för det läge
+ *      (1) INTE täcker — när mål-anmälans detalj REDAN ligger varm i
+ *      cachen vid landningen, vilket persist-lagret (`ADR-072`, `staleTime`
+ *      5 min) gör till normalfall snarare än kantfall. Utan `key` hade
+ *      React återanvänt samma komponentinstans med gammalt
+ *      `oppen`/`vy`/`nyttEventId`-state.
+ *
+ * Beteendet bevakas av tre acceptansfall i
+ * `anmalan-ombokning.acceptance.test.ts`: steget stängt efter en
+ * förstagångs-ombokning (cache-miss-vägen), steget stängt efter en andra
+ * ombokning mot ett mål vars cache redan var varm i SAMMA app-instans
+ * (key-vägen — det enda fall som faktiskt kan visa en läcka), och att
+ * varken skältexten eller det valda eventet läcker till den nya anmälan.
  *
  * VAD DET HÄNGER PÅ, öppet deklarerat: att målet ALLTID är ett annat event.
  * Servern garanterar det (`beslutaOmbokning` avvisar samma event med 409
- * `samma_event`), men om den regeln någon gång mjukas upp faller remounten och
- * steget skulle stå kvar öppet. Vakterna ovan fäller då — de finns just för
- * att korrektheten här vilar på en mekanism denna fil inte äger.
+ * `samma_event`), men om den regeln någon gång mjukas upp OCH `key`-
+ * garantin någon gång tas bort blir state-läckan möjlig igen. Vakterna
+ * ovan fäller då.
  */
 export function OmbokningsSteg({
   registrationId,

@@ -669,7 +669,23 @@ export function AnmalanDetail({
               en tom rubrik "Avbokning" ovanför ett tomt kort för varje
               inställd anmälan. Ytan returnerar därför null FÖRE sitt eget
               gruppskal. */}
+          {/* [TASK-368.5, review #2267 runda 2] `key` PÅ ANMÄLANS ID — enda
+              mekanismen som nollställer ytans state vid ett anmälan-byte.
+
+              Routern remountar INTE på ett param-byte i sig: `MatchInner`s
+              `key` härleds uteslutande ur `route.options.remountDeps ??
+              router.options.defaultRemountDeps` (källäst i
+              `node_modules/@tanstack/react-router/dist/esm/Match.js`
+              1.170.21, rad 75-95), och ingen av dem är satt (`grep -rn
+              remountDeps src/` → noll träffar). Utan denna `key` faller
+              nollställningen alltså tillbaka på `isPending`-grenens
+              cache-miss-avmontering ovan som bieffekt — vilket inte inträffar
+              när mål-anmälans detalj redan ligger varm i cachen
+              (persist-lagret, `ADR-072`, normalfall snarare än kantfall), och
+              samma komponentinstans återanvänds då med gammalt
+              `oppen`/`vy`/`nyttEventId`-state. */}
           <AvbokningsYta
+            key={registrationId}
             eventId={eventId}
             registrationId={reg.id}
             namn={namn}

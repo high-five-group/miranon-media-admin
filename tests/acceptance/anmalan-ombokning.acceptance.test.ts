@@ -186,11 +186,19 @@ function mocka(
     svar,
     vantelistaPerEvent = {},
     avvisaMed = null,
+    nyAnmalanPlusEttor = [],
   }: {
     detaljer: DetaljRow[];
     svar?: RebookSvar;
     vantelistaPerEvent?: Record<string, number>;
     avvisaMed?: { status: number; body: Record<string, unknown> } | null;
+    /**
+     * +1-relationer på den NYA anmälan. Ger dess sida en klient-sidig
+     * `PersonMiniKort`-länk till en annan anmälan — den enda vägen mellan två
+     * anmälningar som INTE laddar om appen, och därmed en förutsättning för
+     * att kunna pröva varm målcache i samma app-instans.
+     */
+    nyAnmalanPlusEttor?: DetaljRow['plusEttor'];
   },
 ): { rebookCalls: RebookBody[] } {
   const rebookCalls: RebookBody[] = [];
@@ -239,6 +247,7 @@ function mocka(
         status: 'Obekräftad',
         bekraftelseSkickad: null,
         notering: null,
+        plusEttor: nyAnmalanPlusEttor,
         eventId: body.nyttEventId,
         eventNamn: malEvent?.eventNamn ?? null,
         startdatum: malEvent?.startdatum ?? null,
@@ -389,55 +398,74 @@ test.describe('Boka om till annat event (TASK-368.5)', () => {
   });
 
   /**
-   * REGRESSIONSVAKT, review #2267 runda 1 — det fall där kvarhängande
-   * steg-state FAKTISKT kan uppstå.
+   * REGRESSIONSVAKT, review `#2267` runda 2 — det ENDA läge där kvarhängande
+   * steg-state faktiskt kan uppstå, och därför det enda som bevisar något.
    *
-   * Granskaren härledde ur koden att `AvbokningsYta`s `oppen`/`vy` och
-   * `OmbokningsSteg`s `nyttEventId` överlever navigeringen, eftersom ett
-   * param-byte inom samma route inte remountar. Fallet ovan ("samma pris")
-   * visar att det INTE sker på en förstagångs-ombokning — och mätningen
-   * förklarar varför: den nya anmälans detalj finns inte i cachen, så
-   * `AnmalanDetail` går genom sitt pending-läge, byter hela gruppträdet mot
-   * skeleton och AVMONTERAR `AvbokningsYta`. Avmonteringen nollställer state
-   * som en bieffekt.
+   * ═══════════════════════════════════════════════════════════════════════
+   * VARFÖR DE ANDRA FALLEN INTE RÄCKER
+   * ═══════════════════════════════════════════════════════════════════════
+   * Ingenting i routern remountar på ett param-byte: `MatchInner`s `key`
+   * härleds UTESLUTANDE ur `route.options.remountDeps ??
+   * router.options.defaultRemountDeps` (källäst i
+   * `node_modules/@tanstack/react-router/dist/esm/Match.js` 1.170.21, rad
+   * 75-95), och varken routern eller anmälans route sätter någon av dem
+   * (`grep -rn remountDeps src/` → noll träffar). En tidigare version av denna
+   * fil påstod motsatsen; påståendet var fel och är rättat.
    *
-   * Den maskeringen faller bort så fort den nya anmälans detalj REDAN ligger
-   * färsk i cachen (persist-lagret, `staleTime` 5 min — `src/router.ts`): då
-   * finns inget pending-läge, ingen avmontering, och state överlever. Exakt
-   * det inträffade i denna fils axe-test under bygget: varv 2 nådde aldrig
-   * kvittot eftersom komponenten inte remountades. Granskarens hypotes var
-   * alltså riktig — den gällde bara ett smalare fall än den beskrev.
+   * Det som FAKTISKT nollställer `AvbokningsYta` i normalfallet är
+   * `AnmalanDetail`s `isPending`-gren: vid cache-miss byts hela grenen mot en
+   * skeleton och ytan avmonteras som bieffekt. Den maskeringen försvinner så
+   * fort mål-anmälans detalj REDAN ligger i cachen vid landningen — och med
+   * persist-lagret (`ADR-072`, `staleTime` 5 min) är det inget kantfall.
    *
-   * Testet framkallar villkoret genom TVÅ ombokningar i rad utan omladdning:
-   * den första fyller cachen för mål-anmälan, den andra landar på en sida vars
-   * data redan är färsk.
+   * ═══════════════════════════════════════════════════════════════════════
+   * VILLKOREN SOM MÅSTE HÅLLA SAMTIDIGT — OCH VARFÖR `page.goto` FÖRSTÖR DEM
+   * ═══════════════════════════════════════════════════════════════════════
+   *   1. mål-anmälans detalj är VARM när ombokningen landar, OCH
+   *   2. `AvbokningsYta`-instansen som utför ombokningen har levt i SAMMA
+   *      app-instans hela vägen fram.
+   *
+   * En `page.goto` mellan stegen laddar om appen och river varje
+   * komponentinstans — då startar den kritiska övergången alltid från en
+   * frisk mount, och testet kan aldrig se läckan. Källsidan nås därför via
+   * appens EGEN länk (`PersonMiniKort` för `plusEttor`), alltså en
+   * klient-sidig navigering.
    */
-  test('andra ombokningen i rad: steget står INTE kvar öppet när målsidan redan är cachad', async ({
+  test('varm målcache i samma app-instans: steget står INTE kvar öppet', async ({
     page,
     network,
   }) => {
     mocka(network, {
       detaljer: [detalj(), detalj({ id: ANNA_TVA, anmalanId: 249 })],
       svar: { nyttPris: 2500, prisskillnad: 0, summaNyAnmalan: 2500 },
+      // Den nya anmälan bär en +1-relation till ANNA_TVA, så dess sida får en
+      // klient-sidig länk dit. Utan den finns ingen väg mellan två anmälningar
+      // som inte går via en omladdning.
+      nyAnmalanPlusEttor: [{ id: ANNA_TVA, namn: 'Anna Andersson' }],
     });
 
-    // Ombokning 1 — fyller `registrations.detail(NY_ANMALAN)` i cachen.
+    // ── Steg 1: ombokning 1 värmer `registrations.detail(NY_ANMALAN)` ──
     const forsta = await oppnaOmbokningen(page);
     await valjEvent(page, 'Resor i medvetandet 3');
     await forsta.getByRole('button', BEKRAFTA_KNAPP).click();
     await expect(page).toHaveURL(`/event/${EVENT_SAMMA}/anmalan/${NY_ANMALAN}`);
     await expect(page.getByTestId('ombokningskvitto')).toBeVisible();
 
-    // Ombokning 2 — SAMMA mål-anmälan, nu med färsk cache. Ingen omladdning
-    // mellan: `oppnaOmbokningen` navigerar client-side via `page.goto` till en
-    // annan anmälan, och cachen överlever i localStorage.
-    const andra = await oppnaOmbokningen(page, ANNA_TVA);
+    // ── Steg 2: KLIENT-SIDIGT till källsidan — ingen omladdning ──
+    await page.getByRole('link', { name: /Medföljande/ }).click();
+    await expect(page).toHaveURL(`/event/${EVENT_SAMMA}/anmalan/${ANNA_TVA}`);
+    await expect(page.getByText('Anmälan #249')).toBeVisible();
+
+    // ── Steg 3: ombokning 2 mot det NU VARMA målet, i samma app-instans ──
+    await page.getByRole('button', AVBOKA_KNAPP).click();
+    await page.getByRole('button', BOKA_OM_KNAPP).click();
+    const andra = page.getByRole('group', STEG_NAMN);
+    await expect(andra).toBeVisible();
     await valjEvent(page, 'Resor i medvetandet 3');
     await andra.getByRole('button', BEKRAFTA_KNAPP).click();
     await expect(page).toHaveURL(`/event/${EVENT_SAMMA}/anmalan/${NY_ANMALAN}`);
 
-    // Kvittot syns — och steget är STÄNGT. Utan identitetsbunden nollställning
-    // faller minst en av dessa.
+    // ── Invarianten: steget är stängt, oavsett cache-timing ──
     await expect(page.getByTestId('ombokningskvitto')).toBeVisible();
     await expect(page.getByRole('group', STEG_NAMN)).toHaveCount(0);
     await expect(page.getByRole('button', BEKRAFTA_KNAPP)).toHaveCount(0);
