@@ -8,34 +8,39 @@ import { EF, json } from '../support/fixturvarld/handlers';
 import { expect, test } from '../support/fixturvarld/hermetic';
 
 /**
- * PROMOVERINGS-GRINDEN för Intresserade-listan (`ADR-103` B4, TASK-374.1).
+ * PROMOVERINGS-GRINDEN för Intresserade-listan (`ADR-103` B4, TASK-374.1/374.2).
  *
- * [FAS 1 — FÖRE-HALVAN, fångad UR VARIANT-LÄGET] Detta är den första halvan
- * av B4:s `ariaSnapshot`-PAR: referenserna fångas ur konvergens-formen
- * (`?variant=a`) INNAN villkoret flippas (`374.2`). Efter flippen pekar
- * SAMMA lokator och SAMMA `name:`-nycklar mot den promoverade, ovillkorliga
- * ytan — skiljer sig trädet på en enda byte fäller grinden, och det är
- * exakt beviset för att promoveringen tog FORMEN och ingenting annat.
+ * [BÅDA HALVOR GJORDA — 2026-09-03] B4:s `ariaSnapshot`-PAR är komplett.
  *
- * ORDNINGEN ÄR ENKELRIKTAD, och det är skälet denna fil skrivs FÖRE flippen:
- * variant-grenen renderas bara under `import.meta.env.DEV && variant === 'a'`
- * (`src/routes/_authenticated/mer/intresserade.tsx`). Flippas villkoret
- * först upphör FÖRE-läget att existera, och paret kan aldrig konstrueras i
- * efterhand — inte ens genom att läsa gamla PNG:er, eftersom de inte bär
- * roll/namn-strukturen `ariaSnapshot` jämför. Formen följer
+ * [FAS 1 — FÖRE-HALVAN, 374.1, fångad UR VARIANT-LÄGET] Referenserna under
+ * `__aria__/` fångades ur konvergens-formen (`?variant=a`) INNAN villkoret
+ * flippades; de har varit ORÖRDA sedan dess. Formen följde
  * `personer-promoverings-grind.spec.ts`s FAS 1-commit (46c03f6c, samma
  * ordning: `?variant=a`, samma `ariaSnapshot`-val, samma axe-block) och
  * `anmalningssidan-promoverings-grind.spec.ts` (den namngivna mallen i
  * TASK-374.1s uppdrag) — inte en egen uppfinning.
  *
- * FAS 2 (samma namn mot den promoverade adressen, `?variant=a` borta ur
- * `gotoVariantA`) skrivs av `374.2`. Den "stale `?variant=`-URL degraderar"-
- * describen som `personer-promoverings-grind.spec.ts`/
- * `anmalningssidan-promoverings-grind.spec.ts` bär hör LIKASÅ till FAS 2 —
- * före flippen finns inget "stale" läge att bevisa (queryn är fortfarande
- * den ENDA vägen in i formen), så den describen står MEDVETET UTANFÖR denna
- * fil (orkestrerarens uppdrag till TASK-374.1, 2026-09-03: "stale-URL-describe
- * LÄMNAS TILL 374.2").
+ * [FAS 2 — GJORD, 374.2] Villkoret är flippat (`src/routes/_authenticated/
+ * mer/intresserade.tsx`): `Intresserade` (git-mv:ad ur
+ * `prototype/IntresseradeKonvergens.tsx`) renderas OVILLKORLIGT. `gotoPromoverad`
+ * (tidigare `gotoVariantA`) navigerar nu till `/mer/intresserade` UTAN
+ * `?variant=` — SAMMA lokator och SAMMA `name:`-nycklar pekar mot den
+ * promoverade ytan, referenserna nedan är HELT ORÖRDA (git status bekräftade
+ * att `__aria__/` inte skrevs om under körningen). En grön körning betyder
+ * därför EN sak: trädet är byte-identiskt före och efter promoveringen —
+ * formen följde med filflytten, ingenting annat smög in.
+ *
+ * ROLLBYTET: den här filen bevisar inte längre "variant == promoverad" —
+ * eftersom promoveringen redan skett i SAMMA gren/PR som denna omskrivning
+ * (till skillnad från personer/checkin, där flipp och rivning låg i separata
+ * landningar), är FAS 1 och FAS 2 synliga i samma diff. Filen är från och med
+ * nu REGRESSIONSLÅS över `src/components/intresserade/Intresserade.tsx`: att
+ * ytan fortsätter rendera exakt den låsta formen för alla framtida ändringar.
+ * Samma rollbyte som `personer-promoverings-grind.spec.ts`/
+ * `eventsida-promoverings-grind.spec.ts` bokför i sina egna huvuden.
+ *
+ * "STALE `?variant=`-URL DEGRADERAR"-DESCRIBEN (personer-/anmälningssidan-
+ * mallen) läggs till i DENNA skiva (374.2) — se describe-blocket längre ned.
  *
  * VARFÖR ARIASNAPSHOT OCH INTE PIXLAR (`ADR-103` B4): deterministiskt, noll
  * nya beroenden, och det jämför STRUKTUR + TILLGÄNGLIGT NAMN. Pixel-diff
@@ -46,7 +51,7 @@ import { expect, test } from '../support/fixturvarld/hermetic';
  *
  *   1. **Fylld** — minst en NAMNGIVEN och en NAMNLÖS intresserad (kortets
  *      egen ordalydelse), så primär-/sekundärradens BÅDA grenar
- *      (`primarText`/`sekundarText` i `IntresseradeKonvergens.tsx`) täcks av
+ *      (`primarText`/`sekundarText` i `Intresserade.tsx`) täcks av
  *      samma referens: en rad med namn+e-post, en rad med bara e-post och
  *      den dämpade "Namnlös intresserad"-sekundärraden.
  *   2. **Tom** — `get-leads` ger noll rader. Eget formbeslut ("Inga
@@ -69,33 +74,21 @@ import { expect, test } from '../support/fixturvarld/hermetic';
  * `tests/acceptance/mer-intresserade.acceptance.test.ts`s `mockLeads`/`row()`)
  * och kör därför den RIKTIGA datavägen (`fetchIntresserade()` →
  * `dataSource`), inte fyllnadsfabrikens minnesdata — `?variant=a` UTAN
- * `&data=fyll` lämnar `fyllnad` falskt (`IntresseradeKonvergens.tsx`s
+ * `&data=fyll` lämnar `fyllnad` falskt (`Intresserade.tsx`s
  * `dataMode === 'fyll'`-villkor), så `useQuery` körs `enabled: true` och
- * träffar den mockade EF:en precis som den skarpa ytan gör efter `374.2`.
+ * träffar den mockade EF:en precis som den promoverade ytan gör (`374.2`).
  *
  * ── AC #3 — LIVE-REGIONEN HÄVDAS BÅDE HÄR OCH I ACCEPTANCE-KLASSEN ────────
  *
- * [RÄTTAT I RUNDA 2 — review-utlåtande PR #2248, fynd 2] Denna sektion
- * citerade tidigare "Kortets § Källmärkta premisser" som källa för att
- * lägga live-region-assertionen ENBART här. Den sektionen finns inte i
- * något kort (`git grep -n "Källmärkta premisser" origin/main --
- * 'backlog/tasks/*.md'` gav noll träffar) — rubriken stod i
- * ORKESTRERARENS uppdragstext till bygg-agenten (2026-09-03, S114 resume 1),
- * inte i backloggens kort. Ett citat mot en källa som inte finns är exakt
- * den `ADR-086`-felklass repot bekämpar, så den rättas här i stället för
- * att lämnas för `374.2`s implementerare att leta förgäves efter.
- *
- * Den FAKTISKA ändringen runda 2 gjorde: AC #3s ordalydelse ("acceptance-
- * sviten hävdar annonseringen") gjordes SANN i stället för omformulerad.
- * `tests/acceptance/mer-intresserade-konvergens.acceptance.test.ts` (ny fil,
- * CI-blockerande Acceptance-klassen) navigerar till samma `?variant=a` och
- * hävdar EXAKT samma sak som blocket nedan: `aria-live="polite"` +
- * `aria-atomic="true"` på räknaren, och att texten uppdateras vid en
- * sökning. Att `import.meta.env.DEV` är sant där är EMPIRISKT verifierat,
- * inte antaget — samma `webServer`-gren (`isVisualRun || isAcceptanceRun ||
- * …` i `playwright.config.ts`) startar `npm run dev` för BÅDA projekten, och
- * en riktad körning mot `?variant=a` under `PLAYWRIGHT_ACCEPTANCE_DEV_SERVER=1`
- * bekräftade att ankaret och räknaren renderar där precis som i `visual`.
+ * [OMSKRIVET I 374.2] `tests/acceptance/mer-intresserade-konvergens.
+ * acceptance.test.ts` (374.1 runda 2:s nya fil, som navigerade till
+ * `?variant=a`) är RIVEN och dess hävdande FLYTTAT IN i den omskrivna
+ * `tests/acceptance/mer-intresserade.acceptance.test.ts` (testet "sökning
+ * filtrerar och räknaren annonseras…") — nu mot den promoverade adressen
+ * utan `?variant=`, eftersom den separata filens enda existensskäl (formen
+ * nåddes bara bakom variant-queryn) upphörde när flippen gjordes. Samma två
+ * hävdanden som blocket nedan: `aria-live="polite"` + `aria-atomic="true"`
+ * på räknaren, och att texten uppdateras vid en sökning.
  *
  * Blocket HÄR BEHÅLLS ändå (inte bara flyttat) av två skäl:
  *
@@ -108,9 +101,7 @@ import { expect, test } from '../support/fixturvarld/hermetic';
  *   2. **Redundans är avsiktlig, inte dubbelarbete.** Acceptance-testet är
  *      den CI-BLOCKERANDE grinden (gör AC #3 sann); detta block är den
  *      snabba, hermetiska ariaSnapshot-granne-kontrollen som redan finns i
- *      samma fil som formen den härrör ifrån. Den `374.2`-skrivna
- *      EFTER-halvan ärver SAMMA assertion mot den promoverade, ovillkorliga
- *      ytan.
+ *      samma fil som formen den härrör ifrån.
  *
  * ── ÄRLIGHET OM VAR GRINDEN FAKTISKT FÄLLER ──────────────────────────────
  *
@@ -118,16 +109,13 @@ import { expect, test } from '../support/fixturvarld/hermetic';
  * `anmalningssidan-promoverings-grind.spec.ts`/
  * `personer-promoverings-grind.spec.ts` bokför för sina ytor; enda träffen
  * på `npm run test:visual` i `.github/workflows/` är `visual-baselines.yml`,
- * ett `workflow_dispatch`-jobb). Det LEVANDE låset för K0-formen bor i
- * `tests/acceptance/mer-intresserade.acceptance.test.ts` (rörs INTE av denna
- * skiva — skrivs om i `374.2` när formen blir skarp). Denna fil är B4:s
- * bevis-par, och den enda plats där `374.2` kan bevisa att flippen inte rörde
- * formen. UNDANTAGET är AC #3: den claimen har SIN egna CI-blockerande lås i
- * `tests/acceptance/mer-intresserade-konvergens.acceptance.test.ts` (ny fil,
- * runda 2) — se § AC #3 ovan.
+ * ett `workflow_dispatch`-jobb). Det LEVANDE låset för formen bor i
+ * `tests/acceptance/mer-intresserade.acceptance.test.ts` (omskriven i denna
+ * skiva). Denna fil är B4:s bevis-par — det mekaniska beviset för att
+ * flippen inte rörde formen — och lever vidare som regressionslås.
  */
 
-/** Formens yttersta element — `IntresseradeKonvergens.tsx` § YTANS_ANKARE. */
+/** Formens yttersta element — `Intresserade.tsx` § YTANS_ANKARE. */
 const YTA = 'intresserade-yta';
 
 /** Sökfältets tillgängliga namn — `<label><span>Sök intresserad</span>…`. */
@@ -205,25 +193,28 @@ function mockaYtan(network: NetworkFixture, rows: Row[]): void {
 }
 
 /**
- * FÖRE-läget: konvergens-formen via `?variant=a`.
+ * EFTER-läget: den PROMOVERADE, ovillkorliga ytan.
  *
- * [FAS 2, EFTER FLIPPEN — `374.2`] Denna helper är den ENDA rad som ändras
- * när promoveringen är gjord: `?variant=a` faller bort och samma lokator
- * pekar mot den ovillkorliga ytan. Referenserna nedan rörs ALDRIG — de är
- * facit.
+ * [FAS 2 GJORD — 374.2] `?variant=a` är borta ur adressen eftersom villkoret
+ * är flippat (`ADR-103` B2 steg 1): routen renderar formen ovillkorligt.
+ * Detta var den ENDA raden som ändrades i denna helper (tidigare
+ * `gotoVariantA`, `await page.goto('/mer/intresserade?variant=a')`) —
+ * referenserna nedan är ORÖRDA sedan FÖRE-capturen, och det är precis
+ * därför en grön körning BEVISAR att promoveringen tog formen och
+ * ingenting annat.
  */
-async function gotoVariantA(page: Page): Promise<void> {
-  await page.goto('/mer/intresserade?variant=a');
+async function gotoPromoverad(page: Page): Promise<void> {
+  await page.goto('/mer/intresserade');
   // Ankaret finns på alla tre render-grenar; att invänta det säkrar att vi
   // är förbi laddningsläget (som medvetet står utanför referensen) OCH att
   // fixturvärlden svarat.
   await expect(page.getByTestId(YTA)).toBeVisible();
 }
 
-test.describe('promoverings-grinden — ariaSnapshot ur variant-läget (ADR-103 B4)', () => {
+test.describe('promoverings-grinden — ariaSnapshot mot den promoverade ytan (ADR-103 B4)', () => {
   test('fylld — en namngiven och en namnlös intresserad', async ({ page, network }) => {
     mockaYtan(network, fylldaRader());
-    await gotoVariantA(page);
+    await gotoPromoverad(page);
 
     // Fixtur-förankrad skarv före snapshotten: KÄNDA rader bevisar att datat
     // faktiskt landat via den riktiga hämtningsvägen.
@@ -236,11 +227,52 @@ test.describe('promoverings-grinden — ariaSnapshot ur variant-läget (ADR-103 
 
   test('tom — inga intresserade', async ({ page, network }) => {
     mockaYtan(network, []);
-    await gotoVariantA(page);
+    await gotoPromoverad(page);
 
     await expect(page.getByText('Inga intresserade än.')).toBeVisible();
     await expect(page.getByTestId(YTA)).toMatchAriaSnapshot({
       name: 'intresserade-tom.aria.yml',
+    });
+  });
+});
+
+/**
+ * STALE `?variant=`-URL — degraderar till den enda formen utan krasch och
+ * utan halvbyggd yta (TASK-374.2 AC #4). Före flippen villkorade
+ * `?variant=a` vilken form routen renderade; en länk som fortfarande bär
+ * den gamla queryn (bokmärke, delad URL, öppen flik) träffar nu en app där
+ * INGEN kod läser parametern längre. [UPPDATERAT I TASK-374.4] Vid FAS 2
+ * (374.2) fanns `PrototypeSwitcher`-railen kvar på routen och läste
+ * `?variant=` internt för sin egen aktiv-knapp — det påverkade bara
+ * railens highlight, aldrig den scopade `ariaSnapshot`-ytan nedan. Efter
+ * rivningen (374.4, ADR-103 B2 steg 4) är railen borta från routen helt:
+ * ingen komponent, inte ens `PrototypeSwitcher`, monteras längre här, så
+ * `?variant=` är en helt inert parameter i alla led.
+ *
+ * Samma referens som regressionslåset ovan bevisar det MEKANISKT, inte bara
+ * "sidan kraschar inte": en stale URL måste rendera byte för byte samma
+ * träd som ingen query alls. Samma AC-form som
+ * `personer-promoverings-grind.spec.ts`/
+ * `anmalningssidan-promoverings-grind.spec.ts` § stale `?variant=`.
+ */
+test.describe('stale ?variant=-URL degraderar till den enda formen', () => {
+  test('?variant=a renderar identiskt med ingen query alls', async ({ page, network }) => {
+    mockaYtan(network, fylldaRader());
+    await page.goto('/mer/intresserade?variant=a');
+    await expect(page.getByTestId(YTA)).toBeVisible();
+    await expect(page.getByText('Anna Andersson')).toBeVisible();
+    await expect(page.getByTestId(YTA)).toMatchAriaSnapshot({
+      name: 'intresserade-fylld.aria.yml',
+    });
+  });
+
+  test('okänd ?variant=z degraderar likaså', async ({ page, network }) => {
+    mockaYtan(network, fylldaRader());
+    await page.goto('/mer/intresserade?variant=z');
+    await expect(page.getByTestId(YTA)).toBeVisible();
+    await expect(page.getByText('Anna Andersson')).toBeVisible();
+    await expect(page.getByTestId(YTA)).toMatchAriaSnapshot({
+      name: 'intresserade-fylld.aria.yml',
     });
   });
 });
@@ -255,9 +287,9 @@ test.describe('promoverings-grinden — ariaSnapshot ur variant-läget (ADR-103 
  * TEXTEN är rätt. Detta block hävdar attributen direkt och att texten
  * faktiskt UPPDATERAS vid en sökning, vilket är den beteendebiten AC #3
  * kräver ("Träffantalet vid sökning annonseras"). Den CI-BLOCKERANDE
- * motsvarigheten (samma två hävdanden, samma `?variant=a`) bor i
- * `tests/acceptance/mer-intresserade-konvergens.acceptance.test.ts` — se
- * filens § AC #3-docblock ovan för varför båda finns.
+ * motsvarigheten (samma två hävdanden, mot den promoverade adressen) bor i
+ * `tests/acceptance/mer-intresserade.acceptance.test.ts` — se filens § AC #3-
+ * docblock ovan för varför båda finns.
  */
 test.describe('AC #3 — träffantalet annonseras i en artig live-region', () => {
   test('räknaren bär aria-live/aria-atomic och uppdateras vid sökning', async ({
@@ -265,15 +297,15 @@ test.describe('AC #3 — träffantalet annonseras i en artig live-region', () =>
     network,
   }) => {
     mockaYtan(network, fylldaRader());
-    await gotoVariantA(page);
+    await gotoPromoverad(page);
 
     const raknare = page.getByText('2 intresserade');
     await expect(raknare).toBeVisible();
     await expect(raknare).toHaveAttribute('aria-live', 'polite');
     await expect(raknare).toHaveAttribute('aria-atomic', 'true');
     // Rollen är ORÖRD ("paragraph", inte "status") — se filens docblock i
-    // `IntresseradeKonvergens.tsx` § TRÄFFANTALET SOM ARTIG LIVE-REGION för
-    // varför (role="status" hade dubbelannonserat OCH ändrat ariaSnapshot).
+    // `Intresserade.tsx` § TRÄFFANTALET SOM ARTIG LIVE-REGION för varför
+    // (role="status" hade dubbelannonserat OCH ändrat ariaSnapshot).
     await expect(raknare).not.toHaveAttribute('role', 'status');
 
     await page.getByRole('searchbox', { name: SOKFALT }).fill('Anna');
@@ -312,21 +344,21 @@ test.describe('a11y-golvet — axe på samma ytor som formgrinden (ADR-103, här
 
   test('fylld: axe 0 violations', async ({ page, network }) => {
     mockaYtan(network, fylldaRader());
-    await gotoVariantA(page);
+    await gotoPromoverad(page);
     await expect(page.getByText('Anna Andersson')).toBeVisible();
     await axeNoll(page);
   });
 
   test('tom: axe 0 violations', async ({ page, network }) => {
     mockaYtan(network, []);
-    await gotoVariantA(page);
+    await gotoPromoverad(page);
     await expect(page.getByText('Inga intresserade än.')).toBeVisible();
     await axeNoll(page);
   });
 
   test('fel (4xx): axe 0 violations', async ({ page, network }) => {
     network.use(http.get(EF('get-leads'), () => json({ error: 'x' }, 404)));
-    await page.goto('/mer/intresserade?variant=a');
+    await page.goto('/mer/intresserade');
     await expect(page.getByTestId(YTA)).toBeVisible();
     await expect(page.getByText('Kunde inte hämta intresserade')).toBeVisible();
     await axeNoll(page);
