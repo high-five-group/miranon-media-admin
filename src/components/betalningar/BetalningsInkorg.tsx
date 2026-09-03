@@ -906,6 +906,20 @@ export function BetalningsInkorg() {
    * `forhandsgranska.error` — av samma skäl: den delade mutationen vet inte
    * VILKEN rad som senast felade.
    *
+   * [REVIEW RUNDA 1, FYND — lokalt state SJÄLVLÄKER INTE] Den gamla, delade
+   * `forhandsgranska.isError`/`.error` nollställdes AUTOMATISKT av TanStack
+   * Query så fort en NY mutation gick till `pending` (`#dispatch({ type:
+   * 'pending', ... })` sätter `error: null`, se docblocket ovan). Det nya
+   * lokala `forhandsgranskaFel` ärver INTE den självläkningen — ett state
+   * satt en gång i `setForhandsgranskaFel` lever kvar för evigt om inget
+   * explicit nollställer det. Utan denna rad hade rad A:s fel stått kvar i
+   * `role="alert"` PERMANENT även efter en lyckad retry på samma rad ELLER
+   * en helt annan, felfri förhandsgranskning på rad B — ett löst problem som
+   * såg olöst ut. Nollställningen sker HÄR, vid nästa FÖRSÖK (inte t.ex. vid
+   * lyckad `onSuccess` på VILKEN SOM HELST rad), av samma skäl som
+   * TanStacks egen `pending`-övergång: ett nytt försök är den händelse som
+   * gör det gamla felet inaktuellt, oavsett vilken rad som startar det.
+   *
    * GRILLAD SAMSYN (S116 fråga 5, Marcus valde A "Oberoende"): bara den
    * TRYCKTA knappen laddar, övriga är fria omedelbart; samma rad kan inte
    * startas två gånger medan den renderar.
@@ -917,6 +931,11 @@ export function BetalningsInkorg() {
     // ligga här. Bara SAMMA rad spärras medan den renderar — övriga rader
     // är fria (S116 beslut 5).
     if (forhandsgranskaPagar.has(inbetalningId)) return;
+
+    // NOLLSTÄLL FÖREGÅENDE FEL — se docblockets § "lokalt state SJÄLVLÄKER
+    // INTE". Ett nytt försök (denna rad ELLER en annan) gör ett tidigare
+    // fel inaktuellt; utan detta står `role="alert"` kvar för evigt.
+    setForhandsgranskaFel(null);
 
     // MÅSTE ske synkront, före mutateAsync() och all await — se docblocket.
     const fonster = window.open('', '_blank');
@@ -1971,7 +1990,12 @@ export function BetalningsInkorg() {
               (AC #4) — den gamla texten gjorde det inte. Fälar flera rader
               samtidigt visas SENASTE, det räcker (S116 beslut 5, bokfört i
               kortet): ingen kö av fel behövs, bara ett fel i taget blockerar
-              ingen annan rads knapp. */}
+              ingen annan rads knapp.
+
+              [REVIEW RUNDA 1] Rutan nollställs INTE av sig själv (till
+              skillnad från den gamla `forhandsgranska.isError`, som
+              TanStack självläkte vid nästa `pending`) — `forhandsgranskaKvitto`
+              rensar den explicit vid varje NYTT försök, se dess docblock. */}
           {forhandsgranskaFel && (
             <p role="alert" className="text-(color:--mm-input-error-text) text-caption">
               {`Kvittot till ${forhandsgranskaFel.namn} kunde inte förhandsgranskas: ${forhandsgranskaFel.message}`}

@@ -47,6 +47,10 @@ import { mockValjarLista, valjarRad } from './helpers/valjar-lista';
  *    andra klicket på en PENDING rad öppnar INGET nytt fönster.
  * D. AC #4: ett fel på en rad namnger PERSONEN och blockerar inte den andra
  *    radens förhandsgranskning.
+ * E. [REVIEW RUNDA 1] Ett tidigare fel SJÄLVLÄKER INTE av sig självt (det
+ *    lokala `forhandsgranskaFel` saknar TanStacks automatiska nollställning
+ *    vid nästa `pending`) — det försvinner i stället explicit så fort ETT
+ *    NYTT FÖRSÖK startar, oavsett vilken rad.
  *
  * NEGATIVT BEVIS (AC #5, "samma test mot origin/main-komponenten fäller"):
  * körd av byggaren, inte kodad i filen (en e2e-svit kan inte parametrisera
@@ -423,6 +427,63 @@ test.describe('TASK-369 — betalningsinkorgens förhandsgranskning är oberoend
     // förhandsgranskning FÖR DEN raden fungerar normalt.
     await expect(knappB).toBeEnabled();
     const [fonsterB] = await Promise.all([context.waitForEvent('page'), knappB.click()]);
+    preview.slapp(INBETALNING_B, {
+      status: 200,
+      body: { url: PREVIEW_URL_B, utgar: new Date(Date.now() + 300_000).toISOString() },
+    });
+    await expect.poll(() => fonsterB.url()).toBe(PREVIEW_URL_B);
+  });
+
+  /**
+   * [REVIEW RUNDA 1, FYND] `forhandsgranskaFel` SJÄLVLÄKER INTE av sig
+   * självt (till skillnad från den gamla, delade `forhandsgranska.isError`,
+   * som TanStack nollställde automatiskt vid nästa `pending`) — se
+   * `forhandsgranskaKvitto`s docblock i `BetalningsInkorg.tsx`. Utan den
+   * explicita nollställningen hade rad A:s fel stått kvar i `role="alert"`
+   * PERMANENT, även efter att en HELT ANNAN rad förhandsgranskats felfritt.
+   *
+   * BEVISFORMEN ÄR MEDVETET STRÄNG: alerten prövas BORTA precis efter att
+   * knapp B TRYCKTS — INNAN dess `preview-receipt`-anrop ens löst ut
+   * (gatead, `preview.slapp` för B kommer EFTER assertionen). Det skiljer
+   * den KORREKTA fixen (nollställning vid VARJE NYTT FÖRSÖKS START, i
+   * `forhandsgranskaKvitto`s första rader) från en ofullständig variant som
+   * bara rensat felet i en lyckad `onSuccess`-gren — den senare hade låtit
+   * alerten stå kvar ända till dess B:s svar faktiskt kommit tillbaka.
+   */
+  test('REVIEW RUNDA 1: ett tidigare fel försvinner så fort ETT NYTT FÖRSÖK startar (annan rad)', async ({
+    page,
+    context,
+  }) => {
+    await mockaGrund(page);
+    const preview = mockaPreviewReceipt(page);
+    await mockaLagradPdf(context, PREVIEW_URL_B);
+
+    await page.goto('/mer/betalningar');
+    await registreraUtanAttSkicka(page, NAMN_A);
+    await registreraUtanAttSkicka(page, NAMN_B);
+
+    const knappA = page.getByRole('button', { name: `Förhandsgranska kvittot till ${NAMN_A}` });
+    const knappB = page.getByRole('button', { name: `Förhandsgranska kvittot till ${NAMN_B}` });
+
+    const [fonsterA] = await Promise.all([context.waitForEvent('page'), knappA.click()]);
+    preview.slapp(INBETALNING_A, {
+      status: 500,
+      body: { error: 'Kunde inte rendera kvittot (TASK-369-fixtur)' },
+    });
+
+    const felruta = page.getByRole('alert');
+    await expect(felruta).toBeVisible();
+    await expect(felruta).toContainText(NAMN_A);
+    await expect.poll(() => fonsterA.isClosed()).toBe(true);
+
+    // NYTT FÖRSÖK, ANNAN RAD — `preview-receipt`-anropet för B hänger ÄNNU
+    // (ingen `preview.slapp(INBETALNING_B, …)` har körts). Om alerten ändå
+    // är borta HÄR bevisar det att nollställningen sker vid FÖRSÖKETS
+    // START, inte vid dess (ännu ohända) utfall.
+    const [fonsterB] = await Promise.all([context.waitForEvent('page'), knappB.click()]);
+    await expect(felruta).toHaveCount(0);
+
+    // Sanity: försöket självt fungerar normalt — B navigerar rätt när svaret väl kommer.
     preview.slapp(INBETALNING_B, {
       status: 200,
       body: { url: PREVIEW_URL_B, utgar: new Date(Date.now() + 300_000).toISOString() },
