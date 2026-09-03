@@ -22,6 +22,7 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { expect, test } from '@playwright/test';
+import { summeraKronor } from '../../supabase/functions/_shared/betalningsbelopp';
 import { fetMarkera } from '../../supabase/functions/_shared/fet-markering';
 import {
   byggBekraftelseData,
@@ -453,6 +454,33 @@ test.describe('byggForsattsbladData (TASK-370.2, PRD TASK-370 § Implementations
       NU,
     );
     expect(data.summa).toBe('SEK 3 700,00');
+  });
+
+  test('summan räknas med summeraKronor (heltalsören) — INTE rå flyttalsaddition (review-fynd runda 1, regressionsbevis)', () => {
+    // NEGATIVT BEVIS, MÄTT (Node): 1000.10 + 2000.20 + 0.30 med rå
+    // flyttalsaddition är INTE exakt 3000.6 — `(1000.1 + 2000.2 + 0.3)`
+    // ger `3000.6000000000004`. Detta ÄR precis den drift
+    // `summeraKronor`s eget filhuvud citerar ("0.1 + 0.2 !== 0.3 gäller
+    // lika mycket för 1000.10 + 2000.20"). Körd mot den GAMLA raden
+    // (`rader.reduce((sum, rad) => sum + rad.belopp, 0)`) INNAN bytet till
+    // `summeraKronor` — bokfört utfall: `3000.6000000000004`, `!== 3000.6`.
+    const belopp = [1000.1, 2000.2, 0.3];
+    const raFlyttalsaddition = belopp.reduce((sum, kr) => sum + kr, 0);
+    expect(raFlyttalsaddition).not.toBe(3000.6); // den gamla formens fel, dokumenterat
+
+    // `summeraKronor` (den NYA, korrekta formen) ger den exakta summan —
+    // detta diskriminerar mellan de två implementationerna på ett sätt den
+    // FORMATERADE strängen INTE gör här: `Intl.NumberFormat` avrundar bort
+    // 4e-13-felet ovan så BÅDA formerna råkar formatera till "SEK 3 000,60"
+    // för just dessa tal (mätt: sträng-nivå-kontrollen ensam hade alltså
+    // INTE fällt en regression till rå addition för detta specifika fall).
+    expect(summeraKronor(belopp)).toBe(3000.6);
+
+    const data = byggForsattsbladData(
+      belopp.map((belopp) => forsattsbladRad({ belopp })),
+      NU,
+    );
+    expect(data.summa).toBe('SEK 3 000,60');
   });
 
   test('varje rads belopp formateras "SEK <formatBelopp>" — samma form som kvittots totalruta', () => {

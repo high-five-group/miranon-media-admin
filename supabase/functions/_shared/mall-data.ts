@@ -58,6 +58,11 @@ import {
   kvittoRubrik,
   MIRANON_ORG,
 } from './receipt-content.ts';
+// [TASK-370.2, review-fynd runda 1] `summeraKronor` — samma "räkna i ören,
+// dela tillbaka"-disciplin som `beraknaMoms` redan följer. Transitivt
+// Deno-fri (`betalningsbelopp.ts`s eget filhuvud) — bryter alltså inte
+// denna fils Node/Deno dual-import-kontrakt.
+import { summeraKronor } from './betalningsbelopp.ts';
 import { fetMarkera } from './fet-markering.ts';
 
 /**
@@ -454,9 +459,15 @@ export function stockholmDatumTid(nu: Date): string {
  * `nu` skickas in explicit av anroparen i stället för att läsas härifrån
  * (`Date.now()`), samma testbarhetsdisciplin som resten av filen: en ren
  * funktion av sina argument går att enhetstesta utan att mocka klockan.
+ *
+ * [TASK-370.2, review-fynd runda 1] Summan räknas med `summeraKronor`
+ * (heltalsören, delas tillbaka), INTE med rå flyttalsaddition —
+ * `0.1 + 0.2 !== 0.3` gäller lika mycket för N kronbelopp här (upp till
+ * `MAX_KOMBINERADE_KVITTON`, `_shared/kvitto-kombination.ts`) som för
+ * `beraknaMoms`s momsdelning (`receipt-content.ts`), samma disciplin.
  */
 export function byggForsattsbladData(rader: ForsattsbladRadSpec[], nu: Date): ForsattsbladMallData {
-  const summa = rader.reduce((sum, rad) => sum + rad.belopp, 0);
+  const summa = summeraKronor(rader.map((rad) => rad.belopp));
   return {
     antal: rader.length,
     tidpunkt: stockholmDatumTid(nu),

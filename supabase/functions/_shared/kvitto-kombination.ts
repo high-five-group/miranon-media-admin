@@ -3,7 +3,13 @@
 // (`_shared/mall-render.ts`s `fyllMall('kvitto', …)`, ETT anrop per kvitto)
 // till ETT sammanhängande HTML-dokument med `break-before: page` mellan
 // varje kvittosida. Självbärande-görningen sker EN gång, UTANFÖR denna fil
-// (`gorMallSjalvbarande('kvitto', …)`), och DocRaptor-anropet likaså
+// [TASK-370.2, review-fynd runda 1: kommentaren nedan var stale sedan
+// försättsbladet infördes — `preview-receipt/index.ts`s kombinerade gren
+// anropar numera `gorMallSjalvbarande('forsattsblad', …)`, INTE `'kvitto'`,
+// eftersom den ANROPADE CSS-bunten måste täcka BÅDA försättsbladets egna
+// klasser OCH varje kvittosidas `.kvitto-*` klasser (se `mall-render.ts`s
+// `MALL_TEMPLATES.forsattsblad`)] (`gorMallSjalvbarande(<mall>, …)`, mall
+// styrd av anroparen), och DocRaptor-anropet likaså
 // (`renderaSjalvbarandeHtmlPdf`) — se `_shared/mall-render.ts`s filhuvud
 // för hela fyllning/självbärande-uppdelningen och `preview-receipt/
 // index.ts`s `inbetalningIds`-gren för hur de tre stegen kedjas.
@@ -27,14 +33,18 @@
 //
 // VARFÖR REN STRÄNGOPERATION RÄCKER FÖR KOMPOSITIONEN: den sker EFTER
 // Eta-fyllningen, inte i stället för den. Varje ingående HTML-sträng är
-// redan en FULLSTÄNDIG `kvitto.html`-rendering (head + body), byggd av
-// anroparen via `fyllMall`. Denna fil extraherar bara `<body>`-innehållet,
-// injicerar en sidbrytning på alla utom den första sidan, och sätter ihop
-// dem under den FÖRSTA sidans `<head>` (två `<link rel="stylesheet">`,
-// orört av kompositionen — `mall-render.ts`s `gorSjalvbarande` hanterar
-// redan GODTYCKLIGT MÅNGA identiska `<link>`-träffar, se den filens
-// kommentar vid `LINK_STYLESHEET_REGEX`; kompositionen ändrar aldrig deras
-// antal). `kvitto.html`/`kvitto.css`/sändflödet rörs INTE av denna fil.
+// redan en FULLSTÄNDIG mall-rendering (head + body), byggd av anroparen
+// via `fyllMall` — i praktiken den FÖRSTA (index 0) ett `fyllMall
+// ('forsattsblad', …)`-anrop (TASK-370.2, tre `<link>`) och VARJE
+// EFTERFÖLJANDE ett `fyllMall('kvitto', …)`-anrop (två `<link>`), men
+// funktionen själv är mall-agnostisk — den läser bara `<body>`/`<head>`.
+// Denna fil extraherar bara `<body>`-innehållet, injicerar en sidbrytning
+// på alla utom den första sidan, och sätter ihop dem under den FÖRSTA
+// sidans `<head>` (dess `<link rel="stylesheet">`-taggar, ORÖRDA av
+// kompositionen — `mall-render.ts`s `gorSjalvbarande` hanterar redan
+// GODTYCKLIGT MÅNGA identiska `<link>`-träffar, se den filens kommentar
+// vid `LINK_STYLESHEET_REGEX`; kompositionen ändrar aldrig deras antal).
+// `kvitto.html`/`kvitto.css`/sändflödet rörs INTE av denna fil.
 //
 // TAKET (30, `MAX_KOMBINERADE_KVITTON`): S116 Del 2 beslut 6, orkestrerarens
 // startvärde — justeras vid mätning mot N≈30 (skiva TASK-370.3). DocRaptors
@@ -115,13 +125,20 @@ function markeraSidbrytning(kropp: string, index: number): string {
 }
 
 /**
- * Slår ihop N redan Eta-fyllda kvitto-dokument (`fyllMall('kvitto', …)`,
- * ETT per kvitto, i GIVEN visningsordning — PRD TASK-370 användarberättelse
- * 8) till ETT dokument: `<head>` (två `<link>`) ärvs oförändrat från den
- * FÖRSTA sidan, varje EFTERFÖLJANDE sida får `break-before: page` på sin
- * `.sida--kvitto`-div. Ren strängoperation — självbärande-görningen sker EN
- * gång, UTANFÖR denna funktion (`gorMallSjalvbarande('kvitto', …)`,
- * `_shared/mall-render.ts`).
+ * Slår ihop N redan Eta-fyllda dokument (`fyllMall(<mall>, …)`, ETT per
+ * block, i GIVEN visningsordning — PRD TASK-370 användarberättelse 8) till
+ * ETT dokument: `<head>` (dess `<link>`-taggar, antalet beror på FÖRSTA
+ * blockets mall — TASK-370.2: `forsattsblad.html` bär tre, `kvitto.html`
+ * bär två) ärvs oförändrat från den FÖRSTA sidan, varje EFTERFÖLJANDE
+ * kvittosida får `break-before: page` på sin `.sida--kvitto`-div. Ren
+ * strängoperation — självbärande-görningen sker EN gång, UTANFÖR denna
+ * funktion [TASK-370.2, review-fynd runda 1: `gorMallSjalvbarande('kvitto',
+ * …)` var stale — anroparen (`preview-receipt/index.ts`s kombinerade gren)
+ * anropar numera `gorMallSjalvbarande('forsattsblad', …)` på HELA det
+ * sammanslagna dokumentet, eftersom den CSS-bunten är en supermängd som
+ * täcker BÅDA försättsbladets egna klasser OCH varje kvittosidas
+ * `.kvitto-*` klasser] (`gorMallSjalvbarande(<mall>, …)`, `_shared/
+ * mall-render.ts`).
  */
 export function kombineraFylldaKvittoSidor(fyllda: string[]): string {
   if (fyllda.length === 0) {
