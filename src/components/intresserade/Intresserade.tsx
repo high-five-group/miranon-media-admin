@@ -1,31 +1,46 @@
 /**
- * [PROTOTYPE] IntresseradeKonvergens — B3-konvergenspasset (S114 Del 3
- * beslut 5-6, Marcus-kvitterad riktning 2026-08-31).
+ * Intresserade — GLOBAL LÄS-vy över leads (Fas 6e L1 Landning 3),
+ * `/mer/intresserade`. Data via `fetchIntresserade()` → get-leads-EF
+ * (router-context-DI, ADR-055), som serverside-filtrerar den STRIKTA
+ * lead-formeln (`AND({Totalt antal hämtningar (erbjudande)} > 0, {Antal
+ * anmälningar (totalt)} = 0)`) och sorterar 'Senaste interaktion (datum)'
+ * desc — ingen klient-sortering av GRUNDORDNINGEN (sorteringskontrollen
+ * nedan är ett explicit VAL, default = serverns ordning).
  *
- * FRÅGAN SOM BESVARAS: exakt vilken form av Intresserade-sidan är Marcus
- * helt nöjd med?
- *
- * Konvergens-only (divergensen överhoppad öppet — riktningen är redan
- * kvitterad): filen föddes som EXAKT kopia av ../Intresserade.tsx
- * (K0-baslinjen är skarpa vyn på ?variant=null i växlaren), och K-stegen
- * itererar mot riktningen:
+ * [PROMOVERAD, TASK-374.2, ADR-103 B2 steg 1] Formen föddes som prototypen
+ * `IntresseradeKonvergens` (S114 Del 3, K1–K3-varven, Marcus-stämplad
+ * `tasks/sessions/bilagor/s114-intresserade-konvergens/facit.json`, sha
+ * b391dffe, citat "Det blir bra, vi stämplar denna som klar") och är
+ * git-mv:ad hit rakt av — denna commit rörde INGEN rad i render-logiken,
+ * bara filens plats och det exporterade namnet (K0-baslinjens gamla
+ * `Intresserade`, 194 rader, ersattes av samma git-mv). `git log --follow`
+ * på DENNA fil spårar in i prototyp-passets fulla historik (K1-scaffold, K2
+ * husets Select, K3 radanatomin, 374.1s härdning) — se PR-beskrivningen för
+ * det körda beviset. Formen:
  *   (a) personlistans rad-anatomi (namn + e-post som identitetsblock,
- *       4 px-gap, "N dagar sedan · handling" som aktivitetsrad,
- *       hämtnings-badge som egen högerkolumn)
+ *       "N dagar sedan · handling" som aktivitetsrad, hämtnings-badge som
+ *       egen högerkolumn, tre höjdreserverade rader — se KonvergensRad)
  *   (b) sök + sorteringskontroll (senaste interaktion desc default,
- *       namn A-Ö som växel; INGEN bokstavsrad)
+ *       namn A-Ö som växel; ingen bokstavsrad)
  *   (c) "Namnlös intresserad" — aldrig initialer ur platshållarsträngen
  *   (d) ingen utskicks-affordans (6h-kroken byggs inte här)
  *
- * Kastbar VÄXEL-kod (throwaway-kontraktet ii): formen promoveras vid
- * Marcus stämpel (ADR-102/103/104); det som rivs efteråt är denna
- * variant-gren och fyllnadsläget, aldrig formen.
+ * KVAR MED AVSIKT TILL 374.4 (ADR-102 B3: rivning först efter Marcus
+ * godkännande av den PROMOVERADE ytan i 374.3): fyllnadsfabriken
+ * (`byggFyllnadsdata`) och dataläget `?data=fyll` nedan, bakom
+ * `import.meta.env.DEV` — strukturellt onåbart i produktionsbygget
+ * (verifierat: `npm run build` + grep i `dist/` hittar inga
+ * `@exempel.invalid`-strängar). `IntresseradeKonvergens`-namnet lever också
+ * kvar, som en alias-export ur barreln (`./index.ts`) — inte i denna fil —
+ * eftersom `scripts/check-facit.sh` invariant (c) söker den markören
+ * GLOBALT i `src/` så länge minst ett annat facit-manifest är ogodkänt.
  *
- * Datavägen ärvs (underform A): fetchIntresserade() via useDataSource —
- * ingen egen adapter, inga mutationer. Fyllnadsläget (?data=fyll) är
- * DEV-lokal minnesdata för FORMBEDÖMNING (staging bär endast 2 leads,
- * mätt i TASK-350) — skalprovs-precedentets form: syntetiska rader med
- * @exempel.invalid + varningsruta som inte går att missa.
+ * Datavägen är OFÖRÄNDRAD (underform A): `fetchIntresserade()` via
+ * `useDataSource` — ingen egen adapter, inga mutationer. Fyllnadsläget
+ * (`?data=fyll`) är DEV-lokal minnesdata för Marcus FORMBEDÖMNING (staging
+ * bär endast 2 leads, mätt i TASK-350) — skalprovs-precedentets form:
+ * syntetiska rader med `@exempel.invalid` + varningsruta som inte går att
+ * missa.
  */
 import { useQuery } from '@tanstack/react-query';
 import { UserRound } from 'lucide-react';
@@ -45,8 +60,8 @@ import { queryKeys } from '@/queries/keys';
  * `AnmalningarSida.tsx`s `YTANS_ANKARE` (rad ~86). Ett attribut, ingen ny
  * DOM-nod eller ARIA-roll: `data-testid` syns aldrig i `ariaSnapshot`, så
  * ankaret ändrar inte formen (TASK-374.1 AC #1/#2). Namnet följer den
- * skarpa ytans framtida plats efter promoveringen (`374.2`s rename), inte
- * prototypfilens eget namn — ingen kollision mätt mot `src/`/`tests/`. */
+ * skarpa ytans plats (satt redan i 374.1, INNAN 374.2s rename existerade)
+ * — inte prototypfilens dåvarande eget namn. */
 const YTANS_ANKARE = 'intresserade-yta';
 
 /** Sorteringslägen — konvergensens (b): interaktion (serverns ordning) | namn. */
@@ -82,8 +97,7 @@ function sekundarText(person: Intresserad): string {
   return person.email ? 'Namnlös intresserad' : '';
 }
 
-/** "N dagar sedan"-texten — medvetet enkel (prototyp; personlistans exakta
- * form ärvs vid promoveringen). */
+/** "N dagar sedan"-texten — medvetet enkel form, oförändrad av 374.2s rename. */
 function dagarText(dagar: number): string {
   if (dagar === 0) return 'i dag';
   if (dagar === 1) return 'i går';
@@ -220,7 +234,7 @@ function byggFyllnadsdata(): Intresserad[] {
   });
 }
 
-export function IntresseradeKonvergens() {
+export function Intresserade() {
   const dataSource = useDataSource();
   const headingRef = useRef<HTMLHeadingElement>(null);
   const announceRef = useRef(false);

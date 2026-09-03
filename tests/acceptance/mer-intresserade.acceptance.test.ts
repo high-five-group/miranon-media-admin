@@ -10,10 +10,32 @@ import { expect, test } from './acceptance-bas';
  * Fas 6e L1 Landning 3 — Intresserade-vy (/mer/intresserade, LÄS-vy via get-leads,
  * GLOBAL lista, strikt lead-formel, Senaste interaktion desc).
  *
- * ACCEPTANCE-KLASSEN (task-59.5, ADR-080): filen flyttades hit ur e2e-sviten
- * med hela sitt bevisinnehåll intakt — a11y-assertionerna inkluderade.
- * Klassningen är HÄRLEDD ur hermetik-mätningen (`.hermetik/rapport.jsonl`): 15
- * restanrop, samtliga typsnitt, noll skarpa.
+ * [OMSKRIVEN TILL DEN PROMOVERADE ANATOMIN, TASK-374.2, ADR-103 B2 steg 1]
+ * K0-baslinjen (initialcirkel + namn-rubrik + `<dl>`-fältlista: "Nappat på",
+ * "Antal hämtningar", "Senaste interaktion") är riven — den promoverade
+ * B3-konvergensformen (`src/components/intresserade/Intresserade.tsx`, git-mv:ad
+ * ur `prototype/IntresseradeKonvergens.tsx`) är nu den ENDA vyn på denna
+ * adress. Denna fil hävdade tidigare K0-anatomin; det görs inte längre —
+ * "Nappat på"-listan (`allaHamtningar`-rollupen) visas inte i den nya formen,
+ * så de assertionerna är BORTTAGNA, inte datan (rollup-fältet finns kvar i
+ * schemat och i EF-svaret).
+ *
+ * NY ANATOMI (facit: `tasks/sessions/bilagor/s114-intresserade-konvergens/
+ * facit.json`, yta `intresserade-lista`): primär rad (namn, eller e-posten när
+ * namnet saknas) + sekundär rad (e-post under ett namn, eller "Namnlös
+ * intresserad" dämpat under en e-post) + aktivitetsrad ("N dagar sedan ·
+ * <senaste interaktion>") + hämtnings-pill i högerkolumnen. Sök på namn/e-post
+ * och en sorteringskontroll (husets `Select`, default "Senaste interaktion",
+ * växel "Namn A till Ö") ligger ovanför listan.
+ *
+ * LIVE-REGION-HÄVDANDET (TASK-374.1 AC #3) ÄR INFLYTTAT HIT. Fram till denna
+ * skiva bodde det i en separat fil (`mer-intresserade-konvergens.acceptance.
+ * test.ts`) eftersom formen bara nåddes bakom `?variant=a` — nu ÄR formen
+ * denna adress, så det separata låset är onödigt: samma hävdande (aria-live=
+ * "polite" + aria-atomic="true" på träffräknaren, ingen `role="status"`, och
+ * att texten uppdateras vid sökning) ligger i testet
+ * "sökning filtrerar och räknaren annonseras" nedan. Den gamla filen är riven
+ * i samma commit som denna omskrivning.
  *
  * **Deterministisk via `network.use()`** — inte `page.route`: page-routes prövas
  * FÖRE MSW:s context-routes och hade lagt en andra avlyssningsmekanism ovanpå
@@ -28,17 +50,11 @@ import { expect, test } from './acceptance-bas';
  * stället för att tyst rendera en främmande datamängd. Svarsformen är EF:ens
  * egen (`{ intresserade, nextCursor }`) — snittet ligger vid protokollet.
  *
- * Täckning: roster-rendering (namn + nappat-på/allaHamtningar + antalHamtningar +
- * senaste interaktion), antal-summa, fokus→<h1> + aria-live, tom-state, fel
- * (role=alert), loading aria-busy, namnlös-fallback (MED + UTAN e-post), axe 0
- * i alla tre tillstånd (tomt/ifyllt/fel). LÄS-vy → INGEN write-affordans.
- *
- * UTVIDGAD, INTE OMSKRIVEN (TASK-299.8, PRD TASK-299 § Testbeslut "skarvarna
- * följer skivorna"): den gamla textlänken ("← Tillbaka till Mer") är ersatt av
- * husets sidram (`primitives/SidRam`, kant-i-kant, chevron ensam — rubriken
- * lever kvar i sidan) och varje rad bär nu initialcirkeln
- * (`primitives/InitialAvatar`). Radens fält och deras ordning är oförändrade
- * (AC #3) — bara chromet och avataren är nya, se `Intresserade.tsx`.
+ * Täckning: primär/sekundär rad (namngiven, namnlös MED e-post), aktivitetsrad,
+ * hämtnings-pill (singular/plural), sökning + träffräknare (live-region),
+ * sortering (husets Select, listbox), tom-state, sökning utan träff, fel
+ * (role=alert, ingen retry), loading aria-busy, axe 0 i alla tre tillstånd
+ * (tomt/ifyllt/fel). LÄS-vy → INGEN write-affordans.
  */
 
 /** Härledd ur schemat, ej beskriven bredvid det (TASK-63) — se `acceptance-bas.ts` § fogen. */
@@ -65,7 +81,7 @@ function row(overrides: Partial<Row> = {}): Row {
     erfarenhetsbadge: null,
     senasteInteraktion: 'Laddade ner guide',
     senasteInteraktionDatum: '2026-05-01',
-    dagarSedanSenaste: 30,
+    dagarSedanSenaste: 5,
     harAktivAnmalan: null,
     ejGodkandMail: false,
     radSkapad: '2026-05-01T10:00:00.000Z',
@@ -85,9 +101,7 @@ function mockLeads(
   // manualRelease (opt-in): håll EF-svaret öppet tills testet kallar release().
   // Gör loading-fönstret DETERMINISTISKT i stället för att racea en fast delayMs
   // mot realtid (cold-chunk lazy-load under autoCodeSplitting); speglar
-  // event-anmalda manualRelease (T26 Landning B). Parkeringen bärs nu av ett
-  // OBESVARAT LÖFTE i MSW-resolvern i stället för av ett uppskjutet Route-objekt
-  // — samma bevis, en mekanism (task-59.4:s form).
+  // event-anmalda manualRelease (T26 Landning B).
   let release = () => {};
   const gate = manualRelease ? new Promise<void>((resolve) => (release = resolve)) : null;
   network.use(
@@ -101,8 +115,8 @@ function mockLeads(
   return release;
 }
 
-test.describe('Intresserade-vy (Fas 6e L1 L3 — LÄS-vy via get-leads)', () => {
-  test('roster renderas (namn + nappat-på + antal + senaste interaktion) + summa; fokus → <h1>', async ({
+test.describe('Intresserade-vy (Fas 6e L1 L3 — LÄS-vy via get-leads, promoverad B3-form)', () => {
+  test('roster renderas: primär/sekundär rad + aktivitetsrad + hämtnings-pill; fokus → <h1>', async ({
     page,
     network,
   }) => {
@@ -110,16 +124,16 @@ test.describe('Intresserade-vy (Fas 6e L1 L3 — LÄS-vy via get-leads)', () => 
       row({
         namn: 'Anna Andersson',
         email: 'anna@example.se',
-        antalHamtningar: 2,
-        allaHamtningar: ['Gratis guide', 'Webinar'],
         senasteInteraktion: 'Laddade ner guide',
+        dagarSedanSenaste: 5,
+        antalHamtningar: 2,
       }),
       row({
         namn: 'Bo Bengtsson',
         email: 'bo@example.se',
-        antalHamtningar: 1,
-        allaHamtningar: ['Nyhetsbrev'],
         senasteInteraktion: 'Öppnade välkomstmail',
+        dagarSedanSenaste: 1,
+        antalHamtningar: 1,
       }),
     ]);
     await page.goto('/mer/intresserade');
@@ -132,43 +146,56 @@ test.describe('Intresserade-vy (Fas 6e L1 L3 — LÄS-vy via get-leads)', () => 
     // aria-live bekräftar att listan anlänt.
     await expect(page.getByText('Intresserade laddade.')).toHaveCount(1);
 
-    // Antal-summa som TEXT.
+    // Antal-summa som TEXT (default, ingen sökning).
     await expect(page.getByText('2 intresserade')).toBeVisible();
 
-    // Namn (aldrig record-ID).
+    // Primär rad = namnet, sekundär rad = e-posten (Anna har båda).
     await expect(page.getByText('Anna Andersson')).toBeVisible();
+    await expect(page.getByText('anna@example.se')).toBeVisible();
     await expect(page.getByText('Bo Bengtsson')).toBeVisible();
+    await expect(page.getByText('bo@example.se')).toBeVisible();
 
-    // "Nappat på" — allaHamtningar (string[]) som läsbar kommaseparerad lista.
-    await expect(page.getByText('Gratis guide, Webinar')).toBeVisible();
-    await expect(page.getByText('Nyhetsbrev')).toBeVisible();
+    // Aktivitetsraden: "N dagar sedan · <senaste interaktion>".
+    await expect(page.getByText('5 dagar sedan · Laddade ner guide')).toBeVisible();
+    await expect(page.getByText('i går · Öppnade välkomstmail')).toBeVisible();
 
-    // Antal hämtningar-fältet renderas (dt-etiketten finns).
-    await expect(page.getByText('Antal hämtningar').first()).toBeVisible();
-
-    // Senaste interaktion som läsbar text.
-    await expect(page.getByText('Laddade ner guide')).toBeVisible();
-    await expect(page.getByText('Öppnade välkomstmail')).toBeVisible();
+    // Hämtnings-pillen: plural (2) och singular (1).
+    await expect(page.getByText('2 hämtningar')).toBeVisible();
+    await expect(page.getByText('1 hämtning', { exact: true })).toBeVisible();
 
     // LÄS-vy: ingen write-/markera-kontroll (mailutskick = framtida slice).
-    // Namn-scopad så app-skalets chrome ej ger falskt negativ.
     await expect(
       page.getByRole('button', { name: /skicka|markera|spara|ändra|ta bort/i }),
     ).toHaveCount(0);
 
-    // Tillbaka-chevron → Mer-landningen. TASK-299.8: husets sidram
-    // (`primitives/SidRam`) ersätter den gamla textlänken ("← Tillbaka till
-    // Mer") — chevronens tillgängliga namn bär ingen pil, se
-    // `SidRam.tsx`s `tillbakaEtikett`.
+    // Tillbaka-chevron → Mer-landningen (husets sidram, orörd av promoveringen).
     await expect(page.getByRole('link', { name: 'Tillbaka till Mer' })).toHaveAttribute(
       'href',
       '/mer',
     );
+  });
 
-    // Initialcirklarna (TASK-299.8, `primitives/InitialAvatar`) — dekorativa
-    // (`aria-hidden`), en per rad; namnet bärs av radens egen text.
-    await expect(page.getByText('AA', { exact: true })).toBeVisible();
-    await expect(page.getByText('BB', { exact: true })).toBeVisible();
+  test('namnlös intresserad MED e-post → e-posten primär rad, "Namnlös intresserad" sekundär (dämpat)', async ({
+    page,
+    network,
+  }) => {
+    mockLeads(network, [
+      row({
+        id: 'recINTnamnlos',
+        namn: null,
+        fornamn: null,
+        efternamn: null,
+        email: 'namnlos@example.se',
+      }),
+    ]);
+    await page.goto('/mer/intresserade');
+
+    // Primärraden BÄR e-posten (mailklienternas regel: namn saknas → e-post
+    // är bästa identifierare) — den gamla K0-formens "Namnlös person - …"
+    // finns inte i denna anatomi.
+    await expect(page.getByText('namnlos@example.se').first()).toBeVisible();
+    // Sekundärraden bär den dämpade etiketten.
+    await expect(page.getByText('Namnlös intresserad')).toBeVisible();
   });
 
   test('tom lista → vänlig tom-text, ej fel', async ({ page, network }) => {
@@ -181,24 +208,75 @@ test.describe('Intresserade-vy (Fas 6e L1 L3 — LÄS-vy via get-leads)', () => 
     await expect(page.getByRole('alert')).toHaveCount(0);
   });
 
-  test('namnlös lead MED e-post → "Namnlös person — …" (graciöst, aldrig krasch/tomt)', async ({
+  test('sökning filtrerar och räknaren annonseras (aria-live/aria-atomic, ingen role=status)', async ({
     page,
     network,
   }) => {
     mockLeads(network, [
-      row({ namn: null, fornamn: null, efternamn: null, email: 'namnlos@example.se' }),
+      row({ namn: 'Anna Andersson', email: 'anna@example.se' }),
+      row({
+        id: 'recINTnamnlosSok',
+        namn: null,
+        fornamn: null,
+        efternamn: null,
+        email: 'bo@example.se',
+      }),
     ]);
     await page.goto('/mer/intresserade');
-    await expect(page.getByText('Namnlös person - namnlos@example.se')).toBeVisible();
+
+    const raknare = page.getByText('2 intresserade');
+    await expect(raknare).toBeVisible();
+    await expect(raknare).toHaveAttribute('aria-live', 'polite');
+    await expect(raknare).toHaveAttribute('aria-atomic', 'true');
+    // Rollen är ORÖRD ("paragraph") — role="status" hade dubbelannonserat
+    // (samma teknik som DokumentYta.tsx, se Intresserade.tsx docblock).
+    await expect(raknare).not.toHaveAttribute('role', 'status');
+
+    await page.getByRole('searchbox', { name: 'Sök intresserad' }).fill('Anna');
+    const traffRaknare = page.getByText('1 träffar av 2 intresserade');
+    await expect(traffRaknare).toBeVisible();
+    await expect(page.getByText('Namnlös intresserad')).toHaveCount(0);
+    // SAMMA nod (React uppdaterar textnoden in place) bär fortfarande attributen.
+    await expect(traffRaknare).toHaveAttribute('aria-live', 'polite');
+    await expect(traffRaknare).toHaveAttribute('aria-atomic', 'true');
   });
 
-  test('namnlös lead UTAN e-post → "Namnlös person" (generisk fallback)', async ({
+  test('sökning utan träff → "Inga träffar på sökningen."', async ({ page, network }) => {
+    mockLeads(network, [row({ namn: 'Anna Andersson', email: 'anna@example.se' })]);
+    await page.goto('/mer/intresserade');
+
+    await page.getByRole('searchbox', { name: 'Sök intresserad' }).fill('zzz-ingen-traff');
+    await expect(page.getByText('Inga träffar på sökningen.')).toBeVisible();
+    await expect(page.getByText('0 träffar av 1 intresserade')).toBeVisible();
+  });
+
+  test('sortering via husets Select — "Namn A till Ö" omordnar listan', async ({
     page,
     network,
   }) => {
-    mockLeads(network, [row({ namn: null, fornamn: null, efternamn: null, email: null })]);
+    // Serverordning (default "Senaste interaktion"): Zebra FÖRE Anna —
+    // motsatt alfabetisk ordning, så en reordering vid namn-sort är synlig.
+    mockLeads(network, [
+      row({ id: 'recINTzebra', namn: 'Zebra Larsson', email: 'zebra@example.se' }),
+      row({ id: 'recINTanna', namn: 'Anna Andersson', email: 'anna@example.se' }),
+    ]);
     await page.goto('/mer/intresserade');
-    await expect(page.getByText('Namnlös person', { exact: true })).toBeVisible();
+
+    // Scopat till ytans egen lista — `getByRole('listitem')` osoperad matchar
+    // även app-skalets navigationsmeny (t.ex. "Mer"), som också renderar
+    // <li>-element.
+    const rader = page.getByTestId('intresserade-yta').getByRole('listitem');
+    await expect(rader.first()).toContainText('Zebra Larsson');
+    await expect(rader.last()).toContainText('Anna Andersson');
+
+    // Husets Select: tillgängligt namn = värde + etikett ("Senaste
+    // interaktion Sortera efter" — se tests/visual/intresserade-
+    // promoverings-grind.spec.ts ariaSnapshot-referenserna).
+    await page.getByRole('button', { name: 'Senaste interaktion Sortera efter' }).click();
+    await page.getByRole('option', { name: 'Namn A till Ö' }).click();
+
+    await expect(rader.first()).toContainText('Anna Andersson');
+    await expect(rader.last()).toContainText('Zebra Larsson');
   });
 
   test('fel (4xx, klient-fel) → fel-UI via role=alert (ingen retry)', async ({ page, network }) => {
@@ -221,8 +299,6 @@ test.describe('Intresserade-vy (Fas 6e L1 L3 — LÄS-vy via get-leads)', () => 
   });
 
   test('axe 0 violations på TOM vy', async ({ page, network }) => {
-    // TASK-299.8 DoD #5 — sidramen (SidRam) och det tomma läget tillsammans;
-    // ingen rad, alltså ingen InitialAvatar heller, men chevronen är kvar.
     mockLeads(network, []);
     await page.goto('/mer/intresserade');
     await expect(page.getByText('Inga intresserade än.')).toBeVisible();
@@ -234,14 +310,17 @@ test.describe('Intresserade-vy (Fas 6e L1 L3 — LÄS-vy via get-leads)', () => 
     expect(results.violations).toEqual([]);
   });
 
-  test('axe 0 violations på IFYLLD vy (sidram + initialcirklar, TASK-299.8)', async ({
+  test('axe 0 violations på IFYLLD vy (namngiven + namnlös rad, sök + sortering)', async ({
     page,
     network,
   }) => {
     mockLeads(network, [
       row({ namn: 'Anna Andersson', email: 'anna@example.se' }),
       row({
-        namn: 'Bo Bengtsson',
+        id: 'recINTnamnlosAxe',
+        namn: null,
+        fornamn: null,
+        efternamn: null,
         email: 'bo@example.se',
         senasteInteraktion: 'Anmälde nyhetsbrev',
       }),
@@ -257,7 +336,6 @@ test.describe('Intresserade-vy (Fas 6e L1 L3 — LÄS-vy via get-leads)', () => 
   });
 
   test('axe 0 violations på FEL-vy (4xx, role=alert)', async ({ page, network }) => {
-    // TASK-299.8 DoD #5 — MessageBox (role=alert) bredvid den nya sidramen.
     mockLeads(network, [], { status: 404 });
     await page.goto('/mer/intresserade');
     await expect(page.getByRole('alert')).toContainText('Kunde inte hämta intresserade');
