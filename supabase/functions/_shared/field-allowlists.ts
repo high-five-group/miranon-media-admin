@@ -104,6 +104,25 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
     tableId: 'Anmälningar',
     allowedFields: ['Status', 'Notering'],
   },
+  // Ombokningens skrivning på den GAMLA anmälan (TASK-368.4, PRD TASK-368
+  // beslut 7–8, ADR-130). EXAKT samma två fält som `cancel-registration` ovan
+  // — och det är MED AVSIKT en EGEN nyckel, inte ett återbruk av den:
+  // allowlisten är per OPERATION, inte per fältmängd, och en delad nyckel hade
+  // gjort att en framtida utvidgning av den ena tyst vidgat den andra. Samma
+  // resonemang som `create-attachment`/`upload-attachment`-paret längre ned i
+  // denna fil redan bär ("EGEN OPERATIONSNYCKEL, INTE ÅTERANVÄND").
+  //
+  // Övergången (aktiv → Avbokad/Ombokad) prövas av `_shared/rebook-registration.ts`s
+  // `beslutaOmbokning` INNAN denna allowlist ens nås; Notering skrivs som
+  // append med den datumstämplade Ombokad-raden sist (befintlig text bevaras
+  // byte för byte). Den NYA anmälan skapas via `create-registration`-postens
+  // egna fält — `_shared/create-registration.ts` läser den nyckeln, inte denna.
+  // Båda fälten LIVE-VERIFIERADE (data-model.md, identiska fält-ID:n i staging
+  // och prod). Tabell per NAMN (ADR-050 bas-portabilitet).
+  'rebook-registration': {
+    tableId: 'Anmälningar',
+    allowedFields: ['Status', 'Notering'],
+  },
   // Bor över-markeringen per anmälan (task-18.7, PRD task-18 beslut 8 —
   // eventsidans kryss-läge). EXAKT ett fält: 'Bor över' (fldGYYNnQi7XlfbhP,
   // checkbox), ADDITIVT skapat i STAGING 2026-07-22 och skrivbarheten

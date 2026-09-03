@@ -625,3 +625,39 @@ export function kanForhandsgranska(
   if (!rad.medKvitto) return false;
   return vantandeIds.includes(rad.inbetalningId);
 }
+
+/**
+ * [TASK-370.4, review-runda 1 FYND 1] Fångar TALET ur EF:ens
+ * (`supabase/functions/_shared/kvitto-kombination.ts`s
+ * `valideraInbetalningIdLista`) tak-avvisning — den engelska texten
+ * "inbetalningIds may contain at most 30 entries (got 35)" — i stället för
+ * att duplicera `MAX_KOMBINERADE_KVITTON` som en egen klientkonstant. PRD
+ * TASK-370-uppdragets egen motivering: "en klientkopia som kan glida är
+ * sämre än att läsa felet från EF:en".
+ *
+ * UTBRUTEN UR `BetalningsInkorg.tsx` TILL DENNA RENA MODUL, SPECIFIKT FÖR
+ * ATT KUNNA BEVISAS MOT EF-KÄLLAN: en regex gömd inline i en komponent kan
+ * inte importeras av ett Node-test, och ett test som bara mockar en
+ * HANDSKRIVEN kopia av EF:ens sträng (så som `betalningar-inkorg-
+ * forhandsgranska-alla.staging.test.ts` gör) bevisar bara att regexen
+ * matchar sin egen förlaga — inte att den matchar EF:ens FAKTISKA text.
+ * Den bindningen ligger i stället i `tests/api/forhandsgranska-alla-tak-
+ * bindning.test.ts`, som importerar BÅDA sidorna: `valideraInbetalningIdLista`
+ * (EF-modulen, körd med 31 UUID:er, det verkliga kastade felet) OCH denna
+ * funktion, och asserterar att `tolkaTakfel(felets message) ===
+ * MAX_KOMBINERADE_KVITTON`. Ändras EF:ens ordalydelse fäller DET testet —
+ * inte tyst en drift till att Lotta ser EF:ens råa engelska text.
+ *
+ * Returnerar `null` när meddelandet inte matchar mönstret (annat fel, eller
+ * EF:ens text har ändrats på ett sätt bindnings-testet ännu inte känner
+ * till) — anroparen visar då EF:ens råa meddelande i stället för att gissa
+ * ett tal, se `BetalningsInkorg.tsx`s `forhandsgranskaAlla`.
+ */
+const TAK_FELMATCH = /may contain at most (\d+) entries/;
+
+export function tolkaTakfel(meddelande: string): number | null {
+  const traff = meddelande.match(TAK_FELMATCH);
+  if (!traff) return null;
+  const tal = Number(traff[1]);
+  return Number.isFinite(tal) ? tal : null;
+}

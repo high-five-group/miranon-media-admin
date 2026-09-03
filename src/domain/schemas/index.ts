@@ -137,6 +137,11 @@ export {
   PersonTouchpointEntrySchema,
 } from './PersonDetail.schema';
 export { PersonNoteSchema } from './PersonNote.schema';
+export {
+  type RebookRegistrationInput,
+  type RebookRegistrationResult,
+  RebookRegistrationResultSchema,
+} from './RebookRegistration.schema';
 export { RegistrationSchema } from './Registration.schema';
 export {
   type RegistrationDetail,

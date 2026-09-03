@@ -40,6 +40,8 @@ import type {
   OppnaBetalningar,
   PersonDetail,
   PlaceListItem,
+  RebookRegistrationInput,
+  RebookRegistrationResult,
   RecordActivityResult,
   RegistrationDetail,
   RegistreraInbetalningInput,
@@ -314,6 +316,25 @@ export interface DataSourceAdapter {
    * återtas; allt annat avvisas med 409.
    */
   atertaAvbokning(input: CancelRegistrationInput): Promise<CancelRegistrationResult>;
+
+  /**
+   * Boka om en anmälan till ett annat event (TASK-368.4, PRD TASK-368
+   * beslut 7-8, ADR-130). EN operation (`rebook-registration`-EF:en) som
+   * skapar den nya anmälan på det valda eventet, flyttar personens AKTIVA
+   * inbetalningar dit (kvittot rörs aldrig), sätter den gamla till
+   * "Avbokad/Ombokad" med en datumstämplad Ombokad-rad i Notering, räknar om
+   * basens spegel på BÅDA anmälningarna och loggar handlingen.
+   *
+   * Endast en AKTIV anmälan kan bokas om, aldrig till det event den redan
+   * sitter på, och aldrig till ett event personen redan har en anmälan på
+   * (`redan_anmald_pa_malet`) — pengar slås aldrig ihop mellan två anmälningar
+   * automatiskt (ADR-130). Alla tre avvisas med 409.
+   *
+   * Ett omanrop av en REDAN UTFÖRD ombokning är däremot ofarligt: servern
+   * känner igen den på gamla anmälans status plus dess Ombokad-rad och svarar
+   * `aterupptaget: true` utan att skriva något.
+   */
+  bokaOmAnmalan(input: RebookRegistrationInput): Promise<RebookRegistrationResult>;
 
   /**
    * Skicka ett åtgärdsutskick (TASK-147.2, ADR-067-revisionen): SERVERN skickar
@@ -700,6 +721,51 @@ export interface DataSourceAdapter {
    * inte.
    */
   previewKvittoForInbetalning(inbetalningId: string): Promise<DocumentPreview>;
+
+  /**
+   * [TASK-370.4, PRD TASK-370 § Implementationsbeslut, S116 Del 2 beslut 1]
+   * "Förhandsgranska alla N" — ETT kombinerat dokument (försättsblad + en
+   * sida per kvitto) för HELA den väntande kön, i visningsordning.
+   *
+   * ═══════════════════════════════════════════════════════════════════════
+   * EGEN METOD, INTE EN LISTVARIANT AV `previewKvittoForInbetalning`
+   * ═══════════════════════════════════════════════════════════════════════
+   * Samma resonemang som skiljer `previewKvittoForInbetalning` från
+   * `previewReceipt` ovan: en anropare ska kunna läsa av KONTRAKTET av
+   * METODNAMNET, inte av hur många element en array råkar innehålla. Denna
+   * metod svarar dessutom på en tredje, EGEN fråga ("hur ser HELA kön ut
+   * som ETT dokument") med ett ANNAT felläge (allt-eller-inget — ett trasigt
+   * kvitto bland N fäller HELA anropet) och ett tak (`MAX_KOMBINERADE_
+   * KVITTON` i EF-lagrets `_shared/kvitto-kombination.ts`) som den enskilda
+   * varianten aldrig kan träffa.
+   *
+   * SAMMA EF (`preview-receipt`), TREDJE, additiv body: `{ inbetalningIds }`
+   * (en array, i stället för `inbetalningId`/`eventId`) — se `preview-
+   * receipt/index.ts`s egen gren-dokumentation för hela kedjan
+   * (validering → allt-eller-inget-hämtning → komposition → ETT DocRaptor-
+   * anrop → egen lagringsnyckel `utkast/kombinerat/<requestId>.pdf`).
+   *
+   * SIDOEFFEKTSFRIHETEN ÄR OFÖRÄNDRAD (samma invariant som ovan): inget
+   * allokerat kvittonummer, ingen `kvitton`-rad, inget mail — bara det
+   * transienta, kombinerade Storage-utkastet.
+   *
+   * SVARSFORMEN ÄR SAMMA `DocumentPreview` — EF:en returnerar dessutom ett
+   * `requestId` (lagringsnyckelns identitet), men det fältet är INTE del av
+   * detta kontrakt: `DocumentPreviewSchema.parse(...)` stryper okända
+   * nycklar (Zods default), och ingen klientkonsument behöver det — anroparen
+   * ÄGER fönstret precis som för `previewKvittoForInbetalning`
+   * (`window.open('', '_blank')` SYNKRONT i klickets tick, `location.href`
+   * satt när svaret kommer).
+   *
+   * TAKÖVERSKRIDANDE OCH ALLT-ELLER-INGET SVARAR MED ETT VANLIGT KASTAT FEL
+   * (`EdgeFunctionError`, samma väg som alla andra `postEdgeFunction`-anrop)
+   * — anroparen (`BetalningsInkorg.tsx`s `forhandsgranskaAlla`) tolkar
+   * felmeddelandet för att visa ett begripligt tak-meddelande i stället för
+   * EF:ens råa valideringstext; se den funktionens docblock för varför
+   * TOLKNINGEN sker KLIENT-sidigt (läser felet, i stället för en egen
+   * klientkopia av taket som kan glida ur synk med EF:ens).
+   */
+  previewKvittonForInbetalningar(inbetalningIds: string[]): Promise<DocumentPreview>;
 
   /**
    * Hämta en cursor-paginerad sida av Aktivitetsloggen (TASK-201.5, PRD

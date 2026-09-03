@@ -40,6 +40,8 @@ import {
   type OppnaBetalningar,
   type PersonDetail,
   type PlaceListItem,
+  type RebookRegistrationInput,
+  type RebookRegistrationResult,
   type RecordActivityResult,
   RecordActivityResultSchema,
   type RegistrationDetail,
@@ -224,6 +226,10 @@ export class SupabaseAdapter implements DataSourceAdapter {
     throw new Error(NOT_IMPLEMENTED);
   }
 
+  async bokaOmAnmalan(_input: RebookRegistrationInput): Promise<RebookRegistrationResult> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
   async sendActionEmail(_input: SendActionEmailInput): Promise<SendActionEmailResult> {
     throw new Error(NOT_IMPLEMENTED);
   }
@@ -310,6 +316,10 @@ export class SupabaseAdapter implements DataSourceAdapter {
   }
 
   async previewKvittoForInbetalning(_inbetalningId: string): Promise<DocumentPreview> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async previewKvittonForInbetalningar(_inbetalningIds: string[]): Promise<DocumentPreview> {
     throw new Error(NOT_IMPLEMENTED);
   }
 

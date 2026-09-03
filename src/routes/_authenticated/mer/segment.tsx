@@ -9,12 +9,15 @@ import { VariantD } from '@/components/segment/prototyp/VariantD';
 // Nytt pass-namespace (s114-segmentlistan-konvergens) — nyckeln `a` är
 // passets egen, inte 249-divergensens rivna a/b/c (ADR-074-noten i Del 4).
 const PROTO_VARIANTS: PrototypeVariant[] = [
-  { key: 'a', label: 'Konvergens', steg: 1, stegLabel: 'K1 - sektioner + kompakta kort' },
+  { key: 'a', label: 'Konvergens', steg: 3, stegLabel: 'K3 - brickor, korthöjd låst' },
 ];
 const PROTO_DATA_LAGEN: readonly PrototypeDataLage[] = [
   { value: null, label: 'Demo' },
   { value: 'tom', label: 'Tomläge' },
 ];
+// [PROTOTYPE] K2 bar en korthöjds-växel (`?kort=kompakt|facit`) i rälsen så
+// värdet kunde omstämplas i browsern (S114 Del 3 beslut 3). Marcus valde
+// kompakt (K3, 2026-09-03) — växeln är riven, värdet är låst i komponenten.
 
 export const Route = createFileRoute('/_authenticated/mer/segment')({
   staticData: { title: 'Segment' },

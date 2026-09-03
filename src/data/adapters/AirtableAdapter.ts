@@ -65,6 +65,9 @@ import {
   parsaAttachment,
   parsaAttachments,
   parsaSkapadEventBilaga,
+  type RebookRegistrationInput,
+  type RebookRegistrationResult,
+  RebookRegistrationResultSchema,
   type RecordActivityResult,
   RecordActivityResultSchema,
   type RegistrationDetail,
@@ -657,6 +660,22 @@ export class AirtableAdapter implements DataSourceAdapter {
   }
 
   /**
+   * Boka om en anmälan till ett annat event (TASK-368.4, ADR-130). EGEN EF
+   * (`rebook-registration`), inte ett tredje `atgard`-värde på
+   * `cancel-registration` — operationen SKAPAR en anmälan och rör Postgres,
+   * samma gräns betalningsdomänen redan drar mellan `registrera-inbetalning`
+   * och `hantera-inbetalning`; se EF:ens filhuvud. `.parse()` validerar vid
+   * datagränsen (ADR-026).
+   */
+  async bokaOmAnmalan(input: RebookRegistrationInput): Promise<RebookRegistrationResult> {
+    const data = await postEdgeFunction<unknown>('rebook-registration', {
+      registrationId: input.registrationId,
+      nyttEventId: input.nyttEventId,
+    });
+    return RebookRegistrationResultSchema.parse(data);
+  }
+
+  /**
    * Skicka ett åtgärdsutskick (TASK-147.2). POST mot send-action-email-EF:en
    * (TASK-147.1), som löser mottagarna SERVER-SIDE (klienten skickar bara
    * record-ID:n + eventId), sänder via den bilage-fria batchgrenen och
@@ -1217,6 +1236,17 @@ export class AirtableAdapter implements DataSourceAdapter {
    */
   async previewKvittoForInbetalning(inbetalningId: string): Promise<DocumentPreview> {
     const data = await postEdgeFunction<unknown>('preview-receipt', { inbetalningId });
+    return DocumentPreviewSchema.parse(data);
+  }
+
+  /**
+   * [TASK-370.4] "Förhandsgranska alla N" — samma EF, TREDJE additiva body.
+   * Se `DataSourceAdapter.previewKvittonForInbetalningar` för hela
+   * motiveringen (egen metod, allt-eller-inget, taket, `requestId`-fältet
+   * som medvetet stryks av `DocumentPreviewSchema.parse`).
+   */
+  async previewKvittonForInbetalningar(inbetalningIds: string[]): Promise<DocumentPreview> {
+    const data = await postEdgeFunction<unknown>('preview-receipt', { inbetalningIds });
     return DocumentPreviewSchema.parse(data);
   }
 

@@ -376,7 +376,22 @@ test.describe('promoverings-grinden — ariaSnapshot-referenser för segment-yta
   }) => {
     await gotoSegmentytan(page, network);
     await vantaInRakningar(page);
-    await page.getByRole('button', { name: 'Visa täckning' }).click();
+    // [B2-promoveringen, S117] Knappen heter INTE längre garanterat "Visa
+    // täckning" vid det här laget: sedan flippen räknar `SegmentLista` de
+    // fjortons täckning EAGERT (samma frågor som `TackningsPanel` skulle
+    // ställt, bara tidigare), och i DENNA fixturvärld är utfallet redan känt
+    // och friskt när `vantaInRakningar` (väntar in ALLA `/Räknar/`-texter,
+    // inklusive knappens egen "Räknar täckningen…") går igenom — etiketten
+    // har då redan hunnit bli "Full täckning · 8 av 8" (facitets tillägg,
+    // se `VariantD.tsx` § `tackningsEtikett`). Matchningen mot /täckning/i
+    // fångar alla tre etiketterna ("Visa täckning"/"Dölj täckning"/"Full
+    // täckning · N av N") och är därmed oberoende av VILKEN av dem knappen
+    // råkar bära i just detta ögonblick — testets ärende är att KLICKA på
+    // täckningsknappen, inte att bevisa dess etikett (det gör den låsta
+    // `segment-listan`-referensen). `tackningsvyn.aria.yml` self scopar
+    // ENDAST till panelen (en syskon-nod till knappen), och är därför
+    // OFÖRÄNDRAD av detta — se PR-kroppens § Aria-omlåsning.
+    await page.getByRole('button', { name: /täckning/i }).click();
     await vantaInRakningar(page);
     await expect(page.getByText('100 % - Full täckning')).toBeVisible();
     await expect(page.getByTestId('tackningsvyn')).toMatchAriaSnapshot({
