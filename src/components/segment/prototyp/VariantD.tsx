@@ -225,6 +225,7 @@ import {
   Pencil,
   Plus,
   Send,
+  UserRound,
   Users,
   X,
 } from 'lucide-react';
@@ -754,6 +755,137 @@ function definitionFor(entitet: SegmentEntitet, parInfo: ParInfo[]): string {
     : med;
 }
 
+/* ================================================================== *
+ * REGELN SOM CHIPS — läs-only strukturvy (TASK-390 punkt 7)
+ * ================================================================== */
+
+/**
+ * En LÄS-ONLY chip — samma geometri som regelverkstadens `ValChip` (rundad
+ * kant, samma padding/typsnitt), men `<span>` i stället för `<button>`: ingen
+ * `aria-pressed`, ingen knapp-semantik, ingenting att trycka på. Alltid i det
+ * OVALDA utseendet (`ValChip`s `vald={false}`-gren) — en chip här visar bara
+ * VAD regeln innehåller, den kan aldrig vara "vald".
+ */
+function RegelChip({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="rounded-full border border-border bg-surface px-3 py-1 text-small text-text-secondary contrast-more:border-border-strong">
+      {children}
+    </span>
+  );
+}
+
+/** Dämpad operator-text mellan chip-grupper — "och"/"eller"/"Utan:". Vanlig,
+ *  läsbar text (ALDRIG `aria-hidden`): operatorn bär betydelse (AND/OR/NOT)
+ *  och ska nå skärmläsaren som texten den är. */
+function RegelOperator({ children }: { children: React.ReactNode }) {
+  return <span className="text-small text-text-muted">{children}</span>;
+}
+
+/**
+ * Chip-etiketterna för ETT villkor — modaliteten först (den är obligatorisk
+ * och aldrig underförstådd, `SÄKERHETSKRAVET` i verkstaden), sedan familjer
+ * och nivåer i tur och ordning. Speglar `villkorKlartext`s dimensioner men
+ * som separata, skanbara chips i stället för en sammanhållen mening.
+ */
+function chipsForVillkor(v: Villkor): string[] {
+  const modalitetChip =
+    v.modalitet === 'Föreläsning'
+      ? 'Föreläsning'
+      : v.modalitet === 'Båda'
+        ? 'Utbildning eller föreläsning'
+        : 'Utbildning';
+  return [modalitetChip, ...v.familjer, ...v.nivaer.map((n) => NIVA_ETIKETT[n])];
+}
+
+/**
+ * Regeln STRUKTURERAT, under avsiktsmeningens prosa (`definitionFor`,
+ * renderad av anroparen). TVÅ GRENAR, en per lagringsform — ingen egen
+ * parallell datakälla:
+ *
+ *   · `entitet.predikat`: AND/OR-strukturen är ÄKTA (Konjunkt-grupper i
+ *     `med`, bundna med "och" inom en grupp och "eller" mellan grupper,
+ *     `utan` som platt uteslutning) — samma träd `predikatKlartext` läser.
+ *   · Äldre uppräknad form (`predikat === null`): `bruttoRegelFor` ger en
+ *     PLATT union (`include`/`exclude`), för den formen har ingen AND-
+ *     struktur att bevara — ren uppräkning, "eller" mellan varje par.
+ *
+ * Tom regel (inget giltigt villkor byggt än) renderar ingenting — samma
+ * neutrala tomhet som `tomRegel`-grenen ovanför i `SegmentDetalj` redan
+ * hanterar; prosan ovan ("Ingen regel byggd än."/"Uppräknad regel utan
+ * inkluderade utbildningar.") räcker då som ensam text.
+ */
+function RegelStruktur({ entitet, parInfo }: { entitet: SegmentEntitet; parInfo: ParInfo[] }) {
+  if (entitet.predikat) {
+    const med = entitet.predikat.med.filter(konjunktGiltig);
+    const utan = entitet.predikat.utan.filter(villkorGiltigt);
+    if (med.length === 0) return null;
+    return (
+      <div className="flex flex-col gap-2">
+        <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+          {med.map((k, ki) => (
+            <span key={k.id} className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+              {ki > 0 && <RegelOperator>eller</RegelOperator>}
+              <span className="flex flex-wrap items-center gap-1.5">
+                {k.villkor.filter(villkorGiltigt).map((v, vi) => (
+                  <span key={v.id} className="flex flex-wrap items-center gap-1.5">
+                    {vi > 0 && <RegelOperator>och</RegelOperator>}
+                    <span className="flex flex-wrap items-center gap-1">
+                      {chipsForVillkor(v).map((c) => (
+                        <RegelChip key={c}>{c}</RegelChip>
+                      ))}
+                    </span>
+                  </span>
+                ))}
+              </span>
+            </span>
+          ))}
+        </div>
+        {utan.length > 0 && (
+          <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
+            <RegelOperator>Utan:</RegelOperator>
+            {utan.map((v, vi) => (
+              <span key={v.id} className="flex flex-wrap items-center gap-1.5">
+                {vi > 0 && <RegelOperator>eller</RegelOperator>}
+                <span className="flex flex-wrap items-center gap-1">
+                  {chipsForVillkor(v).map((c) => (
+                    <RegelChip key={c}>{c}</RegelChip>
+                  ))}
+                </span>
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  const rule = bruttoRegelFor(entitet, parInfo);
+  if (rule.include.length === 0) return null;
+  return (
+    <div className="flex flex-col gap-2">
+      <div className="flex flex-wrap items-center gap-1.5">
+        {rule.include.map((p, i) => (
+          <span key={parKey(p)} className="flex flex-wrap items-center gap-1.5">
+            {i > 0 && <RegelOperator>eller</RegelOperator>}
+            <RegelChip>{labelForPar(p)}</RegelChip>
+          </span>
+        ))}
+      </div>
+      {rule.exclude.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          <RegelOperator>Utan:</RegelOperator>
+          {rule.exclude.map((p, i) => (
+            <span key={parKey(p)} className="flex flex-wrap items-center gap-1.5">
+              {i > 0 && <RegelOperator>eller</RegelOperator>}
+              <RegelChip>{labelForPar(p)}</RegelChip>
+            </span>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 /**
  * PARTITION-GENERATORN — kärnan bakom "Dela upp i grupper" och de fjorton
  * förskapade grupperna nedan (S104 Del 3, Marcus-beslut "partition som
@@ -1031,9 +1163,16 @@ function aktaNamn(m: { namn: string | null }): string | null {
   return rensat.toLocaleLowerCase('sv-SE') === NAMN_SENTINEL ? null : rensat;
 }
 
-/** Namnet som det VISAS i en lista — fallbacken är en upplysning, aldrig ett namn. */
+/**
+ * Namnet som det VISAS i en lista — fallbacken är en upplysning, aldrig ett
+ * namn. UTAN parentes (TASK-390 punkt 4, Marcus 2026-09-04): "(namn saknas)"
+ * var appens enda parentetiska variant — `Waitlist.tsx`, `Narvaro.tsx`,
+ * `EventCheckin.tsx`, `EventRegistrations.tsx` och `registration-display.ts`
+ * skriver alla samma upplysning utan parentes ("Namn saknas"). Formen bär nu
+ * samma ord som resten av appen.
+ */
 function visatNamn(m: { namn: string | null }): string {
-  return aktaNamn(m) ?? '(namn saknas)';
+  return aktaNamn(m) ?? 'Namn saknas';
 }
 
 /**
@@ -2336,14 +2475,31 @@ function PersonRad({
   endastForelasning?: boolean;
 }) {
   const namn = visatNamn(medlem);
+  // NAMNLÖS → PERSON-IKON, ALDRIG INITIALER UR PLATSHÅLLARTEXTEN (TASK-390
+  // punkt 5, Marcus 2026-09-04). "NS" (initialerna ur "Namn saknas") hade
+  // sett ut som en persons riktiga initialer — exakt den missvisning
+  // `Intresserade.tsx`s `KonvergensRad` redan löste ut för "Namnlös
+  // intresserad" (samma `size-9`/`bg-bg-muted`/`text-text-muted`/`UserRound
+  // size-5`-form, kopierad rakt av). `aktaNamn`, inte `namn`-strängen: den
+  // enda källan till sanning om huruvida personen HAR ett namn.
+  const namnlos = aktaNamn(medlem) === null;
   return (
     <li className="flex break-inside-avoid items-center gap-3 py-2.5">
-      <span
-        aria-hidden="true"
-        className="flex size-9 shrink-0 items-center justify-center rounded-full bg-bg-emphasized font-semibold text-small text-text-secondary"
-      >
-        {initialer(namn)}
-      </span>
+      {namnlos ? (
+        <span
+          aria-hidden="true"
+          className="flex size-9 shrink-0 items-center justify-center rounded-full bg-bg-muted text-text-muted"
+        >
+          <UserRound className="size-5" />
+        </span>
+      ) : (
+        <span
+          aria-hidden="true"
+          className="flex size-9 shrink-0 items-center justify-center rounded-full bg-bg-emphasized font-semibold text-small text-text-secondary"
+        >
+          {initialer(namn)}
+        </span>
+      )}
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="flex min-w-0 flex-wrap items-center gap-2">
           <span className="truncate font-medium text-body">{namn}</span>
@@ -2432,7 +2588,7 @@ function PublikSektion({
     [medlemmar, vy, sokTerm],
   );
 
-  // PUBLIKENS ÖPPNA TAL. 154 av 247 rader som säger "(namn saknas)" är inte en
+  // PUBLIKENS ÖPPNA TAL. 154 av 247 rader som säger "Namn saknas" är inte en
   // kontrollista man kan granska — och QA-fyndet 2026-08-17 ("varför står det
   // Hej Ej?") hade besvarat sig självt med den här raden på plats. Räknas ur
   // HELA publiken, aldrig ur `synliga`: talet beskriver mängden man ska skicka
@@ -2571,34 +2727,49 @@ function PublikSektion({
           ) : (
             // LISTYTAN ÄR PERSONLISTANS (`PersonsList.tsx:476-479`): tonal
             // platta, `divide-y` som avdelare, `px-4` inner-inset "där
-            // rundningen slutar". Den yttre `mx-4` ersätter sektionens `px-4`
-            // på just denna rad - plattan ska ha samma kant som sidans övriga
-            // kort, inte ligga i marginalen.
+            // rundningen slutar" — INGEN egen omslutande `<div>` (TASK-390
+            // punkt 2, Marcus 2026-09-04, DOM-mätt): den TIDIGARE ytterdiven
+            // (`<div className="px-4">`) lade sin EGEN `px-4` UTANPÅ ulens
+            // redan egna `px-4`, alltså dubbel inset — 32 px på mobil (311 px
+            // platta mot knappkortets 343 px bredd, samma vänsterkant +16 px
+            // förskjuten), 16 px på varje sida på desktop (536 px platta mot
+            // knappkortets 568 px, x=452 mot kortets x=436). `<ul>` bär nu
+            // SAMMA mönster som `KORT_KLASS`-korten ovanför den (samma
+            // `rounded-2xl border ... bg-bg-muted px-4`-stomme som
+            // primärknappens kort), direkt under sektionens flöde — exakt
+            // samma vänster/högerkant som knappkortet och rubrikraden.
             //
             // `pr-2.5` FÖRE `px-4` i klasslistan hade förlorat mot den; därför
             // står rullningens klasser sist. Höger-insetet blir 10 px i stället
             // för 16 - det är plats åt rullningslisten (`scrollbar-inline`),
             // samma val som `DeltagarListan`.
-            <div className="px-4">
-              <ul
-                aria-label="Personer i publiken"
-                // biome-ignore lint/a11y/noNoninteractiveTabindex: fokuserbar scrollregion är WCAG 2.1.1-golvet (axe scrollable-region-focusable) — samma motiv som NyaAnmalningarCard.tsx:112.
-                tabIndex={kanRulla ? 0 : undefined}
-                className={`flex flex-col divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong ${
-                  kanRulla
-                    ? 'focus-ring-inset scrollbar-inline max-h-[25.5rem] overflow-y-auto pr-2.5 print:max-h-none print:overflow-visible print:pr-4'
-                    : ''
-                }`}
-              >
-                {synliga.map((m) => (
-                  <PersonRad
-                    key={m.id}
-                    medlem={m}
-                    endastForelasning={endastForelasning?.has(m.id)}
-                  />
-                ))}
-              </ul>
-            </div>
+            //
+            // `py-1.5` ÄR NYTT (punkt 3, samma DOM-mätning): ulen bar tidigare
+            // `paddingTop: 0px` — första radens EGNA `py-2.5` (10 px) var alltså
+            // den enda marginalen mot en `rounded-2xl`-hörnradie på 16 px, så
+            // hörnkurvan sträckte sig in över radens topp innan innehållet ens
+            // börjat (samma iakttagelse som Marcus gjorde: "rullningslisten går
+            // för högt upp"). `DeltagarListan` har inte problemet — dess `<ul>`
+            // är själv OSMYCKAD (`Deltagare.tsx:1211`, `gap-2.5`, ingen egen
+            // rundning); varje KORT bär sin egen rundning i stället. Här, där
+            // hela plattan (inte varje rad) är kortet, ger `py-1.5` (6 px)
+            // tillsammans med radens 10 px totalt 16 px — matchar hörnradien
+            // exakt, så kurvan aldrig biter in i en rads innehåll, först eller
+            // sist.
+            <ul
+              aria-label="Personer i publiken"
+              // biome-ignore lint/a11y/noNoninteractiveTabindex: fokuserbar scrollregion är WCAG 2.1.1-golvet (axe scrollable-region-focusable) — samma motiv som NyaAnmalningarCard.tsx:112.
+              tabIndex={kanRulla ? 0 : undefined}
+              className={`flex flex-col divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4 py-1.5 contrast-more:border-border-strong ${
+                kanRulla
+                  ? 'focus-ring-inset scrollbar-inline max-h-[25.5rem] overflow-y-auto pr-2.5 print:max-h-none print:overflow-visible print:pr-4'
+                  : ''
+              }`}
+            >
+              {synliga.map((m) => (
+                <PersonRad key={m.id} medlem={m} endastForelasning={endastForelasning?.has(m.id)} />
+              ))}
+            </ul>
           )}
         </>
       )}
@@ -2715,7 +2886,11 @@ function SegmentDetalj({
               className={`${RAD_KLASS} disabled:cursor-not-allowed disabled:opacity-60`}
             >
               <Send aria-hidden="true" size={16} className="shrink-0" />
-              Skicka utskick till det här segmentet
+              {/* TASK-390 punkt 1 (Marcus 2026-09-04): "Skicka" var appens ord
+                  för AVSÄNDANDET (mailet går ut nu); "Gör" är ordet för att
+                  ÖPPNA VERKTYGET — knappen leder till granska-läget, den
+                  skickar ingenting själv. */}
+              Gör ett utskick till det här segmentet
               <ChevronRight
                 aria-hidden="true"
                 size={18}
@@ -2737,11 +2912,14 @@ function SegmentDetalj({
           skapar i skov, kontrollerar alltid) — men den måste gå att nå, och
           "Ändra regeln" är raden som leder vidare (chevron höger). */}
         <DetaljGrupp id="grupp-regel" rubrik="Regeln">
-          <EtikettVardeRad term="Form">
-            {entitet.predikat
-              ? 'Predikat över dimensioner'
-              : 'Uppräknade utbildningspar (äldre form)'}
-          </EtikettVardeRad>
+          {/* [TASK-390 punkt 6, orkestrerarens rekommendation, Marcus
+              2026-09-04] "Form"-raden ("Predikat över dimensioner" /
+              "Uppräknade utbildningspar (äldre form)") ÄR RIVEN. Den skiljde
+              två INTERNA lagringsformer (den nya predikat-motorn mot den
+              äldre uppräknade regelformen, migrationssömmen `TASK-249.5`
+              öppnade) — en distinktion Lotta aldrig har nytta av
+              (Gunilla-principen). "Räknas ur"/"Motsvarar" bär den mening som
+              faktiskt finns. */}
           <EtikettVardeRad term="Räknas ur">
             Genomförd närvaro (Närvarande eller Deltog online)
           </EtikettVardeRad>
@@ -2752,8 +2930,15 @@ function SegmentDetalj({
                   rule.include.length === 1 ? 'utbildning' : 'utbildningar'
                 } i basen i dag`}
           </EtikettVardeRad>
-          <div className="py-3">
+          <div className="flex flex-col gap-3 py-3">
             <p className="text-small text-text-secondary">{definitionFor(entitet, parInfo)}</p>
+            {/* [TASK-390 punkt 7, orkestrerarens rekommendation, Marcus
+                2026-09-04] Avsiktsmeningen (ovan) vinner alltid som PROSA;
+                själva regeln renderas STRUKTURERAT under den, som
+                läs-only chip-grupper — Linear/GitHub/Notions filter-pill-
+                mönster. `RegelStruktur` läser samma predikat/`bruttoRegelFor`
+                som prosan redan gör, aldrig en egen parallell källa. */}
+            <RegelStruktur entitet={entitet} parInfo={parInfo} />
           </div>
           <div className="flex flex-col py-1.5 print:hidden">
             <button type="button" onClick={onAndra} className={RAD_KLASS}>
