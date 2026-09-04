@@ -3,10 +3,10 @@ id: TASK-389
 title: >-
   Fynd: Mer → Anmälningar-raden leder till eventets gamla Anmälda-lista i
   stället för anmälans sida — länkbyte + rivning av anmalda-ytan (18.13-skulden)
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-04 09:54'
-updated_date: '2026-09-04 11:00'
+updated_date: '2026-09-04 12:24'
 labels:
   - ready-for-agent
 dependencies: []
@@ -30,9 +30,9 @@ FYND (Marcus 2026-09-04, S120 Del 1): klick på en rad i Mer → Anmälningar la
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -54,3 +54,9 @@ Grindar efter ändringen: anmalningssidan-promoverings-grind.spec.ts hela filen 
 
 AC #4 bockad. Alla fem AC nu bockade.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landad via PR #2313 (merge 00496403, 2026-09-04 12:02Z) genom review-loopen: runda 1 konvergerad, risk låg, två info-fynd (cache-nyckel delad av sex konsumenter; FETCH_HEAD-volatilitet i fleet-miljö som granskarens metodfynd). Länkbyte i AnmalningarSida till /event/$eventId/anmalan/$registrationId; anmalda-routen, EventRegistrations, AddRegistrationModal, tre testfiler och baselines rivna; aria-referensernas /url-rader uppdaterade med pinnat fixtur-id (bifynd: Anna saknade fast id, hade gett permanent röd grind); amendering s111 AMENDERING-2026-09-04-radens-lankmal.md; byggplanens filrad bär rivningsnot. 18.13-skulden betald. Orkestrerare S120 (Claude Fable 5.1), bygg- och granskningsagenter Sonnet 5.
+<!-- SECTION:FINAL_SUMMARY:END -->
