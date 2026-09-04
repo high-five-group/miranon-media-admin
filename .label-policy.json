@@ -35,7 +35,7 @@
     "Dependabots egna kategoriseringslabels (.github/dependabot.yml).",
     "wontfix deklareras enligt ADR-131 § 5 som STÄNGNINGSSKÄL ('not planned'),",
     "inte en label vår taxonomi äger — den finns kvar som GitHubs default men",
-    "hanteras aldrig av detta skript. GitHubs sju kvarvarande defaults (bug,",
+    "hanteras aldrig av detta skript. GitHubs åtta kvarvarande defaults (bug,",
     "documentation, duplicate, enhancement, good first issue, help wanted,",
     "invalid, question) rörs inte heller — de ligger utanför vår taxonomi.",
     "",
