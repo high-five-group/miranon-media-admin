@@ -503,7 +503,7 @@ jobs:
   lint:
     name: Lint + Audit + TypeCheck
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     permissions:
       contents: read
     steps:
@@ -1692,6 +1692,26 @@ jobs:
         # per fall i stället för att efterliknas. `lint` hade timeout-minutes: 5
         # mot ~1 min jobbtid före detta steg (TASK-82:s CI-mätning) — marginalen
         # bör läsas av på den första skarpa körningen, inte projiceras härifrån.
+        #
+        # DEN AVLÄSNINGEN KOM 2026-09-04: fyra körningar mellan 07:50–08:10 föll
+        # på exakt taket i `lint` och/eller `docs`, samtliga `cancelled` på
+        # npm-latens, inte en trädregression — merge_group-run 33850613813
+        # (#2264, Lint dog i `npm ci`), PR-run 33850992570 + dess rerun
+        # 33851503642 (#2284, Lint dog i "Audit dependencies (audit-ci with
+        # allowlist)", Docs dog i "Install dependencies") och PR-run 33851282508
+        # (#2269, samma två). Verbatim ur run 33851503642, job 100955216172:
+        # cache-träff (`Cache hit for: node-cache-Linux-x64-npm-…`), `npm ci`
+        # startade 08:03:05 och blev klar 08:07:34 ("added 643 packages in
+        # 4m") — själva `npm ci` tog alltså 4 min med cache-träff, mot ~1 min
+        # i TASK-82:s ursprungsmätning — och `audit-ci` kancellerades
+        # 08:08:06, 5:00 efter jobbstart. Senaste gröna Lint (main-push
+        # 33778799749, 2026-09-03 16:28) tog 3 min 22 s totalt, så 5 min var
+        # redan tunn marginal mot en enda långsam `npm ci`. `timeout-minutes`
+        # höjt 5→10 för BÅDE `lint` och `docs` samma dag — 2× det tidigare
+        # taket, ett valt golv för att absorbera npm-latens av den mätta
+        # storleksordningen, inte en projicerad garanti mot framtida latens.
+        # Fynd-kortet med den fulla mätserien: se backlog (syskon till
+        # TASK-383, som rör samma dags 12-minuterstak i test-sviten).
         run: node scripts/test-check-staging-preflight-wiring.mjs
 
       - name: Install shellcheck (pinned v0.11.0)
@@ -2010,7 +2030,7 @@ jobs:
     needs: changed
     if: needs.changed.outputs.docs_changed == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     permissions:
       contents: read
     steps:
