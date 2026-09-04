@@ -6,9 +6,10 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-09-03 08:32'
-updated_date: '2026-09-04 12:55'
+updated_date: '2026-09-04 13:34'
 labels:
   - ready-for-human
+  - intentionally-unchecked
 dependencies:
   - TASK-370.1
   - TASK-370.2
@@ -29,7 +30,7 @@ Manuell testplan i staging (granskningsdata via npm run seed:review — bygg ald
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [ ] #1 Punkt 1–10 i testplanen genomgångna i staging och bokförda i kortet med utfall per punkt
-- [ ] #2 Marcus har dömt försättsbladets utseende: godkänt, eller avvikelser registrerade som nya kort
+- [x] #2 Marcus har dömt försättsbladets utseende: godkänt, eller avvikelser registrerade som nya kort
 - [ ] #3 Inga skickade kvitton och ingen rörd kvittoserie efter vandringen (verifierat mot data)
 <!-- AC:END -->
 
@@ -47,4 +48,6 @@ Manuell testplan i staging (granskningsdata via npm run seed:review — bygg ald
 
 <!-- SECTION:NOTES:BEGIN -->
 Marcus QA-vandring i staging 2026-09-04: fann Summa-rutan smalare än sammanställningen; rättat i TASK-388/PR #2295 (width: calc(100% - 5mm)), staging preview-receipt v26. Marcus kvittens verbatim: "Försättsbladet ser rätt ut nu, 370.5 godkänt."
+
+OBOCKAT MED AVSIKT: AC #1 (punkt 1-10 bokförda med utfall per punkt) och AC #3 (kvittoserie-verifiering) lämnas obockade — denna stängningsbatch bär endast Marcus slutgiltiga kvittens och det enda faktiskt registrerade fyndet (TASK-388), inte en per-punkt-dokumenterad testlogg. AC #2 (Marcus dom av utseendet) är verifierbart sant och bockad. DoD #1 följer AC-läget; DoD #4-6 (ärvda PRD-grindar för mall-render/ADR-124/mallparitet) hör till EF-bygget i 370.1-370.3, inte till denna rena QA-vandring, och lämnas obockade av samma skäl.
 <!-- SECTION:NOTES:END -->

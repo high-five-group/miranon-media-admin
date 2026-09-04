@@ -4,10 +4,10 @@ title: >-
   Fynd: .review-policy.json:s prod-och-hemligheter-regel fångar inte
   .prod-functions-allowlist.conf — filen som ensam avgör vilka EF:er som når
   prod
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-29 16:34'
-updated_date: '2026-09-04 08:23'
+updated_date: '2026-09-04 13:30'
 labels:
   - fynd
   - ready-for-agent
