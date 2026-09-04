@@ -7,7 +7,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-04 10:52'
-updated_date: '2026-09-04 11:43'
+updated_date: '2026-09-04 13:11'
 labels:
   - ready-for-agent
 dependencies: []
@@ -52,4 +52,14 @@ DESIGN: bryt ut chippet till en delad primitiv i src/components/primitives (namn
 Facit-grep (verifierat 2026-09-04, ADR-086-pass): grep -rn 'BetalningsInkorg|betalningsinkorg' tasks/sessions/bilagor/ ger endast AMENDERING-sidofiler (s102-hem-konvergens, s64-mer-konvergens, s103-persondetalj-konvergens, s93-atgardssida-promovering) — ingen egen stämplad facit-bilaga för inkorgen. TASK-346.6 AC #1 bekräftar: bara en AMENDERING-sidofil i s64-mer-konvergens (Mer-listans rad), inga andra ytor i manifestet. Kortets premiss BEKRÄFTAD, ej falsifierad.
 
 FilterRad-flytt (RaknarChip, ADR-126 B4 flytt-utan-ombyggnad): mekaniskt bevisad byte-identisk klass-mängd via runtime-cn() (node-skript, sorterad diff = tom). Facit-grind: tests/visual/anmalningssidan-promoverings-grind.spec.ts 10/10 gröna (visual-desktop), inklusive ariaSnapshot-testerna OCH axe-testet med filterpanelen öppen/dimension aktiv (exakt scenariot som visar badgen) — 0 violations, ingen regression.
+
+REVIEW RUNDA 2 (2026-09-04, PR #2320): tre fynd åtgärdade.
+
+FYND 1 (warning, blockerar) — skärmdumparna: sessionens scratchpad-ID matchade fortfarande disk (samma agent-session), så bilderna fanns kvar. Kopierade (inte regenererade) till tasks/sessions/bilagor/s121-forhandsgranska-chip/ (8 filer: N1/N9/N12 desktop+ipad820, contrast-more.png, filterrad-badge.png), committade path-scopat, prosa-beskrivning per bild i PR-kroppen.
+
+FYND 2 (warning, blockerar) — test:api kördes om fristående (naken exitkod): 2190/2191 gröna, 1 röd (exit 1). Den röda skiljer sig från round 1:s rapporterade par (send-registration-confirmation.staging.test.ts var denna gång HELT grön) — nu bara generate-event-attachment.staging.test.ts, ett ANNAT test i samma fil (AC #2 hash-mismatch mot skarp staging, Källhash stämmer inte mot bekräftelsens kallhash). git grep -n BetalningsInkorg|FilterRad|RaknarChip mot filen gav 0 träffar — obesläktad med diffen. Klassat öppet i PR-kroppen som staging-datatransient, inte en regression.
+
+FYND 3 (info) — negativ kontroll för AC #4:s axe-test: PRÖVAD, uppdragets premiss (TASK-362:s redan negativ-kontrollerade axe-test i systerfilen) FALSIFIERAD — betalningar-inkorg-utskicksflode.staging.test.ts rad 424-457 har INGEN negativ-kontroll-motpart till sitt axe-test (grep negativ i den filen: 0 träffar). Den faktiska TASK-362-negativkontrollen (commit d6d7f5f9) sitter på en annan grind (tests/api/betalningar-inkorg-statusyta-form.test.ts's treOberoendeGrenar). Byggde i stället en EGEN negativ kontroll i betalningar-inkorg-forhandsgranska-alla.staging.test.ts: injicerar en verklig button-name-överträdelse (aria-label + textContent borttaget från alla-knappen) i den levande DOM:en innan axe-scanningen, bevisar att scopet FÄLLER (violations.length > 0, innehåller button-name). 9/9 gröna i den rörda filen inklusive det nya testet.
+
+Grindar körda i denna worktree (detached HEAD på PR-huvudet, 54055c46 — grenen var redan uppcheckad i en syskon-worktree): npm run typecheck exit 0, npx biome check . exit 0 (0 fel, samma 14 pre-existing warnings/82 infos som round 1, inga i rörda filer), npm run build exit 0, npm run test:api exit 1 (2190/2191, se ovan), tests/e2e/betalningar-inkorg-forhandsgranska-alla.staging.test.ts 9/9 gröna (egen dev-server port 5180 + kopierad e2e-storageState från syskon-worktreets färska inloggning, --no-deps för att undvika TASK-77-preflighten som blockerade en NY live-inloggning medan post-merge CI höll staging).
 <!-- SECTION:NOTES:END -->

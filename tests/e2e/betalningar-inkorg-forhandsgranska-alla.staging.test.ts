@@ -561,4 +561,64 @@ test.describe('TASK-370.4/TASK-393 — den kombinerade förhandsgranskningen i b
       .analyze();
     expect(resultat.violations).toEqual([]);
   });
+
+  /**
+   * [REVIEW RUNDA 2, FYND 3] NEGATIV KONTROLL för axe-testet ovan.
+   *
+   * ADR-086-PREMISSPASS: uppdraget bad mig spegla "TASK-362:s redan
+   * negativ-kontrollerade axe-test i systerfilen"
+   * (`betalningar-inkorg-utskicksflode.staging.test.ts`, rad 424–457).
+   * PRÖVAT och FALSIFIERAT — den filens axe-test
+   * ("axe: 0 fel på granskningsblocket i BÅDA tillstånden") har INGEN
+   * negativ-kontroll-motpart; `grep -n "AxeBuilder" den filen` ger exakt
+   * TVÅ träffar, båda i SAMMA test, och `grep -n "negativ"` ger noll
+   * träffar i hela filen. Den negativa kontrollen TASK-362 review runda 1
+   * faktiskt byggde (commit `d6d7f5f9`) sitter på en ANNAN grind —
+   * `tests/api/betalningar-inkorg-statusyta-form.test.ts`s
+   * `treOberoendeGrenar`-grind, med den FAKTISKA JSX-ternary-regressionen
+   * som negativ kontroll — inte på en axe-scanning. Det finns alltså inget
+   * mönster att spegla RAKT AV; detta test bygger en EGEN negativ kontroll
+   * för AXE-SCOPET, för samma syfte husets övriga negativa kontroller
+   * tjänar: bevisa att grinden FÄLLER, inte bara råkar vara grön av
+   * avsaknad täckning.
+   *
+   * Metoden: injicera en VERKLIG, av axe-core detekterbar överträdelse
+   * (`button-name`, WCAG 4.1.2 Namn/Roll/Värde — en av de taggar testet
+   * ovan redan scannar med, `wcag2a`+`wcag412`) i den LEVANDE DOM:en, INUTI
+   * samma `section[aria-label="${REGION}"]`-scope, och verifiera att
+   * `AxeBuilder` faktiskt rapporterar den. `aria-label` ensam räcker inte —
+   * ARIA:s namnberäkning faller tillbaka till knappens textinnehåll
+   * ("Förhandsgranska", chippets siffra är `aria-hidden`) om bara
+   * attributet tas bort. Både attributet OCH allt barninnehåll måste bort
+   * för att knappen genuint ska sakna ett tillgängligt namn.
+   */
+  test('AC #4 (TASK-393) NEGATIV KONTROLL: axe-scopet FÄLLER på en verklig button-name-överträdelse', async ({
+    page,
+  }) => {
+    await mockaGrund(page, 3);
+    await page.goto('/mer/betalningar');
+
+    await registreraUtanAttSkicka(page, NAMN_A);
+    await registreraUtanAttSkicka(page, NAMN_B);
+    await registreraUtanAttSkicka(page, NAMN_C);
+
+    const allaKnapp = page.getByRole('button', { name: 'Förhandsgranska 3 kvitton' });
+    await expect(allaKnapp).toBeVisible();
+
+    // Injicera överträdelsen: knappen förlorar BÅDE sitt `aria-label` OCH
+    // allt textinnehåll (etiketten + `RaknarChip`) — inget tillgängligt
+    // namn kvarstår i något fallback-led.
+    await allaKnapp.evaluate((el) => {
+      el.removeAttribute('aria-label');
+      el.innerHTML = '';
+    });
+
+    const resultat = await new AxeBuilder({ page })
+      .include(`section[aria-label="${REGION}"]`)
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+      .analyze();
+
+    expect(resultat.violations.length).toBeGreaterThan(0);
+    expect(resultat.violations.some((v) => v.id === 'button-name')).toBe(true);
+  });
 });
