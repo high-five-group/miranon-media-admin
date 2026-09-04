@@ -4,10 +4,10 @@ title: >-
   Fynd: inkorgens Förhandsgranska-knapp byter text till "Förhandsgranska alla N"
   vid flera kvitton. Alltid "Förhandsgranska" med upphöjd räknare i chip med
   reserverad plats (filterknappens form)
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-04 10:52'
-updated_date: '2026-09-04 13:11'
+updated_date: '2026-09-04 14:23'
 labels:
   - ready-for-agent
 dependencies: []
