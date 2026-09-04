@@ -3,10 +3,10 @@ id: TASK-392
 title: >-
   Segmentsidans tomläge får en yta — vit platta med streckad ram
   (facit-amendering s114, Marcus stämpel 2026-09-04)
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-04 10:36'
-updated_date: '2026-09-04 10:48'
+updated_date: '2026-09-04 12:24'
 labels:
   - ready-for-agent
 dependencies: []
@@ -24,12 +24,18 @@ URSPRUNG (Marcus 2026-09-04, S120 Del 1 punkt 2, verbatim i sessionsdoket): 'bor
 - [x] #1 Tomläget 'Inga sparade segment än' renderas i en container med bg-surface, border border-dashed i kant-token (contrast-more: border-strong), rounded-2xl, py-10; ingen textur, inga kvarvarande tomläges-tokens i components.css; text och kapsel byte-identiska med före.
 - [x] #2 Facit-amendering tasks/sessions/bilagor/s114-segmentlistan-konvergens/AMENDERING-2026-09-04-tomlagets-yta.md skriven i samma form som s111:s amendering 2026-09-01: yta, klass, Marcus båda citat (v1-avslag + v2-stämpel), vad som ändrats mot facit.json rad 14 ('ingen grå låda' → vit streckad platta), nya bilder desktop 1440 + mobil 375 i bilagan; facit.json orört (stämpel-PR #2293 äger godkand).
 - [x] #3 Grindar gröna: typecheck 0, biome 0 nya fel, build grön, tests/visual/segment-promoverings-grind.spec.ts båda vyportarna; check-facit passerar (markören 'K3 - brickor, korthöjd låst' orörd).
-- [ ] #4 PR genom review-loopen (review-agent färsk kontext, sektion, backstopp-preflight) och landad; kortet Done med PR-nummer och merge-SHA i final summary.
+- [x] #4 PR genom review-loopen (review-agent färsk kontext, sektion, backstopp-preflight) och landad; kortet Done med PR-nummer och merge-SHA i final summary.
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landad via PR #2308 (merge 95987a47, 2026-09-04 12:14Z) genom review-loopen: runda 1 risk låg med ett warning/auto-fix (kodkommentar påstod 'ej stämplat' efter stämpeln) rättat i 9c87ed5c, runda 2 konvergerad. Iteration v1 (punktraster på grå platta) avslogs av Marcus, v2 (bg-surface + streckad border-border-ram, rounded-2xl, py-10) stämplad: 'Nu blev det en streckad kontur bara. Ser jättebra ut. Kör på den.' Texturtokens rivna, components.css netto identisk med main. Amendering s114 AMENDERING-2026-09-04-tomlagets-yta.md + bilder segmentlistan-tomlage-v2-{desktop,mobil}.png (facit-prefix undviks: check-facit orphan-kontroll). Apparat-fynd: bygg-agentens fork utan isolation tog över featuren och förväxlade identitet, bokfört i S120 sessionsdok. Orkestrerare S120 (Claude Fable 5.1), agenter Sonnet 5.
+<!-- SECTION:FINAL_SUMMARY:END -->

@@ -4,10 +4,10 @@ title: >-
   Fynd: nolläget 'Inget kvar att betala' på personkortet (och syskonytorna)
   förutsätter en skuld — byt till 'Inget att betala' där ingen öppen
   betalningsrad finns
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-04 10:11'
-updated_date: '2026-09-04 10:40'
+updated_date: '2026-09-04 12:24'
 labels:
   - ready-for-agent
 dependencies: []
@@ -30,9 +30,9 @@ FYND (Marcus 2026-09-04, S120 Del 1, verbatim i sessionsdoket): på personkortet
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -40,3 +40,9 @@ FYND (Marcus 2026-09-04, S120 Del 1, verbatim i sessionsdoket): på personkortet
 <!-- SECTION:NOTES:BEGIN -->
 AC #4 utfört 2026-09-04 (S120, TASK-391-byggagenten). Exakt kommandot ur kortet: grep -rn 'Inget kvar' tasks/sessions/bilagor/ — TVÅ träffar, inte de två namngivna dirs 1:1: s103-persondetalj-konvergens/AMENDERING-2026-09-01-just-nu-utan-guld-och-betalningssektionens-nya-form.md:174 (bär strängen — amenderings-not skriven: AMENDERING-2026-09-04-nollage-inget-att-betala.md i samma katalog) och s93-atgardssida-promovering/AMENDERING-2026-09-01-pricka-av-vertikalen-riven.md:174 (bär SAMMA citat men den bilagan namngavs INTE av kortet — lämnad orörd, flaggad i slutrapporten för orkestreraren). s83-anmalningsvyn-konvergens/ gav NOLL träffar — dess amenderingar rör avbokning/ombokning (AMENDERING-2026-09-03-avbokningssteget.md, AMENDERING-2026-09-03-ombokningssteget.md), ingen nämner betalnings-nolläget. Grep-bevis bokfört enligt AC #4:s andra gren (facit nämner inte strängen).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landad via PR #2311 (merge b583a2a0, 2026-09-04 12:02Z) genom review-loopen: runda 1 risk låg med ett info/ask-user-fynd (bilagan s93-atgardssida-promovering bär det historiska citatet; Marcus avskrev 2026-09-04 'Kör på din rek': historik står kvar), rebase efter #2307 (kortfilen add/add), runda 2 byte-identisk diff, konvergerad. Fyra nollägen lyder 'Inget att betala' (PersonBetalningar, AnmalansBetalningar, AvbokningsBetallage, PanelBetalningar rad===null); inkorgens heltäckning och 'Allt betalt' orörda; docblocks reviderade med datum; två staging-tester uppdaterade; amendering s103 AMENDERING-2026-09-04-nollage-inget-att-betala.md. Öppen revision av Marcus 2026-09-01-formulering. Orkestrerare S120 (Claude Fable 5.1), agenter Sonnet 5.
+<!-- SECTION:FINAL_SUMMARY:END -->
