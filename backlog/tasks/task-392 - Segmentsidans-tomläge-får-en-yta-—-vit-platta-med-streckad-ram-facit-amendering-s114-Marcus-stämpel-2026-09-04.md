@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-04 10:36'
+updated_date: '2026-09-04 10:48'
 labels:
   - ready-for-agent
 dependencies: []
@@ -20,9 +21,9 @@ URSPRUNG (Marcus 2026-09-04, S120 Del 1 punkt 2, verbatim i sessionsdoket): 'bor
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Tomläget 'Inga sparade segment än' renderas i en container med bg-surface, border border-dashed i kant-token (contrast-more: border-strong), rounded-2xl, py-10; ingen textur, inga kvarvarande tomläges-tokens i components.css; text och kapsel byte-identiska med före.
-- [ ] #2 Facit-amendering tasks/sessions/bilagor/s114-segmentlistan-konvergens/AMENDERING-2026-09-04-tomlagets-yta.md skriven i samma form som s111:s amendering 2026-09-01: yta, klass, Marcus båda citat (v1-avslag + v2-stämpel), vad som ändrats mot facit.json rad 14 ('ingen grå låda' → vit streckad platta), nya bilder desktop 1440 + mobil 375 i bilagan; facit.json orört (stämpel-PR #2293 äger godkand).
-- [ ] #3 Grindar gröna: typecheck 0, biome 0 nya fel, build grön, tests/visual/segment-promoverings-grind.spec.ts båda vyportarna; check-facit passerar (markören 'K3 - brickor, korthöjd låst' orörd).
+- [x] #1 Tomläget 'Inga sparade segment än' renderas i en container med bg-surface, border border-dashed i kant-token (contrast-more: border-strong), rounded-2xl, py-10; ingen textur, inga kvarvarande tomläges-tokens i components.css; text och kapsel byte-identiska med före.
+- [x] #2 Facit-amendering tasks/sessions/bilagor/s114-segmentlistan-konvergens/AMENDERING-2026-09-04-tomlagets-yta.md skriven i samma form som s111:s amendering 2026-09-01: yta, klass, Marcus båda citat (v1-avslag + v2-stämpel), vad som ändrats mot facit.json rad 14 ('ingen grå låda' → vit streckad platta), nya bilder desktop 1440 + mobil 375 i bilagan; facit.json orört (stämpel-PR #2293 äger godkand).
+- [x] #3 Grindar gröna: typecheck 0, biome 0 nya fel, build grön, tests/visual/segment-promoverings-grind.spec.ts båda vyportarna; check-facit passerar (markören 'K3 - brickor, korthöjd låst' orörd).
 - [ ] #4 PR genom review-loopen (review-agent färsk kontext, sektion, backstopp-preflight) och landad; kortet Done med PR-nummer och merge-SHA i final summary.
 <!-- AC:END -->
 
