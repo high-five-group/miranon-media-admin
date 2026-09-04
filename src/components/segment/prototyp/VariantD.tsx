@@ -2164,17 +2164,29 @@ function SegmentLista({
                 // landning — pröva-och-bokför-fyndet från B2-promoveringens
                 // uppdrag.
                 //
-                // FÖRSLAG, S120 (Marcus 2026-09-04, ej stämplat — facit.json
-                // säger fortfarande "ingen grå låda"): blocket har fått en
-                // egen yta (KORT_KLASS, samma kort-ton som handlingsradens
-                // kort ovan) med en subtil dot-grid-textur
-                // (--mm-tomlage-textur, components.css) i stället för att stå
-                // som ett hål mellan sektionerna. Texturen bär ingen
-                // information och faller bort under contrast-more/print —
-                // ytan (bg-bg-muted) och texten står kvar oförändrade.
-                <div
-                  className={`${KORT_KLASS} bg-(image:--mm-tomlage-textur) flex flex-col items-center gap-2 bg-size-[20px_20px] py-10 text-center contrast-more:bg-none print:bg-none`}
-                >
+                // FÖRSLAG, S120 ITERATION 2 (Marcus 2026-09-04, ej stämplat
+                // — facit.json säger fortfarande "ingen grå låda"): blocket
+                // har fått en egen yta i stället för att stå som ett hål
+                // mellan sektionerna. ITERATION 1 (dot-grid-textur ovanpå
+                // KORT_KLASS, samma tonala grå som "Färdiga grupper"-korten)
+                // underkändes av Marcus: "Gillar inte bakgrunden med
+                // prickarna. Och jag tycker den är för grå liksom, bör vara
+                // en ljusare variant så ytan skiljer sig från alla andra
+                // gråa saker på sidan." Texturen (--mm-tomlage-punkt/
+                // --mm-tomlage-textur, components.css) är RIVEN, inga döda
+                // tokens kvar.
+                //
+                // Ny yta: `bg-surface` (VIT, samma yta InbetalningsLista.tsx
+                // och PersonDetail.tsx redan bär för att skilja sig från
+                // gruppkortens `bg-bg-muted`) i stället för KORT_KLASS —
+                // skiljer sig alltså MEDVETET från "Färdiga grupper"-korten
+                // strax nedanför, som Marcus efterfrågade. Tomläges-
+                // affordansen är i stället en STRECKAD ram
+                // (`border-dashed border-border`, husets kant-token, samma
+                // familj Tailwind UI/Primer Blankslate använder för "detta
+                // är en tom platshållare" utan att luta sig på en textur)
+                // med `contrast-more:border-border-strong`.
+                <div className="flex flex-col items-center gap-2 rounded-2xl border border-border border-dashed bg-surface px-4 py-10 text-center contrast-more:border-border-strong">
                   <p className="font-medium text-body">Inga sparade segment än</p>
                   <p className="max-w-prose text-small text-text-muted">
                     Ett segment är ett urval personer du kan skicka till om och om igen. Du bygger
