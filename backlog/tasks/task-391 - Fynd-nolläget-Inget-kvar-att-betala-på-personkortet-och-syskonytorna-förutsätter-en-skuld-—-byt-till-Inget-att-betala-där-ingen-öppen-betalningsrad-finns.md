@@ -7,6 +7,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-04 10:11'
+updated_date: '2026-09-04 10:40'
 labels:
   - ready-for-agent
 dependencies: []
@@ -21,10 +22,10 @@ FYND (Marcus 2026-09-04, S120 Del 1, verbatim i sessionsdoket): på personkortet
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 De fyra nollägena (PersonBetalningar, AnmalansBetalningar, AvbokningsBetallage, PanelBetalningar rad === null) lyder 'Inget att betala.' resp. 'Inget att betala' i samma interpunktionsform som i dag; inkorg-harledningar.ts heltäcknings-grenen och PanelBetalningars 'Allt betalt' oförändrade.
-- [ ] #2 Docblock-kommentarerna som citerar nolläges-meningen ordagrant (AvbokningsBetallage rad ~50, PanelBetalningar rad ~60–62, AnmalansBetalningar ~rad 84) uppdaterade så koden inte påstår en sträng som inte finns; Marcus 2026-09-01-citaten står kvar som historik med datum för revisionen.
-- [ ] #3 Acceptance-/enhetstester som asserterar den gamla strängen uppdaterade (grep 'Inget kvar att betala' i tests/ ger bara träffar för inkorgens heltäckning); rörda sviter gröna.
-- [ ] #4 Om facit s103-persondetalj-konvergens eller s83-anmalningsvyn-konvergens bär strängen i sitt manifest eller sina amenderingar: en kort amenderings-not i respektive bilaga; annars bokförs det i detta korts notes att faciten inte nämner strängen (grep-bevis).
+- [x] #1 De fyra nollägena (PersonBetalningar, AnmalansBetalningar, AvbokningsBetallage, PanelBetalningar rad === null) lyder 'Inget att betala.' resp. 'Inget att betala' i samma interpunktionsform som i dag; inkorg-harledningar.ts heltäcknings-grenen och PanelBetalningars 'Allt betalt' oförändrade.
+- [x] #2 Docblock-kommentarerna som citerar nolläges-meningen ordagrant (AvbokningsBetallage rad ~50, PanelBetalningar rad ~60–62, AnmalansBetalningar ~rad 84) uppdaterade så koden inte påstår en sträng som inte finns; Marcus 2026-09-01-citaten står kvar som historik med datum för revisionen.
+- [x] #3 Acceptance-/enhetstester som asserterar den gamla strängen uppdaterade (grep 'Inget kvar att betala' i tests/ ger bara träffar för inkorgens heltäckning); rörda sviter gröna.
+- [x] #4 Om facit s103-persondetalj-konvergens eller s83-anmalningsvyn-konvergens bär strängen i sitt manifest eller sina amenderingar: en kort amenderings-not i respektive bilaga; annars bokförs det i detta korts notes att faciten inte nämner strängen (grep-bevis).
 <!-- AC:END -->
 
 ## Definition of Done
@@ -33,3 +34,9 @@ FYND (Marcus 2026-09-04, S120 Del 1, verbatim i sessionsdoket): på personkortet
 - [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+AC #4 utfört 2026-09-04 (S120, TASK-391-byggagenten). Exakt kommandot ur kortet: grep -rn 'Inget kvar' tasks/sessions/bilagor/ — TVÅ träffar, inte de två namngivna dirs 1:1: s103-persondetalj-konvergens/AMENDERING-2026-09-01-just-nu-utan-guld-och-betalningssektionens-nya-form.md:174 (bär strängen — amenderings-not skriven: AMENDERING-2026-09-04-nollage-inget-att-betala.md i samma katalog) och s93-atgardssida-promovering/AMENDERING-2026-09-01-pricka-av-vertikalen-riven.md:174 (bär SAMMA citat men den bilagan namngavs INTE av kortet — lämnad orörd, flaggad i slutrapporten för orkestreraren). s83-anmalningsvyn-konvergens/ gav NOLL träffar — dess amenderingar rör avbokning/ombokning (AMENDERING-2026-09-03-avbokningssteget.md, AMENDERING-2026-09-03-ombokningssteget.md), ingen nämner betalnings-nolläget. Grep-bevis bokfört enligt AC #4:s andra gren (facit nämner inte strängen).
+<!-- SECTION:NOTES:END -->
