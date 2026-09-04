@@ -1,0 +1,220 @@
+{
+  "_readme": [
+    "Config för scripts/synka-labels.mjs (GitHub-issue #2298, ADR-131 § 5).",
+    "Kurerad label-taxonomi i tre familjer — LOGIK I SKRIPTET, VÄRDEN HÄR",
+    "(grindvakts-konventionen, ~/.claude/CLAUDE.md § Instruktioner, Lesson #6",
+    "[UNIVERSAL]). scripts/lib/synka-labels.mjs innehåller matchningen,",
+    "diff-beräkningen och valideringen; denna fil bär bara VÄRDENA och kan",
+    "därför bytas ut utan refactor.",
+    "",
+    "═══ VARFÖR TRE FAMILJER ═══",
+    "Inventeringen av backlog/tasks/*.md (786 kort, grep över frontmatterns",
+    "labels:-block) gav 31 distinkta labels i bruk. ADR-131 § 5 delar dem i",
+    "tillstånd (var kortet står i sin livscykel), klass (vilken TYP av kort",
+    "det är) och område (vilken del av systemet kortet rör) — samma tre-lagers",
+    "tanke som repots designtoken-system (primitiv/semantik/komponent), fast",
+    "för arbetslappar i stället för CSS.",
+    "",
+    "═══ EN FÄRG PER FAMILJ ═══",
+    "Alla labels inom en familj delar samma färg; beskrivningen skiljer dem",
+    "åt. tillstand återanvänder den befintliga deferred-labelns FBCA04 och",
+    "klass återanvänder den befintliga prd-labelns 5319E7 — ingen slump: båda",
+    "labels finns redan i repot (gh label list, 2026-09-04) och ska kunna",
+    "synkas UTAN diff redan vid FÖRSTA körningen (AC #2 kräver idempotens,",
+    "inte bara vid andra körningen).",
+    "",
+    "═══ ALIAS FALLER, SKAPAS ALDRIG SOM EGEN LABEL ═══",
+    "qa-utredning (1 kort) är en QA-flaggad variant av utredning (1 kort) —",
+    "samma koncept, olika stavning. Aliaset dokumenterar mappningen men",
+    "skriptet skapar ALDRIG en egen GitHub-label för aliasnyckeln (ADR-131",
+    "§ 5: 'bara dubbletter faller').",
+    "",
+    "═══ SKYDDADE LABELS RÖRS ALDRIG ═══",
+    "ci-natt, lankrota, ci-post-merge är repots larm-labels (nightly.yml,",
+    "ADR-082, TASK-70.2) — untouched enligt uppdraget. dependencies/ci är",
+    "Dependabots egna kategoriseringslabels (.github/dependabot.yml).",
+    "wontfix deklareras enligt ADR-131 § 5 som STÄNGNINGSSKÄL ('not planned'),",
+    "inte en label vår taxonomi äger — den finns kvar som GitHubs default men",
+    "hanteras aldrig av detta skript. GitHubs sju kvarvarande defaults (bug,",
+    "documentation, duplicate, enhancement, good first issue, help wanted,",
+    "invalid, question) rörs inte heller — de ligger utanför vår taxonomi.",
+    "",
+    "FRIKTION, bokförd öppet (premiss-pass, ADR-086): uppdragstexten till",
+    "byggagenten listade 'deferred' som en av de labels som ska RÖRAS INTE",
+    "('befintliga repo-labels ... deferred, dependencies, ci ... RÖRS INTE').",
+    "ADR-131 § 5 — den uttalade källan för hela denna policy — placerar",
+    "explicit 'deferred' i tillstånd-familjen som en av de FEM labels som SKA",
+    "skapas/uppdateras av skriptet ('tillstånd (ready-for-agent,",
+    "ready-for-human, intentionally-unchecked, intentionally-open,",
+    "deferred)'). Denna fil följer ADR:n (den namngivna källan) framför",
+    "uppdragets sammanfattande prosa: deferred är MANAGED, inte skyddad.",
+    "Se PR-kroppens 'Friktioner i substratet'-sektion för fullständig",
+    "redovisning.",
+    "",
+    "═══ SCHEMA ═══",
+    "version: heltal, ökas vid brytande formatändring.",
+    "familjer: { <namn>: { farg: 6-hex utan '#', beskrivning } }.",
+    "labels: { <namn>: { familj: <familjenamn>, beskrivning } } — varje label",
+    "  i bruk hamnar i EXAKT EN familj.",
+    "alias: { <alias-namn>: <kanoniskt-labelnamn> } — aliasnamnet får ALDRIG",
+    "  vara en nyckel i labels eller skyddade.",
+    "skyddade: [<namn>, …] — labels skriptet aldrig skapar, uppdaterar eller",
+    "  ens jämför; endast dokumentation av avsikt."
+  ],
+  "version": 1,
+  "familjer": {
+    "tillstand": {
+      "farg": "FBCA04",
+      "beskrivning": "Var kortet står i sin livscykel."
+    },
+    "klass": {
+      "farg": "5319E7",
+      "beskrivning": "Vilken TYP av kort det är."
+    },
+    "omrade": {
+      "farg": "0E8A16",
+      "beskrivning": "Vilken del av systemet kortet rör."
+    }
+  },
+  "labels": {
+    "ready-for-agent": {
+      "familj": "tillstand",
+      "beskrivning": "Redo att plockas av en agent utan mänsklig indata (AFK)."
+    },
+    "ready-for-human": {
+      "familj": "tillstand",
+      "beskrivning": "Kräver mänsklig granskning eller ett beslut innan arbetet kan drivas vidare."
+    },
+    "intentionally-unchecked": {
+      "familj": "tillstand",
+      "beskrivning": "En AC- eller DoD-punkt lämnas medvetet obockad — dokumenterat undantag, inte ett missat steg."
+    },
+    "intentionally-open": {
+      "familj": "tillstand",
+      "beskrivning": "Kortet hålls medvetet öppet — inget nästa steg krävs just nu."
+    },
+    "deferred": {
+      "familj": "tillstand",
+      "beskrivning": "Deferred per explicit beslut, reopen senare"
+    },
+    "needs-triage": {
+      "familj": "tillstand",
+      "beskrivning": "Väntar på en triage-bedömning innan det kan klassas eller prioriteras."
+    },
+    "prd": {
+      "familj": "klass",
+      "beskrivning": "PRD-kort: förälder-issue med skivor som sub-issues (ADR-131)"
+    },
+    "fynd": {
+      "familj": "klass",
+      "beskrivning": "En oplanerad upptäckt som dokumenteras och triageras (ADR-053)."
+    },
+    "beslut": {
+      "familj": "klass",
+      "beskrivning": "Ett beslutskort — en vägvalsfråga som avgjorts och bokförs."
+    },
+    "grillning": {
+      "familj": "klass",
+      "beskrivning": "Resultatet av en intervju till samsyn före bygge."
+    },
+    "restsamling": {
+      "familj": "klass",
+      "beskrivning": "En samling mindre poster som inte motiverar egna kort."
+    },
+    "utredning": {
+      "familj": "klass",
+      "beskrivning": "Kartläggning av minsta möjliga väg innan bygge."
+    },
+    "qa-fix": {
+      "familj": "klass",
+      "beskrivning": "En fix identifierad och driven av manuell QA-granskning."
+    },
+    "falsifierat": {
+      "familj": "klass",
+      "beskrivning": "Dokumenterar att en hypotes eller ett antagande falsifierats."
+    },
+    "grind": {
+      "familj": "omrade",
+      "beskrivning": "Rör en CI-grind eller ett gatekeeper-skript."
+    },
+    "hook": {
+      "familj": "omrade",
+      "beskrivning": "Rör en Claude Code-hook (PreToolUse/PostToolUse)."
+    },
+    "hub": {
+      "familj": "omrade",
+      "beskrivning": "Rör hub-repot marcus-system (plugin, skills, SYSTEMET.md)."
+    },
+    "sakerhet": {
+      "familj": "omrade",
+      "beskrivning": "Rör säkerhet — åtkomst, secrets, behörigheter."
+    },
+    "airtable": {
+      "familj": "omrade",
+      "beskrivning": "Rör Airtable-basen — schema, fält, automationer."
+    },
+    "docs": {
+      "familj": "omrade",
+      "beskrivning": "Rör dokumentation."
+    },
+    "deps": {
+      "familj": "omrade",
+      "beskrivning": "Rör beroenden (npm-paket, versioner)."
+    },
+    "a11y": {
+      "familj": "omrade",
+      "beskrivning": "Rör tillgänglighet (WCAG, tangentbord, skärmläsare)."
+    },
+    "prod": {
+      "familj": "omrade",
+      "beskrivning": "Rör produktionsmiljön specifikt."
+    },
+    "stad": {
+      "familj": "omrade",
+      "beskrivning": "Rör städning — döda filer, ospårade grenar, ryddning."
+    },
+    "datakvalitet": {
+      "familj": "omrade",
+      "beskrivning": "Rör datakvalitet i Airtable-basen eller Supabase."
+    },
+    "tooling": {
+      "familj": "omrade",
+      "beskrivning": "Rör interna verktyg och skript."
+    },
+    "facit": {
+      "familj": "omrade",
+      "beskrivning": "Rör facit-mekanismen — låsta referensfixturer och deras grindar."
+    },
+    "tests": {
+      "familj": "omrade",
+      "beskrivning": "Rör testsviter eller testtäckning."
+    },
+    "backfill": {
+      "familj": "omrade",
+      "beskrivning": "Rör historisk databackfyllning."
+    },
+    "bas-maximering": {
+      "familj": "omrade",
+      "beskrivning": "Rör den kontinuerliga maximeringen av Airtable-basen till förstklassig leverabel (ADR-063)."
+    }
+  },
+  "alias": {
+    "qa-utredning": "utredning"
+  },
+  "skyddade": [
+    "ci-natt",
+    "lankrota",
+    "ci-post-merge",
+    "dependencies",
+    "ci",
+    "wontfix",
+    "bug",
+    "documentation",
+    "duplicate",
+    "enhancement",
+    "good first issue",
+    "help wanted",
+    "invalid",
+    "question"
+  ]
+}
