@@ -3,9 +3,10 @@ id: TASK-328
 title: >-
   Grillning: work-item-substratet under fleet-drift — Backlog.md rätt inställt
   eller annat verktyg?
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-26 05:02'
+updated_date: '2026-09-04 09:32'
 labels:
   - ready-for-human
   - grillning
@@ -21,13 +22,19 @@ Marcus fråga 2026-08-26: 'kortskapandet är flaskhalsen... fel verktyg?' Underl
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 grillning körd (/grill-me) till samsyn — dokumentets fyra styrfrågor (rad 495-507) besvarade: är kortets sanning tvungen att vara en fil i git-commit, accepterar vi landningstids-upptäckt i stället för skapande-förhindrande, hur många parallella agenter ska substratet bära, vad kostar 656 kortidentiteter vid byte
-- [ ] #2 ADR mintad eller beslut bokfört med decline-rationale
+- [x] #1 grillning körd (/grill-me) till samsyn — dokumentets fyra styrfrågor (rad 495-507) besvarade: är kortets sanning tvungen att vara en fil i git-commit, accepterar vi landningstids-upptäckt i stället för skapande-förhindrande, hur många parallella agenter ska substratet bära, vad kostar 656 kortidentiteter vid byte
+- [x] #2 ADR mintad eller beslut bokfört med decline-rationale
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Grillad till samsyn i S118 (2026-09-04), nio beslut kvitterade var för sig och i block. Utfall: ADR-131 (work-item-substratet flyttar till GitHub Issues) mintad; PRD #2296 med nio sub-issues #2297–#2305 skapad som första GitHub-issue = ADR:ns minimala test steg 1. Fråga 1 (fil i git) besvarad nej: forgen är arbetslappen, git är historieboken. Fråga 2 (landningstids-upptäckt) moot: servern allokerar. Fråga 3 (parallellitet) besvarad: obegränsad allokering, seriella skrivningar 1 s. Fråga 4 (656 identiteter) besvarad: bara öppna kort flyttar, Done-korten fryses på plats, kostnaden bunden i klasser. Landning: PR #2286 (docs-only, D0). Sessionsdok S118 Del 2 bär hela grillningen.
+<!-- SECTION:FINAL_SUMMARY:END -->
