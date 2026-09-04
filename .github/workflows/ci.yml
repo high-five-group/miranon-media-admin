@@ -1528,6 +1528,30 @@ jobs:
         # 0,18 s LOKALT mätt (macOS, 2026-08-31, median av tre körningar
         # EFTER runda 2:s utökning: 172/199/179 ms) — CI-tiden är INTE mätt
         # av mig och kan avvika.
+        #
+        # test-synka-labels.mjs (GitHub-issue #2298, ADR-131 § 5) hör hit av
+        # samma ADR-039-skäl som syskonen ovan: label-synken (scripts/lib/
+        # synka-labels.mjs + scripts/synka-labels.mjs) är inte en grind förrän
+        # dess logik fortlöpande verifieras. Sektion B prövar valideraPolicy
+        # fail-closed i BÅDA riktningar (19 fall: en trasig struktur FÄLLS med
+        # rätt skäl, den rättade formen SLÄPPER — se sektion A); sektion D
+        # bevisar att berakDiff aldrig producerar ett "radera"-fält (D6/D7:
+        # en skyddad eller okänd GitHub-label syns inte alls i diffen, per
+        # konstruktion eftersom den aldrig ingår i labelSpecs); sektion F/G/H
+        # kör den FULLA orkestreringen (synka() och CLI:ts main()) mot en
+        # INJICERAD fejkad gh-klient — aldrig ett riktigt `gh`-anrop, aldrig
+        # en PATH-fejkad subprocess. H11 bevisar idempotens på CLI-nivå (två
+        # körningar i rad ⇒ noll diff på den andra), H12 att en skyddad label
+        # aldrig rörs av --utfor. H13 är en kopplingsvakt: CLI:ts main()
+        # glömde ursprungligen vidarebefordra sleepMs/sleepFn till synka(),
+        # vilket gjorde varje --utfor-testkörning vänta 1 s PER skrivning på
+        # riktigt (mätt: tre CLI-nivå-tester tillsammans tog 6,1 s väggklocka
+        # mot 0,08 s CPU-tid innan felet hittades och rättades under bygget).
+        # Mutationsprövad under bygget: färgjämförelsen i berakDiff
+        # kortsluten till alltid-lika fällde D3 (51/52 gröna → 1 rött), vilket
+        # bevisar att sviten fångar en verklig regression och inte bara är
+        # grön av konstruktion. 53 fall. 0,13 s LOKALT mätt (macOS,
+        # 2026-09-04) — CI-tiden är INTE mätt av mig och kan avvika.
         run: |
           bash scripts/test-check-frontmatter.sh
           bash scripts/test-check-public-checklists.sh
@@ -1579,6 +1603,7 @@ jobs:
           node scripts/test-task-338-6-prod-migration.mjs
           node scripts/test-docraptor-sjalvbarande.mjs
           node scripts/test-backfill-inbetalningar.mjs
+          node scripts/test-synka-labels.mjs
 
       - name: Test post-merge-lagrets ärvda klassning (TASK-73)
         # Per ADR-039 § lesson→grind (L43): en grind är inte en grind förrän
