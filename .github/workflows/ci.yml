@@ -503,7 +503,7 @@ jobs:
   lint:
     name: Lint + Audit + TypeCheck
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
@@ -1712,6 +1712,22 @@ jobs:
         # storleksordningen, inte en projicerad garanti mot framtida latens.
         # Fynd-kortet med den fulla mätserien: se backlog (syskon till
         # TASK-383, som rör samma dags 12-minuterstak i test-sviten).
+        #
+        # ANDRA AVLÄSNINGEN, SAMMA DAG: run 33852769123 (omkörning av
+        # Lint-jobbet efter att npm börjat svara igen) startade 08:37:28.
+        # `audit-ci` gick GRÖNT denna gång men tog ~5 min (08:41:56→08:46:02,
+        # npms fetch-timeout är 300 s) — inte längre bara `npm ci` som var
+        # långsam. Biome, TypeScript ×2, actionlint, yamllint och
+        # docs-grindarna gick alla gröna. Jobbet kancellerades ändå kl
+        # 08:47:40 (10 min 12 s totalt, jobbstart 08:37:28) mitt i "Test
+        # gatekeeper script suites" — 10-minuterstaket (höjt via denna kommentars
+        # första avläsning ovan) räckte alltså inte mot en dag med genomgående
+        # långsamt npm, bara mot en enskild långsam `npm ci`. `timeout-minutes`
+        # för `lint` höjt 10→15 — dagens uppmätta värsta fall (~12 min: 5 min
+        # npm ci + 5 min audit-ci + resten) plus marginal, INTE en projektion
+        # mot framtida latens. `docs` stannar på 10: samma runs docs-jobb
+        # (Docs link check) gick grönt på 5 min 45 s (08:19:18→08:25:03),
+        # gott och väl inom det befintliga taket, och rörs därför inte.
         run: node scripts/test-check-staging-preflight-wiring.mjs
 
       - name: Install shellcheck (pinned v0.11.0)

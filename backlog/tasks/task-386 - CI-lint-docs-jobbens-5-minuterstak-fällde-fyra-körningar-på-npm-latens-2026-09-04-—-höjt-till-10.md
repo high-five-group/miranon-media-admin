@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-09-04 08:15'
-updated_date: '2026-09-04 08:17'
+updated_date: '2026-09-04 08:50'
 labels:
   - ready-for-agent
 dependencies: []
@@ -92,7 +92,7 @@ samma bakomliggande npm/nätverks-latensklass men inte samma jobb.
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [x] #1 timeout-minutes 10 för lint och docs, actionlint grönt, paritetsgrinden grön
+- [x] #1 timeout-minutes 15 för lint, 10 för docs, actionlint grönt, paritetsgrinden grön
 <!-- AC:END -->
 
 ## Definition of Done
@@ -102,30 +102,71 @@ samma bakomliggande npm/nätverks-latensklass men inte samma jobb.
 - [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+## Andra mätningen, samma dag (2026-09-04)
+
+Efter första höjningen (5→10) föll lint-jobbet en femte gång: run
+`33852769123`, job `100964013950` (omkörning sedan npm börjat svara igen).
+Startade 08:37:28. Install dependencies 08:37:37→08:41:56 (~4m19s).
+Audit dependencies (audit-ci) gick GRÖNT denna gång men tog ~5 min
+(08:41:56→08:46:02) — npms fetch-timeout är 300 s, så detta var inte
+längre bara en långsam `npm ci` utan genomgående npm-latens. Biome,
+TypeScript ×2, actionlint, yamllint och de nio check:docs-grindarna gick
+alla gröna (08:46:02→08:46:22). Jobbet kancellerades kl 08:47:39/08:47:40
+(10 min 12 s totalt) mitt i steget "Test gatekeeper script suites
+(frontmatter / checklists / hook / ci-wait)" — 10-minuterstaket (från
+första höjningen) räckte inte.
+
+Docs-jobbet i SAMMA run (job `100964016212`, Docs link check) gick grönt
+på 5 min 45 s (08:19:18→08:25:03) — gott och väl inom det befintliga
+10-minuterstaket.
+
+Åtgärd: `timeout-minutes` för `lint` höjt 10→15 — dagens uppmätta värsta
+fall (~12 min: ~4-5 min npm ci + ~5 min audit-ci + resten av jobbet) plus
+marginal, INTE en projektion mot framtida latens. `docs` orörd (kvar på
+10) med hänvisning till samma runs gröna 5m45s-mätning.
+
+Verifierat efter ändringen: actionlint (pinnad 1.7.12) grönt exit 0,
+yamllint (pinnad 1.38.0) grönt exit 0, paritetsgrinden
+(`node scripts/verify-ci-parity.mjs --list`) grönt exit 0 — "Paritets-
+preflight ... matchar policyn."
+
+Ny commit på samma PR (#2288, redan armerad av Marcus — orörd av detta
+kort). Grenen: ci/lint-docs-timeout-10.
+<!-- SECTION:NOTES:END -->
+
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
-Höjde timeout-minutes 5→10 för ci.yml-jobben `lint` (rad ~506) och `docs`
-(rad ~2033), samt uppdaterade kommentaren vid rad ~1692-1694 med dagens
-avläsning. Grund: fyra 2026-09-04-körningar (07:50-08:10) föll på det
-gamla 5-minuterstaket på npm-latens, inte en trädregression —
-merge_group-run 33850613813 (#2264), PR-run 33850992570 + rerun
-33851503642 (#2284), PR-run 33851282508 (#2269). Verbatim ur run
-33851503642 job 100955216172: npm ci tog 4 min trots cache-träff (mot
-~1 min i TASK-82:s ursprungsmätning), audit-ci kancellerad vid 5:00-taket.
-Senaste gröna Lint (33778799749, 2026-09-03) tog 3m22s totalt.
+TVÅ höjningar samma dag på PR #2288 (gren ci/lint-docs-timeout-10):
 
-review-backstopp (5), changed (3), ci-passed (1) orörda.
-.ci-parity-policy.json bär inga timeout-minutes-värden — ingen ändring
-krävdes där.
+1. Första: timeout-minutes 5→10 för BÅDE lint (rad ~506) och docs (rad
+   ~2049), grundat i fyra 2026-09-04-körningar (07:50-08:10) som föll på
+   det gamla 5-minuterstaket på npm-latens (npm ci 4 min trots
+   cache-träff) — merge_group-run 33850613813 (#2264), PR-run 33850992570
+   + rerun 33851503642 (#2284), PR-run 33851282508 (#2269). Commit
+   e2d4468a.
 
-Verifierat: actionlint (pinnad 1.7.12, samma -ignore-flagga som CI) grönt
-exit 0; yamllint (pinnad 1.38.0) grönt exit 0; paritetsgrinden
-(`node scripts/verify-ci-parity.mjs --list`) grön exit 0 — "Paritets-
-preflight: jobbmängden + suite-input-invarianterna + diff-klassningens
-koppling matchar policyn."; npm run typecheck/biome/build alla gröna
-(irrelevanta för YAML-ändringen men körda enligt uppdrag).
+2. Andra: timeout-minutes för lint höjt YTTERLIGARE 10→15 sedan run
+   33852769123 (job 100964013950) föll på det nya 10-minuterstaket kl
+   08:47:40 (10m12s totalt) mitt i "Test gatekeeper script suites" — denna
+   gång var även audit-ci långsamt (~5 min, grönt men nära npms
+   300s-fetch-timeout), inte bara npm ci. docs rördes INTE denna gång —
+   samma runs docs-jobb gick grönt på 5m45s, gott och väl inom
+   10-minuterstaket. Se anteckningar-fältet för fullständig stegdata.
 
-PR #2288 (draft, ej armerad — enligt uppdrag). Gren
-ci/lint-docs-timeout-10, commit e2d4468a.
+review-backstopp (5), changed (3), ci-passed (1) orörda genom hela
+kortet. .ci-parity-policy.json bär inga timeout-minutes-värden — ingen
+ändring krävdes där i någon av de två omgångarna.
+
+Verifierat i BÅDA omgångarna: actionlint (pinnad 1.7.12, CI:s exakta
+-ignore-flagga) grönt exit 0; yamllint (pinnad 1.38.0) grönt exit 0;
+paritetsgrinden (node scripts/verify-ci-parity.mjs --list) grön exit 0.
+Första omgången kördes även npm run typecheck/biome/build gröna
+(irrelevanta för YAML men körda enligt uppdrag).
+
+PR #2288 (armerad av Marcus 08:25:26, orörd av detta kort — ingen
+re-armering gjord). Gren ci/lint-docs-timeout-10.
 <!-- SECTION:FINAL_SUMMARY:END -->
