@@ -306,3 +306,97 @@ exakt.
 - Fix: PR #684 (merge-commit `c227593f`)
 - Amendering: `TASK-133`
 - Sessionsdok: `tasks/sessions/archive/2026-08/2026-08-02-session-96.md` Del 10
+
+### 2026-09-04 — Nätverksdegradering när advisory-endpointen är onåbar (`TASK-395`)
+
+Marcus i klartext 2026-09-04: **"Bygg degraderingen då."**
+
+**Bakgrund (mätt, källa per påstående).** npm:s advisory-bulk-endpoint
+(`POST /-/npm/v1/security/advisories/bulk`) flappade under förmiddagen och
+blockerade varje PR i repot — trots att de blockerade PR:erna inte rörde
+beroendeträdet. Audit-steget bodde då i jobbet `Lint + Audit + TypeCheck` och
+var obligatoriskt.
+
+- `gh api .../runs/33862945280/jobs` (PR #2285, event `pull_request`):
+  `Install dependencies` 10:23:06→10:28:07 = 5 min 01 s;
+  `Audit dependencies (audit-ci with allowlist)` 10:28:07→10:37:42 =
+  9 min 35 s = 575 s, alltså exakt fem försök à 90 s fetch-timeout plus fyra
+  pauser à 30 s. Jobbet `failure`, samtliga arton efterföljande steg
+  `skipped` — Biome, TypeScript, actionlint, yamllint och hela grindraden
+  kördes alltså inte alls.
+- Samma dag, run 33862989013: samma jobb SUCCESS på 3 min 53 s, med
+  `audit-ci` grönt på 3 s (10:41:18→10:41:21). Endpointen var alltså uppe
+  10:41 och nere igen 10:51 — flappning, inte ett sammanhängande avbrott.
+- Lokal mätning 2026-09-04 10:51 UTC mot samma träd: `npm audit --json` exit 1
+  med `{"message":"network timeout at: https://registry.npmjs.org/-/npm/v1/security/advisories/bulk","error":{"summary":"","detail":""}}`,
+  och `npx audit-ci --config audit-ci.jsonc` exit 1 med utdatan
+  `code undefined:` följt av `Exiting...`.
+- Att npm aldrig gör om denna POST är källverifierat i `#2288`
+  (`make-fetch-happen` `lib/remote.js`); `NPM_CONFIG_FETCH_RETRIES` är därför
+  verkningslös för anropet, och omförsöken ligger sedan dess på steg-nivå.
+
+**Beslut 1 — auditen får ett eget jobb.** `audit-ci` flyttas ur `lint` till
+jobbet `audit` i `ci.yml`, parallellt och villkorslöst (varken `if:` eller
+`needs:`, samma form som `lint`), med `timeout-minutes: 20` — nog för loopens
+värsta fall (570 s) plus `npm ci`. Jobbet läggs i aggregatorns `needs`
+(`ci-passed`) och är därmed exakt lika required som audit-steget var förut.
+Vinsten är att en onåbar endpoint inte längre kan svälja lint-jobbets
+tidsbudget och släcka de arton grindarna efter sig.
+
+**Beslut 2 — en SMAL degradering, med två villkor som båda måste hålla.**
+Faller alla fem försök släpps körningen igenom med en `::warning::` och exit 0
+ENDAST om:
+
+1. **Nätverksklass.** Inget försöks utdata bär en sårbarhetsmarkör
+   (`Failed security audit due to`, `Vulnerable advisories are:`,
+   `Found vulnerable advisory paths:`, en advisory-URL), OCH varje försöks
+   utdata matchar minst ett känt nätverksmönster. Mönsterlistorna är lästa ur
+   audit-ci 7.1.0:s egen dist-bundle och ur npm:s faktiska utdata, inte
+   gissade — härledningen står i skriptets filhuvud. Ett försök som föll av
+   ett skäl vi inte känner igen fäller: fail-closed, aldrig "förmodligen
+   nätverket".
+2. **Oförändrat beroendeträd.**
+   `git diff --quiet <bas-sha> HEAD -- package.json package-lock.json` är tyst.
+   Bas-SHA:n kommer ur `github.event.pull_request.base.sha` respektive
+   `github.event.merge_group.base_sha`, båda fältnamnen verifierade mot
+   octokit/webhooks payload-schemat 2026-09-04.
+
+I varje annat läge exit 1, med en loggrad om vilket villkor som föll. **På
+`push` mot main gäller ingen degradering** — det eventet bär ingen bas att
+jämföra mot, och post-merge-ytan ska aldrig kunna landa ett ogranskat träd på
+en tyst degradering.
+
+**Vad degraderingen INTE är.** Den är inte `continue-on-error`, och §1–§4 i
+detta ADR:s Beslut är orörda: allowlisten (`audit-ci.jsonc`) rörs inte, en
+rapporterad sårbarhet fäller alltid oavsett lockfilens tillstånd, och en PR
+som rör `package.json` eller `package-lock.json` kräver alltid ett riktigt
+audit-svar. Den gör inte heller trädet säkrare — den byter en känd, avgränsad
+risk (en advisory-körning uteblir på en diff som bevisligen inte rör
+beroendeträdet) mot en mätt, total blockering av varje PR. Den säger ingenting
+om huruvida trädet är fritt från sårbarheter under avbrottet; nästa körning
+som når endpointen är det som avgör.
+
+**Under ADR-baren för en egen ADR, därför denna post.** Beslutet är lätt att
+återställa — ett borttaget jobb och ett borttaget skript — och det ändrar
+ingen av detta ADR:s fyra grundbeslut. Det utvidgar §1:s supply-chain-grind
+med ett avgränsat undantag, vilket hör hemma i en Updates-post.
+
+**Bevis (tvåsidigt, mätt 2026-09-04, inte resonerat):**
+`scripts/test-audit-degradering.sh` — 41 assertions, hermetisk (`npx` stubbad
+via PATH, git-fixturer i mktemp, ingen nätverkstrafik), wirad i lint-jobbets
+gatekeeper-steg. Röd sida: ändrad låsfil, ändrat manifest, sårbarhetstabell,
+sårbarhet i ett av två försök, okänd felklass, nätverksfel i ett försök men
+okänt i nästa, samt saknad bas-SHA — samtliga exit 1. Grön sida: grönt första
+respektive andra försöket, nätverksfel med oförändrat träd, `ENOAUDIT`-formen,
+audit-ci:s verkligt uppmätta utdata verbatim, och bas-commiten hämtad grunt ur
+origin när den saknas i checkouten.
+
+**Spårbarhet:**
+
+- Kort: `TASK-395`
+- Grind: `.github/workflows/ci.yml` jobbet `audit` ·
+  `scripts/audit-ci-med-degradering.sh` · `scripts/test-audit-degradering.sh`
+- Paritet: `.ci-parity-policy.json` (`knownJobs.ci.audit`, `derivedJobs.ci`,
+  `exprSubstitutions`)
+- Föregående ändring i samma incident: PR `#2288` (omförsöken flyttade till
+  steg-nivå)
