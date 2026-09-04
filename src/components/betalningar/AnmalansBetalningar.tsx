@@ -48,10 +48,18 @@ import { REGISTRERA_TRIGGER_ID, RegistreraYta } from './RegistreraYta';
  * beloppet, det Marcus kallade "NYCKELTALET", får radens vikt.
  *
  * ORDVALET BYTTES 2026-09-01 (Marcus): etiketten "Saknas" är nu "Kvar att
- * betala", och nolläget "Inget öppet belopp enligt basen." är "Inget kvar att
- * betala." Termen är KONSEKVENT över alla betalningsytor — panelen, denna vy,
- * personkortet, inkorgens rader och registreringens kvittens — så samma sak
- * heter samma sak var Lotta än står. Kompositionen är oförändrad.
+ * betala", och nolläget "Inget öppet belopp enligt basen." blev "Inget kvar
+ * att betala." Termen var KONSEKVENT över alla betalningsytor — panelen,
+ * denna vy, personkortet, inkorgens rader och registreringens kvittens — så
+ * samma sak hette samma sak var Lotta än stod. Kompositionen är oförändrad.
+ *
+ * REVISION 2026-09-04 (S120, TASK-391): nolläget är nu "Inget att betala."
+ * — "kvar" förutsätter att något funnits att betala, medan `saknas === null`
+ * inte vet det (aldrig haft pris eller helt betald, ovisst vilket). "Inget
+ * att betala" är neutralt och täcker båda fallen. Gäller bara detta
+ * nolläge — inkorgens heltäckningsgren (`inkorg-harledningar.ts`, en
+ * registrerad inbetalning som täcker hela priset) behåller "Inget kvar att
+ * betala.", där "kvar" fortfarande är exakt.
  */
 export function AnmalansBetalningar({
   anmalanRecordId,
@@ -86,7 +94,7 @@ export function AnmalansBetalningar({
           påstås vara "allt betalt". Se filens docblock § "SAKNAS X KR" för
           varför bara det öppna beloppet får radstrukturens vikt. */}
         {saknas === null ? (
-          <p className="text-small text-text-muted">Inget kvar att betala.</p>
+          <p className="text-small text-text-muted">Inget att betala.</p>
         ) : saknas > 0 ? (
           <div className="flex items-center justify-between gap-4 py-1">
             <span className="text-small text-text-muted">Kvar att betala</span>
