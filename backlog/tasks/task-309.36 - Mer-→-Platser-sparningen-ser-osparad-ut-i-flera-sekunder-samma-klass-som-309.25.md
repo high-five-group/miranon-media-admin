@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-28 03:04'
+updated_date: '2026-08-28 04:41'
 labels:
   - ready-for-agent
 dependencies: []
@@ -52,9 +53,9 @@ hook-form, samma kommentarsstandard.
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Samma optimistiska mönster (onMutate/onError/onSettled) implementerat i useSavePlace.ts, med rollback vid fel
-- [ ] #2 Playwright-bevis: sparningen syns omedelbart i UI:t, ingen flera-sekunders osparad-känsla — snapshot-par före/efter, samma bevisform som 309.25
-- [ ] #3 Ingen regression i 309.25:s yta (GenereringsVy.tsx/useSaveEventText) — dess testsvit körs grön oförändrad
+- [x] #1 Samma optimistiska mönster (onMutate/onError/onSettled) implementerat i useSavePlace.ts, med rollback vid fel
+- [x] #2 Playwright-bevis: sparningen syns omedelbart i UI:t, ingen flera-sekunders osparad-känsla — snapshot-par före/efter, samma bevisform som 309.25
+- [x] #3 Ingen regression i 309.25:s yta (GenereringsVy.tsx/useSaveEventText) — dess testsvit körs grön oförändrad
 <!-- AC:END -->
 
 ## Definition of Done

@@ -7,7 +7,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-30 06:37'
-updated_date: '2026-08-30 09:03'
+updated_date: '2026-09-04 08:14'
 labels: []
 dependencies: []
 parent_task_id: TASK-309
@@ -31,9 +31,9 @@ Marcus 2026-08-30 efter prod-titt (S113 resume 3): knapparna 'Ladda upp bilaga'/
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -69,6 +69,8 @@ KONTROLLEN FANGADE EN VACUOS ASSERTION, vilket ar hela skalet att kora dem. A-ii
 EN ASSERTION UTAN ISOLERAD KONTROLL, oppet bokfort: B:s 'fokus atterlamnas till triggern efter Escape'. Beteendet levereras av react-arias MenuTrigger och gar inte att bryta med en lokal enradsmutation utan att skriva om Meny.tsx-primitiven; ingen realistisk regressionsmutation fanns att kora. Assertionen star kvar (den fangar en framtida handbyggd meny), men den ar INTE negativt kontrollerad — sag inte att den ar det.
 
 GRINDAR efter tillaggen, matta exitkoder: typecheck 0 - biome 0 - build 0 - check-langa-streck 0 (267 filer) - npm run test:acceptance -- dokument: 103 passed (3.6m), exit 0. Talet var 98 fore denna runda, 95 fore skivan.
+
+Nattgrind-stängning 2026-09-04: DoD bockad mot belägg — samtliga 5 AC redan bockade (mekanisk DoD#1); DoD#2 styrks av notens grindtabell (typecheck/biome/build/check-langa-streck 0, 103 acceptance passed, 14 negativa kontroller); DoD#3 verifierat mot git show --stat e50ee1c3 (PR #2130): enbart DokumentYta.tsx, RackviddBadge.tsx, components.css och två acceptance-testfiler ändrade.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

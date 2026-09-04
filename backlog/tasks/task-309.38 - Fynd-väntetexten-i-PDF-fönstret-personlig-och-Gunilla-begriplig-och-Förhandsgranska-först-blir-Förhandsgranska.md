@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-29 07:34'
-updated_date: '2026-08-29 09:15'
+updated_date: '2026-09-04 08:14'
 labels:
   - ready-for-agent
 dependencies: []
@@ -36,9 +36,9 @@ FORM (Gunilla-principen, ORDLISTA): förhandsgranskning → 'Ett ögonblick <Fö
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -201,6 +201,8 @@ hittades inte inom 15s) — resurskonkurrens vid parallell körning av 8 tunga
 Playwright-filer, INTE en regression: samtliga tre gav grönt vid omkörning
 isolerat/serialiserat. Den auktoritativa körningen (`--workers=1`, samma
 8 filer): 51/51 gröna, exit 0.
+
+Nattgrind-stängning 2026-09-04: DoD bockad mot belägg — samtliga 4 AC redan bockade (mekanisk DoD#1); DoD#2 styrks av notens egna grindtabeller (typecheck/biome/check-langa-streck/check-facit.sh 0, acceptance-sviter gröna, runda 2-omkörning 51/51); DoD#3 verifierat mot git show --stat 73d23930 (PR #2077): enbart dokument-/hem-ytans egna filer, aria-snapshots och tester ändrade.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

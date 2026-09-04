@@ -263,11 +263,40 @@ staging-körningar delar basen. Åtgärden ligger hos orkestreraren.
 
 ## Omstämplings-läge
 
-**Väntar på Marcus omstämpling** (`ADR-104` beslut 1–2), tillsammans med
-`368.3`:s amendering — de två gäller samma yta och samma bilder. Inget
-stämpel-fält är rört av denna commit: ytan har inget manifest att röra, och
-`S111`-manifestets `godkand` står kvar med sin 2026-08-23-kvittens och sha
-`cb7ad681`.
+**Kvitterad 2026-09-04** — se § Omstämpling — kvitterad 2026-09-04 nedan,
+tillsammans med `368.3`:s amendering: de två gäller samma yta och samma
+bilder och kvitterades i samma andetag. Inget stämpel-fält är rört av denna
+eller den kvitterande commiten: ytan har inget manifest att röra, och
+`S111`-manifestets `godkand` står kvar orört med sin 2026-08-23-kvittens och
+sha `cb7ad681`.
 
 `bash scripts/check-facit.sh` → **exit 0**, före och efter denna commit
 (mätt 2026-09-03, om efter `TASK-368.7`s tillägg).
+
+## Omstämpling — kvitterad 2026-09-04
+
+**Marcus kvittens, klartext i chatten** (samma kvittens som
+[`AMENDERING-2026-09-03-avbokningssteget.md`](AMENDERING-2026-09-03-avbokningssteget.md)
+§ Omstämpling — kvitterad 2026-09-04, eftersom den täcker båda stegen på samma
+sida i samma QA-vandring):
+
+> "Avboka och boka om, godkänt i staging 2026-09-04."
+
+**Vad som QA:ades:** `TASK-368.6` steg 1–8 i staging (avboka, återta, boka om
+till samma/dyrare/billigare pris, betalläge, felläge, mobil) på
+granskningsfixturen `ZZ-GRANSKNING-S119`.
+
+**Kanalen:** ytan saknar `facit.json`-manifest (§ Yta och lås ovan), så
+`npm run facit:godkann` har ingen post att skriva mot — kvittensen gavs
+därför i klartext i chatten (S119, till orkestreraren) i stället för via
+kommandot. Ett första försök att bokföra den maskinellt gick mot FEL yta: PR
+`#2294` skrev om `s111-anmalningssidan-konvergens/facit.json`
+(anmälnings-LISTAN, se § FÖRST ovan) i stället för denna sida, och stängdes
+2026-09-04 utan att landa — `s111`:s stämpel (2026-08-23, `godkand.sha`
+`cb7ad681…`) står orörd. Kvittensens innehåll är oberoende av den felriktade
+kanalen: Marcus godkände i klartext den amenderade detaljsidan, vilket är
+exakt vad klass (c) väntar på för en yta utan manifest (`ADR-102` § Updates
+2026-08-22 § A3, tabellraden "Omstämplings-läge").
+
+**Facit-bilderna `k04.png`/`k04-obekraftad.png` är fortsatt INTE omtagna** —
+kvittensen godkänner formen, den tar inte nya bilder.

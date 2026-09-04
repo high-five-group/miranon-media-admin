@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-29 07:54'
-updated_date: '2026-08-29 09:15'
+updated_date: '2026-09-04 08:14'
 labels:
   - ready-for-agent
 dependencies: []
@@ -31,9 +31,9 @@ Marcus prod-röktest 2026-08-29 (S113), ordagrant: "Nu har jag laddad upp 2 dela
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -159,6 +159,8 @@ Nya sviten är nu 10 fall (var 9). Det tidigare fällande `inline-rullningen`-te
 ### Ej rört
 
 `?typ`-nollställning vid räckviddsbyte — orkestreraren har avgjort JA på Marcus mandat, men i ett EGET kort. Inte berörd i denna PR.
+
+Nattgrind-stängning 2026-09-04: DoD bockad mot belägg — samtliga 5 AC redan bockade (mekanisk DoD#1); DoD#2 styrks av notens grindtabeller (typecheck/biome/check-langa-streck/build 0, acceptance-sviter gröna i två rundor); DoD#3 verifierat mot git show --stat c7366aba (PR #2080): enbart DokumentYta.tsx + de två berörda acceptance-testfilerna ändrade.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

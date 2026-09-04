@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-29 08:03'
-updated_date: '2026-08-29 08:32'
+updated_date: '2026-09-04 08:16'
 labels:
   - ready-for-agent
 dependencies: []
@@ -30,9 +30,9 @@ Efter skivan bär STAGING-basen (apphjj8Q7lkXCMsL4 — prod app8uGPrVCVOm6LfD ä
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #4 Prod-schemaändringar endast efter Marcus GO i klartext per tabell (ADR-125 § 8)
 - [ ] #5 Deny/allow-test grönt för varje ny eller ändrad EF-operation (sub-fas-mönstret, field-allowlists)
 - [ ] #6 Lagervakten grön — matchning och validering bor i EF/_shared, aldrig i klienten (ADR-057)
@@ -81,6 +81,8 @@ Efter skivan bär STAGING-basen (apphjj8Q7lkXCMsL4 — prod app8uGPrVCVOm6LfD ä
 **DoD #5 (deny/allow-test per ny/ändrad EF-operation):** N/A — denna skiva ändrar INGEN EF-kod, endast Airtable-schema + dokumentation. Ingen ny/ändrad EF-operation finns att testa.
 
 **DoD #6 (Lagervakten — matchning/validering i EF/_shared):** N/A av samma skäl — ingen matchnings- eller valideringslogik skrevs i denna skiva (det är TASK-338.2/338.3). Ingen klientkod rörd.
+
+Nattgrind-stängning 2026-09-04: DoD bockad mot belägg — samtliga 4 AC redan bockade (mekanisk DoD#1); DoD#2 styrks av PR #2078:s testplan (check:docs 14/14 gröna, staging-sviter 43/43); DoD#3 verifierat mot git show --stat 658e4243 (PR #2078): enbart data-model.md + kortfilen ändrade. DoD#4/#5/#6 KVARSTÅR OBOCKADE — kortets egna notiser klassar dem N/A (inget prod-anrop, ingen EF-kod, ingen klientkod i denna skiva); rapporterat till orkestreraren, inte bockat på gissning.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

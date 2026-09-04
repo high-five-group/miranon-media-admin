@@ -145,8 +145,9 @@ async function mockGetRegistration(page: Page, rad: DetaljRow): Promise<void> {
   });
 }
 
-/** Tomt betalläge — `kvar === null` i `AvbokningsBetallage`, "Inget kvar att
-    betala." Testet prövar rubrikordningen, inte beloppen. */
+/** Tomt betalläge — `kvar === null` i `AvbokningsBetallage`, "Inget att
+    betala." (reviderad 2026-09-04, S120, TASK-391, ur "Inget kvar att
+    betala."). Testet prövar rubrikordningen, inte beloppen. */
 async function mockOppnaBetalningarTom(page: Page): Promise<void> {
   await page.route(HAMTA_OPPNA_BETALNINGAR, async (route) => {
     await route.fulfill({

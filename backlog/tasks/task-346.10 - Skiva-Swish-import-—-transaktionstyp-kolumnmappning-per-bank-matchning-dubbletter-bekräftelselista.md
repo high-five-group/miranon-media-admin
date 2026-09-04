@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-30 18:46'
-updated_date: '2026-08-31 13:07'
+updated_date: '2026-09-04 08:24'
 labels:
   - ready-for-agent
 dependencies:
@@ -35,11 +35,17 @@ Modell: Opus@xhigh (ADR-089; avvikelse från agent-default bokförd här). Nattm
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #4 ADR-128 och ADR-129 är Accepted och landade FÖRE första kodskiva armeras
-- [ ] #5 Pengalogikens regler (härledning, sekvens, unik kvittonyckel, matchning, dubbletter, jobbets tillstånd) har var sin negativ kontroll bokförd — testet fäller en trasig implementation
-- [ ] #6 Orkestrerarens egen vandring av Lottas lördag mot staging (fixtur ZZ-GRANSKNING-S113) är bokförd med skärmdumpar i tasks/sessions/bilagor/ före session-paus, och en oberoende granskningsagent har gått samma vandring
-- [ ] #7 Nya ytor ligger bakom miljöflaggan och är avstängda i prod tills Marcus slår på den
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 ADR-128 och ADR-129 är Accepted och landade FÖRE första kodskiva armeras
+- [x] #5 Pengalogikens regler (härledning, sekvens, unik kvittonyckel, matchning, dubbletter, jobbets tillstånd) har var sin negativ kontroll bokförd — testet fäller en trasig implementation
+- [x] #6 Orkestrerarens egen vandring av Lottas lördag mot staging (fixtur ZZ-GRANSKNING-S113) är bokförd med skärmdumpar i tasks/sessions/bilagor/ före session-paus, och en oberoende granskningsagent har gått samma vandring
+- [x] #7 Nya ytor ligger bakom miljöflaggan och är avstängda i prod tills Marcus slår på den
 - [ ] #8 Facit-stämplade ytor (Hem, Åtgärds-sidan, persondetalj) bär AMENDERING-sidofil per yta med klassen ny form, förhandsmandat S113 Del 11
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Nattgrind-stangning 2026-09-04: DoD2/3/4/5/6/7 bockade mot belagg (PR 2164-kroppens grindtabell, git show 85bac1ff-scope, ADR-128/129 Accepted, negativ-kontroll per matchnings-/dubblettregel, VITE_FEATURE_BETALNINGAR av i prod, orkestrerarens slutvandring Del 13 namner Swish-importen explicit plus skarmdumpen slutdom-swish-1440.png i s113-natt-slutvandring/). AC1/AC5/DoD1/DoD8 lamnade obockade - AC1 ar explicit DELVIS (bas-halvan STOPPA-bokford, vantar Marcus-beslut), AC5 explicit HITL-oppen (Lottas verkliga bankfil saknas), DoD8 ingen AMENDERING-sidofil hittad specifikt for Swish/inkorgen (inkorgen ar mojligen inte en facit-stamplad yta - obedombart harifran).
+<!-- SECTION:NOTES:END -->

@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-30 18:45'
-updated_date: '2026-08-31 13:07'
+updated_date: '2026-09-04 08:20'
 labels:
   - ready-for-agent
 dependencies:
@@ -35,13 +35,19 @@ Modell: Opus@xhigh (ADR-089; avvikelse från agent-default bokförd här). Nattm
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #4 ADR-128 och ADR-129 är Accepted och landade FÖRE första kodskiva armeras
-- [ ] #5 Pengalogikens regler (härledning, sekvens, unik kvittonyckel, matchning, dubbletter, jobbets tillstånd) har var sin negativ kontroll bokförd — testet fäller en trasig implementation
-- [ ] #6 Orkestrerarens egen vandring av Lottas lördag mot staging (fixtur ZZ-GRANSKNING-S113) är bokförd med skärmdumpar i tasks/sessions/bilagor/ före session-paus, och en oberoende granskningsagent har gått samma vandring
-- [ ] #7 Nya ytor ligger bakom miljöflaggan och är avstängda i prod tills Marcus slår på den
-- [ ] #8 Facit-stämplade ytor (Hem, Åtgärds-sidan, persondetalj) bär AMENDERING-sidofil per yta med klassen ny form, förhandsmandat S113 Del 11
-- [ ] #9 Facit-granskning: tasks/sessions/bilagor/s102-hem-konvergens/facit.json, tasks/sessions/bilagor/s93-atgardssida-promovering/facit.json, tasks/sessions/bilagor/s103-persondetalj-konvergens/facit.json — AMENDERING-sidofil per manifest, klass ny form, förhandsmandat S113 Del 11
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 ADR-128 och ADR-129 är Accepted och landade FÖRE första kodskiva armeras
+- [x] #5 Pengalogikens regler (härledning, sekvens, unik kvittonyckel, matchning, dubbletter, jobbets tillstånd) har var sin negativ kontroll bokförd — testet fäller en trasig implementation
+- [x] #6 Orkestrerarens egen vandring av Lottas lördag mot staging (fixtur ZZ-GRANSKNING-S113) är bokförd med skärmdumpar i tasks/sessions/bilagor/ före session-paus, och en oberoende granskningsagent har gått samma vandring
+- [x] #7 Nya ytor ligger bakom miljöflaggan och är avstängda i prod tills Marcus slår på den
+- [x] #8 Facit-stämplade ytor (Hem, Åtgärds-sidan, persondetalj) bär AMENDERING-sidofil per yta med klassen ny form, förhandsmandat S113 Del 11
+- [x] #9 Facit-granskning: tasks/sessions/bilagor/s102-hem-konvergens/facit.json, tasks/sessions/bilagor/s93-atgardssida-promovering/facit.json, tasks/sessions/bilagor/s103-persondetalj-konvergens/facit.json — AMENDERING-sidofil per manifest, klass ny form, förhandsmandat S113 Del 11
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Nattgrind-stangning 2026-09-04: DoD 2-9 bockade mot belagg ur PR 2156-kroppen och sessionsdok 2026-08-29-session-113.md Del 12-13 (ADR-128/129 Accepted, feature-flagg av i prod, AMENDERING-sidofiler i tre manifest, orkestrerarens slutvandring med skarmdumpar, negativ-kontroll i betalningstestsviterna, git-verifierad diff-scope).
+<!-- SECTION:NOTES:END -->

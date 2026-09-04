@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-28
+updated: 2026-09-04
 review_by: 2026-11-15
 status: stable
 ---
@@ -706,7 +706,12 @@ Bygga de fyra produkt-flikarna i strangler-fig-ordning: Persons-domän → Event
 
 **6c (Registrations + Väntelista):**
 
-- `src/routes/event/$eventId/anmalda.tsx`
+- `src/routes/event/$eventId/anmalda.tsx` — **riven 2026-09-04 (TASK-389).**
+  18.13-skulden betald: länken från Mer → Anmälningar gick till denna
+  gamla, hela-eventets Anmälda-lista i stället för anmälans egen sida
+  (task-18.17). Länken i `AnmalningarSida.tsx` pekar nu på
+  `/event/$eventId/anmalan/$registrationId`; routen, `EventRegistrations.tsx`
+  och `AddRegistrationModal.tsx` är rivna tillsammans med den.
 - `src/routes/mer/vantelista.tsx`
 - `supabase/functions/create-registration/index.ts` (deploy med idempotency)
 - `supabase/functions/get-waitlist/index.ts` (deploy)

@@ -3,10 +3,10 @@ id: TASK-368.5
 title: >-
   Skiva: Ombokningssteget i appen — Boka om till annat event, prisskillnaden
   rakt ut med länkar, väntelistepåminnelsen (facit-amendering ADR-102)
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-03 07:57'
-updated_date: '2026-09-03 16:16'
+updated_date: '2026-09-04 07:53'
 labels:
   - ready-for-agent
 dependencies:
@@ -25,7 +25,7 @@ Beteende ände-till-ände: Lotta trycker Avboka anmälan, väljer i stället Bok
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [x] #1 Anmälans sida är identisk med facit tasks/sessions/bilagor/s111-anmalningssidan-konvergens/facit.json ytan anmälningssidan, amenderat per ADR-102 med utskriven klassning + sidofil för ombokningsvalet och väntelistepåminnelsen; ariaSnapshot-referenser uppdaterade och gröna
-- [ ] #2 Avbokningssteget har valet Boka om till annat event: en eventväljare (kommande event, samma form som skapa-anmälan) och skälet förifyllt 'Ombokad till <event, datum>' (redigerbart); bekräftelsen anropar ombokningsoperationen och landar på den NYA anmälans sida med ett kvitto i klartext på vad som hände
+- [x] #2 Avbokningssteget har valet Boka om till annat event: en eventväljare (kommande event, samma form som skapa-anmälan) och skälet förifyllt 'Ombokad till <event, datum>'; bekräftelsen anropar ombokningsoperationen och landar på den NYA anmälans sida med ett kvitto i klartext på vad som hände
 - [x] #3 Prisskillnaden sägs rakt ut i steget innan bekräftelse: 'Nya eventet kostar X kr, Y kr blir att återbetala' eller 'saknas Y kr' eller 'samma pris'; efter bekräftelse visas samma text med länk till Registrera återbetalning respektive registrera inbetalning; inkorgen ändras inte
 - [x] #4 När eventet som avbokas har personer på väntelistan visar bekräftelsesteget 'N personer väntar på plats' med länk till väntelistan; ingen automatik, ingen skrivning
 - [x] #5 Acceptanstest i den hermetiska fixturvärlden prövar ombokning med samma pris, dyrare och billigare event, förifyllt och redigerat skäl, väntelistepåminnelsen med och utan väntande, felläget, axe noll överträdelser; desktop och iPad-bredd
@@ -33,10 +33,10 @@ Beteende ände-till-ände: Lotta trycker Avboka anmälan, väljer i stället Bok
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #4 Facit-granskning mot tasks/sessions/bilagor/s111-anmalningssidan-konvergens/facit.json (ADR-102 R3): skarpa ytan jämförd bild för bild mot det amenderade facitet innan Done
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Facit-granskning mot tasks/sessions/bilagor/s111-anmalningssidan-konvergens/facit.json (ADR-102 R3): skarpa ytan jämförd bild för bild mot det amenderade facitet innan Done
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -60,3 +60,9 @@ TESTER: tests/acceptance/anmalan-ombokning.acceptance.test.ts, 16 fall, 16/16 gr
 
 S115 stängning (orkestrerare): PR #2267 landad 2026-09-03 (0fed8d7a) efter tre review-rundor (runda 2 fällde byggarens remount-premiss mot TanStack Routers Match.js; key={registrationId} på AvbokningsYta, rött-först-bevisat; runda 3 risk låg, konvergerad). AC #3:s 'före bekräftelse' byggdes i TASK-368.7 (PR #2280, landad a8c00733) och bockas här. AC #2 '(redigerbart)' är obockat: rebook-registration saknar skäl-fält, Marcus beslut i TASK-381. Kortet flippas Done när 381 avgjorts.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+PR #2267 landad (0fed8d7a) efter tre granskningsrundor (runda 2 fällde remount-premissen mot TanStack Routers Match.js, runda 3 risk låg, konvergerad). AC #2 stängd av TASK-381-beslutet A (2026-09-04, orkestreraren på Marcus mandat): '(redigerbart)' struket ur AC-texten — skälraden visas i klartext, exakt den rad servern skriver, redigering utan nuvarande användare. AC #3 stängd av TASK-368.7 (#2280): pris i get-event + prisbesked före bekräftelse byggt och landat. Samtliga 5 AC bockade.
+<!-- SECTION:FINAL_SUMMARY:END -->

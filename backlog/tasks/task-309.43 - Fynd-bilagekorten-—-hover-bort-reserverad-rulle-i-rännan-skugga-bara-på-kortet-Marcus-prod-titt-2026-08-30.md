@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-30 06:26'
-updated_date: '2026-08-30 09:03'
+updated_date: '2026-09-04 08:14'
 labels: []
 dependencies: []
 parent_task_id: TASK-309
@@ -30,9 +30,9 @@ Marcus prod-titt 2026-08-30 på Bilagor-ytan efter #2123 (S113 resume 3): (1) ho
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -62,6 +62,8 @@ HÖJDLÅSET (AC #4) — useLastaListhojd-kroppen BYTE-IDENTISK med origin/main: 
 GRINDAR: typecheck exit 0 · biome exit 0 · build exit 0 · check-langa-streck exit 0 (267 filer, 0 ofångade) · npm run test:acceptance -- dokument: 95 passed (3.0m), tio dokument-sviter inkl. dokument-lista-hojdlas, dokument-lista-hojdlas-tidpunkt, dokument-rackviddsval.
 
 AC #5 EJ BOCKAD: docblock-rättelsen och de tre grindarna är klara, men 'landat via review-grinden och prod-verifierat read-only' sker efter landning och ägs av orkestreraren.
+
+Nattgrind-stängning 2026-09-04: DoD bockad mot belägg — samtliga 5 AC redan bockade (mekanisk DoD#1); DoD#2 styrks av notens grindtabell (typecheck/biome/build/check-langa-streck 0, 95 acceptance passed); DoD#3 verifierat mot git show --stat fd0a5dc4 (PR #2128): enbart DokumentYta.tsx + components.css ändrade.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

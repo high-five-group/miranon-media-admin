@@ -77,3 +77,31 @@ pekar-arkitekturen (punkt 2); synk-inställningen i claude.ai är manuell
 konfiguration som Marcus måste underhålla när nya arkivkataloger
 tillkommer; exkluderingslistan här och inställningen i claude.ai kan
 drifta isär — vid ändring uppdateras båda.
+
+## Updates
+
+### 2026-08-24 (S112) — claude.ai-projektkunskapen avvecklad, beslutet historiskt
+
+Marcus i klartext (S112, `TASK-318`): *"Kör inte med Claude.ai längre."*
+
+Detta ADR:s hela beslut (punkt 1–3, 5) styrde synken mot en läsyta som inte
+längre är i drift. Konsekvensen:
+
+- **Synk-exkluderingarna (punkt 1) är moot** — det finns ingen aktiv synk
+  kvar att exkludera material ur.
+- **Pekar-arkitekturen (punkt 2)** — regeln att historik hämtas VIA CODE
+  eller genom att Marcus klistrar innehåll — överlever som GENERELL princip,
+  oberoende av claude.ai. Den flyttades till spoke-`CLAUDE.md`
+  § Synk-horisont och arkiv-åtkomst i samma landning som denna post, formulerad
+  yta-neutralt.
+- **Villkorad framtida exkludering (punkt 3, `docs/research/` vid
+  Fas 6-avslut)** är moot av samma skäl — det finns ingen synk att exkludera
+  ur när Fas 6 avslutas.
+- **Struktur-flyttarna (punkt 4)** är opåverkade — de gäller filers plats i
+  git, inte synken, och står kvar som utförd historik.
+- **Beslutet i sin helhet klassas historiskt.** Innehållet rivs inte —
+  samma "omge, riv inte"-mönster repot använder på andra frusna beslut
+  (jämför `docs/reference/schema_reference.md` "historisk karta"-markeringen).
+
+Ingen ny ADR mintas för detta — avvecklingen är en konsekvens att bokföra,
+inte en ny avvägning (ADR-BAR, `~/.claude/CLAUDE.md` § Instruktioner).

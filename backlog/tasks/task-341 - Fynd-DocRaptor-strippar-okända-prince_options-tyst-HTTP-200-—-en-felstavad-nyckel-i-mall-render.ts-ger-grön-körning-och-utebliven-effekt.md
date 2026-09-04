@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-29 14:33'
-updated_date: '2026-08-29 17:16'
+updated_date: '2026-09-04 08:18'
 labels:
   - ready-for-agent
 dependencies: []
@@ -27,9 +27,9 @@ Ur research-passet docs/research/forhandsgranska-spara-atervand-bilageflodet-202
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -40,4 +40,6 @@ Källa: https://docraptor.com/documentation/api, verifierad WebFetch + browser-k
 PREMISSAVVIKELSE (bokförd, ej tyst rättad): kortet antog att mall-render.ts skickar ett eller flera prince_options-fält som behöver verifieras nyckel för nyckel. Mätt fakta (grep + läsning av postaTillDocRaptor): filen skickar NOLL prince_options-nycklar i dag — inget prince_options-objekt finns i JSON-kroppen. De facto skickas EXAKT fem topp-nivå-nycklar: test, document_type, document_content, name, javascript — samtliga verifierade mot referensen. document_type är INTE en felstavning: sidan säger verbatim 'This field was previously called document_type and is still available for applications that depend on it.' javascript är korrekt topp-nivå (DocRaptors egen JS-motor), skilt från det nästlade prince_options[javascript] (Princes motor).
 
 Enhetstest: tests/api/mall-render-docraptor-request.test.ts (5 test, källkods-nivå — mall-render.ts kan inte importeras i Node p.g.a. esm.sh-import). Låser (1) de fem faktiska topp-nivå-nycklarna mot en allowlist på 19 dokumenterade DocRaptor-parametrar, och (2) framåtsäkrat: om ett prince_options-block någonsin läggs till prövas dess nycklar mot en allowlist på 32 dokumenterade prince_options-nycklar. Bidirektionellt bevisat 2026-08-29: en injicerad felstavning (document_type -> documnet_type) fällde testen 2/5 exakt som avsett, reverterad efteråt (diff verifierad identisk mot backup).
+
+Nattgrind-stängning 2026-09-04: DoD bockad mot belägg — samtliga 2 AC redan bockade (mekanisk DoD#1); DoD#2 styrks av PR #2111:s grindtabell (api-pure 24/24, typecheck/biome/build 0); DoD#3 verifierat mot git show --stat 208349fc (PR #2111): enbart mall-render.ts + en ny testfil + kortfilen ändrade.
 <!-- SECTION:NOTES:END -->
