@@ -4,7 +4,7 @@ title: 'Skiva: Kreditkvitto, återbetalning, makulera och radera i UI'
 status: Done
 assignee: []
 created_date: '2026-08-30 18:46'
-updated_date: '2026-08-31 13:07'
+updated_date: '2026-09-04 08:23'
 labels:
   - ready-for-agent
 dependencies:
@@ -34,11 +34,17 @@ Modell: Sonnet@xhigh (ADR-089; avvikelse från agent-default bokförd här). Nat
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #4 ADR-128 och ADR-129 är Accepted och landade FÖRE första kodskiva armeras
-- [ ] #5 Pengalogikens regler (härledning, sekvens, unik kvittonyckel, matchning, dubbletter, jobbets tillstånd) har var sin negativ kontroll bokförd — testet fäller en trasig implementation
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 ADR-128 och ADR-129 är Accepted och landade FÖRE första kodskiva armeras
+- [x] #5 Pengalogikens regler (härledning, sekvens, unik kvittonyckel, matchning, dubbletter, jobbets tillstånd) har var sin negativ kontroll bokförd — testet fäller en trasig implementation
 - [ ] #6 Orkestrerarens egen vandring av Lottas lördag mot staging (fixtur ZZ-GRANSKNING-S113) är bokförd med skärmdumpar i tasks/sessions/bilagor/ före session-paus, och en oberoende granskningsagent har gått samma vandring
-- [ ] #7 Nya ytor ligger bakom miljöflaggan och är avstängda i prod tills Marcus slår på den
-- [ ] #8 Facit-stämplade ytor (Hem, Åtgärds-sidan, persondetalj) bär AMENDERING-sidofil per yta med klassen ny form, förhandsmandat S113 Del 11
+- [x] #7 Nya ytor ligger bakom miljöflaggan och är avstängda i prod tills Marcus slår på den
+- [x] #8 Facit-stämplade ytor (Hem, Åtgärds-sidan, persondetalj) bär AMENDERING-sidofil per yta med klassen ny form, förhandsmandat S113 Del 11
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Nattgrind-stangning 2026-09-04: DoD2/3/4/5/7/8 bockade mot belagg i PR 2163-kroppen, git-scope och disk. AC5 och DoD1/DoD6 lamnade obockade - review-agentens egen text sager AC5 fortfarande arligt obockad (blockerad pa post-armering EF-deploy); ingen dedikerad skarmdump hittad for makulera/aterbetalning/kreditkvitto-ytorna. Rapporterat till orkestreraren.
+<!-- SECTION:NOTES:END -->

@@ -4,7 +4,7 @@ title: 'Skiva: CI-backstoppen'
 status: Done
 assignee: []
 created_date: '2026-08-09 13:14'
-updated_date: '2026-08-28 06:32'
+updated_date: '2026-09-04 08:13'
 labels:
   - ready-for-agent
 dependencies:
@@ -32,11 +32,11 @@ ordinal: 327000
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Tvåsidig skript-testsvit (ska-fälla + ska-passera) per nytt deterministiskt skript, grön lokalt
-- [ ] #6 CI-backstoppens grind-verkan bevisad med rött-först-form: positivt bevis + negativ self-test
-- [ ] #7 Instrumenteringsloggen bevisat skrivande från första skarpa körningen (findings-per-runda + risk-kalibrering + grind-missar)
-- [ ] #8 Mekanism som inte kan skarpbevisas i byggsessionen bokförs som öppen skuld i handoff, aldrig som klar
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 Tvåsidig skript-testsvit (ska-fälla + ska-passera) per nytt deterministiskt skript, grön lokalt
+- [x] #6 CI-backstoppens grind-verkan bevisad med rött-först-form: positivt bevis + negativ self-test
+- [x] #7 Instrumenteringsloggen bevisat skrivande från första skarpa körningen (findings-per-runda + risk-kalibrering + grind-missar)
+- [x] #8 Mekanism som inte kan skarpbevisas i byggsessionen bokförs som öppen skuld i handoff, aldrig som klar
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -90,4 +90,6 @@ FYND UTANFÖR SCOPE, ej åtgärdat (ADR-053, registrerat): scripts/docraptor-sja
 ## Stängning (S112 resume 2, 2026-08-28 ~15:30)
 
 Landning: PR #2049, merge-commit `e8c8bbc1` (två granskningsrundor, Opus: r1 medel — main-guardens fail-open i sökväg med mellanslag/symlänk, ALLGREEN-bokföring, STALE-via-rebase, CLAUDE.md-motsägelse; r2 låg — ett error-fynd om rebase-revert prövades bort med `git merge-tree --write-tree`). **AC #1/#2 betalda efter landning:** `review-backstopp-proof.yml` positiv run 33145964415 = success · negativ kontroll (`simulera_gront=true`) run 33145969468 = failure. **Första skarpa fällningen i drift:** merge_group-run 33145818932 sparkade orkestrerarens egen docs-batch #2066 (två .conf-rader = kodklass, ingen sektion) — grinden skiljer inte på vems PR det är. Post-merge på e8c8bbc1 grön (run 33145903146). DoD #7 hör till 173.6 (uppfyllt där: loggen skrivs och committas).
+
+Nattgrind-stängning 2026-09-04: DoD #4 (git show --stat e8c8bbc1, PR #2049): samtliga 13 rörda filer hör till review-backstopp-featuren (ci.yml, review-backstopp-proof.yml, review-backstopp.mjs+lib+test, CLAUDE.md/CONTRIBUTING.md, .ci-parity-policy.json, kortfilen) — inga orelaterade. DoD #5/#6 styrks av notens egna citat: test-review-backstopp 40/40 (tvåsidig, mutationsprövad) samt review-backstopp-proof.yml positiv run 33145964415=success / negativ run 33145969468=failure (rött-först-form). DoD #7 uppfylld i syskonskivan TASK-173.6 per kortets egen not ('DoD #7 hör till 173.6, uppfyllt där: loggen skrivs och committas'). DoD #8 styrks av kortets egen dokumenterade praxis: öppen skuld bokförd explicit (AC #1/#2 lämnade obockade med STOPPA-PUNKT-notering) och betald efter merge med run-ID, aldrig anspråk på klart i förtid.
 <!-- SECTION:NOTES:END -->

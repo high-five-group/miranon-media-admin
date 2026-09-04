@@ -4,7 +4,7 @@ title: 'Skiva: Å8 — Fynd 1: Antal anmälningar / Antal anmälda (§O3, efter 
 status: Done
 assignee: []
 created_date: '2026-08-14 17:24'
-updated_date: '2026-09-03 08:54'
+updated_date: '2026-09-04 08:13'
 labels:
   - ready-for-human
 dependencies:
@@ -67,7 +67,7 @@ Täcker användarberättelser: 8
 - [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 Rollback-väg dokumenterad och bevisat reversibel (formeltext eller record-ID:n sparade verbatim) FÖRE varje prod-mutation, per skiva
-- [ ] #6 Marcus-GO för prod-mutationen explicit citerat i skivans Implementation Notes, per skiva
+- [x] #6 Marcus-GO för prod-mutationen explicit citerat i skivans Implementation Notes, per skiva
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -78,6 +78,8 @@ Trigger: recordMatchesConditions på Eventplanering (tblVE3UKWl1CKrphV), villkor
 Åtgärd: sendEmail till lotta@outsidereality.se + marcus@h5gruppen.se, statisk ämnesrad "Event fullbokat! Ändra status på webbsidan nu." och statiskt meddelande — inga dynamiska fält/formler i mailkroppen.
 Konsekvens för fixen: eftersom A6 triggar på EXAKT beläggning=1 (inte tröskel-överskridande), och fixen ändrar täljaren (Antal anmälda, exkluderar avbokade/inställda), kommer A6 fira vid ett ANNAT faktiskt antal aktiva anmälningar efter fixen än före — samma procentvärde (100%) men mot en mindre population. Ingen formel i A6 själv behöver ändras; endast NÄR den fyrar flyttas. Detta är precis vad AC#2 efterfrågar dokumenterat.
 Bekräftat samtidigt (identifiersOnly/full describe_table, prod): Antal anmälningar (fldU5MCQmagdHtz4G) är type="count" (ovillkorat, ej rollup) — matchar kortets "M-a/M-b"-premiss exakt. Anmäld beläggning (%) = {Antal anmälda}/{Max antal platser}; Platser kvar = {Max antal platser}-{Antal anmälda}; Antal slutbetalning saknas = {Antal anmälda}-{Antal mottagna slutbetalningar} — samtliga tre följdfält bekräftat beroende av Antal anmälda, exakt som blast-radius-varningen anger.
+
+Marcus-GO för prod-mutationen (citat, källa TASK-368.1 Implementation Notes, S115 Del 4, 2026-09-03): 'Du har GO på fältbytet i prodbasen sedan'. Prod-mutationen (nytt rollup-fält Antal aktiva anmälningar, Antal anmälda ompekad) utfördes av orkestreraren via claude.ai-Airtable-connectorn 2026-09-03 med detta GO som underlag. Citatet flyttat hit vid nattgrindens stängning 2026-09-04 eftersom DoD #6 kräver citatet i skivans EGNA Implementation Notes, inte enbart i syskonkortet 368.1.
 <!-- SECTION:NOTES:END -->
 
 ## Comments
