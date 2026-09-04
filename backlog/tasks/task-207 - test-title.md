@@ -35,7 +35,7 @@ METODNOT (viktig för framtida triage): gh pr diff <nr> --name-only kan ge FALSK
 MÖJLIG SVAG PRECEDENT (ej oberoende verifierad av mig, citerad i TASK-205s Implementation Notes): TASK-201.12-agenten mätte en Airtable-kontentionsflake i update-event.staging.test.ts i just detta fönster (2026-08-11 kväll) — annan natt, annan endpoint, men samma allmänna klass (staging-backend-kontention/degradering under samtidig belastning). Ingen egen backlog-post hittades för den observationen vid sökning 2026-08-13 (grep -rl kontention backlog/tasks/).
 
 NÄSTA STEG FÖR DEN SOM TAR KORTET:
-1. Avgör om detta är Supabase-plattformens egen instabilitet (kontrollera Supabase status-historik för pqtshyierkdgwdnxuirz kring dessa tidsfönster) eller självförvållad kontention (flera parallella staging-CI-körningar/agenter samma kväll — sessionsdoket tasks/sessions/2026-08-11-session-105.md bokför TOLV landningar samma dag, hög samtidig aktivitet).
+1. Avgör om detta är Supabase-plattformens egen instabilitet (kontrollera Supabase status-historik för pqtshyierkdgwdnxuirz kring dessa tidsfönster) eller självförvållad kontention (flera parallella staging-CI-körningar/agenter samma kväll — sessionsdoket tasks/sessions/archive/2026-08/2026-08-11-session-105.md bokför TOLV landningar samma dag, hög samtidig aktivitet).
 2. Om självförvållad: överväg om post-merge-sviten behöver en mutex/kö mot staging (jämför TASK-77/TASK-78s redan kända gränser för dagens mutex).
 3. Om plattforms-instabilitet: detta är per definition icke-blockerande brus för post-merge-grinden — överväg samma typ av signalvärdes-varning som TASK-205 § REVIDERAD NÄSTA-STEG punkt 4.
 <!-- SECTION:DESCRIPTION:END -->

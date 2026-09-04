@@ -2,7 +2,7 @@
 
 - Status: Accepted (grillad samsyn S101, 2026-08-09 — sju kvitterade beslut
   med helhetskvittens, kanonisk trail:
-  `tasks/sessions/2026-08-09-session-101.md` Del 6; Marcus slutkvittens
+  `tasks/sessions/archive/2026-08/2026-08-09-session-101.md` Del 6; Marcus slutkvittens
   verbatim: *"Kvitterar samsynen i sin helhet, kör vidare"*)
 - Datum: 2026-08-09
 - Fas: Session 101 — processform, K1 i L8-transformationsplanen (ingen

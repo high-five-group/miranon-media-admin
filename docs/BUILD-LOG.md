@@ -3322,7 +3322,7 @@ Syftet är att en ny läsare ska kunna läsa sista sessionen och förstå var vi
 - **Avvikelser:** ref-incidenten 2026-08-10 (fem EF:er till fel projekt — blev skälet till att `fas4-prod-deploy.sh` verifierar länkläget före varje skarp operation) · nightly röd 19 raka nätter, dominanterna två drift-detektorer (Länkkontroll = ADR-082:s valda kostnad, backlog-grinden = 238-roten) · fas 4-underlaget beskrev en baslinje som var inaktuell redan när det skrevs (git-derivering, inte artefakt-mätning) · min egen `.se`/`.dev`-förväxling ur arkivmaterial · shellcheck körd utan `--enable=all` gav falskt grönt lokalt
 - **Verifiering:** deployen mätt mot prod-svaret (39 ACTIVE, alla `updated_at` inom 55 s, noll test-\* i prod) · deny-triple mot `create-attendance` (401/401/405) · CORS tvåsidigt bevisat (rätt origin 200 + speglad, främmande 403) · prod-bundlen bevisad bära dagens kod (`grid min-h-dvh w-full`) · passkey-probe 200 med `rpId: admin.miranon.dev` · prod-basens `Bilagor` mätt tom
 - **Teknisk skuld:** `task-268` (icke-strikt `DocumentPreviewSchema` döljer fel-gren-svar) · `task-269` AC3 (dörrens backup-väg oprövad skarpt) · `task-239` (tre gröna nätter, tidigast 2026-08-20) · `task-256` AC4 · stämpel-hookens delta-fix (a/b-beslutet, väg b vald men obyggd) · `T144` (heartbeat-larm utan ägarskaps-filter, andra instansen mätt) · `INVITE_REDIRECT_URL` bör sättas explicit i stället för Site URL-fallback · 40-listans beslutspass · fem Dependabot-PR:er i review
-- **Full narrativ:** `tasks/sessions/2026-08-10-session-102.md` Del 1–18
+- **Full narrativ:** `tasks/sessions/archive/2026-08/2026-08-10-session-102.md` Del 1–18
 - **Producerade underlag:** `docs/research/fas4-ef-deploy-underlag-2026-08-17.md` · `docs/research/40-listan-proveniens-relevans-2026-08-16.md` · `docs/research/task-99-dequeue-enqueue-live-test-2026-08-01.md` · `scripts/fas4-prod-deploy.sh` + `scripts/test-fas4-prod-deploy.sh` (TASK-272) · `tasks/threads/T144-heartbeat-svepet-larmar-utan-agarskaps-filter.md`
 
 ## Session 104 (2026-08-10 → 2026-08-17) — Segment-passet: design-om + promoveringen
@@ -3333,7 +3333,7 @@ Syftet är att en ny läsare ska kunna läsa sista sessionen och förstå var vi
 - **Avvikelser:** en CI-cykel på 249.5 (skip-mot-självtest, precedent-fix); re-låsning av två aria-referenser med Marcus-kvittens (ADR-102/103-disciplinen höll); modell-routing skärpt mitt i natten (Opus för svåra, ADR-089)
 - **Verifiering:** merge-kö-verifikat per PR; aria-grinden 14/14 genom flipp OCH rivning; hermetik-självtestet 222/222; 874 API-tester
 - **Teknisk skuld:** task-257 (PersonsList-höjdlåset) · task-258 (död kod + sparNot/PrototypNot-rester) · task-265 (Leads-vyn i basen) · 213.4-varningen (BLANK()-kanten)
-- **Full narrativ:** `tasks/sessions/2026-08-10-session-104.md` Del 1–10
+- **Full narrativ:** `tasks/sessions/archive/2026-08/2026-08-10-session-104.md` Del 1–10
 
 ## Session 114 (2026-08-31 → 2026-09-03) — Segment och Intresserade: våg A, våg B-samsyn, B3 från konvergens till prod
 

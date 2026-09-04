@@ -2,7 +2,7 @@
 
 - Status: Accepted (ställningstagande-grillning A, S101 2026-08-09 —
   tre-delat beslut kvitterat; kanonisk trail:
-  `tasks/sessions/2026-08-09-session-101.md` Del 8; Marcus kvittens
+  `tasks/sessions/archive/2026-08/2026-08-09-session-101.md` Del 8; Marcus kvittens
   verbatim: *"Kvitterar snitt-principen, kör grillning B"*)
 - Datum: 2026-08-09
 - Fas: Session 101 — processform (ingen byggfas-status-ändring)
