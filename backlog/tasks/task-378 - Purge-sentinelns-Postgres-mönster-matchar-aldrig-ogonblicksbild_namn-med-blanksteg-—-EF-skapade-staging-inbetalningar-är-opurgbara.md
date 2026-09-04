@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-03 11:11'
+updated_date: '2026-09-04 07:53'
 labels:
   - ready-for-agent
 dependencies: []
@@ -32,3 +33,9 @@ Symptom (källa: review-agent runda 1 på PR #2247, 2026-09-03, info-fynd 5; HYP
 - [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #4 Den fixade regeln är dokumenterad i ADR-060 § Updates eller i policyfilens egen kommentar (var den styrande ytan är avgörs av ADR-100 §1)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Relaterat fynd ur PR #2264 (TASK-370.3) granskning, fynd 2: testfilens fixtur-städning (raderaFixturInbetalning) loggar console.error vid fallerad radering men fäller inte testet — en läckt staging-rad syns bara i loggen. Orkestrerarbeslut 2026-09-04: PR:en landad som den är; purge-fixen i detta kort ska täcka de rader det testet kan lämna. Verifiera vid bygget att sentinel-mönstret matchar 370.3-testets fixturnamn.
+<!-- SECTION:NOTES:END -->
