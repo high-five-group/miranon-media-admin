@@ -422,7 +422,14 @@ export const EVENT_DETAIL_RESPONSE = {
     // AKTIVA länkade Anmälningar med Källa 'Manuell'/'Väntelista'/framtida
     // värden (`get-event/index.ts` § fetchBelaggning). ALDRIG `null` —
     // en räkning, precis som viaFormular/medfoljande/vantelista.
-    ovrigaAnmalningar: 1,
+    //
+    // 0, INTE 1 (rättat i review-runda 2, PR #2289): `src/lib/belaggning.ts`s
+    // INVARIANT kräver viaFormular + ovrigaAnmalningar + manuelltTillagda =
+    // basens `Antal anmälda` (events[0] spreadar `antalAnmalda: 8` hit).
+    // 6 (viaFormular) + 0 + 1 (manuelltTillagda) = 8 = antalAnmalda. Ett `1`
+    // hade brutit invarianten (9 ≠ 8) och fått mätaren att rendera "11 av 12"
+    // i stället för korrekta "10 av 12" — granskningsfynd, inte en gissning.
+    ovrigaAnmalningar: 0,
     vantelista: 2,
     deltagarinfoAutoAvstangt: false,
   },

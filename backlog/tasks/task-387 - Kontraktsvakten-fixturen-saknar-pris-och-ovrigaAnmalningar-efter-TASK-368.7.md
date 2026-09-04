@@ -4,7 +4,7 @@ title: 'Kontraktsvakten: fixturen saknar pris och ovrigaAnmalningar efter TASK-3
 status: Done
 assignee: []
 created_date: '2026-09-04 08:15'
-updated_date: '2026-09-04 08:16'
+updated_date: '2026-09-04 08:31'
 labels:
   - ready-for-agent
 dependencies: []
@@ -63,3 +63,9 @@ Landad i samma PR som kortet, gren `fix/kontraktsvakt-fixtur-pris`.
 - [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Runda 2: ovrigaAnmalningar 0 (invarianten i src/lib/belaggning.ts, granskningsfynd PR #2289 r1).
+<!-- SECTION:NOTES:END -->
