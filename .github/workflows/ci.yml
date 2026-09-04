@@ -527,9 +527,98 @@ jobs:
         run: npm ci
 
       - name: Audit dependencies (audit-ci with allowlist)
-        run: npx audit-ci --config audit-ci.jsonc
         # K17 supply-chain-skydd: kör på varje commit (kod ELLER doc-only).
         # Allowlist tom efter K0åh (2026-05-13). ADR-028 reverse-flow aktiv.
+        #
+        # ENV-BLOCKET NEDAN (2026-09-04): `npm audit` (som audit-ci shellar
+        # ut till, se nedan) hängde 09:16:00→09:21:01 i merge_group-run
+        # 33857044952 (job "Lint + Audit + TypeCheck") och föll med
+        # conclusion `failure` — loggen bar bara "code undefined: /
+        # Exiting... / exit code 1", inget HTTP-statuskod. npm:s
+        # rådgivnings-API flappade samma dag: audit-ci gick grönt
+        # 08:41–08:46 (33852769123, ~4m06s) och 08:54–08:55 (33855429327,
+        # ~47s), men hängde ~5 min både i detta jobb och i det som ledde
+        # till första timeout-höjningen (33851503642 m.fl., se kommentaren
+        # vid `timeout-minutes` längre ned i filen). Ett högre JOBB-tak
+        # hjälper inte mot detta — problemet är att EN registry-förfrågan
+        # själv väntar upp till npm:s default `fetch-timeout` (300000 ms)
+        # innan den ger upp.
+        #
+        # KÄLLOR (2026-09-04, npm CLI v11-dokumentationen,
+        # docs.npmjs.com/cli/v11/using-npm/config):
+        #   `fetch-timeout`: "The maximum amount of time to wait for HTTP
+        #   requests to complete." Default 300000 (5 min).
+        #   `fetch-retries`: "The 'retries' config for the retry module to
+        #   use when fetching packages from the registry. npm will retry
+        #   idempotent read requests to the registry in the case of network
+        #   failures or 5xx HTTP errors." Default 2.
+        #   `fetch-retry-mintimeout` (default 10000) / `fetch-retry-maxtimeout`
+        #   (default 60000) — ORÖRDA här, se uträkningen nedan.
+        #   Env-formen är dokumenterad i samma sida: "any environment
+        #   variables that start with npm_config_ will be interpreted as a
+        #   configuration parameter" och är case-insensitive, alltså
+        #   NPM_CONFIG_FETCH_TIMEOUT / NPM_CONFIG_FETCH_RETRIES.
+        #
+        # BEKRÄFTAT ATT `npm audit` GÅR GENOM SAMMA VÄG (npm/cli →
+        # @npmcli/arborist `lib/audit-report.js`, källkod läst 2026-09-04):
+        #   `const npmFetch = require('npm-registry-fetch')`
+        #   `const res = await npmFetch('/-/npm/v1/security/advisories/bulk', { ...this.options, ... })`
+        # — samma `npm-registry-fetch`-klient som `npm ci`/`npm install`
+        # använder, och den honorerar `fetch-timeout`/`fetch-retries`
+        # per sin egen README (npm/npm-registry-fetch, `opts.timeout`
+        # default 300000 "Time before a hanging request times out",
+        # `opts.fetchRetries` default 2 mappad från npm:s `fetch-retries`).
+        #
+        # AUDIT-CI:S EGET `--retry-count` LÄGGS INTE TILL — läst i källan
+        # (github.com/IBM/audit-ci, `lib/audit.ts`), inte bara README:t.
+        # README:t säger "The number of attempts audit-ci calls an
+        # unavailable registry before failing (default 5)", men den
+        # faktiska retry-villkoret i koden är:
+        #   `const PARTIAL_RETRY_ERROR_MSG = { npm: ["not support audit"], yarn: ["503 Service Unavailable"], pnpm: [] }`
+        # — för npm triggas audit-ci:s EGEN retry alltså BARA av
+        # felmeddelanden som innehåller "not support audit" (en registry
+        # som saknar audit-stöd), inte av ett timeout/häng-fel. Loggens
+        # "code undefined: / Exiting..." matchar inte den strängen, så
+        # `--retry-count` hade inte hjälpt mot DENNA felklass. ADR-083:
+        # påstå inte en mekanism som inte gör det den låter påskina.
+        #
+        # UTRÄKNING (pessimistiskt tak, ANTAR att npm-registry-fetchs EGEN
+        # retry-logik även täcker timeout-fel — konservativt: research-
+        # passet kunde inte entydigt fastställa make-fetch-happens exakta
+        # felklassificering utan risk för felciterad källkod, så uträkningen
+        # nedan är en övre gräns, inte en garanti):
+        #   fetch-retries=4 → enligt `retry`-biblioteket (samma som
+        #   npm-registry-fetch bygger på, node-retry README: "retries: …
+        #   Setting this to '1' means 'do it once, then retry it once'")
+        #   är totalt antal FÖRSÖK = 1 + retries = 5.
+        #   5 försök × fetch-timeout (90000 ms = 90 s) = 450 s, om VARJE
+        #   försök hänger till sitt eget tak (absolut värsta fall).
+        #   Backoff mellan de 4 omförsöken (ORÖRDA defaultvärden
+        #   fetch-retry-mintimeout=10 s, fetch-retry-maxtimeout=60 s,
+        #   fetch-retry-factor=10): 10 s, sedan 60 s (taket, factor²=100s
+        #   klipps av maxtimeout) tre gånger till = 10+60+60+60 = 190 s.
+        #   Summa värsta fall: 450+190 = 640 s ≈ 10 min 40 s.
+        #   DETTA ÄR STÖRRE ÄN UPPDRAGETS GROVA "~8 min"-RIKTVÄRDE — noterat
+        #   öppet, inte tystat: 640 s är en pessimistisk matematisk gräns
+        #   (kräver att ALLA fem försök hänger till fullo), inte en
+        #   förväntad tid. Jämfört med FÖRE denna ändring (fetch-timeout
+        #   300 s × 3 default-försök + backoff ≈ 970 s ≈ 16 min) är 640 s
+        #   ändå en sänkning av det teoretiska taket, och ger fler snabba
+        #   chanser att träffa ett fungerande fönster (vilket dagens
+        #   flappande mönster visar finns). Med install (~5 min observerat
+        #   värsta fall) + resten av jobbet (~3,5 min observerat i en grön
+        #   körning) ryms det NORMALA fallet gott inom lint-jobbets 15 min,
+        #   men det matematiska absoluta värsta fallet (allt hänger
+        #   samtidigt) ryms INTE med marginal — detta är en känd, öppet
+        #   bokförd kvarstående risk, inte en löst garanti.
+        #
+        # Steget blir INTE continue-on-error, och allowlisten (audit-ci.jsonc)
+        # rörs INTE — supply-chain-grinden försvagas inte i sak, den blir
+        # bara tåligare mot enskilda långsamma registry-anrop.
+        env:
+          NPM_CONFIG_FETCH_TIMEOUT: "90000"
+          NPM_CONFIG_FETCH_RETRIES: "4"
+        run: npx audit-ci --config audit-ci.jsonc
 
       - name: Biome check
         run: npx @biomejs/biome check .

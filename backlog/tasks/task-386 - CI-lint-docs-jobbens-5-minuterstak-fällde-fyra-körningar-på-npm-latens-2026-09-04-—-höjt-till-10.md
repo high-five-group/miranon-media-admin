@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-09-04 08:15'
-updated_date: '2026-09-04 08:50'
+updated_date: '2026-09-04 09:32'
 labels:
   - ready-for-agent
 dependencies: []
@@ -93,6 +93,7 @@ samma bakomliggande npm/nätverks-latensklass men inte samma jobb.
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [x] #1 timeout-minutes 15 för lint, 10 för docs, actionlint grönt, paritetsgrinden grön
+- [x] #2 audit-steget bär fetch-timeout 90 s och 4 omförsök, källmärkt i kommentaren
 <!-- AC:END -->
 
 ## Definition of Done
@@ -135,38 +136,116 @@ preflight ... matchar policyn."
 
 Ny commit på samma PR (#2288, redan armerad av Marcus — orörd av detta
 kort). Grenen: ci/lint-docs-timeout-10.
+
+## Tredje mätningen och åtgärden: audit-ci env-tuning (2026-09-04)
+
+Ett höjt jobb-tak (10 min) räckte inte heller: merge_group-run 33857044952
+(job 100972648049) föll med conclusion `failure` (inte cancelled) — `npm ci`
+gick igenom, men "Audit dependencies (audit-ci with allowlist)" hängde
+09:16:00→09:21:01 (5m01s, matchar npm:s default fetch-timeout 300000ms
+exakt) och kraschade med "code undefined: / Exiting... / exit code 1"
+(verbatim ur job-loggen). Samma dags flapping-mönster bekräftat via tre
+andra körningars audit-ci-steg: 33852769123 grönt 08:41:56-08:46:02
+(~4m06s), 33855429327 grönt 08:54:37-08:55:24 (~47s, snabbt fönster).
+
+Research (web-research-disciplinen, källor citerade i ci.yml-kommentaren
+vid audit-ci-steget):
+- docs.npmjs.com/cli/v11/using-npm/config: fetch-timeout default 300000ms,
+  fetch-retries default 2 ("retry idempotent read requests ... network
+  failures or 5xx HTTP errors"), fetch-retry-mintimeout 10000ms,
+  fetch-retry-maxtimeout 60000ms. Env-form NPM_CONFIG_<KEY>, case-
+  insensitive, bekräftad.
+- Källkodsläsning (npm/cli -> @npmcli/arborist lib/audit-report.js):
+  `npm audit` går via `npm-registry-fetch` (samma klient npm ci/install
+  använder) mot /-/npm/v1/security/advisories/bulk — bekräftar att
+  NPM_CONFIG_FETCH_TIMEOUT/FETCH_RETRIES faktiskt honoreras.
+- npm/npm-registry-fetch README: opts.timeout default 300000 "Time before
+  a hanging request times out"; opts.fetchRetries default 2, mappar från
+  npm:s fetch-retries.
+- github.com/IBM/audit-ci lib/audit.ts (KÄLLKOD, inte bara README):
+  `PARTIAL_RETRY_ERROR_MSG = { npm: ["not support audit"], yarn: ["503
+  Service Unavailable"], pnpm: [] }` — audit-ci:s EGEN --retry-count
+  triggas för npm BARA av felmeddelanden som innehåller "not support
+  audit". Loggens "code undefined: / Exiting..." matchar inte den
+  strängen. SLUTSATS: --retry-count lades INTE till — det hade inte
+  hjälpt mot denna felklass (dokumenterat i ci.yml-kommentaren, ADR-083).
+- tim-kos/node-retry README (biblioteket npm-registry-fetch bygger sin
+  retry-logik på): retries=4 ger 1+4=5 TOTALA försök, inte 4.
+
+Åtgärd: env-block på audit-ci-steget (rad ~529):
+  NPM_CONFIG_FETCH_TIMEOUT: "90000"
+  NPM_CONFIG_FETCH_RETRIES: "4"
+
+Uträkning (dokumenterad i sin helhet i ci.yml-kommentaren): pessimistiskt
+värsta fall = 5 försök × 90s + backoff (10+60+60+60=190s, ORÖRDA
+fetch-retry-mintimeout/maxtimeout-defaults) = 640s ≈ 10m40s. DETTA ÄR
+STÖRRE än uppdragets grova "~8 min"-riktvärde — registrerad divergens
+(ADR-086), inte tystad. Jämfört med FÖRE ändringen (300s × 3 default-
+försök + backoff ≈ 970s ≈ 16min) är 640s ändå en sänkning av det
+teoretiska taket. Det normala fallet (install ~5min + audit-ci snabbt
+fönster + resten ~3,5min) ryms gott inom lint-jobbets 15 min; det absoluta
+matematiska värsta fallet gör det INTE med marginal — öppet bokförd
+kvarstående risk.
+
+Steget är INTE continue-on-error, allowlisten (audit-ci.jsonc) är orörd.
+
+Verifierat: actionlint grönt exit 0, yamllint (CI:s exakta form,
+`yamllint .github/`, auto-discoverar .yamllint.yml) grönt exit 0,
+paritetsgrinden (node scripts/verify-ci-parity.mjs --list) grönt exit 0.
+
+Armerar INTE denna gång — armeringen konsumerades när kön sparkade ut
+PR:en (failed_checks-utsparkning, se CLAUDE.md § Landning fjärde läget).
+Orkestreraren armerar om efter omgranskning.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
-TVÅ höjningar samma dag på PR #2288 (gren ci/lint-docs-timeout-10):
+TRE ändringar samma dag på PR #2288 (gren ci/lint-docs-timeout-10):
 
-1. Första: timeout-minutes 5→10 för BÅDE lint (rad ~506) och docs (rad
-   ~2049), grundat i fyra 2026-09-04-körningar (07:50-08:10) som föll på
-   det gamla 5-minuterstaket på npm-latens (npm ci 4 min trots
-   cache-träff) — merge_group-run 33850613813 (#2264), PR-run 33850992570
-   + rerun 33851503642 (#2284), PR-run 33851282508 (#2269). Commit
-   e2d4468a.
+1. timeout-minutes 5→10 för BÅDE lint och docs, grundat i fyra
+   2026-09-04-körningar som föll på 5-minuterstaket på npm-latens
+   (npm ci-hastighet). Commit e2d4468a.
 
-2. Andra: timeout-minutes för lint höjt YTTERLIGARE 10→15 sedan run
-   33852769123 (job 100964013950) föll på det nya 10-minuterstaket kl
-   08:47:40 (10m12s totalt) mitt i "Test gatekeeper script suites" — denna
-   gång var även audit-ci långsamt (~5 min, grönt men nära npms
-   300s-fetch-timeout), inte bara npm ci. docs rördes INTE denna gång —
-   samma runs docs-jobb gick grönt på 5m45s, gott och väl inom
-   10-minuterstaket. Se anteckningar-fältet för fullständig stegdata.
+2. lint-jobbets timeout-minutes höjt ytterligare 10→15 sedan run
+   33852769123 föll på det nya taket mitt i gatekeeper-testsviterna —
+   denna gång var även audit-ci långsamt (~5 min, grönt men nära
+   npms 300s-fetch-timeout). docs rördes inte (dess audit-oberoende
+   grindar gick grönt på 5m45s). Commit 87ac2e23.
+
+3. Rotorsak identifierad och åtgärdad direkt: ett högre JOBB-tak löser
+   inte problemet när npm:s EGEN fetch-timeout (default 300s) gör att en
+   enskild registry-förfrågan självständigt kan hänga i 5 min. Run
+   33857044952 bevisade detta — audit-ci föll med `failure` (inte
+   `cancelled`) efter exakt 5m01s, oberoende av jobb-taket. Fix: env-block
+   på audit-ci-steget (NPM_CONFIG_FETCH_TIMEOUT=90000,
+   NPM_CONFIG_FETCH_RETRIES=4), källmärkt mot npm CLI v11-dokumentationen
+   och verifierat via källkodsläsning att npm audit går genom
+   npm-registry-fetch (samma klient som npm ci/install) och därför
+   honorerar dessa env-variabler. audit-ci:s EGET --retry-count
+   undersöktes i KÄLLKODEN (inte bara README) och visade sig INTE vara
+   relevant för denna felklass (triggas för npm bara av "not support
+   audit"-meddelanden) — lades därför INTE till. Pessimistiskt värsta
+   fall beräknat till ~640s (10m40s), större än uppdragets grova
+   "~8 min"-riktvärde men lägre än det gamla taket (~970s/16min) —
+   divergensen registrerad öppet i kommentaren och notes, inte tystad.
+   Commit (denna, tredje).
 
 review-backstopp (5), changed (3), ci-passed (1) orörda genom hela
 kortet. .ci-parity-policy.json bär inga timeout-minutes-värden — ingen
-ändring krävdes där i någon av de två omgångarna.
+ändring krävdes där i någon av de tre omgångarna. Steget audit-ci är
+INTE continue-on-error, allowlisten (audit-ci.jsonc) är orörd —
+supply-chain-grinden försvagas inte, den blir bara tåligare mot
+enskilda långsamma registry-anrop.
 
-Verifierat i BÅDA omgångarna: actionlint (pinnad 1.7.12, CI:s exakta
--ignore-flagga) grönt exit 0; yamllint (pinnad 1.38.0) grönt exit 0;
+Verifierat i ALLA TRE omgångarna: actionlint (pinnad 1.7.12, CI:s exakta
+-ignore-flagga) grönt exit 0; yamllint (CI:s exakta form) grönt exit 0;
 paritetsgrinden (node scripts/verify-ci-parity.mjs --list) grön exit 0.
-Första omgången kördes även npm run typecheck/biome/build gröna
-(irrelevanta för YAML men körda enligt uppdrag).
+Första omgången kördes även npm run typecheck/biome/build gröna.
 
-PR #2288 (armerad av Marcus 08:25:26, orörd av detta kort — ingen
-re-armering gjord). Gren ci/lint-docs-timeout-10.
+PR #2288: armerad av Marcus 08:25:26 efter omgång 1-2; armeringen
+konsumerades när kön sparkade ut PR:en pga run 33857044952:s
+failed_checks (§ Landning fjärde läget i CLAUDE.md). Denna tredje
+commit ARMERAR INTE om — orkestreraren gör det efter omgranskning, per
+uppdrag. Gren ci/lint-docs-timeout-10.
 <!-- SECTION:FINAL_SUMMARY:END -->
