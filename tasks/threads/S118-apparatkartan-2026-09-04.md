@@ -329,20 +329,31 @@ Chen. Kuns egen siffra, 40–50 testade prod-PR:er per dag, vilar på
 asynkron landning (No Mistakes-pipelinens sista steg är *babysitting till
 merge*, inte väntan före nästa enhet).
 
-## 7. Föreslagen väg
+## 7. Föreslagen väg (reviderad efter § 9)
 
-1. **Landa kartan och research-doket** (denna PR).
-2. **Grilla kärnfrågan i ett pass** med indata: `T183`, `T67`, `T108`/
-   `T112`, `T126`, `T134`, `T179`, K4 ur S101, research-dokets fem
-   kandidatmönster, och gårdagens tidslinje. Utfallet är beslut om
-   (a) nästa-enhet-default efter armering, (b) stacking eller inte för
-   beroende skivor, (c) Claude Codes agentvy och sessionsmeddelanden som
-   komplement, (d) om `TASK-148.5` prioriteras som mätning. ADR-bar prövas
-   på varje.
-3. **Triage** av § 4 och § 5 mot disk, i bunt-PR:er: stäng-kandidater
+1. **Landa kartan och research-doken** (denna PR).
+2. **Grillning 1 — substratet (`TASK-328`), fundamental på Marcus
+   ord.** Indata: § 9.5. Den förgrenande frågan är Marcus ensam: måste
+   kortets sanning vara en fil i vår git-commit? Svaret avgör om nästa
+   steg är landningsgrinden (research-dokets alternativ 2) eller ett
+   substratbyte (GitHub Issues). ADR-bar: över.
+3. **Grillning 2 — arbetsformen.** Indata: `T183`, `T67`, `T108`/`T112`,
+   `T126`, `T134`, `T179`, K4 ur S101, 45-procents-mätningen (§ 9.1),
+   designiterationens saknade takt-regel (§ 9.2), research-dokets fem
+   kandidatmönster och gårdagens tidslinje. Utfall: (a) nästa-enhet-
+   default efter armering, (b) stacking eller inte för beroende skivor,
+   (c) promoveringens takt som regel i stället för per-instans-beslut,
+   (d) Claude Codes agentvy och sessionsmeddelanden, (e) om `TASK-148.5`
+   prioriteras som mätning.
+4. **Mekaniserings-bunt för de tre stående instruktionerna** (§ 9.3):
+   kort per instruktion, `T119`-klassen. Kan mintas före grillning 2,
+   inget av dem kräver ett arkitekturbeslut.
+5. **Triage** av § 4 och § 5 mot disk, i bunt-PR:er: stäng-kandidater
    stängs med belägg, minta-buntar mintas via CLI, QA-svansen får ett
    Marcus-beslut per PRD.
-4. **S112 stängs i ett eget kort pass** (resume → session-end), inte
+6. **MCP-installation** enligt § 9.4, i nästa session (MCP-ytan bestäms
+   vid sessionsstart), med agentfilernas denylistor ändrade i samma steg.
+7. **S112 stängs i ett eget kort pass** (resume → session-end), inte
    som detour här.
 
 ## 8. Vad jag inte kunde avgöra
@@ -358,10 +369,139 @@ merge*, inte väntan före nästa enhet).
 - Åtgärdsklassen för de 35 endast registrerade trådarna (§ 4.3) vilar på
   README-rader, inte på lästa kort — triagen prövar dem mot disk.
 
+## 9. Tillägg samma förmiddag — fem punkter Marcus lyfte in
+
+Marcus 2026-09-04, efter första leveransen: fyra tillägg plus
+Backlog-CLI:t som *"prio eller fundamental"*. Fem nya read-only-pass;
+allt nedan är mätt mot disk eller transkript.
+
+### 9.1 Overhead-mätningen från S113 — andra instansen av samma tal
+
+Citatet Marcus återgav gavs i S113 resume 2, 2026-08-29 17:45 UTC, i
+orkestrerar-transkriptet (`~/.claude/projects/…/30850a9b-….jsonl` rad
+199), som svar på *"fan vilken lång tid dessa 8 punkter tog att fixa …
+jag undrar om något är fundamentalt fel i hur vi jobbar."* Mätfönstret var
+07:38–17:35 UTC samma dag: 36 landade PR:er varav 16 processens egen
+bokföring; 29 loop-beslut varav 11 eskalerade (6 ask-user, 3 rundtak, 2
+risk); prod-momentet seriellt och kört två gånger (`TASK-344`, To Do).
+Slutsatsen *"fast overhead runt 45 %"* upprepades i S113 Del 9
+§ Tidsfrågan på tre separata skivor (`309.43`–`.45`). Parafraserat i
+`2026-08-29-session-113.md` Del 8 (rad 663–686) och Del 9 (rad 795–847);
+buret som *"grillnings-kandidat, Marcus start"* i `tasks/todo.md` rad
+132–134 och S113:s handoff. **Aldrig kort, tråd eller lesson.** Med
+`T183`:s 85 min/skiva (S114) och gårdagens tidslinje (§ 1) är det nu tre
+oberoende mätningar av samma sak. Placering: indata till grillning 2.
+
+### 9.2 Designiterationens former — nio former, en saknad regel
+
+Inventerade ur hubbens `prototype`-skill, ADR-071/102/103/104, `T66`,
+`T81`, `T157`, `T172` och sessionerna S113/S114/S117:
+
+| Form | Ingång | Godkänner | Dokumenterad |
+|---|---|---|---|
+| Prototyp-skillens tvåfas, divergens → konvergens | ny yta eller större omtag | Marcus väljer variant, låser som facit | hub `prototype/SKILL.md`, `UI.md` |
+| K-numrerade HITL-varv (K1, K2, K3 …) | konvergens öppnad | Marcus i dev-servern | hub `SKILL.md` rad 91–149 |
+| Promoveringsformen | konvergens låst | Marcus via `facit:godkann`, kanalseparation | ADR-103, ADR-104 |
+| Fix-våg (review-utfall FIX) | komplett direktiv inom levererad yta | Marcus-kvittens avfyrar vågen | ADR-071 § amendering S76 |
+| Iterations-skiva (review-utfall ITERATION) | öppen designfråga eller nytt scope | Marcus designbeslut vid triagen | ADR-071 rad 80–87 |
+| Facit-amendering klass a/b/c | stämplad yta ska ändras | klass c: Marcus omstämpling | ADR-102 § Updates 2026-08-22 |
+| B5-avsteget, "Marcus-iteration" | detaljgrillat underlag, natt-AFK | Marcus på morgonen | ADR-103 § Updates 2026-08-30, engångsmandat |
+| Hopvikning av skivor | skivor för triviala för var sin loop | Marcus verbatim per instans | S114 Del 6, bara precedent |
+| Snabbvägen till promovering | Marcus: "inte jättestora ändringar" | Marcus verbatim per instans | S117 Del 2–3, bokförd avvikelse från S114 Del 3 beslut 7 |
+
+**Två snabb/långsam-gränser är skrivna:** HITL mot AFK per fas (ADR-103
+B5: *"inte storlekströsklar"*) och fix-våg mot skiva (ADR-071:s tvådelade
+gränstest). **En saknas:** promoveringens takt. Hopvikning (S114) och
+snabbväg (S117) valdes två sessioner i rad, båda som öppet bokförda
+avvikelser, ingen regel skrevs. Det är den fråga Marcus själv ställde
+(*"Fan vilken tid det tar för en sådan enkel promovering"*).
+**Ordlistelagret:** `promovering` och `kanalseparation` är definierade i
+hubbens `SYSTEMET.md` §0; `facit`, `stämpel`, `konvergens`, `divergens`
+och `iteration` saknar uppslagsord i både `ORDLISTA.md` (som avsiktligt
+exkluderar processtermer) och `SYSTEMET.md`. **Bokförda problem** kring
+formerna, tjugo poster: ADR-102 R1–R9, L481, L527, L532, L608, L610,
+`T143` (utan kort sedan 2026-08-14), `T157` (stängd), `T172`/`TASK-297`
+(To Do: 24 av 27 stämplade ytor omärkta), `TASK-189` (subset-matchning),
+`TASK-309.21`, `TASK-309.31`, fragmentet om facit-manifest ur minnet.
+Bedömning, hypotes: formerna är precisa där de bor men når inte en
+agent som kommer in via resume eller handoff — `prototype`-skillen
+citerar själv `T126`. Placering: takt-regeln till grillning 2;
+ordlisteraderna och `T143`-kortet till mekaniserings-bunten.
+
+### 9.3 Tre stående instruktioner — disciplin i dag, mekanik möjlig
+
+| Instruktion | Kanonisk definition | Mekanism i dag | Belagda upprepningar |
+|---|---|---|---|
+| Modellval: Haiku hittar, Sonnet utför, Opus avgör | ja, ADR-089 (2026-08-02) | ingen; `agent-spawn-log.sh` loggar inte `model` | 5 verbatim i S108 (×2), S112 (×2), S113, alla efter ADR:n |
+| "AFK-läge" / "jobba autonomt" | delvis: ADR-071 för `/work-batch`, ADR-101 för compact-nischen | `disallowedTools` i agentfiler; inget för det muntliga mandatet | 7 muntliga mandat S108–S117, vart och ett omförhandlat; S113 krävde egen STOPPA-runda (B3/B4); `[AFK-beslut]`-markören uppfunnen tre gånger samma dag, odokumenterad |
+| Kontakt med parallella sessioner | nej; ADR-090 löser bara kollision på huvudkatalogen | harnessets `ListAgents` + `SendMessage` finns, oadopterad | S102↔S104 och S108↔S112 samordnades via Marcus som relä; gårdagens fyra sessioner samordnade inte |
+
+Kandidat-mekanismer, alla i `T119`-klassen och byggbara utan
+arkitekturbeslut: (a) `model`/`model_kalla` i spawn-loggen efter
+`isolation`-mönstret, plus en PreToolUse-vakt på `Agent` som prövar
+`subagent_type` mot rolltabellen; (b) en `afk`-rad i arbetsform-
+tillståndsfilen (ADR-097:s princip: regler bor i tillstånd, inte i
+startdörrar) som hookar läser vid armering av `hog`, facit-skrivning och
+prod-deploy, plus `[AFK-beslut]` som krav i session-end; (c) session-
+startens parallellitets-detektion får ett `SendMessage` till
+syskonsessionen som steg. **Skarp instans i dag:** S118 tog kontakt med
+S119 via `SendMessage` vid start, och fick på en runda orsaken till fyra
+röda PR:er (Lint-jobbets 5-minuterstak på npm-latens), en kollisionsyta
+(`tasks/todo.md`-toppen) och två dubbletter strukna (arkiveringssvepet
+och backlog-hygienen körs redan av S119). Instansen är beviset att (c)
+bär.
+
+### 9.4 Fem MCP-verktyg — dom per verktyg
+
+Fullt belagt i
+[`docs/research/mcp-verktyg-apify-firecrawl-composio-devtools-higgsfield-2026-09-04.md`](../../docs/research/mcp-verktyg-apify-firecrawl-composio-devtools-higgsfield-2026-09-04.md).
+Kärnan: **Firecrawl** har ett mätt behov (WebFetch-gapet mot JS-
+renderade sidor, två research-pass). **Chrome DevTools** är redan
+installerat i orkestrerarens session och är rätt verktyg bredvid
+Playwright (prestanda- och Lighthouse-primitiv). **Apify** rimlig utan
+registrerat behov. **Composio** och **Higgsfield** saknar registrerat
+behov i arbetssättet; ADR-106 talar mot installation "för framtiden".
+**Risken som avgör ordningen:** agentfilerna använder `disallowedTools`,
+så varje ny MCP-server på user-scope blir automatiskt tillgänglig för
+`bygg-agent` med git-skriv och push. Prompt-injektion via hämtat
+webbinnehåll är därför den största risken, och alla tre agentfiler ändras
+i samma steg som en server installeras. MCP-ytan bestäms vid
+sessionsstart: installation slår igenom nästa session.
+
+### 9.5 Backlog-CLI:t — fundamental, med färdiga indata
+
+Anatomi: `task create` tar ett globalt exklusivt lås i git-common-dir,
+håller det under hela gren-skanningen, 30 s budget utan backoff. Kvoten
+`agenter ≈ 30/T_create + 1` gör kön kastande, inte långsam: 2 av 8
+lyckas vid 23 s create. Sju åtgärder landade (`TASK-93`, `102`, `238`/
+ADR-117, `250`, `118`, `310`, `327` → 1.50.1 sedan 2026-08-28, `323`
+→ grenstädning i heartbeat-svepet). **Mätt i dag i denna worktree:**
+`task list --plain` 1,72–1,95 s (49 lokala grenar, loadavg 6, 1.50.1)
+mot 39,2 s i `TASK-310`; confound-behäftat, och `create` är oförändrad av
+1.50.1. **Öppet:** `TASK-328` grillningen, `TASK-323` AC #2
+dygnsmätning, `TASK-206` closure-grinden hänger under last, `TASK-335`
+wrapperns config-läcka. **Nytt fynd:** en nästlad worktree utan egen
+`node_modules` gör att `npm run bl` faller (exit 2) medan `npx backlog`
+tyst resolvar uppåt till huvudrepots installation — två versioner utan
+varning; kandidat för fynd-kort. **Grillningens fyra frågor** ur
+research-doket: (1) måste kortets sanning vara en fil i git? — Marcus
+ensam, förgrenande; (2) accepterar vi upptäckt vid landning i stället för
+förhindrande vid skapande? — labbmätt 8/8, ingen landningsgrind byggd;
+(3) hur många parallella agenter ska substratet bära? — formel finns, mål
+saknas; (4) vad kostar 656 kortidentiteter att flytta? — oräknat.
+
+### 9.6 Numrering som rört sig under förmiddagen
+
+S119 mintade `TASK-384` och `385` och väntar tre kort till; nästa lediga
+är sannolikt 388 eller högre. `368.5` flippas Done i `#2284`. Kartans
+§ 2 och § 5 är pekare och rättas vid session-end, inte löpande.
+
 ## Källor
 
-Sex read-only-pass 2026-09-04 mot `78de4a7d`; deras rådata ligger i
-sessionens agent-transkript, inte i repot. Filer citerade ovan är den
-verifierbara ytan. Research-passet:
-[`docs/research/parallella-sessioner-och-merge-van-2026-09-04.md`](../../docs/research/parallella-sessioner-och-merge-van-2026-09-04.md).
+Elva read-only-pass 2026-09-04 mot `78de4a7d` (sex vid start, fem för
+§ 9); deras rådata ligger i sessionens agent-transkript, inte i repot.
+Filer citerade ovan är den verifierbara ytan. Research-passen:
+[`docs/research/parallella-sessioner-och-merge-van-2026-09-04.md`](../../docs/research/parallella-sessioner-och-merge-van-2026-09-04.md)
+och
+[`docs/research/mcp-verktyg-apify-firecrawl-composio-devtools-higgsfield-2026-09-04.md`](../../docs/research/mcp-verktyg-apify-firecrawl-composio-devtools-higgsfield-2026-09-04.md).
 Prejudikat för formen: [`S91-tradkarta-2026-07-31.md`](S91-tradkarta-2026-07-31.md).
