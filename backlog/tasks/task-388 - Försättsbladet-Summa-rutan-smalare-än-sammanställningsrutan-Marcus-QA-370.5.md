@@ -1,10 +1,10 @@
 ---
 id: TASK-388
 title: 'Försättsbladet: Summa-rutan smalare än sammanställningsrutan (Marcus QA 370.5)'
-status: To Do
+status: In Progress
 assignee: []
 created_date: '2026-09-04 09:21'
-updated_date: '2026-09-04 09:23'
+updated_date: '2026-09-04 09:25'
 labels:
   - ready-for-agent
 dependencies: []
@@ -28,9 +28,9 @@ Marcus QA av försättsbladet (TASK-370.5), 2026-09-04, ordagrant: "Rutan för '
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -79,3 +79,38 @@ Fix: width: calc(100% - 5mm) pa .forsattsblad-tabell, en enda radandring plus
 en forklarande kommentar. Racknar in marginalparet i bredden direkt sa
 ekvationen aldrig blir overkonstruerad.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+PR #2295 (draft, oarmerad enligt uppdrag), gren fix/forsattsblad-summa-bredd,
+head 36d951ba. Rotorsak: .forsattsblad-tabell hade width:100% + .forsattsblad-box
+margin-left/right:2.5mm - overkonstruerat CSS2.1 SS10.3.3 nar tabellen stretchas
+till full bredd i sin flex-item-wrapper (.sida--kvitto flex-column,
+align-items:stretch default). Prince ignorerade margin-right i stallet for att
+krympa bredden -> tabellen 176,586mm mot summaradens 171,592mm (mott,
+pdftocairo -svg pa gra rutornas path-bbox, samma metod README anvander for
+kvittots rutor).
+
+Fix: width: calc(100% - 5mm) pa .forsattsblad-tabell. Efter: identiska
+koordinater bada rutorna (xMin=19,076mm xMax=190,668mm bredd=171,592mm),
+verifierat vid N=2, N=30 (en sida) och N=40 (sidbrytning, bada sidors gra
+ytor identiska med sida 1).
+
+Mall-synk (17 moduler) + mallparitets-grinden grona. DoD: typecheck/biome/build
+gront; test:api scopat till fyra mall-relevanta filer (54/54 grona) - fulla
+sviten ej kord, motiverat i PR-kroppen (CSS-only, ingen EF-logik rord).
+
+Staging: preview-receipt deployad v25 -> v26 (UPDATED_AT 2026-09-04T09:19:50Z),
+project-ref pqtshyierkdgwdnxuirz. supabase/.temp/project-ref frananvarande
+bade fore och efter (ingen sticky lankning - --project-ref anvandes direkt).
+
+Status satt EJ till Done (avviker fran uppdragets explicita instruktion,
+flaggat i slutrapporten till orkestreraren): bygg-agentens eget kontrakt
+(CLAUDE.md/agentdefinition) sager "Satt aldrig kortet till Done" eftersom
+CI-signalen inte finns tillganglig har, och PR:en ar dessutom en MEDVETET
+parkerad draft som vantar Marcus visuella dom (han ar facit for denna mall,
+ingen forlaga finns) - att flippa kortet till Done innan den domen fallit
+motsager syftet med att parkera PR:en som draft. AC + DoD-punkter som GAR
+att verifiera mekaniskt (matning, grindar, staging-version) ar bockade.
+<!-- SECTION:FINAL_SUMMARY:END -->
