@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-09-03 09:21'
-updated_date: '2026-09-03 14:25'
+updated_date: '2026-09-04 12:56'
 labels:
   - ready-for-human
 dependencies:
@@ -50,6 +50,12 @@ Täcker användarberättelser: 22
 - [x] #4 check-facit.sh exit 0 efter skivan — markör-invarianten (c) är global, avregistrering i samma commit som rivning (ADR-102 B3)
 - [ ] #5 ariaSnapshot-paret grönt i BÅDA vyporterna där skivan rör ytan (ADR-103 B4)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Marcus prod-QA 2026-09-04 verbatim: "374.5 prod-QA klar, allt godkänt".
+<!-- SECTION:NOTES:END -->
 
 ## Final Summary
 
