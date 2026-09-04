@@ -2164,17 +2164,20 @@ function SegmentLista({
                 // landning — pröva-och-bokför-fyndet från B2-promoveringens
                 // uppdrag.
                 //
-                // FÖRSLAG, S120 ITERATION 2 (Marcus 2026-09-04, ej stämplat
-                // — facit.json säger fortfarande "ingen grå låda"): blocket
-                // har fått en egen yta i stället för att stå som ett hål
-                // mellan sektionerna. ITERATION 1 (dot-grid-textur ovanpå
-                // KORT_KLASS, samma tonala grå som "Färdiga grupper"-korten)
-                // underkändes av Marcus: "Gillar inte bakgrunden med
-                // prickarna. Och jag tycker den är för grå liksom, bör vara
-                // en ljusare variant så ytan skiljer sig från alla andra
-                // gråa saker på sidan." Texturen (--mm-tomlage-punkt/
-                // --mm-tomlage-textur, components.css) är RIVEN, inga döda
-                // tokens kvar.
+                // S120 ITERATION 2 — STÄMPLAD av Marcus 2026-09-04: "Agenten
+                // har redan byggt om. Nu blev det en streckad kontur bara.
+                // Ser jättebra ut. Kör på den." Facit.json rad "ingen grå
+                // låda" är AMENDERAD genom
+                // tasks/sessions/bilagor/s114-segmentlistan-konvergens/
+                // AMENDERING-2026-09-04-tomlagets-yta.md (stämpel-PR #2293
+                // äger själva `godkand`-fältet, orört av denna ändring).
+                // ITERATION 1 (dot-grid-textur ovanpå KORT_KLASS, samma
+                // tonala grå som "Färdiga grupper"-korten) underkändes av
+                // Marcus: "Gillar inte bakgrunden med prickarna. Och jag
+                // tycker den är för grå liksom, bör vara en ljusare variant
+                // så ytan skiljer sig från alla andra gråa saker på sidan."
+                // Texturen (--mm-tomlage-punkt/--mm-tomlage-textur,
+                // components.css) är RIVEN, inga döda tokens kvar.
                 //
                 // Ny yta: `bg-surface` (VIT, samma yta InbetalningsLista.tsx
                 // och PersonDetail.tsx redan bär för att skilja sig från
