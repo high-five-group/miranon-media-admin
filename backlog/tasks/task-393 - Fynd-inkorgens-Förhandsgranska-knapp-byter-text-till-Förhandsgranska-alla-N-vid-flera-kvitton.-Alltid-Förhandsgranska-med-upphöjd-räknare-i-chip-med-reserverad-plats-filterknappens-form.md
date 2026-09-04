@@ -7,6 +7,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-04 10:52'
+updated_date: '2026-09-04 11:43'
 labels:
   - ready-for-agent
 dependencies: []
@@ -30,17 +31,25 @@ DESIGN: bryt ut chippet till en delad primitiv i src/components/primitives (namn
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Knappen lyder "Förhandsgranska" för alla N >= 1, med N som siffra i ett upphöjt chip i filterknappens form; ordet "alla" förekommer varken i synlig text eller aria-label; loadingText oförändrad.
-- [ ] #2 Chippet är en delad primitiv i src/components/primitives som både FilterRad och Förhandsgranska-knappen konsumerar; FilterRads inline-badge är ersatt utan visuell regression (bilder före och efter i PR-kroppen).
-- [ ] #3 Reserverad plats: knappens bredd är identisk vid N = 1, N = 9 och N = 12, mätt i browsern och bokförd i PR-kroppen; tvåsiffrigt N ryms.
-- [ ] #4 Tillgängligt namn bär antalet i klartext (t.ex. "Förhandsgranska 2 kvitton", singular vid 1); chippets siffra är aria-hidden; axe 0 överträdelser på inkorgen.
-- [ ] #5 Alla tester som asserterar "Förhandsgranska alla N" är uppdaterade (e2e-stagingtestet inklusive N = 1-fallet, kvitto-forhandsgranskning.test.ts, betalningar-inkorg-statusyta-form.test.ts, preview-receipt-forhandsgranska-alla.staging.test.ts om berörd); rörda sviter gröna, test:api grön.
-- [ ] #6 Skärmdumpar desktop och iPad 820 px i PR-kroppen med N = 1, 2 och 12; prefers-contrast: more verifierad för chippet.
+- [x] #1 Knappen lyder "Förhandsgranska" för alla N >= 1, med N som siffra i ett upphöjt chip i filterknappens form; ordet "alla" förekommer varken i synlig text eller aria-label; loadingText oförändrad.
+- [x] #2 Chippet är en delad primitiv i src/components/primitives som både FilterRad och Förhandsgranska-knappen konsumerar; FilterRads inline-badge är ersatt utan visuell regression (bilder före och efter i PR-kroppen).
+- [x] #3 Reserverad plats: knappens bredd är identisk vid N = 1, N = 9 och N = 12, mätt i browsern och bokförd i PR-kroppen; tvåsiffrigt N ryms.
+- [x] #4 Tillgängligt namn bär antalet i klartext (t.ex. "Förhandsgranska 2 kvitton", singular vid 1); chippets siffra är aria-hidden; axe 0 överträdelser på inkorgen.
+- [x] #5 Alla tester som asserterar "Förhandsgranska alla N" är uppdaterade (e2e-stagingtestet inklusive N = 1-fallet, kvitto-forhandsgranskning.test.ts, betalningar-inkorg-statusyta-form.test.ts, preview-receipt-forhandsgranska-alla.staging.test.ts om berörd); rörda sviter gröna, test:api grön.
+- [x] #6 Skärmdumpar desktop och iPad 820 px i PR-kroppen med N = 1, 2 och 12; prefers-contrast: more verifierad för chippet.
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Facit-grep (verifierat 2026-09-04, ADR-086-pass): grep -rn 'BetalningsInkorg|betalningsinkorg' tasks/sessions/bilagor/ ger endast AMENDERING-sidofiler (s102-hem-konvergens, s64-mer-konvergens, s103-persondetalj-konvergens, s93-atgardssida-promovering) — ingen egen stämplad facit-bilaga för inkorgen. TASK-346.6 AC #1 bekräftar: bara en AMENDERING-sidofil i s64-mer-konvergens (Mer-listans rad), inga andra ytor i manifestet. Kortets premiss BEKRÄFTAD, ej falsifierad.
+
+FilterRad-flytt (RaknarChip, ADR-126 B4 flytt-utan-ombyggnad): mekaniskt bevisad byte-identisk klass-mängd via runtime-cn() (node-skript, sorterad diff = tom). Facit-grind: tests/visual/anmalningssidan-promoverings-grind.spec.ts 10/10 gröna (visual-desktop), inklusive ariaSnapshot-testerna OCH axe-testet med filterpanelen öppen/dimension aktiv (exakt scenariot som visar badgen) — 0 violations, ingen regression.
+<!-- SECTION:NOTES:END -->
