@@ -55,7 +55,19 @@
     "skript-lagret ÄR det lager som talar med prod, och regelns tre frågor är",
     "billiga att pröva på varje skript-PR. Testfiler under scripts/ ingår",
     "MEDVETET (inget undantag): review r1 på PR #2206 fann ett verkligt",
-    "hygienfynd i just en testfil (fixtur-digest = prefix av riktig digest)."
+    "hygienfynd i just en testfil (fixtur-digest = prefix av riktig digest).",
+    "",
+    "═══ SCOPE-RÄTTELSE 2026-09-04 (TASK-344, fynd på PR #2117 r2 2026-08-29,",
+    "återfunnet på PR #2285 r1) ═══",
+    "`.prod-functions-allowlist.conf` (repo-roten) styr ENSAM vilka Edge",
+    "Functions scripts/deploy-prod-functions.sh deployar till prod — exakt den",
+    "filklass regeln finns för — men matchade INGET av de fem tidigare",
+    "mönstren: den ligger i roten (inte under scripts/), heter *-allowlist.conf",
+    "(inte *-policy.*) och är ingen .env-fil. review:policy gav noll regler för",
+    "en PR vars enda ändrade fil var just den. Mönstret `*-allowlist.conf`",
+    "tillagt, symmetriskt med `*-policy.conf`/`*-policy.json`. Sveper man",
+    "repo-rotens filer mot samtliga regler (TASK-344 AC #2) är detta den ENDA",
+    "luckan — alla `*-policy.conf`/`*-policy.json`-filer i roten matchar redan."
   ],
   "version": 1,
   "regler": [
@@ -99,11 +111,12 @@
         "scripts/**",
         "supabase/functions/**/*.ts",
         "*-policy.conf",
-        "*-policy.json"
+        "*-policy.json",
+        "*-allowlist.conf"
       ],
       "undantag": ["**/*.example", "**/*.test.ts"],
       "provning": "Exponerar diffen en hemlighet, en prod-project-ref eller en nyckel i klartext (inklusive i loggutskrifter och felmeddelanden)? Öppnar den en väg där en agent kan nå prod-basen eller prod-projektet? Försvagar den ett befintligt lås? Detta är en kandidat för risk.niva = 'hog' — armering väntar då på Marcus explicita granskning.",
-      "kalla": "CLAUDE.md § Prod-EF-deploy · scripts/deny-prod-ref.sh · docs/reference/atkomst-och-nycklar.md"
+      "kalla": "CLAUDE.md § Prod-EF-deploy · scripts/deny-prod-ref.sh · scripts/deploy-prod-functions.sh · docs/reference/atkomst-och-nycklar.md"
     },
     {
       "id": "ci-workflow",
