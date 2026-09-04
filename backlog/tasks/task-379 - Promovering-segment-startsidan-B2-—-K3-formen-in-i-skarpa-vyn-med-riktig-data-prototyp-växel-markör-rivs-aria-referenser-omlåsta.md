@@ -3,10 +3,10 @@ id: TASK-379
 title: >-
   Promovering: segment-startsidan (B2) — K3-formen in i skarpa vyn med riktig
   data, prototyp/växel/markör rivs, aria-referenser omlåsta
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-03 11:12'
-updated_date: '2026-09-04 12:55'
+updated_date: '2026-09-04 14:24'
 labels:
   - ready-for-agent
 dependencies: []
@@ -23,7 +23,7 @@ SNABBVÄG PÅ MARCUS ORDER (S117, 2026-09-03: 'Se till att denna promovering gå
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [x] #1 Skarpa vyn /mer/segment (variant=null) renderar facitets form med RIKTIG data: 'Dina segment' (sparade ur get-segments; facitets tomläge när basen är tom) och 'Färdiga grupper' (de fjorton), h2 + antalsbricka (ingen bricka vid noll), kort i K3-anatomin (namn en rad trunkerad med title / mening två reserverade rader / antal med Users-ikon, min-h-6; 132 px DOM-mätt), täckningen som textknapp på Färdiga grupper-raden ('Full täckning · N av N' när frisk, annars skarpa vyns etikett) som togglar TackningsPanel; skarpa handlers och markera-läget oförändrade i funktion.
-- [ ] #2 Prototyp-substratet borta i SAMMA landning: SegmentListaKonvergens.tsx, ?variant=a-grenen + PrototypeSwitcher-monteringen ur mer/segment.tsx, markören 'K3 - brickor, korthöjd låst' ur .facit-policy.conf (städas i samma landning, TASK-192-lärdomen). bash scripts/check-facit.sh grön med rivnings-klausulen (manifestet stämplat).
+- [x] #2 Prototyp-substratet borta i SAMMA landning: SegmentListaKonvergens.tsx, ?variant=a-grenen + PrototypeSwitcher-monteringen ur mer/segment.tsx, markören 'K3 - brickor, korthöjd låst' ur .facit-policy.conf (städas i samma landning, TASK-192-lärdomen). bash scripts/check-facit.sh grön med rivnings-klausulen (manifestet stämplat).
 - [x] #3 Aria-referenserna segment-listan-visual-desktop.aria.yml + -mobile omlåsta mot den nya formen; diffen (gammal → ny) redovisad i klartext i PR-kroppen för Marcus kvittens; övriga fem referenser (detaljvyn, mallvyn, täckningsvyn m.fl.) OFÖRÄNDRADE — grinden bevisar att de ytorna står orörda.
 - [x] #4 Visuella baselines för segment-listan hanterade: riktad baseline-run ur CI (visual-baselines.yml dispatch) eller motsvarande; PR-kroppen redovisar vägen och run-id.
 - [x] #5 DoD-kommandona gröna (npm run test:api, typecheck, biome check, build) + node scripts/check-langa-streck.mjs + check-facit; review-loopen konvergerad; CI grön per jobb på pushad commit.
@@ -44,4 +44,6 @@ AC #2 (rivningen) = PR 2 efter Marcus stämpel
 PR2-rivningen pushad som DRAFT. SegmentListaKonvergens.tsx borttagen, variant=a-grenen och PrototypeSwitcher-monteringen rivna ur mer/segment.tsx (VariantD ovillkorlig), markoren K3-brickor-korthojd-last borttagen ur facit-policy.conf. Manifestet facit.json bar fortfarande godkand null vid denna push, AC2 ej bockad. Landar forst efter Marcus stampel via facit:godkann-npm-scriptet. check-facit rod tills dess ar vantat.
 
 Marcus prod-titt på /mer/segment godkänd 2026-09-04, verbatim: "Prod-titten i på mer/segment godkänd". Status orörd — PR #2269 (B2-rivningen) väntar på #2293-landning (facit-lås B3).
+
+PR #2269 (B2-rivningen) mergad 9c7b85d7 (2026-09-04T14:22:15Z). Review r1-r4 (Sonnet 5), risk lag; check-facit.sh rivningsklausulen skarpbevisad (manifestet stämplat, godkand.sha 78de4a7d). AC #2 bockad. Kort Done.
 <!-- SECTION:NOTES:END -->
