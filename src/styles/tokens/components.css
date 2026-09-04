@@ -653,4 +653,25 @@
   --mm-sidbytesindikator-track: var(--mm-bg-muted);
   --mm-sidbytesindikator-fill: var(--p-gold-11);
   --mm-sidbytesindikator-fill-contrast: var(--p-gold-12);
+
+  /* ── Segment-tomläget (FÖRSLAG, S120 — Marcus 2026-09-04: "en bakgrund
+     med lite textur så det ser proffsigt och snyggt ut?"; facit-amendering
+     väntar hans stämpel, se PR-kroppen § Research) ──
+     Dot-grid: samma teknik Linear/Vercel/Figma använder på sina tomma
+     canvas-ytor — en `radial-gradient` som upprepar en enda punkt i ett
+     rutnät via `background-size` (källor i PR-kroppen). Punktens färg är
+     en GENOMSKINLIG skrim av `--mm-text`, samma mönster som
+     `--mm-state-hover` (semantic.css) redan använder av samma skäl: den
+     fungerar oavsett vilken yta den läggs ovanpå, och håller regeln i
+     detta lagrets egen filhuvud ("Komponent-tokens refererar SEMANTISKA
+     tokens, aldrig primitiva direkt") i stället för att peka på
+     `--p-neutral-*`.
+     Konsumeras via Tailwinds arbitrary-property-syntax (samma mönster som
+     `--mm-forberedelseskarm-kantton` ovan): `bg-(image:--mm-tomlage-
+     textur) bg-size-[20px_20px]`, med `contrast-more:bg-none print:bg-none`
+     för att ta bort ENDAST bildlagret — ytans egen `bg-bg-muted` (från
+     `KORT_KLASS`, VariantD.tsx) står kvar, blocket blir en ren yta i
+     stället för osynligt. */
+  --mm-tomlage-punkt: color-mix(in srgb, var(--mm-text) 8%, transparent);
+  --mm-tomlage-textur: radial-gradient(var(--mm-tomlage-punkt) 1px, transparent 1px);
 }

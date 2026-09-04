@@ -2163,7 +2163,18 @@ function SegmentLista({
                 // aldrig bort, så `poster.length === 0` är dött sedan denna
                 // landning — pröva-och-bokför-fyndet från B2-promoveringens
                 // uppdrag.
-                <div className="flex flex-col items-center gap-2 py-6 text-center">
+                //
+                // FÖRSLAG, S120 (Marcus 2026-09-04, ej stämplat — facit.json
+                // säger fortfarande "ingen grå låda"): blocket har fått en
+                // egen yta (KORT_KLASS, samma kort-ton som handlingsradens
+                // kort ovan) med en subtil dot-grid-textur
+                // (--mm-tomlage-textur, components.css) i stället för att stå
+                // som ett hål mellan sektionerna. Texturen bär ingen
+                // information och faller bort under contrast-more/print —
+                // ytan (bg-bg-muted) och texten står kvar oförändrade.
+                <div
+                  className={`${KORT_KLASS} bg-(image:--mm-tomlage-textur) flex flex-col items-center gap-2 bg-size-[20px_20px] py-10 text-center contrast-more:bg-none print:bg-none`}
+                >
                   <p className="font-medium text-body">Inga sparade segment än</p>
                   <p className="max-w-prose text-small text-text-muted">
                     Ett segment är ett urval personer du kan skicka till om och om igen. Du bygger
