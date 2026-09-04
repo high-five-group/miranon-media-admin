@@ -39,6 +39,10 @@ SNABBVÄG PÅ MARCUS ORDER (S117, 2026-09-03: 'Se till att denna promovering gå
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
+AC #2 (rivningen) = PR 2 efter Marcus stämpel
+
+PR2-rivningen pushad som DRAFT. SegmentListaKonvergens.tsx borttagen, variant=a-grenen och PrototypeSwitcher-monteringen rivna ur mer/segment.tsx (VariantD ovillkorlig), markoren K3-brickor-korthojd-last borttagen ur facit-policy.conf. Manifestet facit.json bar fortfarande godkand null vid denna push, AC2 ej bockad. Landar forst efter Marcus stampel via facit:godkann-npm-scriptet. check-facit rod tills dess ar vantat.
+
 Marcus prod-titt på /mer/segment godkänd 2026-09-04, verbatim: "Prod-titten i på mer/segment godkänd". Status orörd — PR #2269 (B2-rivningen) väntar på #2293-landning (facit-lås B3).
 
 PR #2269 (B2-rivningen) mergad 9c7b85d7 (2026-09-04T14:22:15Z). Review r1-r4 (Sonnet 5), risk lag; check-facit.sh rivningsklausulen skarpbevisad (manifestet stämplat, godkand.sha 78de4a7d). AC #2 bockad. Kort Done.
