@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-31 10:10'
-updated_date: '2026-08-31 13:07'
+updated_date: '2026-09-04 08:12'
 labels:
   - ready-for-agent
 dependencies: []
@@ -34,9 +34,9 @@ Ur S113-slutvandringen 2026-08-31 (orkestreraren, dev-server mot staging). Uppm�
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -98,4 +98,6 @@ send-registration-confirmation.staging.test.ts) och matchar EXAKT den redan
 bokförda klass-B-flaken i TASK-347 ("rött i full svit men grönt isolerat -
 ordnings-/samtidighetsberoende, inte en regression i någon diff").
 git diff --stat mot dessa fyra testfiler/deras EF:er = tomt.
+
+Nattgrind-stängning 2026-09-04: DoD bockad mot belägg — samtliga 8 AC redan bockade (mekanisk DoD#1); DoD#2 styrks av Implementation Notes GRINDAR-avsnittet (typecheck/biome/build/check-langa-streck/test:api:pure gröna; test:api-fullsvitens 4 orelaterade fel bokförda som känd TASK-347-flakeklass); DoD#3 verifierat mot git show --stat e879d57b (PR #2176): enbart betalnings-ytans egna filer + tester ändrade.
 <!-- SECTION:NOTES:END -->

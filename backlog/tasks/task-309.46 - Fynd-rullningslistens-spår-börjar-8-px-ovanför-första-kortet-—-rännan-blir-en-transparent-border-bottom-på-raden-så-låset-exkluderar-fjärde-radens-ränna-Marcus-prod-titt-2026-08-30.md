@@ -7,7 +7,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-30 10:09'
-updated_date: '2026-08-30 11:26'
+updated_date: '2026-09-04 08:15'
 labels: []
 dependencies: []
 parent_task_id: TASK-309
@@ -31,9 +31,9 @@ Marcus prod-titt 2026-08-30 ~10:20 UTC: 'scrollbaren … börjar för högt upp,
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -70,6 +70,8 @@ SEX ISOLERADE NEGATIVA KONTROLLER, en bruten invariant per korning:
 N6 FANGADE EN FOR VID TOLERANS — precis det kontrollerna finns for. Bandet 'FALLBACK x 4 + 8' svalde felsvaret 496, eftersom det narmaste felet ar exakt en ranna. TOLERANS = 2 utesluter det och racker for sub-pixel (ul saknar kant, hojden ar exakt 488 vid bada bredder).
 
 GRINDAR, matta exitkoder: typecheck 0 - biome 0 - build 0 - check-langa-streck 0 (267 filer) - npm run test:a11y 117 passed exit 0 - npm run test:acceptance -- dokument 109 passed exit 0 (var 107 fore skivan, +2 nya).
+
+Nattgrind-stängning 2026-09-04: DoD bockad mot belägg — samtliga 5 AC redan bockade (mekanisk DoD#1); DoD#2 styrks av notens grindtabell (typecheck/biome/build/check-langa-streck 0, test:a11y 117 passed, dokument-acceptance 109 passed, 6 negativa kontroller); DoD#3 verifierat mot git show --stat 01c84076 (PR #2134): enbart DokumentYta.tsx, lessons-fragment och två acceptance-testfiler ändrade.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

@@ -4,7 +4,7 @@ title: 'Skiva: Å7 — Är aktiv (1/0) + de tre JS-predikaten (§27, B1 samma la
 status: Done
 assignee: []
 created_date: '2026-08-14 17:24'
-updated_date: '2026-09-03 08:54'
+updated_date: '2026-09-04 08:13'
 labels:
   - ready-for-human
 dependencies:
@@ -67,8 +67,14 @@ Täcker användarberättelser: 7
 - [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #5 Rollback-väg dokumenterad och bevisat reversibel (formeltext eller record-ID:n sparade verbatim) FÖRE varje prod-mutation, per skiva
-- [ ] #6 Marcus-GO för prod-mutationen explicit citerat i skivans Implementation Notes, per skiva
+- [x] #6 Marcus-GO för prod-mutationen explicit citerat i skivans Implementation Notes, per skiva
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Marcus-GO för prod-mutationen (citat, källa TASK-368.1 Implementation Notes, S115 Del 4, 2026-09-03): 'Du har GO på fältbytet i prodbasen sedan'. Prod-mutationen (Är aktiv-formeln, exkludera Inställt) utfördes av orkestreraren via claude.ai-Airtable-connectorn 2026-09-03 med detta GO som underlag. Citatet flyttat hit vid nattgrindens stängning 2026-09-04 eftersom DoD #6 kräver citatet i skivans EGNA Implementation Notes, inte enbart i syskonkortet 368.1.
+<!-- SECTION:NOTES:END -->
 
 ## Comments
 

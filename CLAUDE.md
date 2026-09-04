@@ -1109,18 +1109,25 @@ För aktuell struktur, kör `tree -L 3 -I 'node_modules|dist|.git|coverage|test-
 
 ## Synk-horisont och arkiv-åtkomst
 
-claude.ai-projektkunskapen synkar INTE: `tasks/sessions/archive/`,
-`docs/archive/` (+ `package-lock.json` om fil-urval stöds). Allt finns
-kvar i git — exkluderingen gäller endast claude.ai-projektkunskapens synk (ADR-048).
+**claude.ai-projektkunskapen är AVVECKLAD.** Marcus i klartext 2026-08-24
+(S112, `TASK-318`): *"Kör inte med Claude.ai längre."* Synk-mekaniken nedan
+och [ADR-048](docs/decisions/ADR-048-synk-horisont-arkiv-atkomst.md) som
+beslutade den är därmed HISTORISKA — de beskriver en läsyta som inte längre
+är i drift, inte en aktiv arbetsordning. Konsekvensen är utskriven i
+ADR-048 § Updates.
 
-Regel vid claude.ai-läsning: noll träffar i projektkunskapen på historiskt material
-(arkiverade sessionsdok, superceded specs, frusna analyser) betyder INTE
-att det saknas. Historik utanför synk-horisonten hämtas VIA CODE
-(LÄS→RAPPORTERA mot lokal disk/git) eller genom att Marcus klistrar
-innehållet — anta aldrig att materialet inte existerar.
+Den generella principen överlever avvecklingen av den specifika ytan:
+historik utanför en läsytas synk-horisont (arkiverade sessionsdok,
+superceded specs, frusna analyser) antas ALDRIG vara borta bara för att en
+sökning ger noll träffar — den hämtas VIA CODE (LÄS→RAPPORTERA mot lokal
+disk/git), oavsett vilken yta som söker.
 
-`docs/research/` ligger kvar i synken tills Fas 6 är avslutad
-(konsumeras aktivt av Fas 6) och exkluderas därefter (ADR-048 punkt 3).
+**Historisk synk-mekanik** (claude.ai-projektkunskapen, i drift fram till
+2026-08-24): synken exkluderade `tasks/sessions/archive/`, `docs/archive/`
+(+ `package-lock.json` om fil-urval stöddes) — allt fanns ändå kvar i git,
+exkluderingen gällde bara den ytans synk (ADR-048). `docs/research/` låg
+kvar i synken tills Fas 6 avslutades; den villkorade exkluderingen vid
+Fas 6-avslut (ADR-048 punkt 3) är moot sedan avvecklingen.
 
 ---
 

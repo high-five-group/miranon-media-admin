@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-29 21:38'
-updated_date: '2026-08-29 22:20'
+updated_date: '2026-09-04 08:14'
 labels: []
 dependencies: []
 parent_task_id: TASK-309
@@ -31,10 +31,16 @@ Marcus prod-vandring 2026-08-29 (S113 resume 2, före testplanen): tre anmärkni
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Nattgrind-stängning 2026-09-04: DoD bockad mot belägg — samtliga 6 AC redan bockade (mekanisk DoD#1); DoD#2 styrks av kortets Final Summary (review-grinden r1/r2 låg risk, backstopp exit 0, prod-verifierat); DoD#3 verifierat mot git show --stat 50c6493d (PR #2123): enbart dokumentyte-komponenter, aria-snapshots och tester ändrade.
+<!-- SECTION:NOTES:END -->
 
 ## Final Summary
 

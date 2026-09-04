@@ -4,7 +4,7 @@ title: 'Mer-flikens etikett: Bygg segment → Segment'
 status: Done
 assignee: []
 created_date: '2026-08-31 08:50'
-updated_date: '2026-08-31 10:58'
+updated_date: '2026-09-04 08:12'
 labels:
   - ready-for-agent
 dependencies: []
@@ -28,7 +28,7 @@ Marcus S114-scope punkt 1 (kvitterad 2026-08-31, sessionsdok S114 Del 1). Mer-me
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->

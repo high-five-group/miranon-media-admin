@@ -516,6 +516,27 @@ try {
       assert.ok(regel.kalla.length > 0, `${regel.id} saknar källa`);
     }
   });
+
+  test('F3 .prod-functions-allowlist.conf träffar prod-och-hemligheter (TASK-344 — filen som ensam avgör vilka EF:er som når prod)', () => {
+    const raw = JSON.parse(spawnSync('cat', [join(REPO, POLICY_FIL)], { encoding: 'utf8' }).stdout);
+    const { policy } = parsaPolicy(raw);
+    const traffar = matchaRegler(['.prod-functions-allowlist.conf'], policy);
+    assert.ok(
+      traffar.some((t) => t.id === 'prod-och-hemligheter'),
+      `.prod-functions-allowlist.conf borde träffa prod-och-hemligheter, fick: ${traffar.map((t) => t.id).join(', ') || '(inga)'}`,
+    );
+  });
+
+  test('F4 KONTRAST: en orelaterad rotfil (README.md) träffar fortfarande INGEN regel', () => {
+    const raw = JSON.parse(spawnSync('cat', [join(REPO, POLICY_FIL)], { encoding: 'utf8' }).stdout);
+    const { policy } = parsaPolicy(raw);
+    const traffar = matchaRegler(['README.md'], policy);
+    assert.deepEqual(
+      traffar,
+      [],
+      `README.md borde inte träffa någon regel, fick: ${traffar.map((t) => t.id).join(', ')}`,
+    );
+  });
 } finally {
   rmSync(tmpRot, { recursive: true, force: true });
 }
