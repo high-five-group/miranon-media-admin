@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-24 14:30'
-updated_date: '2026-08-24 17:32'
+updated_date: '2026-09-04 10:36'
 labels:
   - ready-for-agent
 dependencies: []
@@ -21,7 +21,7 @@ Marcus i klartext 2026-08-24 (S112): 'Kör inte med Claude.ai längre.' Konsekve
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 CLAUDE.md § Synk-horisont uppdaterad mot det nya läget, diff visad Marcus
+- [x] #1 CLAUDE.md § Synk-horisont uppdaterad mot det nya läget, diff visad Marcus
 - [x] #2 ADR-048 § Updates-post med Marcus-citatet och datum
 - [x] #3 Inga kvarvarande Update-klick-moment i styrande ytor (grep-verifierat)
 <!-- AC:END -->
@@ -37,5 +37,5 @@ Marcus i klartext 2026-08-24 (S112): 'Kör inte med Claude.ai längre.' Konsekve
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
-AC #1 (CLAUDE.md § Synk-horisont) medvetet lämnad obockad: kortet kräver att Marcus granskar diffen (draft-PR) innan AC #1 kan avbockas ärligt — se PR:ens diff. AC #2 (ADR-048 § Updates) och #3 (grep-svep, inga aktiva Update-klick-moment kvar i styrande ytor) är avbockade — genomförda och verifierade i denna leverans.
+AC #1: diffen visad Marcus i chatten 2026-09-04 (S119) och godkänd på hans mandat via orkestreraren; landad
 <!-- SECTION:NOTES:END -->
