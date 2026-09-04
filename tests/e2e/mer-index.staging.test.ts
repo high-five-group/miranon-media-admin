@@ -41,16 +41,31 @@ import { expect, test } from '../support/test-bas';
  * ingång): SJUNDE raden, sist i grupp 1 (listorna). Höjer raderna till SJU.
  *
  * DOKUMENT TILLKOM TASK-164-RIVNINGEN (2026-08-16, ADR-103 B2 steg 4):
- * ÅTTONDE raden, sist i grupp 2 (handling/verktyg, efter "Bygg segment").
- * Ytan var tidigare DEV-grindad (`visaDokumentPrototyp`, S100/T131) och
+ * ÅTTONDE raden, sist i grupp 2 (handling/verktyg, efter "Segment", som
+ * döptes om från sin ursprungsform i TASK-348). Ytan var tidigare
+ * DEV-grindad (`visaDokumentPrototyp`, S100/T131) och
  * osynlig för detta test; efter Marcus godkännande av facit-låset
- * (`tasks/sessions/bilagor/s102-dokument-konvergens/facit.json`) är den
- * en skarp, ovillkorlig ingång. Höjer raderna till ÅTTA.
+ * (`tasks/sessions/archive/bilagor/s102-dokument-konvergens/facit.json` —
+ * PENSIONERAT och arkivflyttat i TASK-309.29, se `ARKIVERAD.md` i samma
+ * katalog) är den en skarp, ovillkorlig ingång. Höjer raderna till ÅTTA.
  *
  * EVENTINNEHÅLL + PLATSER TILLKOM TASK-309.7 (Del 2 § D beslut 10, ADR-125
- * § 7): NIONDE och TIONDE raden, sist i grupp 2 (efter "Dokument") —
+ * § 7): NIONDE och TIONDE raden, sist i grupp 2 (efter "Bilagor", som hette
+ * "Dokument" fram till T176) —
  * redigeringsytorna bilagornas skrivvägar (skiva 2, TASK-309.3) matar.
  * Höjer raderna till TIO.
+ *
+ * BETALNINGAR TILLKOM TASK-346.6 (AC #1, PRD TASK-346 § Inkorgen): ELFTE
+ * raden, sist i grupp 1 (listorna) enligt samma konvention Aktivitetshistoriken
+ * följde. Höjer raderna till ELVA.
+ *
+ * RADEN ÄR MILJÖFLAGGAD (`VITE_FEATURE_BETALNINGAR`, `src/lib/funktionsflaggor.ts`),
+ * och det ändrar vad detta test mäter. Flaggan är `pa` i `.env.development`
+ * och `.env.staging` — de två lägen denna klass någonsin kör i — så raden ÄR
+ * synlig här, och elva är rätt tal. I PROD är flaggan frånvarande och raden
+ * renderas inte alls; testet påstår alltså ingenting om prod, och ska inte
+ * läsas som att det gör det. TASK-346.12 river flaggan efter promovering, och
+ * då blir elva ovillkorligt.
  *
  * UTLOGGNINGS-ASSERTIONERNA RÄTTADE 2026-08-20: de två S107-testerna mätte
  * FRÅNVARON av `?redirect=` i URL:en, fast `/login`s eget search-schema
@@ -215,7 +230,7 @@ test.describe('Mer-landningen till M6-facitet (task-9.2)', () => {
     await expect(page.locator('header')).toHaveCount(0);
   });
 
-  test('AC 1: tio NavCard-rader i TRE grupper med facit-ordning, tysta ikoner, chevron per rad', async ({
+  test('AC 1: elva NavCard-rader i TRE grupper med facit-ordning, tysta ikoner, chevron per rad', async ({
     page,
   }) => {
     await page.goto('/mer');
@@ -231,26 +246,34 @@ test.describe('Mer-landningen till M6-facitet (task-9.2)', () => {
     // Grupp 1 = listorna, grupp 2 = handling före verktyg, grupp 3 =
     // Inställningar — exakt ordning. Skapa nytt event-raden RIVEN
     // (task-19.2 — se rivnings-bokföringen i fil-huvudet); grupp 2 bär
-    // numera Bygg segment + Dokument + Eventinnehåll + Platser (TASK-164-
+    // numera Segment + Dokument + Eventinnehåll + Platser (TASK-164-
     // rivningen + TASK-309.7, se fil-huvudets "TILLKOM"-noter), grupp 3
     // (task-126.3) enbart Installera appen. Aktivitetshistorik (TASK-201.6,
-    // AC #2) tillkom sist i grupp 1 — höjer SJU rader till ÅTTA, och
-    // Eventinnehåll + Platser (TASK-309.7) höjer ÅTTA till TIO.
+    // AC #2) tillkom sist i grupp 1 — höjer SJU rader till ÅTTA,
+    // Eventinnehåll + Platser (TASK-309.7) höjer ÅTTA till TIO, och
+    // Betalningar (TASK-346.6, miljöflaggad — se fil-huvudet) TIO till ELVA.
     await expect(grupper.nth(0).getByRole('link')).toHaveText([
       'Anmälningar',
       'Väntelista',
       'Intresserade',
       'Maillogg',
       'Aktivitetshistorik',
+      'Betalningar',
     ]);
     await expect(grupper.nth(1).getByRole('link')).toHaveText([
-      'Bygg segment',
-      'Dokument',
+      // [TASK-348, 2026-08-31] Etiketten döptes om från sin ursprungsform
+      // (S114 Del 1, väg A punkt 1). Sökvägen `/mer/segment` är oförändrad;
+      // det är etiketten som bytt, inte raden.
+      'Segment',
+      // [T176, 2026-08-29] Etiketten var 'Dokument' — Marcus: *"Mer-fliken
+      // 'Dokument' kanske borde heta 'Bilagor'"*. Sökvägen `/mer/dokument`
+      // är oförändrad; det är etiketten som bytt, inte raden.
+      'Bilagor',
       'Eventinnehåll',
       'Platser',
     ]);
     await expect(grupper.nth(2).getByRole('link')).toHaveText(['Installera appen']);
-    await expect(nav.getByRole('link')).toHaveCount(10);
+    await expect(nav.getByRole('link')).toHaveCount(11);
 
     // Varje rad bär EXAKT två dekorativa svg (radikon + chevron, båda
     // aria-hidden) — etiketten ensam bär länknamnet (redan assertat via
@@ -268,7 +291,7 @@ test.describe('Mer-landningen till M6-facitet (task-9.2)', () => {
     // (S73 K25-prövningens Marcus-kvitterade konsekvens, PRD task-18
     // beslut 15) — chevron betyder att raden leder vidare, och Mer-menyns
     // rader bär den för app-koherens med eventsidans åtgärdsrader.
-    await expect(nav.locator('svg.lucide-chevron-right')).toHaveCount(10);
+    await expect(nav.locator('svg.lucide-chevron-right')).toHaveCount(11);
   });
 
   test('Skapa nytt event är RIVEN ur Mer (task-19.2) — ingången bor på event-listan', async ({

@@ -18,6 +18,13 @@
 # scripts/test-deploy-prod-functions.sh, samma "kan inte nätverkstestas här"-
 # skäl som resten av filen.
 #
+# HEMLIGHETS-NAMN-KONTROLLEN (TASK-359, 2026-09-02): fem fall prövar
+# scripts/kontrollera-hemlighets-namn.sh direkt (alla namn finns → grönt,
+# INVITE_REDIRECT_URL saknas → rött med rätt rad, ref saknas → nekas) plus
+# TVÅ strukturella wiring-fall i fas4-prod-deploy.sh (kontrollen anropas;
+# --kontrollera:s exitkod styrs faktiskt av utfallet). Se den sektionens
+# egen kommentar för fixtur-mönstret.
+#
 # Körs av: CI (shellcheck-strict + denna svit), och för hand vid ändring.
 
 set -uo pipefail
@@ -216,6 +223,118 @@ if grep -qF 'doden "Bucket \"bilagor\" saknas eller avviker i prod (TASK-308)' "
     printf '✓ FALL %d — --deploya FÄLLER (doden) om bucketen inte konvergerar\n' "${FALL}"
 else
     printf '✗ FALL %d: hittar ingen doden-gate för bucket-avvikelse i --deploya\n' "${FALL}" >&2
+    FEL=$((FEL + 1))
+fi
+
+# ── HEMLIGHETS-NAMN-KONTROLLEN (TASK-359) ────────────────────────────────────
+# Den skarpa vägen (riktig `secrets list` mot ett verkligt projekt) kan inte
+# täckas här av samma skäl som bucket-kontrollen ovan — men logiken den
+# omsluter lever i en EGEN fil (scripts/kontrollera-hemlighets-namn.sh),
+# UTFLYTTAD ur fas4-prod-deploy.sh av precis samma testbarhets-skäl som
+# scripts/kontrollera-bilagor-bucket.sh. HEMLIGHET_LISTA_CMD-injektionen
+# (samma mönster som KONTROLL_CMD ovan) låter oss bevisa BÅDA RIKTNINGARNA
+# — "alla namn finns" OCH "ett namn saknas" — utan en enda riktig
+# project-ref eller nätverksanrop.
+HEMLIGHET_SKRIPT="${SCRIPT_DIR}/kontrollera-hemlighets-namn.sh"
+
+# Fixturer: två körbara "fake secrets list"-kommandon. Byggda som egna filer
+# (inte `KONTROLL_CMD=true/false`-mönstret ovan) eftersom detta skriptet
+# faktiskt behöver TEXTINNEHÅLL att grep:a mot, inte bara en exitkod.
+HEMLIGHET_FIXTURDIR="$(mktemp -d "${TMPDIR:-/tmp}/task-359-hemlighets-namn.XXXXXX")"
+trap 'rm -rf "${HEMLIGHET_FIXTURDIR}"' EXIT
+
+FIXTUR_ALLA="${HEMLIGHET_FIXTURDIR}/alla-finns.sh"
+cat > "${FIXTUR_ALLA}" <<'FIXTUR'
+#!/usr/bin/env bash
+cat <<'TABELL'
+        NAME                       |                             DIGEST | UPDATED_AT (UTC)
+  ---------------------------------|-------------------------------------|---------------------
+    INVITE_REDIRECT_URL            | deadbeef00112233                    | 2026-09-02 07:56:00
+    CORS_ALLOWED_ORIGINS           | abc123def456                        | 2026-08-05 15:06:09
+    DOCRAPTOR_API_KEY              | def456abc789                        | 2026-08-23 10:00:00
+    JOBBMOTOR_DELAD_HEMLIGHET      | 1234567890abcdef                    | 2026-08-30 20:00:00
+    RESEND_API_KEY                 | fedcba9876543210                    | 2026-06-01 00:00:00
+    RESEND_FROM                    | 1122334455667788                    | 2026-06-01 00:00:00
+    ADMIN_EMAILS                   | 99887766554433221                   | 2026-06-01 00:00:00
+    AIRTABLE_TOKEN                 | aabbccddeeff0011                    | 2026-06-01 00:00:00
+    AIRTABLE_BASE_ID               | 0011223344556677                    | 2026-06-01 00:00:00
+    ENVIRONMENT                    | 7766554433221100                    | 2026-06-01 00:00:00
+TABELL
+FIXTUR
+chmod +x "${FIXTUR_ALLA}"
+
+FIXTUR_SAKNAR="${HEMLIGHET_FIXTURDIR}/saknar-invite.sh"
+cat > "${FIXTUR_SAKNAR}" <<'FIXTUR'
+#!/usr/bin/env bash
+cat <<'TABELL'
+        NAME                       |                             DIGEST | UPDATED_AT (UTC)
+  ---------------------------------|-------------------------------------|---------------------
+    CORS_ALLOWED_ORIGINS           | abc123def456                        | 2026-08-05 15:06:09
+    DOCRAPTOR_API_KEY              | def456abc789                        | 2026-08-23 10:00:00
+    JOBBMOTOR_DELAD_HEMLIGHET      | 1234567890abcdef                    | 2026-08-30 20:00:00
+    RESEND_API_KEY                 | fedcba9876543210                    | 2026-06-01 00:00:00
+    RESEND_FROM                    | 1122334455667788                    | 2026-06-01 00:00:00
+    ADMIN_EMAILS                   | 99887766554433221                   | 2026-06-01 00:00:00
+    AIRTABLE_TOKEN                 | aabbccddeeff0011                    | 2026-06-01 00:00:00
+    AIRTABLE_BASE_ID               | 0011223344556677                    | 2026-06-01 00:00:00
+    ENVIRONMENT                    | 7766554433221100                    | 2026-06-01 00:00:00
+TABELL
+FIXTUR
+chmod +x "${FIXTUR_SAKNAR}"
+
+FALL=$((FALL + 1))
+HEMLIGHET_LISTA_CMD="${FIXTUR_ALLA}" bash "${HEMLIGHET_SKRIPT}" ZZ-TEST-REF > /dev/null 2>&1
+KOD_ALLA_FINNS=$?
+if [[ "${KOD_ALLA_FINNS}" -eq 0 ]]; then
+    printf '✓ FALL %d — hemlighets-namn-kontroll: alla namn finns → exit 0 (grönt)\n' "${FALL}"
+else
+    printf '✗ FALL %d (hemlighets-namn-kontroll, alla finns): exit %d, förväntade 0\n' \
+        "${FALL}" "${KOD_ALLA_FINNS}" >&2
+    FEL=$((FEL + 1))
+fi
+
+FALL=$((FALL + 1))
+UTDATA_SAKNAR="$(HEMLIGHET_LISTA_CMD="${FIXTUR_SAKNAR}" bash "${HEMLIGHET_SKRIPT}" ZZ-TEST-REF 2>&1)"
+KOD_SAKNAR=$?
+if [[ "${KOD_SAKNAR}" -eq 1 ]] && [[ "${UTDATA_SAKNAR}" == *"✗ INVITE_REDIRECT_URL SAKNAS"* ]]; then
+    printf '✓ FALL %d — hemlighets-namn-kontroll: INVITE_REDIRECT_URL saknas → exit 1 med rätt rad\n' "${FALL}"
+else
+    printf '✗ FALL %d (hemlighets-namn-kontroll, saknar INVITE_REDIRECT_URL): exit %d (förväntade 1), utdata:\n%s\n' \
+        "${FALL}" "${KOD_SAKNAR}" "${UTDATA_SAKNAR}" >&2
+    FEL=$((FEL + 1))
+fi
+
+FALL=$((FALL + 1))
+UTDATA_UTAN_REF_HEML="$(bash "${HEMLIGHET_SKRIPT}" 2>&1)"
+KOD_UTAN_REF_HEML=$?
+if [[ "${KOD_UTAN_REF_HEML}" -eq 1 ]] && [[ "${UTDATA_UTAN_REF_HEML}" == *"Project-ref saknas"* ]]; then
+    printf '✓ FALL %d — hemlighets-namn-kontroll utan ref nekas, exit 1\n' "${FALL}"
+else
+    printf '✗ FALL %d: hemlighets-namn-kontroll utan ref gav exit %d (förväntade 1 + "Project-ref saknas")\n' \
+        "${FALL}" "${KOD_UTAN_REF_HEML}" >&2
+    FEL=$((FEL + 1))
+fi
+
+# ── HEMLIGHETS-NAMN-KONTROLLENS WIRING I fas4-prod-deploy.sh ─────────────────
+FALL=$((FALL + 1))
+if grep -q 'kontrollera-hemlighets-namn\.sh' "${MAL}"; then
+    printf '✓ FALL %d — fas4-prod-deploy.sh anropar hemlighets-namn-kontrollen\n' "${FALL}"
+else
+    printf '✗ FALL %d: fas4-prod-deploy.sh anropar inte hemlighets-namn-kontrollen\n' "${FALL}" >&2
+    FEL=$((FEL + 1))
+fi
+
+FALL=$((FALL + 1))
+# --kontrollera MÅSTE avsluta rött (inte bara varna) om ett krävt namn
+# saknas — den skillnaden mot bucket-radens rena varning är AVSIKTLIG (se
+# fas4-prod-deploy.sh:s egen header-kommentar om TASK-359). Prövar
+# STRUKTURELLT att HEMLIGHETER_NAMN_OK faktiskt styr ett `exit 1` i
+# --kontrollera-grenen, inte bara att variabeln existerar.
+if grep -A3 'HEMLIGHETER_NAMN_OK}" -eq 1' "${MAL}" | grep -q 'exit 0' \
+    && grep -A2 'minst en krävd hemlighet saknas' "${MAL}" | grep -q 'exit 1'; then
+    printf '✓ FALL %d — --kontrollera avslutar 1 när HEMLIGHETER_NAMN_OK=0, annars 0\n' "${FALL}"
+else
+    printf '✗ FALL %d: --kontrollera:s exitkod styrs inte strukturellt av HEMLIGHETER_NAMN_OK\n' "${FALL}" >&2
     FEL=$((FEL + 1))
 fi
 

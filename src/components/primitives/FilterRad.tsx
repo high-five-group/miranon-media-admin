@@ -230,7 +230,18 @@ export function FilterRad({
       onExpandedChange={setOppen}
       className={cn('flex flex-col print:hidden', className)}
     >
-      <div className="flex items-center gap-2">
+      {/* `gap-4`, INTE `gap-2` (pass 11, Marcus dom 2026-09-01: *"Mer luft
+          mellan sökrutan och filter-ikonen"*). Sökfältet är en fullbredds-låda
+          med synlig kant och tratten en rund platta — 8 px mellan dem läste som
+          att de satt ihop. 16 px är nästa steg i 4 px-basen och ger ett tydligt
+          andrum utan att bryta rytmen.
+
+          GÄLLER ALLA `FilterRad`-KONSUMENTER: betalningssidan, anmälningssidan
+          och eventlistan delar primitiven. Det är avsikten — samma kontroll ska
+          se likadan ut överallt — men det gör ändringen bredare än den yta
+          Marcus tittade på. Bokfört; en yta-lokal variant vore en ratt utan
+          efterfrågan. */}
+      <div className="flex items-center gap-4">
         <div className="min-w-0 flex-1">{children}</div>
         {/* Tratt-ingången: öppen/aktiv bär bg-text-svärtan (facit k02);
             badgen är dekor (aria-hidden) — sr-only-namnet bär antalet.
@@ -291,12 +302,27 @@ export function FilterRad({
                   alternativ så triggern kommunicerar vad som faktiskt
                   filtreras på — aldrig RAC:s råa placeholder. */}
               {dimensioner.map((dim) => {
-                // KONSUMENT-ÄGD KONTROLL: etiketten renderas i dropdownens
-                // egen etikett-grammatik (samma klasser som `Select`s
-                // `Label`) så kolumnerna i rutnätet linjerar, men som ett
-                // `span` — ett `label`-element utan kontroll att peka på
-                // hade varit en tom utfästelse. Kontrollen bär sitt eget
-                // tillgängliga namn.
+                // KONSUMENT-ÄGD KONTROLL: etiketten är `sr-only` sedan
+                // 2026-09-01 (Marcus: *"ta bort rubriken 'Event' över
+                // eventväljaren … på komponenten, den behövs inte på
+                // anmälningssidan heller"* — alltså på PRIMITIVEN, så den
+                // försvinner på båda ytorna samtidigt).
+                //
+                // BARA DEN VISUELLA RUBRIKEN GÅR. Texten står kvar i
+                // tillgänglighetsträdet, så en skärmläsare som läser panelen
+                // i ordning fortfarande hör vilken axel kontrollen gäller.
+                // Det är också varför detta INTE är en regression: spannet
+                // var aldrig ett `label`-element och namngav aldrig
+                // kontrollen programmatiskt (kontrollen bär sitt eget
+                // tillgängliga namn) — det var ren visuell rubrik, och det
+                // är exakt den delen som tas bort.
+                //
+                // Skälet att kontroll-dimensionen inte behöver sin rubrik
+                // medan dropdown-dimensionerna gör det: en `Select` visar
+                // bara sitt VALDA värde ("Kurs"), medan `EventValjare`s
+                // stängda trigger säger vad den är ("Alla event", eller
+                // eventets namn med ikon). Rubriken upprepade alltså vad
+                // kontrollen redan sa.
                 if (dim.kontroll != null) {
                   return (
                     <div
@@ -304,9 +330,7 @@ export function FilterRad({
                       data-testid={`filter-${dim.nyckel}`}
                       className="flex w-full flex-col gap-1 sm:col-span-full"
                     >
-                      <span className="text-(color:--mm-input-label-text) text-small">
-                        {dim.etikett}
-                      </span>
+                      <span className="sr-only">{dim.etikett}</span>
                       {dim.kontroll}
                     </div>
                   );

@@ -15,6 +15,13 @@ echo "" | npx supabase link --project-ref pqtshyierkdgwdnxuirz
 npx supabase db push
 ```
 
+Kedjad (den form ett agent-uppdrag bokför i en PR-kropp — `&&` gör att en
+misslyckad länkning aldrig följs av en push mot fel eller inget projekt):
+
+```bash
+echo "" | npx supabase link --project-ref pqtshyierkdgwdnxuirz && npx supabase db push
+```
+
 **Varför `echo "" |`:** körd interaktivt utan styrd stdin frågar `link` efter
 databas-LÖSENORDET (en prompt, inte ett login-flöde) och HÄNGER i en headless
 agent-miljö utan TTY. Ett tomt svar besvaras direkt — `link` behöver bara
@@ -216,3 +223,71 @@ definierar för läsvägen. Skrivvägen (`TASK-201.3`/`TASK-201.4`) emitterar
 finns bär den INTE). Filtret returnerar alltså `[]` mot riktiga rader tills
 skrivvägen antar samma nyckel — verifierat KORREKT som mekanism, inte ännu
 verifierat som fullbordad ände-till-ände-funktion.
+
+## Betalningsdomänen + jobbmotorn (TASK-346.3, ADR-128/ADR-129)
+
+Tre migrationer, i denna ordning (tidsstämplarna gör ordningen bindande):
+
+| Fil | Vad den skapar |
+|---|---|
+| `20260830195728_betalningsdomanen_inbetalningar_kvitton.sql` | `inbetalningar`, `kvitton`, `kvittoserie_golv`, `allokera_kvittonummer()`; RLS + grants; `inbetalningar` i Realtime-publikationen |
+| `20260830195900_jobbmotorn_ko_cron_jobbtabeller.sql` | `pgmq`/`pg_cron`/`pg_net`, kön `jobbko`, `jobb` + `jobb_rad`, kö-wrappers i `public`, `jobb_cron_tick()` + cron-posten `jobbmotor-tick`; `jobb`/`jobb_rad` i publikationen |
+| `20260830200100_purga_testrader_sentineler.sql` | `purga_testrader()` — städvägen för `ZZ-TASK-346…`-testrader |
+
+### TVÅ STEG KRÄVS EFTER `db push` — annars är motorn inert
+
+`db push` ensamt gör INTE staging körbart. Två DATA-steg återstår, och båda
+är medvetet skilda från schemat:
+
+**1. Kvittoseriens golv.** `allokera_kvittonummer()` är FAIL-CLOSED mot ett
+saknat golv — den kastar hellre än gissar 1001 och kolliderar med den gamla
+Airtable-serien. Golvet är miljöberoende och kan inte bo i en migration
+(Postgres kan inte läsa Airtable-ledgern):
+
+```bash
+npx supabase db query --linked "insert into public.kvittoserie_golv (ar, forsta_lopnummer, motivering) values (2026, 1003, 'Airtable-ledgern i staging bar hogst MM-2026-1002 (matt 2026-08-30) — serien fortsatter efter den.') on conflict (ar) do nothing"
+```
+
+Staging: **1003** (ledgern bär `MM-2026-1001` och `MM-2026-1002`, mätt
+2026-08-30). Prod: **1001** (ledgern är tom, mätt read-only samma dag) — det
+steget är Marcus, i prod-runbooken (`TASK-346.11`,
+[`docs/reference/prod-driftsattning-betalningsflodet-runbook.md`](../../docs/reference/prod-driftsattning-betalningsflodet-runbook.md)
+§ Steg 3).
+
+**2. Vault-hemligheterna.** Cron-ticket ringer inte ut förrän alla tre finns
+(ADR-129 beslut 7). Namnen är `jobbmotor_funktions_url`,
+`jobbmotor_anon_nyckel` och `jobbmotor_delad_hemlighet`; den sista måste ha
+SAMMA värde som Edge Function-secreten `JOBBMOTOR_DELAD_HEMLIGHET`.
+Staging seedas av en agent, prod av Marcus.
+
+### Verifieringen körs EN gång, efter push
+
+```bash
+npx supabase db query --linked -f scripts/task-346-3-staging-verifiering.sql
+```
+
+Bevisar det som bor i databasen och därför inte kan bevisas hermetiskt:
+sekvensens golv och täthet, den unika nyckeln per inbetalning (andra
+insättningen fäller), den genererade kvittonummer-kolumnen, pengalogikens
+check-constraints, och jobbmotorns dubblettskydd. Städar efter sig, bränner
+inga kvittonummer och lämnar 2026-serien orörd. Exit 0 + slutraden
+`ALLA KONTROLLER PASSERADE` är utfallet.
+
+Deny-halvan (anon/authenticated) och kolumnkontraktet är däremot COMMITTADE,
+i `tests/api/betalningsdomanen-rls.staging.test.ts` — de kräver ingen
+skrivbehörighet och körs i varje `npm run test:api:staging`.
+
+### En känd, accepterad transient vid första appliceringen
+
+Cron-posten anropar `jobb-konsument`, som byggs först i `TASK-346.4`.
+Anropet 404:ar tills funktionen deployats — men det sker aldrig i praktiken:
+`jobb_cron_tick()` ringer bara när det FAKTISKT finns rader i `vantar`, och
+aldrig alls medan Vault saknar sina tre värden. Med tom jobbtabell görs noll
+anrop, och `cron.job_run_details` fylls inte med fel.
+
+### Ingen down-migration finns — Supabase CLI har ingen
+
+Varje migrationsfil bär i stället sin rollback-SQL som ett kommentarblock
+sist. Läs `20260830195900`:s: `drop extension pgmq cascade` lämnar schemat
+`pgmq` KVAR, tomt (mätt 2026-08-30, ADR-129 § Kontext), så en avinstallation
+som inte droppar det explicit ser ren ut utan att vara det.

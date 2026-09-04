@@ -19,14 +19,21 @@
 //   5. `serialiseraKanoniskt`/`berakaKallhash` — nyckelordning påverkar
 //      INTE hashen, olika data ger olika hash, samma data ger samma hash.
 
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { expect, test } from '@playwright/test';
+import { summeraKronor } from '../../supabase/functions/_shared/betalningsbelopp';
+import { fetMarkera } from '../../supabase/functions/_shared/fet-markering';
 import {
   byggBekraftelseData,
   byggDeltagarinfoData,
+  byggForsattsbladData,
   byggKvittoData,
   type DocumentSourcesResult,
+  type ForsattsbladRadSpec,
   formatSvenskDatum,
   formatSvenskDatumspann,
+  stockholmDatumTid,
   valjKopia,
 } from '../../supabase/functions/_shared/mall-data';
 import { berakaKallhash, serialiseraKanoniskt } from '../../supabase/functions/_shared/mall-hash';
@@ -174,6 +181,32 @@ test.describe('byggBekraftelseData', () => {
     expect(data.beskrivning).toEqual([]);
   });
 
+  // ── Att byggBekraftelseData FAKTISKT kör fetMarkera ────────────────────
+  //
+  // Review-fynd på PR #2025: fetMarkera var enhetstestad isolerat, och
+  // mall-render.test.ts matade FÖRBEHANDLAD data in i mallen — men INGET test
+  // höll produktionsfunktionen till sitt ansvar. En refaktor som tog bort
+  // `.map(fetMarkera)` hade passerat hela sviten grönt och öppnat en levande
+  // injektionsväg, eftersom mallen renderar beskrivningen rått (`<%~ %>`).
+  //
+  // Dessa två testar den kopplingen, inte funktionen i sig.
+
+  test('byggBekraftelseData escapar beskrivningen — HTML från Airtable kan aldrig nå mallen rå', () => {
+    const data = byggBekraftelseData(
+      fixtureSources({ beskrivning: tomKopia('<script>alert(1)</script>') }),
+    );
+    expect(data.beskrivning).toEqual(['&lt;script&gt;alert(1)&lt;/script&gt;']);
+  });
+
+  test('byggBekraftelseData konverterar **fet** till <strong>', () => {
+    const data = byggBekraftelseData(
+      fixtureSources({ beskrivning: tomKopia('Boken **Utanför Verkligheten** ligger till grund') }),
+    );
+    expect(data.beskrivning).toEqual([
+      'Boken <strong>Utanför Verkligheten</strong> ligger till grund',
+    ]);
+  });
+
   test('agendans KOPIA vinner över standarden när eventet har en egen agenda', () => {
     const data = byggBekraftelseData(
       fixtureSources(
@@ -225,6 +258,11 @@ function kvittoSpec(overrides: Partial<KvittoradSpec> = {}): KvittoradSpec {
     eventStart: '2026-07-25',
     eventSlut: '2026-07-26',
     bokforingstext: 'personlig utveckling, meditation',
+    // [TASK-346.5] Default satt (INTE null) — samma fixturvärde som
+    // `docs/mallar/bilagor/fixtures/kvitto.exempel.json`, medvetet skilt
+    // från `datum` för att bevisa att raderna kan avvika (se testerna
+    // nedan för `null`-fallet).
+    betalningsdatum: '2026-08-01',
     ...overrides,
   };
 }
@@ -240,6 +278,43 @@ test.describe('byggKvittoData (TASK-309.5, ADR-125 § Beslut 4-5)', () => {
   test('datum är ISO (formatKvittoDatum) — kvittot är en bokföringshandling', () => {
     const data = byggKvittoData(kvittoSpec({ datum: '2026-08-03T00:00:00.000Z' }));
     expect(data.datum).toBe('2026-08-03');
+  });
+
+  // [TASK-346.5, ADR-128 § Beslut 1/9] "Betalningsdatum"-raden — ett SKILT
+  // fält från `datum` (utfärdandedagen). Fixturens värden avviker medvetet
+  // (2026-08-01 vs 2026-08-03) för att bevisa att de INTE är samma fält
+  // som råkar formateras lika.
+  test('betalningsdatum är ISO och SKILT från datum — de kan avvika', () => {
+    const data = byggKvittoData(
+      kvittoSpec({ datum: '2026-08-03T00:00:00.000Z', betalningsdatum: '2026-08-01' }),
+    );
+    expect(data.betalningsdatum).toBe('2026-08-01');
+    expect(data.datum).toBe('2026-08-03');
+    expect(data.betalningsdatum).not.toBe(data.datum);
+  });
+
+  test('betalningsdatum: null (backfillad historisk inbetalning, ADR-128 beslut 8) ger "-", inte "undefined"/"null"', () => {
+    const data = byggKvittoData(kvittoSpec({ betalningsdatum: null }));
+    expect(data.betalningsdatum).toBe('-');
+  });
+
+  // [TASK-346.5, förberedd för 346.9, AC #5] Kreditkvittots mallvariant —
+  // TOKEN förberedd, INTE aktiverad: `typ`/`hanvisningTillKvittonummer`
+  // utelämnas av VARJE befintlig anropssite i dag.
+  test('rubrik/hanvisning DEFAULTAR till ett vanligt kvitto när typ/hanvisningTillKvittonummer utelämnas (nuvarande läge, ingen anropssite sätter dem)', () => {
+    const data = byggKvittoData(kvittoSpec());
+    expect(data.rubrik).toBe('Kvitto');
+    expect(data.hanvisning).toBe('');
+  });
+
+  test('rubrik blir "Kreditkvitto" när typ === "kreditkvitto" (346.9 aktiverar detta senare)', () => {
+    const data = byggKvittoData(kvittoSpec({ typ: 'kreditkvitto' }));
+    expect(data.rubrik).toBe('Kreditkvitto');
+  });
+
+  test('hanvisning byggs som "Kvitto <nummer>" när hanvisningTillKvittonummer är satt', () => {
+    const data = byggKvittoData(kvittoSpec({ hanvisningTillKvittonummer: 'MM-2026-1001' }));
+    expect(data.hanvisning).toBe('Kvitto MM-2026-1001');
   });
 
   test('benamning byggs via kvittoBenamning (TASK-306 rättelsevarv-formen)', () => {
@@ -271,14 +346,16 @@ test.describe('byggKvittoData (TASK-309.5, ADR-125 § Beslut 4-5)', () => {
     expect(data.orgMomsregnummer).toBe('SE559540549801');
   });
 
-  test('samtliga femton fält i KvittoMallData är satta (inget "undefined")', () => {
+  test('samtliga arton fält i KvittoMallData är satta (inget "undefined")', () => {
     const data = byggKvittoData(kvittoSpec());
     const nycklar = [
       'kvittonummer',
       'datum',
+      'betalningsdatum',
       'orgReferens',
       'kundnamn',
       'kundEpost',
+      'rubrik',
       'benamning',
       'netto',
       'moms',
@@ -289,8 +366,9 @@ test.describe('byggKvittoData (TASK-309.5, ADR-125 § Beslut 4-5)', () => {
       'orgLand',
       'orgNummer',
       'orgMomsregnummer',
+      'hanvisning',
     ] as const;
-    expect(nycklar).toHaveLength(15);
+    expect(nycklar).toHaveLength(18);
     for (const nyckel of nycklar) {
       expect(data[nyckel]).not.toBeUndefined();
       expect(typeof data[nyckel]).toBe('string');
@@ -319,6 +397,128 @@ test.describe('byggKvittoData (TASK-309.5, ADR-125 § Beslut 4-5)', () => {
   });
 });
 
+test.describe('stockholmDatumTid (TASK-370.2)', () => {
+  test('sommartid (CEST, UTC+2) — 2026-09-03T12:00:00Z blir 2026-09-03 14:00', () => {
+    expect(stockholmDatumTid(new Date('2026-09-03T12:00:00.000Z'))).toBe('2026-09-03 14:00');
+  });
+
+  test('vintertid (CET, UTC+1) — 2026-01-15T12:00:00Z blir 2026-01-15 13:00', () => {
+    expect(stockholmDatumTid(new Date('2026-01-15T12:00:00.000Z'))).toBe('2026-01-15 13:00');
+  });
+
+  test('dygnsgräns — sen kväll UTC rullar över till nästa dag i Stockholm', () => {
+    // 2026-09-03T22:30:00Z är sommartid (+2) -> 2026-09-04 00:30 i Stockholm.
+    expect(stockholmDatumTid(new Date('2026-09-03T22:30:00.000Z'))).toBe('2026-09-04 00:30');
+  });
+
+  test('timme/minut är alltid två siffror (Intl 2-digit) — inte "9:5"', () => {
+    // 2026-01-01T08:05:00Z -> Stockholm CET (+1) -> 09:05.
+    expect(stockholmDatumTid(new Date('2026-01-01T08:05:00.000Z'))).toBe('2026-01-01 09:05');
+  });
+});
+
+function forsattsbladRad(overrides: Partial<ForsattsbladRadSpec> = {}): ForsattsbladRadSpec {
+  return {
+    namn: 'Anna Andersson',
+    epost: 'anna.andersson@example.com',
+    event: 'Resor i medvetandet 1',
+    belopp: 2500,
+    betalsatt: 'Swish',
+    ...overrides,
+  };
+}
+
+test.describe('byggForsattsbladData (TASK-370.2, PRD TASK-370 § Implementationsbeslut)', () => {
+  const NU = new Date('2026-09-03T12:00:00.000Z');
+
+  test('antal = radernas längd', () => {
+    const data = byggForsattsbladData([forsattsbladRad(), forsattsbladRad()], NU);
+    expect(data.antal).toBe(2);
+  });
+
+  test('rätt radantal och rätt fält per rad, i GIVEN ordning (PRD användarberättelse 8)', () => {
+    const rader = [
+      forsattsbladRad({ namn: 'Anna Andersson', belopp: 2500 }),
+      forsattsbladRad({ namn: 'Bengt Bengtsson', belopp: 1200, betalsatt: 'Bankgiro' }),
+    ];
+    const data = byggForsattsbladData(rader, NU);
+    expect(data.rader).toHaveLength(2);
+    expect(data.rader[0].namn).toBe('Anna Andersson');
+    expect(data.rader[1].namn).toBe('Bengt Bengtsson');
+    expect(data.rader[1].betalsatt).toBe('Bankgiro');
+  });
+
+  test('summan är RÄTT (2500 + 1200 = 3700), formaterad "SEK 3 700,00"', () => {
+    const data = byggForsattsbladData(
+      [forsattsbladRad({ belopp: 2500 }), forsattsbladRad({ belopp: 1200 })],
+      NU,
+    );
+    expect(data.summa).toBe('SEK 3 700,00');
+  });
+
+  test('summan räknas med summeraKronor (heltalsören) — INTE rå flyttalsaddition (review-fynd runda 1, regressionsbevis)', () => {
+    // NEGATIVT BEVIS, MÄTT (Node): 1000.10 + 2000.20 + 0.30 med rå
+    // flyttalsaddition är INTE exakt 3000.6 — `(1000.1 + 2000.2 + 0.3)`
+    // ger `3000.6000000000004`. Detta ÄR precis den drift
+    // `summeraKronor`s eget filhuvud citerar ("0.1 + 0.2 !== 0.3 gäller
+    // lika mycket för 1000.10 + 2000.20"). Körd mot den GAMLA raden
+    // (`rader.reduce((sum, rad) => sum + rad.belopp, 0)`) INNAN bytet till
+    // `summeraKronor` — bokfört utfall: `3000.6000000000004`, `!== 3000.6`.
+    const belopp = [1000.1, 2000.2, 0.3];
+    const raFlyttalsaddition = belopp.reduce((sum, kr) => sum + kr, 0);
+    expect(raFlyttalsaddition).not.toBe(3000.6); // den gamla formens fel, dokumenterat
+
+    // `summeraKronor` (den NYA, korrekta formen) ger den exakta summan —
+    // detta diskriminerar mellan de två implementationerna på ett sätt den
+    // FORMATERADE strängen INTE gör här: `Intl.NumberFormat` avrundar bort
+    // 4e-13-felet ovan så BÅDA formerna råkar formatera till "SEK 3 000,60"
+    // för just dessa tal (mätt: sträng-nivå-kontrollen ensam hade alltså
+    // INTE fällt en regression till rå addition för detta specifika fall).
+    expect(summeraKronor(belopp)).toBe(3000.6);
+
+    const data = byggForsattsbladData(
+      belopp.map((belopp) => forsattsbladRad({ belopp })),
+      NU,
+    );
+    expect(data.summa).toBe('SEK 3 000,60');
+  });
+
+  test('varje rads belopp formateras "SEK <formatBelopp>" — samma form som kvittots totalruta', () => {
+    const data = byggForsattsbladData([forsattsbladRad({ belopp: 2500 })], NU);
+    expect(data.rader[0].belopp).toBe('SEK 2 500,00');
+  });
+
+  test('event: null blir tom sträng, inte "null"/"undefined" (samma konvention som byggKvittoData)', () => {
+    const data = byggForsattsbladData([forsattsbladRad({ event: null })], NU);
+    expect(data.rader[0].event).toBe('');
+  });
+
+  test('tidpunkten är stockholmDatumTid(nu) — anroparen skickar klockan, funktionen läser den aldrig själv', () => {
+    const data = byggForsattsbladData([forsattsbladRad()], NU);
+    expect(data.tidpunkt).toBe(stockholmDatumTid(NU));
+    expect(data.tidpunkt).toBe('2026-09-03 14:00');
+  });
+
+  test('REN funktion — två separata anrop med samma indata-VÄRDEN ger djupt identiskt resultat', () => {
+    expect(byggForsattsbladData([forsattsbladRad()], NU)).toEqual(
+      byggForsattsbladData([forsattsbladRad()], NU),
+    );
+  });
+
+  test('tom lista (N=0, oåtkomlig i praktiken via valideraInbetalningIdLista) ger antal 0 och summa "SEK 0,00" — inget kastat fel', () => {
+    const data = byggForsattsbladData([], NU);
+    expect(data.antal).toBe(0);
+    expect(data.rader).toEqual([]);
+    expect(data.summa).toBe('SEK 0,00');
+  });
+
+  test('olika belopp ger olika summa (negativ kontroll — inte alltid samma svar)', () => {
+    const dataA = byggForsattsbladData([forsattsbladRad({ belopp: 2500 })], NU);
+    const dataB = byggForsattsbladData([forsattsbladRad({ belopp: 1000 })], NU);
+    expect(dataA.summa).not.toBe(dataB.summa);
+  });
+});
+
 test.describe('serialiseraKanoniskt / berakaKallhash (ADR-125 § 3)', () => {
   test('nyckelordning påverkar INTE den kanoniska strängen', () => {
     const a = serialiseraKanoniskt({ b: 1, a: 2, c: { y: 1, x: 2 } });
@@ -344,4 +544,102 @@ test.describe('serialiseraKanoniskt / berakaKallhash (ADR-125 § 3)', () => {
     const h2 = await berakaKallhash({ x: 2 });
     expect(h1).not.toBe(h2);
   });
+});
+
+// ─────────────────────────────────────────────────────────────────────────
+// `fetMarkera` — säker **fet**-markering (2026-08-27, Marcus fångst att
+// fetstilen försvann i TASK-309.4). TVÅSIDIGT: att fetstilen KOMMER TILLBAKA
+// (positiv), och att inget ANNAT slinker igenom (negativ). Den andra halvan
+// är den viktiga — funktionens utdata renderas RÅTT i mallen (`<%~ %>`), så
+// en lucka här är en injektionsväg in i ett dokument som mailas till
+// deltagare.
+// ─────────────────────────────────────────────────────────────────────────
+
+test('fetMarkera: **text** blir <strong>, som i förlagan', () => {
+  expect(fetMarkera('Utbildningen **Resor i Medvetandet** ger dig insikt')).toBe(
+    'Utbildningen <strong>Resor i Medvetandet</strong> ger dig insikt',
+  );
+});
+
+test('fetMarkera: flera markeringar i samma stycke', () => {
+  expect(fetMarkera('**ett** mitten **två**')).toBe(
+    '<strong>ett</strong> mitten <strong>två</strong>',
+  );
+});
+
+test('fetMarkera: text utan markörer passerar oförändrad', () => {
+  expect(fetMarkera('helt vanlig text')).toBe('helt vanlig text');
+});
+
+test('fetMarkera: HTML i indata escapas — ingen tagg överlever', () => {
+  expect(fetMarkera('<script>alert(1)</script>')).toBe('&lt;script&gt;alert(1)&lt;/script&gt;');
+});
+
+test('fetMarkera: HTML INUTI en markering escapas också', () => {
+  expect(fetMarkera('**<img src=x onerror=alert(1)>**')).toBe(
+    '<strong>&lt;img src=x onerror=alert(1)&gt;</strong>',
+  );
+});
+
+test('fetMarkera: attribut-brytande tecken escapas', () => {
+  expect(fetMarkera(`"citat" & 'apostrof'`)).toBe('&quot;citat&quot; &amp; &#39;apostrof&#39;');
+});
+
+test('fetMarkera: & escapas FÖRE < och > — ingen dubbel-escaping', () => {
+  // Om ordningen vore omvänd skulle &lt; bli &amp;lt; och visas som text.
+  expect(fetMarkera('a & b < c')).toBe('a &amp; b &lt; c');
+});
+
+test('fetMarkera: oparad markör lämnas som literal text', () => {
+  expect(fetMarkera('detta ** är inte fet')).toBe('detta ** är inte fet');
+});
+
+test('fetMarkera: markering spänner INTE över radbrytning', () => {
+  // Ett asterisk-par över två rader är nästan alltid ett skrivfel — det ska
+  // synas, inte svälja resten av stycket i fetstil.
+  expect(fetMarkera('**start\nslut**')).toBe('**start\nslut**');
+});
+
+test('fetMarkera: tom markering (****) blir inte en tom tagg', () => {
+  expect(fetMarkera('****')).toBe('****');
+});
+
+test('fetMarkera: tomt fält ger tom sträng', () => {
+  expect(fetMarkera('')).toBe('');
+});
+
+test('fetMarkera: den lokala kopian i render-bilage-mall.mjs är i synk', () => {
+  // scripts/render-bilage-mall.mjs kan inte importera Deno-TypeScript och bär
+  // därför en kopia av mönstret. Glider de isär granskar man lokalt en ANNAN
+  // bilaga än den som skickas — den klassen av tyst divergens vaktas här.
+  const rot = process.cwd();
+  const kanonisk = readFileSync(join(rot, 'supabase/functions/_shared/fet-markering.ts'), 'utf8');
+  const lokal = readFileSync(join(rot, 'scripts/render-bilage-mall.mjs'), 'utf8');
+  // Den literala mönsterkällan, tecken för tecken. Skiljer sig strängarna åt
+  // renderar de två vägarna olika — exakt den divergens testet finns för.
+  const MONSTER_KALLA = String.raw`\*\*([^*\n]+?)\*\*`;
+  expect(kanonisk).toContain(MONSTER_KALLA);
+  expect(lokal).toContain(MONSTER_KALLA);
+
+  // Review-fynd på #2025: bold-regexet ensamt räckte inte. En ändring som rör
+  // vid ESCAPING-stegen i bara den ena filen — en borttagen rad, en kastad
+  // ordning — hade passerat obemärkt, trots att det är just escapingen som
+  // gör rå-renderingen säker. Alla fem stegen och deras ORDNING jämförs nu.
+  const ESCAPE_STEG = [
+    String.raw`.replace(/&/g, '&amp;')`,
+    String.raw`.replace(/</g, '&lt;')`,
+    String.raw`.replace(/>/g, '&gt;')`,
+    String.raw`.replace(/"/g, '&quot;')`,
+    String.raw`.replace(/'/g, '&#39;')`,
+  ];
+  for (const steg of ESCAPE_STEG) {
+    expect(kanonisk).toContain(steg);
+    expect(lokal).toContain(steg);
+  }
+  // Ordningen är säkerhetskritisk: & måste escapas FÖRST, annars blir &lt;
+  // till &amp;lt; och visas som text i stället för att skydda.
+  const index = (fil: string) => ESCAPE_STEG.map((steg) => fil.indexOf(steg));
+  for (const positioner of [index(kanonisk), index(lokal)]) {
+    expect(positioner).toEqual([...positioner].sort((a, b) => a - b));
+  }
 });

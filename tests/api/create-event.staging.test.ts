@@ -20,6 +20,12 @@
 //      miranon.se` SATT i råa record.fields; utelämnad ELLER explicit `false` → fältet OSATT
 //      (EF:en utelämnar det ur fields-mapen — ett skrivet false skulle sätta checkboxen);
 //      närvarande men av fel typ → 400. Bas-fältet är ADDITIVT och finns ENDAST i staging.
+//   7. ORT-TILL-PLATS (TASK-309.30, ADR-125 § 2): eventets `Ort` slås upp mot Platser-
+//      tabellens `Namn`. EXAKT en träff → `Plats`-länken satt i råa record.fields +
+//      `platsLankning: { satt: true, skal: 'exakt-en-traff' }`. Ingen träff → tom länk,
+//      `skal: 'ingen-traff'`. FLERA träffar → tom länk, `skal: 'flera-traffar'` (aldrig
+//      den första — en gissad plats hade gett en bilaga med fel adress). Idempotent
+//      replay mot en rad som redan bär en Plats → `skal: 'redan-satt'`, länken ORÖRD.
 //
 // EVENTFORMAT-ANKARE: eventtyp KRÄVS vid create (ADR-066 b5, GREN A) → driver Sessionsmall.
 // Staging Eventformat var TOMT vid bygget (Session 38) → en permanent sentinel-fixtur seedades
@@ -37,6 +43,7 @@
 
 import { randomUUID } from 'node:crypto';
 import { type APIRequestContext, type APIResponse, expect, test } from '@playwright/test';
+import { registreraKastbarPost } from '../support/kastbara-poster';
 import { type ApiConfig, classify401Body, getApiConfig, getValidUserJWT } from './helpers';
 
 const ENDPOINT = '/functions/v1/create-event';
@@ -60,6 +67,32 @@ interface CreateBody {
 // utelämnar en OMARKERAD checkbox ur `fields` → `undefined` ÄR "osatt".
 const PUBLICERINGSFALT = 'Publicerad på miranon.se';
 
+// ORT-TILL-PLATS (TASK-309.30) — Eventplanerings länkfält mot Platser
+// (staging `fld8OmPGNgEYZ8eER`). Airtable UTELÄMNAR ett tomt länkfält ur
+// `fields` → `undefined` ÄR "ingen länk", precis som för checkboxen ovan.
+const PLATS_FALT = 'Plats';
+
+// PERMANENTA Platser-fixturer, seedade via Airtable-MCP 2026-08-28 (samma klass
+// som Eventformat-ankaret ovan: ZZ-markerade, matchar MEDVETET ingen
+// purge-target i `.purge-staging-policy.json`). Dubbletten är den enda vägen
+// till flera-träffar-grenen: `save-place-standard` är find-or-create by `Namn`
+// och kan därför strukturellt inte skapa två rader med samma namn, och testet
+// har ingen Airtable-token (ADR-060 punkt 2, EF-only-gränsen). Att den ÖVERHUVUD
+// GÅR att seeda är samtidigt fyndet regeln vilar på: `Platser.Namn` är ett
+// singleLineText-primärfält och Airtable kan inte tvinga unikhet på det.
+const PLATS_UNIK_ORT = 'ZZ-plats-unik-fixtur';
+const PLATS_UNIK_ID = 'recVWAYh1cbVQKxi7';
+const PLATS_DUBBLETT_ORT = 'ZZ-plats-dubblett-fixtur';
+// Ingen Platser-rad bär detta namn — och får aldrig få en. Grenen bevisas av
+// frånvaron.
+const PLATS_SAKNAS_ORT = 'ZZ-plats-saknas-fixtur';
+
+interface PlatsLankningSvar {
+  satt: boolean;
+  platsId: string | null;
+  skal: string;
+}
+
 function postCreate(
   request: APIRequestContext,
   config: ApiConfig,
@@ -69,6 +102,28 @@ function postCreate(
   const headers: Record<string, string> = { 'Content-Type': 'application/json' };
   if (jwt) headers.Authorization = `Bearer ${jwt}`;
   return request.post(`${config.baseUrl}${ENDPOINT}`, { headers, data: body });
+}
+
+/**
+ * [TASK-309.15] Registrera den skapade raden i ägar-manifestet
+ * (`tests/support/kastbara-poster.ts`) så att
+ * `purge-staging-sentinels.mjs --efter-korning` kan radera EXAKT denna
+ * körnings rader direkt efteråt. Setup-purgen är kvar som andra
+ * försvarslinje — detta stänger fönstret MELLAN körningarna, där 61
+ * `ZZ-create-event-test`-event låg kvar som KOMMANDE event i appens
+ * eventväljare (mätt 2026-08-24).
+ *
+ * Tar RÅTEXTEN testet redan läst — läser aldrig `APIResponse` en andra gång.
+ * Deny-vägarnas svar bär ingen `record.id` och blir därför en no-op, vilket
+ * gör anropet säkert att lägga efter VARJE `.text()` i filen.
+ */
+function registreraSkapadRad(raw: string, vad: string): void {
+  try {
+    const id = (JSON.parse(raw) as { record?: { id?: unknown } })?.record?.id;
+    if (typeof id === 'string') registreraKastbarPost(id, `create-event/${vad}`);
+  } catch {
+    // Icke-JSON-kropp (t.ex. gateway-401) — ingen rad skapades, inget att registrera.
+  }
 }
 
 // Seedat Eventformat-ankare (eventtyp-länkens mål). Staging Eventformat var TOMT vid bygget
@@ -107,6 +162,7 @@ test.describe('create-event — skarp conformance (Fas 6f L1)', () => {
 
     const res = await postCreate(request, config, jwt, validBody(eventtyp, randomUUID()));
     const raw = await res.text();
+    registreraSkapadRad(raw, 'allow');
     expect(res.status(), raw).toBe(201);
     const body = JSON.parse(raw) as {
       event: Record<string, unknown>;
@@ -157,6 +213,7 @@ test.describe('create-event — skarp conformance (Fas 6f L1)', () => {
       event: 'Resor i medvetandet 2',
     });
     const raw = await res.text();
+    registreraSkapadRad(raw, 'basdimensioner');
     expect(res.status(), raw).toBe(201);
     const body = JSON.parse(raw) as { record: { fields: Record<string, unknown> } };
 
@@ -228,6 +285,7 @@ test.describe('create-event — skarp conformance (Fas 6f L1)', () => {
     // (1) Färsk nyckel → SKAPAR (createdRecords).
     const first = await postCreate(request, config, jwt, validBody(eventtyp, key));
     const firstRaw = await first.text();
+    registreraSkapadRad(firstRaw, 'idempotens');
     expect(first.status(), firstRaw).toBe(201);
     const firstBody = JSON.parse(firstRaw) as { record: { id: string }; created: boolean };
     expect(firstBody.created).toBe(true);
@@ -256,6 +314,7 @@ test.describe('create-event — skarp conformance (Fas 6f L1)', () => {
       publicera: true,
     });
     const armeradRaw = await armerad.text();
+    registreraSkapadRad(armeradRaw, 'publicering-armerad');
     expect(armerad.status(), armeradRaw).toBe(201);
     const armeradBody = JSON.parse(armeradRaw) as {
       record: { id: string; fields: Record<string, unknown> };
@@ -272,6 +331,7 @@ test.describe('create-event — skarp conformance (Fas 6f L1)', () => {
       validBody(eventtyp, randomUUID()), // ingen publicera-nyckel alls
     );
     const oarmeradRaw = await oarmerad.text();
+    registreraSkapadRad(oarmeradRaw, 'publicering-oarmerad');
     expect(oarmerad.status(), oarmeradRaw).toBe(201);
     const oarmeradBody = JSON.parse(oarmeradRaw) as {
       record: { id: string; fields: Record<string, unknown> };
@@ -285,11 +345,140 @@ test.describe('create-event — skarp conformance (Fas 6f L1)', () => {
       publicera: false,
     });
     const explicitRaw = await explicitFalse.text();
+    registreraSkapadRad(explicitRaw, 'publicering-explicit-false');
     expect(explicitFalse.status(), explicitRaw).toBe(201);
     const explicitBody = JSON.parse(explicitRaw) as {
       record: { fields: Record<string, unknown> };
     };
     expect(explicitBody.record.fields[PUBLICERINGSFALT]).toBeUndefined();
+  });
+
+  test('ORT-TILL-PLATS: exakt EN Platser-rad matchar Ort → Plats LÄNKAD', async ({ request }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const eventtyp = eventformatId();
+
+    const res = await postCreate(request, config, jwt, {
+      ...validBody(eventtyp, randomUUID()),
+      ort: PLATS_UNIK_ORT,
+    });
+    const raw = await res.text();
+    registreraSkapadRad(raw, 'plats-traff');
+    expect(res.status(), raw).toBe(201);
+    const body = JSON.parse(raw) as {
+      record: { id: string; fields: Record<string, unknown> };
+      platsLankning: PlatsLankningSvar;
+    };
+
+    // (i) Utfallet är OBSERVERBART i svaret, inte bara i serverloggen.
+    expect(body.platsLankning).toEqual({
+      satt: true,
+      platsId: PLATS_UNIK_ID,
+      skal: 'exakt-en-traff',
+    });
+    // (ii) SKRIV-BEVIS ur råa record.fields: länken finns FAKTISKT på raden i
+    // Airtable, inte bara som ett påstående i svarskroppen.
+    expect(body.record.fields[PLATS_FALT]).toEqual([PLATS_UNIK_ID]);
+    // (iii) Härledningen får inte ha kostat något annat: `Ort` är ORÖRD (ADR-125
+    // beslut 8 - platsen härleds UR orten, den skriver aldrig tillbaka till den)
+    // och de system-genererade fälten föddes som vanligt trots den extra PATCH:en.
+    expect(body.record.fields['Ort']).toBe(PLATS_UNIK_ORT);
+    expect(body.record.fields['EventKey']).toMatch(/^Event-\d+$/);
+  });
+
+  test('ORT-TILL-PLATS: INGEN Platser-rad matchar Ort → Plats TOM, skäl "ingen-traff"', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const eventtyp = eventformatId();
+
+    const res = await postCreate(request, config, jwt, {
+      ...validBody(eventtyp, randomUUID()),
+      ort: PLATS_SAKNAS_ORT,
+    });
+    const raw = await res.text();
+    registreraSkapadRad(raw, 'plats-ingen-traff');
+    expect(res.status(), raw).toBe(201);
+    const body = JSON.parse(raw) as {
+      record: { fields: Record<string, unknown> };
+      platsLankning: PlatsLankningSvar;
+    };
+
+    expect(body.platsLankning).toEqual({ satt: false, platsId: null, skal: 'ingen-traff' });
+    // Airtable utelämnar ett tomt länkfält helt ur `fields`.
+    expect(body.record.fields[PLATS_FALT]).toBeUndefined();
+    // Eventet skapades ändå: en utebliven härledning är inget fel.
+    expect(body.record.fields['Ort']).toBe(PLATS_SAKNAS_ORT);
+  });
+
+  test('ORT-TILL-PLATS: FLERA Platser-rader matchar Ort → Plats TOM, aldrig den första', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const eventtyp = eventformatId();
+
+    const res = await postCreate(request, config, jwt, {
+      ...validBody(eventtyp, randomUUID()),
+      ort: PLATS_DUBBLETT_ORT,
+    });
+    const raw = await res.text();
+    registreraSkapadRad(raw, 'plats-flera-traffar');
+    expect(res.status(), raw).toBe(201);
+    const body = JSON.parse(raw) as {
+      record: { fields: Record<string, unknown> };
+      platsLankning: PlatsLankningSvar;
+    };
+
+    // KÄRNAN i regeln: tvetydighet ger INGEN länk. En "första träffen"-
+    // implementation hade passerat allt utom denna rad, och felet hade synts
+    // först i en genererad bilaga med fel adress.
+    expect(body.platsLankning).toEqual({ satt: false, platsId: null, skal: 'flera-traffar' });
+    expect(body.record.fields[PLATS_FALT]).toBeUndefined();
+  });
+
+  test('ORT-TILL-PLATS: idempotent replay rör ALDRIG en redan satt Plats', async ({ request }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const eventtyp = eventformatId();
+    const key = randomUUID();
+    const payload = { ...validBody(eventtyp, key), ort: PLATS_UNIK_ORT };
+
+    // (1) Färsk nyckel → skapar + länkar.
+    const first = await postCreate(request, config, jwt, payload);
+    const firstRaw = await first.text();
+    registreraSkapadRad(firstRaw, 'plats-replay');
+    expect(first.status(), firstRaw).toBe(201);
+    const firstBody = JSON.parse(firstRaw) as {
+      record: { id: string; fields: Record<string, unknown> };
+      platsLankning: PlatsLankningSvar;
+    };
+    expect(firstBody.platsLankning.satt).toBe(true);
+    expect(firstBody.record.fields[PLATS_FALT]).toEqual([PLATS_UNIK_ID]);
+
+    // (2) SAMMA nyckel → upserten matchar raden. Raden bär nu en Plats, så
+    // härledningen SKA hålla sig borta: `redan-satt`, ingen andra PATCH.
+    // Detta är invarianten "aldrig skriva över en redan satt Plats" i sin
+    // observerbara form - EF:en kan inte veta om länken kom från härledningen
+    // eller från Lottas hand, och behandlar därför båda likadant.
+    const second = await postCreate(request, config, jwt, payload);
+    const secondRaw = await second.text();
+    expect(second.status(), secondRaw).toBe(200);
+    const secondBody = JSON.parse(secondRaw) as {
+      record: { id: string; fields: Record<string, unknown> };
+      created: boolean;
+      platsLankning: PlatsLankningSvar;
+    };
+    expect(secondBody.created).toBe(false);
+    expect(secondBody.record.id).toBe(firstBody.record.id);
+    expect(secondBody.platsLankning).toEqual({
+      satt: false,
+      platsId: null,
+      skal: 'redan-satt',
+    });
+    // Länken står kvar oförändrad — "rörde inte" betyder inte "tog bort".
+    expect(secondBody.record.fields[PLATS_FALT]).toEqual([PLATS_UNIK_ID]);
   });
 
   test('deny: publicera av fel typ (ej boolean) → 400', async ({ request }) => {

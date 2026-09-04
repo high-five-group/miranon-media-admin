@@ -9,7 +9,7 @@ status: stable
 
 > **Proveniens:** avgränsat research-pass beställt ur konsoliderings-grillningen
 > S93 Del 3 (8/8 kvitterade beslut, Marcus 2026-08-03) — se
-> [`tasks/sessions/2026-08-02-session-93.md`](../../tasks/sessions/2026-08-02-session-93.md)
+> [`tasks/sessions/archive/2026-08/2026-08-02-session-93.md`](../../tasks/sessions/archive/2026-08/2026-08-02-session-93.md)
 > Del 3 (landad på grenen `docs/s93-del3-konsolideringsgrillning`, ej ännu
 > mergad till `main` vid pass-start). Grillningen kvitterade beslut 4
 > (transportform: enhetliga riktiga server-utskick, mailto-eran stängs, ADR-067
@@ -581,5 +581,5 @@ Detta är en rekommendation, inte ett beslut — den kommande grillningen/ADR:n
 - [`docs/decisions/ADR-063-airtable-bas-som-forstklassig-leverabel.md`](../decisions/ADR-063-airtable-bas-som-forstklassig-leverabel.md)
 - [`docs/reference/data-model.md`](../reference/data-model.md) — rad ~973, ~998 (psionautics Storage-precedent)
 - [`docs/reference/airtable-constraints.md`](../reference/airtable-constraints.md)
-- [`tasks/sessions/2026-08-02-session-93.md`](../../tasks/sessions/2026-08-02-session-93.md) Del 3 (grundare S93-dok; grenen `docs/s93-del3-konsolideringsgrillning` bär Del 3-innehållet)
+- [`tasks/sessions/archive/2026-08/2026-08-02-session-93.md`](../../tasks/sessions/archive/2026-08/2026-08-02-session-93.md) Del 3 (grundare S93-dok; grenen `docs/s93-del3-konsolideringsgrillning` bär Del 3-innehållet)
 - `tasks/lessons.md` rad ~2054 (Airtable Team-plan, sekundärkälla)

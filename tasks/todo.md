@@ -4,18 +4,197 @@
 # todo.md — Miranon Media Admin (React)
 
 <!-- markdownlint-disable-next-line MD036 -->
-*Senast uppdaterad: 2026-07-24 (**Session 84 ✅ AVSLUTAD (2026-07-24)** — **EF-PROD-SYNKEN (parallell session bredvid aktiva S83, egen worktree):** T39-pre-flighten (innehålls-diff deployad-kod-vs-HEAD ×12 → verklig drift SMALARE än versionsgapet, L332; karta+planer i `docs/research/t39-ef-sync-preflight-2026-07-24.md`) → Marcus-förkraven i dashboarden (smoke-user `marcus+ef-smoke@h5gruppen.se` · Playwright-paret + `marcus@marcusjohansson.me` raderade → **T33 STÄNGD**) → **A-kedjan:** test-auth raderad (TASK-35 Done, AC2→TASK-37) · kanoniska full-allowlist-deployen **13/13** (11 bump + notes-paret NYTT I PROD; **L216-override-kravet UPPHÄVT**) · deny-triple ×13 grön (källkods-klassad form, L331; metod-vakts-fyndet→TASK-38) · autentiserade smokes gröna (Airtable-secreterna runtime-bevisade · create-event-idempotensen · notes-rundturen · save-segment) · ZZ-teardown verifierad → **T39 + T40 STÄNGDA** (frontend-kontrollen + allowlist-utvidgningen ärvda av T46; byggplanens closeout-förkrav fick T40-dimensionen). **Fälla 45 född** (Månad/år-options-horisonten dec 2026 — appen kan ej skapa 2027-event i prod förrän löst, L330). Kvälls-incidenterna: GitHub-API-avbrottet överbryggat med retry-vakt · syskonsessionens gröna js-yaml-PR #160 armerad+mergad · gitlab-429:an → `.lycheeignore` (digg.se-precedenten). PR #150/#151/#161 gröna per jobb. **SKÖRD L330–L332** [UNIVERSAL ×3]. **NÄSTA: TASK-37/38 plockbara · T46 bär go-live-resterna · hub-lyftet L284–L332 vid hub-sync · Marcus-moment: Update-klicket i claude.ai.** Numrering efter S84: 85/078/L333/T88/f46/task-39. Full narrativ: sessionsdok S84 Del 1–4 + BUILD-LOG S84-post.) (**Session 82 ✅ AVSLUTAD (2026-07-24)** — **POCOCK V1.1-INTEGRATIONEN (parallell-session bredvid aktiva S81):** fyra YT-transkript gap-analyserade med pre-K-forensik (T71/ADR-068/DECLINE-listorna lästa före förslag) → hub `d369d99` **plugin 1.19.0** (grilling-kärnans fakta/beslut-distinktion + enact-gate · do-work-valideringskadensen · **NY skill `/research`**) + spoke-PR #132 docs-only via egen worktree (korpus: fyra rå-transkript + delta-destillat/gap-analys; **tråd T86 född** — beslutsläge: review-piloten i do-work-skarven PARKERAD tills 36.x-mätinstrumenten [mäts 10–15 skivor → permanentas eller rivs] · Wayfinder-kartklassen + namnfrågan "PRD-kort"→"spec-kort" GRILLNINGSKLASS [trigger AT-Max] · teach-piloten/guide-builder-korsbefruktningen/Lotta-onboarding behovs-triggade · avstått-listan per över-engineering-vakten). Memory `kaizen-i-samarbetet` (bevakningen återkommande). **T86 FÖRBRUKAD → nästa tråd T87** (S81-dokets numrerings-rad skrevs före mergen). Metrics-ytorna orörda. **NÄSTA: T86 § Nästa steg A–D.** Full narrativ: sessionsdok S82 + T86-kortet.) (**Session 81 ✅ AVSLUTAD (2026-07-24)** — **T85 VÅG 2B: 36.7 VISUELL REGRESSION FRÅN NOLL — VAKTEN BYGGD OCH BEVISAD, GRINDEN MEDVETET PARKERAD (T87).** Hermetisk fixturvärld (`tests/visual/support/`: seedad session [nyckel verifierad mot supabase-js dist] · EF-mockar i zod-parsad EF-form · pinnad Inter v20 incheckad · frusen klocka · hermetik-vakt · fixtur-server 5299 med FIKTIV URL — noll staging/mutex/secrets) → **6 facit-tunga vyer × 2 vyportar = 12 bilder på ~15 s** (`npm run test:visual`). Snapshot-mallen amenderad (pre-K-forensik: {projectName}-kollisionsfix + {platform} för AC 3; -darwin gitignorerade). **2x-beslutet** (Marcus efter granskning: deviceScaleFactor 2 + scale device, 2880×1804 — granskningsupplevelsen är del av vaktens design). **Baseline-maskineriet bevisat ände-till-ände:** visual-baselines.yml dispatch → linux-generering → granskningsbar PR nr 140 (12 bilder, -uall-räknefixen skarpt bevisad) → Marcus-välsignad + mergad. **Marcus-beslut A → AC 7–8 (grind-jobbet + nightly) PARKERADE i tråd T87** (aktiverings-jobbet komplett i kortet; trigger: UI-takten lugnar; rådgivande läge förkastat L321-klassen) — kortet **Done** med öppen bokföring. PR #131/#133/#136/#139/#140/#141 alla gröna per jobb. **SKÖRD L327–L328** [UNIVERSAL ×2]: bot-PR-kedjans två plattformsgrindar (repo-inställningen + approval-empirin — mekanism som bär grind bevisas skarpt, ej doc-läses) · BEHIND-svälten (strict + heterogena CI-tider + parallella landningar). **NÄSTA (NY session S83): 36.8 QA-vandringen (ready-for-human, dep 36.7 ✓ AVBLOCKAD — sista skivan i task-36) · T87 vilande (grind-aktiveringen på Marcus-trigger) · hub-lyftet L284–L328 vid hub-sync-moment · dependabot-PR #65/#137 Marcus-review · Marcus-moment: Update-klicket i claude.ai.** Numrering efter S81: 83/078/L329/T88/f45/task-37. Full narrativ: sessionsdok S81 Del 1–7 + BUILD-LOG S81-post.) (**Session 80 ✅ AVSLUTAD (2026-07-24)** — **T85 VÅG 2 FORTS.: 36.5 MÄTSKRIPTET + 36.6 RÖTT-FÖRST BÅDA DONE.** **36.5:** `scripts/ci-metrics.mjs` + parallell fixtur-testsvit (13 fall, TDD 7 cykler rött→grönt) — PR-ledtid median+p95 · staging-kötid · röd-orsak/jobb · flaky · dedup-träffkvot ur changed-loggens markörer (enda källan som skiljer dedup-träff från docs-skip; pre-36.4 = öppet `unknown`); L314+L319 kodade och live-bevisade; `nightly-metrics`-jobb i larmets needs (röda mätningar aldrig tysta) — **ci.yml ORÖRD** (fetch-depth + L322 opåverkade). **Utgångsvärde** (fönster 50): PR-ledtid median 1/p95 13,3 min (n=24) · kötid median 0,2/p95 7,7 min (n=37) · flaky 0,0 % · dedup 100 % (4/0). Bevis: leverans-run 30072089892 full svit + nattbevis 30072499255 (CI-mätningsjobbet grönt, larm SKIPPAT). **36.6** (scope-utvidgning på Marcus-order, docs-only): ADR-071-amendering S80-block överst (lokalt körutdrag som bärare · rött+grönt pushas IHOP · grind-bevis via gate-proof.yml · ingen-ny-ADR öppet motiverad; fix-vågens rad (iv) öppet amenderad) + CONTRIBUTING § Rött-först; run 30073375124. **PR #124–#129 alla grön/jobb first-pass; noll defekter i körning** (2 självfångade före commit). **Första skarpa schemalagda nightly GRÖN** (30065650800). Inga nya lessons/ADR/trådar (T85-kortet: 2a KOMPLETT + 2c VERKSTÄLLD). **NÄSTA (NY session S81): 36.7 visual (EGEN session, ready-for-human) → 36.8 QA (ready-for-human, dep 36.7) · hub-lyftet L284–L326 vid hub-sync-moment · dependabot-PR #65/#126 Marcus-review · Marcus-moment: Update-klicket i claude.ai.** Numrering efter S80: 81/077/L327/T86/f45/task-37. Full narrativ: sessionsdok S80 Del 1–3 + BUILD-LOG S80-post.) (**Session 79 ✅ AVSLUTAD (2026-07-23)** — **CI.YML-TRION T85 VÅG 2A KOMPLETT (36.2+36.3+36.4):** reusable-svit-extraktion (`ci-suite.yml` `workflow_call`, anropad av `ci.yml`+`nightly.yml`; **ADR-077 mintad** — klassning+dedup+nattnät). **36.2 nattnätet** (schema ~03:00 Europe/Stockholm + larmkedja→tilldelat `ci-natt`-ärende med run-länk+commit-spann + moderate-audit + no-cache-länk; grön natt run 30039548355 [larm SKIPPAT, 0 ärenden] · simulate 30039559724→ärende #114 [stängt med motivering] · gate-proof 30038462683 [L322 fail-closed genom refaktorn]) — **3 CI-FÅNGADE DEFEKTER → L326** [UNIVERSAL]: `startup_failure` ×2 (permissions-eskalering i BÅDA reusable-anroparna — ett anropat workflow kan ej eskalera anroparens token; taket måste grantas per anropare) + span-faktafel (samma-SHA-natt = flake-signal). Spiken bar `permissions: {}` = förenkling som maskerade buggen. **36.3 D1-klassen** (ren CSS/stilmall/publik statisk → staging+mutex SKIPPAD, a11y/pure/build kör; allowlist aldrig blocklist, samma exkludering som D0; kontrastbevis-tripel 30043867877 [D1] / 30043886869 [.css+.tsx→full] / 30043233137 [config→full]; `.playwright-mcp/`-gitignore L321-klassen) 0 defekter first-pass-grönt. **36.4 merge-dedup** (main-push läser `HEAD^2`, tree-ekvivalens + `gh run list --commit <full SHA>`; **fail-closed på VARJE avvikelse**; cache-formen FALSIFIERAD ej byggd L325; unit-testad 6 grenar [1 hit+5 fail-closed] FÖRE bygget; kontrastbevis-par MISS 30047428027 [PR full svit] / HIT 30047936570 [main-push config-ändring Test suite SKIPPAD]) 0 defekter. **fetch-depth-invariant (3 bärare) + L322 ORÖRDA genom hela trion.** PR #111–#122 alla grön/jobb. **NÄSTA (NY session S80): 36.5 mätskript (dep 36.2 ✓) → 36.6 rött-först (ADR-071-amendering) → 36.7 visual (egen session, ready-for-human) → 36.8 QA · hub-lyftet L284–L326 vid hub-sync-moment · Marcus-moment: Update-klicket i claude.ai.** Numrering efter S79: 80/077/L327/T86/f45/task-37. Full narrativ: sessionsdok S79 Del 1–4 + BUILD-LOG S79-post.) (**Session 78 ✅ AVSLUTAD (2026-07-23)** — **T85 VÅG 2 SPECCAD + 36.1 LEVERERAD:** `/to-prd` → **TASK-36** + `/to-issues` → **åtta skivor** i beroendeordning (sekvens-invarianten kodad som deps: 36.2→36.3→36.4). **Cache-dedupen FALSIFIERAD öppet** (L325: GHA pull_request-cache merge-ref-scopad, osynlig för main-run) → ersatt med `HEAD^2`+tree-ekvivalens+`gh run list` (väg A, bevisad disk+API `db6ef53`). **work-batch (max-kort 3) levererade 36.1 gate-proof DONE** — S77:s bevis-skuld (L322) BETALD: tvåsidigt bevis (positivt run 30032296699 GRÖN + negativ self-test 30032299223 RÖD). PR #104–#108 alla grön/jobb första passet. **SKÖRD L323–L325** [UNIVERSAL ×3]: subagent bär ej asynkron CI-svans (orkestratorn äger den) · risk-klass = tvingade beroenden ej fil-hemvist · GHA-cache-scoping. **KURSKORRIGERING:** 36.2 (nattnätet) omklassad additiv→ci.yml-klass (nightly kräver ci.yml:s fulla svit); 36.2/36.3/36.4 tas som ETT ci.yml-arbete under direkt hand (reusable-workflow, EJ subagent-batch). **NÄSTA (S79 — HANDOFF på toppnivå i sessionsdok S78 Del 4): ci.yml-trion 36.2 (nattnätet, reusable `workflow_call`) → 36.3 (D1-klass + `.playwright-mcp/`-gitignore) → 36.4 (dedup, HEAD^2-formen) + ADR-077 mintas där · sedan 36.5 (mätskript, dep 36.2) → 36.6 (rött-först ADR-071-am) → 36.7 (visual, egen session) → 36.8 (QA). Invarianter: L322 fail-closed (gate-proof.yml är vakten) · gate-proof-replik-drift-bärare · fetch-depth-3 · sekvens-invarianten.** Numrering efter S78: 79/077/L326/T86/f45/task-37. Full narrativ: sessionsdok S78 Del 1–4.) (**Session 77 ✅ AVSLUTAD 2026-07-23** (`lifecycle: closed` på Marcus coverage-kvittens **"Det är bara att flippa."**) — **PROCESSGRANSKNINGS-LANDNINGEN:** merge-grinden MEKANISERAD (ADR-076: ruleset `main-skydd`, PR-krav 0 approvals + required check strict, TOM bypass; direktpush-bevis + BLOCKED→auto-merge-bevis; ALL bokföring via auto-merge-PR, beslut A) · Test+Build SPLITTAT (mutexen ENDAST på test-staging; Pure+Build-signal 29 s, förr ~10 min; PR #99) · actionlint release-pinnad + SHA256 (utelämning #3 stängd) · riskanpassad CI DESIGNAD (T85 våg 2a/2b/2c: D1-klass + merge-dedup + nightly/larm + visual från noll + rött-först-bärarbytet [beslut A]; våg 3 = staging-isolering vid bas-maximeringen) · Codex-processgranskningen verifierad påstående-för-påstående (svars-sektion i research-doket) · **END-PASS-INCIDENTEN:** röd PR auto-mergad via skipped-aggregator-hålet → FAIL-CLOSED-aggregator (PR nr 102) + **L321–L322** [UNIVERSAL ×2] (deferral-bärare · skippbar required check är fail-open). **NÄSTA: våg 2a/2b/2c per T85 i Marcus-takt · hub-lyftet L284–L322 vid hub-sync · Marcus-moment: Update-klicket i claude.ai.** Full narrativ: sessionsdok Del 1–4. S76 ✅ + S75 ✅ i egna sektioner nedan.) (**Session 76 ✅ AVSLUTAD 2026-07-22** (`lifecycle: closed` efter Marcus design-godkännande **"Nu är det skitbra"** + hela-vägen-ordern som coverage-kvittens) — **T80/T81/T82-MELLANSESSIONEN LEVERERAD FÖRE S75-RESUMEN:** T81 → ADR-071-amenderingen (review-utfalls-klasserna 3+2, tvådelat gränstest, fix-vågens PR-kontrakt, Done-flipp-grinden) · T80 → **ADR-074** (stabila nycklar/vinnaren behåller nyckeln · växlar-standarden · snapshot-par + fönster-jämförelse) + URL-STATE-SPEC §Dev-parametrar · T82-flippen 6 av 7 (work-batch KVARLÅST per ADR-071 b1) · hub-bunten **plugin 1.18.1** + REINSTALL-PRAXISEN (Code kör `claude plugin update` i samma landning — T18 STÄNGD) · **TASK-29 Done GODKÄND: ikon-railen** (SEX vågor, 16 AC; dockad dragbar, badge alltid synlig, rörelse-förbud, inga tooltips) · **MEKANISKA CI-vakt-hooken** i `.claude/settings.json` (foreground-vakt nekas av harnesset; falsk-positiv fångad → position-ankrad) · trådar T78/T80/T81/T82/T18 stängda + **T83** född (Claude Design) · SKÖRD **L307–L310** · numrering 075/L311/T84/f45/TASK-30. **NÄSTA: S75-RESUME med work-batch 12 (huvudspåret, stående JA) · Done-flippar fråga 4 + TASK-25 i S75-loopen · hub-lyftet L284–L310 vid hub-sync · Marcus-moment: Update-klicket i claude.ai.** Full narrativ: sessionsdok Del 1–10. S75 ⏸️ + S74 ✅ i egna sektioner nedan.)* (`lifecycle: closed` efter Marcus coverage-kvittens **"Kvitterar 1 och 2"** — coverage inkl. post 3 inget-att-säkra + batch-ordern i samma kvittens) — **EVENT-FAMILJENS EXEKVERINGS-UNDERLAG KOMPLETT: TASK-17/18/19 (familje-PRD:erna ur S72/S73-faciten) + 25 skivor publicerade i beroendeordning.** Skarv-kvittensen + 4 designbeslut Marcus-kvitterade per rekommendation: två befintliga skarvar (api + e2e/axe) · chevron-regeln RIVS öppet (verkställs TASK-18.3) · hemvisten event-familjens skapa-route + Mer-ingången rivs (TASK-19.2) · Anteckningar = ADDITIV tabell (egen ADR vid TASK-18.11) · publiceringsflaggan additiv nu (kontraktet = T79, registerraden synkad). Klartext-avstämningen (L305-fångsten) låste deadline-regeln start − 14 dagar (18.8). Etiketter: ready-for-agent ×22 + QA ready-for-human ×3; DoD-arvet per skiva (L220/L245/L246 + bas-additivitets-grinden); graf-verifierad — tre disjunkta startkedjor (17.1+17.3 ∥ 18.1 ∥ 19.1) = ADR-073-partitions-kandidaterna; prefaktoreringen 17.3 kursfärgs-tokensen delas av kalendern + gruppdynamiken; familje-rivningen 18.13 sist (dep alla 21 bygg). EF-gap-kartan lagd (uppdatera-event · slutbetalning/notering · bekräfta · bor över · anteckningar · närvaro-write saknas — skarpa 6b/6c/6f-ytor finns = ombyggnad). SKÖRD: **L305–L306** (klartext-avstämningen · cache-läsnings-formen; MD018-kandidaten förkastad med motiv). Inga röda runs (docs-only-formen höll ×5). Ingen ny ADR (73==73, nästa 074) · nästa lesson L307 · nästa tråd T80 · fälla 45. BUILD-LOG S74-post + transcript-ref wc-verifierad. **NÄSTA (NY session S75 — HANDOFF + MARCUS BATCH-ORDER ordagrant i sessionsdok Del 4: work-batch · max-kort 22 · två pipelines [P1 lista+skapa: 17.1→17.3→17.2→17.4→19.1→19.2→19.3→19.4 · P2 eventsidan: 18.1→18.2→18.3→18.8→18.9→18.10→18.11→18.4→18.5→18.6→18.7→18.12 · svans 17.5→18.13] · granskningsfärdig-läge; QA-vågen + design-review + prod-deploy = Marcus ikväll · hub-lyftet L284–L306 + T78-hubhalvan; Marcus-moment: Update-klicket i claude.ai.** Full narrativ: sessionsdok Del 1–4. S73 ✅ i egen sektion nedan.)*
+*Senast uppdaterad: 2026-09-03 (**Session 115 ✅ AVSLUTAD, AFK-läge på Marcus mandat — se § Aktuellt fokus.**) (**Session 84 ✅ AVSLUTAD (2026-07-24)** — **EF-PROD-SYNKEN (parallell session bredvid aktiva S83, egen worktree):** T39-pre-flighten (innehålls-diff deployad-kod-vs-HEAD ×12 → verklig drift SMALARE än versionsgapet, L332; karta+planer i `docs/research/t39-ef-sync-preflight-2026-07-24.md`) → Marcus-förkraven i dashboarden (smoke-user `marcus+ef-smoke@h5gruppen.se` · Playwright-paret + `marcus@marcusjohansson.me` raderade → **T33 STÄNGD**) → **A-kedjan:** test-auth raderad (TASK-35 Done, AC2→TASK-37) · kanoniska full-allowlist-deployen **13/13** (11 bump + notes-paret NYTT I PROD; **L216-override-kravet UPPHÄVT**) · deny-triple ×13 grön (källkods-klassad form, L331; metod-vakts-fyndet→TASK-38) · autentiserade smokes gröna (Airtable-secreterna runtime-bevisade · create-event-idempotensen · notes-rundturen · save-segment) · ZZ-teardown verifierad → **T39 + T40 STÄNGDA** (frontend-kontrollen + allowlist-utvidgningen ärvda av T46; byggplanens closeout-förkrav fick T40-dimensionen). **Fälla 45 född** (Månad/år-options-horisonten dec 2026 — appen kan ej skapa 2027-event i prod förrän löst, L330). Kvälls-incidenterna: GitHub-API-avbrottet överbryggat med retry-vakt · syskonsessionens gröna js-yaml-PR #160 armerad+mergad · gitlab-429:an → `.lycheeignore` (digg.se-precedenten). PR #150/#151/#161 gröna per jobb. **SKÖRD L330–L332** [UNIVERSAL ×3]. **NÄSTA: TASK-37/38 plockbara · T46 bär go-live-resterna · hub-lyftet L284–L332 vid hub-sync · Marcus-moment: Update-klicket i claude.ai.** Numrering efter S84: 85/078/L333/T88/f46/task-39. Full narrativ: sessionsdok S84 Del 1–4 + BUILD-LOG S84-post.) (**Session 82 ✅ AVSLUTAD (2026-07-24)** — **POCOCK V1.1-INTEGRATIONEN (parallell-session bredvid aktiva S81):** fyra YT-transkript gap-analyserade med pre-K-forensik (T71/ADR-068/DECLINE-listorna lästa före förslag) → hub `d369d99` **plugin 1.19.0** (grilling-kärnans fakta/beslut-distinktion + enact-gate · do-work-valideringskadensen · **NY skill `/research`**) + spoke-PR #132 docs-only via egen worktree (korpus: fyra rå-transkript + delta-destillat/gap-analys; **tråd T86 född** — beslutsläge: review-piloten i do-work-skarven PARKERAD tills 36.x-mätinstrumenten [mäts 10–15 skivor → permanentas eller rivs] · Wayfinder-kartklassen + namnfrågan "PRD-kort"→"spec-kort" GRILLNINGSKLASS [trigger AT-Max] · teach-piloten/guide-builder-korsbefruktningen/Lotta-onboarding behovs-triggade · avstått-listan per över-engineering-vakten). Memory `kaizen-i-samarbetet` (bevakningen återkommande). **T86 FÖRBRUKAD → nästa tråd T87** (S81-dokets numrerings-rad skrevs före mergen). Metrics-ytorna orörda. **NÄSTA: T86 § Nästa steg A–D.** Full narrativ: sessionsdok S82 + T86-kortet.) (**Session 81 ✅ AVSLUTAD (2026-07-24)** — **T85 VÅG 2B: 36.7 VISUELL REGRESSION FRÅN NOLL — VAKTEN BYGGD OCH BEVISAD, GRINDEN MEDVETET PARKERAD (T87).** Hermetisk fixturvärld (`tests/visual/support/`: seedad session [nyckel verifierad mot supabase-js dist] · EF-mockar i zod-parsad EF-form · pinnad Inter v20 incheckad · frusen klocka · hermetik-vakt · fixtur-server 5299 med FIKTIV URL — noll staging/mutex/secrets) → **6 facit-tunga vyer × 2 vyportar = 12 bilder på ~15 s** (`npm run test:visual`). Snapshot-mallen amenderad (pre-K-forensik: {projectName}-kollisionsfix + {platform} för AC 3; -darwin gitignorerade). **2x-beslutet** (Marcus efter granskning: deviceScaleFactor 2 + scale device, 2880×1804 — granskningsupplevelsen är del av vaktens design). **Baseline-maskineriet bevisat ände-till-ände:** visual-baselines.yml dispatch → linux-generering → granskningsbar PR nr 140 (12 bilder, -uall-räknefixen skarpt bevisad) → Marcus-välsignad + mergad. **Marcus-beslut A → AC 7–8 (grind-jobbet + nightly) PARKERADE i tråd T87** (aktiverings-jobbet komplett i kortet; trigger: UI-takten lugnar; rådgivande läge förkastat L321-klassen) — kortet **Done** med öppen bokföring. PR #131/#133/#136/#139/#140/#141 alla gröna per jobb. **SKÖRD L327–L328** [UNIVERSAL ×2]: bot-PR-kedjans två plattformsgrindar (repo-inställningen + approval-empirin — mekanism som bär grind bevisas skarpt, ej doc-läses) · BEHIND-svälten (strict + heterogena CI-tider + parallella landningar). **NÄSTA (NY session S83): 36.8 QA-vandringen (ready-for-human, dep 36.7 ✓ AVBLOCKAD — sista skivan i task-36) · T87 vilande (grind-aktiveringen på Marcus-trigger) · hub-lyftet L284–L328 vid hub-sync-moment · dependabot-PR #65/#137 Marcus-review · Marcus-moment: Update-klicket i claude.ai.** Numrering efter S81: 83/078/L329/T88/f45/task-37. Full narrativ: sessionsdok S81 Del 1–7 + BUILD-LOG S81-post.) (**Session 80 ✅ AVSLUTAD (2026-07-24)** — **T85 VÅG 2 FORTS.: 36.5 MÄTSKRIPTET + 36.6 RÖTT-FÖRST BÅDA DONE.** **36.5:** `scripts/ci-metrics.mjs` + parallell fixtur-testsvit (13 fall, TDD 7 cykler rött→grönt) — PR-ledtid median+p95 · staging-kötid · röd-orsak/jobb · flaky · dedup-träffkvot ur changed-loggens markörer (enda källan som skiljer dedup-träff från docs-skip; pre-36.4 = öppet `unknown`); L314+L319 kodade och live-bevisade; `nightly-metrics`-jobb i larmets needs (röda mätningar aldrig tysta) — **ci.yml ORÖRD** (fetch-depth + L322 opåverkade). **Utgångsvärde** (fönster 50): PR-ledtid median 1/p95 13,3 min (n=24) · kötid median 0,2/p95 7,7 min (n=37) · flaky 0,0 % · dedup 100 % (4/0). Bevis: leverans-run 30072089892 full svit + nattbevis 30072499255 (CI-mätningsjobbet grönt, larm SKIPPAT). **36.6** (scope-utvidgning på Marcus-order, docs-only): ADR-071-amendering S80-block överst (lokalt körutdrag som bärare · rött+grönt pushas IHOP · grind-bevis via gate-proof.yml · ingen-ny-ADR öppet motiverad; fix-vågens rad (iv) öppet amenderad) + CONTRIBUTING § Rött-först; run 30073375124. **PR #124–#129 alla grön/jobb first-pass; noll defekter i körning** (2 självfångade före commit). **Första skarpa schemalagda nightly GRÖN** (30065650800). Inga nya lessons/ADR/trådar (T85-kortet: 2a KOMPLETT + 2c VERKSTÄLLD). **NÄSTA (NY session S81): 36.7 visual (EGEN session, ready-for-human) → 36.8 QA (ready-for-human, dep 36.7) · hub-lyftet L284–L326 vid hub-sync-moment · dependabot-PR #65/#126 Marcus-review · Marcus-moment: Update-klicket i claude.ai.** Numrering efter S80: 81/077/L327/T86/f45/task-37. Full narrativ: sessionsdok S80 Del 1–3 + BUILD-LOG S80-post.) (**Session 79 ✅ AVSLUTAD (2026-07-23)** — **CI.YML-TRION T85 VÅG 2A KOMPLETT (36.2+36.3+36.4):** reusable-svit-extraktion (`ci-suite.yml` `workflow_call`, anropad av `ci.yml`+`nightly.yml`; **ADR-077 mintad** — klassning+dedup+nattnät). **36.2 nattnätet** (schema ~03:00 Europe/Stockholm + larmkedja→tilldelat `ci-natt`-ärende med run-länk+commit-spann + moderate-audit + no-cache-länk; grön natt run 30039548355 [larm SKIPPAT, 0 ärenden] · simulate 30039559724→ärende #114 [stängt med motivering] · gate-proof 30038462683 [L322 fail-closed genom refaktorn]) — **3 CI-FÅNGADE DEFEKTER → L326** [UNIVERSAL]: `startup_failure` ×2 (permissions-eskalering i BÅDA reusable-anroparna — ett anropat workflow kan ej eskalera anroparens token; taket måste grantas per anropare) + span-faktafel (samma-SHA-natt = flake-signal). Spiken bar `permissions: {}` = förenkling som maskerade buggen. **36.3 D1-klassen** (ren CSS/stilmall/publik statisk → staging+mutex SKIPPAD, a11y/pure/build kör; allowlist aldrig blocklist, samma exkludering som D0; kontrastbevis-tripel 30043867877 [D1] / 30043886869 [.css+.tsx→full] / 30043233137 [config→full]; `.playwright-mcp/`-gitignore L321-klassen) 0 defekter first-pass-grönt. **36.4 merge-dedup** (main-push läser `HEAD^2`, tree-ekvivalens + `gh run list --commit <full SHA>`; **fail-closed på VARJE avvikelse**; cache-formen FALSIFIERAD ej byggd L325; unit-testad 6 grenar [1 hit+5 fail-closed] FÖRE bygget; kontrastbevis-par MISS 30047428027 [PR full svit] / HIT 30047936570 [main-push config-ändring Test suite SKIPPAD]) 0 defekter. **fetch-depth-invariant (3 bärare) + L322 ORÖRDA genom hela trion.** PR #111–#122 alla grön/jobb. **NÄSTA (NY session S80): 36.5 mätskript (dep 36.2 ✓) → 36.6 rött-först (ADR-071-amendering) → 36.7 visual (egen session, ready-for-human) → 36.8 QA · hub-lyftet L284–L326 vid hub-sync-moment · Marcus-moment: Update-klicket i claude.ai.** Numrering efter S79: 80/077/L327/T86/f45/task-37. Full narrativ: sessionsdok S79 Del 1–4 + BUILD-LOG S79-post.) (**Session 78 ✅ AVSLUTAD (2026-07-23)** — **T85 VÅG 2 SPECCAD + 36.1 LEVERERAD:** `/to-prd` → **TASK-36** + `/to-issues` → **åtta skivor** i beroendeordning (sekvens-invarianten kodad som deps: 36.2→36.3→36.4). **Cache-dedupen FALSIFIERAD öppet** (L325: GHA pull_request-cache merge-ref-scopad, osynlig för main-run) → ersatt med `HEAD^2`+tree-ekvivalens+`gh run list` (väg A, bevisad disk+API `db6ef53`). **work-batch (max-kort 3) levererade 36.1 gate-proof DONE** — S77:s bevis-skuld (L322) BETALD: tvåsidigt bevis (positivt run 30032296699 GRÖN + negativ self-test 30032299223 RÖD). PR #104–#108 alla grön/jobb första passet. **SKÖRD L323–L325** [UNIVERSAL ×3]: subagent bär ej asynkron CI-svans (orkestratorn äger den) · risk-klass = tvingade beroenden ej fil-hemvist · GHA-cache-scoping. **KURSKORRIGERING:** 36.2 (nattnätet) omklassad additiv→ci.yml-klass (nightly kräver ci.yml:s fulla svit); 36.2/36.3/36.4 tas som ETT ci.yml-arbete under direkt hand (reusable-workflow, EJ subagent-batch). **NÄSTA (S79 — HANDOFF på toppnivå i sessionsdok S78 Del 4): ci.yml-trion 36.2 (nattnätet, reusable `workflow_call`) → 36.3 (D1-klass + `.playwright-mcp/`-gitignore) → 36.4 (dedup, HEAD^2-formen) + ADR-077 mintas där · sedan 36.5 (mätskript, dep 36.2) → 36.6 (rött-först ADR-071-am) → 36.7 (visual, egen session) → 36.8 (QA). Invarianter: L322 fail-closed (gate-proof.yml är vakten) · gate-proof-replik-drift-bärare · fetch-depth-3 · sekvens-invarianten.** Numrering efter S78: 79/077/L326/T86/f45/task-37. Full narrativ: sessionsdok S78 Del 1–4.) (**Session 77 ✅ AVSLUTAD 2026-07-23** (`lifecycle: closed` på Marcus coverage-kvittens **"Det är bara att flippa."**) — **PROCESSGRANSKNINGS-LANDNINGEN:** merge-grinden MEKANISERAD (ADR-076: ruleset `main-skydd`, PR-krav 0 approvals + required check strict, TOM bypass; direktpush-bevis + BLOCKED→auto-merge-bevis; ALL bokföring via auto-merge-PR, beslut A) · Test+Build SPLITTAT (mutexen ENDAST på test-staging; Pure+Build-signal 29 s, förr ~10 min; PR #99) · actionlint release-pinnad + SHA256 (utelämning #3 stängd) · riskanpassad CI DESIGNAD (T85 våg 2a/2b/2c: D1-klass + merge-dedup + nightly/larm + visual från noll + rött-först-bärarbytet [beslut A]; våg 3 = staging-isolering vid bas-maximeringen) · Codex-processgranskningen verifierad påstående-för-påstående (svars-sektion i research-doket) · **END-PASS-INCIDENTEN:** röd PR auto-mergad via skipped-aggregator-hålet → FAIL-CLOSED-aggregator (PR nr 102) + **L321–L322** [UNIVERSAL ×2] (deferral-bärare · skippbar required check är fail-open). **NÄSTA: våg 2a/2b/2c per T85 i Marcus-takt · hub-lyftet L284–L322 vid hub-sync · Marcus-moment: Update-klicket i claude.ai.** Full narrativ: sessionsdok Del 1–4. S76 ✅ + S75 ✅ i egna sektioner nedan.) (**Session 76 ✅ AVSLUTAD 2026-07-22** (`lifecycle: closed` efter Marcus design-godkännande **"Nu är det skitbra"** + hela-vägen-ordern som coverage-kvittens) — **T80/T81/T82-MELLANSESSIONEN LEVERERAD FÖRE S75-RESUMEN:** T81 → ADR-071-amenderingen (review-utfalls-klasserna 3+2, tvådelat gränstest, fix-vågens PR-kontrakt, Done-flipp-grinden) · T80 → **ADR-074** (stabila nycklar/vinnaren behåller nyckeln · växlar-standarden · snapshot-par + fönster-jämförelse) + URL-STATE-SPEC §Dev-parametrar · T82-flippen 6 av 7 (work-batch KVARLÅST per ADR-071 b1) · hub-bunten **plugin 1.18.1** + REINSTALL-PRAXISEN (Code kör `claude plugin update` i samma landning — T18 STÄNGD) · **TASK-29 Done GODKÄND: ikon-railen** (SEX vågor, 16 AC; dockad dragbar, badge alltid synlig, rörelse-förbud, inga tooltips) · **MEKANISKA CI-vakt-hooken** i `.claude/settings.json` (foreground-vakt nekas av harnesset; falsk-positiv fångad → position-ankrad) · trådar T78/T80/T81/T82/T18 stängda + **T83** född (Claude Design) · SKÖRD **L307–L310** · numrering 075/L311/T84/f45/TASK-30. **NÄSTA: S75-RESUME med work-batch 12 (huvudspåret, stående JA) · Done-flippar fråga 4 + TASK-25 i S75-loopen · hub-lyftet L284–L310 vid hub-sync · Marcus-moment: Update-klicket i claude.ai.** Full narrativ: sessionsdok Del 1–10. S75 ⏸️ + S74 ✅ i egna sektioner nedan.)* (`lifecycle: closed` efter Marcus coverage-kvittens **"Kvitterar 1 och 2"** — coverage inkl. post 3 inget-att-säkra + batch-ordern i samma kvittens) — **EVENT-FAMILJENS EXEKVERINGS-UNDERLAG KOMPLETT: TASK-17/18/19 (familje-PRD:erna ur S72/S73-faciten) + 25 skivor publicerade i beroendeordning.** Skarv-kvittensen + 4 designbeslut Marcus-kvitterade per rekommendation: två befintliga skarvar (api + e2e/axe) · chevron-regeln RIVS öppet (verkställs TASK-18.3) · hemvisten event-familjens skapa-route + Mer-ingången rivs (TASK-19.2) · Anteckningar = ADDITIV tabell (egen ADR vid TASK-18.11) · publiceringsflaggan additiv nu (kontraktet = T79, registerraden synkad). Klartext-avstämningen (L305-fångsten) låste deadline-regeln start − 14 dagar (18.8). Etiketter: ready-for-agent ×22 + QA ready-for-human ×3; DoD-arvet per skiva (L220/L245/L246 + bas-additivitets-grinden); graf-verifierad — tre disjunkta startkedjor (17.1+17.3 ∥ 18.1 ∥ 19.1) = ADR-073-partitions-kandidaterna; prefaktoreringen 17.3 kursfärgs-tokensen delas av kalendern + gruppdynamiken; familje-rivningen 18.13 sist (dep alla 21 bygg). EF-gap-kartan lagd (uppdatera-event · slutbetalning/notering · bekräfta · bor över · anteckningar · närvaro-write saknas — skarpa 6b/6c/6f-ytor finns = ombyggnad). SKÖRD: **L305–L306** (klartext-avstämningen · cache-läsnings-formen; MD018-kandidaten förkastad med motiv). Inga röda runs (docs-only-formen höll ×5). Ingen ny ADR (73==73, nästa 074) · nästa lesson L307 · nästa tråd T80 · fälla 45. BUILD-LOG S74-post + transcript-ref wc-verifierad. **NÄSTA (NY session S75 — HANDOFF + MARCUS BATCH-ORDER ordagrant i sessionsdok Del 4: work-batch · max-kort 22 · två pipelines [P1 lista+skapa: 17.1→17.3→17.2→17.4→19.1→19.2→19.3→19.4 · P2 eventsidan: 18.1→18.2→18.3→18.8→18.9→18.10→18.11→18.4→18.5→18.6→18.7→18.12 · svans 17.5→18.13] · granskningsfärdig-läge; QA-vågen + design-review + prod-deploy = Marcus ikväll · hub-lyftet L284–L306 + T78-hubhalvan; Marcus-moment: Update-klicket i claude.ai.** Full narrativ: sessionsdok Del 1–4. S73 ✅ i egen sektion nedan.)*
 
 > Aktiva uppgifter. Lärdomar fångas i `tasks/lessons.md`.
 > Arkitekturbeslut fångas i `docs/decisions/`.
 > Implementation-journal i `docs/BUILD-LOG.md`.
 > Styrande dokument: [`docs/byggplan.md`](../docs/byggplan.md)
 
+**Session 116 ✅ AVSLUTAD (2026-09-03, AFK på förhandskvittens) — FÖRHANDSGRANSKA KVITTON: LADDNINGSLÄGET PER RAD RÄTTAT, "FÖRHANDSGRANSKA ALLA" SOM ETT DOKUMENT BYGGT TILL STAGING.** Marcus fråga vid start (två rader laddade samtidigt) gav buggen `TASK-369` (delat `isPending` + TanStacks överskrivna per-anrops-callbacks, `#2237`) och ett nytt designarbete: grillning i sex beslut parallellt med research-pass (`docs/research/kvitto-forhandsgranskning-flera-som-ett-dokument-2026-09-03.md`) → PRD `TASK-370` + fem skivor. Landade genom review-loopen: `370.1` EF-komposition (`#2241`), `370.2` försättsbladet (`#2253`, husets första mall utan förlaga), `370.4` knappen (`#2255`). `370.3` (staging-bevis, tak 30 bekräftat) står i `#2264` i STOPPA-OCH-FRÅGA på två ask-user-fynd. Staging har `preview-receipt` v25. **Handover (S117):** Marcus beslut på `#2264` · `370.5` QA-vandring (Marcus facit för försättsbladet) · `TASK-380` layoutfynd · prod-promovering av 370.x efter QA · Update-klicket i claude.ai. **Numrering efter S116:** ADR 131 · kort 381 · L655 (51 fragment) · T184 · session 117. Full narrativ: sessionsdok S116 Del 1 till 5 + BUILD-LOG S116-post.
+
+**Session 113 ✅ AVSLUTAD (2026-09-02, AFK på förhandskvittens) — BILAGESPÅRET OCH BETALNINGSFLÖDET TILL PROD: NIO PAUSER, PIPELINEN I MÅL.** Marcus åtta prod-röktestfynd på bilagespåret drevs till prod (`TASK-338`/`340`/`339`), följt av en grillning om Lottas betalningsrutin (tretton beslut, `ADR-128`/`ADR-129`), en AFK-natt med sex vågor som byggde Postgres-modellen, jobbmotorn, nio Edge Functions, kvittomallen och facit-ytorna, ett natthaveri övertaget utan förlorat landat arbete (tråd `T179`), promoveringen (`#2193`, 44 commits) och prod-driftsättningen (55 Edge Functions, backfill 327 av 882 inbetalningar för 812 000 kr, `INVITE_REDIRECT_URL` rättad i båda miljöer). Resume 9 landade den sista pipelinen (`#2218`/`#2216`/`#2215`) genom review-loopen, en systematisk namnstädning (tråd `T182`) och en 46-minuters agent-loop-incident som gav tråd `T183`. **Handover (S115, S114 finns redan och är pausad, olandad `#2180`):** priserna på 305 anmälningar (backfill om när Lotta ger värden) · `346.12` riv miljöflaggan · `#1883`/`#1926` baseline-godkännande · Dependabot-PR:er · T183-grillningen · `TASK-346.15`/`365`/`366` plockbara · `hem.acceptance.test.ts:313` öppen fråga · Marcus ögonbevis-lista i prod. **Numrering efter S113:** ADR 130 · kort 367 · L655 (48 fragment) · T184 · session 115 (S114 finns, pausad-olandad `#2180`). Full narrativ: sessionsdok S113 Del 1 till 17 + BUILD-LOG S113-post. **Paus 9 var:** (paus 9, 2026-09-02 ~11:00 UTC — kontext 90 %, pre-compact STOPPAD per ADR-101 (andra impulsen), pipelinen medvetet EJ dränerad: `#2215`/`#2216`/`#2218` i review-loop, handoff i sessionsdok S113 § PAUSLÄGE paus 9; prod i nivå: front `2bf26258`, 55 EF deployade 10:49Z, backfill 327/812 000 kr; kort 358–366 + 346.15 + T182). Resume 8 var: (resume 8, 2026-09-02 ~07:25 UTC, `lifecycle: active`;
+Marcus: *"Återuppta S113 … jag behöver din vägledning"* → *"Jag vill att du kör
+runbooken!"* — **PROD-DRIFTSÄTTNINGEN KÖRD: steg 1–7 + 10 av orkestreraren
+(bypass per Marcus diktering), steg 9 av Marcus, steg 14 flaggan PÅ i prod
+(bundel-verifierad); `INVITE_REDIRECT_URL` rättad i båda miljöer
+(`TASK-359`-PR i bygge); kvar = steg 12/13/15-beslut hos Marcus**; Lotta-demo
+I DAG. Full narrativ: sessionsdok S113 Del 16):** paus 8-landningen `#2201` var RÖD
+(audit-ci: två browserslist-advisories publicerade efter `main`s sista gröna
+körning, patchade i `4.28.7`) → låsfils-bump som egen kod-PR via bygg-agent;
+resume 8 + paus 8 landar tillsammans i `#2201`. Numrering re-verifierad
+(ADR 130 · kort 358 · L655 · T182 · 23 fragment, inga divergenser).
+Handoffen (sessionsdok S113 § Paushistorik paus 8) bär HELA återstoden:
+MARCUS-SEKVENS (terminal-blocket steg 1–10, körklart med kommandon) +
+resume 8:s autonoma steg (verifiera blocket → steg 14 Vercel-flaggan →
+steg 13 backfillen → steg 16 facit → steg 15 röktest-lista) per paus 7-
+MANDATET som KVARSTÅR. promoverings-PR **`#2193` MERGAD** (`9dca0e56`, 44 commits —
+hela TASK-346-leveransen + steg 1b Förhandsgranska kvitton, vars
+"ren frontend"-premiss falsifierades och löstes som sidoeffektsfri
+`preview-receipt`-utökning, staging-skarpbevisad 23/23) · `#2192`
+(steg 11-skriptvägen + runbook-rättelser, `9c1fced2`) · `#2194` (steg 8-
+allowlistens nio EF:er + intern-auth-klassen i ef-metod-vakten, `a2a9b232`)
+· `#2196` baselines (36 bilder, själv-blessad per MANDAT, armerad i kön) —
+samtliga genom full review-loop (konvergens, sektion, backstopp; hög
+mandat-armerad). **Steg 6 UTFÖRT:** alla nio Airtable-prod-fält skapade +
+describe_table-verifierade (formeln exakt). **NÄSTA = STEG 7, MARCUS
+TERMINAL-BLOCK steg 1–10 (grinden för Lotta)** — allt dukat: runbooken
+aktuell (FYRA migrationer), allowlisten landad, prod-fälten på plats.
+Därefter per MANDAT: steg 14 Vercel-flaggan → steg 13 backfillen → steg 16
+facit → röktest-listan. Bokfört: TASK-357 mintad (seed-review-prisfälten) ·
+346.7 redan Done · T180/T181 grillnings-kandidater post-promovering ·
+`#2050`/`#2180` väntar Marcus. Full narrativ: sessionsdok S113 Del 15.
+
 ---
 
 ## Aktuellt fokus
 
-**Session 112 ▶️ PÅGÅR (2026-08-24, `lifecycle: active`) — STÄDSESSIONEN:
+**Session 117 ✅ AVSLUTAD (2026-09-03, AFK på förhandskvittens; `lifecycle: closed`) — SEGMENT-STARTSIDAN (B2): K1 → K3 TILL STÄMPELKLAR, FACIT LANDAT, FLIPPEN I PROD, RIVNINGEN DUKAD.** Tog över B2 från S114 i egna worktrees (huvudkatalogen S115:s). Marcus fynd på K1 (*"skarpa vyn är mycket snyggare"*) mättes mot DOM och kod: K2 = skarpa vyns hantverk verbatim + riktningen, K3 = brickor i Hem-mönstret + korthöjd låst 132 px; stämpelbeslut *"Det blir bra, vi stämplar denna som klar."* → facit-manifest (`godkand: null`) + bilder + markör i `#2256` (review 2 rundor, låg). Snabbvägen på Marcus order: EN kort (`TASK-379`, `#2258`), ingen PRD, inga skivor — flippen `#2266` mergad `a587cfab` med prod-deploy `success`, rivningen `#2269` draft (röd på `check-facit` med avsikt tills stämpeln). Falsifierat: "dev-servern måste köra på 5173" — CORS täcker 5174, skarpa vyn hämtar alla EF:er där. **NÄSTA (Marcus, i ordning — HANDOFF i sessionsdok S117 § K-SISTA):** stämpla `s114-segmentlistan-konvergens` via `!` → prod-titt `/mer/segment` → landa `#2269` (backstopp, ready, armera; AC #2 + Done på 379) → beslut spara-delen (`task-271`/`181`/`258`) → 6h-grillningen. **Numrering efter S117:** ADR 131 · kort 380 · L655 (54 fragment) · T184 · session 118. Full narrativ: sessionsdok S117 Del 1–3 + K-SISTA + BUILD-LOG S117-post.
+
+**Session 115 ✅ AVSLUTAD (2026-09-03, AFK-läge på Marcus mandat; `lifecycle: closed`) — AVBOKNING/OMBOKNING I APPEN LANDAD, PROD-INCIDENTEN CECILIA FÖRKLARAD, RIM 3-FYNDEN RÄTTADE.** Prod-incidenten (inbetalning försvann ur inkorgen = flikens minne, `TASK-367`) + prod-Postgres-läsväg (bypass per kommando, research: stående läsroll) → grillning i elva beslut → PRD `TASK-368` + sex skivor. Landat: `368.1` räknarfixen i prod (`#2232`, 213.8/213.9 Done) · `368.2` operationen `cancel-registration` (`#2236`) · `368.3` Avboka/Återta på anmälans sida (`#2246`) · `368.4` **ADR-130** + `rebook-registration` (`#2247`, hög risk, Marcus GO, 3 rundor) · `368.5` ombokningssteget (`#2267`, 3 rundor, Opus→Sonnet-tier-avvikelse vid endpoint-överbelastning bokförd) · `TASK-382` heading-fix (`#2272`) · RIM 3-fynden `TASK-372` (`#2244`, hög risk, Marcus GO) + `TASK-373` (`#2245`) · CI-timeoutfixen `TASK-383` (`#2278`, 12→20 min, fyra `cancelled`-avbrott). **SKÖRD:** 5 fragment i `tasks/lessons.d/` (3 `[UNIVERSAL]`) — mätning som inte isolerar mekanismen bevisar fel sak · icke-ASCII-sökvägars quotepath-fälla i konfliktlösning · `cancelled` vs `failed` i ett CI-jobb utan headroom · kortets facit-manifest måste verifieras mot ytan, inte ur minnet · Opus-överbelastning under bygge räddas via WIP-diff ur den döda worktreen. **NÄSTA:** `368.6` QA-vandring (Marcus) · prod-deploy av `cancel-registration`/`rebook-registration`/`create-registration`/`get-event` + de sex betalnings-EF:erna (Marcus, fas4) · `TASK-381`-beslutet (skäl-fält, Marcus) · `TASK-383` · `TASK-378` (purge-sentinelns blanksteg) · omstämpling av anmälans detaljsida.
+368.7 (pris i get-event + prisbesked före bekräftelse): PR #2280, Opus, review risk låg, konvergerad och armerad; staging-EF:erna get-event/get-events/update-event deployade av orkestreraren. Se Del 7 § 368.7.
+**Numrering efter S115:** ADR 131 · kort 384 · L655 (59 fragment) · T184 · session 118 (S116 och S117 redan landade och stängda under samma dag). Full narrativ: sessionsdok S115 Del 1–7 + BUILD-LOG S115-post.
+
+**Session 114 ✅ AVSLUTAD (2026-09-03, AFK på mandat) — SEGMENT OCH
+INTRESSERADE: VÅG A, VÅG B-SAMSYN, B3 FRÅN KONVERGENS TILL PROD.** Marcus
+sex punkter om Segment-ytan och Intresserade-sidan drevs som våg A
+(mekaniska fixar, `TASK-348`/`349`/`350` Done) + våg B-grillning (sju
+kvitterade beslut, Del 3 — intresserade blir ALDRIG segment, ADR-115 §
+Updates). B3 (Intresserade-listan) itererades K1→K3 mot prod-mätning
+(112 intresserade, 63 namnlösa) till stämplat facit (`b391dffe`) → PRD
+`TASK-374` + fem skivor, promoverade på fullt mandat (*"Du har mandat
+att bedöma skarvarna och gå vidare."*): `374.1` (`#2248`→`bb793c86`),
+`374.2`+`374.3`+`374.4` hopvikta i en landning (`#2263`→`2df040c6`,
+anmälningssidans precedent), `374.4` AC #4 via riktad baseline-PR
+(`#2273`→`6a70368b`), `374.5` QA i staging (prod-punkter som kräver
+inloggning öppna åt Marcus). Prod-deployment `6245094695` success
+13:34 UTC — B3 är i prod. B2 (segmentlistan) togs över av S117
+parallellt. **Handover:** dubblett-e-posten i prod-basen
+(`Kallewestholm@hotmail.com`) · prod-QA-punkterna i `374.5` · VoiceOver-
+stickprovet · 6h-/`271`-grillningen · `#1883`/`#1926` baseline-PR:er ·
+Dependabot `#2050`/`#2159`/`#2160`/`#1826` · T183/arbetssätts-
+effektiviseringen (Marcus: *"vi har planerat att kolla på hur vi jobbar
+för att kunna effektivisera"* — instansdata bokförd på `T183`).
+**Numrering efter S114:** ADR 131 · kort 383 (`task-380` saknas som
+fil, mätt gap, ej utrett) · L655 (57 fragment efter denna landning) ·
+T184 · session 118. Full narrativ: sessionsdok S114 Del 1–6 + Avslut
+K-sista + BUILD-LOG S114-post. **Paus 1 var:**
+(paus 1, 2026-08-31, AFK-mandatet slutfört — nästa steg Marcus
+granskning; landningen olandad fram till resume 1, `#2180`). **Resume
+1 var:** (resume 1, 2026-09-03 — paus-landningen `#2180` hade ALDRIG
+nått `main` [CONFLICTING, 119 bakom], rebasad och landad; B3 itererad
+K2–K3 till stämpelklar, facit landat i `#2233`).
+
+**Session 113 ✅ AVSLUTAD (2026-09-02, K-sista på Marcus förhandskvittens; `lifecycle: closed`; block nedan är historik från resume 5, 2026-08-30 ~19:00 UTC, `lifecycle: active` vid den tidpunkten;
+Marcus: *"Återuppta S113 och kör nattens mandat"* — AFK-NATTEN KÖRS: PRD `TASK-346` Lottas
+betalningsflöde, skivor 346.1–346.13 i våg 1–7 mot staging per sessionsdokets HANDOFF (paus 5,
+nu Paushistorik) med nattmandat B3/B4; löpande läge i Del 12; Marcus promoverar på morgonen;
+paus 5 var 2026-08-30 ~18:50 UTC) — DOKUMENTYTAN BLEV BILAGOR: KORTFORM, ⋯-MENY, HANDLINGSRAD,
+BILAGA-SUBSTANTIVET — LANDAT OCH VERIFIERAT I PROD.** Marcus tre anmärkningar
+före vandringen (T176 · "Event-mallad" · knapparna) → orkestrerarens
+designbedömning mot prod (sex fynd: listan saknade hierarki) → Marcus GO
+(*"Gör om direkt i prod"*, sedan kortform + "bilaga" som substantiv +
+Mer-fliken "Bilagor", explicit kvittens på att höjdlåsets separator-halva
+rivs) → *"fullt AFK-läge … Gör detta ORDENTLIGT!"*. Elva commits, PR `#2123`
+(26 filer), två granskningsrundor (risk låg, loop konvergerad), backstopp
+grön, landade `50c6493d` 22:17Z, Vercel prod success 22:18Z, **prod
+verifierad med eget skript + egna ögon** (h1 Bilagor · Skapa bilaga · kort
+124 px · ingen filterrad · inget Event-mallad). Hookens kod byte-identisk
+med main. Beslut under mandat: kvittots Ladda ner utgår · URL kvar ·
+rullningsskugga · en-radsnamn på mobil. `T176` stängd · `T178` ny (HMR) ·
+`TASK-309.42` Done · 4 lessons-fragment (13 totalt) · ORDLISTA § Bilaga.
+**Numrering:** ADR 128 (346.1 mintar 128+129) · kort 347/346.14 · L655 · T179 · 20
+fragment (RÄTTELSE: resume 4:s "20, inte 19" var fel — README räknades; 19 stämde, nu 20
+efter lagrum-fragmentet) · session 113 (disk-verifierat 2026-08-30 ~19:00 UTC, resume 5 — inga divergenser). Fyra skivor i prod
+(`01c84076`: 309.43/44/45/46), Marcus: *"nu funkar det perfekt"* efter
+rensad site data. **Resume 4 levererat (Del 10):** appvandring (31 skärmdumpar, 6 klick till knappen,
+7 klick + 1 belopp per kvitto, ≈143 för en kurs) + branschresearch (SFL 39:5 verifierat,
+Pretix ordagrant) + `docs/research/kvitto-beslutsunderlag-2026-08-30.md` + artefakten
+*Lottas kvittovandring*. **Grillningen KÖRD (Del 11):** tretton beslut kvitterade — Inbetalningar-tabell i
+Supabase Postgres + spegel i basen, global inkorg, registrera-först-skicka-sedan, kö + cron +
+kick, Swish-import från början, kreditkvitto i v1, universell härledning + backfill; tre
+research-pass + adversarial verifiering (sju blockerare, vågordning). Marcus: *"B4 ja, B3 ja"* → PRD `TASK-346` + 13 skivor (`#2141`). **NÄSTA:**
+NATTENS MANDAT pågår (sessionsdok § Paushistorik paus 5 + Del 12): våg 0–2 KLARA (`346.1`–`346.3`
+Done; ADR-128/129 + basen + Postgres-schemat landade och skarpt bevisade i staging — 5 granskningsrundor
+på #2147, 7 verklighetsfångade buggar fixade; morgonpunkt: radera ERSATT-fältet) → våg 3 KLAR (`346.4`
+Done `5b9ded1a`: nio EF:er deployade, kedjebeviset grönt i sex steg, 3+3 granskningsrundor;
+TASK-347 mintat) → våg 4 KLAR (`346.5`/`346.6`/`346.8`
+Done — kvittomall 0,23 mm, inkorgen med staging-vandring, backfillen efter 4 granskningsrundor
+inkl. prod-preflight + förekomst-grind; datafynd: staging saknar priser utanför ZZ) → våg 5 KLAR (`346.7`
+landad f575d4d1 — Hem/Åtgärder/anmälan/personkort bakom flaggan, 4 sidofiler, 3 egna vandringsfynd
+rättade; `346.11` Done — morgon-runbook 16 steg + färdig checklista) → våg 6 pågår (`346.9` ‖
+`346.10`) → våg 7: slutvandringen → paus 6, seriell staging-applicering, `hog` armeras bara vid
+konvergerad loop, slutvandring i browsern före paus 6 → morgon: Marcus tittar, justerar, promoverar (prod-fält,
+prod-Postgres per runbook 346.11, EF-deploy, flagga, backfill-GO, facit-stämplar) → veto-lista (Marcus: "vi släpper det lite"; +
+ny version-kontroll vid flik-fokus?) (strängbytena i `93dbf275`, tomytan under
+fyra-korts-låset vid 2–3 bilagor — `min(4, n)` föreslaget, URL-bytet som
+kort) → prod-vandringen (testplanen delvis inaktuell efter formbytet) → domar
+`340.5`/`340.4` → skörd (17 fragment) → arbetsforms-grillningen (Del 9 §
+Tidsfrågan) → `session-end` (114). Arbetssätts-frågan (45 %
+bokförings-PR:er, 38 % eskaleringar) är en grillnings-kandidat, Marcus start.
+HANDOFF: sessionsdok S113 § PAUSLÄGE (paus 4). Full narrativ: Del 1–9 (+ tillägg).
+
+**Session 112 ⏸️ PAUSAD (paus 3, 2026-08-28 ~16:30, `lifecycle: paused`; resume 2 körd AFK på
+fullt mandat — "du bestämmer") — AFK-VÅG 5 LANDAD: FLASKHALSEN BRUTEN, REVIEW-GRINDEN MEKANISK,
+REGISTRET RENT.** 21 S112-PR:er + hub-lyft `marcus-system#18`. **Mått:** issues 42 → **1** ·
+grenar 178 → **29** (trigger i heartbeat, `#2042`) · fragment 121 → **0** (L570–L654, vol-08) ·
+pausade dok 8 → **2** (sex stängda via scope-överföring → `TASK-332`, 56 Ö-punkter) · nightly
+3/5 gröna (kvar länkröta `254` + closure `241.5`/`284.4` = Marcus) · Backlog.md 1.50.1 ·
+CI-backstoppen live på merge_group-ytan (`#2049`, första fällning på egen batch) ·
+instrumenteringen (`#2052`) · hooken läser mål (`#2044`, HÖG→låg) · `TASK-334` attribution ·
+`TASK-336` disallowedTools (AC #3 = ny session) · AC-komplettering 12/10/1. **Marcus-listan**
+`tasks/marcus-listan.md` (41 punkter) + artifact. **Numrering:** task-337 → 338 · ADR 127 → 128
+· L654 → L655 · T176 · fragment 0 · session 112. **NÄSTA:** resume → `336` AC #3 (ny agent) +
+`323` AC #2 (≥ 24 h) → Marcus-listan → session-end med skörd (kandidater 25–50). HANDOFF:
+sessionsdok S112 § PAUSLÄGE (paus 3). Full narrativ: Del 7–8.
+
+**Session 112 ▶️ ÅTERUPPTAGEN (resume 2, 2026-08-28, `lifecycle: active`) — ORKESTRERARE +
+PROJEKTLEDARE PÅ FULLT AFK-MANDAT: BORT FRÅN FLASKHALSEN, TILL ETT RENT REPO.** Marcus
+order: *"Återuppta S112 … vad ett RENT och städat läge skulle vara"* + rollen antagen
+(*"Antar du den?"* / *"du bestämmer"*). Huvudkatalogen ägs av S108 resume 13 (pid 77130) —
+S112 i `s112-stadsessionen`, gren `docs/s112-resume-2` från `7a0a2a46`. `#2012` landad
+`27db4d69`. **Numrering mot disk:** task-330 → 331 · ADR 127 → 128 · L533 · **121 fragment**
+(handoff sade 112) · T176 · session 113. **Triagen (Del 7, fyra läs-agenter):** nightly rött
+3 nätter × 5 jobb = fyra registerhygien-skulder + en fixturdrift (`datum`/`eventmatchning`,
+saknar kort) · 42 issues = 42 bot-larm (27 post-merge, 13 ci-natt i obruten följd, 1 lankrota)
+· 8 pausade dok: S92/101/107 absorberade, S96/98 delvis, S99 genuin · backlog 168 öppna =
+STOR inte smutsig (5 landade-ej-flippade, 24 utan AC, `213` obörjad = S113) · trådar 131/175
+öppna, OAVGJORT T01/T17/T19 nu 67–75 d · **178 grenar/154 mergade** (åter sedan 310) ·
+**flaskhalsen: planen finns, 327/323/322 obyggda, 328 väntar Marcus; view 130 s under last.**
+**Beslut (Del 7):** restsamlingen = PRD-kort med referens per scope-punkt + scope-överföring
+som stängningsform (ADR-052-amendering) · larm-issues stängs med motivering · grenstädning
+från worktree som 323:s skarpbevis. **NÄSTA (AFK-våg 5): 327 → 323 → 322 · nightly-städ
+(arkivering, fixtur, 223) · larm-issues · restsamlingen · 173.4/173.6 · AC-komplettering ·
+grenstädning · Marcus-moment orörda (325 · 37 · 326/328/330/254 · bilder · #1957 · dependabot
+· vandringsblocket).** Full narrativ: sessionsdok S112 Del 7.
+
+**Session 112 ⏸️ PAUSAD (paus 2, 2026-08-26 ~07:45, `lifecycle: paused`; resume 1
+körd AFK på fullt mandat) — FIX-VÅG 4 HELT LANDAD, REVIEW-GRINDEN 173.1–173.5
+I DRIFT, FLASKHALSEN UTREDD.** Marcus order: *"Återuppta S112 …"* + kvittens *"Gör det du anser
+vi behöver göra. Var noggrann och chansa aldrig."* **Paus-PR `#1969` landad**
+(`origin/main` `60b5e659`). Huvudkatalogen ägs av **S108 resume 11** (levande,
+pid 23064) — S112 kvar i `s112-stadsessionen`, gren `docs/s112-resume-1`.
+**Numrering re-verifierad mot disk:** task-**320** → 321 · ADR **126** på main
+(127 = `#1932`, EJ landad) · **L533** · 90 fragment · **T176** · session
+**112**. **Avvikelser mot handoffen:** `#1932` var ALDRIG i kön — noll CI på
+head (stackad PR auto-retargetad till `main` utan `pull_request`-event; fix =
+commit på grenen) · closure-grinden **15/650** (`190`/`193` = S112:s egna
+flippar utan `Landning:`-pekare, dolda av karensen) · review-agent-skulden
+**BETALD** (typen laddades mitt i sessionen; utlåtande för `#1932`: risk låg,
+2 info). **Del 5 (05:30, AFK på mandat): fix-våg 4 LANDAD — 17 PR:er, 27 kort;
+closure-grinden 2/661 (bara dina domar 241.5/284.4); `TASK-322`–`328`
+mintade; flaskhals-research landad (globalt create-lås, 2/8 vid 8 agenter);
+18 lessons-fragment.** Kvar i luften: `#1992` (G, fix) · `#2000` (kö) ·
+`173.5` (Opus). **NÄSTA: 173.4/173.6 + stängnings-batch 3 · Marcus-moment:
+`TASK-325` prod-deploy · `TASK-326`/`328` beslut · granskningsfärdiga 22/222/223 ·
+`#1883`→`#1926` · `#1957` · vandringsblocket.** **Del 6 + PAUSLÄGE (07:45):** #1992/#2000/#2007/#2009/#2010 landade;
+`#2012` i kö; closure 2/663; `TASK-329`/`330` mintade; loop-policyfrågan
+öppen. HANDOFF: sessionsdok S112 § PAUSLÄGE — Marcus-momenten (325 prod-deploy ·
+37 audit · 326/328/330 beslut · 22/222/223 Done-flippar · bilder · #1957),
+nästa AFK-våg 173.4/173.6/327/322–324/329. Återupptas via `session-resume`.
+Full narrativ: sessionsdok S112 Del 4–6.
+
+**Session 112 ⏸️ PAUSAD (paus 1, 2026-08-25, `lifecycle: paused`) — STÄDSESSIONEN:
 REGISTRET SANT, REPOT RENT, ROTORSAKER.** Marcus fullt beslutsmandat ("Go
 på alla", 2026-08-24), körs autonomt i worktree `s112-stadsessionen`
 (S108 äger huvudkatalogen). Levererat hittills: closure-grinden 38→4
@@ -29,7 +208,12 @@ S113-dukningen klar (`docs/reference/s113-basmaxning-dukning.md`).
 flip-batch + slutmätning · fix-våg 3 · vandringsblocket efter Marcus
 bildgranskning `#1883`→`#1926` · session-end med skörd). **S113
 RESERVERAD för Airtable-fönstret.** claude.ai-projektkunskapen LÄMNAD
-(TASK-318) — inga Update-klick-moment framgent.
+(TASK-318) — inga Update-klick-moment framgent. **PAUSAD 2026-08-25 efter
+att HELA actionplanen exekverats** (Del 2–3 + slutmätning 14/643 noll
+oskötta; A2-bågen komplett i prod). HANDOFF: sessionsdok S112 § PAUSLÄGE
+— Marcus-momenten dukade (bilder #1883→#1926 · #1957-draften ·
+vandringsblocket · småbesluten), #1932/dependabot-verifikat +
+heartbeat-omstart är resume-steg 1. Återupptas via `session-resume`.
 
 **Session 111 ✅ STÄNGD (2026-08-23, K-sista i AFK-läge på Marcus mandat; `lifecycle: closed`) —
 ANMÄLNINGSSIDAN I PROD: KONVERGENSPASSET HELA VÄGEN, BEVAKNINGSRADERNA I NY
@@ -425,6 +609,187 @@ direkt · notis-prototypen, EN variant itererad per `ADR-121` beslut 6.**
 Numrering efter S109: ADR 122 · kort 284 (om `#1674` landat) · L512 + 55
 fragment · T158 · f52 · session 111. Full narrativ: sessionsdok S109 Del 1–4 +
 PAUSLÄGE.
+
+**Session 108 ✅ K-SISTA KLAR (2026-08-28, STÄNGD 2026-08-28 efter Marcus
+kvittens, `lifecycle: closed`, nästa session 113) — HELA BILAGESPÅRET I PROD: NIO PR:ER LANDADE, 45 EF
+DEPLOYADE 04:06–04:17Z, DOKUMENT/BILAGOR/KVITTON LIVE INFÖR LOTTAS SÖNDAG.**
+Marcus mål för resumen — *"komma hela vägen till session-end"* — nått för allt
+som är agent-görbart. **Landat på `main`:** `#2030` · `#2031` (`309.29`,
+s102-pensioneringen) · `#2034` (`301`, docraptor-sjalvbarande) · `#2037`
+(stängningssvansen, nio kort — inte tre som handoffen sade) · `#2038` (`309.30`,
+Plats härledd ur Ort) · `#2040` (`309.26`, popup-bevis i äkta Chrome) · `#2039`
+(lessons `L533`–`L569`) · `#2036` (fyra kort mintade) · `#2032` (`309.31`,
+`check-facit` varnar; `ADR-102` § Updates) · `#2053` (`333`, testdriften) ·
+`#2054` (`309.34` skiva i, `b370e6cb` 04:42:59Z) — elva landningar totalt;
+`#2055` kvar som draft (rundtaket nått, `review-loop-beslut` exit 20 — runda 2:s
+fix införde ett nytt error, felmeddelandet nollställdes inte vid platsbyte; nu
+rättat och pushat som `0fcfc4c8` men OGRANSKAT — runda 3 kräver Marcus GO) och
+`#2060` (stängningsbatch 2) MERGED `372050bd` 05:23:48Z.
+**PROD tog tre försök, och de TVÅ första gick
+båda via `!`-kanalen med OLIKA utfall vid tvåminuterstaket:** (1) harnesset
+flyttade körningen till BAKGRUNDEN (*"moved to the background"*), den fortsatte
+och föll på Cloudflare 520 vid funktion 26/45 — skriptet avbröt korrekt och
+återlänkade staging själv; (2) omkörningen DÖDADES i stället (*"Command timed
+out after 2m 0s"*) vid ~5/45 (`get-event-formats`), EXIT-trapen kördes aldrig
+och katalogen stod sticky länkad mot PROD i ~10 min; (3) eget terminalfönster,
+45 EF `UPDATED_AT` 04:06–04:17Z. Poängen: kanalens beteende vid taket är INTE
+förutsägbart. `CLAUDE.md`
+§ Prod-EF-deploy nu skärpt PER LÄGE (`--kontrollera` via `!` OK, `--deploya`
+aldrig) med rivningen bokförd — granskaren på `#2060` fällde den första,
+motsägande formuleringen; preflight-fyndet är `TASK-337`.
+**Hub:** `marcus-system` `73803d74` (`K108.1`–`K108.30`). **Fynd:** `TASK-333`
+`334` (S112:s) `335` + `TASK-337` (fas4-preflighten, i `#2060`) + `TASK-309.37`
+(ärvd race, i `#2055`); `git stash` delas mellan worktrees (S112 mintar).
+**MARCUS SKULD, åtta punkter:** prod-röktest `309.11` ·
+facit-stämpling (s108-generering, s108-dokumentytan, s106/s111 med `--ersatt`) ·
+DocRaptor-rotation i BÅDA miljöer · `325` AC #2 · `INVITE_REDIRECT_URL` ·
+`DOCRAPTOR_API_KEY` som GitHub-secret · GO/STOPP för `#2055`:s runda 3 ·
+coverage-kvittens. **CI-hygien:** post-merge GRÖN på `b370e6cb`
+(run `33142610595`), S108:s fyra larm-issues stängda, worktree-städningen körd
+(8 borttagna, 13 kvar) — enda öppna issue i repot är `#1482` (`TASK-254`). **Numrering vid K-sista (disk-mätt mot `ecc324b1`):** ADR 128 ·
+kort 337/`309.37` mintade men ej landade → nästa 338/`309.38` (336 togs av S112) ·
+`L570` · 85 fragment · `T176` · session 113. **NÄSTA (S113): `309.34` skiva (ii) ·
+`309.35` · `309.33` (d) · `#2055` runda 3 eller omtag · `TASK-309.37` · hela
+lessons-katalogen = egen planerad session per Marcus beslut A.** Full narrativ:
+sessionsdok S108 Del 29 + § K-SISTA.
+
+**Session 108 ▶️ ÅTERUPPTAGEN (2026-08-28, `lifecycle: active`, trettonde
+resumen; pausad tolv gånger, historik) — MÅLET ÄR SESSION-END: LOTTA ÄR I
+APPEN PÅ SÖNDAG, DOKUMENT/BILAGOR/KVITTON SKA FUNGERA HELT.** Marcus order:
+*"Återuppta S108. Gå igenom och kartlägg exakt allt som är kvar att göra …
+Sätt ut agenter på allt som går att utföra direkt … Målet med denna session
+är att komma hela vägen till session-end."* LÄS-fasen mätt: `#2028`
+(höjdanpassningen) **landad** `a620b3f4` 18:01:57Z — live i `main`, **inte i
+prod** (kräver en andra EF-deploy, Marcus kanal); huvudkatalogen bär MIN
+ägarlapp, ingen parallell session; numreringen håller på alla sex serier
+(ADR 128 · kort 331/`309.33` · L533 · 121 fragment · T176 · session 113).
+**Divergens mot handoffen, disk vinner:** Cavolini-filerna FINNS på maskinen
+(`~/.miranon-fonts/`, fyra vikter sedan 2026-08-19) — bara den git-ignorerade
+symlänken saknas i huvudkatalogen; och EF-lagret bundlar Cavolini ALDRIG per
+design (`mall-render.ts` § FONT_BASE64_PER_FILNAMN), så prod renderar Comic
+Neue oavsett symlänk — "Cavolini-beslutet" är ett licens-/designbeslut om
+prod, inte en saknad fil. Heartbeat `bku4n5wpr`. Kartläggningen delegerad;
+agenter sätts ut på allt delegerbart. Full narrativ: sessionsdok S108 Del 29.
+
+**Session 108 ⏸️ PAUSAD (tolfte gången, 2026-08-27, `lifecycle: paused`) —
+BILAGE-MALLEN I PROD TILL FÖRLAGE-PARITET; KVAR ÄR MARCUS PROD-RÖKTEST,
+CAVOLINI OCH K-SISTA (SESSIONSDOK S108 § PAUSLÄGE TOLFTE → MARCUS-SEKVENS).**
+Resume 13 löste **rotorsaken**: bilagan blev två sidor oavsett innehåll för att
+Prince saknar `align-self: stretch` i row-containers — Del 26:s "knivsegg" och
+de tolv EF-deployerna (v37→v49) mätte den buggen. Byggde **den lokala
+PDF-loopen** (`npm run mall:pdf`, ~5 s mot tidigare ~45 min) efter Marcus fråga
+*"Håller proffs också på så här?"*. **Marcus fyra fångster**, alla verkliga: sex
+saknade agendapunkter i BÅDA baserna (Dag Två 10→16) · fetstilen borta sedan
+`TASK-309.4` (fyra dagar, inte tre veckor som jag påstod) · förlagornas sökväg
+obokförd · en vakt som bara täckte RIM 1. Landade `#2019` `#2020` `#2022`
+`#2024` `#2025`; `#2028` (höjdanpassningen) i kön vid paus. **PROD DEPLOYAD
+17:35:45 UTC** — 45 EF:er, `generate-event-attachment` v11, förkraven
+hash-verifierade. Bilagan är nu i paritet med förlagan **utom rubrikens
+typsnitt** (ComicNeue i stället för Cavolini, 80 % av bredden — kräver Marcus
+besked om var filen finns). Numrering vid paus 12: ADR **128** ·
+task-**331**/`309.33` · **L533** · **121 fragment** · **T176** · session
+**113**. Full handoff: sessionsdok S108 § PAUSLÄGE (tolfte) + Del 27–28.
+
+**Session 108 ▶️ ÅTERUPPTAGEN (2026-08-26, `lifecycle: active`, tolfte resumen;
+pausad elva gånger, historik) — PAUS-LANDNINGEN DIAGNOSTISERAD: `#2015` FÖLL
+INTE PÅ SIN DIFF UTAN PÅ EN ZOMBIE-KÖRNING FRÅN AKTIONS-LÅSET.** Marcus order:
+*"Återuppta S108. Jag vill få klart de här nu. Förra resumen fick problem med
+paus-landningen så du får kolla upp vad som är problemet och lösa det."* Mätt
+15:45 UTC: CI-run `32985153863` `queued` i 19 min med **noll jobb**, CodeQL
+`startup_failure` (ej omkörbar), noll check-runs på paus-SHA:n,
+`mergeStateStatus: BLOCKED` trots `MERGEABLE` — och **ingenting hade kört i
+repot sedan 14:48:52Z**. Åtgärd: resume-commiten ÄR det nya SHA:t (paus +
+resume i samma PR `#2015`, push-ekonomin per `ADR-097`). Del 26 § B:s
+*"14:24–16:30 UTC"* rättad — mätt lås-fönster **14:24–14:36 UTC**, den övre
+gränsen var lokal tid, och låset var **inte** över: symptomet återkom 15:25
+UTC. **Marcus-sekvensen (§ Paushistorik 11) står oförändrad:** `#2014` beslut
+A/C/D → prod-EF-deploy → röktest → facit-stämpling → nyckelrotation. Full
+narrativ: sessionsdok S108 Del 27.
+
+**Session 108 ⏸️ PAUSAD (elfte gången, 2026-08-26, `lifecycle: paused`) —
+BILAGE-SPÅRET I PROD UTOM MALLENS B-VÄRDE OCH EF-DEPLOYEN; KVAR ÄR MARCUS TRE
+MOMENT (SESSIONSDOK S108 § PAUSLÄGE ELFTE → MARCUS-SEKVENS).** Resume 11
+landade **tolv** S108-PR:er (`#1971` `#1972` `#1977` `#1979` `#1984` `#1990`
+`#1991` `#1994` `#1995` `#1996` `#1998` `#2002` `#2003` `#2005` `#2006`
+`#2008` `#2011` `#1983`); i prod (Vercel): `309.18` `.19` `.20` `.23` `.24`
+`.25` `.26` `.28`. **Plats-backfill 27/27** i prod på Marcus GO.
+Review-grinden skarp: 12 utlåtanden, sex verkliga fel fångade (bl.a.
+`document.write`-kollision reproducerad i Chromium, ASCII-hash-kollisioner).
+**Faktureringslås** på GitHub Actions ~14:24–16:30 UTC (prövperioden
+utgången → Enterprise Cloud tecknat). **Orkestrerarfel:** "B stängt"
+accepterades utan att läsa vad som mätts — Marcus pushback; mätserien
+beställd. `#2014` (draft, väntar Marcus beslut A/C/D vid resume (mätserien i PR-kroppen, staging v49 = PR-innehållet)). Prod-EF: EJ deployad — Marcus-moment vid resume (`fas4-prod-deploy.sh`; på `main` väntar `#1939` `#1983` + S112:s `#1940` `#1954` `#1981` `#1988`; `#2014` efter A/C/D). Numrering vid
+paus 11: ADR **128** · task-**331**/`309.33` · **L533** · 118 fragment ·
+**T176** · f53 · session **113**. Full handoff: sessionsdok S108 § PAUSLÄGE
+(elfte) + Del 24–26.
+
+**Session 108 ▶️ ÅTERUPPTAGEN (2026-08-26, `lifecycle: active`, elfte resumen;
+pausad tio gånger, historik) — LÄGET RE-MÄTT MOT `origin/main` `60b5e659`:
+ALLT ÄR LIVE I PROD, KVAR ÄR MARCUS VERIFIERING OCH BESLUT.** Handoff mot
+disk: paus-PR `#1970` landad · `TASK-309` 12 Done / 10 öppna · båda facit-
+manifesten `godkand: null` · numreringen OFÖRÄNDRAD sedan paus 10 (ADR 127 ·
+task-321 · L533 · T176 · session 113) · huvudkatalogen fast-forwardad
+`f5ed41d2` → `60b5e659` · **dev-servern DÖD** (den förutsagda risken) ·
+S112 pausad parallellt, ingen öppen PR är S108:s. Live-belägg: Vercel
+Production `60b5e659` 2026-08-25T15:00:31Z, prod-schema + 45/45 EF:er sedan
+2026-08-24. **MARCUS-SEKVENS (sessionsdok Del 23 § C):** GO på `309.20`-agent
+→ röktest i prod (`309.11`, nio punkter) → nyckelrotation (§ (g)) →
+stämpling efter `309.20` → `309.8` AC #3/#4 · `ADR-060` · `309.18`/`.19`/`.21`
+→ agent-svans + K-sista. Full narrativ: sessionsdok S108 Del 23. **AFK-natten (Del 25):** `#1990` `#1991` `#1994` `#1995` `#1996` `#1998` `#2002` `#2003` `#2005` `#2006` landade — i prod: `309.18` `.19` `.20` `.23` `.25` `.26` `.28` · `#1996` tog fyra review-rundor (document.write-kollision empiriskt fångad) · S112:s fixturflytt `#2000` fällde `#1996` i merge-gruppen (rättad) · kvar: `#1983` (hög risk, Marcus) · `#2008` (`309.24` r2) · `309.27` (HITL). **Forts. (Del 24):** Marcus prod-röktest → sju kort `309.22`–`.28` · **Plats-backfill 27/27 i prod** (Marcus GO) · `#1979` + `#1977` köade, `#1983` (Invalid key) under review · review-agent skarp ×3 · S112 kör AFK-fleet parallellt (prio S108) · **Marcus mandat** → `309.18` riv, `309.19` riv, `309.21` pensionera, `ADR-060` godkänd, `309.8` AC #3 omskrivet · **DEADLINE: Lotta testar i helgen 2026-08-29** — morgonsekvens i Del 24 § G.
+
+**Session 108 ⏸️ PAUSAD (tionde gången, 2026-08-25, `lifecycle: paused`) —
+PROMOVERINGEN ÄR I PROD; KORTFAMILJEN HALVSTÄNGD; ALLT SOM ÅTERSTÅR KRÄVER
+MARCUS BESLUT (SESSIONSDOK S108 § PAUSLÄGE TIONDE → MARCUS-SEKVENS).**
+Resume 10 landade **21 PR:er**. `#1889` merge `24c39777` 17:00:37Z → Vercel
+Production 17:01:13Z; prod verifierat med `git merge-base --is-ancestor` mot
+deploy-SHA, inte med stränglätning i bundle. `TASK-309`-familjen: **12 Done**
+(`.1`–`.7`, `.12`–`.16`), 10 öppna — closure-grinden fäller **noll**
+309-kort. Fragment-katalogen 65 → **89**. Efter-körning-purgen skarpt bevisad
+i post-merge (`ADR-060` punkt 3 amenderad av agent — **Marcus bör granska**).
+Skiva 9:s facit levererat: 22 bilder + 2 manifest, båda `godkand: null`.
+**SEX AV ÅTTA AGENTER RÄTTADE ORKESTRERARENS EGET UNDERLAG** — fragment-talet
+(66→65), testevent-antalet (44→55, 151 över fem familjer), den falska
+förklaringen att setup-purgen inte kör efter, `ADR-109`:s upphävda momsrad,
+ett `dvh`-påstående, och att block-dialogens datum-läge skulle vara nåbart
+(**död kod** — falsifierar `TASK-309.17`). **TRE FYND INGEN LETADE EFTER:**
+två Airtable-rader kvar i **27 och 32 dygn** utan matchande purge-target ·
+runbookens mall bar `fullPage: true` och **lärde ut** buggen · `s102`:s
+stämplade facit vaktas av **ingenting**. **Lessons-konsolideringen STOPPAD
+med avsikt** — 65 av 89 fragment tillhör andra sessioner. **TIDSKRITISKT VID
+RESUME: `TASK-309.20`** (två formdefekter vid 375 px som facit fryser om
+stämplingen sker före fixen). Därefter `309.8` AC #3 · `ADR-060`-granskningen
+· stämpling · röktest · nyckelrotation · `309.18`/`.19`/`.21`.
+Numrering vid paus 10: ADR **127** · task-**321** · **L533** · 89 fragment ·
+**T176** · f53 · session **113**. Dev-servern lämnad igång på `localhost:5173`
+mot staging. Full handoff: sessionsdok S108 § PAUSLÄGE (tionde) + Del 20–22.
+
+**Session 108 🤖 ORKESTRERINGS-PASS (2026-08-24, `lifecycle: active`, tionde
+resumen forts.) — PROMOVERINGEN I PROD, ÅTTA AGENTER, NITTON LANDNINGAR,
+KORTFAMILJEN 0 → 12 STÄNGDA.** Marcus AFK med order att delegera allt
+delegerbart och köra så långt möjligt. **`#1889` landad 17:00:37Z
+(`24c39777`)** → Vercel Production 17:01:13Z; prod verifierat via
+`git merge-base --is-ancestor` mot deploy-SHA, inte via stränglätning i
+bundle. Landat i övrigt: `309.1`–`.7` stängda (`#1946`) · `309.12`–`.16`
+stängda (`#1947`/`#1951`/`#1965`) · **efter-körning-purgen** (`#1956`,
+`ADR-060` punkt 3 amenderad — **Marcus bör granska**) · **skiva 9:s facit**
+(`#1961`, 22 bilder + 2 manifest, båda `godkand: null`) · 24 lessons-fragment
+(65 → 89) · `ADR-109`-indexraden · runbookens `fullPage`-fälla · 11 döda
+filreferenser. **SEX AGENTER RÄTTADE MITT EGET UNDERLAG** — fragment-talet
+(66→65), testevent-antalet (44→55, och 151 över fem familjer), min falska
+förklaring att setup-purgen inte kör efter, `ADR-109`:s upphävda momsrad,
+och att block-dialogens datum-läge skulle vara nåbart (det är **död kod**,
+falsifierar mitt eget `TASK-309.17`). **TRE FYND INGEN LETADE EFTER:** två
+Airtable-rader kvar i **27 och 32 dygn** utan matchande purge-target ·
+runbookens mall bar `fullPage: true` och **lärde ut** buggen · `s102`:s
+stämplade facit vaktas av **ingenting** (innehållslåset gäller bara ytor med
+`referenser`-nyckel). **Nya kort:** `309.15`–`.21`. **Lessons-konsolideringen
+STOPPAD med avsikt** — 65 av 89 fragment tillhör andra sessioner; ett
+fragment är en fullgod leverans. **KVAR FÖR MARCUS:** `309.8` AC #3
+(ordalydelsen "identisk med prototypen" är inte längre sann) · `ADR-060`-
+amenderingen · **`309.20` är tidskritisk** (två formdefekter vid 375 px som
+facit fryser om du stämplar före fix) · prod-röktest · DocRaptor-rotation ·
+facit-stämpling · `byggplan.md` §2 saknar hela spåret · `CHANGELOG`
+`[Unreleased]` tom sedan `0.8.0`. Full narrativ: sessionsdok S108 Del 22.
 
 **Session 108 ▶️ ÅTERUPPTAGEN (2026-08-24, `lifecycle: active`, tionde resumen;
 pausad nio gånger, historik) — LÄGET RE-MÄTT MOT `origin/main`,

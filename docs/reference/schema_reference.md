@@ -119,12 +119,12 @@ Utskickslogg ←→ Email Opens          (via Utskickslogg.Antal öppnade mail �
 | Startdatum | `fldBYhXEHLCd1o2Je` | date | ISO (YYYY-MM-DD) |
 | Slutdatum | `fldUMB4x3OyGQ31aL` | date | ISO (YYYY-MM-DD) |
 | Max antal platser | `fldbyEz8djcxCBO5r` | number | heltal |
-| Antal anmälningar | `fldU5MCQmagdHtz4G` | count | Räknar records i Anmälningar (länkat fält) |
+| Antal anmälningar | `fldU5MCQmagdHtz4G` | count | Räknar records i Anmälningar (länkat fält). **Not, ändrad 2026-09-03 (`TASK-213.9`):** fältet självt är OFÖRÄNDRAT (räknar fortfarande alla, inkl. avbokade/inställda — medvetet, Verksamhetspuls-interfacet). Ett NYTT fält `Antal aktiva anmälningar` tillkom i stället; se `data-model.md` § Fält tillagda 2026-09-03. |
 | Manuella platser | `fld8pUb6x2G3YIovs` | number | heltal. Anmälningar utanför formuläret |
 | Extra platser | `fldIHwVr8Wq5tp4o6` | number | heltal. Reserverade av Roger och Lotta |
 | Arrangörsplatser | `fldfrlZcRW3PGILiN` | number | heltal |
-| Antal anmälda | `fldTQkYOz9O2BGEIZ` | formula | `{Antal anmälningar} + {Manuella platser}` → heltal |
-| Anmäld beläggning (%) | `fldqkyeE7cVHMNRpH` | formula | `{Antal anmälda} / {Max antal platser}` → procent |
+| Antal anmälda | `fldTQkYOz9O2BGEIZ` | formula | `{Antal anmälningar} + {Manuella platser}` → heltal. **Not, ändrad 2026-09-03 (`TASK-213.9`):** Antal anmälda bygger nu på Antal aktiva anmälningar (`{Antal aktiva anmälningar} + {Manuella platser}`), inte längre på det ovillkorade Antal anmälningar — se `data-model.md` § Fält tillagda 2026-09-03. |
+| Anmäld beläggning (%) | `fldqkyeE7cVHMNRpH` | formula | `{Antal anmälda} / {Max antal platser}` → procent. **Not:** täljaren ändrades indirekt 2026-09-03 via Antal anmälda ovan; formeln själv oförändrad. |
 | Anmälningar (länkat fält) | `fldUAjTutSM0fziMT` | multipleRecordLinks | → Anmälningar (via `fldi3enUaMdbuGSlm`). Spegelfält – ändra alltid från Anmälningar |
 | Vi kommer! | `fldKYJ6X1TYoYXAZt` | lookup | Via Anmälningar → Person (lookup av Person-länk) |
 | Säsong | `fldBO6FGQeP7Qh8f4` | formula | SWITCH på månad → "❄️ Vinter", "🌱 Vår", "☀️ Sommar", "🍂 Höst" |
@@ -212,7 +212,7 @@ Utskickslogg ←→ Email Opens          (via Utskickslogg.Antal öppnade mail �
 | Inskickad | `fldNtSHQivkL26B6L` | dateTime | — |
 | Deltaganden | `fldgKGmudjmdD6eQJ` | multipleRecordLinks | → Deltaganden (via `fldwQdDpRK8vByNhb`) |
 | Motivering (sammanfattning) | `fldrMT8cWP3NmBc9T` | formula | Kombinerar Event-namn + Ort + Startdatum + Motiveringstext |
-| Är aktiv (1/0) | `fld4j7PeckDViTdIB` | formula | `IF(Status="Avbokad/Ombokad", 0, 1)` → heltal |
+| Är aktiv (1/0) | `fld4j7PeckDViTdIB` | formula | `IF(Status="Avbokad/Ombokad", 0, 1)` → heltal. **Not, ändrad 2026-09-03 (`TASK-213.8`):** formeln utökades till `IF(OR(Status="Avbokad/Ombokad", Status="Inställt"), 0, 1)` — se `data-model.md` § Kända fällor post 27 (ÅTGÄRDAD) och § Fält tillagda 2026-09-03. |
 | Är avbokad/ombokad (1/0) | `fld7KFhNH6vtM1L4A` | formula | `IF(Status="Avbokad/Ombokad", 1, 0)` → heltal |
 | Frågor eller funderingar? | `fldtaSHOvGjgu9v39` | multilineText | Formulärfält (psionautics.se) |
 | Uppdatera mig om fler event? | `fldeBejosU8PzDtQM` | singleLineText | Formulärfält (psionautics.se) |

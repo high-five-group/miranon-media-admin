@@ -2,6 +2,8 @@ import type {
   Attachment,
   AttachmentDownloadUrl,
   DocumentPreview,
+  SkapadEventBilaga,
+  UpdateAttachmentScopeInput,
   UploadAttachmentInput,
 } from '../../domain/models/Attachment';
 import type {
@@ -20,17 +22,30 @@ import type { CreateRegistrationInput, Registration } from '../../domain/models/
 import type { WaitlistEntry } from '../../domain/models/WaitlistEntry';
 import type {
   ActivityStatement,
+  CancelRegistrationInput,
+  CancelRegistrationResult,
   ConfirmRegistrationsInput,
   ConfirmRegistrationsResult,
   CreatedEvent,
   CreateEventInput,
   EventFormat,
   EventinnehallListItem,
+  HanteraInbetalningResult,
+  Inbetalningslista,
   Intresserad,
+  Jobbstatus,
+  KoaKvittonInput,
+  KoaKvittonResult,
+  Kvittolank,
+  OppnaBetalningar,
   PersonDetail,
   PlaceListItem,
+  RebookRegistrationInput,
+  RebookRegistrationResult,
   RecordActivityResult,
   RegistrationDetail,
+  RegistreraInbetalningInput,
+  RegistreraInbetalningResult,
   SavedSegment,
   SaveEventContentInput,
   SaveEventTextInput,
@@ -45,6 +60,8 @@ import type {
   SendActionTestEmailResult,
   SendReceiptInput,
   SendReceiptResult,
+  SkickaKvittoIgenInput,
+  SkickaKvittoIgenResult,
   UpdateEventInput,
 } from '../../domain/schemas';
 import type {
@@ -282,6 +299,44 @@ export interface DataSourceAdapter {
   confirmRegistrations(input: ConfirmRegistrationsInput): Promise<ConfirmRegistrationsResult>;
 
   /**
+   * Avboka en aktiv anmälan (TASK-368.2, PRD TASK-368 beslut 1/3). Servern
+   * sätter Status till "Avbokad/Ombokad", speglar skälet som en datum-
+   * stämplad rad i anmälans Notering (befintlig text bevaras) och loggar
+   * handlingen — allt i EN operation (`cancel-registration`-EF:en). Endast
+   * en AKTIV anmälan (Bekräftad/Betalningspåminnelse/Obekräftad) kan
+   * avbokas; alla andra statusar avvisas med 409.
+   */
+  avbokaAnmalan(input: CancelRegistrationInput): Promise<CancelRegistrationResult>;
+
+  /**
+   * Återta en avbokning (TASK-368.2, PRD TASK-368 beslut 4). Samma EF som
+   * `avbokaAnmalan` (`atgard: 'aterta'`) — statusen härleds SERVER-SIDE ur
+   * bekräftelsedatumet (satt → "Bekräftad (mail skickat)", annars
+   * "Obekräftad"), aldrig vald av klienten. Endast en avbokad anmälan kan
+   * återtas; allt annat avvisas med 409.
+   */
+  atertaAvbokning(input: CancelRegistrationInput): Promise<CancelRegistrationResult>;
+
+  /**
+   * Boka om en anmälan till ett annat event (TASK-368.4, PRD TASK-368
+   * beslut 7-8, ADR-130). EN operation (`rebook-registration`-EF:en) som
+   * skapar den nya anmälan på det valda eventet, flyttar personens AKTIVA
+   * inbetalningar dit (kvittot rörs aldrig), sätter den gamla till
+   * "Avbokad/Ombokad" med en datumstämplad Ombokad-rad i Notering, räknar om
+   * basens spegel på BÅDA anmälningarna och loggar handlingen.
+   *
+   * Endast en AKTIV anmälan kan bokas om, aldrig till det event den redan
+   * sitter på, och aldrig till ett event personen redan har en anmälan på
+   * (`redan_anmald_pa_malet`) — pengar slås aldrig ihop mellan två anmälningar
+   * automatiskt (ADR-130). Alla tre avvisas med 409.
+   *
+   * Ett omanrop av en REDAN UTFÖRD ombokning är däremot ofarligt: servern
+   * känner igen den på gamla anmälans status plus dess Ombokad-rad och svarar
+   * `aterupptaget: true` utan att skriva något.
+   */
+  bokaOmAnmalan(input: RebookRegistrationInput): Promise<RebookRegistrationResult>;
+
+  /**
    * Skicka ett åtgärdsutskick (TASK-147.2, ADR-067-revisionen): SERVERN skickar
    * mailet OCH skriver åtgärdens stämpel-fält (per typ — `_shared/send-action-
    * email.ts` § `stampFieldsFor`) i samma operation, den bilage-fria batchgrenen
@@ -390,6 +445,15 @@ export interface DataSourceAdapter {
    * (valfria — se `UploadAttachmentInput`) trär igenom till BÅDA mönstren
    * oförändrat; `eventId` FÖRBLIR obligatoriskt oavsett räckvidd (se
    * modellens docblock för det medvetna skälet).
+   *
+   * [UTBYGGD, TASK-338.3, ADR-125 § Beslut 1] `input.plats` är den TREDJE
+   * räckviddsaxeln och trär igenom likadant — ett Platser-RECORD-ID, aldrig
+   * ett namn. VALIDERINGEN AV DEN BOR SERVER-SIDE, i två lager: Zod prövar
+   * FORMEN (`rec…`), och den skrivande EF:en prövar att raden FAKTISKT finns
+   * (`platsFinns`, `_shared/attachments.ts`) innan skrivning. Adaptern
+   * kontrollerar ingetdera med avsikt — en klientsidig existenskontroll hade
+   * krävt en egen Platser-hämtning och därmed en andra sanning om vad som
+   * finns (ADR-057: valideringen bor i EF/_shared, aldrig i klienten).
    */
   uploadAttachment(input: UploadAttachmentInput): Promise<Attachment>;
 
@@ -411,6 +475,13 @@ export interface DataSourceAdapter {
    * EGNA + KURSTYP-matchande + ALLA-EVENT-bilagor (server-side, `get-event-
    * attachments`) — gemensamma bilagor syns automatiskt, märkta med sin
    * `rackvidd` (se `Attachment`-modellens docblock för badge-underlaget).
+   *
+   * [OMBYGGD, TASK-338.3, ADR-125 § Beslut 1] Unionen är NU eventets EGNA +
+   * de `Gemensam`-bilagor vars satta axlar (Kursfamilj · Kursnivå · Plats)
+   * alla matchar eventet. Matchningen sker SERVER-SIDE i
+   * `_shared/rackvidd-matchning.ts` — klienten tar emot en färdig lista och
+   * filtrerar aldrig själv (ADR-057). Varje post bär numera också `plats`,
+   * upplöst till `{ id, namn }` av EF:ens `Platsnamn`-lookup.
    */
   fetchEventAttachments(eventId: string): Promise<Attachment[]>;
 
@@ -419,9 +490,19 @@ export interface DataSourceAdapter {
    * Dokument-ytans RÄCKVIDDSLÄGE (läget utan valt event, ORDLISTA.md §
    * Gemensam bilaga). GET mot get-event-attachments-EF:en UTAN `eventId`
    * (den nya, valfria query-param-formen) — SAMMA endpoint som
-   * `fetchEventAttachments`, en annan gren server-side (ingen eventunion,
-   * bara `Räckvidd IN (Kurstyp, Alla event)`, se get-event-attachments/
-   * index.ts § filhuvudet). EGEN adapter-metod i stället för att göra
+   * `fetchEventAttachments`, en annan gren server-side (ingen eventunion).
+   *
+   * [PREMISSEN SKÄRPT, TASK-338.3 runda 3] Den gamla lydelsen sade `Räckvidd
+   * IN (Kurstyp, Alla event)` (TASK-275.2:s tre rivna filterByFormula-
+   * mängder); min egen första rättelse sade `Räckvidd = Gemensam`, vilket är
+   * närmare men fortfarande inte vad EF:en gör. FAKTISKT, sedan TASK-338.2:
+   * en hämtning med `NOT({Räckvidd} = 'Event')` — en medveten SUPERMÄNGD —
+   * följd av kod-grinden `arGemensam` efter normalisering. Två steg, inte
+   * ett, eftersom formeln måste släppa igenom legacy-värdena (som
+   * normaliseras till Gemensam i kod) men koden måste hålla ute raderna med
+   * TOMT `Räckvidd`. Se get-event-attachments/index.ts § fetchAllaGemensamma.
+   *
+   * EGEN adapter-metod i stället för att göra
    * `fetchEventAttachments`s `eventId`-parameter valfri: två genuint olika
    * frågor (ett events dokument vs. ALLA gemensamma dokument) förtjänar
    * varsitt namn — "håll adapter-API:t smalt och välnamnat" gäller åt båda
@@ -456,6 +537,35 @@ export interface DataSourceAdapter {
    * filhuvudet för den fulla auktorisationslogiken.
    */
   deleteAttachment(eventId: string | null, attachmentId: string): Promise<void>;
+
+  /**
+   * [TASK-338.4, ADR-125 § Beslut 1] Ändra RÄCKVIDDEN på en redan uppladdad
+   * DELAD bilaga — Lottas "Ändra räckvidd" i räckviddsläget. POST mot
+   * update-attachment-scope-EF:en, som svarar med den uppdaterade raden i
+   * samma `Attachment`-form som `fetchEventAttachments`.
+   *
+   * VARFÖR EN EGEN METOD OCH INTE `uploadAttachment` MED SAMMA `id`: det
+   * finns ingen ny FIL. Före denna metod var enda vägen att rätta en
+   * felklassad delad bilaga att radera raden och ladda upp filen igen (PRD
+   * TASK-338 berättelse 8) — bilagan bytte då `id`, tappade sitt
+   * `Skapad`-datum och passerade Storage i onödan. Här ändras bara de tre
+   * axlarna; `id`, bytesen och historiken står kvar.
+   *
+   * TOMMA AXLAR RENSAS, inte utelämnas. `kursfamilj: undefined` betyder
+   * "denna bilaga ska INTE vara familjebunden", inte "rör inte familjen" —
+   * annars hade Lotta inte kunnat bredda en bilaga från "RIM · Rönninge"
+   * till bara "Rönninge". Servern skriver alla fyra fälten vid varje anrop
+   * (`buildScopeUpdateFields`), så anroparen skickar ALLTID hela det
+   * önskade sluttillståndet, aldrig en delmängd.
+   *
+   * SERVERN ÄGER VAKTERNA, inte klienten (ADR-057): räckvidden på raden
+   * måste redan vara gemensam (403), dokumentklassen måste vara `Uppladdad`
+   * (403), plats-ID:t måste finnas i Platser (404), och ett familje-byte som
+   * skulle flytta filens lagringsplats nekas (409). Klienten kan visa
+   * felet — den får aldrig avgöra saken själv. Se update-attachment-scope/
+   * index.ts § VAKTERNA.
+   */
+  updateAttachmentScope(input: UpdateAttachmentScopeInput): Promise<Attachment>;
 
   /**
    * Hämta en TIDSBEGRÄNSAD signerad nedladdnings-/förhandsvisnings-URL för
@@ -528,12 +638,35 @@ export interface DataSourceAdapter {
    * `ersatt`, satt till ett befintligt Event-mallat bilage-ID, regenererar
    * SAMMA rad (ADR-125 § 3 "regenerering är ERSÄTTNING") i stället för att
    * skapa en ny — servern verifierar ägarskap/dokumentklass/mall-matchning
-   * (se EF:ens filhuvud). Utelämnad: en NY rad skapas alltid (genererings-
-   * vyns "Skapa"-knapp, AC #3) — upprepade klick kan därför ge dubbletter,
-   * samma synliga "+N äldre filer"-grupp som redan gäller uppladdade filer
-   * (`DokumentYta.tsx` § grupperaPerNamn).
+   * (se EF:ens filhuvud). Det är listans "Skapa om"-väg.
+   *
+   * [ÄNDRAT, TASK-340.1 → TASK-340.2, PRD `TASK-340` § Implementationsbeslut E]
+   * ETT UTELÄMNAT `ersatt` SKAPAR INTE LÄNGRE ALLTID EN NY RAD. Finns redan
+   * en Event-mallad rad för (event × `Mall`) väljer SERVERN ersätt-vägen
+   * själv (uppslag på eventets omvända `Bilagor`-länk) och svarar
+   * `ersatte: true` med status 200 i stället för 201. Docblocket sade fram
+   * till denna skiva *"en NY rad skapas alltid … upprepade klick kan därför
+   * ge dubbletter"* — det var sant, och det var själva defekten: dubbletterna
+   * bär IDENTISKT filnamn, kollapsar bakom "+1 äldre fil" i
+   * `DokumentYta.tsx`s `grupperaPerNamn` och går inte att radera från appen
+   * (mätt på staging-fixturen 2026-08-29: 23 Bekräftelsebilaga-rader på ETT
+   * event). Klienten kan alltså inte längre skapa en dubblett av misstag.
+   *
+   * [TILLÄGG, TASK-340.1 § A] `kallhash` är underlagets hash ur den SENASTE
+   * förhandsgranskningen i samma vy. Stämmer den med serverns omräkning av
+   * dagens underlag PROMOVERAS utkastets exakta bytes (Storage copy, ingen
+   * omrendering) — det är hela integritetsargumentet: DocRaptor slumpar
+   * PDF:ens `/ID` per anrop, så en omrendering ger bevisligen andra bytes än
+   * den fil Lotta granskade. Hashen är ett PÅSTÅENDE som servern ALLTID
+   * verifierar; ett felaktigt värde ger aldrig fel dokument, bara en
+   * omrendering. Utelämnad hash = dagens beteende, oförändrat.
    */
-  skapaEventBilaga(input: { eventId: string; mall: MallId; ersatt?: string }): Promise<Attachment>;
+  skapaEventBilaga(input: {
+    eventId: string;
+    mall: MallId;
+    ersatt?: string;
+    kallhash?: string;
+  }): Promise<SkapadEventBilaga>;
 
   /**
    * Sidoeffektsfri förhandsvisning av klass C:s kvitto-generator
@@ -556,6 +689,85 @@ export interface DataSourceAdapter {
   previewReceipt(eventId: string): Promise<DocumentPreview>;
 
   /**
+   * [TASK-353] Sidoeffektsfri förhandsgranskning av EN KONKRET INBETALNINGS
+   * kvitto — det Lotta ska se INNAN hon trycker "Skicka N kvitton".
+   *
+   * ═══════════════════════════════════════════════════════════════════════
+   * EGEN METOD, INTE EN VALFRI PARAMETER PÅ `previewReceipt`
+   * ═══════════════════════════════════════════════════════════════════════
+   * De två svarar på OLIKA frågor och har olika sanningsvärde:
+   * `previewReceipt` visar hur ett kvitto SER UT för ett event (typexempel,
+   * generator-katalogen); denna visar vad DEN HÄR personen faktiskt kommer
+   * att få. Att göra den andra till ett valfritt fält på den första hade
+   * gjort returtypens sanningshalt beroende av ett argument — en anropare
+   * kunde inte längre läsa av anropet om den fick riktig eller påhittad
+   * data. Två namn, två kontrakt.
+   *
+   * Bakåtkompatibiliteten blir dessutom skarp i BÅDA lagren: `previewReceipt`
+   * är byte för byte oförändrad, och `dokumentKalla.ts` rörs inte alls.
+   *
+   * SAMMA EF (`preview-receipt`), additiv body (`{ inbetalningId }` i stället
+   * för `{ eventId }`). Eventet härleds SERVER-SIDIGT ur anmälan — klienten
+   * får medvetet inte para ihop en inbetalning med ett event den valt själv.
+   *
+   * SIDOEFFEKTSFRIHETEN ÄR OFÖRÄNDRAD: inget allokerat kvittonummer, ingen
+   * `kvitton`-rad, inget mail. Kvittonumret är platshållaren
+   * "FÖRHANDSVISNING" — se `preview-receipt/index.ts` § filhuvud.
+   *
+   * VARFÖR INTE `fetchKvittolank`: det kvittot FINNS INTE ÄNNU. Kvitton-raden
+   * INSERTas först av jobbkonsumenten (`_shared/kvittojobb.ts` FAS 1) och
+   * PDF:en renderas i FAS 2 — `hamta-kvittolank` svarar 409 `pdf_saknas` för
+   * allt som ännu inte gått i väg. Förhandsgranskningen RENDERAR, den hämtar
+   * inte.
+   */
+  previewKvittoForInbetalning(inbetalningId: string): Promise<DocumentPreview>;
+
+  /**
+   * [TASK-370.4, PRD TASK-370 § Implementationsbeslut, S116 Del 2 beslut 1]
+   * "Förhandsgranska alla N" — ETT kombinerat dokument (försättsblad + en
+   * sida per kvitto) för HELA den väntande kön, i visningsordning.
+   *
+   * ═══════════════════════════════════════════════════════════════════════
+   * EGEN METOD, INTE EN LISTVARIANT AV `previewKvittoForInbetalning`
+   * ═══════════════════════════════════════════════════════════════════════
+   * Samma resonemang som skiljer `previewKvittoForInbetalning` från
+   * `previewReceipt` ovan: en anropare ska kunna läsa av KONTRAKTET av
+   * METODNAMNET, inte av hur många element en array råkar innehålla. Denna
+   * metod svarar dessutom på en tredje, EGEN fråga ("hur ser HELA kön ut
+   * som ETT dokument") med ett ANNAT felläge (allt-eller-inget — ett trasigt
+   * kvitto bland N fäller HELA anropet) och ett tak (`MAX_KOMBINERADE_
+   * KVITTON` i EF-lagrets `_shared/kvitto-kombination.ts`) som den enskilda
+   * varianten aldrig kan träffa.
+   *
+   * SAMMA EF (`preview-receipt`), TREDJE, additiv body: `{ inbetalningIds }`
+   * (en array, i stället för `inbetalningId`/`eventId`) — se `preview-
+   * receipt/index.ts`s egen gren-dokumentation för hela kedjan
+   * (validering → allt-eller-inget-hämtning → komposition → ETT DocRaptor-
+   * anrop → egen lagringsnyckel `utkast/kombinerat/<requestId>.pdf`).
+   *
+   * SIDOEFFEKTSFRIHETEN ÄR OFÖRÄNDRAD (samma invariant som ovan): inget
+   * allokerat kvittonummer, ingen `kvitton`-rad, inget mail — bara det
+   * transienta, kombinerade Storage-utkastet.
+   *
+   * SVARSFORMEN ÄR SAMMA `DocumentPreview` — EF:en returnerar dessutom ett
+   * `requestId` (lagringsnyckelns identitet), men det fältet är INTE del av
+   * detta kontrakt: `DocumentPreviewSchema.parse(...)` stryper okända
+   * nycklar (Zods default), och ingen klientkonsument behöver det — anroparen
+   * ÄGER fönstret precis som för `previewKvittoForInbetalning`
+   * (`window.open('', '_blank')` SYNKRONT i klickets tick, `location.href`
+   * satt när svaret kommer).
+   *
+   * TAKÖVERSKRIDANDE OCH ALLT-ELLER-INGET SVARAR MED ETT VANLIGT KASTAT FEL
+   * (`EdgeFunctionError`, samma väg som alla andra `postEdgeFunction`-anrop)
+   * — anroparen (`BetalningsInkorg.tsx`s `forhandsgranskaAlla`) tolkar
+   * felmeddelandet för att visa ett begripligt tak-meddelande i stället för
+   * EF:ens råa valideringstext; se den funktionens docblock för varför
+   * TOLKNINGEN sker KLIENT-sidigt (läser felet, i stället för en egen
+   * klientkopia av taket som kan glida ur synk med EF:ens).
+   */
+  previewKvittonForInbetalningar(inbetalningIds: string[]): Promise<DocumentPreview>;
+
+  /**
    * Hämta en cursor-paginerad sida av Aktivitetsloggen (TASK-201.5, PRD
    * TASK-201). Läsning via get-activity-log: DIREKT ur Postgres-tabellen
    * `activity_log` (ADR-110) — ingen Airtable-interaktion, till skillnad
@@ -568,99 +780,132 @@ export interface DataSourceAdapter {
    */
   fetchActivityLog(params?: ActivityLogParams): Promise<ActivityLogPage>;
 
-  /**
-   * Rendera en färdig, SJÄLVBÄRANDE HTML-sträng till PDF och returnera
-   * bytesen som `Blob` (S108 MARCUS-SEKVENS punkt 3, `ADR-119`).
-   *
-   * PROVISORISK ADRESS, PERMANENT FÖRMÅGA — läs skillnaden noga. Metoden
-   * uttrycker en förmåga datalagret ska ha: "gör PDF av denna HTML". VILKEN
-   * renderare som svarar är adapterns ensak, och i dag är svaret
-   * `test-docraptor-render` — en staging-only testharness-EF som är
-   * MEDVETET utelämnad ur `.prod-functions-allowlist.conf` och alltså
-   * saknas i produktion. Anropas metoden mot ett prod-projekt blir svaret
-   * 404 — staging-only med avsikt, oavsett anropare.
-   *
-   * [UPPDATERAD, TASK-309.8] Denna docblock beskrev tidigare metoden som
-   * nådd via en dev-gatead prototypväg (`?variant=a`/`protoAktiv` i
-   * `dokument.tsx`) som skulle "byta adress till den skarpa renderings-
-   * EF:en vid promoveringen". Den flaggan är nu riven (ADR-103 B2), men
-   * promoveringen (ADR-125 § 4–5) valde en ANNAN väg än den denna docblock
-   * förutsåg: `generate-event-attachment`/`_shared/mall-render.ts`
-   * (Eta + DocRaptor, server-side), inte denna metod. `renderPdfFranHtml`
-   * saknar (mätt, grep) varje anropare i `src/` — trolig kvarleva från
-   * S108 MARCUS-SEKVENS punkt 3 innan renderingsvägen valdes om. Rivning av
-   * själva metoden/dess adapterimplementationer är UTANFÖR denna skivas
-   * scope (mekanisk gate-/mappe-rivning, inte en dead-code-revision) och
-   * bokförs i stället här som öppen skuld.
-   *
-   * VARFÖR METODEN ÖVER HUVUD TAGET FANNS, i stället för ett `fetch` i
-   * komponenten: `ADR-057` klausul (a) förbjuder UI-lagret att importera
-   * EF-klienten. Prototypkod är inte undantagen från lager-invarianten —
-   * den granskas av samma fitness-audit som resten.
-   *
-   * `html` MÅSTE vara självbärande (stil, typsnitt och bilder som
-   * `data:`-URI:er) — renderaren kör i sitt eget nät och når ingenting
-   * relativt. [RIVET, TASK-309.6] `src/components/dokument/prototyp/
-   * sjalvbarande.ts`, som tidigare byggde denna HTML klient-sidigt, är
-   * riven — servern gör jobbet nu (se ovan). `namn` är dokumentnamnet
-   * renderaren stämplar jobbet med.
-   */
-  renderPdfFranHtml(html: string, namn: string): Promise<Blob>;
+  // ═════════════════════════════════════════════════════════════════════════
+  // BETALNINGSDOMÄNEN (TASK-346.4, ADR-128/ADR-129)
+  // ═════════════════════════════════════════════════════════════════════════
+  //
+  // NIO PORTAR, SAMMA KLASS SOM `recordActivity`: inbetalningar, kvittoledger
+  // och jobbtabeller bor i Supabase Postgres och har ALDRIG legat i Airtable
+  // (ADR-128 beslut 3). Edge Function-vägen skriver därför mot Supabase
+  // OAVSETT vilken adapter som är live, och BÅDA implementationerna är
+  // funktionella och identiska — till skillnad från adapterns övriga metoder
+  // är de inte en del av Fas E-migrationens swap-yta.
+  //
+  // Implementationen är EN, delad: `src/data/adapters/betalningsportar.ts`.
+  // Adaptrarnas metoder delegerar dit. Se den filens huvud för varför nio
+  // portar inte fick bli arton handhållna kopior — och för varför
+  // port-pariteten (ADR-057 klausul c) ändå är oförändrad.
+  //
+  // VAD SOM ÄNDÅ NÅR AIRTABLE: läsvägarna korsläser basen, eftersom anmälan,
+  // event och priser fortsatt bor där (ADR-128 beslut 5), och skrivvägarna
+  // skriver SPEGELN via `write-registration-payment-mirror`. Riktningen är
+  // enkelriktad, Postgres → basen (beslut 6) — ingen av portarna härleder
+  // pengar ur spegelvärdena.
 
   /**
-   * Rendera självbärande HTML till PDF och lagra resultatet som ett
-   * TRANSIENT utkast i Storage — returnerar en KORT signerad URL i stället
-   * för bytes (TASK-302.1, PRD `TASK-302`, `ADR-124`).
+   * Alla ÖPPNA betalningar över alla event (PRD berättelse 1) — inkorgens
+   * lista. "Öppen" = `Saknas (kr) > 0` och anmälans status varken Avbokad
+   * eller Ombokad (ADR-128 beslut 2).
    *
-   * VARFÖR EN EGEN METOD, INTE ETT PARAMETER-TILLÄGG PÅ `renderPdfFranHtml`:
-   * de två metoderna svarar olika FORMER (`Blob` kontra `{ url, utgar }`) —
-   * ett gemensamt returtyp-union hade tvingat VARJE anropare att gissa
-   * vilken form som kom tillbaka. `renderPdfFranHtml` BEHÅLLS OFÖRÄNDRAD
-   * (riv inte) — den är fortfarande skiva 2:s (`TASK-302.2`) startpunkt för
-   * de skarpa preview-EF:erna, som byter LEVERANSVÄG men inte metodform.
-   *
-   * MÄTT, INTE ANTAGET (`TASK-302` § "Problemet"): Chromes PDF-visare
-   * scrollar bara jämnt på en PDF SERVERAD AV NÄTVERKSTJÄNSTEN. En
-   * `blob:`-URL (denna adapters ANDRA metod ovan), och likaså en URL fångad
-   * av appens egen Service Worker, laggar vid scroll — sex mätta armar,
-   * headed Chrome 151. Den URL denna metod returnerar är Supabase Storages
-   * SIGNERADE URL (`supabase.co`, cross-origin mot appens eget origin) —
-   * `src/sw.ts`s `NavigationRoute` rör den därför aldrig.
-   *
-   * PROVISORISK ADRESS, PERMANENT FÖRMÅGA — samma resonemang som
-   * `renderPdfFranHtml`: i dag svarar `test-docraptor-render` med
-   * `leverans: 'utkast'` (staging-only, `.prod-functions-allowlist.conf`-
-   * exkluderad); vid promoveringen (`ADR-103`) byter adaptern adress till
-   * de skarpa preview-EF:erna (`TASK-302.2`), interfacet är då oförändrat.
-   *
-   * `eventId`/`typ` blir Storage-sökvägen `utkast/<eventId>/<typ>.pdf`
-   * (`upsert` — högst en fil per event och typ). `utgar` är URL:ens
-   * ISO-utgångstid.
+   * Posterna bär BÅDE basens `Saknas (kr)` och Postgres-summan, plus
+   * `spegelIFas`. Det är inte redundans: `Saknas (kr)` är en Airtable-formel
+   * över spegelvärden och därför exakt så färsk som spegeln är, aldrig
+   * färskare (ADR-128 § Konsekvenser).
    */
-  renderPdfTillUtkast(
-    html: string,
-    namn: string,
-    params: { eventId: string; typ: UtkastTyp },
-  ): Promise<{ url: string; utgar: string }>;
+  fetchOppnaBetalningar(): Promise<OppnaBetalningar>;
+
+  /**
+   * Registrera EN inbetalning: raden skrivs i Postgres, facken härleds ur
+   * summan mot priset (ADR-128 beslut 2 — Lotta väljer aldrig fack), och
+   * spegeln skrivs till basen med omförsök.
+   *
+   * BELOPPET ÄR EN STRÄNG, inte ett tal. Normaliseringen av "2 500,00" sker
+   * SERVER-SIDE (`_shared/betalningsbelopp.ts`), där den kan bevisas
+   * hermetiskt — se `RegistreraInbetalningInput` för hela resonemanget.
+   */
+  registreraInbetalning(input: RegistreraInbetalningInput): Promise<RegistreraInbetalningResult>;
+
+  /**
+   * Radera en felregistrerad inbetalning (PRD berättelse 16) — tillåtet
+   * ENDAST innan ett kvitto utfärdats. Server-side fäller försöket med 409
+   * när ledgern redan bär ett kvitto (databasen gör det dessutom
+   * strukturellt: `kvitton.inbetalning_id` har `on delete restrict`).
+   */
+  raderaInbetalning(inbetalningId: string): Promise<HanteraInbetalningResult>;
+
+  /**
+   * Makulera en inbetalning MED SKÄL (PRD berättelse 17) — vägen efter att
+   * kvittot gått: "sanningen rättas utan att kvittot försvinner ur
+   * bokföringen". Raden består, märkt makulerad, och räknas inte längre in
+   * i summan.
+   *
+   * SKÄLET ÄR OBLIGATORISKT, inte av artighet: check-constrainten
+   * `inbetalningar_makulering_kraver_skal` fäller en makulering utan skäl.
+   */
+  makuleraInbetalning(input: {
+    inbetalningId: string;
+    skal: string;
+  }): Promise<HanteraInbetalningResult>;
+
+  /**
+   * Inbetalningarna för EN anmälan eller EN person (PRD berättelse 24;
+   * Åtgärds-panelen, anmälans detaljvy, personkortet). Exakt ett av de två
+   * argumenten ska anges.
+   */
+  fetchInbetalningar(params: {
+    anmalanRecordId?: string;
+    personId?: string;
+  }): Promise<Inbetalningslista>;
+
+  /**
+   * "Skicka N kvitton" (PRD berättelse 8) — köar ETT jobb med N rader och
+   * svarar DIREKT. Kvittona genereras och skickas i bakgrunden av
+   * jobbmotorn; klienten väntar aldrig (ADR-129 beslut 3).
+   */
+  koaKvitton(input: KoaKvittonInput): Promise<KoaKvittonResult>;
+
+  /**
+   * Jobbets läge per rad (PRD berättelse 10). LÄSES VID APPÖPPNING och inte
+   * bara vid Realtime-push: "Push är en snabbhet, aldrig en sanning — en
+   * webbläsare som var stängd får sitt läge ur läsningen" (ADR-129 beslut 8).
+   * Utan `jobbId` returneras det senaste jobbet.
+   */
+  fetchJobbstatus(params?: { jobbId?: string }): Promise<Jobbstatus>;
+
+  /**
+   * Signerad, tidsbegränsad länk till kvittots sparade PDF ("Visa", PRD
+   * berättelse 12). Samma leveransform som `getAttachmentDownloadUrl` —
+   * bucketen är privat och klienten rör aldrig lagrings-API:t (ADR-057
+   * klausul a).
+   */
+  fetchKvittolank(kvittoId: string): Promise<Kvittolank>;
+
+  /**
+   * "Skicka igen" (PRD berättelse 12 och 13) — SAMMA PDF, SAMMA nummer,
+   * valfri annan adress. Ett nytt nummer hade gjort kvittot till ett annat
+   * kvitto och brutit verifikationskedjan.
+   */
+  skickaKvittoIgen(input: SkickaKvittoIgenInput): Promise<SkickaKvittoIgenResult>;
 }
 
 /**
- * `typ`-diskriminatorn för TASK-302:s utkast-väg (`ADR-124`) — bilaga (denna
- * skivas prototyp-väg, TASK-302.1), kvitto och deltagarinformation (skiva
- * 2:s skarpa EF:er, TASK-302.2). SAMMA tre värden som backend-enumen
- * `UTKAST_TYPER` i `supabase/functions/_shared/utkast.ts` — dubblerad
- * MEDVETET (Deno-EF:erna delar ingen build-kedja med Vite-bygget, samma
- * duplicerings-mönster `_shared/attachments.ts`s filhuvud redan etablerar
- * för `AttachmentClass`/`AttachmentScope`).
+ * [RIVET, TASK-309.18] `renderPdfFranHtml`/`renderPdfTillUtkast` (samt
+ * `UtkastTyp`, deras enda gemensamma parametertyp) stod tidigare här som
+ * öppen skuld: de anropade `test-docraptor-render`, en EF som redan var
+ * riven (`TASK-309.4`) utan att interfacet följde med. Skulden är nu betald
+ * — mätt (`git grep`) noll anropare kvar utanför adapter-lagret innan
+ * rivningen, och den skarpa vägen (`generate-event-attachment`s
+ * preview-gren / `preview-receipt`, `ADR-125` § 5) bär redan den förmåga
+ * metoderna en gång uttryckte. Prosa och kod säger nu samma sak (ADR-083).
  */
-export type UtkastTyp = 'bilaga' | 'kvitto' | 'deltagarinformation';
 
 /**
  * De TVÅ bilagemallarna generate-event-attachment renderar (TASK-309.6,
  * ADR-125 § 5) — SAMMA två värden som EF:ens `MallParam`
  * (`generate-event-attachment/index.ts`) och UI-lagrets `MallId`
- * (`@/components/dokument/blockDefinitioner`). Duplicerad MEDVETET, samma
- * Deno↔Vite-gränsmönster som `UtkastTyp` ovan — datalagret får inte
- * importera UI-lagrets `blockDefinitioner.ts` (lager-oberoende, `ADR-057`).
+ * (`@/components/dokument/blockDefinitioner`). Duplicerad MEDVETET — samma
+ * Deno↔Vite-gränsmönster `_shared/attachments.ts`s filhuvud redan etablerar
+ * för `AttachmentClass`/`AttachmentScope` — datalagret får inte importera
+ * UI-lagrets `blockDefinitioner.ts` (lager-oberoende, `ADR-057`).
  */
 export type MallId = 'bekraftelse' | 'deltagarinfo';

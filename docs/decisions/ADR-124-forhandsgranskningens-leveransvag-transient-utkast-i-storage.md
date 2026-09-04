@@ -290,3 +290,108 @@ konvergerar mot `BUCKET_DESIRED_CONFIG` i PROD) kräver Marcus egen körning
 (`scripts/deny-prod-ref.sh`). Exakt kommando: se
 [`docs/reference/atkomst-och-nycklar.md`](../reference/atkomst-och-nycklar.md)
 § "Prod-provisionering av externa Storage-resurser". Källa: `TASK-308`-kortets AC #1.
+
+**2026-08-29 (`TASK-340.1`/`TASK-340.3`):** § Beslut 1, 2 och 4 amenderas
+INTE — de håller oförändrade. `generate-event-attachment` KONSUMERAR nu
+utkastet i stället för att bara producera det och kasta det bort:
+preview-svaret bär `kallhash` (den `Källhash` EF:en redan räknade ut och
+tidigare kastade i preview-grenen). Skapa skickar `kallhash` tillbaka;
+servern räknar om dagens hash server-side och (a) vid likhet OCH ett
+befintligt utkast **promoverar** — utkastets bytes kopieras till eventets
+prefix med en Storage-kopiering INOM bucketen (`_shared/storage-kopiera.ts`,
+rå REST `POST /storage/v1/object/copy` med header `x-upsert: true` —
+`storage-js` sätter den ALDRIG, och `copy()` mot en redan existerande
+destination ger annars 409), INGEN DocRaptor-rendering; (b) vid skillnad
+renderas om och svaret bär `underlagAndrat: true`; (c) saknas utkastet
+renderas tyst, aldrig ett fel. Klientens hash är ett PÅSTÅENDE som ALLTID
+verifieras mot serverns egen omräkning — en felaktig hash ger aldrig
+promovering av fel underlag, bara ett misslyckat försök som faller tillbaka
+på rendering.
+
+Skälet till att bära hashen i ANROPET/SVARET i stället för i Storage-
+objektets metadata eller i objektnamnet
+(`docs/research/forhandsgranska-spara-atervand-bilageflodet-2026-08-29.md`
+§ 4): metadata syns inte i `list()` (öppen förstaparts-issue
+`supabase/storage#759`) och kan inte uppdateras i efterhand, och namnet hade
+brutit § Beslut 2:s `upsert`-invariant (högst ETT utkast per event och typ)
+— hashen bärs alltså av anropet/svaret, aldrig av lagringen. Invarianten
+består oförändrad.
+
+**Varför promovera i stället för att lita på determinism:** DocRaptor
+slumpar PDF:ens `/ID`-par i trailern per anrop och det går inte att styra —
+mätt i `research/forhandsgranska-spara-atervand-bilageflodet-2026-08-29.md`
+§ 2.3, som samtidigt rättar en felaktig determinism-slutsats i
+[`docraptor-minimaltest-2026-08-22.md`](../research/docraptor-minimaltest-2026-08-22.md)
+(mätningen där var ett byte-ANTAL ur en header, inte en innehållsjämförelse).
+Två renderingar av identiskt underlag ger alltså bevisligen OLIKA bytes —
+den sparade filen ska vara BEVISLIGEN samma bytes Lotta granskade, inte bara
+"samma innehåll".
+
+§ Beslut 5 ("Marcus scroll, inte ett mekaniskt bevis") gäller helt
+oförändrat och är den regel som styr mätmetoden för en framtida option C —
+egen mätyta i `TASK-340.4`. Ingen ny avgörandeaxel tillkommer av denna
+skiva.
+
+**§ Beslut 3:s AC #3-text amenderas en tredje gång I SAK, men inte ännu i
+denna ADR:s löptext.** Den nya lydelsen (två tillagda led: promovering vid
+server-verifierad hash-likhet, och skälet "de bytes hon granskade") står
+VERBATIM i `generate-event-attachment/index.ts`s filhuvud (`TASK-340.1`).
+`preview-receipt/index.ts` bär fortsatt den ÄLDRE (andra amenderade)
+lydelsen — dess utkast promoveras aldrig av kvittoflödet, så den nya
+klausulen gäller inte den EF:en. Divergensen mellan EF-filhuvudet och detta
+§ Beslut 3-blocks löptext är öppet bokförd här (ADR-083-klassen), inte
+tyst: § Beslut 3 rättas till den tredje lydelsen när kvittoflödet (utanför
+`TASK-340`s omfattning) ärver samma promoverings-mönster.
+
+**2026-09-03 (`TASK-370.1`, PRD `TASK-370`, S116 Del 2 beslut 6): § Beslut
+2:s "en fil per event och typ"-invariant AMENDERAS för ETT nytt fall —
+det KOMBINERADE förhandsgransknings-utkastet ("Förhandsgranska alla N").**
+
+**Skälet, mätt inte antaget:** `vantande`-kön i `BetalningsInkorg.tsx` är
+SID-omfattande state, inte per event (research-passet
+[`kvitto-forhandsgranskning-flera-som-ett-dokument-2026-09-03.md`](../research/kvitto-forhandsgranskning-flera-som-ett-dokument-2026-09-03.md)
+§ 0, "Oväntade fynd") — en "Skicka N kvitton"-omgång kan alltså spänna över
+FLERA events samtidigt. Nyckelformen `utkast/<eventId>/<typ>.pdf` bygger på
+exakt EN eventId per utkast och har därför STRUKTURELLT ingen plats att
+sätta ett dokument som består av kvitton från flera olika events.
+
+**Den nya formen: `utkast/kombinerat/<requestId>.pdf`, keyad på ANROPET.**
+`requestId` är samma `crypto.randomUUID()` (`generateRequestId()`,
+`_shared/errors.ts`) `preview-receipt/index.ts` REDAN genererar per anrop
+och REDAN returnerar till klienten (`{ url, utgar, requestId }`) — ingen ny
+identifierare uppfanns. Formeln (`byggKombineratUtkastPath`) och sweepen
+(`stadaKombineradeUtkast`) bor i `_shared/utkast.ts`; den rena
+nyckel-/ålders-logiken (import-fri, Node-testad utan mock) bor i den nya
+`_shared/kvitto-kombination.ts`.
+
+**Livstid och städning — OPPORTUNISTISK sweep, INTE en cron.** Beslut 2
+ovan valde "bundet per konstruktion, ingen klocka" eftersom mängden växer
+med antalet EVENTS — det argumentet håller inte här: mängden växer i
+stället med antalet KOMBINERADE FÖRHANDSGRANSKNINGSKLICK, ett tal utan
+naturligt tak. Att bygga en NY `pg_cron`-artefakt bara för denna skiva vore
+över-engineering för en enda, smal yta (`~/.claude/CLAUDE.md` §
+Dubbelriktad över-engineering-vakt) — repot har ingen storage-TTL-cron att
+haka i. Lösningen är i stället en OPPORTUNISTISK sweep:
+`laggKombineratUtkast` kör `stadaKombineradeUtkast` (best-effort, samma
+"logga och svälj"-disciplin som `rensaUtkast`) FÖRE varje ny skrivning —
+"svepet körs när något annat körs", samma princip som `npm run seed:review
+-- --sweep` redan etablerar för granskningsfixturer. Ett objekt är
+FÖRFALLET (`arKombineratUtkastForfallet`) när det är äldre än
+`KOMBINERAT_UTKAST_TTL_MS` (1 timme — tolv gånger `SIGNED_DOWNLOAD_URL_TTL_
+SECONDS`s 300 s): efter den tiden är objektets EGEN signerade URL redan
+bevisligen oåtkomlig, och ingen klient kan någonsin fråga efter SAMMA
+`requestId` igen (varje nytt anrop genererar ett nytt). Marginalen täcker
+nätverksfördröjning/klockskillnad utan att sopa undan ett utkast någon
+fortfarande skulle kunna öppna.
+
+**Prefixet `utkast/kombinerat/` delar INGEN gemensam förälder med
+`utkast/<eventId>/`** — `rensaUtkast` (beslut 2) och `stadaKombineradeUtkast`
+(denna amendering) kan alltså aldrig kollidera eller trampa på varandras
+objekt; de är två helt separata delträd under `utkast/`.
+
+**Vad som INTE ändras:** kvittomallen, dess CSS och det skarpa sändflödet
+rörs inte av denna skiva (S116 Del 2 beslut 6). Det EXISTERANDE
+`utkast/<eventId>/<typ>.pdf`-mönstret (beslut 2) är OFÖRÄNDRAT för de två
+äldre grenarna (`eventId`/`inbetalningId`) i `preview-receipt/index.ts` —
+den nya kombinerade grenen är en TREDJE, additiv gren som returnerar tidigt
+och delar ingen kodväg med dem (`TASK-370.1`-kortets AC #1).

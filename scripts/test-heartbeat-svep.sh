@@ -469,6 +469,14 @@ if grep -qF "KALLSTART" "${TEST_DIR}/out.txt" && grep -qF "Startform som bakgrun
 else
     printf '  ✗ T24b  --help saknar KALLSTART-stycket eller blockets svans\n'; FAILED=$((FAILED+1))
 fi
+# T24c (TASK-323) — den DESTRUKTIVA bieffekten måste synas i --help. Ett
+# skript som kan radera grenar får inte dölja det i ett block --help hoppar
+# över; detta fall fäller om radintervallet inte följer med blockets nya slut.
+if grep -qF "UNDERHÅLL — GLES GREN-STÄDNING" "${TEST_DIR}/out.txt"; then
+    printf '  ✓ T24c  --help visar § UNDERHÅLL (gren-städningen är synlig, inte dold)\n'; PASSED=$((PASSED+1))
+else
+    printf '  ✗ T24c  --help saknar § UNDERHÅLL — radintervallet följde inte med blocket\n'; FAILED=$((FAILED+1))
+fi
 
 # ============================================================
 # T25/T25b/T26/T27/T27b — HEARTBEAT_EXEMPT_AUTHORS (fynd 2026-08-04,
@@ -544,6 +552,235 @@ NOT_EXPECT_OUT="PARKERAD"
 run_case "T27b HEARTBEAT_EXEMPT_AUTHORS definierad TOM (()) → fail-open, larmar ändå" 4 - \
     env HEARTBEAT_SVEP_POLICY="${TEST_DIR}/.empty-exempt-policy.conf" \
     bash ./scripts/heartbeat-svep.sh --once
+
+# ============================================================
+# T28–T36 — FEMTE VÄGEN: gles gren-städning (TASK-323).
+#
+# Vad som bevisas TVÅSIDIGT, och varför just dessa par:
+#   fyrar/tiger      T28 (intervall passerat ⇒ körs) mot T29 (samma stub
+#                    direkt efter ⇒ glesningen håller den tyst).
+#   på/av            T28 mot T30 (INTERVALL=0 ⇒ stubben anropas ALDRIG,
+#                    bevisat med en argv-markörfil, inte med tyst utdata —
+#                    tyst utdata bevisar bara att inget SKREVS, inte att
+#                    inget KÖRDES).
+#   tyst vid noll    T31 — designkravet "tyst vid noll kandidater": en
+#                    idempotent körning utan fynd skriver ingenting alls.
+#   larmar aldrig    T32 (städning exit 1 ⇒ svepets verdikt fortfarande 0)
+#                    och T33 (städning exit 1 + en RÖD PR ⇒ verdikt exakt 1,
+#                    inte förorenat). T33 är det egentliga beviset: den
+#                    skiljer "städningen tystade sig" från "städningen råkade
+#                    inte påverka en redan tom bitmask".
+#   fail-safe        T34 — STADA_BIN saknas på disk ⇒ tyst, exit 0. Det är
+#                    exakt läget för varje spoke som kopierar heartbeat men
+#                    inte stada-grenar.sh.
+#   rutin, ej larm   T35 — --quiet dämpar UNDERHÅLL-raden. Om den vore ett
+#                    larm hade den överlevt --quiet (jfr T21/T22).
+#   kontraktet       T36 — stubben tar emot `--utfor` och INTE
+#                    `--ingen-fetch`. Argumentvalet är ett medvetet beslut
+#                    (stada-grenar.sh: en stale bas under-rapporterar) och
+#                    ska fällas om någon "optimerar" bort fetchen.
+echo ""
+
+# Stub för stada-grenar.sh: loggar sin argv, ekar en summering i skriptets
+# riktiga format, och kan fås att fallera. T323_RADERADE styr talet som
+# heartbeat parsar ut.
+cat > "${TEST_DIR}/stada-stub.sh" <<'STADASTUB'
+#!/usr/bin/env bash
+[ -n "${T323_ARGV:-}" ] && printf '%s\n' "$*" > "${T323_ARGV}"
+printf '=== GRENSTADNING ===\n'
+printf -- '-- Summering --\n'
+printf 'Raderade grenar:  %s\n' "${T323_RADERADE:-0}"
+printf 'Skonade grenar:    2\n'
+exit "${T323_EXIT:-0}"
+STADASTUB
+chmod +x "${TEST_DIR}/stada-stub.sh"
+STADA_STUB="${TEST_DIR}/stada-stub.sh"
+ARGV_FIL="${TEST_DIR}/stada-argv.txt"
+
+reset_scen
+rm -f "${ARGV_FIL}"
+EXPECT_OUT="UNDERHÅLL — 3 mergade lokala grenar städade"
+run_case "T28 intervall passerat (kallstart) + 3 raderade → UNDERHÅLL-rutinrad, exit 0" 0 - \
+    env HEARTBEAT_STADA_BIN="${STADA_STUB}" T323_RADERADE=3 T323_ARGV="${ARGV_FIL}" \
+    bash ./scripts/heartbeat-svep.sh --once
+
+# T29 — INGEN reset_scen: stämpeln från T28 ligger kvar i STATE_DIR, så
+# glesningen ska hålla nästa svep tyst trots att stubben skulle rapportera
+# fynd. Bevisar att intervallet faktiskt läses, inte bara skrivs.
+rm -f "${ARGV_FIL}"
+NOT_EXPECT_OUT="UNDERHÅLL"
+run_case "T29 andra svepet direkt efter → glesningen håller städningen tyst" 0 - \
+    env HEARTBEAT_STADA_BIN="${STADA_STUB}" T323_RADERADE=3 T323_ARGV="${ARGV_FIL}" \
+    bash ./scripts/heartbeat-svep.sh --once
+if [[ -f "${ARGV_FIL}" ]]; then
+    printf '  ✗ T29b  stubben KÖRDES trots att intervallet inte passerat\n'; FAILED=$((FAILED+1))
+else
+    printf '  ✓ T29b  stubben anropades aldrig — glesningen är en spärr, inte bara tystnad\n'; PASSED=$((PASSED+1))
+fi
+
+# T30 — AV-läget. Egen policy-fil med INTERVALL=0.
+printf '%s\n' \
+    'HEARTBEAT_REPO="owner/repo"' \
+    'HEARTBEAT_BRANCH="main"' \
+    'HEARTBEAT_INTERVAL=90' \
+    'HEARTBEAT_TIMEOUT=0' \
+    'HEARTBEAT_STADA_GRENAR_INTERVALL=0' \
+    > "${TEST_DIR}/.stada-av-policy.conf"
+reset_scen
+rm -f "${ARGV_FIL}"
+NOT_EXPECT_OUT="UNDERHÅLL"
+run_case "T30 HEARTBEAT_STADA_GRENAR_INTERVALL=0 → städningen är AV" 0 - \
+    env HEARTBEAT_SVEP_POLICY="${TEST_DIR}/.stada-av-policy.conf" \
+    HEARTBEAT_STADA_BIN="${STADA_STUB}" T323_RADERADE=9 T323_ARGV="${ARGV_FIL}" \
+    bash ./scripts/heartbeat-svep.sh --once
+if [[ -f "${ARGV_FIL}" ]]; then
+    printf '  ✗ T30b  stubben KÖRDES trots INTERVALL=0\n'; FAILED=$((FAILED+1))
+else
+    printf '  ✓ T30b  stubben anropades aldrig vid INTERVALL=0\n'; PASSED=$((PASSED+1))
+fi
+
+# T31 — tyst vid noll (designkrav b).
+reset_scen
+rm -f "${ARGV_FIL}"
+NOT_EXPECT_OUT="UNDERHÅLL"
+run_case "T31 städning körd men 0 raderade → helt tyst om städningen" 0 - \
+    env HEARTBEAT_STADA_BIN="${STADA_STUB}" T323_RADERADE=0 T323_ARGV="${ARGV_FIL}" \
+    bash ./scripts/heartbeat-svep.sh --once
+if [[ -f "${ARGV_FIL}" ]]; then
+    printf '  ✓ T31b  stubben KÖRDES — tystnaden är "inget att rapportera", inte "hoppade över"\n'; PASSED=$((PASSED+1))
+else
+    printf '  ✗ T31b  stubben kördes aldrig — fel orsak till tystnaden\n'; FAILED=$((FAILED+1))
+fi
+
+# T32/T33 — LARMAR ALDRIG. T33 är det skarpa fallet: en RÖD PR ger verdikt 1,
+# och en samtidigt fallerande städning får inte ändra den siffran.
+reset_scen
+EXPECT_OUT="gren-städningen gav exit 1"
+run_case "T32 städningen fallerar, inga PR-fynd → verdikt ÄNDÅ 0" 0 - \
+    env HEARTBEAT_STADA_BIN="${STADA_STUB}" T323_EXIT=1 \
+    bash ./scripts/heartbeat-svep.sh --once
+
+reset_scen
+set_rows '701\tfalse\tBLOCKED\ttrue\tFAILURE\tfalse\toctocat\n'
+EXPECT_OUT="gren-städningen gav exit 1"
+run_case "T33 städningen fallerar + RÖD PR → verdikt exakt 1, bitmasken oförorenad" 1 - \
+    env HEARTBEAT_STADA_BIN="${STADA_STUB}" T323_EXIT=1 \
+    bash ./scripts/heartbeat-svep.sh --once
+
+# T34 — fail-safe: skriptet finns inte på disk (varje spoke utan
+# stada-grenar.sh).
+reset_scen
+NOT_EXPECT_OUT="UNDERHÅLL"
+run_case "T34 STADA_BIN saknas på disk → tyst, exit 0 (ingen spoke kraschar)" 0 - \
+    env HEARTBEAT_STADA_BIN="${TEST_DIR}/finns-inte.sh" \
+    bash ./scripts/heartbeat-svep.sh --once
+
+# T35 — UNDERHÅLL-raden är en RUTIN-rad: --quiet ska dämpa den. Tvåsopnings-
+# tekniken från T22/T25b sätter SHA-baslinjen först så kallstart-raden inte
+# förorenar mätningen; STATE_DIR behålls, så andra sopningen måste få ett
+# eget städ-fönster — därav den egna policyfilen med INTERVALL=1.
+printf '%s\n' \
+    'HEARTBEAT_REPO="owner/repo"' \
+    'HEARTBEAT_BRANCH="main"' \
+    'HEARTBEAT_INTERVAL=90' \
+    'HEARTBEAT_TIMEOUT=0' \
+    'HEARTBEAT_STADA_GRENAR_INTERVALL=1' \
+    > "${TEST_DIR}/.stada-tat-policy.conf"
+reset_scen
+( cd "${TEST_DIR}" && env PATH="${TEST_DIR}/bin:${PATH}" T119_SCEN="${SCEN}" \
+    HEARTBEAT_STATE_DIR="${STATE_DIR}" \
+    HEARTBEAT_SVEP_POLICY="${TEST_DIR}/.stada-tat-policy.conf" \
+    HEARTBEAT_STADA_BIN="${STADA_STUB}" T323_RADERADE=4 \
+    bash ./scripts/heartbeat-svep.sh --once --quiet ) >/dev/null 2>&1
+sleep 2
+run_case "T35 UNDERHÅLL-raden dämpas av --quiet (rutin-rad, inget larm)" 0 - \
+    env HEARTBEAT_SVEP_POLICY="${TEST_DIR}/.stada-tat-policy.conf" \
+    HEARTBEAT_STADA_BIN="${STADA_STUB}" T323_RADERADE=4 T323_ARGV="${ARGV_FIL}" \
+    bash ./scripts/heartbeat-svep.sh --once --quiet
+if [[ -s "${TEST_DIR}/out.txt" ]]; then
+    printf '  ✗ T35b  förväntade tom utdata under --quiet, fick:\n'
+    sed 's/^/      /' "${TEST_DIR}/out.txt" | head -5
+    FAILED=$(( FAILED + 1 ))
+else
+    printf '  ✓ T35b  stdout helt tomt — UNDERHÅLL är rutin, inte larm\n'; PASSED=$((PASSED+1))
+fi
+
+# T36 — argv-kontraktet mot stada-grenar.sh.
+reset_scen
+rm -f "${ARGV_FIL}"
+run_case "T36 anropet bär --utfor" 0 - \
+    env HEARTBEAT_STADA_BIN="${STADA_STUB}" T323_RADERADE=1 T323_ARGV="${ARGV_FIL}" \
+    bash ./scripts/heartbeat-svep.sh --once
+if grep -qF -- "--utfor" "${ARGV_FIL}" 2>/dev/null; then
+    printf '  ✓ T36b  --utfor skickas (annars vore städningen en evig torrkörning)\n'; PASSED=$((PASSED+1))
+else
+    ARGV_SETT="$(cat "${ARGV_FIL}" 2>/dev/null || true)"
+    printf '  ✗ T36b  --utfor saknades i argv: %s\n' "${ARGV_SETT}"; FAILED=$((FAILED+1))
+fi
+if grep -qF -- "--ingen-fetch" "${ARGV_FIL}" 2>/dev/null; then
+    printf '  ✗ T36c  --ingen-fetch skickades — basen blir stale och städningen under-rapporterar\n'; FAILED=$((FAILED+1))
+else
+    printf '  ✓ T36c  --ingen-fetch skickas INTE (färsk bas, medvetet val)\n'; PASSED=$((PASSED+1))
+fi
+
+# ============================================================
+# T37/T38 — OBSERVABILITET: fel tystas ALDRIG av --quiet (TASK-323 runda 2,
+# granskningsfynd 2 och 4).
+#
+# Varför detta är en egen klass, skild från T35: en persistent monitor körs
+# rimligen MED --quiet (det är hela poängen med rutin/larm-distinktionen).
+# Skickas ett FEL på say()-kanalen blir en kontinuerligt trasig städning helt
+# osynlig — ingen stdout, bara en loggfil ingen läser om man inte redan vet
+# att den finns. Samma observabilitets-felklass som TASK-135 en gång fixade
+# för kallstart-raden. Därför går fel via alltid_pa(), som är --quiet-immun
+# men INTE bär någon exit-bit.
+#
+# TVÅSIDIGHETEN sitter i paret T35 ↔ T37: SUCCESS-raden dämpas (T35b bevisar
+# helt tom stdout), FAILURE-raden syns (T37). Vore båda på samma kanal kunde
+# bara en av dem hålla.
+echo ""
+
+reset_scen
+EXPECT_OUT="gren-städningen gav exit 1"
+run_case "T37 städningen fallerar UNDER --quiet → felraden syns ändå (ALLTID-PÅ)" 0 - \
+    env HEARTBEAT_STADA_BIN="${STADA_STUB}" T323_EXIT=1 \
+    bash ./scripts/heartbeat-svep.sh --once --quiet
+if grep -qF "LARM (bitmask" "${TEST_DIR}/out.txt"; then
+    printf '  ✗ T37b  felraden drog med sig ett LARM — städningen ska aldrig bära en exit-bit\n'; FAILED=$((FAILED+1))
+else
+    printf '  ✓ T37b  ingen LARM-rad — synlig utan att vara ett larm\n'; PASSED=$((PASSED+1))
+fi
+
+# T38 — stämpel-skrivningen fallerar. Mockas genom att göra .tmp-sökvägen till
+# en KATALOG: `printf > <katalog>` fallerar ("Is a directory") utan att röra
+# något annat state, så main-SHA-vägen är opåverkad och felet isoleras till
+# exakt den skrivning fyndet gäller.
+reset_scen
+mkdir -p "${STATE_DIR}/last-stada-grenar.tmp"
+EXPECT_OUT="kunde inte stämpla"
+run_case "T38 stämpel-skrivfel UNDER --quiet → synlig rad, inte tyst || true" 0 - \
+    env HEARTBEAT_STADA_BIN="${STADA_STUB}" T323_RADERADE=2 \
+    bash ./scripts/heartbeat-svep.sh --once --quiet
+if grep -qF "LARM (bitmask" "${TEST_DIR}/out.txt"; then
+    printf '  ✗ T38b  stämpel-felet drog med sig ett LARM — får inte påverka verdiktet\n'; FAILED=$((FAILED+1))
+else
+    printf '  ✓ T38b  ingen LARM-rad — stämpel-felet är synligt men bär ingen exit-bit\n'; PASSED=$((PASSED+1))
+fi
+rm -rf "${STATE_DIR}/last-stada-grenar.tmp"
+
+# T39 — den lyckade stämplingen lämnar INGEN .tmp-fil kvar (atomiciteten får
+# inte läcka skräp in i STATE_DIR vid varje svep).
+reset_scen
+run_case "T39 lyckad stämpling → atomär mv, ingen kvarlämnad .tmp" 0 - \
+    env HEARTBEAT_STADA_BIN="${STADA_STUB}" T323_RADERADE=1 \
+    bash ./scripts/heartbeat-svep.sh --once
+if [[ -e "${STATE_DIR}/last-stada-grenar.tmp" ]]; then
+    printf '  ✗ T39b  .tmp-filen ligger kvar efter en lyckad körning\n'; FAILED=$((FAILED+1))
+elif [[ -f "${STATE_DIR}/last-stada-grenar" ]]; then
+    printf '  ✓ T39b  stämpeln på plats, ingen .tmp kvar\n'; PASSED=$((PASSED+1))
+else
+    printf '  ✗ T39b  stämpeln saknas helt\n'; FAILED=$((FAILED+1))
+fi
 
 printf '\ntest-heartbeat-svep: %s passerade, %s failade\n' "${PASSED}" "${FAILED}"
 [[ "${FAILED}" -eq 0 ]] || exit 1

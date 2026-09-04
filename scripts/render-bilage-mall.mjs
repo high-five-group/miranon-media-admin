@@ -45,7 +45,7 @@ import { Eta } from 'eta';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const MALLROT = join(__dirname, '..', 'docs', 'mallar', 'bilagor');
-const KANDA_MALLAR = ['bekraftelsebilaga', 'deltagarinformation', 'kvitto'];
+const KANDA_MALLAR = ['bekraftelsebilaga', 'deltagarinformation', 'kvitto', 'forsattsblad'];
 
 // Mallar som redan bär Eta-syntax (`<%= %>`/`<% %>`) — TASK-309.4. Ny mall
 // som konverteras (t.ex. kvitto i TASK-309.5) läggs till här ELLER, ännu
@@ -64,9 +64,39 @@ function larsArgv() {
   return { mall, dataPath };
 }
 
+/*
+ * SPEGLAR `fetMarkera` i supabase/functions/_shared/fet-markering.ts.
+ *
+ * Den filen är KANONISK — läs motiveringen där (whitelist i två steg: escapa
+ * allt, återinför sedan enbart <strong>). Kopian finns här därför att detta
+ * skript är ren Node (.mjs) och inte kan importera Deno-TypeScript, medan den
+ * lokala granskningen ändå MÅSTE visa samma resultat som skarp drift — annars
+ * granskar man en annan bilaga än den som skickas.
+ *
+ * De två får inte glida isär. `tests/api/mall-data.test.ts` läser BÅDA
+ * filerna och jämför regex-litteralen tecken för tecken; ändras den ena utan
+ * den andra blir testet rött.
+ */
+const FET_MONSTER = /\*\*([^*\n]+?)\*\*/g;
+
+function fetMarkeraLokalt(text) {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;')
+    .replace(FET_MONSTER, '<strong>$1</strong>');
+}
+
 function renderaMedEta(mallKalla, fixture) {
   const eta = new Eta({ autoEscape: true, varName: 'data' });
-  return eta.renderString(mallKalla, fixture);
+  // Beskrivningen förbehandlas som i mall-data.ts, så den lokala
+  // granskningen visar fetstilen precis som den skarpa vägen gör.
+  const data = Array.isArray(fixture?.beskrivning)
+    ? { ...fixture, beskrivning: fixture.beskrivning.map(fetMarkeraLokalt) }
+    : fixture;
+  return eta.renderString(mallKalla, data);
 }
 
 function renderaMedLegacyStrangersattning(mallKalla, fixture) {

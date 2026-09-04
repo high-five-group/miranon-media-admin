@@ -16,11 +16,13 @@ import { Button } from '@/components/primitives/Button';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { displayName, inskickadTid } from '@/components/registrations/registration-display';
+import { StatusBadge } from '@/components/registrations/StatusBadge';
 import { useSetBorOver } from '@/data/mutations/registrationLodging';
 import { useDataSource } from '@/data/useDataSource';
 import type { Event } from '@/domain/models/Event';
 import type { Registration } from '@/domain/models/Registration';
 import { RegistrationSource, RegistrationStatus } from '@/domain/types/Status';
+import { arAktivAnmalan } from '@/lib/aktiv-anmalan';
 import { queryKeys } from '@/queries/keys';
 // Betalningars arbetsyta flyttade in i Anmälda deltagare (S93 konvergens-pass
 // Del 3 beslut 1) — se ArbetsKo:s "Öppna detaljer" nedan.
@@ -152,8 +154,10 @@ declare module '@tanstack/react-router' {
  * en UTSKICKS-logg, gruppen är anmälans TILLSTÅND. Divergerar de visas det som
  * det är — aldrig hopslaget.
  *
- * Avbokade/ombokade räknas bort ur SUMMERINGARNA och topp-räknarna (`arAktiv`,
- * samma basformel-disciplin som Betalningar-gruppen) — en avbokad anmälan är
+ * Avbokade/ombokade OCH inställda räknas bort ur SUMMERINGARNA och
+ * topp-räknarna (`arAktivAnmalan`, samma basformel-disciplin som
+ * Betalningar-gruppen — TASK-368.1/213.8 utökade predikatet till att även
+ * exkludera Inställt, 2026-09-03) — en avbokad eller inställd anmälan är
  * inte Lottas ARBETE. [ÄNDRAT, TASK-162.3 AC #2] Registret självt är
  * undantaget: avbokade syns numera i registrets bas (grå-märkta av
  * `HallplatsMarke`, sist i ordningen via `registerOrdning`s hink 6) —
@@ -171,11 +175,6 @@ declare module '@tanstack/react-router' {
  * egen text, färg aldrig ensam bärare; räknarna står som TEXT i etiketterna
  * (skärmläsaren får hela bilden); signal-badgen bär sin text likaså.
  */
-
-/** Aktiv anmälan (basens 'Är aktiv'-formel): endast Avbokad/Ombokad räknas bort. */
-function arAktiv(r: Registration): boolean {
-  return r.status !== RegistrationStatus.AVBOKAD;
-}
 
 /** Bekräftad ⟺ basens Status har lämnat 'Obekräftad' (ORDLISTA; S73 K53). */
 function arBekraftad(r: Registration): boolean {
@@ -617,7 +616,7 @@ function MarkeringsBatchBar({
 
 /**
  * [RIVEN, TASK-145.2] `isoDatum`/`AutoKryss` (auto-utskicks-krysset, K44) bodde
- * här. Grillad samsyn beslut 2 (S93 Del 3, `tasks/sessions/2026-08-02-session-93.md`
+ * här. Grillad samsyn beslut 2 (S93 Del 3, `tasks/sessions/archive/2026-08/2026-08-02-session-93.md`
  * rad 158–162) namnger auto-kryssen som EN av exakt tre rivningar ur
  * summeringsblocket (med påminnelse-raden och "Anmälningsbekräftelse skickad"-
  * raden) — samma rivning `?variant=a`s konvergens-pass redan genomförde
@@ -836,7 +835,12 @@ function KortInnehall({
 
             7,5rem = 120 px rymmer den bredaste pillen med marginal — uppmätta
             naturliga bredder: "Från väntelistan" 110,95 · "Manuellt tillagd"
-            107,42 · "Medföljande" 90,09 · "Obekräftad" 82,67. Två pillar
+            107,42 · "Medföljande" 90,09 · "Obekräftad" 82,67. (Obekräftad-talet
+            är ~2 px lågt sedan 2026-09-01: pillen går nu genom `StatusBadge`,
+            som bär `border border-transparent` — den reserverade px:en som gör
+            att `contrast-more` inte hoppar. Marginalen till 120 px är
+            oförändrat god, så slot-bredden rörs inte; talet står kvar med sin
+            avvikelse noterad i stället för att skrivas om utan ommätning.) Två pillar
             samtidigt ryms aldrig på en rad här och staplas som förr (den
             avsiktliga 390-px-lösningen). En framtida bredare pill radbryter
             inuti sin egen pill (två pill-rader = 50 px < identitetens 67) och
@@ -850,10 +854,20 @@ function KortInnehall({
               information ("Väntar på bekräftelse") som denna röda status-pill.
               Två märken på samma axel för samma person var dubbel-etikettering
               (granskningsfynd); steg-märket ERSÄTTER pillen i variant-läge. */}
+          {/* DEN RÖDA HANDRULLADE PILLEN ÄR RIVEN (Marcus dom 2026-09-01).
+              Samma ord bar TRE former i appen: röd `bg-error-bg`/`text-error`
+              här och i `AtgardsSida.tsx`, kopparfärgad `StatusBadge
+              ton="warning"` på betalningsytorna och anmälans detaljsida.
+              `events/detail/Betalningar.tsx` bokförde konflikten redan
+              2026-08-06 ("Ett ord, en färg, hela appen") men konverterade bara
+              sin egen yta — dessa två blev kvar. Nu går alla genom
+              `StatusBadge`, och tonen är NEUTRAL: "Obekräftad" har ett eget
+              bekräftelseflöde och är det normala läget för en ny anmälan.
+              Rött sade "fel har inträffat" om något som inte är ett fel. */}
           {!arBekraftad(reg) && !vald && !hallplatsMarke && (
-            <span className="rounded-full bg-(--mm-error-bg) px-2 py-0.5 font-medium text-caption text-error">
+            <StatusBadge ton="neutral" storlek="sm">
               Obekräftad
-            </span>
+            </StatusBadge>
           )}
           {/* ITERATIONSVÅG (Marcus 2026-08-05): "De här pillsen som sitter på
               kortet 'Medföljande' och 'Manuell' kan vi då ersätta med
@@ -1255,7 +1269,7 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
   // för skarpa vyn OCH `?variant=a`, i stället för två parallella tillstånd.
   const [registerFilter, setRegisterFilter] = useState<RegisterFilter>(TOMT_REGISTER_FILTER);
 
-  const aktiva = useMemo(() => registreringar.filter(arAktiv), [registreringar]);
+  const aktiva = useMemo(() => registreringar.filter(arAktivAnmalan), [registreringar]);
 
   // [PROTOTYPE] [S93] GEMENSAMT — avbokade (Del 3 fall C): tysta idag, en
   // diskret rad längst ned under hållplats-prototypen. Läser HELA

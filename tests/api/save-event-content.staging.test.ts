@@ -44,6 +44,7 @@ import { randomUUID } from 'node:crypto';
 import { type APIRequestContext, type APIResponse, expect, test } from '@playwright/test';
 import { DocumentSourcesSchema } from '../../src/domain/schemas';
 import { EVENTINNEHALL_FALT_KEYS } from '../../supabase/functions/_shared/eventinnehall-falt';
+import { registreraKastbarPost } from '../support/kastbara-poster';
 import { type ApiConfig, classify401Body, getApiConfig, getValidUserJWT } from './helpers';
 
 const ENDPOINT = '/functions/v1/save-event-content';
@@ -87,6 +88,11 @@ async function createThrowawayEvent(
   });
   expect(res.status(), await res.text()).toBe(201);
   const body = (await res.json()) as { record: { id: string } };
+  // [TASK-309.15] Ankaret ÄR ett kastbart KOMMANDE event (startdatum 2026-09-15)
+  // och syntes i appens eventväljare tills nästa staging-jobbs setup-purge kom
+  // åt det. Registreras i ägar-manifestet → raderas av
+  // `purge:staging:efter` direkt efter körningen.
+  registreraKastbarPost(body.record.id, 'save-event-content/Eventplanering/ankare');
   return body.record.id;
 }
 

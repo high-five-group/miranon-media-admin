@@ -22,10 +22,28 @@
 // människoläsbart svenskt fel (filstorlek i MB, inte byte) — aldrig en rå
 // bytejämförelse.
 //
-// [TASK-275.2, ADR-118] RÄCKVIDDSPARAMETRARNA (`rackvidd`/`kursfamilj`/
-// `kursniva`, valfria — default 'Event', dagens beteende oförändrat)
-// valideras STRIKT via `_shared/attachments.ts`s `AttachmentScopeInputSchema`
-// innan `fields` byggs (`buildScopeFields`). Anges `eventId` skrivs
+// [TASK-275.2, ADR-118 · OMBYGGT TASK-338.2, ADR-125 § Beslut 1]
+// RÄCKVIDDSPARAMETRARNA (`rackvidd`/`kursfamilj`/`kursniva`/`plats`, alla
+// valfria — default 'Event', dagens beteende oförändrat) valideras STRIKT
+// via `_shared/attachments.ts`s `AttachmentScopeInputSchema` innan `fields`
+// byggs (`buildScopeFields`).
+//
+// TVÅ levande räckvidder: `Event` och `Gemensam`. `Gemensam` bär tre
+// VALFRIA axlar (Kursfamilj · Kursnivå, bara med familj · Plats) som
+// kombineras med OCH; NOLL axlar är giltigt och betyder "alla event".
+// Legacy-värdena `Kurstyp`/`Alla event` ACCEPTERAS fortfarande (installerade
+// PWA-klienter kan skicka dem tills de uppdaterats) och SPARAS som
+// `Gemensam` med sina axlar bevarade — rivningsskuld, bokförd i
+// AttachmentScopeInputSchemas docblock. Deras egna gamla regler bevaras
+// oförändrade: `Kurstyp` KRÄVER fortfarande `kursfamilj`.
+//
+// `plats` är ett Platser-record-ID och EXISTENSKONTROLLERAS mot
+// Platser-tabellen (`platsFinns`) FÖRE lagringsskrivningen — samma vaktklass
+// som generate-event-attachments ersatt-guard. Skälet: Airtable tystar ett
+// okänt ID i ett länkfält, så ett felstavat plats-ID hade gett en PLATS-LÖS
+// bilaga synlig på ALLA event i stället för ett fel.
+//
+// Anges `eventId` skrivs
 // `Event: [eventId]` OAVSETT räckvidd (oförändrat 275.2-beteende: den bär
 // storage-path-ankaret och den befintliga ägarskaps-mekaniken i delete-
 // attachment/get-attachment-download-url; olycksskyddet mot radering ur
@@ -97,6 +115,48 @@
 // aldrig två olika filer. `anchor` ingår i hash-indata specifikt för att
 // samma fil+filnamn uppladdat till TVÅ OLIKA event inte ska kollidera till
 // en enda rad.
+//
+// [TASK-309.22, HASH-BESLUT — REVIDERAT I REVIEW-RUNDA 1] `deriveAttachmentId`
+// hashar `sanitizeFilnamn(filnamn)` — men EN TIDIGARE VERSION av detta beslut
+// (samma korts första bygg-varv) lät `sanitizeFilnamn` SJÄLV falla till
+// ASCII, vilket gjorde hash-underlaget ASCII-säkert också. Det var FEL:
+// review-runda 1 visade empiriskt att `toStorageSafe` (ASCII-fallet)
+// kollapsar OLIKA filnamn till IDENTISK sträng långt bortom "bara
+// diakritik" — TVÅ HELT OLIKA CJK-strängar (`填报指南.pdf`/`肆意妄为.pdf`)
+// och TVÅ HELT OLIKA emoji (`😀`/`🎉`) föll till samma ASCII-form precis
+// lika lätt som ett diakritik-par. Eftersom `deriveAttachmentId` hashar
+// (anchor, hash-underlag, bytes) hade DETTA gjort att två filer med OLIKA
+// namn och byte-identiskt innehåll fick SAMMA attachmentId — en genuint ny
+// uppladdning hade av misstag blivit en "idempotent replay" av en HELT
+// annan fil (fel Namn kvarstående i Airtable).
+//
+// BESLUTET NU: `sanitizeFilnamn` (`_shared/attachment-filename.ts`) faller
+// INTE längre till ASCII alls — den gör bara det den alltid gjort
+// (separator-/styrtecken-städning, trim, 200-cap). ASCII-fallet
+// (`toStorageSafe`) körs ENDAST inuti `buildAttachmentLeaf`, för
+// Storage-nyckeln/`Lagringsnyckel` — ALDRIG för hash-underlaget. Två olika
+// filnamn (oavsett skript) ger därför ALLTID olika `sanitizeFilnamn`-utdata
+// och därmed olika attachmentId, PRECIS som innan denna hela skiva någonsin
+// rörde vid ASCII-frågan. Bakåtkompatibiliteten (befintliga ASCII-namns
+// hash/nyckel OFÖRÄNDRADE) håller fortfarande: för rena ASCII-namn är
+// `sanitizeFilnamn`s utdata och den ASCII-fallna leaf-formen IDENTISKA (inget
+// tecken att falla), så ingenting ändras för dem. Se
+// `_shared/attachment-filename.ts`s docblock för `sanitizeFilnamn`/
+// `toStorageSafe`/`buildAttachmentLeaf` för den fullständiga uppdelningen.
+//
+// DEN TIDIGARE "KÄND, ACCEPTERAD BIEFFEKT"-NOTEN HÄR ÄR DÄRFÖR BORTTAGEN,
+// INTE OMFORMULERAD: bieffekten den beskrev (två diakritik-varianter av
+// samma namn kolliderar) finns INTE LÄNGRE — hash-underlaget ascii-faller
+// aldrig, så `café.pdf` och `cafe.pdf` hashar till OLIKA attachmentId igen,
+// exakt som före hela detta korts arbete.
+//
+// MÖNSTER 2 (create-attachment-upload-ticket/finalize-attachment-upload)
+// PÅVERKAS INTE av detta beslut: verifierat via kodläsning att den vägen
+// aldrig hashar ett filnamn alls — `attachmentId` där är ALLTID
+// `crypto.randomUUID()`, utfärdat av create-attachment-upload-ticket och
+// sedan client-relayat till finalize (se `create-attachment-upload-ticket/
+// index.ts` respektive `finalize-attachment-upload/index.ts`s § IDEMPOTENS).
+// Hash-frågan är UNIK för mönster 1 (denna EF).
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { fetchAirtableRecord, upsertAirtableRecord } from '../_shared/airtable-client.ts';
@@ -114,6 +174,7 @@ import {
   formatMB,
   isValidEventId,
   mapAttachmentRecord,
+  platsFinns,
   sanitizeFilnamn,
   SMALL_UPLOAD_MAX_BYTES,
 } from '../_shared/attachments.ts';
@@ -231,13 +292,17 @@ Deno.serve(async (req) => {
       return badRequest('Filen saknar innehåll.', corsHeaders);
     }
 
-    // [TASK-275.2] Räckviddsparametrarna — strikt Zod (AC #2). Ogiltig
-    // kombination (t.ex. Kurstyp utan Kursfamilj, eller Kursfamilj angiven
-    // trots räckvidd Event) → 400 med Zod:s egna, specifika felmeddelande.
+    // [TASK-275.2 · UTBYGGT TASK-338.2] Räckviddsparametrarna — strikt Zod.
+    // Ogiltig kombination (t.ex. Kursnivå utan Kursfamilj, eller Plats
+    // angiven trots räckvidd Event) → 400 med Zod:s egna, specifika
+    // felmeddelande. `plats` är den tredje axeln (ADR-125 § Beslut 1);
+    // legacy-värdena Kurstyp/Alla event accepteras och sparas som Gemensam
+    // (se AttachmentScopeInputSchemas docblock för rivningsskulden).
     const scopeParsed = AttachmentScopeInputSchema.safeParse({
       rackvidd: body?.rackvidd,
       kursfamilj: body?.kursfamilj,
       kursniva: body?.kursniva,
+      plats: body?.plats,
     });
     if (!scopeParsed.success) {
       return badRequest(
@@ -275,6 +340,19 @@ Deno.serve(async (req) => {
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         });
       }
+    }
+
+    // [TASK-338.2, ADR-125 § Beslut 1] PLATSEN FINNS-kontrollen — se
+    // `platsFinns` (_shared/attachments.ts) för varför formkontrollen i Zod
+    // inte räcker: Airtable tystar ett okänt record-ID i ett länkfält, så en
+    // felstavad plats hade gett en PLATS-LÖS bilaga (synlig på alla event)
+    // i stället för ett fel. Körs FÖRE bytesen skrivs till lagringen — ett
+    // avvisat anrop ska inte lämna ett föräldralöst Storage-objekt efter sig.
+    if (scopeParsed.data.plats && !(await platsFinns(scopeParsed.data.plats))) {
+      return new Response(JSON.stringify({ error: 'Platsen hittades inte.' }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
     }
 
     const supabaseAdmin = createClient(

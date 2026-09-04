@@ -22,8 +22,21 @@ import {
   BELAGGNING_EVENT_ID,
   BELAGGNING_EXPECTED,
 } from './fixtures';
-import { type ApiConfig, classify401Body, getApiConfig, getValidUserJWT } from './helpers';
+import {
+  type ApiConfig,
+  classify401Body,
+  getApiConfig,
+  getValidUserJWT,
+  getWithTransientRetry,
+} from './helpers';
 
+// TASK-207: get-event.staging.test.ts:48 (get-events-listan, i firstEventId)
+// var ETT av fem endpoints som föll på genuina transienta 502/503 från
+// Edge Runtime/Airtable-lagret i post-merge-sviten 2026-08-12 — bevisat
+// oskyldigt via first-parent-diff. Båda anropen här är idempotenta GET, så
+// getWithTransientRetry appliceras på VARJE försök, negativa vägar (404/401/
+// 400) inkluderat — retryn är ett no-op för dem eftersom de aldrig ser
+// 502/503 på första försöket.
 async function callGetEvent(
   request: APIRequestContext,
   config: ApiConfig,
@@ -33,7 +46,19 @@ async function callGetEvent(
   const query = id === undefined ? '' : `?id=${encodeURIComponent(id)}`;
   const headers: Record<string, string> = {};
   if (jwt) headers.Authorization = `Bearer ${jwt}`;
-  return request.get(`${config.baseUrl}/functions/v1/get-event${query}`, { headers });
+  return getWithTransientRetry(() =>
+    request.get(`${config.baseUrl}/functions/v1/get-event${query}`, { headers }),
+  );
+}
+
+/** Hämta get-events-listan RÅTT — transient-retry-skyddad (TASK-207), delas av
+    firstEventId och de tester nedan som läser listan direkt utan att härleda ett ID. */
+async function fetchEventsList(request: APIRequestContext, config: ApiConfig, jwt: string) {
+  return getWithTransientRetry(() =>
+    request.get(`${config.baseUrl}/functions/v1/get-events`, {
+      headers: { Authorization: `Bearer ${jwt}` },
+    }),
+  );
 }
 
 /** Härled ett riktigt event-ID ur get-events (list) — ingen seedad fixtur. */
@@ -42,9 +67,7 @@ async function firstEventId(
   config: ApiConfig,
   jwt: string,
 ): Promise<string> {
-  const res = await request.get(`${config.baseUrl}/functions/v1/get-events`, {
-    headers: { Authorization: `Bearer ${jwt}` },
-  });
+  const res = await fetchEventsList(request, config, jwt);
   expect(res.status()).toBe(200);
   const body = (await res.json()) as { events: unknown };
   const events = z.array(EventSchema).parse(body.events);
@@ -77,9 +100,7 @@ test.describe('get-event — conformance (single-get-mall, Fas 6b L2)', () => {
   }) => {
     const config = getApiConfig();
     const jwt = await getValidUserJWT(request, config);
-    const res = await request.get(`${config.baseUrl}/functions/v1/get-events`, {
-      headers: { Authorization: `Bearer ${jwt}` },
-    });
+    const res = await fetchEventsList(request, config, jwt);
     expect(res.status()).toBe(200);
     const body = (await res.json()) as { events: unknown };
 
@@ -121,9 +142,7 @@ test.describe('get-event — conformance (single-get-mall, Fas 6b L2)', () => {
   }) => {
     const config = getApiConfig();
     const jwt = await getValidUserJWT(request, config);
-    const res = await request.get(`${config.baseUrl}/functions/v1/get-events`, {
-      headers: { Authorization: `Bearer ${jwt}` },
-    });
+    const res = await fetchEventsList(request, config, jwt);
     expect(res.status()).toBe(200);
     const events = z.array(EventSchema).parse(((await res.json()) as { events: unknown }).events);
 
@@ -144,9 +163,7 @@ test.describe('get-event — conformance (single-get-mall, Fas 6b L2)', () => {
 
     // Härled ett RIM-event ur listan (samma mönster som firstEventId ovan) — mer
     // robust än ett hårdkodat ID.
-    const listRes = await request.get(`${config.baseUrl}/functions/v1/get-events`, {
-      headers: { Authorization: `Bearer ${jwt}` },
-    });
+    const listRes = await fetchEventsList(request, config, jwt);
     const listEvents = z
       .array(EventSchema)
       .parse(((await listRes.json()) as { events: unknown }).events);
@@ -160,6 +177,110 @@ test.describe('get-event — conformance (single-get-mall, Fas 6b L2)', () => {
     // samma värden ur single-get som ur listan.
     expect(event.kursfamilj).toBe('RIM');
     expect(event.kursniva).toBe(rim?.kursniva);
+  });
+
+  // ── EVENTETS PRIS (TASK-368.7 AC #1) ──
+  // Fältet är prisets nivå 2 med Eventinnehåll-standarden (nivå 3) uppslagen
+  // server-side — SAMMA `valjPris` som ombokningens `prisskillnad` använder.
+  // Går de isär slutar prisbeskedet före bekräftelsen stämma med kvittot efter
+  // den, och ingen annan grind ser det.
+
+  test('priset (AC #1): get-events bär `pris` på VARJE event — number eller null, aldrig utelämnat', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const res = await fetchEventsList(request, config, jwt);
+    expect(res.status()).toBe(200);
+    const rader = ((await res.json()) as { events: { pris?: unknown }[] }).events;
+    expect(rader.length, 'staging-basen måste ha minst ETT event').toBeGreaterThan(0);
+
+    // NYCKELN MÅSTE FINNAS. Schemat har fältet `.optional()` för
+    // bakåtkompatibilitet mot cache från före denna leverans, så en `.parse()`
+    // ensam hade INTE fällt en EF som slutade bära det. Därför prövas den råa
+    // JSON-nyckeln här, före valideringen.
+    for (const rad of rader) {
+      expect(
+        Object.hasOwn(rad, 'pris'),
+        `get-events utelämnade \`pris\` för en rad: ${JSON.stringify(rad).slice(0, 120)}`,
+      ).toBe(true);
+      expect(rad.pris === null || typeof rad.pris === 'number').toBe(true);
+    }
+
+    // Och schemat håller för hela listan.
+    z.array(EventSchema).parse(rader);
+
+    // MINST ETT event måste ha ett SATT pris. Utan detta hade sviten varit
+    // grön även om mappningen alltid gav null — alltså grön med ett dött fält.
+    // Staging bär priser sedan TASK-346.2 (`data-model.md` § Stagingbasens
+    // additiva tillskott 2026-08-30); saknas de helt är det basen som
+    // regredierat, och det ska SYNAS.
+    const medPris = rader.filter((r) => typeof r.pris === 'number');
+    expect(
+      medPris.length,
+      'staging-basen måste ha minst ETT event med ett pris (eget eller via Eventinnehåll-standarden)',
+    ).toBeGreaterThan(0);
+  });
+
+  test('priset (AC #1): get-event (single) ger SAMMA tal som listan för samma rad', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+
+    // KORSVALIDERINGEN ÄR POÄNGEN, inte en formalitet: de två EF:erna löser
+    // Eventinnehåll-uppslaget på OLIKA vägar — get-events slår upp EN gång för
+    // hela listan, get-event för en enda rad — och en divergens där hade gett
+    // ombokningssteget (som läser LISTCACHEN) ett annat pris än eventsidan.
+    const listRes = await fetchEventsList(request, config, jwt);
+    const listEvents = z
+      .array(EventSchema)
+      .parse(((await listRes.json()) as { events: unknown }).events);
+    const medPris = listEvents.find((e) => typeof e.pris === 'number');
+    expect(medPris, 'staging-basen måste ha minst ETT event med ett satt pris').toBeDefined();
+
+    const res = await callGetEvent(request, config, jwt, medPris?.id);
+    expect(res.status()).toBe(200);
+    const event = EventSchema.parse(((await res.json()) as { event: unknown }).event);
+    expect(event.pris, 'get-event mot get-events för samma rad').toBe(medPris?.pris);
+  });
+
+  test('priset (AC #1): Eventinnehåll-standarden når fram — RIM-1-utbildningarna bär ett pris', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const res = await fetchEventsList(request, config, jwt);
+    const events = z.array(EventSchema).parse(((await res.json()) as { events: unknown }).events);
+
+    // BASFÖRUTSÄTTNINGEN, mätt 2026-09-03 mot staging (`apphjj8Q7lkXCMsL4`):
+    // Eventinnehåll-raden `Resor i medvetandet 1 × Utbildning` bär
+    // `Pris (kr)` = 2500 (satt av TASK-346.2), medan de flesta
+    // Eventplanering-rader för det paret saknar ett EGET `Pris (kr)`. Ett
+    // sådant event kan alltså BARA få ett pris via uppslaget — det är hela
+    // fallbackens bevis, och utan den skulle klienten visa "priset är inte
+    // satt" för ett event servern prissätter.
+    const rimEtt = events.filter(
+      (e) => e.eventNamn === 'Resor i medvetandet 1' && e.typ === 'Utbildning',
+    );
+    expect(
+      rimEtt.length,
+      'staging-basen måste ha minst ETT "Resor i medvetandet 1 × Utbildning"-event',
+    ).toBeGreaterThan(0);
+    for (const e of rimEtt) {
+      // `typeof === 'number'` och INTE `.not.toBeNull()`. Skillnaden är mätt,
+      // inte teoretisk: fältet är `.optional()` i schemat, så en EF som
+      // UTELÄMNAR nyckeln ger `undefined` — och `expect(undefined).not
+      // .toBeNull()` PASSERAR. Den svagare formen stod här först och var grön
+      // mot den ännu odeployade staging-EF:en, alltså grön utan att bevisa
+      // något (mätt 2026-09-03: de två fallen ovan föll, detta gjorde det
+      // inte). Ett fallback-bevis som inte kan skilja "saknas" från "finns"
+      // är inget bevis.
+      expect(
+        typeof e.pris,
+        `event ${e.id} (${e.eventlabel}) bär inget pris — Eventinnehåll-standarden nådde inte fram`,
+      ).toBe('number');
+    }
   });
 
   // ── Beläggningens innehållsmodell (task-18.2; K16 — AC #1) ──
@@ -189,13 +310,21 @@ test.describe('get-event — conformance (single-get-mall, Fas 6b L2)', () => {
 
     // Per-källa-räkningarna: 2 × Källa TOM → viaFormular; 1 × '+1' → medfoljande;
     // fixturens Källa 'Manuell'-rad räknas i INGEN av dem (exkluderings-beviset —
-    // distinkta värden 2 ≠ 1 utesluter förväxlade räknare).
-    expect(event.viaFormular, 'viaFormular = länkade Anmälningar med Källa TOM').toBe(
+    // distinkta värden 2 ≠ 1 utesluter förväxlade räknare) utan i
+    // `ovrigaAnmalningar` (TASK-373).
+    expect(event.viaFormular, 'viaFormular = AKTIVA länkade Anmälningar med Källa TOM').toBe(
       BELAGGNING_EXPECTED.viaFormular,
     );
-    expect(event.medfoljande, "medfoljande = länkade Anmälningar med Källa '+1'").toBe(
+    expect(event.medfoljande, "medfoljande = AKTIVA länkade Anmälningar med Källa '+1'").toBe(
       BELAGGNING_EXPECTED.medfoljande,
     );
+    // TASK-373: restposten som stänger hålet — 'Manuell'/'Väntelista'/framtida
+    // Källa-värden. Var före fixen ingen nyckel alls i svaret, och anmälan
+    // saknades därmed i eventsidans mätare.
+    expect(
+      event.ovrigaAnmalningar,
+      "ovrigaAnmalningar = AKTIVA länkade Anmälningar med ÖVRIGA Källa-värden ('Manuell')",
+    ).toBe(BELAGGNING_EXPECTED.ovrigaAnmalningar);
 
     // Väntelistan via NYA länkfältet 'Event (länk)': 2 kopplade rader varav 1
     // Flyttad till anmälan → aktiv-filtret ger 1 (AC #3:s läs-bevis).
@@ -204,16 +333,33 @@ test.describe('get-event — conformance (single-get-mall, Fas 6b L2)', () => {
     );
 
     // SUMMERINGEN mot basens fält: basens formel 'Antal anmälda' =
-    // länkade Anmälningar (4: viaFormular 2 + medfoljande 1 + Manuell-raden 1)
-    // + 'Manuella platser' (1) = 5 — segmenten är konsistenta med basens egen
-    // aggregering, inte en parallell sanning.
+    // 'Antal aktiva anmälningar' (4: viaFormular 2 + medfoljande 1 +
+    // ovrigaAnmalningar 1) + 'Manuella platser' (1) = 5 — segmenten är
+    // konsistenta med basens egen aggregering, inte en parallell sanning.
     expect(event.antalAnmalda, "basens 'Antal anmälda'-formel (länkar + manuella)").toBe(
       BELAGGNING_EXPECTED.antalAnmalda,
     );
+    // TASK-373: INGEN handkorrigerad `+ 1` längre. Den konstanten var
+    // symptomet — testet kompenserade för att EF:en tappade Manuell-raden i
+    // stället för att fälla på det. Nu bär `ovrigaAnmalningar` talet, och
+    // uttrycket är den skarpa invarianten mätaren vilar på.
     expect(
-      (event.viaFormular ?? 0) + (event.medfoljande ?? 0) + 1 + (event.manuelltTillagda ?? 0),
-      'per-källa-delarna + Manuell-raden summerar mot basens Antal anmälda',
+      (event.viaFormular ?? 0) +
+        (event.medfoljande ?? 0) +
+        (event.ovrigaAnmalningar ?? 0) +
+        (event.manuelltTillagda ?? 0),
+      'per-källa-delarna summerar mot basens Antal anmälda — ingen aktiv anmälan tappas',
     ).toBe(event.antalAnmalda);
+    // Eventsidans mätare (`@/lib/belaggning`): upptagna = Antal anmälda +
+    // Extra platser. Räknas här ur EF-svaret så kontraktet bevisas skarpt.
+    expect(
+      (event.viaFormular ?? 0) +
+        (event.ovrigaAnmalningar ?? 0) +
+        (event.manuelltTillagda ?? 0) +
+        (event.medfoljande ?? 0) +
+        (event.reserverade ?? 0),
+      'mätarens upptagna === basens Antal anmälda + Extra platser',
+    ).toBe(event.antalAnmalda + (event.reserverade ?? 0));
   });
 
   test('beläggnings-fälten är ADDITIVT-optional: godtyckligt event bär räkningar ≥ 0', async ({
@@ -231,6 +377,7 @@ test.describe('get-event — conformance (single-get-mall, Fas 6b L2)', () => {
     // finns för get-events/äldre cache, inte för get-event-svaret.
     expect(event.viaFormular).toBeGreaterThanOrEqual(0);
     expect(event.medfoljande).toBeGreaterThanOrEqual(0);
+    expect(event.ovrigaAnmalningar).toBeGreaterThanOrEqual(0);
     expect(event.vantelista).toBeGreaterThanOrEqual(0);
   });
 
@@ -272,9 +419,7 @@ test.describe('get-event — conformance (single-get-mall, Fas 6b L2)', () => {
   }) => {
     const config = getApiConfig();
     const jwt = await getValidUserJWT(request, config);
-    const res = await request.get(`${config.baseUrl}/functions/v1/get-events`, {
-      headers: { Authorization: `Bearer ${jwt}` },
-    });
+    const res = await fetchEventsList(request, config, jwt);
     expect(res.status()).toBe(200);
     const events = z.array(EventSchema).parse(((await res.json()) as { events: unknown }).events);
 

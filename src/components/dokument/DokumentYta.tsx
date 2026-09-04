@@ -2,11 +2,18 @@
  * Dokument-ytan — Mer-ytan där bilagor förvaltas (`T131`). PROMOVERAD ur
  * S100/TASK-147.6:s konvergenspass (ADR-102 B1/B2, ADR-103 B2 steg 1) —
  * denna fil ÄR den skarpa ytan, ingen separat prototypfil att riva.
- * Facit-manifestet
- * `tasks/sessions/bilagor/s102-dokument-konvergens/facit.json` är den
- * auktoritativa formbeskrivningen (ADR-102 B1) och bär Marcus godkännande
- * (TASK-164-rivningen, ADR-103 B2 steg 4). Fullständig bygghistorik
- * (skärpningsvarv 1–3, TASK-245/246) finns i
+ * Facit-manifestet `s102-dokument-konvergens` är PENSIONERAT (TASK-309.29,
+ * 2026-08-28) och arkivflyttat till
+ * `tasks/sessions/archive/bilagor/s102-dokument-konvergens/` — dess
+ * `ARKIVERAD.md` bär skälet, gapet och efterträdarna. Det beskrev denna yta
+ * som den såg ut 2026-08-16 (Marcus stämpel, TASK-164-rivningen, ADR-102 B1,
+ * ADR-103 B2 steg 4); Visa-dialogen det avbildar är riven, se
+ * `[ERSATT, TASK-273.4]` nedan. Dagens formbeskrivning bor i
+ * `tasks/sessions/bilagor/s108-generering/facit.json` och
+ * `tasks/sessions/bilagor/s108-dokumentytan/facit.json` (TASK-309.10,
+ * PR #1961) — båda ännu ostämplade, och ingen av dem täcker ett valt events
+ * fulla lista med dagens ikonpar (gapet; uppföljning i TASK-309.32).
+ * Fullständig bygghistorik (skärpningsvarv 1–3, TASK-245/246) finns i
  * `git log -p -- src/components/dokument/DokumentYta.tsx`, inte upprepad
  * här.
  *
@@ -83,9 +90,13 @@
  * genererade en TRANSIENT PDF per klick för klass B/C på samma sätt.
  *
  * IKONPAR (TASK-273.4, Marcus-beslut 2026-08-17 — se amenderings-sidofilen
- * `tasks/sessions/bilagor/s102-dokument-konvergens/AMENDERING-2026-08-17-
- * visa-till-ikonpar.md`): Visa-dialogen ersatt av TVÅ ikonknappar per rad,
- * `DokumentAtgardsKnappar` nedan, för alla tre dokumentklasser. Förhandsvisa
+ * `tasks/sessions/archive/bilagor/s102-dokument-konvergens/
+ * AMENDERING-2026-08-17-visa-till-ikonpar.md`): Visa-dialogen ersatt av TVÅ
+ * ikonknappar per rad för alla tre dokumentklasser. [T176, 2026-08-29:
+ * ikonparet är i sin tur rivet — Öppna ÄR radens namn och Ladda ner är en
+ * menypost; `DokumentAtgardsKnappar`/`LaddaNerKnapp` finns inte längre. Se
+ * `DokumentRadSkal`s docblock. Popup-mönstret nedan är OFÖRÄNDRAT och bor nu
+ * i `oppnaDokument()`.] Förhandsvisa
  * öppnar dokumentet i en RIKTIG ny webbläsarflik (webbläsarens egen
  * PDF-/bildvisare, ingen egen iframe/img-rendering längre) via ett
  * POPUP-BLOCKERAR-SÄKERT mönster: `window.open('', '_blank')` anropas
@@ -100,6 +111,17 @@
  * Storage-URL i vår egen bucket, eller en `blob:`-URL byggd av vår egen JS),
  * aldrig en tredjeparts-länk, vilket gör reverse-tabnabbing-risken av det
  * uteblivna `noopener` försumbar här.
+ *
+ * [TILLÄGG, TASK-309.26 review-runda 1, AC #4] Fönstret bär numera en
+ * momentan laddningssida (`skrivLaddningssida`, `@/lib/skriv-laddningssida`,
+ * "Öppnar dokument…") direkt efter `window.open`, INNAN
+ * `forhandsvisaMutation.mutate(...)` — samma delade mönster som
+ * `GenereringsVy.tsx`s `skapaDokument` numera använder. Fönstret stod annars
+ * tomt (`about:blank`) under hela hämtningen, samma "abrupt tomt fönster"
+ * Marcus avvisade 22 aug 2026 för genereringsvyn — konsekvenskravet (AC #4)
+ * mot just DENNA yta var det som synliggjorde att defekten fanns här också.
+ * Se `useForhandsvisaDokument.ts`s docblock och `@/lib/skriv-laddningssida`
+ * för hela resonemanget, MDN-källorna och viewport-/typsnittsvalen.
  *
  * Nedladdning triggar INGEN flik: en dold `<a download>`-länk klickas
  * programmatiskt. Klass A: den signerade URL:en får en `download`-query-
@@ -131,9 +153,10 @@
  * SIDOEFFEKTSFRI förhandsvisning (AC #3, TASK-246).
  *
  * [UTBYGGD, TASK-275.3, ADR-118] RÄCKVIDDSVAL + RÄCKVIDDSLÄGE + BADGES — se
- * amenderings-sidofilen `tasks/sessions/bilagor/s102-dokument-konvergens/
- * AMENDERING-2026-08-17-rackviddsval-gemensamt-lage-badges.md` för hela
- * avvikelsen mot det godkända facit-manifestet. Kort sammanfattat:
+ * amenderings-sidofilen `tasks/sessions/archive/bilagor/
+ * s102-dokument-konvergens/AMENDERING-2026-08-17-rackviddsval-gemensamt-
+ * lage-badges.md` för hela avvikelsen mot det godkända facit-manifestet.
+ * Kort sammanfattat:
  *   - RÄCKVIDDSVALET (RadioGroup: Detta event/En kurstyp/Alla event — husets
  *     radioval-primitiv, `RadioGroup`/`Radio`), med Kursfamilj/Kursnivå-
  *     `Select` (husets select-primitiv) när Kurstyp är valt. "Detta event" är
@@ -155,32 +178,56 @@
  */
 import { useQuery } from '@tanstack/react-query';
 import {
-  ChevronRight,
+  // [T176] "Skapa bilaga ▾" — chevronen säger att knappen öppnar något,
+  // samma affordans `Select`s trigger bär.
+  ChevronDown,
   Download,
-  ExternalLink,
+  // [2026-08-29] ⋯-knappen som ersätter radens ikonrad. `Ellipsis` (inte
+  // `MoreVertical`): menyn öppnas NEDÅT från en knapp längst ut till höger i
+  // en vågrät rad, och tre vågräta prickar är den form användare känner igen
+  // som "fler val i den här raden" (samma val som `Files`/`Target` gjordes på
+  // — ikonen ska läsa som det den gör).
+  Ellipsis,
+  // [T176] "Skapa bilaga"-triggerns ikon — en bilaga som TILLKOMMER.
+  FilePlus,
   Files,
+  // Radens ledande typglyf — `FileText` för pdf/okänt, `Image` för bilder.
+  // `Image` krockar med webbläsarens globala `Image`-konstruktor, därav
+  // alias.
+  FileText,
   FileUp,
+  Image as ImageIcon,
   Loader2,
+  // [T176] Kvittots menypost — `Receipt` är lucides egen kvittoikon.
+  Receipt,
   RefreshCw,
+  // [TASK-338.4] "Ändra räckvidd" — `Target` läser som "vad detta dokument
+  // siktar på", vilket är precis vad en filter-räckvidd ÄR (ADR-125 § 1).
+  // `Files` är upptagen av räckviddslägets egen väljar-ikon och `Layers` av
+  // segment-byggarens lager-begrepp; `Settings`/`Pencil` hade lovat en
+  // generell redigering av bilagan, inte specifikt dess spridning.
+  Target,
   Trash2,
   Upload,
 } from 'lucide-react';
 import { useQueryState } from 'nuqs';
-import { useMemo, useState } from 'react';
+import { useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { FileTrigger } from 'react-aria-components';
+import { useAuth } from '@/auth/useAuth';
 import type { MallId } from '@/components/dokument/blockDefinitioner';
 import { stegEtikett } from '@/components/dokument/nivaSprak';
 import { RackviddBadge } from '@/components/dokument/RackviddBadge';
+import { rackviddsSammanfattning } from '@/components/dokument/rackviddsText';
 import { EventValjare } from '@/components/events/EventValjare';
 import { Button } from '@/components/primitives/Button';
 import { Dialog } from '@/components/primitives/Dialog';
+import { Meny, MenyAvdelare, MenyPost } from '@/components/primitives/Meny';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Modal } from '@/components/primitives/Modal';
 import { Radio, RadioGroup } from '@/components/primitives/RadioGroup';
 import { Select, SelectItem } from '@/components/primitives/Select';
 import { SidRam } from '@/components/primitives/SidRam';
 import { Skeleton } from '@/components/primitives/Skeleton';
-import { ToggleButton, ToggleButtonGroup } from '@/components/primitives/ToggleButtonGroup';
 import { StatusBadge } from '@/components/registrations/StatusBadge';
 import { mallIdFranAirtableOption } from '@/data/adapters/mallKallhash';
 import type { DokumentKalla } from '@/data/mutations/dokumentKalla';
@@ -189,13 +236,18 @@ import { useForhandsvisaDokument } from '@/data/mutations/useForhandsvisaDokumen
 import { useLaddaNerDokument } from '@/data/mutations/useLaddaNerDokument';
 import { useReplaceAttachment } from '@/data/mutations/useReplaceAttachment';
 import { useSkapaOmEventBilaga } from '@/data/mutations/useSkapaOmEventBilaga';
+import { useUpdateAttachmentScope } from '@/data/mutations/useUpdateAttachmentScope';
 import {
   type UploadAttachmentVariables,
   useUploadAttachment,
 } from '@/data/mutations/useUploadAttachment';
+import { useEventAttachments } from '@/data/queries/useEventAttachments';
+import { usePlacesList } from '@/data/queries/usePlacesList';
 import { useDataSource } from '@/data/useDataSource';
 import type { Attachment } from '@/domain/models/Attachment';
 import { AttachmentClass, AttachmentScope, type AttachmentScopeValue } from '@/domain/types/Status';
+import { fornamn } from '@/lib/fornamn';
+import { skrivLaddningssida } from '@/lib/skriv-laddningssida';
 import { queryKeys } from '@/queries/keys';
 
 /* ------------------------------------------------------------------ *
@@ -216,40 +268,28 @@ import { queryKeys } from '@/queries/keys';
  * nämner den bara som kontext för varför den INTE fick en "Skapa"-knapp).
  * ------------------------------------------------------------------ */
 
+/* [T176, 2026-08-29] `fyllerI`/`byggsUr` ÄR RIVNA. De bar radernas
+   detaljled ("Fyller i datum, plats, pris …" / "Byggs ur namn, e-post …") i
+   `MallRad`/`GeneratorRad`, som inte längre finns: katalogerna renderas nu
+   som menyposter i `SkapaDokumentMeny`, och en menypost är ikon + etikett.
+   Fälten hade blivit data utan läsare — "ingen abstraktion utan faktisk
+   nuvarande användare". Datan finns kvar i git om formen ändras igen. */
 type Mall = {
   id: MallId;
   namn: string;
-  /** Vilka eventfält mallen fyller i — det som gör den till en MALL. */
-  fyllerI: string[];
 };
 
 const MALLAR: Mall[] = [
-  {
-    id: 'bekraftelse',
-    namn: 'Bekräftelsebilaga',
-    fyllerI: ['Datum', 'Plats', 'Pris', 'Betalning', 'Innehåll'],
-  },
-  {
-    id: 'deltagarinfo',
-    namn: 'Deltagarinformation',
-    fyllerI: ['Datum', 'Plats', 'Praktisk info'],
-  },
+  { id: 'bekraftelse', namn: 'Bekräftelsebilaga' },
+  { id: 'deltagarinfo', namn: 'Deltagarinformation' },
 ];
 
 type Generator = {
   id: string;
   namn: string;
-  /** Vilka uppgifter filen byggs ur — per person. */
-  byggsUr: string[];
 };
 
-const GENERATORER: Generator[] = [
-  {
-    id: 'c1',
-    namn: 'Betalningskvitto',
-    byggsUr: ['Namn', 'E-post', 'Betalt belopp', 'Betaldatum', 'Eventnamn'],
-  },
-];
+const GENERATORER: Generator[] = [{ id: 'c1', namn: 'Betalningskvitto' }];
 
 /* ------------------------------------------------------------------ *
  * KURSFAMILJ/KURSNIVÅ-VALSLAGET (TASK-275.3, ADR-118 beslut 1)
@@ -276,6 +316,26 @@ const KURSFAMILJ_VALUES = ['RIM', 'Fjärrskådning', 'Psionautics'] as const;
 const KURSNIVA_VALUES = ['Intro', 'Nivå 1', 'Nivå 2', 'Nivå 3'] as const;
 const KURSFAMILJ_MED_NIVAER: ReadonlySet<string> = new Set(['RIM']);
 
+/**
+ * [TASK-338.3] Nolläget i räckviddsdialogens tre axel-`Select`ar — "axeln är
+ * inte satt, den begränsar inte" (ADR-125 § 1). Se `RackviddsDialog`s
+ * kommentar vid Familj-selecten för varför nolläget är ett EGET alternativ
+ * i stället för en platshållare.
+ *
+ * Värdet kan inte kollidera med riktig data: familjerna är tre kända namn,
+ * stegen är basens `Nivå N`-optioner och platserna är Airtable-record-ID:n
+ * (`rec…`). Det lämnar aldrig klienten — `axelVarde` översätter tillbaka
+ * till `null` innan valet blir en EF-parameter.
+ */
+const ALLA_AXEL = '__alla';
+
+/** Select-nyckel → axelvärde: nolläget (och inget val alls) blir `null`. */
+function axelVarde(nyckel: React.Key | null): string | null {
+  if (nyckel == null) return null;
+  const varde = String(nyckel);
+  return varde === ALLA_AXEL ? null : varde;
+}
+
 /** Full precision, Gunilla-läsbart — samma format som Anteckningar.tsx § ANTECKNING_TID. */
 const DATUM_TID = new Intl.DateTimeFormat('sv-SE', {
   day: 'numeric',
@@ -294,10 +354,15 @@ const DATUM_TID = new Intl.DateTimeFormat('sv-SE', {
  */
 type BilageRad = { current: Attachment; dolda: number };
 
-/** [TASK-275.3] Räckviddsvalet `RackviddsDialog` producerar — delad shape
-    mellan uppladdning (`UploadAttachmentVariables` minus `file`) och
-    ersättning (`ReplaceAttachmentInput` minus `file`/`oldAttachmentId`). */
-type UploadScopeVal = Pick<UploadAttachmentVariables, 'rackvidd' | 'kursfamilj' | 'kursniva'>;
+/** [TASK-275.3, UTBYGGD TASK-338.3] Räckviddsvalet `RackviddsDialog`
+    producerar — delad shape mellan uppladdning (`UploadAttachmentVariables`
+    minus `file`) och ersättning (`ReplaceAttachmentInput` minus `file`/
+    `oldAttachmentId`). Bär sedan ADR-125 § 1 alla TRE axlarna; `plats` är
+    ett Platser-record-ID, aldrig ett namn. */
+type UploadScopeVal = Pick<
+  UploadAttachmentVariables,
+  'rackvidd' | 'kursfamilj' | 'kursniva' | 'plats'
+>;
 
 /**
  * [TASK-147.11, DEGRADERAD TILL REN VISNINGSHJÄLP] Grupperar VERKLIGA
@@ -340,11 +405,12 @@ export function DokumentYta() {
   });
   const valtEvent = eventsQuery.data?.find((e) => e.id === eventId);
 
-  const attachmentsQuery = useQuery({
-    queryKey: queryKeys.attachments.byEvent(eventId ?? ''),
-    queryFn: () => dataSource.fetchEventAttachments(eventId ?? ''),
-    enabled: eventId != null,
-  });
+  // [TASK-340.2] Frågan bor nu i `useEventAttachments` — SAMMA nyckel, samma
+  // `enabled`-villkor, ingen beteendeändring här. Den flyttade ut därför att
+  // `GenereringsVy.tsx` behöver samma svar för sin "Skapa om …"-etikett, och
+  // två inline-`useQuery` med samma nyckel är två ställen att hålla i synk.
+  // Se hookens docblock för hela resonemanget.
+  const attachmentsQuery = useEventAttachments(eventId);
 
   // [TASK-275.3, ADR-118 beslut 5] Räckviddsläget (Fynd, filhuvudets nya
   // stycke): ALLA gemensamma bilagor, hämtas BARA när inget event är valt —
@@ -370,6 +436,11 @@ export function DokumentYta() {
   // (`GemensamtLage` nedan; se useDeleteAttachment.ts § docblock för varför
   // signaturen ändå speglar hela `string | null`-kontraktet).
   const deleteMutation = useDeleteAttachment(eventId);
+  // [TASK-338.4] "Ändra räckvidd" — som Radera ovan ANVÄNDS den bara i
+  // räckviddsläget (ADR-118 beslut 3: en delad bilaga är oredigerbar ur ett
+  // events kontext). Enda OPTIMISTISKA mutationen på denna yta; skälet
+  // (ingen fil rör sig) står i useUpdateAttachmentScope.ts § docblock.
+  const scopeMutation = useUpdateAttachmentScope(eventId);
 
   const rader = useMemo(
     () => grupperaPerNamn(attachmentsQuery.data ?? []),
@@ -388,6 +459,35 @@ export function DokumentYta() {
   // eller inte, och två monterade dialoger (en per läge) hade kunnat glida
   // isär precis som de två radkomponenterna gjorde före S107:s fjärde rond.
   const [valdaFiler, setValdaFiler] = useState<FileList | null>(null);
+
+  // ═══ [TASK-338.4] RADEN VARS RÄCKVIDD ÄNDRAS ═══
+  //
+  // Samma disciplin som `valdaFiler` ovan, och samma dialog: `null` betyder
+  // "ingen ändring pågår". Att BÅDA lägena bärs av var sitt state (i stället
+  // för ett delat `dialogLage`) håller dem ömsesidigt uteslutande på ett sätt
+  // som syns i JSX-grenen nedan — och gör det omöjligt att av misstag öppna
+  // en uppladdningsdialog med en rad förifylld.
+  const [andrasRackvidd, setAndrasRackvidd] = useState<Attachment | null>(null);
+
+  /**
+   * RÄCKVIDDSVÄXLINGEN — EN HANDLER, båda anropsvägarna.
+   *
+   * `onByte` (event → event, delade → event) och `gemensamtAlternativ.onValj`
+   * ("Delade bilagor") är `EventValjare`s ENDA två vägar in i ett
+   * räckviddsbyte (se dess `onSelectionChange` — sentinel-grenen ELLER
+   * event-grenen, aldrig båda för samma klick), och båda pekar hit.
+   *
+   * [T176, RIVET] Handlern nollställde tidigare ÄVEN typfiltret
+   * (`void setFilter(null)`, TASK-309.40) vid varje byte i båda riktningarna.
+   * Filtret finns inte längre — `?typ` är riven med `LISTA_FILTER`, se
+   * `DokumentLista`s docblock — så det finns inget att nollställa. Problemet
+   * den raden löste (ett filter som överlevde ett räckviddsbyte OSYNLIGT,
+   * eftersom nuqs-nyckeln inte hör till komponent-livscykeln och
+   * räckviddsläget saknade filterrad) kan strukturellt inte uppstå igen.
+   */
+  const handleRackviddsByte = (nastaEventId: string | null) => {
+    void setEventId(nastaEventId);
+  };
 
   const handleUpload = (files: FileList | null, scope: UploadScopeVal, onKlart?: () => void) => {
     const file = files?.[0];
@@ -410,13 +510,48 @@ export function DokumentYta() {
     deleteMutation.mutate({ attachmentId, namn });
   };
 
+  /**
+   * [TASK-338.4] Sparar den nya räckvidden på raden i `andrasRackvidd`.
+   *
+   * `platsNamn` kommer FRÅN DIALOGEN (som redan har platslistan) och används
+   * ENBART för den optimistiska renderingen — se `useUpdateAttachmentScope.ts`
+   * § `UpdateAttachmentScopeVariables`. EF:en får aldrig ett platsNAMN;
+   * kontraktet bär bara record-ID:t.
+   *
+   * `onSuccess`-callbacken stänger dialogen, INTE ett `isSuccess`-useEffect:
+   * flaggan står kvar efter stängning och hade stängt nästa dialog i samma
+   * ögonblick den öppnades (samma fälla `handleUpload` redan bokför). Vid
+   * FEL stängs dialogen inte — felet renderas inuti den, intill valet.
+   */
+  const handleSparaRackvidd = (scope: UploadScopeVal, onKlart: () => void, platsNamn?: string) => {
+    const rad = andrasRackvidd;
+    if (!rad) return;
+    scopeMutation.mutate(
+      {
+        attachmentId: rad.id,
+        namn: rad.namn,
+        // Dialogen kan bara producera GEMENSAM här ("Bara detta event" är
+        // avstängd i ändra-läget), men vi läser värdet den faktiskt gav i
+        // stället för att hårdkoda — så en framtida ändring av dialogen inte
+        // tyst skickar något annat än vad Lotta såg.
+        rackvidd: scope.rackvidd ?? AttachmentScope.GEMENSAM,
+        kursfamilj: scope.kursfamilj,
+        kursniva: scope.kursniva,
+        plats: scope.plats,
+        platsNamn,
+      },
+      { onSuccess: onKlart },
+    );
+  };
+
   return (
     <div className="flex flex-col gap-4" data-testid="dokument-yta">
       {/* TASK-299.11 — PROMOVERAD: husets delade SidRam-primitiv (kant-i-
           kant-dialekten, endast sidkromet) ersätter den gamla textlänken.
           Dev-växeln `?sidram=ny` (TASK-299.1) är riven (ADR-103 B2 steg 4);
-          facit-manifestet amenderat till klass (c), se
-          s102-dokument-konvergens/AMENDERING-2026-08-23-sidram-promovering.md. */}
+          facit-manifestet amenderat till klass (c), se tasks/sessions/
+          archive/bilagor/s102-dokument-konvergens/AMENDERING-2026-08-23-
+          sidram-promovering.md (arkivflyttat, TASK-309.29). */}
       <SidRam to="/mer" tillbakaEtikett="Tillbaka till Mer" />
 
       {/* INGEN INGRESS — PRÖVAD RENDERAD OCH FÄLLD (Marcus 2026-08-18).
@@ -426,7 +561,7 @@ export function DokumentYta() {
           hon ändå."* Sidans tydlighet bärs i stället av strukturen — ett val,
           en knapp, en lista. Återinför den inte utan att fråga. */}
       <header className="flex flex-col gap-1 px-4">
-        <h1 className="font-semibold text-3xl">Dokument</h1>
+        <h1 className="font-semibold text-3xl">Bilagor</h1>
       </header>
 
       {/* Eventväljaren (Fynd 2): fundamentet är event-scopat, så ytan
@@ -436,7 +571,7 @@ export function DokumentYta() {
           default-vald här. TOMT LÄGE är sedan TASK-275.3 INTE längre "väntar
           på val" — det ÄR räckviddsläget (se GemensamtLage nedan). */}
       {/* VÄLJAREN ÄGER HELA RÄCKVIDDS-AXELN (Marcus 2026-08-18). Listan har
-          ett kontextlöst alternativ överst — "Delade dokument" — som är
+          ett kontextlöst alternativ överst — "Delade bilagor" — som är
           valt när `?event=` saknas. Ett val, en kontroll.
 
           Det ersätter knappen "Visa gemensamma dokument" som stod längst ner
@@ -466,27 +601,75 @@ export function DokumentYta() {
         <EventValjare
           // Den STORA, luftiga rutan — samma geometri som manuell anmälans
           // tomma läge (Marcus 2026-08-18). Dokument-ytans väljare är sidans
-          // primära val och står per konstruktion ALDRIG tom ("Delade dokument"
+          // primära val och står per konstruktion ALDRIG tom ("Delade bilagor"
           // är valt när `?event=` saknas), så pillformen var den enda den
           // någonsin visade. Se `EventValjare`s `form`-prop för hela motivet.
           form="fristaende"
           valtEventId={eventId ?? undefined}
           valtEvent={valtEvent}
-          onByte={(id) => void setEventId(id)}
+          onByte={(id) => handleRackviddsByte(id)}
           gemensamtAlternativ={{
-            // "Delade dokument", inte "Gemensamma dokument" (Marcus 2026-08-18).
-            // MODELLBEGREPPET är oförändrat: ORDLISTA.md § Gemensam bilaga och
-            // `AttachmentScope`-värdena rörs inte — detta är UI-språk, samma
-            // skillnad som `Nivå`→`Steg` redan bär (nivaSprak.ts).
-            etikett: 'Delade dokument',
+            // "Delade bilagor" (T176, 2026-08-29). Var "Delade dokument" —
+            // aldrig "Gemensamma dokument" (Marcus 2026-08-18) — och blev
+            // "bilagor" när BILAGA gjordes till ytans substantiv (ORDLISTA.md
+            // rad 179). MODELLBEGREPPET är oförändrat: ORDLISTA.md § Gemensam
+            // bilaga och `AttachmentScope`-värdena rörs inte — detta är
+            // UI-språk, samma skillnad som `Nivå`→`Steg` redan bär
+            // (nivaSprak.ts).
+            etikett: 'Delade bilagor',
             // `Files` — FLERA dokument, vilket är precis vad räckvidden betyder
             // (ORDLISTA.md § Gemensam bilaga: syns i varje berört events lista).
             // Kalender vore fel: den betyder event, och detta är valet UTAN
             // event. `Layers` var upptaget av segment-byggarens lager-begrepp.
             // Storleken 18 speglar kalenderikonens i väljarens tomma läge.
             ikon: <Files aria-hidden="true" size={18} className="shrink-0" />,
-            onValj: () => void setEventId(null),
+            onValj: () => handleRackviddsByte(null),
           }}
+        />
+
+        {/* ═══ [TASK-309.44, 2026-08-30] HANDLINGSRADEN BOR PÅ SIDAN, INTE I
+            LISTANS BLOCK ═══
+
+            Marcus prod-titt: *"knapparna inte sitter perfekt där dem sitter
+            just nu, de har en annan rundning än blocket också"*. TVÅ fel i
+            ett, båda mätta av orkestreraren på 1280×900 innan flytten:
+
+              RADIE-NÄSTLING. Knapparna hade `border-radius: 4px` inuti ett
+              block med 16 px radie, bredvid kort med 16 px radie. Tre radier
+              i tre nästlade lager läser som tre olika hus. Att bara runda
+              knapparna mer hade varit att lösa symptomet — 44 px-knappar med
+              16 px radie är en annan knappform än husets.
+
+              ROLL-FÖRVÄXLING. `Ladda upp bilaga` är SIDANS primärhandling
+              (solid guld, den tyngsta ytan på skärmen) och stod inne i
+              listans grå bricka, vänsterställd, med en tom grå yta till
+              höger. Blocket svarar på "vad FINNS här?"; knapparna svarar på
+              "vad kan jag GÖRA här?" — och den frågan hör till sidan.
+
+            RADEN LIGGER DÄRFÖR HÄR, som syskon till `EventValjare` och till
+            lägena, inte inuti något av dem. Formen bär tre egenskaper GRATIS
+            i stället för att behöva mätas fram:
+
+              • RYTMEN. Kolumnens egen `gap-4` ger 16 px väljare → rad →
+                block, utan att någon sektion behöver justeras.
+              • VÄNSTERKANTEN. Väljare, knappar och block är syskon i samma
+                `px-4`-kolumn, så de kan strukturellt inte hamna ur linje.
+                (Före flytten låg knapparna på 381 mot väljarens 372 — 1 px
+                blockkant + 8 px `p-2`.)
+              • SYMMETRIN. Raden renderas i BÅDA lägena och i ALLA
+                query-tillstånd. Låg den kvar i listkomponenterna hade den
+                funnits under laddning i räckviddsläget (som äger sin egen
+                skelett-gren) men saknats under laddning i eventläget (vars
+                skelett ligger nedanför) — plus ett layout-hopp när datan
+                landade och raden dök upp ovanför listan.
+
+            Att den syns under laddning och vid fel är en FÖRBÄTTRING, inte
+            en bieffekt: uppladdningsvägen är oberoende av att listan kunde
+            hämtas, och var otillgänglig i felläget förut. */}
+        <ListHandlingsRad
+          eventId={eventId}
+          uploadMutation={uploadMutation}
+          onValjFil={setValdaFiler}
         />
 
         {eventId == null ? (
@@ -503,6 +686,8 @@ export function DokumentYta() {
             replaceMutation={replaceMutation}
             onDelete={handleDelete}
             deleteMutation={deleteMutation}
+            onAndraRackvidd={setAndrasRackvidd}
+            scopeMutation={scopeMutation}
           />
         ) : attachmentsQuery.isPending ? (
           <div role="status" aria-busy="true" className="flex flex-col gap-2">
@@ -525,35 +710,35 @@ export function DokumentYta() {
           />
         )}
 
-        {/* SIDANS PRIMÄRA HANDLING — EN KNAPP, INTE ETT FORMULÄR, OCH DEN STÅR
-          UNDER LISTAN (Marcus 2026-08-18).
+        {/* [T176, 2026-08-29] UPPLADDNINGSKNAPPEN STOD HÄR — den bor nu i
+            `ListHandlingsRad` OVANFÖR lägena (se dess placering ovan).
+            Historiken, för den som undrar varför den flyttat fyra gånger:
 
-          Placeringen hänger ihop med att listan RULLAR INLINE: den kan aldrig
-          växa förbi sin max-höjd, så knappen under den är alltid inom en
-          skärmhöjd. Marcus: *"detta gör det logiskt att sätta Ladda upp-
-          knappen under dokumentlistan, vilket också gör layouten snyggare."*
-          Utan rullningen hade placeringen varit fel — det var precis därför
-          uppladdningen flyttades ÖVER listan 2026-08-17, när listans längd
-          var obegränsad.
+              2026-08-17  ÖVER listan (listans längd var obegränsad, så en
+                          knapp under den kunde hamna utanför skärmen)
+              2026-08-18  UNDER listan — Marcus: *"detta gör det logiskt att
+                          sätta Ladda upp-knappen under dokumentlistan"*, ett
+                          giltigt drag så fort listan fick låst höjd och
+                          inline-rullning
+              2026-08-29  IN I KORTET, ovanför listan, tillsammans med
+                          "Skapa bilaga" — handlingarna hör ihop som ETT
+                          block ("vad kan jag göra här?") och listan som ett
+                          annat ("vad finns här?"); två handlingszoner på var
+                          sin sida om listan var en zon för mycket
+              2026-08-30  UT UR KORTET igen, till sidflödet mellan väljaren
+                          och blocket (TASK-309.44, Marcus mandat). Steget
+                          2026-08-29 grupperade rätt saker men i fel
+                          BEHÅLLARE: handlingarna hör ihop, och de hör till
+                          SIDAN — inte till listans bricka. Skälen (radie-
+                          nästling + roll-förväxling) står i sin helhet vid
+                          `ListHandlingsRad`s anropsställe ovan.
 
-          Knappen öppnar filväljaren DIREKT; räckviddsfrågan kommer efteråt, i
-          dialogen, när det finns en fil att ställa den om. Före detta stod ett
-          permanent tvåstegs-block ("Steg 1: Vilka event ska filen gälla?" →
-          "Steg 2: Välj fil") som frågade om spridning innan filen fanns.
-
-          `data-testid` på WRAPPERN, inte på knappen: `FileTrigger` renderar
-          sin dolda `<input type="file">` som syskon till knappen, och det är
-          inputen testet behöver nå (`setInputFiles`). Sidan bär flera
-          FileTriggers — varje "Ersätt" är en — så ett scopat ankare är enda
-          sättet att träffa RÄTT input. */}
-        <div data-testid="ladda-upp-ny-fil">
-          <FileTrigger acceptedFileTypes={['application/pdf']} onSelect={setValdaFiler}>
-            <Button intent="primary" isDisabled={uploadMutation.isPending}>
-              <Upload aria-hidden="true" size={16} className="shrink-0" />
-              {uploadMutation.isPending ? 'Laddar upp…' : 'Ladda upp ny fil'}
-            </Button>
-          </FileTrigger>
-        </div>
+            Flödet är ORÖRT genom alla fyra: knappen öppnar filväljaren DIREKT
+            och räckviddsfrågan ställs efteråt i dialogen, när det finns en fil
+            att ställa den om (Marcus 2026-08-18 — före det stod ett permanent
+            tvåstegs-block som frågade om spridning innan filen fanns).
+            `data-testid="ladda-upp-ny-fil"` har följt med oförändrat varje
+            gång, så uppladdningstesterna har aldrig behövt röras. */}
 
         {/* Uppladdningsfelet bor på SIDAN, inte i dialogen: dialogen stänger
             vid framgång och rivs, så ett fel som uppstår i sista ögonblicket
@@ -575,62 +760,723 @@ export function DokumentYta() {
           200 ms-skalning inte är det. */}
       {valdaFiler != null && (
         <RackviddsDialog
-          filer={valdaFiler}
+          lage={{ typ: 'uppladdning', filer: valdaFiler }}
           harEvent={eventId != null}
-          uploadMutation={uploadMutation}
+          arbetar={uploadMutation.isPending}
+          // Uppladdningsfelet bor på SIDAN (`UppladdningsFel` ovan), inte i
+          // dialogen — den stänger vid framgång och hade rivit felet med sig.
+          fel={null}
           onStang={() => setValdaFiler(null)}
-          onUpload={handleUpload}
+          onBekrafta={(scope, onKlart) => handleUpload(valdaFiler, scope, onKlart)}
+        />
+      )}
+
+      {/* [TASK-338.4] ÄNDRA RÄCKVIDD — samma dialog, andra läget. Villkorad
+          montering av EXAKT samma skäl som uppladdningens ovan: förifyllningen
+          läses som `useState`-initialvärde, så en rivning vid stängning är det
+          som garanterar att nästa öppning speglar RADENS axlar och inte förra
+          radens. De två staten är ömsesidigt uteslutande i praktiken (Lotta
+          kan bara trycka på en knapp i taget) men ingen av dem stänger av den
+          andra — det behövs inte, eftersom `Modal` staplar och den senast
+          öppnade tar fokus. */}
+      {andrasRackvidd != null && (
+        <RackviddsDialog
+          lage={{
+            typ: 'andra-rackvidd',
+            attachmentId: andrasRackvidd.id,
+            namn: andrasRackvidd.namn,
+            // RADENS NUVARANDE AXLAR blir dialogens utgångsläge. `?? undefined`
+            // och inte `?? null`: `UploadScopeVal` bär `undefined` som "axeln
+            // är inte satt" hela vägen ner till EF:en, medan modellen bär
+            // `null` — översättningen sker här, vid gränsen, en gång.
+            initial: {
+              rackvidd: andrasRackvidd.rackvidd ?? undefined,
+              kursfamilj: andrasRackvidd.kursfamilj ?? undefined,
+              kursniva: andrasRackvidd.kursniva ?? undefined,
+              plats: andrasRackvidd.plats?.id ?? undefined,
+            },
+          }}
+          harEvent={eventId != null}
+          arbetar={scopeMutation.isPending}
+          fel={
+            scopeMutation.isError
+              ? (scopeMutation.error?.message ?? 'Inget felmeddelande angavs.')
+              : null
+          }
+          onStang={() => {
+            setAndrasRackvidd(null);
+            // Nollställ felet med dialogen: mutationens `isError` står kvar
+            // efter stängning och hade annars visat förra försökets fel i
+            // samma ögonblick nästa rad öppnades.
+            scopeMutation.reset();
+          }}
+          onBekrafta={handleSparaRackvidd}
         />
       )}
     </div>
   );
 }
 
-/** Metaraden under namnet — bara verkliga fält (storlek, uppladdad-datum). */
-/* ═══ DE FYRA RADHANDLINGARNA DELAR EXAKT FORM ═══
+/* ═══ RADENS IKONKNAPP — EN KVAR, MEN FORMEN GÄLLER ═══
  *
- * Marcus 2026-08-17: *"alla fyra knappar måste se likadana ut och sitta i
- * rad, alltså även previewknappen, gör de mindre så får de plats."*
+ * Konstanten bar tidigare FYRA à FEM knappar per rad (Marcus 2026-08-17:
+ * *"alla fyra knappar måste se likadana ut och sitta i rad, alltså även
+ * previewknappen, gör de mindre så får de plats."*). Sedan T176 (2026-08-29)
+ * finns exakt EN kvar — radens ⋯-trigger — och resten bor som menyposter
+ * (`DokumentRadSkal`). Konstanten står ändå: den bär två saker som inte fick
+ * följa med i rivningen.
  *
- * Formen bor därför i EN konstant i stället för att upprepas på fyra
- * anropsställen i två radkomponenter — samma skäl som `HandlingsRad` och
- * `StegSektion` lyftes: en delad form som beskrivs på flera ställen glider
- * isär, och glidningen upptäcks av Marcus öga, inte av en grind.
+ * ── 1. STORLEKEN ÄR 44 px, OCH DEN ÄR ETT GOLV VI INTE SÄNKER ──
  *
- * ── STORLEKEN ÄR 44 px, OCH DEN ÄR ETT GOLV VI INTE SÄNKER ──
+ * "Gör dem mindre" löstes en gång med IKONEN (18 → 16 px) och luften mellan
+ * dem, aldrig med träffytan. 44×44 är repots egen uttalade ribba
+ * (`DESIGN-SYSTEM-SPEC.md` § checklista, "Touch targets ≥ 44px?") och den är
+ * mekaniskt låst på annat håll i huset (`tests/a11y/NavCard.spec.ts`:
+ * "träffyta: raden är ≈58 px hög (≥44 px-golvet)").
  *
- * "Gör dem mindre" löstes med IKONEN (18 → 16 px) och luften mellan dem
- * (`gap-1` → `gap-0.5`), aldrig med träffytan. 44×44 är repots egen
- * uttalade ribba (`DESIGN-SYSTEM-SPEC.md` § checklista, "Touch targets ≥
- * 44px?") och den är mekaniskt låst på annat håll i huset
- * (`tests/a11y/NavCard.spec.ts`: "träffyta: raden är ≈58 px hög (≥44
- * px-golvet)"). Fyra knappar à 44 px + tre 2 px-mellanrum = 182 px, mätt.
+ * ── 2. FORMEN ÄR `ghost` I VILA MED EGEN PLATT-TOKEN — OCH DET ÄR EN
+ *      OMPRÖVNING AV INVARIANTEN NEDAN, INTE ETT BROTT MOT DEN ──
  *
- * Skulle bredden ändå inte räcka på en smal skärm är rätt svar att låta
- * raden bryta, inte att krympa träffytan — en knapp som är för liten att
- * träffa är trasig för Lotta på mobil, medan en rad som bryter bara är
- * längre.
+ * [TASK-309.44, 2026-08-30, Marcus mandat] Knappen bar `primary`+`subtle`
+ * fram till denna skiva. Formen var korrekt för sin tid men fel för kortet:
+ * en permanent guldtonad platta (mätt `color(srgb 0.157 0.161 0.157 / 0.1)`)
+ * på VARJE rad gör listan till en knapprad, och plattans `border-radius: 4px`
+ * satt inuti ett kort med 16 px radie — samma radie-nästling som fällde
+ * handlingsraden i samma skiva.
+ *
+ * NYA FORMEN, tre delar:
+ *   • VILA: `intent="ghost"` (transparent botten) och bara ikonen, i
+ *     `--mm-bilagekort-ikonknapp-text` (= `--mm-text-secondary`). Ingen
+ *     platta alls — raden läser som text tills man siktar på den.
+ *   • HOVER / PRESSED / ÖPPEN MENY: en platta i
+ *     `--mm-bilagekort-ikonknapp-bg-hover` (= `--mm-bg-emphasized`, #edeee9)
+ *     och ikonen i `--mm-text`.
+ *   • FORMEN: `rounded-full`. En rund platta kan aldrig krocka med kortets
+ *     16 px-radie — det finns ingen tredje radie att läsa fel.
+ *
+ * INVARIANTEN NEDAN GÄLLER OFÖRÄNDRAT, och det är därför formen fungerar:
+ * problemet var ALDRIG `ghost` som intent, utan `ghost`s HOVER-TOKEN. Den
+ * (`--mm-button-ghost-bg-hover`) ÄR `--mm-bg-muted`, alltså behållarens egen
+ * ton — ΔE00 0,00, mätt. Vi byter därför inte tillbaka till ghost-tokenen; vi
+ * överskuggar den med en EGEN komponent-token som är skild från BÅDA
+ * grannarna (ΔE00 4,52 mot kortets vita, 2,30 mot behållaren; hela
+ * mätserien i `components.css` § Bilagekortets ⋯-knapp). Ghost-tokenen hade
+ * gett 2,30 mot kortet och 0,00 mot behållaren — alltså hälften så tydlig,
+ * och osynlig så fort knappen råkar ligga mot den grå ytan.
+ *
+ * `contrast-more:border contrast-more:border-current` bär den kant `subtle`
+ * gav gratis via sin compound-variant — 11-golvet får inte falla bort med
+ * intent-bytet, och `ghost` har ingen egen kontrast-regel.
+ *
+ * ── 2b. DEN GAMLA FORMENS HISTORIK — LÄS DEN INNAN DU "FÖRENKLAR" ══
+ *
+ * FLYTTAD HIT från den rivna `DokumentAtgardsKnappar`s docblock (T176), för
+ * att invarianten gäller ⋯-knappen precis som den gällde ikonparet. Detta är
+ * en ÅTERSTÄLLD fix, inte ett smakval, och den har rivits en gång redan:
+ *
+ *   1. `3b592e8c` (TASK-147.6 varv 3) bytte den dåvarande Visa-knappen FRÅN
+ *      `ghost` TILL `intent="primary" emphasis="subtle"` — på Marcus
+ *      granskningsfynd. Skälet stod i klartext: `ghost`s hover-token
+ *      (`--mm-button-ghost-bg-hover`) ÄR `var(--mm-bg-muted)`, vilket är
+ *      EXAKT samma färg som radgruppens egen bakgrund (`bg-bg-muted` på
+ *      `grupp-kort`). Hovern FANNS i CVA:n hela tiden — den var osynlig mot
+ *      en identisk bakgrund.
+ *   2. `b881fe64` (TASK-273.4) ersatte Visa-knappen med ett ikonpar och satte
+ *      `intent="ghost"` — vilket återinförde exakt samma token-identitet, och
+ *      därmed exakt samma osynliga hover.
+ *   3. Marcus fångade den igen vid QA 273.5 steg 5 (2026-08-17): "de behöver
+ *      alltså samma bakgrund som visa-knappen hade, samma hover också
+ *      liksom". Samma defekt, andra ronden.
+ *
+ * INVARIANTEN, formulerad så den överlever nästa ombyggnad: en knapp i denna
+ * yta får aldrig bära `ghost`s HOVER-TOKEN, för `--mm-button-ghost-bg-hover`
+ * ÄR `--mm-bg-muted` — behållarens egen ton, och därmed osynlig mot den och
+ * halvsynlig mot kortet.
+ *
+ * [T176-TILLÄGG, uppdaterat vid kortformen 2026-08-29] Invarianten fick en
+ * TREDJE grund när raden blev ett KORT: en knapp-platta i behållarens färg
+ * mitt i ett vitt kort. Namnknappen löser samma sak åt andra hållet: den bär
+ * INGEN platta alls.
+ *
+ * [2026-08-30, TASK-309.43] Namnknappens platt-löshet var tidigare motiverad
+ * med att KORTET bar återkopplingen i stället (`--mm-bilagekort-bg-hover`,
+ * #edeee9). Den tonen är riven på Marcus mandat (*"Ta bort hover på
+ * korten"*) — kortet är statiskt. Namnknappen bär sedan TASK-309.44 en
+ * UNDERSTRYKNING vid hover i stället, se `DokumentRadSkal`s docblock.
+ *
+ * [2026-08-30, TASK-309.44] INVARIANTEN VAR EN GÅNG FÖR BRETT SKRIVEN, och
+ * det är värt att veta varför den nu står som den gör. Den löd: *"en knapp
+ * som sitter INUTI `grupp-kort` får aldrig bära `ghost`"* — alltså ett
+ * förbud mot INTENTEN. Men vad de tre instanserna ovan faktiskt fällde var
+ * varje gång TOKENEN, aldrig intenten; formuleringen generaliserade från
+ * fyndet till hela varianten. Följden var att den enda rätta formen för en
+ * ikonknapp i ett kort — platt i vila, tonad vid hover — stod förbjuden på
+ * fel grund, och ytan bar i stället en permanent platta i tre ronder.
+ * Invarianten är därför omformulerad mot vad som mättes, inte mot vad som
+ * antogs, och `subtle`-argumentet (primitivens deklarerade form för
+ * "tabellrader/toolbars", `Button.tsx` § subtle) gäller fortfarande — det
+ * beskriver bara en ANNAN ytklass än ett vitt kort i en grå behållare.
+ * Kontrast-kanten som `subtle` gav gratis bärs nu explicit, se § 2 ovan.
  */
 const IKONKNAPP_KLASS = 'size-11 shrink-0 p-0';
 
 /**
  * Listans rullnings-geometri — MÄTT i renderad yta, inte uppskattad.
  *
- * Marcus 2026-08-18: *"se till att listan också visar exakt 4 dokumentrader,
- * alltså att den fjärde längst ner klipps exakt precis över separatorn."*
- *
- * Radsteget är **99 px** (uppmätt: fyra raders `top`-värden på 284/383/482/581
- * i acceptance-riggen), så fyra rader är **396 px** — mätt som avståndet från
- * första radens överkant till fjärde radens underkant. `max-h-96` (384 px) som
- * stod här innan klippte alltså 12 px IN i fjärde raden.
- *
- * Talet är hårt bundet till radhöjden, och den är LÅST till tre led sedan
- * S107 Del 9 (namn · täckning · datum, alla trunkerande). Ändras radens
- * innehållshöjd måste detta mätas om — måttet är en mätning, inte en
- * konvention, och en gissning här syns direkt som en halv rad i underkanten.
+ * [HISTORIK] Fram till TASK-309.24 stod här ett hårdkodat `max-h-[396px]`
+ * (4 × 99 px, "acceptance-riggens" mätning 2026-08-18: fyra raders
+ * `top`-värden på 284/383/482/581). Talet höll så länge VARJE rad var
+ * exakt 99 px hög — men TASK-309.20 (375 px-defekter, `DokumentRadSkal`s
+ * eget filhuvud) gav radens ikonkolumn `flex-wrap`: en Event-mallad rad
+ * med FYRA handlingar (Öppna/Ladda ner/Skapa om/Ersätt) bryter till TVÅ
+ * rader vid 375 px, och en rad med tre badgar kan göra detsamma redan
+ * innan dess (samma docblock, "rader REDAN varierar i höjd"). Radhöjden
+ * är sedan dess en RENDERAD EGENSKAP, inte en konstant — ett hårdkodat
+ * px-tal hade antingen klippt en verklig rad eller lämnat ett gap, båda
+ * fel. `LISTA_SYNLIGA_RADER` (antalet rader) är fortsatt en konstant;
+ * `useLastaListhojd` nedan MÄTER pixelhöjden dynamiskt i stället för
+ * `LISTA_MAXHOJD`, som är riven.
  */
 const LISTA_SYNLIGA_RADER = 4;
-const LISTA_MAXHOJD = 'max-h-[396px]';
+
+/**
+ * FALLBACK-RADHÖJD — `useLastaListhojd`s NIVÅ 3 (sista utvägen), använd
+ * ENDAST när (a) noll RIKTIGA rader finns i DOM (bara tomt-lägets
+ * placeholder-`<li>`) OCH (b) ingen mätning — varken PRECIS eller ESTIMAT —
+ * någonsin skett i detta komponent-liv (`senastUppmattRadhojd.current ===
+ * null`).
+ *
+ * NÅBAR I BÅDA LISTORNA (rättat i TASK-309.39 — stycket sade tidigare
+ * `GemensamtLage` ENSAMT, och `harMattAlls`-nödmätningen gjorde det
+ * falskt):
+ *
+ *   • `GemensamtLage`, vid ett events ALLRA FÖRSTA rendering med noll
+ *     delade dokument. Oförändrat sedan TASK-309.24.
+ *   • `DokumentLista`, vid SIDLADDNING direkt i `?typ=bilaga` på ett event
+ *     UTAN bilagor. Filtret visar då bara tomt-lägets placeholder-`<li>`
+ *     (`antalSynliga === 0`), och eftersom komponenten monteras MED det
+ *     filtret har den aldrig renderat i 'alla' — `senastUppmattRadhojd` är
+ *     alltså `null` när nödmätningen kör. Mätt 2026-08-29: 398 px, alltså
+ *     `LISTA_FALLBACK_RADHOJD × 4 + kantjustering`.
+ *
+ * DET GAMLA PÅSTÅENDET VAR SANT FÖR SIN EGEN KOD, INTE FÖR DENNA. Det löd
+ * att `DokumentLista` *"har alltid minst `MALLAR.length +
+ * GENERATORER.length === 3` RIKTIGA rader synliga i 'alla' (default-filtret)
+ * och har därför redan skrivit `senastUppmattRadhojd`"*. Den slutledningen
+ * förutsätter att komponenten NÅGON GÅNG renderat i 'alla' — vilket den
+ * inte gör när `?typ=` redan står på 'bilaga' vid mount. Före 309.39 var
+ * det ofarligt eftersom höjden då inte sattes ALLS (det var symptom S1);
+ * nödmätningen gör vägen nåbar, och därmed påståendet fel.
+ *
+ * Test: `dokument-lista-hojdlas-tidpunkt.acceptance.test.ts` § "NIVÅ 3 är
+ * nåbar även i DokumentLista".
+ *
+ * [RUNDA 2, ANDRA VARVET — review-fynd, orkestrerarens/Marcus mandat
+ * 2026-08-26] FÖRSTA VARVETS TAL (155 för mobil) VAR FEL VAL, INTE FEL
+ * MÄTNING. 155 px kommer från en ENSAM `GemensamBilageRadRow` vid 375 px —
+ * den raden BRYTER (`DokumentRadSkal`: `flex-wrap`, 4 ikoner: förhandsvisa/
+ * ladda ner/ersätt/radera, `IKONKNAPP_KLASS`-bredden ryms strukturellt
+ * ALDRIG bredvid namnkolumnens `min-w-[12ch]`-golv i `<ul>`s uppmätta
+ * 277 px vid den bredden — verifierat: ÄVEN en rad med bara TRE ikoner
+ * bryter i samma mätning). Att låsa TOMMA listans höjd mot den VÄRSTA
+ * tänkbara radformen (en bruten rad) ger en orimlig box: 155×4+kant ≈ 622 px
+ * — 78 % av en 800 px mobilskärm luft under "Inga delade dokument än.",
+ * innan någon vet om den FÖRSTA riktiga raden ens kommer bryta.
+ *
+ * Fallbacken representerar i stället en NORMAL rad UTAN ikon-radbrytning —
+ * samma storleksordning som desktop, på ALLA brytpunkter (ENGÅNGS-
+ * konstant, ingen brytpunkts-gren kvar). MÄTT (inte gissat): `MallRad`
+ * (`DokumentYta.tsx` nedan) har INGEN `flex-wrap` på sitt yttre skal och
+ * BARA EN ikon (`ChevronRight`) — den kan strukturellt aldrig bryta, och är
+ * därför den genuint viewport-OBEROENDE referensen för "en normal rad":
+ * uppmätt till **99 px** vid BÅDA `acceptance`-projektets 1280×720-viewport
+ * (`<ul>`-bredd 502 px) OCH en 375×800-viewport (`<ul>`-bredd 277 px) —
+ * SAMMA TAL, konstant, eftersom raden aldrig bryter oavsett bredd. Detta
+ * matchar dessutom den historiska 4×99-mätningen i filhuvudets
+ * [HISTORIK]-stycke.
+ *
+ * DETTA ÄR ETT UTTALAT PRODUKTBESLUT, INTE EN TEKNISK NÖDVÄNDIGHET: en
+ * `GemensamBilageRadRow` (GemensamtLage's ENDA radtyp) kunde tidigare BRYTA
+ * första gången ett riktigt delat dokument dök upp på en smal skärm, vilket
+ * kunde ge EN synlig höjdjustering den allra första gången listan gick från
+ * tom till fylld på mobil.
+ *
+ * ═══ [T176, 2026-08-29] 99 → 107, OCH BRYTNINGSFÖRBEHÅLLET ÄR BORTA ═══
+ *
+ * TVÅ saker ändrades, båda MÄTTA (`getBoundingClientRect` i renderad yta,
+ * dev-server mot staging):
+ *
+ *   1. REFERENSRADEN FINNS INTE LÄNGRE. Talet 99 var uppmätt på `MallRad` —
+ *      vald just för att den strukturellt aldrig kunde bryta. Mallarna är
+ *      handlingar nu (`SkapaDokumentMeny`), inte listrader, så `MallRad` är
+ *      riven. Referensen är i stället en BILAGERAD, vars namnknapp bär
+ *      44 px träffyta: uppmätt **107 px** vid BÅDE 1280 px och 390 px.
+ *   2. FÖRBEHÅLLET OM RADBRYTNING ÄR UPPHÄVT. Det byggde på att
+ *      ikonkolumnen (4–5 × 44 px) inte rymdes bredvid namnet vid 375 px och
+ *      tvingade `flex-wrap`. Med EN ⋯-knapp kvar är raden `flex-nowrap` och
+ *      kan strukturellt inte bryta (`DokumentRadSkal`s docblock) — 107 är
+ *      alltså viewport-oberoende av samma skäl 99 var det, men nu för den
+ *      radform som FAKTISKT visas.
+ *
+ * Följden är att tom och fylld lista delar höjd igen, i stället för att
+ * hoppa ~32 px när första dokumentet dyker upp. Talet dupliceras medvetet i
+ * båda acceptance-sviterna (`FALLBACK_RADHOJD`) — se deras egna kommentarer.
+ *
+ * ═══ [T176, ANDRA STEGET SAMMA DAG] 107 → 124: TALET ÄR LI-HÖJDEN ═══
+ *
+ * Konstanten mäter `<li>`, inte kortet — och det är ingen detaljskillnad
+ * utan hela poängen. Sedan raden blev ett KORT bor RÄNNAN mellan korten
+ * INUTI `<li>`, just för att hookens två mätvägar ska se samma tal: NIVÅ 1
+ * mäter SPANNET rad1.top → rad4.bottom, NIVÅ 2 mäter MAX av radernas EGNA
+ * höjder. Ett `gap-*` på `<ul>` hade legat mellan raderna — med i spannet,
+ * utanför radhöjden — och de två nivåerna hade gett olika svar.
+ *
+ * ═══ [TASK-309.46, 2026-08-30] 124 → 122: KONSTANTEN ÄR SEPARATOR-FRI ═══
+ *
+ * `<li>` är fortfarande 124 px hög. Konstanten är det INTE, och skillnaden
+ * är hela denna skiva: rännan ligger sedan nu som en TRANSPARENT
+ * `border-bottom` på raden (`border-b-8 border-transparent`) i stället för
+ * som `pt-2`, och hooken DRAR BORT den fjärde radens ränna ur låset
+ * (`separatorBredd`). Låset är därmed 488 px = rad1.top → rad4.bottom, inte
+ * 496 — och `senastUppmattRadhojd`, som NIVÅ 3 läser, bär den SEPARATOR-FRIA
+ * per-rad-höjden 488 / 4 = **122**. Konstanten är NIVÅ 3:s reserv för exakt
+ * det talet och måste därför vara 122, inte li-höjden 124.
+ *
+ * SKRIV ALDRIG TILLBAKA 124 HÄR "för att li är 124". Det är samma
+ * förväxling som gav hooken sitt latenta separator-fel (se § NIVÅ 2/3):
+ * li-höjden och den lagrade per-rad-höjden är två olika tal så fort raden
+ * bär en separator, och de sammanföll bara så länge separatorn var 1 px.
+ *
+ * VARFÖR RÄNNAN BLEV EN BORDER, i en mening: ett spår (`<ul>`s padding-box)
+ * som ska börja vid FÖRSTA KORTETS överkant får ingen ränna innanför sig
+ * ovanför det kortet, och en border ligger utanför padding-boxen medan en
+ * padding ligger innanför. Marcus prod-titt 2026-08-30: *"scrollbaren …
+ * börjar för högt upp, den bör ju börja vid kortet precis."* Hela
+ * resonemanget bor i `DokumentListRam`s wrapper-kommentar.
+ *
+ * UPPMÄTT, INTE RÄKNAT (acceptance-riggen): `radHojder` = [124 × n] vid
+ * både 1280 och 390, med `<ul>`s låsta `hojd` = **488** px. Kortet självt
+ * mäter 116 px (`p-3` + 1 px kant runt tre led vars första är namnknappens
+ * 44 px träffyta); 124 = 116 + 8, och 488 = 3 × 124 + 116.
+ *
+ * FÖLJDEN ÄR ATT ALLA TRE NIVÅER GER EXAKT SAMMA HÖJD: 0 rader (NIVÅ 3,
+ * 122 × 4), 1–3 rader (NIVÅ 2, 124 × 4 − 8) och 4+ (NIVÅ 1, spannet minus
+ * fjärde radens separator) landar alla på 488 px. `<ul>` bär ingen kant, så
+ * `kantjustering` är 0 — talet är rent.
+ */
+const LISTA_FALLBACK_RADHOJD = 122;
+
+/**
+ * En rads EGEN separatorlinje i px — `border-bottom-width`, läst ur
+ * renderad stil, aldrig antagen.
+ *
+ * ═══ [T176, 2026-08-29] I KORTFORMEN RETURNERAR DEN ALLTID 0 ═══
+ *
+ * Säg det rakt ut i stället för att låta namnet lova något (ADR-083):
+ * sedan varje `<li>` blev ETT KORT med ränna omkring sig bär ingen rad en
+ * `border-bottom`. `divide-y` är riven från `<ul>`, `sistaRadenBarLinje`
+ * är riven ur `berakaListgeometri`, och funktionen mäter därför `0px` på
+ * varje anrop — mätt i renderad yta, inte antaget.
+ *
+ * DEN ÄR ÄNDÅ KVAR, OCH DET ÄR ETT VAL: `useLastaListhojd`s kropp är
+ * ORÖRD i denna ändring (bara dess argument och den renderade markupen
+ * ändras), och kroppen anropar den på två ställen. Att riva funktionen
+ * hade krävt en ändring inuti hooken — precis den kirurgi som gjorde
+ * TASK-309.24/.39 dyra. En nollterm kostar ingenting, och mekanismen
+ * finns kvar den dag en radform med egen underkant återinförs.
+ *
+ * HÖJDMATEMATIKEN BÄRS NU AV RÄNNAN I STÄLLET, och den ligger INUTI
+ * `<li>` (som transparent `border-bottom` sedan TASK-309.46, se
+ * `DokumentListRam`s wrapper-kommentar) just för att hookens
+ * mätningar — NIVÅ 1:s spann rad1.top→rad4.bottom och NIVÅ 2:s
+ * MAX-av-radhöjder — ska se SAMMA tal. Ett `gap-*` på `<ul>` hade legat
+ * mellan raderna: med i spannet, utanför radhöjden, alltså två olika
+ * "radhöjder" i samma hook.
+ *
+ * [HISTORIK, bevarad för nästa läsare] Att linjen satt på `border-bottom`
+ * och inte `border-top` var en MÄTT egenskap hos Tailwind 4, inte en
+ * smaksak (TASK-309.39, 2026-08-29): `divide-y` genererar i v4
+ * `:where(& > :not(:last-child)) { border-bottom-width: … }` — linjen
+ * tillhörde alltså raden OVANFÖR mellanrummet. I v3 var samma
+ * verktygsklass `border-top-width` på `& > * + *`, alltså raden NEDANFÖR.
+ * Med v3:s semantik hade linjen mellan rad 4 och rad 5 legat utanför en
+ * box som slutar vid rad 4:s underkant; med v4:s låg den innanför, och
+ * en höjd satt till exakt spannet reserverade plats åt just den linje som
+ * INTE skulle synas. Det var hela TASK-309.39s andra symptom.
+ *
+ * `Number.parseFloat` av ett tomt/ogiltigt värde ger `NaN`, som hade
+ * förgiftat hela höjduttrycket tyst; `|| 0` gör den degraderingen
+ * explicit och ofarlig.
+ */
+function separatorBredd(rad: Element): number {
+  return Number.parseFloat(getComputedStyle(rad).borderBottomWidth) || 0;
+}
+
+/**
+ * MÄTER listans låsta höjd mot RENDERAD geometri (TASK-309.24 — filhuvudets
+ * nya stycke bär hela regeln; runda 2 gör låsningen OVILLKORAD, se nedan).
+ *
+ * TRE MÄTNIVÅER, fallande precision — `mat()` provar dem i ordning och
+ * skriver ALDRIG en sämre nivå över en bättre (se "PRECISIONEN ÄR MONOTON"):
+ *
+ *   1. PRECIS (`antalRiktigaRader >= LISTA_SYNLIGA_RADER`) — exakt spannet
+ *      rad1.top → rad4.bottom, oförändrat sedan runda 1.
+ *   2. ESTIMAT (1–3 RIKTIGA rader) — `radhöjd` = MAX av de BEFINTLIGA
+ *      radernas EGNA höjd (INTE en summa av spannet, se nedan), gånger
+ *      `LISTA_SYNLIGA_RADER`.
+ *   3. FALLBACK (0 RIKTIGA rader) — `senastUppmattRadhojd.current` om något
+ *      NÅGONSIN uppmätts i detta komponent-liv, annars den dokumenterade
+ *      `LISTA_FALLBACK_RADHOJD`-konstanten (EN, viewport-oberoende).
+ *
+ * VARFÖR MAX, INTE FÖRSTA RADEN, I NIVÅ 2: TASK-309.20s `flex-wrap` gör att
+ * rader kan variera i höjd (en rad med fler ikoner/badgar radbryter, en
+ * annan inte) — att alltid ta den FÖRSTA riskerar att underskatta om just
+ * den råkar vara kortast av de synliga, vilket hade klippt en senare, högre
+ * rad. MAX är den konservativa (aldrig-klippande) uppskattningen.
+ *
+ * PRECISIONEN ÄR MONOTON, ALDRIG NEDÅT (`harPreciserMatt`, review-fynd 3 /
+ * gränsfallet, TASK-309.24 runda 2): en gång en PRECIS mätning skett,
+ * skriver varken ESTIMAT eller FALLBACK över den igen — annars hade en
+ * in-place-minskning under fyra RIKTIGA rader (radera bilagor tills färre
+ * än fyra kvarstår, UTAN sidladdning) fått boxen att KRYMPA i stället för
+ * att stå kvar. `GemensamtLage` saknar 'bilaga'/'alla'-källprioriteringen
+ * nedan (`harForetradesMatt`) — där mäter VARJE render (`matbar` konstant
+ * sant), så UTAN `harPreciserMatt` hade en minskning under fyra DIREKT
+ * skrivit över en tidigare precis mätning med en sämre estimat-mätning.
+ *
+ * MONOTONIN ÄR RIKTAD, INTE ABSOLUT: en UPPGRADERING (NIVÅ 2 → NIVÅ 1, ett
+ * fjärde RIKTIGT dokument dyker upp i samma sidladdning — review-fynd,
+ * runda 2 andra varvet) SKRIVER över en tidigare ESTIMAT-mätning, och detta
+ * är avsiktligt: fjärde raden är verkligt INNEHÅLL som nu går att mäta
+ * precist, inte ett filterhopp (regel 5 gäller BARA filterbyte, se
+ * `berakaListgeometri`). **Detta är därför det ENDA läget höjden tillåts
+ * ÄNDRAS UTAN att en `ResizeObserver`-triggad omritning av en BEFINTLIG
+ * raders storlek ligger bakom** (ADR-083: prosan här och koden i `mat()`
+ * ska hålla ihop) — en höjdökning vid 3→4 är en mätning av verkligt
+ * innehåll, inte en regression av regel 5. Test: se
+ * `dokument-lista-hojdlas.acceptance.test.ts`s gränsfall "NIVÅ 2 → NIVÅ 1".
+ *
+ * MÄTKÄLLAN ÄR I ÖVRIGT (nivå 1/2) MEDVETET BEGRÄNSAD TILL 'alla' OCH
+ * 'bilaga', I TVÅ NIVÅER (`foretradesMatbar`/`reservMatbar`, satta av
+ * anroparen). Bilagor står ALLTID FÖRST i den kanoniska ordningen (bilagor
+ * → mallar → generatorer), så filtret 'bilaga's första `LISTA_SYNLIGA_RADER`
+ * rader är SAMMA rader (samma `id`, samma props) som 'alla's — men INTE
+ * nödvändigtvis SAMMA RENDERADE HÖJD: en rads pixelhöjd beror mätt
+ * (TASK-309.24) på hur många SYSKON den har i DOM, inte bara sitt eget
+ * innehåll (samma rad mätte 99 px bland sju syskon, 98 px bland fyra — ren
+ * layout-avrundning, se `DokumentLista`s eget stycke för den fulla
+ * diagnosen). En mätning måste därför tas i SAMMA "hur många rader finns i
+ * DOM"-kontext den senare ska gälla för — 'bilaga' är den kontext AC #2:s
+ * exakt-fyra-krav faktiskt prövas i, så `foretradesMatbar` (sann när
+ * 'bilaga' själv kan leverera minst fyra rader) vinner ALLTID och LÅSER
+ * (`harForetradesMatt`) — en gång mätt DÄRIFRÅN skriver 'alla' aldrig över
+ * värdet igen, oavsett hur många gånger filtret växlar tillbaka.
+ *
+ * `reservMatbar` ('alla', ovillkorat) finns för den FÖRSTA renderingen:
+ * sidan öppnas alltid i 'alla' (`aktivtFilter`s default), så UTAN en
+ * reservkälla hade den absolut första visningen — innan Lotta någonsin
+ * rört filterraden — saknat låst höjd helt (mätt, TASK-309.24: exakt detta
+ * hände första implementationsvarvet, `alla.scrollHeight` var lika med
+ * `clientHeight` bara för att INGEN mätning någonsin skett). Reservkällan
+ * ger ett DUGLIGT första-värde ('alla' är alltid rullningsbar när
+ * totalen räcker, så ±1 px spelar ingen roll där) tills 'bilaga' — om den
+ * någonsin besöks — förfinar det till det EXAKTA talet. 'mall'/'generator'
+ * litas ALDRIG på egen hand: `MALLAR`/`GENERATORER` är statiska (2
+ * respektive 1 post, 2026-08-26) och kan idag aldrig ensamma nå
+ * `LISTA_SYNLIGA_RADER` — men skulle någon senare lägga till en tredje mall
+ * vore dess rader INTE en prefix av den kanoniska ordningen (mallar kommer
+ * EFTER bilagor i 'alla'), så mät inte därifrån utan att först lösa den
+ * frågan på nytt. `GemensamtLage` har inget filter alls — där finns bara EN
+ * kontext, så varje mätning är trygg och dess anrop sätter BÅDA till
+ * konstant `true`.
+ *
+ * `hojd`-state uppdateras alltså bara när minst en av de två (foreträde/
+ * reserv) är sann OCH spärren (`harForetradesMatt`) inte hindrar den —
+ * annars står den kvar vid sitt senaste värde. Det ÄR poängen med regel 5
+ * (filterbyte ändrar aldrig listans bounding box).
+ *
+ * ── EN OMÄTT LISTA ÄR ALDRIG ETT GILTIGT VILOLÄGE (TASK-309.39) ──
+ *
+ * "Står kvar vid sitt senaste värde" förutsätter att ETT senaste värde
+ * finns. Gjorde det inte det, stod listan kvar vid `null` — och en `<ul>`
+ * utan `style.height` följer sitt innehåll. `harMattAlls` stänger exakt
+ * det hålet: när INGEN nivå ännu satt en höjd mäter effekten oavsett vad
+ * källvillkoren säger, och den nödmätningen sätter aldrig
+ * `harForetradesMatt` (den är ett dugligt första-värde, inte ett
+ * företräde — 'bilaga' och 'alla' får förfina det precis som förut).
+ *
+ * HÅLET VAR NÅBART PÅ TVÅ VÄGAR, BÅDA MÄTTA 2026-08-29:
+ *
+ *   1. `?typ=bilaga` på ett event med FÄRRE än fyra bilagor.
+ *      `foretradesMatbar` kräver `rader.length >= LISTA_SYNLIGA_RADER`,
+ *      `reservMatbar` kräver filtret 'alla' — båda falska. Marcus nådde
+ *      det genom att växla räckvidd: nuqs-nyckeln `typ` överlever bytet
+ *      delade ↔ event medan komponenten monteras OM (alla refs och
+ *      `hojd`-state nollställs), och räckviddsläget har ingen filterrad
+ *      som visar att filtret ens är satt. Uppmätt utfall före fixen:
+ *      listan stod på 200 px (två raders naturliga höjd) i stället för
+ *      fyra raders låsta, i VARJE ram — inte "sent låst" utan aldrig låst.
+ *      Marcus beskrivning *"några sekunder senare ligga låst"* är
+ *      låsningen som inträffar först när något ANNAT gör filtret mätbart.
+ *   2. Sidladdning i `?typ=mall` eller `?typ=generator`. `MALLAR` har två
+ *      poster och `GENERATORER` en, så de kan ALDRIG nå fyra rader —
+ *      låsningen uteblev permanent, utan att någon växling behövdes.
+ *
+ * VÄG 2 ÄR SKÄLET ATT FIXEN SITTER HÄR OCH INTE I RÄCKVIDDSVÄXLINGEN. Att
+ * i stället nolla `?typ` när räckvidden byts hade tagit väg 1 och lämnat
+ * väg 2 öppen — och det vore dessutom en produktändring (filtret skulle
+ * tyst kastas om), inte en rotorsaksfix. Frågan om `?typ` bör överleva ett
+ * räckviddsbyte är verklig men separat, och ligger hos Marcus.
+ *
+ * Test: `dokument-lista-hojdlas-tidpunkt.acceptance.test.ts` § S1 samplar
+ * ram för ram och fäller på FÖRSTA olåsta ramen — inte på ett stickprov
+ * efteråt, som inte kan se ett tidsfönster.
+ *
+ * `getBoundingClientRect()` på RADERNA, aldrig `offsetTop`/`clientHeight`:
+ * den senare rundar till HELA pixlar (mätt, TASK-309.24 — en 1 px-diff mot
+ * `tests/acceptance/dokument-rackviddsval.acceptance.test.ts`s egen
+ * `getBoundingClientRect`-baserade `fyraRader`-mätning avslöjade det). Att
+ * skillnaden (nivå 1) mäts mellan TVÅ element i SAMMA rullande container
+ * gör den scroll-position-OBEROENDE trots att `getBoundingClientRect` är
+ * viewport-rymden: rullar listan S pixlar flyttar sig BÅDA elementens
+ * rektanglar med S, och S tar ut sig själv i subtraktionen
+ * (`fjarde.bottom - forsta.top`).
+ *
+ * ── DEN FJÄRDE SEPARATORN LIGGER UTANFÖR KANTEN (TASK-309.39) ──
+ *
+ * Spannet ovan är INTE höjden. Fjärde radens egen `border-bottom` dras
+ * bort (`separatorBredd`, se dess docblock för Tailwind 4-mätningen som
+ * bär hela resonemanget) innan `kantjustering` läggs på.
+ *
+ * DETTA STYCKE SADE TIDIGARE MOTSATSEN, OCH DET VAR FEL — inte slarvigt
+ * skrivet, utan byggt på ett antagande om `divide-y` som aldrig prövades:
+ * *"Ingen egen kantlinje behöver uteslutas för hand här: `sistaRadenBarLinje`
+ * är redan FALSK precis när fjärde raden är den sista …"*. Den meningen
+ * resonerar enbart om `[&>li:last-child]:border-b`, och missar att
+ * `divide-y` ger fjärde raden en `border-bottom` så fort en FEMTE rad
+ * följer. Marcus såg följden i prod 2026-08-29: *"vi har sagt att listan
+ * ska sluta precis över den nedersta separatorn men det gör den inte just
+ * nu, jag ser den nedersta separatorn."*
+ *
+ * MÄTT FÖRE FIXEN (acceptance-riggen, 1280×720, fem rader): innehållsytan
+ * slutade vid 397 px och fjärde radens linje upptog 396→397 px — alltså
+ * ytans sista synliga pixelrad. Avdraget flyttar kanten till 396 px, så
+ * linjen hamnar precis utanför. Vid EXAKT fyra rader är fjärde raden
+ * `:last-child`, bär ingen linje, och avdraget blir 0 — höjden är
+ * oförändrad och 1 px-scroll-invarianten (AC #5) rörs inte. Bieffekten är
+ * god och avsiktlig: fyra och fem rader delar nu EXAKT samma bounding box
+ * i stället för att skilja sig med linjens bredd.
+ *
+ * NIVÅ 2 gör samma avdrag av samma skäl — `radhojd × 4` innehåller fyra
+ * separatorer när den mätta raden bär sin egen, men bara TRE av dem ligger
+ * MELLAN rader. NIVÅ 3 gör inget avdrag: den läser `senastUppmattRadhojd`,
+ * som NIVÅ 1/2 redan skrivit separator-fri.
+ *
+ * ═══ [TASK-309.46] STYCKET OVAN VAR SANT FÖR NIVÅ 1 OCH FALSKT FÖR NIVÅ 2
+ *     — EN RAD, RÄTTAD ═══
+ *
+ * NIVÅ 1 skrev `spann / 4`, alltså efter avdraget: separator-fritt, precis
+ * som beskrivet. NIVÅ 2 skrev `radhojd` RAKT AV — med sin egen separator
+ * kvar — trots att den drar bort den i samma andetag när den sätter höjden.
+ * Prosan beskrev alltså ett kontrakt bara den ena av två skribenter höll.
+ *
+ * FELET VAR OSYNLIGT SÅ LÄNGE SEPARATORN VAR 1 px: en lista som gick från
+ * 1–3 rader till NOLL rader låste sig på 4 px för högt, vilket ingen mätning
+ * hade anledning att titta efter. Med 309.46:s 8 px-ränna blir samma
+ * övergång 496 i stället för 488 — samma buggklass, nu synlig.
+ *
+ * FIXEN ÄR ATT LAGRA SAMMA TAL SOM NIVÅ 1 LAGRAR:
+ * `(radhojd × 4 − radensSeparator) / 4`. Uttrycket är dessutom en NO-OP i
+ * NIVÅ 3 (där `radensSeparator` är 0 och `radhojd` redan separator-fri), så
+ * en gren räcker för båda vägarna genom koden.
+ *
+ * DET ÄR HOOKENS ENDA KODÄNDRING I DENNA SKIVA — allt annat i kroppen är
+ * byte-identiskt med `origin/main`, verifierat med diff.
+ *
+ * `ResizeObserver` på RADERNA (upp till fyra, eller färre om listan har
+ * färre), inte på `<ul>` självt — samma val som `BlockDialog.tsx`s
+ * uttoningsmätning gör och av samma skäl: när höjden väl är LÅST slutar
+ * `<ul>` självt att ändra storlek (det är hela poängen), så en observer på
+ * ul:et skulle sluta trigga om en rads innehåll ändras EFTER första
+ * låsningen (t.ex. ett filnamn som växer och radbryter annorlunda). Raderna
+ * själva ändrar storlek oavsett.
+ */
+function useLastaListhojd(
+  foretradesMatbar: boolean,
+  reservMatbar: boolean,
+  antalRiktigaRader: number,
+  ommatningsSignal: unknown,
+): { listRef: React.RefObject<HTMLUListElement | null>; hojd: number | null } {
+  // `listRef` skapas HÄR (inte mottagen som parameter) av samma skäl som
+  // `BlockDialog.tsx`s `rullRef`: biomes `useExhaustiveDependencies` känner
+  // igen en `ref.current`-läsning som stabil bara när `useRef`-anropet och
+  // effekten som läser den delar samma funktionskropp — en ref given som
+  // PARAMETER kan i princip vara vad som helst, och flaggas då som ett
+  // riktigt beroende (mätt, TASK-309.24: samma mönster gav
+  // `useExhaustiveDependencies`-fel så fort `listRef` kom in som argument).
+  const listRef = useRef<HTMLUListElement>(null);
+  const [hojd, setHojd] = useState<number | null>(null);
+  // Sant så fort `foretradesMatbar` mätt EN gång — spärrar `reservMatbar`
+  // från att SKRIVA ÖVER en redan etablerad, precis mätning med en mindre
+  // precis (se filhuvudets stycke för VARFÖR de två källorna kan ge olika
+  // tal för "samma" fyra rader). Utan spärren hade den FÖRSTA
+  // sidladdningen (alltid filtret 'alla') låst in ett värde som senare,
+  // första gången 'Bilagor' besöks, tystast blivit fel igen — spärren gör
+  // förträdet OÅTERKALLELIGT inom komponentens livslängd, inte bara en
+  // engångsprioritering vid mättillfället.
+  const harForetradesMatt = useRef(false);
+  // NIVÅ 3:s spärr (runda 2) — se filhuvudets "PRECISIONEN ÄR MONOTON"-stycke.
+  const harPreciserMatt = useRef(false);
+  // [TASK-309.39] NÖDMÄTNINGENS spärr — se filhuvudets "EN OMÄTT LISTA ÄR
+  // ALDRIG ETT GILTIGT VILOLÄGE"-stycke. Sant så fort NÅGON nivå satt en
+  // höjd; det är det enda som skiljer "ingen mätkälla är giltig, men vi har
+  // redan ett värde" (stå kvar — regel 5) från "ingen mätkälla är giltig och
+  // vi har INGET värde" (mät ändå — annars följer listan innehållet).
+  const harMattAlls = useRef(false);
+  // NIVÅ 2/3:s minne — senast uppmätt ENSKILD radhöjd (inte den slutliga
+  // fyra-raders-höjden), skriven av VILKEN nivå som helst som lyckats mäta
+  // riktiga rader. Grunden för NIVÅ 3:s förstahandsval.
+  const senastUppmattRadhojd = useRef<number | null>(null);
+
+  useLayoutEffect(() => {
+    // [TASK-309.39] NÖDMÄTNING — se filhuvudets "EN OMÄTT LISTA ÄR ALDRIG
+    // ETT GILTIGT VILOLÄGE"-stycke. Villkoret nedan är oförändrat för allt
+    // UTOM det läge där ingen höjd alls existerar ännu.
+    const nodmatning = !harMattAlls.current;
+    if (!foretradesMatbar && !(reservMatbar && !harForetradesMatt.current) && !nodmatning) return;
+    // Läses aldrig — `ommatningsSignal` finns i beroendelistan uteslutande
+    // för att TVINGA en ommätning när kanoniska raders innehåll (`rader`)
+    // ändras (nya/borttagna bilagor kan byta ut vilka DOM-noder som är
+    // "de fyra första", eller sänka `antalRiktigaRader` under fyra). `void`
+    // gör referensen explicit i stället för att bara stå i beroendelistan
+    // — annars flaggar biomes `useExhaustiveDependencies` den som ett
+    // oanvänt beroende.
+    void ommatningsSignal;
+    const ul = listRef.current;
+    if (!ul) return;
+
+    const mat = () => {
+      const barn = ul.children;
+      // Strukturellt onåbart (både `DokumentLista` och `GemensamtLage`
+      // renderar ALLTID minst en `<li>` — en riktig rad eller tomt-lägets
+      // placeholder), men en tom `<ul>` ska aldrig krascha på `barn[0]`.
+      if (barn.length === 0) return;
+      // `<ul>` bär `border border-transparent` (husets nästlingsmönster,
+      // se `DokumentLista`s filterstycke) OCH ärver `box-sizing: border-box`
+      // (Tailwind preflight, gäller universellt). Ett `style.height` satt
+      // till EXAKT radspannet/radhöjden hade därför reserverat 2 px FÖR
+      // LITE innehållsyta — kantlinjerna äts av samma tal som innehållet
+      // ska få (mätt, TASK-309.24: `ul`s egen `getBoundingClientRect().bottom`
+      // slutade 1 px FÖRE fjärde radens verkliga underkant). Kompensationen
+      // läggs på HÄR, en gång, för BÅDA nivåerna nedan.
+      const kant = getComputedStyle(ul);
+      const kantjustering =
+        Number.parseFloat(kant.borderTopWidth) + Number.parseFloat(kant.borderBottomWidth);
+
+      if (antalRiktigaRader >= LISTA_SYNLIGA_RADER) {
+        // NIVÅ 1 — PRECIS.
+        const fjardeEl = barn[LISTA_SYNLIGA_RADER - 1];
+        const forsta = barn[0].getBoundingClientRect();
+        const fjarde = fjardeEl.getBoundingClientRect();
+        // [TASK-309.39] Fjärde radens EGEN separator räknas ALDRIG in — se
+        // filhuvudets "DEN FJÄRDE SEPARATORN LIGGER UTANFÖR KANTEN"-stycke.
+        const spann = fjarde.bottom - forsta.top - separatorBredd(fjardeEl);
+        setHojd(spann + kantjustering);
+        senastUppmattRadhojd.current = spann / LISTA_SYNLIGA_RADER;
+        harPreciserMatt.current = true;
+        harMattAlls.current = true;
+        if (foretradesMatbar) harForetradesMatt.current = true;
+        return;
+      }
+      // MONOTON — se filhuvudets "PRECISIONEN ÄR MONOTON"-stycke: en gång
+      // precist mätt skriver ingen lägre nivå över värdet igen.
+      if (harPreciserMatt.current) return;
+
+      let radhojd: number;
+      // [TASK-309.39] Den mätta radens EGEN separator, av samma skäl som
+      // NIVÅ 1 drar bort den fjärdes: en `radhojd` mätt på en rad som BÄR
+      // sin linje innehåller fyra linjer när den multipliceras med fyra,
+      // men bara TRE av dem ligger mellan rader. Hålls NOLL i NIVÅ 3 — där
+      // finns ingen riktig rad, och `senastUppmattRadhojd` bär redan ett
+      // separator-fritt tal (NIVÅ 1/2 skriver det efter avdraget).
+      let radensSeparator = 0;
+      if (antalRiktigaRader > 0) {
+        // NIVÅ 2 — ESTIMAT: MAX av de riktiga radernas EGNA höjd (se
+        // filhuvudets "VARFÖR MAX"-stycke).
+        radhojd = 0;
+        for (let i = 0; i < barn.length; i++) {
+          const h = barn[i].getBoundingClientRect().height;
+          if (h > radhojd) {
+            radhojd = h;
+            radensSeparator = separatorBredd(barn[i]);
+          }
+        }
+      } else {
+        // NIVÅ 3 — FALLBACK: senast kända radhöjd, annars den dokumenterade
+        // konstanten (se `LISTA_FALLBACK_RADHOJD`s docblock — EN konstant,
+        // viewport-oberoende, sedan runda 2:s andra varv).
+        radhojd = senastUppmattRadhojd.current ?? LISTA_FALLBACK_RADHOJD;
+      }
+      senastUppmattRadhojd.current =
+        (radhojd * LISTA_SYNLIGA_RADER - radensSeparator) / LISTA_SYNLIGA_RADER;
+      harMattAlls.current = true;
+      setHojd(radhojd * LISTA_SYNLIGA_RADER - radensSeparator + kantjustering);
+    };
+    mat();
+
+    const ro = new ResizeObserver(mat);
+    for (let i = 0; i < Math.min(LISTA_SYNLIGA_RADER, ul.children.length); i++) {
+      ro.observe(ul.children[i]);
+    }
+    return () => ro.disconnect();
+  }, [foretradesMatbar, reservMatbar, antalRiktigaRader, ommatningsSignal]);
+
+  return { listRef, hojd };
+}
+
+/**
+ * Listans geometri-regler — DELAD mellan `DokumentLista` och
+ * `GemensamtLage` (TASK-309.24, Marcus 2026-08-26, ordagrant): *"Vi kan ha
+ * låst höjd med separatorlinje på alla OM vi låser höjden så den fjärde
+ * separatorlinjen inte syns. Är 5 dokument i listan så syns inte linjen
+ * förrän du scrollar."* ERSÄTTER de tidigare separata
+ * `lasHojd`/`avslutaLista`-villkoren (TASK-309.12/91738caa,
+ * `DokumentLista` bar dem, `GemensamtLage` bar ingetdera — ett genuint
+ * glapp, inte ett medvetet undantag; samma regel gäller BÅDA listorna på
+ * `/mer/dokument`).
+ *
+ * INGET `lasHojd`-FÄLT KVAR (runda 2, review-fynd 1): körning 1 lät
+ * containerns höjd låsas bara `totaltAntal > LISTA_SYNLIGA_RADER` — Marcus
+ * regel 2 är ordagrant *"ALLTID exakt fyra raders hög … Gäller 0–3 rader
+ * (luft under; tomt-läget renderas inom samma höjd), exakt 4 och 5+."*
+ * Låsningen är alltså nu OVILLKORAD: anroparna applicerar höjdstilen så
+ * fort en mätning finns (`matadHojd !== null`, se `useLastaListhojd`s tre
+ * nivåer, inklusive FALLBACK-nivån för 0 rader), aldrig villkorat av ett
+ * eget booleskt fält här.
+ *
+ * `kanRulla` — rullar listan? Styr tabb-stoppet OCH overflow-läget
+ * (`hidden` när den inte kan rulla, `auto` när den kan — regel 3:
+ * "overflow hidden när ≤ 4, auto när > 4").
+ *
+ * ═══ [T176, 2026-08-29] `sistaRadenBarLinje` ÄR RIVET — MED KVITTENS ═══
+ *
+ * Fältet svarade på frågan *"bär den sista SYNLIGA raden sin egen
+ * underkant?"* och fanns bara för att raderna skildes åt av
+ * separatorlinjer (`divide-y` på `<ul>`). I kortformen är VARJE `<li>`
+ * ett eget kort med luft omkring sig — rannan mellan korten ÄR
+ * avdelaren, och en linje ovanpå den hade varit två avdelare för samma
+ * skarv.
+ *
+ * MARCUS HAR KVITTERAT RIVNINGEN EXPLICIT (2026-08-29): höjdlåsets
+ * SEPARATOR-halva (*"fjärde linjen klipps / sista raden bär linje"*) går
+ * bort, medan FYRA-SYNLIGA-MED-INLINE-RULLNING står kvar oförändrad.
+ * Regel 2 (alltid exakt fyra raders höjd), regel 3 (overflow) och regel 5
+ * (boxen ändras inte) gäller ord för ord som förut — det är bara den
+ * linje-specifika halvan som saknar föremål efter formbytet.
+ */
+function berakaListgeometri(antalSynliga: number) {
+  return { kanRulla: antalSynliga > LISTA_SYNLIGA_RADER };
+}
 
 /**
  * Täckningspillens klass — EN källa, delad av `RackviddBadge` (bilagor) och
@@ -647,15 +1493,38 @@ const LISTA_MAXHOJD = 'max-h-[396px]';
  * `getComputedStyle` gav `pill=rgb(255,255,255)` och
  * `lista=rgb(255,255,255)` i renderad yta.
  *
+ * [T176, 2026-08-29] NÄSTLINGEN ÖVERLEVDE KORTFORMEN, MEN BÄRAREN BYTTE:
+ * den vita ytan under pillen är numera BILAGEKORTET, inte `<ul>` (som är
+ * genomskinlig). `bg-bg-muted` står alltså kvar — men prövningen gjordes
+ * om, inte antogs: mätt i renderad yta bär pillen #f5f5f3 mot kortets
+ * #ffffff.
+ *
+ * [2026-08-30] PRÖVNINGEN HAR BARA ETT FALL KVAR. Här stod tidigare att
+ * pillen vid HOVER mättes mot kortets hover-ton #edeee9, och att den då
+ * blev LJUSARE än sin bakgrund i stället för mörkare. Den tonen är riven
+ * (Marcus: *"Ta bort hover på korten"*) — kortet är statiskt vitt i alla
+ * lägen, så riktningen kastas aldrig om längre och steget är detsamma i
+ * vila som under pekaren. Regeln som gjorde noten värd att skriva står
+ * kvar: byter kortet bakgrund igen måste pillen mätas om.
+ *
  * Det är sjätte gången samma token-identitet gjort något osynligt på DENNA
  * yta (ghost-hovern ×2, Ersätt/Radera, räckviddspillen, uppladdningsskalet
  * — se filhuvudets systemiska fynd). Regeln som faller ut: **tokenvalet följer
  * NÄSTLINGEN, aldrig vanan.** Byter en behållare bakgrund måste allt som
  * ligger I den prövas om — och prövningen är en mätning av `backgroundColor`,
  * inte en blick på klassnamnet.
+ *
+ * [TASK-309.20] `min-w-0 max-w-full truncate`, INTE `shrink-0` — samma fix
+ * som `RackviddBadge.tsx` fick, av samma mätta skäl (se dess docblock för
+ * pixelbeläggen): en Mall-badge med lång text ("Bekräftelsebilaga", 17 tecken)
+ * i en Event-mallad rad vid 375 px flöt annars ut över ikonknapparna på
+ * exakt samma sätt som räckviddsbadgen — X-överlappet mättes (badge
+ * `x=62 width=121` mot första knappens `x=131`), även om Y-banden råkade
+ * missa varandra i just den mätta raden. Samma underliggande arkitekturfel,
+ * så samma fix på den delade klassen.
  */
 const TACKNING_KLASS =
-  'inline-flex shrink-0 items-center rounded-full border border-transparent bg-bg-muted px-2 py-0.5 font-medium text-caption text-text-secondary contrast-more:border-border-strong';
+  'inline-flex min-w-0 max-w-full items-center truncate rounded-full border border-transparent bg-bg-muted px-2 py-0.5 font-medium text-caption text-text-secondary contrast-more:border-border-strong';
 const IKON_STORLEK = 16;
 
 function MetaRad({ delar }: { delar: (string | null)[] }) {
@@ -678,137 +1547,87 @@ function MetaRad({ delar }: { delar: (string | null)[] }) {
  * glider isär (de bar identiska men separata literal-listor före S107:s
  * fjärde QA-rond).
  *
- * ═══ VARFÖR "Klass:" ÄR BORTA, OCH VARFÖR DET INTE RÄCKTE ═══
+ * ═══ RADEN BÄR BARA DATUMET (Marcus 2026-08-29) ═══
  *
- * Marcus: *"Ta bort 'Klass:' framför 'Uppladdad:'"*. Raden löd
- * `Klass: Uppladdad · 0.0 MB · Uppladdad 17 aug. 2026 22:38`.
+ * Historiken, i tre steg, för den som undrar varför så lite står kvar:
  *
- * Att bara stryka prefixet hade gett `Uppladdad · 0.0 MB · Uppladdad 17
- * aug.` — ordet TVÅ gånger, alltså sämre. Dokumentklassens egna värden är
- * `Uppladdad` · `Event-mallad` · `Person-genererad` (`AttachmentClass`), och
- * det första kolliderar med datumledets verb.
+ *   1. `Klass: Uppladdad · 0.0 MB · Uppladdad 17 aug. 2026 22:38` var
+ *      utgångsläget. Marcus: *"Ta bort 'Klass:' framför 'Uppladdad:'"*.
+ *   2. FILSTORLEKEN UTGICK samtidigt. `0.0 MB` är brus för varje fil under
+ *      50 kB, och Lotta fattar inget beslut på den.
+ *   3. KLASSLEDET UTGÅR NU OCKSÅ (Marcus 2026-08-29, ordagrant: *"ta bort
+ *      'event-mallad'"*). Det stod villkorat — `Uppladdad` doldes som
+ *      default-fall medan `Event-mallad`/`Person-genererad`/`Okänd` visades
+ *      — och gav rader som `Event-mallad · Uppladdad 29 aug. 2026 19:52`.
+ *      Beslut 1 i TASK-147.12-resonemanget ("klassen visas bara när den
+ *      säger något nytt") är därmed UPPHÄVT, inte tappat: det är samma
+ *      information `RackviddBadge`/mall-pillen redan bär i täckningsraden
+ *      ovanför, i en form Lotta faktiskt läser.
  *
- * Tre beslut, i tur och ordning:
+ * KVAR STÅR `Uppladdad 17 aug. 2026 22:38` — det enda meta-värdet som
+ * faktiskt skiljer två filer åt i en lista — plus `+N äldre filer` när
+ * `grupperaPerNamn` kollapsat dubbletter (läggs på av anroparen, inte här).
  *
- *   1. KLASSEN VISAS BARA NÄR DEN SÄGER NÅGOT NYTT. `Uppladdad` är
- *      default-fallet och upprepar det datumledet redan säger — den utelämnas
- *      därför. `Event-mallad`/`Person-genererad`/`Okänd` bär äkta
- *      information och visas. Samma regel som segment-byggarens räknare
- *      ("N av M matchar" syns bara när filtret gör skillnad, `VariantD.tsx`).
- *   2. FILSTORLEKEN UTGÅR. `0.0 MB` är brus för varje fil under 50 kB, och
- *      Lotta fattar inget beslut på den. Den fanns för att den var lätt att
- *      visa, inte för att någon frågade efter den.
- *   3. DATUMET BÄR RADEN. Kvar står `Uppladdad 17 aug. 2026 22:38` — det
- *      enda meta-värdet som faktiskt skiljer två filer åt i en lista.
- *
- * "Okänd" behålls som ÄRLIG etikett (Gunilla-principen, TASK-147.12): den
- * betyder "backfillen kunde inte härleda den här raden", aldrig "vi vet men
- * visar det inte".
+ * Funktionen returnerar fortfarande en LISTA (inte en sträng): `MetaRad`
+ * fogar samman leden med ` · `, och `DokumentRadSkal` spetsar på
+ * dubblett-ledet. En framtida yta som vill lägga till ett led gör det på
+ * ett ställe.
  */
 function metaDelar(current: BilageRad['current']): (string | null)[] {
-  const klass = current.dokumentklass;
-  return [
-    klass != null && klass !== AttachmentClass.UPPLADDAD ? klass : null,
-    `Uppladdad ${DATUM_TID.format(new Date(current.skapad))}`,
-  ];
+  return [`Uppladdad ${DATUM_TID.format(new Date(current.skapad))}`];
 }
 
 /**
- * FÖRHANDSVISNINGS-/NEDLADDNINGS-IKONERNA (TASK-273.4) — se filhuvudets
- * IKONPAR-not för hela resonemanget (popup-blockerar-säkert mönster,
- * `download`-query-parameter-verifieringen mot staging, blob-URL-hantering
- * för klass B/C). Ren presentationskomponent: den faktiska hämt-/öppna-
- * logiken bor i `useForhandsvisaDokument`/`useLaddaNerDokument`
- * (`src/data/mutations/`, TASK-201.15s mutations-hemvist-grind — en
- * komponent-lokal `useMutation` hade fällt `mutation-hemvist-vakt.test.ts`).
- * Delad över alla tre dokumentklasser via `DokumentKalla`
- * (`src/data/mutations/dokumentKalla.ts`) — samma DRY-motiv den rivna
- * `GenereradPdfVisaKnapp`s docblock uttryckte, nu genomfört för alla tre i
- * stället för bara två.
+ * ÖPPNANDET — EN KODVÄG, två anropsställen (radens namnknapp i
+ * `DokumentRadSkal`, kvitto-posten i `SkapaDokumentMeny`).
  *
- * ═══ KNAPPFORMEN ÄR `primary`+`subtle` — RÖR DEN INTE TILL `ghost` ═══
+ * MÅSTE ANROPAS SYNKRONT UR KLICK-HANDLERN. `window.open` nedan är hela
+ * popup-blockerar-säkerheten: fönstret öppnas i användarens egen gest, och
+ * adressen sätts EFTERÅT när hämtningen är klar (se filhuvudets IKONPAR-not
+ * för mätningen och för varför `noopener` är uteslutet). Lägg aldrig ett
+ * `await` före anropet av denna funktion.
  *
- * Detta är en ÅTERSTÄLLD fix, inte ett smakval, och den har rivits en gång
- * redan. Historiken, för den som frestas förenkla:
+ * [TASK-309.26 AC #4 / TASK-309.38] Fönstret får en momentan laddningssida
+ * direkt — annars står det tomt (`about:blank`) under hela hämtningen, samma
+ * "abrupt tomt fönster" Marcus avvisade 2026-08-22 för genereringsvyn.
+ * Väntetexten är personlig men bär ett GENERISKT substantiv, inte namnet i
+ * bestämd form: vägen är delad mellan fritt uppladdade filnamn
+ * ("kontrakt_signerat.pdf" — inte en böjbar substantivfras) och katalogens
+ * fasta namn, och svensk bestämd form bildas inte med en enda regel över
+ * substantiv-klasser (`GenereringsVy.tsx`s `MALL_META` bär därför en
+ * uppslagstabell i stället — den vägen har ett känt, litet antal namn).
  *
- *   1. `3b592e8c` (TASK-147.6 varv 3) bytte den dåvarande Visa-knappen FRÅN
- *      `ghost` TILL `intent="primary" emphasis="subtle"` — på Marcus
- *      granskningsfynd. Skälet stod i klartext i den commitens docblock:
- *      `ghost`s hover-token (`--mm-button-ghost-bg-hover`) är
- *      `var(--mm-bg-muted)`, vilket är EXAKT samma färg som radgruppens egen
- *      bakgrund (`bg-bg-muted` på `grupp-kort`, se `DokumentLista` och
- *      `GemensamtLage` nedan). Hovern FANNS i CVA:n hela tiden — den var
- *      osynlig mot en identisk bakgrund.
- *   2. `b881fe64` (TASK-273.4) ersatte Visa-knappen med detta ikonpar och
- *      satte `intent="ghost"` — vilket återinförde exakt samma
- *      token-identitet, och därmed exakt samma osynliga hover.
- *   3. Marcus fångade den igen vid QA 273.5 steg 5 (2026-08-17):
- *      "de behöver alltså samma bakgrund som visa-knappen hade, samma hover
- *      också liksom". Samma defekt, andra ronden.
+ * ═══ [T176, 2026-08-29] SUBSTANTIVET VÄLJS AV KÄLLAN, INTE FAST ═══
  *
- * INVARIANTEN, formulerad så den överlever nästa ombyggnad: en knapp som
- * sitter INUTI `grupp-kort` (`bg-bg-muted`) får aldrig bära `ghost`, för
- * `ghost`s hover ÄR `bg-bg-muted`. `subtle` är dessutom primitivens egen
- * deklarerade form för just denna ytklass ("tabellrader/toolbars, kompakt:
- * svag intent-tonad platta", `Button.tsx` § subtle) och tänder en kant i
- * intent-färgen under `prefers-contrast: more` — 11-golvet, som `ghost`
- * (transparent botten) inte kan ge här.
+ * Texten sade "dokumentet" åt BÅDA anroparna. Efter namnbytet (ORDLISTA
+ * rad 179: en BILAGA är den PDF Lotta bifogar i ett utskick) stämmer det
+ * bara för den ena: `typ: 'bilaga'` ÄR en bilaga, medan `typ: 'generator'`
+ * (kvittots förhandsvisning) uttryckligen INTE är det — den når aldrig
+ * Storage, Bilagor-raden eller ett allokerat kvittonummer
+ * (`SkapaDokumentMeny`s docblock, `preview-receipt/index.ts` § PERSONDATA).
+ * Att byta båda till "bilagan" hade alltså gjort den ena texten osann.
+ * `kalla.typ` är den enda uppgift som skiljer dem, och den finns redan här.
  */
-function DokumentAtgardsKnappar({ namn, kalla }: { namn: string; kalla: DokumentKalla }) {
-  const forhandsvisaMutation = useForhandsvisaDokument();
-
-  return (
-    <>
-      <Button
-        intent="primary"
-        emphasis="subtle"
-        size="sm"
-        className={IKONKNAPP_KLASS}
-        // `aria-disabled`, INTE `isDisabled`: ett native `disabled` tar
-        // knappen ur tabordningen mitt i klicket. Vakten i onPress bär
-        // dubbelklicks-skyddet i stället.
-        aria-disabled={forhandsvisaMutation.isPending}
-        aria-label={forhandsvisaMutation.isPending ? `Öppnar ${namn} …` : `Öppna ${namn}`}
-        onPress={() => {
-          if (forhandsvisaMutation.isPending) return;
-          // KRITISKT: window.open MÅSTE anropas synkront här, före all
-          // await/mutate-hantering — se filhuvudets IKONPAR-not.
-          const handle = window.open('', '_blank');
-          forhandsvisaMutation.mutate({ kalla, handle });
-        }}
-      >
-        {forhandsvisaMutation.isPending ? (
-          <Loader2 aria-hidden="true" size={IKON_STORLEK} className="motion-safe:animate-spin" />
-        ) : (
-          <ExternalLink aria-hidden="true" size={IKON_STORLEK} />
-        )}
-      </Button>
-      {forhandsvisaMutation.isError && (
-        <MessageBox intent="error" title="Kunde inte öppna filen" className="max-w-56">
-          {forhandsvisaMutation.error instanceof Error
-            ? forhandsvisaMutation.error.message
-            : 'Inget felmeddelande angavs.'}
-        </MessageBox>
-      )}
-    </>
-  );
+function oppnaDokument({
+  kalla,
+  forNamn,
+  mutation,
+}: {
+  kalla: DokumentKalla;
+  forNamn: string | null;
+  mutation: ReturnType<typeof useForhandsvisaDokument>;
+}) {
+  const handle = window.open('', '_blank');
+  const substantiv = kalla.typ === 'bilaga' ? 'bilagan' : 'dokumentet';
+  skrivLaddningssida(handle, {
+    titel: kalla.typ === 'bilaga' ? 'Öppnar bilagan…' : 'Öppnar dokument…',
+    text: forNamn
+      ? `Ett ögonblick ${forNamn}, ${substantiv} öppnas här om några sekunder.`
+      : `Ett ögonblick, ${substantiv} öppnas här om några sekunder.`,
+  });
+  mutation.mutate({ kalla, handle });
 }
 
-/**
- * NEDLADDNINGEN ÄR RADENS ENDA ALLTID-SYNLIGA IKONKNAPP.
- *
- * Före S107:s fjärde QA-rond bar varje rad TRE kvadratiska ikonrutor
- * (`size-11 shrink-0 p-0`). Mönsterkartläggningen av appen visade att den
- * formen inte fanns någon annanstans i huset — samtliga träffar på den
- * klass-strängen låg i denna fil. Det var en lokal uppfinning, och Marcus
- * läste den som främmande ("dokumentsidan är skitdålig").
- *
- * Husets svar på radhandlingar är i stället att den PRIMÄRA handlingen är
- * hela raden (`HandlingsRad`-grammatiken). Förhandsvisningen är den
- * handlingen här; nedladdningen är den enda sekundära som Lotta gör ofta nog
- * att den ska stå framme. Ersätt/Radera är förvaltning och bor i sin egen
- * kolumn, se radernas egna kommentarer.
- */
 /**
  * ═══ RADENS DELADE SKAL — EN FORM FÖR BÅDA LÄGENA ═══
  *
@@ -817,42 +1636,141 @@ function DokumentAtgardsKnappar({ namn, kalla }: { namn: string; kalla: Dokument
  * redan börjat glida isär. Skalet är därför delat KOD, inte delad
  * beskrivning — samma lärdom `HandlingsRad` bär i sitt eget huvud.
  *
- * Det enda som skiljer lägena är `handlingar`: eventläget skickar Ersätt för
- * event-egna filer, räckviddsläget skickar Ersätt + Radera. Nedladdningen
- * står alltid framme, och öppnandet är hela raden.
+ * ═══ [2026-08-29] FRÅN IKONRAD TILL NAMN + ⋯ (Marcus prod-granskning) ═══
  *
- * ── VARFÖR HELA RADEN ÄR KLICKBAR ──
+ * VAD SOM MÄTTES I PROD (event RIM 1, 2026-08-29): eventlägets rader bar två
+ * till fyra kvadratiska ikonknappar (Öppna · Ladda ner · Ersätt · Skapa om)
+ * och räckviddslägets bar FEM (+ Ändra räckvidd + Radera) — fem identiska
+ * grå lådor i rad, där filnamnet klipptes till "2025-HörlurarMiranonMedi…"
+ * för att ikonkolumnen tog bredden. Ikonerna hade inga etiketter; Lotta ska
+ * gissa vad en `FileUp` betyder bredvid en `Target`.
  *
- * Marcus dom 2026-08-17: *"dokumentsidan är skitdålig… Lotta kommer inte
- * gilla detta."* Mönsterkartläggningen gav orsaken: raden bar TRE
- * kvadratiska ikonrutor, och den formen fanns inte någon annanstans i appen
- * — samtliga träffar på `size-11 shrink-0 p-0` låg i denna fil. Huset löser
- * radhandlingar med att den primära handlingen ÄR raden (`PersonsList`,
- * `EventCard`, `HandlingsRad`), inte med en knappkolumn.
+ * DEN NYA ANATOMIN — TRE ZONER, ALDRIG FLER:
  *
- * Att öppna dokumentet är den handlingen. `after:absolute after:inset-0` på
- * öppna-knappen mot detta `relative`-skal är samma grepp `PersonsList`s
- * namn-Link använder; de sekundära knapparna lyfts över med `relative z-10`
- * så de förblir egna träffytor.
+ *   1. TYPGLYFEN (`TypGlyf`) — en 20 px lucide-ikon i en fast kolumn, så
+ *      varje rads text startar på samma x. `aria-hidden`: filändelsen står
+ *      redan i namnet, glyfen är ett SKANNINGSSTÖD, inte information.
+ *   2. TEXTKOLUMNEN — namnet som KNAPP (radens primära handling = Öppna),
+ *      därunder täckningsraden och metaraden. Samma TRE LED som förut, se
+ *      nedan.
+ *   3. ⋯-KNAPPEN — EN knapp, som öppnar `Meny` med alla sekundära
+ *      handlingar, var och en med ikon OCH text.
  *
- * ── HOVERN MÅSTE VARA `bg-bg-emphasized`, ALDRIG `bg-bg-muted` ──
+ * NAMNET ÄR KNAPPEN, INTE EN IKON BREDVID DET. Det tar bort tre av fyra
+ * ikonknappar ur bredduppgörelsen och ger namnet all plats som ⋯ inte
+ * behöver. Det följer husets egen grammatik (`PersonsList`s namn-Link,
+ * `HandlingsRad`) — men UTAN `after:absolute after:inset-0`-greppet: den
+ * osynliga klickfällan är riven på Marcus order och återinförs inte (se
+ * `MallRad`s docblock för buggen den orsakade).
  *
- * Kortet raden bor i bär `bg-bg-muted`. En hover i samma token hade varit
- * osynlig — exakt den felklass denna yta redan drabbats av tre gånger
- * (`ghost`-hovern två gånger, räckviddspillen en). `bg-bg-emphasized` är
- * husets nästa steg upp och det `HandlingsRad` självt använder.
- */
-/**
- * ═══ RADENS FORM ÄR LÅST TILL TRE RADER (Marcus 2026-08-17) ═══
+ * ── RADEN WRAPPAR ALDRIG (`flex-nowrap`) ──
+ *
+ * TASK-309.20 gav raden `flex-wrap` därför att fyra à fem 44 px-knappar
+ * strukturellt inte rymdes bredvid namnkolumnens golv vid 375 px. Med EN
+ * knapp kvar är den aritmetiken borta: 24 px glyf + 8 px + namn + 8 px +
+ * 44 px ⋯ ryms med marginal i den mätta 251 px-radbredden. Wrappen var en
+ * kompensation för ett problem som inte längre finns, och den KOSTADE:
+ * mobilraderna i prod visade knapparna under metaraden på rad 1 men till
+ * höger på rad 2–3, alltså två olika radformer i samma lista. Nu är
+ * anatomin identisk på mobil och skrivbord.
+ *
+ * ═══ [T176, 2026-08-29] RADEN ÄR ETT KORT — INGET KORT-I-KORT ═══
+ *
+ * Marcus mandat samma dag: ETT kort per bilaga, hover på HELA kortet.
+ * Formen är `NavCard`s dialekt (`rounded-2xl`, transparent kant som tänds
+ * under `prefers-contrast: more`, mjuk färgövergång), men INTE `NavCard`s
+ * TOKENS — `--mm-navcard-bg` ÄR `--mm-bg-muted`, alltså exakt samma värde
+ * som den grå behållaren korten ligger i. Ett kort på NavCards tokens hade
+ * varit osynligt: sjunde instansen av filhuvudets token-identitetsfälla.
+ * Korten bär därför egna `--mm-bilagekort-*` (components.css), och
+ * nästlingen är omvänd mot NavCards: kortet är den LJUSA ytan mot en TONAD
+ * behållare.
+ *
+ * DEN VITA LISTYTAN ÄR RIVEN I SAMMA DRAG. `<ul>` bar tidigare
+ * `bg-surface` + `rounded-xl` + `divide-y` INUTI den grå behållaren — ett
+ * kort i ett kort, med linjer inuti. Nu ligger `<ul>` direkt på behållaren
+ * och den grå ytan syns bara som RÄNNAN mellan korten.
+ *
+ * ── KORTET ÄR STATISKT: INGEN HOVER-TON, VARKEN PÅ KORTET ELLER PÅ
+ *    NAMNKNAPPEN (Marcus 2026-08-30) ──
+ *
+ * *"Ta bort hover på korten."* — Marcus prod-titt 2026-08-30. Kortet bär
+ * sedan dess ENBART `--mm-bilagekort-bg` (#ffffff); `hover:bg-*` och
+ * `motion-safe:transition-colors` är rivna ur klassen, och
+ * `--mm-bilagekort-bg-hover` är riven ur `components.css`. Övergången hade
+ * inget kvar att animera när tonen försvann — en `transition-colors` utan
+ * färgskifte är död kod, inte en kvarlämnad finess.
+ *
+ * [HISTORIK, 2026-08-29 → 2026-08-30] Kortet hovrade tidigare #ffffff →
+ * `--mm-bilagekort-bg-hover` (#edeee9), en ton vald mot BÅDA grannarna
+ * (`bg-bg-muted` #f5f5f3 var identisk med behållaren, `bg-bg-subtle`
+ * #fafaf8 för nära den). Tonen var alltså inte fel — den var oönskad.
+ * Raden står kvar som historik just för att nästa läsare inte ska
+ * återinföra den i tron att den föll bort av misstag.
+ *
+ * NAMNKNAPPEN BÄR FORTSATT INGEN EGEN PLATTA, och skälen är OFÖRÄNDRADE av
+ * rivningen — de handlar om token-identitet, inte om kortets ton:
+ *
+ *   • `ghost` hade gett hover `--mm-bg-muted` — alltså behållarens egen
+ *     ton, mitt i ett kort som INTE bär den. Samma token-identitets-fälla
+ *     som fällt denna yta sex gånger (filhuvudets systemiska fynd).
+ *   • `primary`+`subtle` hade gett varje rads NAMN en permanent guldtonad
+ *     platta — en lista som ser ut som en knapprad.
+ *
+ * `data-[hovered]:bg-transparent data-[pressed]:bg-transparent` står alltså
+ * KVAR på knappen.
+ *
+ * ═══ [TASK-309.44, 2026-08-30] MEN PLATT-LÖS ÄR INTE SAMMA SAK SOM
+ *     SIGNAL-LÖS — HOVERN ÄR EN UNDERSTRYKNING ═══
+ *
+ * Fram till 309.43 bar KORTET återkopplingen: pekaren låg någonstans på
+ * raden och hela kortet tonade. Den tonen är riven (*"Ta bort hover på
+ * korten"*), och raden stod därefter helt utan mus-affordans — ett kort som
+ * ser statiskt ut, med ett filnamn som ÄR en knapp men inte ser ut som en.
+ *
+ * `data-[hovered]:underline underline-offset-4` + `cursor-pointer` löser det
+ * med den enda grammatik som inte behöver en yta: titeln är LÄNK-LIK, och
+ * beter sig som en länk när man siktar på den. Understrykningen ändrar
+ * varken box eller höjd (den ritas i textens egen rad), så höjdlåsets 124 px
+ * kan strukturellt inte röras — till skillnad från en platta, som hade krävt
+ * padding och därmed mätning.
+ *
+ * `underline-offset-4` och inte default: standardavståndet lägger linjen i
+ * bokstävernas underhäng (p, g, j) i `text-body`/`font-medium`, vilket läser
+ * som en stavningsmarkering. 4 px lyfter den fri.
+ *
+ * `cursor-pointer` PÅ EN KNAPP är ett medvetet avsteg från husets form:
+ * `Button.tsx`s bas-klass bär ingen cursor-regel (bara `data-[disabled]` och
+ * `data-[loading]`), och repots fjorton `cursor-pointer` sitter alla på
+ * label/summary/div — inte på `Button`. Webbläsarens default för `<button>`
+ * är `cursor: default`, vilket är rätt för en knapp som SER ut som en knapp.
+ * Denna gör inte det: den ser ut som en rubrik. Avsteget är alltså till för
+ * exakt den egenskap som skiljer den från husets övriga knappar, och det
+ * generaliseras inte till dem.
+ *
+ * ⋯-knappen är sedan samma skiva `ghost` i vila med en egen platt-token vid
+ * hover — se `IKONKNAPP_KLASS`s docblock för varför det INTE bryter
+ * token-identitets-invarianten.
+ *
+ * KORTPADDINGEN ÄR 12 px (`p-3`), MÄTT MOT BLOCKETS INNERKANT:
+ * kortets ytterkant ligger vid behållarens innerkant (`grupp-kort`s `p-2`),
+ * alltså 0 px förskjutning, och kortets innehållskant landar 13 px in
+ * (1 px kant + 12 px padding).
+ *
+ * [TASK-309.44] REFERENSEN VAR TIDIGARE HANDLINGSRADEN. Här stod att
+ * paddingen var *"MÄTT MOT HANDLINGSRADEN"* och att kortets innehållskant
+ * linjerade med "Skapa bilaga"-knappens (`outline`: 1 px kant + `px-3`),
+ * med 1 px avvikelse mot "Ladda upp bilaga" (`solid`, kantlös). Den
+ * mätningen var riktig men gäller inte längre: handlingsraden ligger sedan
+ * 2026-08-30 UTANFÖR blocket, i sidkolumnen, alltså 8 px + 1 px till vänster
+ * om kortens ytterkant. Referensen är därför blockets innerkant — den enda
+ * kant kortet numera har en relation till. Skriv inte tillbaka den gamla
+ * formuleringen; den beskriver en nästling som inte finns.
+ *
+ * ═══ RADENS FORM ÄR LÅST TILL TRE LED (Marcus 2026-08-17, OFÖRÄNDRAT) ═══
  *
  * *"vi måste se till att alla dokumentrader är lika höga, det måste vara:
  * Dokumentnamn / Täckning / Uppladdningsdatum PÅ ALLA rader, alltid."*
- *
- * Det är INTE ett nytt mönster — `PersonsList.tsx` bär redan samma
- * höjdlåsning ("varje rad renderas ALLTID, tomt fält får en osynlig
- * platshållare, aldrig villkorad rendering"). Raderna här var förut olika
- * höga beroende på om en badge fanns, om namnet radbröt och om
- * "+N äldre filer" behövdes; listan blev ojämn att skanna.
  *
  * TRE LED, ALLTID RENDERADE:
  *   1. namnet     — ETT svep, trunkerat (se nedan)
@@ -862,51 +1780,143 @@ function DokumentAtgardsKnappar({ namn, kalla }: { namn: string; kalla: Dokument
  *
  * NAMNET TRUNKERAS I STÄLLET FÖR ATT RADBRYTA. `truncate` kräver `min-w-0`
  * på varje flex-förfader hela vägen upp, annars växer kolumnen i stället för
- * att klippa — därav `min-w-0` på både kolumnen och namn-spannet.
+ * att klippa — därav `min-w-0` på kolumnen, knappen och namn-spannet.
  *
- * HELA NAMNET NÅS PÅ TRE VÄGAR, och det behövs: `title` (pekare), knappens
- * `aria-label` (skärmläsare — den bär alltid hela namnet), och radens egen
- * `title`. KÄND KANT, medvetet accepterad: på TOUCH finns ingen hover, så
- * ett avklippt namn kan där inte läsas i sin helhet. Motvikten är att
- * verkliga filnamn är korta — demo-fixturen mäter 17–24 tecken mot
- * testsentinelernas 59 — och att trunkeringen är ett skyddsnät för
- * undantaget, inte normalfallet.
+ * HELA NAMNET NÅS PÅ TVÅ VÄGAR: `title` (pekare) och knappens `aria-label`
+ * (skärmläsare — den bär alltid hela namnet). KÄND KANT, medvetet
+ * accepterad: på TOUCH finns ingen hover, så ett avklippt namn kan där inte
+ * läsas i sin helhet. Motvikten är att namnet nu får HELA raden minus
+ * 76 px i stället för minus 182–228 px, alltså att trunkeringen åter är ett
+ * skyddsnät för undantaget i stället för normalfallet.
  *
- * "+N ÄLDRE FILER" FLYTTADE IN I DATUMLEDET. Den stod som en fjärde rad och
- * bröt låsningen för just de rader som hade dubbletter.
+ * "+N ÄLDRE FILER" bor i datumledet, inte som en fjärde rad.
+ *
+ * ── HÖJDLÅSET RÖRS INTE ──
+ *
+ * `useLastaListhojd` MÄTER radernas renderade höjd; ingen konstant beskriver
+ * dem. Att raden blir något högre (namnknappens 44 px-träffyta) är därför
+ * ingen ändring av låsningens logik, bara av det tal den mäter fram.
  */
+
+/** Filändelser som ska visa en bild-glyf i stället för dokument-glyfen. */
+const BILDANDELSER = new Set([
+  'png',
+  'jpg',
+  'jpeg',
+  'gif',
+  'webp',
+  'avif',
+  'heic',
+  'heif',
+  'bmp',
+  'svg',
+  'tif',
+  'tiff',
+]);
+
+/**
+ * Radens ledande typglyf. `aria-hidden` — filändelsen står redan i namnet,
+ * som skärmläsaren läser; glyfen finns för ÖGAT som skannar en lista.
+ *
+ * Fast kolumnbredd (`w-6`) så att varje rads text börjar på samma x oavsett
+ * glyf, och `h-11` så glyfen centreras mot namnknappens 44 px i stället för
+ * att klistra i radens överkant.
+ */
+function TypGlyf({ namn }: { namn: string }) {
+  const andelse = namn.includes('.') ? (namn.split('.').pop() ?? '').toLowerCase() : '';
+  const arBild = BILDANDELSER.has(andelse);
+  return (
+    <span className="flex h-11 w-6 shrink-0 items-center justify-center text-text-secondary">
+      {arBild ? (
+        <ImageIcon aria-hidden="true" size={20} />
+      ) : (
+        <FileText aria-hidden="true" size={20} />
+      )}
+    </span>
+  );
+}
+
 function DokumentRadSkal({
   namn,
   kalla,
   current,
   dolda,
-  handlingar,
+  menyposter,
+  filinput,
 }: {
   namn: string;
   kalla: DokumentKalla;
   current: BilageRad['current'];
   dolda: number;
-  handlingar: React.ReactNode;
+  /**
+   * Radens EGNA menyposter (Ersätt/Skapa om/Ändra räckvidd/Radera) — de
+   * läggs EFTER den delade "Ladda ner"-posten som skalet självt renderar.
+   */
+  menyposter?: React.ReactNode;
+  /**
+   * Dolda `<input type="file">` raden behöver (Ersätt). MÅSTE renderas i
+   * RADEN och inte bland menyposterna: `Popover` portalerar sitt innehåll
+   * till `document.body`, så en input inuti menyn hade lämnat raden — och
+   * varje test som scopar `rad.locator('input[type="file"]')` hade slutat
+   * hitta den.
+   */
+  filinput?: React.ReactNode;
 }) {
+  // ÖPPNA + LADDA NER BOR HÄR, inte i anropande radkomponent: båda gäller
+  // VARJE rad i båda lägena, och två instanser av samma hook i två
+  // radkomponenter var precis det som lät lägena glida isär före S107.
+  const forhandsvisaMutation = useForhandsvisaDokument();
+  const nedladdningMutation = useLaddaNerDokument();
+  // [TASK-309.38] Samma väntehälsning som GenereringsVy.tsx.
+  const { user } = useAuth();
+  const forNamn = user?.displayName ? fornamn(user.displayName) : null;
+
   return (
-    <div data-testid="dokument-fil" className="flex items-start gap-3 py-3">
-      <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
-        <span className="w-full min-w-0 truncate font-medium text-body" title={namn}>
-          {namn}
-        </span>
+    <div
+      data-testid="dokument-fil"
+      className="flex flex-nowrap items-start gap-2 rounded-2xl border border-(--mm-bilagekort-border) bg-(--mm-bilagekort-bg) p-3 contrast-more:border-(--mm-bilagekort-border-contrast)"
+    >
+      <TypGlyf namn={namn} />
+      <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5">
+        {/* NAMNET ÄR KNAPPEN — se docblocket för varför den är transparent
+            och varför hovern ligger på raden. `-mx-2 px-2` låter träffytan nå
+            ut i radens egen luft utan att namnet flyttar sig visuellt. */}
+        <Button
+          intent="ghost"
+          size="sm"
+          className="-mx-2 min-h-11 w-full min-w-0 cursor-pointer justify-start rounded-lg px-2 font-medium text-body underline-offset-4 data-[hovered]:bg-transparent data-[pressed]:bg-transparent data-[hovered]:underline"
+          // `aria-disabled`, INTE `isDisabled`: ett native `disabled` tar
+          // knappen ur tabordningen mitt i klicket. Vakten i onPress bär
+          // dubbelklicks-skyddet i stället.
+          aria-disabled={forhandsvisaMutation.isPending}
+          aria-label={forhandsvisaMutation.isPending ? `Öppnar ${namn} …` : `Öppna ${namn}`}
+          onPress={() => {
+            if (forhandsvisaMutation.isPending) return;
+            oppnaDokument({ kalla, forNamn, mutation: forhandsvisaMutation });
+          }}
+        >
+          {forhandsvisaMutation.isPending && (
+            <Loader2
+              aria-hidden="true"
+              size={IKON_STORLEK}
+              className="shrink-0 motion-safe:animate-spin"
+            />
+          )}
+          <span className="min-w-0 truncate" title={namn}>
+            {namn}
+          </span>
+        </Button>
         {/* [TASK-309.6, ADR-125 § 3+5] Mall-/INAKTUELL-badgen delar RADEN med
-            RackviddBadge (samma "TRE LED, ALLTID RENDERADE"-lås, Marcus
-            2026-08-17 — se filhuvudets docblock) i stället för att lägga till
-            en fjärde rad. `current.mall`/`current.inaktuell` är `null` för
-            varje icke-Event-mallad rad (uppladdade/person-genererade filer),
-            så de allra flesta rader visar EXAKT samma två-badge-yta som
-            förut. INAKTUELL bär TEXT, inte bara färg (`StatusBadge`,
-            WCAG 1.4.1 — samma disciplin som RackviddBadge/nivåbadgar). */}
-        <span className="flex flex-wrap items-center gap-1">
+            RackviddBadge (samma "TRE LED, ALLTID RENDERADE"-lås) i stället för
+            att lägga till en fjärde rad. INAKTUELL bär TEXT, inte bara färg
+            (`StatusBadge`, WCAG 1.4.1). `w-full min-w-0` så en för bred badge
+            TRUNKERAS inom raden i stället för att flyta ut. */}
+        <span className="flex w-full min-w-0 flex-wrap items-center gap-1">
           <RackviddBadge
             rackvidd={current.rackvidd}
             kursfamilj={current.kursfamilj}
             kursniva={current.kursniva}
+            plats={current.plats}
           />
           {current.mall !== null && <span className={TACKNING_KLASS}>{current.mall}</span>}
           {current.inaktuell === true && (
@@ -921,59 +1931,149 @@ function DokumentRadSkal({
             dolda > 0 ? `+${dolda} ${dolda === 1 ? 'äldre fil' : 'äldre filer'}` : null,
           ]}
         />
-      </span>
-      <span className="flex shrink-0 items-center gap-0.5">
-        <DokumentAtgardsKnappar namn={namn} kalla={kalla} />
-        <LaddaNerKnapp namn={namn} kalla={kalla} />
-        {handlingar}
-      </span>
-    </div>
-  );
-}
-
-function LaddaNerKnapp({ namn, kalla }: { namn: string; kalla: DokumentKalla }) {
-  const nedladdningMutation = useLaddaNerDokument();
-  return (
-    <>
-      <Button
-        intent="primary"
-        emphasis="subtle"
-        size="sm"
-        className={IKONKNAPP_KLASS}
-        aria-disabled={nedladdningMutation.isPending}
-        aria-label={nedladdningMutation.isPending ? `Laddar ner ${namn} …` : `Ladda ner ${namn}`}
-        onPress={() => {
-          if (nedladdningMutation.isPending) return;
-          nedladdningMutation.mutate({ kalla, namn });
-        }}
-      >
-        {nedladdningMutation.isPending ? (
-          <Loader2 aria-hidden="true" size={IKON_STORLEK} className="motion-safe:animate-spin" />
-        ) : (
-          <Download aria-hidden="true" size={IKON_STORLEK} />
+        {/* FELEN BOR I TEXTKOLUMNEN, inte i handlingszonen. De två
+            mutationerna vars knappar flyttat in i menyn (Öppna, Ladda ner)
+            har ingen synlig knapp att stå bredvid längre — och en felruta i
+            en portalerad meny hade försvunnit i samma ögonblick menyn
+            stängdes. */}
+        {forhandsvisaMutation.isError && (
+          <MessageBox intent="error" title="Kunde inte öppna filen" className="mt-1 w-full">
+            {forhandsvisaMutation.error instanceof Error
+              ? forhandsvisaMutation.error.message
+              : 'Inget felmeddelande angavs.'}
+          </MessageBox>
         )}
-      </Button>
-      {nedladdningMutation.isError && (
-        <MessageBox intent="error" title="Kunde inte ladda ner filen" className="max-w-56">
-          {nedladdningMutation.error instanceof Error
-            ? nedladdningMutation.error.message
-            : 'Inget felmeddelande angavs.'}
-        </MessageBox>
-      )}
-    </>
+        {nedladdningMutation.isError && (
+          <MessageBox intent="error" title="Kunde inte ladda ner filen" className="mt-1 w-full">
+            {nedladdningMutation.error instanceof Error
+              ? nedladdningMutation.error.message
+              : 'Inget felmeddelande angavs.'}
+          </MessageBox>
+        )}
+      </span>
+      {filinput}
+      <Meny
+        etikett={`Fler val för ${namn}`}
+        trigger={
+          // [TASK-309.44] GHOST I VILA, RUND PLATTA VID HOVER/PRESSED/ÖPPEN.
+          // Hela resonemanget (varför ghost-INTENTEN är rätt medan
+          // ghost-TOKENEN aldrig får användas här) bor i `IKONKNAPP_KLASS`s
+          // docblock; tonerna och mätvärdena i `components.css`
+          // § Bilagekortets ⋯-knapp.
+          //
+          // `data-[pressed]` TÄCKER DET ÖPPNA LÄGET, och det är verifierat i
+          // biblioteket — inte antaget: react-aria-components `MenuTrigger`
+          // lindar sin trigger i en `PressResponder` med `isPressed:
+          // state.isOpen` (`react-aria-components/dist/private/Menu.mjs`), och
+          // RAC:s `Button` renderar `data-pressed` ur `ctx.isPressed ||
+          // isPressed` (`.../Button.mjs`). Plattan står alltså kvar hela tiden
+          // menyn är uppe, utan en egen `aria-expanded`-regel.
+          //
+          // `contrast-more:border border-current` ersätter den kant
+          // `primary`+`subtle` gav via sin compound-variant. `ghost` har ingen
+          // egen kontrast-regel, så utan denna rad hade 11-golvet fallit bort
+          // med intent-bytet — en transparent knapp utan kant är osynlig i
+          // hög-kontrastläge.
+          //
+          // KÄND KANT, MÄTT OCH BOKFÖRD — INTE LAPPAD. Under TANGENTBORDS-
+          // fokus blir knappen en rundad FYRKANT: `base.css` § `*:focus-visible`
+          // sätter `border-radius: 2px` utöver ringen, så att ringen får en
+          // konsekvent form på element som saknar egen radie. Mätt i denna
+          // skiva: `borderTopLeftRadius` 3,35544e+07px i vila/hover/öppen →
+          // **2px** när `data-focus-visible` står (Escape-stängning, mus kvar
+          // över knappen: bg #edeee9 i en 2px-ruta).
+          //
+          // DET GÅR INTE ATT ÖVERSKUGGA MED EN UTILITY, och det är prövat:
+          // `focus-visible:rounded-full` ligger i `@layer utilities` medan den
+          // globala regeln är OLAGRAD author-CSS, och olagrat besegrar allt
+          // lagrat oavsett specificitet (`base.css` dokumenterar exakt den
+          // kaskad-ordningen vid sina egna `@layer`-noter). Klassen mättes till
+          // NOLL effekt och är därför borttagen igen i stället för att lämnas
+          // kvar som död kod som ser ut att göra något. Vägarna som ÅTERSTÅR
+          // — en `!`-utility, eller att smalna den globala regeln — ändrar
+          // appens fokus-grammatik för mer än denna knapp och är alltså ett
+          // eget beslut, inte en detalj i denna skiva. Bokfört för orkestrerar-
+          // triage; kanten är dessutom SMAL: utan mus är plattan transparent,
+          // så det enda som skiljer mot före denna skiva är ringens radie
+          // (4 px → 2 px var redan sant för den gamla `rounded`-formen).
+          <Button
+            intent="ghost"
+            size="sm"
+            className={`${IKONKNAPP_KLASS} text-(color:--mm-bilagekort-ikonknapp-text) data-[hovered]:text-(color:--mm-text) data-[pressed]:text-(color:--mm-text) rounded-full data-[hovered]:bg-(--mm-bilagekort-ikonknapp-bg-hover) data-[pressed]:bg-(--mm-bilagekort-ikonknapp-bg-hover) contrast-more:border contrast-more:border-current`}
+            aria-label={`Fler val för ${namn}`}
+          >
+            <Ellipsis aria-hidden="true" size={IKON_STORLEK} />
+          </Button>
+        }
+      >
+        <MenyPost
+          ikon={
+            nedladdningMutation.isPending ? (
+              <Loader2
+                aria-hidden="true"
+                size={IKON_STORLEK}
+                className="motion-safe:animate-spin"
+              />
+            ) : (
+              <Download aria-hidden="true" size={IKON_STORLEK} />
+            )
+          }
+          isDisabled={nedladdningMutation.isPending}
+          textValue="Ladda ner"
+          onAction={() => {
+            if (nedladdningMutation.isPending) return;
+            nedladdningMutation.mutate({ kalla, namn });
+          }}
+        >
+          {nedladdningMutation.isPending ? 'Laddar ner…' : 'Ladda ner'}
+        </MenyPost>
+        {menyposter}
+      </Meny>
+    </div>
   );
 }
 
 type UploadMutation = ReturnType<typeof useUploadAttachment>;
 type ReplaceMutation = ReturnType<typeof useReplaceAttachment>;
 type DeleteMutation = ReturnType<typeof useDeleteAttachment>;
+/** [TASK-338.4] "Ändra räckvidd"-mutationen — samma härlednings-mönster
+    som syskonen ovan, så en signaturändring i hooken följer med hit. */
+type ScopeMutation = ReturnType<typeof useUpdateAttachmentScope>;
 type SkapaOmMutation = ReturnType<typeof useSkapaOmEventBilaga>;
 
-/** [TASK-275.3] Sant för en GEMENSAM bilaga (räckvidd Kurstyp/Alla event) —
-    delad mellan BilageRadRow (döljer Ersätt) och badgens eget "rendera
-    inget"-villkor (RackviddBadge.tsx). */
+/** [TASK-275.3, OMBYGGD TASK-338.3] Sant för en GEMENSAM bilaga (räckvidd
+    `Gemensam`) — delad mellan BilageRadRow (döljer Ersätt) och badgens eget
+    "Detta event"-villkor (RackviddBadge.tsx).
+
+    ETT värde att jämföra mot i stället för två: legacy-räckvidderna
+    normaliseras bort vid datagränsen (`normaliseraRaAttachment`), så ingen
+    UI-yta behöver längre känna till `Kurstyp`/`Alla event`. */
 function arGemensam(rackvidd: Attachment['rackvidd']): boolean {
-  return rackvidd === AttachmentScope.KURSTYP || rackvidd === AttachmentScope.ALLA_EVENT;
+  return rackvidd === AttachmentScope.GEMENSAM;
+}
+
+/**
+ * ÖPPNAR RADENS DOLDA FILVÄLJARE — den väg "Ersätt" tar sedan handlingen
+ * flyttade in i ⋯-menyn.
+ *
+ * VARFÖR INTE `FileTrigger` LÄNGRE: react-arias `FileTrigger` driver sin
+ * dolda input via `PressResponder`-kontexten (verifierat i den installerade
+ * källan, `react-aria-components/dist/private/FileTrigger.mjs` — den
+ * renderar `<PressResponder onPress={…}>{children}</PressResponder>` plus
+ * inputen). `MenuItem` bygger på `useMenuItem` och konsumerar INTE den
+ * kontexten, så en menypost inuti en `FileTrigger` hade aldrig öppnat något.
+ * Raden renderar därför inputen själv och menyposten klickar den.
+ *
+ * `value = ''` FÖRE klicket är inte kosmetik: utan nollställningen fyrar
+ * `change` inte när SAMMA fil väljs två gånger i rad, och Lotta som råkat
+ * välja fel version och väljer om den rätta hade fått tyst ingenting.
+ * `FileTrigger` gör exakt samma sak i sin `onPress` (samma källa).
+ */
+function oppnaFilvaljare(ref: React.RefObject<HTMLInputElement | null>) {
+  const input = ref.current;
+  if (!input) return;
+  input.value = '';
+  input.click();
 }
 
 function BilageRadRow({
@@ -990,20 +2090,21 @@ function BilageRadRow({
   skapaOmMutation: SkapaOmMutation;
 }) {
   const { current, dolda } = rad;
-  // Bara DENNA rads knapp visar "Ersätter…"/blir avstängd — inte hela
-  // listan (till skillnad mot uppladdningsknappen längst ner, som stänger
-  // av sig själv via sin egen `uploadMutation.isPending`). `variables`
-  // finns bara medan mutationen faktiskt pågår (TanStack Query), så
-  // jämförelsen är säker även innan första anropet.
+  const ersattInputRef = useRef<HTMLInputElement>(null);
+  // Bara DENNA rads meny visar "Ersätter…" — inte hela listan (till skillnad
+  // mot uppladdningsknappen, som stänger av sig själv via sin egen
+  // `uploadMutation.isPending`). `variables` finns bara medan mutationen
+  // faktiskt pågår (TanStack Query), så jämförelsen är säker även innan
+  // första anropet.
   const ersatterDennaRaden =
     replaceMutation.isPending && replaceMutation.variables?.oldAttachmentId === current.id;
-  // [TASK-309.6] Samma "bara DENNA rads knapp"-disciplin som `ersatterDennaRaden`.
+  // [TASK-309.6] Samma "bara DENNA rad"-disciplin som `ersatterDennaRaden`.
   const skaparOmDennaRaden =
     skapaOmMutation.isPending && skapaOmMutation.variables?.ersatt === current.id;
   // [TASK-275.3, ADR-118 beslut 3] Ersätt VISAS INTE i eventkontext för en
   // GEMENSAM bilaga — badgen bär förklaringen (AC #4). Servern nekar 403
   // ändå (delete-attachment/index.ts), men UI-lagret ska inte erbjuda en
-  // knapp den vet kommer avvisas.
+  // handling den vet kommer avvisas.
   const gemensam = arGemensam(current.rackvidd);
   // [TASK-309.6, ADR-125 § 3+4] "Skapa om" gäller BARA Event-mallade rader
   // med ett KÄNT `mall`-värde ('Bekräftelsebilaga'/'Deltagarinformation') —
@@ -1019,65 +2120,43 @@ function BilageRadRow({
       kalla={{ typ: 'bilaga', eventId, attachmentId: current.id }}
       current={current}
       dolda={dolda}
-      handlingar={
+      filinput={
+        !gemensam && (
+          // `hidden` (display:none) — EXAKT samma form som `FileTrigger`
+          // renderar sin egen input i (`style={{display:'none'}}`), så den
+          // varken syns, tar tabbstopp eller når skärmläsaren.
+          <input
+            ref={ersattInputRef}
+            type="file"
+            accept="application/pdf"
+            className="hidden"
+            onChange={(e) =>
+              onReplace(e.target.files, current.id, {
+                rackvidd: current.rackvidd ?? undefined,
+                kursfamilj: current.kursfamilj ?? undefined,
+                kursniva: current.kursniva ?? undefined,
+                // [TASK-338.3] Plats-axeln MÅSTE följa med — se
+                // `ReplaceAttachmentInput`s docblock: utan den vidgas en
+                // platsbunden bilaga tyst till ALLA event vid nästa byte.
+                plats: current.plats?.id ?? undefined,
+              })
+            }
+          />
+        )
+      }
+      menyposter={
         <>
-          {skapaOmMallId !== null && (
-            <Button
-              intent="primary"
-              emphasis="subtle"
-              size="sm"
-              className={IKONKNAPP_KLASS}
-              aria-disabled={skaparOmDennaRaden}
-              aria-label={
-                skaparOmDennaRaden ? `Skapar om ${current.namn} …` : `Skapa om ${current.namn}`
-              }
-              onPress={() => {
-                if (skaparOmDennaRaden) return;
-                skapaOmMutation.mutate({ mall: skapaOmMallId, ersatt: current.id });
-              }}
-            >
-              {skaparOmDennaRaden ? (
-                <Loader2
-                  aria-hidden="true"
-                  size={IKON_STORLEK}
-                  className="motion-safe:animate-spin"
-                />
-              ) : (
-                <RefreshCw aria-hidden="true" size={IKON_STORLEK} />
-              )}
-            </Button>
-          )}
           {/* [TASK-275.3, ADR-118 beslut 3] Ersätt VISAS INTE i eventkontext
               för en GEMENSAM bilaga — badgen bär förklaringen (AC #4).
-              Servern nekar 403 ändå, men UI-lagret ska inte erbjuda en knapp
-              den vet avvisas.
 
               För eventets EGNA filer står den kvar (Marcus-beslut
               2026-08-17): förvaltningen flyttades i övrigt till
               räckviddsläget, men en event-egen fil syns inte där, så utan
-              denna knapp hade den saknat ersätt-väg helt. */}
+              denna post hade den saknat ersätt-väg helt. */}
           {!gemensam && (
-            <FileTrigger
-              acceptedFileTypes={['application/pdf']}
-              onSelect={(files) =>
-                onReplace(files, current.id, {
-                  rackvidd: current.rackvidd ?? undefined,
-                  kursfamilj: current.kursfamilj ?? undefined,
-                  kursniva: current.kursniva ?? undefined,
-                })
-              }
-            >
-              <Button
-                intent="primary"
-                emphasis="subtle"
-                size="sm"
-                className={IKONKNAPP_KLASS}
-                isDisabled={ersatterDennaRaden}
-                aria-label={
-                  ersatterDennaRaden ? `Ersätter ${current.namn} …` : `Ersätt ${current.namn}`
-                }
-              >
-                {ersatterDennaRaden ? (
+            <MenyPost
+              ikon={
+                ersatterDennaRaden ? (
                   <Loader2
                     aria-hidden="true"
                     size={IKON_STORLEK}
@@ -1085,9 +2164,37 @@ function BilageRadRow({
                   />
                 ) : (
                   <FileUp aria-hidden="true" size={IKON_STORLEK} />
-                )}
-              </Button>
-            </FileTrigger>
+                )
+              }
+              isDisabled={ersatterDennaRaden}
+              textValue="Ersätt"
+              onAction={() => oppnaFilvaljare(ersattInputRef)}
+            >
+              {ersatterDennaRaden ? 'Ersätter…' : 'Ersätt'}
+            </MenyPost>
+          )}
+          {skapaOmMallId !== null && (
+            <MenyPost
+              ikon={
+                skaparOmDennaRaden ? (
+                  <Loader2
+                    aria-hidden="true"
+                    size={IKON_STORLEK}
+                    className="motion-safe:animate-spin"
+                  />
+                ) : (
+                  <RefreshCw aria-hidden="true" size={IKON_STORLEK} />
+                )
+              }
+              isDisabled={skaparOmDennaRaden}
+              textValue="Skapa om"
+              onAction={() => {
+                if (skaparOmDennaRaden) return;
+                skapaOmMutation.mutate({ mall: skapaOmMallId, ersatt: current.id });
+              }}
+            >
+              {skaparOmDennaRaden ? 'Skapar om…' : 'Skapa om'}
+            </MenyPost>
           )}
         </>
       }
@@ -1096,96 +2203,242 @@ function BilageRadRow({
 }
 
 /**
- * [HISTORIK, kravet gäller INTE längre] `relative` var ett hårt krav på
- * dessa rader så länge öppna-knappen bar `after:absolute after:inset-0`
- * (radklick-greppet). Det greppet är rivet på Marcus order — förhandsvisning
- * är en vanlig ikonknapp igen — så raden behöver inget `relative`.
+ * ═══ HANDLINGSRADEN ÖVER LISTAN — MALLAR OCH GENERATORER ÄR HANDLINGAR,
+ *     INTE DOKUMENT (`T176`, Marcus 2026-08-29) ═══
  *
- * Noten står kvar för att buggen var dyr och lätt att återinföra: den
+ * `MallRad`/`GeneratorRad` är RIVNA. De renderades som rader i
+ * dokumentlistan trots att de inte ÄR dokument — de är sätt att SKAPA ett.
+ * Följden syntes i prod: en lista med sex poster där två (Deltagarinformation-
+ * mallen, Betalningskvitto-generatorn) låg under rullningskanten och alltså
+ * var osynliga, och där Lotta fick skanna förbi katalogposter för att hitta
+ * sina verkliga filer. Katalogerna (`MALLAR`/`GENERATORER`) lever kvar som
+ * kod-nivå-listor — det är RENDERINGEN som flyttat, inte datan.
  *
- * uppstår i samma sekund någon återinför ett `after:inset-0`-grepp här.
- * Ett absolut positionerat element mäts mot
- * närmaste POSITIONERADE förfader — saknar raden `relative` klättrar
- * `after`-lagret uppåt i trädet och lägger sig som en osynlig klickfälla
- * över allt det förfadern täcker. Mätt utfall: uppladdningsflödets
- * radioknappar gick inte att klicka, eftersom mall-radens `after` låg över
- * dem. Playwright-felet var ordagrant "…button… intercepts pointer events".
+ * Raden bär TVÅ handlingar, i den ordning Lotta gör dem (*"Tror hon kommer
+ * ladda upp mest"*, Marcus 2026-08-17):
  *
- * Bilagerader får sitt `relative` av `DokumentRadSkal`. Mall- och
- * generatorrader har egen struktur (ingen räckviddsbadge, ingen
- * ersätt-handling) och måste därför bära det själva. Tar du bort `relative`
- * här återuppstår buggen tyst — den syns inte i något statiskt test, bara
- * när någon försöker klicka på något annat på sidan.
+ *   1. `Ladda upp bilaga` — samma `FileTrigger`-flöde och samma
+ *      `uploadMutation` som knappen under listan hade. Den knappen är riven:
+ *      två uppladdningsvägar på samma sida hade varit två ställen att hålla
+ *      i synk, och `UppladdningsFel` bor kvar på SIDAN (dialogen rivs vid
+ *      framgång och hade tagit felet med sig).
+ *   2. `Skapa bilaga ▾` — samma `Meny`-primitiv som radernas ⋯, med
+ *      mallarna och kvittot som poster.
  *
- * [ÄNDRAD, TASK-309.8] `MallRad`s handlingsyta bar tidigare SAMMA
- * `DokumentAtgardsKnappar`+`LaddaNerKnapp`-par som `GeneratorRad` (nedan)
- * fortfarande bär — förhandsvisning/nedladdning av en transient PDF via
- * `previewEventTemplate`. Den vägen var HÅRDKODAD till `'deltagarinfo'`
- * (`dokumentKalla.ts`s enda mall var just den), vilket hade förhandsvisat
- * FEL innehåll för den nytillkomna `'bekraftelse'`-posten (`MALLAR` ovan).
- * Genereringsvyn (`GenereringsVy.tsx`) äger nu BÅDA jobben för en mall —
- * "Förhandsgranska först" och "Skapa" — så mall-radens knapp blir en enda
- * ENTRÉ dit i stället för en andra, felkopplad, preview-väg. `typ: 'mall'`
- * (den gamla `DokumentKalla`-varianten) är därför riven, se
- * `dokumentKalla.ts`s filhuvud. `GeneratorRad` (kvitto) är OFÖRÄNDRAD —
- * den har ingen genereringsvy att peka mot (TASK-147.7, obyggd).
+ * ── RÄCKVIDDSLÄGET FÅR BARA UPPLADDNINGEN, OCH DET ÄR DAGENS BETEENDE ──
+ *
+ * `MALLAR`/`GENERATORER` renderades aldrig i `GemensamtLage`: en mall
+ * genereras UR ett events data och har inget meningsfullt läge utan valt
+ * event (`GemensamtLage`s eget docblock). Menyn utelämnas därför helt när
+ * `eventId` är `null` — hellre ingen knapp än en avstängd som lovar något
+ * ytan inte kan hålla.
+ *
+ * ── PLACERINGEN: SIDFLÖDET MELLAN VÄLJAREN OCH BLOCKET ──
+ *
+ * Marcus 2026-08-18 om varför uppladdningen stod UNDER listan: *"detta gör
+ * det logiskt att sätta Ladda upp-knappen under dokumentlistan"* — och skälet
+ * var att listan rullar inline och därför aldrig växer förbi sin maxhöjd.
+ * Argumentet håller fortfarande för en knapp under listan, men handlingarna
+ * hör ihop som ETT block ("vad kan jag göra här?") och listan som ett annat
+ * ("vad finns här?"). Att splittra dem på var sin sida om listan hade gett
+ * två handlingszoner.
+ *
+ * [TASK-309.44, 2026-08-30] RADEN LIGGER INTE LÄNGRE I KORTET. Den bor i
+ * `DokumentYta`s innehållskolumn, som syskon till `EventValjare` och till
+ * lägena — h1 → väljare → handlingsrad → block. Grupperingen ovan är
+ * oförändrad (handlingarna hör fortfarande ihop); det som ändrades är vilken
+ * BEHÅLLARE de hör till. Hela skälet med mätvärden står vid anropsstället i
+ * `DokumentYta` (radie-nästling + roll-förväxling, Marcus mandat).
+ *
+ * Att raden inte längre ärver filterradens plats i kortet betyder att kortets
+ * överkant står tom igen — men kortet är sedan T176 en ren behållare för
+ * listan, inte en panel med egna kontroller, så tom överkant är rätt läge nu.
  */
-function MallRad({ mall }: { mall: Mall }) {
-  // nuqs-paret genereringsvyn läser i `dokument.tsx`s routekomponent
-  // (`vy`/`mall`) — samma nycklar, ingen prop-borrning: `DokumentYta` och
-  // `GenereringsVy` är syskon under samma route, precis som prototypens
-  // egen dispatcher (`GenereringsPrototyp`, riven) läste dem lokalt.
-  const [, setVy] = useQueryState('vy');
-  const [, setMall] = useQueryState('mall');
+function ListHandlingsRad({
+  eventId,
+  uploadMutation,
+  onValjFil,
+}: {
+  /** `null` = räckviddsläget: bara uppladdning, ingen "Skapa bilaga". */
+  eventId: string | null;
+  uploadMutation: UploadMutation;
+  onValjFil: (filer: FileList | null) => void;
+}) {
   return (
-    <div data-testid="dokument-mall" className="flex items-center gap-3 py-3">
-      <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
-        <span className="w-full min-w-0 truncate font-medium text-body" title={mall.namn}>
-          {mall.namn}
-        </span>
-        {/* SAMMA TRE LED SOM BILAGERADEN (namn / täckning / detalj), så
-            höjdlåsningen håller genom hela listan — inte bara för bilagor.
-            En mall genereras ur DETTA events data och gäller därför bara
-            det; `TACKNING_KLASS` är samma pill-sträng `RackviddBadge` bär,
-            delad som konstant så de två aldrig glider isär. */}
-        <span className={TACKNING_KLASS}>Detta event</span>
-        <MetaRad delar={[`Fyller i ${mall.fyllerI.join(', ').toLowerCase()}`]} />
-      </span>
-      <span className="flex shrink-0 items-center gap-0.5">
-        <Button
-          intent="primary"
-          emphasis="subtle"
-          size="sm"
-          className={IKONKNAPP_KLASS}
-          aria-label={`Skapa ${mall.namn}`}
-          onPress={() => {
-            void setMall(mall.id);
-            void setVy('generering');
-          }}
-        >
-          <ChevronRight aria-hidden="true" size={IKON_STORLEK} />
-        </Button>
-      </span>
+    // INGEN PADDING ALLS — varken horisontell eller vertikal.
+    //
+    // HORISONTELLT: knapparnas vänsterkant ska LINJERA med väljarens och
+    // blockets. Här stod `px-1` med motiveringen att knapparna "behöver egen
+    // luft för att inte klistra i ramens kant"; den var fel redan då (4 px
+    // indrag mot listan läste som ett fel, inte som luft — mätt: knappkant
+    // 385 mot listans 381 vid 1280 px). Nu är den dessutom omöjlig att
+    // motivera: raden är syskon till väljaren i samma `px-4`-kolumn, så
+    // kanten är kolumnens och all extra padding vore en avvikelse från den.
+    //
+    // VERTIKALT: `pt-1` stod här och KOMPENSERADE för kortets innerkant —
+    // "den skiljer handlingsraden från kortets överkant". Raden ligger inte
+    // i något kort längre, så de 4 px hade brutit den 16 px-rytm kolumnens
+    // `gap-4` ger (16 → 20 px mellan väljare och knappar). Riven med
+    // referensen den kompenserade för (TASK-309.44).
+    //
+    // ═══ STAPLADE I FULL BREDD UNDER `sm`, SIDA VID SIDA FRÅN `sm` ═══
+    //
+    // Första formen var `flex-wrap`: knapparna behöll sin intrinsic bredd
+    // (mätt vid 390 px: 132 resp. 181 px) och bröt till två VÄNSTERSTÄLLDA
+    // rader med olika längd — det såg oavslutat ut, inte som en medveten
+    // mobilform. `flex-col` + `w-full` staplar dem i stället som ETT block
+    // med samma bredd, primärhandlingen överst; `sm:flex-row` + `sm:w-auto`
+    // ger tillbaka sida-vid-sida-formen så fort bredden räcker.
+    //
+    // BREDDEN MÅSTE NÅ SJÄLVA `<Button>`. `MenuTrigger` (react-aria) renderar
+    // INGET eget DOM-element — den är en ren kontextleverantör plus en
+    // portalerad `Popover` — så `Meny`s trigger-knapp är ett DIREKT flexbarn
+    // och tar `w-full` självt. Uppladdningens `FileTrigger` gör detsamma
+    // (fragment + dold input), men den ligger inuti `data-testid`-ankaret
+    // nedan, så DEN diven måste också bära `w-full sm:w-auto` — annars
+    // sträcker sig ankaret men inte knappen.
+    <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+      {/* `data-testid` på WRAPPERN, inte på knappen: `FileTrigger` renderar
+          sin dolda `<input type="file">` som SYSKON till knappen, och det är
+          inputen testet behöver nå (`setInputFiles`). Sidan bär flera
+          filväljare — varje rads "Ersätt" är en — så ett scopat ankare är
+          enda sättet att träffa RÄTT input. Ankarnamnet är oförändrat sedan
+          knappen bodde under listan, så befintliga tester följer med. */}
+      <div data-testid="ladda-upp-ny-fil" className="w-full sm:w-auto">
+        <FileTrigger acceptedFileTypes={['application/pdf']} onSelect={onValjFil}>
+          {/* `min-h-11` — 44 px-golvet, samma som filterraden bar
+              (`min-h-11` per pill, "size='sm' ensamt gav 37 px, under
+              golvet") och samma som radernas ⋯ bär via `IKONKNAPP_KLASS`.
+              `size="sm"` styr typografi och sidpadding, ALDRIG höjden:
+              dess `min-h-8` mätte 32 px, alltså under golvet för sidans
+              primära handling. */}
+          <Button
+            intent="primary"
+            size="sm"
+            className="min-h-11 w-full sm:w-auto"
+            isDisabled={uploadMutation.isPending}
+          >
+            <Upload aria-hidden="true" size={IKON_STORLEK} className="shrink-0" />
+            {uploadMutation.isPending ? 'Laddar upp…' : 'Ladda upp bilaga'}
+          </Button>
+        </FileTrigger>
+      </div>
+      {eventId !== null && <SkapaDokumentMeny eventId={eventId} />}
     </div>
   );
 }
 
-/** Samma `relative`-krav som `MallRad` ovan — se dess docblock. */
-function GeneratorRad({ gen, eventId }: { gen: Generator; eventId: string }) {
+/**
+ * "Skapa bilaga ▾" — mallkatalogen plus kvittot, som meny i stället för
+ * listrader. (Komponentnamnet `SkapaDokumentMeny` är MEDVETET oförändrat:
+ * T176:s namnbyte gäller USER-SYNLIG text, inte symbolnamn.)
+ *
+ * MALLPOSTERNA gör EXAKT vad `MallRad`s chevron-knapp gjorde: sätter
+ * `?mall=` och `?vy=generering` via nuqs, så `dokument.tsx`s routekomponent
+ * byter till `GenereringsVy`. Ingen ny navigeringsväg, bara en ny form.
+ *
+ * ═══ KVITTOT ÖPPNAR — DET LADDAS INTE NER (orkestrerar-beslut, Marcus
+ *     mandat 2026-08-29) ═══
+ *
+ * `GeneratorRad` bar TVÅ knappar, Öppna och Ladda ner. Nedladdningen är
+ * riven och får ingen menypost. Skälet är inte förenkling utan
+ * kvittoseriens integritet: kvittots ENDA leveransväg är "Skicka kvitto" i
+ * Åtgärder (`AtgardsSida.tsx`, TASK-147.7/ADR-109), där SERVERN allokerar
+ * kvittonumret. En PDF nedladdad härifrån saknar kvittonummer och är alltså
+ * ett kvitto-LIKNANDE dokument utanför serien — en nedladdningsknapp hade
+ * bjudit in till att mejla den för hand och därmed kringgå serien.
+ * Dokumentytans generator är en FÖRHANDSVISNING av kvittoformen, inte ett
+ * kvitto (`preview-receipt/index.ts` § PERSONDATA: typexempel, aldrig en
+ * verklig anmälan, och den når aldrig Storage, Bilagor-raden eller ett
+ * allokerat kvittonummer).
+ */
+function SkapaDokumentMeny({ eventId }: { eventId: string }) {
+  // nuqs-paret genereringsvyn läser i `dokument.tsx`s routekomponent
+  // (`vy`/`mall`) — samma nycklar, ingen prop-borrning: `DokumentYta` och
+  // `GenereringsVy` är syskon under samma route.
+  const [, setVy] = useQueryState('vy');
+  const [, setMall] = useQueryState('mall');
+  const forhandsvisaMutation = useForhandsvisaDokument();
+  const { user } = useAuth();
+  const forNamn = user?.displayName ? fornamn(user.displayName) : null;
+
   return (
-    <div data-testid="dokument-generator" className="flex items-center gap-3 py-3">
-      <span className="flex min-w-0 flex-1 flex-col items-start gap-1">
-        <span className="w-full min-w-0 truncate font-medium text-body" title={gen.namn}>
-          {gen.namn}
-        </span>
-        <span className={TACKNING_KLASS}>Detta event</span>
-        <MetaRad delar={[`Byggs ur ${gen.byggsUr.join(', ').toLowerCase()}`]} />
-      </span>
-      <span className="flex shrink-0 items-center gap-0.5">
-        <DokumentAtgardsKnappar namn={gen.namn} kalla={{ typ: 'generator', eventId }} />
-        <LaddaNerKnapp namn={gen.namn} kalla={{ typ: 'generator', eventId }} />
-      </span>
-    </div>
+    <>
+      <Meny
+        etikett="Skapa bilaga"
+        // `bottom start` (inte radernas `bottom end`): triggern står till
+        // VÄNSTER i sin rad, så menyn ska växa åt höger.
+        placement="bottom start"
+        trigger={
+          // `min-h-11 w-full sm:w-auto` — samma 44 px-golv och samma
+          // stapel-form som uppladdningsknappen (se `ListHandlingsRad`s
+          // docblock). Knappen är ett DIREKT flexbarn i handlingsraden:
+          // `MenuTrigger` renderar inget eget DOM-element, så bredden når
+          // hela vägen ner utan en wrapper att kompensera för.
+          <Button
+            intent="secondary"
+            emphasis="outline"
+            size="sm"
+            className="min-h-11 w-full sm:w-auto"
+          >
+            <FilePlus aria-hidden="true" size={IKON_STORLEK} className="shrink-0" />
+            Skapa bilaga
+            <ChevronDown aria-hidden="true" size={IKON_STORLEK} className="shrink-0" />
+          </Button>
+        }
+      >
+        {MALLAR.map((mall) => (
+          <MenyPost
+            key={mall.id}
+            ikon={<FileText aria-hidden="true" size={IKON_STORLEK} />}
+            textValue={mall.namn}
+            onAction={() => {
+              void setMall(mall.id);
+              void setVy('generering');
+            }}
+          >
+            {mall.namn}
+          </MenyPost>
+        ))}
+        {GENERATORER.map((gen) => (
+          <MenyPost
+            key={gen.id}
+            ikon={
+              forhandsvisaMutation.isPending ? (
+                <Loader2
+                  aria-hidden="true"
+                  size={IKON_STORLEK}
+                  className="motion-safe:animate-spin"
+                />
+              ) : (
+                <Receipt aria-hidden="true" size={IKON_STORLEK} />
+              )
+            }
+            isDisabled={forhandsvisaMutation.isPending}
+            textValue={gen.namn}
+            onAction={() => {
+              if (forhandsvisaMutation.isPending) return;
+              // Samma popup-blockerar-säkra väg som radernas namnknapp —
+              // `window.open` synkront i handlern, adressen efteråt.
+              oppnaDokument({
+                kalla: { typ: 'generator', eventId },
+                forNamn,
+                mutation: forhandsvisaMutation,
+              });
+            }}
+          >
+            {gen.namn}
+          </MenyPost>
+        ))}
+      </Meny>
+      {forhandsvisaMutation.isError && (
+        <MessageBox intent="error" title="Kunde inte öppna dokumentet" className="w-full">
+          {forhandsvisaMutation.error instanceof Error
+            ? forhandsvisaMutation.error.message
+            : 'Inget felmeddelande angavs.'}
+        </MessageBox>
+      )}
+    </>
   );
 }
 
@@ -1214,33 +2467,425 @@ function ErsattningsFel({ replaceMutation }: { replaceMutation: ReplaceMutation 
   );
 }
 
-type ListaTyp = 'alla' | 'bilaga' | 'mall' | 'generator';
-
-const LISTA_FILTER: { key: ListaTyp; label: string }[] = [
-  { key: 'alla', label: 'Alla' },
-  { key: 'bilaga', label: 'Bilagor' },
-  { key: 'mall', label: 'Mallar' },
-  { key: 'generator', label: 'Generatorer' },
-];
+/**
+ * ═══ KORTETS RAM ÄR 8 px, INTE 16 (Marcus 2026-08-29) ═══
+ *
+ * *"Man kanske kan göra 'listytan', den höjdlåset sitter på lite större, så
+ * den gråa ramen som är bakgrunden blir lite smalare också, stör mig lite på
+ * att 'ramen' är så tjock."*
+ *
+ * Kortet (`grupp-kort`, `bg-bg-muted`) bär listan, och dess padding ÄR
+ * därför en synlig ram. `p-4` → `p-2` halverar den och ger listytan 16 px
+ * mer bredd. SYMMETRIN är oförändrad och icke förhandlingsbar
+ * (Marcus 2026-08-18: *"den grå ramen ser bredare ut på sidorna än vad den är
+ * över och under"*) — `p-2` är lika brett runtom, precis som `p-4` var.
+ *
+ * [T176, 2026-08-29] BEHÅLLAREN ÄR NU OCKSÅ RÄNNAN. Listan har ingen egen
+ * `bg-surface`-yta längre — bilagekorten bär den (`DokumentRadSkal`), och
+ * den grå tonen syns mellan dem. Samma 8 px runtom OCH mellan korten:
+ * radens transparenta `border-b-8` bär rännan MELLAN korten, och eftersom
+ * en border ligger UTANFÖR padding-boxen behövs ingen kompensation alls på
+ * wrappern — behållarens `p-2` ensam ger de 8 px runtom.
+ * [TASK-309.46] Formen har varit `py-1` + `-my-1` (halv ränna över och
+ * under) och `pt-2` + `-mt-2` (hela rännan över kortet, men innanför
+ * `<ul>`:ets padding-box, så rullningslistens spår började 8 px för högt).
+ * Hela historiken med mätvärden står i `DokumentListRam`s
+ * wrapper-kommentar.
+ *
+ * DELAD KONSTANT, INTE TVÅ STRÄNGAR: eventläget och räckviddsläget bar
+ * identiska men separata klass-strängar för både kortet och `<ul>`:et. De hade
+ * redan glidit isär en gång (`sistaRadenBarLinje` saknades helt i
+ * räckviddsläget, TASK-309.24) — samma lärdom `DokumentRadSkal` och
+ * `HandlingsRad` bär i sina egna huvuden.
+ *
+ * ═══ [TASK-309.44, 2026-08-30] BLOCKET BÄR BARA LISTAN NU ═══
+ *
+ * `ListHandlingsRad` låg här inne från 2026-08-29 till 2026-08-30 och är
+ * flyttad ut till sidflödet (Marcus mandat — radie-nästling + roll-
+ * förväxling, hela skälet vid `ListHandlingsRad`s anropsställe i
+ * `DokumentYta`). Blocket har därmed EXAKT ETT barn: `DokumentListRam`.
+ *
+ * KLASS-STRÄNGEN ÄR ÄNDÅ ORÖRD, och det är ett val. `gap-2` har inget att
+ * verka på med ett enda barn, men den beskriver behållarens form ("8 px
+ * mellan innehållsblock, samma tal som `p-2` runtom") och kostar noll
+ * renderat. Att riva den hade sparat sex tecken och tagit bort svaret på
+ * frågan "vad händer om något läggs tillbaka här?" — och den frågan har nu
+ * ställts två gånger på två dagar. `p-2`, radien och kontrast-kanten är
+ * oförändrade av samma skäl som de en gång sattes: de tillhör kortet, inte
+ * dess innehåll.
+ */
+const GRUPPKORT_KLASS =
+  'flex flex-col gap-2 rounded-2xl border border-transparent bg-bg-muted p-2 contrast-more:border-border-strong';
 
 /**
- * DOKUMENT-LISTAN — den ENDA formen (Marcus-GO, filhuvudets "FORMEN ÄR LÅST
- * TILL EN LISTA"-not), inte längre en av två växlingsbara varianter. En
- * flat, filtrerbar lista: typ-chipsen filtrerar klient-sidigt över samma
- * `rader`/mallar/generatorer som tidigare — ingen ny data.
+ * ═══ LISTANS RAM — `<ul>`:et, rullningen och uttoningen, EN gång ═══
  *
- * FILTERRADEN (uppdraget: "husets uppdelade filterrad, historik-sidans
- * mönster") — `ToggleButtonGroup` med `spread` (likbredds-läge, ADR-044) på
- * EGEN rad ovanför listan, samma disciplin som `AktivitetsHistorik.tsx`
- * § `FilterRad`s tidsperiod-toggel: `min-h-11` per pill håller 44 px-
- * touch-target-golvet (samma filens kommentar: "`size='sm'` ensamt gav
- * 37 px, under golvet").
+ * `<ul>`/`<li>`, INTE `<div>` — och det är ett a11y-krav, inte smak:
+ * `aria-label` stöds inte av en rollös `<div>` (biome
+ * `useAriaPropsSupportedByRole` fällde exakt det, mätt 2026-08-18), och
+ * listrollen bär namnet. Det är dessutom husets form för samma sak
+ * (`NyaAnmalningar.tsx`, `Deltagare.tsx`).
  *
- * TYPFILTRETS DATAGRUND: `ListaTyp`/`LISTA_FILTER` filtrerar i dag bara på
- * VILKEN LISTA en rad kommer från (bilagor/mallar/generatorer) — inom
- * "Bilagor" finns ingen verklig klass-uppdelning ännu (Fynd 1, filhuvudet).
- * TASK-147.12 kopplar in den verkliga klassen; denna filterrad ändras inte
- * strukturellt den dagen, bara vad "Bilagor" i praktiken innehåller.
+ * ═══ [T176, 2026-08-29] LISTAN HAR INGEN EGEN YTA LÄNGRE ═══
+ *
+ * `bg-surface`, `rounded-xl`, `px-3`, `border` och `divide-y` är RIVNA.
+ * `<ul>` är sedan kortformen en GENOMSKINLIG rullningsbox: den vita ytan
+ * bor i varje `<li>`s eget kort, och den grå behållaren
+ * (`GRUPPKORT_KLASS`) syns som RÄNNAN mellan korten.
+ *
+ * DET UPPHÄVER ETT TIDIGARE BESLUT, ÖPPET: Marcus 2026-08-18 bad om att
+ * *"ge inline-scroll-ytan en annan färg/toning"*, och listan fick då sin
+ * egen `bg-surface`. Kravet bakom önskemålet — att listan ska skilja sig
+ * från behållaren — uppfylls fortfarande, men av korten i stället för av
+ * en yta bakom dem. Ett kort inuti ett kort var vad Marcus 2026-08-29 bad
+ * bort ("inget kort-i-kort").
+ *
+ * TOKENVALET ÄR FORTFARANDE PÅTVINGAT, INTE SMAK: korten kan inte bära
+ * `--mm-bg-muted` (behållarens egen ton) och inte `NavCard`s tokens (som
+ * ÄR `--mm-bg-muted`) — se `--mm-bilagekort-*` i `components.css`.
+ *
+ * SCROLLBAREN ÄR HUSETS `scrollbar-inline` MED RESERVERAD RÄNNA — beslutet
+ * är VÄNT sedan 2026-08-29, och det gamla stod på en felaktig mätning.
+ *
+ * Marcus 2026-08-30: *"Reservera plats för scrollbaren på listytan eller?
+ * Ska vi inte de? Det kommer bli mer än fyra delade bilagor väldigt snart.
+ * Scrollbaren ska va den ljusgråa som vi använder i appen. Jag vill nog
+ * också att den sitter utanför listytan på den gråa bakgrunden."*
+ *
+ * MÄTT 2026-08-30 (dev-server, 1280×900, headless Chromium): med
+ * `scrollbar-inline` går `<ul>`s `offsetWidth` 518 → `clientWidth` 507,
+ * alltså **11 px ränna, i BÅDA overflow-lägena** — `auto` (fler än fyra
+ * kort) OCH `hidden` (fyra eller färre). Kortbredden är därmed 507 px
+ * oavsett hur många bilagor eventet har.
+ *
+ * [RÄTTELSE, 2026-08-30] Här stod att rännan reserveras *"BARA när
+ * `overflow-y` är `auto`"*. Det är FALSIFIERAT. Påståendet kom ur en
+ * mätning 2026-08-29 (`offsetWidth` 518 mot `clientWidth` 505 = 2 px kant
+ * + 11 px ränna) som gjordes när `<ul>` ännu bar en `border` — den kanten
+ * revs i samma T176-drag som gav korten deras form, och slutsatsen följde
+ * aldrig med. `scrollbar-gutter: stable` reserverar per specifikation
+ * rännan i BÅDA lägena; det är hela poängen med `stable`. Den gamla
+ * farhågan — att korten skulle byta bredd så fort listan råkade få en
+ * femte post — byggde alltså på ett fel, och rännan ger tvärtom EXAKT den
+ * stabilitet farhågan efterlyste.
+ *
+ * DEN BEFARADE FELINRIKTNINGEN MOT HANDLINGSRADEN FINNS INTE PÅ DESKTOP:
+ * `ListHandlingsRad`s knappar är VÄNSTERSTÄLLDA (mätt 2026-08-30:
+ * knappkanter vid 540,75 respektive 703,45 mot listkanten 899), så de
+ * linjerar aldrig med kortens högerkant till att börja med.
+ * KÄND KANT, bokförd i stället för lappad: under `sm` (< 640 px) staplas
+ * knapparna i full bredd, och i desktop-Chromium vid smal viewport blir
+ * korten då 11 px smalare än knapparna. På riktiga mobiler uppstår det
+ * inte — overlay-scrollbars reserverar ingen ränna alls (CSS Overflow
+ * Module Level 3: `scrollbar-gutter` reserverar bara för KLASSISKA
+ * scrollbars).
+ *
+ * [TASK-309.44, 2026-08-30] BÅDA STYCKENA OVAN GÄLLER FORTFARANDE, MEN MOT
+ * EN ANNAN REFERENS. Handlingsraden ligger inte längre i blocket, så
+ * jämförelsen är knapparna mot BLOCKET (samma vänsterkant, syskon i
+ * sidkolumnen) i stället för knapparna mot listan (som satt 9 px in). Den
+ * kända kanten under `sm` finns kvar OFÖRÄNDRAD i sak — knapparna sträcker
+ * sig kolumnens fulla bredd, korten är rännans bredd smalare — men avståndet
+ * har vuxit med blockets 1 px kant + 8 px `p-2`, alltså ~9 px utöver rännan.
+ * Det är fortfarande en desktop-Chromium-artefakt: på riktiga mobiler är
+ * rännan 0 och skillnaden alltså exakt blockets egen padding, vilket är den
+ * normala nästlingen och inte en felinriktning.
+ *
+ * RULLEN LIGGER UTANFÖR KORTEN, PÅ DEN GRÅ BEHÅLLAREN. `<ul>` är
+ * genomskinlig sedan T176, så rännan visar behållarens egen ton — rullen
+ * sitter alltså bredvid de vita korten, inte ovanpå dem, vilket är exakt
+ * den placering Marcus beskriver. Tummen är `--mm-border-strong` på
+ * transparent spår (`scrollbar-inline` i `tailwind.css`), samma ljusgrå
+ * som `NyaAnmalningar`, `ForfallnaBetalningar` och `Deltagare`.
+ *
+ * AFFORDANSEN BÄRS INTE LÄNGRE ENSAM AV SKUGGAN. Med en KLASSISK rulle
+ * syns tummen redan i vila; overlay-scrollbaren gjorde det inte, och det
+ * var därför uttoningen nedan en gång fick hela ansvaret för att antyda
+ * att listan rullar. Skuggan finns kvar — de två signalerna säger olika
+ * saker (rullen: "det går att rulla"; skuggan: "det finns mer NEDANFÖR
+ * kanten") — men skuggan är inte längre den enda.
+ *
+ * INLINE-RULLNING är i övrigt husets etablerade form (`NyaAnmalningar.tsx`,
+ * `ForfallnaBetalningar.tsx` ×3, `Deltagare.tsx`, `EventValjare`s listbox).
+ * TABB-STOPPET sätts BARA när listan faktiskt rullar (`Deltagare.tsx`s
+ * förfining: *"ett fokuserbart område utan funktion vore ett tomt stopp i
+ * tangentbordsflödet"*); när den rullar är `tabIndex={0}` ett WCAG
+ * 2.1.1-golv (axe `scrollable-region-focusable`).
+ *
+ * ── RULLNINGSSKUGGAN: DOLDA RADER SKA SYNAS SOM DOLDA (T176) ──
+ *
+ * Prod 2026-08-29: `scrollHeight 594 / clientHeight 395` med SEX rader — två
+ * låg under kanten utan att något antydde det. Låst höjd + `overflow-y: auto`
+ * ger ingen rullningslist förrän man rör listan (macOS overlay-scrollbars),
+ * så kanten såg ut som slutet.
+ *
+ * DEN ÄR EN SKUGGA, INTE EN UTTONING MOT YTFÄRGEN — och det är ett MÄTT val,
+ * inte en smaksak. Första formen var en gradient `from-surface` (vitt) som
+ * tonade ut innehållet mot listans egen botten. Den fungerar när en HALV rad
+ * sticker fram under kanten, men vår höjd är låst till EXAKT fyra hela rader:
+ * gradienten lade sig då över fjärde radens datumrad och gjorde den blek
+ * (avläst i skärmdump: "Uppladdad 29 aug. 2026 19:32" halvsuddad på rad 4 men
+ * inte på 1–3), vilket läser som en renderingsbugg snarare än "det finns mer".
+ * Kortare gradient (16 px) tog bort suddigheten men också hela signalen.
+ *
+ * Formen är i stället husets state-layer-token `--mm-state-hover`
+ * (`color-mix(in srgb, var(--mm-text) 6%, transparent)`) tonad uppåt mot
+ * transparent — ETT genomskinligt skrim, alltså exakt den roll tokenets eget
+ * docblock beskriver ("mörknar vilken yta som helst under sig med ett
+ * konstant perceptuellt steg", uppmätt ΔE00 2,63 mot vit). Texten under
+ * DÄMPAS inte, den får en svag skugga bakom sig — samma avläsning som
+ * Material 3:s scroll-edge och Lea Verous klassiska "scrolling shadows".
+ *
+ * ═══ [TASK-309.47] SKUGGAN BOR INUTI `<ul>`, SOM `::after` ═══
+ *
+ * Marcus skärmavbild 2026-08-30 15:50: *"rundningen på skuggningen i högre
+ * nedre hörn täcker inte helt nästa kort när det scrollas fram."*
+ *
+ * ORSAKEN VAR TVÅ KURVOR MED OLIKA CENTRUM. Skuggan var ett SYSKON till
+ * `<ul>` — en absolut `<span>` i wrappern med `left-0`, ett `right` satt till
+ * den mätta rännbredden (11 px) och `rounded-b-2xl`. Dess hörnkurva satt
+ * därmed vid KORTKANTEN (x 888) medan `<ul>`:ets egen klippkurva
+ * (`rounded-2xl`) satt vid ul-kanten (x 899). I glappet mellan de två
+ * kurvorna lyste nästa korts rundade övre högra hörn igenom OSKUGGAT — en vit
+ * kil under skuggans hörn, synlig så fort ett kort sköt upp underifrån.
+ * Reproducerat i ×3 vid `scrollTop` 12 och 24.
+ *
+ * TVÅ KURVOR KAN INTE HÅLLAS I SYNK GENOM ATT JUSTERA DEN ENA. Så länge
+ * skuggan ligger UTANFÖR rullboxen måste dess rundning gissa sig till
+ * boxens, och varje ändring av rännan eller radien öppnar glappet igen. Som
+ * `::after` INUTI `<ul>` finns bara EN kurva: `<ul>`:ets `overflow` klipper
+ * pseudo-elementet med exakt samma `rounded-2xl` som klipper korten. Skuggan
+ * behöver därför ingen egen rundning alls, och `rounded-b-2xl` är riven.
+ *
+ * BREDDEN BLIR STRUKTURELL I STÄLLET FÖR MÄTT. Ett pseudo-element i ett
+ * block-flöde får CONTENT-boxens bredd, och rullningsrännan ligger per
+ * definition utanför den. Mätt: `getComputedStyle(ul, '::after').width` =
+ * 507 = `ul.clientWidth` = kortbredden. `rannbredd`-state och dess
+ * `useLayoutEffect` är därmed RIVNA — inte för att mätningen var fel, utan
+ * för att frågan den svarade på inte längre ställs. Marcus krav står kvar
+ * oförändrat: *"Skuggningen ska ju bara synas på vita kortet."*
+ *
+ * FORMEN: `content-['']` + `block` + `h-6` + `-mt-6` + `sticky bottom-0`.
+ * Den negativa marginalen neutraliserar höjden, så pseudo-elementet lägger
+ * NOLL till innehållet — höjdlåset och `scrollHeight` är opåverkade.
+ * `sticky bottom-0` klistrar det vid scrollportens underkant i stället för
+ * vid innehållets, vilket är vad som gör att det följer med under rullning.
+ *
+ * ═══ HÖJDLÅSETS SKÄL ÄR UPPFYLLT, INTE ÖVERGIVET ═══
+ *
+ * Här stod *"SKUGGAN LIGGER PÅ WRAPPERN, ALDRIG PÅ `<ul>`"* med motiveringen
+ * att ett element INUTI `<ul>` hade blivit ett femte "barn" som `mat()`
+ * räknar som en rad. Skälet är RIKTIGT och gäller fortfarande — men det
+ * gäller ELEMENT. `mat()` läser `ul.children`, en `HTMLCollection` av
+ * element, och ett pseudo-element finns inte i DOM-trädet. Regeln är alltså
+ * uppfylld på ett annat sätt, inte upphävd: skriv aldrig in ett riktigt
+ * `<span>` här igen. Bevisat, inte antaget: hookens kod är byte-identisk med
+ * `origin/main` och låset mäter 488 med `::after` på plats, i alla radantal.
+ *
+ * [TASK-309.45/46, historik] Skuggan har suttit på `bottom-1` (när `<ul>`:ets
+ * underkant låg 4 px under fjärde kortets, radens `py-1`) och sedan
+ * `bottom-0` (när rännan flyttat helt över kortet). Båda offseterna fanns för
+ * att träffa en kant skuggan låg UTANFÖR. Med `sticky bottom-0` inuti boxen
+ * ÄR skuggans underkant scrollportens, definitionsmässigt — det finns ingen
+ * offset kvar att hålla i synk.
+ *
+ * DEN FÖRSVINNER VID BOTTEN. En skugga som ligger kvar när man rullat hela
+ * vägen ner ljuger — den säger "mer finns" om ett tomt slut. `onScroll`
+ * (billig: listan har fyra synliga rader, ingen virtualisering) sätter
+ * `vidBotten`, och `- 1` i jämförelsen är sub-pixel-marginalen `scrollTop`
+ * bär vid fraktionella höjder.
+ *
+ * `prefers-contrast: more` BYTER SKRIM MOT KANT: ett 6 %-skrim är per
+ * definition låg kontrast, och användare som bett om hög kontrast har bett
+ * bort just den signalklassen. Under den mediafrågan blir signalen en 4 px
+ * solid `border-strong`-list i stället. `prefers-reduced-motion` kräver
+ * inget: signalen animeras inte alls.
+ */
+function DokumentListRam({
+  listRef,
+  matadHojd,
+  kanRulla,
+  ariaLabel,
+  children,
+}: {
+  listRef: React.RefObject<HTMLUListElement | null>;
+  matadHojd: number | null;
+  kanRulla: boolean;
+  ariaLabel: string;
+  children: React.ReactNode;
+}) {
+  const [vidBotten, setVidBotten] = useState(false);
+  return (
+    // ═══ RÄNNAN ÄR EN TRANSPARENT `border-bottom` PÅ RADEN ═══
+    // [TASK-309.46, Marcus prod-titt 2026-08-30]
+    //
+    // *"scrollbaren … börjar för högt upp, den bör ju börja vid kortet
+    // precis."* MÄTT i prod före fixen: `ul.top` 303, `kort1.top` 311 — spåret
+    // började 8 px ovanför kortet.
+    //
+    // ORSAKEN ÄR EN BOXMODELL-DETALJ, inte en slarvig siffra: rullningslistens
+    // SPÅR spänner alltid `<ul>`:ets PADDING-box. En ränna som ligger som
+    // `padding-top` på raden ligger därmed INNANFÖR spåret — även rännan
+    // ovanför FÖRSTA kortet, som inte har något kort att skilja från. En
+    // `border` ligger utanför padding-boxen. Samma 8 px, annan sida av kanten,
+    // och spåret börjar exakt vid kortet.
+    //
+    // FORMEN ÄR `border-b-8 border-transparent` PÅ VARJE `<li>`:
+    //   • li-höjden är oförändrad 124 px (116 + 8) — uniform, alla rader
+    //   • ingen ledande ränna finns kvar, så wrapperns `-mt-2` är RIVEN
+    //     (det fanns inget att neutralisera; tray-luften bärs nu av
+    //     behållarens `p-2` ensam, 8 px + 1 px transparent kant runtom)
+    //   • `<ul>`:ets padding-box = spåret = EXAKT korten
+    //
+    // OCH HOOKEN VAR REDAN BYGGD FÖR DET. `separatorBredd(rad)` läser
+    // `border-bottom-width`; NIVÅ 1 låser `rad4.bottom − rad1.top −
+    // separatorBredd(rad4)` och NIVÅ 2 `radhöjd × 4 − radens separator`. Med
+    // `pt-2` var separatorn 0 och avdragen no-ops; med border-formen gör de
+    // exakt det de skrevs för. Låset går därmed 496 → **488** = kort1.top →
+    // kort4.bottom, i ALLA tre nivåerna.
+    //
+    // ── VARFÖR INTE `last:border-b-0` ──
+    //
+    // Det ser ut som den städade formen (ingen ränna efter sista kortet) och
+    // är fel, räknat: med EN rad är den raden också den sista, bär då ingen
+    // separator, och NIVÅ 2 ger `116 × 4 − 0` = **464** mot de andra
+    // radantalens 488. Samma sak för tomläget efter en 1-rads-mätning. Låset
+    // ska vara ETT tal oavsett hur många bilagor eventet har — det är hela
+    // dess uppgift — så varje rad bär sin ränna, undantagslöst.
+    //
+    // ── KÄND KANT, BOKFÖRD I STÄLLET FÖR LAPPAD ──
+    //
+    // Vid MAXIMAL rullning (≥ 5 kort) ligger sista radens transparenta ränna
+    // inuti det rullbara innehållet, så sista kortet slutar 8 px ovanför
+    // spårets slut i det läget. Det är normal bottom-padding i en
+    // rullningsvy, skuggan är borta där (`vidBotten`), och alternativet är
+    // `last:border-b-0` med sitt 464-fel ovan.
+    //
+    // ── HISTORIKEN, för den som undrar varför rännan flyttat tre gånger ──
+    //
+    //   `py-1` + `-my-1`   halv ränna över och under varje kort. Symmetriskt
+    //                      i vila, men `<ul>`:ets underkant låg 4 px under
+    //                      fjärde kortets, och MITT I EN RULLNING klipptes
+    //                      kortet där — en vit remsa med rak kant under
+    //                      skuggans rundade hörn (Marcus 2026-08-30).
+    //   `pt-2` + `-mt-2`   hela rännan över kortet (TASK-309.45). Löste
+    //                      klippningen: skuggans, klippningens och kortets
+    //                      underkanter sammanföll. Men rännan låg fortfarande
+    //                      innanför padding-boxen, alltså ovanför första
+    //                      kortet — spåret började för högt.
+    //   `border-b-8`       rännan utanför padding-boxen (denna skiva). Spåret
+    //                      börjar vid kortet, underkanterna sammanfaller
+    //                      fortfarande, och hookens avdrag får äntligen
+    //                      föremål.
+    //
+    // AVVISAD KANDIDAT (309.45), fortfarande giltig: att bara runda `<ul>` och
+    // sätta skuggan `bottom-0` utan att röra rännan gav ren klippning mitt i
+    // rullning men lade gradientens mörkaste 4 px på rännans GRÅ yta i vila —
+    // ett synligt streck under sista kortet.
+    //
+    // BORDERN, INTE `gap-*`, BÄR RÄNNAN — se `<li>`-kommentaren i
+    // `DokumentLista`: ett `gap` hade legat MELLAN raderna och därmed synts i
+    // höjdlåsets NIVÅ 1-spann men inte i dess NIVÅ 2-radhöjd, och hooken hade
+    // inte kunnat dra bort den fjärde radens.
+    <div className="relative">
+      <ul
+        ref={listRef}
+        data-testid="dokument-lista"
+        // biome-ignore lint/a11y/noNoninteractiveTabindex: fokuserbar scrollregion är WCAG 2.1.1-golvet (axe scrollable-region-focusable) — samma motiv som NyaAnmalningar.tsx.
+        tabIndex={kanRulla ? 0 : undefined}
+        aria-label={kanRulla ? ariaLabel : undefined}
+        onScroll={(e) => {
+          const el = e.currentTarget;
+          setVidBotten(el.scrollTop + el.clientHeight >= el.scrollHeight - 1);
+        }}
+        // [TASK-309.24] Höjden är en MÄTNING (`useLastaListhojd`), inte ett
+        // hårdkodat px-tal — se hookens docblock. `matadHojd` kan vara `null`
+        // under en enda synkron render-cykel innan `useLayoutEffect` hunnit
+        // mäta (ingen synlig flimmer, samma "mät efter commit, applicera före
+        // paint"-garanti React ger `useLayoutEffect`); listan visar då sin
+        // NATURLIGA höjd, vilket är exakt vad mätningen själv behöver läsa av.
+        // Låsningen är OVILLKORAD — se `berakaListgeometri`s docblock.
+        style={matadHojd !== null ? { height: matadHojd, maxHeight: matadHojd } : undefined}
+        // [T176] INGEN egen yta kvar: `bg-surface`, `rounded-xl`, `px-3`,
+        // `border` och `divide-y` är rivna. Korten ÄR ytorna; `<ul>` är den
+        // genomskinliga rullningsboxen omkring dem.
+        // ═══ [TASK-309.47] SKUGGAN ÄR `::after` INUTI `<ul>` ═══
+        //
+        // `data-vid-botten` bär den enda dynamiska biten: när man rullat hela
+        // vägen ner släcks skuggan (`data-[vid-botten]:after:hidden`). Attributet
+        // finns bara när det är sant — `undefined` renderar inget attribut alls,
+        // vilket är vad Tailwinds närvaro-selektor `[data-vid-botten]` läser.
+        //
+        // `after:-mt-6` neutraliserar `after:h-6`: pseudo-elementet lägger noll
+        // till innehållets höjd och kan därför inte röra höjdlåset eller
+        // `scrollHeight`. `after:sticky after:bottom-0` klistrar det vid
+        // scrollportens underkant i stället för vid innehållets.
+        //
+        // `after:content-['']` ÄR REDUNDANT — och står kvar med avsikt. MÄTT i
+        // en probe: Tailwind v4:s `after:`-variant injicerar själv
+        // `content: var(--tw-content)` med `""` som default, så ett element med
+        // bara `after:block` rapporterar redan `content: '""'`. Klassen skrivs
+        // ändå ut därför att `content` är det som avgör om pseudo-elementet
+        // EXISTERAR, och en läsare ska inte behöva känna till variantens
+        // implicita beteende för att se att skuggan renderas. Riv den inte som
+        // "död kod": den kostar noll och bär betydelsen.
+        data-vid-botten={vidBotten ? '' : undefined}
+        className={`scrollbar-inline focus-ring-inset rounded-2xl ${kanRulla ? 'overflow-y-auto' : 'overflow-y-hidden'} ${kanRulla ? "after:pointer-events-none after:sticky after:bottom-0 after:-mt-6 after:block after:h-6 after:bg-linear-to-t after:from-(--mm-state-hover) after:to-transparent after:content-[''] data-[vid-botten]:after:hidden contrast-more:after:h-1 contrast-more:after:bg-border-strong contrast-more:after:bg-none" : ''}`}
+      >
+        {children}
+      </ul>
+    </div>
+  );
+}
+
+/**
+ * DOKUMENT-LISTAN (eventläget) — EN flat lista med EVENTETS BILAGOR, punkt.
+ *
+ * ═══ [T176, Marcus 2026-08-29] TYPFILTRET ÄR RIVET ═══
+ *
+ * `ListaTyp`/`LISTA_FILTER`/`ToggleButtonGroup` och nuqs-nyckeln `?typ` är
+ * borta. De filtrerade mellan bilagor, mallar och generatorer — och sedan
+ * mallarna och generatorerna flyttat upp i handlingsraden
+ * (`ListHandlingsRad`) finns bara EN sorts rad kvar. Ett filter med tre
+ * alternativ varav två är tomma är sämre än inget filter.
+ *
+ * FÖLJDRIVNINGAR I SAMMA DRAG, båda för att `?typ` inte längre existerar:
+ *   • TASK-309.40:s nollställning av `?typ` vid räckviddsbyte
+ *     (`handleRackviddsByte`) — den fanns för att filtret annars överlevde
+ *     ett byte osynligt.
+ *   • TASK-340.2:s `setTyp('bilaga')` i `dokument.tsx`s "Till bilagorna"
+ *     (`GenereringsVy`s bekräftelseyta). NAVIGERINGEN är kvar — bara
+ *     parametern är borta, och landningen visar nu bilagorna ändå eftersom
+ *     listan inte kan visa något annat.
+ *
+ * ═══ HÖJDLÅSETS INKOPPLING EFTER RIVNINGEN ═══
+ *
+ * `useLastaListhojd(rader.length >= LISTA_SYNLIGA_RADER, true, rader.length,
+ * rader)`. Hookens kropp är ORÖRD; det är argumenten som ändras, och varje
+ * ändring följer av att filtret försvann:
+ *
+ *   • `foretradesMatbar` var *"'bilaga'-filtret OCH minst fyra egna rader"*.
+ *     Filtervillkoret är alltid uppfyllt nu (det finns bara en kontext), så
+ *     kvar står radvillkoret: `rader.length >= LISTA_SYNLIGA_RADER`.
+ *   • `reservMatbar` var *"filtret 'alla'"* — likaså alltid uppfyllt, alltså
+ *     `true`.
+ *   • `antalRiktigaRader` var det FILTRERADE antalet; nu `rader.length`.
+ *
+ * DE TVÅ KÄLLORNA FANNS FÖR ETT PROBLEM SOM INTE LÄNGRE FINNS. Hookens
+ * docblock: *"en rads pixelhöjd beror mätt på hur många SYSKON den har i DOM,
+ * inte bara sitt eget innehåll (samma rad mätte 99 px bland sju syskon, 98 px
+ * bland fyra)"* — därav företrädet för den kontext AC #2 faktiskt prövas i.
+ * Med EN kontext kan de två aldrig ge olika tal, och `harForetradesMatt`-
+ * spärren blir en no-op i praktiken. Den lämnas orörd i hooken: den skadar
+ * inget, och `GemensamtLage` anropar redan hooken med `true, true` sedan
+ * TASK-309.24 — de två lägena bär nu IDENTISK inkoppling så när som på
+ * företrädesvillkoret.
+ *
+ * NÖDMÄTNINGEN (nivå 3, TASK-309.39) tar 0–3-radersfallet precis som förut.
+ * De två vägar dess docblock listar som "nåbara" — `?typ=bilaga` på ett event
+ * med färre än fyra bilagor, och sidladdning i `?typ=mall`/`?typ=generator`
+ * — är BÅDA rivna med filtret; nivå 3 nås nu bara av det ärliga fallet
+ * "eventet har inga bilagor".
  */
 function DokumentLista({
   eventId,
@@ -1254,216 +2899,101 @@ function DokumentLista({
   replaceMutation: ReplaceMutation;
 }) {
   // [TASK-309.6] "Skapa om" (AC #4) — EN mutation-instans för HELA listan,
-  // samma "bara denna rads knapp lyser"-mönster som `replaceMutation`
+  // samma "bara denna rads post lyser"-mönster som `replaceMutation`
   // (`skaparOmDennaRaden` i `BilageRadRow`). Instansierad HÄR (inte lyft upp
-  // till `DokumentYta`): denna komponent har redan ett GARANTERAT
-  // non-null `eventId: string` — `DokumentYta`s eget `eventId` är
-  // `string | null` (räckviddsläget), och "Skapa om" existerar strukturellt
-  // inte där (Event-mallade rader visas aldrig i `GemensamtLage`, se
+  // till `DokumentYta`): denna komponent har redan ett GARANTERAT non-null
+  // `eventId: string` — `DokumentYta`s eget `eventId` är `string | null`
+  // (räckviddsläget), och "Skapa om" existerar strukturellt inte där
+  // (Event-mallade rader visas aldrig i `GemensamtLage`, se
   // `AirtableAdapter.berikaMedInaktuell` § docblock).
   const skapaOmMutation = useSkapaOmEventBilaga(eventId);
-  const [filter, setFilter] = useQueryState('typ');
-  const aktivtFilter: ListaTyp =
-    filter === 'bilaga' || filter === 'mall' || filter === 'generator' ? filter : 'alla';
 
-  const visaBilagor = aktivtFilter === 'alla' || aktivtFilter === 'bilaga';
-  const visaMallar = aktivtFilter === 'alla' || aktivtFilter === 'mall';
-  const visaGeneratorer = aktivtFilter === 'alla' || aktivtFilter === 'generator';
-
-  // ═══ TVÅ SKILDA VILLKOR, OCH DE MÄTER OLIKA SAKER ═══
-  //
-  // `kanRulla` — rullar listan I DET AKTUELLA FILTRET? Styr tabb-stoppet.
-  // Ett fokuserbart område som inte rullar vore ett tomt stopp i
-  // tangentbordsflödet (`Deltagare.tsx`s förfining).
-  //
-  // `lasHojd` — skulle listan rulla i NÅGOT filter? Styr den FASTA höjden.
-  // Marcus 2026-08-18: *"nu ser skillnaden genom att växla mellan 'Alla' och
-  // 'Bilagor', för då hoppar layouten/listan i höjd."* Filtret smalnar av
-  // innehållet, listan krymper, och allt under den — inklusive
-  // uppladdningsknappen — flyttar sig. Det syntes inte förut, när listan
-  // delade kortets bakgrund och saknade egen kant.
-  //
-  // Höjden låses därför på TOTALEN, inte på det filtrerade antalet: bär
-  // eventet fler än fyra dokument står listan stilla oavsett vilket filter
-  // som är valt. Bär det färre är listan kort ändå, och en fast höjd hade
-  // bara skapat tom vit yta utan att lösa något.
-  const antalSynliga =
-    (visaBilagor ? rader.length : 0) +
-    (visaMallar ? MALLAR.length : 0) +
-    (visaGeneratorer ? GENERATORER.length : 0);
-  const totaltAntal = rader.length + MALLAR.length + GENERATORER.length;
-  const kanRulla = antalSynliga > LISTA_SYNLIGA_RADER;
-  const lasHojd = totaltAntal > LISTA_SYNLIGA_RADER;
-  // `avslutaLista` — bär SISTA raden en egen underkant?
-  //
-  // `divide-y` ritar linjer MELLAN rader, aldrig under den sista. Det är rätt
-  // när listan är exakt full: fjärde radens underkant sammanfaller då med
-  // ytans egen kant, och `LISTA_MAXHOJD` är mätt för att klippa "exakt precis
-  // över separatorn" (se dess docblock). Är listan KORTARE slutar den i
-  // stället naket mitt i kortet — Marcus 2026-08-24: *"om det bara är två
-  // rader så ser det dumt ut att den nedersta raden (dokumentet) inte har en
-  // separatorlinje nedtill."* Är den LÄNGRE ligger sista raden bortom den
-  // låsta höjden, och den som rullar dit ska mötas av en avslutad lista, inte
-  // en avskuren.
-  //
-  // Villkoret är därför OLIKHET mot golvet, inte "mindre än": exakt fyra rader
-  // är det enda läget där ytans kant redan gör separatorns jobb. Noll rader
-  // renderar tom-raden, som aldrig ska bära linje.
-  const avslutaLista = antalSynliga > 0 && antalSynliga !== LISTA_SYNLIGA_RADER;
+  const { kanRulla } = berakaListgeometri(rader.length);
+  const { listRef, hojd: matadHojd } = useLastaListhojd(
+    rader.length >= LISTA_SYNLIGA_RADER,
+    true,
+    rader.length,
+    rader,
+  );
 
   return (
-    // ═══ UPPLADDNINGEN FÖRST, LISTAN SEDAN (Marcus 2026-08-17) ═══
-    //
-    // Ordningen var omvänd: filterrad → lista → uppladdning. För att ladda
-    // upp en fil fick Lotta skrolla förbi hela dokumentlistan, vars längd vi
-    // inte styr. Marcus: *"man måste ju SE ladda upp sektionen"* — och på
-    // frågan vad Lotta gör oftast: *"Tror hon kommer ladda upp mest"*.
-    //
-    // Den vanligaste handlingen ligger nu överst. Infällning av listan
-    // övervägdes och valdes BORT: huset använder `Disclosure` enbart för
-    // filterpaneler (`EventsList.tsx`), aldrig för innehållslistor, och en
-    // infälld lista hade dolt symptomet i stället för att flytta orsaken.
     <div className="flex flex-col gap-4">
       <section className="flex flex-col gap-3">
         {/* INGEN RUBRIK I KORTET — BESLUTAD BORT, INTE TAPPAD (Marcus,
             QA 273.5 steg 5, 2026-08-18: *"Ta bort rubriken 'Dokument för
             eventet' i eventläget … Man ser ju vad de olika ytorna är för
-            något ändå."*).
+            något ändå."*). `<h1>Bilagor` står redan i sidhuvudet, och
+            `EventValjare` ovanför visar VILKET event listan gäller.
 
-            Rubriken flyttades in i kortet 2026-08-17 och togs bort dagen
-            därpå: `<h1>Dokument` står redan i sidhuvudet och `EventValjare`
-            direkt ovanför visar VILKET event listan gäller, så en `<h2>` som
-            upprepar båda tillförde ingenting. Återinför den inte utan att
-            först fråga.
+            [TASK-309.44] "direkt ovanför" stämmer inte längre bokstavligt:
+            `ListHandlingsRad` ligger sedan 2026-08-30 EMELLAN väljaren och
+            detta block (se `DokumentYta`s anropsställe). Väljaren är
+            fortfarande den enda bäraren av kontext-frågan "vilket event?" —
+            handlingsraden svarar på en annan fråga och konkurrerar inte om
+            rollen — men avståndet är inte längre noll, och en rubrik som
+            hade tjänat på det är fortfarande beslutad bort.
 
-            `<section>` behåller sin tagg men står nu UTAN `aria-labelledby`
-            — husets etablerade form för sektioner utan egen rubrik
-            (`Waitlist.tsx`, `Hem.tsx`, `InstalleraAppen.tsx`). En namnlös
-            `section` exponeras per spec inte som landmark, vilket är rätt:
-            den ÄR inte en självständig region. En `sr-only`-rubrik övervägdes
-            och valdes bort — huset har ingen sådan, och en osynlig rubrik som
-            säger det synliga redan säger är brus för skärmläsaren, inte
-            hjälp. */}
-        <div
-          data-testid="grupp-kort"
-          className="flex flex-col gap-3 rounded-2xl border border-transparent bg-bg-muted p-4 contrast-more:border-border-strong"
-        >
-          {/* FILTRET BOR I KORTET, ÖVERST (Marcus-granskning 2026-08-17,
-              eventläget). Det stod förut UTANFÖR kortet; ordningen är nu
-              filter → lista inuti samma block — säg hur listan kan smalnas
-              av, sedan innehållet. Rubriksteget däremellan utgick 2026-08-18
-              (se sektionskommentaren ovan). */}
-          <ToggleButtonGroup
-            label="Filtrera på typ"
-            spread
-            selectedKey={aktivtFilter}
-            onSelectionChange={(key) => void setFilter(key === 'alla' ? null : key)}
+            `<section>` står UTAN `aria-labelledby` — husets etablerade form
+            för sektioner utan egen rubrik (`Waitlist.tsx`, `Hem.tsx`,
+            `InstalleraAppen.tsx`). En namnlös `section` exponeras per spec
+            inte som landmark, vilket är rätt: den ÄR inte en självständig
+            region. */}
+        <div data-testid="grupp-kort" className={GRUPPKORT_KLASS}>
+          <DokumentListRam
+            listRef={listRef}
+            matadHojd={matadHojd}
+            kanRulla={kanRulla}
+            ariaLabel="Bilagor"
           >
-            {LISTA_FILTER.map((f) => (
-              <ToggleButton key={f.key} id={f.key} size="sm" className="min-h-11">
-                {f.label}
-              </ToggleButton>
+            {/* ═══ RÄNNAN BOR INUTI `<li>` (transparent `border-bottom`),
+                ALDRIG SOM `gap-*` PÅ `<ul>` — HÖJDLÅSET KRÄVER DET ═══
+
+                `useLastaListhojd` mäter på TVÅ sätt: NIVÅ 1 tar SPANNET
+                rad1.top → rad4.bottom, NIVÅ 2 tar MAX av radernas EGNA
+                höjder × 4. Ett `gap` ligger MELLAN raderna: med i spannet,
+                utanför radhöjden — alltså två olika svar på "hur hög är en
+                rad" i samma hook, och en box som ändrar sig när listan går
+                från tre till fyra poster. Med rännan INUTI raden ser båda
+                nivåerna samma tal (kort + 8 px), och hookens kropp plus
+                `LISTA_SYNLIGA_RADER` står orörda.
+
+                `border-b-8 border-transparent` och INTE en padding
+                (`pt-2`/`pb-2`): alla tre ger 124 px hög rad, men bara bordern
+                ligger UTANFÖR `<ul>`:ets padding-box — och padding-boxen ÄR
+                rullningslistens spår. Med `pt-2` började spåret 8 px ovanför
+                första kortet (mätt i prod: `ul.top` 303 mot `kort1.top` 311);
+                med `pb-2` hade `<ul>` i stället slutat 8 px under fjärde
+                kortet och brutit skuggans, klippningens och kortkantens
+                sammanfall (TASK-309.45). Bordern ger båda kanterna rätt på
+                en gång, och hookens `separatorBredd`-avdrag — som fanns men
+                var en no-op mot 0 px padding — får äntligen föremål.
+
+                OCH ALLA RADER BÄR SIN, även den sista: `last:border-b-0` ser
+                städat ut men ger EN rad låset 116 × 4 = 464 mot de andra
+                radantalens 488. Låset ska vara ett tal oavsett antal bilagor.
+                Priset är den bokförda kanten i `DokumentListRam`: vid maximal
+                rullning ligger sista radens ränna inuti det rullbara
+                innehållet. */}
+            {rader.map((r) => (
+              <li key={r.current.id} className="border-transparent border-b-8">
+                <BilageRadRow
+                  eventId={eventId}
+                  rad={r}
+                  onReplace={onReplace}
+                  replaceMutation={replaceMutation}
+                  skapaOmMutation={skapaOmMutation}
+                />
+              </li>
             ))}
-          </ToggleButtonGroup>
-          {/* ═══ LISTAN ÄR EN EGEN YTA: `bg-surface` MOT KORTETS `bg-bg-muted` ═══
-              Marcus 2026-08-18: *"vi behöver ge inline-scroll-ytan en annan
-              färg/toning och skapa lite luft mellan toggle-valen och själva
-              listan."*
-
-              TOKENVALET ÄR PÅTVINGAT, INTE SMAK. Kortet ÄR `bg-bg-muted`
-              (`--p-neutral-50`), så en lista med samma token hade varit
-              OSYNLIG — exakt den felklass denna yta drabbats av FEM gånger
-              (ghost-hovern ×2, Ersätt/Radera, räckviddspillen,
-              uppladdningsskalet; se filhuvudets systemiska fynd). Nästlingen
-              avgör: muted skal, surface innehåll — samma ordning som
-              `StegSektion` bar i uppladdningsblocket och som `HandlingsRadKort`
-              följer.
-
-              `px-3` på listan eftersom raderna bara bär vertikal padding
-              (`DokumentRadSkal`: `py-3`) och tidigare ärvde kortets `px-4`.
-              `pr-3` ur rull-klasserna utgick i samma veva — `px-3` täcker
-              högersidan, och `scrollbar-inline` reserverar redan plats för
-              rullningslisten via `scrollbar-gutter: stable`.
-
-              `contrast-more:border-border-strong` speglar kortets egen rad:
-              under `prefers-contrast: more` räcker inte en vit yta mot en grå
-              för att skilja dem åt.
-
-              LUFTEN mellan filterraden och listan bärs av kortets `gap-3`
-              (var `gap-2`).
-
-              KORTETS PADDING ÄR SYMMETRISK (`p-4`, var `px-4 py-3`) — Marcus
-              fångade asymmetrin så fort listan fick egen yta: *"den grå ramen
-              ser bredare ut på sidorna än vad den är över och under"*. 16 px
-              horisontellt mot 12 px vertikalt syntes inte så länge listan
-              delade kortets bakgrund; med en egen yta blev kortets padding en
-              synlig RAM, och en ram ska vara lika bred runtom. Mätt efter
-              ändringen: vänster 17 · höger 17 · under 17 px (16 padding + 1 px
-              genomskinlig kant).
-
-              INLINE-RULLNING — husets etablerade form (Marcus 2026-08-18:
-              *"vi gör dokumentlistan till en inline-scroll lista, det har vi
-              många i appen"*, verifierat: `NyaAnmalningar.tsx`,
-              `ForfallnaBetalningar.tsx` ×3, `Deltagare.tsx`, `EventValjare`s
-              listbox). Klasserna är kopierade ur den formen, inte uppfunna.
-
-              TABB-STOPPET SÄTTS BARA NÄR LISTAN FAKTISKT RULLAR — ärvt ur
-              `Deltagare.tsx`s förfining: *"ett fokuserbart område utan
-              funktion vore ett tomt stopp i tangentbordsflödet"*. När den
-              rullar är `tabIndex={0}` däremot ett WCAG 2.1.1-golv (axe
-              `scrollable-region-focusable`): raderna har egna knappar, men
-              själva rullningen måste gå att nå med tangentbord.
-
-              ANTALET RÄKNAS UR DET FAKTISKT RENDERADE, inte ur `rader.length`
-              — typfiltret döljer hela grupper, och en lista som filtrerats ner
-              till två poster ska inte bära ett tomt tabb-stopp. */}
-          {/* `<ul>`/`<li>`, INTE `<div>` — och det är ett a11y-krav, inte
-              smak. `aria-label` stöds inte av en rollös `<div>` (biome
-              `useAriaPropsSupportedByRole` fällde exakt det, mätt 2026-08-18);
-              listrollen bär namnet. Det är dessutom husets form för samma sak
-              (`NyaAnmalningar.tsx`, `Deltagare.tsx`). `divide-y` opererar på
-              direkta barn, så avdelarna följer `<li>`-elementen oförändrat. */}
-          <ul
-            data-testid="dokument-lista"
-            // biome-ignore lint/a11y/noNoninteractiveTabindex: fokuserbar scrollregion är WCAG 2.1.1-golvet (axe scrollable-region-focusable) — samma motiv som NyaAnmalningar.tsx.
-            tabIndex={kanRulla ? 0 : undefined}
-            aria-label={kanRulla ? 'Dokument' : undefined}
-            className={`divide-y divide-border rounded-xl border border-transparent bg-surface px-3 contrast-more:border-border-strong ${
-              lasHojd
-                ? `focus-ring-inset scrollbar-inline h-[396px] ${LISTA_MAXHOJD} overflow-y-auto`
-                : ''
-            } ${avslutaLista ? '[&>li:last-child]:border-border [&>li:last-child]:border-b' : ''}`}
-          >
-            {visaBilagor &&
-              rader.map((r) => (
-                <li key={r.current.id}>
-                  <BilageRadRow
-                    eventId={eventId}
-                    rad={r}
-                    onReplace={onReplace}
-                    replaceMutation={replaceMutation}
-                    skapaOmMutation={skapaOmMutation}
-                  />
-                </li>
-              ))}
-            {visaMallar &&
-              MALLAR.map((m) => (
-                <li key={m.id}>
-                  <MallRad mall={m} />
-                </li>
-              ))}
-            {visaGeneratorer &&
-              GENERATORER.map((g) => (
-                <li key={g.id}>
-                  <GeneratorRad gen={g} eventId={eventId} />
-                </li>
-              ))}
-            {visaBilagor && rader.length === 0 && !visaMallar && !visaGeneratorer && (
-              <li className="py-3 text-small text-text-muted">
+            {rader.length === 0 && (
+              // TOMT LÄGE = INGET KORT. Det finns ingen bilaga att teckna ett
+              // kort omkring; texten står direkt på behållarens grå yta, med
+              // `px-3` så den börjar där kortens innehåll skulle ha börjat.
+              <li className="px-3 py-4 text-small text-text-muted">
                 Inga bilagor för det här eventet än.
               </li>
             )}
-          </ul>
+          </DokumentListRam>
           {/* INGEN INGÅNG TILL FÖRVALTNINGSLÄGET HÄR — den bor i väljaren
               (se `DokumentYta`s kommentar vid `EventValjare`). Knappen
               "Visa gemensamma dokument" stod här ett dygn, flyttad hit
@@ -1514,30 +3044,132 @@ function DokumentLista({
  * (`isDismissable`/`isKeyboardDismissDisabled` speglar `isPending`): ett
  * klick utanför mitt i en flerhundra-kB-uppladdning hade sett ut som en
  * avbruten uppladdning utan att vara det — mutationen kör vidare oavsett.
+ *
+ * ═══ TVÅ LÄGEN SEDAN TASK-338.4 (ADR-125 § Beslut 1) ═══
+ *
+ * Samma dialog bär nu BÅDE uppladdningens räckviddsfråga och "Ändra
+ * räckvidd" på en redan uppladdad delad bilaga (PRD TASK-338 berättelse 8).
+ * Lägena skiljs av `lage`, en DISKRIMINERAD UNION — inte av en handfull
+ * valfria props. Skälet är att de två lägena bär OLIKA data (en `FileList`
+ * respektive ett `attachmentId` + ett förifyllt utgångsläge), och en
+ * union gör det omöjligt att av misstag rendera ett halvt läge; med
+ * `filer?: FileList` + `initial?: …` hade typen tillåtit båda samtidigt
+ * eller ingendera.
+ *
+ * VAD SOM ÄR GEMENSAMT, och varför en delad dialog är rätt: frågan Lotta
+ * svarar på är IDENTISK ("vad ska det här gälla?"), och axlarna, deras
+ * defaults, sammanfattningsraden, geometrilåset och tangentbordsordningen
+ * ska vara det också. Två kopior hade drivit isär vid nästa axel.
+ *
+ * VAD SOM SKILJER, och varje skillnad har ett skäl:
+ *   - FÖRIFYLLNING. Uppladdningen startar i nolläget; ändringen startar i
+ *     radens NUVARANDE axlar, annars vore "ändra" i praktiken "skriv om
+ *     från början" och Lotta hade tappat det hon redan valt.
+ *   - "Bara detta event" är ALLTID avstängd i ändra-läget, oavsett
+ *     `harEvent`. Servern kan inte göra en delad bilaga event-egen (filens
+ *     lagringsplats är härledd ur räckvidden, se update-attachment-scope/
+ *     index.ts § VAD DEN INTE ÄR) — ett aktivt val som alltid ger 400 vore
+ *     en fälla, inte ett val.
+ *   - FELET BOR I DIALOGEN i ändra-läget, till skillnad mot uppladdningens
+ *     `UppladdningsFel` som bor på sidan. Uppladdningsdialogen STÄNGER vid
+ *     framgång och skulle ha rivit felet med sig; ändra-dialogen står kvar
+ *     tills servern sagt ja, så felet kan visas intill det val som orsakade
+ *     det i stället för på en sida hon redan lämnat.
+ *
+ * ═══ VAD FELRUTAN FAKTISKT VISAR ═══
+ * Husets `EdgeFunctionError`-form (`src/data/config/supabase-client.ts` §
+ * `edgeFunctionError`): `Edge Function "update-attachment-scope" 403:
+ * <serverns skäl>`. Serverns skäl NÅR alltså fram, men bakom ett tekniskt
+ * prefix Lotta inte har någon användning för. Att skriva att rutan visar ett
+ * Gunilla-läsbart skäl vore mer än vad koden gör (ADR-083). Begripligheten
+ * bärs av RUBRIKEN ("Räckvidden kunde inte ändras") tills den repo-breda
+ * felöversättningen finns — det är en egen, registrerad tråd, och
+ * renderingsmönstret rörs INTE härifrån.
  */
-function RackviddsDialog({
-  filer,
-  harEvent,
-  uploadMutation,
-  onStang,
-  onUpload,
-}: {
-  filer: FileList;
-  harEvent: boolean;
-  uploadMutation: UploadMutation;
-  onStang: () => void;
-  onUpload: (files: FileList | null, scope: UploadScopeVal, onKlart?: () => void) => void;
-}) {
-  const [rackvidd, setRackvidd] = useState<AttachmentScopeValue>(
-    harEvent ? AttachmentScope.EVENT : AttachmentScope.KURSTYP,
-  );
-  const [kursfamilj, setKursfamilj] = useState<string | null>(null);
-  const [kursniva, setKursniva] = useState<string | null>(null);
+type RackviddsDialogLage =
+  | { typ: 'uppladdning'; filer: FileList }
+  | { typ: 'andra-rackvidd'; attachmentId: string; namn: string; initial: UploadScopeVal };
 
+function RackviddsDialog({
+  lage,
+  harEvent,
+  arbetar,
+  fel,
+  onStang,
+  onBekrafta,
+}: {
+  lage: RackviddsDialogLage;
+  harEvent: boolean;
+  /** Den körande mutationens `isPending` — låser dialogen, se docblocket. */
+  arbetar: boolean;
+  /** Felmeddelande att visa INUTI dialogen (bara ändra-läget, se docblocket). */
+  fel: string | null;
+  onStang: () => void;
+  /**
+   * Bekräftelsen. `platsNamn` är PRESENTATIONS-data, inte en del av
+   * EF-kontraktet: dialogen har redan platslistan (`usePlacesList`) och kan
+   * därför namnge den valda platsen gratis, medan `scope.plats` bär det
+   * record-ID servern faktiskt vill ha. Alternativet — att låta sidan slå
+   * upp namnet — hade krävt en andra `usePlacesList`-prenumeration på hela
+   * Dokument-ytan, alltså en platshämtning även när ingen dialog är öppen.
+   * Uppladdningsvägen ignorerar argumentet (den renderar ingen badge
+   * optimistiskt); ändra-vägen behöver det för sin.
+   */
+  onBekrafta: (scope: UploadScopeVal, onKlart: () => void, platsNamn?: string) => void;
+}) {
+  const andrar = lage.typ === 'andra-rackvidd';
+  // FÖRIFYLLNINGEN läses EN gång, som `useState`-initialvärde — dialogen
+  // unmountas vid varje stängning (se anropsstället), så ett kvarhängande
+  // värde är strukturellt omöjligt och en `useEffect`-synk vore både onödig
+  // och en väg för radens uppdaterade data att skriva över Lottas pågående
+  // redigering mitt i.
+  const [rackvidd, setRackvidd] = useState<AttachmentScopeValue>(() =>
+    andrar ? AttachmentScope.GEMENSAM : harEvent ? AttachmentScope.EVENT : AttachmentScope.GEMENSAM,
+  );
+  const [kursfamilj, setKursfamilj] = useState<string | null>(() =>
+    lage.typ === 'andra-rackvidd' ? (lage.initial.kursfamilj ?? null) : null,
+  );
+  const [kursniva, setKursniva] = useState<string | null>(() =>
+    lage.typ === 'andra-rackvidd' ? (lage.initial.kursniva ?? null) : null,
+  );
+  const [platsId, setPlatsId] = useState<string | null>(() =>
+    lage.typ === 'andra-rackvidd' ? (lage.initial.plats ?? null) : null,
+  );
+
+  // PLATSLISTAN ÄR SAMMA LÄSVÄG SOM MER → PLATSER (kortets AC #1, PRD
+  // berättelse 11: *"platslistan i dialogen är samma som under Mer →
+  // Platser, så att en ny plats bara behöver läggas till en gång"*).
+  // `usePlacesList` bär redan den globala, stabila query-nyckeln och
+  // invalideras av `useSavePlace` — en egen hämtning här hade gett en andra
+  // sanning om vilka platser som finns, och en nyss tillagd plats hade
+  // saknats i dialogen tills sidan laddades om.
+  const platserQuery = usePlacesList();
+  const platser = platserQuery.data ?? [];
+  // [TASK-338.3 runda 2] FELET MÅSTE SYNAS, inte tolkas som "inga platser".
+  // `usePlacesList` som fallerar ger `data === undefined`, alltså en TOM
+  // lista — visuellt oskiljbar från en bas utan platser. Lotta hade då
+  // kunnat ladda upp en bilaga hon TROR blir platsbunden, medan den i
+  // själva verket blir `Gemensam` utan axlar = ALLA event (PRD TASK-338
+  // berättelse 3: fel information går ut). Frånvaron av ett besked är här
+  // farligare än beskedet självt.
+  const platserFel = platserQuery.isError;
+
+  const gemensam = rackvidd === AttachmentScope.GEMENSAM;
   const kursfamiljHarNivaer = kursfamilj != null && KURSFAMILJ_MED_NIVAER.has(kursfamilj);
-  const scopeGiltig = rackvidd !== AttachmentScope.KURSTYP || kursfamilj != null;
-  const laddarUpp = uploadMutation.isPending;
-  const filnamn = filer.item(0)?.name ?? 'Filen';
+  const laddarUpp = arbetar;
+  // Dokumentets namn — filens i uppladdningsläget, radens i ändra-läget.
+  // Raden under rubriken svarar på "vad handlar det här om?" i BÅDA lägena.
+  const filnamn = andrar ? lage.namn : (lage.filer.item(0)?.name ?? 'Filen');
+
+  // Sammanfattningen läser platsens NAMN, inte dess id — texten är för
+  // Lotta. Faller tillbaka på `null` (= "axeln räknas som osatt") medan
+  // listan laddar, så raden aldrig hinner peka på en plats den inte kan namnge.
+  const valdPlatsNamn = platser.find((plats) => plats.id === platsId)?.namn ?? null;
+  const sammanfattning = rackviddsSammanfattning({
+    kursfamilj,
+    kursniva,
+    platsNamn: valdPlatsNamn,
+  });
 
   return (
     <Modal
@@ -1554,9 +3186,16 @@ function RackviddsDialog({
           Avbryt, Escape/utanförklick och lyckad uppladdning. En blandning av
           två stängningsmekanismer hade gjort det oklart vilken som gäller. */}
       <Dialog
-        title="Vad ska filen gälla?"
+        // RUBRIKEN SÄGER VILKEN FRÅGA SOM STÄLLS. I ändra-läget finns ingen
+        // fil att ladda upp — "Vad ska filen gälla?" hade läst som att en
+        // uppladdning pågick. Samma fråga, rätt tempus.
+        title={andrar ? 'Vad ska bilagan gälla?' : 'Vad ska filen gälla?'}
         size="md"
-        aria-description="Välj om filen gäller det valda eventet, en hel familj eller alla event."
+        aria-description={
+          andrar
+            ? 'Ändra vilka event den delade bilagan ska gälla. Välj familj, steg och plats. Tomma val betyder ingen begränsning.'
+            : 'Välj om filen gäller bara det valda eventet eller är en delad bilaga som gäller flera event.'
+        }
       >
         <div className="flex flex-col gap-4">
           {/* FILNAMNET ÄR EGEN RAD, INTE INBAKAT I RUBRIKEN. En rubrik som
@@ -1572,84 +3211,275 @@ function RackviddsDialog({
               dropdownlistan kan tas bort"). Primitiven gör då `label` till
               `aria-label`, så skärmläsaren behåller ett namn på kontrollen
               medan ögat slipper en rubrik det inte behöver. Dialogens egen
-              rubrik ställer redan frågan gruppen svarar på. */}
+              rubrik ställer redan frågan gruppen svarar på.
+
+              [TASK-338.3] TVÅ VAL, INTE TRE — och orienteringen är VERTIKAL.
+              "En familj"/"Alla event" var två av ADR-118:s tre räckvidder;
+              med ADR-125 § 1 är de samma räckvidd (`Gemensam`) med respektive
+              utan axlar, så valet är binärt: hör filen till DETTA event, eller
+              är den delad? Etiketterna är hela satser ("Delad bilaga -
+              gäller flera event") och ryms inte bredvid varandra på 375 px,
+              därav `vertical` i stället för den tidigare `horizontal`. */}
           <RadioGroup
             label="Räckvidd"
             hideLabel
-            orientation="horizontal"
+            orientation="vertical"
             value={rackvidd}
             onChange={(value) => {
               const next = value as AttachmentScopeValue;
               setRackvidd(next);
-              if (next !== AttachmentScope.KURSTYP) {
+              // Axlarna nollas när filen blir event-egen: de är MENINGSLÖSA
+              // för räckvidd Event, och EF:ens write-schema avvisar dem
+              // uttryckligen ("Kursfamilj, Kursnivå och Plats är bara giltiga
+              // för en gemensam bilaga"). Att bara dölja dem hade skickat ett
+              // kontraktsbrott vid nästa Ladda upp.
+              if (next !== AttachmentScope.GEMENSAM) {
                 setKursfamilj(null);
                 setKursniva(null);
+                setPlatsId(null);
               }
             }}
           >
-            <Radio value={AttachmentScope.EVENT} isDisabled={!harEvent}>
-              Detta event
+            {/* ALLTID AVSTÄNGD I ÄNDRA-LÄGET, oavsett `harEvent` — se
+                docblockets § VAD SOM SKILJER. `update-attachment-scope`
+                svarar 400 på räckvidd Event ("en delad bilaga kan inte göras
+                event-egen här"), så ett valbart alternativ hade varit en
+                fälla: Lotta väljer, trycker Spara, får ett fel hon inte kan
+                göra något åt. Vägen dit finns ändå — radera och ladda upp
+                filen på nytt i eventets kontext. */}
+            <Radio value={AttachmentScope.EVENT} isDisabled={andrar || !harEvent}>
+              Bara detta event
             </Radio>
-            {/* "En familj" — INTE "En eventtyp". `Eventtyp` är upptaget av ett
-                ANNAT begrepp på tre ställen samtidigt: ORDLISTA.md § Eventtyp
-                (= Utbildning/Föreläsning), `CreateEventForm.tsx`s egen
-                `label="Eventtyp"` för samma sak, och Airtable-fältet `Eventtyp`
-                (länken till Eventformat). Etiketten här följer i stället
-                Select:en nedan, som heter "Familj". VÄRDET som skickas är
-                oförändrat `AttachmentScope.KURSTYP` = strängen 'Kurstyp' —
-                basens optionsnamn i fältet `Räckvidd`, som INTE får bytas
-                härifrån (datakällans kontrakt, se ADR-118). */}
-            <Radio value={AttachmentScope.KURSTYP}>En familj</Radio>
-            <Radio value={AttachmentScope.ALLA_EVENT}>Alla event</Radio>
+            {/* KORT BINDESTRECK, INTE LÅNGT — Marcus 2026-08-09: *"Ta bort
+                alla långa bindestreck överallt, jag gillar de korta
+                bindestrecken (-)"*, mekaniserat i
+                `scripts/check-langa-streck.mjs` (CI-wirad grind som fäller på
+                långt streck i JSXText). Kortet skriver etiketten med långt
+                streck; regeln och grinden slår bokstaven, och ett undantag i
+                `.langa-streck-policy.json` vore fel väg — policyn reserverar
+                dem för tom-markören, inte för text som kan skrivas om. */}
+            <Radio value={AttachmentScope.GEMENSAM}>Delad bilaga - gäller flera event</Radio>
           </RadioGroup>
 
-          {rackvidd === AttachmentScope.KURSTYP && (
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-start">
+          {/* ═══ DE TRE AXLARNA + SAMMANFATTNINGEN — ALLTID RENDERADE ═══
+              (TASK-309.23:s teknik, utvidgad till tre axlar av TASK-338.3.)
+
+              Marcus prod-röktest 2026-08-26: *"rutan aldrig ändrar storlek och
+              läge vad jag än väljer eller trycker på"*. `Modal`s overlay är
+              `items-center`, så varje höjdändring flyttar OCKSÅ dialogen
+              vertikalt — ett hopp vid varje radioklick.
+
+              Blocket renderas därför ALLTID och döljs med `invisible` (kvar i
+              layouten, osynlig) + native `inert` när räckvidden är Event.
+              `inert` gör HELA underträdet icke-fokuserbart OCH tar bort det ur
+              tillgänglighetsträdet i en sats — starkare golv än `tabIndex={-1}`
+              per kontroll, som måste upprepas för varje ny kontroll och lätt
+              glöms. Det tystar dessutom `aria-live`-raden nedan i event-läget,
+              vilket är precis rätt: en sammanfattning av ett filter som inte
+              gäller ska inte annonseras.
+
+              PRISET ÄR RESERVERAT TOMRUM i event-läget, och det är MEDVETET
+              betalt: tre selects plus sammanfattningsraden är mer reserverad
+              yta än den enda rad TASK-309.23 reserverade. Alternativet är en
+              dialog som hoppar, vilket Marcus uttryckligen avvisat. Flaggat
+              för hans QA-vandring (kortets AC #3).
+
+              SELECTARNA STAPLAS, ingen `sm:flex-row`. Tre triggers sida vid
+              sida i en 28rem-dialog ger ~128 px var, vilket trunkerar "Alla
+              familjer"/"Alla platser" redan i nolläget — och en brytpunkt som
+              byter kolumn/rad gör dessutom geometrilåset beroende av
+              viewport-bredden (exakt det `sm:`-fall den tidigare radens
+              kommentar varnade för). En kolumn på alla bredder är både
+              läsbarare och trivialt stabil. */}
+          <div className={`flex flex-col gap-2 ${gemensam ? '' : 'invisible'}`} inert={!gemensam}>
+            {/* ═══ ALLA AXLAR ÄR VALFRIA — DÄRFÖR ETT EXPLICIT "ALLA"-VAL ═══
+
+                Fram till TASK-338.3 var Kursfamilj OBLIGATORISK för den (nu
+                rivna) Kurstyp-räckvidden, så en `Select` med enbart
+                platshållare räckte: ett val gjordes en gång och togs aldrig
+                tillbaka.
+
+                Med ADR-125 § 1 är varje axel valfri, och då MÅSTE vägen
+                tillbaka finnas — en Lotta som råkat välja RIM ska kunna ångra
+                sig till "alla familjer" utan att stänga dialogen och börja om.
+                `react-aria`s `Select` har ingen inbyggd rensa-knapp, så
+                nolläget bärs av ett eget första alternativ. Det är dessutom
+                BÄTTRE än en platshållare på en yta där etiketterna är
+                `hideLabel`: triggern säger nu alltid i klartext vad axeln gör
+                ("Alla familjer") i stället för att vara tom.
+
+                Sentinelvärdet kan inte kollidera med riktig data: familjerna
+                är tre kända namn och platserna är Airtable-record-ID:n
+                (`rec…`). */}
+            <Select
+              label="Familj"
+              hideLabel
+              selectedKey={kursfamilj ?? ALLA_AXEL}
+              onSelectionChange={(key) => {
+                setKursfamilj(axelVarde(key));
+                // Steget hör till familjen — byter familjen är ett kvarhängande
+                // steg antingen ogiltigt (nivålös familj) eller osynligt satt.
+                setKursniva(null);
+              }}
+            >
+              <SelectItem id={ALLA_AXEL}>Alla familjer</SelectItem>
+              {KURSFAMILJ_VALUES.map((v) => (
+                <SelectItem key={v} id={v}>
+                  {v}
+                </SelectItem>
+              ))}
+            </Select>
+
+            {/* Steg-selecten bär SAMMA teknik en nivå ner: alltid monterad,
+                osynlig + `inert` för en nivålös familj (Fjärrskådning och
+                Psionautics har inga steg alls — ORDLISTA.md § Steg). Utan att
+                den ALLTID renderas hade en nivåbärande familj (RIM) gett en
+                annan dialoghöjd än en nivålös. */}
+            <div className={kursfamiljHarNivaer ? '' : 'invisible'} inert={!kursfamiljHarNivaer}>
               <Select
-                label="Familj"
+                label="Steg"
                 hideLabel
-                placeholder="Välj familj"
-                selectedKey={kursfamilj}
-                onSelectionChange={(key) => {
-                  setKursfamilj(key == null ? null : String(key));
-                  setKursniva(null);
-                }}
-                className="sm:max-w-56"
+                selectedKey={kursniva ?? ALLA_AXEL}
+                onSelectionChange={(key) => setKursniva(axelVarde(key))}
               >
-                {KURSFAMILJ_VALUES.map((v) => (
+                <SelectItem id={ALLA_AXEL}>Alla steg</SelectItem>
+                {/* `id` är basvärdet ('Nivå 1'), texten är presentationen
+                    ('Steg 1'). Det som skickas till EF:en är därför
+                    oförändrat — se nivaSprak.ts. */}
+                {KURSNIVA_VALUES.map((v) => (
                   <SelectItem key={v} id={v}>
-                    {v}
+                    {stegEtikett(v)}
                   </SelectItem>
                 ))}
               </Select>
-              {kursfamiljHarNivaer && (
-                <Select
-                  label="Steg"
-                  hideLabel
-                  placeholder="Alla steg"
-                  selectedKey={kursniva}
-                  onSelectionChange={(key) => setKursniva(key == null ? null : String(key))}
-                  className="sm:max-w-56"
-                >
-                  {/* `id` är basvärdet ('Nivå 1'), texten är presentationen
-                      ('Steg 1'). Det som skickas till EF:en är därför
-                      oförändrat — se nivaSprak.ts. */}
-                  {KURSNIVA_VALUES.map((v) => (
-                    <SelectItem key={v} id={v}>
-                      {stegEtikett(v)}
-                    </SelectItem>
-                  ))}
-                </Select>
-              )}
             </div>
-          )}
 
-          {/* LEDTEXTEN SÄGER VAD SOM SAKNAS, knappens `isDisabled` är grinden
-              — de ska inte förväxlas. Samma disciplin som steg 2:s
-              vilo-tillstånd bar innan blocket revs: en avstängd knapp säger
-              "nej" utan att säga varför. */}
-          {!scopeGiltig && (
-            <p className="text-small text-text-muted">Välj en familj för att gå vidare.</p>
+            {/* PLATS-AXELN (ADR-125 § 1) — nolläget står FÖRST och är valt från
+                start, så listan är användbar även medan `usePlacesList` laddar
+                (då bär den bara nolläget). En tom lista under laddning hade
+                sett ut som "inga platser finns". */}
+            <Select
+              label="Plats"
+              hideLabel
+              isDisabled={platserFel}
+              selectedKey={platsId ?? ALLA_AXEL}
+              onSelectionChange={(key) => setPlatsId(axelVarde(key))}
+            >
+              <SelectItem id={ALLA_AXEL}>Alla platser</SelectItem>
+              {platser.map((plats) => (
+                <SelectItem key={plats.id} id={plats.id}>
+                  {plats.namn}
+                </SelectItem>
+              ))}
+            </Select>
+
+            {/* ═══ PLATSLISTANS FEL — INLINE, INTILL DEN AXEL SOM GICK FEL ═══
+                (kortets runda 2, INFO-fyndet.)
+
+                KLASSEN ÄR GIVEN, INTE VALD: "uppgiftsgenererat fel, knutet
+                till en yta" i notistrappan (`DESIGN-SYSTEM-SPEC.md` § 21,
+                ADR-121 beslut 4) → `MessageBox`, inline intill det som gick
+                fel. Samma primitiv och samma `intent="error"` som ytans
+                övriga fel ("Kunde inte hämta bilagor", "Kunde inte ladda upp
+                filen"). Trappans egen kolumn "Förskjuter layout?" säger JA
+                för denna klass — felet får alltså kosta höjd, till skillnad
+                mot allt annat i denna dialog.
+
+                DEN DELADE VÄGEN STÄNGS INTE AV, och det är ett medvetet val
+                mot en näraliggande frestelse: i räckviddsläget är "Bara
+                detta event" redan avstängd (inget event att koppla mot), så
+                ett avstängt "Delad bilaga" hade lämnat dialogen UTAN något
+                giltigt val alls — en återvändsgränd där Lotta inte kan ladda
+                upp någonting. Dessutom är en axellös gemensam bilaga ("alla
+                event") ett FULLT LEGITIMT val som inte behöver platslistan.
+                Skyddet ligger i stället i att (a) felet syns, (b)
+                Plats-selecten är avstängd i stället för tomt lockande, och
+                (c) sammanfattningsraden nedan fortsätter säga sanningen
+                ("Gäller: alla event") — hon kan alltså inte tro att hon valt
+                en plats. */}
+            {/* `gemensam &&` ÄR INTE REDUNDANT — det är a11y-golvet.
+                (Runda 3, INFO/a11y.)
+
+                `MessageBox intent="error"` renderar `role="alert"`
+                (MessageBox.tsx rad ~94). En alert annonseras när noden DYKER
+                UPP i tillgänglighetsträdet — inte när den råkar bli synlig.
+                Villkorad bara på `platserFel` monterades rutan direkt vid
+                dialogens öppning, alltså INUTI blocket som är `inert` i
+                eventläget (och dialogen initieras till EVENT när `harEvent`).
+                `inert` tar bort hela underträdet ur tillgänglighetsträdet, så
+                alerten fyrade i ett läge där ingen kunde höra den — och när
+                Lotta sedan växlade till "Delad bilaga" fanns noden redan,
+                så det fyrade inget då heller. Felet var alltså SYNLIGT men
+                aldrig ANNONSERAT: tyst för en skärmläsaranvändare, vilket är
+                precis den grupp som inte kan se den avstängda Plats-selecten.
+
+                Med `gemensam &&` monteras rutan i samma ögonblick blocket
+                blir aktivt, och alerten fyrar då — mot ett träd som faktiskt
+                exponerar den. Tillgänglighet är 11 utan undantag
+                (CLAUDE.md § Kvalitetsribba). */}
+            {gemensam && platserFel && (
+              <MessageBox intent="error" title="Platserna kunde inte hämtas">
+                Försök igen om en stund. Du kan fortfarande ladda upp filen, men inte koppla den
+                till en plats.
+              </MessageBox>
+            )}
+
+            {/* ═══ SAMMANFATTNINGEN — VAD VALET BETYDER, I KLARTEXT ═══
+                (kortets AC #1; PRD TASK-338 berättelse 6: *"se i klartext vad
+                mitt räckviddsval betyder innan jag sparar"*.)
+
+                Ersätter den rivna raden "Välj en familj för att gå vidare." —
+                den var en VALIDERINGSLEDTEXT för ett krav som inte längre
+                finns (noll axlar är giltigt och betyder alla event, ADR-125
+                § 1), så "Ladda upp" är aldrig avstängd av räckviddsskäl mer.
+
+                `aria-live="polite"` + `aria-atomic` UTAN `role="status"`:
+                rollen implicerar samma politeness, och att sätta båda är den
+                kända dubbelannonserings-fällan. Regionen bär BARA meningen —
+                aldrig kontrollerna — så skärmläsaren annonserar konsekvensen
+                ("Gäller: RIM-event i Rönninge") EFTER att selecten själv
+                annonserat sitt värde, i stället för att säga samma sak två
+                gånger.
+
+                HÖJDEN ÄR LÅST, som allt annat i denna dialog: `line-clamp-2`
+                gör att texten aldrig kan bli högre än två rader (2 × 1,5 ×
+                0,875rem = 2,625rem) och `min-h-12` (3rem) reserverar mer än
+                så — boxen är därmed exakt 3rem oavsett om meningen är "Gäller:
+                alla event" eller den längsta tre-axel-formen. Ett långt
+                platsnamn trunkeras visuellt men står helt i `title`, och
+                skärmläsaren läser alltid hela textnoden (klippningen är ren
+                CSS). */}
+            <p
+              aria-atomic="true"
+              aria-live="polite"
+              className="line-clamp-2 min-h-12 text-small text-text-secondary"
+              title={sammanfattning}
+            >
+              {sammanfattning}
+            </p>
+          </div>
+
+          {/* ═══ ÄNDRA-LÄGETS FEL BOR HÄR, INTE PÅ SIDAN ═══
+              (Se docblockets § VAD SOM SKILJER för hela motivet.)
+
+              Uppladdningens fel bor på SIDAN (`UppladdningsFel`) därför att
+              dialogen rivs vid framgång och hade tagit felet med sig. Denna
+              dialog står kvar tills servern sagt ja, så felet kan stå intill
+              valet som orsakade det, i stället för på en sida hon lämnat.
+
+              VAD RUTAN FAKTISKT VISAR: husets `EdgeFunctionError`-form,
+              `Edge Function "…" 403: <serverns skäl>`. Skälet NÅR alltså hit,
+              men bakom ett tekniskt prefix — se dialogens docblock § VAD
+              FELRUTAN FAKTISKT VISAR. Rubriken bär begripligheten;
+              felöversättningen är repo-bred och rörs inte här.
+
+              Samma notistrappe-klass och samma primitiv som platslistans fel
+              ovan: uppgiftsgenererat fel, knutet till en yta
+              (`DESIGN-SYSTEM-SPEC.md` § 21, ADR-121 beslut 4). */}
+          {fel !== null && (
+            <MessageBox intent="error" title="Räckvidden kunde inte ändras">
+              {fel}
+            </MessageBox>
           )}
 
           <div className="flex flex-wrap justify-end gap-2">
@@ -1658,23 +3488,38 @@ function RackviddsDialog({
             </Button>
             <Button
               intent="primary"
-              isDisabled={laddarUpp || !scopeGiltig}
+              isDisabled={laddarUpp}
               onPress={() =>
-                onUpload(
-                  filer,
+                onBekrafta(
                   {
                     rackvidd,
-                    kursfamilj:
-                      rackvidd === AttachmentScope.KURSTYP ? (kursfamilj ?? undefined) : undefined,
-                    kursniva:
-                      rackvidd === AttachmentScope.KURSTYP ? (kursniva ?? undefined) : undefined,
+                    // AXLARNA SKICKAS BARA FÖR GEMENSAM, och `undefined`
+                    // (utelämnad nyckel) är formen för "axeln är inte satt" —
+                    // aldrig tom sträng. EF:ens `buildScopeFields` UTELÄMNAR i
+                    // sin tur fältet i Airtable-skrivningen, så "ingen axel" är
+                    // samma sak hela vägen ner. En tomsträng hade skrivits som
+                    // ett värde och smalnat räckvidden.
+                    //
+                    // [TASK-338.4] I ÄNDRA-LÄGET betyder samma `undefined`
+                    // att axeln RENSAS (`buildScopeUpdateFields`), inte att
+                    // den lämnas orörd — det är därför Lotta kan bredda
+                    // "RIM · Rönninge" tillbaka till bara "Rönninge".
+                    kursfamilj: gemensam ? (kursfamilj ?? undefined) : undefined,
+                    kursniva: gemensam ? (kursniva ?? undefined) : undefined,
+                    plats: gemensam ? (platsId ?? undefined) : undefined,
                   },
                   onStang,
+                  // Samma uppslag sammanfattningsraden redan gör — `valdPlatsNamn`
+                  // är `null` när ingen plats är vald ELLER när listan inte
+                  // hunnit ladda, och i båda fallen är `undefined` rätt: den
+                  // optimistiska badgen visar då platsen utan namn i stället
+                  // för ett namn som kan vara fel.
+                  valdPlatsNamn ?? undefined,
                 )
               }
             >
-              <Upload aria-hidden="true" size={16} className="shrink-0" />
-              {laddarUpp ? 'Laddar upp…' : 'Ladda upp'}
+              {andrar ? null : <Upload aria-hidden="true" size={16} className="shrink-0" />}
+              {andrar ? (laddarUpp ? 'Sparar…' : 'Spara') : laddarUpp ? 'Laddar upp…' : 'Ladda upp'}
             </Button>
           </div>
         </div>
@@ -1691,9 +3536,13 @@ function RackviddsDialog({
  * platsen en gemensam bilaga kan ersättas/raderas (ADR-118 beslut 3) —
  * servern nekar 403 annars.
  *
- * INGEN typ-filterrad (till skillnad mot `DokumentLista`): mallar/
- * generatorer (klass B/C) genereras UR eventets data och har därför inget
- * meningsfullt läge utan valt event — räckviddsläget visar BARA bilagor.
+ * [T176, 2026-08-29] LÄGENA DELAR NU SKELETT HELT: samma `GRUPPKORT_KLASS`,
+ * samma `DokumentListRam`, samma `ListHandlingsRad`. Den enda skillnaden är
+ * att handlingsraden här saknar "Skapa bilaga" — mallar och kvitto härleds
+ * ur ett events data och har inget meningsfullt läge utan valt event (samma
+ * skäl som filterraden aldrig fanns här). Att lägena bar identiska men
+ * SEPARATA klass-strängar var precis det som lät `sistaRadenBarLinje` saknas
+ * här i månader (TASK-309.24).
  */
 function GemensamtLage({
   rader,
@@ -1704,6 +3553,8 @@ function GemensamtLage({
   replaceMutation,
   onDelete,
   deleteMutation,
+  onAndraRackvidd,
+  scopeMutation,
 }: {
   rader: BilageRad[];
   laddar: boolean;
@@ -1713,15 +3564,16 @@ function GemensamtLage({
   replaceMutation: ReplaceMutation;
   onDelete: (attachmentId: string, namn: string) => void;
   deleteMutation: DeleteMutation;
+  onAndraRackvidd: (rad: Attachment) => void;
+  scopeMutation: ScopeMutation;
 }) {
-  // Förvaltningsläget har INGEN filterrad (bara bilagor visas), så det finns
-  // inget filter att hoppa mellan — höjden behöver därför ingen låsning, bara
-  // taket. Se `DokumentLista` för varför de två villkoren skiljs där.
-  const kanRulla = rader.length > LISTA_SYNLIGA_RADER;
+  // Förvaltningsläget har aldrig haft någon filterrad, så höjdlåsningen har
+  // varit OVILLKORAD här sedan TASK-309.24 (`matbar` konstant sant). Sedan
+  // T176 gäller samma sak i eventläget — de två inkopplingarna skiljer sig nu
+  // bara i företrädesvillkoret, se `DokumentLista`s docblock.
+  const { kanRulla } = berakaListgeometri(rader.length);
+  const { listRef, hojd: matadHojd } = useLastaListhojd(true, true, rader.length, rader);
   return (
-    // SAMMA ORDNING SOM EVENTLÄGET: uppladdningen först, listan sedan
-    // (Marcus 2026-08-17). De två lägena delar nu skelett — en användare som
-    // lärt sig det ena känner igen det andra.
     <div className="flex flex-col gap-4">
       <section className="flex flex-col gap-3">
         {/* HJÄLPTEXTEN ÄR BORTTAGEN (Marcus, QA 273.5 steg 5, 2026-08-17:
@@ -1730,62 +3582,54 @@ function GemensamtLage({
             här, syns direkt överallt de gäller." — informationen bärs redan av
             `RackviddBadge` per rad, som säger samma sak om den enskilda filen i
             stället för i abstrakt form ovanför listan. Återinför den inte utan
-            att först fråga; raden är beslutad bort, inte tappad.
-
-            INGEN TYP-FILTERRAD HÄR, och det är avsiktligt: räckviddsläget
-            visar BARA bilagor (klass A). Mallar och generatorer härleds ur
-            ett events data och har inget meningsfullt läge utan valt event —
-            en filterrad med tre döda alternativ hade lovat något ytan inte
-            kan hålla. */}
+            att först fråga; raden är beslutad bort, inte tappad. */}
         {laddar ? (
           <div role="status" aria-busy="true" className="flex flex-col gap-2">
-            <span className="sr-only">Laddar gemensamma dokument…</span>
+            <span className="sr-only">Laddar delade bilagor…</span>
             <Skeleton variant="listRow" />
             <Skeleton variant="listRow" />
           </div>
         ) : fel ? (
-          <MessageBox intent="error" title="Kunde inte hämta gemensamma dokument">
+          <MessageBox intent="error" title="Kunde inte hämta delade bilagor">
             {felmeddelande}
           </MessageBox>
         ) : (
-          <div
-            data-testid="grupp-kort"
-            className="flex flex-col gap-3 rounded-2xl border border-transparent bg-bg-muted p-4 contrast-more:border-border-strong"
-          >
+          <div data-testid="grupp-kort" className={GRUPPKORT_KLASS}>
             {/* INGEN RUBRIK — BESLUTAD BORT, INTE TAPPAD (Marcus, QA 273.5
                 steg 5, 2026-08-18: *"Ta även bort rubriken 'Dokument' i
                 förvaltningsläget."*). Den hette först "Gemensamma dokument",
                 kortades till "Dokument" 2026-08-17 — och blev därmed en ren
-                dubblett av sidhuvudets `<h1>Dokument` en skärmhöjd ovanför.
-                Se eventlägets sektionskommentar för `section`-formen. */}
-            {/* SAMMA INLINE-RULLNING SOM EVENTLÄGET (se dess kommentar för
-                formens härkomst och för varför tabb-stoppet är villkorat).
-                Räkningen är enklare här: räckviddsläget visar BARA bilagor,
-                ingen filterrad döljer grupper. */}
-            <ul
-              data-testid="dokument-lista"
-              // biome-ignore lint/a11y/noNoninteractiveTabindex: fokuserbar scrollregion är WCAG 2.1.1-golvet (axe scrollable-region-focusable) — samma motiv som NyaAnmalningar.tsx.
-              tabIndex={kanRulla ? 0 : undefined}
-              aria-label={kanRulla ? 'Delade dokument' : undefined}
-              className={`divide-y divide-border rounded-xl border border-transparent bg-surface px-3 contrast-more:border-border-strong ${
-                kanRulla ? `focus-ring-inset scrollbar-inline ${LISTA_MAXHOJD} overflow-y-auto` : ''
-              }`}
+                dubblett av sidhuvudets `<h1>Bilagor` en skärmhöjd ovanför.
+                Se eventlägets sektionskommentar för `section`-formen, och
+                `DokumentYta`s anropsställe för varför `ListHandlingsRad`
+                sedan TASK-309.44 inte längre står här inne. */}
+            <DokumentListRam
+              listRef={listRef}
+              matadHojd={matadHojd}
+              kanRulla={kanRulla}
+              ariaLabel="Delade bilagor"
             >
+              {/* `border-b-8 border-transparent` — se eventlägets kommentar
+                  på samma rad för varför rännan bor i `<li>`, inte i ett
+                  `gap`, och varför den är en BORDER och inte en padding. */}
               {rader.map((r) => (
-                <li key={r.current.id}>
+                <li key={r.current.id} className="border-transparent border-b-8">
                   <GemensamBilageRadRow
                     rad={r}
                     onReplace={onReplace}
                     replaceMutation={replaceMutation}
                     onDelete={onDelete}
                     deleteMutation={deleteMutation}
+                    onAndraRackvidd={onAndraRackvidd}
+                    scopeMutation={scopeMutation}
                   />
                 </li>
               ))}
               {rader.length === 0 && (
-                <li className="py-3 text-small text-text-muted">Inga delade dokument än.</li>
+                // Tomt läge = inget kort — se eventlägets motsvarighet.
+                <li className="px-3 py-4 text-small text-text-muted">Inga delade bilagor än.</li>
               )}
-            </ul>
+            </DokumentListRam>
           </div>
         )}
 
@@ -1810,51 +3654,67 @@ function GemensamBilageRadRow({
   replaceMutation,
   onDelete,
   deleteMutation,
+  onAndraRackvidd,
+  scopeMutation,
 }: {
   rad: BilageRad;
   onReplace: (files: FileList | null, oldAttachmentId: string, scope: UploadScopeVal) => void;
   replaceMutation: ReplaceMutation;
   onDelete: (attachmentId: string, namn: string) => void;
   deleteMutation: DeleteMutation;
+  /** [TASK-338.4] Öppnar RackviddsDialog förifylld med RADENS axlar. */
+  onAndraRackvidd: (rad: Attachment) => void;
+  scopeMutation: ScopeMutation;
 }) {
   const { current, dolda } = rad;
+  const ersattInputRef = useRef<HTMLInputElement>(null);
   const ersatterDennaRaden =
     replaceMutation.isPending && replaceMutation.variables?.oldAttachmentId === current.id;
   const raderarDennaRaden =
     deleteMutation.isPending && deleteMutation.variables?.attachmentId === current.id;
+  const andrarDennaRaden =
+    scopeMutation.isPending && scopeMutation.variables?.attachmentId === current.id;
   return (
     <DokumentRadSkal
       namn={current.namn}
       kalla={{ typ: 'bilaga', eventId: null, attachmentId: current.id }}
       current={current}
       dolda={dolda}
-      handlingar={
+      filinput={
+        // `hidden` (display:none) — se `BilageRadRow`s motsvarande input.
+        <input
+          ref={ersattInputRef}
+          type="file"
+          accept="application/pdf"
+          className="hidden"
+          onChange={(e) =>
+            onReplace(e.target.files, current.id, {
+              rackvidd: current.rackvidd ?? undefined,
+              kursfamilj: current.kursfamilj ?? undefined,
+              kursniva: current.kursniva ?? undefined,
+              // [TASK-338.3] Se BilageRadRow ovan — plats-axeln följer med,
+              // annars blir "Ersätt" en tyst uppvidgning till alla event.
+              plats: current.plats?.id ?? undefined,
+            })
+          }
+        />
+      }
+      menyposter={
         // RÄCKVIDDSLÄGET ÄR FÖRVALTNINGSYTAN (Marcus 2026-08-17): här — och
         // enligt ADR-118 beslut 3 BARA här — får en gemensam bilaga ersättas
         // och raderas. Eventläget är Lottas läsflöde och ska inte bära
         // handlingar som kan förstöra något för alla event samtidigt.
+        //
+        // ORDNINGEN GÅR FRÅN MINST TILL MEST INGRIPANDE: byt fil → byt
+        // spridning → ta bort. Radera står SIST, efter en avdelare, i egen
+        // faroton — muskelminnet för den farligaste handlingen flyttas inte,
+        // och avdelaren gör det svårare att träffa den av misstag när menyn
+        // öppnas med tangentbord (`ArrowUp` från triggern landar på Radera,
+        // men avdelaren gör gruppbytet hörbart för skärmläsaren).
         <>
-          <FileTrigger
-            acceptedFileTypes={['application/pdf']}
-            onSelect={(files) =>
-              onReplace(files, current.id, {
-                rackvidd: current.rackvidd ?? undefined,
-                kursfamilj: current.kursfamilj ?? undefined,
-                kursniva: current.kursniva ?? undefined,
-              })
-            }
-          >
-            <Button
-              intent="primary"
-              emphasis="subtle"
-              size="sm"
-              className={IKONKNAPP_KLASS}
-              isDisabled={ersatterDennaRaden}
-              aria-label={
-                ersatterDennaRaden ? `Ersätter ${current.namn} …` : `Ersätt ${current.namn}`
-              }
-            >
-              {ersatterDennaRaden ? (
+          <MenyPost
+            ikon={
+              ersatterDennaRaden ? (
                 <Loader2
                   aria-hidden="true"
                   size={IKON_STORLEK}
@@ -1862,28 +3722,65 @@ function GemensamBilageRadRow({
                 />
               ) : (
                 <FileUp aria-hidden="true" size={IKON_STORLEK} />
-              )}
-            </Button>
-          </FileTrigger>
-          <Button
-            intent="danger"
-            emphasis="subtle"
-            size="sm"
-            className={IKONKNAPP_KLASS}
-            isDisabled={raderarDennaRaden}
-            aria-label={raderarDennaRaden ? `Raderar ${current.namn} …` : `Radera ${current.namn}`}
-            onPress={() => onDelete(current.id, current.namn)}
+              )
+            }
+            isDisabled={ersatterDennaRaden}
+            textValue="Ersätt"
+            onAction={() => oppnaFilvaljare(ersattInputRef)}
           >
-            {raderarDennaRaden ? (
-              <Loader2
-                aria-hidden="true"
-                size={IKON_STORLEK}
-                className="motion-safe:animate-spin"
-              />
-            ) : (
-              <Trash2 aria-hidden="true" size={IKON_STORLEK} />
-            )}
-          </Button>
+            {ersatterDennaRaden ? 'Ersätter…' : 'Ersätt'}
+          </MenyPost>
+          {/* [TASK-338.4] ÄNDRA RÄCKVIDD — bara här, aldrig i eventläget.
+              ADR-118 beslut 3 gäller vidare: räckviddsläget ÄR förvaltnings-
+              ytan, och en handling som ändrar vilka event ett dokument gäller
+              hör hemma bland de andra förvaltningshandlingarna, inte i Lottas
+              läsflöde per event. `BilageRadRow` (eventläget) får därför ingen
+              motsvarighet — där är en delad bilaga fortsatt oredigerbar, och
+              badgen bär förklaringen.
+
+              [2026-08-29] `Target`-ikonen står kvar men är inte längre ensam
+              bärare av betydelsen: menyposten bär TEXTEN "Ändra räckvidd".
+              Den femte identiska grå ikonlådan som ADR-125-noten flaggade för
+              Marcus QA-vandring vid smal skärm finns inte längre — hela
+              ikonkolumnen är EN ⋯-knapp. */}
+          <MenyPost
+            ikon={
+              andrarDennaRaden ? (
+                <Loader2
+                  aria-hidden="true"
+                  size={IKON_STORLEK}
+                  className="motion-safe:animate-spin"
+                />
+              ) : (
+                <Target aria-hidden="true" size={IKON_STORLEK} />
+              )
+            }
+            isDisabled={andrarDennaRaden}
+            textValue="Ändra räckvidd"
+            onAction={() => onAndraRackvidd(current)}
+          >
+            {andrarDennaRaden ? 'Ändrar räckvidd…' : 'Ändra räckvidd'}
+          </MenyPost>
+          <MenyAvdelare />
+          <MenyPost
+            ton="fara"
+            ikon={
+              raderarDennaRaden ? (
+                <Loader2
+                  aria-hidden="true"
+                  size={IKON_STORLEK}
+                  className="motion-safe:animate-spin"
+                />
+              ) : (
+                <Trash2 aria-hidden="true" size={IKON_STORLEK} />
+              )
+            }
+            isDisabled={raderarDennaRaden}
+            textValue="Radera"
+            onAction={() => onDelete(current.id, current.namn)}
+          >
+            {raderarDennaRaden ? 'Raderar…' : 'Radera'}
+          </MenyPost>
         </>
       }
     />

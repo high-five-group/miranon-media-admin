@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import { http } from 'msw';
 import { EF, json } from '../support/fixturvarld/handlers';
-import { expect, test } from './support/acceptance-bas';
+import { expect, test } from './acceptance-bas';
 
 /**
  * TASK-309.7 AC #1/#2/#4 — Mer-sidans Eventinnehåll-yta (/mer/eventinnehall).

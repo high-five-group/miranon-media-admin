@@ -5,6 +5,7 @@ import {
   EVENT_FORMATS_RESPONSE,
   EVENT_NOTES_RESPONSE,
   EVENTS_RESPONSE,
+  PLACES_RESPONSE,
   REGISTRATIONS_RESPONSE,
   resolveActivityLogResponse,
   resolvePersonNotesResponse,
@@ -94,6 +95,11 @@ export const handlers = [
   http.get(EF('get-event-notes'), () => json(EVENT_NOTES_RESPONSE)),
   http.get(EF('get-event-formats'), () => json(EVENT_FORMATS_RESPONSE)),
   http.get(EF('get-event-attachments'), () => json(EVENT_ATTACHMENTS_RESPONSE)),
+  // [TASK-338.3] Räckviddsdialogens Plats-axel läser SAMMA lista som
+  // Mer → Platser (`usePlacesList`), så varje öppning av
+  // uppladdningsdialogen träffar denna EF. Utan handler faller
+  // hermetik-vakten på ett omockat anrop.
+  http.get(EF('get-places'), () => json(PLACES_RESPONSE)),
 
   // Personer: båda är resolvers. Listan speglar EF:ens search/pageSize/cursor
   // (annars vore sök och "Ladda fler" osynliga), detaljen slår upp `?id=` mot

@@ -135,63 +135,94 @@ async function oppnaSidanOchBetalningar(page: Page): Promise<void> {
     .click();
 }
 
-test.describe('Skicka kvitto — verklig sändväg mot send-receipt-email (TASK-147.7 AC #2, #3)', () => {
-  test('POST med rätt kontrakt, kvittonumret redovisas i dialogen', async ({ page }) => {
-    const { sentBody } = await mocka(page);
-    await oppnaSidanOchBetalningar(page);
+/**
+ * ═══════════════════════════════════════════════════════════════════════════
+ * SKIPPAD AV TASK-346.7 — DIALOGEN FINNS INTE MED MILJÖFLAGGAN PÅ
+ * ═══════════════════════════════════════════════════════════════════════════
+ * Båda testerna nedan öppnar knappen "Skicka kvitto - …" i Åtgärds-panelen.
+ * Sedan TASK-346.7 renderas den knappen bara med `VITE_FEATURE_BETALNINGAR`
+ * satt till annat än `pa` — och e2e-klassen kör med `pa` (`.env.development`;
+ * `playwright.config.ts`s e2e-webServer sätter ingen egen flagga).
+ *
+ * VARFÖR DIALOGEN RIVS: den bygger på ADR-109 beslut 7-flödet, där Lotta
+ * skriver kvittobeloppet för hand i en ruta utan felmeddelanden. Det beslutet
+ * är rivet (PRD TASK-346 § ADR-koppling). Kvittot avser numera exakt EN
+ * inbetalning och bär dess belopp och datum (ADR-128), så ett handskrivet
+ * belopp kan inte längre peka på någon inbetalning — Roger hade fått en
+ * verifikation utan motpost.
+ *
+ * SKIPPAD OCH INTE RADERAD, med avsikt: `send-receipt-email` är fortfarande
+ * deployad, och med flaggan AV är dialogen Lottas enda kvittoväg i PROD tills
+ * Marcus slår på flaggan. Bevisen för den vägen får inte försvinna medan
+ * vägen kör.
+ *
+ * ATT DIALOGEN FAKTISKT ÄR BORTA med flaggan på bevisas positivt i
+ * `atgarder-betalningar.staging.test.ts` § "gamla 'Skicka kvitto'-dialogen är
+ * RIVEN ur panelen" — den nya kvittovägen (Visa/Skicka igen per
+ * inbetalningsrad) prövas i `tests/api/kvitto-visa-skicka-igen.test.ts` och i
+ * acceptansvandringen mot staging.
+ *
+ * VEM SOM STÄNGER DET HÄR: `TASK-346.12` river flaggan och därmed dialogen,
+ * `useSendReceipt` och denna fil.
+ */
+test.describe
+  .skip('Skicka kvitto — verklig sändväg mot send-receipt-email (TASK-147.7 AC #2, #3) [SKIPPAD: dialogen är riven med miljöflaggan på, TASK-346.7]', () => {
+    test('POST med rätt kontrakt, kvittonumret redovisas i dialogen', async ({ page }) => {
+      const { sentBody } = await mocka(page);
+      await oppnaSidanOchBetalningar(page);
 
-    const panel = page.locator('section[aria-labelledby="grupp-betalningar"]');
-    await panel
-      .getByRole('button', { name: 'Skicka kvitto - Anmälningsavgift för Anna Andersson' })
-      .click();
+      const panel = page.locator('section[aria-labelledby="grupp-betalningar"]');
+      await panel
+        .getByRole('button', { name: 'Skicka kvitto - Anmälningsavgift för Anna Andersson' })
+        .click();
 
-    const dialog = page.getByRole('dialog', { name: 'Skicka kvitto - Anmälningsavgift' });
-    await dialog.getByRole('textbox', { name: 'Belopp (kr)' }).fill('1250');
-    await dialog.getByRole('button', { name: 'Betalsätt' }).click();
-    await page.getByRole('option', { name: 'Swish' }).click();
-    await dialog.getByRole('button', { name: 'Skicka' }).click();
+      const dialog = page.getByRole('dialog', { name: 'Skicka kvitto - Anmälningsavgift' });
+      await dialog.getByRole('textbox', { name: 'Belopp (kr)' }).fill('1250');
+      await dialog.getByRole('button', { name: 'Betalsätt' }).click();
+      await page.getByRole('option', { name: 'Swish' }).click();
+      await dialog.getByRole('button', { name: 'Skicka' }).click();
 
-    await expect(dialog.getByText('MM-2026-1001 skickat till Anna Andersson.')).toBeVisible();
+      await expect(dialog.getByText('MM-2026-1001 skickat till Anna Andersson.')).toBeVisible();
 
-    await expect.poll(() => sentBody()).not.toBeNull();
-    const body = sentBody() as unknown as Json;
-    expect(body.registrationId).toBe(REG_ID);
-    expect(body.eventId).toBe(EVENT_ID);
-    expect(body.betalning).toBe('avgift');
-    expect(body.belopp).toBe(1250);
-    expect(body.betalsatt).toBe('Swish');
-    expect(String(body.idempotencyKey)).toMatch(
-      /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
-    );
+      await expect.poll(() => sentBody()).not.toBeNull();
+      const body = sentBody() as unknown as Json;
+      expect(body.registrationId).toBe(REG_ID);
+      expect(body.eventId).toBe(EVENT_ID);
+      expect(body.betalning).toBe('avgift');
+      expect(body.belopp).toBe(1250);
+      expect(body.betalsatt).toBe('Swish');
+      expect(String(body.idempotencyKey)).toMatch(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i,
+      );
+    });
+
+    test('AKTIVITETSLOGGEN (TASK-201.4 AC #3): ett skickat kvitto postar log-activity med rätt aktör, verb och objekt-namn', async ({
+      page,
+    }) => {
+      const { aktivitetsloggar } = await mocka(page);
+      await oppnaSidanOchBetalningar(page);
+
+      const panel = page.locator('section[aria-labelledby="grupp-betalningar"]');
+      await panel
+        .getByRole('button', { name: 'Skicka kvitto - Anmälningsavgift för Anna Andersson' })
+        .click();
+
+      const dialog = page.getByRole('dialog', { name: 'Skicka kvitto - Anmälningsavgift' });
+      await dialog.getByRole('textbox', { name: 'Belopp (kr)' }).fill('1250');
+      await dialog.getByRole('button', { name: 'Betalsätt' }).click();
+      await page.getByRole('option', { name: 'Swish' }).click();
+      await dialog.getByRole('button', { name: 'Skicka' }).click();
+      await expect(dialog.getByText('MM-2026-1001 skickat till Anna Andersson.')).toBeVisible();
+
+      await expect.poll(() => aktivitetsloggar.length).toBe(1);
+      const [logg] = aktivitetsloggar;
+      // AKTÖR: ett giltigt (icke-tomt) namn skickas klient-sidan — samma
+      // form-bevis som `atgarder-betalningar.staging.test.ts`, den
+      // AUKTORITATIVA identiteten härleds server-side.
+      expect(logg.actor.name.length).toBeGreaterThan(0);
+      expect(logg.actor.account.name.length).toBeGreaterThan(0);
+      expect(logg.verb.display['sv-SE']).toBe('skickade kvitto');
+      expect(logg.object.definition.name['sv-SE']).toBe('Anna Andersson (Kvittoprövning)');
+      expect(logg.object.definition.type).toContain('/activity-types/kvitto');
+    });
   });
-
-  test('AKTIVITETSLOGGEN (TASK-201.4 AC #3): ett skickat kvitto postar log-activity med rätt aktör, verb och objekt-namn', async ({
-    page,
-  }) => {
-    const { aktivitetsloggar } = await mocka(page);
-    await oppnaSidanOchBetalningar(page);
-
-    const panel = page.locator('section[aria-labelledby="grupp-betalningar"]');
-    await panel
-      .getByRole('button', { name: 'Skicka kvitto - Anmälningsavgift för Anna Andersson' })
-      .click();
-
-    const dialog = page.getByRole('dialog', { name: 'Skicka kvitto - Anmälningsavgift' });
-    await dialog.getByRole('textbox', { name: 'Belopp (kr)' }).fill('1250');
-    await dialog.getByRole('button', { name: 'Betalsätt' }).click();
-    await page.getByRole('option', { name: 'Swish' }).click();
-    await dialog.getByRole('button', { name: 'Skicka' }).click();
-    await expect(dialog.getByText('MM-2026-1001 skickat till Anna Andersson.')).toBeVisible();
-
-    await expect.poll(() => aktivitetsloggar.length).toBe(1);
-    const [logg] = aktivitetsloggar;
-    // AKTÖR: ett giltigt (icke-tomt) namn skickas klient-sidan — samma
-    // form-bevis som `atgarder-betalningar.staging.test.ts`, den
-    // AUKTORITATIVA identiteten härleds server-side.
-    expect(logg.actor.name.length).toBeGreaterThan(0);
-    expect(logg.actor.account.name.length).toBeGreaterThan(0);
-    expect(logg.verb.display['sv-SE']).toBe('skickade kvitto');
-    expect(logg.object.definition.name['sv-SE']).toBe('Anna Andersson (Kvittoprövning)');
-    expect(logg.object.definition.type).toContain('/activity-types/kvitto');
-  });
-});

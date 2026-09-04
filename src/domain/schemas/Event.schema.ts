@@ -37,6 +37,23 @@ export const EventSchema = z.object({
   kursfamilj: z.string().nullable().optional(),
   kursniva: z.string().nullable().optional(),
 
+  // EVENTETS PRIS (TASK-368.7) — prisets nivå 2 med Eventinnehåll-standarden
+  // (nivå 3) som fallback, löst server-side (`_shared/event-map.ts` § EVENTETS
+  // PRIS + `_shared/eventpris.ts`). Ombokningssteget räknar prisbeskedet FÖRE
+  // bekräftelsen ur detta tal (`ombokning-pris.ts` § `prisskillnadFore`).
+  //
+  // `.nullable()` bär det ÄRLIGA "inget pris satt"-läget: varken eventet eller
+  // dess Eventinnehåll-standard har ett pris, och då säger appen att priset är
+  // okänt i stället för att gissa. `.optional()` är BAKÅTKOMPATIBILITETS-luckan
+  // (samma form som kursfamilj/kursniva ovan) — svar och persist-cache från
+  // FÖRE denna leverans bär inte nyckeln, och `z.array(EventSchema)`-parsen av
+  // hela listan får inte falla på det. get-events/get-event/update-event bär
+  // nyckeln ALLTID sedan denna leverans. Håll i synk med Event.ts.
+  //
+  // 0 ÄR ETT SATT PRIS, inte "inget pris" (`betalningsharledning.ts` § NOLL) —
+  // varje konsument prövar `=== null`, aldrig sanningsvärde.
+  pris: z.number().nullable().optional(),
+
   // ── Beläggningens innehållsmodell (task-18.2; S73-facit K16, PRD task-18
   // beslut 5) — mappar basen 1-till-1. SAMTLIGA fält ADDITIVT-OPTIONAL i
   // eventKey-formen: UTELÄMNAS-vid-saknas, ALDRIG null (null skulle kollidera
@@ -50,11 +67,19 @@ export const EventSchema = z.object({
   reserverade: z.number().optional(),
   // Manuellt tillagda = basens 'Manuella platser' (osatt → nyckeln utelämnas).
   manuelltTillagda: z.number().optional(),
-  // "Anmälda deltagare"-raden: antal länkade Anmälningar med Källa TOM
-  // (= formuläranmälningar; frånvaro är sanning — data-model §Källa-värden).
+  // Antal AKTIVA länkade Anmälningar med Källa TOM (= formuläranmälningar;
+  // frånvaro är sanning — data-model §Källa-värden).
   viaFormular: z.number().optional(),
-  // Antal länkade Anmälningar med Källa '+1' (CompanionModal-medföljande).
+  // Antal AKTIVA länkade Anmälningar med Källa '+1' (CompanionModal-medföljande).
   medfoljande: z.number().optional(),
+  // TASK-373: antal AKTIVA länkade Anmälningar med varje ANNAT Källa-värde —
+  // 'Manuell' (appens Ny anmälan), 'Väntelista' (uppflyttad ur kön) och varje
+  // framtida option. FAIL-CLOSED restpost: tillsammans med de två ovan är detta
+  // ALLA aktiva anmälningar, så mätaren aldrig kan tappa en plats (buggen kortet
+  // rättar: prod visade "12 av 20" mot basens 13). ADDITIVT-OPTIONAL i samma
+  // form som fälten omkring — en app mot en ÄLDRE deployad get-event läser
+  // `undefined → 0` i stället för att fälla parsen.
+  ovrigaAnmalningar: z.number().optional(),
   // Auto-utskicket för eventinfo (task-18.6; PRD task-18 beslut 14) — de två
   // ADDITIVA bas-fälten som eventsidans auto-utskicks-kryss läser och skriver:
   // 'Deltagarinfo schemalagd' (date ISO) respektive 'Deltagarinfo auto-utskick

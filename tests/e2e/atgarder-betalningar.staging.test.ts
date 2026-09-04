@@ -213,12 +213,23 @@ function betalningsPanel(page: Page) {
   return page.locator('section[aria-labelledby="grupp-betalningar"]');
 }
 
+/**
+ * [PASS 10, 2026-09-01] FÄLLNINGEN KLICKAS INTE LÄNGRE — den finns inte.
+ *
+ * Hjälparen hette (och heter) "öppna sidan OCH betalningarna" därför att
+ * betalningsytan låg bakom fällknappen "Pricka av och notera". Med miljöflaggan
+ * PÅ är den knappen riven tillsammans med kryss-vertikalen (Marcus GO
+ * 2026-09-01): sektionen ÄR betalningsytan, synlig direkt. Namnet står kvar
+ * eftersom kontraktet — "efter detta anrop är betalningsytan tillgänglig" — är
+ * oförändrat; bara vägen dit är kortare.
+ *
+ * Väntan på sektionen ersätter klicket som synk-punkt. Utan den hade testerna
+ * kunnat läsa en tom sektion innan React hunnit rendera personerna.
+ */
 async function oppnaSidanOchBetalningar(page: Page): Promise<void> {
   await page.goto(`/event/${EVENT_ID}/atgarder`);
   await expect(page.getByTestId('eventet-block')).toBeVisible();
-  await betalningsPanel(page)
-    .getByRole('button', { name: /Pricka av och notera/ })
-    .click();
+  await expect(betalningsPanel(page)).toBeVisible();
 }
 
 function avgiftKryss(page: Page, namn: string) {
@@ -278,131 +289,175 @@ const FACIT: Json[] = [
   reg('recAvbokad000009', 'Avbokad Person', { status: 'Avbokad/Ombokad' }),
 ];
 
-test.describe('Betalningarnas skrivvertikal på Åtgärds-sidan — avprickning (TASK-147.4 AC #1)', () => {
-  test('avprickning: kryssa i Anmälningsavgift skriver mark-registration-fee-paid via adapter-vägen', async ({
-    page,
-  }) => {
-    const { skrivningar } = await mocka(page, FACIT);
-    await oppnaSidanOchBetalningar(page);
+/**
+ * ═══════════════════════════════════════════════════════════════════════════
+ * SKIPPAD AV TASK-346.7 — AFFORDANSEN FINNS INTE MED MILJÖFLAGGAN PÅ
+ * ═══════════════════════════════════════════════════════════════════════════
+ * Testerna nedan bevisar att ett KLICK på ett betalningskryss skriver till
+ * basen. Sedan TASK-346.7 är kryssen LÄSANDE när `VITE_FEATURE_BETALNINGAR`
+ * är `pa` (PRD § Ytorna beslut 10: "kryssen flippas inte längre för hand";
+ * facken härleds ur inbetalningarna, ADR-128, och basens två valfält är en
+ * app-skriven SPEGEL av härledningen).
+ *
+ * E2E-KLASSEN KÖR MED FLAGGAN PÅ. `playwright.config.ts`s e2e-webServer
+ * sätter bara `VITE_E2E_WARMUP_TIMEOUT_MS`, så `.env.development`s `pa`
+ * gäller — till skillnad från acceptance/visual/webblasarbeteende, som får
+ * ett explicit `av` (config § VITE_FEATURE_BETALNINGAR). Klicken nedan kan
+ * alltså inte längre avfyra någon skrivning, och testerna kan inte passera.
+ *
+ * SKIPPADE OCH INTE RADERADE, med avsikt: skrivvägen
+ * (`useSetPaymentStatus`, taktvakten, aktivitetsloggens två riktningar,
+ * rollbacken) är fortfarande LEVANDE PRODUKTIONSKOD med flaggan AV — alltså
+ * i prod, tills Marcus slår på flaggan. Att radera bevisen för en väg som
+ * fortfarande kör hade tagit bort täckning utan att ta bort risken. En skip
+ * gör förlusten SYNLIG i varje testrapport i stället för osynlig i en diff.
+ *
+ * VEM SOM STÄNGER DET HÄR: `TASK-346.12` river miljöflaggan och därmed
+ * skrivvägen. Då ska blocket RADERAS tillsammans med `useSetPaymentStatus`
+ * och `SkickaKvittoKnapp` — inte återupplivas.
+ *
+ * ÖPPEN FRÅGA TILL MORGONGRANSKNINGEN (nattmandat B3): med flaggan på finns
+ * ingen e2e-täckning kvar för skrivvägen, eftersom dess enda affordans är
+ * borta i den miljö e2e kör i. Alternativet — att sätta flaggan till `av`
+ * på e2e-webServern — hade bevarat dessa sex tester men brutit
+ * `mer-index.staging.test.ts` (TASK-346.6, som räknar elva rader i
+ * Mer-listan just för att flaggan är på) och gjort hela betalningsdomänen
+ * osynlig för e2e-klassen. Valet är bokfört, inte fattat i tysthet.
+ */
+test.describe
+  .skip('Betalningarnas skrivvertikal på Åtgärds-sidan — avprickning (TASK-147.4 AC #1) [SKIPPAD: kryssen är läsande med miljöflaggan på, TASK-346.7]', () => {
+    test('avprickning: kryssa i Anmälningsavgift skriver mark-registration-fee-paid via adapter-vägen', async ({
+      page,
+    }) => {
+      const { skrivningar } = await mocka(page, FACIT);
+      await oppnaSidanOchBetalningar(page);
 
-    const kryss = avgiftKryss(page, 'Eva Lindqvist');
-    await expect(kryss).not.toBeChecked();
-    await klicka(kryss);
-    await expect(kryss).toBeChecked();
+      const kryss = avgiftKryss(page, 'Eva Lindqvist');
+      await expect(kryss).not.toBeChecked();
+      await klicka(kryss);
+      await expect(kryss).toBeChecked();
 
-    await expect.poll(() => skrivningar.length).toBe(1);
-    expect(skrivningar[0]).toEqual({
-      operationKey: 'mark-registration-fee-paid',
-      recordId: 'recEva0000000001',
-      fields: { Anmälningsavgift: 'Mottagen' },
+      await expect.poll(() => skrivningar.length).toBe(1);
+      expect(skrivningar[0]).toEqual({
+        operationKey: 'mark-registration-fee-paid',
+        recordId: 'recEva0000000001',
+        fields: { Anmälningsavgift: 'Mottagen' },
+      });
+    });
+
+    test('slutbetalning: kryssa i skriver mark-final-payment-paid — DET operationen uppdraget trodde var ny, men som redan fanns (c3d39360)', async ({
+      page,
+    }) => {
+      const { skrivningar } = await mocka(page, FACIT);
+      await oppnaSidanOchBetalningar(page);
+
+      const kryss = slutKryss(page, 'Karin Sjögren');
+      await expect(kryss).not.toBeChecked();
+      await klicka(kryss);
+      await expect(kryss).toBeChecked();
+
+      await expect.poll(() => skrivningar.length).toBe(1);
+      expect(skrivningar[0]).toEqual({
+        operationKey: 'mark-final-payment-paid',
+        recordId: 'recKarin00000003',
+        fields: { Slutbetalning: 'Mottagen' },
+      });
+    });
+
+    test('ångra: bocka ur en felaktig avprickning skriver Ej mottagen via SAMMA operation (toggle, ej separat "ångra"-operation)', async ({
+      page,
+    }) => {
+      const { skrivningar } = await mocka(page, FACIT);
+      await oppnaSidanOchBetalningar(page);
+
+      const kryss = avgiftKryss(page, 'Johan Berg');
+      await expect(kryss).toBeChecked(); // Johan startar Mottagen (facit-listan).
+      await klicka(kryss);
+      await expect(kryss).not.toBeChecked();
+
+      await expect.poll(() => skrivningar.length).toBe(1);
+      expect(skrivningar[0]).toEqual({
+        operationKey: 'mark-registration-fee-paid',
+        recordId: 'recJohan00000002',
+        fields: { Anmälningsavgift: 'Ej mottagen' },
+      });
+    });
+
+    test('AKTIVITETSLOGGEN (TASK-201.3 AC #4): en avprickning postar log-activity med rätt aktör, verb och objekt-namn', async ({
+      page,
+    }) => {
+      const { skrivningar, aktivitetsloggar } = await mocka(page, FACIT);
+      await oppnaSidanOchBetalningar(page);
+
+      await klicka(avgiftKryss(page, 'Eva Lindqvist'));
+      await expect.poll(() => skrivningar.length).toBe(1);
+      await expect.poll(() => aktivitetsloggar.length).toBe(1);
+
+      const [logg] = aktivitetsloggar;
+      // AKTÖR: ett giltigt (icke-tomt) namn skickas klient-sidan — den
+      // AUKTORITATIVA identiteten härleds server-side (EF-kontraktet,
+      // tests/api/log-activity.staging.test.ts), så denna e2e-svit bevisar
+      // FORMEN, inte det slutliga namnet.
+      expect(logg.actor.name.length).toBeGreaterThan(0);
+      expect(logg.actor.account.name.length).toBeGreaterThan(0);
+      // VERB: "markerade betalning" (mottagen-riktningen — Eva startar Ej
+      // mottagen i FACIT).
+      expect(logg.verb.display['sv-SE']).toBe('markerade betalning');
+      // OBJEKT: Gunilla-formen "Namn (Event)" — samma exempel som PRD § Lösning.
+      expect(logg.object.definition.name['sv-SE']).toBe('Eva Lindqvist (Betalprövning)');
+      expect(logg.object.definition.type).toContain('/activity-types/betalning');
+    });
+
+    test('AKTIVITETSLOGGEN (TASK-201.3 AC #4): AVMARKERING loggar den motsatta riktningen ("avmarkerade betalning")', async ({
+      page,
+    }) => {
+      const { aktivitetsloggar } = await mocka(page, FACIT);
+      await oppnaSidanOchBetalningar(page);
+
+      // Johan startar Mottagen (FACIT) — klick avmarkerar.
+      await klicka(avgiftKryss(page, 'Johan Berg'));
+      await expect.poll(() => aktivitetsloggar.length).toBe(1);
+
+      expect(aktivitetsloggar[0].verb.display['sv-SE']).toBe('avmarkerade betalning');
+    });
+
+    test('AKTIVITETSLOGGEN (TASK-201.3 AC #1): log-activity 500 FÄLLER ALDRIG den riktiga mutationen — fire-and-forget bevisat i BÅDA riktningarna (framgång ovan, fel här)', async ({
+      page,
+    }) => {
+      const { skrivningar, aktivitetsloggar } = await mocka(page, FACIT, { failLogActivity: true });
+      await oppnaSidanOchBetalningar(page);
+
+      const kryss = avgiftKryss(page, 'Eva Lindqvist');
+      await expect(kryss).not.toBeChecked();
+      await klicka(kryss);
+
+      // DEN RIKTIGA MUTATIONEN lyckas identiskt — update-record ser aldrig att
+      // log-activity fallerade (separata, oberoende request-strömmar).
+      await expect(kryss).toBeChecked();
+      await expect.poll(() => skrivningar.length).toBe(1);
+      expect(skrivningar[0]).toEqual({
+        operationKey: 'mark-registration-fee-paid',
+        recordId: 'recEva0000000001',
+        fields: { Anmälningsavgift: 'Mottagen' },
+      });
+      // Ingen "Kunde inte spara"-larmruta — mutationen VET INGET om att
+      // loggningen misslyckades (recordActivity fångar felet internt, `void`-
+      // anropat, aldrig awaitat av mutationens egen kedja).
+      await expect(page.getByRole('alert')).toHaveCount(0);
+
+      // log-activity ANROPADES (mocken svarade 500, men anropet skedde) — detta
+      // skiljer "loggningen fallerade tyst" från "loggningen anropades aldrig".
+      await expect.poll(() => aktivitetsloggar.length).toBe(1);
     });
   });
 
-  test('slutbetalning: kryssa i skriver mark-final-payment-paid — DET operationen uppdraget trodde var ny, men som redan fanns (c3d39360)', async ({
-    page,
-  }) => {
-    const { skrivningar } = await mocka(page, FACIT);
-    await oppnaSidanOchBetalningar(page);
-
-    const kryss = slutKryss(page, 'Karin Sjögren');
-    await expect(kryss).not.toBeChecked();
-    await klicka(kryss);
-    await expect(kryss).toBeChecked();
-
-    await expect.poll(() => skrivningar.length).toBe(1);
-    expect(skrivningar[0]).toEqual({
-      operationKey: 'mark-final-payment-paid',
-      recordId: 'recKarin00000003',
-      fields: { Slutbetalning: 'Mottagen' },
-    });
-  });
-
-  test('ångra: bocka ur en felaktig avprickning skriver Ej mottagen via SAMMA operation (toggle, ej separat "ångra"-operation)', async ({
-    page,
-  }) => {
-    const { skrivningar } = await mocka(page, FACIT);
-    await oppnaSidanOchBetalningar(page);
-
-    const kryss = avgiftKryss(page, 'Johan Berg');
-    await expect(kryss).toBeChecked(); // Johan startar Mottagen (facit-listan).
-    await klicka(kryss);
-    await expect(kryss).not.toBeChecked();
-
-    await expect.poll(() => skrivningar.length).toBe(1);
-    expect(skrivningar[0]).toEqual({
-      operationKey: 'mark-registration-fee-paid',
-      recordId: 'recJohan00000002',
-      fields: { Anmälningsavgift: 'Ej mottagen' },
-    });
-  });
-
-  test('AKTIVITETSLOGGEN (TASK-201.3 AC #4): en avprickning postar log-activity med rätt aktör, verb och objekt-namn', async ({
-    page,
-  }) => {
-    const { skrivningar, aktivitetsloggar } = await mocka(page, FACIT);
-    await oppnaSidanOchBetalningar(page);
-
-    await klicka(avgiftKryss(page, 'Eva Lindqvist'));
-    await expect.poll(() => skrivningar.length).toBe(1);
-    await expect.poll(() => aktivitetsloggar.length).toBe(1);
-
-    const [logg] = aktivitetsloggar;
-    // AKTÖR: ett giltigt (icke-tomt) namn skickas klient-sidan — den
-    // AUKTORITATIVA identiteten härleds server-side (EF-kontraktet,
-    // tests/api/log-activity.staging.test.ts), så denna e2e-svit bevisar
-    // FORMEN, inte det slutliga namnet.
-    expect(logg.actor.name.length).toBeGreaterThan(0);
-    expect(logg.actor.account.name.length).toBeGreaterThan(0);
-    // VERB: "markerade betalning" (mottagen-riktningen — Eva startar Ej
-    // mottagen i FACIT).
-    expect(logg.verb.display['sv-SE']).toBe('markerade betalning');
-    // OBJEKT: Gunilla-formen "Namn (Event)" — samma exempel som PRD § Lösning.
-    expect(logg.object.definition.name['sv-SE']).toBe('Eva Lindqvist (Betalprövning)');
-    expect(logg.object.definition.type).toContain('/activity-types/betalning');
-  });
-
-  test('AKTIVITETSLOGGEN (TASK-201.3 AC #4): AVMARKERING loggar den motsatta riktningen ("avmarkerade betalning")', async ({
-    page,
-  }) => {
-    const { aktivitetsloggar } = await mocka(page, FACIT);
-    await oppnaSidanOchBetalningar(page);
-
-    // Johan startar Mottagen (FACIT) — klick avmarkerar.
-    await klicka(avgiftKryss(page, 'Johan Berg'));
-    await expect.poll(() => aktivitetsloggar.length).toBe(1);
-
-    expect(aktivitetsloggar[0].verb.display['sv-SE']).toBe('avmarkerade betalning');
-  });
-
-  test('AKTIVITETSLOGGEN (TASK-201.3 AC #1): log-activity 500 FÄLLER ALDRIG den riktiga mutationen — fire-and-forget bevisat i BÅDA riktningarna (framgång ovan, fel här)', async ({
-    page,
-  }) => {
-    const { skrivningar, aktivitetsloggar } = await mocka(page, FACIT, { failLogActivity: true });
-    await oppnaSidanOchBetalningar(page);
-
-    const kryss = avgiftKryss(page, 'Eva Lindqvist');
-    await expect(kryss).not.toBeChecked();
-    await klicka(kryss);
-
-    // DEN RIKTIGA MUTATIONEN lyckas identiskt — update-record ser aldrig att
-    // log-activity fallerade (separata, oberoende request-strömmar).
-    await expect(kryss).toBeChecked();
-    await expect.poll(() => skrivningar.length).toBe(1);
-    expect(skrivningar[0]).toEqual({
-      operationKey: 'mark-registration-fee-paid',
-      recordId: 'recEva0000000001',
-      fields: { Anmälningsavgift: 'Mottagen' },
-    });
-    // Ingen "Kunde inte spara"-larmruta — mutationen VET INGET om att
-    // loggningen misslyckades (recordActivity fångar felet internt, `void`-
-    // anropat, aldrig awaitat av mutationens egen kedja).
-    await expect(page.getByRole('alert')).toHaveCount(0);
-
-    // log-activity ANROPADES (mocken svarade 500, men anropet skedde) — detta
-    // skiljer "loggningen fallerade tyst" från "loggningen anropades aldrig".
-    await expect.poll(() => aktivitetsloggar.length).toBe(1);
-  });
-
+/**
+ * NOTERINGSFÄLTEN ÄR KVAR — och det är ett uttryckligt krav, inte en rest.
+ * TASK-346.7 AC #2: "noteringsfälten kvar". De skriver ett eget additivt
+ * fält (`Notering anmälningsavgift`), inte facken, så härledningen rör dem
+ * inte. Testet nedan kör därför OFÖRÄNDRAT med flaggan på.
+ */
+test.describe('Betalningarnas noteringsfält på Åtgärds-sidan (TASK-147.4 AC #1)', () => {
   test('notering: skriver update-registration-payment-note vid blur — EXAKT det egna additiva fältet, aldrig gamla odelade Notering', async ({
     page,
   }) => {
@@ -422,20 +477,24 @@ test.describe('Betalningarnas skrivvertikal på Åtgärds-sidan — avprickning 
     // ADR-063-avgränsningen: gamla odelade 'Notering' rörs aldrig av denna väg.
     expect(Object.keys(skrivningar[0].fields)).not.toContain('Notering');
   });
-
-  test('fel-väg: update-record 500 → optimistisk flipp rullas tillbaka + role=alert "Kunde inte spara"', async ({
-    page,
-  }) => {
-    await mocka(page, FACIT, { failForRecordId: 'recEva0000000001' });
-    await oppnaSidanOchBetalningar(page);
-
-    const kryss = avgiftKryss(page, 'Eva Lindqvist');
-    await klicka(kryss);
-
-    await expect(page.getByRole('alert')).toContainText('Kunde inte spara');
-    await expect(kryss).not.toBeChecked(); // rollback till föregående (Ej mottagen).
-  });
 });
+
+/** SKIPPAD AV SAMMA SKÄL som skrivvertikalens block ovan — se dess docblock. */
+test.describe
+  .skip('Betalningarnas fel-väg (TASK-147.4) [SKIPPAD: kryssen är läsande, TASK-346.7]', () => {
+    test('fel-väg: update-record 500 → optimistisk flipp rullas tillbaka + role=alert "Kunde inte spara"', async ({
+      page,
+    }) => {
+      await mocka(page, FACIT, { failForRecordId: 'recEva0000000001' });
+      await oppnaSidanOchBetalningar(page);
+
+      const kryss = avgiftKryss(page, 'Eva Lindqvist');
+      await klicka(kryss);
+
+      await expect(page.getByRole('alert')).toContainText('Kunde inte spara');
+      await expect(kryss).not.toBeChecked(); // rollback till föregående (Ej mottagen).
+    });
+  });
 
 test.describe('Ej relevant-vakten — föreläsnings-semantiken (TASK-147.4 AC #2)', () => {
   test('försök skriva över: INGEN kryssruta finns för en Ej relevant-slutbetalning — strukturellt omöjligt att avfyra, inte bara dolt', async ({
@@ -444,8 +503,11 @@ test.describe('Ej relevant-vakten — föreläsnings-semantiken (TASK-147.4 AC #
     const { skrivningar } = await mocka(page, FACIT);
     await oppnaSidanOchBetalningar(page);
 
-    // Den stilla textraden ersätter krysset, precis som förlagans (rivna)
-    // läsyte-bevis — samma text, ny plats.
+    // [PASS 10] UPPLYSNINGEN ÖVERLEVDE RIVNINGEN. Raden som bar den (SkrivRads
+    // form utan kryss) finns inte kvar, men texten gör det — nu som en
+    // kvalificering direkt under personens namn. Föreläsnings-semantiken
+    // förklarar varför den här personen aldrig får en slutbetalning; utan den
+    // ser frånvaron ut som en lucka.
     await expect(
       betalningsPanel(page).getByText('Slutbetalning · Ej relevant (föreläsning)'),
     ).toBeVisible();
@@ -459,11 +521,17 @@ test.describe('Ej relevant-vakten — föreläsnings-semantiken (TASK-147.4 AC #
       }),
     ).toHaveCount(0);
 
-    // Personens EGEN avgiftskryss (Mottagen sedan facit) rörs för att bevisa
-    // att panelen fungerar normalt — men slutbetalningens fält förblir orört.
-    await klicka(avgiftKryss(page, 'Föreläsnings Person'));
-    await expect.poll(() => skrivningar.length).toBe(1);
-    expect(skrivningar.some((s) => 'Slutbetalning' in s.fields)).toBe(false);
+    // [PASS 10] SLUTBEVISET ÄR NU STRUKTURELLT, INTE BETEENDEMÄSSIGT. Raden
+    // klickade tidigare på personens EGNA avgiftskryss och mätte att
+    // ingenting skrevs. Det krysset finns inte längre — hela vertikalen är
+    // riven — så klicket kan inte utföras, och det är ett STARKARE bevis för
+    // samma sak: när ingen skrivande affordans existerar kan
+    // föreläsnings-semantiken omöjligt skrivas över. Noll skrivningar mäts
+    // efter att sidan renderat färdigt, alltså utan att någon interaktion
+    // behövde provoceras.
+    await expect(betalningsPanel(page).getByRole('checkbox')).toHaveCount(0);
+    await expect(page.getByRole('alert')).toHaveCount(0);
+    expect(skrivningar).toHaveLength(0);
   });
 
   test('axe: 0 överträdelser med panelen öppen (inkl. Ej relevant-raden)', async ({ page }) => {
@@ -474,28 +542,171 @@ test.describe('Ej relevant-vakten — föreläsnings-semantiken (TASK-147.4 AC #
   });
 });
 
-test.describe('Taktvakten — batch-avprickning begränsad parallellitet (TASK-147.4 AC #2)', () => {
-  test('tre kryss i snabb följd körs SERIELLT — aldrig mer än 1 samtidig update-record (scope.id, TanStack Query)', async ({
+/**
+ * PASS 10 (2026-09-01) — SEKTIONENS KONTRAKT EFTER RIVNINGEN.
+ *
+ * Blocket hette tidigare "läsande kryss" och bevisade att kryssen inte längre
+ * SKREV. Marcus GO 2026-09-01 rev dem helt: en kontroll som ser ut som en
+ * kontroll men inte är det är sämre än ingen kontroll. Testerna prövar därför
+ * inte längre kryssens BETEENDE utan deras FRÅNVARO, plus att det som ersatte
+ * dem faktiskt finns — och, viktigast, att noteringarna INTE följde med i
+ * rivningen.
+ *
+ * `hamta-oppna-betalningar` mockas TOMT med avsikt. Sektionen ska fungera —
+ * och säga något sant — även när ingen av personerna har en öppen rad; det
+ * är exakt det tvetydiga läge `PanelBetalningar` § `rad === null` bokför
+ * (fullbetald ELLER okänt pris i basen). Ett mockat innehåll här hade
+ * dessutom knutit denna svit till EF-svarets form, som ägs av TASK-346.4.
+ */
+test.describe('Åtgärds-sidans betalningssektion med miljöflaggan PÅ (pass 10)', () => {
+  const OPPNA_BETALNINGAR = '**/functions/v1/hamta-oppna-betalningar*';
+
+  async function mockaTomBetalningslista(page: Page): Promise<void> {
+    await page.route(OPPNA_BETALNINGAR, (route) =>
+      route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: JSON.stringify({ betalningar: [], forfallna: 0 }),
+      }),
+    );
+  }
+
+  /* ERSÄTTER DE TVÅ `aria-readonly`-TESTERNA. De prövade att ett läsande kryss
+     varken flippade eller skrev; med vertikalen riven finns inget kryss att
+     pröva, och frånvaron är ett starkare och enklare påstående. Noll
+     kryssrutor i sektionen ⇒ noll skrivvägar via kryss, oavsett vad någon
+     klickar på. */
+  test('kryss-vertikalen är RIVEN: noll kryssrutor i sektionen, noll skrivningar', async ({
     page,
   }) => {
-    const { skrivningar, maxSamtidiga } = await mocka(page, FACIT, { updateDelayMs: 250 });
+    const { skrivningar } = await mocka(page, FACIT);
+    await mockaTomBetalningslista(page);
     await oppnaSidanOchBetalningar(page);
 
-    // Klicken avvaktar INTE varandras nätverks-runda — `.click()` returnerar
-    // så fort klick-eventet dispatchat, långt före ett 250 ms-fördröjt svar.
-    // Utan taktvakten hade detta gett tre SAMTIDIGA update-record-anrop.
-    await klicka(avgiftKryss(page, 'Peter Åkesson'));
-    await klicka(avgiftKryss(page, 'Maria Holm'));
-    await klicka(avgiftKryss(page, 'Anders Ek'));
+    await expect(betalningsPanel(page).getByRole('checkbox')).toHaveCount(0);
+    await expect(page.getByRole('alert')).toHaveCount(0);
+    expect(skrivningar).toHaveLength(0);
+  });
 
-    await expect.poll(() => skrivningar.length, { timeout: 5000 }).toBe(3);
+  /* FÄLLKNAPPEN ÄR RIVEN, OCH RÄKNAREN ÖVERLEVDE HOS RUBRIKEN. Talet satt på
+     knappen "Pricka av och notera"; överblicken får inte försvinna med sin
+     bärare. Mönstret matchas i stället för ett exakt tal — testet vaktar att
+     räknaren FINNS på sin nya plats, inte FACIT:s aritmetik (den ägs av
+     `obetald`-predikatets egna tester). */
+  test('fällknappen är riven och "N saknar" bor i sektionsrubriken', async ({ page }) => {
+    await mocka(page, FACIT);
+    await mockaTomBetalningslista(page);
+    await oppnaSidanOchBetalningar(page);
 
-    // Det mätbara beviset: aldrig mer än 1 request in flight samtidigt, trots
-    // tre klick avfyrade i snabb följd.
-    expect(maxSamtidiga()).toBe(1);
+    await expect(
+      betalningsPanel(page).getByRole('button', { name: /Pricka av och notera/ }),
+    ).toHaveCount(0);
+    await expect(page.getByRole('heading', { name: /Betalningar · \d+ saknar/ })).toBeVisible();
+  });
 
-    // Samtliga tre landade ändå — seriellt är inte samma sak som förlorat.
-    const recordIds = skrivningar.map((s) => s.recordId).sort();
-    expect(recordIds).toEqual(['recPeter00000005', 'recMaria00000006', 'recAnders0000007'].sort());
+  /* NOTERINGARNA ÄR DET HÅRDA VILLKORET I HELA RIVNINGEN. Panelens två
+     noteringsfält är Lottas ENDA skrivväg till anmälans
+     `Notering anmälningsavgift`/`Notering slutbetalning` — pass 7 A3 mätte att
+     de inte kan nås från registreringsformuläret utan en EF-ändring, och
+     stannade därför. Ett kryss som försvinner är ett designbeslut; en
+     skrivväg som försvinner är en förlust. Testet vaktar att båda fälten
+     finns kvar i den nya formen. */
+  test('BÅDA noteringsfälten överlevde rivningen och är skrivbara', async ({ page }) => {
+    const { skrivningar } = await mocka(page, FACIT);
+    await mockaTomBetalningslista(page);
+    await oppnaSidanOchBetalningar(page);
+
+    const panel = betalningsPanel(page);
+    await expect(
+      panel.getByRole('textbox', { name: 'Notering anmälningsavgift för Eva Lindqvist' }),
+    ).toBeVisible();
+    await expect(
+      panel.getByRole('textbox', { name: 'Notering slutbetalning för Eva Lindqvist' }),
+    ).toBeVisible();
+
+    const falt = avgiftNotering(page, 'Eva Lindqvist');
+    await falt.fill('Ringer på fredag');
+    await falt.blur();
+
+    await expect.poll(() => skrivningar.length).toBe(1);
+    expect(skrivningar[0].operationKey).toBe('update-registration-payment-note');
+    expect(skrivningar[0].fields).toEqual({ 'Notering anmälningsavgift': 'Ringer på fredag' });
+  });
+
+  test('gamla "Skicka kvitto"-dialogen är RIVEN ur sektionen', async ({ page }) => {
+    await mocka(page, FACIT);
+    await mockaTomBetalningslista(page);
+    await oppnaSidanOchBetalningar(page);
+
+    // Johan och Karin har Mottagen anmälningsavgift i FACIT — det var precis
+    // det villkor som tidigare renderade knappen (`vald && …`).
+    await expect(betalningsPanel(page).getByRole('button', { name: /^Skicka kvitto/ })).toHaveCount(
+      0,
+    );
+  });
+
+  test('varje person bär saknas-beskedet och fällningen för sina inbetalningar', async ({
+    page,
+  }) => {
+    await mocka(page, FACIT);
+    await mockaTomBetalningslista(page);
+    await oppnaSidanOchBetalningar(page);
+
+    // Ingen av personerna har en öppen rad i den (tomma) listan, så beskedet
+    // är det tvetydighets-ärliga — aldrig ett påstått "Allt betalt".
+    //
+    // ORDALYDELSEN BYTTES 2026-09-01 (Marcus: "'enligt basen' är
+    // tekniksvenska — får inte nå Lotta"). Skillnaden mot "Allt betalt" är
+    // vad testet vaktar, och den står kvar: `rad === null` säger "Inget kvar
+    // att betala", ett känt fullbetalt pris säger "Allt betalt". Se
+    // `PanelBetalningar.tsx` § `rad === null` för vad hedgen kostade.
+    //
+    // [PASS 10] Beskedet syns nu UTAN att någon fällning öppnas först —
+    // sektionen ÄR betalningsytan. Inbetalnings-fällningen per person är
+    // däremot kvar och fortfarande stängd: anropsbudgeten (en läsning per
+    // person = tjugo EF-anrop) gäller oförändrat.
+    const panel = betalningsPanel(page);
+    await expect(panel.getByText('Inget kvar att betala').first()).toBeVisible();
+
+    const fallning = panel.getByRole('button', { name: /Visa inbetalningarna för Eva Lindqvist/ });
+    await expect(fallning).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  test('axe: 0 överträdelser på den nya sektionen', async ({ page }) => {
+    await mocka(page, FACIT);
+    await mockaTomBetalningslista(page);
+    await oppnaSidanOchBetalningar(page);
+    const results = await new AxeBuilder({ page }).analyze();
+    expect(results.violations).toEqual([]);
   });
 });
+
+/** SKIPPAD AV SAMMA SKÄL som skrivvertikalens block — se dess docblock. */
+test.describe
+  .skip('Taktvakten — batch-avprickning begränsad parallellitet (TASK-147.4 AC #2) [SKIPPAD: kryssen är läsande, TASK-346.7]', () => {
+    test('tre kryss i snabb följd körs SERIELLT — aldrig mer än 1 samtidig update-record (scope.id, TanStack Query)', async ({
+      page,
+    }) => {
+      const { skrivningar, maxSamtidiga } = await mocka(page, FACIT, { updateDelayMs: 250 });
+      await oppnaSidanOchBetalningar(page);
+
+      // Klicken avvaktar INTE varandras nätverks-runda — `.click()` returnerar
+      // så fort klick-eventet dispatchat, långt före ett 250 ms-fördröjt svar.
+      // Utan taktvakten hade detta gett tre SAMTIDIGA update-record-anrop.
+      await klicka(avgiftKryss(page, 'Peter Åkesson'));
+      await klicka(avgiftKryss(page, 'Maria Holm'));
+      await klicka(avgiftKryss(page, 'Anders Ek'));
+
+      await expect.poll(() => skrivningar.length, { timeout: 5000 }).toBe(3);
+
+      // Det mätbara beviset: aldrig mer än 1 request in flight samtidigt, trots
+      // tre klick avfyrade i snabb följd.
+      expect(maxSamtidiga()).toBe(1);
+
+      // Samtliga tre landade ändå — seriellt är inte samma sak som förlorat.
+      const recordIds = skrivningar.map((s) => s.recordId).sort();
+      expect(recordIds).toEqual(
+        ['recPeter00000005', 'recMaria00000006', 'recAnders0000007'].sort(),
+      );
+    });
+  });

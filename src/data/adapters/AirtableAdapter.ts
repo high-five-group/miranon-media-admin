@@ -3,6 +3,8 @@ import type {
   Attachment,
   AttachmentDownloadUrl,
   DocumentPreview,
+  SkapadEventBilaga,
+  UpdateAttachmentScopeInput,
   UploadAttachmentInput,
 } from '../../domain/models/Attachment';
 import type {
@@ -23,9 +25,11 @@ import {
   type ActivityStatement,
   ActivityStatementSchema,
   AttachmentDownloadUrlSchema,
-  AttachmentSchema,
   AttachmentUploadTicketSchema,
   AttendanceSchema,
+  type CancelRegistrationInput,
+  type CancelRegistrationResult,
+  CancelRegistrationResultSchema,
   type ConfirmRegistrationsInput,
   type ConfirmRegistrationsResult,
   ConfirmRegistrationsResultSchema,
@@ -41,21 +45,36 @@ import {
   EventinnehallListItemSchema,
   EventNoteSchema,
   EventSchema,
+  type HanteraInbetalningResult,
+  type Inbetalningslista,
   type Intresserad,
   IntresseradSchema,
+  type Jobbstatus,
+  type KoaKvittonInput,
+  type KoaKvittonResult,
+  type Kvittolank,
   MailLogEntrySchema,
   MailSendResultSchema,
+  type OppnaBetalningar,
   type PersonDetail,
   PersonDetailSchema,
   PersonNoteSchema,
   PersonSchema,
   type PlaceListItem,
   PlaceListItemSchema,
+  parsaAttachment,
+  parsaAttachments,
+  parsaSkapadEventBilaga,
+  type RebookRegistrationInput,
+  type RebookRegistrationResult,
+  RebookRegistrationResultSchema,
   type RecordActivityResult,
   RecordActivityResultSchema,
   type RegistrationDetail,
   RegistrationDetailSchema,
   RegistrationSchema,
+  type RegistreraInbetalningInput,
+  type RegistreraInbetalningResult,
   type SavedSegment,
   SavedSegmentSchema,
   type SaveEventContentInput,
@@ -75,8 +94,9 @@ import {
   type SendReceiptInput,
   type SendReceiptResult,
   SendReceiptResultSchema,
+  type SkickaKvittoIgenInput,
+  type SkickaKvittoIgenResult,
   type UpdateEventInput,
-  UtkastResultatSchema,
   WaitlistEntrySchema,
 } from '../../domain/schemas';
 import type {
@@ -86,20 +106,21 @@ import type {
 } from '../../domain/types/Filters';
 import type { ActivityLogPage, ActivityLogParams } from '../../domain/types/Pagination';
 import { AttachmentClass } from '../../domain/types/Status';
-import {
-  callEdgeFunction,
-  postEdgeFunction,
-  postEdgeFunctionBlob,
-  supabase,
-} from '../config/supabase-client';
+import { callEdgeFunction, postEdgeFunction, supabase } from '../config/supabase-client';
 import {
   BILAGOR_BUCKET_ID,
   fileToBase64,
   formatMB,
   SMALL_UPLOAD_MAX_BYTES,
 } from './attachmentUpload';
-import type { DataSourceAdapter, MallId, UtkastTyp } from './DataSourceAdapter';
-import { berakaAktuellKallhash, mallIdFranAirtableOption } from './mallKallhash';
+import * as betalningsportar from './betalningsportar';
+import { samlaCursorSidor } from './cursorWalk';
+import type { DataSourceAdapter, MallId } from './DataSourceAdapter';
+import {
+  arKanoniskKallhash,
+  berakaAktuellKallhash,
+  mallIdFranAirtableOption,
+} from './mallKallhash';
 
 // Airtable tabell-ID:n (från docs/schema_reference.md). Behålls som
 // referens i kommentarer för framtida operations-definitioner i
@@ -107,6 +128,13 @@ import { berakaAktuellKallhash, mallIdFranAirtableOption } from './mallKallhash'
 // operation → tabell sker i Edge Function via getOperation(), inte
 // längre i klient-koden (M4 K9-respekt: domännamn i klient, table-IDs
 // i Edge Function-implementationen).
+
+// TASK-350 — `fetchIntresserade`s sidstorlek vid cursor-walken (se metoden
+// nedan). SAMMA tak som `get-leads/index.ts`s `MAX_PAGE_SIZE` (ADR-056:
+// Airtables `pageSize` ≤ 100/svar) — satt till taket, inte defaulten (50),
+// för att minimera antalet sekventiella Airtable-anrop klienten behöver
+// göra för att hämta hela Intresserade-mängden.
+const INTRESSERADE_MAX_PAGE_SIZE = 100;
 
 export class AirtableAdapter implements DataSourceAdapter {
   // === Befintliga metoder (oförändrade) ===
@@ -305,18 +333,36 @@ export class AirtableAdapter implements DataSourceAdapter {
   }
 
   /**
-   * Hämta Intresserade (Fas 6e L1). GLOBAL läs-lista: get-leads filtrerar
-   * serverside på den strikta lead-formeln (hämtat något, noll Anmälningar
-   * totalt — Läsning 2) och sorterar 'Senaste interaktion (datum)' desc.
-   * `.parse()` validerar vid datagränsen (ADR-026; z.array — en LISTA).
+   * Hämta HELA Intresserade-mängden (Fas 6e L1, TASK-350). GLOBAL läs-lista:
+   * get-leads filtrerar serverside på den strikta lead-formeln (hämtat
+   * något, noll Anmälningar totalt — Läsning 2) och sorterar 'Senaste
+   * interaktion (datum)' desc — server-sorteringen bevaras, `samlaCursorSidor`
+   * omsorterar aldrig. `.parse()` validerar vid datagränsen (ADR-026;
+   * z.array — en LISTA), EN gång över hela den ackumulerade mängden.
    *
-   * v1 visar FÖRSTA sidan (pageSize default 50 server-side). Lead-mängden är
-   * liten; full cursor-paginering (nextCursor finns i svaret) deferreras till
-   * en useInfiniteQuery-väg vid behov (jfr persons). Inga filters i v1.
+   * [TASK-350, fixad] Stod tidigare som `callEdgeFunction('get-leads')` utan
+   * cursor — hämtade bokstavligen bara FÖRSTA sidan och klampade listan till
+   * EF:ens `DEFAULT_PAGE_SIZE = 50` oavsett verkligt antal (samma felklass
+   * som S109:s get-persons-incident). `samlaCursorSidor` (`./cursorWalk.ts`,
+   * dess filhuvud) väljer varje sida över den REDAN deployade cursor-porten
+   * (ADR-056) tills `nextCursor` är null — ingen EF-ändring, ingen andra
+   * server-gren (kontrastera ADR-123 beslut 1s `register=true` för
+   * Personer: den motiveras av sök/index/svensk sortering i klienten, som
+   * Intresserade saknar helt — se `cursorWalk.ts`s filhuvud för hela
+   * motiveringen). `pageSize` sätts till EF:ens eget tak (`MAX_PAGE_SIZE`,
+   * `get-leads/index.ts`) för att minimera antalet sekventiella anrop.
    */
   async fetchIntresserade(): Promise<Intresserad[]> {
-    const data = await callEdgeFunction<{ intresserade: unknown }>('get-leads');
-    return z.array(IntresseradSchema).parse(data.intresserade);
+    const alla = await samlaCursorSidor<unknown>(async (cursor) => {
+      const params: Record<string, string> = { pageSize: String(INTRESSERADE_MAX_PAGE_SIZE) };
+      if (cursor) params.cursor = cursor;
+      const data = await callEdgeFunction<{ intresserade: unknown[]; nextCursor: string | null }>(
+        'get-leads',
+        params,
+      );
+      return { poster: data.intresserade, nextCursor: data.nextCursor };
+    });
+    return z.array(IntresseradSchema).parse(alla);
   }
 
   /**
@@ -585,6 +631,51 @@ export class AirtableAdapter implements DataSourceAdapter {
   }
 
   /**
+   * Avboka en aktiv anmälan (TASK-368.2). POST mot cancel-registration-EF:en
+   * med `atgard: 'avboka'`. Servern läser den nuvarande statusen, avvisar
+   * övergången (409) om anmälan inte är aktiv, och skriver annars Status +
+   * Notering i EN operation. `.parse()` validerar vid datagränsen (ADR-026).
+   */
+  async avbokaAnmalan(input: CancelRegistrationInput): Promise<CancelRegistrationResult> {
+    const data = await postEdgeFunction<unknown>('cancel-registration', {
+      registrationId: input.registrationId,
+      atgard: 'avboka',
+      ...(input.skal !== undefined ? { skal: input.skal } : {}),
+    });
+    return CancelRegistrationResultSchema.parse(data);
+  }
+
+  /**
+   * Återta en avbokning (TASK-368.2). SAMMA EF som `avbokaAnmalan`, med
+   * `atgard: 'aterta'` — den nya statusen härleds server-side ur
+   * bekräftelsedatumet, aldrig vald här.
+   */
+  async atertaAvbokning(input: CancelRegistrationInput): Promise<CancelRegistrationResult> {
+    const data = await postEdgeFunction<unknown>('cancel-registration', {
+      registrationId: input.registrationId,
+      atgard: 'aterta',
+      ...(input.skal !== undefined ? { skal: input.skal } : {}),
+    });
+    return CancelRegistrationResultSchema.parse(data);
+  }
+
+  /**
+   * Boka om en anmälan till ett annat event (TASK-368.4, ADR-130). EGEN EF
+   * (`rebook-registration`), inte ett tredje `atgard`-värde på
+   * `cancel-registration` — operationen SKAPAR en anmälan och rör Postgres,
+   * samma gräns betalningsdomänen redan drar mellan `registrera-inbetalning`
+   * och `hantera-inbetalning`; se EF:ens filhuvud. `.parse()` validerar vid
+   * datagränsen (ADR-026).
+   */
+  async bokaOmAnmalan(input: RebookRegistrationInput): Promise<RebookRegistrationResult> {
+    const data = await postEdgeFunction<unknown>('rebook-registration', {
+      registrationId: input.registrationId,
+      nyttEventId: input.nyttEventId,
+    });
+    return RebookRegistrationResultSchema.parse(data);
+  }
+
+  /**
    * Skicka ett åtgärdsutskick (TASK-147.2). POST mot send-action-email-EF:en
    * (TASK-147.1), som löser mottagarna SERVER-SIDE (klienten skickar bara
    * record-ID:n + eventId), sänder via den bilage-fria batchgrenen och
@@ -771,13 +862,20 @@ export class AirtableAdapter implements DataSourceAdapter {
       bytesBase64,
       // [TASK-275.2, ADR-118] Valfria — EF:en default:ar rackvidd till
       // 'Event' när utelämnad (oförändrat beteende).
+      // [UTBYGGT, TASK-338.3, ADR-125 § 1] `plats` är den TREDJE axeln, ett
+      // Platser-RECORD-ID. Skickas RAKT IGENOM: existenskontrollen mot
+      // Platser-tabellen bor i EF:en (`platsFinns`, `_shared/attachments.ts`)
+      // eftersom bara servern kan avgöra att raden finns — adaptern som
+      // gissade hade antingen behövt en egen hämtning (en andra sanning) eller
+      // släppt igenom ett ID som Airtable tyst sväljer som en TOM länk.
       rackvidd: input.rackvidd,
       kursfamilj: input.kursfamilj,
       kursniva: input.kursniva,
+      plats: input.plats,
     });
     // Uppladdade rader är aldrig Event-mallade — 'inaktuell' är strukturellt
     // inte tillämplig (TASK-309.6, se domänmodellens docblock).
-    return { ...AttachmentSchema.parse(data.attachment), inaktuell: null };
+    return { ...parsaAttachment(data.attachment), inaktuell: null };
   }
 
   /**
@@ -828,15 +926,17 @@ export class AirtableAdapter implements DataSourceAdapter {
       eventId: input.eventId,
       attachmentId: ticket.attachmentId,
       filnamn: input.file.name,
-      // [TASK-275.2, ADR-118] Se uploadAttachmentSmall ovan — samma
-      // valfria trädgren, `create-attachment-upload-ticket` (steget ovan)
-      // rör dem aldrig (skriver ingen Bilagor-rad).
+      // [TASK-275.2, ADR-118 · TASK-338.3] Se uploadAttachmentSmall ovan —
+      // samma valfria trädgren inklusive `plats`-axeln,
+      // `create-attachment-upload-ticket` (steget ovan) rör dem aldrig
+      // (skriver ingen Bilagor-rad).
       rackvidd: input.rackvidd,
       kursfamilj: input.kursfamilj,
       kursniva: input.kursniva,
+      plats: input.plats,
     });
     // Se uploadAttachmentSmall ovan — samma "aldrig Event-mallad"-motivering.
-    return { ...AttachmentSchema.parse(data.attachment), inaktuell: null };
+    return { ...parsaAttachment(data.attachment), inaktuell: null };
   }
 
   /**
@@ -850,7 +950,7 @@ export class AirtableAdapter implements DataSourceAdapter {
     const data = await callEdgeFunction<{ attachments: unknown }>('get-event-attachments', {
       eventId,
     });
-    const parsed = z.array(AttachmentSchema).parse(data.attachments);
+    const parsed = parsaAttachments(data.attachments);
     return this.berikaMedInaktuell(parsed);
   }
 
@@ -861,12 +961,27 @@ export class AirtableAdapter implements DataSourceAdapter {
    */
   async fetchGemensammaBilagor(): Promise<Attachment[]> {
     const data = await callEdgeFunction<{ attachments: unknown }>('get-event-attachments');
-    const parsed = z.array(AttachmentSchema).parse(data.attachments);
-    // [TASK-309.6] Defensivt anropad (get-event-attachments/index.ts filtrerar
-    // denna gren på `Räckvidd IN (Kurstyp, Alla event)` — generate-event-
-    // attachment sätter ALDRIG `Räckvidd`, så en Event-mallad rad förekommer
-    // strukturellt inte här i dag). `berikaMedInaktuell` kostar då bara den
-    // tomma `eventMallade.length === 0`-kontrollen, ingen extra nätverksfråga.
+    const parsed = parsaAttachments(data.attachments);
+    // [TASK-309.6, PREMISSEN RÄTTAD TASK-338.3] Defensivt anropad.
+    //
+    // Raden sade tidigare att EF:en filtrerar denna gren på `Räckvidd IN
+    // (Kurstyp, Alla event)`. Det var sant för TASK-275.2:s tre
+    // filterByFormula-mängder, men de är RIVNA sedan TASK-338.2. EF:en gör nu
+    // TVÅ steg (get-event-attachments/index.ts § fetchAllaGemensamma):
+    // en hämtning med `NOT({Räckvidd} = 'Event')` — en medveten SUPERMÄNGD —
+    // och därefter kod-grinden `arGemensam` efter normalisering.
+    //
+    // Steg två är inte en dubblering: det är det som håller ute raderna med
+    // TOMT `Räckvidd`, som formeln släpper igenom och som annars hade lagt 34
+    // mall-genererade, event-bundna PDF:er (mätt i staging 2026-08-29) i
+    // Lottas lista över delade dokument.
+    //
+    // SLUTSATSEN NEDAN HÅLLER OFÖRÄNDRAD, det var bara premissen som var
+    // stale (ADR-083): generate-event-attachment sätter ALDRIG `Räckvidd`, så
+    // en Event-mallad rad har tomt värde och sållas bort av `arGemensam` —
+    // den förekommer alltså strukturellt inte här. `berikaMedInaktuell`
+    // kostar då bara den tomma `eventMallade.length === 0`-kontrollen, ingen
+    // extra nätverksfråga.
     return this.berikaMedInaktuell(parsed);
   }
 
@@ -959,6 +1074,41 @@ export class AirtableAdapter implements DataSourceAdapter {
   }
 
   /**
+   * [TASK-338.4, ADR-125 § Beslut 1] Ändra räckvidden på en redan uppladdad
+   * delad bilaga. POST mot update-attachment-scope-EF:en — se
+   * `DataSourceAdapter.updateAttachmentScope` för det fulla kontraktet
+   * (vakterna, och varför tomma axlar RENSAS i stället för att lämnas).
+   *
+   * AXLARNA SKICKAS SOM `undefined` när de inte är satta, aldrig som
+   * tomsträng eller `null`: `postEdgeFunction` serialiserar med
+   * `JSON.stringify`, som UTELÄMNAR `undefined`-nycklar helt, och EF:ens
+   * `AttachmentScopeInputSchema` läser en frånvarande nyckel som "axeln är
+   * inte satt". En tomsträng hade i stället fällts av dess `z.enum`. Samma
+   * form `uploadAttachment` redan bär för samma tre axlar.
+   *
+   * `.parse()` VID DATAGRÄNSEN (ADR-026) via `parsaAttachment` — samma par
+   * (normalisera legacy → validera) som resten av adapterns fem
+   * `Attachment`-parsningar, så en icke-migrerad rad inte kan kasta här och
+   * bara här.
+   */
+  async updateAttachmentScope(input: UpdateAttachmentScopeInput): Promise<Attachment> {
+    const data = await postEdgeFunction<{ attachment: unknown }>('update-attachment-scope', {
+      attachmentId: input.attachmentId,
+      rackvidd: input.rackvidd,
+      kursfamilj: input.kursfamilj,
+      kursniva: input.kursniva,
+      plats: input.plats,
+    });
+    // `inaktuell: null` — SAMMA disciplin som `uploadAttachment`/
+    // `generateEventAttachment` ovan: fältet är HÄRLETT vid listning
+    // (`berikaMedInaktuell`), aldrig lagrat, och den här operationen rör
+    // varken `Mall` eller `Källhash`. En bilaga vars räckvidd just ändrats
+    // har alltså inget nytt att säga om sin aktualitet; `null` betyder
+    // "bedöms inte här", och nästa listning härleder värdet riktigt.
+    return { ...parsaAttachment(data.attachment), inaktuell: null };
+  }
+
+  /**
    * Hämta en signerad nedladdnings-/förhandsvisnings-URL för en bilaga
    * (TASK-245). GET mot get-attachment-download-url-EF:en — se
    * `DataSourceAdapter.getAttachmentDownloadUrl` för det fulla kontraktet
@@ -1009,26 +1159,53 @@ export class AirtableAdapter implements DataSourceAdapter {
    * Skapa eller regenerera en Event-mallad bilaga (TASK-309.6, ADR-125 § 5).
    * POST mot generate-event-attachment UTAN `preview` — se
    * `DataSourceAdapter.skapaEventBilaga` för det fulla kontraktet
-   * (`ersatt`-läget, dubblett-beteendet). `.parse()` validerar vid
-   * datagränsen (ADR-026), speglar `uploadAttachment`.
+   * (`ersatt`-läget, server-valda ersätt-vägen, `kallhash`-promoveringen).
+   * `.parse()` validerar vid datagränsen (ADR-026), speglar `uploadAttachment`.
+   *
+   * [UTBYGGD, TASK-340.2] Svaret parsas nu som HELHET
+   * (`SkapadEventBilagaSchema`) i stället för att bara plocka ut
+   * `attachment` — de tre booleanerna `promoverad`/`underlagAndrat`/
+   * `ersatte` är det bekräftelseytan säger i klartext, och ett fält som
+   * plockas ut för hand vid sidan av schemat är precis den datagräns
+   * ADR-026 finns för att stänga.
+   *
+   * `kallhash` SKICKAS BARA I KANONISK FORM. EF:en svarar 400 på en
+   * icke-kanonisk hash (`arKanoniskKallhash`, `_shared/promoveringsbeslut.ts`),
+   * så ett trasigt värde hade fällt HELA Skapa — inte bara optimeringen.
+   * Gaten sitter därför här, på skickar-sidan, och hellre utelämnar hashen
+   * än skickar en form servern kommer avvisa: utelämnad hash = omrendering,
+   * vilket är ett SÄMRE men fungerande utfall (PRD § A (d)).
    */
   async skapaEventBilaga(input: {
     eventId: string;
     mall: MallId;
     ersatt?: string;
-  }): Promise<Attachment> {
-    const data = await postEdgeFunction<{ attachment: unknown }>('generate-event-attachment', {
+    kallhash?: string;
+  }): Promise<SkapadEventBilaga> {
+    const data = await postEdgeFunction<unknown>('generate-event-attachment', {
       eventId: input.eventId,
       mall: input.mall,
       ...(input.ersatt !== undefined ? { ersatt: input.ersatt } : {}),
+      ...(arKanoniskKallhash(input.kallhash) ? { kallhash: input.kallhash } : {}),
     });
+    // [MERGE 338.3 x 340.2] Helhets-parsen går via `parsaSkapadEventBilaga`,
+    // som normaliserar det INBÄDDADE `attachment`-fältets legacy-räckvidd
+    // innan `SkapadEventBilagaSchema` validerar hela svaret — se den
+    // funktionens docblock för varför de två skivorna annars vore
+    // oförenliga här.
+    const svar = parsaSkapadEventBilaga(data);
     // [TASK-309.6] `inaktuell` sätts inte här — en NYSKAPAD/nyss-regenererad
     // rads Källhash är per konstruktion den dagens hash (samma anrop skrev
     // båda), så `false` hade varit korrekt men ONÖDIGT: `attachments.byEvent`-
     // invalideringen (mutations-hooken) refetchar listan direkt efteråt, och
     // DEN vägen (`fetchEventAttachments`) härleder `inaktuell` riktigt. Att
     // gissa värdet här hade riskerat att glida isär från den härledningen.
-    return { ...AttachmentSchema.parse(data.attachment), inaktuell: null };
+    return {
+      attachment: { ...svar.attachment, inaktuell: null },
+      promoverad: svar.promoverad,
+      underlagAndrat: svar.underlagAndrat,
+      ersatte: svar.ersatte,
+    };
   }
 
   /**
@@ -1047,57 +1224,30 @@ export class AirtableAdapter implements DataSourceAdapter {
   }
 
   /**
-   * Rendera självbärande HTML till PDF (`DataSourceAdapter.renderPdfFranHtml`
-   * bär hela motiveringen — läs den där, inte här).
+   * [TASK-353] Förhandsgranskning av EN KONKRET inbetalnings kvitto — samma
+   * EF som `previewReceipt` ovan, additiv body. Se
+   * `DataSourceAdapter.previewKvittoForInbetalning` för varför detta är en
+   * egen metod och inte en valfri parameter.
    *
-   * ADRESSEN ÄR PROVISORISK: `test-docraptor-render` är staging-only och
-   * prod-exkluderad. Det är denna rad som byter till den skarpa
-   * renderings-EF:en vid promoveringen (`ADR-103`) — interfacet ovanför och
-   * anroparen ovanför den märker ingenting av bytet.
-   *
-   * `postEdgeFunctionBlob`, inte `postEdgeFunction`: EF:en svarar med rå
-   * `application/pdf`, inte base64-i-JSON som husets övriga PDF-vägar.
-   * Skälet står i hjälparens egen docblock.
+   * `eventId` skickas MEDVETET INTE med: EF:en härleder eventet ur anmälan,
+   * så en klient kan inte para ihop en inbetalning med fel events
+   * bokföringstext. Samma svarsschema (`DocumentPreviewSchema`) i båda
+   * lägena — leveransvägen är identisk (signerad utkast-URL, ADR-124).
    */
-  async renderPdfFranHtml(html: string, namn: string): Promise<Blob> {
-    return await postEdgeFunctionBlob('test-docraptor-render', { html, namn });
+  async previewKvittoForInbetalning(inbetalningId: string): Promise<DocumentPreview> {
+    const data = await postEdgeFunction<unknown>('preview-receipt', { inbetalningId });
+    return DocumentPreviewSchema.parse(data);
   }
 
   /**
-   * Rendera + lagra som transient utkast, returnera signerad URL
-   * (`DataSourceAdapter.renderPdfTillUtkast` bär hela motiveringen — läs
-   * den där, TASK-302.1, `ADR-124`).
-   *
-   * ADRESSEN ÄR PROVISORISK, SAMMA RESONEMANG SOM `renderPdfFranHtml` OVAN:
-   * `test-docraptor-render` med `leverans: 'utkast'` är staging-only och
-   * prod-exkluderad. [RÄTTAT, TASK-302.2] Denna rad SKREV tidigare "byter
-   * till de skarpa preview-EF:erna vid TASK-302.2" — FEL: `ADR-124` § Öppet
-   * säger uttryckligen att `generate-event-attachment` FORTFARANDE ritar med
-   * pdf-lib, och bytet till DocRaptor-vägen är "promoveringens sak, inte
-   * denna ADR:s". `TASK-302.2` bytte BARA leveransformen på de befintliga
-   * pdf-lib-EF:erna (`preview-receipt`/`generate-event-attachment`) —
-   * `renderPdfTillUtkast` här är en HELT SEPARAT metod (egen HTML-input, egen
-   * DocRaptor-rendering) som denna skiva inte rör. Adressen byter i stället
-   * vid en FRAMTIDA promovering (`ADR-103`), om/när DocRaptor-vägen tar över
-   * mall-genereringen — interfacet ovanför märker ingenting av det bytet.
-   *
-   * `postEdgeFunction`, inte `postEdgeFunctionBlob`: den här grenen svarar
-   * JSON (`{ url, utgar }`), inte rå `application/pdf` som `renderPdfFranHtml`
-   * ovan. `.parse()` validerar vid datagränsen (ADR-026).
+   * [TASK-370.4] "Förhandsgranska alla N" — samma EF, TREDJE additiva body.
+   * Se `DataSourceAdapter.previewKvittonForInbetalningar` för hela
+   * motiveringen (egen metod, allt-eller-inget, taket, `requestId`-fältet
+   * som medvetet stryks av `DocumentPreviewSchema.parse`).
    */
-  async renderPdfTillUtkast(
-    html: string,
-    namn: string,
-    params: { eventId: string; typ: UtkastTyp },
-  ): Promise<{ url: string; utgar: string }> {
-    const data = await postEdgeFunction<unknown>('test-docraptor-render', {
-      html,
-      namn,
-      leverans: 'utkast',
-      eventId: params.eventId,
-      typ: params.typ,
-    });
-    return UtkastResultatSchema.parse(data);
+  async previewKvittonForInbetalningar(inbetalningIds: string[]): Promise<DocumentPreview> {
+    const data = await postEdgeFunction<unknown>('preview-receipt', { inbetalningIds });
+    return DocumentPreviewSchema.parse(data);
   }
 
   /**
@@ -1139,5 +1289,62 @@ export class AirtableAdapter implements DataSourceAdapter {
         ? { total: data.total }
         : {}),
     };
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // BETALNINGSDOMÄNEN (TASK-346.4, ADR-128/ADR-129)
+  // ═══════════════════════════════════════════════════════════════════════
+  //
+  // NIO DELEGERINGAR till den DELADE implementationen
+  // (`./betalningsportar.ts`). Samma klass som `recordActivity` ovan:
+  // inbetalningar, kvittoledger och jobbtabeller bor i Supabase Postgres och
+  // har ALDRIG legat i Airtable (ADR-128 beslut 3), så metoderna är
+  // IDENTISKA i båda adaptrarna och ingår inte i Fas E-migrationens
+  // swap-yta.
+  //
+  // `recordActivity` löste samma sak med två ordagrant lika metodkroppar.
+  // Nio portar gånger två adaptrar hade gjort det valet till arton kroppar
+  // att hålla i synk för hand — se `betalningsportar.ts` § filhuvud.
+
+  fetchOppnaBetalningar(): Promise<OppnaBetalningar> {
+    return betalningsportar.hamtaOppnaBetalningar();
+  }
+
+  registreraInbetalning(input: RegistreraInbetalningInput): Promise<RegistreraInbetalningResult> {
+    return betalningsportar.registreraInbetalning(input);
+  }
+
+  raderaInbetalning(inbetalningId: string): Promise<HanteraInbetalningResult> {
+    return betalningsportar.raderaInbetalning(inbetalningId);
+  }
+
+  makuleraInbetalning(input: {
+    inbetalningId: string;
+    skal: string;
+  }): Promise<HanteraInbetalningResult> {
+    return betalningsportar.makuleraInbetalning(input);
+  }
+
+  fetchInbetalningar(params: {
+    anmalanRecordId?: string;
+    personId?: string;
+  }): Promise<Inbetalningslista> {
+    return betalningsportar.hamtaInbetalningar(params);
+  }
+
+  koaKvitton(input: KoaKvittonInput): Promise<KoaKvittonResult> {
+    return betalningsportar.koaKvitton(input);
+  }
+
+  fetchJobbstatus(params?: { jobbId?: string }): Promise<Jobbstatus> {
+    return betalningsportar.hamtaJobbstatus(params);
+  }
+
+  fetchKvittolank(kvittoId: string): Promise<Kvittolank> {
+    return betalningsportar.hamtaKvittolank(kvittoId);
+  }
+
+  skickaKvittoIgen(input: SkickaKvittoIgenInput): Promise<SkickaKvittoIgenResult> {
+    return betalningsportar.skickaKvittoIgen(input);
   }
 }

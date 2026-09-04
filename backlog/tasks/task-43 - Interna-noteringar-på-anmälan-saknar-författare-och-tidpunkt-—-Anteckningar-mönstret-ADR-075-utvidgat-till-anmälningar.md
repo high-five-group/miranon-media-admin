@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-25 03:33'
-updated_date: '2026-08-07 11:19'
+updated_date: '2026-08-28 05:06'
 labels:
   - ready-for-human
 dependencies: []
@@ -26,3 +26,9 @@ Per-anmälan-detaljvyn (task-18.17 byggkrav 10, S83-facit) visar interimet: base
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+AC saknas medvetet: kortet kräver ett 'migreringsbeslut för dagens Notering-data (ADR-kandidat)' plus en additiv basändring (ADR-075-mönstret utvidgat till anmälningar). Kräver Marcus-beslut om datamigrering + ny tabellstruktur i Airtable (staging först, ADR-063/ADR-050). Källa: kortets egen Description. Verifierat av registerhygien-passet 2026-08-28 (redan taggat ready-for-human).
+<!-- SECTION:NOTES:END -->

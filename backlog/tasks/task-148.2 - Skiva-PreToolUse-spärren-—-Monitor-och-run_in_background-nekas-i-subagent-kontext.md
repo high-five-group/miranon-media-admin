@@ -47,7 +47,7 @@ ordinal: 248000
 <!-- SECTION:NOTES:BEGIN -->
 Levererad via PR #860 (merge 5c43978d), kö-CI grön; spärren + conf + testsvit 18/18 live. Skarpbevis-skulden KVARSTÅR ÖPPEN — betalas nästa session (QA 148.7).
 
-[TASK-169, backlog-städet, 2026-08-09] DoD #1-4 bockade mot belägg (natt-grind run 31291660374: status Done, 0 AC/4 DoD obockade — bokföringsfel, inte saknat arbete). #1: AC redan [x]. #2: PR #860 (merge 5c43978d, 2026-08-07T11:06:16Z) — FULL testsvit (Pure+Build, Acceptance, Webblasarbeteende, Lint+Audit+TypeCheck inkl. shellcheck-strict) SUCCESS. #3: PR #860 MERGED, alla jobb gröna. #4: diff scopad till .claude/settings.json, ci.yml, .subagent-vantan-policy.conf, scripts/deny-subagent-vantan.sh, scripts/test-deny-subagent-vantan.sh, kortfilen — matchar frontmatter modified_files. Skarpbevis-skulden (AC #5) betald, verifierad verbatim i tasks/sessions/2026-08-07-session-99.md rad 340-344.
+[TASK-169, backlog-städet, 2026-08-09] DoD #1-4 bockade mot belägg (natt-grind run 31291660374: status Done, 0 AC/4 DoD obockade — bokföringsfel, inte saknat arbete). #1: AC redan [x]. #2: PR #860 (merge 5c43978d, 2026-08-07T11:06:16Z) — FULL testsvit (Pure+Build, Acceptance, Webblasarbeteende, Lint+Audit+TypeCheck inkl. shellcheck-strict) SUCCESS. #3: PR #860 MERGED, alla jobb gröna. #4: diff scopad till .claude/settings.json, ci.yml, .subagent-vantan-policy.conf, scripts/deny-subagent-vantan.sh, scripts/test-deny-subagent-vantan.sh, kortfilen — matchar frontmatter modified_files. Skarpbevis-skulden (AC #5) betald, verifierad verbatim i tasks/sessions/archive/2026-08/2026-08-07-session-99.md rad 340-344.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

@@ -13,6 +13,7 @@ import {
 import type { SvepTyp } from '@/components/svep/types';
 import type { Event } from '@/domain/models/Event';
 import type { Registration } from '@/domain/models/Registration';
+import { fornamn } from '@/lib/fornamn';
 import { Bevakningsrad } from './Bevakningsrad';
 import { ForfallnaBetalningar } from './ForfallnaBetalningar';
 import { Genvagar } from './Genvagar';
@@ -25,10 +26,10 @@ import {
   eventsById,
   type ForfallenRad,
   forfallnaBetalningar,
-  fornamn,
   obekraftadeAnmalningar,
   velNastaEvent,
 } from './hem-derivations';
+import { KvittojobbBanderoll } from './KvittojobbBanderoll';
 import { NastaEvent } from './NastaEvent';
 import { NyaAnmalningar } from './NyaAnmalningar';
 import { SenasteAktivitetKompakt } from './SenasteAktivitetKompakt';
@@ -379,7 +380,36 @@ export function Hem() {
           nyligenSkickade={nyligenSkickadeRader}
         />
 
-        {/* 4. FÖRFALLNA BETALNINGAR */}
+        {/* 4. FÖRFALLNA BETALNINGAR — OVILLKORLIGT, ÄVEN MED MILJÖFLAGGAN PÅ.
+
+            HÄR STOD EN VÄXEL (TASK-346.7): med flaggan på renderades
+            `BetalningarKort`, PRD:ns tre-tal-kort, i stället för detta block.
+            Marcus dom 2026-09-01, efter två iterationer på den formen, river
+            växeln: "Nej det här håller inte. Lotta kommer bli så sjukt
+            förvirrad."
+
+            GRUNDFELET VAR INTE FORMEN UTAN ATT BLOCKET BLANDADE TVÅ JOBB.
+            Kortet LISTADE alla öppna betalningar, medan dess enda knapp
+            ("Skicka påminnelse till alla") opererade på en DELMÄNGD — de
+            rader som är i "Att påminna"-läget. Listan och knappen svarade
+            alltså på olika frågor under samma rubrik, och ingen omdesign av
+            typografin kunde laga det. Det gamla blocket har inte den
+            tvetydigheten: dess tre grupper ÄR påminnelse-modellens tillstånd,
+            och knappen sitter i den grupp den opererar på.
+
+            `BetalningarKort.tsx` är därmed BORTTAGEN, inte parkerad —
+            git-historiken bär den (senast `01255446`), och en oanvänd
+            komponent på disk är en inbjudan att återinföra ett underkänt
+            beslut. PRD:ns kort-rad är inte längre gällande; PRD-texten
+            speglas i skivans amendering, inte här.
+
+            REGISTRERA-INGÅNGEN FLYTTADE, DEN FÖRSVANN INTE: den bor nu som
+            en flagg-gatad rad i `Genvagar` — genvägar är precis vad den är.
+            Kvittojobbets banderoll bor i `KvittojobbBanderoll` strax nedan.
+
+            Komponenten själv är ORÖRD, liksom dess props och
+            påminnelsesvepets urval. Med flaggan av är beteendet exakt vad
+            det alltid varit; med flaggan på är det nu detsamma. */}
         <ForfallnaBetalningar
           anmalDataPending={anmalDataPending}
           regsError={regsError}
@@ -389,6 +419,12 @@ export function Hem() {
           onSkickaPaminnelseAlla={() => setAktivtSvep('paminnelse')}
           nyligenPaminda={nyligenPaminda}
         />
+
+        {/* 4b. KVITTOJOBBET — fristående, och osynligt utom medan ett jobb
+            faktiskt arbetar. Samma klass som Bevakningsraden: en yta som inte
+            finns när den inte har något att säga, och därför inte kan störa
+            blockordningen. Gatar sig själv på miljöflaggan. */}
+        <KvittojobbBanderoll />
 
         {/* 5. GENVÄGAR */}
         <Genvagar />

@@ -12,7 +12,8 @@ import { displayName } from './registration-display';
 /**
  * Eventlänkens vakt — resolution-dialogen (task-284.3; ADR-122 beslut 7; PRD
  * task-284 användarberättelser 6+8+9). Öppnas från en rad vars
- * `eventmatchning` är `'Avviker'` eller `'Utan event'` (`AnmalningarList`) och
+ * `eventmatchning` är `'Avviker'` eller `'Utan event'` (`AnmalningarSida`,
+ * f.d. `AnmalningarList`, `TASK-299.5`) och
  * kopplar om anmälan till rätt event UTAN att Lotta någonsin öppnar
  * datakällan.
  *

@@ -1,26 +1,33 @@
+import type { Page } from '@playwright/test';
 import { http } from 'msw';
 import type { DocumentSources } from '../../src/domain/models/DocumentSources';
 import { VISUAL_EVENT_ID } from '../support/fixturvarld/fixture-data';
 import { EF, json } from '../support/fixturvarld/handlers';
-import { expect, test } from './support/acceptance-bas';
+import { expect, test } from './acceptance-bas';
 
 /**
- * TASK-309.8, ADR-125 § 6 — `DokumentYta.tsx`s mallkatalog (`MallRad`) är
- * genereringsvyns ENTRÉ efter promoveringen. Prototypens egen listvy
- * (`ListaVy`, riven) hade samma sorts rad — men denna fil bevisar den
- * SKARPA, RIKTIGA raden: att "Skapa Bekräftelsebilaga"/"Skapa
- * Deltagarinformation" faktiskt navigerar in i `GenereringsVy` (inte bara
- * att ariaSnapshot-paret matchar OM man redan står i genereringsvyn — se
- * `dokument-generering-promoverings-grind.spec.ts` för den delen), och att
- * "Tillbaka till Dokument" tar Lotta hela vägen tillbaka till listan.
+ * TASK-309.8, ADR-125 § 6 — `DokumentYta.tsx`s mallkatalog är
+ * genereringsvyns ENTRÉ. Filen bevisar den SKARPA vägen: att
+ * "Bekräftelsebilaga"/"Deltagarinformation" faktiskt navigerar in i
+ * `GenereringsVy` (inte bara att ariaSnapshot-paret matchar OM man redan
+ * står i genereringsvyn — se `dokument-generering-promoverings-grind.spec.ts`
+ * för den delen), och att "Tillbaka till Bilagor" tar Lotta hela vägen
+ * tillbaka till listan.
  *
- * ARBETET SOM GJORDES INTE ÄR ETT ARIASNAPSHOT-PAR (registrerat, avsiktligt
- * gap): `MallRad`s EGEN form (namn/täckning/knapp) ÄR ny mot den gamla,
- * generiska katalogposten (`ADR-125` § 6-kommentaren i `DokumentYta.tsx`)
- * — det finns inget "före" att jämföra den mot i den skarpa listan. Detta
- * test bevisar i stället att den NYA formen fungerar, inte att den är
- * identisk med något föregående.
+ * [T176, 2026-08-29] KATALOGEN ÄR EN MENY, INTE LISTRADER. `MallRad` är
+ * riven: mallarna är HANDLINGAR (man skapar ett dokument), inte dokument,
+ * och de bodde tidigare som rader i dokumentlistan där två av sex poster låg
+ * under rullningskanten i prod. Entrén är nu `Skapa bilaga ▾` i kortets
+ * handlingsrad (`SkapaDokumentMeny` i `DokumentYta.tsx`), med en `menuitem`
+ * per mall. VÄGEN är oförändrad — samma nuqs-nycklar `?vy=generering` +
+ * `?mall=` — så testerna nedan är SELEKTOR-uppdaterade, inte omskrivna.
  */
+
+/** Öppnar "Skapa bilaga"-menyn och väljer posten `namn`. */
+async function valjSkapaDokument(page: Page, namn: string) {
+  await page.getByRole('button', { name: 'Skapa bilaga' }).click();
+  await page.getByRole('menuitem', { name: namn }).click();
+}
 
 const MOCK_SOURCES: DocumentSources = {
   event: {
@@ -74,9 +81,7 @@ test.describe('Dokument-ytan — mallkatalogens entré in i genereringsvyn (TASK
     await page.goto(`/mer/dokument?event=${VISUAL_EVENT_ID}`);
     await expect(page.getByTestId('dokument-yta')).toBeVisible();
 
-    const skapaKnapp = page.getByRole('button', { name: 'Skapa Bekräftelsebilaga' });
-    await expect(skapaKnapp).toBeVisible();
-    await skapaKnapp.click();
+    await valjSkapaDokument(page, 'Bekräftelsebilaga');
 
     await expect(page.getByTestId('generering-vy')).toBeVisible();
     await expect(page.getByRole('heading', { level: 1, name: 'Bekräftelsebilaga' })).toBeVisible();
@@ -86,9 +91,9 @@ test.describe('Dokument-ytan — mallkatalogens entré in i genereringsvyn (TASK
     // — navigeringen in i genereringsvyn tappar inte vilket event Lotta stod på.
     await expect(page).toHaveURL(new RegExp(`event=${VISUAL_EVENT_ID}`));
 
-    await page.getByRole('button', { name: 'Tillbaka till Dokument' }).click();
+    await page.getByRole('button', { name: 'Tillbaka till Bilagor' }).click();
     await expect(page.getByTestId('dokument-yta')).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Skapa Bekräftelsebilaga' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Skapa bilaga' })).toBeVisible();
   });
 
   test('"Skapa Deltagarinformation" navigerar in i genereringsvyn med rätt mall', async ({
@@ -105,7 +110,7 @@ test.describe('Dokument-ytan — mallkatalogens entré in i genereringsvyn (TASK
     await page.goto(`/mer/dokument?event=${VISUAL_EVENT_ID}`);
     await expect(page.getByTestId('dokument-yta')).toBeVisible();
 
-    await page.getByRole('button', { name: 'Skapa Deltagarinformation' }).click();
+    await valjSkapaDokument(page, 'Deltagarinformation');
 
     await expect(page.getByTestId('generering-vy')).toBeVisible();
     await expect(

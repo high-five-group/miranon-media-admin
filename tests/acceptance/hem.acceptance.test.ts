@@ -5,7 +5,7 @@ import type { z } from 'zod';
 import type { EventSchema, RegistrationSchema } from '../../src/domain/schemas';
 import { EF, json } from '../support/fixturvarld/handlers';
 import { FIXTUR_EPOST } from '../support/fixturvarld/hermetic';
-import { expect, type Page, test } from './support/acceptance-bas';
+import { expect, type Page, test } from './acceptance-bas';
 
 /**
  * Hem-vyn — Morgonkollen, V1 "Lugna morgonen" (TASK-243.3, full omskrivning

@@ -582,7 +582,7 @@ vyn, som inte läser `?variant=`, opåverkad).
 ## KONVERGENS-PASSET (S93 Del 3, 2026-08-03) — variant A byggs ut till HELA strukturen
 
 Marcus 8/8-kvitterade beslut (Del 3 § Grillad samsyn, se
-`tasks/sessions/2026-08-02-session-93.md` Del 3 + Tillägget — kravkällan för
+`tasks/sessions/archive/2026-08/2026-08-02-session-93.md` Del 3 + Tillägget — kravkällan för
 detta pass) tar variant A från "toppens tre rader" till hela den grillade
 eventsida-strukturen. **Allt uttrycks i BEFINTLIGT formspråk** (Marcus-krav,
 Del 3 beslut 3): inga nya tokens, ingen ny radgrammatik, inga nya

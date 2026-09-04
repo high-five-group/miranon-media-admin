@@ -44,7 +44,7 @@ ordinal: 297000
 PREMISS-PASS-DIVERGENS (bokförd öppet, ADR-086): uppdraget hänvisade Ö8-
 instanserna (de fem hub/spoke-dubblerade raderna) till "PRD:n/Del 10-
 underlaget" — verifierat mot disk: varken TASK-161-kortet eller
-tasks/sessions/2026-08-07-session-99.md § Del 10 enumererar dem. Ingen
+tasks/sessions/archive/2026-08/2026-08-07-session-99.md § Del 10 enumererar dem. Ingen
 "Explore-kartan"-fil hittades i repot. Agenten identifierade de fem
 raderna själv genom systematisk grep-jämförelse mellan hub-CLAUDE.md
 § Instruktioner och spoke-CLAUDE.md § Instruktioner — se slutrapport för

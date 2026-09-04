@@ -186,3 +186,82 @@ löpande drift.
 **Landning i samma svep:** `docs/byggplan.md` §4-milstolpe-blocket (Mål +
 Scope-punkt (c)) och `CLAUDE.md` § "Vad är detta projekt?" amenderade för att
 spegla samma omdefiniering.
+
+### 2026-08-30 — Öppen rivning av Beslut 2 och 6 FÖR BETALNINGSDOMÄNEN: pengarna flyttar till Postgres, basen bär en app-skriven spegel (S113 Del 11)
+
+Grillningen om Lottas betalningsflöde (S113 Del 11, tretton kvitterade
+beslut) flyttar inbetalningar, kvittoledger och jobbtabeller ut ur
+Airtable till Supabase Postgres. Lagringsvalet och datamodellen bor i
+[`ADR-128`](ADR-128-inbetalningen-som-sanning-postgres-och-spegeln.md);
+denna post bär **rivningen**, i samma form som posten 2026-08-14 ovan.
+
+Marcus beslut, verbatim (Del 11, Postgres-beslutet 11/13): *"Om Airtable
+är flaskhalsen för något så här viktigt så funderar jag skarpt på om vi
+ska migrera det som måste migreras för just detta redan nu till Supabase
+… jag vill inte att vi ger Lotta något 'Halvbra'."*
+
+**Detta är en RIVNING, inte ett undantag — och skillnaden är avsiktlig.**
+[`ADR-110`](ADR-110-aktivitetsloggens-lagring-supabase-inte-airtable.md)
+kunde kalla sitt fall en *"medveten, avgränsad ADR-063-avvikelse"* därför
+att `activity_log` — dess egna ord — *"har ALDRIG legat i Airtable … och
+detta beslut flyttar ingenting UT ur basen"*. Kvittoledgern LIGGER i
+basen (`ADR-109` beslut 5, tabellen `Kvitton`, staging
+`tblk8fZcArXPpRYnX`) och flyttas ut. Att låna `ADR-110`:s ord hade varit
+att kalla en flytt för en nyetablering. Rättelsen kommer ur den
+adversariella granskningen
+([`verifiering-kvittoskivning-afk-natt-2026-08-30.md`](../research/verifiering-kvittoskivning-afk-natt-2026-08-30.md)
+§ 4), som fällde ordvalet innan ADR-128 skrevs.
+
+**Vad som rivs, avgränsat till betalningsdomänen.**
+
+- **Beslut 2 (*"Resolution sker I BASEN"*)** gäller inte längre för
+  pengarna. Airtables strukturella väggar för denna domän — P1 (ingen
+  unique-constraint på ett skrivbart fält), P2 (inga transaktioner) och
+  P3 (server-side idempotens strukturellt omöjlig),
+  [`airtable-constraints.md`](../reference/airtable-constraints.md) §A —
+  är inte defekter som kan lösas I basen. De är plattformens form. En
+  bokföringsserie som kräver atomär numrering och en unik nyckel kan
+  därför inte maxas fram; `ADR-109` beslut 2 byggde ett helt
+  kompensationsprotokoll just för att komma runt dem.
+- **Beslut 6 (*"Supabase-migration är ett separat SENARE spår, INTE en
+  ersättning"*)** gäller inte längre för betalningsdomänen. Den flyttar
+  NU. Marcus egen avgränsning står i citatet ovan: *det som måste
+  migreras för just detta*.
+
+**Vad som INTE rivs — och det är det mesta.**
+
+- **Beslut 1 står oförändrat.** Basen är fortsatt en förstklassig
+  leverabel som maxas kontinuerligt, och den är fortsatt sanning för
+  **anmälan, event och priser**. `ADR-128` beslut 5 säger det
+  uttryckligen och bygger på det: basen får nya numeriska prisfält
+  BREDVID fritexten (som aldrig byter typ, eftersom bilagemallarna läser
+  den) och en `Saknas (kr)`-formel.
+- **Beslut 2 står för allt annat än pengarna.** Avtäckta databrister i
+  anmälnings-, event- och persondomänerna löses fortsatt I basen,
+  kontinuerligt, enligt posten 2026-08-14.
+- **Beslut 3 står:** defekt-registret är fortsatt KRAVSPECEN.
+- **Beslut 4 står:** app-sidans "beräkna från källan" är oförändrad — och
+  härledningen av betalningsfacken ur inbetalningarna
+  (`ADR-128` beslut 2) är faktiskt samma princip tillämpad på pengar:
+  räkna ur händelserna, lita aldrig på en handunderhållen kumulativ
+  flagga.
+- **Beslut 5 står:** slutgenomlysningen är kvar som milstolpe.
+- **Beslut 6 står för allt annat.** Detta är EN domän som flyttar, på ett
+  namngivet skäl. Det är inte startskottet för Fas E, och det ger ingen
+  framtida domän rätt att flytta utan sitt eget beslut.
+
+**Basen blir INTE fattigare — den får en spegel.** Appen skriver de två
+valfälten, `Summa inbetalt (kr)` (ett talfält, inte en rollup — raderna
+som skulle summeras ligger i en annan databas) och kvittonumret på
+`Anmälningar`, så att Lottas vyer, formulär, automation A7 och rollups
+fungerar orörda (`ADR-128` beslut 5). Att basen förblir användbar för sin
+ägare är alltså ett konstruktionsvillkor i flytten, inte en förhoppning.
+Blast-radius-noten ovan gäller oförändrat: spegelfälten är additiva, och
+prod-ändringarna är Marcus-moment per tabell.
+
+**Vad detta kostar, öppet.** Sanningen blir tvålagrig — anmälan i basen,
+pengarna i Postgres — med en spegelskrivning som kan fallera (omförsök,
+eftersläpning synlig i appen) och en konsistensvakt som larmar på
+inbetalningar vars anmälan försvunnit. Priset är redovisat i `ADR-128`
+§ Konsekvenser och bokförs här för att den som läser ADR-063 ensam ska se
+det.

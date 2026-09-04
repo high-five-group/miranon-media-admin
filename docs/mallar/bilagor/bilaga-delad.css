@@ -91,6 +91,46 @@
   --mm-bilaga-hyperlank: #0563c1;
   --mm-bilaga-accent-bla: #4472c4;
   --mm-bilaga-morkbla-ram: #2f5597;
+  /*
+   * Sidfotens höjd = dess HÖGSTA barn. .sidfot har tre: .ikonruta-ram
+   * (31,5 mm, med .ikonruta-bildtext INUTI sig — inte staplad under) och
+   * .ikonruta-omslag (36 mm). Bokomslaget är alltså det som bestämmer, och
+   * 36 mm är hämtat DÄRIFRÅN — inte från ikonrutorna.
+   *
+   * Namngiven här för att .yttre-ram ska kunna reservera plats åt den
+   * absolut positionerade sidfoten utan att talet dubbleras. Ändras något av
+   * de två barnens höjd måste MAX-värdet räknas om här — det finns ingen
+   * CSS-mekanism som gör det åt oss, och review-grinden fällde just den här
+   * raden en gång för att den påstod fel källa (2026-08-27, PR #2019).
+   */
+  --mm-bilaga-sidfot-hojd: 36mm;
+  /*
+   * Bekräftelsebilagans symmetriska sid-padding. Namngiven av SAMMA skäl som
+   * raden ovan: värdet konsumeras på TVÅ ställen (.sida--bekraftelses padding
+   * och .yttre-rams min-height) och måste hållas i synk — ändras det ena utan
+   * det andra rivs en-sida-garantin tyst. Review-grinden fällde exakt den
+   * dupliceringen på PR #2020 (2026-08-27), samma buggklass som redan fällts
+   * en gång på #2019.
+   */
+  --mm-bilaga-sida-padding: 6.5mm;
+  /*
+   * INNEHÅLLSSKALAN — hur mycket brödtexten och innehållslistorna krymps för
+   * att bilagan ska rymmas på EN sida. 1 = orörd storlek.
+   *
+   * Sätts av renderaren, inte här: `renderaMallPdf` i _shared/mall-render.ts
+   * renderar först med 1, räknar sidorna i den returnerade PDF:en, och gör om
+   * anropet med en mindre skala om det blev fler än en. Se den filens
+   * § HÖJDANPASSNINGEN för trappan och golvet.
+   *
+   * VARFÖR DEN BEHÖVS: Marcus krav 2026-08-27 är "allt på en sida, punkt".
+   * Utan skalning gäller det bara så länge innehållet råkar rymmas — mätt
+   * gräns är ~1800 tecken beskrivning plus 16 agendapunkter. RIM 2, RIM 3,
+   * Fjärrskådning och Psionautics har ännu TOMMA standardtexter; när Roger
+   * och Lotta fyller dem vet ingen om de ryms. Skalningen gör "en sida" till
+   * en egenskap hos mallen i stället för till tur — samma sak Lotta gör för
+   * hand i PowerPoint när texten blir för lång.
+   */
+  --mm-bilaga-innehalls-skala: 1;
   --mm-bilaga-gront: #548235;
   --mm-bilaga-gult: #ffff00;
   --mm-bilaga-gra-ram: #d9d9d9;
@@ -152,10 +192,32 @@ body {
    * Förlagan: ramens ytterkant 7,90 mm från vänster kant och 8,37 mm från
    * höger — 0,47 mm asymmetri som är handplacering i PowerPoint, inte design.
    * Vi sätter medelvärdet 8,1 mm på båda sidor (se RAPPORT.md § Öppna frågor).
-   * Topp 9,75 mm, botten 6,03 mm — båda mätta, båda behållna som de är.
+   * Topp/botten var 9,75 / 6,03 mm i förlagan — 3,72 mm asymmetri som är
+   * handplacering i PowerPoint. Marcus fällde den vid prod-röktestet
+   * 2026-08-26 ("den blåa ramen är inte helt centrerad på pappret").
+   *
+   * VÄRDET 6,5 mm ÄR MÄTT MOT FÖRLAGAN, inte valt. Metod: `npm run mall:pdf`
+   * renderar via DocRaptor (samma Prince som skarp drift), och sektionernas
+   * mm-koordinater läses ur BÅDA PDF:erna med `pdftotext -bbox` — vår mot
+   * ~/Desktop/Miranon Media/exempelpdokument/bekräftelsebilaga-exempel.pdf. Medelvärdet 7,89 mm
+   * (samma summa som förlagan) gav 2 sidor med RIM 1:s KOMPLETTA agenda —
+   * 30 punkter, som originalbilagan faktiskt har. 6,5 mm symmetriskt ger
+   * EN sida och lägger sektionerna inom 0,5 mm från originalets:
+   *   rubrik      36,8 mm  (originalet 36,7)
+   *   sista punkt 249,1 mm (originalet 249,4)
+   *   sidfot      277,6 mm (originalet 278,1)
+   * Botten blir 0,47 mm STÖRRE än förlagans 6,03 mm, alltså ingen ny
+   * utskriftsrisk. Ändra inte utan att köra `npm run mall:pdf` mot en
+   * KOMPLETT agenda — standardfixturen är för kort för att fälla felet.
    */
-  padding: 9.75mm 8.1mm 6.03mm;
-  display: flex; /* så ramen når sidfoten även när innehållet är kort */
+  padding: var(--mm-bilaga-sida-padding) 8.1mm;
+  /*
+   * INTE `display: flex`. Se § PRINCE OCH FLEXBOX nedan — den yttre
+   * flex-containern plus `.yttre-ram`s `flex: 1 1 auto` fick Prince att
+   * trycka sidfoten förbi arkets nederkant, vilket gav TVÅ sidor oavsett hur
+   * kort innehållet var. Ramen når sidfoten via `min-height` i stället.
+   */
+  display: block;
 }
 
 .sida--deltagarinformation {
@@ -194,10 +256,20 @@ body {
    */
   border: 2.25pt solid var(--mm-bilaga-morkbla-ram);
   border-radius: 15.7mm;
-  padding: 0 14.79mm 2.92mm;
-  flex: 1 1 auto;
-  display: flex;
-  flex-direction: column;
+  /*
+   * padding-top 2,92 mm ger loggan luft till ramens innerkant. Den var 0 —
+   * loggan rörde ramen visuellt, Marcus andra fångst vid samma röktest
+   * ("Loggan ligger i överkant nästan PÅ den blåa ramen"). Att flytta ramen
+   * på sidan löser INTE detta: ramens position och avståndet till dess
+   * första barn är två oberoende egenskaper.
+   *
+   * padding-bottom reserverar sidfotens plats, eftersom sidfoten är absolut
+   * positionerad (se .sidfot) och därmed ligger utanför flödet.
+   */
+  padding: 2.92mm 14.79mm calc(2.92mm + var(--mm-bilaga-sidfot-hojd) + 1mm);
+  min-height: calc(297mm - var(--mm-bilaga-sida-padding) * 2);
+  display: block;
+  position: relative;
 }
 
 .loggarad {
@@ -442,7 +514,16 @@ body {
   justify-content: space-between;
   align-items: center;
   gap: 6mm;
-  margin-top: auto; /* ramen är sidhög — sidfoten ligger i dess nederkant */
+  /*
+   * `margin-top: auto` krävde en flex-column-förälder, och just den
+   * konstruktionen är det Prince räknar fel (§ PRINCE OCH FLEXBOX).
+   * Absolut positionering mot ramens nederkant ger samma visuella resultat
+   * och är väl understött i sidbrytande renderare.
+   */
+  position: absolute;
+  left: 14.79mm;
+  right: 14.79mm;
+  bottom: 2.92mm;
 }
 
 .ikonruta {
@@ -520,4 +601,65 @@ body {
   font-weight: 700;
   margin-top: 1.75mm;
   white-space: nowrap;
+}
+
+/*
+ * ═══ § PRINCE OCH FLEXBOX — LÄS INNAN DU ÅTERINFÖR display: flex ═══
+ *
+ * Bekräftelsebilagan renderades i TVÅ sidor oavsett innehåll: med
+ * standardfixturen låg 141 ord på sida 1 med 161 mm tomt under, medan
+ * sidfoten ensam hamnade på sida 2. Orsaken var INTE textmängden, marginalen
+ * eller paddingen — det var flexbox.
+ *
+ * Konstruktionen som föll:
+ *
+ *     .sida--bekraftelse { display: flex }              (row-container)
+ *     .yttre-ram         { flex: 1 1 auto;
+ *                          display: flex;
+ *                          flex-direction: column }
+ *     .sidfot            { margin-top: auto }
+ *
+ * Prince dokumenterar själv luckan: `align-self: stretch` för flex-items i
+ * ROW-containers implementerades inte, och stödet har byggts ut stegvis
+ * (princexml.com/forum/topic/2132, /2566, /4471). Mätt hos oss 2026-08-27
+ * med den lokala PDF-loopen (`npm run mall:pdf`), fyra experiment à ~5 s:
+ *
+ *   EXP1  .sida margin: 10mm auto -> 0        2 sidor  (marginalen oskyldig)
+ *   EXP2  båda flex -> block                  1 sida   (men sidfoten flöt upp)
+ *   EXP3  bara yttre flex -> block            2 sidor  (column-flexen är boven)
+ *   EXP4  block + absolut sidfot              1 sida   ✅ formen som gäller nu
+ *
+ * KONSEKVENS FÖR GÅRDAGENS MÄTSERIE: den påstådda "knivseggen" — att varje
+ * avvikelse på 0,25 mm i padding-fördelningen knuffade dokumentet till två
+ * sidor, och att sambandet padding->sidantal var icke-monotont med
+ * en-sides-öar vid 6,25-6,75 och 5,0 mm — var symptom på DETTA, inte en
+ * egenskap hos dokumentet. Tolv Edge Function-deploys (v37->v49) mätte en
+ * flexbox-bugg. Den hypotes om Prince och absoluta positioner som bokfördes
+ * i PR #2014 är därmed överspelad.
+ *
+ * Vill du återinföra flexbox här: gör det bara med en mätning i
+ * `npm run mall:pdf -- bekraftelsebilaga` som visar 1 sida, och kontrollera
+ * med en LÅNG kursbeskrivning, inte bara standardfixturen.
+ */
+
+/*
+ * Höjdanpassningens verkan. Bara brödtexten och innehållslistorna skalas —
+ * logga, rubrik, inforuta och sidfot behåller sin mätta storlek, eftersom de
+ * är de element som gör bilagan igenkännlig mot förlagan. Krympningen tas
+ * alltså ur löptexten, precis som en människa hade gjort.
+ *
+ * MÄTT (npm run mall:pdf, 2026-08-27) på ett fall 25 % större än RIM 1:s
+ * verkliga innehåll — 1829 tecken beskrivning + 20 agendapunkter:
+ *   skala 1,00 -> 2 sidor · 0,95 -> 2 · 0,90 -> 2 · 0,85 -> EN sida
+ * Marginalerna är i mm och skalar därför INTE med font-size; effekten är
+ * medvetet mindre än proportionell, och trappan i mall-render.ts är satt
+ * efter den mätningen, inte efter matematiken.
+ *
+ * Fallbacket i var() är avsiktligt: renderas mallen av något som INTE sätter
+ * variabeln (den lokala granskningsvägen, en framtida konsument) blir
+ * resultatet oskalat i stället för trasigt.
+ */
+.sida--bekraftelse .brodtext,
+.sida--bekraftelse .innehallslistor {
+  font-size: calc(1em * var(--mm-bilaga-innehalls-skala, 1));
 }

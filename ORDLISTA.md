@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-23
+updated: 2026-09-03
 review_by: 2027-01-02
 status: stable
 ---
@@ -52,6 +52,69 @@ följer Roger & Lotta; mappningen är PRD-materia.
 **Anmälan** — en persons begäran att delta i ett specifikt event.
 *Undvik:* bokning, registrering.
 *I koden:* `Registration`.
+
+**Inbetalning** — en betalning som faktiskt kommit in på Miranon Medias konto
+(Swish, Bankgiro eller Plusgiro): en post per bankrad, med belopp, betalsätt,
+datum och den anmälan den gäller. Inbetalningen är ARBETSENHETEN i Lottas
+betalningsflöde (grillad samsyn S113, 2026-08-30): anmälans fack
+Anmälningsavgift/Slutbetalning härleds ur inbetalningarna mot eventets
+numeriska pris, och ett kvitto avser exakt en inbetalning. Handlingen att
+skapa en inbetalning i appen heter *registrera betalning*.
+*Undvik:* avstämning (betyder NÄRVARO i basen — se Deltagande), avprickning
+(den gamla handlingen att flippa facket för hand), betalning (överbegreppet;
+säg inbetalning när pengarna kommit in), transaktion om VÅR bokföringspost
+(transaktion är bankens rad, se nästa post — skillnaden är att inbetalningen
+har en anmälan och en plats i bokföringen).
+*I koden:* `Inbetalning` (tabell `Inbetalningar`, planerad).
+
+**Transaktion** — EN rad i en fil eller ett svar från banken: datum, belopp,
+namn, telefon, meddelande och bankens egen referens. Transaktionen är
+BANKENS påstående, innan någon avgjort vad den gäller — den har ingen anmälan,
+ingen plats i bokföringen och inget kvitto. Vid import matchas den mot öppna
+betalningar och blir en *Inbetalning* först när Lotta bekräftar. Samma typ
+bär Swish-rapporten, girofilen och ett framtida bank-API (TASK-346.10,
+PRD TASK-346 beslut 8: "en typ, inget ramverk").
+*Undvik:* inbetalning (det är vad transaktionen BLIR, inte vad den är),
+betalning, bankrad (talspråk).
+*I koden:* `Transaktion` (`src/domain/models/Transaktion.ts`).
+
+**Förhandsgranskning (kvitton)** — handlingen att se ett väntande kvitto
+som det kommer att se ut INNAN Lotta trycker "Skicka N kvitton", och
+dokumentet den öppnar. Renderas som utkast av `preview-receipt` med
+platshållaren "FÖRHANDSVISNING" i stället för kvittonummer (numret tilldelas
+först vid utskick). Två former, grillad samsyn S116 fråga 1: **per rad** (ett
+kvitto) och **alla** (ett dokument med försättsblad + en sida per väntande
+kvitto, i ett fönster). Skild från *visa* på en redan skickad rad, som hämtar
+den faktiskt skickade PDF:en ur Storage (`kanVisa`, `panel-harledningar.ts`).
+*Undvik:* förhandsvisning (knappen heter Förhandsgranska, TASK-353 — ordet
+står kvar bara i EF:ens platshållartext), efterhandsgranskning.
+*I koden:* `kanForhandsgranska` (`inkorg-harledningar.ts`),
+`useForhandsgranskaKvitto` (`data/mutations/kvitton.ts`).
+
+**Försättsblad** — första sidan i förhandsgranskningen av *alla* väntande
+kvitton: ett kontrollblad med kvittots sidhuvud (logga + rubrikblock),
+antal kvitton och tidpunkt, en tabell med namn · mottagarens e-post · event
+· belopp · betalsätt per kvitto, en summarad, och notraden "Kvittonummer
+tilldelas när kvittona skickas. Ingenting är skickat." Husets första mall
+utan förlaga hos Lotta — Marcus är facit (S116 fråga 2–3). Finns bara i
+förhandsgranskningen, aldrig i ett skickat kvitto.
+*Undvik:* sammanställning, omslag, cover.
+
+**Kontoutdrag** — den fil Lotta laddar ner ur internetbanken och matar in i
+appen: en rad per *Transaktion*. Termen är UI-språket sedan 2026-09-01 (Marcus
+ordagrant: *"'bankrapport' är typiskt dålig svensk översättning av 'bank
+statement'"*) och står på öppningsknappen ("Importera kontoutdrag"), på
+dialogens rubrik och i dialogens tillgängliga namn — `aria-label` räknas som
+UI-text, den ÄR ytans namn. Swish-hänvisningen står kvar i brödtexten; utan den
+vet Lotta inte vilken av bankens filer som avses. Kvalificeringen "per bank" är
+struken på Marcus order (*"Ta bort 'per bank', de har bara en bank."*) — koden
+bär visserligen ett bankmappnings-minne per banknamn, men generaliteten fick en
+engångsuppgift att låta återkommande.
+*Undvik:* bankrapport (den ersatta termen), rapportfil (den ersatta
+knapptexten — knappen heter "Ladda upp fil"), bank statement.
+*I koden:* identifierarna är ORÖRDA — `SwishImport`, `bankimport-*`. Docblocket
+i `bankimport-parser.ts` använder fortfarande "bankrapport" om FORMATET; det är
+kod-intern prosa, inte UI-text.
 
 **Användarinbjudan** — en engångs- och tidsbegränsad inbjudan som ger en
 människa ett konto i appen, med roll och e-postadress låsta av inbjudan
@@ -185,8 +248,9 @@ metadatat och eventkopplingen i basen (delad hemvist, ADR vid bygget).
 Varje bilaga bär dessutom en **räckvidd** (S108-grillningen; ersätter
 ADR-118:s ursprungliga form). Räckvidden är ortogonal mot dokumentklassen:
 klassen är innehållets ursprung, räckvidden dess spridning.
-*Undvik:* dokument (tvetydigt — Dokument är YTAN i Mer där bilagor hanteras),
-attachment.
+*Undvik:* dokument (ytan i Mer heter **Bilagor** sedan 2026-08-29, S113 —
+hette Dokument dessförinnan; "dokument" står kvar bara där ordet inte är en
+bilaga, t.ex. kvittots förhandsvisning), attachment.
 
 **Räckvidd** — vilka event en bilaga gäller för. Antingen **ett utpekat
 event** (en direktlänk), eller ett **filter** över tre valfria axlar:
@@ -194,17 +258,29 @@ Familj · Event · Plats (familjen kan smalnas till ett **Steg**). Axlarna
 kombineras med OCH — *Familj RIM + Plats
 Rönninge* betyder "RIM-event som ligger i Rönninge", aldrig unionen av de
 två. En tom axel begränsar inte, så *inga axlar satta* betyder alla event.
-Kvitterad S108-grillningen (frågorna 4 och 9); ersätter ADR-118 beslut 1:s
-"exakt EN räckvidd, aldrig kombinerbart" och dess separata "alla
-event"-läge, som blir "inga filter satta".
+Filtret lagras i basen som EN singleSelect-option, **"Gemensam"**
+(`Bilagor.Räckvidd`), oavsett hur många av de tre axlarna som är satta —
+det är matchningen i kod, inte basvärdet, som avgör om en gemensam bilaga
+gäller alla event eller ett smalare urval (`TASK-338`). Kvitterad
+S108-grillningen (frågorna 4 och 9); ersätter ADR-118 beslut 1:s "exakt EN
+räckvidd, aldrig kombinerbart" och dess separata "alla event"-läge, som blir
+"inga filter satta".
 *Undvik:* scope, kurstyps-räckvidd (kurstyp är inte ett kanoniskt begrepp —
 se Eventinnehåll).
 
 **Gemensam bilaga** — en bilaga vars räckvidd är ett filter snarare än ett
 utpekat event: syns automatiskt, märkt med räckviddsbadge, i varje berört
-events dokumentlista och i Åtgärds-sidans bilageväljare; byts/raderas ENDAST
-i sitt räckviddsläge på Dokument-ytan, aldrig ur ett enskilt events kontext
-(S107-grillningen, ADR-118 beslut 3 — oförändrat av S108).
+events dokumentlista och i Dokument-ytans egen listning; byts/raderas
+ENDAST i sitt räckviddsläge på Dokument-ytan, aldrig ur ett enskilt events
+kontext (S107-grillningen, ADR-118 beslut 3 — oförändrat av S108). Badgens
+texten beror på vilka axlar som är satta: "Alla event" (inga axlar) ·
+"RIM · Steg 1" (familj + steg) · "Rönninge" (bara plats) · "RIM · Rönninge"
+(familj + plats) · "RIM · Steg 1 · Rönninge" (alla tre) — Kursnivåns
+basfältnamn ("Nivå 1") mappas till "Steg 1" i presentationslagret, se
+§ Steg. Badgen visas i Dokument-ytan; sedan `TASK-339` (Marcus 2026-08-29)
+INTE längre i Åtgärds-sidans bilageväljare, där den konkurrerade visuellt
+med kryssrutan och filnamnet — varifrån dokumentet kommer är inte ett
+beslutsunderlag i den ytan.
 *Undvik:* universell bilaga (arbetsbegreppet under grillningen), global
 bilaga, statisk bilaga (förväxlas med dokumentklass A).
 
@@ -559,3 +635,61 @@ skrivningen går först när fönstret löpt ut (grillad samsyn S103 Del 15).
 incheckade; ångra efter kvittensfönstret bor här (bocka ur = vanlig
 statusskrivning tillbaka).
 *Undvik:* klarlista, historik (upptaget av andra ytor).
+
+**Kvar att betala** — det belopp som återstår på en anmälan: gällande pris
+minus summan av dess inbetalningar. Kanoniserad UI-term över SAMTLIGA
+betalningsytor 2026-09-01 (Marcus-iterationen) och ersätter både *Saknas* och
+*öppen/öppna*. Böjs efter plats: som ETIKETT står termen först ("Kvar att
+betala · 1 500 kr"), i LÖPANDE TEXT står beloppet först ("1 500 kr kvar att
+betala") — etikett-först läser annars som en tabellrad som hamnat i en mening.
+Noll uttrycks **"Inget kvar att betala"**, som är ett svagare påstående än
+"Allt betalt" och därför det som används när priset kan vara okänt: basens
+`Saknas (kr)` är BLANK när formeln inte kan räkna fram ett pris, och
+`BLANK() > 0` är falskt i Airtable. De två meningarna hålls isär med avsikt —
+ytan påstår aldrig det starkare av dem om ett okänt pris.
+*Undvik:* Saknas (den ersatta etiketten), öppen/öppna betalning (den ersatta
+jargongen — i UI heter det numera *kvarvarande betalning*), obetalt, restskuld,
+"täcker hela priset" (den ersatta heltäcknings-meningen; den mätte en
+täckningsgrad mot ett pris Lotta inte har framför sig).
+*I koden:* identifierarna är ORÖRDA — `saknas`, `saknasTotalt`,
+`useOppnaBetalningar`, `OppenBetalning`, `queryKeys.betalningar.oppna`, och
+basens fält `Saknas (kr)`. Två strängar med SAMMA ord men annan betydelse är
+också orörda: "Saknas" som tomvärdesmarkör för e-post i deltagarregistret, och
+"Öppna" som VERB ("Öppna detaljer", "Öppnar kvittot …") — det är inte
+domänjargong, det är vad knappen gör.
+
+**Granskningsblocket** — betalningsinkorgens block över de betalningar Lotta
+registrerat i den PÅGÅENDE sessionen: en rad per registrering (namn · belopp ·
+betalsätt · kvittostatus) med "Skicka N kvitton" som blockets egen avslutande
+handling. Det är svaret på PRD-berättelse 7–8 — registrera alla åtta först,
+GRANSKA, tryck EN gång — och ersätter den nakna knapp som stod här förut
+("Skicka 8 kvitton" utan att visa VILKA åtta är inte granskningsbart).
+Blockets **logg är skild från kvittokön**, med avsikt: kön bär bara det som ska
+skickas och TÖMS vid tryck, medan loggen bär varje registrering (även de utan
+kvitto och de som redan gått i väg) och töms aldrig under sessionen — hade kön
+burit båda rollerna försvunnit raderna i samma tryck som skickade dem. *Ångra*
+på en rad ångrar REGISTRERINGEN, inte raden: inbetalningen ligger i ledgern och
+kvittot i kön, så att bara plocka bort posten hade varit en lögn.
+Session-lokalt i strikt mening — en stängd flik tar kön med sig.
+*Undvik:* kvittokö (kön är den andra halvan, se ovan), granskningsvy (blocket
+är en del av inkorgen, inte en egen vy), "Registrerat nu" (den rivna rubriken;
+blockets tillgängliga namn bärs numera av behållarens `aria-label`).
+*I koden:* `SessionsRad` + `registrerade` i
+`src/components/betalningar/BetalningsInkorg.tsx`.
+
+**Avbokning** — handlingen att ta en Anmälan ur spel: statusen blir
+"Avbokad/Ombokad", personen lämnar inkorg och dörrlista, platsen räknas som
+ledig, och händelsen loggas med ett frivilligt skäl som även speglas till
+anmälans Notering. Görs på anmälans egen sida och kan återtas där (statusen
+härleds då ur bekräftelsedatumet). Ett avbokat och ett ombokat tillstånd
+delar samma statusvärde i basen (grillad samsyn S115 Del 3).
+*Undvik:* avanmälan, radering (en anmälan raderas aldrig, den avbokas).
+*I koden:* `RegistrationStatus.AVBOKAD`.
+
+**Ombokning** — en Avbokning där personen i samma steg får en ny Anmälan på
+ett annat event, med skälet ifyllt automatiskt och inbetalningen flyttad
+till den nya anmälan; en prisskillnad visas rakt ut som att återbetala eller
+saknas. Kvittots beteende vid flytten avgörs av research-passet
+`docs/research/kvitto-vid-ombokning-2026-09-03.md` (S115 Del 3, beslut 7–8).
+*Undvik:* byte, flytt (ordet Ombokning bär både avbokningen och den nya
+anmälan).

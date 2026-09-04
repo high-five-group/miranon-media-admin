@@ -48,13 +48,50 @@
     "types": []
   },
   "include": [
+    // TASK-346.4 (betalningsdomänen, ADR-128/ADR-129). Fem moduler, samtliga
+    // transitivt Deno-fria: `betalningsbelopp` och `jobb-tillstand` och
+    // `aktivitetslogg` har INGEN import alls; `betalningsharledning`
+    // importerar bara `betalningsbelopp`; `kvittojobb` bara `jobb-tillstand`.
+    // Grafen stannar alltså inom denna lista, vilket är villkoret filhuvudet
+    // ställer.
+    "supabase/functions/_shared/aktivitetslogg.ts",
+    "supabase/functions/_shared/betalningsbelopp.ts",
+    "supabase/functions/_shared/betalningsharledning.ts",
+    "supabase/functions/_shared/jobb-tillstand.ts",
+    "supabase/functions/_shared/kvittojobb.ts",
+    // TASK-368.2/368.4 (avbokning + ombokning). `cancel-registration` har INGEN
+    // import alls; `rebook-registration` importerar bara `cancel-registration`
+    // och `betalningsbelopp` — grafen stannar inom denna lista, samma villkor
+    // filhuvudet ställer. Båda typkollades tidigare bara som SIDOEFFEKT av att
+    // tester råkade importera dem (den odeklarerade täckning filhuvudet varnar
+    // för); här blir den avsiktlig.
+    "supabase/functions/_shared/cancel-registration.ts",
+    "supabase/functions/_shared/rebook-registration.ts",
     "supabase/functions/_shared/airtable-filter.ts",
     "supabase/functions/_shared/airtable-retry.ts",
+    "supabase/functions/_shared/attachment-filename.ts",
+    // TASK-373: beläggningens anmälnings-räkning (aktiv-filter + Källa-partition).
+    // Enda importen är `coerce.ts` nedan → transitivt Deno-fri, villkoret filhuvudet ställer.
+    "supabase/functions/_shared/belaggning.ts",
     "supabase/functions/_shared/coerce.ts",
     "supabase/functions/_shared/confirm-registrations.ts",
     "supabase/functions/_shared/cursor.ts",
     "supabase/functions/_shared/errors.ts",
+    "supabase/functions/_shared/event-map.ts",
     "supabase/functions/_shared/field-allowlists.ts",
+    // TASK-309.34: höjdanpassningens skaltrappa + sidräknare, utbruten ur
+    // mall-render.ts (som är esm.sh-/Deno-bunden). INGA importer alls —
+    // samma klass som plats-uppslag.ts nedan.
+    "supabase/functions/_shared/hojdanpassning.ts",
+    // TASK-370.1: kvitto-kompositionen (N fyllda kvitton -> ett dokument),
+    // valideringen och lagringsnyckelns form för "Förhandsgranska alla N".
+    // Utbruten import-fri av SAMMA skäl som hojdanpassning.ts ovan
+    // (mall-render.ts:s esm.sh-import gör den otestbar i Node) — enda
+    // importen är errors.ts, redan i denna lista.
+    "supabase/functions/_shared/kvitto-kombination.ts",
+    // TASK-309.30: ren Ort-till-Plats-beslutslogik, transitivt Deno-fri
+    // (ingen import alls) — samma klass som airtable-filter.ts ovan.
+    "supabase/functions/_shared/plats-uppslag.ts",
     "supabase/functions/_shared/prepare-bulk-send.ts",
     "supabase/functions/_shared/resend-batch.ts",
     "supabase/functions/_shared/segment-membership.ts",

@@ -51,6 +51,24 @@ function readAllowlist(): string[] {
 
 const ALLOWLIST = readAllowlist();
 
+// EF:er med INTERN auth i stället för requireUser — maskin-anropade
+// konsumenter där anroparen aldrig är en människa. Metod-vaktens kontrakt
+// (405 + 'Method not allowed' före auth, handleCors före vakten) kvarstår
+// oförändrat; requireUser-kravet ERSÄTTS av krav på den dokumenterade
+// interna auth-formen: konstanttids-jämförd delad hemlighet med fail-closed
+// på osatt secret. En funktion läggs hit ENDAST med källmärkt rationale i
+// sitt eget filhuvud. Detta är den explicita godkännande-punkt filhuvudet
+// ovan utlovar ("en ny vakt-form ska godkännas här explicit").
+//
+//   jobb-konsument: ADR-129 beslut 6 — anroparen är cron (`jobb_cron_tick()`)
+//   eller kicken (`koa-kvitton`), aldrig en människa; auth är
+//   `x-jobbmotor-hemlighet` jämförd i konstanttid, och `requireUser` avvisar
+//   uttryckligen anon-rollen som cron bär. Tillagd 2026-09-01 (PR #2194,
+//   promoveringssekvensens steg 8) när funktionen gick in i prod-allowlisten.
+const INTERN_AUTH_EF: Record<string, { hemlighetsEnv: string }> = {
+  'jobb-konsument': { hemlighetsEnv: 'JOBBMOTOR_DELAD_HEMLIGHET' },
+};
+
 test.describe('EF-metod-vakten — 405 före auth för hela prod-allowlisten (TASK-38)', () => {
   // FAIL-CLOSED: per-funktions-testerna genereras ur listan. Blir listan tom
   // (flyttad/omdöpt conf-fil, ändrat kommentar-format) genereras NOLL tester och
@@ -76,9 +94,31 @@ test.describe('EF-metod-vakten — 405 före auth för hela prod-allowlisten (TA
         'Method not allowed',
       );
 
-      const authIdx = source.indexOf('requireUser(req');
-      expect(authIdx, `${fn}: anropar inte requireUser`).toBeGreaterThan(-1);
-      expect(guardIdx, `${fn}: metod-vakten ligger EFTER auth-kontrollen`).toBeLessThan(authIdx);
+      const internAuth = INTERN_AUTH_EF[fn];
+      if (internAuth) {
+        // Intern-auth-klassen: requireUser FÅR INTE förekomma (dyker den upp
+        // är klassningen fel och ska omprövas här, inte glida igenom), och
+        // den dokumenterade formen ska finnas: konstanttids-jämförelse plus
+        // fail-closed-läsning av hemligheten, EFTER metod-vakten.
+        expect(
+          source.indexOf('requireUser(req'),
+          `${fn}: klassad som intern-auth men anropar requireUser — ompröva klassningen`,
+        ).toBe(-1);
+        expect(source, `${fn}: saknar konstanttids-jämförelsen`).toContain('likaIKonstantTid(');
+        const hemlighetsIdx = source.indexOf(`Deno.env.get('${internAuth.hemlighetsEnv}')`);
+        expect(
+          hemlighetsIdx,
+          `${fn}: läser inte hemligheten ${internAuth.hemlighetsEnv} fail-closed`,
+        ).toBeGreaterThan(-1);
+        expect(
+          guardIdx,
+          `${fn}: metod-vakten ligger EFTER den interna auth-kontrollen`,
+        ).toBeLessThan(hemlighetsIdx);
+      } else {
+        const authIdx = source.indexOf('requireUser(req');
+        expect(authIdx, `${fn}: anropar inte requireUser`).toBeGreaterThan(-1);
+        expect(guardIdx, `${fn}: metod-vakten ligger EFTER auth-kontrollen`).toBeLessThan(authIdx);
+      }
 
       // OPTIONS-preflighten måste fångas av handleCors INNAN metod-vakten —
       // annars 405:ar EF:en varje CORS-preflight och browsern blockerar appen.

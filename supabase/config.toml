@@ -15,6 +15,23 @@
 
 project_id = "miranon-media-admin"
 
+# ─────────────────────────────────────────────────────────────────────────
+# EDGE RUNTIME — `per_worker` KRÄVS AV JOBBMOTORNS KICK (TASK-346.4)
+#
+# ADR-129 beslut 3 bokförde fällan i förväg: i LOKAL CLI-körning dödas
+# instansen efter varje request om inte denna rad står här, och ett
+# bakgrundsarbete som startats med `EdgeRuntime.waitUntil` avbryts då innan
+# det hunnit klart. Symptomet är "kicken gör ingenting" — "ett fel som ser
+# ut som en bugg i koden men är en testmiljö-inställning"
+# (`asynkront-kvittojobb-byggstenar-2026-08-30.md` rad 125–129).
+#
+# `koa-kvitton` startar just ett sådant bakgrundsarbete. Raden påverkar
+# ENDAST `supabase start` lokalt — den deployade plattformen kör redan med
+# egen livscykel per worker; den står här för att en lokal felsökning inte
+# ska jaga fel spöke.
+[edge_runtime]
+policy = "per_worker"
+
 # Test-only endpoint för isolerad requireUser-testning.
 # verify_jwt = false så att testerna kan nå requireUser för alla
 # auth-deny-paths (saknad header, ogiltig JWT, anon-key) direkt.
@@ -272,6 +289,72 @@ verify_jwt = true
 # allowlist-posten är bokföring inför en KOMMANDE Marcus-auktoriserad
 # prod-deploy (kortets AC #4), ingen prod-operation är utförd av denna rad.
 [functions.delete-attachment]
+verify_jwt = true
+
+# update-attachment-scope — TASK-338.4 (ADR-125 § Beslut 1). Ändrar
+# räckvidden på en REDAN uppladdad delad bilaga, så Lotta kan rätta en
+# felklassning utan att radera och ladda upp filen igen (PRD TASK-338
+# berättelse 8). Gateway-första-försvar aktivt; requireUser + FYRA guards
+# läggs OVANPÅ i koden (räckvidden på raden måste vara gemensam,
+# dokumentklassen måste vara Uppladdad, plats-ID:t måste finnas i Platser,
+# och storage-ankaret får inte flyttas) — se EF:ens filhuvud. STÅR ÄNNU
+# INTE i .prod-functions-allowlist.conf: prod-halvan av hela PRD:n
+# (schema + EF-deploy + radmigrering) är TASK-338.6 och kräver Marcus GO
+# per tabell (ADR-125 § 8). Denna rad är en STAGING-registrering.
+[functions.update-attachment-scope]
+verify_jwt = true
+
+# ─────────────────────────────────────────────────────────────────────────
+# BETALNINGSDOMÄNEN (TASK-346.4, ADR-128/ADR-129) — NIO FUNKTIONER
+#
+# Samtliga MEDVETET UTELÄMNADE ur `.prod-functions-allowlist.conf`: prod
+# kräver först migrationerna, Vault-hemligheten och cron-posten, och de
+# stegen är Marcus egna i prod-runbooken (TASK-346.11, ADR-129 § Negativa
+# och skuld). Raderna nedan är STAGING-registreringar — de gör funktionerna
+# deploybara till staging, inte deployade till prod.
+#
+# `verify_jwt = true` överallt, av två olika skäl beroende på anropare:
+#   - de åtta människo-anropade funktionerna lägger `requireUser` OVANPÅ
+#     gatewayn (defense-in-depth, husets standard);
+#   - `jobb-konsument` anropas av cron och av kicken med ANON-nyckeln, och
+#     där är gatewayn bara ett första försvar. Anon-nyckelns JWT PASSERAR
+#     grinden (MÄTT, ADR-129 § Kontext), så den är ingen auktorisation.
+#     Auktorisationen är den delade hemligheten i `x-jobbmotor-hemlighet`,
+#     jämförd i konstanttid i funktionen. Båda lagren behålls (ADR-129
+#     beslut 6).
+# ─────────────────────────────────────────────────────────────────────────
+
+# Skriv-EF:er.
+[functions.registrera-inbetalning]
+verify_jwt = true
+
+[functions.hantera-inbetalning]
+verify_jwt = true
+
+[functions.koa-kvitton]
+verify_jwt = true
+
+[functions.skicka-kvitto-igen]
+verify_jwt = true
+
+# Jobbmotorns konsument. Namnet är ALDRIG `send-*` (ADR-129 beslut 6):
+# mail-låset (`.mail-lock-policy.conf`) fäller Bash-kommandon som innehåller
+# `functions/v1/send-`, vilket hade gjort funktionen oanropbar för varje
+# agent i staging.
+[functions.jobb-konsument]
+verify_jwt = true
+
+# Läs-EF:er.
+[functions.hamta-oppna-betalningar]
+verify_jwt = true
+
+[functions.hamta-inbetalningar]
+verify_jwt = true
+
+[functions.hamta-jobbstatus]
+verify_jwt = true
+
+[functions.hamta-kvittolank]
 verify_jwt = true
 
 # ─────────────────────────────────────────────────────────────────────────

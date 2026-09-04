@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-23 02:06'
-updated_date: '2026-08-07 11:19'
+updated_date: '2026-08-28 05:06'
 labels:
   - ready-for-human
 dependencies: []
@@ -34,3 +34,9 @@ Oetiketterat per fynd-regeln — människan klassar.
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+AC saknas medvetet: kortet är explicit 'Oetiketterat per fynd-regeln — människan klassar' och beslutet är villkorat ('om Lotta ska kunna av-/påpublicera'). Kräver Marcus-beslut om publiceringsflaggan ska vara läsbar/ändringsbar i UI, och i så fall var (sannolikt eventsidan/T79). Källa: kortets egen Description. Verifierat av registerhygien-passet 2026-08-28 (redan taggat ready-for-human).
+<!-- SECTION:NOTES:END -->

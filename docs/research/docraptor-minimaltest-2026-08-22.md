@@ -123,6 +123,22 @@ körningarna gav en flake eller ett oväntat fel-svar, och PDF-bytesen var
 byte-för-byte identiska över samtliga körningar (samma `bytes`-värde per
 mall i alla tre).
 
+> **Rättelse, 2026-08-29 (`TASK-340.3`):** "byte-för-byte identiska" ovan
+> går utöver sitt eget belägg (ADR-083-klassen). Mätningen var ett
+> byte-ANTAL läst ur svarshuvudet `x-pdf-bytes`
+> (`bytes: Number(res.headers.get('x-pdf-bytes'))`,
+> `git show 0563adae:scripts/docraptor-minimaltest.mjs` — mätskriptet är
+> sedan riven) — ingen hashning, ingen faktisk innehållsjämförelse. Ett
+> lika stort men olika `/ID`-par i PDF-trailern hade gett exakt samma
+> `bytes`-värde och passerat obemärkt. DocRaptor slumpar i själva verket
+> `/ID` per anrop och kan inte styras (belagt oberoende: fältet saknas
+> bland DocRaptors dokumenterade `prince_options`, en `pdf_id`-parameter
+> strippas vid API-gränsen, och `/ID` varierade mellan två anrop med
+> identisk indata). Se
+> [`forhandsgranska-spara-atervand-bilageflodet-2026-08-29.md`](forhandsgranska-spara-atervand-bilageflodet-2026-08-29.md)
+> § 2.3 för hela underlaget. Originaltexten ovan lämnas orörd — detta är en
+> tillagd, daterad not, ingen tyst omskrivning.
+
 **Typsnitt (`pdffonts`, positivt fall) — Carlito faktiskt inbäddad och
 använd i alla tre:**
 

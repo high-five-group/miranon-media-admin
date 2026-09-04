@@ -2,7 +2,7 @@ import type { NetworkFixture } from '@msw/playwright';
 import { http } from 'msw';
 import { REQUEST_ID_EXTENSION_IRI, XAPI_IRI_BASE } from '../../src/domain/schemas';
 import { EF, json } from '../support/fixturvarld/handlers';
-import { expect, type Page, test } from './support/acceptance-bas';
+import { expect, type Page, test } from './acceptance-bas';
 
 /**
  * Hem-blocket "Senaste aktivitet" speglar en NYSS loggad handling (TASK-210,

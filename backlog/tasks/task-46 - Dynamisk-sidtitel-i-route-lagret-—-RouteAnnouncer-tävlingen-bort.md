@@ -4,7 +4,7 @@ title: Dynamisk sidtitel i route-lagret — RouteAnnouncer-tävlingen bort
 status: To Do
 assignee: []
 created_date: '2026-07-25 06:50'
-updated_date: '2026-08-07 11:19'
+updated_date: '2026-08-28 05:07'
 labels:
   - ready-for-human
 dependencies: []
@@ -33,4 +33,6 @@ Symptom-bevis: task-18.19 INSTANT-e2e (toHaveTitle) föll mot Event — Miranon 
 
 <!-- SECTION:NOTES:BEGIN -->
 Fött ur review-pilotens F2 på task-18.19 (S86-nattbatchen). Oetiketterat — plockbarhet klassas av människa (ADR-071).
+
+AC saknas medvetet: kortets Implementation Notes säger explicit 'Oetiketterat — plockbarhet klassas av människa (ADR-071)', och Description föreslår två alternativa arkitekturer (staticData-titel som funktion av params/cache, ELLER ett sidan-äger-titeln-kontrakt) utan att välja. Kräver Marcus-beslut om vilken titel-ägar-modell route-lagret ska bära (påverkar även skärmläsar-annonseringen). Källa: kortets egen Description + Implementation Notes. Verifierat av registerhygien-passet 2026-08-28 (redan taggat ready-for-human).
 <!-- SECTION:NOTES:END -->

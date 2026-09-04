@@ -157,7 +157,7 @@ export const EVENTS_RESPONSE = {
 } as const;
 
 /**
- * De TOLV additiva fälten som `get-registrations` ALLTID skickar i den
+ * De FJORTON additiva fälten som `get-registrations` ALLTID skickar i den
  * event-lösa grenen — och som fixturen saknade fram till task-59.2.
  *
  * KONTRAKTSVAKTENS FÖRSTA SKARPA FYND, inte en gissning. Vakten (ADR-080
@@ -165,6 +165,25 @@ export const EVENTS_RESPONSE = {
  * larmade: `FIXTUREN-BAKOM — staging levererar 11 nycklar fixturen saknar`,
  * var och en i 43/43 skarpa poster. Den tolfte, `kalla`, fanns i EN av sex
  * fixtur-poster medan Edge Functionen skickar den i alla.
+ *
+ * ANDRA SKARPA FYNDET (fynd-TASK-331, samma driftklass som TASK-255 löste
+ * för `EVENTS_RESPONSE`s `kursfamilj`/`kursniva`). `eventmatchning` +
+ * `datum` lades till ADDITIVT-OPTIONAL i `Registration.schema.ts`
+ * (task-284.1/commit `0667ec8c` + task-284.3/commit `3a355a49`,
+ * 2026-08-21) utan att denna konstant rördes i samma commit. Vakten larmade
+ * tre nätter i rad (25–27/8, run `32800998004` m.fl.):
+ * `FIXTUREN-BAKOM — staging levererar 2 nyckel/nycklar som fixturen saknar`.
+ * Formprofilen observerad i 81/81 skarpa poster styr valen nedan
+ * (`kontraktsjamforelse.ts` jämför TYP, inte värde, och exkluderar `null`
+ * via `ickeNullTyper` — se den filens `granskaKontrakt`): `eventmatchning`
+ * är ALLTID sträng (formeln har ingen `BLANK()`-väg, `Registration.schema.ts`
+ * rad 92) — default `'OK'` här, ALDRIG `null`. `datum` är `null | sträng` —
+ * anmälans EGNA fritextsvar (`Datum`, singleLineText; jämförs av
+ * Eventmatchning-formeln mot facit-lookupen `Datum (from Event)`,
+ * `docs/reference/data-model.md` rad 1186–1187) — default en sträng här,
+ * override till `null` på den enda manuellt skapade posten (`kalla:
+ * 'Manuell'` nedan), som aldrig gick via det publika formuläret och därför
+ * aldrig fick fältet ifyllt.
  *
  * VÄRDENA ÄR MAPPNINGENS, INTE VALDA: `supabase/functions/_shared/
  * registration-read.ts` skriver `?? null` för samtliga och `=== true` för
@@ -177,6 +196,27 @@ export const EVENTS_RESPONSE = {
  * vyerna renderar och därmed de visuella baselines. Att acceptance-testerna
  * ska prövas mot fältens ifyllda tillstånd hör till migrerings-skivorna, där
  * varje flyttad fil får sitt eget tvåsidiga bevis — inte hit.
+ *
+ * `'OK'` SOM DEFAULT — DEN VERKLIGA GRUNDEN (rättat i review-runda 2,
+ * PR #2051): `datum` LÄSES visst under `src/` —
+ * `AnmalningRadResolution.tsx:140` och `KopplaTillEventDialog.tsx:122`
+ * renderar båda `registration.datum ?? 'Uppgift saknas'`. Skälet baseliner
+ * ändå inte rör sig är `behoverAtgard()` (`registration-display.ts`), som
+ * `AnmalningarSida.tsx` (rad ~801/812) villkorar `AnmalningRadResolution`
+ * på: den kräver `eventmatchning === 'Avviker' | 'Utan event'`, och var
+ * `false` för samtliga poster REDAN FÖRE denna konstant fick `eventmatchning`
+ * (fältet var då `undefined`, vilket missar båda likhetsjämförelserna precis
+ * som `'OK'` gör nu) — övergången `undefined → 'OK'` ändrar alltså inte
+ * sanningsvärdet för någon post. Det är detta, inte frånvaron av läsande
+ * vyer, som håller baselinerna stilla.
+ *
+ * LATENT RISK, DÄRFÖR ÖPPET DOKUMENTERAD: sätter en framtida fixtur-post som
+ * delar denna konstant `eventmatchning` till `'Avviker'`/`'Utan event'` (för
+ * att t.ex. provtrycka åtgärdskö-läget), dyker `datum`-defaulten
+ * `'20 sep 2026'` OFRIVILLIGT upp i `KopplaTillEventDialog`/
+ * `AnmalningRadResolution` där `'Uppgift saknas'` visades tidigare — sätt då
+ * `datum` explicit på den posten (samma mönster som `kalla`/`datum`-override
+ * på `recVisualReg000006` nedan), lita aldrig på att defaulten råkar passa.
  */
 const ADDITIVA_ANMALNINGSFALT = {
   noteringAnmalningsavgift: null,
@@ -191,6 +231,8 @@ const ADDITIVA_ANMALNINGSFALT = {
   borOver: false,
   erfarenhetsbadge: null,
   kurshistorik: null,
+  eventmatchning: 'OK',
+  datum: '20 sep 2026',
 } as const;
 
 /**
@@ -339,6 +381,10 @@ export const REGISTRATIONS_RESPONSE = {
       personId: 'recVisualPers00006',
       ...ADDITIVA_ANMALNINGSFALT,
       kalla: 'Manuell',
+      // Manuellt skapad rad gick aldrig via det publika formuläret — ingen
+      // ifylld `Datum`-fritext att spegla. Provtrycker fixturens `null`-form
+      // (staging observerade null | sträng, 81/81 — se docblocket ovan).
+      datum: null,
     },
   ],
 } as const;
@@ -390,6 +436,49 @@ export const EVENT_NOTES_RESPONSE = {
  * överskuggar med `network.use()`, per filhuvudets egen regel.
  */
 export const EVENT_ATTACHMENTS_RESPONSE = { attachments: [] } as const;
+
+/**
+ * `get-places`-svaret (TASK-309.7, ADR-125 § 7) — den GLOBALA platslistan
+ * bakom Mer → Platser OCH, sedan TASK-338.3, bakom räckviddsdialogens
+ * Plats-axel. Samma läsväg, en fixtur (PRD TASK-338 berättelse 11: en ny
+ * plats ska bara behöva läggas till en gång).
+ *
+ * TRE PLATSER, inte noll: en tom lista hade gjort Plats-selecten omöjlig att
+ * pröva i acceptance-sviterna, och `usePlacesList` anropas numera av VARJE
+ * öppning av uppladdningsdialogen — utan handler faller hermetik-vakten
+ * (`hermetik-vakt.ts`) på ett omockat EF-anrop i stället för att testet
+ * säger något om ytan.
+ *
+ * RÖNNINGE STÅR FÖRST OCH ÄR INTE GODTYCKLIG: det är PRD TASK-338:s egen
+ * drivande instans (Rogers och Lottas hem, parkeringsbilagan och sushimenyn,
+ * tråd T153) och ORDLISTA.md § Plats beskriver den som platsen med stabila
+ * värden. Falköping och Gotland är de kontrasterande orterna ur PRD:ns
+ * berättelse 3 — "ett event i Falköping ska INTE visa Rönninge-dokumenten".
+ *
+ * `falt` bär de fyra `PLATS_FALT_KEYS` (`PlaceListItemSchema`). De är
+ * `null` här med avsikt: räckviddsdialogen läser bara `id`/`namn`, och en
+ * fixtur som fyller fält ingen konsument i dessa sviter läser hade bara
+ * varit en extra sanning att hålla synkad.
+ */
+export const PLACES_RESPONSE = {
+  places: [
+    {
+      id: 'recPlatsRonninge01',
+      namn: 'Rönninge',
+      falt: { adress: null, parkering: null, transport: null, klader: null },
+    },
+    {
+      id: 'recPlatsFalkoping1',
+      namn: 'Falköping',
+      falt: { adress: null, parkering: null, transport: null, klader: null },
+    },
+    {
+      id: 'recPlatsGotland001',
+      namn: 'Gotland',
+      falt: { adress: null, parkering: null, transport: null, klader: null },
+    },
+  ],
+} as const;
 
 /** `get-event-formats`-svaret (de två skarpa bas-formaten). */
 export const EVENT_FORMATS_RESPONSE = {

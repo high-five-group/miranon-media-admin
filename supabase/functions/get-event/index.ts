@@ -1,8 +1,10 @@
 import { fetchAirtableRecord, fetchFromAirtable } from '../_shared/airtable-client.ts';
 import { requireUser } from '../_shared/auth.ts';
-import { scalarNumber, scalarString, selectName } from '../_shared/coerce.ts';
+import { BELAGGNING_ANMALAN_FALT, raknaAnmalningar } from '../_shared/belaggning.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
 import { generateRequestId, mapErrorToResponse } from '../_shared/errors.ts';
+import { mapEventBas, mapEventKategorifalt } from '../_shared/event-map.ts';
+import { hamtaStandardpriser, standardprisFor } from '../_shared/eventpris.ts';
 
 // Tabeller adresseras per NAMN (ej tbl-id) så samma kod fungerar mot prod- och
 // staging-bas — tbl-id:n är bas-unika och skiljer sig i en duplicerad bas (ADR-050).
@@ -10,6 +12,9 @@ import { generateRequestId, mapErrorToResponse } from '../_shared/errors.ts';
 const TABLE_NAME = 'Eventplanering';
 const REGISTRATIONS_TABLE = 'Anmälningar';
 const WAITLIST_TABLE = 'Väntelista';
+
+/** Loggprefix för uppslagets varning (`_shared/eventpris.ts` § ETT UPPSLAG SOM FALLERAR). */
+const LOGG = '[get-event]';
 
 // Max record-ID:n per batch-anrop — en chunk = en kort `OR(RECORD_ID()=…)`-formel
 // (≤50 IDs ≈ ~1.5 kB, väl under Airtables formel-/URL-längd) → ETT listanrop per
@@ -51,17 +56,33 @@ function linkedIds(value: unknown): string[] {
 /**
  * Beläggningens innehållsmodell (task-18.2; S73-facit K16, PRD task-18 beslut 5)
  * — mappar basen 1-till-1:
- *   viaFormular  = länkade Anmälningar med Källa TOM (formuläranmälningar;
- *                  frånvaro är sanning — data-model §Källa-värden)
- *   medfoljande  = länkade Anmälningar med Källa '+1' (CompanionModal)
- *   vantelista   = AKTIVA event-kopplade Väntelisteplatser via nya länkfältet
- *                  'Event (länk)' (additivt staging-först, ADR-063), räknade
- *                  från eventradens inverse-spegel 'Väntelista (länkat fält)'
- *                  med get-waitlist:s aktiv-semantik (NOT Flyttad till anmälan)
- * Övriga Källa-värden (Manuell/Väntelista) är MEDVETET inga rader i modellen —
- * K16:s Manuellt tillagda är basens NUMBER-fält 'Manuella platser', inte en
- * Källa-räkning. RECORD-ID-BATCH från event-hållet (get-registrations-mallen);
- * ALDRIG länk-filter i formel (T15-klassen — matchar primär-display, ej ID).
+ *   viaFormular       = AKTIVA länkade Anmälningar med Källa TOM
+ *                       (formuläranmälningar; frånvaro är sanning —
+ *                       data-model §Källa-värden)
+ *   medfoljande       = AKTIVA länkade Anmälningar med Källa '+1' (CompanionModal)
+ *   ovrigaAnmalningar = AKTIVA länkade Anmälningar med ALLT ANNAT Källa-värde:
+ *                       'Manuell' (appens Ny anmälan), 'Väntelista' (uppflyttad
+ *                       ur kön) och varje FRAMTIDA värde (TASK-373)
+ *   vantelista        = AKTIVA event-kopplade Väntelisteplatser via nya länkfältet
+ *                       'Event (länk)' (additivt staging-först, ADR-063), räknade
+ *                       från eventradens inverse-spegel 'Väntelista (länkat fält)'
+ *                       med get-waitlist:s aktiv-semantik (NOT Flyttad till anmälan)
+ *
+ * DE TRE FÖRSTA ÄR EN PARTITION av eventets aktiva anmälningar — ingen aktiv
+ * anmälan får tappas (TASK-373: `Källa = 'Manuell'` räknades tidigare i INGEN
+ * del, och prod-mätaren undervärderade med en plats per sådan anmälan). Delarna
+ * och aktiv-filtret bor i `_shared/belaggning.ts` (hermetiskt testade,
+ * `tests/api/belaggning.test.ts`); den här funktionen gör I/O:t.
+ *
+ * K16:s "Manuellt tillagda" förblir basens SKRIVBARA NUMBER-fält 'Manuella
+ * platser' (via `mapEventKategorifalt`) och är alltså INTE en Källa-räkning —
+ * en anmälan med Källa 'Manuell' är en anmäld DELTAGARE med egen rad och eget
+ * deltagarkort, ett Manuella platser-snäpp är en PLATS utan rad. Att lägga
+ * Källa-räkningen i det skrivbara fältets rad hade brutit Ändra-morfens
+ * "ändrar från"-tal på eventsidan (se `Belaggning.tsx` § segmentbeslutet).
+ *
+ * RECORD-ID-BATCH från event-hållet (get-registrations-mallen); ALDRIG
+ * länk-filter i formel (T15-klassen — matchar primär-display, ej ID).
  * Saknar basen länkfälten (t.ex. prod före den separat auktoriserade
  * fält-deployen) → tomma arrays → 0-räkningar, aldrig fel.
  *
@@ -71,10 +92,16 @@ function linkedIds(value: unknown): string[] {
  * fields-listan) → ingen extra rundtur. Checkbox: Airtable UTELÄMNAR en
  * okryssad ruta ur svaret → `=== true` normaliserar (aldrig null; samma
  * mappning som get-registrations, task-18.7). Inget lagrat räknefält (ADR-063).
+ * MEDVETET UTANFÖR TASK-373:s snitt: säng-räkningen tar fortfarande MED
+ * avbokade/inställda anmälningar. Samma härledning görs på list-nivå i
+ * get-events (`fetchBorOverAntalByEvent`), så en ändring hör hemma i en egen
+ * landning som rör båda EF:erna och deras e2e-facit — registrerad, ej tyst
+ * förkastad (ADR-053).
  */
 async function fetchBelaggning(f: Fields): Promise<{
   viaFormular: number;
   medfoljande: number;
+  ovrigaAnmalningar: number;
   vantelista: number;
   borOverAntal: number;
 }> {
@@ -83,95 +110,62 @@ async function fetchBelaggning(f: Fields): Promise<{
 
   const [regs, waits] = await Promise.all([
     regIds.length > 0
-      ? fetchByRecordIds(REGISTRATIONS_TABLE, regIds, ['Källa', 'Bor över'])
+      ? fetchByRecordIds(REGISTRATIONS_TABLE, regIds, [...BELAGGNING_ANMALAN_FALT, 'Bor över'])
       : Promise.resolve([]),
     waitIds.length > 0
       ? fetchByRecordIds(WAITLIST_TABLE, waitIds, ['Flyttad till anmälan'])
       : Promise.resolve([]),
   ]);
 
-  let viaFormular = 0;
-  let medfoljande = 0;
+  const { viaFormular, medfoljande, ovrigaAnmalningar } = raknaAnmalningar(regs);
+
   let borOverAntal = 0;
   for (const reg of regs) {
-    const kalla = selectName(reg.fields['Källa']);
-    if (kalla === null) viaFormular += 1;
-    else if (kalla === '+1') medfoljande += 1;
     // Bor över är checkbox-fältet på anmälan (task-18.7): true = bor över.
     if (reg.fields['Bor över'] === true) borOverAntal += 1;
   }
   // Checkbox: true = flyttad (historik, utanför kön); blank/false = aktiv.
   const vantelista = waits.filter((w) => w.fields['Flyttad till anmälan'] !== true).length;
 
-  return { viaFormular, medfoljande, vantelista, borOverAntal };
+  return { viaFormular, medfoljande, ovrigaAnmalningar, vantelista, borOverAntal };
 }
 
-// Fältnamn från Airtable → ren API-respons. Bas-fälten mappas IDENTISKT med
-// get-events `mapEvent` (samma berikade shape per EventSchema); därtill bär
-// get-event ENSAM beläggningens innehållsmodell (task-18.2) — aggregerade
-// räkningar + de två skrivbara kategorifälten. Håll bas-delen i synk med
-// get-events/index.ts och update-event/index.ts om fält ändras.
+// Fältnamn från Airtable → ren API-respons. Bas-shapen (21 fält) och beläggningens
+// två skrivbara kategorifält + auto-utskickets två fält kommer ur
+// `_shared/event-map.ts` — SSOT sedan TASK-23, delad med get-events/update-event.
+// Därtill bär get-event ENSAM beläggningens AGGREGERADE räkningar (task-18.2), som
+// kräver egna batch-läsningar och därför stannar här. Spread i samma ordning som
+// inline-kopian hade: bas → kategorifält → aggregeringar, så svarets nyckelordning är
+// oförändrad.
 function mapEvent(
   record: { id: string; fields: Record<string, unknown> },
   belaggning: {
     viaFormular: number;
     medfoljande: number;
+    ovrigaAnmalningar: number;
     vantelista: number;
     borOverAntal: number;
   },
+  standardPris: number | null,
 ) {
-  const f = record.fields;
-
   return {
-    id: record.id,
-    eventlabel: f['Eventlabel'] ?? null, // formula (primary)
-    eventNamn: selectName(f['Event (source)']), // singleSelect
-    typ: selectName(f['Typ']), // singleSelect
-    ort: scalarString(f['Ort']), // text (eget fält, skalärt)
-    startdatum: f['Startdatum'] ?? null, // date
-    slutdatum: f['Slutdatum'] ?? null, // date
-    tidKvarTillEvent: f['Tid kvar till event'] ?? null, // formula → text
-    // Number-fält via scalarNumber: Airtable ger formel-/procent-fält som blir
-    // NaN/Infinity (0/0, osatt maxPlatser) som OBJEKT {specialValue} — scalarNumber
-    // coercar det till null så .parse() håller (konsekvent över get-event/get-events).
-    maxPlatser: scalarNumber(f['Max antal platser']), // number (osatt → null)
-    antalAnmalda: scalarNumber(f['Antal anmälda']) ?? 0, // formel → number
-    platserKvar: scalarNumber(f['Platser kvar']), // formel → number|null
-    anmaldBelaggning: scalarNumber(f['Anmäld beläggning (%)']), // formel-% (NaN→null)
-    bekraftadBelaggning: scalarNumber(f['Bekräftad beläggning (%)']), // formel-% (NaN→null)
-    antalNyaAnmalningar: scalarNumber(f['Antal nya anmälningar']) ?? 0, // rollup → number
-    antalAnmalningsavgifter: scalarNumber(f['Antal mottagna anmälningsavgifter']) ?? 0, // rollup
-    antalSlutbetalningar: scalarNumber(f['Antal mottagna slutbetalningar']) ?? 0, // rollup
-    antalSlutbetalningFelande: scalarNumber(f['Antal slutbetalning saknas']) ?? 0, // formel
-    status: selectName(f['Status'] ?? null), // singleSelect (om det finns)
-    // eventKey (task-18.1): formel "Event-" & {Event-nr} — EventKey-pillen på
-    // detaljsidans topprad. Håll i synk med get-events (fältet är OPTIONAL i
-    // EventSchema — saknas värdet UTELÄMNAS nyckeln: JSON.stringify droppar
-    // undefined; aldrig null). Båda EF:erna bär fältet sedan samma leverans.
-    eventKey: typeof f['EventKey'] === 'string' ? f['EventKey'] : undefined,
-    // Basdimensionerna (TASK-249.4, ADR-115): direkta singleSelect-fält, alltid lästa —
-    // selectName ger string|null (aldrig gissat). Håll i synk med get-events/update-event.
-    kursfamilj: selectName(f['Kursfamilj']),
-    kursniva: selectName(f['Kursnivå']),
-    // Beläggningens innehållsmodell (task-18.2, K16 — mappar basen 1-till-1):
-    // de två skrivbara kategorifälten ur eventraden + de aggregerade räkningarna.
-    // Osatt i basen → nyckeln UTELÄMNAS (undefined droppas av JSON.stringify;
-    // eventKey-formen — aldrig null, OPTIONAL i EventSchema).
-    reserverade: scalarNumber(f['Extra platser']) ?? undefined, // 'Extra platser'
-    manuelltTillagda: scalarNumber(f['Manuella platser']) ?? undefined, // 'Manuella platser'
-    // Auto-utskicket (task-18.6, PRD task-18 beslut 14): schemalagt datum + opt-out
-    // ur de ADDITIVA staging-fälten. Datumet: osatt → nyckeln UTELÄMNAS (eventKey-
-    // formen). Opt-out: Airtable utelämnar en OKRYSSAD checkbox ur svaret →
-    // normaliseras till FALSE (aldrig undefined) så krysset alltid har ett definit
-    // läge. Håll i synk med update-event/index.ts.
-    deltagarinfoSchemalagd: scalarString(f['Deltagarinfo schemalagd']) ?? undefined,
-    deltagarinfoAutoAvstangt: f['Deltagarinfo auto-utskick avstängt'] === true,
-    viaFormular: belaggning.viaFormular, // länkade Anmälningar, Källa TOM
-    medfoljande: belaggning.medfoljande, // länkade Anmälningar, Källa '+1'
+    // `standardPris` = Eventinnehåll-standarden (prisets nivå 3, TASK-368.7),
+    // uppslagen av `hamtaStandardpriser` och noll anrop när eventet redan har
+    // ett eget pris. Samma tal som serverns `lasEvent` ger ombokningens
+    // prisskillnad — se `_shared/event-map.ts` § EVENTETS PRIS.
+    ...mapEventBas(record, standardPris),
+    ...mapEventKategorifalt(record),
+    viaFormular: belaggning.viaFormular, // AKTIVA länkade Anmälningar, Källa TOM
+    medfoljande: belaggning.medfoljande, // AKTIVA länkade Anmälningar, Källa '+1'
+    // TASK-373: AKTIVA länkade Anmälningar med varje ANNAT Källa-värde
+    // ('Manuell' · 'Väntelista' · framtida). ADDITIVT-optional i klientschemat
+    // så en app mot en ÄLDRE deployad get-event får `undefined → 0` (samma
+    // beteende som före fixen) i stället för ett parse-fel.
+    ovrigaAnmalningar: belaggning.ovrigaAnmalningar,
     vantelista: belaggning.vantelista, // aktiva event-kopplade Väntelisteplatser
     // Bor över-summeringen (task-17.5): härlett antal ikryssade 'Bor över'
-    // bland eventets Anmälningar (listkortets/eventsidans säng-rad). Håll i
-    // synk med get-events mapEvent (samma härledning ur registrerings-batchen).
+    // bland eventets Anmälningar (eventsidans säng-rad) — get-events härleder
+    // samma tal ur sin list-nivå-batch.
     borOverAntal: belaggning.borOverAntal,
   };
 }
@@ -232,8 +226,11 @@ Deno.serve(async (req) => {
 
     // Beläggnings-aggregationen (task-18.2): batch-hämtningarna körs efter
     // eventraden (ID-listorna kommer ur den).
-    const belaggning = await fetchBelaggning(record.fields);
-    const event = mapEvent(record, belaggning);
+    const [belaggning, standardpriser] = await Promise.all([
+      fetchBelaggning(record.fields),
+      hamtaStandardpriser([record], LOGG),
+    ]);
+    const event = mapEvent(record, belaggning, standardprisFor(standardpriser, record));
 
     return new Response(JSON.stringify({ event }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

@@ -19,6 +19,15 @@ import { queryKeys } from '@/queries/keys';
  * återanvända den GAMLA radens räckvidd i stället för att implicit falla
  * till EF:ens Event-default (vilket hade tyst DEGRADERAT en gemensam bilaga
  * till event-specifik vid nästa "Ersätt").
+ *
+ * [UTBYGGD, TASK-338.3, ADR-125 § Beslut 1] `plats` följer med av EXAKT
+ * samma skäl, en axel ner: utan den hade ett "Ersätt" på parkeringsbilagan
+ * för Rönninge laddat upp den nya filen UTAN plats-axel — alltså en
+ * `Gemensam` bilaga med noll axlar, som per modellen betyder ALLA EVENT.
+ * Lotta hade bytt en fil och oavsiktligt lagt Rönninge-parkeringen på varje
+ * Falköping- och Gotland-event, vilket är precis den "fel information går
+ * ut"-skada PRD TASK-338 berättelse 3 finns för att förhindra. En tyst
+ * UPPVIDGNING är värre än ett fel som syns.
  */
 export interface ReplaceAttachmentInput {
   file: File;
@@ -26,6 +35,8 @@ export interface ReplaceAttachmentInput {
   rackvidd?: AttachmentScopeValue;
   kursfamilj?: string;
   kursniva?: string;
+  /** Den ERSATTA radens plats-axel (`Attachment.plats.id`) — se docblocket. */
+  plats?: string;
 }
 
 /**
@@ -67,15 +78,17 @@ export function useReplaceAttachment(eventId: string | null) {
     // ovanligt/odesignat som två samtidiga uppladdningar redan är.
     mutationKey: ['replace-attachment', eventId ?? 'gemensamt'],
 
-    mutationFn: async ({ file, oldAttachmentId, rackvidd, kursfamilj, kursniva }) => {
+    mutationFn: async ({ file, oldAttachmentId, rackvidd, kursfamilj, kursniva, plats }) => {
       // 1) Ladda upp den nya filen FÖRST — med DEN GAMLA radens räckvidd
-      //    (se ReplaceAttachmentInput-docblocken för varför).
+      //    OCH alla tre axlarna (se ReplaceAttachmentInput-docblocken för
+      //    varför en tappad `plats` tyst hade vidgat bilagan till alla event).
       const uploaded = await dataSource.uploadAttachment({
         eventId,
         file,
         rackvidd,
         kursfamilj,
         kursniva,
+        plats,
       });
 
       // 2) Radera den gamla posten EFTER lyckad uppladdning — aldrig tvärtom.

@@ -28,9 +28,11 @@ två ortogonala tillstånds-axlar i ett fält.
 
 Gemena strängar, konsekvent med `status:`-enumets format. Semantik: `active` =
 sessionens arbete pågår eller är öppet (nyfött eller återupptaget); `paused` = durabelt
-parkerat utan completion (ADR-051-paus); `closed` = avslutat (session-end). Tre
-tillstånd, fyra verb: start/create-session-doc → `active`; paus → `paused`; resume →
-`active`; end → `closed`.
+parkerat utan completion (ADR-051-paus); `closed` = avslutat — **via `session-end`
+ELLER via scope-överföring** (*amenderat 2026-08-28, se § Updates; ursprungstexten
+sade enbart "(session-end)"*). Tre tillstånd, fyra verb: start/create-session-doc →
+`active`; paus → `paused`; resume → `active`; end → `closed` — plus
+scope-överföringen som femte, verblös skrivare av `closed`.
 
 ### 2. Ortogonal mot `status:` — `status:` förblir orört
 
@@ -123,3 +125,104 @@ skill-editsen landar (efterföljande inkrement) — tills dess är det en deklar
 - ADR-023 (sessions-arkivering) — immutabiliteten som motiverar beslut 4:s
   grind-separation.
 - ADR-039 (ADR-räkning) — rot-README-räknaren bumpas 51→52 vid denna ADR:s landning.
+
+## Updates
+
+### 2026-08-28 (S112 resume 2) — andra vägen till `closed`: STÄNGNING VIA SCOPE-ÖVERFÖRING
+
+Denna post **amenderar beslut 1** och **utvidgar beslut 3**. Beslut 2, 4, 5
+och 6 är oförändrade.
+
+- **Beslut 1** band `closed` till ett enda verb (*"`closed` = avslutat
+  (session-end)"*). Den parentesen är nu ofullständig och har därför
+  amenderats i beslutstexten själv, med markering — en läsare som stannar
+  vid beslut 1 ska inte tro att `session-end` är enda vägen till `closed`.
+  Besluts-texten är annars fryst (L53): det som ändrats är parentesens
+  uppräkning, inte semantiken hos `closed`.
+- **Beslut 3** (skill-ägt underhåll) får en femte, namngiven skrivare av
+  `lifecycle:`-fältet.
+
+Posten namnger också den avvägning utvidgningen kostar.
+
+**Kontexten — sex dok som ingen ceremoni kunde nå.** Beslut 3 gav fältet fyra
+skrivare, en per lifecycle-verb: `session-start` → `active`, `session-paus` →
+`paused`, `session-resume` → `active`, `session-end` → `closed`. Formen
+förutsätter att varje `paused` dok förr eller senare får en resume och därefter
+ett end. Den förutsättningen höll inte: 2026-08-28 stod sex dok `paused` — S92
+(2026-07-27), S96, S98, S99, S101 och S107 — där merparten av scopet i
+verkligheten var UTFÖRT av senare sessioner, och resten var Marcus-ägda beslut
+som ingen resume kan avsluta åt honom. Vägen till `closed` gick genom sex
+`session-resume` → `session-end`-ceremonier vars enda funktion hade varit att
+flytta ett fält, eftersom det arbete `session-end` finns för att finalisera
+(BUILD-LOG, lessons-skörd, arkivering) inte kunde göras av en session vars
+återstående scope var någon annans beslut.
+
+Det gav ett tillstånd utan bevakare i samma familj som `T108`/`T112`: dok som
+står `paused` för evigt, vars öppna punkter ingen läser, och vars antal ökar
+med varje session som pausas i stället för att stängas. Alternativet — att
+tyst sätta `closed` på ett dok med öppet scope — hade varit exakt den drift
+hela ADR-052 finns för att förhindra: ett fält som påstår något kroppen inte
+bär.
+
+Marcus order, verbatim: *"Alla sessionsdok som inte är stängda ännu är det av
+en anledning, det finns något i dess scope som inte är klart som jag vill/ville
+få klart. Men en idé kanske skulle vara att samla ihop scope-punkterna till
+ETT nytt sessionsdok, som kan arbeta med dem senare"* + *"Då är det ju viktigt
+med referenser, så man alltid kan hitta källan/källorna."*
+
+**Beslutet.** Ett pausat sessionsdok får sättas `lifecycle: closed` UTAN
+`session-end`, om och endast om alla tre villkoren håller samtidigt:
+
+1. **Varje scope-punkt i doket är klassad** — antingen **K** (klar, med belägg
+   mätt mot disk, backlog eller git; ett påstående utan mätning duger inte)
+   eller **Ö** (öppen, med överföring till ett NAMNGIVET kort).
+2. **Doket bär en sektion `## Stängd via scope-överföring (<datum>)`** sist i
+   kroppen, med K/Ö-tabellen i sin helhet och en pekare till mottagarkortet.
+   Sektionen är dokets kvitto: den som läser doket ser vad som bedömdes klart,
+   på vilket belägg, och vart resten tog vägen.
+3. **Mottagarkortet pekar tillbaka på doket.** Referensen går i BÅDA
+   riktningarna — ett kort som samlar rester utan spårbar källa är precis det
+   Marcus referenskrav förbjuder.
+
+Paus-markören i kroppen bryts samtidigt till historik-form (`## Paushistorik —
+…`), av samma skäl som vid resume: `scripts/check-lifecycle.sh` är
+prefix-förankrad på `^## PAUSLÄGE — Session <N> pausad` och fäller `closed` +
+kvarstående prefix. Grinden ändras INTE — formen håller sig innanför den.
+
+**Konsekvenser.**
+
+- **Positivt:** en pausad session som i praktiken är slut kan avslutas ärligt;
+  restpunkterna får en bevakad hemvist i backlog-substratet i stället för att
+  ligga i ett dok ingen öppnar; K-klassningens beläggkrav gör stängningen
+  granskningsbar i efterhand. Beslut 1, 2, 4, 5 och 6 är orörda, och grinden
+  behöver ingen ändring.
+- **Priset, öppet namngivet:** formen ger **ingen BUILD-LOG-post och ingen
+  lessons-skörd per session**. Det är precis vad `session-end` bär och
+  scope-överföringen inte gör. Konsekvensen är att lessons-kandidaterna i de
+  överförda doken måste skördas på annan väg — de bokförs som Ö-punkter på
+  mottagarkortet och skördas i den separata fragment-kadensen
+  (`tasks/lessons.d/`, 121 fragment vid denna posts datum). En session som
+  stängs så här får alltså ingen egen rad i byggets narrativ. Avvägningen
+  accepteras medvetet: sex ceremonier utan innehåll är ett högre pris än sex
+  saknade BUILD-LOG-poster för sessioner vars arbete redan är bokfört i de
+  PR:er och kort de producerade.
+- **Missbruksytan, och varför den är smal:** formen kan i princip användas för
+  att stänga en session som fortfarande arbetar. Villkor 1 gör det dyrt —
+  varje punkt måste klassas med belägg — och villkor 2 gör det synligt, men
+  ingen MEKANISM hindrar det. Detta är en form, inte en grind
+  ([ADR-083](ADR-083-prosa-som-pastar-mekanism.md)-disciplinen: skriv aldrig om
+  detta stycke till att påstå motsatsen). `check-pausade-sessioner.sh` fångar
+  det omvända felet (ett dok som PÅSTÅR paus medan arbete landar) och berörs
+  inte — ett stängt dok faller helt utanför dess population.
+- **Fönstereffekt:** ett dok som blir `closed` blir därmed arkiv-kandidat i
+  ADR-099:s rullande fönster. Stängningen och arkiveringen är SKILDA
+  handlingar; nattgrinden `check-sessionsdok-fonster.sh` pekar ut kandidaterna
+  när de uppstår.
+
+**Första tillämpning:** S92, S96, S98, S99, S101 och S107, överförda till
+`TASK-332` (*PRD: Restsamlingen*) — 24 K-punkter med belägg, 55 Ö-punkter med
+referens. Beslutet att formen ska vara ett PRD-kort och inte ett för-skapat
+sessionsdok togs i samma andetag och står i
+`tasks/sessions/2026-08-24-session-112.md` § "Marcus order mitt i resumen"
+beslut 1: ett för-skapat dok bryter ADR-043 beslut 4 (dok föds vid
+sessionsstart).

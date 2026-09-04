@@ -36,6 +36,18 @@ export interface Event {
   /** Kursnivå (Intro/Nivå 1-3) — se `kursfamilj` för formens fulla rationale. */
   kursniva?: string | null;
 
+  /**
+   * Eventets pris i kronor (TASK-368.7) — `Eventplanering.Pris (kr)` med
+   * `Eventinnehåll.Pris (kr)` som standard, löst server-side med SAMMA
+   * `valjPris` som ombokningens prisskillnad använder
+   * (`supabase/functions/_shared/event-map.ts` § EVENTETS PRIS).
+   *
+   * `null` = varken eventet eller standarden bär ett pris. `0` är ett SATT
+   * pris — pröva `=== null`, aldrig sanningsvärde. Optional speglar schemat:
+   * bakåtkompatibilitet mot cache/svar från före denna leverans.
+   */
+  pris?: number | null;
+
   // Beläggningens innehållsmodell (task-18.2; K16 — mappar basen 1-till-1).
   // Optional-fälten speglar schemat (utelämnas-vid-saknas, aldrig null —
   // 18.1:s eventKey-form): endast get-event aggregerar; get-events/
@@ -44,10 +56,16 @@ export interface Event {
   reserverade?: number;
   /** Manuellt tillagda = basens 'Manuella platser' (osatt → utelämnas). */
   manuelltTillagda?: number;
-  /** Anmälda deltagare-raden: länkade Anmälningar med Källa TOM (formulär). */
+  /** AKTIVA länkade Anmälningar med Källa TOM (formulär). */
   viaFormular?: number;
-  /** Länkade Anmälningar med Källa '+1' (medföljande). */
+  /** AKTIVA länkade Anmälningar med Källa '+1' (medföljande). */
   medfoljande?: number;
+  /**
+   * TASK-373: AKTIVA länkade Anmälningar med varje ANNAT Källa-värde
+   * ('Manuell' · 'Väntelista' · framtida). Räknas in i "Anmälda deltagare"-raden
+   * tillsammans med `viaFormular` (se `src/lib/belaggning.ts`).
+   */
+  ovrigaAnmalningar?: number;
   /** Aktiva event-kopplade Väntelisteplatser via 'Event (länk)' (utanför taket). */
   vantelista?: number;
   /** Bor över-summeringen (task-17.5): härlett antal ikryssade 'Bor över' bland

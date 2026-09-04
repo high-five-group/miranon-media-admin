@@ -1,9 +1,10 @@
 ---
 id: TASK-223
 title: 'Fynd: glomt-losenord saknar auth-fonden (data-auth-fond)'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-15 09:05'
+updated_date: '2026-08-28 05:06'
 labels:
   - ready-for-agent
 dependencies: []
@@ -18,15 +19,35 @@ S102 Explore-svepets fynd (2026-08-15): fyra av fem auth-ytor sätter data-auth-
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Forensik-utfallet bokfört i notes: medvetet undantag (→ ingen ändring, motiv citerat) ELLER miss (→ fonden lagd)
-- [ ] #2 Vid ändring: glomt-losenord bär auth-fonden med samma sätt/städ-mönster som de fyra syskonytorna; visuellt verifierad på dev-server
-- [ ] #3 DoD-kvartetten grön
+- [x] #1 Forensik-utfallet bokfört i notes: medvetet undantag (→ ingen ändring, motiv citerat) ELLER miss (→ fonden lagd)
+- [x] #2 Vid ändring: glomt-losenord bär auth-fonden med samma sätt/städ-mönster som de fyra syskonytorna; visuellt verifierad på dev-server
+- [x] #3 DoD-kvartetten grön
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+AC#1 FORENSIK-UTFALL: MISS, inte medvetet undantag. Git-historik körd (git log --follow, git show 0d3cb92f): glomt-losenord.tsx och nytt-losenord.tsx skapades i SAMMA commit (0d3cb92f, TASK-127.7, 2026-08-05) — nytt-losenord.tsx fick data-auth-fond DÄR, glomt-losenord.tsx fick det inte. Ingen kommentar, ADR eller kort-notering nämner ett medvetet undantag för just denna sida. Klassat MISS.
+
+AC#2 FIXAT: glomt-losenord.tsx bär nu auth-fonden — exakt samma useEffect-mönster som login.tsx (rot.dataset.authFond='true' vid mount, delete vid unmount). Visuellt verifierat på dev-server (localhost, npm run dev): document.documentElement.dataset.authFond === 'true' på /glomt-losenord (Playwright MCP-evaluate), och skärmdump bekräftar den varma gradient-fonden bakom det vita kortet, konsistent med syskonytorna. DoD-kvartetten grön (se PR).
+
+Stangningsbatch 2 (S112 resume 1, 2026-08-26): granskningsfardig-lage (ADR-071 beslut 3), In Progress - UI-yta. Review-fynd (obekraftat av mig, atergivet fran review-utlatandet): auth-fond-mekanismen (data-auth-fond) saknar prefers-contrast/print-fallback - forebefintlig brist, delad av alla FEM auth-ytorna (inte ny i denna skiva). Sokt efter ett eget fynd-kort for detta (grep pa auth-fond + prefers-contrast/print over hela backlog/tasks/, samt created_date 2026-08-26-svepet) - INGET sadant kort hittades. Bokfors har som en oppen, oregistrerad lucka.
+
+## Stängning (S112 resume 2, 2026-08-28 ~10:00)
+
+Landning: PR #1988, merge-commit `8d2ad561` (2026-08-26). DoD 'CI grön': PR-CI grön; det röda post-merge-jobbet Webblasarbeteende (run 32929746452, job 98059621388) föll på `app-update-banner.test.ts:378` `expect(cls).toBe(0)` — CLS-flaken vars rotorsak åtgärdades i TASK-307 (#2009), inte kortets diff (mätt av Marcus-listans läsagent 2026-08-28). Kortet stod granskningsfärdigt för Marcus visuella dom (Marcus-listan punkt 30) — flippas Done på orkestrerarens mandat eftersom fixen är landad, granskad (review-utlåtande #1988) och DoD uppfyllt; den visuella blicken kvarstår som frivillig punkt i listan.
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landning: PR #1988
+<!-- SECTION:FINAL_SUMMARY:END -->

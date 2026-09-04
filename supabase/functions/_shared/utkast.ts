@@ -20,6 +20,21 @@
 // generering (TASK-302.3). Mängden växer med ANTAL EVENT, inte med antal
 // förhandsgranskningar.
 //
+// [TASK-340.1, PRD `TASK-340` § A] UTKASTET ÄR INTE LÄNGRE BARA EN
+// FÖRHANDSVISNING — DET PROMOVERAS. Skarp generering kopierar utkastets
+// EXAKTA bytes till eventets prefix när klientens `kallhash` stämmer med
+// serverns omräkning (`_shared/promoveringsbeslut.ts`, `_shared/storage-
+// kopiera.ts`), i stället för att rendera om. Skälet är korrekthet, inte
+// hastighet: DocRaptor slumpar PDF:ens `/ID` per anrop, så en omrendering
+// ger BEVISLIGEN andra bytes än den fil Lotta granskade (research
+// `forhandsgranska-spara-atervand-bilageflodet-2026-08-29.md` § 2.3).
+// INVARIANTERNA ÄR OFÖRÄNDRADE: sökvägen är fortfarande `utkast/<eventId>/
+// <typ>.pdf` med `upsert: true` (hashen bärs i ANROPET, aldrig i
+// objektnamnet — ett namn som bar hashen hade brutit `ADR-124` beslut 2:s
+// "högst ETT utkast per event och typ"), och `rensaUtkast` städar precis
+// som förut EFTER en lyckad skarp skrivning — nu även efter en promovering,
+// eftersom utkastet DÅ är konsumerat.
+//
 // ÅTERANVÄNDER MEDVETET — ingen ny TTL, ingen ny bucket, ingen ny
 // eventId-valideringsform: `BILAGOR_BUCKET_ID` och
 // `SIGNED_DOWNLOAD_URL_TTL_SECONDS` (samma konstant `get-attachment-
@@ -39,6 +54,15 @@
 
 import { ValidationError, HttpError } from './errors.ts';
 import { BILAGOR_BUCKET_ID, isValidEventId, SIGNED_DOWNLOAD_URL_TTL_SECONDS } from './attachments.ts';
+// [TASK-370.1] Det kombinerade utkastets nyckelform + ålders-predikat bor i
+// den IMPORTFRIA kompositionsmodulen (Node-testbar, se dess filhuvud) —
+// denna fil återanvänder dem för den faktiska Storage-åtkomsten i stället
+// för att duplicera path-formeln eller TTL-konstanten.
+import {
+  arKombineratUtkastForfallet,
+  byggKombineratUtkastPath,
+  KOMBINERAT_UTKAST_MAPP,
+} from './kvitto-kombination.ts';
 
 /** De tre dokumentklasserna utkast-vägen stödjer (TASK-302 § Designbeslut). */
 export const UTKAST_TYPER = ['bilaga', 'kvitto', 'deltagarinformation'] as const;
@@ -64,13 +88,44 @@ interface SupabaseAdminLike {
         path: string,
         expiresIn: number,
       ): Promise<{ data: { signedUrl: string } | null; error: { message: string } | null }>;
+      // [TASK-340.1] `metadata.size` tillkom i den lästa ytan — `hittaUtkast`
+      // nedan behöver källobjektets storlek som RESERV när Storage-copyns
+      // eget svar inte rapporterar den (`_shared/storage-kopiera.ts`).
+      // Fältet är valfritt i typen: `rensaUtkast` läser bara `name`, och
+      // Storage returnerar `metadata: null` för mapp-poster.
+      // [TASK-370.1] `updated_at` tillkom — `stadaKombineradeUtkast` nedan
+      // behöver objektets ålder (samma fält `test-attachments-storage/
+      // index.ts`s `collectObjectEntries` redan läser för sin egen listning).
       list(path: string): Promise<{
-        data: { name: string }[] | null;
+        data: { name: string; metadata?: { size?: number } | null; updated_at?: string | null }[] | null;
         error: { message: string } | null;
       }>;
       remove(paths: string[]): Promise<{ error: { message: string } | null }>;
     };
   };
+}
+
+/**
+ * [TASK-340.1] Utkastets sökväg — EN formel, tre anropare (`laggUtkast`
+ * skriver den, `hittaUtkast` läser den, `generate-event-attachment` kopierar
+ * FRÅN den vid promovering). Formen är `ADR-124` beslut 2:s ordagrant:
+ * `utkast/<eventId>/<typ>.pdf`, alltså högst ETT utkast per event och typ.
+ *
+ * VALIDERINGEN BOR HÄR, inte hos anroparen: `eventId` måste ha rec-formen
+ * och `typ` vara ett av de tre enum-värdena — samma "stängd uppsättning,
+ * ingen fri sträng i ett path-SEGMENT"-disciplin filhuvudet beskriver. Att
+ * lyfta ut den i en egen funktion gjorde INTE valideringen svagare: den
+ * kördes tidigare inuti `laggUtkast` och körs nu i varje anropare av denna,
+ * `laggUtkast` inräknad.
+ */
+export function byggUtkastPath(eventId: string, typ: UtkastTyp): string {
+  if (!isValidEventId(eventId)) {
+    throw new ValidationError('eventId must be an Airtable record ID (rec…)');
+  }
+  if (!isValidUtkastTyp(typ)) {
+    throw new ValidationError(`typ must be one of: ${UTKAST_TYPER.join(', ')}`);
+  }
+  return `utkast/${eventId}/${typ}.pdf`;
 }
 
 export interface UtkastResultat {
@@ -94,14 +149,7 @@ export async function laggUtkast(
   supabaseAdmin: SupabaseAdminLike,
   params: { eventId: string; typ: UtkastTyp; bytes: Uint8Array },
 ): Promise<UtkastResultat> {
-  if (!isValidEventId(params.eventId)) {
-    throw new ValidationError('eventId must be an Airtable record ID (rec…)');
-  }
-  if (!isValidUtkastTyp(params.typ)) {
-    throw new ValidationError(`typ must be one of: ${UTKAST_TYPER.join(', ')}`);
-  }
-
-  const path = `utkast/${params.eventId}/${params.typ}.pdf`;
+  const path = byggUtkastPath(params.eventId, params.typ);
 
   const { error: uploadError } = await supabaseAdmin.storage
     .from(BILAGOR_BUCKET_ID)
@@ -122,6 +170,71 @@ export async function laggUtkast(
 
   const utgar = new Date(Date.now() + SIGNED_DOWNLOAD_URL_TTL_SECONDS * 1000).toISOString();
   return { url: signed.signedUrl, utgar };
+}
+
+/** [TASK-340.1] Det befintliga utkastet för ETT event och EN typ. */
+export interface FunnetUtkast {
+  /** Objektets fulla nyckel i bucketen (`utkast/<eventId>/<typ>.pdf`). */
+  path: string;
+  /** Storleken i bytes ur `list()`s `metadata.size`, `null` om den saknas. */
+  storlek: number | null;
+}
+
+/**
+ * hittaUtkast — TASK-340.1, PRD `TASK-340` § A (c): *"saknas utkastet
+ * renderas tyst (degradering, aldrig fel)"*. Slår upp om
+ * `utkast/<eventId>/<typ>.pdf` FINNS just nu, och hämtar samtidigt dess
+ * storlek (reserv för `Storlek (bytes)` när Storage-copyns eget svar inte
+ * bär `metadata.size`).
+ *
+ * ANVÄNDER `list(prefix)` OCH INTE en HEAD/`download` — `list` är den enda
+ * lästa Storage-ytan denna fil redan bär (`rensaUtkast`), den hämtar INGA
+ * bytes, och den ger storleken på köpet. Prefixet innehåller som mest tre
+ * objekt (`UTKAST_TYPER`), så filtreringen i minnet är gratis.
+ *
+ * RETURNERAR `null` — kastar ALDRIG — när utkastet saknas ELLER när `list`
+ * fallerar. Skälet är kortets kontrakt: ett saknat/oläsbart utkast får
+ * ALDRIG fälla den skarpa genereringen, det ska bara leda till att vi
+ * renderar i stället. Samma best-effort-disciplin som `rensaUtkast` nedan,
+ * av samma skäl och med samma loggning. Formfel i `eventId`/`typ` är dock
+ * ett ANNAT slag av fel (programmerings-/klientfel) och propageras från
+ * `byggUtkastPath` som `ValidationError` — de tystas inte.
+ */
+export async function hittaUtkast(
+  supabaseAdmin: SupabaseAdminLike,
+  params: { eventId: string; typ: UtkastTyp },
+): Promise<FunnetUtkast | null> {
+  const path = byggUtkastPath(params.eventId, params.typ);
+  const prefix = `utkast/${params.eventId}`;
+  const filnamn = `${params.typ}.pdf`;
+
+  try {
+    const { data: entries, error: listError } = await supabaseAdmin.storage
+      .from(BILAGOR_BUCKET_ID)
+      .list(prefix);
+    if (listError) {
+      console.error(
+        `[hittaUtkast] list("${prefix}") misslyckades (behandlas som "utkast saknas") | ` +
+          `event=${params.eventId} | error=${listError.message}`,
+      );
+      return null;
+    }
+    const traff = (entries ?? []).find((entry) => entry.name === filnamn);
+    if (!traff) return null;
+
+    const storlek = traff.metadata?.size;
+    return {
+      path,
+      storlek: typeof storlek === 'number' && Number.isFinite(storlek) ? storlek : null,
+    };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(
+      `[hittaUtkast] oväntat fel (behandlas som "utkast saknas") | event=${params.eventId} | ` +
+        `error=${message}`,
+    );
+    return null;
+  }
 }
 
 /**
@@ -178,4 +291,91 @@ export async function rensaUtkast(supabaseAdmin: SupabaseAdminLike, eventId: str
         `error=${message}`,
     );
   }
+}
+
+/**
+ * [TASK-370.1, ADR-124 § Updates] stadaKombineradeUtkast — BEST-EFFORT
+ * sweep av `utkast/kombinerat/` (samma "logga och svälj"-disciplin som
+ * `rensaUtkast` ovan: fäller ALDRIG anroparen). Tar bort varje objekt vars
+ * `updated_at` är äldre än `KOMBINERAT_UTKAST_TTL_MS`
+ * (`arKombineratUtkastForfallet`, `_shared/kvitto-kombination.ts` — ren
+ * ålders-predikat, testad i Node utan mock).
+ *
+ * OPPORTUNISTISK, INTE TIDSSTYRD: anropas av `laggKombineratUtkast` INNAN
+ * varje ny skrivning — repot har ingen storage-TTL-cron, och en "svepet
+ * körs när något annat körs"-disciplin är redan etablerad
+ * (`npm run seed:review -- --sweep`, se ADR-124 § Updates för hela
+ * motiveringen). Prefixet `utkast/kombinerat/` delar INGEN gemensam
+ * förälder med `utkast/<eventId>/` (`rensaUtkast` städar bara den senare),
+ * så de två sweeparna kan aldrig kollidera.
+ */
+export async function stadaKombineradeUtkast(supabaseAdmin: SupabaseAdminLike, nuMs: number = Date.now()): Promise<void> {
+  try {
+    const { data: entries, error: listError } = await supabaseAdmin.storage
+      .from(BILAGOR_BUCKET_ID)
+      .list(KOMBINERAT_UTKAST_MAPP);
+    if (listError) {
+      console.error(
+        `[stadaKombineradeUtkast] list("${KOMBINERAT_UTKAST_MAPP}") misslyckades ` +
+          `(fäller inte anroparen) | error=${listError.message}`,
+      );
+      return;
+    }
+    if (!entries || entries.length === 0) return;
+
+    const forfallna = entries.filter((entry) => arKombineratUtkastForfallet(entry.updated_at ?? null, nuMs));
+    if (forfallna.length === 0) return;
+
+    const paths = forfallna.map((entry) => `${KOMBINERAT_UTKAST_MAPP}/${entry.name}`);
+    const { error: removeError } = await supabaseAdmin.storage.from(BILAGOR_BUCKET_ID).remove(paths);
+    if (removeError) {
+      console.error(
+        `[stadaKombineradeUtkast] remove(${paths.length} objekt) misslyckades ` +
+          `(fäller inte anroparen) | error=${removeError.message}`,
+      );
+    }
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    console.error(`[stadaKombineradeUtkast] oväntat fel (fäller inte anroparen) | error=${message}`);
+  }
+}
+
+/**
+ * [TASK-370.1] Skriver ett KOMBINERAT förhandsgransknings-utkast (N kvitton
+ * som ETT dokument) till `utkast/kombinerat/<requestId>.pdf` och returnerar
+ * en signerad URL + dess utgångstid — SAMMA svarsform som `laggUtkast`.
+ * Kör `stadaKombineradeUtkast` FÖRST, best-effort, innan skrivningen (se
+ * dess docblock för varför sweepen sitter här och inte i en cron).
+ *
+ * Kastar `ValidationError` (400) för ogiltig `requestId`-form (ur
+ * `byggKombineratUtkastPath`), `HttpError` (502) om Storage-skrivningen
+ * eller signeringen misslyckas — samma felkontrakt som `laggUtkast`.
+ */
+export async function laggKombineratUtkast(
+  supabaseAdmin: SupabaseAdminLike,
+  params: { requestId: string; bytes: Uint8Array },
+): Promise<UtkastResultat> {
+  const path = byggKombineratUtkastPath(params.requestId);
+
+  await stadaKombineradeUtkast(supabaseAdmin);
+
+  const { error: uploadError } = await supabaseAdmin.storage
+    .from(BILAGOR_BUCKET_ID)
+    .upload(path, params.bytes, { contentType: 'application/pdf', upsert: true });
+  if (uploadError) {
+    throw new HttpError(502, `Det kombinerade utkastet kunde inte sparas: ${uploadError.message}`);
+  }
+
+  const { data: signed, error: signError } = await supabaseAdmin.storage
+    .from(BILAGOR_BUCKET_ID)
+    .createSignedUrl(path, SIGNED_DOWNLOAD_URL_TTL_SECONDS);
+  if (signError || !signed) {
+    throw new HttpError(
+      502,
+      `Kunde inte skapa en nedladdningslänk: ${signError?.message ?? 'okänt fel'}`,
+    );
+  }
+
+  const utgar = new Date(Date.now() + SIGNED_DOWNLOAD_URL_TTL_SECONDS * 1000).toISOString();
+  return { url: signed.signedUrl, utgar };
 }

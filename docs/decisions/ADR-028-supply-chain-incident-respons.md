@@ -242,7 +242,7 @@ aldrig med `rm -rf node_modules package-lock.json`. Endast en av de sex
 (Vite, 2026-06-15-posten ovan) fick sin avvikelse skriven in i denna ADR;
 de fem andra var tyst identisk praxis.
 
-**Amenderingen (Marcus-GO 2026-08-04, sessionsdok `tasks/sessions/2026-08-02-session-96.md` Del 10):**
+**Amenderingen (Marcus-GO 2026-08-04, sessionsdok `tasks/sessions/archive/2026-08/2026-08-02-session-96.md` Del 10):**
 
 Beslut §2 föreskriver "regenerera lock-fil helt, INTE partiell fix" utan
 att skilja på incidentklass. Det var rätt regel för §2:s egen
@@ -305,4 +305,4 @@ exakt.
 - Research: PR #682 (`docs/research/t118-npm-advisory-remediering-praxis-2026-08-04.md`)
 - Fix: PR #684 (merge-commit `c227593f`)
 - Amendering: `TASK-133`
-- Sessionsdok: `tasks/sessions/2026-08-02-session-96.md` Del 10
+- Sessionsdok: `tasks/sessions/archive/2026-08/2026-08-02-session-96.md` Del 10

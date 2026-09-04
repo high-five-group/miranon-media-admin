@@ -44,15 +44,55 @@
 // Se isAlreadyDeletedError() för klassificeringen — den är fail-closed, så en
 // 404 från fel bas eller fel tabell fäller fortfarande.
 //
-// Flaggor: --dry-run (planera + rapportera, radera inget).
+// ═══ TVÅ LÄGEN (TASK-309.15) ═══
+// SETUP-läget (default, allt ovan) är oförändrat och är fortsatt ANDRA
+// försvarslinjen — deterministiskt, robust mot krasch, oberoende av att någon
+// körning hann städa efter sig.
+//
+// EFTER-KÖRNING-läget (`--efter-korning [manifestfil]`) är den FÖRSTA
+// försvarslinjen och stänger fönstret setup-purgen strukturellt inte kan
+// stänga: mellan en testkörning och NÄSTA staging-jobb ligger raderna kvar.
+// De kastbara eventen bär framtida `startdatum` och blir därmed KOMMANDE event
+// i appens eventväljare — mätt 2026-08-24: 151 kvarliggande ZZ-event, samtliga
+// yngre än 2,4 h (setup-purgen HADE alltså kört; fönstret är formen, inte ett
+// fel). Marcus valde ett av dem vid en granskning och fick en tom
+// genereringsvy, vilket läste som ett designfel i vyn.
+//
+// Läget läser ett ÄGAR-MANIFEST som testerna skriver
+// (`tests/support/kastbara-poster.ts`, JSONL, en rad per skapad post) och
+// raderar EXAKT de posterna. Att testet inte kan radera själv är ADR-060
+// punkt 2+4: det får ALDRIG en Airtable-token, och ingen delete-EF för event
+// finns. Manifestet bär därför KUNSKAPEN över till denna Airtable-creddade
+// kodväg, som körs SKILD från testet (CI: eget jobb + egen secret; lokalt:
+// `npm run purge:staging:efter`).
+//
+// ÅLDERS-GUARDEN ERSÄTTS, DEN TAS INTE BORT. I setup-läget är åldern det enda
+// tillgängliga beviset för "ingen kör på den här raden just nu". I
+// efter-körning-läget finns ett STARKARE bevis: raden skapades av den körning
+// som just avslutades, och står namngiven i dess eget manifest. Snittet mot
+// manifestet är alltså skyddet — en samtidig lokal körnings rader kan per
+// konstruktion aldrig hamna i CI:s manifest. Allt ANNAT skydd är kvar orört:
+// bas-guarden, filterByFormula, exakt markör-match och länk-guarden körs
+// precis som i setup-läget, via SAMMA `planPurge`.
+//
+// LUCKDETEKTIONEN: en ägd post som INGEN target gjorde anspråk på men som
+// FINNS KVAR i basen är en sentinel-familj utan purge-target — exakt den lucka
+// som lät två `ZZ-create-event-test-uppdaterad`-rader ligga kvar i 27
+// respektive 32 dygn (update-event-testets `finally`-återställning föll, och
+// den uppdaterade orten matchade ingen target). Läget FÄLLER på det i stället
+// för att tiga.
+//
+// Flaggor: --dry-run (planera + rapportera, radera inget),
+//          --efter-korning [fil] (ägar-manifest-läget; fil default
+//          `.kastbara/poster.jsonl`).
 // Exit: 0 = OK (även "inget att purga"), 1 = guard-/konfigurationsfel,
-//       2 = Airtable-API-fel.
+//       2 = Airtable-API-fel ELLER ägd post utan purge-target (luckan ovan).
 //
 // Airtable-mekanik (verifierad mot developers-docs 2026-07-19): 5 req/s per
 // bas, 429 ⇒ vänta 30 s; delete via ?records[]=… (batchas ≤10 per anrop —
 // S69-empirin: 36 batchar à ≤10); list pagineras via offset.
 
-import { readFile } from 'node:fs/promises';
+import { readFile, rm } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import { kravStagingLedigt } from './lib/staging-preflight.mjs';
@@ -60,6 +100,18 @@ import { kravStagingLedigt } from './lib/staging-preflight.mjs';
 const AIRTABLE_API_URL = 'https://api.airtable.com/v0';
 const BASE_ID_PATTERN = /^app[A-Za-z0-9]{14}$/;
 const REC_ID_PATTERN = /^rec[A-Za-z0-9]{14}$/;
+
+/**
+ * [TASK-309.15] Ägar-manifestets default-sökväg. SPEGLAR
+ * `KASTBARA_POSTER_FIL` i `tests/support/kastbara-poster.ts` — skrivaren
+ * (Playwright/TypeScript) och läsaren (detta Node-script) kan inte dela modul,
+ * så konstanten finns på två ställen. Att de två går isär TYST är precis
+ * felklassen som gör ett mätinstrument farligare än inget: purgen hade läst en
+ * tom fil och rapporterat "inget att städa" utan att något såg fel ut.
+ * `scripts/test-purge-staging-sentinels.mjs` korsläser därför de två raderna
+ * mot varandra vid varje CI-körning.
+ */
+export const KASTBARA_POSTER_FIL = '.kastbara/poster.jsonl';
 
 /**
  * Airtables ENDA formulering för "posten finns inte" — live-mätt mot staging
@@ -77,7 +129,14 @@ export function validatePolicy(policy) {
   if (!policy || typeof policy !== 'object') {
     throw new Error('policy: förväntade ett objekt');
   }
-  const { expectedBaseId, forbiddenBaseIds, minAgeMinutes, targets, storageTargets } = policy;
+  const {
+    expectedBaseId,
+    forbiddenBaseIds,
+    minAgeMinutes,
+    targets,
+    storageTargets,
+    postgresTargets,
+  } = policy;
   if (!BASE_ID_PATTERN.test(expectedBaseId ?? '')) {
     throw new Error(`bas-guard: expectedBaseId "${expectedBaseId}" är inte app-formad`);
   }
@@ -112,6 +171,38 @@ export function validatePolicy(policy) {
     for (const st of storageTargets) {
       if (!st.name || !st.bucket || !st.pathPrefix) {
         throw new Error(`policy: storageTarget "${st.name ?? '?'}" saknar obligatoriska fält`);
+      }
+    }
+  }
+  // [TASK-346.3] postgresTargets är OPTIONELLT, samma klass-form som
+  // storageTargets. Den FAKTISKA spärren mot "något annat än en gammal
+  // ZZ-TASK-346-testrad" sitter server-side i migrationens
+  // `public.purga_testrader` (hårdkodat mönster + hårdkodat 10-minutersgolv)
+  // — den är INTE duplicerad hit. Mönstret nedan är en SPEGEL som korsläses
+  // mot migrationen av scripts/test-purge-staging-sentinels.mjs; att det
+  // valideras här är en form-guard, inte ett säkerhetslager.
+  if (postgresTargets !== undefined) {
+    if (!Array.isArray(postgresTargets) || postgresTargets.length === 0) {
+      throw new Error('policy: postgresTargets är satt men tomt — ta bort nyckeln helt i stället');
+    }
+    for (const pt of postgresTargets) {
+      if (!pt.name || !pt.rpc || !pt.exactMatchPattern) {
+        throw new Error(`policy: postgresTarget "${pt.name ?? '?'}" saknar obligatoriska fält`);
+      }
+      if (!/^[a-z_][a-z0-9_]*$/.test(pt.rpc)) {
+        throw new Error(
+          `policy: postgresTarget "${pt.name}" har ett rpc-namn som inte är en giltig ` +
+            `Postgres-identifierare: "${pt.rpc}"`,
+        );
+      }
+      // Ett mönster som inte kompilerar hade gjort korsläsningen mot
+      // migrationen meningslös — den jämför strängar, inte semantik.
+      try {
+        new RegExp(pt.exactMatchPattern);
+      } catch (err) {
+        throw new Error(
+          `policy: postgresTarget "${pt.name}" har ett ogiltigt exactMatchPattern: ${err.message}`,
+        );
       }
     }
   }
@@ -214,6 +305,103 @@ export function planPurge(records, target, minAgeMinutes, nowMs) {
     plan.toDelete.push(record.id);
   }
   return plan;
+}
+
+// ---------------------------------------------------------------------------
+// [TASK-309.15] Efter-körning-läget — ägar-manifestet (pura funktioner)
+// ---------------------------------------------------------------------------
+
+/**
+ * Läs CLI-flaggorna. Egen funktion (i stället för inline i main) enbart för att
+ * den ska kunna prövas utan att någon rör Airtable.
+ *
+ * `--efter-korning` tar en VALFRI filsökväg. Nästa argv-post räknas som
+ * sökväg bara om den inte själv är en flagga — annars faller den till
+ * KASTBARA_POSTER_FIL, så `--efter-korning --dry-run` betyder vad det ser ut
+ * att betyda.
+ */
+export function parseArgs(argv) {
+  const dryRun = argv.includes('--dry-run');
+  const i = argv.indexOf('--efter-korning');
+  if (i === -1) return { lage: 'setup', dryRun, manifestFil: null };
+  const nasta = argv[i + 1];
+  const manifestFil =
+    typeof nasta === 'string' && nasta !== '' && !nasta.startsWith('--')
+      ? nasta
+      : KASTBARA_POSTER_FIL;
+  return { lage: 'efter-korning', dryRun, manifestFil };
+}
+
+/**
+ * Tolka ägar-manifestets JSONL.
+ *
+ * FAIL-CLOSED PER RAD: en rad som inte är JSON, eller vars `id` inte är
+ * rec-formad, blir en OGILTIG rad — den bär inget ägarskap och kan därför
+ * aldrig leda till en radering. Den rapporteras i stället för att tigas ihjäl:
+ * en tyst bortsorterad rad hade betytt att en post inte städades och att ingen
+ * fick veta det.
+ *
+ * Duplicerade ID:n är NORMALA (ett event kan registreras av flera anrop i
+ * samma svit) och slås ihop av mängden — `vad` behåller den FÖRSTA
+ * beskrivningen, som är den som beskriver skapandet.
+ */
+export function parseManifest(text) {
+  const ids = new Set();
+  const vad = new Map();
+  const ogiltiga = [];
+  for (const rad of (text ?? '').split('\n')) {
+    if (rad.trim() === '') continue;
+    let post;
+    try {
+      post = JSON.parse(rad);
+    } catch {
+      ogiltiga.push(rad.slice(0, 120));
+      continue;
+    }
+    if (!post || typeof post !== 'object' || !REC_ID_PATTERN.test(post.id ?? '')) {
+      ogiltiga.push(rad.slice(0, 120));
+      continue;
+    }
+    ids.add(post.id);
+    if (!vad.has(post.id)) vad.set(post.id, typeof post.vad === 'string' ? post.vad : '');
+  }
+  return { ids, vad, ogiltiga };
+}
+
+/**
+ * Klassa ETT targets listade poster mot ägar-manifestet.
+ *
+ * Ålders-guarden sätts till 0 — se filhuvudets § "ÅLDERS-GUARDEN ERSÄTTS":
+ * snittet mot `agdaIds` är ett STARKARE ägarskapsbevis än åldern, och det är
+ * det som skyddar mot att röra någon annans in-flight-rad. Varje ANNAT
+ * skyddsräcke (exakt markör-match, länk-guard) körs oförändrat, eftersom detta
+ * är SAMMA `planPurge` som setup-läget använder.
+ *
+ * `isOldEnough(_, 0, now)` är fortfarande fail-safe åt rätt håll: en post med
+ * oparsbar `createdTime` klassas som "för färsk" och rörs INTE, även om den är
+ * ägd. Konservativt med flit — setup-purgen tar den vid nästa jobb.
+ */
+export function planEfterKorning(records, target, agdaIds, nowMs) {
+  const egna = records.filter((r) => agdaIds.has(r.id));
+  return planPurge(egna, target, 0, nowMs);
+}
+
+/** Alla ID:n ETT target-plan rörde vid — oavsett utfall. Det som INTE står här
+ *  gjorde ingen target anspråk på, och är därför luckdetektionens indata. */
+export function hanteradeIds(plan) {
+  return [
+    ...plan.toDelete,
+    ...plan.skippedYoung,
+    ...plan.skippedMismatch,
+    ...plan.skippedLinked.map((s) => s.id),
+  ];
+}
+
+/** Airtable-formel som matchar exakt de givna rec-ID:na. Används för
+ *  luckdetektionens existens-sond — enda stället där vi frågar "finns denna
+ *  post över huvud taget", oberoende av sentinel-mönster. */
+export function recordIdFormula(ids) {
+  return `OR(${ids.map((id) => `RECORD_ID()='${id}'`).join(',')})`;
 }
 
 /** Dela id-lista i batchar om max size (Airtable delete ≤10 per anrop). */
@@ -363,12 +551,12 @@ class ApiError extends Error {
   }
 }
 
-async function listSentinels(baseId, target, token, throttleMs) {
+async function listByFormula(baseId, table, formula, token, throttleMs) {
   const records = [];
   let offset;
   do {
-    const url = new URL(`${AIRTABLE_API_URL}/${baseId}/${encodeURIComponent(target.table)}`);
-    url.searchParams.set('filterByFormula', target.filterByFormula);
+    const url = new URL(`${AIRTABLE_API_URL}/${baseId}/${encodeURIComponent(table)}`);
+    url.searchParams.set('filterByFormula', formula);
     url.searchParams.set('pageSize', '100');
     if (offset) url.searchParams.set('offset', offset);
     const page = await airtableRequest(url, token, throttleMs);
@@ -376,6 +564,10 @@ async function listSentinels(baseId, target, token, throttleMs) {
     offset = page.offset;
   } while (offset);
   return records;
+}
+
+async function listSentinels(baseId, target, token, throttleMs) {
+  return listByFormula(baseId, target.table, target.filterByFormula, token, throttleMs);
 }
 
 /** DELETE-URL för en batch (Airtable: ?records[]=…, ≤10 id:n per anrop). */
@@ -529,11 +721,235 @@ async function purgeStorageTarget(baseUrl, jwt, target, minAgeMinutes, nowMs, dr
 }
 
 // ---------------------------------------------------------------------------
+// [TASK-346.3] Postgres-targets — betalningsdomänen och jobbmotorn
+//
+// Samma tre-lagers-form som storage-purgen ovan (samma fyra TEST_*-secrets,
+// samma test-admin-JWT, samma ApiError-klass), men målet är en RPC i stället
+// för en test-EF: `public.purga_testrader` (migration 20260830200100).
+//
+// VARFÖR EN RPC OCH INTE EN RAK DELETE: skriptet har ingen service_role-nyckel
+// (inte en CI-secret — se supabase/migrations/README.md § RLS-beviset), och
+// `authenticated` har medvetet varken UPDATE eller DELETE på någon av
+// tabellerna. Funktionen är `security definer` med HÅRDKODAT sentinel-mönster,
+// hårdkodat 10-minutersgolv och hårdkodad tabellista — den kan alltså inte
+// fås att röra något annat, oavsett vad denna kodväg skickar.
+//
+// ÅLDERS-GUARDEN skickas som argument men KAN INTE SÄNKAS under funktionens
+// eget golv. Skyddsräcke 2 gäller därmed även här, och det gör det på den
+// säkra sidan av gränsen.
+//
+// DRY RUN: funktionen har medvetet inget dry-run-läge — ett sådant hade
+// krävt en andra kodväg genom samma raderingslogik, alltså exakt den
+// divergens-risk som gör städverktyg farliga. I --dry-run RAPPORTERAS
+// targetet i stället utan att anropas.
+// ---------------------------------------------------------------------------
+
+/** Samma fyra env-variabler som storage-purgen — Postgres-purgen delar inloggning. */
+const POSTGRES_PURGE_ENV_VARS = STORAGE_PURGE_ENV_VARS;
+
+/** Anropar ETT postgres-target via PostgREST-RPC. Kastar ApiError på icke-2xx. */
+async function purgePostgresTarget(baseUrl, anonKey, jwt, target, minAgeMinutes, dryRun) {
+  if (dryRun) {
+    console.log(
+      `▸ ${target.name} (rpc ${target.rpc}): DRY RUN — anropas inte. ` +
+        `Sentinel-mönster: ${target.exactMatchPattern}`,
+    );
+    return;
+  }
+
+  const res = await fetch(`${baseUrl}/rest/v1/rpc/${target.rpc}`, {
+    method: 'POST',
+    headers: {
+      apikey: anonKey,
+      Authorization: `Bearer ${jwt}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ p_min_alder_minuter: minAgeMinutes }),
+  });
+  const body = await res.text();
+
+  if (!res.ok) {
+    throw new ApiError(`${target.rpc} ${res.status}: ${body.slice(0, 300)}`, {
+      status: res.status,
+      body,
+    });
+  }
+
+  const rader = JSON.parse(body);
+  const totalt = rader.reduce((summa, rad) => summa + (rad.raderade ?? 0), 0);
+  console.log(
+    `▸ ${target.name} (rpc ${target.rpc}, ålders-guard: > ${minAgeMinutes} min): ` +
+      `${totalt} rader raderade`,
+  );
+  for (const rad of rader) {
+    if ((rad.raderade ?? 0) > 0) console.log(`   🗑  ${rad.tabell}: ${rad.raderade}`);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// [TASK-309.15] Efter-körning-purgen — manifest-driven, ålders-guard ersatt av
+// ägarskap. Se filhuvudets § TVÅ LÄGEN för hela resonemanget.
+// ---------------------------------------------------------------------------
+
+/**
+ * Kör efter-körning-läget. Returnerar true om något gick fel (anropar-sidan
+ * mappar det till exit 2) — samma form som setup-flödets `hadApiError`.
+ */
+async function efterKorning(policy, token, manifestFil, dryRun) {
+  const { expectedBaseId, requestThrottleMs, deleteBatchSize } = policy;
+
+  let text;
+  try {
+    text = await readFile(manifestFil, 'utf8');
+  } catch {
+    // INGEN fil = ingen körning har registrerat något. Det är ett giltigt
+    // utfall (staging-steget skippades, eller sviten skapade inga rader) och
+    // ska INTE fälla jobbet — setup-purgen är kvar som andra försvarslinje.
+    console.log(
+      `ⓘ  Inget ägar-manifest på "${manifestFil}" — inget att städa efter körningen. ` +
+        '(Skrivs av tests/support/kastbara-poster.ts när en staging-svit skapar en kastbar rad.)',
+    );
+    return false;
+  }
+
+  const { ids, vad, ogiltiga } = parseManifest(text);
+  console.log(
+    `Efter-körning-purge mot ${expectedBaseId} — ${ids.size} ägd(a) post(er) i "${manifestFil}"` +
+      `${dryRun ? ' — DRY RUN, inget raderas' : ''}`,
+  );
+  for (const rad of ogiltiga) {
+    console.log(`   ⚠️  ogiltig manifest-rad hoppas över (bär inget ägarskap): ${rad}`);
+  }
+  if (ids.size === 0) return false;
+
+  let hadApiError = false;
+  const kvar = new Set(ids);
+  const nowMs = Date.now();
+
+  for (const target of policy.targets) {
+    try {
+      const records = await listSentinels(expectedBaseId, target, token, requestThrottleMs);
+      const plan = planEfterKorning(records, target, ids, nowMs);
+      for (const id of hanteradeIds(plan)) kvar.delete(id);
+      if (
+        plan.toDelete.length === 0 &&
+        plan.skippedYoung.length === 0 &&
+        plan.skippedLinked.length === 0 &&
+        plan.skippedMismatch.length === 0
+      ) {
+        continue; // detta target ägde ingenting i denna körning — tyst.
+      }
+      console.log(
+        `▸ ${target.name} (${target.table}): ${plan.toDelete.length} ägda raderas, ` +
+          `${plan.skippedLinked.length} länk-guardade, ${plan.skippedMismatch.length} icke-exakta, ` +
+          `${plan.skippedYoung.length} utan läsbar createdTime`,
+      );
+      for (const s of plan.skippedLinked) {
+        console.log(
+          `   ⚠️  ${s.id} hoppas över — länkade fält: ${s.fields.join(', ')} (fail-safe: rapportera, radera ej)`,
+        );
+      }
+      for (const id of plan.skippedMismatch) {
+        console.log(`   ⚠️  ${id} träffade formeln men INTE exakt-mönstret — rörs ej`);
+      }
+      if (dryRun || plan.toDelete.length === 0) continue;
+
+      const { deleted, alreadyGone } = await deleteRecords(
+        expectedBaseId,
+        target,
+        plan.toDelete,
+        token,
+        requestThrottleMs,
+        deleteBatchSize,
+      );
+      console.log(
+        `   🗑  ${deleted}/${plan.toDelete.length} raderade` +
+          (alreadyGone > 0 ? ` (+${alreadyGone} redan borta — räknas som utfört)` : ''),
+      );
+
+      // Efter-verifiering, samma form som setup-flödet: inga ÄGDA rader kvar.
+      const remaining = planEfterKorning(
+        await listSentinels(expectedBaseId, target, token, requestThrottleMs),
+        target,
+        ids,
+        nowMs,
+      );
+      if (remaining.toDelete.length > 0) {
+        throw new ApiError(
+          `efter-verifiering: ${remaining.toDelete.length} ägda sentineler kvarstår`,
+        );
+      }
+    } catch (err) {
+      if (!(err instanceof ApiError)) throw err;
+      hadApiError = true;
+      console.error(`❌ ${target.name}: ${err.message}`);
+    }
+  }
+
+  // ═══ LUCKDETEKTIONEN ═══
+  // En ägd post som inget target rörde är ANTINGEN redan borta (normalt — en
+  // tidigare körnings manifest-rad, eller setup-purgen hann före) ELLER kvar i
+  // basen utan att någon target gör anspråk på den. Det andra fallet är den
+  // lucka som lät `ZZ-create-event-test-uppdaterad` ligga i 32 dygn, och den
+  // ska fälla — inte tigas. Sonden frågar per TABELL, inte per post: en
+  // formel-listning per distinkt tabell i policyn, oavsett antal ID:n.
+  if (kvar.size > 0 && !hadApiError) {
+    const tabeller = [...new Set(policy.targets.map((t) => t.table))];
+    const funna = new Map();
+    try {
+      for (const tabell of tabeller) {
+        for (const batch of chunk([...kvar], 50)) {
+          const rader = await listByFormula(
+            expectedBaseId,
+            tabell,
+            recordIdFormula(batch),
+            token,
+            requestThrottleMs,
+          );
+          for (const r of rader) funna.set(r.id, tabell);
+        }
+      }
+    } catch (err) {
+      if (!(err instanceof ApiError)) throw err;
+      hadApiError = true;
+      console.error(`❌ luckdetektionens existens-sond: ${err.message}`);
+    }
+
+    const borta = [...kvar].filter((id) => !funna.has(id));
+    if (borta.length > 0) {
+      console.log(
+        `ⓘ  ${borta.length} ägd(a) post(er) fanns inte längre i basen (redan raderade) — inget att göra.`,
+      );
+    }
+    if (funna.size > 0) {
+      console.error(
+        `❌ LUCKA: ${funna.size} ägd(a) post(er) FINNS KVAR men matchade ingen purge-target. ` +
+          'Sentinel-familjen saknar en target i .purge-staging-policy.json — lägg till den, ' +
+          'annars ligger raderna kvar för alltid (setup-purgen ser dem inte heller).',
+      );
+      for (const [id, tabell] of funna) {
+        console.error(`   ⚠️  ${id} i ${tabell} — registrerad som "${vad.get(id) ?? '?'}"`);
+      }
+      hadApiError = true;
+    }
+  }
+
+  // Manifestet är förbrukat när körningen lyckats — annars växer den lokala
+  // filen obegränsat. Vid fel LÄMNAS den kvar med flit: nästa körning ska få
+  // ett nytt försök på samma poster.
+  if (!dryRun && !hadApiError) {
+    await rm(manifestFil, { force: true });
+  }
+
+  return hadApiError;
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
 async function main() {
-  const dryRun = process.argv.includes('--dry-run');
+  const { lage, dryRun, manifestFil } = parseArgs(process.argv);
   const scriptDir = dirname(fileURLToPath(import.meta.url));
   const policyPath = join(scriptDir, '..', '.purge-staging-policy.json');
 
@@ -562,6 +978,15 @@ async function main() {
   // CI-jobbet. Gäller även --dry-run: en dry run läser basen och delar dess
   // 5 req/s-budget.
   kravStagingLedigt('lokal purge:staging');
+
+  // [TASK-309.15] Efter-körning-läget delar ALLA guards ovan (policy-form,
+  // bas-guard, token-krav, staging-preflight) och grenar först här.
+  if (lage === 'efter-korning') {
+    const fel = await efterKorning(policy, token, manifestFil, dryRun);
+    if (fel) process.exit(2);
+    console.log(dryRun ? 'Efter-körning-purge: dry run klar.' : 'Efter-körning-purge klar.');
+    return;
+  }
 
   const { expectedBaseId, minAgeMinutes, requestThrottleMs, deleteBatchSize } = policy;
   const nowMs = Date.now();
@@ -625,6 +1050,22 @@ async function main() {
     }
   }
 
+  // Storage- och Postgres-klasserna delar test-admin-inloggning: EN
+  // GoTrue-token per körning, inte en per klass (samma skäl som T24-b:s
+  // "authenticate once in setup, reuse" i tests/api/helpers.ts).
+  let adminJwt = null;
+  const hamtaAdminJwt = async () => {
+    if (adminJwt === null) {
+      adminJwt = await loginTestAdmin(
+        process.env.TEST_SUPABASE_URL,
+        process.env.TEST_SUPABASE_ANON_KEY,
+        process.env.TEST_ADMIN_EMAIL,
+        process.env.TEST_ADMIN_PASSWORD,
+      );
+    }
+    return adminJwt;
+  };
+
   // [TASK-302.3] Storage-targets — se § "Storage-purge" ovan för gaten och
   // varför en saknad TEST_*-env är ett SKIP, inte ett fel.
   if (Array.isArray(policy.storageTargets) && policy.storageTargets.length > 0) {
@@ -638,12 +1079,7 @@ async function main() {
       );
     } else {
       try {
-        const jwt = await loginTestAdmin(
-          process.env.TEST_SUPABASE_URL,
-          process.env.TEST_SUPABASE_ANON_KEY,
-          process.env.TEST_ADMIN_EMAIL,
-          process.env.TEST_ADMIN_PASSWORD,
-        );
+        const jwt = await hamtaAdminJwt();
         for (const target of policy.storageTargets) {
           await purgeStorageTarget(
             process.env.TEST_SUPABASE_URL,
@@ -658,6 +1094,37 @@ async function main() {
         if (!(err instanceof ApiError)) throw err;
         hadApiError = true;
         console.error(`❌ storageTargets: ${err.message}`);
+      }
+    }
+  }
+
+  // [TASK-346.3] Postgres-targets — se § "Postgres-targets" ovan. Samma
+  // env-gate och samma SKIP-semantik som storage-klassen: en saknad
+  // TEST_*-secret är inte ett fel, den är en miljö utan Supabase-credentials.
+  if (Array.isArray(policy.postgresTargets) && policy.postgresTargets.length > 0) {
+    const missingEnv = POSTGRES_PURGE_ENV_VARS.filter((name) => !process.env[name]);
+    if (missingEnv.length > 0) {
+      console.log(
+        `ⓘ  postgresTargets hoppas över — saknar ${missingEnv.join(', ')} i env ` +
+          `(${missingEnv.length}/${POSTGRES_PURGE_ENV_VARS.length}). Lokalt: källa .env.test.`,
+      );
+    } else {
+      try {
+        const jwt = await hamtaAdminJwt();
+        for (const target of policy.postgresTargets) {
+          await purgePostgresTarget(
+            process.env.TEST_SUPABASE_URL,
+            process.env.TEST_SUPABASE_ANON_KEY,
+            jwt,
+            target,
+            minAgeMinutes,
+            dryRun,
+          );
+        }
+      } catch (err) {
+        if (!(err instanceof ApiError)) throw err;
+        hadApiError = true;
+        console.error(`❌ postgresTargets: ${err.message}`);
       }
     }
   }

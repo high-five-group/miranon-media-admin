@@ -19,16 +19,34 @@
 //   10. fel HTTP-metod (GET) → 405.
 //
 // TASK-275.2 (ADR-118) tillägg — RÄCKVIDDSPARAMETRARNAS strikta Zod-
-// validering (AC #2), "allow/deny-testbevis" per DoD-disciplinen:
-//   11. allow: rackvidd Kurstyp + kursfamilj/kursniva → 201, Räckvidd/
-//       Kursfamilj/Kursnivå SKRIVNA, `Event` FÖRBLIR satt (medveten
-//       avgränsning, se upload-attachment/index.ts § filhuvudet).
-//   12. allow: rackvidd Alla event (inga kursfält) → 201, Kursfamilj/
-//       Kursnivå OSATTA (utelämnade, inte tomsträng).
-//   13. deny: rackvidd Kurstyp UTAN kursfamilj → 400.
+// validering, "allow/deny-testbevis" per DoD-disciplinen. OMSKRIVET i
+// TASK-338.2 (ADR-125 § Beslut 1): räckvidden är nu `Event`/`Gemensam` med
+// tre valfria axlar, och de gamla värdena är LEGACY som MAPPAS:
+//   11. allow: LEGACY `Kurstyp` + kursfamilj/kursniva → 201, och raden
+//       sparas som `Räckvidd: 'Gemensam'` med axlarna BEVARADE. `Event`
+//       FÖRBLIR satt (medveten avgränsning, se index.ts § filhuvudet).
+//   12. allow: LEGACY `Alla event` (inga kursfält) → 201, sparas som
+//       `Gemensam` med Kursfamilj/Kursnivå OSATTA (utelämnade, inte
+//       tomsträng).
+//   13. deny: LEGACY `Kurstyp` UTAN kursfamilj → 400 (det gamla kontraktet
+//       bevaras oförändrat för den gamla klienten).
 //   14. deny: kursfamilj angiven trots rackvidd Event (default) → 400.
 //   15. deny: okänt rackvidd-värde → 400.
 //   16. deny: okänt kursfamilj-värde → 400.
+//
+// TASK-338.2 (ADR-125 § Beslut 1) tillägg — PLATS-AXELN och den levande
+// `Gemensam`-räckvidden, samma allow/deny-disciplin:
+//   21. allow: `Gemensam` + plats → 201, `Plats` skriven som LÄNK-array
+//       ([recId]), `Platsnamn`-lookupen upplöst i svarets `plats.namn`.
+//   22. allow: `Gemensam` UTAN axlar → 201, noll axlar är giltigt.
+//   23. allow: `Gemensam` + kursfamilj + plats → 201, båda axlarna skrivna.
+//   24. deny: `plats` med giltig rec-form men OKÄND rad → 404 (existens-
+//       kontrollen mot Platser, `platsFinns`) — den viktigaste av dem:
+//       utan den hade Airtable tystat ID:t och gett en PLATS-LÖS bilaga
+//       synlig på ALLA event.
+//   25. deny: `plats` med ogiltig FORM (inte rec…) → 400 (Zod).
+//   26. deny: `plats` angiven trots räckvidd Event → 400.
+//   27. deny: `kursniva` utan `kursfamilj` på `Gemensam` → 400.
 //
 // TASK-275.3 (ADR-118 beslut 5) tillägg — EVENT-LÖS UPPLADDNING (mönster 1,
 // "allow/deny-testbevis" per DoD-disciplinen):
@@ -72,7 +90,12 @@
 import { randomUUID } from 'node:crypto';
 import { type APIRequestContext, type APIResponse, expect, test } from '@playwright/test';
 import type { z } from 'zod';
-import { AttachmentSchema } from '../../src/domain/schemas';
+// [TASK-338.2, SMALNAD TASK-338.4] Läser EF-svaret med testsidans schema —
+// numera BARA en strikt `plats`-överskrivning (räckvidden går via
+// domänschemat rakt av sedan `AttachmentScope` bär `GEMENSAM`). Se
+// `attachment-staging-schema.ts` § VAD SOM ÄR KVAR för varför strikt HÄR och
+// lenient i klienten är två avsikter, inte en inkonsekvens.
+import { StagingAttachmentSchema } from './attachment-staging-schema';
 import { BELAGGNING_EVENT_ID } from './fixtures';
 import { type ApiConfig, classify401Body, getApiConfig, getValidUserJWT } from './helpers';
 
@@ -80,7 +103,17 @@ const ENDPOINT = '/functions/v1/upload-attachment';
 const DELETE_ENDPOINT = '/functions/v1/delete-attachment';
 const SMALL_UPLOAD_MAX_BYTES = 6 * 1024 * 1024;
 
-type Attachment = z.infer<typeof AttachmentSchema>;
+// [TASK-338.2] Den PERMANENTA Platser-raden skrivvägens plats-axel prövas mot
+// (samma fixtur create-event.staging.test.ts vilar på; live-läst mot staging
+// 2026-08-29). Testet skapar aldrig en Platser-rad — det hade bara lämnat
+// skräp bakom sig i en tabell utan purge-target för denna svit.
+const PLATS_ID = 'recVWAYh1cbVQKxi7';
+const PLATS_NAMN = 'ZZ-plats-unik-fixtur';
+// Rec-FORM men ingen existerande rad — provocerar existenskontrollen
+// (`platsFinns`), inte Zods formkontroll.
+const OKAND_PLATS_ID = 'recZZZZZZZZZZZZZZ';
+
+type Attachment = z.infer<typeof StagingAttachmentSchema>;
 
 interface UploadBody {
   eventId?: string | null;
@@ -88,6 +121,9 @@ interface UploadBody {
   contentType?: string;
   bytesBase64?: string;
   rackvidd?: unknown;
+  /** [TASK-338.2] Platser-record-ID (räckviddens tredje axel). `unknown`
+   *  av samma skäl som `rackvidd`: deny-testerna skickar medvetet skräp. */
+  plats?: unknown;
   kursfamilj?: unknown;
   kursniva?: unknown;
 }
@@ -161,7 +197,7 @@ test.describe('upload-attachment — skarp conformance (TASK-146.4 mönster 1)',
     expect(body.record.fields.Kursnivå).toBeUndefined();
 
     // (ii) Domän-shape (adapterns parse-väg).
-    const attachment: Attachment = AttachmentSchema.parse(body.attachment);
+    const attachment: Attachment = StagingAttachmentSchema.parse(body.attachment);
     expect(attachment.namn).toBe(filnamn);
     expect(attachment.storlekBytes).toBe(2048);
     expect(attachment.eventId).toBe(BELAGGNING_EVENT_ID);
@@ -366,8 +402,9 @@ test.describe('upload-attachment — skarp conformance (TASK-146.4 mönster 1)',
     expect(res.status()).toBe(405);
   });
 
-  // TASK-275.2 (ADR-118) — räckviddsparametrarnas strikta Zod-validering (AC #2).
-  test('allow: rackvidd Kurstyp + kursfamilj/kursniva → 201, fälten skrivna, Event FÖRBLIR satt', async ({
+  // TASK-275.2 (ADR-118) — räckviddsparametrarnas strikta Zod-validering,
+  // omskriven i TASK-338.2 (legacy-värdena MAPPAS till Gemensam).
+  test('allow: LEGACY rackvidd Kurstyp + kursfamilj/kursniva → 201, sparas som Gemensam med axlarna bevarade, Event FÖRBLIR satt', async ({
     request,
   }) => {
     const config = getApiConfig();
@@ -386,7 +423,9 @@ test.describe('upload-attachment — skarp conformance (TASK-146.4 mönster 1)',
     expect(res.status(), raw).toBe(201);
     const body = JSON.parse(raw) as { record: { fields: Record<string, unknown> } };
 
-    expect(body.record.fields.Räckvidd).toBe('Kurstyp');
+    // BASEN bär EN modell (ADR-063): legacy-toleransen sitter i KONTRAKTET,
+    // aldrig i lagringen. Klienten skickade 'Kurstyp', raden säger 'Gemensam'.
+    expect(body.record.fields.Räckvidd).toBe('Gemensam');
     expect(body.record.fields.Kursfamilj).toBe('RIM');
     expect(body.record.fields.Kursnivå).toBe('Nivå 1');
     // MEDVETET: Event förblir satt (storage-path-ankaret) — se
@@ -394,7 +433,7 @@ test.describe('upload-attachment — skarp conformance (TASK-146.4 mönster 1)',
     expect(body.record.fields.Event).toEqual([BELAGGNING_EVENT_ID]);
   });
 
-  test('allow: rackvidd Alla event (inga kursfält) → 201, Kursfamilj/Kursnivå UTELÄMNADE', async ({
+  test('allow: LEGACY rackvidd Alla event (inga kursfält) → 201, sparas som Gemensam, Kursfamilj/Kursnivå UTELÄMNADE', async ({
     request,
   }) => {
     const config = getApiConfig();
@@ -411,12 +450,16 @@ test.describe('upload-attachment — skarp conformance (TASK-146.4 mönster 1)',
     expect(res.status(), raw).toBe(201);
     const body = JSON.parse(raw) as { record: { fields: Record<string, unknown> } };
 
-    expect(body.record.fields.Räckvidd).toBe('Alla event');
+    expect(body.record.fields.Räckvidd).toBe('Gemensam');
     expect(body.record.fields.Kursfamilj).toBeUndefined();
     expect(body.record.fields.Kursnivå).toBeUndefined();
+    // Plats-länken sätts ALDRIG till en tom array — den utelämnas.
+    expect(body.record.fields.Plats).toBeUndefined();
   });
 
-  test('deny: rackvidd Kurstyp UTAN kursfamilj → 400', async ({ request }) => {
+  test('deny: LEGACY rackvidd Kurstyp UTAN kursfamilj → 400 (gamla kontraktet bevarat)', async ({
+    request,
+  }) => {
     const config = getApiConfig();
     const jwt = await getValidUserJWT(request, config);
 
@@ -475,7 +518,7 @@ test.describe('upload-attachment — skarp conformance (TASK-146.4 mönster 1)',
 
   // TASK-275.3 (ADR-118 beslut 5) — EVENT-LÖS UPPLADDNING (räckviddsläget,
   // se filhuvudets nya stycke).
-  test('allow: eventId UTELÄMNAD + rackvidd Kurstyp → 201, Event-fältet HELT FRÅNVARANDE', async ({
+  test('allow: eventId UTELÄMNAD + LEGACY rackvidd Kurstyp → 201, sparas som Gemensam, Event-fältet HELT FRÅNVARANDE', async ({
     request,
   }) => {
     const config = getApiConfig();
@@ -500,12 +543,12 @@ test.describe('upload-attachment — skarp conformance (TASK-146.4 mönster 1)',
     expect(res.status(), raw).toBe(201);
     const body = JSON.parse(raw) as { record: { fields: Record<string, unknown> } };
 
-    expect(body.record.fields.Räckvidd).toBe('Kurstyp');
+    expect(body.record.fields.Räckvidd).toBe('Gemensam');
     expect(body.record.fields.Kursfamilj).toBe('Fjärrskådning');
     // Kärnpremissen (TASK-275.3): INGEN `Event`-länk alls, inte en tom lista.
     expect(body.record.fields.Event).toBeUndefined();
 
-    const attachment = AttachmentSchema.parse(JSON.parse(raw).attachment) as Attachment;
+    const attachment = StagingAttachmentSchema.parse(JSON.parse(raw).attachment) as Attachment;
     expect(attachment.eventId).toBeNull();
 
     // Städar sig själv — räckviddsläge (eventId utelämnad), samma väg
@@ -517,7 +560,7 @@ test.describe('upload-attachment — skarp conformance (TASK-146.4 mönster 1)',
     expect(delRes.status(), await delRes.text()).toBe(200);
   });
 
-  test('allow: eventId UTELÄMNAD + rackvidd Alla event → 201, Event-fältet HELT FRÅNVARANDE', async ({
+  test('allow: eventId UTELÄMNAD + LEGACY rackvidd Alla event → 201, sparas som Gemensam, Event-fältet HELT FRÅNVARANDE', async ({
     request,
   }) => {
     const config = getApiConfig();
@@ -533,10 +576,10 @@ test.describe('upload-attachment — skarp conformance (TASK-146.4 mönster 1)',
     expect(res.status(), raw).toBe(201);
     const body = JSON.parse(raw) as { record: { fields: Record<string, unknown> } };
 
-    expect(body.record.fields.Räckvidd).toBe('Alla event');
+    expect(body.record.fields.Räckvidd).toBe('Gemensam');
     expect(body.record.fields.Event).toBeUndefined();
 
-    const attachment = AttachmentSchema.parse(JSON.parse(raw).attachment) as Attachment;
+    const attachment = StagingAttachmentSchema.parse(JSON.parse(raw).attachment) as Attachment;
     expect(attachment.eventId).toBeNull();
 
     const delRes = await request.post(`${config.baseUrl}${DELETE_ENDPOINT}`, {
@@ -563,5 +606,164 @@ test.describe('upload-attachment — skarp conformance (TASK-146.4 mönster 1)',
     expect(res.status(), raw).toBe(400);
     const body = JSON.parse(raw) as { error?: string };
     expect(body.error).toMatch(/event-id/i);
+  });
+
+  // ══ TASK-338.2 (ADR-125 § Beslut 1) — PLATS-AXELN OCH `Gemensam` ═══════
+  test('allow: Gemensam + plats → 201, Plats skriven som LÄNK-array och Platsnamn upplöst i svaret', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+
+    const res = await postUpload(request, config, jwt, {
+      eventId: BELAGGNING_EVENT_ID,
+      filnamn: sentinelFilnamn(),
+      contentType: 'application/pdf',
+      bytesBase64: buildPseudoPdfBase64(1024),
+      rackvidd: 'Gemensam',
+      plats: PLATS_ID,
+    });
+    const raw = await res.text();
+    expect(res.status(), raw).toBe(201);
+    const body = JSON.parse(raw) as { record: { fields: Record<string, unknown> } };
+
+    expect(body.record.fields.Räckvidd).toBe('Gemensam');
+    // LÄNK-array, aldrig ett namn: multipleRecordLinks tar record-ID:n, och
+    // en namn-skrivning hade drivit isär från matchningens ID-jämförelse.
+    expect(body.record.fields.Plats).toEqual([PLATS_ID]);
+    // `Platsnamn` är en LOOKUP — Airtable levererar den som en ARRAY även
+    // när länken bara bär en rad.
+    expect(body.record.fields.Platsnamn).toEqual([PLATS_NAMN]);
+    // De axlar som INTE angavs utelämnas, aldrig tomsträng.
+    expect(body.record.fields.Kursfamilj).toBeUndefined();
+    expect(body.record.fields.Kursnivå).toBeUndefined();
+
+    const attachment = StagingAttachmentSchema.parse(JSON.parse(raw).attachment) as Attachment;
+    expect(attachment.plats).toEqual({ id: PLATS_ID, namn: PLATS_NAMN });
+  });
+
+  test('allow: Gemensam UTAN axlar → 201, noll axlar är giltigt ("alla event")', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+
+    const res = await postUpload(request, config, jwt, {
+      eventId: BELAGGNING_EVENT_ID,
+      filnamn: sentinelFilnamn(),
+      contentType: 'application/pdf',
+      bytesBase64: buildPseudoPdfBase64(1024),
+      rackvidd: 'Gemensam',
+    });
+    const raw = await res.text();
+    expect(res.status(), raw).toBe(201);
+    const body = JSON.parse(raw) as { record: { fields: Record<string, unknown> } };
+
+    expect(body.record.fields.Räckvidd).toBe('Gemensam');
+    expect(body.record.fields.Kursfamilj).toBeUndefined();
+    expect(body.record.fields.Kursnivå).toBeUndefined();
+    expect(body.record.fields.Plats).toBeUndefined();
+
+    const attachment = StagingAttachmentSchema.parse(JSON.parse(raw).attachment) as Attachment;
+    expect(attachment.plats).toBeNull();
+  });
+
+  test('allow: Gemensam + kursfamilj + plats → 201, BÅDA axlarna skrivna', async ({ request }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+
+    const res = await postUpload(request, config, jwt, {
+      eventId: BELAGGNING_EVENT_ID,
+      filnamn: sentinelFilnamn(),
+      contentType: 'application/pdf',
+      bytesBase64: buildPseudoPdfBase64(1024),
+      rackvidd: 'Gemensam',
+      kursfamilj: 'RIM',
+      plats: PLATS_ID,
+    });
+    const raw = await res.text();
+    expect(res.status(), raw).toBe(201);
+    const body = JSON.parse(raw) as { record: { fields: Record<string, unknown> } };
+
+    expect(body.record.fields.Räckvidd).toBe('Gemensam');
+    expect(body.record.fields.Kursfamilj).toBe('RIM');
+    expect(body.record.fields.Plats).toEqual([PLATS_ID]);
+  });
+
+  test('deny: plats med rec-FORM men okänd rad → 404 (existenskontrollen mot Platser)', async ({
+    request,
+  }) => {
+    // Den viktigaste deny-vägen i skivan: Airtable TYSTAR ett okänt ID i ett
+    // länkfält. Utan `platsFinns` hade raden skapats med en TOM Plats-länk
+    // och bilagan blivit synlig på ALLA event i stället för en enda — en tyst
+    // uppvidgning, precis den skada PRD TASK-338 berättelse 3 finns för att
+    // förhindra.
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+
+    const res = await postUpload(request, config, jwt, {
+      eventId: BELAGGNING_EVENT_ID,
+      filnamn: sentinelFilnamn(),
+      contentType: 'application/pdf',
+      bytesBase64: buildPseudoPdfBase64(1024),
+      rackvidd: 'Gemensam',
+      plats: OKAND_PLATS_ID,
+    });
+    const raw = await res.text();
+    expect(res.status(), raw).toBe(404);
+    const body = JSON.parse(raw) as { error?: string };
+    expect(body.error).toMatch(/plats/i);
+  });
+
+  test('deny: plats med ogiltig FORM (inte rec…) → 400 (Zod, före varje bas-anrop)', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+
+    const res = await postUpload(request, config, jwt, {
+      eventId: BELAGGNING_EVENT_ID,
+      filnamn: sentinelFilnamn(),
+      contentType: 'application/pdf',
+      bytesBase64: buildPseudoPdfBase64(1024),
+      rackvidd: 'Gemensam',
+      plats: 'Rönninge',
+    });
+    const raw = await res.text();
+    expect(res.status(), raw).toBe(400);
+  });
+
+  test('deny: plats angiven trots räckvidd Event → 400', async ({ request }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+
+    const res = await postUpload(request, config, jwt, {
+      eventId: BELAGGNING_EVENT_ID,
+      filnamn: sentinelFilnamn(),
+      contentType: 'application/pdf',
+      bytesBase64: buildPseudoPdfBase64(1024),
+      // rackvidd UTELÄMNAD → default 'Event'.
+      plats: PLATS_ID,
+    });
+    const raw = await res.text();
+    expect(res.status(), raw).toBe(400);
+  });
+
+  test('deny: kursniva utan kursfamilj på Gemensam → 400 (en nivå utan familj är ingen räckvidd)', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+
+    const res = await postUpload(request, config, jwt, {
+      eventId: BELAGGNING_EVENT_ID,
+      filnamn: sentinelFilnamn(),
+      contentType: 'application/pdf',
+      bytesBase64: buildPseudoPdfBase64(1024),
+      rackvidd: 'Gemensam',
+      kursniva: 'Nivå 1',
+    });
+    const raw = await res.text();
+    expect(res.status(), raw).toBe(400);
   });
 });

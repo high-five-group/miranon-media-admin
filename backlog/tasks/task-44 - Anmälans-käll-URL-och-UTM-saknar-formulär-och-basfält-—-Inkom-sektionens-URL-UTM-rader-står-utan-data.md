@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-07-25 03:33'
-updated_date: '2026-08-07 11:19'
+updated_date: '2026-08-28 05:06'
 labels:
   - ready-for-human
 dependencies: []
@@ -26,3 +26,9 @@ Per-anmälan-detaljvyn (task-18.17 byggkrav 9, S83-facit) reserverar Inkom-rader
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+AC saknas medvetet: kortet kräver nya ADDITIVA basfält (AT-Max/ADR-063-kandidat, bas-maximeringens T16-spår) i Anmälningar-tabellen för sid-URL/UTM. Kräver Marcus-beslut om fält-tillägget i Airtable (staging apphjj8Q7lkXCMsL4 först) innan formulär- och get-registration-mappningen kan specas. Källa: kortets egen Description. Verifierat av registerhygien-passet 2026-08-28 (redan taggat ready-for-human).
+<!-- SECTION:NOTES:END -->

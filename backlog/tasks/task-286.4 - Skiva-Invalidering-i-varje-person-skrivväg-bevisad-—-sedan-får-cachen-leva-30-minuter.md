@@ -6,9 +6,10 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-21 11:50'
-updated_date: '2026-08-24 13:08'
+updated_date: '2026-08-26 03:28'
 labels:
   - ready-for-agent
+  - intentionally-unchecked
 dependencies:
   - TASK-286.2
 parent_task_id: TASK-286
@@ -60,6 +61,8 @@ DoD #5 (paritetstestet EF-filter mot klientfilter) är EJ TILLÄMPLIGT för denn
 ## Orkestrerar-stängning 2026-08-22
 
 Merge-SHA `d4317a2e` (PR #1760). DoD #3 (CI grön per jobb) bockad — `gh pr checks 1760`: samtliga jobb pass/skipping, noll fail. DoD #7 (inga nätverksanrop vid skrivning efter första laddningen) bockad — mekaniskt bevisat i tests/api/personregister-invalidering.test.ts, testet 'en OMONTERAD registerfråga markeras stale UTAN nätverksanrop': räknande queryFn stannar på antal()===1 efter invalideringen, 250ms grace-period för en ev. felaktig refetch inräknad. DoD #5 och #6 lämnas ÖPPNA — redan motiverade ovan (EJ TILLÄMPLIGT respektive BLOCKERAD, klass (c), TASK-283.4). Status sätts Done.
+
+OBOCKAT MED AVSIKT: DoD #5 (paritetstest EF-filter/klientfilter, 'för varje skiva som rör sök eller filtrering') är otillämplig för denna skiva — diffen rör varken sök eller filtrering (redan dokumenterat i kortets egna Implementation Notes: src/lib/person-sok.ts, PersonsLists filtrering och get-persons sök-/cursorgren är samtliga orörda; skivan ändrar enbart cache-invalidering och staleTime). Landningen PR #1760 (MERGED, verifierat gh pr view 1760). Källmärkt 2026-08-26, S112 fix-våg 4, ADR-127-normalisering.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

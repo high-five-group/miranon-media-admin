@@ -48,7 +48,7 @@ skäl än ADR:n anger.
 
 Passet inleddes med inventering. Fyra artefakter täckte delar av frågan redan:
 
-1. **`tasks/sessions/2026-08-02-session-93.md` rad 1590 ff. — § "Mekaniseringen
+1. **`tasks/sessions/archive/2026-08/2026-08-02-session-93.md` rad 1590 ff. — § "Mekaniseringen
    — och fyra fel agenten fann i min analys."** Bokför redan FYRA rättelser mot
    ADR-102: (a) R1 underskattad, `/prototype` bar inte heller begreppet; (b) R3
    feldiagnostiserad, utföraren letade och rapporterade öppet, och en DoD-post
@@ -693,7 +693,7 @@ i fallande ordning efter vad som kan gå fel snarast.
 - `.github/workflows/ci.yml` rad 735–760 (`lint`-jobbet) och rad 859
 - `tasks/sessions/bilagor/s93-hallplats-prototyp/facit.json` + `README.md`
 - `tasks/sessions/bilagor/s96-auth-prototyp-facit/README.md`
-- `tasks/sessions/2026-08-02-session-93.md` rad 1590 ff.
+- `tasks/sessions/archive/2026-08/2026-08-02-session-93.md` rad 1590 ff.
 - `backlog/tasks/task-145*.md`, `task-146*.md` (lästa, aldrig redigerade)
 - `src/components/events/` (grep-mätning, ingen ändring)
 

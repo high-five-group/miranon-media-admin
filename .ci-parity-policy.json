@@ -30,16 +30,18 @@
       "lint": "DERIVERAS — se derivedJobs.ci.",
       "suite": "delegerar via `uses:` till ci-suite.yml. Har inga egna steg — de verkliga grindarna härleds direkt ur ci-suite.yml (se derivedJobs.ciSuite). Jobbets `with:`-block vaktas separat, se `suiteInputInvariants`.",
       "docs": "DERIVERAS — se derivedJobs.ci. Jobbets `if: docs_changed`-villkor ignoreras medvetet: att köra docs-grindarna på en icke-docs-PR är en säker superset, aldrig en lucka.",
+      "review-backstopp": "TASK-173.4 (2026-08-28): review-grindens CI-backstopp. DERIVERAS INTE, och det är en egenskap hos jobbet — inte en lucka. Jobbet är `if: github.event_name == 'merge_group'`-gatat och prövar en LEVANDE GitHub-resurs (PR-kroppens Riskbedömnings-sektion via `gh pr view` på den PR kö-grenens namn pekar ut). Det finns ingen merge_group-ref och ingen köad PR i ett lokalt arbetsträd, så steget kan strukturellt inte köras verbatim av denna grind — att härleda det hade gett ett garanterat fel på varje lokal körning (exit 4 — brutet eller frånvarande merge_group-antagande — eller exit 3 om gh inte når PR:en), alltså brus i stället för täckning. Jobbets LOGIK är i stället CI-täckt av gatekeeper-sviten `scripts/test-review-backstopp.mjs` (40 fall MÄTT 2026-08-28, tvåsidig, körs i `lint`-jobbets 'Test gatekeeper script suites'-steg och DERIVERAS därmed hit via derivedJobs.ci.lint). Vill du pröva backstoppen lokalt mot en verklig PR: `npm run review:backstopp -- --pr <nr>`.",
       "ci-passed": "ren aggregator — läser `needs`-resultat, innehåller ingen egen grind."
     },
     "ciSuite": {
       "purge": "gated av inputs.run_staging, som ci.yml:s suite-jobb skickar VILLKORSLÖST false (mekaniskt verifierat, se suiteInputInvariants) — instansieras aldrig på PR-ytan.",
       "test-fast": "DERIVERAS — se derivedJobs.ciSuite.",
-      "acceptance": "DERIVERAS — se derivedJobs.ciSuite.",
+      "acceptance": "DERIVERAS — se derivedJobs.ciSuite. TASK-239 VARV 3 (2026-09-02): jobbet bär nu `strategy.matrix.shard` (villkorad på `inputs.acceptance_selection`, se ci-suite.yml:s kommentar vid jobbet) — den YAML-strukturella job-mängden är oförändrad (ETT jobb `acceptance` i workflow-filen; matrisen multiplicerar bara vid KÖRTID), så `verifieraJobbmangd` ser samma jobbnamn som förut och kräver ingen ny post här. Vad matrisen påverkar är de nya GH-uttrycken i steget `Acceptance tests (hermetiska)`s env-block — se `exprSubstitutions`.",
       "acceptance-sjalvtest": "DERIVERAS — se derivedJobs.ciSuite. TASK-239 (2026-08-17): hermetik-självtestet var ett STEG i `acceptance` och är nu ett eget parallellt jobb (motivering i ci-suite.yml vid jobbet). Paritetsytan är OFÖRÄNDRAD i sak — samma `npm run test:acceptance:sjalvtest`-steg härleds och körs verbatim som förr, bara ur ett annat jobb. Posten finns här därför att verifieraJobbmangd är fail-closed mot HELT NYA jobb (filhuvudets § PARITETS-GRINDEN punkt a), inte för att täckningen ändrats.",
       "webblasarbeteende": "DERIVERAS — se derivedJobs.ciSuite.",
       "a11y": "gated av inputs.run_a11y, som ci.yml:s suite-jobb skickar VILLKORSLÖST false (mekaniskt verifierat, se suiteInputInvariants) — instansieras aldrig på PR-ytan.",
-      "test-staging": "gated av inputs.run_staging, samma skäl som purge — kräver dessutom staging-secrets som inte finns lokalt."
+      "test-staging": "gated av inputs.run_staging, samma skäl som purge — kräver dessutom staging-secrets som inte finns lokalt.",
+      "purge-efter": "TASK-309.15 (2026-08-24): efter-körning-purgen, samma gate som purge/test-staging (inputs.run_staging, villkorslöst false på PR-ytan) och samma secret-krav (STAGING_AIRTABLE_TOKEN). Instansieras därför aldrig på PR-ytan och kan inte köras lokalt av denna grind. Posten finns här därför att verifieraJobbmangd är fail-closed mot HELT NYA jobb (filhuvudets § PARITETS-GRINDEN punkt a) — inte för att täckningen ändrats."
     }
   },
   "derivedJobs": {
@@ -131,7 +133,9 @@
   },
   "specialStepsRationale": "\"Check YAML syntax (yamllint)\" konflaterade tidigare bootstrap (pip install) och grind (yamllint .github/) i EN run:-rad, opinnat — repots ENDA CI-verktyg utan version-pin (TASK-312, 2026-08-24). Löst genom att SEPARERA ci.yml:s steg: \"Install yamllint (pinned 1.38.0)\" (versionAssert, samma mönster som shellcheck/vale ovan — pip:s --require-hashes-läge kräver att HELA yamllints transitiva dependency-träd pinnas+hash-verifieras, empiriskt bekräftat 2026-08-24 och avvisat som oproportionerlig skörhet för ett enda docs-lint-verktyg, se ci.yml:s egen kommentar vid steget) och \"Check YAML syntax (yamllint)\" (nu ren `yamllint .github/`, oklassad → körs verbatim via derive-vägen, ingen special-hantering behövs längre). scripts/verify-ci-parity.mjs:s hanteraToolPresenceLastLine() är kvar som allmän mekanism för en FRAMTIDA konflaterad situation, men ingen post här namnger den handlingen längre.",
   "exprSubstitutions": {
-    "${{ inputs.acceptance_selection }}": ""
+    "${{ inputs.acceptance_selection }}": "",
+    "${{ matrix.shard }}": "1",
+    "${{ strategy.job-total }}": "1"
   },
-  "exprSubstitutionsRationale": "Enda GH-Actions-uttrycket i något härlett stegs env-block (Acceptance-jobbets två självtest-steg). Tom sträng ⇒ FULL acceptance-klass körs lokalt, samma default som post-merge.yml och nightly.yml — en säker superset av vad ci.yml:s PR-urval (TASK-75) hade kört. Varje ANNAT `${{ ... }}`-uttryck som dyker upp i ett härlett steg (nytt secret, ny input) fäller skriptet fail-closed i stället för att köras blint — se scripts/verify-ci-parity.mjs:s hittaOhanteradeUttryck()/losStegEnv()."
+  "exprSubstitutionsRationale": "GH-Actions-uttryck i acceptance-jobbets env-block. `inputs.acceptance_selection` → tom sträng ⇒ FULL acceptance-klass körs lokalt, samma default som post-merge.yml och nightly.yml — en säker superset av vad ci.yml:s PR-urval (TASK-75) hade kört. `matrix.shard`/`strategy.job-total` → \"1\"/\"1\" (TASK-239 VARV 3, 2026-09-02, sharding av acceptance-jobbet): Playwrights `--shard=1/1` är dess no-op-shard (hela testmängden i EN shard, samma `filterForShard`-källa som riktiga shards, se ci-suite.yml:s kommentar vid jobbet) — den lokala FULLA körningen fortsätter alltså täcka HELA klassen i EN process, den prövar bara aldrig CI:s tre-parallella-jobb-topologi. Varje ANNAT `${{ ... }}`-uttryck som dyker upp i ett härlett steg (nytt secret, ny input) fäller skriptet fail-closed i stället för att köras blint — se scripts/verify-ci-parity.mjs:s hittaOhanteradeUttryck()/losStegEnv()."
 }

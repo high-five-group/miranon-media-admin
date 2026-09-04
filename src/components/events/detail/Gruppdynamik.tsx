@@ -8,7 +8,7 @@ import { useDataSource } from '@/data/useDataSource';
 import type { Event } from '@/domain/models/Event';
 import type { Registration } from '@/domain/models/Registration';
 import type { PersonHistoryEntry } from '@/domain/schemas';
-import { RegistrationStatus } from '@/domain/types/Status';
+import { arAktivAnmalan } from '@/lib/aktiv-anmalan';
 import { arGenomford } from '@/lib/genomford';
 import { kursfargForKurs } from '@/lib/kursfarg';
 import { queryKeys } from '@/queries/keys';
@@ -45,11 +45,6 @@ import { DetaljGrupp } from './DetaljGrupp';
  * bärare); Läs mer/Visa mindre bär aria-expanded + kontext i aria-label;
  * radbrytningar i motiveringen bevaras (whitespace-pre-line).
  */
-
-/** Aktiv anmälan (basens 'Är aktiv'-formel): endast Avbokad/Ombokad räknas bort. */
-function arAktiv(r: Registration): boolean {
-  return r.status !== RegistrationStatus.AVBOKAD;
-}
 
 /** Erfarenhetsmixens tre nivåer — sekventiell skala ur semantic.css (task-18.10). */
 const ERFARENHETS_NIVAER: readonly {
@@ -343,7 +338,7 @@ export function Gruppdynamik({ event }: { event: Event }) {
   }
 
   const registreringar = data;
-  const aktiva = registreringar.filter(arAktiv);
+  const aktiva = registreringar.filter(arAktivAnmalan);
   // Erfarenhetsmixen går över den KLASSIFICERBARA populationen (känd räknare).
   const klassificerbara = aktiva.filter((r) => r.antalGenomfordaEvent != null);
   const totalt = klassificerbara.length;

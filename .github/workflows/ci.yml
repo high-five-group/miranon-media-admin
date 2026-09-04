@@ -435,8 +435,8 @@ jobs:
         #
         # ALLOWLIST, ALDRIG BLOCKLIST: skriptet ger urval ENDAST när VARENDA
         # post är en acceptance-spec-fil som finns på disk. En källfil, den
-        # delade sömmen under tests/acceptance/support/, en workflow eller en
-        # okänd filtyp ⇒ tomt ⇒ full klass. Okänt givet faller till full svit.
+        # delade sömmen tests/acceptance/acceptance-bas.ts, en workflow eller
+        # en okänd filtyp ⇒ tomt ⇒ full klass. Okänt givet faller till full svit.
         #
         # SKYDDSNÄTET: post-merge.yml skickar ingen input och kör därmed full
         # klass på varje mergat träd (ADR-077 § Kontext, Google-modellen).
@@ -503,7 +503,7 @@ jobs:
   lint:
     name: Lint + Audit + TypeCheck
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
@@ -527,9 +527,102 @@ jobs:
         run: npm ci
 
       - name: Audit dependencies (audit-ci with allowlist)
-        run: npx audit-ci --config audit-ci.jsonc
         # K17 supply-chain-skydd: kör på varje commit (kod ELLER doc-only).
         # Allowlist tom efter K0åh (2026-05-13). ADR-028 reverse-flow aktiv.
+        #
+        # HISTORIK, TRE AVLÄSNINGAR SAMMA DAG (2026-09-04):
+        # 1) merge_group-run 33857044952 (job "Lint + Audit + TypeCheck"):
+        #    audit-ci hängde 09:16:00→09:21:01 (5m01s, matchar npm:s DEFAULT
+        #    `fetch-timeout` 300000ms exakt) och föll `failure` — "code
+        #    undefined: / Exiting... / exit code 1", inget HTTP-statuskod.
+        #    npm:s rådgivnings-API flappade samma dag: audit-ci gick grönt
+        #    08:41–08:46 (33852769123, ~4m06s) och 08:54–08:55 (33855429327,
+        #    ~47s). Åtgärd: env NPM_CONFIG_FETCH_TIMEOUT=90000 +
+        #    NPM_CONFIG_FETCH_RETRIES=4 (npm CLI v11-docs,
+        #    docs.npmjs.com/cli/v11/using-npm/config — env-formen
+        #    NPM_CONFIG_<KEY>, case-insensitive, bekräftad samma sida).
+        #    Bekräftat att `npm audit` går samma väg som `npm ci`/`npm
+        #    install` (npm/cli → @npmcli/arborist `lib/audit-report.js`,
+        #    källkod läst 2026-09-04: `require('npm-registry-fetch')` mot
+        #    `/-/npm/v1/security/advisories/bulk`).
+        # 2) merge_group-run 33858911410 (job 100978552048), MED ovanstående
+        #    env satt (loggen visar NPM_CONFIG_FETCH_TIMEOUT: 90000,
+        #    NPM_CONFIG_FETCH_RETRIES: 4 explicit): audit-ci föll 09:37:36→
+        #    09:39:07 — EXAKT 91s, alltså timeouten (90s) slog igenom, men
+        #    EFTER BARA ETT FÖRSÖK, ingen retry, trots FETCH_RETRIES=4.
+        #    Samma "code undefined: / Exiting..." igen.
+        #
+        # ROTORSAK FÖR (2) — LÄST I KÄLLKODEN, INTE SUMMERAD (curl+Read av
+        # rå-filen, npm/make-fetch-happen `lib/remote.js`, main-branch,
+        # 2026-09-04 — npm-registry-fetch delegerar sin retry-mekanik hit):
+        # HTTP-svar-grenen har en uttrycklig kommentar: "do not retry POST
+        # requests, or requests with a streaming body" —
+        #   `const isRetriable = req.method !== 'POST' && !isStream && (...)`
+        # och samma uteslutning gäller i CATCH-grenen (thrown/timeout-fel,
+        # den gren som är relevant här eftersom loggen inte visar en
+        # HTTP-statuskod):
+        #   `if (req.method === 'POST' || isRetryError) { throw err }`
+        # — för en POST (vilket `/-/npm/v1/security/advisories/bulk` ÄR,
+        # bekräftat i audit-report.js: `method: 'POST'`) är villkoret SANT
+        # OAVSETT `isRetryError`, så koden kastar felet vidare direkt UTAN
+        # att någonsin anropa `retryHandler(err)` — retry-vägen nås aldrig.
+        # SLUTSATS: `NPM_CONFIG_FETCH_RETRIES` är VERKNINGSLÖS för detta
+        # anrop — make-fetch-happen retryar principiellt aldrig POST
+        # (icke-idempotent, kan inte säkert göras om), oavsett satt
+        # retry-antal. Bekräftat EMPIRISKT av avläsning (2) ovan (exakt ett
+        # försök trots FETCH_RETRIES=4). `NPM_CONFIG_FETCH_RETRIES` TAS
+        # DÄRFÖR BORT — att behålla en env-variabel som källäsningen visar
+        # är inert vore precis den ADR-083-felklassen ("prosa/config som
+        # påstår en mekanism den inte har") repot städar bort. Env-formen
+        # NPM_CONFIG_FETCH_TIMEOUT BEHÅLLS — den fungerar (bekräftat av
+        # avläsning 2: 91s ≈ 90s + marginal, timeouten slog igenom exakt).
+        #
+        # ÅTGÄRD (3), DENNA ÄNDRING: omförsöken flyttas till STEG-nivå (en
+        # bash-loop runt HELA `npx audit-ci`-anropet) i stället för att
+        # förlita sig på ett bibliotekslager som kategoriskt utesluter
+        # denna POST. Upp till 5 försök, 30s paus mellan, exit 0 vid första
+        # gröna, exit 1 om alla fem föll — ALDRIG continue-on-error, ALDRIG
+        # tyst (loggrad per försök). Varje enskilt försök är ändå bundet av
+        # NPM_CONFIG_FETCH_TIMEOUT=90000 (så ETT hängande npm-anrop inte
+        # kan äta hela stegets budget självt).
+        #
+        # UTRÄKNING, exakt (ingen bibliotekslogik inblandad längre, så
+        # detta är inte längre en pessimistisk gräns utan en direkt summa):
+        #   5 försök × fetch-timeout (90s) = 450s
+        #   + 4 pauser × 30s (sleep mellan försök 1-2, 2-3, 3-4, 4-5) = 120s
+        #   Summa värsta fall: 450+120 = 570s ≈ 9,5 min.
+        #   Ryms under lint-jobbets timeout-minutes (15 min = 900s) med
+        #   ~5,5 min marginal ÄVEN om audit-ci-steget är det ENDA som drar
+        #   ut på tiden. Install dependencies (~4–5 min observerat) +
+        #   resten av jobbet (~1–3,5 min observerat i tidigare gröna
+        #   körningar) ryms inte SAMTIDIGT med audit-ci:s absoluta värsta
+        #   fall inom 15 min — samma kvarstående, öppet bokförda risk som
+        #   tidigare avläsningar, nu med en lägre och exakt (inte
+        #   pessimistiskt uppskattad) siffra för just detta steg.
+        #
+        # Steget blir INTE continue-on-error, och allowlisten (audit-ci.jsonc)
+        # rörs INTE — supply-chain-grinden försvagas inte i sak, den blir
+        # bara tåligare mot enskilda långsamma/felande registry-anrop.
+        env:
+          NPM_CONFIG_FETCH_TIMEOUT: "90000"
+        run: |
+          set -euo pipefail
+          max_forsok=5
+          forsok=1
+          while [[ "${forsok}" -le "${max_forsok}" ]]; do
+            echo "audit-ci försök ${forsok}/${max_forsok}"
+            if npx audit-ci --config audit-ci.jsonc; then
+              echo "audit-ci grönt på försök ${forsok}/${max_forsok}"
+              exit 0
+            fi
+            if [[ "${forsok}" -lt "${max_forsok}" ]]; then
+              echo "audit-ci försök ${forsok}/${max_forsok} föll — väntar 30s innan nästa försök"
+              sleep 30
+            fi
+            forsok=$((forsok + 1))
+          done
+          echo "audit-ci föll alla ${max_forsok} försök"
+          exit 1
 
       - name: Biome check
         run: npx @biomejs/biome check .
@@ -1131,6 +1224,310 @@ jobs:
         # jq. 11 fall, 18 assertioner. Stubbar `gh` på PATH i en
         # mktemp-sandlåda — ingen nätverkstrafik. 0,1 s LOKALT mätt (macOS,
         # 2026-08-24) — CI-tiden är INTE mätt av mig.
+        #
+        # TASK-185 (2026-08-26): sjutton sviter nedan var ALDRIG inwirade i
+        # NÅGOT jobb — samma kadens-missmatch-felklass som resten av detta
+        # steg (ADR-039 § lesson→grind, L43), avtäckt av ett fullständigt
+        # svep av scripts/test-*.sh|.mjs mot samtliga .github/workflows/*.yml
+        # (grep på "(bash|node) scripts/test-"), inte kortets egen — då tre
+        # år gamla och ofullständiga — lista. Sex ANDRA o-wirade sviter
+        # (test-check-claims-tackning.sh, test-check-merge-tree.sh,
+        # test-backfill-bilagor-dokumentklass.mjs,
+        # test-create-{bilagor-table,eventinnehall-modell,kvitton-table}.mjs)
+        # rördes INTE: var och en bär sin egen "INTE WIRAD/AVGRÄNSAD BORT
+        # (medvetet)"-kommentar i eget filhuvud (TASK-82/-139-precedent) —
+        # att skriva över ett tidigare medvetet scope-beslut hör inte hemma
+        # i detta kort, se PR-beskrivning/slutrapport för fullständig lista.
+        #
+        # test-arkivera-sessionsdok.sh (TASK-158.2, kortets eget fynd) och
+        # test-check-obesvarade-larm.sh (T119 (b), kortets eget fynd) hör hit
+        # av EXAKT samma skäl som test-check-backlog-closure.sh/
+        # test-check-sessionsdok-fonster.sh ovan: grinden själv
+        # (arkivera-sessionsdok.sh resp. check-obesvarade-larm.sh) kör i
+        # NATTEN (nightly.yml, torrkörning resp. skarpt), men dess testsvit
+        # ska fälla FÖRE landning när någon försvagar grindens logik.
+        # Sandboxade i mktemp/äkta engångsrepo, ingen nätverkstrafik (fejkad
+        # JSON via env-override i obesvarade-larm-fallet). 5,1 s resp. 2,6 s
+        # LOKALT mätt (macOS, 2026-08-26).
+        #
+        # test-check-pausade-sessioner.sh (TASK-185 Implementation Notes,
+        # tredje instansen — samma nattvakts-familj, check-pausade-
+        # sessioner.sh) hör hit av identiskt skäl. 19 fall. 31,5 s LOKALT
+        # mätt (macOS, 2026-08-26, loadavg förhöjd av parallell fleet-drift
+        # i detta repo) — CI-tiden är INTE mätt av mig.
+        #
+        # test-deny-arbetsform-push.sh, test-deny-facit-godkand-skrivning.sh,
+        # test-deny-frammande-huvudkatalog.sh, test-deny-grind-genom-pipe.sh,
+        # test-deny-hemlighet-utskrift.sh, test-deny-precompact.sh,
+        # test-deny-prod-ref.sh, test-deny-resend-send.sh och
+        # test-deny-subagent-vantan.sh hör hit av EXAKT det skäl
+        # test-stop-vakt.sh ovan redan etablerar: var och en prövar en
+        # PreToolUse-HOOK som körs LIVE i en Claude Code-session, aldrig i
+        # CI — det enda som hör hemma i en pipeline är sviten som skyddar
+        # hookens LOGIK mot regression innan landning. Samtliga nio är
+        # tvåsidiga (D/A/F/E-formen: fäller planterat, släpper legitimt,
+        # fail-closed på trasig indata, exakt exit-kod 2), hermetiska
+        # (fixturer i mktemp/TEST_DIR, PATH_NO_<verktyg>-stubbning för
+        # fail-closed-fallen, inga hemliga värden i någon fixtur — se
+        # respektive skripts eget filhuvud) och saknade ALLA CI-täckning
+        # innan detta kort trots att flera skyddar säkerhetskritisk mekanik
+        # (deny-prod-ref.sh: prod-låset: se CLAUDE.md § "Project-refen anges
+        # som ARGUMENT"). test-deny-frammande-huvudkatalog.sh bygger ett äkta
+        # git-repo + worktree men är uttryckligen CI-portabel (eget filhuvud
+        # § "CI-PORTABILITET, MEDVETET" — processmönster-override styr bort
+        # den lokala VS Code-terminal-flakigheten). 3,9–35,3 s LOKALT mätt
+        # per svit (macOS, 2026-08-26, samma förhöjda loadavg som ovan) — CI-
+        # tiden är INTE mätt av mig.
+        #
+        # test-heartbeat-svep.sh hör hit av samma hook/vakt-skäl som
+        # test-stop-vakt.sh: scripts/heartbeat-svep.sh är orkestrerarens
+        # persistenta landnings-svep (CLAUDE.md § Landning), körs aldrig som
+        # ett CI-jobb, men dess LOGIK (fyra bitar: RÖTT/DIRTY/armerings-
+        # kandidat, level-triggered per L443) måste skyddas mot regression
+        # före landning. Räkningen i skriptets svit-slutrad är den
+        # AUKTORITATIVA totalen (TASK-106-disciplinen: aldrig handräknad
+        # hit). Hermetisk, fejkade GraphQL-svar. 17,0 s LOKALT mätt (macOS,
+        # 2026-08-26).
+        #
+        # test-post-compact-igenkanning.sh (TASK-160.4, ADR-101 § Beslut 5)
+        # hör hit av samma skäl som test-deny-precompact.sh (syskonhooken):
+        # PostCompact-hookens omorienterings-injektion är LOGIK som måste
+        # bevisas innan landning, oavsett att hooken själv bara körs live.
+        # Hermetisk, äkta git-repo som TEST_DIR. 2,9 s LOKALT mätt (macOS,
+        # 2026-08-26).
+        #
+        # test-stada-grenar.sh (TASK-152 AC #3) hör hit av samma kadens-skäl
+        # som test-arkivera-sessionsdok.sh: tvåsidigt bevis (mergad+ingen
+        # worktree raderas, ej-mergad/worktree-bunden/skyddslistad skonas) i
+        # ett engångsrepo under mktemp, ingen nätverkstrafik. 7,2 s LOKALT
+        # mätt (macOS, 2026-08-26).
+        #
+        # test-validera-review-utlatande.mjs (TASK-173.1, ADR-105) hör hit av
+        # samma ADR-039-skäl som test-check-manifest-fields.mjs
+        # (ci-suite.yml): en grind är inte en grind förrän dess fyrning
+        # bevisas, och review-utlåtande-schemat (scripts/lib/review-
+        # utlatande.mjs) är review-grindens (ADR-105) kontraktsyta.
+        # Rena funktioner + ett CLI-lager (spawnSync) som bevisar att
+        # exit-koderna faktiskt matchar. Hermetisk. 5,5 s LOKALT mätt (macOS,
+        # 2026-08-26).
+        #
+        # test-review-policy.mjs (TASK-173.2, base-drift-fynd 2026-08-26 —
+        # main flyttade sig under TASK-185:s eget bygge, PR #1993/#1995
+        # mellanlandade) hör hit av samma ADR-039-skäl som syskonet
+        # test-validera-review-utlatande.mjs ovan: policy-ytan (.review-
+        # policy.json + scripts/lib/review-policy.mjs +
+        # scripts/hamta-review-policy.mjs) är review-grindens ANDRA
+        # kontraktsyta (ADR-105) och var lika oskyddad. AC #1 (regler läses
+        # ENDAST ur `main`, aldrig ur en gren eller ett ocommittat arbetsträd)
+        # bevisas i ett äkta temporärt git-repo med tre OLIKA policy-versioner
+        # samtidigt (main/gren/arbetsträd) plus ett KONTRAST-test som läser
+        # grenens ref och FÅR angriparens innehåll — utan den kontrasten vore
+        # huvudtestet vakuöst. 44 fall. Orkestrerar-beslut (Marcus-mandat,
+        # samma svep som denna rad): båda review-policy-sviterna är
+        # enhetstester för skript, samma klass som de 15 övriga
+        # gatekeeper-sviterna — INTE samma sak som TASK-173.4:s CI-backstopp
+        # (den mekaniska spärren mot en PR utan giltigt utlåtande; byggd
+        # 2026-08-28 som jobbet `review-backstopp` nedan), se CLAUDE.md
+        # § Review-grinden. Hermetisk (temp-repo, node_modules-symlänk, ingen
+        # nätverkstrafik). 2026-08-26 (macOS).
+        #
+        # test-review-risk-sektion.mjs (TASK-173.3, ÄNNU en base-drift-fynd
+        # 2026-08-26 — PR #1993 landade UNDER TASK-185:s eget bygge, andra
+        # gången main flyttade sig mitt i detta kort) hör hit av samma
+        # ADR-039-skäl som sina två syskon ovan: risk-rendreraren
+        # (scripts/lib/review-risk-sektion.mjs + scripts/uppdatera-review-
+        # sektion.mjs) är review-grindens TREDJE kontraktsyta (ADR-105) och
+        # var lika oskyddad. Rena funktioner (sektion A–D) + ett CLI-lager
+        # mot en FAKE `gh`-binär på PATH (sektion E–F, `gh pr view`/`gh pr
+        # edit --body-file -`) som bevisar KONTRAST (F2: fake gh pr view
+        # fallerar → CLI exit 3, ingen pr edit anropas — annars vore F1
+        # vakuöst). 47 fall. Samma Marcus-mandat som syskonen: enhetstest för
+        # skript, samma klass som de övriga gatekeeper-sviterna — INTE
+        # TASK-173.4:s CI-backstopp (jobbet `review-backstopp` nedan, byggt
+        # 2026-08-28). Hermetisk, ingen riktig gh-/nätverkstrafik.
+        # 2026-08-26 (macOS).
+        #
+        # test-review-loop.mjs (TASK-173.5, ADR-105 beslut 4) hör hit av samma
+        # ADR-039-skäl som sina tre syskon ovan: rundtaks-loopen
+        # (.review-loop-policy.json + scripts/lib/review-loop.mjs +
+        # scripts/review-loop-beslut.mjs) är review-grindens FJÄRDE
+        # kontraktsyta och skulle annars vara lika oskyddad som de var före
+        # TASK-185. Rena funktioner (sektion A–D: config-validering,
+        # rundtrösklar, prioritetsordning, eskaleringsrendering) + ett
+        # CLI-lager (sektion E, exit 0/10/20/1/2/64) + ett trusted-ref-lager
+        # (sektion F) som bygger ÄKTA engångs-git-repon där origin/main,
+        # PR-grenen och arbetsträdet bär TRE OLIKA policy-versioner samtidigt
+        # — med KONTRAST-fallet F4 som landar mildringen i main och visar att
+        # den DÅ syns, utan vilket F2/F3 vore vakuösa. Samma temp-repo-
+        # disciplin som test-review-policy.mjs. 103 fall.
+        #
+        # Sviten är tvåsidigt bevisad med mutationstest (bygg-agentens
+        # slutrapport, 2026-08-26): takkontrollen bortkopplad fällde 10 fall,
+        # rundtröskeln bortkopplad fällde 8 — inklusive AC #1- och AC
+        # #4-kontrastparen.
+        #
+        # Orkestrerar-beslut (Marcus-mandat, samma som för de tre syskonen):
+        # en enhetstestsvit för ett skript är en gatekeeper-svit, samma klass
+        # som de övriga ~15 — INTE samma sak som TASK-173.4:s CI-backstopp
+        # (den deterministiska spärren mot en PR utan giltigt utlåtande;
+        # sedan 2026-08-28 jobbet `review-backstopp` nedan), se CLAUDE.md
+        # § Review-grinden. Att denna svit körs i CI skyddar loop-skriptets
+        # LOGIK mot regression; det gör inte i sig review-grinden mekaniskt
+        # otvingbar — det gör backstopp-JOBBET. Hermetisk (temp-repon,
+        # node_modules-symlänk, ingen nätverkstrafik). 9,2 s LOKALT mätt
+        # (macOS, 2026-08-26, `time node scripts/test-review-loop.mjs`) —
+        # CI-tiden är INTE mätt av mig och kan avvika.
+        #
+        # test-review-metrics.mjs (TASK-173.6, ADR-105 § Konsekvenser: "Fångst-
+        # rate-instrumenteringen är en del av BYGGET, inte ett tillägg") hör hit
+        # av samma ADR-039-skäl som sina FYRA review-syskon ovan:
+        # instrumenteringen (scripts/lib/review-metrics.mjs +
+        # scripts/review-metrics.mjs + scripts/review-metrics-kalibrering.mjs +
+        # append-tillägget i scripts/review-loop-beslut.mjs) är review-grindens
+        # FEMTE kontraktsyta och skulle annars vara lika oskyddad som de andra
+        # var före TASK-185. Rena funktioner (sektion A–F: radbyggning,
+        # JSONL-parsning fail-soft, summering, rendering, filväg-resolution) +
+        # ett CLI-lager (sektion G–I) som TVÅSIDIGT bevisar append-kontraktet:
+        # ett lyckat beslut loggar en rad (I1/I4), ett malformat utlåtande eller
+        # policyfel loggar INGEN (I2/I3 — en trasig indata ska aldrig förorena
+        # fångstrate-underlaget). 49 fall (MÄTT 2026-08-28; stod som 48 här —
+        # ett fall tillkom i 173.6:s runda 2 utan att talet följde med, TASK-106:s
+        # kopierings-drift i miniatyr). Samma Marcus-mandat som syskonen:
+        # enhetstest för skript, samma klass som de övriga gatekeeper-sviterna.
+        # Hermetisk (egen tmpdir, ingen nätverkstrafik, ingen delad state med
+        # de andra review-sviterna). Mutationsprövad (bygg-agentens
+        # slutrapport, 2026-08-28): append-anropet bortkopplat fällde I1/I4.
+        #
+        # test-review-backstopp.mjs (TASK-173.4) hör hit av samma ADR-039-skäl
+        # som sina FEM syskon ovan, men med en skillnad värd att läsa: dess
+        # produktionsyta (scripts/lib/review-backstopp.mjs +
+        # scripts/review-backstopp.mjs) körs som ett EGET jobb i detta
+        # workflow (`review-backstopp`, se längre ned) och är alltså
+        # review-grindens SJÄTTE kontraktsyta OCH själva spärren. Sviten
+        # skyddar dess LOGIK mot regression; jobbet är mekanismen. Sektion C
+        # är kopplings-vakten mellan 173.3:s rendrerare och 173.4:s parser —
+        # de två sitter i olika moduler och kan drifta isär utan att
+        # någondera sviten märker det. Sektion F kör CLI:t mot en FAKE
+        # `gh`-binär på PATH, med tre KONTRAST-fall (gh fallerar / gh ger
+        # skräp-JSON / gh-svar utan headRefOid ⇒ exit 3, aldrig 0) — utan dem
+        # vore de positiva fallen vakuösa. Sektion E bär dessutom E7, ett
+        # REGRESSIONSFALL som kör CLI:t ur en katalog med mellanslag och åäö —
+        # runda 2 mätte där en fail-open där entrypoint-vakten aldrig fyrade
+        # (exit 0, noll byte, på en kropp UTAN sektion). 40 fall (MÄTT
+        # 2026-08-28), tvåsidigt mutationsbevisat (STALE-kontrollen bortkopplad
+        # fällde 3 fall, PR-nummer-kontrollen 2, ref-regexen 1, CLI:ts exitkod 3,
+        # entrypoint-vakten återställd till den trasiga formen 1). Hermetisk.
+        #
+        # test-verify-ci-parity.mjs hör hit av samma ADR-039-skäl applicerat
+        # på scripts/verify-ci-parity.mjs SJÄLVT (CLAUDE.md § verify:ci-
+        # parity) — paritetsverktyget som ska fånga när ci.yml/ci-suite.yml
+        # driftar från .ci-parity-policy.json hade självt noll skydd mot
+        # regression i sin egen klassnings-/preflight-logik. Tre lager: rena
+        # funktioner mot syntetiska fixturer, levande regression mot det
+        # RIKTIGA ci.yml/ci-suite.yml (`--list`), och ett tvåsidigt CLI-bevis
+        # i en sandlåda med muterade kopior av policy+ci.yml+ci-suite.yml.
+        # Ingen nätverkstrafik. 18,0 s LOKALT mätt (macOS, 2026-08-26).
+        #
+        # test-docraptor-sjalvbarande.mjs (TASK-301) hör hit av samma
+        # ADR-039-skäl: scripts/docraptor-sjalvbarande.mjs lämnade tidigare
+        # en ohämtbar CSS-url() ORÖRD, exakt den referensklassen Prince
+        # fäller HELA DocRaptor-jobbet på med HTTP 422 "File system access
+        # is not allowed" (se skriptets eget filhuvud § inlinaCssUrls).
+        # Fixen neutraliserar i stället till `local("")`, samma regel som
+        # EF-lagrets `inlinaCssUrls` (supabase/functions/_shared/
+        # mall-render.ts) redan bär. Fyra fall, tvåsidigt bevis (en ohämtbar
+        # font-url() → local(""), INTE orörd; en hämtbar font-url() → en
+        # data-URI, regressionsskydd mot att fixen neutraliserar för brett;
+        # en saknad <img src> är fortfarande ett HÅRT fel — asymmetrin mot
+        # fonter; neutraliseringen loggas på stderr med filnamn). Hermetisk
+        # (egen mktemp-fixtur, ingen nätverkstrafik). 0,16 s LOKALT mätt
+        # (macOS, 2026-08-28, `time node scripts/test-docraptor-
+        # sjalvbarande.mjs`) — CI-tiden är INTE mätt av mig och kan avvika.
+        #
+        # test-task-338-6-prod-migration.mjs (TASK-338.6) hör hit av SAMMA
+        # skäl som test-fas4-prod-deploy.sh (raden nedan, TASK-272): skriptet
+        # det prövar är ett REPETERBART operativt verktyg (Marcus kör
+        # --kontrollera/--utfor-schema/--utfor-rader mot prod fler gånger än
+        # en, inte ett engångs-schemaskript à la create-eventinnehall-
+        # modell.mjs, vars test-svit MEDVETET lämnas ovirad — se den sviten
+        # § filhuvud).
+        # Bevisar: bas-guarden (resolveTargetBaseId) VÄGRAR en icke-staging-
+        # bas utan AIRTABLE_PROD_GODKAND_AV_MARCUS satt till EXAKT samma
+        # bas-ID — mekaniken scripts/deny-prod-ref.sh INTE täcker (den
+        # matchar bara Supabase-prod-refen, TASK-203; Airtable-bas-ID:n
+        # nämns i .prod-ref-policy.conf endast i en kommentar). Planerings-
+        # och exekverings-logiken (planSchema/runSchema för steg (i),
+        # planRader/runRader för steg (iii), efter review-runda 2:s split av
+        # det tidigare kombinerade --utfor-läget) är hermetisk, DI mot
+        # injicerade API-stubbar (inkl. createThrowawayAndDeletes
+        # fetchImpl/sleepImpl/logImpl, review-runda 3); en liten
+        # barnprocess-integrationsdel bevisar de FAKTISKA exit-koderna
+        # (0–3, exit 4 = post-verifieringens fail-closed-läge vid
+        # schema-/rad-diskrepans efter en --utfor-*-körning, review-runda 2
+        # punkt 3) men ENDAST för grenar som exitar FÖRE någon fetch — ingen
+        # nätverkstrafik i sviten. 74 fall. 1,25 s LOKALT mätt (macOS,
+        # 2026-08-29, `time node scripts/test-task-338-6-prod-migration.mjs`)
+        # — CI-tiden är INTE mätt av mig och kan avvika.
+        #
+        # test-backfill-inbetalningar.mjs (TASK-346.8) hör hit av samma
+        # ADR-039-skäl som syskonen ovan, med ett tillägg som är kortets egen
+        # DoD #5: pengalogikens regler ska ha var sin NEGATIV kontroll som
+        # fäller en trasig implementation. Sviten är därför byggd i
+        # KONTRASTPAR — tydligast § B17, där samma sträng ('2.500') prövas mot
+        # BÅDA parsrarna och måste ge OLIKA svar (2500 respektive null),
+        # eftersom det är hela skälet till att prisfritextens tolkning finns
+        # vid sidan av _shared/betalningsbelopp.ts normaliseraBelopp; och
+        # § D6, som bevisar VARFÖR fack-motsägelsen listas i stället för att
+        # backfillas (beloppet hade flippat båda facken i basen).
+        # Sektionerna K1–K4 är KOPPLINGS-vakter mot ytor skriptet inte äger:
+        # att härledningen importeras ur EF-lagret och inte kopieras, att
+        # policyns betalsätt finns i migrationens check-constraint, och att
+        # betalningsdatum-kolumnen ÄR nullable — faller den sista är kortets
+        # "datum tomt"-krav omöjligt och skivan måste ritas om.
+        # Granskningsrunda 1 lade fyra sektioner: L (länktillståndets preflight
+        # mot sticky `supabase/.temp/project-ref` — L5 är kärnan: PROD i filen
+        # fäller ÄVEN med korrekt --projekt-ref), M (0-kr hoppas, negativt är
+        # avvikelse, båda fail-closed i sqlBelopp/byggInsertSats), N (aktiva
+        # icke-Historik-inbetalningar blir avvikelse — N2 bevisar att summan
+        # annars blivit 3500 av 2500) och O (spegelns konvergens: Del C
+        # itererar backfill ∪ redanBackfillad, O4 vaktar att prosan inte
+        # överlovar per ADR-083).
+        #
+        # Granskningsrunda 2 lade tre till, var och en efter ett fynd där en
+        # mutation ÖVERLEVDE den dåvarande sviten — alltså tre mätta luckor,
+        # inte tre påhitt: P (indexeringen bruten ur `lasInbetalningar` till
+        # en ren funktion, så status-filtret blir testbart; P4/P5 bär
+        # granskarens motexempel mot netto-formen: +2500 och −2500 ger netto 0
+        # men ANTAL 2, och grinden prövar nu FÖREKOMST), Q (kopplingsvakter
+        # som binder de rena funktionerna till anropsstället i main() —
+        # en `{ ok: true }`-mutation överlevde 118/118 innan Q1 fanns, och Q2
+        # låser att preflighten körs FÖRE staging-semaforen) och R (patch-
+        # hoppet som betalar ned konvergensens linjära kostnad, plus att
+        # länkpreflightens felmeddelanden aldrig bär en kopierbar ref).
+        #
+        # 137 fall (MÄTT 2026-08-31, sviten kördes och dess egen slutrad
+        # lästes — aldrig avskrivet, TASK-106). Hermetisk: inga fetch-anrop,
+        # ingen Airtable-token, inget supabase-CLI, ingen nätverkstrafik —
+        # skriptets main() körs inte vid import (körvakten längst ned i det).
+        #
+        # Mutationsprövad 2026-08-31: TJUGOFYRA mutationer, 24 av 24 FÄLLDA,
+        # var och en med namngivet fällande testfall. Tolv från bygget
+        # (idempotens-predikatet bortkopplat, betalningsdatum satt till
+        # current_date, fack-motsägelsen backfillad, tusental-regeln
+        # bortkopplad, prod-ref-guarden bortkopplad, okänt avgiftspris gissat,
+        # exkluderadeEventIds bortkopplad, spegelns null-hopp bortkopplat,
+        # redan-backfillad-kontrollen bortkopplad, bas-guardens prod-spärr
+        # bortkopplad, NUL-vakten bortkopplad, makulerade poster räknade som
+        # betalda); sex från runda 1 (länktillståndets två grenar,
+        # beloppsgrindens noll-gren, aktiv-inbetalnings-grinden, Del C:s
+        # breddning, sqlBelopps positivt-krav); sex från runda 2 (förekomst→
+        # netto ⇒ P5/P6, status-filtret ⇒ P2, preflightens wirning kortsluten
+        # respektive borttagen ⇒ Q1/Q2/Q3, patch-hoppet hoppar allt ⇒ R2/R3/R4,
+        # maskeringen bortkopplad ⇒ R5/R6/R7).
+        #
+        # 0,18 s LOKALT mätt (macOS, 2026-08-31, median av tre körningar
+        # EFTER runda 2:s utökning: 172/199/179 ms) — CI-tiden är INTE mätt
+        # av mig och kan avvika.
         run: |
           bash scripts/test-check-frontmatter.sh
           bash scripts/test-check-public-checklists.sh
@@ -1157,6 +1554,31 @@ jobs:
           bash scripts/test-gh-guard.sh
           bash scripts/test-visual-baselines-scope.sh
           bash scripts/test-check-mallparitet.sh
+          bash scripts/test-arkivera-sessionsdok.sh
+          bash scripts/test-check-obesvarade-larm.sh
+          bash scripts/test-check-pausade-sessioner.sh
+          bash scripts/test-deny-arbetsform-push.sh
+          bash scripts/test-deny-facit-godkand-skrivning.sh
+          bash scripts/test-deny-frammande-huvudkatalog.sh
+          bash scripts/test-deny-grind-genom-pipe.sh
+          bash scripts/test-deny-hemlighet-utskrift.sh
+          bash scripts/test-deny-precompact.sh
+          bash scripts/test-deny-prod-ref.sh
+          bash scripts/test-deny-resend-send.sh
+          bash scripts/test-deny-subagent-vantan.sh
+          bash scripts/test-heartbeat-svep.sh
+          bash scripts/test-post-compact-igenkanning.sh
+          bash scripts/test-stada-grenar.sh
+          node scripts/test-validera-review-utlatande.mjs
+          node scripts/test-review-policy.mjs
+          node scripts/test-review-risk-sektion.mjs
+          node scripts/test-review-loop.mjs
+          node scripts/test-review-metrics.mjs
+          node scripts/test-review-backstopp.mjs
+          node scripts/test-verify-ci-parity.mjs
+          node scripts/test-task-338-6-prod-migration.mjs
+          node scripts/test-docraptor-sjalvbarande.mjs
+          node scripts/test-backfill-inbetalningar.mjs
 
       - name: Test post-merge-lagrets ärvda klassning (TASK-73)
         # Per ADR-039 § lesson→grind (L43): en grind är inte en grind förrän
@@ -1177,6 +1599,28 @@ jobs:
         # ärligt namn per Session 17 K7-disciplinen — stegnamn ska inte ljuga om
         # sitt innehåll.
         run: bash scripts/test-classify-post-merge.sh
+
+      - name: Test post-merge-larmets attribution (TASK-334)
+        # Per ADR-039 § lesson→grind (L43), samma kadens-argument som steget
+        # ovan. Sviten prövar scripts/post-merge-attribution.sh i BÅDA
+        # riktningar: att larmet PÅSTÅR primär misstanke när den är sann, och
+        # att det NEKAR den när sviten inte mätte landningarna däremellan.
+        #
+        # A11-A13 är skälet steget bor i CI och inte bara i en byggsession.
+        # A11 vaktar EN sträng — post-merge.yml:s `suite`-jobbnamn, skriptets
+        # enda koppling till workflowen. A12 vaktar att workflowen faktiskt
+        # anropar skriptet. A13 är ADR-083-vakten: den fäller om den FALSKA
+        # meningen ("… är den primära misstänkta. Revert nedan …") återinförs
+        # hårdkodad i YAML, där den skrivs oavsett om den är sann.
+        #
+        # Utan de tre driftar fixen tyst tillbaka till det läge som mättes
+        # 2026-08-28: två larm inom 13 minuter (ärenden #2043 och #2047) pekade
+        # ut fel landning som primärt misstänkt, eftersom föregående körning var
+        # `success` DÄRFÖR ATT den hoppade sviten på ärvd D0.
+        #
+        # Hermetisk (gh-stub på PATH, ingen nätverkstrafik, ~1 s). Eget steg
+        # med ärligt namn per Session 17 K7-disciplinen.
+        run: bash scripts/test-post-merge-attribution.sh
 
       - name: Test PR-grindens acceptance-urval (TASK-75)
         # Per ADR-039 § lesson→grind (L43), samma kadens-argument som stegen
@@ -1341,6 +1785,42 @@ jobs:
         # per fall i stället för att efterliknas. `lint` hade timeout-minutes: 5
         # mot ~1 min jobbtid före detta steg (TASK-82:s CI-mätning) — marginalen
         # bör läsas av på den första skarpa körningen, inte projiceras härifrån.
+        #
+        # DEN AVLÄSNINGEN KOM 2026-09-04: fyra körningar mellan 07:50–08:10 föll
+        # på exakt taket i `lint` och/eller `docs`, samtliga `cancelled` på
+        # npm-latens, inte en trädregression — merge_group-run 33850613813
+        # (#2264, Lint dog i `npm ci`), PR-run 33850992570 + dess rerun
+        # 33851503642 (#2284, Lint dog i "Audit dependencies (audit-ci with
+        # allowlist)", Docs dog i "Install dependencies") och PR-run 33851282508
+        # (#2269, samma två). Verbatim ur run 33851503642, job 100955216172:
+        # cache-träff (`Cache hit for: node-cache-Linux-x64-npm-…`), `npm ci`
+        # startade 08:03:05 och blev klar 08:07:34 ("added 643 packages in
+        # 4m") — själva `npm ci` tog alltså 4 min med cache-träff, mot ~1 min
+        # i TASK-82:s ursprungsmätning — och `audit-ci` kancellerades
+        # 08:08:06, 5:00 efter jobbstart. Senaste gröna Lint (main-push
+        # 33778799749, 2026-09-03 16:28) tog 3 min 22 s totalt, så 5 min var
+        # redan tunn marginal mot en enda långsam `npm ci`. `timeout-minutes`
+        # höjt 5→10 för BÅDE `lint` och `docs` samma dag — 2× det tidigare
+        # taket, ett valt golv för att absorbera npm-latens av den mätta
+        # storleksordningen, inte en projicerad garanti mot framtida latens.
+        # Fynd-kortet med den fulla mätserien: se backlog (syskon till
+        # TASK-383, som rör samma dags 12-minuterstak i test-sviten).
+        #
+        # ANDRA AVLÄSNINGEN, SAMMA DAG: run 33852769123 (omkörning av
+        # Lint-jobbet efter att npm börjat svara igen) startade 08:37:28.
+        # `audit-ci` gick GRÖNT denna gång men tog ~5 min (08:41:56→08:46:02,
+        # npms fetch-timeout är 300 s) — inte längre bara `npm ci` som var
+        # långsam. Biome, TypeScript ×2, actionlint, yamllint och
+        # docs-grindarna gick alla gröna. Jobbet kancellerades ändå kl
+        # 08:47:40 (10 min 12 s totalt, jobbstart 08:37:28) mitt i "Test
+        # gatekeeper script suites" — 10-minuterstaket (höjt via denna kommentars
+        # första avläsning ovan) räckte alltså inte mot en dag med genomgående
+        # långsamt npm, bara mot en enskild långsam `npm ci`. `timeout-minutes`
+        # för `lint` höjt 10→15 — dagens uppmätta värsta fall (~12 min: 5 min
+        # npm ci + 5 min audit-ci + resten) plus marginal, INTE en projektion
+        # mot framtida latens. `docs` stannar på 10: samma runs docs-jobb
+        # (Docs link check) gick grönt på 5 min 45 s (08:19:18→08:25:03),
+        # gott och väl inom det befintliga taket, och rörs därför inte.
         run: node scripts/test-check-staging-preflight-wiring.mjs
 
       - name: Install shellcheck (pinned v0.11.0)
@@ -1476,7 +1956,13 @@ jobs:
         # separat nedan av samma skäl som supabase-cli.sh ovan) och till
         # trettio i SAMMA TASK-312-wiring (.gh-version-policy.conf —
         # pinnad LÄGSTA gh-version, scripts/lib/gh-guard.sh, samma
-        # separat-räkning som de två andra sourcade .sh-kodfilerna).
+        # separat-räkning som de två andra sourcade .sh-kodfilerna) och till
+        # trettioett i TASK-359-wiringen (.hemlighets-namn-policy.conf —
+        # config-driven mängd krävda Supabase-secret-namn,
+        # scripts/kontrollera-hemlighets-namn.sh — se filens egen header:
+        # INVITE_REDIRECT_URL saknades i BÅDA Supabase-projekten i flera
+        # veckor trots att en prosa-notis redan namngav variabeln, mätt
+        # missad tre gånger, S107/S108/S113).
         # Pre-aktiverings-state (post-K3.2 commit d86d846): 0/0/0/0.
         run: |
           shellcheck \
@@ -1516,7 +2002,8 @@ jobs:
             .prod-ref-policy.conf \
             .supabase-cli-policy.conf \
             .jq-version-policy.conf \
-            .gh-version-policy.conf
+            .gh-version-policy.conf \
+            .hemlighets-namn-policy.conf
 
   # Job 3: Tung testsvit — anropar den reusable ci-suite.yml (EN KÄLLA,
   # delad med nightly.yml OCH post-merge.yml; task-36.2 / ADR-077). Villkorat på
@@ -1652,7 +2139,7 @@ jobs:
     needs: changed
     if: needs.changed.outputs.docs_changed == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     permissions:
       contents: read
     steps:
@@ -1820,7 +2307,78 @@ jobs:
         # Etablerad: Session 6.6.6 K3.6 (2026-05-20).
         run: bash scripts/test-vale-regression.sh
 
-  # Job 5: Aggregator — REQUIRED CHECK för main-rulesetet (ADR-076).
+  # Job 5: Review-backstoppen (TASK-173.4, ADR-105 beslut 2/3) — den
+  # deterministiska spärren mot att en kod-PR landar utan granskningsutlåtande.
+  #
+  # ═══ VARFÖR `merge_group` OCH INTE PR-YTAN ═══
+  # Review-grindens sekvens är push → granskning → sektion → armering
+  # (CLAUDE.md § Review-grinden). Vid PUSH saknas sektionen med NÖDVÄNDIGHET
+  # — granskningen har inte hänt än. En grind på PR-ytan hade därför gjort
+  # varje kod-PR röd som NORMALTILLSTÅND, vilket bryter mot CONTRIBUTING.md
+  # § Rött-först: "rött i CI ska betyda EN sak: oväntad regression". På
+  # kö-ytan är läget det motsatta — PR:en är armerad, alltså MÅSTE
+  # granskningen ha skett, och rött betyder exakt en sak. Se skriptets
+  # filhuvud för hela resonemanget och för varför en fällning här är dyr
+  # (utsparkning ur kön konsumerar armeringen) och därför ska föregripas av
+  # `npm run review:backstopp -- --pr <nr>` FÖRE armering.
+  #
+  # ═══ AC #3: INGEN EGEN KLASSNINGSLOGIK ═══
+  # `needs.changed.outputs.should_skip_tests` ÄR D0-klassningen — samma
+  # allowlist-glob (`paritet:start klassning-d0`) som resten av CI gatar på.
+  # Backstoppen duplicerar den aldrig. Att `changed` beräknar rätt värde även
+  # på kö-ytan är MÄTT, inte antaget: merge_group-körning 33138424216
+  # (docs-only) skippade `Test suite` på samma output, 2026-08-28.
+  #
+  # ═══ AC #4: DETERMINISTISK, INGEN LLM ═══
+  # Ett node-skript utan nätverk utöver ETT `gh pr view`-anrop, utan klocka
+  # och utan slumpkälla. Ingen modell anropas i CI, och kan inte anropas:
+  # jobbet installerar inga beroenden alls (se nedan).
+  #
+  # INGET `npm ci` — MED AVSIKT. scripts/review-backstopp.mjs och dess lib
+  # importerar bara scripts/lib/review-risk-sektion.mjs, som självt saknar
+  # importer. En backstopp ska inte kunna släckas av att det led den skyddar
+  # (beroende-installationen) fallerar. Steget "Install dependencies" är
+  # därför medvetet frånvarande, inte glömt.
+  review-backstopp:
+    name: Review-backstopp (granskningsutlåtande)
+    needs: [changed]
+    if: ${{ github.event_name == 'merge_group' && needs.changed.outputs.should_skip_tests != 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      # pull-requests: read — `gh pr view` läser kroppen + headRefOid på den
+      # PR kö-grenen namnger. Minsta grant utöver contents:read.
+      pull-requests: read
+    steps:
+      # INGEN `fetch-depth:`-nyckel här — MEDVETET, och raden står kvar för att
+      # nästa läsare inte ska "rätta" tillbaka den. `scripts/check-fetch-depth-
+      # invariant.sh` (ADR-039-grinden i lint-jobbet) kräver EXAKT TRE
+      # fetch-depth-bärare i denna fil (changed/lint/docs), alla med SAMMA
+      # värde. En fjärde bärare fäller grinden oavsett vilket värde den bär —
+      # mätt skarpt 2026-08-28 på detta jobbs första CI-körning (`fetch-depth:
+      # 1` gav "hittade 4 fetch-depth-config-rader (förväntat 3)"). Och jobbet
+      # BEHÖVER ingen historik: det läser två skript ur arbetsträdet och hämtar
+      # allt annat via `gh`. Checkoutens default (djup 1) är alltså både rätt
+      # för jobbet och det enda som håller invarianten.
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+        with:
+          node-version-file: '.nvmrc'
+          # INGEN `cache: 'npm'` — jobbet kör aldrig `npm ci`, så det finns
+          # inget att cacha och en cache-miss ska aldrig kunna sänka grinden.
+
+      - name: Verifiera granskningsutlåtandet
+        env:
+          MG_REF: ${{ github.event.merge_group.head_ref }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_REPO: ${{ github.repository }}
+        run: node scripts/review-backstopp.mjs --merge-group-ref "${MG_REF}"
+
+  # Job 6: Aggregator — REQUIRED CHECK för main-rulesetet (ADR-076).
   # Per ADR-029 §1e + S77-incidenten (PR #101): jobbet KÖR ALLTID och
   # rapporterar success ELLER failure — ALDRIG skipped. Gamla formen
   # (if-villkor som skippade jobbet vid failure i needs) var FAIL-OPEN
@@ -1838,7 +2396,12 @@ jobs:
   ci-passed:
     name: CI Passed or Skipped
     if: ${{ always() }}
-    needs: [changed, lint, docs, suite]
+    # review-backstopp tillagt TASK-173.4: jobbet SKIPPAS på PR-ytan
+    # (`github.event_name == 'merge_group'`) och på D0-diffar — och en
+    # skipped post är per fail-closed-logiken nedan "skipped-by-design",
+    # alltså grön. Det är avsikten: spärren ska bita i landnings-ögonblicket,
+    # inte göra varje opgranskad PR röd (se jobbets eget kommentarsblock).
+    needs: [changed, lint, docs, suite, review-backstopp]
     runs-on: ubuntu-latest
     timeout-minutes: 1
     permissions: {}

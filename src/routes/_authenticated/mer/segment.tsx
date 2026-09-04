@@ -1,5 +1,23 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { useQueryState } from 'nuqs';
+import type { PrototypeDataLage, PrototypeVariant } from '@/components/dev/PrototypeSwitcher';
+import { PrototypeSwitcher } from '@/components/dev/PrototypeSwitcher';
+import { SegmentListaKonvergens } from '@/components/segment/prototyp/SegmentListaKonvergens';
 import { VariantD } from '@/components/segment/prototyp/VariantD';
+
+// [PROTOTYPE] B2-konvergenspasset (S114 Del 3): kastbar växel-konfig.
+// Nytt pass-namespace (s114-segmentlistan-konvergens) — nyckeln `a` är
+// passets egen, inte 249-divergensens rivna a/b/c (ADR-074-noten i Del 4).
+const PROTO_VARIANTS: PrototypeVariant[] = [
+  { key: 'a', label: 'Konvergens', steg: 3, stegLabel: 'K3 - brickor, korthöjd låst' },
+];
+const PROTO_DATA_LAGEN: readonly PrototypeDataLage[] = [
+  { value: null, label: 'Demo' },
+  { value: 'tom', label: 'Tomläge' },
+];
+// [PROTOTYPE] K2 bar en korthöjds-växel (`?kort=kompakt|facit`) i rälsen så
+// värdet kunde omstämplas i browsern (S114 Del 3 beslut 3). Marcus valde
+// kompakt (K3, 2026-09-03) — växeln är riven, värdet är låst i komponenten.
 
 export const Route = createFileRoute('/_authenticated/mer/segment')({
   staticData: { title: 'Segment' },
@@ -22,6 +40,18 @@ export const Route = createFileRoute('/_authenticated/mer/segment')({
  * (`tests/visual/segment-promoverings-grind.spec.ts`) är beviset för att
  * ytan står oförändrad genom rivningen.
  */
+// [PROTOTYPE] ?variant=a monterar B2-konvergensytan i DEV (S114 Del 3;
+// skarpa vyn är K0-baslinjen på variant=null). Import + villkor är kastbar
+// växel-kod och rivs vid promoveringen — formen promoveras (ADR-103).
 function SegmentPage() {
-  return <VariantD />;
+  const [variant] = useQueryState('variant');
+  const konvergens = import.meta.env.DEV && variant === 'a';
+  return (
+    <>
+      {import.meta.env.DEV ? (
+        <PrototypeSwitcher variants={PROTO_VARIANTS} dataLagen={PROTO_DATA_LAGEN} />
+      ) : null}
+      {konvergens ? <SegmentListaKonvergens /> : <VariantD />}
+    </>
+  );
 }

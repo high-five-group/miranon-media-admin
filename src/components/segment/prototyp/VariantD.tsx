@@ -214,11 +214,9 @@
  */
 import { parseDate } from '@internationalized/date';
 import { useQueries, useQuery } from '@tanstack/react-query';
-import { Link } from '@tanstack/react-router';
 import {
   Check,
   ChevronDown,
-  ChevronLeft,
   ChevronRight,
   CircleCheck,
   Group,
@@ -238,6 +236,7 @@ import { DatumFalt } from '@/components/primitives/DatumFalt';
 import { Input } from '@/components/primitives/Input';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Radio, RadioGroup } from '@/components/primitives/RadioGroup';
+import { SidRam, SidRamKnapp } from '@/components/primitives/SidRam';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { StegSektion } from '@/components/primitives/StegSektion';
 import { TextArea } from '@/components/primitives/TextArea';
@@ -254,6 +253,7 @@ import type {
   SegmentRuleDnf,
 } from '@/domain/schemas';
 import { deriveTaxonomy, labelForPar, parKey } from '@/lib/segment-taxonomy';
+import { lasSegmentStartinfoDold, sparaSegmentStartinfoDold } from './segment-startinfo-minne';
 
 /* ================================================================== *
  * DIMENSIONSMODELLEN — den nya regelformens råmaterial
@@ -988,8 +988,6 @@ const KORT_KLASS =
   'rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong';
 const RAD_KLASS =
   '-mx-2 flex w-auto items-center gap-2 rounded-lg px-2 py-1.5 text-left font-medium text-body hover:bg-bg-emphasized motion-safe:transition-colors';
-const TILLBAKA_KLASS =
-  'mx-4 flex size-11 shrink-0 items-center justify-center self-start rounded-full bg-bg-muted hover:bg-bg-emphasized motion-safe:transition-colors';
 const KAPSEL_KLASS =
   'inline-flex shrink-0 items-center gap-1.5 rounded-full border border-transparent bg-bg-muted px-3.5 py-2 font-medium text-small hover:bg-bg-emphasized motion-safe:transition-colors';
 
@@ -1124,35 +1122,18 @@ function useVyFokus(rubrikRef: React.RefObject<HTMLHeadingElement | null>, dataK
   }, []);
 }
 
-function SidRam({
-  onTillbaka,
-  tillbakaEtikett,
-  children,
-}: {
-  onTillbaka?: () => void;
-  tillbakaEtikett: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <section className="flex flex-col gap-6 pt-2 lg:pt-10">
-      {onTillbaka ? (
-        <button
-          type="button"
-          onClick={onTillbaka}
-          aria-label={tillbakaEtikett}
-          className={`${TILLBAKA_KLASS} print:hidden`}
-        >
-          <ChevronLeft aria-hidden="true" size={26} />
-        </button>
-      ) : (
-        <Link to="/mer" aria-label={tillbakaEtikett} className={`${TILLBAKA_KLASS} print:hidden`}>
-          <ChevronLeft aria-hidden="true" size={26} />
-        </Link>
-      )}
-      {children}
-    </section>
-  );
-}
+/* Den lokala `SidRam`-funktionen bodde här — RIVEN i TASK-349 (ADR-126).
+ *
+ * Den var en EGEN kopia av husets sidkrom-geometri (samma klasser som
+ * `PersonDetail.tsx`/`EventCheckin.tsx` bar innan `TASK-299.1` samlade dem),
+ * och delade namn med `primitives/SidRam.tsx` utan att vara den — ADR-126
+ * § "Kvarvarande kopior" namngav uttryckligen just detta som "den värsta
+ * varianten: en grep efter SidRam ger en falsk träff som ser ut som en
+ * konsument". Startvyns egen chevron (till `/mer`) SAKNADES helt — filen
+ * bar bara den interna, knapp-baserade grenen; ingen av de sju ytorna
+ * navigerade ut ur segment-ytan. Bygg inte tillbaka en lokal kopia: husets
+ * `SidRam` (route-länk) och `SidRamKnapp` (state-baserad "tillbaka") bär
+ * geometrin nu, delad av `CHEVRON_KLASS` i `primitives/SidRam.tsx`. */
 
 /* `PrototypNot` ÄR RIVEN (TASK-259, Marcus QA-fynd 2026-08-17). Noten satt
    på sju ställen och sa "Prototyp. Inget sparas, inget skickas." på en yta
@@ -1696,20 +1677,28 @@ function SegmentKort({
     <>
       {/* `pr-16` är borta med pillen — den fanns bara för att hålla undan
           rubriken från den absolut placerade etiketten uppe till höger. */}
-      {/* LÅST KORTHÖJD — GLOBAL REGEL (Marcus 2026-08-10): varje kort
-          reserverar höjden för sitt MAXINNEHÅLL (2 rader namn + 2 rader
-          beskrivning + antal-radens min-h-8) och får ALDRIG växa eller
-          krympa med innehållet. `min-h-[2lh]` reserverar två radhöjder i
-          elementets egen typografi — samma grepp som personlistans låsta
-          radhöjd (S103) och antal-radens min-h-8 nedan: geometrin ligger
-          fast när data landar, när skalprovet växlas, när namnet är kort. */}
+      {/* LÅST KORTHÖJD — GLOBAL REGEL (Marcus 2026-08-10, värdet omstämplat
+          168 → 132 px vid B2-promoveringen, S114 Del 3 beslut 3 + S117-
+          stämpeln — facit.json, tasks/sessions/bilagor/s114-segmentlistan-
+          konvergens/): varje kort reserverar höjden för sitt MAXINNEHÅLL (EN
+          rad namn, trunkerad med `title` + 2 rader beskrivning + antal-
+          radens min-h-6) och får ALDRIG växa eller krympa med innehållet.
+          Principen — fast, innehållsoberoende höjd — är oförändrad; bara
+          namnradens reservation (2 rader → 1, trunkerad) och antal-radens
+          höjd (min-h-8 → min-h-6) krympte till K3-anatomin. `min-h-[2lh]`/
+          `min-h-[1lh]` reserverar radhöjd i elementets egen typografi —
+          samma grepp som personlistans låsta radhöjd (S103): geometrin
+          ligger fast när data landar, när namnet är kort eller långt. */}
       {markeraLage ? (
-        <span className="line-clamp-2 min-h-[2lh] font-semibold text-body">{entitet.namn}</span>
+        <span className="min-h-[1lh] truncate font-semibold text-body" title={entitet.namn}>
+          {entitet.namn}
+        </span>
       ) : (
         <button
           type="button"
           onClick={onOppna}
-          className="line-clamp-2 min-h-[2lh] text-left font-semibold text-body after:absolute after:inset-0"
+          title={entitet.namn}
+          className="min-h-[1lh] truncate text-left font-semibold text-body after:absolute after:inset-0"
         >
           {entitet.namn}
         </button>
@@ -1728,11 +1717,11 @@ function SegmentKort({
           ÄR TALET ÄNNU INTE KÄNT STÅR RADEN TOM, inte "Antal ej räknat".
           Den texten beskrev appens interna tillstånd, inte segmentet, och det
           enda den sa Lotta var att något inte gjorts. Höjden är ändå låst
-          (`min-h-8`) så ingenting flyttar sig när talet landar.
+          (`min-h-6`, K3-anatomin) så ingenting flyttar sig när talet landar.
 
           Live-regionen är ALLTID monterad och byter bara innehåll — en
           `aria-live` som monteras samtidigt som sin text annonseras inte. */}
-      <div className="flex min-h-8 flex-wrap items-center gap-1.5">
+      <div className="flex min-h-6 items-center">
         <span
           aria-live="polite"
           className="flex items-center gap-1.5 text-caption text-text-secondary"
@@ -1772,7 +1761,7 @@ function SegmentKort({
         <Checkbox
           isSelected={vald}
           onChange={onVaxla}
-          className={`relative flex w-full cursor-pointer flex-col gap-1.5 rounded-2xl border p-4 motion-safe:transition-colors ${
+          className={`relative flex w-full cursor-pointer flex-col gap-1 rounded-2xl border p-4 motion-safe:transition-colors ${
             vald
               ? 'border-(--mm-success) bg-(--mm-success-bg) contrast-more:border-(--mm-success)'
               : 'border-transparent bg-bg-muted hover:bg-bg-emphasized contrast-more:border-border-strong'
@@ -1785,7 +1774,7 @@ function SegmentKort({
   }
 
   return (
-    <li className="relative flex flex-col gap-1.5 rounded-2xl border border-transparent bg-bg-muted p-4 hover:bg-bg-emphasized motion-safe:transition-colors contrast-more:border-border-strong">
+    <li className="relative flex flex-col gap-1 rounded-2xl border border-transparent bg-bg-muted p-4 hover:bg-bg-emphasized motion-safe:transition-colors contrast-more:border-border-strong">
       {innehall}
     </li>
   );
@@ -1820,16 +1809,58 @@ function SegmentKortMedAntal(props: {
 }
 
 /**
- * LANDNINGSVYN. Entiteterna ÄR sidan (`c`s tes) — EN lista, ingen gruppering.
+ * Sektionsrubrik: h2 + antalet som BRICKA i Hem-mönstret
+ * (`ForfallnaBetalningar.tsx` § "Att påminna"), explicit liten text så den
+ * inte ärver h2:ans storlek; ingen bricka vid noll. Ingen ikon — lagerikonen
+ * betyder täckning på denna yta och lånas inte ut. Promoverad ur
+ * `SegmentListaKonvergens.tsx` (K3, B2-promoveringen, S117).
+ */
+function SektionsRubrik({ namn, antal }: { namn: string; antal: number }) {
+  return (
+    <div className="flex items-center gap-2">
+      <h2 className="font-semibold text-lg">{namn}</h2>
+      {antal > 0 && (
+        <span className="rounded-md bg-bg-emphasized px-1.5 py-0.5 font-semibold text-small text-text tabular-nums">
+          {antal}
+        </span>
+      )}
+    </div>
+  );
+}
+
+/** Neutral uppsättning för `useTackning`s hook-anrop när ingen
+ *  "de-fjorton"-uppsättning finns (kan i praktiken inte inträffa — de fjorton
+ *  finns alltid från mount och tas aldrig bort, se `byggDeFjorton`). Ren
+ *  Rules-of-Hooks-nödvändighet: `useTackning` måste anropas ovillkorligt
+ *  varje rendering, och behöver då ett giltigt objekt även i det läget. */
+const TOM_UPPSATTNING: Uppsattning = {
+  nyckel: '',
+  namn: '',
+  entiteter: [],
+  modalitet: 'Utbildning',
+};
+
+/**
+ * LANDNINGSVYN. Entiteterna delas i TVÅ sektioner (B2-promoveringen, S117,
+ * ADR-103 — omprövning av 2026-08-10s "EN lista, ingen gruppering", S114
+ * Del 3 beslut 3): "Dina segment" (sparade ur basen + osparade "Nytt
+ * segment"-utkast — allt som INTE hör till en genererad partition) och
+ * "Färdiga grupper" (de fjorton + ev. körningar av "Dela upp i grupper" —
+ * samma "generator-identitet" `harledUppsattningar` redan använder för
+ * täckningsvyns gruppering, se dess docblock: id-prefix `de-fjorton-`/
+ * `gen-<ts>-`). Delningen återanvänder den befintliga uppsättnings-
+ * härledningen i stället för att duplicera prefix-logiken.
  *
- * Formen bar tidigare två block, "Sparade i basen" och "Skisser". Marcus rev
- * den 2026-08-10 av ett skäl som gäller hela ytan: grupperingen fanns bara för
- * prototypens skull, och i skarp drift finns den inte. En yta som ska bedömas
- * som Lottas yta får inte bära vår egen bokföring i rubrikform.
+ * Formen bar tidigare två block, "Sparade i basen" och "Skisser", rivna
+ * 2026-08-10 av skälet att grupperingen bara var en prototyp-egenskap. Den
+ * nya sektioneringen är INTE en återgång till det — "Dina segment"/"Färdiga
+ * grupper" är Lottas egna begrepp (facitet), inte vår interna bokföring.
  *
- * Tomläget står kvar och är fortfarande ärligt — det renderas när listan är
- * tom, aldrig ovanpå ett fel (ett tomläge är ett påstående om basen, och
- * misslyckas hämtningen VET vi inte om den är tom).
+ * Tomläget står kvar per sektion och är fortfarande ärligt — det renderas
+ * när "Dina segment" är tomt, aldrig ovanpå ett fel (ett tomläge är ett
+ * påstående om basen, och misslyckas hämtningen VET vi inte om den är tom).
+ * "Färdiga grupper" kan i praktiken aldrig bli tomt (de fjorton finns
+ * alltid) — se `SegmentLista`s eget kommentarblock för det prövade fyndet.
  */
 function SegmentLista({
   poster,
@@ -1872,6 +1903,65 @@ function SegmentLista({
   const rubrikRef = useRef<HTMLHeadingElement>(null);
   useVyFokus(rubrikRef, !laddar);
   const uppsattningar = useMemo(() => harledUppsattningar(poster), [poster]);
+  // SEKTIONERINGEN (B2-promoveringen, se filhuvudets docblock ovan
+  // `SegmentLista`): en entitet hör till "Färdiga grupper" om den ingår i
+  // NÅGON uppsättning `harledUppsattningar` känner igen (de-fjorton eller en
+  // generator-körning) — allt annat (sparade segment, osparade "Nytt
+  // segment"-utkast) hör till "Dina segment". Härlett ur `uppsattningar` i
+  // stället för att duplicera prefix-matchningen.
+  const genereradeIder = useMemo(
+    () => new Set(uppsattningar.flatMap((u) => u.entiteter.map((e) => e.id))),
+    [uppsattningar],
+  );
+  const dinaSegment = useMemo(
+    () => poster.filter((e) => !genereradeIder.has(e.id)),
+    [poster, genereradeIder],
+  );
+  const fardigaGrupper = useMemo(
+    () => poster.filter((e) => genereradeIder.has(e.id)),
+    [poster, genereradeIder],
+  );
+  // TÄCKNINGSKNAPPENS ETIKETT (facitet: "Full täckning · N av N" när räknad
+  // och frisk, annars skarpa vyns "Visa täckning"/"Dölj täckning"). N är
+  // "de fjorton"s uppsättning specifikt — den finns alltid (aldrig riven),
+  // så uppslaget mot `TOM_UPPSATTNING` ovan är en typ-nödvändighet, inte ett
+  // förväntat läge. EN generator-körning ("Dela upp i grupper") räknas INTE
+  // in i etiketten — bara de fjorton, facitets enda testade fall; se
+  // PR-kroppens § Avvikelser för avvägningen.
+  //
+  // EGET "raknar"-LÄGE, SAMMA ORD SOM `TackningsPanel` ("Räknar
+  // täckningen…", ovan) — inte en fri nykonstruktion. Utan det hade
+  // etiketten legat kvar på "Visa täckning" medan populations-frågan (en
+  // NY fråga, delar ingen cache med kortens egna) fortfarande väntar in
+  // svar, och grindens `vantaInRakningar` (väntar in ALLA `/Räknar/`-texter
+  // innan den fångar en ariaSnapshot) hade då inte känt av den — samma
+  // ordstam gör att den gör det.
+  const deFjortonUppsattning = useMemo(
+    () => uppsattningar.find((u) => u.nyckel === 'de-fjorton') ?? TOM_UPPSATTNING,
+    [uppsattningar],
+  );
+  const deFjortonUtfall = useTackning(deFjortonUppsattning, parInfo);
+  const deFjortonFriskt =
+    deFjortonUtfall.status === 'klar' &&
+    deFjortonUtfall.dubbla === 0 &&
+    deFjortonUtfall.utanfor.length === 0;
+  const tackningsEtikett =
+    deFjortonUtfall.status === 'raknar'
+      ? 'Räknar täckningen…'
+      : deFjortonFriskt && deFjortonUtfall.status === 'klar'
+        ? `Full täckning · ${deFjortonUtfall.tackta} av ${deFjortonUtfall.tackta}`
+        : tackningsLage
+          ? 'Dölj täckning'
+          : 'Visa täckning';
+  // [TASK-349] Dismiss minns per ENHET (localStorage), inte per flik — se
+  // `segment-startinfo-minne.ts` för varför den skiljer sig från
+  // `AppUpdateBanner.tsx`s sessionsskopade "Inte nu". Lazy initializer: läses
+  // en gång vid mount, aldrig på varje rendering.
+  const [infoDold, setInfoDold] = useState(() => lasSegmentStartinfoDold());
+  const doljInfo = () => {
+    setInfoDold(true);
+    sparaSegmentStartinfoDold();
+  };
 
   const markerbara = poster.length;
   const allaValda = markerbara > 0 && valda.size === markerbara;
@@ -1893,27 +1983,46 @@ function SegmentLista({
   );
 
   return (
-    <section className="flex flex-col gap-6 pt-2 lg:pt-10">
+    <section className="flex flex-col gap-6">
+      {/* [TASK-349, ADR-126] Husets sidkrom — chevron till `/mer`, den enda
+          utgången ur segment-ytan. Saknades helt innan denna skiva: filen
+          bar bara den interna, knapp-baserade `onTillbaka`-grenen, så det
+          gick inte att lämna startvyn annat än via TabBar. Smalare
+          omfattning (ingen `rubrik`-prop) — sidan äger sitt eget
+          rubrikblock nedan, samma anatomi som `Intresserade.tsx`. */}
+      <SidRam to="/mer" tillbakaEtikett="Tillbaka till Mer" />
       <header className="flex flex-col gap-1.5 border-border border-b px-4 pb-5">
         <h1 ref={rubrikRef} tabIndex={-1} className="font-semibold text-3xl">
           Segment
         </h1>
-        {/* Marcus text verbatim - men NY text sedan 2026-08-16
-            (begreppsrenheten), inte den från 2026-08-10. Den ersatta lydelsen
-            löd "Grupper av personer som du kan skicka riktade mail till. Spara
-            en grupp och återanvänd den - …" och kallade alltså ett SEGMENT för
-            en grupp. Det ordet är sedan uppdelnings-generatorn finns upptaget
-            av något annat: en grupp är en av de delar publiken delas upp i.
-            Ingressen säger därför "urval", och ordet segment står kvar som
-            sidans egen term. Den tidigare tredje meningen ("Flera grupper i
-            samma utskick: markera dem") ströks redan 2026-08-10 - markera-
-            funktionen får bära sig själv - och återinförs inte här. */}
-        <p className="text-small text-text-muted">
-          Urval av personer som du kan skicka riktade mail till. Spara ett segment och återanvänd
-          det - antalet räknas upp automatiskt, så antalet stämmer även när fler personer tillfaller
-          segmentet.
-        </p>
       </header>
+
+      {/* [TASK-349] Marcus text verbatim - men NY text sedan 2026-08-16
+          (begreppsrenheten), inte den från 2026-08-10. Den ersatta lydelsen
+          löd "Grupper av personer som du kan skicka riktade mail till. Spara
+          en grupp och återanvänd den - …" och kallade alltså ett SEGMENT för
+          en grupp. Det ordet är sedan uppdelnings-generatorn finns upptaget
+          av något annat: en grupp är en av de delar publiken delas upp i.
+          Ingressen säger därför "urval", och ordet segment står kvar som
+          sidans egen term. Den tidigare tredje meningen ("Flera grupper i
+          samma utskick: markera dem") ströks redan 2026-08-10 - markera-
+          funktionen får bära sig själv - och återinförs inte här.
+
+          KRYSSBAR sedan TASK-349 (KRYSS-REGELN, MessageBox.tsx): `info` får
+          avfärdas, till skillnad från `error`/`warning`. Dismiss minns per
+          enhet (`segment-startinfo-minne.ts`, localStorage). Utanför
+          `data-testid="segment-listan"`-scopet nedan, precis som headern
+          — ariaSnapshot-referenserna för de sju facit-ytorna är därför
+          oförändrade av detta. */}
+      {!infoDold && (
+        <div className="px-4">
+          <MessageBox intent="info" onDismiss={doljInfo}>
+            Urval av personer som du kan skicka riktade mail till. Spara ett segment och återanvänd
+            det - antalet räknas upp automatiskt, så antalet stämmer även när fler personer
+            tillfaller segmentet.
+          </MessageBox>
+        </div>
+      )}
 
       {/* [TASK-249.1] Wrappern bär grindens ariaSnapshot-fäste
           (`data-testid="segment-listan"`, ADR-103 B4) — samma
@@ -2010,79 +2119,6 @@ function SegmentLista({
           )}
         </div>
 
-        {/* KONTROLLÄGETS INGÅNG (S104 Del 4, task-181, beslut 1: "ett LÄGE
-            på listan") — en EGEN lågmäld rad, högerställd, direkt ovanför
-            kvittenserna den slår på och av. Textknapp som byter etikett
-            (Markera-mönstret), lättare vikt än kapslarna: kontrollen är ett
-            gransknings-läge, inte en daglig handling, och ska inte
-            konkurrera med skapandeknapparna om radplats eller uppmärksamhet.
-
-            ETIKETTEN ÄR "VISA TÄCKNING", OCH DET ÄR ETT ÅTERSTÄLLT BESLUT
-            (Marcus granskning 2026-08-16, fjärde varvet: "Jag vill ha tillbaka
-            täckningsyta och ikonen vi hade innan"). Varv 3 bytte till
-            "Kontrollera grupperna" + `ListChecks` på tesen att "täckning" var
-            ett begrepp Lotta inte har - Marcus underkände den tesen: ordet ÄR
-            hans, och den nya kvittenstexten bär det i klartext ("100 % - Full
-            täckning"). Knappen och kvittensen måste då säga samma ord, annars
-            namnger de två olika saker. `Layers` framför `ListChecks`: lagren
-            är bilden av flera segment som tillsammans ska täcka en population,
-            vilket är exakt vad ytan mäter. Båda finns i lucide-react 1.28.0
-            (mätt). */}
-        {!markeraLage && markerbara > 0 && (
-          <div className="-mt-2 flex justify-end print:hidden">
-            <button
-              type="button"
-              onClick={onTackning}
-              className={`-mx-2 flex items-center gap-2 rounded-lg px-2 py-1.5 font-medium text-small motion-safe:transition-colors ${
-                tackningsLage ? 'bg-bg-emphasized' : 'text-text-secondary hover:bg-bg-emphasized'
-              }`}
-            >
-              <Layers aria-hidden="true" size={16} className="shrink-0" />
-              {tackningsLage ? 'Dölj täckning' : 'Visa täckning'}
-            </button>
-          </div>
-        )}
-
-        {/* KVITTENSERNA (S104 Del 4, task-181). Läggs ÖVER listan - mellan
-            handlingsraden och korten, listan döljs aldrig. Göms i
-            markera-läget: de två lägena löser olika ärenden och har inget
-            gemensamt att visa samtidigt (samma princip som "Nytt
-            segment"/"Dela upp i grupper" göms där). En uppsättning per
-            kvittens (flera-uppsättningar-beslutet i docblocket ovan
-            `TackningsPanel`) - de fjorton finns från mount, så listan är
-            aldrig tom när läget slås på.
-
-            `!laddar` GRINDAR ÄVEN HÄR (till skillnad från handlingsraden
-            ovan, som redan visas under laddning): innan `events` svarat är
-            `parInfo` tom, och en kontroll som räknar mot en tom taxonomi
-            hade kunnat visa "ingen saknas" en bråkdel av en sekund innan
-            det rätta talet landar. Ett kort missvisande nollresultat är
-            precis den tysta felklass kontrolläget finns för att avslöja -
-            det ska därför aldrig självt producera en. */}
-        {tackningsLage && !markeraLage && !laddar && (
-          // [TASK-249.1] `data-testid="tackningsvyn"` — nästlad INUTI
-          // `segment-listan`s scope (en referens kan scopa till endera; se
-          // spec-filens huvud). Panelerna bär ingen egen rigg/scaffolding,
-          // så ingen ytterligare avgränsning krävs här.
-          <div data-testid="tackningsvyn" className="flex flex-col gap-4">
-            {uppsattningar.length === 0 ? (
-              <p className="text-small text-text-muted">
-                Det finns inga grupper att räkna täckning för än. Täckningen gäller de fjorton
-                förskapade grupperna eller en körning av "Dela upp i grupper".
-              </p>
-            ) : (
-              uppsattningar.map((u) => (
-                <TackningsPanel
-                  key={u.nyckel}
-                  uppsattning={u}
-                  parInfo={parInfo}
-                  visaNamn={uppsattningar.length > 1}
-                />
-              ))
-            )}
-          </div>
-        )}
-
         {fel && (
           <MessageBox intent="error" title="Kunde inte hämta sparade segment">
             {fel.message}
@@ -2100,41 +2136,127 @@ function SegmentLista({
               >
                 <Skeleton variant="text" className="w-1/2 text-body" />
                 <Skeleton variant="text" className="w-3/4 text-small" />
-                <div className="flex min-h-8 items-center">
+                <div className="flex min-h-6 items-center">
                   <Skeleton variant="text" className="w-24 text-caption" />
                 </div>
               </div>
             ))}
           </div>
-        ) : fel ? null : poster.length === 0 ? (
-          // TOMLÄGET, på riktigt: basen bär inga segment. Strukturerat och
-          // lugnt (`EventsList.tsx § body`) — ingenting har gått fel.
-          //
-          // DET RENDERAS ALDRIG OVANPÅ ETT FEL. Första formen gjorde det,
-          // och renderingspasset visade varför det är fel: felrutan och
-          // "Inga sparade segment än" stod under varandra och sa två olika
-          // saker om samma sak. Misslyckas hämtningen VET vi inte om basen
-          // är tom — och ett tomläge är ett påstående, inte en reservbild.
-          <div className="flex flex-col items-center gap-2 py-10 text-center">
-            <p className="font-medium text-body">Inga sparade segment än</p>
-            <p className="max-w-prose text-small text-text-muted">
-              Ett segment är en grupp personer du kan skicka till om och om igen. Du bygger det som
-              en regel - och regeln fortsätter gälla när nya utbildningar tillkommer.
-            </p>
-            <button type="button" onClick={onNytt} className={KAPSEL_KLASS}>
-              <ListPlus aria-hidden="true" size={18} className="shrink-0" />
-              Skapa ditt första segment
-            </button>
-          </div>
-        ) : (
-          // EN LISTA, INGEN GRUPPERING (Marcus 2026-08-10). Tidigare stod
-          // korten under "Sparade i basen" respektive "Skisser". Två fel i
-          // ett: "basen" är vårt ord — Lotta vet inte att det finns en
-          // Airtable-bas och ska inte behöva veta — och distinktionen är en
-          // PROTOTYP-egenskap. I skarp drift är varje rad i listan riktig,
-          // och då finns ingen gruppering att göra. Ytan gick alltså inte
-          // att bedöma som den yta den ska bli.
-          kortLista(poster)
+        ) : fel ? null : (
+          // TVÅ SEKTIONER (B2-promoveringen, se filhuvudets docblock ovan
+          // `SegmentLista`): "Dina segment" och "Färdiga grupper" i stället
+          // för EN flat lista (Marcus 2026-08-10, omprövad S114 Del 3
+          // beslut 3). DET RENDERAS ALDRIG OVANPÅ ETT FEL — samma princip
+          // som förut (`fel ? null : …` ovan): misslyckas
+          // `segments`-hämtningen VET vi inte om basen är tom, och då ska
+          // ingen sektion visas som ett påstående om innehåll.
+          <>
+            <div className="flex flex-col gap-3">
+              <SektionsRubrik namn="Dina segment" antal={dinaSegment.length} />
+              {dinaSegment.length === 0 ? (
+                // TOMLÄGET, på riktigt: inga sparade segment i basen.
+                // Facitets form + ordval ("urval personer" — ORDLISTA:n
+                // reserverar "grupp" för uppdelnings-generatorn). Ersätter
+                // den TIDIGARE GLOBALA tomläges-grenen (`poster.length ===
+                // 0`), som inte längre kan inträffa: `egna` förpopuleras med
+                // de fjorton vid mount (byggDeFjorton, ovan) och de tas
+                // aldrig bort, så `poster.length === 0` är dött sedan denna
+                // landning — pröva-och-bokför-fyndet från B2-promoveringens
+                // uppdrag.
+                <div className="flex flex-col items-center gap-2 py-6 text-center">
+                  <p className="font-medium text-body">Inga sparade segment än</p>
+                  <p className="max-w-prose text-small text-text-muted">
+                    Ett segment är ett urval personer du kan skicka till om och om igen. Du bygger
+                    det som en regel - och regeln fortsätter gälla när nya utbildningar tillkommer.
+                  </p>
+                  <button type="button" onClick={onNytt} className={KAPSEL_KLASS}>
+                    <ListPlus aria-hidden="true" size={18} className="shrink-0" />
+                    Skapa ditt första segment
+                  </button>
+                </div>
+              ) : (
+                kortLista(dinaSegment)
+              )}
+            </div>
+
+            <div className="flex flex-col gap-3 pb-8">
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <SektionsRubrik namn="Färdiga grupper" antal={fardigaGrupper.length} />
+                {/* KONTROLLÄGETS INGÅNG (S104 Del 4, task-181, beslut 1: "ett
+                    LÄGE på listan") — flyttad från en egen rad OVANFÖR hela
+                    listan till "Färdiga grupper"s rubrikrad vid
+                    B2-promoveringen (S117, facitet): täckningen gäller bara
+                    de fjorton/generator-uppsättningarna (`harledUppsattningar`
+                    ovan), så knappen bor hos sektionen den mäter i stället
+                    för att sitta ovanför BÅDA sektionerna.
+
+                    ETIKETTEN "VISA TÄCKNING" ÄR ETT ÅTERSTÄLLT BESLUT (Marcus
+                    granskning 2026-08-16, fjärde varvet: "Jag vill ha
+                    tillbaka täckningsyta och ikonen vi hade innan" — git-
+                    historiken bär hela turordningen). Facitets tillägg: när
+                    täckningen redan är räknad OCH frisk visar knappen SVARET
+                    ("Full täckning · N av N", N ur `useTackning`) i stället
+                    för uppmaningen — `tackningsEtikett` ovan. `Layers`
+                    framför `ListChecks`: lagren är bilden av flera segment
+                    som tillsammans ska täcka en population. */}
+                {!markeraLage && fardigaGrupper.length > 0 && (
+                  <button
+                    type="button"
+                    onClick={onTackning}
+                    aria-expanded={tackningsLage}
+                    className={`-mx-2 flex items-center gap-2 rounded-lg px-2 py-1.5 font-medium text-small motion-safe:transition-colors print:hidden ${
+                      tackningsLage
+                        ? 'bg-bg-emphasized'
+                        : 'text-text-secondary hover:bg-bg-emphasized'
+                    }`}
+                  >
+                    <Layers aria-hidden="true" size={16} className="shrink-0" />
+                    {tackningsEtikett}
+                  </button>
+                )}
+              </div>
+
+              {/* KVITTENSERNA (S104 Del 4, task-181). Läggs ÖVER listan -
+                  mellan rubrikraden och korten, listan döljs aldrig. Göms i
+                  markera-läget: de två lägena löser olika ärenden och har
+                  inget gemensamt att visa samtidigt (samma princip som
+                  "Nytt segment"/"Dela upp i grupper" göms där). En
+                  uppsättning per kvittens (flera-uppsättningar-beslutet i
+                  docblocket ovan `TackningsPanel`) - de fjorton finns från
+                  mount, så listan är aldrig tom när läget slås på. Nästlad
+                  inuti "inte laddar, inte fel"-grenen ovan — samma
+                  `!laddar`-skydd som förut (kommentaren stod tidigare här:
+                  en kontroll som räknar mot en tom taxonomi innan `events`
+                  svarat hade kunnat visa "ingen saknas" en bråkdel av en
+                  sekund innan det rätta talet landar). */}
+              {tackningsLage && !markeraLage && (
+                // [TASK-249.1] `data-testid="tackningsvyn"` — nästlad INUTI
+                // `segment-listan`s scope (en referens kan scopa till
+                // endera; se spec-filens huvud). Panelerna bär ingen egen
+                // rigg/scaffolding, så ingen ytterligare avgränsning krävs
+                // här.
+                <div data-testid="tackningsvyn" className="flex flex-col gap-4">
+                  {uppsattningar.length === 0 ? (
+                    <p className="text-small text-text-muted">
+                      Det finns inga grupper att räkna täckning för än. Täckningen gäller de fjorton
+                      förskapade grupperna eller en körning av "Dela upp i grupper".
+                    </p>
+                  ) : (
+                    uppsattningar.map((u) => (
+                      <TackningsPanel
+                        key={u.nyckel}
+                        uppsattning={u}
+                        parInfo={parInfo}
+                        visaNamn={uppsattningar.length > 1}
+                      />
+                    ))
+                  )}
+                </div>
+              )}
+
+              {kortLista(fardigaGrupper)}
+            </div>
+          </>
         )}
       </div>
       {/* [TASK-259] Prototyp-noten som stod som egen syskon-div här — utanför
@@ -2516,10 +2638,15 @@ function SegmentDetalj({
   const tomRegel = rule.include.length === 0;
 
   return (
-    <SidRam onTillbaka={onTillbaka} tillbakaEtikett="Tillbaka till segmenten">
+    <section className="flex flex-col gap-6">
+      {/* [TASK-349, ADR-126] Husets `SidRamKnapp` — state-baserad "tillbaka"
+          (byter vy, byter aldrig route), ersätter den lokala `SidRam`-kopian.
+          Geometrin är identisk (delad `CHEVRON_KLASS`), bara hemvisten
+          flyttad. */}
+      <SidRamKnapp tillbakaEtikett="Tillbaka till segmenten" onTillbaka={onTillbaka} />
       {/* [TASK-249.1] Wrappern bär grindens ariaSnapshot-fäste
           (`data-testid="segment-detaljvyn"`, ADR-103 B4) — `gap-6` speglar
-          `SidRam`s egen `<section>`-klass exakt, så DETTA extra DOM-lager
+          den omslutande sektionens klass exakt, så DETTA extra DOM-lager
           ändrar inget synligt avstånd (samma grepp som `granskning-yta`/
           `segment-listan` ovan). [TASK-259] `PrototypNot`, som stod sist i
           funktionen som en egen syskon-div av samma skäl, är riven.
@@ -2641,7 +2768,7 @@ function SegmentDetalj({
           </div>
         </DetaljGrupp>
       </div>
-    </SidRam>
+    </section>
   );
 }
 
@@ -3255,9 +3382,12 @@ function RegelVerkstad({
     setPred((p) => ({ ...p, utan: p.utan.filter((v) => v.id !== id) }));
 
   return (
-    <SidRam onTillbaka={onTillbaka} tillbakaEtikett="Tillbaka till segmentet">
+    <section className="flex flex-col gap-6">
+      {/* [TASK-349, ADR-126] Husets `SidRamKnapp` ersätter den lokala
+          `SidRam`-kopian — samma geometri, delad `CHEVRON_KLASS`. */}
+      <SidRamKnapp tillbakaEtikett="Tillbaka till segmentet" onTillbaka={onTillbaka} />
       {/* [TASK-249.1] `data-testid="verkstaden"` (ADR-103 B4) — `gap-6`
-          speglar `SidRam`s `<section>`-klass, samma noll-synligt-avstånd-
+          speglar den omslutande sektionens klass, samma noll-synligt-avstånd-
           grepp som övriga sex ytor. Riggarna förekom aldrig i denna vy —
           bara `PrototypNot` behövde uteslutas ur scopet, och den är sedan
           TASK-259 riven helt (TASK-249.6 rev `PrototypRigg`/
@@ -3424,7 +3554,7 @@ function RegelVerkstad({
           )}
         </div>
       </div>
-    </SidRam>
+    </section>
   );
 }
 
@@ -3619,9 +3749,12 @@ function DelaUppIGrupper({
   }
 
   return (
-    <SidRam onTillbaka={onTillbaka} tillbakaEtikett="Tillbaka till segmenten">
+    <section className="flex flex-col gap-6">
+      {/* [TASK-349, ADR-126] Husets `SidRamKnapp` ersätter den lokala
+          `SidRam`-kopian — samma geometri, delad `CHEVRON_KLASS`. */}
+      <SidRamKnapp tillbakaEtikett="Tillbaka till segmenten" onTillbaka={onTillbaka} />
       {/* [TASK-249.1] `data-testid="generatorn"` (ADR-103 B4) — `gap-6`
-          speglar `SidRam`s `<section>`-klass. Omsluter BÅDA de befintliga
+          speglar den omslutande sektionens klass. Omsluter BÅDA de befintliga
           topp-nivå-divarna (stegkorten + Avbryt-raden, redan syskon till
           varandra). `PrototypNot`, som låg i en egen syskon-div sist just
           för att hållas utanför scopet, är riven (TASK-259). Riggarna
@@ -3868,7 +4001,7 @@ function DelaUppIGrupper({
           </div>
         </div>
       </div>
-    </SidRam>
+    </section>
   );
 }
 
@@ -4100,9 +4233,12 @@ function NyttSegmentVy({
       ));
 
   return (
-    <SidRam onTillbaka={onTillbaka} tillbakaEtikett="Tillbaka till segmenten">
+    <section className="flex flex-col gap-6">
+      {/* [TASK-349, ADR-126] Husets `SidRamKnapp` ersätter den lokala
+          `SidRam`-kopian — samma geometri, delad `CHEVRON_KLASS`. */}
+      <SidRamKnapp tillbakaEtikett="Tillbaka till segmenten" onTillbaka={onTillbaka} />
       {/* [TASK-249.1] `data-testid="nytt-segment-mallvyn"` (ADR-103 B4) —
-          `gap-6` speglar `SidRam`s `<section>`-klass. `PrototypNot`, som
+          `gap-6` speglar den omslutande sektionens klass. `PrototypNot`, som
           stod sist i funktionen som egen syskon-div utanför scopet, är
           riven (TASK-259). Riggarna förekom aldrig i denna vy (och är
           rivna sedan TASK-249.6). */}
@@ -4245,7 +4381,7 @@ function NyttSegmentVy({
           </div>
         </div>
       </div>
-    </SidRam>
+    </section>
   );
 }
 
@@ -4490,7 +4626,10 @@ function UtskicksVy({
   if (lage === 'resultat' && visatUtfall) {
     const u = visatUtfall;
     return (
-      <SidRam onTillbaka={onTillbaka} tillbakaEtikett={tillbakaEtikett}>
+      <section className="flex flex-col gap-6">
+        {/* [TASK-349, ADR-126] Husets `SidRamKnapp` ersätter den lokala
+            `SidRam`-kopian — samma geometri, delad `CHEVRON_KLASS`. */}
+        <SidRamKnapp tillbakaEtikett={tillbakaEtikett} onTillbaka={onTillbaka} />
         {/* [TASK-249.1] `data-testid="utskicksvyn"` (ADR-103 B4) — DELAS
             med `granska`-lägets gren nedan (mutuellt uteslutande DOM-träd,
             samma mönster som `granskning-yta` i
@@ -4542,12 +4681,15 @@ function UtskicksVy({
             </div>
           </div>
         </div>
-      </SidRam>
+      </section>
     );
   }
 
   return (
-    <SidRam onTillbaka={onTillbaka} tillbakaEtikett={tillbakaEtikett}>
+    <section className="flex flex-col gap-6">
+      {/* [TASK-349, ADR-126] Husets `SidRamKnapp` ersätter den lokala
+          `SidRam`-kopian — samma geometri, delad `CHEVRON_KLASS`. */}
+      <SidRamKnapp tillbakaEtikett={tillbakaEtikett} onTillbaka={onTillbaka} />
       {/* [TASK-249.1] `data-testid="utskicksvyn"` — samma testid som
           `resultat`-grenen ovan (mutuellt uteslutande DOM-träd). Se
           docblocket där för fullständig motivering. */}
@@ -4922,7 +5064,7 @@ function UtskicksVy({
           </div>
         </div>
       </div>
-    </SidRam>
+    </section>
   );
 }
 

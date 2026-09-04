@@ -1,14 +1,8 @@
-import {
-  createAirtableRecord,
-  fetchAirtableRecord,
-  fetchFromAirtable,
-} from '../_shared/airtable-client.ts';
-import { buildEqualsFilter, combineWithAnd } from '../_shared/airtable-filter.ts';
 import { requireUser } from '../_shared/auth.ts';
 import { scalarString, selectName } from '../_shared/coerce.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
+import { EMAIL_RE, skapaAnmalan } from '../_shared/create-registration.ts';
 import { generateRequestId, mapErrorToResponse } from '../_shared/errors.ts';
-import { findDisallowedField, getOperation } from '../_shared/field-allowlists.ts';
 
 // create-registration — skapar en MANUELL anmälan (Källa="Manuell") för admin
 // (Fas 6c Leverabel 4). Skriv-kärnan som speglar update-record:s SÄKERHET
@@ -39,19 +33,16 @@ import { findDisallowedField, getOperation } from '../_shared/field-allowlists.t
 //
 // 409 (affärs-unikhet, SKILD från idempotensen): Normaliserad e-post
 // (LOWER(TRIM) — replikerad deterministiskt) + EventKey-sträng. Hit → 409.
+//
+// [TASK-368.4] SKRIV-KÄRNAN BOR I `_shared/create-registration.ts`. Eventuppslaget,
+// 409-frågan, fält-bygget, allowlist-grinden och skrivningen flyttade dit
+// OFÖRÄNDRADE (samma anrop, samma ordning, samma loggrader) så att
+// `rebook-registration` kan skapa den nya anmälan via SAMMA väg i stället för
+// en andra kopia. Denna fils yttre kontrakt — metod-vakt, requireUser,
+// Idempotency-Key-kravet, input-valideringen och statuskoderna — är MEDVETET
+// kvar här; se den modulens filhuvud för hela resonemanget.
 
 const OPERATION_KEY = 'create-registration';
-const EVENTPLANERING_TABLE = 'Eventplanering';
-
-// Sätts vid manuell admin-create (data-model.md § Källa-/Status-värden).
-// Manuell = admin lägger till manuellt; Obekräftad = create-default.
-const SOURCE_MANUAL = 'Manuell';
-const STATUS_CREATE_DEFAULT = 'Obekräftad';
-
-// Pragmatisk e-post-format-grind (samma anda som klient-validering). Avsiktligt
-// enkel: en exakt RFC-5322-parser är fel verktyg här — 409-/normaliserings-
-// korrektheten vilar på Airtables `LOWER(TRIM())`, inte på adress-strukturen.
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 /**
  * Mappar en skapad Airtable-rad till domän-Registration (samma shape som
@@ -59,8 +50,29 @@ const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
  * `RegistrationSchema.parse()` validerar i adaptern, ADR-026). Lokalt definierad:
  * under ADR-026:s ≥3-tröskel för _shared-extraktion (endast get-registrations +
  * denna; extrahera vid tredje konsument).
+ *
+ * `eventNamn` (TASK-363): en MANUELL/+1/väntelista-create lämnar Anmälans EGNA
+ * `Vill anmäla sig till` osatt (endast webbformuläret fyller det) — formeln
+ * `Event (namn)` (`{Vill anmäla sig till}`) blir därför ALLTID tom här, precis
+ * som `Kurs (from Event)`-lookupen (`_shared/registration-read.ts` § eventNamn)
+ * redan hanterar för läsvägen. Samma idiom här: föredra lookupen
+ * `Kurs (from Event)` (eventets kanoniska kursnamn — samma källa get-person och
+ * basens egen "Senaste anmälan (sammanfattning)"-formel föredrar, TASK-184) med
+ * fallback till formeln, och SIST till `eventNamnFallback` — namnet EF:en redan
+ * läste ur Eventplanering-posten (`Event (text)`, identisk källa som lookupen
+ * pekar på) innan skrivningen, för det osannolika fallet att Airtables
+ * lookup-uppdateringskedja ännu inte hunnit slå igenom i CREATE-svaret (fälla
+ * 17/18, data-model.md). `??`-kedjan garanterar alltså aldrig `null` här när
+ * Event-länken är satt — vilket den alltid är vid en create (`fields.Event`
+ * ovan). STOPP-BESLUT (ADR-086-premisspasset): `Vill anmäla sig till` skrivs
+ * INTE vid create — fältet bär en ANNAN semantik (self-reported form-claim,
+ * `Eventmatchning`s PÅSTÅENDE-sida, källa för `Antal tidigare genomförda
+ * utbildningar`-rollupen på Personer) än "eventets namn", se PR-beskrivningen.
  */
-function mapCreatedRegistration(record: { id: string; fields: Record<string, unknown> }) {
+function mapCreatedRegistration(
+  record: { id: string; fields: Record<string, unknown> },
+  eventNamnFallback: string | null,
+) {
   const f = record.fields;
   return {
     id: record.id,
@@ -69,7 +81,7 @@ function mapCreatedRegistration(record: { id: string; fields: Record<string, unk
     efternamn: f['Efternamn'] ?? null, // text
     email: f['E-post'] ?? null, // text
     telefon: f['Mobilnummer'] ?? null, // text
-    eventNamn: f['Event (namn)'] ?? null, // formula
+    eventNamn: scalarString(f['Kurs (from Event)']) ?? f['Event (namn)'] ?? eventNamnFallback ?? null,
     ort: scalarString(f['Ort']), // text
     status: selectName(f['Status']), // singleSelect
     flagga: selectName(f['Flagga']), // singleSelect
@@ -174,99 +186,45 @@ Deno.serve(async (req) => {
       return badRequest('Invalid eventId format', corsHeaders);
     }
 
-    // Allowlist-SSOT: hämta operationens tableId + allowedFields (defensiv —
-    // operationen är statiskt registrerad, men null-vägen behålls för paritet).
-    const operation = getOperation(OPERATION_KEY);
-    if (!operation) {
-      return badRequest(`Unknown operation: ${OPERATION_KEY}`, corsHeaders);
-    }
+    const utfall = await skapaAnmalan(
+      {
+        fornamn,
+        efternamn,
+        email,
+        telefon: typeof telefon === 'string' ? telefon : null,
+        antalPlatser: typeof antalPlatser === 'number' ? antalPlatser : null,
+        notering: typeof notering === 'string' ? notering : null,
+        eventId,
+      },
+      '[create-registration]',
+      user.id,
+    );
 
-    // Hämta eventraden → EventKey ("Event-N"). null = okänt event → 404
-    // (ärver get-event/get-registrations eventId-grenens 404-kontrakt).
-    const eventRecord = await fetchAirtableRecord(EVENTPLANERING_TABLE, eventId);
-    if (!eventRecord) {
-      return new Response(JSON.stringify({ error: 'Event not found' }), {
-        status: 404,
-        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-      });
-    }
-    const eventKey = eventRecord.fields['EventKey'];
-    if (typeof eventKey !== 'string' || !eventKey) {
-      // Eventraden saknar EventKey-formelvärde — data-integritetsfel (ska ej ske;
-      // EventKey är en alltid-beräknad formel). Oväntat → 500 (generic body).
-      throw new Error(`Eventplanering ${eventId} saknar EventKey-formelvärde`);
-    }
-
-    // 409-dedup (affärs-unikhet): Normaliserad e-post (LOWER(TRIM), replikerad) +
-    // EventKey-STRÄNGEN. FILTRERAR ALDRIG på Event-länken (T15-lärdom). Injektions-
-    // säkert via buildEqualsFilter (samma builder som get-registrations).
-    const normalizedEmail = email.trim().toLowerCase();
-    const dupFilter = combineWithAnd([
-      buildEqualsFilter('Normaliserad e-post', normalizedEmail),
-      buildEqualsFilter('EventKey', eventKey),
-    ]);
-    const existing = await fetchFromAirtable(operation.tableId, {
-      filterByFormula: dupFilter,
-      fields: ['Namn'],
-      maxRecords: 1,
-    });
-    if (existing.length > 0) {
-      const existingName = scalarString(existing[0].fields['Namn']);
-      console.warn(
-        `[create-registration] DENY duplicate | caller_user_id=${user.id} | eventKey=${eventKey}`,
-      );
-      return new Response(
-        JSON.stringify({
-          error: 'Personen är redan anmäld till eventet',
-          existingName,
-          requestId,
-        }),
-        { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
-      );
-    }
-
-    // Bygg write-fält SERVER-SIDE (endast skrivbara create-fält; formel/rollup ALDRIG).
-    const fields: Record<string, unknown> = {
-      Förnamn: fornamn.trim(),
-      Efternamn: efternamn.trim(),
-      'E-post': email.trim(),
-      Källa: SOURCE_MANUAL,
-      Status: STATUS_CREATE_DEFAULT,
-      Inskickad: new Date().toISOString(),
-      EventKey: eventKey,
-      Event: [eventId], // länk-fältets NAMN är 'Event' (fldi3enUaMdbuGSlm)
-    };
-    if (typeof telefon === 'string' && telefon.trim()) {
-      fields['Mobilnummer'] = telefon.trim();
-    }
-    // Facit-formens två återstående fält (task-18.12). Antal platser skrivs när
-    // angivet (annars lämnas basens number tomt — läs-mappningen normaliserar ?? 1);
-    // Notering skrivs bara när icke-tom (tom text ⇒ fältet lämnas osatt).
-    if (typeof antalPlatser === 'number') {
-      fields['Antal platser'] = antalPlatser;
-    }
-    if (typeof notering === 'string' && notering.trim()) {
-      fields['Notering'] = notering.trim();
-    }
-
-    // SSOT-grind: varje server-byggt fält måste vara på operationens allowlist
-    // (defense-in-depth mot framtida kod-drift; deny → 400).
-    const disallowed = findDisallowedField(operation, fields);
-    if (disallowed !== null) {
-      console.warn(
-        `[create-registration] DENY field not in allowlist | caller_user_id=${user.id} | field=${disallowed}`,
-      );
+    if (!utfall.ok) {
+      if (utfall.kod === 'okand_operation') {
+        return badRequest(`Unknown operation: ${OPERATION_KEY}`, corsHeaders);
+      }
+      if (utfall.kod === 'event_saknas') {
+        return new Response(JSON.stringify({ error: 'Event not found' }), {
+          status: 404,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        });
+      }
+      if (utfall.kod === 'dubblett') {
+        return new Response(
+          JSON.stringify({
+            error: 'Personen är redan anmäld till eventet',
+            existingName: utfall.befintligtNamn,
+            requestId,
+          }),
+          { status: 409, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
+        );
+      }
       return badRequest(
-        `Field "${disallowed}" not allowed for operation "${OPERATION_KEY}"`,
+        `Field "${utfall.falt}" not allowed for operation "${OPERATION_KEY}"`,
         corsHeaders,
       );
     }
-
-    console.log(
-      `[create-registration] ALLOW | caller_user_id=${user.id} | eventKey=${eventKey} | event=${eventId}`,
-    );
-
-    const created = await createAirtableRecord(operation.tableId, fields);
 
     // Dubbel retur: `registration` = ren domän-shape (adaptern parse:ar denna,
     // ser aldrig Airtable-fältnamn); `record` = rå skriv-bevis (id + fields,
@@ -274,8 +232,8 @@ Deno.serve(async (req) => {
     // Event-länk + Källa faktiskt skrevs (de ligger ej i domän-modellen).
     return new Response(
       JSON.stringify({
-        registration: mapCreatedRegistration(created),
-        record: { id: created.id, fields: created.fields },
+        registration: mapCreatedRegistration(utfall.record, utfall.eventNamnFallback),
+        record: { id: utfall.record.id, fields: utfall.record.fields },
       }),
       { status: 201, headers: { ...corsHeaders, 'Content-Type': 'application/json' } },
     );

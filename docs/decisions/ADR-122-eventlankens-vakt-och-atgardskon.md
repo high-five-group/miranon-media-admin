@@ -97,7 +97,8 @@ A1 får ett skript-steg som normaliserar `"10"` → `"Event-10"`, jämför
 formulärets textkopior mot det tilltänkta eventets facit, och **lämnar `Event`
 tomt** när de inte går ihop. Raden blir därmed en orphan — vilket appen redan
 visar som `'Utan event'` (`hem-derivations.ts:93`,
-`AnmalningarList.tsx:163`).
+`AnmalningarSida.tsx`, f.d. `AnmalningarList.tsx`). *(Rättat 2026-08-26,
+`TASK-309.18` — se § Updates: filen döptes om i `TASK-299.5`.)*
 
 **Skälet är att den formen är fail-closed by construction.**
 [`airtable-constraints.md`](../reference/airtable-constraints.md) `P16`
@@ -178,9 +179,11 @@ det klickade eventet.
 Åtgärdskön på Hem är alltså **en ny bevakningsrad-typ**, inte en ny form.
 Vad som byggs är dess datakälla (beslut 3:s formelfält), dess egen
 resolution-overlay (analog med `SvepOverlay`) och radmarkören i
-`AnmalningarList`. Detta upptäcktes vid ordlistearbetet efter Marcus kvittens
-av helheten och bokförs här i stället för att glida in tyst — det gör
-beslutet billigare, inte annorlunda.
+`AnmalningarSida` (f.d. `AnmalningarList`). *(Rättat 2026-08-26,
+`TASK-309.18` — se § Updates: filen döptes om i `TASK-299.5`.)* Detta
+upptäcktes vid ordlistearbetet efter Marcus kvittens av helheten och bokförs
+här i stället för att glida in tyst — det gör beslutet billigare, inte
+annorlunda.
 
 ### 8. Åtgärdskön är en klass VID SIDAN av notistrappan, inte i den
 
@@ -299,3 +302,27 @@ bär `Ort (from Event)` och `Kurs (from Event)` under andra ID:n — divergensen
 är utskriven i `data-model.md` § Fält tillagda 2026-08-21 och i
 A1-skriptets huvud, och var orsaken till att `284.6` mappade om tre ID:n
 när formeln skapades i prod.
+
+### 2026-08-26 — § 7/§ 2 rättade: `AnmalningarList` → `AnmalningarSida` (`TASK-309.18`)
+
+Beslut 1–8 står orörda. Detta är en rättelse av två **stödjande
+faktapåståenden** (§ 2 rad ~100, § 7 rad ~181) som refererade
+`AnmalningarList.tsx` i presens, upptäckt av svep-passet efter S108:s
+rivningar (`TASK-309.18`, angränsande fynd).
+
+**Vad som var fel.** Filen döptes om till `AnmalningarSida.tsx` i
+`TASK-299.5` (konvergenspassets promovering till skarp yta) — `git ls-files`
+bekräftar att `AnmalningarList.tsx` inte längre existerar i repot. Varje
+annan levande kodplats som nämner det gamla namnet gör det konsekvent med
+en "f.d."/"riven/döpt om, `TASK-299.5`"-not (`Bevakningsrad.tsx`,
+`hem-derivations.ts`, `AnmalningarSida.tsx` självt, `KopplaTillEventDialog.tsx`,
+`registration-display.ts`, `registrationEventLink.ts`, `startvarmningen.ts`,
+`Registration.ts`, `mer/anmalningar.tsx`) — ADR-122 var den enda kvarvarande
+platsen utan den annoteringen.
+
+**Åtgärd.** Bägge raderna pekar nu på `AnmalningarSida.tsx` (f.d.
+`AnmalningarList.tsx`), med samma inline-markörkonvention som § Fynd 1 ovan.
+Radnumren i den ursprungliga texten (100/181) stämde mot filnamnet, inte mot
+en rad i den nya filen — ingen ny radreferens gissas här, eftersom filen
+skrevs om vid promoveringen och en gammal rad-till-rad-mappning inte kan
+antas hålla.

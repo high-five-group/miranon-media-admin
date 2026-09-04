@@ -14,7 +14,7 @@ import type { DataSourceAdapter } from '@/data/adapters/DataSourceAdapter';
  * (`MallRad`) anropade den för en transient förhandsvisning via
  * `previewEventTemplate`, HÅRDKODAD till `'deltagarinfo'` (katalogens
  * enda mall då). Genereringsvyn (`GenereringsVy.tsx`, TASK-309) äger nu
- * BÅDE förhandsvisning ("Förhandsgranska först") och skapande ("Skapa")
+ * BÅDE förhandsvisning ("Förhandsgranska") och skapande ("Skapa")
  * för de två riktiga mallarna, och `MallRad`s knapp är en entré DIT i
  * stället för en andra, felkopplad preview-väg — se `DokumentYta.tsx`s
  * `MallRad`-docblock. Klass B som DOKUMENTKLASS (`AttachmentClass.

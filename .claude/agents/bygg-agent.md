@@ -4,6 +4,7 @@ description: Bygger en backlog-skiva eller ett fynd-kort till pushad PR med grö
 isolation: worktree
 model: sonnet
 effort: xhigh
+disallowedTools: mcp__claude_ai_Airtable, mcp__claude_ai_Gmail, mcp__claude_ai_Google_Calendar, mcp__claude_ai_Google_Drive, mcp__google-drive, mcp__plugin_github_github, mcp__resend, mcp__plugin_resend_resend, mcp__vercel, mcp__nanobanana, mcp__plugin_figma_figma
 ---
 
 Du bygger EN avgränsad arbetsenhet till en pushad PR. Orkestreraren granskar din
@@ -12,6 +13,46 @@ diff, armerar auto-merge och äger CI-svansen — du gör inget av det.
 Du kör i en **egen git-worktree**. Huvudkatalogen ägs av orkestreraren och kan ha
 en annan gren uppcheckad. Rör den aldrig, och kör aldrig `git checkout` mot en
 sökväg utanför din egen worktree.
+
+## AFK-regel — gh-CLI framför MCP, rm scopad, vänta aldrig (TASK-336)
+
+2026-08-28 fick Marcus godkänna ett MCP-anrop "från en agent" medan flera
+sessioner körde `bypassPermissions` — ingen session kunde attribuera prompten
+(`backlog/tasks/task-336`). Källan (`code.claude.com/docs/en/permission-modes.md`
+§ "Actions no mode auto-approves") listar fem klasser som promptar även under
+bypass; av dem är den enda en agent realistiskt kan råka ut för
+**connector-verktyg satta till `ask`** och **MCP-verktyg märkta
+`requiresUserInteraction`** — `AskUserQuestion` tas bort ur din verktygspool
+automatiskt (`sub-agents.md` § Available tools, gäller alla subagenter oavsett
+`tools`/`disallowedTools`), och de andra tre klasserna (explicita ask-regler,
+kritisk-sökväg-`rm`, cross-session-godkännanden) kräver antingen en regel repot
+inte har eller ett kommando du inte ska köra.
+
+`disallowedTools`-fältet i frontmatteln ovan är den **MEKANISKA** spärren: den
+tar bort de MCP-serverfamiljer (Airtable-connectorn, Gmail, Calendar, Drive,
+GitHub-MCP, Resend, Vercel, Nanobanana, Figma) som du aldrig behöver för att
+bygga en skiva och som annars är just den typ av connector-verktyg som kan
+vara satt till `ask`. Kvar i din pool: `mcp__airtable__*` (PAT-servern —
+CLAUDE.md § Arbetsflöde, legitim fält-verifiering), `mcp__chrome-devtools__*`/
+`mcp__playwright__*` (samma tabell, visuell QA) och `mcp__context7__*`
+(dokumentation).
+
+Vad som följer här är **PROSA, inte mekanik** (ADR-083-disciplinen — påstå
+aldrig en spärr som inte finns) för det `disallowedTools` INTE kan uttrycka:
+
+- **Föredra `gh`/git/npm-CLI framför ett kvarvarande MCP-verktyg** när båda
+  löser samma uppgift. Ett CLI-anrop är aldrig ett MCP-anrop och kan därför
+  aldrig träffa connector-ask-klassen.
+- **`rm` bara i din egen worktree eller din egen scratchpad-katalog.** Aldrig
+  mot huvudkatalogen eller ett syskonträd — se § Namnge varje temporärfil
+  nedan för scratchpad-delningsrisken.
+- **Aldrig `git stash`** — stash-listan delas av ALLA worktrees under samma
+  `.git` (mätt 2026-08-28: en agents `stash pop` tog en annan sessions post).
+  Parkera i stället med `git diff > <fil>` + `git checkout -- <path>`, eller
+  en WIP-commit (lesson: git stash delas mellan worktrees, S112 2026-08-28).
+- **Vänta aldrig på en människa.** Se § Ingen asynkron signal når dig nedan —
+  samma regel, en människa som ska svara en prompt är strukturellt samma
+  obevakade väntan som en bakgrundsvakt ingen läser.
 
 ## Först av allt: gör worktreen körbar
 

@@ -106,21 +106,57 @@ export const AttachmentClass = {
 
 export type AttachmentClassValue = (typeof AttachmentClass)[keyof typeof AttachmentClass];
 
-// Bilagor.Räckvidd (TASK-275.2, ADR-118 beslut 1+4, additivt fält — staging
-// fldU6i9Ju5HRwSRBf, prod fldsEltfGx3y63hhF, task-275.1, data-model.md §
-// "Staging- och prodbasens additiva tillskott 2026-08-17 (task-275.1...)").
-// SPEGLAR `supabase/functions/_shared/attachments.ts`s ATTACHMENT_SCOPE_*
-// (Deno↔Vite-dubblering, samma mönster som AttachmentClass ovan). Varje
-// bilaga bär EXAKT en räckvidd (ORDLISTA.md § Räckvidd): Event (dagens
-// koppling) · Kurstyp (Kursfamilj obligatorisk + Kursnivå valfri, tom =
-// hela familjen) · Alla event.
+// Bilagor.Räckvidd (TASK-275.2 → OMBYGGD TASK-338.3, ADR-125 § Beslut 1,
+// additivt fält — staging fldU6i9Ju5HRwSRBf med optionen `Gemensam`
+// selxFObtdzHsUJiun, prod fldsEltfGx3y63hhF; prod-optionen väntar
+// TASK-338.6). SPEGLAR `supabase/functions/_shared/rackvidd-matchning.ts`s
+// ATTACHMENT_SCOPE_* (Deno↔Vite-dubblering, samma mönster som
+// AttachmentClass ovan — de två sidorna delar ingen build-kedja).
+//
+// ═══ TVÅ LEVANDE VÄRDEN, INTE TRE (ADR-125 § 1 ersätter ADR-118 beslut 1) ═══
+//
+//   - `Event`    — bilagan hör till exakt de event `Event`-länken pekar på.
+//   - `Gemensam` — FILTER-räckvidd över tre VALFRIA axlar (Kursfamilj ·
+//                  Kursnivå · Plats) kombinerade med OCH. En TOM axel
+//                  BEGRÄNSAR INTE; noll satta axlar = alla event.
+//
+// ORDLISTA.md § Räckvidd bär samma modell i produktspråk. Det gamla
+// `Kurstyp`/`Alla event`-paret är INTE längre en räckvidd var för sig — det
+// ÄR `Gemensam` med respektive utan axlar, vilket är precis varför de två
+// optionsnamnen degraderas till legacy nedan i stället för att leva kvar
+// som enum-medlemmar: en klient som kan UTTRYCKA dem kan också skriva dem.
 export const AttachmentScope = {
   EVENT: 'Event',
-  KURSTYP: 'Kurstyp',
-  ALLA_EVENT: 'Alla event',
+  GEMENSAM: 'Gemensam',
 } as const;
 
 export type AttachmentScopeValue = (typeof AttachmentScope)[keyof typeof AttachmentScope];
+
+/**
+ * LEGACY-optionsnamnen (ADR-118 beslut 1) som fortfarande kan ligga i basen
+ * och komma tillbaka på LÄSVÄGEN — normaliseras till `Gemensam` av
+ * `normaliseraRaAttachment` (`../schemas/Attachment.schema.ts`) innan
+ * `AttachmentSchema` ser dem.
+ *
+ * SKRIVVÄGEN ANVÄNDER DEM ALDRIG. De står här som en LÄS-tolerans, inte som
+ * ett val någon UI-yta får erbjuda — därför utanför `AttachmentScope` (som
+ * `RackviddsDialog` itererar över begreppsmässigt) i stället för som två
+ * till medlemmar. Att lämna dem i enumet hade gjort ett rivet modellbeslut
+ * valbart igen, vilket är exakt vad ADR-125 § 1 avskaffade.
+ *
+ * TVÅ KÄLLOR till ett legacy-värde, båda övergående:
+ *   1. Basen: prod-raderna migreras först i TASK-338.6; staging i 338.1.
+ *   2. EF:en: en `get-event-attachments` som ännu inte deployats med
+ *      TASK-338.2:s `mapAttachmentRecord` normaliserar inte på vägen ut.
+ *
+ * RIVNINGSSKULD, bokförd öppet (PRD TASK-338 § Utanför omfattningen):
+ * listan töms när BÅDA källorna är stängda. Att tömma den innan dess gör en
+ * gemensam bilaga osynlig i drift — inte ett fel som syns i CI.
+ */
+export const LEGACY_ATTACHMENT_SCOPES = {
+  KURSTYP: 'Kurstyp',
+  ALLA_EVENT: 'Alla event',
+} as const;
 
 // Anmälningar.Eventmatchning (TASK-284.1, ADR-122 beslut 3 — formelfält,
 // staging fldYz2NRZJjyX8VWB). Vaktens facit-jämförelse: anmälans EGNA

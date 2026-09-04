@@ -2,6 +2,8 @@ import type {
   Attachment,
   AttachmentDownloadUrl,
   DocumentPreview,
+  SkapadEventBilaga,
+  UpdateAttachmentScopeInput,
   UploadAttachmentInput,
 } from '../../domain/models/Attachment';
 import type {
@@ -20,18 +22,31 @@ import type { CreateRegistrationInput, Registration } from '../../domain/models/
 import type { WaitlistEntry } from '../../domain/models/WaitlistEntry';
 import {
   type ActivityStatement,
+  type CancelRegistrationInput,
+  type CancelRegistrationResult,
   type ConfirmRegistrationsInput,
   type ConfirmRegistrationsResult,
   type CreatedEvent,
   type CreateEventInput,
   type EventFormat,
   type EventinnehallListItem,
+  type HanteraInbetalningResult,
+  type Inbetalningslista,
   type Intresserad,
+  type Jobbstatus,
+  type KoaKvittonInput,
+  type KoaKvittonResult,
+  type Kvittolank,
+  type OppnaBetalningar,
   type PersonDetail,
   type PlaceListItem,
+  type RebookRegistrationInput,
+  type RebookRegistrationResult,
   type RecordActivityResult,
   RecordActivityResultSchema,
   type RegistrationDetail,
+  type RegistreraInbetalningInput,
+  type RegistreraInbetalningResult,
   type SavedSegment,
   type SaveEventContentInput,
   type SaveEventTextInput,
@@ -46,6 +61,8 @@ import {
   type SendActionTestEmailResult,
   type SendReceiptInput,
   type SendReceiptResult,
+  type SkickaKvittoIgenInput,
+  type SkickaKvittoIgenResult,
   type UpdateEventInput,
 } from '../../domain/schemas';
 import type {
@@ -55,7 +72,8 @@ import type {
 } from '../../domain/types/Filters';
 import type { ActivityLogPage, ActivityLogParams } from '../../domain/types/Pagination';
 import { postEdgeFunction } from '../config/supabase-client';
-import type { DataSourceAdapter, MallId, UtkastTyp } from './DataSourceAdapter';
+import * as betalningsportar from './betalningsportar';
+import type { DataSourceAdapter, MallId } from './DataSourceAdapter';
 
 const NOT_IMPLEMENTED = 'SupabaseAdapter: Not implemented - migrate Edge Functions first';
 
@@ -200,6 +218,18 @@ export class SupabaseAdapter implements DataSourceAdapter {
     throw new Error(NOT_IMPLEMENTED);
   }
 
+  async avbokaAnmalan(_input: CancelRegistrationInput): Promise<CancelRegistrationResult> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async atertaAvbokning(_input: CancelRegistrationInput): Promise<CancelRegistrationResult> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
+  async bokaOmAnmalan(_input: RebookRegistrationInput): Promise<RebookRegistrationResult> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
   async sendActionEmail(_input: SendActionEmailInput): Promise<SendActionEmailResult> {
     throw new Error(NOT_IMPLEMENTED);
   }
@@ -257,6 +287,10 @@ export class SupabaseAdapter implements DataSourceAdapter {
     throw new Error(NOT_IMPLEMENTED);
   }
 
+  async updateAttachmentScope(_input: UpdateAttachmentScopeInput): Promise<Attachment> {
+    throw new Error(NOT_IMPLEMENTED);
+  }
+
   async getAttachmentDownloadUrl(
     _eventId: string | null,
     _attachmentId: string,
@@ -272,7 +306,8 @@ export class SupabaseAdapter implements DataSourceAdapter {
     eventId: string;
     mall: MallId;
     ersatt?: string;
-  }): Promise<Attachment> {
+    kallhash?: string;
+  }): Promise<SkapadEventBilaga> {
     throw new Error(NOT_IMPLEMENTED);
   }
 
@@ -280,19 +315,74 @@ export class SupabaseAdapter implements DataSourceAdapter {
     throw new Error(NOT_IMPLEMENTED);
   }
 
-  async renderPdfFranHtml(_html: string, _namn: string): Promise<Blob> {
+  async previewKvittoForInbetalning(_inbetalningId: string): Promise<DocumentPreview> {
     throw new Error(NOT_IMPLEMENTED);
   }
 
-  async renderPdfTillUtkast(
-    _html: string,
-    _namn: string,
-    _params: { eventId: string; typ: UtkastTyp },
-  ): Promise<{ url: string; utgar: string }> {
+  async previewKvittonForInbetalningar(_inbetalningIds: string[]): Promise<DocumentPreview> {
     throw new Error(NOT_IMPLEMENTED);
   }
 
   async fetchActivityLog(_params?: ActivityLogParams): Promise<ActivityLogPage> {
     throw new Error(NOT_IMPLEMENTED);
+  }
+
+  // ═══════════════════════════════════════════════════════════════════════
+  // BETALNINGSDOMÄNEN (TASK-346.4, ADR-128/ADR-129)
+  // ═══════════════════════════════════════════════════════════════════════
+  //
+  // FUNKTIONELLA här, till skillnad från nästan allt annat i denna Fas
+  // E-stub-klass — av EXAKT samma skäl som `recordActivity` ovan:
+  // inbetalningar, kvittoledger och jobbtabeller har ALDRIG legat i Airtable
+  // (ADR-128 beslut 3), så Edge Function-vägen skriver mot Supabase oavsett
+  // vilken adapter som är "live". Ingen migration behövs för att de ska
+  // fungera i Fas E.
+  //
+  // NIO DELEGERINGAR, byte-identiska med `AirtableAdapter`s, till den delade
+  // implementationen (`./betalningsportar.ts`). Att BÅDA adaptrarna bär exakt
+  // samma metoduppsättning är ADR-056:s swappbarhet och ADR-057 klausul c
+  // (port-paritet); att kroppen bor på ETT ställe är vad som gör pariteten
+  // omöjlig att drifta isär.
+
+  fetchOppnaBetalningar(): Promise<OppnaBetalningar> {
+    return betalningsportar.hamtaOppnaBetalningar();
+  }
+
+  registreraInbetalning(input: RegistreraInbetalningInput): Promise<RegistreraInbetalningResult> {
+    return betalningsportar.registreraInbetalning(input);
+  }
+
+  raderaInbetalning(inbetalningId: string): Promise<HanteraInbetalningResult> {
+    return betalningsportar.raderaInbetalning(inbetalningId);
+  }
+
+  makuleraInbetalning(input: {
+    inbetalningId: string;
+    skal: string;
+  }): Promise<HanteraInbetalningResult> {
+    return betalningsportar.makuleraInbetalning(input);
+  }
+
+  fetchInbetalningar(params: {
+    anmalanRecordId?: string;
+    personId?: string;
+  }): Promise<Inbetalningslista> {
+    return betalningsportar.hamtaInbetalningar(params);
+  }
+
+  koaKvitton(input: KoaKvittonInput): Promise<KoaKvittonResult> {
+    return betalningsportar.koaKvitton(input);
+  }
+
+  fetchJobbstatus(params?: { jobbId?: string }): Promise<Jobbstatus> {
+    return betalningsportar.hamtaJobbstatus(params);
+  }
+
+  fetchKvittolank(kvittoId: string): Promise<Kvittolank> {
+    return betalningsportar.hamtaKvittolank(kvittoId);
+  }
+
+  skickaKvittoIgen(input: SkickaKvittoIgenInput): Promise<SkickaKvittoIgenResult> {
+    return betalningsportar.skickaKvittoIgen(input);
   }
 }

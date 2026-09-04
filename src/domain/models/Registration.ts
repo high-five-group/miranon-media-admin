@@ -71,7 +71,8 @@ export interface Registration {
   /**
    * Arbetsköns deltagar-shape (task-18.4; PRD task-18 beslut 10). ADDITIVT-
    * OPTIONAL av samma skäl som betalfälten ovan: fyra andra konsumenter
-   * (useDashboardData, AnmalningarList, EventRegistrations, detail/Betalningar)
+   * (useDashboardData, AnmalningarSida — f.d. AnmalningarList, TASK-299.5 —
+   * EventRegistrations, detail/Betalningar)
    * delar Registration och deras mockar får inte falla. Deployad
    * get-registrations levererar dem alltid som värde-eller-null.
    *
@@ -129,7 +130,8 @@ export interface Registration {
    * egna formulärtext mot det länkade eventets facit — exakt tre värden:
    * `'OK'` (stämmer, eller kan inte avgöras pga tomt jämförelsefält),
    * `'Avviker'` (en icke-tom jämförelse divergerar), `'Utan event'` (ingen
-   * Event-länk). Markören i AnmalningarList visar raden vid `'Avviker'`.
+   * Event-länk). Markören i AnmalningarSida (f.d. AnmalningarList,
+   * TASK-299.5) visar raden vid `'Avviker'`.
    */
   eventmatchning?: EventmatchningValue | null;
   /**

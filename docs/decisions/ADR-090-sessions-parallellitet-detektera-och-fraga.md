@@ -447,7 +447,7 @@ för) · `T119` (mekaniserings-programmet, som Updaten ovan hör till) ·
 `ADR-089` (syskon-ADR:n från samma grillning, modell-/effort-policy) ·
 `ADR-076` (merge-kön, trunk-based-arkitekturen denna ADR bygger vidare på) ·
 [`sessions-parallellitet-frontier-praxis-2026-08-02.md`](../research/sessions-parallellitet-frontier-praxis-2026-08-02.md)
-(fullt underlag) · `tasks/sessions/2026-08-02-session-94.md` Del 3 punkt 6.
+(fullt underlag) · `tasks/sessions/archive/2026-08/2026-08-02-session-94.md` Del 3 punkt 6.
 
 ## Verkställande
 

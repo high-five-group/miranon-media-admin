@@ -11,6 +11,14 @@
 // Agendapunkter-rader matchar `save-event-text-agendapunkter-sentineler`
 // (Text-prefix samma `ZZ-TASK-309.3-`).
 //
+// [TASK-309.15] Varje skapat event REGISTRERAS dessutom i ägar-manifestet
+// (`tests/support/kastbara-poster.ts`) så att `purge-staging-sentinels.mjs
+// --efter-korning` kan radera exakt denna körnings rader direkt efteråt, i
+// stället för att låta dem ligga kvar till nästa staging-jobbs setup-purge.
+// Eventen bär `startdatum: '2026-09-15'` och är alltså KOMMANDE — de dök upp
+// i appens eventväljare och kostade en granskningsrunda (55 kvarliggande
+// mätta 2026-08-24). Setup-purgen är kvar som andra försvarslinje.
+//
 // Bevisar mot SKARP staging-data:
 //   1. falt (AC #1, riktning 1 — FYLL): skriv ett (bilagetext)-fält → 200 +
 //      SKRIV-BEVIS ur råa record.fields → get-document-sources visar
@@ -38,6 +46,7 @@
 import { randomUUID } from 'node:crypto';
 import { type APIRequestContext, type APIResponse, expect, test } from '@playwright/test';
 import { DocumentSourcesSchema } from '../../src/domain/schemas';
+import { registreraKastbarPost } from '../support/kastbara-poster';
 import { type ApiConfig, classify401Body, getApiConfig, getValidUserJWT } from './helpers';
 
 const ENDPOINT = '/functions/v1/save-event-text';
@@ -85,6 +94,7 @@ async function createThrowawayEvent(
   });
   expect(res.status(), await res.text()).toBe(201);
   const body = (await res.json()) as { record: { id: string } };
+  registreraKastbarPost(body.record.id, `save-event-text/Eventplanering/${suffix}`);
   return body.record.id;
 }
 

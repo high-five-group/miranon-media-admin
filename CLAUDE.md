@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-24
+updated: 2026-08-28
 review_by: 2026-11-15
 status: stable
 ---
@@ -36,6 +36,21 @@ Detta är en **React-konvertering** av det Vue-byggda systemet i `~/Repon/mirano
 - **Styrande dokument för byggandet:** `docs/byggplan.md`. Läs den innan varje fas. Avvik aldrig utan att uppdatera byggplanen först.
 - Research före implementation (princip: `~/.claude/CLAUDE.md` § Instruktioner, "Research först, bygg sedan"): kolla React Aria, TanStack, Radix, FK Designsystemet INNAN du designar en lösning. Branschledarnas mönster är golvet.
 - **Airtable-schema före write:** konsultera `docs/reference/data-model.md` (fält-skrivbarhet, formel/rollup-fält, §Kända fällor, write-fält-IDs) INNAN du designar någon Airtable-fält-operation. Anta aldrig fält-form — verifiera mot referensen eller live via Code. Gäller vid Code:s fält-operations-design och utförande.
+- **Bilagemallarnas FÖRLAGOR ligger utanför repot** —
+  `~/Desktop/Miranon Media/exempelpdokument/` (`bekräftelsebilaga-exempel.pdf`,
+  `deltagarinformation-exempel.pdf`, `2026-08-03 kvitto-forlaga.pdf`). De är
+  Lottas designade original och enda facit för geometri, färger, typsnitt och
+  INNEHÅLL. Läs dem FÖRE varje mall-ändring; mät med `npm run mall:pdf` +
+  `pdftotext -bbox` + `pdffonts`, ögonmät aldrig. Regeln är "som förlagan, fast
+  bättre": där förlagan bär ett handgjort fel (innehåll som sitter snett efter
+  handplacering i PowerPoint) behåller vi vår raka version — kopiera formen och
+  innehållet, inte slarvfelen. **Varför raden står här:** sökvägen fanns
+  ingenstans i repot förrän 2026-08-27, och README pekade på en katalog under
+  `~/Downloads/` som inte existerade. Följden blev en fixtur byggd ur
+  Airtable-basen i tron att den var komplett — sex agendapunkter och en
+  rubrik-avvikelse missades, och Marcus fick leta reda på mappen själv. Full
+  mekanik: [`docs/mallar/bilagor/README.md`](docs/mallar/bilagor/README.md)
+  § Förlagorna.
 - **Prod-basens UI-/automations-lager (historisk karta):** [`docs/reference/schema_reference.md`](docs/reference/schema_reference.md) — interfaces, vyer, formulär, Zapier/Make och automationerna A1–A11 med skriptkod; frusen ögonblicksbild mars 2026, kopierad ur frysta Vue-repot 2026-08-01. För fält-data är `data-model.md` auktoritativ.
 - **Airtable-plattformens väggar:** `docs/reference/airtable-constraints.md` är den auktoritativa katalogen över vad Airtable strukturellt INTE kan (30 poster, A–G), var och en med `v1-kompensation` + `Fas E-krav` — den är därmed också migrations-kravspecen. Konsultera INNAN arkitektur-, test- eller CI-design som rör datakällan, och anta aldrig att en vägg är vår egen design. Vad valet kostar i testbarhet: [ADR-063](docs/decisions/ADR-063-airtable-bas-som-forstklassig-leverabel.md) § S91-not.
 - **Samarbetssystemets mekanik:** hur vårt Code/Marcus-system fungerar och sitter ihop bor i hubbens `SYSTEMET.md` (`marcus-system/SYSTEMET.md`) — den navigerbara mekanik-kartan (roller, hub/spoke, plugin/skills, governing/CI, lifecycle, tråd/backlog-substrat, MCP, distribution). Spoke-pekare: [`docs/reference/systemet.md`](docs/reference/systemet.md). Slå upp on-demand när du behöver systemets mekanik; läs inte in den i förväg.
@@ -257,8 +272,9 @@ bara CI ser kan en lokal serie vara fel instrument helt och hållet.
 
 ### Prod-EF-deploy körs via SKRIPTET — handkörning har fällt tre gånger
 
-Ska Edge Functions till prod (fas 4-klassen) kör Marcus, i sin egen terminal
-eller via `!`-prefixet:
+Ska Edge Functions till prod (fas 4-klassen) kör Marcus i sin egen terminal —
+`--kontrollera` (sekunder) får gå via `!`-prefixet, `--deploya` (45 EF ≈ 10 min)
+får det INTE:
 
 ```bash
 bash scripts/fas4-prod-deploy.sh --kontrollera <prod-ref>   # läser prod-läget, ändrar inget
@@ -284,6 +300,25 @@ bär den också och **fälls**. Prövat skarpt — ett agent-anrop med prod-refe
 avvisades av låset med korrekt skäl. Testsviten
 (`scripts/test-fas4-prod-deploy.sh`, CI-wirad) vaktar invarianten i båda
 riktningar.
+
+**`--deploya` körs i ett EGET terminalfönster — aldrig via `!`-prefixet.**
+`!`-kanalen har ett 2-minuterstak, och dess beteende när taket träffas är
+**inte förutsägbart**: körningen kan flyttas till bakgrunden och fortsätta,
+eller dödas på fläcken. Dödas den körs EXIT-trapen inte, och
+`supabase/.temp/project-ref` står kvar på PROD-refen — exakt det sticky-läge
+skriptet finns för att förhindra. Mätt 2026-08-28 (S108 Del 29): ett
+`--deploya` via `!` dog vid funktion 5/45 och lämnade katalogen länkad mot
+prod i ~10 min tills orkestreraren återlänkade staging för hand; ett tidigare
+försök hade i stället flyttats till bakgrunden av harnesset (*"moved to the
+background"*), fortsatt köra och fallit på en Cloudflare 520 vid 26/45 — där
+avbröt skriptet korrekt och återlänkade staging själv. Ett skript vars
+säkerhetsmekanism ÄR en EXIT-trap hör alltså inte hemma i en kanal som ibland
+skickar SIGKILL. Raden ovan sade tidigare att båda kanalerna var likvärdiga
+för hela skriptet — det håller för `--kontrollera`, aldrig för `--deploya`;
+`!`-kanalens hook-passage
+(`tasks/lessons.d/bang-prefixet-passerar-pretooluse-hookar-matt-tva-ganger.md`)
+är oförändrad och skälet att kanalen finns kvar för de korta anropen.
+Preflight-vakt mot sticky prod-länk: `TASK-337`.
 
 **Läs `UPDATED_AT`, inte `VERSION`, i verifieringen.** En deploy bumpar
 `VERSION` +1 på ALLA funktioner medan `UPDATED_AT` står stilla för dem som inte
@@ -332,6 +367,16 @@ Skilj alltid "hooken är fel" från "hooken är inte laddad" med en
 **differentialmätning**: kör skriptet manuellt med identisk hook-JSON (ska
 fälla), och provocera samtidigt en BEFINTLIG hook via harnesset (ska fälla).
 Faller den befintliga men inte den nya är det registreringen, inte logiken.
+
+**En hook-FIX kan dessutom inte skarpbevisas av den worktree-agent som bygger
+den — mekaniskt, inte bara "kanske inte laddad".** Mätt 2026-08-28 (`TASK-322`,
+PR `#2044`): hooken körs via `CLAUDE_PROJECT_DIR`, som pekar på huvudkatalogen,
+så varje worktree-isolerad agent kör huvudkatalogens skriptkopia — den gamla
+versionen, tills huvudkatalogen fast-forwardats. Agentens manuella körning av
+det NYA skriptet mot verkligt tillstånd (differentialmätningen ovan) är därför
+det enda beviset den kan producera; skarpbeviset genom harnesset betalas av
+den session som äger huvudkatalogen, efter ff. Bokför det som öppen skuld i
+kortet, aldrig som gjort.
 
 Samma strukturella klass som MCP-verktygsytan (S97 Del 2): båda bestäms vid
 sessionsstart, och en mitt-i-sessionen-ändring kan inte FÖRLITAS på att slå
@@ -496,7 +541,16 @@ VANLIGA vägen genom kön, inte ett undantag. Ett skript som bara läser
 "aldrig armerad"/"utsparkad med konsumerad armering" (larma) —
 `isInMergeQueue` skiljer dem åt: `isInMergeQueue: true` ⇒ tyst, `false` ⇒
 larma (kan fortfarande vara ANTINGEN aldrig-armerad ELLER utsparkad — den
-skillnaden kräver fortfarande det andra `gh pr merge --auto`). Fixad i
+skillnaden kräver fortfarande det andra `gh pr merge --auto`).
+
+**"GraphQL" ovan är bokstavligt — `gh pr view --json isInMergeQueue` finns
+INTE.** Anropet faller med `Unknown JSON field: "isInMergeQueue"` plus en
+fältlista där namnet saknas (mätt i `gh` 2.96.0, två gånger oberoende
+2026-08-24). Fältet nås bara via `gh api graphql`. Raden är alltså korrekt som
+den står, men den är lätt att läsa som "fråga båda fälten" utan att märka
+vilket API som avses — och `gh pr view --json` är den form man når först.
+Skriver du ett svep som klassar armering: bygg det på `gh api graphql`, inte
+på `--json`. Fixad i
 `TASK-128` (falsklarmade sju gånger på en enda natt innan fixen — full
 instansdata på kortet).
 
@@ -567,42 +621,330 @@ utföraren kan godkänna sin egen förskrivning,
 **HÖG risknivå blockerar formellt** (ADR-105 beslut 5): returnerar
 granskaren `risk.niva: 'hog'` — armera INTE. Eskalera till Marcus med
 utlåtandets fynd; armering sker först efter hans explicita granskning. `lag`/
-`medel` är i detta skede (`TASK-173.1`, innan `173.3`s PR-sektion och `173.4`s
-CI-backstopp) informativt underlag för din egen bedömning — ingen mekanisk
-spärr hindrar armering vid `lag`/`medel` än.
+`medel` är informativt underlag för din egen bedömning — nivån SYNS åt Marcus
+i PR-kroppens Riskbedömnings-sektion (se nedan), men ingen mekanisk spärr
+hindrar armering vid `lag`/`medel`. **Backstoppen (`TASK-173.4`) ändrar inte
+det**: den kräver att ett utlåtande FINNS och är färskt, aldrig att det bär
+en viss nivå — en `hog`-PR som Marcus granskat och armerat ska kunna landa.
 
-**Vad som ÄR byggt i denna skiva, och vad som INTE är det (progressiv
-härdning, ADR-105 beslut 3):** `review-agent`-kontraktet och utlåtande-
-schemat (`scripts/lib/review-utlatande.mjs`,
-`scripts/validera-review-utlatande.mjs`) existerar och är skarpbevisade. **Vad
-som SAKNAS än:** path-scopade regler ur main (`TASK-173.2`), den fasta
-Riskbedömnings-sektionen i PR-kroppen (`TASK-173.3`), den deterministiska
-CI-backstoppen som fäller en PR utan giltigt utlåtande (`TASK-173.4`),
-rundtaks-loopen med konvergensregel (`TASK-173.5`), och
-fångstrate-instrumenteringen (`TASK-173.6`). Fram tills dess är grinden ett
-**orkestrerar-åtagande**, inte en mekanisk spärr — en PR kan i praktiken
-armeras utan granskning så länge `173.4` inte finns. Skriv aldrig om detta
-stycke till att låta grinden vara mekaniskt otvingbar innan `173.4` faktiskt
-landat (samma `ADR-083`-disciplin som resten av denna fil: prosa som påstår
-en mekanism som inte finns är värre än att inte skriva något alls).
+**Injicera path-reglerna när du spawnar granskaren (`TASK-173.2`):**
 
-**Skarpbevis-skuld, öppet bokförd (`CLAUDE.md` § En ny hooks skarpbevis,
-samma strukturella klass generaliserad från hookar till agent-definitioner):**
-`.claude/agents/review-agent.md` skapades i samma session som denna rad
-skrevs. `subagent_type: "review-agent"` känns **BEVISLIGEN INTE** igen av
-`Agent`-verktyget i DEN SESSIONEN (mätt: ett direkt anrop med den
-`subagent_type` gav `Agent type 'review-agent' not found` — listan över
-kända typer omfattade inte namnet, trots att filen redan låg på disk). Den
-manuella skarpkörningen mot en verklig PR (AC #1/#5/#6) gjordes därför via
-`general-purpose` med kontraktets fulla text inklistrad i uppdraget, inte via
-`subagent_type: "review-agent"` — logiken är skarpbevisad, REGISTRERINGEN är
-det inte. Om `subagent_type: "review-agent"` känns igen i en **framtida**
-session (efter att filen synkats via en ny sessionsstart) är OPRÖVAT. Betala
-skulden som en av nästa berörda sessions första handlingar: ett enkelt
-`Agent`-anrop med `subagent_type: "review-agent"` mot en trivial uppgift —
-lyckas det, är skulden betald; misslyckas det på nytt, eskalera till Marcus
-(agent-definitioner kan kräva en mekanism utöver filnärvaro för att
-registreras, vilket i så fall är ett nytt fynd, inte bara en väntan).
+```bash
+npm run review:policy -- --pr <NUMMER>          # blocket du klistrar in
+npm run review:policy -- --pr <NUMMER> --json   # samma, maskinläsbart
+```
+
+Kommandot läser `.review-policy.json` ur `origin/main` med `git show` — aldrig
+från disk och aldrig från PR-grenen, så en gren kan inte manipulera sin egen
+granskning (ADR-105 beslut 7). Reglerna injiceras bara för filer som faktiskt
+matchar sitt mönster, var och en med sitt scope. **Exit 64 = POLICYFEL:
+granska inte vidare — en halverad regelmängd ser ut som en fullständig
+granskning men saknar regler ingen ser saknas.** Glömmer du steget kör
+granskaren kommandot själv (`.claude/agents/review-agent.md` § Indata) —
+källan är densamma oavsett vem som kör den.
+
+**Skriv in utlåtandet i PR-kroppen som Riskbedömnings-sektion (`TASK-173.2`
+→ `TASK-173.3`):** när granskaren returnerat sitt JSON-utlåtande, spara det
+till fil och kör:
+
+```bash
+node scripts/uppdatera-review-sektion.mjs /path/till/utlatande-pr<NR>.json
+node scripts/uppdatera-review-sektion.mjs /path/till/utlatande.json --dry-run   # förhandsgranska
+```
+
+PR-numret hämtas ur utlåtandets EGNA `prNummer`-fält — ingen separat
+`--pr`-flagga. Skriptet validerar utlåtandet mot
+`scripts/lib/review-utlatande.mjs`s schema FÖRE någon gh-anrop (**exit 1 =
+malformat, ingen sektion skrivs — AC #3**), hämtar PR:ens NUVARANDE kropp via
+`gh pr view`, och skriver tillbaka HELA kroppen via `gh pr edit --body-file -`
+(GitHubs `body`-fält är alltid en fullständig ersättning, aldrig en delvis
+patch — `gh pr edit --help`, docs.github.com REST-referens för Pulls). Sektionen
+är inramad av två HTML-kommentarmarkörer
+(`<!-- review-grinden:riskbedomning:start/end -->`, version-oberoende med
+avsikt) som gör uppdateringen IDEMPOTENT: finns en tidigare sektion ERSÄTTS
+den in-place (`agerande: 'ersatte'`), texten runt omkring rörs inte; finns
+ingen läggs sektionen till sist (`agerande: 'lade-till'`). En KORRUPT
+markörsituation (bara en av de två, eller i fel ordning — t.ex. en människa
+som redigerat kroppen för hand) fäller skriptet med **exit 4** i stället för
+att gissa. **Exit 3** = gh-I/O fallerade (nätverk/auth/fel PR-nummer) —
+utlåtandet var giltigt, det är kommunikationen med GitHub som bröt. Full
+mekanik + forskningskällorna (Danger.js:s markör-mönster, GitHubs
+full-ersättnings-semantik): `scripts/lib/review-risk-sektion.mjs` filhuvud.
+
+**Kör loop-beslutet efter VARJE runda — gissa aldrig nästa steg (`TASK-173.5`):**
+
+```bash
+node scripts/review-loop-beslut.mjs /path/till/utlatande-pr<NR>.json
+node scripts/review-loop-beslut.mjs <utlatande.json> --foregaende-sha <sha>   # runda ≥ 2
+node scripts/review-loop-beslut.mjs <utlatande.json> --json                   # maskinläsbart
+npm run review:loop -- <utlatande.json>
+```
+
+**Exitkoden BÄR beslutet**, så `… && gh pr merge --auto` aldrig kan armera på
+annat än konvergens: **0** = konvergerad · **10** = ny runda · **20** =
+ESKALERA till Marcus (armera INTE) · **1** = malformat utlåtande · **2** =
+CLI-fel · **64** = POLICYFEL (fail-closed, samma kod och skäl som
+`review:policy`). Utdatan vid `20` ÄR den markeringsbara STOPPA-OCH-FRÅGA-
+listan — klistra in den i chatten, den är skriven för att svaras i.
+
+Värdena bor i `.review-loop-policy.json` och läses ur `origin/main` med `git
+show`, aldrig från disk — en PR-gren som satte `tak: 99` hade annars mildrat
+granskningen av sin egen PR (samma tillitsmodell som `.review-policy.json`,
+ADR-105 beslut 7; tvåsidigt bevisat i `scripts/test-review-loop.mjs` § F).
+**Loopens kontrakt, som det står i policyn i dag:**
+
+| Vad | Värde | Var det kommer ifrån |
+|---|---|---|
+| Rundtak | **2** | ADR-105 beslut 4 — öppet deklarerad startbedömning, inte mätning |
+| Blockerar runda 1 | `warning` och uppåt | bred fångst i första rundan |
+| Blockerar runda 2 | **`error` enbart** | ADR-105 beslut 4: warnings/info bokförs utan att stoppa |
+| Öppet fynd (vid tak) | `warning` och uppåt, **plus** varje `ask-user` oavsett severity | härledd ur den bredaste rundans tröskel — ingen egen config-ratt |
+| Konvergensregel | runda k+1 granskar diffen **sedan runda k:s `granskadSha`** + kvarstående öppna fynd | CodeRabbits incremental/full-distinktion; motåtgärd mot förlagans 27 rundor utan konvergens (`#683`) |
+| Eskalerar oavsett runda | `risk.niva: 'hog'` · varje `ask-user`-fynd | ADR-105 beslut 5 · `173.5` AC #3 |
+| Vid tak med öppna fynd | STOPPA-OCH-FRÅGA, **aldrig** en tredje automatisk runda | `173.5` AC #2/#4 — taket byter automatik mot eskalering, aldrig mot godkännande |
+
+**"Blockerar" och "öppet vid tak" är TVÅ SKILDA trösklar — den skillnaden är
+lätt att läsa fel.** *Blockerar* betyder "tvingar fram ännu en runda", och i
+runda 2 gör bara `error` det. *Öppet* betyder "kvarstår och ska visas för
+Marcus", och där räknas `warning` med. Följden: **ett ensamt `warning` i
+runda 2 startar ingen tredje runda — men det eskalerar ändå**, eftersom taket
+är nått och fyndet är öppet (`eskalera-tak`, exit 20, armering väntar).
+Alternativet vore att grinden tyst släppte igenom ett kvarstående warning för
+att det inte råkade nå blockeringströskeln — alltså självgodkännande, som
+ADR-105 beslut 4 uttryckligen förbjuder. Ett `info`/`auto-fix`-fynd är
+däremot varken blockerande eller öppet: det bokförs och konvergerar.
+
+**En omgranskning utan ny commit räknas aldrig som konvergens.** Ger du
+`--foregaende-sha` och den är identisk med utlåtandets `granskadSha` i runda
+≥ 2 fälls det som `eskalera-ingen-andring` — inget pushades emellan, så rundan
+prövade ingen fix. Samma koppling som GitHub (`dismiss stale pull request
+approvals when commits are pushed`), Prow (`retracts the label automatically if
+someone updates the PR with a new commit`) och Gerrits patchset-bundna röster
+gör. Utelämnar du flaggan hoppas kontrollen över — **synligt**, som en varning i
+utdatan, aldrig tyst.
+
+**CI-backstoppen fäller i KÖN, inte på PR-ytan (`TASK-173.4`) — kör därför
+preflighten FÖRE armering:**
+
+```bash
+npm run review:backstopp -- --pr <NUMMER>          # exit 0 = får armeras
+npm run review:backstopp -- --pr <NUMMER> --json   # samma, maskinläsbart
+```
+
+`ci.yml`-jobbet `review-backstopp` kör samma skript på **`merge_group`-ytan**
+och fäller landningen om PR:en inte bär en giltig Riskbedömnings-sektion.
+Exitkoderna är desamma i båda lägena: **0** = släpper · **1** = FÄLLER
+(sektionen saknas / korrupta markörer / oparsbar nivå eller fotnot / renderad
+för fel PR / `granskadSha` ≠ PR:ens head, alltså STALE) · **2** = CLI-fel ·
+**3** = gh-I/O fallerade (fail-closed i CI, men loggen skiljer orsaken från
+ett saknat utlåtande) · **4** = PLATTFORMS-ANTAGANDET BRUTET: kö-grenens namn
+har en form vi inte känner igen, så PR-numret går inte att härleda. Koden är
+egen just för att den inte betyder "någon skrev fel kommando" (2) och inte
+"nätverket strulade" (3) utan "GitHub har ändrat kö-grenens namngivning" — då
+är grindens hela PR-uppslag ogiltigt och VARJE landning blockeras tills formen
+mätts om (`gh run list --workflow ci.yml --event merge_group`) och
+`parsaMergeGroupRef` uppdaterats.
+
+**Varför kö-ytan och inte PR-ytan** — och läs detta innan du "förbättrar" det:
+grindens sekvens är push → granskning → sektion → armering, så vid PUSH saknas
+sektionen med NÖDVÄNDIGHET. En grind på PR-ytan hade gjort varje kod-PR röd som
+normaltillstånd, vilket bryter mot [`CONTRIBUTING.md`](CONTRIBUTING.md)
+§ Rött-först (*"rött i CI ska betyda EN sak: oväntad regression"*). På kö-ytan
+är PR:en armerad, alltså MÅSTE granskningen ha skett — och rött betyder exakt
+en sak.
+
+**VARJE NY HEAD GÖR SEKTIONEN STALE** — rebase, force-push, `gh pr
+update-branch`, en extra fix-commit. Sektionen bär `granskadSha`, och
+backstoppen kräver att den är commiten som landar; en omskriven head betyder
+alltså att granskningen inte längre gäller. Efter varje sådan operation: kör om
+granskningen (eller minst `node scripts/uppdatera-review-sektion.mjs
+<utlatande.json>` med ett utlåtande vars `granskadSha` är den NYA headen) OCH
+preflighten nedan, INNAN du armerar om. Hoppar du över det är kostnaden inte en
+varning utan en konsumerad armering.
+
+**Priset, och därför preflighten:** en fällning i kön sparkar posten ur kön och
+KONSUMERAR armeringen (§ Landning, fjärde läget). **Ett backstopp-rött i
+`merge_group` är en ORDER att köra granskningen — aldrig att armera om.** Att
+armera om utan att skriva sektionen ger exakt samma fällning igen, i en loop
+som bränner en full CI-körning per varv.
+
+**Vad backstoppen INTE bevisar:** att en granskning faktiskt ägt rum. PR-kroppen
+är skrivbar av PR:ens författare, så en sektion kan handskrivas. Det är en
+medveten gräns i ADR-105 beslut 2 ("verifierar att PR:en bär ett
+granskningsutlåtande") — tilliten till att granskningen ÄGDE RUM bärs av
+orkestrerar-kontraktet (färsk kontext, aldrig samma agent som byggde), inte av
+grinden. Skriv aldrig om detta stycke till att påstå mer (ADR-083).
+
+**D0-klassade PR:er undantas** via `needs.changed.outputs.should_skip_tests` —
+CI:s BEFINTLIGA klassning, ingen egen glob (ADR-105 beslut 3). Att `changed`
+beräknar rätt värde även på kö-ytan är mätt: merge_group-körning `33138424216`
+(docs-only) skippade `Test suite` på samma output. **Läs undantaget bokstavligt:
+grinden är inte repo-bred.** En PR där VARJE fil matchar D0-allowlisten
+(`**/*.md`, `docs/**`, `tasks/**`, `.claude/**`, `.vale/**`, `LICENSE`,
+`.editorconfig` m.fl. — hela listan i `ci.yml`:s `paritet:start klassning-d0`)
+landar helt UTAN granskningsutlåtande. Det omfattar alltså styrande dokument,
+denna fil, ADR:er, backlog-kort och agent-kontrakt. Det är ADR-105 beslut 3:s
+medvetna räckvidd ("D0/docs-only undantagen tills mätdata visar missad
+felklass"), inte en lucka — men tro aldrig att en grön kö-körning betyder att
+en docs-PR granskats.
+
+**Kö-antagandet som bär grinden, och som måste omprövas om rulesetet ändras:**
+kö-grenen namnger EN PR (`gh-readonly-queue/main/pr-<nr>-<bas-sha>`, verifierat
+mot 30 skarpa körningar 2026-08-28), medan `max_entries_to_merge` är 3. Att
+bara pröva den namngivna PR:en är fullständigt så länge `grouping_strategy` är
+**`ALLGREEN`** (varje köad post bygger sin egen spekulativa grupp, och alla
+måste vara gröna). Byts strategin till `HEADGREEN` faller argumentet och
+grinden måste räkna upp gruppens alla PR:er.
+
+**Vad som ÄR byggt, och vad som INTE är det (progressiv härdning, ADR-105
+beslut 3):** `review-agent`-kontraktet och utlåtande-schemat
+(`scripts/lib/review-utlatande.mjs`, `scripts/validera-review-utlatande.mjs`)
+existerar och är skarpbevisade; sedan `TASK-173.2` policy-ytan
+(`.review-policy.json`, `scripts/lib/review-policy.mjs`,
+`scripts/hamta-review-policy.mjs`) med utlåtandets `policySha`/`policyRegler`;
+sedan `TASK-173.3` den fasta Riskbedömnings-sektionen i PR-kroppen
+(`scripts/lib/review-risk-sektion.mjs`, `scripts/uppdatera-review-sektion.mjs`);
+sedan `TASK-173.5` rundtaks-loopen med konvergensregel och eskaleringsform
+(`.review-loop-policy.json`, `scripts/lib/review-loop.mjs`,
+`scripts/review-loop-beslut.mjs`); och sedan `TASK-173.6` instrumenterings-
+ytan (`scripts/lib/review-metrics.mjs`, `scripts/review-metrics.mjs`,
+`scripts/review-metrics-kalibrering.mjs`) — `review-loop-beslut.mjs` appendar
+sedan dess EN "korning"-rad per lyckat beslut till
+`docs/reference/review-instrumentering.jsonl` (findings-per-runda,
+risknivå, beslut), och `npm run review:kalibrering` bokför en Marcus-fångst
+på en stämplad PR som grind-miss; `npm run review:metrics` summerar loggen
+till markdown (findings/runda, risk-/beslutsfördelning, härledd fångstrate
+per nivå). Detta är en **ren bokföringsyta** (Marcus-mandat, TASK-173.6):
+den fäller ingenting och styr ingen armering — se `173.4` nedan för den
+mekaniska spärren.
+
+Och sedan `TASK-173.4` (2026-08-28): den deterministiska CI-backstoppen
+(`scripts/lib/review-backstopp.mjs`, `scripts/review-backstopp.mjs`,
+`ci.yml`-jobbet `review-backstopp` i aggregatorns `needs`) — den mekaniska
+spärren stycket ovan pekar framåt på. Den fäller på `merge_group`-ytan, inte
+på PR-ytan; hela resonemanget står längre upp i detta avsnitt.
+
+**Loggfilen är versionerad (INTE gitignorad) men bär INGEN egen
+commit-mekanism — det är ett orkestrerar-ÅTAGANDE, inte en spärr (runda
+2-fynd, PR #2052).** Den ackumuleras i vilken checkout som råkar köra
+`review-loop-beslut.mjs` (normalt orkestrerarens worktree, samma körpunkt
+loopen redan anropas ifrån). Skriptet skriver därför en synlig
+påminnelserad till stderr efter varje lyckad append
+("instrumenterings-rad appendad till `<sökväg>` — ospårad tills
+committad") — en påminnelse, inte en spärr. **Orkestreraren committar
+loggen i sina stängningsbatchar** (samma landning som Done-flipparna); en
+ospårad logg vid session-paus/-end är en SKULD att bokföra i handoffen,
+aldrig en tyst förlust. Ingen ny grind vaktar detta: en nightly-vakt (t.ex.
+`heartbeat-svep.sh`) kan strukturellt inte se en lokal, ospårad fil i en
+agents worktree, så ansvaret ligger hos den som stänger sessionen — inte
+hos ett skript (samma `ADR-083`-ärlighet som `173.4`-stycket nedan: säg
+det öppet, påstå aldrig en mekanisk spärr som inte finns).
+
+Loggen gäller FRÅN OCH MED denna skiva: de 14 skarpa
+review-agent-körningarna från S112 (2026-08-26) är INTE backfyllda — deras
+utlåtande-JSON låg i agenternas scratchpad-kataloger och gick inte att
+återfinna på disk när `173.6` byggdes (endast de aggregerade talen i
+`tasks/sessions/2026-08-24-session-112.md` Del 6 finns kvar, som prosa).
+
+**Vad som SAKNAS än:** ingen mekanism-skiva — samtliga sex är byggda. Kvar är
+`TASK-173.7`, QA-vandringen ände-till-ände (`ready-for-human`), och de
+skarpbevis-skulder den ska betala: `173.4`:s gate-proof-avfyrning och
+backstoppens första skarpa fällning på kö-ytan (se nedan).
+
+**Vad backstoppen faktiskt gjorde otvingbart — och vad som fortfarande är ett
+ÅTAGANDE.** Mekaniskt otvingbart sedan `173.4`: en kod-klassad PR kan inte
+MERGAS utan att bära en välformad, färsk Riskbedömnings-sektion — kön fäller
+den. Fortfarande enbart åtagande: (a) att granskningen faktiskt ägt rum (se
+"Vad backstoppen INTE bevisar" ovan), (b) att du kör `review:policy` när du
+spawnar granskaren, (c) att du kör `review-loop-beslut.mjs` och respekterar
+exit 20 — ingen mekanism tvingar dig, och ingenting hindrar en armering vid
+exit 20, (d) att `hog` eskaleras till Marcus före armering, (e) att du kör
+backstopp-preflighten i stället för att låta kön fälla, och (f) att
+instrumenteringsloggen faktiskt committas (`173.6`-stycket ovan). Rundtaket är
+alltså fortfarande ett åtagande du håller, inte ett lås som håller dig. Skriv
+aldrig om detta stycke till att låta MER vara mekaniserat än raderna ovan (samma
+`ADR-083`-disciplin som resten av denna fil: prosa som påstår en mekanism som
+inte finns är värre än att inte skriva något alls).
+
+**Den genererade JSON-Schema-artefakten är en UTDATA-sida-artefakt — inte en
+bugg, som denna rad tidigare påstod (avgjort i `TASK-173.4`, 2026-08-28).**
+`docs/reference/review-utlatande.schema.json` listar `policySha`/
+`policyRegler` som `required` trots att båda bär zod `.default()` i
+källschemat (`scripts/lib/review-utlatande.mjs`). Skälet är mätt, inte
+gissat: `z.toJSONSchema()` i zod 4.4.3 defaultar till `io: 'output'`, där ett
+`.default()`-fält ALLTID är närvarande och därför korrekt `required` —
+verifierat direkt mot den installerade zod-versionen (`io: 'input'` ger
+`["a"]`, `io: 'output'` och default ger `["a","b"]` på ett probe-schema).
+Artefakten beskriver alltså vad en konsument SER EFTER validering, och det är
+sant. Vad som återstår är en tolknings-fälla, inte ett fel: en konsument som
+validerar RÅ, ovaliderad JSON (indata-sidan) mot filen skulle avvisa ett
+giltigt 173.1-format — den behöver `io: 'input'`, alltså en ANNAN artefakt.
+`173.4`:s CI-backstopp behövde ingendera: den parsar den RENDERADE
+Riskbedömnings-sektionen i PR-kroppen, aldrig JSON. Risk-rendreraren (`173.3`)
+berörs likaså inte — den konsumerar alltid `valideraUtlatande(raw).data`
+(EFTER zods default-normalisering), bevisat i
+`scripts/test-review-risk-sektion.mjs` fall A16. **Öppet framåt:** dyker en
+rå-JSON-konsument upp genereras en input-sidans artefakt vid sidan av — det
+är ett eget beslut, inte en tyst regenerering av den befintliga filen.
+
+**Bunt-PR: `kortId` är SINGULÄR i schemat — en öppen fråga, inte en lösning.**
+Schemat (`scripts/lib/review-utlatande.mjs`) bär ETT `kortId`, och superRefine
+kräver tom `acProvning` när det är `null`. En PR som landar flera kort får
+därför `kortId: null`, och granskaren tvingas lägga sin AC-prövning i `fynd`
+som fri text — mätt på fem bunt-PR:er i S112 (`#1978`, `#1982`, `#1986`,
+`#1987`, `#1988`, 2026-08-26). Loopens beslut påverkas INTE (fynd och risk är
+kort-oberoende, bevisat i `scripts/test-review-loop.mjs` C26), men den
+strukturerade AC-prövningen går förlorad. `173.5` prövade frågan och valde
+INGEN väg: att utvidga ADR-105 beslut 7 till flera kort per PR kräver ett eget
+ADR-beslut och en bakåtkompatibel schemaändring. Tills dess: föredra en PR per
+kort där det går, och räkna med att bunt-PR:ers AC-prövning är prosa, inte
+struktur. Options-rymden och instansdatan bor i
+[[L636]]
+— pekare, inte kopia (ADR-100 §2).
+
+**Review-ytans SEX testsviter körs som gatekeeper-sviter i `ci.yml`:s "Test
+gatekeeper script suites"-steg** — `scripts/test-validera-review-utlatande.mjs`
+(35 fall, `173.1`), `scripts/test-review-policy.mjs` (44 fall, `173.2`) och
+`scripts/test-review-risk-sektion.mjs` (47 fall, `173.3`) sedan `TASK-185`
+(PR #1992, 2026-08-26, den sista wirad i samma bas-drift-svep sedan `173.3`
+landade UNDER `185`s eget bygge — PR #1993), plus
+`scripts/test-review-loop.mjs` (103 fall, `173.5`, wirad i sin egen PR på
+samma orkestrerar-beslut), `scripts/test-review-metrics.mjs` (49 fall,
+`173.6`) och `scripts/test-review-backstopp.mjs` (40 fall, `173.4`). Samma
+klass som repots övriga ~15 gatekeeper-sviter: enhetstester för skriptens egen
+logik, wirade så att en regression fälls FÖRE landning i stället för att
+upptäckas efteråt.
+
+**Talen ovan är MÄTTA 2026-08-28**, inte avskrivna — varje svit kördes och
+dess egen slutrad lästes. Det är inte en formalitet: `ci.yml`:s eget
+kommentarsblock sade "48 fall" om metrics-sviten medan den faktiskt kör 49
+(ett fall tillkom i dess runda 2, kommentaren följde inte med). Talet är
+rättat där; skriv aldrig av ett tal hit utan att köra sviten (`TASK-106`).
+
+**Att sviterna körs är INTE detsamma som att grinden är otvingbar** — de
+skyddar skriptens LOGIK mot regression. Mekanismen som faktiskt fäller en PR
+utan giltigt granskningsutlåtande är `173.4`:s CI-jobb `review-backstopp`
+(beskrivet högre upp i detta avsnitt), och den fäller på `merge_group`-ytan.
+Håll de två isär i prosan (samma `ADR-083`-disciplin: en testsvit är inte en
+spärr).
+
+**Skarpbevis-skulden — BETALD 2026-08-26 (S112 resume 1), med en mätt kant
+(`CLAUDE.md` § En ny hooks skarpbevis, samma strukturella klass generaliserad
+från hookar till agent-definitioner):** `.claude/agents/review-agent.md`
+skapades i S112 (`#1927`, 2026-08-24). I DEN sessionen kändes
+`subagent_type: "review-agent"` **bevisligen inte** igen av `Agent`-verktyget
+(`Agent type 'review-agent' not found` trots filen på disk); skarpkörningen
+mot en verklig PR (AC #1/#5/#6) gjordes via `general-purpose` med kontraktets
+fulla text inklistrad. I S112 resume 1 (2026-08-26) saknades typen ÅTER vid
+sessionsstart — huvudkatalogen stod på `f5ed41d2`, före `#1927` — och dök upp
+mitt i sessionen när en parallell session flyttade huvudkatalogen till `main`:
+harnesset annonserade *"New agent types are now available: review-agent"*, och
+ett `Agent`-anrop med `subagent_type: "review-agent"` mot `#1932` gav ett
+schema-giltigt utlåtande (Sonnet 5, 42 verktygsanrop, risk `lag`, 2 info).
+Slutsats, samma form som hook-raden: agent-definitioner läses ur den katalog
+sessionen startade i och KAN laddas om av filbevakaren — en NY definition kan
+aldrig FÖRLITAS på i sessionen som skapar den, men en tidig laddning är ett
+giltigt skarpbevis (`task-167`-precedentet). Belägg: sessionsdok S112 Del 4.
 
 ### Kortnummer — verktyget skyddar, men bara halva vägen
 
@@ -616,16 +958,30 @@ arbete. Tre hål är mätta och kända:
 | Läge | Skyddar flaggan? |
 |---|---|
 | Kortet är committat på en annan gren | **Ja** — numret hoppas över |
-| Kortet är skapat men **inte committat** i ett systerträd | **Nej** — osynligt |
-| Kortet ligger **ospårat i huvudträdet** medan en agent räknar från `main` | **Nej** |
+| Kortet är skapat men **inte committat** i ett systerträd | **Ja** — sedan Backlog.md PR #710 (2026-07-01, före vår 1.49.1); stod här som "Nej — osynligt" i fyra veckor, falsifierat tvåsidigt 2026-08-26 |
+| Kortet ligger **ospårat i huvudträdet** medan en agent räknar från `main` | **Ja** — samma mätning: ett okommitterat `task-9000` i ett systerträd gav `TASK-9001` (1.49.1) resp. `TASK-9002` (1.50.1) |
 | Grenen är äldre än `active_branch_days` (30) | **Nej** |
+
+Två av tabellens tre hål var alltså stängda hela tiden — raderna skrevs av
+ADR-081:s antagande, aldrig mätta, och research-passet
+[`backlog-kortskapandets-flaskhals-2026-08-26.md`](docs/research/backlog-kortskapandets-flaskhals-2026-08-26.md)
+§ Sidofynd 1 fällde dem i ett labb med ett okommitterat kort i ett systerträd.
+Kvarvarande hål: `active_branch_days` — och det filtrerar i praktiken bort
+noll grenar hos oss, hela populationen är yngre än 30 dagar. Det verkliga
+problemet är inte längre osynlighet utan det **globala create-låset**
+(`<git-common-dir>/backlog.md/locks/create`, 30 s timeout, ingen jitter):
+mätt 2/8 lyckade `task create` vid åtta samtidiga agenter, och ett enda kort
+tog 513 s att skapa under S112:s fleet (`TASK-322`-mintningen, 2026-08-26).
+Beslutsunderlaget är research-doket; substratfrågan grillas (`TASK-328`),
+uppgraderingen till 1.50.1 är kortad (`TASK-327`).
 
 Praktiskt, i den ordningen:
 
 1. **`git fetch` + fast-forwarda före `task create`.** En föråldrad worktree ger
    dig ett nummer som redan är taget i merge-kön.
-2. **Committa kortet i samma andetag som du skapar det.** Uppskjuten bokföring är
-   inte neutral väntan — den är en osynlig reservation av en delad resurs.
+2. **Committa kortet i samma andetag som du skapar det.** Skälet är inte längre
+   osynlighet (se tabellen) utan durabilitet: ett okommitterat kort dör med
+   worktreen, och `git worktree remove` frågar inte.
 3. **Krockar det ändå: rätta via CLI:t, aldrig för hand.** Parkera kortet utanför
    registret och återskapa det med `task create` när den andra posten landat. En
    handredigerad `id:`-rad löser symptomet och bryter den regel som gör registret

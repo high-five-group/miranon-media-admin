@@ -1,8 +1,9 @@
-import { updateAirtableRecord } from '../_shared/airtable-client.ts';
+import { fetchAirtableRecord, updateAirtableRecord } from '../_shared/airtable-client.ts';
 import { requireUser } from '../_shared/auth.ts';
-import { scalarNumber, scalarString, selectName } from '../_shared/coerce.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
 import { generateRequestId, mapErrorToResponse } from '../_shared/errors.ts';
+import { deriveManadAr, mapEventBas, mapEventKategorifalt } from '../_shared/event-map.ts';
+import { hamtaStandardpriser, standardprisFor } from '../_shared/eventpris.ts';
 import { findDisallowedField, getOperation } from '../_shared/field-allowlists.ts';
 
 // update-event — uppdaterar ett BEFINTLIGT event i Eventplanering (task-18.1,
@@ -38,86 +39,56 @@ import { findDisallowedField, getOperation } from '../_shared/field-allowlists.t
 // VALIDERING (manuell deny-by-default): speglar create-event/create-registration —
 // manuell validering, INTE Zod (Zod bor i klient-/adapter-lagret, ADR-026;
 // kodbas-konsistens > abstrakt schema-kanon).
+//
+// 404-KONTRAKTET (TASK-24-fyndet, rättat): ett rec-prefixat men okänt/raderat
+// eventId gav tidigare 500 i stället för 404. Grundorsaken var att
+// `updateAirtableRecord` kastar en GENERISK `Error` på varje icke-2xx-svar
+// (samma helper alla PATCH-EF:er delar), och den generiska Error:en är ingen
+// `HttpError` — `mapErrorToResponse` faller därför till 500-grenen. Fixen
+// speglar det MALL-kontrakt get-event/create-event-note redan bär: en
+// pre-check-`fetchAirtableRecord` läser raden FÖRE skrivningen och returnerar
+// 404 manuellt om den är `null`, i stället för att förlita sig på PATCH:ens
+// egen felhantering. Live-verifierat mot staging 2026-08-26: en PATCH mot ett
+// rec-prefixat men obefintligt ID (`recZZZZZZZZZZZZZZ`) ger Airtable-svaret
+// 403 `INVALID_PERMISSIONS_OR_MODEL_NOT_FOUND` — SAMMA statuskod
+// `fetchAirtableRecord`s egen docblock redan beskriver för GET (record-GET
+// konflaterar medvetet "saknas" och "ingen behörighet"); PATCH beter sig
+// identiskt. Ett malformat (icke rec-prefixat) ID fälls redan tidigare, som
+// 400 (se `eventId`-valideringen ovan) — det Airtable-läget (404 `NOT_FOUND`
+// på en URL-form som inte matchar route-mönstret) når därför aldrig hit.
 
 const OPERATION_KEY = 'update-event';
+
+/** Loggprefix för uppslagets varning (`_shared/eventpris.ts` § ETT UPPSLAG SOM FALLERAR). */
+const LOGG = '[update-event]';
 
 // ISO-datum YYYY-MM-DD (Airtable date-fält-form; samma pragmatiska format-grind
 // som create-event — exakt kalender-validitet vilar på Airtable).
 const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
 
-// Svenska månadsnamn för `Månad/år`-härledningen — HÅLL I SYNK med create-event
-// (samma medvetna duplicering som get-event/get-events mapEvent; EF:er delar kod
-// endast via _shared, och en extraktion hör till en egen refaktor-landning).
-const MANAD_AR_MONTHS = [
-  'Januari',
-  'Februari',
-  'Mars',
-  'April',
-  'Maj',
-  'Juni',
-  'Juli',
-  'Augusti',
-  'September',
-  'Oktober',
-  'November',
-  'December',
-];
-
-/** Härleder `Månad/år`-värdet ("Mars 2026") ur ett ISO-datum (YYYY-MM-DD). */
-function deriveManadAr(isoDate: string): string {
-  const [year, month] = isoDate.split('-');
-  return `${MANAD_AR_MONTHS[Number(month) - 1]} ${year}`;
-}
-
-// Fältnamn från Airtable → ren API-respons (BERIKADE läs-shapen). IDENTISK mappning
-// som get-event/get-events mapEvent — PATCH-svaret från Airtable bär ALLA fält
-// (inkl. formler/rollups), så update-svaret kan bära samma domän-shape som
-// läs-vägen och klienten kan cache-sätta direkt. Håll i synk med get-event/
-// get-events om fält ändras.
-function mapEvent(record: { id: string; fields: Record<string, unknown> }) {
-  const f = record.fields;
-
+// Fältnamn från Airtable → ren API-respons (BERIKADE läs-shapen) ur
+// `_shared/event-map.ts` — SSOT sedan TASK-23, samma mappning som get-event/get-events
+// använder. Write-vägen kan bära läs-vägens domän-shape därför att Airtables
+// PATCH-svar bär ALLA fält (inkl. formler/rollups), så klienten kan cache-sätta direkt.
+//
+// De aggregerade räkningarna (viaFormular/medfoljande/vantelista/borOverAntal) läggs
+// MEDVETET INTE till här — write-EF:en förblir ETT Airtable-anrop (fälten är ADDITIVT-
+// OPTIONAL i EventSchema); klienten MERGE-cachar (useUpdateEvent) och onSettled-
+// refetchen mot get-event bär hela modellen.
+function mapEvent(
+  record: { id: string; fields: Record<string, unknown> },
+  standardPris: number | null,
+) {
   return {
-    id: record.id,
-    eventlabel: f['Eventlabel'] ?? null, // formula (primary)
-    eventNamn: selectName(f['Event (source)']), // singleSelect
-    typ: selectName(f['Typ']), // singleSelect
-    ort: scalarString(f['Ort']), // text (eget fält, skalärt)
-    startdatum: f['Startdatum'] ?? null, // date
-    slutdatum: f['Slutdatum'] ?? null, // date
-    tidKvarTillEvent: f['Tid kvar till event'] ?? null, // formula → text
-    maxPlatser: scalarNumber(f['Max antal platser']), // number (osatt → null)
-    antalAnmalda: scalarNumber(f['Antal anmälda']) ?? 0, // formel → number
-    platserKvar: scalarNumber(f['Platser kvar']), // formel → number|null
-    anmaldBelaggning: scalarNumber(f['Anmäld beläggning (%)']), // formel-% (NaN→null)
-    bekraftadBelaggning: scalarNumber(f['Bekräftad beläggning (%)']), // formel-% (NaN→null)
-    antalNyaAnmalningar: scalarNumber(f['Antal nya anmälningar']) ?? 0, // rollup → number
-    antalAnmalningsavgifter: scalarNumber(f['Antal mottagna anmälningsavgifter']) ?? 0, // rollup
-    antalSlutbetalningar: scalarNumber(f['Antal mottagna slutbetalningar']) ?? 0, // rollup
-    antalSlutbetalningFelande: scalarNumber(f['Antal slutbetalning saknas']) ?? 0, // formel
-    status: selectName(f['Status'] ?? null), // singleSelect (om det finns)
-    // eventKey: saknas värdet UTELÄMNAS nyckeln (undefined droppas av
-    // JSON.stringify; OPTIONAL i EventSchema — aldrig null). Håll i synk.
-    eventKey: typeof f['EventKey'] === 'string' ? f['EventKey'] : undefined,
-    // Basdimensionerna (TASK-249.4, ADR-115): direkta singleSelect-fält, alltid lästa ur
-    // PATCH-svarets fullständiga fields (kommentaren ovan mapEvent) — selectName ger
-    // string|null (aldrig gissat). Håll i synk med get-event/get-events.
-    kursfamilj: selectName(f['Kursfamilj']),
-    kursniva: selectName(f['Kursnivå']),
-    // Beläggningens TVÅ skrivbara kategorifält (task-18.2, K16) — PATCH-svaret
-    // bär dem. Räkningarna (viaFormular/medfoljande/vantelista) aggregeras
-    // MEDVETET INTE här (write-EF:en förblir ett Airtable-anrop; ADDITIVT-
-    // OPTIONAL i EventSchema) — klienten MERGE-cachar (useUpdateEvent) och
-    // onSettled-refetchen mot get-event bär hela modellen. Osatt → nyckeln
-    // UTELÄMNAS (eventKey-formen — aldrig null).
-    reserverade: scalarNumber(f['Extra platser']) ?? undefined,
-    manuelltTillagda: scalarNumber(f['Manuella platser']) ?? undefined,
-    // Auto-utskickets två ADDITIVA fält (task-18.6). Datumet: osatt → nyckeln
-    // UTELÄMNAS (eventKey-formen). Opt-out: Airtable utelämnar en OKRYSSAD checkbox
-    // ur svaret — normaliseras därför till FALSE (aldrig undefined), så krysset alltid
-    // har ett definit läge att rendera. Håll i synk med get-event.
-    deltagarinfoSchemalagd: scalarString(f['Deltagarinfo schemalagd']) ?? undefined,
-    deltagarinfoAutoAvstangt: f['Deltagarinfo auto-utskick avstängt'] === true,
+    // EVENTINNEHÅLL-STANDARDEN SLÅS UPP ÄVEN HÄR (TASK-368.7), trots att
+    // kortets AC #1 bara nämner get-event/get-events. Skälet är cachen, inte
+    // symmetrin: `useUpdateEvent` MERGE-cachar svaret
+    // (`{ ...prev, ...updated }`), så ett `pris: null` härifrån hade skrivit
+    // över ett korrekt uppslaget pris i detaljcachen med ett falskt tomt värde
+    // så fort Lotta redigerat eventet. Uppslaget kostar noll extra anrop när
+    // eventet har ett eget pris (`hamtaStandardpriser` frågar då inte alls).
+    ...mapEventBas(record, standardPris),
+    ...mapEventKategorifalt(record),
   };
 }
 
@@ -270,11 +241,27 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Mål-raden måste finnas — null = okänt/raderat ID → 404 (se 404-KONTRAKTET
+    // i filens docblock ovan, TASK-24).
+    const existing = await fetchAirtableRecord(operation.tableId, eventId);
+    if (!existing) {
+      return new Response(JSON.stringify({ error: 'Event not found' }), {
+        status: 404,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
+
     console.log(
       `[update-event] ALLOW | caller_user_id=${user.id} | record=${eventId} | fields=${Object.keys(fields).join(',')}`,
     );
 
     const updated = await updateAirtableRecord(operation.tableId, eventId, fields);
+
+    // Eventinnehåll-standarden (TASK-368.7) läses ur PATCH-SVARET, inte ur
+    // `existing`: svaret bär raden EFTER skrivningen, och en av de skrivbara
+    // nycklarna (`Typ`) ingår i uppslagsparet. Att slå upp mot förbilden hade
+    // gett standarden för eventets GAMLA typ.
+    const standardpriser = await hamtaStandardpriser([updated], LOGG);
 
     // Dubbel retur (create-event-mönstret): `event` = berikad domän-shape (adaptern
     // parse:ar denna i L2 och kan cache-sätta detaljen direkt); `record` = rått
@@ -282,7 +269,7 @@ Deno.serve(async (req) => {
     // Månad/år omhärleddes.
     return new Response(
       JSON.stringify({
-        event: mapEvent(updated),
+        event: mapEvent(updated, standardprisFor(standardpriser, updated)),
         record: { id: updated.id, fields: updated.fields },
       }),
       {

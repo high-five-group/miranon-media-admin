@@ -11,7 +11,7 @@ import {
 } from '../../src/domain/schemas';
 import { FROZEN_NOW } from '../support/fixturvarld/fixture-data';
 import { EF, json } from '../support/fixturvarld/handlers';
-import { expect, test } from './support/acceptance-bas';
+import { expect, test } from './acceptance-bas';
 
 /**
  * TASK-201.6 — Aktivitetshistoriken, kärnvyn (A-formen): /mer/aktivitetshistorik.

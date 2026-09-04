@@ -238,13 +238,53 @@ body {
 .mm-fokusring-vid-fokus:focus {
   outline: var(--mm-focus-ring-width) solid var(--mm-focus-ring);
   outline-offset: var(--mm-focus-ring-offset);
-  border-radius: 2px;
 }
 
 *:focus-visible {
   outline: var(--mm-focus-ring-width) solid var(--mm-focus-ring);
   outline-offset: var(--mm-focus-ring-offset);
-  border-radius: 2px;
+}
+
+/* ═══ RINGENS HÖRN BOR I @layer base — OUTLINE GÖR DET ALDRIG ═══
+   [TASK-309.45, Marcus 5173-granskning 2026-08-30]
+
+   `border-radius: 2px` stod i de två reglerna ovan, alltså i OLAGRAD
+   author-CSS. Följden var att fokusregeln skrev över elementets EGEN form:
+   olagrat besegrar varje cascade-lager oavsett specificitet, så en
+   `rounded-full`-knapp blev en 2 px-ruta i samma ögonblick den fick
+   tangentbordsfokus. MÄTT på Bilagor-ytans ⋯-knapp (2026-08-30):
+   `borderRadius` 3.35544e+07px i vila och hover → **2px** när
+   `data-focus-visible` stod, med hover-plattan fyrkantig efteråt. Marcus såg
+   det direkt: *"hover på ⋯ är rund i utgångsläget men fyrkantig efter att man
+   tryckt på den en gång"*.
+
+   Felet var ALDRIG ⋯-knappens. Regeln träffar `*`, så varje element med egen
+   radie bar det — namnknappens `rounded-lg`, `Button`s `rounded`, pillarnas
+   `rounded-full`. Att lappa knappen (en `!`-utility) hade lämnat de andra
+   kvar; därför flyttas orsaken i stället.
+
+   SPLITTEN ÄR AVSIKTLIG OCH DE TVÅ HALVORNA HAR MOTSATTA KRAV:
+
+     RADIEN är en DEFAULT — "ge ringen ett mjukt hörn på element som inte har
+     något eget". Den hör hemma i `@layer base`, där `rounded-*`-utilities
+     (senare lager) vinner över den. Ett element utan radie-klass får
+     fortfarande sina 2 px; ett med behåller sin egen form.
+
+     OUTLINE är ett GOLV och förblir OLAGRAD, icke förhandlingsbart. Vore den
+     lagrad kunde en `outline-none`-utility släcka fokusringen helt — och en
+     osynlig fokusring är ett WCAG 2.4.7-brott, inte en smakfråga. Det är hela
+     skälet att egenskaperna skiljs åt i stället för att flyttas tillsammans.
+
+   INGEN `!important` någonstans: den hade vunnit över utilities också och
+   återinfört exakt det problem som rättas här.
+
+   Släckarna längre ned (`:not([data-focus-visible])`-familjen) rör bara
+   `outline` och är därmed opåverkade av flytten. */
+@layer base {
+  .mm-fokusring-vid-fokus:focus,
+  *:focus-visible {
+    border-radius: 2px;
+  }
 }
 
 /* Fokuserbara element INUTI en intern rullningsyta: den utanpåliggande
@@ -297,8 +337,76 @@ body {
    PersonsList.tsx eller Input-primitivens fält) — den generella
    `.mm-fokusring-vid-fokus:focus`-regeln ovan vinner nu utan konkurrens,
    så den redundanta varianten vore dött, missvisande kod. */
+/* [T176, 2026-08-29] `role="menu"` TILLAGD — SAMMA defekt, samma lösning.
+   `Meny.tsx`s popover fick en 2 px-ring runt HELA menyn vid MUSÖPPNING:
+   `MenuTrigger` fokuserar `[role=menu]`-behållaren (mätt i renderad yta:
+   `document.activeElement` = menyn, `:focus-visible` matchade,
+   `outline: solid 2px rgb(27, 73, 101)`), och globalen ovan målade den.
+   Behållaren är en COMPOSITE-widget precis som listboxen: fokus bor på
+   behållaren, men fokus-INDIKATIONEN bärs av den markerade POSTEN
+   (`data-[focused]`-plattan + postens egen ring). Vid TANGENTBORDSÖPPNING
+   fokuseras första `[role=menuitem]` direkt (mätt: `data-focused="true"`,
+   ring på posten, ingen ring på behållaren), så släckaren tar aldrig en
+   ring någon behöver.
+
+   REGELN MÅSTE BO HÄR, OLAGRAD — inte som en Tailwind-klass på komponenten.
+   Prövat och MÄTT först: `focus-visible:outline-none` på `<Menu>` genereras
+   korrekt som `.focus-visible\:outline-none:focus-visible` (specificitet
+   0,2,0 mot globalens 0,1,0) men FÖRLORAR ändå — Tailwind-utilities ligger
+   i `@layer utilities` och olagrad author-CSS besegrar ALLA lagrade regler
+   oavsett specificitet (samma kaskad-arkitektur som noten vid `@layer base`
+   längre ner beskriver). Specificiteten är alltså rätt verktyg, men bara
+   inom samma olagrade kontext.
+
+   [T176, 2026-08-29] TRIGGERN TILLAGD (`[data-rac][aria-haspopup]`) — tredje
+   instansen av samma defektklass, denna gång på knappen som ÖPPNAR
+   popovern. RAC återlämnar fokus programmatiskt till triggern när overlayen
+   stänger; webbläsarens `:focus-visible`-heuristik klassar skript-fokus som
+   tangentbord och globalen målar — även när stängningen skedde med MUS.
+   MÄTT vid 390 px före regeln, mus-öppna + musklick utanför:
+   `data-focus-visible: null` (RAC säger PEKARE) men `outline: solid 2px
+   rgb(27, 73, 101)`. Gällde `Skapa bilaga ▾` (hette `Skapa dokument ▾`
+   vid mätningen), radernas ⋯ OCH
+   eventväljaren — `aria-haspopup` är `"true"` för menyer och `"listbox"`
+   för Select/EventValjare, så attributets NÄRVARO är det som träffar exakt
+   popover-triggers och inget annat.
+
+   `:not([data-focus-visible])` bevarar tangentbordsringen, och den är mätt
+   i båda riktningarna: Escape-stängning ger `data-focus-visible="true"` +
+   ring KVAR, och ren Tab till triggern likaså.
+
+   [TASK-309.45, 2026-08-30] POSTERNA TILLAGDA (`[role="menuitem"]`) — FJÄRDE
+   instansen av samma defektklass, och den enda som återstod i menyfamiljen.
+   Marcus, om ⋯-menyn på Bilagor-ytan: *"den blå fokusringen kommer fram i
+   menyn. Inte okej. Något är fel där."*
+
+   KEDJAN, MÄTT STEG FÖR STEG på en FÄRSK sida (2026-08-30):
+     1. musklick öppnar menyn
+     2. RAC skript-fokuserar `[role=menu]`-behållaren ASYNKRONT — alltså
+        utanför pointer-händelsen, och Chrome låter skript-fokus ärva
+        tangentbords-modalitet i sin `:focus-visible`-heuristik
+     3. musen glider över en post; RAC flyttar fokus dit (focus-follows-hover,
+        menygrammatikens egen form)
+     4. posten matchar då `:focus-visible` UTAN att bära `data-focus-visible`
+        — och globalen målade: `outline solid rgb(27, 73, 101) 2px` på
+        `[role=menuitem]`, mätt i två oberoende fall
+   Behållar-släckaren ovan täckte steg 2 men aldrig steg 4: fokus hade redan
+   flyttat från menyn till posten.
+
+   PRINCIPEN ÄR GRANNARNAS, oförändrad: RAC VET modaliteten och skriver
+   `data-focus-visible` bara vid tangentbord; webbläsaren GISSAR, och gissar
+   fel så fort fokus sätts av skript. Vid tangentbordsöppning (Enter/
+   ArrowDown) bär posten `data-focus-visible="true"`, så `:not(…)` lämnar den
+   ringen orörd — den behövs, den är tangentbordsanvändarens enda markör.
+
+   `data-[focused]`-PLATTAN PÅ POSTEN RÖRS INTE. Den bär hover-/markerings-
+   indikationen i båda modaliteterna, och det är den som gör att en
+   mus-användare ser vilken post pekaren står på när ringen är släckt. */
 [role="listbox"][data-rac]:focus-visible:not([data-focus-visible]),
-[role="listbox"] [data-rac]:focus-visible:not([data-focus-visible]) {
+[role="listbox"] [data-rac]:focus-visible:not([data-focus-visible]),
+[role="menu"][data-rac]:focus-visible:not([data-focus-visible]),
+[role="menuitem"][data-rac]:focus-visible:not([data-focus-visible]),
+[data-rac][aria-haspopup]:focus-visible:not([data-focus-visible]) {
   outline: none;
 }
 

@@ -85,6 +85,44 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
     tableId: 'Anmälningar',
     allowedFields: ['Status', 'Bekräftelse skickad'],
   },
+  // Avboka/återta en anmälan (TASK-368.2, PRD TASK-368 beslut 1/3/4). EXAKT
+  // två fält: 'Status' (fldWr5cCPNx9HEKtL, singleSelect — exakt två tillåtna
+  // övergångar, prövade av `_shared/cancel-registration.ts` INNAN denna
+  // allowlist ens nås) och 'Notering' (fldPMsiRoLWcgUbsv, multilineText,
+  // append-skrivning som bevarar befintlig text). Till skillnad från
+  // `update-registration-payment-note` ovan är det den GAMLA, ODELADE
+  // Notering-kolumnen som skrivs här, MEDVETET: avbokningsskälet är inte en
+  // betalningsnotering, och anmälans sida (TASK-368.3) ska visa ETT fält
+  // med både Lottas fria text och avbokningshistoriken i samma flöde
+  // (grillad samsyn S115 Del 3, beslut 3–4). `fields` byggs SERVER-SIDE ur
+  // den UPPLÄSTA anmälan (klienten skickar bara record-ID + valfritt skäl)
+  // — listan är därför en SSOT-grind mot framtida kod-drift, samma form som
+  // `send-registration-confirmation` ovan. Båda fälten LIVE-VERIFIERADE
+  // (data-model.md, identiska fält-ID:n i staging och prod). Tabell per
+  // NAMN (ADR-050 bas-portabilitet).
+  'cancel-registration': {
+    tableId: 'Anmälningar',
+    allowedFields: ['Status', 'Notering'],
+  },
+  // Ombokningens skrivning på den GAMLA anmälan (TASK-368.4, PRD TASK-368
+  // beslut 7–8, ADR-130). EXAKT samma två fält som `cancel-registration` ovan
+  // — och det är MED AVSIKT en EGEN nyckel, inte ett återbruk av den:
+  // allowlisten är per OPERATION, inte per fältmängd, och en delad nyckel hade
+  // gjort att en framtida utvidgning av den ena tyst vidgat den andra. Samma
+  // resonemang som `create-attachment`/`upload-attachment`-paret längre ned i
+  // denna fil redan bär ("EGEN OPERATIONSNYCKEL, INTE ÅTERANVÄND").
+  //
+  // Övergången (aktiv → Avbokad/Ombokad) prövas av `_shared/rebook-registration.ts`s
+  // `beslutaOmbokning` INNAN denna allowlist ens nås; Notering skrivs som
+  // append med den datumstämplade Ombokad-raden sist (befintlig text bevaras
+  // byte för byte). Den NYA anmälan skapas via `create-registration`-postens
+  // egna fält — `_shared/create-registration.ts` läser den nyckeln, inte denna.
+  // Båda fälten LIVE-VERIFIERADE (data-model.md, identiska fält-ID:n i staging
+  // och prod). Tabell per NAMN (ADR-050 bas-portabilitet).
+  'rebook-registration': {
+    tableId: 'Anmälningar',
+    allowedFields: ['Status', 'Notering'],
+  },
   // Bor över-markeringen per anmälan (task-18.7, PRD task-18 beslut 8 —
   // eventsidans kryss-läge). EXAKT ett fält: 'Bor över' (fldGYYNnQi7XlfbhP,
   // checkbox), ADDITIVT skapat i STAGING 2026-07-22 och skrivbarheten
@@ -92,9 +130,12 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
   // Allowlisten gatar FÄLTET, inte värdet — samma operation kryssar i och ur
   // (och är därmed test-teardownens väg). Eventets bor över-ANTAL härleds
   // ALLTID ur dessa kryss; något lagrat räknefält finns medvetet inte och kan
-  // därför inte heller skrivas. ⚠️ PROD-fältet är INTE skapat — hård
-  // prod-deploy-förutsättning (fält FÖRE EF, per miljö; data-model.md §Kända
-  // fällor 37). Tabell per NAMN (ADR-050 bas-portabilitet).
+  // därför inte heller skrivas. PROD-fältet FINNS sedan 2026-07-23 (S75
+  // prod-deploy-vågen, prod-ID `fld4Flif4NoFnNsxS` — data-model.md § Prod-
+  // basens additiva tillskott 2026-07-23). Föregående ⚠️-varning ("PROD-
+  // fältet är INTE skapat") var föråldrad; rättad TASK-200 (svept mot
+  // live-schema via data-model.md, 2026-08-26). Tabell per NAMN (ADR-050
+  // bas-portabilitet).
   'set-registration-lodging': {
     tableId: 'Anmälningar',
     allowedFields: ['Bor över'],
@@ -179,9 +220,12 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
   // skapa-sidans dra-till-bekräfta-handtag armerar. ADDITIVT checkbox-fält, live-verifierat
   // mot STAGING-schemat (tblVE3UKWl1CKrphV, fält `fldyJKnJCP1brHwL6`, skapat 2026-07-22 —
   // skrivbart per konstruktion, L294) INNAN posten låstes; namnet är EXAKT Airtable-fältnamnet.
-  // ⚠️ PROD-fältet är INTE skapat — hård prod-deploy-förutsättning (fält FÖRE EF, per miljö;
-  // samma ordning som 'Idempotensnyckel', data-model.md §Kända fällor 37). EF:en skriver
-  // fältet ENDAST när flaggan är ARMERAD; oarmerat utelämnas det ur fields-mapen (ett skrivet
+  // PROD-fältet FINNS sedan 2026-07-23 (S75 prod-deploy-vågen, prod-ID
+  // `fldrjj61ovL3Zv1mN` — data-model.md § Prod-basens additiva tillskott
+  // 2026-07-23). Föregående ⚠️-varning ("PROD-fältet är INTE skapat") var
+  // föråldrad; rättad TASK-200 (svept mot live-schema via data-model.md,
+  // 2026-08-26). EF:en skriver fältet ENDAST när flaggan är ARMERAD;
+  // oarmerat utelämnas det ur fields-mapen (ett skrivet
   // `false` skulle SÄTTA checkboxen till omarkerad — utelämnande är formen för "osatt").
   // 'Kursfamilj'/'Kursnivå' (TASK-249.4, ADR-115) — basdimensionerna som stänger den
   // dokumenterade skapelseväg-kanten (data-model.md § "Staging- och prodbasens additiva
@@ -193,6 +237,19 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
   // backfillens källa, prototypens KURS_KARTA) — klienten skickar dem ALDRIG. Kursnivå
   // UTELÄMNAS för nivålösa familjer (Fjärrskådning/Psionautics) OCH för okänt kursnamn
   // (öppet, aldrig gissat — modulens docblock).
+  // 'Plats' (TASK-309.30, ADR-125 § 2) — länken till Platser-raden, HÄRLEDD
+  // server-side ur eventets eget `Ort` via `_shared/plats-uppslag.ts` (exakt
+  // namnmatchning, ENDAST vid exakt en träff). Klienten skickar den ALDRIG;
+  // formuläret är oförändrat (kortets AC #3). Fältet skrivs i en SEPARAT PATCH
+  // EFTER upserten, aldrig i upsertens egen fields-map — se create-event/
+  // index.ts § ORT-TILL-PLATS för varför ordningen är invarianten som skyddar
+  // en redan satt Plats vid en idempotent replay. Bas-fältet är
+  // multipleRecordLinks → Platser (staging `fld8OmPGNgEYZ8eER`, prod
+  // `fldaVV1KS6skbOLrB`; data-model.md § Bilagornas datamodell, staging-ID:t
+  // live-verifierat via describe_table 2026-08-28 som Platser-fältets
+  // inverseLinkFieldId). BÅDA baserna bär fältet sedan 2026-08-24, så
+  // prod-EF-deployen har ingen schema-förutsättning kvar att vänta på (till
+  // skillnad mot `Idempotensnyckel`/publiceringsflaggan när de tillkom).
   'create-event': {
     tableId: 'Eventplanering',
     allowedFields: [
@@ -208,6 +265,7 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
       'Publicerad på miranon.se',
       'Kursfamilj',
       'Kursnivå',
+      'Plats',
       'Idempotensnyckel',
     ],
   },
@@ -283,8 +341,11 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
   // additivt 2026-07-23; skrivbarheten LIVE-VERIFIERAD via create+läs-tillbaka+radera
   // INNAN posten låstes, L294): 'Författare' (singleLineText, primär), 'Anteckning'
   // (multilineText), 'Event' (multipleRecordLinks → Eventplanering). Tidpunkten sätts av
-  // Airtables createdTime (aldrig ett skrivet fält). ⚠️ PROD-tabellen är INTE skapad —
-  // hård prod-deploy-förutsättning (tabell FÖRE EF, per miljö; ADR-050/ADR-063).
+  // Airtables createdTime (aldrig ett skrivet fält). PROD-tabellen FINNS
+  // sedan 2026-07-23 (S75 prod-deploy-vågen, prod-ID `tblaUhH1KF9k9imul` —
+  // data-model.md § Prod-basens additiva tillskott 2026-07-23). Föregående
+  // ⚠️-varning ("PROD-tabellen är INTE skapad") var föråldrad; rättad
+  // TASK-200 (svept mot live-schema via data-model.md, 2026-08-26).
   // Tabell per NAMN (ADR-050 bas-portabilitet).
   'create-event-note': {
     tableId: 'Anteckningar',
@@ -327,10 +388,19 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
   // separat live-verifiering behövdes): 'Namn' (singleLineText, primär),
   // 'Storlek (bytes)' (number), 'Skapad' (dateTime — manuellt satt, INTE
   // Airtables createdTime, se scripts/create-bilagor-table.mjs § "Skapad"),
-  // 'Event' (multipleRecordLinks → Eventplanering). ⚠️ PROD-tabellen är INTE
-  // skapad — hård prod-deploy-förutsättning (tabell FÖRE EF, per miljö;
-  // ADR-050/ADR-063, samma mönster som create-event-note). Tabell per NAMN
-  // (ADR-050 bas-portabilitet).
+  // 'Event' (multipleRecordLinks → Eventplanering). PROD-tabellen FINNS
+  // sedan 2026-08-11 (S102 bas-apply, prod-ID `tblevR1B54wFjp7QC` —
+  // data-model.md § Prod-basens additiva tillskott 2026-08-11). DIVERGENS
+  // mot TASK-200s ursprungliga premiss (kortet pekade ut tre av fem
+  // varningar som föråldrade — Bor över/Publicerad på miranon.se/
+  // Anteckningar; denna och create-receipts varning nedan var vid kortets
+  // skrivande fortfarande sanna, men bas-applyn som skapade denna tabell
+  // landade SAMMA DAG, några timmar senare — se
+  // docs/research/prodbas-synk-staging-till-prod-2026-08-11.md § Delfråga 2
+  // + § Rekommendation p1). Rättad TASK-200 (svept mot live-schema via
+  // data-model.md, 2026-08-26, alltså mot ALLA FEM, inte bara de tre
+  // kortet ursprungligen pekade ut). Tabell per NAMN (ADR-050
+  // bas-portabilitet).
   // 'Lagringsnyckel' (TASK-147.5, additiv) — storage-objektets leaf-namn,
   // skrivet av upload-attachment/finalize-attachment-upload/generate-event-
   // attachment vid radskapelse. Server-internt (aldrig i den publika
@@ -373,6 +443,20 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
       'Räckvidd',
       'Kursfamilj',
       'Kursnivå',
+      // [TASK-338.2, ADR-125 § Beslut 1] Plats-axeln — `Bilagor.Plats`
+      // (staging `fldmkHUxPNRRA0Rxi`, multipleRecordLinks → Platser
+      // `tbl7ER0wNqAZ9ZhEq`; prod väntar TASK-338.6). Skrivs som en
+      // LÄNK-array (`[platsId]`) av `buildScopeFields`, ur ett redan
+      // Zod-validerat `AttachmentScopeInput` vars `plats` dessutom
+      // EXISTENSKONTROLLERATS mot Platser-tabellen av den skrivande EF:en
+      // (samma vaktklass som generate-event-attachments ersatt-guard) —
+      // listan är alltså en SSOT-grind mot framtida kod-drift, exakt
+      // samma form som 'Räckvidd' ovan. Lookup-fältet `Platsnamn`
+      // (`fldyEDJD3Y3InHJ7J`) står MEDVETET INTE här: ett
+      // multipleLookupValues-fält är beräknat och kan inte skrivas
+      // (data-model.md § Kända fällor) — en post för det hade varit en
+      // tillåtelse att göra något plattformen ändå avvisar.
+      'Plats',
       // [TASK-309.4, ADR-125 § Beslut 3] Mall-genererade bilagor (Event-
       // mallad) bär numera VILKEN mall som byggde dem och en hash av
       // ifyllnadsunderlaget (härledd inaktualitet). Samma operationsnyckel
@@ -382,6 +466,41 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
       'Källhash',
     ],
   },
+  // [TASK-338.4, ADR-125 § Beslut 1] `update-attachment-scope` — Lottas
+  // "Ändra räckvidd" i räckviddsläget (PRD TASK-338 berättelse 8: en
+  // felklassad delad bilaga ska gå att rätta utan att filen laddas upp igen).
+  //
+  // EGEN OPERATIONSNYCKEL, INTE ÅTERANVÄND 'create-attachment' — och det är
+  // avsiktligt trots att den nyckelns docblock uttryckligen tillåter samma
+  // nyckel för både POST och PATCH ("en OperationDef gatar FÄLTET, inte om
+  // anropet är POST eller PATCH", generate-event-attachments ersatt-läge).
+  // Skälet är MINSTA PRIVILEGIUM: denna operation ändrar RÄCKVIDDEN på en
+  // redan existerande rad och har därför inget ärende till `Namn`,
+  // `Storlek (bytes)`, `Skapad`, `Event`, `Lagringsnyckel`, `Dokumentklass`,
+  // `Mall` eller `Källhash`. Hade den ärvt create-listan vore listan tyst
+  // verkningslös för just denna EF — en kod-drift som bytte fil eller
+  // dokumentklass hade passerat grinden. FYRA fält, exakt de axlar
+  // `buildScopeUpdateFields` (_shared/attachments.ts) skriver.
+  //
+  // Fält-ID:n (staging) för de fyra: `Räckvidd` fldU6i9Ju5HRwSRBf,
+  // `Kursfamilj` fldiJnZk66jlkUiX8, `Kursnivå` fldep25m32Q3Cjh41,
+  // `Plats` fldmkHUxPNRRA0Rxi — data-model.md § "Bilagornas
+  // Gemensam-räckvidd — Plats-axel" resp. § "Staging- och prodbasens
+  // additiva tillskott 2026-08-17 (task-275.1...)". Prod väntar TASK-338.6.
+  // Lookup-fältet `Platsnamn` står MEDVETET INTE här av samma skäl som i
+  // 'create-attachment' ovan: multipleLookupValues är BERÄKNAT och kan inte
+  // skrivas (data-model.md § Kända fällor).
+  //
+  // Klienten når INTE dessa fältnamn — EF:en bygger `fields` server-side ur
+  // ett redan Zod-validerat `AttachmentScopeInput` (samma
+  // `AttachmentScopeInputSchema` som skrivvägen, importerad aldrig
+  // duplicerad), så listan är en SSOT-grind mot framtida kod-drift, exakt
+  // samma form som 'create-attachment'. Tabell per NAMN (ADR-050).
+  'update-attachment-scope': {
+    tableId: 'Bilagor',
+    allowedFields: ['Räckvidd', 'Kursfamilj', 'Kursnivå', 'Plats'],
+  },
+
   // Åtgärdsutskickens sändväg (TASK-147.1, ADR-067-revisionen — repots sjunde
   // write-vertikal, tredje mail-vertikal). send-action-email-EF:en bygger `fields`
   // SERVER-SIDE ur den UPPLÄSTA anmälan + den fasta per-åtgärdstyp-mappningen i
@@ -423,9 +542,11 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
   // fel. Additiv tabell (staging tblk8fZcArXPpRYnX, skapad additivt via
   // Airtable MCP 2026-08-10, deklarativ hemvist
   // scripts/create-kvitton-table.mjs — samma mönster som
-  // scripts/create-bilagor-table.mjs). ⚠️ PROD-tabellen är INTE skapad —
-  // hård prod-deploy-förutsättning (tabell FÖRE EF, per miljö; ADR-050/
-  // ADR-063). Tabell per NAMN (ADR-050 bas-portabilitet).
+  // scripts/create-bilagor-table.mjs). PROD-tabellen FINNS sedan 2026-08-11
+  // (S102 bas-apply, prod-ID `tblZC6jBQIHiuS24a` — data-model.md § Prod-
+  // basens additiva tillskott 2026-08-11). Samma divergens-anmärkning som
+  // create-attachment ovan gäller: föråldrad, rättad TASK-200 2026-08-26.
+  // Tabell per NAMN (ADR-050 bas-portabilitet).
   'create-receipt': {
     tableId: 'Kvitton',
     allowedFields: [
@@ -440,6 +561,42 @@ const OPERATIONS: Readonly<Record<string, OperationDef>> = {
       'Event',
       'Skickad',
       'Lagringsnyckel',
+    ],
+  },
+  // Betalningens app-skrivna spegel på Anmälningar (ADR-128 beslut 5, förberett
+  // TASK-346.2 — den faktiska skrivande EF:en byggs i TASK-346.4). Inbetalningen
+  // SJÄLV bor i Postgres (ADR-128 beslut 3); denna operation är BARA spegeln
+  // tillbaka till basen så Lottas Airtable-vyer, automation A7 och rollups
+  // fungerar orörda (ADR-128 § Beslut 5/6, användarberättelse 35). UNIONEN av
+  // vad spegel-skrivningen kan sätta över sin livscykel (samma "en operation,
+  // unionen av vad den kan skriva"-form som send-action-email/create-receipt
+  // ovan): 'Summa inbetalt (kr)' (TALFÄLT, INTE en rollup — en rollup kan inte
+  // summera rader i en annan databas, beslut 5) skrivet av appen ur Postgres i
+  // samma operation som inbetalningen; 'Kvittonummer' (singleLineText,
+  // skild från länkfältet 'Kvitton') satt när ett kvitto utfärdats;
+  // 'Anmälningsavgift'/'Slutbetalning' (de två VALFÄLTEN, redan individuellt
+  // allowlistade av mark-registration-fee-paid/mark-final-payment-paid ovan —
+  // unionen här ger INGEN ny skrivbehörighet utöver vad de operationerna redan
+  // tillåter, den låter bara SAMMA spegel-anrop sätta båda facken atomärt i
+  // stället för två separata update-record-anrop) härledda ur summan mot
+  // priset (beslut 2); 'Avtalat pris (kr)' när Lotta sätter ett rabatterat
+  // pris via betalningsformuläret (beslut 2, frivilligt, förvalt = eventets
+  // pris). `Saknas (kr)` ligger MEDVETET UTANFÖR — den är en Airtable-FORMEL
+  // (basen räknar själv, beslut 5), aldrig ett skrivbart fält. De numeriska
+  // standardprisfälten (Eventinnehåll/Eventplanering "Pris (kr)"/
+  // "Anmälningsavgift (kr)", beslut 7) ligger också UTANFÖR — de är Lottas
+  // egna prissättningsfält, satta via eventredigeringen (save-event-content/
+  // save-event-text-klassen), inte en del av betalnings-spegeln. Fält-ID:n:
+  // data-model.md § "Stagingbasens additiva tillskott 2026-08-30 (TASK-346.2)".
+  // Tabell per NAMN (ADR-050 bas-portabilitet).
+  'write-registration-payment-mirror': {
+    tableId: 'Anmälningar',
+    allowedFields: [
+      'Summa inbetalt (kr)',
+      'Kvittonummer',
+      'Anmälningsavgift',
+      'Slutbetalning',
+      'Avtalat pris (kr)',
     ],
   },
   // Sätt närvarostatus på ett Deltagande (check-in-vertikalen, TASK-214.1). Dörrens BINÄRA

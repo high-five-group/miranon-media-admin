@@ -1,4 +1,5 @@
 import AxeBuilder from '@axe-core/playwright';
+import { registreraKastbarPost } from '../support/kastbara-poster';
 import { expect, type Page, type Route, test } from '../support/test-bas';
 import { loggaInFristaende } from './helpers/fristaende-session';
 
@@ -473,6 +474,13 @@ test.describe('Skapa nytt event — SKARPT mot staging (AC #1)', () => {
     const createBody = (await (await createSvar).json()) as {
       record: { id: string; fields: Record<string, unknown> };
     };
+    // [TASK-309.15] Raden är KASTBAR och KOMMANDE (startdatum 2026-09-15) →
+    // ägar-manifestet, så `purge:staging:efter` river den direkt i stället för
+    // att lämna den i appens eventväljare till nästa staging-jobbs setup-purge.
+    // Manifestet delas med api-sviten: CI kör `test:api:staging` och
+    // `test:e2e:staging` som två Playwright-invokationer i SAMMA jobb, och
+    // filen ligger utanför `test-results/` just därför (se helperns filhuvud).
+    registreraKastbarPost(createBody.record.id, 'e2e-skapa-event/Eventplanering');
     expect(createBody.record.fields[PUBLICERINGSFALT]).toBe(true);
 
     // Bekräftelseläget är skriv-beviset: det renderas ENBART på server-OK

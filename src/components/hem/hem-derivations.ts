@@ -124,10 +124,10 @@ export function initialer(namn: string): string {
     .join('');
 }
 
-/** Förnamnet ur ett fullt visningsnamn (hälsningens visningslogik, TASK-220-formen). */
-export function fornamn(helaNamnet: string): string {
-  return helaNamnet.trim().split(/\s+/)[0];
-}
+// [FLYTTAD, TASK-309.38] `fornamn()` bor nu i `@/lib/fornamn` — den delas
+// sedan denna skiva med dokumentgenereringens väntetext, som annars hade
+// fått ett feature→feature-beroende mot `hem/`. `Hem.tsx` importerar den
+// därifrån direkt (se den filens importblock).
 
 export interface AnmalningRad {
   reg: Registration;
@@ -410,7 +410,8 @@ export function bevakningar(
  * osynlig-vid-noll-kontrakt som `Bevakningsrad` bär för HELA komponenten,
  * upprepat här så konsumenten aldrig behöver kontrollera `antal === 0`
  * själv). Räknar via `antalBehoverAtgard` — det DELADE predikatet
- * `AnmalningarList`s markör också läser, aldrig en egen klientberäkning.
+ * `AnmalningarSida`s markör (f.d. `AnmalningarList`, `TASK-299.5`) också
+ * läser, aldrig en egen klientberäkning.
  */
 export function atgardskoRad(regs: Registration[] | undefined): AtgardskoBevakningRad | null {
   const antal = antalBehoverAtgard(regs);

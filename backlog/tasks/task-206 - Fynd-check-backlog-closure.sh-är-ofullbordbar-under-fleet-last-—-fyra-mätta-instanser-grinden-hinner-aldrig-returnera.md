@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-12 21:17'
-updated_date: '2026-08-13 15:42'
+updated_date: '2026-08-28 05:09'
 labels: []
 dependencies: []
 priority: medium
@@ -39,6 +39,14 @@ KONSEKVENS TILLS DEN ÄR LÖST: agenter ska inte köra den repo-breda grinden so
 
 RELATERAT MEN INTE SAMMA SAK: TASK-118 (grinden fail-closed:ar utan BACKLOG_CMD-override när backlog.md saknas i node_modules). Det är en frånvaro-bugg, detta är en prestanda-pathologi.
 <!-- SECTION:DESCRIPTION:END -->
+
+## Acceptance Criteria
+<!-- AC:BEGIN -->
+- [ ] #1 Diagnos-passets fyra frågor besvaras med mätdata: (1) git-kontention vs backlog-CLI:ts egen grenskanning, (2) skalning mot antal samtidiga CLI-instanser vs total maskin-load, (3) om grinden kan göras inkrementell (bara ändrade kort sedan senaste gröna nattkörning), (4) om en tidsgräns med tydligt felmeddelande behövs — interfolierad mätning, ej blockad (metrics:flake-mönstret)
+- [ ] #2 scripts/check-backlog-closure.sh emitterar progressiv output (per kort eller per N kort) till stderr, så en pågående körning kan skiljas från en hängd
+- [ ] #3 Skriptet har en tidsgräns som fäller med tydligt skäl i stället för att hänga tyst, eller ett källbelagt beslut om varför en tidsgräns är fel åtgärd om diagnosen visar det
+- [ ] #4 Nightly-körningen (nightly.yml:437) grön efter ändringen, mätt minst en gång under normal fleet-last
+<!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->

@@ -19,7 +19,7 @@ status: draft
 
 **Fullständigt lästa primärkällor:**
 
-- `tasks/sessions/2026-08-02-session-93.md` — samtliga 1 777 rader, Del 1–11
+- `tasks/sessions/archive/2026-08/2026-08-02-session-93.md` — samtliga 1 777 rader, Del 1–11
   plus tillhörande paushistorik-block.
 - `docs/decisions/ADR-102-prototypen-ar-facit-skarpa-ska-vara-identisk.md` —
   helt, inklusive R1–R9 och B1–B5.
@@ -37,11 +37,11 @@ status: draft
 
 **Delvis lästa, avgränsat till det instruerade urvalet:**
 
-- `tasks/sessions/2026-08-02-session-96.md` — Del 9 (`#678`
+- `tasks/sessions/archive/2026-08/2026-08-02-session-96.md` — Del 9 (`#678`
   växlar-kontraktet, ADR-074 Amendering 6) samt en grep över hela filen efter
   `hallplats`/`PrototypeSwitcher`/`variant=a`/`ADR-074`/`eventsid`/`Atgarder`.
   Ingen ytterligare eventsida-relevans hittades.
-- `tasks/sessions/2026-08-07-session-100.md` — Del 1–4 (varv 1–5 på
+- `tasks/sessions/archive/2026-08/2026-08-07-session-100.md` — Del 1–4 (varv 1–5 på
   åtgärds-sidan). Detta är ett **angränsande, inte samma**, kort (`TASK-147`
   mot eventsidans `TASK-145`) — medtaget som jämförelsepunkt, inte som en del
   av eventsidans egen tidslinje. Del 5 lästes inte (utanför varv 1–4).
@@ -768,7 +768,7 @@ underleverans Claude! Den här sidan ser ut att vara ihopkastad i panik.
 Ingen tanke, inget engagemang, ingenting."* Grammatiken (facit-bilder för
 BETALNINGSARBETSYTAN) lästes men omsattes inte i den nya ytan; Dokument-
 ytan byggdes inte alls trots att den stod i scope.
-*Källa:* `tasks/sessions/2026-08-07-session-100.md` Del 2.
+*Källa:* `tasks/sessions/archive/2026-08/2026-08-07-session-100.md` Del 2.
 *Konsekvens:* en hel bygg-varv kastades, ytan gjordes om från grunden i
 Del 3–4 med fyra EXPLICITA Marcus-formkrav.
 *Mappning:* **HYPOTES, inte fastställt** att detta delar rotorsak med
@@ -802,7 +802,7 @@ UPPENBARLIGEN funkar det inte... Och DU ska reda ut VARFÖR, och det är
 NU!!!!!!!!!!!!!!!!!!!!!!!!!"* — följt tre minuter senare av *"FIXA snälla
 Claude!!!! Ordentligt så detta VERKLIGEN funkar som de ska sen!!!!!!"*
 *Källa:* `~/.claude/projects/…s93-agarlapp-regelbarare/89a5c755-e006-4c0b-a520-77c87400460a.jsonl`.
-Sökt i `tasks/sessions/2026-08-02-session-93.md` i sin helhet: ordet
+Sökt i `tasks/sessions/archive/2026-08/2026-08-02-session-93.md` i sin helhet: ordet
 "ägarlapp" förekommer nio gånger, samtliga i den rutinmässiga
 "Huvudkatalogens ägarlapp tillhör session X"-formen — **noll referenser**
 till denna incident, denna worktree, eller detta citat.
@@ -835,7 +835,7 @@ ordagrant, inte en skrivning härifrån):
 
 <!-- vale Vale.Repetition = YES -->
 *Källa:* `~/.claude/projects/…/c91a05a2-ea83-41d8-a38c-1e800b227992.jsonl`,
-2026-08-07T18:05:42.400Z. Ej nämnt i `tasks/sessions/2026-08-02-session-93.md`
+2026-08-07T18:05:42.400Z. Ej nämnt i `tasks/sessions/archive/2026-08/2026-08-02-session-93.md`
 Del 11 — den skrivna narrativen går direkt från felskärmdumpen (F43) till
 Marcus dom och ADR-mintningen, utan denna mellanliggande, andra felkälla.
 *Konsekvens:* okänt exakt vad som orsakade felpåståendet — men den mest
@@ -1131,7 +1131,7 @@ delar dess grundform: en regel skriven i en fil som en viss inträdesväg
 
 ## Källförteckning
 
-- `tasks/sessions/2026-08-02-session-93.md` (Del 1–11 + paushistorik, 1 777
+- `tasks/sessions/archive/2026-08/2026-08-02-session-93.md` (Del 1–11 + paushistorik, 1 777
   rader)
 - `docs/decisions/ADR-102-prototypen-ar-facit-skarpa-ska-vara-identisk.md`
 - `docs/research/eventsidan-prototyp-mot-skarpa-facitkarta-2026-08-07.md`
@@ -1147,8 +1147,8 @@ delar dess grundform: en regel skriven i en fil som en viss inträdesväg
 - `tasks/lessons.d/skivning-provas-mot-kodens-kopplingar-inte-mot-funktionsytan.md`
 - `tasks/lessons.d/uppdragets-kallmarkning-maste-avse-gallande-text.md`
 - `backlog/tasks/task-145.md` + `task-145.1`–`.6`
-- `tasks/sessions/2026-08-02-session-96.md` (Del 9, grep-svept Del 1–17)
-- `tasks/sessions/2026-08-07-session-100.md` (Del 1–4)
+- `tasks/sessions/archive/2026-08/2026-08-02-session-96.md` (Del 9, grep-svept Del 1–17)
+- `tasks/sessions/archive/2026-08/2026-08-07-session-100.md` (Del 1–4)
 - `tasks/todo.md` (grep över kadensraderna, rad ~297–1100)
 - `git log --oneline --since=2026-08-02 --until=2026-08-08 main`
 - `gh pr list --state merged --search "merged:2026-08-02..2026-08-08" --limit 200`

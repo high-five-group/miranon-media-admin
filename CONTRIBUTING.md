@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-23
+updated: 2026-08-30
 review_by: 2027-02-08
 status: stable
 ---
@@ -72,7 +72,7 @@ kanoniska kommandona separat:
 | `npm run test:visual` | Visuella regressionstester |
 | `npm run vakt:kontrakt` | Kontraktsvakten: fixturvärlden mot skarp staging (nattlig i CI, körbar lokalt med `.env.test` — se § Nattnätet) |
 | `npm run test:preview:staging` | Byggt staging-bygge på preview-porten 4173: bygge → bundelgrind → login/Hem-bevis (TASK-10) |
-| `npm run purge:staging` | Sentinel-purge av staging-basen (setup-purge, ADR-060) — kräver `.env.seed`; `-- --dry-run` för plan utan radering |
+| `npm run purge:staging` | Sentinel-purge av staging-basen (setup-purge, ADR-060) — kräver `.env.seed`; `-- --dry-run` för plan utan radering. Städar TRE klasser: Airtable-sentineler, Storage-objekt under `utkast`, och sedan `TASK-346.3` Postgres-testrader i betalningsdomänen (`ZZ-TASK-346…`, via `purga_testrader`) |
 | `npm run seed:review` | Granskningsfixtur i staging: kommande event + bekräftade/obekräftade anmälningar för design-review — kräver `.env.seed`; `-- --dry-run` för plan utan skrivning |
 | `npm run seed:review:clean` | Raderar granskningsfixturen igen (samma guards, samma `--dry-run`) |
 
@@ -103,6 +103,34 @@ Platsers `Namn`, Agendapunkters `Text` — bilagornas skrivvägar, TASK-309.3),
 och `ZZ-TASK-309.7-` i Platsers `Namn` (Mer-sidans Platser-yta, TASK-309.7 —
 EGEN sentinel-klass skild från 309.3:s: dessa rader föds via
 `save-place-standard`s event-lösa läge, utan något throwaway-event i sikte).
+Till dem kommer `ZZ-create-event-test-uppdaterad` i Eventplaneringens `Ort`
+(TASK-309.15) — den ort `update-event.staging.test.ts` döper om sitt
+sentinel-event till mitt i testet och återställer i `finally`. Faller den
+återställningen (kraschad körning, avbrutet CI-jobb) matchar raden ingen av de
+övriga targets och blir opurgbar för alltid; mätt 2026-08-24 låg två sådana
+rader kvar i 26,9 respektive 32,3 dygn.
+
+Och `ZZ-plats-` i Eventplaneringens `Ort` (TASK-309.30) — de event
+`create-event.staging.test.ts` skapar för att bevisa Ort-till-Plats-
+härledningen. Deras `Ort` MÅSTE vara exakt ett platsnamn (uppslaget matchar
+`Platser.Namn` = `Ort`) och kan därför inte bära `ZZ-create-event-test`.
+De TVÅ Platser-raderna fixturen vilar på (`ZZ-plats-unik-fixtur` och den
+avsiktliga dubbletten `ZZ-plats-dubblett-fixtur`, seedade via Airtable-MCP)
+är PERMANENTA och matchar MEDVETET ingen purge-target — dubbletten går inte
+att återskapa via någon EF (`save-place-standard` är find-or-create by
+`Namn`), så en purgead fixtur hade tyst gjort flera-träffar-grenen oprövbar.
+Targeten städar alltså ENBART Eventplanering-raderna, och `Plats` står i dess
+`linkGuardExcludeFields` eftersom länken är just det testet bevisar.
+
+Och `ZZ-attachment-filename-test-` i Bilagors `Namn` (TASK-309.22) —
+`upload-attachment-ascii-safety.staging.test.ts`s EGEN sentinel-klass, skild
+från `ZZ-attachment-test-` ovan eftersom den targetens exakt-mönster bara
+tillåter ett UUID-only-suffix och därför inte kan bära det rapporterade
+bugg-filnamnet (`2025-HörlurarMiranonMedia.pdf`) som testet medvetet laddar
+upp. Städas via ägar-manifestet (`tests/support/kastbara-poster.ts`,
+ADR-060 punkt 3), inte setup-purgen — testet självstädar redan i sitt eget
+`finally`-block, manifestet är ett säkerhetsnät för en kraschad körning.
+
 Uppräkningen hålls komplett mot `.purge-staging-policy.json` av
 `scripts/check-listparitet.sh` (paret `sentinel-markorer`) — den stod med
 två av fyra tills den grinden byggdes. CI städar dem automatiskt i jobbet **Staging sentinel
@@ -132,6 +160,47 @@ Serialisering via projekt-dependencies i `playwright.config.ts` förkastades:
 `--project`-anrop drar in dependencies transitivt, vilket hade svällt CI:s
 e2e-stegs testmängd (bevisat 148 → 259 tester) och fällt steget på saknade
 admin-secrets — TASK-6-kortets notes bär hela beviskedjan.
+
+### Efter-körning-purgen — den första försvarslinjen (`TASK-309.15`)
+
+Setup-purgen ovan städar FÖRE varje staging-jobb och kan därför strukturellt
+inte städa fönstret MELLAN en körning och nästa staging-jobb. De kastbara
+eventen bär framtida `startdatum` och är alltså KOMMANDE event — de dyker upp i
+appens eventväljare under hela det fönstret. **Mätt 2026-08-24: 151
+kvarliggande ZZ-event i staging, samtliga yngre än 2,4 h** (setup-purgen hade
+alltså kört — fönstret är formen, inte ett fel i purgen). Marcus valde ett av
+dem vid en granskning och fick en genereringsvy där varje block var tomt, vilket
+läste som ett designfel i vyn.
+
+Branschpraxis för integrationstester mot en delad databas är setup-purge
+KOMBINERAD med teardown, och det är vad repot kör:
+
+| Linje | Vad | När |
+|---|---|---|
+| 1 | **Efter-körning-purge** — raderar exakt de rader körningen själv skapade | direkt efter varje staging-körning |
+| 2 | **Setup-purge** (oförändrad) — raderar allt sentinel-märkt äldre än 60 min | före varje staging-jobb |
+
+Mekaniken: varje staging-svit som skapar en kastbar Airtable-rad registrerar
+dess record-ID i ett **ägar-manifest** (`tests/support/kastbara-poster.ts`,
+JSONL i `.kastbara/poster.jsonl` — utanför `test-results/`, som Playwright
+rensar vid varje körningsstart). Manifestet bärs över till en Airtable-creddad
+kodväg SKILD från testet (ADR-060 punkt 4 verbatim): CI-jobbet **Staging
+sentinel purge (efter körning)** i `ci-suite.yml`, `if: always()` så att även en
+röd eller avbruten körning städas. Lokalt: `npm run purge:staging:efter`.
+
+Att sviten inte städar själv är inget förbiseende — den KAN inte. Testet får
+aldrig en Airtable-token (ADR-060 punkt 2, EF-only-gränsen) och det finns ingen
+delete-EF för event. Manifestet bär kunskapen dit credentialen redan finns.
+
+Ålders-guarden är **ersatt, inte borttagen**, i efter-körning-läget: snittet mot
+manifestet är ett starkare ägarskapsbevis än åldern, och en samtidig lokal
+körnings rader kan per konstruktion aldrig hamna i CI:s manifest. Bas-guard,
+`filterByFormula`, exakt markör-match och länk-guard körs oförändrat via samma
+`planPurge`.
+
+Läget bär dessutom en **luckdetektion**: en ägd post som finns kvar i basen men
+som ingen target gör anspråk på fäller jobbet (exit 2). Det är exakt den lucka
+som lät de två `ZZ-create-event-test-uppdaterad`-raderna ligga i en månad.
 
 ### Staging-preflighten — lokala körningar frågar CI först (`TASK-77`, `TASK-84`)
 
@@ -165,7 +234,7 @@ täcker alla.
 | `test:api:staging` + `vakt:kontrakt` | setup-projektet `api-setup` (`tests/api/auth.setup.ts`) |
 | `test:e2e:staging` | setup-projektet `setup` (`tests/e2e/auth.setup.ts`) |
 | `test:preview:staging` | setup-projektet `preview-setup` (`tests/preview/preflight.setup.ts`) |
-| `purge:staging` | `main()` i `scripts/purge-staging-sentinels.mjs` |
+| `purge:staging` + `purge:staging:efter` | `main()` i `scripts/purge-staging-sentinels.mjs` |
 | `seed:review` + `seed:review:clean` | `main()` i `scripts/seed-review-fixture.mjs` |
 
 Haken sitter i KODVÄGEN, aldrig i kommandonamnet. Playwright-ytorna bär den via
@@ -372,7 +441,7 @@ Kö-parametrarna, med skälen:
 |---|---|---|
 | `merge_method` | `MERGE` | måste matcha rulesetets `allowed_merge_methods` |
 | `min_entries_to_merge` | `1` | en ensam PR landar direkt; vore den 2 väntade varje PR på sällskap |
-| `grouping_strategy` | `ALLGREEN` | varje PR i gruppen måste vara grön, inte bara gruppens head |
+| `grouping_strategy` | `ALLGREEN` | varje PR i gruppen måste vara grön, inte bara gruppens head. **Review-backstoppens fullständighet hänger på detta värde** (`TASK-173.4`): kö-grenen namnger EN PR (`pr-<nr>-<bas-sha>`), och backstoppen prövar bara den. Under `ALLGREEN` bygger varje köad post sin egen spekulativa grupp och måste vara grön, så varje PR prövas av sin egen körning. Byts värdet till `HEADGREEN` faller det argumentet och backstoppen måste räkna upp gruppens ALLA PR:er — annars landar poster ogranskade. Ompröva `scripts/lib/review-backstopp.mjs` § `parsaMergeGroupRef` före ett sådant byte. |
 | `max_entries_to_build` | `3` | satt efter uppmätt parallellitet, inte efter optimism |
 | `check_response_timeout_minutes` | `60` | kritiska vägen är ~7,5 min — åtta gångers marginal |
 
@@ -845,12 +914,29 @@ aldrig växa, av `TASK-70.3`. Ett projicerat tal skrivs inte in här; nästa
 uppmätning ersätter tabellen.
 
 **Blir post-merge röd** skapas automatiskt ett tilldelat ärende (etikett
-`ci-post-merge`) med de röda jobben, föregående post-merge-körnings utfall och
-ett revert-förslag med rätt `-m`-form. Samma stängningsregel som nattnätet
-nedan: åtgärd, genomförd revert eller öppet skriven motivering — aldrig tyst.
-Ärendet bär en tolkningshjälp som ska läsas FÖRE revert; en ensam röd
-`Acceptance (hermetisk)` kan vara `TASK-64`:s kända flake, och en ensam röd
-mätning betyder att mätningen gått sönder, inte `main`.
+`ci-post-merge`) med de röda jobben, en **attribution** och ett revert-förslag
+med rätt `-m`-form. Samma stängningsregel som nattnätet nedan: åtgärd,
+genomförd revert eller öppet skriven motivering — aldrig tyst. Ärendet bär en
+tolkningshjälp som ska läsas FÖRE revert; en ensam röd `Acceptance (hermetisk)`
+kan vara `TASK-64`:s kända flake, och en ensam röd mätning betyder att
+mätningen gått sönder, inte `main`.
+
+**Attributionen svarar på "är det DEN HÄR landningen?" — och den frågan har
+inte alltid svaret ja.** Ärendet läste tidigare bara föregående
+post-merge-körnings utfall på workflow-nivå. Men en docs-landning ärver
+ci.yml:s `D0`-beslut, svit-anropet hoppas, och körningen blir `success` **utan
+att ha mätt någonting** — grönt betyder då "ingen mätning", inte "trädet var
+friskt". Larmet skrev ändå att landningen var den primära misstänkta; mätt två
+gånger inom 13 minuter 2026-08-28 (ärenden `#2043` och `#2047`), båda med en
+rotorsak som låg flera landningar bakåt. Sedan `TASK-334` går
+[`scripts/post-merge-attribution.sh`](scripts/post-merge-attribution.sh) i
+stället bakåt till senaste körning som FAKTISKT körde sviten, räknar
+landningarna däremellan och skriver ut spannet — och påståendet "primär
+misstänkt" produceras ENDAST när det är sant. Går något fel står det **OKÄND**
+i ärendet, aldrig en gissning. Beslutet, options-rymden och den tidsbaserade
+drift-vakt som är flaggad men INTE byggd:
+[ADR-077](docs/decisions/ADR-077-riskanpassad-ci-klassning-dedup-nightly.md)
+§ Updates 2026-08-28.
 
 **Öppet bokförd blind fläck:** larm-jobbet bor inne i den körning det bevakar. Ett
 `startup_failure` (noll jobb instansieras) lämnar därför inget spår — samma defekt
@@ -967,9 +1053,13 @@ per körning — är delvis stängd så länge Airtable-basen varken är självh
 eller klonbar. ADR-080 säger det rakt ut och ritar in omprövningen vid Fas E.
 
 **Var den bor:** `tests/acceptance/`, projektet `acceptance`, sömmen
-`tests/acceptance/support/acceptance-bas.ts` (komponerad med Playwrights
-`mergeTests` ur den **klassdelade** fixturvärlden `tests/support/fixturvarld/`
-— aldrig en egen kopia). Kör lokalt med `npm run test:acceptance`.
+`tests/acceptance/acceptance-bas.ts` (platt fil sedan TASK-123 — katalogen
+`tests/acceptance/support/` fanns bara för att härbärgera denna EN fil och
+lästes som en falsk tvilling till den klassdelade fixturvärlden
+`tests/support/fixturvarld/`; branschmönstret för en klasslokal söm är en fil,
+inte en katalog med en fil i, se Cypress `support/e2e.js` + RTL:s
+`test-utils`). Komponerad med Playwrights `mergeTests` ur fixturvärlden —
+aldrig en egen kopia. Kör lokalt med `npm run test:acceptance`.
 
 **CI:** eget jobb i `ci-suite.yml`, **utan staging-mutex och utan secrets** —
 en PR som bara rör renderingen får svar utan att köa bakom `staging-tests`.
@@ -994,8 +1084,11 @@ Mekaniken är `scripts/acceptance-urval.sh`, kallad av `ci.yml`:s
   § Beslut 1).
 - **Allowlist, aldrig blocklist.** Urvalet tillämpas endast när *varenda* post
   är en spec-fil som finns på disk. En källfil, den delade sömmen
-  `tests/acceptance/support/**`, en workflow eller en okänd filtyp ⇒ **full
-  klass**. Vid minsta osäkerhet körs allt.
+  `tests/acceptance/acceptance-bas.ts` (platt fil sedan TASK-123 — faller
+  fortfarande till full klass, nu för att namnet inte matchar
+  spec-mönstret `*.acceptance.test.ts`, inte för att den ligger i en
+  egen katalog), en workflow eller en okänd filtyp ⇒ **full klass**. Vid
+  minsta osäkerhet körs allt.
 - **Post-merge är nätet.** `post-merge.yml` och `nightly.yml` skickar ingen
   input och kör därför hela klassen på varje mergat träd. Ett urval som missar
   något fångas där, inom minuter — inte aldrig.

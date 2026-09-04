@@ -2,7 +2,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { http } from 'msw';
 import type { PlaceListItem } from '../../src/domain/schemas';
 import { EF, json } from '../support/fixturvarld/handlers';
-import { expect, test } from './support/acceptance-bas';
+import { expect, test } from './acceptance-bas';
 
 /**
  * TASK-309.7 AC #1/#3/#4 — Mer-sidans Platser-yta (/mer/platser).

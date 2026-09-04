@@ -77,7 +77,8 @@ import { HEM_SENASTE_AKTIVITET_ANTAL, queryKeys } from '@/queries/keys';
  * verifierad statiskt, inte antagen: `src/components/events/EventsList.tsx`
  * rad 197 och `src/components/hem/useDashboardData.ts` rad 71 anropar BÅDA
  * `dataSource.fetchEvents()` UTAN argument; `src/components/registrations/
- * AnmalningarList.tsx` rad 50 och `useDashboardData.ts` rad 60 anropar BÅDA
+ * AnmalningarSida.tsx` rad 403 (f.d. `AnmalningarList.tsx`, `TASK-299.5`)
+ * och `useDashboardData.ts` rad 60 anropar BÅDA
  * `dataSource.fetchRegistrations()` UTAN argument. Ingen av de fyra
  * anropsplatserna skickar ett filter-argument — payloaden kan därför inte
  * divergera (samma nollställda funktionssignatur, inget att divergera

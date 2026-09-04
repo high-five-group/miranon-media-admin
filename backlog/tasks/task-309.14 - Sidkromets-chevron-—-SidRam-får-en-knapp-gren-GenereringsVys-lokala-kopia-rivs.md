@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-24 16:36'
-updated_date: '2026-08-24 17:11'
+updated_date: '2026-08-24 17:22'
 labels:
   - ready-for-agent
 dependencies: []
@@ -36,10 +36,10 @@ Skälet kopian fanns är verkligt men litet: SidRam är wrappad i TanStack Route
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Final Summary
@@ -54,4 +54,6 @@ Landad i `d9d973d5` (PR #1889, merge `24c39777`).
 **Vägen: gren, inte lapp.** Marcus 2026-08-24: *"INGET lappande"*. Skälet kopian fanns är verkligt men litet — `SidRam` är wrappad i TanStack Routers `createLink` och renderar `<a href>`, medan genereringsvyn går tillbaka INOM sin egen route genom att nolla query-parametern `vy`. Det motiverar en andra gren i primitiven, inte en sjunde kopia. `<button>` är dessutom rätt element när ingen URL byts — en `<a>` utan `href` hade varit fel för både skärmläsare och mellanklick.
 
 **#1** `CHEVRON_KLASS` utbruten, delad av `SidRamLink` och nya `SidRamKnapp` (react-aria-components `Button`, obligatorisk `tillbakaEtikett`). **#2** `KromKnapp` riven; alla tre anropsställen använder `SidRamKnapp` (verifierat mot `origin/main`: 0 träffar på `function KromKnapp`, 3 på `<SidRamKnapp tillbakaEtikett`). **#3** `mx-4 mt-2 … lg:mt-10` verifierad i den delade konstanten. **#4** ariaSnapshot-facit oförändrat (`button "Tillbaka till Dokument"` kvar) — promoverings-grindens **desktop-tester 5/5 gröna** mot landad kod.
+
+**DoD-kvittens.** #1 alla AC bockade mot landad kod (belägg i tabellen ovan). #2 lokala grindar för rörd fil-klass gröna: `npm run typecheck` exit 0 · `npx @biomejs/biome check .` exit 0 · `npm run test:acceptance -- dokument` 15/15 · promoverings-grinden visual-desktop 5/5. #3 är en HÄRLEDD rad — Landning: PR #1889 (merge `24c39777`, 12 SUCCESS + 3 SKIPPED, noll fel). #4 path-scopad `git add`, diffen bar tre källfiler och fem kortfiler, inget orelaterat.
 <!-- SECTION:FINAL_SUMMARY:END -->

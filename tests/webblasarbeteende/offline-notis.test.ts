@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test';
 import { expect, test } from '@playwright/test';
+import { matCLS } from '../support/mat-cls';
 
 /**
  * Offline-notisen — externt beteende (TASK-285.6, ADR-047 B5, ADR-103/
@@ -168,48 +169,32 @@ test.describe('OfflineIndicator', () => {
 });
 
 /**
- * [AC #2] Layoutförskjutningen vid offline-övergången är 0 — samma metod
- * som `app-update-banner.test.ts`s CLS-svit (`PerformanceObserver`,
- * `document.fonts.ready` väntad in FÖRE observatören startas — se den
- * filens filhuvud "ROTORSAK TILL EN CI-FÄLLNING" för hela skälet till
- * font-swap-väntan).
+ * [AC #2] Layoutförskjutningen vid offline-övergången är 0 — samma delade
+ * mätmetod som `app-update-banner.test.ts`s CLS-svit:
+ * `tests/support/mat-cls.ts` (`matCLS`). Den filens filhuvud bär den
+ * fullständiga rotorsaks-utredningen (ursprungsdiagnosen PR #1702 +
+ * återfallet TASK-307/S112 resume 1, 2026-08-26 — en `document.fonts.ready`-
+ * race i Vite dev-lägets CSS-leverans, inte ett formfel i notisen).
+ * `matCLS` var tidigare duplicerad HÄR som en lokal kopia — det var en del
+ * av rotorsaken (en fix i en fils kopia propagerade aldrig till den andra;
+ * denna fils kopia föll ändå i CI trots att `document.fonts.ready`-väntan
+ * redan fanns med, se `TASK-307`).
  */
 test.describe('TASK-285.6 — layoutförskjutningen vid offline är 0 (AC #2)', () => {
-  async function matCLS(page: Page, viewport: { width: number; height: number }) {
-    await page.setViewportSize(viewport);
-    await page.goto('/dev/primitives');
-    await oppnaAppen(page);
-
-    await page.evaluate(() => document.fonts.ready);
-
-    await page.evaluate(() => {
-      (window as unknown as { __mmClsSum: number }).__mmClsSum = 0;
-      const observer = new PerformanceObserver((list) => {
-        for (const entry of list.getEntries() as unknown as Array<{
-          value: number;
-          hadRecentInput: boolean;
-        }>) {
-          if (!entry.hadRecentInput) {
-            (window as unknown as { __mmClsSum: number }).__mmClsSum += entry.value;
-          }
-        }
-      });
-      observer.observe({ type: 'layout-shift', buffered: false } as PerformanceObserverInit);
-    });
-
-    await gaOffline(page);
-    await expect(page.locator(OFFLINE_NOTIS)).toBeVisible();
-
-    const cls = await page.evaluate(() => (window as unknown as { __mmClsSum: number }).__mmClsSum);
-    expect(cls).toBe(0);
-  }
-
   test('390 px (mobil)', async ({ page }) => {
-    await matCLS(page, { width: 390, height: 844 });
+    const cls = await matCLS(page, { width: 390, height: 844 }, async (p) => {
+      await gaOffline(p);
+      await expect(p.locator(OFFLINE_NOTIS)).toBeVisible();
+    });
+    expect(cls).toBe(0);
   });
 
   test('1280 px (desktop)', async ({ page }) => {
-    await matCLS(page, { width: 1280, height: 800 });
+    const cls = await matCLS(page, { width: 1280, height: 800 }, async (p) => {
+      await gaOffline(p);
+      await expect(p.locator(OFFLINE_NOTIS)).toBeVisible();
+    });
+    expect(cls).toBe(0);
   });
 });
 

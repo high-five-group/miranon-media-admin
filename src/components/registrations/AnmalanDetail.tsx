@@ -2,6 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { Bell, ChevronLeft, ChevronRight, Inbox, Mail, UserPlus } from 'lucide-react';
 import { useEffect, useRef } from 'react';
+import { AnmalansBetalningar } from '@/components/betalningar/AnmalansBetalningar';
 import { DetaljGrupp, EtikettVardeRad } from '@/components/events/detail/DetaljGrupp';
 import { Button } from '@/components/primitives/Button';
 import { MessageBox } from '@/components/primitives/MessageBox';
@@ -12,11 +13,14 @@ import { useDataSource } from '@/data/useDataSource';
 import type { Registration } from '@/domain/models/Registration';
 import type { RegistrationDetail } from '@/domain/schemas';
 import { PaymentStatus, RegistrationSource, RegistrationStatus } from '@/domain/types/Status';
+import { betalningarPa } from '@/lib/funktionsflaggor';
 import { kursfargForKurs } from '@/lib/kursfarg';
 import { queryKeys } from '@/queries/keys';
+import { AvbokningsYta } from './AvbokningsYta';
 import { harledBehorighet } from './behorighet';
 import { FritextRad } from './FritextRad';
 import { IdChip } from './IdChip';
+import { OmbokningsKvitto } from './OmbokningsKvitto';
 import { PersonMiniKort } from './PersonMiniKort';
 import { displayName } from './registration-display';
 import { StatusBadge } from './StatusBadge';
@@ -338,7 +342,11 @@ export function AnmalanDetail({
               {bekraftadTid && <span className="text-small text-text-muted">{bekraftadTid}</span>}
             </>
           )}
-          {lage === 'obekraftad' && <StatusBadge ton="warning">Obekräftad</StatusBadge>}
+          {/* NEUTRAL, INTE WARNING (Marcus dom 2026-09-01) — samma byte som på
+              betalningsytorna, av samma skäl: "Obekräftad" är det normala läget
+              för en ny anmälan, inte ett larm. Se `StatusBadge.tsx` § TON_FORM.
+              `md`-steget är oförändrat; detta är detaljsidans statusrad. */}
+          {lage === 'obekraftad' && <StatusBadge ton="neutral">Obekräftad</StatusBadge>}
           {lage === 'avvikande' && (
             <span className="rounded-full bg-bg-muted px-2.5 py-1 font-medium text-small text-text-secondary">
               {reg.status ?? 'Okänd status'}
@@ -346,6 +354,22 @@ export function AnmalanDetail({
           )}
         </p>
       </header>
+
+      {/* [TASK-368.5 AC #2/#3] OMBOKNINGSKVITTOT — den enda gruppen som får
+          stå OVANFÖR de nio låsta, och den enda som är TRANSIENT.
+
+          S83-låset bevakas genom att inget PERMANENT flyttas: kvittot
+          renderas bara direkt efter en ombokning (ett engångsfat ur
+          navigeringens history-state, se `OmbokningsKvitto`), och på varje
+          annan laddning av sidan returnerar komponenten null — då står
+          Kontakt kvar exakt där facit har den. `TASK-368.3` valde SIST för
+          avbokningsgruppen av precis samma skäl, men den gruppen är
+          permanent; ett kvitto Lotta måste rulla till botten för att hitta
+          hade inte varit "ett kvitto i klartext" (kortets AC #2).
+
+          `mx-4` matchar `DetaljGrupp`s egen sidmarginal, så rutan linjerar
+          med grupperna under den i stället för att sticka ut. */}
+      <OmbokningsKvitto registrationId={registrationId} />
 
       {/* Kontakt FÖRST (byggkrav 4): E-post finns ALLTID (Marcus-beslut — ingen
           saknas-gren); vid obekräftad bor bekräfta-åtgärden hos mailadressen den
@@ -486,6 +510,16 @@ export function AnmalanDetail({
                 )}
               </EtikettVardeRad>
             </dl>
+            {/* [TASK-346.7 AC #3] Saknas-belopp, inbetalningar, kvitton och
+                Registrera betalning — bakom miljöflaggan. Blocket ligger
+                UTANFÖR `<dl>`:en med avsikt: en `<dl>` får bara bära
+                `<dt>`/`<dd>`-par (axe `definition-list`/`only-dlitems`), och
+                detta är en yta med rubrik, knapp och lista, inte ett
+                term-värde-par.
+
+                MED FLAGGAN AV ÄR GRUPPEN EXAKT DAGENS: de fem raderna ovan,
+                oförändrade. */}
+            {betalningarPa() && <AnmalansBetalningar anmalanRecordId={reg.id} />}
           </DetaljGrupp>
 
           {/* Uppgifter (byggkrav 7): platser + bor över + RELATIONERNA som
@@ -603,13 +637,60 @@ export function AnmalanDetail({
             </DetaljGrupp>
           )}
 
-          {/* Händelser SIST (byggkrav 11): tidslinjen härledd ur tidsstämplarna,
-              senast överst. */}
+          {/* Händelser (byggkrav 11): tidslinjen härledd ur tidsstämplarna,
+              senast överst. STOD SIST fram till TASK-368.3 — se
+              Avbokning-gruppen nedan för varför den nya gruppen lades EFTER
+              och inte före. */}
           {handelser.length > 0 && (
             <DetaljGrupp id="grupp-handelser" rubrik="Händelser">
               <Tidslinje handelser={handelser} />
             </DetaljGrupp>
           )}
+
+          {/* [TASK-368.3] Avbokningen (PRD TASK-368 beslut 2). Ytan renderar
+              INGENTING för en anmälan som varken är aktiv eller avbokad
+              (Inställt, Flytta till väntelista) — S83-regeln om att avvikande
+              anmälningar inte bär åtgärder står kvar, med återtagandet som
+              enda tillägg.
+
+              PLACERAD ALLRA SIST, MED AVSIKT. Sidan är facit-låst sedan S83
+              (Marcus "Lås den" 2026-07-24) och varje tillägg är en klass
+              (c)-amendering (ADR-102 § A1/A4) som ska stämplas om av Marcus.
+              Sist är den enda placering som lämnar SAMTLIGA låsta grupper på
+              exakt sina positioner — en insättning mitt i sidan hade flyttat
+              allt under sig utan att någon bett om det. Att gruppen står
+              efter tidslinjen i stället för före den är alltså en följd av
+              den regeln, inte ett designval om läsordning; placeringen är
+              öppen för Marcus vid omstämplingen (se amenderings-sidofilen
+              tasks/sessions/bilagor/s83-anmalningsvyn-konvergens/).
+
+              GRUPPSKALET ÄGS AV YTAN SJÄLV, inte av denna fil: en
+              `DetaljGrupp` runt en komponent som kan rendera null hade gett
+              en tom rubrik "Avbokning" ovanför ett tomt kort för varje
+              inställd anmälan. Ytan returnerar därför null FÖRE sitt eget
+              gruppskal. */}
+          {/* [TASK-368.5, review #2267 runda 2] `key` PÅ ANMÄLANS ID — enda
+              mekanismen som nollställer ytans state vid ett anmälan-byte.
+
+              Routern remountar INTE på ett param-byte i sig: `MatchInner`s
+              `key` härleds uteslutande ur `route.options.remountDeps ??
+              router.options.defaultRemountDeps` (källäst i
+              `node_modules/@tanstack/react-router/dist/esm/Match.js`
+              1.170.21, rad 75-95), och ingen av dem är satt (`grep -rn
+              remountDeps src/` → noll träffar). Utan denna `key` faller
+              nollställningen alltså tillbaka på `isPending`-grenens
+              cache-miss-avmontering ovan som bieffekt — vilket inte inträffar
+              när mål-anmälans detalj redan ligger varm i cachen
+              (persist-lagret, `ADR-072`, normalfall snarare än kantfall), och
+              samma komponentinstans återanvänds då med gammalt
+              `oppen`/`vy`/`nyttEventId`-state. */}
+          <AvbokningsYta
+            key={registrationId}
+            eventId={eventId}
+            registrationId={reg.id}
+            namn={namn}
+            status={reg.status}
+          />
         </>
       )}
     </>,

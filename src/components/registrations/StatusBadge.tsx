@@ -1,3 +1,4 @@
+import type { LucideIcon } from 'lucide-react';
 import { CircleCheck, TriangleAlert } from 'lucide-react';
 
 /**
@@ -54,32 +55,85 @@ const PILL_STORLEK = {
   md: { kapsel: 'px-2.5 py-1 text-small', ikon: 15 },
 } as const;
 
+/**
+ * TONERNA — EN ANATOMI, TRE BETYDELSER (Marcus dom 2026-09-01).
+ *
+ * Marcus såg "Förfallen" (kopparfärgad text + klocka) och "Obekräftad"
+ * (svart text + varningstriangel, liknande tint) SIDA VID SIDA på inkorgens
+ * rader och kallade dem inkonsekventa. De var det på två sätt samtidigt:
+ * olika ANATOMI (`rounded` mot `rounded-full`, egen span mot denna komponent)
+ * och två VARNINGSSIGNALER på samma rad.
+ *
+ * Regeln som ersätter båda felen: MAX EN VARNINGSSIGNAL PER RAD.
+ *   • `warning` = ÄKTA BRÅDSKA. "Förfallen" är en deadline som passerat —
+ *     något har gått fel i tiden. Kopparton + ikon.
+ *   • `neutral` = ETT TILLSTÅND, INTE ETT LARM. "Obekräftad" har ett eget
+ *     bekräftelseflöde och är det NORMALA läget för en ny anmälan. Den bar
+ *     tidigare en varningstriangel (och på två ytor en RÖD pill), vilket
+ *     ropade lika högt som den verkliga brådskan bredvid. Neutral text på
+ *     neutral tint, UTAN ikon.
+ *   • `success` = oförändrad.
+ *
+ * NEUTRAL HAR INGEN IKON, med avsikt. WCAG 1.4.1 är oberörd — texten bär
+ * ALLTID hela utsagan i denna komponent, ikonen har aldrig varit annat än
+ * dekorativ förstärkning (`aria-hidden`). En ikon utan larm-betydelse hade
+ * bara varit brus.
+ *
+ * TEXTFÄRGEN ÄR TONENS, inte alltid default. `success`/`warning` behåller
+ * default-texten (AA mot 100-tonerna, mätt); `neutral` bär
+ * `text-text-secondary` — 7,25:1 mot `bg-bg-muted`, alltså väl över AA — så
+ * att den läses som dämpad i förhållande till en warning-pill bredvid.
+ */
+const TON_FORM = {
+  success: {
+    kapsel: 'bg-success-bg contrast-more:border-success',
+    ikonKlass: 'text-success',
+    Ikon: CircleCheck as LucideIcon | null,
+  },
+  warning: {
+    kapsel: 'bg-warning-bg contrast-more:border-warning',
+    ikonKlass: 'text-warning',
+    Ikon: TriangleAlert as LucideIcon | null,
+  },
+  neutral: {
+    kapsel: 'bg-bg-muted text-text-secondary contrast-more:border-border-strong',
+    ikonKlass: 'text-text-secondary',
+    Ikon: null as LucideIcon | null,
+  },
+} as const;
+
 export function StatusBadge({
   ton,
   storlek = 'md',
+  ikon,
   children,
 }: {
-  ton: 'success' | 'warning';
+  ton: keyof typeof TON_FORM;
   /** Pill-skalans steg — se PILL_STORLEK. `md` (default) = detaljsida/header;
       `sm` = list-/kortmiljö. */
   storlek?: keyof typeof PILL_STORLEK;
+  /**
+   * Byter ut tonens standardikon. Finns för att "Förfallen" bär en KLOCKA
+   * (tiden är det som gått fel) i stället för warning-tonens triangel — och
+   * för att den pillen annars hade behövt vara en egen handrullad span igen,
+   * vilket är precis den drift denna komponent finns för att stoppa.
+   *
+   * Storleken sätts ALDRIG av anroparen: den följer `storlek` ur PILL_STORLEK,
+   * så en utbytt ikon aldrig kan hamna i fel skalsteg.
+   */
+  ikon?: LucideIcon;
   children: string;
 }) {
-  const Ikon = ton === 'success' ? CircleCheck : TriangleAlert;
+  const form = TON_FORM[ton];
   const skala = PILL_STORLEK[storlek];
+  const Ikon = ikon ?? form.Ikon;
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full border border-transparent font-medium ${skala.kapsel} ${
-        ton === 'success'
-          ? 'bg-success-bg contrast-more:border-success'
-          : 'bg-warning-bg contrast-more:border-warning'
-      }`}
+      className={`inline-flex items-center gap-1.5 rounded-full border border-transparent font-medium ${skala.kapsel} ${form.kapsel}`}
     >
-      <Ikon
-        aria-hidden="true"
-        size={skala.ikon}
-        className={`shrink-0 ${ton === 'success' ? 'text-success' : 'text-warning'}`}
-      />
+      {Ikon && (
+        <Ikon aria-hidden="true" size={skala.ikon} className={`shrink-0 ${form.ikonKlass}`} />
+      )}
       {children}
     </span>
   );

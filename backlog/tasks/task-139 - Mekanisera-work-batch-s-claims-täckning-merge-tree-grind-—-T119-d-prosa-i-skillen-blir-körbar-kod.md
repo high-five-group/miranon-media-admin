@@ -196,7 +196,7 @@ explicit AC").
   Session 75)
 - `plugins/marcus-system/skills/work-batch/SKILL.md` § "Parallell form"
   (hub-plugin-cache, citerad verbatim ovan — ej repo-relativ sökväg)
-- `tasks/sessions/2026-08-04-session-97.md` "Paushistorik — Session 97,
+- `tasks/sessions/archive/2026-08/2026-08-04-session-97.md` "Paushistorik — Session 97,
   fjärde pausen" § CARRY (rad ~1413–1417)
 - `scripts/classify-post-merge.sh` (verifierat: enda obesläktade träffen
   på "merge-tree" i `scripts/`)

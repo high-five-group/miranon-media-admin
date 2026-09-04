@@ -6,9 +6,10 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-21 11:17'
-updated_date: '2026-08-22 10:41'
+updated_date: '2026-08-26 03:27'
 labels:
   - ready-for-human
+  - intentionally-unchecked
 dependencies:
   - TASK-285.1
   - TASK-285.2
@@ -75,4 +76,6 @@ DoD #6 mätt, inte antaget: appfel- + messagebox-promoverings-grindarna 12 passe
 DoD #3 bockad mot PR #1755:s CI: 7 pass, 2 skipping (diff-klassning), 0 fail.
 
 DoD #7 EJ BOCKAD — strukturellt otillämplig. Punkten kräver ett test-konsument-svep över testfiler som konsumerar en flippad yta. Denna skiva är en STÄMPLINGSSKIVA och flippar ingen yta; den rör ingen kod alls (PR #1755 = två facit.json). Svepet gjordes i sina egna skivor, TASK-285.8 och TASK-285.9.
+
+OBOCKAT MED AVSIKT: DoD #7 (test-konsument-svepets träffyta) är strukturellt otillämplig — denna skiva är en ren stämplingsskiva (Marcus godkänner via !-kanalen), rör ingen kod (PR #1755 = två facit.json-filer), och flippar ingen yta (redan dokumenterat i kortets egna Implementation Notes). Test-konsument-svepen gjordes redan i sina egna byggskivor, TASK-285.8 och TASK-285.9. Landningen PR #1755 (MERGED, verifierat gh pr view 1755). Källmärkt 2026-08-26, S112 fix-våg 4, ADR-127-normalisering.
 <!-- SECTION:NOTES:END -->

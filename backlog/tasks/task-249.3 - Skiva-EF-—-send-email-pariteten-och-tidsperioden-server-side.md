@@ -4,9 +4,10 @@ title: 'Skiva: EF — send-email-pariteten och tidsperioden server-side'
 status: Done
 assignee: []
 created_date: '2026-08-17 00:29'
-updated_date: '2026-08-24 13:07'
+updated_date: '2026-08-26 03:23'
 labels:
   - ready-for-agent
+  - intentionally-unchecked
 dependencies:
   - TASK-249.2
 parent_task_id: TASK-249
@@ -86,6 +87,8 @@ Flaggat som handoff-punkt för 249.5.
 DoD #5/#6 (ariaSnapshot/check-facit) rör INTE denna skiva — samma
 boilerplate-mönster tre syskonskivor (249.1/.2/.4) redan bokfört; flipp/
 rivning har inte skett än. Lämnade omarkerade, ej gissat klara.
+
+OBOCKAT MED AVSIKT: DoD #5 (ariaSnapshot-referenserna låsta ur variant d FÖRE flippen) och #6 (check-facit grön genom flipp OCH rivning) rör INTE denna skiva — samma boilerplate-mönster som 249.2/249.4/249.7 (se kortets egna Implementation Notes: 'samma boilerplate-mönster tre syskonskivor (249.1/.2/.4) redan bokfört; flipp/rivning har inte skett än'). Landningen PR #1492 (MERGED 2026-08-17T04:55:15Z, verifierat gh pr view 1492) rör send-email-pariteten och tidsperioden server-side, ingen VariantD-flipp. Källmärkt 2026-08-26, S112 fix-våg 4, ADR-127-normalisering.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

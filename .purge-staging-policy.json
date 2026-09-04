@@ -23,6 +23,26 @@
       "linkGuardExcludeFields": ["Eventtyp"]
     },
     {
+      "name": "update-event-uppdaterad-sentineler",
+      "_TASK-309.15": "update-event.staging.test.ts döper om sitt sentinel-event till den uppdaterade orten och återställer i finally. Faller finally (kraschad körning, avbrutet CI-jobb) matchar raden VARKEN create-event-sentinelernas formel eller dess exakt-mönster — den blir därmed OPURGBAR för alltid. Mätt i staging 2026-08-24: två rader, 26,9 och 32,3 dygn gamla. Denna target gör den uppdaterade orten purge-bar i sig (försvar i djupled bredvid TASK-309.15:s ägar-manifest).",
+      "table": "Eventplanering",
+      "filterByFormula": "{Ort} = 'ZZ-create-event-test-uppdaterad'",
+      "exactMatchField": "Ort",
+      "exactMatchPattern": "^ZZ-create-event-test-uppdaterad$",
+      "linkGuard": true,
+      "linkGuardExcludeFields": ["Eventtyp"]
+    },
+    {
+      "name": "create-event-plats-harledning-sentineler",
+      "_TASK-309.30": "create-event.staging.test.ts bevisar Ort-till-Plats-härledningen i tre grenar och måste därför skapa event vars Ort är EXAKT ett platsnamn (uppslaget matchar Platser.Namn = Ort). Orten kan alltså inte bära create-event-sentinelernas 'ZZ-create-event-test'. De TVÅ Platser-raderna fixturen vilar på (ZZ-plats-unik-fixtur recVWAYh1cbVQKxi7; ZZ-plats-dubblett-fixtur rec1bMcnYvgAYeO6d + rec3XSjtWhbK3PRXF, seedade via Airtable-MCP 2026-08-28) är PERMANENTA av samma klass som ZZ-create-event-test-format och matchar MEDVETET ingen Platser-target: dubbletten går inte att återskapa via någon EF (save-place-standard är find-or-create by Namn), så en purgead fixtur hade tyst gjort flera-träffar-grenen oprövbar. Denna target städar därför ENBART Eventplanering-raderna. Plats star i linkGuardExcludeFields eftersom länken är exakt det testet bevisar - utan undantaget hade varje bevisad rad blivit permanent opurgbar, samma fälla update-event-uppdaterad-sentineler bokför.",
+      "table": "Eventplanering",
+      "filterByFormula": "FIND('ZZ-plats-', {Ort}) = 1",
+      "exactMatchField": "Ort",
+      "exactMatchPattern": "^ZZ-plats-(unik|dubblett|saknas)-fixtur$",
+      "linkGuard": true,
+      "linkGuardExcludeFields": ["Eventtyp", "Plats"]
+    },
+    {
       "name": "create-event-note-sentineler",
       "table": "Anteckningar",
       "filterByFormula": "AND(FIND('ZZ-note-test+', {Anteckning}) = 1, FIND('@sentinel', {Anteckning}) > 0)",
@@ -53,6 +73,15 @@
       "filterByFormula": "AND(OR(FIND('Bekräftelsebilaga –', {Namn}) = 1, FIND('Deltagarinformation –', {Namn}) = 1), FIND('ZZ-dokumentunderlag-fixtur', {Namn}) > 0)",
       "exactMatchField": "Namn",
       "exactMatchPattern": "^(Bekräftelsebilaga|Deltagarinformation) – ZZ-dokumentunderlag-fixtur.*\\.pdf$",
+      "linkGuard": false
+    },
+    {
+      "name": "attachment-filename-ascii-safety-sentineler",
+      "table": "Bilagor",
+      "_TASK-309.22": "upload-attachment.staging.test.ts:s sentinel-formel/exact-mönster kräver ett UUID-only-suffix (regexen slutar direkt efter uuid:t med .pdf) och kan därför inte bära det rapporterade bugg-filnamnet självt. Denna target är EFTER-KÖRNING-ÄGD (registreras via tests/support/kastbara-poster.ts, ADR-060 punkt 3) — testet upload-attachment-ascii-safety.staging.test.ts laddar upp EXAKT filnamnet 2025-HörlurarMiranonMedia.pdf (rotorsaksfilnamnet, Marcus prod-röktest 2026-08-26) inbäddat i en per-körning-unik sentinel för att bevisa Storage-nyckel-fixen mot skarp staging-EF.",
+      "filterByFormula": "FIND('ZZ-attachment-filename-test-', {Namn}) = 1",
+      "exactMatchField": "Namn",
+      "exactMatchPattern": "^ZZ-attachment-filename-test-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-2025-HörlurarMiranonMedia\\.pdf$",
       "linkGuard": false
     },
     {
@@ -96,6 +125,22 @@
       "name": "utkast-drafts",
       "bucket": "bilagor",
       "pathPrefix": "utkast"
+    }
+  ],
+  "postgresTargets": [
+    {
+      "name": "task-346-betalningsdomanen-sentineler",
+      "_TASK-346.3": "Betalningsdomänen och jobbmotorn bor i Supabase Postgres (ADR-128/ADR-129), inte i Airtable — de kan därför varken listas eller raderas av targets-klassen ovan. Städningen går via en security definer-funktion som migration 20260830200100 skapar; skriptet har ingen service_role-nyckel och authenticated har medvetet varken UPDATE eller DELETE på tabellerna. SENTINEL-MÖNSTRET NEDAN ÄR EN SPEGEL av konstanten v_sentinel i den migrationen — de två korsläses av scripts/test-purge-staging-sentinels.mjs vid varje CI-körning, samma lösning som redan vaktar KASTBARA_POSTER_FIL. Går de isär tyst rapporterar purgen noll raderade rader medan raderna ligger kvar, utan att något ser fel ut. (Prosan här undviker medvetet enkelcitat: listparitets-grinden läser VARJE enkelciterad sträng i denna fil som en sentinel-markör som måste namnges i CONTRIBUTING.md, och en citerad fras i en kommentar hade blivit ett falskt positivt.)",
+      "rpc": "purga_testrader",
+      "exactMatchPattern": "^ZZ-TASK-346[.-][0-9A-Za-z._+-]{1,80}$",
+      "sentinelKolumner": {
+        "inbetalningar": "ogonblicksbild_namn",
+        "jobb": "skapad_av"
+      },
+      "arvsvagar": {
+        "kvitton": "inbetalning_id -> inbetalningar (unik)",
+        "jobb_rad": "jobb_id -> jobb (on delete cascade) samt objekt_id -> inbetalningar"
+      }
     }
   ]
 }

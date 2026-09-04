@@ -109,9 +109,24 @@
       "skäl": "Bilage-datamodellens schema-skript (schema:eventinnehall, TASK-309.2, ADR-125 §2). Samma Metadata-API-skrivväg mot samma delade staging-bas som create-bilagor-table.mjs/create-kvitton-table.mjs — identisk risk, identisk motivering."
     },
     {
+      "sökväg": "scripts/create-betalningsfalt.mjs",
+      "funktion": "main",
+      "skäl": "Betalningsflödets prisfält/spegel/Saknas-formel-skript (schema:betalningsfalt, TASK-346.2, ADR-128 §§ 2/5/7). Samma Metadata-API-skrivväg mot samma delade staging-bas som create-bilagor-table.mjs/create-kvitton-table.mjs/create-eventinnehall-modell.mjs — identisk risk, identisk motivering."
+    },
+    {
       "sökväg": "scripts/seed-eventinnehall-modell.mjs",
       "funktion": "main",
       "skäl": "Bilage-datamodellens permanenta seed (seed:eventinnehall, TASK-309.2, ADR-125 §2). Skriver Platser-/Eventinnehåll-/Agendapunkter-records via samma delade staging-bas som backfill-bilagor-dokumentklass.mjs — en lokal körning samtidigt med ett CI-staging-jobb ska stoppas av samma skäl."
+    },
+    {
+      "sökväg": "scripts/task-338-6-prod-migration.mjs",
+      "funktion": "main",
+      "skäl": "Räckvidd-migrationens förberedelseskript (TASK-338.6, ADR-125 § Beslut 1). --kontrollera/--utfor läser och skriver Bilagor-records OCH Metadata-API-schema via samma delade staging-bas som create-eventinnehall-modell.mjs/backfill-bilagor-dokumentklass.mjs — identisk risk, identisk motivering. Mutexen hoppas MEDVETET över när målbasen skiljer sig från staging (prod-körning; samma undantag som create-eventinnehall-modell.mjs § TASK-309.9 — semaforen bevakar staging-kontention, irrelevant för prod)."
+    },
+    {
+      "sökväg": "scripts/backfill-inbetalningar.mjs",
+      "funktion": "main",
+      "skäl": "Historiska inbetalningars backfill (backfill:inbetalningar, TASK-346.8, ADR-128 beslut 8). Läser fyra tabeller OCH skriver Eventplanering-prisfält + Anmälningar-spegeln via samma delade staging-bas som backfill-bilagor-dokumentklass.mjs — identisk risk, identisk motivering. Skriver DESSUTOM till staging-Postgres via `supabase db query`, vilket gör kollisionsytan större än de rena Airtable-skripten: ett CI-staging-jobb som kör mot samma bas kan ändra facken mitt under planeringen, och backfillens plan skulle då vila på ett tillstånd som inte längre gäller vid skrivningen. Preflighten anropas i main() EFTER policy-/bas-/ref-/token-guardsen och FÖRE första Airtable-anropet — samma ordning som purge-staging-sentinels.mjs."
     }
   ],
   "nodeSkriptUpptäckt": {
@@ -150,6 +165,18 @@
       {
         "sökväg": "scripts/test-create-eventinnehall-modell.mjs",
         "skäl": "Hermetisk testsvit (TASK-309.2) — importerar bara de pura funktionerna ur create-eventinnehall-modell.mjs (validateConfig, planFields, buildCreateTableBody m.fl.), anropar aldrig fetch. apphjj8Q7lkXCMsL4 förekommer enbart som strängvärde i assertions mot CONFIG.expectedBaseId, identiskt mönster som test-create-bilagor-table.mjs/test-create-kvitton-table.mjs."
+      },
+      {
+        "sökväg": "scripts/test-backfill-inbetalningar.mjs",
+        "skäl": "Hermetisk testsvit (TASK-346.8) — importerar bara de rena funktionerna ur backfill-inbetalningar.mjs (tolkaPrisFritext, harledPrisbild, klassificera, byggInsertSats, planera, berknaMatning m.fl.) och anropar aldrig fetch, `supabase` eller `spawnSync`. apphjj8Q7lkXCMsL4 förekommer enbart som strängvärde i assertions mot policyns expectedBaseId (§ A1), identiskt mönster som test-create-bilagor-table.mjs/test-backfill-bilagor-dokumentklass.mjs. Skriptets kravStagingLedigt-anrop ligger i main(), som INTE körs vid import — körvakten längst ned i backfill-inbetalningar.mjs jämför process.argv[1] mot filens egen URL."
+      },
+      {
+        "sökväg": "scripts/test-task-338-6-prod-migration.mjs",
+        "skäl": "Hermetisk testsvit (TASK-338.6) — de flesta fallen importerar bara de pura funktionerna (parseArgs, resolveTargetBaseId, planUtfor, runUtfor m.fl.) och anropar aldrig fetch; apphjj8Q7lkXCMsL4 förekommer enbart som strängvärde i assertions, identiskt mönster som test-create-eventinnehall-modell.mjs. Barnprocessdelen (§ EXIT-KODER) spawnar VERKLIGA CLI-anrop mot skriptet, men uteslutande på grenar som exitar vid argument-/bas-ID-/prod-guard-/token-fel — samtliga STRIKT FÖRE task-338-6-prod-migration.mjs:s egen kravStagingLedigt-anrop (som sitter EFTER token-checkarna) och FÖRE all fetch. Ingen av barnprocesserna når preflighten eller basen."
+      },
+      {
+        "sökväg": "scripts/test-create-betalningsfalt.mjs",
+        "skäl": "Hermetisk testsvit (TASK-346-familjen, prod-vägens tillägg) — importerar bara de pura väg­vals-funktionerna ur create-betalningsfalt.mjs (validateConfig, parseArgs, resolveTargetBaseId, findTableByName, PROD_GODKAND_ENV_VAR), anropar aldrig fetch. apphjj8Q7lkXCMsL4 förekommer enbart som strängvärde i assertions mot CONFIG.expectedBaseId, identiskt mönster som test-create-eventinnehall-modell.mjs/test-create-kvitton-table.mjs."
       }
     ]
   }

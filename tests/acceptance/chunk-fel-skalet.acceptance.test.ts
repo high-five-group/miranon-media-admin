@@ -1,4 +1,4 @@
-import { expect, type Page, test } from './support/acceptance-bas';
+import { expect, type Page, test } from './acceptance-bas';
 
 /**
  * Vem äger "Ladda om" vid en chunk-krasch (TASK-285.13, Marcus beslut

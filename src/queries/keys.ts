@@ -102,9 +102,11 @@ export const queryKeys = {
   },
   intresserade: {
     // Intresserade/leads (Fas 6e L1 Landning 3): GLOBAL läs-lista (get-leads).
-    // STABIL nyckel — `fetchIntresserade()` hämtar FÖRSTA sidan av den strikta
-    // lead-mängden (hämtat något, noll Anmälningar totalt), inga klient-filters.
-    // Speglar waitlist.all-formen: parameterlös global lista, ingen param i nyckeln.
+    // STABIL nyckel — `fetchIntresserade()` hämtar HELA den strikta
+    // lead-mängden (hämtat något, noll Anmälningar totalt) via en klient-sidig
+    // cursor-walk (TASK-350, `cursorWalk.ts`) — inte längre bara EF:ens första
+    // sida. Inga klient-filters. Speglar waitlist.all-formen: parameterlös
+    // global lista, ingen param i nyckeln.
     all: ['intresserade'] as const,
   },
   maillog: {
@@ -209,6 +211,31 @@ export const queryKeys = {
   },
   places: {
     list: ['places', 'list'] as const,
+  },
+  /**
+   * Betalningsdomänen (TASK-346.4, ADR-128/ADR-129).
+   *
+   * TRE GRENAR under en gemensam rot, av samma skäl som `activityLog.all`
+   * finns: en ändring i EN gren gör ofta de andra inaktuella. En registrerad
+   * inbetalning ändrar både inkorgens lista och anmälans egen; ett tickande
+   * jobb ändrar `jobbstatus` OCH inkorgens "kvitton att skicka"-räknare.
+   * Roten är därför den nyckel skrivvägarna och Realtime-lyssnaren
+   * invaliderar — aldrig en uträknad delmängd, eftersom vilka rader som
+   * berörs bara servern vet.
+   */
+  betalningar: {
+    all: ['betalningar'] as const,
+    /** Inkorgens globala lista — alla öppna betalningar över alla event. */
+    oppna: ['betalningar', 'oppna'] as const,
+    /** Inbetalningarna för EN anmälan (Åtgärds-panelen, anmälans detaljvy). */
+    perAnmalan: (anmalanRecordId: string) => ['betalningar', 'anmalan', anmalanRecordId] as const,
+    /** Inbetalningarna för EN person över alla event (personkortet). */
+    perPerson: (personId: string) => ['betalningar', 'person', personId] as const,
+    /**
+     * Kvittojobbets läge. `jobbId: null` = det SENASTE jobbet (Hem-kortet),
+     * som är en annan fråga än ett namngivet jobb och därför en annan nyckel.
+     */
+    jobbstatus: (jobbId: string | null) => ['betalningar', 'jobbstatus', jobbId] as const,
   },
   dashboard: {
     // Hem-aggregering (Fas 6d). EGNA nycklar, MEDVETET skilda från events.list /

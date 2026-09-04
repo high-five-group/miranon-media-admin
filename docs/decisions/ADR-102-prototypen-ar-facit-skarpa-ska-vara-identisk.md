@@ -677,3 +677,150 @@ Grinden är fortsatt grön mot `main` (12 manifest, 27 ytor, 0 ogodkända).
 - `.facit-policy.conf` får ingen ny nyckel. Att regeln INTE är config-driven
   är dess poäng: den härleder allt ur manifestet, så det finns inget
   projekt-specifikt värde som kan glida isär.
+
+### 2026-08-28 — Täckningsluckan i invariant (d) NAMNGES, men fäller inte (`TASK-309.31`)
+
+Beslutstexten B1–B5 står orörd, och de två posterna ovan likaså. Denna post
+avgör en fråga de lämnade öppen och som `TASK-309.21` AC #4 ställde skarpt:
+ska `check-facit.sh` larma när en **stämplad** yta helt saknar nyckeln
+`referenser` — och därmed står utanför innehållslåset — eller ska den
+frånvaron fortsatt vara tillåten i tysthet?
+
+**Beslut: VARNA. Namnge varje sådan yta. Fäll ALDRIG på det.** Exitkoden är
+oförändrad 0, och det är inte en halvmesyr utan sakens kärna: luckan ska bli
+omöjlig att inte se, utan att en enda PR blir röd av en nyckel som aldrig
+varit obligatorisk.
+
+Kortpekare: byggt i `TASK-309.31`; frågan ställd av `TASK-309.21` AC #4;
+vägen till fällning är `TASK-288`.
+
+#### V1. Vad som ändrades mekaniskt
+
+Före denna post skrev grinden **en siffra** vid varje körning — "24 stämplade
+ytor saknar `referenser`" — enligt R5-disciplinen. Siffran var sann men
+outnyttjbar: den säger hur stor luckan är, aldrig var den sitter. Den som
+skulle stänga luckan fick börja med att räkna fram listan själv, och den som
+läste en grön logg hade ingen anledning att göra det.
+
+`check-facit.sh` skriver nu, på **stderr**, en rad per stämplad yta som saknar
+nyckeln — `manifest · ytan "<namn>" — saknar nyckeln "referenser"` — följd av
+en summeringsrad på formen `N av M stämplade ytor saknar innehållslås`. Den
+befintliga stdout-raden står kvar ordagrant, så äldre citat av den förblir
+sanna.
+
+Tre gränser bär beteendet, och alla tre är testade:
+
+| Gräns | Beteende | Varför |
+|---|---|---|
+| **Nyckeln** | en yta som deklarerar `referenser` varnar aldrig — inte heller med tom lista | tom lista är ett VAL (deklarerad frånvaro), en frånvarande nyckel är en lucka |
+| **Stämpeln** | en yta under `godkand: null` varnar aldrig | innehållslåset gäller först efter stämpeln (samma gräns som klass (a) i A1); annars vore grinden brus under hela promoveringsarbetet |
+| **Omkopplaren** | `FACIT_VARNA_ODEKLARERAD_REFERENS="0"` i `.facit-policy.conf` tystar namngivningen | skriptets logik är universell, mängden är projekt-specifik (Lesson #6) |
+
+Omkopplaren styr hur mycket grinden **berättar**, aldrig om den **fäller** —
+inget värde på den kan göra avsaknaden fällande. Saknas nyckeln i configen
+varnar grinden ändå: defaultvärdet är PÅ, eftersom tystnad aldrig får uppstå
+av att någon glömde skriva ett värde.
+
+#### V2. Varför inte fällning — fyra skäl, samtliga mätta
+
+Underlaget är
+[`facit-pensionering-s102-2026-08-26.md`](../research/facit-pensionering-s102-2026-08-26.md)
+§ 4, som prövade frågan och landade i ordagrant:
+
+> **Rekommendation: VARNA, fäll inte — åtminstone inte retroaktivt.**
+
+Dess fyra skäl, oförkortade i sak:
+
+1. **En fällning i dag hade rödmålat `main` över natten.** 24 av 28 stämplade
+   ytor saknar fältet (mätt 2026-08-28, se V4) — utan migrationsfönster, och
+   utan att backfillen ens är påbörjad.
+2. **Branschprecedent kräver INTE denna form.** Percys egen dokumentation:
+   *"A baseline is an approved snapshot … all future comparisons depend on
+   this reference, so it must be reviewed and intentionally accepted."*
+   Referensen ÄR den lagrade bilden; identiteten är implicit i
+   lagringsplatsen. Chromatic, BackstopJS och Storybook följer samma mönster
+   — ingen av de fyra kräver ett fristående, handunderhållet fält med källa
+   och hash utöver baseline-artefakten. Vårt `referenser` är en egen,
+   striktare mekanism byggd OVANPÅ golvet, inte en implementation AV det.
+   Att fälla på dess frånvaro vore att göra ett frivilligt tillägg till ett
+   krav retroaktivt.
+3. **Frånvaron var redan synlig, bara inte adresserbar.** R5-raden fanns; det
+   som saknades var namnen. Skärpningen är därför en precisering av samma
+   disciplin, inte ett nytt krav.
+4. **Fällning hade inte fångat instansen som motiverade frågan.** `s102`s
+   avvikelse gick åtta dagar utan att någon grind fällde — men rotorsaken är
+   att `check-facit.sh` aldrig jämför renderad yta mot bild (se filens
+   § VAD GRINDEN INTE GÖR), inte att nyckeln saknades. En `referenser`-nyckel
+   låser en sökväg i tillgänglighetsträdet, inte "täcker denna yta
+   fortfarande allt facit-bilderna visar". En fällning på fältets frånvaro
+   hade alltså kostat 24 röda ytor utan att lösa det problem den åberopades
+   för.
+
+Skäl 4 är det som gör beslutet mer än en bekvämlighet: en grind som skärps på
+fel axel köper stränghet utan att köpa täckning, och blir därmed en
+`ADR-083`-mekanism i förklädnad — den ser strängare ut än den är.
+
+#### V3. Vägen till fällning går via backfillen, inte via grinden
+
+`TASK-288` är kvar som den enda vägen till ett fällande läge, och den är ett
+**Marcus-moment**: `ADR-104`-hooken fryser varje stämplat manifest, så ingen
+agent kan skriva in fältet retroaktivt (mätt tvåsidigt i A6:s tabell). När
+backfillen väl körts och räkningen når noll är en fällande form billig och
+proportionerlig — då finns inget att rödmåla.
+
+En avgränsad skärpning som INTE väntar på backfillen står öppen i
+research-filens § 4 och beslutas inte här: stämplingsskriptet skulle kunna
+varna vid själva LÅSNINGS-ögonblicket om det manifest som stämplas inte har
+någon `referenser`-nyckel alls. Det tvingar fram ett medvetet val i den ände
+där fönstret ännu är öppet — samma ändpunkts-disciplin som
+`.facit-policy.conf`s markör-regel bär — utan att straffa de 24 redan
+stämplade. Noterad som option, inte som beslut.
+
+**Talet 24 är ett ögonblicksvärde och ska läsas som ett.** A6 skrev "22 av 22"
+2026-08-22; `TASK-288`s titel bar samma 22 medan dess egen kommentar samma dag
+bokförde 24. Ingen backfill har utförts under tiden — talet vandrar med
+antalet stämplade ytor, inte med arbete. Läs alltid om det ur en färsk körning
+i stället för ur en nedskriven siffra.
+
+#### V4. Beviset
+
+Mätt i denna landning, mot repots verkliga bilage-katalog:
+
+| Vad | Utfall |
+|---|---|
+| `bash scripts/check-facit.sh` före ändringen | exit **0**, en siffra i slutraden, noll namn |
+| `bash scripts/check-facit.sh` efter ändringen | exit **0**, **24 namngivna ytor** + `24 av 28 stämplade ytor saknar innehållslås` |
+| Oberoende omräkning (eget node-svep över alla 15 manifest) | 15 manifest, 30 ytor, 28 stämplade, **24** utan nyckeln, 11 låsta referenser — identiskt med grindens tal |
+| De 24 namnen mot research § 2:s lista | identisk mängd, post för post |
+
+Testsviten `scripts/test-check-facit.sh` gick från 32 till **36 fall** (64
+assertions, exit 0). Att de nya fallen BITER är mätt med tre mutationer, inte
+antaget:
+
+| Mutation i `check-facit.sh` | Utfall |
+|---|---|
+| `skriv_odeklarerade` görs till en no-op — beteendet före denna post | **T33 röd**, 3 assertions faller |
+| Omkopplaren läses inte — varningen hårdkodad på | **T35 röd** |
+| Stämpel-gränsen tas bort — varnar även för `godkand: null` | **T36 röd** |
+
+Tre negativa fall mot ett positivt är avsiktligt. En varning som alltid skriks
+är precis lika oanvändbar som en som aldrig hörs: den drunknar, och nästa
+läsare filtrerar bort hela klassen.
+
+#### V5. Konsekvenser
+
+- `scripts/check-facit.sh` namnger invariant (d):s täckningslucka på stderr;
+  exitkoden är oförändrad i varje läge, och namngivningen skrivs i BÅDA
+  utfallen — även när en annan invariant fällde, av samma skäl som
+  rivnings-klausulens bokföring (R5).
+- `.facit-policy.conf` får nyckeln `FACIT_VARNA_ODEKLARERAD_REFERENS`. Till
+  skillnad från rivnings-klausulen (som medvetet INTE är config-driven, se R5)
+  är mängden här projekt-specifik: 24 rader är rätt i detta repo och fel i ett
+  spoke som just kopierat hit grinden.
+- `scripts/test-check-facit.sh` bär 36 fall; T33–T36 är täckningsvarningens
+  fyra gränser.
+- `TASK-309.21` AC #4 är därmed besvarad och bockad. Kortets övriga AC står
+  öppna — de kräver Marcus kanal.
+- `TASK-288` byter roll: den är inte längre bara en backfill utan **den enda
+  vägen till ett fällande innehållslås**, och dess räkning är nu läsbar direkt
+  ur grindens utdata i stället för att behöva rekonstrueras.

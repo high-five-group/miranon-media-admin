@@ -119,7 +119,7 @@ skill-referens-nivå, bekräftat på trigger-matchnings-nivå.
 
 ### Belägg 3 — S93-sessionsdokets egen bokföring
 
-Källa: `tasks/sessions/2026-08-02-session-93.md`, `grep -n "kadens"`,
+Källa: `tasks/sessions/archive/2026-08/2026-08-02-session-93.md`, `grep -n "kadens"`,
 rad 585–588 (sessionens EGEN, samtida bokföring — inte en efterhandskonstruktion):
 
 > "Regeln fanns ordagrant i `prototype`-skillens § 5 *Iterations-kadensen*,

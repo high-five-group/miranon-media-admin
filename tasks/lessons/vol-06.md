@@ -837,7 +837,7 @@ generaliserar oberoende av kodbas. Registreras som skript-hygien-kandidat,
 lokal till detta repo tills fler instanser (i detta eller andra skript)
 visar motsatsen.
 
-**Källa:** `tasks/sessions/2026-08-02-session-93.md` Del 2 § "Bokfört i
+**Källa:** `tasks/sessions/archive/2026-08/2026-08-02-session-93.md` Del 2 § "Bokfört i
 övrigt" (rad ~126–129) + PAUSLÄGE-blockets CARRY-lista, kandidat (5).
 
 ### L448 — bokföring på ett kort vars ändringar ligger olandade
@@ -1059,7 +1059,7 @@ gärning av en specifik process.
 (research-pass). Bokförd som egen post: L451 § "Lärdomen, i två delar" bär
 denna regel som sin PUNKT 2, buntad med en annan (frekvens som signal för
 aktiv skribent). Sessionsdokets egen paushistorik (tredje pausen,
-`tasks/sessions/2026-08-04-session-97.md` rad ~1138–1139) listar den ändå
+`tasks/sessions/archive/2026-08/2026-08-04-session-97.md` rad ~1138–1139) listar den ändå
 som en EGEN, fristående lesson-kandidat — den säkras därför här som sin
 egen post i stället för att bara vila inuti L451.
 
@@ -3152,7 +3152,7 @@ markörer, `TASK-287` saknade). Beslut och mätserie:
 `ADR-102` § Updates 2026-08-22 (Rivna prototyp-källor).
 
 **Relaterat, men inte samma sak:** fragmentet
-`facit-kallor-ompekas-fore-stampeln.md` ger den operativa omvägen — peka om
+[[L582]] ger den operativa omvägen — peka om
 `kallor` i flip-skivan medan manifestet ännu är skrivbart. Den räcker bara
 när prototypfilen har en skarp EFTERTRÄDARE att peka på. Mätt 2026-08-22:
 hem- och svep-familjerna har 6 av 6 källor som är rent prototyp-substrat utan
@@ -3337,7 +3337,7 @@ döpa om en nod i en av de nya referenserna — grinden föll (exit 1). Före
 omskrivningen kunde samma provokation inte fälla någonting. Det är skillnaden
 mellan ett lås och en fil som råkar ligga där.
 
-Släkt: fragmentet `verifiera-mot-den-axel-andringen-ror-inte-mot-fixturernas-rakade-tomhet.md`
+Släkt: fragmentet [[L634]]
 — samma rotklass, där i FIXTUR-ledet i stället för i uppdaterings-ledet.
 
 ### L519 — Agentens `grep` utelämnar filer tyst — och tystnaden ser ut som frånvaro
@@ -3384,7 +3384,7 @@ symptomet och bokförde det som verktygsartefakt; `283.3`:s agent rotorsakade de
    `grep -rn` bör kunna svara på hur många filer som faktiskt lästes — annars
    mäter den sin egen filtrering.
 
-Släkt: `ett-tyst-verktyg-ser-likadant-ut-som-ett-verktyg-utan-fynd.md` — där ett
+Släkt: [[L623]] — där ett
 övervakningsverktyg vars noll var tvetydigt, här ett sökverktyg vars noll var
 falskt. Samma rot: frånvaro rapporterad av ett verktyg måste kunna skiljas från
 trasig rapportering.
@@ -3451,7 +3451,7 @@ det passerade ändå, eftersom ingen hade skrivit ut förväntan innan kommandot
 lämnades ut.
 
 **Varför detta inte är samma lärdom som
-`stampel-sha-harleds-ur-ref-som-star-stilla.md`:** där härledde ett VERKTYG ett
+[[L573]]:** där härledde ett VERKTYG ett
 SHA ur en lokal ref som stod stilla, och fixen låg i verktyget. Här var trädet
 självt föråldrat i det ögonblick en människa körde kommandot, och ingen
 verktygsfix hade hjälpt. Ansvaret följer överlämningen: den som formulerar

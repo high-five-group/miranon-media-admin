@@ -42,8 +42,44 @@
   --mm-button-danger-bg-pressed: color-mix(in srgb, var(--mm-error), black 15%);
   --mm-button-ghost-bg: transparent;
   --mm-button-ghost-text: var(--mm-text);
-  --mm-button-ghost-bg-hover: var(--mm-bg-muted);
-  --mm-button-ghost-bg-pressed: color-mix(in srgb, var(--mm-bg-muted), black 8%);
+  /* ── Ghost-knappens hover/pressed: GENOMSKINLIG SKRIM, inte opak platta ──
+     (Marcus 2026-09-01: *"Behåll kan ju inte ha vit hover"*, *"Även
+     Ångra-knappen hade vit hover, funkar ju inte på denna bakgrund"*.)
+
+     ROTORSAKEN ÄR IDENTITETSFÄLLAN, INTE DE TVÅ KNAPPARNA. En OPAK hover
+     har en fast ton, så dess synlighet beror på vilken yta den råkar hamna
+     på — och `--mm-bg-muted` är samma ton som flera av husets egna ytor.
+     Mätt (WCAG-kontrast mellan hover-plattan och ytan under den):
+
+       yta                        opak #f5f5f3      skrim 6 %
+       vit surface #ffffff .......... 1,092 ....... 1,119
+       guld-tint #fbf3e0 ............ 1,013 ....... 1,116   ← osynlig förut
+       bg-muted #f5f5f3 ............. 1,000 ....... 1,123   ← IDENTISK förut
+       bg-emphasized #edeee9 ........ 1,068 ....... 1,117
+
+     En skrim är RELATIV till det som ligger under: den mörknar ytan i
+     stället för att måla över den, så samma token ger samma upplevda
+     återkoppling på alla fyra ytorna. Det är därför fixen bor HÄR och inte
+     som en klass per knapp eller per tonad behållare — hade den lappats per
+     yta hade nästa tonade yta ärvt buggen igen.
+
+     6 % ÄR VALT MOT NULÄGET PÅ VITT, inte gripet ur luften: vitt är den
+     vanligaste ghost-ytan, och 6 % (1,119) ligger närmast den etablerade
+     opaka hovern där (1,092). Skillnaden är 0,027 i kontrastkvot — under
+     vad ögat skiljer — så den stora installerade basen av ghost-knappar på
+     vit yta ser i praktiken oförändrad ut.
+
+     KULÖREN ÄR HUSETS VARMA MÖRKER (--p-neutral-900), inte ren svart:
+     en svart skrim hade kylt ned den varma guld- och neutralpaletten.
+
+     SIDOEFFEKT VÄRD ATT KÄNNA TILL: raden "1,000" ovan är den fälla
+     `DokumentYta.tsx` (§ ghost-tokenens identitet) räknar SEX instanser av
+     och som `--mm-bilagekort-ikonknapp-*` mintades för att gå runt. Den är
+     löst vid källan nu. De befintliga komponent-tokensen är ORÖRDA — de
+     fungerar fortfarande och att riva dem är ett eget beslut, inte en
+     bieffekt av ett iterationspass. */
+  --mm-button-ghost-bg-hover: color-mix(in srgb, var(--p-neutral-900) 6%, transparent);
+  --mm-button-ghost-bg-pressed: color-mix(in srgb, var(--p-neutral-900) 10%, transparent);
   /* success = GRÖN primär (task-19.3; S73-facit K77, Marcus: skapa-knappen i
      sage-grönt i stället för primärknappens svärta). Vit text mot --mm-success
      (#606B57) ≈ 5,6:1 → WCAG AA. Samma hover/pressed-grammatik som danger. */
@@ -110,8 +146,15 @@
   --mm-button-danger-subtle-bg-hover: color-mix(in srgb, var(--mm-error) 16%, transparent);
   --mm-button-danger-subtle-bg-pressed: color-mix(in srgb, var(--mm-error) 22%, transparent);
 
-  /* ── Input (Fas 3 K2) ── */
-  --mm-input-bg: var(--mm-bg);
+  /* ── Input (Fas 3 K2 — mm-input-bg flyttad till surface-familjen TASK-222) ──
+     Fältet pekade tidigare på --mm-bg (canvas-tokenen): inputfälten ärvde
+     sidbakgrunden, vilket bara såg rätt ut så länge canvas och kontrollyta
+     båda var vita (S102 gul-experimentets fynd, 2026-08-15 Del 7). Semantiskt
+     hör en input-yta till surface-familjen (kontrollyta), inte canvas — samma
+     roll Dialog/Modal/NavCard redan uttrycker via --mm-surface*. Visuellt
+     NEUTRALT idag: --mm-surface och --mm-bg är båda var(--p-neutral-0)
+     (semantic.css). */
+  --mm-input-bg: var(--mm-surface);
   --mm-input-bg-disabled: var(--mm-bg-muted);
   --mm-input-text: var(--mm-text);
   --mm-input-text-placeholder: var(--mm-text-muted);
@@ -208,6 +251,26 @@
   --mm-select-item-bg-focused: var(--mm-primary-tint);
   --mm-select-item-bg-selected: var(--mm-primary-pale);
 
+  /* ── Meny (dokumentytans radform, 2026-08-29) ──
+     Flytande handlings-meny (react-aria `Menu`), inte ett värdeval — se
+     `Meny.tsx`s docblock för varför den inte lånar Select-tokens.
+
+     BAKGRUNDEN ÄR IDENTISK MED DOKUMENTLISTANS (`--mm-surface`, #ffffff):
+     separationen bärs av kanten + `shadow-lg`, precis som Select-popovern.
+     Flyttas menyn någonsin in i en ton-satt yta ska kanten MÄTAS om
+     (`getComputedStyle`), inte antas — dokumentytan har sex bokförda buggar
+     av klassen "två ytor delar token och blir osynliga". */
+  --mm-meny-popover-bg: var(--mm-surface-overlay);
+  --mm-meny-popover-border: var(--mm-border);
+  --mm-meny-post-text: var(--mm-text);
+  --mm-meny-post-ikon: var(--mm-text-secondary);
+  /* Fokus-/hover-plattan: ETT tonsteg upp från popoverns vita botten, samma
+     steg `HandlingsRad` gör från sitt kort (#f5f5f3 → #edeee9). */
+  --mm-meny-post-bg-focused: var(--mm-bg-emphasized);
+  --mm-meny-post-fara-text: var(--mm-error);
+  --mm-meny-post-fara-bg-focused: var(--mm-error-bg);
+  --mm-meny-avdelare: var(--mm-border);
+
   /* ── MessageBox (Fas 3 K3) — bg/border/text per intent mot status-rollerna ── */
   --mm-messagebox-info-bg: var(--mm-info-bg);
   --mm-messagebox-info-border: var(--mm-info);
@@ -221,6 +284,34 @@
   --mm-messagebox-error-bg: var(--mm-error-bg);
   --mm-messagebox-error-border: var(--mm-error);
   --mm-messagebox-error-text: var(--mm-error);
+
+  /* ── Markerat betalningskort (pass 11, Marcus dom 2026-09-01) ──
+     Marcus: *"du använder samma grön på markeringen som gröna notis-rutan,
+     så notisrutan syns inte"*.
+
+     MÄTT, INTE RESONERAT: markeringen bar `--mm-success-bg` och
+     MessageBox success-ytan är `--mm-messagebox-success-bg`, som ÄR
+     `--mm-success-bg` (raden ovan). Samma token, samma hex — #f0fdf4 mot
+     #f0fdf4. Rutan var alltså inte svårläst, den var bokstavligen osynlig.
+
+     TVÅ SEPARATA GREPP löser det, och båda behövs:
+      1. KORTET FÅR EN SVAGARE TINT (nedan). 50 % mot vit ⇒ ~#f8fefa. Den
+         gröna signalen bärs av RAMEN, inte av ytan — vilket är vad Marcus
+         beställde ("grön RAM + svag tint").
+      2. NOTISRUTAN FÅR EN HEL KANT (`border-y border-r` på konsumentens
+         `className`, se `RegistreraForm.tsx`). Fyllnadsskillnaden mot kortet
+         är liten i sig — #f0fdf4 mot #f8fefa är knappt 1,02:1 i luminans,
+         eftersom `--p-green-100` redan ligger nära vitt — så det är KANTEN
+         som gör rutan till en ruta. Att bara justera tinten hade inte räckt,
+         och det är värt att veta innan någon "förenklar" bort kanten.
+
+     KONTRASTER RÄKNADE (WCAG 1.4.11, 3:1-golvet för icke-text):
+       ramen #606b57 mot kortets tint ~#f8fefa → 5,46:1 ✓
+       ramen #606b57 mot notisrutans #f0fdf4  → 5,37:1 ✓
+     `contrast-more` tänder dessutom full intent-färg på båda, så golvet
+     stiger i det läget i stället för att falla. */
+  --mm-betalningskort-markerad-bg: color-mix(in srgb, var(--mm-success-bg) 50%, var(--mm-surface));
+  --mm-betalningskort-markerad-border: var(--mm-success);
   --mm-messagebox-body-text: var(--mm-text);
 
   /* ── Modal/Dialog (Fas 3 K3) ── */
@@ -239,6 +330,63 @@
   --mm-navcard-icon: var(--mm-text-secondary);
   --mm-navcard-border: transparent;
   --mm-navcard-border-contrast: var(--mm-border-strong);
+
+  /* ── Bilagekort (T176, 2026-08-29 — dokumentytans kortform) ──
+     NavCards dialekt, men INTE NavCards tokens: --mm-navcard-bg ÄR
+     --mm-bg-muted, alltså EXAKT samma värde som den grå behållare korten
+     ligger i (grupp-kort, bg-bg-muted). Ett kort som lånat NavCards
+     tokens hade därför varit osynligt — sjunde instansen av den
+     token-identitetsfälla DokumentYta.tsx:s filhuvud räknar sex av.
+     Nästlingen är omvänd här: kortet är den LJUSA ytan (--mm-surface,
+     #ffffff) mot en TONAD behållare, inte tvärtom.
+
+     INGEN HOVER-TON (Marcus 2026-08-30: "Ta bort hover på korten").
+     Kortet är statiskt vitt i alla lägen — det finns alltså medvetet
+     ingen --mm-bilagekort-bg-hover att nå. Här stod tidigare en sådan
+     token (--mm-bg-emphasized, #edeee9), mätt mot BÅDA grannarna:
+     --mm-bg-muted hade varit identisk med behållaren och --mm-bg-subtle
+     (#fafaf8) för nära den. Tonen var alltså aldrig fel — den var
+     oönskad, och raden står kvar som historik så att nästa läsare inte
+     återinför den i tron att den föll bort av misstag. Affordansen på
+     raden bärs av namnknappens cursor och fokusring, inte av yttoning.
+
+     Kanten är transparent i vila och blir synlig först under
+     prefers-contrast: more — korten skiljs annars av rännan (den grå
+     behållaren mellan dem), inte av linjer. */
+  --mm-bilagekort-bg: var(--mm-surface);
+  --mm-bilagekort-border: transparent;
+  --mm-bilagekort-border-contrast: var(--mm-border-strong);
+
+  /* ── Bilagekortets ⋯-knapp (TASK-309.44, 2026-08-30) ──
+     Knappen är GHOST i vila (ingen platta, bara ikonen) och får sin runda
+     platta först vid hover/pressed/öppen meny. Ghost-INTENTEN är rätt form,
+     men ghost-TOKENEN är det inte: --mm-button-ghost-bg-hover ÄR
+     --mm-bg-muted, alltså EXAKT den grå ton kortet LIGGER PÅ men inte bär
+     (ΔE00 0,00 mot behållaren) — en hover-platta i behållarens färg mitt i
+     ett vitt kort läser som ett hål, inte som återkoppling. Det är den
+     token-identitetsfälla DokumentYta.tsx:s filhuvud räknar sex instanser
+     av, och skälet att IKONKNAPP_KLASS:s docblock i tre ronder argumenterat
+     MOT ghost.
+
+     Egen komponent-token bryter identiteten utan att byta intent. Mätt
+     (node, CIEDE2000 + WCAG-formeln, TASK-309.44):
+       #edeee9 mot kortets #ffffff  → ΔE00 4,52  (den vi väljer)
+       #f5f5f3 mot kortets #ffffff  → ΔE00 2,30  (ghost-tokenen, avvisad)
+       #edeee9 mot behållarens #f5f5f3 → ΔE00 2,30  (skild från BÅDA)
+     Plattan är alltså dubbelt så tydlig mot kortet som ghost-tokenen, och
+     till skillnad från den kan den aldrig kollapsa in i behållaren.
+
+     Tonen är INTE nyvald: det är exakt --mm-bg-emphasized (#edeee9) som
+     mättes mot båda grannarna 2026-08-29 när kortet självt hade hover.
+     Den hovern är riven (Marcus 2026-08-30, se ovan) — tonen återanvänds
+     nu på KNAPPEN i stället för på kortet, vilket är där återkopplingen
+     hör hemma när kortet är statiskt.
+
+     Ikonen står i --mm-text-secondary i vila (7,91:1 mot kortets vita) och
+     går till --mm-text vid hover (13,31:1 mot plattan) — båda långt över
+     WCAG 1.4.11:s 3:1-golv för ett grafiskt objekt. */
+  --mm-bilagekort-ikonknapp-text: var(--mm-text-secondary);
+  --mm-bilagekort-ikonknapp-bg-hover: var(--mm-bg-emphasized);
 
   /* ── Åtgärdskö-markör (TASK-291 — QA-fynd 284.5, ADR-122 §22 "Markören") ──
      Fylld cirkel/pill-behållare: bär BÅDE åtgärdskö-radens ledande

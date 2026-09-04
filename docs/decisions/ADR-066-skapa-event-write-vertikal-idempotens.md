@@ -123,6 +123,69 @@ Idempotens-alternativen (affärsnyckel-merge / ingen idempotens / check-then-cre
   anmälningsformulär, event-sida) är **T79:s** kontrakt. Denna ADR bär enbart att
   flaggan skrivs, aldrig vad den betyder för webbplatsen.
 
+## Tillägg (additivt) — 2026-08-28 (TASK-309.30, Ort-till-Plats-härledningen)
+
+> Additiv utökning av create-setet (beslut 2). Besluts-texten ovan är
+> **oförändrad/immutabel**; detta tillägg lägger EN ny post i den kontrakterade
+> fält-tabellen och låser dess skriv-semantik. Ingen ny ADR-fil
+> (`check-adr-count` orörd) — fältet är ADR-125 § 2:s befintliga `Plats`-länk,
+> och det som beslutas här är enbart att create-vertikalen HÄRLEDER den, i
+> samma anda som `Månad/år` (beslut 6) redan härleds ur `Startdatum`.
+>
+> **Grund:** `create-event` föddes 2026-06-27, `Plats` 2026-08-24. Nya event
+> fick därför tom länk, och bilagans adress-/parkerings-/transport-/klädblock
+> föll tillbaka på TOMT i stället för platsens standard. Plats-backfillen
+> 2026-08-26 stängde de 27 befintliga Rönninge-eventen i prod; detta tillägg
+> stänger de framtida (data-model.md § Plats-backfill, "Öppen kant").
+
+| Syfte | Fält (NAMN) | Fält-ID | Typ |
+|---|---|---|---|
+| Plats | `Plats` | staging `fld8OmPGNgEYZ8eER` · prod `fldaVV1KS6skbOLrB` | multipleRecordLinks → Platser |
+
+- **Klient-input: INGEN.** Fältet härleds SERVER-SIDE ur eventets eget `Ort`.
+  `CreateEventInput` och `CreateEventForm` är oförändrade — härledning framför
+  formändring var kortets uttryckliga vägval, och en platsväljare i formuläret
+  ((b)/(c) på TASK-309.30) är ett Marcus-beslut som inte fattas här.
+- **UPPSLAG, INTE LÄNK-KRAV.** `Platser` slås upp på `Namn` = `Ort` (exakt
+  strängmatchning, `maxRecords: 2`). Samma anda som ADR-125 § 2:s
+  "Event (source) × Typ pekar ut sin Eventinnehåll-rad" — en andra sanning som
+  kan glida isär undviks.
+- **EXAKT EN TRÄFF, ALDRIG ANNARS.** `Platser.Namn` är ett singleLineText-
+  primärfält och Airtable kan strukturellt inte tvinga unikhet på det
+  (`airtable-constraints.md`); två rader med samma namn är skarpt verifierat i
+  staging 2026-08-28. Noll eller flera träffar → länken lämnas TOM och skälet
+  loggas öppet. En gissad "första träff" hade tyst gett en bilaga med fel
+  adress — samma "utelämna, logga, gissa aldrig"-disciplin som ADR-115:s
+  okända kursnamn.
+- **ALDRIG ÖVER EN BEFINTLIG LÄNK — ordningen är invarianten.** `Plats` läggs
+  ALDRIG i upsertens `fields`-map. Den skrivs i en SEPARAT PATCH EFTER
+  upserten, och bara när den upsertade raden saknar länk. En upsert som bar
+  fältet hade vid en idempotent replay (beslut 3) patchat en befintlig rad och
+  kunnat skriva över en `Plats` som satts för hand — exakt den felklass
+  publiceringsflaggans utelämnings-mönster bokför för checkboxen.
+- **Allowlist:** `'Plats'` läggs till `create-event`-postens `allowedFields`
+  (SSOT-grinden i `_shared/field-allowlists.ts`); PATCH:en gates:as av
+  `findDisallowedField` precis som fields-mapen.
+- **Fail-soft mot skapandet.** Eventet är redan skrivet när länkningen körs.
+  Ett fel i uppslaget eller i PATCH:en loggas öppet och rapporteras som
+  `platsLankning.skal: 'uppslag-fel'` — det får aldrig göra ett lyckat
+  skapande till ett misslyckat som klienten retryar.
+- **Observerbarhet:** svaret bär ett tredje, additivt fält `platsLankning`
+  (`{ satt, platsId, skal }`). Klienten rör det inte
+  (`AirtableAdapter.createEvent` parse:ar enbart `data.event`, och zod strippar
+  okända nycklar) — det finns för conformance-testet och för felsökning.
+- **Miljö-ordning:** BÅDA baserna bär `Plats` sedan 2026-08-24 (data-model.md
+  § Bilagornas datamodell), så prod-EF-deployen har — till skillnad mot
+  `Idempotensnyckel` och publiceringsflaggan när de tillkom — ingen
+  schema-förutsättning kvar att vänta på. Prod-deployen är ändå en separat
+  Marcus-auktoriserad handling (`scripts/fas4-prod-deploy.sh`, ADR-050/ADR-063).
+- **Rättelse till tillägget 2026-07-22 ovan, bokförd inte tyst:** dess rad
+  _"PROD-fältet är INTE skapat"_ om `Publicerad på miranon.se` är FÖRÅLDRAD —
+  prod-fältet finns sedan 2026-07-23 (`fldrjj61ovL3Zv1mN`, S75 prod-deploy-vågen;
+  rättat i `_shared/field-allowlists.ts` och data-model.md § Prod-basens
+  additiva tillskott 2026-07-23 av TASK-200). Beslutstexten där lämnas orörd
+  per immutabilitets-regeln; denna rad är kartan till den rättade sanningen.
+
 ## Källor
 
 - **Stripe — Idempotent requests:** [docs.stripe.com/api/idempotent_requests](https://docs.stripe.com/api/idempotent_requests) + [error-handling (low-level)](https://docs.stripe.com/error-low-level) — UUID-nyckel bevarad över retries; strikt param-match-semantik (avgränsad i beslut 3).

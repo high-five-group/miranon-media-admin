@@ -2,7 +2,7 @@ import AxeBuilder from '@axe-core/playwright';
 import type { CDPSession, Page } from '@playwright/test';
 import { HttpResponse, http } from 'msw';
 import { FROZEN_NOW } from '../support/fixturvarld/fixture-data';
-import { expect, test } from './support/acceptance-bas';
+import { expect, test } from './acceptance-bas';
 
 /**
  * Erbjudande-ytan `/passkey` (TASK-127.8, ADR-093 beslut 2) — DATABEROENDE

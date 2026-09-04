@@ -1,6 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
 import {
   ClipboardList,
+  Coins,
   Filter,
   History,
   Hourglass,
@@ -15,6 +16,7 @@ import {
 import { useAuth } from '@/auth/useAuth';
 import { Button, NavCard } from '@/components/primitives';
 import { markeraAvsiktligUtloggning } from '@/lib/auth/utloggningsavsikt';
+import { betalningarPa } from '@/lib/funktionsflaggor';
 
 export const Route = createFileRoute('/_authenticated/mer/')({
   staticData: { title: 'Mer' },
@@ -35,8 +37,9 @@ export const Route = createFileRoute('/_authenticated/mer/')({
  * (pt-2 lg:pt-10) · Logga ut-blocket med extra topp-luft (pt-4).
  *
  * Ikonvalen är domänbegrepps-mappade och Marcus-kvitterade (PRD beslut 5) —
- * Bygg segment bär Filter, INTE Users (Personer-flikens ikon; krocken funnen
- * i M6-detaljsvepet): segment byggs med filter.
+ * Segment (etiketten döptes om från sin ursprungsform i TASK-348) bär
+ * Filter, INTE Users (Personer-flikens ikon; krocken funnen i
+ * M6-detaljsvepet): segment byggs med filter.
  *
  * TREDJE gruppen (Inställningar) tillkom task-126.3: tråd T47:s parkerade
  * Inställnings-hemvist ("Ingen Inställningar (de-scopad, T47)" — noten stod
@@ -81,6 +84,31 @@ function MerPage() {
           <li>
             <NavCard to="/mer/aktivitetshistorik" icon={History} label="Aktivitetshistorik" />
           </li>
+          {/* Betalningar (TASK-346.6 AC #1, PRD TASK-346 § Inkorgen). SIST i
+              listorna-gruppen enligt samma konvention Aktivitetshistoriken
+              följde ("nyaste tillskottet"), inte först: ordningen i grupp 1
+              är facit-låst från M6 och ett nytt tillskott lägger sig efter
+              den, det byter inte plats på det som redan står.
+
+              BAKOM MILJÖFLAGGAN. Raden renderas inte alls i prod förrän
+              Marcus slår på flaggan (PRD berättelse 36); routen är gatad
+              för sig i `betalningar.tsx`, så en gissad adress leder ingen
+              vart heller. Rivs av TASK-346.12 tillsammans med flaggan -
+              villkoret tas bort, raden blir ovillkorlig.
+
+              Coins (Marcus order 2026-09-01, samma ikon som Hem-genvägen -
+              en destination, en ikon) och INTE Receipt: `Receipt` är lucides kvittoikon och
+              är redan tagen för just kvitton (`dokument/DokumentYta.tsx`
+              § T176). Ytan handlar om INBETALNINGAR - kvittot är en följd av
+              en betalning, inte samma sak (ORDLISTA § Inbetalning). Samma
+              ikon-krocksdisciplin som bar Segment (etiketten döptes om från
+              sin ursprungsform i TASK-348) till Filter i stället för
+              Users. */}
+          {betalningarPa() && (
+            <li>
+              <NavCard to="/mer/betalningar" icon={Coins} label="Betalningar" />
+            </li>
+          )}
         </ul>
         <ul className="flex flex-col gap-2.5">
           {/* Skapa nytt event-raden RIVEN ÖPPET (task-19.2, PRD task-19
@@ -88,17 +116,29 @@ function MerPage() {
               utökningen K74) och sidan på /event/skapa (hemvist-flytten,
               Marcus-kvitterad 2026-07-21); gamla routen omdirigerar. */}
           <li>
-            <NavCard to="/mer/segment" icon={Filter} label="Bygg segment" />
+            <NavCard to="/mer/segment" icon={Filter} label="Segment" />
           </li>
-          {/* Dokument (`T131`, promoverad TASK-164-rivningen, ADR-103 B2 steg
-              4) — ORDLISTA § Bilaga: "Dokument är YTAN i Mer där bilagor
-              hanteras". Hör till HANDLING/VERKTYG-gruppen, inte listorna: den
+          {/* Bilagor (`T131`, promoverad TASK-164-rivningen, ADR-103 B2 steg
+              4). Hör till HANDLING/VERKTYG-gruppen, inte listorna: den
               förvaltar material, den listar inte personer. Ikonen är
               Paperclip = bilaga (domänbegreppsmappningen, PRD beslut 5);
               FileText hade läst som "dokument i allmänhet", vilket är precis
-              det ORDLISTA varnar för. */}
+              det ORDLISTA varnar för.
+
+              [T176, 2026-08-29] ETIKETTEN VAR "Dokument" — ORDLISTA § Bilaga
+              säger *"Dokument är YTAN i Mer där bilagor hanteras"*, och ytan
+              hette därför så. Marcus dom samma dag: *"Mer-fliken 'Dokument'
+              kanske borde heta 'Bilagor'"*. BILAGA är substantivet för det
+              som faktiskt hanteras (ORDLISTA rad 179: en PDF som Lotta väljer
+              att bifoga i ett utskick), och alla tre klasserna — uppladdad,
+              event-mallad, person-genererad — är bilagor. ROUTEN
+              (`/mer/dokument`) är MEDVETET oförändrad: det är en adress, inte
+              en etikett, och att byta den hade brutit varje bokmärke och
+              varje testselektor utan att göra något begripligare. ORDLISTA.md
+              är inte ändrad av denna landning — språkbytet är UI-språk, och
+              ordlistans egen rad är Marcus att uppdatera. */}
           <li>
-            <NavCard to="/mer/dokument" icon={Paperclip} label="Dokument" />
+            <NavCard to="/mer/dokument" icon={Paperclip} label="Bilagor" />
           </li>
           {/* Eventinnehåll + Platser (TASK-309.7, Del 2 § D beslut 10):
               standardtexterna per Event × Eventtyp och platsernas uppgifter

@@ -6,9 +6,10 @@ import { expect, test } from '../support/fixturvarld/hermetic';
 
 /**
  * Dokument-ytan (/mer/dokument) — visual-baslinje (TASK-299.11 AC #2). Ytan
- * bär SEDAN TIDIGARE ett facit-stämplat konvergenspass
- * (`tasks/sessions/bilagor/s102-dokument-konvergens/facit.json`, fem
- * PNG-referenser + ariaSnapshot) — denna fil är den FÖRSTA
+ * bar SEDAN TIDIGARE ett facit-stämplat konvergenspass
+ * (`tasks/sessions/archive/bilagor/s102-dokument-konvergens/facit.json`, fem
+ * PNG-referenser + ariaSnapshot — PENSIONERAT och arkivflyttat i
+ * TASK-309.29, se `ARKIVERAD.md` i samma katalog) — denna fil är den FÖRSTA
  * `toHaveScreenshot`-baserade visuella baslinjen för ytan i den delade
  * visual-regressions-sviten, född EFTER att husets delade `SidRam`-sidkrom
  * promoverades hit (dev-växeln `?sidram=ny`, TASK-299.1, riven ADR-103
@@ -24,7 +25,7 @@ import { expect, test } from '../support/fixturvarld/hermetic';
  * använder — eftersom det är läget som renderas UTAN en föregående
  * eventväljning och därmed är stabilast att skärmdumpa.
  */
-test('dokument-ytan — sidram och räckviddsläget (Delade dokument) ur fixturvärlden', async ({
+test('dokument-ytan — sidram och räckviddsläget (Delade bilagor) ur fixturvärlden', async ({
   page,
   network,
 }) => {
@@ -39,9 +40,15 @@ test('dokument-ytan — sidram och räckviddsläget (Delade dokument) ur fixturv
             skapad: '2026-08-05T09:00:00.000Z',
             eventId: VISUAL_EVENT_ID,
             dokumentklass: 'Uppladdad',
-            rackvidd: 'Kurstyp',
+            // [TASK-338.3, ADR-125 § Beslut 1] `Kurstyp` finns inte längre
+            // som räckvidd — det ÄR `Gemensam` med en familje-axel satt.
+            // Plats-axeln lämnas tom här: baslinjen ska visa den ENKLASTE
+            // gemensamma formen, och badgens axelkomposition provas i
+            // `dokument-rackviddsval.acceptance.test.ts` + enhetstesterna.
+            rackvidd: 'Gemensam',
             kursfamilj: 'RIM',
             kursniva: null,
+            plats: null,
           },
         ],
       }),
@@ -51,7 +58,7 @@ test('dokument-ytan — sidram och räckviddsläget (Delade dokument) ur fixturv
   await page.goto('/mer/dokument');
 
   await expect(page.getByTestId('dokument-yta')).toBeVisible();
-  await expect(page.getByRole('heading', { level: 1, name: 'Dokument' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1, name: 'Bilagor' })).toBeVisible();
   await expect(page.getByText('Hörlursinformation.pdf')).toBeVisible();
 
   await expect(page).toHaveScreenshot('dokument-yta.png', { fullPage: true });
@@ -82,9 +89,15 @@ test('dokument-ytan — hög-kontrast-läge (prefers-contrast: more)', async ({ 
             skapad: '2026-08-05T09:00:00.000Z',
             eventId: VISUAL_EVENT_ID,
             dokumentklass: 'Uppladdad',
-            rackvidd: 'Kurstyp',
+            // [TASK-338.3, ADR-125 § Beslut 1] `Kurstyp` finns inte längre
+            // som räckvidd — det ÄR `Gemensam` med en familje-axel satt.
+            // Plats-axeln lämnas tom här: baslinjen ska visa den ENKLASTE
+            // gemensamma formen, och badgens axelkomposition provas i
+            // `dokument-rackviddsval.acceptance.test.ts` + enhetstesterna.
+            rackvidd: 'Gemensam',
             kursfamilj: 'RIM',
             kursniva: null,
+            plats: null,
           },
         ],
       }),

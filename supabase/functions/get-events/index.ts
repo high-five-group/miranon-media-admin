@@ -1,13 +1,17 @@
 import { fetchFromAirtable } from '../_shared/airtable-client.ts';
 import { requireUser } from '../_shared/auth.ts';
-import { scalarNumber, scalarString, selectName } from '../_shared/coerce.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
 import { generateRequestId, mapErrorToResponse } from '../_shared/errors.ts';
+import { mapEventBas } from '../_shared/event-map.ts';
+import { hamtaStandardpriser, standardprisFor } from '../_shared/eventpris.ts';
 
 // Tabeller adresseras per NAMN (ej tbl-id) så samma kod fungerar mot prod- och
 // staging-bas — tbl-id:n är bas-unika och skiljer sig i en duplicerad bas (ADR-050).
 const TABLE_NAME = 'Eventplanering';
 const REGISTRATIONS_TABLE = 'Anmälningar';
+
+/** Loggprefix för uppslagets varning (`_shared/eventpris.ts` § ETT UPPSLAG SOM FALLERAR). */
+const LOGG = '[get-events]';
 
 // Max record-ID:n per batch-anrop — en chunk = en kort `OR(RECORD_ID()=…)`-formel
 // (≤50 IDs, väl under Airtables formel-/URL-längd) → ETT listanrop per chunk (ej
@@ -86,45 +90,27 @@ async function fetchBorOverAntalByEvent(
   return result;
 }
 
-// Fältnamn från Airtable → ren API-respons (kanonisk coercion ur _shared/coerce).
-function mapEvent(record: { id: string; fields: Record<string, unknown> }, borOverAntal: number) {
-  const f = record.fields;
-
+// Fältnamn från Airtable → ren API-respons. Bas-shapen (21 fält) kommer ur
+// `_shared/event-map.ts` — SSOT sedan TASK-23, delad med get-event/update-event, så
+// ett nytt läs-fält landar på ETT ställe i stället för att kräva håll-i-synk-plikt i
+// tre kopior. Spread FÖRST, funktionsspecifika fält efter: nyckelordningen i svaret är
+// därmed oförändrad mot inline-kopian den ersätter.
+function mapEvent(
+  record: { id: string; fields: Record<string, unknown> },
+  borOverAntal: number,
+  standardPris: number | null,
+) {
   return {
-    id: record.id,
-    eventlabel: f['Eventlabel'] ?? null, // formula (primary)
-    eventNamn: selectName(f['Event (source)']), // singleSelect
-    typ: selectName(f['Typ']), // singleSelect
-    ort: scalarString(f['Ort']), // text (eget fält, skalärt)
-    startdatum: f['Startdatum'] ?? null, // date
-    slutdatum: f['Slutdatum'] ?? null, // date
-    tidKvarTillEvent: f['Tid kvar till event'] ?? null, // formula → text
-    // Number-fält via scalarNumber: Airtable ger formel-/procent-fält som blir
-    // NaN/Infinity (0/0, osatt maxPlatser) som OBJEKT {specialValue} — scalarNumber
-    // coercar det till null så .parse() håller (konsekvent över get-event/get-events).
-    maxPlatser: scalarNumber(f['Max antal platser']), // number (osatt → null)
-    antalAnmalda: scalarNumber(f['Antal anmälda']) ?? 0, // formel → number
-    platserKvar: scalarNumber(f['Platser kvar']), // formel → number|null
-    anmaldBelaggning: scalarNumber(f['Anmäld beläggning (%)']), // formel-% (NaN→null)
-    bekraftadBelaggning: scalarNumber(f['Bekräftad beläggning (%)']), // formel-% (NaN→null)
-    antalNyaAnmalningar: scalarNumber(f['Antal nya anmälningar']) ?? 0, // rollup → number
-    antalAnmalningsavgifter: scalarNumber(f['Antal mottagna anmälningsavgifter']) ?? 0, // rollup
-    antalSlutbetalningar: scalarNumber(f['Antal mottagna slutbetalningar']) ?? 0, // rollup
-    antalSlutbetalningFelande: scalarNumber(f['Antal slutbetalning saknas']) ?? 0, // formel
-    status: selectName(f['Status'] ?? null), // singleSelect (om det finns)
-    // eventKey (task-18.1): formel "Event-" & {Event-nr}. Håll i synk med get-event —
-    // saknas värdet UTELÄMNAS nyckeln (JSON.stringify droppar undefined; aldrig
-    // null — fältet är OPTIONAL i EventSchema, så z.array-parsen håller ändå);
-    // båda EF:erna bär fältet sedan samma leverans.
-    eventKey: typeof f['EventKey'] === 'string' ? f['EventKey'] : undefined,
-    // Basdimensionerna (TASK-249.4, ADR-115): direkta singleSelect-fält, alltid lästa —
-    // selectName ger string|null (aldrig gissat). Håll i synk med get-event/update-event.
-    kursfamilj: selectName(f['Kursfamilj']),
-    kursniva: selectName(f['Kursnivå']),
+    // `standardPris` = Eventinnehåll-standarden (prisets nivå 3), uppslagen EN
+    // gång för hela listan (`hamtaStandardpriser`). Utan den hade ett event vars
+    // pris bara finns i standarden fått `pris: null` här medan servern efter en
+    // ombokning svarat med ett riktigt tal — exakt den inkonsekvens TASK-368.7
+    // finns för att ta bort.
+    ...mapEventBas(record, standardPris),
     // Bor över-summeringen (task-17.5): härlett antal ikryssade 'Bor över' bland
     // eventets länkade Anmälningar (listkortets säng-rad). Aggregeras per event ur
-    // registrerings-batchen (fetchBorOverAntalByEvent) och skickas in här. Håll i
-    // synk med get-event mapEvent (samma härledning).
+    // registrerings-batchen (fetchBorOverAntalByEvent) och skickas in här — get-event
+    // härleder samma tal ur sin egen beläggnings-batch.
     borOverAntal,
   };
 }
@@ -150,8 +136,15 @@ Deno.serve(async (req) => {
     const records = await fetchFromAirtable(TABLE_NAME);
     // Bor över-summeringen (task-17.5): EN batch-läsning av alla events länkade
     // Anmälningar → antal ikryssade 'Bor över' per event (aldrig N+1).
-    const borOverByEvent = await fetchBorOverAntalByEvent(records);
-    const events = records.map((record) => mapEvent(record, borOverByEvent.get(record.id) ?? 0));
+    // Eventinnehåll-standarden (TASK-368.7): ETT anrop för hela listan, och
+    // noll anrop när varje event redan har ett eget pris.
+    const [borOverByEvent, standardpriser] = await Promise.all([
+      fetchBorOverAntalByEvent(records),
+      hamtaStandardpriser(records, LOGG),
+    ]);
+    const events = records.map((record) =>
+      mapEvent(record, borOverByEvent.get(record.id) ?? 0, standardprisFor(standardpriser, record)),
+    );
 
     return new Response(JSON.stringify({ events }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },

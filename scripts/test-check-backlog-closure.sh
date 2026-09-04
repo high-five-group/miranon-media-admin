@@ -267,6 +267,48 @@ kor_fixtur() {
                 bash "${GRIND}" 2>&1)" || SISTA_KOD=$?
 }
 
+# ── Ancestry-riggen (TASK-319) ───────────────────────────────────────────────
+#
+# Pekarens sannings-prövning slår upp PR-nummer mot landningarna i git-
+# historiken. Fixturen bygger därför ett EGET litet git-repo och kör grinden med
+# cwd där, i stället för att luta sig mot repots egen historik. Skälet är
+# determinism i båda leden: repots landningar ändras varje dag, och CI-jobbets
+# checkout-djup är utanför svitens kontroll — ett test vars utfall beror på
+# fetch-depth bevisar ingenting den dagen värdet ändras.
+#
+# Referensen är HEAD, inte ett grennamn: `git init` ger olika default-gren i
+# olika git-versioner, och HEAD pekar rätt i alla.
+REPO_ROT="${PWD}"
+
+# $1 = katalog för repot, därefter de PR-nummer som ska finnas som landningar.
+bygg_gitrepo() {
+    local g="$1"; shift
+    mkdir -p "${g}"
+    git init -q "${g}"
+    # -c framför varje commit: sviten får ALDRIG skriva i användarens git-config,
+    # och en global commit.gpgsign hade annars fällt fixturen på en signatur
+    # ingen bad om.
+    git -C "${g}" -c user.email=t@t.invalid -c user.name=t -c commit.gpgsign=false \
+        commit -q --allow-empty -m "init"
+    local nr
+    for nr in "$@"; do
+        git -C "${g}" -c user.email=t@t.invalid -c user.name=t -c commit.gpgsign=false \
+            commit -q --allow-empty -m "Merge pull request #${nr} from high-five-group/gren-${nr}"
+    done
+}
+
+# Som kor_fixtur, men med cwd i ett fixtur-git-repo. Sökvägarna till stubben,
+# korten och policyn är absoluta (mktemp -d ger absolut path), och grindens egen
+# path görs absolut här — annars hade cd:n brutit dem.
+kor_fixtur_i() {
+    local d="$1" g="$2"
+    SISTA_KOD=0
+    SISTA_UT="$(cd "${g}" && BACKLOG_CMD="${d}/backlog" BACKLOG_TASKS_DIR="${d}/tasks" \
+                BACKLOG_CLOSURE_POLICY="${d}/policy.conf" \
+                BACKLOG_KORTFAKTA_SKRIPT="${REPO_ROT}/scripts/backlog-kortfakta.mjs" \
+                bash "${REPO_ROT}/${GRIND}" 2>&1)" || SISTA_KOD=$?
+}
+
 rapportera() {
     local ok="$1" namn="$2" forklaring="$3"
     if [[ "${ok}" -eq 1 ]]; then
@@ -331,6 +373,34 @@ prova_utskrift() {
         ok=1
     fi
     rapportera "${ok}" "${namn}" "väntade exit ${vantad} + /${monster}/, fick exit ${SISTA_KOD}"
+}
+
+# $1=namn  $2=förväntad exit  $3=ref policyn pekar på  $4=commit-mönster
+# $5=PR-nummer som ska FINNAS som landningar i fixtur-repot (mellanslagsseparerade)
+# $6=mönster som måste finnas i utskriften ('' = ingen kontroll)  $7=kortkropp
+prova_ancestry() {
+    local namn="$1" vantad="$2" ref="$3" cmonster="$4" landningar="$5" utmonster="$6" kropp="$7"
+    local d="${TMP}/anc-$$-${RANDOM}"
+    local g="${TMP}/ancrepo-$$-${RANDOM}"
+    bygg_fixturer "${d}" 1 "${kropp}"
+    # Appendas EFTER bygg_fixturer: de fall som inte anropar denna funktion ska
+    # se en policy utan ancestry-variabler, alltså prövningen avstängd. Annars
+    # hade TASK-319 tyst ändrat vad svitens 62 äldre fall påstår sig bevisa.
+    printf 'BACKLOG_PEKARE_ANCESTRY_REF="%s"\n' "${ref}" >> "${d}/policy.conf"
+    printf 'BACKLOG_PEKARE_LANDNINGS_COMMIT_MONSTER="%s"\n' "${cmonster}" >> "${d}/policy.conf"
+    # Avsiktligt ociterad: landningarna ska ordsplittas till separata argument.
+    # shellcheck disable=SC2086
+    bygg_gitrepo "${g}" ${landningar}
+    kor_fixtur_i "${d}" "${g}"
+    local ok=0
+    if [[ "${SISTA_KOD}" -eq "${vantad}" ]]; then
+        if [[ -z "${utmonster}" ]]; then
+            ok=1
+        elif grep -qE "${utmonster}" <<< "${SISTA_UT}"; then
+            ok=1
+        fi
+    fi
+    rapportera "${ok}" "${namn}" "väntade exit ${vantad} + /${utmonster}/, fick exit ${SISTA_KOD}"
 }
 
 AC_HDR="Acceptance Criteria:"
@@ -1254,6 +1324,101 @@ if [[ "${kod}" -eq 2 ]] && grep -q 'saknar markörparet' <<< "${ut}"; then
 else
     echo "  ✗ T70 saknad sektionsmarkör gav inte exit 2 av rätt orsak (kod=${kod})"
     while IFS= read -r r; do echo "      ${r}"; done <<< "${ut}"
+    FAIL=$((FAIL + 1))
+fi
+
+# ── Pekarens SANNING (TASK-319) ──────────────────────────────────────────────
+#
+# TASK-281 prövade pekarens närvaro och form; ett påhittat nummer passerade.
+# Fallen nedan bevisar att den gränsen är stängd — och de är formulerade i PAR
+# på exakt samma sätt som resten av sviten: samma kort, samma policy, EN
+# variabel skiljer. Skiljer bara landningshistoriken kan en fällning inte komma
+# från något annat än sannings-prövningen.
+
+MERGE_MONSTER="^Merge pull request #[0-9]+ from "
+
+PEKAR_KORT="${HARLEDD_KLAR}
+Final Summary:
+Levererad. Landning: PR #4242."
+
+prova_ancestry "T71 pekare som FINNS som landning -> passerar" 0 \
+    "HEAD" "${MERGE_MONSTER}" "4242 1910" '' "${PEKAR_KORT}"
+
+prova_ancestry "T72 SAMMA kort, pekaren finns INTE som landning -> FÄLLER" 1 \
+    "HEAD" "${MERGE_MONSTER}" "1910 1930" '' "${PEKAR_KORT}"
+
+prova_ancestry "T72b fällningen namnger numret och referensen" 1 \
+    "HEAD" "${MERGE_MONSTER}" "1910" '#4242' "${PEKAR_KORT}"
+
+# En falsk pekare är ett osant påstående även när den inte undantar någonting.
+# Kortet nedan har ALLA rutor bockade — invariant 2 rör det inte — och ska ändå
+# fällas, annars kan ett påhittat nummer stå kvar obemärkt på ett grönt kort.
+prova_ancestry "T73 falsk pekare på kort med allt bockat -> FÄLLER ändå" 1 \
+    "HEAD" "${MERGE_MONSTER}" "1910" 'finns inte som landning' \
+"Status: ✔ Done
+${AC_HDR}
+- [x] #1 ett
+${DOD_HDR}
+- [x] #1 dod
+Final Summary:
+Landning: PR #4242."
+
+# Ett sant nummer får inte skyla ett falskt. Kortet deklarerar två landningar
+# och båda prövas.
+prova_ancestry "T74 två pekare, en sann och en falsk -> FÄLLER på den falska" 1 \
+    "HEAD" "${MERGE_MONSTER}" "1910" '#4242' \
+"${HARLEDD_KLAR}
+Final Summary:
+Landning: PR #1910. Följdfix i Landning: PR #4242."
+
+# AVSTÄNGT LÄGE — bakåtkompatibiliteten, prövad och inte antagen. Utan
+# ancestry-variabler ska grinden bete sig EXAKT som före TASK-319: pekarens form
+# räcker, och det påhittade numret passerar. Det är samma kort som T72 fäller
+# på, så paret isolerar prövningen till precis den variabeln.
+prova "T75 samma påhittade pekare med prövningen AVSTÄNGD -> passerar" 0 \
+"${PEKAR_KORT}"
+
+# GRACEFUL DEGRADATION. Saknas historiken kan sanningen inte prövas — och då
+# ska grinden säga det, inte fälla. Ett falskt rött på varje pekare hade gjort
+# nattgrinden permanent röd under fetch-depth: 1 och devalverat varje larm.
+prova_ancestry "T76 referensen finns inte -> OPRÖVAD, fäller INTE" 0 \
+    "finns-inte-har" "${MERGE_MONSTER}" "4242" 'OPRÖVADE' "${PEKAR_KORT}"
+
+prova_ancestry "T76b det oprövade läget REDOVISAS, aldrig tyst" 0 \
+    "finns-inte-har" "${MERGE_MONSTER}" "4242" 'SANNING är det inte' "${PEKAR_KORT}"
+
+# FAIL-SAFE-RIKTNINGEN, det subtila fallet: mönstret matchar noll commits (t.ex.
+# efter ett byte till squash-landningar). Mängden blir tom — och en tom mängd
+# får ALDRIG läsas som "alla pekare är falska", vilket hade fällt hela
+# backloggen på en konfigurationsändring.
+prova_ancestry "T77 commit-mönstret matchar noll landningar -> OPRÖVBAR, ej allt-falskt" 0 \
+    "HEAD" "^Squashed landing #[0-9]+ from " "4242" 'noll landningar matchade' \
+"${PEKAR_KORT}"
+
+# Policy-kopplingen är fail-closed på samma sätt som de två paren från TASK-281.
+prova_policy "T78 ancestry-ref utan commit-mönster -> exit 2" \
+"${POLICY_BAS}
+BACKLOG_PEKARE_ANCESTRY_REF=\"HEAD\"" \
+2 'BACKLOG_PEKARE_LANDNINGS_COMMIT_MONSTER saknas'
+
+prova_policy "T78b båda satta -> passerar (fällningen kom från kopplingen)" \
+"${POLICY_BAS}
+BACKLOG_PEKARE_ANCESTRY_REF=\"HEAD\"
+BACKLOG_PEKARE_LANDNINGS_COMMIT_MONSTER=\"${MERGE_MONSTER}\"" \
+0 ''
+
+# Repots RIKTIGA policy måste bära ett mönster som faktiskt matchar repots
+# faktiska landningar — samma T10-form som test-jq-guard.sh använder mot den
+# lokala binären. Ett mönster som är syntaktiskt giltigt men aldrig matchar
+# hade gjort prövningen permanent oprövbar utan att någon märkte det.
+kod=0
+ut=""
+ut="$(grep -oE '^BACKLOG_PEKARE_LANDNINGS_COMMIT_MONSTER=.*' .backlog-closure-policy.conf)" || kod=$?
+if [[ "${kod}" -eq 0 ]] && grep -qE 'Merge pull request' <<< "${ut}"; then
+    echo "  ✓ T79 repots egen policy bär landnings-mönstret för merge-köns form"
+    PASS=$((PASS + 1))
+else
+    echo "  ✗ T79 repots .backlog-closure-policy.conf saknar ett brukbart landnings-mönster"
     FAIL=$((FAIL + 1))
 fi
 

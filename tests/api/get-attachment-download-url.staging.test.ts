@@ -66,7 +66,12 @@
 
 import { randomUUID } from 'node:crypto';
 import { type APIRequestContext, type APIResponse, expect, test } from '@playwright/test';
-import { AttachmentSchema } from '../../src/domain/schemas';
+// [TASK-338.2, SMALNAD TASK-338.4] Läser EF-svaret med testsidans schema —
+// numera BARA en strikt `plats`-överskrivning (räckvidden går via
+// domänschemat rakt av sedan `AttachmentScope` bär `GEMENSAM`). Se
+// `attachment-staging-schema.ts` § VAD SOM ÄR KVAR för varför strikt HÄR och
+// lenient i klienten är två avsikter, inte en inkonsekvens.
+import { StagingAttachmentSchema } from './attachment-staging-schema';
 import { ARBETSKO_EVENT_ID, BELAGGNING_EVENT_ID } from './fixtures';
 import { type ApiConfig, classify401Body, getApiConfig, getValidUserJWT } from './helpers';
 
@@ -128,7 +133,7 @@ async function skapaBilaga(
   const raw = await res.text();
   expect(res.status(), `setup-uppladdning misslyckades: ${raw}`).toBe(201);
   const body = JSON.parse(raw) as { attachment: unknown };
-  return AttachmentSchema.parse(body.attachment).id;
+  return StagingAttachmentSchema.parse(body.attachment).id;
 }
 
 /** Rader denna svit skapar städas via delete-attachment — självstädande.
@@ -293,7 +298,7 @@ test.describe('get-attachment-download-url — skarp conformance (TASK-245)', ()
       },
     });
     expect(uploadRes.status(), await uploadRes.text()).toBe(201);
-    const attachmentId = AttachmentSchema.parse((await uploadRes.json()).attachment).id;
+    const attachmentId = StagingAttachmentSchema.parse((await uploadRes.json()).attachment).id;
 
     try {
       const res = await getDownloadUrl(request, config, jwt, { attachmentId });
@@ -325,7 +330,7 @@ test.describe('get-attachment-download-url — skarp conformance (TASK-245)', ()
       },
     });
     expect(uploadRes.status(), await uploadRes.text()).toBe(201);
-    const attachmentId = AttachmentSchema.parse((await uploadRes.json()).attachment).id;
+    const attachmentId = StagingAttachmentSchema.parse((await uploadRes.json()).attachment).id;
 
     try {
       const res = await getDownloadUrl(request, config, jwt, {
@@ -366,7 +371,7 @@ test.describe('get-attachment-download-url — skarp conformance (TASK-245)', ()
       },
     });
     expect(uploadRes.status(), await uploadRes.text()).toBe(201);
-    const attachmentId = AttachmentSchema.parse((await uploadRes.json()).attachment).id;
+    const attachmentId = StagingAttachmentSchema.parse((await uploadRes.json()).attachment).id;
 
     try {
       const res = await getDownloadUrl(request, config, jwt, { attachmentId });

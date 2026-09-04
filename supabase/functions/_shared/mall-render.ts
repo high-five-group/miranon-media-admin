@@ -19,7 +19,7 @@
 // importerar den EGNA `eta`-modulen ur node_modules, inte denna fil — en
 // `https://`-import kan inte resolvas av Node/Playwright).
 //
-// EN RENDERARE, TRE MALLAR (`MallNamn`): `generate-event-attachment/
+// EN RENDERARE, FYRA MALLAR (`MallNamn`): `generate-event-attachment/
 // index.ts` anropar denna funktion för 'bekraftelse' och 'deltagarinfo'.
 // Kvittots renderingsväg ('kvitto', ADR-125 § Beslut 5) TILLKOM I
 // TASK-309.5: `preview-receipt/index.ts` och `send-receipt-email/
@@ -29,6 +29,12 @@
 // `_shared/receipt-content.ts`s rena hjälpfunktioner (beraknaMoms/
 // formatBelopp/formatKvittoDatum/kvittoBenamning/MIRANON_ORG) men bygger
 // en STRUKTURERAD Eta-data-form, inte en textrad-lista.
+//
+// [TASK-370.2] Försättsbladets renderingsväg ('forsattsblad') TILLKOM för
+// "Förhandsgranska alla N" (PRD TASK-370) — ENDAST konsumerad av
+// `preview-receipt/index.ts`s `inbetalningIds`-gren (`_shared/
+// kvitto-kombination.ts`), aldrig av `renderaMallPdf` direkt (mallen bär
+// inget eget en-sida-krav och går inte via höjdanpassningens trappa).
 //
 // KVITTO-MALLEN BÄR TVÅ `<link rel="stylesheet">`-TAGGAR (`bilaga-delad.css`
 // + `kvitto.css` — se docs/mallar/bilagor/kvitto.css § filhuvud för VARFÖR
@@ -41,16 +47,21 @@
 //
 // SJÄLVBÄRANDE UTAN DOM — regex-baserad, portering av `<link>`/`url()`-
 // inlinings-BETEENDET ur `scripts/docraptor-sjalvbarande.mjs`
-// (Node/fs-baserad) och `src/components/dokument/prototyp/sjalvbarande.ts`
-// (klient/DOM-baserad) till en tredje form utan filsystem OCH utan DOM:
-// varje `url(...)`-referens i den delade CSS:en slås upp mot en
-// FÖRUTBESTÄMD tabell av redan bundlade typsnitts-base64-strängar (samma
-// FAIL-SAFE-princip som klientens `inlinaCssUrls` — Cavolini saknas
-// alltid här, faller till `local("")`, aldrig ett kastat fel); varje
-// `<img src>` slås upp mot en tabell av redan bundlade bild-data-URI:er
-// (HÅRT fel om en bild saknar en genererad modul — samma asymmetri som
-// klientens `inlinaBilder`: en font som faller tillbaka ger ett annat
-// typsnitt, en bild som inte kan hämtas ger ett hål i dokumentet).
+// (Node/fs-baserad) — det tredje syskonet,
+// `src/components/dokument/prototyp/sjalvbarande.ts` (klient/DOM-baserad),
+// är RIVET sedan TASK-309.6 (prototypen bytte till riktig data, commit
+// `5632e164`) — till en form utan filsystem OCH utan DOM: varje
+// `url(...)`-referens i den delade CSS:en slås upp mot en FÖRUTBESTÄMD
+// tabell av redan bundlade typsnitts-base64-strängar (samma FAIL-SAFE-
+// princip som `scripts/docraptor-sjalvbarande.mjs`s `inlinaCssUrls` sedan
+// TASK-301 — tidigare lämnade SKRIPTVARIANTEN en ohämtbar referens ORÖRD,
+// vilket mätt fäller HELA DocRaptor-jobbet med HTTP 422 "File system
+// access is not allowed"; Cavolini saknas alltid här, faller till
+// `local("")`, aldrig ett kastat fel); varje `<img src>` slås upp mot en
+// tabell av redan bundlade bild-data-URI:er (HÅRT fel om en bild saknar en
+// genererad modul — samma asymmetri som skriptvariantens `gorSjalvbarande`:
+// en font som faller tillbaka ger ett annat typsnitt, en bild som inte kan
+// hämtas ger ett hål i dokumentet).
 //
 // ADR-125 § BESLUT 4 OMFATTAR ÄVEN LOGGA/IKON-BILDERNA, TROTS ATT DEN
 // EGNA TEXTEN BARA NÄMNER HTML/CSS/TYPSNITT: `bekraftelsebilaga.html`/
@@ -74,9 +85,89 @@
 // mönster `send-receipt-email/index.ts` (`isProd`) redan etablerat, så
 // mall-render.ts förblir en REN funktion av sina argument (testbar utan
 // att mocka miljövariabler).
+//
+// DOCRAPTOR-REQUEST-YTAN — VERIFIERAD MOT REFERENSEN (TASK-341, 2026-08-29,
+// källa https://docraptor.com/documentation/api, WebFetch + browser-kontroll
+// enligt tasks/lessons.d/webfetch-citat-verifieras-i-browser-fore-citering.md
+// — WebFetch:s sammanfattning kontrollerades ordagrant mot sidans egen
+// `document.body.innerText` innan något citerades här). `postaTillDocRaptor`
+// nedan skickar EXAKT FEM topp-nivå-nycklar i JSON-kroppen: `test`,
+// `document_type`, `document_content`, `name`, `javascript`. Alla fem finns i
+// referensen. `document_type` är INTE en felstavning — sidan säger verbatim:
+// "This field was previously called document_type and is still available
+// for applications that depend on it." (fältet heter `type` i dag, men den
+// gamla nyckeln stöds uttryckligen alltjämt). `javascript` är TOPP-NIVÅ
+// (DocRaptors EGEN JavaScript-motor: "If enabled, we will use DocRaptor's
+// custom JavaScript engine to run any JavaScript in your HTML before sending
+// it to Prince for conversion.") — skilt från det NÄSTLADE
+// `prince_options[javascript]` (Princes egen motor: "If enabled, we will use
+// Prince's built-in JavaScript engine. Note that this is a separate engine
+// from DocRaptor's JavaScript engine."). Vi sätter bara den förra, till
+// `false` (våra mallar kräver ingen JS-körning under rendering).
+//
+// PREMISSAVVIKELSE MOT FYND-KORTET (bokförd, inte tyst rättad — ADR-086):
+// TASK-341 formulerades utifrån att denna fil skickar ett eller flera
+// `prince_options`-fält som var och ett behöver verifieras mot referensen.
+// Mätt fakta (grep + läsning av `postaTillDocRaptor` nedan): filen skickar
+// NOLL `prince_options`-nycklar i dag — inget `prince_options`-objekt finns
+// alls i JSON-kroppen. Ursprungsfyndet som gav upphov till kortet — att
+// DocRaptor svarar HTTP 200 och TYST STRIPPAR en okänd `prince_options`-nyckel
+// (docs/research/forhandsgranska-spara-atervand-bilageflodet-2026-08-29.md
+// § Oväntade fynd, en `pdf_id`-probe) — beskriver alltså i dag en RISK för en
+// FRAMTIDA utökning av denna fil, inte en aktiv bugg. Ingen ändring av
+// renderingsbeteendet gjordes (kortets uttryckliga krav).
+// `tests/api/mall-render-docraptor-request.test.ts` fäller BÅDA
+// felklasserna lokalt utan nätverk: (1) en felstavning bland de fem
+// topp-nivå-nycklar som FAKTISKT skickas i dag, prövad mot en allowlist på
+// 19 dokumenterade topp-nivå-parametrar; och (2) — framåtsäkrat — om ett
+// `prince_options: { … }`-block någonsin läggs till i `postaTillDocRaptor`,
+// prövas VARJE nyckel däri mot en egen allowlist på de 32
+// `prince_options[…]`-nycklar referenssidan dokumenterar i dag (räknat
+// 2026-08-29; forsknings-passets tal "33" i samma sida ovan gäller ett
+// annat, tidigare mätt datum och är inte omräknat här).
+//
+// HTTP_TIMEOUT-DEFAULTEN ÄR 10 S, INTE 60 (TASK-342, 2026-08-29, källa
+// https://docraptor.com/documentation/api, samma browser-kontrollerade
+// verifiering som ovan): "By default, DocRaptor will attempt to fetch any
+// external resource for up to 10 seconds." Detta gäller resurser PRINCE
+// HÄMTAR under rendering (typsnitt via CSS `url(...)`, bilder via
+// `<img src>`) — INTE det 60 s synkrona anropstaket ovan, som är ett annat
+// tal för en annan sak. Mallarna är AVSEDDA att vara helt självbärande
+// (ADR-125 § 4, `gorSjalvbarande` nedan), vilket GÖR exponeringen noll OM
+// ingen extern URL överlever inlining-stegen — men det var före denna
+// skiva ANTAGET, inte MÄTT.
+//
+// MÄTT (grep av de tre mallarnas HTML/CSS-källsträngar direkt, ur
+// `./mallar/*.html.ts` + `./mallar/*.css.ts`): NOLL `url(http…)`-referenser
+// i CSS:en och NOLL `<img src="http…">` i någon av de tre mallarna
+// (bekräftelse, deltagarinfo, kvitto) — samtliga `url(...)`/`<img src>`
+// är relativa och matchas av `FONT_BASE64_PER_FILNAMN`/
+// `BILD_DATA_URI_PER_FILNAMN` nedan. Kortet är alltså en BOKFÖRD FRÅNVARO
+// (dess egen § "Ingen ändring om (1) ger noll träffar"): ingen kodändring
+// gjord, `http_timeout` sätts INTE explicit eftersom det inte finns någon
+// hämtning att skydda.
+//
+// EN plaintext-förekomst av `https://miranon.se/` finns i
+// `bekraftelsebilaga.html.ts` — en `<span class="ikonruta-bildtext">`-
+// bildtext BREDVID en INLINE `<svg>`-QR-kod (se
+// `docs/mallar/bilagor/README.md` § QR-koderna). Varken QR-SVG:n (vektor-
+// markup, ingen extern referens) eller bildtexten (synlig text, inget
+// `href`/`src`) hämtas av Prince — http_timeout-exponeringen är alltså
+// fortsatt noll. Motsvarande Instagram-bildtext skriver `instagram.com/
+// se.miranon/` utan protokoll-prefix och matchar därför inte ens
+// `http(s)://`-mönstret.
+//
+// Låst av `tests/api/mall-render-sjalvbarande-resurser.test.ts` (källkods-
+// nivå, importerar mall-/CSS-strängarna direkt och kör mall-render.ts:s
+// EGNA `CSS_URL_REGEX`/`IMG_SRC_REGEX` — kopierade dit under en
+// KONFIG-PARITETSNOT, se den filens filhuvud) — en framtida `url(http…)`
+// eller `<img src="http…">` fälls lokalt, utan nätverk.
 
 import { Eta } from 'https://esm.sh/eta@4.6.0';
 import { HttpError } from './errors.ts';
+// [TASK-309.34] Höjdanpassningens trappa bor i en EGEN, importfri modul —
+// se blocket § HÖJDANPASSNINGEN nedan för varför.
+import { anpassaHojd } from './hojdanpassning.ts';
 import { carlitoBoldFontBase64 } from './mallar/Carlito-Bold.font.ts';
 import { carlitoBoldItalicFontBase64 } from './mallar/Carlito-BoldItalic.font.ts';
 import { carlitoItalicFontBase64 } from './mallar/Carlito-Italic.font.ts';
@@ -86,6 +177,8 @@ import { selawikBoldFontBase64 } from './mallar/Selawik-Bold.font.ts';
 import { bekraftelsebilagaHtml } from './mallar/bekraftelsebilaga.html.ts';
 import { bilagaDeladCss } from './mallar/bilaga-delad.css.ts';
 import { deltagarinformationHtml } from './mallar/deltagarinformation.html.ts';
+import { forsattsbladCss } from './mallar/forsattsblad.css.ts';
+import { forsattsbladHtml } from './mallar/forsattsblad.html.ts';
 import { globeOutlinedImageDataUri } from './mallar/globe-outlined.image.ts';
 import { instagramGlyfGradientImageDataUri } from './mallar/instagram-glyf-gradient.image.ts';
 import { kvittoCss } from './mallar/kvitto.css.ts';
@@ -93,7 +186,7 @@ import { kvittoHtml } from './mallar/kvitto.html.ts';
 import { miranonMediaOrdmarkeOriginalImageDataUri } from './mallar/miranon-media-ordmarke-original.image.ts';
 import { utanforVerklighetenOmslagImageDataUri } from './mallar/utanfor-verkligheten-omslag.image.ts';
 
-export type MallNamn = 'bekraftelse' | 'deltagarinfo' | 'kvitto';
+export type MallNamn = 'bekraftelse' | 'deltagarinfo' | 'kvitto' | 'forsattsblad';
 
 const MALL_TEMPLATES: Record<MallNamn, { html: string; css: string }> = {
   bekraftelse: { html: bekraftelsebilagaHtml, css: bilagaDeladCss },
@@ -101,6 +194,17 @@ const MALL_TEMPLATES: Record<MallNamn, { html: string; css: string }> = {
   // Sammanslagen CSS, SAMMA ordning som mallens egna två <link>-taggar
   // (bilaga-delad.css FÖRE kvitto.css) — se filhuvudet.
   kvitto: { html: kvittoHtml, css: `${bilagaDeladCss}\n${kvittoCss}` },
+  // [TASK-370.2] Försättsbladet — SAMMA ordning som mallens EGNA tre
+  // <link>-taggar (bilaga-delad.css → kvitto.css → forsattsblad.css, se
+  // forsattsblad.html:s filhuvud). CSS-bunten är en SUPERMÄNGD av kvittots
+  // (bilaga-delad + kvitto), inte bara försättsbladets egen — den
+  // KOMBINERADE grenen i preview-receipt/index.ts anropar
+  // `gorMallSjalvbarande('forsattsblad', …)` på HELA det sammanslagna
+  // dokumentet (försättsblad + N kvittosidor), så bunten måste bära ALLA
+  // klasser som förekommer i det dokumentet — kvittosidornas `.kvitto-*`
+  // klasser INKLUDERAT, inte bara försättsbladets egna. Se
+  // `_shared/kvitto-kombination.ts`s filhuvud för hela kompositionskedjan.
+  forsattsblad: { html: forsattsbladHtml, css: `${bilagaDeladCss}\n${kvittoCss}\n${forsattsbladCss}` },
 };
 
 // De sex FRIA typsnittsfilerna (Cavolini bundlas ALDRIG — gitignorerad
@@ -186,14 +290,50 @@ function gorSjalvbarande(ifylldHtml: string, css: string): string {
 // disciplin research-passet (§ Delfråga 4) kräver: `<%= %>` (aldrig
 // `<%~ %>`) på VARJE fält som ytterst härstammar från Airtable-fritext.
 // `varName: 'data'` matchar mallarnas egen `<%= data.x %>`-syntax.
+//
+// ETT UNDANTAG FINNS, och det är medvetet: bekräftelsebilagans
+// BESKRIVNINGSSTYCKE renderas med `<%~ %>`. Det är säkert därför att
+// `byggBekraftelseData` kört texten genom `fetMarkera`
+// (_shared/fet-markering.ts), som escapar HELA strängen och därefter
+// återinför enbart <strong>. Regeln ovan gäller alltså varje fält som når
+// mallen OTVÄTTAT — och kopplingen hålls av två tester i mall-data.test.ts
+// som fäller om `.map(fetMarkera)` någonsin försvinner. Läser du bara denna
+// fil ser regeln absolut ut; den är det inte längre (review-fynd, #2025).
 const eta = new Eta({ autoEscape: true, varName: 'data' });
 
+/**
+ * [TASK-370.1] Fyller mallen med Eta — UTAN att göra resultatet
+ * självbärande. Ren funktion, inget nätverk. Utbruten ur
+ * `fyllOchGorSjalvbarande` (nedan, nu en tunn komposition av denna +
+ * `gorMallSjalvbarande`) så att `_shared/kvitto-kombination.ts` kan fylla
+ * mallen N GÅNGER (en per kvitto) och låta självbärande-görningen ske EN
+ * gång på det SAMMANSLAGNA dokumentet — se den filens filhuvud för hela
+ * mätpunkt 4-motiveringen (payload en gång vs N gånger självbärande).
+ */
+export function fyllMall(mall: MallNamn, data: Record<string, unknown>): string {
+  const { html } = MALL_TEMPLATES[mall];
+  return eta.renderString(html, data) as string;
+}
+
+/**
+ * [TASK-370.1] Gör en REDAN Eta-fylld HTML-sträng självbärande med `mall`s
+ * CSS. Utbruten av samma skäl som `fyllMall` ovan — kompositionsvägen
+ * anropar denna EN gång på det sammanslagna N-kvitto-dokumentet i stället
+ * för N gånger på varje enskilt kvitto (mätpunkt 4).
+ */
+export function gorMallSjalvbarande(mall: MallNamn, ifylldHtml: string): string {
+  const { css } = MALL_TEMPLATES[mall];
+  return gorSjalvbarande(ifylldHtml, css);
+}
+
 /** Fyller mallen med Eta och gör resultatet självbärande. Ren funktion,
- *  inget nätverk — den halva `renderaMallPdf` kallar innan DocRaptor. */
+ *  inget nätverk — den halva `renderaMallPdf` kallar innan DocRaptor.
+ *  [TASK-370.1] Nu en tunn komposition av `fyllMall` + `gorMallSjalvbarande`
+ *  — BETEENDET är oförändrat (samma två steg, samma ordning), bara
+ *  UTBRUTET så kompositionsvägen kan återanvända de två halvorna var för
+ *  sig. */
 export function fyllOchGorSjalvbarande(mall: MallNamn, data: Record<string, unknown>): string {
-  const { html, css } = MALL_TEMPLATES[mall];
-  const ifylld = eta.renderString(html, data) as string;
-  return gorSjalvbarande(ifylld, css);
+  return gorMallSjalvbarande(mall, fyllMall(mall, data));
 }
 
 const DOCRAPTOR_URL_BAS = 'https://api.docraptor.com/docs';
@@ -256,6 +396,58 @@ export interface RenderaMallPdfOpts {
   namn: string;
 }
 
+/*
+ * ═══ HÖJDANPASSNINGEN — FLYTTAD TILL `./hojdanpassning.ts` (TASK-309.34) ═══
+ *
+ * `SKALTRAPPA`, `raknaSidor` och trappans beslutslogik BODDE här (TASK-309.27,
+ * PR #2028, merge-SHA `a620b3f4`) men flyttades UTAN BETEENDEÄNDRING till en
+ * EGEN, IMPORTFRI modul i TASK-309.34. Skälet är strukturellt: `import { Eta }
+ * from 'https://esm.sh/eta@4.6.0'` på rad 83 i DENNA fil gör hela filen
+ * omöjlig att importera i Node/Playwright (`ERR_UNSUPPORTED_ESM_URL_SCHEME`,
+ * minimalt repro i `hojdanpassning.ts`s filhuvud) — trappan kunde alltså inte
+ * enhetstestas så länge den låg här. Samma lösning som TASK-309.22 valde för
+ * `attachments.ts` → `attachment-filename.ts` (PR #1983, `f80ace72`).
+ *
+ * Rationalen för trappans VÄRDEN (mätserien, golvet, kostnaden) flyttade med
+ * till den nya modulens filhuvud — den är inte kopierad hit.
+ *
+ * `raknaSidor` RE-EXPORTERAS nedan så filens publika yta är oförändrad.
+ */
+export { raknaSidor } from './hojdanpassning.ts';
+
+/**
+ * [TASK-370.1] POST:ar en REDAN fylld och självbärande HTML-sträng till
+ * DocRaptor, med EN retry på 5xx/timeout (aldrig 4xx) — utbruten ur
+ * `renderaEttPass` (nedan, nu en tunn komposition av `fyllOchGorSjalvbarande`
+ * + denna) så att kompositionsvägen (`_shared/kvitto-kombination.ts`, redan
+ * fylld OCH självbärande INNAN detta anrop) kan återanvända samma
+ * retry-disciplin utan att gå via en `mall`+`data`-fyllning den redan gjort
+ * själv (N gånger, en per kvitto — se den filens filhuvud).
+ */
+export async function renderaSjalvbarandeHtmlPdf(
+  html: string,
+  opts: RenderaMallPdfOpts,
+): Promise<Uint8Array> {
+  try {
+    return await postaTillDocRaptor(opts.apiKey, html, opts.namn, opts.test);
+  } catch (error) {
+    if (!arRetrybart(error)) throw error;
+    return await postaTillDocRaptor(opts.apiKey, html, opts.namn, opts.test);
+  }
+}
+
+/** Ett DocRaptor-anrop med retry på 5xx/timeout — trappans enskilda steg.
+ *  [TASK-370.1] Nu en tunn komposition av `fyllOchGorSjalvbarande` +
+ *  `renderaSjalvbarandeHtmlPdf` — BETEENDET är oförändrat. */
+async function renderaEttPass(
+  mall: MallNamn,
+  data: Record<string, unknown>,
+  opts: RenderaMallPdfOpts,
+): Promise<Uint8Array> {
+  const html = fyllOchGorSjalvbarande(mall, data);
+  return await renderaSjalvbarandeHtmlPdf(html, opts);
+}
+
 /**
  * Renderar `mall` med `data` (Eta, autoEscape) → självbärande HTML →
  * DocRaptor → PDF-bytes. EN retry på 5xx/timeout, aldrig på 4xx.
@@ -265,11 +457,17 @@ export async function renderaMallPdf(
   data: Record<string, unknown>,
   opts: RenderaMallPdfOpts,
 ): Promise<Uint8Array> {
-  const html = fyllOchGorSjalvbarande(mall, data);
-  try {
-    return await postaTillDocRaptor(opts.apiKey, html, opts.namn, opts.test);
-  } catch (error) {
-    if (!arRetrybart(error)) throw error;
-    return await postaTillDocRaptor(opts.apiKey, html, opts.namn, opts.test);
-  }
+  // Bara bekräftelsebilagan bär en-sida-kravet. Deltagarinformationen och
+  // kvittot får växa — deras förlagor gör det också.
+  if (mall !== 'bekraftelsebilaga') return await renderaEttPass(mall, data, opts);
+
+  // Trappan äger beslutet (skalsteg, golv, loggrad); denna fil äger bara
+  // renderaren den matas med. `utfall` bär även skala/sidor/renderingar —
+  // ingen konsument behöver dem i dag, men de är vad trappans enhetstest
+  // (`tests/api/hojdanpassning.test.ts`) prövar utan att röra DocRaptor.
+  const utfall = await anpassaHojd(
+    (skala) => renderaEttPass(mall, { ...data, innehallsSkala: skala }, opts),
+    { namn: opts.namn },
+  );
+  return utfall.pdf;
 }

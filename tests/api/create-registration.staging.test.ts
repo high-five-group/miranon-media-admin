@@ -65,12 +65,18 @@ function sentinelEmail(): string {
   return `create-test+${randomUUID()}@staging.test`;
 }
 
-/** Härled conformance-ankaret: den seedade postens event (ingen ny event-fixtur). */
-async function findSeededEventId(
+/**
+ * Härled conformance-ankaret: den seedade postens event (ingen ny event-fixtur).
+ * Returnerar även `eventNamn` (TASK-363) — den seedade posten är EN webbformulär-
+ * anmälan till SAMMA event som våra sentinel-creates länkas till, så dess
+ * `eventNamn` (löst ur `Kurs (from Event)`/`Event (namn)`, `_shared/registration-
+ * read.ts`) är facit att jämföra en NY manuell creates `eventNamn` mot.
+ */
+async function findSeededEvent(
   request: APIRequestContext,
   config: ApiConfig,
   jwt: string,
-): Promise<string> {
+): Promise<{ eventId: string; eventNamn: string | null }> {
   const seededId = process.env.TEST_REGISTRATION_RECORD_ID ?? '';
   expect(
     seededId,
@@ -82,12 +88,12 @@ async function findSeededEventId(
   });
   expect(res.status()).toBe(200);
   const { registrations } = (await res.json()) as {
-    registrations: { id: string; eventId: string | null }[];
+    registrations: { id: string; eventId: string | null; eventNamn: string | null }[];
   };
   const seeded = registrations.find((r) => r.id === seededId);
   expect(seeded, `seedad post ${seededId} hittades inte via get-registrations`).toBeTruthy();
   expect(seeded?.eventId, `seedad post ${seededId} saknar eventId (länk ej satt?)`).toBeTruthy();
-  return seeded?.eventId as string;
+  return { eventId: seeded?.eventId as string, eventNamn: seeded?.eventNamn ?? null };
 }
 
 test.describe('create-registration — skarp conformance (Fas 6c L4)', () => {
@@ -96,7 +102,7 @@ test.describe('create-registration — skarp conformance (Fas 6c L4)', () => {
   }) => {
     const config = getApiConfig();
     const jwt = await getValidUserJWT(request, config);
-    const eventId = await findSeededEventId(request, config, jwt);
+    const { eventId, eventNamn: seededEventNamn } = await findSeededEvent(request, config, jwt);
 
     const email = sentinelEmail();
     const res = await postCreate(request, config, jwt, {
@@ -121,6 +127,11 @@ test.describe('create-registration — skarp conformance (Fas 6c L4)', () => {
     expect(body.record.fields['EventKey']).toMatch(/^Event-\d+$/); // "Event-N"-form (lookup)
     expect(body.record.fields['Event']).toEqual([eventId]); // Event-länk = route-eventId
     expect(body.record.fields['E-post']).toBe(email);
+    // TASK-363: skrivningen sätter ALDRIG `Vill anmäla sig till` (annan
+    // semantik, se PR-beskrivningen) — SSOT-grinden nedan bevisar det ännu
+    // hårdare (deny på ett otillåtet fält), men skriv-beviset här visar att
+    // vi inte av misstag lade till det som ett tillåtet create-fält.
+    expect(body.record.fields['Vill anmäla sig till']).toBeUndefined();
 
     // (ii) Domän-shape (adapterns parse-väg) — eventId + null personId (A2 delegerad).
     const reg: Registration = RegistrationSchema.parse(body.registration);
@@ -129,6 +140,16 @@ test.describe('create-registration — skarp conformance (Fas 6c L4)', () => {
     expect(reg.email).toBe(email);
     expect(reg.fornamn).toBe('Sentinel');
     expect(reg.personId, 'Person-länk sätts ej vid create (delegeras till A2)').toBeNull();
+    // TASK-363: rotorsaken — en MANUELL create ska ALDRIG lämna eventNamn null
+    // ("(okänt event)" i aktivitetsloggen). Facit: samma värde som den seedade
+    // webbformulär-anmälans eventNamn (samma event → samma Kurs (from Event)).
+    expect(
+      reg.eventNamn,
+      'eventNamn ska aldrig vara null när Event-länken är satt (TASK-363)',
+    ).toBeTruthy();
+    if (seededEventNamn !== null) {
+      expect(reg.eventNamn).toBe(seededEventNamn);
+    }
   });
 
   test('allow: create med antalPlatser + notering → 201 + skriv-bevis (facit-formens sex fält, task-18.12)', async ({
@@ -136,7 +157,7 @@ test.describe('create-registration — skarp conformance (Fas 6c L4)', () => {
   }) => {
     const config = getApiConfig();
     const jwt = await getValidUserJWT(request, config);
-    const eventId = await findSeededEventId(request, config, jwt);
+    const { eventId } = await findSeededEvent(request, config, jwt);
 
     const email = sentinelEmail();
     const noteringText = 'Ringde in på telefon — betalar via faktura vecka 32.';
@@ -227,7 +248,7 @@ test.describe('create-registration — skarp conformance (Fas 6c L4)', () => {
   }) => {
     const config = getApiConfig();
     const jwt = await getValidUserJWT(request, config);
-    const eventId = await findSeededEventId(request, config, jwt);
+    const { eventId } = await findSeededEvent(request, config, jwt);
     const email = sentinelEmail();
 
     const first = await postCreate(request, config, jwt, {
@@ -256,7 +277,7 @@ test.describe('create-registration — skarp conformance (Fas 6c L4)', () => {
   test('INVARIANT: saknad idempotencyKey → 400', async ({ request }) => {
     const config = getApiConfig();
     const jwt = await getValidUserJWT(request, config);
-    const eventId = await findSeededEventId(request, config, jwt);
+    const { eventId } = await findSeededEvent(request, config, jwt);
 
     const res = await postCreate(request, config, jwt, {
       fornamn: 'X',

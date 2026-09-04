@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-24
+updated: 2026-09-03
 review_by: 2026-11-24
 status: stable
 ---
@@ -169,9 +169,45 @@ URL); all åtkomst går via en signerad URL (`SIGNED_DOWNLOAD_URL_TTL_SECONDS
 
 | Path-form | Skrivs av | Formel |
 |---|---|---|
-| `<eventId>/<attachmentId>-<filnamn>` | Klass A/B, event-räckvidd | `buildAttachmentPath`, `_shared/attachments.ts` |
+| `<eventId>/<attachmentId>-<filnamn>` | Klass A/B, event-räckvidd | `buildAttachmentPath`, `_shared/attachment-filename.ts` (re-exporterad via `_shared/attachments.ts`) |
 | `kurstyp/<kursfamilj>/<attachmentId>-<filnamn>` · `alla-event/<attachmentId>-<filnamn>` | Gemensamma bilagor (ADR-118 beslut 5) | `buildStorageAnchor`, `_shared/attachments.ts` |
 | `utkast/<eventId>/<typ>.pdf` (`typ` ∈ `bilaga`\|`kvitto`\|`deltagarinformation`) | TASK-302, `ADR-124` — transient förhandsgransknings-utkast, `upsert: true` (högst ETT per event och typ) | `laggUtkast`, `_shared/utkast.ts` |
+
+**[TASK-309.22] `<filnamn>` ovan är sedan denna skiva ASCII-/Storage-SÄKERT,
+INTE klientens råa filnamn.** Rotorsak: Supabase Storages nyckel-regex
+(`supabase/storage` `src/storage/limits.ts`, `VALID_OBJECT_KEY`) accepterar
+bara `/^[A-Za-z0-9_/!.*'() &$=@;:+,?-]*$/` — ett filnamn med å/ä/ö/é/… gav
+`502 Invalid key: …` (Marcus prod-röktest 2026-08-26,
+`2025-HörlurarMiranonMedia.pdf`).
+
+**Två separata steg, MEDVETET åtskilda sedan review-runda 1** (en tidigare
+version av denna rad lät ETT enda steg göra båda sakerna — fel, se nedan):
+
+1. `sanitizeFilnamn` (`_shared/attachment-filename.ts`) städar bara
+   separatorer/styrtecken, trimmar och cappar vid 200 tecken — den faller
+   ALDRIG till ASCII. Detta är den sträng `upload-attachment/index.ts`s
+   `deriveAttachmentId` hashar (TASK-316:s idempotens-nyckel): två OLIKA
+   klient-filnamn (oavsett skript — `café.pdf`/`cafe.pdf`, eller två helt
+   olika CJK-strängar) ska alltid ge OLIKA hash, precis som före hela detta
+   korts arbete.
+2. `buildAttachmentLeaf` (samma fil) tar `sanitizeFilnamn`s utdata och
+   NFKD-normaliserar + stripper diakritik (å→a, ä→a, ö→o, …) + faller allt
+   som ändå ligger utanför den tillåtna mängden till `-` — ENDAST för
+   Storage-nyckeln/`Lagringsnyckel`, aldrig för hash-underlaget.
+
+**Varför isärhållningen:** ASCII-fallet i steg 2 KOLLAPSAR olika filnamn
+till identisk sträng (`填报指南.pdf`/`肆意妄为.pdf` → samma ASCII-form) — om
+HASHEN hade använt den formen hade två olika filer med samma bytes kunnat få
+samma `attachmentId`, dvs. en genuint ny uppladdning hade tolkats som en
+idempotent replay av en annan fil. Steg 1 (hash-underlaget) håller sig
+därför OASCII-fallet.
+
+**Bilagor.Namn förblir klientens ORIGINALFILNAMN oförändrat** — bara
+Storage-nyckeln/`Lagringsnyckel` transformeras (steg 2). Befintliga rader
+(redan ASCII-giltiga per konstruktion — annars hade uppladdningen redan
+fallerat) är BYTE FÖR BYTE oförändrade, i BÅDA stegen. Se
+`_shared/attachment-filename.ts`s docblock för hela algoritmen och
+`tests/api/attachment-filename.test.ts` för regressionstäckningen.
 
 `utkast/`-prefixet skiljer sig från de två andra på tre punkter: det är
 ALDRIG listat i appen (ingen Bilagor-rad pekar dit), det ÖVERSKRIVS i
@@ -313,6 +349,132 @@ count-verifierat efter med `{Räckvidd} = BLANK()` → 0 träffar (24/24).
 Prod-tabellen mättes TOM i S102 och är TOM alltjämt — `list_records` gav 0
 rader både före och efter fältskapelsen (0/0, inget att migrera).
 
+#### Bilagornas Gemensam-räckvidd — Plats-axel (ADR-125 § Updates 2026-08-29, TASK-338.1) — staging skapad 2026-08-29
+
+ADR-125 § Beslut 1 (S108 Del 2 § D:s grillade samsyn) beslutade räckvidden
+som ett AND-filter över tre kombinerbara axlar (Familj · Event · Plats) —
+det ERSÄTTER ADR-118 beslut 1 (radioval Event/Kurstyp/Alla event) för
+räckviddsVALET självt. ADR-118 beslut 2/3 (unionshämtning av eventets egna +
+gemensamma bilagor, raderingsskydd ur eventkontext) gäller **vidare
+oförändrat** — bara VAD som räknas som "gemensam" byter form. Denna skiva
+(TASK-338.1) bär STAGING-halvan (`apphjj8Q7lkXCMsL4`) av lagringsformen:
+fjärde option "Gemensam" på `Bilagor.Räckvidd`, ny länk `Bilagor.Plats` →
+`Platser`, och ett lookup-fält `Bilagor.Platsnamn` (`Platser.Namn`). Options
+"Kurstyp"/"Alla event" lämnas kvar OANVÄNDA på fältet (borttagning är ett
+Marcus-beslut, bokfört i defektregistret vid slutgenomlysningen, `ADR-063`
+§ Updates) — PRD `TASK-338` § Implementationsbeslut.
+
+**KÄND KANT, mätt skarpt — `mcp__airtable__update_field` kan INTE lägga till
+en `options.choice` på en befintlig singleSelect.** Verktygets JSON-schema
+exponerar bara `name`/`description` (bekräftat: en beskrivnings-uppdatering
+mot `Räckvidd` lyckades, en efterföljande `options`-payload mot SAMMA fält
+gav `INVALID_REQUEST_UNKNOWN: "name, description, and/or options must be
+specified"` — wrappern stryper okända fält innan anropet ens når Airtable).
+En efterföljande direkt Web-API-PATCH mot samma fält (samma PAT som
+MCP-servern använder — `~/.claude.json`
+`mcpServers.airtable.env.AIRTABLE_API_KEY`, verifierat vara EXAKT samma
+nyckel data-model.md redan bokför som delad mellan MCP:n och
+`AIRTABLE_SCHEMA_TOKEN`-klassen skript) gav Airtables EGEN 422:
+`"Changing a field's type or number precision is not currently supported."`
+— plattformens Metadata-API tillåter alltså inte att lägga till en choice på
+en BEFINTLIG singleSelect överhuvudtaget, oavsett verktyg. Vägen som
+FUNGERADE: `mcp__airtable__update_records` med `Räckvidd: "Gemensam"` på en
+riktig rad — Airtables dokumenterade **typecast**-beteende för Records-API:t
+skapar automatiskt en ny choice när strängen inte matchar något befintligt
+val. Choice-ID:t `selxFObtdzHsUJiun` föddes så och verifierades efteråt med
+`describe_table` (bekräftat närvarande med korrekt namn/färg). Bokförs här
+som verktygsfakta för nästa fält-operation av samma klass.
+
+| Yta | Staging-ID | Prod-ID | Typ |
+|---|---|---|---|
+| Bilagor → `Räckvidd` (ny 4:e option) | choice `selxFObtdzHsUJiun` på fält `fldU6i9Ju5HRwSRBf` | choice `selsABHUcAQJqGd0M` på fält `fldsEltfGx3y63hhF` (ADR-118, 2026-08-17) — mätt via `describe_table` 2026-08-29, INTE av migreringsskriptet (se not nedan) | singleSelect-choice — "Gemensam" |
+| Bilagor → `Plats` | `fldmkHUxPNRRA0Rxi` | `fldiRBrqROTJ7fnFs` | multipleRecordLinks → Platser (`tbl7ER0wNqAZ9ZhEq` staging / `tblPeNLeeQ1IduGTK` prod); `prefersSingleRecordLink: false` i prod (bekräftar staging, stänger `TASK-338.6` § Premiss-pass punkt 2 — uppdragsspecen sa `true`); högst en plats avsedd — Airtable kan inte tvinga det, adapter/EF vaktar (TASK-338.2/338.3) |
+| Bilagor → `Platsnamn` | `fldyEDJD3Y3InHJ7J` | `fldFgcCtK8gRRm2m8` | multipleLookupValues — lookup av `Platser.Namn` (`fldSDJcY7cb4dam3Y` staging / `fld9CfDq4rqTAGGpw` prod) via `Plats` |
+| Platser → `Bilagor` (auto-född spegel av `Plats`) | `fldbdACukM1V52mZT` | `fld1yaGrVppKh9fyh` — mätt via `describe_table` 2026-08-29 (`Plats`-fältets `options.inverseLinkFieldId`), INTE av migreringsskriptet (se not nedan) | multipleRecordLinks → Bilagor |
+
+**Steg (i) utförd mot prod 2026-08-29 (`TASK-338.6`, Marcus GO per `ADR-125`
+§ 8).** Körning: `node scripts/task-338-6-prod-migration.mjs --utfor-schema
+app8uGPrVCVOm6LfD` följt av `--kontrollera`, båda `exit 0`.
+Bilagor-tabellen är `tblevR1B54wFjp7QC`, Platser-tabellen `tblPeNLeeQ1IduGTK`
+(båda matchar redan bokförda ID:n i § Snabbreferens ovan). Räckvidd-choices
+EFTER: `Event, Kurstyp, Alla event, Gemensam`. Verifiering: `konvergerat: JA`
+(en färsk `planSchema()`-körning gav enbart `already-exists`/`skip` för alla
+tre komponenter — choice, `Plats`-fält, `Platsnamn`-fält), `Skrivningar:
+optionAdd=2 platsField=1 platsnamnField=1` (`optionAdd=2` är skriptets
+create+delete-par för den kastbara raden, INTE två tillagda choices — se
+`runSchema()` rad ~481). Kastbar rad `rec5qoF9b2uBmNP3B` skapades och
+raderades korrekt; `--kontrollera` efteråt gav `Gemensam-rader utan
+Namn/Event-länk: 0` — inga kvarlevor.
+
+**Kvarstående tooling-lucka, bekräftad — INTE stängd av mätningen nedan:**
+`scripts/task-338-6-prod-migration.mjs`s `runSchema()` fångar ALDRIG
+choice-ID:t för "Gemensam" (skapas via en kastbar rads typecast, ingen
+efterläsning) eller spegelfältets ID på `Platser` (auto-föds av Airtable vid
+`Plats`-skapelsen, skriptet frågar aldrig efter det) — bara `Plats`- och
+`Platsnamn`-fältens egna ID:n loggas/returneras (`skrivningar.platsField`/
+`platsnamnField`, rad ~493/501). De två ID:na i tabellen ovan kom DÄRFÖR
+inte från skriptet utan från ett separat `describe_table`-uppslag mot prod
+2026-08-29 (`app8uGPrVCVOm6LfD`, tabell `tblevR1B54wFjp7QC`, Marcus stående
+GO för prod-LÄSNING) — full choice-lista på `Räckvidd` efter uppslaget:
+`seljRFJnazDELbE3C` (Event) · `selkHwo1c3WtQpBnC` (Kurstyp) ·
+`seliEQKhV8i2KFTM0` (Alla event) · `selsABHUcAQJqGd0M` (Gemensam). **Not:**
+"Gemensam" fick färgen `blueLight2` medan de tre äldre choicesen alla har
+`grayLight2` — Airtables egen färgtilldelning vid typecast-skapelse, ingen
+avsiktlig färgsättning. Spegelfältets ID (`fld1yaGrVppKh9fyh`) lästes ur
+`Plats`-fältets `options.inverseLinkFieldId` i samma svar. Samma uppslag
+bekräftade `Plats`-fältets `prefersSingleRecordLink: false` i prod — matchar
+staging, stänger `TASK-338.6` § Premiss-pass punkt 2 (uppdragsspecen sa
+`true`).
+
+**Migrering av befintliga rader (AC #2), samma form som `TASK-275`:s
+migrering ovan.** Staging bar **9** rader med `Räckvidd` = "Kurstyp" (6) eller
+"Alla event" (3) FÖRE migreringen (räknat med
+`OR({Räckvidd}='Kurstyp',{Räckvidd}='Alla event')`) — samtliga 9 PATCH:ade
+till "Gemensam" via `mcp__airtable__update_records`, `Kursfamilj`/`Kursnivå`
+lämnade helt orörda på var och en. Count-verifierat efter:
+`OR({Räckvidd}='Kurstyp',{Räckvidd}='Alla event')` → **0** träffar;
+`{Räckvidd}='Gemensam'` → **9** träffar (matchar summan 6+3 exakt), med
+samtliga `Kursfamilj`/`Kursnivå`-värden identiska mot före-läsningen
+(fält-för-fält jämförda). Övriga 36 rader i tabellen (13 med
+`Räckvidd`="Event", 23 utan `Räckvidd` satt alls — event-mallade
+`generate-event-attachment`-rader som aldrig skriver fältet) rördes inte.
+Prod-basen (`app8uGPrVCVOm6LfD`) är HELT ORÖRD i denna skiva — inget anrop i
+ovanstående bar det bas-ID:t; migreringen dit är `TASK-338.6` (Marcus GO per
+tabell, `ADR-125` § 8).
+
+**Ingen ny `.purge-staging-policy.json`-target.** Migreringen skapade inga
+nya rader — den PATCH:ade 9 befintliga, redan sentinel-täckta rader
+(`upload-attachment-sentineler`s `Namn`-mönster täcker de `ZZ-attachment-
+test-*`-raderna; `Demo - *`-raderna är permanenta demo-fixturer utanför
+purge-svepet av samma skäl som andra `Demo - *`-poster). De två nya fälten
+(`Plats`/`Platsnamn`) skapar inga transienta rader i DENNA skiva —
+skrivvägen som faktiskt sätter `Plats` på nya rader hör till TASK-338.2/
+338.3 och får bedöma purge-behov där. Verifierat mot
+`.purge-staging-policy.json`: ingen befintlig target rör `Plats`/`Platsnamn`,
+och ingen ny target behövs för detta bytes egna operationer.
+
+**Matchningsregeln (TASK-338.2, kod — inte basen).** `get-event-attachments`
+hämtar eventets egna rader plus ALLA `Räckvidd = Gemensam`-rader i EN
+hämtning, och matchar de senare i kod mot eventets Kursfamilj, Kursnivå
+(tom-nivå-regeln oförändrad) och `Plats` — på länkens record-ID, aldrig
+`Platsnamn`. Skälet: `Plats` är en länk och Airtables formelspråk kan inte
+jämföra ett länkfält mot ett record-ID utan hjälpfält (samma T15-klassbugg
+`get-event-attachments`s eget filhuvud redan varnar för); en tom axel
+begränsar inte. Den rena matcharen bor i
+`supabase/functions/_shared/rackvidd-matchning.ts`, enhetstestad utan
+staging (`tests/api/rackvidd-matchning.test.ts`). Läsvägen normaliserar
+legacy-värdena "Kurstyp"/"Alla event" till "Gemensam" med sina axlar FÖRE
+matchning — en bokförd rivningsskuld (töms först när prod är migrerad,
+`TASK-338.6`, och installerade PWA-klienter bevisligen slutat skicka dem).
+
+**Känt randfall, bokfört men OSKAPBART från appen:** en rad med tomt
+`Räckvidd` OCH tom `Event`-länk vore osynlig för unionen — den matchar
+varken "eventets egna" (ingen `Event`-länk) eller "Gemensam" (fältet har
+inte det värdet). Ingen skrivväg i appen kan producera formen (`rackvidd`
+är obligatoriskt ∈ {Event, Gemensam} vid skrivning, och `Event` sätts alltid
+oavsett räckvidd); den kräver en direkt Airtable-redigering. Ingen kod
+skyddar mot den.
+
 #### Bilagornas datamodell (ADR-125, TASK-309.2) — staging skapad 2026-08-23, prod skapad 2026-08-24
 
 Tre nya tabeller + fält på Eventplanering/Bilagor, per
@@ -437,6 +599,24 @@ Föreläsning `reczZleTUxMind5Wx` · Resor i medvetandet 1 · Utbildning
 Resor i medvetandet 3 · Utbildning `recEhb0BMo26Y7ndN` · Psionautics ·
 Utbildning `recG7kY1EV0GrUOTa`; samt 24 `Agendapunkter`-rader knutna till
 "Resor i medvetandet 1 · Utbildning" (record-ID:na i S108 Del 17).
+
+**Plats-backfill (prod, 2026-08-26, S108 resume 11).** Marcus GO i klartext
+(*"Kör plats-backfillen på alla Rönninge event"*): samtliga **27**
+`Eventplanering`-rader med `Ort = "Rönninge"` (Event-2 … Event-64, alla utan
+länk) fick `Plats` (`fldaVV1KS6skbOLrB`) → `recZc1EMWMYw5KADo` via
+Airtable-API:t — en testrad först (Event-14), sedan batchar 10+10+6.
+Kontroll efteråt: `AND({Ort}='Rönninge', {Plats}='')` → 0 rader. A6/A9/A10
+bevakar andra fält; inget triggades. Staging bär 0 Rönninge-event, så ingen
+paritet att hålla. Event-62:s testkopia `Adress (bilagetext)` tömd samma dag
+på Marcus order (regeln `kopia ?? standard`). **Kanten STÄNGD 2026-08-28
+(TASK-309.30):** `create-event` lärde sig Ort → Plats — vertikalen slår upp
+`Platser` på `Namn` = `Ort` och länkar vid exakt en träff, så ett nytt
+Rönninge-event föds med `Plats` satt. Regeln, dess tre nej-lägen och
+ordnings-invarianten: § Ort-till-Plats vid create (under Eventplanerings
+create-fält). Prod-EF-deployen av `create-event` är ett separat
+Marcus-moment (`scripts/fas4-prod-deploy.sh`); prod-fältet `Plats` finns
+sedan 2026-08-24, så deployen har ingen schema-förutsättning kvar att vänta
+på.
 
 **Torrkörnings-kant, bokförd — inte ett fel i skarpa vägen.**
 `create-eventinnehall-modell.mjs --dry-run` kan INTE planera hela kedjan mot
@@ -605,6 +785,158 @@ för att uppfinna en egen dialogform (AC #2/#3: "ingen andra dialogform") —
 se modulernas egna filhuvuden för den fullständiga motiveringen och den
 enda avsiktliga tillägget (`BlockDialog`s `caption`-prop).
 
+#### Stagingbasens additiva tillskott 2026-08-30 (TASK-346.2, ADR-128 §§ 2/5/7) — numeriska prisfält, spegel, Saknas (kr)
+
+Betalningsflödets numeriska prisfält, den app-skrivna spegeln och
+`Saknas (kr)`-formeln — ADR-128 beslut 5 (spegeln) och beslut 7 (numeriska
+priser BREDVID fritexten). Skapade LIVE via Airtable MCP
+(`mcp__airtable__create_field`, staging `apphjj8Q7lkXCMsL4`, 2026-08-30) —
+`AIRTABLE_SCHEMA_TOKEN` saknades lokalt (samma lucka som `TASK-147.12`/
+`TASK-309.2`); `scripts/create-betalningsfalt.mjs` är den deklarativa
+hemvisten som speglar exakt denna spec för framtida idempotenta körningar
+(samma form som `create-kvitton-table.mjs`, `npm run schema:betalningsfalt`).
+Enbart additivt — inget befintligt fält (inklusive alla fritext-fälten
+Pris/Anmälningsavgift/Resterande belopp, § Schema cheat sheet ovan) rört.
+
+| Tabell | Fält (staging-ID) | Typ | Roll |
+|---|---|---|---|
+| Eventinnehåll | `Pris (kr)` (`fldyFLfa0RhzY1qH1`) | number, precision 2 | Numerisk standard, BREDVID fritexten `Pris` (`fldaNE6ZU42lVNyrS`) |
+| Eventinnehåll | `Anmälningsavgift (kr)` (`fldvMVViBjpXW9Abe`) | number, precision 2 | Numerisk standard, BREDVID fritexten `Anmälningsavgift` (`fldih0ePhJqD8raEa`) |
+| Eventplanering | `Pris (kr)` (`fldCGsGP3QDtaAoho`) | number, precision 2 | Per-event-override, BREDVID `Pris (bilagetext)` (`fld6SoKgMvTsgicDm`). Tomt = Eventinnehållets standard gäller (härleds i KOD — ingen lagrad länk Eventplanering→Eventinnehåll finns) |
+| Eventplanering | `Anmälningsavgift (kr)` (`fldQL5eNuGNHwQ7tq`) | number, precision 2 | Per-event-override, BREDVID `Anmälningsavgift (bilagetext)` (`fld2DSzLOcXn1REBK`) |
+| Anmälningar | `Avtalat pris (kr)` (`fldZHwxOXOQqkFx33`) | number, precision 2 | Frivilligt, vinner över eventets pris (beslut 2) |
+| Anmälningar | `Summa inbetalt (kr)` (`fldI73u3UYN5vGsN6`) | number, precision 2 | **APP-SKRIVET spegelfält** — TALFÄLT, INTE rollup (beslut 5). Skrivväg: `write-registration-payment-mirror` (byggs TASK-346.4) |
+| Anmälningar | `Kvittonummer` (`fldkqFkqL3N5nopAL`) | singleLineText | **APP-SKRIVET spegelfält** — skild från länkfältet `Kvitton` (`fld2Axx3FsfXndJ39`) |
+| Anmälningar | `Pris (kr) (from Event)` (`fldtZSeHg3ubwStzK`) | multipleLookupValues | **ADDITIVT HJÄLPFÄLT** (ej i AC #1:s lista, uttryckligen tillåtet av uppdraget) — lookup av Eventplanering.`Pris (kr)` via länken `Event` (`fldi3enUaMdbuGSlm`). Namnkonvention: samma `(from Event)`-suffix som `Ort (from Event)`/`Kurs (from Event)` m.fl. |
+| Anmälningar | `Saknas (kr)` (`fldAjVbTtNo1IMkW6`) | formula | Se formeln nedan (RUNDA 2-FIX) |
+
+**RUNDA 2-FIX (review-fynd, 2026-08-30): 0-pris behandlades som "okänt".**
+Den ursprungliga formeln (`OR({Avtalat pris (kr)}, {Pris (kr) (from Event)})`)
+använde fältens SANNINGSVÄRDE — och Airtable tolkar talet `0` som falskt i
+`OR()`/`IF()`, precis som JavaScript. Ett explicit 0-pris (gratis-/comp-event,
+eller ett avtalat 0-pris) lästes därför som "inget pris känt" i stället för
+"priset är 0". Airtable saknar `ISBLANK()`; fixen testar fältens NÄRVARO via
+textform-tvång (`{Fält} & "" != ""`, tomt blir `""`, `0` blir `"0"`) i stället
+för sanningsvärde. **Mekaniskt tvång, bokfört öppet:** `mcp__airtable__update_field`
+kan INTE ändra ett formelfälts `options.formula` (verifierat empiriskt — ett
+anrop med en `options`-payload accepterades av verktygsgränssnittet men
+IGNORERADES helt server-side, samma "wrappern stryper okända fält"-mönster
+redan dokumenterat för `singleSelect`-choices ovan) och denna MCP-server
+saknar `delete_field`/`delete_table` helt (verifierat mot hela verktygslistan).
+Vägen: det GAMLA fältet döptes om till **`Saknas (kr) [ERSATT 2026-08-30 —
+0-pris-bugg]`** (`fldSJCJwXnqwBIX2b`, kvarlämnat orört i staging — ofarligt,
+ingen kod läser det, `Saknas (kr)` är inte i någon allowlist) och ett NYTT
+fält skapades med det korrekta namnet och den korrekta formeln.
+
+**`Saknas (kr)`-formeln, verbatim, som den STÅR LIVE** (`fldAjVbTtNo1IMkW6`;
+fältnamn i klammerform — Airtable resolvade dem till `referencedFieldIds`
+`fldZHwxOXOQqkFx33`/`fldtZSeHg3ubwStzK`/`fldI73u3UYN5vGsN6` vid skapelsen,
+`isValid: true`):
+
+```text
+IF(
+  OR({Avtalat pris (kr)} & "" != "", {Pris (kr) (from Event)} & "" != ""),
+  IF({Avtalat pris (kr)} & "" != "", {Avtalat pris (kr)}, {Pris (kr) (from Event)}) - {Summa inbetalt (kr)},
+  BLANK()
+)
+```
+
+**Empiriskt verifierat LIVE mot staging (fem case + en bråkdels-kontroll,
+samtliga mätta på `rec0houPcRjsPBGVz` "Cecilia Ödman" och det länkade eventet
+ZZ-GRANSKNING-S113 (`recSahYCeTbEzFFe6`), muterade och ÅTERSTÄLLDA till sina
+ursprungliga värden efteråt — `mutera-och-återställ`-mönstret):**
+
+| # | Fall | Indata | NYTT fält | GAMLA fältet (negativ kontroll) | Vad det bevisar |
+|---|---|---|---|---|---|
+| i | Inget pris känt | Avtalat pris tomt, `Pris (kr) (from Event)` tomt (ej ZZ-länkad rad, `rec09CDc3OkrdFutj` "Petra Kvist") | **BLANK** | BLANK (oförändrat) | Guarden mot skräp-negativa värden håller |
+| ii | Eventets pris-fallback | Avtalat pris tomt, `Pris (kr) (from Event)` = 2500, Summa = 0 | `2500` | 2500 (oförändrat) | Fallback till eventets pris |
+| iii | Avtalat pris VINNER, ÄVEN vid 0 | Avtalat pris (kr) = **0**, `Pris (kr) (from Event)` = 2500, Summa = 500 | **`-500`** (= 0−500) | **`2000`** (= 2500−500, IGNORERADE 0:an — BUGGEN) | 0 räknas nu som "satt" och vinner över eventpriset |
+| iv | Explicit 0-pris (eventprisledet) | Avtalat pris tomt, `Pris (kr) (from Event)` = **0** (Eventplanering.`Pris (kr)` temporärt satt till 0), Summa = 300 | **`-300`** (= 0−300) | **BLANK** (fältet saknades helt i API-svaret — BUGGEN) | Ett genuint 0-pris ger `0 − summa`, aldrig BLANK |
+| v | Genuin överbetalning | Avtalat pris = 2000, Summa = 2500 | `-500` | -500 (oförändrat) | Negativt TILLÅTET vid äkta överskott — guarden gäller bara "inget pris känt" |
+| bråkdel | Rå precision, inte lookupens displayprecision | Eventplanering.`Pris (kr)` temporärt = **2500.55**, Summa = **0.05** | **`2500.5`** (exakt — INGEN avrundning till heltal) | — | Se kosmetisk-kant-noten nedan: bevisar att beräkningen använder RÅDATA |
+
+Fall (iii) och (iv) är negativa kontroller i sig: samma indata mot det GAMLA
+(nu bortdöpta) fältet reproducerar precis den bugg review-rundan flaggade —
+`2000` i stället för `-500`, respektive `BLANK` i stället för `-300`.
+
+**Känd kosmetisk kant, ej blockerande — gäller BÅDA `fldtZSeHg3ubwStzK` OCH
+`Saknas (kr)` självt.** Meta-API:t rapporterar `result.options.precision: 0`
+för lookup-fältet `Pris (kr) (from Event)` TROTS att källfältet (Eventplanering.
+`Pris (kr)`) har precision 2 — och samma sak gäller `Saknas (kr)`-formelfältets
+EGNA `result.options.precision` (verifierat via `describe_table` direkt efter
+skapelsen av BÅDA fälten: `fldtZSeHg3ubwStzK.result.options.precision = 0` och
+`fldAjVbTtNo1IMkW6.result.options.precision = 0`, trots att formelns utdata
+härrör från precision-2-fält). Detta är en Airtable-**visningsegenskap**, INTE
+en lagringsbegränsning — **bevisat, inte längre obevisat för bråkdelar**:
+bråkdels-fallet ovan (2500.55 − 0.05) gav exakt `2500.5`, inte `2500` eller
+`2501`. Både lookup-svaret (`"Pris (kr) (from Event)":[2500.55]`, rå JSON) och
+formelresultatet (`"Saknas (kr)":2500.5`) bar full precision i API-svaret.
+Påverkar bara hur fälten VISAS i ett grid-view, aldrig ett beräknat resultat
+eller den råa datan.
+
+**Priser ifyllda (AC #4), källa bokförd per event:**
+
+- **Eventinnehåll `Resor i medvetandet 1 · Utbildning`** (`rec2MZrLMKWAzxarB`)
+  — enda Eventinnehåll-raden med fritext ifylld sedan tidigare (§ "Uppslaget
+  Event (source) × Typ"). `Pris (kr)` = 2500, `Anmälningsavgift (kr)` = 1000,
+  parsat DIREKT ur radens EGEN fritext (`Pris` = `"2.500"`, `Anmälningsavgift`
+  = `"1000:-"`) — källan är alltså denna rads egen fritext, ordagrant.
+- **Eventplanering ZZ-GRANSKNING-S113** (Event-14061, `recSahYCeTbEzFFe6`)
+  — `Pris (kr)` = 2500, `Anmälningsavgift (kr)` = 1000 satta som PER-EVENT-
+  ÖVERRIDE. **Premiss-divergens, bokförd öppet (ADR-086):** uppdraget antog
+  ett existerande fritext-värde att kopiera från, men verifierat live
+  (2026-08-30) är BÅDA fritext-källorna för detta event blanka — eventets
+  EGEN `Pris (bilagetext)` (tom) och dess Eventinnehåll-standard
+  `Fjärrskådning · Utbildning` (`recyjQG7OjNHMPDmm`, samtliga fritextfält
+  tomma). Talen 2500/1000 sattes därför DIREKT per AC #4:s explicita krav,
+  utan en fritext-källa på DETTA event — de matchar (och är medvetet valda
+  för att matcha) det enda verkliga fritext-exemplet i basen, ovanstående
+  `Resor i medvetandet 1 · Utbildning`-rad.
+- **"Kommande staging-event":** ingen ytterligare icke-ZZ `Planerat`-rad med
+  startdatum efter 2026-08-30 finns i staging (mätt:
+  `AND(IS_AFTER({Startdatum},TODAY()),NOT(REGEX_MATCH({Ort},'^ZZ')))` → 0
+  träffar; de två närmaste icke-ZZ `Planerat`-eventen, Falköping 2026-08-18
+  och Varberg 2026-08-22, ligger redan BAKOM dagens datum). AC #4:s andra
+  klausul tolkas därför som täckt av Eventinnehåll-backfillen ovan — den
+  STANDARDEN är källan varje framtida `Resor i medvetandet 1`-event ärver.
+  En fullständig events-prisbackfill hör till `TASK-346.8` (utanför denna
+  skivas scope).
+
+**Skrivväg (allowlist, AC #3):** `supabase/functions/_shared/field-allowlists.ts`
+bär operationen `write-registration-payment-mirror` (tabell `Anmälningar`,
+fälten `Summa inbetalt (kr)` / `Kvittonummer` / `Anmälningsavgift` /
+`Slutbetalning` / `Avtalat pris (kr)`) — deny-by-default kvar, EF:en som
+faktiskt anropar den byggs i `TASK-346.4`. `Saknas (kr)` ligger MEDVETET
+UTANFÖR (Airtable-formel, basen räknar själv). De numeriska
+standardprisfälten (Eventinnehåll/Eventplanering ovan) ligger UTANFÖR denna
+operation — de hör till Lottas egen prissättning via eventredigeringen, inte
+betalnings-spegeln; en framtida skrivväg dit (om Lotta ska kunna redigera
+`Pris (kr)` från appen) är en egen, ej ännu beslutad operation.
+
+**Prod-fälten — ÖPPET AC #5 för Marcus.** Agenten rör aldrig prod
+(`app8uGPrVCVOm6LfD` förbjuden). Exakt samma NIO fält, samma typer/precision,
+skapas i prod-basen på Marcus GO (t.ex. via `AIRTABLE_PROD_GODKAND_AV_MARCUS`-
+vägen `create-eventinnehall-modell.mjs`/`create-betalningsfalt.mjs` redan
+etablerar, eller Airtable-konsolen direkt):
+
+| Tabell (prod-ID) | Fält | Typ |
+|---|---|---|
+| Eventinnehåll (`tblfwqsNPSYd6o44L`) | `Pris (kr)` | number, precision 2 |
+| Eventinnehåll (`tblfwqsNPSYd6o44L`) | `Anmälningsavgift (kr)` | number, precision 2 |
+| Eventplanering (`tblVE3UKWl1CKrphV`) | `Pris (kr)` | number, precision 2 |
+| Eventplanering (`tblVE3UKWl1CKrphV`) | `Anmälningsavgift (kr)` | number, precision 2 |
+| Anmälningar (`tbloOcrppVoyrHbrq`) | `Avtalat pris (kr)` | number, precision 2 |
+| Anmälningar (`tbloOcrppVoyrHbrq`) | `Summa inbetalt (kr)` | number, precision 2 |
+| Anmälningar (`tbloOcrppVoyrHbrq`) | `Kvittonummer` | singleLineText (INGEN options-nyckel vid skapelse — se skriptets kommentar) |
+| Anmälningar (`tbloOcrppVoyrHbrq`) | `Pris (kr) (from Event)` | multipleLookupValues — `recordLinkFieldId` = prodens `Event`-fält-ID, `fieldIdInLinkedTable` = prodens Eventplanering.`Pris (kr)`-fält-ID (läs efter skapelse, samma ordning som skriptet: Eventplanering FÖRE lookupen) |
+| Anmälningar (`tbloOcrppVoyrHbrq`) | `Saknas (kr)` | formula — EXAKT den KORRIGERADE (runda 2) formeln ovan, med `& "" != ""`-narvarotestet — INTE den ursprungliga formen (den hade samma 0-pris-bugg i prod som i staging) |
+
+Ordningen är en invariant (samma som skriptet): Eventinnehåll/Eventplanering
+FÖRE lookupen, lookupen FÖRE formeln. Även prod-basens `Eventplanering.
+Pris (bilagetext)`/`Anmälningsavgift (bilagetext)` (§ "Prod-ID:n" ovan) och
+fritext-fälten på Eventinnehåll/Anmälningar förblir ORÖRDA — samma
+additivitetsprincip som resten av denna sektion.
+
 ### Aktiva event
 
 | Event | Record ID | Datum | Max antal platser |
@@ -619,7 +951,7 @@ enda avsiktliga tillägget (`BlockDialog`s `caption`-prop).
 | Anmälningar | Event | Eventplanering | `fldi3enUaMdbuGSlm` | Sätts av A1 (eller Edge Function direkt) |
 | Anmälningar | Medföljande till | Anmälningar (self) | `fld39KEXJxyulXfsN` | Sätts av CompanionModal i admin |
 | Anmälningar | From field: Medföljande till | Anmälningar (self, inverse) | `fldlP4z8Dirq00nqq` | Auto-skapat inverse-fält. Read-only — skrivs aldrig direkt. |
-| Personer | Anmälningar | Anmälningar | `fld8pOivka8YdiywK` | |
+| Personer | Anmälningar (länkat fält) | Anmälningar | `fld8pOivka8YdiywK` | Reverse-länken till `Anmälningar.Person`. **Namn rättat 2026-08-31 (`TASK-351`)** — stod tidigare utan `(länkat fält)`-suffixet, falsifierat mot `describe_table` i BÅDA baserna. Bär `Anmälningar`-record-ID:n via API-READ (se §Kända fällor 53). |
 | Personer | Deltaganden | Deltaganden | `fld5shm9UER5CMyTl` | |
 | Deltaganden | Anmälan | Anmälningar | `fldwQdDpRK8vByNhb` | |
 | Deltaganden | Event | Eventplanering | `fldaj5mbpU3yPw2np` | |
@@ -679,6 +1011,25 @@ Dessa är broarna som hela rollup-kedjan bygger på. Ändra aldrig utan att för
 | Väntelista | `sely4zQsuvnXYTKKI` | blueLight2 | `create-registration` när person flyttas från Väntelista |
 | *(tom)* | – | – | **Formuläranmälningar** (Huvudformulär, Expressformulär). Frånvaro = sanning. |
 
+**Vad eventsidans beläggnings-mätare räknar (`TASK-373`, 2026-09-03).** Mätaren
+visar `Antal anmälda` + `Extra platser`, alltså ALLA aktiva anmälningar oavsett
+Källa-värde, plus de två skrivbara platsfälten. `get-event` partitionerar
+anmälningarna i tre delar (`supabase/functions/_shared/belaggning.ts`):
+`viaFormular` (Källa TOM) · `medfoljande` (Källa `+1`) · `ovrigaAnmalningar`
+(**allt annat** — `Manuell`, `Väntelista` och varje framtida option). Den tredje
+delen är en FAIL-CLOSED restpost: en ny option i tabellen ovan hamnar där
+automatiskt och kan aldrig falla ur summan. Aktiv-filtret är basens egen
+`Är aktiv (1/0)`, så avbokade och inställda räknas inte.
+
+Fram till 2026-09-03 räknade EF:en bara de två första delarna, och en anmälan
+skapad via appens Ny anmälan (`Källa = 'Manuell'`) syntes därför inte i mätaren:
+prod visade "12 av 20 platser upptagna" på Event-25 medan `Antal anmälda` var 13.
+UI-sidan: `ovrigaAnmalningar` läggs till **"Anmälda deltagare"-raden**, inte till
+"Manuellt tillagda" — den raden är basens SKRIVBARA `Manuella platser` (platser
+utan anmälningsrad) och måste visa samma tal som Ändra-lägets "ändrar från".
+Deltagarkortens pill (`Manuellt tillagd` / `Från väntelistan`) beskriver en annan
+axel: hur personen kom in, inte vad som fyller taket.
+
 ### Status-värden — Deltaganden
 
 `Deltaganden.Status` (`fldRFOzNqVswqZ1mN`) — **6 val:**
@@ -718,7 +1069,7 @@ För Edge Functions, scripts, manuella PATCH-ops. Listar fält som ofta skrivs t
 | Notering | `fldPMsiRoLWcgUbsv` | multilineText | – |
 | EventKey | `fldPlPLkpqm0X7Xs2` | multilineText | "Event-N" — matchas av A1 |
 | Inskickad | `fldNtSHQivkL26B6L` | dateTime | Sätts av `create-registration` med ISO-timestamp. **Zap 3/4 mappar den INTE** (se §Kända fällor 49) — 294 rader backfillade 2026-08-17 ur `Rad skapad`; framåtgarantin är en separat, ännu ej stängd åtgärd |
-| Person (länk) | `fldQekqRlLfup8x5K` | multipleRecordLinks → Personer | Sätts normalt av A2; Edge Functions kan PATCH:a direkt |
+| Person | `fldQekqRlLfup8x5K` | multipleRecordLinks → Personer | Sätts normalt av A2; Edge Functions kan PATCH:a direkt. **Namn rättat 2026-08-31 (`TASK-351`)** — stod tidigare som `Person (länk)`, falsifierat mot `describe_table` i BÅDA baserna (rad 950 ovan hade redan rätt namn; de två raderna motsade varandra). Orsakade en 500 i `hamta-inbetalningar`s person-väg — se §Kända fällor 53 för hela felkedjan. |
 | Event (länk) | `fldi3enUaMdbuGSlm` | multipleRecordLinks → Eventplanering | Sätts av A1; Edge Functions sätter samtidigt med EventKey (idempotent) |
 | Medföljande till | `fld39KEXJxyulXfsN` | multipleRecordLinks (self) | Sätts av CompanionModal när +1-anmälan skapas |
 | Bekräftelse skickad | `fld0jnbkIbuFAumgG` | dateTime | Sätts av `send-email` (confirmation) |
@@ -792,12 +1143,58 @@ De skrivbara fält som [ADR-066](../decisions/ADR-066-skapa-event-write-vertikal
 | Kapacitet | Max antal platser | `fldbyEz8djcxCBO5r` | number | – |
 | Tillstånd | Status | `fld2nXlS1UG0aOHLt` | singleSelect | Default `Planerat`. |
 | Sessionsstruktur | Eventtyp | `fldCAGA9NPnd9kEmi` | multipleRecordLinks → Eventformat | **KRÄVS vid create** (ADR-066 b5, prod-belagt) — driver `Sessionsmall`-lookupen. Pekar på BEFINTLIG Eventformat-rad (ingen ny post). |
+| Plats | Plats | staging `fld8OmPGNgEYZ8eER` · prod `fldaVV1KS6skbOLrB` | multipleRecordLinks → Platser | **HÄRLEDS server-side** ur `Ort` (TASK-309.30) — klienten skickar den ALDRIG. Sätts ENDAST vid exakt en `Platser.Namn`-träff, aldrig över en befintlig länk. Se § Ort-till-Plats nedan. |
 | Dokument | PDF (URL) | `fldXIbT08897kV1Oa` | url | Valfritt. |
 | Spårning | Touchpoints | `fldeRc98Xs7XJRCn8` | singleLineText | Valfritt. |
 | Backfill | Backfill-ID | `fld2M7EdjCcocls0u` | singleLineText | Valfritt (historik-import). |
 | Idempotens | Idempotensnyckel | `fldOWoh4WR5zG6XgQ` (staging) | singleLineText | Merge-nyckel för upsert (ADR-066 b3). **Staging-live (Session 38 L1); PROD-fält ej skapat** — hård prod-deploy-förutsättning, se §Kända fällor 37. |
 
 **Sätts ALDRIG vid create** (system-genererat eller härlett från motsatt sida): `EventKey` (`fldhmhaz3ZnouAzDm`, formel `"Event-" & {Event-nr}`) + `Event-nr` (`fldl5By2a7jGBPpxF`, autoNumber) föds vid skapande; `Eventlabel` (primärfält, formel) + alla rollup/count/formel/lookup-fält beräknas; spegelfältet `Anmälningar (länkat fält)` (`fldUAjTutSM0fziMT`) + `Närvaro (records)` sätts från Anmälningar/Deltaganden-sidan (A1/A3) — ett nyfött event har noll.
+
+##### Ort-till-Plats vid create (TASK-309.30, ADR-125 § 2)
+
+`create-event` slår upp `Platser` på `Namn` = eventets `Ort` och sätter
+`Plats`-länken när **exakt en** rad matchar. Uppslag, inte länk-krav — samma
+härlednings-anda som `Eventinnehåll` (`Event (source)` × `Typ`) och som
+`Månad/år` (ADR-066 b6). Klienten är oförändrad: ingen ny formkontroll, ingen
+ny input.
+
+| Läge | `Plats` | Svarets `platsLankning.skal` |
+|---|---|---|
+| Exakt EN `Platser.Namn` = `Ort` | länkad | `exakt-en-traff` |
+| Ingen träff | TOM | `ingen-traff` |
+| FLERA träffar | TOM (aldrig den första) | `flera-traffar` |
+| Idempotent replay mot rad som redan bär `Plats` | ORÖRD | `redan-satt` |
+| Uppslaget eller PATCH:en fallerade | TOM, eventet skapas ändå | `uppslag-fel` |
+
+**Varför "exakt en" och inte "första träffen".** `Platser.Namn` är ett
+`singleLineText`-primärfält, och Airtable kan strukturellt inte tvinga unikhet
+på det (`airtable-constraints.md`). Två rader med samma `Namn` är alltså ett
+möjligt bastillstånd — skarpt verifierat 2026-08-28 genom att seeda
+`ZZ-plats-dubblett-fixtur` två gånger i staging (`rec1bMcnYvgAYeO6d` +
+`rec3XSjtWhbK3PRXF`, båda skapade utan invändning). `save-place-standard`s
+find-or-create tar medvetet första träffen eftersom operatören uttryckligen
+bett om skrivningen; den automatiska härledningen får inte göra samma sak — en
+gissad plats syns först som fel adress i en genererad bilaga.
+
+**Ordningen är invarianten:** `Plats` läggs ALDRIG i upsertens `fields`-map. Den
+skrivs i en SEPARAT PATCH efter upserten, och bara när den upsertade raden
+saknar länk — annars hade en idempotent replay kunnat skriva över en `Plats`
+som satts för hand efter det första anropet (samma felklass som
+publiceringsflaggans utelämnings-mönster bokför för checkboxen). Allowlisten
+(`_shared/field-allowlists.ts`, `create-event`) bär `Plats`, och skrivningen
+gates:as av `findDisallowedField` precis som fields-mapen. Beslutslogiken bor i
+`_shared/plats-uppslag.ts` (ren modul, enhetstestad i
+`tests/api/plats-uppslag.test.ts`); de fyra grenarna är skarpbevisade mot
+deployad staging-EF i `tests/api/create-event.staging.test.ts`.
+
+**Staging-fixturerna** (permanenta, matchar MEDVETET ingen purge-target — samma
+klass som `ZZ-create-event-test-format`): `ZZ-plats-unik-fixtur`
+(`recVWAYh1cbVQKxi7`) och `ZZ-plats-dubblett-fixtur` (de två ID:na ovan).
+Dubbletten går inte att återskapa via någon EF, så en purgead fixtur hade tyst
+gjort flera-träffar-grenen oprövbar. Eventen testet skapar städas i stället av
+den nya `create-event-plats-harledning-sentineler`-targeten (`Ort`-prefix
+`ZZ-plats-`, `linkGuardExcludeFields` inkluderar `Plats`).
 
 #### Eventplanering — kvitto-benämning (TASK-306, 2026-08-23)
 
@@ -1113,6 +1510,80 @@ mellanslag + upprepat årtal → `OK` (mirrors prod Event-59); tomt eget
 `Ort`-fält (backfill-mönstret) → `OK`, aldrig `Avviker`; formulärtext som
 pekar på ett annat event än länken → `Avviker` (mirrors prod anmälan-21);
 ingen Event-länk → `Utan event`.
+
+---
+
+## Fält tillagda 2026-09-03 — räknarfixen (TASK-368.1, TASK-213.8/213.9)
+
+**I BÅDA BASERNA 2026-09-03** — staging (`apphjj8Q7lkXCMsL4`) ändrad först,
+prod (`app8uGPrVCVOm6LfD`) därefter på Marcus explicita GO ("Du har GO på
+fältbytet i prodbasen sedan", 2026-09-03). Bas-halvan utfördes av
+orkestreraren via claude.ai-Airtable-connectorn (denna PR bär endast
+app-halvan + dokumentationen); talen nedan är rapporterade av orkestreraren
+till app-agenten, inte oberoende verifierade av den senare mot basen.
+
+**Två formler ändrade (samma ID i båda baser, ingen ny option/inget nytt
+fält för dem):**
+
+| Fält | ID | Ändring |
+|---|---|---|
+| `Anmälningar.Är aktiv (1/0)` | `fld4j7PeckDViTdIB` | `IF({Status}="Avbokad/Ombokad", 0, 1)` → `IF(OR({Status}="Avbokad/Ombokad", {Status}="Inställt"), 0, 1)` — stänger §Kända fällor post 27. |
+| `Eventplanering.Antal anmälda` | `fldTQkYOz9O2BGEIZ` | `{Antal anmälningar} + {Manuella platser}` → `{Antal aktiva anmälningar} + {Manuella platser}` — täljaren byter källa till det nya rollup-fältet nedan. |
+
+**Ett nytt fält** — `Eventplanering.Antal aktiva anmälningar`, rollup
+`SUM(values)` över länkfältet `fldUAjTutSM0fziMT` (Anmälningar) av `Är aktiv
+(1/0)`:
+
+| Bas | ID |
+|---|---|
+| Staging | `fld1LGJ6HVCLDJhFC` |
+| Prod | `fldO9pTic9Mm8G6P4` |
+
+**Varför ett NYTT fält i stället för att bygga om `Antal anmälningar`
+(`fldU5MCQmagdHtz4G`) till en rollup: R3, inte R1 (TASK-213.9-kortets egen
+term).** Airtables Meta-API kan inte byta ett fälts `type` (samma väggen som
+§Kända fällor 25 — `Manuella flagga`) — ett count-fält kan alltså inte
+omvandlas till en rollup in-place. `Antal anmälningar` lämnades därför
+**OFÖRÄNDRAT** (fortfarande `count`, räknar ALLA anmälningar inklusive
+Avbokad/Ombokad och Inställt) — det används medvetet så av
+Verksamhetspuls-interfacets bigNumber och linjediagram, som ska visa den
+RÅA anmälningsvolymen, inte den aktiva. `Antal anmälda`
+(`fldTQkYOz9O2BGEIZ`) pekar i stället om till det nya `Antal aktiva
+anmälningar`-fältet.
+
+**Blast radius — följdfälten på `Antal anmälda` ändrades inte själva, bara
+sitt indata:** `Anmäld beläggning (%)` (`fldqkyeE7cVHMNRpH`), `Platser kvar`
+(`fldaqwIdTNJ54Xn5P`) och `Antal slutbetalning saknas` (`fldgv8tekGEbNBZfw`)
+läser alla `Antal anmälda` och följer automatiskt med. **Automation A6**
+(`wfl0filPx4wyAcaQ8`, § Automationssekvenser) triggar på `Anmäld beläggning
+(%) = 1` — samma villkor, oförändrat, men fyrar nu vid en mindre nämnare
+(faktiskt AKTIVA anmälningar) i stället för alla, alltså vid genuin fullbokning
+i stället för en fullbokning som räknade avbokade/inställda med. Ingen ändring
+i A6 själv krävdes (bekräftat via `get_automation`-läsning, TASK-213.9 AC #2,
+se kortets Implementation Notes).
+
+**Staging-bevis (kortlivad fixtur `ZZ-GRANSKNING-S115`, 4 anmälningar varav
+en satt till Avbokad/Ombokad och en till Inställt, städad efter mätningen):**
+
+| Fält | Före | Efter |
+|---|---|---|
+| Antal anmälningar (oförändrat count-fält) | 4 | 4 |
+| Antal aktiva anmälningar (nytt) | 4 | 2 |
+| Antal anmälda | 4 | 2 |
+| Platser kvar | 16 | 18 |
+| Anmäld beläggning (%) | 20 % | 10 % |
+| Antal slutbetalning saknas | 3 | 1 |
+
+Prod-siffrorna (Psionautics-eventet, TASK-213.9 AC #3: `Antal anmälningar`
+88→79, `Platser kvar` 0→9 gäller `Antal aktiva anmälningar`/`Antal anmälda`,
+inte det oförändrade count-fältet) rapporteras separat av orkestreraren i
+`TASK-213.9`s Implementation Notes.
+
+**App-halvan (samma PR som denna dokumentation, B1-kravet i `TASK-213.8`):**
+de tre JS-predikaten som replikerade basens gamla `Är aktiv`-formel
+(`Deltagare.tsx`, `Gruppdynamik.tsx`, `AtgardsSida.tsx`) är konsoliderade
+till EN delad `arAktivAnmalan` (`src/lib/aktiv-anmalan.ts`) och exkluderar nu
+även `Inställt`, i synk med basformeln ovan.
 
 ---
 
@@ -1786,6 +2257,8 @@ Detta är saker som har bitit oss eller sannolikt kommer att bita oss.
 
     **Åtgärd-rekommendation:** Uppdatera formeln till `IF(OR({Status}="Avbokad/Ombokad", {Status}="Inställt"), 0, 1)`. Inte gjord 2026-04-26 — sannolikt missad i samband med att Inställt-option lades till.
 
+    **[ÅTGÄRDAD 2026-09-03, `TASK-368.1`/`TASK-213.8`/`TASK-213.9`, Marcus-GO för prod-mutationen.]** Formeln på `Är aktiv (1/0)` (`fld4j7PeckDViTdIB`, samma ID i båda baser) är exakt rekommendationen ovan: `IF(OR({Status}="Avbokad/Ombokad", {Status}="Inställt"), 0, 1)`. Samtidigt bytt: `Eventplanering.Antal anmälda` (`fldTQkYOz9O2BGEIZ`) bygger nu på ett NYTT rollup-fält `Antal aktiva anmälningar` i stället för det gamla ovillkorade `Antal anmälningar`-räknefältet (R3-vägen — API:t kan inte byta ett fälts typ, se § Fält tillagda 2026-09-03 nedan för fullständig mekanik och staging-bevis). App-halvans tre JS-predikat (Deltagare.tsx, Gruppdynamik.tsx, AtgardsSida.tsx — nu konsoliderade till `arAktivAnmalan` i `src/lib/aktiv-anmalan.ts`) landade i samma PR som bas-fixen (B1-kravet, TASK-213.8).
+
 28. **Två parallella `Antal genomförda event`-formler.** På Personer finns både:
     - `flddymQaYJGVCInzq` ("Antal genomförda event (gammal)") — gammal **rollup** på Deltaganden.Genomfört event
     - `flddy8JND3YnlgZxe` ("Antal genomförda event") — ny **formula** sedan 2026-04-26: summan av RIM 1 × + RIM 2 × + RIM 3 × + Fjärrskådning ×
@@ -1861,6 +2334,8 @@ Detta är saker som har bitit oss eller sannolikt kommer att bita oss.
 50. **`Personer.Totalt antal hämtningar (erbjudande)` (`fldd782imiCRtFJ4t`) — ODOKUMENTERAT FÖRE DENNA POST, sedan `TASK-277` en LÄST yta i produktionskod.** ROLLUP över `Touchpoints`-länken (`fldnuqNqlVzt47AAN`), källfält `Touchpoint ID` (`fldv9JUvqCmnxh4wy`, `autoNumber`) i `Touchpoints`-tabellen (`tbl22SCvlHrgcAiZi`) — samma länk `Alla hämtningar` (`fldHchJXiIFw3BuFy`) rullar upp, alltså RÅLOGGET, inte en separat aggregeringstabell. **Skiljer sig strukturellt från fälla 47 ovan:** `Antal hämtningar` (`fld4UQOdKTvWixZ9F`) är `COUNTA({Engagemang})` — en SEPARAT tabell som automation A5 ska fylla (`data-model.md:1105-1122`) och som kan stå tom även när riktiga hämtningar skett (fälla 47:s Sofia Isaksson-instans). Detta fält läser i stället direkt ur `Touchpoints`, ett steg närmare källan, och missar därför inte de rader vars `Engagemang`-post aldrig skapades. **Live-belagt 2026-08-19 (`TASK-277` premisskontroll, prod `app8uGPrVCVOm6LfD`, Airtable-MCP READ-only):** fältet ÄR filtrerbart i `filterByFormula` (skarpt prövat, inget formelfel — detta var tidigare en OVERIFIERAD premiss i kortets AC #6). `AND({Totalt antal hämtningar (erbjudande)} > 0, {Antal hämtningar} = 0, {Antal anmälningar (totalt)} = 0)` gav **exakt 33 poster**, samtliga med en genuin `"Hämtade …"`-rad i `Senaste interaktion (text)` — bekräftar att fältet räknar RIKTIGA hämtningar där fälla 47:s syskonfält gav 0. Mätt bredare: **69 personer** bär rollup > 0 medan `Antal hämtningar` ger 0 (33 av dem med noll anmälningar — rena leads, tidigare osynliga i HELA appen). **Konsekvens för app-design (`TASK-277` AC #6):** `get-leads`s `LEAD_FILTER` läste tidigare `{Antal hämtningar}` och läckte därmed exakt den mängden — filtret pekar nu om till detta fält. **UPPDATERAT `TASK-278` (2026-08-19):** `get-leads`s `antalHamtningar`-VISNINGSFÄLT pekades likaså om till detta fält — öppen kant stängd (de 33 leads `TASK-277` gjorde synliga bar per definition `COUNTA(Engagemang) = 0`, så visningsfältet visade `0` på en rad som listades FÖR ATT personen hämtat något; live-belagt mot staging på `Sofia Isaksson`, rollup=3 mot COUNTA=0). `get-person` (singular) mappar FORTFARANDE `antalHamtningar` från `Antal hämtningar` — medvetet lämnat (`TASK-278` korsundersökning, AC #2): fältet renderas ingenstans i `PersonDetail.tsx` (jämförelse-blocket som en gång visade det revs 2026-08-10 av precis detta skäl) och skapar därför ingen synlig självmotsägelse på den ytan idag. → **Maximerings-kandidat (T16):** samma rotorsaksfix som fälla 47 föreslår (peka om/döp om `Antal hämtningar`) löser även denna dubblering — en PROD-SCHEMAÄNDRING, kräver Marcus uttryckliga GO.
 51. **Sorterings-kollationen och filter-jämförelsen i `Personer.Namn` följer INTE samma regler — sort veckar Å/Ä/Ö mot basbokstaven, `=` gör det inte. [MÄTT 2026-08-21 — Session 109, prod `app8uGPrVCVOm6LfD`, Airtable-MCP READ-only]** `get-persons/index.ts:147` skickar `sort: [{ field: 'Namn', direction: 'asc' }]`, och den sorteringen är **diakritik-OKÄNSLIG**: samtliga fem Å-poster i basen (`Åsa Ganell`, `Åsa Jansson`, `Åsa Jeborn`, `Åsa Karner`, `Åsa Reinholdson`) sorterar mellan `Annika Svessar` och `Axel Andersson` — exakt där `"Asa"` utan diakrit hade hamnat — och `Anneli Åsblom` sorterar före `Anneli Clevenrot`. Det är alltså INTE svensk kollationsordning (Å, Ä, Ö efter Z). **Men `filterByFormula`-jämförelse med `=` är diakritik-KÄNSLIG:** `LEFT({Namn},1)="Å"` returnerar exakt de fem Åsa-posterna, och ett `LEFT({Namn},1)="A"`-filter kombinerat med prefixet `Ås`/`As` returnerar **noll** — Å läcker aldrig in i A-hinken. **Verifierat oberoende två gånger** (research-agent + orkestrerare, samma dag, olika formler). **Konsekvens för app-design:** ett bokstavsindex kan byggas **diakritik-korrekt** (A–Z, sedan Å, Ä, Ö, svensk konvention belagd via CLDR + iOS `sv_SE`-lokaldata) trots att bläddringsordningen inte följer den — filter och sortering är två olika mekanismer i Airtable. Priset är en synlig inkonsekvens: trycker användaren Å får hon rätt fem personer, men bläddrar hon utan filter ligger samma fem inne bland A:na. **Mätt på köpet:** noll poster i basen börjar på Ä eller Ö (`LEFT({Namn},1)="Ä"` och `="Ö"` gav båda tomma träfflistor), vilket gör "tom bokstav"-hanteringen konkret och nuvarande för just de två knapparna, inte hypotetisk. **Skiljs från fälla 43:** den posten bär att 186 av personlistans 559 har formelvärdet `"Ej tillgängligt"` på `Namn` (dataförlust vid källan, ej åtgärdbar). Sorterings-konsekvensen av DEN posten hör hit: `"Ej tillgängligt"` sorterar bokstavligen in mellan `Ei…` och `Ek…`, alltså **inuti E** — ett naivt `LEFT({Namn},1)="E"`-filter drar därför med sig samtliga 186. Sentinelen måste undantas explicit (`AND(LEFT({Namn},1)="E", {Namn}<>"Ej tillgängligt")`) och ges en egen namngiven hink; det är en **mätt korrekthetsbugg**, inte en smaksak ([ADR-121](../decisions/ADR-121-notistrappan-form-per-klass-i-notisfamiljen.md)s systerbeslut för personlistan, S109). → **Maximerings-kandidat (T16):** basens sorteringskollation är en Airtable-plattformsegenskap vi inte styr; posten registreras som KÄND VÄGG, inte som åtgärdbar defekt. Full källbeläggning: [`bokstavsindex-personlista-branschmonster-2026-08-21.md`](../research/bokstavsindex-personlista-branschmonster-2026-08-21.md) § Fokusfråga 4.
 52. **`Anmälningar.Deadline slutbetalning` (`fldGlznON7xqR3IE1`) — undantags-grenen är DÖD KOD, och utan den kraschar formeln på varje anmälan utan eventlänk. TVÅ defekter, EN rotorsak: ett valalternativs namn. [MÄTT 2026-08-21 — Session 110, prod `app8uGPrVCVOm6LfD` + staging, Airtable-MCP READ-only]** Formeln lyder `IF({Slutbetalning} = "Ej relevant", BLANK(), DATEADD({Startdatum}, -14, 'days'))`. Men valalternativet i `Slutbetalning` (`fldIImadnJUZHr5Qh`) heter **`"Ej relevant (för föreläsningar)"`** (`seljLR0FhWMMGSZRh`) — likhetstestet matchar därför **aldrig**, och `BLANK()`-grenen har varit oåtkomlig sedan den skrevs. **Följd 1 (den döda grenen):** en föreläsningsanmälan får en slutbetalnings-deadline trots att den uttryckligen markerats som irrelevant. **Följd 2 (kraschen):** eftersom grenen aldrig tas körs `DATEADD` alltid, och `Startdatum` (`fldAHtyo4P7Z08Vuj`) är ett UPPSLAGSFÄLT som är tomt när `Event`-länken saknas → `DATEADD(BLANK(), -14, 'days')` → **`#ERROR!`**. **Samma döda test finns i `Slutbetalning status visuellt` (`fldphHILC1eFiVHXD`)**, som därför klassar en föreläsning som `"Försenad"`/`"Snart dags"`/`"Väntar"` i stället för `"Ej relevant"` — en synlig felaktig status, inte bara ett internt värde. `Dagar kvar till deadline` (`fldZKPoOpziYbthYF`) ärver felet via sin `IF({Deadline slutbetalning}, …)`. **Appen läser fälten:** `get-registration/index.ts:189-190` mappar `deadlineSlutbetalning` + `dagarKvarTillDeadline`, och `AnmalanDetail.tsx:468` renderar datumet — ett `#ERROR!` når alltså ända fram till användarytan. **LATENT, INTE AKTIV — mätt, inte antaget:** `{Slutbetalning} = "Ej relevant (för föreläsningar)"` gav **0 poster** i prod, och `AND({Event} = BLANK(), {Slutbetalning} != "Mottagen")` gav likaså **0 poster** (2026-08-21, efter S110:s orphan-sanering). Ingen rad bär felet i dag; varje framtida orphan eller föreläsningsanmälan gör det. **Upptäckt** via `TASK-284.1`:s staging-fixtur `ZZ-TASK-284.1 Fixtur Utan event`, som är den första rad på länge som saknat eventlänk — bygg-agenten rapporterade kraschen, orkestreraren korsläste formeln mot fältets `choices` och fann den döda grenen bakom den. **Skiljs från fälla 10/F.2:** den posten rör FEL eventlänk (tyst felmatchning); denna rör INGEN eventlänk plus ett namnfel i en formel. → **Maximerings-kandidat (T16):** rättningen är två formler i prod (byt `"Ej relevant"` mot valets faktiska namn, eller testa på `FIND("Ej relevant", {Slutbetalning})`, plus ett `IF({Startdatum}, …)`-skydd runt `DATEADD`) — en PROD-SCHEMAÄNDRING, kräver Marcus uttryckliga GO.
+53. **Ett länkfälts `ARRAYJOIN` renderar INUTI en formel de länkade posternas PRIMÄRFÄLT (namn) — ALDRIG deras record-ID. Ett formel-baserat ID-uppslag mot ett länkfält matchar därför aldrig, oavsett fältnamn. [MÄTT 2026-08-31 — `TASK-351`, staging `apphjj8Q7lkXCMsL4`, Airtable-MCP/REST]** `hamta-inbetalningar`s person-väg byggde `FIND(personId, ARRAYJOIN({Person (länk)}))` mot `Anmälningar` — två separata fel i en rad. **Fel 1 (namnet, se rad ~1053 ovan):** `fldQekqRlLfup8x5K` heter `Person`, inte `Person (länk)`, i BÅDA baserna — formeln föll med `422 INVALID_FILTER_BY_FORMULA`, mappat av EF:en till en generisk `500`. **Fel 2 (semantiken — allvarligare, och INTE åtgärdad av namnbytet ensamt):** `FIND("rec2JwV3Bh0x5qlvl", ARRAYJOIN({Person}))` gav **0 träffar** mot en rad där `rec2JwV3Bh0x5qlvl` bevisligen ÄR den länkade personen (`"Person":["rec2JwV3Bh0x5qlvl"]` i samma rads råa fältdata), medan `FIND("Cecilia Ödman", ARRAYJOIN({Person}))` (personens NAMN, inte ID) **matchade** exakt den raden. Ett rent namnbyte hade alltså bytt en 500:a mot en TYST tom sektion för varje person — en värre felklass (ser ut som "inga betalningar" i stället för ett fel) — och ett namn-baserat filter hade dessutom kunnat matcha FEL person: `"Cecilia Ödman"` finns tre gånger i staging-fixturerna med tre OLIKA `Person`-record-ID:n. **Rätt väg för ett ID-uppslag mot ett länkfält: ett API-READ (record-GET), aldrig en formel.** Ett API-READ av samma fält returnerar record-ID:n rakt av — motsatsen till formel-renderingen (`GET Personer/rec2JwV3Bh0x5qlvl` gav `"Anmälningar (länkat fält)":["rec0houPcRjsPBGVz"]`, den korrekta och ENDA anmälan för just den personen). `hamta-inbetalningar` läser sedan denna fix i stället personens EGEN rad och dess reverse-länk `Anmälningar (länkat fält)` (`fld8pOivka8YdiywK`, samma fält-ID i staging OCH prod — se rad ~954 ovan, vars namn också var fel dokumenterat). **Detta är en ÅTERKOMST av en redan känd, en gång stängd bugg-klass — inte en ny upptäckt.** `tasks/threads/README.md` §`T15` (stängd Session 26, `6c`-completion) dokumenterade EXAKT samma mekanism och konstaterade att `buildLinkedRecordFilter` då hade **noll live-callers** — helpern lämnades medvetet som dormant kod, avveckling flaggad som lågprioriterad städning. `hamta-inbetalningar` (TASK-346.4, commit `23e74c01`, långt efter `T15`s stängning) återinförde en live-caller av EXAKT den helpern, utan att kopplas till `T15`s varning — precis den lucka en stängd tråd inte kan skydda mot: den bevakar inget framåt, den registrerar bara ett läge vid stängningstillfället. **Rättelse (R1-granskning, `TASK-351`):** en tidigare version av denna post och PR-kroppen påstod felaktigt att `get-attendance` och `_shared/segment-resolution.ts` var "andra callers" av `buildLinkedRecordFilter` som gjorde "säker" existens-/enkel-länk-läsning. Grep-verifierat FALSKT: ingen av de två anropar helpern alls. `get-attendance` UNDVIKER den MEDVETET — egen dockblock-kommentar citerar uttryckligen **"T15-klass-bugg"** och väljer i stället record-ID-batch. `_shared/segment-resolution.ts` läser fältvärdet direkt (`singleLinkedId(f['Person (länk)'])`) och bygger aldrig ett filter. **Sanningen efter denna PR:** `buildLinkedRecordFilter` har ÅTER noll live-callers repo-brett (grep-verifierat: `_shared/airtable-filter.ts` definierar den, ingen fil importerar eller anropar den längre) — samma tillstånd som vid `T15`s stängning, en andra gång. → **Avvecklings-kandidat, registrerad på `TASK-351`, INTE åtgärdad i denna skiva:** ta bort den dormanta helpern, eller markera den `@deprecated` med en körtids- eller lint-vakt mot nya callers, så att klassen inte kan återinföras tyst en tredje gång. Ingen maximerings-åtgärd i basen krävs för själva ARRAYJOIN-mekanismen: det är en formel-SEMANTIK-egenskap hos Airtable-plattformen (ARRAYJOIN renderar primärfältet inuti en formel, aldrig ID), inte ett schemafel — posten registreras som KÄND VÄGG för hur en formel och en API-läsning av SAMMA länkfält skiljer sig åt.
+54. **En raderad inbetalning kunde lämna `Anmälningsavgift = "Mottagen"` kvar i basen när eventet saknade `Anmälningsavgift (kr)` — härledningen var ENVÄGS. [MÄTT 2026-09-03 — `TASK-372`, prod `app8uGPrVCVOm6LfD`, RIM 3 Rönninge (Event-25, `recLJ3SuZz8A1UEND`), aktivitetsloggen + Postgres]** Marcus registrerade helpriset 2 500 kr på tre anmälningar (Cecilia Örning 06:43, Anna Roos 07:17, Anna Ryttberg 07:17 UTC) och RADERADE alla tre via appen (07:06 resp. 07:20). Efteråt: `Summa inbetalt (kr)` = 0 och **noll rader** i `public.inbetalningar` — men `Anmälningsavgift` stod kvar på **`Mottagen`** på alla tre, så eventsidan visade "3 av 13 anmälningsavgifter mottagna" (rollupen `Antal mottagna anmälningsavgifter` läser flaggan). `Slutbetalning` återställdes däremot korrekt till `Ej mottagen` — och den asymmetrin ÄR diagnosen. **Rotorsaken, helt i appens kod (`supabase/functions/_shared/betalningsharledning.ts`), inte i basen:** eventet saknade `Anmälningsavgift (kr)`, alltså var avgiftens gräns okänd. Vid REGISTRERINGEN täckte helpriset avgiften, så filens egenskap 2 ("allt klart implicerar avgift klar") gav `Mottagen` trots den okända gränsen. Vid RADERINGEN var summan 0 — under helpriset — och avgiftens egen gräns fortfarande okänd, så egenskap 3 ("ett okänt pris ger ett okänt fack") gav `null`. Och `null` betyder "rör inte fältet": `skrivSpegel` (`_shared/betalningar-bas.ts`) hoppar medvetet över `null`-värden, eftersom ett tomt värde hade RADERAT information basen redan hade. Följden var en **envägs-funktion**: appen kunde flippa flaggan TILL `Mottagen` men aldrig tillbaka, så länge avgiftsbeloppet saknades. Slutbetalningsfacket drabbades inte, därför att DESS gräns är helpriset — som var känt. **Rättelsen (`TASK-372`, en rad i härledningen):** `summa <= 0` gör avgiftsfacket avgörbart när helpriset är känt, alltså `Ej mottagen`. Det är en HÄRLEDNING, ingen gissning: en okänd gräns är bevisligen strikt positiv (0 är ett SATT pris — samma noll-är-satt-regel som § Stagingbasens additiva tillskott / RUNDA 2-FIX ovan och filens egen § NOLL; ett pris kan inte vara negativt), så `summa <= 0 < gräns` gäller utan att någon vet vad gränsen är. `<= 0` och inte `=== 0`, eftersom en nettonegativ summa (återbetalning större än inbetalningarna) bär samma sanning. **Den medvetna AVGRÄNSNINGEN — läs den innan regeln "förbättras":** villkoret kräver dessutom ett KÄNT helpris, trots att sanningsargumentet ovan inte behöver det. Skälet är de **305 historiska anmälningar** som bär Lottas MANUELLA `Mottagen`-flaggor utan en enda inbetalningsrad (backfillen kunde inte prissätta dem — [`backfill-inbetalningar.md`](./backfill-inbetalningar.md)): för dem är basens flagga enda källan, och summa 0 betyder "aldrig registrerad i det nya systemet", inte "aldrig betald". Med helpriset känt skriver härledningen redan `Ej mottagen` i `Slutbetalning` för samma anmälan, så avgränsningen lägger INTE till en ny yta där appen uttalar sig — den gör avgiftsfacket lika avgörbart som slutbetalningsfacket redan var. Samma linje som backfillen drar med sitt `pris-okant`-hopp. **Fixen sitter i den RENA modulen, inte i radera-vägen** — härledningen är per konstruktion en funktion av summan, inte av historiken (filens egenskap 1), och en specialregel i `hantera-inbetalning` hade gjort utfallet beroende av vilken Edge Function som råkade anropa den. Samtliga anropare rättas därmed samtidigt: `registrera-inbetalning`, `hantera-inbetalning`, `jobb-konsument`, `preview-receipt` och `scripts/backfill-inbetalningar.mjs`. **Backfillen påverkas inte i praktiken:** den skriver spegeln endast för `plan.backfill ∪ plan.redanBackfillad`, alltså anmälningar som HAR en inbetalningsrad (summa > 0). De 305 hamnar i **`plan.avvikelser`** med koden `pris-okant` — `BESLUT.avvikelse`, inte `BESLUT.hoppa` (`scripts/backfill-inbetalningar.mjs` rad ~658-666 och ~1043; låst av D8 i `scripts/test-backfill-inbetalningar.mjs`; rad 6 i klassningstabellen, [`backfill-inbetalningar.md`](./backfill-inbetalningar.md)). Spegel-loopen rör varken avvikelserna eller de hoppade, så slutsatsen står — men listan hette fel i en tidigare version av denna post (runda 1-fynd, PR #2244). **Datastädning:** de tre RIM 3-flaggorna återställdes för hand av orkestreraren, och eventets `Anmälningsavgift (kr)` sattes till 1 000 (S115 Del 5). → **Ingen maximerings-åtgärd krävs i basen** — detta var en app-logikdefekt, inte ett schemafel. Men posten registrerar en KRAVKLASS för bas-maximeringen: ett event utan `Anmälningsavgift (kr)` är ett giltigt datatillstånd som appen måste klara, och rollupen `Antal mottagna anmälningsavgifter` är bara så sann som flaggan under den.
 
 <!-- markdownlint-enable MD029 -->
 
@@ -2015,3 +2490,12 @@ Code kan ta dessa när de blir relevanta för en specifik uppgift.
 | 2026-08-23 (`TASK-309.2`) | **§ Bilagornas datamodell (ADR-125) tillagd** — tre nya tabeller (Eventinnehåll/Agendapunkter/Platser) + 18 fält på Eventplanering + 2 på Bilagor, skapade live i staging via Airtable MCP. Tabell-ID-tabellen (§ Snabbreferens) uppdaterad med de tre nya raderna + Eventplanerings ändrade fältantal. Sju Event×Typ-kombinationer verifierade READ-ONLY mot prod (2026-08-23) — det tidigare osourcade "sju kombinationer"-påståendet (ORDLISTA.md/ADR-125) bär nu en källa och en lista. Plattformsvägg dokumenterad: formelfält kan varken skapas vid tabellskapelse eller bli primärfält i efterhand. |
 | 2026-08-23 (`TASK-309.3`) | **§ Skrivvägar (TASK-309.3) tillagd** — tre nya EF:er (`save-event-text`/`save-place-standard`/`save-event-content`) + delad agenda-ersättningsoperation, allowlistade fält per operation dokumenterade. TASK-309.2:s "Öppen skuld"-not stängd: tre nya `.purge-staging-policy.json`-targets (Eventplanering/Platser/Agendapunkter, prefix `ZZ-TASK-309.3-`); Eventinnehåll fick medvetet ingen ny target (mutera-och-återställ mot en av de sex tomma seedade raderna, ingen ny transient rad skapas). |
 | 2026-08-23 (`TASK-309.7`) | **§ Mer-sidans läsvägar + Platsers event-lösa läge tillagd** — två nya GLOBALA läs-EF:er (`get-event-contents`/`get-places`, Mer-sidans nya Eventinnehåll-/Platser-ytor); `save-place-standard` utökad med TVÅ event-lösa lägen (`platsId`-uppdatering, `namn`-skapelse med valfri `falt`) för Platser-ytans rena plats-redigering utan event. Ny `.purge-staging-policy.json`-target `save-place-standard-event-los-platser-sentineler` (Platser, prefix `ZZ-TASK-309.7-`, egen sentinel-klass — dessa rader föds utan något throwaway-event). Block-redigeringsdialogen utbruten ur `GenereringsPrototyp.tsx` till `src/components/dokument/BlockDialog.tsx`/`blockDefinitioner.ts`, delad av genereringsvyn och Mer-sidans två nya ytor. |
+| 2026-08-26 (`TASK-309.22`) | **§ Bucket `bilagor` — Storage-path-formerna: `<filnamn>` ASCII-/Storage-säkrat.** Prod-symptom: `upload-attachment` 502 "Invalid key" på ett filnamn med å/ä/ö (`2025-HörlurarMiranonMedia.pdf`, Marcus röktest). Rotorsak: Supabase Storages nyckel-regex (`supabase/storage` `limits.ts`) accepterar bara ett fast ASCII-tecken-set. `sanitizeFilnamn`/`buildAttachmentLeaf`/`buildAttachmentPath` flyttade ur `_shared/attachments.ts` till en ny zod-fri `_shared/attachment-filename.ts` (re-exporterade oförändrat, se filens docblock för det strukturella skälet — Node/Playwright kan inte importera en esm.sh-beroende modul direkt), och `sanitizeFilnamn` NFKD-normaliserar + faller icke-Storage-säkra tecken till ASCII. `Namn`-fältet (klientens originalfilnamn) OFÖRÄNDRAT; endast Storage-nyckeln transformeras. Befintliga ASCII-namngivna rader bevisbart oförändrade (se `_shared/attachment-filename.ts`s docblock för argumentet). |
+| 2026-08-26 (`TASK-309.22`, review-runda 1) | **§ Bucket `bilagor`s rad ovan AMENDERAD** — föregående rad (samma dag) sa att `sanitizeFilnamn` NFKD-normaliserar/faller till ASCII. Det var fel EFTER review-runda 1: `sanitizeFilnamn` faller INTE till ASCII (den är hash-underlaget för `deriveAttachmentId`, TASK-316) — ASCII-fallet flyttades till `buildAttachmentLeaf` (Storage-nyckeln/`Lagringsnyckel` ENDAST). Skälet: review visade empiriskt att det GAMLA (ett-stegs) upplägget kollapsade OLIKA filnamn (två helt olika CJK-strängar, två helt olika emoji — inte bara diakritik-varianter) till samma hash, vilket hade gjort en genuint ny uppladdning till en falsk idempotent replay av en annan fil. Se `_shared/attachment-filename.ts`s docblock och `upload-attachment/index.ts`s HASH-BESLUT-not för den fullständiga uppdelningen. |
+| 2026-08-28 (`TASK-309.30`) | **§ Ort-till-Plats vid create tillagd** (under Eventplanerings create-fält) + `Plats` tillagd i create-fält-tabellen + Plats-backfillens **öppna kant STÄNGD**. `create-event` slår upp `Platser` på `Namn` = `Ort` och länkar vid EXAKT en träff; noll/flera träffar och en redan satt `Plats` lämnar länken orörd, var och en med sitt `platsLankning.skal` i svaret. Ordnings-invarianten (`Plats` skrivs i en PATCH EFTER upserten, aldrig i dess fields-map) skyddar en manuellt satt Plats vid idempotent replay. `Platser.Namn`s icke-unikhet skarpt verifierad genom att seeda två rader med samma namn i staging. Ny purge-target `create-event-plats-harledning-sentineler` (Eventplanering, `Ort`-prefix `ZZ-plats-`); de två permanenta Platser-fixturerna matchar medvetet ingen target. Staging-EF deployad (v25 → v26, `UPDATED_AT` 2026-08-28T03:08:03.740Z); prod-deploy är ett separat Marcus-moment. |
+| 2026-08-29 (`TASK-338.1`) | **§ Bilagornas Gemensam-räckvidd — Plats-axel tillagd** (STAGING-halvan av `ADR-125` § Beslut 1, ersätter `ADR-118` beslut 1 för räckviddsVALET; beslut 2/3 gäller vidare). Ny 4:e option "Gemensam" på `Bilagor.Räckvidd` (choice `selxFObtdzHsUJiun`), ny länk `Bilagor.Plats` → `Platser` (`fldmkHUxPNRRA0Rxi`), lookup `Bilagor.Platsnamn` (`fldyEDJD3Y3InHJ7J`, `Platser.Namn` via `Plats`), auto-född spegel `Platser.Bilagor` (`fldbdACukM1V52mZT`). Migrerade 9 rader (6 "Kurstyp" + 3 "Alla event") → "Gemensam", `Kursfamilj`/`Kursnivå` oförändrade, räkneverifierat 9→0/9 med `filterByFormula`. **Plattformsvägg mätt:** `mcp__airtable__update_field` kan inte ändra en singleSelects `options.choices` (wrappern stryper okända fält); en direkt Web-API-PATCH mot samma fält (samma PAT som MCP-servern) gav Airtables egen 422 `"Changing a field's type or number precision is not currently supported"` — plattformen tillåter det inte alls via Metadata-API:t. Vägen som fungerade: `mcp__airtable__update_records` med ett okänt strängvärde, Airtables typecast-beteende skapade choicen automatiskt. Ingen ny `.purge-staging-policy.json`-target (migreringen skapade inga nya rader). Prod-kolumnen väntar `TASK-338.6` (Marcus GO per tabell, `ADR-125` § 8). |
+| 2026-08-29 (`TASK-338.6`, steg (i)) | **§ Bilagornas Gemensam-räckvidd — Plats-axel: prod-kolumnen ifylld** (PROD-halvan av samma tabell, Marcus GO citerat i kortets Implementation Notes). `Bilagor.Plats` = `fldiRBrqROTJ7fnFs`, `Bilagor.Platsnamn` = `fldFgcCtK8gRRm2m8`; Räckvidd-choicen "Gemensam" och Platsers auto-födda spegelfält bekräftat NÄRVARANDE (konvergens-verifierat namnbaserat) men deras ID:n fångas inte av migreringsskriptet — bokfört öppet i tabellen, inte gissat. Steg (ii) EF-deploy och (iii) radmigrering är INTE gjorda i denna skiva. |
+| 2026-08-29 (`TASK-338.6`, steg (i), komplettering) | **De två återstående prod-ID:na ifyllda** — Räckvidd-choicen "Gemensam" (`selsABHUcAQJqGd0M`, färg `blueLight2` — Airtables egen typecast-tilldelning, inte avsiktlig) och Platsers auto-födda spegelfält (`fld1yaGrVppKh9fyh`, läst ur `Plats.options.inverseLinkFieldId`), mätta via `describe_table` mot prod 2026-08-29 (Marcus stående GO för prod-läsning) sedan migreringsskriptet bevisligen inte fångar dem (kvarstående tooling-lucka, bokförd i § Bilagornas Gemensam-räckvidd, inte stängd av mätningen). Bonus: `Platsnamn`s `fieldIdInLinkedTable` i prod (`fld9CfDq4rqTAGGpw`) och `Plats`-fältets `prefersSingleRecordLink: false` i prod — bekräftar staging, stänger `TASK-338.6` § Premiss-pass punkt 2. |
+| 2026-08-30 (`TASK-346.2`, ADR-128 §§ 2/5/7) | **§ Stagingbasens additiva tillskott 2026-08-30 tillagd** — nio nya fält (Eventinnehåll/Eventplanering `Pris (kr)`+`Anmälningsavgift (kr)`, Anmälningar `Avtalat pris (kr)`/`Summa inbetalt (kr)`/`Kvittonummer`/`Pris (kr) (from Event)`-lookup/`Saknas (kr)`-formel), skapade live via Airtable MCP; deklarativ hemvist `scripts/create-betalningsfalt.mjs`. `Saknas (kr)`-formeln empiriskt fyrfallstestad live (inget pris → BLANK, eventpris-fallback, Avtalat pris-företräde, genuin överbetalning tillåten negativ). Priser satta för ZZ-GRANSKNING-S113 (2500/1000, källa-divergens bokförd öppet) och Eventinnehåll-standarden `Resor i medvetandet 1 · Utbildning` (parsat ur egen fritext). Ny allowlist-operation `write-registration-payment-mirror` i `field-allowlists.ts` (byggs på av `TASK-346.4`). Prod-fältlistan (§ AC #5) skriven som öppet Marcus-moment. |
+| 2026-08-30 (`TASK-346.2` runda 2, review-fynd) | **§ Stagingbasens additiva tillskott: `Saknas (kr)`-formeln RÄTTAD** — den ursprungliga formeln behandlade explicit 0-pris som "okänt" (Airtables `OR()`/`IF()` läser talet 0 som falskt); fixad med ett närvaro-test (`{Fält} & "" != ""`) i stället för sanningsvärde. `mcp__airtable__update_field` kan inte ändra ett formelfälts formula och MCP-servern saknar `delete_field` — det gamla fältet döptes om till `Saknas (kr) [ERSATT 2026-08-30 — 0-pris-bugg]` (`fldSJCJwXnqwBIX2b`, kvarlämnat orört) och ett nytt `Saknas (kr)` (`fldAjVbTtNo1IMkW6`) skapades med den korrekta formeln. Fem fall + en bråkdels-kontroll verifierade live, inklusive två negativa kontroller mot det gamla fältet. Kosmetisk-kant-noten utökad till att gälla `Saknas (kr)` självt; "obevisat för bråkdelar"-frågan stängd med ett faktiskt bråkdels-test (2500.55 − 0.05 = 2500.5, exakt). Prod-fältlistan uppdaterad till att peka på den korrigerade formeln. |
+| 2026-09-03 (`TASK-368.1`, `TASK-213.8`/`TASK-213.9`) | **§ Kända fällor post 27 ÅTGÄRDAD + ny § Fält tillagda 2026-09-03 tillagd.** `Är aktiv (1/0)` (`fld4j7PeckDViTdIB`) utökad till `IF(OR({Status}="Avbokad/Ombokad", {Status}="Inställt"), 0, 1)` i BÅDA baser. Nytt rollup-fält `Eventplanering.Antal aktiva anmälningar` (staging `fld1LGJ6HVCLDJhFC`, prod `fldO9pTic9Mm8G6P4`), `SUM(values)` av `Är aktiv (1/0)`. `Antal anmälda` (`fldTQkYOz9O2BGEIZ`) pekar nu på det nya fältet i stället för det ovillkorade `Antal anmälningar` (`fldU5MCQmagdHtz4G`, MEDVETET oförändrat — Verksamhetspuls-interfacets bigNumber/linjediagram). R3-vägen (nytt fält, inte typbyte — API:t kan inte byta ett fälts typ), samma väggklass som §Kända fällor 25. Bas-halvan utförd av orkestreraren via claude.ai-Airtable-connectorn på Marcus GO; app-halvan (denna PR) konsoliderar de tre JS-predikaten till `arAktivAnmalan` (`src/lib/aktiv-anmalan.ts`). Staging-bevis: fixtur `ZZ-GRANSKNING-S115` (4 anmälningar, en Avbokad/Ombokad + en Inställt) → Antal aktiva anmälningar 4→2, Antal anmälda 4→2, Platser kvar 16→18, Anmäld beläggning 20 %→10 %, Antal slutbetalning saknas 3→1; Antal anmälningar oförändrat 4. Prod-siffrorna (Psionautics) rapporteras separat i `TASK-213.9`s Implementation Notes. |

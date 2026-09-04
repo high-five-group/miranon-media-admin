@@ -29,6 +29,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { expect, test } from '@playwright/test';
 import { Eta } from 'eta';
+import { fetMarkera } from '../../supabase/functions/_shared/fet-markering';
 import { bekraftelsebilagaHtml } from '../../supabase/functions/_shared/mallar/bekraftelsebilaga.html';
 import { deltagarinformationHtml } from '../../supabase/functions/_shared/mallar/deltagarinformation.html';
 // [TASK-309.5] kvitto.html konverterades från `{{fältnamn}}`-strängersättning
@@ -75,14 +76,20 @@ const MINIMAL_DELTAGARINFO_DATA = {
   utrustning: null as string | null,
 };
 
-// [TASK-309.5] kvitto.html bär INGA villkor/loopar (ren flat substitution,
-// samma som förlagans {{}}-form) — se KvittoMallData i _shared/mall-data.ts.
+// [TASK-309.5] kvitto.html var HELT fri från villkor/loopar (ren flat
+// substitution, samma som förlagans {{}}-form) — se KvittoMallData i
+// _shared/mall-data.ts. [TASK-346.5] EN ändring av det: "Hänvisning"-raden
+// är sedan denna skiva mallens ENDA villkor (`<% if (data.hanvisning) %>`,
+// kreditkvittot, förberedd för TASK-346.9) — `hanvisning: ''` nedan håller
+// den dolt, precis som för varje befintligt kvitto i dag.
 const MINIMAL_KVITTO_DATA = {
   kvittonummer: 'x',
   datum: 'x',
+  betalningsdatum: 'x',
   orgReferens: 'x',
   kundnamn: 'x',
   kundEpost: 'x',
+  rubrik: 'x',
   benamning: 'x',
   netto: 'x',
   moms: 'x',
@@ -93,6 +100,7 @@ const MINIMAL_KVITTO_DATA = {
   orgLand: 'x',
   orgNummer: 'x',
   orgMomsregnummer: 'x',
+  hanvisning: '',
 };
 
 test.describe('Escaping — Airtable-härledd fritext kan aldrig injicera HTML (ADR-125 § 4)', () => {
@@ -111,13 +119,35 @@ test.describe('Escaping — Airtable-härledd fritext kan aldrig injicera HTML (
     expect(html).not.toContain(FARLIG_STRANG);
   });
 
-  test('bekraftelsebilaga.html: beskrivningsstycket escapeas', () => {
+  // BESKRIVNINGEN BYTTE SKYDDSMEKANISM 2026-08-27 (TASK-309.27), och testet
+  // med den. Förlagan har fetstilta ord i kursbeskrivningen; mallen hade dem
+  // hårdkodade som <strong> fram till TASK-309.4 gjorde stycket datadrivet,
+  // varefter de försvann tyst. Fixen kunde inte vara att släppa igenom rå
+  // HTML — i stället escapar `fetMarkera` (fet-markering.ts) HELA strängen
+  // och återinför DÄREFTER enbart <strong>. Mallen renderar därför stycket
+  // rått, och skyddet ligger ett steg tidigare.
+  //
+  // Testet nedan speglar den ordningen: rå indata rakt in i mallen är NU
+  // otvättad (det är sant, och därför bär mall-data.ts ansvaret), medan
+  // fetMarkera-utdata är säker. Enhetstesterna för själva funktionen —
+  // inklusive <script>, HTML inuti markeringar och dubbel-escaping — bor i
+  // mall-data.test.ts § fetMarkera.
+  test('bekraftelsebilaga.html: beskrivningsstycket renderas rått — skyddet ligger i fetMarkera', () => {
     const html = eta.renderString(bekraftelsebilagaHtml, {
       ...MINIMAL_BEKRAFTELSE_DATA,
-      beskrivning: [FARLIG_STRANG],
+      beskrivning: [fetMarkera(FARLIG_STRANG)],
     }) as string;
+    // Går texten genom fetMarkera först är resultatet escapat i markupen …
     expect(html).toContain('&lt;script&gt;alert(1)&lt;/script&gt;');
     expect(html).not.toContain(FARLIG_STRANG);
+  });
+
+  test('bekraftelsebilaga.html: fetMarkera-utdata behåller <strong> genom mallen', () => {
+    const html = eta.renderString(bekraftelsebilagaHtml, {
+      ...MINIMAL_BEKRAFTELSE_DATA,
+      beskrivning: [fetMarkera('Boken **Utanför Verkligheten** ligger till grund')],
+    }) as string;
+    expect(html).toContain('Boken <strong>Utanför Verkligheten</strong> ligger till grund');
   });
 
   test('deltagarinformation.html: ämnesstyckets text escapeas', () => {
@@ -213,13 +243,21 @@ test.describe('Ifyllnad — mallens villkor och loopar (samma AC #1, "ifyllnad"-
   // [TASK-309.5] kvitto.html — ren flat substitution, samma AC-form som de
   // två andra mallarna. Bevisar mot den FAKTISKA mallen (inte en syntetisk
   // sträng) att varenda `<%= data.x %>`-token faktiskt fylls i.
-  test('kvitto.html: samtliga femton token fylls i från KvittoMallData', () => {
+  test('kvitto.html: samtliga arton token fylls i från KvittoMallData', () => {
     const data = {
       kvittonummer: 'MM-2026-1001',
       datum: '2026-08-03',
+      // [TASK-346.5] Medvetet SKILT värde från `datum` — bevisar att
+      // "Betalningsdatum"-raden inte råkar återanvända utfärdandedagen.
+      betalningsdatum: '2026-08-01',
       orgReferens: 'Miranon Media/Lotta Gotthardsson',
       kundnamn: 'Anna Andersson',
       kundEpost: 'anna.andersson@example.com',
+      // [TASK-346.5, förberedd för 346.9] Icke-default värde ('Kreditkvitto'
+      // + en satt hänvisning) — testar SAMTIDIGT att den flata substitutionen
+      // fylls OCH att mallens enda villkor (`<% if (data.hanvisning) %>`)
+      // faktiskt renderar raden när fältet är satt.
+      rubrik: 'Kreditkvitto',
       benamning: 'Utbildning 2026-07-25/26, personlig utveckling, meditation',
       netto: '2 000,00',
       moms: '500,00',
@@ -230,6 +268,7 @@ test.describe('Ifyllnad — mallens villkor och loopar (samma AC #1, "ifyllnad"-
       orgLand: 'Sverige',
       orgNummer: '559540-5498',
       orgMomsregnummer: 'SE559540549801',
+      hanvisning: 'Kvitto MM-2026-0500',
     };
     const html = eta.renderString(kvittoHtml, data) as string;
     for (const varde of Object.values(data)) {
@@ -242,6 +281,23 @@ test.describe('Ifyllnad — mallens villkor och loopar (samma AC #1, "ifyllnad"-
     const kropp = html.slice(html.indexOf('<body>'));
     expect(kropp).not.toMatch(/\{\{\s*[\w]+\s*\}\}/);
     expect(kropp).not.toMatch(/<%[=~]?/);
+  });
+
+  // [TASK-346.5, förberedd för 346.9, AC #5] NEGATIV KONTROLL mot en
+  // permanent visuell regression: ETT VANLIGT kvitto (hanvisning === '',
+  // det värde varje befintlig anropssite ger i dag, se
+  // `KvittoradSpec.hanvisningTillKvittonummer`s docstring) får INTE visa
+  // en tom "Hänvisning"-rad. Utan detta test hade en trasig `<% if %>`
+  // (t.ex. `if (data.hanvisning !== undefined)`, sant även för `''`)
+  // kunnat smyga in en synlig men tom rad på VARJE kvitto som går ut i dag.
+  test('kvitto.html: "Hänvisning"-raden är HELT FRÅNVARANDE för ett vanligt kvitto (hanvisning === "")', () => {
+    const html = eta.renderString(kvittoHtml, MINIMAL_KVITTO_DATA) as string;
+    // Slicen från <body> är AVSIKTLIG (samma mönster som testet ovan) —
+    // mallens EGEN filhuvud-KOMMENTAR (före <body>) nämner ordet
+    // "Hänvisning" i sin dokumentation av villkoret, vilket annars hade
+    // gett en falsk träff här.
+    const kropp = html.slice(html.indexOf('<body>'));
+    expect(kropp).not.toContain('Hänvisning');
   });
 });
 
@@ -263,7 +319,11 @@ const EF_DIR = path.join(REPO_ROOT, 'supabase', 'functions');
 test.describe('Kvittots renderingsväg — BÅDA anropssiterna använder SAMMA renderare (AC #2, källkods-nivå)', () => {
   test("preview-receipt/index.ts anropar byggKvittoData + renderaMallPdf('kvitto', …) — INTE kvittoRader/renderKvittoPdf", () => {
     const source = readFileSync(path.join(EF_DIR, 'preview-receipt', 'index.ts'), 'utf8');
-    expect(source).toContain("import { byggKvittoData } from '../_shared/mall-data.ts'");
+    // [TASK-370.2] Importraden bär numera ÄVEN `byggForsattsbladData` (samma
+    // modul, en kombinerad import) — kontrollen matchar suffixet i stället
+    // för HELA raden, så den inte bryts av att en syskonfunktion läggs till
+    // i samma import-sats.
+    expect(source).toContain("byggKvittoData } from '../_shared/mall-data.ts'");
     expect(source).toContain("import { renderaMallPdf } from '../_shared/mall-render.ts'");
     expect(source).toMatch(/renderaMallPdf\(\s*'kvitto'/);
     expect(source).not.toContain('kvittoRader(');

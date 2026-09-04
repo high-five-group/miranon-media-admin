@@ -1,10 +1,10 @@
 ---
 id: TASK-213.9
 title: 'Skiva: Å8 — Fynd 1: Antal anmälningar / Antal anmälda (§O3, efter §27)'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-14 17:24'
-updated_date: '2026-08-24 14:45'
+updated_date: '2026-09-03 08:54'
 labels:
   - ready-for-human
 dependencies:
@@ -53,20 +53,20 @@ Täcker användarberättelser: 8
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Eventplanering.Antal anmälningar (fldU5MCQmagdHtz4G) ersatt av en rollup över Anmälningar.Är aktiv (1/0) med SUM — förutsatt att skiva 8 är landad och verifierad (O3)
-- [ ] #2 Automation A6:s skriptkod (triggervillkor Anmäld beläggning (%)=1) läst via claude.ai-connectorns get_automation FÖRE prod-mutationen, och dess triggerpunkt efter fixen dokumenterad
-- [ ] #3 På Psionautics-eventet (recQ2TPsY69fQXA8a) går Antal anmälningar 88→79 och Platser kvar 0→9 i prod, verifierat efter landning
-- [ ] #4 Rollback-väg: export/förbild av det gamla count-fältet sparad FÖRE typbytet (fältet kan inte byta typ via API, R3)
-- [ ] #5 Marcus-GO för prod-mutationen inhämtat och citerat innan fälttypbytet utförs i prod
+- [x] #1 Eventplanering.Antal anmälningar (fldU5MCQmagdHtz4G) ersatt av en rollup över Anmälningar.Är aktiv (1/0) med SUM — förutsatt att skiva 8 är landad och verifierad (O3)
+- [x] #2 Automation A6:s skriptkod (triggervillkor Anmäld beläggning (%)=1) läst via claude.ai-connectorns get_automation FÖRE prod-mutationen, och dess triggerpunkt efter fixen dokumenterad
+- [x] #3 På Psionautics-eventet (recQ2TPsY69fQXA8a) går Antal anmälningar 88→79 och Platser kvar 0→9 i prod, verifierat efter landning
+- [x] #4 Rollback-väg: export/förbild av det gamla count-fältet sparad FÖRE typbytet (fältet kan inte byta typ via API, R3)
+- [x] #5 Marcus-GO för prod-mutationen inhämtat och citerat innan fälttypbytet utförs i prod
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #5 Rollback-väg dokumenterad och bevisat reversibel (formeltext eller record-ID:n sparade verbatim) FÖRE varje prod-mutation, per skiva
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #5 Rollback-väg dokumenterad och bevisat reversibel (formeltext eller record-ID:n sparade verbatim) FÖRE varje prod-mutation, per skiva
 - [ ] #6 Marcus-GO för prod-mutationen explicit citerat i skivans Implementation Notes, per skiva
 <!-- DOD:END -->
 
@@ -79,3 +79,12 @@ Trigger: recordMatchesConditions på Eventplanering (tblVE3UKWl1CKrphV), villkor
 Konsekvens för fixen: eftersom A6 triggar på EXAKT beläggning=1 (inte tröskel-överskridande), och fixen ändrar täljaren (Antal anmälda, exkluderar avbokade/inställda), kommer A6 fira vid ett ANNAT faktiskt antal aktiva anmälningar efter fixen än före — samma procentvärde (100%) men mot en mindre population. Ingen formel i A6 själv behöver ändras; endast NÄR den fyrar flyttas. Detta är precis vad AC#2 efterfrågar dokumenterat.
 Bekräftat samtidigt (identifiersOnly/full describe_table, prod): Antal anmälningar (fldU5MCQmagdHtz4G) är type="count" (ovillkorat, ej rollup) — matchar kortets "M-a/M-b"-premiss exakt. Anmäld beläggning (%) = {Antal anmälda}/{Max antal platser}; Platser kvar = {Max antal platser}-{Antal anmälda}; Antal slutbetalning saknas = {Antal anmälda}-{Antal mottagna slutbetalningar} — samtliga tre följdfält bekräftat beroende av Antal anmälda, exakt som blast-radius-varningen anger.
 <!-- SECTION:NOTES:END -->
+
+## Comments
+
+<!-- COMMENTS:BEGIN -->
+created: 2026-09-03 08:54
+---
+Utförd via TASK-368.1 (S115, 2026-09-03). AC1 uppfyllt i R3-formen kortet förutsåg: inget fälttypsbyte (API:t kan inte byta typ) — i stället NYTT rollup-fält Antal aktiva anmälningar (SUM över Är aktiv, prod fldO9pTic9Mm8G6P4, staging fld1LGJ6HVCLDJhFC) och Antal anmälda ompekad till det; Antal anmälningar (count) kvar orört med beskrivning, eftersom Verksamhetspuls-interfacet summerar det. Skiva 8 (213.8) landad först, samma leverans. AC2: A6 läst via get_automation — trigger Anmäld beläggning (%) = 1, åtgärd sendEmail till lotta@outsidereality.se + marcus@h5gruppen.se; efter fixen fyrar den när AKTIVA anmälningar plus manuella platser når max, inte längre på avbokade. AC3: Psionautics recQ2TPsY69fQXA8a i prod: Antal anmälningar 88 (kvar), Antal anmälda 88→79, Platser kvar 0→9, beläggning 100→90 %. AC4: inget typbyte skedde, så ingen export behövdes — Rollback (formeltext verbatim, mätt före ändring, identisk i staging och prod): Är aktiv (1/0) fld4j7PeckDViTdIB = IF({fldWr5cCPNx9HEKtL}="Avbokad/Ombokad", 0, 1); Antal anmälda fldTQkYOz9O2BGEIZ = {fldU5MCQmagdHtz4G} + {fld8pUb6x2G3YIovs}. Återställ = sätt tillbaka de två formlerna och radera rollup-fältet Antal aktiva anmälningar (staging fld1LGJ6HVCLDJhFC, prod fldO9pTic9Mm8G6P4). Antal anmälningar (count, fldU5MCQmagdHtz4G) rördes aldrig. AC5: Marcus GO citerat i 368.1.
+---
+<!-- COMMENTS:END -->

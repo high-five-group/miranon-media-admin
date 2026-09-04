@@ -8,16 +8,21 @@ import { queryKeys } from '@/queries/keys';
 /**
  * Mutation-input: filen plus räckviddsvalet (TASK-275.3, ADR-118 beslut 5).
  * `rackvidd` utelämnad = Event (oförändrat default, se
- * `AttachmentScopeInputSchema`). `kursfamilj`/`kursniva` bara meningsfulla
- * vid `rackvidd` Kurstyp — se `UploadAttachmentInput`s docblock för den
- * fulla valideringskedjan (server-sidan är golvet, denna typ tvingar
- * ingenting klient-side).
+ * `AttachmentScopeInputSchema`).
+ *
+ * [UTBYGGD, TASK-338.3, ADR-125 § Beslut 1] De tre AXLARNA — `kursfamilj`,
+ * `kursniva` och `plats` — är meningsfulla vid `rackvidd` Gemensam och
+ * VALFRIA var för sig; noll satta axlar är giltigt och betyder "alla event".
+ * Se `UploadAttachmentInput`s docblock för den fulla valideringskedjan
+ * (server-sidan är golvet, denna typ tvingar ingenting klient-side).
  */
 export interface UploadAttachmentVariables {
   file: File;
   rackvidd?: AttachmentScopeValue;
   kursfamilj?: string;
   kursniva?: string;
+  /** Platser-RECORD-ID (`rec…`), aldrig ett platsnamn — se `UploadAttachmentInput.plats`. */
+  plats?: string;
 }
 
 /**
@@ -72,6 +77,7 @@ export function useUploadAttachment(eventId: string | null) {
         rackvidd: variables.rackvidd,
         kursfamilj: variables.kursfamilj,
         kursniva: variables.kursniva,
+        plats: variables.plats,
       }),
 
     onSuccess: (attachment) => {

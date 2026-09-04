@@ -40,12 +40,14 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
 import { CalendarCheck, ChevronRight, Download, UserPlus } from 'lucide-react';
 import { type ComponentType, useEffect, useRef } from 'react';
+import { PersonBetalningar } from '@/components/betalningar/PersonBetalningar';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { SidRam } from '@/components/primitives/SidRam';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useDataSource } from '@/data/useDataSource';
 import type { PersonDetail as PersonDetailType, PersonHistoryEntry } from '@/domain/schemas';
+import { betalningarPa } from '@/lib/funktionsflaggor';
 import { type KursfargKlass, kursfargForKurs } from '@/lib/kursfarg';
 import { queryKeys } from '@/queries/keys';
 // D-variantens SKARPA ytor (`#1151`). a/b/c rör dem aldrig — de behåller sina
@@ -205,10 +207,11 @@ function platsOchTillfalle(ort: string | null, eventDatum: string | null): strin
  *    kontextrad, `size-2.5 rounded-full`) och `Gruppdynamik.tsx:183`
  *    (`h-3.5 w-1`). Pricken är gränsen som saknades, och bär dessutom kursens
  *    identitet utan ett ord.
- *  · **` · `-separator** — `AnmalningarList.tsx:136`
- *    (`[eventNamn, datum].join(' · ')`), samt D:s egna Eventhistorik- och
- *    Just nu-rader. Samma vy använde alltså redan separatorn på två andra
- *    ställen; motiveringsraden var undantaget.
+ *  · **` · `-separator** — den rivna `AnmalningarList.tsx`s
+ *    `[eventNamn, datum].join(' · ')` (numera `AnmalningarSida.tsx`,
+ *    `TASK-299.5`), samt D:s egna Eventhistorik- och Just nu-rader. Samma
+ *    vy använde alltså redan separatorn på två andra ställen;
+ *    motiveringsraden var undantaget.
  *
  * Separatorerna är `aria-hidden` — de är en visuell gräns, inte innehåll, och
  * en skärmläsare som läser "punkt" mellan varje led vinner ingenting.
@@ -1138,7 +1141,34 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
         <h2 id="proto-d-nulage" className="px-4 font-semibold text-lg">
           Just nu
         </h2>
-        <div className="flex flex-col gap-3 rounded-2xl border border-transparent bg-primary-tint px-4 py-4 contrast-more:border-border-strong">
+        {/* ═══ INGEN GULD-SIGNAL ALLS — HUSETS NEUTRALA BLOCKFORM ═══
+            Marcus dom 2026-09-01, ordagrant: *"Ta bort den oranga konturen på
+            just nu blocket, jag vill inte ha den."*
+
+            BÅDA GULD-VARIANTERNA ÄR PRÖVADE OCH RIVNA, i den ordningen, och
+            historiken står kvar därför att den är hela skälet att inte försöka
+            en tredje gång:
+
+              1. GULD-FOND (`bg-primary-tint`, promoverad ur prototypen).
+                 Revs samma dag: *"det funkar inte att ha gul bakgrund på det,
+                 det skär sig med färgerna som 'event-raderna' har. Jag tror
+                 det bästa är att kanske enbart ha gul kontur."* Krocken satt i
+                 lagren — varm gul fond, kall neutralgrå rader
+                 (`bg-bg-emphasized`), och en KURSFÄRGAD vänsterkant per rad
+                 (`kursfargForKurs`). Tre kulörfamiljer på tre lager.
+              2. GULD-KONTUR på vit botten (commit `02e9f9af`), byggd på hans
+                 egen "kanske enbart ha gul kontur". Riven i detta pass.
+
+            SLUTSATSEN ÄR INTE "fel ton" UTAN "ingen ton": blocket behöver ingen
+            egen signal. Det är en sektion bland systrarna, inte en hero.
+
+            FORMEN ÄR SYSKONENS, ÅTERANVÄND OCH INTE OMSKRIVEN: `kortKlass`
+            (definierad i denna komponent) är exakt samma sträng "Ström"- och
+            tomläges-blocken bär, och samma form som `Sektion`s behållare
+            använder — `bg-bg-muted` med transparent kant och
+            `contrast-more:border-border-strong`. Raderna INUTI är ORÖRDA i
+            alla tre varianterna; det var aldrig de som var fel. */}
+        <div className={`flex flex-col gap-3 ${kortKlass}`}>
           {aktivaAnmalningar.length > 0 ? (
             <>
               <p className="font-semibold text-body">
@@ -1211,9 +1241,14 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
                   // transparent)` (semantic.css 46) och används som skrim av
                   // `ToggleButtonGroup.tsx:73`. Den token kan inte användas rakt
                   // av här — den ERSÄTTER bakgrunden, så skrimmet hade lagt sig
-                  // mot kortets guld-tint i stället för mot den grå raden och
+                  // mot BLOCKETS egen yta i stället för mot den grå raden och
                   // ljusnat igen. Samma 6 % blandas därför direkt in i
                   // `bg-emphasized`. Steget är appens, ytan är radens.
+                  //
+                  // (Noten sade "kortets guld-tint" fram till 2026-09-01, då
+                  // fonden byttes mot en guld-KONTUR på vit botten — se
+                  // blockets egen not ovan. Resonemanget är oförändrat: felet
+                  // vore fortfarande att skrimmet läggs mot fel lager.)
                   const radKlass = 'flex items-center gap-3';
                   return (
                     <li key={grupp.nyckel} className="flex flex-col py-1.5 first:pt-0">
@@ -1242,6 +1277,26 @@ function VariantD({ person, nuMs }: { person: PersonDetailType; nuMs: number }) 
           )}
         </div>
       </section>
+
+      {/* BETALNINGAR — NY SEKTION (TASK-346.7 AC #4), bakom miljöflaggan.
+
+          PLACERINGEN ÄR ETT FORMBESLUT FÖR MORGONGRANSKNINGEN, inte ett
+          fastställt facit: sektionen står EFTER "Just nu" och FÖRE "Flagga",
+          därför att en öppen betalning hör till personens NULÄGE — det är
+          samma fråga som "Just nu" svarar på ("vad pågår med den här
+          personen"), bara i pengar i stället för i anmälningar. Facitet
+          (S103, variant D) låser sju block i Marcus egen ordning och känner
+          inte detta; avsteget är bokfört i
+          `tasks/sessions/bilagor/s103-persondetalj-konvergens/AMENDERING-2026-08-31-*.md`
+          med klassen "ny form, förhandsmandat S113 Del 11 (B3)".
+
+          MED FLAGGAN AV RENDERAS INGENTING — persondetaljen är då byte för
+          byte den promoverade formen. */}
+      {betalningarPa() && (
+        <Sektion id="proto-d-betalningar" rubrik="Betalningar">
+          <PersonBetalningar person={person} />
+        </Sektion>
+      )}
 
       {/* FLAGGAN — eget block sedan 2026-08-12. Marcus 2026-08-10: *"Manuell
           flagga är ju bra att kunna skapa här, så den sedan kan 'fästas' på

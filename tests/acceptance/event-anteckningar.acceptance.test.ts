@@ -4,7 +4,7 @@ import { http } from 'msw';
 import type { z } from 'zod';
 import type { EventNoteSchema, EventSchema } from '../../src/domain/schemas';
 import { EF, json } from '../support/fixturvarld/handlers';
-import { expect, type Page, test } from './support/acceptance-bas';
+import { expect, type Page, test } from './acceptance-bas';
 
 /**
  * task-18.11 — Anteckningar (S73-facit K66–K71, ADR-075): tidsstämplad ström

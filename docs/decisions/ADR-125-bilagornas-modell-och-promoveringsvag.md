@@ -363,3 +363,109 @@ en ÖGONBLICKSBILD, inte en härledd formel. Väggen bokfördes redan i
 rad stänger den kvarvarande motsägelsen mellan ADR:n och den skarpa
 implementationen. `TASK-309.3` fortsätter mönstret: `save-event-content`
 sätter `Namn` VID VARJE skrivning, inte bara vid radens födelse.
+
+### 2026-08-28 — Eventplanerings `Plats` HÄRLEDS vid create, med samma uppslags-anda som § 2:s Event × Typ
+
+**TASK-309.30.** § 2 låser `Plats` som en LÄNK från `Eventplanering` till
+`Platser`, och slår samtidigt fast principen *"uppslag, inte länk"* för
+`Eventinnehåll` (`Event (source)` × `Typ` pekar ut sin rad deterministiskt;
+"en länk hade varit en andra sanning som Airtables UI kan låta glida isär").
+`Plats` MÅSTE vara en länk — bilagerenderingen läser platsens fyra fält ur
+den (`_shared/document-sources.ts`) — men den behöver inte SÄTTAS för hand.
+
+`create-event` (ADR-066) härleder den nu ur eventets eget `Ort`: uppslag mot
+`Platser.Namn`, länk vid EXAKT en träff, aldrig annars, aldrig över en
+befintlig länk. Det är samma anda tillämpad på en länk i stället för på ett
+uppslag — härledningen bär kopplingen, `Ort` förblir den enda platsen
+platsnamnet skrivs (beslut 8: `Ort` rörs ALDRIG av plats-vägarna).
+
+**Varför "exakt en" och inte "första träffen":** `Platser.Namn` är ett
+singleLineText-primärfält och Airtable kan strukturellt inte tvinga unikhet
+på det. Två rader med samma namn skapades utan invändning i staging
+2026-08-28 (verifikationen som regeln vilar på). `save-place-standard`s
+find-or-create tar medvetet första träffen — den skriver på operatörens
+uttryckliga order i stunden. Den automatiska härledningen får inte göra samma
+sak: en gissad plats syns först som fel adress i en genererad bilaga, alltså
+exakt den tysta felklass beslut 7:s "aldrig tyst regenerering" bevakar i
+inaktualitets-frågan.
+
+**Vad detta INTE beslutar:** en platsväljare i `CreateEventForm` (TASK-309.30
+alternativ (b)/(c)) är ett Marcus-beslut och fattas inte här. Klientens
+skapa-event-flöde är oförändrat i form. Full skriv-semantik, ordnings-
+invarianten och de fem `platsLankning.skal`-lägena:
+[ADR-066](ADR-066-skapa-event-write-vertikal-idempotens.md) § Tillägg
+2026-08-28 + `data-model.md` § Ort-till-Plats vid create.
+
+### 2026-08-29 — Beslut 1:s tre axlar bokförda som lagringsform: `Bilagor.Räckvidd = Gemensam` + Plats-länk
+
+**TASK-338.5.** § Beslut 1 ovan ("räckvidden bär tre axlar (9)") beskriver
+S108 Del 2 § D:s grillade beslut, men inte hur det landade i basen och
+koden — den skarva formen bokförs här, sedan `TASK-338` (PRD) körde
+beslutet genom staging (`TASK-338.1`) och EF-lagret (`TASK-338.2`).
+
+**Lagringsformen.** `Bilagor.Räckvidd` fick en fjärde option **"Gemensam"**
+som betyder "filter-räckvidd: axlarna gäller, tomma axlar begränsar inte" —
+den ersätter ADR-118:s "Kurstyp"/"Alla event" som samma sak uttryckt med
+TVÅ separata val. Axlarna bärs av de befintliga `Kursfamilj`/`Kursnivå`
+(ADR-115-fälten, oförändrade) plus en ny länk `Bilagor.Plats` → `Platser`
+(högst en plats avsedd; Airtable kan strukturellt inte tvinga det, adapter
+och EF vaktar) och ett lookup-fält `Bilagor.Platsnamn`
+(`Platser.Namn`) så appen och Lotta läser namnet utan extra uppslag. Fält-ID:n
+för båda baser: `data-model.md` § "Bilagornas Gemensam-räckvidd —
+Plats-axel".
+
+**Matchningen — EN hämtning, OCH i kod.** `get-event-attachments` hämtar (a)
+eventets egna rader och (b) ALLA rader med `Räckvidd = Gemensam` i EN
+Airtable-hämtning, och matchar (b) i kod mot eventets Kursfamilj, Kursnivå
+(tom-nivå-regeln oförändrad — tom nivå på bilagan betyder hela familjen) och
+Plats — på LÄNKENS record-ID, aldrig namnet (samma disciplin som § 8:s
+Ort-drift-skäl). Matcharen är en ren, zod-fri funktion i `_shared/`
+(`rackvidd-matchning.ts`) med egen enhetstestsvit — Airtables formelspråk kan
+inte jämföra länk-ID:n utan hjälpfält, så filterByFormula dög inte längre;
+de tre gamla filterByFormula-mängderna (Event/Kurstyp/Alla event) revs.
+
+**Legacy-toleransen är en BOKFÖRD RIVNINGSSKULD, inte en permanent gren.**
+Läsvägen tolererar `Räckvidd` = "Kurstyp"/"Alla event" som "Gemensam" med
+sina axlar (så prod fungerar oavsett i vilken ordning EF-deploy och
+radmigrering sker i `TASK-338.6`); skrivvägen accepterar samma legacy-värden
+och mappar dem till "Gemensam" (installerade PWA-klienter kan skicka dem
+tills de uppdaterats). Rivning av legacy-mappningen är en egen skuldpost,
+utanför `TASK-338`s omfattning — se PRD § Utanför omfattningen.
+
+**Options "Kurstyp"/"Alla event" lämnas kvar OANVÄNDA** på `Räckvidd`-fältet
+tills slutgenomlysningen — borttagning är ett Marcus-beslut, bokfört i
+defektregistret (`ADR-063` § Updates), inte en glömd städning.
+
+**Känt randfall, bokfört men INTE kodat mot:** en rad med tomt `Räckvidd`
+OCH tom `Event`-länk vore osynlig för både unionens mängder — den matchar
+varken "eventets egna" (ingen `Event`-länk) eller "Gemensam" (fältet är inte
+satt till det värdet). Ingen skrivväg i appen kan producera den formen
+(`upload-attachment`/`finalize-attachment-upload` kräver `rackvidd` ∈
+{Event, Gemensam}, och `Event` sätts alltid oavsett räckvidd), så randfallet
+kräver en direkt Airtable-redigering för att uppstå. Skälen och den fulla
+matchningslogiken: PRD `TASK-338` § Implementationsbeslut → Matchningen.
+
+### 2026-08-29 — Skapa är ersättning när raden finns — E
+
+**`TASK-340.1`/`TASK-340.3`.** § 3 (*"Regenerering är ERSÄTTNING"*)
+utvidgas till ospecificerat Skapa, inte bara till listans explicita
+"Skapa om"-knapp. Ett upprepat Skapa för samma (event × `Mall`) går
+ersätt-vägen AUTOMATISKT: `generate-event-attachment` slår själv upp om en
+Event-mallad Bilagor-rad redan finns för eventet, via eventets OMVÄNDA
+`Bilagor`-länk filtrerad på `Dokumentklass` + `Mall` — aldrig klientens
+val. Hittas en träff skrivs SAMMA rad, SAMMA `attachmentId`, SAMMA
+lagringsnyckel, svaret bär `ersatte: true` och statuskoden är **200**;
+hittas ingen skapas en NY rad, `ersatte: false`, statuskod **201** —
+invarianten är alltså **201 ⇔ ny rad, 200 ⇔ ersatte**, oavsett väg dit. Ett
+explicit `ersatt`-fält i body:n (listans befintliga "Skapa om") fortsätter
+fungera oförändrat och tar företräde framför server-uppslaget när det
+finns.
+
+**Skälet:** oraderbara dubbletter. Filnamnet är deterministiskt
+(`${namnPrefix} – ${eventlabel}.pdf`), `DokumentYta.tsx`s `grupperaPerNamn`
+grupperar per namn och visar bara den nyaste raden som "+1 äldre fil", och
+event-mallade rader saknar en Radera-knapp helt i appen — mätt på den
+permanenta staging-fixturen 2026-08-29: 23 Bekräftelsebilaga-rader och 4
+Deltagarinformation-rader länkade till ETT event, samtliga skapade samma
+dag (research `forhandsgranska-spara-atervand-bilageflodet-2026-08-29.md`
+§ 0 punkt b).

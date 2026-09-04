@@ -66,6 +66,34 @@
 # grenen trots allt inte är fullt mergad (t.ex. en avvikande merge-strategi)
 # — ett sådant avslag redovisas som SKONAS, aldrig som ett fel.
 #
+# ═══ KÄND BEGRÄNSNING — URVALET ÄR UNDER-UPPTÄCKANDE (TASK-323) ═══
+#
+#   "Mergad?" avgörs enbart på ANCESTOR-relationen (`git merge-base
+#   --is-ancestor <gren> <BAS_SHA>` nedan). Repot bär en egen namngiven
+#   lesson om precis det mönstret tillämpat på VÅR landningsväg:
+#   [[L604]] i tasks/lessons/vol-08.md —
+#   merge queue bygger om varje post mot main plus posterna före den, så den
+#   commit som faktiskt landar är en ANNAN commit än grenens topp. En gren
+#   vars innehåll ligger i main kan därför svara "nej" på ancestor-frågan.
+#
+#   RIKTNINGEN ÄR SÄKER, och det är hela skälet att begränsningen är
+#   acceptabel: en kö-landad gren vars topp byggts om bedöms "ej mergad" och
+#   SKONAS. Skriptet raderar aldrig något det inte bevisligen har ancestry
+#   för. Felet går alltid mot att städa för LITE, aldrig för mycket.
+#
+#   KOSTNADEN är ett dolt tak på hur mycket automatiken kan lösa: en okänd
+#   andel av de skonade grenarna kan redan vara landade. Vid skarpkörningen
+#   2026-08-28 identifierades 162 av 203 grenar korrekt som mergade (20
+#   skonades som "ej mergad") — taket bet alltså inte hårt då, men talet är
+#   ett stickprov, inte en garanti.
+#
+#   VÄGEN OM TAKET BÖRJAR BITA: git-trim (github.com/foriequal0/git-trim)
+#   avgör mergad-status med `git cherry` — patch-ID-ekvivalens i stället för
+#   ancestry — vilket fångar både squash- och ombyggda toppar. Byt INTE
+#   urvalskriterium utan att först mäta hur många grenar som faktiskt
+#   skonas felaktigt; `git cherry` är dyrare per gren och skriptet körs nu
+#   automatiskt (scripts/heartbeat-svep.sh § UNDERHÅLL).
+#
 # TORRKÖRNING ÄR DEFAULT. Utan --utfor ändras ingenting — samma kontrakt som
 # `git clean -n` och scripts/stada-worktrees.sh. Exit 0 = rapporten är
 # komplett, inte "allt städat".

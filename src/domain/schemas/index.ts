@@ -24,9 +24,59 @@ export {
   AttachmentSchema,
   AttachmentUploadTicketSchema,
   DocumentPreviewSchema,
+  normaliseraRaAttachment,
+  parsaAttachment,
+  parsaAttachments,
+  parsaSkapadEventBilaga,
+  SkapadEventBilagaSchema,
   UtkastResultatSchema,
 } from './Attachment.schema';
 export { AttendanceSchema, CreatedAttendanceSchema } from './Attendance.schema';
+export {
+  type HanteraInbetalningInput,
+  type HanteraInbetalningResult,
+  HanteraInbetalningResultSchema,
+  INBETALNING_BETALSATT,
+  type Inbetalning,
+  type InbetalningBetalsatt,
+  InbetalningSchema,
+  type Inbetalningslista,
+  InbetalningslistaSchema,
+  type InbetalningsStatus,
+  type InbetalningsTyp,
+  type Jobb,
+  type JobbRad,
+  JobbRadSchema,
+  type JobbRadStatus,
+  JobbSchema,
+  type Jobbstatus,
+  JobbstatusSchema,
+  type KoaKvittonInput,
+  type KoaKvittonResult,
+  KoaKvittonResultSchema,
+  type Kvitto,
+  type Kvittolank,
+  KvittolankSchema,
+  KvittoSchema,
+  type OppenBetalning,
+  type OppnaBetalningar,
+  OppnaBetalningarSchema,
+  type RegistreraInbetalningInput,
+  type RegistreraInbetalningResult,
+  RegistreraInbetalningResultSchema,
+  type SkickaKvittoIgenInput,
+  type SkickaKvittoIgenResult,
+  SkickaKvittoIgenResultSchema,
+  type SpegelUtfall,
+  VALBARA_BETALSATT,
+} from './Betalningar.schema';
+export {
+  type CancelRegistrationAtgard,
+  CancelRegistrationAtgardSchema,
+  type CancelRegistrationInput,
+  type CancelRegistrationResult,
+  CancelRegistrationResultSchema,
+} from './CancelRegistration.schema';
 export {
   type ConfirmRegistrationsInput,
   type ConfirmRegistrationsResult,
@@ -87,6 +137,11 @@ export {
   PersonTouchpointEntrySchema,
 } from './PersonDetail.schema';
 export { PersonNoteSchema } from './PersonNote.schema';
+export {
+  type RebookRegistrationInput,
+  type RebookRegistrationResult,
+  RebookRegistrationResultSchema,
+} from './RebookRegistration.schema';
 export { RegistrationSchema } from './Registration.schema';
 export {
   type RegistrationDetail,

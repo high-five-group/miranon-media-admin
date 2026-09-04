@@ -1,0 +1,22 @@
+{
+  "_kalla": "Ingen förlaga (TASK-370.2, husets första mall utan förlaga hos Lotta - Marcus är facit mot renderad PDF, TASK-370.5). Fixturen är två FIKTIVA personer (T171: aldrig en verklig kund), samma mönster som kvitto.exempel.json. Radernas 'belopp' är förhandsformaterat exakt som byggForsattsbladData() i mall-data.ts ger ('SEK ' + formatBelopp(n)) - render-bilage-mall.mjs matar fixturen rakt in i Eta utan att gå via byggForsattsbladData(), så fältformen måste vara den FÄRDIGA formen. 'summa' är de två radernas belopp summerade (2500 + 1200 = 3700), likaså förhandsformaterad. 'tidpunkt' är Europe/Stockholm 'ÅÅÅÅ-MM-DD TT:MM' (stockholmDatumTid() i mall-data.ts) - ett fryst exempel, inte 'nu'.",
+  "antal": 2,
+  "tidpunkt": "2026-09-03 14:32",
+  "rader": [
+    {
+      "namn": "Anna Andersson",
+      "epost": "anna.andersson@example.com",
+      "event": "Resor i medvetandet 1",
+      "belopp": "SEK 2 500,00",
+      "betalsatt": "Swish"
+    },
+    {
+      "namn": "Bengt Bengtsson",
+      "epost": "bengt.bengtsson@example.com",
+      "event": "Fjärrskådning 2",
+      "belopp": "SEK 1 200,00",
+      "betalsatt": "Bankgiro"
+    }
+  ],
+  "summa": "SEK 3 700,00"
+}

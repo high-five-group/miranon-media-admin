@@ -496,4 +496,4 @@ inflytande i stället för ett förvirrande val.
   `scripts/deny-resend-send.sh`, `scripts/stop-vakt.sh` — lästa i sin helhet.
 - `docs/decisions/ADR-090-sessions-parallellitet-detektera-och-fraga.md` —
   läst i sin helhet, inklusive § Updates 2026-08-04.
-- `tasks/sessions/2026-08-04-session-97.md` § Del 4 (mekaniseringen).
+- `tasks/sessions/archive/2026-08/2026-08-04-session-97.md` § Del 4 (mekaniseringen).
