@@ -30,6 +30,7 @@ export { Modal, type ModalProps } from './Modal';
 export { NavCard, type NavCardIcon } from './NavCard';
 export { Notis, type NotisProps } from './Notis';
 export { Radio, RadioGroup, type RadioGroupProps } from './RadioGroup';
+export { RaknarChip, type RaknarChipProps } from './RaknarChip';
 export { Select, SelectItem, type SelectProps } from './Select';
 export { SidRam, type SidRamProps } from './SidRam';
 export { Skeleton, type SkeletonProps } from './Skeleton';

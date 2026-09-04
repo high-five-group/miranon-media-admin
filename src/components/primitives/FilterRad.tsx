@@ -3,6 +3,7 @@ import type { ReactNode, Ref } from 'react';
 import { useState } from 'react';
 import { Button as AriaButton, Disclosure, DisclosurePanel } from 'react-aria-components';
 import { cn } from '@/lib/cn';
+import { RaknarChip } from './RaknarChip';
 import { Select, SelectItem } from './Select';
 import { Skeleton } from './Skeleton';
 
@@ -260,14 +261,16 @@ export function FilterRad({
             // text-[10px]: ÖPPET BOKFÖRD avvikelse från typografiskalan
             // (spec-regeln no-hardcoded-font-size) — badge-mikrotexten är
             // prototyp-facitets låsta form (k02) och skalan saknar steg
-            // under text-caption; ett badge-skalsteg mintas först vid en
-            // andra konsument (över-engineering-vakten).
-            <span
-              aria-hidden="true"
-              className="absolute -top-1 -right-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 font-medium text-[10px] text-text-inverse"
-            >
-              {aktiva}
-            </span>
+            // under text-caption. [TASK-393, ADR-126 B1/B3] Den ANDRA
+            // konsumenten anlände: Förhandsgranska-knappen
+            // (`BetalningsInkorg.tsx`) delar nu samma kärnform via
+            // `RaknarChip` — lyft UTAN ombyggnad (ADR-126 B4, byte-
+            // identiska klasser), positioneringen (`absolute -top-1
+            // -right-1`) stannar här eftersom den är specifik för denna
+            // hörn-badge. Avvikelsen ovan STÅR KVAR — inget nytt
+            // typografiskalsteg mintades, den är bara delad nu i stället
+            // för dold i en enda fil (se `RaknarChip.tsx` docblock).
+            <RaknarChip antal={aktiva} className="absolute -top-1 -right-1" />
           ) : null}
           <span className="sr-only">
             {oppen ? 'Dölj filter' : 'Visa filter'}
