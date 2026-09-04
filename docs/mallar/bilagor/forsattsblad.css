@@ -56,7 +56,23 @@
 
 .forsattsblad-tabell {
   table-layout: fixed;
-  width: 100%;
+  /* RÄTTAT (Marcus QA TASK-370.5, 2026-09-04): "Rutan för 'Summa' är inte
+     lika bred som rutan över med sammanställningen." width:100% på en
+     block-box (tabellens wrapper-box) TILLSAMMANS med de explicita
+     margin-left/margin-right:2.5mm som .forsattsblad-box redan lägger på
+     ÄR ÖVERKONSTRUERAT (CSS2.1 § 10.3.3): inget värde är auto, så
+     motorn ignorerar margin-right och räknar om det i stället för att
+     krympa bredden - tabellen blir 5mm BREDARE än containern minus dess
+     egna marginaler, medan .forsattsblad-summarad (flex-item i
+     .sida--kvitto, width:auto, align-items:stretch) korrekt landar på
+     container - 5mm. Mätt (pdftocairo -svg, gråfyllnadens path-bbox,
+     samma metod som README § "Kvittots layout-primitiver"):
+     FÖRE denna rad: tabell 176,586mm bred, summaraden 171,592mm bred
+     (samma vänsterkant, 19,076mm - avvikelsen satt EFTER, på höger sida).
+     calc(100% - 5mm) räknar in exakt samma marginalpar direkt i width, så
+     ekvationen aldrig blir överkonstruerad - tabellen och summaraden delar
+     nu samma bredd- och positionsberäkning. */
+  width: calc(100% - 5mm);
   /* separate, INTE collapse: en table med border-collapse:collapse
      ignorerar sin EGEN padding/border/border-radius (CSS2.1 § 17.6.1) -
      samma skäl som kvitto.css § .kvitto-tabell. */
