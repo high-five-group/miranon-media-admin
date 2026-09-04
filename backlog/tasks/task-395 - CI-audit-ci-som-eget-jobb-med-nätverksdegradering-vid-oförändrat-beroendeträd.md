@@ -4,7 +4,7 @@ title: 'CI: audit-ci som eget jobb med nätverksdegradering vid oförändrat ber
 status: In Progress
 assignee: []
 created_date: '2026-09-04 10:57'
-updated_date: '2026-09-04 11:14'
+updated_date: '2026-09-04 11:17'
 labels:
   - ready-for-agent
 dependencies: []
@@ -98,3 +98,78 @@ inte projiceras.
 - [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+## Final summary (2026-09-04)
+
+**Landning:** gren `ci/audit-eget-jobb-degradering`, commit `a13bfc92`,
+**PR #2316 — DRAFT, OARMERAD** (uppdraget: parkerad för granskning; draft är en
+sann utsaga om PR:en, inte en tystning — `CLAUDE.md` § Landning).
+
+**Sju filer, samtliga inom skivans scope:**
+
+| Fil | Varför |
+|---|---|
+| `.github/workflows/ci.yml` | nytt jobb `audit`; audit-steget borttaget ur `lint`; `lint` omdöpt till `Lint + TypeCheck`; `audit` i aggregatorns `needs`; testsviten wirad i gatekeeper-steget |
+| `scripts/audit-ci-med-degradering.sh` | loopen + klassningen + degraderingen (NY) |
+| `scripts/test-audit-degradering.sh` | tvåsidig hermetisk svit, 41 assertions (NY) |
+| `.ci-parity-policy.json` | `knownJobs.ci.audit`, `derivedJobs.ci`, exprSubstitution för bas-SHA-uttrycket |
+| `docs/decisions/ADR-028-supply-chain-incident-respons.md` | § Updates 2026-09-04 — beslutet, de två villkoren, Marcus citat |
+| `CONTRIBUTING.md` | jobbnamns-referensen `Lint + Audit + TypeCheck` → `Lint + TypeCheck` |
+| `backlog/tasks/task-395 …` | detta kort |
+
+**AC-status med uppmätt värde:**
+
+- **#1 GRÖN.** Strukturellt mätt via `js-yaml` mot `ci.yml`: jobbmängden är
+  `changed, lint, audit, suite, docs, review-backstopp, ci-passed`;
+  `lint.name = "Lint + TypeCheck"`; `lint` bär inget steg med "audit" i namnet;
+  `audit.needs = null`, `audit.if = null` (villkorslöst, samma form som `lint`);
+  `ci-passed.needs = ["changed","lint","audit","docs","suite","review-backstopp"]`.
+  Rulesetets enda required check är `CI Passed or Skipped` (mätt via
+  `gh api repos/…/rulesets/19627609`), så namnbytet bryter inget skydd och
+  aggregator-posten är det som gör `audit` required.
+- **#2 GRÖN.** Fristående bevis, skriptets råa utdata: fall (a) simulerat
+  nätverksfel + oförändrad lockfile gav
+  `::warning::audit-ci: npm:s advisory-endpoint onåbar efter 5 försök;
+  beroendeträdet oförändrat mot bas (<sha>) — släpps med varning, TASK-395`
+  och **EXITKOD=0**. Sviten täcker dessutom `ENOAUDIT`-formen, audit-ci:s
+  verkligt uppmätta utdata verbatim, och fetch-grenen när bas-commiten saknas.
+- **#3 GRÖN.** Fall (b) nätverksfel + ändrad lockfile → `::error::… beroendeträdet
+  är ÄNDRAT mot bas (<sha>) …`, **EXITKOD=1**. Fall (c) sårbarhetstabell →
+  `::error::… sårbarhetsmarkören "Failed security audit due to" står i försök 1:s
+  utdata …`, **EXITKOD=1**. Saknad bas-SHA (T10) → exit 1 med
+  `bär ingen bas-SHA att jämföra mot`. Fail-closed vid okänd felklass bevisad i
+  T8/T9.
+- **#4 GRÖN.** `node scripts/verify-ci-parity.mjs --list` exit 0 med
+  `✅ Paritets-preflight`; `node scripts/test-verify-ci-parity.mjs` 69 gröna /
+  0 röda, exit 0; `actionlint -color -ignore '…'` exit 0 (lokal 1.7.12 = CI:s
+  pin); `yamllint .github/` exit 0 (1.38.0 = CI:s pin);
+  `shellcheck --severity=style --enable=all` med CI:s hela fil-lista verbatim
+  exit 0.
+
+**Övriga grindar, mätta:** `check-fetch-depth-invariant.sh` exit 0 (5 bärare == 0,
+`ci×3` — det nya jobbets checkout bär MEDVETET ingen `fetch-depth:`-nyckel, en
+fjärde bärare hade fällt grinden) · `check-listparitet.sh` exit 0 (6 par i synk) ·
+`check:docs` 14/14 gröna exit 0 · `typecheck` / `biome check .` / `build` exit 0 ·
+`test-audit-degradering.sh` 41/41 PASS exit 0.
+
+**Divergenser mot uppdraget, bokförda:**
+
+1. Uppdragets påstående om run `33862989013` ("npm ci ~5 min + loop 8 min 05 s →
+   15-taket sprack") är **falsifierat**: jobbet var SUCCESS på 3 min 53 s med
+   `audit-ci` grönt på 3 s. Endpointen flappade i stället för att vara
+   oavbrutet nere. Designen påverkas inte.
+2. Uppdraget bad om "samma `needs`/`if`-villkor som lint har mot `changed`".
+   `lint` har varken `needs:` eller `if:`; `audit` byggdes likadant.
+3. Nästa fria kortnummer var 395, inte ~390.
+4. Uppdraget föreslog att testet skulle "extrahera run-blocket till en skalfil".
+   Logiken lades i stället DIREKT i en skalfil som `ci.yml` anropar — samma
+   intention, men utan en andra handhållen kopia, och med shellcheck-täckning
+   som ett inline-block inte hade fått.
+
+**Obetald skuld / orkestrerarens moment:** `gate-proof.yml` bör köras efter denna
+`ci.yml`-ändring (T85). Lint-jobbets `timeout-minutes: 15` står kvar medvetet och
+bör mätas om mot körningar utan audit-steget innan det sänks till 10.
+<!-- SECTION:NOTES:END -->
