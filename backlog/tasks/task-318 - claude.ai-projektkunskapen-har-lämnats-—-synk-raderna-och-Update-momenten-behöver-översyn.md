@@ -3,10 +3,10 @@ id: TASK-318
 title: >-
   claude.ai-projektkunskapen har lämnats — synk-raderna och Update-momenten
   behöver översyn
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-24 14:30'
-updated_date: '2026-09-04 10:36'
+updated_date: '2026-09-04 13:44'
 labels:
   - ready-for-agent
 dependencies: []
@@ -28,10 +28,10 @@ Marcus i klartext 2026-08-24 (S112): 'Kör inte med Claude.ai längre.' Konsekve
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
-- [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 CI grön per jobb på pushad commit
+- [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -39,3 +39,9 @@ Marcus i klartext 2026-08-24 (S112): 'Kör inte med Claude.ai längre.' Konsekve
 <!-- SECTION:NOTES:BEGIN -->
 AC #1: diffen visad Marcus i chatten 2026-09-04 (S119) och godkänd på hans mandat via orkestreraren; landad
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+S119 stangningsbatch 2a (2026-09-04): PR #1957 mergad i origin/main, merge-SHA f64878c2 (verifierat mot origin/main-loggen, sok pa 'Merge pull request #1957'). CI-checks pa PR: SUCCESS/SKIPPED per jobb (Detect changed files, Analyze actions/js-ts, Lint + Audit + TypeCheck, Docs link check, CI Passed or Skipped, CodeQL alla SUCCESS; Test suite + Review-backstopp SKIPPED, D0-klassad diff). Diff omfattade CLAUDE.md, docs/decisions/ADR-048-synk-horisont-arkiv-atkomst.md, backlog/tasks/task-318 -- inga orelaterade filer. AC #3 (grep) aterverifierad av denna agent 2026-09-04: inga kvarvarande 'klicka Update i claude.ai'-moment i styrande ytor (CLAUDE.md/docs/decisions/docs/reference/.claude); enda 'Update'-traffen i docs/reference/data-model.md ror Airtable prod-UI, inte claude.ai.
+<!-- SECTION:FINAL_SUMMARY:END -->
