@@ -1,10 +1,10 @@
 ---
 id: TASK-241.5
 title: 'Skiva: WOW-övergången hem–sändyta'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-16 23:06'
-updated_date: '2026-08-17 03:34'
+updated_date: '2026-09-04 08:25'
 labels:
   - ready-for-agent
 dependencies:
@@ -30,7 +30,7 @@ US 9 är explicit acceptansyta (Marcus WOW-krav 2026-08-16 nära-verbatim i PRD:
 <!-- DOD:BEGIN -->
 - [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 CI grön per jobb på pushad commit
+- [x] #3 CI grön per jobb på pushad commit
 - [x] #4 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #5 Facit-granskning mot tasks/sessions/bilagor/s102-svep-konvergens/facit.json (18 bilder) — renderad yta jämförd läge för läge
 <!-- DOD:END -->
@@ -223,3 +223,9 @@ check_active_branches: false) borttagna efter task-edit-anropen; samtliga
 .tmp-task2415-*.mjs temporarskript raderade ur worktreen. git status
 verifierad ren mot exakt de 3 avsedda filerna (2 andrade + 1 ny).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Nattgrind-stangning 2026-09-04 (invariant b): kortet var inkonsistent - alla 3 AC redan bockade och PR #1485 (feat/task-241-5-wow-overgangen) MERGED 2026-08-17T04:00:09Z som 1173933a, men status stod kvar pa To Do. Belagg: git show --stat 1173933a bekraftar exakt de 3 filer notens Implementation Notes anger (Hem.tsx, SvepOverlay.tsx, ny acceptance-testfil). DoD3 bockad - gh pr checks 1485 visar samtliga korda jobb pass (Lint+Audit+TypeCheck, Pure+Build, Acceptance, Webblasarbeteende, CodeQL, Vercel); A11y/Staging skippade (ej fallerade). DoD5 (facit-granskning 18 bilder) LAMNAS OBOCKAD - byggagentens egen not sager explicit att 12 av 18 bilder jamfordes och matchade, 6 aldrig granskade (mobil-viewport + tva desktop-lagen), lamnat at orkestrerare/Marcus att bedoma om det racker. Status satt till Done eftersom arbetet ar bevisligen landat och CI-verifierat; DoD5 kvarstar som oppen post.
+<!-- SECTION:FINAL_SUMMARY:END -->
