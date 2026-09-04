@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-04 09:54'
+updated_date: '2026-09-04 10:47'
 labels:
   - ready-for-agent
 dependencies: []
@@ -20,11 +21,11 @@ FYND (Marcus 2026-09-04, S120 Del 1): klick på en rad i Mer → Anmälningar la
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 OK-rader i Mer → Anmälningar (rad med eventId) länkar till /event/$eventId/anmalan/$registrationId med radens reg.id; rader utan event öppnar fortfarande kopplingsdialogen. Bevisat i tests/acceptance/mer-anmalningar*.acceptance.test.ts (länkmålet asserterat, inte bara att en länk finns).
-- [ ] #2 Routen /event/$eventId/anmalda, EventRegistrations.tsx och AddRegistrationModal.tsx är rivna; routeTree.gen.ts regenererad; grep -rn anmalda src tests ger noll träffar i kod (prosa-omnämnanden undantagna); typecheck 0, biome 0, build grön.
-- [ ] #3 De tre testfilerna för den rivna ytan är rivna inklusive visuella baselines och eventuella aria-snapshots; test:visual och acceptance-klassen gröna utan dem (inga föräldralösa snapshot-filer kvar).
+- [x] #1 OK-rader i Mer → Anmälningar (rad med eventId) länkar till /event/$eventId/anmalan/$registrationId med radens reg.id; rader utan event öppnar fortfarande kopplingsdialogen. Bevisat i tests/acceptance/mer-anmalningar*.acceptance.test.ts (länkmålet asserterat, inte bara att en länk finns).
+- [x] #2 Routen /event/$eventId/anmalda, EventRegistrations.tsx och AddRegistrationModal.tsx är rivna; routeTree.gen.ts regenererad; grep -rn anmalda src tests ger noll träffar i kod (prosa-omnämnanden undantagna); typecheck 0, biome 0, build grön.
+- [x] #3 De tre testfilerna för den rivna ytan är rivna inklusive visuella baselines och eventuella aria-snapshots; test:visual och acceptance-klassen gröna utan dem (inga föräldralösa snapshot-filer kvar).
 - [ ] #4 Anmälningssidans promoverings-grind (tests/visual/__aria__/anmalningssidan-promoverings-grind.spec.ts) grön OFÖRÄNDRAD — formen är orörd, s111-facitet amenderas inte.
-- [ ] #5 docs/byggplan.md: filraden för anmalda.tsx uppdaterad med rivningsnot (18.13-skulden betald i detta kort); task-18.13 orört (Done), betalningen bokförs i detta korts notes.
+- [x] #5 docs/byggplan.md: filraden för anmalda.tsx uppdaterad med rivningsnot (18.13-skulden betald i detta kort); task-18.13 orört (Done), betalningen bokförs i detta korts notes.
 <!-- AC:END -->
 
 ## Definition of Done
@@ -33,3 +34,13 @@ FYND (Marcus 2026-09-04, S120 Del 1): klick på en rad i Mer → Anmälningar la
 - [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+BYGGT (S120, bygg-agent, Claude Sonnet 5): länkbyte i AnmalningarSida.tsx (rad ~838-844) från /event/$eventId/anmalda till /event/$eventId/anmalan/$registrationId (params eventId + reg.id). Rivningsyta borttagen: routen anmalda.tsx, EventRegistrations.tsx, AddRegistrationModal.tsx (ersatt av manuell anmälan-sidan sedan 18.13), exporterna i events/index.ts, samt de tre testfilerna (event-anmalda.acceptance.test.ts, event-add-registration.acceptance.test.ts, tests/visual/event-anmalda.spec.ts + dess två linux-baselines). routeTree.gen.ts regenererat via tsr generate (gitignorad, ingen commit). AC #5-betalningen: docs/byggplan.md rad ~709 (6c-filraden för anmalda.tsx) bär nu en rivningsnot med datum + kortreferens; task-18.13 är orört.
+
+AC #1 bevisat i BÅDA mer-anmalningar*.acceptance.test.ts: reg()-anropen fick ett explicit id (recRegCarl0001) och assertionen är nu exakt toHaveURL('/event/recEvent1/anmalan/recRegCarl0001') i stället för en /anmalda-regex.
+
+BLOCKERAT — AC #4 kan INTE bockas: tests/visual/__aria__/anmalningssidan-promoverings-grind.spec.ts/anmalningssidan-lista-visual-desktop.aria.yml (delas av desktop+mobile) bär raden "- /url: /event/recGrindEventKurs1/anmalda" INUTI länk-noden. toMatchAriaSnapshot fäller därför deterministiskt (4/4: två tester × två viewports, reproducerat två gånger) efter länkbytet — exakt det scenario kortets egen text varnade för ("Om aria-snapshoten skulle bära href-värden och därför ändras: STOPPA och rapportera, uppdatera den inte själv"). Facit-filen är ORÖRD i denna PR. Kräver Marcus/orkestrerar-beslut: antingen amendera facit (river då AC #4:s "s111-facitet amenderas inte"-krav bokstavligt, men är sakligt korrekt eftersom det är href som ändrats, inte formen) eller ett annat grepp (t.ex. att facit-testet maskar bort /url-raden). Ingen av vägarna valdes av bygg-agenten — utanför mandat.
+<!-- SECTION:NOTES:END -->
