@@ -3,10 +3,10 @@ id: TASK-386
 title: >-
   CI: lint/docs-jobbens 5-minuterstak fällde fyra körningar på npm-latens
   2026-09-04 — höjt till 10
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-04 08:15'
-updated_date: '2026-09-04 08:15'
+updated_date: '2026-09-04 08:17'
 labels:
   - ready-for-agent
 dependencies: []
@@ -97,7 +97,35 @@ samma bakomliggande npm/nätverks-latensklass men inte samma jobb.
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Höjde timeout-minutes 5→10 för ci.yml-jobben `lint` (rad ~506) och `docs`
+(rad ~2033), samt uppdaterade kommentaren vid rad ~1692-1694 med dagens
+avläsning. Grund: fyra 2026-09-04-körningar (07:50-08:10) föll på det
+gamla 5-minuterstaket på npm-latens, inte en trädregression —
+merge_group-run 33850613813 (#2264), PR-run 33850992570 + rerun
+33851503642 (#2284), PR-run 33851282508 (#2269). Verbatim ur run
+33851503642 job 100955216172: npm ci tog 4 min trots cache-träff (mot
+~1 min i TASK-82:s ursprungsmätning), audit-ci kancellerad vid 5:00-taket.
+Senaste gröna Lint (33778799749, 2026-09-03) tog 3m22s totalt.
+
+review-backstopp (5), changed (3), ci-passed (1) orörda.
+.ci-parity-policy.json bär inga timeout-minutes-värden — ingen ändring
+krävdes där.
+
+Verifierat: actionlint (pinnad 1.7.12, samma -ignore-flagga som CI) grönt
+exit 0; yamllint (pinnad 1.38.0) grönt exit 0; paritetsgrinden
+(`node scripts/verify-ci-parity.mjs --list`) grön exit 0 — "Paritets-
+preflight: jobbmängden + suite-input-invarianterna + diff-klassningens
+koppling matchar policyn."; npm run typecheck/biome/build alla gröna
+(irrelevanta för YAML-ändringen men körda enligt uppdrag).
+
+PR #2288 (draft, ej armerad — enligt uppdrag). Gren
+ci/lint-docs-timeout-10, commit e2d4468a.
+<!-- SECTION:FINAL_SUMMARY:END -->
