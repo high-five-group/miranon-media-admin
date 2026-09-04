@@ -4,7 +4,7 @@ title: 'CI: audit-ci som eget jobb med nätverksdegradering vid oförändrat ber
 status: In Progress
 assignee: []
 created_date: '2026-09-04 10:57'
-updated_date: '2026-09-04 11:17'
+updated_date: '2026-09-04 11:48'
 labels:
   - ready-for-agent
 dependencies: []
@@ -172,4 +172,49 @@ fjärde bärare hade fällt grinden) · `check-listparitet.sh` exit 0 (6 par i s
 **Obetald skuld / orkestrerarens moment:** `gate-proof.yml` bör köras efter denna
 `ci.yml`-ändring (T85). Lint-jobbets `timeout-minutes: 15` står kvar medvetet och
 bör mätas om mot körningar utan audit-steget innan det sänks till 10.
+
+## Review-grinden runda 1 (granskad SHA `af980dca`) — åtgärder
+
+**Fynd 1 (warning/auto-fix) — ÅTGÄRDAT med kodändring.**
+`.claude/agents/bygg-agent.md` rad 139 pekade fortfarande på jobbnamnet
+`Lint + Audit + TypeCheck` som platsen där `scripts/check-langa-streck.mjs` är
+wirat. Referensen rättad till `Lint + TypeCheck` med en historisk parentes som
+namnger bytet och `TASK-395`, plus det som saknades i granskarens beskrivning
+men är det bärande: **grinden bor kvar i lint-jobbet — bara jobbets namn bytte**
+(verifierat mot `ci.yml`: steget "Check for long dashes in UI strings (TASK-172
+gate, scope A)" ligger oförändrat i `lint`).
+
+Hela repot genomsökt med `git grep -l 'Lint + Audit + TypeCheck'` (69 filer).
+Klassning av de kvarvarande träffarna, var och en med skäl:
+
+- `.github/workflows/ci.yml` rad 504 · `CONTRIBUTING.md` rad 261 ·
+  `docs/decisions/ADR-028-…md` rad 317 — **LÄMNADE ORÖRDA MED AVSIKT.** Alla tre
+  är denna PR:s EGNA historiska noter om namnbytet ("hette … fram till
+  TASK-395", "Audit-steget bodde då i jobbet …"). Att rätta dem hade gjort dem
+  falska.
+- `scripts/test-ci-metrics.mjs` rad 103/117 — **LÄMNAD ORÖRD.** Strängen är
+  syntetisk fixturdata i ett enhetstest; jobbnamnet är godtyckligt och
+  assertionen gäller `'Staging (API + E2E)'`, inte detta namn. Inget
+  funktionellt beroende av det verkliga jobbnamnet finns.
+- `tasks/sessions/**`, `tasks/lessons/**`, `tasks/lessons.d/**`,
+  `docs/archive/**`, `docs/research/**`,
+  `docs/reference/review-instrumentering.jsonl` och 42 `backlog/tasks/*`-kort —
+  **LÄMNADE ORÖRDA.** Historiska protokoll och frysta underlag; de beskriver
+  korrekt vad jobbet hette när de skrevs.
+
+Inga fler stale referenser i levande kontrakt/README/CONTRIBUTING-klassen.
+
+**Fynd 2 (info/ask-user) — AVGJORT AV ORKESTRERAREN PÅ MARCUS MANDAT, ingen
+kodändring.** Granskaren noterade att villkor B (`git diff --quiet <bas-sha>
+HEAD -- package.json package-lock.json`) täcker enbart dessa två filer och inte
+hypotetiska `.npmrc` eller `npm-shrinkwrap.json`. Avgörandet: **medveten gräns.**
+De två filerna är exakt de Marcus beslut och `ADR-028` § Updates 2026-09-04
+namnger, och **ingen av de hypotetiska filerna finns i repot**. Gränsen omprövas
+om någon av dem tillkommer. Att bredda villkoret nu hade varit spekulativ
+komplexitet ovanför golvet — och en bredare fil-lista i skriptet än den ADR:n
+namnger hade dessutom skapat exakt den prosa/mekanism-divergens `ADR-083` städar
+bort.
+
+**Landning av rundan:** ny commit på samma gren, PR #2316 förblir **draft** —
+orkestreraren gör ready + armering efter runda 2.
 <!-- SECTION:NOTES:END -->
