@@ -17,7 +17,7 @@ mot serverloggarna vid felsökning" — Fas A M7 etablerade redan
 och server → strukturerad logg (`generateRequestId()` +
 `mapErrorToResponse()` i `supabase/functions/_shared/errors.ts`). Frågan
 grillades till samsyn i S105 Del 2 (2026-08-11,
-`tasks/sessions/2026-08-11-session-105.md` § Beslut 4).
+`tasks/sessions/archive/2026-08/2026-08-11-session-105.md` § Beslut 4).
 
 ## Beslut
 
@@ -91,7 +91,7 @@ ordet, bara det korrekta ordet givet dagens mätta grund.
 
 - [ADR-110](ADR-110-aktivitetsloggens-lagring-supabase-inte-airtable.md) —
   lagringsytan `requestId` skrivs till.
-- `tasks/sessions/2026-08-11-session-105.md` § Del 2 Beslut 4 — grillad
+- `tasks/sessions/archive/2026-08/2026-08-11-session-105.md` § Del 2 Beslut 4 — grillad
   samsyn, Marcus-kvittens.
 - `supabase/functions/_shared/errors.ts` — `generateRequestId()` +
   server-loggens `requestId`-fält (Fas A M7-arvet).

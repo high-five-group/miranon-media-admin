@@ -2223,7 +2223,7 @@ Marcus återkommande fick frågan om åtkomster han redan hade.
 
 #### Botten 1 — omgivningen mättes, inte åtkomsten
 
-En "token-utredning" (`tasks/sessions/2026-08-11-session-105.md` Del 4)
+En "token-utredning" (`tasks/sessions/archive/2026-08/2026-08-11-session-105.md` Del 4)
 mätte `printenv`, `~/.supabase/`, CI-workflow-filer och `.env`-filnamn, och
 drog slutsatsen att `SUPABASE_ACCESS_TOKEN` "saknas genuint". Fel: Supabase
 CLI hade en giltig nyckelrings-inloggning sedan 2026-03-30 hela tiden.
