@@ -503,7 +503,7 @@ jobs:
   lint:
     name: Lint + Audit + TypeCheck
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 15
     permissions:
       contents: read
     steps:
@@ -527,9 +527,102 @@ jobs:
         run: npm ci
 
       - name: Audit dependencies (audit-ci with allowlist)
-        run: npx audit-ci --config audit-ci.jsonc
         # K17 supply-chain-skydd: kör på varje commit (kod ELLER doc-only).
         # Allowlist tom efter K0åh (2026-05-13). ADR-028 reverse-flow aktiv.
+        #
+        # HISTORIK, TRE AVLÄSNINGAR SAMMA DAG (2026-09-04):
+        # 1) merge_group-run 33857044952 (job "Lint + Audit + TypeCheck"):
+        #    audit-ci hängde 09:16:00→09:21:01 (5m01s, matchar npm:s DEFAULT
+        #    `fetch-timeout` 300000ms exakt) och föll `failure` — "code
+        #    undefined: / Exiting... / exit code 1", inget HTTP-statuskod.
+        #    npm:s rådgivnings-API flappade samma dag: audit-ci gick grönt
+        #    08:41–08:46 (33852769123, ~4m06s) och 08:54–08:55 (33855429327,
+        #    ~47s). Åtgärd: env NPM_CONFIG_FETCH_TIMEOUT=90000 +
+        #    NPM_CONFIG_FETCH_RETRIES=4 (npm CLI v11-docs,
+        #    docs.npmjs.com/cli/v11/using-npm/config — env-formen
+        #    NPM_CONFIG_<KEY>, case-insensitive, bekräftad samma sida).
+        #    Bekräftat att `npm audit` går samma väg som `npm ci`/`npm
+        #    install` (npm/cli → @npmcli/arborist `lib/audit-report.js`,
+        #    källkod läst 2026-09-04: `require('npm-registry-fetch')` mot
+        #    `/-/npm/v1/security/advisories/bulk`).
+        # 2) merge_group-run 33858911410 (job 100978552048), MED ovanstående
+        #    env satt (loggen visar NPM_CONFIG_FETCH_TIMEOUT: 90000,
+        #    NPM_CONFIG_FETCH_RETRIES: 4 explicit): audit-ci föll 09:37:36→
+        #    09:39:07 — EXAKT 91s, alltså timeouten (90s) slog igenom, men
+        #    EFTER BARA ETT FÖRSÖK, ingen retry, trots FETCH_RETRIES=4.
+        #    Samma "code undefined: / Exiting..." igen.
+        #
+        # ROTORSAK FÖR (2) — LÄST I KÄLLKODEN, INTE SUMMERAD (curl+Read av
+        # rå-filen, npm/make-fetch-happen `lib/remote.js`, main-branch,
+        # 2026-09-04 — npm-registry-fetch delegerar sin retry-mekanik hit):
+        # HTTP-svar-grenen har en uttrycklig kommentar: "do not retry POST
+        # requests, or requests with a streaming body" —
+        #   `const isRetriable = req.method !== 'POST' && !isStream && (...)`
+        # och samma uteslutning gäller i CATCH-grenen (thrown/timeout-fel,
+        # den gren som är relevant här eftersom loggen inte visar en
+        # HTTP-statuskod):
+        #   `if (req.method === 'POST' || isRetryError) { throw err }`
+        # — för en POST (vilket `/-/npm/v1/security/advisories/bulk` ÄR,
+        # bekräftat i audit-report.js: `method: 'POST'`) är villkoret SANT
+        # OAVSETT `isRetryError`, så koden kastar felet vidare direkt UTAN
+        # att någonsin anropa `retryHandler(err)` — retry-vägen nås aldrig.
+        # SLUTSATS: `NPM_CONFIG_FETCH_RETRIES` är VERKNINGSLÖS för detta
+        # anrop — make-fetch-happen retryar principiellt aldrig POST
+        # (icke-idempotent, kan inte säkert göras om), oavsett satt
+        # retry-antal. Bekräftat EMPIRISKT av avläsning (2) ovan (exakt ett
+        # försök trots FETCH_RETRIES=4). `NPM_CONFIG_FETCH_RETRIES` TAS
+        # DÄRFÖR BORT — att behålla en env-variabel som källäsningen visar
+        # är inert vore precis den ADR-083-felklassen ("prosa/config som
+        # påstår en mekanism den inte har") repot städar bort. Env-formen
+        # NPM_CONFIG_FETCH_TIMEOUT BEHÅLLS — den fungerar (bekräftat av
+        # avläsning 2: 91s ≈ 90s + marginal, timeouten slog igenom exakt).
+        #
+        # ÅTGÄRD (3), DENNA ÄNDRING: omförsöken flyttas till STEG-nivå (en
+        # bash-loop runt HELA `npx audit-ci`-anropet) i stället för att
+        # förlita sig på ett bibliotekslager som kategoriskt utesluter
+        # denna POST. Upp till 5 försök, 30s paus mellan, exit 0 vid första
+        # gröna, exit 1 om alla fem föll — ALDRIG continue-on-error, ALDRIG
+        # tyst (loggrad per försök). Varje enskilt försök är ändå bundet av
+        # NPM_CONFIG_FETCH_TIMEOUT=90000 (så ETT hängande npm-anrop inte
+        # kan äta hela stegets budget självt).
+        #
+        # UTRÄKNING, exakt (ingen bibliotekslogik inblandad längre, så
+        # detta är inte längre en pessimistisk gräns utan en direkt summa):
+        #   5 försök × fetch-timeout (90s) = 450s
+        #   + 4 pauser × 30s (sleep mellan försök 1-2, 2-3, 3-4, 4-5) = 120s
+        #   Summa värsta fall: 450+120 = 570s ≈ 9,5 min.
+        #   Ryms under lint-jobbets timeout-minutes (15 min = 900s) med
+        #   ~5,5 min marginal ÄVEN om audit-ci-steget är det ENDA som drar
+        #   ut på tiden. Install dependencies (~4–5 min observerat) +
+        #   resten av jobbet (~1–3,5 min observerat i tidigare gröna
+        #   körningar) ryms inte SAMTIDIGT med audit-ci:s absoluta värsta
+        #   fall inom 15 min — samma kvarstående, öppet bokförda risk som
+        #   tidigare avläsningar, nu med en lägre och exakt (inte
+        #   pessimistiskt uppskattad) siffra för just detta steg.
+        #
+        # Steget blir INTE continue-on-error, och allowlisten (audit-ci.jsonc)
+        # rörs INTE — supply-chain-grinden försvagas inte i sak, den blir
+        # bara tåligare mot enskilda långsamma/felande registry-anrop.
+        env:
+          NPM_CONFIG_FETCH_TIMEOUT: "90000"
+        run: |
+          set -euo pipefail
+          max_forsok=5
+          forsok=1
+          while [[ "${forsok}" -le "${max_forsok}" ]]; do
+            echo "audit-ci försök ${forsok}/${max_forsok}"
+            if npx audit-ci --config audit-ci.jsonc; then
+              echo "audit-ci grönt på försök ${forsok}/${max_forsok}"
+              exit 0
+            fi
+            if [[ "${forsok}" -lt "${max_forsok}" ]]; then
+              echo "audit-ci försök ${forsok}/${max_forsok} föll — väntar 30s innan nästa försök"
+              sleep 30
+            fi
+            forsok=$((forsok + 1))
+          done
+          echo "audit-ci föll alla ${max_forsok} försök"
+          exit 1
 
       - name: Biome check
         run: npx @biomejs/biome check .
@@ -1717,6 +1810,42 @@ jobs:
         # per fall i stället för att efterliknas. `lint` hade timeout-minutes: 5
         # mot ~1 min jobbtid före detta steg (TASK-82:s CI-mätning) — marginalen
         # bör läsas av på den första skarpa körningen, inte projiceras härifrån.
+        #
+        # DEN AVLÄSNINGEN KOM 2026-09-04: fyra körningar mellan 07:50–08:10 föll
+        # på exakt taket i `lint` och/eller `docs`, samtliga `cancelled` på
+        # npm-latens, inte en trädregression — merge_group-run 33850613813
+        # (#2264, Lint dog i `npm ci`), PR-run 33850992570 + dess rerun
+        # 33851503642 (#2284, Lint dog i "Audit dependencies (audit-ci with
+        # allowlist)", Docs dog i "Install dependencies") och PR-run 33851282508
+        # (#2269, samma två). Verbatim ur run 33851503642, job 100955216172:
+        # cache-träff (`Cache hit for: node-cache-Linux-x64-npm-…`), `npm ci`
+        # startade 08:03:05 och blev klar 08:07:34 ("added 643 packages in
+        # 4m") — själva `npm ci` tog alltså 4 min med cache-träff, mot ~1 min
+        # i TASK-82:s ursprungsmätning — och `audit-ci` kancellerades
+        # 08:08:06, 5:00 efter jobbstart. Senaste gröna Lint (main-push
+        # 33778799749, 2026-09-03 16:28) tog 3 min 22 s totalt, så 5 min var
+        # redan tunn marginal mot en enda långsam `npm ci`. `timeout-minutes`
+        # höjt 5→10 för BÅDE `lint` och `docs` samma dag — 2× det tidigare
+        # taket, ett valt golv för att absorbera npm-latens av den mätta
+        # storleksordningen, inte en projicerad garanti mot framtida latens.
+        # Fynd-kortet med den fulla mätserien: se backlog (syskon till
+        # TASK-383, som rör samma dags 12-minuterstak i test-sviten).
+        #
+        # ANDRA AVLÄSNINGEN, SAMMA DAG: run 33852769123 (omkörning av
+        # Lint-jobbet efter att npm börjat svara igen) startade 08:37:28.
+        # `audit-ci` gick GRÖNT denna gång men tog ~5 min (08:41:56→08:46:02,
+        # npms fetch-timeout är 300 s) — inte längre bara `npm ci` som var
+        # långsam. Biome, TypeScript ×2, actionlint, yamllint och
+        # docs-grindarna gick alla gröna. Jobbet kancellerades ändå kl
+        # 08:47:40 (10 min 12 s totalt, jobbstart 08:37:28) mitt i "Test
+        # gatekeeper script suites" — 10-minuterstaket (höjt via denna kommentars
+        # första avläsning ovan) räckte alltså inte mot en dag med genomgående
+        # långsamt npm, bara mot en enskild långsam `npm ci`. `timeout-minutes`
+        # för `lint` höjt 10→15 — dagens uppmätta värsta fall (~12 min: 5 min
+        # npm ci + 5 min audit-ci + resten) plus marginal, INTE en projektion
+        # mot framtida latens. `docs` stannar på 10: samma runs docs-jobb
+        # (Docs link check) gick grönt på 5 min 45 s (08:19:18→08:25:03),
+        # gott och väl inom det befintliga taket, och rörs därför inte.
         run: node scripts/test-check-staging-preflight-wiring.mjs
 
       - name: Install shellcheck (pinned v0.11.0)
@@ -2035,7 +2164,7 @@ jobs:
     needs: changed
     if: needs.changed.outputs.docs_changed == 'true'
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
     permissions:
       contents: read
     steps:
