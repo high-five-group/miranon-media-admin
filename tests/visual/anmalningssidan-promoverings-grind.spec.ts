@@ -217,6 +217,13 @@ function reg(overrides: Record<string, unknown>) {
 function grindRader() {
   return [
     reg({
+      // TASK-389: länkmålet inkluderar sedan länkbytet radens EGET id
+      // (/event/$eventId/anmalan/$registrationId) — till skillnad från det
+      // gamla /anmalda-målet (bara eventId) läcker id:t nu in i aria-
+      // snapshotens /url:-rad. reg()s DEFAULT-id är slumpat per körning
+      // (`recGrind${Math.random()...}`); ett pinnat id här är vad som gör
+      // anmalningssidan-lista.aria.yml deterministisk mellan körningar.
+      id: 'recGrindAnna00001',
       fornamn: 'Anna',
       efternamn: 'Andersson',
       eventId: EVENT_KURS,

@@ -6,7 +6,7 @@
 - list "Anmälningar":
   - listitem:
     - link "Anna Andersson":
-      - /url: /event/recGrindEventKurs1/anmalda
+      - /url: /event/recGrindEventKurs1/anmalan/recGrindAnna00001
     - text: Resor i medvetandet 1 · Skövde · 5 okt för 2 tim sedan
   - listitem:
     - button "Bo Bengtsson"
