@@ -3,9 +3,10 @@ id: TASK-370.5
 title: >-
   QA: Förhandsgranska alla — vandring i staging med Marcus som facit för
   försättsbladet
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-03 08:32'
+updated_date: '2026-09-04 12:55'
 labels:
   - ready-for-human
 dependencies:
@@ -41,3 +42,9 @@ Manuell testplan i staging (granskningsdata via npm run seed:review — bygg ald
 - [ ] #5 ADR-124 § Updates amenderad med det kombinerade utkastets nyckelform; mallkatalogens README § Förlagorna bokför försättsbladet som mall utan förlaga (ärvd PRD-grind; N/A med motivering om skivan inte rör den)
 - [ ] #6 Mallparitets-grinden och mall-synken körda om försättsbladets mall läggs i mallkatalogen (ärvd PRD-grind; N/A med motivering om skivan inte rör den)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Marcus QA-vandring i staging 2026-09-04: fann Summa-rutan smalare än sammanställningen; rättat i TASK-388/PR #2295 (width: calc(100% - 5mm)), staging preview-receipt v26. Marcus kvittens verbatim: "Försättsbladet ser rätt ut nu, 370.5 godkänt."
+<!-- SECTION:NOTES:END -->
