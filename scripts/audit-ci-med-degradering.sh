@@ -18,9 +18,12 @@
 #    alltså fail-closed, inte "förmodligen nätverket".
 #
 #    VILLKOR B — OFÖRÄNDRAT BEROENDETRÄD.
-#    `git diff --quiet ${AUDIT_BAS_SHA} HEAD -- package.json package-lock.json`
-#    måste vara tyst. Saknas bas-SHA (t.ex. `push` mot main, som ci.yml också
-#    kör på) finns ingenting att jämföra mot → INGEN degradering, exit 1.
+#    `git diff --quiet <effektiv bas> HEAD -- package.json package-lock.json`
+#    måste vara tyst. Saknas `AUDIT_BAS_SHA` (t.ex. `push` mot main, som ci.yml
+#    också kör på) finns ingenting att jämföra mot → INGEN degradering, exit 1.
+#    Den EFFEKTIVA basen är merge-refens första förälder när HEAD är en
+#    merge-ref vi känner igen, annars eventets bas — se § EFFEKTIV BAS längre
+#    ned för mätningen som tvingade fram den skillnaden.
 #
 # ═══ VAD DEGRADERINGEN INTE ÄR ═══
 #
@@ -78,10 +81,16 @@
 # redan följer i detta repo.
 #
 # ═══ IN-MILJÖ ═══
-#   AUDIT_BAS_SHA        bas-commit att jämföra mot. ci.yml sätter den ur
+#   AUDIT_BAS_SHA        bas-commit ur EVENTET. ci.yml sätter den ur
 #                        github.event.pull_request.base.sha (pull_request)
 #                        respektive github.event.merge_group.base_sha
-#                        (merge_group); TOM på push mot main.
+#                        (merge_group); TOM på push mot main. Kan vara STALE —
+#                        se § EFFEKTIV BAS.
+#   AUDIT_HEAD_SHA       head-commit ur eventet
+#                        (github.event.pull_request.head.sha respektive
+#                        github.event.merge_group.head_sha). Används ENBART för
+#                        att känna igen merge-refen; tom värde stänger bara den
+#                        första klausulen, det öppnar aldrig något.
 #   AUDIT_MAX_FORSOK     antal försök (default 5).
 #   AUDIT_PAUS_SEKUNDER  paus mellan försök (default 30).
 #   GITHUB_EVENT_NAME    sätts av GitHub Actions; används bara i loggtext.
@@ -94,6 +103,7 @@ set -euo pipefail
 MAX_FORSOK="${AUDIT_MAX_FORSOK:-5}"
 PAUS_SEKUNDER="${AUDIT_PAUS_SEKUNDER:-30}"
 BAS_SHA="${AUDIT_BAS_SHA:-}"
+HEAD_SHA="${AUDIT_HEAD_SHA:-}"
 EVENT="${GITHUB_EVENT_NAME:-lokal-korning}"
 KORT="TASK-395"
 
@@ -172,23 +182,95 @@ for ((n = 1; n <= MAX_FORSOK; n++)); do
 done
 
 # ── Steg 2, villkor B: beroendeträdet oförändrat mot bas ──────────────────
+#
+# Tom bas-SHA prövas FÖRE all härledning: push mot main degraderar aldrig.
 if [[ -z "${BAS_SHA}" ]]; then
     echo "::error::audit-ci: eventet \"${EVENT}\" bär ingen bas-SHA att jämföra mot (push mot main har ingen). Degraderingen gäller inte här."
     exit 1
 fi
 
-if ! git cat-file -e "${BAS_SHA}^{commit}" 2> /dev/null; then
-    echo "bas-commiten ${BAS_SHA} saknas i checkouten — hämtar den grunt"
-    if ! git fetch --no-tags --depth=1 origin "${BAS_SHA}"; then
-        echo "::error::audit-ci: kunde inte hämta bas-commiten ${BAS_SHA}. Utan bas går beroendeträdet inte att jämföra — ingen degradering."
+# ── EFFEKTIV BAS (rättelse 2026-09-04, samma dag som första skarpa fyrningen)
+#
+# `github.event.pull_request.base.sha` är main NÄR PR-EVENTET SKAPADES, inte när
+# checkouten sker. Vår checkout är merge-refen `refs/pull/N/merge`, som GitHub
+# bygger om varje gång main rör sig — så snart en annan PR landar däremellan är
+# eventets bas STALE mot den bas som FAKTISKT mergades mot. I en fleet är det
+# normalfallet, inte undantaget.
+#
+# MÄTT SKARPT, run 33869798369 (job 101012813108, head 2d6f1a6e):
+#   eventets base.sha  = 21a76d6b  (main när PR-eventet skapades)
+#   checkoutens HEAD   = 1b3c3157  "Merge 2d6f1a6e… into 72bbeb80…"
+#   p1 (main vid checkout) = 72bbeb80 · p2 (PR-head) = 2d6f1a6e
+# Mellan 21a76d6b och 72bbeb80 landade c3008757 (#2306), som lade EN rad i
+# package.json. Två-punkts-diffen mot eventets bas blev därför icke-tom trots
+# att PR:ens EGEN diff mot sin merge-base är tom — degraderingen föll på ett
+# fel som inte hade med PR:en att göra.
+#
+# Semantiken vi vill ha är "ändrar DENNA PR beroendeträdet mot den redan
+# auditerade main den mergas mot", och den basen är merge-commitens FÖRSTA
+# FÖRÄLDER.
+#
+# VARFÖR `git cat-file`, INTE `git rev-list --parents` — MÄTT, INTE ANTAGET:
+# jobbets checkout är grund (djup 1), så merge-commiten ÄR shallow-boundary och
+# git graftar bort dess föräldrar. Mätt 2026-09-04 i en `--depth=1`-fixtur:
+#   `git rev-list --parents -n1 HEAD` → bara commitens egen SHA, INGA föräldrar
+#   `git log -1 --format=%P`          → TOM
+#   `git cat-file commit HEAD`        → BÅDA parent-raderna, som de ska
+# Rå objekt-läsning går förbi graftningen; de graf-traverserande formerna gör
+# det inte. Hade härledningen byggts på `rev-list --parents` vore den en no-op
+# i exakt den miljö den finns för — den hade tyst fallit tillbaka på den stale
+# basen varje gång. Föräldra-OBJEKTEN saknas fortfarande lokalt (samma mätning),
+# därav den grunda hämtningen nedan.
+#
+# Huvudet klipps vid första tomraden så en commit-MEDDELANDERAD som råkar börja
+# med "parent " aldrig kan läsas som en förälder.
+foraldrar_rad="$(git cat-file commit HEAD | sed -e '/^$/q' | sed -n 's/^parent \([0-9a-f]\{7,40\}\)$/\1/p' | tr '\n' ' ')"
+# shellcheck disable=SC2086  # AVSIKTLIG ordsplittning: raden är SHA:n separerade
+# med blanksteg, producerad av sed:en ovan — set -- ger oss p1/p2 portabelt
+# (macOS bash 3.2 saknar mapfile).
+set -- ${foraldrar_rad}
+antal_foraldrar=$#
+p1="${1:-}"
+p2="${2:-}"
+
+huvud_sha="$(git rev-parse HEAD)"
+effektiv_bas="${BAS_SHA}"
+klausul="eventets-bas (HEAD är ingen merge-ref vi känner igen)"
+
+if [[ "${antal_foraldrar}" -eq 2 ]]; then
+    if [[ -n "${HEAD_SHA}" && "${p2}" == "${HEAD_SHA}" ]]; then
+        # pull_request: HEAD är refs/pull/N/merge, p2 är PR-headen ⇒ p1 är den
+        # main som faktiskt mergades mot.
+        effektiv_bas="${p1}"
+        klausul="merge-refens första förälder (p2 == PR-headen)"
+    elif [[ "${p1}" == "${BAS_SHA}" ]]; then
+        # merge_group: kö-merge-commitens första förälder ÄR eventets bas_sha.
+        # Ingen förändring i sak — men klausulen görs explicit så loggen säger
+        # vilken väg som gällde i stället för att låta den se ut som fallback.
+        effektiv_bas="${p1}"
+        klausul="kö-merge-commitens första förälder (p1 == eventets bas)"
+    fi
+fi
+
+echo "bas ur eventet: ${BAS_SHA}"
+echo "HEAD: ${huvud_sha} (${antal_foraldrar} förälder/föräldrar: ${p1:-inga} ${p2:-})"
+echo "effektiv bas: ${effektiv_bas} — ${klausul}"
+if [[ "${effektiv_bas}" != "${BAS_SHA}" ]]; then
+    echo "main flyttade mellan eventet och checkouten: eventets bas (${BAS_SHA}) är STALE mot den bas som faktiskt mergades mot (${effektiv_bas}). Jämförelsen görs mot den senare."
+fi
+
+if ! git cat-file -e "${effektiv_bas}^{commit}" 2> /dev/null; then
+    echo "bas-commiten ${effektiv_bas} saknas i checkouten — hämtar den grunt"
+    if ! git fetch --no-tags --depth=1 origin "${effektiv_bas}"; then
+        echo "::error::audit-ci: kunde inte hämta bas-commiten ${effektiv_bas}. Utan bas går beroendeträdet inte att jämföra — ingen degradering."
         exit 1
     fi
 fi
 
-if git diff --quiet "${BAS_SHA}" HEAD -- package.json package-lock.json; then
-    echo "::warning::audit-ci: npm:s advisory-endpoint onåbar efter ${MAX_FORSOK} försök; beroendeträdet oförändrat mot bas (${BAS_SHA}) — släpps med varning, ${KORT}"
+if git diff --quiet "${effektiv_bas}" HEAD -- package.json package-lock.json; then
+    echo "::warning::audit-ci: npm:s advisory-endpoint onåbar efter ${MAX_FORSOK} försök; beroendeträdet oförändrat mot bas (${effektiv_bas}) — släpps med varning, ${KORT}"
     exit 0
 fi
 
-echo "::error::audit-ci: beroendeträdet är ÄNDRAT mot bas (${BAS_SHA}) — package.json och/eller package-lock.json rörs av denna diff och kräver ett riktigt audit-svar. Ingen degradering."
+echo "::error::audit-ci: beroendeträdet är ÄNDRAT mot bas (${effektiv_bas}) — package.json och/eller package-lock.json rörs av denna diff och kräver ett riktigt audit-svar. Ingen degradering."
 exit 1

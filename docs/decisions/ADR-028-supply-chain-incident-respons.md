@@ -400,3 +400,30 @@ origin när den saknas i checkouten.
   `exprSubstitutions`)
 - Föregående ändring i samma incident: PR `#2288` (omförsöken flyttade till
   steg-nivå)
+
+**Amendering samma dag — första skarpa fyrningen rättade villkor B:s bas.**
+Degraderingen fyrade skarpt redan i `TASK-395`:s egen PR (`#2316`), run
+`33869798369`, job `101012813108`. Nätverkssidan bevisades därmed **skarpt**
+och fungerade exakt som byggd: fem av fem försök klassades korrekt som
+`code undefined`, och den grunda hämtningen av bas-commiten kördes. Villkor B
+föll däremot på ett **latent basvalsfel**: eventets
+`pull_request.base.sha` (`21a76d6b`) är main NÄR EVENTET SKAPADES, medan
+checkouten är merge-refen `refs/pull/2316/merge` (`1b3c3157`, föräldrar
+`72bbeb80` = main vid checkout och `2d6f1a6e` = PR-head). Däremellan hade
+`c3008757` (`#2306`) landat och lagt en rad i `package.json`, så två-punkts-
+diffen mot eventets bas blev icke-tom trots att PR:ens egen diff mot sin
+merge-base var tom. Jobbet föll alltså på en **annan PR:s** ändring.
+
+Rättelsen, i samma PR: skriptet härleder en **effektiv bas** — merge-refens
+första förälder när HEAD är en merge-ref det känner igen (`p2` är PR-headen,
+eller `p1` är eventets bas i kö-formen), annars eventets bas, fail-closed.
+Semantiken blir den avsedda: *ändrar denna PR beroendeträdet mot den redan
+auditerade main den mergas mot*. Härledningen läser `git cat-file commit HEAD`
+och **inte** `git rev-list --parents`: checkouten är grund, merge-commiten är
+shallow-boundary, och git graftar då bort dess föräldrar — mätt i en
+`--depth=1`-fixtur, där `rev-list --parents` gav enbart commitens egen SHA och
+`log --format=%P` en tom rad medan `cat-file` gav båda parent-raderna. En
+härledning byggd på de graf-traverserande formerna hade varit en no-op i exakt
+den miljö den finns för. Sviten `scripts/test-audit-degradering.sh` växte
+41 → **66 assertions** och mäter den shallow-egenskapen explicit, så
+påståendet inte blir en obevakad utsaga.

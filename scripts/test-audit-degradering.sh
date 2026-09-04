@@ -28,6 +28,27 @@
 #       origin är ett LOKALT bart repo, ingen nätverkstrafik)
 #   T15 loopen gör exakt AUDIT_MAX_FORSOK försök, inte fler eller färre
 #
+#   ─── EFFEKTIV BAS (tillagda efter degraderingens FÖRSTA SKARPA FYRNING,
+#       run 33869798369 — se skriptets § EFFEKTIV BAS) ───
+#   T16 merge-HEAD, p2 == AUDIT_HEAD_SHA, main flyttade och rörde package.json
+#       mellan eventets bas och p1, men PR-headen rör inget → **exit 0** +
+#       ::warning:: mot p1. Detta är dagens exakta instans: mot eventets
+#       (stale) bas hade den fällt.
+#   T17 samma form men PR-HEADEN ändrar package.json → exit 1
+#   T18 merge-HEAD där VARKEN klausul matchar (p2 ≠ AUDIT_HEAD_SHA och
+#       p1 ≠ AUDIT_BAS_SHA) → fallback till eventets bas → exit 1 när main
+#       flyttat låsfilen (fail-closed bevarad)
+#   T19 merge_group-formen: p1 == AUDIT_BAS_SHA, AUDIT_HEAD_SHA == HEAD →
+#       p1 väljs, exit 0 vid oförändrat träd (ingen förändring i sak, men
+#       loggen ska namnge kö-klausulen, inte se ut som fallback)
+#   T20 icke-merge-HEAD → gamla vägen oförändrad, loggen namnger eventets bas
+#   T21 SHALLOW merge-HEAD (djup 1, föräldrarna GRAFTADE bort): härledningen
+#       måste ändå hitta p1/p2 och hämta p1 grunt. Detta fall är hela skälet
+#       till att implementationen läser `git cat-file commit HEAD` i stället
+#       för `git rev-list --parents` — sviten mäter också, i samma fall, att
+#       de graf-traverserande formerna FAKTISKT är tomma i den miljön, så
+#       påståendet i skriptets kommentar aldrig blir en obevakad utsaga.
+#
 # HERMETISK: `npx` stubbas via en prependad PATH-katalog och svarar med en
 # förskriven utdata + exitkod per försök; git-fixturerna byggs i mktemp.
 # INGEN nätverkstrafik, inga secrets, repots eget träd rörs ALDRIG.
@@ -150,6 +171,80 @@ bygg_fixtur "${TEST_DIR}/oforandrad" readme
 bygg_fixtur "${TEST_DIR}/andrad-lockfil" lockfil
 bygg_fixtur "${TEST_DIR}/andrad-manifest" manifest
 
+# ── Merge-ref-fixturer (T16–T21) ──────────────────────────────────────────
+# Speglar refs/pull/N/merge: B0 = bas när PR-eventet skapades · B1 = main
+# flyttade och EN ANNAN PR rörde package.json (motsvarar c3008757/#2306 i den
+# skarpa instansen) · PR-grenen greneras ur B0 · M = merge(B1, PR) med
+# p1 = B1 (main vid checkout) och p2 = PR-headen.
+# PR-grenens ändring väljs så att den ALDRIG kolliderar med B1:s.
+bygg_merge_fixtur() {
+    local dir="$1" pr_andring="$2"
+    mkdir -p "${dir}"
+    git -C "${dir}" init -q -b main
+    printf '{"name":"fixtur","version":"1.0.0"}\n' > "${dir}/package.json"
+    printf '{"lockfileVersion":3,"packages":{}}\n' > "${dir}/package-lock.json"
+    printf 'bas\n' > "${dir}/README.md"
+    git -C "${dir}" add -A
+    git -C "${dir}" commit -q --no-verify -m "B0 bas"
+    git -C "${dir}" rev-parse HEAD > "${dir}/.b0"
+
+    git -C "${dir}" checkout -q -b pr
+    case "${pr_andring}" in
+        readme) printf 'pr\n' > "${dir}/README.md" ;;
+        lockfil) printf '{"lockfileVersion":3,"packages":{"node_modules/pr":{}}}\n' > "${dir}/package-lock.json" ;;
+        *)
+            echo "bygg_merge_fixtur: okänd ändring '${pr_andring}'" >&2
+            exit 2
+            ;;
+    esac
+    git -C "${dir}" add -A
+    git -C "${dir}" commit -q --no-verify -m "PR-head"
+    git -C "${dir}" rev-parse HEAD > "${dir}/.head"
+
+    git -C "${dir}" checkout -q main
+    printf '{"name":"fixtur","version":"1.0.0","labels":"policy"}\n' > "${dir}/package.json"
+    git -C "${dir}" add -A
+    git -C "${dir}" commit -q --no-verify -m "B1 en annan PR rör package.json"
+    git -C "${dir}" rev-parse HEAD > "${dir}/.b1"
+
+    git -C "${dir}" merge -q --no-ff -m "Merge pr into main" pr
+}
+
+bygg_merge_fixtur "${TEST_DIR}/merge-pr-ren" readme
+bygg_merge_fixtur "${TEST_DIR}/merge-pr-lockfil" lockfil
+
+MB0="$(cat "${TEST_DIR}/merge-pr-ren/.b0")"
+MB1="$(cat "${TEST_DIR}/merge-pr-ren/.b1")"
+MHEAD="$(cat "${TEST_DIR}/merge-pr-ren/.head")"
+LB0="$(cat "${TEST_DIR}/merge-pr-lockfil/.b0")"
+LHEAD="$(cat "${TEST_DIR}/merge-pr-lockfil/.head")"
+
+# Kö-formen (T19): merge där p1 ÄR eventets bas — main flyttade aldrig.
+KO="${TEST_DIR}/merge-ko"
+mkdir -p "${KO}"
+git -C "${KO}" init -q -b main
+printf '{"name":"fixtur","version":"1.0.0"}\n' > "${KO}/package.json"
+printf '{"lockfileVersion":3,"packages":{}}\n' > "${KO}/package-lock.json"
+printf 'bas\n' > "${KO}/README.md"
+git -C "${KO}" add -A
+git -C "${KO}" commit -q --no-verify -m "kö-bas"
+KO_BAS="$(git -C "${KO}" rev-parse HEAD)"
+git -C "${KO}" checkout -q -b post
+printf 'kopost\n' > "${KO}/README.md"
+git -C "${KO}" add -A
+git -C "${KO}" commit -q --no-verify -m "kö-post"
+git -C "${KO}" checkout -q main
+git -C "${KO}" merge -q --no-ff -m "Merge post into main" post
+KO_MERGE="$(git -C "${KO}" rev-parse HEAD)"
+
+# Grund klon av merge-commiten (T21): föräldrarna graftas bort av shallow.
+git -C "${TEST_DIR}" clone -q --bare "${TEST_DIR}/merge-pr-ren" "${TEST_DIR}/merge-origin.git"
+MERGE_SHA="$(git -C "${TEST_DIR}/merge-origin.git" rev-parse HEAD)"
+git -C "${TEST_DIR}" init -q merge-grund
+git -C "${TEST_DIR}/merge-grund" remote add origin "file://${TEST_DIR}/merge-origin.git"
+git -C "${TEST_DIR}/merge-grund" fetch -q --no-tags --depth=1 origin "${MERGE_SHA}"
+git -C "${TEST_DIR}/merge-grund" checkout -q FETCH_HEAD
+
 BAS_OFORANDRAD="$(cat "${TEST_DIR}/oforandrad/.bas-sha")"
 BAS_LOCKFIL="$(cat "${TEST_DIR}/andrad-lockfil/.bas-sha")"
 BAS_MANIFEST="$(cat "${TEST_DIR}/andrad-manifest/.bas-sha")"
@@ -162,7 +257,22 @@ git -C "${TEST_DIR}" clone -q --depth=1 "file://${TEST_DIR}/origin.git" "${TEST_
 # kor <fixturkatalog> <bas-sha> <spec…>   där spec = "<exitkod>:::<utdata>"
 UT=""
 EC=0
+KOR_HEAD_SHA=""
+
+# kor …            — utan AUDIT_HEAD_SHA (T1–T15, oförändrade)
+# kor_med_head H … — med AUDIT_HEAD_SHA satt (T16–T21)
 kor() {
+    KOR_HEAD_SHA=""
+    kor_intern "$@"
+}
+
+kor_med_head() {
+    KOR_HEAD_SHA="$1"
+    shift
+    kor_intern "$@"
+}
+
+kor_intern() {
     local fixtur="$1" bas="$2"
     shift 2
     rm -rf "${SVAR_DIR:?}"
@@ -181,6 +291,7 @@ kor() {
         cd "${fixtur}" || exit 99
         PATH="${STUB_BIN}:${PATH}" \
             AUDIT_BAS_SHA="${bas}" \
+            AUDIT_HEAD_SHA="${KOR_HEAD_SHA}" \
             AUDIT_MAX_FORSOK="${n}" \
             AUDIT_PAUS_SEKUNDER=0 \
             GITHUB_EVENT_NAME=pull_request \
@@ -323,6 +434,75 @@ else
     echo "  ❌ T15 loopen gjorde ${ANTAL} försök (förväntade 3)"
     FAILED=$((FAILED + 1))
 fi
+
+# ── T16 ───────────────────────────────────────────────────────────────────
+# Den skarpa instansen (run 33869798369): main flyttade mellan eventet och
+# checkouten och rörde package.json, PR-headen rör inget beroende.
+kor_med_head "${MHEAD}" "${TEST_DIR}/merge-pr-ren" "${MB0}" \
+    "1:::${NAT_TIMEOUT}" "1:::${NAT_TIMEOUT}"
+check "T16 merge-HEAD, stale eventbas, PR rör inga beroenden" 0 "${EC}"
+check_contains "T16" "effektiv bas: ${MB1} — merge-refens första förälder (p2 == PR-headen)" "${UT}"
+check_contains "T16" "main flyttade mellan eventet och checkouten" "${UT}"
+check_contains "T16" "::warning::audit-ci: npm:s advisory-endpoint onåbar" "${UT}"
+check_contains "T16" "beroendeträdet oförändrat mot bas (${MB1})" "${UT}"
+
+# ── T17 ───────────────────────────────────────────────────────────────────
+kor_med_head "${LHEAD}" "${TEST_DIR}/merge-pr-lockfil" "${LB0}" \
+    "1:::${NAT_TIMEOUT}" "1:::${NAT_TIMEOUT}"
+check "T17 samma form men PR-HEADEN ändrar låsfilen" 1 "${EC}"
+check_contains "T17" "::error::audit-ci: beroendeträdet är ÄNDRAT mot bas" "${UT}"
+check_saknar "T17" "::warning::" "${UT}"
+
+# ── T18 ───────────────────────────────────────────────────────────────────
+# Varken klausul matchar (p2 ≠ AUDIT_HEAD_SHA, p1 ≠ AUDIT_BAS_SHA) ⇒ fallback
+# till eventets bas. Main flyttade package.json däremellan ⇒ fail-closed.
+kor_med_head "0000000000000000000000000000000000000000" "${TEST_DIR}/merge-pr-ren" "${MB0}" \
+    "1:::${NAT_TIMEOUT}" "1:::${NAT_TIMEOUT}"
+check "T18 merge-HEAD där ingen klausul matchar (fail-closed bevarad)" 1 "${EC}"
+check_contains "T18" "effektiv bas: ${MB0} — eventets-bas" "${UT}"
+check_saknar "T18" "main flyttade mellan eventet och checkouten" "${UT}"
+check_saknar "T18" "::warning::" "${UT}"
+
+# ── T19 ───────────────────────────────────────────────────────────────────
+# merge_group-formen: p1 ÄR eventets bas, och head_sha ÄR kö-merge-commiten.
+kor_med_head "${KO_MERGE}" "${KO}" "${KO_BAS}" \
+    "1:::${NAT_TIMEOUT}" "1:::${NAT_TIMEOUT}"
+check "T19 merge_group-formen (p1 == eventets bas)" 0 "${EC}"
+check_contains "T19" "kö-merge-commitens första förälder (p1 == eventets bas)" "${UT}"
+check_saknar "T19" "main flyttade mellan eventet och checkouten" "${UT}"
+check_contains "T19" "::warning::audit-ci: npm:s advisory-endpoint onåbar" "${UT}"
+
+# ── T20 ───────────────────────────────────────────────────────────────────
+kor_med_head "${MHEAD}" "${TEST_DIR}/oforandrad" "${BAS_OFORANDRAD}" \
+    "1:::${NAT_TIMEOUT}" "1:::${NAT_TIMEOUT}"
+check "T20 icke-merge-HEAD → gamla vägen oförändrad" 0 "${EC}"
+check_contains "T20" "eventets-bas (HEAD är ingen merge-ref vi känner igen)" "${UT}"
+check_contains "T20" "beroendeträdet oförändrat mot bas (${BAS_OFORANDRAD})" "${UT}"
+
+# ── T21 ───────────────────────────────────────────────────────────────────
+# SHALLOW merge-HEAD. Först MÄTS att de graf-traverserande formerna faktiskt
+# är tomma i denna miljö — påståendet i skriptets kommentar får inte vara en
+# obevakad utsaga — sedan att härledningen ändå fungerar.
+SHALLOW_RL="$(git -C "${TEST_DIR}/merge-grund" rev-list --parents -n1 HEAD)"
+SHALLOW_LOGP="$(git -C "${TEST_DIR}/merge-grund" log -1 --format=%P)"
+SHALLOW_CATFILE="$(git -C "${TEST_DIR}/merge-grund" cat-file commit HEAD | sed -n 's/^parent //p' | tr '\n' ' ')"
+if [[ "${SHALLOW_RL}" == "${MERGE_SHA}" && -z "${SHALLOW_LOGP}" ]]; then
+    echo "  ✅ T21 förutsättning: shallow graftar bort föräldrarna (rev-list ger bara HEAD, log %P är tom)"
+    PASSED=$((PASSED + 1))
+else
+    echo "  ❌ T21 förutsättning: shallow-graftningen beter sig inte som skriptets kommentar påstår"
+    echo "     rev-list: ${SHALLOW_RL}"
+    echo "     log %P:   ${SHALLOW_LOGP}"
+    FAILED=$((FAILED + 1))
+fi
+check_contains "T21 cat-file (rå objekt-läsning)" "${MB1}" "${SHALLOW_CATFILE}"
+
+kor_med_head "${MHEAD}" "${TEST_DIR}/merge-grund" "${MB0}" \
+    "1:::${NAT_TIMEOUT}" "1:::${NAT_TIMEOUT}"
+check "T21 shallow merge-HEAD, föräldrarna graftade" 0 "${EC}"
+check_contains "T21" "effektiv bas: ${MB1} — merge-refens första förälder (p2 == PR-headen)" "${UT}"
+check_contains "T21" "saknas i checkouten — hämtar den grunt" "${UT}"
+check_contains "T21" "::warning::audit-ci: npm:s advisory-endpoint onåbar" "${UT}"
 
 echo ""
 TOTAL=$((PASSED + FAILED))

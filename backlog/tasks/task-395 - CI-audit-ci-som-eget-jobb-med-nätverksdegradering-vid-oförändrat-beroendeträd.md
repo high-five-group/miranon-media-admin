@@ -4,7 +4,7 @@ title: 'CI: audit-ci som eget jobb med nätverksdegradering vid oförändrat ber
 status: In Progress
 assignee: []
 created_date: '2026-09-04 10:57'
-updated_date: '2026-09-04 11:48'
+updated_date: '2026-09-04 12:33'
 labels:
   - ready-for-agent
 dependencies: []
@@ -87,7 +87,7 @@ inte projiceras.
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [x] #1 audit-ci kör i ett EGET ci.yml-jobb (audit), parallellt med lint; lint bär inget audit-steg längre; audit står i aggregatorns (ci-passed) needs och är därmed required precis som förut
-- [x] #2 Degraderingen slapper igenom ENBART när BADA villkoren haller: samtliga fem forsok ar natverksklassade (kallbelagt monster, ingen sarbarhetsmarkor) OCH git diff --quiet <bas-sha> HEAD -- package.json package-lock.json ar tyst; utfallet ar da en ::warning::-rad och exit 0
+- [x] #2 Degraderingen slapper igenom ENBART när BADA villkoren haller: samtliga forsok ar natverksklassade (kallbelagt monster, ingen sarbarhetsmarkor) OCH git diff --quiet <effektiv bas> HEAD -- package.json package-lock.json ar tyst, dar effektiv bas ar MERGE-COMMITENS FORSTA FORALDER nar HEAD ar en merge-ref (annars eventets bas, fail-closed); utfallet ar da en ::warning::-rad och exit 0
 - [x] #3 En sarbarhetsmarkor i nagot forsoks utdata faller ALLTID (exit 1) oavsett lockfilen; ett andrat beroendetrad faller ocksa (exit 1); saknad bas-SHA (push mot main) faller (exit 1) — var och en med egen loggrad om vilket villkor som foll
 - [x] #4 Grindarna grona: paritets-preflighten (node scripts/verify-ci-parity.mjs --list), actionlint med CI:s egen -ignore-flagga, yamllint .github/, shellcheck --severity=style --enable=all pa de nya skripten
 <!-- AC:END -->
@@ -217,4 +217,76 @@ bort.
 
 **Landning av rundan:** ny commit på samma gren, PR #2316 förblir **draft** —
 orkestreraren gör ready + armering efter runda 2.
+
+## Första skarpa fyrningen — och den rättade basen (2026-09-04)
+
+Degraderingen fyrade skarpt redan i denna PR, run `33869798369`, job
+`101012813108`, head `2d6f1a6e`. Två saker följde av det.
+
+**Nätverkssidan är nu SKARPBEVISAD, inte bara lokalt bevisad.** Loggen verbatim:
+`audit-ci föll alla 5 försök — klassar utfallet` följt av
+`audit-ci försök 1..5: nätverksklassat ("code undefined")`, samt
+`bas-commiten 21a76d6b… saknas i checkouten — hämtar den grunt`. Klassningen och
+den grunda hämtningen fungerade exakt som byggda i skarp CI-miljö.
+
+**Villkor B föll på ett LATENT basvalsfel — rättat i samma PR.** Eventets
+`pull_request.base.sha` = `21a76d6b` är main NÄR EVENTET SKAPADES. Checkouten är
+merge-refen `refs/pull/2316/merge` = `1b3c3157` med föräldrarna `72bbeb80`
+(main vid CHECKOUT) och `2d6f1a6e` (PR-head) — verifierat via
+`gh api repos/…/commits/1b3c3157`. Däremellan landade `c3008757` (`#2306`,
+label-policyn) som la EN rad i `package.json` (`git show --stat c3008757`:
+`package.json | 1 +`). Två-punktsdiffen mot eventets bas blev därför icke-tom
+trots att PR:ens egen diff mot sin merge-base är tom — jobbet föll på en ANNAN
+PR:s ändring. `base.sha` är stale mot merge-refens faktiska bas så snart main
+rör sig mellan event och checkout, vilket i en fleet är normalfallet.
+
+**Rättelsen:** skriptet härleder en EFFEKTIV bas. Är HEAD en merge-commit med
+två föräldrar OCH (p2 == `AUDIT_HEAD_SHA` [pull_request] ELLER p1 ==
+`AUDIT_BAS_SHA` [merge_group]) ⇒ effektiv bas = p1. Annars eventets bas,
+fail-closed. Tom `AUDIT_BAS_SHA` fäller fortfarande FÖRE all härledning — push
+mot main degraderar aldrig. Loggen skriver alltid ut eventbas, effektiv bas och
+vilken klausul som gällde, plus en explicit rad när de skiljer sig.
+
+### DIVERGENS mot uppdragets föreskrivna mekanism — mätt, inte antagen
+
+Uppdraget föreskrev `git rev-list --parents -n1 HEAD` och bad uttryckligen att
+påståendet skulle **verifieras, inte antas**. Det var rätt att kräva:
+**mekanismen fungerar INTE i jobbets miljö.** Checkouten är grund (djup 1), så
+merge-commiten ÄR shallow-boundary och git graftar bort dess föräldrar. Mätt i
+en `--depth=1`-fixtur mot ett lokalt origin:
+
+| Form | Utfall i grund klon |
+|---|---|
+| `git rev-list --parents -n1 HEAD` | **bara commitens egen SHA — inga föräldrar** |
+| `git log -1 --format=%P` | **tom rad** |
+| `git cat-file commit HEAD` | **båda parent-raderna, korrekt** |
+| `git cat-file -e <p1>` / `<p2>` | objekten SAKNAS (därav den grunda hämtningen) |
+
+`.git/shallow` innehöll merge-commiten själv. Implementationen läser därför
+**`git cat-file commit HEAD`** (rå objekt-läsning går förbi graftningen) och
+klipper huvudet vid första tomraden så en commit-meddelanderad som råkar börja
+med `parent ` aldrig kan läsas som en förälder. Hade härledningen byggts på
+`rev-list --parents` vore den en **no-op i exakt den miljö den finns för** —
+den hade tyst fallit tillbaka på den stale basen varje gång, och grinden hade
+sett rättad ut utan att vara det.
+
+### Bevis
+
+`scripts/test-audit-degradering.sh` växte **41 → 66 assertions**, sviten körd
+(inte avskriven): `RESULT: 66/66 PASS, 0 FAIL`, exit 0. Nya fall:
+
+- **T16** merge-HEAD, stale eventbas, PR rör inga beroenden ⇒ **exit 0** +
+  `::warning::` mot p1 — dagens exakta instans, som mot eventets bas hade fällt.
+- **T17** samma form men PR-headen ändrar låsfilen ⇒ exit 1.
+- **T18** varken klausul matchar ⇒ fallback till eventets bas ⇒ exit 1 när main
+  flyttat beroendefilen (fail-closed bevarad).
+- **T19** merge_group-formen (p1 == eventets bas) ⇒ p1 väljs, exit 0, och loggen
+  namnger kö-klausulen i stället för att se ut som fallback.
+- **T20** icke-merge-HEAD ⇒ gamla vägen oförändrad.
+- **T21** SHALLOW merge-HEAD med graftade föräldrar ⇒ härledningen hittar ändå
+  p1/p2 och hämtar p1 grunt, exit 0. Fallet **mäter dessutom** att
+  `rev-list --parents` och `log %P` faktiskt är tomma där, så skriptets
+  kommentar om saken aldrig blir en obevakad utsaga.
+
+Samtliga 41 tidigare assertions fortsatt gröna.
 <!-- SECTION:NOTES:END -->

@@ -1974,13 +1974,44 @@ jobs:
   #   fäller — fail-closed, aldrig "förmodligen nätverket".
   #
   #   VILLKOR B, OFÖRÄNDRAT BEROENDETRÄD.
-  #   `git diff --quiet <bas-sha> HEAD -- package.json package-lock.json`
-  #   måste vara tyst. Bas-SHA:n kommer ur
+  #   `git diff --quiet <EFFEKTIV bas> HEAD -- package.json package-lock.json`
+  #   måste vara tyst. Eventets bas kommer ur
   #   `github.event.pull_request.base.sha` (pull_request) respektive
   #   `github.event.merge_group.base_sha` (merge_group) — båda fältnamnen
   #   verifierade mot octokit/webhooks payload-schemat 2026-09-04
   #   (`MergeGroupChecksRequestedEvent.merge_group.base_sha`, "The SHA of the
   #   merge group's parent commit").
+  #
+  # ═══ EFFEKTIV BAS — RÄTTELSE EFTER FÖRSTA SKARPA FYRNINGEN ═══
+  #
+  # Degraderingen fyrade skarpt första gången samma dag den byggdes, och föll
+  # på ett LATENT fel i villkor B. Nätverkssidan fungerade exakt som byggd
+  # (5/5 försök klassade "code undefined") — felet satt i basvalet.
+  #
+  # MÄTT: run 33869798369, job 101012813108, head `2d6f1a6e`.
+  #   eventets `base.sha`   = `21a76d6b`  (main NÄR PR-EVENTET SKAPADES)
+  #   checkoutens HEAD      = `1b3c3157`  "Merge 2d6f1a6e… into 72bbeb80…"
+  #   p1 (main vid CHECKOUT) = `72bbeb80` · p2 (PR-head) = `2d6f1a6e`
+  # Mellan `21a76d6b` och `72bbeb80` landade `c3008757` (#2306, label-policyn),
+  # som lade EN rad i `package.json` (`git show --stat c3008757`). Två-punkts-
+  # diffen mot eventets bas blev därför icke-tom trots att PR:ens EGEN diff mot
+  # sin merge-base är tom — jobbet föll på en annan PR:s ändring.
+  #
+  # `base.sha` är alltså STALE mot merge-refens faktiska bas så snart main rör
+  # sig mellan event och checkout. I vår fleet är det NORMALFALLET, inte
+  # undantaget. Semantiken vi vill ha är "ändrar DENNA PR beroendeträdet mot
+  # den redan auditerade main den mergas mot", och den basen är merge-commitens
+  # FÖRSTA FÖRÄLDER. Skriptet härleder den, faller tillbaka på eventets bas när
+  # HEAD inte är en merge-ref det känner igen, och loggar alltid vilken klausul
+  # som gällde.
+  #
+  # DÄRFÖR `git cat-file`, INTE `git rev-list --parents` — MÄTT, INTE ANTAGET:
+  # checkouten är grund (djup 1), så merge-commiten ÄR shallow-boundary och git
+  # graftar bort dess föräldrar. I en `--depth=1`-fixtur gav
+  # `git rev-list --parents -n1 HEAD` bara commitens egen SHA och
+  # `git log -1 --format=%P` en TOM rad, medan `git cat-file commit HEAD` gav
+  # båda parent-raderna. En härledning byggd på de graf-traverserande formerna
+  # hade varit en NO-OP i exakt den miljö den finns för.
   #
   # PÅ `push` MOT MAIN GÄLLER INGEN DEGRADERING. ci.yml kör även på
   # `push: branches: [main]`, och det eventet bär ingen bas att jämföra mot —
@@ -2047,9 +2078,15 @@ jobs:
         # Uttrycket har en post i .ci-parity-policy.json:s exprSubstitutions
         # (tom sträng lokalt ⇒ ingen degradering ⇒ samma utfall som det
         # gamla steget hade lokalt: exit 1 när audit-ci faller).
+        #
+        # AUDIT_HEAD_SHA tillkom i samma PR efter den FÖRSTA SKARPA FYRNINGEN
+        # (se § EFFEKTIV BAS i kommentarsblocket ovan). Den används ENBART för
+        # att känna igen merge-refen — ett tomt värde stänger bara den ena
+        # klausulen, det öppnar aldrig någon väg till degradering.
         env:
           NPM_CONFIG_FETCH_TIMEOUT: "90000"
           AUDIT_BAS_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+          AUDIT_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha }}
         run: bash scripts/audit-ci-med-degradering.sh
 
   # Job 3: Tung testsvit — anropar den reusable ci-suite.yml (EN KÄLLA,
