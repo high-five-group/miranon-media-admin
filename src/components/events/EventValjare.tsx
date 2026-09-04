@@ -33,9 +33,20 @@ const GEMENSAMT_KEY = '__gemensamt';
 
 /**
  * Eventväljaren — delad väljar-komponent med TVÅ ytor (biblioteks-beviset,
- * dubbel-output-visionen): manuell anmälan-sidan (task-18.18, `form=
- * "kontextrad"`) och eventdetaljsidan (task-18.19, `form="rubrik"` — väljaren
- * ÄR rubriken, variant A). S83 pass 4-facit, Marcus-låst 2026-07-24.
+ * dubbel-output-visionen): manuell anmälan-sidan (task-18.18) och
+ * eventdetaljsidan (task-18.19, `form="rubrik"` — väljaren ÄR rubriken,
+ * variant A). S83 pass 4-facit, Marcus-låst 2026-07-24.
+ *
+ * Triggerns ANDRA form hette ursprungligen `form="kontextrad"` (18.18-ytans
+ * smala pill) och var DEFAULT fram till 2026-09-04. Marcus fällde den då
+ * (`TASK-394`, fynd av åtgärdssidans lilla väljare): *"Vi har infört den
+ * 'stora' på typ alla ställen, eller det SKA vara den stora på alla
+ * ställen."* `'kontextrad'` revs samma dag (typ-union, render-grenar,
+ * docblock — noll konsumenter kvar, över-engineering-vakten) och
+ * `'fristaende'` blev DEFAULT i dess ställe; se `form`-propens eget
+ * docblock nedan för hela historiken, inklusive det äldre 2026-08-18-beslut
+ * som mintade `'fristaende'` ursprungligen.
+ *
  * Branschledar-precedent: Linear (New issue-teamväljaren) · Stripe
  * (kundväljaren på create-payment + objekt-switchern) · Notion · Airtables
  * record-navigering. Popover-/list-/sök-maskineriet är IDENTISKT mellan
@@ -160,7 +171,7 @@ export function EventValjare({
   valtEvent,
   onByte,
   isDisabled,
-  form = 'kontextrad',
+  form = 'fristaende',
   rubrikRef,
   onAvsikt,
   gemensamtAlternativ,
@@ -173,22 +184,32 @@ export function EventValjare({
   /** Byte/val: navigerar URL:en (beslut a/13) — väljaren äger inget state. */
   onByte: (eventId: string) => void;
   isDisabled?: boolean;
-  /** Triggerns form: 'kontextrad' (18.18-ytan), 'rubrik' (väljaren ÄR h1:an,
-      18.19 variant A) eller 'fristaende'. List-/sök-maskineriet är identiskt
-      i alla tre.
+  /** Triggerns form: 'rubrik' (väljaren ÄR h1:an, 18.19 variant A) eller
+      'fristaende' (DEFAULT sedan 2026-09-04). List-/sök-maskineriet är
+      identiskt i båda.
 
-      'fristaende' bär den STORA, luftiga rutan som 'kontextrad' annars visar
-      bara i sitt TOMMA läge (`rounded-2xl`, `py-4`, `text-body`, full bredd)
-      — även när ett val ÄR gjort. Marcus 2026-08-18, efter att ha jämfört
-      Dokument-ytan med manuell anmälan: *"jag vill i alla fall att vi
-      kopierar eventväljarens utseende i tomma läget så som det ser ut på
-      manuell anmälan."*
+      'fristaende' bär den STORA, luftiga rutan (`rounded-2xl`, `py-4`,
+      `text-body`, full bredd) — oavsett om ett val är gjort eller ej. Formen
+      MINTADES 2026-08-18 som OPT-IN (default var då `'kontextrad'`, en smal
+      pill som bara växte till samma ruta i sitt TOMMA läge): Marcus, efter
+      att ha jämfört Dokument-ytan med manuell anmälan: *"jag vill i alla
+      fall att vi kopierar eventväljarens utseende i tomma läget så som det
+      ser ut på manuell anmälan."*
+
+      BLEV DEFAULT 2026-09-04 (`TASK-394`) — Marcus fann pillen kvar på
+      åtgärdssidan och fällde regeln för hela appen: *"Jag stör mig på att
+      åtgärdssidan har den 'lilla' eventväljaren. Vi har infört den 'stora'
+      på typ alla ställen, eller det SKA vara den stora på alla ställen."*
+      `'kontextrad'` togs bort ur unionen samma dag: grep över samtliga
+      konsumenter gav noll träffar på förvald pill (över-engineering-vakten
+      — en form utan användare rivs), så render-grenen och dess klasser
+      (`rounded-full`, `px-3.5 py-2`, `text-small`) är rivna, inte bara
+      overridade. Historiken bor i git-loggen för den som behöver den.
 
       Formen finns för ytor där väljaren är sidans PRIMÄRA VAL och aldrig står
       tom — Bilagor-ytan har ett kontextlöst alternativ ("Delade bilagor"),
-      så dess `tomtLage` är per konstruktion alltid falskt och pillformen blev
-      den enda den någonsin visade. */
-  form?: 'kontextrad' | 'rubrik' | 'fristaende';
+      så dess `tomtLage` är per konstruktion alltid falskt. */
+  form?: 'rubrik' | 'fristaende';
   /** h1-elementet i rubrik-formen (sidans fokusmål vid laddning). */
   rubrikRef?: Ref<HTMLHeadingElement>;
   /** Avsikts-signal (hover) på en listrad — prefetch-krok (ADR-078 beslut 3).
@@ -292,11 +313,10 @@ export function EventValjare({
   const gemensamtValt = valtEventId == null && gemensamtAlternativ != null;
   const tomtLage = valtEventId == null && gemensamtAlternativ == null;
   const rubrikForm = form === 'rubrik';
-  // GEOMETRIN är skild från TILLSTÅNDET: den stora rutan används både när
-  // inget är valt (tomtLage, oförändrat) och när konsumenten uttryckligen
-  // ber om den ('fristaende'). Kalenderikonen följer däremot tillståndet —
-  // se dess villkor nedan.
-  const storForm = tomtLage || form === 'fristaende';
+  // Den stora rutan (`form="fristaende"`) är sedan 2026-09-04 (`TASK-394`)
+  // den ENDA icke-rubrik-formen — geometrin är alltså konstant i denna gren,
+  // oavsett `tomtLage`. Kalenderikonen följer ändå TILLSTÅNDET (tomtLage),
+  // inte geometrin — se dess villkor nedan.
 
   return (
     <AriaSelect
@@ -373,17 +393,13 @@ export function EventValjare({
       ) : (
         <AriaButton
           data-testid="event-valjare-trigger"
-          className={
-            storForm
-              ? // Fristående formen (punkt 7): sidans enda handling, full bredd.
-                // Sedan 2026-08-18 även åtkomlig via `form="fristaende"` för
-                // ytor där väljaren är primärvalet men aldrig står tom.
-                'flex w-full items-center gap-2.5 rounded-2xl border border-border bg-surface px-4 py-4 text-body hover:bg-bg-muted motion-safe:transition-colors'
-              : // Pillen på grå kortyta (punkt 3): vit, lyfter ur ytan. FAST
-                // BREDD över hela blocket (Marcus-beslut 2026-07-25) — aldrig
-                // innehållsstyrd; chevronen vid högerkanten (ml-auto).
-                'flex w-full items-center gap-2 rounded-full border border-border bg-surface px-3.5 py-2 text-small hover:bg-bg-muted motion-safe:transition-colors'
-          }
+          // Fristående formen (punkt 7): sidans enda handling, full bredd —
+          // sedan 2026-08-18 den STORA rutan (Marcus), och sedan 2026-09-04
+          // (`TASK-394`) den ENDA formen i denna gren. 'kontextrad' var
+          // ursprungligen default och rullade ut en smalare pill
+          // (`rounded-full`, `px-3.5 py-2`, `text-small`) här; den revs
+          // samma dag — se propens docblock ovan för hela historiken.
+          className="flex w-full items-center gap-2.5 rounded-2xl border border-border bg-surface px-4 py-4 text-body hover:bg-bg-muted motion-safe:transition-colors"
         >
           {/* Kalenderikonen följer TILLSTÅNDET, inte geometrin: den betyder
               "inget valt än" — en kalender vore fel över ett gjort val. */}

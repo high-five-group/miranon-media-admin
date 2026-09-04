@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-04 10:57'
+updated_date: '2026-09-04 11:28'
 labels:
   - ready-for-agent
 dependencies: []
@@ -20,7 +21,7 @@ FYND (Marcus 2026-09-04, S120 Del 1, verbatim i sessionsdoket): 'Jag stör mig p
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 EventValjare: default form = 'fristaende'; 'kontextrad' riven om noll konsumenter kvar (grep-bevis), annars kvar som explicit opt-in med motivering i docblocket; 'rubrik' oförändrad; docblocket § form uppdaterat med Marcus 2026-09-04-beslutet.
+- [x] #1 EventValjare: default form = 'fristaende'; 'kontextrad' riven om noll konsumenter kvar (grep-bevis), annars kvar som explicit opt-in med motivering i docblocket; 'rubrik' oförändrad; docblocket § form uppdaterat med Marcus 2026-09-04-beslutet.
 - [ ] #2 Åtgärdssidan visar den stora rutan i båda tillstånden (utan valt event och med valt event), mätt i DOM och skärmdump desktop 1440 + mobil 375; sidhuvud/sidram opåverkade.
 - [ ] #3 Skärmdumpar före/efter för varje anropsplats som byter form (BetalningsInkorg, ManuellAnmalanForm ×2, KopplaTillEventDialog, AnmalningRadResolution) i PR-kroppen — Marcus stämplar per yta eller pekar ut undantag; ett undantag blir explicit form-prop med motivering, aldrig tyst.
 - [ ] #4 Tester: acceptance-/aria-snapshots som bär pill-formen uppdaterade medvetet i samma landning, diffen redovisad; typecheck 0, biome 0 nya fel, build grön, långa-streck-grinden grön.
