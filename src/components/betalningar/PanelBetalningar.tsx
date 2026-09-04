@@ -56,14 +56,20 @@ type Props = {
  * TASK-346.8), inte av en gissning här.
  *
  * MARCUS DOM 2026-09-01 BYTTE ORDEN, och vad det kostar sägs rakt ut:
- * *"'enligt basen' är tekniksvenska - får inte nå Lotta."* Strängen är nu
- * "Inget kvar att betala". Hedgen är därmed TUNNARE - texten pekar inte
- * längre ut basen som den som talar - men den är inte borta: de två lägena
- * har fortfarande OLIKA meningar ("Inget kvar att betala" vid `rad === null`,
- * "Allt betalt" vid ett känt, fullbetalt pris), så ytan påstår aldrig det
+ * *"'enligt basen' är tekniksvenska - får inte nå Lotta."* Strängen blev då
+ * "Inget kvar att betala". Hedgen var därmed TUNNARE - texten pekade inte
+ * längre ut basen som den som talar - men den var inte borta: de två lägena
+ * hade fortfarande OLIKA meningar ("Inget kvar att betala" vid `rad === null`,
+ * "Allt betalt" vid ett känt, fullbetalt pris), så ytan påstod aldrig det
  * starkare av dem om ett okänt pris. Att Lotta förstår raden vägde tyngre än
  * att den bar sin egen epistemologi (Gunilla-principen). Den fulla
  * tvetydigheten bor kvar här, i koden, och stängs fortfarande av DATA.
+ *
+ * REVISION 2026-09-04 (S120, TASK-391): nolläget är nu "Inget att betala" —
+ * "kvar" förutsätter att något funnits att betala, medan `rad === null` inte
+ * vet det (aldrig haft pris eller helt betald, ovisst vilket). "Inget att
+ * betala" är neutralt och täcker båda fallen utan att göra hedgen svagare.
+ * "Allt betalt" vid ett känt, fullbetalt pris är ORÖRD.
  *
  * ═══════════════════════════════════════════════════════════════════════════
  * INBETALNINGARNA HÄMTAS FÖRST NÄR RADEN FÄLLS UT
@@ -97,7 +103,7 @@ export function PanelBetalningar({ anmalanRecordId, namn, rad }: Props) {
         </div>
       ) : (
         <span className="text-small text-text-muted">
-          {saknas === null ? 'Inget kvar att betala' : 'Allt betalt'}
+          {saknas === null ? 'Inget att betala' : 'Allt betalt'}
         </span>
       )}
 

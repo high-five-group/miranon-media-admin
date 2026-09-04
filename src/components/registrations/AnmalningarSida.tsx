@@ -836,8 +836,8 @@ export function AnmalningarSida({
                 </AnmalningRadResolution>
               ) : reg.eventId ? (
                 <Link
-                  to="/event/$eventId/anmalda"
-                  params={{ eventId: reg.eventId }}
+                  to="/event/$eventId/anmalan/$registrationId"
+                  params={{ eventId: reg.eventId, registrationId: reg.id }}
                   className={namnKlass}
                 >
                   {namn}

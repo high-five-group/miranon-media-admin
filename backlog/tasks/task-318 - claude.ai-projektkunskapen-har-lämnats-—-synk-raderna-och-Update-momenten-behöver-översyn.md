@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-24 14:30'
+updated_date: '2026-09-04 10:36'
 labels:
   - ready-for-agent
 dependencies: []
@@ -20,9 +21,9 @@ Marcus i klartext 2026-08-24 (S112): 'Kör inte med Claude.ai längre.' Konsekve
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 CLAUDE.md § Synk-horisont uppdaterad mot det nya läget, diff visad Marcus
-- [ ] #2 ADR-048 § Updates-post med Marcus-citatet och datum
-- [ ] #3 Inga kvarvarande Update-klick-moment i styrande ytor (grep-verifierat)
+- [x] #1 CLAUDE.md § Synk-horisont uppdaterad mot det nya läget, diff visad Marcus
+- [x] #2 ADR-048 § Updates-post med Marcus-citatet och datum
+- [x] #3 Inga kvarvarande Update-klick-moment i styrande ytor (grep-verifierat)
 <!-- AC:END -->
 
 ## Definition of Done
@@ -32,3 +33,9 @@ Marcus i klartext 2026-08-24 (S112): 'Kör inte med Claude.ai längre.' Konsekve
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+AC #1: diffen visad Marcus i chatten 2026-09-04 (S119) och godkänd på hans mandat via orkestreraren; landad
+<!-- SECTION:NOTES:END -->

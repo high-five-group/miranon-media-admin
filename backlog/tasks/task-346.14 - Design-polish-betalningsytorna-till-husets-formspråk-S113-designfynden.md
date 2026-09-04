@@ -4,7 +4,7 @@ title: 'Design-polish: betalningsytorna till husets formspråk (S113-designfynde
 status: Done
 assignee: []
 created_date: '2026-08-31 10:49'
-updated_date: '2026-08-31 13:20'
+updated_date: '2026-09-04 08:24'
 labels:
   - ready-for-agent
 dependencies: []
@@ -30,7 +30,13 @@ Marcus dom under S113-slutvandringen: grundformen ok men ytorna är utkast/kladd
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Nattgrind-stangning 2026-09-04: DoD bockad mot belagg - samtliga 6 AC redan bockade (mekanisk DoD1); DoD2 styrks av PR 2183:s grindtabell over tre rundor (biome/typecheck/build/check-langa-streck/check-facit/check:docs alla 0, risk LAG runda 3, enda fyndet info-niva utan blockering); DoD3 verifierat mot git show --stat cc3fb46d (PR 2183): enbart betalningskomponenter, AtgardsSida.tsx, BetalningarKort.tsx och AMENDERING-sidofiler andrade.
+<!-- SECTION:NOTES:END -->

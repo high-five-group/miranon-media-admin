@@ -7,7 +7,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-31 10:04'
-updated_date: '2026-08-31 13:07'
+updated_date: '2026-09-04 08:12'
 labels:
   - ready-for-agent
 dependencies: []
@@ -58,9 +58,9 @@ ordinal: 655000
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -95,4 +95,6 @@ ensidigt.
 saknas" vs "person finns men har noll anmälningar" är AVSIKTLIGT — speglar
 anmalanRecordId-vägens beteende (samma fil). Dokumenterat med docstring-
 kommentar i hamta-inbetalningar/index.ts vid person-branchen.
+
+Nattgrind-stängning 2026-09-04: DoD bockad mot belägg — samtliga 5 AC redan bockade (mekanisk DoD#1); DoD#2 (grindar gröna) styrks av AC#4 (typecheck/biome/build/test:api gröna) samt PR #2174 (merge eda20bfa); DoD#3 (inga orelaterade filer) verifierat mot git show --stat eda20bfa: enbart backlog-kortfilen, data-model.md och hamta-inbetalningar/index.ts ändrade.
 <!-- SECTION:NOTES:END -->

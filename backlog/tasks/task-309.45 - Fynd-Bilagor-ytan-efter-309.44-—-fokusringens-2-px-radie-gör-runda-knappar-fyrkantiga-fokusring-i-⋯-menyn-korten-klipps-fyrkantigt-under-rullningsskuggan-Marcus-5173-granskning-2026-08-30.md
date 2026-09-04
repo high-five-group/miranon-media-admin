@@ -7,7 +7,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-30 08:47'
-updated_date: '2026-08-30 09:53'
+updated_date: '2026-09-04 08:15'
 labels: []
 dependencies: []
 parent_task_id: TASK-309
@@ -31,9 +31,9 @@ Marcus granskade 309.44 på dev-servern 5173 (2026-08-30 ~08:50 UTC): 'Klar för
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -46,6 +46,8 @@ ALLT UTOM EN KLAUSUL AR MATT OCH GRONT (talen star i den foregaende noteringen):
 KLAUSULEN SOM INTE GAR ATT MATA HAR: 'rullens tumme klipps inte synligt i hornen'. Acceptance-projektets headless Chromium malar ingen scrollbar-tumme alls — rannan ar reserverad (11 px, matt) men en x6-uppskalad strimma over hela rannans yta visar enfargad gra. Jag kan alltsa varken bekrafta eller falsifiera klausulen.
 Och min egen harledning pekar at FEL hall: rannan ar 11 px bred, ul:s nedre horn-radie 16 px, sa rannans nedersta ~16 px ligger innanfor hornkurvan — en malad tumme skulle formodligen fa sin nedre ande avrundad. Det ar inneboende i att runda en rullbox; enda alternativet ar att ta bort radien, vilket ger tillbaka det fyrkantiga hornet fixen finns for.
 Att bocka en AC vars enda oprovade klausul min egen geometri talar EMOT vore att pasta mer an jag vet. Orkestrerarens matning mot 5173 i en riktig webblasare avgor — bocka #3 dar, eller ta ett beslut om radien om tummen ser trasig ut.
+
+Nattgrind-stängning 2026-09-04: DoD bockad mot belägg — samtliga 5 AC redan bockade (mekanisk DoD#1); DoD#2 styrks av Final Summary (review-grinden r1 låg risk, backstopp exit 0, prod-verifierat, AC #3:s sista klausul mätt av orkestreraren på 5173); DoD#3 verifierat mot git show --stat fe3b2b9f (PR #2131): enbart DokumentYta.tsx, Meny.tsx, base.css och en acceptance-testfil ändrade.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

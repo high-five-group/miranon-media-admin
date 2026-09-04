@@ -2163,7 +2163,33 @@ function SegmentLista({
                 // aldrig bort, så `poster.length === 0` är dött sedan denna
                 // landning — pröva-och-bokför-fyndet från B2-promoveringens
                 // uppdrag.
-                <div className="flex flex-col items-center gap-2 py-6 text-center">
+                //
+                // S120 ITERATION 2 — STÄMPLAD av Marcus 2026-09-04: "Agenten
+                // har redan byggt om. Nu blev det en streckad kontur bara.
+                // Ser jättebra ut. Kör på den." Facit.json rad "ingen grå
+                // låda" är AMENDERAD genom
+                // tasks/sessions/bilagor/s114-segmentlistan-konvergens/
+                // AMENDERING-2026-09-04-tomlagets-yta.md (stämpel-PR #2293
+                // äger själva `godkand`-fältet, orört av denna ändring).
+                // ITERATION 1 (dot-grid-textur ovanpå KORT_KLASS, samma
+                // tonala grå som "Färdiga grupper"-korten) underkändes av
+                // Marcus: "Gillar inte bakgrunden med prickarna. Och jag
+                // tycker den är för grå liksom, bör vara en ljusare variant
+                // så ytan skiljer sig från alla andra gråa saker på sidan."
+                // Texturen (--mm-tomlage-punkt/--mm-tomlage-textur,
+                // components.css) är RIVEN, inga döda tokens kvar.
+                //
+                // Ny yta: `bg-surface` (VIT, samma yta InbetalningsLista.tsx
+                // och PersonDetail.tsx redan bär för att skilja sig från
+                // gruppkortens `bg-bg-muted`) i stället för KORT_KLASS —
+                // skiljer sig alltså MEDVETET från "Färdiga grupper"-korten
+                // strax nedanför, som Marcus efterfrågade. Tomläges-
+                // affordansen är i stället en STRECKAD ram
+                // (`border-dashed border-border`, husets kant-token, samma
+                // familj Tailwind UI/Primer Blankslate använder för "detta
+                // är en tom platshållare" utan att luta sig på en textur)
+                // med `contrast-more:border-border-strong`.
+                <div className="flex flex-col items-center gap-2 rounded-2xl border border-border border-dashed bg-surface px-4 py-10 text-center contrast-more:border-border-strong">
                   <p className="font-medium text-body">Inga sparade segment än</p>
                   <p className="max-w-prose text-small text-text-muted">
                     Ett segment är ett urval personer du kan skicka till om och om igen. Du bygger

@@ -127,11 +127,45 @@ export function PlatserYta() {
               intent="ghost"
               size="sm"
               className="self-start"
-              onPress={() => void setValdId(null)}
+              onPress={() => {
+                spara.reset();
+                void setValdId(null);
+              }}
             >
               ‹ Alla platser
             </Button>
             <h2 className="font-medium text-lg">{valt.namn}</h2>
+
+            {/* Felytan renderas ur `spara.isError`/`spara.error` — samma
+                disciplin som `GenereringsVy.tsx`s block-dialog (rad
+                ~885–895): dialogen stänger SYNKRONT vid Spara (`onSpara`,
+                nedan), så detta är ANVÄNDARENS enda besked om att den
+                optimistiska sparningen rullades tillbaka (TASK-309.36,
+                review-runda 1 på #2055, F1). Utan denna yta hade ett
+                misslyckat sparförsök tystats bort helt — a11y-golvbrott
+                (WCAG 3.3.1/4.1.3).
+
+                NOLLSTÄLLS vid platsbyte (TASK-309.36, review-runda 2 på
+                #2055, nytt error): `spara` är EN delad hook-instans för
+                HELA ytan (rad ~88, delad med `skapaPlats`) — den remountas
+                ALDRIG, till skillnad från `GenereringsVy.tsx`s precedent
+                (`dokument.tsx` rad ~48–52: `key={`${valtEvent.id}-${mall}`}`
+                remonterar hela komponenten, och därmed dess hooks, per
+                event). Ett key-remount hade krävt att bryta ut hela
+                detaljvyn (inklusive `spara`-hooken) i en egen komponent —
+                en större omstrukturering som riskerar att splittra
+                `spara` från `skapaPlats`s list-nivå-användning. UTAN
+                `spara.reset()` i BÅDA `setValdId`-anropen (rad ~130 "‹
+                Alla platser", rad ~255 platsvalet) hade `isError` legat
+                kvar sant efter ett fel på Plats A och visats igen under
+                Plats B — fel plats, samma felmeddelande. */}
+            {spara.isError && (
+              <MessageBox intent="error">
+                Ändringen kunde inte sparas:{' '}
+                {spara.error instanceof Error ? spara.error.message : 'Okänt fel.'}
+              </MessageBox>
+            )}
+
             <ul
               data-testid="plats-block-lista"
               className="divide-y divide-border rounded-xl border border-transparent bg-surface px-3 contrast-more:border-border-strong"
@@ -233,7 +267,10 @@ export function PlatserYta() {
                     <button
                       type="button"
                       className="flex w-full items-center gap-3 py-3 text-left"
-                      onClick={() => void setValdId(plats.id)}
+                      onClick={() => {
+                        spara.reset();
+                        void setValdId(plats.id);
+                      }}
                     >
                       <span className="min-w-0 flex-1 truncate text-body">{plats.namn}</span>
                       <ChevronRight

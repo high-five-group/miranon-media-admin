@@ -3,9 +3,10 @@ id: TASK-381
 title: >-
   Fynd: ombokningsskälet i ombokningssteget är inte redigerbart —
   rebook-registration saknar skäl-fält
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-03 12:43'
+updated_date: '2026-09-04 07:52'
 labels:
   - ready-for-human
 dependencies: []
@@ -24,3 +25,9 @@ Symptom: 368.5 AC #2 kräver att det förifyllda skälet 'Ombokad till <event, d
 - [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Beslut 2026-09-04, orkestreraren på Marcus mandat: A. Ett skäl-fält i rebook-registration har ingen nuvarande användare — över-engineering-vakten (~/.claude/CLAUDE.md § Instruktioner) skär spekulativ komplexitet ovanför golvet. AC #2 i 368.5 omformulerad utan '(redigerbart)'. Väljs B senare mintas ett nytt kort.
+<!-- SECTION:FINAL_SUMMARY:END -->

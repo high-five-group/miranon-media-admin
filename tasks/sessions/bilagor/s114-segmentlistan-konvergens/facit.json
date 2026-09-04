@@ -2,7 +2,12 @@
   "prototyp": "s114-segmentlistan-konvergens",
   "last": "2026-09-03",
   "lasning": "Det blir bra, vi stämplar denna som klar.",
-  "godkand": null,
+  "godkand": {
+    "av": "marcus",
+    "datum": "2026-09-04",
+    "citat": "Det blir bra, vi stämplar denna som klar.",
+    "sha": "78de4a7d3ae13977edaf7817b60b653f64914612"
+  },
   "ytor": [
     {
       "yta": "segment-startsidan",
