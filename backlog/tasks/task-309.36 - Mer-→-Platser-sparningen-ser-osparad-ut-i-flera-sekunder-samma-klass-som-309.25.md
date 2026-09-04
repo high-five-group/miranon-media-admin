@@ -3,10 +3,10 @@ id: TASK-309.36
 title: >-
   Mer → Platser: sparningen ser osparad ut i flera sekunder (samma klass som
   309.25)
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-28 03:04'
-updated_date: '2026-08-28 04:41'
+updated_date: '2026-09-04 13:44'
 labels:
   - ready-for-agent
 dependencies: []
@@ -60,7 +60,13 @@ hook-form, samma kommentarsstandard.
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+S119 stangningsbatch 2a (2026-09-04): PR #2055 mergad i origin/main, merge-SHA 0b172e7f (verifierat mot origin/main-loggen). Review konvergerad runda 3, risk LAG (granskad SHA 0fcfc4c8) -- runda 2:s enda ask-user-fynd loste av Marcus egen commit med tvasidig manuell verifiering + nytt CI-gront test; kvarstaende punkter bokforda info utan blockerande allvar. Diff (PR-namn-lista): backlog/tasks/task-309.36, src/components/platser/PlatserYta.tsx, src/data/mutations/useSavePlace.ts, tests/acceptance/mer-platser-optimistisk-sparning.acceptance.test.ts, samt backlog/tasks/task-309.37 (nytt fynd-kort mintat under skivan -- optimistiska sparhookar saknar concurrent-mutation-skydd) -- inga orelaterade filer, task-309.37 ar sjalva skivans eget arbetsprodukt.
+<!-- SECTION:FINAL_SUMMARY:END -->

@@ -4,7 +4,7 @@ title: 'Kontraktsvakten: fixturen saknar pris och ovrigaAnmalningar efter TASK-3
 status: Done
 assignee: []
 created_date: '2026-09-04 08:15'
-updated_date: '2026-09-04 08:31'
+updated_date: '2026-09-04 13:45'
 labels:
   - ready-for-agent
 dependencies: []
@@ -59,13 +59,15 @@ Landad i samma PR som kortet, gren `fix/kontraktsvakt-fixtur-pris`.
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
 Runda 2: ovrigaAnmalningar 0 (invarianten i src/lib/belaggning.ts, granskningsfynd PR #2289 r1).
+
+S119 stangningsbatch 2a (2026-09-04): PR #2289 mergad i origin/main, merge-SHA 7218d2d8 (verifierat mot origin/main-loggen). Review r1-r3, risk LAG hela vagen, runda 3 konvergerad (byte-identisk innehallsdiff mot runda 2, enda tillagget en ren main-merge PR #2288 via update-branch). Kvarstaende r3 info-fynd, ingen kodandring: kommentaren ovanfor ovrigaAnmalningar: 0 i tests/support/fixturvarld/fixture-data.ts (rad ~427-431) utelamnar medfoljande-termen i invariant-formeln och rakneexemplet (6+0+1 != 8; verkliga invarianten enligt src/lib/belaggning.ts ar 6+1+0+1 = 8) -- fixturvardet sjalvt ar korrekt, endast kommentartexten missvisande. Bokfors har som kand kommentars-skuld, ingen kodandring i denna batch.
 <!-- SECTION:NOTES:END -->

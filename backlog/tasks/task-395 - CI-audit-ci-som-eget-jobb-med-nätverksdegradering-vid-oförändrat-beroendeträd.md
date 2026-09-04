@@ -1,10 +1,10 @@
 ---
 id: TASK-395
 title: 'CI: audit-ci som eget jobb med nätverksdegradering vid oförändrat beroendeträd'
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-04 10:57'
-updated_date: '2026-09-04 12:33'
+updated_date: '2026-09-04 13:44'
 labels:
   - ready-for-agent
 dependencies: []
@@ -94,9 +94,9 @@ inte projiceras.
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -290,3 +290,9 @@ sett rättad ut utan att vara det.
 
 Samtliga 41 tidigare assertions fortsatt gröna.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+S119 stangningsbatch 2a (2026-09-04): PR #2316 mergad i origin/main, merge-SHA 38429d77 (verifierat mot origin/main-loggen). Gate-proof.yml positivt bevis: run 33875903794 (Gate Proof - CI Passed or Skipped FAIL-branch) SUCCESS pa main efter landning. OPPEN SKULD kvarstar, obetald: degraderingens grona gren (nätverksfel + oforandrat beroendetrad -> ::warning:: + exit 0) har INTE fyrat skarpt i CI annu -- varje audit-korning efter fixen (inkl. run 33869798369, som fyrade skarpt pa det tidigare bas-valsfelet och verifierade natverkssidan + den rattade effektiva-bas-logiken) har fatt korrekt/riktigt svar fran npm:s advisory-endpoint. Denna agent har INTE sjalv sokt efter en sadan korning -- pastaendet ar overtaget fran uppdraget, kallmarkt dit, och forblir HYPOTES tills nagon faktiskt hittar en gron degraderings-korning i CI-loggarna.
+<!-- SECTION:FINAL_SUMMARY:END -->

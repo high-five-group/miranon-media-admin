@@ -4,7 +4,7 @@ title: 'Prod-allowlist: cancel-registration + rebook-registration inför 368-dep
 status: Done
 assignee: []
 created_date: '2026-09-04 07:54'
-updated_date: '2026-09-04 08:02'
+updated_date: '2026-09-04 13:44'
 labels:
   - ready-for-agent
 dependencies: []
@@ -22,6 +22,12 @@ ordinal: 686000
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+S119 stangningsbatch 2a (2026-09-04): kortet var redan Done pa origin/main (sjalv-stangt inom PR #2285:s egen commit fbca73cd) -- ingen statusandring gjord av denna agent. Merge-SHA for PR #2285 verifierat: be4b883c (mergad 2026-09-04T13:39:27Z, review konvergerad runda 2, risk LAG). Tillagg per orkestrerarens uppdrag: prod-deployen av cancel-registration/rebook-registration kors av Marcus sjalv i egen terminal EFTER hans staging-QA (TASK-368.6, To Do) -- bash scripts/fas4-prod-deploy.sh --kontrollera <prod-ref> far ga via !-prefixet, men --deploya (cirka 10 min) ska ALDRIG koras via !-prefixet (CLAUDE.md-radens skal: 2-minuderstaket kan konvertera korningen till bakgrund eller doda den mitt i, vilket lamnar supabase/.temp/project-ref pekande pa prod). TASK-368.6 steg 9 (prod) vantar pa den korningen.
+<!-- SECTION:NOTES:END -->
 
 ## Final Summary
 
