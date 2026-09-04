@@ -222,6 +222,7 @@ import {
   Group,
   Layers,
   ListPlus,
+  Minus,
   Pencil,
   Plus,
   Send,
@@ -760,54 +761,117 @@ function definitionFor(entitet: SegmentEntitet, parInfo: ParInfo[]): string {
  * ================================================================== */
 
 /**
- * En LÄS-ONLY chip — samma geometri som regelverkstadens `ValChip` (rundad
- * kant, samma padding/typsnitt), men `<span>` i stället för `<button>`: ingen
- * `aria-pressed`, ingen knapp-semantik, ingenting att trycka på. Alltid i det
- * OVALDA utseendet (`ValChip`s `vald={false}`-gren) — en chip här visar bara
- * VAD regeln innehåller, den kan aldrig vara "vald".
+ * En LÄS-ONLY chip för en INKLUDERAD utbildning — husets SUCCESS-TON, EXAKT
+ * de tokens `StatusBadge ton="success"` och täckningskvittensen (rad ~1713)
+ * redan bär: `bg-success-bg` + `contrast-more:border-success` på kapseln,
+ * `text-success` på ikonen ENSAM — texten själv står i default-färg (samma
+ * val båda förlagorna gör, AA mätt mot 100-tonen; att tinta hela texten hade
+ * varit en NY parning ingen annan yta bär). `<span>`, ingen knapp-semantik.
+ *
+ * ITERATION 2, TVÅ MARCUS-DOMAR I RAD (2026-09-04, mot staging):
+ *   1. "Ta också bort alla 'utan' och 'eller' chips i regelblocket, det blev
+ *      ju ännu otydligare nu." — operatorORDEN (och/eller/Utan:) är RIVNA.
+ *   2. "Chipsen borde ligga på samma rad, och den/de chips vars utbildning
+ *      inkluderas i segmentet bör vara grön ju? De andra nedtonade?" — de två
+ *      RADERNA (första domens svar) är i sin tur ersatta av EN rad (se
+ *      `RegelStruktur`), och tonen bär nu distinktionen i stället för
+ *      positionen.
+ *
+ * FÄRG ÄR ALDRIG ENSAM BÄRARE (WCAG 1.4.1, `CLAUDE.md` § Kvalitetsribba,
+ * Tillgänglighet alltid 11): `Check`-ikonen (`aria-hidden`) är en ANDRA,
+ * form-baserad signal utöver tonen, och en `sr-only`-svans ("ingår") gör
+ * skillnaden hörbar för skärmläsare som inte förmedlar bakgrundsfärg alls.
+ * Under `prefers-contrast: more` tar kanten (`border-success`) över som
+ * bärare när tonytan i sig kan tunnas ut.
  */
 function RegelChip({ children }: { children: React.ReactNode }) {
   return (
-    <span className="rounded-full border border-border bg-surface px-3 py-1 text-small text-text-secondary contrast-more:border-border-strong">
+    <span className="inline-flex items-center gap-1 rounded-full border border-transparent bg-success-bg px-3 py-1 text-small contrast-more:border-success">
+      <Check aria-hidden="true" size={14} className="shrink-0 text-success" />
       {children}
+      <span className="sr-only">, ingår</span>
     </span>
   );
 }
 
-/** Dämpad operator-text mellan chip-grupper — "och"/"eller"/"Utan:". Vanlig,
- *  läsbar text (ALDRIG `aria-hidden`): operatorn bär betydelse (AND/OR/NOT)
- *  och ska nå skärmläsaren som texten den är. */
-function RegelOperator({ children }: { children: React.ReactNode }) {
-  return <span className="text-small text-text-muted">{children}</span>;
+/**
+ * DÄMPAD läs-only chip för en EXKLUDERAD utbildning — motsatsen till
+ * `RegelChip` på alla tre led: `Minus`-ikon i stället för `Check`,
+ * `text-text-muted` i stället för default/success, en alltid-synlig
+ * `border-border` (inte `border-transparent`) i stället för en tonad platta
+ * — "kant i stället för platta" (Marcus, iteration 2). `contrast-more:
+ * border-border-strong` skärper samma kant ytterligare i högkontrastläge.
+ * `sr-only`-svansen ("ingår inte") speglar `RegelChip`s.
+ */
+function RegelChipDampad({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full border border-border bg-transparent px-3 py-1 text-small text-text-muted contrast-more:border-border-strong">
+      <Minus aria-hidden="true" size={14} className="shrink-0 text-text-muted" />
+      {children}
+      <span className="sr-only">, ingår inte</span>
+    </span>
+  );
 }
 
 /**
- * Chip-etiketterna för ETT villkor — modaliteten först (den är obligatorisk
- * och aldrig underförstådd, `SÄKERHETSKRAVET` i verkstaden), sedan familjer
- * och nivåer i tur och ordning. Speglar `villkorKlartext`s dimensioner men
- * som separata, skanbara chips i stället för en sammanhållen mening.
+ * EN UTBILDNINGS-ETIKETT PER VILLKOR, I GRUPPKORTENS EGEN FORM ("RIM 1",
+ * "Fjärrskådning", …) — INTE regelverkstadens dimension-chips (modalitet
+ * separat, `NIVA_ETIKETT`s långform "Nivå 1"). Samma `familj`/`NIVA_KORT`-
+ * sammansättning som `KursAtom.etikett` (rad ~938: `` `${familj}
+ * ${NIVA_KORT[niva]}` ``) och `DE_FJORTON_ATOMER`s etiketter (rad
+ * ~1056–1059) — gruppkortens NAMN, återanvänt rakt av i stället för
+ * uppfunnet på nytt. Modaliteten (Utbildning/Föreläsning/Båda) är RIVEN som
+ * egen chip (orkestrerarens fynd, iteration 2): den bär noll information —
+ * varenda grupp i dagens taxonomi är "Utbildning", chippen upprepade bara
+ * det.
+ *
+ * De fjorton förskapade gruppernas villkor har ALLTID exakt en familj och
+ * som mest en nivå (`villkorForAtom`), så cross-produkten nedan kollapsar
+ * till EN etikett för dem. För ett fritt byggt villkor (regelverkstaden,
+ * flera familjer/nivåer i samma villkor) ger cross-produkten en etikett per
+ * kombination — familjer UTAN nivådimension (`FAMILJER_MED_NIVA`) får sin
+ * egen etikett oavsett vilka nivåer som råkar vara valda på ANDRA familjer
+ * i samma villkor.
  */
-function chipsForVillkor(v: Villkor): string[] {
-  const modalitetChip =
-    v.modalitet === 'Föreläsning'
-      ? 'Föreläsning'
-      : v.modalitet === 'Båda'
-        ? 'Utbildning eller föreläsning'
-        : 'Utbildning';
-  return [modalitetChip, ...v.familjer, ...v.nivaer.map((n) => NIVA_ETIKETT[n])];
+function atomEtiketterForVillkor(v: Villkor): string[] {
+  return v.familjer.flatMap((f) => {
+    if (!FAMILJER_MED_NIVA.includes(f) || v.nivaer.length === 0) return [f];
+    return v.nivaer.map((n) => `${f} ${NIVA_KORT[n]}`);
+  });
+}
+
+/** Samma etikett-form som `atomEtiketterForVillkor`, men för ETT taxonomi-
+ *  par (den äldre uppräknade regelformen) — slår upp familj/nivå via
+ *  `parInfo` (`byggParInfo`s berikning). Saknar paret en känd familj (data-
+ *  model-fälla, se `ParInfo`s docblock) faller den till `labelForPar`s
+ *  fullständiga etikett i stället för att gissa. */
+function atomEtikettForPar(p: Par, parInfo: ParInfo[]): string {
+  const info = parInfo.find((pi) => pi.par.kurs === p.kurs && pi.par.modalitet === p.modalitet);
+  if (!info?.familj) return labelForPar(p);
+  return info.niva ? `${info.familj} ${NIVA_KORT[info.niva]}` : info.familj;
 }
 
 /**
  * Regeln STRUKTURERAT, under avsiktsmeningens prosa (`definitionFor`,
- * renderad av anroparen). TVÅ GRENAR, en per lagringsform — ingen egen
- * parallell datakälla:
+ * renderad av anroparen) — EN RAD, ordfritt (iteration 2, andra tillägget):
+ * inkluderade chips (gröna) FÖRST, exkluderade chips (dämpade) DIREKT
+ * EFTER, i samma `flex-wrap`-flöde. Marcus två domar i rad river först
+ * operatorORDEN, sedan RADINDELNINGEN själv ("Chipsen borde ligga på samma
+ * rad") — tonen (grön kontra dämpad, se `RegelChip`/`RegelChipDampad`) är nu
+ * den ENDA visuella avgränsningen, förstärkt av varje chips egen ikon +
+ * sr-only-svans i stället för en grupperande rad/rubrik.
  *
- *   · `entitet.predikat`: AND/OR-strukturen är ÄKTA (Konjunkt-grupper i
- *     `med`, bundna med "och" inom en grupp och "eller" mellan grupper,
- *     `utan` som platt uteslutning) — samma träd `predikatKlartext` läser.
- *   · Äldre uppräknad form (`predikat === null`): `bruttoRegelFor` ger en
- *     PLATT union (`include`/`exclude`), för den formen har ingen AND-
- *     struktur att bevara — ren uppräkning, "eller" mellan varje par.
+ * AND/OR/NOT-TRÄDET PLATTAS MEDVETET (samma skäl som första tillägget):
+ * precisionen finns kvar i avsiktsmeningens prosa och i regelverkstaden,
+ * chipsen här är en SKANBAR SAMMANFATTNING, inte en fullständig återgivning
+ * av predikatet.
+ *
+ * TVÅ GRENAR, en per lagringsform — ingen egen parallell datakälla:
+ * `entitet.predikat` läser Konjunkt/Villkor-trädet, den äldre uppräknade
+ * formen (`predikat === null`) läser `bruttoRegelFor`s platta union.
+ * Dubbletter (samma utbildning i flera villkor/grupper) dedupas var för sig
+ * inom inkluderade/exkluderade — en utbildning kan aldrig vara båda samtidigt
+ * i en giltig regel, så de två mängderna kan aldrig kollidera i DOM-nyckeln.
  *
  * Tom regel (inget giltigt villkor byggt än) renderar ingenting — samma
  * neutrala tomhet som `tomRegel`-grenen ovanför i `SegmentDetalj` redan
@@ -815,73 +879,36 @@ function chipsForVillkor(v: Villkor): string[] {
  * inkluderade utbildningar.") räcker då som ensam text.
  */
 function RegelStruktur({ entitet, parInfo }: { entitet: SegmentEntitet; parInfo: ParInfo[] }) {
+  let inkluderade: string[];
+  let exkluderade: string[];
+
   if (entitet.predikat) {
     const med = entitet.predikat.med.filter(konjunktGiltig);
-    const utan = entitet.predikat.utan.filter(villkorGiltigt);
     if (med.length === 0) return null;
-    return (
-      <div className="flex flex-col gap-2">
-        <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-          {med.map((k, ki) => (
-            <span key={k.id} className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-              {ki > 0 && <RegelOperator>eller</RegelOperator>}
-              <span className="flex flex-wrap items-center gap-1.5">
-                {k.villkor.filter(villkorGiltigt).map((v, vi) => (
-                  <span key={v.id} className="flex flex-wrap items-center gap-1.5">
-                    {vi > 0 && <RegelOperator>och</RegelOperator>}
-                    <span className="flex flex-wrap items-center gap-1">
-                      {chipsForVillkor(v).map((c) => (
-                        <RegelChip key={c}>{c}</RegelChip>
-                      ))}
-                    </span>
-                  </span>
-                ))}
-              </span>
-            </span>
-          ))}
-        </div>
-        {utan.length > 0 && (
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1.5">
-            <RegelOperator>Utan:</RegelOperator>
-            {utan.map((v, vi) => (
-              <span key={v.id} className="flex flex-wrap items-center gap-1.5">
-                {vi > 0 && <RegelOperator>eller</RegelOperator>}
-                <span className="flex flex-wrap items-center gap-1">
-                  {chipsForVillkor(v).map((c) => (
-                    <RegelChip key={c}>{c}</RegelChip>
-                  ))}
-                </span>
-              </span>
-            ))}
-          </div>
-        )}
-      </div>
-    );
+    inkluderade = [
+      ...new Set(
+        med.flatMap((k) => k.villkor.filter(villkorGiltigt).flatMap(atomEtiketterForVillkor)),
+      ),
+    ];
+    exkluderade = [
+      ...new Set(entitet.predikat.utan.filter(villkorGiltigt).flatMap(atomEtiketterForVillkor)),
+    ];
+  } else {
+    const rule = bruttoRegelFor(entitet, parInfo);
+    if (rule.include.length === 0) return null;
+    inkluderade = [...new Set(rule.include.map((p) => atomEtikettForPar(p, parInfo)))];
+    exkluderade = [...new Set(rule.exclude.map((p) => atomEtikettForPar(p, parInfo)))];
   }
+  if (inkluderade.length === 0) return null;
 
-  const rule = bruttoRegelFor(entitet, parInfo);
-  if (rule.include.length === 0) return null;
   return (
-    <div className="flex flex-col gap-2">
-      <div className="flex flex-wrap items-center gap-1.5">
-        {rule.include.map((p, i) => (
-          <span key={parKey(p)} className="flex flex-wrap items-center gap-1.5">
-            {i > 0 && <RegelOperator>eller</RegelOperator>}
-            <RegelChip>{labelForPar(p)}</RegelChip>
-          </span>
-        ))}
-      </div>
-      {rule.exclude.length > 0 && (
-        <div className="flex flex-wrap items-center gap-1.5">
-          <RegelOperator>Utan:</RegelOperator>
-          {rule.exclude.map((p, i) => (
-            <span key={parKey(p)} className="flex flex-wrap items-center gap-1.5">
-              {i > 0 && <RegelOperator>eller</RegelOperator>}
-              <RegelChip>{labelForPar(p)}</RegelChip>
-            </span>
-          ))}
-        </div>
-      )}
+    <div className="flex flex-wrap items-center gap-1.5">
+      {inkluderade.map((etikett) => (
+        <RegelChip key={`in-${etikett}`}>{etikett}</RegelChip>
+      ))}
+      {exkluderade.map((etikett) => (
+        <RegelChipDampad key={`ut-${etikett}`}>{etikett}</RegelChipDampad>
+      ))}
     </div>
   );
 }
@@ -2667,7 +2694,18 @@ function PublikSektion({
       ) : medlemmar.length === 0 ? (
         // FÄLLA #34: noll träffar är NEUTRALT, aldrig ett fel. Golvet
         // (Närvaropoäng=1) lättas medvetet inte (ADR-064 beslut 4a).
-        <div className="flex flex-col items-center gap-1 px-4 py-10 text-center">
+        //
+        // ITERATION 2 (Marcus 2026-09-04, dev-servern mot staging): "jag kan
+        // ju inte granska publiklistan för det finns ingen lista, jag ser
+        // tomläget, som dessutom saknar den streckade konturen som vi precis
+        // stämplade på Segment-vyn." Samma yta som `SektionsRubrik`s
+        // "Inga sparade segment än"-tomläge (`TASK-392`, facit-amendering
+        // s114, PR #2308, `feat/segment-tomlage-textur` rad ~2180): vit
+        // `bg-surface`-platta med streckad ram i stället för `KORT_KLASS`s
+        // toniga grå — samma val, för samma skäl (skiljer tomläget visuellt
+        // från de FYLLDA gruppkorten/listorna runtomkring). Klassträngen är
+        // DUPLICERAD, inte importerad — unifiering är ett separat kort.
+        <div className="flex flex-col items-center gap-2 rounded-2xl border border-border border-dashed bg-surface px-4 py-10 text-center contrast-more:border-border-strong">
           <p className="font-medium text-body">0 personer ännu</p>
           <p className="max-w-prose text-small text-text-muted">
             Närvaron för de utbildningar regeln träffar är inte avstämd i basen - publiken fylls av
