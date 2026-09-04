@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-09-04 08:15'
-updated_date: '2026-09-04 09:32'
+updated_date: '2026-09-04 09:44'
 labels:
   - ready-for-agent
 dependencies: []
@@ -93,7 +93,7 @@ samma bakomliggande npm/nätverks-latensklass men inte samma jobb.
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [x] #1 timeout-minutes 15 för lint, 10 för docs, actionlint grönt, paritetsgrinden grön
-- [x] #2 audit-steget bär fetch-timeout 90 s och 4 omförsök, källmärkt i kommentaren
+- [x] #2 audit-steget omförsöks upp till 5 gånger på stegnivå med 90 s fetch-timeout per försök, källmärkt
 <!-- AC:END -->
 
 ## Definition of Done
@@ -196,56 +196,120 @@ paritetsgrinden (node scripts/verify-ci-parity.mjs --list) grönt exit 0.
 Armerar INTE denna gång — armeringen konsumerades när kön sparkade ut
 PR:en (failed_checks-utsparkning, se CLAUDE.md § Landning fjärde läget).
 Orkestreraren armerar om efter omgranskning.
+
+## Fjärde mätningen och åtgärden: retries flyttade till stegnivå (2026-09-04)
+
+Föregående fix (env NPM_CONFIG_FETCH_TIMEOUT=90000 + NPM_CONFIG_FETCH_RETRIES=4)
+räckte inte: merge_group-run 33858911410 (job 100978552048), MED env-
+variablerna explicit satta (bekräftat i job-loggen: "NPM_CONFIG_FETCH_TIMEOUT:
+90000" / "NPM_CONFIG_FETCH_RETRIES: 4"), föll ändå EFTER BARA ETT FÖRSÖK —
+09:37:36→09:39:07, exakt 91s (timeouten på 90s slog igenom), men INGEN retry
+skedde trots FETCH_RETRIES=4.
+
+Källkodsläsning (curl+Read av RÅ filen, inte AI-summering, för att undvika
+felciterad kod): npm/make-fetch-happen lib/remote.js (main-branch,
+2026-09-04):
+- HTTP-svar-grenen: `// do not retry POST requests, or requests with a
+  streaming body` + `const isRetriable = req.method !== 'POST' && !isStream
+  && (...)`.
+- CATCH-grenen (thrown/timeout-fel — den relevanta här, ingen HTTP-status i
+  loggen): `if (req.method === 'POST' || isRetryError) { throw err }` — för
+  en POST är villkoret sant OAVSETT isRetryError, så retryHandler() nås
+  ALDRIG.
+- Bekräftat att advisory-anropet ÄR en POST (audit-report.js:
+  `method: 'POST'`).
+
+SLUTSATS: NPM_CONFIG_FETCH_RETRIES är principiellt VERKNINGSLÖS för detta
+anrop — make-fetch-happen retryar aldrig POST, oavsett satt retry-antal.
+Bekräftat både i källkoden och empiriskt (run 33858911410: exakt ett
+försök trots FETCH_RETRIES=4). NPM_CONFIG_FETCH_RETRIES togs därför BORT
+ur env-blocket (ADR-083 — en config som källäsningen visar är inert ska
+inte stå kvar och påstå en mekanism). NPM_CONFIG_FETCH_TIMEOUT behölls
+(fungerar, bekräftat: 91s ≈ 90s+marginal).
+
+Åtgärd: omförsöken flyttade till STEG-nivå — en bash-loop runt hela
+`npx audit-ci`-anropet, upp till 5 försök, 30s sleep mellan, exit 0 vid
+första gröna, exit 1 om alla fem föll. Loggrad per försök
+("audit-ci försök N/5"). ALDRIG continue-on-error. Varje försök bundet av
+NPM_CONFIG_FETCH_TIMEOUT=90000.
+
+Uträkning: 5×90s (fetch-timeout) + 4×30s (sleep) = 450+120 = 570s ≈
+9,5 min. Under lint-jobbets 15 min med ~5,5 min marginal om audit-ci är
+det ENDA som drar ut — men ryms INTE med marginal om install (~4-5min) +
+resten (~1-3,5min) OCKSÅ är på sin långsammaste samtidigt. Känd,
+öppet bokförd kvarstående risk, nu en EXAKT siffra (ingen bibliotekslogik
+kvar att gissa på) i stället för en pessimistisk uppskattning.
+
+Shellcheck-strict (samma flaggor som CI:s scripts/*.sh-grind, --severity=
+style --enable=all): 0 findings på loopen efter [ ] → [[ ]] (SC2292).
+CI:s shellcheck-strict-steg scannar INTE .github/workflows/ci.yml (endast
+scripts/*.sh + .githooks/* + en fast lista .conf-filer, verifierat via
+grep) — loopen görs ändå shellcheck-ren som god sed, inte för att en grind
+kräver det.
+
+Paritetsgrinden: exit 0, "Paritets-preflight ... matchar policyn." Ingen
+.ci-parity-policy.json-ändring krävdes — grindens egen § PARITETSGRIND
+säger att verbatim-körning stänger drift INOM ett känt jobb/steg; policyn
+behöver bara uppdateras för (a) ett HELT NYTT jobb, (b) ändrade suite-
+input-invarianter, eller (c) ett okänt ${{ }}-uttryck i steget. Steget
+"Audit dependencies" är oförändrat till namn/jobb, och loopen innehåller
+noll GH Actions-uttryck. Bekräftat med grep: "audit" förekommer INTE i
+.ci-parity-policy.json eller verify-ci-parity.mjs — steget klassas
+generiskt som [härleds+körs].
+
+Armerar INTE — orkestreraren gör det efter omgranskning.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
-TRE ändringar samma dag på PR #2288 (gren ci/lint-docs-timeout-10):
+FYRA ändringar samma dag på PR #2288 (gren ci/lint-docs-timeout-10):
 
-1. timeout-minutes 5→10 för BÅDE lint och docs, grundat i fyra
-   2026-09-04-körningar som föll på 5-minuterstaket på npm-latens
-   (npm ci-hastighet). Commit e2d4468a.
+1. timeout-minutes 5→10 för lint+docs (fyra körningar föll på 5-min-taket
+   på npm-latens). Commit e2d4468a.
 
-2. lint-jobbets timeout-minutes höjt ytterligare 10→15 sedan run
-   33852769123 föll på det nya taket mitt i gatekeeper-testsviterna —
-   denna gång var även audit-ci långsamt (~5 min, grönt men nära
-   npms 300s-fetch-timeout). docs rördes inte (dess audit-oberoende
-   grindar gick grönt på 5m45s). Commit 87ac2e23.
+2. lint-jobbets timeout-minutes 10→15 (run 33852769123 föll på det nya
+   taket, audit-ci självt också långsamt ~5min). docs orörd. Commit
+   87ac2e23.
 
-3. Rotorsak identifierad och åtgärdad direkt: ett högre JOBB-tak löser
-   inte problemet när npm:s EGEN fetch-timeout (default 300s) gör att en
-   enskild registry-förfrågan självständigt kan hänga i 5 min. Run
-   33857044952 bevisade detta — audit-ci föll med `failure` (inte
-   `cancelled`) efter exakt 5m01s, oberoende av jobb-taket. Fix: env-block
-   på audit-ci-steget (NPM_CONFIG_FETCH_TIMEOUT=90000,
-   NPM_CONFIG_FETCH_RETRIES=4), källmärkt mot npm CLI v11-dokumentationen
-   och verifierat via källkodsläsning att npm audit går genom
-   npm-registry-fetch (samma klient som npm ci/install) och därför
-   honorerar dessa env-variabler. audit-ci:s EGET --retry-count
-   undersöktes i KÄLLKODEN (inte bara README) och visade sig INTE vara
-   relevant för denna felklass (triggas för npm bara av "not support
-   audit"-meddelanden) — lades därför INTE till. Pessimistiskt värsta
-   fall beräknat till ~640s (10m40s), större än uppdragets grova
-   "~8 min"-riktvärde men lägre än det gamla taket (~970s/16min) —
-   divergensen registrerad öppet i kommentaren och notes, inte tystad.
-   Commit (denna, tredje).
+3. Rotorsak: ett JOBB-tak löser inte att EN registry-POST kan hänga upp
+   till npm:s default fetch-timeout (300s) själv. Env-block på audit-ci-
+   steget (NPM_CONFIG_FETCH_TIMEOUT=90000, NPM_CONFIG_FETCH_RETRIES=4),
+   källmärkt (npm CLI v11-docs + källkodsläsning av @npmcli/arborist).
+   audit-ci:s eget --retry-count undersökt i KÄLLKODEN och funnet
+   irrelevant (triggas bara av "not support audit"-meddelanden) — lades
+   inte till. Commit 349d8ae4.
+
+4. Run 33858911410 bevisade att FETCH_RETRIES=4 var VERKNINGSLÖS: timeouten
+   (90s) slog igenom exakt (91s), men INGEN retry skedde. Källkodsläsning
+   (RÅ fil, npm/make-fetch-happen lib/remote.js) bekräftade varför:
+   `if (req.method === 'POST' || isRetryError) { throw err }` — retries
+   nås ALDRIG för en POST, och advisory-anropet ÄR en POST
+   (audit-report.js: method: 'POST'). NPM_CONFIG_FETCH_RETRIES borttagen
+   (ADR-083, verkningslös config). Omförsöken flyttade till STEG-nivå: en
+   shellcheck-ren bash-loop (5 försök, 30s sleep mellan, exit 0 vid grönt,
+   exit 1 om alla fem föll, loggrad per försök, aldrig continue-on-error).
+   Exakt värsta fall 5×90s+4×30s=570s≈9,5min, under lint-jobbets 15min.
+   Denna commit.
 
 review-backstopp (5), changed (3), ci-passed (1) orörda genom hela
-kortet. .ci-parity-policy.json bär inga timeout-minutes-värden — ingen
-ändring krävdes där i någon av de tre omgångarna. Steget audit-ci är
-INTE continue-on-error, allowlisten (audit-ci.jsonc) är orörd —
-supply-chain-grinden försvagas inte, den blir bara tåligare mot
-enskilda långsamma registry-anrop.
+kortet. Allowlisten (audit-ci.jsonc) orörd i alla fyra omgångar.
+.ci-parity-policy.json bär inga referenser till "audit" alls (grep-
+verifierat) — grindens § PARITETSGRIND bekräftar att ingen policy-
+uppdatering krävs så länge jobbet/steget redan är känt och run:-blocket
+saknar okända GH Actions-uttryck (loopen har noll ${{ }}), vilket gäller
+i alla fyra omgångar.
 
-Verifierat i ALLA TRE omgångarna: actionlint (pinnad 1.7.12, CI:s exakta
+Verifierat i ALLA FYRA omgångarna: actionlint (pinnad 1.7.12, CI:s exakta
 -ignore-flagga) grönt exit 0; yamllint (CI:s exakta form) grönt exit 0;
 paritetsgrinden (node scripts/verify-ci-parity.mjs --list) grön exit 0.
-Första omgången kördes även npm run typecheck/biome/build gröna.
+Omgång 4 dessutom shellcheck-strict (--severity=style --enable=all,
+samma flaggor som CI:s scripts/*.sh-grind — vilken INTE scannar
+ci.yml:s inline-bash, men loopen görs ändå ren): 0 findings.
 
 PR #2288: armerad av Marcus 08:25:26 efter omgång 1-2; armeringen
-konsumerades när kön sparkade ut PR:en pga run 33857044952:s
-failed_checks (§ Landning fjärde läget i CLAUDE.md). Denna tredje
-commit ARMERAR INTE om — orkestreraren gör det efter omgranskning, per
-uppdrag. Gren ci/lint-docs-timeout-10.
+konsumerades av kön (failed_checks) efter omgång 3:s underliggande
+körning (run 33857044952). Ingen av omgång 3 eller 4 armerar om —
+orkestreraren gör det efter omgranskning, per uppdrag. Gren
+ci/lint-docs-timeout-10.
 <!-- SECTION:FINAL_SUMMARY:END -->
