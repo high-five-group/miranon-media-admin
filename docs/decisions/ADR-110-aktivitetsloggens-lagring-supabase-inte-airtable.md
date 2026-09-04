@@ -19,7 +19,7 @@ etablerade sedan Airtable-basen som **förstklassig leverabel** — resolution a
 databrister sker I basen, inte genom att routa runt den, och Supabase-migration
 är ett separat SENARE spår (Beslut 6), inte en ersättning. Frågan grillades
 explicit i S105 Del 2 (2026-08-11,
-`tasks/sessions/2026-08-11-session-105.md`): ska aktivitetsloggen följa
+`tasks/sessions/archive/2026-08/2026-08-11-session-105.md`): ska aktivitetsloggen följa
 Airtable-planen från 2026-04/2026-05, eller gå direkt till Supabase?
 
 ## Beslut
@@ -124,7 +124,7 @@ dem call-site-vis.
   `context.extensions`.
 - `docs/features/FEATURE-ACTIVITY-LOG.md` § "Framtida Supabase-version" —
   formen denna ADR realiserar.
-- `tasks/sessions/2026-08-11-session-105.md` § Del 2 Beslut 3 — grillad
+- `tasks/sessions/archive/2026-08/2026-08-11-session-105.md` § Del 2 Beslut 3 — grillad
   samsyn, Marcus-kvittens.
 - `byggplan.md` § Fas 6.5 + § Milstolpe — Airtable-bas-maximering —
   amenderade i samma landning (`TASK-201.1`).

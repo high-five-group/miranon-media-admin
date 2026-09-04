@@ -904,7 +904,8 @@ struktur. Options-rymden och instansdatan bor i
 
 **Review-ytans SEX testsviter körs som gatekeeper-sviter i `ci.yml`:s "Test
 gatekeeper script suites"-steg** — `scripts/test-validera-review-utlatande.mjs`
-(35 fall, `173.1`), `scripts/test-review-policy.mjs` (44 fall, `173.2`) och
+(35 fall, `173.1`), `scripts/test-review-policy.mjs` (46 fall, `173.2` —
+46 sedan `TASK-344`/PR #2291, F3+F4) och
 `scripts/test-review-risk-sektion.mjs` (47 fall, `173.3`) sedan `TASK-185`
 (PR #1992, 2026-08-26, den sista wirad i samma bas-drift-svep sedan `173.3`
 landade UNDER `185`s eget bygge — PR #1993), plus

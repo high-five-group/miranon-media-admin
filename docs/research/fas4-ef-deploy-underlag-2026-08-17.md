@@ -101,7 +101,7 @@ bash scripts/deploy-prod-functions.sh --list
 `test-attachments-storage`, `test-auth`, `test-invite-completion`,
 `test-pdf-generation`).
 
-S102-handoffen (`tasks/sessions/2026-08-10-session-102.md` rad 1232 och 1367,
+S102-handoffen (`tasks/sessions/archive/2026-08/2026-08-10-session-102.md` rad 1232 och 1367,
 speglat i `tasks/todo.md` rad 67 och 102) säger *"fulla allowlisten (12 EF:er)"*.
 Talet stämmer inte mot någon mätning som går att hitta. Uppdragets instruktion
 att derivera färskt var befogad.
@@ -113,7 +113,7 @@ Bokföringen bär **åtta** prod-EF-deploy-händelser. Den senaste:
 > **2026-08-15 (S106 Del 3): 35/35 = hela allowlisten**, via
 > `scripts/deploy-prod-functions.sh` från Marcus egen terminal, torrkörning →
 > skarpt. `test-*` aldrig rörda.
-> Källa: `tasks/sessions/2026-08-15-session-106.md` rad 160–165 ·
+> Källa: `tasks/sessions/archive/2026-08/2026-08-15-session-106.md` rad 160–165 ·
 > `tasks/todo.md` rad 29–31 · `docs/BUILD-LOG.md` rad 3284–3287.
 
 **Efter 2026-08-15 finns ingen bokförd prod-EF-deploy.**
@@ -430,7 +430,7 @@ Källa: `src/data/adapters/AirtableAdapter.ts` rad 721–771.
 | Radera/ersätt | `delete-attachment` | POST | **ALDRIG DEPLOYAD** |
 
 Bokföringen drar själv slutsatsen: *"Därefter fungerar dokument-ytans Visa i
-PROD"* (`tasks/sessions/2026-08-10-session-102.md` rad 1235) ⇒ **den fungerar
+PROD"* (`tasks/sessions/archive/2026-08/2026-08-10-session-102.md` rad 1235) ⇒ **den fungerar
 inte i prod idag.**
 
 `preview-receipt` är avsiktligt en **egen** EF: `send-receipt-email` kan inte
@@ -479,7 +479,7 @@ och är alltså sannolikt redan ute. Men **det kan inte bekräftas härifrån**:
 
 | # | Risk | Vad som händer | Rullbakåt / åtgärd |
 |---|---|---|---|
-| **R1** | **Fel projekt länkat** | Skarp operation träffar Lottas data i stället för staging | `cat supabase/.temp/project-ref` **före varje** skarp operation + steg 7 efteråt. Runbook **fälla 4**. *Precedent: fem EF:er deployades OAVSIKTLIGT till prod 2026-08-10 16:47 på exakt detta fel* (`tasks/sessions/2026-08-10-session-102.md` rad 155–191) |
+| **R1** | **Fel projekt länkat** | Skarp operation träffar Lottas data i stället för staging | `cat supabase/.temp/project-ref` **före varje** skarp operation + steg 7 efteråt. Runbook **fälla 4**. *Precedent: fem EF:er deployades OAVSIKTLIGT till prod 2026-08-10 16:47 på exakt detta fel* (`tasks/sessions/archive/2026-08/2026-08-10-session-102.md` rad 155–191) |
 | **R2** | **`link` hänger** | Det är prompten för databas-LÖSENORDET, inte ett inloggningsfel | `echo "" \|` före kommandot. *"En hängning är inte ett felmeddelande."* **Fälla 1** |
 | **R3** | **En EF deployas trasig** | Ingen rollback-till-föregående finns i Supabase CLI (verifierat: `functions` har bara `list/delete/download/deploy/new/serve`) | Runbook **§ R2**: `git checkout <känd-god-sha> -- supabase/functions/<namn>` → deploya → `git checkout HEAD -- …`. För de **tre nya**: `functions delete <namn>` = ren återgång |
 | **R4** | **Deploy-loopen avbryter halvvägs** | `set -euo pipefail` + ohanterad loop ⇒ första felet stoppar skriptet. Tidigare EF:er deployade, resten inte — **partiellt tillstånd, ingen transaktion** | Läs vilken funktion som föll, rätta, kör om. Skriptet är idempotent per funktion |
@@ -506,11 +506,11 @@ senare.
 | Låsets fällning | `scripts/deny-prod-ref.sh` via `PreToolUse`, mätt 2026-08-17 |
 | Bypass-formens ägare | `scripts/deny-prod-ref.sh` § MEDVETEN VÄG FÖRBI |
 | Deploy-set 38 / exkluderade 5 | `bash scripts/deploy-prod-functions.sh --list`, 2026-08-17 |
-| Handoffens "12 EF:er" | `tasks/sessions/2026-08-10-session-102.md` rad 1232, 1367; `tasks/todo.md` rad 67, 102 |
-| Prod-baslinjen 35/35 | `tasks/sessions/2026-08-15-session-106.md` rad 160–165 · `tasks/todo.md` rad 29–31 · `docs/BUILD-LOG.md` rad 3284–3287 |
-| 33/33-deployen 08-11 | commit `c6c96a52` meddelandekropp · `tasks/sessions/2026-08-10-session-102.md` rad 317 |
-| Aktivitetsloggen 08-13 | `tasks/sessions/2026-08-11-session-105.md` rad 983, 1059–1061 · `backlog/tasks/task-201.9` rad 77–81 |
-| Ref-incidenten 08-10 | `tasks/sessions/2026-08-10-session-102.md` rad 155–191 |
+| Handoffens "12 EF:er" | `tasks/sessions/archive/2026-08/2026-08-10-session-102.md` rad 1232, 1367; `tasks/todo.md` rad 67, 102 |
+| Prod-baslinjen 35/35 | `tasks/sessions/archive/2026-08/2026-08-15-session-106.md` rad 160–165 · `tasks/todo.md` rad 29–31 · `docs/BUILD-LOG.md` rad 3284–3287 |
+| 33/33-deployen 08-11 | commit `c6c96a52` meddelandekropp · `tasks/sessions/archive/2026-08/2026-08-10-session-102.md` rad 317 |
+| Aktivitetsloggen 08-13 | `tasks/sessions/archive/2026-08/2026-08-11-session-105.md` rad 983, 1059–1061 · `backlog/tasks/task-201.9` rad 77–81 |
+| Ref-incidenten 08-10 | `tasks/sessions/archive/2026-08/2026-08-10-session-102.md` rad 155–191 |
 | Driftkartan | `git log origin/main` per EF-katalog + transitiv `_shared`-upplösning |
 | 8 commits efter baslinjen | `git log origin/main --since=2026-08-15 -- supabase/functions/` |
 | T39-mönstret | `docs/research/t39-ef-sync-preflight-2026-07-24.md` §1–§3 |

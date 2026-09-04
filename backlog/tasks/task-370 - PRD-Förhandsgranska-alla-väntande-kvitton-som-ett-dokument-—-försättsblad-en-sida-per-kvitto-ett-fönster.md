@@ -3,9 +3,10 @@ id: TASK-370
 title: >-
   PRD: Förhandsgranska alla väntande kvitton som ett dokument — försättsblad +
   en sida per kvitto, ett fönster
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-03 08:26'
+updated_date: '2026-09-04 13:34'
 labels: []
 dependencies: []
 references:
@@ -78,10 +79,16 @@ Research: research-passet 'kvitto-forhandsgranskning-flera-som-ett-dokument' (20
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #4 Minimaltestet (två kvitton, en sidbrytning) verifierat med pdfinfo/pdftotext/pdffonts FÖRE EF-bygget, och renderingstiden vid N ≈ 30 mätt mot klienttaket
-- [ ] #5 ADR-124 § Updates amenderad med det kombinerade utkastets nyckelform; mallkatalogens README § Förlagorna bokför försättsbladet som mall utan förlaga
-- [ ] #6 Mallparitets-grinden och mall-synken körda om försättsbladets mall läggs i mallkatalogen
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Minimaltestet (två kvitton, en sidbrytning) verifierat med pdfinfo/pdftotext/pdffonts FÖRE EF-bygget, och renderingstiden vid N ≈ 30 mätt mot klienttaket
+- [x] #5 ADR-124 § Updates amenderad med det kombinerade utkastets nyckelform; mallkatalogens README § Förlagorna bokför försättsbladet som mall utan förlaga
+- [x] #6 Mallparitets-grinden och mall-synken körda om försättsbladets mall läggs i mallkatalogen
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Samtliga fem barn (370.1-370.5) Done. Landning: EF-kompositionen + lagringsnyckel (370.1), försättsbladet (370.2), staging-skarpbevis PR #2264 (mergad 90cc3ac1, 2026-09-04), knappen i inkorgen PR #2255 (mergad), QA-vandring 370.5 (Marcus godkännande, S119 stängningsbatch 1). DoD #4-6 (ärvda PRD-grindar: minimaltest/N≈30-mätning, ADR-124-amendering, mallparitet) verifierat gröna på 370.1/370.2, ej upprepade på parent-nivå. Flippad av orkestrerar-svepet i S119 stängningsbatch 1 efter att invariant 3 (samtliga barn Done, förälder öppen) upptäcktes av scripts/check-backlog-closure.sh.
+<!-- SECTION:FINAL_SUMMARY:END -->

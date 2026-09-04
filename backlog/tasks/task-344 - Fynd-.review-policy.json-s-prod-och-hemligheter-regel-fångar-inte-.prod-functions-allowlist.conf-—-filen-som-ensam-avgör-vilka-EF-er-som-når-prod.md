@@ -4,10 +4,10 @@ title: >-
   Fynd: .review-policy.json:s prod-och-hemligheter-regel fångar inte
   .prod-functions-allowlist.conf — filen som ensam avgör vilka EF:er som når
   prod
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-08-29 16:34'
-updated_date: '2026-09-04 08:23'
+updated_date: '2026-09-04 13:30'
 labels:
   - fynd
   - ready-for-agent
@@ -48,6 +48,12 @@ Not: `.review-policy.json` läses av `hamta-review-policy.mjs` ur `origin/main` 
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+scripts/test-review-policy.mjs går 44→46 fall (F3+F4) när PR #2291 landar (2026-09-04, ännu ej mergad vid stängningsbatch-tillfället). CLAUDE.md rad ~907 rättas i S119 stängningsbatch 1; .github/workflows/ci.yml:s gatekeeper-kommentar 'test-review-policy.mjs (44 fall, 173.2)' lämnas medvetet oförändrad — ci.yml är kod-klassad och #2316 rör filen samtidigt; rättas i nästa ci.yml-PR.
+<!-- SECTION:NOTES:END -->
 
 ## Final Summary
 

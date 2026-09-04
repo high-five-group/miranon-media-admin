@@ -586,7 +586,7 @@ ligga som rena bas-kandidater.
 - `docs/reference/schema_reference.md` rad 31, 122, 126–144, 254, 280–283, 321, 334, 391
 - `docs/research/datamodell-research/02-live-state.md` rad 89–116, 231–236, 304
 - `docs/reference/airtable-interaction.md` §4 (adressering per namn), §5.0
-- `tasks/sessions/2026-08-10-session-103.md` rad 1210–1216 (Del 8), 1767–1775 (Carry 11)
+- `tasks/sessions/archive/2026-08/2026-08-10-session-103.md` rad 1210–1216 (Del 8), 1767–1775 (Carry 11)
 - [`ADR-062`](../decisions/ADR-062-segment-yta-berakn-medlemskap-fran-kalla.md) beslut 2
 - [`ADR-063`](../decisions/ADR-063-airtable-bas-som-forstklassig-leverabel.md)
 - [`ADR-064`](../decisions/ADR-064-segment-taxonomi-fran-domanen-strikt-narvaro.md) beslut 4

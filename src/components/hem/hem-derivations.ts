@@ -307,7 +307,7 @@ export type BevakningRad = EventinfoBevakningRad | AtgardskoBevakningRad;
  * bytte samtidigt `truncate` mot `line-clamp-2`, som löser klippningen på
  * ett annat sätt. Skälet till strykningen försvann alltså redan då, utan
  * att någon bokförde det. Grillningens beslut 4
- * (`tasks/sessions/2026-08-10-session-102.md:726-727`) motiverar ordet
+ * (`tasks/sessions/archive/2026-08/2026-08-10-session-102.md:726-727`) motiverar ordet
  * uttryckligen: "'nya' friar Lotta från falsk glömske-signal" — utan det
  * kan Lotta läsa en oförändrad kvarstående siffra som att INGET hänt sedan
  * senast, när det i själva verket är rätt personer, bara ännu inte

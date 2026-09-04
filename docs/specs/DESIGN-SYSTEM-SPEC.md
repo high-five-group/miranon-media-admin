@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-23
+updated: 2026-09-04
 review_by: 2027-02-08
 status: stable
 ---
@@ -1659,7 +1659,7 @@ Mätt på `SegmentKort` (segmentprototypens listrad,
 `src/components/segment/prototyp/VariantD.tsx`): **samtliga 14 genererade
 kort exakt 168 px**, oavsett att namn- och beskrivningstexterna varierar
 kraftigt i längd (commit `16c25de6`, S104 Del 6-tabellens
-"Tre-fynd-varvet"-rad, `tasks/sessions/2026-08-10-session-104.md`).
+"Tre-fynd-varvet"-rad, `tasks/sessions/archive/2026-08/2026-08-10-session-104.md`).
 Mönstret hade redan produktionsprecedent i `EventCard` (task-17.2,
 S72-facitet — §14 ovan bygger på samma NavCard-generation): S104:s fynd
 höjer det uttryckligen till en APP-GLOBAL regel i stället för att förbli

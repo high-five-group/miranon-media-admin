@@ -3,7 +3,7 @@
 *Skapad: 2026-04-05*
 *Status: **Levererad — live i prod sedan 2026-08-13 ~18:30*** (Fas 6.5, PRD
 [`task-201`](../../backlog/tasks/task-201%20-%20PRD-Aktivitetslogg-Fas-6.5-xAPI.md),
-sessionsdok `tasks/sessions/2026-08-11-session-105.md` § Del 8 + Paushistorik).
+sessionsdok `tasks/sessions/archive/2026-08/2026-08-11-session-105.md` § Del 8 + Paushistorik).
 QA (`task-201.10`) + fas-stängning återstår — se `docs/byggplan.md` § Fas 6.5.
 *Prioritet: Hög (förtroende-byggande feature)*
 

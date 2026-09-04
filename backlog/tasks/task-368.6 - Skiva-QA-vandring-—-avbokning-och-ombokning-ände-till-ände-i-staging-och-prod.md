@@ -4,6 +4,7 @@ title: 'Skiva: QA-vandring — avbokning och ombokning ände-till-ände i stagin
 status: To Do
 assignee: []
 created_date: '2026-09-03 07:57'
+updated_date: '2026-09-04 12:56'
 labels:
   - ready-for-human
 dependencies:
@@ -39,3 +40,9 @@ Fynd registreras som nya kort med exakt symptom och förväntat beteende.
 - [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Steg 1-8 (staging) godkända av Marcus 2026-09-04 — kvittens verbatim i tasks/sessions/2026-09-04-session-119.md Del 5. Steg 9 (prod) väntar på fas4-deployen som Marcus kör själv efter att PR #2285 (allowlist cancel-registration/rebook-registration) landat.
+<!-- SECTION:NOTES:END -->

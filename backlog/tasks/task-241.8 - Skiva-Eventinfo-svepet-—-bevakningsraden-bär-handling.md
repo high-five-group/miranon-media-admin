@@ -20,7 +20,7 @@ Bevakningsraden på hemvyn är idag en riktig `<button>` UTAN `onPress`
 ingenting, inte ens navigering. Denna skiva ger den den handling
 S102-grillningens beslut 4 redan beslutade: *"klicket öppnar sändflödet
 förifiltrerat på exakt de ostämplade"*
-(`tasks/sessions/2026-08-10-session-102.md:726-727`).
+(`tasks/sessions/archive/2026-08/2026-08-10-session-102.md:726-727`).
 
 **Arbetet är klient-plumbing, inte EF-bygge.** Motorn finns och är skarp:
 `send-action-email` bär `eventinfo` som åtgärdstyp, och

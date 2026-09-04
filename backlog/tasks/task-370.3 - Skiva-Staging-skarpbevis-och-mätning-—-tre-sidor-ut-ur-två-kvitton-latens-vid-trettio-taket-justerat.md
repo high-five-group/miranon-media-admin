@@ -3,10 +3,10 @@ id: TASK-370.3
 title: >-
   Skiva: Staging-skarpbevis och mätning — tre sidor ut ur två kvitton, latens
   vid trettio, taket justerat
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-03 08:32'
-updated_date: '2026-09-03 12:02'
+updated_date: '2026-09-04 12:56'
 labels:
   - ready-for-agent
 dependencies:
@@ -94,4 +94,6 @@ Två fynd, INTE mallfixade i denna skiva (mission-instruktion: "fixa inte mallen
 ## Övriga staging-tester — flaky-observation (INTE en regression)
 
 `npm run test:api` (fulla parallella api-staging-svepet, ~2700 tester) fällde ett SKIFTANDE, ORELATERAT urval tester (2 olika körningar → 2 helt olika testmängder föll: `generate-event-attachment.staging.test.ts` första körningen, `cancel-registration`/`get-registrations`/`save-event-content`/`send-registration-confirmation`/`generate-event-attachment` andra körningen — "Request context disposed"-klassen, en Playwright/nätverks-transient under hög parallell belastning mot delad staging, INTE en kodregression). Samtliga fällda tester GRÖNA vid isolerad omkörning. `api-pure` (1511 test, hermetiskt): 1511/1511 gröna. Riktad omkörning av betalningsdomänens/preview-receipt-grannskapet (38 tester inkl. denna skivas nya fil): 38/38 gröna, 3/3 för den nya filen specifikt (2 solokörningar + 1 i den riktade batchen). Ingen fil denna skiva rör (`tests/api/fixtures.ts`, `tests/api/preview-receipt-forhandsgranska-alla.staging.test.ts`) korsar de fällda testernas domän.
+
+PR #2264 mergad som 90cc3ac1 på main 2026-09-04 (S119 stängningsbatch 1).
 <!-- SECTION:NOTES:END -->

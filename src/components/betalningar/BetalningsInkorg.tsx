@@ -12,7 +12,14 @@ import {
   SearchField,
 } from 'react-aria-components';
 import { EventValjare } from '@/components/events/EventValjare';
-import { Button, InitialAvatar, MessageBox, SidRam, Skeleton } from '@/components/primitives';
+import {
+  Button,
+  InitialAvatar,
+  MessageBox,
+  RaknarChip,
+  SidRam,
+  Skeleton,
+} from '@/components/primitives';
 import {
   antalAktivaFilter,
   type FilterDimension,
@@ -320,6 +327,44 @@ const ALLA_EVENT = 'Alla event';
  * varandras nycklar.
  */
 const FORHANDSGRANSKA_ALLA_NYCKEL = '__alla__';
+
+/**
+ * [TASK-393, Marcus fynd S121] Den DELADE synliga etiketten för BÅDA
+ * Förhandsgranska-knapparna nedan — ett-kvitto-fallet OCH `!enSamKo`-fallet.
+ * Ordet "alla" finns inte längre i den synliga texten (bara i aria-label,
+ * se knapparnas egen `aria-label` — den bär "alla" ALDRIG heller, se AC #1):
+ * texten är alltid "Förhandsgranska", och `antal` syns bara i det upphöjda
+ * `RaknarChip`-chippet bredvid.
+ *
+ * TVÅ SKILDA KNAPPAR, EN GEMENSAM ETIKETT: `ensamKandidat`-knappen och
+ * `!enSamKo`-knappen har olika `onPress` (ett kvitto kontra ett kombinerat
+ * dokument, TASK-370.1) och olika `isLoading`-nycklar — bara den VISUELLA
+ * texten är gemensam, se `Button`s docblock § "ETIKETTEN ÄGER KNAPPENS
+ * MÅTT": `children` renderas i ett `inline-flex`-lager med `gap`, så text +
+ * chip läggs sida vid sida utan egen wrapper här.
+ *
+ * `RaknarChip`s `min-w-6` (i stället för primitivens `min-w-4`-standard)
+ * reserverar plats för TVÅ siffror (kön har tak 30) så knappens bredd är
+ * IDENTISK vid N = 1, N = 9 och N = 12 (AC #3) — `relative -top-1` ger
+ * samma "upphöjda" känsla som `FilterRad`s hörn-badge (Marcus: *"vi har
+ * redan en form för det på exempelvis filterknappen"*), fast INLINE i
+ * stället för `absolute`-perchad, eftersom chippet här måste ta egen
+ * layout-plats (se `RaknarChip.tsx` docblock för hela resonemanget).
+ */
+function ForhandsgranskaEtikett({ antal }: { antal: number }) {
+  return (
+    <>
+      {/* Explicit blanksteg (INTE JSX-radbrytningen mellan text och tagg,
+          som trimmas bort helt — se React JSX-whitespace-reglerna): utan
+          detta blir knappens `textContent` "Förhandsgranska3" utan
+          mellanrum. Den VISUELLA luften kommer från `Button`s egen
+          `gap-2` (etikett-lagrets flex-gap); detta tecken säkrar att
+          RENDERAD TEXT (kopiera, `toHaveText`) också läser rätt. */}
+      {'Förhandsgranska '}
+      <RaknarChip antal={antal} className="relative -top-1 min-w-6 tabular-nums" />
+    </>
+  );
+}
 
 /**
  * Radens period, med `grupperaPerEvent`s EGEN regel — inte en andra tolkning.
@@ -1173,16 +1218,24 @@ export function BetalningsInkorg() {
      finns alltså redan en per-rad-slot OCH en gemensam knapprad att hänga
      nya åtgärder i — ingen ny struktur behövs för någotdera.
 
-     VALD FORM, S116 beslut 1 ("Båda"):
-       • EXAKT ETT väntande kvitto (`enSamKo`) → TASK-353s ursprungsform,
-         BYTE FÖR BYTE OFÖRÄNDRAD: "Förhandsgranska" (utan tal) står BREDVID
-         "Skicka 1 kvitto". Ingen "alla"-knapp för ett ensamt kvitto — den
-         hade varit en synonym till den redan befintliga.
+     VALD FORM, S116 beslut 1 ("Båda") — VILKEN KNAPP RENDERAS, oförändrat:
+       • EXAKT ETT väntande kvitto (`enSamKo`) → TASK-353s ursprungsform:
+         en ensam knapp står BREDVID "Skicka 1 kvitto". Ingen andra,
+         separat "alla"-knapp för ett ensamt kvitto — den hade varit en
+         synonym till den redan befintliga.
        • TVÅ ELLER FLER väntande (`!enSamKo`) → BÅDA finns: per-RAD-knappen
-         (oförändrad, ett enskilt kvitto i taget) OCH "Förhandsgranska alla
-         N" bredvid "Skicka N kvitton" (`TASK-370.4`, hela kön som ETT
-         dokument). De två täcker olika behov ("Annas kvitto, snabbt" kontra
-         "allihop, i ordning") och är inte varandras ersättning.
+         (oförändrad, ett enskilt kvitto i taget) OCH den kombinerade
+         förhandsgranskningen bredvid "Skicka N kvitton" (`TASK-370.4`,
+         hela kön som ETT dokument). De två täcker olika behov ("Annas
+         kvitto, snabbt" kontra "allihop, i ordning") och är inte
+         varandras ersättning.
+
+     [AMENDERAD TASK-393] BÅDA knapparnas SYNLIGA TEXT/aria-label är nu
+     IDENTISK FORM — "Förhandsgranska" + upphöjt räknarchip, aldrig ordet
+     "alla" — se `ForhandsgranskaEtikett`s docblock. Det som beskrivs ovan
+     ("BYTE FÖR BYTE OFÖRÄNDRAD", "utan tal") gällde etiketten FÖRE denna
+     ändring och är inte längre sant för texten; VALET AV VILKEN KNAPP som
+     renderas (formvalet ovan) är fortsatt oförändrat.
 
      KNAPPARNA ÄR OBEROENDE (S116 beslut 5) — se `forhandsgranskaPagar`s och
      `FORHANDSGRANSKA_ALLA_NYCKEL`s docblock: ett tryck på "alla" spärrar
@@ -1706,8 +1759,10 @@ export function BetalningsInkorg() {
                           INTE gått i väg, och bara när kön har FLERA rader
                           (se `vantandeIds`/`enSamKo` ovan för formvalet).
                           `kanForhandsgranska` äger regeln; JSX bedömer inte.
-                          Denna knapp och "Förhandsgranska alla N" (bredvid
-                          "Skicka N kvitton" nedan) är OBEROENDE syskon, inte
+                          Denna knapp och den kombinerade förhandsgranskningen
+                          (bredvid "Skicka N kvitton" nedan — samma synliga
+                          "Förhandsgranska"-etikett sedan `TASK-393`, se
+                          `ForhandsgranskaEtikett`) är OBEROENDE syskon, inte
                           varandras ersättning — se FORMVALET-kommentaren för
                           S116 beslut 1.
 
@@ -1953,15 +2008,20 @@ export function BetalningsInkorg() {
               `min-h-10` alltid gjort (reservera för det TALLASTE av de
               tillstånd som delar slotten, inte bara det egna).
 
-              [TASK-370.4, ÖPPET, INTE OMÄTT-OCH-TYST] "Skicka N kvitton" +
-              "Förhandsgranska alla N" (`!enSamKo`-fallet) är ETT NYTT
-              tvåknappspar i SAMMA slot, längre text än "Förhandsgranska"
-              ensamt — samma `min-h-22 sm:min-h-10`-golv ÅTERANVÄNDS
-              (oförändrat, ingen ny mätning gjord i denna skiva). Mobil-
-              wrap-höjden för DETTA par är därför en RIMLIG ANTAGELSE, inte
-              en bekräftad mätning som ovanstående stycke är för
-              enkvitto-paret — verifieras i `TASK-370.5`s QA-vandring
-              (Marcus facit), samma ansvarsfördelning som försättsbladets
+              [TASK-370.4, ÖPPET, INTE OMÄTT-OCH-TYST — AMENDERAD TASK-393]
+              "Skicka N kvitton" + den kombinerade förhandsgranskningen
+              (`!enSamKo`-fallet) är ETT NYTT tvåknappspar i SAMMA slot —
+              samma `min-h-22 sm:min-h-10`-golv ÅTERANVÄNDS (oförändrat,
+              ingen ny mätning gjord i denna skiva). FÖRUTSÄTTNINGEN "längre
+              text än 'Förhandsgranska' ensamt" HÖLL fram till `TASK-393`:
+              sedan dess har BÅDA knapparna SAMMA korta text ("Förhandsgranska"
+              + ett kompakt räknarchip) — paret är alltså SANNOLIKT SMALARE
+              i dag än när denna rad skrevs, vilket om något minskar
+              wrap-risken, inte ökar den. Mobil-wrap-höjden för DETTA par
+              är fortsatt en RIMLIG ANTAGELSE, inte en bekräftad mätning som
+              ovanstående stycke är för enkvitto-paret — verifieras i
+              `TASK-370.5`s QA-vandring (Marcus facit), samma
+              ansvarsfördelning som försättsbladets
               utseende. */}
           {(vantande.length > 0 || (utfall !== null && ovrigaJobbrader.length === 0)) && (
             <div className="flex min-h-22 flex-col justify-center gap-2 sm:min-h-10">
@@ -2031,29 +2091,62 @@ export function BetalningsInkorg() {
                       `forhandsgranskaKvitto`s docblock. Detta läge och
                       radknappens läge är fortfarande ömsesidigt uteslutande
                       (`enSamKo`), så samma inbetalningId förekommer aldrig i
-                      båda knapparna samtidigt. */}
+                      båda knapparna samtidigt.
+
+                      [AMENDERAD TASK-393] `aria-label` BYTTE från personnamn
+                      ("Förhandsgranska kvittot till {namn}") till räknarformen
+                      ("Förhandsgranska 1 kvitto") — en RIKTIG ändring av det
+                      tillgängliga namnet, inte bara synlig text. Skälet: AC
+                      #4 kräver samma räkne-mönster som `!enSamKo`-knappen
+                      nedan har ("singular vid 1" är bara meningsfullt om
+                      DENNA knapp, den enda som någonsin kan visa N = 1, bär
+                      räkneformen) och Marcus fynd bad uttryckligen om
+                      ENHETLIGHET ("den alltid ska vara Förhandsgranska X").
+                      Personnamnet tappas INTE ur skärmläsarens sammanhang —
+                      knappen är ensam i sin slot (raden ovan renderar bara
+                      vid `!enSamKo`, se `kanForhandsgranska`-villkoret på
+                      rad ~1776), så ingen namn-kollision uppstår som den
+                      radknappen har (se dess "EGET TILLGÄNGLIGT NAMN PER
+                      RAD"-motivering). Etiketten delas nu med `!enSamKo`-
+                      knappen via `ForhandsgranskaEtikett`, se dess
+                      docblock. */}
                   {ensamKandidat !== null && kanForhandsgranska(ensamKandidat, vantandeIds) && (
                     <Button
                       intent="secondary"
                       emphasis="outline"
                       isLoading={forhandsgranskaPagar.has(vantande[0].inbetalningId)}
                       loadingText="Förhandsgranskar …"
-                      aria-label={`Förhandsgranska kvittot till ${vantande[0].namn}`}
+                      aria-label={`Förhandsgranska ${vantande.length} ${vantande.length === 1 ? 'kvitto' : 'kvitton'}`}
                       onPress={() =>
                         forhandsgranskaKvitto(vantande[0].inbetalningId, vantande[0].namn)
                       }
                     >
-                      Förhandsgranska
+                      <ForhandsgranskaEtikett antal={vantande.length} />
                     </Button>
                   )}
 
-                  {/* [TASK-370.4, S116 beslut 1] "FÖRHANDSGRANSKA ALLA N" —
-                      BREDVID "Skicka N kvitton", precis som ett-kvitto-fallets
-                      knapp ovan, men bara när kön har TVÅ ELLER FLER väntande
-                      (`!enSamKo` — se den omskrivna FORMVALET-kommentaren ovan
-                      för varför TASK-353s "aldrig en gemensam knapp"-slutsats
-                      är upphävd). SAMMA ordning-avsiktlig-motivering som
-                      knappen ovan: Skicka först, Förhandsgranska(alla) efter.
+                  {/* [TASK-370.4, S116 beslut 1] DEN KOMBINERADE FÖRHANDS-
+                      GRANSKNINGEN (internt namn "alla" i handlern/nyckeln
+                      nedan) — BREDVID "Skicka N kvitton", precis som
+                      ett-kvitto-fallets knapp ovan, men bara när kön har
+                      TVÅ ELLER FLER väntande (`!enSamKo` — se den omskrivna
+                      FORMVALET-kommentaren ovan för varför TASK-353s "aldrig
+                      en gemensam knapp"-slutsats är upphävd). SAMMA
+                      ordning-avsiktlig-motivering som knappen ovan: Skicka
+                      först, Förhandsgranska(alla) efter.
+
+                      [AMENDERAD TASK-393] Synlig text och `aria-label` bar
+                      tidigare ordet "alla" ("Förhandsgranska alla N
+                      kvitton") — Marcus fynd (S121): knappen ska ALLTID
+                      lyda "Förhandsgranska", med N i ett upphöjt räknarchip.
+                      Ordet "alla" är BORTA ur båda (AC #1); etiketten delas
+                      nu med ett-kvitto-knappen ovan via
+                      `ForhandsgranskaEtikett` (docblock vid
+                      `FORHANDSGRANSKA_ALLA_NYCKEL`). Det INTERNA namnet
+                      ("alla", sentinel-nyckeln, handler-funktionen
+                      `forhandsgranskaAlla`) är OFÖRÄNDRAT — det är en
+                      implementationsdetalj, inte UI-text, och byts inte av
+                      detta kort.
 
                       `!enSamKo` I STÄLLET FÖR `vantande.length >= 2`: detta
                       HELA träd-svepet ligger redan inuti `vantande.length > 0`
@@ -2086,10 +2179,10 @@ export function BetalningsInkorg() {
                       emphasis="outline"
                       isLoading={forhandsgranskaPagar.has(FORHANDSGRANSKA_ALLA_NYCKEL)}
                       loadingText="Förhandsgranskar …"
-                      aria-label={`Förhandsgranska alla ${vantande.length} kvitton`}
+                      aria-label={`Förhandsgranska ${vantande.length} kvitton`}
                       onPress={() => forhandsgranskaAlla(vantandeIds)}
                     >
-                      {`Förhandsgranska alla ${vantande.length}`}
+                      <ForhandsgranskaEtikett antal={vantande.length} />
                     </Button>
                   )}
                 </div>

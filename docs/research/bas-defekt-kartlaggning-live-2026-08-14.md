@@ -29,7 +29,7 @@ Inventeringen kördes före första live-anropet, per research-passets ordning.
 |---|---|---|
 | [`data-model.md`](../reference/data-model.md) § Kända fällor | **Defekt-registret självt** — 47 numrerade poster. Kravspec per [`ADR-063`](../decisions/ADR-063-airtable-bas-som-forstklassig-leverabel.md) beslut 3. | Posterna daterade 2026-04-28 → 2026-08-10. **Sju av dem hade inte mätts om på 50–108 dagar.** |
 | Tråd `T16` ([`tasks/threads/README.md`](../../tasks/threads/README.md) rad 59) | Registrets hemvist. Tunn radform, inget kort. Bär vidgningarna från S27/S33/S35/S38/S60. | `paused` sedan S26 — registrering, ej aktivering |
-| [`S103`](../../tasks/sessions/2026-08-10-session-103.md) Del 7 + Carry 11 | Tre bas-defekter belagda (§46, §47, `Manuella flagga`) + **Carry 11, den fjärde, ej registrerad**. | 4 dagar — håller |
+| [`S103`](../../tasks/sessions/archive/2026-08/2026-08-10-session-103.md) Del 7 + Carry 11 | Tre bas-defekter belagda (§46, §47, `Manuella flagga`) + **Carry 11, den fjärde, ej registrerad**. | 4 dagar — håller |
 | [`airtable-constraints.md`](../reference/airtable-constraints.md) | 30 plattformsväggar A–G. Avgörande för att inte klassa en vägg som defekt. | håller |
 | [`prodbas-synk-staging-till-prod-2026-08-11.md`](prodbas-synk-staging-till-prod-2026-08-11.md) | Schema-diff staging↔prod + additiv apply-plan. | 3 dagar — **planens steg 1–2 är UTFÖRDA sedan dess, se § Oväntade fynd** |
 | [`claude-ai-airtable-connector-flera-baser-2026-08-10.md`](claude-ai-airtable-connector-flera-baser-2026-08-10.md) | Connectorn nådde bara prod; vägen att lägga till staging. | 4 dagar — **åtgärdad, connectorn når nu båda** |
@@ -686,7 +686,7 @@ Registrerade, inte tyst förkastade.
 - [`docs/reference/schema_reference.md`](../reference/schema_reference.md) — frusen automationskarta, mars 2026
 - [`docs/reference/testkonton.md`](../reference/testkonton.md) — identitetsroller, relevant för fällorna 41 och 44
 - [`tasks/threads/README.md`](../../tasks/threads/README.md) rad 59 och 203 — tråd `T16`
-- [`tasks/sessions/2026-08-10-session-103.md`](../../tasks/sessions/2026-08-10-session-103.md) — Del 7, Carry 11, Del 4 (automations-deploystatus)
+- [`tasks/sessions/archive/2026-08/2026-08-10-session-103.md`](../../tasks/sessions/archive/2026-08/2026-08-10-session-103.md) — Del 7, Carry 11, Del 4 (automations-deploystatus)
 - [`docs/decisions/ADR-063`](../decisions/ADR-063-airtable-bas-som-forstklassig-leverabel.md) — registret som kravspec
 - [`docs/decisions/ADR-062`](../decisions/ADR-062-segment-yta-berakn-medlemskap-fran-kalla.md) — route-around-but-register
 - [`docs/decisions/ADR-064`](../decisions/ADR-064-segment-taxonomi-fran-domanen-strikt-narvaro.md) — beslut 4(a)/4(b), fällorna 34 och 35

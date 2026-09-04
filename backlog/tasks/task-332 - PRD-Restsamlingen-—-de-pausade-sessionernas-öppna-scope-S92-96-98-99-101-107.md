@@ -97,7 +97,7 @@ Agent-sidan av alla nio uppdrag är KOMPLETT (`TASK-161.1`–`161.9` Done). **De
 
 ---
 
-## S101 — L8-workflow-kartläggningen (`tasks/sessions/2026-08-09-session-101.md`, 378 rader)
+## S101 — L8-workflow-kartläggningen (`tasks/sessions/archive/2026-08/2026-08-09-session-101.md`, 378 rader)
 
 Hela transformationens etablering är landad (åtta PR:er, ADR-105/106/107, `TASK-173` + sju skivor). Resten är **visionsspåret K3/K4 plus review-grindens svans**. Referenser går till § Paushistorik (rad 314–378).
 
@@ -147,7 +147,7 @@ Två hela spår är ÖVERLÄMNADE och ingår därför INTE nedan: dokument-/bila
 - `tasks/sessions/archive/2026-08/2026-08-02-session-96.md` — 4 K, 11 Ö
 - `tasks/sessions/archive/2026-08/2026-08-05-session-98.md` — 3 K, 4 Ö
 - `tasks/sessions/archive/2026-08/2026-08-07-session-99.md` — 5 K, 11 Ö
-- `tasks/sessions/2026-08-09-session-101.md` — 3 K, 8 Ö
+- `tasks/sessions/archive/2026-08/2026-08-09-session-101.md` — 3 K, 8 Ö
 - `tasks/sessions/2026-08-17-session-107.md` — 10 K, 13 Ö
 
 Var och en bär en sektion `## Stängd via scope-överföring (2026-08-28)` med sin fullständiga K/Ö-tabell och beläggen för K-klassningarna.
