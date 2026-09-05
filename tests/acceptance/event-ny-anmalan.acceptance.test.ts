@@ -461,14 +461,20 @@ test.describe('Eventväljaren på manuell anmälan-sidan (task-18.18)', () => {
     expect(vanster).toBeCloseTo(17, 0);
     expect(hoger).toBeCloseTo(vanster, 0);
 
-    // Chevronen vid högerkanten: triggerns px-3.5 (14 px) + triggerns egen
-    // 1 px-kant i boundingBox = 15.
+    // Chevronen vid högerkanten: triggerns px-4 (16 px) + triggerns egen
+    // 1 px-kant i boundingBox = 17 — SAMMA inset som vänster (`vanster` ovan),
+    // sedan EventValjare bytte default till 'fristaende' och rev
+    // 'kontextrad' (TASK-394, Marcus 2026-09-04: "Vi har infört den 'stora'
+    // på typ alla ställen, eller det SKA vara den stora på alla ställen.").
+    // Talet var 15 (kontextradens px-3.5 = 14 px + 1) fram till stämpeln
+    // 2026-09-05 ("Eventväljaren ser bra ut.") — se
+    // tasks/sessions/bilagor/s111-anmalningssidan-konvergens/AMENDERING-2026-09-05-eventvaljarens-stora-form.md.
     const chevronBox = await trigger.locator('svg.lucide-chevrons-up-down').boundingBox();
     expect(
       (triggerBox?.x ?? 0) +
         (triggerBox?.width ?? 0) -
         ((chevronBox?.x ?? 0) + (chevronBox?.width ?? 0)),
-    ).toBeCloseTo(15, 0);
+    ).toBeCloseTo(17, 0);
   });
 
   test('sökfältet får fokus på BÅDA öppningsvägarna (Marcus våg 2-regression 2026-07-25): mus-klick och tangentbord', async ({
