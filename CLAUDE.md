@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-09-04
+updated: 2026-09-05
 review_by: 2026-11-15
 status: stable
 ---
@@ -273,8 +273,9 @@ bara CI ser kan en lokal serie vara fel instrument helt och hållet.
 ### Prod-EF-deploy körs via SKRIPTET — handkörning har fällt tre gånger
 
 Ska Edge Functions till prod (fas 4-klassen) kör Marcus i sin egen terminal —
-`--kontrollera` (sekunder) får gå via `!`-prefixet, `--deploya` (45 EF ≈ 10 min)
-får det INTE:
+`--kontrollera` (sekunder) får gå via `!`-prefixet, `--deploya` (allowlistens 57 EF ≈ 12 min — räkna i
+`.prod-functions-allowlist.conf`, skriv aldrig av talet; det stod "45" här i tre
+veckor efter att listan vuxit, fångat av Marcus 2026-09-05) får det INTE:
 
 ```bash
 bash scripts/fas4-prod-deploy.sh --kontrollera <prod-ref>   # läser prod-läget, ändrar inget
@@ -297,7 +298,15 @@ ett bekvämt anrop som läste refen ur `.prod-ref-policy.conf` hade gjort hela
 prod-låset verkningslöst för varje agent som läser repot. Argument-formen
 bevarar låset: Marcus anrop bär refen och passerar hans kanal, en agents anrop
 bär den också och **fälls**. Prövat skarpt — ett agent-anrop med prod-refen
-avvisades av låset med korrekt skäl. Testsviten
+avvisades av låset med korrekt skäl.
+
+**Låset sitter på KOMMANDOSTRÄNGEN, inte på kunskapen.** En agent får läsa
+`.prod-ref-policy.conf` och skriva ut prod-refen till Marcus i chatten — det är
+hans kanal som bär anropet, och det är den kanalen låset lämnar öppen. Mätt
+2026-09-05 (S119, efter stängning): orkestreraren vägrade först ge Marcus hans
+egen ref med hänvisning till detta stycke. Det var en över-läsning av prosan,
+inte låsets avsikt; en agent som läser stycket som "agenten får aldrig bära
+refen" gör samma fel. Testsviten
 (`scripts/test-fas4-prod-deploy.sh`, CI-wirad) vaktar invarianten i båda
 riktningar.
 
