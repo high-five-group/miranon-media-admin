@@ -665,7 +665,14 @@ test.describe('Segment-yta (Fas 6g L2, promoverad TASK-249.5)', () => {
 
     await page.getByRole('button', { name: 'RIM 1 + RIM 2', exact: true }).click();
     await vantaInRakningar(page);
-    await page.getByRole('button', { name: 'Skicka utskick till det här segmentet' }).click();
+    // TASK-390 punkt 1 (Marcus 2026-09-04): "Skicka" → "Gör ett utskick" —
+    // en explicit synlighets-assertion på den NYA texten, inte bara
+    // klick-lokatorns implicita namnmatchning.
+    const utskicksKnapp = page.getByRole('button', {
+      name: 'Gör ett utskick till det här segmentet',
+    });
+    await expect(utskicksKnapp).toBeVisible();
+    await utskicksKnapp.click();
     await expect(page.getByRole('heading', { level: 1, name: 'Utskick' })).toBeVisible();
     await vantaInRakningar(page);
 
@@ -714,7 +721,14 @@ test.describe('Segment-yta (Fas 6g L2, promoverad TASK-249.5)', () => {
 
     await page.getByRole('button', { name: 'RIM 1 + RIM 2', exact: true }).click();
     await vantaInRakningar(page);
-    await page.getByRole('button', { name: 'Skicka utskick till det här segmentet' }).click();
+    // TASK-390 punkt 1 (Marcus 2026-09-04): "Skicka" → "Gör ett utskick" —
+    // en explicit synlighets-assertion på den NYA texten, inte bara
+    // klick-lokatorns implicita namnmatchning.
+    const utskicksKnapp = page.getByRole('button', {
+      name: 'Gör ett utskick till det här segmentet',
+    });
+    await expect(utskicksKnapp).toBeVisible();
+    await utskicksKnapp.click();
     await expect(page.getByRole('heading', { level: 1, name: 'Utskick' })).toBeVisible();
     await vantaInRakningar(page);
 

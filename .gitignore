@@ -143,3 +143,11 @@ docs/mallar/bilagor/*.png
 # katalog — ett mönster med trailing "/" matchar bara riktiga kataloger
 # och missar symlänken, disk-verifierat i denna skiva innan commit).
 docs/mallar/bilagor/lokala-typsnitt
+
+# TASK-390 iteration 2 (Marcus 2026-09-04) — lokal, Marcus-riktad
+# granskningsspec. Matchar hermetiska fixturvärlden och `testDir: tests/visual`
+# så den ÅTERANVÄNDER visual-desktop/visual-mobile-projektens viewport/
+# webServer-wiring — men fastnar avsiktligt på `page.pause()` och får ALDRIG
+# hamna i CI-sviten. Mekaniskt spärrad här (`git add` kan aldrig ta med den av
+# misstag), inte bara en konvention.
+tests/visual/granskning-*.spec.ts

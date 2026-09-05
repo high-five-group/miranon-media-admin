@@ -1,6 +1,6 @@
 - heading "RIM 1 + RIM 2" [level=1]
 - paragraph: 2 personer · 1 får mailet · 1 får inte mailet
-- button "Skicka utskick till det här segmentet"
+- button "Gör ett utskick till det här segmentet"
 - region "Publiken":
   - heading "Publiken" [level=2]
   - radiogroup "Visa i publiken":
@@ -12,11 +12,8 @@
     - listitem: David Dahl Tackat nej till utskick david.dahl@example.se
 - region "Regeln":
   - heading "Regeln" [level=2]
-  - term: Form
-  - definition: Predikat över dimensioner
   - term: Räknas ur
-  - definition: Genomförd närvaro (Närvarande eller Deltog online)
-  - term: Motsvarar
-  - definition: 2 utbildningar i basen i dag
+  - definition: Närvaro
   - paragraph: Har gått både RIM 1 och RIM 2 - men ingen av de andra två utbildningarna.
+  - text: RIM 1 , ingår RIM 2 , ingår Fjärrskådning , ingår inte Psionautics , ingår inte
   - button "Ändra regeln"

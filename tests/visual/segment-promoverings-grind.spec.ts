@@ -476,7 +476,11 @@ test.describe('promoverings-grinden — ariaSnapshot-referenser för segment-yta
     await vantaInRakningar(page);
     await page.getByRole('button', { name: 'RIM 1 + RIM 2', exact: true }).click();
     await vantaInRakningar(page);
-    await page.getByRole('button', { name: 'Skicka utskick till det här segmentet' }).click();
+    // TASK-390 punkt 1 (Marcus 2026-09-04): NAVIGERINGS-klicket, inte en
+    // ariaSnapshot-referens — knappen sitter inte i `utskicksvyn`s eget
+    // testid-scope, så det NYA namnet ändrar ingenting i den låsta
+    // referensen nedan.
+    await page.getByRole('button', { name: 'Gör ett utskick till det här segmentet' }).click();
     await expect(page.getByRole('heading', { level: 1, name: 'Utskick' })).toBeVisible();
     await vantaInRakningar(page);
     await expect(page.getByText('Utskick till 2 personer.')).toBeVisible();
