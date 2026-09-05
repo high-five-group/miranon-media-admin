@@ -4,7 +4,7 @@ title: 'Prod-allowlist: cancel-registration + rebook-registration inför 368-dep
 status: Done
 assignee: []
 created_date: '2026-09-04 07:54'
-updated_date: '2026-09-04 13:44'
+updated_date: '2026-09-05 10:22'
 labels:
   - ready-for-agent
 dependencies: []
@@ -27,6 +27,8 @@ ordinal: 686000
 
 <!-- SECTION:NOTES:BEGIN -->
 S119 stangningsbatch 2a (2026-09-04): kortet var redan Done pa origin/main (sjalv-stangt inom PR #2285:s egen commit fbca73cd) -- ingen statusandring gjord av denna agent. Merge-SHA for PR #2285 verifierat: be4b883c (mergad 2026-09-04T13:39:27Z, review konvergerad runda 2, risk LAG). Tillagg per orkestrerarens uppdrag: prod-deployen av cancel-registration/rebook-registration kors av Marcus sjalv i egen terminal EFTER hans staging-QA (TASK-368.6, To Do) -- bash scripts/fas4-prod-deploy.sh --kontrollera <prod-ref> far ga via !-prefixet, men --deploya (cirka 10 min) ska ALDRIG koras via !-prefixet (CLAUDE.md-radens skal: 2-minuderstaket kan konvertera korningen till bakgrund eller doda den mitt i, vilket lamnar supabase/.temp/project-ref pekande pa prod). TASK-368.6 steg 9 (prod) vantar pa den korningen.
+
+Prod-deploy körd av Marcus 2026-09-05 (fas4-prod-deploy.sh --deploya i eget fönster): efter-kontrollen visar 57 EF i prod, samtliga med UPDATED_AT 2026-09-05 10:16–10:20Z; cancel-registration och rebook-registration finns som v1 (10:20Z); länkläget återställt till staging; hemligheter 10/10 ✓, bucket bilagor konvergerad. Före-kontrollen: 55 EF, de två saknades.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
