@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-29 14:33'
-updated_date: '2026-08-29 17:28'
+updated_date: '2026-09-04 08:18'
 labels:
   - ready-for-agent
 dependencies: []
@@ -27,9 +27,9 @@ Ur research-passet docs/research/forhandsgranska-spara-atervand-bilageflodet-202
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -44,4 +44,6 @@ EN plaintext-förekomst av https://miranon.se/ finns i bekraftelsebilaga.html.ts
 UTFALL: bokförd frånvaro (kortets egen § 'Ingen ändring om (1) ger noll träffar'). Ingen kodändring, http_timeout sätts inte explicit — det finns ingen hämtning att skydda.
 
 Låst av tests/api/mall-render-sjalvbarande-resurser.test.ts (9 test, källkods-nivå — importerar mall-/CSS-strängarna direkt och kör mall-render.ts:s EGNA CSS_URL_REGEX/IMG_SRC_REGEX kopierade under en KONFIG-PARITETSNOT). Bidirektionellt bevisat 2026-08-29: en injicerad extern URL i bilaga-delad.css.ts (Cavolini-Bold.ttf -> https://evil.example.com/...) fällde 3 test (ett per mall som använder den delade CSS-en), exakt som avsett. Reverterad efteråt (diff verifierad identisk mot backup).
+
+Nattgrind-stängning 2026-09-04: DoD bockad mot belägg — samtliga 2 AC redan bockade (mekanisk DoD#1); DoD#2 styrks av PR #2113:s grindtabell (api-pure 33/33, typecheck/biome/build 0; test:api-fullsvitens 3 fel bevisade orelaterad delad-staging-kontention); DoD#3 verifierat mot git show --stat 6c1e68d6 (PR #2113): enbart mall-render.ts, README.md, en lessons-fil, en ny testfil och kortfilen ändrade.
 <!-- SECTION:NOTES:END -->

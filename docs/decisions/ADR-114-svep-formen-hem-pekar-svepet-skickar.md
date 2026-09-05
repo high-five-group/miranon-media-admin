@@ -59,7 +59,7 @@ föll på samma invändning som Åtgärds-sids-vägen.
 
 ## Källor
 
-- Grillad samsyn: `tasks/sessions/2026-08-10-session-102.md` Del 8
+- Grillad samsyn: `tasks/sessions/archive/2026-08/2026-08-10-session-102.md` Del 8
   (SVEPARNA-blocket + ADR-bedömningen) och Del 10
   (en-påminnelse-modellen).
 - Svep-PRD:n: backlog-kortet "PRD: Sveparna — cross-event-sändytorna"

@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-28
+updated: 2026-09-05
 review_by: 2026-11-15
 status: stable
 ---
@@ -273,8 +273,9 @@ bara CI ser kan en lokal serie vara fel instrument helt och hållet.
 ### Prod-EF-deploy körs via SKRIPTET — handkörning har fällt tre gånger
 
 Ska Edge Functions till prod (fas 4-klassen) kör Marcus i sin egen terminal —
-`--kontrollera` (sekunder) får gå via `!`-prefixet, `--deploya` (45 EF ≈ 10 min)
-får det INTE:
+`--kontrollera` (sekunder) får gå via `!`-prefixet, `--deploya` (allowlistens 57 EF ≈ 12 min — räkna i
+`.prod-functions-allowlist.conf`, skriv aldrig av talet; det stod "45" här i tre
+veckor efter att listan vuxit, fångat av Marcus 2026-09-05) får det INTE:
 
 ```bash
 bash scripts/fas4-prod-deploy.sh --kontrollera <prod-ref>   # läser prod-läget, ändrar inget
@@ -297,7 +298,15 @@ ett bekvämt anrop som läste refen ur `.prod-ref-policy.conf` hade gjort hela
 prod-låset verkningslöst för varje agent som läser repot. Argument-formen
 bevarar låset: Marcus anrop bär refen och passerar hans kanal, en agents anrop
 bär den också och **fälls**. Prövat skarpt — ett agent-anrop med prod-refen
-avvisades av låset med korrekt skäl. Testsviten
+avvisades av låset med korrekt skäl.
+
+**Låset sitter på KOMMANDOSTRÄNGEN, inte på kunskapen.** En agent får läsa
+`.prod-ref-policy.conf` och skriva ut prod-refen till Marcus i chatten — det är
+hans kanal som bär anropet, och det är den kanalen låset lämnar öppen. Mätt
+2026-09-05 (S119, efter stängning): orkestreraren vägrade först ge Marcus hans
+egen ref med hänvisning till detta stycke. Det var en över-läsning av prosan,
+inte låsets avsikt; en agent som läser stycket som "agenten får aldrig bära
+refen" gör samma fel. Testsviten
 (`scripts/test-fas4-prod-deploy.sh`, CI-wirad) vaktar invarianten i båda
 riktningar.
 
@@ -904,7 +913,8 @@ struktur. Options-rymden och instansdatan bor i
 
 **Review-ytans SEX testsviter körs som gatekeeper-sviter i `ci.yml`:s "Test
 gatekeeper script suites"-steg** — `scripts/test-validera-review-utlatande.mjs`
-(35 fall, `173.1`), `scripts/test-review-policy.mjs` (44 fall, `173.2`) och
+(35 fall, `173.1`), `scripts/test-review-policy.mjs` (46 fall, `173.2` —
+46 sedan `TASK-344`/PR #2291, F3+F4) och
 `scripts/test-review-risk-sektion.mjs` (47 fall, `173.3`) sedan `TASK-185`
 (PR #1992, 2026-08-26, den sista wirad i samma bas-drift-svep sedan `173.3`
 landade UNDER `185`s eget bygge — PR #1993), plus
@@ -1108,18 +1118,25 @@ För aktuell struktur, kör `tree -L 3 -I 'node_modules|dist|.git|coverage|test-
 
 ## Synk-horisont och arkiv-åtkomst
 
-claude.ai-projektkunskapen synkar INTE: `tasks/sessions/archive/`,
-`docs/archive/` (+ `package-lock.json` om fil-urval stöds). Allt finns
-kvar i git — exkluderingen gäller endast claude.ai-projektkunskapens synk (ADR-048).
+**claude.ai-projektkunskapen är AVVECKLAD.** Marcus i klartext 2026-08-24
+(S112, `TASK-318`): *"Kör inte med Claude.ai längre."* Synk-mekaniken nedan
+och [ADR-048](docs/decisions/ADR-048-synk-horisont-arkiv-atkomst.md) som
+beslutade den är därmed HISTORISKA — de beskriver en läsyta som inte längre
+är i drift, inte en aktiv arbetsordning. Konsekvensen är utskriven i
+ADR-048 § Updates.
 
-Regel vid claude.ai-läsning: noll träffar i projektkunskapen på historiskt material
-(arkiverade sessionsdok, superceded specs, frusna analyser) betyder INTE
-att det saknas. Historik utanför synk-horisonten hämtas VIA CODE
-(LÄS→RAPPORTERA mot lokal disk/git) eller genom att Marcus klistrar
-innehållet — anta aldrig att materialet inte existerar.
+Den generella principen överlever avvecklingen av den specifika ytan:
+historik utanför en läsytas synk-horisont (arkiverade sessionsdok,
+superceded specs, frusna analyser) antas ALDRIG vara borta bara för att en
+sökning ger noll träffar — den hämtas VIA CODE (LÄS→RAPPORTERA mot lokal
+disk/git), oavsett vilken yta som söker.
 
-`docs/research/` ligger kvar i synken tills Fas 6 är avslutad
-(konsumeras aktivt av Fas 6) och exkluderas därefter (ADR-048 punkt 3).
+**Historisk synk-mekanik** (claude.ai-projektkunskapen, i drift fram till
+2026-08-24): synken exkluderade `tasks/sessions/archive/`, `docs/archive/`
+(+ `package-lock.json` om fil-urval stöddes) — allt fanns ändå kvar i git,
+exkluderingen gällde bara den ytans synk (ADR-048). `docs/research/` låg
+kvar i synken tills Fas 6 avslutades; den villkorade exkluderingen vid
+Fas 6-avslut (ADR-048 punkt 3) är moot sedan avvecklingen.
 
 ---
 

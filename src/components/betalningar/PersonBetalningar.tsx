@@ -91,7 +91,7 @@ export function PersonBetalningar({ person }: { person: PersonDetail }) {
       <div className="flex flex-col gap-4 rounded-2xl border border-transparent bg-surface p-3 contrast-more:border-border-strong">
         <p className="text-body">
           {oversikt.rader.length === 0
-            ? 'Inget kvar att betala.'
+            ? 'Inget att betala.'
             : // BÅDA räkneorden böjs. Mätt i acceptansvandringen 2026-08-31:
               // meningen löd "Saknas 2 500 kr på 1 anmälan, varav 1 förfallna"
               // - substantivet var böjt, adjektivet inte. Gunilla-principen

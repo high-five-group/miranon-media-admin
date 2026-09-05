@@ -99,6 +99,16 @@ export const EVENTS_RESPONSE = {
       // och speglar skarpa get-event (som detaljfixturen nedan spreadar).
       kursfamilj: 'Fjärrskådning',
       kursniva: null,
+      // EVENTETS PRIS (TASK-368.7, kontraktsvakts-fyndet 2026-09-04, run
+      // `33841484905`) — get-event/get-events/update-event bär `pris` sedan
+      // commit `8b6d44e3`, men fixturen rördes aldrig i samma leverans.
+      // Vakten larmade FIXTUREN-BAKOM: staging levererade `pris` i 19/19
+      // (get-events) resp. 1/1 (get-event) skarpa poster, typ `null | tal`.
+      // Skövde bär ett SATT pris (en betald tvådagarsutbildning); Göteborg
+      // (föreläsning) bär `null` och Varberg ett annat satt pris — samma
+      // form-paritetsmönster som kursfamilj/kursniva ovan: båda typerna i
+      // listan, aldrig bara en.
+      pris: 1500,
       borOverAntal: 3,
     },
     {
@@ -125,6 +135,9 @@ export const EVENTS_RESPONSE = {
       // okänt kursnamn är `null`, aldrig en gissad familj.
       kursfamilj: null,
       kursniva: null,
+      // Inget pris satt (varken eget eller Eventinnehåll-standardens) — den
+      // ÄRLIGA `null`-formen `pris` bär (se docblocket på Skövde-eventet ovan).
+      pris: null,
       borOverAntal: 0,
     },
     {
@@ -151,6 +164,7 @@ export const EVENTS_RESPONSE = {
       // blir `null | sträng` för BÅDA nycklarna (paritet med stagings 86/86).
       kursfamilj: 'RIM',
       kursniva: 'Nivå 2',
+      pris: 1200,
       borOverAntal: 5,
     },
   ],
@@ -396,11 +410,26 @@ export const REGISTRATIONS_RESPONSE = {
  */
 export const EVENT_DETAIL_RESPONSE = {
   event: {
+    // `pris` följer med via spreaden av `events[0]` (Skövde, satt till 1500
+    // ovan) — get-event och get-events delar samma `mapEvent`/`mapEventBas`
+    // (`_shared/event-map.ts`), så samma tal är korrekt på båda ställena.
     ...EVENTS_RESPONSE.events[0],
     reserverade: 2,
     manuelltTillagda: 1,
     viaFormular: 6,
     medfoljande: 1,
+    // TASK-373 (kontraktsvakts-fyndet 2026-09-04, run `33841484905`) —
+    // AKTIVA länkade Anmälningar med Källa 'Manuell'/'Väntelista'/framtida
+    // värden (`get-event/index.ts` § fetchBelaggning). ALDRIG `null` —
+    // en räkning, precis som viaFormular/medfoljande/vantelista.
+    //
+    // 0, INTE 1 (rättat i review-runda 2, PR #2289): `src/lib/belaggning.ts`s
+    // INVARIANT kräver viaFormular + ovrigaAnmalningar + manuelltTillagda =
+    // basens `Antal anmälda` (events[0] spreadar `antalAnmalda: 8` hit).
+    // 6 (viaFormular) + 0 + 1 (manuelltTillagda) = 8 = antalAnmalda. Ett `1`
+    // hade brutit invarianten (9 ≠ 8) och fått mätaren att rendera "11 av 12"
+    // i stället för korrekta "10 av 12" — granskningsfynd, inte en gissning.
+    ovrigaAnmalningar: 0,
     vantelista: 2,
     deltagarinfoAutoAvstangt: false,
   },

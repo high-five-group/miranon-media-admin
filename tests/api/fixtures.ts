@@ -272,3 +272,36 @@ export const EVENTMATCHNING_ANMALAN_FEL_AR_ID = 'recdKgK82XA0Oa2ee';
  */
 export const DOKUMENTUNDERLAG_EVENT_ID = 'recnzSBfLWCo5dBlY';
 export const DOKUMENTUNDERLAG_AGENDAPUNKT_ID = 'recPbZUoa0KKKOXAi';
+
+/**
+ * `ZZ-TASK-370.3-fixtur` — permanent event i staging-Eventplanering (TASK-370.3;
+ * seedad via Airtable MCP 2026-09-03, Ort 'ZZ-TASK-370.3-fixtur' — medvetet
+ * SKILD från alla `.purge-staging-policy.json`-mönster, samma konvention som
+ * ZZ-belaggning-/ZZ-arbetsko-/ZZ-Checkin-fixturerna). EGET event så INGEN
+ * annan fixturs rollupräkning (BELAGGNING_EXPECTED m.fl.) rörs. Event (source)
+ * 'Fjärrskådning', Typ 'Föreläsning', Start/Slutdatum 2099-06-01 (fjärran
+ * placeholder-datum, samma mönster som TASK-369:s e2e-fixtur).
+ *
+ * Bär TVÅ permanenta Anmälningar (`FORHANDSGRANSKA_ALLA_ANMALAN_A/B_ID`) —
+ * `preview-receipt-forhandsgranska-alla.staging.test.ts`s "Förhandsgranska
+ * alla N"-svit registrerar mot dem en TRANSIENT Postgres-`inbetalningar`-rad
+ * (`registrera-inbetalning`), förhandsgranskar den kombinerade PDF:en
+ * (`preview-receipt`, `inbetalningIds`), och RADERAR raden igen
+ * (`hantera-inbetalning`, `atgard: 'radera'`) i testets `finally` — samma
+ * mutate-and-restore-mönster som `update-record.staging.test.ts`s
+ * set-attendance-status-toggle. `hantera-inbetalning` räknar om och skriver
+ * OM anmälningarnas spegelfält (`Summa inbetalt (kr)` m.fl.) efter radering,
+ * så anmälningarna är byte-för-byte återställda efter varje körning.
+ * Eventets EGNA rollupfält (`Antal anmälda` m.fl.) räknas ur ANTAL LÄNKADE
+ * ANMÄLNINGAR — den siffran ändras ALDRIG av en inbetalning (Postgres, inte
+ * Airtable-länk), bara anmälningarnas egna spegelfält gör. STÄDA INTE bort
+ * någon av dessa tre poster.
+ */
+export const FORHANDSGRANSKA_ALLA_EVENT_ID = 'reck7WgOA5zgUy52X';
+export const FORHANDSGRANSKA_ALLA_ANMALAN_A_ID = 'recYj7Jm9DYJ11X6d';
+export const FORHANDSGRANSKA_ALLA_ANMALAN_B_ID = 'recNKZHR0MkWP5SQB';
+/** `Anmälningar.Namn` (Förnamn + Efternamn) — det `hamtaRiktigtUnderlag` lägger i `kundnamn`. */
+export const FORHANDSGRANSKA_ALLA_NAMN_A = 'ZZ-Task370.3 Person A';
+export const FORHANDSGRANSKA_ALLA_NAMN_B = 'ZZ-Task370.3 Person B';
+export const FORHANDSGRANSKA_ALLA_EPOST_A = 'zz-task370-3-person-a@staging.test';
+export const FORHANDSGRANSKA_ALLA_EPOST_B = 'zz-task370-3-person-b@staging.test';

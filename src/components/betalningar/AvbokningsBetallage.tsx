@@ -47,8 +47,10 @@ import { harledRad } from './inkorg-harledningar';
  *
  * Frånvaron av en öppen-betalnings-rad är TVETYDIG och påstås aldrig vara
  * "allt betalt" — samma disciplin som `AnmalansBetalningar` § `rad === null`
- * och `PanelBetalningar`. Här blir den "Inget kvar att betala.", ordagrant
- * samma nolläges-mening som anmälans betalningsyta redan bär.
+ * och `PanelBetalningar`. Här blir den "Inget att betala.", ordagrant samma
+ * nolläges-mening som anmälans betalningsyta redan bär (reviderad 2026-09-04,
+ * S120, TASK-391, ur "Inget kvar att betala." — "kvar" förutsätter en skuld
+ * som nolläget inte vet finns).
  */
 export function AvbokningsBetallage({ anmalanRecordId }: { anmalanRecordId: string }) {
   const { data: oppna } = useOppnaBetalningar();
@@ -127,7 +129,7 @@ export function AvbokningsBetallage({ anmalanRecordId }: { anmalanRecordId: stri
               varför nollägena är fri text och bara det öppna beloppet får
               radens vikt. */}
           {kvar === null ? (
-            <p className="my-0 text-small text-text-muted">Inget kvar att betala.</p>
+            <p className="my-0 text-small text-text-muted">Inget att betala.</p>
           ) : kvar > 0 ? (
             <div className="flex items-center justify-between gap-4">
               <span className="text-small text-text-muted">Kvar att betala</span>
