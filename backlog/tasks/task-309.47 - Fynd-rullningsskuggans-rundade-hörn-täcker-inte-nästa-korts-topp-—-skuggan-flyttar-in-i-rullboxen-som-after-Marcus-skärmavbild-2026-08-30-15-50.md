@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-30 13:56'
-updated_date: '2026-08-30 14:45'
+updated_date: '2026-09-04 08:15'
 labels: []
 dependencies: []
 parent_task_id: TASK-309
@@ -30,9 +30,9 @@ Marcus prod-titt 2026-08-30 15:50 (skärmavbild): 'skuggningen nere i högra hö
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -61,6 +61,8 @@ EN KONTROLL VÄNDE EN SLUTSATS. N4 var forst definierad som 'ta bort after:conte
 DOCBLOCK omskrivna: § RULLNINGSSKUGGAN (hela avsnittet — de tva kurvorna, varfor en border-radie inte gar att halla i synk utifran, bredden som strukturell, och att hojdlasets skal ar UPPFYLLT och inte overgivet), rannbredd-styckena rivna med koden, 309.43/45/46-noterna om right: rannbredd och bottom-0 omskrivna till historik.
 
 GRINDAR, matta exitkoder var for sig: typecheck 0 - biome 0 - build 0 - check-langa-streck 0 (267 filer) - a11y 117 passed 0 - dokument-acceptance 110 passed 0 (var 108 fore skivan, +2 nya).
+
+Nattgrind-stängning 2026-09-04: DoD bockad mot belägg — samtliga 5 AC redan bockade (mekanisk DoD#1); DoD#2 styrks av notens grindtabell (typecheck/biome/build/check-langa-streck 0, a11y 117 passed, dokument-acceptance 110 passed, 7 negativa kontroller); DoD#3 verifierat mot git show --stat 055bc8a7 (PR #2136): enbart DokumentYta.tsx + en acceptance-testfil ändrade.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

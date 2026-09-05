@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-09-03
+updated: 2026-09-05
 review_by: 2027-01-02
 status: stable
 ---
@@ -115,6 +115,32 @@ knapptexten — knappen heter "Ladda upp fil"), bank statement.
 *I koden:* identifierarna är ORÖRDA — `SwishImport`, `bankimport-*`. Docblocket
 i `bankimport-parser.ts` använder fortfarande "bankrapport" om FORMATET; det är
 kod-intern prosa, inte UI-text.
+
+**Bekräftelsesteget (inbetalningar)** — den fokuserade yta där Lotta granskar
+och bekräftar FLERA inbetalningar på en gång innan de registreras: en rad per
+anmälan med namn, event, saknas, belopp, betalsätt och datum; bulkval överst
+(beloppsgenvägarna "Anmälningsavgift", "Allt som saknas", "Annat belopp",
+samt betalsätt och datum) som sätter alla rader, med sanningen per rad synlig
+och skrivbar; en knapp "Registrera N"; utfall per rad i samma yta, följt av
+"Förhandsgranska N" och "Skicka N kvitton" ur inkorgens kö. Egen yta under
+betalningssidan med full bredd, inte en panel i inkorgen (grillad samsyn
+S121 beslut 1 och 4, 2026-09-04). Fylls av tre *Matare*. Beloppsgenvägarna
+sätter ett BELOPP, aldrig ett fack (ADR-128 beslut 2). Radformuläret för EN
+betalning på plats i inkorgen är orört och är inte ett bekräftelsesteg.
+*Undvik:* registreringsvyn, registreringssidan (Marcus arbetsnamn i
+S121-ingången, ersatta), bekräftelselistan (importens gamla namn på sitt
+sista steg, som flyttar in hit), batchvyn, massregistrering.
+*I koden:* planerad; namnet sätts i PRD:n.
+
+**Matare** — en ingång som fyller *Bekräftelsesteget* med rader: (1)
+markera-läget i inkorgen, över alla event; (2) *Kontoutdraget*, där
+transaktionerna matchas mot öppna betalningar; (3) Åtgärds-sidans markerade
+personer i ett event. Mataren väljer VILKA rader; steget avgör belopp,
+betalsätt och datum och registrerar. Formeln ur grillningen S121 (beslut 1,
+2b och 7): "en bekräftelseyta, tre matare".
+*Undvik:* källa (för brett), ingång (mataren är ingången till just steget),
+import (bara en av tre).
+*I koden:* planerad.
 
 **Användarinbjudan** — en engångs- och tidsbegränsad inbjudan som ger en
 människa ett konto i appen, med roll och e-postadress låsta av inbjudan

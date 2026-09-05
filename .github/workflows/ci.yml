@@ -501,7 +501,19 @@ jobs:
   # Job 2: Always-on lint + audit + typecheck.
   # Kör på ALLA commits oavsett doc-only-detection. Per ADR-029 §1b + K17.
   lint:
-    name: Lint + Audit + TypeCheck
+    # NAMNET BYTTE 2026-09-04 (TASK-395): "Lint + Audit + TypeCheck" → "Lint +
+    # TypeCheck". Audit-steget bor sedan dess i det egna jobbet `audit` nedan.
+    # Namnbytet är säkert: rulesetets ENDA required check är aggregatorn
+    # `CI Passed or Skipped` (mätt 2026-09-04, `gh api repos/…/rulesets/19627609`
+    # → [{"context":"CI Passed or Skipped"}]), så inget kö- eller
+    # skyddsvillkor nycklar mot detta jobbnamn.
+    #
+    # `timeout-minutes: 15` STÅR KVAR MEDVETET i denna ändring. Taket sattes i
+    # `#2288` när audit-loopen (värsta fall ~9,5 min) fortfarande bodde här,
+    # och kan sannolikt gå tillbaka till 10 nu — men en taksänkning ska mätas
+    # mot faktiska körningar UTAN audit-steget, inte projiceras ur en
+    # subtraktion. Bokfört som öppen punkt på TASK-395.
+    name: Lint + TypeCheck
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -525,104 +537,6 @@ jobs:
 
       - name: Install dependencies
         run: npm ci
-
-      - name: Audit dependencies (audit-ci with allowlist)
-        # K17 supply-chain-skydd: kör på varje commit (kod ELLER doc-only).
-        # Allowlist tom efter K0åh (2026-05-13). ADR-028 reverse-flow aktiv.
-        #
-        # HISTORIK, TRE AVLÄSNINGAR SAMMA DAG (2026-09-04):
-        # 1) merge_group-run 33857044952 (job "Lint + Audit + TypeCheck"):
-        #    audit-ci hängde 09:16:00→09:21:01 (5m01s, matchar npm:s DEFAULT
-        #    `fetch-timeout` 300000ms exakt) och föll `failure` — "code
-        #    undefined: / Exiting... / exit code 1", inget HTTP-statuskod.
-        #    npm:s rådgivnings-API flappade samma dag: audit-ci gick grönt
-        #    08:41–08:46 (33852769123, ~4m06s) och 08:54–08:55 (33855429327,
-        #    ~47s). Åtgärd: env NPM_CONFIG_FETCH_TIMEOUT=90000 +
-        #    NPM_CONFIG_FETCH_RETRIES=4 (npm CLI v11-docs,
-        #    docs.npmjs.com/cli/v11/using-npm/config — env-formen
-        #    NPM_CONFIG_<KEY>, case-insensitive, bekräftad samma sida).
-        #    Bekräftat att `npm audit` går samma väg som `npm ci`/`npm
-        #    install` (npm/cli → @npmcli/arborist `lib/audit-report.js`,
-        #    källkod läst 2026-09-04: `require('npm-registry-fetch')` mot
-        #    `/-/npm/v1/security/advisories/bulk`).
-        # 2) merge_group-run 33858911410 (job 100978552048), MED ovanstående
-        #    env satt (loggen visar NPM_CONFIG_FETCH_TIMEOUT: 90000,
-        #    NPM_CONFIG_FETCH_RETRIES: 4 explicit): audit-ci föll 09:37:36→
-        #    09:39:07 — EXAKT 91s, alltså timeouten (90s) slog igenom, men
-        #    EFTER BARA ETT FÖRSÖK, ingen retry, trots FETCH_RETRIES=4.
-        #    Samma "code undefined: / Exiting..." igen.
-        #
-        # ROTORSAK FÖR (2) — LÄST I KÄLLKODEN, INTE SUMMERAD (curl+Read av
-        # rå-filen, npm/make-fetch-happen `lib/remote.js`, main-branch,
-        # 2026-09-04 — npm-registry-fetch delegerar sin retry-mekanik hit):
-        # HTTP-svar-grenen har en uttrycklig kommentar: "do not retry POST
-        # requests, or requests with a streaming body" —
-        #   `const isRetriable = req.method !== 'POST' && !isStream && (...)`
-        # och samma uteslutning gäller i CATCH-grenen (thrown/timeout-fel,
-        # den gren som är relevant här eftersom loggen inte visar en
-        # HTTP-statuskod):
-        #   `if (req.method === 'POST' || isRetryError) { throw err }`
-        # — för en POST (vilket `/-/npm/v1/security/advisories/bulk` ÄR,
-        # bekräftat i audit-report.js: `method: 'POST'`) är villkoret SANT
-        # OAVSETT `isRetryError`, så koden kastar felet vidare direkt UTAN
-        # att någonsin anropa `retryHandler(err)` — retry-vägen nås aldrig.
-        # SLUTSATS: `NPM_CONFIG_FETCH_RETRIES` är VERKNINGSLÖS för detta
-        # anrop — make-fetch-happen retryar principiellt aldrig POST
-        # (icke-idempotent, kan inte säkert göras om), oavsett satt
-        # retry-antal. Bekräftat EMPIRISKT av avläsning (2) ovan (exakt ett
-        # försök trots FETCH_RETRIES=4). `NPM_CONFIG_FETCH_RETRIES` TAS
-        # DÄRFÖR BORT — att behålla en env-variabel som källäsningen visar
-        # är inert vore precis den ADR-083-felklassen ("prosa/config som
-        # påstår en mekanism den inte har") repot städar bort. Env-formen
-        # NPM_CONFIG_FETCH_TIMEOUT BEHÅLLS — den fungerar (bekräftat av
-        # avläsning 2: 91s ≈ 90s + marginal, timeouten slog igenom exakt).
-        #
-        # ÅTGÄRD (3), DENNA ÄNDRING: omförsöken flyttas till STEG-nivå (en
-        # bash-loop runt HELA `npx audit-ci`-anropet) i stället för att
-        # förlita sig på ett bibliotekslager som kategoriskt utesluter
-        # denna POST. Upp till 5 försök, 30s paus mellan, exit 0 vid första
-        # gröna, exit 1 om alla fem föll — ALDRIG continue-on-error, ALDRIG
-        # tyst (loggrad per försök). Varje enskilt försök är ändå bundet av
-        # NPM_CONFIG_FETCH_TIMEOUT=90000 (så ETT hängande npm-anrop inte
-        # kan äta hela stegets budget självt).
-        #
-        # UTRÄKNING, exakt (ingen bibliotekslogik inblandad längre, så
-        # detta är inte längre en pessimistisk gräns utan en direkt summa):
-        #   5 försök × fetch-timeout (90s) = 450s
-        #   + 4 pauser × 30s (sleep mellan försök 1-2, 2-3, 3-4, 4-5) = 120s
-        #   Summa värsta fall: 450+120 = 570s ≈ 9,5 min.
-        #   Ryms under lint-jobbets timeout-minutes (15 min = 900s) med
-        #   ~5,5 min marginal ÄVEN om audit-ci-steget är det ENDA som drar
-        #   ut på tiden. Install dependencies (~4–5 min observerat) +
-        #   resten av jobbet (~1–3,5 min observerat i tidigare gröna
-        #   körningar) ryms inte SAMTIDIGT med audit-ci:s absoluta värsta
-        #   fall inom 15 min — samma kvarstående, öppet bokförda risk som
-        #   tidigare avläsningar, nu med en lägre och exakt (inte
-        #   pessimistiskt uppskattad) siffra för just detta steg.
-        #
-        # Steget blir INTE continue-on-error, och allowlisten (audit-ci.jsonc)
-        # rörs INTE — supply-chain-grinden försvagas inte i sak, den blir
-        # bara tåligare mot enskilda långsamma/felande registry-anrop.
-        env:
-          NPM_CONFIG_FETCH_TIMEOUT: "90000"
-        run: |
-          set -euo pipefail
-          max_forsok=5
-          forsok=1
-          while [[ "${forsok}" -le "${max_forsok}" ]]; do
-            echo "audit-ci försök ${forsok}/${max_forsok}"
-            if npx audit-ci --config audit-ci.jsonc; then
-              echo "audit-ci grönt på försök ${forsok}/${max_forsok}"
-              exit 0
-            fi
-            if [[ "${forsok}" -lt "${max_forsok}" ]]; then
-              echo "audit-ci försök ${forsok}/${max_forsok} föll — väntar 30s innan nästa försök"
-              sleep 30
-            fi
-            forsok=$((forsok + 1))
-          done
-          echo "audit-ci föll alla ${max_forsok} försök"
-          exit 1
 
       - name: Biome check
         run: npx @biomejs/biome check .
@@ -1528,6 +1442,30 @@ jobs:
         # 0,18 s LOKALT mätt (macOS, 2026-08-31, median av tre körningar
         # EFTER runda 2:s utökning: 172/199/179 ms) — CI-tiden är INTE mätt
         # av mig och kan avvika.
+        #
+        # test-synka-labels.mjs (GitHub-issue #2298, ADR-131 § 5) hör hit av
+        # samma ADR-039-skäl som syskonen ovan: label-synken (scripts/lib/
+        # synka-labels.mjs + scripts/synka-labels.mjs) är inte en grind förrän
+        # dess logik fortlöpande verifieras. Sektion B prövar valideraPolicy
+        # fail-closed i BÅDA riktningar (19 fall: en trasig struktur FÄLLS med
+        # rätt skäl, den rättade formen SLÄPPER — se sektion A); sektion D
+        # bevisar att berakDiff aldrig producerar ett "radera"-fält (D6/D7:
+        # en skyddad eller okänd GitHub-label syns inte alls i diffen, per
+        # konstruktion eftersom den aldrig ingår i labelSpecs); sektion F/G/H
+        # kör den FULLA orkestreringen (synka() och CLI:ts main()) mot en
+        # INJICERAD fejkad gh-klient — aldrig ett riktigt `gh`-anrop, aldrig
+        # en PATH-fejkad subprocess. H11 bevisar idempotens på CLI-nivå (två
+        # körningar i rad ⇒ noll diff på den andra), H12 att en skyddad label
+        # aldrig rörs av --utfor. H13 är en kopplingsvakt: CLI:ts main()
+        # glömde ursprungligen vidarebefordra sleepMs/sleepFn till synka(),
+        # vilket gjorde varje --utfor-testkörning vänta 1 s PER skrivning på
+        # riktigt (mätt: tre CLI-nivå-tester tillsammans tog 6,1 s väggklocka
+        # mot 0,08 s CPU-tid innan felet hittades och rättades under bygget).
+        # Mutationsprövad under bygget: färgjämförelsen i berakDiff
+        # kortsluten till alltid-lika fällde D3 (51/52 gröna → 1 rött), vilket
+        # bevisar att sviten fångar en verklig regression och inte bara är
+        # grön av konstruktion. 53 fall. 0,13 s LOKALT mätt (macOS,
+        # 2026-09-04) — CI-tiden är INTE mätt av mig och kan avvika.
         run: |
           bash scripts/test-check-frontmatter.sh
           bash scripts/test-check-public-checklists.sh
@@ -1569,6 +1507,7 @@ jobs:
           bash scripts/test-heartbeat-svep.sh
           bash scripts/test-post-compact-igenkanning.sh
           bash scripts/test-stada-grenar.sh
+          bash scripts/test-audit-degradering.sh
           node scripts/test-validera-review-utlatande.mjs
           node scripts/test-review-policy.mjs
           node scripts/test-review-risk-sektion.mjs
@@ -1579,6 +1518,7 @@ jobs:
           node scripts/test-task-338-6-prod-migration.mjs
           node scripts/test-docraptor-sjalvbarande.mjs
           node scripts/test-backfill-inbetalningar.mjs
+          node scripts/test-synka-labels.mjs
 
       - name: Test post-merge-lagrets ärvda klassning (TASK-73)
         # Per ADR-039 § lesson→grind (L43): en grind är inte en grind förrän
@@ -2005,6 +1945,175 @@ jobs:
             .gh-version-policy.conf \
             .hemlighets-namn-policy.conf
 
+  # ═══ Job 2b: SUPPLY-CHAIN-AUDITEN, EGET JOBB (TASK-395, 2026-09-04) ═══
+  #
+  # Marcus i klartext 2026-09-04: "Bygg degraderingen då."
+  #
+  # VAD SOM BYGGS. audit-ci flyttades hit ur `lint` och kör nu parallellt med
+  # det. Två saker vinns: en långsam eller onåbar advisory-endpoint kan inte
+  # längre svälja lint-jobbets tidsbudget och släcka Biome/TypeScript/
+  # actionlint/de arton grindarna efter sig (det är precis vad som hände, se
+  # MÄTNINGARNA nedan), och auditen får ett eget tak (20 min) som rymmer
+  # loopens värsta fall (5 × 90 s fetch-timeout + 4 × 30 s paus = 570 s ≈
+  # 9,5 min) plus `npm ci` med god marginal.
+  #
+  # VILLKORSLÖST, precis som `lint` — INGET `needs:`, INGET `if:`. Det är
+  # samma form lint bär och samma skäl: supply-chain-grinden ska gälla varje
+  # commit, kod som doc-only (K17). Jobbet ligger i aggregatorns `needs`
+  # (`ci-passed`) och är därmed exakt lika required som audit-steget var när
+  # det bodde i `lint`.
+  #
+  # ═══ MÄTNINGARNA (2026-09-04, `gh api`, inte avskrivna) ═══
+  #
+  # npm:s advisory-bulk-endpoint (`POST /-/npm/v1/security/advisories/bulk`)
+  # FLAPPADE under förmiddagen och blockerade varje PR.
+  #
+  #   run 33862945280 (PR #2285, event pull_request), job "Lint + Audit +
+  #   TypeCheck": `Install dependencies` 10:23:06→10:28:07 = 5 min 01 s;
+  #   `Audit dependencies (audit-ci with allowlist)` 10:28:07→10:37:42 =
+  #   9 min 35 s = 575 s, alltså exakt 5 × 90 s + 4 × 30 s. Jobbet `failure`,
+  #   och SAMTLIGA arton efterföljande steg `skipped`.
+  #
+  #   run 33862989013 (docs-PR), samma jobb: SUCCESS på 3 min 53 s —
+  #   `npm ci` 15 s (cache-träff) och `audit-ci` 3 s GRÖNT
+  #   (10:41:18→10:41:21). Endpointen var alltså uppe 10:41.
+  #
+  #   Lokalt 10:51 UTC samma dag, samma träd: `npm audit --json` exit 1 med
+  #   {"message":"network timeout at: https://registry.npmjs.org/-/npm/v1/
+  #   security/advisories/bulk", "error":{"summary":"","detail":""}}, och
+  #   `npx audit-ci --config audit-ci.jsonc` exit 1 med utdatan (ANSI-kodad)
+  #   "code undefined: " + "Exiting...".
+  #
+  # Att npm ALDRIG retryar denna POST är källverifierat i `#2288`
+  # (make-fetch-happen `lib/remote.js`), varför `NPM_CONFIG_FETCH_RETRIES` är
+  # verkningslös här och omförsöken måste ligga på STEG-nivå.
+  #
+  # ═══ DEGRADERINGEN — EXAKT VAD DEN KRÄVER ═══
+  #
+  # Faller alla fem försök släpps körningen igenom med en `::warning::` och
+  # exit 0 ENDAST om BÅDA villkoren håller. I varje annat läge exit 1.
+  #
+  #   VILLKOR A, NÄTVERKSKLASS. Inget försöks utdata får bära en
+  #   sårbarhetsmarkör, OCH varje försöks utdata måste matcha minst ett känt
+  #   nätverksmönster. Ett försök som föll av ett skäl vi inte känner igen
+  #   fäller — fail-closed, aldrig "förmodligen nätverket".
+  #
+  #   VILLKOR B, OFÖRÄNDRAT BEROENDETRÄD.
+  #   `git diff --quiet <EFFEKTIV bas> HEAD -- package.json package-lock.json`
+  #   måste vara tyst. Eventets bas kommer ur
+  #   `github.event.pull_request.base.sha` (pull_request) respektive
+  #   `github.event.merge_group.base_sha` (merge_group) — båda fältnamnen
+  #   verifierade mot octokit/webhooks payload-schemat 2026-09-04
+  #   (`MergeGroupChecksRequestedEvent.merge_group.base_sha`, "The SHA of the
+  #   merge group's parent commit").
+  #
+  # ═══ EFFEKTIV BAS — RÄTTELSE EFTER FÖRSTA SKARPA FYRNINGEN ═══
+  #
+  # Degraderingen fyrade skarpt första gången samma dag den byggdes, och föll
+  # på ett LATENT fel i villkor B. Nätverkssidan fungerade exakt som byggd
+  # (5/5 försök klassade "code undefined") — felet satt i basvalet.
+  #
+  # MÄTT: run 33869798369, job 101012813108, head `2d6f1a6e`.
+  #   eventets `base.sha`   = `21a76d6b`  (main NÄR PR-EVENTET SKAPADES)
+  #   checkoutens HEAD      = `1b3c3157`  "Merge 2d6f1a6e… into 72bbeb80…"
+  #   p1 (main vid CHECKOUT) = `72bbeb80` · p2 (PR-head) = `2d6f1a6e`
+  # Mellan `21a76d6b` och `72bbeb80` landade `c3008757` (#2306, label-policyn),
+  # som lade EN rad i `package.json` (`git show --stat c3008757`). Två-punkts-
+  # diffen mot eventets bas blev därför icke-tom trots att PR:ens EGEN diff mot
+  # sin merge-base är tom — jobbet föll på en annan PR:s ändring.
+  #
+  # `base.sha` är alltså STALE mot merge-refens faktiska bas så snart main rör
+  # sig mellan event och checkout. I vår fleet är det NORMALFALLET, inte
+  # undantaget. Semantiken vi vill ha är "ändrar DENNA PR beroendeträdet mot
+  # den redan auditerade main den mergas mot", och den basen är merge-commitens
+  # FÖRSTA FÖRÄLDER. Skriptet härleder den, faller tillbaka på eventets bas när
+  # HEAD inte är en merge-ref det känner igen, och loggar alltid vilken klausul
+  # som gällde.
+  #
+  # DÄRFÖR `git cat-file`, INTE `git rev-list --parents` — MÄTT, INTE ANTAGET:
+  # checkouten är grund (djup 1), så merge-commiten ÄR shallow-boundary och git
+  # graftar bort dess föräldrar. I en `--depth=1`-fixtur gav
+  # `git rev-list --parents -n1 HEAD` bara commitens egen SHA och
+  # `git log -1 --format=%P` en TOM rad, medan `git cat-file commit HEAD` gav
+  # båda parent-raderna. En härledning byggd på de graf-traverserande formerna
+  # hade varit en NO-OP i exakt den miljö den finns för.
+  #
+  # PÅ `push` MOT MAIN GÄLLER INGEN DEGRADERING. ci.yml kör även på
+  # `push: branches: [main]`, och det eventet bär ingen bas att jämföra mot —
+  # uttrycket nedan blir tomt och skriptet faller ut med exit 1 och en egen
+  # loggrad. Det är avsiktligt: post-merge-ytan ska aldrig kunna landa ett
+  # ogranskat träd på en tyst degradering.
+  #
+  # EN PR SOM RÖR package.json ELLER package-lock.json KRÄVER ALLTID ETT
+  # RIKTIGT AUDIT-SVAR. Och en rapporterad sårbarhet fäller ALLTID, oavsett
+  # lockfilens tillstånd. Steget är INTE continue-on-error, och allowlisten
+  # (audit-ci.jsonc) rörs inte av denna ändring.
+  #
+  # ═══ VAD DENNA KOMMENTAR INTE PÅSTÅR (ADR-083) ═══
+  #
+  # Degraderingen gör INTE trädet säkrare — den byter en KÄND, avgränsad
+  # risk (en advisory-körning uteblir på en diff som bevisligen inte rör
+  # beroendeträdet) mot en mätt, total blockering av varje PR. Den säger
+  # ingenting om huruvida trädet är fritt från sårbarheter under avbrottet;
+  # nästa körning som når endpointen är det som avgör. Beslutet och dess två
+  # villkor är bokförda i ADR-028 § Updates 2026-09-04.
+  #
+  # Logiken bor i `scripts/audit-ci-med-degradering.sh`, inte som ett inline
+  # run:-block — så shellcheck-strict (`scripts/*.sh`) täcker den och
+  # `scripts/test-audit-degradering.sh` (41 assertions, tvåsidig, hermetisk,
+  # körs i lint-jobbets gatekeeper-steg) prövar EXAKT den kod som körs här.
+  audit:
+    name: Audit dependencies (audit-ci)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions:
+      contents: read
+    steps:
+      # INGEN `fetch-depth:`-nyckel här — MEDVETET, samma skäl som
+      # `review-backstopp`-jobbet skriver ut: scripts/check-fetch-depth-
+      # invariant.sh kräver EXAKT TRE fetch-depth-bärare i denna fil
+      # (changed/lint/docs) och en fjärde fäller grinden oavsett värde.
+      # Jobbet behöver ingen historik: audit-ci läser arbetsträdet, och
+      # degraderingens bas-commit hämtas vid behov grunt av skriptet
+      # (`git fetch --no-tags --depth=1 origin <bas-sha>` — att GitHub
+      # tillåter fetch av en godtycklig SHA på djup 1 är MÄTT 2026-09-04 mot
+      # detta repo, exit 0). Checkoutens default (djup 1) är alltså både rätt
+      # för jobbet och det enda som håller invarianten.
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+        with:
+          node-version-file: '.nvmrc'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Audit dependencies (audit-ci with allowlist)
+        # NPM_CONFIG_FETCH_TIMEOUT=90000 behålls från `#2288` — den fungerar
+        # (bekräftat: ett försök tog exakt 91 s). NPM_CONFIG_FETCH_RETRIES är
+        # BORTA sedan `#2288` och kommer inte tillbaka: källäsningen visar att
+        # den är inert för en POST.
+        #
+        # Bas-SHA:n går via env, ALDRIG in i run:-blocket — dels skal-
+        # injektionsdisciplin, dels för att scripts/verify-ci-parity.mjs
+        # fäller fail-closed på ett ohanterat `${{ … }}` i ett run:-block.
+        # Uttrycket har en post i .ci-parity-policy.json:s exprSubstitutions
+        # (tom sträng lokalt ⇒ ingen degradering ⇒ samma utfall som det
+        # gamla steget hade lokalt: exit 1 när audit-ci faller).
+        #
+        # AUDIT_HEAD_SHA tillkom i samma PR efter den FÖRSTA SKARPA FYRNINGEN
+        # (se § EFFEKTIV BAS i kommentarsblocket ovan). Den används ENBART för
+        # att känna igen merge-refen — ett tomt värde stänger bara den ena
+        # klausulen, det öppnar aldrig någon väg till degradering.
+        env:
+          NPM_CONFIG_FETCH_TIMEOUT: "90000"
+          AUDIT_BAS_SHA: ${{ github.event.pull_request.base.sha || github.event.merge_group.base_sha }}
+          AUDIT_HEAD_SHA: ${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha }}
+        run: bash scripts/audit-ci-med-degradering.sh
+
   # Job 3: Tung testsvit — anropar den reusable ci-suite.yml (EN KÄLLA,
   # delad med nightly.yml OCH post-merge.yml; task-36.2 / ADR-077). Villkorat på
   # changed-detection: HELA svit-anropet skippas på doc-only-commits
@@ -2401,7 +2510,13 @@ jobs:
     # skipped post är per fail-closed-logiken nedan "skipped-by-design",
     # alltså grön. Det är avsikten: spärren ska bita i landnings-ögonblicket,
     # inte göra varje opgranskad PR röd (se jobbets eget kommentarsblock).
-    needs: [changed, lint, docs, suite, review-backstopp]
+    # audit tillagt TASK-395 (2026-09-04): supply-chain-auditen flyttade ur
+    # `lint` till ett eget jobb, och posten här är det som håller den lika
+    # required som förut. `audit` har varken `if:` eller `needs:` och kan
+    # därför aldrig bli `skipped` — den rapporterar alltid success eller
+    # failure, precis som `lint`, och fail-closed-logiken nedan behöver
+    # ingen särskild hantering för den.
+    needs: [changed, lint, audit, docs, suite, review-backstopp]
     runs-on: ubuntu-latest
     timeout-minutes: 1
     permissions: {}

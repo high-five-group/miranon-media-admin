@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-29 08:04'
-updated_date: '2026-08-29 09:56'
+updated_date: '2026-09-04 08:17'
 labels:
   - ready-for-agent
 dependencies:
@@ -30,9 +30,9 @@ Efter skivan bokför repot ersättningen öppet: ADR-118 får en § Updates-sekt
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 - [ ] #4 Prod-schemaändringar endast efter Marcus GO i klartext per tabell (ADR-125 § 8)
 - [ ] #5 Deny/allow-test grönt för varje ny eller ändrad EF-operation (sub-fas-mönstret, field-allowlists)
 - [ ] #6 Lagervakten grön — matchning och validering bor i EF/_shared, aldrig i klienten (ADR-057)
@@ -60,6 +60,8 @@ Efter skivan bokför repot ersättningen öppet: ADR-118 får en § Updates-sekt
 - #4 N/A — inga prod-schemaändringar, inget Airtable-anrop alls i denna skiva.
 - #5 N/A — ingen EF-operation ändrad, inga kodändringar (ren docs-skiva).
 - #6 N/A — ingen matchnings-/valideringskod skriven eller ändrad; ADR/ORDLISTA/data-model beskriver befintlig, redan landad kod (TASK-338.2).
+
+Nattgrind-stängning 2026-09-04: DoD bockad mot belägg — samtliga 3 AC redan bockade (mekanisk DoD#1); DoD#2 styrks av notens grindtabell (check:docs 14/14, markdownlint 0, check-langa-streck 0); DoD#3 verifierat mot git show --stat 9b9c1d9f (PR #2089): exakt de 5 filer notens egen git-status-lista angav. DoD#4/#5/#6 KVARSTÅR OBOCKADE — N/A per kortets egen klassning (ren docs-skiva, inget prod-anrop, ingen EF-/klientkod); rapporterat, inte bockat på gissning.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

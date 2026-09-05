@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-30
+updated: 2026-09-05
 review_by: 2027-02-08
 status: stable
 ---
@@ -257,7 +257,9 @@ misslyckas anropet blir det exit 77, inte grönt ljus.
 
 **Att tabellen ovan fortfarande stämmer är grindat** (`TASK-91`).
 `scripts/check-staging-preflight-wiring.mjs` prövar att haken faktiskt sitter
-kvar på alla fem ytorna, och körs av `ci.yml`-jobbet `Lint + Audit + TypeCheck`.
+kvar på alla fem ytorna, och körs av `ci.yml`-jobbet `Lint + TypeCheck` (hette
+`Lint + Audit + TypeCheck` fram till `TASK-395`, 2026-09-04, då audit-ci flyttade
+till det egna jobbet `Audit dependencies (audit-ci)`).
 Playwright-ytorna prövas mot Playwrights EGEN dependency-upplösning
 (`--list`), inte mot en regex över configen; Node-ytorna mot att anropet ligger
 i `main()`. Vad som räknas som yta — och vilka projekt som är undantagna, med

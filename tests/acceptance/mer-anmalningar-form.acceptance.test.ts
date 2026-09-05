@@ -148,6 +148,7 @@ function periodTestEvents(): EventRow[] {
 function blandadeRader(): Row[] {
   return [
     reg({
+      id: 'recRegCarl0001',
       fornamn: 'Carl',
       efternamn: 'Carlsson',
       eventmatchning: 'OK',
@@ -264,7 +265,9 @@ test.describe('Anmälningssidans form (TASK-299.5 — /mer/anmalningar)', () => 
       await expect(carlsRad.getByRole('button')).toHaveCount(0);
 
       await carlsRad.getByRole('link').click();
-      await expect(page).toHaveURL(/\/event\/recEvent1\/anmalda/);
+      // TASK-389: länkmålet är anmälans egen sida (task-18.17), inte längre
+      // eventets gamla Anmälda-lista.
+      await expect(page).toHaveURL('/event/recEvent1/anmalan/recRegCarl0001');
     });
 
     test('en Avviker-rad är en knapp som öppnar resolutionen — ingen nästlad interaktivitet', async ({

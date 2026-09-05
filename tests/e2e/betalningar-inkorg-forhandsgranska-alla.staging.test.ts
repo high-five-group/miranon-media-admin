@@ -1,12 +1,27 @@
+import AxeBuilder from '@axe-core/playwright';
 import type { BrowserContext } from '@playwright/test';
 import { expect, type Page, type Route, test } from '../support/test-bas';
 import { mockValjarLista, valjarRad } from './helpers/valjar-lista';
 
+/** Samma granskningsblock-region som `betalningar-inkorg-utskicksflode
+ *  .staging.test.ts`s `REGION` (TASK-362) — `aria-label="Registrerat nu"`
+ *  på `BetalningsInkorg.tsx`s C1-sektion. */
+const REGION = 'Registrerat nu';
+
 /**
- * TASK-370.4 — "Förhandsgranska alla N" i betalningsinkorgen (S116 Del 2
- * beslut 1, 4, 5, 6): en knapp bredvid "Skicka N kvitton" som öppnar ETT
- * fönster med ETT kombinerat dokument för HELA den väntande kön, oberoende
- * av per-rad-knapparna (samma per-nyckel-Set-mekanik som `TASK-369` byggde).
+ * TASK-370.4 — den KOMBINERADE förhandsgranskningen i betalningsinkorgen
+ * (S116 Del 2 beslut 1, 4, 5, 6): en knapp bredvid "Skicka N kvitton" som
+ * öppnar ETT fönster med ETT kombinerat dokument för HELA den väntande kön,
+ * oberoende av per-rad-knapparna (samma per-nyckel-Set-mekanik som
+ * `TASK-369` byggde).
+ *
+ * [AMENDERAD TASK-393, Marcus fynd S121] Den synliga texten OCH aria-label
+ * bar tidigare ordet "alla" ("Förhandsgranska alla N kvitton") — knappen
+ * lyder nu ALLTID "Förhandsgranska" med N i ett upphöjt räknarchip, samma
+ * form som ett-kvitto-knappen och `FilterRad`s hörn-badge
+ * (`RaknarChip`-primitiven). Denna svit är UPPDATERAD att asertera den nya
+ * formen, inte omskriven — beteendet (fönster, kombinerat dokument, tak 30,
+ * oberoende av radknapparna) som beskrivs nedan är HELT ORÖRT av TASK-393.
  *
  * ═══════════════════════════════════════════════════════════════════════════
  * VARFÖR STAGING-E2E OCH INTE ACCEPTANCE-KLASSEN (samma ADR-086-divergens
@@ -26,10 +41,12 @@ import { mockValjarLista, valjarRad } from './helpers/valjar-lista';
  * ═══════════════════════════════════════════════════════════════════════════
  * VAD SVITEN BEVISAR
  * ═══════════════════════════════════════════════════════════════════════════
- * A. AC #1: "Förhandsgranska alla N" finns BARA vid N ≥ 2, bredvid
- *    "Skicka N kvitton", med tillgängligt namn som bär antalet OCH ordet
- *    "kvitton". Vid N = 1 finns INGEN "alla"-knapp — bara dagens ensamma
- *    "Förhandsgranska", oförändrad.
+ * A. AC #1 (TASK-393): knappen lyder ALLTID "Förhandsgranska" + räknarchip,
+ *    för N = 1 OCH N ≥ 2 — ordet "alla" finns varken i synlig text eller
+ *    aria-label, i NÅGOT läge. Vid N ≥ 2 finns den kombinerade knappen
+ *    BREDVID "Skicka N kvitton"; vid N = 1 finns bara den ensamma knappen
+ *    (samma ett-kvitto-form som TASK-353, nu med samma etikett-form som
+ *    N ≥ 2-fallet).
  * B. AC #2/#3: klicket öppnar fönstret SYNKRONT med laddningssida; medan
  *    "alla"-anropet hänger är VARJE radknapp ÄNDÅ enabled (S116 beslut 5,
  *    "Oberoende") — och tvärtom: en radknapps eget anrop blockerar inte
@@ -253,7 +270,7 @@ async function registreraUtanAttSkicka(page: Page, namn: string): Promise<void> 
     .click();
 }
 
-test.describe('TASK-370.4 — "Förhandsgranska alla N" i betalningsinkorgen', () => {
+test.describe('TASK-370.4/TASK-393 — den kombinerade förhandsgranskningen i betalningsinkorgen', () => {
   test('AC #1: knappen finns BARA vid N ≥ 2, med rätt tillgängligt namn; per-rad-knapparna opåverkade', async ({
     page,
   }) => {
@@ -264,9 +281,9 @@ test.describe('TASK-370.4 — "Förhandsgranska alla N" i betalningsinkorgen', (
     await registreraUtanAttSkicka(page, NAMN_B);
     await registreraUtanAttSkicka(page, NAMN_C);
 
-    const allaKnapp = page.getByRole('button', { name: 'Förhandsgranska alla 3 kvitton' });
+    const allaKnapp = page.getByRole('button', { name: 'Förhandsgranska 3 kvitton' });
     await expect(allaKnapp).toBeVisible();
-    await expect(allaKnapp).toHaveText('Förhandsgranska alla 3');
+    await expect(allaKnapp).toHaveText('Förhandsgranska 3');
 
     // Bredvid "Skicka 3 kvitton" — samma knapprad.
     await expect(page.getByRole('button', { name: 'Skicka 3 kvitton' })).toBeVisible();
@@ -283,7 +300,7 @@ test.describe('TASK-370.4 — "Förhandsgranska alla N" i betalningsinkorgen', (
     ).toBeVisible();
   });
 
-  test('AC #1: N = 1 är OFÖRÄNDRAT — ingen "alla"-knapp, bara dagens ensamma Förhandsgranska', async ({
+  test('AC #1/#4 (TASK-393): N = 1 visar EN "Förhandsgranska"-knapp med räknarchip "1", singular aria-label', async ({
     page,
   }) => {
     await mockaGrund(page, 1);
@@ -291,11 +308,21 @@ test.describe('TASK-370.4 — "Förhandsgranska alla N" i betalningsinkorgen', (
 
     await registreraUtanAttSkicka(page, NAMN_A);
 
-    await expect(page.getByRole('button', { name: /Förhandsgranska alla/ })).toHaveCount(0);
+    // EXAKT EN knapp vars namn börjar med "Förhandsgranska" — ingen andra,
+    // separat "alla"-knapp för ett ensamt kvitto (samma form-val som förut,
+    // se `enSamKo` i produktionskoden), och per-rad-knapparna renderar
+    // ALDRIG vid N = 1 (bara vid `!enSamKo`).
+    await expect(page.getByRole('button', { name: /^Förhandsgranska/ })).toHaveCount(1);
+
+    // AC #4: singular ("kvitto", inte "kvitton") — det tillgängliga namnet
+    // är nu räknarformen, INTE längre personnamnet
+    // ("Förhandsgranska kvittot till {namn}"), se `BetalningsInkorg.tsx`s
+    // AMENDERAD TASK-393-kommentar vid ensamKandidat-knappen för skälet.
+    const knapp = page.getByRole('button', { name: 'Förhandsgranska 1 kvitto' });
+    await expect(knapp).toBeVisible();
+    await expect(knapp).toHaveText('Förhandsgranska 1');
+
     await expect(page.getByRole('button', { name: 'Skicka 1 kvitto' })).toBeVisible();
-    await expect(
-      page.getByRole('button', { name: `Förhandsgranska kvittot till ${NAMN_A}` }),
-    ).toBeVisible();
   });
 
   test('AC #2/#3: klicket öppnar fönstret SYNKRONT; "alla" och raderna är OBEROENDE i båda riktningarna', async ({
@@ -312,7 +339,7 @@ test.describe('TASK-370.4 — "Förhandsgranska alla N" i betalningsinkorgen', (
     await registreraUtanAttSkicka(page, NAMN_B);
     await registreraUtanAttSkicka(page, NAMN_C);
 
-    const allaKnapp = page.getByRole('button', { name: 'Förhandsgranska alla 3 kvitton' });
+    const allaKnapp = page.getByRole('button', { name: 'Förhandsgranska 3 kvitton' });
     const knappA = page.getByRole('button', { name: `Förhandsgranska kvittot till ${NAMN_A}` });
     const knappB = page.getByRole('button', { name: `Förhandsgranska kvittot till ${NAMN_B}` });
 
@@ -357,7 +384,7 @@ test.describe('TASK-370.4 — "Förhandsgranska alla N" i betalningsinkorgen', (
     });
     await expect.poll(() => fonsterAlla.url()).toBe(PREVIEW_URL_ALLA);
     await expect(allaKnapp).toBeEnabled();
-    await expect(allaKnapp).toHaveText('Förhandsgranska alla 3');
+    await expect(allaKnapp).toHaveText('Förhandsgranska 3');
   });
 
   test('AC #2: ett STÄNGT fönster hanteras UTAN FEL när svaret kommer sent', async ({
@@ -372,7 +399,7 @@ test.describe('TASK-370.4 — "Förhandsgranska alla N" i betalningsinkorgen', (
     await registreraUtanAttSkicka(page, NAMN_B);
     await registreraUtanAttSkicka(page, NAMN_C);
 
-    const allaKnapp = page.getByRole('button', { name: 'Förhandsgranska alla 3 kvitton' });
+    const allaKnapp = page.getByRole('button', { name: 'Förhandsgranska 3 kvitton' });
     const [fonsterAlla] = await Promise.all([context.waitForEvent('page'), allaKnapp.click()]);
 
     // LOTTA STÄNGER FÖNSTRET SJÄLV, INNAN SVARET KOMMIT — `forhandsgranskaAlla`s
@@ -407,7 +434,7 @@ test.describe('TASK-370.4 — "Förhandsgranska alla N" i betalningsinkorgen', (
     await registreraUtanAttSkicka(page, NAMN_B);
     await registreraUtanAttSkicka(page, NAMN_C);
 
-    const allaKnapp = page.getByRole('button', { name: 'Förhandsgranska alla 3 kvitton' });
+    const allaKnapp = page.getByRole('button', { name: 'Förhandsgranska 3 kvitton' });
     const knappA = page.getByRole('button', { name: `Förhandsgranska kvittot till ${NAMN_A}` });
 
     const [fonsterAlla] = await Promise.all([context.waitForEvent('page'), allaKnapp.click()]);
@@ -443,7 +470,7 @@ test.describe('TASK-370.4 — "Förhandsgranska alla N" i betalningsinkorgen', (
     await registreraUtanAttSkicka(page, NAMN_B);
     await registreraUtanAttSkicka(page, NAMN_C);
 
-    const allaKnapp = page.getByRole('button', { name: 'Förhandsgranska alla 3 kvitton' });
+    const allaKnapp = page.getByRole('button', { name: 'Förhandsgranska 3 kvitton' });
     const [fonsterAlla] = await Promise.all([context.waitForEvent('page'), allaKnapp.click()]);
 
     // EF:ens valideringstext (`_shared/kvitto-kombination.ts`s
@@ -481,7 +508,7 @@ test.describe('TASK-370.4 — "Förhandsgranska alla N" i betalningsinkorgen', (
     await registreraUtanAttSkicka(page, NAMN_B);
     await registreraUtanAttSkicka(page, NAMN_C);
 
-    const allaKnapp = page.getByRole('button', { name: 'Förhandsgranska alla 3 kvitton' });
+    const allaKnapp = page.getByRole('button', { name: 'Förhandsgranska 3 kvitton' });
     const knappA = page.getByRole('button', { name: `Förhandsgranska kvittot till ${NAMN_A}` });
 
     // 1) RAD A FELAR FÖRST.
@@ -508,5 +535,90 @@ test.describe('TASK-370.4 — "Förhandsgranska alla N" i betalningsinkorgen', (
       body: { url: PREVIEW_URL_ALLA, utgar: new Date(Date.now() + 300_000).toISOString() },
     });
     await expect.poll(() => fonsterAlla.url()).toBe(PREVIEW_URL_ALLA);
+  });
+
+  test('AC #4 (TASK-393): axe 0 fel på granskningsblocket med räknarchippet synligt, N ≥ 2', async ({
+    page,
+  }) => {
+    // N = 3: den kombinerade knappens `RaknarChip` visar "3" — samma
+    // house-mönster som `betalningar-inkorg-utskicksflode.staging.test.ts`s
+    // "axe: 0 fel på granskningsblocket"-test (TASK-362), scopat till SAMMA
+    // region. Ett-kvitto-fallets chip ("1") täcks redan av DET testet
+    // (`enSamKo`-läget bär numera också ett `RaknarChip`).
+    await mockaGrund(page, 3);
+    await page.goto('/mer/betalningar');
+
+    await registreraUtanAttSkicka(page, NAMN_A);
+    await registreraUtanAttSkicka(page, NAMN_B);
+    await registreraUtanAttSkicka(page, NAMN_C);
+
+    const allaKnapp = page.getByRole('button', { name: 'Förhandsgranska 3 kvitton' });
+    await expect(allaKnapp).toBeVisible();
+
+    const resultat = await new AxeBuilder({ page })
+      .include(`section[aria-label="${REGION}"]`)
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+      .analyze();
+    expect(resultat.violations).toEqual([]);
+  });
+
+  /**
+   * [REVIEW RUNDA 2, FYND 3] NEGATIV KONTROLL för axe-testet ovan.
+   *
+   * ADR-086-PREMISSPASS: uppdraget bad mig spegla "TASK-362:s redan
+   * negativ-kontrollerade axe-test i systerfilen"
+   * (`betalningar-inkorg-utskicksflode.staging.test.ts`, rad 424–457).
+   * PRÖVAT och FALSIFIERAT — den filens axe-test
+   * ("axe: 0 fel på granskningsblocket i BÅDA tillstånden") har INGEN
+   * negativ-kontroll-motpart; `grep -n "AxeBuilder" den filen` ger exakt
+   * TVÅ träffar, båda i SAMMA test, och `grep -n "negativ"` ger noll
+   * träffar i hela filen. Den negativa kontrollen TASK-362 review runda 1
+   * faktiskt byggde (commit `d6d7f5f9`) sitter på en ANNAN grind —
+   * `tests/api/betalningar-inkorg-statusyta-form.test.ts`s
+   * `treOberoendeGrenar`-grind, med den FAKTISKA JSX-ternary-regressionen
+   * som negativ kontroll — inte på en axe-scanning. Det finns alltså inget
+   * mönster att spegla RAKT AV; detta test bygger en EGEN negativ kontroll
+   * för AXE-SCOPET, för samma syfte husets övriga negativa kontroller
+   * tjänar: bevisa att grinden FÄLLER, inte bara råkar vara grön av
+   * avsaknad täckning.
+   *
+   * Metoden: injicera en VERKLIG, av axe-core detekterbar överträdelse
+   * (`button-name`, WCAG 4.1.2 Namn/Roll/Värde — en av de taggar testet
+   * ovan redan scannar med, `wcag2a`+`wcag412`) i den LEVANDE DOM:en, INUTI
+   * samma `section[aria-label="${REGION}"]`-scope, och verifiera att
+   * `AxeBuilder` faktiskt rapporterar den. `aria-label` ensam räcker inte —
+   * ARIA:s namnberäkning faller tillbaka till knappens textinnehåll
+   * ("Förhandsgranska", chippets siffra är `aria-hidden`) om bara
+   * attributet tas bort. Både attributet OCH allt barninnehåll måste bort
+   * för att knappen genuint ska sakna ett tillgängligt namn.
+   */
+  test('AC #4 (TASK-393) NEGATIV KONTROLL: axe-scopet FÄLLER på en verklig button-name-överträdelse', async ({
+    page,
+  }) => {
+    await mockaGrund(page, 3);
+    await page.goto('/mer/betalningar');
+
+    await registreraUtanAttSkicka(page, NAMN_A);
+    await registreraUtanAttSkicka(page, NAMN_B);
+    await registreraUtanAttSkicka(page, NAMN_C);
+
+    const allaKnapp = page.getByRole('button', { name: 'Förhandsgranska 3 kvitton' });
+    await expect(allaKnapp).toBeVisible();
+
+    // Injicera överträdelsen: knappen förlorar BÅDE sitt `aria-label` OCH
+    // allt textinnehåll (etiketten + `RaknarChip`) — inget tillgängligt
+    // namn kvarstår i något fallback-led.
+    await allaKnapp.evaluate((el) => {
+      el.removeAttribute('aria-label');
+      el.innerHTML = '';
+    });
+
+    const resultat = await new AxeBuilder({ page })
+      .include(`section[aria-label="${REGION}"]`)
+      .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
+      .analyze();
+
+    expect(resultat.violations.length).toBeGreaterThan(0);
+    expect(resultat.violations.some((v) => v.id === 'button-name')).toBe(true);
   });
 });

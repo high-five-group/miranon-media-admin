@@ -27,7 +27,7 @@ se noter.
 
 ### Rotorsak 1 — omgivningen mättes, inte åtkomsten
 
-En tidigare "token-utredning" (`tasks/sessions/2026-08-11-session-105.md`
+En tidigare "token-utredning" (`tasks/sessions/archive/2026-08/2026-08-11-session-105.md`
 Del 4, rad ~325–331) mätte fyra ytor — `printenv`, `~/.supabase/`,
 CI-workflow-filer, `.env`-filnamn — och drog slutsatsen att
 `SUPABASE_ACCESS_TOKEN` "saknas genuint". Slutsatsen var **fel**. Supabase

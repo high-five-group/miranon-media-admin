@@ -25,6 +25,6 @@ F-morgonsekvensen): skarpt mail via prod-appens åtgärdssida **delivered**
 enbart till Marcus, avsändare + Reply-To `lotta@outsidereality.se`
 verifierade i mottaget mail, loggrad sekundexakt i Utskickslogg
 (`Bekräftelse skickad` 19:17:21 + Status-flipp). Belägg: sessionsdok
-[S102 Del 6](../sessions/2026-08-10-session-102.md) · kort `TASK-177`
+[S102 Del 6](../sessions/archive/2026-08/2026-08-10-session-102.md) · kort `TASK-177`
 (Done, Resend `f4045fde`, loggrad `recD6TBB54yqMjzmh`). Trådens
 gold-standard-krav är därmed uppfyllt ände-till-ände.

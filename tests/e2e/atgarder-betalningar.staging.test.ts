@@ -656,17 +656,19 @@ test.describe('Åtgärds-sidans betalningssektion med miljöflaggan PÅ (pass 10
     // är det tvetydighets-ärliga — aldrig ett påstått "Allt betalt".
     //
     // ORDALYDELSEN BYTTES 2026-09-01 (Marcus: "'enligt basen' är
-    // tekniksvenska — får inte nå Lotta"). Skillnaden mot "Allt betalt" är
-    // vad testet vaktar, och den står kvar: `rad === null` säger "Inget kvar
-    // att betala", ett känt fullbetalt pris säger "Allt betalt". Se
-    // `PanelBetalningar.tsx` § `rad === null` för vad hedgen kostade.
+    // tekniksvenska — får inte nå Lotta"), och REVIDERADES 2026-09-04
+    // (S120, TASK-391): "kvar" förutsatte en skuld nolläget inte vet finns.
+    // Skillnaden mot "Allt betalt" är vad testet vaktar, och den står kvar:
+    // `rad === null` säger "Inget att betala", ett känt fullbetalt pris
+    // säger "Allt betalt". Se `PanelBetalningar.tsx` § `rad === null` för
+    // vad hedgen kostade.
     //
     // [PASS 10] Beskedet syns nu UTAN att någon fällning öppnas först —
     // sektionen ÄR betalningsytan. Inbetalnings-fällningen per person är
     // däremot kvar och fortfarande stängd: anropsbudgeten (en läsning per
     // person = tjugo EF-anrop) gäller oförändrat.
     const panel = betalningsPanel(page);
-    await expect(panel.getByText('Inget kvar att betala').first()).toBeVisible();
+    await expect(panel.getByText('Inget att betala').first()).toBeVisible();
 
     const fallning = panel.getByRole('button', { name: /Visa inbetalningarna för Eva Lindqvist/ });
     await expect(fallning).toHaveAttribute('aria-expanded', 'false');

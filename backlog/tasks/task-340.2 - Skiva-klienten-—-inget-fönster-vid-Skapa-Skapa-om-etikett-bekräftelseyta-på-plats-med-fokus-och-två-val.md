@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-29 08:18'
-updated_date: '2026-08-29 11:59'
+updated_date: '2026-09-04 08:18'
 labels:
   - ready-for-agent
 dependencies:
@@ -31,11 +31,11 @@ Efter skivan: Skapa öppnar inget fönster och skriver ingen laddningssida (för
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #4 Ingen HTML byggs i klienten; lagervakten (ADR-057) grön — promovering, hash-verifiering och ersätt-uppslag bor i EF/_shared
-- [ ] #5 Facit-granskning mot tasks/sessions/bilagor/s108-generering/facit.json: avvikelser utöver PRD:ns avsiktliga ändringar bokförda; ny baslinje först efter Marcus godkännande (ADR-074)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Ingen HTML byggs i klienten; lagervakten (ADR-057) grön — promovering, hash-verifiering och ersätt-uppslag bor i EF/_shared
+- [x] #5 Facit-granskning mot tasks/sessions/bilagor/s108-generering/facit.json: avvikelser utöver PRD:ns avsiktliga ändringar bokförda; ny baslinje först efter Marcus godkännande (ADR-074)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -61,6 +61,8 @@ Ursprunglig lydelse krävde "exakt en annonsering vid 'Till dokumenten'". Mätni
 Runda 1 lagrade den signerade nedladdnings-URL:en i bekräftelsens state (hämtad vid Skapa). Signerade Storage-URL:er lever **300 s** (`SIGNED_DOWNLOAD_URL_TTL_SECONDS`), och bekräftelsen är just den yta Lotta får STÅ KVAR på — ett klick efter fem minuter hade öppnat en flik mot en utgången URL: rått Storage-fel, inget besked i appen.
 
 Rättat till husets mönster (`DokumentYta.tsx` § IKONPAR): `window.open('', '_blank')` synkront i klicket, `skrivLaddningssida` med 309.38:s väntetext, och en FÄRSK URL via den ÅTERANVÄNDA `useForhandsvisaDokument`. `useGenereraEventBilaga` hämtar därmed ingen URL alls längre (`GenereradEventBilaga.url` rivet). Bevisat i test med en fixtur som ger en NY adress per anrop: 0 anrop vid Skapa, adress nr 1 vid första klicket, adress nr 2 vid det andra.
+
+Nattgrind-stängning 2026-09-04: DoD bockad mot belägg — samtliga 4 AC redan bockade (mekanisk DoD#1); DoD#2 styrks av PR #2093:s grindtabell (typecheck/biome/build/test:api:pure/acceptance/visual/check-langa-streck/check-facit/check:docs alla 0; test:api-fullsviten 23 fel bevisade pre-existerande/miljöbetingade, koden byte-identisk med main); DoD#3 verifierat mot git show --stat be87d128 (PR #2093): enbart klientfiler (dokument-/data-/domän-lagren) + kortfilen ändrade; DoD#4 styrks av att diffen är rent klientkod utan EF-ändring — klienten läser bara serverns booleaner (promoverad/underlagAndrat/ersatte) och skickar kallhash endast i kanonisk form, ingen matchning/hash-logik duplicerad client-side; DoD#5 styrks av notens egen facit-sektion (granskning gjord, avvikelser bokförda som öppen skuld, ingen ny baslinje tagen utan Marcus godkännande — ADR-074 respekterad, inte kringgången).
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

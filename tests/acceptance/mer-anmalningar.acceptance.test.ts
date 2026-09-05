@@ -151,12 +151,12 @@ test.describe('Samlade anmälningslistan (task-1.4 — /mer/anmalningar)', () =>
     await expect(page.getByText('3 anmälningar', { exact: true })).toBeVisible();
   });
 
-  test('AC 3 — rad-klick → eventets anmälda-vy; rad utan event olänkad med "Utan event"', async ({
+  test('AC 3 — rad-klick → anmälans egen sida (TASK-389); rad utan event olänkad med "Utan event"', async ({
     page,
     network,
   }) => {
     mockRegistrations(network, [
-      reg({ fornamn: 'Carl', efternamn: 'Carlsson', eventId: 'recEvent1' }),
+      reg({ id: 'recRegCarl0001', fornamn: 'Carl', efternamn: 'Carlsson', eventId: 'recEvent1' }),
       reg({
         fornamn: 'Eva',
         efternamn: 'Ek',
@@ -174,7 +174,9 @@ test.describe('Samlade anmälningslistan (task-1.4 — /mer/anmalningar)', () =>
     await expect(lista.getByRole('link')).toHaveCount(1); // endast Carl-raden
 
     await page.getByRole('link', { name: /Carl Carlsson/ }).click();
-    await expect(page).toHaveURL(/\/event\/recEvent1\/anmalda/);
+    // TASK-389: länkmålet är anmälans egen sida (task-18.17), inte längre
+    // eventets gamla Anmälda-lista — asserterat mot radens registrationId.
+    await expect(page).toHaveURL('/event/recEvent1/anmalan/recRegCarl0001');
   });
 
   test('tomt läge → vänlig text, inga fel', async ({ page, network }) => {

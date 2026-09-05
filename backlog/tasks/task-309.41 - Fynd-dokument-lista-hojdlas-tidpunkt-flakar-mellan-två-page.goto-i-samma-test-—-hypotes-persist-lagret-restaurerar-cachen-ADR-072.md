@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-29 12:47'
-updated_date: '2026-08-29 17:16'
+updated_date: '2026-09-04 08:14'
 labels:
   - ready-for-agent
 dependencies: []
@@ -28,13 +28,15 @@ Ur TASK-338.3 runda 3 (S113, 2026-08-29): `tests/acceptance/dokument-lista-hojdl
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
 Precedent (granskaren #2094 r3): TASK-28 (S75) — samma mekanism (ADR-072-persist + staleTime återanvänder tidigare scenarios data vid omnavigering med samma query-nyckel), redan klassat 'ingen produktbugg' med etablerat fix-mönster: distinkta nycklar per scenario. Diagnostisera mot TASK-28 först, omdiagnostisera inte från noll.
+
+Nattgrind-stängning 2026-09-04: DoD bockad mot belägg — samtliga 2 AC redan bockade (mekanisk DoD#1); DoD#2 styrks av PR #2112:s DoD-checklista (typecheck/biome/build gröna, test:api:s 2 fällningar bevisade pre-existerande/orelaterade) samt check-langa-streck 0; DoD#3 verifierat mot git show --stat 8744e909 (PR #2112): enbart tre acceptance-testfiler + kortfilen ändrade.
 <!-- SECTION:NOTES:END -->
