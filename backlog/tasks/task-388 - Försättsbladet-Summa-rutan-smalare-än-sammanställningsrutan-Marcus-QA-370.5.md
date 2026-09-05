@@ -4,7 +4,7 @@ title: 'Försättsbladet: Summa-rutan smalare än sammanställningsrutan (Marcus
 status: Done
 assignee: []
 created_date: '2026-09-04 09:21'
-updated_date: '2026-09-04 13:45'
+updated_date: '2026-09-05 10:22'
 labels:
   - ready-for-agent
 dependencies: []
@@ -80,6 +80,8 @@ en forklarande kommentar. Racknar in marginalparet i bredden direkt sa
 ekvationen aldrig blir overkonstruerad.
 
 S119 stangningsbatch 2a (2026-09-04): PR #2295 mergad i origin/main, merge-SHA 2575d0ae (verifierat mot origin/main-loggen). Status flippad till Done pa orkestrerarens explicita tillaggsinstruktion (som overtrumfar bygg-agentens generella Satt-aldrig-Done-kontrakt for detta enskilda fall, eftersom CI-signalen nu finns tillganglig via den mergade PR:en). Review r1-r2, risk LAG (runda 2 byte-identisk nyttolast mot runda 1, enda tillagget en main-merge PR #2288). Marcus kvittens verbatim 2026-09-04: 'Forsattsbladet ser ratt ut nu, 370.5 godkant.' Uppfoljningskort ur reviewen -- TASK-396 (kvitto.css rubrikruta), TASK-397 (.worktreeinclude .env.docraptor), TASK-398 (README matmetod) -- KALLPROVAT av denna agent: dessa tre kort finns INTE annu pa origin/main; de bor pa PR #2323 (gren docs/s119-stangningsbatch-1), som ar OPEN/omergad vid tidpunkten for denna anteckning. Pastaendet 'mintade i #2323' ar darmed inte annu sant i landad mening -- divergens flaggad, ingen atgard vidtagen har (utanfor denna skivas scope). OPPET: prod-promovering av preview-receipt v26 sker i Marcus fas4-deploy.
+
+preview-receipt promoverad till prod 2026-09-05 10:19Z som v17 i Marcus fas4-deploy (Summa-bredden, calc(100% - 5mm), nu i prod).
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
