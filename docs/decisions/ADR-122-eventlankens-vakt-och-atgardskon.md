@@ -326,3 +326,26 @@ Radnumren i den ursprungliga texten (100/181) stämde mot filnamnet, inte mot
 en rad i den nya filen — ingen ny radreferens gissas här, eftersom filen
 skrevs om vid promoveringen och en gammal rad-till-rad-mappning inte kan
 antas hålla.
+
+### 2026-09-05 — `KopplaTillEventDialog.tsx` riven som död kod (`TASK-400`)
+
+Beslut 1–8 står orörda. Fillistan i § 2026-08-26-noten ovan är en historisk
+ögonblicksbild av läget den dagen och rörs inte — den nämnde
+`KopplaTillEventDialog.tsx` som en levande kodplats med en "f.d."-not om
+`AnmalningarList`. Denna not gäller filens ÖDE, inte den listan.
+
+**Vad som hände.** `KopplaTillEventDialog.tsx` (`AnmalningRadResolution.tsx`s
+syskon, § "HISTORIK: TVÅ RESOLUTIONS-KOMPONENTER I SAMMA KATALOG" i
+`AnmalningRadResolution.tsx`s eget docblock) importerades ingenstans —
+`AnmalningRadResolution.tsx` hade redan tagit över rollen som radens
+resolution-trigger (helradsteknik, `TASK-299.5` AC #4), och dialogen med
+egen `"Koppla till event"`-etikett-knapp stod kvar utan anropsplats. Fyndet
+gjordes i `TASK-394`:s forensik (S120 Del 2, 2026-09-04) och rivningen
+genomfördes separat i `TASK-400` (2026-09-05) för att hålla eventväljar-PR:en
+i sitt eget scope. Kommentarerna som pekade på filen (`AnmalningRadResolution.tsx`,
+`Registration.ts`, `tests/support/fixturvarld/fixture-data.ts`) skrevs om i
+samma landning.
+
+**Beslutet berörs inte.** Vaktens mekanik (A1, formelfältet, åtgärdskön) är
+oförändrad — det som försvann var en overksam UI-genväg till samma
+mutation (`useRelinkRegistration`), inte vakten själv.

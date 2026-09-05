@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-05 10:54'
+updated_date: '2026-09-05 17:10'
 labels:
   - ready-for-agent
 dependencies: []
@@ -20,10 +21,10 @@ FYND (S120 Del 2, premiss-fynd i TASK-394:s forensik 2026-09-04; re-verifierat a
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Filen src/components/registrations/KopplaTillEventDialog.tsx är borttagen; grep-bevis i PR-kroppen på att inget importerar den före rivningen (bara kommentarer) och att inget refererar den efter.
-- [ ] #2 Kommentarerna i AnmalningRadResolution.tsx (docblocket om syskonet), Registration.ts och tests/support/fixturvarld/fixture-data.ts är omskrivna så att de inte pekar på en fil som inte finns; historiken bevaras i en mening ('dialogen med egen knapp revs i TASK-<detta kort>'), inte raderad tyst.
-- [ ] #3 ADR-122 rad ~318: fillistan får en Updates-not (datum + kortnummer) om att dialogen rivits; ADR:ns beslut orört.
-- [ ] #4 typecheck 0, biome 0 nya fel, build grön, test:api grön; inga acceptance-/visual-tester refererade filen (verifierat med grep i tests/).
+- [x] #1 Filen src/components/registrations/KopplaTillEventDialog.tsx är borttagen; grep-bevis i PR-kroppen på att inget importerar den före rivningen (bara kommentarer) och att inget refererar den efter.
+- [x] #2 Kommentarerna i AnmalningRadResolution.tsx (docblocket om syskonet), Registration.ts och tests/support/fixturvarld/fixture-data.ts är omskrivna så att de inte pekar på en fil som inte finns; historiken bevaras i en mening ('dialogen med egen knapp revs i TASK-<detta kort>'), inte raderad tyst.
+- [x] #3 ADR-122 rad ~318: fillistan får en Updates-not (datum + kortnummer) om att dialogen rivits; ADR:ns beslut orört.
+- [x] #4 typecheck 0, biome 0 nya fel, build grön, test:api grön; inga acceptance-/visual-tester refererade filen (verifierat med grep i tests/).
 <!-- AC:END -->
 
 ## Definition of Done

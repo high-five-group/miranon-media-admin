@@ -21,25 +21,26 @@ import { displayName } from './registration-display';
  * historik intakt (`git log --follow`). Den ENDA ändringen vid flytten är
  * detta docblock.
  *
- * ── VARFÖR TVÅ RESOLUTIONS-KOMPONENTER I SAMMA KATALOG ───────────────────
+ * ── HISTORIK: TVÅ RESOLUTIONS-KOMPONENTER I SAMMA KATALOG ────────────────
  *
- * Syskonet `KopplaTillEventDialog.tsx` bär SAMMA dialog med en liten
- * `"Koppla till event"`-etikett-knapp som trigger. Denna bär `children` som
- * trigger — radens eget namn-element, med `after:absolute after:inset-0` så
- * hela `<li>` blir klickytan (`PersonsList.tsx`s helradsteknik). Det är
- * skillnaden AC #4 kräver: den enda interaktiva ytan per rad är ANTINGEN en
- * riktig länk (OK-rader) ELLER en riktig knapp (åtgärdsrader), aldrig båda
- * och aldrig nästlade (axe `nested-interactive`).
+ * Syskonet `KopplaTillEventDialog.tsx` bar SAMMA dialog bakom en liten
+ * `"Koppla till event"`-etikett-knapp som trigger, medan denna komponent bär
+ * `children` som trigger — radens eget namn-element, med
+ * `after:absolute after:inset-0` så hela `<li>` blir klickytan
+ * (`PersonsList.tsx`s helradsteknik). Det är skillnaden AC #4 kräver: den
+ * enda interaktiva ytan per rad är ANTINGEN en riktig länk (OK-rader) ELLER
+ * en riktig knapp (åtgärdsrader), aldrig båda och aldrig nästlade (axe
+ * `nested-interactive`).
  *
  * Dupliceringen var medveten under prototypfasen (`ADR-102` B3: en prototyp
  * breddar aldrig en skarp, redan levererad komponent innan Marcus godkänt
- * formen) och står kvar efter promoveringen därför att syskonet FORTFARANDE
- * har egna konsumenter — det är inte en kvarglömd kopia. En sammanslagning
- * till en komponent med två trigger-former är ett eget, senare pass, inte
- * något denna promovering ska smyga in.
+ * formen). Syskonet miste sina konsumenter när denna komponent tog över
+ * rollen (helradsteknik, AC #4) och revs som död kod i `TASK-400`
+ * (2026-09-05) — det som återstår här är samma resolutionslogik i sin enda
+ * kvarvarande form.
  *
  * Dialogens kropp, mutationen (`useRelinkRegistration`, ORÖRD
- * produktionshook) och felhanteringen är en verbatim kopia av syskonets, så
+ * produktionshook) och felhanteringen var en verbatim kopia av syskonets, så
  * ytan har varit fullt funktionell mot riktig data sedan prototypfasen.
  */
 export function AnmalningRadResolution({
