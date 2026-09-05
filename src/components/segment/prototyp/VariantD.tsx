@@ -3143,7 +3143,11 @@ function SegmentDetalj({
           </div>
           <div className="flex flex-col py-1.5 print:hidden">
             <button type="button" onClick={onAndra} className={RAD_KLASS}>
-              <Pencil aria-hidden="true" size={16} className="shrink-0" />
+              {/* [TASK-390 iteration 5, Marcus dom 2026-09-05: "ta bort
+                  pen-ikonen framför 'Ändra regeln'"] RIVEN. Chevron-höger
+                  räcker som riktningssignal. `Pencil` lever kvar i
+                  importen ovan — den används fortfarande i `NyttSegmentVy`
+                  ("Bygg med egna villkor", rad ~4764), en annan yta. */}
               Ändra regeln
               <ChevronRight
                 aria-hidden="true"
