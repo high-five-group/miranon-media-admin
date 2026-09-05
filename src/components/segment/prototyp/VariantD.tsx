@@ -3097,9 +3097,7 @@ function SegmentDetalj({
               öppnade) — en distinktion Lotta aldrig har nytta av
               (Gunilla-principen). "Räknas ur" bär den mening som faktiskt
               finns. */}
-          <EtikettVardeRad term="Räknas ur">
-            Genomförd närvaro (Närvarande eller Deltog online)
-          </EtikettVardeRad>
+          <EtikettVardeRad term="Räknas ur">Närvaro</EtikettVardeRad>
           {/* [TASK-390 iteration 3, Marcus dom 2026-09-05: "Raden 'Motsvarar'
               behöver vi den?"] NEJ — RIVEN. Raden sa "2 utbildningar i basen
               i dag", ett TAL över exakt den mängd `RegelStruktur`s chips
@@ -3110,16 +3108,29 @@ function SegmentDetalj({
               gånger tidigare på den här ytan ("Visar N av M" mot "N av M
               visade", noll-fallets överlappsrad).
 
-              "Räknas ur" står KVAR och är inte samma sak: den säger vilken
-              närvaro som kvalificerar (Närvarande/Deltog online) — en
-              upplysning som inte finns någon annanstans i blocket.
+              "Räknas ur" står KVAR men är KORTAD (TASK-390 iteration 4,
+              Marcus dom 2026-09-05, efter granskning av iteration 3): "Ser
+              bra ut, det enda jag vill ta bort är '(Närvarande eller deltog
+              online)', det räcker liksom att det står 'Närvaro', alltså
+              'Räknas ur: Närvaro'. Håller du inte med? Lotta behöver inte
+              veta mer än så." De två värdena (Närvarande / Deltog online) är
+              Airtable-basens INTERNA statusalternativ på Deltagande-posten
+              (ORDLISTA.md, posten Deltagande, "närvaro" är statusen på
+              posten) — samma klass av intern distinktion som Form-raden ovan
+              revs för (Gunilla-principen). Raden fyller ändå en funktion
+              ingen annan rad fyller: den säger vad "Räknas ur" UTESLUTER
+              (att bara viss närvaro räknas ur, inte all anmälan) — en
+              upplysning som inte finns någon annanstans i blocket, bara
+              uttryckt kortare.
 
               REVERSIBEL: `rule` lever kvar (`tomRegel` läser den), så raden
               kommer tillbaka med sitt eget uttryck om Marcus säger annat.
               KÄND FÖLJD: `segment-detaljvyn-visual-{desktop,mobile}.aria.yml`
               bär `term: Motsvarar` + `definition: 2 utbildningar i basen i
-              dag` och diffar tills referenserna görs om vid stämpeln
-              (AC #6/#7) — medvetet INTE omgenererade här. */}
+              dag`, och (sedan iteration 4) även iteration 3:s längre,
+              parentesbärande "Räknas ur"-definitionstext — båda diffar tills
+              referenserna görs om vid stämpeln (AC #6/#7), medvetet INTE
+              omgenererade här. */}
           <div className="flex flex-col gap-3 py-3">
             <p className="text-small text-text-secondary">{definitionFor(entitet, parInfo)}</p>
             {/* [TASK-390 punkt 7, orkestrerarens rekommendation, Marcus
