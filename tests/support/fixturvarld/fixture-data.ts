@@ -213,8 +213,9 @@ export const EVENTS_RESPONSE = {
  *
  * `'OK'` SOM DEFAULT — DEN VERKLIGA GRUNDEN (rättat i review-runda 2,
  * PR #2051): `datum` LÄSES visst under `src/` —
- * `AnmalningRadResolution.tsx:140` och `KopplaTillEventDialog.tsx:122`
- * renderar båda `registration.datum ?? 'Uppgift saknas'`. Skälet baseliner
+ * `AnmalningRadResolution.tsx:141` renderar `registration.datum ?? 'Uppgift
+ * saknas'` (syskonet `KopplaTillEventDialog.tsx` gjorde detsamma innan det
+ * revs som död kod i `TASK-400`, 2026-09-05). Skälet baseliner
  * ändå inte rör sig är `behoverAtgard()` (`registration-display.ts`), som
  * `AnmalningarSida.tsx` (rad ~801/812) villkorar `AnmalningRadResolution`
  * på: den kräver `eventmatchning === 'Avviker' | 'Utan event'`, och var
@@ -227,10 +228,10 @@ export const EVENTS_RESPONSE = {
  * LATENT RISK, DÄRFÖR ÖPPET DOKUMENTERAD: sätter en framtida fixtur-post som
  * delar denna konstant `eventmatchning` till `'Avviker'`/`'Utan event'` (för
  * att t.ex. provtrycka åtgärdskö-läget), dyker `datum`-defaulten
- * `'20 sep 2026'` OFRIVILLIGT upp i `KopplaTillEventDialog`/
- * `AnmalningRadResolution` där `'Uppgift saknas'` visades tidigare — sätt då
- * `datum` explicit på den posten (samma mönster som `kalla`/`datum`-override
- * på `recVisualReg000006` nedan), lita aldrig på att defaulten råkar passa.
+ * `'20 sep 2026'` OFRIVILLIGT upp i `AnmalningRadResolution` där `'Uppgift
+ * saknas'` visades tidigare — sätt då `datum` explicit på den posten (samma
+ * mönster som `kalla`/`datum`-override på `recVisualReg000006` nedan), lita
+ * aldrig på att defaulten råkar passa.
  */
 const ADDITIVA_ANMALNINGSFALT = {
   noteringAnmalningsavgift: null,
