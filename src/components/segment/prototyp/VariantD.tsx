@@ -222,9 +222,11 @@ import {
   Group,
   Layers,
   ListPlus,
+  Minus,
   Pencil,
   Plus,
   Send,
+  UserRound,
   Users,
   X,
 } from 'lucide-react';
@@ -499,8 +501,10 @@ function konjunktGiltig(k: Konjunkt): boolean {
  * i klartexten hade läst som ett fel).
  *
  * SEDAN AND-PRIMITIVEN ÄR DETTA INTE ALLTID FRÅGAN — bruttot är METADATA
- * (Motsvarar-raden, modalitets-vakten, verkstadens expansions-not), aldrig
- * frågevägen. Den frågevägen (TASK-249.5) är `predikatTillDnfRegel` nedan,
+ * (tomhets-avgörandet, modalitets-vakten, verkstadens expansions-not), aldrig
+ * frågevägen. (Motsvarar-raden stod här som första exempel tills TASK-390
+ * iteration 3 rev den, 2026-09-05.) Den frågevägen (TASK-249.5) är
+ * `predikatTillDnfRegel` nedan,
  * som skickar EN DNF-regel direkt (ingen klient-side snitt/union, AC#2).
  * Ogiltiga grupper bidrar med INGENTING — inte heller sina giltiga villkor.
  */
@@ -730,9 +734,11 @@ type SegmentEntitet = {
 /**
  * BRUTTO-regeln för en entitet — vilka kurspar den RÖR. Sedan AND-primitiven
  * är detta INTE frågan för ett predikat med flerledade grupper (frågan äger
- * `useEntitetsMedlemmar` via frågeplanen); bruttot bär Motsvarar-raden,
- * modalitets-vakten och tomhets-avgörandet. För ärvda uppräknade regler och
- * predikat utan flerledade grupper är brutto och fråga samma sak.
+ * `useEntitetsMedlemmar` via frågeplanen); bruttot bär modalitets-vakten,
+ * tomhets-avgörandet (`tomRegel`) och `RegelStruktur`s uppräknade gren. För
+ * ärvda uppräknade regler och predikat utan flerledade grupper är brutto och
+ * fråga samma sak. (Detaljvyns "Motsvarar"-rad läste också härifrån tills
+ * TASK-390 iteration 3 rev den, Marcus dom 2026-09-05.)
  */
 function bruttoRegelFor(entitet: SegmentEntitet, parInfo: ParInfo[]): SegmentRule {
   if (entitet.predikat) return expandera(entitet.predikat, parInfo);
@@ -752,6 +758,192 @@ function definitionFor(entitet: SegmentEntitet, parInfo: ParInfo[]): string {
   return rule.exclude.length > 0
     ? `${med} Utan: ${rule.exclude.map(labelForPar).join(' eller ')}.`
     : med;
+}
+
+/* ================================================================== *
+ * REGELN SOM CHIPS — läs-only strukturvy (TASK-390 punkt 7)
+ * ================================================================== */
+
+/**
+ * En LÄS-ONLY chip för en INKLUDERAD utbildning — husets SUCCESS-TON, EXAKT
+ * de tokens `StatusBadge ton="success"` och täckningskvittensen (rad ~1713)
+ * redan bär: `bg-success-bg` + `contrast-more:border-success` på kapseln,
+ * `text-success` på ikonen ENSAM — texten själv står i default-färg (samma
+ * val båda förlagorna gör, AA mätt mot 100-tonen; att tinta hela texten hade
+ * varit en NY parning ingen annan yta bär). `<span>`, ingen knapp-semantik.
+ *
+ * ITERATION 2, TVÅ MARCUS-DOMAR I RAD (2026-09-04, mot staging):
+ *   1. "Ta också bort alla 'utan' och 'eller' chips i regelblocket, det blev
+ *      ju ännu otydligare nu." — operatorORDEN (och/eller/Utan:) är RIVNA.
+ *   2. "Chipsen borde ligga på samma rad, och den/de chips vars utbildning
+ *      inkluderas i segmentet bör vara grön ju? De andra nedtonade?" — de två
+ *      RADERNA (första domens svar) är i sin tur ersatta av EN rad (se
+ *      `RegelStruktur`), och tonen bär nu distinktionen i stället för
+ *      positionen.
+ *
+ * FÄRG ÄR ALDRIG ENSAM BÄRARE (WCAG 1.4.1, `CLAUDE.md` § Kvalitetsribba,
+ * Tillgänglighet alltid 11): `Check`-ikonen (`aria-hidden`) är en ANDRA,
+ * form-baserad signal utöver tonen, och en `sr-only`-svans ("ingår") gör
+ * skillnaden hörbar för skärmläsare som inte förmedlar bakgrundsfärg alls.
+ * Under `prefers-contrast: more` tar kanten (`border-success`) över som
+ * bärare när tonytan i sig kan tunnas ut.
+ */
+function RegelChip({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full border border-transparent bg-success-bg px-3 py-1 text-small contrast-more:border-success">
+      <Check aria-hidden="true" size={14} className="shrink-0 text-success" />
+      {children}
+      <span className="sr-only">, ingår</span>
+    </span>
+  );
+}
+
+/**
+ * DÄMPAD läs-only chip för en EXKLUDERAD utbildning — SAMMA ANATOMI som
+ * `RegelChip`, bara annan ton: `Minus`-ikon i stället för `Check`,
+ * `bg-bg-emphasized` i stället för `bg-success-bg`, `text-text-muted` i
+ * stället för default. Form, radie, padding (`px-3 py-1`), typsnittsgrad
+ * (`text-small`) och `border-transparent` är IDENTISKA rader — de två
+ * chipsen är samma objekt i två tillstånd, inte två olika objekt.
+ *
+ * ITERATION 3 (Marcus dom 2026-09-05): *"De 'ej-aktiverade' chipsen har
+ * kontur bara, snyggare om stilen går konsekvent med aktiverade/valda chips
+ * (de gröna), så en grå fyllnadsfärg istället för kontur tycker jag."* Det
+ * VÄNDER iteration 2:s "kant i stället för platta" — den domen gällde en yta
+ * där de gröna ännu inte var stämplade, och en kant mot en platta läste som
+ * två skilda komponenter.
+ *
+ * TONVALET ÄR PÅTVINGAT AV BÄRYTAN, inte valt: chipsen sitter i
+ * `DetaljGrupp`s kort, vars egen bakgrund ÄR `bg-bg-muted` (neutral-50). En
+ * `bg-bg-muted`-chip hade alltså varit osynlig. `bg-bg-emphasized`
+ * (neutral-100) är husets etablerade nästa steg på samma yta — exakt det
+ * `RAD_KLASS` redan använder som hovertillstånd PÅ ett `bg-bg-muted`-kort.
+ * Kontrasten `text-text-muted` (#6b6b6b) mot `bg-bg-emphasized` (#edeee9)
+ * är 4,57:1, alltså över WCAG AA 4,5:1 för normal text (14 px).
+ *
+ * FÄRG ÄR FORTFARANDE ALDRIG ENSAM BÄRARE (WCAG 1.4.1) — och nu bär den
+ * MINDRE ensam än förut, eftersom två ytor i samma tonfamilj skiljs åt av
+ * mindre än en ton mot en kant gjorde: `Minus` kontra `Check` är den
+ * form-baserade signalen, `sr-only`-svansen ("ingår inte") den hörbara.
+ * `contrast-more:border-border-strong` tänder kanten igen i högkontrastläge
+ * (mot `RegelChip`s `contrast-more:border-success` — två OLIKA kanter, så
+ * paret går isär också där tonytorna tunnas ut).
+ *
+ * `print:border-border` ÅTERFÖR KONTUREN PÅ PAPPER, och den raden är inte
+ * dekoration: webbläsare utelämnar bakgrundsfärger vid utskrift som default
+ * (`print-color-adjust: economy`; "Background graphics" är en ruta användaren
+ * måste kryssa i). Utan den hade båda plattorna tvättats bort och paret vilat
+ * ensamt på ikonskillnaden. Nu skiljs de på papper som de gjorde före denna
+ * ändring — kant kontra ingen kant — utöver `Minus`/`Check`.
+ */
+function RegelChipDampad({ children }: { children: React.ReactNode }) {
+  return (
+    <span className="inline-flex items-center gap-1 rounded-full border border-transparent bg-bg-emphasized px-3 py-1 text-small text-text-muted contrast-more:border-border-strong print:border-border">
+      <Minus aria-hidden="true" size={14} className="shrink-0 text-text-muted" />
+      {children}
+      <span className="sr-only">, ingår inte</span>
+    </span>
+  );
+}
+
+/**
+ * EN UTBILDNINGS-ETIKETT PER VILLKOR, I GRUPPKORTENS EGEN FORM ("RIM 1",
+ * "Fjärrskådning", …) — INTE regelverkstadens dimension-chips (modalitet
+ * separat, `NIVA_ETIKETT`s långform "Nivå 1"). Samma `familj`/`NIVA_KORT`-
+ * sammansättning som `KursAtom.etikett` (rad ~938: `` `${familj}
+ * ${NIVA_KORT[niva]}` ``) och `DE_FJORTON_ATOMER`s etiketter (rad
+ * ~1056–1059) — gruppkortens NAMN, återanvänt rakt av i stället för
+ * uppfunnet på nytt. Modaliteten (Utbildning/Föreläsning/Båda) är RIVEN som
+ * egen chip (orkestrerarens fynd, iteration 2): den bär noll information —
+ * varenda grupp i dagens taxonomi är "Utbildning", chippen upprepade bara
+ * det.
+ *
+ * De fjorton förskapade gruppernas villkor har ALLTID exakt en familj och
+ * som mest en nivå (`villkorForAtom`), så cross-produkten nedan kollapsar
+ * till EN etikett för dem. För ett fritt byggt villkor (regelverkstaden,
+ * flera familjer/nivåer i samma villkor) ger cross-produkten en etikett per
+ * kombination — familjer UTAN nivådimension (`FAMILJER_MED_NIVA`) får sin
+ * egen etikett oavsett vilka nivåer som råkar vara valda på ANDRA familjer
+ * i samma villkor.
+ */
+function atomEtiketterForVillkor(v: Villkor): string[] {
+  return v.familjer.flatMap((f) => {
+    if (!FAMILJER_MED_NIVA.includes(f) || v.nivaer.length === 0) return [f];
+    return v.nivaer.map((n) => `${f} ${NIVA_KORT[n]}`);
+  });
+}
+
+/** Samma etikett-form som `atomEtiketterForVillkor`, men för ETT taxonomi-
+ *  par (den äldre uppräknade regelformen) — slår upp familj/nivå via
+ *  `parInfo` (`byggParInfo`s berikning). Saknar paret en känd familj (data-
+ *  model-fälla, se `ParInfo`s docblock) faller den till `labelForPar`s
+ *  fullständiga etikett i stället för att gissa. */
+function atomEtikettForPar(p: Par, parInfo: ParInfo[]): string {
+  const info = parInfo.find((pi) => pi.par.kurs === p.kurs && pi.par.modalitet === p.modalitet);
+  if (!info?.familj) return labelForPar(p);
+  return info.niva ? `${info.familj} ${NIVA_KORT[info.niva]}` : info.familj;
+}
+
+/**
+ * Regeln STRUKTURERAT, under avsiktsmeningens prosa (`definitionFor`,
+ * renderad av anroparen) — EN RAD, ordfritt (iteration 2, andra tillägget):
+ * inkluderade chips (gröna) FÖRST, exkluderade chips (dämpade) DIREKT
+ * EFTER, i samma `flex-wrap`-flöde. Marcus två domar i rad river först
+ * operatorORDEN, sedan RADINDELNINGEN själv ("Chipsen borde ligga på samma
+ * rad") — tonen (grön kontra dämpad, se `RegelChip`/`RegelChipDampad`) är nu
+ * den ENDA visuella avgränsningen, förstärkt av varje chips egen ikon +
+ * sr-only-svans i stället för en grupperande rad/rubrik.
+ *
+ * AND/OR/NOT-TRÄDET PLATTAS MEDVETET (samma skäl som första tillägget):
+ * precisionen finns kvar i avsiktsmeningens prosa och i regelverkstaden,
+ * chipsen här är en SKANBAR SAMMANFATTNING, inte en fullständig återgivning
+ * av predikatet.
+ *
+ * TVÅ GRENAR, en per lagringsform — ingen egen parallell datakälla:
+ * `entitet.predikat` läser Konjunkt/Villkor-trädet, den äldre uppräknade
+ * formen (`predikat === null`) läser `bruttoRegelFor`s platta union.
+ * Dubbletter (samma utbildning i flera villkor/grupper) dedupas var för sig
+ * inom inkluderade/exkluderade — en utbildning kan aldrig vara båda samtidigt
+ * i en giltig regel, så de två mängderna kan aldrig kollidera i DOM-nyckeln.
+ *
+ * Tom regel (inget giltigt villkor byggt än) renderar ingenting — samma
+ * neutrala tomhet som `tomRegel`-grenen ovanför i `SegmentDetalj` redan
+ * hanterar; prosan ovan ("Ingen regel byggd än."/"Uppräknad regel utan
+ * inkluderade utbildningar.") räcker då som ensam text.
+ */
+function RegelStruktur({ entitet, parInfo }: { entitet: SegmentEntitet; parInfo: ParInfo[] }) {
+  let inkluderade: string[];
+  let exkluderade: string[];
+
+  if (entitet.predikat) {
+    const med = entitet.predikat.med.filter(konjunktGiltig);
+    if (med.length === 0) return null;
+    inkluderade = [
+      ...new Set(
+        med.flatMap((k) => k.villkor.filter(villkorGiltigt).flatMap(atomEtiketterForVillkor)),
+      ),
+    ];
+    exkluderade = [
+      ...new Set(entitet.predikat.utan.filter(villkorGiltigt).flatMap(atomEtiketterForVillkor)),
+    ];
+  } else {
+    const rule = bruttoRegelFor(entitet, parInfo);
+    if (rule.include.length === 0) return null;
+    inkluderade = [...new Set(rule.include.map((p) => atomEtikettForPar(p, parInfo)))];
+    exkluderade = [...new Set(rule.exclude.map((p) => atomEtikettForPar(p, parInfo)))];
+  }
+  if (inkluderade.length === 0) return null;
+
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      {inkluderade.map((etikett) => (
+        <RegelChip key={`in-${etikett}`}>{etikett}</RegelChip>
+      ))}
+      {exkluderade.map((etikett) => (
+        <RegelChipDampad key={`ut-${etikett}`}>{etikett}</RegelChipDampad>
+      ))}
+    </div>
+  );
 }
 
 /**
@@ -1031,9 +1223,16 @@ function aktaNamn(m: { namn: string | null }): string | null {
   return rensat.toLocaleLowerCase('sv-SE') === NAMN_SENTINEL ? null : rensat;
 }
 
-/** Namnet som det VISAS i en lista — fallbacken är en upplysning, aldrig ett namn. */
+/**
+ * Namnet som det VISAS i en lista — fallbacken är en upplysning, aldrig ett
+ * namn. UTAN parentes (TASK-390 punkt 4, Marcus 2026-09-04): "(namn saknas)"
+ * var appens enda parentetiska variant — `Waitlist.tsx`, `Narvaro.tsx`,
+ * `EventCheckin.tsx`, `EventRegistrations.tsx` och `registration-display.ts`
+ * skriver alla samma upplysning utan parentes ("Namn saknas"). Formen bär nu
+ * samma ord som resten av appen.
+ */
 function visatNamn(m: { namn: string | null }): string {
-  return aktaNamn(m) ?? '(namn saknas)';
+  return aktaNamn(m) ?? 'Namn saknas';
 }
 
 /**
@@ -2362,14 +2561,47 @@ function PersonRad({
   endastForelasning?: boolean;
 }) {
   const namn = visatNamn(medlem);
+  // NAMNLÖS → PERSON-IKON, ALDRIG INITIALER UR PLATSHÅLLARTEXTEN (TASK-390
+  // punkt 5, Marcus 2026-09-04). "NS" (initialerna ur "Namn saknas") hade
+  // sett ut som en persons riktiga initialer — exakt den missvisning
+  // `Intresserade.tsx`s `KonvergensRad` redan löste ut för "Namnlös
+  // intresserad" (`UserRound size-5` i en `size-9`-rundel, kopierad rakt av).
+  // `aktaNamn`, inte `namn`-strängen: den enda källan till sanning om
+  // huruvida personen HAR ett namn.
+  //
+  // ITERATION 3 (Marcus dom 2026-09-05): *"'initial-ikonen' för dem som inte
+  // har namn har fel grå fyllnadsfärg eller ingen alls, de ska ha exakt samma
+  // som de som har namn."* TONEN är därför INTE längre `Intresserade`s
+  // (`bg-bg-muted`/`text-text-muted`) utan den NAMNGIVNA GRENENS EGEN,
+  // tecken för tecken: `bg-bg-emphasized` + `text-text-secondary`. Skälet är
+  // kontexten, inte smaken — `Intresserade`s rundel sitter på en VIT
+  // `bg-surface`-yta där `bg-bg-muted` (neutral-50) syns som en rundel; här
+  // sitter den på publiklistans EGEN `bg-bg-muted`-platta, alltså exakt samma
+  // ton som bakgrunden (mätt 2026-09-05: `rgb(245,245,243)` mot plattans
+  // `rgb(245,245,243)`), och rundeln försvann. Namngivna rader bar redan
+  // `bg-bg-emphasized` (neutral-100, `rgb(237,238,233)`) och syntes.
+  // `UserRound` ärver `currentColor`, så ikonen får samma `text-secondary`
+  // som initialerna. `font-semibold text-small` följer INTE med: de är
+  // textegenskaper utan verkan på en ikon, och att kopiera dem hade varit
+  // brus, inte likhet.
+  const namnlos = aktaNamn(medlem) === null;
   return (
     <li className="flex break-inside-avoid items-center gap-3 py-2.5">
-      <span
-        aria-hidden="true"
-        className="flex size-9 shrink-0 items-center justify-center rounded-full bg-bg-emphasized font-semibold text-small text-text-secondary"
-      >
-        {initialer(namn)}
-      </span>
+      {namnlos ? (
+        <span
+          aria-hidden="true"
+          className="flex size-9 shrink-0 items-center justify-center rounded-full bg-bg-emphasized text-text-secondary"
+        >
+          <UserRound className="size-5" />
+        </span>
+      ) : (
+        <span
+          aria-hidden="true"
+          className="flex size-9 shrink-0 items-center justify-center rounded-full bg-bg-emphasized font-semibold text-small text-text-secondary"
+        >
+          {initialer(namn)}
+        </span>
+      )}
       <span className="flex min-w-0 flex-1 flex-col">
         <span className="flex min-w-0 flex-wrap items-center gap-2">
           <span className="truncate font-medium text-body">{namn}</span>
@@ -2458,7 +2690,7 @@ function PublikSektion({
     [medlemmar, vy, sokTerm],
   );
 
-  // PUBLIKENS ÖPPNA TAL. 154 av 247 rader som säger "(namn saknas)" är inte en
+  // PUBLIKENS ÖPPNA TAL. 154 av 247 rader som säger "Namn saknas" är inte en
   // kontrollista man kan granska — och QA-fyndet 2026-08-17 ("varför står det
   // Hej Ej?") hade besvarat sig självt med den här raden på plats. Räknas ur
   // HELA publiken, aldrig ur `synliga`: talet beskriver mängden man ska skicka
@@ -2537,7 +2769,18 @@ function PublikSektion({
       ) : medlemmar.length === 0 ? (
         // FÄLLA #34: noll träffar är NEUTRALT, aldrig ett fel. Golvet
         // (Närvaropoäng=1) lättas medvetet inte (ADR-064 beslut 4a).
-        <div className="flex flex-col items-center gap-1 px-4 py-10 text-center">
+        //
+        // ITERATION 2 (Marcus 2026-09-04, dev-servern mot staging): "jag kan
+        // ju inte granska publiklistan för det finns ingen lista, jag ser
+        // tomläget, som dessutom saknar den streckade konturen som vi precis
+        // stämplade på Segment-vyn." Samma yta som `SektionsRubrik`s
+        // "Inga sparade segment än"-tomläge (`TASK-392`, facit-amendering
+        // s114, PR #2308, `feat/segment-tomlage-textur` rad ~2180): vit
+        // `bg-surface`-platta med streckad ram i stället för `KORT_KLASS`s
+        // toniga grå — samma val, för samma skäl (skiljer tomläget visuellt
+        // från de FYLLDA gruppkorten/listorna runtomkring). Klassträngen är
+        // DUPLICERAD, inte importerad — unifiering är ett separat kort.
+        <div className="flex flex-col items-center gap-2 rounded-2xl border border-border border-dashed bg-surface px-4 py-10 text-center contrast-more:border-border-strong">
           <p className="font-medium text-body">0 personer ännu</p>
           <p className="max-w-prose text-small text-text-muted">
             Närvaron för de utbildningar regeln träffar är inte avstämd i basen - publiken fylls av
@@ -2597,22 +2840,101 @@ function PublikSektion({
           ) : (
             // LISTYTAN ÄR PERSONLISTANS (`PersonsList.tsx:476-479`): tonal
             // platta, `divide-y` som avdelare, `px-4` inner-inset "där
-            // rundningen slutar". Den yttre `mx-4` ersätter sektionens `px-4`
-            // på just denna rad - plattan ska ha samma kant som sidans övriga
-            // kort, inte ligga i marginalen.
+            // rundningen slutar" — och EN inset, aldrig två (TASK-390 punkt 2,
+            // Marcus 2026-09-04, DOM-mätt): den ursprungliga ytterdiven
+            // (`<div className="px-4">`) lade sin EGEN `px-4` UTANPÅ ulens
+            // redan egna `px-4`, alltså dubbel inset — 32 px på mobil (311 px
+            // platta mot knappkortets 343 px bredd, samma vänsterkant +16 px
+            // förskjuten), 16 px på varje sida på desktop (536 px platta mot
+            // knappkortets 568 px, x=452 mot kortets x=436). Plattan bär nu
+            // SAMMA mönster som `KORT_KLASS`-korten ovanför den (samma
+            // `rounded-2xl border ... bg-bg-muted px-4`-stomme som
+            // primärknappens kort), direkt under sektionens flöde — exakt
+            // samma vänster/högerkant som knappkortet och rubrikraden.
             //
-            // `pr-2.5` FÖRE `px-4` i klasslistan hade förlorat mot den; därför
-            // står rullningens klasser sist. Höger-insetet blir 10 px i stället
-            // för 16 - det är plats åt rullningslisten (`scrollbar-inline`),
-            // samma val som `DeltagarListan`.
-            <div className="px-4">
+            // DEN YTTRE `<div>` FINNS IGEN SEDAN ITERATION 3 (blocket nedan),
+            // men bär INTE tillbaka dubbel-insetet: paddingen ligger på ETT
+            // element, kortet, och `<ul>` har ingen egen. Vad div:en löser är
+            // rullningslistens geometri — se nästa stycke.
+            //
+            // ── ITERATION 3, PUNKT B: PLATTAN OCH RULLNINGSYTAN ÄR TVÅ
+            // ELEMENT, INTE ETT (Marcus dom 2026-09-05, tredje domen på samma
+            // punkt) ────────────────────────────────────────────────────────
+            //
+            // Marcus: *"Scrollbaren går för högt och för lågt så den hamnar
+            // utanför blocket/listan fortfarande."*
+            //
+            // ROTORSAKEN, DOM-MÄTT 2026-09-05 (1440, headless Chromium, före
+            // ändringen): `<ul>` var SAMMA ELEMENT som den rundade plattan —
+            // `scrollerArPlattan: true`, båda `top 479,75 / bottom 887,75 /
+            // left 436 / right 1004`, `plattaRadie 16px`, `rannaPx 13`. En
+            // klassisk rullningslist ritas i scroll-containerns PADDING-BOX,
+            // alltså över HELA det elementets höjd. När det elementet också ÄR
+            // kortet betyder det tre fel på en gång:
+            //   1. tracket började 7,00 px OVANFÖR första radens överkant
+            //      (`overhangTopp: 7` = ulens egen `py-1.5` + kanten) — "går
+            //      för högt";
+            //   2. det slutade lika långt NEDANFÖR sista raden — "går för
+            //      lågt";
+            //   3. det låg i x mellan 991 och 1004, alltså ända ut till
+            //      kortets absoluta högerkant — där en 16 px hörnradie kröker
+            //      bakgrunden INÅT. Ett rektangulärt spår i ett rundat hörn
+            //      ligger per definition utanför plattan: "hamnar utanför
+            //      blocket".
+            // Iteration 2:s `py-1.5` flyttade radernas INNEHÅLL bort från
+            // hörnkurvan, men rörde aldrig tracket — därför föll punkten igen.
+            //
+            // FÖREBILDEN HAR ALDRIG HAFT PROBLEMET, och nu vet vi varför:
+            // `DeltagarListan`s `<ul>` (`Deltagare.tsx:1211-1213`) är
+            // OSMYCKAD — `flex flex-col gap-2.5` plus rullklasserna, ingen
+            // rundning, ingen bakgrund, ingen padding. Där bär varje KORT sin
+            // egen form, så scroll-containern har ingen ram att sticka utanför.
+            // `DokumentYta.tsx:2833` löser samma sak likadant ("RULLEN LIGGER
+            // UTANFÖR KORTEN, PÅ DEN GRÅ BEHÅLLAREN — `<ul>` är genomskinlig").
+            //
+            // FIXEN ÄR DÄRFÖR STRUKTURELL, inte ännu en paddingjustering: den
+            // yttre `<div>` är KORTET (rundning, kant, `bg-bg-muted`, padding)
+            // och `<ul>` är ENBART rullningsytan (transparent, formlös). Då
+            // ligger trackets överkant exakt på första radens överkant och
+            // underkanten på listytans, och hela spåret sitter innanför
+            // plattans ram i båda riktningar.
+            //
+            // GEOMETRIN ÄR BEVARAD, inte omritad (punkt 2 från iteration 2 får
+            // inte falla tillbaka): kortets ytterkant är fortfarande `<div>`:ens
+            // och alltså identisk med `KORT_KLASS`-kortens (mätt: samma
+            // `left`/`right`/`width` som primärknappens kort). Vänster-insetet
+            // till radens innehåll är fortfarande 16 px (`pl-4` på kortet, ulen
+            // har ingen egen). `pr-1.5` (6 px) i stället för `px-4` när listan
+            // rullar är rännans nya hemvist — den ersätter iteration 2:s
+            // `pr-2.5` INUTI ulen, som var det som sköt spåret ut i kanten.
+            // Rullar listan inte finns ingen ränna, och kortet är symmetriskt
+            // `px-4` igen. `print:pr-4` återställer symmetrin på papper, där
+            // `overflow` ändå är `visible` och ingen list finns.
+            //
+            // INGEN EGEN RUNDNING PÅ `<ul>`, medvetet: `border-radius` på en
+            // scroll-container klipper spårets ändar i hörnen — samma avhuggna
+            // intryck vi just rättar, bara i en annan form. Fokusringen
+            // (`focus-ring-inset`, tab-stoppet nedan) blir därmed rak innanför
+            // en rundad platta. Det är ett aktivt-tillståndsmärke, inte en
+            // vilande yta, och läsbarheten vinner över hörnformen.
+            //
+            // OFÖRÄNDRAT: `kanRulla`-vakten (tab-stoppet sätts bara när listan
+            // faktiskt klipper), `divide-y` på ulen, `max-h-[25.5rem]`,
+            // `print:max-h-none print:overflow-visible` (papperet får alla
+            // rader), och `contrast-more:border-border-strong` — den följer med
+            // kanten till det element som numera bär den.
+            <div
+              className={`rounded-2xl border border-transparent bg-bg-muted py-1.5 contrast-more:border-border-strong ${
+                kanRulla ? 'pr-1.5 pl-4 print:pr-4' : 'px-4'
+              }`}
+            >
               <ul
                 aria-label="Personer i publiken"
                 // biome-ignore lint/a11y/noNoninteractiveTabindex: fokuserbar scrollregion är WCAG 2.1.1-golvet (axe scrollable-region-focusable) — samma motiv som NyaAnmalningarCard.tsx:112.
                 tabIndex={kanRulla ? 0 : undefined}
-                className={`flex flex-col divide-y divide-border rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong ${
+                className={`flex flex-col divide-y divide-border ${
                   kanRulla
-                    ? 'focus-ring-inset scrollbar-inline max-h-[25.5rem] overflow-y-auto pr-2.5 print:max-h-none print:overflow-visible print:pr-4'
+                    ? 'focus-ring-inset scrollbar-inline max-h-[25.5rem] overflow-y-auto print:max-h-none print:overflow-visible'
                     : ''
                 }`}
               >
@@ -2741,7 +3063,11 @@ function SegmentDetalj({
               className={`${RAD_KLASS} disabled:cursor-not-allowed disabled:opacity-60`}
             >
               <Send aria-hidden="true" size={16} className="shrink-0" />
-              Skicka utskick till det här segmentet
+              {/* TASK-390 punkt 1 (Marcus 2026-09-04): "Skicka" var appens ord
+                  för AVSÄNDANDET (mailet går ut nu); "Gör" är ordet för att
+                  ÖPPNA VERKTYGET — knappen leder till granska-läget, den
+                  skickar ingenting själv. */}
+              Gör ett utskick till det här segmentet
               <ChevronRight
                 aria-hidden="true"
                 size={18}
@@ -2763,27 +3089,65 @@ function SegmentDetalj({
           skapar i skov, kontrollerar alltid) — men den måste gå att nå, och
           "Ändra regeln" är raden som leder vidare (chevron höger). */}
         <DetaljGrupp id="grupp-regel" rubrik="Regeln">
-          <EtikettVardeRad term="Form">
-            {entitet.predikat
-              ? 'Predikat över dimensioner'
-              : 'Uppräknade utbildningspar (äldre form)'}
-          </EtikettVardeRad>
-          <EtikettVardeRad term="Räknas ur">
-            Genomförd närvaro (Närvarande eller Deltog online)
-          </EtikettVardeRad>
-          <EtikettVardeRad term="Motsvarar">
-            {rule.include.length === 0
-              ? 'Inga utbildningar'
-              : `${rule.include.length} ${
-                  rule.include.length === 1 ? 'utbildning' : 'utbildningar'
-                } i basen i dag`}
-          </EtikettVardeRad>
-          <div className="py-3">
+          {/* [TASK-390 punkt 6, orkestrerarens rekommendation, Marcus
+              2026-09-04] "Form"-raden ("Predikat över dimensioner" /
+              "Uppräknade utbildningspar (äldre form)") ÄR RIVEN. Den skiljde
+              två INTERNA lagringsformer (den nya predikat-motorn mot den
+              äldre uppräknade regelformen, migrationssömmen `TASK-249.5`
+              öppnade) — en distinktion Lotta aldrig har nytta av
+              (Gunilla-principen). "Räknas ur" bär den mening som faktiskt
+              finns. */}
+          <EtikettVardeRad term="Räknas ur">Närvaro</EtikettVardeRad>
+          {/* [TASK-390 iteration 3, Marcus dom 2026-09-05: "Raden 'Motsvarar'
+              behöver vi den?"] NEJ — RIVEN. Raden sa "2 utbildningar i basen
+              i dag", ett TAL över exakt den mängd `RegelStruktur`s chips
+              räknar upp med NAMN direkt under den ("RIM 1" "RIM 2"). Att
+              först säga hur många och sedan vilka är en dubbling, och talet
+              är den svagare av de två: man kan räkna chipsen, man kan inte
+              härleda chipsen ur talet. Samma dubblings-klass Marcus rev två
+              gånger tidigare på den här ytan ("Visar N av M" mot "N av M
+              visade", noll-fallets överlappsrad).
+
+              "Räknas ur" står KVAR men är KORTAD (TASK-390 iteration 4,
+              Marcus dom 2026-09-05, efter granskning av iteration 3): "Ser
+              bra ut, det enda jag vill ta bort är '(Närvarande eller deltog
+              online)', det räcker liksom att det står 'Närvaro', alltså
+              'Räknas ur: Närvaro'. Håller du inte med? Lotta behöver inte
+              veta mer än så." De två värdena (Närvarande / Deltog online) är
+              Airtable-basens INTERNA statusalternativ på Deltagande-posten
+              (ORDLISTA.md, posten Deltagande, "närvaro" är statusen på
+              posten) — samma klass av intern distinktion som Form-raden ovan
+              revs för (Gunilla-principen). Raden fyller ändå en funktion
+              ingen annan rad fyller: den säger vad "Räknas ur" UTESLUTER
+              (att bara viss närvaro räknas ur, inte all anmälan) — en
+              upplysning som inte finns någon annanstans i blocket, bara
+              uttryckt kortare.
+
+              REVERSIBEL: `rule` lever kvar (`tomRegel` läser den), så raden
+              kommer tillbaka med sitt eget uttryck om Marcus säger annat.
+              KÄND FÖLJD: `segment-detaljvyn-visual-{desktop,mobile}.aria.yml`
+              bär `term: Motsvarar` + `definition: 2 utbildningar i basen i
+              dag`, och (sedan iteration 4) även iteration 3:s längre,
+              parentesbärande "Räknas ur"-definitionstext — båda diffar tills
+              referenserna görs om vid stämpeln (AC #6/#7), medvetet INTE
+              omgenererade här. */}
+          <div className="flex flex-col gap-3 py-3">
             <p className="text-small text-text-secondary">{definitionFor(entitet, parInfo)}</p>
+            {/* [TASK-390 punkt 7, orkestrerarens rekommendation, Marcus
+                2026-09-04] Avsiktsmeningen (ovan) vinner alltid som PROSA;
+                själva regeln renderas STRUKTURERAT under den, som
+                läs-only chip-grupper — Linear/GitHub/Notions filter-pill-
+                mönster. `RegelStruktur` läser samma predikat/`bruttoRegelFor`
+                som prosan redan gör, aldrig en egen parallell källa. */}
+            <RegelStruktur entitet={entitet} parInfo={parInfo} />
           </div>
           <div className="flex flex-col py-1.5 print:hidden">
             <button type="button" onClick={onAndra} className={RAD_KLASS}>
-              <Pencil aria-hidden="true" size={16} className="shrink-0" />
+              {/* [TASK-390 iteration 5, Marcus dom 2026-09-05: "ta bort
+                  pen-ikonen framför 'Ändra regeln'"] RIVEN. Chevron-höger
+                  räcker som riktningssignal. `Pencil` lever kvar i
+                  importen ovan — den används fortfarande i `NyttSegmentVy`
+                  ("Bygg med egna villkor", rad ~4764), en annan yta. */}
               Ändra regeln
               <ChevronRight
                 aria-hidden="true"

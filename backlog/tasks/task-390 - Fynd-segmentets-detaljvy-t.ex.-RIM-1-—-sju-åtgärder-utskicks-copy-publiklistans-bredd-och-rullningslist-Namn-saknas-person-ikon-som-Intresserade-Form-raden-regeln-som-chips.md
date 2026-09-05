@@ -7,6 +7,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-04 10:03'
+updated_date: '2026-09-05 16:54'
 labels:
   - ready-for-agent
 dependencies: []
@@ -21,13 +22,13 @@ FYND (Marcus 2026-09-04, S120 Del 1, verbatim i sessionsdoket): öppnar man ett 
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Copy: primärknappen lyder 'Gör ett utskick till det här segmentet'; ingen annan sträng ändrad; acceptance-test som asserterar knapptexten uppdaterat.
-- [ ] #2 Publiklistans platta har samma yttre kant som sidans övriga kort (mätt i DOM: samma vänster/höger-x som KORT_KLASS-korten på 1440 och 375); dubbel inset borta.
-- [ ] #3 Rullningslisten börjar i nivå med listans första rad och slutar vid sista, som DeltagarListan; ingen list ovanför innehållet; fokusring och print-läge oförändrade.
-- [ ] #4 Namnlös medlem visas som 'Namn saknas' (utan parentes) med person-ikon i rundeln enligt Intresserade.tsx-mönstret; namngivna rader oförändrade; räknaren 'namnlösa' oförändrad.
-- [ ] #5 Form-raden i Regeln-blocket är borttagen ELLER omskriven enligt Marcus stämpel; ingen teknisk term (predikat/dimension) syns för användaren.
-- [ ] #6 Regeln renderas som Marcus stämplat i iterationen (rekommendation: avsiktsmening som prosa + chip-grupper för utbildningar/nivåer med operatorer som text); prefers-contrast: more och print klarar formen; aria-snapshot i tests/visual/segment-promoverings-grind.spec.ts uppdaterad medvetet i samma landning om DOM ändras.
-- [ ] #7 Facit-amendering skriven i tasks/sessions/bilagor/s104-segment-divergens/ (AMENDERING-<datum>-detaljvyn-sju-atgarder.md) med Marcus stämpelcitat och nya bilder; facit.json orört i övrigt.
+- [x] #1 Copy: primärknappen lyder 'Gör ett utskick till det här segmentet'; ingen annan sträng ändrad; acceptance-test som asserterar knapptexten uppdaterat.
+- [x] #2 Publiklistans platta har samma yttre kant som sidans övriga kort (mätt i DOM: samma vänster/höger-x som KORT_KLASS-korten på 1440 och 375); dubbel inset borta.
+- [x] #3 Rullningslisten börjar i nivå med listans första rad och slutar vid sista, som DeltagarListan; ingen list ovanför innehållet; fokusring och print-läge oförändrade.
+- [x] #4 Namnlös medlem visas som 'Namn saknas' (utan parentes) med person-ikon i rundeln enligt Intresserade.tsx-mönstret; namngivna rader oförändrade; räknaren 'namnlösa' oförändrad.
+- [x] #5 Form-raden i Regeln-blocket är borttagen ELLER omskriven enligt Marcus stämpel; ingen teknisk term (predikat/dimension) syns för användaren.
+- [x] #6 Regeln renderas som Marcus stämplat i iterationen (rekommendation: avsiktsmening som prosa + chip-grupper för utbildningar/nivåer med operatorer som text); prefers-contrast: more och print klarar formen; aria-snapshot i tests/visual/segment-promoverings-grind.spec.ts uppdaterad medvetet i samma landning om DOM ändras.
+- [x] #7 Facit-amendering skriven i tasks/sessions/bilagor/s104-segment-divergens/ (AMENDERING-<datum>-detaljvyn-sju-atgarder.md) med Marcus stämpelcitat och nya bilder; facit.json orört i övrigt.
 <!-- AC:END -->
 
 ## Definition of Done
