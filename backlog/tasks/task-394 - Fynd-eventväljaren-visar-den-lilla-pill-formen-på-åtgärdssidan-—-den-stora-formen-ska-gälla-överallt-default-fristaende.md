@@ -3,10 +3,10 @@ id: TASK-394
 title: >-
   Fynd: eventväljaren visar den lilla pill-formen på åtgärdssidan — den stora
   formen ska gälla överallt (default 'fristaende')
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-04 10:57'
-updated_date: '2026-09-05 11:10'
+updated_date: '2026-09-05 11:43'
 labels:
   - ready-for-agent
 dependencies: []
@@ -30,7 +30,13 @@ FYND (Marcus 2026-09-04, S120 Del 1, verbatim i sessionsdoket): 'Jag stör mig p
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landad 2026-09-05 via PR #2319, merge-SHA e677d3dd (11:42Z), Marcus stämpel i webbläsaren 2026-09-05: "Eventväljaren ser bra ut." Review-agent runda 1 (färsk kontext): risk lag, konvergerad; ett info-fynd bokfört: fyra styrande dokument (CONTRIBUTING.md, ORDLISTA.md, docs/byggplan.md, docs/specs/DESIGN-SYSTEM-SPEC.md) bär enbart updated-datumbumpen ur pre-commit-hooken (ADR-030) från merge-synken mot main — DoD #3 bockas mot den öppet bokförda avvikelsen, ingen innehållsändring i filerna. AC #3 klassad felställd av granskaren: KopplaTillEventDialog är död kod (0 konsumenter), rivningen ägs av TASK-400. Facit-amendering: s111-anmalningssidan-konvergens/AMENDERING-2026-09-05-eventvaljarens-stora-form.md (enda stämplade facit vars kallor bär EventValjare.tsx). Skärmdumpar: tasks/sessions/bilagor/s120-eventvaljaren-task394/ (16). Källa: S120 sessionsdok Del 4.
+<!-- SECTION:FINAL_SUMMARY:END -->
