@@ -3,9 +3,10 @@ id: TASK-394
 title: >-
   Fynd: eventväljaren visar den lilla pill-formen på åtgärdssidan — den stora
   formen ska gälla överallt (default 'fristaende')
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-04 10:57'
+updated_date: '2026-09-05 11:43'
 labels:
   - ready-for-agent
 dependencies: []
@@ -20,16 +21,22 @@ FYND (Marcus 2026-09-04, S120 Del 1, verbatim i sessionsdoket): 'Jag stör mig p
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 EventValjare: default form = 'fristaende'; 'kontextrad' riven om noll konsumenter kvar (grep-bevis), annars kvar som explicit opt-in med motivering i docblocket; 'rubrik' oförändrad; docblocket § form uppdaterat med Marcus 2026-09-04-beslutet.
-- [ ] #2 Åtgärdssidan visar den stora rutan i båda tillstånden (utan valt event och med valt event), mätt i DOM och skärmdump desktop 1440 + mobil 375; sidhuvud/sidram opåverkade.
-- [ ] #3 Skärmdumpar före/efter för varje anropsplats som byter form (BetalningsInkorg, ManuellAnmalanForm ×2, KopplaTillEventDialog, AnmalningRadResolution) i PR-kroppen — Marcus stämplar per yta eller pekar ut undantag; ett undantag blir explicit form-prop med motivering, aldrig tyst.
-- [ ] #4 Tester: acceptance-/aria-snapshots som bär pill-formen uppdaterade medvetet i samma landning, diffen redovisad; typecheck 0, biome 0 nya fel, build grön, långa-streck-grinden grön.
-- [ ] #5 Facit-amendering(ar) skrivna för varje stämplad yta vars kallor rörs (kallor-korsläsning mot git diff, S111-precedentet), med Marcus stämpelcitat; facit.json orörda; check-facit passerar.
+- [x] #1 EventValjare: default form = 'fristaende'; 'kontextrad' riven om noll konsumenter kvar (grep-bevis), annars kvar som explicit opt-in med motivering i docblocket; 'rubrik' oförändrad; docblocket § form uppdaterat med Marcus 2026-09-04-beslutet.
+- [x] #2 Åtgärdssidan visar den stora rutan i båda tillstånden (utan valt event och med valt event), mätt i DOM och skärmdump desktop 1440 + mobil 375; sidhuvud/sidram opåverkade.
+- [x] #3 Skärmdumpar före/efter för varje anropsplats som byter form (BetalningsInkorg, ManuellAnmalanForm ×2, KopplaTillEventDialog, AnmalningRadResolution) i PR-kroppen — Marcus stämplar per yta eller pekar ut undantag; ett undantag blir explicit form-prop med motivering, aldrig tyst.
+- [x] #4 Tester: acceptance-/aria-snapshots som bär pill-formen uppdaterade medvetet i samma landning, diffen redovisad; typecheck 0, biome 0 nya fel, build grön, långa-streck-grinden grön.
+- [x] #5 Facit-amendering(ar) skrivna för varje stämplad yta vars kallor rörs (kallor-korsläsning mot git diff, S111-precedentet), med Marcus stämpelcitat; facit.json orörda; check-facit passerar.
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landad 2026-09-05 via PR #2319, merge-SHA e677d3dd (11:42Z), Marcus stämpel i webbläsaren 2026-09-05: "Eventväljaren ser bra ut." Review-agent runda 1 (färsk kontext): risk lag, konvergerad; ett info-fynd bokfört: fyra styrande dokument (CONTRIBUTING.md, ORDLISTA.md, docs/byggplan.md, docs/specs/DESIGN-SYSTEM-SPEC.md) bär enbart updated-datumbumpen ur pre-commit-hooken (ADR-030) från merge-synken mot main — DoD #3 bockas mot den öppet bokförda avvikelsen, ingen innehållsändring i filerna. AC #3 klassad felställd av granskaren: KopplaTillEventDialog är död kod (0 konsumenter), rivningen ägs av TASK-400. Facit-amendering: s111-anmalningssidan-konvergens/AMENDERING-2026-09-05-eventvaljarens-stora-form.md (enda stämplade facit vars kallor bär EventValjare.tsx). Skärmdumpar: tasks/sessions/bilagor/s120-eventvaljaren-task394/ (16). Källa: S120 sessionsdok Del 4.
+<!-- SECTION:FINAL_SUMMARY:END -->
