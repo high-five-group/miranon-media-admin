@@ -121,6 +121,17 @@
             "statusMessage": "PROD-REF-LÅSET — agent-kommandon mot produktions-Supabase-projektet nekas (TASK-203)"
           }
         ]
+      },
+      {
+        "matcher": "^mcp__airtable__.*$|^mcp__claude_ai_Airtable__.*$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash \"${CLAUDE_PROJECT_DIR:-.}/scripts/deny-prod-airtable.sh\"",
+            "timeout": 10,
+            "statusMessage": "PROD-AIRTABLE-LÅSET — MCP-anrop mot Airtable-produktionsbasen nekas (TASK-419)"
+          }
+        ]
       }
     ],
     "PreCompact": [

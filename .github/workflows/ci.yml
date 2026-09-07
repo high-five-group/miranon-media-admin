@@ -1193,6 +1193,24 @@ jobs:
         # per svit (macOS, 2026-08-26, samma förhöjda loadavg som ovan) — CI-
         # tiden är INTE mätt av mig.
         #
+        # test-deny-prod-airtable.sh (TASK-419, 2026-09-07) går in i SAMMA
+        # deny-familj som ovanstående nio (samma D/A/F/E-form, samma
+        # motivering — en PreToolUse-hook som körs LIVE i en session, aldrig
+        # i CI) men landade EFTER TASK-185:s ursprungliga niotal, som ett
+        # eget kort: scripts/deny-prod-airtable.sh är det mekaniska låset
+        # mot Airtable-produktionsbasen via mcp__airtable__*/
+        # mcp__claude_ai_Airtable__* (tasks/lessons.d/prod-basen-last-av-
+        # tva-agenter-ett-prosa-forbud-utan-mekanism-haller-inte-under-
+        # fleet.md — två agenter läste prod read-only samma dag, ingen
+        # grind fångade det). 17 fall, tvåsidigt (PAT-servern nekas
+        # ovillkorligt, claude.ai-connectorn nekas bara i agent-kontext via
+        # `agent_id`, staging/bas-lösa anrop släpps, fail-closed på trasig
+        # indata). Familjen är alltså TIO sviter i dag, inte nio — talet
+        # "nio" i stycket ovan är historiskt korrekt för vad TASK-185
+        # wirade DÅ och lämnas orört (TASK-106-disciplinen: räkna om, skriv
+        # aldrig av — ett nytt tal hör till den paragraf som faktiskt räknar
+        # samtiden, inte till en historisk sammanfattning).
+        #
         # test-heartbeat-svep.sh hör hit av samma hook/vakt-skäl som
         # test-stop-vakt.sh: scripts/heartbeat-svep.sh är orkestrerarens
         # persistenta landnings-svep (CLAUDE.md § Landning), körs aldrig som
@@ -1502,6 +1520,7 @@ jobs:
           bash scripts/test-deny-hemlighet-utskrift.sh
           bash scripts/test-deny-precompact.sh
           bash scripts/test-deny-prod-ref.sh
+          bash scripts/test-deny-prod-airtable.sh
           bash scripts/test-deny-resend-send.sh
           bash scripts/test-deny-subagent-vantan.sh
           bash scripts/test-heartbeat-svep.sh
@@ -1902,7 +1921,13 @@ jobs:
         # scripts/kontrollera-hemlighets-namn.sh — se filens egen header:
         # INVITE_REDIRECT_URL saknades i BÅDA Supabase-projekten i flera
         # veckor trots att en prosa-notis redan namngav variabeln, mätt
-        # missad tre gånger, S107/S108/S113).
+        # missad tre gånger, S107/S108/S113) och till trettiotvå i
+        # TASK-419-wiringen (.prod-airtable-policy.conf — bas-ID:n och
+        # MCP-verktygsprefix för scripts/deny-prod-airtable.sh, det
+        # mekaniska PreToolUse-låset mot Airtable-produktionsbasen via
+        # mcp__airtable__*/mcp__claude_ai_Airtable__* — samma form som
+        # .prod-ref-policy.conf, fast för Airtable-MCP-ytan i stället för
+        # Supabase-CLI:t i Bash).
         # Pre-aktiverings-state (post-K3.2 commit d86d846): 0/0/0/0.
         run: |
           shellcheck \
@@ -1943,7 +1968,8 @@ jobs:
             .supabase-cli-policy.conf \
             .jq-version-policy.conf \
             .gh-version-policy.conf \
-            .hemlighets-namn-policy.conf
+            .hemlighets-namn-policy.conf \
+            .prod-airtable-policy.conf
 
   # ═══ Job 2b: SUPPLY-CHAIN-AUDITEN, EGET JOBB (TASK-395, 2026-09-04) ═══
   #
