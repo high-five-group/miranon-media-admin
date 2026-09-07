@@ -177,6 +177,14 @@
       {
         "sökväg": "scripts/test-create-betalningsfalt.mjs",
         "skäl": "Hermetisk testsvit (TASK-346-familjen, prod-vägens tillägg) — importerar bara de pura väg­vals-funktionerna ur create-betalningsfalt.mjs (validateConfig, parseArgs, resolveTargetBaseId, findTableByName, PROD_GODKAND_ENV_VAR), anropar aldrig fetch. apphjj8Q7lkXCMsL4 förekommer enbart som strängvärde i assertions mot CONFIG.expectedBaseId, identiskt mönster som test-create-eventinnehall-modell.mjs/test-create-kvitton-table.mjs."
+      },
+      {
+        "sökväg": "scripts/deny-prod-airtable.sh",
+        "skäl": "PreToolUse-hook (TASK-419) som läser hook-JSON på stdin och gör en ren sträng-jämförelse av tool_input mot bas-ID:n ur .prod-airtable-policy.conf — anropar aldrig fetch/curl, öppnar ingen förbindelse mot Airtable. apphjj8Q7lkXCMsL4 (STAGING_AIRTABLE_BASE_ID) förekommer på TVÅ ställen, båda icke-nätverks: (1) i .prod-airtable-policy.conf som ett dokumentationsvärde konsumerat ENDAST av testsviten (matchningslogiken läser bara PROD_AIRTABLE_BASE_ID), och (2) i skriptets egen deny()-funktion (rad ~118) som REN TEXT i det svenska felmeddelandet till agenten (\"staging (apphjj8Q7lkXCMsL4) bär identisk fältdata\") — en strängliteral i en printf, ingen variabel, inget anrop. Samma icke-nätverks-mönster som test-create-bilagor-table.mjs m.fl. ovan (rättad TASK-419 fix-runda 1, granskningsfynd 2: skälet påstod tidigare felaktigt att markören \"i skriptet överhuvudtaget inte alls\" förekom)."
+      },
+      {
+        "sökväg": "scripts/test-deny-prod-airtable.sh",
+        "skäl": "Hermetisk testsvit (TASK-419) för deny-prod-airtable.sh — kör skriptet i en mktemp-sandlåda med planterad hook-JSON på stdin, ingen nätverkstrafik. apphjj8Q7lkXCMsL4 förekommer enbart som STAGING-fixturvärde i A-fallen (måste SLÄPPAS igenom), identiskt icke-nätverks-mönster som skriptets syskon-testsviter ovan."
       }
     ]
   }
