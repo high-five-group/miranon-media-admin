@@ -75,10 +75,18 @@ const MOCK_SOURCES: DocumentSources = {
   },
 };
 
+/** [TASK-431, DEL B] Extraherad till en egen konstant: efter TASK-431 visar
+ *  raden MALLNAMNET ("Bekräftelsebilaga") som rubrik, inte längre detta
+ *  fulla filnamn — testets rad-selektor (nedan) måste därför hitta raden
+ *  via `title`-attributet i stället för synlig text, och behöver samma
+ *  sträng som mock-datan bär. */
+const BILAGA_NAMN =
+  'Bekräftelsebilaga – Arboga - Utbildning - Resor i medvetandet 1 - 2026-10-31.pdf';
+
 function bilagaRad(kallhash: string) {
   return {
     id: ATTACHMENT_ID,
-    namn: 'Bekräftelsebilaga – Arboga - Utbildning - Resor i medvetandet 1 - 2026-10-31.pdf',
+    namn: BILAGA_NAMN,
     storlekBytes: 51_200,
     skapad: '2026-08-20T09:00:00.000Z',
     eventId: VISUAL_EVENT_ID,
@@ -149,8 +157,17 @@ test.describe('Dokument-ytan — Event-mallade rader: Mall, INAKTUELL, Skapa om 
     await page.goto(`/mer/dokument?event=${VISUAL_EVENT_ID}`);
     await expect(page.getByTestId('dokument-yta')).toBeVisible();
 
-    const rad = page.getByTestId('dokument-fil').filter({ hasText: 'Bekräftelsebilaga –' });
+    // [TASK-431, DEL B] Raden hittas via `title`-attributet (bär HELA
+    // filnamnet oförändrat, se `DokumentYta.tsx`s "HELA NAMNET NÅS PÅ TVÅ
+    // VÄGAR"-regel) i stället för synlig text — den synliga rubriken är nu
+    // mallnamnet, inte filnamnet.
+    const rad = page
+      .getByTestId('dokument-fil')
+      .filter({ has: page.locator(`[title="${BILAGA_NAMN}"]`) });
     await expect(rad).toBeVisible();
+    // Rubriken visar MALLNAMNET ("Bekräftelsebilaga"), inte längre filnamnet
+    // — samma assertion som förut, men den träffar nu namn-spannet direkt i
+    // stället för den borttagna mall-badgen (DEL B tog bort dubbleringen).
     await expect(rad.getByText('Bekräftelsebilaga', { exact: true })).toBeVisible();
     await expect(rad.getByText('Inaktuell')).toBeVisible();
 
@@ -183,7 +200,8 @@ test.describe('Dokument-ytan — Event-mallade rader: Mall, INAKTUELL, Skapa om 
     expect(forstaGenomgangen.violations).toEqual([]);
 
     await valjRadhandling(
-      page.getByTestId('dokument-fil').filter({ hasText: 'Bekräftelsebilaga –' }),
+      // [TASK-431, DEL B] Samma title-attribut-selektor som första testet.
+      page.getByTestId('dokument-fil').filter({ has: page.locator(`[title="${BILAGA_NAMN}"]`) }),
       page,
       /Skapa om/,
     );

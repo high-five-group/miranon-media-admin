@@ -332,10 +332,36 @@ export function Button({
           ALLTID i det normala flödet; `invisible` (visibility:hidden)
           döljer den under laddning UTAN att ta bort dess layout-utrymme,
           så knappens bredd/höjd är IDENTISKA i vila och laddläge. Se
-          docblockets § "STABILA MÅTT UNDER LADDLÄGE" för källorna. */}
+          docblockets § "STABILA MÅTT UNDER LADDLÄGE" för källorna.
+
+          [TASK-431, PROD-REGRESSION] `min-w-0 max-w-full` — UTAN dem är
+          detta spannet ett flex-item med default `min-width: auto`, som
+          INTE kan krympa under sitt innehålls naturliga bredd. En konsument
+          som skickar ett `truncate`-barn (`DokumentYta.tsx`s bilagenamn,
+          `min-w-0 truncate` hela vägen upp) fick sin klippnings-kedja
+          bruten HÄR: namn-spannets EGEN `min-w-0` var verkningslös eftersom
+          FÖRÄLDERN (detta spann) redan vägrade krympa och tvingade hela
+          knappen att svälla till innehållets bredd — Marcus prod-fynd
+          2026-09-07 (S123 resume 1), *"HELA namnet skrivs ut långt utanför
+          själva kortet"*. `max-w-full` är den kompletterande halvan: utan
+          den kan spannet fortfarande VÄXA utöver knappens tillgängliga
+          utrymme (min-w-0 tillåter bara krympning, sätter inget tak).
+
+          ÄNDRAR INTE TASK-361 r2:s invariant: en knapp UTAN truncate-barn
+          (den överväldigande majoriteten, t.ex. denna funktions egen
+          `@example`) sizar redan till sitt innehålls fulla bredd oavsett
+          `min-width`/`max-width` — ingen ANCESTOR tvingar den att krympa,
+          så `min-w-0`/`max-w-full` är no-ops där. `button-laddlage-stabil-
+          bredd.test.ts` (TASK-361:s egen mätning, vila == laddläge både med
+          och utan denna ändring) och den nya `dokument-bilagenamn-
+          trunkering.acceptance.test.ts` (TASK-431) bevisar båda hälfterna:
+          den ena att INGET annat mått rubbades, den andra att KLIPPNINGEN
+          nu faktiskt sker. Svep över hela `src/`: exakt EN plats i
+          kodbasen skickar ett `truncate`-barn som direkt Button-barn
+          (`DokumentYta.tsx`), så ingen ytterligare konsument påverkas. */}
       <span
         className={cn(
-          'inline-flex items-center justify-center',
+          'inline-flex min-w-0 max-w-full items-center justify-center',
           CONTENT_GAP[resolvedSize],
           isLoading && 'invisible',
         )}

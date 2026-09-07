@@ -338,8 +338,13 @@ function meningsStart(text: string): string {
  *     UTANFÖR det tonala kortet, indragen till inner-inset (px-4); kortet är
  *     LISTPOSTEN (`bg-bg-muted border-transparent`, aldrig en behållare i en
  *     listpost) med divide-y mellan raderna; etiketten dämpad, värdet
- *     primärt. Inga piller för härkomst — TACKNING_KLASS är kategori-
+ *     primärt. Inga piller för härkomst — den pill-klassen är kategori-
  *     grammatik (RackviddBadge.tsx), inte status, och osynlig mot bg-muted.
+ *     [TASK-431] Namnet `TACKNING_KLASS` som stod här pekade på
+ *     `DokumentYta.tsx`s egen konstant med samma klass-sträng; den är
+ *     borttagen (mall-badgen den bar är riven, se dess docblock) — pillens
+ *     GRAMMATIK som beskrivs i denna rad lever kvar oförändrad i
+ *     `RackviddBadge.tsx`.
  *   · Branschens summary-list på smal skärm (GOV.UK < 641 px, M3 compact,
  *     HIG; docs/research/mall-ifyllnadsvyer-branschmonster-2026-08-21.md):
  *     etikett och värde STAPLADE, saknat värde som handlingslänk i

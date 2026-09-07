@@ -1479,52 +1479,15 @@ function berakaListgeometri(antalSynliga: number) {
 }
 
 /**
- * Täckningspillens klass — EN källa, delad av `RackviddBadge` (bilagor) och
- * mall-/generatorraderna. De bar samma sträng på tre ställen innan
- * höjdlåsningen; en delad form som beskrivs flera gånger glider isär, och
- * glidningen upptäcks av Marcus öga i stället för av en grind.
- *
- * ═══ `bg-bg-muted`, INTE `bg-surface` — INSTANS SEX, FÅNGAD FÖRE LANDNING ═══
- *
- * Pillen bar `bg-surface` så länge den låg på kortets `bg-bg-muted`. När
- * listan 2026-08-18 fick sin EGEN `bg-surface`-yta (Marcus: *"ge inline-
- * scroll-ytan en annan färg/toning"*) vände nästlingen — och pillen blev
- * osynlig mot sin nya bakgrund. MÄTT, inte antaget:
- * `getComputedStyle` gav `pill=rgb(255,255,255)` och
- * `lista=rgb(255,255,255)` i renderad yta.
- *
- * [T176, 2026-08-29] NÄSTLINGEN ÖVERLEVDE KORTFORMEN, MEN BÄRAREN BYTTE:
- * den vita ytan under pillen är numera BILAGEKORTET, inte `<ul>` (som är
- * genomskinlig). `bg-bg-muted` står alltså kvar — men prövningen gjordes
- * om, inte antogs: mätt i renderad yta bär pillen #f5f5f3 mot kortets
- * #ffffff.
- *
- * [2026-08-30] PRÖVNINGEN HAR BARA ETT FALL KVAR. Här stod tidigare att
- * pillen vid HOVER mättes mot kortets hover-ton #edeee9, och att den då
- * blev LJUSARE än sin bakgrund i stället för mörkare. Den tonen är riven
- * (Marcus: *"Ta bort hover på korten"*) — kortet är statiskt vitt i alla
- * lägen, så riktningen kastas aldrig om längre och steget är detsamma i
- * vila som under pekaren. Regeln som gjorde noten värd att skriva står
- * kvar: byter kortet bakgrund igen måste pillen mätas om.
- *
- * Det är sjätte gången samma token-identitet gjort något osynligt på DENNA
- * yta (ghost-hovern ×2, Ersätt/Radera, räckviddspillen, uppladdningsskalet
- * — se filhuvudets systemiska fynd). Regeln som faller ut: **tokenvalet följer
- * NÄSTLINGEN, aldrig vanan.** Byter en behållare bakgrund måste allt som
- * ligger I den prövas om — och prövningen är en mätning av `backgroundColor`,
- * inte en blick på klassnamnet.
- *
- * [TASK-309.20] `min-w-0 max-w-full truncate`, INTE `shrink-0` — samma fix
- * som `RackviddBadge.tsx` fick, av samma mätta skäl (se dess docblock för
- * pixelbeläggen): en Mall-badge med lång text ("Bekräftelsebilaga", 17 tecken)
- * i en Event-mallad rad vid 375 px flöt annars ut över ikonknapparna på
- * exakt samma sätt som räckviddsbadgen — X-överlappet mättes (badge
- * `x=62 width=121` mot första knappens `x=131`), även om Y-banden råkade
- * missa varandra i just den mätta raden. Samma underliggande arkitekturfel,
- * så samma fix på den delade klassen.
+ * [TASK-431, DEL B, 2026-09-07] `TACKNING_KLASS` (mall-badgens egen pill-
+ * klass, historik: `bg-bg-muted`-nästlingsfynden instans 6, `T176`,
+ * `TASK-309.20`s truncate-fix) BODDE HÄR — borttagen tillsammans med sin
+ * enda konsument (mall-badgen i `DokumentRadSkal`, se den JSX-kommentaren)
+ * när namn-spannet började visa mallnamnet direkt (Marcus: badgen blev ren
+ * dubblering). `RackviddBadge.tsx` bär sin EGEN kopia av samma pill-klass
+ * (rad ~143) och är OBERÖRD av denna rivning. Full historik i `git log -p`
+ * på denna rad om den någonsin behövs igen.
  */
-const TACKNING_KLASS =
-  'inline-flex min-w-0 max-w-full items-center truncate rounded-full border border-transparent bg-bg-muted px-2 py-0.5 font-medium text-caption text-text-secondary contrast-more:border-border-strong';
 const IKON_STORLEK = 16;
 
 function MetaRad({ delar }: { delar: (string | null)[] }) {
@@ -1902,15 +1865,38 @@ function DokumentRadSkal({
               className="shrink-0 motion-safe:animate-spin"
             />
           )}
+          {/* [TASK-431, DEL B] Mall-genererade rader visar MALLENS namn
+              ("Bekräftelsebilaga"/"Deltagarinformation") i stället för
+              filnamnet — Marcus i prod 2026-09-07 (S123 resume 1), verbatim:
+              "Bekräftelsebilagans namn behöver inte ens skrivas ut på
+              kortet. På kortet kan det stå bara 'Bekräftelsebilaga'."
+              `current.mall` ÄR redan visningsformen (Airtables optionsnamn,
+              se `mallKallhash.ts`s `AIRTABLE_MALL_TILL_ID`) — ingen egen
+              mappning behövs. HELA filnamnet finns ändå kvar på TVÅ vägar:
+              `title` (denna spanns tooltip) och knappens `aria-label` nedan
+              bär `namn` OFÖRÄNDRAT, oavsett vad som VISAS. En uppladdad fil
+              (mall === null) visar filnamnet precis som förut, nu bara
+              korrekt klippt (DEL A). */}
           <span className="min-w-0 truncate" title={namn}>
-            {namn}
+            {current.mall ?? namn}
           </span>
         </Button>
-        {/* [TASK-309.6, ADR-125 § 3+5] Mall-/INAKTUELL-badgen delar RADEN med
+        {/* [TASK-309.6, ADR-125 § 3+5] INAKTUELL-badgen delar RADEN med
             RackviddBadge (samma "TRE LED, ALLTID RENDERADE"-lås) i stället för
             att lägga till en fjärde rad. INAKTUELL bär TEXT, inte bara färg
             (`StatusBadge`, WCAG 1.4.1). `w-full min-w-0` så en för bred badge
-            TRUNKERAS inom raden i stället för att flyta ut. */}
+            TRUNKERAS inom raden i stället för att flyta ut.
+
+            [TASK-431, DEL B] Mall-badgen (som tidigare stod HÄR och
+            upprepade `current.mall`) är BORTTAGEN — namn-spannet ovan visar
+            nu samma text som rubrik, och en badge som säger exakt vad
+            rubriken redan säger är ren dubblering (Marcus explicit: "det
+            behöver inte ens skrivas ut" — inte "skriv det två gånger").
+            `RackviddBadge` bär täckningen oförändrat (event-mallade rader
+            får sin egen "Detta event"-text, se dess docblock) så raden är
+            aldrig tom även när `mall` är satt. `TACKNING_KLASS`-konstanten
+            (den enda konsumenten av denna badge) är borttagen i samma drag
+            — se `git log -p` för TASK-309.20:s historik om den behövs. */}
         <span className="flex w-full min-w-0 flex-wrap items-center gap-1">
           <RackviddBadge
             rackvidd={current.rackvidd}
@@ -1918,7 +1904,6 @@ function DokumentRadSkal({
             kursniva={current.kursniva}
             plats={current.plats}
           />
-          {current.mall !== null && <span className={TACKNING_KLASS}>{current.mall}</span>}
           {current.inaktuell === true && (
             <StatusBadge ton="warning" storlek="sm">
               Inaktuell
