@@ -586,16 +586,22 @@ test.describe('TASK-402.5 — "Registrera inbetalning för N markerade" (AC #1-#
    * `chromium-authenticated` (samma projekt som resten av TASK-402.5-
    * sviten ovan), där flaggan är `på`.
    *
-   * INTE ETT FAST 16 PX-MÅTT — MÄTT, INTE ANTAGET. Knappens wrapper-div
-   * (`px-4`) sitter nästlad i `KORT_KLASS` (rad ~245, ÄVEN `px-4`) — en
-   * PRE-EXISTERANDE dubbel padding från TASK-402.5, orörd av TASK-432 (som
-   * uttryckligen skulle lämna padding oförändrad). Verkligt uppmätt vänster-
-   * avstånd mot sektionen är därför ~32-33 px, inte 16 — se avstånd-siffrorna
-   * i PR-kroppen/slutrapporten. Assertionen nedan använder därför ett
-   * STRUKTUR-OBEROENDE kriterium (vänster gap < höger gap) i stället för ett
-   * absolut pixeltal: det bevisar VÄNSTERSTÄLLNING robust oavsett padding,
-   * och TVÅSIDIGT — ett temporärt `justify-end` (verifierat manuellt, se
-   * samma källa) flippar ojämlikheten och fäller testet.
+   * FIX-RUNDA 1 (samma dag, review runda 1, info-fynd på Marcus AFK-mandat):
+   * ursprungsversionen jämförde bara vänster- mot höger-gap (strukturoberoende,
+   * bevisade "vänsterställd" men inte "FLUSH"). Wrapperns egen `px-4` (dubbel
+   * padding ovanpå `KORT_KLASS`s egen, se `AtgardsSida.tsx`s docblock) gjorde
+   * att knappen landade ~32 px in i stället för flush med h2-räknaren — Marcus
+   * ordagranna avsikt var flush. `px-4` togs bort från wrappern (samma commit),
+   * och testet nedan har en ANDRA, SKARPARE assertion: knappens vänsterkant
+   * jämförd mot h2-rubrikens FAKTISKA innehållskant (`h2.box.x +
+   * getComputedStyle(h2).paddingLeft` — läst LIVE, aldrig ett hårdkodat
+   * "16", eftersom en padding-ändring i `KORT_KLASS`/h2 annars tyst hade gjort
+   * talet fel utan att testet märkte det) inom 4 px. Den bredare
+   * vänster<höger-gap-kollen behålls som en andra, oberoende linje.
+   *
+   * TVÅSIDIGT: grönt med `px-4` borttagen; ett temporärt `px-4` återinsatt på
+   * wrappern (verifierat manuellt, se PR-kroppen/slutrapporten för talen)
+   * flyttar knappen ~16 px längre in och fäller `toBeLessThanOrEqual(4)`.
    */
   test('[TASK-432] "Registrera inbetalning för N markerade" är vänsterställd, desktop och mobil 390px', async ({
     page,
@@ -610,21 +616,33 @@ test.describe('TASK-402.5 — "Registrera inbetalning för N markerade" (AC #1-#
       name: `Registrera inbetalning för ${FIXTUR.length} markerade`,
     });
     await expect(knapp).toBeVisible();
+    const raknare = panel.locator('h2#grupp-betalningar');
+    await expect(raknare).toBeVisible();
 
     const MOBIL = { width: 390, height: 844 } as const;
     for (const viewport of [DESKTOP, MOBIL]) {
       await page.setViewportSize(viewport);
       const panelBox = await panel.boundingBox();
       const knappBox = await knapp.boundingBox();
-      if (!panelBox || !knappBox) {
+      const raknareBox = await raknare.boundingBox();
+      if (!panelBox || !knappBox || !raknareBox) {
         throw new Error(
           `boundingBox saknas vid ${viewport.width}×${viewport.height} — elementet är inte layoutat`,
         );
       }
+      const raknarePaddingLeft = await raknare.evaluate((el) =>
+        Number.parseFloat(getComputedStyle(el).paddingLeft),
+      );
+      const raknareInnehallX = raknareBox.x + raknarePaddingLeft;
+
+      // Bred linje: strukturoberoende, håller oavsett padding-värden.
       const vansterGap = knappBox.x - panelBox.x;
       const hogerGap = panelBox.x + panelBox.width - (knappBox.x + knappBox.width);
       expect(vansterGap).toBeGreaterThanOrEqual(0);
       expect(vansterGap).toBeLessThan(hogerGap);
+
+      // Skarp linje: FLUSH med h2-räknarens faktiska innehållskant, ±4 px.
+      expect(Math.abs(knappBox.x - raknareInnehallX)).toBeLessThanOrEqual(4);
     }
   });
 });

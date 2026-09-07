@@ -3252,16 +3252,27 @@ export function AtgardsSida({ eventId }: { eventId?: string }) {
 
                         [TASK-432] Vänsterställd (justify-start) på Marcus
                         explicita beslut 2026-09-07 — tidigare justify-end
-                        (höger), satt av TASK-402.5. Padding oförändrad per
-                        uppdraget: wrappern har EGEN `px-4` nästlad i
-                        `KORT_KLASS`s (rad ~245) egen `px-4`, så knappen
-                        landar ~32 px in från sektionens vänsterkant — INTE
-                        flush med h2-räknaren/personraderna under (16 px,
-                        enkel padding). Boundingbox-mätt mot verklig staging,
-                        se `atgarder-kvitto.staging.test.ts`s TASK-432-test
-                        och slutrapporten för PR:en. */}
+                        (höger), satt av TASK-402.5.
+
+                        FIX-RUNDA 1 (samma dag): Marcus ordagranna avsikt är
+                        FLUSH med blockets vänsterkant, i linje med
+                        h2-räknaren och personraderna under — inte "vänster
+                        men 16 px längre in". Wrapperns EGNA `px-4` (satt av
+                        TASK-402.5) låg nästlad OVANPÅ `KORT_KLASS`s (rad
+                        ~245) egen `px-4` och landade knappen ~32 px in,
+                        dubbelt så djupt som räknaren/raderna (16 px). Den
+                        egna `px-4` är därför borttagen här — `KORT_KLASS`s
+                        padding bär hela insetet, precis som för h2:n och
+                        personradernas namn-span. `py-3` och `border-b`
+                        oförändrade: border-b spänner nu KORT_KLASS:s hela
+                        innehållsbredd (samma bredd som `divide-y`-linjerna
+                        i `BetalningsSkrivYta` under), inget visuellt hopp.
+                        Boundingbox-mätt mot verklig staging (desktop +
+                        mobil 390px), se `atgarder-kvitto.staging.test.ts`s
+                        TASK-432-test och PR-kroppen/slutrapporten för de
+                        uppmätta talen. */}
                     {mottagare.length > 0 && (
-                      <div className="flex justify-start border-border border-b px-4 py-3">
+                      <div className="flex justify-start border-border border-b py-3">
                         <Button
                           intent="primary"
                           size="sm"
