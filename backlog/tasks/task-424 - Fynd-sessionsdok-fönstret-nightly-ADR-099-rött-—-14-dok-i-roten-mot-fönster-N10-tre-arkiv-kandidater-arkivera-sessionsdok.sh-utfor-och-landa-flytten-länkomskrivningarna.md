@@ -4,10 +4,10 @@ title: >-
   Fynd: sessionsdok-fönstret (nightly, ADR-099) rött — 14 dok i roten mot
   fönster N=10, tre arkiv-kandidater; arkivera-sessionsdok.sh --utfor och landa
   flytten + länkomskrivningarna
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-07 15:30'
-updated_date: '2026-09-07 15:52'
+updated_date: '2026-09-07 16:51'
 labels:
   - ready-for-agent
 dependencies: []
@@ -106,4 +106,6 @@ staging-miljö-flakighet och OBEROENDE av denna diff — `ci.yml` sätter
 `run_staging: false` VILLKORSLÖST för både `pull_request` och
 `merge_group` (rad ~2145), så api-staging körs aldrig i PR-grinden.
 `api-pure`-delen (1757 test) var 100 % grön.
+
+STÄNGNING (S123 resume 1, 2026-09-07): PR #2441 → 562b3f43; post-merge 562b3f43 GRÖN (full svit — PR:en var inte D0 pga två .ts-kommentarer). Review runda 1 (Sonnet): 3 info (de två .ts-diffarna verifierade som rena sökvägsciteringar i kommentarer; D0-klassningen korrekt icke-D0; 31 länkreferenser exakt verifierade), risk låg, konvergerad. Done-flipp av orkestreraren.
 <!-- SECTION:NOTES:END -->

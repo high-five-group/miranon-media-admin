@@ -3,10 +3,10 @@ id: TASK-422
 title: >-
   Fynd: tests/e2e/atgarder-kvitto.staging.test.ts:482 fäller sedan TASK-402.8
   tog bort Obekräftad-pillen — testet uppdaterades aldrig
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-06 19:17'
-updated_date: '2026-09-07 15:37'
+updated_date: '2026-09-07 16:48'
 labels:
   - ready-for-agent
 dependencies: []
@@ -44,4 +44,6 @@ AC #2 (grep): grep -rn "Obekräftad" tests/e2e/ visar inga andra assertioner som
 Filen körd mot staging (npx playwright test --project=chromium-authenticated tests/e2e/atgarder-kvitto.staging.test.ts): 2 passed, 2 skipped (SKIPPAD: dialogen riven med miljöflaggan på, TASK-346.7 — förväntat, orört av denna ändring), exit 0. Inga medKvitto-fällningar: filen mockar registrera-inbetalning OCH hamta-oppna-betalningar via page.route (rad 402, 411) — den träffar aldrig de skarpa staging-EF:erna som TASK-367/PR #2416 (fortfarande OPEN vid denna körning, kollat med gh pr view 2416) kräver medKvitto på. Staging-driften i uppdragstexten materialiserades alltså inte i denna fils körning.
 
 AC #3 (post-merge staging-körningen grön) kan INTE verifieras av mig — den kräver en post-merge/nightly-körning som inte existerar förrän PR:en landat. Lämnad avbockad med avsikt; orkestreraren/CI äger den signalen.
+
+STÄNGNING (S123 resume 1, 2026-09-07): PR #2438 → 56d71536; post-merge 56d71536 röd ENBART på get-person.staging.test.ts:173 (sentinel-driften L599, orelaterad, städad i staging 2026-09-07), täckt av nästa gröna post-merge fb814734. Review runda 1 (Sonnet): 0 fynd, risk låg, konvergerad. AC #3 (post-merge grön) uppfylld via fb814734. Done-flipp av orkestreraren.
 <!-- SECTION:NOTES:END -->

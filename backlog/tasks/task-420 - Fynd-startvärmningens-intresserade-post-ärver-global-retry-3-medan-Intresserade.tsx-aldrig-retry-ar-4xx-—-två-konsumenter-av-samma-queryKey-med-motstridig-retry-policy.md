@@ -4,10 +4,10 @@ title: >-
   Fynd: startvärmningens intresserade-post ärver global retry 3 medan
   Intresserade.tsx aldrig retry:ar 4xx — två konsumenter av samma queryKey med
   motstridig retry-policy
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-06 17:11'
-updated_date: '2026-09-07 15:49'
+updated_date: '2026-09-07 16:48'
 labels:
   - ready-for-agent
 dependencies: []
@@ -64,4 +64,6 @@ Grinden falsifierad manuellt i båda riktningarna under bygget (dokumenterat i s
 Fem av sex övriga varma nycklar (waitlist, maillog, segment, registrations, events.list) bär samma dubbelpolicy-mönster som intresserade.all gjorde — INTE åtgärdade i denna skiva (kortets scope), bokförda här för ett framtida kort. `activityLog.latest(N)` är den enda som redan var konsekvent (ingen konsument sätter någon override).
 
 **Övrig avvikelse mot kortets ordalydelse:** ingen delad retry-hjälpfunktion extraherades trots att lambdan nu finns på fem-sex ställen i repot — `src/data/betalningar/useBetalningar.ts`s `husetsRetryPolicy`-docblock (TASK-346.7.1) bokför ett EXPLICIT beslut att INTE extrahera ("att extrahera en delad export här hade varit att uppfinna ett fjärde mönster där tre redan finns"). Samma konvention följd här (dupliceringen i `intresserade-retry-policy.ts` är avsiktlig, inte glömd).
+
+STÄNGNING (S123 resume 1, 2026-09-07): PR #2440 → fb814734; post-merge fb814734 GRÖN (hela staging-sviten). Review runda 1 (Sonnet): 3 info (ensureQueryData/fetchQuery @deprecated i query-core 5.102.2 — migreras till queryClient.query() vid nästa major; AC #2:s metodsubstitution mot acceptance-bas.ts:s förbud mot handler-räkning; CI-läge), risk låg, konvergerad. Done-flipp av orkestreraren.
 <!-- SECTION:NOTES:END -->

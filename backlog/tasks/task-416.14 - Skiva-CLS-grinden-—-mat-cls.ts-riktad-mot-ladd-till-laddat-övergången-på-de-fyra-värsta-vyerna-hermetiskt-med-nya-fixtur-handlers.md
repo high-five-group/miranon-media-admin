@@ -3,10 +3,10 @@ id: TASK-416.14
 title: >-
   Skiva: CLS-grinden — mat-cls.ts riktad mot ladd-till-laddat-övergången på de
   fyra värsta vyerna, hermetiskt med nya fixtur-handlers
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-06 13:23'
-updated_date: '2026-09-06 20:01'
+updated_date: '2026-09-07 16:35'
 labels:
   - ready-for-agent
 dependencies: []
@@ -23,15 +23,15 @@ Källa: rapport D §6, §8 (S123). tests/support/mat-cls.ts är en riktig CLS-m�
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Acceptance-test mäter CLS skeleton→innehåll på Check-in, Betalningsinkorgen, Aktivitetshistorik och Anmälningar; tröskel dokumenterad med källa
-- [ ] #2 Fixtur-handlers för get-attendance och betalnings-EF:erna tillagda i fixturvärlden, kontraktsvakten grön
-- [ ] #3 Tvåsidigt bevis: en avsiktlig geometri-avvikelse i en fixtur gör testet rött
-- [ ] #4 Acceptance-klassen grön i CI
+- [x] #1 Acceptance-test mäter CLS skeleton→innehåll på Check-in, Aktivitetshistorik och Anmälningar (Betalningsinkorgen deferrerad till TASK-409: kan inte nås hermetiskt med VITE_FEATURE_BETALNINGAR av i playwright.config.ts); tröskel 0,05 dokumenterad med källa (web.dev/cls good ≤ 0,1)
+- [x] #2 Fixtur-handlers för get-attendance (fanns) och hamta-oppna-betalningar (tillagd) i fixturvärlden; kontraktsvakten ej tillämplig på PR-ytan (bor i nightly mot live staging och itererar bara KONTRAKTSFALL)
+- [x] #3 Tvåsidigt bevis mot den invariant grinden faktiskt bär: en temporär geometri-regression på ett PERSISTERANDE sidkroms-element (FramstegskortD, height 2000 under isPending) gör Check-in mobil rött (CLS 0,0517 > 0,05, deterministiskt); listkroppens egen geometri bärs av *-laddlage-filernas boundingBox-tester, inte av sid-CLS
+- [x] #4 Acceptance-klassen grön i CI
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
@@ -54,4 +54,6 @@ REVIEW-RUNDA 1 (utlåtande läst i sin helhet, 4 warning + 4 info, samtliga auto
 EGET FYND UNDER FIX-RUNDAN (ej i review-utlåtandet): min FÖRSTA hallbarMock-implementation hade en genuin race — vantaOmHallen() saknade en "hall"-boolean och köade ALLTID en ny resolver, så en request som startade EFTER slappAlla() (t.ex. attendance/registrations/event som fyrar i olika renderingspass) blev stående för evigt. Fångad empiriskt: körning 2 av fem gav en 16 s timeout på "Alma Almqvist" aldrig synlig. Fixat genom att lägga till exakt samma "hall"-flagga som det etablerade event-checkin-laddlage-mönstret redan bär (kollas VARJE gång en ny request kommer in, inte bara vid uppstart) — fem körningar i rad gröna efteråt.
 
 REVIEW-RUNDA 2 (PR #2426, Opus, 2026-09-06): konvergerad, 3 info i ny prosa bokförda här utan kodändring: (1) mat-cls.ts lasAvClsSumma-docblocket påstår att page.evaluate inte kan returnera undefined — playwright-core serialiserar undefined ({v:'undefined'}); null-sentinelen är ett val, inte ett krav. (2) Engångskontraktet och fail-closed-uppräkningen nämner 'hård omnavigering mitt i en mätning'/'dokumentet ersatt' som skyddade fall — vid riktig navigering får det nya dokumentet ett färskt window (vakten hjälper inte, lasAvClsSumma läser 0 utan att kasta); luckan är latent (inga anropare) och ska namnges öppet. (3) hallbarCheckin saknar förlagans startvärmnings-undantag för get-registrations (eventId-gren) — fungerar eftersom allt släpps samtidigt, men 'samma form som förlagan' ska nyanseras. ÖPPET FÖR MARCUS: AC #1–#3 är felställda mot instrumentet (sid-CLS blind för listkroppen; Betalningsinkorgen kräver TASK-409; kontraktsvakten bor i nightly) — DoD #1 kan inte uppfyllas utan beslut om AC-texterna; grinden skyddar sidkromets stabilitet, radgeometrin bärs av *-laddlage-filernas boundingBox-tester.
+
+AC-BESLUT (Marcus 2026-09-07, S123 resume 1: 'OK 416.14'): AC #1–#3 omskrivna av orkestreraren till vad instrumentet faktiskt kan mäta — sid-CLS är blind för listkroppen (radgeometrin bärs av *-laddlage-filernas boundingBox-tester), Betalningsinkorgen deferrerad till TASK-409, kontraktsvakten bor i nightly. Ursprungliga AC-texter bevarade i notes-historiken ovan (AC #1–#3 PARTIELLT/EJ VERIFIERAT-avsnitten). Landad som PR #2426 → 0ab225e3 (2026-09-06); post-merge hermetiska jobb gröna, staging-jobbet rött av medKvitto-driften från #2416 (löst när #2416 landade 988e0d3b). Done-flipp i S123 resume 1.
 <!-- SECTION:NOTES:END -->
