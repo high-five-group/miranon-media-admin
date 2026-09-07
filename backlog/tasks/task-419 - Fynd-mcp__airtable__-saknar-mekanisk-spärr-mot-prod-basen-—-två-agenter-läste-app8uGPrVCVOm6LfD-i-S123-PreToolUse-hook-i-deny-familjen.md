@@ -3,10 +3,10 @@ id: TASK-419
 title: >-
   Fynd: mcp__airtable__* saknar mekanisk spärr mot prod-basen — två agenter
   läste app8uGPrVCVOm6LfD i S123; PreToolUse-hook i deny-familjen
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-06 17:11'
-updated_date: '2026-09-07 16:35'
+updated_date: '2026-09-07 17:06'
 labels:
   - ready-for-agent
 dependencies: []
@@ -25,7 +25,7 @@ Källa: S123 (2026-09-06) sessionsdok Del 3 § Avvikelser + lessons-fragmentet p
 - [x] #1 Hook nekar mcp__airtable__*- och mcp__claude_ai_Airtable__*-anrop vars input bär prod-bas-ID:t ur .prod-airtable-policy.conf; staging-ID:t släpps; nekandet bär ett svenskt skäl i samma form som deny-prod-ref.sh
 - [x] #2 Tvåsidig testsvit (minst: nekar prod-ID, släpper staging-ID, nekar prod-ID nästlat i input, släpper anrop utan bas-ID) CI-wirad i gatekeeper-steget
 - [x] #3 Skarpbeviset genom harnesset bokfört som öppen skuld med differentialmätningen gjord (manuell körning av skriptet mot verklig hook-JSON fäller)
-- [ ] #4 CLAUDE.md-raden om Airtable-MCP:erna säger att spärren är mekanisk och pekar på hook + policy-conf; ingen prosa påstår mer än vad hooken gör
+- [x] #4 CLAUDE.md-raden om Airtable-MCP:erna säger att spärren är mekanisk och pekar på hook + policy-conf; ingen prosa påstår mer än vad hooken gör
 <!-- AC:END -->
 
 ## Definition of Done
@@ -193,4 +193,6 @@ implementerade redan alternativ A. Beslutet + motiveringen är bokfört i
 skriptets egen docblock (§ TVÅ FAMILJER, "ÖPPEN FRÅGA, PRÖVAD OCH AVGJORD")
 så nästa läsare ser luckan som ett medvetet, godkänt val — inte en
 oupptäckt brist.
+
+STÄNGNING (S123 resume 1, 2026-09-07): PR #2442 → 51144a3c; post-merge 269f6d47 GRÖN (täcker batchen). Review runda 1 (Sonnet): risk HÖG, 3 warnings + 2 info → fix-runda 1 (7ab494c4: verify:ci-parity:fast 33 gröna exit 0, skäl-text rättad, 3 nya testfall D6/D7/A7 → 20/20) → Marcus beslut '419 A — behåll som byggt' (89a76fba) → runda 2: 5 info, 0 warnings, risk medel, konvergerad. AC #4 (CLAUDE.md-raden) utförd av orkestreraren i stängningsbatch 3 (repots CLAUDE.md § Verktygsfakta). Öppen skuld kvar: skarpbeviset genom harnesset (hooken laddas i en NY session; en agent som anropar mcp__airtable__* med prod-bas-ID ska nekas). Tillfällig agent-behörighet = TASK-430 (Marcus regel 2026-09-07). Done-flipp av orkestreraren.
 <!-- SECTION:NOTES:END -->

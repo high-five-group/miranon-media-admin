@@ -3,10 +3,10 @@ id: TASK-416.20
 title: >-
   Skiva: regressionstest för prefetch på avsikt — bilagor (416.11) och närvaro
   (416.16) bevisas hermetiskt i fixturvärlden, tvåsidigt
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-06 17:12'
-updated_date: '2026-09-07 16:03'
+updated_date: '2026-09-07 17:06'
 labels:
   - ready-for-agent
 dependencies: []
@@ -53,4 +53,6 @@ Test A (närvaro): a) tog bort ENBART onIntent på CheckInKort i EventDetail.tsx
 GRINDAR, MÄTTA: biome (filen + hela repot) exit=0, typecheck exit=0, build exit=0, check-langa-streck OK (diffen rör inte src/, ej formellt krävd), test:acceptance:sjalvtest för filen -> 3 fällda / 3 med OmockadRequestError, exit=0. Negativ kontroll -> 0 fällda, exit=0. test:api -> 1757 passed, 1 failed (auth.setup.ts), 523 did not run: fällningen är staging-preflighten (TASK-77) som vägrade köra eftersom post-merge.yml (run 34140945601) höll staging-mutexen — miljöblockad, ej regression (diffen rör bara den nya testfilen). Körd två gånger, samma resultat.
 
 AC 4:s CI-led (Acceptance-klassen grön i CI) kan inte observeras härifrån — bockad utifrån den lokala motsvarigheten (samma projektform CI kör); CI:s eget utfall äger den slutliga signalen.
+
+STÄNGNING (S123 resume 1, 2026-09-07): PR #2444 → 59d8d336; post-merge 59d8d336 GRÖN. Review runda 1 (Sonnet): 1 info ask-user (Check-in-ingångens onIntent går inte att isolera i test — sidmount-effekten hinner alltid först), risk låg; Marcus 'OK 2444' 2026-09-07 → fynd-kort TASK-429 för frågan. AC #1 bedömd felställd för närvaro-delen (bokfört i testfilens docblock). Done-flipp av orkestreraren.
 <!-- SECTION:NOTES:END -->
