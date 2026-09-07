@@ -7,6 +7,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-07 15:30'
+updated_date: '2026-09-07 15:56'
 labels:
   - ready-for-agent
 dependencies: []
@@ -22,9 +23,9 @@ Källa: Nightly-körning 34088565869 (2026-09-07 05:54 UTC), jobbet 'Backlog-st�
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Var och en av de nio korten: DoD bockad med belägg (PR-nummer/SHA) i notes ELLER återöppnad med skäl — inget kort lämnat i mellanläge
+- [x] #1 Var och en av de nio korten: DoD bockad med belägg (PR-nummer/SHA) i notes ELLER återöppnad med skäl — inget kort lämnat i mellanläge
 - [ ] #2 Grinden körd lokalt med CI:s kommando ur nightly.yml (jobbet Backlog-stängning); exit 0, eller kvarvarande ❌-rader bevisat tillhörande de äldre listorna och bokförda i notes med kort-ID
-- [ ] #3 De två äldre listorna inventerade i notes (invariant, antal, exempel) och ett separat fynd-kort mintat om de fäller grinden på egen hand
+- [x] #3 De två äldre listorna inventerade i notes (invariant, antal, exempel) och ett separat fynd-kort mintat om de fäller grinden på egen hand
 <!-- AC:END -->
 
 ## Definition of Done
@@ -33,3 +34,9 @@ Källa: Nightly-körning 34088565869 (2026-09-07 05:54 UTC), jobbet 'Backlog-st�
 - [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+PREMISS-DIVERGENS (ADR-086), rapporteras öppet: kortets beskrivning karaktäriserade nightly-loggens 'två äldre listor (invariant 1/3, 41 resp. 25 kort-ID:n)' fel. Verifierat mot scripts/check-backlog-closure.sh + en färsk körning: de två listorna hör INTE till invariant 1/3 — de är loggens 'Stängningsformer bland de 870 korten'-sektion: (a) 25 kort godkända via härledd DoD-rad ('CI grön per jobb') + landnings-pekare, exempel TASK-37/116/118/200/212/124/138/198/31/34/173.2/173.5/190/193/222/223/224/283/285/309.12-16/319; (b) 41 (nu 43, se nedan) kort stängda med etiketten 'intentionally-unchecked' + markören 'OBOCKAT MED AVSIKT:' i Notes/Final Summary, exempel TASK-118/124/18/18.20/30/34/39/40/42/170/173.1-3/173.5/192/194/249.2-4/249.7/283/283.1/283.4-5/285.5-6/285.10/285.12/286.1/286.4/286.6/309.17/346.1-6/346.8/346.11/370.5. BÅDA listorna är redan UNDANTAGNA från invariant 2 (scripts/check-backlog-closure.sh rad ~905: 'avstadd == 0' krävs för att invariant 2 ska fälla) och visas ALDRIG som ❌-rader i loggen — de fäller alltså inte grinden på egen hand, och AC #3:s villkorade fynd-kort ('om de fäller grinden') gäller därmed strikt läst INTE dem. AC #3 tolkas ändå som uppfylld i sak: inventeringen är gjord (ovan, med invariant/antal/exempel), och en verklig, tidigare obekant population av grind-fällande kort UPPTÄCKTES under arbetet (se nedan) — för DEN mintades TASK-427, i linje med AC #3:s syfte (registrera, förkasta aldrig tyst; ADR-053). AC #2 LÄMNAS OBOCKAD: efter fix av de nio S121-korten återstår 22 ❌-kort (31 − 9 = 22; INGET av de nio kvarstår, verifierat). Dessa 22 hör INTE till de två äldre (icke-fällande) listorna ovan — de är en TREDJE, separat population som varken TASK-425:s premiss eller nightly-loggens 41/25-sektioner förutsåg. Grindens exakta CI-kommando gav alltså varken exit 0 eller 'kvarvarande rader bevisat tillhörande de äldre listorna' — AC #2:s bokstavliga disjunktion håller inte, och rutan lämnas därför ärligt obockad snarare än tvingad. De 22 korten är inventerade med kort-ID och fällningsform i det nya kortet TASK-427 (samma bocka-eller-öppna-mönster som detta kort), som även bär hela premiss-korrigeringen ovan i sin egen beskrivning.
+<!-- SECTION:NOTES:END -->

@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-09-06 09:24'
-updated_date: '2026-09-06 16:39'
+updated_date: '2026-09-07 15:52'
 labels:
   - ready-for-agent
 dependencies:
@@ -33,9 +33,9 @@ Marcus prod-granskning av bekräftelsesteget 2026-09-06 (S121 resume 4, under 40
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -50,4 +50,6 @@ SLUTVARVET (denna landning). Bas: mergade origin/task/411-markerat-kort-gron-pla
 SLUTVARVETS SENA FYND. (1) Att ta bort de fyra test.fixme-raderna återaktiverade ett DORMANT race i promoverings-grindens oppna()-hjälpare: page.evaluate(Date.now) + clock.pauseAt(nu + 500 ms) fäller med "Cannot fast-forward to the past" när de två CDP-anropen tillsammans tar mer än marginalen. Föll på "ipad — körningen pågår" i en körning där desktop-varianten och trettio andra fall var gröna. Marginalen höjd till 2 s (ofarligt: pausen sker FÖRE klicket, alltså innan simuleringens timers finns, och data=fixtur håller useOppnaBetalningar avstängd) — sex omkörningar gröna. (2) Två lesson-fragment lagda i tasks/lessons.d/: fast millisekundmarginal mellan två CDP-anrop är ett lastberoende race [UNIVERSAL], och fullPage-dump ritar ett fixed-element där rullningen råkar stå [UNIVERSAL]. (3) FYND UTANFÖR DENNA PR:s DIFF, ej åtgärdat: tests/e2e/betalningar-inkorg-markera-lage.staging.test.ts "navigation UTANFÖR betalningsfamiljen rensar" är flakig — 2 fällningar av 7 försök, och den fäller i hel-fil-körning även vid låg last (loadavg 23) medan den är 4/4 grön i isolering vid loadavg 25, vilket pekar på ordnings-/tillståndsberoende inom filen snarare än ren last. Filen ligger INTE i denna PR:s diff mot main (den kom med 410/411 som redan landat), BetalningsInkorg.tsx importerar ingenting ur denna diff, och testet besöker bara /mer/betalningar och /event/<id> — aldrig prototyp-routen. Registrerad enligt ADR-053 (blockerar ej, utanför scope), inte fixad här eftersom det hade lagt en orelaterad fil i diffen.
 
 FINAL SUMMARY (S121 resume 4, 2026-09-06): AFK-proveniens bygg-agent Opus (varv 1–10, stoppad efter ~670k tokens på Marcus fångst) + färsk Opus-agent för slutvarv och runda 3-fix. Tio formvarv på granskningsservern 4173 med Marcus vid skärmen (blocket i panelform → luft/text/Återställ → kapsel → tre lägen som sekundära knappar, lika breda → no-shift → kontur i fyra varv, slutform --mm-text). Marcus kvittens: 'Nu är vi klara med bulkregistrerings-sidan också, vi kör på detta. Nu behöver det här komma till prod också.' Granskning: runda 1 (Sonnet) hög som klass/0 fynd; runda 2 (Opus, slutformen) hög/1 warning (varv-1-kommentarer) + 1 ask-user (tyst beloppsändring vid markering för skärmläsare) + 5 info; runda 3-fix (kommentarer rivna, docblock rättade, annonsering i status-regionen, nytt e2e-fall tvåsidigt) → runda 3 (Sonnet) hög som klass/0 öppna fynd. Armerad på Marcus GO ('Fortsätt autonomt hela vägen'), landad via #2378 → main 6c999f2f (2026-09-06 16:13Z); post-merge grön via bce8cc60:s körning 34045141857 (16:20Z). Facit: fem amendering-bilder, 8/10 referenser omtagna, sha256 uppdaterade, godkand null — stämpeln är TASK-402.6. Fynd utanför kortet: TASK-418 (flake i markera-lägets e2e), klock-race i promoverings-grinden lagad 500 ms → 2 s (lesson-fragment). DoD #1–#3 hålls; DoD #4 facit-granskning gjord mot slutbilderna; DoD #5 (ariaSnapshot-par + baslinje efter stämpel) och #6 (staging-skarpbevis, 402.3) bärs av 402.6/402.3.
+
+TASK-425: DoD bockad mot belägg — samtliga AC #1-#6 redan avbockade. Final Summary dokumenterar landning PR #2378 → main 6c999f2f (2026-09-06 16:13Z); post-merge grön via bce8cc60 (run 34045141857, 16:20Z); review runda 3 (Sonnet) hög som klass/0 öppna fynd; verbatim i kortet: 'DoD #1–#3 hålls'.
 <!-- SECTION:NOTES:END -->

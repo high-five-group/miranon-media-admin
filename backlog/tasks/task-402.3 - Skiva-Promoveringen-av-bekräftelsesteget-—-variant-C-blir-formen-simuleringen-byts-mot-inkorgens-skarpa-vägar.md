@@ -6,9 +6,10 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-09-05 19:02'
-updated_date: '2026-09-06 14:37'
+updated_date: '2026-09-07 15:52'
 labels:
   - ready-for-agent
+  - intentionally-unchecked
 dependencies:
   - TASK-402.2
 parent_task_id: TASK-402
@@ -38,7 +39,7 @@ Bekräftelsesteget på /mer/betalningar/registrera renderar variant C:s form ovi
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 - [x] #4 Facit-granskning: ytan bekraftelsesteget jämförd mot facit tasks/sessions/bilagor/s121-bekraftelsesteget-konvergens/facit.json (bilderna i samma katalog) i varje läge skivan rör — avvikelse bokförs som AMENDERING-fil i facit-katalogen, aldrig som tyst ändring (ADR-102 B5/R3)
@@ -198,4 +199,6 @@ Modell: Sonnet 5 (claude-sonnet-5).
 RESUME 4 (2026-09-06): Marcus granskar i PROD (flaggan är på via Vercel sedan S113 steg 14 — bundeln på admin.miranon.dev bär VITE_FEATURE_BETALNINGAR=pa och registrera-chunken; granskningsvyn ovan gäller lika i prod, men Registrera-trycket bokför på riktigt där). Hans fynd gav TASK-402.8 (pillsen bort, namnet klipps, beloppsknapparna under listan) som ändrar formen FÖRE stämpeln — AC #10 görs om på 402.8:s form (402.8 AC #6). 402.6 beror nu på 402.8.
 
 AC #10 BOCKAD (S121 resume 4, 2026-09-06): Marcus granskade den promoverade ytan på granskningsservern 4173 (desktop 1440 + iPad 820) genom TASK-402.8:s tio formvarv — den formen ersätter 402.3:s ursprungliga (402.8 AC #6, Marcus kvittens 'Nu är vi klara med bulkregistrerings-sidan också, vi kör på detta.'). Kortet sätts Done; DoD #5:s visual-baslinje efter stämpel bärs av TASK-402.6 (stämpel + rivning), som planerat i PRD TASK-402. Landad via #2362 → main b6a598c1 (2026-09-06 natt, Marcus GO på hög risk); staging-skarpbevis tio rader (notes ovan).
+
+TASK-425: DoD #1 bockad mot belägg (samtliga AC #1-#11 redan avbockade). OBOCKAT MED AVSIKT: DoD #5 (promoveringsgrindens visual-baslinje omtagen på den godkända ytan efter Marcus stämpel, ADR-103 B4) ägs av TASK-402.6 (status To Do, dependencies TASK-402.3+TASK-402.8) — det kortet stämplar facit.json godkand via stämplingsskriptet och tar om baslinjen i sin egen landning (ADR-103 B2 steg 4). 402.3s eget AC #9 (ariaSnapshot-par FÖRE/EFTER) är redan avbockat och landat via PR #2362 → main; DoD #5 kräver DESSUTOM händelsen 'efter Marcus stämpel' som ännu inte inträffat. Verifierat mot TASK-402.6:s faktiska kort 2026-09-07, inte antaget.
 <!-- SECTION:NOTES:END -->

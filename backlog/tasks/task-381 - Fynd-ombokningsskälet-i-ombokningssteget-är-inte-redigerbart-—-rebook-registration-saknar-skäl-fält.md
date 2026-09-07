@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-09-03 12:43'
-updated_date: '2026-09-04 07:52'
+updated_date: '2026-09-07 15:52'
 labels:
   - ready-for-human
 dependencies: []
@@ -21,10 +21,16 @@ Symptom: 368.5 AC #2 kräver att det förifyllda skälet 'Ombokad till <event, d
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+TASK-425: DoD bockad mot belägg — beslutskort utan kodändring (Final Summary: alternativ A valt, TASK-368.5 AC #2 omformulerad utan '(redigerbart)'); landat i PR #2268 (docs-only D0, mergad 2026-09-03T12:56:51Z, 'S115 stängningsbatch 1'). Inga AC finns (0 av 0 avbockade = uppfyllt); inga filer utanför backlog-katalogen berörda av detta kort.
+<!-- SECTION:NOTES:END -->
 
 ## Final Summary
 
