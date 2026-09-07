@@ -115,6 +115,11 @@ billigast och följer purge-svepets befintliga mönster.
 
 Instanser: S104 sessionsdok Del 10 § Incidenter; 259-agentens
 slutrapport § Grindarnas utfall (differentialmätningen).
+Tredje instansen 2026-09-07 (S123 resume 1): samma sentinel kvar efter en
+avbruten körning fällde tre post-merge i rad (`988e0d3b`, `56d71536`) och en
+byggares lokala staging-svit innan orkestreraren läste posten via MCP och
+återställde `Flagga` till tom — nästa post-merge (`fb814734`) grön.
+Motmedel (a) är fortfarande inte byggt.
 
 *Konsoliderad ur `tasks/lessons.d/finally-restore-i-staging-test-overlever-inte-avbrott.md` (S112 resume 2, fragment-vägen `ADR-081`); fragmentet är borttaget.*
 

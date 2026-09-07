@@ -4,10 +4,10 @@ title: >-
   Fynd: PROD-REGRESSION — långa bilagenamn klipps inte längre på Bilagor-sidan
   (Mer → Bilagor), namnet rinner ut ur kortet; orsak TASK-361 r2:s nya
   etikett-span i Button.tsx saknar min-w-0 och bryter truncate-kedjan
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-07 16:46'
-updated_date: '2026-09-07 17:23'
+updated_date: '2026-09-07 18:25'
 labels:
   - ready-for-agent
 dependencies: []
@@ -52,4 +52,6 @@ test:api: 2300 passed forsta korningen, 3 failed. Omkorning: 2 av 3 grona (flaky
 hermetik-sjalvtest.mjs scopat till nya filen: EXIT=0 BEVISET HALLER - alla 4 test fallda med OmockadRequestError nar mockarna togs bort.
 
 DEL B (utanfor denna korts AC/DoD - instruerad direkt av orkestreraren, Marcus verbatim-citat, INTE del av kortets ursprungliga formulering): mall-genererade rader visar nu mallnamnet (Bekraftelsebilaga/Deltagarinformation) som rubrik i stallet for filnamnet; fullt filnamn kvar i title-attribut + aria-label; gamla mall-badgen (dubblerade texten) borttagen. Bevisat i 2 nya testfall + 1 befintlig testfil uppdaterad (dokument-event-mallad-inaktuell.acceptance.test.ts, radselektor bytt fran text till title-attribut). Ingen ny AC lagd till pa kortet - bokfort har istallet.
+
+STÄNGNING (S123 resume 1, 2026-09-07): PR #2452 → 790650d5; post-merge 790650d5 GRÖN (hela staging-sviten, efter staging-omdeployen); Vercel prod 790650d5 success 17:58 UTC. Review runda 1 (Sonnet): 1 info (bredd-begränsade Button-konsumenter med ikon+text ej svepta — bedömd CSS-no-op), risk medel (delad primitiv, 64 konsumenter), konvergerad. AC #3 bedömd felställd (premissen 'minst två ytterligare truncate-konsumenter' var falsk — svep över 164 tsx-filer fann exakt en). DEL B (mallnamn som rubrik, Marcus verbatim) byggd utan egen AC, bokfört. Lotta-blockeraren i prod samma kväll. Done-flipp av orkestreraren.
 <!-- SECTION:NOTES:END -->

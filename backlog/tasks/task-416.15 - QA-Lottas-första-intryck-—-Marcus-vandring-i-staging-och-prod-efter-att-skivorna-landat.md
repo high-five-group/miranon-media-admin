@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-06 13:24'
+updated_date: '2026-09-07 17:59'
 labels:
   - ready-for-human
 dependencies: []
@@ -33,3 +34,9 @@ Källa: PRD (S123). Ände-till-ände-vandring med rensad site data (skeleton må
 - [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+S123 resume 1 (2026-09-07): fas4-deployen körd (get-event-attachments v21 i prod 16:57Z, mätt) — AC #2:s första halva uppfylld; andra halvan ('bilagorna syns direkt på åtgärder i prod') och AC #1/#3 är Marcus vandring. Bilagenamns-regressionen (TASK-431, PR #2452 → 790650d5) är landad före vandringen.
+<!-- SECTION:NOTES:END -->
