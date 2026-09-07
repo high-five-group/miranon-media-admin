@@ -3,10 +3,10 @@ id: TASK-432
 title: >-
   Skiva: åtgärdssidans knapp 'Registrera inbetalning för N markerade'
   vänsterställs (justify-start i stället för justify-end)
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-07 16:59'
-updated_date: '2026-09-07 17:42'
+updated_date: '2026-09-07 18:30'
 labels:
   - ready-for-agent
 dependencies: []
@@ -32,3 +32,9 @@ Källa: Marcus 2026-09-07 (S123 resume 1), verbatim: 'På åtgärdssidan: Jag vi
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+STÄNGNING (S123 resume 1, 2026-09-07): PR #2453 → c357e3ee; Vercel prod c357e3ee 18:24 UTC; post-merge c357e3ee köad vid stängningen. Review runda 1 (Sonnet): 1 info ask-user (pre-existerande dubbel px-4 gav 16 px extra indrag) → fix-runda 1 på Marcus AFK-mandat och avsikt 'till vänster sida' (066ecbf9: wrapperns px-4 bort, 1 px från räknarens innehållskant desktop+mobil, 17 px med paddingen kvar) → runda 2: 1 info (staging-only-testet ej CI-gatat, korroborerat mot mätloggar), risk låg, konvergerad. Done-flipp av orkestreraren (återapplicerad efter rebase på c357e3ee).
+<!-- SECTION:NOTES:END -->
