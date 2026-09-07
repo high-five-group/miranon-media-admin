@@ -7,6 +7,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-07 16:46'
+updated_date: '2026-09-07 17:23'
 labels:
   - ready-for-agent
 dependencies: []
@@ -22,15 +23,33 @@ Källa: Marcus i prod 2026-09-07 (S123 resume 1), verbatim: 'Jag gick in på RIM
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Hermetiskt acceptance-test (fixturvärlden) på /mer/dokument med långt bilagenamn: rött FÖRE fixen (boundingBox: namnets högerkant > kortets högerkant), grönt EFTER, på desktop och mobil 390 px
-- [ ] #2 Button.tsx: etikett-spannet bär min-w-0 max-w-full; TASK-361:s befintliga tester (laddläget ändrar aldrig måttet) fortsatt gröna, tvåsidigt bevisat
-- [ ] #3 Svep över Button-konsumenter med truncate-barn bokfört i notes (minst två ytterligare prövade), inga nya överflöden
-- [ ] #4 DoD-kommandona gröna; hermetik-självtestet grönt för den nya filen
+- [x] #1 Hermetiskt acceptance-test (fixturvärlden) på /mer/dokument med långt bilagenamn: rött FÖRE fixen (boundingBox: namnets högerkant > kortets högerkant), grönt EFTER, på desktop och mobil 390 px
+- [x] #2 Button.tsx: etikett-spannet bär min-w-0 max-w-full; TASK-361:s befintliga tester (laddläget ändrar aldrig måttet) fortsatt gröna, tvåsidigt bevisat
+- [x] #3 Svep över Button-konsumenter med truncate-barn bokfört i notes (minst två ytterligare prövade), inga nya överflöden
+- [x] #4 DoD-kommandona gröna; hermetik-självtestet grönt för den nya filen
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+AC1: Reproducerat hermetiskt (dokument-bilagenamn-trunkering.acceptance.test.ts). FORE fix: desktop 1280x800 kort=889px namn=1472.7px (overflod ~584px); mobil 390x844 kort=339px namn=1132.7px (overflod ~794px). EFTER fix: bagge gront, scrollWidth>clientWidth bevisar truncate klipper.
+
+AC2: Button.tsx etikett-spannet fick min-w-0 max-w-full. TASK-361 egen testsvit (button-laddlage-stabil-bredd.test.ts, 4 fall) omkord, gron. a11y/primitives.spec.ts (18 fall) gront, 0 axe violations.
+
+AC3: Sveptes MASKINELLT (python-regex over hela src/**/*.tsx, alla Button-block med truncate). EXAKT EN traff i hela kodbasen (bara buggen som fixas). DIVERGENS: de tva hintade kandidaterna (AtgardsSida.tsx rad ~704, ~1812) sitter INTE i var Button-primitiv (native button resp Checkbox) - verifierat, inte antaget. Minst-tva-kravet kunde inte uppfyllas bokstavligt eftersom fler instanser inte finns; svepet ar uttommande, inte stickprov.
+
+AC4: typecheck EXIT=0, build EXIT=0, check-langa-streck.mjs EXIT=0 (324 filer). biome scopat till mina 5 filer: EXIT=0 efter auto-format (2 formfel fixade). 1 FOREXISTERANDE warning kvar (DokumentYta.tsx suppressions/unused) verifierat identisk i origin/main fore mina andringar. Repo-brett biome EXIT=1 pga 2 errors i tasks/sessions/bilagor/s122-pushback-bank/extrahera-pushbacks.mjs - helt orort av min gren (commit ae55ce11).
+
+test:api: 2300 passed forsta korningen, 3 failed. Omkorning: 2 av 3 grona (flaky: cancel-registration, generate-event-attachment), 1 falls konsekvent 3/3 (send-registration-confirmation GATE-LIVENESS, staging-timeout Request context disposed). Ingen av de tre filerna rors av min diff. Flaggat, ej atgardat (utanfor scope).
+
+hermetik-sjalvtest.mjs scopat till nya filen: EXIT=0 BEVISET HALLER - alla 4 test fallda med OmockadRequestError nar mockarna togs bort.
+
+DEL B (utanfor denna korts AC/DoD - instruerad direkt av orkestreraren, Marcus verbatim-citat, INTE del av kortets ursprungliga formulering): mall-genererade rader visar nu mallnamnet (Bekraftelsebilaga/Deltagarinformation) som rubrik i stallet for filnamnet; fullt filnamn kvar i title-attribut + aria-label; gamla mall-badgen (dubblerade texten) borttagen. Bevisat i 2 nya testfall + 1 befintlig testfil uppdaterad (dokument-event-mallad-inaktuell.acceptance.test.ts, radselektor bytt fran text till title-attribut). Ingen ny AC lagd till pa kortet - bokfort har istallet.
+<!-- SECTION:NOTES:END -->
