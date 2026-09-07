@@ -7,7 +7,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-06 17:13'
-updated_date: '2026-09-07 15:44'
+updated_date: '2026-09-07 16:11'
 labels:
   - ready-for-agent
 dependencies: []
@@ -49,4 +49,6 @@ Oppen divergens (ADR-086), bokford i sjalva spec-texten - inte tystad: kortets b
 ORDLISTA.md provad (grep, noll traffar for sidkrom/returtrad fore andringen) - INGA poster tillagda: bada ar design-system-/kodmonstertermer, inte produktdomanbegrepp (scope-texten sager uttryckligen att allmanna begrepp exkluderas). Sidkrom har redan sin hemvist i DESIGN-SYSTEM-SPEC.md par. 23. Returtrad definieras inline dar det forst anvands. KVALITETSDEFINITIONER-11-REACT.md provad for en laddlages-rad (grep, noll traffar) - ingen pekare tillagd per kortets egen villkorade formulering, eftersom par. 3 fortfarande ar TBD (Fas 3.5).
 
 Grindar (exitkoder matta separat, aldrig i pipe): npm run check:docs -> exit 0, 14 grona / 14 korda. npx markdownlint-cli2 pa filen -> exit 0, 0 issues i 621 filer totalt. vale pa filen -> exit 0, 0 errors/0 warnings/0 suggestions. Diff: endast docs/specs/DESIGN-SYSTEM-SPEC.md (74 insertions, 0 deletions), path-scopad add, inga orelaterade filer.
+
+FIX-RUNDA 1 (2026-09-07, efter review-runda 1 pa PR 2439): fyra fynd atgardade. (1) warning - terminologikollision: regel 1 omdefinierade sidkrom-termen bredare an par. 23s snava definition (SidRam, exkluderar rubriken uttryckligen). Rattat: regel 1 heter nu Sidramen (sidkromet enligt par. 23) OCH sidans egna statiskt kanda element, med explicit pekare till par. 23 for termens avgransning; ordet sidkrom anvands inte langre for h1 nagonstans i tillagget (rubrik/checklista/andringslogg uppdaterade). (2) warning - regel 1 citerade TASK-416.3 (PR 2396) utan reservation trots att PR 2396s egen kropp bekraftar isError-scope-exkludering och AktivitetsHistorik.tsx fortfarande saknar FilterRad i isError (tre separata topp-niva-returns). Rattat: regel 1 citerar 2396 med reservation (bar bara isPending-grenen); mintat fynd-kort TASK-428 (AktivitetsHistorik isError saknar FilterRad/returtrad), citerat i spec-texten som oppen skuld. (3) info - regel 2s attribution av PR 2395 stod som runda 2, PR 2395s egen kropp lagger h1-alltid-monterad-instansen i Runda 3. Rattat till runda 3. (4) info - PR-kroppens Modell-identitet-avsnitt atergav en overifierad rad kopierad fran PR 2395 - ersatt med arlig beskrivning i PR-kroppen.
 <!-- SECTION:NOTES:END -->
