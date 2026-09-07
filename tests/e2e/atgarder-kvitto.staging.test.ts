@@ -569,4 +569,80 @@ test.describe('TASK-402.5 — "Registrera inbetalning för N markerade" (AC #1-#
     const axe = await new AxeBuilder({ page }).analyze();
     expect(axe.violations).toEqual([]);
   });
+
+  /**
+   * [TASK-432] Marcus explicita beslut 2026-09-07: mataren vänsterställs
+   * (`justify-start`, tidigare `justify-end` satt av `TASK-402.5`).
+   * BoundingBox-mätt mot betalningsblockets sektion
+   * (`section[aria-labelledby="grupp-betalningar"]`, samma locator som
+   * `betalningsPanel()` ovan), desktop och mobil 390 px.
+   *
+   * VARFÖR DENNA FIL OCH INTE ACCEPTANCE-KLASSEN: `playwright.config.ts`
+   * (rad ~384) hårdkodar `VITE_FEATURE_BETALNINGAR: 'av'` för HELA
+   * `tests/acceptance/**`s delade webServer, och denna knapp monteras bara
+   * i `betalningarPa()`-grenen (`AtgardsSida.tsx` rad ~3225) — grenen finns
+   * strukturellt inte i det hermetiska fixturläget, så ingen
+   * acceptance-fil kan någonsin bevisa dess placering. Denna fil kör i
+   * `chromium-authenticated` (samma projekt som resten av TASK-402.5-
+   * sviten ovan), där flaggan är `på`.
+   *
+   * FIX-RUNDA 1 (samma dag, review runda 1, info-fynd på Marcus AFK-mandat):
+   * ursprungsversionen jämförde bara vänster- mot höger-gap (strukturoberoende,
+   * bevisade "vänsterställd" men inte "FLUSH"). Wrapperns egen `px-4` (dubbel
+   * padding ovanpå `KORT_KLASS`s egen, se `AtgardsSida.tsx`s docblock) gjorde
+   * att knappen landade ~32 px in i stället för flush med h2-räknaren — Marcus
+   * ordagranna avsikt var flush. `px-4` togs bort från wrappern (samma commit),
+   * och testet nedan har en ANDRA, SKARPARE assertion: knappens vänsterkant
+   * jämförd mot h2-rubrikens FAKTISKA innehållskant (`h2.box.x +
+   * getComputedStyle(h2).paddingLeft` — läst LIVE, aldrig ett hårdkodat
+   * "16", eftersom en padding-ändring i `KORT_KLASS`/h2 annars tyst hade gjort
+   * talet fel utan att testet märkte det) inom 4 px. Den bredare
+   * vänster<höger-gap-kollen behålls som en andra, oberoende linje.
+   *
+   * TVÅSIDIGT: grönt med `px-4` borttagen; ett temporärt `px-4` återinsatt på
+   * wrappern (verifierat manuellt, se PR-kroppen/slutrapporten för talen)
+   * flyttar knappen ~16 px längre in och fäller `toBeLessThanOrEqual(4)`.
+   */
+  test('[TASK-432] "Registrera inbetalning för N markerade" är vänsterställd, desktop och mobil 390px', async ({
+    page,
+  }) => {
+    await mocka(page);
+    await page.setViewportSize(DESKTOP);
+    await page.goto(`/event/${EVENT_ID}/atgarder`);
+    await expect(page.getByTestId('eventet-block')).toBeVisible();
+    const panel = betalningsPanel(page);
+    await expect(panel).toBeVisible();
+    const knapp = panel.getByRole('button', {
+      name: `Registrera inbetalning för ${FIXTUR.length} markerade`,
+    });
+    await expect(knapp).toBeVisible();
+    const raknare = panel.locator('h2#grupp-betalningar');
+    await expect(raknare).toBeVisible();
+
+    const MOBIL = { width: 390, height: 844 } as const;
+    for (const viewport of [DESKTOP, MOBIL]) {
+      await page.setViewportSize(viewport);
+      const panelBox = await panel.boundingBox();
+      const knappBox = await knapp.boundingBox();
+      const raknareBox = await raknare.boundingBox();
+      if (!panelBox || !knappBox || !raknareBox) {
+        throw new Error(
+          `boundingBox saknas vid ${viewport.width}×${viewport.height} — elementet är inte layoutat`,
+        );
+      }
+      const raknarePaddingLeft = await raknare.evaluate((el) =>
+        Number.parseFloat(getComputedStyle(el).paddingLeft),
+      );
+      const raknareInnehallX = raknareBox.x + raknarePaddingLeft;
+
+      // Bred linje: strukturoberoende, håller oavsett padding-värden.
+      const vansterGap = knappBox.x - panelBox.x;
+      const hogerGap = panelBox.x + panelBox.width - (knappBox.x + knappBox.width);
+      expect(vansterGap).toBeGreaterThanOrEqual(0);
+      expect(vansterGap).toBeLessThan(hogerGap);
+
+      // Skarp linje: FLUSH med h2-räknarens faktiska innehållskant, ±4 px.
+      expect(Math.abs(knappBox.x - raknareInnehallX)).toBeLessThanOrEqual(4);
+    }
+  });
 });
