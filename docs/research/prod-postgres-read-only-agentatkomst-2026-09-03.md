@@ -559,7 +559,7 @@ kontonyckelns fulla behörighet med ett artigt löfte att bara läsa.**
 
 1. [Postgres Roles | Supabase Docs](https://supabase.com/docs/guides/database/postgres/roles) — läst 2026-09-03
 2. [Predefined Roles | PostgreSQL Documentation](https://www.postgresql.org/docs/current/predefined-roles.html) — läst 2026-09-03 (`pg_read_all_data` bypassar inte RLS)
-3. [Exclude any mutating tools when in read_only mode · Issue #112 · `supabase/mcp`](https://github.com/supabase-community/supabase-mcp/issues/112) — maintainer-citat `gregnr`, 2025-07-19, läst 2026-09-03
+3. [Exclude any mutating tools when in read_only mode · Issue #112 · `supabase/mcp`](https://github.com/supabase/mcp/issues/112) — maintainer-citat `gregnr`, 2025-07-19, läst 2026-09-03
 4. [Row Level Security | Supabase Docs](https://supabase.com/docs/guides/database/postgres/row-level-security) — läst 2026-09-03
 5. [Server Configuration — default_transaction_read_only | PostgreSQL Documentation](https://www.postgresql.org/docs/current/runtime-config-client.html) — läst 2026-09-03
 6. [SET TRANSACTION | PostgreSQL Documentation](https://www.postgresql.org/docs/current/sql-set-transaction.html) — läst 2026-09-03

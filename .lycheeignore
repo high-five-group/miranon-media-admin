@@ -654,3 +654,190 @@
 #              avvisande av GHA-nätet, inte en rutten länk).
 # EN-INSTANS-POST, öppet bokförd per samma precedent.
 ^https://arri\.gay/.*$
+
+# ═══════════════════════════════════════════════════════════════════════
+# TASK-426 (2026-09-07) — triage av nightly-links run 34088565869
+# (2026-09-07 05:54 UTC, 26 fel över 16 filer). Fem av de 26 var genuint
+# flyttat innehåll och FIXADES i dokumenten (länkmål peka-om, ingen
+# sakändring): Shopify/polaris#10049 → Shopify/polaris-react-archive#10049
+# (repo arkiverat/omdöpt, 301 verifierat lokalt), dev-k8sref-io.web.app
+# (hela Firebase-sajten nedlagd, 404 på ROTEN också) →
+# kubernetes.io:s officiella ValidatingWebhookConfiguration-referens
+# (samma innehåll, officiell efterträdare), supabase-community/
+# supabase-mcp#112 → supabase/mcp#112 (repo omdöpt, doc:ens EGEN
+# citat-titel sa redan "supabase/mcp" — bara URL:en var kvar på det gamla
+# namnet), biomejs/website getting-started.mdx (sajten fick i18n-prefix,
+# flyttade under /en/) och supabase/cli deploy.go (flyttade
+# internal/functions/deploy/ → pkg/function/ i CLI:ts Go-omskrivning,
+# innehållet — import-map-upplösningen — verifierat oförändrat på nya
+# platsen). Kvar är de 21 posterna nedan (16 unika mönster, två
+# ActiveCampaign-artiklar delar en domän-bred rad) där ingen verifierad
+# ersättning hittades eller där felet är ett äkta, dokumenterat
+# nätverks-/bot-block. Källmärkning per post nedan; samtliga mätta lokalt
+# 2026-09-07 om inget annat anges.
+# ═══════════════════════════════════════════════════════════════════════
+
+# fortnox.helpjuice.com — 402 Payment Required (plain- OCH Chrome-UA,
+# symmetriskt). Fortnox knowledge-base-artikeln kräver nu betald åtkomst
+# eller är bakom en inloggningsvägg Helpjuice svarar med 402 för. Citerad
+# i docs/research/forhandsgranskning-dokumentgenerering-branschmonster-
+# 2026-08-22.md (391:4). EN-INSTANS-POST, path-scopad.
+^https://fortnox\.helpjuice\.com/sv_SE/hantering/forhandsgranska-fakturor-tips$
+
+# quickbooks.intuit.com — lychees exakta Chrome-UA-header (nightly.ymls
+# --header) utlöser "HTTP/2 stream ... INTERNAL_ERROR" hos Intuits
+# WAF/Akamai: servern stänger HTTP/2-strömmen mitt i request innan svar,
+# vilket lychee rapporterar som "HTTP/2 protocol error". Plain-UA (curl
+# utan header) → 200 OK på samma URL. ASYMMETRISKT, UA/fingerprint-
+# klassen (samma familj som travisgosselin.com/help.shopify.com ovan,
+# men manifesterar som protokollfel snarare än 403/415 eftersom blocket
+# sker på HTTP/2-lagret). Citerad i docs/research/forhandsgranskning-
+# dokumentgenerering-branschmonster-2026-08-22.md (414:4). EN-INSTANS-
+# POST, path-scopad.
+^https://quickbooks\.intuit\.com/learn-support/en-us/help-article/invoicing/create-invoices-quickbooks-time/L4XMWuh6i_US_en_US$
+
+# helpx.adobe.com — SAMMA HTTP/2-protokollfel-klass som quickbooks.intuit.com
+# ovan: Chrome-UA → anslutningen dör (curl: "HTTP/2 stream ... not closed
+# cleanly"/timeout), plain-UA → 200 OK. ASYMMETRISKT, UA/fingerprint-
+# klassen. Citerad i docs/research/pdf-scrollprestanda-pdfium-chrome-
+# 2026-08-22.md (596:4). EN-INSTANS-POST, path-scopad.
+^https://helpx\.adobe\.com/acrobat/using/transparency-flattening-acrobat-pro\.html$
+
+# doi.org/10.1068 — Pion Ltd:s gamla registrant-prefix (tidskriften
+# *Perception*), vars back-katalog SAGE numera är värd för på
+# journals.sagepub.com — samma blockerade värd som den befintliga
+# `journals.sagepub.com`/`doi.org/10.1177`-posten ovan (2026-08-01), men
+# ETT ANNAT DOI-prefix som den smala 10.1177-regexen inte täcker.
+# Klassbevis, mätt lokalt 2026-09-07: doi.org/10.1068/p5518 → 302 till
+# journals.sagepub.com/doi/10.1068/p5518 → 403 (plain- och Chrome-UA,
+# symmetriskt) → UA/fingerprint-klassen. Citerad i docs/research/ikon-
+# optisk-centrering-2026-08-20.md (522:86) som ett PMID-styrkt
+# sekundärcitat (Denisova/Singh/Kowler 2006) — källans existens är alltså
+# redan belagd via PMID, det är grindens hämtning som blockeras.
+# EN-INSTANS-POST, path-scopad till just detta DOI.
+^https://doi\.org/10\.1068/p5518$
+
+# help.acuityscheduling.com — Zendesk-hostat hjälpcenter, samma
+# UA/fingerprint-bot-block-klass som help.shopify.com/help.tickettailor.com
+# ovan. Dokumentet SJÄLVT flaggar redan "403 vid direkt hämtning" (S91-
+# stilens egen-disclosure) i docs/research/kvitto-branschpraxis-och-
+# svensk-ratt-2026-08-30.md (260:455, 539:66). Reproducerade INTE i den
+# lokala baslinjekörningen 2026-09-07 (intermittent, som flera andra
+# poster i denna fil) men är verifierad röd i nightly-run 34088565869
+# samma dag. EN-INSTANS-ARTIKEL, path-scopad.
+^https://help\.acuityscheduling\.com/hc/en-us/articles/16676813537293-Sending-your-clients-receipts$
+
+# pretix.readthedocs.io — HELA readthedocs-projektet är nedlagt (ROTEN
+# `/en/latest/` ger också 404, inte bara den citerade sidan): pretix
+# flyttade sin dokumentation till docs.pretix.eu 2026-08-11, vars egen
+# "old-link"-landningssida ("Unfortunately, this page no longer exists.")
+# bekräftar att det inte finns någon automatisk ersättning för just denna
+# sida. Dokumentet SJÄLVT redovisar redan detta ("sidan är BORTTAGEN...
+# pretix byggde om sin dokumentation 2026-08-11") i docs/research/kvitto-
+# branschpraxis-och-svensk-ratt-2026-08-30.md (255:517, 535:178) — citatet
+# är medvetet en parafras av sökmotorns sammanfattning, inte en verifierad
+# sidhämtning, och ska INTE bytas mot en gissad ny URL. Domän-bred:
+# projektet i sin helhet är nedlagt, inte en enskild sida.
+^https://pretix\.readthedocs\.io/.*$
+
+# help.visma.net — DNS-uppslagningen fallerar HELT, även lokalt (verifierat
+# 2026-09-07 med både `curl` — "Could not resolve host" — och `nslookup`
+# mot 1.1.1.1 — "Can't find help.visma.net: No answer"). Detta är alltså
+# INTE GHA-IP-klassen (som kräver att länken är frisk lokalt) utan en äkta
+# nedlagd/flyttad subdomän: `www.visma.net` löser upp fint (185.206.5.152),
+# bara `help.visma.net` är dött. Ingen verifierad ersättnings-URL hittad —
+# en websökning gav samma döda URL som toppträff, och `vismaspcs.se`-
+# domänens artiklar gäller ANDRA Visma-produkter (Administration/
+# eEkonomi Smart) än den citerade Visma eEkonomi-artikeln, så en gissning
+# hade riskerat att peka mot fel produkt. Citerad i docs/research/kvitto-
+# vid-ombokning-2026-09-03.md (306:378, 624:20). Domän-bred (roten löser
+# inte upp alls, inte bara en sökväg).
+^https://help\.visma\.net/.*$
+
+# localhost:5173 — ETT VERBATIM-CITAT ur en Slack-transkript (Marcus,
+# 2026-08-07 13:14:46Z), inte en riktig extern referens: meddelandet
+# citerar den prototyp-URL Marcus tittade på DÅ, på sin egen dev-server.
+# Ingen dev-server körs under nattkontrollen, så länken kan per konstruktion
+# aldrig svara. Citerad i docs/research/marcus-designpushbacks-bank-
+# transkript-2026-09-05.md (480:90). EN-INSTANS-POST — övriga
+# `localhost:5173`-omnämnanden i repot är text/kod utan `http://`-schema
+# och triggas alltså inte av lychee.
+^http://localhost:5173/event/reco44UBx6GXcxwu5\?variant=a&data=proto$
+
+# github.com/composiohq/rube — repot existerar inte (404, och GitHub
+# Search-API:t hittar ingen "rube" bland ComposioHQ:s ~samtliga publika
+# repon, mätt 2026-09-07). Dokumentet SJÄLVT redovisar redan osäkerheten
+# ("sökträff 2026-09-04, README ej oberoende hämtat") i docs/research/
+# mcp-verktyg-apify-firecrawl-composio-devtools-higgsfield-2026-09-04.md
+# (484:3) — ingen verifierad ersättning hittad, repot kan ha varit
+# privat/borttaget redan vid ursprungscitatet. EN-INSTANS-POST.
+^https://github\.com/composiohq/rube$
+
+# openai.com/codex/ — Cloudflare-bot-skydd, 403 BÅDE med och utan
+# Chrome-UA (symmetriskt, mätt 2026-09-07) → UA/fingerprint-klassen
+# (samma familj som uxdesign.cc/iso.org ovan). Citerad i docs/research/
+# parallella-sessioner-och-merge-van-2026-09-04.md (536:3). Reproducerade
+# INTE i den lokala baslinjekörningen 2026-09-07 men verifierad röd i
+# nightly-run 34088565869 samma dag. EN-INSTANS-POST, path-scopad.
+^https://openai\.com/codex/?$
+
+# help.activecampaign.com — Zendesk-hostat hjälpcenter, UA/fingerprint-
+# bot-block (403), samma klass som help.shopify.com/help.acuityscheduling.com
+# ovan. TVÅ distinkta artiklar i TVÅ olika filer, båda redan självdeklarerade
+# i sin brödtext: "Why is Gmail clipping my email" i docs/research/pdf-
+# bifoga-eller-lanka-branschmonster-2026-08-19.md (411:3), och "Create and
+# save segments" i docs/research/segment-byggare-branschmonster-2026-08-16.md
+# (443:3, doc:en säger uttryckligen "gav 403 Forbidden på fyra separata
+# [tillfällen]"). Domän-bred: två distinkta sidvägar är starkare bevis än
+# EN-instans-precedenten kräver.
+^https://help\.activecampaign\.com/.*$
+
+# bitbucket.org/chromiumembedded/cef/issues/2727/ — CEF-projektets gamla
+# Bitbucket-issuetracker. Dokumentet SJÄLVT redovisar redan att sidan var
+# oåtkomlig VID URSPRUNGSCITERINGEN ("INNEHÅLL EJ LÄSBART (kräver
+# inloggning), försökt hämtad 2026-08-22, avvisad") i docs/research/pdf-
+# forhandsgranskning-serverlosning-natverkstjanst-2026-08-22.md (530:139);
+# repo-roten svarar 200 men just denna issue-URL ger nu 404 (mätt
+# 2026-09-07) — konsekvent med en nedlagd/flyttad issuetracker, ingen
+# verifierad ersättning hittad. EN-INSTANS-POST.
+^https://bitbucket\.org/chromiumembedded/cef/issues/2727/?$
+
+# assets.ctfassets.net (Contentful CDN, Swish/Getswish-space zrqoyh8r449h)
+# — 403 BÅDE med och utan Chrome-UA (symmetriskt, mätt 2026-09-07) →
+# UA/fingerprint-/hotlink-skydd på CDN-asset-nivå, en ANNAN värd än den
+# befintliga `www.contentful.com`-posten ovan (marknadssida, inte
+# asset-CDN:en). Citerad i docs/research/swish-rapport-exportformat-
+# 2026-08-30.md (449:3), doc:en noterar redan att PDF:en lästes via
+# `pdftotext` — innehållets existens är alltså redan belagd, det är
+# grindens hämtning som blockeras. EN-INSTANS-POST, path-scopad.
+^https://assets\.ctfassets\.net/zrqoyh8r449h/aBolaUxwMBZWntQ9CsuLD/c5b0c94c5fb2a298bda91bf4e567d039/Merchant_Integration_Guide\.pdf$
+
+# github.com/supabase/cli — TVÅ mallfiler som inte längre existerar på de
+# citerade sökvägarna efter CLI:ts Go-omskrivning (`internal/` → `pkg/`-
+# omstruktureringen som redan flyttade grann-filen `deploy.go`, se
+# ovanstående FIX i docs/research/task-103-deno-verktygskedjan-i-node-
+# repo-2026-07-31.md). Till skillnad från deploy.go hittades INGEN
+# entydig efterträdare för dessa två: `.vscode/settings.json`-mallens
+# innehåll (deno.enable-inställningen) finns numera i en TypeScript-mall
+# (`apps/cli/src/shared/init/project-init.templates.ts`) snarare än som
+# fristående fil i `cli-go`, och en test-golden-fixtur
+# (`apps/cli/src/shared/init/testdata/go-templates/vscode-settings.json.golden`)
+# är en TESTFIXTUR, inte den faktiska körtidsmallen — att peka dit hade
+# ändrat vad citatet faktiskt belägger. `deno.json`-mallen för
+# `functions new` gav ingen träff alls i nuvarande cli-go-träd (endast en
+# testdata-fixtur på en annan sökväg). Mätt 2026-09-07 via GitHubs
+# Code Search-API. Citerade i docs/research/task-103-deno-
+# verktygskedjan-i-node-repo-2026-07-31.md (432:51, 433:42).
+^https://github\.com/supabase/cli/blob/main/apps/cli-go/internal/init/templates/\.vscode/settings\.json$
+^https://github\.com/supabase/cli/blob/main/apps/cli-go/internal/functions/new/templates/deno\.json$
+
+# simplesignup.se — INTE en av de 26 felen i nightly-run 34088565869
+# (05:54 UTC); upptäckt 2026-09-07 ~16:03 UTC vid den lokala EFTER-
+# verifieringen av denna skiva, då hela sajten (även ROTEN `/`, inte bara
+# den citerade sidan) svarade 503 Service Unavailable med `server: nginx +
+# Phusion Passenger` — signaturen för en kraschad/omstartande
+# applikationsserver, inte ett bot-block. Genuint sajt-brett driftavbrott,
+# transient per definition (samma klass som den befintliga Contentful-
+# 429-posten ovan). Citerad i docs/research/kvitto-branschpraxis-och-
+# svensk-ratt-2026-08-30.md (264:226, 535:704).
+^https://simplesignup\.se/.*$

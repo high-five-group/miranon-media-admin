@@ -260,7 +260,7 @@ uttryckligen den interaktiva/varumärkesbärande tonen.
 
 **Shopify Polaris** (WebSearch-syntes av
 [`polaris-react.shopify.com/.../progress-bar`](https://polaris-react.shopify.com/components/feedback-indicators/progress-bar?example=progress-bar-colored)
-samt [GitHub-diskussion #10049](https://github.com/Shopify/polaris/issues/10049),
+samt [GitHub-diskussion #10049](https://github.com/Shopify/polaris-react-archive/issues/10049),
 hämtad 2026-08-16, **ej verbatim** — se § Vad jag inte kunde belägga):
 komponenten har en `tone`-prop (`highlight` som default, plus `primary`,
 `success`, `critical`) — dvs. ALLTID en semantiskt vald färg, aldrig ett
@@ -511,7 +511,7 @@ gren `main`, commit `0fa3e58a`):**
 - Apple Human Interface Guidelines — Progress Indicators, via community-spegling [`codershigh.github.io`](https://codershigh.github.io/guidelines/ios/human-interface-guidelines/ui-controls/progress-indicators/index.html) — ej officiellt verbatim
 - Meta for Developers, [Splash screen best practices (Horizon OS)](https://developers.meta.com/horizon/design/mr-splash-screen-bp/) — verbatim
 - IBM Carbon Design System, [Progress bar — style (v10)](https://v10.carbondesignsystem.com/components/progress-bar/style/) — verbatim
-- Shopify Polaris, [Progress bar](https://polaris-react.shopify.com/components/feedback-indicators/progress-bar?example=progress-bar-colored) + [GitHub issue #10049](https://github.com/Shopify/polaris/issues/10049) — WebSearch-syntes, ej verbatim
+- Shopify Polaris, [Progress bar](https://polaris-react.shopify.com/components/feedback-indicators/progress-bar?example=progress-bar-colored) + [GitHub issue #10049](https://github.com/Shopify/polaris-react-archive/issues/10049) — WebSearch-syntes, ej verbatim
 - Material Design 3, [Easing and duration — tokens & specs](https://m3.material.io/styles/motion/easing-and-duration/tokens-specs), [Motion overview](https://m3.material.io/styles/motion/overview/specs), [Building Beautiful Transitions with Material Motion for Android](https://m3.material.io/blog/android-material-motion) — WebSearch-syntes, ej verbatim
 - performance.dev, [How's Linear so fast? A technical breakdown](https://performance.dev/how-is-linear-so-fast-a-technical-breakdown) — verbatim (kompositionsfokuserad omläsning)
 - Pencil & Paper, [UX Design Patterns for Loading](https://www.pencilandpaper.io/articles/ux-pattern-analysis-loading-feedback) — verbatim, sekundärkälla med namngivna produkter

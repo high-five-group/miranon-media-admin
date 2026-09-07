@@ -431,7 +431,7 @@ branschmönstret — mönstret är bara halvt implementerat hos oss.**
   — källtext: <https://raw.githubusercontent.com/supabase/supabase/master/apps/docs/content/guides/functions/dependencies.mdx>
 - CLI, VS Code-mall som `supabase init` skriver: <https://github.com/supabase/cli/blob/main/apps/cli-go/internal/init/templates/.vscode/settings.json>
 - CLI, `supabase functions new`-mallar: <https://github.com/supabase/cli/blob/main/apps/cli-go/internal/functions/new/templates/deno.json> och `index_auth_mode_user.ts` i samma katalog
-- CLI, upplösning av import-map/`deno.json` vid deploy: <https://github.com/supabase/cli/blob/main/apps/cli-go/internal/functions/deploy/deploy.go>
+- CLI, upplösning av import-map/`deno.json` vid deploy: <https://github.com/supabase/cli/blob/main/apps/cli-go/pkg/function/deploy.go>
 - CLI, bundling till eszip + `DENO_NO_PACKAGE_JSON`: <https://github.com/supabase/cli/blob/main/apps/cli-go/pkg/function/bundle.go>
 - CLI, sökvägsbyggaren (`FallbackImportMapPath`): <https://github.com/supabase/cli/blob/main/apps/cli-go/pkg/config/utils.go>
 
@@ -445,7 +445,7 @@ branschmönstret — mönstret är bara halvt implementerat hos oss.**
 
 ### Förstapartskällor — Biome
 
-- Getting started (Deno nämns endast som körsätt för Biome): <https://github.com/biomejs/website/blob/main/src/content/docs/guides/getting-started.mdx>
+- Getting started (Deno nämns endast som körsätt för Biome): <https://github.com/biomejs/website/blob/main/src/content/docs/en/guides/getting-started.mdx>
 - Stängda PR:er "fix: support deno": <https://github.com/biomejs/biome/pull/151>, <https://github.com/biomejs/biome/pull/153>
 
 ### Precedent-repon
