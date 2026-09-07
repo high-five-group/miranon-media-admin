@@ -422,4 +422,4 @@ Detta är en rekommendation, inte ett beslut.
 - [`backlog/tasks/task-146`](../../backlog/tasks/task-146%20-%20PRD-Bilage-fundamentet-—-delad-hemvist-tre-dokumentklasser-och-PDF-generering-inom-plattformen.md) — PRD, "inget externt beroende"-linjen
 - [`backlog/tasks/task-182`](../../backlog/tasks/task-182%20-%20ADR-för-bilage-hemvisten-—-PRD-146-kravet-ouppfyllt-genom-146.1–146.4.md) — ännu ej mintad ADR för bilage-hemvisten
 - [`docs/decisions/ADR-067-bulk-mail-segment-send-kontrakt.md`](../decisions/ADR-067-bulk-mail-segment-send-kontrakt.md) — sändkontraktet loopen kompletterar
-- [`tasks/sessions/2026-08-17-session-107.md`](../../tasks/sessions/2026-08-17-session-107.md) Del 14 § D — Marcus pushback som styrde föregående pass, samma disciplin gäller här
+- [`tasks/sessions/archive/2026-08/2026-08-17-session-107.md`](../../tasks/sessions/archive/2026-08/2026-08-17-session-107.md) Del 14 § D — Marcus pushback som styrde föregående pass, samma disciplin gäller här

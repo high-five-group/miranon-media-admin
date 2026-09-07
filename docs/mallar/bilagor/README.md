@@ -475,7 +475,7 @@ gömd. Fixturen `fixtures/kvitto.exempel.json` bär de nya värdena.
 
 **Datumet är ISO och adressen är tre fält sedan S108 (2026-08-22,
 Marcus-beslut "Kör dina rekommendationer" - slutbild av MARCUS-SEKVENS
-punkt 2, se `tasks/sessions/2026-08-20-session-108.md` § Del 9 C och
+punkt 2, se `tasks/sessions/archive/2026-08/2026-08-20-session-108.md` § Del 9 C och
 ADR-109 § Updates 2026-08-22).** `formatKvittoDatum()` gav tidigare
 `"3 augusti 2026"`; kvittot är en bokföringshandling, alltså ISO
 `YYYY-MM-DD` - matchar dessutom Rogers egen datumsträng (`"2026-08-03"`)

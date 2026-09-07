@@ -8,7 +8,7 @@ status: draft
 # Kvittots gap/grid-omgranskning — Prince mot Chrome, per-ställe mätning (2026-08-22)
 
 > **Proveniens:** kortlöst mätpass, beställt av S108-orkestreraren efter fyndet
-> i `tasks/sessions/2026-08-20-session-108.md` Del 10 § CARRY
+> i `tasks/sessions/archive/2026-08/2026-08-20-session-108.md` Del 10 § CARRY
 > ("KVITTOTS GAP/GRID-OMGRANSKNING"). Kört i egen worktree
 > (`.claude/worktrees/s108-paus-docs`, gren `docs/s108-resume-7`). **Modell:**
 > exakt rad ur egen systemprompt — *"You are powered by the model named
@@ -222,7 +222,7 @@ grid-implementation.
   228, 305, 320, 347, 369 — disk-verifierade via `grep -n` innan mätning)
 - `docs/mallar/bilagor/kvitto.granskning.html` (redan genererad,
   `npm run mall:granska -- kvitto`, TASK/S108-fixtur)
-- `tasks/sessions/2026-08-20-session-108.md` Del 10 § B punkt 2
+- `tasks/sessions/archive/2026-08/2026-08-20-session-108.md` Del 10 § B punkt 2
   (fyra-fallstestet: flex-`gap` ignoreras, `grid`+`column-gap` "trasig —
   staplar i stället för kolumner") och § CARRY
   ("KVITTOTS GAP/GRID-OMGRANSKNING")

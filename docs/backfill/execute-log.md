@@ -313,7 +313,7 @@ Nieminen, `TASK-232`s namngivna instans, `EventKey = "11"` sedan raden skapades
 Event-länken, inte texten — normaliseringen av `EventKey`-fältet hör till
 2026-08-21-posten nedan).
 
-Källa: [`../../tasks/sessions/2026-08-17-session-107.md`](../../tasks/sessions/2026-08-17-session-107.md)
+Källa: [`../../tasks/sessions/archive/2026-08/2026-08-17-session-107.md`](../../tasks/sessions/archive/2026-08/2026-08-17-session-107.md)
 § Del 2 + `TASK-232`-kortets Implementation Notes.
 
 ## 2026-08-21 — Omlänkning av 61 felmatchade anmälningar (Elfsight-URL-bugg), Session 110
@@ -530,6 +530,6 @@ Källa: `TASK-229.3`-kortets Implementation Notes (steg 0–2, S112) och
 - CSV: `~/Downloads/alla-anmalda-medveten-kontakt-2026-07-08.csv` (Psionautics, 88 anm).
 - Xlsx: `~/Downloads/2026-06-24 uppdaterade deltagare.xlsx` (FJS + RIM1).
 - Sessionsdok: [`../../tasks/sessions/archive/2026-07/2026-07-08-session-60.md`](../../tasks/sessions/archive/2026-07/2026-07-08-session-60.md).
-- Sessionsdok: [`../../tasks/sessions/2026-08-17-session-107.md`](../../tasks/sessions/2026-08-17-session-107.md) § Del 2.
+- Sessionsdok: [`../../tasks/sessions/archive/2026-08/2026-08-17-session-107.md`](../../tasks/sessions/archive/2026-08/2026-08-17-session-107.md) § Del 2.
 - Sessionsdok: [`../../tasks/sessions/2026-08-21-session-110.md`](../../tasks/sessions/2026-08-21-session-110.md) § Del 2.
 - Kort: `TASK-232` (Fynd EventKey 11 på anmälan ID 868 — återfall av sanerad fälla 10/F.2).

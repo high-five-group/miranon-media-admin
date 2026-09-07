@@ -3253,7 +3253,7 @@ härledd ur git är en hypotes.
 
 Relaterat: `TASK-286.8` (instansens fulla bokföring), `TASK-289`
 (`staleTime`-risken, materialiserad), `TASK-296`,
-`tasks/sessions/2026-08-17-session-107.md` rad ~285–325 (den första
+`tasks/sessions/archive/2026-08/2026-08-17-session-107.md` rad ~285–325 (den första
 instansen), `CLAUDE.md` § Prod-EF-deploy körs via SKRIPTET.
 
 ### L517 — Läs tillbaka det du INTE rörde — en additivt klingande flagga kan ha ersatt hela sektionen

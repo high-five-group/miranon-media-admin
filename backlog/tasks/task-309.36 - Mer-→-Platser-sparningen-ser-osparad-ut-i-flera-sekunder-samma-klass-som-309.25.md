@@ -19,7 +19,7 @@ ordinal: 607000
 <!-- SECTION:DESCRIPTION:BEGIN -->
 FAKTA (källmärkta, verifierade 2026-08-28):
 
-- `tasks/sessions/2026-08-20-session-108.md` rad 3827: "`#1998` | `309.25` |
+- `tasks/sessions/archive/2026-08/2026-08-20-session-108.md` rad 3827: "`#1998` | `309.25` |
   optimistisk sparning (`useSaveEventText` onMutate/onError/onSettled), mätt
   1,95 s → omedelbar | medel (Platser-ytan har samma bugg → kort)".
 - Samma dok rad 3909, "Agent-svans"-listan: "Kandidat att minta: **Mer →

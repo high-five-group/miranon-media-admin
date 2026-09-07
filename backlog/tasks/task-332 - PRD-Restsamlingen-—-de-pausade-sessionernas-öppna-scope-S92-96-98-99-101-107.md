@@ -112,7 +112,7 @@ Hela transformationens etablering är landad (åtta PR:er, ADR-105/106/107, `TAS
 
 ---
 
-## S107 — Nio-punktslistan (`tasks/sessions/2026-08-17-session-107.md`, 2765 rader, 7 pauser)
+## S107 — Nio-punktslistan (`tasks/sessions/archive/2026-08/2026-08-17-session-107.md`, 2765 rader, 7 pauser)
 
 Två hela spår är ÖVERLÄMNADE och ingår därför INTE nedan: dokument-/bilage-/mallspåret → **S108** (Del 19, rad 2256–2382) och notis-/felmeddelande-spåret → **S109** (Överlämning 2, rad 2649–2765, `S109` numera `closed`). Det som står kvar är exakt vad Överlämning 2 § A räknar upp som "S107 behåller allt annat".
 
@@ -148,7 +148,7 @@ Två hela spår är ÖVERLÄMNADE och ingår därför INTE nedan: dokument-/bila
 - `tasks/sessions/archive/2026-08/2026-08-05-session-98.md` — 3 K, 4 Ö
 - `tasks/sessions/archive/2026-08/2026-08-07-session-99.md` — 5 K, 11 Ö
 - `tasks/sessions/archive/2026-08/2026-08-09-session-101.md` — 3 K, 8 Ö
-- `tasks/sessions/2026-08-17-session-107.md` — 10 K, 13 Ö
+- `tasks/sessions/archive/2026-08/2026-08-17-session-107.md` — 10 K, 13 Ö
 
 Var och en bär en sektion `## Stängd via scope-överföring (2026-08-28)` med sin fullständiga K/Ö-tabell och beläggen för K-klassningarna.
 

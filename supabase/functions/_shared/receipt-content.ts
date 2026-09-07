@@ -50,7 +50,7 @@
 //
 // DATUMET ÄR ISO OCH ADRESSEN ÄR TRE FÄLT (S108, Marcus-beslut 2026-08-22,
 // slutbild av MARCUS-SEKVENS punkt 2, ordagrant "Kör dina rekommendationer" —
-// se `tasks/sessions/2026-08-20-session-108.md` § Del 9 C och ADR-109
+// se `tasks/sessions/archive/2026-08/2026-08-20-session-108.md` § Del 9 C och ADR-109
 // § Updates 2026-08-22). `formatKvittoDatum` gav tidigare `"3 augusti 2026"`;
 // kvittot är en BOKFÖRINGSHANDLING, alltså ISO `YYYY-MM-DD` i stället — ingen
 // annan konsument i repot vill ha den svenska datumtexten (`git grep

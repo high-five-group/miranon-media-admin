@@ -4,7 +4,7 @@
 
 Manifestet stämplades 2026-08-16 (`cc1d7c53`) men avbildade en riven funktion: den dialog-baserade Visa-overlayen ersattes av ikonpar i `TASK-273.4` (`b881fe64`). `--ersatt` skriver bara om `godkand`-blocket, aldrig bilderna — en omstämpling hade producerat ett färskt-daterat kvitto för något som inte går att klicka fram i appen. Formen är därför arkivflytt, per prejudikatet `s55-hem-konvergens` (`TASK-243.1`, PR #1426) och `tasks/lessons.d/superseded-facit-arkivflyttas-aldrig-raderas.md`.
 
-Mandat: Marcus i klartext 2026-08-26 (S108 resume 11, `tasks/sessions/2026-08-20-session-108.md` rad 3795). Underlag: `docs/research/facit-pensionering-s102-2026-08-26.md` § 1 och § 5.
+Mandat: Marcus i klartext 2026-08-26 (S108 resume 11, `tasks/sessions/archive/2026-08/2026-08-20-session-108.md` rad 3795). Underlag: `docs/research/facit-pensionering-s102-2026-08-26.md` § 1 och § 5.
 
 ## Manifestet är ORÖRT — bevis
 

@@ -10,7 +10,7 @@ lifecycle: paused
 
 > Registrerad i `TASK-285.4` (spec-skörden), ur `ADR-121` § 8:s öppna fråga.
 > Detta är en skuld som redan bokfördes en gång vid S109:s andra paus
-> (`tasks/sessions/2026-08-20-session-109.md` § PAUSLÄGE → CARRY / ÖPPNA
+> (`tasks/sessions/archive/2026-08/2026-08-20-session-109.md` § PAUSLÄGE → CARRY / ÖPPNA
 > TRÅDAR: *"Osparad-detektion (ADR-121 § 8, dialog-vägen) ska registreras
 > som tråd — EJ GJORT vid paus ... Görs i 285.4 ... eller som första
 > docs-handling vid resume."*) och som denna skiva betalar.

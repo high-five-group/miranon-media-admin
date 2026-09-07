@@ -373,7 +373,7 @@ sidfotens adress radbröt mitt i postnumret ("…väg 17, 144 / 63 Rönninge,
 Sverige") eftersom `MIRANON_ORG.adress` (§ Updates 2026-08-22 ovan) är EN
 sträng men mallens sidfotskolumn är smal — ledde till Marcus dom på
 slutbilden, ordagrant: *"Kör dina rekommendationer"*. Källa:
-`tasks/sessions/2026-08-20-session-108.md` § Del 9 C.
+`tasks/sessions/archive/2026-08/2026-08-20-session-108.md` § Del 9 C.
 
 **Två ändringar, båda i `_shared/receipt-content.ts`:**
 

@@ -316,7 +316,7 @@ nästan ordagrant, oberoende funna av två olika extraktionspass.
 **Sessioner:** S102, S104, S107, S108, S113, S121 (6 st).
 
 **Starkaste citat:** *"Fyll i de 3 som saknas är extremt överflödig."*
-(B-048, S108, `tasks/sessions/2026-08-20-session-108.md:931`).
+(B-048, S108, `tasks/sessions/archive/2026-08/2026-08-20-session-108.md:931`).
 
 ### R-09 — Terminologi och skrivregler exakt
 
