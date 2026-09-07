@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-09-05
+updated: 2026-09-07
 review_by: 2027-02-08
 status: stable
 ---
@@ -1140,6 +1140,91 @@ gör.
   spinner efter 1 s är deras enda mönster) — öppet bokfört med
   research-stöd i PRD TASK-8 och ADR-113.
 
+### Multivytillstånd — tre regler ur S123 (statiskt krom och rubrik, shimmer, returträd)
+
+Principen ovan (trappsteg 1) beskriver EN komponents pending-läge. En hel
+vy med FLERA query-tillstånd (`isPending`/`isError`/laddat) och flera
+delar (SidRam, h1, sidhuvud, filter-/sökrad, handlingsrad, datakropp)
+höll inte ensam på den. S123:s granskningsloop på 15 skivor av PRD
+`TASK-416` (`tasks/sessions/2026-09-06-session-123.md` Del 3 §
+Granskningsloopen: fem konvergerade i runda 1, sju behövde runda 2, tre
+gick förbi rundtaket på Marcus mandat) fastslog tre regler, en i taget,
+instans för instans — varje runda avtäckte nästa lager av samma princip i
+stället för en ny felklass
+(`tasks/lessons.d/rundtaket-racker-inte-nar-varje-runda-avtacker-nasta-lager-av-samma-princip.md`).
+De komponerar ovanpå
+[ADR-113](../decisions/ADR-113-laddtrappan-yttrappa-for-laddindikatorer.md)s
+Laddtrappa (steg 1, Skeleton, ovan) och
+[ADR-078](../decisions/ADR-078-instant-regeln.md)s INSTANT-regel (statisk
+geometri renderas OMEDELBART när den seedas ur en redan värmd cache —
+`useDorrEvent`s `placeholderData` i #2401 nedan är instansen som gjorde
+regel 1 möjlig utan extra nätverksanrop): ingen av de tre river någotdera,
+de täpper igen kanten där flera tillstånd och flera delar möts samtidigt.
+
+1. **Sidramen (sidkromet enligt §23) OCH sidans egna statiskt kända
+   element renderas i ALLA query-tillstånd — bara datakroppen växlar.**
+   Termen *sidkrom* används här i exakt den avgränsning §23 § Vad
+   sidramen äger — och inte redan låser: SidRam (chevron + delad
+   kolumnbredd) — rubriken räknas UTTRYCKLIGEN inte in ("Bara
+   sidkromet. Rubriken lever kvar i varje sida", `TASK-299`, Marcus
+   2026-08-22), och Hem-ytan ställer rubrik och sidkrom som ALTERNATIV,
+   inte som samma sak. Den gränsen ändras inte av denna regel. Vad
+   regeln lägger till är att sidramen (där ytan har en) OCH sidans egna
+   statiskt kända delar — h1, sidhuvud, filter-/sökrad, handlingsrad —
+   monteras TILLSAMMANS oavsett `isPending`/`isError`/laddat; bara det
+   som sitter UNDER dem växlar mellan skeleton, felbesked och riktigt
+   innehåll. Belagt utan reservation i `TASK-416.1` (#2401), `TASK-416.8`
+   (#2395), `TASK-416.4` (#2392), `TASK-416.2` (#2415). `TASK-416.3`
+   (#2396) bär regeln bara i isPending-grenen — dess isError-gren
+   saknar fortfarande filterraden och ett gemensamt returträd (öppen
+   skuld, `TASK-428`).
+2. **Skeleton och shimmer ENBART i `isPending`, aldrig i `isError`.** Ett
+   fel-läge visar kromet med en STATISK platshållare — ingen shimmer,
+   ingen `aria-busy` — och felbeskedet bär tillståndet i stället: en
+   animerad platshållare bredvid ett felmeddelande påstår att något
+   fortfarande pågår, vilket är osant. Belagt i `TASK-416.4` (#2392,
+   runda 1), `TASK-416.8` (#2395, runda 3 — h1 alltid monterad,
+   antalsraden skeleton i `isPending`/`null` i `isError`), `TASK-416.1`
+   (#2401, rundorna 2–3).
+3. **Ett returträd med fasta barnpositioner.** Statusannonseringen och
+   varje block returneras från EN gemensam `return`, på fast index (`null`
+   på sin plats när blocket inte ska synas) — aldrig separata
+   `return`-grenar per tillstånd. Reacts keyless reconciliation matchar
+   barn POSITIONELLT: skilda `return`-grenar ger olika barn på samma index
+   mellan tillstånd, vilket monterar om DOM-noden och tar fokus och
+   oskickad text med sig. Belagt i `TASK-416.8` (#2395), `TASK-416.2`
+   (#2415), `TASK-416.19` (#2423, "ett returträd med fasta
+   syskon-positioner så FilterRad inte remonteras").
+
+Källan för alla tre är PR-nummer, inte prosa-påståenden — vart och ett går
+att slå upp med `gh pr view <nr> --json body`. **Öppen divergens, bokförd
+i stället för tystad (ADR-086):** för regel 3 anger kortets (`TASK-416.21`)
+egen beskrivning `TASK-416.2`s bidrag som "runda 2", medan sessionsdokets
+Del 3 § Beslut på mandatet anger "runda 1" för samma PR och fynd.
+PR-numret (#2415) är samstämmigt i båda källorna — rundnumret är det
+inte, och bullet-listan ovan utelämnar det avsiktligt för just den posten
+i stället för att gissa.
+
+### Laddläges-checklistan — citera i skivors uppdrag
+
+Sex punkter — en per regel/golv ovan plus de mätbara krav som redan
+gäller (a11y-besked per landmärke, mobil, boundingBox) — tänkta att
+klistras in ORDAGRANT i en PRD:s spec eller en enskild skivas uppdrag, så
+en byggare bygger mot dem och en granskare prövar mot dem redan i runda 1
+i stället för att loopen upptäcker dem en i taget:
+
+1. Sidramen (§23) OCH sidans statiska element — h1, sidhuvud,
+   filter-/sökrad, handlingsrad — monterade i `isPending`/`isError`/
+   laddat; bara datakroppen växlar.
+2. Shimmer bara i `isPending` — aldrig i `isError`; fel-läget är statiskt.
+3. Fasta barnpositioner — ett returträd, aldrig separata `return`-grenar
+   per tillstånd.
+4. `aria-busy`/`role="status"` per landmärke som laddar — inte bara på
+   det yttersta blocket.
+5. Mobil viewport mätt, inte bara desktop.
+6. `boundingBox` före/efter datalandning bifogad som mätning i PR:en,
+   inte ögonmätt.
+
 ### Skeleton — API (medvetet minimalt)
 
 ```tsx
@@ -1992,6 +2077,7 @@ en känd föräldrayta?* Ja ⇒ sidram. Stängs den, eller är den roten i sin g
 
 | Datum | Förändring |
 |-------|-----------|
+| 2026-09-07 | §15 tillägg: "Multivytillstånd — tre regler ur S123" + Laddläges-checklistan (`TASK-416.21`, skiva av PRD `TASK-416`; fix-runda 1 efter review på PR `#2439`). S123:s granskningsloop på 15 skivor fastslog tre regler en i taget i stället för att skriva ner dem först: sidramen (sidkromet enligt §23) OCH sidans egna statiska element renderas i alla query-tillstånd (`#2401`/`#2395`/`#2392`/`#2415` utan reservation; `#2396` bär det bara i isPending-grenen — öppen skuld `TASK-428`), skeleton/shimmer enbart i `isPending` aldrig i `isError` (`#2392` runda 1, `#2395` runda 3, `#2401` rundorna 2–3), och ett returträd med fasta barnpositioner så React inte monterar om header/FilterRad (`#2395`/`#2415`/`#2423`) — komponerar ovanpå ADR-113 och ADR-078. Regel 1 omdefinierar INTE §23:s snäva sidkrom-term (SidRam, exkluderar rubriken) — fix-rundan rättade en terminologikollision mot §23 § Vad sidramen äger — och inte. Sexpunkts checklista tillagd för att citera i kommande skivors uppdrag i stället för att låta loopen upptäcka reglerna på nytt (lessons-fragmentet `rundtaket-racker-inte-nar-varje-runda-avtacker-nasta-lager-av-samma-princip.md`). ORDLISTA.md prövad för "sidkrom"/"returträd" — inga poster tillagda: båda är design-system-/kodmönstertermer, inte produktdomänbegrepp (sidkrom har redan sin hemvist i §23; returträd definieras inline där det används första gången). |
 | 2026-08-23 | §23 Sidramen — Mer-familjens delade sidkrom ([ADR-126](../decisions/ADR-126-delade-presentationsformer.md), S111). Paragrafen saknades HELT, och frånvaron var den diagnostiserade orsaken till att appen bar två oförenliga sidram-dialekter — båda facit-stämplade, den ena med en kodkommentar som kallade den andra ett `dubbleringsfel`. Formen låst till kant-i-kant: `size-11`-chevron (44 px, WCAG 2.5.5-golvet exakt) indragen `mx-4`, `ChevronLeft` 26, obligatoriskt `tillbakaEtikett`, och HELA innehållskolumnen på samma `px-4` — sista ledet mätt, en yta som drog in bara rubriken fick 16 px missalignment (`TASK-299.2`, `boundingBox()`). Sidramen äger BARA sidkromet; rubriken lever kvar per sida, och den rubrik-ägande grenen har noll skarpa konsumenter (demonstreras på `/dev/primitives`). Familjegränsen utskriven mot Hem (landningsyta), eventdetaljen (`EventValjare` bär identiteten), overlays (stängs, navigeras inte ur) och dev-prototyper, med testet "lämnar användaren sidan genom att gå TILLBAKA till en känd föräldrayta?". Åtta bärande ytor uppräknade; tre öppna poster bokförda, däribland `text-2xl`/`text-3xl`-divergensen i familjens rubriker. |
 | 2026-08-21 | §22 Åtgärdskön — arbetsobjekt är INTE notiser ([ADR-122](../decisions/ADR-122-eventlankens-vakt-och-atgardskon.md), S110). Dragen som familjegräns mot §21 dagen efter att §21 skrevs: notistrappans åtta klasser är alla händelsebundna, och en post som ligger kvar tills någon åtgärdar den har ingen klass där. Regeln i en mening: kan beskedet vara sant för en användare som loggar in i morgon är det inte en notis. Tre delar krävs alltid (kö · markör · resolution i appen) — två av tre är en halvmesyr som gör Airtable till en yta Lotta måste kunna. Notiscenter förkastat på NN/g:s grund. Formen på Hem är den befintliga `Bevakningsrad`, inte en ny yta. |
 | 2026-08-21 | §21 Notistrappan — familjens FÖRSTA styrande yta ([ADR-121](../decisions/ADR-121-notistrappan-form-per-klass-i-notisfamiljen.md), S109). Fram till nu hade specen noll träffar på banner/notis/toast/`MessageBox`; fem ytor bar fyra separata designspråk utan att någon regel band dem. Trappan delar på TVÅ axlar (orsakade användaren detta? kräver det handling nu?) i stället för på kodhemvist, med åtta klasser och kolumnen "förskjuter layout". Fyra app-breda regler: fel blir aldrig toast · ingen timer när knappen är enda vägen till åtgärden (WCAG 2.2.1) · överlagrade notiser har fast bredd · `role="status"` alltid monterad medan `role="alert"` monteras villkorat. Copy-golvet problem/orsak/lösning mot GOV.UK + NN/g + Microsoft; "Ladda om" låst framför "Uppdatera" (mätt domänkollision). Systerstruktur till §15 Laddtrappan, samma form som `ADR-113` etablerade. |
