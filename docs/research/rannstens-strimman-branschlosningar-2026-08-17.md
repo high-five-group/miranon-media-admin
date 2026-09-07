@@ -510,7 +510,7 @@ central nog för egen sektion):**
 - `src/styles/base.css` rad 87–195 (§ RÄNNSTENS-KAMOUFLAGE + § FULL-BREDDS-FOND)
 - `src/styles/tokens/components.css` rad 330–386
 - `src/components/AppShell/Forberedelseskarm.tsx` (helhet, inkl. rad 297–310)
-- `tasks/sessions/2026-08-17-session-107.md` Del 6 (Marcus-fångsten, citatet
+- `tasks/sessions/archive/2026-08/2026-08-17-session-107.md` Del 6 (Marcus-fångsten, citatet
   som utlöste detta pass)
 - Commit `00ccc852` (TASK-276 runda 2, kamouflage-omräkningen mot
   kantkolumner) och `5d2d0735` (TASK-276 runda 1, kamouflagets första

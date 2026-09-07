@@ -81,5 +81,5 @@ Kommentarens egen brasklapp — "ofarligt just för att skrivvägarna invalidera
 
 SLUTSATS FÖR VÄGVALET (AC #1): väg (b), rollback till 5 min, är inte längre bara "billig att agera på snabbt". Den är den enda av de två vägarna som minskar exponeringen för HELA klassen — väg (a) i sina föreslagna former (optimistisk uppdatering, fördröjd invalidering, EF-side person-koppling) adresserar bara A2-inflödet och lämnar deploy-glapp-inflödet orört. Det är ett argument som ska ligga på bordet vid beslutet, inte ett beslut fattat här.
 
-Källor: TASK-286.8 (incidentens fulla bokföring), src/queries/persist.ts, src/queries/personregister-farskhet.ts rad 21 och 51, supabase/functions/get-persons/index.ts rad 13 och 121, tasks/sessions/2026-08-17-session-107.md rad ~285-325 (den tidigare instansen av samma deploy-asymmetri), tasks/lessons.d/tva-deploymekanismer-for-samma-system-skapar-ett-glapp-ingen-grind-ser.md.
+Källor: TASK-286.8 (incidentens fulla bokföring), src/queries/persist.ts, src/queries/personregister-farskhet.ts rad 21 och 51, supabase/functions/get-persons/index.ts rad 13 och 121, tasks/sessions/archive/2026-08/2026-08-17-session-107.md rad ~285-325 (den tidigare instansen av samma deploy-asymmetri), tasks/lessons.d/tva-deploymekanismer-for-samma-system-skapar-ett-glapp-ingen-grind-ser.md.
 <!-- SECTION:NOTES:END -->

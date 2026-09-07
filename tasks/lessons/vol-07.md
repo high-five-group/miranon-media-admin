@@ -949,7 +949,7 @@ att `task create` där skulle allokera `task-311` i stället för `task-319`.
 Ingenting sade att kortens INNEHÅLL var lika gammalt. Åtgärd: resumens dokgren
 togs ur `origin/main` i stället för ur huvudkatalogen, och all faktainsamling
 gjordes med `git show origin/main:<fil>`. Belägg:
-`tasks/sessions/2026-08-20-session-108.md` § Del 20 § A–B.
+`tasks/sessions/archive/2026-08/2026-08-20-session-108.md` § Del 20 § A–B.
 
 **Det generella:** ett CLI som materialiserar sitt tillstånd ur filer i
 arbetsträdet — backlog-kort, changelog, versionsfiler, konfiguration,

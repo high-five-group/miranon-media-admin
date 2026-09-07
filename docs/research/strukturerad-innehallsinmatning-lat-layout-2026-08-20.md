@@ -21,7 +21,7 @@ status: draft
 > hemma; se § Delfråga 4 nedan för återanvändning), `docs/mallar/bilagor/bekraftelsebilaga.html`
 > och `docs/mallar/bilagor/README.md` (`TASK-279`) samt fixture-JSON:en.
 > Ingen ADR eller lesson avgör frågan i uppdraget — Session 108:s eget
-> sessionsdok (`tasks/sessions/2026-08-20-session-108.md`) har vid
+> sessionsdok (`tasks/sessions/archive/2026-08/2026-08-20-session-108.md`) har vid
 > passets start endast **Del 1** skriven; ingen grillnings-Del med
 > kandidaterna A/B/C existerar ännu på disk. Frågan är alltså genuint
 > öppen, inte redan avgjord.

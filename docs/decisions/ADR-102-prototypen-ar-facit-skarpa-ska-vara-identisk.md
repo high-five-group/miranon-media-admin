@@ -245,7 +245,7 @@ avgjorde dem åt olika håll, korrekt, men enbart på orkestrerarens omdöme:
 | Utfall | STOPPAD — en agent skriver om ett **stämplat** facit | armerad — en **ogodkänd** form ändras av sin egen skiva |
 
 Ingen grind fällde i något av fallen. Källa:
-`tasks/sessions/2026-08-20-session-109.md` § Del 12 avsnitt B (landad i
+`tasks/sessions/archive/2026-08/2026-08-20-session-109.md` § Del 12 avsnitt B (landad i
 `2ce6c36c`) samt kommentaren på `#1715`.
 
 #### A1. Tre klasser av facit-ändring

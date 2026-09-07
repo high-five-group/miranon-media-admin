@@ -17,7 +17,7 @@ ordinal: 552000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-PRD-kort (förälder). Skivorna är barnen. Beslut: orkestreraren på Marcus mandat (*"Du har mandat att besluta ingången här"*, S108 resume 7, 2026-08-22). Styrande ADR: `ADR-124` (mintas i samma resume). Sessionsdok: `tasks/sessions/2026-08-20-session-108.md` Del 10–11.
+PRD-kort (förälder). Skivorna är barnen. Beslut: orkestreraren på Marcus mandat (*"Du har mandat att besluta ingången här"*, S108 resume 7, 2026-08-22). Styrande ADR: `ADR-124` (mintas i samma resume). Sessionsdok: `tasks/sessions/archive/2026-08/2026-08-20-session-108.md` Del 10–11.
 
 ## Problemet, mätt (inte antaget)
 

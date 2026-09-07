@@ -8,7 +8,7 @@
 // skivan: Chromes PDF-visare scrollar bara jämnt på en URL SERVERAD AV
 // NÄTVERKSTJÄNSTEN. `blob:` (dagens väg), en Service Worker som fångar
 // svaret, och båda med `noopener` mättes ALLA laggiga (sex armar, headed
-// Chrome 151, `tasks/sessions/2026-08-20-session-108.md` Del 10 § B punkt
+// Chrome 151, `tasks/sessions/archive/2026-08/2026-08-20-session-108.md` Del 10 § B punkt
 // 3 + Del 11) — bara en riktig nätverks-URL scrollar identiskt med
 // `http://`-referensen.
 //

@@ -30,7 +30,7 @@ status: draft
 >
 > **Ett STYRANDE beslut hittat som redan besvarat halva frågan — behandlat
 > som "håller premissen?", inte som öppen fråga.**
-> `tasks/sessions/2026-08-20-session-108.md` § Del 10 (läst i sin helhet)
+> `tasks/sessions/archive/2026-08/2026-08-20-session-108.md` § Del 10 (läst i sin helhet)
 > visar att Marcus REDAN gett muntligt GO på "Alternativ A" (transient
 > Storage-objekt + signerad URL, samma mönster som klass A:s
 > `getAttachmentDownloadUrl`): *"Vi kör på din rekommendation."* Storage-
@@ -516,7 +516,7 @@ pekade mot.
 - Supabase — Custom Domains (kostnad, ett-per-projekt-gräns, SAML-varning): <https://supabase.com/docs/guides/platform/custom-domains> (hämtad 2026-08-22)
 - Supabase — Serving assets from Storage (signerad URL, `createSignedUrl`-exempel): <https://supabase.com/docs/guides/storage/serving/downloads> (hämtad 2026-08-22)
 - Supabase blogg — Background Tasks, Ephemeral Storage, WebSockets (`EdgeRuntime.waitUntil()`, 150/400 s-tak): <https://supabase.com/blog/edge-functions-background-tasks-websockets> (hämtad 2026-08-22)
-- Egen mätning, staging, Del 10 § C (`tasks/sessions/2026-08-20-session-108.md` rad 1731–1743): signerad Storage-URL svarar `accept-ranges: bytes` och `206 Partial Content`.
+- Egen mätning, staging, Del 10 § C (`tasks/sessions/archive/2026-08/2026-08-20-session-108.md` rad 1731–1743): signerad Storage-URL svarar `accept-ranges: bytes` och `206 Partial Content`.
 
 ### Community-/sekundärkällor (tydligt märkta)
 
@@ -542,5 +542,5 @@ pekade mot.
 - `vercel.json` — SPA-only-deploykonfiguration.
 - [`ADR-118`](../decisions/ADR-118-bilagors-rackviddsmodell.md), [`ADR-119`](../decisions/ADR-119-pdf-renderingsvagen-extern-motor-per-event.md) — rendering/lagringsbesluten som ramar in frågan.
 - [`T171`](../../tasks/threads/T171-personuppgifter-i-publikt-repo.md) — persondata-mönstret som väger mot kandidat 1.
-- `tasks/sessions/2026-08-20-session-108.md` rad 1638–1917 (Del 10) — Marcus GO på Alternativ A, den öppna tolkningsfrågan, `EdgeRuntime.waitUntil`-relevanta gränser.
+- `tasks/sessions/archive/2026-08/2026-08-20-session-108.md` rad 1638–1917 (Del 10) — Marcus GO på Alternativ A, den öppna tolkningsfrågan, `EdgeRuntime.waitUntil`-relevanta gränser.
 - [`pdf-forhandsgranskning-leveransvag-blob-vs-url-2026-08-22.md`](pdf-forhandsgranskning-leveransvag-blob-vs-url-2026-08-22.md), [`pdf-scrollprestanda-pdfium-chrome-2026-08-22.md`](pdf-scrollprestanda-pdfium-chrome-2026-08-22.md), [`docraptor-minimaltest-2026-08-22.md`](docraptor-minimaltest-2026-08-22.md) — angränsande pass, se proveniens-blocket för exakt gränsdragning.

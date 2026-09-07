@@ -56,7 +56,7 @@ Täcker användarberättelser: 1, 8, 9, 18
 <!-- SECTION:NOTES:BEGIN -->
 ## Orkestrerar-stängning 2026-08-22 — stängs som ÖVERFLÖDIGT, inte tyst
 
-Källa: tasks/sessions/2026-08-20-session-109.md § Del 7 (landad på main, 2026-08-21).
+Källa: tasks/sessions/archive/2026-08/2026-08-20-session-109.md § Del 7 (landad på main, 2026-08-21).
 
 **Vad hände.** Marcus observerade att personlistan 'laddas om' vid varje teckeninmatning i sökrutan — ett UX-problem, inte ett buggfynd i denna skivas kod. Två vägar restes som ett STOPP: (A) lappa symptomet med keepPreviousData, eller (B) förladda hela personregistret (559 personer) och sök/filtrera/sortera i klienten, i ADR-078:s (INSTANT-regeln) anda och samma mönster repot redan bär på två andra ytor. Marcus: 'Då kör vi B!' (Del 7 § B).
 
