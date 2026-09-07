@@ -1202,9 +1202,15 @@ jobs:
         # mcp__claude_ai_Airtable__* (tasks/lessons.d/prod-basen-last-av-
         # tva-agenter-ett-prosa-forbud-utan-mekanism-haller-inte-under-
         # fleet.md — två agenter läste prod read-only samma dag, ingen
-        # grind fångade det). 17 fall, tvåsidigt (PAT-servern nekas
-        # ovillkorligt, claude.ai-connectorn nekas bara i agent-kontext via
-        # `agent_id`, staging/bas-lösa anrop släpps, fail-closed på trasig
+        # grind fångade det). 20 fall (räknat om i fix-runda 1 efter
+        # granskningsrunda 1, PR #2442 — startade på 17, tre tillkom: D6/D7
+        # täcker claude.ai-connectorns SIDO-/INTERFACE-verktyg
+        # list_records_for_page/get_record_for_page mot prod i
+        # agent-kontext, A7 samma verktyg mot staging), tvåsidigt
+        # (PAT-servern nekas ovillkorligt, claude.ai-connectorn nekas bara
+        # i agent-kontext via `agent_id` — inklusive sido-verktygen, vars
+        # `baseId`-fält är REQUIRED enligt orkestrerarens schema-mätning
+        # 2026-09-07 — staging/bas-lösa anrop släpps, fail-closed på trasig
         # indata). Familjen är alltså TIO sviter i dag, inte nio — talet
         # "nio" i stycket ovan är historiskt korrekt för vad TASK-185
         # wirade DÅ och lämnas orört (TASK-106-disciplinen: räkna om, skriv

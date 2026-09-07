@@ -82,6 +82,22 @@
 # INPUT: PreToolUse hook-JSON på stdin, `tool_name`, `tool_input` och
 #   (villkorat) `agent_id` — samtliga bekräftade common/event-fält.
 #
+# ═══ SIDO-/INTERFACE-VERKTYGEN (list_records_for_page m.fl.) — PRÖVAT ═══
+#
+#   Granskningsrunda 1 (PR #2442) befarade att claude.ai-connectorns sido-
+#   /interface-verktyg (`list_records_for_page`, `get_record_for_page`,
+#   `list_pages_for_base`) kan sakna `baseId` i `tool_input` och därmed
+#   slinka förbi hel-payload-substräng-matchningen. Orkestreraren mätte
+#   detta 2026-09-07 mot verktygens FAKTISKA JSON-scheman (denna agent har
+#   inte `mcp__claude_ai_Airtable__*` i sin egen verktygspool —
+#   `disallowedTools` i bygg-agent.md/review-agent.md/research-pass.md —
+#   och kan därför inte introspektera schemat själv; mätningen är
+#   ORKESTRERARENS, sourcad, inte omprövad av denna agent): samtliga tre
+#   har `baseId` som `required` med mönstret `^app[A-Za-z0-9]{14}$`. Hålet
+#   finns alltså INTE för dem — se D6/D7/A7 i testsviten för fixturer med
+#   sido-verktygens payload-form (`pageId`/`interfaceId` vid sidan av
+#   `baseId`).
+#
 # SCOPE, ÖPPET AVGRÄNSAT: detta skript täcker ENDAST MCP-verktygsanropen.
 #   En rå `curl`/`wget` mot Airtables REST-API med prod-bas-ID:t i URL:en
 #   ligger UTANFÖR denna hooks matcher (den är inte registrerad på `Bash`)

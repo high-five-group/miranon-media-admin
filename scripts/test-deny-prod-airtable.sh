@@ -14,12 +14,23 @@
 #           inte i baseId-fältet — NEKAS (hel-payload-substräng-matchning)
 #   D5      mcp__claude_ai_Airtable__* mot prod-bas-ID:t I AGENT-KONTEXT
 #           (agent_id satt) NEKAS
+#   D6–D7   claude.ai-connectorns SIDO-/INTERFACE-verktyg
+#           (list_records_for_page, get_record_for_page) mot prod-bas-ID:t
+#           i agent-kontext NEKAS — samma familjeregel som D5, med
+#           verktygens EGEN payload-form (baseId + pageId/interfaceId).
+#           Orkestreraren mätte 2026-09-07 (granskningsrunda 1, PR #2442)
+#           att baseId är REQUIRED (^app[A-Za-z0-9]{14}$) på dessa verktyg
+#           OCH på list_pages_for_base — mätningen är sourcad från
+#           orkestreraren, ej omprövad av denna agent (verktygen ligger
+#           utanför bygg-agentens egen MCP-tillgång, disallowedTools).
 #   A1–A2   mcp__airtable__* mot STAGING-bas-ID:t SLÄPPS
 #   A3      mcp__claude_ai_Airtable__* mot STAGING-bas-ID:t SLÄPPS
 #   A4      mcp__claude_ai_Airtable__* mot PROD-bas-ID:t UTAN agent_id
 #           (huvudsession, Marcus HITL-undantaget) SLÄPPS
 #   A5      mcp__airtable__list_bases UTAN baseId alls SLÄPPS
 #   A6      helt orelaterat tool_name (Read) SLÄPPS
+#   A7      sido-verktyg (list_records_for_page) mot STAGING-bas-ID:t,
+#           agent-kontext, SLÄPPS
 #   F1–F5   FAIL-CLOSED: jq saknas, trasig JSON, tom stdin, saknad
 #           policyfil, tomt PROD_AIRTABLE_BASE_ID-värde — samtliga NEKAR
 #           (exit 2)
@@ -167,6 +178,21 @@ JSON="$(json 'mcp__claude_ai_Airtable__list_tables_for_base' "{\"baseId\":\"${PR
 EXPECT_OUT="AGENT-KONTEXT"
 run_case "D5  mcp__claude_ai_Airtable__* mot prod I AGENT-KONTEXT (agent_id satt) NEKAS" 2 "${JSON}"
 
+# D6-D7: granskningsrunda 1 (PR #2442) befarade att claude.ai-connectorns
+# SIDO-/INTERFACE-verktyg (list_records_for_page m.fl.) saknar baseId och
+# därmed slinker förbi. Orkestreraren mätte 2026-09-07 mot verktygens
+# faktiska scheman: baseId är REQUIRED (mönster ^app[A-Za-z0-9]{14}$) på
+# samtliga tre (list_records_for_page, get_record_for_page,
+# list_pages_for_base) — fixturerna nedan speglar den payload-formen
+# (baseId + pageId/interfaceId vid sidan av).
+JSON="$(json 'mcp__claude_ai_Airtable__list_records_for_page' "{\"baseId\":\"${PROD}\",\"pageId\":\"pagXXXXXXXXXXXXXX\",\"interfaceId\":\"pagYYYYYYYYYYYYYY\"}" 'agent-ghi789')"
+EXPECT_OUT="AGENT-KONTEXT"
+run_case "D6  mcp__claude_ai_Airtable__list_records_for_page (sido-verktyg) baseId=<prod>, agent-kontext, NEKAS" 2 "${JSON}"
+
+JSON="$(json 'mcp__claude_ai_Airtable__get_record_for_page' "{\"baseId\":\"${PROD}\",\"recordId\":\"recZ\",\"pageId\":\"pagXXXXXXXXXXXXXX\"}" 'agent-ghi789')"
+EXPECT_OUT="AGENT-KONTEXT"
+run_case "D7  mcp__claude_ai_Airtable__get_record_for_page (sido-verktyg) baseId=<prod>, agent-kontext, NEKAS" 2 "${JSON}"
+
 # ============================================================
 # A1–A6 — SLÄPPER: staging, bas-lösa anrop, huvudsessionens HITL-undantag,
 # orelaterade verktyg.
@@ -196,6 +222,10 @@ run_case "A5  mcp__airtable__list_bases (ingen baseId alls) SLÄPPS" 0 "${JSON}"
 NOT_EXPECT_OUT="PROD-AIRTABLE-LÅS"
 run_case "A6  helt orelaterat tool_name (Read) SLÄPPS" 0 \
     '{"tool_name":"Read","tool_input":{"file_path":"/tmp/x"}}'
+
+JSON="$(json 'mcp__claude_ai_Airtable__list_records_for_page' "{\"baseId\":\"${STAGING}\",\"pageId\":\"pagXXXXXXXXXXXXXX\",\"interfaceId\":\"pagYYYYYYYYYYYYYY\"}" 'agent-ghi789')"
+NOT_EXPECT_OUT="PROD-AIRTABLE-LÅS"
+run_case "A7  mcp__claude_ai_Airtable__list_records_for_page (sido-verktyg) baseId=<staging>, agent-kontext, SLÄPPS" 0 "${JSON}"
 
 # ============================================================
 # F1–F5 — FAIL-CLOSED.
