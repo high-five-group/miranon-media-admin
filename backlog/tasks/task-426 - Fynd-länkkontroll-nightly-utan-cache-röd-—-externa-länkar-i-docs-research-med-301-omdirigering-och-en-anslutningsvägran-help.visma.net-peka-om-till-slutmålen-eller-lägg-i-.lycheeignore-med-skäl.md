@@ -4,10 +4,10 @@ title: >-
   Fynd: länkkontroll (nightly, utan cache) röd — externa länkar i docs/research/
   med 301-omdirigering och en anslutningsvägran (help.visma.net); peka om till
   slutmålen eller lägg i .lycheeignore med skäl
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-07 15:30'
-updated_date: '2026-09-07 16:08'
+updated_date: '2026-09-07 16:49'
 labels:
   - ready-for-agent
 dependencies: []
@@ -175,4 +175,6 @@ AVVIKELSER MOT UPPDRAGET (bokförda, byggda på verkligheten per ADR-086):
   - simplesignup.se (503, sajt nere just nu) upptäcktes och åtgärdades
     proaktivt eftersom den annars hade fällt AC #1 utan att vara en av
     uppdragets 26 ursprungliga fel
+
+STÄNGNING (S123 resume 1, 2026-09-07): PR #2445 → ef1319cd; landad i batch med c3740309 (post-merge c3740309 GRÖN). Review runda 1 (Sonnet): 1 info (simplesignup.se-ignoreringen är permanent för ett fel som redan läkt — följer Contentful-precedentet), risk låg, konvergerad. AC #2 felställd (inga 301:or bland de 26 felen; alla 404/402/403/protokollfel) — byggaren bokförde premissfelet, orkestreraren accepterar tolkningen 'verifierat flyttat mål ersatt'. Done-flipp av orkestreraren.
 <!-- SECTION:NOTES:END -->
