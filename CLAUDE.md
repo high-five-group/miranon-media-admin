@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-09-05
+updated: 2026-09-07
 review_by: 2026-11-15
 status: stable
 ---
@@ -1107,6 +1107,21 @@ Inte regler — fakta som kostat tid när de antagits. Slå upp, gissa aldrig.
   `npm run atkomst:diagnos` (`scripts/atkomst-diagnos.sh`). Etablerat
   TASK-202 efter att Marcus två gånger blivit ombedd att skapa åtkomster
   han redan hade.
+- **Airtable-produktionsbasen (`app8uGPrVCVOm6LfD`) är mekaniskt låst för agenter
+  sedan `TASK-419` (PR #2442, 2026-09-07):** PreToolUse-hooken
+  `scripts/deny-prod-airtable.sh` (värden i `.prod-airtable-policy.conf`,
+  registrerad i `.claude/settings.json`) nekar varje `mcp__airtable__*`-anrop
+  (PAT-servern) vars indata bär prod-bas-ID:t, oavsett anropare, och varje
+  `mcp__claude_ai_Airtable__*`-anrop mot prod från en SUBAGENT (`agent_id`
+  satt). Huvudsessionen — Marcus och orkestreraren i samma chatt — släpps
+  igenom mot prod via claude.ai-connectorn; det är Marcus beslut `419 A`
+  (2026-09-07), inte en lucka, och det gäller även obevakad AFK-drift. Staging
+  (`apphjj8Q7lkXCMsL4`) släpps överallt. Tillfällig behörighet för en agent
+  saknar mekanism tills `TASK-430` byggts — tills dess är svaret för agenter
+  nej utan undantag. Skarpbeviset genom harnesset är ÖPPEN SKULD (hooken
+  registrerades 2026-09-07 och kan inte förlitas på i den sessionen, se § En ny
+  hooks skarpbevis); logiken är bevisad av `scripts/test-deny-prod-airtable.sh`
+  (20 fall, CI-wirad). Prosa här påstår inte mer än hooken gör (ADR-083).
 
 ---
 
