@@ -534,10 +534,13 @@ test.describe('TASK-402.5 — "Registrera inbetalning för N markerade" (AC #1-#
     await expect(form).toMatchAriaSnapshot(facitYaml);
 
     // ── AC #5: Erik Holm (obekräftad) ingår, registreras, och förblir
-    //    obekräftad — ingen bekräftelse skickas. ─────────────────────────
-    await expect(
-      form.getByRole('checkbox', { name: /Erik Holm Obekräftad Markerad/ }),
-    ).toBeChecked();
+    //    obekräftad — ingen bekräftelse skickas. Kortets tillgängliga namn
+    //    bär INTE längre "Obekräftad" (TASK-402.8, PR #2378 → 6c999f2f:
+    //    pillen togs bort ur `KortHuvud`, se VariantC.tsx rad ~868) — formen
+    //    efter 402.8 är `"{namn} Markerad"`, verifierad mot
+    //    `bekraftelsesteget-promoverings-grind.staging.test.ts`s ariaSnapshot
+    //    (`checkbox "Erik Holm Markerad"`). ─────────────────────────────────
+    await expect(form.getByRole('checkbox', { name: /Erik Holm Markerad/ })).toBeChecked();
 
     await form.getByRole('button', { name: `Registrera ${FIXTUR.length} inbetalningar` }).click();
     await expect(form.getByText('Alla inbetalningar registrerade')).toBeVisible({

@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-06 19:17'
+updated_date: '2026-09-07 15:37'
 labels:
   - ready-for-agent
 dependencies: []
@@ -21,8 +22,8 @@ Källa: bygg-agenten för TASK-367 (PR #2416, S123 2026-09-06) vid full betalnin
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Testet asserterar kortets tillgängliga namn i formen efter TASK-402.8; filen grön mot staging
-- [ ] #2 Grep i tests/e2e efter 'Obekräftad' bekräftar att ingen annan assertion bygger på den borttagna pillen (eller de rättas i samma PR)
+- [x] #1 Testet asserterar kortets tillgängliga namn i formen efter TASK-402.8; filen grön mot staging
+- [x] #2 Grep i tests/e2e efter 'Obekräftad' bekräftar att ingen annan assertion bygger på den borttagna pillen (eller de rättas i samma PR)
 - [ ] #3 Post-merge staging-körningen grön för filen
 <!-- AC:END -->
 
@@ -32,3 +33,15 @@ Källa: bygg-agenten för TASK-367 (PR #2416, S123 2026-09-06) vid full betalnin
 - [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Assertionens tillgängliga namn uppdaterat (rad ~539): /Erik Holm Obekräftad Markerad/ → /Erik Holm Markerad/. Källa för nya formen: VariantC.tsx:s KortHuvud (rad ~893-905) renderar bara InitialAvatar (aria-hidden) + namn + sr-only "Markerad"/"Inte markerad" sedan TASK-402.8 (PR #2378 → 6c999f2f) tog bort pillen — verifierat mot promoverings-grindens facit (tests/e2e/__aria__/bekraftelsesteget-promoverings-grind.staging.test.ts/bekraftelsesteget-utgangslage-desktop-chromium-authenticated.aria.yml rad 23: checkbox "Erik Holm Markerad").
+
+AC #2 (grep): grep -rn "Obekräftad" tests/e2e/ visar inga andra assertioner som bygger på den borttagna pillen. Träffarna är antingen (a) fixturens status-fält ("Obekräftad" som domändata, orört av 402.8) eller (b) redan-korrekta toHaveCount(0)-assertioner i andra filer (bekraftelsesteget-formen-fore-stampeln, event-bekraftelse, event-detail) som verifierar pillens FRÅNVARO — de rördes redan av 402.8:s egen PR. Endast denna fils rad 539 asserterade pillens NÄRVARO i ett tillgängligt namn.
+
+Filen körd mot staging (npx playwright test --project=chromium-authenticated tests/e2e/atgarder-kvitto.staging.test.ts): 2 passed, 2 skipped (SKIPPAD: dialogen riven med miljöflaggan på, TASK-346.7 — förväntat, orört av denna ändring), exit 0. Inga medKvitto-fällningar: filen mockar registrera-inbetalning OCH hamta-oppna-betalningar via page.route (rad 402, 411) — den träffar aldrig de skarpa staging-EF:erna som TASK-367/PR #2416 (fortfarande OPEN vid denna körning, kollat med gh pr view 2416) kräver medKvitto på. Staging-driften i uppdragstexten materialiserades alltså inte i denna fils körning.
+
+AC #3 (post-merge staging-körningen grön) kan INTE verifieras av mig — den kräver en post-merge/nightly-körning som inte existerar förrän PR:en landat. Lämnad avbockad med avsikt; orkestreraren/CI äger den signalen.
+<!-- SECTION:NOTES:END -->
