@@ -55,6 +55,7 @@ const FIXTUR: OppenBetalning = {
   spegelIFas: true,
   deadlineSlutbetalning: null,
   kvittonAttSkicka: 0,
+  oskickadeKvitton: [],
 };
 
 const IDAG = '2026-09-05';

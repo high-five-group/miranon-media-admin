@@ -443,6 +443,14 @@ export function useBekraftelsesteg(
               belopp: rad.belopp,
               betalsatt: rad.betalsatt,
               betalningsdatum: rad.datum,
+              // [TASK-367 review runda 1, FYND 2] Raden bär redan `medKvitto`
+              // (kryssrutan i steget, samma fält `kvitto`-läsningarna nedan
+              // och `kvittolage()` i `RegistreratNuBlock.tsx` redan använder)
+              // — bara `mutateAsync`-anropet saknade det. Utan detta hade en
+              // rad registrerad med kryssrutan URTAGEN i bekräftelsesteget
+              // felaktigt återuppstått i den durabla "kvitto att
+              // skicka"-sektionen.
+              medKvitto: rad.medKvitto,
               ...(rad.notering.trim() === '' ? {} : { notering: rad.notering }),
               // DUBBLETTNYCKELN (AC #4). Skickas ENDAST för importrader, och
               // utelämnas helt när den saknas: EF:en läser fältet som

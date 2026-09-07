@@ -613,6 +613,13 @@ export function RegistreraForm(props: Props) {
          kvar parallellt. Fältet finns kvar i `RegistreraInbetalningInput` och
          i EF:en, orört: det är UI:ts bruk som rivits, inte kontraktet. */
       ...(noteringAttSkicka !== null ? { notering: noteringAttSkicka } : {}),
+      // [TASK-367 review runda 1, FYND 2] `medKvitto` SKICKADES TIDIGARE
+      // ALDRIG TILL SERVERN — den levde bara i `props.onKlar({..., medKvitto,
+      // ...})` nedan, alltså i UI-svaret, aldrig i själva skrivningen.
+      // Servern persisterar den nu (`kvitto_avbojt = !medKvitto`) så att den
+      // durabla "kvitto att skicka"-härledningen kan skilja "väntar på att
+      // köas" från "Lotta ville medvetet inte ha ett kvitto".
+      medKvitto,
     });
 
     // KVITTENSEN LÄSER SERVERNS SVAR, ALDRIG FÄLTET. Servern normaliserar

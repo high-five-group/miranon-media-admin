@@ -202,6 +202,21 @@ Deno.serve(async (req) => {
   }
   const notering = noteringsLasning.varde;
 
+  /**
+   * [TASK-367 review runda 1, FYND 2] "Skicka kvitto"-kryssrutan, PERSISTERAD.
+   * OBLIGATORISKT, INTE valfritt med ett tyst default: fältet är precis det
+   * som stänger fyndets hål (en betalning registrerad UTAN kvitto kunde
+   * tidigare inte skiljas från en som väntade på att köas), och ett tyst
+   * `?? true`-default hade gjort en GLÖMD anropare (en fjärde call site som
+   * aldrig hittades) osynlig i stället för att fälla den med ett 400 här.
+   * Se `RegistreraInbetalningInput.medKvitto`s docblock (`Betalningar.
+   * schema.ts`) för varför TS-typen är obligatorisk av samma skäl.
+   */
+  const medKvitto = body?.medKvitto;
+  if (typeof medKvitto !== 'boolean') {
+    return badRequest('medKvitto krävs och måste vara true eller false.', corsHeaders);
+  }
+
   try {
     const anmalan = await lasAnmalan(anmalanRecordId);
     if (!anmalan) {
@@ -231,6 +246,11 @@ Deno.serve(async (req) => {
         status: 'aktiv',
         bankreferens,
         notering,
+        // [TASK-367 review runda 1, FYND 2] Negationen är avsiktlig: kolumnen
+        // heter "avböjt" (defaultar `false` = kvitto önskat), kryssrutan
+        // heter "Skicka kvitto" (defaultar `true` = kvitto önskat) — samma
+        // sanning, motsatt polaritet, se migrationens filhuvud för varför.
+        kvitto_avbojt: !medKvitto,
         skapad_av: visningsnamn,
       })
       .select(INBETALNING_KOLUMNER)

@@ -43,8 +43,10 @@ import { visaKronor } from './belopp-inmatning';
 import { type Betalsatt, lasSenasteBetalsatt, sparaBetalsatt } from './betalsatt-minne';
 import { idagIso } from './idag';
 import {
+  type DurabelKvittoPost,
   type EventGrupp,
   grupperaPerEvent,
+  harledKvittoAttSkicka,
   harledRad,
   type InkorgsRad,
   type IsoDatum,
@@ -99,16 +101,24 @@ import { SwishImport } from './SwishImport';
  * "SKICKA N KVITTON" RÄKNAR SESSIONENS EGNA REGISTRERINGAR
  * ═══════════════════════════════════════════════════════════════════════════
  * PRD berättelse 7 + 8: registrera alla åtta först, granska, tryck EN gång.
- * Listan över väntande kvitton byggs därför av de registreringar som gjorts I
- * DENNA SESSION med kryssrutan i, och nollställs när jobbet köats.
+ * Listan över väntande kvitton (`vantande`, granskningsblockets underlag)
+ * byggs därför av de registreringar som gjorts I DENNA SESSION med
+ * kryssrutan i, och nollställs när jobbet köats.
  *
- * DEN KÄNDA GRÄNSEN, öppet bokförd: stängs fliken innan Lotta tryckt på
- * knappen är listan borta, och inbetalningarna står kvar utan kvitto. Ett
- * durabelt svar kräver ett fält på `OppenBetalning` som säger "denna anmälan
- * har inbetalningar utan kvitto" - och den ytan ägs av TASK-346.4:s Edge
- * Functions, inte av denna skiva. `kvittonAttSkicka` som EF:en redan skickar
- * räknar något ANNAT: rader som redan ligger i kön (`vantar`/`pagar`), alltså
- * kvitton Lotta redan tryckt på. Det talet visas separat i sammanfattningen.
+ * DEN KÄNDA GRÄNSEN VAR, ÖPPET BOKFÖRD FRAM TILL TASK-367: stängs fliken
+ * innan Lotta tryckt på knappen är `vantande` borta, och inbetalningarna
+ * står kvar utan kvitto. TASK-367 (S115 Del 2, "kvitto att skicka bor i
+ * flikens minne") gav `OppenBetalning` exakt det fält som efterlystes här —
+ * `oskickadeKvitton` — och `KvittoAttSkickaBlock` (nedan i denna fil) är den
+ * durabla motsvarigheten: en rad utan kvitto och utan jobbrad återuppstår
+ * där oavsett flik, session eller enhet. `vantande`/granskningsblocket är
+ * ÄNDÅ KVAR, oförändrat: den ger DENNA sessionens egna registreringar Ångra
+ * och Förhandsgranska, som `oskickadeKvitton` inte bär data för (se
+ * `KvittoAttSkickaBlock`s docblock). `kvittonAttSkicka` (utan "s" framför
+ * "Attskicka" — pluralformen) är ett TREDJE, äldre tal och räknar något
+ * ANNAT: rader som redan ligger i kön (`vantar`/`pagar`), alltså kvitton
+ * Lotta redan tryckt på (namnet är plural, `oskickadeKvitton`s är det med).
+ * De tre talen svarar på tre olika frågor och slås aldrig ihop.
  */
 
 /* BETALSÄTTS-MINNET OCH `idagIso` FLYTTADE UT (TASK-346.7).
@@ -407,6 +417,100 @@ function MarkeringsAtgardsRad({
 }
 
 /**
+ * [TASK-367] "KVITTO ATT SKICKA" — DEN DURABLA SEKTIONEN, sedan Postgres,
+ * inte flikens minne.
+ *
+ * Fyndet (S115 Del 2): Marcus registrerade en inbetalning, bytte flik, och
+ * raden försvann ur inkorgen — betalningen täckte hela priset (raden faller
+ * ur EF:ens `Saknas (kr) > 0`-filter) OCH "väntar på kvitto" levde bara i
+ * `vantande` (React-state, riven med fliken). Denna sektion läser i stället
+ * `rad.betalning.oskickadeKvitton`, som EF:en härleder VARJE hämtning: en
+ * aktiv inbetalning utan `kvitto_id` och utan jobbrad i `vantar`/`pagar`
+ * (`hamta-oppna-betalningar/index.ts` § "KVITTO ATT SKICKA").
+ *
+ * OBEROENDE AV `RegistreratNuBlock`, MEDVETET — de två blocken svarar på
+ * OLIKA frågor. `RegistreratNuBlock` visar DENNA sessionens egna
+ * registreringar (Ångra, Förhandsgranska per rad, sessionens logg) och det
+ * kräver client-state `RegistreratNuBlock` äger ensam (`betalsatt`,
+ * `medKvitto`, `radNyckel` finns bara där — se `RegistreratNuBlock.tsx`s
+ * `SessionsRad`). Denna sektion visar ALLT som globalt återstår, oavsett
+ * VILKEN flik, session eller yta som registrerade det: Åtgärds-panelen,
+ * anmälans detaljvy och personkortet delar samma formulär och skriver till
+ * samma Postgres-tabell (`BetalningsInkorg.tsx`s anropare filtrerar bort
+ * dubbletter med `doljIds`, se `harledKvittoAttSkicka`s docblock).
+ *
+ * MEDVETET SMALARE ÄN `RegistreratNuBlock`: ingen Ångra, ingen
+ * Förhandsgranska — bara listan och EN "Skicka N kvitton"-knapp. Att
+ * återuppfinna hela den andra komponentens funktionalitet här hade krävt
+ * data denna sektion inte har (betalsätt, om kvittorutan var i vid
+ * registreringen) och touchat `RegistreratNuBlock.tsx`, som `Bekraftelsesteget.tsx`
+ * (en annan skivas kollisionsyta i denna omgång, se PR-kroppen) delar.
+ */
+function KvittoAttSkickaBlock({
+  poster,
+  pending,
+  onSkicka,
+}: {
+  poster: readonly DurabelKvittoPost[];
+  pending: boolean;
+  onSkicka: () => void;
+}) {
+  const rubrikId = useId();
+  if (poster.length === 0) return null;
+  const flertal = poster.length === 1 ? 'kvitto' : 'kvitton';
+
+  return (
+    <section
+      aria-labelledby={rubrikId}
+      // `data-testid`, INTE `aria-label`: sedan FYND 3 (review runda 1) är
+      // `<h2>`:n den ENDA namnkällan (`aria-labelledby` ovan). Testkroken
+      // ger sviterna ett stabilt CSS-mål (AxeBuilder `.include()` tar bara
+      // CSS-selektorer, ingen roll/namn-matchning) utan att återinföra den
+      // dubblering FYND 3 tog bort — samma mönster som `data-testid=
+      // "markering-batchbar"`/`"inkorg-sandstatus"` redan bär i denna fil.
+      data-testid="kvitto-att-skicka"
+      className="flex flex-col gap-3 rounded-2xl border border-transparent bg-bg-muted p-4 contrast-more:border-border-strong"
+    >
+      <div className="flex items-center justify-between gap-3">
+        {/* [TASK-367 review runda 1, FYND 3] EN NAMNKÄLLA, INTE TVÅ.
+            `RegistreratNuBlock` rev sin rubrik helt (Marcus: "känns
+            överflödig") och bär bara `aria-label` — ingen visuell
+            dubblering finns där att undvika. HÄR finns motsatt skäl att
+            BEHÅLLA rubriken synlig: sektionen ska vara en skanningsbar,
+            igenkännbar rubrik på sidan (till skillnad från
+            `RegistreratNuBlock`, som är kontextuell till det Lotta just
+            gjorde) — men den fick tidigare namnge sektionen TVÅ gånger
+            samtidigt (`aria-label` OCH den synliga `<h2>`:n, ord för ord
+            identiska). `aria-labelledby` gör `<h2>`:n till den ENDA
+            namnkällan: samma text läses upp en gång, inte två. */}
+        <h2 id={rubrikId} className="font-semibold text-body">
+          Kvitto att skicka
+        </h2>
+        {/* Räknaren annonseras, seende läser den i knappens egen etikett
+            nedan — samma arbetsfördelning som markerings-radens räknare
+            (`MarkeringsAtgardsRad`). */}
+        <span className="sr-only" role="status" aria-live="polite">
+          {`${poster.length} ${flertal} väntar sedan tidigare.`}
+        </span>
+      </div>
+      <ul className="-my-1.5 flex flex-col divide-y divide-border">
+        {poster.map((post) => (
+          <li key={post.inbetalningId} className="flex items-center justify-between gap-3 py-1.5">
+            <span className="min-w-0 flex-1 truncate font-medium text-body">{post.namn}</span>
+            <span className="shrink-0 font-medium text-body tabular-nums">
+              {`${visaKronor(post.belopp)} kr`}
+            </span>
+          </li>
+        ))}
+      </ul>
+      <Button intent="success" className="self-start" isLoading={pending} onPress={onSkicka}>
+        {`Skicka ${poster.length} ${flertal}`}
+      </Button>
+    </section>
+  );
+}
+
+/**
  * MARKERA-LÄGETS TILLSTÅNDSMASKIN — `Deltagare.tsx` § MARKERA-LÄGETS
  * TILLSTÅNDSMASKIN, med minnet inkopplat.
  *
@@ -679,6 +783,28 @@ export function BetalningsInkorg() {
     () => (oppna?.betalningar ?? []).map((b) => harledRad(b, idag)),
     [oppna, idag],
   );
+
+  /**
+   * [TASK-367] DEN DURABLA "KVITTO ATT SKICKA"-LISTAN — se
+   * `KvittoAttSkickaBlock`s och `harledKvittoAttSkicka`s docblock för hela
+   * resonemanget. `registreradeIds` utesluter DENNA sessionens egna,
+   * redan-synliga registreringar (`RegistreratNuBlock` visar dem) — allt
+   * annat härleds ur `rader`, alltså ur EF:ens Postgres-svar, och överlever
+   * därför omladdning, flikbyte och byte av enhet.
+   *
+   * MÅSTE STÅ FÖRE `isPending`/`isError`-returerna NEDAN (Regler för
+   * hookar — `useMemo` fick tidigare stå efter dem och föll
+   * `lint/correctness/useHookAtTopLevel`, mätt av `npx @biomejs/biome check`).
+   */
+  const registreradeIds = useMemo(
+    () => new Set(registrerade.map((post) => post.inbetalningId)),
+    [registrerade],
+  );
+  const kvittoAttSkickaPoster = useMemo(
+    () => harledKvittoAttSkicka(rader, registreradeIds),
+    [rader, registreradeIds],
+  );
+
   /* ═══ FILTRERINGEN: PERIOD → DIMENSIONER → GRUPPERING ═══
    *
    * Ordningen är anmälningssidans, och den är inte godtycklig. Periodfiltret
@@ -1857,6 +1983,24 @@ export function BetalningsInkorg() {
     ? (registrerade.find((post) => post.inbetalningId === vantande[0].inbetalningId) ?? null)
     : null;
 
+  /**
+   * [TASK-367] "Skicka N kvitton" för den DURABLA sektionen
+   * (`KvittoAttSkickaBlock`, renderad i `datakroppLoaded` nedan) — se
+   * `harledKvittoAttSkicka`s docblock för hela resonemanget. En egen
+   * funktion, inte inline i JSX, av samma skäl som `skickaKvitton` (den
+   * session-lokala motsvarigheten) redan är det.
+   */
+  function skickaKvittoAttSkicka() {
+    if (kvittoAttSkickaPoster.length === 0) return;
+    // [TASK-362] Samma regel som `vidRegistrerad`/`skickaKvitton`: nästa
+    // handling gör en stående SUCCESS-bekräftelse inaktuell.
+    setBekraftelseSynlig(false);
+    koa.mutate(
+      { inbetalningIds: kvittoAttSkickaPoster.map((post) => post.inbetalningId) },
+      { onSuccess: (svar) => setJobbId(svar.jobbId ?? undefined) },
+    );
+  }
+
   /* `datakropp` I LADDAT LÄGE — allt som tidigare stod direkt i det enda
      (numera rivna) loaded-returträdet, oförändrat i sak. Fragmentet blir
      VÄRDET på `datakropp`s tredje gren (se konstruktionen och det enda
@@ -1930,10 +2074,16 @@ export function BetalningsInkorg() {
           `koa.mutate` och idempotensen per inbetalning (ADR-128) är byte för
           byte orörda — avbrottskontraktet är alltså detsamma som före passet.
 
-          DEN KÄNDA GRÄNSEN ÄR OFÖRÄNDRAD och ärvs, inte utökas: stängs fliken
-          innan knappen tryckts är både kön och loggen borta (båda är
-          session-lokala). Ett durabelt svar kräver ett fält på `OppenBetalning`,
-          se filens huvud-docblock § "SKICKA N KVITTON".
+          DEN KÄNDA GRÄNSEN ÄR SEDAN TASK-367 BARA HALV: stängs fliken innan
+          knappen tryckts är LOGGEN (`registrerade`, denna komponentens
+          Ångra/Förhandsgranska-vy) fortfarande borta — den kräver
+          session-state ingen server har. KÖN är det inte längre: en rad utan
+          kvitto och utan jobbrad återuppstår i `KvittoAttSkickaBlock` nedan,
+          härlett ur `OppenBetalning.oskickadeKvitton`
+          (`hamta-oppna-betalningar/index.ts` § "KVITTO ATT SKICKA"), och
+          "Skicka N kvitton" fungerar därifrån oavsett vilken flik som
+          registrerade den. Se `harledKvittoAttSkicka`s docblock för hela
+          resonemanget och den medvetna gränsen mot denna komponent.
 
           RADFORMEN ÄR INBETALNINGSRADERNAS (`InbetalningsLista.tsx` § RADENS
           ANATOMI): bankens tre kolumner — titelled i `text-body`-vikt,
@@ -1943,6 +2093,17 @@ export function BetalningsInkorg() {
           personen som skiljer raderna åt här, medan förlagan listar en enda
           persons betalningar och därför kan låta betalsättet vara identiteten.
           Betalsättet står i klartext i sekundärledet. */}
+      {/* [TASK-367] DEN DURABLA SEKTIONEN — före granskningsblocket med
+          avsikt: en rad som återuppstår från en ANNAN flik/session/enhet är
+          per definition äldre än allt Lotta gjort i DENNA flik, och ska inte
+          gömmas under dagens egna aktivitet. Se `KvittoAttSkickaBlock`s
+          docblock för hela resonemanget och gränsen mot blocket nedan. */}
+      <KvittoAttSkickaBlock
+        poster={kvittoAttSkickaPoster}
+        pending={koa.isPending}
+        onSkicka={skickaKvittoAttSkicka}
+      />
+
       <RegistreratNuBlock
         granskningsBlockRef={granskningsBlockRef}
         registrerade={registrerade}

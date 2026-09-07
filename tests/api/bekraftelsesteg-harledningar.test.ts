@@ -75,6 +75,7 @@ function betalning(
     spegelIFas: true,
     deadlineSlutbetalning: null,
     kvittonAttSkicka: 0,
+    oskickadeKvitton: [],
     saknas,
     ...over,
   };

@@ -169,6 +169,11 @@ async function registreraFixturInbetalning(
     belopp: String(belopp),
     betalsatt: 'Swish',
     typ: 'inbetalning',
+    // [TASK-367 review runda 1, FYND 2] `medKvitto` är sedan denna skiva
+    // OBLIGATORISKT (`registrera-inbetalning` svarar 400 utan det) — `true`
+    // är korrekt här, sviten registrerar EXAKT för att sedan förhandsgranska
+    // kvitton.
+    medKvitto: true,
   });
   const raw = await res.text();
   // 201 Created — POST:ar en NY rad. (Mätt lokalt, TASK-370.3: EF:en svarar

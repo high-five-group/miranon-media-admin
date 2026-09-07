@@ -312,3 +312,37 @@ export function valjPris(
   if (perEvent !== null) return perEvent;
   return standard;
 }
+
+/**
+ * [TASK-367 review runda 1, FYND 1] Räknas raden som FÖRFALLEN i
+ * `hamta-oppna-betalningar`s toppnivåfält `forfallna`?
+ *
+ * ADR-128 beslut 2, ordagrant: "FÖRFALLEN = slutbetalningens deadline
+ * passerad." — men den meningen står i sammanhanget "ÖPPEN BETALNING =
+ * `Saknas (kr) > 0` OCH status ≠ Avbokad/Ombokad … FÖRFALLEN = …": förfallen
+ * är ett attribut HOS EN ÖPPEN BETALNING, inte ett fristående datumvillkor.
+ * En anmälan där inget längre saknas är per definition inte en öppen
+ * betalning, och kan därför strukturellt inte vara förfallen — oavsett hur
+ * gammalt slutbetalningsdatumet är.
+ *
+ * VARFÖR DENNA FUNKTION FINNS EFTER TASK-367: innan dess kom VARJE rad
+ * `hamta-oppna-betalningar` räknade ur `OPPEN_BETALNING_FILTER`
+ * (`{Saknas (kr)} > 0`), så `saknas > 0` höll IMPLICIT för varje rad
+ * `forfallna`-räkningen såg. TASK-367s `raderExtra` (fullbetalda
+ * anmälningar med ett oskickat kvitto, hämtade UTANFÖR det filtret) bröt
+ * det antagandet — utan denna vakt hade en fullbetald anmälan med ett
+ * gammalt slutbetalningsdatum blåst upp `forfallna` felaktigt.
+ *
+ * `saknas === null` (basen kunde inte räkna fram ett pris) räknas INTE som
+ * förfallen — samma fail-open-princip som `saknas <= 0`: ett okänt belopp
+ * är inte ett bevisat skuldbelopp.
+ */
+export function raknasSomForfallen(
+  saknas: number | null,
+  deadline: string | null,
+  idag: string,
+): boolean {
+  if (saknas === null || saknas <= 0) return false;
+  if (deadline === null) return false;
+  return deadline.slice(0, 10) < idag;
+}

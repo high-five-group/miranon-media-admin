@@ -161,6 +161,54 @@ export function sammanfattaBetalningar(rader: readonly InkorgsRad[]): Betalnings
   };
 }
 
+/* ═══════════════════════ KVITTO ATT SKICKA, DURABELT (TASK-367) ═══════════════════════
+ *
+ * Fyndets kärna (S115 Del 2): en registrerad inbetalning utan kvitto låg
+ * bara i `BetalningsInkorg.tsx`s React-state (`vantande`) — stängs fliken
+ * innan Lotta trycker "Skicka N kvitton" är listan borta, trots att
+ * inbetalningen står kvar obehandlad i Postgres. `OppenBetalning
+ * .oskickadeKvitton` är EF:ens svar på det: härlett VARJE hämtning, oberoende
+ * av vilken flik, session eller enhet som frågar.
+ *
+ * `DurabelKvittoPost` HAR SAMMA FORM som `RegistreratNuBlock.tsx`s
+ * `VantandeKvitto` (`{inbetalningId, namn, belopp}`) MED AVSIKT: de driver
+ * samma "Skicka N kvitton"-mutation (`useKoaKvitton`), och en gemensam form
+ * gör det uttryckligt att härledningarna svarar på samma fråga — bara ur
+ * OLIKA källor (session-state kontra Postgres). Typen är ändå en EGEN,
+ * strukturell definition (inte en import av `RegistreratNuBlock`s typ):
+ * denna modul är `api-pure` och importerar aldrig en komponentfil, se
+ * `ForhandsgranskningsRad`s docblock ovan för samma regel.
+ */
+export type DurabelKvittoPost = { inbetalningId: string; namn: string; belopp: number };
+
+/**
+ * Alla anmälningars oskickade kvitton, plattade till en enda lista.
+ *
+ * `doljIds` UTESLUTER rader som redan syns i DENNA flikens
+ * `RegistreratNuBlock` (anroparen skickar in `registrerade`s ID:n): den
+ * sessionen har redan sin egen, mer detaljerade vy (Ångra, Förhandsgranska
+ * per rad) för sina EGNA registreringar, och en rad ska inte visas — och
+ * kunna skickas — från TVÅ oberoende knappar samtidigt. En rad som kommer
+ * från en ANNAN flik, en annan session eller en annan yta (Åtgärds-panelen,
+ * anmälans detaljvy, personkortet — alla skriver till samma Postgres-tabell)
+ * har inget sådant motstycke och listas normalt.
+ *
+ * EN ANMÄLAN KAN BIDRA MED FLERA POSTER: `oskickadeKvitton` är redan
+ * per-inbetalning (anmälningsavgift och slutbetalning kan båda vänta
+ * samtidigt), så `flatMap` bevarar den granulariteten i stället för att slå
+ * ihop dem till en anmälan-nivå-summa.
+ */
+export function harledKvittoAttSkicka(
+  rader: readonly InkorgsRad[],
+  doljIds: ReadonlySet<string>,
+): DurabelKvittoPost[] {
+  return rader.flatMap((rad) =>
+    rad.betalning.oskickadeKvitton
+      .filter((post) => !doljIds.has(post.inbetalningId))
+      .map((post) => ({ inbetalningId: post.inbetalningId, namn: rad.namn, belopp: post.belopp })),
+  );
+}
+
 /* ═══════════════════════════ GRUPPERINGEN ═══════════════════════════ */
 
 /**

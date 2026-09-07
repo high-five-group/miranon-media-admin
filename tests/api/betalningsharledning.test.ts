@@ -29,6 +29,7 @@ import {
   harledBetalning,
   type InbetalningsBidrag,
   type Prisbild,
+  raknasSomForfallen,
   valjPris,
 } from '../../supabase/functions/_shared/betalningsharledning';
 
@@ -577,4 +578,54 @@ test.describe('harledBetalning — summa noll skriver tillbaka', () => {
       }
     }
   });
+});
+
+/* ═══════════════════ FÖRFALLEN KRÄVER ÖPPEN (TASK-367 review runda 1, FYND 1) ═══════════════════
+ *
+ * ADR-128 beslut 2: "ÖPPEN BETALNING = Saknas (kr) > 0 … FÖRFALLEN =
+ * slutbetalningens deadline passerad" — förfallen är ett attribut HOS en
+ * öppen betalning, inte ett fristående datumvillkor. `hamta-oppna-
+ * betalningar`s toppnivåfält `forfallna` ska därför ALDRIG räkna en
+ * fullbetald anmälan, oavsett hur gammalt deadline-datumet är.
+ */
+
+test('en ÖPPEN betalning med passerat deadline ÄR förfallen', () => {
+  expect(raknasSomForfallen(500, '2026-08-01', '2026-09-06')).toBe(true);
+
+  // NEGATIV KONTROLL: trasig variant som ignorerar `saknas` helt — det ÄR
+  // exakt buggen FYND 1 fångade (räknade varenda rad i `rader`, oavsett om
+  // något fortfarande saknades).
+  const trasig = (deadline: string | null, idag: string) =>
+    deadline !== null && deadline.slice(0, 10) < idag;
+  expect(trasig('2026-08-01', '2026-09-06')).toBe(true);
+});
+
+test('en FULLBETALD anmälan (saknas = 0) räknas ALDRIG som förfallen, även med gammalt deadline', () => {
+  expect(raknasSomForfallen(0, '2026-08-01', '2026-09-06')).toBe(false);
+
+  // NEGATIV KONTROLL: samma trasiga variant som ovan hade sagt `true` här —
+  // exakt skillnaden mellan koden FÖRE och EFTER denna rättning.
+  const trasig = (deadline: string | null, idag: string) =>
+    deadline !== null && deadline.slice(0, 10) < idag;
+  expect(trasig('2026-08-01', '2026-09-06')).toBe(true);
+  expect(raknasSomForfallen(0, '2026-08-01', '2026-09-06')).toBe(false);
+});
+
+test('en ÖVERBETALD anmälan (saknas negativt) räknas inte som förfallen', () => {
+  expect(raknasSomForfallen(-100, '2026-08-01', '2026-09-06')).toBe(false);
+});
+
+test('okänt saknas-belopp (basen kunde inte räkna fram ett pris) räknas inte som förfallen', () => {
+  // Fail-open: ett okänt belopp är inte ett bevisat skuldbelopp — samma
+  // princip som `deadline === null` nedan.
+  expect(raknasSomForfallen(null, '2026-08-01', '2026-09-06')).toBe(false);
+});
+
+test('saknad deadline är aldrig förfallen, oavsett saknat belopp', () => {
+  expect(raknasSomForfallen(500, null, '2026-09-06')).toBe(false);
+});
+
+test('deadline SAMMA DAG är inte förfallen, dagen EFTER är det', () => {
+  expect(raknasSomForfallen(500, '2026-09-06', '2026-09-06')).toBe(false);
+  expect(raknasSomForfallen(500, '2026-09-05', '2026-09-06')).toBe(true);
 });

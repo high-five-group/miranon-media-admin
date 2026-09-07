@@ -61,6 +61,7 @@ export {
   type OppenBetalning,
   type OppnaBetalningar,
   OppnaBetalningarSchema,
+  type OskickatKvitto,
   type RegistreraInbetalningInput,
   type RegistreraInbetalningResult,
   RegistreraInbetalningResultSchema,

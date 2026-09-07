@@ -55,8 +55,11 @@ och var Marcus tar vid.
    ```
 
    Förväntat: `20260830195728`, `20260830195900`, `20260830200100`,
-   `20260901111500` visar `local` **och** `remote` ifyllda (se § Steg 2 för
-   fullständig utdata).
+   `20260901111500`, `20260906165100` visar `local` **och** `remote` ifyllda
+   (se § Steg 2 för fullständig utdata). Denna femradiga lista gäller
+   FÖRSTAGÅNGSSEKVENSEN ovan (§ Steg 1–7); en inkrementell skiva som TASK-367
+   kör bara sin EGEN, senaste migration för sig — se § "Inkrementell deploy
+   när flödet redan är i prod" nedan.
 3. **Prod-basens fält + priser + backfill:** § Steg 11–13. Förutsättningen
    för allt annat: de nio fälten i tabellen i § Steg 11 måste finnas INNAN
    backfillen (§ Steg 13) kan hitta ett enda pris.
@@ -137,20 +140,23 @@ Utöver diagnosen, tre saker specifika för denna driftsättning:
 
    `git status --short` tomt; de två SHA:erna identiska.
 
-2. **De fyra migrationsfilerna finns på disk** (de tre första landade med
-   `TASK-346.3`, PR `#2147`; den fjärde — `20260901111500_inbetalning_notering.sql`
-   — landar med promoverings-PR:n `fix/hem-betalningskort-marcus-iteration`
-   och finns alltså på disk först EFTER att den PR:en är mergad till `main`,
-   inte i dagsläget):
+2. **De fem migrationsfilerna finns på disk** (de tre första landade med
+   `TASK-346.3`, PR `#2147`; den fjärde —
+   `20260901111500_inbetalning_notering.sql` — landade med promoverings-PR:n
+   `fix/hem-betalningskort-marcus-iteration`; den femte —
+   `20260906165100_inbetalning_kvitto_avbojt.sql` — landar med TASK-367
+   (PR `#2416`, "kvitto att skicka" härlett ur Postgres) och finns alltså på
+   disk först EFTER att DEN PR:en är mergad till `main`, inte i dagsläget):
 
    ```bash
    ls supabase/migrations/20260830195728_betalningsdomanen_inbetalningar_kvitton.sql \
       supabase/migrations/20260830195900_jobbmotorn_ko_cron_jobbtabeller.sql \
       supabase/migrations/20260830200100_purga_testrader_sentineler.sql \
-      supabase/migrations/20260901111500_inbetalning_notering.sql
+      supabase/migrations/20260901111500_inbetalning_notering.sql \
+      supabase/migrations/20260906165100_inbetalning_kvitto_avbojt.sql
    ```
 
-   Alla fyra listas. Saknas en: `main` är inte fast-forwardad tillräckligt
+   Alla fem listas. Saknas en: `main` är inte fast-forwardad tillräckligt
    långt — kör `git fetch` + `git merge --ff-only origin/main` innan du
    fortsätter.
 
@@ -172,6 +178,106 @@ Utöver diagnosen, tre saker specifika för denna driftsättning:
 
    Detta ÄR värdet `jobbmotor_anon_nyckel` ska bära i § Steg 4 — samma
    nyckel, inte en ny.
+
+## Inkrementell deploy när flödet redan är i prod
+
+Denna runbook är skriven för FÖRSTAGÅNGSDRIFTSÄTTNINGEN (Steg 1–16 nedan).
+Betalningsflödet har varit LIVE i prod sedan 2026-09-02 (S113/S115), så en
+efterföljande skiva som bara lägger till en kolumn eller ändrar en Edge
+Function — TASK-367 (PR `#2416`, "kvitto att skicka" härlett ur Postgres,
+migration `20260906165100_inbetalning_kvitto_avbojt.sql`) är det första
+exemplet — kör INTE hela sextonstegs-sekvensen. Den behöver bara tre steg,
+i denna ordning, ALDRIG omvänd:
+
+1. **Migrationen i prod först.** Samma `supabase db push`-mönster som
+   `supabase/migrations/README.md` beskriver (`echo "" | npx supabase link
+   --project-ref <prod-ref>` följt av `npx supabase db push`) — Marcus eget
+   terminalfönster, ALDRIG via `!`-prefixet (samma skäl som § Prod-EF-deploy
+   i `CLAUDE.md`: en hängning eller ett SIGKILL mitt i lämnar katalogen
+   länkad mot prod).
+
+   **Kvitto — kör INNAN steg 2 får påbörjas, aldrig ur `db push`s exit 0
+   ensamt** (samma disciplin som § Steg 2 nedan: "Bekräfta att objekten
+   faktiskt finns, aldrig ur exit 0 ensamt"):
+
+   ```bash
+   npx supabase migration list
+   ```
+
+   **Förväntad utdata** (mätt mot staging, `--output pretty`, samma rader i
+   annan miljö — bland ev. fler rader):
+
+   ```text
+     Local            | Remote           | Time (UTC)
+    ------------------|------------------|-----------------------
+     ...
+     `20260906165100` | `20260906165100` | `2026-09-06 16:51:00`
+   ```
+
+   Raden för DENNA PR:s migration (`20260906165100`) visar samma tidsstämpel
+   i BÅDE `Local`- och `Remote`-kolumnen. **Formatet är CLI-versions-/
+   TTY-beroende, prosaregeln är det bindande facit:** körd interaktivt i
+   Marcus eget terminalfönster (en riktig TTY) ger `supabase migration list`
+   normalt denna tabell utan flaggor; körd icke-interaktivt (pipe, en
+   agent-shell utan TTY) gav SAMMA kommando i denna installation (CLI
+   `2.116.0`) i stället JSON-rader
+   (`{"local":"20260906165100","remote":"20260906165100",...}`) — mätt
+   direkt, inte antaget ur `--help`. Läs kolumnerna/nycklarna oavsett form:
+   det är `local`/`remote`-VÄRDET för `20260906165100` som avgör steget, inte
+   utskriftens format.
+
+   **Steget lyckades när:** `local` och `remote` är identiska för
+   `20260906165100`. Ett `remote` som saknas eller står tomt (`null`/`""`)
+   betyder att `db push` antingen kördes mot fel länkat projekt eller
+   misslyckades halvvägs — **steg 2 får inte påbörjas**: en `--deploya` mot
+   den kolumnen ännu inte i prod är exakt övergången denna sektions "Varför
+   ordningen är låst"-stycke varnar för (`42703`/`PGRST204` → HTTP 500 på
+   hela betalningsinkorgen och hela registreringsvägen).
+
+   **Om kvittot saknas:** kontrollera `cat supabase/.temp/project-ref` —
+   står den INTE på prod-refen länkade `db push` aldrig mot rätt projekt och
+   ska köras om efter en ny `echo "" | npx supabase link --project-ref
+   <prod-ref>`. Står refen rätt men `remote` ändå saknas: `db push`
+   misslyckades under körningen — läs hela dess utskrift (inte bara raderna
+   du kände igen, samma regel som § Steg 2), rätta felet, och kör om
+   `npx supabase db push` följt av en NY `migration list`-kontroll innan
+   `--deploya` någonsin körs.
+2. **EF-deployen därefter**, `scripts/fas4-prod-deploy.sh --deploya`
+   (allowlistens samtliga funktioner, ~12 min) — TASK-367 rör
+   `registrera-inbetalning` och `hamta-oppna-betalningar`; batchen tar även
+   med `get-event-attachments` (TASK-416.12), obesläktad men väntande i
+   samma allowlist.
+3. **Klienten är fri** — Vercel bygger och deployar `main` automatiskt, ingen
+   manuell handling.
+
+**Varför ordningen är låst hitåt, inte bara en vanesak:** `hamta-oppna-
+betalningar` filtrerar `.eq('kvitto_avbojt', false)` och `registrera-
+inbetalning` skriver `kvitto_avbojt: !medKvitto` till en kolumn som INTE
+finns i prod förrän steg 1 kört. Deployas EF:erna FÖRE migrationen svarar
+PostgREST `42703 undefined_column` (läsvägen) respektive `PGRST204`
+(skrivvägen) på båda funktionerna — Postgres-felet blir `mapErrorToResponse`
+→ HTTP 500, och HELA betalningsinkorgen (inte bara den nya sektionen) och
+HELA registreringsvägen slutar fungera tills migrationen kommit ikapp.
+
+**Mellanläget migration-i-prod/EF-fortfarande-gammal är ofarligt** (steg 1
+klart, steg 2 inte påbörjat än): den gamla `registrera-inbetalning` skriver
+aldrig till `kvitto_avbojt` (kolumnen har `default false`, och ett `insert`
+utan kolumnen i sin lista lämnar den på defaultvärdet), och den gamla
+`hamta-oppna-betalningar` frågar aldrig efter den. En overifierad, extra
+kolumn ingen kod läser eller skriver är bara en oanvänd kolumn — samma
+princip `_shared/betalningar-db.ts`s `INBETALNING_KOLUMNER`-docblock redan
+slår fast ("en applicerad kolumn som ingen EF ännu läser är bara en oanvänd
+kolumn").
+
+**Mellanläget klient-ny/EF-fortfarande-gammal är ALLTID ofarligt**, oavsett
+var i sekvensen Vercel råkar hinna före EF-deployen (Vercel bygger på varje
+push till `main`, oberoende av när Marcus kör `--deploya`): den GAMLA
+`registrera-inbetalning` läser body-fält EXPLICIT (`body?.anmalanRecordId`,
+`body?.belopp`, `body?.betalsatt`, …) utan `...body`-spread och utan ett
+strict-schema som avvisar okända nycklar — en klient som redan skickar
+`medKvitto` mot den icke-uppdaterade funktionen får fältet TYST IGNORERAT.
+Det finns alltså inget farligt fönster åt det hållet; risken sitter
+uteslutande i EF-FÖRE-migration-riktningen ovan.
 
 ## Ordningen — och varför den är just denna
 
@@ -216,7 +322,7 @@ prod-referensen. Läs den raden varje gång.
 
 ## Steg 2 — Applicera migrationerna
 
-**Detta är INTE en scopad push av bara dessa fyra filer.** `db push` applicerar
+**Detta är INTE en scopad push av bara dessa fem filer.** `db push` applicerar
 VARJE migration som ännu inte är registrerad som applicerad i prod — om andra
 PRD:er landat migrationer på `main` sedan senaste prod-driftsättningen
 applicerar de OCKSÅ. Läs hela listan `db push` skriver ut, inte bara raderna
@@ -235,15 +341,16 @@ Applying migration 20260830195728_betalningsdomanen_inbetalningar_kvitton.sql...
 Applying migration 20260830195900_jobbmotorn_ko_cron_jobbtabeller.sql...
 Applying migration 20260830200100_purga_testrader_sentineler.sql...
 Applying migration 20260901111500_inbetalning_notering.sql...
+Applying migration 20260906165100_inbetalning_kvitto_avbojt.sql...
 ```
 
 och i EXAKT den ordningen (tidsstämpel-sorterat, `20260830195728` <
-`20260830195900` < `20260830200100` < `20260901111500` — ordningen är
-bindande: se `supabase/migrations/README.md` § Betalningsdomänen för
-varför).
+`20260830195900` < `20260830200100` < `20260901111500` <
+`20260906165100` — ordningen är bindande: se `supabase/migrations/README.md`
+§ Betalningsdomänen för varför).
 
 **Steget lyckades när:** andra `migration list` visar `local` **och**
-`remote` ifyllda för alla fyra versionerna. Bekräfta att objekten faktiskt
+`remote` ifyllda för alla fem versionerna. Bekräfta att objekten faktiskt
 finns, aldrig ur exit 0 ensamt:
 
 ```bash
@@ -262,7 +369,7 @@ avvikelsen om du ser en, den är en bra sak att ha bokförd.
 avvikelse mot stagings `0.20.3` per exakt samma resonemang som ovan; `pgmq`
 och `pg_cron` omättes inte separat i det passet.
 
-**Om det inte lyckades:** `migration list` säger exakt vilken av de fyra som
+**Om det inte lyckades:** `migration list` säger exakt vilken av de fem som
 gick igenom. Se § Rullbakåt R1 — läs den innan du river något, kvitton är
 append-only och tabellerna kan bära verkliga rader så fort steg 9–10 är
 körda.
@@ -985,7 +1092,7 @@ formulerad så att den rör så lite som möjligt.
 
 ### R1 — Migrationen gick fel halvvägs
 
-`migration list` (§ Steg 2) säger exakt vilken av de fyra som applicerades.
+`migration list` (§ Steg 2) säger exakt vilken av de fem som applicerades.
 
 **Säkert att riva ENDAST om ingen av tabellerna bär en rad ännu** (dvs. före
 § Steg 9/15 och innan Lotta registrerat något):

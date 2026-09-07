@@ -213,7 +213,11 @@ async function registreraInbetalning(
 ): Promise<string> {
   const res = await request.post(`${config.baseUrl}/functions/v1/registrera-inbetalning`, {
     headers: { Authorization: `Bearer ${jwt}`, 'Content-Type': 'application/json' },
-    data: { anmalanRecordId, belopp: String(belopp), betalsatt: 'Swish' },
+    // [TASK-367 review runda 1, FYND 2] `medKvitto` är sedan denna skiva
+    // OBLIGATORISKT (`registrera-inbetalning` svarar 400 utan det). Denna
+    // svit rör flytten mellan anmälningar, aldrig kvittoflödet — `true` är
+    // det neutrala valet (samma default kryssrutan i UI:t bär).
+    data: { anmalanRecordId, belopp: String(belopp), betalsatt: 'Swish', medKvitto: true },
   });
   const raw = await res.text();
   expect(res.status(), raw).toBe(201);

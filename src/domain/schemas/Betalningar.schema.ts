@@ -194,8 +194,42 @@ export const OppenBetalningSchema = z.object({
   deadlineSlutbetalning: z.string().nullable(),
   /** Antal kvitton som väntar på att skickas för denna anmälan. */
   kvittonAttSkicka: z.number().int(),
+  /**
+   * [TASK-367] Aktiva inbetalningar för DENNA anmälan som saknar `kvitto_id`
+   * OCH saknar en köad/pågående jobbrad (`vantar`/`pagar`) — härlett i
+   * Postgres, VARJE hämtning, oberoende av flikens minne. Tomt array = inget
+   * kvitto att skicka. `belopp` är DEN ENSKILDA inbetalningens belopp (inte
+   * anmälans `summaInbetalt`), eftersom en anmälan kan bära flera
+   * inbetalningar som var för sig behöver ett eget kvitto.
+   *
+   * SKILD FRÅN `kvittonAttSkicka` OVAN (ETT TAL, redan köat) — namnen är
+   * medvetet olika (singular kontra plural-med-n) för att inte glida ihop:
+   * `kvittonAttSkicka` räknar det Lotta REDAN tryckt på och som jobbmotorn
+   * arbetar av; `oskickadeKvitton` är det som ÅTERSTÅR att köa. Se
+   * `hamta-oppna-betalningar/index.ts` § "KVITTO ATT SKICKA" för
+   * härledningen och S115 Del 2 för fyndet.
+   *
+   * `.default([])` ÄR AVSIKTLIGT, INTE EN GENVÄG: repots
+   * `page.route`-mockade e2e-svit (`betalningar-inkorg-*.staging.test.ts`
+   * m.fl.) bygger sina svar för hand, fält för fält, och känner INTE till
+   * detta nya fält. Utan defaulten fäller `OppnaBetalningarSchema.parse()`
+   * (`betalningsportar.ts`) VARJE sådant test med ett ZodError, trots att
+   * inget av dem testar just detta fält — en bakåtkompatibilitets-brytning
+   * som inte hör hemma i en `TASK-367`-fix. Med defaulten tolkas en saknad
+   * nyckel som "inget att skicka", exakt det EF:en själv svarar för en rad
+   * utan kandidater.
+   */
+  oskickadeKvitton: z
+    .array(
+      z.object({
+        inbetalningId: z.string(),
+        belopp: z.number(),
+      }),
+    )
+    .default([]),
 });
 export type OppenBetalning = z.infer<typeof OppenBetalningSchema>;
+export type OskickatKvitto = OppenBetalning['oskickadeKvitton'][number];
 
 export const OppnaBetalningarSchema = z.object({
   betalningar: z.array(OppenBetalningSchema),
@@ -234,6 +268,18 @@ export type RegistreraInbetalningInput = {
   /** Rå inmatning: '2 500,00', '2500,50', '1000:-'. Normaliseras på servern. */
   belopp: string;
   betalsatt: (typeof VALBARA_BETALSATT)[number];
+  /**
+   * [TASK-367 review runda 1, FYND 2] "Skicka kvitto"-kryssrutan
+   * (`RegistreraForm.tsx`). Servern skriver `kvitto_avbojt = !medKvitto` på
+   * inbetalningen (migration `20260906165100_inbetalning_kvitto_avbojt.sql`)
+   * — den durabla "kvitto att skicka"-härledningen (`hamta-oppna-
+   * betalningar`) läser den flaggan för att aldrig återuppliva en betalning
+   * Lotta MEDVETET registrerade utan kvitto. OBLIGATORISKT (inte `?:`) med
+   * avsikt: ett valfritt fält hade kunnat glömmas av en ANNAN anropskälla än
+   * `RegistreraForm.tsx` utan att TypeScript sa ifrån — exakt den tysta
+   * glidningen som gjorde fältet nödvändigt att lägga till i första läget.
+   */
+  medKvitto: boolean;
   /** ISO-datum (YYYY-MM-DD). Utelämnat = i dag, satt server-side. */
   betalningsdatum?: string;
   typ?: InbetalningsTyp;

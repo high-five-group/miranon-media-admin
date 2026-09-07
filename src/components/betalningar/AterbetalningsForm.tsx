@@ -98,6 +98,13 @@ export function AterbetalningsForm({
       belopp,
       betalsatt,
       betalningsdatum: datum,
+      // [TASK-367 review runda 1, FYND 2] `skickaKreditkvitto` ÄR denna
+      // ytans "Skicka kvitto"-motsvarighet (samma roll som `medKvitto` i
+      // `RegistreraForm.tsx`, bara döpt efter vad som faktiskt skickas —
+      // ett KREDITkvitto, inte ett vanligt). Ett `false` här ska stänga av
+      // den durabla "kvitto att skicka"-härledningen för denna rad precis
+      // som för en vanlig registrering.
+      medKvitto: skickaKreditkvitto,
     });
 
     // KVITTENSEN LÄSER SERVERNS SVAR (samma disciplin som `RegistreraForm`):

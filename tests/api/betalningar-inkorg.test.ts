@@ -20,6 +20,7 @@ import {
   beloppsutfall,
   grupperaPerEvent,
   harledBeloppsknappar,
+  harledKvittoAttSkicka,
   harledRad,
   type InkorgsRad,
   jobbDelutfall,
@@ -69,6 +70,7 @@ function betalning(over: Partial<OppenBetalning> = {}): OppenBetalning {
     spegelIFas: true,
     deadlineSlutbetalning: '2026-09-01',
     kvittonAttSkicka: 0,
+    oskickadeKvitton: [],
     ...over,
   };
 }
@@ -570,4 +572,114 @@ test('regeln är stabil över flera rader i kön — var och en bedöms för sig
   ];
 
   expect(rader.map((r) => kanForhandsgranska(r, ko))).toEqual([true, false, false, true]);
+});
+
+/* ═══════════════════ KVITTO ATT SKICKA, DURABELT (TASK-367) ═══════════════════
+ *
+ * Fyndet (S115 Del 2): en registrerad inbetalning utan kvitto låg bara i
+ * flikens minne (`vantande`, React-state) — stängs fliken innan Lotta
+ * trycker "Skicka N kvitton" är listan borta, trots att Postgres redan vet
+ * att inbetalningen väntar. `harledKvittoAttSkicka` bygger samma lista ur
+ * `OppenBetalning.oskickadeKvitton`, som EF:en (`hamta-oppna-betalningar`)
+ * härleder VARJE hämtning — oberoende av flik, session eller enhet.
+ *
+ * SAMMA TVÅ-RIKTNINGS-DISCIPLIN som resten av filen.
+ */
+
+test('en anmälan med ett oskickat kvitto ger en post, namnet är RADENS, beloppet är INBETALNINGENS', () => {
+  const r = rad({
+    personNamn: 'Cecilia Örning',
+    saknas: 0,
+    gallandePris: 2500,
+    summaInbetalt: 2500,
+    oskickadeKvitton: [{ inbetalningId: 'inb-1', belopp: 2500 }],
+  });
+
+  expect(harledKvittoAttSkicka([r], new Set())).toEqual([
+    { inbetalningId: 'inb-1', namn: 'Cecilia Örning', belopp: 2500 },
+  ]);
+});
+
+test('EN ANMÄLAN kan bidra med FLERA poster, avgift och slutbetalning kan båda vänta samtidigt', () => {
+  const r = rad({
+    personNamn: 'Bengt Lindqvist',
+    saknas: 0,
+    gallandePris: 2500,
+    summaInbetalt: 2500,
+    oskickadeKvitton: [
+      { inbetalningId: 'inb-avgift', belopp: 1000 },
+      { inbetalningId: 'inb-slut', belopp: 1500 },
+    ],
+  });
+
+  // NEGATIV KONTROLL: en implementation som slog ihop till en anmälan-nivå-
+  // summa (`{ inbetalningId: rad.nyckel, namn, belopp: summaInbetalt }`) hade
+  // gett EN post på 2500 kr — och "Skicka N kvitton" hade då köat ett
+  // inbetalnings-ID (anmälans record-ID) som inte finns i `inbetalningar`-
+  // tabellen, vilket `koa-kvitton` fäller på (främmande nyckel).
+  expect(harledKvittoAttSkicka([r], new Set())).toEqual([
+    { inbetalningId: 'inb-avgift', namn: 'Bengt Lindqvist', belopp: 1000 },
+    { inbetalningId: 'inb-slut', namn: 'Bengt Lindqvist', belopp: 1500 },
+  ]);
+});
+
+test('doljIds utesluter EXAKT den inbetalningen som redan syns i DENNA flikens Registrerat nu-block', () => {
+  const r = rad({
+    personNamn: 'Astrid Almqvist',
+    saknas: 0,
+    gallandePris: 1000,
+    summaInbetalt: 1000,
+    oskickadeKvitton: [{ inbetalningId: 'inb-1', belopp: 1000 }],
+  });
+
+  expect(harledKvittoAttSkicka([r], new Set(['inb-1']))).toEqual([]);
+
+  // NEGATIV KONTROLL: en implementation som ignorerade `doljIds` helt hade
+  // visat raden i BÅDA sektionerna samtidigt — "Registrerat nu" (sessionens
+  // egen logg) OCH "Kvitto att skicka" (den durabla), med två oberoende
+  // "Skicka"-knappar för samma inbetalning.
+  const utanDoljIds = (rader: readonly InkorgsRad[]) =>
+    rader.flatMap((x) =>
+      x.betalning.oskickadeKvitton.map((p) => ({
+        inbetalningId: p.inbetalningId,
+        namn: x.namn,
+        belopp: p.belopp,
+      })),
+    );
+  expect(utanDoljIds([r])).toHaveLength(1);
+  expect(harledKvittoAttSkicka([r], new Set(['inb-1']))).toHaveLength(0);
+});
+
+test('inget oskickat kvitto → tom lista, inte en post med tomt innehåll', () => {
+  const r = rad({ saknas: 500 });
+  expect(r.betalning.oskickadeKvitton).toEqual([]);
+  expect(harledKvittoAttSkicka([r], new Set())).toEqual([]);
+});
+
+test('flera anmälningar plattas till EN lista, oberoende av event-gruppering', () => {
+  const radA = rad({
+    anmalanRecordId: 'rec-a',
+    personNamn: 'Anna',
+    saknas: 0,
+    gallandePris: 1000,
+    summaInbetalt: 1000,
+    oskickadeKvitton: [{ inbetalningId: 'inb-a', belopp: 1000 }],
+  });
+  const radB = rad({
+    anmalanRecordId: 'rec-b',
+    personNamn: 'Björn',
+    saknas: 500,
+    gallandePris: 2500,
+    summaInbetalt: 2000,
+    oskickadeKvitton: [{ inbetalningId: 'inb-b', belopp: 1000 }],
+  });
+  // Björn är fortfarande ÖPPEN (saknas 500 kr) — beviset att härledningen
+  // inte kräver `klar: true`. En inbetalning kan behöva ett kvitto oavsett
+  // om HELA anmälan är färdigbetald.
+  expect(radB.klar).toBe(false);
+
+  expect(harledKvittoAttSkicka([radA, radB], new Set())).toEqual([
+    { inbetalningId: 'inb-a', namn: 'Anna', belopp: 1000 },
+    { inbetalningId: 'inb-b', namn: 'Björn', belopp: 1000 },
+  ]);
 });

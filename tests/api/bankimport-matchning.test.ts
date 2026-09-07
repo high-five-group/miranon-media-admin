@@ -64,6 +64,7 @@ function betalning(over: Partial<OppenBetalning> = {}): OppenBetalning {
     spegelIFas: true,
     deadlineSlutbetalning: '2026-09-01',
     kvittonAttSkicka: 0,
+    oskickadeKvitton: [],
     ...over,
   };
 }
