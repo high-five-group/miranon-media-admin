@@ -177,7 +177,7 @@ allvarligt det underliggande problemet känns.
 
 ### 1. Kubernetes admission-webhooks — `failurePolicy: Fail` vs `Ignore`
 
-Källor: [Kubernetes-referensen för `ValidatingWebhookConfiguration`](https://dev-k8sref-io.web.app/docs/extend/validatingwebhookconfiguration-v1/),
+Källor: [Kubernetes-referensen för `ValidatingWebhookConfiguration`](https://kubernetes.io/docs/reference/kubernetes-api/admissionregistration/validating-webhook-configuration-v1/),
 [Gatekeepers egen "Failing Closed"-sida](https://open-policy-agent.github.io/gatekeeper/website/docs/failing-closed/).
 
 `failurePolicy` styr inte policyns UTFALL (godkänn/neka) utan vad som händer
@@ -462,7 +462,7 @@ inflytande i stället för ett förvirrande val.
 
 **Branschprecedent — policy-gates:**
 
-- [Kubernetes: `ValidatingWebhookConfiguration`-referensen](https://dev-k8sref-io.web.app/docs/extend/validatingwebhookconfiguration-v1/) —
+- [Kubernetes: `ValidatingWebhookConfiguration`-referensen](https://kubernetes.io/docs/reference/kubernetes-api/admissionregistration/validating-webhook-configuration-v1/) —
   `failurePolicy: Fail`/`Ignore`.
 - [Gatekeeper: "Failing Closed"](https://open-policy-agent.github.io/gatekeeper/website/docs/failing-closed/)
   och [Gatekeeper: how-to](https://open-policy-agent.github.io/gatekeeper/website/docs/howto/)
