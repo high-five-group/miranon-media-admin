@@ -4,6 +4,7 @@ import type { AuthContextValue } from './auth/AuthProvider';
 import { Sidbytesindikator } from './components/AppShell';
 import { SectionError } from './components/ErrorBoundary';
 import { dataSource } from './data/dataSource';
+import { registreraIntresseradeRetryPolicy } from './queries/intresserade-retry-policy';
 import { PERSIST_MAX_AGE_MS } from './queries/persist';
 import { registreraPersonregistretsFarskhet } from './queries/personregister-farskhet';
 import { routeTree } from './routeTree.gen';
@@ -40,6 +41,14 @@ export const queryClient = new QueryClient({
 // prefetch) ärver samma värde. Motiveringen, och varför
 // refetchOnWindowFocus/refetchOnReconnect medvetet INTE nämns, står i modulen.
 registreraPersonregistretsFarskhet(queryClient);
+
+// TASK-420 (fynd ur PR #2395 review-runda 2) — retry-policyn för
+// `intresserade.all` bor på NYCKELN, inte hos ett enskilt anropsställe: två
+// konsumenter (denna motorns startvärmning och `Intresserade.tsx`) delade
+// tidigare samma cache-post med motstridiga retry-svar på 4xx. Se modulens
+// eget filhuvud (`src/queries/intresserade-retry-policy.ts`) för hela
+// motiveringen och TanStack Query-källorna.
+registreraIntresseradeRetryPolicy(queryClient);
 
 /**
  * Router instantierad på modul-scope. context.auth fylls per-render via InnerApp-komponenten

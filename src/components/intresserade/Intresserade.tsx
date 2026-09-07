@@ -39,7 +39,6 @@ import { MessageBox } from '@/components/primitives/MessageBox';
 import { Select, SelectItem } from '@/components/primitives/Select';
 import { SidRam } from '@/components/primitives/SidRam';
 import { Skeleton } from '@/components/primitives/Skeleton';
-import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useDataSource } from '@/data/useDataSource';
 import type { Intresserad } from '@/domain/schemas';
 import { queryKeys } from '@/queries/keys';
@@ -174,6 +173,13 @@ export function Intresserade() {
   const [sok, setSok] = useState('');
   const [sortering, setSortering] = useState<Sortering>('interaktion');
 
+  // [TASK-420] Ingen egen `retry` här — policyn (aldrig retry på 4xx, max 3
+  // försök annars) bor på NYCKELN via `setQueryDefaults`
+  // (`registreraIntresseradeRetryPolicy`, `src/router.ts`), delad med
+  // startvärmningens `ensureQueryData`-anrop mot samma nyckel. En egen
+  // `retry` här hade skuggat den delade defaulten (anropsställets options
+  // vinner alltid över `setQueryDefaults`) och återinfört exakt den
+  // dubbelpolicy denna skiva tar bort.
   const {
     data: hamtade,
     isPending,
@@ -182,9 +188,6 @@ export function Intresserade() {
   } = useQuery({
     queryKey: queryKeys.intresserade.all,
     queryFn: () => dataSource.fetchIntresserade(),
-    retry: (failureCount, err) =>
-      !(err instanceof EdgeFunctionError && err.status >= 400 && err.status < 500) &&
-      failureCount < 3,
   });
 
   const intresserade = useMemo(() => hamtade ?? [], [hamtade]);
