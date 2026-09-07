@@ -3248,9 +3248,20 @@ export function AtgardsSida({ eventId }: { eventId?: string }) {
                         redirectar till `/mer` när flaggan är av
                         (`betalningar_.registrera.tsx` § `beforeLoad`) — en
                         knapp i flagg-AV-världen hade lovat en resa som aldrig
-                        bär fram. */}
+                        bär fram.
+
+                        [TASK-432] Vänsterställd (justify-start) på Marcus
+                        explicita beslut 2026-09-07 — tidigare justify-end
+                        (höger), satt av TASK-402.5. Padding oförändrad per
+                        uppdraget: wrappern har EGEN `px-4` nästlad i
+                        `KORT_KLASS`s (rad ~245) egen `px-4`, så knappen
+                        landar ~32 px in från sektionens vänsterkant — INTE
+                        flush med h2-räknaren/personraderna under (16 px,
+                        enkel padding). Boundingbox-mätt mot verklig staging,
+                        se `atgarder-kvitto.staging.test.ts`s TASK-432-test
+                        och slutrapporten för PR:en. */}
                     {mottagare.length > 0 && (
-                      <div className="flex justify-end border-border border-b px-4 py-3">
+                      <div className="flex justify-start border-border border-b px-4 py-3">
                         <Button
                           intent="primary"
                           size="sm"

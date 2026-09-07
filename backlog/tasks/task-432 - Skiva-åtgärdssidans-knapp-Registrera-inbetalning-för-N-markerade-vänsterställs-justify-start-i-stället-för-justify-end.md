@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-07 16:59'
+updated_date: '2026-09-07 17:42'
 labels:
   - ready-for-agent
 dependencies: []
@@ -21,13 +22,13 @@ Källa: Marcus 2026-09-07 (S123 resume 1), verbatim: 'På åtgärdssidan: Jag vi
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Knappen står vänsterställd i betalningsblocket på desktop och mobil (boundingBox-mätt, tvåsidigt)
-- [ ] #2 Befintliga tester för åtgärdssidans betalningsblock gröna; docblocken bär Marcus beslut 2026-09-07
+- [x] #1 Knappen står vänsterställd i betalningsblocket på desktop och mobil (boundingBox-mätt, tvåsidigt)
+- [x] #2 Befintliga tester för åtgärdssidans betalningsblock gröna; docblocken bär Marcus beslut 2026-09-07
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->

@@ -569,4 +569,62 @@ test.describe('TASK-402.5 — "Registrera inbetalning för N markerade" (AC #1-#
     const axe = await new AxeBuilder({ page }).analyze();
     expect(axe.violations).toEqual([]);
   });
+
+  /**
+   * [TASK-432] Marcus explicita beslut 2026-09-07: mataren vänsterställs
+   * (`justify-start`, tidigare `justify-end` satt av `TASK-402.5`).
+   * BoundingBox-mätt mot betalningsblockets sektion
+   * (`section[aria-labelledby="grupp-betalningar"]`, samma locator som
+   * `betalningsPanel()` ovan), desktop och mobil 390 px.
+   *
+   * VARFÖR DENNA FIL OCH INTE ACCEPTANCE-KLASSEN: `playwright.config.ts`
+   * (rad ~384) hårdkodar `VITE_FEATURE_BETALNINGAR: 'av'` för HELA
+   * `tests/acceptance/**`s delade webServer, och denna knapp monteras bara
+   * i `betalningarPa()`-grenen (`AtgardsSida.tsx` rad ~3225) — grenen finns
+   * strukturellt inte i det hermetiska fixturläget, så ingen
+   * acceptance-fil kan någonsin bevisa dess placering. Denna fil kör i
+   * `chromium-authenticated` (samma projekt som resten av TASK-402.5-
+   * sviten ovan), där flaggan är `på`.
+   *
+   * INTE ETT FAST 16 PX-MÅTT — MÄTT, INTE ANTAGET. Knappens wrapper-div
+   * (`px-4`) sitter nästlad i `KORT_KLASS` (rad ~245, ÄVEN `px-4`) — en
+   * PRE-EXISTERANDE dubbel padding från TASK-402.5, orörd av TASK-432 (som
+   * uttryckligen skulle lämna padding oförändrad). Verkligt uppmätt vänster-
+   * avstånd mot sektionen är därför ~32-33 px, inte 16 — se avstånd-siffrorna
+   * i PR-kroppen/slutrapporten. Assertionen nedan använder därför ett
+   * STRUKTUR-OBEROENDE kriterium (vänster gap < höger gap) i stället för ett
+   * absolut pixeltal: det bevisar VÄNSTERSTÄLLNING robust oavsett padding,
+   * och TVÅSIDIGT — ett temporärt `justify-end` (verifierat manuellt, se
+   * samma källa) flippar ojämlikheten och fäller testet.
+   */
+  test('[TASK-432] "Registrera inbetalning för N markerade" är vänsterställd, desktop och mobil 390px', async ({
+    page,
+  }) => {
+    await mocka(page);
+    await page.setViewportSize(DESKTOP);
+    await page.goto(`/event/${EVENT_ID}/atgarder`);
+    await expect(page.getByTestId('eventet-block')).toBeVisible();
+    const panel = betalningsPanel(page);
+    await expect(panel).toBeVisible();
+    const knapp = panel.getByRole('button', {
+      name: `Registrera inbetalning för ${FIXTUR.length} markerade`,
+    });
+    await expect(knapp).toBeVisible();
+
+    const MOBIL = { width: 390, height: 844 } as const;
+    for (const viewport of [DESKTOP, MOBIL]) {
+      await page.setViewportSize(viewport);
+      const panelBox = await panel.boundingBox();
+      const knappBox = await knapp.boundingBox();
+      if (!panelBox || !knappBox) {
+        throw new Error(
+          `boundingBox saknas vid ${viewport.width}×${viewport.height} — elementet är inte layoutat`,
+        );
+      }
+      const vansterGap = knappBox.x - panelBox.x;
+      const hogerGap = panelBox.x + panelBox.width - (knappBox.x + knappBox.width);
+      expect(vansterGap).toBeGreaterThanOrEqual(0);
+      expect(vansterGap).toBeLessThan(hogerGap);
+    }
+  });
 });
