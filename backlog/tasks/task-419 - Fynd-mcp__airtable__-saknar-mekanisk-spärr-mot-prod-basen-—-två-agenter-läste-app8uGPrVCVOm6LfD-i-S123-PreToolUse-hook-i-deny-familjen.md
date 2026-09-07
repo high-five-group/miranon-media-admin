@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-06 17:11'
-updated_date: '2026-09-07 16:32'
+updated_date: '2026-09-07 16:35'
 labels:
   - ready-for-agent
 dependencies: []
@@ -179,4 +179,18 @@ via orkestreraren; kan ge ytterligare en granskningsrunda.
 
 FYND 5 (info, ask-user): CLAUDE.md-raden (AC #4) hanteras av orkestreraren
 i stängningsbatchen. Ingen CLAUDE.md-fil rörd av mig i denna runda heller.
+
+Marcus 2026-09-07: 419 A — behåll som byggt.
+
+Fullständig kontext: FYND 4 (granskningsrunda 1, PR #2442) — hookens
+"huvudsession = HITL"-antagande täcker inte strikt en AFK-orkestrerare
+(saknar också agent_id). Alternativ A (behåll som byggt: huvudsessionen,
+interaktiv eller AFK, får läsa OCH skriva prod via claude.ai-connectorn;
+endast agent-/subagent-anrop nekas) VALT över alternativ B (neka
+huvudsessionen för skrivande claude.ai-verktyg mot prod, släpp läsande
+oavsett kontext). Ingen kodändring krävdes — scripts/deny-prod-airtable.sh
+implementerade redan alternativ A. Beslutet + motiveringen är bokfört i
+skriptets egen docblock (§ TVÅ FAMILJER, "ÖPPEN FRÅGA, PRÖVAD OCH AVGJORD")
+så nästa läsare ser luckan som ett medvetet, godkänt val — inte en
+oupptäckt brist.
 <!-- SECTION:NOTES:END -->

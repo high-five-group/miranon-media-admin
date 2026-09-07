@@ -62,6 +62,24 @@
 #   research-pass — eller en `general-purpose`/`claude`-catchall som INTE
 #   har servern strukturellt borttagen via `disallowedTools`) NEKAS.
 #
+#   ÖPPEN FRÅGA, PRÖVAD OCH AVGJORD (granskningsrunda 1, PR #2442, fynd 3):
+#   "huvudsession saknar agent_id" är INTE strikt liktydigt med "Marcus
+#   sitter interaktivt och tittar just nu" — en orkestrerar-session som
+#   kör AFK (CLAUDE.md § Landning: heartbeat-svep, autonom armering över
+#   lång tid utan mänsklig närvaro) är OCKSÅ huvudsession utan `agent_id`,
+#   och skulle släppas igenom av exakt samma undantag. Detta ÄR alltså en
+#   verklig lucka i "HITL"-etiketten, inte ett hypotetiskt hörn.
+#   MARCUS BESLUT 2026-09-07 (bokfört TASK-419-kortets notes, ordagrant:
+#   "Marcus 2026-09-07: 419 A — behåll som byggt"): alternativ A — BEHÅLL
+#   SOM BYGGT. Huvudsessionen (interaktiv ELLER AFK-orkestrerare) får
+#   läsa OCH skriva prod via claude.ai-connectorn; endast agent-/subagent-
+#   anrop nekas. Det avvisade alternativet (B) hade nekat huvudsessionen
+#   för SKRIVANDE verktyg (`create_*`/`update_*`/`delete_*`/`submit_*`/
+#   `publish_*`/`revert_*`) och släppt bara läsande, oavsett kontext.
+#   Denna kod-gren (AGENT_ID-blocket nedan) implementerar ALREDAN
+#   alternativ A och kräver alltså INGEN ändring — luckan är från och med
+#   detta beslut ett MEDVETET, GODKÄNT val, inte en oupptäckt brist.
+#
 # ═══ FAIL-CLOSED-KONTRAKTET — se deny-prod-ref.sh för fullt resonemang ═══
 #
 #   Samma motivering som deny-prod-ref.sh: en obehörig prod-läsning/skrivning
