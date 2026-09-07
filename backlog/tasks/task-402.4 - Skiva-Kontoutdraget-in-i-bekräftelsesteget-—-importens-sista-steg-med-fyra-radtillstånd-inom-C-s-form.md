@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-09-05 19:02'
-updated_date: '2026-09-06 07:10'
+updated_date: '2026-09-07 15:52'
 labels:
   - ready-for-agent
 dependencies:
@@ -32,10 +32,10 @@ Filläsning och kolumnmappning står kvar i inkorgen under 'Importera kontoutdra
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #4 Facit-granskning: ytan bekraftelsesteget jämförd mot facit tasks/sessions/bilagor/s121-bekraftelsesteget-konvergens/facit.json (bilderna i samma katalog) i varje läge skivan rör — avvikelse bokförs som AMENDERING-fil i facit-katalogen, aldrig som tyst ändring (ADR-102 B5/R3)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 Facit-granskning: ytan bekraftelsesteget jämförd mot facit tasks/sessions/bilagor/s121-bekraftelsesteget-konvergens/facit.json (bilderna i samma katalog) i varje läge skivan rör — avvikelse bokförs som AMENDERING-fil i facit-katalogen, aldrig som tyst ändring (ADR-102 B5/R3)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -163,6 +163,8 @@ kördes INTE om mot staging — diffen är ren radbrytning, ingen
 assertion/text ändrad.
 
 PR:en kvarstår draft, ej armerad.
+
+TASK-425: DoD bockad mot belägg — samtliga AC #1-#5 redan avbockade. Implementation Notes/Final Summary dokumenterar landning PR #2365 → main cf9ba0ba (2026-09-06); grindar (exitkod läst separat): typecheck 0, biome 0 (efter rättningen i commit a9ce3a34), check-langa-streck.mjs 0 (323 filer), build 0, check-facit.sh 0 (17 manifest/8 markörer), check:docs 0 (14/14); AMENDERING-2026-09-06-importens-radtillstand.md + tre bilder i facit-katalogen (DoD #4).
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

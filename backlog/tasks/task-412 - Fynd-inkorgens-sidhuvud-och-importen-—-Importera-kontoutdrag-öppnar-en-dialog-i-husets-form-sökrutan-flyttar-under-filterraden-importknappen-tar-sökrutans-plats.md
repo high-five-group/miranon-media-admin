@@ -7,7 +7,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-09-06 09:59'
-updated_date: '2026-09-06 14:37'
+updated_date: '2026-09-07 15:53'
 labels:
   - ready-for-agent
 dependencies:
@@ -31,9 +31,9 @@ Marcus prod-granskning 2026-09-06 (S121 resume 4, QA-vandringen TASK-402.7 påb�
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -48,4 +48,6 @@ GRANSKNINGSVARV 5 (samma dag): Marcus: 'Agenten ändrade storleken på de tre pr
 OMPRÖVNING 2026-09-06 (Marcus, efter kortets mintning, ersatte beskrivningens del (2) om sökrutans flytt; bokförd i main via #2381, återinlagd här vid konfliktlösningen mot main när #2380 landat — ⋯-formen ersattes i sin tur av rubrik-menyn i varv 5): 'Jag vet inte om de där med att flytta sökrutan blir bra när jag tänker efter. Jag tror vi kan behålla det som det är MEN vi tar bort knappen Importera kontoutdrag och skapar istället en rund ikon med tre prickar bredvid filtreringsikonen (till höger) som öppnar vår dropdown där det står Importera kontoutdrag. … jag vill liksom ha det lite renare upptill.' Sökrutan flyttades inte. Del (1), dialogen, stod oförändrad. Det gamla AC #3 om flytten togs bort då; det slutgiltiga AC #4 beskriver rubrik-menyn.
 
 FINAL SUMMARY (S121 resume 4, 2026-09-06): AFK-proveniens bygg-agent Sonnet (samma agent som TASK-410/411, pensionerad efter ~890k tokens). Fem formvarv på granskningsservern 4173: dialog i husets form → ⋯-meny → ikonstorlek → dialoganatomi efter Ångra-/utskicksdialogen → rubriken 'Betalningar' som menytrigger i eventväljarens rubrikform (⋯ och FilterRad-slotten rivna). Marcus godkännande: 'Betalnings/inkorgs-sidan är bra nu. Nu måste den till prod så snabbt och bra som möjligt.' Granskning: runda 1 låg/0 fynd (head 16d06d01 efter testfix exact:true), runda 2 låg (merge av 411 runda 2), runda 3 låg (merge av 411 runda 3), runda 4 låg (konfliktlösning add/add på detta kort efter att #2380 landat — --ours + återinlagd OMPRÖVNING-not). Landad via #2383 → main 74f2cc20 (2026-09-06 13:51Z); post-merge staging-svit grön på efterföljande main-push 2db58183 (run 13:51:22Z, success). DoD #2/#3 hölls (grindar gröna per varv, path-scopad add); DoD #1 alla AC bockade. Kända fynd utanför kortet: e2e-fallet 'navigation UTANFÖR betalningsfamiljen rensar' i betalningar-inkorg-markera-lage.staging.test.ts är ordningsberoende flakigt i hel-fil-körning (eget fynd-kort).
+
+TASK-425: DoD bockad mot belägg — samtliga AC #1-#4 redan avbockade. Final Summary dokumenterar landning via #2383 → main 74f2cc20 (2026-09-06 13:51Z); post-merge staging-svit grön (run 13:51:22Z, success); verbatim i kortet: 'DoD #2/#3 hölls (grindar gröna per varv, path-scopad add); DoD #1 alla AC bockade'.
 <!-- SECTION:NOTES:END -->

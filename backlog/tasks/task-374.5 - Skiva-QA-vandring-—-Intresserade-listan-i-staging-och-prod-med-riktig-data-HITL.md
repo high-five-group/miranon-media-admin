@@ -6,9 +6,10 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-09-03 09:21'
-updated_date: '2026-09-04 12:56'
+updated_date: '2026-09-07 15:52'
 labels:
   - ready-for-human
+  - intentionally-unchecked
 dependencies:
   - TASK-374.1
   - TASK-374.2
@@ -55,6 +56,8 @@ Täcker användarberättelser: 22
 
 <!-- SECTION:NOTES:BEGIN -->
 Marcus prod-QA 2026-09-04 verbatim: "374.5 prod-QA klar, allt godkänt".
+
+OBOCKAT MED AVSIKT: DoD #5 (ariaSnapshot-paret, ADR-103 B4) lämnas permanent obockad — denna skiva är en ren QA-observation (Marcus prod-QA 2026-09-04 verbatim: '374.5 prod-QA klar, allt godkänt') utan kodändring; det finns inget snapshot-par att ta eller jämföra. TASK-425 premiss-pass 2026-09-07, mot grinden check-backlog-closure.sh invariant 2.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
