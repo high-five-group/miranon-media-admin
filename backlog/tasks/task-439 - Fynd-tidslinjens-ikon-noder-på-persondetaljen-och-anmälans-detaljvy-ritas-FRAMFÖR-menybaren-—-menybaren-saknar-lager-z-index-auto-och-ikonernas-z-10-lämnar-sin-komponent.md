@@ -4,10 +4,10 @@ title: >-
   Fynd: tidslinjens ikon-noder på persondetaljen och anmälans detaljvy ritas
   FRAMFÖR menybaren — menybaren saknar lager (z-index auto) och ikonernas z-10
   lämnar sin komponent
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-08 14:45'
-updated_date: '2026-09-08 16:45'
+updated_date: '2026-09-08 18:17'
 labels:
   - fynd
   - ready-for-agent
@@ -40,7 +40,7 @@ KÄLLOR: TabBar.tsx rad 72–79 · Tidslinje.tsx rad 49–70 · PersonDetail.tsx
 - [x] #2 Tidslinje.tsx och PersonDetail.tsx: isolate på <li> (inte <ol>, skäl i kodkommentar: #2457 rör <ol>-raden); den genomgående linjen ligger bakom ikon-cirklarna som i dag, verifierat i bild vid 390 och 1280 px
 - [x] #3 Hermetiskt acceptance-test: på persondetaljen och på anmälans detaljvy träffar document.elementFromPoint i en ikon-nod som rullats in i menybarens rektangel ett element inuti nav[aria-label=Huvudnavigation]; rött mot main före fixen (utdata i PR-kroppen), grönt efter; fix A ensam och fix B ensam gör vardera provet grönt, bokfört
 - [x] #4 axe 0 på båda ytorna; prefers-contrast more och print oförändrade; DoD-kommandona (typecheck, biome, build), berörda acceptance-sviter och check-langa-streck gröna med faktiska exitkoder
-- [ ] #5 Ögonmätt av Marcus mot dev-server/staging före Done
+- [x] #5 Ögonmätt av Marcus mot dev-server/staging före Done
 <!-- AC:END -->
 
 ## Definition of Done
@@ -57,3 +57,9 @@ Bygg-agent 2026-09-08: Fix A (TabBar z-30 + lagerskala-docblock), Fix B (isolate
 
 LANDAD via PR #2467 (`b5806695`, 2026-09-08 ~16:2xZ) efter två granskningsrundor: r1 risk medel (1 warning/ask-user + 3 info), r2 risk låg (6 info, 0 blockerande). ORKESTRERAR-NOT om AC #1 (S124 resume 1): kriteriets bokstav "inget annat element får ett nytt z-tal" gäller inte längre efter runda 2 — fem Popover-anrop (Meny, Select, DatumFalt, EventValjare, dev/patterns) fick DEFENSIV `z-50` på orkestrerarens order, grundad på ett granskarfynd som bygg-agenten sedan fällde med mätning (react-aria sätter `zIndex: 100000` inline; `useOverlayPosition.mjs` rad ~191). Tillägget är harmlöst och dokumenterat "INTE LOAD-BEARING"; AC #1:s avsikt (krom på 30, lagerskalan dokumenterad, inga godtyckliga z-tal) håller. Granskaren r2 klassade AC #1 felställd på bokstaven — bokförs här i stället för att skriva om ett redan bockat AC på ett landat kort. AC #5 (Marcus ögonmätning) kvarstår öppen; Done flippas efter den.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landad via PR #2467 (`b5806695`, 2026-09-08 ~16:2xZ) — byggd av bygg-agent (Sonnet 5). Två granskningsrundor i färsk kontext: r1 risk medel (1 warning/ask-user — granskaren påstod att RAC-popovrarna saknade z-index och kunde döljas av TabBar z-30; bygg-agentens premiss-pass fällde det med mätning: react-aria sätter `zIndex: 100000` inline på varje Popover (`useOverlayPosition.mjs` rad ~191); defensiv `z-50` lades ändå på fem Popover-anrop, märkt "DEFENSIV, INTE LOAD-BEARING"), r2 risk låg (6 info, 0 blockerande) — konvergerad. Fix A: TabBar fick `z-30` + lagerskalan dokumenterad i docblock (innehåll ≤10 isolerat · krom 30 · notiser 40 · överlägg 50). Fix B: `isolate` på `<li>` i Tidslinje.tsx och PersonDetail.tsx (inte `<ol>`, för att undvika merge-konflikt med PR #2457). Hermetiskt acceptance-test `tests/acceptance/tidslinje-under-menybaren.acceptance.test.ts`: rött mot main före fixen, grönt efter, fix A/B mätta ensamma. AC #5 ögonmätt av Marcus mot dev-server 2026-09-08 (JA, "Ser bra ut", källa: sessionsdok S124 Del 7).
+<!-- SECTION:FINAL_SUMMARY:END -->
