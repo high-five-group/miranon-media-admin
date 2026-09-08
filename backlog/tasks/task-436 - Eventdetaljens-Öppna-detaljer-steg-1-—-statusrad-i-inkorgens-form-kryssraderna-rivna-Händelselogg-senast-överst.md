@@ -3,10 +3,10 @@ id: TASK-436
 title: >-
   Eventdetaljens 'Öppna detaljer' steg 1 — statusrad i inkorgens form,
   kryssraderna rivna, Händelselogg senast överst
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-08 02:20'
-updated_date: '2026-09-08 03:16'
+updated_date: '2026-09-08 15:53'
 labels:
   - ready-for-agent
 dependencies: []
@@ -34,7 +34,7 @@ KÄLLOR: `src/components/events/detail/Betalningar.tsx` (docblock rad 16–39, `
 - [x] #1 Per person i Öppna detaljer: namn + pills som i dag, därunder statusraden 'Kvar att betala' i persondetaljens etikett-värde-form (husets form för detaljkort, BetalningsInkorg.tsx RadInnehall docblock: etikett-formen bär panelen och anmälans detaljvy, löpande text bär inkorgen) renderad av samma utbrutna komponent som anmälans detaljvy; inkorgens befintliga tester gröna utan ändring
 - [x] #2 BetalningsLasRad och de två kryssraderna borta; inga disabled-kryss i sektionen; Saknar/Klara-flikarna och deadline-märket oförändrade; eventets pris saknas sägs EN gång på eventnivå, aldrig per person
 - [x] #3 Noll skriv-affordanser: mark-paid.staging och event-deltagare.staging omskrivna mot den nya formen med invarianterna bevarade (noll textbox, noll mailto) och skärpta (noll kryss); axe 0 på öppen sektion; beloppen hämtas först när detaljerna öppnas (noll anrop vid sidladdning, bevisat i e2e); prefers-contrast more, prefers-reduced-motion och print prövade i browsern
-- [ ] #4 Ögonmätt av Marcus mot dev-server/staging före Done
+- [x] #4 Ögonmätt av Marcus mot dev-server/staging före Done
 - [x] #5 Tidslinjen heter Händelselogg i kod (variabeln handelselogg) och i aria (listans tillgängliga namn via Tidslinje-propen etikett, utan rubrikelement); tomtexten säger i klartext att inga händelser finns (Gunilla-principen, inte ordet Händelselogg); sorteras senast överst, bär dagens utskick plus Anmäld ur inskickad med detaljvyns ordval ur en delad härledning (registrations/handelser.ts) som även detaljvyns Händelser använder; ingen synlig rubrik
 <!-- AC:END -->
 
@@ -44,3 +44,9 @@ KÄLLOR: `src/components/events/detail/Betalningar.tsx` (docblock rad 16–39, `
 - [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landad via PR #2457 (`01c33c14`, 2026-09-08 15:14Z) — byggd av orkestreraren på Marcus order ("var perfektionist med designen nu"), S124 Del 4. Tre granskningsrundor i färsk kontext: r1 4 fynd (AC #3-namnet omskrivet till AC #5-formen: namn i kod och aria, tomtext i klartext), r2 1 warning (testprecision → fix `e32ab273`, skiljande tal 500 mot 900), r3 0 fynd, risk låg (Marcus mandat för rundan 2026-09-08 ~14:30Z). Backstopp-preflight exit 0. AC #4 ögonmätt av Marcus mot dev-server på ZZ-GRANSKNING-S121-MARCUS (`recRuwcAh9YC6NUG1`): "Ser rätt ut, landa den." Noterat vid ögonmätningen: S119-fixturen saknar pris i staging-basen, därför visades "Pris saknas i basen" där — datan, inte formen. Steg 2 (inbetalningarna i loggen) = TASK-438, PR #2468; persondetaljens Händelser = TASK-440.
+<!-- SECTION:FINAL_SUMMARY:END -->

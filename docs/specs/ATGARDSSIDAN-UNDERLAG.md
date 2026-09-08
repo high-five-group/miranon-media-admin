@@ -140,7 +140,7 @@ Grillad samsyn beslut 5, ordagrant utfällt:
 > **SUPERSEDED 2026-09-08 (TASK-435, Marcus beslut S124): "Jag är helt säker
 > på att jag vill riva betalningsblocket helt från åtgärdssidan."** § "Hela
 > skrivvertikalen (2026-08-07)" nedan beskriver ett beslut som är REVERSERAT
-> — avprickning, notering och skrivvertikalen flyttade INTE stanna kvar på
+> — avprickning, notering och skrivvertikalen stannar INTE kvar på
 > åtgärds-sidan. Betalningar hanteras numera uteslutande på betalningssidan
 > (inkorg + bekräftelsesteg, PRD `TASK-402`); noteringar skrivs i
 > registreringsformuläret (`RegistreraForm.tsx` § NOTERINGSFÄLTET). Se

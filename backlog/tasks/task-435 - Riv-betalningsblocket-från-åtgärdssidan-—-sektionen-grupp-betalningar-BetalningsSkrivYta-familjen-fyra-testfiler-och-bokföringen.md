@@ -3,10 +3,10 @@ id: TASK-435
 title: >-
   Riv betalningsblocket från åtgärdssidan — sektionen grupp-betalningar,
   BetalningsSkrivYta-familjen, fyra testfiler och bokföringen
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-08 02:20'
-updated_date: '2026-09-08 03:08'
+updated_date: '2026-09-08 15:53'
 labels:
   - ready-for-agent
 dependencies: []
@@ -41,3 +41,9 @@ KARTA (kartläggnings-agent S124, varje symbol grep:ad över hela filen/repot; r
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landad via PR #2459 (`d9bc1c45`, 2026-09-08 03:46Z, bygg-agent Sonnet 5, S124 Del 5). ~850 rader rivna ur `AtgardsSida.tsx` (sektionen grupp-betalningar, BetalningsSkrivYta-familjen, döda hjälpare/imports); `PanelBetalningar.tsx`, `useSetPaymentStatus`/`useUpdatePaymentNote`/`useSendReceipt`-kedjan bort; tre testfiler bort; noterings-integritetstestet omskrivet mot `RegistreraForm` med rött-först (ny DEV-route, ADR-044); bokföring i ADR-128 § Updates, ATGARDSSIDAN-UNDERLAG § 5, korten 147/147.9/402.5/403. Review: 4 info, risk medel, konvergerad. De fyra info-fynden togs i S124 stängningsbatch 1 (2026-09-08): UNDERLAG rad 143 grammatiskt rättad · task-147 DoD #11 obsolet-not · nytt fynd-kort TASK-441 för det serversidiga aktivitetslogg-integritetstestet (pre-existerande lucka) · test:api-flaken är redan spårad (task-347/task-14). Betalningsblocket är borta i prod.
+<!-- SECTION:FINAL_SUMMARY:END -->
