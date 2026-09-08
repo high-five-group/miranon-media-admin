@@ -63,9 +63,20 @@ const husetsRetryPolicy = (failureCount: number, err: Error): boolean =>
  * ═══════════════════════════════════════════════════════════════════════════
  * Miljöflaggan gatar hämtningen via React Querys `enabled`, aldrig via ett
  * tidigt `return` hos anroparen: hooks-reglerna förbjuder villkorade
- * hook-anrop. Samma form `useJobbstatus` redan bär, och av samma skäl - i
- * prod finns varken migrationerna eller de deployade funktionerna ännu
- * (ADR-129 § Negativa och skuld), så ett anrop hade fått 404.
+ * hook-anrop. Samma form `useJobbstatus` redan bär.
+ *
+ * [TASK-442, RÄTTELSE av en preexisterande rad — ADR-083] Här stod tidigare
+ * att skälet var "i prod finns varken migrationerna eller de deployade
+ * funktionerna ännu (ADR-129 § Negativa och skuld), så ett anrop hade fått
+ * 404". Det var sant när ADR-129 skrevs och är FALSKT i dag: samtliga 57
+ * EF:er ligger i prod (`TASK-385`, 2026-09-05; omdeployade 2026-09-08
+ * 04:28–04:32Z), `TASK-367`:s migration är körd (2026-09-06), och flaggan
+ * `VITE_FEATURE_BETALNINGAR` är PÅ i prod via Vercels miljövariabler (mätt i
+ * prod-bundeln vid `29a3c16d`, S123). Formen är alltså riktig av det första
+ * skälet ensamt (hooks-reglerna); 404-motiveringen är historik och får inte
+ * läsas som nuläge. Rättad här i stället för lämnad, eftersom TASK-442 skrev
+ * om resten av denna fils docblockar för just den ärligheten och en känt
+ * falsk rad kvar i samma fil hade varit sämre än ingen rad alls.
  */
 
 /** Alla öppna betalningar över alla event. Delas av Hem, panelen och ytorna. */
@@ -192,18 +203,33 @@ export function useInbetalningarForEvent(
  * `Deltagare.tsx`s `ArbetsKo`), och en gating som bara den ena bar hade varit
  * en regel som kan glömmas. Därför:
  *
- *   1. `betalningarPa()` — miljöflaggan (`lib/funktionsflaggor.ts`). Av i
- *      prod, där varken migrationerna eller alla EF:er finns ännu (ADR-129
- *      § Negativa och skuld): ett anrop hade fått 404. ÖPPET BOKFÖRT, för det
- *      är en ASYMMETRI mot renderingen: `Deltagare.tsx` monterar
- *      `DetaljRad`/`BetalningsDetaljer` OVILLKORLIGT (bara `aktiva.length >
- *      0` gatar dem, TASK-145.4 AC #2) — flaggan gatar dem inte i dag. Att
- *      låta förvärmningen ärva den frånvaron hade gjort VARJE eventsidbesök
- *      i prod till två anrop som kan 404:a, i stället för de noll det är i
- *      dag ända tills Lotta faktiskt klickar. Att i stället flagg-gata
- *      renderingen är ett eget beslut om en yta denna skiva inte äger
- *      (TASK-442 § F: minimalt scope), inte något som ska smygas in via en
- *      prefetch.
+ *   1. `betalningarPa()` — miljöflaggan (`lib/funktionsflaggor.ts`).
+ *      **Flaggan är PÅ i prod**, satt i Vercels miljövariabler och därför
+ *      osynlig i `.env.production` (mätt i prod-bundeln vid `29a3c16d`,
+ *      S123; bekräftat S124: "flaggan `VITE_FEATURE_BETALNINGAR` är PÅ i
+ *      prod via Vercel"). Förvärmningen KÖRS alltså i prod — det är hela
+ *      poängen med denna skiva. Raden är därmed ingen prod-spärr utan två
+ *      andra saker: den håller fixturklasserna rena (acceptance-, visual-
+ *      och webblasarbeteende-webServern byggs med
+ *      `VITE_FEATURE_BETALNINGAR: 'av'`, `playwright.config.ts`), och den är
+ *      en vakt för det fall flaggan någon gång stängs igen.
+ *
+ *      HISTORIK, inte nuläge: `ADR-129` § Negativa och skuld beskriver ett
+ *      läge där prod saknade migrationerna och EF:erna, så att ett anrop
+ *      hade fått 404. Så var det när ADR:n skrevs. I dag ligger samtliga 57
+ *      EF:er i prod (`TASK-385`, 2026-09-05; omdeployade 2026-09-08
+ *      04:28–04:32Z) och `TASK-367`:s migration är körd (2026-09-06). Läs
+ *      aldrig den ADR-raden som en beskrivning av dagens prod.
+ *
+ *      ASYMMETRIN MOT RENDERINGEN står kvar och bokförs öppet:
+ *      `Deltagare.tsx` monterar `DetaljRad`/`BetalningsDetaljer`
+ *      OVILLKORLIGT (bara `aktiva.length > 0` gatar dem, TASK-145.4 AC #2),
+ *      alltså utan flaggan. Med flaggan PÅ i prod är de två vägarna i fas
+ *      där det räknas; skulle flaggan stängas av skulle knappen finnas kvar
+ *      medan förvärmningen tystnade, och klicket falla tillbaka på den lata
+ *      hämtningen. Att i stället flagg-gata renderingen är ett eget beslut
+ *      om en yta denna skiva inte äger (TASK-442 § F: minimalt scope), inte
+ *      något som ska smygas in via en prefetch.
  *   2. Tom id-lista — EF:en hade svarat `{ grupper: [] }` och batch-frågan är
  *      ändå avstängd i det läget (`enabled` ovan). Inkorgsfrågan värms inte
  *      heller: utan anmälningar finns ingen betalningsyta att öppna.

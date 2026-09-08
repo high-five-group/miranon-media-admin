@@ -2,7 +2,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, type Page, test } from '../support/test-bas';
 import { mockTomNarvaro } from './helpers/tom-narvaro';
 import { mockTommaAnteckningar } from './helpers/tomma-anteckningar';
-import { mockTommaInbetalningar } from './helpers/tomma-betalningar';
+import { mockTommaBetalningar, mockTommaInbetalningar } from './helpers/tomma-betalningar';
 import { mockValjarLista } from './helpers/valjar-lista';
 
 /**
@@ -568,9 +568,13 @@ test.describe('Anmälda deltagare — arbetsköns skelett (task-18.4)', () => {
     // TASK-416.16: eventsidan prefetchar nu get-attendance ovillkorligt
     // (sidmount + Check-in-hover) — samma skäl, detta test kringgår mocka().
     await mockTomNarvaro(page);
-    // TASK-442: samma skäl för inbetalnings-batchen — se
-    // helpers/tomma-betalningar.ts.
-    await mockTommaInbetalningar(page);
+    // TASK-442: samma skäl för BÅDA betalnings-EF:erna — se
+    // helpers/tomma-betalningar.ts. Detta block kringgår `mocka()` och bär
+    // därför, till skillnad från den, INGEN egen `hamta-oppna-betalningar`-
+    // mock; utan raden nedan gick belopps-anropet omockat mot skarp staging
+    // (r1-fynd på PR #2474 — `prefetchQuery` är fire-and-forget, så läckaget
+    // var osynligt för den gröna körningen).
+    await mockTommaBetalningar(page);
 
     // Läge 1 — utanför tvåveckorsfönstret (start om 60 dagar): TOM RESERV.
     await oppnaEventsidan(page);

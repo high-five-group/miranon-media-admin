@@ -1211,6 +1211,12 @@ async function mockaPersonkort(
       body: JSON.stringify({ registrations }),
     });
   });
+  // TASK-442 (r1-fynd): eventsidan förvärmer betalnings-EF:erna vid
+  // sidmontering, och denna uppsättning serverar AKTIVA anmälningar — utan
+  // stubben går båda anropen omockade mot skarp staging. Att den gröna
+  // körningen inte fångade det är hela poängen: `prefetchQuery` är
+  // fire-and-forget, så ett obesvarat anrop är osynligt för testresultatet.
+  await mockTommaBetalningar(page);
 }
 
 test.describe('Personkorten — metaytan + historiken (task-18.5)', () => {
@@ -1610,6 +1616,12 @@ async function mockaGruppdynamik(
       body: JSON.stringify({ registrations }),
     });
   });
+  // TASK-442 (r1-fynd): eventsidan förvärmer betalnings-EF:erna vid
+  // sidmontering, och denna uppsättning serverar AKTIVA anmälningar — utan
+  // stubben går båda anropen omockade mot skarp staging. Att den gröna
+  // körningen inte fångade det är hela poängen: `prefetchQuery` är
+  // fire-and-forget, så ett obesvarat anrop är osynligt för testresultatet.
+  await mockTommaBetalningar(page);
 }
 
 test.describe('Gruppdynamik — erfarenhetsmix + kurshistorik + motiveringar (task-18.10)', () => {

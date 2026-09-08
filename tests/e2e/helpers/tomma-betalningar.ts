@@ -25,22 +25,43 @@ import type { Page, Route } from '@playwright/test';
  * först) råkar låta dess egen mock vinna. En stub som bara fungerar så länge
  * ingen flyttar en rad är en fälla, inte en söm.
  *
- * Filerna som fick stubben vid TASK-442, och vilken form:
- *   · BÅDA (`mockTommaBetalningar`): `event-detail`, `event-bekraftelse`,
- *     `event-bor-over` — navigerar till bare `/event/$eventId` med aktiva
- *     anmälningar och hade ingen av mockarna.
- *   · ENBART batchen (`mockTommaInbetalningar`): `event-deltagare`,
- *     `betalningar-inkorg-markera-lage` — bär en egen, ämnesbärande
- *     `hamta-oppna-betalningar`-mock som lämnas orörd.
+ * LISTAN NEDAN RÄKNAR ANROPSPLATSER, INTE FILER — och det är en rättelse,
+ * inte en stilfråga. Den första versionen av detta docblock listade FILER
+ * ("BÅDA: event-detail"), vilket lät en fil se täckt ut fastän bara EN av
+ * dess tre uppsättnings-funktioner hade stubben; två vägar i samma fil gick
+ * omockade mot skarp staging (r1-fynd på PR #2474). En fil är fel
+ * granularitet när täckningen bestäms per `page.route`-uppsättning.
  *
- * INTE STUBBADE, mätt och medvetet: `mark-paid.staging.test.ts` mockar båda
+ * Anropsplatserna, med form:
+ *   · BÅDA (`mockTommaBetalningar`): `event-detail` × 3 — `mockEvent`,
+ *     `mockaPersonkort`, `mockaGruppdynamik` (alla tre serverar aktiva
+ *     anmälningar till `/event/$eventId`) · `event-bekraftelse` × 1 ·
+ *     `event-bor-over` × 1 · `event-deltagare`s kringgåendeblock (det som
+ *     inte går via `mocka()` och därför saknar egen belopps-mock).
+ *   · ENBART batchen (`mockTommaInbetalningar`): `event-deltagare`s `mocka()`
+ *     och `betalningar-inkorg-markera-lage` — båda bär en egen,
+ *     ämnesbärande `hamta-oppna-betalningar`-mock som lämnas orörd.
+ *
+ * INTE STUBBADE, och skälet per plats: `mark-paid.staging.test.ts` mockar båda
  * själv med räknare (förvärmningen ÄR dess ämne sedan TASK-442);
  * `event-narvaro-register` svarar `registrations: []`, och en tom aktiv-lista
  * gatar bort förvärmningen redan i callbacken; `skapa-event` och
- * `aktivitetslogg-skarv` når aldrig en eventdetalj med anmälningar; hela
- * acceptance-/visual-/webblasarbeteende-klassen kör med
- * `VITE_FEATURE_BETALNINGAR: 'av'` (`playwright.config.ts`), och flaggan
- * gatar förvärmningen.
+ * `aktivitetslogg-skarv` når aldrig en eventdetalj med anmälningar.
+ *
+ * FIXTURKLASSERNA (acceptance/visual/webblasarbeteende) behöver ingen stub av
+ * en ANNAN orsak, och den ska inte blandas ihop med ovanstående: deras
+ * webServer byggs med `VITE_FEATURE_BETALNINGAR: 'av'`
+ * (`playwright.config.ts`), och `betalningarPa()` är en byggtidskonstant, så
+ * callbackens första rad returnerar innan något anrop formuleras. Det är ett
+ * KODLÄSNINGS-argument om en enda grind-rad — inte en observation ur att
+ * deras körningar är gröna: ett avvisat `prefetchQuery` är per konstruktion
+ * osynligt för ett testresultat.
+ *
+ * ATT LÄCKAGET SYNS ALLS kräver `PLAYWRIGHT_HERMETIK_RAPPORT=1`
+ * (`tests/support/test-bas.ts`) — catch-all-vakten som loggar varje
+ * icke-lokalt anrop som slank förbi testets egna mockar. I normal drift är
+ * den en no-op, och ett omockat förvärmningsanrop är därför tyst. Kör den när
+ * en ny uppsättnings-funktion tillkommer.
  */
 
 export const HAMTA_OPPNA_BETALNINGAR_GLOB = '**/functions/v1/hamta-oppna-betalningar*';
