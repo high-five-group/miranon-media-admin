@@ -75,7 +75,7 @@ import { expect, test } from './acceptance-bas';
  *      mobil) — orimligt för ett tomt läge (622 px låst höjd, 78 % luft på
  *      en 800 px-skärm). Nu EN viewport-oberoende konstant (99, mätt mot
  *      `MallRad`, som strukturellt aldrig bryter) — se
- *      `LISTA_FALLBACK_RADHOJD`s docblock i källan. Nytt: en HEL
+ *      `LISTA_FALLBACK_KORTHOJD`s docblock i källan. Nytt: en HEL
  *      `GemensamtLage`-svit vid 375 px (test.describe nedan) som speglar
  *      desktop-sviten över alla tre nivåer, så regressionen fångas på BÅDA
  *      brytpunkterna, inte bara desktop.
@@ -87,7 +87,7 @@ import { expect, test } from './acceptance-bas';
  *      `useLastaListhojd`s "MONOTONIN ÄR RIKTAD, INTE ABSOLUT"-stycke.
  *   3. Tomt-lägets mobila höjd (~400 px, INTE ~622 px) är ETT PRODUKTBESLUT
  *      Marcus kan justera efter helgen (S108 Del 26-frågan), inte en
- *      slutgiltig teknisk sanning — bokfört i `LISTA_FALLBACK_RADHOJD`s
+ *      slutgiltig teknisk sanning — bokfört i `LISTA_FALLBACK_KORTHOJD`s
  *      docblock och i PR-beskrivningen, inte bara här.
  */
 
@@ -173,7 +173,7 @@ async function gotoRackviddslage(page: Page) {
 const PERSIST_KEY = 'REACT_QUERY_OFFLINE_CACHE';
 
 /**
- * `LISTA_FALLBACK_RADHOJD` (`DokumentYta.tsx`) — NIVÅ 3:s enda tal.
+ * `LISTA_FALLBACK_KORTHOJD` (`DokumentYta.tsx`) — NIVÅ 3:s enda tal.
  *
  * DUPLICERAS MEDVETET (samma disciplin som talet hade när det var 99): en
  * fallback som bara jämförs mot sig själv bevisar ingenting, så testet bär
@@ -186,68 +186,77 @@ const PERSIST_KEY = 'REACT_QUERY_OFFLINE_CACHE';
  * namnknapp bär 44 px träffyta — 107 px.
  *
  * Sedan blev raden ett KORT: kortet bär `p-3` + 1 px kant, och `<li>` bär
- * rännan. UPPMÄTT I DENNA RIGG (inte räknat): `radHojder` = [124, …] vid
- * både 1280 px och 375 px. `<li>` är alltså 124 px (kort 116 + ränna 8), och
- * det är viewport-oberoende av samma skäl som förut: kortet bryter aldrig,
- * det trunkerar.
+ * rännan (då som en border). UPPMÄTT I DENNA RIGG (inte räknat): `radHojder`
+ * = [124, …] vid både 1280 px och 375 px. `<li>` var alltså 124 px
+ * (kort 116 + ränna 8), och det var viewport-oberoende av samma skäl som
+ * förut: kortet bryter aldrig, det trunkerar.
  *
  * ═══ [TASK-309.46, 2026-08-30] 124 → 122: KONSTANTEN ÄR INTE LI-HÖJDEN ═══
+ * (historik, SUPERSEDED av TASK-309.48 nedan — kvar för spårbarhet)
  *
- * `<li>` är fortfarande 124. Konstanten är det inte, och skillnaden är hela
- * skivan: rännan ligger sedan dess som en TRANSPARENT `border-bottom` på
- * raden i stället för som `pt-2`, och hooken DRAR BORT den fjärde radens
- * ränna ur låset (`separatorBredd` läser `border-bottom-width`). Låset är
- * därmed **488** = rad1.top → rad4.bottom, och `senastUppmattRadhojd` — som
- * NIVÅ 3 läser, och som denna konstant är reserv för — bär den
- * SEPARATOR-FRIA per-rad-höjden 488 / 4 = **122**.
+ * `<li>` var 124. Konstanten var det inte: rännan låg som en TRANSPARENT
+ * `border-bottom` på raden i stället för `pt-2`, och hooken DROG BORT den
+ * fjärde radens ränna ur låset. Låset var därmed 488 = rad1.top →
+ * rad4.bottom, och den lagrade per-rad-höjden bar den SEPARATOR-FRIA
+ * 488 / 4 = 122.
  *
- * SKÄLET TILL FLYTTEN var inte höjden utan SPÅRET: rullningslistens spår
- * spänner `<ul>`:ets padding-box, så en ränna som padding låg innanför det —
- * även ovanför FÖRSTA kortet. Mätt i prod: `ul.top` 303 mot `kort1.top` 311.
- * Marcus: *"den bör ju börja vid kortet precis."*
+ * ═══ [TASK-309.48, 2026-09-08] 122 → 116: RÄNNAN ÄR EN MARGINAL, INTE EN
+ *     BORDER — OCH DÅ ÄR LI-HÖJD ALLTID KORT-HÖJD ═══
  *
- * SKRIV ALDRIG TILLBAKA 124 HÄR "för att li är 124" — se källans egen
- * varning i `LISTA_FALLBACK_RADHOJD`s docblock. Li-höjden och den lagrade
- * per-rad-höjden är olika tal så fort raden bär en separator.
+ * Marcus prod-titt 2026-09-08: skrimmet mörkade brickan i kortens hörn OCH
+ * spåret slutade 8 px UNDER sista kortet — `border-b-8` lade rännan INUTI
+ * sista radens EGEN box, som därmed räknades i `scrollHeight`. Fixen: rännan
+ * är nu `margin-top` på varje rad UTOM DEN FÖRSTA (komponent-token
+ * `--mm-dokumentlista-ranna`, `components.css`, se `DokumentYta.tsx`s
+ * `useLastaListhojd`-docblock för hela geometrin).
  *
- * ATT NIVÅ 1, 2 OCH 3 GER SAMMA TAL ÄR HELA POÄNGEN MED ATT RÄNNAN BOR
- * I `<li>`: varje rad är exakt lika hög oavsett position, så spannet minus
- * fjärde radens ränna (NIVÅ 1), MAX-av-radhöjder minus radens ränna
- * (NIVÅ 2) och konstanten × 4 (NIVÅ 3) landar alla på 488 px. En tom lista
- * och en full lista delar bounding box exakt.
+ * DETTA TAR BORT HELA "LI-HÖJD ≠ KONSTANT"-DISTINKTIONEN OVAN. En marginal
+ * sitter INTE på raden den "hör till" — den sitter FÖRE nästa rad — så
+ * `getBoundingClientRect().height` på en `<li>` mäter numera ALLTID exakt
+ * kortets EGNA höjd, 116 px, oavsett hur många syskon den har. UPPMÄTT I
+ * DENNA RIGG (Playwright, ej gissat): `radHojder` = [116, …] vid BÅDA
+ * viewport-bredderna. Konstanten byter därför namn (RADHÖJD → KORTHÖJD,
+ * eftersom det inte längre finns någon skillnad att hålla isär) OCH värde
+ * (122 → 116, kortets egen höjd, samma tal `GRUPPKORT_KLASS`s docblock i
+ * källan redan bär).
+ *
+ * ATT NIVÅ 1, 2 OCH 3 GER SAMMA TAL ÄR FORTFARANDE HELA POÄNGEN, men skälet
+ * är nu EXPLICIT i stället för strukturellt: hooken bygger höjden som
+ * `kort × 4 + ränna × 3` i ALLA tre nivåer (se källans "kort × 4 + ränna ×
+ * 3"-stycke) — en tom lista och en full lista delar bounding box exakt,
+ * 488 px, oavsett vilken nivå som mätte den.
  */
-const FALLBACK_RADHOJD = 122;
+const FALLBACK_KORTHOJD = 116;
 
 /**
- * [TASK-309.46] RÄNNAN MELLAN KORTEN, i px — radens transparenta
- * `border-bottom` (`border-b-8`).
+ * [TASK-309.48] RÄNNAN MELLAN KORTEN, i px — radens `margin-top`
+ * (`mt-(--mm-dokumentlista-ranna) first:mt-0`), buren av komponent-token
+ * `--mm-dokumentlista-ranna` (`components.css`).
  *
- * DUPLICERAS MEDVETET, samma disciplin som `FALLBACK_RADHOJD` ovan. Hookens
- * NIVÅ 1 och 2 DRAR BORT den sista mätta radens ränna ur låset
- * (`separatorBredd` läser `border-bottom-width`): fyra radhöjder innehåller
- * fyra rännor, men bara TRE ligger mellan rader. En assertion mot
- * `radhöjd × 4` UTAN avdrag kodar därför den form som gällde när rännan var
- * en padding och separatorn 0 px — den var sann av en slump, inte av regeln.
+ * VÄRDET ÄR OFÖRÄNDRAT (8 px) SEDAN TASK-309.46 — FORMEN ÄR DET INTE. Fram
+ * till TASK-309.48 var rännan en `border-bottom` PÅ VARJE rad, och hookens
+ * NIVÅ 1/2 DROG BORT den sista mätta radens EGEN ränna ur låset. Sedan
+ * rännan blev en marginal MELLAN raderna lägger hooken i stället TILLBAKA
+ * den, explicit, i alla tre nivåer: `kort × 4 + ränna × 3`. En assertion
+ * mot `radhöjd × 4` UTAN detta tillägg kodar den gamla formen — den var
+ * sann bara så länge rännan satt PÅ den mätta raden.
  *
- * Talet står här så att en ändring av rännan fäller testerna i stället för
- * att tyst göra dem till tautologier.
+ * DUPLICERAS MEDVETET, samma disciplin som `FALLBACK_KORTHOJD` ovan. Talet
+ * står här så att en ändring av rännan fäller testerna i stället för att
+ * tyst göra dem till tautologier.
  */
 const RANNA = 8;
 
 /**
- * [TASK-309.46] ÖVRE TOLERANS FÖR NIVÅ 3:s HÖJD — 2 px, inte 8.
+ * [TASK-309.46, oförändrad efter TASK-309.48] ÖVRE TOLERANS FÖR NIVÅ 3:s
+ * HÖJD — 2 px, inte 8.
  *
- * SKÄRPT PÅ EN NEGATIV KONTROLL, inte på en känsla. Bandet var
- * `FALLBACK × 4 + 8`, valt när "fel svar" låg långt utanför det. Sedan
- * TASK-309.46 är det NÄRMASTE felsvaret exakt EN RÄNNA fel (konstanten 124 i
- * stället för 122 ⇒ 496 i stället för 488), alltså precis 8 px — och den
- * gamla toleransen SVALDE det: en isolerad kontroll som satte tillbaka 124
- * lämnade testet GRÖNT.
- *
- * `<ul>` bär ingen kant (mätt), så `kantjustering` är 0 och den uppmätta
- * höjden är exakt 488 vid både 1280 och 390 px. 2 px räcker för sub-pixel-brus
- * och utesluter ränn-felet. Vidga inte bandet igen utan att först fråga vilket
- * felsvar som då släpps in.
+ * SKÄRPT PÅ EN NEGATIV KONTROLL, inte på en känsla. Det NÄRMASTE tänkbara
+ * felsvaret sedan TASK-309.48 är STÖRRE än förut, inte mindre: en agent som
+ * av misstag lämnar konstanten på det GAMLA värdet (122, "kort × 4 + ränna
+ * × 3" = 122×4+24 = **512**) missar med 24 px, inte 8. 2 px räcker
+ * fortfarande gott för sub-pixel-brus och utesluter varje sådant fel —
+ * vidga inte bandet utan att först fråga vilket felsvar som då släpps in.
  */
 const TOLERANS = 2;
 
@@ -354,34 +363,29 @@ async function mataGeometri(page: Page) {
  */
 /**
  * ═══ [TASK-309.46] EXAKT FYRA RADER — DEN KRITISKA GRÄNSEN, OMFORMULERAD ═══
+ * (historik — SUPERSEDED av TASK-309.48 nedan, kvar för spårbarhet)
  *
- * Här stod `expect(scrollHeight).toBe(clientHeight)` med kommentaren *"AC #5
- * fäller här på 1 px-scroll. Ingen tolerans."* Den formen var rätt så länge
- * rännan var en PADDING: fyra rader mätte då 496 px innehåll i en 496 px låst
- * box, och varje avvikelse betydde att något klipptes.
+ * Ursprungsformen (`expect(scrollHeight).toBe(clientHeight)`) höll så länge
+ * rännan var en PADDING. Sedan rännan blev en transparent `border-bottom`
+ * (309.46) höll den INTE LÄNGRE: fyra rader mätte 496 px innehåll i en
+ * 488 px box — 8 px övermått som var den sista radens EGEN, ineliminerbara
+ * ränna. Invarianten skrevs då om till tre påståenden i stället för ett rakt
+ * likhetstecken (se `provaKortkanter` för klippkant-halvan).
  *
- * SEDAN RÄNNAN BLEV EN TRANSPARENT `border-bottom` GÄLLER DET INTE LÄNGRE, och
- * det är MED AVSIKT: låset EXKLUDERAR fjärde radens ränna (det är hela skälet
- * spåret nu börjar vid kortet och slutar vid kortet), medan rännan fortfarande
- * ligger kvar i innehållet. Fyra rader mäter alltså 496 px innehåll i en
- * 488 px box — 8 px övermått som ÄR den transparenta rännan, inget annat.
+ * ═══ [TASK-309.48, 2026-09-08] ÖVERMÅTTET ÄR BORTA — LIKHETEN ÄR TILLBAKA ═══
  *
- * DET GAMLA TESTET SKULLE ALLTSÅ FÄLLA PÅ EN KORREKT APP. Men att bara ta bort
- * det vore att tappa gränsfallet, så invarianten skrivs i stället UT — och blir
- * strängare än den var, inte mildare. Tre påståenden i stället för ett:
+ * Rännan är sedan denna skiva en `margin-top` MELLAN raderna, aldrig EFTER
+ * den sista. Det finns därför inget kvar att räkna som "övermått": vid
+ * EXAKT fyra rader mäter innehållet `4 × kort + 3 × ränna` = samma tal som
+ * låset (`488`), och `scrollHeight === clientHeight` håller ÅTERIGEN — inte
+ * som tur, utan som en direkt konsekvens av att rännan inte längre bor i
+ * NÅGON rads egen box. UPPMÄTT (Playwright, ej gissat): `scrollHeight` 488,
+ * `clientHeight` 488, vid exakt fyra bilagor.
  *
- *   1. LISTAN KAN INTE RULLAS. `overflow-y` är `hidden` vid fyra rader
- *      (`kanRulla` är falskt), så ingen scrollbar visas och ingenting går att
- *      rulla bort. Det är den EGENSKAP AC #5 handlade om.
- *   2. ÖVERMÅTTET ÄR EXAKT EN RÄNNA. `scrollHeight − clientHeight === RANNA`
- *      pinnar både talet och dess orsak. Blir det 9 px, eller 0, har något i
- *      ränn-geometrin ändrats och testet fäller.
- *   3. INGENTING SYNLIGT KLIPPS. `provaKortkanter` (fjärde kortet helt innanför
- *      kanten) plus att det inte finns något femte kort.
- *
- * En regression som klipper ett halvt kort fälls fortfarande av (3), en som
- * gör listan rullbar vid fyra rader av (1), och en som råkar lägga en HEL
- * extra rad i innehållet av (2).
+ * `provaExaktFyraRader` behåller ändå ALLA TRE påståendena (inte bara
+ * likheten) — regel 3 (`overflow-y: hidden`) och kort-kant-invarianten
+ * (`provaKortkanter`) är ORÖRDA av denna skiva och fäller fortfarande sina
+ * egna regressionsklasser.
  */
 /**
  * [TASK-309.47] RULLNINGSSKUGGANS COMPUTED STYLE — den bor i `<ul>::after`.
@@ -397,10 +401,13 @@ async function mataGeometri(page: Page) {
  * rundade övre hörn igenom oskuggat — en vit kil. Inuti `<ul>` finns bara EN
  * kurva, och skuggan behöver ingen egen.
  *
- * `display` ÄR SIGNALEN att skuggan visas: `block` när den ska synas, `none`
- * när `data-vid-botten` står. Renderas den inte alls (listan rullar inte) har
- * pseudo-elementet ingen `content` och `display` faller till `inline` — det
- * är webbläsarens default för ett tomt `::after`, inte en synlig skugga.
+ * [TASK-309.48] `display` ÄR FORTFARANDE SIGNALEN att pseudo-elementet
+ * EXISTERAR (`block` när `kanRulla`, `inline`/`none content` annars) — men
+ * SYNLIGHETEN inom det är sedan denna skiva KONTINUERLIG, buren av
+ * `opacity` (`--skugg-op`, läst via `efter.opacity` nedan), inte längre av
+ * `data-vid-botten`/`display: none`. `mixBlendMode` läses HÄR eftersom det
+ * är den mekaniska signalen för att skrimmet är brickans EGEN ton blandad
+ * med `darken`, inte en opak/halvgenomskinlig platta.
  */
 async function matSkugga(page: Page) {
   return page.getByTestId('dokument-lista').evaluate((ul) => {
@@ -413,7 +420,7 @@ async function matSkugga(page: Page) {
       //
       // MÄTT, inte antaget (probe i denna rigg): Tailwind v4:s `after:`-variant
       // injicerar SJÄLV `content: var(--tw-content)` med `""` som default. Ett
-      // element med bara `after:block after:h-6` rapporterar alltså
+      // element med bara `after:block after:h-8` rapporterar alltså
       // `content: '""'` — precis som ett med `after:content-['']`. Utan NÅGON
       // `after:`-klass rapporteras `content: 'none'`.
       //
@@ -431,12 +438,13 @@ async function matSkugga(page: Page) {
       pointerEvents: efter.pointerEvents,
       bakgrundsbild: efter.backgroundImage,
       bakgrundsfarg: efter.backgroundColor,
+      mixBlend: efter.mixBlendMode,
+      opacitet: efter.opacity,
       // Bredden är STRUKTURELL: ett pseudo-element i block-flöde får
       // content-boxens bredd, och rullningsrännan ligger utanför den.
       ulClientWidth: ul.clientWidth,
       kortBredd: kort ? Math.round(kort.getBoundingClientRect().width) : null,
       ulBottom: Math.round(ul.getBoundingClientRect().bottom * 100) / 100,
-      vidBotten: ul.getAttribute('data-vid-botten'),
     };
   });
 }
@@ -445,10 +453,12 @@ function provaExaktFyraRader(g: Awaited<ReturnType<typeof mataGeometri>>) {
   expect(g.antalKort, 'exakt fyra kort').toBe(4);
   expect(g.femteKortTop, 'inget femte kort att klippa').toBeNull();
   expect(g.overflowY, 'vid fyra rader ska listan inte kunna rullas alls').toBe('hidden');
+  // [TASK-309.48] LIKHETEN ÄR TILLBAKA — se docblocket ovan för varför
+  // 309.46:s "övermåttet är exakt en ränna"-form inte längre gäller.
   expect(
-    g.scrollHeight - g.clientHeight,
-    `övermåttet ska vara EXAKT fjärde radens transparenta ränna — mätt ${g.scrollHeight} − ${g.clientHeight}`,
-  ).toBe(RANNA);
+    g.scrollHeight,
+    `scrollHeight (${g.scrollHeight}) ska vara EXAKT clientHeight (${g.clientHeight}) vid fyra rader — ingen ränna kvar att räkna som övermått`,
+  ).toBe(g.clientHeight);
   provaKortkanter(g);
 }
 
@@ -483,8 +493,8 @@ test.describe('DokumentLista (eventläge) — låst fyra-radershöjd, nu UTAN fi
     // BEVISAR LÅSNING, inte bara "ingen scroll": höjden ska vara fyra raders
     // spann, inte innehållets naturliga.
     const maxRadhojd = Math.max(...fyra.radHojder);
-    expect(fyra.hojd).toBeGreaterThanOrEqual(maxRadhojd * 4 - RANNA - 2);
-    expect(fyra.hojd).toBeLessThanOrEqual(maxRadhojd * 4 - RANNA + 4);
+    expect(fyra.hojd).toBeGreaterThanOrEqual(maxRadhojd * 4 + RANNA * 3 - 2);
+    expect(fyra.hojd).toBeLessThanOrEqual(maxRadhojd * 4 + RANNA * 3 + 4);
   });
 
   test('AC #1/#2: sju bilagor delar EXAKT samma låsta bounding box som fyra; scrollbart; femte kortet helt utanför kanten', async ({
@@ -566,6 +576,16 @@ test.describe('DokumentLista (eventläge) — låst fyra-radershöjd, nu UTAN fi
     // Efter scroll till botten är SISTA kortet (kort 6) helt synligt — hela
     // listan har alltså gått att nå, inte bara de fyra första.
     expect(efterScroll.sistaKortBottom).not.toBeNull();
+    // [TASK-309.48, AC #1/punkt G] SISTA KORTETS UNDERKANT SKA SAMMANFALLA
+    // EXAKT MED `ul`s EGEN underkant vid MAXIMAL rullning — inte bara
+    // "rymmas inom" (den gamla `toBeLessThanOrEqual`-formen, som RÖTT-läget
+    // (border-b-8) också uppfyllde trivialt, eftersom sista kortet där slutar
+    // 8 px OVANFÖR kanten, aldrig vid den). RÖTT mot main: diff = −8 px.
+    // GRÖNT: diff = 0.
+    expect(
+      efterScroll.sistaKortBottom,
+      `sista kortet slutar vid ${efterScroll.sistaKortBottom} px, ul:ets underkant vid ${efterScroll.innehallBottom} px — de ska sammanfalla`,
+    ).toBeGreaterThanOrEqual(efterScroll.innehallBottom - 0.5);
     expect(efterScroll.sistaKortBottom ?? 0).toBeLessThanOrEqual(efterScroll.innehallBottom + 0.5);
   });
 
@@ -576,7 +596,7 @@ test.describe('DokumentLista (eventläge) — låst fyra-radershöjd, nu UTAN fi
     // [T176] Före filterrivningen nåddes detta läge via 'bilaga'-filtret på
     // ett event vars mallar/generatorer ändå fyllde 'alla' — nu är det det
     // ÄRLIGA fallet: eventet har inga bilagor, listan har noll RIKTIGA rader,
-    // och `useLastaListhojd` faller till NIVÅ 3 (`LISTA_FALLBACK_RADHOJD`).
+    // och `useLastaListhojd` faller till NIVÅ 3 (`LISTA_FALLBACK_KORTHOJD`).
     network.use(hojdlasHandler(0, 0));
     await gotoEventlage(page);
     await expect(page.getByText('Inga bilagor för det här eventet än.')).toBeVisible();
@@ -588,8 +608,8 @@ test.describe('DokumentLista (eventläge) — låst fyra-radershöjd, nu UTAN fi
     // disciplin som `GemensamtLage`-sviten nedan.
     expect(tomt.scrollHeight).toBe(tomt.clientHeight);
     expect(tomt.antalKort).toBe(0);
-    expect(tomt.hojd).toBeGreaterThanOrEqual(FALLBACK_RADHOJD * 4);
-    expect(tomt.hojd).toBeLessThanOrEqual(FALLBACK_RADHOJD * 4 + TOLERANS);
+    expect(tomt.hojd).toBeGreaterThanOrEqual(FALLBACK_KORTHOJD * 4 + RANNA * 3);
+    expect(tomt.hojd).toBeLessThanOrEqual(FALLBACK_KORTHOJD * 4 + RANNA * 3 + TOLERANS);
     await expect(page.getByTestId('dokument-lista')).not.toHaveAttribute('tabindex', '0');
   });
 
@@ -632,7 +652,7 @@ test.describe('DokumentLista (eventläge) — låst fyra-radershöjd, nu UTAN fi
     expect(resultat.violations).toEqual([]);
   });
 
-  test('T176: uttoningen syns när listan rullar, försvinner vid botten, och finns aldrig när den inte rullar', async ({
+  test('T176/TASK-309.48: uttoningen syns när listan rullar, tonar (INTE släcks) mot botten, och finns aldrig när den inte rullar', async ({
     page,
     network,
   }) => {
@@ -655,19 +675,76 @@ test.describe('DokumentLista (eventläge) — låst fyra-radershöjd, nu UTAN fi
     expect(synlig.position, 'sticky är det som håller den vid scrollportens kant').toBe('sticky');
     expect(synlig.bottom).toBe('0px');
     expect(synlig.pointerEvents).toBe('none');
+    expect(synlig.mixBlend, 'brickans ton blandas med darken, inte en opak platta').toBe('darken');
+    // I VILA (gott om rullväg kvar) ska bandet vara FULLT synligt — AC #4.
+    expect(Number(synlig.opacitet), `--skugg-op ska vara 1 i vila, var ${synlig.opacitet}`).toBe(1);
     // Barnräkningen: sex `<li>`, inget mer — pseudo-elementet syns inte här.
     await expect(page.getByTestId('dokument-lista').locator('> li')).toHaveCount(6);
-    await expect(page.getByTestId('dokument-lista')).not.toHaveAttribute('data-vid-botten', '');
+
+    // [TASK-309.48] TONAR, SLÄCKS INTE: vid MAXIMAL rullning ska `--skugg-op`
+    // gå mot 0 — INTE `display: none`/`data-vid-botten`, som är rivna.
+    await page.getByTestId('dokument-lista').evaluate((ul) => {
+      ul.scrollTo({ top: ul.scrollHeight });
+    });
+    await expect
+      .poll(async () => Number((await matSkugga(page)).opacitet), {
+        message: 'skuggan ska tona till 0 vid botten, INTE släckas binärt',
+      })
+      .toBeLessThanOrEqual(0.01);
+    // Bandet är FORTFARANDE `display: block` vid botten — det är opaciteten,
+    // inte pseudo-elementets existens, som bär signalen nu.
+    expect((await matSkugga(page)).display, 'display förblir block — bara opaciteten ändras').toBe(
+      'block',
+    );
+  });
+
+  /**
+   * [TASK-309.48, AC #4] `--skugg-op` FÖLJER RULLPOSITIONEN KONTINUERLIGT —
+   * bevisat vid TRE punkter (1 i vila, ~0,5 vid halva bandhöjden kvar, 0 vid
+   * botten), inte bara vid ändpunkterna. Formeln (`DokumentListRam`s
+   * `onScroll`): `clamp((scrollHeight − clientHeight − scrollTop) /
+   * SKUGG_BANDHOJD_PX, 0, 1)`, SKUGG_BANDHOJD_PX = 32 (`after:h-8`).
+   */
+  test('AC #4: --skugg-op är 1 i vila, ~0,5 vid halva bandhöjden kvar, 0 vid botten', async ({
+    page,
+    network,
+  }) => {
+    network.use(hojdlasHandler(6, 0));
+    await gotoEventlage(page);
+    await expect(page.getByText('Bilaga 1.pdf')).toBeVisible();
+
+    const BAND = 32;
+    const lasKvarOchOp = () =>
+      page.getByTestId('dokument-lista').evaluate((ul) => {
+        const kvar = ul.scrollHeight - ul.clientHeight - ul.scrollTop;
+        return { kvar, op: Number(getComputedStyle(ul, '::after').opacity) };
+      });
+
+    const vila = await lasKvarOchOp();
+    expect(vila.kvar, 'testet kräver gott om rullväg kvar i vila').toBeGreaterThan(BAND);
+    expect(vila.op, `vila: kvar ${vila.kvar}px, op ${vila.op}`).toBe(1);
+
+    // Rulla så att EXAKT halva bandhöjden återstår. `scrollTop` triggar
+    // `scroll`-eventet ASYNKRONT (nästa ram) — `onScroll`-handlern som
+    // skriver `--skugg-op` hinner alltså inte köra förrän efter denna
+    // `evaluate` returnerar, så mätningen pollar i stället för att läsa
+    // direkt (samma mönster som botten-steget nedan).
+    await page.getByTestId('dokument-lista').evaluate((ul, band) => {
+      const maxScroll = ul.scrollHeight - ul.clientHeight;
+      ul.scrollTop = maxScroll - band / 2;
+    }, BAND);
+    await expect
+      .poll(async () => (await lasKvarOchOp()).op, {
+        message: 'halva bandhöjden kvar ska ge ~0,5 opacitet',
+      })
+      .toBeCloseTo(0.5, 1);
 
     await page.getByTestId('dokument-lista').evaluate((ul) => {
       ul.scrollTo({ top: ul.scrollHeight });
     });
-    await expect(page.getByTestId('dokument-lista')).toHaveAttribute('data-vid-botten', '');
     await expect
-      .poll(async () => (await matSkugga(page)).display, {
-        message: 'skuggan ska släckas när man rullat hela vägen ner',
-      })
-      .toBe('none');
+      .poll(async () => (await lasKvarOchOp()).op, { message: 'botten ska ge 0 opacitet' })
+      .toBeLessThanOrEqual(0.01);
   });
 
   test('T176: EXAKT fyra rader bär INGEN uttoning (listan rullar inte)', async ({
@@ -690,17 +767,21 @@ test.describe('DokumentLista (eventläge) — låst fyra-radershöjd, nu UTAN fi
   /**
    * [TASK-309.47] `prefers-contrast: more` — SKRIM BYTS MOT LIST, oförändrat.
    *
-   * Ett 6 %-skrim är per definition låg kontrast, och en användare som bett om
-   * hög kontrast har bett bort just den signalklassen. Formen har därför alltid
-   * varit "4 px solid `border-strong` i stället för gradient" — och den skulle
-   * kunna falla bort tyst när skuggan flyttar från ett `<span>` till ett
-   * `::after`, eftersom varje `contrast-more:`-klass måste skrivas om till
-   * `contrast-more:after:`.
+   * Ett skrim (oavsett om det är `--mm-state-hover` eller — sedan TASK-309.48
+   * — brickans egen ton via `darken`) är per definition låg kontrast, och en
+   * användare som bett om hög kontrast har bett bort just den signalklassen.
+   * Formen har därför alltid varit "4 px solid `border-strong` i stället för
+   * gradient" — och den skulle kunna falla bort tyst när skuggan flyttar
+   * mellan bärare, eftersom varje `contrast-more:`-klass måste skrivas om.
+   *
+   * [TASK-309.48] `contrast-more:after:mix-blend-normal` ÄR NY: utan den
+   * skulle en redan mörk `border-strong`-list blandas med `darken` mot en
+   * ännu mörkare bricka i stället för att stå som sin egna, orörda kulör.
    *
    * Tonen läses ur en LEVANDE token-probe, inte hårdkodad: en medveten
    * token-ändring ska inte fälla testet som om den vore en bugg.
    */
-  test('TASK-309.47: prefers-contrast: more ger en solid list utan gradient', async ({
+  test('TASK-309.47/.48: prefers-contrast: more ger en solid list utan gradient eller blandning', async ({
     page,
     network,
   }) => {
@@ -721,9 +802,13 @@ test.describe('DokumentLista (eventläge) — låst fyra-radershöjd, nu UTAN fi
     const skugga = await matSkugga(page);
     expect(skugga.content, 'signalen renderas faktiskt').not.toBe('none');
     expect(skugga.display, 'signalen finns kvar i hög kontrast').toBe('block');
-    expect(skugga.hojd, 'en 4 px list, inte ett 24 px skrim').toBe('4px');
+    expect(skugga.hojd, 'en 4 px list, inte ett 32 px skrim').toBe('4px');
     expect(skugga.bakgrundsbild, 'ingen gradient under prefers-contrast: more').toBe('none');
     expect(skugga.bakgrundsfarg, 'listen bär --mm-border-strong').toBe(stark);
+    expect(
+      skugga.mixBlend,
+      'darken-blandningen ska vara riven under prefers-contrast: more — listen ska stå orörd',
+    ).toBe('normal');
   });
 });
 
@@ -899,13 +984,16 @@ test.describe('TASK-309.43:s beteenden — hover-ton, reserverad ränna, skuggan
    * då stack en vit remsa av det klippta kortet ut under skuggans rundade hörn,
    * med rak kant tvärs över ett i övrigt runt kort.
    *
-   * Rännan ligger sedan TASK-309.46 som en transparent `border-bottom` på
-   * raden, och hooken drar bort den fjärde radens ur låset, så de tre
-   * kanterna är samma tal. (Mellansteget 309.45 nådde samma underkant med
+   * Rännan låg TASK-309.46–TASK-309.48 som en transparent `border-bottom` på
+   * raden, och hooken drog bort den fjärde radens ur låset, så de tre
+   * kanterna var samma tal. (Mellansteget 309.45 nådde samma underkant med
    * `pt-2` + `-mt-2`; det som ändrades i 309.46 var `<ul>`:ets ÖVERkant —
-   * se spår-testet nedan.) Assertionen låser just det: inte "skuggan finns"
-   * (det prövas ovan) utan att de tre sammanfaller, vilket är det enda som gör
-   * klippningen osynlig.
+   * se spår-testet nedan.) SEDAN TASK-309.48 är rännan i stället en
+   * `margin-top` MELLAN raderna, och fjärde kortets EGEN box bär aldrig
+   * någon ränna alls (varken före eller efter) — samma tre-kanters-likhet
+   * håller, nu utan att något behöver dras av. Assertionen låser just det:
+   * inte "skuggan finns" (det prövas ovan) utan att de tre sammanfaller,
+   * vilket är det enda som gör klippningen osynlig.
    *
    * `<ul>` bär dessutom `rounded-2xl` så klippningen följer KORTETS radie i
    * stället för att vara rak — utan den hade fixen bytt en vit remsa mot ett
@@ -969,6 +1057,7 @@ test.describe('TASK-309.43:s beteenden — hover-ton, reserverad ränna, skuggan
 
   /**
    * [TASK-309.46] RULLNINGSLISTENS SPÅR BÖRJAR VID FÖRSTA KORTET.
+   * (historik — RÄNNANS BÄRARE är SUPERSEDED av TASK-309.48, se nedan)
    *
    * Marcus prod-titt 2026-08-30: *"scrollbaren … börjar för högt upp, den bör
    * ju börja vid kortet precis."* Mätt i prod före fixen: `ul.top` 303 mot
@@ -980,8 +1069,15 @@ test.describe('TASK-309.43:s beteenden — hover-ton, reserverad ränna, skuggan
    * början — mät den, så är frågan besvarad utan att bero på en tumme.
    *
    * ORSAKEN VAR EN BOXMODELL-DETALJ: rännan låg som `padding-top` på raden,
-   * alltså INNANFÖR padding-boxen, även ovanför första kortet. Som transparent
-   * `border-bottom` ligger den utanför. Samma 8 px, andra sidan av kanten.
+   * alltså INNANFÖR padding-boxen, även ovanför första kortet. TASK-309.46
+   * flyttade den till en `border-bottom` (utanför padding-boxen, men INUTI
+   * varje rads egen box — se `LISTA_FALLBACK_KORTHOJD`s docblock för vad det
+   * kostade vid SISTA kortet). TASK-309.48 flyttar den EN gång till: en
+   * `margin-top` på VARJE rad UTOM DEN FÖRSTA. Första kortets ovansida har
+   * därmed ALDRIG någon ränna framför sig — varken som padding, border eller
+   * marginal — och spåret börjar vid den av samma skäl som förut, fast nu
+   * PÅ RÄTT SIDA om ett helt annat problem (se `provaExaktFyraRader`s
+   * docblock för sista-kortet-halvan).
    *
    * TILLSAMMANS MED testet ovan (underkanterna sammanfaller) låser de två
    * assertionerna HELA spåret: det börjar vid första kortets överkant och
@@ -1001,14 +1097,24 @@ test.describe('TASK-309.43:s beteenden — hover-ton, reserverad ränna, skuggan
       if (!ul) return null;
       const kort1 = ul.querySelector('[data-testid="dokument-fil"]');
       const li1 = ul.firstElementChild;
-      const cs = li1 ? getComputedStyle(li1) : null;
+      const li2 = li1?.nextElementSibling ?? null;
+      const cs1 = li1 ? getComputedStyle(li1) : null;
+      const cs2 = li2 ? getComputedStyle(li2) : null;
       return {
         ulTop: rund(ul.getBoundingClientRect().top),
         kort1Top: kort1 ? rund(kort1.getBoundingClientRect().top) : null,
-        // Rännan SKA vara en border, inte en padding — annars ligger den
-        // innanför padding-boxen igen nästa gång någon "städar".
-        liPaddingTop: cs ? cs.paddingTop : null,
-        liBorderBottom: cs ? cs.borderBottomWidth : null,
+        // [TASK-309.48] Rännan SKA vara en marginal, inte en padding ELLER en
+        // border — annars ligger den antingen innanför padding-boxen igen
+        // (padding) eller inuti en rads egen box igen (border, 309.46:s form,
+        // som gav sista kortet en icke-eliminerbar 8 px ränna i sin egen
+        // scrollHeight-bidrag).
+        li1PaddingTop: cs1 ? cs1.paddingTop : null,
+        li1BorderBottom: cs1 ? cs1.borderBottomWidth : null,
+        // FÖRSTA radens marginal ska vara NOLL (`first:mt-0`) — annars läggs
+        // en ränna FÖRE första kortet, och spåret börjar för högt igen.
+        li1MarginTop: cs1 ? cs1.marginTop : null,
+        // ANDRA radens marginal bär rännan — det är HÄR den ska bo.
+        li2MarginTop: cs2 ? cs2.marginTop : null,
       };
     });
 
@@ -1018,10 +1124,18 @@ test.describe('TASK-309.43:s beteenden — hover-ton, reserverad ränna, skuggan
       Math.abs((topp?.ulTop ?? 0) - (topp?.kort1Top ?? 0)),
       `spåret börjar vid ${topp?.ulTop} px, första kortet vid ${topp?.kort1Top} px`,
     ).toBeLessThanOrEqual(1);
-    expect(topp?.liPaddingTop, 'rännan får inte ligga som padding — då hamnar den i spåret').toBe(
+    expect(topp?.li1PaddingTop, 'rännan får inte ligga som padding — då hamnar den i spåret').toBe(
       '0px',
     );
-    expect(Number.parseFloat(topp?.liBorderBottom ?? '0')).toBeGreaterThan(0);
+    expect(
+      topp?.li1BorderBottom,
+      'rännan får inte ligga som border längre — 309.46:s form gav sista kortet en icke-eliminerbar ränna',
+    ).toBe('0px');
+    expect(topp?.li1MarginTop, 'första radens marginal ska vara 0 (first:mt-0)').toBe('0px');
+    expect(
+      Number.parseFloat(topp?.li2MarginTop ?? '0'),
+      'andra radens marginal ska BÄRA rännan',
+    ).toBe(RANNA);
   });
 });
 
@@ -1037,19 +1151,19 @@ test.describe('GemensamtLage (räckviddsläge) — samma regel (tidigare saknad,
     const geometri = await mataGeometri(page);
     // Regel 2 (runda 2): höjden är ALLTID låst, även vid 0 rader — INGEN
     // riktig rad finns att mäta, så `useLastaListhojd` faller till NIVÅ 3
-    // (`LISTA_FALLBACK_RADHOJD_DESKTOP`, `DokumentYta.tsx`). Talet
+    // (`LISTA_FALLBACK_KORTHOJD_DESKTOP`, `DokumentYta.tsx`). Talet
     // DUPLICERAS här medvetet (samma 2026-08-26-mätning som källans egen
     // docblock) — se filhuvudets TÄCKNING-stycke. `overflow-y-hidden`
     // (regel 3, ≤ 4) gör `scrollHeight === clientHeight` trivialt sant
     // OAVSETT låsning, så den ENSAM bevisar ingenting — höjdvärdet gör.
     expect(geometri.scrollHeight).toBe(geometri.clientHeight);
     expect(geometri.antalKort).toBe(0);
-    expect(geometri.hojd).toBeGreaterThanOrEqual(FALLBACK_RADHOJD * 4);
+    expect(geometri.hojd).toBeGreaterThanOrEqual(FALLBACK_KORTHOJD * 4 + RANNA * 3);
     // Övre gräns generös (kantjustering + typsnitt/webbläsar-brus) — ändå
     // långt under vad en NATURLIG (o-låst) tomt-lägesrad hade mätt (en
     // enda `py-3`-textrad, typiskt < 60 px), vilket är den regression
     // denna gräns skulle fånga.
-    expect(geometri.hojd).toBeLessThanOrEqual(FALLBACK_RADHOJD * 4 + TOLERANS);
+    expect(geometri.hojd).toBeLessThanOrEqual(FALLBACK_KORTHOJD * 4 + RANNA * 3 + TOLERANS);
     await expect(page.getByTestId('dokument-lista')).not.toHaveAttribute('tabindex', '0');
 
     const resultat = await new AxeBuilder({ page })
@@ -1074,8 +1188,8 @@ test.describe('GemensamtLage (räckviddsläge) — samma regel (tidigare saknad,
     // (NIVÅ 2, ESTIMAT — `useLastaListhojd`s `Math.max`, trivialt en enda
     // rad här), inte ~1 × (radens naturliga, o-låsta höjd).
     const maxRadhojd = Math.max(...en.radHojder);
-    expect(en.hojd).toBeGreaterThanOrEqual(maxRadhojd * 4 - RANNA);
-    expect(en.hojd).toBeLessThanOrEqual(maxRadhojd * 4 - RANNA + 8);
+    expect(en.hojd).toBeGreaterThanOrEqual(maxRadhojd * 4 + RANNA * 3);
+    expect(en.hojd).toBeLessThanOrEqual(maxRadhojd * 4 + RANNA * 3 + 8);
   });
 
   // EGET test, INTE en fortsättning av ovanstående via `page.reload()` —
@@ -1092,8 +1206,8 @@ test.describe('GemensamtLage (räckviddsläge) — samma regel (tidigare saknad,
     expect(tre.scrollHeight).toBe(tre.clientHeight);
     expect(tre.antalKort).toBe(3);
     const maxRadhojd = Math.max(...tre.radHojder);
-    expect(tre.hojd).toBeGreaterThanOrEqual(maxRadhojd * 4 - RANNA);
-    expect(tre.hojd).toBeLessThanOrEqual(maxRadhojd * 4 - RANNA + 8);
+    expect(tre.hojd).toBeGreaterThanOrEqual(maxRadhojd * 4 + RANNA * 3);
+    expect(tre.hojd).toBeLessThanOrEqual(maxRadhojd * 4 + RANNA * 3 + 8);
   });
 
   test('AC #2/#5: exakt 4 rader — scrollHeight === clientHeight, inget femte kort, inget tabb-stopp (den kritiska gränsen)', async ({
@@ -1142,6 +1256,130 @@ test.describe('GemensamtLage (räckviddsläge) — samma regel (tidigare saknad,
     expect(sex.hojd).toBe(fem.hojd);
     expect(sex.scrollHeight).toBeGreaterThan(sex.clientHeight);
     provaKortkanter(sex);
+  });
+
+  /**
+   * [TASK-309.48, AC #4] `--skugg-op` RÄKNAS OM VID ÄNDRAT RADANTAL ÄVEN
+   * NÄR VARKEN `kanRulla` ELLER `matadHojd` ÄNDRAS — OCH ÄVEN NÄR INGET
+   * NATIVT `scroll`-EVENT FÅR HJÄLP AV WEBBLÄSARENS EGEN KLAMPNING.
+   *
+   * Både 5 och 6 rader är `>= LISTA_SYNLIGA_RADER` (NIVÅ 1, samma 488 px-lås)
+   * och båda gör `kanRulla` sant — `DokumentListRam`s `useLayoutEffect`
+   * (keyad på just de två) triggar DÄRFÖR INTE om av en uppladdning som går
+   * 5 → 6, trots att `scrollHeight` (mer innehåll) FAKTISKT ändras.
+   *
+   * VARFÖR EN RADERING (5 → 4 eller 6 → 5) INTE DUGER SOM TEST: en rad är
+   * 124 px, bandet bara 32 — att TA BORT en rad medan man står nära botten
+   * TVINGAR i praktiken webbläsaren att klampa `scrollTop` till det nya,
+   * mindre maxvärdet, vilket AVFYRAR ett nativt `scroll`-event som `onScroll`
+   * redan lyssnar på. Ett sådant test blir grönt ÄVEN UTAN
+   * `MutationObserver`:n (skarpt prövat: `mo.observe(...)`-raderna borttagna
+   * gav ändå grönt via klampningens scroll-event) — det bevisar alltså
+   * INGENTING om just den mekanismen.
+   *
+   * EN UPPLADDNING KLAMPAR ALDRIG: att växa `scrollHeight` kräver aldrig att
+   * `scrollTop` justeras (det gamla värdet är fortfarande giltigt), så INGET
+   * nativt `scroll`-event avfyras. Scenariot: rulla till botten vid 5 rader
+   * (kvar = 0, op → 0), ladda upp en SJÄTTE rad UTAN att röra rullpositionen.
+   * Mer innehåll finns nu under den oförändrade `scrollTop`:n — `--skugg-op`
+   * SKA visa bandet igen. Skarpt differentialprövat: RÖTT (op stannar på 0)
+   * med `MutationObserver`:n avstängd, GRÖNT med den på — se `DokumentListRam`s
+   * docblock.
+   */
+  test('AC #4 gränsfall: --skugg-op räknas om vid en uppladdning 5 → 6, UTAN att något scroll-event avfyras', async ({
+    page,
+    network,
+  }) => {
+    // [MÄTT, INTE ANTAGET] En scrollposition EXAKT vid botten dög INTE som
+    // testpunkt: Chromiums scroll anchoring (default på) flyttade `scrollTop`
+    // till den NYA botten med ett RIKTIGT `scroll`-event så fort en rad
+    // lades till, vilket lät `onScroll` städa upp åt en även UTAN
+    // `MutationObserver`:n — ett test byggt på det scenariot bevisar därför
+    // ingenting om just den mekanismen (skarpt uppmätt under byggandet av
+    // detta test: `scrollLog` fångade ett äkta `scroll`-event, `scrollTop`
+    // hamnade prick på den nya `scrollHeight − clientHeight`).
+    //
+    // EN MITT-I-LISTAN-POSITION UNDANVIKER DET: raden läggs till EFTER allt
+    // synligt innehåll, så ingenting FLYTTAR SIG i viewporten — scroll
+    // anchorings hela syfte (att inte störa det som redan syns) ger då
+    // INGET skäl att röra `scrollTop`. Testet verifierar det direkt: en
+    // `scroll`-lyssnare läggs på INNAN uppladdningen och ska förbli TOM.
+    network.use(gransfallHandler(5, 6));
+    network.use(http.post(EF('upload-attachment'), () => json({ attachment: gemensamBilaga(6) })));
+
+    await gotoRackviddslage(page);
+    await expect(page.getByText('Delad 5.pdf')).toBeVisible();
+
+    const lista = page.getByTestId('dokument-lista');
+    // 5 rader låst NIVÅ 1: scrollHeight 612 (5×116+4×8), clientHeight 488,
+    // maxScroll 124. `scrollTop` sätts till 20 px FRÅN botten (inte 0, inte
+    // maxScroll) — gott om marginal mot både toppen och botten, så att
+    // varken en klampning eller en gräns-effekt kan förklara en förändring.
+    const fore = await lista.evaluate((ul) => {
+      ul.scrollTop = ul.scrollHeight - ul.clientHeight - 20;
+      return {
+        scrollTop: ul.scrollTop,
+        kvar: ul.scrollHeight - ul.clientHeight - ul.scrollTop,
+      };
+    });
+    expect(fore.kvar, 'testet kräver en position INOM uttoningsbandet (< 32 px kvar)').toBeLessThan(
+      32,
+    );
+    // POLLAD, INTE LÄST DIREKT: att sätta `scrollTop` programmatiskt avfyrar
+    // `scroll`-eventet ASYNKRONT (nästa ram) — samma race som AC #4:s första
+    // test (se dess kommentar). En direkt läsning här är racy och kan råka
+    // fånga värdet FÖRE `onScroll` hunnit skriva det nya.
+    await expect
+      .poll(async () => lista.evaluate((ul) => Number(getComputedStyle(ul, '::after').opacity)), {
+        message: 'op ska hinna räknas om till det DELVIS-värde scrollpositionen ger',
+      })
+      .toBeCloseTo(fore.kvar / 32, 2);
+
+    // Scroll-vakten sätts EFTER positioneringen ovan (annars fångar den
+    // det egna `scrollTop`-satt).
+    await lista.evaluate((ul) => {
+      const w = window as unknown as { __scrollFired: boolean };
+      w.__scrollFired = false;
+      ul.addEventListener('scroll', () => {
+        w.__scrollFired = true;
+      });
+    });
+
+    // Samma FileTrigger-väg som NIVÅ 2 → NIVÅ 1-testet ovan.
+    await page
+      .getByTestId('ladda-upp-ny-fil')
+      .locator('input[type="file"]')
+      .setInputFiles({
+        name: 'Ny.pdf',
+        mimeType: 'application/pdf',
+        buffer: Buffer.from('%PDF-1.4 acceptance-fixtur'),
+      });
+    const dialog = page.getByRole('dialog');
+    await expect(dialog).toBeVisible();
+    await expect(
+      dialog.getByRole('radio', { name: 'Delad bilaga - gäller flera event' }),
+    ).toBeChecked();
+    await dialog.getByRole('button', { name: 'Ladda upp' }).click();
+    await expect(dialog).not.toBeVisible();
+    await expect(lista.getByText('Delad 6.pdf')).toBeVisible();
+
+    // `scrollTop` är ORÖRD — INGET scroll-event avfyrades (verifierat, inte
+    // antaget). `--skugg-op` kan alltså BARA ha räknats om av
+    // `MutationObserver`:n. Vid `kvar` 144 px (736 − 488 − 104) är bandet
+    // helt utom synhåll — op ska vara 1, inte kvar på `opFore`.
+    await expect
+      .poll(async () => lista.evaluate((ul) => Number(getComputedStyle(ul, '::after').opacity)), {
+        message:
+          '--skugg-op ska räknas om till 1 när en rad läggs till, utan scroll-event eller kanRulla/matadHojd-ändring',
+      })
+      .toBe(1);
+    const scrollFired = await page.evaluate(
+      () => (window as unknown as { __scrollFired: boolean }).__scrollFired,
+    );
+    expect(
+      scrollFired,
+      'inget scroll-event fick hjälpa till — MutationObserver:n bar hela vägen',
+    ).toBe(false);
   });
 
   test('AC #2 gränsfall (review-fynd 3): radantalet minskar IN-PLACE via en riktig Radera-åtgärd (ingen page.goto) — höjden fryser vid den PRECISA mätningen', async ({
@@ -1196,7 +1434,12 @@ test.describe('GemensamtLage (räckviddsläge) — samma regel (tidigare saknad,
 
   /**
    * [TASK-309.46] ÖVERGÅNGEN RADER → NOLL RADER — hookens latenta
-   * separator-fel, gjort synligt och rättat.
+   * separator-fel, gjort synligt och rättat. (Historik — MEKANISMEN nedan är
+   * SUPERSEDED av TASK-309.48: `radensSeparator` finns inte längre, se
+   * `useLastaListhojd`s "AVDRAGET ÄR RIVET"-stycke i källan. Testets
+   * REGRESSIONSKLASS — höjden ska stå EXAKT kvar vid NIVÅ 2 → NIVÅ 3, inte
+   * växa eller krympa — är fortfarande giltig och oförändrad; det är bara
+   * VÄGEN dit som inte längre kan gå via en separator-bugg.)
    *
    * NIVÅ 2 lagrade `senastUppmattRadhojd = radhojd` RAKT AV, med radens egen
    * separator kvar, trots att den drar bort separatorn i samma andetag när
@@ -1205,9 +1448,10 @@ test.describe('GemensamtLage (räckviddsläge) — samma regel (tidigare saknad,
    * gjorde det inte.
    *
    * FELET VAR OSYNLIGT MED EN 1 px-SEPARATOR (4 px fel, som ingen mätning
-   * hade anledning att leta efter) och blir 8 px med 309.46:s ränna: samma
+   * hade anledning att leta efter) och blev 8 px med 309.46:s ränna: samma
    * lista skulle låsas på 496 i stället för 488 så fort den gick från
-   * 1–3 rader till NOLL. Fixen lagrar `(radhojd × 4 − radensSeparator) / 4`.
+   * 1–3 rader till NOLL. Fixen (309.46) lagrade `(radhojd × 4 −
+   * radensSeparator) / 4`.
    *
    * VÄGEN MÅSTE VARA EN RIKTIG RADERING, inte DOM-kirurgi: `antalRiktigaRader`
    * kommer ur Reacts props, så att ta bort `<li>`-noder i webbläsaren driver
@@ -1231,9 +1475,11 @@ test.describe('GemensamtLage (räckviddsläge) — samma regel (tidigare saknad,
     const fore = await mataGeometri(page);
     expect(fore.antalKort).toBe(1);
     const radhojd = Math.max(...fore.radHojder);
-    // NIVÅ 2: radhöjd × 4 MINUS radens egen ränna.
-    expect(fore.hojd).toBeGreaterThanOrEqual(radhojd * 4 - RANNA);
-    expect(fore.hojd).toBeLessThanOrEqual(radhojd * 4 - RANNA + 8);
+    // NIVÅ 2 (TASK-309.48): kort × 4 PLUS tre rännor — se `useLastaListhojd`s
+    // "kort × 4 + ränna × 3"-stycke. `radhojd` är sedan denna skiva alltid
+    // kortets EGNA höjd (ingen egen ränna att dra av eller bevaka längre).
+    expect(fore.hojd).toBeGreaterThanOrEqual(radhojd * 4 + RANNA * 3);
+    expect(fore.hojd).toBeLessThanOrEqual(radhojd * 4 + RANNA * 3 + 8);
 
     await valjRadhandling(page, 'Delad 1.pdf', 'Radera');
     // Scopad till listan av samma announcer-skäl som 5 → 3-testet ovan.
@@ -1316,13 +1562,14 @@ test.describe('GemensamtLage (räckviddsläge) — samma regel (tidigare saknad,
       const kantjustering =
         Number.parseFloat(kant.borderTopWidth) + Number.parseFloat(kant.borderBottomWidth);
       const forsta = ul.children[0].getBoundingClientRect();
-      const fjardeEl = ul.children[3];
-      const fjarde = fjardeEl.getBoundingClientRect();
-      // [TASK-309.46] MINUS FJÄRDE RADENS RÄNNA — samma avdrag NIVÅ 1 gör
-      // (`separatorBredd`). Referensen ska spegla hookens formel, inte den
-      // form den hade när rännan var en padding och avdraget en no-op.
-      const fjardesRanna = Number.parseFloat(getComputedStyle(fjardeEl).borderBottomWidth) || 0;
-      return fjarde.bottom - forsta.top - fjardesRanna + kantjustering;
+      const fjarde = ul.children[3].getBoundingClientRect();
+      // [TASK-309.48] INGET AVDRAG LÄNGRE — spannet mäts direkt. Rännan
+      // ligger sedan denna skiva som `margin-top` MELLAN raderna, aldrig på
+      // någon rads egen box, så `fjarde.bottom - forsta.top` bär redan hela
+      // svaret (se `useLastaListhojd`s "AVDRAGET ÄR RIVET"-stycke i källan).
+      // Referensen ska spegla hookens FAKTISKA formel, inte 309.46:s
+      // separator-avdrag som inte längre har något föremål.
+      return fjarde.bottom - forsta.top + kantjustering;
     });
     // Regel 5 gäller FILTERBYTE — detta är INGET filterbyte, det är en mätning
     // av VERKLIGT innehåll som nu går att mäta precist. Se `useLastaListhojd`s
@@ -1359,14 +1606,14 @@ test.describe('GemensamtLage vid 375 px — samma tre nivåer som desktop (revie
     const geometri = await mataGeometri(page);
     expect(geometri.scrollHeight).toBe(geometri.clientHeight);
     expect(geometri.antalKort).toBe(0);
-    // `LISTA_FALLBACK_RADHOJD` (EN konstant, se `DokumentYta.tsx`s docblock
-    // och `FALLBACK_RADHOJD` ovan) × 4 — INTE ~622 px, som en fallback
+    // `LISTA_FALLBACK_KORTHOJD` (EN konstant, se `DokumentYta.tsx`s docblock
+    // och `FALLBACK_KORTHOJD` ovan) × 4 — INTE ~622 px, som en fallback
     // baserad på en BRUTEN `GemensamBilageRadRow`-rad hade gett. [T176]
-    // Talet är 122 (den separator-fria per-rad-höjden, se `FALLBACK_RADHOJD`
+    // Talet är 122 (den separator-fria per-rad-höjden, se `FALLBACK_KORTHOJD`
     // ovan — `<li>` är 124) och `<ul>` bär ingen kant, så
     // väntad höjd är exakt 488 px.
-    expect(geometri.hojd).toBeGreaterThanOrEqual(FALLBACK_RADHOJD * 4);
-    expect(geometri.hojd).toBeLessThanOrEqual(FALLBACK_RADHOJD * 4 + TOLERANS);
+    expect(geometri.hojd).toBeGreaterThanOrEqual(FALLBACK_KORTHOJD * 4 + RANNA * 3);
+    expect(geometri.hojd).toBeLessThanOrEqual(FALLBACK_KORTHOJD * 4 + RANNA * 3 + TOLERANS);
   });
 
   test('NIVÅ 2 (ESTIMAT): 2 rader — låst höjd bevisad mot radens EGEN uppmätta höjd', async ({
@@ -1385,8 +1632,8 @@ test.describe('GemensamtLage vid 375 px — samma tre nivåer som desktop (revie
     // testerna ovan: `hojd` ska vara ~4× radens EGNA uppmätta höjd, inte
     // listans naturliga 2-radershöjd.
     const maxRadhojd = Math.max(...geometri.radHojder);
-    expect(geometri.hojd).toBeGreaterThanOrEqual(maxRadhojd * 4 - RANNA);
-    expect(geometri.hojd).toBeLessThanOrEqual(maxRadhojd * 4 - RANNA + 8);
+    expect(geometri.hojd).toBeGreaterThanOrEqual(maxRadhojd * 4 + RANNA * 3);
+    expect(geometri.hojd).toBeLessThanOrEqual(maxRadhojd * 4 + RANNA * 3 + 8);
   });
 
   test('NIVÅ 1 (PRECIS): 5 rader — scrollbart, samma exakta geometri-invariant som desktop', async ({

@@ -7,6 +7,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-08 14:33'
+updated_date: '2026-09-08 15:51'
 labels:
   - fynd
   - ready-for-agent
@@ -39,10 +40,10 @@ KÄLLOR: `src/components/dokument/DokumentYta.tsx` (hooken ~1340–1445, `separa
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Rännan är en marginal på varje rad utom den första via komponent-token --mm-dokumentlista-ranna (components.css) som både radklassen och hooken läser; ingen rad bär border-b-8; spåret börjar vid första kortet och slutar vid sista kortet: vid 5+ rader och max rullning är sistaKort.bottom === ul.bottom, mätt i Playwright för båda listorna och RÖTT mot main före fixen
-- [ ] #2 useLastaListhojd räknar kort × 4 + ränna × 3 i alla tre nivåer, separatorBredd riven, LISTA_FALLBACK_KORTHOJD = 116 med omskriven docblock; låset är exakt 488 vid 0, 1, 3, 4 och 5+ rader i båda listorna, scrollHeight === clientHeight vid exakt 4 rader; befintliga hojdlas-acceptance-sviter gröna med uppdaterat fallback-tal och nya fall för spårets slut
+- [x] #1 Rännan är en marginal på varje rad utom den första via komponent-token --mm-dokumentlista-ranna (components.css) som både radklassen och hooken läser; ingen rad bär border-b-8; spåret börjar vid första kortet och slutar vid sista kortet: vid 5+ rader och max rullning är sistaKort.bottom === ul.bottom, mätt i Playwright för båda listorna och RÖTT mot main före fixen
+- [x] #2 useLastaListhojd räknar kort × 4 + ränna × 3 i alla tre nivåer, separatorBredd riven, LISTA_FALLBACK_KORTHOJD = 116 med omskriven docblock; låset är exakt 488 vid 0, 1, 3, 4 och 5+ rader i båda listorna, scrollHeight === clientHeight vid exakt 4 rader; befintliga hojdlas-acceptance-sviter gröna med uppdaterat fallback-tal och nya fall för spårets slut
 - [ ] #3 Skrimmen är after:from-bg-muted + after:mix-blend-darken (32 px band); pixelprov i PR-kroppen: brickans pixlar i kortets nedre hörn och i rännan under bandet är byte-lika med brickan utanför bandet (rött mot main, grönt efter); texten under bandet dämpas inte; contrast-more-varianten kvar; axe 0 på listan
-- [ ] #4 Skuggan tonar ut kontinuerligt via --skugg-op (1 i vila, 0.5 vid halva bandhöjden kvar, 0 vid botten) utan React-state per rullframe; data-vid-botten och after:hidden rivna; värdet initieras när listan blir rullbar och räknas om vid ändrat radantal — bevisat i acceptance-test
+- [x] #4 Skuggan tonar ut kontinuerligt via --skugg-op (1 i vila, 0.5 vid halva bandhöjden kvar, 0 vid botten) utan React-state per rullframe; data-vid-botten och after:hidden rivna; värdet initieras när listan blir rullbar och räknas om vid ändrat radantal — bevisat i acceptance-test
 - [ ] #5 Docblockarna i DokumentYta.tsx (rännan, rullningsskuggan, fallback-konstanten, gap-avvisningen) omskrivna så prosa och kod säger samma sak, med historiken bevarad och Marcus dom 2026-09-08 källmärkt; facit s108-dokumentytan kontrollerat och utfallet bokfört utan att godkand rörs; DoD-kommandona, tests/visual-grinden för dokument och check-langa-streck gröna med faktiska exitkoder
 - [ ] #6 Ögonmätt av Marcus mot dev-server/staging (styrkan på 32 px-bandet och uttoningen vid botten) före Done
 <!-- AC:END -->
@@ -53,3 +54,17 @@ KÄLLOR: `src/components/dokument/DokumentYta.tsx` (hooken ~1340–1445, `separa
 - [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Bygg-agent slutrapport 2026-09-08. AC #1/#2/#4 avbockade och mätta. AC #3 och #5 lämnas OBOCKADE med källmärkta skäl (se append-notes nedan); AC #6 obockad per uppdrag.
+
+RÖTT-FÖRST: git checkout -- mot huvudkatalogens gamla border-b-8-form (main), sedan Playwright/acceptance kört mot de uppdaterade testerna. 14 av 42 föll (bl.a. EXAKT fyra bilagor, fem-plus rader scroll till botten, spår börjar vid FÖRSTA KORTETS överkant, GemensamtLage 1/3-rad, NIVÅ2 till 1-gränsfall). Efter fixen (git apply av samma diff): 42/42 gröna plus 1 nytt AC4-gränsfallstest = 43/43.
+
+AC #3 pixelprov (Playwright 1280x900, eventläge 6 bilagor). RÖTT (main): hörnpixel 887,798 RGBA 240,240,238 mot brickereferens 245,245,243 - delta 5 per kanal, synlig mörkning. GRÖNT (fix): samma punkt RGBA 244,244,242 - delta 1 per kanal. Isolerat mot en SOLID darken-fyllning (ingen gradient): EXAKT 245,245,243, delta 0 - bevisar att mix-blend-darken-matematiken är exakt. Delta1-resten vid DELVIS bandstyrka är en generisk 8-bitars alfakomposit-avrundning, mätt identisk med en mask-image-gradient i stallet for background-image (alltsa inte teknikspecifik). Byte-lika haller EXAKT vid full bandstyrka, INTE bokstavligen vid varje delvis bandstyrka (ungefär deltaE00 0.4, under förnimbarhetströskeln cirka 2.3 men inte 0). Lämnat obockat: AC-texten säger byte-lika utan kvalifikation, och en bedömning om detta uppfyller kravets anda (trekanten och listen är mekaniskt och visuellt borta) krävs av orkestrerare eller Marcus.
+
+AC #5: Docblockar omskrivna (rannan/margin-formen, rullningsskuggan/darken-blend, LISTA_FALLBACK_KORTHOJD, gap/flex-avvisningen) med historik bevarad och Marcus dom 2026-09-08 källmärkt. Facit tasks/sessions/bilagor/s108-dokumentytan/facit.json kontrollerat: alla fyra bilder visar GemensamtLage med 1 bilaga eller eventvaljaren, ingen rullande lista - bekräftat mot manifestets egen not-text, ingen omtagning behövs, godkand-fältet (null) orört. tests/visual/dokument-visual.spec.ts kontrollerat via källäsning: bada scenerna har EN bilaga vardera, kanRulla=false, inga after-klasser renderas - strukturellt oberörda. KUNDE INTE köras till grönt lokalt: darwin-baslinjerna är gitignorerade (bara linux är committat, CI kör linux). Lokal körning gav snapshot doesnt exist, väntat enligt CONTRIBUTING.md paragraf Visuell regression. Detta är alltså en analys, inte en mätt grön grind - CI:s visual-baselines.yml är enda instans som kan bekräfta grönt. Lämnat obockat av samma skäl.
+
+DoD-kommandon, exitkoder körda i denna worktree: npm run typecheck exit 0. npx @biomejs/biome check . exit 0 repo-brett, scopat till berörda filer exit 0 med endast en föreexisterande varning identisk pa origin/main (biome-ignore utan effekt pa tabIndex-raden). npm run build exit 0. node scripts/check-langa-streck.mjs exit 0, 323 filer skannade, 0 ofångade långa streck. npm run test:api BLOCKERAD av staging-preflighten TASK-77 - en samtidig CI-körning (post-merge.yml, Staging API plus E2E) höll staging; 1778 api-pure-tester gick gröna innan blockeringen, api-staging-setupet kördes aldrig. Detta var inte en del av uppdragets uttryckliga grindlista men bokförs transparent.
+<!-- SECTION:NOTES:END -->
