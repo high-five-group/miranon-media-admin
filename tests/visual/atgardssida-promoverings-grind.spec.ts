@@ -297,13 +297,12 @@ test.describe('TASK-171.5 — stale-URL-beviset (rivningens AC #2)', () => {
  * OVAN I SAMMA FIL — samma navigering som referens-grindens sex tester,
  * ingen andra sanning om hur man tar sig till varje läge.
  *
- * BETALNINGSPANELEN (`BetalningsSkrivYta`) ÖPPNAS i sista testet men INGEN
- * kryssruta/notering klickas — `useSetPaymentStatus`/`useUpdatePaymentNote`
- * instansieras vid montering men `mutate()` anropas aldrig av testet, så
- * ingen `update-record`-mock krävs i fixturvärlden: ingen begäran görs.
- * Skrivvägen i sig (vilka EF-operationer, mot vilken bas) är kartlagd som
- * statisk analys i kortets Implementation Notes — denna svit bevisar att
- * PANELENS FORM är ren, inte att servern svarar rätt.
+ * [RIVET, TASK-435, 2026-09-08] Denna sviten bar tidigare ett sjunde test som
+ * öppnade betalningspanelen (`BetalningsSkrivYta`) och axe-skannade den —
+ * hela sektionen (`grupp-betalningar`, `BetalningsSkrivYta`-familjen) är
+ * riven ur `AtgardsSida.tsx`; betalningar hanteras numera på betalningssidan
+ * (inkorg + bekräftelsesteg, PRD TASK-402). Testet togs bort med sektionen,
+ * inte skrivet om — det fanns ingen kvarvarande yta att bevisa formen av.
  */
 test.describe('TASK-171.3 — axe-pass på den promoverade åtgärds-/granskningsytan (ADR-103, härdningen)', () => {
   const WCAG_TAGGAR = ['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'];
@@ -379,19 +378,6 @@ test.describe('TASK-171.3 — axe-pass på den promoverade åtgärds-/granskning
     await valjArmeraSkicka(page, network, 'inget');
     await axeNoll(page);
   });
-
-  test('betalningspanelen öppen (BetalningsSkrivYta) — ingen mutation triggad: axe 0', async ({
-    page,
-  }) => {
-    await gotoAtgarder(page);
-    await page.getByRole('button', { name: 'Pricka av och notera' }).click();
-    // Scopat till betalningssektionen — "Anna Andersson" står även i
-    // mottagar-ytans preview-pill och deltagarkortet ovanför (strict mode
-    // ger flera träffar på osscopad text).
-    const betalningar = page.locator('section[aria-labelledby="grupp-betalningar"]');
-    await expect(betalningar.getByText('Anna Andersson')).toBeVisible();
-    await axeNoll(page);
-  });
 });
 
 /**
@@ -441,7 +427,10 @@ test.describe('TASK-171.3 — kvalitetsribbans tre lägen på den promoverade yt
     page,
   }) => {
     await gotoAtgarder(page);
-    const rad = page.getByRole('button', { name: 'Pricka av och notera' });
+    // [TASK-435] "Pricka av och notera" (betalningsblocket) är riven ur
+    // AtgardsSida.tsx — plockarens egen `RAD_KLASS`-rad i mottagar-ytan är
+    // samma klass, alltid närvarande, och mäter exakt samma hover-övergång.
+    const rad = page.getByRole('button', { name: 'Lägg till fler personer från eventet' });
 
     await page.emulateMedia({ reducedMotion: 'reduce' });
     const varaktighet = await rad.evaluate(

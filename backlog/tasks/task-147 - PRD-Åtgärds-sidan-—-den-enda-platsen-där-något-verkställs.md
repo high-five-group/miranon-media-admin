@@ -4,7 +4,7 @@ title: 'PRD: Åtgärds-sidan — den enda platsen där något verkställs'
 status: To Do
 assignee: []
 created_date: '2026-08-07 07:52'
-updated_date: '2026-08-07 11:41'
+updated_date: '2026-09-08 02:54'
 labels:
   - ready-for-human
 dependencies: []
@@ -161,8 +161,6 @@ Skiva 6 beror på kort 2. Skiva 10 beror på kort 2 och på Roger-avstämningen.
 - [ ] #11 Avprickningens E2E-täckning återupprättad på Åtgärds-sidan — skulden ärvd från TASK-145.3, där bekräfta-flödet revs ur eventsidan
 <!-- DOD:END -->
 
-
-
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
@@ -175,4 +173,8 @@ TVÅ PROTOTYP-PASS, INTE ETT: ytorna är distinkta (event-knuten åtgärds-sida 
 BIEFFEKT: TASK-146 får därmed tillbaka en UI-konsument — utbrytningen hade lämnat fundamentet utan användare.
 
 PARALLELLITET MOT BYGGSPÅRET: körs denna session samtidigt som agenter bygger TASK-145 finns tre krockytor (platshållarna, prototyp-växlarens registrering, hållplats-substratet som TASK-145.6 river). Reglerna står i docs/specs/ATGARDSSIDAN-UNDERLAG.md § 9 — egna filer och egen route, platshållarna orörda av båda tills facit är låst, TASK-145.6 allra sist.
+
+## Updates 2026-09-08 (TASK-435) — 'Betalningarnas skrivvertikal bor här' är REVERSERAT
+
+Marcus S124, ordagrant: "Jag är helt säker på att jag vill riva betalningsblocket helt från åtgärdssidan." Beskrivningens rad "Betalningarnas skrivvertikal bor här" och skiva TASK-147.4:s hela leverans (BetalningsSkrivYta, avprickning, notering, kvitto-knappen) är rivna ur AtgardsSida.tsx i TASK-435. Betalningar hanteras numera uteslutande på betalningssidan (inkorg + bekräftelsesteg, PRD TASK-402); noteringar skrivs i registreringsformuläret. Eventdetaljen äger läsningen (statusrad + Händelselogg, TASK-436/437/438). Se docs/decisions/ADR-128-inbetalningen-som-sanning-postgres-och-spegeln.md § Updates 2026-09-08 för hela historien. Barn-kortet TASK-147.9 (QA) steg 6-7 är omskrivna mot betalningssidan i samma skiva.
 <!-- SECTION:NOTES:END -->

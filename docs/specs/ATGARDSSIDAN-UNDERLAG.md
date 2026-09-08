@@ -137,6 +137,18 @@ Grillad samsyn beslut 5, ordagrant utfällt:
 
 ## 5. Vad som flyttar hit
 
+> **SUPERSEDED 2026-09-08 (TASK-435, Marcus beslut S124): "Jag är helt säker
+> på att jag vill riva betalningsblocket helt från åtgärdssidan."** § "Hela
+> skrivvertikalen (2026-08-07)" nedan beskriver ett beslut som är REVERSERAT
+> — avprickning, notering och skrivvertikalen flyttade INTE stanna kvar på
+> åtgärds-sidan. Betalningar hanteras numera uteslutande på betalningssidan
+> (inkorg + bekräftelsesteg, PRD `TASK-402`); noteringar skrivs i
+> registreringsformuläret (`RegistreraForm.tsx` § NOTERINGSFÄLTET). Se
+> [`ADR-128`](../decisions/ADR-128-inbetalningen-som-sanning-postgres-och-spegeln.md)
+> § Updates 2026-09-08 för hela historien. Resten av avsnittet står kvar som
+> historik — det beskriver ett beslut som faktiskt gällde och byggdes
+> (`TASK-171.5`), inte längre nuläget.
+
 ### Ur Åtgärds-gruppen på eventsidan
 
 Marcus, iterationsvåg 2026-08-05 punkt 4 (verbatim):

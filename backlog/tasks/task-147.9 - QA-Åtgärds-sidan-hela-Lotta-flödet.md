@@ -4,7 +4,7 @@ title: 'QA: Åtgärds-sidan hela Lotta-flödet'
 status: To Do
 assignee: []
 created_date: '2026-08-10 07:05'
-updated_date: '2026-08-10 07:41'
+updated_date: '2026-09-08 02:55'
 labels:
   - ready-for-human
 dependencies:
@@ -24,8 +24,8 @@ Manuell QA-vandring på riktiga enheter, hela flödet:
 3. Betalningspåminnelse till obetald delmängd — bara de obetalda träffas.
 4. Fritt utskick med redigerad ämnesrad + text — redigeringen går ut, inte mallen.
 5. Utskick med klass A-bilaga → bilagan FRAMME i riktig mailklient (iPad + dator).
-6. Avprickning: anmälningsavgift + slutbetalning + ångra + notering — registret visar rätt.
-7. Kvitto: generera ur betalning, nummer löper, två snabba genereringar ger olika nummer.
+6. [SUPERSEDED 2026-09-08, TASK-435] Registrera en inbetalning på betalningssidan (inkorg → RegistreraForm): belopp, betalsätt, notering — raden uppdateras, saknas-beloppet minskar. Åtgärdssidans avprickningsblock (kryssvertikal + notering) är rivet; steget prövar numera den ENDA kvarvarande skrivvägen.
+7. [SUPERSEDED 2026-09-08, TASK-435] Kvitto: köa/skicka ur betalningssidans kvitto-flöde, nummer löper, två snabba köningar ger olika nummer. Åtgärdssidans "Skicka kvitto"-knapp (SkickaKvittoKnapp, ADR-109) är riven med blocket.
 8. Skärmläsarpass: körningens förlopp + resultat annonseras.
 9. Mailto-frånvaro: ingen åtgärd öppnar mailklient någonstans.
 

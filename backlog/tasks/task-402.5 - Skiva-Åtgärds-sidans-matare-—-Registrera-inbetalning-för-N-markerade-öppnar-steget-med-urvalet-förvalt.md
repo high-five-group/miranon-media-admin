@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-09-05 19:02'
-updated_date: '2026-09-06 07:01'
+updated_date: '2026-09-08 02:55'
 labels:
   - ready-for-agent
 dependencies:
@@ -59,6 +59,10 @@ Testet bevisar "markeringen kvar" MEKANISKT för round-trippen: `AtgardsSida` sa
 ## Divergenser mot uppdraget (ADR-086)
 
 Inga. Premiss-passet höll: `081a2e95` var faktisk head vid checkout, PR #2362 draft/OPEN/MERGEABLE mot main, `.env.development`s `VITE_FEATURE_BETALNINGAR=pa` bekräftat oförändrat av e2e-webServern, `Bekraftelesteget.tsx`s `ids`-kontrakt (kommaseparerade anmälnings-record-ID:n, samma nyckel som `PanelBetalningar`) bekräftat via läsning, INTE antaget.
+
+## Superseded 2026-09-08 (TASK-435)
+
+Marcus S124: "Jag är helt säker på att jag vill riva betalningsblocket helt från åtgärdssidan." Knappen 'Registrera inbetalning för N markerade' (denna skivas leverans) satt i AtgardsSida.tsx:s betalningsblock — det blocket är rivet i sin helhet, mataren med det. Marcus accepterade förlusten uttryckligen 2026-09-08 (inkorgen har egen markeringsgruppering per event, som fyller samma behov). Kortet ändras inte i övrigt — det förblir Done och en korrekt historisk beskrivning av vad som byggdes och landade.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
