@@ -4,10 +4,10 @@ title: >-
   Fynd: dokumentlistans rullningsskugga mörkar brickan i kortens nedre hörn och
   rännan, och spåret slutar 8 px under sista kortet — skrim i brickans färg med
   darken, rännan blir marginal, skuggan tonar ut i stället för att släckas
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-08 14:33'
-updated_date: '2026-09-08 16:12'
+updated_date: '2026-09-08 18:17'
 labels:
   - fynd
   - ready-for-agent
@@ -45,7 +45,7 @@ KÄLLOR: `src/components/dokument/DokumentYta.tsx` (hooken ~1340–1445, `separa
 - [x] #3 Skrimmen är after:from-bg-muted + after:mix-blend-darken (32 px band); pixelprov i PR-kroppen: vid FULL bandstyrka är brickans pixlar i kortets nedre hörn och i rännan under bandet byte-lika med brickan utanför bandet (rött mot main, grönt efter); vid delvis bandstyrka avviker de högst 1/255 per kanal (8-bitars alfakomposit-avrundning, samma restfel uppmätt för en mask-image-kontroll); texten under bandet dämpas inte; contrast-more-varianten kvar; axe 0 på listan
 - [x] #4 Skuggan tonar ut kontinuerligt via --skugg-op (1 i vila, 0.5 vid halva bandhöjden kvar, 0 vid botten) utan React-state per rullframe; data-vid-botten och after:hidden rivna; värdet initieras när listan blir rullbar och räknas om vid ändrat radantal — bevisat i acceptance-test
 - [x] #5 Docblockarna i DokumentYta.tsx (rännan, rullningsskuggan, fallback-konstanten, gap-avvisningen) omskrivna så prosa och kod säger samma sak, med historiken bevarad och Marcus dom 2026-09-08 källmärkt; facit s108-dokumentytan kontrollerat och utfallet bokfört utan att godkand rörs; DoD-kommandona, HELA dokument-familjen i acceptance-klassen och check-langa-streck gröna med faktiska exitkoder; tests/visual/dokument-visual.spec.ts läst och dess scener klassade (pixelbaslinjerna föds i CI, körs inte lokalt — CI-utfallet bokförs i PR-kroppen när det finns)
-- [ ] #6 Ögonmätt av Marcus mot dev-server/staging (styrkan på 32 px-bandet och uttoningen vid botten) före Done
+- [x] #6 Ögonmätt av Marcus mot dev-server/staging (styrkan på 32 px-bandet och uttoningen vid botten) före Done
 <!-- AC:END -->
 
 ## Definition of Done
@@ -72,3 +72,9 @@ AC-listan omskriven 2026-09-08 efter runda 1-granskningen av PR #2469 (mot d552e
 
 CI-rattning 2026-09-08: PR #2469 var ROD i Test suite / Acceptance (hermetisk) - tests/acceptance/dokument-rackviddsval.acceptance.test.ts, assertionen ikonen far inte vaxa raden - hojdlaset ar 124 px foll (kort4247). Rotorsak: samma antagande jag redan fixade i de tva hojdlas-sviterna men missade i denna tredje fil - raden lag=124 (kort116+border-b-8). Med marginal-rannan mater li ALLTID 116 (margin raknas aldrig in i getBoundingClientRect). Grep-svep kort tests/acceptance/dokument-* tests/e2e/dokument* tests/visual gav bara denna traff (plus en irrelevant ADR-124-referens i en annan fil och tva redan-fixade historiska referenser). Fixat rad ~1055-1066: 124 til 116, docblock omskriven. Hela dokument-familjen i acceptance-klassen kord om (npx playwright test --project=acceptance tests/acceptance/dokument-*.acceptance.test.ts, 11 filer inklusive de tva hojdlas-sviterna): 116/116 grona, 0 rott, 4.7 min. typecheck exit 0, biome check exit 0, check-langa-streck exit 0 pa nytt efter andringen.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landad via PR #2469 (`6e1266fe`, 2026-09-08 ~16:4xZ) — byggd av bygg-agent. Två granskningsrundor: r1 (1 info: stale docblock-siffror efter en tidigare rättning) → r2 (0 fynd) — konvergerad, risk låg. Marginal-ränna via ny komponent-token `--mm-dokumentlista-ranna` (components.css) läst av både radklassen och hooken, `separatorBredd` riven, `LISTA_FALLBACK_KORTHOJD` 122 → 116. Rullningsskuggan bär ett skrim i brickans egen färg med `mix-blend-mode: darken` (32 px band) — mörkar bara det som är ljusare än brickan, texten dämpas inte. Uttoning via CSS-variabeln `--skugg-op` (proportionell mot kvarvarande rullväg) i stället för hård släckning vid botten. 43/43 höjdlås-acceptance gröna. CI blev röd i `dokument-rackviddsval`-sviten (antog radhöjd 124 px, en tredje fil med samma antagande bygg-agenten redan rättat i två andra), rättad av bygg-agenten (124 → 116, docblock omskriven) — utanför uppdragets ursprungliga grindlista, bokfört transparent. AC #3 och #5 skrevs om av orkestreraren (Marcus mandat) efter runda 1: granskaren klassade dem som FELSTÄLLDA (mätte fel sak) snarare än ouppfyllda — AC #3 kräver nu byte-lika pixlar bara vid FULL bandstyrka (vid delvis bandstyrka anges det uppmätta restfelet, högst 1/255 per kanal, en generisk 8-bitars alfakomposit-avrundning); AC #5:s visual-grind omformulerad till läst-och-klassad plus CI-bokföring (darwin-pixelbaslinjer är gitignorade, endast CI:s linux-körning kan bekräfta grönt). AC #6 ögonmätt av Marcus mot dev-server 2026-09-08 (JA, "Ser bra ut", källa: sessionsdok S124 Del 7).
+<!-- SECTION:FINAL_SUMMARY:END -->
