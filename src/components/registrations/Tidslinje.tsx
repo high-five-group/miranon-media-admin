@@ -1,14 +1,12 @@
-import type { ComponentType } from 'react';
+import type { TidslinjeIkon, TidslinjeUnderrad } from './tidslinje-typer';
 
 /**
- * Ikon-kontraktet är strukturellt (size/aria-hidden/className) — inte låst
- * till lucide-react (NavCardIcon-disciplinen; återanvändbarhet 11).
+ * Typkontrakten (`TidslinjeIkon`, `TidslinjeUnderrad`) bor i
+ * `tidslinje-typer.ts` sedan TASK-438 — rena `.ts`-härledningar och deras
+ * api-pure-tester måste kunna importera dem utan `jsx` (se den filens
+ * docblock). Återexporten håller konsumenterna av `./Tidslinje` oförändrade.
  */
-export type TidslinjeIkon = ComponentType<{
-  size?: number;
-  'aria-hidden'?: boolean;
-  className?: string;
-}>;
+export type { TidslinjeIkon, TidslinjeUnderrad } from './tidslinje-typer';
 
 export interface TidslinjeHandelse {
   /** Stabil list-nyckel (t.ex. `${tidpunkt}-${slag}`). */
@@ -19,6 +17,16 @@ export interface TidslinjeHandelse {
   tid: string;
   /** Nodens ikon (aria-hidden). */
   ikon: TidslinjeIkon;
+  /**
+   * [TASK-438] Dämpade underrader mellan texten och tiden — kvittostatus,
+   * makulering, notering för en inbetalning. Valfri: utskicken bär inga.
+   * Raderna är TEXT i list-posten, inte dekor: en skärmläsare läser
+   * "text, underrader, tid" i den ordningen. Varje rad bär ett eget `id`
+   * (radens SLAG: "kvitto", "makulering", "notering") som list-nyckel —
+   * texten duger inte: "Notering: …" är Lottas fritext och kan ordagrant
+   * råka lyda som en annan rad (granskarfynd PR #2468 r1).
+   */
+  undertext?: readonly TidslinjeUnderrad[];
 }
 
 /**
@@ -60,6 +68,11 @@ export function Tidslinje({
             </span>
             <span className="flex min-w-0 flex-col pt-1">
               <span className="text-body">{h.text}</span>
+              {h.undertext?.map((rad) => (
+                <span key={rad.id} className="text-caption text-text-muted">
+                  {rad.text}
+                </span>
+              ))}
               <span className="text-caption text-text-muted">{h.tid}</span>
             </span>
           </li>

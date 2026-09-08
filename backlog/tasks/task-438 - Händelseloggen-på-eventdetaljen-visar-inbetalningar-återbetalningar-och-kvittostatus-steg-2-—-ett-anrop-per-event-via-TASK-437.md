@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-08 02:21'
-updated_date: '2026-09-08 02:21'
+updated_date: '2026-09-08 16:01'
 labels:
   - ready-for-agent
 dependencies:
@@ -25,9 +25,9 @@ Loggen tar in inbetalningsraderna som händelser blandade med utskicken, senast 
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Ett anrop för hela eventet när Öppna detaljer öppnas, noll anrop vid sidladdning — bevisat i e2e via nätverksräkning
-- [ ] #2 Varje inbetalning och återbetalning syns som händelse med belopp, betalsätt, kvittostatus och notering, sorterad senast överst blandat med utskicken
-- [ ] #3 Laddnings- och felläge enligt InbetalningsLista-mönstret; mark-paid- och event-deltagare-invarianterna gröna; axe 0
+- [x] #1 Ett anrop för hela eventet när Öppna detaljer öppnas, noll anrop vid sidladdning — bevisat i e2e via nätverksräkning
+- [x] #2 Varje inbetalning och återbetalning syns som händelse med belopp, betalsätt, kvittostatus och notering, sorterad senast överst blandat med utskicken
+- [x] #3 Laddnings- och felläge enligt InbetalningsLista-mönstret; mark-paid- och event-deltagare-invarianterna gröna; axe 0
 - [ ] #4 Ögonmätt av Marcus mot staging före Done
 <!-- AC:END -->
 
@@ -37,3 +37,16 @@ Loggen tar in inbetalningsraderna som händelser blandade med utskicken, senast 
 - [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+BYGGT AV ORKESTRERAREN (S124 resume 1, 2026-09-08, Marcus mandat "Bygg steg 2 när den landat"). Gren task-438-handelselogg-inbetalningar på main 01c33c14 (efter #2457).
+FORM: `betalningar/inbetalnings-handelser.ts` (ny, ren härledning: "Inbetalning 2 500 kr · Swish" / "Återbetalning 500 kr · Bankgiro", underrader kvittostatus via `kvittolage` · "Makulerad: <skäl>" · "Notering: …"; ikoner Banknote/Undo2/Ban; tid = betalningsdatum ?? skapadNar). `Tidslinje` fick valfri `undertext` per nod (readonly string[], caption-rader mellan text och tid). `Betalningar.tsx`: `useInbetalningarForEvent(event.id, sorterade id:n för BÅDA flikarna, aktiv)` → Map per anmälan → per person blandas `harledHandelser` + `inbetalningsHandelser`, sorteras senast överst; rent datum formateras utan klockslag (`loggtid`/`tidsvarde`, noon-förankrad), skelett per person medan batchen väntas (loggen sorterar aldrig om under ögonen), EN felruta för hela ytan med Försök igen (InbetalningsLista-orden). Kvittojobbets felskäl visas medvetet inte i loggen (hör till ytan där Lotta kan agera) — bokfört i modulens docblock.
+AVVIKELSER MOT KORTET: inga i scope. Två mätta fällor under bygget, bokförda i testfilen: (1) `visaKronor` ger hårt blanksteg (sv-SE) — regex i tester matchar `\s`, pure-testet bygger förväntan ur formatteraren; (2) en 500 från EF:en retryas i BÅDA lagren (EF-klient + React Query, TASK-420) och når inte ytan inom expect-timeouten — feltestet använder 400 (husets policy retryar aldrig 4xx).
+VERIFIERING (faktiska exitkoder): typecheck 0 · biome check . 0 · build 0 · check-langa-streck 0 · api-pure `tests/api/inbetalnings-handelser.test.ts` 8/8 · acceptance `anmalan-detalj` 7/7 · e2e `mark-paid.staging` + `event-deltagare.staging` 33/33 (nya: 0 anrop vid sidladdning / 1 batch-anrop med alla 8 aktiva id:n, aldrig den avbokade, inget nytt anrop vid flikbyte; händelser med belopp/betalsätt/kvittostatus/notering i ordningen återbetalning 20 juli · inbetalning 15 juli · bekräftelse 12 juli · anmälan 10 juli, rent datum utan klockslag; makulerad rad med skäl; felruta + Försök igen + omhämtning; axe 0 med underrader).
+CI-FYND EFTER FÖRSTA PUSHEN (fe93535c, PR #2468): Lint+TypeCheck och Pure+Build röda på TS6142 — `inbetalnings-handelser.ts` importerade typen `TidslinjeIkon` ur `Tidslinje.tsx`, och `tsconfig.tests.json` (api-pure-testerna) saknar `jsx`. Lokal `tsc -b --noEmit` var grön (inkrementell build-info); `npx tsc -p tsconfig.tests.json --noEmit` reproducerade felet. Fix (b4d88844): typen flyttad till `registrations/tidslinje-ikon.ts` (ren .ts), `Tidslinje.tsx` återexporterar; tests-projektet, typecheck, biome, build och api-pure gröna igen. Lärdom: kör `tsc -p tsconfig.tests.json --noEmit` när en ren modul får ett nytt test — `tsc -b` kan vara tyst. (Den första `--append-notes`-raden om detta skrevs med dubbla citattecken och fick sina backtick-ord uppätna av skalet — rättad här i sin helhet.)
+AC #4 (Marcus ögonmätning) lämnas öppen.
+
+GRANSKNING r1 (PR #2468, granskad 19bbbefd): risk låg, 2 info. (1) auto-fix `key={rad}` i Tidslinjes underrader kunde kollidera på Lottas fritext → underraderna är nu typade `TidslinjeUnderrad { id, text }` med slaget som id (kvitto/makulering/notering). (2) ask-user: docblocken påstod "exakt betalningssidans ord" för makulerade rader, men listan tystnar när skäl saknas medan loggen säger "Makulerad" — orkestrerarens beslut (Marcus mandat): loggens beteende behålls (ADR-128, historiken tystas aldrig), docblocken säger nu skillnaden öppet. Samma TS6142-fälla en andra gång när `TidslinjeUnderrad` först lades i `.tsx`-filen → båda typerna bor i `registrations/tidslinje-typer.ts`. Om-verifierat: typecheck 0, tests-projektet 0, biome 0, api-pure 8/8, mark-paid e2e och anmalan-detalj acceptance gröna (tal i PR-kroppen).
+<!-- SECTION:NOTES:END -->
