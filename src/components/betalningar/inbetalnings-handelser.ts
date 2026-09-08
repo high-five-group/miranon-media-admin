@@ -1,5 +1,5 @@
 import { Ban, Banknote, Undo2 } from 'lucide-react';
-import type { TidslinjeIkon } from '@/components/registrations/Tidslinje';
+import type { TidslinjeIkon } from '@/components/registrations/tidslinje-ikon';
 import type { Inbetalning, InbetalningarBatchGrupp, Kvitto } from '@/domain/schemas';
 import { visaKronor } from './belopp-inmatning';
 import { kvittolage } from './panel-harledningar';

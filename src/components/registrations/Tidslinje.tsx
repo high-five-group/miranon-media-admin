@@ -1,14 +1,12 @@
-import type { ComponentType } from 'react';
+import type { TidslinjeIkon } from './tidslinje-ikon';
 
 /**
- * Ikon-kontraktet är strukturellt (size/aria-hidden/className) — inte låst
- * till lucide-react (NavCardIcon-disciplinen; återanvändbarhet 11).
+ * Ikon-kontraktet (`TidslinjeIkon`) bor i `tidslinje-ikon.ts` sedan TASK-438
+ * — rena `.ts`-härledningar och deras api-pure-tester måste kunna importera
+ * det utan `jsx` (se den filens docblock). Återexporten håller konsumenterna
+ * av `./Tidslinje` oförändrade.
  */
-export type TidslinjeIkon = ComponentType<{
-  size?: number;
-  'aria-hidden'?: boolean;
-  className?: string;
-}>;
+export type { TidslinjeIkon } from './tidslinje-ikon';
 
 export interface TidslinjeHandelse {
   /** Stabil list-nyckel (t.ex. `${tidpunkt}-${slag}`). */
