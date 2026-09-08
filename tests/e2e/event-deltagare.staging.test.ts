@@ -2,6 +2,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, type Page, test } from '../support/test-bas';
 import { mockTomNarvaro } from './helpers/tom-narvaro';
 import { mockTommaAnteckningar } from './helpers/tomma-anteckningar';
+import { mockTommaInbetalningar } from './helpers/tomma-betalningar';
 import { mockValjarLista } from './helpers/valjar-lista';
 
 /**
@@ -192,6 +193,9 @@ async function mocka(page: Page, event: Json, registrations: Json[] = DELTAGARE)
   // TASK-416.16: eventsidan prefetchar nu get-attendance ovillkorligt
   // (sidmount + Check-in-hover) — se helpers/tom-narvaro.ts.
   await mockTomNarvaro(page);
+  // TASK-442: eventsidan förvärmer nu inbetalnings-batchen vid sidmontering
+  // (belopps-mocken finns redan ovan) — se helpers/tomma-betalningar.ts.
+  await mockTommaInbetalningar(page);
 }
 
 /** Deltagar-gruppen (rubriken står utanför kortet — sektionen bär båda). */
@@ -564,6 +568,9 @@ test.describe('Anmälda deltagare — arbetsköns skelett (task-18.4)', () => {
     // TASK-416.16: eventsidan prefetchar nu get-attendance ovillkorligt
     // (sidmount + Check-in-hover) — samma skäl, detta test kringgår mocka().
     await mockTomNarvaro(page);
+    // TASK-442: samma skäl för inbetalnings-batchen — se
+    // helpers/tomma-betalningar.ts.
+    await mockTommaInbetalningar(page);
 
     // Läge 1 — utanför tvåveckorsfönstret (start om 60 dagar): TOM RESERV.
     await oppnaEventsidan(page);

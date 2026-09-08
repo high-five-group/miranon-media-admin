@@ -1,7 +1,9 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useCallback } from 'react';
 import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useDataSource } from '@/data/useDataSource';
 import type { InbetalningarBatch, Inbetalningslista, OppnaBetalningar } from '@/domain/schemas';
+import { betalningarPa } from '@/lib/funktionsflaggor';
 import { queryKeys } from '@/queries/keys';
 
 /**
@@ -43,6 +45,18 @@ const husetsRetryPolicy = (failureCount: number, err: Error): boolean =>
  * alltså en tyst pollare. Denna form hämtar om vid MONTERING och överlåter
  * löpande färskhet åt Realtime (`JobbLyssnare`), som är den mekanism som ska
  * bära den.
+ *
+ * [TASK-442, ÄRLIGHETSNOT] Raden bär de ytor som monterar sin observer
+ * PÅSLAGEN (inkorgen, personkortet, anmälans detaljvy). För eventdetaljens
+ * `aktiv`-gatade par är den en NO-OP, och var det redan före förvärmningen:
+ * observern monterar med `enabled: false`, och `shouldFetchOnMount` (den enda
+ * väg `refetchOnMount` läses) prövas bara på en OMONTERAD observer OCH kräver
+ * `enabled !== false` i båda sina led. När `aktiv` sedan slår om är observern
+ * redan monterad, så vägen dit går via `shouldFetchOptionally`, som läser
+ * `staleTime` — aldrig `refetchOnMount`. Källäst i `@tanstack/query-core`
+ * 5.102.2, `build/modern/queryObserver.js`. Raden STÅR KVAR (TASK-442
+ * beslut C: läsvägen rörs inte) — den är sann där den har verkan, och att
+ * riva den för de andra tre ytornas skull hade varit en annan skiva.
  *
  * ═══════════════════════════════════════════════════════════════════════════
  * `aktiv` TRÅDAS IN, DEN LÄSES INTE HÄR
@@ -131,4 +145,125 @@ export function useInbetalningarForEvent(
     refetchOnMount: 'always',
     retry: husetsRetryPolicy,
   });
+}
+
+/**
+ * [TASK-442] FÖRVÄRMNINGEN av eventdetaljens "Öppna detaljer" (ADR-078
+ * beslut 3, förvärmningsdoktrinen). Marcus 2026-09-08 (S124 resume 1), efter
+ * ögonmätning av TASK-438: "inbetalningsraderna kommer förvärmas när man går
+ * in på eventdetalj-sidan eller något sådant eller? Så man inte behöver vänta
+ * på att de laddas när man öppnar detaljerna?" och, på rekommendationen:
+ * "Kör på din rek, gör det branschledarmässigt och ordentligt!!"
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * VAD DEN VÄRMER, OCH VARFÖR EXAKT DESSA TVÅ
+ * ═══════════════════════════════════════════════════════════════════════════
+ * `BetalningsDetaljer` (`events/detail/Betalningar.tsx`) ställer BÅDA
+ * frågorna nedan först när Lotta fällt ut disclosuren (`aktiv`), och båda
+ * kostar ett Edge Function-anrop var. Callbacken ställer SAMMA två frågor i
+ * förväg, med SAMMA nycklar och SAMMA queryFn som `useOppnaBetalningar` och
+ * `useInbetalningarForEvent` ovan. Två cache-poster för samma data hade varit
+ * det enda sättet att göra saken värre än att inte förvärma alls, så
+ * nyckel-identiteten är inte en konvention här: `queryKeys.betalningar
+ * .perEvent` NORMALISERAR id-ordningen själv (`[...ids].sort()`), så
+ * anroparens sortering kan inte skapa en andra post ens om den avviker.
+ *
+ * INGEN EGEN `staleTime` (till skillnad från husets avsikts-prefetchar
+ * `useForberedAtgardsBilagor`/`EventCard.tsx`, som sätter 30 s): värdet ärvs
+ * från routerns globala 5 minuter (`src/router.ts`), vilket är EXAKT samma
+ * tröskel observern själv använder när `aktiv` slår om. Symmetrin är
+ * poängen. Källäst i `@tanstack/query-core` 5.102.2 (installerad version,
+ * `build/modern/queryObserver.js`): en `enabled`-flip på en REDAN MONTERAD
+ * observer går via `setOptions` → `shouldFetchOptionally(query, prevQuery,
+ * options, prevOptions)`, vars sista led är `isStale(query, options)` =
+ * `query.isStaleByTime(resolveStaleTime(options.staleTime, query))`. Hoppade
+ * prefetchen över hämtningen (datan färsk nog) gör alltså observern det
+ * också, och öppningen kostar noll anrop. En egen kortare `staleTime` hade
+ * betalat ett extra anrop i just det ögonblick Lotta klickar, mot ett
+ * Airtable-tak som delas med hennes egna klick och automationerna
+ * (`ADR-063` § S91-not) — precis den kostnadssida doktrinens § Dom väger.
+ * Samma val som `EventDetail.tsx`s `varmNarvaro` (TASK-416.16) redan gjorde
+ * för sin mount-prefetch.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * GATINGEN BOR HÄR, INTE HOS ANROPARNA
+ * ═══════════════════════════════════════════════════════════════════════════
+ * Två anropsplatser delar callbacken (sidmontering och avsikt,
+ * `Deltagare.tsx`s `ArbetsKo`), och en gating som bara den ena bar hade varit
+ * en regel som kan glömmas. Därför:
+ *
+ *   1. `betalningarPa()` — miljöflaggan (`lib/funktionsflaggor.ts`). Av i
+ *      prod, där varken migrationerna eller alla EF:er finns ännu (ADR-129
+ *      § Negativa och skuld): ett anrop hade fått 404. ÖPPET BOKFÖRT, för det
+ *      är en ASYMMETRI mot renderingen: `Deltagare.tsx` monterar
+ *      `DetaljRad`/`BetalningsDetaljer` OVILLKORLIGT (bara `aktiva.length >
+ *      0` gatar dem, TASK-145.4 AC #2) — flaggan gatar dem inte i dag. Att
+ *      låta förvärmningen ärva den frånvaron hade gjort VARJE eventsidbesök
+ *      i prod till två anrop som kan 404:a, i stället för de noll det är i
+ *      dag ända tills Lotta faktiskt klickar. Att i stället flagg-gata
+ *      renderingen är ett eget beslut om en yta denna skiva inte äger
+ *      (TASK-442 § F: minimalt scope), inte något som ska smygas in via en
+ *      prefetch.
+ *   2. Tom id-lista — EF:en hade svarat `{ grupper: [] }` och batch-frågan är
+ *      ändå avstängd i det läget (`enabled` ovan). Inkorgsfrågan värms inte
+ *      heller: utan anmälningar finns ingen betalningsyta att öppna.
+ *
+ * Listan är anroparens `aktiva` (`lib/aktiv-anmalan.ts`), samma mängd
+ * `BetalningsDetaljer` får som prop — aldrig de avbokade, som inte har någon
+ * rad i arbetsytan att vänta på.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * KOSTNADEN, RÄKNAD ÖPPET (doktrinens § Dom: ETT event, inte alla)
+ * ═══════════════════════════════════════════════════════════════════════════
+ * Ett eventsidbesök betalar hädanefter ETT batch-anrop (`hamta-inbetalningar`
+ * POST, hela eventets anmälningar i en begäran sedan TASK-437) plus det
+ * DELADE inkorgsanropet (`hamta-oppna-betalningar`, samma nyckel som
+ * inkorgen/personkortet/anmälans detaljvy — redan varmt om Lotta passerat
+ * någon av dem inom fönstret; det ingår INTE i startvärmningens sju
+ * datamängder, `data/warmup/startvarmningen.ts`, så första besöket i en
+ * session betalar det). Kostnaden är proportionerlig mot vad Lotta FAKTISKT
+ * gör — hon har öppnat DET eventet — aldrig mot eventregistrets bredd. Det
+ * är precis den distinktion `docs/research/forvarma-allt-branschmonster-
+ * 2026-09-06.md` § 5(b) punkt 2–3 drar, och § Dom avvisar motsatsen
+ * ("förvärm allt") på vår egen bas: 7–8× den kvitterade väntebudgeten redan
+ * vid 57 event.
+ *
+ * `prefetchQuery`, ALDRIG `ensureQueryData` (doktrinens § 5(b) punkt 4,
+ * ADR-078 beslut 1): fire-and-forget, ingen loader, ingenting som kan
+ * blockera navigeringen. Ett misslyckat förvärmningsanrop är osynligt — den
+ * riktiga hämtningen sker då vid klick precis som före denna skiva, med
+ * `BetalningsDetaljer`s egna skelett och felrutor.
+ *
+ * `retry: husetsRetryPolicy` PÅ BÅDA, av exakt samma skäl som hookarna ovan
+ * bär den (TASK-346.7.1): `prefetchQuery` ärver annars routerns naiva globala
+ * `retry: 3` (`src/router.ts`), som retryar BLINT även på 4xx — tre extra
+ * anrop mot det delade taket för ett fel som aldrig kan läka av att man
+ * väntar, och det i en väg Lotta inte ens bett om. En förvärmning som
+ * misslyckas ska misslyckas tyst och EN gång.
+ */
+export function useForberedEventBetalningar(): (
+  eventId: string,
+  anmalanRecordIds: readonly string[],
+) => void {
+  const dataSource = useDataSource();
+  const queryClient = useQueryClient();
+  return useCallback(
+    (eventId: string, anmalanRecordIds: readonly string[]) => {
+      if (!betalningarPa() || anmalanRecordIds.length === 0) return;
+      // Kopian skyddar mot att anroparens array muteras efter anropet:
+      // queryFn:ns payload läses först när hämtningen faktiskt körs.
+      const ids = [...anmalanRecordIds];
+      queryClient.prefetchQuery({
+        queryKey: queryKeys.betalningar.oppna,
+        queryFn: () => dataSource.fetchOppnaBetalningar(),
+        retry: husetsRetryPolicy,
+      });
+      queryClient.prefetchQuery({
+        queryKey: queryKeys.betalningar.perEvent(eventId, ids),
+        queryFn: () => dataSource.fetchInbetalningarBatch({ anmalanRecordIds: ids }),
+        retry: husetsRetryPolicy,
+      });
+    },
+    [dataSource, queryClient],
+  );
 }

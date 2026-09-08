@@ -54,8 +54,9 @@ import { kategoriPillText } from './hallplats-steg-prototyp';
  *
  * Beloppet kommer ur `useOppnaBetalningar` — SAMMA anrop som inkorgen och
  * anmälans detaljvy, en rad per anmälan med öppet belopp — slaget upp per
- * person. Noll extra anrop för sjutton personer, och hämtningen väntar tills
- * Lotta faktiskt öppnat detaljerna (`aktiv`): sidladdningen kostar ingenting.
+ * person. Noll extra anrop för sjutton personer. Observern är fortfarande
+ * gatad på `aktiv`, men datan är normalt redan hämtad när Lotta klickar: se
+ * § TASK-442 nedan.
  *
  * TVÅ KÄLLOR, OCH VILKEN SOM VINNER: flikarna läser basens spegel
  * (`anmalningsavgift`/`slutbetalning`), beloppet läser Postgres via samma
@@ -98,9 +99,43 @@ import { kategoriPillText } from './hallplats-steg-prototyp';
  * docblock dömde ut ("tjugo Edge Function-anrop"). `hamta-inbetalningar`
  * tar sedan TASK-437 en batch av anmälnings-id:n (POST, tak 200) och svarar
  * grupperat per anmälan; `useInbetalningarForEvent` hämtar den EN gång per
- * event, först när detaljerna öppnats (`aktiv`) — noll anrop vid sidladdning,
- * bevisat i e2e via nätverksräkning. Prod-EF:en deployades av Marcus
- * 2026-09-08 (version 6) innan denna klientändring landade.
+ * event. Prod-EF:en deployades av Marcus 2026-09-08 (version 6) innan denna
+ * klientändring landade.
+ *
+ * VARIFRÅN DEN HÄMTNINGEN STARTAR bytte regel samma dag — se § TASK-442.
+ * Fram till dess gällde "noll anrop vid sidladdning, allt vid klicket", och
+ * det stod på denna rad som ytans avsikt.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * TASK-442 (Marcus 2026-09-08): FÖRVÄRMT, INTE LATT — NOLL VÄNTAN VID KLICKET
+ * ═══════════════════════════════════════════════════════════════════════════
+ * Ögonmätningen av steg 2 gav Marcus fråga: "inbetalningsraderna kommer
+ * förvärmas när man går in på eventdetalj-sidan eller något sådant eller? Så
+ * man inte behöver vänta på att de laddas när man öppnar detaljerna?" — och
+ * beslutet: "Kör på din rek, gör det branschledarmässigt och ordentligt!!"
+ *
+ * DEN GAMLA REGELN VAR INTE FEL, DEN VAR EN ANNAN AVVÄGNING. TASK-436/438
+ * valde medvetet noll kostnad vid sidladdning mot ett skelett vid klicket
+ * (två anrop, ett skelett per person). Marcus ögonmätte det priset och
+ * vände avvägningen: sidan betalar två anrop för DET event han öppnat,
+ * klicket kostar noll väntan.
+ *
+ * HÄMTNINGEN STARTAR NU I `Deltagare.tsx`s `ArbetsKo` — vid sidmontering så
+ * fort anmälningarna är kända, och vid AVSIKT (hover/fokus på "Öppna
+ * detaljer", `DetaljRad` § AVSIKT) för fallet där klicket hinner före
+ * monteringsförvärmningen. Båda vägarna går genom EN callback,
+ * `useForberedEventBetalningar` (`data/betalningar/useBetalningar.ts`), som
+ * äger nyckel-identiteten, miljöflaggan och kostnadsräkningen; läs den
+ * docblocken för mekaniken, den upprepas inte här (ADR-100 § 2: karta, inte
+ * kopia).
+ *
+ * DENNA FIL ÄNDRADES INTE I LÄSVÄGEN (TASK-442 beslut C). `aktiv`-gatingen,
+ * `refetchOnMount: 'always'` och skeletten står kvar precis som de var:
+ * förvärmningen fyller cachen, observern läser den när disclosuren öppnas,
+ * och skeletten finns kvar för de lägen där förvärmningen inte hann eller
+ * misslyckades (flygplansläge, EF-fel, ett event vars anmälningar just
+ * ändrats). Ett skelett som aldrig kan visas är en lögn om ytan; ett som
+ * sällan visas är ett golv.
  *
  * LADDNING OCH FEL följer `InbetalningsLista.tsx`: skelett per person
  * (`role="status"`) medan svaret väntas — loggen visar INTE utskicken först
@@ -202,15 +237,27 @@ function tidsvarde(nar: string): number {
     `hover:bg-bg-emphasized` + `motion-safe:transition-colors`, samma som
     `AnmalanDetail`s eventlänk och `EventsList`. Geometrin är familjens
     48 px-rad (6+6+24+6+6): hover-plattan ligger på KNAPPEN och kan därför
-    bära `rounded-lg`. `focus-visible` bärs globalt via `--mm-color-focus-ring`. */
+    bära `rounded-lg`. `focus-visible` bärs globalt via `--mm-color-focus-ring`.
+
+    AVSIKT (TASK-442, ADR-078 beslut 3): `onAvsikt` körs på `onMouseEnter` +
+    `onFocus` — TabBar-formen för NATIVA knappar (`AppShell/TabBar.tsx`s
+    `varmPersonregister`), inte React Arias `onHoverStart`, som denna
+    `<button>` inte har. Hover täcker pekaren, fokus täcker tangentbordet: en
+    likvärdig signal oavsett styrsätt. Propen är VALFRI — komponenten är
+    exporterad, och en yta utan något att värma ska slippa skicka en tom
+    callback bara för att tillfredsställa en typ. */
 export function DetaljRad({
   oppen,
   kontrollerarId,
   onToggle,
+  onAvsikt,
 }: {
   oppen: boolean;
   kontrollerarId: string;
   onToggle: () => void;
+  /** Förvärmning på avsikt: körs vid hover och vid fokus, aldrig vid klick
+      (klicket har redan `onToggle`, och en värmning där vore för sen). */
+  onAvsikt?: () => void;
 }) {
   return (
     <div className="py-1.5">
@@ -219,6 +266,8 @@ export function DetaljRad({
         aria-expanded={oppen}
         aria-controls={kontrollerarId}
         onClick={onToggle}
+        onMouseEnter={onAvsikt}
+        onFocus={onAvsikt}
         className="flex w-full items-center justify-center gap-2 rounded-lg py-1.5 font-medium text-body hover:bg-bg-emphasized motion-safe:transition-colors"
       >
         {oppen ? 'Stäng detaljer' : 'Öppna detaljer'}
@@ -372,9 +421,12 @@ function BetalningsPersonRad({
  * Anmälda deltagare (`Deltagare.tsx`s `ArbetsKo`), fällbar under registret,
  * bakom samma `DetaljRad`. Deadline-badgen följer med — den renderas HÄR.
  *
- * `aktiv` är disclosure-läget: beloppen hämtas först när Lotta öppnat
- * detaljerna (ett anrop för hela eventet, samma cache som inkorgen), aldrig
- * vid sidladdning.
+ * `aktiv` är disclosure-läget: observern hämtar först när Lotta öppnat
+ * detaljerna (ett anrop för hela eventet, samma cache som inkorgen). Sedan
+ * TASK-442 är cachen normalt redan fylld när det sker — `Deltagare.tsx`
+ * förvärmer båda frågorna vid sidmontering och vid avsikt, så `aktiv`-flippen
+ * blir en cache-läsning i stället för en hämtning. Se filens docblock
+ * § TASK-442.
  */
 export function BetalningsDetaljer({
   event,
