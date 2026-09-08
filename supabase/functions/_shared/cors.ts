@@ -4,6 +4,16 @@
 // lista av origins). Origin-headern från klienten matchas exakt mot
 // allowlisten — inga wildcards, ingen substring-matchning.
 //
+// TASK-415.1 (2026-09-06): en ANDRA, valfri secret —
+// CORS_ALLOWED_ORIGIN_PATTERNS — prövas EFTER exaktlistan. Den bär
+// kommaseparerade MÖNSTER (`*` som enda jokertecken) för Vercel-
+// förhandsvisningarnas växlande origins (staging-only; sätts ALDRIG i
+// prod). Hela mönster-/beslutslogiken bor i `cors-origin-policy.ts`
+// (Deno-fri, med avsikt — se den filens filhuvud) så att den kan
+// enhetstestas i Node; denna fil är en tunn wrapper som läser env och
+// delegerar dit. Se docs/specs/SECURITY-SPEC.md §6.2 och
+// docs/decisions/ADR-050-isolerad-staging-miljo.md § Updates.
+//
 // K7-respekt (rekommendation ≠ beslut när gate är öppen): env-driven
 // allowlist är medveten pre-S-track-bridge. Kan flyttas till
 // `tenants.allowed_origins` när 06b §A1 byggs. Strukturera så att
@@ -21,34 +31,48 @@
 //    Browsers skickar alltid Origin på preflight per spec. Saknad
 //    Origin på preflight indikerar manipulation eller bugg.
 
+import { decideOrigin, parseCommaSeparatedList } from './cors-origin-policy.ts';
+
 const BASE_HEADERS: Record<string, string> = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
   'Access-Control-Allow-Methods': 'GET, POST, PATCH, OPTIONS',
 };
 
 function getAllowlist(): string[] {
-  const raw = Deno.env.get('CORS_ALLOWED_ORIGINS') ?? '';
-  return raw
-    .split(',')
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0);
+  return parseCommaSeparatedList(Deno.env.get('CORS_ALLOWED_ORIGINS'));
+}
+
+/** CORS_ALLOWED_ORIGIN_PATTERNS — ORÖRD/tom i prod, satt enbart i staging (TASK-415.1). */
+function getPatternAllowlist(): string[] {
+  return parseCommaSeparatedList(Deno.env.get('CORS_ALLOWED_ORIGIN_PATTERNS'));
 }
 
 function isAllowedOrigin(origin: string): boolean {
-  const allowlist = getAllowlist();
-  if (allowlist.length === 0) return false; // deny-by-default
-  return allowlist.includes(origin);
+  const { allowed, rejectedPatterns } = decideOrigin(origin, getAllowlist(), getPatternAllowlist());
+  for (const pattern of rejectedPatterns) {
+    console.warn(
+      `[cors] Ogiltigt mönster i CORS_ALLOWED_ORIGIN_PATTERNS, ignoreras (fail-closed): "${pattern}"`,
+    );
+  }
+  return allowed;
 }
 
 // Bygger CORS-headers för en specifik request. Sätter
 // Access-Control-Allow-Origin BARA om Origin finns och är på
-// allowlisten. Saknad Origin (server-till-server) eller otillåten
-// Origin → bara base-headers utan Allow-Origin (browser blockerar
-// då response, server-till-server bryr sig inte).
+// allowlisten (exakt eller mönster). Saknad Origin (server-till-server)
+// eller otillåten Origin → bara base-headers utan Allow-Origin (browser
+// blockerar då response, server-till-server bryr sig inte).
+//
+// Vary: Origin sätts på varje svar som BÄR Access-Control-Allow-Origin
+// (TASK-415.1, research sidofynd 3) — MDN: "the server should also
+// include Origin in the Vary response header to indicate to clients
+// that server responses will differ based on the value of the Origin
+// request header." Utan den kan en delad cache (CDN, proxy) servera ett
+// svar avsett för origin A till origin B.
 export function corsHeadersFor(req: Request): Record<string, string> {
   const origin = req.headers.get('Origin');
   if (origin && isAllowedOrigin(origin)) {
-    return { ...BASE_HEADERS, 'Access-Control-Allow-Origin': origin };
+    return { ...BASE_HEADERS, 'Access-Control-Allow-Origin': origin, Vary: 'Origin' };
   }
   return { ...BASE_HEADERS };
 }

@@ -75,6 +75,11 @@
     "supabase/functions/_shared/belaggning.ts",
     "supabase/functions/_shared/coerce.ts",
     "supabase/functions/_shared/confirm-registrations.ts",
+    // TASK-415.1: CORS-originbeslutets rena matchningslogik (mönster +
+    // exaktlista), utbruten ur `cors.ts` (som rör Deno.env direkt och
+    // därför INTE står i denna lista). INGA importer alls — samma klass
+    // som plats-uppslag.ts nedan.
+    "supabase/functions/_shared/cors-origin-policy.ts",
     "supabase/functions/_shared/cursor.ts",
     "supabase/functions/_shared/errors.ts",
     "supabase/functions/_shared/event-map.ts",

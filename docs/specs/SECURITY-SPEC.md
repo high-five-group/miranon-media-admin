@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-08-08
+updated: 2026-09-06
 review_by: 2026-11-15
 status: stable
 ---
@@ -513,6 +513,8 @@ CORS-headers genereras per-request baserat på Origin matchat mot env-allowlist 
 
 - Browser-CORS (preflight 403 på otillåten origin) särskiljs från server-till-server (no Origin → tillåts genom).
 - Skalar till tenant-baserade allowlists post-S-track utan refaktorering.
+- Svar som bär `Access-Control-Allow-Origin` bär även `Vary: Origin` (TASK-415.1) — utan den kan en delad cache servera fel origins svar till en annan origin.
+- **`CORS_ALLOWED_ORIGIN_PATTERNS`** (TASK-415.1, 2026-09-06): en ANDRA, valfri secret som prövas EFTER `CORS_ALLOWED_ORIGINS`, satt ENBART i staging (tom/ohanterad i prod). Bär kommaseparerade MÖNSTER — `*` som enda jokertecken, matchar aldrig över en `.`-gräns — för Vercel-förhandsvisningarnas växlande origins. Ett mönster utan minst en literal (icke-wildcard) domän-del (bart `*`, `https://*`) ignoreras fail-closed med en loggrad; det faller aldrig tillbaka till "tillåt allt". Ren matchningslogik: `supabase/functions/_shared/cors-origin-policy.ts` (Deno-fri, enhetstestad i `tests/api/cors-origin-policy.test.ts`); wrapper som läser env: `cors.ts`. Se docs/decisions/ADR-050-isolerad-staging-miljo.md § Updates och docs/research/pr-forhandsvisningar-och-backend-branschmonster-2026-09-06.md §4 för branschunderlaget.
 
 ### 6.3 `AuthContext | Response` discriminated union
 
