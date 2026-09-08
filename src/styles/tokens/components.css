@@ -412,6 +412,25 @@
   --mm-bilagekort-ikonknapp-text: var(--mm-text-secondary);
   --mm-bilagekort-ikonknapp-bg-hover: var(--mm-bg-emphasized);
 
+  /* ── Dokumentlistans ränna (TASK-309.48, 2026-09-08) ──
+     Avståndet MELLAN bilagekorten i `DokumentYta.tsx`s lista
+     (`DokumentLista` OCH `GemensamtLage` — samma `<li>`-form på två
+     ställen). ETT tal i EN fil (ADR-083): `<li>`s radklass läser den via
+     Tailwinds `mt-(--mm-dokumentlista-ranna)`, och
+     `useLastaListhojd`-hooken läser SAMMA variabel via
+     `getComputedStyle(ul).getPropertyValue(...)` för att låsa listans höjd
+     — ingen av de två bär ett eget, duplicerad px-tal. Se hookens
+     docblock (`DokumentYta.tsx`) för hela geometrin.
+
+     VÄRDET ÄR OFÖRÄNDRAT (8 px) — det som ändras i denna skiva är FORMEN:
+     rännan var en transparent `border-bottom` på VARJE `<li>` (även den
+     sista), vilket lade 8 px ränna INUTI sista radens egen box och fick
+     rullningslistens spår att sluta 8 px under sista kortet (Marcus
+     prod-titt 2026-09-08). Som en `margin-top` på varje rad UTOM DEN
+     FÖRSTA (`first:mt-0`) ligger rännan bara MELLAN kort — sista radens
+     box slutar exakt vid kortets egen kant, och spåret gör det med den. */
+  --mm-dokumentlista-ranna: 8px;
+
   /* ── Åtgärdskö-markör (TASK-291 — QA-fynd 284.5, ADR-122 §22 "Markören") ──
      Fylld cirkel/pill-behållare: bär BÅDE åtgärdskö-radens ledande
      ikon-markör (variant A) och den friliggande räkne-badgen (TASK-303

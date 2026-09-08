@@ -1052,17 +1052,28 @@ test.describe('Dokument-ytan — räckviddsval, gemensamt läge, badges (TASK-27
     await expect(egen).toHaveText('Detta event');
 
     // HÖJDLÅSET: en 13 px-ikon i en `text-caption`-pill (radhöjd 18 px) får
-    // strukturellt inte växa raden. Mätt, inte resonerat — 124 px är samma
-    // tal `dokument-lista-hojdlas` låser, och det ska gälla ÄVEN på en rad
-    // som bär den nya pillen.
+    // strukturellt inte växa raden. Mätt, inte resonerat.
+    //
+    // [TASK-309.48, 2026-09-08, RÄTTAT — se PR som fixade CI-röd på denna
+    // rad] Talet var 124 (kort 116 + rännans EGEN `border-b-8` på VARJE
+    // `<li>`, TASK-309.46-formen). Rännan är sedan TASK-309.48 en
+    // `margin-top` MELLAN raderna (`mt-(--mm-dokumentlista-ranna)
+    // first:mt-0`) i stället för en border PÅ raden — och `margin` räknas
+    // ALDRIG in i `getBoundingClientRect().height` (bara border-boxen gör
+    // det). VARJE `<li>` mäter därför nu EXAKT kortets egna höjd, 116 px,
+    // oavsett position i listan (första raden har ingen marginal alls,
+    // `first:mt-0`; övriga rader har en marginal FÖRE sig som inte syns i
+    // deras EGEN höjdmätning). `dokument-lista-hojdlas.acceptance.test.ts`
+    // låser samma 116 px som `LISTA_FALLBACK_KORTHOJD` — se den filens
+    // docblock för hela geometrin (`kort × 4 + ränna × 3` i höjdlåset).
     const liHojder = await page
       .getByTestId('dokument-lista')
       .evaluate((ul) =>
         Array.from(ul.children).map((li) => Math.round(li.getBoundingClientRect().height)),
       );
     expect(liHojder.length).toBeGreaterThan(0);
-    expect(liHojder, 'ikonen får inte växa raden — höjdlåset är 124 px').toEqual(
-      liHojder.map(() => 124),
+    expect(liHojder, 'ikonen får inte växa raden — varje kort är 116 px').toEqual(
+      liHojder.map(() => 116),
     );
   });
 

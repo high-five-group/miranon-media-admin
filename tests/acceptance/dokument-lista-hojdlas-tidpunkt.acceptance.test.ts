@@ -103,32 +103,34 @@ function handler(antalEgna: number, antalGemensamma: number, latensMs = 0) {
 }
 
 /**
- * [TASK-309.46] RÄNNAN MELLAN KORTEN, i px — radens transparenta
- * `border-bottom` (`border-b-8`).
+ * [TASK-309.48] RÄNNAN MELLAN KORTEN, i px — radens `margin-top`
+ * (`mt-(--mm-dokumentlista-ranna) first:mt-0`), buren av komponent-token
+ * `--mm-dokumentlista-ranna` (`components.css`).
  *
- * DUPLICERAS MEDVETET, samma disciplin som `FALLBACK` nedan: hookens NIVÅ 1
- * och 2 DRAR BORT den sista mätta radens ränna ur låset (`separatorBredd`
- * läser `border-bottom-width`), så en assertion mot `radhöjd × 4` utan avdrag
- * kodar den form som gällde när rännan var en padding och separatorn 0 px.
- * Talet står här så att en ändring av rännan fäller testet i stället för att
- * tyst göra det till en tautologi.
+ * VÄRDET ÄR OFÖRÄNDRAT (8 px) SEDAN TASK-309.46 — FORMEN ÄR DET INTE. Fram
+ * till TASK-309.48 var rännan en `border-bottom` PÅ VARJE rad (radens
+ * `separatorBredd`), och hookens NIVÅ 1/2 DROG BORT den sista mätta radens
+ * EGEN ränna ur låset. Sedan rännan blev en marginal MELLAN raderna lägger
+ * hooken i stället TILLBAKA den, explicit, i alla tre nivåer: `kort × 4 +
+ * ränna × 3`. En assertion mot `radhöjd × 4` UTAN detta tillägg kodar den
+ * gamla formen.
+ *
+ * DUPLICERAS MEDVETET, samma disciplin som `FALLBACK` nedan. Talet står här
+ * så att en ändring av rännan fäller testet i stället för att tyst göra det
+ * till en tautologi.
  */
 const RANNA = 8;
 
 /**
- * [TASK-309.46] ÖVRE TOLERANS FÖR NIVÅ 3:s HÖJD — 2 px, inte 8.
+ * [TASK-309.46, oförändrad efter TASK-309.48] ÖVRE TOLERANS FÖR NIVÅ 3:s
+ * HÖJD — 2 px, inte 8.
  *
- * SKÄRPT PÅ EN NEGATIV KONTROLL, inte på en känsla. Bandet var
- * `FALLBACK × 4 + 8`, valt när "fel svar" låg långt utanför det. Sedan
- * TASK-309.46 är det NÄRMASTE felsvaret exakt EN RÄNNA fel (konstanten 124 i
- * stället för 122 ⇒ 496 i stället för 488), alltså precis 8 px — och den
- * gamla toleransen SVALDE det: en isolerad kontroll som satte tillbaka 124
- * lämnade testet GRÖNT.
- *
- * `<ul>` bär ingen kant (mätt), så `kantjustering` är 0 och den uppmätta
- * höjden är exakt 488 vid både 1280 och 390 px. 2 px räcker för sub-pixel-brus
- * och utesluter ränn-felet. Vidga inte bandet igen utan att först fråga vilket
- * felsvar som då släpps in.
+ * SKÄRPT PÅ EN NEGATIV KONTROLL, inte på en känsla. Det NÄRMASTE tänkbara
+ * felsvaret sedan TASK-309.48 är STÖRRE än förut: en agent som av misstag
+ * lämnar konstanten på det GAMLA värdet (122, "kort × 4 + ränna × 3" =
+ * 122×4+24 = **512**) missar med 24 px, inte 8. 2 px räcker fortfarande gott
+ * för sub-pixel-brus och utesluter varje sådant fel — vidga inte bandet
+ * utan att först fråga vilket felsvar som då släpps in.
  */
 const TOLERANS = 2;
 
@@ -311,15 +313,18 @@ test.describe('S1 — höjden är låst från listans FÖRSTA målade ram', () =
     // Slutläget: fyra raders låst höjd trots att bara två rader finns.
     const slut = await matGeometri(page);
     expect(slut.last).toBe(true);
-    // [TASK-309.46] AVDRAGET ÄR NYTT I TALEN, INTE I HOOKEN. NIVÅ 2 har
-    // alltid satt `radhöjd × 4 − radens egen separator`; separatorn var bara
-    // 0 px så länge rännan låg som padding. Sedan rännan blev en transparent
-    // `border-bottom` (8 px) har avdraget ett föremål, och den låsta höjden är
-    // 488 = 124 × 4 − 8. Att skriva `maxRad * 4` utan avdrag hade alltså
-    // kodat den GAMLA formen — bounds:en är oförändrade i sin bredd.
+    // [TASK-309.48] TILLÄGGET ÄR I TALEN, INTE I HOOKEN. NIVÅ 2 sätter
+    // `kort × 4 + ränna × 3` — se `useLastaListhojd`s "kort × 4 + ränna ×
+    // 3"-stycke. `radHojder` (via `getBoundingClientRect()` på varje `<li>`)
+    // mäter sedan denna skiva ALLTID kortets EGNA höjd, aldrig kort+ränna,
+    // eftersom rännan bor som en marginal MELLAN raderna i stället för på
+    // raden själv (309.46:s `border-bottom`-form). Låst höjd är 488 =
+    // 116 × 4 + 8 × 3. Att skriva `maxRad * 4` UTAN tillägget hade alltså
+    // kodat en form som aldrig gällt sedan rännan flyttade ut ur radens egen
+    // box — bounds:en är oförändrade i sin bredd.
     const maxRad = Math.max(...slut.radHojder);
-    expect(slut.hojd).toBeGreaterThanOrEqual(maxRad * 4 - RANNA - 2);
-    expect(slut.hojd).toBeLessThanOrEqual(maxRad * 4 - RANNA + 4);
+    expect(slut.hojd).toBeGreaterThanOrEqual(maxRad * 4 + RANNA * 3 - 2);
+    expect(slut.hojd).toBeLessThanOrEqual(maxRad * 4 + RANNA * 3 + 4);
   });
 
   // [T176, 2026-08-29] TESTET "sidladdning direkt i ?typ=mall" ÄR RIVET, INTE
@@ -335,7 +340,7 @@ test.describe('S1 — höjden är låst från listans FÖRSTA målade ram', () =
     page,
     network,
   }) => {
-    // Låser den nåbarhet `LISTA_FALLBACK_RADHOJD`s docblock beskriver efter
+    // Låser den nåbarhet `LISTA_FALLBACK_KORTHOJD`s docblock beskriver efter
     // 309.39: noll RIKTIGA rader i DOM och ingen tidigare mätning i
     // komponentens liv, alltså NIVÅ 3 (konstanten).
     //
@@ -350,15 +355,16 @@ test.describe('S1 — höjden är låst från listans FÖRSTA målade ram', () =
     const geometri = await matGeometri(page);
     expect(geometri.last).toBe(true);
     // Talet DUPLICERAS medvetet, samma disciplin som systerfilens
-    // `FALLBACK_RADHOJD` — se dess kommentar. [T176] 99 → 107 → 124, och
-    // [TASK-309.46] 124 → 122: konstanten är NIVÅ 3:s reserv för den
+    // `FALLBACK_KORTHOJD` — se dess kommentar. [T176] 99 → 107 → 124, och
+    // [TASK-309.46] 124 → 122: konstanten var NIVÅ 3:s reserv för den
     // SEPARATOR-FRIA per-rad-höjden (488 / 4), inte för `<li>`-höjden 124.
-    // `<li>` är fortfarande 124 (kort 116 + 8 px ränna); det som ändrades är
-    // att rännan ligger som transparent `border-bottom` och därmed dras bort
-    // ur låset. Uppmätt i denna rigg vid både 1280 px och 375 px.
-    const FALLBACK = 122;
-    expect(geometri.hojd).toBeGreaterThanOrEqual(FALLBACK * 4);
-    expect(geometri.hojd).toBeLessThanOrEqual(FALLBACK * 4 + TOLERANS);
+    // [TASK-309.48] 122 → 116: rännan är sedan denna skiva en marginal, så
+    // `<li>` ÄR kortets höjd, alltid — 116, inte 124. Formeln bär rännan
+    // TILLBAKA explicit i stället (`kort × 4 + ränna × 3`). Uppmätt i denna
+    // rigg vid både 1280 px och 375 px.
+    const FALLBACK = 116;
+    expect(geometri.hojd).toBeGreaterThanOrEqual(FALLBACK * 4 + RANNA * 3);
+    expect(geometri.hojd).toBeLessThanOrEqual(FALLBACK * 4 + RANNA * 3 + TOLERANS);
     expect(geometri.scrollHeight).toBe(geometri.clientHeight);
   });
 
@@ -451,30 +457,28 @@ test.describe('S2 — fjärde kortet ligger HELT innanför klippkanten, femte HE
   }) => {
     // Gränsfallet får inte betalas av regeln: vid exakt fyra rader finns
     // inget femte kort alls, och fjärde kortet ska ligga helt innanför
-    // kanten med luft kvar (radens `py-1`). [T176] Prövade förut att
-    // fjärde raden saknade `border-bottom`; separatorn finns inte längre,
-    // så frågan ställs mot korten i stället.
+    // kanten. [T176] Prövade förut att fjärde raden saknade `border-bottom`;
+    // separatorn finns inte längre, så frågan ställs mot korten i stället.
     network.use(handler(0, 4));
     await page.goto('/mer/dokument');
     await expect(page.getByText('Delad 4.pdf')).toBeVisible();
 
-    // [TASK-309.46] `scrollHeight === clientHeight` STOD HÄR och skulle nu
-    // fälla på en KORREKT app. Rännan är sedan dess en transparent
-    // `border-bottom`, och låset EXKLUDERAR fjärde radens (det är det som gör
-    // att spåret börjar OCH slutar vid korten) medan rännan ligger kvar i
-    // innehållet — fyra rader mäter alltså 496 px innehåll i en 488 px box.
+    // [TASK-309.46, historik] `scrollHeight === clientHeight` stod här och
+    // föll då för att rännan var en `border-bottom` PÅ VARJE rad — fjärde
+    // radens EGEN ränna räknades in i `scrollHeight` men EXKLUDERADES ur
+    // låset, en 8 px-diskrepans mellan innehåll och box.
     //
-    // Invarianten skrivs därför ut i stället för att mätas indirekt, och blir
-    // strängare: listan går inte att rulla (`overflow-y: hidden`, alltså ingen
-    // scrollbar), övermåttet är EXAKT en ränna och inget annat, och fjärde
-    // kortet ligger helt innanför kanten. Se systerfilens
-    // `provaExaktFyraRader` för hela resonemanget.
+    // [TASK-309.48] LIKHETEN ÄR TILLBAKA. Rännan är en `margin-top` MELLAN
+    // raderna, aldrig EFTER den sista — vid exakt fyra rader finns ingen
+    // "extra" ränna att räkna: `scrollHeight === clientHeight` håller igen,
+    // som en direkt konsekvens av att rännan inte längre bor i NÅGON rads
+    // egen box. Se systerfilens `provaExaktFyraRader` för hela resonemanget.
     const geometri = await matGeometri(page);
     expect(geometri.overflowY, 'vid fyra rader ska listan inte kunna rullas alls').toBe('hidden');
     expect(
-      geometri.scrollHeight - geometri.clientHeight,
-      `övermåttet ska vara EXAKT fjärde radens transparenta ränna — mätt ${geometri.scrollHeight} − ${geometri.clientHeight}`,
-    ).toBe(RANNA);
+      geometri.scrollHeight,
+      `scrollHeight (${geometri.scrollHeight}) ska vara EXAKT clientHeight (${geometri.clientHeight}) — ingen ränna kvar att räkna som övermått`,
+    ).toBe(geometri.clientHeight);
     const lage = await kortensLage(page);
     expect(lage?.antalKort).toBe(4);
     expect(lage?.femteTop).toBeNull();
@@ -487,10 +491,11 @@ test.describe('S2 — fjärde kortet ligger HELT innanför klippkanten, femte HE
   }) => {
     // Före TASK-309.39 skilde de sig med den fjärde separatorns bredd: fyra
     // rader gav ingen linje att räkna in, fem gav en. [T176] Termen finns
-    // inte längre alls — rännan bor INUTI varje `<li>` (`py-1`) och är
-    // därför lika stor i varje rad oavsett position, så NIVÅ 1:s spann och
-    // NIVÅ 2:s radhöjd ger samma tal. Regel 5 prövas fortsatt som EXAKT
-    // likhet i det par som tidigare bar hela avvikelsen.
+    // inte längre alls. [TASK-309.48] Rännan bor sedan denna skiva som en
+    // `margin-top` MELLAN varje `<li>` (utanför varje rads egen box) — NIVÅ
+    // 1:s spann och NIVÅ 2:s korthöjd (`kort × 4 + ränna × 3`) ger därför
+    // samma tal oavsett var i listan mätningen tas. Regel 5 prövas fortsatt
+    // som EXAKT likhet i det par som tidigare bar hela avvikelsen.
     //
     // ENDA testet i filen med TVÅ laddningar, och därför det enda som
     // behöver arrangemanget — se `arrangeraTomCache` för mekanismen och
