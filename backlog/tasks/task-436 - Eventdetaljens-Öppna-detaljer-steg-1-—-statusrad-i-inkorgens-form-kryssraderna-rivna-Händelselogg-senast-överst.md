@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-08 02:20'
-updated_date: '2026-09-08 02:53'
+updated_date: '2026-09-08 03:16'
 labels:
   - ready-for-agent
 dependencies: []
@@ -33,9 +33,9 @@ KÄLLOR: `src/components/events/detail/Betalningar.tsx` (docblock rad 16–39, `
 <!-- AC:BEGIN -->
 - [x] #1 Per person i Öppna detaljer: namn + pills som i dag, därunder statusraden 'Kvar att betala' i persondetaljens etikett-värde-form (husets form för detaljkort, BetalningsInkorg.tsx RadInnehall docblock: etikett-formen bär panelen och anmälans detaljvy, löpande text bär inkorgen) renderad av samma utbrutna komponent som anmälans detaljvy; inkorgens befintliga tester gröna utan ändring
 - [x] #2 BetalningsLasRad och de två kryssraderna borta; inga disabled-kryss i sektionen; Saknar/Klara-flikarna och deadline-märket oförändrade; eventets pris saknas sägs EN gång på eventnivå, aldrig per person
-- [x] #3 Tidslinjen heter Händelselogg i kod, aria och tomtext, sorteras senast överst, bär dagens utskick plus Anmäld ur inskickad med detaljvyns ordval ur en delad härledning (registrations/handelser.ts) som även detaljvyns Händelser använder; ingen synlig rubrik
-- [x] #4 Noll skriv-affordanser: mark-paid.staging och event-deltagare.staging omskrivna mot den nya formen med invarianterna bevarade (noll textbox, noll mailto) och skärpta (noll kryss); axe 0 på öppen sektion; beloppen hämtas först när detaljerna öppnas (noll anrop vid sidladdning, bevisat i e2e); prefers-contrast more, prefers-reduced-motion och print prövade i browsern
-- [ ] #5 Ögonmätt av Marcus mot dev-server/staging före Done
+- [x] #3 Noll skriv-affordanser: mark-paid.staging och event-deltagare.staging omskrivna mot den nya formen med invarianterna bevarade (noll textbox, noll mailto) och skärpta (noll kryss); axe 0 på öppen sektion; beloppen hämtas först när detaljerna öppnas (noll anrop vid sidladdning, bevisat i e2e); prefers-contrast more, prefers-reduced-motion och print prövade i browsern
+- [ ] #4 Ögonmätt av Marcus mot dev-server/staging före Done
+- [x] #5 Tidslinjen heter Händelselogg i kod (variabeln handelselogg) och i aria (listans tillgängliga namn via Tidslinje-propen etikett, utan rubrikelement); tomtexten säger i klartext att inga händelser finns (Gunilla-principen, inte ordet Händelselogg); sorteras senast överst, bär dagens utskick plus Anmäld ur inskickad med detaljvyns ordval ur en delad härledning (registrations/handelser.ts) som även detaljvyns Händelser använder; ingen synlig rubrik
 <!-- AC:END -->
 
 ## Definition of Done

@@ -36,9 +36,17 @@ export interface TidslinjeHandelse {
  * ikon-cirklarna är aria-hidden (dekor) — varje list-post läses som
  * "text, tid". Inga interaktiva element — ren läsyta.
  */
-export function Tidslinje({ handelser }: { handelser: readonly TidslinjeHandelse[] }) {
+export function Tidslinje({
+  handelser,
+  etikett,
+}: {
+  handelser: readonly TidslinjeHandelse[];
+  /** Listans tillgängliga namn (`aria-label`) när ingen synlig rubrik bär det
+      — eventdetaljens Händelselogg (TASK-436) står utan rubrik med avsikt. */
+  etikett?: string;
+}) {
   return (
-    <ol className="relative my-0 flex list-none flex-col py-3 pl-0">
+    <ol aria-label={etikett} className="relative my-0 flex list-none flex-col py-3 pl-0">
       <span aria-hidden="true" className="absolute top-5 bottom-5 left-[15px] w-px bg-border" />
       {handelser.map((h) => {
         const Ikon = h.ikon;

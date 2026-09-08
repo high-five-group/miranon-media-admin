@@ -490,6 +490,48 @@ test.describe('Betalningsytan — LÄSYTA, mekaniskt bevisad (TASK-145.4 AC #5/#
     await oppnaDetaljer(page);
     await expect(personRad(page, 'Eva Lindqvist').getByText('Kvar att betala')).toBeVisible();
     expect(raknare.anrop).toBe(1);
+
+    // Stäng och öppna igen: cachen bär (global staleTime 5 min, router.ts) —
+    // en andra öppning kostar inget nytt anrop. Queryn delas med inkorgen, så
+    // ett oväntat svar här hade varit en full omhämtning av alla öppna
+    // betalningar per klick.
+    await gruppen(page).getByRole('button', { name: 'Stäng detaljer' }).click();
+    await oppnaDetaljer(page);
+    await expect(personRad(page, 'Eva Lindqvist').getByText('Kvar att betala')).toBeVisible();
+    expect(raknare.anrop).toBe(1);
+  });
+
+  test('Postgres vinner även under Klara: öppen rad trots spegel som säger klart; okänt pris i raden faller tillbaka på basens saknas', async ({
+    page,
+  }) => {
+    const oppna = [
+      // Karin: basen säger båda mottagna (fliken Klara), Postgres har 2 000 av
+      // 2 500 — raden vinner, och spegelns eftersläpning sägs rakt ut.
+      oppen('recBET00000karin', 'Karin Sjögren', {
+        saknas: 500,
+        summaInbetalt: 2000,
+        summaInbetaltSpegel: 2500,
+        spegelIFas: false,
+      }),
+      // Eva: raden finns men priset är okänt i Postgres — `kvar` blir null och
+      // basens eget `saknas` är det enda talet som finns.
+      oppen('recBET000000eva1', 'Eva Lindqvist', { gallandePris: null, saknas: 700 }),
+    ];
+    await mockSidan(page, { oppna });
+    await page.goto(`/event/${EVENT_ID}`);
+    await oppnaDetaljer(page);
+
+    await expect(
+      personRad(page, 'Eva Lindqvist').getByText('700 kr', { exact: true }),
+    ).toBeVisible();
+
+    await arbetsytan(page).getByRole('radio', { name: 'Klara (2)' }).click();
+    const karin = personRad(page, 'Karin Sjögren');
+    await expect(karin.getByText('Kvar att betala', { exact: true })).toBeVisible();
+    await expect(karin.getByText('500 kr', { exact: true })).toBeVisible();
+    await expect(karin.getByText('Basen släpar')).toBeVisible();
+    await expect(karin.getByText('Allt betalt.')).toHaveCount(0);
+    await expect(personRad(page, 'Lars Öhman').getByText('Allt betalt.')).toBeVisible();
   });
 
   test('eventet utan pris: EN notis på eventnivå, ingen beloppsrad per person', async ({
@@ -598,7 +640,10 @@ test.describe('Händelseloggen som Tidslinje (TASK-145.4 AC #8, formen TASK-436)
     await page.goto(`/event/${EVENT_ID}`);
     await oppnaDetaljer(page);
 
-    const noder = personRad(page, 'Eva Lindqvist').locator('ol > li');
+    const eva = personRad(page, 'Eva Lindqvist');
+    // Loggen bär sitt namn i aria, utan synlig rubrik (TASK-436 AC #3).
+    await expect(eva.getByRole('list', { name: 'Händelselogg' })).toBeVisible();
+    const noder = eva.locator('ol > li');
     await expect(noder).toHaveCount(3);
     await expect(noder.nth(0)).toContainText('Påminnelse om anmälningsavgift skickad');
     await expect(noder.nth(1)).toContainText('Bekräftelsemail skickat');

@@ -67,7 +67,10 @@ import { kategoriPillText } from './hallplats-steg-prototyp';
  * inbetalningarna. Ingen synlig rubrik (Marcus 2026-08-06: "'Utskick' kan vi
  * ta bort … man fattar ändå"); ingen sr-only-rubrik heller — den som stod
  * här rev två CI-grindar (axe `heading-order` + strict mode), och varje nod
- * läses redan "text, tid" inuti personens egen listpost.
+ * läses redan "text, tid" inuti personens egen listpost. Listan bär i
+ * stället sitt namn som `aria-label` ("Händelselogg"): inget rubrikelement,
+ * ingen roll, inget lint-undantag — skärmläsaren hör "lista, Händelselogg",
+ * ögat ser noderna. Tomtexten säger i klartext att inget hänt (Gunilla).
  *
  * Skrivvertikalen bor på betalningssidan (PRD TASK-402); eventsidan skriver
  * ingenting (TASK-145 DoD #7): ingen mutation instansieras i denna fil, och
@@ -211,7 +214,7 @@ function BetalningsPersonRad({
   const saknas = rad ? (rad.kvar ?? rad.betalning.saknas) : klar ? 0 : null;
 
   // Händelseloggen: delad härledning, senast överst; tiden formateras här.
-  const handelser: TidslinjeHandelse[] = harledHandelser(registration).map((h) => ({
+  const handelselogg: TidslinjeHandelse[] = harledHandelser(registration).map((h) => ({
     id: h.id,
     text: h.text,
     tid: LOGGTID.format(new Date(h.nar)),
@@ -261,15 +264,15 @@ function BetalningsPersonRad({
             {laddar ? (
               <div aria-busy="true" role="status" className="py-1">
                 <span className="sr-only">Laddar belopp ...</span>
-                <Skeleton variant="listRow" aria-hidden />
+                <Skeleton variant="listRow" />
               </div>
             ) : (
               <KvarAttBetala saknas={saknas} />
             )}
           </div>
         )}
-        {handelser.length > 0 ? (
-          <Tidslinje handelser={handelser} />
+        {handelselogg.length > 0 ? (
+          <Tidslinje etikett="Händelselogg" handelser={handelselogg} />
         ) : (
           <p className="py-3 text-small text-text-muted">
             Inga händelser ännu för den här personen.
