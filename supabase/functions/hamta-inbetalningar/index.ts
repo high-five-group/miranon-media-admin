@@ -1,9 +1,49 @@
 // @ts-nocheck — Deno Edge Function (esm.sh-import + Deno-globaler; typas vid
 // deploy, se ADR-010 § Fas 7-åtagande).
 //
-// hamta-inbetalningar — inbetalningarna för EN anmälan eller EN person.
+// hamta-inbetalningar — inbetalningarna för EN anmälan, EN person, ELLER
+// (TASK-437) en HEL BATCH av anmälningar i ETT anrop.
 // TASK-346.4 AC #1, PRD TASK-346 berättelse 24 (personkortets Betalningar)
 // och beslut 10 (Åtgärds-panelen, anmälans detaljvy).
+//
+// ═══════════════════════════════════════════════════════════════════════════
+// BATCH-VÄGEN (TASK-437) — POST, INTE EN QUERY-PARAM-LISTA
+// ═══════════════════════════════════════════════════════════════════════════
+// Behovet: eventdetaljens logg ska visa inbetalningar för ALLA anmälningar i
+// ett event. `useInbetalningarPerAnmalan`s docblock (`useBetalningar.ts`)
+// säger redan varför en läsning PER anmälan är fel för en lista med många
+// rader: "tjugo Edge Function-anrop". Två designval, båda bokförda i PR-
+// kroppen för TASK-437:
+//
+//  1) BATCH AV ANMÄLNINGS-RECORD-ID:N, INTE ETT `eventId`. Klienten har
+//     redan eventets anmälningar (`useRegistrations`/eventvyn) — att skicka
+//     ett `eventId` hade tvingat DENNA EF att slå upp eventets anmälningar i
+//     Airtable FÖRST (en ny uppslagsväg, ett nytt anrop mot det delade
+//     Airtable-taket, ADR-063 § S91-not), bara för att komma fram till exakt
+//     den lista klienten redan hade. `inbetalningar.anmalan_record_id` är
+//     redan INDEXERAT (`inbetalningar_anmalan_idx`, migration
+//     `20260830195728`) — ett `.in(...)`-filter över anmälnings-ID:n är
+//     samma frågeform GET-vägen redan kör, bara med N värden i stället för
+//     ett. NOLL Airtable-anrop i denna väg.
+//
+//  2) POST MED JSON-KROPP, INTE GET MED QUERY-PARAMS. Ett event kan ha
+//     uppåt `MAX_ANMALNINGAR_PER_BATCH` deltagare — en query-sträng med så
+//     många record-ID:n är läsbar men onödigt bräcklig (URL-längdtak,
+//     URLSearchParams-kodning av en array). `compute-segment/index.ts`
+//     satte redan precedentet i detta repo ("Repots första POST-LÄS-only-EF:
+//     regeln ... ryms ej i query-params") — samma resonemang här: input är
+//     en LISTA, inte ett fåtal skalärer, så POST är rätt verktyg trots att
+//     anropet är en läsning. GET-vägen (`anmalanRecordId`/`personId`) är
+//     HELT OFÖRÄNDRAD — se `hanteraBatch` nedan för hela batch-kroppen.
+//
+// SPEGEL INGÅR MEDVETET INTE PER GRUPP I BATCH-SVARET. Den enskilda
+// anmälnings-vägen (GET) gör en `lasAnmalan`-läsning (ETT Airtable-anrop) för
+// att jämföra Postgres-summan mot basens spegel. Att göra SAMMA sak per
+// anmälan i en batch på upp till `MAX_ANMALNINGAR_PER_BATCH` poster hade
+// återinfört exakt det N-anrops-mönster batch-vägen finns för att eliminera
+// — bara flyttat innanför en enda EF-invokation. `jobbfel` ingår DÄREMOT per
+// grupp: den härleds redan ur Postgres (ingen Airtable-kostnad) och är
+// naturligt attribuerbar per anmälan via `inbetalningar.anmalan_record_id`.
 //
 // ═══════════════════════════════════════════════════════════════════════════
 // EFTERSLÄPNINGEN SYNS HÄR — UTAN EN EGEN KOLUMN
@@ -69,6 +109,7 @@
 // fällor för den generaliserade noten (övriga formel-callers mot länkfält
 // är en öppen, separat granskningsfråga — ändras INTE här).
 
+import { z } from 'https://esm.sh/zod@4';
 import { requireUser } from '../_shared/auth.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
 import { generateRequestId, mapErrorToResponse } from '../_shared/errors.ts';
@@ -93,8 +134,29 @@ const PERSONER_TABELL_BAS = 'Personer';
 const PERSON_ANMALNINGAR_FALT = 'Anmälningar (länkat fält)';
 /** Personkortet visar en persons betalningar över ALLA event — men inte tusen. */
 const MAX_ANMALNINGAR_PER_PERSON = 200;
+/**
+ * [TASK-437] Batchvägens tak. Samma golv som personvägens
+ * `MAX_ANMALNINGAR_PER_PERSON` ovan — ingen känd Miranon-kurs eller -resa
+ * kommer i närheten, och samma ceiling-resonemang gäller: en lista LÅNGT
+ * över vad en admin-yta rimligen renderar i en logg.
+ */
+const MAX_ANMALNINGAR_PER_BATCH = 200;
 /** Samma jobbtyp-sträng som `koa-kvitton/index.ts` skriver — `jobb_rad.objekt_id` är inbetalningens id. */
 const JOBBTYP_KVITTO = 'kvitto';
+
+/** [TASK-437] Batch-kroppens form — zod-validerad, se AC #1. */
+const BatchBodySchema = z.object({
+  anmalanRecordIds: z
+    .array(z.string().regex(REC_ID_RE, 'anmalanRecordIds måste vara Airtable record-ID:n (rec-prefix)'))
+    .max(MAX_ANMALNINGAR_PER_BATCH, `Högst ${MAX_ANMALNINGAR_PER_BATCH} anmälningar per anrop.`),
+});
+
+type BatchGrupp = {
+  anmalanRecordId: string;
+  inbetalningar: ReturnType<typeof radTillInbetalning>[];
+  kvitton: ReturnType<typeof radTillKvitto>[];
+  jobbfel: { inbetalningId: string; skal: string }[];
+};
 
 function jsonResponse(body: unknown, status: number, corsHeaders: Record<string, string>): Response {
   return new Response(JSON.stringify(body), {
@@ -107,6 +169,128 @@ function badRequest(message: string, corsHeaders: Record<string, string>): Respo
   return jsonResponse({ error: message }, 400, corsHeaders);
 }
 
+/**
+ * [TASK-437] Batch-vägen — POST. Se filhuvudets § BATCH-VÄGEN för designvalet
+ * (batch av anmälnings-ID:n, ingen Airtable-uppslagning, ingen `spegel` per
+ * grupp). KASTAR på Postgres-fel (fångas av anroparens try/catch →
+ * `mapErrorToResponse`, samma kontrakt som GET-vägen); returnerar en
+ * `Response` direkt för validering (400), aldrig via kastning.
+ */
+async function hanteraBatch(
+  req: Request,
+  user: { id: string },
+  requestId: string,
+  corsHeaders: Record<string, string>,
+): Promise<Response> {
+  let body: unknown;
+  try {
+    body = await req.json();
+  } catch {
+    return badRequest('Invalid JSON body', corsHeaders);
+  }
+
+  const parsed = BatchBodySchema.safeParse(body);
+  if (!parsed.success) {
+    return badRequest(
+      parsed.error.issues[0]?.message ?? 'anmalanRecordIds är ogiltigt.',
+      corsHeaders,
+    );
+  }
+
+  // Dubbletter kollapsas (send-action-email-mönstret, `registrationIds`):
+  // samma anmälan två gånger i samma anrop är ett klientmisstag, inte två
+  // grupper.
+  const ids = [...new Set(parsed.data.anmalanRecordIds)];
+
+  if (ids.length === 0) {
+    console.log(
+      `${LOGG} OK BATCH | caller_user_id=${user.id} | requestId=${requestId} | anmalningar=0`,
+    );
+    return jsonResponse({ grupper: [] }, 200, corsHeaders);
+  }
+
+  const db = skapaAdminKlient();
+
+  const { data: radar, error: lasFel } = await db
+    .from(INBETALNINGAR_TABELL)
+    .select(INBETALNING_KOLUMNER)
+    .in('anmalan_record_id', ids)
+    .order('betalningsdatum', { ascending: false, nullsFirst: false })
+    .order('skapad_nar', { ascending: false });
+  if (lasFel) throw lasFel;
+
+  const inbetalningar = (radar ?? []).map(radTillInbetalning);
+
+  // Kvittona för HELA batchen i EN fråga (samma form som GET-vägen, bara med
+  // alla batchens inbetalnings-ID:n i `.in(...)` i stället för en anmälans).
+  let kvitton: ReturnType<typeof radTillKvitto>[] = [];
+  if (inbetalningar.length > 0) {
+    const { data: kvittoRadar, error: kvittoFel } = await db
+      .from(KVITTON_TABELL)
+      .select(KVITTO_KOLUMNER)
+      .in(
+        'inbetalning_id',
+        inbetalningar.map((post) => post.id),
+      );
+    if (kvittoFel) throw kvittoFel;
+    kvitton = (kvittoRadar ?? []).map(radTillKvitto);
+  }
+
+  // Senaste kvittojobbets felskäl — SAMMA logik som GET-vägens § SENASTE
+  // KVITTOJOBBETS FELSKÄL ovan, EN fråga för hela batchen.
+  const jobbfelPerInbetalning = new Map<string, string>();
+  if (inbetalningar.length > 0) {
+    const { data: jobbRadar, error: jobbFel } = await db
+      .from(JOBB_RAD_TABELL)
+      .select('objekt_id, status, skal')
+      .in(
+        'objekt_id',
+        inbetalningar.map((post) => post.id),
+      )
+      .eq('jobbtyp', JOBBTYP_KVITTO)
+      .order('skapad_nar', { ascending: false });
+    if (jobbFel) throw jobbFel;
+
+    const senasteJobbPerInbetalning = new Map<string, { status: string; skal: string | null }>();
+    for (const rad of jobbRadar ?? []) {
+      if (senasteJobbPerInbetalning.has(rad.objekt_id)) continue;
+      senasteJobbPerInbetalning.set(rad.objekt_id, { status: rad.status, skal: rad.skal });
+    }
+    for (const [inbetalningId, jobb] of senasteJobbPerInbetalning) {
+      if (jobb.status === 'fel' && jobb.skal !== null) {
+        jobbfelPerInbetalning.set(inbetalningId, jobb.skal);
+      }
+    }
+  }
+
+  // ── Gruppera per anmälan — EN grupp per (deduplicerat) begärt ID, ÄVEN för
+  // ett ID utan en enda rad (samma "tomt, aldrig fel"-kontrakt som GET-vägens
+  // anmalanRecordId/personId bär, se filhuvudet). ──────────────────────────
+  const grupper = new Map<string, BatchGrupp>(
+    ids.map((id) => [id, { anmalanRecordId: id, inbetalningar: [], kvitton: [], jobbfel: [] }]),
+  );
+  const anmalanPerInbetalning = new Map<string, string>();
+  for (const post of inbetalningar) {
+    anmalanPerInbetalning.set(post.id, post.anmalanRecordId);
+    grupper.get(post.anmalanRecordId)?.inbetalningar.push(post);
+  }
+  for (const kvitto of kvitton) {
+    const anmalanId = anmalanPerInbetalning.get(kvitto.inbetalningId);
+    if (anmalanId !== undefined) grupper.get(anmalanId)?.kvitton.push(kvitto);
+  }
+  for (const [inbetalningId, skal] of jobbfelPerInbetalning) {
+    const anmalanId = anmalanPerInbetalning.get(inbetalningId);
+    if (anmalanId !== undefined) grupper.get(anmalanId)?.jobbfel.push({ inbetalningId, skal });
+  }
+
+  console.log(
+    `${LOGG} OK BATCH | caller_user_id=${user.id} | requestId=${requestId} | ` +
+      `anmalningar=${ids.length} | inbetalningar=${inbetalningar.length}`,
+  );
+
+  return jsonResponse({ grupper: [...grupper.values()] }, 200, corsHeaders);
+}
+
 Deno.serve(async (req) => {
   const corsResponse = handleCors(req);
   if (corsResponse) return corsResponse;
@@ -114,8 +298,24 @@ Deno.serve(async (req) => {
   const corsHeaders = corsHeadersFor(req);
   const requestId = generateRequestId();
 
-  if (req.method !== 'GET') {
-    return jsonResponse({ error: 'Method not allowed. Use GET.' }, 405, corsHeaders);
+  if (req.method !== 'GET' && req.method !== 'POST') {
+    return jsonResponse({ error: 'Method not allowed. Use GET or POST.' }, 405, corsHeaders);
+  }
+
+  // [TASK-437] POST = batch-vägen. Grenas FÖRE resten av handlern, som är
+  // GET-vägen, HELT OFÖRÄNDRAD (bakåtkompatibilitet, AC #1).
+  if (req.method === 'POST') {
+    const authForBatch = await requireUser(req, corsHeaders);
+    if (authForBatch instanceof Response) return authForBatch;
+    try {
+      return await hanteraBatch(req, authForBatch.user, requestId, corsHeaders);
+    } catch (error) {
+      return mapErrorToResponse(error, requestId, corsHeaders, {
+        function: 'hamta-inbetalningar',
+        method: req.method,
+        callerUserId: authForBatch.user.id,
+      });
+    }
   }
 
   const auth = await requireUser(req, corsHeaders);

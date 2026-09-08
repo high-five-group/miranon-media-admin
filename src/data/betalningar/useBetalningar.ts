@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useDataSource } from '@/data/useDataSource';
-import type { Inbetalningslista, OppnaBetalningar } from '@/domain/schemas';
+import type { InbetalningarBatch, Inbetalningslista, OppnaBetalningar } from '@/domain/schemas';
 import { queryKeys } from '@/queries/keys';
 
 /**
@@ -99,6 +99,35 @@ export function useInbetalningarPerPerson(personId: string, aktiv: boolean) {
     queryKey: queryKeys.betalningar.perPerson(personId),
     queryFn: () => dataSource.fetchInbetalningar({ personId }),
     enabled: aktiv,
+    refetchOnMount: 'always',
+    retry: husetsRetryPolicy,
+  });
+}
+
+/**
+ * [TASK-437] ALLA inbetalningar för ETT HELT EVENTS anmälningar, i ETT anrop
+ * (eventdetaljens logg). Klienten skickar batchen av anmälnings-record-ID:n
+ * den redan känner (`useRegistrations`/eventvyn) — EF:en gör INGEN Airtable-
+ * uppslagning, till skillnad från `useInbetalningarPerAnmalan` ovan, som är
+ * EN läsning PER anmälan (rätt val där raden fälls ut lat, fel val för en
+ * hel logg som visar allt på en gång).
+ *
+ * `enabled` kräver BÅDE `aktiv` och en icke-tom lista: en tom batch behöver
+ * inget nätverksanrop — EF:en hade ändå svarat `{ grupper: [] }`.
+ *
+ * `spegel` ingår INTE per grupp i svaret — se `InbetalningarBatchGruppSchema`
+ * (`Betalningar.schema.ts`) för skälet.
+ */
+export function useInbetalningarForEvent(
+  eventId: string,
+  anmalanRecordIds: string[],
+  aktiv: boolean,
+) {
+  const dataSource = useDataSource();
+  return useQuery<InbetalningarBatch>({
+    queryKey: queryKeys.betalningar.perEvent(eventId, anmalanRecordIds),
+    queryFn: () => dataSource.fetchInbetalningarBatch({ anmalanRecordIds }),
+    enabled: aktiv && anmalanRecordIds.length > 0,
     refetchOnMount: 'always',
     retry: husetsRetryPolicy,
   });

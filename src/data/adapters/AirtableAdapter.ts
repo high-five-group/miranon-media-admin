@@ -46,6 +46,7 @@ import {
   EventNoteSchema,
   EventSchema,
   type HanteraInbetalningResult,
+  type InbetalningarBatch,
   type Inbetalningslista,
   type Intresserad,
   IntresseradSchema,
@@ -1295,15 +1296,15 @@ export class AirtableAdapter implements DataSourceAdapter {
   // BETALNINGSDOMÄNEN (TASK-346.4, ADR-128/ADR-129)
   // ═══════════════════════════════════════════════════════════════════════
   //
-  // NIO DELEGERINGAR till den DELADE implementationen
-  // (`./betalningsportar.ts`). Samma klass som `recordActivity` ovan:
-  // inbetalningar, kvittoledger och jobbtabeller bor i Supabase Postgres och
-  // har ALDRIG legat i Airtable (ADR-128 beslut 3), så metoderna är
-  // IDENTISKA i båda adaptrarna och ingår inte i Fas E-migrationens
-  // swap-yta.
+  // TIO DELEGERINGAR (TASK-437 lade till den tionde) till den DELADE
+  // implementationen (`./betalningsportar.ts`). Samma klass som
+  // `recordActivity` ovan: inbetalningar, kvittoledger och jobbtabeller bor i
+  // Supabase Postgres och har ALDRIG legat i Airtable (ADR-128 beslut 3), så
+  // metoderna är IDENTISKA i båda adaptrarna och ingår inte i Fas E-
+  // migrationens swap-yta.
   //
   // `recordActivity` löste samma sak med två ordagrant lika metodkroppar.
-  // Nio portar gånger två adaptrar hade gjort det valet till arton kroppar
+  // Tio portar gånger två adaptrar hade gjort det valet till tjugo kroppar
   // att hålla i synk för hand — se `betalningsportar.ts` § filhuvud.
 
   fetchOppnaBetalningar(): Promise<OppnaBetalningar> {
@@ -1330,6 +1331,10 @@ export class AirtableAdapter implements DataSourceAdapter {
     personId?: string;
   }): Promise<Inbetalningslista> {
     return betalningsportar.hamtaInbetalningar(params);
+  }
+
+  fetchInbetalningarBatch(params: { anmalanRecordIds: string[] }): Promise<InbetalningarBatch> {
+    return betalningsportar.hamtaInbetalningarBatch(params);
   }
 
   koaKvitton(input: KoaKvittonInput): Promise<KoaKvittonResult> {

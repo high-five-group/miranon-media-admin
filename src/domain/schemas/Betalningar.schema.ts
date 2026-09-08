@@ -355,6 +355,39 @@ export const InbetalningslistaSchema = z.object({
 });
 export type Inbetalningslista = z.infer<typeof InbetalningslistaSchema>;
 
+/**
+ * [TASK-437] EN grupp i batch-svaret (`hamta-inbetalningar` POST) — samma
+ * `Inbetalning`-radtyp som `InbetalningslistaSchema.inbetalningar` ovan, så
+ * anmälans detaljvy/Åtgärds-panelen och eventdetaljens logg delar typ.
+ *
+ * INGEN `spegel` HÄR, MEDVETET: en spegel-jämförelse per anmälan hade krävt
+ * en Airtable-läsning PER ANMÄLAN i EF:en (samma `lasAnmalan`-anrop som
+ * `InbetalningslistaSchema`-vägen gör för EN anmälan) — exakt det
+ * N-Edge-Function-anrops-mönster `useInbetalningarPerAnmalan`s docblock
+ * varnar för ("tjugo Edge Function-anrop"), bara flyttat innanför en enda
+ * EF-invokation i stället för borttaget. Se `supabase/functions/
+ * hamta-inbetalningar/index.ts` § BATCH-VÄGEN för hela designresonemanget.
+ * `jobbfel` ingår DÄREMOT: den härleds redan ur Postgres utan Airtable-
+ * kostnad och är naturligt attribuerbar per anmälan.
+ */
+export const InbetalningarBatchGruppSchema = z.object({
+  anmalanRecordId: z.string(),
+  inbetalningar: z.array(InbetalningSchema),
+  kvitton: z.array(KvittoSchema),
+  jobbfel: z.array(z.object({ inbetalningId: z.string().uuid(), skal: z.string() })),
+});
+export type InbetalningarBatchGrupp = z.infer<typeof InbetalningarBatchGruppSchema>;
+
+/**
+ * Svaret för HELA batchen (TASK-437) — en grupp per efterfrågat
+ * `anmalanRecordId`, ÄVEN för ett ID utan en enda rad (samma "tomt, aldrig
+ * fel"-kontrakt som `anmalanRecordId`/`personId`-vägen ovan bär).
+ */
+export const InbetalningarBatchSchema = z.object({
+  grupper: z.array(InbetalningarBatchGruppSchema),
+});
+export type InbetalningarBatch = z.infer<typeof InbetalningarBatchSchema>;
+
 /** "Skicka N kvitton" — ETT klick, ETT jobb, N rader. */
 export type KoaKvittonInput = { inbetalningIds: string[] };
 

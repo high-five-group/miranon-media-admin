@@ -2,6 +2,8 @@ import {
   type HanteraInbetalningInput,
   type HanteraInbetalningResult,
   HanteraInbetalningResultSchema,
+  type InbetalningarBatch,
+  InbetalningarBatchSchema,
   type Inbetalningslista,
   InbetalningslistaSchema,
   type Jobbstatus,
@@ -37,7 +39,7 @@ import { callEdgeFunction, postEdgeFunction } from '../config/supabase-client';
  * INTE en del av Fas E-migrationens swap-yta.
  *
  * `recordActivity` löste det med två ordagrant identiska metodkroppar, en i
- * varje adapter. Nio portar gånger två hade gjort samma val till arton
+ * varje adapter. Tio portar gånger två hade gjort samma val till tjugo
  * kroppar som måste hållas i synk för hand — och den enda mekanism som hade
  * upptäckt en drift är att någon läser båda filerna samtidigt.
  * Implementationen bor därför HÄR, och adaptrarnas metoder är
@@ -120,6 +122,24 @@ export async function hamtaInbetalningar(params: {
   if (params.personId !== undefined) query.personId = params.personId;
   const data = await callEdgeFunction<unknown>('hamta-inbetalningar', query);
   return InbetalningslistaSchema.parse(data);
+}
+
+/**
+ * [TASK-437] Inbetalningarna för EN BATCH av anmälningar, i ETT anrop —
+ * eventdetaljens logg. POST, inte GET: batchen är en LISTA (upp till
+ * `MAX_ANMALNINGAR_PER_BATCH` i EF:en), inte ett fåtal skalärer som ryms
+ * naturligt i en query-sträng (samma avvägning som `compute-segment`, repots
+ * första POST-läs-EF). Se `hamta-inbetalningar/index.ts` § BATCH-VÄGEN för
+ * designresonemanget och `InbetalningarBatchGruppSchema`s docblock för
+ * varför `spegel` inte ingår per grupp.
+ */
+export async function hamtaInbetalningarBatch(params: {
+  anmalanRecordIds: string[];
+}): Promise<InbetalningarBatch> {
+  const data = await postEdgeFunction<unknown>('hamta-inbetalningar', {
+    anmalanRecordIds: params.anmalanRecordIds,
+  });
+  return InbetalningarBatchSchema.parse(data);
 }
 
 /** "Skicka N kvitton" — köar jobbet och svarar direkt (ADR-129 beslut 3). */
