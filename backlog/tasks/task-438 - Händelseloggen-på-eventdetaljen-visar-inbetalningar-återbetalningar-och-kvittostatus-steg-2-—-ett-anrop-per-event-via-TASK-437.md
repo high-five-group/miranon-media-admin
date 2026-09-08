@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-08 02:21'
-updated_date: '2026-09-08 15:48'
+updated_date: '2026-09-08 15:49'
 labels:
   - ready-for-agent
 dependencies:
@@ -45,7 +45,6 @@ BYGGT AV ORKESTRERAREN (S124 resume 1, 2026-09-08, Marcus mandat "Bygg steg 2 n�
 FORM: `betalningar/inbetalnings-handelser.ts` (ny, ren härledning: "Inbetalning 2 500 kr · Swish" / "Återbetalning 500 kr · Bankgiro", underrader kvittostatus via `kvittolage` · "Makulerad: <skäl>" · "Notering: …"; ikoner Banknote/Undo2/Ban; tid = betalningsdatum ?? skapadNar). `Tidslinje` fick valfri `undertext` per nod (readonly string[], caption-rader mellan text och tid). `Betalningar.tsx`: `useInbetalningarForEvent(event.id, sorterade id:n för BÅDA flikarna, aktiv)` → Map per anmälan → per person blandas `harledHandelser` + `inbetalningsHandelser`, sorteras senast överst; rent datum formateras utan klockslag (`loggtid`/`tidsvarde`, noon-förankrad), skelett per person medan batchen väntas (loggen sorterar aldrig om under ögonen), EN felruta för hela ytan med Försök igen (InbetalningsLista-orden). Kvittojobbets felskäl visas medvetet inte i loggen (hör till ytan där Lotta kan agera) — bokfört i modulens docblock.
 AVVIKELSER MOT KORTET: inga i scope. Två mätta fällor under bygget, bokförda i testfilen: (1) `visaKronor` ger hårt blanksteg (sv-SE) — regex i tester matchar `\s`, pure-testet bygger förväntan ur formatteraren; (2) en 500 från EF:en retryas i BÅDA lagren (EF-klient + React Query, TASK-420) och når inte ytan inom expect-timeouten — feltestet använder 400 (husets policy retryar aldrig 4xx).
 VERIFIERING (faktiska exitkoder): typecheck 0 · biome check . 0 · build 0 · check-langa-streck 0 · api-pure `tests/api/inbetalnings-handelser.test.ts` 8/8 · acceptance `anmalan-detalj` 7/7 · e2e `mark-paid.staging` + `event-deltagare.staging` 33/33 (nya: 0 anrop vid sidladdning / 1 batch-anrop med alla 8 aktiva id:n, aldrig den avbokade, inget nytt anrop vid flikbyte; händelser med belopp/betalsätt/kvittostatus/notering i ordningen återbetalning 20 juli · inbetalning 15 juli · bekräftelse 12 juli · anmälan 10 juli, rent datum utan klockslag; makulerad rad med skäl; felruta + Försök igen + omhämtning; axe 0 med underrader).
+CI-FYND EFTER FÖRSTA PUSHEN (fe93535c, PR #2468): Lint+TypeCheck och Pure+Build röda på TS6142 — `inbetalnings-handelser.ts` importerade typen `TidslinjeIkon` ur `Tidslinje.tsx`, och `tsconfig.tests.json` (api-pure-testerna) saknar `jsx`. Lokal `tsc -b --noEmit` var grön (inkrementell build-info); `npx tsc -p tsconfig.tests.json --noEmit` reproducerade felet. Fix (b4d88844): typen flyttad till `registrations/tidslinje-ikon.ts` (ren .ts), `Tidslinje.tsx` återexporterar; tests-projektet, typecheck, biome, build och api-pure gröna igen. Lärdom: kör `tsc -p tsconfig.tests.json --noEmit` när en ren modul får ett nytt test — `tsc -b` kan vara tyst. (Den första `--append-notes`-raden om detta skrevs med dubbla citattecken och fick sina backtick-ord uppätna av skalet — rättad här i sin helhet.)
 AC #4 (Marcus ögonmätning) lämnas öppen.
-
-CI-FYND EFTER FÖRSTA PUSHEN (fe93535c, PR #2468): Lint+TypeCheck och Pure+Build röda på TS6142 —  importerade typen  ur , och  (api-pure-testerna) saknar . Lokal  var grön (inkrementell build-info),  reproducerade felet. Fix: typen flyttad till  (ren .ts),  återexporterar; tests-projektet, typecheck, biome, build och api-pure gröna igen. Lärdom: kör  när en ren modul får ett nytt test —  kan vara tyst.
 <!-- SECTION:NOTES:END -->
