@@ -45,6 +45,24 @@ import { mockValjarLista } from './helpers/valjar-lista';
  * SERVER-write-kontraktet prövas mot skarp staging i
  * `tests/api/update-record.staging.test.ts`; dessa e2e bevisar klientens
  * form och beteende flak-fritt utan att mutera delad staging-data.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * TASK-442 (2026-09-08): HÄMTNINGENS TIDPUNKT ÄR INVERTERAD
+ * ═══════════════════════════════════════════════════════════════════════════
+ * Två av sviten tester bevisade fram till denna skiva den GAMLA regeln, med
+ * samma räknare och motsatt förväntan: "noll anrop vid sidladdning, allt vid
+ * klicket". Marcus vände avvägningen 2026-09-08 efter att ha ögonmätt
+ * väntan (`Betalningar.tsx` § TASK-442), så båda testerna är OMSKRIVNA — inte
+ * strukna: förvärmningen är nu det som bevisas, och kontrakten som INTE
+ * ändrades (batchens id-mängd = alla aktiva, aldrig den avbokade; ett anrop
+ * för hela eventet; flikbyte utan omhämtning) prövas fortfarande, bara på
+ * förvärmningens begäran i stället för på klickets.
+ *
+ * FÖRDRÖJDA MOCKAR ÄR VAD SOM GÖR PROVEN SKARPA (`SVARS_FORDROJNING_MS`).
+ * Utan dem hade "inget skelett vid klicket" varit sant även utan förvärmning,
+ * eftersom en omockad hämtning ändå svarar på mikrosekunder. Med dem kan ett
+ * grönt resultat bara komma ur cachen. Rött-först mot `origin/main` är kört
+ * och bokfört i PR-kroppen.
  */
 
 const GET_EVENT = /\/functions\/v1\/get-event\?/;
@@ -317,6 +335,22 @@ function batchSvar(anmalanRecordIds: string[], medFacit: boolean): Mock {
   };
 }
 
+/**
+ * [TASK-442] Svarsfördröjningen som gör förvärmnings-testerna ICKE-TRIVIALA.
+ *
+ * Utan den svarar mockarna på mikrosekunder, och "inget skelett vid klicket"
+ * hade varit sant även UTAN förvärmning — bara för att hämtningen hann klart
+ * innan Playwright hann titta. Med fördröjningen kostar en hämtning som
+ * startar vid klicket mätbart mer än assertionens egen timeout, så ett grönt
+ * resultat kan bara komma ur cachen. Talet är en avvägning: långt nog att
+ * skilja cache från nät med marginal, kort nog att inte dominera svit-tiden.
+ */
+const SVARS_FORDROJNING_MS = 1500;
+
+/** Assertionsfönster som är TRYGGT under fördröjningen ovan: en hämtning som
+    startade vid klicket kan omöjligt hinna, en cache-läsning hinner alltid. */
+const CACHE_FONSTER_MS = 700;
+
 async function mockSidan(
   page: Page,
   {
@@ -325,17 +359,29 @@ async function mockSidan(
     oppna = facitOppna(),
     raknare,
     batch,
+    fordrojning = 0,
   }: {
     event?: Mock;
     registrations?: Mock[];
     oppna?: Mock[];
-    raknare?: { anrop: number };
+    /** Belopps-vägen (`hamta-oppna-betalningar`): `anrop` räknar begäran, `svar`
+        räknar FULLBORDADE svar (den enda signal ett test kan vänta på när
+        `fordrojning` är satt), `fel` = antal 400-svar innan mocken svarar 200. */
+    raknare?: { anrop: number; svar?: number; fel?: number };
     /** [TASK-438] Batch-vägen: `facit` = Evas/Johans inbetalningar i svaret (default TOMMA
         grupper, så sviter skrivna före steg 2 ser samma värld); `anrop`/`ids` räknar och
-        fångar begäran; `fel` = antal felsvar (400) som återstår innan mocken svarar 200. */
-    batch?: { anrop?: number; ids?: string[][]; fel?: number; facit?: boolean };
+        fångar begäran; `svar` räknar fullbordade svar (se `raknare` ovan); `fel` = antal
+        felsvar (400) som återstår innan mocken svarar 200. */
+    batch?: { anrop?: number; svar?: number; ids?: string[][]; fel?: number; facit?: boolean };
+    /** [TASK-442] Fördröjning i ms på BÅDA betalnings-EF:erna — se
+        `SVARS_FORDROJNING_MS`. 0 (default) lämnar sviten skriven före denna
+        skiva oförändrad. */
+    fordrojning?: number;
   } = {},
 ) {
+  const drojSvar = async () => {
+    if (fordrojning > 0) await new Promise((r) => setTimeout(r, fordrojning));
+  };
   await mockValjarLista(page); // task-18.19: väljarens listquery — aldrig staging i deterministisk svit
   await page.route(GET_EVENT, (route) =>
     route.fulfill({
@@ -359,8 +405,23 @@ async function mockSidan(
   // Anteckningar-gruppen (task-18.11) fetchar get-event-notes för VARJE event —
   // stubbas tom via delade sömmen (TASK-47, tidigare TASK-205/TASK-212) så
   // eventsidans övriga sviter förblir deterministiska.
-  await page.route(HAMTA_OPPNA_BETALNINGAR, (route) => {
+  await page.route(HAMTA_OPPNA_BETALNINGAR, async (route) => {
     if (raknare) raknare.anrop += 1;
+    await drojSvar();
+    if (raknare && (raknare.fel ?? 0) > 0) {
+      raknare.fel = (raknare.fel ?? 0) - 1;
+      // 400 av samma skäl som batch-vägen nedan: husets retry-policy retryar
+      // aldrig 4xx, så felet når ytan direkt och räkningen förblir exakt.
+      // [TASK-442] Gäller nu även FÖRVÄRMNINGEN: `useForberedEventBetalningar`
+      // bär samma `husetsRetryPolicy`, annars hade routerns globala `retry: 3`
+      // gjort ett förvärmningsfel till fyra anrop.
+      return route.fulfill({
+        status: 400,
+        contentType: 'application/json',
+        body: '{"error":"facit-fel"}',
+      });
+    }
+    if (raknare) raknare.svar = (raknare.svar ?? 0) + 1;
     return route.fulfill({
       status: 200,
       contentType: 'application/json',
@@ -370,13 +431,19 @@ async function mockSidan(
   // [TASK-438] Batch-vägen (POST). GET-vägen (per anmälan/person) används inte av
   // eventsidan — ett GET-anrop hit vore i sig en regression och släpps vidare
   // till staging där det syns som ett oväntat anrop i räknaren.
-  await page.route(HAMTA_INBETALNINGAR, (route) => {
+  await page.route(HAMTA_INBETALNINGAR, async (route) => {
     if (route.request().method() !== 'POST') return route.fallback();
     const kropp = JSON.parse(route.request().postData() ?? '{}') as { anmalanRecordIds?: string[] };
     const ids = kropp.anmalanRecordIds ?? [];
+    // Begäran räknas FÖRE fördröjningen (`anrop` = "har frågat"), svaret efter
+    // (`svar` = "har fått") — ett test som väntar in förvärmningen behöver den
+    // andra signalen, ett som räknar anrop efter ett klick den första.
     if (batch) {
       batch.anrop = (batch.anrop ?? 0) + 1;
       batch.ids?.push(ids);
+    }
+    await drojSvar();
+    if (batch) {
       if ((batch.fel ?? 0) > 0) {
         batch.fel = (batch.fel ?? 0) - 1;
         // 400, inte 500: husets retry-policy (`useBetalningar.ts`, `husetsRetryPolicy`)
@@ -388,6 +455,7 @@ async function mockSidan(
           body: '{"error":"facit-fel"}',
         });
       }
+      batch.svar = (batch.svar ?? 0) + 1;
     }
     return route.fulfill({
       status: 200,
@@ -466,6 +534,20 @@ function arbetsytan(page: Page) {
 
 async function oppnaDetaljer(page: Page) {
   await gruppen(page).getByRole('button', { name: 'Öppna detaljer' }).click();
+}
+
+/**
+ * [TASK-442] Väntar tills BROWSERN fått ett svar från en av betalnings-EF:erna.
+ *
+ * Räknarna i `mockSidan` ökar i Node när route-handlern fulfillar — svaret är
+ * då ännu inte framme hos React Query. Ett test som pollar en räknare och
+ * klickar direkt kan därför läsa cachen en hårsmån innan den är fylld, och
+ * skelettet hade blinkat till av ren tidsordning i stället för av en riktig
+ * hämtning. Denna väntan stänger det fönstret på rätt sida: den löser ut när
+ * svaret ÄR levererat till sidan.
+ */
+function svarPa(page: Page, ef: 'hamta-oppna-betalningar' | 'hamta-inbetalningar', status = 200) {
+  return page.waitForResponse((r) => r.url().includes(ef) && r.status() === status);
 }
 
 /** En persons EGEN rad inuti den öppna arbetsytan. */
@@ -616,17 +698,32 @@ test.describe('Betalningsytan — LÄSYTA, mekaniskt bevisad (TASK-145.4 AC #5/#
     await expect(arbetsytan(page).getByText('Kvar att betala', { exact: true })).toHaveCount(0);
   });
 
-  test('beloppen hämtas först när detaljerna öppnas — noll anrop vid sidladdning, ett för hela eventet', async ({
+  test('beloppen är FÖRVÄRMDA vid sidmontering — ett anrop före klicket, noll vid det, och noll vid stäng/öppna igen', async ({
     page,
   }) => {
-    const raknare = { anrop: 0 };
-    await mockSidan(page, { raknare });
+    // [TASK-442] INVERTERAT KONTRAKT. Fram till 2026-09-08 hette detta test
+    // "beloppen hämtas först när detaljerna öppnas — noll anrop vid
+    // sidladdning" och krävde `raknare.anrop === 0` här. Marcus vände
+    // avvägningen (se `Betalningar.tsx` § TASK-442): sidan betalar anropet,
+    // klicket kostar noll väntan. Testet bevisar den nya regeln — det är
+    // samma räknare, motsatt förväntan.
+    const raknare = { anrop: 0, svar: 0 };
+    await mockSidan(page, { raknare, fordrojning: SVARS_FORDROJNING_MS });
+    // Förvärmningen startar vid sidmontering, INNAN någon rört disclosuren —
+    // väntan registreras därför före navigeringen.
+    const beloppFramme = svarPa(page, 'hamta-oppna-betalningar');
     await page.goto(`/event/${EVENT_ID}`);
     await expect(gruppen(page).getByRole('button', { name: 'Öppna detaljer' })).toBeVisible();
-    expect(raknare.anrop).toBe(0);
+    await beloppFramme;
+    expect(raknare.anrop).toBe(1);
+    expect(raknare.svar).toBe(1);
 
     await oppnaDetaljer(page);
-    await expect(personRad(page, 'Eva Lindqvist').getByText('Kvar att betala')).toBeVisible();
+    // Fönstret är TRYGGT under mockens fördröjning: hade klicket startat en
+    // hämtning kunde beloppet omöjligt stå här i tid.
+    await expect(personRad(page, 'Eva Lindqvist').getByText('Kvar att betala')).toBeVisible({
+      timeout: CACHE_FONSTER_MS,
+    });
     expect(raknare.anrop).toBe(1);
 
     // Stäng och öppna igen: cachen bär (global staleTime 5 min, router.ts) —
@@ -635,8 +732,138 @@ test.describe('Betalningsytan — LÄSYTA, mekaniskt bevisad (TASK-145.4 AC #5/#
     // betalningar per klick.
     await gruppen(page).getByRole('button', { name: 'Stäng detaljer' }).click();
     await oppnaDetaljer(page);
-    await expect(personRad(page, 'Eva Lindqvist').getByText('Kvar att betala')).toBeVisible();
+    await expect(personRad(page, 'Eva Lindqvist').getByText('Kvar att betala')).toBeVisible({
+      timeout: CACHE_FONSTER_MS,
+    });
     expect(raknare.anrop).toBe(1);
+  });
+
+  test('öppningen visar INGET skelett — varken belopp eller händelser laddas vid klicket', async ({
+    page,
+  }) => {
+    // [TASK-442] AC #2. Skeletten (`role="status"`: "Laddar belopp ...",
+    // "Laddar händelser ...") står kvar i `Betalningar.tsx` för de lägen där
+    // förvärmningen inte hann eller misslyckades — men i normalfallet ska de
+    // aldrig hinna renderas. Mockarnas fördröjning gör provet skarpt: en
+    // hämtning som startade vid klicket hade garanterat visat dem.
+    const raknare = { anrop: 0, svar: 0 };
+    const batch = { anrop: 0, svar: 0, ids: [] as string[][], facit: true };
+    await mockSidan(page, { raknare, batch, fordrojning: SVARS_FORDROJNING_MS });
+    const beloppFramme = svarPa(page, 'hamta-oppna-betalningar');
+    const batchFramme = svarPa(page, 'hamta-inbetalningar');
+    await page.goto(`/event/${EVENT_ID}`);
+    await expect(gruppen(page).getByRole('button', { name: 'Öppna detaljer' })).toBeVisible();
+    await beloppFramme;
+    await batchFramme;
+
+    await oppnaDetaljer(page);
+    // ÖGONBLICKSBILD, inte en retryande assertion: `toHaveCount(0)` hade
+    // passerat även om skelettet syntes en stund och sedan försvann. Här läses
+    // DOM:en direkt efter klicket, då ett laddläge med nödvändighet hade stått.
+    expect(await arbetsytan(page).getByRole('status').count()).toBe(0);
+    await expect(personRad(page, 'Eva Lindqvist').getByText('Kvar att betala')).toBeVisible({
+      timeout: CACHE_FONSTER_MS,
+    });
+    await expect(
+      personRad(page, 'Eva Lindqvist').getByText('Inbetalning 1 000 kr · Swish', { exact: true }),
+    ).toBeVisible({ timeout: CACHE_FONSTER_MS });
+    expect(raknare.anrop).toBe(1);
+    expect(batch.anrop).toBe(1);
+
+    // Flikbyte inuti den öppna ytan: samma två cache-poster bär båda flikarna.
+    await arbetsytan(page).getByRole('radio', { name: 'Klara (2)' }).click();
+    await expect(personRad(page, 'Karin Sjögren').getByText('Allt betalt.')).toBeVisible();
+    expect(await arbetsytan(page).getByRole('status').count()).toBe(0);
+    expect(raknare.anrop).toBe(1);
+    expect(batch.anrop).toBe(1);
+  });
+
+  test('avsikten värmer OBEROENDE av sidmonteringen: hover läker en misslyckad förvärmning, klicket kostar noll', async ({
+    page,
+  }) => {
+    // [TASK-442] AC #3. Monterings- och avsiktsvägen kan inte separeras i tid
+    // — `DetaljRad` renderas i samma ögonblick anmälningarna är kända, alltså
+    // exakt när monteringsförvärmningen körs. Vägarna separeras därför i
+    // UTFALL i stället: den första förvärmningen får FALLERA (400 på båda
+    // EF:erna), så cachen står tom efter sidmonteringen. Hovern är då den
+    // enda som kan fylla den — och gör den det, är avsiktsvägen bevisad
+    // oberoende av monteringsvägens resultat.
+    //
+    // 400 och inte 500 (samma skäl som mockens egen kommentar): förvärmningen
+    // bär `husetsRetryPolicy`, som aldrig retryar 4xx. Räkningen blir därför
+    // exakt ett anrop per försök — med routerns naiva globala `retry: 3` hade
+    // det första försöket blivit fyra.
+    const raknare = { anrop: 0, svar: 0, fel: 1 };
+    const batch = { anrop: 0, svar: 0, ids: [] as string[][], fel: 1, facit: true };
+    await mockSidan(page, { raknare, batch, fordrojning: SVARS_FORDROJNING_MS });
+    const beloppFel = svarPa(page, 'hamta-oppna-betalningar', 400);
+    const batchFel = svarPa(page, 'hamta-inbetalningar', 400);
+    await page.goto(`/event/${EVENT_ID}`);
+    const knapp = gruppen(page).getByRole('button', { name: 'Öppna detaljer' });
+    await expect(knapp).toBeVisible();
+
+    // Monteringsförvärmningen: ETT försök per fråga, båda besvarade med 400.
+    // Väntan på DE FELSVAREN är vad som gör hovern till ett ANDRA försök —
+    // hovrade vi medan första försöket ännu var i luften hade React Query
+    // deduplicerat mot den pågående hämtningen, och testet hade bevisat
+    // ingenting.
+    await beloppFel;
+    await batchFel;
+    expect(raknare.anrop).toBe(1);
+    expect(batch.anrop).toBe(1);
+    expect(raknare.svar).toBe(0);
+    expect(batch.svar).toBe(0);
+
+    // AVSIKTEN — hover, utan klick. Andra försöket går igenom.
+    const beloppFramme = svarPa(page, 'hamta-oppna-betalningar');
+    const batchFramme = svarPa(page, 'hamta-inbetalningar');
+    await knapp.hover();
+    await beloppFramme;
+    await batchFramme;
+    expect(raknare.anrop).toBe(2);
+    expect(batch.anrop).toBe(2);
+
+    // Klicket läser cachen hovern fyllde: noll nya anrop, inget skelett.
+    await knapp.click();
+    expect(await arbetsytan(page).getByRole('status').count()).toBe(0);
+    await expect(personRad(page, 'Eva Lindqvist').getByText('Kvar att betala')).toBeVisible({
+      timeout: CACHE_FONSTER_MS,
+    });
+    await expect(
+      personRad(page, 'Eva Lindqvist').getByText('Inbetalning 1 000 kr · Swish', { exact: true }),
+    ).toBeVisible({ timeout: CACHE_FONSTER_MS });
+    expect(raknare.anrop).toBe(2);
+    expect(batch.anrop).toBe(2);
+  });
+
+  test('avsikten når knappen även via TANGENTBORDET: fokus värmer, utan pekare', async ({
+    page,
+  }) => {
+    // [TASK-442] AC #3, andra halvan. `onFocus` bär tangentbordet precis som
+    // `onMouseEnter` bär pekaren (`DetaljRad` § AVSIKT) — en hover-bara
+    // förvärmning hade varit en yta som är snabb för musen och långsam för
+    // den som tabbar. Samma fel-läkningsprov som ovan, men fokus flyttas
+    // programmatiskt utan att pekaren rör sig.
+    const raknare = { anrop: 0, svar: 0, fel: 1 };
+    const batch = { anrop: 0, svar: 0, ids: [] as string[][], fel: 1, facit: true };
+    await mockSidan(page, { raknare, batch, fordrojning: SVARS_FORDROJNING_MS });
+    const beloppFel = svarPa(page, 'hamta-oppna-betalningar', 400);
+    const batchFel = svarPa(page, 'hamta-inbetalningar', 400);
+    await page.goto(`/event/${EVENT_ID}`);
+    const knapp = gruppen(page).getByRole('button', { name: 'Öppna detaljer' });
+    await expect(knapp).toBeVisible();
+    await beloppFel;
+    await batchFel;
+    expect(raknare.anrop).toBe(1);
+    expect(batch.anrop).toBe(1);
+
+    const beloppFramme = svarPa(page, 'hamta-oppna-betalningar');
+    const batchFramme = svarPa(page, 'hamta-inbetalningar');
+    await knapp.focus();
+    await beloppFramme;
+    await batchFramme;
+    expect(raknare.anrop).toBe(2);
+    expect(batch.anrop).toBe(2);
   });
 
   test('Postgres vinner även under Klara: öppen rad trots spegel som säger klart; okänt pris i raden faller tillbaka på basens saknas', async ({
@@ -806,27 +1033,37 @@ test.describe('Händelseloggen som Tidslinje (TASK-145.4 AC #8, formen TASK-436)
 });
 
 test.describe('Inbetalningarna i Händelseloggen — ett anrop per event (TASK-438)', () => {
-  test('noll anrop vid sidladdning, ETT batch-anrop för hela eventet när detaljerna öppnas — med alla aktiva anmälnings-id:n', async ({
+  test('ETT batch-anrop redan vid SIDMONTERINGEN — alla aktiva anmälnings-id:n, aldrig den avbokade; öppningen kostar noll', async ({
     page,
   }) => {
-    const batch = { anrop: 0, ids: [] as string[][], facit: true };
-    await mockSidan(page, { batch });
+    // [TASK-442] INVERTERAT KONTRAKT. Testet hette "noll anrop vid
+    // sidladdning, ETT batch-anrop … när detaljerna öppnas" och krävde
+    // `batch.anrop === 0` före klicket. Marcus beslut 2026-09-08 vände
+    // avvägningen; id-kontraktet (alla aktiva, aldrig den avbokade) är
+    // OFÖRÄNDRAT och prövas nu på förvärmningens begäran i stället för på
+    // klickets.
+    const batch = { anrop: 0, svar: 0, ids: [] as string[][], facit: true };
+    await mockSidan(page, { batch, fordrojning: SVARS_FORDROJNING_MS });
+    const batchFramme = svarPa(page, 'hamta-inbetalningar');
     await page.goto(`/event/${EVENT_ID}`);
     await expect(gruppen(page).getByRole('button', { name: 'Öppna detaljer' })).toBeVisible();
-    expect(batch.anrop).toBe(0);
-
-    await oppnaDetaljer(page);
-    await expect(
-      personRad(page, 'Eva Lindqvist').getByText('Inbetalning 1 000 kr · Swish', { exact: true }),
-    ).toBeVisible();
+    await batchFramme;
     expect(batch.anrop).toBe(1);
     // Batchen bär BÅDA flikarnas personer (fliken byts utan nytt anrop) — och
-    // aldrig den avbokade, som inte finns i arbetsytan.
+    // aldrig den avbokade, som inte finns i arbetsytan. Att detta gäller redan
+    // vid FÖRVÄRMNINGEN är kärnan i nyckel-identiteten: en avvikande id-mängd
+    // hade gett en andra cache-post, och klicket hade hämtat på nytt.
     const ids = batch.ids[0] ?? [];
     expect(ids).toHaveLength(8);
     expect(ids).toContain('recBET000000eva1');
     expect(ids).toContain('recBET00000karin');
     expect(ids).not.toContain('recBET0000avbokd');
+
+    await oppnaDetaljer(page);
+    await expect(
+      personRad(page, 'Eva Lindqvist').getByText('Inbetalning 1 000 kr · Swish', { exact: true }),
+    ).toBeVisible({ timeout: CACHE_FONSTER_MS });
+    expect(batch.anrop).toBe(1);
 
     await arbetsytan(page).getByRole('radio', { name: 'Klara (2)' }).click();
     await expect(personRad(page, 'Karin Sjögren').getByText('Allt betalt.')).toBeVisible();
