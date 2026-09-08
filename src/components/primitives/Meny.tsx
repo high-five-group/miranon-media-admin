@@ -114,9 +114,13 @@ export function Meny({
       <Popover
         placement={placement}
         className={cn(
-          // Bredden följer innehållet men får ett golv: en meny som är
-          // smalare än sin trigger läser som ett misstag.
-          'min-w-48 rounded-lg border border-(--mm-meny-popover-border) bg-(--mm-meny-popover-bg) p-1 shadow-lg contrast-more:border-border-strong',
+          // z-50 (TASK-439 runda 2) — DEFENSIV, INTE LOAD-BEARING: RAC
+          // sätter redan `zIndex: 100000` INLINE på Popoverns wrapper
+          // (`useOverlayPosition`, mätt — se TabBar.tsx docblock § RUNDA 2)
+          // och den vinner alltid över denna klass. z-50 dokumenterar bara
+          // avsikten i linje med appens lagerskala, ifall RAC:s
+          // ovillkorliga inline-style någon gång försvinner.
+          'z-50 min-w-48 rounded-lg border border-(--mm-meny-popover-border) bg-(--mm-meny-popover-bg) p-1 shadow-lg contrast-more:border-border-strong',
           // Samma in-/uttoning som `Modal.tsx` — och samma skäl att den inte
           // bär `motion-safe:`: base.css nollar varje `transition-duration`
           // globalt under `prefers-reduced-motion: reduce`.

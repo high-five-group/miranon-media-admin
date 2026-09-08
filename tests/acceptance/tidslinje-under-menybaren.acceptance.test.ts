@@ -3,6 +3,7 @@ import type { Locator } from '@playwright/test';
 import { http } from 'msw';
 import type { z } from 'zod';
 import type {
+  EventSchema,
   PersonDetailSchema,
   RegistrationDetailSchema,
   RegistrationSchema,
@@ -34,6 +35,36 @@ import { expect, type Page, test } from './acceptance-bas';
  * beskriver — oberoende av fixen. Den andra assertionen
  * (`elementFromPoint` träffar `nav`) är den som fälls FÖRE fixen och går
  * grön EFTER (RÖTT-FÖRST, utfall bokfört i PR-kroppen).
+ *
+ * RUNDA 2 (granskning av #2467) — GRANSKARENS FYND, PRÖVAT OCH KORRIGERAT.
+ * Granskaren hävdade att fix A ensam (menybaren `z-30`, inga
+ * överlägg-lager) introducerar en regression: en portalerad
+ * react-aria-components `Popover` (`Meny`/`Select`/`ComboBox`-familjen)
+ * skulle bära `z-index: auto` och vinna på DOM-ordning FÖRE `z-30`, men
+ * förlora EFTER — baserat på att `zIndex`/`z-index` "INTE förekommer en
+ * enda gång" i bibliotekets dist. DEN PREMISSEN ÄR FALSK, mätt direkt mot
+ * den installerade koden (`react-aria-components@1.20.0`/`react-aria@3.51.0`,
+ * `package.json`): `node_modules/react-aria/dist/private/overlays/
+ * useOverlayPosition.mjs` rad 191 sätter `zIndex: 100000` som INLINE style
+ * på VARJE `Popover`s positionerade wrapper, OVILLKORLIGT (`usePopover`
+ * anropar `useOverlayPosition` ovillkorat — `react-aria-components/dist/
+ * private/Popover.mjs`). Ett inline-värde slår alltid en klass oavsett
+ * specificitet, så popovern var ALDRIG i riskzonen — RÖTT-FÖRST-försöket
+ * (mot `768a77c2`, `z-30` UTAN någon popover-klass) gav grönt direkt;
+ * `document.elementFromPoint` mitt i menybarens rektangel träffade redan
+ * popovern (`getComputedStyle(popover).zIndex === '100000'`, mätt).
+ *
+ * ÅTGÄRD: `z-50` lades ÄNDÅ till på de fem `Popover`-anropen
+ * (`Meny`/`Select`/`DatumFalt`/`EventValjare`/dev-`patterns.tsx`) — inte
+ * för att de behövs (de gör inte det; RAC:s inline-`zIndex` är den
+ * FAKTISKA mekanismen och kan aldrig bli underlägen en klass), utan som
+ * defensiv, harmlös dokumentation i linje med appens egna lagerskala OM
+ * RAC någon gång slutar sätta stylen ovillkorligt. Tredje testet nedan är
+ * därför INGEN regressionsbevisning (ingen regression fanns) utan ett
+ * ASSURANS-test: det verifierar den FAKTISKA mekanismen
+ * (`popover.style.zIndex === '100000'`) och att popovern konsekvent
+ * vinner — ett skydd mot att RAC:s inline-style någonsin tas bort eller
+ * villkoras i en framtida version.
  */
 
 async function traffarNav(page: Page, ikon: { x: number; y: number }) {
@@ -290,6 +321,68 @@ function mockAnmalan(network: NetworkFixture): void {
   );
 }
 
+// ── POPOVER-FALLET (RUNDA 2): /mer/anmalningar, EventValjare-filtret ──────
+
+type EventRow = z.infer<typeof EventSchema>;
+
+/** Minimal event-fixtur — mönstret från mer-anmalningar-form.acceptance.test.ts. */
+function popoverEvent(overrides: Partial<EventRow> & { id: string }): EventRow {
+  return {
+    eventlabel: null,
+    eventNamn: 'Namnlöst event',
+    typ: 'Kurs',
+    ort: 'Skövde',
+    startdatum: null,
+    slutdatum: null,
+    tidKvarTillEvent: null,
+    maxPlatser: null,
+    antalAnmalda: 0,
+    platserKvar: null,
+    anmaldBelaggning: null,
+    bekraftadBelaggning: null,
+    antalNyaAnmalningar: 0,
+    antalAnmalningsavgifter: 0,
+    antalSlutbetalningar: 0,
+    antalSlutbetalningFelande: 0,
+    status: 'Planerat',
+    ...overrides,
+  };
+}
+
+/**
+ * MEDVETET MÅNGA POSTER (samma skäl som `personDetail()` ovan): sidan
+ * behöver scrollbar höjd så filter-triggern kan flyttas ner mot menybarens
+ * rektangel. `listRad()` (ovan) returnerar redan en `RegistrationSchema`-
+ * form — återanvänd med olika `id`/`eventId` i stället för en tredje
+ * byggare.
+ */
+function popoverRegistrations(): ListRow[] {
+  return Array.from({ length: 12 }, (_, i) =>
+    listRad({
+      id: `recTASK439POPREG${i}`,
+      fornamn: `Test${i}`,
+      efternamn: 'Testsson',
+      eventId: 'recTASK439POPEVENT1',
+      personId: `recTASK439POPPERSON${i}`,
+      inskickad: `2026-06-${String(10 + i).padStart(2, '0')}T10:00:00.000Z`,
+    }),
+  );
+}
+
+function mockPopoverAnmalningar(network: NetworkFixture): void {
+  network.use(
+    http.get(EF('get-events'), () =>
+      json({
+        events: [
+          popoverEvent({ id: 'recTASK439POPEVENT1', eventNamn: 'Resor i medvetandet 1' }),
+          popoverEvent({ id: 'recTASK439POPEVENT2', eventNamn: 'Resor i medvetandet 2' }),
+        ],
+      }),
+    ),
+    http.get(EF('get-registrations'), () => json({ registrations: popoverRegistrations() })),
+  );
+}
+
 test.describe('TASK-439 — tidslinjens ikon-noder ritas bakom menybaren', () => {
   test('persondetaljen: ikon rullad in i menybarens rektangel träffar nav, inte ikonen', async ({
     page,
@@ -346,5 +439,97 @@ test.describe('TASK-439 — tidslinjens ikon-noder ritas bakom menybaren', () =>
     expect(ikonMitt.y).toBeLessThanOrEqual(navBox.y + navBox.height);
 
     expect(await traffarNav(page, ikonMitt)).toBe(true);
+  });
+
+  test('popover (EventValjare) ovanför menybarens rektangel vinner ALLTID — RAC:s inline z-index:100000, assurans-test', async ({
+    page,
+    network,
+  }) => {
+    mockPopoverAnmalningar(network);
+    // 390×844 FÖRST, bara för att mäta triggerns sid-position (den beror
+    // enbart på BREDDEN och innehållet ovanför den, aldrig på höjden).
+    await page.setViewportSize({ width: 390, height: 844 });
+    await page.goto('/mer/anmalningar');
+    await expect(page.getByRole('heading', { level: 1, name: 'Anmälningar' })).toBeVisible();
+
+    await page.getByRole('button', { name: /^(Visa|Dölj) filter/ }).click();
+    await expect(page.getByTestId('filter-panel')).toBeVisible();
+
+    const trigger = page.getByTestId('event-valjare-trigger');
+    await expect(trigger).toBeVisible();
+    const triggerBox = await trigger.boundingBox();
+    if (!triggerBox) throw new Error('triggern saknar boundingBox.');
+
+    // MENYBAREN KAN INTE NÅS GENOM SCROLL HÄR (till skillnad från
+    // ikon-testerna ovan): triggern sitter nära sidans TOPP (i filter-
+    // panelen), och sidan är redan scrollad till y=0 — att scrolla NER
+    // flyttar triggern UPPÅT i viewporten (bort från navets rektangel vid
+    // botten), aldrig neråt. Den enda vägen till en NATURLIG överlappning
+    // är en KORTARE viewport-höjd, så att navets fixed `bottom-4`-rektangel
+    // hamnar tillräckligt nära triggerns redan kända, höjd-oberoende
+    // sid-position (t.ex. en mindre telefon, eller ett tangentbord som ätit
+    // vertikalt utrymme — en realistisk mobil-situation, inte en konstruerad
+    // en). `nav`s egen höjd är konstant ~60 px (mätt); `bottom-4` = 16 px.
+    // Mål: navets ÖVERKANT ~30 px under triggerns NEDERKANT — gott om marginal
+    // så triggern inte själv skyms av navet, samtidigt gott om täckning för
+    // popoverns (bevisat > 200 px höga, två event-grupper) nedre del.
+    const NAV_HOJD_UPPSKATTAD = 60;
+    const NAV_BOTTOM_OFFSET = 16; // bottom-4
+    const MARGINAL_TRIGGER_TILL_NAV = 30;
+    const malNavTop = triggerBox.y + triggerBox.height + MARGINAL_TRIGGER_TILL_NAV;
+    const malViewportHojd = Math.round(malNavTop + NAV_HOJD_UPPSKATTAD + NAV_BOTTOM_OFFSET);
+    await page.setViewportSize({ width: 390, height: malViewportHojd });
+
+    const nav = page.getByRole('navigation', { name: 'Huvudnavigation' });
+    const navBox = await nav.boundingBox();
+    if (!navBox) throw new Error('nav saknar boundingBox.');
+
+    await trigger.click();
+    const popover = page.getByTestId('event-valjare-popover');
+    await expect(popover).toBeVisible();
+
+    const popoverBox = await popover.boundingBox();
+    if (!popoverBox) throw new Error('popovern saknar boundingBox.');
+
+    // DOKUMENTERAR den FAKTISKA mekanismen (se filens docblock § RUNDA
+    // 2-KORRIGERING): react-arias `useOverlayPosition` lägger `zIndex:
+    // 100000` som INLINE style på popoverns positionerade wrapper,
+    // OVILLKORLIGT — inte vår `z-50`-klass. Ett inline-värde vinner alltid
+    // över en klass oavsett specificitet, så detta är den RIKTIGA
+    // skyddsmekanismen. Assertionen fäller om ett framtida RAC-uppgrade
+    // tar bort/villkorar den inline-satta stylen.
+    const popoverInlineZIndex = await popover.evaluate((el) => el.style.zIndex);
+    expect(popoverInlineZIndex).toBe('100000');
+
+    // Sanity: popovern överlappar FAKTISKT menybarens rektangel vertikalt —
+    // oberoende av fixen, ren layout-kontroll (samma disciplin som
+    // ikon-testerna ovan).
+    expect(popoverBox.y).toBeLessThan(navBox.y + navBox.height);
+    expect(popoverBox.y + popoverBox.height).toBeGreaterThan(navBox.y);
+
+    // Provpunkten: mitt i menybarens rektangel, horisontellt inuti
+    // popoverns bredd (popovern är `w-(--trigger-width)` — SMALARE än
+    // navets fulla `max-w-[568px]`-bredd på en 390 px-viewport där
+    // triggern spänner filterpanelens innehållsbredd).
+    const punkt = {
+      x: Math.max(navBox.x + 8, popoverBox.x + 8),
+      y: navBox.y + navBox.height / 2,
+    };
+
+    const utfall = await page.evaluate(({ x, y }) => {
+      const el = document.elementFromPoint(x, y);
+      return {
+        iPopover: el?.closest('[data-testid="event-valjare-popover"]') != null,
+        iNav: el?.closest('nav[aria-label="Huvudnavigation"]') != null,
+      };
+    }, punkt);
+
+    // Assurans-assertionen: popovern (RAC:s inline z-index:100000) ska
+    // vinna över menybaren (z-30, krom-lagret) — det gör den redan idag,
+    // UTAN att appens egen z-50-klass bidrar (se filens docblock §
+    // RUNDA 2). Testet fäller om RAC någon gång slutar sätta den inline
+    // stylen ovillkorligt.
+    expect(utfall.iPopover).toBe(true);
+    expect(utfall.iNav).toBe(false);
   });
 });

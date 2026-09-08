@@ -87,7 +87,10 @@ export function Select<T extends object>({
       <FieldError className="text-(color:--mm-input-error-text) text-caption">
         {errorMessage}
       </FieldError>
-      <Popover className="min-w-(--trigger-width) rounded border border-(--mm-select-popover-border) bg-(--mm-select-popover-bg) p-1 shadow-lg">
+      {/* z-50 (TASK-439 runda 2) — DEFENSIV, INTE LOAD-BEARING: se
+          TabBar.tsx docblock § RUNDA 2. RAC:s inline `zIndex: 100000`
+          (useOverlayPosition) vinner alltid över denna klass. */}
+      <Popover className="z-50 min-w-(--trigger-width) rounded border border-(--mm-select-popover-border) bg-(--mm-select-popover-bg) p-1 shadow-lg">
         <ListBox items={items} className="max-h-60 overflow-auto outline-none">
           {children}
         </ListBox>
