@@ -717,6 +717,24 @@ test.describe('Markera-läget — urvalet och utgången mot Åtgärds-sidan (tas
     await expect(mottagarkort).toHaveCount(2);
     await expect(kryssI(mottagarkort.filter({ hasText: 'Anna Ek' }))).not.toBeChecked();
     await expect(kryssI(mottagarkort.filter({ hasText: 'Bertil Sund' }))).toBeChecked();
+
+    // [TASK-434, fynd S124] Avmarkerad person ska vara en DIREKT kandidat i
+    // plockaren "Lägg till fler personer från eventet" — Marcus i prod:
+    // "de bör direkt finnas tillgängliga i listan … men det gör dem inte".
+    // Exklusionsmängden var listans medlemskap (`synligaIds`, oförändrad av
+    // avmarkering) i stället för markeringen (`valda`); Anna Ek stannade
+    // därför osynlig för plockaren trots avmarkeringen. Räknaren bredvid
+    // knappen ska räkna på samma markering: 3 anmälda − 1 markerad (Bertil)
+    // = 2 kandidater (Anna + Cecilia), inte 1 (bara Cecilia, bugg-utfallet).
+    const plockareKnapp = page.getByRole('button', {
+      name: /Lägg till fler personer från eventet/,
+    });
+    await expect(plockareKnapp).toContainText('2');
+    await plockareKnapp.click();
+    const kandidatkort = page.getByTestId('kandidat-personkort');
+    await expect(kandidatkort).toHaveCount(2);
+    await expect(kandidatkort.filter({ hasText: 'Anna Ek' })).toBeVisible();
+    await expect(kandidatkort.filter({ hasText: 'Cecilia Lund' })).toBeVisible();
   });
 
   test('fynd (e): korthöjden är oberoende av märkets innehåll — mellan kort OCH genom lägena', async ({

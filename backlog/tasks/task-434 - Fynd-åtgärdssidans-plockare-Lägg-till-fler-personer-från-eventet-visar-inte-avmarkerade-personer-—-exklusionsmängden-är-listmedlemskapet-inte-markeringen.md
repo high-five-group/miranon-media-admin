@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-08 01:43'
+updated_date: '2026-09-08 01:56'
 labels:
   - fynd
   - ready-for-agent
@@ -31,15 +32,15 @@ OBS S124: ett parallellt kort river betalningsblocket i samma fil (rad ~3205–3
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Avmarkeras en person i den expanderade mottagarlistan syns hen omedelbart i plockaren 'Lägg till fler personer från eventet'; kortet ligger kvar vitt i panelen (beslut A)
-- [ ] #2 Räknaren bredvid plockaren och tomtexten 'Alla anmälda är redan i listan' läser markeringen (valda), inte listmedlemskapet
-- [ ] #3 En assertion i tests/e2e/event-bekraftelse.staging.test.ts direkt efter avmarkerings-steget (rad ~718) fäller ut plockaren och verifierar att den avmarkerade personen finns där — testet är RÖTT mot main före fixen (bevisat i PR-kroppen) och GRÖNT efter
-- [ ] #4 tests/visual/atgardssida-promoverings-grind.spec.ts grön; DoD-kommandona (test:api, typecheck, biome, build) gröna
+- [x] #1 Avmarkeras en person i den expanderade mottagarlistan syns hen omedelbart i plockaren 'Lägg till fler personer från eventet'; kortet ligger kvar vitt i panelen (beslut A)
+- [x] #2 Räknaren bredvid plockaren och tomtexten 'Alla anmälda är redan i listan' läser markeringen (valda), inte listmedlemskapet
+- [x] #3 En assertion i tests/e2e/event-bekraftelse.staging.test.ts direkt efter avmarkerings-steget (rad ~718) fäller ut plockaren och verifierar att den avmarkerade personen finns där — testet är RÖTT mot main före fixen (bevisat i PR-kroppen) och GRÖNT efter
+- [x] #4 tests/visual/atgardssida-promoverings-grind.spec.ts grön; DoD-kommandona (test:api, typecheck, biome, build) gröna
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
