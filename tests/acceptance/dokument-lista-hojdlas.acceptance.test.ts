@@ -1268,8 +1268,11 @@ test.describe('GemensamtLage (räckviddsläge) — samma regel (tidigare saknad,
    * (keyad på just de två) triggar DÄRFÖR INTE om av en uppladdning som går
    * 5 → 6, trots att `scrollHeight` (mer innehåll) FAKTISKT ändras.
    *
-   * VARFÖR EN RADERING (5 → 4 eller 6 → 5) INTE DUGER SOM TEST: en rad är
-   * 124 px, bandet bara 32 — att TA BORT en rad medan man står nära botten
+   * VARFÖR EN RADERING (5 → 4 eller 6 → 5) INTE DUGER SOM TEST: en rads
+   * FOTAVTRYCK I FLÖDET är 124 px (kortets EGNA 116 + rännans 8 FÖRE nästa
+   * rad — INTE `<li>`:ets egen `getBoundingClientRect().height`, som är 116,
+   * se `LISTA_FALLBACK_KORTHOJD`s docblock), bandet bara 32 — att TA BORT
+   * en rad medan man står nära botten
    * TVINGAR i praktiken webbläsaren att klampa `scrollTop` till det nya,
    * mindre maxvärdet, vilket AVFYRAR ett nativt `scroll`-event som `onScroll`
    * redan lyssnar på. Ett sådant test blir grönt ÄVEN UTAN
@@ -1607,11 +1610,12 @@ test.describe('GemensamtLage vid 375 px — samma tre nivåer som desktop (revie
     expect(geometri.scrollHeight).toBe(geometri.clientHeight);
     expect(geometri.antalKort).toBe(0);
     // `LISTA_FALLBACK_KORTHOJD` (EN konstant, se `DokumentYta.tsx`s docblock
-    // och `FALLBACK_KORTHOJD` ovan) × 4 — INTE ~622 px, som en fallback
-    // baserad på en BRUTEN `GemensamBilageRadRow`-rad hade gett. [T176]
-    // Talet är 122 (den separator-fria per-rad-höjden, se `FALLBACK_KORTHOJD`
-    // ovan — `<li>` är 124) och `<ul>` bär ingen kant, så
-    // väntad höjd är exakt 488 px.
+    // och `FALLBACK_KORTHOJD` ovan) × 4 + `RANNA` × 3 — INTE ~622 px, som en
+    // fallback baserad på en BRUTEN `GemensamBilageRadRow`-rad hade gett.
+    // [T176] [TASK-309.48] Talet är 116 (kortets EGNA höjd — `<li>` mäter nu
+    // ALLTID 116, se `FALLBACK_KORTHOJD` ovan för varför "122, `<li>` är
+    // 124" inte längre stämmer) plus 3 rännor à 8 px, och `<ul>` bär ingen
+    // kant, så väntad höjd är exakt 488 px.
     expect(geometri.hojd).toBeGreaterThanOrEqual(FALLBACK_KORTHOJD * 4 + RANNA * 3);
     expect(geometri.hojd).toBeLessThanOrEqual(FALLBACK_KORTHOJD * 4 + RANNA * 3 + TOLERANS);
   });
