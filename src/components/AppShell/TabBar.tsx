@@ -48,6 +48,25 @@ const TABS = [
  * telefon i mötet"); skalets `pb-24` på main ger fortsatt frihöjd. Inga
  * hårdkodade färger — allt via semantiska tokens (noll nya tokens;
  * beslut 2).
+ *
+ * LAGERSKALA (z-index, TASK-439 fix A): repot bär inga z-tokens (`--mm-z*`
+ * saknas i `src/styles/tokens/`) — värdena nedan är Tailwinds egen skala
+ * (10/20/30/40/50), medvetet ingen ny token (dubbelriktad
+ * över-engineering-vakt: golvet är "krom ovanför innehåll", en egen
+ * z-index-token utan andra konsumenter vore spekulation). Skriven här så
+ * nästa läsare ser hela skalan på ett ställe, inte utspridd per komponent:
+ *   - **≤ 10, isolerat i sin komponent** — sidinnehåll (t.ex.
+ *     `Tidslinje.tsx`/`PersonDetail.tsx`s ikon-noder, `z-10` på `<li isolate>`
+ *     — `isolate` håller staplingen INOM posten, se TASK-439 fix B)
+ *   - **30** — sidkrom, DENNA nav (`TabBar`)
+ *   - **40** — notiser (`primitives/Notis.tsx`, `z-40`)
+ *   - **50** — överlägg (`primitives/Modal.tsx`, `AppShell/Sidbytesindikator.tsx`,
+ *     `AppShell/SkipLink.tsx` vid fokus — samtliga `z-50`)
+ * ROTORSAK för `z-30` här (TASK-439): denna nav var `fixed` med `z-index:
+ * auto` — ett fixed element utan eget z-index ritas i rot-staplingskontexten
+ * på nivå 0, så VARJE sidinnehåll med z-index > 0 (t.ex. tidslinjens
+ * ikon-noder, `z-10`) hamnade ovanpå menybaren. `z-30` placerar navet
+ * mellan sidinnehåll och notiser/överlägg, i linje med skalan ovan.
  */
 export function TabBar() {
   const dataSource = useDataSource();
@@ -74,7 +93,7 @@ export function TabBar() {
       // print:hidden (task-17.7): navigation är död på papper — GOV.UK-
       // blacklisten via Tailwinds återanvändbara print-variant (idiomets
       // motsvarighet till govuk-!-display-none-print), aldrig engångs-CSS.
-      className="fixed inset-x-4 bottom-4 mx-auto max-w-[568px] rounded-full border border-border bg-surface contrast-more:border-border-strong print:hidden"
+      className="fixed inset-x-4 bottom-4 z-30 mx-auto max-w-[568px] rounded-full border border-border bg-surface contrast-more:border-border-strong print:hidden"
     >
       <ul className="my-0 flex w-full list-none items-center gap-1 p-1">
         {TABS.map((tab) => {

@@ -43,7 +43,13 @@ export function Tidslinje({ handelser }: { handelser: readonly TidslinjeHandelse
       {handelser.map((h) => {
         const Ikon = h.ikon;
         return (
-          <li key={h.id} className="relative flex items-start gap-3 pb-5 last:pb-1">
+          // isolate på <li> (INTE <ol>, TASK-439 fix B): PR #2457 ändrar
+          // <ol>-raden ovan (lägger aria-label) — en ändring på samma rad
+          // hade gett merge-konflikt i kön. isolate håller ikon-nodens
+          // z-10 (nedan) INOM denna post i stället för att läcka ut i
+          // rot-staplingskontexten och konkurrera med sidkromet
+          // (TabBar.tsx, z-30 — se dess docblock för hela lagerskalan).
+          <li key={h.id} className="relative isolate flex items-start gap-3 pb-5 last:pb-1">
             <span
               aria-hidden="true"
               className="z-10 flex size-8 shrink-0 items-center justify-center rounded-full border border-border bg-surface"
