@@ -1796,7 +1796,9 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
             onToggle={() => setBetalningOppen((v) => !v)}
           />
           <div id="deltagare-betalningsdetaljer" hidden={!betalningOppen}>
-            <BetalningsDetaljer event={event} registreringar={aktiva} />
+            {/* [TASK-436] `aktiv` = disclosure-läget: beloppen hämtas först
+                när Lotta öppnat detaljerna, aldrig vid sidladdning. */}
+            <BetalningsDetaljer event={event} registreringar={aktiva} aktiv={betalningOppen} />
           </div>
         </div>
       )}

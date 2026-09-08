@@ -1,11 +1,10 @@
-import { CircleCheck } from 'lucide-react';
 import { useMemo } from 'react';
 import { useOppnaBetalningar } from '@/data/betalningar/useBetalningar';
 import { ATERBETALNINGS_TRIGGER_ID, AterbetalningsYta } from './AterbetalningsYta';
-import { visaKronor } from './belopp-inmatning';
 import { InbetalningsLista } from './InbetalningsLista';
 import { idagIso } from './idag';
 import { harledRad } from './inkorg-harledningar';
+import { KvarAttBetala } from './KvarAttBetala';
 import { REGISTRERA_TRIGGER_ID, RegistreraYta } from './RegistreraYta';
 
 /**
@@ -93,19 +92,10 @@ export function AnmalansBetalningar({
           `rad === null` för varför frånvaron är tvetydig och inte får
           påstås vara "allt betalt". Se filens docblock § "SAKNAS X KR" för
           varför bara det öppna beloppet får radstrukturens vikt. */}
-        {saknas === null ? (
-          <p className="text-small text-text-muted">Inget att betala.</p>
-        ) : saknas > 0 ? (
-          <div className="flex items-center justify-between gap-4 py-1">
-            <span className="text-small text-text-muted">Kvar att betala</span>
-            <span className="text-right font-semibold text-body">{`${visaKronor(saknas)} kr`}</span>
-          </div>
-        ) : (
-          <p className="flex items-center gap-2 text-small text-text-secondary">
-            <CircleCheck aria-hidden="true" size={16} className="shrink-0 text-success" />
-            Allt betalt.
-          </p>
-        )}
+        {/* [TASK-436] Blocket bor i `KvarAttBetala` sedan eventdetaljens
+            "Öppna detaljer" blev dess andra konsument (ADR-126) — formen och
+            orden är oförändrade, läs § "KVAR ATT BETALA" SOM VIKTAD RAD ovan. */}
+        <KvarAttBetala saknas={saknas} />
 
         {/* [TASK-346.14 fix-runda D, D1] HORISONTELL KNAPPGRUPP PÅ ≥sm —
           orkestrerarens dom (1440×900) mätte "Registrera betalning" och
