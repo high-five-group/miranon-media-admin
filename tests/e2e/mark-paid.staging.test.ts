@@ -507,8 +507,11 @@ test.describe('Betalningsytan — LÄSYTA, mekaniskt bevisad (TASK-145.4 AC #5/#
     const oppna = [
       // Karin: basen säger båda mottagna (fliken Klara), Postgres har 2 000 av
       // 2 500 — raden vinner, och spegelns eftersläpning sägs rakt ut.
+      // Basens `saknas` (900) och Postgres-talet (2 500 - 2 000 = 500) SKILJER
+      // SIG med avsikt: testet ska fälla en omkastad `??`-ordning, inte bara
+      // bevisa att grenen nås (granskningsfynd runda 2).
       oppen('recBET00000karin', 'Karin Sjögren', {
-        saknas: 500,
+        saknas: 900,
         summaInbetalt: 2000,
         summaInbetaltSpegel: 2500,
         spegelIFas: false,
@@ -529,6 +532,7 @@ test.describe('Betalningsytan — LÄSYTA, mekaniskt bevisad (TASK-145.4 AC #5/#
     const karin = personRad(page, 'Karin Sjögren');
     await expect(karin.getByText('Kvar att betala', { exact: true })).toBeVisible();
     await expect(karin.getByText('500 kr', { exact: true })).toBeVisible();
+    await expect(karin.getByText('900 kr', { exact: true })).toHaveCount(0);
     await expect(karin.getByText('Basen släpar')).toBeVisible();
     await expect(karin.getByText('Allt betalt.')).toHaveCount(0);
     await expect(personRad(page, 'Lars Öhman').getByText('Allt betalt.')).toBeVisible();
