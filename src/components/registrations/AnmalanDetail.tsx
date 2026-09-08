@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from '@tanstack/react-router';
-import { Bell, ChevronLeft, ChevronRight, Inbox, Mail, UserPlus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Mail } from 'lucide-react';
 import { useEffect, useRef } from 'react';
 import { AnmalansBetalningar } from '@/components/betalningar/AnmalansBetalningar';
 import { DetaljGrupp, EtikettVardeRad } from '@/components/events/detail/DetaljGrupp';
@@ -12,13 +12,14 @@ import { useSendConfirmationFromDetail } from '@/data/mutations/registrationConf
 import { useDataSource } from '@/data/useDataSource';
 import type { Registration } from '@/domain/models/Registration';
 import type { RegistrationDetail } from '@/domain/schemas';
-import { PaymentStatus, RegistrationSource, RegistrationStatus } from '@/domain/types/Status';
+import { PaymentStatus, RegistrationStatus } from '@/domain/types/Status';
 import { betalningarPa } from '@/lib/funktionsflaggor';
 import { kursfargForKurs } from '@/lib/kursfarg';
 import { queryKeys } from '@/queries/keys';
 import { AvbokningsYta } from './AvbokningsYta';
 import { harledBehorighet } from './behorighet';
 import { FritextRad } from './FritextRad';
+import { harledHandelser } from './handelser';
 import { IdChip } from './IdChip';
 import { OmbokningsKvitto } from './OmbokningsKvitto';
 import { PersonMiniKort } from './PersonMiniKort';
@@ -123,62 +124,6 @@ function dagarKvarPill(n: number): { text: string; cls: string } {
  * (Källa TOM) namnger formuläret; övriga vägar följer Källa-semantiken
  * (ORDLISTA — Manuell/+1/Väntelista sätts av create-registration).
  */
-function inkomText(reg: RegistrationDetail): string {
-  if (reg.kalla === RegistrationSource.MEDFOLJANDE) {
-    return `Anmälan skapad som medföljande (+1)${
-      reg.medfoljandeTillNamn ? ` till ${reg.medfoljandeTillNamn}` : ''
-    }`;
-  }
-  if (reg.kalla === RegistrationSource.MANUELL) return 'Anmälan tillagd manuellt';
-  if (reg.kalla === RegistrationSource.VANTELISTA) return 'Anmälan skapad från väntelistan';
-  return reg.franFormular ? `Anmälan inkom via ${reg.franFormular}` : 'Anmälan inkom';
-}
-
-/**
- * Tidslinjen HÄRLEDD ur tidsstämplarna (byggkrav 11) — ingen händelselogg
- * finns i basen; varje rad med en faktisk tidsstämpel blir en nod. Betalning-
- * mottagen saknar tidsstämpel i basen ⇒ ingen betalningsnod fabriceras
- * (RÅ-disciplinen: bara det som kan beläggas renderas). SENAST ÖVERST.
- */
-function harledHandelser(reg: RegistrationDetail): TidslinjeHandelse[] {
-  const kandidater: { nar: string | null; text: string; ikon: TidslinjeHandelse['ikon'] }[] = [
-    {
-      nar: reg.inskickad,
-      text: inkomText(reg),
-      ikon: reg.kalla === RegistrationSource.MEDFOLJANDE ? UserPlus : Inbox,
-    },
-    { nar: reg.bekraftelseSkickad ?? null, text: 'Bekräftelsemail skickat', ikon: Mail },
-    { nar: reg.plusOneForfraganSkickad, text: 'Plus-one-förfrågan skickad', ikon: Mail },
-    { nar: reg.deltagarinfoSkickad ?? null, text: 'Deltagarinfo skickad', ikon: Mail },
-    {
-      nar: reg.betalningspaminnelseSkickad,
-      text: 'Betalningspåminnelse skickad',
-      ikon: Bell,
-    },
-    {
-      nar: reg.paminnelseAnmalningsavgiftSkickad ?? null,
-      text: 'Påminnelse om anmälningsavgift skickad',
-      ikon: Bell,
-    },
-    {
-      nar: reg.paminnelseSlutbetalningSkickad ?? null,
-      text: 'Påminnelse om slutbetalning skickad',
-      ikon: Bell,
-    },
-  ];
-  return kandidater
-    .flatMap((k) =>
-      k.nar != null && !Number.isNaN(Date.parse(k.nar)) ? [{ ...k, nar: k.nar }] : [],
-    )
-    .sort((a, b) => Date.parse(b.nar) - Date.parse(a.nar))
-    .map((k) => ({
-      id: `${k.nar}-${k.text}`,
-      text: k.text,
-      tid: datumTid(k.nar) ?? k.nar,
-      ikon: k.ikon,
-    }));
-}
-
 /** Detalj-nycklarnas placeholder-nollor (aldrig renderade som data — se INSTANT-docen). */
 const DETALJ_PLACEHOLDER = {
   anmalanId: null,
@@ -311,7 +256,15 @@ export function AnmalanDetail({
   const bekraftadTid = datumTid(reg.bekraftelseSkickad ?? null);
   const behorighet = harledBehorighet(reg.eventNamn, reg.kurshistorik);
   const kursfarg = kursfargForKurs(reg.eventNamn);
-  const handelser = harledHandelser(reg);
+  // [TASK-436] Härledningen är delad med eventdetaljens Händelselogg
+  // (`handelser.ts`) — samma ord, samma ordning (senast överst) på båda
+  // ytorna. Formatet är denna vys eget: år och klockslag.
+  const handelser: TidslinjeHandelse[] = harledHandelser(reg).map((h) => ({
+    id: h.id,
+    text: h.text,
+    tid: datumTid(h.nar) ?? h.nar,
+    ikon: h.ikon,
+  }));
   const pill = reg.dagarKvarTillDeadline != null ? dagarKvarPill(reg.dagarKvarTillDeadline) : null;
 
   return sidRam(

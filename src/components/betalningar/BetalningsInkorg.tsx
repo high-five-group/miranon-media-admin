@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
-import { AlertTriangle, CalendarRange, ChevronsUpDown, Clock, Upload, X } from 'lucide-react';
+import { CalendarRange, ChevronsUpDown, Clock, Upload, X } from 'lucide-react';
 import { parseAsString, parseAsStringEnum, useQueryState } from 'nuqs';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import {
@@ -39,6 +39,7 @@ import type { Event } from '@/domain/models/Event';
 import { filtreraPersonregister, personVisningsnamn } from '@/lib/person-sok';
 import { skrivLaddningssida } from '@/lib/skriv-laddningssida';
 import { queryKeys } from '@/queries/keys';
+import { BasenSlaparPill } from './BasenSlaparPill';
 import { visaKronor } from './belopp-inmatning';
 import { type Betalsatt, lasSenasteBetalsatt, sparaBetalsatt } from './betalsatt-minne';
 import { idagIso } from './idag';
@@ -2567,15 +2568,7 @@ function RadInnehall({ rad, visaEvent }: { rad: InkorgsRad; visaEvent?: boolean 
               Obekräftad
             </StatusBadge>
           )}
-          {rad.spegelSlapar && (
-            <span
-              className="inline-flex items-center gap-1 rounded border border-transparent bg-bg px-2 py-0.5 text-caption text-text-muted"
-              title="Basen har inte hunnit uppdateras än"
-            >
-              <AlertTriangle aria-hidden size={13} />
-              Basen släpar
-            </span>
-          )}
+          {rad.spegelSlapar && <BasenSlaparPill />}
         </div>
       </div>
     </div>

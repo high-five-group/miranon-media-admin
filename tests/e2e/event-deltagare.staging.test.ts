@@ -37,6 +37,7 @@ import { mockValjarLista } from './helpers/valjar-lista';
  */
 
 const GET_EVENT = /\/functions\/v1\/get-event\?/;
+const HAMTA_OPPNA_BETALNINGAR = '**/functions/v1/hamta-oppna-betalningar*';
 const GET_REGISTRATIONS = '**/functions/v1/get-registrations*';
 const EVENT_ID = 'recDELTAGARE0001';
 
@@ -176,6 +177,14 @@ async function mocka(page: Page, event: Json, registrations: Json[] = DELTAGARE)
       body: JSON.stringify({ registrations }),
     });
   });
+  // [TASK-436] Betalningsytans belopp — tom lista, deterministiskt.
+  await page.route(HAMTA_OPPNA_BETALNINGAR, (route) =>
+    route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify({ betalningar: [], forfallna: 0 }),
+    }),
+  );
   // Anteckningar-gruppen (task-18.11) fetchar get-event-notes för VARJE event —
   // stubbas tom via delade sömmen (TASK-47, tidigare TASK-205/TASK-212) så
   // eventsidans övriga sviter förblir deterministiska.
@@ -875,12 +884,9 @@ test.describe('TASK-145.5 — eventsidan är en REN ÖVERSYN (AC #1/#2)', () => 
     await oppnaEventsidan(page);
 
     await gruppen(page).getByRole('button', { name: 'Öppna detaljer' }).click();
-    const kryssen = gruppen(page).getByRole('checkbox');
-    const antal = await kryssen.count();
-    expect(antal).toBeGreaterThan(0);
-    for (let i = 0; i < antal; i++) {
-      await expect(kryssen.nth(i)).toBeDisabled();
-    }
+    // [TASK-436] Invarianten SKÄRPT: förut "alla kryss är inaktiverade", nu
+    // finns inte ett enda kryss — beloppet bär statusen.
+    await expect(gruppen(page).getByRole('checkbox')).toHaveCount(0);
 
     // Och ytan bär fortfarande inget redigerbart fält och ingen mailto —
     // noterings-redigeringen är riven, inte dold bakom disclosure:n.
