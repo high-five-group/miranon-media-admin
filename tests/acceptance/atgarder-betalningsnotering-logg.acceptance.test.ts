@@ -1,161 +1,180 @@
 import { http } from 'msw';
-import { VISUAL_EVENT_ID } from '../support/fixturvarld/fixture-data';
 import { EF, json } from '../support/fixturvarld/handlers';
-import { medvetetOanvand } from '../support/fixturvarld/overskuggnings-vakt';
 import { expect, test } from './acceptance-bas';
 
 /**
- * TASK-201.13 — betalningsnoteringens aktivitetslogg, ände-till-ände genom
- * den RIKTIGA hooken (`useUpdatePaymentNote`, `registrationPayments.ts`).
+ * TASK-201.13 — betalningsnoteringens integritetsgaranti, ände-till-ände
+ * genom den RIKTIGA hooken (`useRegistreraInbetalning`,
+ * `data/mutations/inbetalningar.ts`).
  *
- * VARFÖR DENNA FIL FINNS VID SIDAN AV `activity-log-luckor-statements.test.ts`:
- * api-pure-sviten kör composern (`recordActivity`) med en input som SPEGLAR
- * hookens. Den bevisar att composern inte läcker — men en spegel kan glida
- * ifrån originalet, och då bevisar den fel sak. HÄR drivs Åtgärds-sidans
- * verkliga noteringsfält, av den verkliga mutationen, och kroppen läses där
- * den faktiskt lämnar klienten. Det är det ledet som binder INTEGRITETEN till
- * hooken i stället för till en testfixtur.
+ * [RIVET, TASK-435, 2026-09-08] SKRIVEN OM. Filen testade tidigare
+ * `AtgardsSida.tsx`s numera rivna `SkrivRad`/`useUpdatePaymentNote` — den
+ * gamla skrivvägen till Anmälningars `Notering anmälningsavgift`/
+ * `Notering slutbetalning` (se `data/mutations/registrationPayments.ts`s
+ * kvarvarande docblock för den historien). Marcus dom 2026-09-01 flyttade
+ * noteringsplatsen: *"det är HÄR lotta noterar något, inte på pricka av-
+ * blocket"* (`RegistreraForm.tsx` § NOTERINGSFÄLTET) — noteringen bor nu på
+ * INBETALNINGEN, skriven av `RegistreraForm` via `useRegistreraInbetalning`.
  *
- * RÄKNANDET ÄR MEDVETET HÄR (klassens vanliga regel är att aldrig testa att en
- * handler anropades — `acceptance-bas.ts` § VAD KLASSEN BEVISAR). Samma
- * motiverade undantag som `anmalan-detalj.acceptance.test.ts` § AKTIVITETS-
- * LOGGEN och `atgarder-testmail-send.acceptance.test.ts` § omklick redan bär:
- * för aktivitetsloggen ÄR den utgående posten det externa beteendet — det
- * finns ingen annan yta i denna vy där den syns.
+ * ARKITEKTUREN ÄR STRUKTURELLT ANNORLUNDA, INTE BARA FLYTTAD. Den GAMLA
+ * hooken loggade aktiviteten KLIENT-SIDA (`recordActivity`, ett separat
+ * `log-activity`-anrop EFTER skrivningen) — det var DÄR integritetsvakten
+ * satt: bevisa att fritexten aldrig band in i DEN utgående kroppen.
+ * `registrera-inbetalning` loggar i stället SERVER-SIDA, i SAMMA
+ * request/response som bär noteringen (`registrera-inbetalning/index.ts`
+ * § "Steg 4: aktivitetsloggen" — `byggStatement`s `objektNamn` läser
+ * `anmalan.namn`, ALDRIG `notering`-variabeln, som strukturell garanti,
+ * samma "fritexten finns inte ens som binding i scopet"-mönster den gamla
+ * hooken bar). Den garantin är server-sidig och hör hemma i `tests/api/`
+ * (t.ex. en utökning av `inbetalning-notering.test.ts`) — INTE i denna
+ * klass, som bara ser vad KLIENTEN skickar och visar (se
+ * `acceptance-bas.ts` § VAD KLASSEN BEVISAR).
  *
- * `update-record` ligger MEDVETET INTE i normalläget (`handlers.ts`): ingen
- * annan acceptance-fil rör betalningarnas skrivyta, och en delad
- * skriv-handler hade svarat 200 på mutationer andra filer inte menar att
- * göra. Varje test här överskuggar den självt — samma skäl som
- * `send-action-email`s syskonfiler anger för sin.
+ * VAD DENNA FIL DÄRFÖR BEVISAR, PÅ KLIENT-LAGRET: (1) att fritexten FAKTISKT
+ * skickas i `registrera-inbetalning`-anropets `notering`-fält — det ÄR
+ * meningen, det är inte längre en läcka (RIKTNING 1); (2) att fritexten
+ * ALDRIG ekas tillbaka i den bekräftelse (`RegistreringsUtfall.kvittens`)
+ * formuläret lämnar till sin anropare — det enda ANDRA klient-observerbara
+ * stället en läcka strukturellt skulle kunna uppstå, eftersom det inte
+ * längre finns något separat klient-drivet loggnings-anrop att läcka in i
+ * (RIKTNING 1, samma test); (3) att en FALLERAD skrivning varken visar en
+ * missvisande bekräftelse eller en notering någonstans i felytan
+ * (RIKTNING 2).
+ *
+ * VARFÖR `/dev/registrera-form-registrera` OCH INTE EN PRODUKTIONSROUTE:
+ * se den routens egen docblock. Kort sagt: alla tre produktionskonsumenter
+ * (`BetalningsInkorg.tsx`, `AnmalansBetalningar.tsx`, `PersonBetalningar.tsx`)
+ * är bakom `betalningarPa()`, och `playwright.config.ts` hårdkodar den
+ * flaggan `'av'` för acceptance-klassens fixturvärld (TASK-346.4). Att
+ * flippa den globala raden hade rört samtliga acceptance-tester (samma
+ * WebSocket-vakt TASK-346.4 skrev raden för att undvika) för att lösa ETT
+ * testfils behov — en `/dev/*`-route (samma ADR-044-mönster som
+ * `/dev/matyta-option-c`, TASK-340.4, redan konsumerad av
+ * `dev-matyta-option-c.acceptance.test.ts`) är den avgränsade vägen.
+ *
+ * RÖTT-FÖRST (AC #3): verifierat 2026-09-08 genom att skarpt injicera
+ * ` (${notering})` i `RegistreraForm.tsx`s `kvittens`-konstruktion (samma
+ * plats en framtida regression rimligen skulle råka lägga till fritexten).
+ * Med injektionen föll RIKTNING 1 exakt på integritetsassertionen ("HELA
+ * noteringen läckte in i bekräftelsen") — se PR-kroppen för exakt
+ * testutdata. Injektionen reverterades omedelbart efter; ingen produktionskod
+ * i denna PR bär den.
  */
 
-/** Anna Andersson, `fixture-data.ts` § REGISTRATIONS_RESPONSE (rad ~157) —
- * eventNamn "Utbildning Skövde", personId `recVisualPers00001`. */
-const ANNA_NOTERINGSFALT = 'Notering anmälningsavgift för Anna Andersson';
-
-/**
- * Precis den sortens känsliga fritext Lotta faktiskt skriver i fältet — och
- * som ALDRIG får hamna i en logg som andra kan läsa (S105 Del 2 beslut 2).
- */
+/** Precis den sortens känsliga fritext Lotta faktiskt skriver i fältet — och
+ * som ALDRIG får ekas tillbaka i en bekräftelse andra kan läsa över axeln
+ * (S105 Del 2 beslut 2 — samma disciplin, ny plats). */
 const HEMLIG_NOTERING = 'Sjukskriven, betalar efter lönen den 25:e — ring inte igen';
 const FRAGMENT = ['Sjukskriven', 'lönen', '25:e', 'ring inte igen'];
 
 type Kropp = Record<string, unknown>;
 
-/** Öppnar Åtgärds-sidans betalnings-panel och returnerar noteringsfältet.
- * Knappens namn är "Pricka av och notera" — INTE sektionsrubriken
- * "Betalningar" (`AtgardsSida.tsx` rad ~3079; "…och påminn" ströks i varv 12). */
-async function oppnaBetalningar(page: import('@playwright/test').Page) {
-  await page.goto(`/event/${VISUAL_EVENT_ID}/atgarder`);
-  await expect(page.getByTestId('eventet-block')).toBeVisible();
-  await page.getByRole('button', { name: /Pricka av och notera/ }).click();
-  const falt = page.getByLabel(ANNA_NOTERINGSFALT);
+async function oppnaOchNoteraKvar(page: import('@playwright/test').Page, notering: string) {
+  await page.goto('/dev/registrera-form-registrera');
+  const falt = page.getByLabel('Notering');
   await expect(falt).toBeVisible();
+  await falt.fill(notering);
   return falt;
 }
 
-test.describe('Betalningsnoteringens aktivitetslogg (TASK-201.13)', () => {
-  test('RIKTNING 1/2 — noteringen SPARAS: posten skapas, och fritexten finns INTE någonstans i den', async ({
+test.describe('Betalningsnoteringens integritetsgaranti (TASK-201.13, TASK-435)', () => {
+  test('RIKTNING 1/2 — sparas: notering skickas i inbetalningen, men ekas ALDRIG i bekräftelsen', async ({
     page,
     network,
   }) => {
-    const loggar: Kropp[] = [];
     let skrivKropp: Kropp | null = null;
 
     network.use(
-      http.post(EF('update-record'), async ({ request }) => {
+      http.post(EF('registrera-inbetalning'), async ({ request }) => {
         skrivKropp = (await request.json()) as Kropp;
-        return json({ ok: true });
-      }),
-      http.post(EF('log-activity'), async ({ request }) => {
-        const body = (await request.json()) as Kropp;
-        loggar.push(body);
-        const b = body as unknown as {
-          id: string;
-          context: { extensions: Record<string, string> };
-        };
-        return json(
-          {
-            id: b.id,
-            requestId: Object.values(b.context.extensions)[0],
-            occurredAt: '2026-08-13T08:00:00.000Z',
+        return json({
+          inbetalning: {
+            id: '00000000-0000-4000-8000-000000000001',
+            anmalanRecordId: 'dev-fixtur-registrera-form-registrera',
+            ogonblicksbildNamn: 'Dev Testsson',
+            ogonblicksbildEvent: 'Dev-eventet (demo)',
+            ogonblicksbildEventdatum: '2099-12-01',
+            belopp: 1500,
+            betalsatt: 'Swish',
+            betalningsdatum: '2026-09-08',
+            typ: 'inbetalning',
+            status: 'aktiv',
+            makuleradSkal: null,
+            makuleradNar: null,
+            bankreferens: null,
+            kvittoId: null,
+            // Servern ekar noteringen tillbaka — precis som en riktig
+            // sparad rad. Det är HÄR den FÅR finnas; testet nedan bevisar
+            // att den INTE också läcker ut i kvittensen.
+            notering: HEMLIG_NOTERING,
+            skapadAv: 'dev@example.test',
+            skapadNar: '2026-09-08T08:00:00.000Z',
           },
-          201,
-        );
+          harledning: {
+            summa: 1500,
+            gallandePris: 1500,
+            saknas: 0,
+            avgiftKlar: true,
+            alltKlart: true,
+            arForelasning: false,
+          },
+          spegel: { skrivet: true, forsok: 1, skal: null },
+        });
       }),
     );
 
-    const falt = await oppnaBetalningar(page);
-    await falt.fill(HEMLIG_NOTERING);
-    await falt.blur(); // commit-punkten (`SkrivRad` § spara)
+    await oppnaOchNoteraKvar(page, HEMLIG_NOTERING);
+    await page.getByRole('button', { name: 'Registrera', exact: true }).click();
 
-    // Den riktiga skrivningen bär fritexten — det SKA den (det är basens fält).
+    // RIKTNING 1a — SKRIVNINGEN BÄR FRITEXTEN. Det SKA den: det är hela
+    // poängen med fältet (Marcus dom 2026-09-01).
     await expect.poll(() => skrivKropp).not.toBeNull();
     expect(JSON.stringify(skrivKropp)).toContain('Sjukskriven');
+    expect((skrivKropp as unknown as { notering: string }).notering).toBe(HEMLIG_NOTERING);
 
-    // Aktivitetsposten skapas — EN post för EN sparad notering.
-    await expect.poll(() => loggar.length).toBe(1);
-
-    // INTEGRITETEN FÖRST, mätt på HELA den utgående kroppen — inte på de fält
-    // vi råkade tänka på. Detta är assertionen som fälls om någon framtida
-    // ändring trär noteringen genom `useUpdatePaymentNote`s onSuccess.
-    //
-    // ORDNINGEN ÄR MEDVETEN: form-assertionerna nedan (verb, objektnamn) fälls
-    // OCKSÅ av en läcka som byggs in i namnet, och skulle då skugga integritets-
-    // assertionen så att fällningen såg ut att handla om en formulering.
-    // Verifierat 2026-08-13 genom att skarpt injicera `: ${notering}` i hookens
-    // object.name: med denna ordning namnger fällningen fritext-fragmentet.
-    const payload = JSON.stringify(loggar[0]);
-    expect(payload, 'HELA noteringen läckte in i aktivitetsposten').not.toContain(HEMLIG_NOTERING);
+    // RIKTNING 1b — INTEGRITETEN, mätt på HELA bekräftelsen formuläret
+    // lämnar till sin anropare (`RegistreringsUtfall`, visad här som
+    // `senast-klar`). Detta är det ENDA andra klient-observerbara stället
+    // en läcka strukturellt kan uppstå, eftersom `registrera-inbetalning`
+    // loggar aktiviteten SERVER-SIDA (se filhuvudet) — det finns inget
+    // separat klient-drivet loggningsanrop att läcka in i.
+    const senastKlar = page.getByTestId('senast-klar');
+    await expect(senastKlar).not.toHaveText('inget än');
+    const bekraftelse = await senastKlar.innerText();
+    expect(bekraftelse, 'HELA noteringen läckte in i bekräftelsen').not.toContain(HEMLIG_NOTERING);
     for (const fragment of FRAGMENT) {
       expect(
-        payload,
-        `fritext-fragmentet "${fragment}" läckte in i aktivitetsposten`,
+        bekraftelse,
+        `fritext-fragmentet "${fragment}" läckte in i bekräftelsen`,
       ).not.toContain(fragment);
     }
-
-    const logg = loggar[0] as unknown as {
-      verb: { display: Record<string, string> };
-      object: { id: string; definition: { name: Record<string, string>; type: string } };
-    };
-    expect(logg.verb.display['sv-SE']).toBe('uppdaterade noteringen för anmälningsavgiften');
-    expect(logg.object.definition.name['sv-SE']).toBe('Anna Andersson (Utbildning Skövde)');
-    expect(logg.object.id).toContain('recVisualReg000001');
   });
 
-  test('RIKTNING 2/2 — skrivningen MISSLYCKAS: ingen aktivitetspost skapas alls', async ({
+  test('RIKTNING 2/2 — skrivningen MISSLYCKAS: ingen bekräftelse visas, notering läcker inte i felytan', async ({
     page,
     network,
   }) => {
-    const loggar: Kropp[] = [];
-
     network.use(
-      // Basen avvisar — mutationen går aldrig till onSuccess.
-      http.post(EF('update-record'), () => json({ error: 'Airtable 422' }, 422)),
-      medvetetOanvand(
-        http.post(EF('log-activity'), async ({ request }) => {
-          loggar.push((await request.json()) as Kropp);
-          return json({ id: 'x', requestId: 'x', occurredAt: '2026-08-13T08:00:00.000Z' }, 201);
-        }),
-        'NEGATIV SENSOR: handlern finns för att bevisa att log-activity ALDRIG anropas när ' +
-          'skrivningen föll. Att den förblir oanvänd ÄR testets resultat — `loggar` ska vara tom. ' +
-          'Matchar den ändå har instrumenteringen flyttat ut ur onSuccess och testet ska falla.',
-      ),
+      // Basen avvisar — mutationen når aldrig sin onSuccess/onKlar.
+      http.post(EF('registrera-inbetalning'), () => json({ error: 'Airtable 422' }, 422)),
     );
 
-    const falt = await oppnaBetalningar(page);
-    await falt.fill(HEMLIG_NOTERING);
-    await falt.blur();
+    await oppnaOchNoteraKvar(page, HEMLIG_NOTERING);
+    await page.getByRole('button', { name: 'Registrera', exact: true }).click();
 
     // Felytan bekräftar att mutationen FAKTISKT föll (utan denna rad kunde
-    // testet vara grönt för att inget hände alls). 422 kortsluter båda
-    // retry-lagren (`acceptance-bas.ts` § TIDEN HÖR TILL KONTRAKTET: 4xx
-    // retryas inte), så den normala expect-timeouten räcker.
-    await expect(page.getByText('Kunde inte spara')).toBeVisible();
+    // testet vara grönt för att inget hände alls). 422 kortsluter retry-
+    // lagret (4xx retryas inte, `supabase-client.ts`), så den normala
+    // expect-timeouten räcker.
+    const fel = page.getByRole('alert');
+    await expect(fel).toBeVisible();
+    const felText = await fel.innerText();
+    expect(felText, 'noteringen läckte in i felmeddelandet').not.toContain(HEMLIG_NOTERING);
 
-    // INGEN aktivitetspost — en logg som antecknar något som aldrig hände
-    // vore värre än ingen logg (PRD TASK-201 användarberättelse 9).
-    expect(loggar).toHaveLength(0);
+    // INGEN bekräftelse — `onKlar` anropas bara vid lyckad mutation
+    // (`RegistreraForm.tsx` § `spara`), så en missvisande "sparat"-text vore
+    // värre än inget svar alls (samma princip som PRD TASK-201 berättelse 9,
+    // överförd från aktivitetsloggen till bekräftelsen).
+    await expect(page.getByTestId('senast-klar')).toHaveText('inget än');
   });
 });

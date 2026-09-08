@@ -362,3 +362,40 @@ klienten (användarberättelse 10). Divergensen fångades av
 `authenticated` SELECT (admin-appens läsning + Realtime) · all skrivning
 uteslutande via `service_role` (Edge Functions). Beslutstexten ovan rörs
 inte (immutabilitet); denna post är den gällande läsningen.
+
+### 2026-09-08 — Åtgärdssidans betalningsvertikal riven: betalningssidan äger skrivandet, eventdetaljen läsningen (TASK-435)
+
+Marcus beslut S124, ordagrant: *"Jag är helt säker på att jag vill riva
+betalningsblocket helt från åtgärdssidan."* `AtgardsSida.tsx`s
+`BetalningsSkrivYta` (bägge miljöflagg-grenarna — den läsande panelen via
+`PanelBetalningar` OCH den äldre skrivande kryss-vertikalen via
+`useSetPaymentStatus`/`useUpdatePaymentNote`) är riven i sin helhet, med
+tre e2e-/acceptance-testfiler och en visuell referens. Detta ADR:s eget
+beslut om VAR inbetalningen skrivs (Postgres, via `registrera-inbetalning`
+m.fl.) berörs INTE — det som flyttar är UI-ENTRÉN, inte sanningskällan.
+
+**Gällande arbetsdelning efter denna skiva:** betalningssidan
+(`/mer/betalningar`, inkorg + bekräftelsesteg) äger ALL SKRIVNING — det är
+här `RegistreraForm` (via `useRegistreraInbetalning`) och de tre systrarna
+(`AnmalansBetalningar.tsx`, `PersonBetalningar.tsx`, samma delade
+formulär) lever. Eventdetaljen (`events/detail/`) äger LÄSNINGEN: en
+statusrad + Händelselogg med basens tidsstämplar (`TASK-436`, orkestreraren
+själv), och en kommande batch-läsning av inbetalningar per event
+(`TASK-437`→`TASK-438`) för att visa inbetalnings-/återbetalnings-/
+kvittostatus i den loggen UTAN att skriva. Åtgärds-sidan bär ingen
+betalningsyta av något slag längre.
+
+**Vad som INTE flyttade med:** "Registrera inbetalning för N markerade"
+(mataren mot bekräftelsesteget, `TASK-402.5`) fanns bara på åtgärds-sidan
+och försvinner med blocket — Marcus accepterade förlusten 2026-09-08
+(inkorgen har egen markeringsgruppering per event). Se `task-402.5` och
+`task-403`s superseded-noter för hela resonemanget.
+
+Klientkod utan konsument efter rivningen togs bort i samma skiva:
+`PanelBetalningar.tsx` (noll andra importörer efter att `AtgardsSida.tsx`s
+import föll bort), `useSetPaymentStatus`/`useUpdatePaymentNote`
+(`registrationPayments.ts` — `BETALNING_LABEL`/`Betalning`-typen står kvar,
+använda av `events/detail/Betalningar.tsx`) och `useSendReceipt`
+(`data/mutations/receipts.ts` — den KLIENT-sidiga hooken; EF:en
+`send-receipt-email` och adapter-kontraktet `dataSource.sendReceipt` rörs
+INTE, de är fortsatt testade direkt av `tests/api/send-receipt.test.ts`).

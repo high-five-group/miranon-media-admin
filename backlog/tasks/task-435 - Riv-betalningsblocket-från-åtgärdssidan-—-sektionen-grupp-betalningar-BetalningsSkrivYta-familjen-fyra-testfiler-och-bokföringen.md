@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-08 02:20'
+updated_date: '2026-09-08 03:08'
 labels:
   - ready-for-agent
 dependencies: []
@@ -27,16 +28,16 @@ KARTA (kartläggnings-agent S124, varje symbol grep:ad över hela filen/repot; r
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Sektionen grupp-betalningar och BetalningsSkrivYta-familjen med döda hjälpare, state och imports är borta ur AtgardsSida.tsx; obetald/obekraftad-seedningen, BetalRader-predikaten och KORT_KLASS står kvar; typecheck och biome 0 fel
-- [ ] #2 Klientkod utan konsument efter rivningen (PanelBetalningar.tsx, useSetPaymentStatus/useUpdatePaymentNote, useSendReceipt-kedjan) är borttagen eller bokförd som medvetet kvar med skäl i PR-kroppen; BETALNING_LABEL/Betalning kvar; inga EF:er rörda
-- [ ] #3 De tre testfilerna raderade; atgarder-betalningsnotering-logg-testet omskrivet mot RegistreraForm med integritetsgarantin bevarad (rött-först mot en avsiktligt läckande payload bevisat i PR-kroppen); promoverings-grindens betalningspanel-test borttaget, ariaSnapshot-referenserna orörda och gröna
-- [ ] #4 Bokföringen gjord: AtgardsSida-filhuvudet trimmat, ATGARDSSIDAN-UNDERLAG § 5 SUPERSEDED-not, ADR-128 § Updates-post, task-147 Updates-not, task-147.9 steg 6–7 omskrivna, task-402.5 och task-403 superseded-noter — korten via backlog-CLI, aldrig direktredigering
-- [ ] #5 DoD-kommandona, npm run test:api, visual-grinden och check-langa-streck gröna med faktiska exitkoder i slutrapporten
+- [x] #1 Sektionen grupp-betalningar och BetalningsSkrivYta-familjen med döda hjälpare, state och imports är borta ur AtgardsSida.tsx; obetald/obekraftad-seedningen, BetalRader-predikaten och KORT_KLASS står kvar; typecheck och biome 0 fel
+- [x] #2 Klientkod utan konsument efter rivningen (PanelBetalningar.tsx, useSetPaymentStatus/useUpdatePaymentNote, useSendReceipt-kedjan) är borttagen eller bokförd som medvetet kvar med skäl i PR-kroppen; BETALNING_LABEL/Betalning kvar; inga EF:er rörda
+- [x] #3 De tre testfilerna raderade; atgarder-betalningsnotering-logg-testet omskrivet mot RegistreraForm med integritetsgarantin bevarad (rött-först mot en avsiktligt läckande payload bevisat i PR-kroppen); promoverings-grindens betalningspanel-test borttaget, ariaSnapshot-referenserna orörda och gröna
+- [x] #4 Bokföringen gjord: AtgardsSida-filhuvudet trimmat, ATGARDSSIDAN-UNDERLAG § 5 SUPERSEDED-not, ADR-128 § Updates-post, task-147 Updates-not, task-147.9 steg 6–7 omskrivna, task-402.5 och task-403 superseded-noter — korten via backlog-CLI, aldrig direktredigering
+- [x] #5 DoD-kommandona, npm run test:api, visual-grinden och check-langa-streck gröna med faktiska exitkoder i slutrapporten
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
