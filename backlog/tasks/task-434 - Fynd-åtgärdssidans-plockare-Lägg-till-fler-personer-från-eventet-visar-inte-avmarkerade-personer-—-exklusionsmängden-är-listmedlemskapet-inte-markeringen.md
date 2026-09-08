@@ -3,10 +3,10 @@ id: TASK-434
 title: >-
   Fynd: åtgärdssidans plockare 'Lägg till fler personer från eventet' visar inte
   avmarkerade personer — exklusionsmängden är listmedlemskapet, inte markeringen
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-08 01:43'
-updated_date: '2026-09-08 01:56'
+updated_date: '2026-09-08 15:53'
 labels:
   - fynd
   - ready-for-agent
@@ -44,3 +44,9 @@ OBS S124: ett parallellt kort river betalningsblocket i samma fil (rad ~3205–3
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landad via PR #2455 (`d62d94f6`, 2026-09-08 ~02:30Z, S124 Del 2). Fix: plockarens kandidater, räknaren och tomtexten läser markeringen (`valda`) i stället för listmedlemskapet (`synligaIds`) — strikt utvidgning av kandidatpoolen, varv 4-grammatiken orörd. Rött-först-bevis i PR-kroppen (event-bekraftelse.staging rad ~718). Review-agent i färsk kontext: 0 fynd, risk låg, konvergerad runda 1. Prod via Vercel samma morgon; Marcus såg fixen i prod inför Lottas eftermiddag.
+<!-- SECTION:FINAL_SUMMARY:END -->

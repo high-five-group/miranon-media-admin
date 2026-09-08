@@ -3,10 +3,10 @@ id: TASK-437
 title: >-
   hamta-inbetalningar läser ett helt events inbetalningar i ett anrop —
   batch/event-parameter, adapter, hook, api-test, staging-deploy
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-08 02:21'
-updated_date: '2026-09-08 03:02'
+updated_date: '2026-09-08 15:53'
 labels:
   - ready-for-agent
 dependencies: []
@@ -38,3 +38,9 @@ DEPLOY-ORDNING: staging-EF deployas av agenten för api-testet (staging är öpp
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landad via PR #2458 (`e4ca9786`, 2026-09-08 03:36Z, bygg-agent Sonnet 5, S124 Del 5). `hamta-inbetalningar` tar POST med `anmalanRecordIds` (tak 200, `spegel` utelämnat med avsikt, GET-vägen byte-identisk); DataSourceAdapter + adaptrar + `useInbetalningarForEvent` med egen queryKey; api-test `hamta-inbetalningar-batch.staging.test.ts` 5/5 i orkestrerarens egen körning. Staging deployad v9 (2026-09-08T02:38:08Z). Prod deployad av Marcus via `fas4-prod-deploy.sh --deploya` i eget fönster: version 6, `updated_at` 2026-09-08T04:31:49Z, alla 57 allowlistade EF:er omdeployade 04:28–04:32Z (verifierat med `--kontrollera`, bokfört i #2463). Review: 9 info, risk låg, ett ask-user löst med staging-mätningen. Konsument: TASK-438 (#2468).
+<!-- SECTION:FINAL_SUMMARY:END -->

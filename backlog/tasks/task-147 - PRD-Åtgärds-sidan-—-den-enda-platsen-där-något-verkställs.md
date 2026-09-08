@@ -4,7 +4,7 @@ title: 'PRD: Åtgärds-sidan — den enda platsen där något verkställs'
 status: To Do
 assignee: []
 created_date: '2026-08-07 07:52'
-updated_date: '2026-09-08 02:54'
+updated_date: '2026-09-08 15:53'
 labels:
   - ready-for-human
 dependencies: []
@@ -177,4 +177,6 @@ PARALLELLITET MOT BYGGSPÅRET: körs denna session samtidigt som agenter bygger 
 ## Updates 2026-09-08 (TASK-435) — 'Betalningarnas skrivvertikal bor här' är REVERSERAT
 
 Marcus S124, ordagrant: "Jag är helt säker på att jag vill riva betalningsblocket helt från åtgärdssidan." Beskrivningens rad "Betalningarnas skrivvertikal bor här" och skiva TASK-147.4:s hela leverans (BetalningsSkrivYta, avprickning, notering, kvitto-knappen) är rivna ur AtgardsSida.tsx i TASK-435. Betalningar hanteras numera uteslutande på betalningssidan (inkorg + bekräftelsesteg, PRD TASK-402); noteringar skrivs i registreringsformuläret. Eventdetaljen äger läsningen (statusrad + Händelselogg, TASK-436/437/438). Se docs/decisions/ADR-128-inbetalningen-som-sanning-postgres-och-spegeln.md § Updates 2026-09-08 för hela historien. Barn-kortet TASK-147.9 (QA) steg 6-7 är omskrivna mot betalningssidan i samma skiva.
+
+OBSOLET-NOT (S124 stängningsbatch 1, 2026-09-08, #2459 info-fynd 2): DoD #11 ("Avprickningens E2E-täckning återupprättad på Åtgärds-sidan") är OBSOLET sedan TASK-435 rev betalningsblocket helt från åtgärdssidan (Marcus beslut 2026-09-08) — det finns ingen avprickning på åtgärdssidan att täcka längre. Skrivvertikalen bor på betalningssidan (PRD TASK-402) och dess E2E-täckning där (`betalningar-inkorg-*`, `mark-paid`). Punkten bockas inte utan lämnas som bokförd obsolet.
 <!-- SECTION:NOTES:END -->

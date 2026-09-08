@@ -1,0 +1,3 @@
+# `.git/FETCH_HEAD` delas av alla worktrees — referera commit-SHA:n, aldrig `FETCH_HEAD`
+
+**`FETCH_HEAD` ligger i den delade `.git`-katalogen och skrivs över av VARJE `git fetch` i VARJE worktree, så en agent som läser `git diff FETCH_HEAD` eller `git show FETCH_HEAD:fil` efter en egen fetch kan få en annan sessions fetch-mål utan att märka det.** Sidofynd från review-agenten på PR #2457 runda 1 (2026-09-08, S124 Del 5): granskaren såg att `FETCH_HEAD` i huvudkatalogen pekade på en gren som en parallell bygg-agent nyss hämtat. Samma klass som L653 (`git stash` delas). Regel: efter `git fetch origin <gren>` — läs SHA:n med `git rev-parse origin/<gren>` och använd den i alla följande kommandon; `FETCH_HEAD` är en delad, flyktig pekare i en worktree-flotta.
