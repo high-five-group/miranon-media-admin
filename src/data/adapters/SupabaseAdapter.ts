@@ -31,6 +31,7 @@ import {
   type EventFormat,
   type EventinnehallListItem,
   type HanteraInbetalningResult,
+  type InbetalningarBatch,
   type Inbetalningslista,
   type Intresserad,
   type Jobbstatus,
@@ -338,7 +339,8 @@ export class SupabaseAdapter implements DataSourceAdapter {
   // vilken adapter som är "live". Ingen migration behövs för att de ska
   // fungera i Fas E.
   //
-  // NIO DELEGERINGAR, byte-identiska med `AirtableAdapter`s, till den delade
+  // TIO DELEGERINGAR (TASK-437 lade till den tionde), byte-identiska med
+  // `AirtableAdapter`s, till den delade
   // implementationen (`./betalningsportar.ts`). Att BÅDA adaptrarna bär exakt
   // samma metoduppsättning är ADR-056:s swappbarhet och ADR-057 klausul c
   // (port-paritet); att kroppen bor på ETT ställe är vad som gör pariteten
@@ -368,6 +370,10 @@ export class SupabaseAdapter implements DataSourceAdapter {
     personId?: string;
   }): Promise<Inbetalningslista> {
     return betalningsportar.hamtaInbetalningar(params);
+  }
+
+  fetchInbetalningarBatch(params: { anmalanRecordIds: string[] }): Promise<InbetalningarBatch> {
+    return betalningsportar.hamtaInbetalningarBatch(params);
   }
 
   koaKvitton(input: KoaKvittonInput): Promise<KoaKvittonResult> {

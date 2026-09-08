@@ -31,6 +31,7 @@ import type {
   EventFormat,
   EventinnehallListItem,
   HanteraInbetalningResult,
+  InbetalningarBatch,
   Inbetalningslista,
   Intresserad,
   Jobbstatus,
@@ -784,7 +785,8 @@ export interface DataSourceAdapter {
   // BETALNINGSDOMÄNEN (TASK-346.4, ADR-128/ADR-129)
   // ═════════════════════════════════════════════════════════════════════════
   //
-  // NIO PORTAR, SAMMA KLASS SOM `recordActivity`: inbetalningar, kvittoledger
+  // TIO PORTAR (TASK-437 lade till den tionde), SAMMA KLASS SOM
+  // `recordActivity`: inbetalningar, kvittoledger
   // och jobbtabeller bor i Supabase Postgres och har ALDRIG legat i Airtable
   // (ADR-128 beslut 3). Edge Function-vägen skriver därför mot Supabase
   // OAVSETT vilken adapter som är live, och BÅDA implementationerna är
@@ -792,8 +794,8 @@ export interface DataSourceAdapter {
   // är de inte en del av Fas E-migrationens swap-yta.
   //
   // Implementationen är EN, delad: `src/data/adapters/betalningsportar.ts`.
-  // Adaptrarnas metoder delegerar dit. Se den filens huvud för varför nio
-  // portar inte fick bli arton handhållna kopior — och för varför
+  // Adaptrarnas metoder delegerar dit. Se den filens huvud för varför tio
+  // portar inte fick bli tjugo handhållna kopior — och för varför
   // port-pariteten (ADR-057 klausul c) ändå är oförändrad.
   //
   // VAD SOM ÄNDÅ NÅR AIRTABLE: läsvägarna korsläser basen, eftersom anmälan,
@@ -856,6 +858,22 @@ export interface DataSourceAdapter {
     anmalanRecordId?: string;
     personId?: string;
   }): Promise<Inbetalningslista>;
+
+  /**
+   * [TASK-437] EN batch av anmälningars inbetalningar i ETT anrop —
+   * eventdetaljens logg, som annars behövt ett `fetchInbetalningar`-anrop
+   * PER anmälan (`useInbetalningarPerAnmalan`s docblock: "tjugo Edge
+   * Function-anrop"). Klienten skickar batchen av anmälnings-record-ID:n den
+   * redan känner (`useRegistrations`/eventvyn) — EF:en gör INGEN Airtable-
+   * uppslagning för att komma fram till den listan.
+   *
+   * Svaret är grupperat per anmälan med SAMMA `Inbetalning`-radtyp som
+   * `fetchInbetalningar` ovan, men UTAN `spegel` per grupp — se
+   * `InbetalningarBatchGruppSchema`s docblock för skälet (en spegel-
+   * jämförelse per anmälan hade återinfört exakt det N-anrops-mönster denna
+   * port finns för att eliminera).
+   */
+  fetchInbetalningarBatch(params: { anmalanRecordIds: string[] }): Promise<InbetalningarBatch>;
 
   /**
    * "Skicka N kvitton" (PRD berättelse 8) — köar ETT jobb med N rader och

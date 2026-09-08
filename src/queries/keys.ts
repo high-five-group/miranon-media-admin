@@ -232,6 +232,14 @@ export const queryKeys = {
     /** Inbetalningarna för EN person över alla event (personkortet). */
     perPerson: (personId: string) => ['betalningar', 'person', personId] as const,
     /**
+     * [TASK-437] Batchen för HELA eventets anmälningar i ETT anrop
+     * (eventdetaljens logg). `anmalanRecordIds` INGÅR i nyckeln, sorterad så
+     * att samma mängd i annan ordning inte skapar en ny cache-post — men en
+     * FAKTISK ändring (ny/borttagen anmälan) gör, med rätta, en ny fråga.
+     */
+    perEvent: (eventId: string, anmalanRecordIds: readonly string[]) =>
+      ['betalningar', 'event', eventId, [...anmalanRecordIds].sort()] as const,
+    /**
      * Kvittojobbets läge. `jobbId: null` = det SENASTE jobbet (Hem-kortet),
      * som är en annan fråga än ett namngivet jobb och därför en annan nyckel.
      */

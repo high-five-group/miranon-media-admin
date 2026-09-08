@@ -69,6 +69,31 @@ const INTERN_AUTH_EF: Record<string, { hemlighetsEnv: string }> = {
   'jobb-konsument': { hemlighetsEnv: 'JOBBMOTOR_DELAD_HEMLIGHET' },
 };
 
+// EF:er med FLERA tillåtna metoder — den andra explicita godkännande-punkten
+// filhuvudet utlovar ("en framtida EF tillåta flera metoder fäller grinden,
+// och det är rätt utfall"). Kontraktet (405 + 'Method not allowed', FÖRE
+// requireUser, EFTER handleCors) gäller OFÖRÄNDRAT — bara vaktens KÄLLFORM
+// skiljer sig från husets enda-metod-mall, så den matchas med en egen,
+// METOD-LISTE-driven regex (`buildMultiGuardRegex`) i stället för `GUARD_RE`.
+//
+//   hamta-inbetalningar: TASK-437 lade till en POST-BATCH-väg (`hamta
+//   inbetalningarna för en HEL BATCH anmälningar i ETT anrop`) vid sidan av
+//   den befintliga GET-vägen (anmalanRecordId/personId) — samma EF, två
+//   metoder, en gemensam metod-vakt: `if (req.method !== 'GET' && req.method
+//   !== 'POST') { … 405 … }`. Tillagd 2026-09-08 (PR för TASK-437).
+const MULTI_METHOD_EF: Record<string, string[]> = {
+  'hamta-inbetalningar': ['GET', 'POST'],
+};
+
+/**
+ * Bygger metod-vaktens regex för en EF med FLERA tillåtna metoder, i EXAKT
+ * käll-ordning: `if (req.method !== 'M1' && req.method !== 'M2' …) {`.
+ */
+function buildMultiGuardRegex(methods: string[]): RegExp {
+  const villkor = methods.map((m) => `req\\.method !== '${m}'`).join(' && ');
+  return new RegExp(`if \\(${villkor}\\) \\{`);
+}
+
 test.describe('EF-metod-vakten — 405 före auth för hela prod-allowlisten (TASK-38)', () => {
   // FAIL-CLOSED: per-funktions-testerna genereras ur listan. Blir listan tom
   // (flyttad/omdöpt conf-fil, ändrat kommentar-format) genereras NOLL tester och
@@ -82,10 +107,14 @@ test.describe('EF-metod-vakten — 405 före auth för hela prod-allowlisten (TA
     test(`${fn}: metod-vakt returnerar 405 före requireUser`, () => {
       const source = readFileSync(path.join(FUNCTIONS_DIR, fn, 'index.ts'), 'utf8');
 
-      const guardIdx = source.search(GUARD_RE);
+      const multiMethods = MULTI_METHOD_EF[fn];
+      const guardRe = multiMethods ? buildMultiGuardRegex(multiMethods) : GUARD_RE;
+      const guardIdx = source.search(guardRe);
       expect(
         guardIdx,
-        `${fn}: saknar explicit metod-vakt (if (req.method !== '…'))`,
+        multiMethods
+          ? `${fn}: saknar den godkända multi-metod-vakten (${guardRe})`
+          : `${fn}: saknar explicit metod-vakt (if (req.method !== '…'))`,
       ).toBeGreaterThan(-1);
 
       const guardBody = source.slice(guardIdx, guardIdx + GUARD_BODY_WINDOW);

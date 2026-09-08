@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-08 02:21'
+updated_date: '2026-09-08 03:02'
 labels:
   - ready-for-agent
 dependencies: []
@@ -24,16 +25,16 @@ DEPLOY-ORDNING: staging-EF deployas av agenten för api-testet (staging är öpp
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 EF:en svarar för en batch av anmälningar eller ett event i ETT anrop med zod-validerad input och tak på batchstorlek; befintliga anrop (anmalanRecordId/personId) oförändrade — bakåtkompatibelt, bevisat av befintliga api-tester
-- [ ] #2 DataSourceAdapter + adaptrar + ny hook med egen queryKey; svar grupperat per anmälan med samma Inbetalning-radtyp som i dag
-- [ ] #3 api-test mot staging: batch med två anmälningar med kända inbetalningar returnerar båda grupperna; tom batch och okänt id ger tom grupp utan fel; över tak fälls med 400
-- [ ] #4 Staging-EF deployad av agenten och verifierad med functions list (UPDATED_AT); prod-deploy bokförd som Marcus-steg i PR-kroppen med exakt kommando — aldrig utförd av agenten
-- [ ] #5 DoD-kommandona gröna med faktiska exitkoder
+- [x] #1 EF:en svarar för en batch av anmälningar eller ett event i ETT anrop med zod-validerad input och tak på batchstorlek; befintliga anrop (anmalanRecordId/personId) oförändrade — bakåtkompatibelt, bevisat av befintliga api-tester
+- [x] #2 DataSourceAdapter + adaptrar + ny hook med egen queryKey; svar grupperat per anmälan med samma Inbetalning-radtyp som i dag
+- [x] #3 api-test mot staging: batch med två anmälningar med kända inbetalningar returnerar båda grupperna; tom batch och okänt id ger tom grupp utan fel; över tak fälls med 400
+- [x] #4 Staging-EF deployad av agenten och verifierad med functions list (UPDATED_AT); prod-deploy bokförd som Marcus-steg i PR-kroppen med exakt kommando — aldrig utförd av agenten
+- [x] #5 DoD-kommandona gröna med faktiska exitkoder
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
