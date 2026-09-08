@@ -76,7 +76,10 @@ export function DatumFalt({
           <CalendarDays aria-hidden="true" size={16} />
         </AriaButton>
       </Group>
-      <Popover className="rounded-2xl border border-(--mm-select-popover-border) bg-(--mm-select-popover-bg) p-4 shadow-lg">
+      {/* z-50 (TASK-439 runda 2) — DEFENSIV, INTE LOAD-BEARING: se
+          TabBar.tsx docblock § RUNDA 2. RAC:s inline `zIndex: 100000`
+          (useOverlayPosition) vinner alltid över denna klass. */}
+      <Popover className="z-50 rounded-2xl border border-(--mm-select-popover-border) bg-(--mm-select-popover-bg) p-4 shadow-lg">
         <Dialog className="outline-none">
           <RangeCalendar className="flex flex-col gap-3">
             <header className="flex items-center justify-between gap-2">

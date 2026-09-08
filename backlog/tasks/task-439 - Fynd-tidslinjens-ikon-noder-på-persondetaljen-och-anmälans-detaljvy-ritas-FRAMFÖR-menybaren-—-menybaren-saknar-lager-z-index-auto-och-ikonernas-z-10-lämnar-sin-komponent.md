@@ -7,6 +7,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-08 14:45'
+updated_date: '2026-09-08 15:14'
 labels:
   - fynd
   - ready-for-agent
@@ -35,10 +36,10 @@ KÄLLOR: TabBar.tsx rad 72–79 · Tidslinje.tsx rad 49–70 · PersonDetail.tsx
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 TabBar bär z-30 med lagerskalan dokumenterad i sin docblock (innehåll ≤ 10 isolerat · krom 30 · notiser 40 · överlägg 50), verifierad mot Modal/Sidbytesindikator/SkipLink/Notis; inget annat element får ett nytt z-tal; ingen token införs, avvägningen bokförd
-- [ ] #2 Tidslinje.tsx och PersonDetail.tsx: isolate på <li> (inte <ol>, skäl i kodkommentar: #2457 rör <ol>-raden); den genomgående linjen ligger bakom ikon-cirklarna som i dag, verifierat i bild vid 390 och 1280 px
-- [ ] #3 Hermetiskt acceptance-test: på persondetaljen och på anmälans detaljvy träffar document.elementFromPoint i en ikon-nod som rullats in i menybarens rektangel ett element inuti nav[aria-label=Huvudnavigation]; rött mot main före fixen (utdata i PR-kroppen), grönt efter; fix A ensam och fix B ensam gör vardera provet grönt, bokfört
-- [ ] #4 axe 0 på båda ytorna; prefers-contrast more och print oförändrade; DoD-kommandona (typecheck, biome, build), berörda acceptance-sviter och check-langa-streck gröna med faktiska exitkoder
+- [x] #1 TabBar bär z-30 med lagerskalan dokumenterad i sin docblock (innehåll ≤ 10 isolerat · krom 30 · notiser 40 · överlägg 50), verifierad mot Modal/Sidbytesindikator/SkipLink/Notis; inget annat element får ett nytt z-tal; ingen token införs, avvägningen bokförd
+- [x] #2 Tidslinje.tsx och PersonDetail.tsx: isolate på <li> (inte <ol>, skäl i kodkommentar: #2457 rör <ol>-raden); den genomgående linjen ligger bakom ikon-cirklarna som i dag, verifierat i bild vid 390 och 1280 px
+- [x] #3 Hermetiskt acceptance-test: på persondetaljen och på anmälans detaljvy träffar document.elementFromPoint i en ikon-nod som rullats in i menybarens rektangel ett element inuti nav[aria-label=Huvudnavigation]; rött mot main före fixen (utdata i PR-kroppen), grönt efter; fix A ensam och fix B ensam gör vardera provet grönt, bokfört
+- [x] #4 axe 0 på båda ytorna; prefers-contrast more och print oförändrade; DoD-kommandona (typecheck, biome, build), berörda acceptance-sviter och check-langa-streck gröna med faktiska exitkoder
 - [ ] #5 Ögonmätt av Marcus mot dev-server/staging före Done
 <!-- AC:END -->
 
@@ -48,3 +49,9 @@ KÄLLOR: TabBar.tsx rad 72–79 · Tidslinje.tsx rad 49–70 · PersonDetail.tsx
 - [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Bygg-agent 2026-09-08: Fix A (TabBar z-30 + lagerskala-docblock), Fix B (isolate på <li> i Tidslinje.tsx OCH PersonDetail.tsx, ej <ol> — skäl i kodkommentar mot PR #2457). Nytt acceptance-test tests/acceptance/tidslinje-under-menybaren.acceptance.test.ts: RÖTT-FÖRST bevisat mot origin/main (neither fix, båda testen föll på elementFromPoint-assertionen, sanity-assertionen bevisade repron); fix A ensam grön; fix B ensam grön; båda fixarna tillsammans grön. Linjen bakom cirklarna verifierad i bild 390/1280 px (temporära screenshots, borttagna före commit). AC#4: person-detail.acceptance.test.ts + anmalan-detalj.acceptance.test.ts (inkl. axe 0-testen) körda om med diffen — 72/72 gröna, ingen regression; contrast-more/print-klasser orörda i diffen. DoD: typecheck 0, biome 0, build 0, check-langa-streck 0. test:api: 2305-2306/2307 gröna i två körningar, olika enstaka staging-nätverksflak (send-registration-confirmation resp. generate-event-attachment) — bekräftat orelaterat: den första flaket kördes om isolerat och gick grönt på 18s; noll av mina ändrade filer rör API/Edge Functions.
+<!-- SECTION:NOTES:END -->

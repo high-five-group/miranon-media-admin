@@ -862,7 +862,11 @@ function StromRadD({ post, sist }: { post: StromPost; sist: boolean }) {
   const radKlasser = '-mx-2 flex items-start gap-3 rounded-lg px-2 py-2';
 
   return (
-    <li className="relative flex flex-col">
+    // isolate (TASK-439 fix B): håller ikon-nodens z-10 (`innehall` ovan)
+    // INOM denna post i stället för att läcka ut i rot-staplingskontexten
+    // och konkurrera med sidkromet (TabBar.tsx, z-30 — se dess docblock
+    // för hela lagerskalan). Samma fix som Tidslinje.tsx's <li>.
+    <li className="relative isolate flex flex-col">
       {!sist && (
         <span aria-hidden="true" className="absolute top-10 bottom-0 left-[15px] w-px bg-border" />
       )}

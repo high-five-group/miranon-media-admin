@@ -485,7 +485,10 @@ export function EventValjare({
         data-testid="event-valjare-popover"
         placement="bottom start"
         shouldFlip={false}
-        className="flex w-(--trigger-width) min-w-72 flex-col gap-1 rounded-xl border border-(--mm-select-popover-border) bg-(--mm-select-popover-bg) p-2 shadow-lg"
+        // z-50 (TASK-439 runda 2) — DEFENSIV, INTE LOAD-BEARING: se
+        // TabBar.tsx docblock § RUNDA 2. RAC:s inline `zIndex: 100000`
+        // (useOverlayPosition) vinner alltid över denna klass.
+        className="z-50 flex w-(--trigger-width) min-w-72 flex-col gap-1 rounded-xl border border-(--mm-select-popover-border) bg-(--mm-select-popover-bg) p-2 shadow-lg"
       >
         {/* Autocomplete = React Arias combobox-maskineri i popover-form:
             sökfältet styr listboxen (virtuell fokus), filtret matchar

@@ -31,7 +31,11 @@ const PERSONER = [
   { id: 'p4', namn: 'David Dahl' },
 ] as const;
 
-const POPOVER_KLASS = 'rounded border border-border bg-surface p-1 shadow-xl';
+// z-50 (TASK-439 runda 2) — DEFENSIV, INTE LOAD-BEARING: se TabBar.tsx
+// docblock § RUNDA 2. RAC:s inline `zIndex: 100000` (useOverlayPosition)
+// vinner alltid över denna klass. Denna route är dev-only (beforeLoad-
+// gated) men bär samma primitiv-mönster som prod.
+const POPOVER_KLASS = 'z-50 rounded border border-border bg-surface p-1 shadow-xl';
 const OPTION_KLASS =
   'cursor-default rounded px-3 py-2 text-body data-[focused]:bg-bg-muted data-[selected]:bg-primary-tint';
 

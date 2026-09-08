@@ -48,6 +48,57 @@ const TABS = [
  * telefon i mötet"); skalets `pb-24` på main ger fortsatt frihöjd. Inga
  * hårdkodade färger — allt via semantiska tokens (noll nya tokens;
  * beslut 2).
+ *
+ * LAGERSKALA (z-index, TASK-439 fix A): repot bär inga z-tokens (`--mm-z*`
+ * saknas i `src/styles/tokens/`) — värdena nedan är Tailwinds egen skala
+ * (10/20/30/40/50), medvetet ingen ny token (dubbelriktad
+ * över-engineering-vakt: golvet är "krom ovanför innehåll", en egen
+ * z-index-token utan andra konsumenter vore spekulation). Skriven här så
+ * nästa läsare ser hela skalan på ett ställe, inte utspridd per komponent:
+ *   - **≤ 10, isolerat i sin komponent** — sidinnehåll (t.ex.
+ *     `Tidslinje.tsx`/`PersonDetail.tsx`s ikon-noder, `z-10` på `<li isolate>`
+ *     — `isolate` håller staplingen INOM posten, se TASK-439 fix B)
+ *   - **30** — sidkrom, DENNA nav (`TabBar`)
+ *   - **40** — notiser (`primitives/Notis.tsx`, `z-40`)
+ *   - **50** — överlägg (`primitives/Modal.tsx`, `AppShell/Sidbytesindikator.tsx`,
+ *     `AppShell/SkipLink.tsx` vid fokus, samt VARJE react-aria-components
+ *     `Popover` — `primitives/Meny.tsx`, `primitives/Select.tsx`,
+ *     `primitives/DatumFalt.tsx`, `events/EventValjare.tsx`,
+ *     `routes/dev/patterns.tsx` — samtliga `z-50`)
+ * ROTORSAK för `z-30` här (TASK-439): denna nav var `fixed` med `z-index:
+ * auto` — ett fixed element utan eget z-index ritas i rot-staplingskontexten
+ * på nivå 0, så VARJE sidinnehåll med z-index > 0 (t.ex. tidslinjens
+ * ikon-noder, `z-10`) hamnade ovanpå menybaren. `z-30` placerar navet
+ * mellan sidinnehåll och notiser/överlägg, i linje med skalan ovan.
+ *
+ * RUNDA 2 (TASK-439, granskning av #2467) — GRANSKARENS FYND, PRÖVAT OCH
+ * KORRIGERAT (ADR-083-disciplin: skriv aldrig en mekanism som inte
+ * verifierats). Granskaren hävdade att `z-30` ensamt introducerar en
+ * regression: en portalerad react-aria-components `Popover` (`Meny`/
+ * `Select`/`DatumFalt`/`EventValjare`-familjen) skulle sakna eget
+ * z-index och tidigare vunnit på DOM-ordning (portalen ligger sist i
+ * `body`) men förlora mot `z-30`. DEN PREMISSEN ÄR FALSK, mätt direkt mot
+ * den installerade koden (`react-aria-components@1.20.0`/
+ * `react-aria@3.51.0`): `react-aria`s `useOverlayPosition`
+ * (`node_modules/react-aria/dist/private/overlays/useOverlayPosition.mjs`
+ * rad 191) sätter `zIndex: 100000` som INLINE style på VARJE `Popover`s
+ * positionerade wrapper, OVILLKORLIGT — `usePopover` anropar den
+ * ovillkorat (`react-aria-components/dist/private/Popover.mjs`). Ett
+ * inline-värde slår alltid en klass, oavsett specificitet eller Tailwinds
+ * `z-*`-skala, så en `Popover` var ALDRIG i riskzonen för `z-30`: mätt
+ * `document.elementFromPoint` mitt i menybarens rektangel träffade
+ * popovern redan UTAN någon app-satt z-klass
+ * (`getComputedStyle(popover).zIndex === '100000'`).
+ *
+ * Varje `Popover` i huset bär ÄNDÅ nu `z-50` — INTE för att det behövs
+ * (RAC:s inline-`zIndex` kan aldrig bli underlägen en klass) utan som
+ * defensiv, harmlös dokumentation i linje med lagerskalan ovan, om RAC
+ * någon gång slutar sätta stylen ovillkorligt i en framtida version. Den
+ * FAKTISKA skyddsmekanismen är RAC:s egen inline-style, inte denna klass —
+ * skriv aldrig om detta stycke till att låta `z-50` vara load-bearing.
+ * Se `tidslinje-under-menybaren.acceptance.test.ts`s popover-fall: ett
+ * ASSURANS-test (ingen regression fanns att bevisa), som verifierar
+ * `popover.style.zIndex === '100000'` och att popovern konsekvent vinner.
  */
 export function TabBar() {
   const dataSource = useDataSource();
@@ -74,7 +125,7 @@ export function TabBar() {
       // print:hidden (task-17.7): navigation är död på papper — GOV.UK-
       // blacklisten via Tailwinds återanvändbara print-variant (idiomets
       // motsvarighet till govuk-!-display-none-print), aldrig engångs-CSS.
-      className="fixed inset-x-4 bottom-4 mx-auto max-w-[568px] rounded-full border border-border bg-surface contrast-more:border-border-strong print:hidden"
+      className="fixed inset-x-4 bottom-4 z-30 mx-auto max-w-[568px] rounded-full border border-border bg-surface contrast-more:border-border-strong print:hidden"
     >
       <ul className="my-0 flex w-full list-none items-center gap-1 p-1">
         {TABS.map((tab) => {
