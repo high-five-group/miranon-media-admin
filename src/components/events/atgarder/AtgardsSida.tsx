@@ -729,6 +729,10 @@ function KandidatKort({ reg, onLaggTill }: { reg: Registration; onLaggTill: () =
  * omarkerade kortet räknas inte som mottagare någonstans; räknaren och alla
  * åtgärds-räknare går över de VALDA.
  *
+ * PLOCKAREN NEDAN läser samma markering som exklusionsmängd (TASK-434, ej
+ * listans medlemskap) — avmarkerar hon en person här är hen omedelbart
+ * kandidat igen i "Lägg till fler personer från eventet".
+ *
  * Den permanenta redigerbarheten (Marcus-krav 2026-08-07: "hon kanske drar in
  * 7 stycken … men sen vill skicka tillbaka 1 person och hämta in 2 nya") bärs
  * alltså av två rörelser: avmarkera i listan, och plocka in ur "Lägg till fler".
@@ -779,18 +783,20 @@ function MottagarYta({
   /** Previewns två former ur en beräkning — se `namnPreview`. */
   const preview = useMemo(() => namnPreview(mottagarNamn), [mottagarNamn]);
 
-  const synligaIds = useMemo(() => new Set(synliga.map((r) => r.id)), [synliga]);
+  /* [TASK-434] Exklusionsmängden är MARKERINGEN (`valda`), inte listans
+     medlemskap (`synligaIds`) — en avmarkerad person ska direkt vara
+     kandidat igen, trots att kortet ligger kvar vitt i panelen (beslut A). */
   const kandidater = useMemo(
     () =>
       alla
-        .filter((r) => !synligaIds.has(r.id))
+        .filter((r) => !valda.has(r.id))
         .filter((r) =>
           sok.trim() === ''
             ? true
             : displayName(r).toLowerCase().includes(sok.trim().toLowerCase()) ||
               (r.email ?? '').toLowerCase().includes(sok.trim().toLowerCase()),
         ),
-    [alla, synligaIds, sok],
+    [alla, valda, sok],
   );
 
   return (
@@ -970,7 +976,7 @@ function MottagarYta({
             Lägg till fler personer från eventet
             <span className="ml-auto flex shrink-0 items-center gap-2">
               <span className="text-small text-text-secondary tabular-nums">
-                {alla.length - synliga.length}
+                {alla.length - valda.size}
               </span>
               <ChevronDown
                 aria-hidden="true"
@@ -1012,7 +1018,7 @@ function MottagarYta({
             <div className="scrollbar-inline flex max-h-96 flex-col gap-2 overflow-auto">
               {kandidater.length === 0 ? (
                 <p className="py-1 text-small text-text-muted">
-                  {alla.length === synliga.length
+                  {alla.length === valda.size
                     ? 'Alla anmälda är redan i listan.'
                     : 'Ingen matchar sökningen.'}
                 </p>
@@ -2972,10 +2978,12 @@ export function AtgardsSida({ eventId }: { eventId?: string }) {
      `synligaIds` är LISTANS medlemskap, `valda` är MARKERINGEN — två olika
      saker sedan varv 4. Ett avmarkerat kort ligger kvar i listan (vitt) men
      räknas inte som mottagare; det är markeringslägets grammatik, oförändrad
-     från eventdetaljen. Ett urvals-ID som inte längre finns i `alla` faller
-     bort automatiskt: `synliga` nedan filtrerar mot den faktiskt hämtade
-     listan, så ett urval som pekar på en försvunnen anmälan räknar aldrig
-     fel. */
+     från eventdetaljen. Plockaren ("Lägg till fler personer från eventet")
+     utesluter mot `valda`, inte `synligaIds` (TASK-434): en avmarkerad
+     person är alltså direkt kandidat igen, trots att kortet ligger kvar i
+     listan. Ett urvals-ID som inte längre finns i `alla` faller bort
+     automatiskt: `synliga` nedan filtrerar mot den faktiskt hämtade listan,
+     så ett urval som pekar på en försvunnen anmälan räknar aldrig fel. */
   const mmAtgardsUrval = useLocation({ select: (l) => l.state.mmAtgardsUrval });
   const [urval] = useState(() => mmAtgardsUrval);
   const [seedad, setSeedad] = useState(false);
