@@ -3,17 +3,22 @@ import { ChevronDown, Clock } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { BasenSlaparPill } from '@/components/betalningar/BasenSlaparPill';
 import { idagIso } from '@/components/betalningar/idag';
+import {
+  arRentDatum,
+  inbetalningsHandelser,
+} from '@/components/betalningar/inbetalnings-handelser';
 import { harledRad, type InkorgsRad } from '@/components/betalningar/inkorg-harledningar';
 import { KvarAttBetala } from '@/components/betalningar/KvarAttBetala';
 import { Button, MessageBox, Skeleton } from '@/components/primitives';
 import { ToggleButton, ToggleButtonGroup } from '@/components/primitives/ToggleButtonGroup';
-import { harledHandelser } from '@/components/registrations/handelser';
+import { type AnmalanHandelse, harledHandelser } from '@/components/registrations/handelser';
 import { displayName } from '@/components/registrations/registration-display';
 import { StatusBadge } from '@/components/registrations/StatusBadge';
 import { Tidslinje, type TidslinjeHandelse } from '@/components/registrations/Tidslinje';
-import { useOppnaBetalningar } from '@/data/betalningar/useBetalningar';
+import { useInbetalningarForEvent, useOppnaBetalningar } from '@/data/betalningar/useBetalningar';
 import type { Event } from '@/domain/models/Event';
 import type { Registration } from '@/domain/models/Registration';
+import type { InbetalningarBatchGrupp } from '@/domain/schemas';
 import { PaymentStatus, RegistrationStatus } from '@/domain/types/Status';
 import { DAGMANAD } from './datumSpann';
 import { kategoriPillText } from './hallplats-steg-prototyp';
@@ -63,14 +68,42 @@ import { kategoriPillText } from './hallplats-steg-prototyp';
  * ("bar noll information och ändå dominerade ytan").
  *
  * HÄNDELSELOGGEN ersätter utskicksloggen (K34): samma tidslinje, men senast
- * överst och med "Anmäld" ur `inskickad` — och från TASK-438 även
- * inbetalningarna. Ingen synlig rubrik (Marcus 2026-08-06: "'Utskick' kan vi
+ * överst och med "Anmäld" ur `inskickad` — och sedan TASK-438 även
+ * inbetalningarna (nästa stycke). Ingen synlig rubrik (Marcus 2026-08-06: "'Utskick' kan vi
  * ta bort … man fattar ändå"); ingen sr-only-rubrik heller — den som stod
  * här rev två CI-grindar (axe `heading-order` + strict mode), och varje nod
  * läses redan "text, tid" inuti personens egen listpost. Listan bär i
  * stället sitt namn som `aria-label` ("Händelselogg"): inget rubrikelement,
  * ingen roll, inget lint-undantag — skärmläsaren hör "lista, Händelselogg",
  * ögat ser noderna. Tomtexten säger i klartext att inget hänt (Gunilla).
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * TASK-438 (2026-09-08): INBETALNINGARNA I LOGGEN — ETT ANROP FÖR HELA EVENTET
+ * ═══════════════════════════════════════════════════════════════════════════
+ * Loggen bär sedan steg 2 även inbetalningar och återbetalningar, blandade
+ * med utskicken och sorterade senast överst: "Inbetalning 2 500 kr · Swish"
+ * med kvittostatus, makulering och notering som dämpade underrader
+ * (`betalningar/inbetalnings-handelser.ts` äger ordvalen — betalningssidans,
+ * aldrig en tredje formulering). Återbetalningar är en egen händelsetyp med
+ * egen ikon; makulerade rader syns med sitt skäl (ADR-128: sanningen rättas
+ * utan att historiken försvinner).
+ *
+ * VARFÖR ETT BATCH-ANROP OCH INTE ETT PER PERSON: läsningen per anmälan
+ * (`useInbetalningarPerAnmalan`) hade gett ett Edge Function-anrop per person
+ * — sjutton för ett fullt event — exakt det mönster `PanelBetalningar.tsx`s
+ * docblock dömde ut ("tjugo Edge Function-anrop"). `hamta-inbetalningar`
+ * tar sedan TASK-437 en batch av anmälnings-id:n (POST, tak 200) och svarar
+ * grupperat per anmälan; `useInbetalningarForEvent` hämtar den EN gång per
+ * event, först när detaljerna öppnats (`aktiv`) — noll anrop vid sidladdning,
+ * bevisat i e2e via nätverksräkning. Prod-EF:en deployades av Marcus
+ * 2026-09-08 (version 6) innan denna klientändring landade.
+ *
+ * LADDNING OCH FEL följer `InbetalningsLista.tsx`: skelett per person
+ * (`role="status"`) medan svaret väntas — loggen visar INTE utskicken först
+ * och sorterar om efteråt — och ETT fel för hela ytan med "Försök igen"
+ * (beloppen och inbetalningarna kommer ur var sitt anrop, så de får var sin
+ * ruta; båda lämnar utskicken orörda). Tiden: en betalning bär ofta bara ett
+ * datum — se `loggtid` nedan.
  *
  * Skrivvertikalen bor på betalningssidan (PRD TASK-402); eventsidan skriver
  * ingenting (TASK-145 DoD #7): ingen mutation instansieras i denna fil, och
@@ -133,6 +166,27 @@ const LOGGTID = new Intl.DateTimeFormat('sv-SE', {
   minute: '2-digit',
 });
 
+/**
+ * [TASK-438] En inbetalning bär ofta bara ett DATUM (`betalningsdatum`,
+ * Lottas eget val vid registreringen) — inget klockslag finns, och ett
+ * "1 september kl. 00:00" hade påstått ett som aldrig fanns. Rent datum
+ * formateras därför utan tid; en tidpunkt (utskick, `skapadNar`) med.
+ * Noon-förankringen håller kalenderdagen intakt oavsett tidszon: ett
+ * `new Date('2026-09-01')` är UTC-midnatt, som i en tidszon väster om
+ * Greenwich hade blivit 31 augusti.
+ */
+function loggtid(nar: string): string {
+  return arRentDatum(nar)
+    ? DAGMANAD.format(new Date(`${nar}T12:00:00`))
+    : LOGGTID.format(new Date(nar));
+}
+
+/** Sorteringsvärde för "senast överst": rent datum räknas som dagens början,
+    så ett utskick med klockslag samma dag hamnar ovanför betalningen. */
+function tidsvarde(nar: string): number {
+  return Date.parse(arRentDatum(nar) ? `${nar}T00:00:00` : nar);
+}
+
 /** K27-disclosure: "Öppna/Stäng detaljer" centrerad rad; chevron-down roterar
     (disclosure-branschformen — skild från navigationsradernas höger-chevron).
     EXPORTERAD sedan konvergens-passet (S93 Del 3 beslut 1): återanvänds av
@@ -192,6 +246,8 @@ function BetalningsPersonRad({
   klar,
   prisOkant,
   laddar,
+  inbetalningar,
+  inbetalningarLaddar,
 }: {
   registration: Registration;
   /** Postgres-raden ur `useOppnaBetalningar`, eller `null` när anmälan inte är öppen enligt basen. */
@@ -201,6 +257,9 @@ function BetalningsPersonRad({
   /** Eventet bär inget pris i basen — beloppsraden hoppas över, notisen står på eventnivå. */
   prisOkant: boolean;
   laddar: boolean;
+  /** [TASK-438] Anmälans grupp ur batch-svaret (ett anrop för hela eventet), `null` tills svaret finns. */
+  inbetalningar: InbetalningarBatchGrupp | null;
+  inbetalningarLaddar: boolean;
 }) {
   const namn = displayName(registration);
   const kategoriPill = kategoriPillText(registration);
@@ -213,13 +272,21 @@ function BetalningsPersonRad({
   // priset kan inte räknas fram (`hamta-oppna-betalningar` § ÖPPEN BETALNING).
   const saknas = rad ? (rad.kvar ?? rad.betalning.saknas) : klar ? 0 : null;
 
-  // Händelseloggen: delad härledning, senast överst; tiden formateras här.
-  const handelselogg: TidslinjeHandelse[] = harledHandelser(registration).map((h) => ({
-    id: h.id,
-    text: h.text,
-    tid: LOGGTID.format(new Date(h.nar)),
-    ikon: h.ikon,
-  }));
+  // Händelseloggen: utskicken (delad härledning) OCH inbetalningarna (TASK-438,
+  // ur batch-svaret) i EN lista, senast överst; tiden formateras här.
+  const poster: Array<AnmalanHandelse & { undertext?: readonly string[] }> = [
+    ...harledHandelser(registration),
+    ...(inbetalningar ? inbetalningsHandelser(inbetalningar) : []),
+  ];
+  const handelselogg: TidslinjeHandelse[] = poster
+    .sort((a, b) => tidsvarde(b.nar) - tidsvarde(a.nar))
+    .map((h) => ({
+      id: h.id,
+      text: h.text,
+      tid: loggtid(h.nar),
+      ikon: h.ikon,
+      undertext: h.undertext,
+    }));
 
   return (
     <li className="flex min-w-0 flex-col gap-2">
@@ -271,7 +338,16 @@ function BetalningsPersonRad({
             )}
           </div>
         )}
-        {handelselogg.length > 0 ? (
+        {inbetalningarLaddar ? (
+          // Loggen väntar in inbetalningarna i stället för att visa utskicken
+          // först och sortera om när svaret kommer — en lista som byter
+          // ordning under ögonen på Lotta läser som ett fel, inte som en
+          // laddning. Samma skelett och annonsering som beloppsraden ovan.
+          <div aria-busy="true" role="status" className="py-3">
+            <span className="sr-only">Laddar händelser ...</span>
+            <Skeleton variant="listRow" />
+          </div>
+        ) : handelselogg.length > 0 ? (
           <Tidslinje etikett="Händelselogg" handelser={handelselogg} />
         ) : (
           <p className="py-3 text-small text-text-muted">
@@ -323,6 +399,25 @@ export function BetalningsDetaljer({
   const prisOkant = event.pris == null;
   const laddar = aktiv && oppna.isPending;
 
+  // [TASK-438] INBETALNINGARNA: ETT anrop för HELA eventet (batch av
+  // anmälnings-id:n, `hamta-inbetalningar` POST, TASK-437), först när Lotta
+  // öppnat detaljerna. Id-listan sorteras så query-nyckeln är stabil oavsett
+  // registrets ordning — annars hade en omsortering av listan kostat en ny
+  // hämtning. Båda flikarnas personer ingår: fliken byts utan nytt anrop.
+  const anmalanRecordIds = useMemo(
+    () => registreringar.map((r) => r.id).sort((a, b) => a.localeCompare(b)),
+    [registreringar],
+  );
+  const batch = useInbetalningarForEvent(event.id, anmalanRecordIds, aktiv);
+  const grupperPerAnmalan = useMemo(
+    () =>
+      new Map<string, InbetalningarBatchGrupp>(
+        (batch.data?.grupper ?? []).map((g) => [g.anmalanRecordId, g]),
+      ),
+    [batch.data],
+  );
+  const inbetalningarLaddar = aktiv && anmalanRecordIds.length > 0 && batch.isPending;
+
   return (
     <div className="flex flex-col gap-3 py-3">
       <ToggleButtonGroup
@@ -371,6 +466,23 @@ export function BetalningsDetaljer({
           Kontrollera att du är uppkopplad och försök igen.
         </MessageBox>
       )}
+      {batch.isError && (
+        // [TASK-438] Samma form och samma ord som `InbetalningsLista.tsx`
+        // (TASK-346.7.1: Gunilla-klar text, aldrig felmeddelandet rakt ut).
+        // ETT fel för hela ytan: inbetalningarna kommer ur ett enda anrop.
+        // Utskicken i loggen står kvar — de läser basen, inte Postgres.
+        <MessageBox
+          intent="error"
+          title="Inbetalningarna kunde inte hämtas"
+          actions={
+            <Button intent="secondary" size="sm" onPress={() => void batch.refetch()}>
+              Försök igen
+            </Button>
+          }
+        >
+          Kontrollera att du är uppkopplad och försök igen.
+        </MessageBox>
+      )}
       {lista.length > 0 ? (
         // Korten separeras av LUFT, inte av hårstreck: när varje person bär
         // en egen kortyta blir en avdelare emellan en andra gräns runt samma
@@ -385,6 +497,8 @@ export function BetalningsDetaljer({
               klar={flik === 'klara'}
               prisOkant={prisOkant}
               laddar={laddar}
+              inbetalningar={grupperPerAnmalan.get(r.id) ?? null}
+              inbetalningarLaddar={inbetalningarLaddar}
             />
           ))}
         </ul>

@@ -19,6 +19,13 @@ export interface TidslinjeHandelse {
   tid: string;
   /** Nodens ikon (aria-hidden). */
   ikon: TidslinjeIkon;
+  /**
+   * [TASK-438] Dämpade underrader mellan texten och tiden — kvittostatus,
+   * makulering, notering för en inbetalning. Valfri: utskicken bär inga.
+   * Raderna är TEXT i list-posten, inte dekor: en skärmläsare läser
+   * "text, underrader, tid" i den ordningen.
+   */
+  undertext?: readonly string[];
 }
 
 /**
@@ -60,6 +67,13 @@ export function Tidslinje({
             </span>
             <span className="flex min-w-0 flex-col pt-1">
               <span className="text-body">{h.text}</span>
+              {h.undertext?.map((rad) => (
+                // Raderna är unika per nod (härledningen ger var sin prefix:
+                // "Kvitto …", "Makulerad: …", "Notering: …"), så texten är nyckeln.
+                <span key={rad} className="text-caption text-text-muted">
+                  {rad}
+                </span>
+              ))}
               <span className="text-caption text-text-muted">{h.tid}</span>
             </span>
           </li>

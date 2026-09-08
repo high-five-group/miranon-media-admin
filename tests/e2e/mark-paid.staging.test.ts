@@ -53,6 +53,10 @@ const UPDATE_RECORD = '**/functions/v1/update-record';
 // [TASK-436] Beloppen per person kommer ur SAMMA anrop som inkorgen — mockas
 // här med facit-rader så ytan är deterministisk (aldrig staging).
 const HAMTA_OPPNA_BETALNINGAR = '**/functions/v1/hamta-oppna-betalningar*';
+// [TASK-438] Inbetalningarna i Händelseloggen kommer ur batch-vägen (POST med
+// `anmalanRecordIds`, TASK-437) — mockas per anrop ur begärans egna id:n, så
+// mocken svarar servertroget: en grupp per efterfrågat id, tom när inga rader.
+const HAMTA_INBETALNINGAR = '**/functions/v1/hamta-inbetalningar*';
 const EVENT_ID = 'recBETALNING0001';
 // Scenario 2-id för tvåscenario-testerna (S75-diagnos 2): ADR-072 persistar
 // query-cachen (throttle-synk ~1 s, src/queries/persist.ts) och global
@@ -217,6 +221,102 @@ function facitOppna(): Mock[] {
   ];
 }
 
+/** [TASK-438] En inbetalningsrad i EF-svarets form (`InbetalningSchema`). */
+function inbet(id: string, anmalanRecordId: string, overrides: Mock = {}): Mock {
+  return {
+    id,
+    anmalanRecordId,
+    ogonblicksbildNamn: 'Facit Person',
+    ogonblicksbildEvent: 'Resor i medvetandet 1',
+    ogonblicksbildEventdatum: '2026-07-31',
+    belopp: 1000,
+    betalsatt: 'Swish',
+    betalningsdatum: '2026-07-15',
+    typ: 'inbetalning',
+    status: 'aktiv',
+    makuleradSkal: null,
+    makuleradNar: null,
+    bankreferens: null,
+    kvittoId: null,
+    notering: null,
+    skapadAv: 'facit@example.com',
+    skapadNar: '2026-07-15T10:00:00.000Z',
+    ...overrides,
+  };
+}
+
+/** [TASK-438] Ett kvitto i EF-svarets form (`KvittoSchema`). */
+function kvitto(id: string, inbetalningId: string, overrides: Mock = {}): Mock {
+  return {
+    id,
+    kvittonummer: '2026-0042',
+    ar: 2026,
+    lopnummer: 42,
+    inbetalningId,
+    lagringsnyckel: 'kvitton/2026-0042.pdf',
+    skickadNar: '2026-07-15T10:05:00.000Z',
+    mottagare: 'eva.lindqvist@example.com',
+    typ: 'kvitto',
+    originalKvittoId: null,
+    status: 'skickat',
+    skapadNar: '2026-07-15T10:04:00.000Z',
+    ...overrides,
+  };
+}
+
+const EVA_INBET = 'a1a1a1a1-1111-4111-8111-000000000001';
+const EVA_ATER = 'a1a1a1a1-1111-4111-8111-000000000002';
+const EVA_KVITTO = 'b2b2b2b2-2222-4222-8222-000000000001';
+const JOHAN_MAKULERAD = 'a1a1a1a1-1111-4111-8111-000000000003';
+
+/** Facit-grupperna per anmälan: Eva har en Swish-inbetalning med skickat
+    kvitto och notering samt en återbetalning utan kvitto; Johan en makulerad
+    inbetalning. Alla andra: tomma grupper (EF-kontraktet: tomt, aldrig fel). */
+function facitBatchGrupper(): Record<string, { inbetalningar: Mock[]; kvitton: Mock[] }> {
+  return {
+    recBET000000eva1: {
+      inbetalningar: [
+        inbet(EVA_INBET, 'recBET000000eva1', {
+          kvittoId: EVA_KVITTO,
+          notering: 'Swishade från mammas konto',
+        }),
+        inbet(EVA_ATER, 'recBET000000eva1', {
+          belopp: -500,
+          betalsatt: 'Bankgiro',
+          betalningsdatum: '2026-07-20',
+          typ: 'aterbetalning',
+          skapadNar: '2026-07-20T10:00:00.000Z',
+        }),
+      ],
+      kvitton: [kvitto(EVA_KVITTO, EVA_INBET)],
+    },
+    recBET00000johan: {
+      inbetalningar: [
+        inbet(JOHAN_MAKULERAD, 'recBET00000johan', {
+          betalningsdatum: '2026-07-16',
+          status: 'makulerad',
+          makuleradSkal: 'Dubbelregistrering',
+          makuleradNar: '2026-07-17T08:00:00.000Z',
+        }),
+      ],
+      kvitton: [],
+    },
+  };
+}
+
+/** Servertroget batch-svar: EN grupp per efterfrågat id, tom när facit saknar rader. */
+function batchSvar(anmalanRecordIds: string[], medFacit: boolean): Mock {
+  const facit = medFacit ? facitBatchGrupper() : {};
+  return {
+    grupper: anmalanRecordIds.map((id) => ({
+      anmalanRecordId: id,
+      inbetalningar: facit[id]?.inbetalningar ?? [],
+      kvitton: facit[id]?.kvitton ?? [],
+      jobbfel: [],
+    })),
+  };
+}
+
 async function mockSidan(
   page: Page,
   {
@@ -224,7 +324,17 @@ async function mockSidan(
     registrations = facitRegistrations(),
     oppna = facitOppna(),
     raknare,
-  }: { event?: Mock; registrations?: Mock[]; oppna?: Mock[]; raknare?: { anrop: number } } = {},
+    batch,
+  }: {
+    event?: Mock;
+    registrations?: Mock[];
+    oppna?: Mock[];
+    raknare?: { anrop: number };
+    /** [TASK-438] Batch-vägen: `facit` = Evas/Johans inbetalningar i svaret (default TOMMA
+        grupper, så sviter skrivna före steg 2 ser samma värld); `anrop`/`ids` räknar och
+        fångar begäran; `fel` = antal felsvar (400) som återstår innan mocken svarar 200. */
+    batch?: { anrop?: number; ids?: string[][]; fel?: number; facit?: boolean };
+  } = {},
 ) {
   await mockValjarLista(page); // task-18.19: väljarens listquery — aldrig staging i deterministisk svit
   await page.route(GET_EVENT, (route) =>
@@ -255,6 +365,34 @@ async function mockSidan(
       status: 200,
       contentType: 'application/json',
       body: JSON.stringify({ betalningar: oppna, forfallna: 0 }),
+    });
+  });
+  // [TASK-438] Batch-vägen (POST). GET-vägen (per anmälan/person) används inte av
+  // eventsidan — ett GET-anrop hit vore i sig en regression och släpps vidare
+  // till staging där det syns som ett oväntat anrop i räknaren.
+  await page.route(HAMTA_INBETALNINGAR, (route) => {
+    if (route.request().method() !== 'POST') return route.fallback();
+    const kropp = JSON.parse(route.request().postData() ?? '{}') as { anmalanRecordIds?: string[] };
+    const ids = kropp.anmalanRecordIds ?? [];
+    if (batch) {
+      batch.anrop = (batch.anrop ?? 0) + 1;
+      batch.ids?.push(ids);
+      if ((batch.fel ?? 0) > 0) {
+        batch.fel = (batch.fel ?? 0) - 1;
+        // 400, inte 500: husets retry-policy (`useBetalningar.ts`, `husetsRetryPolicy`)
+        // retryar aldrig 4xx, medan en 5xx retryas i BÅDA lagren (EF-klienten och
+        // React Query, TASK-420) och tar långt över expect-timeouten att nå ytan.
+        return route.fulfill({
+          status: 400,
+          contentType: 'application/json',
+          body: '{"error":"facit-fel"}',
+        });
+      }
+    }
+    return route.fulfill({
+      status: 200,
+      contentType: 'application/json',
+      body: JSON.stringify(batchSvar(ids, batch?.facit === true)),
     });
   });
   await mockTommaAnteckningar(page);
@@ -595,7 +733,8 @@ test.describe('Betalningsytan — LÄSYTA, mekaniskt bevisad (TASK-145.4 AC #5/#
   });
 
   test('axe 0 på öppen arbetsyta (bägge flikarna)', async ({ page }) => {
-    await mockSidan(page);
+    // [TASK-438] Med inbetalningar i loggen, så underraderna prövas av axe.
+    await mockSidan(page, { batch: { facit: true } });
     await page.goto(`/event/${EVENT_ID}`);
     await oppnaDetaljer(page);
     await expect(
@@ -663,5 +802,121 @@ test.describe('Händelseloggen som Tidslinje (TASK-145.4 AC #8, formen TASK-436)
     await expect(
       personRad(page, 'Johan Berg').getByText('Inga händelser ännu för den här personen.'),
     ).toBeVisible();
+  });
+});
+
+test.describe('Inbetalningarna i Händelseloggen — ett anrop per event (TASK-438)', () => {
+  test('noll anrop vid sidladdning, ETT batch-anrop för hela eventet när detaljerna öppnas — med alla aktiva anmälnings-id:n', async ({
+    page,
+  }) => {
+    const batch = { anrop: 0, ids: [] as string[][], facit: true };
+    await mockSidan(page, { batch });
+    await page.goto(`/event/${EVENT_ID}`);
+    await expect(gruppen(page).getByRole('button', { name: 'Öppna detaljer' })).toBeVisible();
+    expect(batch.anrop).toBe(0);
+
+    await oppnaDetaljer(page);
+    await expect(
+      personRad(page, 'Eva Lindqvist').getByText('Inbetalning 1 000 kr · Swish', { exact: true }),
+    ).toBeVisible();
+    expect(batch.anrop).toBe(1);
+    // Batchen bär BÅDA flikarnas personer (fliken byts utan nytt anrop) — och
+    // aldrig den avbokade, som inte finns i arbetsytan.
+    const ids = batch.ids[0] ?? [];
+    expect(ids).toHaveLength(8);
+    expect(ids).toContain('recBET000000eva1');
+    expect(ids).toContain('recBET00000karin');
+    expect(ids).not.toContain('recBET0000avbokd');
+
+    await arbetsytan(page).getByRole('radio', { name: 'Klara (2)' }).click();
+    await expect(personRad(page, 'Karin Sjögren').getByText('Allt betalt.')).toBeVisible();
+    expect(batch.anrop).toBe(1);
+  });
+
+  test('inbetalning, återbetalning och makulerad rad som händelser — belopp, betalsätt, kvittostatus, notering — senast överst blandat med utskicken', async ({
+    page,
+  }) => {
+    const lista = [
+      reg('recBET000000eva1', 'Eva Lindqvist', {
+        inskickad: '2026-07-10T08:00:00.000Z',
+        bekraftelseSkickad: '2026-07-12T09:00:00.000Z',
+      }),
+      reg('recBET00000johan', 'Johan Berg'),
+    ];
+    await mockSidan(page, { registrations: lista, batch: { facit: true } });
+    await page.goto(`/event/${EVENT_ID}`);
+    await oppnaDetaljer(page);
+
+    const eva = personRad(page, 'Eva Lindqvist');
+    const logg = eva.getByRole('list', { name: 'Händelselogg' });
+    // Ordningen: återbetalning 20 juli · inbetalning 15 juli · bekräftelse 12 juli · anmälan 10 juli.
+    await expect(logg.getByRole('listitem')).toHaveText([
+      /Återbetalning 500 kr · Bankgiro/,
+      /Inbetalning 1\s000 kr · Swish/,
+      /Bekräftelsemail skickat/,
+      /Anmälan inkom/,
+    ]);
+    // Betalningen bär bara ett datum: dag och månad, aldrig ett påhittat klockslag.
+    const inbetalning = logg.getByRole('listitem').filter({ hasText: 'Inbetalning 1 000 kr' });
+    await expect(
+      inbetalning.getByText('Kvitto 2026-0042 · skickat', { exact: true }),
+    ).toBeVisible();
+    await expect(
+      inbetalning.getByText('Notering: Swishade från mammas konto', { exact: true }),
+    ).toBeVisible();
+    await expect(inbetalning.getByText('15 juli', { exact: true })).toBeVisible();
+    await expect(inbetalning.getByText(/kl\./)).toHaveCount(0);
+    const ater = logg.getByRole('listitem').filter({ hasText: 'Återbetalning 500 kr' });
+    await expect(ater.getByText('Inget kvitto', { exact: true })).toBeVisible();
+    await expect(ater.getByText('20 juli', { exact: true })).toBeVisible();
+    // Utskicken har klockslag som förut.
+    await expect(
+      logg
+        .getByRole('listitem')
+        .filter({ hasText: 'Bekräftelsemail skickat' })
+        .getByText(/12 juli kl\. \d{2}:\d{2}/),
+    ).toBeVisible();
+
+    // Johan: makulerad inbetalning syns med sitt skäl — historiken tystas aldrig (ADR-128).
+    const johan = personRad(page, 'Johan Berg');
+    await expect(johan.getByText('Inbetalning 1 000 kr · Swish', { exact: true })).toBeVisible();
+    await expect(johan.getByText('Makulerad: Dubbelregistrering', { exact: true })).toBeVisible();
+
+    // Fortfarande en läsyta: inga knappar, kryss eller textrutor per person.
+    await expect(arbetsytan(page).getByRole('checkbox')).toHaveCount(0);
+    await expect(arbetsytan(page).getByRole('textbox')).toHaveCount(0);
+    await expect(arbetsytan(page).locator('ul button')).toHaveCount(0);
+  });
+
+  test('ett fel ger EN ruta med Försök igen som hämtar om; utskicken står kvar under tiden', async ({
+    page,
+  }) => {
+    const lista = [
+      reg('recBET000000eva1', 'Eva Lindqvist', { bekraftelseSkickad: '2026-07-12T09:00:00.000Z' }),
+    ];
+    // Mocken svarar fel tills "Försök igen" nollställer räknaren nedan.
+    const batch = { anrop: 0, ids: [] as string[][], fel: 99, facit: true };
+    await mockSidan(page, { registrations: lista, batch });
+    await page.goto(`/event/${EVENT_ID}`);
+    await oppnaDetaljer(page);
+
+    const ruta = arbetsytan(page).getByText('Inbetalningarna kunde inte hämtas', { exact: true });
+    await expect(ruta).toBeVisible();
+    await expect(arbetsytan(page).getByText('Inbetalningarna kunde inte hämtas')).toHaveCount(1);
+    // Utskicken läser basen, inte Postgres — loggen står kvar med dem.
+    await expect(
+      personRad(page, 'Eva Lindqvist').getByText('Bekräftelsemail skickat', { exact: true }),
+    ).toBeVisible();
+    await expect(personRad(page, 'Eva Lindqvist').getByText('Inbetalning 1 000 kr')).toHaveCount(0);
+
+    const anropVidFel = batch.anrop;
+    expect(anropVidFel).toBeGreaterThanOrEqual(1);
+    batch.fel = 0;
+    await arbetsytan(page).getByRole('button', { name: 'Försök igen' }).click();
+    await expect(
+      personRad(page, 'Eva Lindqvist').getByText('Inbetalning 1 000 kr · Swish', { exact: true }),
+    ).toBeVisible();
+    await expect(ruta).toHaveCount(0);
+    expect(batch.anrop).toBe(anropVidFel + 1);
   });
 });
