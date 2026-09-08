@@ -14,7 +14,11 @@ import { ToggleButton, ToggleButtonGroup } from '@/components/primitives/ToggleB
 import { type AnmalanHandelse, harledHandelser } from '@/components/registrations/handelser';
 import { displayName } from '@/components/registrations/registration-display';
 import { StatusBadge } from '@/components/registrations/StatusBadge';
-import { Tidslinje, type TidslinjeHandelse } from '@/components/registrations/Tidslinje';
+import {
+  Tidslinje,
+  type TidslinjeHandelse,
+  type TidslinjeUnderrad,
+} from '@/components/registrations/Tidslinje';
 import { useInbetalningarForEvent, useOppnaBetalningar } from '@/data/betalningar/useBetalningar';
 import type { Event } from '@/domain/models/Event';
 import type { Registration } from '@/domain/models/Registration';
@@ -274,7 +278,7 @@ function BetalningsPersonRad({
 
   // Händelseloggen: utskicken (delad härledning) OCH inbetalningarna (TASK-438,
   // ur batch-svaret) i EN lista, senast överst; tiden formateras här.
-  const poster: Array<AnmalanHandelse & { undertext?: readonly string[] }> = [
+  const poster: Array<AnmalanHandelse & { undertext?: readonly TidslinjeUnderrad[] }> = [
     ...harledHandelser(registration),
     ...(inbetalningar ? inbetalningsHandelser(inbetalningar) : []),
   ];

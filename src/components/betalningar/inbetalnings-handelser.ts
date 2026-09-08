@@ -1,5 +1,5 @@
 import { Ban, Banknote, Undo2 } from 'lucide-react';
-import type { TidslinjeIkon } from '@/components/registrations/tidslinje-ikon';
+import type { TidslinjeIkon, TidslinjeUnderrad } from '@/components/registrations/tidslinje-typer';
 import type { Inbetalning, InbetalningarBatchGrupp, Kvitto } from '@/domain/schemas';
 import { visaKronor } from './belopp-inmatning';
 import { kvittolage } from './panel-harledningar';
@@ -27,8 +27,12 @@ import { kvittolage } from './panel-harledningar';
  * EN MAKULERAD INBETALNING SYNS, MED SITT SKÄL. ADR-128: "sanningen rättas
  * utan att kvittot försvinner ur bokföringen" — en logg som tystade
  * makulerade rader hade dolt just den historik en logg finns för. Raden får
- * `Ban`-ikonen och underraden "Makulerad: <skäl>", exakt betalningssidans
- * ord.
+ * `Ban`-ikonen och underraden "Makulerad: <skäl>", betalningssidans ord.
+ * EN MEDVETEN SKILLNAD mot `InbetalningsLista.tsx` (granskarfynd PR #2468
+ * r1): saknar en makulerad rad skäl (typen tillåter `null`, EF:en kräver
+ * 3–500 tecken så vägen är i praktiken stängd) tystnar listan, medan loggen
+ * säger "Makulerad" utan skäl — en logg som döljer att raden är makulerad
+ * hade ljugit om historiken, vilket är exakt vad ADR-128 förbjuder.
  *
  * KVITTOJOBBETS FELSKÄL (`kvittolage(...).felskal`) VISAS INTE HÄR, med
  * avsikt: det hör till en yta där Lotta kan göra något åt det (köa om,
@@ -47,8 +51,8 @@ export interface InbetalningsHandelse {
   /** `YYYY-MM-DD` (betalningsdatum) eller ISO-tidpunkt (skapadNar) — callern formaterar. */
   nar: string;
   text: string;
-  /** Dämpade underrader i ordningen kvittostatus · makulering · notering. */
-  undertext: string[];
+  /** Dämpade underrader i ordningen kvittostatus · makulering · notering; `id` = slaget. */
+  undertext: TidslinjeUnderrad[];
   ikon: TidslinjeIkon;
 }
 
@@ -76,13 +80,16 @@ function inbetalningsHandelse(
   const makulerad = inbetalning.status === 'makulerad';
   const aterbetalning = inbetalning.typ === 'aterbetalning';
   const lage = kvittolage(inbetalning, kvitton, felskal);
-  const undertext = [lage.text];
+  const undertext: TidslinjeUnderrad[] = [{ id: 'kvitto', text: lage.text }];
   if (makulerad) {
-    undertext.push(
-      inbetalning.makuleradSkal ? `Makulerad: ${inbetalning.makuleradSkal}` : 'Makulerad',
-    );
+    undertext.push({
+      id: 'makulering',
+      text: inbetalning.makuleradSkal ? `Makulerad: ${inbetalning.makuleradSkal}` : 'Makulerad',
+    });
   }
-  if (inbetalning.notering) undertext.push(`Notering: ${inbetalning.notering}`);
+  if (inbetalning.notering) {
+    undertext.push({ id: 'notering', text: `Notering: ${inbetalning.notering}` });
+  }
   return {
     id: `inbetalning-${inbetalning.id}`,
     nar: inbetalning.betalningsdatum ?? inbetalning.skapadNar,

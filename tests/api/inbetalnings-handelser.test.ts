@@ -69,7 +69,7 @@ test.describe('inbetalningsHandelser (TASK-438)', () => {
     // Tusentalsavgränsaren är formatterarens (hårt blanksteg, sv-SE) — aldrig ett
     // vanligt mellanslag inskrivet för hand här.
     expect(h?.text).toBe(`Inbetalning ${visaKronor(1000)} kr · Swish`);
-    expect(h?.undertext).toEqual(['Kvitto 2026-0042 · skickat']);
+    expect(h?.undertext).toEqual([{ id: 'kvitto', text: 'Kvitto 2026-0042 · skickat' }]);
     expect(h?.nar).toBe('2026-07-15');
     expect(h?.ikon).toBe(Banknote);
     expect(h?.id).toBe(`inbetalning-${INBET}`);
@@ -77,7 +77,7 @@ test.describe('inbetalningsHandelser (TASK-438)', () => {
 
   test('utan kvitto: "Inget kvitto" — samma ord som betalningssidan', () => {
     const [h] = inbetalningsHandelser(grupp([inbet()]));
-    expect(h?.undertext).toEqual(['Inget kvitto']);
+    expect(h?.undertext).toEqual([{ id: 'kvitto', text: 'Inget kvitto' }]);
   });
 
   test('återbetalning: typordet bär riktningen, beloppet visas positivt, egen ikon', () => {
@@ -93,10 +93,16 @@ test.describe('inbetalningsHandelser (TASK-438)', () => {
     const [medSkal] = inbetalningsHandelser(
       grupp([inbet({ status: 'makulerad', makuleradSkal: 'Dubbelregistrering' })]),
     );
-    expect(medSkal?.undertext).toEqual(['Inget kvitto', 'Makulerad: Dubbelregistrering']);
+    expect(medSkal?.undertext).toEqual([
+      { id: 'kvitto', text: 'Inget kvitto' },
+      { id: 'makulering', text: 'Makulerad: Dubbelregistrering' },
+    ]);
     expect(medSkal?.ikon).toBe(Ban);
     const [utanSkal] = inbetalningsHandelser(grupp([inbet({ status: 'makulerad' })]));
-    expect(utanSkal?.undertext).toEqual(['Inget kvitto', 'Makulerad']);
+    expect(utanSkal?.undertext).toEqual([
+      { id: 'kvitto', text: 'Inget kvitto' },
+      { id: 'makulering', text: 'Makulerad' },
+    ]);
   });
 
   test('noteringen står sist, med prefixet "Notering:" (betalningssidans form)', () => {
@@ -104,8 +110,8 @@ test.describe('inbetalningsHandelser (TASK-438)', () => {
       grupp([inbet({ kvittoId: KVITTO, notering: 'Swishade från mammas konto' })], [kvitto()]),
     );
     expect(h?.undertext).toEqual([
-      'Kvitto 2026-0042 · skickat',
-      'Notering: Swishade från mammas konto',
+      { id: 'kvitto', text: 'Kvitto 2026-0042 · skickat' },
+      { id: 'notering', text: 'Notering: Swishade från mammas konto' },
     ]);
   });
 
@@ -120,8 +126,8 @@ test.describe('inbetalningsHandelser (TASK-438)', () => {
     const [h] = inbetalningsHandelser(
       grupp([inbet()], [], [{ inbetalningId: INBET, skal: 'Entydighets-guarden: två kandidater' }]),
     );
-    expect(h?.undertext).toEqual(['Inget kvitto']);
-    expect(h?.undertext.join(' ')).not.toContain('Entydighets-guarden');
+    expect(h?.undertext).toEqual([{ id: 'kvitto', text: 'Inget kvitto' }]);
+    expect(h?.undertext.map((r) => r.text).join(' ')).not.toContain('Entydighets-guarden');
   });
 
   test('en tom grupp ger en tom lista, aldrig ett fel', () => {

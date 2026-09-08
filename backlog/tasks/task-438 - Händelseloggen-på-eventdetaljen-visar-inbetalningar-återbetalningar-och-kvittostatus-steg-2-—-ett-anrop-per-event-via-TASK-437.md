@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-08 02:21'
-updated_date: '2026-09-08 15:49'
+updated_date: '2026-09-08 16:01'
 labels:
   - ready-for-agent
 dependencies:
@@ -47,4 +47,6 @@ AVVIKELSER MOT KORTET: inga i scope. Två mätta fällor under bygget, bokförda
 VERIFIERING (faktiska exitkoder): typecheck 0 · biome check . 0 · build 0 · check-langa-streck 0 · api-pure `tests/api/inbetalnings-handelser.test.ts` 8/8 · acceptance `anmalan-detalj` 7/7 · e2e `mark-paid.staging` + `event-deltagare.staging` 33/33 (nya: 0 anrop vid sidladdning / 1 batch-anrop med alla 8 aktiva id:n, aldrig den avbokade, inget nytt anrop vid flikbyte; händelser med belopp/betalsätt/kvittostatus/notering i ordningen återbetalning 20 juli · inbetalning 15 juli · bekräftelse 12 juli · anmälan 10 juli, rent datum utan klockslag; makulerad rad med skäl; felruta + Försök igen + omhämtning; axe 0 med underrader).
 CI-FYND EFTER FÖRSTA PUSHEN (fe93535c, PR #2468): Lint+TypeCheck och Pure+Build röda på TS6142 — `inbetalnings-handelser.ts` importerade typen `TidslinjeIkon` ur `Tidslinje.tsx`, och `tsconfig.tests.json` (api-pure-testerna) saknar `jsx`. Lokal `tsc -b --noEmit` var grön (inkrementell build-info); `npx tsc -p tsconfig.tests.json --noEmit` reproducerade felet. Fix (b4d88844): typen flyttad till `registrations/tidslinje-ikon.ts` (ren .ts), `Tidslinje.tsx` återexporterar; tests-projektet, typecheck, biome, build och api-pure gröna igen. Lärdom: kör `tsc -p tsconfig.tests.json --noEmit` när en ren modul får ett nytt test — `tsc -b` kan vara tyst. (Den första `--append-notes`-raden om detta skrevs med dubbla citattecken och fick sina backtick-ord uppätna av skalet — rättad här i sin helhet.)
 AC #4 (Marcus ögonmätning) lämnas öppen.
+
+GRANSKNING r1 (PR #2468, granskad 19bbbefd): risk låg, 2 info. (1) auto-fix `key={rad}` i Tidslinjes underrader kunde kollidera på Lottas fritext → underraderna är nu typade `TidslinjeUnderrad { id, text }` med slaget som id (kvitto/makulering/notering). (2) ask-user: docblocken påstod "exakt betalningssidans ord" för makulerade rader, men listan tystnar när skäl saknas medan loggen säger "Makulerad" — orkestrerarens beslut (Marcus mandat): loggens beteende behålls (ADR-128, historiken tystas aldrig), docblocken säger nu skillnaden öppet. Samma TS6142-fälla en andra gång när `TidslinjeUnderrad` först lades i `.tsx`-filen → båda typerna bor i `registrations/tidslinje-typer.ts`. Om-verifierat: typecheck 0, tests-projektet 0, biome 0, api-pure 8/8, mark-paid e2e och anmalan-detalj acceptance gröna (tal i PR-kroppen).
 <!-- SECTION:NOTES:END -->
