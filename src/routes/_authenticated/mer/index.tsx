@@ -90,11 +90,15 @@ function MerPage() {
               är facit-låst från M6 och ett nytt tillskott lägger sig efter
               den, det byter inte plats på det som redan står.
 
-              BAKOM MILJÖFLAGGAN. Raden renderas inte alls i prod förrän
-              Marcus slår på flaggan (PRD berättelse 36); routen är gatad
-              för sig i `betalningar.tsx`, så en gissad adress leder ingen
-              vart heller. Rivs av TASK-346.12 tillsammans med flaggan -
-              villkoret tas bort, raden blir ovillkorlig.
+              BAKOM MILJÖFLAGGAN. [TASK-446] Här stod "Raden renderas inte
+              alls i prod förrän Marcus slår på flaggan" — falskt sedan
+              S123: `VITE_FEATURE_BETALNINGAR` är PÅ i prod via Vercels
+              miljövariabler (källa: `src/lib/funktionsflaggor.ts` §
+              KONSEKVENSEN FÖR PROD), så raden RENDERAS i prod i dag; routen
+              är gatad för sig i `betalningar.tsx` oavsett. Villkoret finns
+              kvar som vakt för om flaggan någon gång stängs igen. Rivs av
+              TASK-346.12 tillsammans med flaggan - villkoret tas bort,
+              raden blir ovillkorlig.
 
               Coins (Marcus order 2026-09-01, samma ikon som Hem-genvägen -
               en destination, en ikon) och INTE Receipt: `Receipt` är lucides kvittoikon och
