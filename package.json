@@ -131,7 +131,8 @@
     "js-yaml": "5.4.1",
     "linkify-it": "6.0.0",
     "postcss": "8.5.25",
-    "sharp": "0.35.3"
+    "sharp": "0.35.4",
+    "smol-toml": "1.7.1"
   },
   "description": "React-admin för Miranon Media — eventhantering, anmälningar och rapportering ovanpå Airtable + Supabase. Privat projekt.",
   "author": "Marcus Johansson <marcus@h5gruppen.se>",

@@ -76,11 +76,30 @@ function b64url(value: object): string {
 /**
  * Fabricerad session i supabase-js lagrings-form. `getSession()` läser
  * localStorage utan server-validering (AuthProvider-kontraktet, K3) — en
- * syntaktiskt giltig JWT med utgång långt efter FROZEN_NOW ger inloggat läge
- * utan nätverk: ingen refresh hinner schemaläggas inom testets livstid.
+ * syntaktiskt giltig JWT ger inloggat läge utan nätverk, FÖRUTSATT att
+ * klockan appen ser stannar vid FROZEN_NOW (§ Frusen klocka nedan äger det
+ * kontraktet).
+ *
+ * `exp` sattes tidigare till FROZEN_NOW + 24 h, med kommentaren "utgång
+ * långt efter FROZEN_NOW … ingen refresh hinner schemaläggas inom testets
+ * livstid" — FALSKT, mätt (TASK-444, S125). "Testets livstid" är inte samma
+ * sak som "tiden mellan FROZEN_NOW och verklig 'nu'": nightlyn kör samma
+ * fixtur dagligen, långt efter FROZEN_NOW (2026-09-15), och ett test som av
+ * misstag lät klockan gå på VERKLIG systemtid (`page.clock.install()` utan
+ * `time`, se § Frusen klocka) blev grönt fram till 2026-09-16T08:00Z — exakt
+ * FROZEN_NOW + 24 h — och därefter rött av sig självt, utan att koden
+ * rördes (nightly 2026-09-16 grön, 2026-09-17 röd, samma test). `exp` sätts
+ * nu 10 år fram som SKYDDSRÄCKE 2: ingen testassertion i klassen läser eller
+ * visar `exp`/`expires_at` (grep bekräftat, TASK-444), så förlängningen
+ * kostar ingenting i realism. SKYDDSRÄCKE 1 — den enda som faktiskt gör
+ * `Date.now()` deterministisk — är och förblir att klockan STANNAR vid
+ * FROZEN_NOW; en 10-årig `exp` gör bara nästa upprepning av samma
+ * kod-glömska ofarlig i stället för att den tyst tickar mot ett framtida
+ * utgångsdatum igen.
  */
 function buildSession() {
-  const expiresAt = Math.floor(FROZEN_NOW.getTime() / 1000) + 24 * 60 * 60;
+  const TIO_AR_S = 10 * 365 * 24 * 60 * 60;
+  const expiresAt = Math.floor(FROZEN_NOW.getTime() / 1000) + TIO_AR_S;
   const user = {
     id: '00000000-0000-4000-8000-000000000001',
     aud: 'authenticated',
@@ -425,6 +444,20 @@ export const test = base.extend<{ network: NetworkFixture }>({
   page: async ({ page, network: _network }, use) => {
     // Frusen klocka (AC 5): Date/new Date() fixeras vid FROZEN_NOW; timers
     // löper vidare så React/TanStack beter sig normalt.
+    //
+    // KONTRAKT (TASK-444, S125): ETT test som behöver egen klock-kontroll
+    // (fastForward/pauseAt) MÅSTE återinstallera klockan som
+    // `page.clock.install({ time: FROZEN_NOW })` — ALDRIG `install()` utan
+    // `time`. Playwrights install() initierar på "current system time by
+    // default" (playwright-core/types/types.d.ts § `install(options`) och
+    // ERSÄTTER då frysningen här, tyst — testet blir grönt så länge verklig
+    // systemtid ligger inom sessionens `exp` (buildSession() ovan) och rött
+    // av sig självt den dag den passeras, utan att koden rörts. Skarpt fall:
+    // `hem.acceptance.test.ts`s "falsk klocka"-test (nightly 2026-09-16
+    // grön → 2026-09-17 röd, samma kod). Precedent som redan gjorde detta
+    // rätt: `events-list-kalender.acceptance.test.ts` § DETERMINISM,
+    // `event-checkin-dorrlistan.acceptance.test.ts` § DETERMINISMEN,
+    // `event-checkin-laddlage.acceptance.test.ts`.
     await page.clock.setFixedTime(FROZEN_NOW);
 
     // Sessionen seedas FÖRE app-JS via init-script — appen vaknar inloggad.
