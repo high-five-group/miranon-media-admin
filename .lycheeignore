@@ -841,3 +841,12 @@
 # 429-posten ovan). Citerad i docs/research/kvitto-branschpraxis-och-
 # svensk-ratt-2026-08-30.md (264:226, 535:704).
 ^https://simplesignup\.se/.*$
+
+# chromium.googlesource.com svarar 503 Service Unavailable till lychee från
+# GHA-runners — anti-bot på Gerrit-fronten, samma klass som gitlab-429:an
+# (S84). Länken (blob/README.md i chromium/src) öppnar felfritt i webbläsare.
+# Mätt fyra nattkörningar 2026-09-06, 09-07, 09-09, 09-17 (nightly
+# 35187813487) och den manuella dispatchen 35229750510 (S125, 2026-09-17).
+# Ingen repo-åtgärd möjlig; posten är ett brusfilter per ADR-082, inte en
+# grind-tystare. Underlag: S125 Del 3 § Slutläge + S126:s CI-djupgranskning.
+^https://chromium\.googlesource\.com/
