@@ -7,7 +7,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-09-17 09:56'
-updated_date: '2026-09-17 10:06'
+updated_date: '2026-09-17 10:23'
 labels: []
 dependencies: []
 priority: high
@@ -98,4 +98,6 @@ installerade instans. Empiriskt bevisat identiskt: package-lock.json-diffen
 mellan "override bumpad" och "override borttagen" är TOM (npm install gav
 "up to date"). npm audit: 0 träffar på GHSA-rmmr-r34h-pfm5 efter borttagningen.
 Full motivering: ADR-028 § Updates 2026-09-17-posten.
+
+PR (draft): #2498 — https://github.com/high-five-group/miranon-media-admin/pull/2498 · gren fix/tanstack-history-pin-luckring-task · commit 10859e33. Ersätter dependabot #2484 (stängs som superseded efter landning).
 <!-- SECTION:NOTES:END -->
