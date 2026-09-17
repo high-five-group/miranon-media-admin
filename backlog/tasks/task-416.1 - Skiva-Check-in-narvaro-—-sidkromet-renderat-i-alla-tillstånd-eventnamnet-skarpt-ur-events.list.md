@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-09-06 13:19'
-updated_date: '2026-09-06 17:35'
+updated_date: '2026-09-17 09:05'
 labels:
   - ready-for-agent
 dependencies: []
@@ -31,9 +31,9 @@ Källa: rapport D §4 #2 (S123). src/components/events/EventCheckin.tsx:1210–1
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -48,4 +48,6 @@ Ny mätning: tests/acceptance/event-checkin-laddlage.acceptance.test.ts (hallbar
 Regressionskontroll: event-checkin-dorrlistan.acceptance.test.ts 6/6 grönt (2 körningar), dorrlista-promoverings-grind.spec.ts (visual-desktop+mobile) 30/30 grönt inkl axe — loaded-state-DOM ORÖRD (facit intakt).
 
 Review-runda 4, INFO (bokfört, inte rättat): asymmetri mellan de två fel-platshållarna. h1-radens eventnamn/datum-platshållare (VariantD, "text-body"-slotten) är aria-hidden utan eget sr-only-besked; FramstegskortD:s isError-gren fick ett sr-only-besked ("Framsteg kunde inte hämtas") i review-runda 3. Skälet är inte en glömska utan ADR-113:s "en kanal räcker": h1-radens fel är samma fel som isListError redan annonserar via listkroppens MessageBox (role="alert") i SAMMA render — en andra kanal där hade dubblerat annonseringen. FramstegskortD är däremot en egen landmärkes-region (aria-label="Framsteg") som en skärmläsare kan navigera till DIREKT, förbi den lineära lässekvensen som annars skulle nå MessageBox — utan sin egen sr-only-text hade den regionen annonserats tom just vid en sådan direktnavigering. Samma "en kanal räcker"-princip ger alltså två olika svar beroende på om ytan är en egen landmärkes-region eller inte.
+
+Bockad i efterhand av S125 mot belägg: PR #2401 mergad (2026-09-06), samtliga 4 AC redan bockade, Implementation Notes beskriver fullständig implementation, regressionskontroll grönt (event-checkin-dorrlistan 6/6, dorrlista-promoverings-grind 30/30 inkl axe) och review-runda 4. Nightly Backlog-stängningsgrinden (körning 35187813487) flaggade kortet som inkonsistent.
 <!-- SECTION:NOTES:END -->

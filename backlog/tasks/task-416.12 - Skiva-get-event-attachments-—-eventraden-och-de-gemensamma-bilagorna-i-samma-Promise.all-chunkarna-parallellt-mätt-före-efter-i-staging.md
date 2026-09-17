@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-09-06 13:23'
-updated_date: '2026-09-06 17:07'
+updated_date: '2026-09-17 09:05'
 labels:
   - ready-for-agent
 dependencies: []
@@ -31,9 +31,9 @@ Källa: rapport E §3–4, §6 F4–F5 (S123). supabase/functions/get-event-atta
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -136,4 +136,6 @@ Mätserie runda 2 (ren A/B, tillfällig runda-1-redeploy för fräsch baslinje, 
 Slutlig deploy till STAGING (pqtshyierkdgwdnxuirz), commit 4c948c05, exit 0.
 
 PR-kroppen uppdaterad med full runda-2-sektion. Draft-läget på PR #2394 sattes av orkestreraren (marcus803, convert_to_draft) 2026-09-06 14:29:31Z som del av runda-1-hanteringen — INTE rört av agenten, per uppdrag.
+
+Bockad i efterhand av S125 mot belägg: PR #2394 mergad (2026-09-06), samtliga 4 AC redan bockade, runda 2-notiserna anger typecheck/biome/build exit 0, isolerad get-event-attachments.staging.test.ts 13/13 grön, byte-diff 10/10 identiska. Nightly Backlog-stängningsgrinden (körning 35187813487) flaggade kortet som inkonsistent.
 <!-- SECTION:NOTES:END -->

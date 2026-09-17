@@ -7,7 +7,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-09-08 14:45'
-updated_date: '2026-09-08 18:17'
+updated_date: '2026-09-17 09:07'
 labels:
   - fynd
   - ready-for-agent
@@ -45,9 +45,9 @@ KÄLLOR: TabBar.tsx rad 72–79 · Tidslinje.tsx rad 49–70 · PersonDetail.tsx
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -56,6 +56,8 @@ KÄLLOR: TabBar.tsx rad 72–79 · Tidslinje.tsx rad 49–70 · PersonDetail.tsx
 Bygg-agent 2026-09-08: Fix A (TabBar z-30 + lagerskala-docblock), Fix B (isolate på <li> i Tidslinje.tsx OCH PersonDetail.tsx, ej <ol> — skäl i kodkommentar mot PR #2457). Nytt acceptance-test tests/acceptance/tidslinje-under-menybaren.acceptance.test.ts: RÖTT-FÖRST bevisat mot origin/main (neither fix, båda testen föll på elementFromPoint-assertionen, sanity-assertionen bevisade repron); fix A ensam grön; fix B ensam grön; båda fixarna tillsammans grön. Linjen bakom cirklarna verifierad i bild 390/1280 px (temporära screenshots, borttagna före commit). AC#4: person-detail.acceptance.test.ts + anmalan-detalj.acceptance.test.ts (inkl. axe 0-testen) körda om med diffen — 72/72 gröna, ingen regression; contrast-more/print-klasser orörda i diffen. DoD: typecheck 0, biome 0, build 0, check-langa-streck 0. test:api: 2305-2306/2307 gröna i två körningar, olika enstaka staging-nätverksflak (send-registration-confirmation resp. generate-event-attachment) — bekräftat orelaterat: den första flaket kördes om isolerat och gick grönt på 18s; noll av mina ändrade filer rör API/Edge Functions.
 
 LANDAD via PR #2467 (`b5806695`, 2026-09-08 ~16:2xZ) efter två granskningsrundor: r1 risk medel (1 warning/ask-user + 3 info), r2 risk låg (6 info, 0 blockerande). ORKESTRERAR-NOT om AC #1 (S124 resume 1): kriteriets bokstav "inget annat element får ett nytt z-tal" gäller inte längre efter runda 2 — fem Popover-anrop (Meny, Select, DatumFalt, EventValjare, dev/patterns) fick DEFENSIV `z-50` på orkestrerarens order, grundad på ett granskarfynd som bygg-agenten sedan fällde med mätning (react-aria sätter `zIndex: 100000` inline; `useOverlayPosition.mjs` rad ~191). Tillägget är harmlöst och dokumenterat "INTE LOAD-BEARING"; AC #1:s avsikt (krom på 30, lagerskalan dokumenterad, inga godtyckliga z-tal) håller. Granskaren r2 klassade AC #1 felställd på bokstaven — bokförs här i stället för att skriva om ett redan bockat AC på ett landat kort. AC #5 (Marcus ögonmätning) kvarstår öppen; Done flippas efter den.
+
+Bockad i efterhand av S125 mot belägg: PR #2467 mergad b5806695 (2026-09-08), samtliga 5 AC redan bockade (inkl. AC#5 Marcus ögonmätning, källa sessionsdok S124 Del 7), Final Summary anger rött-mot-main-före/grönt-efter-bevis, 72/72 acceptance gröna, review r1 medel -> r2 låg konvergerad. Nightly Backlog-stängningsgrinden (körning 35187813487) flaggade kortet som inkonsistent.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

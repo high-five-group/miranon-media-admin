@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-09-08 02:20'
-updated_date: '2026-09-08 15:53'
+updated_date: '2026-09-17 09:07'
 labels:
   - ready-for-agent
 dependencies: []
@@ -40,10 +40,16 @@ KÄLLOR: `src/components/events/detail/Betalningar.tsx` (docblock rad 16–39, `
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Bockad i efterhand av S125 mot belägg: PR #2457 mergad 01c33c14 (2026-09-08), samtliga 5 AC redan bockade (inkl. AC#4 Marcus ögonmätning, verbatim 'Ser rätt ut, landa den.'), tre granskningsrundor konvergerade (risk låg), backstopp-preflight exit 0. Nightly Backlog-stängningsgrinden (körning 35187813487) flaggade kortet som inkonsistent.
+<!-- SECTION:NOTES:END -->
 
 ## Final Summary
 

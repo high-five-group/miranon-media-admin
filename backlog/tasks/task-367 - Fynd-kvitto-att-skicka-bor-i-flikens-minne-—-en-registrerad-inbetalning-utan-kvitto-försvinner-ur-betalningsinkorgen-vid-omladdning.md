@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-09-03 07:46'
-updated_date: '2026-09-07 17:58'
+updated_date: '2026-09-17 09:07'
 labels:
   - ready-for-agent
 dependencies: []
@@ -28,9 +28,9 @@ PRD TASK-346 § Kvittot ('Registrera först, skicka sedan') och § Inkorgen ('K 
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -43,4 +43,6 @@ Review-fynd (runda 2, PR #2416, FYND 1): prod-deployordningen är LÅST — (1) 
 Review-fynd (runda 2, PR #2416, FYND 3, sidofynd): tests/e2e/atgarder-kvitto.staging.test.ts:482 faller konsekvent sedan TASK-402.8 (PR #2378) tog bort Obekraftad-pillen ur bekraftelsestegets kort — testet forvantar sig fortfarande en checkbox-etikett som innehaller 'Obekraftad' (VariantC.tsx rad 868 bekraftar rivningen i sitt eget docblock). Ror ingen fil i TASK-367:s diff — flaggat, inte tyst forkastat, per ADR-053.
 
 STÄNGNING (S123 resume 1, 2026-09-07): PR #2416 → 988e0d3b (Marcus 'GO 2416' efter Riskbedömning runda 5, risk HÖG pga manuell prod-sekvens). Prod-sekvensen genomförd i ORDNING: (1) migration 20260906165100 applicerad i prod av orkestreraren på Marcus diktering ('Du kan väl migrera själv') via deny-prod-ref-låsets designade bypass, torrkörning visade exakt en väntande migration, kvitto 'migration list' local=remote=20260906165100, staging återlänkad; (2) fas4-prod-deploy.sh --deploya körd av Marcus i eget terminalfönster — första körningen föll på compute-segment (esm.sh hade inte byggt supabase-js 2.116.0 publicerad 16:26Z, se TASK-433), andra körningen 16:55–17:00Z deployade alla 57 EF:er (mätt med --kontrollera: registrera-inbetalning v5, hamta-oppna-betalningar v5); (3) klienten via Vercel. Post-merge 988e0d3b röd ENBART på get-person-sentineln (L599, städad), efterföljande post-merge gröna. Done-flipp av orkestreraren.
+
+Bockad i efterhand av S125 mot belägg: kortet har inga definierade AC (vacuous DoD#1). PR #2416 mergad 988e0d3b (2026-09-07) efter Marcus 'GO 2416' (risk HÖG, riskbedömning runda 5); post-merge röd endast på orelaterad get-person-sentinel (städad), efterföljande post-merge gröna. Nightly Backlog-stängningsgrinden (körning 35187813487) flaggade kortet som inkonsistent.
 <!-- SECTION:NOTES:END -->

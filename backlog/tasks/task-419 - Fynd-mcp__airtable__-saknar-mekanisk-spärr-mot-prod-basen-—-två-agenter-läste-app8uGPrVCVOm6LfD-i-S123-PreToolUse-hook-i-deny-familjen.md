@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-09-06 17:11'
-updated_date: '2026-09-07 17:06'
+updated_date: '2026-09-17 09:06'
 labels:
   - ready-for-agent
 dependencies: []
@@ -30,9 +30,9 @@ Källa: S123 (2026-09-06) sessionsdok Del 3 § Avvikelser + lessons-fragmentet p
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -195,4 +195,6 @@ så nästa läsare ser luckan som ett medvetet, godkänt val — inte en
 oupptäckt brist.
 
 STÄNGNING (S123 resume 1, 2026-09-07): PR #2442 → 51144a3c; post-merge 269f6d47 GRÖN (täcker batchen). Review runda 1 (Sonnet): risk HÖG, 3 warnings + 2 info → fix-runda 1 (7ab494c4: verify:ci-parity:fast 33 gröna exit 0, skäl-text rättad, 3 nya testfall D6/D7/A7 → 20/20) → Marcus beslut '419 A — behåll som byggt' (89a76fba) → runda 2: 5 info, 0 warnings, risk medel, konvergerad. AC #4 (CLAUDE.md-raden) utförd av orkestreraren i stängningsbatch 3 (repots CLAUDE.md § Verktygsfakta). Öppen skuld kvar: skarpbeviset genom harnesset (hooken laddas i en NY session; en agent som anropar mcp__airtable__* med prod-bas-ID ska nekas). Tillfällig agent-behörighet = TASK-430 (Marcus regel 2026-09-07). Done-flipp av orkestreraren.
+
+Bockad i efterhand av S125 mot belägg: PR #2442 mergad 51144a3c (2026-09-07), post-merge 269f6d47 GRÖN, samtliga 4 AC redan bockade, review runda 2 konvergerad (5 info, risk medel), Marcus beslut '419 A — behåll som byggt'. Nightly Backlog-stängningsgrinden (körning 35187813487) flaggade kortet som inkonsistent.
 <!-- SECTION:NOTES:END -->

@@ -4,7 +4,7 @@ title: 'Skiva: Intresserade — sökraden renderad i laddläget'
 status: Done
 assignee: []
 created_date: '2026-09-06 13:21'
-updated_date: '2026-09-06 17:07'
+updated_date: '2026-09-17 09:06'
 labels:
   - ready-for-agent
 dependencies: []
@@ -28,9 +28,9 @@ Källa: rapport D §4 #8 (S123). src/components/intresserade/Intresserade.tsx:20
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -62,4 +62,6 @@ Fix: h1 renderas nu ALLTID (alla tre tillstånd) — problemet flyttas i ställe
 Ny assertion i "fel (4xx)"-testet: getByRole('heading', {level:1, name:'Intresserade'}).toBeVisible(). Bidirektionellt bevisat: (a) effekten återställd till ovillkorad (temporär lokal ändring, aldrig committad) → de två runda 2-övergångstesterna föll korrekt (fokus tappat); (b) rubrik återställd till isError?null (temporär) → den nya h1-assertionen föll korrekt ("element(s) not found"). Båda återställda, alla 14 acceptance-tester gröna igen.
 
 Grindar (runda 3): typecheck 0, biome 0, build grön, check-langa-streck 0, acceptance-svit 14/14, visual promoverings-grind 16/16 (ariaSnapshot oförändrad — h1 fanns redan i fylld/tom-referenserna).
+
+Bockad i efterhand av S125 mot belägg: PR #2395 mergad (2026-09-06), samtliga 3 AC redan bockade, notiserna anger grindtabell över tre granskningsrundor (typecheck 0, biome 0, build grön, check-langa-streck 0, acceptance 14/14, visual 16/16). Nightly Backlog-stängningsgrinden (körning 35187813487) flaggade kortet som inkonsistent.
 <!-- SECTION:NOTES:END -->
