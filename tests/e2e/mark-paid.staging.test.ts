@@ -836,14 +836,16 @@ test.describe('Betalningsytan — LÄSYTA, mekaniskt bevisad (TASK-145.4 AC #5/#
     expect(batch.anrop).toBe(2);
   });
 
-  test('avsikten når knappen även via TANGENTBORDET: fokus värmer, utan pekare', async ({
+  test('avsikten når knappen även via TANGENTBORDET: fokus värmer, utan pekare, klicket kostar noll', async ({
     page,
   }) => {
     // [TASK-442] AC #3, andra halvan. `onFocus` bär tangentbordet precis som
     // `onMouseEnter` bär pekaren (`DetaljRad` § AVSIKT) — en hover-bara
     // förvärmning hade varit en yta som är snabb för musen och långsam för
     // den som tabbar. Samma fel-läkningsprov som ovan, men fokus flyttas
-    // programmatiskt utan att pekaren rör sig.
+    // programmatiskt utan att pekaren rör sig. [TASK-446] Testet klickar nu
+    // också efter fokus-förvärmningen och bevisar 0 nya anrop — AC #3 lovar
+    // det för BÅDA varianterna, och testet stannade tidigare före klicket.
     const raknare = { anrop: 0, svar: 0, fel: 1 };
     const batch = { anrop: 0, svar: 0, ids: [] as string[][], fel: 1, facit: true };
     await mockSidan(page, { raknare, batch, fordrojning: SVARS_FORDROJNING_MS });
@@ -862,6 +864,22 @@ test.describe('Betalningsytan — LÄSYTA, mekaniskt bevisad (TASK-145.4 AC #5/#
     await knapp.focus();
     await beloppFramme;
     await batchFramme;
+    expect(raknare.anrop).toBe(2);
+    expect(batch.anrop).toBe(2);
+
+    // [TASK-446] AC #3 lovar "0 nya vid klicket" för BÅDA varianterna —
+    // hover-testet ovan bevisar det, detta stannade tidigare vid fokus utan
+    // att klicka, så AC:t var osant för hälften av testparet. Klicket läser
+    // cachen fokus fyllde: noll nya anrop, inget skelett — spegling av
+    // hover-testets exakt samma assertion.
+    await knapp.click();
+    expect(await arbetsytan(page).getByRole('status').count()).toBe(0);
+    await expect(personRad(page, 'Eva Lindqvist').getByText('Kvar att betala')).toBeVisible({
+      timeout: CACHE_FONSTER_MS,
+    });
+    await expect(
+      personRad(page, 'Eva Lindqvist').getByText('Inbetalning 1 000 kr · Swish', { exact: true }),
+    ).toBeVisible({ timeout: CACHE_FONSTER_MS });
     expect(raknare.anrop).toBe(2);
     expect(batch.anrop).toBe(2);
   });

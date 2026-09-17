@@ -952,8 +952,19 @@ eller förstådda.
 
 Koden läser `env.VITE_FEATURE_BETALNINGAR === 'pa'`
 (`src/lib/funktionsflaggor.ts`) — värdet måste vara EXAKT strängen `pa`, inte
-`true` eller `1`. `.env.production` saknar raden helt i dag (bekräftat på
-disk 2026-08-31) — det ÄR avstängningen, per konstruktion.
+`true` eller `1`. `.env.production` saknade raden helt 2026-08-31 (bekräftat
+på disk den dagen).
+
+**[TASK-446] MEKANISM-RÄTTELSE.** Här stod tidigare "det ÄR avstängningen,
+per konstruktion" — dvs. att `.env.production`s frånvaro SJÄLV är
+mekanismen. Det är fel: Vite `loadEnv()` låter byggmiljöns `process.env`
+skriva över mode-filens värden sist, så det är Vercels ANSTÄLLDA
+miljövariabel (satt eller ej) som avgör — `.env.production` är bara vad
+mode-filen råkar bära, och en oberoende part. 2026-08-31 var BÅDA
+frånvarande, så utfallet (av) var korrekt den dagen av rätt skäl på fel
+grund. Auktoritativ källa: `src/lib/funktionsflaggor.ts` § KONSEKVENSEN FÖR
+PROD. Kommandot nedan (`vercel env ls production`) läser rätt källa direkt
+och är opåverkat av rättelsen.
 
 ```bash
 npx vercel env ls production | grep VITE_FEATURE_BETALNINGAR   # tomt = av

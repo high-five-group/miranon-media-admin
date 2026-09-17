@@ -46,8 +46,12 @@ import { betalningarPa } from '@/lib/funktionsflaggor';
  * VILLKORAD PÅ `betalningarPa()` AV SAMMA SKÄL SOM ROUTEN ÄR DET: målet
  * `/mer/betalningar` kastar `redirect` till `/mer` med flaggan av
  * (`routes/_authenticated/mer/betalningar.tsx` § FLAGGAN GATAR ROUTEN), så en
- * ovillkorlig rad hade varit en synlig genväg som studsar tillbaka. Prod är
- * därmed oförändrad tills Marcus slår på flaggan — samma villkor som styrde
+ * ovillkorlig rad hade varit en synlig genväg som studsar tillbaka.
+ * [TASK-446] Här stod tidigare "Prod är därmed oförändrad tills Marcus slår
+ * på flaggan" — falskt sedan S123: `VITE_FEATURE_BETALNINGAR` är PÅ i prod
+ * via Vercel (källa: `src/lib/funktionsflaggor.ts` § KONSEKVENSEN FÖR
+ * PROD), så raden RENDERAS i prod i dag. Villkoret kvarstår som vakt för
+ * det fall flaggan någon gång stängs igen — samma villkor som styrde
  * blockvalet på Hem innan växeln revs, och samma villkor som redan bär
  * Mer-vyns egen betalningsrad.
  *

@@ -26,11 +26,17 @@ import { betalningarPa } from '@/lib/funktionsflaggor';
  * ═══════════════════════════════════════════════════════════════════════════
  * MILJÖFLAGGAN GATAR BÅDA EFFEKTERNA
  * ═══════════════════════════════════════════════════════════════════════════
- * Med flaggan av (prod, tills Marcus slår på den) öppnas ingen WebSocket och
- * görs ingen läsning. Det är inte kosmetika: i prod finns varken
- * migrationerna, cron-posten eller Vault-hemligheten ännu (ADR-129 § Negativa
- * och skuld), så en prenumeration hade lyssnat på en tabell som inte finns
- * och en läsning hade fått 404 från en odeployad funktion.
+ * Med flaggan av öppnas ingen WebSocket och görs ingen läsning. [TASK-446]
+ * Här stod tidigare "av (prod, tills Marcus slår på den)" och "i prod finns
+ * varken migrationerna, cron-posten eller Vault-hemligheten ännu (ADR-129 §
+ * Negativa och skuld), så en prenumeration hade lyssnat på en tabell som
+ * inte finns och en läsning hade fått 404 från en odeployad funktion" —
+ * sant när ADR-129 skrevs (2026-08-30), FALSKT sedan prod-driftsättningen
+ * 2026-09-02 och flaggan PÅ i prod via Vercel sedan S123 (källa:
+ * `src/lib/funktionsflaggor.ts` § KONSEKVENSEN FÖR PROD). I prod i dag
+ * ÖPPNAS WebSocketen och görs läsningen — gatingen är kvar som vakt för det
+ * fall flaggan någon gång stängs igen, inte som en beskrivning av en
+ * saknad infrastruktur.
  *
  * Flaggan läses en gång per rendering, INTE i en `useEffect`: den är ett
  * byggtidsvärde och kan aldrig ändras i drift (se `funktionsflaggor.ts`).

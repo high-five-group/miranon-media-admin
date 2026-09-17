@@ -42,17 +42,27 @@ const betalningarSearchSchema = z.object({
  * FLAGGAN GATAR ROUTEN, INTE BARA LÄNKEN
  * ═══════════════════════════════════════════════════════════════════════════
  * Att bara dölja raden i Mer-listan hade lämnat adressen öppen: ett bokmärke,
- * en delad länk eller en gissad URL hade nått ytan i prod, där varken
- * migrationerna, Vault-hemligheten eller cron-posten finns än (ADR-129 §
- * Negativa och skuld). Vyn hade då inte varit halvfärdig utan trasig - exakt
- * det PRD:ns användarberättelse 36 finns för att förhindra.
+ * en delad länk eller en gissad URL hade nått ytan i prod. [TASK-446] Här
+ * stod tidigare "där varken migrationerna, Vault-hemligheten eller
+ * cron-posten finns än (ADR-129 § Negativa och skuld)" — sant när ADR-129
+ * skrevs (2026-08-30), FALSKT sedan prod-driftsättningen 2026-09-02
+ * (`tasks/todo.md` S113: "PROD-DRIFTSÄTTNINGEN KÖRD") och migrationen
+ * `TASK-367` (prod 2026-09-07): samtliga 57 EF:er, migrationerna,
+ * Vault-hemligheten och cron-posten finns i prod i dag. Vakten kvarstår av
+ * ett annat skäl: en gissad adress ska aldrig läcka en yta som är av avsikt
+ * bakom flaggan, oavsett om infrastrukturen råkar finnas.
  *
  * `beforeLoad` och inte ett tidigt `return null` i komponenten: en redirect
- * körs FÖRE route-chunken hämtas, så prod laddar aldrig ens koden.
+ * körs FÖRE route-chunken hämtas, så en klient med flaggan av aldrig ens
+ * laddar koden.
  *
- * `throw redirect` till `/mer` och inte en 404: ytan EXISTERAR, den är bara
- * inte påslagen än. Att skicka Lotta till menyn hon kom ifrån är det enda
- * begripliga svaret på en adress som inte gäller för henne.
+ * `throw redirect` till `/mer` och inte en 404: ytan EXISTERAR. [TASK-446]
+ * "inte påslagen än" var sant vid skrivtillfället men är falskt sedan S123:
+ * `VITE_FEATURE_BETALNINGAR` är PÅ i prod via Vercel (källa:
+ * `src/lib/funktionsflaggor.ts` § KONSEKVENSEN FÖR PROD), så redirecten
+ * körs bara om flaggan någon gång stängs av igen. Att skicka Lotta till
+ * menyn hon kom ifrån är fortfarande det enda begripliga svaret på en
+ * adress som inte gäller när flaggan är av.
  *
  * Rivs av TASK-346.12 tillsammans med resten av flaggan - se
  * `src/lib/funktionsflaggor.ts` § RIVNINGSNOT punkt 4.
