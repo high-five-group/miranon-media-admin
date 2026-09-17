@@ -256,3 +256,85 @@ rådumpar — destillera och länka. Skriv aldrig att något är "gjort" som bar
 är föreslaget. Domen ska vara densamma som leverablerna bär; där du märker
 att två leverabler drar åt olika håll — säg det öppet i stället för att
 släta över.
+
+### D1 — lägesunderlag vid spawn (2026-09-17, efter att leverabel 2–12 landat)
+
+**Läsordning.** (1) `underlag/00-agentkontrakt.md`; (2) denna fil; (3)
+`underlag/01-orkestrerarens-stickprov.md` S1–S33 — **S30, S31 och S33
+först**; (4) leverabel 11: Kort svar, "Ordningen, och varför just den", K1
+och K2, B1–B3, "Inte alls", sluttabellen; (5) leverabel 12: Kort svar,
+"Gällande tal", "Påståenden som föll eller skärptes", "Åtkomstluckor",
+"Kvarstående motsägelser" med orkestrerarens statusnot; (6) leverabel 9:
+Kort svar, Del 4 (de fem frågorna), Del 5 inklusive "Gjorde jag rätt som
+byggde detta så tidigt?"; (7) leverabel 6: Kort svar och § 14; (8) leverabel
+3 (Kort svar, § 1, § 3, § 7) och leverabel 5 (Kort svar, "Grundbegrepp, för
+den som inte kodar", "Flödet steg för steg") — de bär den guidade
+genomgången; (9) Kort svar i leverabel 2, 4, 7, 8, 10 och i
+`underlag/kg1-korsgranskning-ci-mekanismer.md`.
+
+**Rättade tal som gäller** (allt i stickprovsloggen): omkring 2 200 PR:er
+varav omkring 2 100 landade, plus 284 ärenden varav 270 är larm CI själv
+skrivit (S27) · merge-dedupen fungerar — 32 av 32 träffar där den kan göra
+nytta, 3 av 20 kod-landningar; "riv inte", "byt fråga senare, aldrig före
+lagningen av efterkontrollen" (S20, S30) · täckningsluckan efter merge: 85
+av 686 landningar utan egen efterkontroll, varav 60 verkliga hål; det som
+uteblir är staging, a11y och städning — de hermetiska klasserna körs av `CI
+[push]`, som klassar hela spannet (S30, S31) · nattnätet rött 51 av 52
+nätter: tre bokföringsgrindar håller det rött i stort sett varje natt, OCH
+ett produktskyddande jobb var rött 25 av 52 nätter, osett (S30) · självtestet
+äger 92–98 % av väntan; känt och kortat samma dag (`TASK-366`), och dagen
+efter höjdes taket i stället (S25) · listan "Månad/år" i produktionsbasen
+slutar vid december 2026, live-mätt; felet biter första gången någon lägger
+in ett event i januari 2027 (S26) · review-grinden: 110 eskaleringar av 262
+körningar på tolv dagar, rundtaket 2 passerat 37 gånger, noll
+kalibreringsposter (S28) · en rollback hos Vercel stänger av automatisk
+produktion tills någon promotar igen, och ingenting ser en produktion som
+står still (S22, S6).
+
+**Åtgärdsplanens N1 är LÖST** (S33): kön avblockerades av en parallell
+session 10:52Z samma dag. Skriv inte att kön står still. Åtta åtgärder
+återstår i nu-högen; kritiska vägen är N2 → N3; frågan bakom lever kvar som
+vägval K1.
+
+**S31 är den bästa pedagogiska scenen:** under granskningen landade
+merge-kön en kodfix (`#2500`) under granskningens egen födelse-PR (`#2496`,
+ren text) i samma push — kodfixen fick bara sin kö-körning, efterkontrollen
+på toppen blev grön med sviten hoppad, push-körningen körde hela den
+hermetiska sviten. Använd den i den guidade genomgången som "så här såg det
+ut i dag".
+
+**Granskningens självkritik hör hemma i del 10**, kort och rakt.
+Orkestrerarens bokförda fel: "repot är privat" som källmärkt faktum, omätt
+(S14) · "dedupen träffar aldrig" — en commit upphöjd till regel (S20) ·
+"nattnätet är rött av processgrindar" — två nätter upphöjda till en period
+(S30) · "mekanismen hade ingen" — den stod i tråden `T166` sedan 2026-08-21
+(S30) · "omkring 2 500 PR:er" — ett nummer, inte ett antal (S27) ·
+"bekräftat: hårt blanksteg" — en omätt hypotes skriven som faktum ·
+orkestreraren skrev över en agents mätfil i den delade scratch-katalogen
+(S30) · en lasttopp på 269 på 16 kärnor av agenternas lintning innan
+`--no-globs` infördes · uppskattade klockslag skrivna som mätta, upprepat,
+trots en uttalad regel. Mönstret är detsamma som granskningen fann i repot:
+ett litet n upphöjt till regel, och prosa som inte räcker som spärr.
+
+**Metoden i tal:** tre vågor, 31 agentpass (18 + 9 + 4; Sonnet för
+kartläggning, Opus för omdöme), 33 egna stickprov, tre korsgranskningar,
+full dokumentationsgrind körd av orkestreraren. Inget CI-beteende är ändrat.
+Huvudrapporten själv skrevs av Sonnet: två Opus-pass stod still i
+lågprioritetsläget efter att sessionskvoten slagit i (bokförd avvikelse mot
+tier-policyn; rapporten får ett extra granskningspass av orkestreraren).
+
+**Ton och form.** Neutral, varm sakprosa; i den guidade genomgången får
+läsaren tilltalas "du". Ägaren heter Marcus och appens dagliga användare
+Lotta — namnen står i repots publika `CLAUDE.md` och får användas; inga
+andra personnamn. "Så ser du det själv"-rutorna ska vara KÖRBARA (ett ställe
+i GitHub eller ett kommando) — pröva dem, eller märk dem oprövade. "Vad som
+är starkt" får inte bli tunnare än "Var det läcker". Svaret på "gjorde jag
+rätt?" reder ut de två måttstockarna: mätt som DORA mäter ledtid (öppnad PR →
+landad, median 28,9 min) ligger repot långt före; mätt som Marcus upplever
+den — omkring 25 minuters fast maskinväntan per kodändring oavsett storlek,
+gånger varje omkörning — är upplevelsen korrekt. Båda är sanna. Mermaid:
+korta nodtexter, inga tecken som bryter syntaxen.
+
+**Skriv tidigt.** Lägg skelettet (frontmatter, H1, de tolv rubrikerna) på
+disk så snart uppdraget är läst, och fyll på avsnitt för avsnitt — två
+tidigare pass har avbrutits utan att lämna något efter sig.
