@@ -20,13 +20,36 @@ import { env } from '@/env';
  * MILJÖ, INTE ANVÄNDARE
  * ═══════════════════════════════════════════════════════════════════════════
  * Detta är en MILJÖFLAGGA, inte en funktionsflagg-tjänst. Värdet bestäms vid
- * BYGGTID av Vites mode-fil (`.env.development` / `.env.staging` /
- * `.env.production`) och kan inte ändras i drift. Det är avsiktligt: en
- * runtime-flagga hade krävt en distributionsyta vi inte har, för ETT beslut
- * som fattas en gång.
+ * BYGGTID och kan inte ändras i drift. Det är avsiktligt: en runtime-flagga
+ * hade krävt en distributionsyta vi inte har, för ETT beslut som fattas en
+ * gång. Ingen kod behöver veta vilken miljö den kör i.
  *
- * Frånvarande i `.env.production` ⇒ `false` i prod. Ingen kod behöver veta
- * vilken miljö den kör i.
+ * [TASK-442, RÄTTELSE av en preexisterande rad — ADR-083] Här stod tidigare
+ * att värdet bestäms av "Vites mode-fil" och att "Frånvarande i
+ * `.env.production` ⇒ `false` i prod". Andra ledet är FALSKT i dag, och det
+ * första är bara halva mekaniken: mode-filen är EN källa, BYGGMILJÖNS
+ * process-miljövariabler är en annan — och de VINNER.
+ *
+ * KÄLLÄST, inte antaget (`vite` 8.2.2, `dist/node/chunks/node.js`,
+ * `loadEnv()`): mode-filens värden läggs in först, och SISTA ledet är
+ *
+ *     for (const key in process.env)
+ *       if (prefixes.some((p) => key.startsWith(p))) env[key] = process.env[key];
+ *
+ * alltså skriver varje `VITE_`-prefixad variabel i byggprocessens miljö över
+ * mode-filen. Mätt direkt mot `loadEnv()` (TASK-442): mode `production` utan
+ * process-variabel ⇒ `undefined`; med `VITE_FEATURE_BETALNINGAR=pa` i miljön
+ * ⇒ `'pa'`; och mode `staging` — vars fil säger `pa` — med `av` i miljön
+ * ⇒ `'av'`.
+ *
+ * KONSEKVENSEN FÖR PROD, mätt: flaggan är PÅ I PROD. `.env.production` bär
+ * ingen rad för den; Vercels miljövariabler gör det, och de ÄR byggprocessens
+ * miljö. `.env.production` är därför INTE auktoritativ för vad prod-bundeln
+ * bär. Belägg, ordagrant ur `tasks/todo.md`: S123 *"Mätt: prod = `29a3c16d`,
+ * bundeln bär `VITE_FEATURE_BETALNINGAR: pa`"* och S124 *"flaggan
+ * `VITE_FEATURE_BETALNINGAR` är PÅ i prod via Vercel"*. Vill du veta vad som
+ * gäller i prod: läs Vercels miljövariabler eller mät bundeln — aldrig
+ * mode-filens frånvaro.
  *
  * ═══════════════════════════════════════════════════════════════════════════
  * RIVNINGSNOT — VAD SOM FÖRSVINNER, OCH NÄR

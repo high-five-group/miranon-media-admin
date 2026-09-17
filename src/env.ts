@@ -34,8 +34,15 @@ export const env = createEnv({
     VITE_E2E_WARMUP_TIMEOUT_MS: z.coerce.number().int().positive().optional(),
     /**
      * [TASK-346.4 AC #6, PRD TASK-346 § Miljöflagga (B2)] Betalningsflödets
-     * miljöflagga: `pa` i dev och staging, FRÅNVARANDE i prod tills Marcus
-     * slår på den efter prod-migrationerna.
+     * miljöflagga. `pa` i dev och staging via mode-filerna; i PROD sätts
+     * den till `pa` av Vercels miljövariabler — byggmiljön vinner över
+     * mode-filen (källäst mekanik + mätning i `lib/funktionsflaggor.ts`
+     * § MILJÖ, INTE ANVÄNDARE).
+     *
+     * [TASK-442] Här stod tidigare "FRÅNVARANDE i prod tills Marcus slår på
+     * den efter prod-migrationerna". Det var sant när raden skrevs och är
+     * falskt sedan S123: migrationen är applicerad (`TASK-367`, prod
+     * 2026-09-07) och flaggan är på (`tasks/todo.md` S123/S124).
      *
      * TRE VÄRDEN, INTE TVÅ: `pa`, `av` och frånvarande. Skälet är att en
      * uttrycklig avstängning ska kunna stå kvar i en mode-fil som

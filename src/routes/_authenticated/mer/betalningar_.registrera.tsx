@@ -43,8 +43,14 @@ import { betalningarPa } from '@/lib/funktionsflaggor';
  * `betalningar.tsx` (som renderar inkorgen utan `<Outlet/>`). Steget är en
  * egen fokuserad yta (PRD berättelse 5), inte en panel i inkorgen.
  *
- * SAMMA MILJÖGRIND SOM INKORGEN: `betalningarPa()` gatar routen; av i prod
- * ⇒ redirect till `/mer`, exakt som `betalningar.tsx`.
+ * SAMMA MILJÖGRIND SOM INKORGEN: `betalningarPa()` gatar routen; är flaggan
+ * av ⇒ redirect till `/mer`, exakt som `betalningar.tsx`.
+ *
+ * [TASK-442] Raden sade tidigare "av i prod ⇒ redirect till `/mer`". Flaggan
+ * är PÅ i prod sedan S123 — satt i Vercels miljövariabler och därför osynlig
+ * i `.env.production` (`lib/funktionsflaggor.ts` § MILJÖ, INTE ANVÄNDARE).
+ * Routen ÄR alltså nåbar i prod; grinden är en miljögrind, inte en
+ * prod-spärr.
  */
 const searchSchema = z.object({
   /**

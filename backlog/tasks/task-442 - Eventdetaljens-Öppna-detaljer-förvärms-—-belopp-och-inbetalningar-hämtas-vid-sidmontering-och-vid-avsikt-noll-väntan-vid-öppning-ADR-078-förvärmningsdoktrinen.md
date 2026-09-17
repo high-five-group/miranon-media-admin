@@ -7,7 +7,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-08 18:00'
-updated_date: '2026-09-08 19:18'
+updated_date: '2026-09-17 09:02'
 labels:
   - ready-for-agent
 dependencies:
@@ -38,7 +38,7 @@ KÄLLOR: `Betalningar.tsx` (BetalningsDetaljer ~rad 320–380, DetaljRad ~196–
 <!-- AC:BEGIN -->
 - [x] #1 Vid sidmontering av eventdetaljen förvärms betalningar.oppna och betalningar.perEvent för det öppnade eventet via en useForbered-hook med exakt hookarnas nycklar och queryFn; aldrig när funktionen är avstängd, id-listan tom eller för avbokade; e2e: båda räknarna 1 före klick, batchens id:n = de aktiva
 - [x] #2 Öppna detaljer ger 0 nya anrop och inget skelett när förvärmningen är färsk; stäng/öppna och flikbyte ger 0 nya; bevisat med fördröjda mockar (rött mot main före fixen)
-- [x] #3 Avsikts-förvärmning på knappen (onMouseEnter + onFocus) bevisad oberoende av monteringsvägen: hover före monteringsförvärmningen ger exakt ett anrop per fråga och klicket 0
+- [x] #3 Avsikts-förvärmning på knappen (onMouseEnter + onFocus) bevisad som EGEN anropsväg genom UTFALL, inte genom tidsordning: monteringsförvärmningen tvingas fallera (400 på båda EF:erna; husetsRetryPolicy retryar aldrig 4xx, alltså exakt ETT försök per fråga och tom cache), varefter hover respektive tangentbordsfokus är enda möjliga källa till anrop 2 per fråga — mätt 1 -> 2 anrop efter avsikten och 0 nya vid klicket, med väntan på felsvaren först så React Query inte deduplicerar mot ett pågående försök. Två tester: hover och fokus.
 - [x] #4 Docblockarna i Betalningar.tsx och Deltagare.tsx säger den nya regeln med Marcus beslut källmärkt och historiken bevarad; TASK-438 får en superseded-not om sitt AC #1; PR-kroppen citerar doktrinen och den källästa TanStack-mekaniken (enabled-flip hämtar bara stale) med version
 - [x] #5 Skarp mätning i PR-kroppen: klick till renderat belopp/logg mot staging före/efter, fem körningar, median; axe 0; mark-paid + event-deltagare + anmalan-detalj gröna; DoD-kommandona och check-langa-streck gröna med faktiska exitkoder
 - [ ] #6 Ögonmätt av Marcus mot dev-server/staging före Done
@@ -94,4 +94,12 @@ UTVIDGNING UTÖVER FYNDEN, öppet bokförd: samma falska påstående stod ÄVEN 
 REGISTRERAT, EJ ÅTGÄRDAT (ADR-053, blockerar ej, utanför scope): hermetik-rapporten visar 29 omockade `get-attendance`-anrop — TASK-416.16:s `mockTomNarvaro` saknas i samma två uppsättnings-funktioner (`mockaPersonkort`/`mockaGruppdynamik`) som saknade betalnings-stubben. Samma felklass, äldre orsak, egen skiva. Övrig restrafik i rapporten är startvärmningens sju datamängder (get-waitlist 213, get-leads 211, hamta-jobbstatus 208, get-persons 28 m.fl.) plus Google Fonts — förväntad, ej relaterad.
 
 R2-GRINDAR: typecheck 0 · biome check . 0 · build 0 · check-langa-streck 0 · tsc -p tsconfig.tests.json 0 · test:api 1 (2313/2315, de två transienta ovan) · hermetik-svep över sex sviter 127/128 (det ena fallet, `markera-lage` "navigation UTANFÖR betalningsfamiljen", passerar isolerat i BÅDA lägena — flakigt under full-svit-last, inte en regression).
+
+2026-09-17 (bygg-agent, Opus 5 — fix-runda 3 efter granskningens runda 2):
+
+AC #3 OMSKRIVET, inte ombockat. Granskaren bedömde det FELSTÄLLT (inte fel byggt) i både runda 1 och 2: den gamla lydelsen krävde "hover FÖRE monteringsförvärmningen", och det fönstret finns inte — `DetaljRad` renderas i samma React-commit som gör `aktivaIds` känd, alltså exakt när monteringsförvärmningen körs. Ett AC som kräver en tidsordning produkten strukturellt inte kan ha är omätbart, och att bocka det hade varit att bocka mot en fiktion.
+
+Den nya lydelsen beskriver vad testet FAKTISKT bevisar, och det är ett STARKARE prov än det ursprungliga: vägarna separeras i UTFALL i stället för i tid. Monteringsförvärmningen tvingas fallera med 400 på båda EF:erna; `husetsRetryPolicy` retryar aldrig 4xx, så det blir exakt ett försök per fråga och cachen står tom. Testet väntar på BÅDA felsvaren innan hovern — annars hade React Query deduplicerat mot ett pågående försök och provet bevisat ingenting. Därefter är hover (resp. tangentbordsfokus) enda möjliga källa till anrop 2, och klicket kostar 0. Bevis: `tests/e2e/mark-paid.staging.test.ts` § "avsikten värmer OBEROENDE av sidmonteringen" och § "avsikten når knappen även via TANGENTBORDET".
+
+Samma lesson-klass som S124:s fragment "ett strukturellt omätbart AC skrivs om till det mätbara": AC:ts AVSIKT (avsiktsvägen fungerar oberoende av monteringsvägen) var hela tiden rätt och är uppfylld — det var mekanik-formuleringen som var omöjlig att mäta. Omskrivet via CLI (remove-ac bakifrån, sedan --ac i ordning, sedan --check-ac) så numreringen #1-#6 bevaras; PR-kroppen och Riskbedömnings-sektionen refererar till index.
 <!-- SECTION:NOTES:END -->

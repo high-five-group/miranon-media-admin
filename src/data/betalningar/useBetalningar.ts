@@ -70,7 +70,8 @@ const husetsRetryPolicy = (failureCount: number, err: Error): boolean =>
  * funktionerna ännu (ADR-129 § Negativa och skuld), så ett anrop hade fått
  * 404". Det var sant när ADR-129 skrevs och är FALSKT i dag: samtliga 57
  * EF:er ligger i prod (`TASK-385`, 2026-09-05; omdeployade 2026-09-08
- * 04:28–04:32Z), `TASK-367`:s migration är körd (2026-09-06), och flaggan
+ * 04:28–04:32Z), `TASK-367`:s migration är applicerad i prod (2026-09-07),
+ * och flaggan
  * `VITE_FEATURE_BETALNINGAR` är PÅ i prod via Vercels miljövariabler (mätt i
  * prod-bundeln vid `29a3c16d`, S123). Formen är alltså riktig av det första
  * skälet ensamt (hooks-reglerna); 404-motiveringen är historik och får inte
@@ -218,8 +219,11 @@ export function useInbetalningarForEvent(
  *      läge där prod saknade migrationerna och EF:erna, så att ett anrop
  *      hade fått 404. Så var det när ADR:n skrevs. I dag ligger samtliga 57
  *      EF:er i prod (`TASK-385`, 2026-09-05; omdeployade 2026-09-08
- *      04:28–04:32Z) och `TASK-367`:s migration är körd (2026-09-06). Läs
- *      aldrig den ADR-raden som en beskrivning av dagens prod.
+ *      04:28–04:32Z) och `TASK-367`:s migration är applicerad i prod
+ *      (2026-09-07 — migrationsfilen HETER `20260906165100_...`, men
+ *      filnamnets tidsstämpel är när den skrevs; appliceringen skedde dagen
+ *      efter, se `TASK-367`:s stängningsnot). Läs aldrig den ADR-raden som
+ *      en beskrivning av dagens prod.
  *
  *      ASYMMETRIN MOT RENDERINGEN står kvar och bokförs öppet:
  *      `Deltagare.tsx` monterar `DetaljRad`/`BetalningsDetaljer`

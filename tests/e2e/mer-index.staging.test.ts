@@ -62,10 +62,16 @@ import { expect, test } from '../support/test-bas';
  * RADEN ÄR MILJÖFLAGGAD (`VITE_FEATURE_BETALNINGAR`, `src/lib/funktionsflaggor.ts`),
  * och det ändrar vad detta test mäter. Flaggan är `pa` i `.env.development`
  * och `.env.staging` — de två lägen denna klass någonsin kör i — så raden ÄR
- * synlig här, och elva är rätt tal. I PROD är flaggan frånvarande och raden
- * renderas inte alls; testet påstår alltså ingenting om prod, och ska inte
- * läsas som att det gör det. TASK-346.12 river flaggan efter promovering, och
- * då blir elva ovillkorligt.
+ * synlig här, och elva är rätt tal. Testet påstår ingenting om prod, och ska
+ * inte läsas som att det gör det. TASK-346.12 river flaggan efter
+ * promovering, och då blir elva ovillkorligt.
+ *
+ * [TASK-442] Här stod tidigare "I PROD är flaggan frånvarande och raden
+ * renderas inte alls". Falskt sedan S123: flaggan är PÅ i prod, satt i
+ * Vercels miljövariabler och därför osynlig i `.env.production`
+ * (`src/lib/funktionsflaggor.ts` § MILJÖ, INTE ANVÄNDARE bär den källästa
+ * mekaniken). Raden renderas alltså i prod också. Testets räckvidd är
+ * oförändrad — det var bara motiveringen som var fel.
  *
  * UTLOGGNINGS-ASSERTIONERNA RÄTTADE 2026-08-20: de två S107-testerna mätte
  * FRÅNVARON av `?redirect=` i URL:en, fast `/login`s eget search-schema

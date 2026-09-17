@@ -380,7 +380,16 @@ export default defineConfig({
                 // raden.
                 //
                 // Att flaggan är PER MILJÖ är dess design (AC #6): på i
-                // dev/staging, frånvarande i prod, av i fixturvärlden.
+                // dev/staging, av i fixturvärlden (raden nedan) — och PÅ i
+                // prod sedan S123, satt i Vercels miljövariabler.
+                //
+                // [TASK-442] Här stod "frånvarande i prod". Det är falskt:
+                // byggmiljöns VITE_-variabler vinner över mode-filen, så
+                // `.env.production`s tystnad säger ingenting om vad
+                // prod-bundeln bär (källäst mekanik + mätning i
+                // `src/lib/funktionsflaggor.ts` § MILJÖ, INTE ANVÄNDARE).
+                // Raden nedan är opåverkad — den sätter fixturvärldens
+                // värde och ingenting annat.
                 VITE_FEATURE_BETALNINGAR: 'av',
                 // TASK-239 — SAMMA SEAM SOM TASK-236, ANDRA TESTKLASSEN.
                 //

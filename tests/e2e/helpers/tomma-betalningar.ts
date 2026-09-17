@@ -33,8 +33,8 @@ import type { Page, Route } from '@playwright/test';
  * granularitet när täckningen bestäms per `page.route`-uppsättning.
  *
  * Anropsplatserna, med form:
- *   · BÅDA (`mockTommaBetalningar`): `event-detail` × 3 — `mockEvent`,
- *     `mockaPersonkort`, `mockaGruppdynamik` (alla tre serverar aktiva
+ *   · BÅDA (`mockTommaBetalningar`): `event-detail` × 3 av 4 — `mockEvent`,
+ *     `mockaPersonkort`, `mockaGruppdynamik` (alla tre serverar AKTIVA
  *     anmälningar till `/event/$eventId`) · `event-bekraftelse` × 1 ·
  *     `event-bor-over` × 1 · `event-deltagare`s kringgåendeblock (det som
  *     inte går via `mocka()` och därför saknar egen belopps-mock).
@@ -42,11 +42,28 @@ import type { Page, Route } from '@playwright/test';
  *     och `betalningar-inkorg-markera-lage` — båda bär en egen,
  *     ämnesbärande `hamta-oppna-betalningar`-mock som lämnas orörd.
  *
- * INTE STUBBADE, och skälet per plats: `mark-paid.staging.test.ts` mockar båda
- * själv med räknare (förvärmningen ÄR dess ämne sedan TASK-442);
- * `event-narvaro-register` svarar `registrations: []`, och en tom aktiv-lista
- * gatar bort förvärmningen redan i callbacken; `skapa-event` och
- * `aktivitetslogg-skarv` når aldrig en eventdetalj med anmälningar.
+ * INTE STUBBADE — OCH DENNA LISTA RÄKNAR OCKSÅ ANROPSPLATSER. [TASK-442,
+ * r2-fynd på PR #2474] Den första rättelsen växlade bara de STUBBADES
+ * granularitet till anropsplats och lämnade denna lista på filnivå, vilket är
+ * exakt samma fälla en nivå ned: en fil kan ha både stubbade och ostubbade
+ * uppsättningar, och `event-detail` HAR det. Skälet per plats:
+ *   · `event-detail`s FJÄRDE uppsättning, `mockaValjarSidan` (eventväljaren,
+ *     task-18.19) — svarar `registrations: []`. Tom aktiv-lista gatar bort
+ *     förvärmningen redan i callbackens första rad
+ *     (`anmalanRecordIds.length === 0`, `data/betalningar/useBetalningar.ts`
+ *     § `useForberedEventBetalningar`), så inget anrop formuleras. Samma
+ *     skäl som `event-narvaro-register` nedan, inte ett förbiseende.
+ *   · `mark-paid.staging.test.ts` mockar båda själv med räknare
+ *     (förvärmningen ÄR dess ämne sedan TASK-442).
+ *   · `event-narvaro-register` svarar `registrations: []` — se gatingen ovan.
+ *   · `skapa-event` och `aktivitetslogg-skarv` når aldrig en eventdetalj med
+ *     anmälningar.
+ *
+ * ATT RÄKNA RÄTT KRÄVER TVÅ SÖKNINGAR, inte en: `event-detail` registrerar
+ * sin get-registrations-route på fyra ställen men bara tre av dem via
+ * konstanten `GET_REGISTRATIONS` (definierad rad ~1121) — `mockEvent` bär
+ * glob-strängen inlinad, före konstanten finns. Ett `grep GET_REGISTRATIONS`
+ * ensamt missar den och ger tre. Sök på `get-registrations`.
  *
  * FIXTURKLASSERNA (acceptance/visual/webblasarbeteende) behöver ingen stub av
  * en ANNAN orsak, och den ska inte blandas ihop med ovanstående: deras
