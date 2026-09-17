@@ -817,6 +817,42 @@ KG1 prövade fyra mekanismer i koden och mot 601 pushar. Tre av dess fynd
   KG1 upptäckte det via en självmotsägelse i en härledd siffra och mätte om.
   Orkestrerarens scratch-filer bär från och med nu prefixet `ork-`.
 
+### S31 — Täckningsluckan sedd live, med granskningens egen PR överst (källa: S18, KG1 fynd 1)
+
+- **Vad som hände:** medan granskningen pågick landade merge-kön tre PR:er i
+  EN push, 2026-09-17: `#2500` (en kodfix i fyra acceptance-tester och
+  `tests/support/fixturvarld/hermetic.ts`), `#2493` (text) och överst `#2496`
+  — denna sessions egen födelse-PR, ren text.
+- **Prövat med:** `git log origin/main --first-parent` efter `git fetch`;
+  `gh run list --workflow post-merge.yml --limit 8`; `gh run list --commit
+  <full SHA>` på `0c8d3edc…` (kodfixen) och `4567a053…` (toppen); `gh api
+  …/actions/runs/<id>/jobs` på toppens två körningar. 2026-09-17, mellan
+  11:37Z och 11:39Z (klockan avläst före och efter).
+- **Utfall:**
+  1. Kodfixens landnings-commit `0c8d3edc` har **en enda körning**: `CI
+     [merge_group]` (`35215409698`). Ingen `CI [push]`, ingen `Post-merge`.
+     Detsamma gäller `a207644c` (`#2493`).
+  2. Toppens efterkontroll (`35216597781`) är **grön med "Verifierande svit
+     på det mergade trädet: skipped"** — toppen är text, alltså ärvs
+     textklassningen.
+  3. Toppens `CI [push]` (`35216597754`) kör däremot HELA den hermetiska
+     sviten — `Pure + Build`, tre acceptance-skärvor, självtestet,
+     `Webblasarbeteende` — trots att toppen själv är ren text. `A11y`,
+     `Staging (API + E2E)` och de två städjobben är hoppade.
+- **Dom: KG1 höll på varje punkt, och S11:s "`CI [push]` tillför ingenting"
+  föll för grupplandningar.** Push-körningen klassar hela det pushade
+  spannet och är den som fångar koden under en text-topp; efterkontrollen
+  klassar bara toppen. Det som uteblev för `#2500` är exakt det KG1 sa:
+  staging-sviten, tillgänglighetsscanningen och städningen. Hål nummer 61 i
+  KG1:s räkning — skapat av en sessionsstart-PR. Just detta hål är
+  lågriskigt (kodfixen rör bara hermetiska tester, som staging-sviten inte
+  läser), och natten eller nästa kod-landning täcker det. Men det visar hur
+  vardaglig mekanismen är: **varje session föder ett dok via en text-PR, och
+  varje sådan PR kan bli locket över någon annans kod.**
+- **Följd för åtgärdsplanen:** KG1:s ordningskrav väger tyngre efter detta —
+  rör inte `CI [push]` eller dedupens fråga innan efterkontrollen klassar
+  hela spannet.
+
 ## Motsägelser mellan agenter
 
 - **Merge-dedupens faktiska träffkvot (J8.5 mot J8.7, ärvd av D3):** AVGJORD
