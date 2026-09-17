@@ -9,7 +9,7 @@ status: draft
 
 > **Proveniens:** skrivet av orkestreraren (Session 126, Claude Fable 5.1),
 > 2026-09-17, efter att åtta av våg 2:s nio agenter rapporterat och
-> orkestreraren fört tjugonio egna stickprov. Filen är samtidigt en del av
+> orkestreraren fört trettio egna stickprov. Filen är samtidigt en del av
 > granskningens metodbeskrivning: den visar exakt vad de tre sista agenterna
 > fick veta, och vad de blev ombedda att INTE göra. Varje faktapåstående nedan
 > pekar på en fil i granskningen; det som saknar pekare är en hypotes som
@@ -18,7 +18,7 @@ status: draft
 ## Gemensamt för alla tre
 
 1. **Läs först, i sin helhet:** `underlag/00-agentkontrakt.md` (gäller dig)
-   och `underlag/01-orkestrerarens-stickprov.md` (S1–S29). Där loggen säger
+   och `underlag/01-orkestrerarens-stickprov.md` (S1–S30). Där loggen säger
    **föll** eller **skärpt** gäller loggens version — också mot en leverabel
    från våg 2.
 2. **Du skriver exakt EN fil** (namnet står i ditt avsnitt). Inga egna
@@ -47,7 +47,7 @@ status: draft
    | 12 Evidens- och osäkerhetsregister | `11-evidens-och-osakerhetsregister.md` |
 
 5. **Gällande tal.** `underlag/kg3-konsistens-mellan-underlagen.md` §
-   "Kanoniska tal" gäller, med tre rättelser ur stickprovsloggen:
+   "Kanoniska tal" gäller, med fyra rättelser ur stickprovsloggen:
    - **PR-antal:** 2 216 PR:er (2 118 mergade) och 284 ärenden — inte
      "~2 500 PR:er" (S27).
    - **Merge-dedupen:** träffar 3 av 20 kod-landningar i ett
@@ -55,6 +55,14 @@ status: draft
      "noll träffar" föll (S20).
    - **Event-listans gräns** biter vid första event med startdatum i januari
      2027, inte "om tre månader" (S26, live-mätt mot produktionsbasen).
+   - **Tillägg efter korsgranskningen KG1 (S30, läs den posten först av
+     alla):** täckningsluckan efter merge är **60 verkliga hål** av 85
+     landningar utan egen efterkontroll; det som uteblev är staging-sviten,
+     a11y och städningen — de hermetiska klasserna kördes av `CI [push]`.
+     Nattnätet: ett PRODUKTSKYDDANDE jobb var rött **25 av 52 nätter** —
+     "rött av processgrindar" (S12) gäller två nätter, inte perioden.
+     Diagnosen av luckan fanns redan i tråden `T166`; `TASK-365` bär en
+     annan, delvis falsifierad rotorsak.
 6. **Uppdraget ordagrant:**
    `tasks/sessions/bilagor/s126-uppdrag/uppdraget-verbatim.md`. Läs raderna
    ditt avsnitt pekar på.
@@ -104,7 +112,9 @@ nattnätets signal), `underlag/kg2-…` (externa fakta), `underlag/kg3-…`
 5. **Knyt till det som redan finns.** Finns ett backlog-kort eller en
    Accepted ADR för saken — peka på det i stället för att föreslå nytt.
    Kända: `TASK-366` (självtestets delning, S25), `TASK-199` (ingen vakt på
-   stale produktion, S6), `TASK-365` (täckningsluckan efter merge, S18),
+   stale produktion, S6), tråden `T166` (RÄTT diagnos av täckningsluckan
+   efter merge, med tre vägval) och `TASK-365` (samma lucka, delvis fel
+   rotorsak — S18, S30),
    `ADR-131` (Accepted, ej verkställd — river backlog-stängningsgrinden,
    S15). Läs kort med `npm run bl -- task <id> --plain`. Skapa och ändra
    aldrig kort.
@@ -234,7 +244,7 @@ Men ingen teknisk detalj utelämnas; den förklaras i stället.
    den svarar på, plus underlagen. Relativa länkar till syskonfiler;
    kontrollera att varje mål finns (`ls`).
 10. **Hur granskningen gjordes, och vad den inte kunde belägga** — tre vågor,
-    agentpassen, tjugonio egna stickprov; de påståenden som föll, inklusive
+    agentpassen, trettio egna stickprov; de påståenden som föll, inklusive
     orkestrerarens egna; åtkomstluckorna ur D12.
 11. **Förslag på fortsättning** — en fristående guidad wizard över
     arkitekturen är en möjlig nästa leverans; den FÖRESLÅS här, byggs inte.

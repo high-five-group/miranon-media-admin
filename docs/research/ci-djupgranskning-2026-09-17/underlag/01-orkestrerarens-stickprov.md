@@ -242,6 +242,9 @@ utreda.
   hermetik-självtestet); dedupen slog inte till. Post-merge körde SAMMA
   hermetiska klasser en tredje gång, och därutöver `A11y` och
   `Staging (API + E2E)`.
+- **PRECISERAD I S20 OCH S30:** gäller en ENSAM landning. Vid en grupplandning
+  är `CI [push]` den körning som klassar hela spannet; och dedupen träffar
+  när trädet är oförändrat (32 av 32 sådana fall).
 - **Dom: skärpt.** Det är tre körningar av de hermetiska klasserna på
   identiskt träd, inte två — och med körningen på PR-ytan före kön blir det
   fyra per landad kod-PR. Bara post-merge-körningens a11y- och
@@ -259,6 +262,8 @@ utreda.
   processgrindarna plus `Bredare sårbarhetsgranskning`. Inget testjobb var
   rött. Natten 09-17 (run `35187813487`, mätt vid sessionsstart) tillkom
   `Acceptance (hermetisk) (2)` och `Länkkontroll`.
+- **RÄTTAD I S30:** de två nätterna stämmer, generaliseringen gör det inte —
+  ett produktskyddande jobb var rött 25 av 52 nätter. Läs S30 före domen nedan.
 - **Dom: höll.** Det besvarar den öppna frågan i S7: nätet är inte trasigt,
   det bär FEL LAST. Produktskyddande tester och bokföringsgrindar delar ett
   och samma rött/grönt — så när en äkta testregression väl kom (09-17) föll
@@ -437,6 +442,10 @@ utreda.
      ensam landning fick alla fyra.)
   4. Den efterföljande docs-landningens post-merge-körning är **grön med
      `Verifierande svit på det mergade trädet: skipped`** — i båda stickproven.
+- **RÄTTAD I S30:** mekanismen håller, men den var redan diagnostiserad i
+  tråden `T166` (2026-08-21); hålen är 60, inte 85; och det som uteblev är
+  staging, a11y och städningen — de hermetiska klasserna kördes av
+  `CI [push]`. Läs S30 före domen nedan.
 - **Dom: luckan höll, och mekanismen är nu fastställd — ingen av agenterna
   hade den.** Merge-kön landar flera köade PR:er i EN push till `main`; bara
   toppens commit får en push-händelse, och `post-merge.yml` klassar bara
@@ -757,6 +766,56 @@ utreda.
   (`ci.yml:73`, `:78`) och kommentarer; `ci.yml:2213-2214` bokför själv att
   de *"hade `run_staging` som sin ENDA konsument"*. **Höll** — och det är
   öppet bokfört i koden, inte ett förbiseende. Liten städkandidat.
+
+### S30 — Korsgranskningen rättar orkestreraren på tre punkter (källa: KG1, Opus)
+
+KG1 prövade fyra mekanismer i koden och mot 601 pushar. Tre av dess fynd
+ändrar vad denna logg tidigare sagt; jag har prövat vart och ett.
+
+- **S12 generaliserade från två nätter — föll.** Jag skrev *"nätet är inte
+  trasigt, det bär FEL LAST"* efter att ha läst nätterna 09-15 och 09-16. KG1
+  räknade alla 52: ett PRODUKTSKYDDANDE jobb var rött **25 av 52 nätter**
+  (staging 15, kontraktsvakten 9 — varav sex i rad 08-22→08-27 — a11y 3,
+  acceptance 1). Prövat med `gh api …/actions/runs/<id>/jobs` på två av de
+  utpekade nätterna: natten 2026-08-24 (`32682955266`) var kontraktsvakten
+  röd; natten 2026-08-19 (`32208177054`) var både `Staging (API + E2E)` och
+  `A11y` röda. **KG1 höll.** Rätt bild: nätet bär fel last OCH en äkta
+  produktsignal har legat osedd i bruset ungefär varannan natt. KG1:s
+  skarpaste belägg för priset: `TASK-239` kräver "tre gröna nätter i rad" för
+  acceptance-klassen; den var grön 31 nätter i följd, men kriteriet går inte
+  att läsa av, eftersom nattens samlade utfall var rött alla 32.
+- **S18:s "mekanismen hade ingen" — föll; mekanismen höll.** KG1 bekräftar
+  mekanismen ur koden: `post-merge.yml:228-229` skickar bara `github.sha`
+  till `scripts/classify-post-merge.sh` (läst av mig — stämmer). Men repot
+  HADE redan diagnosen: tråden `T166` (2026-08-21, pausad) säger ordagrant att
+  klassningen *"läser `HEAD^2` — sista PR:en i kö-batchen — inte hela
+  pushen"* (`tasks/threads/README.md:209`, läst av mig). Jag återupptäckte
+  något som stod nedskrivet fyra veckor tidigare; `TASK-365` (High, To Do)
+  bär en annan, delvis falsifierad rotorsak, och de två pekar inte på
+  varandra. Det är i sig ett fynd: **ett högprioriterat kort med fel
+  rotorsak, bredvid en pausad tråd med rätt.**
+- **S18 och S11 skärps i sak:** (a) hålen är **60, inte 85** — bara när
+  toppen är en textändring OCH spannet bär kod uteblir något; (b) det som
+  uteblev är **staging-sviten, a11y och städningen** — de hermetiska
+  klasserna KÖRDES ändå, eftersom `CI [push]` klassar hela det pushade
+  spannet (KG1: 14 av 14). S11:s mening *"`CI [push]`-körningen tillför
+  ingenting alls"* gäller alltså en ensam landning, inte en grupplandning;
+  (c) KG1 mätte exponeringsfönstret: alla 60 hål täcktes av nästa
+  kod-landning, median 0,57 timmar, längsta 33 timmar. KG1:s tal (60, 14 av
+  14, 0,57 h) har jag INTE räknat om — märkningen är KG1:s.
+- **S20 står sig, och får en fälla tillagd.** KG1: dedupen träffade 32 av 32
+  gånger där den KAN göra nytta (samma träd, kodspann) — 5,3 % av pusharna;
+  mitt "3 av 20 kod-landningar" är samma sak sedd från andra hållet. "Riv
+  inte" är gemensam dom. Fällan jag missade: den enklare frågan får aldrig
+  vara *"har SHA:n en grön körning?"* — på de 60 hålen är kö-körningen grön
+  med sviten HOPPAD. Villkoret måste vara *"sviten körde och var grön"*, och
+  ändringen får inte göras före lagningen av post-merge-klassningen.
+- **En incident i granskningens egen drift, orsaken fastställd:** KG1
+  rapporterade att dess lista över push-körningar (1 000 poster) skrevs över
+  på disk mitt i passet. Det var orkestreraren: min fil `ci-push-runs.json`
+  (40 poster, skriven 11:07Z) fick samma namn i den delade scratch-katalogen.
+  KG1 upptäckte det via en självmotsägelse i en härledd siffra och mätte om.
+  Orkestrerarens scratch-filer bär från och med nu prefixet `ork-`.
 
 ## Motsägelser mellan agenter
 
