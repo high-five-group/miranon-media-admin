@@ -5,7 +5,7 @@ review_by: 2026-12-17
 status: draft
 ---
 
-# CI- och grindvaktsarkitekturens ändringslogg
+# Leverabel 4 av 12 — Ändringslogg för CI- och grindvaktsarkitekturen
 
 > **Proveniens:** skrivet av en `research-pass`-agent (modell: se
 > slutrapport till orkestreraren) för Session 126, 2026-09-17, som Jobb 1
@@ -40,10 +40,15 @@ samma sjuveckorsperiod, i vissa fall tre–fyra gånger. Samtidigt landade
 2026-09-04 ett beslut (ADR-131, Accepted men **ännu inte verkställt**) att
 riva hela backlog-stängningsgrinden och flytta arbetsspåret till GitHub
 Issues — vilket antyder att en del av dagens komplexitet redan är dömd,
-inte bara växande. Ungefär **en av fem landade PR:er** (506 av 2 251,
-22,5 procent) rörde CI-ytan under de sju veckor jag undersökt i detalj
-(2026-07-20 → 2026-09-08), en andel som legat stabilt mellan cirka 15 och
-30 procent varje vecka utan tydlig upp- eller nedåtgående trend. **Dom:**
+inte bara växande. Ungefär **en av fem landningar på `main`** (506 av
+2 251, 22,5 procent) rörde CI-ytan under de sju veckor jag undersökt i
+detalj (2026-07-20 → 2026-09-08), en andel som legat stabilt mellan cirka
+15 och 30 procent varje vecka utan tydlig upp- eller nedåtgående trend.
+(Rättat efter orkestrerarens stickprov S27: 2 251 räknar landningar på
+`main`s förstaförälderkedja, inte antalet PR:er — omkring 130 av dem är
+direktcommits från tiden före PR-flödet, `ADR-076`. Kvoten 22,5 % rörs inte
+av distinktionen. Det separata PR-antalet är omkring 2 200, varav omkring
+2 100 landade.) **Dom:**
 arkitekturen är omfattande, i stort fungerande och tydligt dokumenterad
 (varje ändring bär sitt "varför" i commit-meddelande, ADR eller
 sessionsdok) — men den bär flera svåra, upprepade felklasser som ännu

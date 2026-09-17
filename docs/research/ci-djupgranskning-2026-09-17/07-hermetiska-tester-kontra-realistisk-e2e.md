@@ -5,7 +5,7 @@ review_by: 2026-12-17
 status: draft
 ---
 
-# J7 — Hermetiska tester kontra realistiska E2E-flöden: hur arbetar vi faktiskt?
+# Leverabel 8 av 12 — Hermetiska tester kontra realistiska E2E-flöden
 
 > **Proveniens.** Skrivet av en `research-pass`-agent (modell: se § Rapport i
 > orkestrerarens slutsammanställning) som ett av flera parallella jobb i

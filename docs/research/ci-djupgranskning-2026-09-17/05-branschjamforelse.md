@@ -5,7 +5,7 @@ review_by: 2026-12-17
 status: draft
 ---
 
-# Hur branschledande är vi, dimension för dimension (S126, leverabel 6)
+# Leverabel 6 av 12 — Branschjämförelse: hur branschledande är vi, dimension för dimension
 
 > **Proveniens:** Jobb 4b i Session 126:s CI-djupgranskning, utfört 2026-09-17
 > av en analysagent enligt `underlag/00-agentkontrakt.md`, i worktreen
@@ -47,13 +47,20 @@ AI-assisterad utveckling — och vi bevisar att våra isolerade tester faktiskt
 Utlastningen är en annan historia. Efter att en ändring släppts igenom
 porten finns två skyddsnät: en kontroll direkt efter ihopslagningen och en
 fullständig körning varje natt. Nattnätet har varit rött **51 av 52
-nätter** sedan slutet av juli, av orsaker som nästan aldrig är fel i
-programmet Lotta använder, och **21 larm står obesvarade**. Kontrollen
-direkt efter ihopslagningen hoppas över för ungefär var åttonde landning
-(85 av 686 mätta), av en mekanisk orsak som först fastställdes i denna
-granskning. Och ingenting alls kontrollerar att en godkänd ändring
-verkligen når fram till användaren — det upptäcktes en gång efter tjugo
-timmar, av en människa.
+nätter** sedan slutet av juli, och **21 larm står obesvarade**. **Rättat
+efter orkestrerarens stickprov S30 (KG1):** orsaken är INTE "nästan aldrig
+fel i programmet Lotta använder" — över alla 52 nätter var ETT
+produktskyddande jobb rött 25 gånger (staging 15, kontraktsvakten 9, a11y
+3, acceptance 1). Nätet bär både fel last OCH en äkta produktsignal som
+har legat gömd i bruset ungefär varannan natt. Kontrollen direkt efter
+ihopslagningen hoppas över för ungefär var åttonde landning (85 av 686
+mätta), av en mekanisk orsak som först fastställdes i denna granskning —
+**skärpt i S30:** de verkliga hålen är 60 (textändring i toppen OCH kod i
+spannet), och det som uteblir där är staging, a11y och städning; de
+hermetiska testklasserna körs ändå, via `push`-ytans körning som klassar
+hela det pushade spannet. Och ingenting alls kontrollerar att en godkänd
+ändring verkligen når fram till användaren — det upptäcktes en gång efter
+tjugo timmar, av en människa.
 
 Branschen har ett namn på det som saknas. Google, Chromium och Kubernetes
 löser det med en utsedd person, en "sheriff" eller "build cop", vars enda
@@ -251,8 +258,10 @@ i grafen; sökvägsbaserad klassning ger samma nytta utan verktyget
 | Ändrade filer | 5 | 18 | 52 |
 | Rader ändrade | 214 | 1 616 | 9 762 |
 
-Takten är ~29 sammanslagna PR:er per dag i mätfönstret, och ~2 496 PR:er på
-fyra månader. Bärande princip: *"commit är gratis, push kostar"*
+Takten är ~29 sammanslagna PR:er per dag i mätfönstret, och omkring 2 200
+PR:er, varav omkring 2 100 landade, på fyra månader (rättat efter
+orkestrerarens stickprov S27 — inte "~2 496"). Bärande princip: *"commit är
+gratis, push kostar"*
 (`ADR-097`), och den är inte bara prosa — `scripts/deny-arbetsform-push.sh`
 blockerar fysiskt `git push` medan ett uttryckligt "under arbete"-läge är
 aktivt, mätt verksamt i två sessioner (`underlag/j3-push-kadens.md` § 4).
@@ -399,9 +408,11 @@ den och `shellcheck`-steget listar den inte (F5 scenario S31, F7).
 `quotepath`-fixen (som en gång orsakade en tyst hoppad dokumentationsgrind på
 en äkta dokumentationsändring) står på fyra ställen och **ingen grind kräver
 att den finns kvar** (F3). Och dedupen: 70 % av de sammanslagna träden
-skiljer sig från PR-huvudets, den observerades träffa **noll** gånger i
-fönstret, och dess skrivna motivering vilar på ett `strict`-krav som togs
-bort 2026-08-05 (F7c).
+skiljer sig från PR-huvudets, och dess skrivna motivering vilar på ett
+`strict`-krav som togs bort 2026-08-05 (F7c). Orkestrerarens egen mätning
+(stickprov S20, ett fönster på 40 `push`-körningar) fann att dedupen träffar
+3 av 20 kod-landningar (15 %) — sällan, inte aldrig; F7c:s "noll gånger i
+fönstret" var ett annat, mindre fönster och rättas här.
 
 **Vad branschen gör.** Google: *"The primary mechanism for determining which
 tests need to be run is an analysis of the downstream dependency graph"*, och
@@ -438,11 +449,13 @@ med skälet utskrivet — *"klassas ärligt D3 tills en framtida
 testgrafs-design"* — är precis motsatsen till en maskin som motiverar sig
 själv.
 
-**Vad som proportionerligt bör förbättras.** Ett: **riv dedupen eller byt
-dess fråga.** Den bär full komplexitet och levererar noll observerade
-träffar; den bättre signalen finns redan, eftersom varje kö-landning ger två
+**Vad som proportionerligt bör förbättras.** Ett: **byt dedupens fråga**
+(rättat efter orkestrerarens stickprov S20 — den träffar 3 av 20
+kod-landningar, inte noll). Den bär full komplexitet för en träffkvot på 15
+%; den bättre signalen finns redan, eftersom varje kö-landning ger två
 körningar på exakt samma commit (S11) — fråga "har denna SHA redan en grön
-körning?" i stället för den svagare frågan om PR-huvudets träd. Två: **vakta
+körning?" i stället för den svagare frågan om PR-huvudets träd. Säkerheten i
+den enklare frågan är inte prövad än (KG1). Två: **vakta
 `quotepath`** med en rad i paritetsgrinden — en lagning utan vakt återkommer
 tyst. Tre: ta bort de två döda utdata (`ui_low_risk`, `acceptance_local`),
 som beräknas vid varje körning och styr ingenting (F4).
@@ -575,22 +588,34 @@ varje post för sig (`ALLGREEN`).
 
 Två mätta problem.
 
-**Samma träd testas fyra gånger per landad kod-PR.** På commit `01c33c145`
-körde `CI [merge_group]` 15:00:46→15:14:00, `CI [push]` 15:14:27→15:26:24 och
-`Post-merge [push]` 15:14:27→15:34:15 — plus körningen på PR-ytan före kön.
-Push-körningen körde exakt samma jobb som kö-körningen; **den tillför
-ingenting alls**. Bara post-merge-körningens a11y- och staging-jobb tillför
-ny information efter kön (S11, skärpt av orkestreraren från J8.5:s "två
-gånger" till "tre, plus PR-ytan").
+**Samma träd testas fyra gånger per landad, ENSAM kod-PR.** På commit
+`01c33c145` körde `CI [merge_group]` 15:00:46→15:14:00, `CI [push]`
+15:14:27→15:26:24 och `Post-merge [push]` 15:14:27→15:34:15 — plus
+körningen på PR-ytan före kön. Push-körningen körde exakt samma jobb som
+kö-körningen; **den tillför ingenting alls, i DETTA fall.** Bara
+post-merge-körningens a11y- och staging-jobb tillför ny information efter
+kön (S11, skärpt av orkestreraren från J8.5:s "två gånger" till "tre, plus
+PR-ytan"). **Preciserat i S30 (KG1):** detta gäller en ENSAM landning. Vid
+en GRUPPLANDNING (flera köade PR:er i samma push) är `push`-ytans körning
+inte overksam — det är just den som klassar och kör mot hela det pushade
+spannet, vilket är anledningen till att gruppfallet har färre verkliga
+täckningshål än en naiv läsning av 85/686 antyder (se nedan).
 
-**Var åttonde landning får ingen efterkontroll.** 85 av 686 landningar
-(12,4 %) saknar post-merge-körning, och mekanismen fastställdes först i denna
-granskning: merge-kön landar flera köade PR:er i EN push till `main`, bara
-toppens commit får en push-händelse, och `post-merge.yml` klassar bara
-toppen. Är toppen en dokumentations-PR hoppas sviten, körningen blir grön —
-och kod-PR:en under den får **aldrig** den kontroll som bara finns efter
-merge (S18). 55 av de saknade är kod-PR:er vars nästa landning var en
-dokumentations-PR.
+**Var åttonde landning saknar en egen post-merge-körning — men de VERKLIGA
+hålen är färre.** 85 av 686 landningar (12,4 %) saknar post-merge-körning,
+och mekanismen fastställdes först i denna granskning: merge-kön landar
+flera köade PR:er i EN push till `main`, bara toppens commit får en
+push-händelse, och `post-merge.yml` klassar bara toppen. Är toppen en
+dokumentations-PR hoppas sviten, körningen blir grön — och kod-PR:en under
+den får **aldrig** den kontroll som bara finns efter merge (S18). 55 av de
+saknade är kod-PR:er vars nästa landning var en dokumentations-PR.
+**Skärpt i S30 (KG1):** av dessa 85 är **60 de verkliga hålen** — bara när
+toppen är en textändring OCH spannet under faktiskt bär kod. Vad som
+uteblir där är staging-sviten, a11y och städningen; de hermetiska
+testklasserna KÖRS ändå, eftersom `push`-ytans körning (ovan) klassar och
+kör mot hela det pushade spannet, inte bara toppen. Exponeringsfönstret för
+dessa 60 är kort — median 0,57 timmar, längst 33 timmar — innan nästa
+landning täcker dem.
 
 **Vad branschen gör.** Google delar i tre tidpunkter, inte två: presubmit,
 postsubmit, och en tredje vid staging-utrullning. Kubernetes namnger samma tre
@@ -616,11 +641,15 @@ evidensdrivna avvägning `j4a` beskriver som god praxis.
 
 *Nätet:* Googles princip förutsätter att postsubmit-rött **åtgärdas**, och
 Chromiums CQ-dokumentation förutsätter en sheriff. Vi har principen men inte
-loopen (§ 8). Och täckningsluckan betyder att för 55 kod-landningar på fyra
-veckor har ingen verklig kedja prövats med ett läsbart utfall.
+loopen (§ 8). Och täckningsluckan betyder att för (skärpt i S30: 60,
+tidigare skrivet 55) kod-landningar har ingen verklig kedja för staging och
+a11y prövats med ett läsbart utfall — det hermetiska svaret KÖRDES ändå, via
+`push`-ytans körning.
 
-Den fjärde körningen (`CI [push]`) är ren kostnad utan motsvarighet i
-branschmaterialet.
+Den fjärde körningen (`CI [push]`) är ren kostnad **för en ENSAM landning**,
+utan motsvarighet i branschmaterialet. **Preciserat i S30 (KG1):** vid en
+grupplandning är den inte kostnad utan täckning — den enda körning som
+klassar och prövar hela det pushade spannet.
 
 **Vår styrka här.** Att kö-formen är rätt vald och rätt konfigurerad
 (`ALLGREEN`, tom bypass-lista), och att avvägningen bakom
@@ -634,6 +663,13 @@ Det är en liten, reversibel ändring som stänger en lucka på 12,4 %
 (orkestrerarens egen riktning i S18 — ej beslutad). Två: **ta bort
 `CI [push]`-körningen** eller reducera den till dedup-frågan på SHA. Fyra
 körningar av samma hermetiska svit per landning har ingen branschgrund.
+**Tillägg efter S30 (KG1), samma fälla D9/åtgärdsplanen ska undvika:** denna
+ändring får INTE göras före lagningen av post-merge-klassningen (ett) —
+annars förloras just den täckning `push`-ytan i dag ger vid en
+grupplandning. Och villkoret för att reducera till en dedup-fråga får
+ALDRIG vara "har denna SHA en grön körning?" — på de 60 verkliga hålen ÄR
+kö-körningen grön, med sviten HOPPAD. Villkoret måste vara "sviten körde OCH
+var grön".
 
 **Kopiera INTE:** spekulativ parallell kö-mekanik utöver GitHubs egen
 (bors/TAP/SubmitQueue), eller Chromiums curerade plattformsmatris. Båda
@@ -656,12 +692,17 @@ sedan 2026-07-28, varav 51 röda och 1 grön. Senaste gröna natten:
 2026-08-28 (S7 — skärpt från J1b:s "30 av 30", som var mätfönstrets tak, inte
 sanningens).
 
-Rödheten bärs **inte** av testsviten. Nätterna 09-15 och 09-16 var röda på
-exakt fyra jobb: de tre processgrindarna plus den bredare
-sårbarhetsgranskningen. Inget testjobb var rött (S12). Nätet är alltså inte
-trasigt — det **bär fel last**. Och när en äkta testregression väl kom
-(natten 09-17) föll den in i ett larm som varit rött i femtio dygn av andra
-skäl.
+Nätterna 09-15 och 09-16 var röda på exakt fyra jobb: de tre
+processgrindarna plus den bredare sårbarhetsgranskningen. Inget testjobb var
+rött just de nätterna (S12). **Skärpt i S30 (KG1), inte mildrat:** att
+generalisera från dessa två nätter till "nätet bär fel last, inte
+produktfel" höll inte. Räknat över alla 52 nätter var ETT
+PRODUKTSKYDDANDE jobb rött **25 gånger** (staging 15, kontraktsvakten 9 —
+varav sex i rad 08-22→08-27 — a11y 3, acceptance 1). Rätt bild: nätet bär
+fel last OCH en äkta produktsignal har legat gömd i bruset ungefär varannan
+natt — det är inte antingen eller. Och när ytterligare en äkta
+testregression kom (natten 09-17) föll den in i ett larm som varit rött i
+femtio dygn av andra skäl.
 
 En strukturell orsak till ärendehögen: `alarm`-jobbet saknar
 dedup-kontroll. `links-arende` har den och `post-merge.yml`:s larm har den
@@ -717,7 +758,9 @@ utskriven av upphovspersonen (den ärver samma cron-beroende den ska täcka),
    rött betyder en sak. ChromiumOS namnger den legitima formen: markera ett
    jobb som *informational* i stället för att låta det färga helheten. I dag
    delar "fungerar appen?" och "är backlog-korten avbockade?" ett och samma
-   rött.
+   rött. **Skärpt i S30 (KG1):** detta är inte längre bara en
+   signal-hygien-fråga. Ett produktskyddande jobb var rött 25 av 52 nätter —
+   utan en egen kanal hade den signalen fortsatt drunkna i bruset.
 3. **Verkställ `ADR-131`:s rivning eller lyft grinden ur rött/grönt under
    tiden.** Ett Accepted-beslut utan brytdag är en stående kostnad:
    maskineriet underhålls tills någon river det (S15).
@@ -1183,7 +1226,8 @@ Proffsen som "kör direkt-PR långt in i projekten" har en sak vi inte har: en
 människa som läser varje ändring innan den landar. PostHog begär alltid en
 granskning. Trunk-based-sajten förutsätter att den som pushar har sett bygget
 passera på sin egen skärm. Hos oss finns ingen människa i den positionen —
-~2 500 PR:er på fyra månader, utan mänskligt godkännande per PR. **Grinden
+omkring 2 200 PR:er, varav omkring 2 100 landade, på fyra månader (rättat
+efter orkestrerarens stickprov S27), utan mänskligt godkännande per PR. **Grinden
 ÄR granskaren.** Frågan är alltså inte "kan vi ha lika lite grind som de?"
 utan "vad ersätter det de har som vi saknar?".
 
@@ -1292,9 +1336,9 @@ Fyra poster, alla mätta:
 | Post | Kostnad | Varför den sitter fel |
 |---|---|---|
 | Hermetik-självtestet i kritiska vägen | 13 min 41 s av 14 min 4 s | Skyddar mot att sviten tappar sin isolering — en långsam förändring, inte en risk i diffen |
-| Fjärde körningen av samma träd (`CI [push]`) | en full svit per landning | Tillför ingen ny information alls (S11) |
+| Fjärde körningen av samma träd (`CI [push]`) | en full svit per landning | Tillför ingen ny information alls **vid en ensam landning** (S11); vid en grupplandning är det just den som klassar hela spannet (rättat efter orkestrerarens stickprov S30) |
 | `audit` på varje dokumentändring | ~30 s × varje körning | Kör även när beroendeträdet inte rörts |
-| Dedupen | full komplexitet | Noll observerade träffar; den bättre signalen finns redan |
+| Dedupen | full komplexitet för en låg träffkvot | Mätt 3 av 20 kod-landningar (15 %), inte noll (rättat efter orkestrerarens stickprov S20). KG1 mätte samma sak från andra hållet: 32 av 32 träffar där dedupen KAN göra nytta (samma träd, kodspann; 5,3 % av 601 pushar) — den bättre signalen (SHA mot kön) finns redan |
 
 **Detta är nästan hela den upplevda långsamheten på PR-ytan** — och inget av
 det skyddar produkten bättre där det sitter än det skulle göra efter merge.
@@ -1320,9 +1364,15 @@ som faktiskt går förlorad.
   precis vid den gräns där PR-flöde med maskinell verifiering blir den
   produktiva formen, och samtliga agent-källor säger att grinden bär mer när
   människan granskar mindre.
-- **B byggdes rätt men växte in i fel plats.** Självtestet var en god idé som
-  hamnade i den dyraste positionen; de andra tre är rester av beslut vars
-  förutsättningar ändrats (kön kom, `strict` togs bort).
+- **B byggdes rätt men växte in i fel plats — och det är inte obemärkt.**
+  Självtestet var en god idé som hamnade i den dyraste positionen; de andra
+  tre är rester av beslut vars förutsättningar ändrats (kön kom, `strict`
+  togs bort). Tillägg efter orkestrerarens stickprov S25: obalansen är känd
+  sedan 2026-09-02 och kortad med hög prioritet (`TASK-366`) — samma dag som
+  fyra avbrott, medan `ci-suite.yml:526-535` bokför att taket i stället
+  höjdes 12→20 minuter dagen efter. Femton dagar senare (fram till denna
+  granskning) är kortet fortfarande To Do: kort med hög prioritet är alltså
+  inte samma sak som en åtgärdad orsak.
 - **C byggdes för tidigt, och fortsätter växa av egen kraft.** Det löser
   problem arbetsformen själv skapat, och det växer med antalet sessioner —
   inte med produktens ålder eller användarantal.
@@ -1345,8 +1395,8 @@ gissar.
 | 4. Testurval | **före** på formen · **efter** på villkoret | fem fail-safe-lager, 46 scenarier utan träff; nätet under bär ingen signal | Riv eller omformulera dedupen; vakta `quotepath` |
 | 5. Hermetiska tester | **före** i mekanism · **överbyggt** i kostnad | tvåsidigt bevis utan publicerad motsvarighet; 91 % av väntetiden | Flytta självtestet; ge klassen en gräns |
 | 6. Realistisk E2E | **efter branschen** | två genuina flöden av 34 filer; kontraktsvakten bevakar 7 av 18 | Kurera 5–15 flöden; stäng eller rätta kontraktsvakten |
-| 7. Före/efter merge | **grinden i nivå** · **nätet långt efter** | 85 av 686 landningar utan efterkontroll (12,4 %); fyra körningar av samma träd | Klassa hela pushade spannet; ta bort `CI [push]` |
-| 8. Nattliga kontroller | **efter** — mer mekanik, mindre signal | 51 röda av 52 nätter; 21 öppna larm; nattlarmet saknar dedup | Stående tråd; skilj process från produkt; verkställ `ADR-131` |
+| 7. Före/efter merge | **grinden i nivå** · **nätet långt efter** | 85 av 686 landningar utan efterkontroll (12,4 %; **60 verkliga hål** — S30/KG1); fyra körningar av samma träd (ren kostnad bara vid en ENSAM landning — S30) | Klassa hela pushade spannet FÖRST; reducera `CI [push]` bara med villkoret "sviten körde OCH var grön" (S30) |
+| 8. Nattliga kontroller | **efter** — mer mekanik, mindre signal | 51 röda av 52 nätter; 21 öppna larm; nattlarmet saknar dedup; **ETT produktjobb rött 25/52 nätter, inte bara processgrindar (S30/KG1)** | Stående tråd; skilj process från produkt; verkställ `ADR-131` |
 | 9. Observability/rollback | **efter** — störst avstånd, billigast att stänga | `TASK-199` öppen sedan 2026-08-11; rollback aldrig körd | `repository_dispatch` från Vercel; öva rollback en gång |
 | 10. Flakighet | **före branschen** för vår skala | 0 bevisat flakiga av 100; interfolierad A/B-rigg; falsifierad motivering utskriven | Läs "N flaky" maskinellt; stäng `TASK-418` |
 | 11. Underhållskostnad | **överbyggt** på processlagret · motiverat på merge-lagret | 0,95:1; 7,5 ändringar/vecka i `ci.yml`; ingen avtagande trend | ADR-karta; flytta CI-avsnittet ur alltid-laddad fil; ställ summfrågan |
@@ -1424,7 +1474,7 @@ Högst sju, i fallande ordning av värde per krona.
 | `workflow_call` · `.github`-specialrepo · organisationstvingande workflow-regel | GitHub-plattformen | Samtliga förutsätter fler än ett konsumerande repo; de bär löpande synk-underhåll och noll värde vid ett (`j4a` § 12) |
 | DHH:s faktiska åtgärd: flytta CI till den egna maskinen | 37signals | **Mätt fel för oss.** 910,7 s lokalt mot 401,0 s i CI, belastning 269 på 16 kärnor av lintning ensam, och molnminuterna är gratis (S14). Hans PRINCIP håller; hans ÅTGÄRD vänder tecken vid en agentflotta |
 | Fler automatiska grindar som svar på denna granskning | — | Av sju historiskt funna hål hittades **ett** av en maskin; två av incidenter, fyra av manuell granskning (`j8-5` F10). Det som hittar hål är genomlysningar, inte vakter |
-| "Proffsen kör direkt-PR, alltså kan vi grinda lättare" | allmän iakttagelse | Premissen saknar en del: de har en människa som läser varje ändring. Vi har ~2 500 PR:er på fyra månader utan mänskligt godkännande per PR. **Ingen** publicerad källa säger att man ska grinda lättare för att agenter skriver koden — Anthropic, GitHub och Meta säger alla motsatsen (§ 14.2) |
+| "Proffsen kör direkt-PR, alltså kan vi grinda lättare" | allmän iakttagelse | Premissen saknar en del: de har en människa som läser varje ändring. Vi har omkring 2 200 PR:er, varav omkring 2 100 landade (rättat efter orkestrerarens stickprov S27 — inte "~2 500"), på fyra månader utan mänskligt godkännande per PR. **Ingen** publicerad källa säger att man ska grinda lättare för att agenter skriver koden — Anthropic, GitHub och Meta säger alla motsatsen (§ 14.2) |
 
 ## Där precedent-rymden var för tunn för en ärlig jämförelse
 

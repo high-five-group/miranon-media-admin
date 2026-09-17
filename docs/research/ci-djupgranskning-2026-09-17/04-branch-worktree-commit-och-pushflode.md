@@ -5,7 +5,7 @@ review_by: 2026-12-17
 status: draft
 ---
 
-# Branch-, worktree-, commit- och pushflöde
+# Leverabel 5 av 12 — Branch-, worktree-, commit- och pushflöde
 
 > **Proveniens:** grundstommen (flödet, steg 1–12, isolering, revert) är ett
 > avgränsat research-pass, Jobb 2 av CI-djupgranskningen (Session 126,

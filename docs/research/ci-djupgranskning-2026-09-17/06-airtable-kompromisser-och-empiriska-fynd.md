@@ -5,7 +5,7 @@ review_by: 2026-12-17
 status: draft
 ---
 
-# Airtables kompromisser i vår arkitektur — kompromissregister och empiriska fynd
+# Leverabel 7 av 12 — Airtables kompromisser: kompromissregister och empiriska fynd
 
 > **Proveniens.** Skrivet av research-passet för Jobb 5 i CI-djupgranskningen
 > (Session 126), 2026-09-17. Modell: Claude Sonnet 5 (exakt modell-ID

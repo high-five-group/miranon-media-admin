@@ -5,7 +5,7 @@ review_by: 2026-12-17
 status: draft
 ---
 
-# D3 — Den tekniska arkitekturkartan: beroenden och dataflöden
+# Leverabel 3 av 12 — Teknisk arkitekturkarta: beroenden och dataflöden
 
 > **Proveniens:** skriven av en `research-pass`-agent (modell: se § Rapport till
 > orkestreraren) i CI-djupgranskningens våg 2, Session 126, 2026-09-17, i
@@ -39,7 +39,12 @@ strukturella sanningar gör att löftet ändå läcker:
    dokumentationsändring hoppas hela efterkontrollen (staging + tillgänglighet)
    — och den kodändring som låg UNDER den får aldrig den kontroll som bara
    finns efter landning. Mätt: 85 av 686 landningar (12,4 %) fick aldrig en
-   egen efterkontroll (§ 7, hål 1).
+   egen efterkontroll (§ 7, hål 1). **Skärpt efter orkestrerarens stickprov
+   S30 (KG1):** de VERKLIGA hålen är 60, inte 85 — bara de landningar där
+   toppen är en textändring OCH spannet under bär kod. Det som faktiskt
+   uteblir är staging-sviten, a11y och städningen; de hermetiska testklasserna
+   kördes ändå, eftersom `CI [push]` klassar och kör mot HELA det pushade
+   spannet, inte bara toppen.
 2. **Nattens kontrollnät — den enda regelbundna, fullständiga kontrollen — har
    varit rött i praktiken taget varje natt sedan slutet av juli.** Larmet för
    det saknar dessutom en spärr mot att skapa ett NYTT ärende varje natt, så
@@ -164,7 +169,7 @@ flowchart TD
     J --> K["ci.yml, kö-ytan\n(merge_group-event)\n+ review-backstopp AKTIV"]
     K -->|"RÖTT, valfritt jobb ELLER\nbackstopp saknar giltig sektion"| KX(["PR SPARKAS UR KÖN.\nArmeringen KONSUMERAS — STOPP\n(kräver nytt gh pr merge --auto)"])
     K -->|"GRÖNT"| L["Merge till main\n(merge-commit, aldrig squash/rebase)"]
-    L --> M1["CI [push]\nci.yml triggas en TREDJE gång\n(dedup kan hoppa sviten, ~30% träff)"]
+    L --> M1["CI [push]\nci.yml triggas en TREDJE gång\n(dedup mätt: 3 av 20 kod-\nlandningar, rättat S20)"]
     L --> M2["Post-merge.yml\nfull svit: staging + a11y\nEJ en required check"]
     L --> M3["Vercel git-integration\nHELT parallellt, ingen GitHub Actions"]
     M1 -->|"RÖTT"| N1(["Ingen mekanism läser detta —\nci.yml:push är inte required,\nmergen har redan skett"])
@@ -187,7 +192,7 @@ information som diagrammet, som lista för den som vill slå upp det snabbt):
 | `ci.yml` på PR-ytan, valfritt av 7 jobb rött | **STOPP** | Required check `CI Passed or Skipped` |
 | `review-agent` bedömer risken HÖG | **STOPP** (eskalering) | `ADR-105` beslut 5, prosa-åtagande i orkestrerarrollen |
 | `ci.yml` på kö-ytan, valfritt jobb rött ELLER `review-backstopp` saknar sektion | **STOPP** | Samma required check, kön sparkar ut posten |
-| `ci.yml` triggas en tredje gång på `push`-eventet | Varken — resultatet är overksamt | Mergen har redan skett; detta är informativt brus |
+| `ci.yml` triggas en tredje gång på `push`-eventet | Varken — overksamt VID EN ENSAM LANDNING | Mergen har redan skett; informativt brus. **Vid en grupplandning (S30/KG1) är den INTE overksam** — det är just den körningen som klassar och kör mot hela det pushade spannet |
 | `post-merge.yml` rött | **LARM** | GitHub-ärende, etikett `ci-post-merge`, ingen spärr |
 | Vercel-deployen misslyckas eller blir stale | **Ingen signal alls** | Ingen mekanism finns (`TASK-199`) |
 | `nightly.yml` rött | **LARM** | GitHub-ärende, etikett `ci-natt`, INGEN dedup |
@@ -364,22 +369,35 @@ efterkontrollen), post-merge (en helt annan workflow-fil,
 kolumner i stället för att tvinga in `push`-ytan i post-merge-kolumnen: de
 delar utlösande händelse (`push` mot `main`) men är TVÅ MASKINELLT SKILDA
 mekanismer (en re-körning av `ci.yml`, en separat fil), och S11 i
-stickprovsloggen visar att just den distinktionen är avgörande — `push`-ytans
-körning tillför i praktiken NOLL ny information medan post-merge tillför
-staging och tillgänglighet. Detta är alltså en avsiktlig avvikelse från
-rubrikens ordval, registrerad öppet snarare än tyst rättad.
+stickprovsloggen visar att just den distinktionen är avgörande — vid en
+ENSAM landning tillför `push`-ytans körning i praktiken NOLL ny information,
+medan post-merge tillför staging och tillgänglighet. **Preciserat efter
+orkestrerarens stickprov S30 (KG1):** vid en GRUPPLANDNING (flera PR:er i
+samma push) är `push`-ytans körning INTE overksam — det är just den
+körningen som klassar och kör mot HELA det pushade spannet, och därför
+kördes de hermetiska klasserna även för kod som landade under en text-topp
+(sett live 2026-09-17, stickprov S31). Detta är alltså en avsiktlig
+avvikelse från rubrikens ordval, registrerad öppet snarare än tyst rättad.
 
 | Jobb / kontroll | PR-ytan | Kö-ytan (`merge_group`) | Push-ytan (`ci.yml`, tredje gången) | Post-merge (`post-merge.yml`) | Natten (`nightly.yml`) |
 |---|---|---|---|---|---|
 | `changed` (klassning) | ✔ kör | ✔ kör | ✔ kör (+ dedup-försök) | *(egen `klassning`, ärver — räknar aldrig om)* | ✗ finns ej — kör alltid allt |
 | `lint` (~30 interna grindvakter) | ✔ kör | ✔ kör | ✔ kör | ✗ finns ej | ✗ finns ej |
 | `audit` (npm-sårbarheter, `high`-tröskel) | ✔ kör | ✔ kör | ✔ kör | ✗ finns ej | `nightly-audit`, EGET jobb, `moderate`-tröskel (bredare) |
-| `test-fast`, `acceptance`, `acceptance-sjalvtest`, `webblasarbeteende` (hermetiska klasser) | ✔ kör (om ej D0/dedup) | ✔ kör (om ej D0) | ✔/**skippad** (dedup, ~30 % träff) | ✔ kör (om ej `docs_only`) | ✔ kör alltid |
+| `test-fast`, `acceptance`, `acceptance-sjalvtest`, `webblasarbeteende` (hermetiska klasser) | ✔ kör (om ej D0/dedup) | ✔ kör (om ej D0) | ✔/**skippad** (dedup mätt: 3 av 20 kod-landningar, ej ~30 % — rättat efter orkestrerarens stickprov S20) | ✔ kör (om ej `docs_only`) | ✔ kör alltid |
 | `purge`, `a11y`, `test-staging`, `purge-efter` (skarp staging + tillgänglighet) | ✗ **ALDRIG** (`run_staging:false`/`run_a11y:false` tvingat) | ✗ **ALDRIG** (samma tvingning) | ✗ **ALDRIG** (samma tvingning) | ✔ kör (full default, om ej `docs_only`) | ✔ kör alltid |
 | `docs` (intern länkkontroll, offline) | villkorat (`docs_changed`) | villkorat | villkorat | ✗ finns ej | `nightly-links`, ANNAT jobb, extern+intern, kallt |
 | `review-backstopp` (granskningsutlåtande krävs) | ✗ alltid `skipped` (kräver `merge_group`) | ✔ AKTIV (om ej D0) | ✗ alltid `skipped` | ✗ finns ej | ✗ finns ej |
 | `ci-passed` (aggregator, required check) | ✔ | ✔ | ✔ (men overksam — mergen redan skett) | *(motsvaras av `exponeringsfonster`+`larm`, ej en required check)* | *(motsvaras av `alarm`, ej en required check)* |
 | Processgrindar (backlog-stängning, pausade sessioner, sessionsdok-fönster, obesvarade larm) | ✗ | ✗ | ✗ | ✗ | ✔ **bara här** |
+
+**Om dedup-talet ovan** (rättat efter orkestrerarens stickprov S20): "~30 %"
+var J8.5:s TEORETISKA tak, räknat ur git-historiken som andelen merge-commits
+vars träd är identiskt med ett tidigare testat träd (568 av 1 887
+merge-commits) — inte en observerad träffkvot. Orkestreraren mätte sedan
+loggraden direkt i ett fönster på 40 `push`-körningar: 20 var kod-landningar,
+och av dem gav 3 en verklig "✅ Dedup-TRÄFF" (15 %), 1 körde en reducerad
+svit, 16 körde hela sviten en gång till.
 
 **I klartext:** två rader i denna tabell bär hela uppdragets misstanke om
 "testat för att det går, inte för att det behövs" på huvudet. Den skarpa
@@ -450,14 +468,21 @@ sequenceDiagram
   (dedup) byggdes bara in i `links-arende` och `nightly-watchdog.yml`, inte i
   `nightly.yml`s eget `alarm`-jobb — en strukturell asymmetri utan bokförd
   motivering, till skillnad från varje annat designval i samma filer.
-- **S12 — nattnätets rödhet är i praktiken en PROCESS-signal, inte en
-  PRODUKT-signal.** Två oberoende körningar (2026-09-15, 2026-09-16) var
+- **S12 — de TVÅ undersökta nätterna var en process-signal, men helheten är
+  värre: en äkta produktsignal har legat gömd i bruset ungefär varannan
+  natt (rättat efter orkestrerarens stickprov S30 — KG1 räknade alla 52,
+  S12 generaliserade från två).** Nätterna 2026-09-15 och 2026-09-16 var
   röda på exakt fyra jobb: tre processgrindar (`Backlog-stängning`,
   `Sessionsdok-fönstret`, `Sannings-avstämning: obesvarade-larm`) plus
-  `Bredare sårbarhetsgranskning` — noll testjobb var röda. Den 2026-09-17
-  tillkom en genuin testregression (`Acceptance (hermetisk) (2)`) i samma
-  larm som redan varit rött i femtio dygn av andra skäl — den nya, äkta
-  signalen drunknade i bruset innan den ens hann synas som ny.
+  `Bredare sårbarhetsgranskning` — noll testjobb röda de nätterna. Men över
+  alla 52 nätter var ETT PRODUKTSKYDDANDE jobb rött **25 gånger** (staging
+  15, kontraktsvakten 9 — varav sex i rad 08-22→08-27 — a11y 3, acceptance
+  1). Slutsatsen skärps i stället för att mildras: nätet bär fel last OCH
+  drunknar en äkta signal ungefär varannan natt — det är inte antingen
+  eller. Den 2026-09-17 tillkom ytterligare en genuin testregression
+  (`Acceptance (hermetisk) (2)`) i samma larm som redan varit rött i
+  femtio dygn av andra skäl — den nya, äkta signalen drunknade i bruset
+  innan den ens hann synas som ny.
 
 ### 5. De fyra deployspåren
 
@@ -611,21 +636,21 @@ finns).
 ```mermaid
 flowchart TD
     A["Merge till main"] --> B["CI [push] + Post-merge + Vercel\n(§ 1, tre parallella spår)"]
-    B --> H1(["HÅL 1 — S18: kö-landning i grupp.\nToppens commit avgör klassningen för HELA\ngruppen; en kod-PR under en docs-topp\nfår ALDRIG staging/a11y.\nMätt: 85/686 landningar (12,4%) utan\negen post-merge-körning."])
+    B --> H1(["HÅL 1 — S18/S30: kö-landning i grupp.\nToppens commit avgör klassningen;\nen kod-PR under docs-topp missar\nstaging/a11y (hermetik körs via\nCI push, hela spannet). 85/686 mätta,\n60 verkliga hål (KG1, S30)."])
     B --> H6(["HÅL 6 — S13: Edge Functions (135 filer)\nsaknar deno check/deno lint helt.\nBara 24/135 typkontrolleras, via en\nNode-genväg. ADR-010:s löfte obetalt."])
     B --> H5(["HÅL 5 — S9: Airtable-skrivvägen saknar\nomförsök vid 429. Läsvägen har det.\nIngen dokumenterad orsak funnen."])
     B --> H4(["HÅL 4 — S10: kontraktsvakten bevakar\n7 av 18 mockade Edge Functions.\nEgen kod påstår 'alla sju bevakas' —\nsant när skrivet, falskt genom tillväxt."])
     B --> H7(["HÅL 7 — S16: mailflödet (bekräftelse,\npåminnelse, eventinfo) har NOLL test\ngenom den verkliga kedjan, på någon nivå."])
     H1 --> C["Natten (nightly.yml)"]
-    C --> H2(["HÅL 2 — S7/S12: nattnätet rött\n51/52 nätter. Larmet saknar dedup —\n21 öppna ärenden i följd. Rödheten\ndrivs av PROCESSGRINDAR, inte tester —\nden äkta regressionen 09-17 drunknade."])
+    C --> H2(["HÅL 2 — S7/S12/S30: nattnätet rött\n51/52 nätter. Larmet saknar dedup.\nDe 2 undersökta nätterna: processgrindar.\nMen ETT produktjobb rött 25/52 nätter\n(KG1) — äkta signal gömd i bruset."])
     C --> D["Vercel produktionsdeploy"]
     D --> H3(["HÅL 3 — S6/TASK-199: ingen mekanism\nvet om main faktiskt når produktion.\nMätt: stale ≥20h, upptäckt av en människa."])
 ```
 
 | # | Hålet | Var i kedjan | Evidens |
 |---|---|---|---|
-| 1 | Täckningslucka vid kö-landning i grupp | Post-merge, mellan merge och natt | `underlag/01-orkestrerarens-stickprov.md` S18: 85/686 (12,4 %) landningar utan post-merge-körning i ett fönster; `underlag/j8-4` mätte oberoende 31/230 (13,5 %) i ett annat fönster. Mekanism: `post-merge.yml`s `klassning`-jobb ärver bara TOPPENS commit-klassning i en flerpost-kö-landning. |
-| 2 | Nattnätets överröstade signal | Natten, larmkedjan | S7 (51/52 röda nätter, 21 öppna `ci-natt`), S12 (rödheten är processgrindar + `nightly-audit`, inte testsviten, tills 2026-09-17) |
+| 1 | Täckningslucka vid kö-landning i grupp | Post-merge, mellan merge och natt | `underlag/01-orkestrerarens-stickprov.md` S18: 85/686 (12,4 %) landningar utan post-merge-körning i ett fönster; `underlag/j8-4` mätte oberoende 31/230 (13,5 %) i ett annat fönster. Mekanism: `post-merge.yml`s `klassning`-jobb ärver bara TOPPENS commit-klassning i en flerpost-kö-landning. **Skärpt i S30 (KG1):** de VERKLIGA hålen är 60 (textänd-topp + kod i spannet); det som uteblir är staging, a11y och städning — hermetiken körs redan via `CI [push]`, som klassar hela spannet. |
+| 2 | Nattnätets överröstade signal | Natten, larmkedjan | S7 (51/52 röda nätter, 21 öppna `ci-natt`), S12 (de två undersökta nätterna, 09-15/09-16, var processgrindar + `nightly-audit`, inte testsviten). **Skärpt i S30 (KG1):** över alla 52 nätter var ETT produktskyddande jobb rött 25 gånger (staging 15, kontraktsvakten 9, a11y 3, acceptance 1) — nätet bär fel last OCH en äkta produktsignal har drunknat i bruset ungefär varannan natt. |
 | 3 | Ingen vakt på att `main` når produktion | Efter merge, frontend-spåret | S6: `TASK-199`, öppet sedan 2026-08-11, `High`-prioritet, mätt stale ≥20h |
 | 4 | Elva obundna mockar i kontraktsvakten | Nattens `kontraktsvakt`-jobb | S10: `handlers.ts` registrerar 18 EF-mockar, `kontraktsfall.ts` bevakar 7; egen kommentar påstår "alla sju bevakas" |
 | 5 | Edge Functions utan Deno-kontroll | Kodkvalitet, oberoende av CI-ytan | S13: 24/135 filer typkontrolleras via Node-genväg; `deno check`/`deno lint` inkopplat ingenstans |

@@ -5,7 +5,7 @@ review_by: 2026-12-17
 status: draft
 ---
 
-# CI som återanvändbar, centralt förvaltad djup modul — nuläge, målarkitektur och migrationsplan
+# Leverabel 10 av 12 — CI som återanvändbar, centralt förvaltad djup modul
 
 > **Proveniens:** skrivet av en analysagent i Session 126 (CI-djupgranskningen),
 > 2026-09-17, i worktreen `s126-ci-djupgranskning`. Modell: Claude Opus 5
@@ -51,10 +51,15 @@ till skillnad från CI.
 **3. Vad bör INTE göras?** Inget mallrepo (ett mallrepo gör *fler* kopior,
 och kopiedrift är just det fel som redan är uppmätt här). Inga composite
 actions. Ingen generator. Inget `.github`-specialrepo. Och framför allt:
-**frys ingenting som är trasigt.** Tre delar av maskinen fungerar inte i dag
-— merge-dedupen träffar aldrig, post-merge-kontrollen har en täckningslucka
-på 55 kod-landningar, och nattnätet har varit rött i femtio dygn. Ett kit som
-kapslar in dem sprider felen i stället för att laga dem.
+**frys ingenting som är trasigt.** Tre delar av maskinen fungerar inte som
+avsett i dag — merge-dedupen träffar bara 3 av 20 kod-landningar (15 %, inte
+aldrig — rättat efter orkestrerarens stickprov S20; KG1 mätte 32 av 32 där
+den kan göra nytta, S30), post-merge-kontrollen har en täckningslucka på 60
+kod-landningar (rättat efter S30/KG1 — tidigare "55"; det som uteblir är
+staging, a11y och städning, inte de hermetiska klasserna), och nattnätet har
+varit rött i femtio dygn av BÅDE processgrindar OCH en äkta produktsignal
+gömd i bruset (S30: ett produktjobb rött 25/52 nätter). Ett kit som kapslar
+in dem sprider felen i stället för att laga dem.
 
 **Min bedömning, rakt ut: utlyftet bör vänta.** Ordningen är laga →
 stabilisera → lyft ut, och vi är fortfarande i det första steget. Men
@@ -498,8 +503,8 @@ villkoren i § Fynd 4 (generell, stabil ett kvartal, egen testsvit).
 | `ci.yml` jobbet `docs` | lychee, markdownlint, Vale, Vale-regression | dokumentationsdrift | G | hårdkodade globbar i `check-docs.sh` | Delvis | **CI-kit (senare)** | parametrisera globbarna |
 | `ci.yml` jobbet `ci-passed` | aggregerar allt till EN required check | sex checkar att underhålla i rulesetet | G | `needs`-listan måste hållas komplett | Nej — ändras med jobben | produktrepot | se risk nedan om `needs`-vakten |
 | `ci-suite.yml` | **redan ett `workflow_call`-arbetsflöde** med tre inputs (`run_staging`, `run_a11y`, `acceptance_selection`) | delad svit för tre anropare | G med config | anropas med lokal sökväg; två jobb är produktspecifika | Nej | **CI-kit (senare) — detta är den mest färdiga byggstenen** | inget nu; se § Fynd 8 |
-| `nightly.yml` | nattligt fullsvep + processgrindar + metrics | postsubmit-nät (`ADR-077`) | G + Pr | **bär fel last** (S12) | Nej — trasig | produktrepot | dela rött/grönt (§ Fynd 10 steg 0) |
-| `post-merge.yml` | efterkontroll på mergat träd | det kön inte hinner köra | G | **täckningslucka, 55 kod-landningar** (S18) | Nej — trasig | produktrepot | laga klassningen först |
+| `nightly.yml` | nattligt fullsvep + processgrindar + metrics | postsubmit-nät (`ADR-077`) | G + Pr | **bär fel last OCH en äkta produktsignal gömd i bruset** — ett produktjobb rött 25/52 nätter (rättat efter S30/KG1, tidigare bara "bär fel last") | Nej — trasig | produktrepot | dela rött/grönt (§ Fynd 10 steg 0) |
+| `post-merge.yml` | efterkontroll på mergat träd | det kön inte hinner köra | G | **täckningslucka, 60 kod-landningar** (rättat efter S30/KG1 — tidigare "55"; S18) | Nej — trasig | produktrepot | laga klassningen först |
 | `nightly-watchdog.yml` | vakt för vakten | ett larm som tystnar tyst | G | ingen | Delvis | **CI-kit (senare)** | — |
 | `visual-baselines.yml` | genererar visuella referensbilder | baseline-drift | G med config | Playwright-projektlistan | Nej | produktrepot | — |
 | `gate-proof.yml` | **bevisar att aggregatorn faktiskt FÄLLER** | en grind som tyst slutat fälla | S | bevisar just våra jobbnamn | Delvis | **CI-kit — mönstret är kitets eget självtest** | se § Fynd 8 |
@@ -564,12 +569,24 @@ längst ned.
 | **Centralisera** (flytta till en befintlig kanal — pluginet) | `deny-grind-genom-pipe.sh`, `deny-hemlighet-utskrift.sh`, `deny-subagent-vantan.sh`, `agent-spawn-log.sh`, `lib/jq-guard.sh`, `lib/gh-guard.sh` + de två versionspolicyerna; senare `deny-frammande-huvudkatalog.sh` och `.claude/agents/*.md` | **Flera kunder finns redan i dag** — pluginet laddas i varje repo på maskinen. Samtliga är generella, stabila (1–4 ändringar sedan juni) och har testsviter. Detta är den enda centralisering där konsumenten existerar. |
 | **Centralisera** (org-inställning) | rulesetet `main-skydd` → **organisations-ruleset** | Enterprise-planen är redan betald och möjligheten oanvänd. Nästa repo i organisationen ärver main-skyddet utan konfiguration. |
 | **Produktifiera** (lyft till ett eget, versionerat kit — SENARE, se villkor) | `ci-suite.yml` som `workflow_call` från ett publikt kit-repo; `check-frontmatter.sh`, `check-public-checklists.sh`, `check-adr-count.sh`, `check-listparitet.sh`, `check-permissions-claims.sh`; `audit-ci-med-degradering.sh`; `gate-proof.yml`-mönstret; `verify-ci-parity.mjs` | Samtliga är generella, mogna och testade. **Villkoret är ett andra produktrepo.** Utan det bär produktifieringen noll värde och full underhållskostnad (J4a § 12: alla fyra branschmekanismer är byggda för situationen "fler än ett repo"). |
-| **Förenkla** | `nightly.yml` (dela rött/grönt så processgrindar inte döljer testregressioner — S12); `ci.yml` jobbet `lint` (dela steget i generellt/process); `check-docs.sh` (parametrisera globbarna); de fjorton skript som hårdkodar layout (§ Fynd 3); de fyra o-SHA-pinnade action-referenserna i `ci-suite.yml` | Var och en är en liten, reversibel ändring som ger värde ensam och samtidigt gör ytan flyttbar. |
-| **Ta bort** | `scripts/verify-phase-1.ts` (föräldralös sedan Fas 1, J1c § 4.8); `check-backlog-closure.sh`, `backlog-kortfakta.mjs`, `backlog-cli.sh` + deras testsviter + nattjobbet Backlog-stängning (**`ADR-131` har redan beslutat rivningen**); merge-dedupen i `changed` (träffar aldrig — S11/J8.5); engångs-schemaskripten `create-*`/`backfill-*` när deras migrering är avslutad | "Ta bort" är ett fullvärdigt svar där evidensen bär det. Här bär den: en föräldralös fil, en beslutad rivning, en mekanism som mätts till noll träffar på 80 körningar, och fyra engångsverktyg. |
+| **Förenkla** | `nightly.yml` (dela rött/grönt så processgrindar inte döljer testregressioner — S12); `ci.yml` jobbet `lint` (dela steget i generellt/process); `check-docs.sh` (parametrisera globbarna); de fjorton skript som hårdkodar layout (§ Fynd 3); de fyra o-SHA-pinnade action-referenserna i `ci-suite.yml`; **merge-dedupens fråga i `changed`** (byt till "körde sviten OCH var den grön?" mot kön — INTE bara "har denna SHA en grön körning?", KG1:s fälla, S30 — och EFTER att post-merge-klassningen är lagad, aldrig före) | Var och en är en liten, reversibel ändring som ger värde ensam och samtidigt gör ytan flyttbar. |
+| **Ta bort** | `scripts/verify-phase-1.ts` (föräldralös sedan Fas 1, J1c § 4.8); `check-backlog-closure.sh`, `backlog-kortfakta.mjs`, `backlog-cli.sh` + deras testsviter + nattjobbet Backlog-stängning (**`ADR-131` har redan beslutat rivningen**); engångs-schemaskripten `create-*`/`backfill-*` när deras migrering är avslutad | "Ta bort" är ett fullvärdigt svar där evidensen bär det. Här bär den: en föräldralös fil, en beslutad rivning, och fyra engångsverktyg. |
+
+**Rättat efter orkestrerarens stickprov S20:** merge-dedupen stod tidigare
+under "Ta bort" med motiveringen "träffar aldrig — S11/J8.5, noll träffar på
+80 körningar". Orkestrerarens egen mätning (40 `push`-körningar, 2026-09-17)
+fann i stället 3 av 20 kod-landningar (15 %) — sällan, inte aldrig. S20:s
+egen dom: *"R3 'byt fråga', och den står sig; 'riv dedupen' gör det inte."*
+Posten är därför flyttad till **Förenkla**. **Förstärkt i S30 (KG1):** 32
+av 32 träffar där dedupen kan göra nytta (samma träd, kodspann) — samma
+sak sedd från andra hållet. KG1 tillade en fälla: den nya frågan får aldrig
+vara "grön körning på samma SHA" (på post-merge-luckans 60 hål är
+kö-körningen grön med sviten hoppad) — den måste vara "sviten körde OCH var
+grön", och ändringen görs efter att post-merge-klassningen (nedan) är lagad.
 
 **Sammanräkning:** av ungefär 45 namngivna komponenter är **cirka 22 behåll
 lokalt**, **8 centralisera** (varav 7 till en kanal som redan finns),
-**8 produktifiera senare**, **5 förenkla nu**, **6 ta bort**. Ungefär en av
+**8 produktifiera senare**, **6 förenkla nu**, **5 ta bort**. Ungefär en av
 sex komponenter bär alltså ett genuint utlyfts-värde i dag — och ingen av
 dem bär det förrän det finns en andra kund.
 
@@ -793,7 +810,7 @@ om nästa steg aldrig tas**.
 
 | # | Steg | Värde ensamt? | Verifiering | Rollback | Beroende |
 |---|---|---|---|---|---|
-| **0** | **Laga de tre trasiga delarna.** (a) Ta bort merge-dedupen som aldrig träffar (S11). (b) Låt `post-merge.yml` klassa hela det pushade spannet, inte bara toppen (S18). (c) Dela nattnätets rött/grönt så processgrindar inte döljer testregressioner (S12). | **Ja — störst värde av alla steg.** (b) ensam återger 55 kod-landningar sin efterkontroll. | en kod-landning följd av en docs-landning får en grön, faktiskt körd post-merge-svit; nattnätet blir grönt eller rött av rätt skäl | revert per PR | inget |
+| **0** | **Laga de tre trasiga delarna, I DENNA ORDNING (S30/KG1 kräver det).** (a) FÖRST: låt `post-merge.yml` klassa hela det pushade spannet, inte bara toppen (S18; 60 verkliga hål, inte 85 — S30). (b) SEDAN: byt merge-dedupens fråga — den träffar i dag bara 3 av 20 kod-landningar (15 %, rättat efter orkestrerarens stickprov S20; KG1: 32/32 där den kan göra nytta, S30). Frågan får ALDRIG bli bara "har SHA:n en grön körning?" (KG1:s fälla: på de 60 hålen är kö-körningen grön med sviten hoppad) — den måste vara "sviten körde OCH var grön", vilket förutsätter att (a) redan är lagat. (c) Dela nattnätets rött/grönt så processgrindar inte döljer testregressioner (S12; ETT produktjobb var självt rött 25/52 nätter — S30). | **Ja — störst värde av alla steg.** (a) ensam återger 60 kod-landningar sin efterkontroll. | en kod-landning följd av en docs-landning får en grön, faktiskt körd post-merge-svit; nattnätet blir grönt eller rött av rätt skäl | revert per PR | inget |
 | **1** | **Verkställ `ADR-131`:s rivning** (eller sätt en brytdag). Backlog-grindfamiljen underhålls i dag trots ett taget rivningsbeslut. | **Ja** — tar bort en nattgrind, en CLI-wrapper, två testsviter och två `CLAUDE.md`-avsnitt ur underhållet | nattnätet tappar ett rött jobb; inget annat fäller | ADR:n bär en tvåstegs-plan med verifieringsvecka | steg 0 (c) |
 | **2** | **Parametrisera layouten** i de fjorton skript som hårdkodar sökvägar (§ Fynd 3). Ny fil `.grind-layout.conf`; skripten läser den med samma fallback-mönster som redan används. | **Ja** — gör konventionen i `CLAUDE.md` sann i stället för ungefärlig, och gör "portabel" mätbart | de befintliga testsviterna fäller om en sökväg tappas; kör dem riktat | revert; filen kan ligga kvar oanvänd | inget |
 | **3** | **Lyft de fem mogna agent-hookarna till pluginet** (`deny-grind-genom-pipe`, `deny-hemlighet-utskrift`, `deny-subagent-vantan`, `agent-spawn-log`, `lib/jq-guard`+`gh-guard`). | **Ja — den enda centraliseringen med kunder i dag.** De börjar verka i alla tretton övriga repon. | plugin-bump + ominstallation; kör varje hooks testsvit; **skarpbeviset är öppen skuld tills nästa session** (`CLAUDE.md` § En ny hooks skarpbevis) | ta bort ur pluginet, återregistrera lokalt | inget |
