@@ -3,6 +3,7 @@ import type { NetworkFixture } from '@msw/playwright';
 import { http } from 'msw';
 import type { z } from 'zod';
 import type { EventSchema, RegistrationSchema } from '../../src/domain/schemas';
+import { FROZEN_NOW } from '../support/fixturvarld/fixture-data';
 import { EF, json } from '../support/fixturvarld/handlers';
 import { FIXTUR_EPOST } from '../support/fixturvarld/hermetic';
 import { expect, type Page, test } from './acceptance-bas';
@@ -278,7 +279,19 @@ test.describe('Hem polling (Fas 6d L2 — ADR-017 + erratum)', () => {
     // page.clock fakar timers → vi kan avancera förbi 60s-intervallet deterministiskt
     // utan att vänta i realtid. refetchIntervalInBackground:false pausar bara när
     // fliken är dold; i testet är document synligt → intervallet är aktivt.
-    await page.clock.install();
+    //
+    // `{ time: FROZEN_NOW }` ÄR OBLIGATORISKT (TASK-444, S125): install() utan
+    // `time` initierar på VERKLIG systemtid (Playwright-kontraktet, se
+    // playwright-core/types/types.d.ts § `install(options` — "current system
+    // time by default") och ERSÄTTER därmed `page`-fixturens frysning
+    // (`hermetic.ts` § Frusen klocka). Fixturvärldens seedade session är en
+    // JWT vars `exp` sätts relativt FROZEN_NOW (samma fälla
+    // `events-list-kalender.acceptance.test.ts` och
+    // `event-checkin-dorrlistan.acceptance.test.ts` filhuvud § DETERMINISMEN
+    // dokumenterar) — en klocka på verklig tid gör testet grönt i dag och
+    // rött av sig självt så snart verklig tid passerar den utgången, utan att
+    // någon rört koden. Exakt det hände 2026-09-16→17 (nightly + PR #2491).
+    await page.clock.install({ time: FROZEN_NOW });
     // Räknaren mäter APPENS beteende (att intervallet fyrar en ny hämtning),
     // inte att en handler anropades — klassen testar aldrig fixturen. Utan
     // räknaren finns ingen observerbar skillnad mellan "pollade" och "pollade
