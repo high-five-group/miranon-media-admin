@@ -97,9 +97,29 @@ function b64url(value: object): string {
  * kod-glömska ofarlig i stället för att den tyst tickar mot ett framtida
  * utgångsdatum igen.
  */
+const TIO_AR_S = 10 * 365 * 24 * 60 * 60;
+
+/**
+ * Fixtur-sessioners `exp`/`expires_at` (sekunder sedan Unix-epoch) — DET ENDA
+ * HEMMET för skyddsräcke 2 i HELA acceptance-klassen, inte bara i denna fil
+ * (TASK-449, uppföljning av TASK-444/448 ovan). `login.acceptance.test.ts`,
+ * `nytt-losenord.acceptance.test.ts`, `passkey.acceptance.test.ts` och
+ * `valkommen.acceptance.test.ts` bygger var sin session/nätverkssvar för
+ * ANDRA användare och tillstånd än denna moduls default-Lotta (utloggat
+ * lösenordsflöde, en passkey-inloggning, en återställningssession, en
+ * inbjudningssession) — och byggde tidigare VAR SIN egen kopia av formeln
+ * `FROZEN_NOW + 24h` för det, samma landmina som docblocket ovan beskriver
+ * men duplicerad fyra gånger. En framtida `page.clock.install()` utan
+ * `time` (kontraktet i § Frusen klocka nedan) i NÅGON av de filerna hade
+ * återupprepat exakt samma tysta, datumberoende fällning TASK-444 fann. De
+ * importerar nu denna konstant i stället för att räkna om FROZEN_NOW + 24h
+ * själva — formeln har ETT hem, oavsett hur många olika sessioner som
+ * behövs.
+ */
+export const FIXTUR_SESSION_EXP_S = Math.floor(FROZEN_NOW.getTime() / 1000) + TIO_AR_S;
+
 function buildSession() {
-  const TIO_AR_S = 10 * 365 * 24 * 60 * 60;
-  const expiresAt = Math.floor(FROZEN_NOW.getTime() / 1000) + TIO_AR_S;
+  const expiresAt = FIXTUR_SESSION_EXP_S;
   const user = {
     id: '00000000-0000-4000-8000-000000000001',
     aud: 'authenticated',

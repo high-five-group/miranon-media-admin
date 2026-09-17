@@ -1,6 +1,6 @@
 import crypto from 'node:crypto';
 import { delay, HttpResponse, http } from 'msw';
-import { FROZEN_NOW } from '../support/fixturvarld/fixture-data';
+import { FIXTUR_SESSION_EXP_S } from '../support/fixturvarld/hermetic';
 import { expect, test } from './acceptance-bas';
 
 /**
@@ -34,9 +34,12 @@ function b64url(value: object): string {
 /** Rå HTTP-svarsform för `POST /auth/v1/token?grant_type=password` — det
  * klassiska OAuth2-token-svaret GoTrue skickar, användaren inbäddad. Samma
  * fält som en seedad session (`sb-visual-fixture-auth-token`), men detta
- * är det NÄTVERKSSVAR som producerar en session, inte en förseedad en. */
+ * är det NÄTVERKSSVAR som producerar en session, inte en förseedad en.
+ * `expiresAt` hämtas ur `hermetic.ts`s exporterade `FIXTUR_SESSION_EXP_S`
+ * (TASK-449) — INTE en egen `FROZEN_NOW + 24h`-kopia, den landminan som
+ * TASK-448 fixade i hermetic.ts. */
 function lyckadLosenordsInloggningSvar(overrides: { userMetadata?: Record<string, unknown> } = {}) {
-  const expiresAt = Math.floor(FROZEN_NOW.getTime() / 1000) + 24 * 60 * 60;
+  const expiresAt = FIXTUR_SESSION_EXP_S;
   const userId = '00000000-0000-4000-8000-000000000096';
   const email = 'login-acceptance@visual-fixture.se';
   const accessToken = [
@@ -322,7 +325,8 @@ test.describe('/login — "Logga in med passkey"-knappen (AC #2, virtuell WebAut
     network,
   }) => {
     const userId = '00000000-0000-4000-8000-000000000095';
-    const expiresAt = Math.floor(FROZEN_NOW.getTime() / 1000) + 24 * 60 * 60;
+    // Samma delade exp-konstant som ovan (TASK-449) — inte en egen kopia.
+    const expiresAt = FIXTUR_SESSION_EXP_S;
     const accessToken = [
       b64url({ alg: 'HS256', typ: 'JWT' }),
       b64url({
