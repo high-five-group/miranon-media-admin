@@ -1,7 +1,7 @@
 import AxeBuilder from '@axe-core/playwright';
 import type { CDPSession, Page } from '@playwright/test';
 import { HttpResponse, http } from 'msw';
-import { FROZEN_NOW } from '../support/fixturvarld/fixture-data';
+import { FIXTUR_SESSION_EXP_S } from '../support/fixturvarld/hermetic';
 import { expect, test } from './acceptance-bas';
 
 /**
@@ -57,8 +57,11 @@ function b64url(value: object): string {
   return Buffer.from(JSON.stringify(value)).toString('base64url');
 }
 
+// `expiresAt` hämtas ur `hermetic.ts`s exporterade `FIXTUR_SESSION_EXP_S`
+// (TASK-449) — INTE en egen `FROZEN_NOW + 24h`-kopia, den landminan som
+// TASK-448 fixade i hermetic.ts.
 function bygdSession(overrides: { userMetadata?: Record<string, unknown> } = {}) {
-  const expiresAt = Math.floor(FROZEN_NOW.getTime() / 1000) + 24 * 60 * 60;
+  const expiresAt = FIXTUR_SESSION_EXP_S;
   const user = {
     id: '00000000-0000-4000-8000-000000000097',
     aud: 'authenticated',

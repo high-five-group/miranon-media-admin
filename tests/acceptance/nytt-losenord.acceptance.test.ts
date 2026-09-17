@@ -2,7 +2,7 @@ import AxeBuilder from '@axe-core/playwright';
 import type { NetworkFixture } from '@msw/playwright';
 import type { Page } from '@playwright/test';
 import { HttpResponse, http } from 'msw';
-import { FROZEN_NOW } from '../support/fixturvarld/fixture-data';
+import { FIXTUR_SESSION_EXP_S } from '../support/fixturvarld/hermetic';
 import { expect, test } from './acceptance-bas';
 
 /**
@@ -14,11 +14,14 @@ import { expect, test } from './acceptance-bas';
  * Supabase Auth (`updateUser`/`signOut`).
  *
  * Sessionen seedas direkt i localStorage, INTE via hash-fragment-simulering
- * — se `src/routes/nytt-losenord.tsx`s topp-kommentar. `expiresAt` härlett
- * ur `FROZEN_NOW` (fixturvärldens frusna klocka), samma skäl som
- * `valkommen.acceptance.test.ts`s `bygdSession()`: en `Date.now()`-baserad
- * utgång landar veckor FÖRE den frusna klockan och tvingar supabase-js att
- * försöka refresha sessionen mot nätet, vilket hermetik-vakten fäller.
+ * — se `src/routes/nytt-losenord.tsx`s topp-kommentar. `expiresAt` hämtas ur
+ * `hermetic.ts`s exporterade `FIXTUR_SESSION_EXP_S` (TASK-449) — samma delade
+ * konstant som `valkommen.acceptance.test.ts`s `bygdSession()` nu använder,
+ * INTE en egen `FROZEN_NOW + 24h`-kopia: en sådan lokal kopia var landminan
+ * TASK-448 fixade i `hermetic.ts` men som fanns duplicerad här. En
+ * `Date.now()`-baserad utgång landar veckor FÖRE den frusna klockan och
+ * tvingar supabase-js att försöka refresha sessionen mot nätet, vilket
+ * hermetik-vakten fäller.
  */
 const AUTH_STORAGE_KEY = 'sb-visual-fixture-auth-token';
 const PWNED_RANGE_PATTERN = 'https://api.pwnedpasswords.com/range/*';
@@ -29,7 +32,7 @@ function b64url(value: object): string {
 
 function bygdSession(overrides: { email?: string } = {}) {
   const epost = overrides.email ?? 'lotta@visual-fixture.se';
-  const expiresAt = Math.floor(FROZEN_NOW.getTime() / 1000) + 24 * 60 * 60;
+  const expiresAt = FIXTUR_SESSION_EXP_S;
   const user = {
     id: '00000000-0000-4000-8000-000000000098',
     aud: 'authenticated',
