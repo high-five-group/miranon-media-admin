@@ -317,9 +317,158 @@ utreda.
   utrett. Granskningens egna leverabler skriver därför "prod-incidenten
   2026-09-03 (S115)" utan namn.
 
+### S15 — En av nattnätets tre röda processgrindar är redan dömd att rivas (källa: ändringsloggen)
+
+- **Påstående:** `ADR-131` (work item-substratet flyttar till GitHub Issues)
+  är Accepted sedan 2026-09-04 men inte verkställd; den river bland annat
+  `check-backlog-closure.sh`, som fortfarande ligger kvar på disk.
+- **Prövat med:** `grep` på status- och `## Updates`-raderna i
+  `docs/decisions/ADR-131-work-item-substratet-github-issues.md` samt på
+  ordet "riv"; `ls -la scripts/check-backlog-closure.sh
+  .backlog-closure-policy.conf`.
+- **Utfall:** rad 3: *"Status: Accepted (grillad samsyn S118 Del 2,
+  2026-09-04, nio beslut kvitterade…)"*. Rad 295–297: `## Updates` — *"Inga
+  än."* Rad 170–172, beslut 7 "Rivning i två steg", namnger
+  `check-backlog-closure.sh`. Skriptet finns kvar: 61 558 byte, med en
+  policy-fil på 14 615 byte.
+- **Dom: höll.** Satt bredvid S12 ger det en skarp bild: grinden
+  "Backlog-stängning" har hållit nattnätet rött i veckor, S125 lägger i dag
+  två PR:er (`#2492`, `#2494`) på att städa dess 30 inkonsistenta kort — och
+  ett taget beslut säger att hela grinden ska bort. Ett Accepted-beslut utan
+  brytdag är en stående kostnad: maskineriet underhålls tills någon river
+  det. Bärs till åtgärdsplanen som en sekvensfråga åt Marcus (verkställ
+  `ADR-131`:s brytdag, eller lyft grinden ur nattnätets rött/grönt under
+  tiden) — inte som ett fel.
+
+### S16 — Testpyramiden i tal, och mailflödet utan verklighetstest (källa: J7)
+
+- **Påståenden:** den hermetiska acceptance-klassen har vuxit från 18 till
+  61 filer medan styrande text fortfarande säger 18; `tests/e2e` bär 34
+  filer; åtgärdsutskicken (`send-action-email` — bekräftelse, påminnelse,
+  eventinfo, testmail) har inget test genom den verkliga kedjan på någon
+  nivå. Sidopåstående: `supabase/functions/` "växte från 51 till 63 poster
+  under dagen" i den delade worktreen.
+- **Prövat med:** `find tests/acceptance -name "*.test.ts" | wc -l`, samma
+  för `tests/e2e`; `grep -n "18 spec"` i `CONTRIBUTING.md`,
+  `scripts/acceptance-urval.sh` och `ADR-080`; `grep -rl
+  "send-action-email" tests`; läsning av huvudet i
+  `tests/api/send-action-email.test.ts` och av `api-pure`/`api-staging` i
+  `playwright.config.ts:489-505`; `git status --short` och
+  `git ls-tree HEAD supabase/functions/`.
+- **Utfall:** 61 acceptance-filer och 34 e2e-filer — stämmer. "18
+  spec-filer" står kvar på `CONTRIBUTING.md:1074` och
+  `scripts/acceptance-urval.sh:12` (ingen träff på exakt den frasen i
+  `ADR-080`). `tests/api/send-action-email.test.ts` (1 275 rader) hör till
+  `api-pure` och säger i sitt eget huvud: *"ingen staging, inga creds, NOLL
+  riktig Resend/Airtable"*, samt att HTTP-auth och *"RIKTIG
+  Airtable-skrivning mot staging"* INTE testas där — *"bokfört öppet"*.
+  Ingen `*.staging.test.ts` för funktionen finns under `tests/api`.
+  Worktreen: inget utanför granskningskatalogen är rört, och
+  `supabase/functions/` bär 63 poster både på disk och i commiten.
+- **Dom: huvudpåståendena höll; sidopåståendet föll.** Katalogen har inte
+  vuxit under dagen — J7:s "51" var en felräkning, och förklaringen "snabbt
+  rörlig worktree" stryks i våg 2. På e2e-nivån har jag INTE omprövat J7:s
+  läsning att ingen fil når Resend (staging bär ett maillås, så ett skarpt
+  utskick är spärrat med avsikt) — märkningen där förblir J7:s.
+- **Varför det väger:** utskick till verkliga deltagare är appens mest
+  följdtunga handling — ett fel där går inte att ta tillbaka. Det är den
+  tydligaste kandidaten till Marcus lista över "5–15 mycket viktiga
+  realistiska E2E-flöden", och den finns inte. J7 räknar dagens genuint
+  realistiska flöden till två filer.
+- **Processfynd om granskningen själv:** J7 spawnade tre egna forkar, och
+  två av dem skrev till samma målfil trots instruktion om motsatsen. Det
+  förklarar taket på 20 samtidiga subagenter (nästlade spawns räknas) och
+  betyder att leverabel 8 är en sammanfogning av tre pass — den läses i sin
+  helhet för koherens i våg 2.
+
+### S17 — "Obetald skuld" som redan är betald: grenstädningen (källa: J2, skärpt)
+
+- **Påstående:** `CLAUDE.md` § Kortnummer säger (källa `TASK-310`,
+  2026-08-24) att ett återkommande lokalt gren-svep är *"flaggat men INTE
+  byggt"*. J2 fann att `scripts/stada-grenar.sh` finns sedan 2026-08-07 och
+  körs automatiskt av heartbeat-svepet — och daterade automatiken till *"tre
+  veckor innan påståendet skrevs"*.
+- **Prövat med:** `ls -la scripts/stada-grenar.sh .stada-grenar-policy.conf`;
+  `git log -S"stada-grenar" -- scripts/heartbeat-svep.sh`; `grep -n
+  "stada-grenar\|STADA_GRENAR" scripts/heartbeat-svep.sh`.
+- **Utfall:** skriptet (15 215 byte) och policy-filen finns. Intrådningen i
+  svepet är commit `b9dac6a0`, **2026-08-28** (`TASK-323`, *"gles
+  gren-städning som svepets femte väg"*), följd av `696c62a2` samma dag.
+  Svepet anropar `stada-grenar.sh --utfor` (rad 106–107, 436–472), aldrig
+  med `-D`.
+- **Dom: skärpt.** I sak har J2 rätt — `CLAUDE.md` är i dag fel, mekanismen
+  finns och kör. Men tidslinjen är en annan än J2 skrev: det MANUELLA
+  verktyget fanns sexton dagar före noteringen, AUTOMATIKEN kom fyra dagar
+  EFTER den. Prosan var alltså sann när den skrevs och blev falsk av en
+  senare landning som inte rörde den. Rättas i leverabel 5 i våg 2.
+  Observera också gränsen: svepet går bara medan en sessions
+  heartbeat-monitor kör — under en vecka utan sessioner städas ingenting
+  (S125 mätte 57 lokala grenar vid sin start i dag).
+- **Mönstret är granskningens tydligaste hittills:** S4 (hook som prosan
+  säger saknas), S10 ("alla sju bevakas" när arton finns), S16 ("18
+  spec-filer" när 61 finns) och denna post är SAMMA felklass — styrande text
+  som var sann och blev falsk genom tillväxt, åt båda håll (för optimistisk
+  och för pessimistisk). `ADR-083` vaktar prosa som påstår en mekanism;
+  ingenting vaktar prosa som bär ett TAL eller påstår en FRÅNVARO.
+
+### S18 — Grönt efter merge trots att sviten aldrig kördes: täckningsluckan, mätt och förklarad (källa: J8.4, J8.5, J1b)
+
+- **Påståenden:** J8.4 mätte att 31 av 230 landade träd (13,5 %) aldrig fick
+  en post-merge-körning men kunde inte fastställa mekanismen. J8.5 kallade
+  luckan bekräftad (`TASK-365`). J1b kallade kortets mekanismförklaring
+  osäker, eftersom `post-merge.yml`:s `concurrency`-grupp är per commit-SHA
+  och ingenting därför kan avbrytas.
+- **Prövat med:** `git log origin/main --first-parent --since=2026-08-20`
+  (686 landningar) mot `gh run list --workflow post-merge.yml --limit 1000`
+  (alla utfall, tillbaka till 2026-08-10), jämförda på commit-SHA i ett
+  engångsskript; därefter `gh run view --json jobs` på två efterföljande
+  körningar (`34045141857`, `34146020300`) och `gh run list --commit` på två
+  av de saknade kod-commitsen (`7395124e` = PR #2408, `51144a3c` = PR #2442).
+- **Utfall, i fyra steg:**
+  1. **85 av 686 landningar (12,4 %) saknar post-merge-körning** — förenligt
+     med J8.4:s 13,5 % på ett annat fönster.
+  2. **Alla 85 följdes av en ny landning inom 15 minuter** (6 inom 5 s, 24
+     inom en minut, 55 inom 1–15 min, ingen längre). 14 av de saknade är
+     själva docs-/backlog-PR:er; **55 är kod-PR:er vars NÄSTA landning är en
+     docs-/backlog-PR**; 16 är kod-PR:er följda av kod.
+  3. De två saknade kod-commitsen har **en enda körning var: `CI
+     [merge_group]`**. Ingen `CI [push]`, ingen `Post-merge`, ingen CodeQL —
+     alltså ingen push-händelse alls för den SHA:n. (Jämför S11, där en
+     ensam landning fick alla fyra.)
+  4. Den efterföljande docs-landningens post-merge-körning är **grön med
+     `Verifierande svit på det mergade trädet: skipped`** — i båda stickproven.
+- **Dom: luckan höll, och mekanismen är nu fastställd — ingen av agenterna
+  hade den.** Merge-kön landar flera köade PR:er i EN push till `main`; bara
+  toppens commit får en push-händelse, och `post-merge.yml` klassar bara
+  toppen ("Ärvd klassning — körde PR-grinden sviten?"). Är toppen en
+  docs-PR hoppas sviten, körningen blir grön, och kod-PR:en under den får
+  aldrig den kontroll som BARA finns efter merge: staging-sviten och a11y
+  (S1). J1b hade rätt i att ingenting avbryts; J8.5 hade rätt i att luckan
+  är verklig. `TASK-365` beskriver symptomet men inte orsaken.
+- **Hur allvarligt:** de hermetiska klasserna KÖRDE på kod-PR:en (kö-ytan) —
+  det som uteblev är det post-merge ensamt tillför. Men det är just den
+  kontrollen `ADR-077` gör till villkoret för att presubmiten ska vara
+  försvarbar, och det enda återstående nätet (natten) har varit rött i
+  femtio dygn (S7, S12). För 55 kod-landningar på fyra veckor har alltså
+  ingen verklig kedja prövats med ett läsbart utfall. Det är uppdragets
+  farligaste felklass — *"ett grönt resultat trots att ett relevant test
+  aldrig kördes"* — inte före merge, där J8.5 letade och inget fann, utan
+  efter.
+- **Riktning för åtgärdsplanen (liten, reversibel, ej beslutad):** låt
+  post-merge klassa HELA det pushade spannet (`github.event.before` →
+  `github.sha`) i stället för bara toppen — kör sviten om NÅGON landning i
+  spannet är kodklassad. Korsgranskningen i våg 2 läser
+  `scripts/classify-post-merge.sh` och prövar om det räcker. Klassningen
+  ovan (docs/kod) bygger på grenprefix och är en approximation.
+
 ## Motsägelser mellan agenter
 
-- **`TASK-365`, täckningsluckan efter merge (J1b mot J8.5):** J1b märker
+- **Antalet filer i `scripts/` (orkestreraren mot J1c och J8.8):**
+  orkestrerarens "172 filer" var `ls scripts | wc -l` — 171 filer plus
+  katalogen `lib` på toppnivå. J1c och J8.8 räknar oberoende 186 filer
+  rekursivt (104 `.sh`, 79 `.mjs`, 3 övriga). Agenterna har rätt; 186 gäller.
+- **`TASK-365`, täckningsluckan efter merge (J1b mot J8.5):** AVGJORD i S18.
+  Ursprunglig bokföring: J1b märker
   kortets mekanism **osäker** — `post-merge.yml`:s `concurrency`-grupp är
   per commit-SHA, så en docs-push kan inte avbryta en kod-landnings svit.
   J8.5 kallar luckan *"öppen och bekräftad: en kod-landning följd av en

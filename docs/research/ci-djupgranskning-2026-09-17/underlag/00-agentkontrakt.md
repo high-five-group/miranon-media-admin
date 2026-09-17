@@ -59,6 +59,27 @@ filer, utreder motsägelser och gör egna stickprov.
 - **Ingen väntan på bakgrundssignaler.** Kör allt du måste invänta i
   förgrunden. En tur som avslutas med "jag väntar på…" återvänder aldrig.
 
+## Tillägg inför våg 2 och 3 (2026-09-17, efter att våg 1 rapporterat)
+
+- **Spawna inga egna agenter eller forkar.** I våg 1 spawnade två agenter
+  egna forkar, vars forkar i sin tur skrev till leverabeln utanför sitt
+  uppdrag — och de nästlade agenterna åt upp harnessets tak på 20 samtidiga
+  subagenter. Du gör ditt arbete själv, i en tur.
+- **Orkestrerarens stickprovslogg går före agenternas filer.**
+  `underlag/01-orkestrerarens-stickprov.md` bär arton egna mätningar. Där en
+  post säger **föll** eller **skärpt** är det loggens version som gäller, och
+  där den säger AVGJORD är motsägelsen mellan två agenter löst. Läs loggen
+  i sin helhet innan du bygger på något underlag.
+- **Repot är PUBLIKT** (mätt 2026-09-17, stickprov S14). Allt du skriver blir
+  läsbart för vem som helst. Skriv aldrig namn på deltagare eller kunder,
+  aldrig e-postadresser till verkliga personer. Prod-incidenten som i repot
+  bär ett förnamn heter i denna granskning "prod-incidenten 2026-09-03
+  (S115)".
+- **Underlaget från våg 1** ligger i `underlag/` (`j1a`–`j1f`, `j3`, `j4a`,
+  `j8-1`, `j8-4`–`j8-8`) och som fyra färdiga leverabler i katalogens rot
+  (`03`, `04`, `06`, `07`). De är källmaterial: citera dem med filnamn och
+  avsnitt, och pröva mot koden när ett påstående bär din slutsats.
+
 ## Uppdragets premisser är hypoteser
 
 Varje faktapåstående i ditt uppdrag är källmärkt där orkestreraren kunnat
