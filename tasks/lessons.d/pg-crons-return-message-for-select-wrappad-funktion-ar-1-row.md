@@ -2,7 +2,7 @@
 
 Ett runbook-steg lovade att `cron.job_run_details.return_message` skulle
 visa funktionens JSON-svar efter en cron-körning. Mätt 2026-09-02 (S113
-Del 16, `tasks/sessions/2026-08-29-session-113.md` rad 1682, 1689 till
+Del 16, `tasks/sessions/archive/2026-08/2026-08-29-session-113.md` rad 1682, 1689 till
 1695): fältet visade i stället "1 row", pg_crons egen bokföring av att en
 SELECT-wrappad funktion returnerade en rad, aldrig funktionens faktiska
 JSON. Funktionens svar lästes i stället med ett direktanrop,

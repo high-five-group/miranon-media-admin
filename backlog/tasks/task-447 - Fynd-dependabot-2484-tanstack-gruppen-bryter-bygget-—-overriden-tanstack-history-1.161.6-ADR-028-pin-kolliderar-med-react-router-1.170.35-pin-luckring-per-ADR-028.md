@@ -4,10 +4,10 @@ title: >-
   Fynd: dependabot #2484 (tanstack-gruppen) bryter bygget — overriden
   @tanstack/history 1.161.6 (ADR-028-pin) kolliderar med react-router 1.170.35;
   pin-luckring per ADR-028
-status: In Progress
+status: Done
 assignee: []
 created_date: '2026-09-17 09:56'
-updated_date: '2026-09-17 10:59'
+updated_date: '2026-09-17 11:58'
 labels: []
 dependencies: []
 priority: high
@@ -99,9 +99,9 @@ fullständig motivering och belägg.
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -120,4 +120,6 @@ mellan "override bumpad" och "override borttagen" är TOM (npm install gav
 Full motivering: ADR-028 § Updates 2026-09-17-posten.
 
 PR (draft): #2498 — https://github.com/high-five-group/miranon-media-admin/pull/2498 · gren fix/tanstack-history-pin-luckring-task · commit 10859e33. Ersätter dependabot #2484 (stängs som superseded efter landning).
+
+Done av S125-orkestreraren 2026-09-17: landad via #2498 (main 8d71f77d), review-grinden konvergerad (+ omstämpling efter update-branch), DoD mot PR-kroppens grind-tabell.
 <!-- SECTION:NOTES:END -->

@@ -264,7 +264,7 @@ T-155, T-157, T-164, T-166, T-168, T-170.
 **Starkaste citat:** *"Ta bort hover på korten. Reservera plats för
 scrollbaren … Scrollbaren ska va den ljusgråa som vi använder i appen …
 Skuggningen ska ju bara synas på vita kortet."* (B-041, S113,
-`tasks/sessions/2026-08-29-session-113.md:799`) — nästan ordagrant
+`tasks/sessions/archive/2026-08/2026-08-29-session-113.md:799`) — nästan ordagrant
 bekräftat oberoende av T-143 (samma session, transkript-extraherat).
 
 Halvmekanisk: att INGEN hårdkodad hex-färg förekommer är redan mekaniserad
@@ -338,7 +338,7 @@ mekaniskt grep-bart (sök `—`/`–` i användarsynliga strängar).
 **Starkaste citat, dubbelt bekräftat oberoende (samma session S113):**
 *"det är fortfarande problem med hovringen … Hur tusan kunde du släppa
 igenom det? Kolla SJÄLV nu i prod."* (B-101,
-`tasks/sessions/2026-08-29-session-113.md:870`), nästan ordagrant matchat av
+`tasks/sessions/archive/2026-08/2026-08-29-session-113.md:870`), nästan ordagrant matchat av
 T-145: *"Hur tusan kunde du släppa igenom det? Kolla SJÄLV nu i prod."*
 
 ### R-03 — Sidkrom identiskt på varje sida

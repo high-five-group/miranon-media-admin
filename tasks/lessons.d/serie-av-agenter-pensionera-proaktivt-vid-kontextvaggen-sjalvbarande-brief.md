@@ -6,7 +6,7 @@ kör in i den HÅRDA kontextväggen blir obrukbar mitt i arbetet, utan
 förvarning) PROAKTIVT: pensionera varje agent innan den når väggen, och
 handa av arbetet till nästa agent i serien via en SJÄLVBÄRANDE brief, i
 stället för att förlita sig på att kontexten bär över mellan agenterna.**
-Mätt 2026-09-01 (S113 Del 14, `tasks/sessions/2026-08-29-session-113.md`
+Mätt 2026-09-01 (S113 Del 14, `tasks/sessions/archive/2026-08/2026-08-29-session-113.md`
 rad 1520 till 1523): fyra bygg-agenter kördes i serie under en lokal
 Marcus-iterationsloop, var och en pensionerad vid ungefär 458k, 452k, 337k
 respektive 400k tokens, långt innan ett hårt fel skulle ha inträffat.

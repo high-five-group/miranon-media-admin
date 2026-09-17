@@ -4,7 +4,7 @@ Repots staging-mutex skyddar mot att flera CI-jobb muterar staging samtidigt,
 men skyddar inte mot en agent som manuellt kör en Edge-Function-deploy mot
 staging medan ett post-merge-E2E-jobb redan läser samma miljö, eftersom
 deployen sker utanför den concurrency-grupp mutexen styr. Mätt 2026-09-02
-(S113 Del 16, `tasks/sessions/2026-08-29-session-113.md` rad 1838 till 1843):
+(S113 Del 16, `tasks/sessions/archive/2026-08/2026-08-29-session-113.md` rad 1838 till 1843):
 en `TASK-363`-agent deployade tre EF:er till staging 09:09:29 till 09:09:39
 UTC medan post-merge-sviten E2E-steg körde på huvudgrenen, och ett test i
 `persondetalj-betalningar-fellage.staging.test.ts` föll strax därefter.

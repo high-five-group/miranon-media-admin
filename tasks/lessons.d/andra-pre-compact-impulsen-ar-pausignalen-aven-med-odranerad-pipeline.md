@@ -4,7 +4,7 @@
 beslut 1) höll under verklig press: när en session som redan hade kört en
 kontrollerad kompaktering fick en andra impuls att kompaktera, tolkades
 impulsen som paus-signalen i stället för ett nytt varv av skillen. Mätt
-2026-09-02 (S113 paus 9, `tasks/sessions/2026-08-29-session-113.md` rad
+2026-09-02 (S113 paus 9, `tasks/sessions/archive/2026-08/2026-08-29-session-113.md` rad
 1890 till 1898): Marcus bad om planering för kompaktering vid
 kontextfönster 90 procent, men eftersom sessionen redan bar en kontrollerad
 kompaktering (Del 13, 2026-08-31) stoppades pre-compact, och sessionen

@@ -28,7 +28,7 @@
 > § Betalningsdomänen + jobbmotorn.
 >
 > **Skrivet:** 2026-08-31, av en AFK-nattagent (`TASK-346.11`) mot det läge
-> S113-natten (`tasks/sessions/2026-08-29-session-113.md` § Del 12) lämnade
+> S113-natten (`tasks/sessions/archive/2026-08/2026-08-29-session-113.md` § Del 12) lämnade
 > `main` i. Ingen prod-operation i denna fil är utförd av agenten som skrev
 > den — varje kommando är obeprövat mot prod och läses, verifieras mot
 > aktuellt läge, och köres av Marcus.
@@ -36,7 +36,7 @@
 ## Morgonchecklistan — skannbar, kopieringsbar
 
 Sju punkter, samma form som paus 5:s stomme
-(`tasks/sessions/2026-08-29-session-113.md` § MORGONCHECKLISTA), nu ifylld
+(`tasks/sessions/archive/2026-08/2026-08-29-session-113.md` § MORGONCHECKLISTA), nu ifylld
 med faktiska kommandon. **Punkt 1 är staging** (agenten har redan gjort sitt);
 **punkt 2 och framåt är prod** — det är gränsen mellan var agenten stannade
 och var Marcus tar vid.
@@ -765,7 +765,7 @@ till staging utan någon parameter för att rikta om den (verifierat av denna
 runbooks författare 2026-08-31 — se PR:ens beskrivning för den fulla
 diff:en). Väg A nedan (av de "Två vägar" som stod här) valdes av Marcus
 mandat 2026-09-01 (verbatim i
-`tasks/sessions/2026-08-29-session-113.md` § MANDAT) och implementerades i
+`tasks/sessions/archive/2026-08/2026-08-29-session-113.md` § MANDAT) och implementerades i
 PR `#2192`, `feat/betalningsfalt-prod-vagen`.
 
 **Nuläget: `create-betalningsfalt.mjs` bär samma `--bas`/
@@ -1247,5 +1247,5 @@ framåt (makulera, korrigera, rätta i basen), riv aldrig.
   fail-closed deploy-grinden.
 - `scripts/fas4-prod-deploy.sh` — EF-deploy-sekvensen som en körning.
 - `scripts/deny-prod-ref.sh` + `.prod-ref-policy.conf` — prod-ref-låset.
-- `tasks/sessions/2026-08-29-session-113.md` § Del 11–12 — grillningens
+- `tasks/sessions/archive/2026-08/2026-08-29-session-113.md` § Del 11–12 — grillningens
   tretton beslut och nattens byggkedja.

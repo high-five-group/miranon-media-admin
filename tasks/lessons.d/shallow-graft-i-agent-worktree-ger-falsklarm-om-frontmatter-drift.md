@@ -6,7 +6,7 @@ kan returnera fel eller tomt resultat för filer vars faktiska historik
 sträcker sig längre tillbaka än graftens gräns. En dokumentationsgrind som
 läser filhistorik för att upptäcka frontmatter-drift kan då larma falskt om
 en fil den faktiskt inte kan se historiken för.** Mätt 2026-09-01 (S113
-resume 7, `tasks/sessions/2026-08-29-session-113.md` rad 2099 till 2101): en
+resume 7, `tasks/sessions/archive/2026-08/2026-08-29-session-113.md` rad 2099 till 2101): en
 agent-worktree med en shallow-graft gav `check:docs` ett falsklarm om
 frontmatter-drift på en fil vars historik i verkligheten var oförändrad.
 Besläktat men skilt från den äldre, redan dokumenterade shallow-clone-buggen

@@ -3,7 +3,7 @@
 **[UNIVERSAL] En fråga stängdes med domen "redan utrett och stängt" trots att
 registret redan bar felet i klartext, eftersom domen bara prövade EN av två
 nödvändiga delar av påståendet.** Mätt 2026-09-02 (S113 Del 16,
-`tasks/sessions/2026-08-29-session-113.md` rad 1697 till 1714): en tidigare
+`tasks/sessions/archive/2026-08/2026-08-29-session-113.md` rad 1697 till 1714): en tidigare
 dom vilade på `TASK-270`s HOST-mätning (Site URL korrekt), men accept-sidan
 är `/valkommen` och utan `INVITE_REDIRECT_URL` skickar `invite-user` ingen
 `redirectTo` alls, så länken hoppade över lösenordssteget trots att HOST var

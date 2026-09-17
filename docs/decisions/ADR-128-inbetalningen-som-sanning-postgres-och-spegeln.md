@@ -338,7 +338,7 @@ prod-planens gränser kunde inte mätas av en agent (prod-ref fälls av
 - [`airtable-constraints.md`](../reference/airtable-constraints.md) §A
   (P1–P3) — den strukturella grunden för varför en atomär sekvens och en
   unik nyckel inte kan uttryckas i basen.
-- `tasks/sessions/2026-08-29-session-113.md` § Del 11 — grillningens
+- `tasks/sessions/archive/2026-08/2026-08-29-session-113.md` § Del 11 — grillningens
   tretton beslut med Marcus kvittenser.
 - [`verifiering-kvittoskivning-afk-natt-2026-08-30.md`](../research/verifiering-kvittoskivning-afk-natt-2026-08-30.md)
   § 4 — den adversariella granskningen av ADR-snittet, vars rättelse av
