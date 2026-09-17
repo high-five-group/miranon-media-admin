@@ -4,10 +4,10 @@ title: >-
   Fynd: react-aria-components 1.21.1 (dependabot #2481) — exakt-pinnad
   @internationalized/date duplicerar paketet, krockar med TS
   #private-fältstypning i tre komponenter
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-17 09:22'
-updated_date: '2026-09-17 09:25'
+updated_date: '2026-09-17 11:58'
 labels: []
 dependencies: []
 priority: high
@@ -85,6 +85,12 @@ nästa medvetna beslut om dependency-policy — inte exekverat här eftersom det
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Done av S125-orkestreraren 2026-09-17: landad via #2495 (main 4670928c), review-grinden konvergerad (+ omstämpling efter update-branch), DoD mot PR-kroppens grind-tabell.
+<!-- SECTION:NOTES:END -->
 
 ## Final Summary
 
