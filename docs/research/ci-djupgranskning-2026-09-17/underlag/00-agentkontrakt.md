@@ -137,11 +137,22 @@ Kör riktat mot DIN fil, i förgrunden, och läs exitkoden direkt (pipa aldrig
 till `tail`/`head` — då är det pipens exitkod du läser):
 
 ```bash
-npx markdownlint-cli2 "<din fil>"; echo "exit: $?"
-vale "<din fil>"; echo "exit: $?"
+npx markdownlint-cli2 --no-globs "<din fil>" > "<scratch>/mdl.log" 2>&1; echo "exit: $?"
+vale "<din fil>" > "<scratch>/vale.log" 2>&1; echo "exit: $?"
 ```
 
-Rätta tills båda är rena. **Kör INTE `npm run check:docs`** — ett tjugotal
+Rätta tills båda är rena. **`--no-globs` är obligatorisk** (rättat
+2026-09-17 under våg 1): utan flaggan slår `markdownlint-cli2` ihop din fil
+med configens globbar och lintar omkring 650 filer — cirka två minuter per
+körning. Mätt under våg 1: fyra sådana körningar samtidigt, plus övrig
+agentlast, gav en belastning på 269 på en maskin med 16 kärnor, medan en
+annan session körde tidskänsliga Playwright-tester. Med flaggan lintas en
+fil på tre sekunder. Skriv utdata till fil och läs filen — en hook i repot
+fäller varje försök att pipa en grind till `grep`, `tail` eller `head`.
+
+**Maskinen är delad.** Kör tunga kommandon (`npx playwright test --list`,
+`npm run metrics:ci`, breda `find`/`wc` över hela disken) EN gång, spara
+utdata till scratch och räkna på filen. **Kör INTE `npm run check:docs`** — ett tjugotal
 agenter skriver samtidigt, och helgrinden skulle fälla på någon annans
 halvskrivna fil. Orkestreraren kör helgrinden en gång när alla är klara.
 
