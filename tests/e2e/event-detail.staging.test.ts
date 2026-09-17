@@ -2,6 +2,7 @@ import AxeBuilder from '@axe-core/playwright';
 import { expect, type Page, type Route, test } from '../support/test-bas';
 import { mockTomNarvaro } from './helpers/tom-narvaro';
 import { mockTommaAnteckningar } from './helpers/tomma-anteckningar';
+import { mockTommaBetalningar } from './helpers/tomma-betalningar';
 import { mockValjarLista, type ValjarRad, valjarRad } from './helpers/valjar-lista';
 
 /**
@@ -128,6 +129,9 @@ async function mockEvent(
   // TASK-416.16: sidan prefetchar nu get-attendance ovillkorligt (sidmount +
   // Check-in-hover) — se helpers/tom-narvaro.ts för hela motivet.
   await mockTomNarvaro(page);
+  // TASK-442: eventsidan förvärmer nu betalnings-EF:erna vid sidmontering
+  // (belopp + inbetalnings-batch) — se helpers/tomma-betalningar.ts.
+  await mockTommaBetalningar(page);
   await mockValjarLista(page, VALJAR_LISTA);
   return release;
 }
@@ -1207,6 +1211,12 @@ async function mockaPersonkort(
       body: JSON.stringify({ registrations }),
     });
   });
+  // TASK-442 (r1-fynd): eventsidan förvärmer betalnings-EF:erna vid
+  // sidmontering, och denna uppsättning serverar AKTIVA anmälningar — utan
+  // stubben går båda anropen omockade mot skarp staging. Att den gröna
+  // körningen inte fångade det är hela poängen: `prefetchQuery` är
+  // fire-and-forget, så ett obesvarat anrop är osynligt för testresultatet.
+  await mockTommaBetalningar(page);
 }
 
 test.describe('Personkorten — metaytan + historiken (task-18.5)', () => {
@@ -1606,6 +1616,12 @@ async function mockaGruppdynamik(
       body: JSON.stringify({ registrations }),
     });
   });
+  // TASK-442 (r1-fynd): eventsidan förvärmer betalnings-EF:erna vid
+  // sidmontering, och denna uppsättning serverar AKTIVA anmälningar — utan
+  // stubben går båda anropen omockade mot skarp staging. Att den gröna
+  // körningen inte fångade det är hela poängen: `prefetchQuery` är
+  // fire-and-forget, så ett obesvarat anrop är osynligt för testresultatet.
+  await mockTommaBetalningar(page);
 }
 
 test.describe('Gruppdynamik — erfarenhetsmix + kurshistorik + motiveringar (task-18.10)', () => {

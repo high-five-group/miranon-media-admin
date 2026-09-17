@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-08 02:21'
-updated_date: '2026-09-08 16:45'
+updated_date: '2026-09-08 18:44'
 labels:
   - ready-for-agent
 dependencies:
@@ -51,4 +51,6 @@ AC #4 (Marcus ögonmätning) lämnas öppen.
 GRANSKNING r1 (PR #2468, granskad 19bbbefd): risk låg, 2 info. (1) auto-fix `key={rad}` i Tidslinjes underrader kunde kollidera på Lottas fritext → underraderna är nu typade `TidslinjeUnderrad { id, text }` med slaget som id (kvitto/makulering/notering). (2) ask-user: docblocken påstod "exakt betalningssidans ord" för makulerade rader, men listan tystnar när skäl saknas medan loggen säger "Makulerad" — orkestrerarens beslut (Marcus mandat): loggens beteende behålls (ADR-128, historiken tystas aldrig), docblocken säger nu skillnaden öppet. Samma TS6142-fälla en andra gång när `TidslinjeUnderrad` först lades i `.tsx`-filen → båda typerna bor i `registrations/tidslinje-typer.ts`. Om-verifierat: typecheck 0, tests-projektet 0, biome 0, api-pure 8/8, mark-paid e2e och anmalan-detalj acceptance gröna (tal i PR-kroppen).
 
 LANDAD via PR #2468 (`e4c4301f`, 2026-09-08 ~16:1xZ): r1 risk låg 2 info (båda lösta i fix-rundan `7616617b`), r2 risk låg 3 info/auto-fix (inget blockerande): (1) `TidslinjeUnderrad.id` är `string`, inte unionen 'kvitto'|'makulering'|'notering' — stramas åt när `Tidslinje` promoveras till biblioteket (ADR-126), eget litet kort eller del av TASK-440; (2) docblockens avsteg mot listan verifierat sakligt korrekt mot EF:ens `SKAL_MIN_LANGD`/`SKAL_MAX_LANGD` och check-constrainten `inbetalningar_makulering_kraver_skal`; (3) rename utan död referens. AC #4 (Marcus ögonmätning) kvarstår öppen; Done flippas efter den. Uppföljning: TASK-440 (persondetaljens Händelser).
+
+2026-09-08 (TASK-442, bygg-agent): AC #1:s formulering "noll anrop vid sidladdning" är SUPERSEDED av TASK-442. Marcus vände avvägningen samma dag efter ögonmätning av steg 2: eventdetaljen förvärmer nu BÅDA frågorna bakom "Öppna detaljer" (belopp + inbetalnings-batch) vid sidmontering och vid avsikt, så klicket kostar noll väntan (mätt mot staging: 1902 ms → 100 ms median, klick 2 s efter att knappen syns). Detta kort är landat och dess AC skrivs INTE om — batch-formen den byggde (ETT anrop för hela eventet, alla aktiva anmälnings-id:n, aldrig den avbokade) är oförändrad och prövas fortfarande i `tests/e2e/mark-paid.staging.test.ts`, nu på förvärmningens begäran i stället för på klickets.
 <!-- SECTION:NOTES:END -->

@@ -17,6 +17,7 @@ import { MessageBox } from '@/components/primitives/MessageBox';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { displayName, inskickadTid } from '@/components/registrations/registration-display';
 import { StatusBadge } from '@/components/registrations/StatusBadge';
+import { useForberedEventBetalningar } from '@/data/betalningar/useBetalningar';
 import { useSetBorOver } from '@/data/mutations/registrationLodging';
 import { useForberedAtgardsBilagor } from '@/data/queries/useEventAttachments';
 import { useDataSource } from '@/data/useDataSource';
@@ -1386,6 +1387,34 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
   // detaljer"). Egen lokal state, precis som Betalningar.tsx:s egen `oppen`.
   const [betalningOppen, setBetalningOppen] = useState(false);
 
+  /* [TASK-442] FÖRVÄRMNINGEN av "Öppna detaljer" (Marcus 2026-09-08, S124
+     resume 1: detaljerna ska vara klara när Lotta klickar, inte börja laddas
+     då). Mekaniken och hela kostnadsräkningen bor i callbacken själv —
+     `data/betalningar/useBetalningar.ts` § `useForberedEventBetalningar` —
+     inklusive miljöflaggan, den tomma listans undantag och varför prefetchen
+     medvetet saknar egen `staleTime`.
+
+     ID-LISTAN ÄR EXAKT DEN `BetalningsDetaljer` SJÄLV BILDAR: `aktiva` (aldrig
+     de avbokade), sorterad med samma `localeCompare`-form som komponentens
+     egen `anmalanRecordIds`. Sorteringen här är i praktiken redundant — nyckeln
+     normaliserar ordningen i `queryKeys.betalningar.perEvent` — men speglingen
+     hålls ändå: den som läser de två ställena bredvid varandra ska se SAMMA
+     lista, inte två som råkar bli lika. */
+  const forberedBetalningar = useForberedEventBetalningar();
+  const aktivaIds = useMemo(
+    () => aktiva.map((r) => r.id).sort((a, b) => a.localeCompare(b)),
+    [aktiva],
+  );
+  /* SIDMONTERINGEN (doktrinens § 5(b) punkt 2, `docs/research/forvarma-allt-
+     branschmonster-2026-09-06.md`): DET event Lotta redan står på, så fort
+     dess anmälningar är kända — aldrig något annat event. Samma form som
+     `EventDetail.tsx`s `varmNarvaro`-effekt (TASK-416.16). Effekten kör om
+     vid eventbyte (väljaren, task-18.19) och när anmälningsmängden faktiskt
+     ändras; ett omkört anrop med oförändrad, färsk cache är en no-op. */
+  useEffect(() => {
+    forberedBetalningar(event.id, aktivaIds);
+  }, [forberedBetalningar, event.id, aktivaIds]);
+
   // [RIVEN, TASK-162.3 AC #1] `registerTraffar` (den gamla flata "Rensa
   // filtret"-grenens filtrerade vy, med ett eget specialfall för
   // `registerFilter.steg === 'avbokad'` som läste `protoAvbokade` direkt) och
@@ -1794,10 +1823,16 @@ function ArbetsKo({ event, registreringar }: { event: Event; registreringar: Reg
             oppen={betalningOppen}
             kontrollerarId="deltagare-betalningsdetaljer"
             onToggle={() => setBetalningOppen((v) => !v)}
+            onAvsikt={() => forberedBetalningar(event.id, aktivaIds)}
           />
           <div id="deltagare-betalningsdetaljer" hidden={!betalningOppen}>
-            {/* [TASK-436] `aktiv` = disclosure-läget: beloppen hämtas först
-                när Lotta öppnat detaljerna, aldrig vid sidladdning. */}
+            {/* [TASK-436, OMSKRIVEN TASK-442] `aktiv` = disclosure-läget:
+                observern hämtar fortfarande först när Lotta öppnat detaljerna
+                — men datan är då normalt REDAN i cachen, förvärmd vid
+                sidmontering och vid avsikt (`forberedBetalningar` ovan). Den
+                gamla lydelsen ("aldrig vid sidladdning") beskrev regeln före
+                Marcus beslut 2026-09-08; sidladdningen betalar nu två anrop
+                för DET öppnade eventet, mot noll väntan vid klicket. */}
             <BetalningsDetaljer event={event} registreringar={aktiva} aktiv={betalningOppen} />
           </div>
         </div>
