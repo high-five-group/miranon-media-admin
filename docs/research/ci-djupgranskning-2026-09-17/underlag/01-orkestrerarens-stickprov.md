@@ -638,6 +638,61 @@ utreda.
   kostnad. Marcus upplevelse — *"det enda jag ser och märker av är ju väntan"*
   — har alltså en namngiven, redan kortad huvudorsak.
 
+### S26 — Event i januari 2027 går inte att skapa i dag, och ingen kontroll ser det (källa: D9 risk P1, J8.1 incident 4)
+
+- **Påstående:** Airtable-basens fält "Månad/år" är en fast lista som tar
+  slut vid december 2026; serverfunktionen `create-event` svarar med ett
+  tekniskt fel för ett startdatum bortom listan; känt sedan 2026-07-24, olöst.
+- **Prövat med:** `grep -n "Månad/år"` i `docs/reference/data-model.md`;
+  läsning av `supabase/functions/create-event/index.ts:222-239`; och ETT
+  läsande schemaanrop mot PRODUKTIONSBASEN via claude.ai-connectorn
+  (`get_table_schema`, tabell `tblVE3UKWl1CKrphV`, fält
+  `fld2BjFdBd964TzVb`), 2026-09-17 ~11:45Z. Inga poster lästa, ingenting
+  skrivet.
+- **Utfall:** `create-event/index.ts:233-235` säger ordagrant: *"Basens
+  options-lista är ändlig (Nov 2025 – Dec 2026); ett datum utanför den FELAR
+  (typecast:false → 500) i stället för att tyst skapa en option — medvetet,
+  §Kända fällor 36 + 45."* `data-model.md:2317` (fälla 45) är märkt
+  live-bekräftad 2026-07-24. **Prod i dag: fjorton val, "November 2025" till
+  "December 2026" — listan är oförändrad.**
+- **Dom: höll, och skärps på en punkt.** D9 skriver *"om drygt tre månader"*
+  — men felet utlöses av eventets STARTDATUM, inte av dagens datum. Det biter
+  alltså första gången någon planerar ett event i januari 2027, vilket kan
+  vara i morgon. Att funktionen FELAR i stället för att tyst skapa ett listval
+  är ett medvetet och rimligt val (fälla 36); det som saknas är att någon
+  fyller på listan, och att något varnar innan den tar slut.
+- **Varför det hör hemma i en CI-granskning:** det är den renaste instansen
+  av uppdragets fråga 1 vänd bakåt — *ett känt, daterat produktionsfel som
+  INGET av de cirka 35 jobben skyddar mot*, medan tre processgrindar håller
+  nattnätet rött över bokföring. Åtgärden är inte CI alls: tolv nya listval i
+  basen (en minuts arbete för den som äger basen), eller fälla 36:s riktiga
+  lösning (härled fältet med en formel). Flaggas för Marcus som "nu"; rörs
+  inte av denna session — skrivning i produktionsbasen är hans beslut.
+
+### S27 — "Omkring 2 500 PR:er" är ett nummer, inte ett antal (källa: J8.8, D9 och orkestreraren mot KG3)
+
+- **Påstående:** J8.8, D9 och orkestrerarens egna texter skriver *"~2 500
+  PR:er på fyra månader"*. KG3 mätte 2 214 (alla tillstånd) och avrådde från
+  det högre talet som *"ospårat"*. Ändringsloggen (`03-…` rad 43) räknar
+  *"506 av 2 251 landade PR:er"*.
+- **Prövat med:** en GraphQL-fråga mot GitHub (`pullRequests.totalCount` per
+  tillstånd samt `issues.totalCount`), 2026-09-17 ~11:50Z; läsning av
+  ändringsloggens metodavsnitt (rad 112–119).
+- **Utfall:** **2 216 PR:er** — 2 118 mergade, 16 öppna, 82 stängda utan
+  merge — och **284 ärenden**. Summan är exakt 2 500: PR:er och ärenden delar
+  nummerserie på GitHub, så det högsta PR-NUMRET (omkring 2 498) lästes som
+  ett antal. Ändringsloggens 2 251 är något tredje: landningar på `main`s
+  förstaförälderkedja, där ungefär 130 är direktcommits från tiden före
+  PR-flödet (`ADR-076`).
+- **Dom: KG3 höll; J8.8, D9 och orkestreraren föll.** Rätt tal är **omkring
+  2 200 PR:er, varav omkring 2 100 landade**. Slutsatserna som vilar på talet
+  står sig — arbetsformens skala ändras med tolv procent, inte i sin art —
+  och ändringsloggens kvot (22,5 %) rör sig inte märkbart. Men av de 284
+  ärendena är 270 maskinskapade larm (207 `ci-post-merge` + 63 `ci-natt`,
+  S7): var nionde nummer i repots serie är alltså ett larm som CI själv
+  skrev. Rättas i leverablerna i putsen; underlagen från våg 1 lämnas som de
+  skrevs, med denna post som gällande version.
+
 ## Motsägelser mellan agenter
 
 - **Merge-dedupens faktiska träffkvot (J8.5 mot J8.7, ärvd av D3):** AVGJORD
