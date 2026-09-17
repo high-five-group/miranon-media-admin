@@ -6,9 +6,10 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-29 08:03'
-updated_date: '2026-09-04 08:16'
+updated_date: '2026-09-17 09:17'
 labels:
   - ready-for-agent
+  - intentionally-unchecked
 dependencies: []
 parent_task_id: TASK-338
 ordinal: 611000
@@ -83,6 +84,8 @@ Efter skivan bär STAGING-basen (apphjj8Q7lkXCMsL4 — prod app8uGPrVCVOm6LfD ä
 **DoD #6 (Lagervakten — matchning/validering i EF/_shared):** N/A av samma skäl — ingen matchnings- eller valideringslogik skrevs i denna skiva (det är TASK-338.2/338.3). Ingen klientkod rörd.
 
 Nattgrind-stängning 2026-09-04: DoD bockad mot belägg — samtliga 4 AC redan bockade (mekanisk DoD#1); DoD#2 styrks av PR #2078:s testplan (check:docs 14/14 gröna, staging-sviter 43/43); DoD#3 verifierat mot git show --stat 658e4243 (PR #2078): enbart data-model.md + kortfilen ändrade. DoD#4/#5/#6 KVARSTÅR OBOCKADE — kortets egna notiser klassar dem N/A (inget prod-anrop, ingen EF-kod, ingen klientkod i denna skiva); rapporterat till orkestreraren, inte bockat på gissning.
+
+OBOCKAT MED AVSIKT: DoD #4, #5 och #6 lämnas obockade permanent, inte tillfälligt. #4 (prod-schemaändringar endast efter Marcus GO, ADR-125 § 8) är INAPPLICERBAR: skivan gjorde inga prod-anrop — samtliga MCP-anrop gick mot staging (apphjj8Q7lkXCMsL4), verifierat mot PR #2078:s diff (gh pr view 2078 --json files: enbart data-model.md + kortfilen, ingen kod). #5 (deny/allow-test för ny/ändrad EF-operation) är INAPPLICERBAR: PR #2078 rör noll EF-kod. #6 (Lagervakten — matchning/validering i EF/_shared) är INAPPLICERBAR av samma skäl: ingen matchnings- eller valideringskod skrevs, ingen klientfil rörd. Bekräftat av S125 2026-09-17 (backlog-stängningsgrindens restlista, TASK-125).
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

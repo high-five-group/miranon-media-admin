@@ -4,9 +4,10 @@ title: 'Skiva: Kreditkvitto, återbetalning, makulera och radera i UI'
 status: Done
 assignee: []
 created_date: '2026-08-30 18:46'
-updated_date: '2026-09-04 08:23'
+updated_date: '2026-09-17 09:20'
 labels:
   - ready-for-agent
+  - intentionally-unchecked
 dependencies:
   - TASK-346.5
   - TASK-346.6
@@ -47,4 +48,6 @@ Modell: Sonnet@xhigh (ADR-089; avvikelse från agent-default bokförd här). Nat
 
 <!-- SECTION:NOTES:BEGIN -->
 Nattgrind-stangning 2026-09-04: DoD2/3/4/5/7/8 bockade mot belagg i PR 2163-kroppen, git-scope och disk. AC5 och DoD1/DoD6 lamnade obockade - review-agentens egen text sager AC5 fortfarande arligt obockad (blockerad pa post-armering EF-deploy); ingen dedikerad skarmdump hittad for makulera/aterbetalning/kreditkvitto-ytorna. Rapporterat till orkestreraren.
+
+OBOCKAT MED AVSIKT: AC #5, DoD #1 och DoD #6 lämnas obockade permanent tills vidare — väntar Marcus '--kontrollera'. AC #5 (Acceptanstest: makulera ett kvitto, registrera en återbetalning, kreditkvitto skickat till testadress, PDF visar hänvisningen) kan INTE bockas mot belägg idag: nattgrindens egen not säger 'blockerad på post-armering EF-deploy', och S124-doket (tasks/sessions/2026-09-08-session-124.md § TILLSTÅND) bekräftar att S123 omdeployade samtliga 57 allowlistade prod-EF:er 2026-09-08 04:28–04:32Z ('Prod-EF hamta-inbetalningar: version 6, updated_at 2026-09-08T04:31:49Z ... alla 57 allowlistade funktioner omdeployade 04:28–04:32Z') — men varken S123- eller S124-doket nämner TASK-346.9, kreditkvitto, makulera eller återbetalning i samband med den deployen: det var en generell synk, inte en körning av detta AC:s scenario. Ingen automatiserad acceptance-testfil täcker flödet (verifierat: tests/acceptance/ saknar kvitto-/makulera-/återbetalnings-test), så AC #5 kräver en FAKTISK manuell körning (skicka till testadress, granska PDF) som ingen agent får utföra mot prod på eget bevåg (CLAUDE.md § Prod-EF-deploy, § Airtable-produktionsbasen). DoD #1 hänger mekaniskt på AC #5. DoD #6 (vandring + skärmdumpar) är av samma skäl obockad — kortets egen not: 'ingen dedikerad skärmdump hittad för makulera/återbetalning/kreditkvitto-ytorna'. Väntar Marcus '--kontrollera' eller motsvarande manuell körning och skärmdumpsbokföring. Bekräftat av S125 2026-09-17 (backlog-stängningsgrindens restlista, TASK-125).
 <!-- SECTION:NOTES:END -->

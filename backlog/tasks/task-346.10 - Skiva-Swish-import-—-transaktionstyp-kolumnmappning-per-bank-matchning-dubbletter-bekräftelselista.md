@@ -6,9 +6,10 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-30 18:46'
-updated_date: '2026-09-04 08:24'
+updated_date: '2026-09-17 09:21'
 labels:
   - ready-for-agent
+  - intentionally-unchecked
 dependencies:
   - TASK-346.6
 parent_task_id: TASK-346
@@ -48,4 +49,6 @@ Modell: Opus@xhigh (ADR-089; avvikelse från agent-default bokförd här). Nattm
 
 <!-- SECTION:NOTES:BEGIN -->
 Nattgrind-stangning 2026-09-04: DoD2/3/4/5/6/7 bockade mot belagg (PR 2164-kroppens grindtabell, git show 85bac1ff-scope, ADR-128/129 Accepted, negativ-kontroll per matchnings-/dubblettregel, VITE_FEATURE_BETALNINGAR av i prod, orkestrerarens slutvandring Del 13 namner Swish-importen explicit plus skarmdumpen slutdom-swish-1440.png i s113-natt-slutvandring/). AC1/AC5/DoD1/DoD8 lamnade obockade - AC1 ar explicit DELVIS (bas-halvan STOPPA-bokford, vantar Marcus-beslut), AC5 explicit HITL-oppen (Lottas verkliga bankfil saknas), DoD8 ingen AMENDERING-sidofil hittad specifikt for Swish/inkorgen (inkorgen ar mojligen inte en facit-stamplad yta - obedombart harifran).
+
+OBOCKAT MED AVSIKT: AC #1, AC #5, DoD #1 och DoD #8 lämnas obockade permanent — två HITL-beroenden, citerade verbatim ur kortet/PR #2164. AC #1: kortets egen text kräver 'mappningen sparas per bank (lokalt + i basen)'; PR #2164:s STOPPA-OCH-FRÅGA-sektion säger 'Den lokala halvan är byggd. Bas-halvan är inte, och det är ett beslut' — banken är okänd (Lotta har ännu inte identifierat sin bank), så en permanent Airtable-tabell för en Handelsbanks-mappning hon sannolikt inte har vore infrastruktur före kunskap; STOPPA-bokfört, väntar Marcus-beslut om bas-halvan ska byggas. AC #5: kortets egen text säger 'Matchning mot Lottas verkliga bankfil är HITL (bank okänd) — bokfört som öppet AC för Marcus'; PR-kroppens AC-tabell bekräftar 'ÖPPET för Marcus ... HITL-halvan — Lottas verkliga fil — är öppen per AC:ets egen text' (acceptanstestet mot staging-fixturen är däremot kört, tio skärmdumpar i tasks/sessions/bilagor/s113-346-10-swish-import/). DoD #1 hänger mekaniskt på AC #1/#5. DoD #8 (AMENDERING-sidofil per facit-stämplad yta) lämnas obockad av ett tredje, mindre skäl: nattgrindens egen not säger 'ingen AMENDERING-sidofil hittad specifikt för Swish/inkorgen (inkorgen är möjligen inte en facit-stämplad yta — obedömbart härifrån)'. Bekräftat av S125 2026-09-17 (backlog-stängningsgrindens restlista, TASK-125).
 <!-- SECTION:NOTES:END -->

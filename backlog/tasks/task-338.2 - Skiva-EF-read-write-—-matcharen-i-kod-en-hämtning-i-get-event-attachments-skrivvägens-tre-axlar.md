@@ -6,9 +6,10 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-29 08:03'
-updated_date: '2026-09-04 08:16'
+updated_date: '2026-09-17 09:18'
 labels:
   - ready-for-agent
+  - intentionally-unchecked
 dependencies:
   - TASK-338.1
 parent_task_id: TASK-338
@@ -85,6 +86,8 @@ Efter skivan returnerar get-event-attachments för ett event unionen av (a) even
 **DoD-noter:** #4 N/A — inget prod-anrop gjordes (deploy och Airtable-läsning gick uteslutande mot `apphjj8Q7lkXCMsL4`/`pqtshyierkdgwdnxuirz`). #5 uppfyllt via sub-fas-mönstret: `Plats` tillagd i `create-attachment`s allowlist med allow-bevis (fältet skrivet som länk) och deny-bevis (okänd rad 404, fel form 400, fel räckvidd 400) i `upload-attachment.staging.test.ts`. Lookup-fältet `Platsnamn` står MEDVETET INTE i allowlisten — ett `multipleLookupValues`-fält är beräknat och kan inte skrivas. #6 grön: `tests/api/attachment-layer-independence.test.ts`, `ef-metod-vakt` och `mutation-hemvist-vakt` gröna i api-pure-körningen; all matchning och validering bor i `_shared`, ingen klientfil rörd.
 
 Nattgrind-stängning 2026-09-04: DoD bockad mot belägg — samtliga 5 AC redan bockade (mekanisk DoD#1); DoD#2 styrks av notens grindtabell (typecheck/biome/build/test:api:pure/test:api:staging/acceptance/check-langa-streck 0); DoD#3 verifierat mot git show --stat eeef0b54 (PR #2084): enbart EF:er + delade moduler + testfiler i bilage-featuren ändrade; DoD#5 styrks av notens egen text (Plats i create-attachments allowlist, allow/deny-bevis i upload-attachment.staging.test.ts); DoD#6 styrks av notens egen text (attachment-layer-independence.test.ts, ef-metod-vakt, mutation-hemvist-vakt gröna). DoD#4 KVARSTÅR OBOCKAD — N/A per notens egen klassning (inget prod-anrop gjordes, prod-migreringen är TASK-338.6); rapporterat, inte bockat på gissning.
+
+OBOCKAT MED AVSIKT: DoD #4 lämnas obockat permanent, inte tillfälligt. Prod-schemaändringar endast efter Marcus GO (ADR-125 § 8) är INAPPLICERBAR i denna skiva: deployen gick uteslutande mot staging (pqtshyierkdgwdnxuirz) och Airtable-läsningen mot apphjj8Q7lkXCMsL4 — inget prod-anrop gjordes, verifierat mot PR #2084:s diff (gh pr view 2084 --json files: enbart supabase/functions/* och tests/api/*, inga prod-allowlist- eller konfigurationsfiler). Prod-migreringen är egen skiva, TASK-338.6. Bekräftat av S125 2026-09-17 (backlog-stängningsgrindens restlista, TASK-125).
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

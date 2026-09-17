@@ -3,10 +3,10 @@ id: TASK-346.7.1
 title: >-
   Fynd: personkortets Betalningar-sektion saknar felläge — evig retry-storm +
   kvarstående sr-only-Laddar när hamta-inbetalningar felar
-status: Done
+status: In Progress
 assignee: []
 created_date: '2026-08-31 10:08'
-updated_date: '2026-08-31 13:07'
+updated_date: '2026-09-17 09:22'
 labels:
   - ready-for-agent
 dependencies: []
@@ -44,4 +44,6 @@ SCOPE: bara den delade läs-hooken (useBetalningar.ts) och den delade Inbetalnin
 
 <!-- SECTION:NOTES:BEGIN -->
 Kod skriven och verifierad statiskt: typecheck (npm run typecheck, exit 0 — inkl. mock-objekten mot PersonDetailSchema/InbetalningSchema z.infer-typerna) + biome (exit 0) + build (exit 0). Test-logikens siffror (16 anrop vid 500, 1 anrop vid 403) är härledda ur ATT LÄSA den installerade @tanstack/query-core 5.101.4:s retryer.js (failureCount startar 0, retry(failureCount,err) utvärderas FÖRE increment — 4 queryFn-försök vid failureCount<3) och src/data/utils.ts:s fetchWithRetry (maxRetries=3 default, exakt 4 råa fetch-anrop per invocation) — INTE gissade. MEN: testet (tests/e2e/persondetalj-betalningar-fellage.staging.test.ts) har INTE körts live. Playwright-projektet chromium-authenticated är CORS-portlåst till exakt localhost:5173 (playwright.config.ts rad ~110), och porten var upptagen hela sessionen av en annan aktiv sessions dev-server (PID 46450, cwd=huvudkatalogen — inte min worktree, rördes aldrig). AC #4 lämnas därför OBOCKAD tills en session med fri port 5173 kört: npx playwright test tests/e2e/persondetalj-betalningar-fellage.staging.test.ts --project=chromium-authenticated
+
+Återöppnat av S125 2026-09-17: AC #4 obevisat (kortets egen not), måste köras live innan Done.
 <!-- SECTION:NOTES:END -->
