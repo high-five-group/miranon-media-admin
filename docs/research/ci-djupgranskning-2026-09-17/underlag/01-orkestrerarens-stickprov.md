@@ -499,7 +499,8 @@ utreda.
   --limit 40` (körningarnas längd i sekunder), sedan `gh api
   …/actions/runs/<id>/jobs` och `gh run view <id> --log --job <id>` på
   klassningsjobbet "Detect changed files" i de fyra KORTA körningar vars
-  gren hade kodnamn. 2026-09-17 ~11:15–11:25Z.
+  gren hade kodnamn. 2026-09-17, mellan 11:05Z och 11:17Z (klockan avläst
+  före och efter — gäller även S21–S27 nedan).
 - **Utfall:** tre verkliga träffar, med loggraden ordagrant *"✅ Dedup-TRÄFF:
   träd == … och den SHA:n har grön CI-run → tunga jobb hoppas"*:
   run `34184098307` (PR #2458), `34179882751` (PR #2455) och `34051468698`
@@ -647,7 +648,7 @@ utreda.
   läsning av `supabase/functions/create-event/index.ts:222-239`; och ETT
   läsande schemaanrop mot PRODUKTIONSBASEN via claude.ai-connectorn
   (`get_table_schema`, tabell `tblVE3UKWl1CKrphV`, fält
-  `fld2BjFdBd964TzVb`), 2026-09-17 ~11:45Z. Inga poster lästa, ingenting
+  `fld2BjFdBd964TzVb`), 2026-09-17 före 11:17Z. Inga poster lästa, ingenting
   skrivet.
 - **Utfall:** `create-event/index.ts:233-235` säger ordagrant: *"Basens
   options-lista är ändlig (Nov 2025 – Dec 2026); ett datum utanför den FELAR
@@ -676,7 +677,7 @@ utreda.
   det högre talet som *"ospårat"*. Ändringsloggen (`03-…` rad 43) räknar
   *"506 av 2 251 landade PR:er"*.
 - **Prövat med:** en GraphQL-fråga mot GitHub (`pullRequests.totalCount` per
-  tillstånd samt `issues.totalCount`), 2026-09-17 ~11:50Z; läsning av
+  tillstånd samt `issues.totalCount`), 2026-09-17 före 11:17Z; läsning av
   ändringsloggens metodavsnitt (rad 112–119).
 - **Utfall:** **2 216 PR:er** — 2 118 mergade, 16 öppna, 82 stängda utan
   merge — och **284 ärenden**. Summan är exakt 2 500: PR:er och ärenden delar
@@ -692,6 +693,38 @@ utreda.
   S7): var nionde nummer i repots serie är alltså ett larm som CI själv
   skrev. Rättas i leverablerna i putsen; underlagen från våg 1 lämnas som de
   skrevs, med denna post som gällande version.
+
+### S28 — Review-grinden i tal: nio eskaleringar om dagen, rundtaket passerat 37 gånger, träffsäkerheten omätt (källa: D6)
+
+- **Påstående:** D6 (Opus) räknade själv på
+  `docs/reference/review-instrumentering.jsonl`: 262 rader; 42 % av rundorna
+  eskalerar till Marcus (omkring nio per dag); 43 är hög risk; 37 är runda 3
+  eller högre mot ett deklarerat tak på 2; noll kalibreringsposter.
+  (Review-grinden är den AI-granskare som läser varje kod-PR i färsk kontext
+  före landning; "kalibrering" är bokföringen av fel som grinden MISSADE och
+  Marcus senare hittade — det enda sättet att veta hur träffsäker den är.)
+- **Prövat med:** `wc -l` och fyra `jq`-uppräkningar över filen (fälten
+  `typ`, `runda`, `beslut`, `risk.niva`, `tidsstampel`), 2026-09-17 före
+  11:25Z. Filen är läst, inte rörd.
+- **Utfall:** 262 rader, SAMTLIGA av typen `korning` — ingen enda
+  `kalibrering`. Rundor: 140 / 85 / 25 / 9 / 3 för runda 1–5, alltså **37 på
+  runda 3–5**. Beslut: 130 konvergerade, 22 ny runda, och **110
+  eskaleringar** (55 fråga till Marcus, 43 hög risk, 12 tak nått) = 42 %.
+  Risk: 162 låg, 57 medel, 43 hög. Fönster: 2026-08-28 → 2026-09-08, tolv
+  dagar ⇒ drygt nio eskaleringar per dag.
+- **Dom: höll, på varje tal.** Tre saker följer. (1) `CLAUDE.md` säger öppet
+  att rundtaket är *"ett åtagande du håller, inte ett lås som håller dig"* —
+  loggen visar vad det betyder i praktiken: taket passeras i var sjunde
+  körning. (2) Nio eskaleringar om dagen är en mätbar del av det Marcus
+  beskriver som *"fel som uppkommer och som måste få en resurs"* — grinden
+  ersätter en mänsklig granskare men skickar ändå fyra av tio ärenden till
+  människan. (3) Utan en enda kalibreringspost är grindens MISSAR omätta:
+  verktyget finns (`npm run review:kalibrering`), och J8.1 räknar sju
+  produktionsfel som Marcus hittade själv — inget av dem är bokfört mot
+  grinden. Om fyra av tio eskaleringar är rätt nivå eller överförsiktighet
+  går därför inte att säga i dag. Åtgärdskandidat: bokför de kända missarna
+  retroaktivt, så blir nästa granskning av grinden en mätning i stället för
+  en bedömning.
 
 ## Motsägelser mellan agenter
 
