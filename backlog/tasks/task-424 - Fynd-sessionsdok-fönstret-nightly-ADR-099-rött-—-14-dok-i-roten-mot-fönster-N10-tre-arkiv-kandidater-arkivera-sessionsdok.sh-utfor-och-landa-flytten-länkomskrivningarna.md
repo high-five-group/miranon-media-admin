@@ -7,7 +7,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-09-07 15:30'
-updated_date: '2026-09-07 16:51'
+updated_date: '2026-09-17 09:07'
 labels:
   - ready-for-agent
 dependencies: []
@@ -30,9 +30,9 @@ Källa: Nightly-körning 34088565869 på a29d8192:s föregångare d99db0ec (2026
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -108,4 +108,6 @@ staging-miljö-flakighet och OBEROENDE av denna diff — `ci.yml` sätter
 `api-pure`-delen (1757 test) var 100 % grön.
 
 STÄNGNING (S123 resume 1, 2026-09-07): PR #2441 → 562b3f43; post-merge 562b3f43 GRÖN (full svit — PR:en var inte D0 pga två .ts-kommentarer). Review runda 1 (Sonnet): 3 info (de två .ts-diffarna verifierade som rena sökvägsciteringar i kommentarer; D0-klassningen korrekt icke-D0; 31 länkreferenser exakt verifierade), risk låg, konvergerad. Done-flipp av orkestreraren.
+
+Bockad i efterhand av S125 mot belägg: PR #2441 mergad 562b3f43 (2026-09-07), post-merge 562b3f43 GRÖN (full svit), samtliga 3 AC redan bockade, review runda 1 konvergerad (3 info, risk låg). Nightly Backlog-stängningsgrinden (körning 35187813487) flaggade kortet som inkonsistent.
 <!-- SECTION:NOTES:END -->

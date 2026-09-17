@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-09-06 13:21'
-updated_date: '2026-09-06 17:07'
+updated_date: '2026-09-17 09:06'
 labels:
   - ready-for-agent
 dependencies: []
@@ -30,9 +30,9 @@ Källa: rapport D §4 #7 (S123). src/components/platser/PlatserYta.tsx:240–251
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -72,4 +72,6 @@ staging (inga referenser till PlatserYta/EventinnehallYta i test:api-sviten);
 2 stickprov (update-record.staging.test.ts update-person-note,
 save-place-standard.staging.test.ts hela filen) om-körda ISOLERAT → 100 %
 gröna, vilket bekräftar flak snarare än regression.
+
+Bockad i efterhand av S125 mot belägg: PR #2393 mergad (2026-09-06), samtliga 3 AC redan bockade, notiserna anger identiska boundingBox-mått (skeleton/laddat) i båda vyerna, axe 0 violations, grindtabell typecheck/biome/build/check-langa-streck 0. Nightly Backlog-stängningsgrinden (körning 35187813487) flaggade kortet som inkonsistent.
 <!-- SECTION:NOTES:END -->

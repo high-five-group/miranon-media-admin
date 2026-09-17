@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-09-06 13:22'
-updated_date: '2026-09-06 17:07'
+updated_date: '2026-09-17 09:06'
 labels:
   - ready-for-agent
 dependencies: []
@@ -31,7 +31,13 @@ Källa: rapport D §5 (S123). Deterministiska geometri-avvikelser: src/component
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Bockad i efterhand av S125 mot belägg: PR #2397 mergad (2026-09-06), samtliga 4 AC redan bockade. Kortet saknade eget Implementation Notes-avsnitt, men PR-kroppen (hämtad via gh pr view 2397) bär full grindtabell (typecheck 0, biome 0, check-langa-streck 0, build 0, test:api 0, hem-laddlage.acceptance.test.ts 5/5) och review-agentens utlåtande (risk LÅG, AC1-4 alla verifierade). Nightly Backlog-stängningsgrinden (körning 35187813487) flaggade kortet som inkonsistent.
+<!-- SECTION:NOTES:END -->

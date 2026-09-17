@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-09-03 11:12'
-updated_date: '2026-09-04 14:24'
+updated_date: '2026-09-17 09:05'
 labels:
   - ready-for-agent
 dependencies: []
@@ -31,9 +31,9 @@ SNABBVÄG PÅ MARCUS ORDER (S117, 2026-09-03: 'Se till att denna promovering gå
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -46,4 +46,6 @@ PR2-rivningen pushad som DRAFT. SegmentListaKonvergens.tsx borttagen, variant=a-
 Marcus prod-titt på /mer/segment godkänd 2026-09-04, verbatim: "Prod-titten i på mer/segment godkänd". Status orörd — PR #2269 (B2-rivningen) väntar på #2293-landning (facit-lås B3).
 
 PR #2269 (B2-rivningen) mergad 9c7b85d7 (2026-09-04T14:22:15Z). Review r1-r4 (Sonnet 5), risk lag; check-facit.sh rivningsklausulen skarpbevisad (manifestet stämplat, godkand.sha 78de4a7d). AC #2 bockad. Kort Done.
+
+Bockad i efterhand av S125 mot belägg: PR #2269 mergad 9c7b85d7 (2026-09-04), samtliga 5 AC redan bockade, AC #5 dokumenterar DoD-kommandona gröna + review-loopen konvergerad + CI grön per jobb på pushad commit. Nightly Backlog-stängningsgrinden (körning 35187813487) flaggade kortet som inkonsistent (0 AC/3 DoD obockade trots status Done).
 <!-- SECTION:NOTES:END -->

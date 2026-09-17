@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-09-06 14:45'
-updated_date: '2026-09-06 17:07'
+updated_date: '2026-09-17 09:06'
 labels:
   - ready-for-agent
 dependencies: []
@@ -30,9 +30,9 @@ Källa: review-agentens utlåtande på PR #2397 (TASK-416.9, S123, 2026-09-06), 
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -105,4 +105,6 @@ Grindar efter fix (exitkoder mätta separat): typecheck 0, biome check 0,
 build 0, check-langa-streck.mjs 0 (323 filer), maillogg/väntelista-
 acceptance + de fyra laddlage-testerna (2 desktop + 2 mobil) 25/25 gröna
 inkl. samtliga axe-svep.
+
+Bockad i efterhand av S125 mot belägg: PR #2408 mergad (2026-09-06), samtliga 3 AC redan bockade, notiserna anger grindtabell efter fix (typecheck 0, biome 0, build 0, check-langa-streck 0, 25/25 acceptance inkl axe). Nightly Backlog-stängningsgrinden (körning 35187813487) flaggade kortet som inkonsistent.
 <!-- SECTION:NOTES:END -->
