@@ -853,6 +853,37 @@ KG1 prövade fyra mekanismer i koden och mot 601 pushar. Tre av dess fynd
   rör inte `CI [push]` eller dedupens fråga innan efterkontrollen klassar
   hela spannet.
 
+### S32 — Registrets pekare träffar, och "vem vaktar vakten" har två belagda hål (källa: D12, KG1 fynd 3)
+
+- **Påståenden (registrets rad G05 och G06, ur KG1):** (G06) `gate-proof.yml`
+  — provet som ska visa att slutgrinden verkligen fäller — startas bara för
+  hand, kördes senast 2026-09-04, och `ci.yml` har ändrats två gånger sedan
+  dess utan nytt prov, trots att `ADR-077` §4 säger att det körs *"efter varje
+  ci.yml-ändring"*. (G05) Paritetsvakten `verifieraJobbmangd` fäller på ett
+  NYTT jobb som policyn inte känner, men kontrollerar inte att jobbet står i
+  slutgrindens `needs`-lista — och själva verktyget körs inte i CI.
+- **Prövat med:** `sed -n '29,30p' .github/workflows/gate-proof.yml`; `gh run
+  list --workflow gate-proof.yml --limit 3`; `git log origin/main -4 --
+  .github/workflows/ci.yml`; `sed -n '202,224p' scripts/verify-ci-parity.mjs`;
+  `grep -n verify-ci-parity .github/workflows/*.yml`. 2026-09-17, mellan
+  11:52Z och 11:54Z (klockan avläst före och efter).
+- **Utfall:** triggern är enbart `workflow_dispatch`. Tre körningar någonsin
+  i listan: 2026-08-01, 08-26 och **09-04 13:02Z**. `ci.yml` ändrades
+  därefter `d8e2fddd` och `7ab494c4`, båda 2026-09-07. Funktionen på rad
+  202–224 jämför jobbmängden mot policyn åt båda håll och nämner aldrig
+  `needs`. Workflow-filerna kör `node scripts/test-verify-ci-parity.mjs`
+  (`ci.yml:1542`) — verktygets TESTSVIT — men aldrig verktyget.
+- **Dom: höll, båda.** S2:s öppna fråga (b) är därmed avgjord: ett nytt jobb
+  som glöms i `needs` fångas i dag av ingenting som kör automatiskt. Och
+  `ADR-077` §4 är ytterligare en instans av mönstret i S4/S10/S16/S17 —
+  prosa som beskriver ett arbetssätt som om det vore en mekanism.
+  Åtgärdskandidat (KG1): en `paths:`-trigger på `gate-proof.yml` kostar en rad.
+- **Registret som helhet:** 130 bärande påståenden, 118 märkta verifierade;
+  agenten prövade 14 pekare (alla träffade), jag 2 till (båda träffade).
+  Registret fångade fyra ställen där en leverabel ännu sade emot senare
+  mätning (M-A, M-B, M-C, M-F) — alla rättade samma dag, se statusnoten i
+  registrets avsnitt om kvarstående motsägelser.
+
 ## Motsägelser mellan agenter
 
 - **Merge-dedupens faktiska träffkvot (J8.5 mot J8.7, ärvd av D3):** AVGJORD

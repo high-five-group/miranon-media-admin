@@ -85,10 +85,13 @@ varit **rött 51 av 52 nätter** sedan 2026-07-28.
    dagar senare är kortet fortfarande To Do (rättat efter orkestrerarens
    stickprov S25 — inte "av misstag").
 3. **Städkontroller för repots egen bokföring delar larm med produktens
-   tester.** Nattkörningens rödhet kommer i praktiken helt från tre
-   pappersgrindar — inte från appen. När ett verkligt testfel väl kom, natten
-   till 2026-09-17, landade det i ett larm som redan tystnat för sju veckor
-   sedan. En av de tre grindarna är dessutom redan beslutad att rivas.
+   tester.** Tre pappersgrindar håller nattkörningen röd i stort sett varje
+   natt — och därför syntes det inte att ett PRODUKTSKYDDANDE jobb också var
+   rött 25 av 52 nätter (rättat efter orkestrerarens stickprov S30; den
+   första läsningen, "rödheten kommer helt från pappersgrindarna", gällde de
+   två nätter som då undersökts). När ännu ett verkligt testfel kom, natten
+   till 2026-09-17, landade det i ett larm som tystnat sju veckor tidigare.
+   En av de tre grindarna är dessutom redan beslutad att rivas.
 
 ## Vad jag läste först
 

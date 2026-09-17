@@ -51,7 +51,11 @@ till skillnad från CI.
 **3. Vad bör INTE göras?** Inget mallrepo (ett mallrepo gör *fler* kopior,
 och kopiedrift är just det fel som redan är uppmätt här). Inga composite
 actions. Ingen generator. Inget `.github`-specialrepo. Och framför allt:
-**frys ingenting som är trasigt.** Tre delar av maskinen fungerar inte som
+**frys ingenting som är trasigt.** ("Trasig" betyder i denna leverabel
+*levererar inte det den byggdes för* — inte *gör fel*. Merge-dedupen gör
+aldrig fel: korsgranskningen KG1 dömer uttryckligen "riv den inte". Den
+ställer en för snäv fråga och hämtar därför hem en bråkdel av sin besparing —
+preciserat efter orkestrerarens stickprov S30.) Tre delar av maskinen fungerar inte som
 avsett i dag — merge-dedupen träffar bara 3 av 20 kod-landningar (15 %, inte
 aldrig — rättat efter orkestrerarens stickprov S20; KG1 mätte 32 av 32 där
 den kan göra nytta, S30), post-merge-kontrollen har en täckningslucka på 60
