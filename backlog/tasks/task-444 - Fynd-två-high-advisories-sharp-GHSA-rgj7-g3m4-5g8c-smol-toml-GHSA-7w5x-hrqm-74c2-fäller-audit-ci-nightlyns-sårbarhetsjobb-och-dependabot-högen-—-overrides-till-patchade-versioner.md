@@ -4,10 +4,10 @@ title: >-
   Fynd: två high-advisories (sharp GHSA-rgj7-g3m4-5g8c, smol-toml
   GHSA-7w5x-hrqm-74c2) fäller audit-ci, nightlyns sårbarhetsjobb och
   dependabot-högen — overrides till patchade versioner
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-17 08:59'
-updated_date: '2026-09-17 08:59'
+updated_date: '2026-09-17 11:40'
 labels: []
 dependencies: []
 priority: high
@@ -65,7 +65,13 @@ princip som repots övriga overrides-poster.
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Done av S125-orkestreraren 2026-09-17: landad via #2491 (main 87aa3dc4), review-grinden konvergerad, DoD mot PR-kroppens grind-tabell.
+<!-- SECTION:NOTES:END -->

@@ -4,10 +4,10 @@ title: >-
   Fynd: hem.acceptance 'falsk klocka' installerar Playwright-klockan på riktig
   tid — fixturtokenen (FROZEN_NOW+24h) gick ut 2026-09-16T08:00Z och fäller
   acceptance-shard 2 på varje PR
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-17 10:27'
-updated_date: '2026-09-17 10:31'
+updated_date: '2026-09-17 11:40'
 labels: []
 dependencies: []
 priority: high
@@ -62,3 +62,9 @@ En separat, redan existerande olöst lesson (`tasks/lessons.d/lokal-testfailure-
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Done av S125-orkestreraren 2026-09-17: landad via #2491 (main 87aa3dc4), review-grinden konvergerad, DoD mot PR-kroppens grind-tabell.
+<!-- SECTION:NOTES:END -->

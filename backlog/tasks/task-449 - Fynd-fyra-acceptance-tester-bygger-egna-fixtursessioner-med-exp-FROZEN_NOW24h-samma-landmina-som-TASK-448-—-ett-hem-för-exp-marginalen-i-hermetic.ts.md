@@ -4,10 +4,10 @@ title: >-
   Fynd: fyra acceptance-tester bygger egna fixtursessioner med exp =
   FROZEN_NOW+24h (samma landmina som TASK-448) — ett hem för exp-marginalen i
   hermetic.ts
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-17 10:57'
-updated_date: '2026-09-17 11:08'
+updated_date: '2026-09-17 11:40'
 labels: []
 dependencies: []
 priority: medium
@@ -51,3 +51,9 @@ importerade den ursprungliga formeln från ETT hem.
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Done av S125-orkestreraren 2026-09-17: landad via #2500 (main df81e630), review-grinden konvergerad, DoD mot PR-kroppens grind-tabell.
+<!-- SECTION:NOTES:END -->
