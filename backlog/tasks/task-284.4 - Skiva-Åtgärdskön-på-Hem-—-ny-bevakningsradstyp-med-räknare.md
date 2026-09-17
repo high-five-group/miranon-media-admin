@@ -1,12 +1,12 @@
 ---
 id: TASK-284.4
 title: 'Skiva: Åtgärdskön på Hem — ny bevakningsradstyp med räknare'
-status: Done
+status: In Progress
 assignee: []
 created_date: '2026-08-21 11:18'
-updated_date: '2026-08-21 13:50'
+updated_date: '2026-09-17 09:22'
 labels:
-  - ready-for-agent
+  - intentionally-open
 dependencies:
   - TASK-284.1
 parent_task_id: TASK-284
@@ -43,6 +43,12 @@ Täcker användarberättelser: 2, 3, 4, 18.
 - [x] #5 Facit-granskning gjord mot manifestet tasks/sessions/bilagor/s102-hem-konvergens/facit.json, ytan 'hem-vyn V1 Lugna morgonen' — sökvägen utskriven i PR:en, aldrig granskad mot minne eller mot en bildkatalog
 - [ ] #6 Facit-amenderingen görs FÖRST efter Marcus visuella godkännande, i EGEN commit, med hans citat inskrivet som daterad amendering — ordningen är enkelriktad (T157 väg A, precedent satt för personlistans bokstavsrad 2026-08-21)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Återöppnat av S125 2026-09-17 på Marcus beslut (väg C): "Jag väljer väg C för korten. Har inte tid med att kolla detta just nu, men det behöver granskas senare." Kvarvarande DoD-post är Marcus egen facit-granskning; kortet väntar honom, inte en agent. Etiketten intentionally-open tystar stängningsgrindens invariant 1 tills granskningen är gjord.
+<!-- SECTION:NOTES:END -->
 
 ## Final Summary
 
