@@ -7,9 +7,10 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-09-07 15:30'
-updated_date: '2026-09-17 09:08'
+updated_date: '2026-09-17 09:18'
 labels:
   - ready-for-agent
+  - intentionally-unchecked
 dependencies: []
 priority: medium
 ordinal: 755000
@@ -43,4 +44,6 @@ PREMISS-DIVERGENS (ADR-086), rapporteras öppet: kortets beskrivning karaktäris
 STÄNGNING (S123 resume 1, 2026-09-07): PR #2443 → cf719938 (batch med 59d8d336); post-merge 59d8d336 GRÖN. Review runda 1 (Sonnet): 3 info varav 2 ask-user (TASK-427:s 22-lista exakt verifierad mot grindens utdata; check:docs 14/14 ej avläsbart i CI men båda bärande jobb gröna), risk låg; Marcus 'OK 2443' 2026-09-07. AC #2/#3 bedömda felställda av granskaren (premissen 'två äldre listor' var fel — de fäller aldrig grinden; den tredje populationen på 22 kort bär TASK-427). Orkestreraren accepterar: AC #2 kvarstår obockad ärligt, AC #3 bockad på avsikten. Done-flipp av orkestreraren.
 
 Delvis bockad i efterhand av S125 mot belägg: DoD#2/#3 bockade — PR #2443 mergad 59d8d336 (2026-09-07), post-merge 59d8d336 GRÖN, review runda 1 konvergerad (3 info, risk låg), Marcus 'OK 2443'. AC#2 och DoD#1 lämnas AVSIKTLIGT obockade — kortets egen STÄNGNING-not säger explicit 'AC #2 kvarstår obockad ärligt... Orkestreraren accepterar' (grinden gav 22 kvarvarande ❌-kort utöver de nio ursprungliga, bokförda i TASK-427). Detta kort saknar den formella tvåfaktors-etiketten (intentionally-unchecked + OBOCKAT MED AVSIKT:) som skulle tysta invariant 2 — flaggat i S125-rapporten som systemisk lucka. Nightly Backlog-stängningsgrinden (körning 35187813487) flaggade kortet som inkonsistent.
+
+OBOCKAT MED AVSIKT: AC #2 och DoD #1 lämnas obockade permanent, inte tillfälligt. AC #2 (grinden körd med CI:s exakta kommando, exit 0 eller kvarvarande rader bevisat tillhörande de äldre listorna) är GENUINT ÖPPET: efter fix av S121:s nio kort återstod 22 ❌-kort som varken tillhörde de två äldre (icke-fällande) listorna eller S121-populationen — en tredje, tidigare obekant population, inventerad med kort-ID och fällningsform i TASK-427 (se det kortets fullständiga lista). DoD #1 (samtliga AC avbockade) hänger på samma öppna AC #2 och kan därför inte bockas mekaniskt. Orkestreraren accepterade detta uttryckligen vid Done-flippen (Marcus 'OK 2443' 2026-09-07): AC #3 bockad på avsikten, AC #2 kvarstår obockad ärligt. Uppföljningen bor i TASK-427, inte här. Bekräftat av S125 2026-09-17 (backlog-stängningsgrindens restlista, TASK-125).
 <!-- SECTION:NOTES:END -->

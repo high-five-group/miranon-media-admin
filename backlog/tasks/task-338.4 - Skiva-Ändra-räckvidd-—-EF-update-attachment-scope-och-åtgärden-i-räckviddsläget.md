@@ -6,9 +6,10 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-29 08:04'
-updated_date: '2026-08-29 17:16'
+updated_date: '2026-09-17 09:18'
 labels:
   - ready-for-agent
+  - intentionally-unchecked
 dependencies:
   - TASK-338.2
   - TASK-338.3
@@ -87,4 +88,6 @@ SKULD 2 BETALD: attachment-upload-large.staging.test.ts förväntade Räckvidd =
 DoD #4 (prod-schemaändringar efter Marcus GO): EJ TILLÄMPLIG i denna skiva — inga prod-operationer utförda, ingen prod-allowlist-post. Prod-halvan är TASK-338.6.
 
 EJ GJORT, per uppdrag: PR:en är INTE armerad. Kortet är inte satt till Done.
+
+OBOCKAT MED AVSIKT: DoD #4 lämnas obockat permanent, inte tillfälligt. Prod-schemaändringar endast efter Marcus GO (ADR-125 § 8) är INAPPLICERBAR i denna skiva: den nya EF:en update-attachment-scope deployades och testades enbart mot staging (pqtshyierkdgwdnxuirz); notens egen rad bekräftar 'STÅR EJ i .prod-functions-allowlist.conf — prod är TASK-338.6:s HITL-moment', och PR #2103:s diff (gh pr view 2103 --json files) bär ingen ändring av .prod-functions-allowlist.conf. Allowlist-tillägget för update-attachment-scope landade separat (commit fe8f9aed, 'fix(prod-deploy): allowlista update-attachment-scope'), utanför denna skiva. Bekräftat av S125 2026-09-17 (backlog-stängningsgrindens restlista, TASK-125).
 <!-- SECTION:NOTES:END -->
