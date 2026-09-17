@@ -3,10 +3,10 @@ id: TASK-368.2
 title: >-
   Skiva: Operationen — allowlistad statusskrivning för avbokning och återtag,
   Notering-append, loggverb, adapter och mutation, API-test mot staging
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-03 07:57'
-updated_date: '2026-09-03 08:40'
+updated_date: '2026-09-17 09:08'
 labels:
   - ready-for-agent
 dependencies: []
@@ -31,9 +31,9 @@ Beteende ände-till-ände: appen kan sätta en aktiv anmälan till Avbokad/Ombok
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -46,4 +46,6 @@ Klient: CancelRegistration.schema.ts (input/result), DataSourceAdapter.avbokaAnm
 Staging: deployad till pqtshyierkdgwdnxuirz via npx supabase functions deploy cancel-registration. Staging-test (7 fall, tests/api/cancel-registration.staging.test.ts) provar sakerhet/input/404/hela rundtripen pa ett eget create-registration-sentinel (avboka - 409 idempotent - aterta - 409 idempotent) inkl. Notering-append med bevarad fixtur-text och get-activity-log-verifiering av bada loggverben. Full sex-status-matrisen (AC1) bevisas UTTOMMANDE hermetiskt, inte live - motiverat i staging-testets filhuvud (samma skal som send-registration-confirmation.staging.test.ts: ingen EF kan konstruera Bekraftad/Betalningspaminnelse/Installt/Flytta-till-vantelista-fixturer utan att antingen mutera en permanent delad fixtur andra sviter beror pa, eller skriva forbi allowlisten).
 
 Prod-deploy INTE utford (utanfor denna skivas scope; .prod-functions-allowlist.conf medvetet ororning). DoD-grindar: npm run typecheck 0 fel, npx biomejs biome check . 0 fel, node scripts/check-langa-streck.mjs OK 0 ofangade, npm run build gron, npm run test:api 1892 passed / 1 failed (den enda fallningen ar generate-event-attachment.staging.test.ts AC1-hash-testet, verifierat pre-existerande - samma fallning innan denna skivas kod deployades).
+
+Stängd i efterhand av S125 (invariant 1/3-fallet): samtliga 5 AC redan bockade, status stod kvar på To Do. PR #2236 mergad (2026-09-03, gren feat/task-368-2-avbokning-atgard-server) verifierat via gh pr list --search TASK-368.2 --state merged. Implementation Notes beskriver fullständig serverkontrakt-implementation (EF cancel-registration, allowlist-post, klient-adapter, mutationer) och staging-test 7 fall + DoD-grindar gröna (typecheck 0, biome 0, check-langa-streck OK, build grön, test:api 1892/1893 med 1 pre-existerande orelaterad fällning). DoD#1-3 uppfyllda mot samma belägg. Nightly Backlog-stängningsgrinden (körning 35187813487) flaggade kortet som inkonsistent (invariant 1: allt bevisat men status ej Done).
 <!-- SECTION:NOTES:END -->

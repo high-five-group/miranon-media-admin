@@ -347,7 +347,7 @@ Rådata/klassning/skrivlogg låg i sessionens scratchpad (`svep/`, `svep/efter/`
 och är efemär; ID-listan i tabellen ovan är rekonstruerad ur sessionsdoket för
 läsbarhet, inte en levande frågekälla.
 
-Källa: [`../../tasks/sessions/2026-08-21-session-110.md`](../../tasks/sessions/2026-08-21-session-110.md)
+Källa: [`../../tasks/sessions/archive/2026-08/2026-08-21-session-110.md`](../../tasks/sessions/archive/2026-08/2026-08-21-session-110.md)
 § Del 2 B + Paushistorik § TILLSTÅND.
 
 ## 2026-08-24 — Touchpoint-backfill: 8 manuellt lagade anmälningar, Session 112
@@ -531,5 +531,5 @@ Källa: `TASK-229.3`-kortets Implementation Notes (steg 0–2, S112) och
 - Xlsx: `~/Downloads/2026-06-24 uppdaterade deltagare.xlsx` (FJS + RIM1).
 - Sessionsdok: [`../../tasks/sessions/archive/2026-07/2026-07-08-session-60.md`](../../tasks/sessions/archive/2026-07/2026-07-08-session-60.md).
 - Sessionsdok: [`../../tasks/sessions/archive/2026-08/2026-08-17-session-107.md`](../../tasks/sessions/archive/2026-08/2026-08-17-session-107.md) § Del 2.
-- Sessionsdok: [`../../tasks/sessions/2026-08-21-session-110.md`](../../tasks/sessions/2026-08-21-session-110.md) § Del 2.
+- Sessionsdok: [`../../tasks/sessions/archive/2026-08/2026-08-21-session-110.md`](../../tasks/sessions/archive/2026-08/2026-08-21-session-110.md) § Del 2.
 - Kort: `TASK-232` (Fynd EventKey 11 på anmälan ID 868 — återfall av sanerad fälla 10/F.2).

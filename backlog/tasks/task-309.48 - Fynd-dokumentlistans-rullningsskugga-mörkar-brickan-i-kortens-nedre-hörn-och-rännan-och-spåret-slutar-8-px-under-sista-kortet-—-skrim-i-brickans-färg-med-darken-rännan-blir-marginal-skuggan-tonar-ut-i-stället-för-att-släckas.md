@@ -7,7 +7,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-09-08 14:33'
-updated_date: '2026-09-08 18:17'
+updated_date: '2026-09-17 09:07'
 labels:
   - fynd
   - ready-for-agent
@@ -50,9 +50,9 @@ KÄLLOR: `src/components/dokument/DokumentYta.tsx` (hooken ~1340–1445, `separa
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -71,6 +71,8 @@ DoD-kommandon, exitkoder körda i denna worktree: npm run typecheck exit 0. npx 
 AC-listan omskriven 2026-09-08 efter runda 1-granskningen av PR #2469 (mot d552e187, risk lag): granskaren klassade AC #3 och #5 som FELSTÄLLDA (mätte fel sak), inte ouppfyllda. Orkestreraren (Marcus mandat) skrev om ordalydelsen for AC #3 (byte-lika kravs nu bara vid FULL bandstyrka; vid delvis bandstyrka anges det uppmatta restfelet explicit, hogst 1/255 per kanal) och AC #5 (visual-grinden for dokument omformulerad till läst-och-klassad plus CI-bokforing i stallet for ett lokalt gront krav som aldrig kan uppfyllas har - darwin-baslinjer saknas per repo-konvention). AC #1/#2/#4/#6 star oforandrade i ordalydelse. Bada de omskrivna kriterierna haller mot mina redan gjorda matningar fran forsta rapporten - AC #3 och #5 ar dartor avbockade. AC #6 forblir obockad, Marcus eget mandat.
 
 CI-rattning 2026-09-08: PR #2469 var ROD i Test suite / Acceptance (hermetisk) - tests/acceptance/dokument-rackviddsval.acceptance.test.ts, assertionen ikonen far inte vaxa raden - hojdlaset ar 124 px foll (kort4247). Rotorsak: samma antagande jag redan fixade i de tva hojdlas-sviterna men missade i denna tredje fil - raden lag=124 (kort116+border-b-8). Med marginal-rannan mater li ALLTID 116 (margin raknas aldrig in i getBoundingClientRect). Grep-svep kort tests/acceptance/dokument-* tests/e2e/dokument* tests/visual gav bara denna traff (plus en irrelevant ADR-124-referens i en annan fil och tva redan-fixade historiska referenser). Fixat rad ~1055-1066: 124 til 116, docblock omskriven. Hela dokument-familjen i acceptance-klassen kord om (npx playwright test --project=acceptance tests/acceptance/dokument-*.acceptance.test.ts, 11 filer inklusive de tva hojdlas-sviterna): 116/116 grona, 0 rott, 4.7 min. typecheck exit 0, biome check exit 0, check-langa-streck exit 0 pa nytt efter andringen.
+
+Bockad i efterhand av S125 mot belägg: PR #2469 mergad 6e1266fe (2026-09-08), samtliga 6 AC redan bockade (inkl. AC#6 Marcus ögonmätning, källa sessionsdok S124 Del 7), Final Summary anger 43/43 höjdlås-acceptance gröna, review konvergerad (r1 1 info -> r2 0 fynd, risk låg). Nightly Backlog-stängningsgrinden (körning 35187813487) flaggade kortet som inkonsistent.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

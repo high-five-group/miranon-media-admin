@@ -2,7 +2,7 @@ import AxeBuilder from '@axe-core/playwright';
 import type { NetworkFixture } from '@msw/playwright';
 import type { Page } from '@playwright/test';
 import { HttpResponse, http } from 'msw';
-import { FROZEN_NOW } from '../support/fixturvarld/fixture-data';
+import { FIXTUR_SESSION_EXP_S } from '../support/fixturvarld/hermetic';
 import { expect, test } from './acceptance-bas';
 
 /**
@@ -36,17 +36,20 @@ function b64url(value: object): string {
   return Buffer.from(JSON.stringify(value)).toString('base64url');
 }
 
-/** `expiresAt` HÄRLETT UR `FROZEN_NOW`, INTE `Date.now()` (fångat skarpt
- * av ett rött första körvarv): fixturvärlden fryser SIDANS klocka till
- * `FROZEN_NOW` (2026-09-15, se `hermetic.ts`), men denna funktion körs i
- * Node-processen — en `Date.now()`-baserad utgång landar på dagens
- * verkliga datum, veckor FÖRE den frusna klockan, så supabase-js läser
- * sessionen som redan utgången och försöker refresha den mot nätet
- * (`POST .../auth/v1/token?grant_type=refresh_token`), vilket hermetik-
- * vakten fäller. Samma härledning som `hermetic.ts`s egen `buildSession()`. */
+/** `expiresAt` hämtas ur `hermetic.ts`s exporterade `FIXTUR_SESSION_EXP_S`
+ * (TASK-449) — INTE en egen `Math.floor(FROZEN_NOW.getTime() / 1000) + 24h`-
+ * kopia (fångat skarpt av ett rött första körvarv innan denna omfaktorering:
+ * en `Date.now()`-baserad utgång körd i Node-processen landar på dagens
+ * verkliga datum, veckor FÖRE fixturvärldens frusna sid-klocka, så
+ * supabase-js läser sessionen som redan utgången och försöker refresha den
+ * mot nätet (`POST .../auth/v1/token?grant_type=refresh_token`), vilket
+ * hermetik-vakten fäller). Den lokala `FROZEN_NOW + 24h`-formeln var sedan
+ * själv landminan TASK-448 fixade i `hermetic.ts` men som fanns duplicerad
+ * här — samma delade konstant som `hermetic.ts`s egen `buildSession()`
+ * använder. */
 function bygdSession(overrides: { email?: string; role?: string } = {}) {
   const epost = overrides.email ?? 'ny.anvandare@visual-fixture.se';
-  const expiresAt = Math.floor(FROZEN_NOW.getTime() / 1000) + 24 * 60 * 60;
+  const expiresAt = FIXTUR_SESSION_EXP_S;
   const user = {
     id: '00000000-0000-4000-8000-000000000099',
     aud: 'authenticated',

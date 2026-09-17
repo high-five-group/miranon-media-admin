@@ -3,10 +3,10 @@ id: TASK-239
 title: >-
   Acceptance-jobbet 5 sekunder från 12-min-taket — mät och åtgärda före
   nattfällningarna
-status: Done
+status: In Progress
 assignee: []
 created_date: '2026-08-16 07:07'
-updated_date: '2026-09-02 12:56'
+updated_date: '2026-09-17 09:21'
 labels:
   - ready-for-agent
 dependencies: []
@@ -233,6 +233,8 @@ Granskningens runda 1-fynd (orelaterade rader i docs/reference/review-instrument
 Full npm run verify:ci-parity kördes (info-fyndets krav: fullt läge, inte --fast, eftersom PR:en ändrar ci-suite.yml). Utfall: 34 gröna, 2 röda, 1711,8 s. Röda: Acceptance 459/461 (hem.acceptance.test.ts:313, mer-platser.acceptance.test.ts:68), Webblasarbeteende 108/109 (forberedelseskarm-hojdkedja.test.ts:166) — samtliga tre filer ligger UTANFÖR denna PR:s diff. Isolerad omkörning via fil:rad gav ERR_CONNECTION_REFUSED (dev-servern på port 18399 startas inte tillförlitligt av en delmängdskörning — samma klass av lokal-loadavg-artefakt som varv 1 redan bokförde ovan för test-ci-wait/acceptance-specs). CI på PR-ytans egen körning (0ddcc3f0) är grön: tre gröna Acceptance-shards + Webblasarbeteende pass. Klassat av orkestreraren som last-/timing-flake under den 28-minuters lokala helkörningen, inte en regression av denna PR:s diff.
 
 PR-kroppens grindtabell uppdaterad: :fast-raden ersatt med den fulla körningens faktiska utfall (se ovan).
+
+Återöppnat av S125 2026-09-17: AC #3 mäts efter tre gröna nätter i rad från och med första gröna natten efter #2491:s landning.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

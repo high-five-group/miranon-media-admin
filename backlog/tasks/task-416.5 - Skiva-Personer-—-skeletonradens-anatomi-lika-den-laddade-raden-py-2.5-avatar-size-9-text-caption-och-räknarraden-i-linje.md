@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-09-06 13:21'
-updated_date: '2026-09-06 17:07'
+updated_date: '2026-09-17 09:06'
 labels:
   - ready-for-agent
 dependencies: []
@@ -30,9 +30,9 @@ Källa: rapport D §4 #5 (S123). src/components/persons/PersonsList.tsx:852–88
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -68,4 +68,6 @@ gröna), acceptance persons+tabbar 47/47 (varav 1 ny), a11y (axe-runner)
 118/118 vid workers=1 (8 miss vid hög fleet-last, samtliga i orelaterade
 filer, reproducerat grönt efter lastfall), visual personer-promoverings-grind
 16/16 (aria-snapshot + axe, alla lägen).
+
+Bockad i efterhand av S125 mot belägg: PR #2400 mergad (2026-09-06), samtliga 3 AC redan bockade, notiserna anger DOM-mätta identiska mått + grindtabell (typecheck 0, biome 0, build 0, check-langa-streck OK, acceptance 47/47, a11y 118/118, visual 16/16). Nightly Backlog-stängningsgrinden (körning 35187813487) flaggade kortet som inkonsistent.
 <!-- SECTION:NOTES:END -->

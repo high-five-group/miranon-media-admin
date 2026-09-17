@@ -427,3 +427,132 @@ härledning byggd på de graf-traverserande formerna hade varit en no-op i exakt
 den miljö den finns för. Sviten `scripts/test-audit-degradering.sh` växte
 41 → **66 assertions** och mäter den shallow-egenskapen explicit, så
 påståendet inte blir en obevakad utsaga.
+
+### 2026-09-17 — Första pin-luckringen: `@tanstack/history`-overriden BORTTAGEN (`TASK-447`)
+
+**K0åi-triggern slog till för första gången sedan ADR-028 skrevs.** `tasks/todo.md`
+rad ~8080 definierar triggern som `npm view @tanstack/history@latest version`
+≠ `1.161.6` — live-kontroll 2026-09-17 gav `1.162.4`. Ingen tidigare
+pin-luckring finns i repots historik (grep på "pin-luckring" och
+`GHSA-rmmr-r34h-pfm5` i `docs/decisions/` + `tasks/lessons*` gav bara
+K0åi-triggerns egen definitionsrad); detta är alltså K0åi:s FÖRSTA körning.
+
+**Utlösande kollision.** Dependabot-PR `#2484` (TanStack-gruppen) bumpade
+`@tanstack/react-router` 1.170.32→1.170.35, `@tanstack/router-plugin`
+1.168.35→1.168.37, `@tanstack/router-cli` 1.167.33→1.167.35 samt
+query-familjen 5.102.2→5.102.8. Den nya `@tanstack/react-router@1.170.35`
+deklarerar `@tanstack/router-core@1.171.29`, som i sin tur kräver
+`@tanstack/history@1.162.3` EXAKT (importerar `normalizeProtocolRelative`,
+en export som saknas i 1.161.6). Overriden höll hela trädet kvar på 1.161.6
+→ `vite build` kraschade med `SyntaxError: The requested module
+'@tanstack/history' does not provide an export named
+'normalizeProtocolRelative'` (PR #2484 CI run `34805552000`, jobben
+"Pure + Build" och "Webblasarbeteende"). Rött-först reproducerat lokalt
+identiskt (exit 1, samma stack-signatur) innan fixen applicerades.
+
+**Advisory-analys, live (`gh api /advisories/GHSA-rmmr-r34h-pfm5`,
+2026-09-17):**
+
+- `vulnerable_version_range`: **exakt** `= 1.161.9` respektive `= 1.161.12`
+  (två separata poster, inte ett `>=`-intervall) — bara de två publicerade
+  malware-versionerna, precis som `updated_at 2026-05-12`-snävningen i
+  2026-05-13-posten ovan redan etablerade.
+- `first_patched_version`: `1.161.13`.
+- `withdrawn_at`: `null` — advisoryn är fortsatt aktiv, inte återkallad.
+- `@tanstack/history@1.162.3` (routerns nya krav) ligger UTANFÖR den snäva
+  vulnerable-range. Malware-versionerna 1.161.9/1.161.12 finns dessutom inte
+  längre i `npm view @tanstack/history versions --json` (avpublicerade ur
+  registryt) — bekräftat live.
+- Slutsats: 1.162.3 är post-incident-säker per advisoryns egen, snävade
+  range. Detta är samma logik som 2026-05-13-postens range-snävning, nu
+  applicerad på en FAKTISK versionsuppgradering i stället för bara en
+  allowlist-rensning.
+
+**Åtgärden — vald mellan två uttryckligt sanktionerade vägar (bump eller
+borttagning; se `TASK-447`s uppdrag).** Testet för borttagning var: *är
+routern redan bumpad förbi incidentversionen UTAN vår override, så att
+historie-pinnen är en ensam rest?* Verifierat, tre oberoende belägg:
+
+1. **TanStack self-pinnar redan exakt.** `@tanstack/router-core@1.171.29`
+   (react-routerns egen, exakt deklarerade dependency) kräver
+   `@tanstack/history: "1.162.3"` — EXAKT, ingen caret. Samma mönster
+   genomgående i hela TanStack-monorepot (`router-generator`,
+   `router-plugin` pekar alla exakt på samma `router-core`-version).
+   Vår override tvingade alltså fram exakt det resultat TanStack redan
+   levererar självt.
+2. **Semver-drift-risken overriden fanns för att stoppa är nu STRUKTURELLT
+   omöjlig, override eller ej.** `npm view @tanstack/history versions --json`
+   listar inte längre `1.161.9`/`1.161.12` — malware-versionerna är
+   avpublicerade ur registryt. Ingen resolver, med eller utan override, kan
+   någonsin installera en version som inte längre existerar i registryt.
+3. **`react-router-devtools` (devDependency) är grupperad i SAMMA
+   Dependabot-`tanstack`-grupp**
+   <!-- vale Vale.Terms = NO -->
+   (`.github/dependabot.yml` rad 37–42,
+   <!-- vale Vale.Terms = YES -->
+   `patterns: "@tanstack/*"`, ingen dependency-type-exkludering för just
+   denna grupp — "Full stack-spegel"-kommentaren rad 84–88 bekräftar
+   avsikten) — dess peer-dependency på `router-core` (`^1.171.16`) löses
+   mot SAMMA installerade instans som react-routerns egen, aldrig en egen.
+
+Overriden togs därför **bort helt** (inte bumpad) — en BORTTAGNING, inte en
+"ordinär patchad advisory"-bump enligt 2026-08-04-amenderingens andra klass.
+Empiriskt bevisat identisk: `package-lock.json`-diffen mellan "override
+bumpad till 1.162.3" och "override borttagen helt" är **TOM** — byte-identisk
+resolution (`npm install` efter borttagningen gav `up to date`, ingen ändrad
+rad). `npm ls @tanstack/history` visar EN version (1.162.3, deduped) i båda
+formerna; `npm audit` bär 0 träffar på GHSA-rmmr-r34h-pfm5 efter borttagningen.
+De fem övriga overrides-posterna (brace-expansion, fast-uri, js-yaml,
+linkify-it, postcss, sharp) rörs inte — detta är en riktad, enkelspårig
+ändring per ADR-028 § 2026-08-04-amenderingens "riktad `npm install`, INTE
+`rm -rf`"-form.
+
+**Runda 2 (samma dag, 2026-09-17): `^`-prefix-återinförandet fullbordat.**
+`^`-prefixet återinfördes på de fyra exakt-pinnade paketen
+(`@tanstack/react-router`, `router-plugin`, `router-cli`,
+`react-router-devtools`) som `tasks/todo.md`s K0åi-definition (rad ~8076–8083,
+nu borttagen ur listan per samma definitions egen "tas bort när K0åi körts"-
+klausul) bundlade ihop med overrides-borttagningen som EN åtgärd. Runda 1
+ovan avgjorde bara overrides-halvan och lämnade caret-halvan uttryckligen
+öppen (r1-granskningsfynd, warning/ask-user) — det var alltså en ofullständig
+K0åi-körning, inte en medveten avgränsning av triggerns egen definition.
+Samma tre belägg som motiverade borttagningen ovan gäller caret-återinförandet:
+TanStack self-pinnar redan `@tanstack/history` exakt i sitt eget träd (belägg
+1), semver-drift-risken caretn skulle kunna öppna för är strukturellt omöjlig
+eftersom malware-versionerna är avpublicerade (belägg 2), och
+`react-router-devtools` delar Dependabot-grupp med de övriga tre och löses
+mot samma instans (belägg 3) — caret-formen återställer alltså bara den
+disciplin Dependabot redan de facto körde genom att redigera exakta
+versionssträngar PR för PR. Verifierat: `npm install` efter caret-ändringen
+ger IDENTISKA resolverade versioner för alla fem paket (`react-router
+1.170.35`, `router-plugin 1.168.37`, `router-cli 1.167.35`,
+`react-router-devtools 1.167.1`, `history 1.162.3` deduped) — `package-
+lock.json`-diffen är begränsad till rot-paketets `dependencies`/
+`devDependencies`-block (specifier-strängen speglad från `package.json`,
+inte en resolverad version) i exakt de fyra raderna som ändrades, ingen
+annan nod i trädet rörd.
+
+**Bevarat per Konvention-flödet:** steg 1–4 följda (diagnostik →
+advisory-omprövning → riktad fix → verifiering); steg 5 (denna post,
+inklusive runda 2-tillägget) kodifierar att K0åi-triggern nu är
+FULLSTÄNDIGT körd, inte bara definierad — båda halvorna (overrides-
+borttagning + caret-återinförande) är avgjorda, ingen öppen fråga kvarstår.
+
+**Resterande osäkerhet:** TanStacks nuvarande praxis (exakt intern
+self-pinning av `@tanstack/history`) är ett observerat MÖNSTER, inte ett
+kontrakt — bryts det i en framtida release faller skyddet tillbaka på CI:s
+build-grind (samma grind som fångade #2484), inte på en override eller en
+saknad caret. Ingen öppen fråga kvarstår för de fyra paketens
+versionsprefix.
+
+**Spårbarhet:**
+
+- Kort: `TASK-447`
+- Utlösande PR (ersätts av denna landning): Dependabot `#2484`,
+  <!-- vale Vale.Terms = NO -->
+  gren `dependabot/npm_and_yarn/tanstack-c2abd82dd0`
+  <!-- vale Vale.Terms = YES -->
+- CI-bevis (rött): run `34805552000`, jobben "Pure + Build" +
+  "Webblasarbeteende"
+- Advisory: <https://github.com/advisories/GHSA-rmmr-r34h-pfm5>
+- K0åi-triggerdefinition: `tasks/todo.md` rad ~8076–8083

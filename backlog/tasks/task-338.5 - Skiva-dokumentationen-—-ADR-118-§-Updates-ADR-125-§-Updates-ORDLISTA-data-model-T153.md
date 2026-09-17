@@ -6,9 +6,10 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-29 08:04'
-updated_date: '2026-09-04 08:17'
+updated_date: '2026-09-17 09:18'
 labels:
   - ready-for-agent
+  - intentionally-unchecked
 dependencies:
   - TASK-338.2
 parent_task_id: TASK-338
@@ -62,6 +63,8 @@ Efter skivan bokför repot ersättningen öppet: ADR-118 får en § Updates-sekt
 - #6 N/A — ingen matchnings-/valideringskod skriven eller ändrad; ADR/ORDLISTA/data-model beskriver befintlig, redan landad kod (TASK-338.2).
 
 Nattgrind-stängning 2026-09-04: DoD bockad mot belägg — samtliga 3 AC redan bockade (mekanisk DoD#1); DoD#2 styrks av notens grindtabell (check:docs 14/14, markdownlint 0, check-langa-streck 0); DoD#3 verifierat mot git show --stat 9b9c1d9f (PR #2089): exakt de 5 filer notens egen git-status-lista angav. DoD#4/#5/#6 KVARSTÅR OBOCKADE — N/A per kortets egen klassning (ren docs-skiva, inget prod-anrop, ingen EF-/klientkod); rapporterat, inte bockat på gissning.
+
+OBOCKAT MED AVSIKT: DoD #4, #5 och #6 lämnas obockade permanent, inte tillfälligt. Ren dokumentationsskiva: PR #2089:s diff (gh pr view 2089 --json files) bär uteslutande ORDLISTA.md, två ADR-filer, data-model.md, tasks/threads/README.md och kortfilen — noll kod. #4 (prod-schemaändringar) INAPPLICERBAR: inget Airtable- eller prod-anrop gjordes. #5 (deny/allow-test) INAPPLICERBAR: ingen EF-operation ändrad. #6 (Lagervakten) INAPPLICERBAR: ingen matchnings- eller valideringskod skriven — dokumenten beskriver redan landad kod (TASK-338.2). Bekräftat av S125 2026-09-17 (backlog-stängningsgrindens restlista, TASK-125).
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

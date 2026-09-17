@@ -6,9 +6,10 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-29 08:03'
-updated_date: '2026-08-29 17:16'
+updated_date: '2026-09-17 09:18'
 labels:
   - ready-for-agent
+  - intentionally-unchecked
 dependencies:
   - TASK-338.2
 parent_task_id: TASK-338
@@ -119,4 +120,6 @@ B. STALE PREMISS I TVÅ DOCBLOCK RÄTTAD (ADR-083). AirtableAdapter.ts § fetchG
    SJÄLVFÅNGST: samma felklass fanns i min EGEN runda-1-rättelse i DataSourceAdapter.ts ("bara Räckvidd = Gemensam sedan TASK-338.2") — närmare, men fortfarande inte vad EF:en gör. Båda ställena är nu skrivna mot den faktiska tvåstegsformen.
 
 GRINDAR runda 3 (nakna exitkoder): typecheck 0 · biome 0 · dokument-rackviddsval 25 passed exit 0 · hela dokument-* + atgarder-bilageval-send (--workers=1, UTAN --reporter så oanvänd-handler-vakten är armerad) exit 0 · check-langa-streck 0 · check-facit 0.
+
+OBOCKAT MED AVSIKT: DoD #4 och #5 lämnas obockade permanent, inte tillfälligt. #4 (prod-schemaändringar endast efter Marcus GO, ADR-125 § 8) är INAPPLICERBAR: skivan gjorde inga Airtable- eller prod-anrop, ren klientkod. #5 (deny/allow-test för ny/ändrad EF-operation) är INAPPLICERBAR: skivan rör noll EF-kod med avsikt (notens egen rad 'EJ RÖRDA MED AVSIKT: supabase/ (338.2 äger EF:en)'), bekräftat mot PR #2094:s diff (gh pr view 2094 --json files): uteslutande src/ och tests/, inga supabase/functions-filer. Bekräftat av S125 2026-09-17 (backlog-stängningsgrindens restlista, TASK-125).
 <!-- SECTION:NOTES:END -->

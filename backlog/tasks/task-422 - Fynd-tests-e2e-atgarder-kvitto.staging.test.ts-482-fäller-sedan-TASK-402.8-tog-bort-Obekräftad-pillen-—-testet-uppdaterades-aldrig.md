@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-09-06 19:17'
-updated_date: '2026-09-07 16:48'
+updated_date: '2026-09-17 09:07'
 labels:
   - ready-for-agent
 dependencies: []
@@ -24,14 +24,14 @@ Källa: bygg-agenten för TASK-367 (PR #2416, S123 2026-09-06) vid full betalnin
 <!-- AC:BEGIN -->
 - [x] #1 Testet asserterar kortets tillgängliga namn i formen efter TASK-402.8; filen grön mot staging
 - [x] #2 Grep i tests/e2e efter 'Obekräftad' bekräftar att ingen annan assertion bygger på den borttagna pillen (eller de rättas i samma PR)
-- [ ] #3 Post-merge staging-körningen grön för filen
+- [x] #3 Post-merge staging-körningen grön för filen
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -46,4 +46,6 @@ Filen körd mot staging (npx playwright test --project=chromium-authenticated te
 AC #3 (post-merge staging-körningen grön) kan INTE verifieras av mig — den kräver en post-merge/nightly-körning som inte existerar förrän PR:en landat. Lämnad avbockad med avsikt; orkestreraren/CI äger den signalen.
 
 STÄNGNING (S123 resume 1, 2026-09-07): PR #2438 → 56d71536; post-merge 56d71536 röd ENBART på get-person.staging.test.ts:173 (sentinel-driften L599, orelaterad, städad i staging 2026-09-07), täckt av nästa gröna post-merge fb814734. Review runda 1 (Sonnet): 0 fynd, risk låg, konvergerad. AC #3 (post-merge grön) uppfylld via fb814734. Done-flipp av orkestreraren.
+
+Bockad i efterhand av S125 mot belägg: kortets egen STÄNGNING-not (2026-09-07) säger explicit 'AC #3 (post-merge grön) uppfylld via fb814734' men rutan stod obockad. PR #2438 mergad 56d71536 (2026-09-07); post-merge 56d71536 röd endast på orelaterad get-person-sentinel (L599, städad), täckt av nästa gröna post-merge fb814734 (verifierat: commit finns i historiken, PR #2440-merge). Review runda 1: 0 fynd, risk låg, konvergerad. Nightly Backlog-stängningsgrinden (körning 35187813487) flaggade kortet som inkonsistent.
 <!-- SECTION:NOTES:END -->
