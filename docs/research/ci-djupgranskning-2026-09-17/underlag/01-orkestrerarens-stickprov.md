@@ -505,8 +505,8 @@ utreda.
   träd == … och den SHA:n har grön CI-run → tunga jobb hoppas"*:
   run `34184098307` (PR #2458), `34179882751` (PR #2455) och `34051468698`
   (PR #2403) — alla med `Test suite: skipped`. Den fjärde korta,
-  `34144253948` (PR #2444), var ingen träff utan en REDUCERAD svit (en
-  acceptance-skärva, D1-klassen). Av fönstrets 40 körningar var 19
+  `34144253948` (PR #2444), var ingen träff utan en REDUCERAD svit
+  (acceptance-urvalet: en skärva i stället för tre). Av fönstrets 40 körningar var 19
   docs-grenar (korta, sviten hoppas av klassningen oavsett dedup), en
   pågående, och **20 kod-landningar: 3 dedup-träffar, 1 reducerad svit, 16
   som körde hela sviten en gång till** (590–806 s).
@@ -725,6 +725,38 @@ utreda.
   går därför inte att säga i dag. Åtgärdskandidat: bokför de kända missarna
   retroaktivt, så blir nästa granskning av grinden en mätning i stället för
   en bedömning.
+
+### S29 — Branschjämförelsens bärande citat finns i källorna; inventeringen är mekaniskt hel (källa: D6, D2)
+
+- **D6:s externa citat.** Svaret på Marcus kärnfråga (leverabel 6 § 14) vilar
+  på ordagranna citat ur förstapartskällor — den klass av påstående där en
+  agent lättast hittar på. Prövat 2026-09-17 genom att hämta sidorna:
+  - `anthropic.com/engineering/building-c-compiler`: *"So it's important that
+    the task verifier is nearly perfect, otherwise Claude will solve the wrong
+    problem."* och *"For autonomous systems, it is easy to see tests pass and
+    assume the job is done, when this is rarely the case."* — båda finns;
+    artikeln anger 16 agenter.
+  - `github.blog/…/agent-pull-requests-are-everywhere-heres-how-to-review-them/`
+    (2026-05-07): *"Any CI weakening is a hard stop."* finns, som första punkt
+    under "Three takeaways"; *"More than one in five code reviews on GitHub now
+    involve an agent."* finns.
+  - `dora.dev/guides/dora-metrics/`: *"DORA's research has repeatedly
+    demonstrated that speed and stability are not tradeoffs. In fact, we see
+    that the metrics are correlated for most teams."* — finns.
+  - **Dom: höll.** En nyans att bära till åtgärdsplanen: GitHubs regel gäller
+    en AGENT-PR som försvagar CI. Flera av granskningens egna förslag (ta bort
+    körningen vid landning, villkora beroendegranskningen) är till FORMEN
+    just det. Skillnaden ligger i vem som beslutar: varje sådan åtgärd måste
+    visa att skyddet består och bära Marcus uttryckliga GO — aldrig landas av
+    en agent på eget bevåg. Metas RADAR-artikel (arXiv 2605.30208) har jag
+    INTE hämtat; D6 läste abstraktet, J4a hela texten.
+- **D2:s inventering.** `01-inventering.json` är giltig JSON med 367 poster
+  (`jq` exit 0). Påståendet att två av klassningsjobbets utdata —
+  `ui_low_risk` och `acceptance_local` — beräknas varje körning utan att
+  något läser dem: `grep -rn` i `.github/workflows/` ger bara definitionerna
+  (`ci.yml:73`, `:78`) och kommentarer; `ci.yml:2213-2214` bokför själv att
+  de *"hade `run_staging` som sin ENDA konsument"*. **Höll** — och det är
+  öppet bokfört i koden, inte ett förbiseende. Liten städkandidat.
 
 ## Motsägelser mellan agenter
 
