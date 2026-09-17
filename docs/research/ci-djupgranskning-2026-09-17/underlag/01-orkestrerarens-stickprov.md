@@ -884,6 +884,43 @@ KG1 prövade fyra mekanismer i koden och mot 601 pushar. Tre av dess fynd
   mätning (M-A, M-B, M-C, M-F) — alla rättade samma dag, se statusnoten i
   registrets avsnitt om kvarstående motsägelser.
 
+### S33 — Åtgärdsplanens pekare träffar; dess första åtgärd hann lösas av verkligheten (källa: D11, Opus)
+
+- **N1 var redan löst.** Planen sätter "avblockera kön" först — ett fynd i
+  sig, ingen leverabel hade gjort det — men bygger på ögonblicksbilden från
+  2026-09-08. Prövat 11:59Z med `git fetch`, `git log origin/main
+  --first-parent -12` och `git show origin/main:package.json`: en parallell
+  session landade `#2491` 10:52Z (låsen `sharp 0.35.4`, `smol-toml 1.7.1` på
+  rad 134–135), klockbuggen är lagad (`TASK-444`), och elva PR:er har landat
+  sedan dess. **Dom: planens premiss föll, fyndet bakom den står sig.**
+  Statusnot införd i planen på tre ställen; kritiska vägen är N2 → N3. Frågan
+  bakom — att nästa varning låser även rena textändringar — lever kvar som
+  vägval K1.
+- **K1-argumentet, som ingen leverabel hade:** att natten redan kör en
+  BREDARE beroendegranskning än dagen. Prövat med `grep -n audit-ci` i
+  `nightly.yml` och `audit-ci.jsonc`: `nightly.yml:91` kör `npx audit-ci
+  --moderate`; dagens config har `"high": true` (`audit-ci.jsonc:7`). **Höll.**
+  Det gör K1 till en sekvensfråga snarare än en säkerhetsfråga: villkora
+  dagens jobb FÖRST när natten är läsbar (N2), annars flyttas lasten till en
+  kanal ingen läser.
+- **Den falsifierade `strict`-premissen står på två ställen, inte ett:**
+  `ADR-077:78` (*"Sunt TACK VARE merge-grindens strict up-to-date-krav"*) och
+  `ci.yml:458` (*"Sundheten vilar på merge-grindens strict up-to-date-krav"*).
+  Båda lästa. **Höll** — KG1 hade bara pekat på ADR:n.
+- **Självtestets tomhetsspärr** (`scripts/hermetik-sjalvtest.mjs:166-172`):
+  *"FAIL-CLOSED PÅ TOMHET … noll tester kördes — en tom svit bevisar
+  ingenting"*. **Höll.** Det är skälet till att delningen (N6, `TASK-366`) är
+  en designfråga: varje skärva klarar spärren var för sig, men ingenting
+  kontrollerar i dag att skärvornas SUMMA är hela klassen. Planen sätter den
+  kontrollen före delningen.
+- **Registrerat, inte avgjort:** planen dömer KG1:s förslag om en
+  `paths:`-utlösare på `gate-proof.yml` till "inte alls" (mekaniserar
+  konventionen utan att laga att provet prövar en replik). S32 nämnde samma
+  förslag som åtgärdskandidat. Det är en omdömesfråga, och planens skäl är
+  utskrivet; jag låter planens dom stå. Planen fann också ett räknefel INUTI
+  KG1 (73 mot 60 tillkommande efterkontroller) som är märkt osäkert — ej
+  omräknat av mig.
+
 ## Motsägelser mellan agenter
 
 - **Merge-dedupens faktiska träffkvot (J8.5 mot J8.7, ärvd av D3):** AVGJORD
