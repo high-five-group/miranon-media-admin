@@ -121,9 +121,124 @@ utreda.
   `main`, ingenting vaktar att `main` faktiskt når användaren. Jämför med
   J8.1:s incidentregister i våg 2.
 
+### S7 — Nattnätet har varit rött i femtio dygn (källa: J1b, skärpt)
+
+- **Påstående:** J1b mätte `nightly.yml` rött 30 av 30 körningar och 22
+  öppna, obesvarade `ci-natt`-ärenden i obruten ström sedan 2026-08-28.
+  S125 hade uppgett "röd 12 av 12 nätter" och 13 öppna `ci-natt`-larm.
+- **Prövat med:** `gh run list --workflow nightly.yml --limit 60` filtrerat
+  på `event == "schedule"` och grupperat på utfall; `gh issue list --label
+  ci-natt` (öppna respektive alla, `--limit 200`); `gh issue list --label
+  ci-post-merge --state all --limit 400`. Alla 2026-09-17.
+- **Utfall:** 52 schemalagda nattkörningar sedan 2026-07-28: **51 röda, 1
+  grön**. Senaste gröna natten: **2026-07-29**. `ci-natt`: 63 ärenden
+  totalt, **21 öppna**, äldsta öppna 2026-08-28, nyaste 2026-09-17.
+  `ci-post-merge`: **207 ärenden totalt**, 0 öppna.
+- **Dom: skärpt.** J1b:s "30 av 30" var fönstrets tak, inte sanningens:
+  nätet har inte varit grönt en enda natt sedan 2026-07-29. J1b:s 22 mot
+  mina 21 öppna är en mätning med några timmars mellanrum (S125 stänger
+  larm just nu); S125:s 13 stämmer med ingendera och behandlas som
+  felräkning.
+- **Varför det väger tungt:** `ADR-077` gör ett postsubmit-nät till själva
+  VILLKORET för att den riskanpassade presubmiten ska vara försvarbar
+  (`ci.yml:2268-2269` citerar det: *"försvarbar ENDAST med ett post-submit-nät
+  under sig"*). Ett nät som är rött varje natt bär ingen signal — en ny, äkta
+  regression som bara natten ser skulle drunkna bland stående röda jobb.
+  **Öppet till våg 2:** VILKA jobb har hållit nätet rött, natt för natt —
+  produktskyddande tester eller processgrindar (sessionsdok-fönster,
+  backlog-stängning, obesvarade larm)? J8.6 klassar röda körningar; svaret
+  avgör om detta är "nätet är trasigt" eller "nätet bär fel last".
+
+### S8 — "Ingen kommandoväg" för rollback av frontenden (källa: J1e mot J4a)
+
+- **Påstående:** J1e skriver om frontendens rollback: *"ingen kommandoväg"*
+  — bara Vercel-dashboardens "promota tidigare deploy" eller en revert-PR —
+  och sammanfattar läget som *"noll mekanisk rollback var som helst i
+  kedjan"*. J4a pekar samtidigt på Vercels Instant Rollback som direkt
+  tillämpbar, eftersom Vercel är vår egen hosting.
+- **Prövat med:** sökning i Vercels egen dokumentation (Vercel-MCP:ns
+  dokumentationssök, 2026-09-17) på rollback via CLI.
+- **Utfall:** kommandovägen FINNS. `vercel rollback [deployment-id eller url]`
+  och `vercel rollback status` (`vercel.com/docs/cli/rollback`),
+  `vercel promote <deployment-url>`
+  (`vercel.com/docs/deployments/promote-preview-to-production`), och ett
+  REST/SDK-anrop `projects.requestRollback`. Vercel publicerar dessutom en
+  hel incidentsekvens — bekräfta felet i loggarna, rulla tillbaka, verifiera,
+  hitta den dåliga deployen, `vercel bisect`
+  (`vercel.com/docs/deployments/rollback-production-deployment`).
+- **Dom: föll delvis.** "Ingen kommandoväg" är fel och rättas i våg 2. Det
+  som STÅR KVAR av J1e:s fynd är det väsentliga: vägen har aldrig körts,
+  aldrig dokumenterats i en runbook hos oss (`TASK-199`), och ingen mekanism
+  upptäcker att den behövs. **Att pröva i våg 2 innan det blir en
+  rekommendation:** Vercels dokumentation om Instant Rollback ska läsas på
+  en punkt — om en rollback stänger av den automatiska kopplingen mellan
+  `main` och Production tills man aktivt promotar igen. I så fall har
+  rollbacken en bieffekt på hela landningsflödet som en runbook måste bära.
+  Frontenden är också bara ETT av fyra deployspår: för Edge Functions,
+  migrationer och Airtable-schema står J1e:s dom orörd.
+
+### S9 — Airtable-skrivvägen saknar omförsök vid 429 (källa: J5)
+
+- **Påstående:** läsfunktionerna i `supabase/functions/_shared/airtable-client.ts`
+  försöker om när Airtable svarar 429 (för många anrop), skrivfunktionerna
+  gör det inte.
+- **Prövat med:** `grep -n "withAirtable429Retry"` samt en uppräkning av
+  exporterade funktioner och `method:`-rader i samma fil (523 rader).
+- **Utfall:** omförsöks-omslaget används på rad 121, 196 och 241 — inuti
+  `fetchFromAirtable` (rad 77), `fetchAirtablePage` (162) och
+  `fetchAirtableRecord` (228). De sex skrivande funktionerna —
+  `updateAirtableRecord` (266, `PATCH`), `createAirtableRecord` (308,
+  `POST`), `upsertAirtableRecord` (353), `deleteAirtableRecord` (411),
+  `createAirtableRecords` (448), `deleteAirtableRecords` (497) — anropar det
+  aldrig.
+- **Dom: höll.** Nyans att pröva i våg 2 innan det blir en rekommendation:
+  finns ett bokfört SKÄL (en `POST` som försöks om kan i princip dubbelskapa
+  — men ett 429 betyder att Airtable avvisade anropet obehandlat, så just
+  det omförsöket är ofarligt)? J5 fann inget skäl och kallar luckan
+  odokumenterad. Basen delar dessutom sitt tak på fem anrop per sekund med
+  CI:s staging-svit — en skrivning från Lotta kan alltså falla på grund av
+  en testkörning, om staging och prod delar arbetsyta (pröva det också).
+
+### S10 — Kontraktsvakten bevakar 7 av 18 mockade Edge Functions (källa: J5)
+
+- **Påstående:** den hermetiska fixturvärlden mockar 18 Edge Functions, men
+  den nattliga kontraktsvakten — mekanismen som ska visa att mockarna
+  fortfarande liknar verkligheten — jämför bara 7 av dem mot staging, medan
+  dess egen kommentar påstår full täckning.
+- **Prövat med:** uppräkning av citerade funktionsnamn i
+  `tests/support/fixturvarld/handlers.ts` och av `functions/v1/<namn>` i
+  `tests/kontraktsvakt/kontraktsfall.ts`, samt `grep -n -i "sju"` i
+  kontraktsvaktens filer.
+- **Utfall:** `handlers.ts` namnger 18 funktioner. `kontraktsfall.ts` namnger
+  8, varav 7 är fixturhandlers (`get-event`, `get-event-formats`,
+  `get-event-notes`, `get-events`, `get-person`, `get-persons`,
+  `get-registrations`) och en (`create-event`) hör till felfallen.
+  `kontraktsfall.ts:25-26` säger ordagrant: *"ALLA SJU FIXTURHANDLERS
+  BEVAKAS. `tests/support/fixturvarld/handlers.ts` registrerar sju
+  EF-handlers"*.
+- **Dom: höll.** Elva mockar binds av ingenting: `get-activity-log`,
+  `get-attendance`, `get-event-attachments`, `get-leads`, `get-mail-log`,
+  `get-person-notes`, `get-places`, `get-segments`, `get-waitlist`,
+  `hamta-oppna-betalningar` och `log-activity`. Kommentaren var sann när den
+  skrevs (`TASK-68`) och har blivit falsk genom tillväxt — samma felklass
+  som `ADR-083`, men i en testfil där ingen grind läser prosan. Detta är det
+  hittills starkaste belägget för Marcus fråga 8.3: *"Hur vet vi att
+  simuleringen fortfarande motsvarar de riktiga tjänsterna?"* — för elva av
+  arton: det vet vi inte. Jämför med J7 (som räknar oberoende) i våg 2, och
+  pröva om acceptance-testerna dessutom bär egna mockar utöver `handlers.ts`.
+
 ## Motsägelser mellan agenter
 
-Inga bokförda ännu.
+- **Rollback av frontenden (J1e mot J4a):** se S8 — J4a hade rätt i sak,
+  J1e rätt i att rutinen är oprövad hos oss.
+- **`TASK-365` och PR #2306 (S125:s uppgift mot J1b):** S125 uppgav att
+  `post-merge.yml`:s täckningslucka var "mätt på #2306". J1b prövade:
+  `gh pr view 2306` är en orelaterad label-policy-PR; kortet `TASK-365` finns
+  och står To Do, men dess mekanismförklaring (en docs-push som avbryter en
+  kod-landnings svit via `concurrency`) går inte att återskapa mot dagens
+  kod, där gruppen är per commit-SHA. J1b märker luckan **osäker**. J8.4
+  räknar oberoende vilka landade träd som aldrig fick en post-merge-körning —
+  den mätningen avgör.
 
 ## Öppna frågor till våg 2
 
