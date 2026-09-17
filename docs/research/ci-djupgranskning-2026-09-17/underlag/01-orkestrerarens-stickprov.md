@@ -461,8 +461,46 @@ utreda.
   `scripts/classify-post-merge.sh` och prövar om det räcker. Klassningen
   ovan (docs/kod) bygger på grenprefix och är en approximation.
 
+### S19 — Nattlarmet saknar spärr mot dubbletter; de två andra kanalerna har en (källa: D3, arkitekturkartan)
+
+- **Påstående:** kartans § 4 säger att `nightly.yml`:s larmjobb skapar ett
+  NYTT ärende varje röd natt, medan länkkanalen (`links-arende`) och
+  `post-merge.yml` först letar efter ett befintligt ärende och kommenterar det
+  i stället ("dedup" — spärr mot dubbletter).
+- **Prövat med:** `grep -n "gh issue list\|gh issue create\|gh issue comment"`
+  i `.github/workflows/nightly.yml` och `.github/workflows/post-merge.yml`,
+  2026-09-17 ~11:10Z.
+- **Utfall:** `nightly.yml:225` letar befintligt `lankrota`-ärende och
+  kommenterar (`:250`) eller skapar (`:258`). `nightly.yml:863` — larmjobbet —
+  är ett rakt `gh issue create` utan någon föregående sökning.
+  `post-merge.yml:479` letar befintligt `ci-post-merge`-ärende, kommenterar
+  (`:543`, loggraden säger *"samma träd … — dedup"*) eller skapar (`:547`).
+- **Dom: höll.** Det förklarar S7:s tal mekaniskt: 21 öppna `ci-natt`-ärenden
+  är inte 21 olika fel utan ett och samma röda tillstånd, rapporterat en gång
+  per natt. Spärren fanns alltså som mönster i samma fil (rad 225) men byggdes
+  aldrig in i huvudlarmet. Liten, reversibel åtgärdskandidat — bärs till
+  åtgärdsplanen.
+- **Vad kartan INTE får stå oemotsagd på:** dess diagram (§ 1) och
+  körytematris (§ 3) anger merge-dedupens träffkvot till *"~30 %"*. Det talet
+  är J8.5:s TEORETISKA träffbarhet ur git-historiken (568 av 1 887
+  merge-commits trädlika), inte en observerad kvot — J8.5 observerade noll
+  träffar, medan J8.7 rapporterar att `metrics:ci` visar 25 av 25. Se
+  motsägelsen nedan; kartan rättas när den är avgjord.
+
 ## Motsägelser mellan agenter
 
+- **Merge-dedupens faktiska träffkvot (J8.5 mot J8.7, ärvd av D3):** J8.5
+  (`underlag/j8-5…` rad 504–564) kallar dedupen *"i praktiken utan verkan"* —
+  noll observerade träffar, och run `34243465042` loggar *"Dedup-miss:
+  träd-avvikelse"*. J8.7 (`underlag/j8-7…` rad 164, 367–374) skriver
+  *"Dedupen fungerar, med ett undantag"*: `metrics:ci` rapporterar 100 %
+  träff (25 av 25), och 57 % av push-körningarna (n=53) är korta (242 s).
+  De kan båda mäta rätt på olika saker: en KORT push-körning kan vara en
+  docs-landning (`should_skip_tests`) lika gärna som en dedup-träff, och
+  `metrics:ci` kan räkna träffar på ett annat sätt än loggraden. ÖPPEN —
+  KG1 äger frågan i våg 2; orkestreraren mäter själv därefter (en påstådd
+  träff och en miss, ur `changed`-jobbets logg), eftersom svaret avgör om
+  rekommendationen blir "riv dedupen" eller "behåll den".
 - **Antalet filer i `scripts/` (orkestreraren mot J1c och J8.8):**
   orkestrerarens "172 filer" var `ls scripts | wc -l` — 171 filer plus
   katalogen `lib` på toppnivå. J1c och J8.8 räknar oberoende 186 filer
