@@ -1,12 +1,12 @@
 ---
 id: TASK-241.5
 title: 'Skiva: WOW-övergången hem–sändyta'
-status: Done
+status: In Progress
 assignee: []
 created_date: '2026-08-16 23:06'
-updated_date: '2026-09-04 08:25'
+updated_date: '2026-09-17 09:22'
 labels:
-  - ready-for-agent
+  - intentionally-open
 dependencies:
   - TASK-241.2
 parent_task_id: TASK-241
@@ -222,6 +222,8 @@ STADNING: dev-server (port 5185) och backlog.config.yml (ROOT_CONFIG,
 check_active_branches: false) borttagna efter task-edit-anropen; samtliga
 .tmp-task2415-*.mjs temporarskript raderade ur worktreen. git status
 verifierad ren mot exakt de 3 avsedda filerna (2 andrade + 1 ny).
+
+Återöppnat av S125 2026-09-17 på Marcus beslut (väg C): "Jag väljer väg C för korten. Har inte tid med att kolla detta just nu, men det behöver granskas senare." Kvarvarande DoD-post är Marcus egen facit-granskning; kortet väntar honom, inte en agent. Etiketten intentionally-open tystar stängningsgrindens invariant 1 tills granskningen är gjord.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary
