@@ -7,7 +7,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-09-17 09:56'
-updated_date: '2026-09-17 10:23'
+updated_date: '2026-09-17 10:59'
 labels: []
 dependencies: []
 priority: high
@@ -54,19 +54,39 @@ SyntaxError: The requested module '@tanstack/history' does not provide an export
 
 ## Fixen
 
-`overrides["@tanstack/history"]`: `1.161.6` → `1.162.3` — den exakta version
-`@tanstack/router-core@1.171.29` (och därmed hela `@tanstack/react-router`-
-trädet) kräver, post-incident-säker per advisory-analysen ovan. Detta är en
-BUMP av overriden, inte en borttagning — de övriga fem historiska overrides-
-posterna (brace-expansion, fast-uri, js-yaml, linkify-it, postcss, sharp)
-rörs inte. `npm install` (riktad, ej `rm -rf`) per ADR-028 § Updates
-2026-08-04-amenderingen (ordinär patchad advisory-klass, inte
-malware-purge-klass — history-versionen i sig är aldrig varit malware,
-overriden var en FÖRSVARSÅTGÄRD mot semver-drift in i malware-versionerna).
-`npm ls @tanstack/history` visar EN version (1.162.3, deduped/overridden)
-efter fixen.
+`overrides["@tanstack/history"]` TOGS BORT HELT (inte bumpad till 1.162.3
+— den ursprungliga beskrivningen ovan antog en bump, men analysen visade
+att pinnen var en ensam rest). Tre oberoende belägg: (1)
+`@tanstack/router-core@1.171.29` (react-routerns egen, exakt deklarerade
+dependency) kräver redan `@tanstack/history: "1.162.3"` EXAKT, utan caret —
+samma mönster genomgående i hela TanStack-monorepot; (2) semver-drift-risken
+overriden fanns för att stoppa är nu strukturellt omöjlig — malware-
+versionerna 1.161.9/1.161.12 är avpublicerade ur npm-registryt och kan
+aldrig återuppstå, override eller ej; (3) `react-router-devtools`
+(devDependency) ligger i SAMMA Dependabot-`tanstack`-grupp
+(`.github/dependabot.yml` rad 37–42) och dess peer-dependency på
+`router-core` löses mot samma installerade instans. De övriga fem
+historiska overrides-posterna (brace-expansion, fast-uri, js-yaml,
+linkify-it, postcss, sharp) rörs inte. `package-lock.json`-diffen mellan
+"override bumpad till 1.162.3" och "override borttagen helt" är TOM —
+byte-identisk resolution (`npm install` gav "up to date"). `npm ls
+@tanstack/history` visar EN version (1.162.3, deduped) efter fixen; `npm
+audit` ger 0 träffar på GHSA-rmmr-r34h-pfm5.
 
-Se ADR-028 § Updates (ny post) för fullständig motivering och belägg.
+**Runda 2 (r1-granskningsfynd, warning/ask-user):** K0åi-triggerns andra
+halva — `^`-prefix-återinförande på de fyra exakt-pinnade paketen
+(`@tanstack/react-router`, `router-plugin`, `router-cli`,
+`react-router-devtools`) — fullbordades. Samma tre belägg ovan gäller: caret-
+formen återställer bara den disciplin Dependabot redan de facto körde
+(redigerar exakt versionssträng per PR). `npm install` efter caret-ändringen
+gav identiska resolverade versioner för alla fem paket (ingen glidning);
+`package-lock.json`-diffen är begränsad till rot-paketets specifier-speglade
+`dependencies`/`devDependencies`-block, ingen annan nod i trädet rörd. K0åi-
+posten borttagen ur `tasks/todo.md` per sin egen "tas bort när K0åi körts"-
+klausul.
+
+Se ADR-028 § Updates (2026-09-17-posten, inklusive runda 2-tillägget) för
+fullständig motivering och belägg.
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria

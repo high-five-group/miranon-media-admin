@@ -507,24 +507,43 @@ linkify-it, postcss, sharp) rörs inte — detta är en riktad, enkelspårig
 ändring per ADR-028 § 2026-08-04-amenderingens "riktad `npm install`, INTE
 `rm -rf`"-form.
 
-`^`-prefix-återinförandet på de fyra exakt-pinnade paketen
+**Runda 2 (samma dag, 2026-09-17): `^`-prefix-återinförandet fullbordat.**
+`^`-prefixet återinfördes på de fyra exakt-pinnade paketen
 (`@tanstack/react-router`, `router-plugin`, `router-cli`,
-`react-router-devtools`) som `tasks/todo.md`s K0åi-definition också nämner
-är EXPLICIT UTANFÖR denna lyfts scope: de fyra pinnarna är en separat,
-fungerande disciplin (Dependabot bumpar dem framgångsrikt genom att redigera
-den exakta versionssträngen i varje PR, senast `#2484` självt) och att lösa
-upp dem är ett självständigt arkitekturval som inte krävs för att laga
-kollisionen — det lämnas som öppen fråga, inte avgjort här.
+`react-router-devtools`) som `tasks/todo.md`s K0åi-definition (rad ~8076–8083,
+nu borttagen ur listan per samma definitions egen "tas bort när K0åi körts"-
+klausul) bundlade ihop med overrides-borttagningen som EN åtgärd. Runda 1
+ovan avgjorde bara overrides-halvan och lämnade caret-halvan uttryckligen
+öppen (r1-granskningsfynd, warning/ask-user) — det var alltså en ofullständig
+K0åi-körning, inte en medveten avgränsning av triggerns egen definition.
+Samma tre belägg som motiverade borttagningen ovan gäller caret-återinförandet:
+TanStack self-pinnar redan `@tanstack/history` exakt i sitt eget träd (belägg
+1), semver-drift-risken caretn skulle kunna öppna för är strukturellt omöjlig
+eftersom malware-versionerna är avpublicerade (belägg 2), och
+`react-router-devtools` delar Dependabot-grupp med de övriga tre och löses
+mot samma instans (belägg 3) — caret-formen återställer alltså bara den
+disciplin Dependabot redan de facto körde genom att redigera exakta
+versionssträngar PR för PR. Verifierat: `npm install` efter caret-ändringen
+ger IDENTISKA resolverade versioner för alla fem paket (`react-router
+1.170.35`, `router-plugin 1.168.37`, `router-cli 1.167.35`,
+`react-router-devtools 1.167.1`, `history 1.162.3` deduped) — `package-
+lock.json`-diffen är begränsad till rot-paketets `dependencies`/
+`devDependencies`-block (specifier-strängen speglad från `package.json`,
+inte en resolverad version) i exakt de fyra raderna som ändrades, ingen
+annan nod i trädet rörd.
 
 **Bevarat per Konvention-flödet:** steg 1–4 följda (diagnostik →
-advisory-omprövning → riktad fix → verifiering); steg 5 (denna post)
-kodifierar att K0åi-triggern nu är BEPRÖVAD i drift, inte bara definierad.
+advisory-omprövning → riktad fix → verifiering); steg 5 (denna post,
+inklusive runda 2-tillägget) kodifierar att K0åi-triggern nu är
+FULLSTÄNDIGT körd, inte bara definierad — båda halvorna (overrides-
+borttagning + caret-återinförande) är avgjorda, ingen öppen fråga kvarstår.
 
 **Resterande osäkerhet:** TanStacks nuvarande praxis (exakt intern
 self-pinning av `@tanstack/history`) är ett observerat MÖNSTER, inte ett
 kontrakt — bryts det i en framtida release faller skyddet tillbaka på CI:s
-build-grind (samma grind som fångade #2484), inte på en override. `^`-
-prefix-frågan för de fyra kvarvarande exakt-pinnade paketen kvarstår öppen.
+build-grind (samma grind som fångade #2484), inte på en override eller en
+saknad caret. Ingen öppen fråga kvarstår för de fyra paketens
+versionsprefix.
 
 **Spårbarhet:**
 

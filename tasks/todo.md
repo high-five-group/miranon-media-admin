@@ -8073,15 +8073,6 @@ K1.D Commit 2 lychee-baseline (2026-05-14) fångade 81 broken/stale refs. Per K7
 
 **Lessons-kandidat #14 (skördas Session 6 K-sista):** lychee + cross-doc-grep är komplementära kvalitetsverktyg — båda behövs vid fas-avslut. lychee fångar **referensdrift**; K5.9c fångar **innehållsdrift**. Generaliserbar disciplin etablerad via ADR-029 § Baseline-fynd.
 
-### Återkommande disciplin: K0åi-trigger för pin-luckring (post-K0åh resolution 2026-05-13)
-
-Allowlist `audit-ci.jsonc` är tom (K0åh, 2026-05-13). Exakt-pin på 5 `@tanstack/*`-paket + `overrides: { "@tanstack/history": "1.161.6" }` bevaras tills TanStack rör `latest`-dist-tag bortom 1.161.6.
-
-- **Trigger:** Vid sessionsstart, om `npm view @tanstack/history@latest version` returnerar annan version än `1.161.6` → starta K0åi (pin-luckring `^`-prefix-återinförande + overrides-borttagning per [ADR-028](../docs/decisions/ADR-028-supply-chain-incident-respons.md) reverse-flow).
-- **Senast kontrollerad:** 2026-05-13 (K0åh, returnerade `1.161.6` — pin-disciplin fortsatt motiverad)
-- **K0åh resolution-detaljer:** Se [ADR-028](../docs/decisions/ADR-028-supply-chain-incident-respons.md) `## Updates` för advisory-snär-uppdaterings-spårning + reverse-flow-spec.
-- **Tas bort från denna lista** när K0åi har körts (overrides + exakt-pin upplöst, post-incident state).
-
 ### Återkommande disciplin: Veckovis Actions supply-chain-granskning (ADR-029 §6)
 
 Third-party GitHub Actions med SHA-pin granskas veckovis för:
