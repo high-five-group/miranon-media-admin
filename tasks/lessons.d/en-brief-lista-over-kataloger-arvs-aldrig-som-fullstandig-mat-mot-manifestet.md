@@ -2,7 +2,7 @@
 
 En bokföringsagent fick i uppdrag att uppdatera en angiven lista av
 facit-kataloger efter ett stort bygge. Mätt 2026-09-01 (S113 Del 14,
-`tasks/sessions/2026-08-29-session-113.md` rad 1557 till 1559): agenten
+`tasks/sessions/archive/2026-08/2026-08-29-session-113.md` rad 1557 till 1559): agenten
 mätte fram TVÅ kataloger utöver de som stod i uppdraget, i stället för att
 bara utgå från den angivna listan (samma premiss-provande disciplin som
 ADR-086, tillämpat på ett bokföringsuppdrags egen scope-lista snarare än

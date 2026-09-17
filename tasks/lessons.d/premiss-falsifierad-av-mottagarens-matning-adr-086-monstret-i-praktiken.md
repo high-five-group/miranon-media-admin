@@ -2,7 +2,7 @@
 
 Ett uppdrag om att bygga en kvitto-förhandsgranskning bar premissen "ren
 frontend", att inget nytt backend-arbete skulle krävas. Mätt 2026-09-01
-(S113 Del 15, `tasks/sessions/2026-08-29-session-113.md` rad 1592 till
+(S113 Del 15, `tasks/sessions/archive/2026-08/2026-08-29-session-113.md` rad 1592 till
 1598): bygg-agenten falsifierade premissen genom att mäta, kvittot
 existerade inte som ett färdigt dokument före utskick, den befintliga
 `preview-receipt`-funktionen renderade bara typexempel. I stället för att

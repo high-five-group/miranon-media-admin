@@ -5,7 +5,7 @@ som skapades av ett anrop autentiserat med det standardgenererade
 `GITHUB_TOKEN`, en avsiktlig plattformsspärr mot rekursiv workflow-
 triggering. En sådan PR står därför utan CI för alltid, tyst, om den inte
 åtgärdas.** Mätt 2026-09-01 (S113 resume 7,
-`tasks/sessions/2026-08-29-session-113.md` rad 2091 till 2093): en
+`tasks/sessions/archive/2026-08/2026-08-29-session-113.md` rad 2091 till 2093): en
 baselines-PR skapad med `GITHUB_TOKEN` fick aldrig CI. Åtgärden var att
 stänga och återöppna PR:en med en annan autentisering (ett personligt
 token, `gh auth`), vilket triggar `pull_request`-eventet på nytt och

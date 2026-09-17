@@ -2,7 +2,7 @@
 
 En prod-runbooks steg för direkt-deploy föll: `npx vercel --prod` avvisade
 uploaden med "files should NOT have more than 15000 items, received 35693".
-Mätt 2026-09-02 (S113 Del 16, `tasks/sessions/2026-08-29-session-113.md`
+Mätt 2026-09-02 (S113 Del 16, `tasks/sessions/archive/2026-08/2026-08-29-session-113.md`
 rad 1725 till 1735): repot bär agent-worktrees under `.claude/worktrees/`,
 och Vercel-CLI:t försöker ladda upp dem eftersom `.vercelignore` inte
 utesluter katalogen. Rätt väg blev i stället att låta git-integrationen

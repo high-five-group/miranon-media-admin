@@ -21,7 +21,7 @@ VARFÖR: grillningen 2026-08-30 (S113 Del 11, beslut 1/7/12) la priset i basen: 
 
 FORM (Marcus GO): (1) Skapa nytt event: två talfält Pris (kr) och Anmälningsavgift (kr), FÖRIFYLLDA från vald eventtyps standard på Eventinnehåll (samma uppslag som betalnings-härledningen använder, data-model.md § Uppslaget Event (source) × Typ), ändringsbara; föreläsning har bara Pris. (2) Eventsidan: samma två fält synliga och redigerbara (egen Spara-väg i samma mönster som avtalat pris på anmälan, S113 Del 14). (3) create-event + update-event skriver fälten; allowlisten i _shared/field-allowlists.ts utökad; ef-metod-vakt/allowlist-tester tvåsidiga. (4) Bilagemallarnas fritextfält Pris (bilagetext)/Anmälningsavgift (bilagetext) RÖRS INTE (grillningens beslut: fritexten byter aldrig typ).
 
-KÄLLOR: tasks/sessions/2026-08-29-session-113.md Del 11 + Del 16 · backlog TASK-346 § Datamodell · docs/reference/data-model.md § Prod-fälten · docs/reference/prod-driftsattning-betalningsflodet-runbook.md § Steg 12.
+KÄLLOR: tasks/sessions/archive/2026-08/2026-08-29-session-113.md Del 11 + Del 16 · backlog TASK-346 § Datamodell · docs/reference/data-model.md § Prod-fälten · docs/reference/prod-driftsattning-betalningsflodet-runbook.md § Steg 12.
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria

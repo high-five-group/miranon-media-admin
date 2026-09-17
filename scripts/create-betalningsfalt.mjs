@@ -90,7 +90,7 @@
 // PROD-VÄGEN (TASK-346-familjen; kopierad hit av
 // docs/reference/prod-driftsattning-betalningsflodet-runbook.md § Steg 11
 // "Två vägar", väg A — Marcus mandat 2026-09-01, verbatim i
-// tasks/sessions/2026-08-29-session-113.md § MANDAT: "Gällande dina frågor
+// tasks/sessions/archive/2026-08/2026-08-29-session-113.md § MANDAT: "Gällande dina frågor
 // om mandat så har du alla mandat du kan ha", täcker uttryckligen "Airtable
 // prod-fälten via AIRTABLE_PROD_GODKAND_AV_MARCUS-mönstret")
 // ─────────────────────────────────────────────────────────────────────────

@@ -457,5 +457,5 @@ enskild invokation behöver klara hela batchen.
   beslutet.
 - [`verifiering-kvittoskivning-afk-natt-2026-08-30.md`](../research/verifiering-kvittoskivning-afk-natt-2026-08-30.md)
   § 2 B6 och § 7 — de tre obelagda punkter minimaltestet betalade.
-- `tasks/sessions/2026-08-29-session-113.md` § Del 11 beslut 11 och
+- `tasks/sessions/archive/2026-08/2026-08-29-session-113.md` § Del 11 beslut 11 och
   "Orkestrerarens tre reverseringar" — grillningens trail.

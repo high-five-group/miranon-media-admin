@@ -27,7 +27,7 @@ noll träffar. Ingen ADR har alltså redan avgjort frågan; detta är genuint
 nytt mark, inte en omprövning av ett tidigare beslut.
 
 **Det viktigaste jag hittade var inte i `docs/`, utan i sessionshistoriken.**
-`tasks/sessions/2026-08-29-session-113.md` Del 11 och Del 16 visar att
+`tasks/sessions/archive/2026-08/2026-08-29-session-113.md` Del 11 och Del 16 visar att
 orkestreraren REDAN har läst prod-Postgres read-only, två gånger, med den
 mekanism som finns idag: Marcus dikterar `deny-prod-ref.sh`s inbyggda
 typa-för-att-bekräfta-bypass (`PROD_REF_GODKAND_AV_MARCUS=<ref>` inline på
@@ -416,7 +416,7 @@ Detta var det oväntade fyndet i sessionshistoriken (§ "Vad jag redan hade").
 `authenticated`-scopad `SELECT`-policy (tabellen i § 1). Det betyder att
 **varenda befintlig app-inloggning** (Marcus, Lotta, Roger, eller ett
 dedikerat "smoke"-konto som redan används för prod-verifiering,
-`tasks/sessions/2026-08-29-session-113.md` rad ~2682) är **strukturellt
+`tasks/sessions/archive/2026-08/2026-08-29-session-113.md` rad ~2682) är **strukturellt
 skrivskyddad** mot dessa fyra tabeller redan idag — inte av konvention, utan
 av samma GRANT-mekanism som § 1: `authenticated` har `revoke all` följt av
 enbart `grant select`, verifierat rad för rad i migrationerna. All skrivning
@@ -584,4 +584,4 @@ kontonyckelns fulla behörighet med ett artigt löfte att bara läsa.**
 `supabase/migrations/20260830195900_jobbmotorn_ko_cron_jobbtabeller.sql`,
 `supabase/migrations/20260811211759_create_activity_log.sql`,
 `supabase/migrations/20260812143131_grant_service_role_activity_log.sql`,
-`tasks/sessions/2026-08-29-session-113.md` (Del 11, Del 16, Paushistorik).
+`tasks/sessions/archive/2026-08/2026-08-29-session-113.md` (Del 11, Del 16, Paushistorik).

@@ -4,7 +4,7 @@ Tråden `T178` hade tidigare bara mätt Vite-staleness kopplad till
 grenbyten (`git checkout`). Under en lokal iterationsloop med flera
 bygg-agenter i serie på SAMMA gren, med lokala commits och ingen
 `git checkout` alls, uppstod stale-servern ändå. Mätt 2026-09-01 (S113
-Del 14, `tasks/sessions/2026-08-29-session-113.md` rad 1563 till 1564):
+Del 14, `tasks/sessions/archive/2026-08/2026-08-29-session-113.md` rad 1563 till 1564):
 fem separata stale-tillfällen under en enda iterationsloop
 (`fix/hem-betalningskort-marcus-iteration`), vilket generaliserar T178,
 mönstret är alltså agentpass-handoff mot samma igångkörda dev-process, inte
