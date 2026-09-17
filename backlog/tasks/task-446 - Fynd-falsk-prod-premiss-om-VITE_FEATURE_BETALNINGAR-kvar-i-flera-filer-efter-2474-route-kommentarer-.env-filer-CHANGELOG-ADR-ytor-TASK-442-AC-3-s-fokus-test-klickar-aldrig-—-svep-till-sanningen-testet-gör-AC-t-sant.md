@@ -4,10 +4,10 @@ title: >-
   Fynd: falsk prod-premiss om VITE_FEATURE_BETALNINGAR kvar i flera filer efter
   #2474 (route-kommentarer, .env-filer, CHANGELOG/ADR-ytor) + TASK-442 AC #3:s
   fokus-test klickar aldrig — svep till sanningen, testet gör AC:t sant
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-17 09:51'
-updated_date: '2026-09-17 10:16'
+updated_date: '2026-09-17 12:29'
 labels: []
 dependencies: []
 priority: medium
@@ -34,6 +34,12 @@ Källa: PR #2474 runda 3 (fynd 1+2 i Riskbedömnings-sektionen) rättade fem pla
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Done av S125-orkestreraren 2026-09-17: landad via #2497 (main 319be9d7), review-grinden konvergerad (r1 + två omstämplingar), DoD mot PR-kroppens grind-tabell. Rest: funktionsflaggor.ts § VAD FLAGGAN ÄR TILL FÖR bär ännu en mening om 'tre saker i prod' (info-fynd r1, utanför diffen) — bokförd i S125 Del 3 handoff.
+<!-- SECTION:NOTES:END -->
 
 ## Final Summary
 
