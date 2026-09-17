@@ -487,9 +487,162 @@ utreda.
   träffar, medan J8.7 rapporterar att `metrics:ci` visar 25 av 25. Se
   motsägelsen nedan; kartan rättas när den är avgjord.
 
+### S20 — Merge-dedupen träffar, men bara var sjätte kod-landning (källa: J8.5 mot J8.7; avgör motsägelsen)
+
+- **Påståenden:** J8.5 fann *"noll dedup-träffar"* och kallar mekanismen *"i
+  praktiken utan verkan"*. J8.7 skriver *"Dedupen fungerar, med ett
+  undantag"* och citerar `metrics:ci`: 25 av 25 träffar. ("Dedup" är här
+  steget i `ci.yml` som, när en ändring just landat i `main`, frågar om
+  exakt samma filträd redan testats grönt — och i så fall hoppar över den
+  tunga testsviten.)
+- **Prövat med:** `gh run list --workflow ci.yml --event push --branch main
+  --limit 40` (körningarnas längd i sekunder), sedan `gh api
+  …/actions/runs/<id>/jobs` och `gh run view <id> --log --job <id>` på
+  klassningsjobbet "Detect changed files" i de fyra KORTA körningar vars
+  gren hade kodnamn. 2026-09-17 ~11:15–11:25Z.
+- **Utfall:** tre verkliga träffar, med loggraden ordagrant *"✅ Dedup-TRÄFF:
+  träd == … och den SHA:n har grön CI-run → tunga jobb hoppas"*:
+  run `34184098307` (PR #2458), `34179882751` (PR #2455) och `34051468698`
+  (PR #2403) — alla med `Test suite: skipped`. Den fjärde korta,
+  `34144253948` (PR #2444), var ingen träff utan en REDUCERAD svit (en
+  acceptance-skärva, D1-klassen). Av fönstrets 40 körningar var 19
+  docs-grenar (korta, sviten hoppas av klassningen oavsett dedup), en
+  pågående, och **20 kod-landningar: 3 dedup-träffar, 1 reducerad svit, 16
+  som körde hela sviten en gång till** (590–806 s).
+- **Dom: J8.5 föll, J8.7 skärpt, orkestrerarens egen sammanfattning föll.**
+  Dedupen är inte död — men den träffar 3 av 20 kod-landningar (15 %) i
+  detta fönster. `metrics:ci`:s "25 av 25" kan alltså inte betyda "varje
+  landning dedupliceras"; vad verktyget räknar är inte utrett här.
+  Sessionsdokets Del 3 skrev *"merge-dedupen träffar aldrig"* — det var S11:s
+  ENA commit generaliserad, och rättas i Del 5. Docs-/kod-indelningen bygger
+  på grenprefix (approximation); de fyra kodnamngivna korta körningarna är
+  däremot lästa ur logg.
+- **Varför den missar:** steget jämför det landade trädet med PR-GRENENS
+  huvud. De är lika bara när `main` stått still sedan grenen senast
+  uppdaterades; i en aktiv kö har `main` nästan alltid rört sig. Men kön har
+  redan testat EXAKT det landade trädet — S11 visade att `CI [merge_group]`
+  och `CI [push]` går på samma commit-SHA. En enklare fråga (*"har denna SHA
+  redan en grön `ci.yml`-körning?"*) skulle träffa nästan alltid. Det är
+  J8.5:s R3 "byt fråga", och den står sig; "riv dedupen" gör det inte.
+  Åtgärdskandidat, ej beslutad — KG1 prövar säkerheten i den enklare frågan.
+- **Följd för kartan (D3):** "~30 % träff" i `02-…` § 1 och § 3 är J8.5:s
+  teoretiska tak ur git-historiken, inte en mätning. Ersätts i putsen med
+  det mätta: 3 av 20 kod-landningar.
+
+### S21 — Merge-kön kräver inte Enterprise-planen för ett publikt repo (källa: KG2 A1, besvarar S14:s öppna fråga)
+
+- **Påstående:** GitHub erbjuder merge-kö i varje publikt repo som ägs av en
+  organisation, oavsett plan; Enterprise krävs bara för PRIVATA repon.
+- **Prövat med:** `gh api
+  repos/github/docs/contents/data/reusables/gated-features/merge-queue.md`
+  med `Accept: application/vnd.github.raw` — alltså källfilen som
+  `docs.github.com` byggs av. 2026-09-17.
+- **Utfall, ordagrant:** *"Pull request merge queues are available in any
+  public repository owned by an organization, or in private repositories
+  owned by organizations using GitHub Enterprise Cloud."*
+- **Dom: höll.** Planen betalar inte för DETTA repos kö. D10 tillför
+  oberoende att organisationens tre privata repon och org-rulesets är vad
+  planen i så fall köper — och att org-rulesets är oanvända. Om planen ska
+  behållas är Marcus beslut (kostnaden är liten); granskningen levererar bara
+  faktumet. KG2 pekar på en möjlig verklig Enterprise-fördel —
+  samtidighetstaket för jobb — som ingen mätning i granskningen isolerat.
+
+### S22 — En rollback hos Vercel stänger av automatisk produktion tills någon aktivt slår på den igen (källa: KG2 A2, besvarar S8:s öppna fråga)
+
+- **Påstående:** efter `vercel rollback` tilldelas nya landningar i `main`
+  inte längre produktionsdomänen automatiskt.
+- **Prövat med:** hämtning av `https://vercel.com/docs/instant-rollback`
+  (sidan daterad 2026-07-07), 2026-09-17.
+- **Utfall, ordagrant:** *"After a rollback, Vercel turns off auto-assignment
+  of production domains. This means new pushes to your production branch
+  won't replace the rolled-back deployment."* Vägen tillbaka: knappen "Undo
+  Rollback" eller `vercel promote [deployment-id or url]`, som *"restores
+  auto-assignment of production domains"*.
+- **Dom: höll.** Satt bredvid S6 är detta en skarp fälla: ingenting hos oss
+  upptäcker en produktion som står still (`TASK-199`). Efter en rollback
+  skulle `main` fortsätta landa gröna ändringar medan användarna tyst står
+  kvar på den gamla versionen — tills en människa märker det. En runbook för
+  rollback MÅSTE därför bära steget "promota igen", och `TASK-199`:s vakt
+  blir viktigare, inte mindre viktig, av att rollback-vägen finns.
+
+### S23 — Fyra Actions-referenser saknar SHA-pin, alla i det sist tillagda jobbet (källa: D10, skärpt)
+
+- **Påstående:** 4 av 64 `uses:`-referenser saknar SHA-pin, samtliga i
+  `ci-suite.yml` rad 903, 945, 950 och 963; D10 kallar det *"SHA-pinningen
+  har redan läckt"*. (En "SHA-pin" låser en extern byggsten till en exakt
+  version som inte kan bytas ut i efterhand; en tagg som `@v7` kan flyttas
+  av den som äger byggstenen.)
+- **Prövat med:** `grep -n "uses:" .github/workflows/ci-suite.yml` filtrerat
+  på rader utan 40 hexadecimala tecken; `grep -n "actions/checkout@"` i
+  samma fil; `grep -rn -i "sha-pin"` i `docs/decisions/`.
+- **Utfall:** exakt de fyra raderna: `actions/upload-artifact@v7` (903),
+  `actions/checkout@v7` (945), `actions/setup-node@v7.0.0` (950),
+  `actions/download-artifact@v8` (963). Filens sju ÖVRIGA
+  `actions/checkout`-referenser är SHA-pinnade (`@3d3c42e5…  # v7.0.1`).
+  `ADR-029` rad 55 kräver SHA-pin *"på alla non-GitHub-officiella Actions"*.
+- **Dom: skärpt.** Alla fyra är GitHubs egna Actions, så `ADR-029` är inte
+  bruten — "läckt" är för starkt. Men filen följer i övrigt en strängare
+  praxis än policyn kräver, och det sist tillagda jobbet bröt den utan att
+  något märkte det: ingen grind vaktar formen. Liten städåtgärd, inte ett
+  säkerhetshål.
+
+### S24 — Tre snabba kontroller av våg 2 (källa: D5, KG3, D3)
+
+- **D5, force-push:** leverabel 5 rättar *"force-push är strukturellt
+  ovanligt"* till 5 av 22 PR:er, med `#2416` på tre händelser. Prövat med
+  `gh api …/issues/2416/timeline --paginate` filtrerat på
+  `head_ref_force_pushed`: **3**. **Höll.**
+- **KG3, paritetsgrinden känner a11y-jobbet:** `.ci-parity-policy.json:43`
+  bär posten ordagrant, och rad 69–71 vaktar att `run_a11y` förblir ett
+  villkorslöst `false`. **Höll** — J1c:s sammanfattning ("7 jobb") var ett
+  räknefel, inget hål; D10 kom oberoende till samma rättelse (filen har 8
+  jobb, policyn listar 8).
+- **Bakgrundssignaler överlever en kompaktering (granskningens egen drift):**
+  sessionen kompakterades kontrollerat ~11:05Z; agenternas
+  fullbordans-notifikationer (D3, KG3, KG2, D5, D10) kom alla fram därefter.
+  En instans åt `TASK-160.6`:s öppna mätpunkt — inte ett bevis för alla lägen.
+
+### S25 — Jobbet som bestämmer hela väntetiden kör odelat — känt, kortat, ogjort (källa: D9, skärpt)
+
+- **Påstående:** D9 (Opus) mätte att jobbet "Acceptance — tvåsidigt bevis
+  (hermetik-självtest)" står för 12,8–13,7 av körningens 13,6–14,0 minuter
+  (3 av 3 körningar), och att det är dyrt *"av misstag"*: det kör 524 tester
+  i EN följd, medan klassen det speglar kör samma 524 uppdelade på tre
+  parallella jobb ("skärvor", 4,2–6,0 min) sedan 2026-09-02. (Självtestet är
+  vakten som bevisar att varje hermetiskt test verkligen hänger på sin
+  låtsasvärld — det kör testerna en gång till UTAN den och kräver att de då
+  faller.)
+- **Prövat med:** `grep -n "shard\|strategy:\|matrix:"` i
+  `.github/workflows/ci-suite.yml`; läsning av rad 516–593; `grep -l -i
+  sjalvtest backlog/tasks/*.md`; `npm run bl -- task 366 --plain`.
+- **Utfall:** `acceptance` har `strategy.matrix.shard` = `[1,2,3]` på full
+  klass (rad 366–372, `--shard=I/N` rad 437). `acceptance-sjalvtest` (rad
+  516–593) har ingen `strategy` alls och anropar `npm run
+  test:acceptance:sjalvtest` rakt av (rad 567–577). Jobbets eget
+  kommentarsblock (rad 526–535) bokför att taket HÖJDES 12→20 minuter
+  2026-09-03 efter fyra avbrott samma dag, och pekar på ett uppföljningskort
+  med *"per-fil-mätning + delningsförslag"*. Kortet är `TASK-366`: status To
+  Do, prioritet High, skapat 2026-09-02, titeln säger *"45 sekunder från
+  12-min-taket — samma organiska tillväxt som TASK-239, samma fällning
+  väntar"*.
+- **Dom: skärpt.** Mätningen och mekanismen håller; "av misstag" gör det
+  inte. Problemet var känt dagen det uppstod, fick ett högprioriterat kort —
+  och sedan höjdes taket i stället för att orsaken åtgärdades. Femton dagar
+  senare bestämmer jobbet ensamt hur länge VARJE kod-landning väntar, på två
+  ytor i följd (PR och kö). D9:s förbehåll står kvar: domslogiken avvisar en
+  tom testmängd, så en delning kräver att skärvornas domar slås ihop — en
+  designfråga, inte en flagga.
+- **Varför det väger:** detta är granskningens största enskilda ledtidsspak,
+  och den kräver inget borttaget skydd. Det är också en ren instans av
+  mönstret i S15: ett beslut eller kort som står öppet blir en stående
+  kostnad. Marcus upplevelse — *"det enda jag ser och märker av är ju väntan"*
+  — har alltså en namngiven, redan kortad huvudorsak.
+
 ## Motsägelser mellan agenter
 
-- **Merge-dedupens faktiska träffkvot (J8.5 mot J8.7, ärvd av D3):** J8.5
+- **Merge-dedupens faktiska träffkvot (J8.5 mot J8.7, ärvd av D3):** AVGJORD
+  i S20 — dedupen träffar, men sällan (3 av 20 kod-landningar).
+  Ursprunglig bokföring: J8.5
   (`underlag/j8-5…` rad 504–564) kallar dedupen *"i praktiken utan verkan"* —
   noll observerade träffar, och run `34243465042` loggar *"Dedup-miss:
   träd-avvikelse"*. J8.7 (`underlag/j8-7…` rad 164, 367–374) skriver

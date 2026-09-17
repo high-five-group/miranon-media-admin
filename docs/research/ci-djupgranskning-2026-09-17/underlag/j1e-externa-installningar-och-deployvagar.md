@@ -34,6 +34,17 @@ tillbaka" betyder alltid en ny framåtriktad handling, aldrig ett CLI-kommando,
 och detta är verifierat som en plattformsbegränsning (Supabase CLI:t saknar
 subkommandot), inte en lucka i vår dokumentation.
 
+> **Rättat i våg 2 (KG2, 2026-09-17):** meningen ovan är fel för FRONTENDEN —
+> stryk "var som helst i kedjan" som ett påstående om alla fyra spår. Vercel
+> HAR en kommandoväg: `vercel rollback <deployment-id/url>` pekar om
+> produktionsdomänen till en tidigare byggd deploy på sekunder, utan
+> ombyggnad (`vercel.com/docs/instant-rollback`, `vercel.com/docs/deployments/
+> rollback-production-deployment`, hämtade 2026-09-17). Se § A2 i
+> `kg2-externa-fakta-och-rattelser.md` för hela mekaniken. **För Supabase
+> (databasmigrationer, Edge Functions) och Airtable-schema står domen ovan
+> KVAR OFÖRÄNDRAD** — där finns verifierat ingen kommandoväg alls, bara
+> framåtriktade handlingar.
+
 Den avgörande skillnaden mellan ytorna är **var komplexiteten bor**: hos
 GitHub bor den i en deklarativ, API-läsbar konfiguration (rulesets) som går
 att verifiera mekaniskt på sekunder. Hos Vercel, Supabase och Airtable bor
@@ -268,13 +279,24 @@ site data` i en färsk browserkontext för att utesluta klient-cache.
 **Smoke-test:** ingen automatiserad — röktestet är en människa som klickar
 igenom en specifik ny funktion i prod.
 
-**Rollback:** ingen kommandoväg. Tre alternativ i stigande ingrepp:
-klientlokal cache-rensning (löser inte en verklig stale deploy), Vercel-
-dashboardens "promota tidigare deploy" (rör bara fronten), eller en
-revert-PR genom samma merge queue som allt annat (enda vägen som ändrar
-sanningen i git). `TASK-199` är öppen just för att väg 2 och 3 saknar
-DOKUMENTERAD kontroll — ingen av dem är någonsin körd och verifierad i en
-runbook.
+**Rollback:** ~~ingen kommandoväg~~ **rättat.** Tre alternativ i stigande
+ingrepp: klientlokal cache-rensning (löser inte en verklig stale deploy),
+`vercel rollback <deployment-id/url>` / dashboardens "Instant Rollback"
+(rör bara fronten, sekunder, ingen ombyggnad), eller en revert-PR genom
+samma merge queue som allt annat (enda vägen som ändrar sanningen i git).
+`TASK-199` är öppen just för att väg 2 och 3 saknar DOKUMENTERAD kontroll —
+ingen av dem är någonsin körd och verifierad i en runbook.
+
+> **Rättat i våg 2 (KG2, 2026-09-17):** "ingen kommandoväg" var fel — se
+> stickprov S8 (`underlag/01-orkestrerarens-stickprov.md`) och § A2 i
+> `kg2-externa-fakta-och-rattelser.md`. Kommandot finns
+> (`vercel.com/docs/cli/rollback`), men en viktig bieffekt som INTE stod här
+> tidigare: en `vercel rollback` STÄNGER AV automatisk tilldelning av
+> produktionsdomänen till nya `main`-pushar tills man aktivt `vercel promote`
+> (eller dashboardens "Undo Rollback") — se rollback-runbooken i
+> `kg2-externa-fakta-och-rattelser.md`. Det som fortfarande stämmer
+> oförändrat: vägen är ALDRIG körd eller verifierad hos oss, och `TASK-199`
+> är öppen av precis det skälet.
 
 #### (b) Edge Functions — helt manuellt, mekaniskt låst för agenter
 

@@ -5,40 +5,68 @@ review_by: 2026-12-17
 status: draft
 ---
 
-# J2 — Branch-, worktree- och commitflödet: regler, spärrar och praxis
+# Branch-, worktree-, commit- och pushflöde
 
-> **Proveniens:** avgränsat research-pass, Jobb 2 av CI-djupgranskningen
-> (Session 126, 2026-09-17), beställt av orkestreraren enligt
+> **Proveniens:** grundstommen (flödet, steg 1–12, isolering, revert) är ett
+> avgränsat research-pass, Jobb 2 av CI-djupgranskningen (Session 126,
+> 2026-09-17), beställt av orkestreraren enligt
 > `tasks/sessions/bilagor/s126-uppdrag/uppdraget-verbatim.md` rad 108–129.
 > Kört av modellen `claude-sonnet-5` ("Sonnet 5") i worktreen
 > `/Users/marcus/Repon/miranon-media-admin/.claude/worktrees/s126-ci-djupgranskning`,
 > gren `docs/s126-ci-djupgranskning`, ovanpå huvudkatalogens ögonblicksbild
-> `origin/main` = `eeca8c72` (2026-09-08). Allt som beskrivs som "i dag"
-> gäller den ögonblicksbilden plus vad som verifierats live mot GitHub
-> 2026-09-17 (märkt med datum genomgående). Öppna PR:er beskrivs som
-> pågående, aldrig som nuläge.
+> `origin/main` = `eeca8c72` (2026-09-08). **§ "Push-kadens" nedan är
+> infogat i våg 2, samma dag**, ur Jobb 3
+> ([`underlag/j3-push-kadens.md`](underlag/j3-push-kadens.md), uppdraget
+> rad 133–146), skrivet av samma modell i ett eget agent-pass.
+> **En tredje körning av samma modell** sammanfogade de två passen till
+> detta dokument, 2026-09-17: rättade två fynd enligt orkestrerarens
+> stickprovslogg
+> ([`underlag/01-orkestrerarens-stickprov.md`](underlag/01-orkestrerarens-stickprov.md),
+> post S17 och S14 — se § "Motsägelse" och § "Push-kadens"), och löste en motsägelse
+> mellan de två passens egna mätningar om force-push-frekvens med en egen
+> kombinerad mätning (§ "Avstämning mellan de två passen"). Allt som
+> beskrivs som "i dag" gäller ögonblicksbilden ovan plus vad som
+> verifierats live mot GitHub 2026-09-17 (märkt med datum genomgående).
+> Öppna PR:er beskrivs som pågående, aldrig som nuläge.
 
 ## Kort svar
 
-Repot har **en enda mekanisk grind** för hela landningsvägen — GitHubs
-ruleset `main-skydd` (id `19627609`) plus dess `merge_queue`-regel — och
-**två git-specifika lokala spärrar** (hookar som körs på Marcus/orkestrerarens
-dator innan ett kommando får köras): en som hindrar en session från att
-skriva git i "fel" arbetskatalog, och en som hindrar `git push` under en
-pågående ändringsomgång. **Allt annat i flödet — hur en gren namnges, hur en
-commit avgränsas, om `git fetch` körs före ett arbete — är dokumenterad regel
-eller ren praxis, inte teknik som stoppar ett misstag.** Det är inte en
-brist: det är en medveten arkitektur där maskinen håller den enda invarianten
-som MÅSTE hålla (inget obevakat kommer in i `main`) och lämnar resten åt
-disciplin, granskning och en repererbar väg tillbaka (revert).
+Repot har **en enda obestridlig mekanisk grind** för hela landningsvägen —
+GitHubs ruleset `main-skydd` (id `19627609`) plus dess `merge_queue`-regel —
+och **två git-specifika lokala spärrar** (hookar som körs på
+Marcus/orkestrerarens dator innan ett kommando får köras): en som håller
+reda på VEM som får skriva git i huvudkatalogen just nu, och en som
+blockerar `git push` medan ett uttryckligt "under arbete"-läge (kallat
+`iteration`) är aktivt, byggd 2026-08-07 (`ADR-097`). **Allt annat i
+flödet — hur en gren namnges, hur en commit avgränsas, om `git fetch` körs
+före ett arbete — är dokumenterad regel eller ren praxis, inte teknik som
+stoppar ett misstag.** Det är inte en brist: det är en medveten arkitektur
+där maskinen håller den enda invarianten som MÅSTE hålla (inget obevakat
+kommer in i `main`) och lämnar resten åt disciplin, granskning och en
+repererbar väg tillbaka (revert, väl övad — se § Återställning).
 
-Den starkaste enskilda upptäckten i detta pass är att **arkitekturen redan
-lever upp till sitt eget löfte oftare än den dokumenterande texten hinner
-uppdateras**: en mekanism CLAUDE.md 2026-08-24 kallade "obetald skuld"
-(automatisk städning av gamla lokala grenar) visade sig redan vara byggd och
-körande sedan 2026-08-07 och automatiskt trådad in i det periodiska
-underhållssvepet — dokumentationen hade bara inte hunnit ikapp. Se
-§ "Motsägelse: den 'obetalda skulden' är redan betald".
+**Kadensen den mekanismen bär är ovanligt väl mätt för ett projekt av den
+här storleken:** ~29 sammanslagna PR:er per dag, median 22 minuter från
+öppning till landning, median 5 ändrade filer/214 rader, och **66 % av
+grenarna (80 av 121) fick EXAKT EN CI-körning** innan de landade — "en push
+per färdig enhet" är normen, inte undantaget. Regeln är dubbelt bärad:
+skriven ("commit gratis, push kostar") OCH teknisk (samma push-hook som
+ovan), och två sessionsdokument visar spärren fälla skarpt i verkligheten.
+Draft-läget (ett "utkast"-läge som gör en PR osynlig för sammanslagning)
+används INTE proaktivt som branschens "push early, draft PR" — det används
+REAKTIVT, som en broms medan en oberoende granskar-agent arbetar. Se
+§ "Push-kadens" nedan.
+
+Den starkaste enskilda upptäckten i detta pass är att **arkitekturen ofta
+lever upp till sitt eget löfte snabbare än dokumentationen hinner ikapp —
+och ibland med en tidslinje i motsatt riktning mot vad ett tidigare utkast
+av det här dokumentet trodde.** En mekanism CLAUDE.md 2026-08-24 kallade
+"obetald skuld" (automatisk städning av gamla lokala grenar) fanns som
+MANUELLT verktyg redan 2026-08-07 och blev AUTOMATISK fyra dagar **efter**
+noteringen (2026-08-28) — inte tre veckor före den. Skulden betalades
+snabbt, men bara medan en sessions bevakning faktiskt kör: en hel
+semestervecka utan sessioner lät ändå 57 lokala grenar hopa sig. Se
+§ "Motsägelse: den 'obetalda skulden' är delvis betald" och § "Push-kadens".
 
 Grennamngivningen är samtidigt det tydligaste exemplet på "ren praxis utan
 regel": av 500 landade grenar (2026-08-22–2026-09-08) användes **15 olika
@@ -46,6 +74,11 @@ prefix** plus "inget prefix alls" — ingen fil i repot föreskriver ett schema.
 Det kostar ingenting mekaniskt (inget läser prefixet för att fatta beslut),
 men det är den punkt där en läsare snabbast ser att disciplinen bärs av
 människor och agenter, inte av ett verktyg.
+
+**Den tydligaste kvarvarande risken är inte förlust — det är en fråga som
+får åldras obesvarad.** En gren med 40 lokala commits har passerat fem
+sessioners avslut utan ett beslut om sitt öde (16+ dagar) — ingenting i
+arkitekturen tvingar fram det beslutet. Se § "Push-kadens" Fynd 6.
 
 ## Vad jag läste först
 
@@ -90,9 +123,10 @@ relevanta delar innan jag skrev en rad:
 fyndet höll (se § Fynd 4). Push-kadens-siffran "7–11 PR:er per dag"
 (`docs/research/push-kadens-agent-arbetstrad-2026-07-26.md`, citerad i
 `CONTRIBUTING.md`) visade sig vid egen mätning vara kraftigt föråldrad —
-dagens takt är ungefär tre gånger högre. Jag lämnar den siffrans TOLKNING
-till J3 (push-kadens är dennes delfråga) men rapporterar rätalet här eftersom
-det påverkades av samma mätning som resten av detta dokument.
+dagens takt är ungefär tre gånger högre. Siffrans TOLKNING görs i
+§ "Push-kadens" nedan (Jobb 3:s delfråga, infogad i våg 2) — jag rapporterar
+rätalet här eftersom det påverkades av samma mätning som resten av detta
+dokument.
 
 **Vad som redan var 80 % täckt och därför bara kompletterades:** hela
 merge queue-mekaniken, revert-mekaniken och push-ekonomins princip står redan
@@ -100,6 +134,17 @@ utförligt i `CONTRIBUTING.md` och `CLAUDE.md`. Detta dokument destillerar dem
 till en läsbar helhet, korsreferererar dem mot faktisk kod och mäter det som
 inte redan var mätt (grennamn-fördelning, PR-storlek, gren-livslängd,
 merge-metod, force-push-frekvens) — det duplicerar dem inte.
+
+**Tillägg i våg 2, samma dag (sammanfogningen till detta dokument):** innan
+sammanfogningen lästes hela
+[`underlag/00-agentkontrakt.md`](underlag/00-agentkontrakt.md) § "Tillägg
+inför våg 2 och 3" och hela
+[`underlag/01-orkestrerarens-stickprov.md`](underlag/01-orkestrerarens-stickprov.md)
+(arton stickprov). Två poster styr rättelserna i detta dokument: **S17**
+(grensvepets tidslinje — se § "Motsägelse" nedan) och **S14** (repot är
+publikt, inte privat — se § "Push-kadens"). Jobb 3:s egen läslista
+([`underlag/j3-push-kadens.md`](underlag/j3-push-kadens.md) § "Vad jag läste
+först") upprepas inte här; den bär sin egen proveniens i källfilen.
 
 ## Metod
 
@@ -157,7 +202,9 @@ git-kommando. Termerna förklaras här en gång och används sedan rakt av.
   misstaget och rättelsen.
 - **Force-push:** att skriva över en grens historik på GitHub med en ny
   version, i stället för att lägga till ovanpå den gamla. Kan förstöra
-  andras arbete om det görs fel, därför ovanligt i detta repo (se § Fynd).
+  andras arbete om det görs fel — men förekommer regelbundet i detta repo
+  under aktivt arbete på en öppen PR, bara aldrig mot `main` eller en
+  kö-satt gren (se § "Undantagen" och § "Avstämning mellan de två passen").
 
 ## Flödet steg för steg
 
@@ -280,7 +327,8 @@ nyare mekanism som motsäger slutsatsen.
 
 ### 8. Pushar grenar
 
-Se § Push-kadens nedan (J3:s delfråga) för RYTMEN. Här: MEKANIKEN.
+Se § "Push-kadens" nedan (Jobb 3:s delfråga, infogad i våg 2) för RYTMEN.
+Här: MEKANIKEN.
 
 **Teknisk spärr, verifierad genom läsning av körande kod:**
 `scripts/deny-arbetsform-push.sh` nekar `git push` (alla former: direkt,
@@ -394,7 +442,7 @@ Se eget avsnitt nedan (§ Återställning) — samma skäl som steg 3–4.
 | 5. Lokal commit | Fri, "gratis" (`ADR-097`) | `.githooks/pre-commit` styr filinnehåll, inte grenval | Commit ofta, per litet steg |
 | 6. Avgränsa commit | Path-scopad `add`, noll orelaterade filer | Ingen | Beror på disciplin + granskning i efterhand |
 | 7. Samtidiga ändringar | `ADR-073` claims-check (bara i batch-kontext) | `check-merge-tree.sh` (bara i batch-kontext) | Utanför batch: inget skydd förutom kön och `review-agent` |
-| 8. Push | Push vid färdig enhet, ej per varv (`ADR-097`) | `deny-arbetsform-push.sh`, nekar under `"iteration"` | Se § Push-kadens (J3) |
+| 8. Push | Push vid färdig enhet, ej per varv (`ADR-097`) | `deny-arbetsform-push.sh`, nekar under `"iteration"` | Se § Push-kadens |
 | 9. Öppna PR | Draft om ej redo att armeras | Ingen | Hålls, med en namngiven lärdom om undantag |
 | 10. Uppdatera gren | Bara orkestreraren, aldrig mot en aktiv gren | `GH006` hindrar push mot en kö-satt gren (git-nativ, ospecifik) | Hålls sedan skärpning efter S91-incidenten |
 | 11. Merge till `main` | `ADR-076` | GitHubs ruleset + merge queue — **den enda obestridliga spärren i hela flödet** | 80/80 mätta landningar via kö, noll avvikelse |
@@ -554,7 +602,7 @@ nytt (`docs/research/kodfils-partitionering-parallella-agenter-2026-08-04.md`
 § Dom). **Starkt indikerad** att gapet fortfarande finns: jag hittade ingen
 nyare ADR eller skript som stänger det.
 
-## Motsägelse: den "obetalda skulden" är redan betald
+## Motsägelse: den "obetalda skulden" är delvis betald — och tidslinjen var fel i ett tidigare utkast
 
 `CLAUDE.md` § "Kortnummer" (dagens repo-kopia, ej ändrad av mig) skriver,
 med källa `TASK-310` (2026-08-24): *"ingen mekanism raderar en lokal gren
@@ -562,27 +610,54 @@ efter att en worktree-isolerad agent landat sin PR … Ett återkommande
 lokalt gren-svep … är flaggat men INTE byggt i detta pass."*
 
 Jag verifierade detta mot körande kod och fann att påståendet är
-**föråldrat, inte fel för sin egen tid**: `scripts/stada-grenar.sh`
-(`git log --follow` visar commit `b7ee51e3`, **2026-08-07** — TASK-152,
-alltså SEXTON dagar FÖRE TASK-310s notering) städar redan lokala grenar
-som är mergade i bas-grenen, bakom fyra oberoende skydd (bas-grenen
-raderas aldrig · aktuell gren raderas aldrig · en gren uppcheckad i NÅGON
-worktree raderas aldrig · en config-driven skyddslista). Och sedan en
-senare ändring (`scripts/heartbeat-svep.sh` rad 259, 436–472,
-`HEARTBEAT_STADA_GRENAR_INTERVALL=1800` i `.heartbeat-svep-policy.conf`)
-körs skriptet **automatiskt högst en gång per 1 800 sekunder (30 minuter)**
-som en del av det periodiska underhållssvepet — inte bara manuellt på
-begäran. Skriptets eget källhuvud citerar en skarp körning **2026-08-28**
-där 162 av 203 grenar korrekt identifierades som mergade.
+**föråldrat i dag — men på en annan tidslinje än ett tidigare utkast av
+detta dokument påstod.** Rättelsen är gjord enligt orkestrerarens stickprov
+S17 (`underlag/01-orkestrerarens-stickprov.md`), som körde om exakt samma
+verifiering och fann en annan ordning mellan de två landningarna:
 
-**Detta är alltså ett FYND, inte en gissning:** en styrande text påstår
-att något saknas, samtidigt som koden redan gör det, automatiskt, sedan
-tre veckor innan påståendet skrevs. Den troliga förklaringen är att
-`TASK-310`s notering skrevs mellan `stada-grenar.sh`s tillkomst (manuellt
-verktyg, 2026-08-07) och dess senare intrådning i det automatiska svepet —
-och att `CLAUDE.md` aldrig uppdaterades när den automatiska koppling
-byggdes. **Verifierad**, både via `git log --follow` på skriptfilen och
-via läsning av `heartbeat-svep.sh`s körande logik.
+- **Det MANUELLA verktyget** — `scripts/stada-grenar.sh` — landade genom
+  commit `b7ee51e3`, **2026-08-07** (`TASK-152`), **17 dagar FÖRE**
+  `TASK-310`s notering (2026-08-24). Det städar lokala grenar som är
+  mergade i bas-grenen, bakom fyra oberoende skydd (bas-grenen raderas
+  aldrig · aktuell gren raderas aldrig · en gren uppcheckad i NÅGON
+  worktree raderas aldrig · en config-driven skyddslista).
+- **Den AUTOMATISKA intrådningen** i det periodiska underhållssvepet — den
+  del som faktiskt gör `CLAUDE.md`s rad felaktig — kom genom commit
+  `b9dac6a0`, **2026-08-28** (`TASK-323`, "gles gren-städning som svepets
+  femte väg"), följd av `696c62a2` samma dag. Det är **FYRA DAGAR EFTER**
+  `TASK-310`s notering, inte tre veckor före den.
+
+Jag verifierade båda commit-tiderna själv, 2026-09-17: `git log --follow
+--format='%H %ad %s' -- scripts/stada-grenar.sh` och `git log
+-S"stada-grenar" --format='%H %ad %s' -- scripts/heartbeat-svep.sh` — båda
+kommandona gav exakt de SHA:n och datum som citeras ovan. **Verifierad**,
+egen körning, inte en upprepning av ett tidigare utkasts siffror.
+
+`heartbeat-svep.sh` (rad 259, 436–472, `HEARTBEAT_STADA_GRENAR_INTERVALL=
+1800` i `.heartbeat-svep-policy.conf`) anropar `stada-grenar.sh --utfor`
+(rad 106–107, 436–472, aldrig med `-D`) högst en gång per 1 800 sekunder
+(30 minuter) som en del av det periodiska underhållssvepet. Skriptets eget
+källhuvud citerar en skarp körning **2026-08-28** där 162 av 203 grenar
+korrekt identifierades som mergade.
+
+**Rättad slutsats:** `CLAUDE.md`s rad var sann precis när den skrevs
+(2026-08-24) — automatiken fanns ännu inte. Den blev falsk FYRA DAGAR
+senare av en landning som aldrig triggade en uppdatering av prosan, inte
+av tre veckors tillväxt före noteringen. Samma felklass som S4, S10 och
+S16 i orkestrerarens stickprovslogg: en styrande text som var sann och
+blev falsk genom EN SENARE LANDNING, i båda riktningar (för optimistisk
+och för pessimistisk) beroende på i vilken ände man mäter.
+
+**En gräns värd att notera, som saknades i det tidigare utkastet:** svepet
+städar bara MEDAN en sessions heartbeat-monitor (den bakgrundsprocess som
+med jämna mellanrum kontrollerar repots tillstånd) faktiskt kör — det är
+inget bakgrundsjobb utanför sessioner. S125 mätte **57 lokala grenar** vid
+sin start 2026-09-17, efter en hel semestervecka utan Code-sessioner (se
+§ "Push-kadens" Fynd 6) — förenligt med att svepet stått stilla hela den
+tiden, inte med att det vore trasigt. Se också § "Avstämning mellan de två
+passen" nedan, där samma punkt visar sig vara en plats där Jobb 3 ärvde
+`CLAUDE.md`s ÄLDRE, föråldrade premiss rakt av i stället för att pröva
+den.
 
 ## Fynd 4 — T121-buggen, omprövad mot dagens verktygsversion
 
@@ -719,43 +794,280 @@ katalogägarskapets ägarlapp, och den skiljer inte på roll utan på
 
 ## Push-kadens
 
-*(Detta kapitel fogas in av orkestreraren från J3:s underlag om
-push-rytmen — när ska man pusha, hur ofta, tidigt eller sent. Detta
-dokument beskriver bara push-MEKANIKEN, se steg 8 ovan.)*
+> Detta kapitel svarar på uppdragets Jobb 3 (rad 133–146 i
+> `uppdraget-verbatim.md`): har vi en push-kadens, definierad eller
+> faktisk? Infogat i våg 2 (2026-09-17) ur
+> [`underlag/j3-push-kadens.md`](underlag/j3-push-kadens.md) (594 rader,
+> samma modell, eget agent-pass) — destillerat till detta kapitel av samma
+> modell i en tredje körning. **Källfilen bär
+> fullständig metod, alla 300 mätta PR:er och samtliga 18 lästa
+> tidslinjer** — detta kapitel återger bara de bärande siffrorna och
+> slutsatserna. Steg 8 ovan beskriver push-MEKANIKEN; det här kapitlet
+> beskriver RYTMEN.
 
-Ett tal jag mätte i förbifarten och lämnar vidare till J3 utan egen
-tolkning: den ofta citerade "7–11 PR:er per dag"
-(`docs/research/push-kadens-agent-arbetstrad-2026-07-26.md`) höll INTE
-mot min egen mätning — 500 PR:er landade på 17 dagar
-(2026-08-22–2026-09-08), ett snitt på **≈ 29 PR:er per dag**, ungefär
-tre gånger den tidigare siffran. Jag har inte utrett VARFÖR (fler
-parallella agenter? annan arbetsform?) — det är J3:s fråga.
+Ett tal som bekräftar bilden oberoende: den ofta citerade "7–11 PR:er per
+dag" (`docs/research/push-kadens-agent-arbetstrad-2026-07-26.md`) höll
+INTE mot varken min egen mätning (500 PR:er på 17 dagar, ≈ 29/dag) eller
+Jobb 3:s (300 PR:er på 10 dagar, ≈ 30/dag) — två oberoende mätningar,
+samma storleksordning, en dryg tredubbling av den gamla siffran. VARFÖR
+takten steg (fler parallella agenter? annan arbetsform?) är inte utrett
+av något av passen — se § "Osäkerheter" nedan.
+
+### Svaren på de åtta frågorna
+
+1. **Vet människor och agenter när de ska pusha?** Ja, entydigt för
+   agenter och orkestreraren; frågan är delvis fel ställd för Marcus,
+   eftersom GitHub-kontot `marcus803` är gemensamt för honom och varje
+   agent som kör åt honom (296 av 300 mätta PR:er kom från det kontot —
+   git kan inte skilja "Marcus skrev `git push`" från "en agent pushade på
+   hans instruktion"). Regeln bärs på TVÅ nivåer: skriven
+   (`CONTRIBUTING.md`, `bygg-agent.md`) och teknisk (fråga 4 nedan) — en
+   ovanligt stark kombination för ett projekt av den här storleken.
+2. **Pushar vi tidigt till små, kortlivade brancher?** Ja, konsekvent:
+   median 22 min 27 s öppen→sammanslagen, median 5 filer/214 rader —
+   strängare än Googles riktmärke (~100 rader "rimligt"). Svansen (max 4
+   dygn 5 t) är sessionspauser och en väntande Dependabot-uppdatering, inte
+   läckta grenar.
+3. **Öppnar vi PR tidigt eller vid "klart"?** Vid "tros klart" — men
+   "klart" omprövas ofta EFTER öppning. 9 av 18 granskade PR:er (50 %)
+   gick genom minst en draft-växling efter att de redan var öppna. Draft
+   signalerar INTE "detta tar dagar" (branschens "push early, draft PR")
+   utan "pausad" eller "väntar på extern granskning" — se § "Draft: en
+   broms, inte en startpunkt" nedan.
+4. **Instruktioner, automation eller praxis?** Alla tre, samstämda — se
+   tabellen nedan.
+5. **Skiljer sig beteendet mellan roller?** Ja, i BESLUT, inte i
+   git-identitet — se tabellen nedan.
+6. **Risk att arbete ligger lokalt för länge?** Ja, mätt konkret: en gren
+   med 40 commits ej sammanslagna i `main`, vars fjärrkopia försvunnit
+   (`[gone]` i `git for-each-ref`) medan de lokala commits ligger kvar,
+   har passerat FEM sessioners avslut (S113, S121, S122, S124, S125) med
+   samma notering — *"…står kvar — orörda, städning är eget beslut"* —
+   utan att frågan "landa eller kasta?" någonsin besvarats. Grenen föddes
+   ur en avsiktlig, Marcus-ledd iterationsloop 2026-09-01, och exakt det
+   skydd `iteration`-läget är byggt för (ingen push förrän Marcus säger
+   klart) höll: inget gick förlorat. Det som INTE hände är steget EFTER —
+   ett beslut om ödet, nu 16+ dagar obesvarat.
+7. **Risk att ofärdigt arbete delas för tidigt?** Mätbart LÅG — noll
+   belagda instanser hittades i lessons eller sessionsdokument. Fyra lager
+   förhindrar det aktivt: merge queue (bygger alltid mot färsk `main`),
+   regeln "armera aldrig en PR vars bygg-agent fortfarande arbetar",
+   review-grinden (`ADR-105`, en oberoende granskar-agent i färsk kontext
+   efter varje push) och draft-som-broms.
+8. **Effekt på kostnad, återkoppling, samarbete, återställning?** Se
+   § "Priset i CI-körningar" nedan.
+
+### Regel, mekanism, praxis — per roll
+
+| Roll | Dokumenterad regel | Teknisk mekanism | Mätt praxis |
+|---|---|---|---|
+| Marcus | Avgör NÄR arbete är klart; pushar aldrig `git push` själv (Code utför) | — | Samma GitHub-konto (`marcus803`) som varje agent — omöjligt att skilja mekaniskt |
+| Orkestreraren | Push vid sessionspaus, vid nummerbärande artefakt (ADR/lesson/kortnummer), efter granskning innan armering | Samma push-hook som subagenter, om `iteration` är satt | Armerar alltid (`gh pr merge --auto`); öppnar sällan PR själv |
+| Subagent, standard (`do-work`) | Push EN gång, när skivan är klar och lokala grindar är gröna | `deny-arbetsform-push.sh` nekar push under `iteration`-läget | 66 % (80 av 121 grenar) fick exakt en `pull_request`-körning |
+| Subagent, batch (`ADR-073`) | Push EN gång — öppnar ALDRIG PR själv | Samma hook | Orkestreraren öppnar PR:en, efter en egen merge-tree-kontroll |
+| Iterationsläge (valfri aktör) | Push väntar tills Marcus säger "klart" | `.claude/arbetsform-tillstand.json` + hook, `ADR-097` | Mätt skarpt fällande i S121 och S122; en gren höll 40 commits olandade i 16+ dagar |
+
+**Motsägelse i den egna styrande texten, funnen i detta pass:**
+`CONTRIBUTING.md` rad 380 säger att en push kostar *"en full CI-körning
+plus en plats i staging-mutexen"* — falskt sedan `TASK-70.3` (2026-07-29),
+FYRA DAGAR FÖRE meningen skrevs (2026-08-02, `TASK-122`). Samma dokuments
+egen § "Post-merge-lagret" beskriver 2026-09-17-läget korrekt: staging kör
+aldrig på PR- eller kö-ytan (bekräftat oberoende av orkestrerarens
+stickprov S1). En enrads-fix utan avvägning.
+
+### De uppmätta talen
+
+| Mått | Värde | Underlag |
+|---|---|---|
+| Sammanslagna PR:er/dag | ≈ 29 | 300 PR:er, 2026-08-29–09-08 (av 2 116 totalt i repot) |
+| Öppen → sammanslagen (median / p90 / max) | 22 min 27 s / 3 t 21 min / 4 dygn 5 t | samma 300 |
+| Ändrade filer (median / p90 / max) | 5 / 18 / 52 | samma 300 |
+| Rader ändrade (median / p90 / max) | 214 / 1 616 / 9 762 | samma 300 |
+| Grenar med EXAKT EN PR-körning | 80 av 121 (66 %) | 400 `ci.yml`-körningar |
+| Grenar med flest körningar | 14 (designiteration under aktiv Marcus-granskning — avsiktligt undantag) | samma 400 |
+| PR:er med minst en draft-växling | 9 av 18 (50 %) | tidslinje-stickprov |
+
+### Draft: en broms, inte en startpunkt
+
+Draft stoppar INTE CI — GitHub kör full CI även på en draft-PR. Skälet till
+draft är i stället SIGNALERING till en automatisk bevakningsrutin
+(`heartbeat-svep.sh`): en namngiven lärdom, mätt på PR `#2319`/`#2312`,
+säger rakt ut att en PR under aktiv granskning ska stå i draft, *"annars
+läser [bevakningsrutinen] den som en glömd armerings-kandidat och larmar i
+onödan, eller värre, någon armerar den innan granskningen är klar."* PR
+`#2416` visar mönstret konkret: öppnad 16:22:59, → draft 76 sekunder
+senare, tre force-push under aktivt kvällsarbete (se § "Avstämning mellan
+de två passen" nedan för vad just den PR:en avslöjade om force-push),
+sedan overnight utan aktivitet, → klar för granskning nästa dag 15:44, och
+sammanslagen 13 minuter senare.
+
+### Risker, med belagda instanser
+
+- **FÖR SENT — arbete ligger obeslutat, inte förlorat:** § fråga 6 ovan.
+  Ingenting tvingar fram ett beslut om en gammal grens öde; git förlorar
+  inget (commit är durabelt), men frågan kan åldras obegränsat.
+- **FÖR TIDIGT — ofärdigt arbete armeras:** ingen belagd instans (§ fråga
+  7 ovan). Fyra skyddslager håller.
+- **BÅDA HÅLLEN — en klar-men-väntande PR misstas för glömd:**
+  `#2319`/`#2312`, löst med draft-växling och en namngiven lärdom (se
+  § "Draft" ovan).
+- **Bevaknings-täckning under frånvaro, ett näraliggande men skilt
+  fynd:** fem Dependabot-PR:er (`#2480`–`#2484`) stod röda och oagerade i
+  tre dagar under Marcus semestervecka, blockerade av en känd
+  säkerhetsvarning ingen agerade på. Samma familjeträd som gren-
+  ackumuleringen i § "Motsägelse" ovan: bevakning som tystnar när ingen är
+  där att svara.
+
+### Priset i CI-körningar
+
+Av 400 `ci.yml`-körningar: `pull_request` 203 (51 %), `merge_group` 104
+(26 %), `push` 93 (23 %). 66 % av grenarna landade på en enda körning —
+normen håller.
+
+**Kostnaden är inte pengar.** Repot är PUBLIKT — verifierat live
+(orkestrerarens stickprov S14, 2026-09-17): GitHub fakturerar aldrig
+Actions-minuter på ett publikt repo, oavsett kontoplan. 76 080 körda
+minuter i augusti 2026 gav **0 kronor** i nettokostnad
+([`underlag/j8-7-tid-och-kostnad.md`](underlag/j8-7-tid-och-kostnad.md) § 5,
+dubbelt bekräftat mot GitHubs fakturerings-API). Priset för en extra push är i stället **väntetid och
+kö-trängsel**: en kod-klassad körning tar 10–14 minuters väggklocka (ett
+självtest av testramverket, inte en riktig databastest — se samma
+underlag § 3), och en gren som itereras tio gånger på en eftermiddag kör
+den kontrollen tio gånger.
+
+Återkopplingen är ändå snabb i normalfallet: review-grinden triggar direkt
+vid push, och medianlivstiden (22 min) gör avståndet mellan "arbete görs"
+och "en oberoende part ser det" kort — siffran som drar upp medianen är
+exakt den grenklass § fråga 6 beskriver (sessionspauser), inte
+push-frekvensen i sig. Merge queue gör dessutom landningar praktiskt
+kostnadsfria för andra agenter/sessioner att bygga vidare på.
+
+### Jämförelse med branschmönstret
+
+Vår kadens (≈ 29 PR:er/dag, median 22 min) ligger väl innanför
+trunk-based-developments golv ("minst en integration per dygn") och nära
+DORA-elitens riktmärke — fast uppskalat till flera parallella AGENTER
+snarare än flera utvecklare. "Push early, draft PR"-skolan (kända
+molnagentmönster) är INTE vad vi gör: vi öppnar PR:er sent och använder
+draft REAKTIVT. Det är en medveten skillnad, motiverad av vår skala — EN
+beslutsfattare (Marcus) som ska hinna granska, och MÅNGA parallella
+agenter snarare än ett mänskligt team som skulle dra nytta av tidig
+synlighet. Det är samma skäl som gör att den parallella batch-formens
+extra orkestrerar-kontroll (tabellraden ovan) finns: fler samtidiga
+skribenter höjer risken att två rena diffar krockar i sak, en risk
+klassiska människo-team sällan möter i samma skala.
+
+### Standardförslaget
+
+Se § "Rekommenderat arbetssätt per roll" nedan — Jobb 3:s fyra förslag
+(behåll det som redan fungerar, rätta `CONTRIBUTING.md` rad 380, inför ett
+förfallodatum för obeslutade grenar, avstå från att sänka
+push-frekvensen) är infogade där tillsammans med detta pass, för att
+undvika en dubblerad lista.
+
+## Avstämning mellan de två passen
+
+Uppdraget för denna sammanfogning kräver att en skillnad mellan de två
+passens beskrivning av SAMMA fakta löses med en egen mätning, inte bara
+noteras. Två sådana hittades.
+
+### 1. Force-push: "strukturellt ovanligt" höll inte vid en bredare mätning
+
+§ "Undantagen" nedan stickprovade ursprungligen 4 PR:er spridda över
+korpusen (`#1900`, `#2100`, `#2300`, `#2470`) och fann **0 av 4**
+force-pushar — och drog slutsatsen "strukturellt ovanligt, inte
+förbjudet". § "Push-kadens" ovans tidslinje-analys av PR `#2416` (en
+annan, oberoende stickprovsgrupp — 18 PR:er valda för draft-frågan, inte
+för force-push) råkade i förbifarten visa **tre** force-push-händelser på
+just den PR:en.
+
+**Prövat:** samma `gh api …/timeline`-fråga
+(`--jq 'select(.event=="head_ref_force_pushed")]|length'`) kördes mot
+samtliga 22 PR:er från BÅDA passens stickprov (de 4 plus de 18),
+2026-09-17.
+
+**Utfall:** 5 av 22 PR:er (23 %) bar minst en force-push, elva
+force-push-händelser totalt (`#2416`: 3, `#2403`: 3, `#2325`: 2, `#2180`:
+2, `#2269`: 1; övriga 17 PR:er: 0).
+
+**Rättelse:** den ursprungliga slutsatsen byggde på ett för litet
+stickprov (n=4, av tillfällighet 0 träffar). Den kombinerade mätningen
+(n=22) visar att en dryg femtedel av granskade PR:er force-pushar minst
+en gång — vanligt nog för att "strukturellt ovanligt" är en missvisande
+beskrivning. Rättad i § "Undantagen" nedan: force-push förekommer
+regelbundet under AKTIVT arbete på en öppen PR (i linje med
+`bygg-agent.md`s tillåtelse), men fortfarande ALDRIG mot en gren i
+merge-kön (`GH006` hindrar det tekniskt, oberoende av detta fynd).
+
+### 2. Den lokala gren-städningens täckning — Jobb 3 ärvde samma föråldrade premiss
+
+§ "Push-kadens" ovans egen risklista citerar `CLAUDE.md` § "Kortnummer"
+rakt av som skydd (eller frånvaro av skydd) mot de 57 lokala grenarna
+S125 mätte. Det är SAMMA premiss § "Motsägelse" ovan visar är föråldrad:
+ett systematiskt svep FINNS (`scripts/stada-grenar.sh`, automatiserat i
+`heartbeat-svep.sh` sedan commit `b9dac6a0`, 2026-08-28, `TASK-323`).
+
+**Prövat:** `git log -S"stada-grenar" --format='%H %ad %s' -- scripts/
+heartbeat-svep.sh`, 2026-09-17 — samma kommando som i § "Motsägelse" ovan,
+kört på nytt för denna avstämning.
+
+**Utfall:** bekräftat — `b9dac6a0` (2026-08-28) och `696c62a2` (samma dag)
+trådar in gren-städningen i det periodiska svepet.
+
+**Rättelse, med kvarstående sanning i det ärvda fyndet:** slutsatsen var
+inte fel i sak, bara i FÖRKLARINGEN — svepet finns, men det städar bara
+MEDAN en sessions heartbeat-monitor faktiskt kör. S125:s 57 grenar mättes
+efter en hel semestervecka UTAN sessioner (§ "Push-kadens" fråga 6) —
+exakt det fönster där automatiken är strukturellt frånvarande, inte
+trasig. Risklistan nedan bär den rättade versionen: inte "obyggt", utan
+"byggt men med ett sessions-bundet täckningshål".
 
 ## Riskerna, rangordnade
 
+Sammanfogad och omrangordnad i våg 2 (var och en märkt med källpass):
+
 1. **Ad hoc-parallellitet utanför ADR-073:s claims-check saknar
-   förebyggande skydd** (§ "Vad som INTE är byggt än"). Detta är den
-   enda risken i detta dokument utan NÅGON mekanisk motvikt före
+   förebyggande skydd** (§ "Vad som INTE är byggt än", Jobb 2). Detta är
+   den enda risken i hela dokumentet utan NÅGON mekanisk motvikt före
    landning — bara merge queue och `review-agent` FÅNGAR problemet, ingen
    mekanism FÖREBYGGER det.
-2. **Fail-open-isoleringsspärren vid worktree-borttagning** (L418,
-   § "Var isoleringen har läckt"). Skyddet försvinner exakt när felet blir
-   möjligt, och exponeringsfönstret (4 min 13 s i den mätta instansen) är
-   tillräckligt kort för att missas av en människa men tillräckligt långt
-   för att en samtidig landning ska kunna gå fel.
-3. **T121-buggen i själva verktyget** (§ Fynd 4) — en extern, opatchbar
-   källa som förstärks av just det arbetssätt (täta, parallella
+2. **Arbete kan ligga obeslutat och oupptäckbart i veckor — inget tvingar
+   fram ett beslut om en grens öde** (§ "Push-kadens" fråga 6, Jobb 3).
+   En gren med 40 commits har passerat fem sessioners avslut med samma
+   notering upprepad, utan att frågan "landa eller kasta?" besvarats.
+   Ingenting går förlorat (git är durabelt), men frågan kan åldras
+   obegränsat — den enda risken i listan utan ens ett förfallodatum som
+   motvikt.
+3. **Fail-open-isoleringsspärren vid worktree-borttagning** (L418,
+   § "Var isoleringen har läckt", Jobb 2). Skyddet försvinner exakt när
+   felet blir möjligt, och exponeringsfönstret (4 min 13 s i den mätta
+   instansen) är tillräckligt kort för att missas av en människa men
+   tillräckligt långt för att en samtidig landning ska kunna gå fel.
+4. **T121-buggen i själva verktyget** (§ Fynd 4, Jobb 2) — en extern,
+   opatchbar källa som förstärks av just det arbetssätt (täta, parallella
    worktree-skapelser) uppdraget vill mekanisera MER av, inte mindre.
-4. **Grennamngivningens totala avsaknad av regel** — låg skada i sig
-   (inget läser prefixet mekaniskt), men den tydligaste indikatorn på att
-   disciplinen bärs av människor, inte av verktyg, och därför den punkt
-   där ny personal/en ny agenttyp lättast avviker utan att någon märker
-   det.
-5. **Dokumentationsdrift** (§ "Motsägelse …") — låg skada per instans (den
-   hittade drift beskriver något BÄTTRE än dokumenterat, inte sämre), men
-   ett mönster värt att bevaka: en styrande fil som är fel åt det
-   optimistiska hållet upptäcks sällan, eftersom ingen letar efter fel som
-   säger "det är bättre än du tror."
+5. **Gren-städningen har ett sessions-bundet täckningshål** (§
+   "Motsägelse" och § "Avstämning mellan de två passen", Jobb 2 rättat i
+   våg 2). Automatiken finns och kör — men bara medan en sessions
+   heartbeat-monitor är aktiv. En hel semestervecka utan sessioner lät
+   57 lokala grenar hopa sig ändå. Skilj denna risk från punkt 2: här är
+   MEKANISMEN byggd, den har bara en tidsmässig gräns ingen dokumenterat
+   förrän nu.
+6. **Grennamngivningens totala avsaknad av regel** (Jobb 2) — låg skada i
+   sig (inget läser prefixet mekaniskt), men den tydligaste indikatorn på
+   att disciplinen bärs av människor, inte av verktyg, och därför den
+   punkt där ny personal/en ny agenttyp lättast avviker utan att någon
+   märker det.
+7. **Styrande text har flera instanser av "sant när den skrevs, falsk
+   genom en senare händelse" — och ingenting vaktar en prosa-rad som bär
+   ett TAL eller en FRÅNVARO-claim** (mönster identifierat av
+   orkestrerarens stickprov S4/S10/S16/S17; konkreta instanser: § "Motsägelse"
+   ovan och `CONTRIBUTING.md` rad 380 om push-kostnad, § "Push-kadens").
+   Låg skada per instans hittills (två av de tre kända hittade instanserna
+   i detta dokument beskriver något BÄTTRE än dokumenterat, inte sämre),
+   men ett mönster värt att bevaka systematiskt: ingen letar efter fel som
+   säger "det är bättre än du tror," och en felaktig kostnadsrad upptäcks
+   inte förrän någon räknar efter.
 
 ## Undantagen
 
@@ -764,12 +1076,19 @@ parallella agenter? annan arbetsform?) — det är J3:s fråga.
   "rebase för en ren historik", eftersom repots merge-dedup-mekanism
   (`task-36.4`) hittar en PR:s träd via merge-commitens andra förälder
   (`HEAD^2`), vilket kräver riktiga merge-commits.
-- **Force-push är strukturellt ovanligt, inte förbjudet.** Jag stickprovade
-  4 PR:er utspridda över korpusen (`gh api …/issues/<nr>/timeline -q
-  'select(.event=="head_ref_force_pushed")'`, 2026-09-17) och fann **noll**
-  force-pushar i alla fyra. Litet stickprov (`n=4`), men konsekvent med att
-  agenter arbetar i FÄRSKA worktrees per uppgift snarare än att skriva om
-  en existerande grens historik.
+- **Force-push förekommer regelbundet under aktivt arbete på en ÖPPEN PR —
+  rättat i våg 2, se § "Avstämning mellan de två passen" ovan.** Ett
+  första stickprov på 4 PR:er gav 0 träffar och ledde till slutsatsen
+  "strukturellt ovanligt". En bredare, kombinerad mätning (samma 4 plus
+  Jobb 3:s 18, n=22, `gh api …/issues/<nr>/timeline --jq 'select(.event==
+  "head_ref_force_pushed")'`, 2026-09-17) fann **5 av 22 PR:er (23 %)**
+  med minst en force-push, elva händelser totalt — mest koncentrerat till
+  PR:er under aktivt, itererande arbete (t.ex. `#2416`: tre force-push
+  under en enda kvälls arbete). Vad som KVARSTÅR sant: en force-push mot en
+  gren i merge-kön är fortfarande omöjlig (`GH006`, git-nativt) oavsett
+  detta fynd, och ingen force-push observerades i mitt urval mot `main`
+  eller en kö-satt gren — bara mot öppna, ej köade PR-grenar under eget
+  arbete.
 - **`git pull` är tillåtet av repots egna permissions** (`.claude/
   settings.json` `permissions.allow`: `"Bash(git pull)"`,
   `"Bash(git pull:*)"`), trots att GLOBAL `CLAUDE.md` uttryckligen säger
@@ -785,17 +1104,43 @@ parallella agenter? annan arbetsform?) — det är J3:s fråga.
 
 ## Rekommenderat arbetssätt per roll
 
+**Behåll, mätt efterlevt (Jobb 3):** principen "commit gratis, push
+kostar" (`ADR-097`), den tekniska push-spärren för `iteration`-läget,
+engångs-push-normen i `bygg-agent.md`/`do-work`, och draft-som-
+granskningssignal. Alla fyra mäts som efterlevda i dagens praxis (se
+§ "Push-kadens") — inget i detta pass motiverar att ändra något av dem.
+
 **Människa (Marcus):** inget i detta pass motiverar en ändring av hur
 Marcus själv arbetar — hans kanal är redan den enda som får fatta
-revert-/nödväg-beslut, och det är rätt plats för det beslutet.
+revert-/nödväg-beslut, och det är rätt plats för det beslutet. Det enda
+NYA beslutet som hamnar hos honom är förfallodatum-förslaget nedan: ett
+beslut om en gammal grens öde kan bara han fatta.
 
 **Orkestreraren:** fortsätt äga branch-uppdatering, armering och
 diff-granskning centralt (kön ser inte "rent men fel ihop"-fallet) —
-detta pass hittade inget som talar för att flytta det ansvaret. Överväg
-att **täta uppdateringen av `CLAUDE.md`s "obetald skuld"-noteringar** när
-ett kort som löser dem landar (se § Motsägelse) — en lätt, billig vana
-(en rad i samma commit som stänger kortet) som hade förhindrat just detta
-fynd.
+detta pass hittade inget som talar för att flytta det ansvaret. Två
+tillägg från sammanfogningen i våg 2:
+
+- **Täta uppdateringen av `CLAUDE.md`s "obetald skuld"-noteringar** när
+  ett kort som löser dem landar (se § "Motsägelse") — en lätt, billig
+  vana (en rad i samma commit som stänger kortet) som hade förhindrat
+  just det fyndet, och som nu även bör omfatta sessions-bundna GRÄNSER på
+  en mekanism, inte bara dess existens.
+- **Inför ett förfallodatum för obeslutade grenar** (Jobb 3:s
+  standardförslag). `ADR-097` löser "push under iteration"; inget löser
+  "vad händer när iterationen är över och ingen bestämmer grenens öde".
+  Förslag: när `session-end`/`session-paus` upptäcker ett arbetsträd på
+  en osammanslagen gren som inte rörts på 7 dagar (halva den tid
+  40-commits-grenen redan legat, § "Push-kadens" fråga 6), ska den
+  STOPPA-OCH-FRÅGA explicit — "landa, kasta, eller medvetet parkera med
+  ett uttalat skäl?" — i stället för att tyst notera "orörd, städning är
+  eget beslut" ännu en gång. Byggs naturligt in i det redan existerande
+  worktree-svepet (`stada-worktrees.sh`, körs redan vid `session-paus`).
+
+**Rätta omedelbart, ingen avvägning (Jobb 3):** `CONTRIBUTING.md` rad 380
+("...plus en plats i staging-mutexen") — ta bort eller uppdatera meningen
+så den stämmer med samma dokuments § "Post-merge-lagret" (se
+§ "Push-kadens"). En enrads-fix.
 
 **Subagent (bygg-agent):** kontraktet i `bygg-agent.md` är redan
 tillräckligt strikt för de risker detta pass hittade (path-scopad add,
@@ -804,6 +1149,12 @@ parkerad). Den enda konkreta luckan är att **kontraktet inte instruerar
 agenten att mäta `git rev-parse --show-toplevel` före VARJE git-skrivning**
 — L418s egen slutsats efter att ha fallit i just den fällan. Det är en
 billig, redan formulerad regel som saknar sin plats i den styrande filen.
+
+**Överväg INTE (Jobb 3):** att sänka push-frekvensen eller batcha pushar
+per session. `ADR-097` § Decline-rationale avvisade redan detta med fyra
+namngivna, mätta skäl (parallell nummerallokering, agent-synlighet,
+write-ahead-principen, DORA:s stor-batch-risk), och mätningarna i detta
+dokument ger inget nytt skäl att ompröva det beslutet.
 
 **Vad som kan FÖRENKLAS eller tas bort:** grennamn-prefixen är den tydligaste
 kandidaten. Femton olika prefix utan mekanisk konsekvens är komplexitet utan
@@ -831,9 +1182,28 @@ implementation.
   sedan 2026-08-04.** Jag hittade ingen nyare källa som säger det, men jag
   har inte läst samtliga 132 ADR:er i sin helhet — bara sökt riktat. **Osäker,
   inte "verifierat frånvarande."**
-- **Exakt varför push-takten tredubblats** sedan 2026-07-26-mätningen
-  (§ Push-kadens). Jag mätte SKILLNADEN, inte ORSAKEN — det är uttryckligen
-  J3:s delfråga, inte min.
+- **Exakt varför push-takten tredubblats** sedan 2026-07-26-mätningen (till
+  ≈ 29 PR:er/dag, § "Push-kadens"). Både detta pass och Jobb 3 mätte
+  SKILLNADEN, inte ORSAKEN — trolig delförklaring (fler parallella agenter?
+  annan arbetsform?) är inte utredd av något av de två passen.
+- **Om `fix/hem-betalningskort-marcus-iteration`s 40 commits redan landat
+  separat, cherry-plockade.** En efterföljande, sammanslagen PR bar en
+  snarlik commit-rubrik ("Coins-ikonen"), men ingen diff mot `main` har
+  gjorts för att avgöra om grenen är helt eller delvis redundant (§
+  "Push-kadens" fråga 6). **Ej verifierbart** utan en riktad
+  `git diff`/`git log --all --grep`-genomgång, utanför detta dokuments
+  scope.
+- **Exakt hur många av S125:s 57 lokala grenar som är rena kvarlevor av
+  redan städade worktrees kontra genuint obeslutat arbete.** Endast en
+  gren (`fix/hem-betalningskort-marcus-iteration`) är verifierad i detalj;
+  en fullständig genomlysning av alla 57 ligger utanför denna delfrågas
+  scope.
+- **Exakt daglig CI-kostnad i minuter, uppdelad per workflow-fil.**
+  GitHubs faktureringsändpunkt ger bara en totalsumma per repo och månad
+  (`underlag/j8-7-tid-och-kostnad.md` § 5), inte per workflow. **Ej
+  verifierbart** utan att summera jobbtider över samtliga körningar i en
+  hel månad — bedömdes oproportionerligt tungt mot ett API andra sessioner
+  delar.
 - **De tre äldre revert-commit-instanserna** (2026-05-14 till 2026-06-23)
   — jag vet ATT de finns men inte HUR de drevs, eftersom de föregår hela
   det mekaniserade flöde jag i övrigt beskriver.
@@ -920,3 +1290,40 @@ implementation.
   långlivad worktree)
 - `tasks/lessons/vol-04.md` rad 443–525 (delad `.git`, gemensamma
   remote-refs)
+
+**Källor för § "Push-kadens" (Jobb 3), kondenserat — fullständig lista i
+`underlag/j3-push-kadens.md` § Källor:**
+
+- `docs/decisions/ADR-097-arbetsformens-tillstandsbarare.md` (principen och
+  den tekniska spärren, inkl. § Decline-rationale)
+- `docs/research/push-kadens-agent-arbetstrad-2026-07-26.md` (förra passet,
+  "7–11 PR:er/dag")
+- `CONTRIBUTING.md` § Push-kadensen, § Landnings-ordningen, § Post-merge-lagret
+- `.claude/agents/bygg-agent.md` § Landning
+- `backlog/tasks/task-149*` (ADR-097:s implementationsskivor)
+- `tasks/lessons.d/armeringskandidat-larm-under-granskning-svaras-med-draft-inte-vantan.md`
+- `tasks/sessions/2026-09-04-session-121.md` rad 1815,
+  `tasks/sessions/2026-09-05-session-122.md` rad 22 (push-spärren mätt skarpt)
+- `tasks/sessions/2026-08-29-session-113.md` rad 1516–1538 (iterationsgrenens
+  födelse), `tasks/sessions/2026-09-17-session-125.md` rad 105–110 (57
+  grenar, 40-commits-grenen)
+- [`underlag/j8-7-tid-och-kostnad.md`](underlag/j8-7-tid-och-kostnad.md) § 5
+  (repot publikt, 0 kr i Actions-kostnad)
+- egna mätningar: `gh pr list --state merged --limit 300`, `gh api
+  .../issues/<nr>/timeline --paginate` för 18 PR:er, `gh run list
+  --workflow ci.yml --limit 400`, `git merge-base --is-ancestor`
+
+**Egna mätningar för sammanfogningen (denna agent, våg 2, 2026-09-17):**
+
+- `gh api repos/high-five-group/miranon-media-admin/issues/<nr>/timeline
+  --paginate --jq '[.[] | select(.event=="head_ref_force_pushed")] |
+  length'` mot 22 PR:er (Jobb 2:s 4 + Jobb 3:s 18) — force-push-avstämningen,
+  se § "Avstämning mellan de två passen"
+- `git log --follow --format='%H %ad %s' -- scripts/stada-grenar.sh` och
+  `git log -S"stada-grenar" --format='%H %ad %s' -- scripts/
+  heartbeat-svep.sh` — bekräftade S17:s tidslinje (`b7ee51e3` 2026-08-07,
+  `b9dac6a0`/`696c62a2` 2026-08-28) på nytt, oberoende av stickprovsloggen
+- [`underlag/00-agentkontrakt.md`](underlag/00-agentkontrakt.md)
+  § "Tillägg inför våg 2 och 3" och
+  [`underlag/01-orkestrerarens-stickprov.md`](underlag/01-orkestrerarens-stickprov.md)
+  (arton stickprov, lästa i sin helhet)

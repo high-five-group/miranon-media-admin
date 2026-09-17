@@ -325,8 +325,10 @@ Ja, på tre konkreta, källbelagda sätt:
 **Finns kritiska flöden som inte verifieras realistiskt?**
 Ja, ett konkret antal, funna genom att korsa `docs/reference/
 airtable-interaction.md`s write-kontrakt (§7, 13 `update-record`-operationer)
-och `supabase/functions/`s fullständiga lista (51 Edge Functions) mot
-`tests/e2e/`s innehåll:
+och `supabase/functions/`s fullständiga lista (63 Edge Functions — rättat i
+våg 2, KG2, 2026-09-17: stod som "51" här, samma felräkning som § Källor
+nedan; ingen av de namngivna funktionerna i tabellen nedan påverkas, se
+rättelsen där) mot `tests/e2e/`s innehåll:
 
 | Skrivande flöde | Edge Function(er) | Realistisk E2E (browser + riktig backend)? | Vad som FINNS i stället |
 |---|---|---|---|
@@ -652,18 +654,20 @@ signal"-observation, citerad redan i
 - `tests/kontraktsvakt/kontraktsfall.ts`, `kontraktsvakt.staging.test.ts`
 - `docs/reference/airtable-interaction.md` §7 (write-kontraktet, 13
   operationer)
-- `supabase/functions/` (51 Edge Functions vid första katalog-listningen
-  2026-09-17 förmiddag; **VOLATIL under detta pass** — denna worktree delas
-  med flera samtidigt körande bygg-agenter i samma S126-flotta som landar
-  commits löpande, och en omräkning senare samma dag gav 63. Ingen av de
-  namngivna funktionerna i denna fils skriv-flödes-tabell (`cancel-
-  registration`, `rebook-registration`, `generate-event-attachment`,
-  `mark-registration-fee-paid`/`mark-final-payment-paid`, `invite-user`,
-  `send-receipt-email`, `skicka-kvitto-igen`, `koa-kvitton`,
-  `send-action-email`) är nytillkommen sedan tidigare research — samtliga är
-  belagda i pass daterade veckor före denna granskning. Totalräkningen 51/63
-  är en sidoiakttagelse om trädets rörlighet, inte en siffra som bär någon
-  slutsats i denna fil.)
+- `supabase/functions/` (63 Edge Functions, verifierat både på disk och i
+  commiten vid denna gransknings ögonblicksbild)
+
+  > **Rättat i våg 2 (KG2, 2026-09-17):** raden stod tidigare här som "51
+  > Edge Functions vid första katalog-listningen ... en omräkning senare
+  > samma dag gav 63", med förklaringen "VOLATIL under detta pass ... denna
+  > worktree delas med flera samtidigt körande bygg-agenter". Stickprov S16
+  > (`underlag/01-orkestrerarens-stickprov.md`) prövade detta mot disk och
+  > `git ls-tree HEAD supabase/functions/` och fann **63 poster på BÅDA
+  > ställena** — katalogen hade inte vuxit under dagen. "51" var en
+  > felräkning i det ursprungliga passet, inte en verklig förändring, och
+  > "snabbt rörlig worktree" som förklaring stryks härmed. Ingen av
+  > slutsatserna nedan byggde på talet 51 eller på tillväxt-hypotesen, så
+  > inget annat i denna fil ändras.
 - `CONTRIBUTING.md` §§ "Acceptance-klassen", "Post-merge-lagret",
   "Webbläsarbeteende-klassen", "Visuell regression"
 - `docs/decisions/ADR-050-isolerad-staging-miljo.md`,
