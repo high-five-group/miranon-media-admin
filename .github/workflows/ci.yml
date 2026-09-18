@@ -1498,6 +1498,41 @@ jobs:
         # EFTER runda 2:s utökning: 172/199/179 ms) — CI-tiden är INTE mätt
         # av mig och kan avvika.
         #
+        # test-betalningar-bas-skrivspegel.mjs (TASK-461, CodeQL
+        # js/stack-trace-exposure #7/#8/#9) hör hit av samma ADR-039-skäl
+        # som syskonen ovan: `_shared/betalningar-bas.ts`s `skrivSpegel()` är
+        # den DELADE hjälparen bakom tre av de fyra flaggade Edge Function-
+        # larmen (hantera-inbetalning, registrera-inbetalning,
+        # rebook-registration — samtliga lägger dess `SpegelUtfall.skal`
+        # direkt i klientsvaret), så EN regression här läcker tyst tillbaka
+        # in i tre EF:er samtidigt. Sviten är, som förlagan ovan
+        # (`test-backfill-inbetalningar.mjs`), ett `scripts/*.mjs`-skript
+        # och INTE en `tests/api/*.test.ts`-fil — MEDVETET: `betalningar-
+        # bas.ts` är transitivt Deno-bunden via `airtable-client.ts` och
+        # därför medvetet UTANFÖR `tsconfig.edge-shared.json`s enumererade,
+        # transitivt Deno-fria allowlist (den filens egen regel: "LÄGGER DU
+        # TILL EN MODUL HÄR: den måste vara transitivt Deno-fri"); en
+        # `.test.ts`-import av `betalningar-bas.ts` fäller `npm run
+        # typecheck` med TS2304 på `Deno` (mätt under TASK-461s bygge, tio
+        # fel på `airtable-client.ts`s tio `Deno.env.get`-anrop). Hermetisk:
+        # `Deno.env` polyfillas minimalt, `globalThis.fetch` mockas per test
+        # — inget nätverksanrop mot Airtable.
+        #
+        # RÖD-FÖRST manuellt bevisat under bygget (TASK-461): med den
+        # ursprungliga koden (`skal: sistaFel`, den råa Airtable-feltexten)
+        # föll § A:s negativa kontroll — 1 röd, exit 1. Efter fixen (`skal:
+        # SPEGEL_GENERISK_SKAL`) är sviten grön. § A bevisar BÅDA hållen i
+        # samma test (positiv: `skal` är den generiska texten; negativ:
+        # `skal` matchar ALDRIG fältnamn/typ/statuskod ur den mockade
+        # Airtable-kroppen), § B (AC #2) att den råa detaljen ändå loggas
+        # server-side (sökbar på anmalanRecordId + loggPrefix), § C att den
+        # självläkande LYCKADE vägen (`skal: null`) är orörd av fixen.
+        # 4 fall. 1,67–1,68 s LOKALT mätt (macOS, 2026-09-19, `time node
+        # scripts/test-betalningar-bas-skrivspegel.mjs`, två körningar) —
+        # nästan uteslutande `setTimeout`-väntan i skrivSpegels egen
+        # retry-backoff (250+500 ms × två fallerande testfall), CPU-tiden är
+        # bara ~0,24 s. CI-tiden är INTE mätt av mig och kan avvika.
+        #
         # test-synka-labels.mjs (GitHub-issue #2298, ADR-131 § 5) hör hit av
         # samma ADR-039-skäl som syskonen ovan: label-synken (scripts/lib/
         # synka-labels.mjs + scripts/synka-labels.mjs) är inte en grind förrän
@@ -1596,6 +1631,7 @@ jobs:
           node scripts/test-task-338-6-prod-migration.mjs
           node scripts/test-docraptor-sjalvbarande.mjs
           node scripts/test-backfill-inbetalningar.mjs
+          node scripts/test-betalningar-bas-skrivspegel.mjs
           node scripts/test-synka-labels.mjs
           node scripts/test-hermetik-tackning.mjs
 
