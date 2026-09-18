@@ -802,6 +802,24 @@ jobs:
         # som inte fyller någon funktion fäller också.
         run: node scripts/check-aggregator-needs.mjs
 
+      - name: Check nightly channel partition invariant (TASK-450.10 gate, 3A)
+        # Per docs/research/ci-djupgranskning-2026-09-17/10-migrations-och-
+        # atgardsplan.md § N2/N4 + tasks/sessions/2026-09-17-session-126.md
+        # § Del 9 (Marcus beslut 3A): sedan TASK-450.1 går nattens åtta
+        # larmbärande jobb i TRE kanaler (produkt/bokföring/beroende), och
+        # varje kanal räknar upp sina utlösande jobb-ID:n för hand i sitt
+        # if-villkor (nightly.yml) — plus nattvaktens allowlist över
+        # produktkanalens jobb-NAMNPREFIX (.nattvakt-kanal-policy.conf),
+        # oberoende. Ett nionde nattjobb som glöms i alla tre triggrar blir
+        # TYST; ett omdöpt produktjobb (eller ett prefix som glidit) tystar
+        # nattvaktens dödmansgrepp för HELA produktkanalen medan en ren
+        # ID-jämförelse fortfarande ser grönt — exakt N2 runda 2:s fynd.
+        # Samma form som steget ovan: läs filen(erna), jämför mängder, fäll
+        # med jobbets/prefixets namn. Kör i lint-jobbet av samma skäl som
+        # N4 (billigast redan-körande jobb, ingen ny fakturerad minut) —
+        # se PR-kroppens "Kostnad i två mått".
+        run: node scripts/check-nattkanal-partition.mjs
+
       - name: Check list parity (TASK-85 gate)
         # Repot bär flera invarianter som står på TVÅ ställen och som filerna
         # SJÄLVA säger ska hållas i synk: "PARAD ÄNDRING (obligatorisk)",
@@ -1397,6 +1415,25 @@ jobs:
         # robusthets-kontroll (`needs:` som skalär sträng, giltig YAML-form).
         # Sandboxad i egen mktemp-katalog, ingen nätverkstrafik.
         #
+        # test-check-nattkanal-partition.mjs (TASK-450.10, 3A) hör hit av
+        # samma ADR-039 § lesson→grind-skäl applicerat på grinden ovan
+        # (check-nattkanal-partition.mjs): den är inte en grind förrän dess
+        # fyrning fortlöpande verifieras. 17 fall (24 assert-kontroller),
+        # tvåsidigt bevis i BÅDA leden (mutationsprövat under bygget: ID-
+        # ledets partitionsloop avstängd fällde exakt de två fall som
+        # bevisar det, namn-ledets båda loopar avstängda fällde de två
+        # fall som bevisar det) — en sandlådekopia av nightly.yml med ett
+        # jobb borttaget ur ALLA tre triggrar FÄLLER med jobbets namn, ett
+        # jobb i TVÅ triggrar FÄLLER, ett ändrat name: på ett produktjobb
+        # FÄLLER, ett föråldrat prefix i .nattvakt-kanal-policy.conf FÄLLER
+        # — plus fail-closed-grenar (saknad/trasig nightly.yml, saknat
+        # 'jobs:'-block, saknat kanaljobb, saknad/tom/trasig kanal-config)
+        # och robusthetskontroller (prefix-matchning som PREFIX, inte
+        # likhet; `needs:` som skalär sträng). De RIKTIGA nightly.yml +
+        # .nattvakt-kanal-policy.conf PASSERAR. Sandboxad i egen mktemp-
+        # katalog, ingen nätverkstrafik. 1,5 s LOKALT mätt (macOS,
+        # 2026-09-19) — CI-tiden är INTE mätt av mig och kan avvika.
+        #
         # test-docraptor-sjalvbarande.mjs (TASK-301) hör hit av samma
         # ADR-039-skäl: scripts/docraptor-sjalvbarande.mjs lämnade tidigare
         # en ohämtbar CSS-url() ORÖRD, exakt den referensklassen Prince
@@ -1593,6 +1630,7 @@ jobs:
           node scripts/test-review-backstopp.mjs
           node scripts/test-verify-ci-parity.mjs
           node scripts/test-check-aggregator-needs.mjs
+          node scripts/test-check-nattkanal-partition.mjs
           node scripts/test-task-338-6-prod-migration.mjs
           node scripts/test-docraptor-sjalvbarande.mjs
           node scripts/test-backfill-inbetalningar.mjs
@@ -1987,7 +2025,12 @@ jobs:
         # mekaniska PreToolUse-låset mot Airtable-produktionsbasen via
         # mcp__airtable__*/mcp__claude_ai_Airtable__* — samma form som
         # .prod-ref-policy.conf, fast för Airtable-MCP-ytan i stället för
-        # Supabase-CLI:t i Bash).
+        # Supabase-CLI:t i Bash) och till trettiotre i TASK-450.10-wiringen
+        # (.nattvakt-kanal-policy.conf — NATTVAKT_PRODUKTKANAL_JOBBPREFIX/
+        # NATTVAKT_OFARLIGA_CONCLUSIONS, sourcad av nightly-watchdog.yml
+        # OCH läst av den nya scripts/check-nattkanal-partition.mjs; filen
+        # fanns sedan TASK-450.1 men stod utanför denna uppräkning — en
+        # öppet bokförd skuld i filens eget huvud, se den för hela skälet).
         # Pre-aktiverings-state (post-K3.2 commit d86d846): 0/0/0/0.
         run: |
           shellcheck \
@@ -2029,7 +2072,8 @@ jobs:
             .jq-version-policy.conf \
             .gh-version-policy.conf \
             .hemlighets-namn-policy.conf \
-            .prod-airtable-policy.conf
+            .prod-airtable-policy.conf \
+            .nattvakt-kanal-policy.conf
 
   # ═══ Job 2b: SUPPLY-CHAIN-AUDITEN, EGET JOBB (TASK-395, 2026-09-04) ═══
   #

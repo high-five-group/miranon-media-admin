@@ -824,31 +824,32 @@ jobs:
   # L321/L322-fällan. Samma krav gäller de tre nya trigger-listorna: tar man
   # bort ett jobb ur en trigger måste det läggas till i en annan.
   #
-  # ═══ KÄND SKULD — KRAVET OVAN ÄR PROSA, INGEN GRIND VAKTAR DET ═══
+  # ═══ MEKANISERAD SEDAN TASK-450.10 (3A, 2026-09-19) ═══
   # Den gamla formen `contains(needs.*.result, …)` var SJÄLVTÄCKANDE: varje
   # jobb som lades i `needs` larmade automatiskt. De explicita uppräkningarna
   # är nödvändiga (se raden om `needs.*` nedan) men byter den egenskapen mot
   # fail-OPEN: ett nionde nattjobb som läggs i `needs` och glöms i alla tre
   # if-uttryck blir TYST, och tystnad är per definition osynlig — exakt
-  # L321/L322-klassen. Partitionen är i dag fullständig och utan överlapp
-  # (3 + 4 + 1 = 8, verifierat av granskningen 2026-09-18), men ingenting
-  # håller den så.
+  # L321/L322-klassen. `scripts/check-nattkanal-partition.mjs` vaktar nu
+  # detta CI-wirat i ci.yml:s lint-jobb, på varje PR — inte bara "i dag
+  # fullständig" (3 + 4 + 1 = 8, verifierat av granskningen 2026-09-18) utan
+  # HÅLLET av en mekanism. `scripts/check-listparitet.sh` kunde inte
+  # uttrycka det (parar bara TVÅ textregioner), så det är ett eget skript.
+  # Skriv aldrig om detta stycke till att påstå MER mekanik än skriptet
+  # faktiskt utövar (ADR-083).
   #
-  # Vakten för invarianten byggs som EGEN följdskiva efter N2 (Marcus beslut
-  # 3A, 2026-09-18). Den är INTE byggd här, och `scripts/check-listparitet.sh`
-  # kan inte uttrycka den — det verktyget parar TVÅ textregioner. Skriv aldrig
-  # om detta stycke till att påstå att kravet är mekaniserat (ADR-083).
-  #
-  # INVARIANTEN HAR TVÅ LED, och följdskivan ska vakta BÅDA (runda 3, fynd 2):
-  #   (i)  ID-LEDET — unionen av de tre triggerlistorna ovan == `needs`-listan,
-  #        utan överlapp. Ren mängdjämförelse i jobb-ID-rymden.
+  # INVARIANTEN HAR TVÅ LED, och skriptet vaktar BÅDA (runda 3, fynd 2):
+  #   (i)  ID-LEDET — unionen av de tre triggerlistorna ovan == unionen av
+  #        deras `needs`-listor, utan överlapp. Ren mängdjämförelse i
+  #        jobb-ID-rymden.
   #   (ii) NAMN-LEDET — varje jobb-ID i alarm-triggern mappar till ett `name:`
   #        som något prefix i .nattvakt-kanal-policy.conf faktiskt matchar.
   #        Nattvaktens lista lever i NAMNPREFIX-rymden, inte i ID-rymden, så en
-  #        vakt byggd enbart på (i) står grön medan ett ändrat `name:` här
-  #        tystar nattvakten för hela produktkanalen.
+  #        vakt byggd enbart på (i) hade stått grön medan ett ändrat `name:`
+  #        här tystar nattvakten för hela produktkanalen.
   # Byter du `name:` på suite, nightly-metrics eller kontraktsvakt: uppdatera
-  # .nattvakt-kanal-policy.conf i samma commit.
+  # .nattvakt-kanal-policy.conf i samma commit — annars fäller lint-jobbet
+  # (`Check nightly channel partition invariant`) på nästa PR.
   #
   # issues:write finns numera på FYRA jobb (dessa tre + links-arende).
   # ────────────────────────────────────────────────────────────────────────
