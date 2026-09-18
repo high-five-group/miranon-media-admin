@@ -98,6 +98,19 @@ export {
   VALID_ATTACHMENT_SCOPES,
 } from './rackvidd-matchning.ts';
 
+/**
+ * [TASK-452] Sändkontrollens ägarskaps-beslut + de delade rå-fältsläsarna
+ * det bygger på — se `rackvidd-matchning.ts` § "SÄNDKONTROLLENS
+ * ÄGARSKAPS-BESLUT" för hela fyndet och resonemanget. RE-EXPORTERADE här
+ * oförändrat, samma mönster som blocken ovan.
+ */
+export {
+  farBilaganSkickasForEvent,
+  lasBilagansRackvidd,
+  lasEventetsAxlar,
+} from './rackvidd-matchning.ts';
+export type { BilagansRackvidd, EventetsAxlar } from './rackvidd-matchning.ts';
+
 import {
   ATTACHMENT_SCOPE_ALLA_EVENT,
   ATTACHMENT_SCOPE_EVENT,

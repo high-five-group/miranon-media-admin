@@ -33,6 +33,9 @@ import {
   arGemensam,
   type BilagansRackvidd,
   type EventetsAxlar,
+  farBilaganSkickasForEvent,
+  lasBilagansRackvidd,
+  lasEventetsAxlar,
   lasPlatsIds,
   matcharEvent,
   normaliseraRackvidd,
@@ -331,5 +334,101 @@ test.describe('lasPlatsIds — Airtables länkfältsformer', () => {
   test('en skalär (fel fälttyp) → tom lista, aldrig en krasch', () => {
     expect(lasPlatsIds(RONNINGE)).toEqual([]);
     expect(lasPlatsIds(7)).toEqual([]);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// TASK-452 — sändkontrollens ägarskaps-beslut. Fyndet: `send-action-email`s
+// `resolveAttachments` avvisade en `Gemensam`-bilaga på ett event den
+// MATCHAR via `matcharEvent` (och som `get-event-attachments` alltså redan
+// VISAR i BilageValjare), om bilagan inte RÅKADE vara länkad till exakt det
+// sändande eventet. Skarpt staging-bevisat 2026-09-18 (HTTP 400, se
+// tests/api/send-action-email-gemensam-bilaga.staging.test.ts filhuvud för
+// request-id:t) före denna rättning.
+// ═══════════════════════════════════════════════════════════════════════
+
+test.describe('lasBilagansRackvidd — rå Airtable-fältdata → BilagansRackvidd', () => {
+  test('läser alla fyra fälten rakt av', () => {
+    expect(
+      lasBilagansRackvidd({
+        Räckvidd: 'Gemensam',
+        Kursfamilj: 'RIM',
+        Kursnivå: 'Nivå 2',
+        Plats: [RONNINGE],
+      }),
+    ).toEqual({ rackvidd: 'Gemensam', kursfamilj: 'RIM', kursniva: 'Nivå 2', platsIds: [RONNINGE] });
+  });
+
+  test('frånvarande/tomsträng-fält → null, aldrig tomsträngen', () => {
+    expect(lasBilagansRackvidd({})).toEqual({
+      rackvidd: null,
+      kursfamilj: null,
+      kursniva: null,
+      platsIds: [],
+    });
+    expect(
+      lasBilagansRackvidd({ Räckvidd: '', Kursfamilj: '', Kursnivå: '', Plats: undefined }),
+    ).toEqual({ rackvidd: null, kursfamilj: null, kursniva: null, platsIds: [] });
+  });
+});
+
+test.describe('lasEventetsAxlar — rå Eventplanering-fältdata → EventetsAxlar', () => {
+  test('läser Kursfamilj/Kursnivå/Plats — samma fält som lasBilagansRackvidd, annan tabell', () => {
+    expect(
+      lasEventetsAxlar({ Kursfamilj: 'RIM', Kursnivå: 'Nivå 2', Plats: [RONNINGE, ANNAN_PLATS] }),
+    ).toEqual({ kursfamilj: 'RIM', kursniva: 'Nivå 2', platsIds: [RONNINGE, ANNAN_PLATS] });
+  });
+
+  test('frånvarande fält → null/tom lista', () => {
+    expect(lasEventetsAxlar({})).toEqual({ kursfamilj: null, kursniva: null, platsIds: [] });
+  });
+});
+
+test.describe('farBilaganSkickasForEvent — sändkontrollens fulla ägarskaps-beslut', () => {
+  const URSPRUNG = 'recUrsprungsEvent0001';
+  const MAL = 'recMalEvent00000002';
+
+  test('väg (a), OFÖRÄNDRAD: bilagan länkad till eventet → true, oavsett räckvidd', () => {
+    // Även en `Event`-bilaga (inte Gemensam) vars axlar inte matchar NÅGOT
+    // ska gå igenom här — det är den ORIGINALA, oförändrade kontrollen.
+    const b = bilaga({ rackvidd: ATTACHMENT_SCOPE_EVENT, kursfamilj: 'Psionautics' });
+    expect(farBilaganSkickasForEvent(b, [URSPRUNG], URSPRUNG, event({ kursfamilj: 'RIM' }))).toBe(
+      true,
+    );
+  });
+
+  test('väg (b), TASK-452-FIXEN: Gemensam + matchande axlar på ETT ANNAT event → true', () => {
+    const b = bilaga({ kursfamilj: 'RIM', kursniva: 'Nivå 2' });
+    expect(
+      farBilaganSkickasForEvent(b, [URSPRUNG], MAL, event({ kursfamilj: 'RIM', kursniva: 'Nivå 2' })),
+    ).toBe(true);
+  });
+
+  test('väg (b): Gemensam UTAN några axlar ("noll axlar = alla event") matchar VARJE annat event', () => {
+    // Den exakta formen tests/api/send-action-email-gemensam-bilaga.staging.
+    // test.ts:s huvudtest använder — ingen familj/nivå/plats krävs.
+    const b = bilaga();
+    expect(farBilaganSkickasForEvent(b, [URSPRUNG], MAL, event())).toBe(true);
+    expect(farBilaganSkickasForEvent(b, [URSPRUNG], MAL, RIM_NIVA2_RONNINGE)).toBe(true);
+  });
+
+  test('FAIL-CLOSED BEVARAT: Gemensam men axlarna matchar INTE → false', () => {
+    const b = bilaga({ kursfamilj: 'Psionautics' });
+    expect(
+      farBilaganSkickasForEvent(b, [URSPRUNG], MAL, event({ kursfamilj: 'RIM' })),
+    ).toBe(false);
+  });
+
+  test('FAIL-CLOSED BEVARAT: Event-räckvidd (INTE Gemensam) på ett annat event → false även med identiska axlar', () => {
+    // Detta är precis regressionen fixen INTE får orsaka: en vanlig
+    // per-event-bilaga ska fortfarande aldrig läcka till ett annat event
+    // bara för att någon råkar dela Kursfamilj.
+    const b = bilaga({ rackvidd: ATTACHMENT_SCOPE_EVENT, kursfamilj: 'RIM' });
+    expect(farBilaganSkickasForEvent(b, [URSPRUNG], MAL, event({ kursfamilj: 'RIM' }))).toBe(false);
+  });
+
+  test('FAIL-CLOSED BEVARAT: tomt Räckvidd (historisk default) på ett annat event → false', () => {
+    const b = bilaga({ rackvidd: null });
+    expect(farBilaganSkickasForEvent(b, [URSPRUNG], MAL, event())).toBe(false);
   });
 });
