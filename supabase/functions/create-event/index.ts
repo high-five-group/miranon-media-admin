@@ -230,9 +230,10 @@ Deno.serve(async (req) => {
       Startdatum: startdatum,
       Slutdatum: slutdatum,
       // Härlett server-side ur Startdatum (ADR-066 b6) via _shared/event-map.ts.
-      // Basens options-lista är ändlig (Nov 2025 – Dec 2026); ett datum utanför
-      // den FELAR (typecast:false → 500) i stället för att tyst skapa en option —
-      // medvetet, §Kända fällor 36 + 45. Maximerings-kandidat T16.
+      // Basens options-lista är ÄNDLIG (aktuell horisont: docs/reference/data-model.md
+      // §Kända fällor 45 — slå upp DÄR, inte här); ett datum utanför den FELAR
+      // (typecast:false → 500) i stället för att tyst skapa en option — medvetet,
+      // §Kända fällor 36 + 45. Maximerings-kandidat T16.
       'Månad/år': deriveManadAr(startdatum),
       'Max antal platser': maxPlatser,
       Status: status,
