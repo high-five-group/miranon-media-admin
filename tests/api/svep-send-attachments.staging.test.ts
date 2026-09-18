@@ -22,6 +22,59 @@
 //
 // Auth via getValidUserJWT (api-token-setup T24-b). Lokalt skip:as utan
 // creds; skarpa beviset körs i CI (STAGING_REQUIRED=1).
+//
+// ═══ VAD "BILAGAN FÖLJDE MED" FAKTISKT BEVISAS AV HÄR, OCH VAD SOM INTE
+// KAN BEVISAS MED DAGENS KONTRAKT (läs innan du litar på eller utökar
+// detta) ═══
+//
+// `SendActionEmailResultSchema` (klientens svarsform) bär status/requested/
+// attempted/completed/skipped/failed — INGET Resend-meddelande-ID, ingen
+// bilage-bekräftelse. `makeRealSingleSender`
+// (`supabase/functions/send-action-email/index.ts`) destrukturerar
+// `resend.emails.send()`s svar som `const { error } = ...` — `data.id`
+// (Resends meddelande-ID) LÄSS ALDRIG UT och returneras alltså inte till
+// klienten. Ingen mail-logg (`get-mail-log`/Utskickslogg) skrivs av
+// `send-action-email` — den loggningen är exklusiv för segment-/batch-vägen
+// (ADR-067 D7), verifierat genom att `_shared/send-action-email.ts` och
+// `send-action-email/index.ts` grep-inspekterats för `get-mail-log`/
+// `MailLog`-referenser (noll träffar). Repot har heller ingen Resend-webhook-
+// mottagare (grep efter "webhook"/"svix" i `supabase/functions/` — noll
+// träffar), så `delivered@resend.dev`s leverans-simulering (Resends egna
+// testadresser, som utlöser webhook-events i stället för verklig leverans)
+// har ingen mottagare att rapportera till HÄR.
+//
+// DEN STARKASTE BEVISNING SOM ÄR TEKNISKT MÖJLIG GENOM DEN DEPLOYADE,
+// OFÖRÄNDRADE EF:EN ÄR DÄRFÖR STRUKTURELL, INTE INNEHÅLLSLIG:
+//
+//   1. POSITIVT (testet nedan): en `attachmentIds`-post som pekar på en
+//      RIKTIG, nyss uppladdad bilaga resolveras av `resolveAttachments`
+//      (Airtable-uppslag + eventägarskaps-kontroll), bytes LÄSES FAKTISKT ur
+//      Supabase Storage (`makeRealAttachmentReader`, samma anrop som skulle
+//      404:a "kunde inte hämtas ur lagringen" om filen saknades), och HELA
+//      den paketen — email + bilage-bytes — skickas som EN ATOMISK
+//      `resend.emails.send()`-request. Resends `/emails`-ändpunkt (INTE
+//      `/emails/batch`, som ADR-067 D9 dokumenterar tappar bilagor tyst)
+//      validerar och accepterar eller avvisar HELA payloaden som en enhet —
+//      ett 200/`sent`-svar är därför bevis för att Resend tog emot och
+//      accepterade precis den request som bar bilagan, inte ett svar som är
+//      oberoende av om bilagan fanns med.
+//   2. NEGATIVT (kontrollen nedan): en `attachmentIds`-post med ett
+//      PÅHITTAT record-ID (aldrig skapat) ger 404 "Attachment not found"
+//      INNAN sändningen ens når Resend. Detta visar att attachmentId:t är
+//      GENUINT LASTBÄRANDE — request 1:s 200/`sent` är alltså inte ett
+//      resultat av att servern ignorerar `attachmentIds` och bara skickar
+//      batch-vägen ändå; en overksam parameter hade gett SAMMA 200 här.
+//
+// VAD DETTA INTE ÄR: ett bevis att `delivered@resend.dev`s (fiktiva) inkorg
+// faktiskt innehåller ett mail med bilagan bifogad som en läsbar PDF. Den
+// biten av AC #3:s ordalydelse ("mottagaren får bilagan") kräver antingen
+// (a) att EF:en börjar returnera/logga Resends meddelande-ID så en extern
+// Resend-API-fråga kan bekräfta leverans+bilaga i efterhand, eller (b) en
+// Resend-webhook-mottagare i repot. Ingetdera finns idag, och att bygga
+// någotdera är UTANFÖR TASK-455:s omfattning (det är en observability-
+// utökning av `send-action-email`, inte av svepets klientlager). Detta
+// stycke bokför gränsen öppet i stället för att låta testnamnet påstå mer
+// än det kan bevisa (samma ADR-083-disciplin som resten av repot).
 
 import { randomUUID } from 'node:crypto';
 import { type APIRequestContext, type APIResponse, expect, test } from '@playwright/test';
@@ -223,5 +276,33 @@ test.describe('Svepets bilagekontrakt — flera event-grupper, en med bilaga och
       });
       expect(del.status(), await del.text()).toBe(200);
     }
+  });
+
+  test('NEGATIV KONTROLL: ett påhittat attachmentId ger 404 INNAN Resend nås — attachmentIds är genuint lastbärande, inte en overksam parameter', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+
+    const event = await skapaEvent(request, config, jwt, '2026-11-16', '2026-11-17');
+    const registrationId = await skapaRegistrering(request, config, jwt, event);
+
+    // Välformat record-ID (rec-prefix + 17 alfanumeriska tecken, samma form
+    // REC_ID_RE i send-action-email/index.ts kräver) som ALDRIG skapats —
+    // resolveAttachments MÅSTE alltså slå fel på Airtable-uppslaget, inte på
+    // formvalideringen (vilket hade gett 400, inte 404, och bevisat mindre).
+    const paHittatAttachmentId = 'recZZnonExistent01';
+
+    const res = await skickaSvepGrupp(request, config, jwt, event, registrationId, [
+      paHittatAttachmentId,
+    ]);
+    const raw = await res.text();
+    // Se filhuvudets § "VAD 'BILAGAN FÖLJDE MED' FAKTISKT BEVISAS": denna
+    // 404 är NEGATIV-halvan av tvåsidig bevisning — utan den skulle ett
+    // 200/sent-svar i testet ovan lika gärna kunna betyda "attachmentIds
+    // ignorerades tyst och batch-vägen kördes ändå".
+    expect(res.status(), `förväntade 404 (attachmentId aldrig skapat): ${raw}`).toBe(404);
+    const body = JSON.parse(raw) as { error: string };
+    expect(body.error).toBe(`Attachment not found: ${paHittatAttachmentId}`);
   });
 });
