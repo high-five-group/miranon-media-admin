@@ -1,0 +1,260 @@
+// TASK-451.3 — api-pure (ren logik, ingen staging, inga creds, ingen
+// browser, inget UI). Regressionstest för ADR-112 beslut 4 ("hämta en gång,
+// dela") på TIMEOUT-VÄGEN
+// (docs/research/kallstarten-diagnoskarta-2026-09-18.md § 1.10, § 5.3
+// scenario A, § 10).
+//
+// FÖRE denna skiva anropade `useDashboardEvents`/`useDashboardRegistrations`s
+// queryFn `dataSource.fetchEvents()`/`fetchRegistrations()` DIREKT — ett HELT
+// NYTT nätverksanrop, oavsett om startvärmningen redan hade SAMMA data i
+// flykt under `events.list`/`registrations.all`. Ett timeout-släpp (hård 9 s,
+// `startvarmningen.ts:112`) lämnar startvärmningens EGEN `events.list`/
+// `registrations.all`-hämtning körande i bakgrunden (inget
+// `AbortController`), medan Hem monteras med tomma `dashboard.*`-nycklar och
+// startar ett ANDRA anrop mot samma tröga Edge Function.
+//
+// Scenario A (batch 1 fördröjd förbi tidsgränsen) fäller den GAMLA koden:
+// `anrop.events`/`anrop.registrations` skulle bli 2 vardera (startvärmningens
+// eget anrop + Hems egna, direkta `dataSource.fetchEvents()`-anrop). Efter
+// fixen (`delaMedListan`/`hamtaDashboardEvents`/`hamtaDashboardRegistrations`,
+// `src/components/hem/useDashboardData.ts`) är talet 1 vardera — Hem
+// återanvänder startvärmningens pågående löfte i stället för att starta ett
+// eget.
+//
+// Samma `QueryClient`+stub-mönster som `tests/api/startvarmningen.test.ts`
+// (en RIKTIG QueryClient, inget stubbat objekt — modulerna anropar faktiska
+// `ensureQueryData`/`getQueryState`/`fetchQuery`-metoder).
+
+import { expect, test } from '@playwright/test';
+import { QueryClient } from '@tanstack/react-query';
+import {
+  delaMedListan,
+  hamtaDashboardEvents,
+  hamtaDashboardRegistrations,
+} from '../../src/components/hem/hamtaDashboardData';
+import type { DataSourceAdapter } from '../../src/data/adapters/DataSourceAdapter';
+import { starta } from '../../src/data/warmup/startvarmningen';
+import { HEM_SENASTE_AKTIVITET_ANTAL, queryKeys } from '../../src/queries/keys';
+
+/** Distinkta sentinelvärden — bevisar att RÄTT payload kommer tillbaka, inte
+ * bara "något". Speglar `startvarmningen.test.ts`s mönster. */
+const SENTINEL = {
+  events: [{ id: 'e1' }],
+  registrations: [{ id: 'r1' }],
+  waitlist: [{ id: 'w1' }],
+  intresserade: [{ id: 'i1' }],
+  maillog: [{ id: 'm1' }],
+  segment: [{ id: 's1' }],
+  activityLog: { statements: [{ id: 'a1' }], nextCursor: null },
+};
+/** Ett ANNAT sentinelvärde för "en senare, oberoende hämtning" (steady-
+ * state-testet nedan) — bevisar att en poll-hämtning FAKTISKT gick till
+ * nätverket och inte bara återanvände en gammal cache-post. */
+const SENTINEL_EVENTS_2 = [{ id: 'e2' }];
+
+interface StubOptions {
+  delays?: Partial<Record<keyof typeof SENTINEL, number>>;
+  hangs?: Array<keyof typeof SENTINEL>;
+}
+
+function stubDataSource(opts: StubOptions = {}): {
+  ds: DataSourceAdapter;
+  anrop: Record<keyof typeof SENTINEL, number>;
+} {
+  const anrop: Record<keyof typeof SENTINEL, number> = {
+    events: 0,
+    registrations: 0,
+    waitlist: 0,
+    intresserade: 0,
+    maillog: 0,
+    segment: 0,
+    activityLog: 0,
+  };
+
+  function svar<K extends keyof typeof SENTINEL>(namn: K): Promise<(typeof SENTINEL)[K]> {
+    anrop[namn] += 1;
+    if (opts.hangs?.includes(namn)) {
+      return new Promise(() => {}); // avsiktligt aldrig settlad
+    }
+    const delay = opts.delays?.[namn] ?? 1;
+    return new Promise((resolve) => {
+      setTimeout(() => resolve(SENTINEL[namn]), delay);
+    });
+  }
+
+  const ds = {
+    fetchEvents: () => svar('events'),
+    fetchRegistrations: () => svar('registrations'),
+    fetchWaitlist: () => svar('waitlist'),
+    fetchIntresserade: () => svar('intresserade'),
+    fetchMailLog: () => svar('maillog'),
+    listSegments: () => svar('segment'),
+    fetchActivityLog: () => svar('activityLog'),
+  } as unknown as DataSourceAdapter;
+
+  return { ds, anrop };
+}
+
+function nyQueryClient(): QueryClient {
+  return new QueryClient({
+    defaultOptions: { queries: { retry: false, staleTime: 0 } },
+  });
+}
+
+test.describe('Hem delar startvärmningens hämtningar i flykt (AC #1, rött-först)', () => {
+  test('scenario A — batch 1 (events+registrations) fördröjd förbi tidsgränsen ⇒ Hem återanvänder, INGET andra anrop', async () => {
+    const { ds, anrop } = stubDataSource({
+      delays: { events: 300, registrations: 300 },
+    });
+    const qc = nyQueryClient();
+
+    // Startvärmningen: timeoutMs (30) << events/registrations-delayen (300)
+    // ⇒ gaten släpper via TIMEOUT medan batch 1 fortfarande är i flykt.
+    const handle = starta(qc, { dataSource: ds, isOnline: () => true, timeoutMs: 30 });
+    const resultat = await handle.slutlofte;
+
+    expect(resultat.utfall).toBe('timeout');
+    // Startvärmningen har startat VARDERA anropet exakt en gång.
+    expect(anrop.events).toBe(1);
+    expect(anrop.registrations).toBe(1);
+    // ...och de har INTE hunnit settla än (delayen är 300 ms, timeouten 30 ms).
+    expect(qc.getQueryState(queryKeys.events.list)?.fetchStatus).toBe('fetching');
+    expect(qc.getQueryState(queryKeys.registrations.all)?.fetchStatus).toBe('fetching');
+
+    // Hem monteras (NastaEvent + NyaAnmalningar/ForfallnaBetalningar mountar
+    // samtidigt) — simulerat med exakt den mekanism `useQuery` använder vid
+    // mount (`QueryClient#fetchQuery`, samma kod useDashboardEvents/
+    // useDashboardRegistrations kör via `queryFn`).
+    const [dashboardEvents, dashboardRegistrations] = await Promise.all([
+      qc.fetchQuery({
+        queryKey: queryKeys.dashboard.events,
+        queryFn: () => hamtaDashboardEvents(qc, ds),
+      }),
+      qc.fetchQuery({
+        queryKey: queryKeys.dashboard.registrations,
+        queryFn: () => hamtaDashboardRegistrations(qc, ds),
+      }),
+    ]);
+
+    // RÖTT FÖRE FIXEN: `anrop.events`/`anrop.registrations` hade blivit 2 här
+    // (Hems gamla queryFn anropade `dataSource.fetchEvents()`/
+    // `fetchRegistrations()` direkt, ovetande om startvärmningens pågående
+    // hämtning). GRÖNT EFTER FIXEN: talet står kvar på 1 — Hem delade
+    // startvärmningens löfte i stället för att starta ett eget.
+    expect(anrop.events).toBe(1);
+    expect(anrop.registrations).toBe(1);
+    // ...och Hem fick ändå RÄTT data (AC #2 — "utan egen omhämtning").
+    expect(dashboardEvents).toEqual(SENTINEL.events);
+    expect(dashboardRegistrations).toEqual(SENTINEL.registrations);
+    expect(qc.getQueryData(queryKeys.dashboard.events)).toEqual(SENTINEL.events);
+    expect(qc.getQueryData(queryKeys.dashboard.registrations)).toEqual(SENTINEL.registrations);
+    // Startvärmningens EGEN nyckelfamilj landade också, av samma hämtning.
+    expect(qc.getQueryData(queryKeys.events.list)).toEqual(SENTINEL.events);
+    expect(qc.getQueryData(queryKeys.registrations.all)).toEqual(SENTINEL.registrations);
+  });
+});
+
+test.describe('Hems 60 s-poll och 4xx-policy förblir opåverkade (AC #2 — "bryter inte pollingen")', () => {
+  test('events.list har FÄRSK cache men INGEN hämtning i flykt ⇒ dashboard-queryn hämtar ändå OBEROENDE (pollen är inte stulen)', async () => {
+    // Motbeviset mot en naiv "gå alltid via listnyckeln"-lösning: skulle
+    // dashboard-queryn ovillkorligt läsa events.list-cachen hade den fått
+    // GAMLA data (SENTINEL_EVENTS_2 hade aldrig hämtats) och Hems 60 s-poll
+    // hade tyst slutat betyda något.
+    let anropEvents2 = 0;
+    const ds = {
+      fetchEvents: () => {
+        anropEvents2 += 1;
+        return Promise.resolve(SENTINEL_EVENTS_2);
+      },
+    } as unknown as DataSourceAdapter;
+    const qc = nyQueryClient();
+    // Simulerar produktionens globala 5-min-staleTime (`src/router.ts`) på
+    // events.list — precis den "listan är fräsch enligt SIN EGEN klocka"-
+    // situationen som skulle lura en ovillkorlig delegering.
+    qc.setQueryData(queryKeys.events.list, SENTINEL.events);
+    qc.setQueryDefaults(queryKeys.events.list, { staleTime: 5 * 60 * 1000 });
+    expect(qc.getQueryState(queryKeys.events.list)?.fetchStatus).toBe('idle');
+
+    const resultat = await hamtaDashboardEvents(qc, ds);
+
+    expect(anropEvents2).toBe(1); // hämtade ändå — oberoende av listans cache
+    expect(resultat).toEqual(SENTINEL_EVENTS_2);
+  });
+
+  test('inget varmt läge alls (ingen startvärmning, ingen cache) ⇒ EN normal hämtning', async () => {
+    const { ds, anrop } = stubDataSource();
+    const qc = nyQueryClient();
+
+    const resultat = await hamtaDashboardEvents(qc, ds);
+
+    expect(anrop.events).toBe(1);
+    expect(resultat).toEqual(SENTINEL.events);
+  });
+
+  test('delaMedListan: en AVSLUTAD (icke-fetching) lista med data delegerar ALDRIG — direkt-hämtning även om data finns', async () => {
+    // Explicit gräns-test av hjälpfunktionen: `fetchStatus !== 'fetching'`
+    // räcker för att falla igenom till den oberoende hämtningen, oavsett
+    // vad listnyckeln råkar bära.
+    let egnaAnrop = 0;
+    const qc = nyQueryClient();
+    qc.setQueryData(queryKeys.events.list, SENTINEL.events);
+
+    const resultat = await delaMedListan(qc, queryKeys.events.list, () => {
+      egnaAnrop += 1;
+      return Promise.resolve(SENTINEL_EVENTS_2);
+    });
+
+    expect(egnaAnrop).toBe(1);
+    expect(resultat).toEqual(SENTINEL_EVENTS_2);
+  });
+});
+
+test.describe('activityLog.latest — nyckelparitet (AC #3, diagnoskartan § 1.10)', () => {
+  test('warmups activityLog-hämtning i flykt ⇒ Hems SenasteAktivitetKompakt-hämtning (samma nyckel, ingen dashboard-alias) delas AUTOMATISKT — ingen kodändring behövs', async () => {
+    // activityLog är EGEN, sista batchen (BATCH_SIZE=2, 7 items ⇒ rest på 1)
+    // — batch 1–3 svarar snabbt så att warmup HINNER STARTA activityLog-
+    // hämtningen innan timeouten löser ut, men delayen (100 ms) är satt så
+    // att den fortfarande är I FLYKT när timeouten (20 ms efter att batch
+    // 1–3 hunnit settla) löser ut.
+    const { ds, anrop } = stubDataSource({
+      delays: {
+        events: 1,
+        registrations: 1,
+        waitlist: 1,
+        intresserade: 1,
+        maillog: 1,
+        segment: 1,
+        activityLog: 100,
+      },
+    });
+    const qc = nyQueryClient();
+
+    const resultat = await starta(qc, { dataSource: ds, isOnline: () => true, timeoutMs: 20 })
+      .slutlofte;
+
+    expect(resultat.utfall).toBe('timeout');
+    expect(anrop.activityLog).toBe(1); // startvärmningen har startat den EN gång
+    expect(
+      qc.getQueryState(queryKeys.activityLog.latest(HEM_SENASTE_AKTIVITET_ANTAL))?.fetchStatus,
+    ).toBe('fetching');
+
+    // `SenasteAktivitetKompakt` → `useLatestActivity(HEM_SENASTE_AKTIVITET_ANTAL)`
+    // (src/data/queries/useActivityLog.ts) läser SAMMA nyckel som
+    // startvärmningens `activityLog`-item — INGEN dashboard-alias, INGEN
+    // `delaMedListan`-delegering. Simulerat med samma `fetchQuery`-mekanism
+    // som `useQuery` kör vid mount, med EXAKT samma queryFn hooken använder.
+    const hemsData = await qc.fetchQuery({
+      queryKey: queryKeys.activityLog.latest(HEM_SENASTE_AKTIVITET_ANTAL),
+      queryFn: () => ds.fetchActivityLog({ pageSize: HEM_SENASTE_AKTIVITET_ANTAL }),
+    });
+
+    // Nyckelpariteten (diagnoskartan § 1.10) höll redan — TanStack Querys
+    // EGEN per-nyckel-dedup (samma `Query#fetch()`-mekanism som
+    // `delaMedListan` lutar sig mot ovan) delade hämtningen automatiskt.
+    expect(anrop.activityLog).toBe(1); // OFÖRÄNDRAT — inget andra anrop
+    expect(hemsData).toEqual(SENTINEL.activityLog);
+    expect(qc.getQueryData(queryKeys.activityLog.latest(HEM_SENASTE_AKTIVITET_ANTAL))).toEqual(
+      SENTINEL.activityLog,
+    );
+  });
+});

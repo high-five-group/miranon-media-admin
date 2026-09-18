@@ -213,6 +213,93 @@ export function matcharEvent(bilaga: BilagansRackvidd, event: EventetsAxlar): bo
 }
 
 // ═══════════════════════════════════════════════════════════════════════
+// SÄNDKONTROLLENS ÄGARSKAPS-BESLUT (TASK-452) — SAMMA matchning som VISAS
+// ═══════════════════════════════════════════════════════════════════════
+//
+// Fyndet (docs/research/utskicksytan-karta-och-historik-2026-09-18.md § A2,
+// skarpbevisat i staging 2026-09-18, request-id `01a0b434-854c-74c7-9f86-
+// 04b76a4b2149`): `send-action-email`s `resolveAttachments` avvisade VARJE
+// bilaga vars `Bilagor.Event`-länk inte bokstavligen innehöll det sändande
+// eventets ID — men `get-event-attachments` (och därmed BilageValjare)
+// VISAR en `Gemensam`-bilaga på varje event den matchar via `matcharEvent`,
+// oavsett vilket event den skapades mot. En Lotta som väljer en sådan
+// bilaga i BilageValjare på ett ANNAT event än ursprungseventet fick alltså
+// 400 "does not belong to event" vid sändning — trots att UI:t just visat
+// den som valbar. De två checkarna hade divergerat: visningen kände till
+// `Gemensam`-matchningen, sändkontrollen gjorde det inte.
+//
+// `lasBilagansRackvidd`/`lasEventetsAxlar` nedan är de RÅ-fältsläsningarna
+// `get-event-attachments/index.ts` tidigare höll som EGNA, lokala kopior
+// (`radensRackvidd` + en inline `eventetsAxlar`-konstruktion) — flyttade
+// hit och delade, av EXAKT det skäl divergensen ovan visar: två oberoende
+// kopior av "läs dessa fält ur en rå Airtable-rad" drev isär en gång och
+// kan göra det igen. Båda EF:erna importerar dem nu från SAMMA plats.
+
+/**
+ * Läser en Bilagor-rads räckviddsaxlar ur RÅ Airtable-fältdata (`Räckvidd`/
+ * `Kursfamilj`/`Kursnivå`/`Plats`) — samma fält, samma tomsträng-till-
+ * `null`-regel som `get-event-attachments/index.ts`s tidigare lokala
+ * `radensRackvidd` använde (flyttad hit oförändrad, TASK-452).
+ */
+export function lasBilagansRackvidd(fields: Record<string, unknown>): BilagansRackvidd {
+  const rackvidd = fields['Räckvidd'];
+  const kursfamilj = fields['Kursfamilj'];
+  const kursniva = fields['Kursnivå'];
+  return {
+    rackvidd: typeof rackvidd === 'string' && rackvidd.length > 0 ? rackvidd : null,
+    kursfamilj: typeof kursfamilj === 'string' && kursfamilj.length > 0 ? kursfamilj : null,
+    kursniva: typeof kursniva === 'string' && kursniva.length > 0 ? kursniva : null,
+    platsIds: lasPlatsIds(fields['Plats']),
+  };
+}
+
+/**
+ * Läser ETT events räckviddsaxlar ur RÅ Airtable Eventplanering-fältdata
+ * (`Kursfamilj`/`Kursnivå`/`Plats`) — samma fält `get-event-attachments/
+ * index.ts`s tidigare inline-konstruktion läste (flyttad hit oförändrad,
+ * TASK-452). `Plats` är `Eventplanering.Plats` (ADR-125 § 2, HÄRLEDD
+ * server-side ur `Ort` vid create, TASK-309.30, aldrig klient-buren) —
+ * samma fältNAMN som `Bilagor.Plats` ovan, men en annan tabell.
+ */
+export function lasEventetsAxlar(fields: Record<string, unknown>): EventetsAxlar {
+  const kursfamilj = fields['Kursfamilj'];
+  const kursniva = fields['Kursnivå'];
+  return {
+    kursfamilj: typeof kursfamilj === 'string' && kursfamilj.length > 0 ? kursfamilj : null,
+    kursniva: typeof kursniva === 'string' && kursniva.length > 0 ? kursniva : null,
+    platsIds: lasPlatsIds(fields['Plats']),
+  };
+}
+
+/**
+ * FÅR DENNA BILAGA BIFOGAS PÅ ETT UTSKICK FÖR DETTA EVENT? —
+ * `send-action-email`s hela ägarskaps-beslut för `attachmentIds`, som EN
+ * ren funktion (samma "flytta beslutet dit det är bevisbart"-mönster som
+ * `provaRackviddsbyte` ovan; TASK-452).
+ *
+ * TVÅ vägar in, ADR-125-konsekventa — EXAKT samma union `get-event-
+ * attachments` redan visar, aldrig bredare:
+ *   (a) Bilagan är LÄNKAD till eventet (`bilagansEventIds` innehåller
+ *       `eventId`) — den ursprungliga kontrollen, OFÖRÄNDRAD.
+ *   (b) Bilagan är `Gemensam` OCH matchar eventets axlar via `matcharEvent`
+ *       — samma regel visningen redan använder.
+ *
+ * FAIL-CLOSED BEVARAT: en `Event`-räckviddig bilaga länkad till ETT ANNAT
+ * event, eller en `Gemensam` bilaga vars axlar INTE matchar detta event,
+ * ger `false` precis som förut — `matcharEvent` vägrar redan allt utom
+ * `Gemensam` (se dess docblock), så väg (b) kan aldrig bredda väg (a).
+ */
+export function farBilaganSkickasForEvent(
+  bilaga: BilagansRackvidd,
+  bilagansEventIds: readonly string[],
+  eventId: string,
+  eventetsAxlar: EventetsAxlar,
+): boolean {
+  if (bilagansEventIds.includes(eventId)) return true;
+  return matcharEvent(bilaga, eventetsAxlar);
+}
+
+// ═══════════════════════════════════════════════════════════════════════
 // RÄCKVIDDSBYTET (TASK-338.4) — får DENNA rad byta räckvidd, och till vad?
 // ═══════════════════════════════════════════════════════════════════════
 

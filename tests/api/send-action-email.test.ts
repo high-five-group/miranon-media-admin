@@ -177,6 +177,11 @@ function resolvedAttachment(overrides: Partial<ResolvedAttachment> = {}): Resolv
     id: 'recBilaga1',
     namn: 'Hörlursinformation.pdf',
     lagringsnyckel: 'uuid-1-Hörlursinformation.pdf',
+    // [TASK-452] Bilagans EGET Storage-ankare — se ResolvedAttachment.anchor
+    // § docblock. Orkestratorn (denna fils api-pure-kontrakt) rör aldrig
+    // detta fält själv, den bär det bara vidare till readAttachments — så
+    // ett fixt exempelvärde räcker som default här.
+    anchor: 'recEventUrsprung1',
     ...overrides,
   };
 }
