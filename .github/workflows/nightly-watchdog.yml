@@ -156,17 +156,95 @@ jobs:
               # aldrig här. Nu frågar vakten vilka JOBB som var röda och
               # bortser från dem som per konstruktion inte bär alarm-jobbet.
               #
+              # ═══ FILTRET ÄR EN ALLOWLIST SEDAN TASK-450.1 (2026-09-18) ═══
+              # Fram till kanaldelningen var detta en EXKLUDERING
+              # (`test("Länkkontroll|Länkröta") | not`) — korrekt så länge ETT
+              # jobb låg utanför alarm-jobbets trigger. Efter delningen ligger
+              # FEM nattgrindar utanför den (nightly-audit, backlog-closure,
+              # pausade-sessioner, obesvarade-larm, sessionsdok-fonster) plus
+              # de två nya kanaljobben, och en denylist som inte känner dem
+              # hade återinfört #469-felklassen för var och en. Vakten läser
+              # därför nu en ALLOWLIST över produktkanalens jobb — samma mängd
+              # som `alarm`-jobbets trigger i nightly.yml. Hela rationalen,
+              # inklusive fail-safe-riktningens omvändning och den invariant
+              # som måste hållas för hand: .nattvakt-kanal-policy.conf.
+              #
+              # Matchningen är PREFIX (startswith), inte likhet: nattsvitens
+              # jobb heter "Nattlig fullsvit / <barnjobb>" i körnings-API:t
+              # eftersom `suite` är ett `uses:`-anrop. Se configens § VÄRDENA.
+              #
+              # ═══ RÖDHET UTTRYCKS SOM NEGATION, INTE SOM UPPRÄKNING ═══
+              # (TASK-450.1 runda 3, granskningens fynd 1.)
+              # Villkoret löd `.conclusion == "failure" or "cancelled"` och var
+              # ofarligt så länge filtret var en DENYLIST — allt utom två namn
+              # passerade ändå någon annanstans. Som ALLOWLIST blev samma rad
+              # ett tyst hål, för de två domänerna är inte lika:
+              #   .jobs[].conclusion — success · failure · neutral · cancelled ·
+              #                        skipped · timed_out · action_required ·
+              #                        stale · null (pågår)
+              #   needs.<jobb>.result — success · failure · cancelled · skipped
+              # Ett produktjobb som slår i timeout har `conclusion: timed_out`
+              # men `result: failure`, alltså FYRAR alarm medan vakten inte såg
+              # jobbet som rött. Faller alarm då självt (gh-I/O — det enda läge
+              # där vakten alls når hit) teg vakten, där den gamla denylisten
+              # larmade. Mätt med syntetisk jobblista av granskaren.
+              #
+              # Nu är rödhet en NEGATION: allt som inte uttryckligen är ofarligt
+              # räknas som rött. Det gör mängden fail-loud mot varje framtida
+              # conclusion-värde GitHub lägger till, i stället för att tyst
+              # tappa det.
+              #
+              # OFARLIGA, var och en med skäl:
+              #   success — grönt.
+              #   skipped — jobbet kördes aldrig. `result` blir `skipped`, som
+              #             inte fyrar alarm; att larma vore ett falsklarm.
+              #   neutral — "avslutat utan att lyckas eller misslyckas".
+              #             GitHubs egen aggregering räknar det som icke-fällande,
+              #             och vi följer den i stället för att uppfinna en
+              #             strängare regel än plattformen själv.
+              #   null    — jobbet PÅGÅR. Ett rött-påstående om ett oavslutat
+              #             jobb vore ett faktapåstående utan fakta (L322).
+              # Allt annat — failure, cancelled, timed_out, action_required,
+              # stale och varje okänt framtida värde — räknas som rött.
+              #
+              # VARFÖR DETTA RÄCKER, och varför larm-jobbet fortfarande INTE
+              # står i listan: `alarm` KÖR bara när ett av produktkanalens tre
+              # jobb har `result` failure eller cancelled, och varje conclusion
+              # som ger det resultatet ligger utanför den ofarliga mängden ovan.
+              # Vakten fångar alltså numera VARJE körning där alarm alls kunde
+              # ha fyrat — utan att behöva alarm-jobbets eget utfall som
+              # bärare. Att lägga "Larm vid röd natt" i listan hade fixat ett
+              # smalare fall med större yta: listan hade slutat vara lika med
+              # alarm-triggern, vilket är precis den invariant configens
+              # § INVARIANT och följdskivan 3A ska hålla.
+              # Motsatt riktning: ingen ny falsklarms-risk, eftersom ett
+              # produktjobb måste ha en conclusion UTANFÖR den ofarliga mängden
+              # för att räknas — och varje sådan ger `result` failure/cancelled.
+              #
+              # VAD VAKTEN INTE VAKTAR, öppet skrivet (ADR-083): bokförings-
+              # och beroendekanalen har ingen motsvarande "vaktens vakt".
+              # Faller deras kanaljobb på gh-I/O syns det bara i körningens
+              # logg. Det är en KÄND lucka, inte en glömska — se
+              # CONTRIBUTING.md § Nattnätet.
+              #
               # FAIL-CLOSED: kan jobblistan inte hämtas eller tolkas larmar
               # vakten ändå, med det öppet skrivet i orsaken. "Vet inte" får
               # aldrig bli tyst — samma hållning som ci-wait.sh och L322.
+              # shellcheck source=.nattvakt-kanal-policy.conf
+              . ./.nattvakt-kanal-policy.conf
+              produktkanal_json=$(printf '%s\n' "${NATTVAKT_PRODUKTKANAL_JOBBPREFIX[@]}" | jq -R . | jq -s .)
+              ofarliga_json=$(printf '%s\n' "${NATTVAKT_OFARLIGA_CONCLUSIONS[@]}" | jq -R . | jq -s .)
+
               alarm_barande_rott=""
               jobs_json=""
               if jobs_json=$(gh run view "${last_id}" --repo "${REPO}" --json jobs 2>/dev/null); then
-                if alarm_barande_rott=$(jq -r '
+                if alarm_barande_rott=$(jq -r --argjson produkt "${produktkanal_json}" --argjson ofarliga "${ofarliga_json}" '
                       [ .jobs[]
-                        | select(.conclusion == "failure" or .conclusion == "cancelled")
-                        | select(.name | test("Länkkontroll|Länkröta") | not)
-                        | .name ]
+                        | .conclusion as $c
+                        | .name as $n
+                        | select($c != null and ($ofarliga | index($c) | not))
+                        | select($produkt | any(. as $p | $n | startswith($p)))
+                        | $n ]
                       | join(", ")
                     ' <<<"${jobs_json}" 2>/dev/null); then
                   :
@@ -179,9 +257,9 @@ jobs:
 
               if [ -n "${alarm_barande_rott}" ]; then
                 rubrik="Nattnätet rött utan larm"
-                orsak="Senaste körningen har \`conclusion: ${conclusion}\` men inget öppet \`ci-natt\`-ärende finns — larm-jobbet kan självt ha uteblivit. Alarm-bärande röda jobb: ${alarm_barande_rott}. Körning: ${last_url}"
+                orsak="Senaste körningen har \`conclusion: ${conclusion}\` men inget öppet \`ci-natt\`-ärende finns — larm-jobbet kan självt ha uteblivit. Röda jobb i PRODUKTKANALEN (de enda som utlöser \`ci-natt\`): ${alarm_barande_rott}. Körning: ${last_url}"
               else
-                echo "Körningen är röd (${conclusion}), men enbart i jobb som per ADR-082 står utanför alarm-jobbets needs (länkkontroll/länkröta). Larm-jobbet skippades korrekt — vakten är tyst. Körning: ${last_url}"
+                echo "Körningen är röd (${conclusion}), men inget av PRODUKTKANALENS jobb (.nattvakt-kanal-policy.conf) var rött — rödheten bärs av en annan kanal (länkröta per ADR-082, eller bokförings-/beroendekanalen per TASK-450.1). Larm-jobbet skippades korrekt — vakten är tyst. Körning: ${last_url}"
               fi
             fi
           fi
