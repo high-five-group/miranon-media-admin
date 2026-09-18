@@ -165,6 +165,7 @@ import {
 import { type ReactNode, useEffect, useId, useMemo, useState } from 'react';
 import { Checkbox } from 'react-aria-components';
 import { useAuth } from '@/auth/useAuth';
+import { BilageValjare } from '@/components/attachments/BilageValjare';
 import { Button } from '@/components/primitives/Button';
 import { Input } from '@/components/primitives/Input';
 import { MessageBox } from '@/components/primitives/MessageBox';
@@ -173,10 +174,8 @@ import { SlideToConfirm } from '@/components/primitives/SlideToConfirm';
 import { TextArea } from '@/components/primitives/TextArea';
 import { displayName } from '@/components/registrations/registration-display';
 import { StatusBadge } from '@/components/registrations/StatusBadge';
-import { formatMB } from '@/data/adapters/attachmentUpload';
 import { useSendActionEmail, useSendActionTestEmail } from '@/data/mutations/actionEmail';
 import { useDataSource } from '@/data/useDataSource';
-import type { Attachment } from '@/domain/models/Attachment';
 import type { Event } from '@/domain/models/Event';
 import type { Registration } from '@/domain/models/Registration';
 import { PaymentStatus, RegistrationSource, RegistrationStatus } from '@/domain/types/Status';
@@ -219,45 +218,6 @@ function NumRuta({ n }: { n: number }) {
 /** Kortytan — Eventet-blockets/DetaljGrupps tonala kort (18.18 punkt 2). */
 const KORT_KLASS =
   'rounded-2xl border border-transparent bg-bg-muted px-4 contrast-more:border-border-strong';
-
-/**
- * KRYSSRUTANS RUTA — EN form för sidans båda kryss-ytor (varv 14).
- *
- * Marcus 2026-08-07: "nu har vi också flera olika typer av checkboxar. En blå
- * och en svart. Jag gillar den blåa mer faktiskt."
- *
- * Han hade sett två former på SAMMA sida, och båda var mina: bilageväljarens
- * native `<input type="checkbox">` (varv 10) och betalningarnas RAC-kryss
- * (varv 13). De skilde sig i tre mått samtidigt — 16 mot 20 px, radie 0 mot
- * 4 px, och färg.
- *
- * FÄRGEN VAR EN BUGG, INTE ETT VAL. Se `components.css` § Kryssruta: den blå
- * kom ur att `--mm-color-primary` inte existerar, så `accent-color` föll till
- * webbläsarens `auto` — på macOS användarens EGEN systemaccent. Blått är nu en
- * riktig token (`--p-blue-9`), och därmed samma färg för Lotta som för Marcus.
- *
- * RAC-FORMEN VANN ÖVER NATIVE, av två skäl som båda är mätbara: den är appens
- * etablerade (4 av 5 kryss i `src/components/` bär exakt denna klassrad —
- * `Betalningar`, `Deltagare`, `EventCheckin` och denna fil), och `accent-color`
- * kan bara styra FÄRG — inte radie, storlek eller bockens form. Native hade
- * alltså aldrig kunnat matcha de andra fyra.
- *
- * INVENTERINGEN AV HELA APPEN ÄR EN EGEN TRÅD (`T134`), per Marcus: "samma sak
- * här som med pills och knappar, inventera och kolla". Denna konstant löser
- * ÅTGÄRDS-SIDAN; de tre andra filerna ägs av S93 och rörs inte härifrån.
- *
- * STORLEKEN ÄR 16 px SEDAN VARV 17 (Marcus: "Kan vi göra checkboxen lite
- * mindre? Känns ganska stor"), ned från förlagans `size-5` (20 px). Bocken
- * följde med 14 → 12 px så proportionen inuti rutan hålls.
- *
- * DETTA ÄR EN MEDVETEN AVVIKELSE FRÅN DE TRE ANDRA, inte en ny drift: de bär
- * fortfarande 20 px, och `T134`:s app-svep ska ta ställning till vilket mått
- * som blir appens. Åtgärds-sidan går först eftersom den är ytan Marcus
- * granskar; avvikelsen är bokförd i tråden så svepet ärver frågan i stället
- * för att upptäcka den.
- */
-const KRYSSRUTA_KLASS =
-  'flex size-4 shrink-0 items-center justify-center rounded border border-(--mm-input-border) bg-(--mm-input-bg) group-data-[selected]:border-(--mm-checkbox-selected-border) group-data-[selected]:bg-(--mm-checkbox-selected-bg)';
 
 /**
  * TEXTYTANS MORF-PARITET — den låsta rutan och `TextArea` bär SAMMA höjd och
@@ -1047,153 +1007,12 @@ function MottagarYta({
   );
 }
 
-/* ================================================================== *
- * BILAGEVÄLJAREN — utan förvals-logik. Kryssruta, namn, storlek.
- *
- * `antalMottagare`-proppen FÖLL MED KLASSTEXTERNA (varv 10): den fanns bara
- * för att klass C:s rad skulle kunna säga "Genereras för var och en — N st".
- * Den togs bort i stället för att lämnas oanvänd — en prop som inget läser
- * påstår ett beroende som inte finns.
- *
- * [TASK-147.5] `attachments` KOMMER NU FRÅN SERVERN (`ArbetsYta` § useQuery),
- * inte en hårdkodad array — se docblocken ovan (raden precis före denna
- * funktion). Storleken visas nu ALLTID (real data bär alltid en verklig
- * `storlekBytes`; stubbens "bara klass A har storlek"-villkor var en fiktion
- * som fanns för att härma att B/C:s filer inte existerar förrän sändningen
- * — sant för klass C, ALDRIG sant för en redan skapad Bilagor-rad).
- * `formatMB` ÄTERANVÄND ur `attachmentUpload.ts` (samma helper upload-flödet
- * redan visar fel med) — ingen ny kB-vs-MB-formatterare uppfunnen här.
- * ================================================================== */
-function BilageValjare({
-  attachments,
-  laddar,
-  fel,
-  valda,
-  onVaxla,
-}: {
-  attachments: Attachment[];
-  laddar: boolean;
-  fel: boolean;
-  valda: Set<string>;
-  onVaxla: (id: string) => void;
-}) {
-  return (
-    <div className="flex flex-col gap-2 py-3">
-      <div className="flex items-center justify-between">
-        <span className="flex items-center gap-2 text-small text-text-muted">
-          <Paperclip aria-hidden="true" size={14} />
-          Bilagor
-        </span>
-        <span className="text-small text-text-secondary">
-          {valda.size === 0 ? 'Inga valda' : `${valda.size} valda`}
-        </span>
-      </div>
-
-      {/* RADEN ÄR NU KRYSSRUTA + NAMN + STORLEK, inget mer (varv 10).
-
-          IKONERNA ÄR BORTA (Marcus: "Ta bort alla ikoner för dokumenten,
-          räcker med kryssrutan"). De bar klass-skillnaden visuellt — `FileText`
-          för A, `Sparkles` för B/C — och den bärningen var svag redan innan:
-          två ikoner för tre klasser, och `Sparkles` sade "genereras" bara för
-          den som redan visste det.
-
-          HOVER ÄR HELT BORTA (varv 11, Marcus: "Jag vill nog ta bort hover
-          helt"). Vägen dit gick via en rättning: raden bar `hover:bg-bg-muted`,
-          vilket är EXAKT `KORT_KLASS`-bakgrunden som arbetsytan står på — hover
-          försvann in i omgivningen i stället för att lyfta raden. Den byttes
-          först till `bg-bg-emphasized` (varv 10), och därefter valde Marcus bort
-          hela effekten.
-
-          VAD SOM BÄR AFFORDANSEN NU: `cursor-pointer` för mus, kryssrutans egen
-          fokusring för tangentbord, och kryssrutans eget markerade läge som
-          resultat-återkoppling. Raden är fortfarande klickbar i hela sin bredd
-          (`<label>` runt kryssrutan) utan att signalera det visuellt vid hover —
-          ett medvetet val, inte en glömska. Faller det vid granskning är
-          mellantinget en ton som INTE är `bg-bg-muted`, eftersom just den färgen
-          var det ursprungliga felet.
-
-          `items-center` i stället för `items-start`: raden är enradig nu, så
-          kryssrutans `mt-0.5`-justering mot en tvåradig text är onödig. */}
-      {/* KRYSSET BYTTE FRÅN NATIVE TILL RAC (varv 14) — se `KRYSSRUTA_KLASS`.
-          Den native-formen var sidans enda, och dess "blå" var webbläsarens
-          default via en token som inte finns. Nu delar bilagorna och
-          betalningarna exakt en form, en storlek och en färg.
-
-          `<Checkbox>` ersätter `<label>` + `<input>`: RAC:s komponent ÄR sin
-          egen etikett-yta, så hela raden förblir klickbar utan en wrapper. */}
-      {laddar ? (
-        /* [TASK-416.11, ADR-113 steg 4] SKELETON I STÄLLET FÖR NAKEN LADDTEXT.
-           Med F1/F2:s förvärmning (sidmontering + hover/fokus-avsikt, se
-           `AtgardsSida` § FÖRVÄRMNING och `useForberedAtgardsBilagor`) är
-           `laddar` (`attachments.isLoading`) sant bara vid en genuint kall
-           cache — restposten ADR-078 beslut 4 bokför öppet för listor av
-           okänd längd: exakt radantal går inte att veta INNAN datan landat,
-           så två rader är en representativ approximation, inte ett löfte om
-           pixel-exakt slutgeometri för varje event. RADHÖJDEN ÄR DÄREMOT
-           EXAKT: `h-11` (44 px) = `py-2.5` (2×10 px) + `text-body`s 1lh
-           (24 px), samma uträkning som `KRYSSRUTA_KLASS`-raden nedan — så
-           SKELETONETS EGEN höjd matchar en verklig rad px för px, till
-           skillnad från `Skeleton`s `listRow`-default (3lh, DokumentYta.tsx
-           § dess kort-rader, en annan radform än denna enradiga kryssruta).
-           `role="status" aria-busy="true"` + `sr-only`-besked är samma
-           mönster som `DokumentYta.tsx` (samma hook, samma data) — Roselli-
-           mönstret `Skeleton`s eget docblock beskriver: blocket är dekorativt,
-           konsumenten äger busy-beskedet. */
-        <div role="status" aria-busy="true" className="flex flex-col gap-2">
-          <span className="sr-only">Hämtar bilagor…</span>
-          <Skeleton variant="listRow" className="h-11" />
-          <Skeleton variant="listRow" className="h-11" />
-        </div>
-      ) : fel ? (
-        <MessageBox intent="warning" title="Bilagorna kunde inte hämtas">
-          Prova att öppna åtgärden igen. Går det inte skickas mailet ändå, utan bilaga.
-        </MessageBox>
-      ) : attachments.length === 0 ? (
-        <p className="px-3 py-2.5 text-small text-text-muted">
-          Inga bilagor tillgängliga för det här eventet.
-        </p>
-      ) : (
-        <div className="divide-y divide-border rounded-lg bg-surface">
-          {attachments.map((b) => (
-            <Checkbox
-              key={b.id}
-              isSelected={valda.has(b.id)}
-              onChange={() => onVaxla(b.id)}
-              aria-label={`Bifoga ${b.namn}`}
-              className="group flex cursor-pointer items-center gap-3 px-3 py-2.5"
-            >
-              <span className={KRYSSRUTA_KLASS}>
-                <Check
-                  aria-hidden="true"
-                  size={14}
-                  className="text-(--mm-checkbox-check) opacity-0 group-data-[selected]:opacity-100"
-                />
-              </span>
-              {/* [TASK-339] Räckviddsbadgen (RackviddBadge, TASK-275.3) TAGEN
-                  BORT härifrån — Marcus prod-röktest 2026-08-29 (S113,
-                  TASK-309.11 punkt 8): "blir inte snyggt". Här väljer Lotta
-                  VAD som ska bifogas; varifrån bilagan kommer (räckvidden)
-                  är inte ett beslutsunderlag i DEN här listan och
-                  konkurrerade visuellt med kryssrutan/filnamnet. Unionen
-                  (event-egen + delad, TASK-275.2) är OFÖRÄNDRAD — bara
-                  räckviddsmarkeringen är borta. Badgen behålls i
-                  Dokument-ytans listor (ADR-118 beslut 3: den förklarar där
-                  varför Ersätt/Radera saknas för en delad bilaga i
-                  eventkontext — ett skäl som inte finns i DENNA väljare,
-                  som varken ersätter eller raderar). */}
-              <span className="min-w-0 flex-1 truncate font-medium text-body">{b.namn}</span>
-              {/* Storleken höger-justerad — samma plats som räknarna på sidans
-                  övriga rader (`RAD_KLASS` § `ml-auto`). */}
-              <span className="ml-auto shrink-0 text-small text-text-muted">
-                {formatMB(b.storlekBytes)}
-              </span>
-            </Checkbox>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
+/* [TASK-455] `BilageValjare` UTBRUTEN till `@/components/attachments/
+   BilageValjare` (DELAD med svepets `Forhandsvisning.tsx`, kopierad inte).
+   Ren kodrelokering — se den filens docblock för hela historiken (varv
+   10/11/14/17, T134-tråden, `formatMB`/`KRYSSRUTA_KLASS`-provenens). Ingen
+   rendering ändrad här: `ArbetsYta` nedan använder komponenten precis som
+   förut, bara importerad i stället för lokalt definierad. */
 
 /* ================================================================== *
  * ÅTGÄRDENS ARBETSYTA — fälls ut in-place under sin egen rad.

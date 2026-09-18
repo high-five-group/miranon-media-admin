@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-18 10:48'
+updated_date: '2026-09-18 12:55'
 labels:
   - ready-for-agent
 dependencies:
@@ -41,17 +42,33 @@ Köad jobbmotor för stora utskick (ADR-120-tröskeln) · "mallen bär sina bila
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Varje eventgrupp i svepet visar sin egen bilageväljare med eventets tillgängliga bilagor (inkl. gemensamma, när TASK-452 landat); inget förval
-- [ ] #2 svepSend skickar attachmentIds per eventgrupp; en grupp utan valda bilagor går batch-vägen som i dag (ADR-067 D9 oförändrad)
+- [x] #1 Varje eventgrupp i svepet visar sin egen bilageväljare med eventets tillgängliga bilagor (inkl. gemensamma, när TASK-452 landat); inget förval
+- [x] #2 svepSend skickar attachmentIds per eventgrupp; en grupp utan valda bilagor går batch-vägen som i dag (ADR-067 D9 oförändrad)
 - [ ] #3 Rött-först: test som visar att ett svep med vald bilaga i dag sänder utan attachmentIds; grönt efter fix. API-test mot staging: mottagaren får bilagan (mail-låset respekterat — sentinel-adress)
-- [ ] #4 Granskningssteget visar per grupp vilka bilagor som följer med, och att bilage-bärande grupper tar längre tid (loopad sändning) — begripligt för Lotta utan teknisk förklaring
-- [ ] #5 Tillgänglighet 11: tangentbord, skärmläsare, prefers-contrast, reduced-motion; aria-mönstret följer åtgärdssidans väljare
+- [x] #4 Granskningssteget visar per grupp vilka bilagor som följer med, och att bilage-bärande grupper tar längre tid (loopad sändning) — begripligt för Lotta utan teknisk förklaring
+- [x] #5 Tillgänglighet 11: tangentbord, skärmläsare, prefers-contrast, reduced-motion; aria-mönstret följer åtgärdssidans väljare
 - [ ] #6 Marcus stämplar formen i dev-server/staging; facit-manifestet s102-svep-konvergens amenderas med nya bilder (ADR-102/ADR-104) — landning sker först efter stämpeln
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+## Status vid PR-öppning (draft, väntar Marcus stämpel)
+
+Kod: src/components/attachments/BilageValjare.tsx (utbruten delad komponent, byte-identisk logik ur AtgardsSida.tsx). src/data/mutations/svepSendGrupper.ts (ren sändloop, ny fil, extraherad för testbarhet). src/data/mutations/svepSend.ts (hooken, re-exporterar). SvepOverlay.tsx/Forhandsvisning.tsx (bilageurval per eventgrupp, tar-langre-tid-not).
+
+AC 3, andra halvan (staging) EJ live-kord av mig: tests/api/svep-send-attachments.staging.test.ts skriven, biome/typecheck grona, men lokal korning blockerades av repots staging-preflight (tests/support/staging-preflight.ts) - en pagaende post-merge-korning (run 35346136785) holl staging vid mitt pass. Jag korde INTE med preflight-overridet (risk for falskt rott pa en annan agents landade PR). Rott-forst-halvan (klientlagrets logik) AR kord och bevisad, se PR-beskrivningen.
+
+Marcus stampling - sa har oppnar du formen: starta dev-servern, ga till /hem, klicka Bekrafta alla (eller Skicka paminnelse till alla - samma delade yta). Bladdra mellan event-grupperna (Utskicket-sektionen) - varje grupp har nu en egen Bilagor-rad under forhandsvisningstexten, ingen forvald. Valjer du en bilaga i en grupp visas Den har gruppen har bilagor och tar lite langre tid att skicka under listan.
+
+KANDIDAT-skarmdumpar (mobil 390 + desktop 1280, ljus + prefers-contrast: more) ligger i tasks/sessions/bilagor/s102-svep-konvergens/KANDIDAT-svep-bilageval-*.png - inte facit, inte stamplade, prefixet skiljer dem mekaniskt fran facit-* (check-facit.sh invariant R4 bekraftat gron med dem narvarande).
+
+Efter stampel: facit.json (s102-svep-konvergens) behover amenderas (ADR-102 paragraf Updates 2026-08-22, klass c - formen utokas faktiskt) via Marcus egen godkannandekanal (ADR-104 beslut 2). Jag har INTE rort facit.json eller dess godkand-falt.
+<!-- SECTION:NOTES:END -->
