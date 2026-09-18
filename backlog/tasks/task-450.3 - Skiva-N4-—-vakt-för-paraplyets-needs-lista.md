@@ -4,6 +4,7 @@ title: 'Skiva: N4 — vakt för paraplyets needs-lista'
 status: To Do
 assignee: []
 created_date: '2026-09-18 09:53'
+updated_date: '2026-09-18 10:27'
 labels:
   - ready-for-agent
 dependencies: []
@@ -24,10 +25,10 @@ Täcker användarberättelser: 6
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Tvåsidig testsvit: en sandlådekopia av ci.yml med ett jobb borttaget ur needs FÄLLER med jobbets namn; den riktiga filen PASSERAR
-- [ ] #2 Ett onödigt undantag i undantagslistan fäller
+- [x] #1 Tvåsidig testsvit: en sandlådekopia av ci.yml med ett jobb borttaget ur needs FÄLLER med jobbets namn; den riktiga filen PASSERAR
+- [x] #2 Ett onödigt undantag i undantagslistan fäller
 - [ ] #3 Skriptet och dess testsvit är wirade i ci.yml (invariant-blocket respektive gatekeeper-steget) och steget är grönt i PR:ens lint-jobb
-- [ ] #4 Värden (undantag) bor i en policy-fil, inte hårdkodade i skriptet
+- [x] #4 Värden (undantag) bor i en policy-fil, inte hårdkodade i skriptet
 <!-- AC:END -->
 
 ## Definition of Done
