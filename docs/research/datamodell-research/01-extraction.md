@@ -428,7 +428,7 @@ Båda fält har `choices=[]`. Sannolikt designade men ingen option har lagts til
 
 ### D.5 Två nya namnlösa Personer skapade 2026-04-26 21:47-48
 
-Recordsen `receoF3BY3ZCMEJ0U` (<tonetider@protonmail.com>) och `rec0uNum3YVL1tb1L` (<miranon.prominent654@passmail.net>) skapades med Förnamn/Efternamn = tom → Namn-formula returnerar "Ej tillgängligt".
+Recordsen `receoF3BY3ZCMEJ0U` (<t***@protonmail.com>) och `rec0uNum3YVL1tb1L` (<m***@passmail.net>) skapades med Förnamn/Efternamn = tom → Namn-formula returnerar "Ej tillgängligt".
 
 **Sannolik orsak:** Lead från Hämtade erbjudanden-formuläret som bara samlar e-post → A4 skapar Person utan namn. Detta är "normalt tillstånd" enligt lessons-psionautics-specifikt rad 67–70.
 
@@ -438,7 +438,7 @@ Recordsen `receoF3BY3ZCMEJ0U` (<tonetider@protonmail.com>) och `rec0uNum3YVL1tb1
 
 Formel `IF({Status}="Avbokad/Ombokad", 0, 1)` exkluderar bara Avbokad/Ombokad. **Inställt räknas som aktiv** (=1).
 
-**Konsekvens:** Personen Mia Hasselgren och Daniel Finnhult (båda "Inställt" Status) räknas som aktiva i `Personer.Antal anmälningar (aktiva)` rollup.
+**Konsekvens:** Personen Deltagare 64 och Deltagare 21 (båda "Inställt" Status) räknas som aktiva i `Personer.Antal anmälningar (aktiva)` rollup.
 
 **Åtgärd-rekommendation:** Uppdatera formeln till `IF(OR({Status}="Avbokad/Ombokad", {Status}="Inställt"), 0, 1)`. Inte gjord 2026-04-26 — sannolikt missad.
 
@@ -475,7 +475,7 @@ Från lessons-16-em (rad 95): Formel kräver `AND(Antal tidigare genomförda > 0
 | Backfill-status | 459 backfill-Anmälningar + 924 backfill-Deltaganden + 22 nya Eventplanering, alla verifierade rena | verifiering-2026-04-24 §Resultat |
 | Plausible | Inaktiverad april 2026 (prenumeration löpt ut) | psionautics-CLAUDE.md |
 | Inställt-events | 3 totalt (Event-6 Varberg, Event-11 Falköping FS, Event-12 Falköping RIM) | live-state §7.5 |
-| Inställt-anmälningar | 2 (Mia Hasselgren #2, Daniel Finnhult #28 — båda Event-6) | live-state §7.6 |
+| Inställt-anmälningar | 2 (Deltagare 64 #2, Deltagare 21 #28 — båda Event-6) | live-state §7.6 |
 | Whitespace-Personer cleanup | 13 → 0 (2026-04-26 §Punkt 6) | session-26-fortsattning |
 | Avvikelse-Personer | 9 → 5 (4 löste sig automatiskt via Punkt 4-rättning, 5 PATCH:ade Anteckningar) | session-26-fortsattning §Punkt 10 |
 
@@ -572,12 +572,12 @@ Båda 27-april-deploys handlar om Väntelista-mail 1-funktionaliteten. Inga andr
 | Tabell | Antal nya records | Tidigaste | Senaste |
 |---|--:|---|---|
 | Anmälningar | 1 (#854) | 2026-04-27 18:41:36 | 2026-04-27 18:41:36 |
-| Personer | 2 (Henny..., Simon Ågren) | 2026-04-27 18:26:50 | 2026-04-27 18:41:41 |
+| Personer | 2 (Deltagare 37, Deltagare 81) | 2026-04-27 18:26:50 | 2026-04-27 18:41:41 |
 | Deltaganden | 2 (#1685–1686) | 2026-04-27 18:41:58 | 2026-04-27 18:41:58 |
 | Eventplanering | 0 | – | – |
 | Väntelista | 0 (sista skapad: rec1rJfnPOoAltCcX 2026-04-14) | – | – |
 
-**Korrelation:** Anmälan #854 (Henny) → A2 skapade Personer-record (Henny) + uppdaterade Anmälan med Person-länk → A1 satte Event-länk → A3 förskapade 2 Deltaganden (Dag 1+Dag 2) på Event-24. Allt skedde inom 22 sekunder (18:41:36 → 18:41:58). Personer-recordet för Simon Ågren (18:26:50) är skapat ~15 min tidigare och saknar Anmälan-länk — sannolikt lead från Hämtade erbjudanden (A4-skapad).
+**Korrelation:** Anmälan #854 (Deltagare 37) → A2 skapade Personer-record (Deltagare 37) + uppdaterade Anmälan med Person-länk → A1 satte Event-länk → A3 förskapade 2 Deltaganden (Dag 1+Dag 2) på Event-24. Allt skedde inom 22 sekunder (18:41:36 → 18:41:58). Personer-recordet för Deltagare 81 (18:26:50) är skapat ~15 min tidigare och saknar Anmälan-länk — sannolikt lead från Hämtade erbjudanden (A4-skapad).
 
 ### G.5 Ändrade automationer
 
@@ -851,7 +851,7 @@ else → patchAfterSend
 
 | Datum | Mall | Mottagare | Källa |
 |---|---|---|---|
-| 2026-04-16 | `medveten-kontakt-deltagarinformation` | 74 (av 75 incheckning-aktiva — Ulrika Arvas saknade e-post) | session-2026-04-16 §A |
+| 2026-04-16 | `medveten-kontakt-deltagarinformation` | 74 (av 75 incheckning-aktiva — Deltagare 88 saknade e-post) | session-2026-04-16 §A |
 | 2026-04-27 | `medveten-kontakt-vantelista-info-1` | 41 (på väntelistan, alla aktiva) | session-2026-04-27 §Slutresultat |
 
 ### J.3 Återkommande Resend-fällor

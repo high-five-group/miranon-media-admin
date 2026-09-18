@@ -588,7 +588,7 @@ test('regeln är stabil över flera rader i kön — var och en bedöms för sig
 
 test('en anmälan med ett oskickat kvitto ger en post, namnet är RADENS, beloppet är INBETALNINGENS', () => {
   const r = rad({
-    personNamn: 'Cecilia Örning',
+    personNamn: 'Deltagare 100',
     saknas: 0,
     gallandePris: 2500,
     summaInbetalt: 2500,
@@ -596,7 +596,7 @@ test('en anmälan med ett oskickat kvitto ger en post, namnet är RADENS, belopp
   });
 
   expect(harledKvittoAttSkicka([r], new Set())).toEqual([
-    { inbetalningId: 'inb-1', namn: 'Cecilia Örning', belopp: 2500 },
+    { inbetalningId: 'inb-1', namn: 'Deltagare 100', belopp: 2500 },
   ]);
 });
 

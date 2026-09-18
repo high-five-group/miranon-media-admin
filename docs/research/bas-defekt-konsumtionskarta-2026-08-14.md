@@ -300,7 +300,7 @@ listan — det är räkningen som är fel, inte visningen.
 Ingen kod läser ett defekt fält här; defekten är i DATAN. Men den når UI direkt:
 båda posterna producerar två Person-records för samma människa, och
 `get-persons` listar records. Lotta ser två rader med samma namn, med
-historiken delad mellan dem (§42:s Ulrika Arvas bar RIM 1 på ena raden och
+historiken delad mellan dem (§42:s Deltagare 88 bar RIM 1 på ena raden och
 Psionautics-närvaron på den andra).
 
 Konsekvensen sträcker sig till segment-ytan: `segment-resolution.ts:122-124`

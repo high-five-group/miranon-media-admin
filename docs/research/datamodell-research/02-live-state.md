@@ -608,11 +608,11 @@ Edge Functions agerar effektivt som webhook-konsumenter (POST från Lovable-fron
 
 | ID | Skapat (UTC) | Namn | Status | Typ |
 |--:|---|---|---|---|
-| 854 | 2026-04-27 18:41:36 | Henny Elisabet Fredrika Röckert | Obekräftad | Utbildning |
-| 853 | 2026-04-26 21:41:27 | Ulrika Johansson | Obekräftad | Utbildning |
-| 852 | 2026-04-26 21:40:53 | Jessica Karlsson | Obekräftad | Utbildning |
-| 851 | 2026-04-26 21:40:15 | Savannah Rosén | Obekräftad | Utbildning |
-| 850 | 2026-04-26 21:39:37 | Maria Karlsson | Obekräftad | Utbildning |
+| 854 | 2026-04-27 18:41:36 | Deltagare 37 | Obekräftad | Utbildning |
+| 853 | 2026-04-26 21:41:27 | Deltagare 90 | Obekräftad | Utbildning |
+| 852 | 2026-04-26 21:40:53 | Deltagare 43 | Obekräftad | Utbildning |
+| 851 | 2026-04-26 21:40:15 | Deltagare 79 | Obekräftad | Utbildning |
+| 850 | 2026-04-26 21:39:37 | Deltagare 57 | Obekräftad | Utbildning |
 
 **Observation:** Bas är levande. Anmälan #854 inkom 2026-04-27 — efter 26-april-fortsattning-sessionen. Alla nya har Status=Obekräftad (default).
 
@@ -620,11 +620,11 @@ Edge Functions agerar effektivt som webhook-konsumenter (POST från Lovable-fron
 
 | Namn | Skapat (UTC) | E-post | Antal anmälningar | Status |
 |---|---|---|--:|---|
-| Henny Elisabet Fredrika Röckert | 2026-04-27 18:41:41 | <fredrika.rockert@gmail.com> | 1 | Aktiv |
-| Simon Ågren | 2026-04-27 18:26:50 | <simon.agren83@gmail.com> | 0 | Ingen aktiv |
-| Ej tillgängligt | 2026-04-26 21:48:25 | <tonetider@protonmail.com> | 0 | Ingen aktiv |
-| Ej tillgängligt | 2026-04-26 21:47:44 | <miranon.prominent654@passmail.net> | 0 | Ingen aktiv |
-| Siv-Åse | 2026-04-26 21:47:12 | <sivan.nilsen@gmail.com> | 0 | Ingen aktiv |
+| Deltagare 37 | 2026-04-27 18:41:41 | <f***@gmail.com> | 1 | Aktiv |
+| Deltagare 81 | 2026-04-27 18:26:50 | <s2***@gmail.com> | 0 | Ingen aktiv |
+| Ej tillgängligt | 2026-04-26 21:48:25 | <t***@protonmail.com> | 0 | Ingen aktiv |
+| Ej tillgängligt | 2026-04-26 21:47:44 | <m***@passmail.net> | 0 | Ingen aktiv |
+| Deltagare 83 | 2026-04-26 21:47:12 | <s***@gmail.com> | 0 | Ingen aktiv |
 
 **Observation:** 2 av 5 saknar Förnamn+Efternamn (formelvärde "Ej tillgängligt" från fldnYys0Ac3UGOdpe). Skapade av A2 från Hämtade erbjudanden (lead utan namn-fält). Ny datakvalitetsfälla — se 1.8.
 
@@ -666,8 +666,8 @@ Edge Functions agerar effektivt som webhook-konsumenter (POST från Lovable-fron
 
 | ID | Namn | Event (namn) |
 |--:|---|---|
-| 28 | Daniel Finnhult | Resor i medvetandet |
-| 2 | Mia Hasselgren | Resor i medvetandet |
+| 28 | Deltagare 21 | Resor i medvetandet |
+| 2 | Deltagare 64 | Resor i medvetandet |
 
 **Bekräftelse:** Mia & Daniel kvarstår som Inställt — Punkt 9 STEG C håller. Inställt-status `selebP2V3qmFRTtdP` (redBright) på Anmälningar.Status.
 
@@ -675,11 +675,11 @@ Edge Functions agerar effektivt som webhook-konsumenter (POST från Lovable-fron
 
 | ID | Namn | Flyttad till anmälan |
 |--:|---|---|
-| 3 | Emma Lagerström | (tom) |
-| 44 | Alissa Norling | (tom) |
-| 42 | Ida Lokamo | (tom) |
-| 33 | Bo Steinvall | **true** |
-| 24 | Cathrine Avidan | (tom) |
+| 3 | Deltagare 28 | (tom) |
+| 44 | Deltagare 03 | (tom) |
+| 42 | Deltagare 40 | (tom) |
+| 33 | Deltagare 16 | **true** |
+| 24 | Deltagare 20 | (tom) |
 
 Total: 44 records. Filter på `Flyttad till anmälan = false` ger aktiva väntelistan.
 

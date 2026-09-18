@@ -1,12 +1,12 @@
 ---
 id: TASK-229
 title: >-
-  Fynd: anmälningar utan Person-länk - Helena-instansen, olänkade-svep +
+  Fynd: anmälningar utan Person-länk - Deltagare 35-instansen, olänkade-svep +
   anmälningskedjans rotorsak
 status: In Progress
 assignee: []
 created_date: '2026-08-15 22:59'
-updated_date: '2026-08-24 15:45'
+updated_date: '2026-09-18 11:46'
 labels:
   - ready-for-agent
 dependencies: []
@@ -17,7 +17,7 @@ ordinal: 431000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-S102 Lotta-vandringen punkt 7 (Marcus 2026-08-16): Helena Skoglunds RIM 3-anmälan (rec1ft7CDqLJwZw9V, ID 911, EventKey Event-25, skapad 2026-06-29 via Huvudformulär) saknar Person-länk i prod - MCP-verifierat: personposten recoFAXvbggTQ8WrL finns med samma e-post, Antal genomförda event 3 och de tre ÄLDRE anmälningarna länkade; anmälningskedjans automatiska person-länkning missade den nya. Frontendkonsekvens: antalGenomfordaEvent blir null (Registration.ts-kontraktet) och deltagarkortets historikrad utelämnas (Deltagare.tsx rad ~910). RESOLUTION I BASEN per ADR-063, tre delar: (1) DATAFIX Helena: länka anmälan till personposten - PROD-WRITE, kräver Marcus-GO, utförs HITL eller av agent efter GO; (2) SVEP: räkna ALLA anmälningar utan Person-länk i prod (read-only) och rapportera lista + mönster (datum-fönster? formulär-väg?); (3) ROTORSAK: varför missade kedjan denna rad (automation-status via claude.ai-Airtable-connectorn - list_automations; jämför rad-skapad-datum mot automationens historik). Kortdesign-frågan (låst korthöjd vid null) är SEPARAT och ligger hos Marcus - inte i detta kort.
+S102 Lotta-vandringen punkt 7 (Marcus 2026-08-16): Deltagare 35:s RIM 3-anmälan (rec1ft7CDqLJwZw9V, ID 911, EventKey Event-25, skapad 2026-06-29 via Huvudformulär) saknar Person-länk i prod - MCP-verifierat: personposten recoFAXvbggTQ8WrL finns med samma e-post, Antal genomförda event 3 och de tre ÄLDRE anmälningarna länkade; anmälningskedjans automatiska person-länkning missade den nya. Frontendkonsekvens: antalGenomfordaEvent blir null (Registration.ts-kontraktet) och deltagarkortets historikrad utelämnas (Deltagare.tsx rad ~910). RESOLUTION I BASEN per ADR-063, tre delar: (1) DATAFIX Deltagare 35: länka anmälan till personposten - PROD-WRITE, kräver Marcus-GO, utförs HITL eller av agent efter GO; (2) SVEP: räkna ALLA anmälningar utan Person-länk i prod (read-only) och rapportera lista + mönster (datum-fönster? formulär-väg?); (3) ROTORSAK: varför missade kedjan denna rad (automation-status via claude.ai-Airtable-connectorn - list_automations; jämför rad-skapad-datum mot automationens historik). Kortdesign-frågan (låst korthöjd vid null) är SEPARAT och ligger hos Marcus - inte i detta kort.
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria
@@ -45,7 +45,7 @@ Skrivet via mcp__airtable__update_records (PAT-servern), tabell Anmälningar
 Personer, "Sätts normalt av A2; Edge Functions kan PATCH:a direkt" per
 data-model.md rad 176).
 
-FÖRE: rec1ft7CDqLJwZw9V (ID 911, Helena Skoglund, EventKey Event-25) — fältet
+FÖRE: rec1ft7CDqLJwZw9V (ID 911, Deltagare 35, EventKey Event-25) — fältet
 Person SAKNADES helt i fields (get_record-svaret innehöll ingen "Person"-nyckel).
 
 SKRIVNING: update_records({id: rec1ft7CDqLJwZw9V, fields: {Person:
@@ -73,7 +73,7 @@ genomforda != null. Innan fixen: Person-länken var tom → lookupen hittade
 ingen Person → antalGenomfordaEvent null → raden dold. Efter fixen: länken
 resolver till recoFAXvbggTQ8WrL vars Antal genomförda event = 3 →
 antalGenomfordaEvent blir 3 → historikraden ska nu rendera "3 tidigare event
-hos Miranon Media" på Helenas RIM 3-anmälan. Detta är en kod-mekanism-
+hos Miranon Media" på Deltagare 35:s RIM 3-anmälan. Detta är en kod-mekanism-
 verifiering, INTE en skärmdump/live-observation i appen — öppet bokfört som
 gap mot AC #1s bokstav.
 
@@ -83,14 +83,14 @@ efter Del 1s fix, dvs 8 TOTALT innan fixen)
 
 | ID | Namn | EventKey | Rad skapad | Från formulär | Status | Namngiven Person fanns redan? |
 |---|---|---|---|---|---|---|
-| 868 | Allan Nieminen | 11 (malformad, ej Event-11 — se not) | 2026-05-12 21:39 | Huvudformulär | Obekräftad | Ja (skapad 2026-05-12 08:52, samma dag, 2 äldre länkar) |
-| 877 | Elin Melwinsson | Event-10 | 2026-05-18 18:56 | Huvudformulär | Obekräftad | Ja (skapad 2026-05-15, 0 äldre länkar) |
-| 884 | Ulrika Arvas | Event-55 | 2026-05-29 15:05 | Huvudformulär | Obekräftad | Ja (skapad 2026-04-19, 2 äldre länkar) |
-| 899 | Lena Maria Olsson | Event-55 | 2026-06-15 05:09 | Huvudformulär | Obekräftad | Ja (skapad 2026-04-19, 1 äldre länk) |
-| 910 | maria lejdeby | Event-55 | 2026-06-28 07:38 | Huvudformulär | Obekräftad | Ja (skapad 2026-04-19, 1 äldre länk) |
-| 911 | Helena Skoglund | Event-25 | 2026-06-29 18:28 | Huvudformulär | Obekräftad | Ja (FIXAD i Del 1) |
-| 941 | Karl Areskough | Event-10 | 2026-07-15 18:15 | Huvudformulär | Obekräftad | Ja (skapad 2026-04-26, 0 äldre länkar) |
-| 981 | Agneta Lindell | Event-10 | 2026-08-11 08:23 | Huvudformulär | Obekräftad | Ja (skapad 2026-05-10, 0 äldre länkar) |
+| 868 | Deltagare 04 | 11 (malformad, ej Event-11 — se not) | 2026-05-12 21:39 | Huvudformulär | Obekräftad | Ja (skapad 2026-05-12 08:52, samma dag, 2 äldre länkar) |
+| 877 | Deltagare 26 | Event-10 | 2026-05-18 18:56 | Huvudformulär | Obekräftad | Ja (skapad 2026-05-15, 0 äldre länkar) |
+| 884 | Deltagare 88 | Event-55 | 2026-05-29 15:05 | Huvudformulär | Obekräftad | Ja (skapad 2026-04-19, 2 äldre länkar) |
+| 899 | Deltagare 48 | Event-55 | 2026-06-15 05:09 | Huvudformulär | Obekräftad | Ja (skapad 2026-04-19, 1 äldre länk) |
+| 910 | Deltagare 58 | Event-55 | 2026-06-28 07:38 | Huvudformulär | Obekräftad | Ja (skapad 2026-04-19, 1 äldre länk) |
+| 911 | Deltagare 35 | Event-25 | 2026-06-29 18:28 | Huvudformulär | Obekräftad | Ja (FIXAD i Del 1) |
+| 941 | Deltagare 46 | Event-10 | 2026-07-15 18:15 | Huvudformulär | Obekräftad | Ja (skapad 2026-04-26, 0 äldre länkar) |
+| 981 | Deltagare 02 | Event-10 | 2026-08-11 08:23 | Huvudformulär | Obekräftad | Ja (skapad 2026-05-10, 0 äldre länkar) |
 
 Mönsteranalys:
 - 8/8 (100%) Från formulär = Huvudformulär, 8/8 Status = Obekräftad.
@@ -98,7 +98,7 @@ Mönsteranalys:
   tidsfönster/utfall; utesluter en enda avstängningsperiod som hel förklaring.
 - 3/8 mot Event-10, 3/8 mot Event-55 — ingen uppenbar gemensam eventegenskap
   hittad (olika event, olika datum, ingen kapacitetsgräns korrelerad).
-- EventKey "11" på Allan Nieminen (868) är EN SEPARAT, redan känd bugg
+- EventKey "11" på Deltagare 04 (868) är EN SEPARAT, redan känd bugg
   (§Kända fällor 10 / §Reverse-flow F.2, "EventKey-format-bug i
   Huvudformulär — orsak okänd", tidigare sanerad 2026-04-26 för poster
   #220–#237+#847). Detta är en NY instans (2026-05-12, efter saneringen) —
@@ -137,8 +137,7 @@ UTESLUTET (belagt, inte antaget):
 → Kvar står ENDAST Gren 2 som den gren logiken SKULLE ha tagit.
 
 STARKT INDICIUM (4 av 8 stickprovskontrollerade i Touchpoints-tabellen,
-tbl22SCvlHrgcAiZi, filtrerat på Person-länk = Karl Areskough / Agneta
-Lindell / Elin Melwinsson / Helena Skoglund): Gren 2 skapar ALLTID en
+tbl22SCvlHrgcAiZi, filtrerat på Person-länk = Deltagare 46 / Deltagare 02 / Deltagare 26 / Deltagare 35): Gren 2 skapar ALLTID en
 Touchpoint (Registrera händelsen i Touchpoints, nod wacXk240STE9j0Ory) i
 SAMMA körning som länken sätts. Ingen av de 4 kontrollerade personerna har
 en Touchpoint med Datum/tidsstämpel som matchar anmälans skapande — deras
@@ -180,15 +179,15 @@ kunde INTE matchas, 0 osäkra länkar skrevs.
 
 | Anmälan (ID) | → Personpost | Äldre länkar FÖRE | Äldre länkar EFTER (orörda) | Ny länk EFTER |
 |---|---|---|---|---|
-| recNbJwwt8nlFtasL (868, Allan Nieminen) | rec5fF7QD16Qpr0C9 | 2 (recnqPMxTTbIS50Gh, recKMwCVSAaeh1bub) | samma 2, orörda | + recNbJwwt8nlFtasL |
-| rec4QfGSOjwljAbKV (877, Elin Melwinsson) | recZ8qJn3iOquLXC8 | 0 | 0 | + rec4QfGSOjwljAbKV |
-| recViNdItldmL6O8l (884, Ulrika Arvas) | recT8y8DvaZz09gtW | 2 (recIkMwXC8DZuEsiz, rec2ZnuEmEvUcvmQO) | samma 2, orörda | + recViNdItldmL6O8l |
-| rec1SD7i2467gPrJ9 (899, Lena Maria Olsson) | rectj3ixgMylQYAGH | 1 (recBRyIFcLiPIqdv3) | samma 1, orörd | + rec1SD7i2467gPrJ9 |
-| rec3A0IJir34yoekd (910, maria lejdeby) | recAZF4Y7Y0AyKFNq | 1 (recfbhorY1k2X8Wwn) | samma 1, orörd | + rec3A0IJir34yoekd |
-| rechDOujWs8FdnrCL (941, Karl Areskough) | recAc3ToqnjYUWEHq | 0 | 0 | + rechDOujWs8FdnrCL |
-| reczi2qUFpS1eiyYm (981, Agneta Lindell) | recM5CHah9vqFh3fb | 0 | 0 | + reczi2qUFpS1eiyYm |
+| recNbJwwt8nlFtasL (868, Deltagare 04) | rec5fF7QD16Qpr0C9 | 2 (recnqPMxTTbIS50Gh, recKMwCVSAaeh1bub) | samma 2, orörda | + recNbJwwt8nlFtasL |
+| rec4QfGSOjwljAbKV (877, Deltagare 26) | recZ8qJn3iOquLXC8 | 0 | 0 | + rec4QfGSOjwljAbKV |
+| recViNdItldmL6O8l (884, Deltagare 88) | recT8y8DvaZz09gtW | 2 (recIkMwXC8DZuEsiz, rec2ZnuEmEvUcvmQO) | samma 2, orörda | + recViNdItldmL6O8l |
+| rec1SD7i2467gPrJ9 (899, Deltagare 48) | rectj3ixgMylQYAGH | 1 (recBRyIFcLiPIqdv3) | samma 1, orörd | + rec1SD7i2467gPrJ9 |
+| rec3A0IJir34yoekd (910, Deltagare 58) | recAZF4Y7Y0AyKFNq | 1 (recfbhorY1k2X8Wwn) | samma 1, orörd | + rec3A0IJir34yoekd |
+| rechDOujWs8FdnrCL (941, Deltagare 46) | recAc3ToqnjYUWEHq | 0 | 0 | + rechDOujWs8FdnrCL |
+| reczi2qUFpS1eiyYm (981, Deltagare 02) | recM5CHah9vqFh3fb | 0 | 0 | + reczi2qUFpS1eiyYm |
 
-Allan Nieminen (868): ENDAST Person-fältet skrivet. EventKey-värdet "11"
+Deltagare 04 (868): ENDAST Person-fältet skrivet. EventKey-värdet "11"
 kontrollerat OFÖRÄNDRAT i både skriv- och läs-svaret (ägs nu av TASK-232,
 bekräftad existerande via git log — commit 6a71e8a6, "kort 232
 (EventKey-återfallet)", ej ännu mergad till main).
@@ -242,5 +241,5 @@ Se `docs/reference/data-model.md` §Kända fällor 21 (raden korrigerad
 2026-08-24, samma källa och samma dag) för den fullständiga mätta
 omfattningen (8/97 ≈ 8,2 % felrat i defekt-fönstret).
 
-S112 slutbatch: 229.1/229.2/229.3 alla Done (rotorsak fixad hela vägen till prod, 61 fällor desarmerade, Helenas historikpost backfillad recF10FuDa0NEKFEK). AC #1:s app-verifiering (historikraden syns i persondetaljen) är ett Marcus-vandringsmoment — kortet lämnas öppet tills den blicken; allt annat är klart.
+S112 slutbatch: 229.1/229.2/229.3 alla Done (rotorsak fixad hela vägen till prod, 61 fällor desarmerade, Deltagare 35:s historikpost backfillad recF10FuDa0NEKFEK). AC #1:s app-verifiering (historikraden syns i persondetaljen) är ett Marcus-vandringsmoment — kortet lämnas öppet tills den blicken; allt annat är klart.
 <!-- SECTION:NOTES:END -->

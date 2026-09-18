@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-09-03 07:46'
-updated_date: '2026-09-17 09:07'
+updated_date: '2026-09-18 11:44'
 labels:
   - ready-for-agent
 dependencies: []
@@ -17,7 +17,7 @@ ordinal: 665000
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
 ## Symptom
-Marcus registrerade en inbetalning i prod (2026-09-03, Cecilia Örning, 2 500 kr) med knappen Registrera, bytte flik, och raden var borta ur betalningsinkorgen. Inkorgens serverfunktion listar bara anmälningar med Saknas (kr) > 0, och listan över väntande kvitton byggs av registreringar gjorda i DENNA flik (React-state) — filhuvudet i BetalningsInkorg.tsx bokför det som känd gräns: 'stängs fliken innan Lotta tryckt på knappen är listan borta, och inbetalningarna står kvar utan kvitto'. Hem-kortets 'K kvitton att skicka' räknar bara rader som redan ligger i kön. Belägg: sessionsdok S115 Del 2 (prod-Postgres: en aktiv inbetalning, kvitto_id tomt, noll jobbrader; inget mail i Resend).
+Marcus registrerade en inbetalning i prod (2026-09-03, Deltagare 100, 2 500 kr) med knappen Registrera, bytte flik, och raden var borta ur betalningsinkorgen. Inkorgens serverfunktion listar bara anmälningar med Saknas (kr) > 0, och listan över väntande kvitton byggs av registreringar gjorda i DENNA flik (React-state) — filhuvudet i BetalningsInkorg.tsx bokför det som känd gräns: 'stängs fliken innan Lotta tryckt på knappen är listan borta, och inbetalningarna står kvar utan kvitto'. Hem-kortets 'K kvitton att skicka' räknar bara rader som redan ligger i kön. Belägg: sessionsdok S115 Del 2 (prod-Postgres: en aktiv inbetalning, kvitto_id tomt, noll jobbrader; inget mail i Resend).
 
 ## Förväntat beteende
 'Kvitto att skicka' härleds ur Postgres, inte ur flikens minne: en aktiv inbetalning utan kvitto_id och utan jobbrad i vantar/pagar ÄR ett kvitto att skicka. Serverfunktionen hamta-oppna-betalningar läser redan varje inbetalning och kön per hämtning, så härledningen kostar inga extra anrop. Inkorgen visar sådana anmälningar i en 'Kvitto att skicka'-sektion även när Saknas (kr) = 0, Hem-kortet räknar dem, och 'Skicka N kvitton' bygger sin lista ur samma härledning. Omladdning, flikbyte eller ny enhet får aldrig tappa ett oskickat kvitto.

@@ -74,7 +74,7 @@ felaktig revert.
 ### L255 [UNIVERSAL] — Stäm av på identitets-stabila nycklar, aldrig på visningsnamn — dubblettnamn mis-mappar tyst
 
 Datum: 2026-07-08 | Källa: S60 Psionautics-avstämning (namn-baserad Deltagande-ID-extraktion
-kopplade "Stefan Martinsson" till fel anmälan — det fanns TVÅ [nr 843 Bekräftad, nr 844
+kopplade "Deltagare 84" till fel anmälan — det fanns TVÅ [nr 843 Bekräftad, nr 844
 Avbokad]; en namn-dict skrev över så fel Deltaganden-IDs plockades; fångat genom att korsläsa
 CSV-status mot bas-status per person) (klass: reconciliation/dedup-korrekthet; [[L254]]-släkt)
 

@@ -254,7 +254,7 @@ prod:
 | Segment först i valet | `mottagare[0]` | Förhandsvisningen säger |
 |---|---|---|
 | **"RIM 1"** | `recCtTpTWOPOltmFf`, namnlös | **"Hej Ej,"** |
-| "Fjärrskådning" | `recyscqpq1fU36xsY`, Daniel Karlsson | "Hej Daniel," |
+| "Fjärrskådning" | `recyscqpq1fU36xsY`, Deltagare 22 | "Hej Daniel," |
 
 Marcus listade "RIM 1" först. Utfallet är alltså inte slumpmässigt — det är
 deterministiskt givet valordningen, och en ren funktion av att 62 % av den
@@ -285,7 +285,7 @@ publiken.
 | **Vyn ∩ publiken (247→373)** | **267** |
 | Vyn ∩ appens `get-leads`-filter (77) | 77 (vyn är en äkta övermängd) |
 
-Stickprov ur snittet: `Beatrice Nilsson` — 3 anmälningar, 3 genomförda
+Stickprov ur snittet: `Deltagare 15` — 3 anmälningar, 3 genomförda
 event, deltagit i Fjärrskådning + RIM 1 + RIM 2 — **ligger i vyn "Leads"**.
 
 Slår man upp en mottagare i basens `Leads`-vy för att kontrollera vem hon
@@ -393,7 +393,7 @@ fjärde och den enda där strängen kan lämna systemet i ett mail.
 
 **B4 — Registrera de 20 spårlösa namnlösa.** 20 personer utan anmälningar,
 utan hämtningar och utan närvaro (14 skapade 2025-11-25). Bland dem
-`fornander33@gmail.com` och `formander33@gmail.com` — ett stavfelspar som
+`fo***@gmail.com` och `fm***@gmail.com` — ett stavfelspar som
 ser ut som en dubblett. Låg prioritet, men de hör hemma i registret.
 
 ### I KODEN (där felet bevisligen är vårt)

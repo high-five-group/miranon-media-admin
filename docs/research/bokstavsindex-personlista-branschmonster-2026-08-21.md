@@ -177,8 +177,7 @@ motsvarande) som skiljs ut explicit från `"#"`.
 **Det starkaste, helt egna fyndet i hela passet (MÄTT, 2026-08-21, prod-basen
 `app8uGPrVCVOm6LfD`):** `filterByFormula {Namn}="Ej tillgängligt"` mot
 `Personer`-tabellen visar att hela klumpen sorterar **sammanhållet inom
-bokstaven E** — direkt efter `"Desiree Andersson"` och före `"Eleonor
-Bondesson"`, eftersom strängen bokstavligen börjar med "E". Ett naivt
+bokstaven E** — direkt efter `"Deltagare 23"` och före `"Deltagare 24"`, eftersom strängen bokstavligen börjar med "E". Ett naivt
 `LEFT({Namn},1)="E"`-filter skulle alltså blanda ~200+ namnlösa poster med de
 äkta E-namnen (Erik, Emma, Eva, Elin...) och göra bokstaven E meningslös som
 filter. **`"Ej tillgängligt"` måste undantas via en EXAKT sträng-jämförelse
@@ -245,11 +244,10 @@ Airtable):** basens defaultsortering är **INTE** svensk kollationsordning.
 Den VECKAR diakritiska tecken mot sin basbokstav i stället för att sortera
 Å/Ä/Ö efter Z:
 
-- `Åsa Ganell`, `Åsa Jansson`, `Åsa Jeborn`, `Åsa Karner`, `Åsa Reinholdson`
-  (samtliga 5 poster som börjar på Å i hela basen) sorterar mellan `Annika
-  Svessar` och `Axel Andersson` — exakt där "Asa" (utan diakrit) hade
+- `Deltagare 93`, `Deltagare 94`, `Deltagare 95`, `Deltagare 96`, `Deltagare 97`
+  (samtliga 5 poster som börjar på Å i hela basen) sorterar mellan `Deltagare 13` och `Deltagare 14` — exakt där "Asa" (utan diakrit) hade
   hamnat alfabetiskt (n < s < x).
-- `Anneli Åsblom` sorterar FÖRE `Anneli Clevenrot` — konsekvent med samma
+- `Deltagare 11` sorterar FÖRE `Deltagare 10` — konsekvent med samma
   veckning (`Åsblom` ≈ `Asblom` < `Clevenrot`).
 - **MÄTT:** noll poster i basen börjar på Ä eller Ö (`LEFT({Namn},1)="Ä"` och
   `="Ö"` gav båda tomma träfflistor, 2026-08-21) — vilket också gör
