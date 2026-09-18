@@ -74,6 +74,10 @@
     // Enda importen är `coerce.ts` nedan → transitivt Deno-fri, villkoret filhuvudet ställer.
     "supabase/functions/_shared/belaggning.ts",
     "supabase/functions/_shared/coerce.ts",
+    // TASK-458: get-events/get-event-attachments delade chunk-samtidighets-
+    // hjälpare, lyft ur get-event-attachments/index.ts (TASK-416.12). INGEN
+    // import alls — transitivt Deno-fri, villkoret filhuvudet ställer.
+    "supabase/functions/_shared/concurrency.ts",
     "supabase/functions/_shared/confirm-registrations.ts",
     "supabase/functions/_shared/cursor.ts",
     "supabase/functions/_shared/errors.ts",

@@ -1,5 +1,6 @@
 import { fetchFromAirtable } from '../_shared/airtable-client.ts';
 import { requireUser } from '../_shared/auth.ts';
+import { withConcurrencyLimit } from '../_shared/concurrency.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
 import { generateRequestId, mapErrorToResponse } from '../_shared/errors.ts';
 import { mapEventBas } from '../_shared/event-map.ts';
@@ -20,6 +21,24 @@ const LOGG = '[get-events]';
 // extraktion hör till en egen refaktor-landning).
 const BATCH_SIZE = 50;
 
+// [TASK-458] Max antal SAMTIDIGA chunk-anrop i `fetchByRecordIds` — mot P4
+// (Airtables DELADE 5 req/s-tak, docs/reference/airtable-constraints.md),
+// motiverat mot get-events EGEN SAMLADE samtidighet, inte bara chunkarna
+// isolerat. `fetchByRecordIds` anropas i denna fil ENDAST från
+// `fetchBorOverAntalByEvent`, som körs i SAMMA `Promise.all` som
+// `hamtaStandardpriser` (Deno.serve nedan) — och `hamtaStandardpriser` gör
+// högst ETT Airtable-anrop (`_shared/eventpris.ts` § ETT ANROP FÖR HELA
+// LÄSNINGEN; noll om varje eventrad redan har eget pris). Med tak 2 här är
+// den STÖRSTA samtidigheten get-events NÅGONSIN skapar alltså
+// 2 (Bor-över-chunkar) + 1 (standardpriser, om fortfarande i flykt) = 3
+// samtidiga Airtable-anrop — samma tak och samma motiv som
+// get-event-attachments redan etablerar (TASK-416.12:
+// ATTACHMENTS_CHUNK_CONCURRENCY=2, "aldrig fler än 3 Airtable-anrop i
+// luften samtidigt"). Steg 1 (`fetchFromAirtable(TABLE_NAME)` i Deno.serve,
+// full paginering av Eventplanering) är seriell och redan KLAR innan detta
+// Promise.all startar — den bidrar aldrig till samtidigheten här.
+const BOR_OVER_CHUNK_CONCURRENCY = 2;
+
 type Fields = Record<string, unknown>;
 
 function chunk<T>(items: readonly T[], size: number): T[][] {
@@ -35,19 +54,30 @@ function linkedIds(value: unknown): string[] {
   return Array.isArray(value) ? value.filter((v): v is string => typeof v === 'string') : [];
 }
 
-/** Batch-hämta record-ID:n ur en tabell via chunkad `OR(RECORD_ID()=…)` (get-event-mall). */
+/**
+ * Batch-hämta record-ID:n ur en tabell via chunkad `OR(RECORD_ID()=…)`
+ * (get-event-mall).
+ *
+ * [TASK-458, mönster från TASK-416.12] Chunkarna hämtas parallellt via den
+ * delade `withConcurrencyLimit` (`_shared/concurrency.ts`) i stället för en
+ * sekventiell for-loop med await — de är oberoende anrop (olika
+ * `RECORD_ID()`-mängder, samma tabell/fält). Se `BOR_OVER_CHUNK_CONCURRENCY`
+ * för samtidighetstaket och dess motiv mot P4. Resultatordningen bevaras
+ * deterministiskt (`withConcurrencyLimit` skriver per index, aldrig i
+ * svarsordning) — union-ordningen spelar dessutom ingen roll för anroparen
+ * här: `fetchBorOverAntalByEvent` bygger en `Map` keyed på record-ID.
+ */
 async function fetchByRecordIds(
   table: string,
   ids: readonly string[],
   fields: readonly string[],
 ): Promise<{ id: string; fields: Fields }[]> {
-  const out: { id: string; fields: Fields }[] = [];
-  for (const idChunk of chunk(ids, BATCH_SIZE)) {
+  const tasks = chunk(ids, BATCH_SIZE).map((idChunk) => () => {
     const filterByFormula = `OR(${idChunk.map((rid) => `RECORD_ID()='${rid}'`).join(',')})`;
-    const records = await fetchFromAirtable(table, { filterByFormula, fields: [...fields] });
-    out.push(...records);
-  }
-  return out;
+    return fetchFromAirtable(table, { filterByFormula, fields: [...fields] });
+  });
+  const chunks = await withConcurrencyLimit(tasks, BOR_OVER_CHUNK_CONCURRENCY);
+  return chunks.flat();
 }
 
 /**

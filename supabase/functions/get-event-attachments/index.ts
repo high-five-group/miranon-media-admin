@@ -89,6 +89,7 @@ import {
   normaliseraRackvidd,
 } from '../_shared/attachments.ts';
 import { requireUser } from '../_shared/auth.ts';
+import { withConcurrencyLimit } from '../_shared/concurrency.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
 import { generateRequestId, mapErrorToResponse } from '../_shared/errors.ts';
 
@@ -151,29 +152,6 @@ function chunk<T>(items: readonly T[], size: number): T[][] {
 }
 
 /**
- * [TASK-416.12 runda 2] Kör `tasks` med högst `limit` samtidiga anrop —
- * ren "worker pool"-form (varje worker plockar nästa lediga index tills
- * kön är tom), resultatet i SAMMA ORDNING som `tasks`. Ingen extern
- * beroende (p-limit e.dyl.) behövs för ett tak på 2 — se
- * `ATTACHMENTS_CHUNK_CONCURRENCY` för motivet (P4).
- */
-async function withConcurrencyLimit<T>(
-  tasks: readonly (() => Promise<T>)[],
-  limit: number,
-): Promise<T[]> {
-  const results: T[] = new Array(tasks.length);
-  let next = 0;
-  async function worker(): Promise<void> {
-    while (next < tasks.length) {
-      const i = next++;
-      results[i] = await tasks[i]();
-    }
-  }
-  await Promise.all(Array.from({ length: Math.min(limit, tasks.length) }, worker));
-  return results;
-}
-
-/**
  * Batch-hämta record-ID:n ur Bilagor via chunkad `OR(RECORD_ID()=…)`.
  *
  * [TASK-416.12, tak tillagt runda 2] Chunkarna hämtas parallellt i stället
@@ -182,7 +160,9 @@ async function withConcurrencyLimit<T>(
  * `ATTACHMENTS_CHUNK_CONCURRENCY` samtidiga anrop (se den konstantens
  * kommentar för P4-motivet). Union-ordningen spelar ingen roll: resultatet
  * dedupliceras på record-ID och sorteras på `Skapad` längre ned i
- * anropskedjan.
+ * anropskedjan. [TASK-458] `withConcurrencyLimit` bor sedan dess i
+ * `_shared/concurrency.ts` — get-events återanvänder samma funktion för sin
+ * egen chunkade Bor-över-batch i stället för en tredje kopia.
  */
 async function fetchAttachmentsByRecordIds(ids: readonly string[]): Promise<AirtableRow[]> {
   const tasks = chunk(ids, ATTACHMENTS_BATCH_SIZE).map((idChunk) => () => {
