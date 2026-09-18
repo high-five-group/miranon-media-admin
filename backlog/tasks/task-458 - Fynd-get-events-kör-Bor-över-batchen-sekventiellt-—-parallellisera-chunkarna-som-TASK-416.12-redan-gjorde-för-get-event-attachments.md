@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-18 11:10'
-updated_date: '2026-09-18 13:50'
+updated_date: '2026-09-18 14:14'
 labels:
   - ready-for-agent
 dependencies: []
@@ -70,4 +70,12 @@ Full npm run test:api kördes två gånger under mycket hög samtidig flotta-akt
 ## Deploy till staging
 
 get-events och get-event-attachments deployade till pqtshyierkdgwdnxuirz (staging). UPDATED_AT: get-events 2026-09-18T13:33:25.539Z (v42), get-event-attachments 2026-09-18T13:33:33.889Z (v33) — sekunder efter deploy-kommandot. Prod-deploy INTE utförd (mekaniskt förbjudet, TASK-419) — öppen Marcus-skuld, fas4-prod-deploy.sh --deploya i eget terminalfönster.
+
+## Runda 2 — review-svar (granskad c265258f)
+
+FYND A (enhetstest): tests/api/concurrency.test.ts, 11 fall, hermetisk (deferred promises + makrotask-flush, ingen setTimeout/staging/nätverk). Ordning (2), Taket (5, inkl. kantfall limit>=n, limit=1, tom lista), Felpropagering (4, inkl. uppmätt FAKTISKT beteende: vid limit=2 fortsätter en redan startad task OCH startar en NY task EFTER att anropet redan rejectat — fler Airtable-anrop kan alltså avfyras efter ett fel). Rött-först: _shared/concurrency.ts mutdecrad tillfälligt till naiv push-variant, exakt de 2 ordnings-testerna föll (9 andra förblev gröna), git checkout -- återställde exakt, omkörning grön (11/11). Plockas upp av npm run test:api:pure utan ny wiring (1800->1811 passed).
+
+FYND B (dokumentation): kodkommentaren i get-events/index.ts utökad med LAGER 2 — startvarmningen.ts BATCH_SIZE=2 kör get-events+get-registrations SAMTIDIGT (WARMUP_ITEMS grupp 1). get-registrations (event-losa grenen) bidrar exakt 1 samtidigt Airtable-anrop (sekventiell paginering). Framraknat varsta fall: 3 (get-events LAGER 1) + 1 (get-registrations) = 4 samtidiga anrop mot P4:s 5 req/s DELADE tak. 429-vagen: fetchFromAirtable ar individuellt wrapped i withAirtable429Retry, ingen delad backoff mellan samtidiga anrop, min 30s golv per anrop (varsta fall 112.5s) mot startvarmningens egna 9s DEFAULT_TIMEOUT_MS. INGET pastaende om acceptabilitet gjort -- Marcus beslut (tredje fyndet, eskalerat separat).
+
+Grindar denna runda: typecheck exit 0, biome exit 0 (samma 18 pre-existing warnings, orelaterad fil), build exit 0, check-langa-streck exit 0 (oforandrat), test:api:pure exit 0 (1811 passed). INGEN ny staging-korning/deploy denna runda -- get-events-andringen ar rent en kodkommentar (verifierat via git diff, BOR_OVER_CHUNK_CONCURRENCY-vardet 2 oforandrat), och testfilen ar api-pure.
 <!-- SECTION:NOTES:END -->
