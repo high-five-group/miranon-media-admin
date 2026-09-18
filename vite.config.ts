@@ -22,6 +22,21 @@ export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), 'VITE_');
   assertModeCoherent(mode, env.VITE_SUPABASE_URL ?? '');
 
+  // TASK-451.5: index.html:s `<link rel="preconnect" href="%VITE_SUPABASE_URL%">`
+  // fylls i av Vites INBYGGDA HTML-env-ersättning (%VAR%, körs automatiskt —
+  // ingen plugin behövs). Den ersättningen är däremot TYST vid en saknad
+  // variabel: "if the env doesn't exist… it will be ignored and not replaced"
+  // (vite.dev/guide/env-and-mode#html-env-replacement) — utan denna vakt
+  // skulle en tom VITE_SUPABASE_URL landa som den LITERALA strängen
+  // `%VITE_SUPABASE_URL%` i href, inte ett byggfel. Samma config-tids-försvar
+  // som assertModeCoherent ovan (ADR-061 Pelare 2.5): fäll bygget tidigast
+  // möjligt i stället för att skeppa en trasig tagg.
+  if (!env.VITE_SUPABASE_URL) {
+    throw new Error(
+      'FATAL (TASK-451.5): VITE_SUPABASE_URL saknas vid build — index.html:s preconnect-tagg kan inte fyllas i. Sätt variabeln i rätt .env.<mode>-fil.',
+    );
+  }
+
   // Appversionen ur paketmanifestet (task-4.2 B-NYTT2): en enda källa —
   // versionsraden på Hem läser __APP_VERSION__, aldrig ett hårdkodat värde.
   // fs-läsning i stället för json-import → oberoende av tsconfig-flaggor.
