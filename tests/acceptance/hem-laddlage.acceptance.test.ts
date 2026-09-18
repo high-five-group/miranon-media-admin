@@ -1038,9 +1038,21 @@ test.describe('CLS-grinden — Hem (TASK-451.7)', () => {
  *    Bevakningsrad/KvittojobbBanderoll/BulkAtgardsknapp), och bekräftat
  *    PRE-EXISTERANDE (mätt på `origin/main` innan denna skivas ändringar).
  *
- * Mobil är därför `test.fixme()`-märkt nedan i stället för grönmålad eller
- * tyst borttagen — se dess kommentar. Desktop håller tröskeln utan
- * undantag (RIKTIG, grön assertion).
+ * MOBIL-FALLET ÄR MEDVETET BORTTAGET UR DENNA SVIT (runda 2-fynd,
+ * granskningsrunda 1 av PR #2548) — INTE `test.fixme()`-markerat. Ett
+ * `test.fixme()`/`test.skip()`/`test.fail()`-test ÖVERLEVER
+ * `npm run test:acceptance:sjalvtest` (hermetik-självtestet): sviten kör
+ * HELA acceptance-sviten UTAN fixturens svar och kräver att VARJE test då
+ * faller med `OmockadRequestError`; ett `test.fixme()`-test hoppar över
+ * helt och "överlever utan fixturens svar och bevisar därför inget om
+ * appens databeteende" — exakt samma felklass som
+ * `tasks/lessons.d/test-fail-som-rott-forst-markor-overlever-hermetik-sjalvtestet.md`
+ * (PR #2412, TASK-416.18) redan dokumenterar för `test.fail()`. En känd
+ * defekt bokförs som KORT (TASK-463 — mätvärden, källdump, misstänkt
+ * mekanism och den borttagna testkroppen för återinförande som
+ * rött-först i fix-PR:en), ALDRIG som en skip-/fail-/fixme-markör kvar i
+ * huvudsviten. Desktop är kvar som en RIKTIG, grön assertion — den håller
+ * tröskeln utan undantag.
  */
 function hallbarMockTomtLage(network: NetworkFixture): HallbarStateGeneric {
   const st = hallbarMock(network, { events: [], registrations: [] });
@@ -1060,36 +1072,18 @@ function hallbarMockTomtLage(network: NetworkFixture): HallbarStateGeneric {
 }
 
 test.describe('CLS-grinden — Hem tomläge (AC #3, TASK-451.7)', () => {
-  for (const [namn, viewport] of [
-    ['desktop 1280×720', HEM_CLS_DESKTOP],
-    ['mobil 390×844', HEM_CLS_MOBIL],
-  ] as const) {
+  // ENDAST DESKTOP HÄR (runda 2-fynd, se docblocket ovan) — mobil-fallet
+  // mäter fortsatt över tröskeln (0,148) av ett skäl utanför denna skivas
+  // scope, registrerat som TASK-463 med den fullständiga testkroppen för
+  // återinförande. En ensam desktop-post i denna `for`-loop (i stället för
+  // ett bokstavligt enda `test(...)`-anrop) håller formen identisk med
+  // filens övriga viewport-loopar och gör en framtida återinsättning av
+  // mobil-posten till en enradsdiff.
+  for (const [namn, viewport] of [['desktop 1280×720', HEM_CLS_DESKTOP]] as const) {
     test(`${namn} — tom data överallt (Nästa event/Nya anmälningar/Förfallna betalningar/Senaste aktivitet i tomläge)`, async ({
       page,
       network,
     }) => {
-      // [TASK-451.7, ÖPPEN SKULD] Mobil-fallet är `test.fixme()`-markerat
-      // nedan (Playwright-idiomet för "känt trasig, inte tyst hoppad över")
-      // — se dess kommentar för den fulla diagnosen. Desktop är en RIKTIG,
-      // grön assertion.
-      if (namn === 'mobil 390×844') {
-        test.fixme(
-          true,
-          'TASK-451.7: förbättrad (0,194→0,148, se PR-kroppen) men INTE under ' +
-            'tröskeln — ett PRE-EXISTERANDE, nyupptäckt render-settle-fynd ' +
-            '(Genvägar/Senaste aktivitets SECTION-noder rapporteras med ' +
-            'previousRect {0,0,0,0} i Layout Instability-API:t, dvs "fanns ' +
-            'inte i föregående bildruta" — inte en skeleton-vs-laddat-' +
-            'geometrimatchning av den typ denna skiva åtgärdar) utanför ' +
-            'denna skivas namngivna scope (Bevakningsrad/KvittojobbBanderoll/' +
-            'BulkAtgardsknapp-reservationer). Bekräftat PRE-EXISTERANDE: ' +
-            'mätt 0,19366540652956052 på en temporärt återställd origin/main ' +
-            '(git diff/checkout-dansen, ALDRIG git stash). Se slutrapporten ' +
-            'för TASK-451.7 för fullständig källdump (fyra layout-shift-' +
-            'källor, en enda entry).',
-        );
-      }
-
       await arrangeraTomCache(page);
       const mocken = hallbarMockTomtLage(network);
 
@@ -1192,13 +1186,18 @@ test.describe('Sektionsnivå-boundingBox — Hem, utan utanY-undantag (AC #2, TA
       // fixturens `maxPlatser: null`-event.
       expect(efter.nastaEvent).toEqual(under.nastaEvent);
 
-      // BEVAKNINGSRAD — IDENTISK BREDD/VÄNSTERKANT/Y (inget ovanför den
-      // ändras heller); höjden jämförs SEPARAT (nedan) eftersom en
-      // enradig platshållare och en enradig riktig rad kan skilja sig med
-      // enstaka pixlar utan att vara en regression.
+      // BEVAKNINGSRAD — HELA BOXEN IDENTISK, HÖJDEN INKLUDERAD (runda
+      // 2-fynd, granskningsrunda 1 av PR #2548): en tidigare version av
+      // detta stycke lämnade höjden ENDAST annoterad, aldrig asserterad
+      // — filhuvudets löfte ("varje fälts jämförelse är en EGEN, namngiven
+      // assertion") höll alltså inte bokstavligt för just detta fält.
+      // MÄTT (båda testade breddar): den enradiga platshållaren och den
+      // enradiga riktiga raden är BYTE-IDENTISKA — 70px = 70px, inte en
+      // approximation som råkar ligga nära.
       expect(efter.bevakning.x).toBe(under.bevakning.x);
       expect(efter.bevakning.y).toBe(under.bevakning.y);
       expect(efter.bevakning.width).toBe(under.bevakning.width);
+      expect(efter.bevakning.height).toBe(under.bevakning.height);
       test.info().annotations.push({
         type: 'bevakningsrad-hojddelta',
         description: `${namn}: under=${under.bevakning.height} efter=${efter.bevakning.height}`,
@@ -1244,12 +1243,24 @@ test.describe('Sektionsnivå-boundingBox — Hem, utan utanY-undantag (AC #2, TA
         description: `${namn}: under.y=${under.genvagar.y} efter.y=${efter.genvagar.y}`,
       });
 
-      // SENASTE AKTIVITET — bredd/vänsterkant IDENTISK; Y ärver kaskaden;
-      // HÖJDEN mäts och namnges (radbrytande aktivitetstext, se
-      // `SenasteAktivitetKompakt.tsx`s docblock — INTE fixad, facit-låst
-      // loaded-markup).
+      // SENASTE AKTIVITET — bredd/vänsterkant IDENTISK. Y OCH HÖJD hade
+      // (runda 2-fynd, granskningsrunda 1 av PR #2548) INGEN assertion
+      // alls — bara en annotation. Rättat med EXAKTA mätta deltan, inte
+      // ett toleransintervall:
+      //   Y: +150px på BÅDA testade breddar — ärver EXAKT samma kaskad
+      //   som Genvägar (Nya anmälningar +60px BulkAtgardsknapp + Förfallna
+      //   betalningar +90px "Att påminna"-knapp/underrubrik = 150px,
+      //   bredd-oberoende eftersom kaskaden är absoluta pixelinsättningar,
+      //   inte breddberoende reflow).
+      //   HÖJD: skiljer sig i RIKTNING per bredd (radbrytande
+      //   aktivitetstext, facit-låst loaded-markup —
+      //   `SenasteAktivitetKompakt.tsx`s docblock, INTE fixad här): desktop
+      //   KRYMPER 46px, mobil VÄXER 50px.
       expect(efter.senaste.x).toBe(under.senaste.x);
       expect(efter.senaste.width).toBe(under.senaste.width);
+      expect(efter.senaste.y - under.senaste.y).toBe(150);
+      const forvantatSenasteHojddelta = namn === 'desktop 1280×720' ? -46 : 50;
+      expect(efter.senaste.height - under.senaste.height).toBe(forvantatSenasteHojddelta);
       test.info().annotations.push({
         type: 'senaste-aktivitet-boundingbox-delta-namngiven',
         description: `${namn}: under=${JSON.stringify(under.senaste)} efter=${JSON.stringify(efter.senaste)}`,

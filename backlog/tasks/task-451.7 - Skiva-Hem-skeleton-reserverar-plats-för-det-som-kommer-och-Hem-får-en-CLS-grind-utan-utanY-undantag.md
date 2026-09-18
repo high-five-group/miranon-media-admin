@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-18 10:40'
-updated_date: '2026-09-18 13:27'
+updated_date: '2026-09-18 13:56'
 labels:
   - ready-for-agent
 dependencies: []
@@ -44,4 +44,6 @@ Läs DESIGN-SYSTEM-SPEC § 15 (TASK-416.21) FÖRE design — regeln om reservera
 
 <!-- SECTION:NOTES:BEGIN -->
 AC #1 EJ avbockad (mätt, inte gissat): den minimala fixturen ('minst en bevakningsrad, ett event utan maxPlatser, radbrytande aktivitet') mäter INTE rött på origin/main (0,0452 mobil, 0,0112 desktop — under tröskeln 0,05). En sammansatt variant (Bevakningsrad bär bade atgärdskö- OCH eventinfo-rad) mäter rött (0,0848 mobil) och förbättras av fixen (0,0611) men förblir över tröskeln — en namngiven, accepterad gräns för Bevakningsrads enda-generiska-rad-design (kan inte reservera för ett okänt antal rader utan att gissa). Grön, real förbättring är mätt och committad (0,045->0,021 mobil, 0,011->0,003 desktop) för den minimala fixturen. AC #3 EJ avbockad: skeleton reserverar plats för Bevakningsrad (höjddelta 0px, perfekt matchning, mätt). Tomläges-CLS förbättrades (0,194->0,148 mobil) men håller INTE tröskeln pa mobil — ett NYUPPTÄCKT, PRE-EXISTERANDE render-settle-fynd (Genvägar/Senaste aktivitets SECTION-noder rapporteras med previousRect {0,0,0,0} i Layout Instability-API:t) utanför denna skivas scope (Bevakningsrad/KvittojobbBanderoll/BulkAtgardsknapp-reservationer). Testet ar test.fixme()-markerat med full diagnos i tests/acceptance/hem-laddlage.acceptance.test.ts. Rekommendation: nytt kort/tråd för Hem-tomläges-render-settle-fyndet.
+
+RUNDA 2 (granskning, PR #2548): CI-rött fixat — test.fixme() för mobil-tomläget togs bort ur huvudsviten (överlevde hermetik-självtestet, känd felklass, se tasks/lessons.d/test-fail-som-rott-forst-markor-overlever-hermetik-sjalvtestet.md). Fyndet är nu registrerat DURABELT som TASK-463 (label fynd) med mätvärden, källdump, misstänkt mekanism och den borttagna testkroppen for återinförande som rött-först i en fix-PR. AC #3:s mobil-tomläge pekar nu på TASK-463 i stället for att leva som en fixme-kommentar i testfilen. AC #2:s tre tidigare endast-annoterade fält (Bevakningsrads höjd, Senaste aktivitets Y och höjd) fick riktiga expect()-assertions med exakta mätta delta (Bevakningsrad: 70=70 båda breddar; Senaste aktivitet Y: +150px båda breddar; höjd: desktop -46px, mobil +50px) i stället för endast test.info().annotations.push().
 <!-- SECTION:NOTES:END -->
