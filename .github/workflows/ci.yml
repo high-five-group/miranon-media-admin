@@ -455,8 +455,11 @@ jobs:
         # på en main-push (merge-commit) läses andra föräldern (den mergade
         # PR-headen), och de tunga jobben hoppas ENDAST om merge-commitens träd
         # är identiskt med PR-headens träd OCH den SHA:n redan har en grön
-        # CI-run. Sundheten vilar på merge-grindens strict up-to-date-krav
-        # (ADR-076): en up-to-date-branch ger merge-commit vars träd == PR-head.
+        # CI-run. Sundheten vilar på att STEGET SJÄLVT är fail-closed på varje
+        # avvikelse (se raden nedan) — INTE på merge-grindens strict
+        # up-to-date-krav som denna kommentar tidigare påstod: det kravet
+        # (ADR-076) stängdes av 2026-08-05 och premissen var falsifierad i
+        # sex veckor. Rättat 2026-09-18, se ADR-077 § Updates.
         #
         # ASYMMETRIN ÄR MEDVETEN: nyckeln ÄR trädet självt, så dedupen kan bara
         # orsaka onödig körning, aldrig släppa förbi otestat. FAIL-CLOSED på
