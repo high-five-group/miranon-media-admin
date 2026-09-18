@@ -43,6 +43,35 @@ on:
       # i stället fäller ett valt läge EN VERKLIG grind (se de
       # `Simulerad fällning`-steg som bär samma input nedan), så kanalen väcks
       # av ett äkta `failure` i needs — samma väg en riktig röd natt tar.
+      #
+      # ═══ BEVIS-LÄGET ÄR HERMETISKT: BARA DEN VALDA KANALEN FÅR SKRIVA ═══
+      # (TASK-450.1 runda 2, granskningens fynd 2, Marcus beslut 2A.)
+      #
+      # Tystnaden är halva beviset — men den garanterades först bara av att
+      # övriga grindar RÅKADE vara gröna, vilket inte är en garanti. Det kostade
+      # skarpt: de fyra första bevis-dispatcharna 2026-09-18 (10:22–10:28 UTC)
+      # lät `links-arende` lägga fyra OMÄRKTA kommentarer på det LEVANDE
+      # lankrota-ärendet #1482 — ordagrant identiska med en äkta nattlig
+      # länkröte-rapport. Samma signalförorening kanaldelningen finns för att ta
+      # bort, i det ärende ADR-082 skapade. Och framåt var felet värre än
+      # kosmetiskt: `nightly-audit` var röd 5 av 6 nätter, så en `produkt`-
+      # simulering hade förr eller senare skrivit till beroendekanalen och
+      # därmed ogiltigförklarat just den halva av beviset som betyder något.
+      #
+      # ALLA FYRA kanaljobb (alarm, bokforings-arende, beroende-arende,
+      # links-arende) bär därför en KANALKLAUSUL i sitt if-uttryck: i ett
+      # bevis-läge kör bara den valda kanalens ärendejobb. Garantin sitter på
+      # SKRIVPUNKTEN, inte på grindarna.
+      #
+      # DEN AVFÄRDADE FORMEN, och varför: att i stället skippa alla icke-valda
+      # GRINDAR (samma villkor som `suite` bär) ger samma garanti men kostar
+      # nio if-uttryck i stället för fyra, gör jobbstatus-listan i testärendet
+      # innehållslös (åtta rader `skipped`) och lägger garantin på fel ställe —
+      # en kanal som inte får skriva är ett starkare påstående än en grind som
+      # inte får köra, och det förra täcker alla fyra kanaler med EN klausul
+      # per kanal. Grindarna kör alltså skarpt i bevis-läge; bara `suite` är
+      # skippad, och det av KOSTNADSSKÄL (se dess eget huvud), inte av
+      # tystnadsskäl.
       simulate_failure:
         description: >-
           BEVIS-LÄGE. Fäller EN verklig grind i vald kanal så att kanalens
@@ -243,7 +272,14 @@ jobs:
   links-arende:
     name: Länkröta — stående ärende
     needs: [nightly-links]
-    if: ${{ always() && needs.nightly-links.result == 'failure' }}
+    # KANALKLAUSULEN (sista raden): i ett bevis-läge skriver bara den valda
+    # kanalen. Länkrötan har ingen egen simuleringsflagga, så denna kanal är
+    # tyst i ALLA bevis-lägen. Se simulate_failure-ingångens huvud för hela
+    # rationalen — och för de fyra kommentarer på #1482 som kostade regeln.
+    if: >-
+      ${{ always() && needs.nightly-links.result == 'failure' && (
+      inputs.simulate_failure == '' || inputs.simulate_failure == 'ingen'
+      ) }}
     runs-on: ubuntu-latest
     timeout-minutes: 3
     permissions:
@@ -788,6 +824,23 @@ jobs:
   # L321/L322-fällan. Samma krav gäller de tre nya trigger-listorna: tar man
   # bort ett jobb ur en trigger måste det läggas till i en annan.
   #
+  # ═══ KÄND SKULD — KRAVET OVAN ÄR PROSA, INGEN GRIND VAKTAR DET ═══
+  # Den gamla formen `contains(needs.*.result, …)` var SJÄLVTÄCKANDE: varje
+  # jobb som lades i `needs` larmade automatiskt. De explicita uppräkningarna
+  # är nödvändiga (se raden om `needs.*` nedan) men byter den egenskapen mot
+  # fail-OPEN: ett nionde nattjobb som läggs i `needs` och glöms i alla tre
+  # if-uttryck blir TYST, och tystnad är per definition osynlig — exakt
+  # L321/L322-klassen. Partitionen är i dag fullständig och utan överlapp
+  # (3 + 4 + 1 = 8, verifierat av granskningen 2026-09-18), men ingenting
+  # håller den så.
+  #
+  # Vakten för invarianten "unionen av de tre triggerlistorna PLUS
+  # .nattvakt-kanal-policy.conf == needs-listan" byggs som EGEN följdskiva
+  # efter N2 (Marcus beslut 3A, 2026-09-18). Den är INTE byggd här, och
+  # `scripts/check-listparitet.sh` kan inte uttrycka den — det verktyget parar
+  # TVÅ textregioner, inte en union av fyra listor mot en femte. Skriv aldrig
+  # om detta stycke till att påstå att kravet är mekaniserat (ADR-083).
+  #
   # issues:write finns numera på FYRA jobb (dessa tre + links-arende).
   # ────────────────────────────────────────────────────────────────────────
   # Produktkanalen. nightly-metrics ingår — röda mätningar får aldrig vara
@@ -807,6 +860,9 @@ jobs:
       needs.suite.result == 'failure' || needs.suite.result == 'cancelled' ||
       needs.nightly-metrics.result == 'failure' || needs.nightly-metrics.result == 'cancelled' ||
       needs.kontraktsvakt.result == 'failure' || needs.kontraktsvakt.result == 'cancelled'
+      ) && (
+      inputs.simulate_failure == '' || inputs.simulate_failure == 'ingen' ||
+      inputs.simulate_failure == 'produkt'
       ) }}
     runs-on: ubuntu-latest
     timeout-minutes: 3
@@ -999,6 +1055,9 @@ jobs:
       needs.pausade-sessioner.result == 'failure' || needs.pausade-sessioner.result == 'cancelled' ||
       needs.obesvarade-larm.result == 'failure' || needs.obesvarade-larm.result == 'cancelled' ||
       needs.sessionsdok-fonster.result == 'failure' || needs.sessionsdok-fonster.result == 'cancelled'
+      ) && (
+      inputs.simulate_failure == '' || inputs.simulate_failure == 'ingen' ||
+      inputs.simulate_failure == 'bokforing'
       ) }}
     runs-on: ubuntu-latest
     timeout-minutes: 3
@@ -1163,6 +1222,9 @@ jobs:
     if: >-
       ${{ always() && (
       needs.nightly-audit.result == 'failure' || needs.nightly-audit.result == 'cancelled'
+      ) && (
+      inputs.simulate_failure == '' || inputs.simulate_failure == 'ingen' ||
+      inputs.simulate_failure == 'beroende'
       ) }}
     runs-on: ubuntu-latest
     timeout-minutes: 3

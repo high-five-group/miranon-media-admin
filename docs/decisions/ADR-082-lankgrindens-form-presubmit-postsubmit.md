@@ -292,3 +292,45 @@ andra, kvarstående skäl: nattvakten bevakar redan den etiketten.
 **Öppet, ej avgjort här.** Beroendekanalen blir lastbärande för hela
 beroendesäkerheten först när K1 väg (b) landat (`TASK-450.5`). Om dess ärende då
 också bör TILLDELAS är ett eget beslut på data.
+
+#### Följdrättelse i nattvakten — beslut 4:s exkludering blev en allowlist
+
+Beslut 4 gav länkrötan en egen kanal, och `nightly-watchdog.yml` fick därför en
+**exkluderings**-regel: jobb vars namn matchade `Länkkontroll|Länkröta` räknades
+inte som "alarm-bärande rött". Den formen var korrekt så länge exakt ETT jobb låg
+utanför `alarm.needs`.
+
+Efter kanaldelningen ligger **fem** nattgrindar utanför produktkanalens trigger,
+plus de två nya kanaljobben. En denylist som inte känner dem hade gjort vakten
+till en falsklarmsmaskin: en natt där bara bokföringsgrindarna är röda ger
+`alarm` SKIPPED (korrekt) men körningens `conclusion: failure`, och vakten hade
+skapat ett TILLDELAT, oåtgärdbart `ci-natt`-ärende — exakt felklassen i ärende
+`#469` (2026-07-30, 123 h öppet) som beslut 4 en gång redan rättade. Mätt: PR
+`#2521`:s egen körning `35334331604` visar de två första leden, och
+bokföringsgrindarna var röda 5 av 6 nätter 2026-09-13…09-18.
+
+Vakten läser därför nu en **allowlist** över produktkanalens jobb
+(`.nattvakt-kanal-policy.conf`), matchad som prefix eftersom nattsvitens jobb
+heter `Nattlig fullsvit / <barnjobb>` i körnings-API:t. Kontrastmätning mot fem
+verkliga körningar: den gamla regeln larmar i tre av dem, den nya i noll av de
+tre där rödheten bärs av en annan kanal.
+
+**Fail-safe-riktningen vändes, medvetet.** En denylist larmar som default om ett
+okänt jobb; en allowlist tystar det. Valet följer vaktens egen husregel (*"ett
+falsklarm är värre än ingen vakt"*) och principen att vakten ska vakta exakt det
+`alarm` ansvarar för. Priset är att listan måste hållas lika med `alarm`-triggern
+**för hand** — kravet står som prosa i båda filerna, och vakten för invarianten
+är kortad som egen följdskiva. Ingen mekanism vaktar den i dag (ADR-083).
+
+**Vad som fortfarande saknar vakt, öppet skrivet:** bokförings- och
+beroendekanalen har ingen "vaktens vakt". `lankrota` har det inte heller, och har
+aldrig haft det — beslut 4 byggde kanalen, inte en vakt över den.
+
+#### Bevis-läget är hermetiskt sedan samma runda
+
+De första fyra bevis-dispatcharna 2026-09-18 lät `links-arende` lägga fyra
+omärkta kommentarer på det levande `lankrota`-ärendet `#1482` — ordagrant
+identiska med en äkta nattrapport. Alla fyra kanaljobb bär därför nu en
+kanalklausul: i ett bevis-läge får bara den valda kanalen skriva. Garantin sitter
+på skrivpunkten, inte på grindarna, så en genuint röd grind i en annan kanal kan
+inte längre förorena beviset.

@@ -991,9 +991,31 @@ det som devalverar signalen.
 **Bevis-läge:** `gh workflow run nightly.yml -f simulate_failure=<kanal>` där
 kanalen är `produkt`, `bokforing` eller `beroende`. Läget fäller EN verklig
 grind i den valda kanalen, så ärendet skapas via den riktiga `needs`-vägen — och
-lämnar de andra kanalerna gröna, vilket är den halva av beviset som betyder
-något. Den tunga nattsviten hoppas över i ett simuleringsläge: larmkedjan prövas,
-inte sviten. Städa testärendet med motivering.
+**bara den valda kanalens ärendejobb får köra**, vilket är den halva av beviset
+som betyder något. Tystnaden garanteras alltså av konstruktionen, inte av att
+övriga grindar råkar vara gröna: alla fyra kanaljobb bär en kanalklausul i sitt
+`if`. Den tunga nattsviten hoppas över i ett simuleringsläge — larmkedjan
+prövas, inte sviten. Städa testärendet med motivering.
+
+### Vad nattvakten vaktar — och vad den INTE vaktar
+
+`nightly-watchdog.yml` larmar när nattkörningen inte är grön men inget öppet
+`ci-natt`-ärende finns, alltså när larm-jobbet självt kan ha uteblivit. Den
+måste därför veta vilka jobb som bär produktkanalen — annars larmar den om
+nätter där `alarm` skippades KORREKT. Sedan `TASK-450.1` läser den en
+**allowlist** över produktkanalens jobb (`.nattvakt-kanal-policy.conf`) i
+stället för den gamla exkluderingen av länkkontrollen.
+
+**Vakten vaktar bara produktkanalen.** Bokförings- och beroendekanalen har i
+dag **ingen** motsvarande "vaktens vakt": faller deras kanaljobb på gh-I/O syns
+det bara i körningens logg. Det är en känd lucka, inte en glömska — de två
+kanalerna är icke-blockerande stående ärenden, och en vakt som larmar
+tilldelat om dem hade återinfört precis den signalblandning delningen tog bort.
+
+**Listan i configen MÅSTE hållas lika med `alarm`-jobbets trigger i
+`nightly.yml`.** Ingen grind vaktar det i dag; kravet står som prosa på båda
+ställena. Vakten för invarianten (de tre triggerlistorna plus vaktens lista mot
+`needs`-listan) är kortad som egen följdskiva.
 
 ### Kontraktsvakten — fixturvärlden mot verkligheten
 
