@@ -37,11 +37,17 @@
 // send-registration-confirmation m.fl.) håller EXAKTA anmälnings-
 // räkningsförväntningar mot de fixturerna (t.ex. `BELAGGNING_EXPECTED`,
 // `ARBETSKO_EXPECTED.antalAnmalningar`). En ny Anmälan skapad DÄR hade tyst
-// spräckt de förväntningarna i en HELT ANNAN fil. `create-registration`s
-// egen conformance-svit etablerar samma "bounded sentinel-ackumulering
-// tolereras, ADR-060"-hållning för sina skapade rader — denna fil följer
-// samma norm (`registreraKastbarPost` för eventen; ingen delete-EF finns för
-// Anmälningar, se `create-registration.staging.test.ts` § docblock).
+// spräckt de förväntningarna i en HELT ANNAN fil.
+//
+// [TASK-465 granskning runda 1, FYND 2] BÅDE eventen OCH anmälningarna
+// registreras nu i ägar-manifestet (`registreraKastbarPost`) och städas av
+// efter-körning-purgen. Anmälningarna bär Resends KANONISKA testadress
+// `delivered@resend.dev` (den enda icke-prod-spärren tillåter EF:en att
+// faktiskt dispatcha mot) — en EGEN, smal purge-target
+// (`send-action-email-gemensam-bilaga-registration-sentineler`,
+// `.purge-staging-policy.json`) krävs vid sidan av registreringen, eftersom
+// adressen inte matchar `create-registration-sentineler`s
+// `create-test+…@staging.test`-formel.
 //
 // AXELLÖS Gemensam bilaga (`rackvidd: 'Gemensam'`, inga axlar satta) matchar
 // VARJE event ("noll axlar = alla event", `matcharEvent`s docblock) — samma
@@ -158,9 +164,13 @@ async function raderaIRackviddslage(
 }
 
 /** Skapar en FRÄSCH Anmälan (create-registration) mot `eventId` med given
- *  e-post. Ingen delete-EF finns för Anmälningar — bounded sentinel-
- *  ackumulering tolereras (samma norm som create-registration.staging.
- *  test.ts, ADR-060). */
+ *  e-post. [TASK-465 granskning runda 1, FYND 2] Registreras nu i ägar-
+ *  manifestet — `delivered@resend.dev` matchar VARKEN
+ *  `create-registration-sentineler`s `FIND('create-test+',…)`-formel ELLER
+ *  dess UUID-krävande exakt-mönster (server-side filterByFormula fetchar
+ *  raden aldrig till att börja med), så en EGEN, smal target
+ *  (`send-action-email-gemensam-bilaga-registration-sentineler`, se
+ *  .purge-staging-policy.json) krävs vid sidan av registreringen. */
 async function skapaRegistrering(
   request: APIRequestContext,
   config: ApiConfig,
@@ -182,6 +192,7 @@ async function skapaRegistrering(
   const raw = await res.text();
   expect(res.status(), `setup create-registration misslyckades: ${raw}`).toBe(201);
   const body = JSON.parse(raw) as { record: { id: string } };
+  registreraKastbarPost(body.record.id, 'send-action-email-gemensam-bilaga/Anmalningar');
   return body.record.id;
 }
 

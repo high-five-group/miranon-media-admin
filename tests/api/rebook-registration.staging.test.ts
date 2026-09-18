@@ -480,6 +480,12 @@ test.describe('rebook-registration — skarp conformance (TASK-368.4)', () => {
       const raw = await res.text();
       expect(res.status(), raw).toBe(200);
       const svar = JSON.parse(raw) as RebookSvar;
+      // [TASK-465 granskning runda 1, FYND 1] `nyAnmalanId` skapas av
+      // rebook-EF:en SJÄLV (indirekt — inte av testets eget create-anrop).
+      // Samma blinda fläck som gav #2544/#2549: registrera DIREKT, inte i
+      // `finally` (som inte ens finns här) och inte villkorat av vidare
+      // asserts som kan fälla innan raden nås.
+      registreraKastbarPost(svar.nyAnmalanId, 'rebook-registration/ny-anmalan-flera-inbetalningar');
 
       expect(svar.gammalAnmalanId).toBe(registrationId);
       expect(svar.nyAnmalanId.startsWith('rec')).toBe(true);
@@ -607,6 +613,12 @@ test.describe('rebook-registration — skarp conformance (TASK-368.4)', () => {
       const raw = await res.text();
       expect(res.status(), raw).toBe(200);
       const svar = JSON.parse(raw) as RebookSvar;
+      // [TASK-465 granskning runda 1, FYND 1] Detta är EXAKT den läckan
+      // granskaren namngav: `nyttEventId` HÄR är det seedade eventet
+      // (motsatt riktning mot testet ovan), så `svar.nyAnmalanId` landar
+      // DIREKT på seed-eventet — samma sentinel-familj som orsakade
+      // #2544/#2549. Registrera DIREKT vid svaret.
+      registreraKastbarPost(svar.nyAnmalanId, 'rebook-registration/ny-anmalan-en-inbetalning');
 
       expect(svar.nyAnmalanSkapad).toBe(true);
       expect(svar.flyttadeRader).toBe(1);

@@ -131,6 +131,15 @@ upp. Städas via ägar-manifestet (`tests/support/kastbara-poster.ts`,
 ADR-060 punkt 3), inte setup-purgen — testet självstädar redan i sitt eget
 `finally`-block, manifestet är ett säkerhetsnät för en kraschad körning.
 
+Och Resends KANONISKA testadress `delivered@resend.dev` (RESEND_TEST_ADDRESSES,
+`_shared/send-bulk.ts`) i Anmälningars `E-post` (TASK-465, granskning runda 1
+FYND 2) — `send-action-email-gemensam-bilaga.staging.test.ts`s (TASK-452) EGEN
+sentinel-klass. Adressen matchar VARKEN `create-registration-sentineler`s
+`create-test+…@staging.test`-formel eller dess exakt-mönster, så en EGEN, smal
+exakt-literal-target (`send-action-email-gemensam-bilaga-registration-sentineler`)
+krävs vid sidan av ägar-manifestet — utan den fetchar filterByFormula raden
+aldrig server-side, och registrering i manifestet ensamt räcker inte.
+
 Uppräkningen hålls komplett mot `.purge-staging-policy.json` av
 `scripts/check-listparitet.sh` (paret `sentinel-markorer`) — den stod med
 två av fyra tills den grinden byggdes. CI städar dem automatiskt i jobbet **Staging sentinel

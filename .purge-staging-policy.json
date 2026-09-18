@@ -17,6 +17,15 @@
       "watchWarnThreshold": 50
     },
     {
+      "name": "send-action-email-gemensam-bilaga-registration-sentineler",
+      "table": "Anmälningar",
+      "_TASK-465-granskning-r1-fynd2": "send-action-email-gemensam-bilaga.staging.test.ts (TASK-452) skapar sina två sentinel-anmälningar med Resends KANONISKA testadress delivered@resend.dev (RESEND_TEST_ADDRESSES, _shared/send-bulk.ts) — den enda adressform icke-prod-spärren tillåter EF:en att faktiskt dispatcha mot. Adressen matchar VARKEN create-registration-sentinelerns FIND('create-test+',…)-formel eller dess UUID-krävande exakt-mönster, så registrering i ägar-manifestet ENSAMT räcker inte: filterByFormula filtrerar server-side, innan klienten någonsin ser raden. Denna target är EXAKT-LITERAL (ingen wildcard) på den kanoniska adressen — smal med avsikt, så ingenting annat än CI:s (eller ett manuellt Resend-smoke-test) egna delivered@resend.dev-rader kan träffas.",
+      "filterByFormula": "{E-post} = 'delivered@resend.dev'",
+      "exactMatchField": "E-post",
+      "exactMatchPattern": "^delivered@resend\\.dev$",
+      "linkGuard": false
+    },
+    {
       "name": "create-event-sentineler",
       "table": "Eventplanering",
       "filterByFormula": "{Ort} = 'ZZ-create-event-test'",

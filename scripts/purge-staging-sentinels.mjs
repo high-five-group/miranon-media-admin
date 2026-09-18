@@ -363,6 +363,46 @@ export function storstaGruppen(grupper) {
 }
 
 /**
+ * [TASK-465 granskning runda 1, INFO 3] Escapening för GitHub Actions
+ * workflow-commands (`::warning …::…`), per förstapartsdokumentationen
+ * (actions/toolkit `docs/commands.md`): PROPERTY-värden (t.ex. `title=`)
+ * kräver `%`/CR/LF/`:`/`,` escapade, DATA (meddelandet efter `::`) bara
+ * `%`/CR/LF. De två är medvetet OLIKA funktioner — en `:` eller `,` i
+ * meddelandetexten ska inte procent-kodas, bara i en property.
+ */
+function escapeActionsProperty(value) {
+  return String(value)
+    .replace(/%/g, '%25')
+    .replace(/\r/g, '%0D')
+    .replace(/\n/g, '%0A')
+    .replace(/:/g, '%3A')
+    .replace(/,/g, '%2C');
+}
+
+function escapeActionsData(value) {
+  return String(value).replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
+}
+
+/**
+ * [TASK-465 granskning runda 1, INFO 3] Bygger en GitHub Actions
+ * `::warning::`-annotation för återfalls-vakten. REN funktion (ingen I/O) —
+ * testbar utan att fånga stdout, och anropas bara av loggaGruppVakt när
+ * BÅDE `GITHUB_ACTIONS === 'true'` och tröskeln är passerad. Syns i
+ * körningens sammanfattning (Actions-fliken) utan att någon behöver läsa
+ * hela jobb-loggen — noll nya nätverksanrop, noll nytt jobb.
+ */
+export function buildActionsWarningAnnotation(targetName, watchGroupField, storst, tak) {
+  const title = escapeActionsProperty(`Återfalls-vakt: ${targetName}`);
+  const message = escapeActionsData(
+    `${watchGroupField}="${storst.id}" bär ${storst.antal} poster — över varningströskeln ${tak}. ` +
+      'Samma tillväxtmönster orsakade TASK-465s "Request context disposed"-flake. Kontrollera att ' +
+      'alla staging-sviter som skapar poster på detta target registrerar dem i ägar-manifestet ' +
+      '(tests/support/kastbara-poster.ts).',
+  );
+  return `::warning title=${title}::${message}`;
+}
+
+/**
  * Loggar återfalls-vakten för ETT target — no-op om policyn inte satt
  * `watchGroupField` för det targetet (de allra flesta targets bär ingen).
  * Returnerar `true` om tröskeln (`watchWarnThreshold`) överskreds, annars
@@ -391,6 +431,15 @@ export function loggaGruppVakt(target, records) {
         'alla staging-sviter som skapar poster på detta target registrerar dem i ' +
         'ägar-manifestet (tests/support/kastbara-poster.ts).',
     );
+    // [TASK-465 granskning runda 1, INFO 3] I CI: skriv ÄVEN en synlig
+    // ::warning::-annotation, så larmet syns i körningens sammanfattning
+    // utan att någon läser jobb-loggen. GITHUB_ACTIONS sätts bara av
+    // GitHubs egen runner (samma signal som staging-preflighten redan
+    // litar på, se scripts/lib/staging-preflight.mjs) — noll nya anrop,
+    // noll nytt jobb.
+    if (process.env.GITHUB_ACTIONS === 'true') {
+      console.log(buildActionsWarningAnnotation(target.name, target.watchGroupField, storst, tak));
+    }
   }
   return overTak;
 }
