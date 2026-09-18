@@ -601,6 +601,19 @@ beroendeträdet SKIPPAR `audit` helt (ingen runner startar) och `CI Passed or
 Skipped` förblir grön ändå (`skipped` är varken `failure` eller `cancelled`
 i aggregatorns fail-closed-logik).
 
+**Amendering samma dag — review-grindens runda 1 (risk medel) utökade
+triggern till att även omfatta GRANSKNINGSMEKANISMEN själv.** Utan det kunde
+en försvagning av granskningen (ett mjukat villkor, en sänkt tröskel i
+degraderingsskriptet, ett kringgånget test) landa utan en enda live-körning
+mot ett riktigt träd — exakt den ändringen rör per definition inte
+beroendeträdet. `changed-deps`-steget i `ci.yml` (den ENDA kanoniska listan
+— den återges inte här, se steget) vaktar sedan denna amendering även
+degraderingsskriptet, dess testsvit och de workflow-filer som bär
+`audit`-jobbets `if:`/`run:`. Denna ADR:s ursprungliga fyra invarianter
+((i)–(iv) ovan) står oförändrade — amenderingen vidgar VILKA ändringar som
+räknas som "rör beroendeträdet", den ändrar inget av vad som händer när
+jobbet väl kör.
+
 **Spårbarhet:**
 
 - Kort: `TASK-450.5` (K1(b)), beroende av `TASK-450.1` (N2, `a046d29c`)
