@@ -12,11 +12,13 @@ import { HEM_SENASTE_AKTIVITET_ANTAL, queryKeys } from '@/queries/keys';
  * här. Körs EN gång per auth-resolution (ADR-112 beslut 5), triggad av
  * `InnerApp` (`src/main.tsx`) EFTER både `auth.isLoading === false` och
  * `PersistQueryClientProvider`s `onSuccess` — den ordningen ägs av 218.3,
- * inte av denna modul. ENDA sidoeffekten utöver datahämtningarna själva
- * (task-240, OBSERVABILITY): `avgorMed('timeout')` rapporterar via
- * `Sentry.captureMessage` (repots redan etablerade, enda observability-yta
- * — `src/observability/sentry.ts`) när gaten löste ut med `klara < totalt`.
- * Ren mätning, ingen UI, inget nytt tredjepartsberoende.
+ * inte av denna modul. Sidoeffekterna utöver datahämtningarna själva är
+ * TVÅ Sentry-rapporter (`src/observability/sentry.ts`, repots redan
+ * etablerade enda observability-yta), båda avgjorda i `avgorMed()`:
+ * (task-240) `klara < totalt` vid timeout — tagg `timeout-partial`, ORÖRD
+ * mätserie; (TASK-451.2) `misslyckade > 0` oavsett avgörandegrund — tagg
+ * `delvis-fel`, se § "Äkta settled- vs lyckad-räkning" nedan. Ren mätning,
+ * ingen UI, inget nytt tredjepartsberoende.
  *
  * `dataSource` är ett OBLIGATORISKT injicerat beroende (`starta(qc,
  * { dataSource })`), INTE ett modul-scope statiskt importerat singleton —
@@ -106,6 +108,29 @@ import { HEM_SENASTE_AKTIVITET_ANTAL, queryKeys } from '@/queries/keys';
  * användares kallstart, med ett straff (30–60 s lockout) som är mycket
  * dyrare än vinsten. Batchas därför i grupper om `BATCH_SIZE` (2) med
  * `await` mellan grupperna.
+ *
+ * ## Äkta settled- vs lyckad-räkning (TASK-451.2, diagnoskartan
+ * `docs/research/kallstarten-diagnoskarta-2026-09-18.md` § 1.4/§ 2.3)
+ *
+ * `klara` räknade FRÅN BÖRJAN (task-218.1) SETTLADE hämtningar — lyckade
+ * OCH misslyckade, ökat i `.finally()` — inte bara lyckade. Det var en
+ * MEDVETEN designpunkt för barens skull (Förberedelseskärmens bar ska nå
+ * 100 % när motorn är klar, oavsett om varje enskild datamängd faktiskt
+ * cachades — annars fryser baren på en enskild EF:s fel). Den outtalade
+ * PREMISSEN i ADR-112 beslut 1/3 var däremot att `klara === totalt` skulle
+ * betyda att data FANNS — vilket inte stämde: en startvärmning där SAMTLIGA
+ * sju hämtningar fallerade gick igenom identiskt med en där alla sju
+ * lyckades (`utfall: 'klar'`, `klara: 7 av 7`), och den enda befintliga
+ * observability-kanalen (nedan, task-240) fyrar ENDAST vid timeout — noll
+ * spår lämnades för detta, det vanligaste felfallet.
+ *
+ * Löst genom att räkna BÅDA: `lyckade`/`misslyckade` bärs separat i
+ * `StartvarmningForlopp`, `klara`/`totalt` behåller OFÖRÄNDRAT sin roll som
+ * barens drivning. `StartvarmningUtfall` skiljer numera `'klar'` (samtliga
+ * lyckades) från `'klar-ofullstandig'` (samtliga settlade, men minst en
+ * misslyckades) — se typens egen JSDoc. En andra, separat Sentry-varning
+ * (tagg `delvis-fel`, ORÖRD från den befintliga `timeout-partial`-mätserien)
+ * fyrar närhelst `misslyckade > 0`, oavsett avgörandegrund.
  */
 
 /** Se § "Hård timeout" ovan — mittpunkt av ADR-112:s 8–10 s-fönster. */
@@ -162,20 +187,33 @@ export const STALL_THRESHOLD_MS = 3000;
  * importera UI) och BÅDA konsumenterna importerar samma export.
  */
 
-/** Se filhuvudets § "Äkta settled-räkning". */
+/**
+ * Se filhuvudets § "Äkta settled- vs lyckad-räkning" (TASK-451.2).
+ * `klara`/`totalt` — SETTLADE hämtningar (lyckade + misslyckade), driver
+ * Förberedelseskärmens bar och når alltid `totalt` vid avslut.
+ * `lyckade`/`misslyckade` — VAD som hände: `lyckade` cachade faktiskt data,
+ * `misslyckade` kastade (nätverksfel, 4xx/5xx, ...). Alltid
+ * `lyckade + misslyckade === klara`.
+ */
 export interface StartvarmningForlopp {
   klara: number;
   totalt: number;
+  lyckade: number;
+  misslyckade: number;
 }
 
 /**
- * `klar` — samtliga datamängder settlade (var för sig lyckade eller
- * misslyckade, se `Promise.allSettled`) inom tidsfönstret.
+ * `klar` — samtliga datamängder settlade OCH samtliga LYCKADES (cachade
+ * data) inom tidsfönstret.
+ * `klar-ofullstandig` — samtliga datamängder settlade, men MINST EN
+ * misslyckades (TASK-451.2: den blinda fläcken där "alla sju fallerar"
+ * annars gick igenom identiskt med "alla sju lyckades"). `forlopp.lyckade`
+ * bär hur många som faktiskt cachade något — kan vara 0.
  * `offline` — enheten var offline VID START; noll hämtningar startades.
  * `timeout` — hård timeout löste ut innan alla datamängder settlat;
- * `forlopp.klara` bär hur många som hann bli klara.
+ * `forlopp.klara` bär hur många som hann bli klara (oavsett lyckad/misslyckad).
  */
-export type StartvarmningUtfall = 'klar' | 'offline' | 'timeout';
+export type StartvarmningUtfall = 'klar' | 'klar-ofullstandig' | 'offline' | 'timeout';
 
 export interface StartvarmningResultat {
   utfall: StartvarmningUtfall;
@@ -381,16 +419,25 @@ export function starta(qc: QueryClient, beroenden: StartvarmningBeroenden): Star
 
   const totalt = WARMUP_ITEMS.length;
   let klara = 0;
+  let lyckade = 0;
+  let misslyckade = 0;
+  // Diagnostik-etiketter (item.namn) — ALDRIG användarvänd text, inga
+  // personuppgifter. Bärs bara vidare till Sentrys `extra` (AC #3).
+  const misslyckadeNamn: string[] = [];
   const lyssnare = new Set<(forlopp: StartvarmningForlopp) => void>();
 
+  function snapshot(): StartvarmningForlopp {
+    return { klara, totalt, lyckade, misslyckade };
+  }
+
   function emit(): void {
-    const snapshot: StartvarmningForlopp = { klara, totalt };
-    for (const l of lyssnare) l(snapshot);
+    const nu = snapshot();
+    for (const l of lyssnare) l(nu);
   }
 
   function forloppsprenumeration(lyssnarFn: (forlopp: StartvarmningForlopp) => void): () => void {
     lyssnare.add(lyssnarFn);
-    lyssnarFn({ klara, totalt }); // omedelbart snapshot, se JSDoc ovan
+    lyssnarFn(snapshot()); // omedelbart snapshot, se JSDoc ovan
     return () => {
       lyssnare.delete(lyssnarFn);
     };
@@ -401,7 +448,7 @@ export function starta(qc: QueryClient, beroenden: StartvarmningBeroenden): Star
   if (!isOnline()) {
     const resultat: StartvarmningResultat = {
       utfall: 'offline',
-      forlopp: { klara: 0, totalt },
+      forlopp: { klara: 0, totalt, lyckade: 0, misslyckade: 0 },
     };
     return { forloppsprenumeration, slutlofte: Promise.resolve(resultat) };
   }
@@ -411,10 +458,26 @@ export function starta(qc: QueryClient, beroenden: StartvarmningBeroenden): Star
       const batch = WARMUP_ITEMS.slice(i, i + BATCH_SIZE);
       await Promise.allSettled(
         batch.map((item) =>
-          item.kor({ qc, ds }).finally(() => {
-            klara += 1;
-            emit();
-          }),
+          item
+            .kor({ qc, ds })
+            .then(
+              () => {
+                lyckade += 1;
+              },
+              () => {
+                // TASK-451.2 — se filhuvudets § "Äkta settled- vs
+                // lyckad-räkning". Ett kastat item räknas ALDRIG som
+                // lyckat, men settlar (och räknas i `klara`) precis som
+                // ett lyckat — `Promise.allSettled` ovan fångar felet,
+                // så en trasig datamängd sänker aldrig resten.
+                misslyckade += 1;
+                misslyckadeNamn.push(item.namn);
+              },
+            )
+            .finally(() => {
+              klara += 1;
+              emit();
+            }),
         ),
       );
     }
@@ -422,25 +485,46 @@ export function starta(qc: QueryClient, beroenden: StartvarmningBeroenden): Star
 
   const slutlofte = new Promise<StartvarmningResultat>((resolve) => {
     let avgjort = false;
-    const avgorMed = (utfall: StartvarmningUtfall): void => {
+    // `bas`: VARFÖR avgörandet sker (timern, eller "alla settlade") —
+    // inte längre det slutliga `StartvarmningUtfall`, se nedan.
+    const avgorMed = (bas: 'klar' | 'timeout'): void => {
       if (avgjort) return;
       avgjort = true;
-      // OBSERVABILITY (task-240, Marcus-beslut 2026-08-17): ADR-112 beslut
+      // OBSERVABILITY 1 (task-240, Marcus-beslut 2026-08-17): ADR-112 beslut
       // 3:s hårda timeout löste ut med ett PARTIELLT klara-värde — samma
       // etablerade fail-open-mönster som glomt-losenord.tsx/valkommen.tsx
       // (Sentry.captureMessage, level 'warning', ingen ny observability-yta
       // införd — Sentry är redan repots enda, se src/observability/sentry.ts).
       // Ren mätning: ändrar inget om SLUTLÖFTETS eget kontrakt ("kastar
       // ALDRIG", filhuvudets § "slutlöfte kastar aldrig") — resolve() nedan
-      // körs oavsett.
-      if (utfall === 'timeout' && klara < totalt) {
+      // körs oavsett. ORÖRD mätserie, tagg och villkor oförändrade av TASK-451.2.
+      if (bas === 'timeout' && klara < totalt) {
         Sentry.captureMessage('Startvärmningen nådde hård timeout innan alla datamängder klara', {
           level: 'warning',
           tags: { warmup: 'timeout-partial' },
           extra: { klara, totalt, timeoutMs },
         });
       }
-      resolve({ utfall, forlopp: { klara, totalt } });
+      // OBSERVABILITY 2 (TASK-451.2, AC #3 — diagnoskartan § 2.3/§ 6 punkt
+      // 2–3): minst en hämtning MISSLYCKADES, oavsett om avgörandet kom via
+      // timeout eller "alla settlade". Egen tagg, egen mätserie — separat
+      // från timeout-partial ovan, eftersom detta mäter FEL-INNEHÅLL, inte
+      // ofullständighet. Item-namnen är interna diagnostik-etiketter
+      // (WarmupItem.namn — se typens JSDoc), aldrig användarvänd text eller
+      // personuppgifter.
+      if (misslyckade > 0) {
+        Sentry.captureMessage('Startvärmningen avslutades med minst en misslyckad hämtning', {
+          level: 'warning',
+          tags: { warmup: 'delvis-fel' },
+          extra: { lyckade, misslyckade, totalt, misslyckadeNamn: [...misslyckadeNamn] },
+        });
+      }
+      // Det SLUTLIGA utfallet: 'timeout' oförändrat; annars skiljer vi
+      // 'klar' (samtliga lyckades) från 'klar-ofullstandig' (samtliga
+      // settlade, men minst en misslyckades) — se StartvarmningUtfalls JSDoc.
+      const utfall: StartvarmningUtfall =
+        bas === 'timeout' ? 'timeout' : lyckade === totalt ? 'klar' : 'klar-ofullstandig';
+      resolve({ utfall, forlopp: snapshot() });
     };
 
     const timer = setTimeout(() => avgorMed('timeout'), timeoutMs);

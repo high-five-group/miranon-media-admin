@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-09-06
+updated: 2026-09-18
 review_by: 2027-01-02
 status: stable
 ---
@@ -508,7 +508,11 @@ logotyp längre synlig. Den Marcus-låsta texten "Förbereder ditt
 administrationsverktyg" finns kvar i DOM:en (progressbarens tillgängliga
 namn) men är sr-only, inte längre visuellt synlig. Visas ALDRIG vid varm
 start (tyst väg), aldrig offline; timeout ~8–10 s släpper tyst.
-Appnivå-instansen av Laddtrappans steg 3.
+Appnivå-instansen av Laddtrappans steg 3. "Klara" i "X av N hämtningar
+klara" räknar SETTLADE hämtningar (lyckade OCH misslyckade), inte bara
+lyckade — baren når alltid 100 % vid avslut, oavsett om datan faktiskt
+cachades (TASK-451.2, ADR-112 § Updates 2026-09-18; startvärmningens egna
+utfall skiljer 'klar' från 'klar-ofullstandig' för den distinktionen).
 *Undvik:* "splash"/"splash-skärm" i användarvänd text och dokumentation —
 Förberedelseskärmen är det kanoniska namnet ("splash" är okej som
 engelskt branschbegrepp i research-citat).

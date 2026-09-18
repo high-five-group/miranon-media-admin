@@ -461,6 +461,17 @@ jobs:
   # ADR-080 beslut 3: VILLKOR för acceptance-klassens existens, inte
   # förhandlingsbart — och oförändrat av att beviset flyttat hit.
   #
+  # LÄS JOBBNAMNET BOKSTAVLIGT (runda 2-fynd, TASK-366, pre-existerande men
+  # värt att skriva ut sedan delningen): "tvåsidigt bevis" beskriver SKRIPTETS
+  # två lägen, inte vad CI kör. CI kör bara den POSITIVA sidan. Den negativa
+  # kontrollen (`npm run test:acceptance:sjalvtest:negativ`, som kör UTAN
+  # självtestläget och kräver att bedömningen FALLER) finns enbart i
+  # package.json och anropas av INGEN workflow — verifierat 2026-09-18:
+  # `grep -rn 'sjalvtest:negativ' .github/workflows/` ger noll träffar. Den är
+  # alltså en lokal körning, inte en CI-grind, och ett grönt jobb här bevisar
+  # inte att grinden kan fälla. Att CI-wira den är kandidat till eget kort
+  # (registrerat i PR #2524:s kropp) — den byggs INTE i denna skiva.
+  #
   # ═══ VARFÖR ETT EGET JOBB SEDAN TASK-239 (2026-08-17) ═══
   #
   # Beviset var ett STEG i `acceptance`, efter den skarpa sviten. Den formen
@@ -533,7 +544,34 @@ jobs:
     # --json jobs`). 20 min ≈ 2× typisk körtid — branschpraxis-headroom, ingen
     # ny mätserie. Uppföljningskort (per-fil-mätning + delningsförslag):
     # se backlog-kortet skapat i samma PR.
+    #
+    # ═══ TASK-366 (2026-09-18) — UPPFÖLJNINGSKORTET BETALAT, TAKET ORÖRT ═══
+    #
+    # Kortet ovan är TASK-366, och dess AC #1 kräver >2 min marginal UTAN
+    # takhöjning. Delningen nedan levererar den: jobbet körde hela klassen
+    # sekventiellt i EN process medan `acceptance` sedan TASK-239 varv 3 kör
+    # tre shards, vilket gjorde självtestet CI:s kritiska väg (leverabel 9 i
+    # docs/research/ci-djupgranskning-2026-09-17/: 12,8–13,7 min av en total
+    # på 13,6–14,0 — 92–98 % av väntetiden, betald på två ytor i följd).
+    #
+    # TALET 20 LIGGER KVAR, OCH DET ÄR ETT VAL. Efter delningen mäter taket
+    # EN skärva i stället för hela klassen, så marginalen växer med
+    # delningsfaktorn utan att en siffra rörs — samma form som task-239 AC #2
+    # krävde två varv i rad. En SÄNKNING vore försvarbar av samma symmetri-skäl
+    # som satte 12 på `acceptance` (samma längd, samma tak), men underlaget är
+    # ännu EN körning: se PR-kroppen för den första skarpa per-shard-mätningen.
+    # Ett tak som sänks på en mätpunkt är ett skyddsnät kalibrerat mot brus.
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      # SAMMA VILLKORSFORM SOM `acceptance` OVAN, och det är ingen slump:
+      # beviset ska följa den skarpa svitens topologi, annars blir det jobbets
+      # nya kritiska väg igen. Tom urval (post-merge/nightly/merge_group — full
+      # klass) ⇒ 3 shards. Satt urval (PR-ytans delmängd, redan snabb) ⇒ 1
+      # shard, oförändrat beteende. Se `acceptance`-jobbets kommentar för hela
+      # härledningen av talet 3 och av varför `--shard` splittrar på FIL-gräns.
+      matrix:
+        shard: ${{ fromJson(inputs.acceptance_selection == '' && '[1,2,3]' || '[1]') }}
     permissions:
       contents: read
     steps:
@@ -564,33 +602,256 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install chromium
 
+      # SHARD-VARIABLERNA, samma form och samma skäl som `acceptance`-jobbet:
+      # `strategy.job-total` (inte ett hårdkodat tal) håller nämnaren i
+      # `--shard=I/N` i synk med matrisens FAKTISKA storlek, så att ändra
+      # matris-uttrycket är den enda ändring en omkonfigurering kräver.
+      #
+      # `--tackning` ÄR INTE VALFRI I CI (TASK-366). Utan den skriver skärvan
+      # ingen rapport, och jobbet `acceptance-sjalvtest-tackning` nedan fäller
+      # på en saknad skärva. Det är avsiktligt fail-closed: en delning utan
+      # täckningskontroll är en delning som tyst kan tappa en tredjedel av
+      # beviset. Rapporten går till `test-results/` (gitignorad) så att en
+      # LOKAL paritetskörning — där `matrix.shard`/`strategy.job-total`
+      # substitueras till `1`/`1` — inte lämnar en otrackad fil i arbetsträdet.
       - name: Acceptance-klassens tvåsidiga bevis (hermetik-självtest)
         env:
           ACCEPTANCE_URVAL: ${{ inputs.acceptance_selection }}
+          ACCEPTANCE_SHARD_INDEX: ${{ matrix.shard }}
+          ACCEPTANCE_SHARD_TOTAL: ${{ strategy.job-total }}
         run: |
           set -euo pipefail
+          tackning="test-results/hermetik-tackning-${ACCEPTANCE_SHARD_INDEX}.json"
           if [ -n "${ACCEPTANCE_URVAL}" ]; then
             read -r -a urval <<< "${ACCEPTANCE_URVAL}"
-            npm run test:acceptance:sjalvtest -- "${urval[@]}"
+            npm run test:acceptance:sjalvtest -- \
+              "--shard=${ACCEPTANCE_SHARD_INDEX}/${ACCEPTANCE_SHARD_TOTAL}" \
+              "--tackning=${tackning}" "${urval[@]}"
           else
-            npm run test:acceptance:sjalvtest
+            npm run test:acceptance:sjalvtest -- \
+              "--shard=${ACCEPTANCE_SHARD_INDEX}/${ACCEPTANCE_SHARD_TOTAL}" \
+              "--tackning=${tackning}"
           fi
+
+      # KÖR ÄVEN NÄR BEVISET FALLER (TASK-366): rapporten skrivs FÖRE skriptets
+      # egen dom (se hermetik-sjalvtest.mjs), så en skärva som faller på sitt
+      # eget bevis har ändå ett tal att lämna. Summasteget kan då säga VILKEN
+      # skärva som inte gick ihop i stället för bara att en saknas. En skärva som
+      # dödas av taket hinner aldrig hit — och det är precis vad summasteget ska
+      # fälla på.
+      #
+      # `always()` OCH INTE `!cancelled()` — granskningen (runda 2) bad
+      # uttryckligen om en bedömning av just detta steg, så här är den.
+      #
+      # Detta är STEG-nivå, och där är `cancelled()` JOBB-scopad: `actions/
+      # runner`s `CancelledFunction.cs` returnerar `JobContext.Status ==
+      # Cancelled`. `!cancelled()` hade alltså hoppat över uppladdningen när
+      # skärvan dödas av sitt eget tak — vilket är motsatsen till vad raden
+      # finns för. (Det är samma semantik som TASK-237-mönstret på
+      # artefaktsteget nedan bygger på, och den stämmer.)
+      #
+      # Fönstret är smalt men verkligt: rapporten skrivs SIST i skriptet, så en
+      # takdödad skärva har oftast inte hunnit skriva den — men har den det, ska
+      # den med. GitHubs [!WARNING] mot `always()` gäller inte här: den handlar
+      # om "getting sources", och detta steg gör ingen checkout.
+      #
+      # ARTEFAKTNAMNET BÄR INTE `run_attempt` — läs det innan du kör om. En
+      # "Re-run failed jobs" kör bara de fällda skärvorna; de gröna laddar inte
+      # upp på nytt, men deras artefakter från försök 1 ligger kvar under samma
+      # namn, så täckningsjobbet kan se en BLANDNING av försök. Utfallet är
+      # fail-closed (en saknad eller inkonsistent rapport ⇒ rött, aldrig grönt),
+      # men ett falskt rött i kön kostar en konsumerad armering. **Kör om som
+      # "Re-run all jobs", inte "Re-run failed jobs".** Att i stället lägga
+      # `${{ github.run_attempt }}` i namnet är den mekaniska fixen; den är
+      # OPRÖVAD här och kräver en avsiktlig omkörning för att mätas.
+      - name: Ladda upp skärvans täckningsrapport
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: hermetik-tackning-${{ matrix.shard }}
+          path: test-results/hermetik-tackning-${{ matrix.shard }}.json
+          retention-days: 7
+          if-no-files-found: ignore
 
       # EGET artefaktnamn, inte `acceptance`-jobbets: `upload-artifact@v4+`
       # avvisar två uppladdningar med samma namn i samma körning, och efter
-      # delningen kan båda jobben vara röda samtidigt. `failure() ||
-      # cancelled()` av samma skäl som överallt annars (TASK-237): utan
-      # `cancelled()` lämnar en takfällning noll spår.
+      # delningen kan båda jobben vara röda samtidigt. Namnet bär sedan
+      # TASK-366 ÄVEN shard-index, av exakt samma skäl som `acceptance`-jobbets
+      # gör det sedan varv 3: tre matrix-jobb med ett gemensamt namn hade
+      # kollaterat på den andra uppladdningen. `failure() || cancelled()` av
+      # samma skäl som överallt annars (TASK-237): utan `cancelled()` lämnar en
+      # takfällning noll spår.
       - name: Ladda upp Playwright-artefakter vid rött
         if: failure() || cancelled()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
-          name: playwright-acceptance-sjalvtest-artefakter
+          name: playwright-acceptance-sjalvtest-artefakter-${{ matrix.shard }}
           path: |
             test-results/
             playwright-report/
           retention-days: 7
           if-no-files-found: ignore
+
+  # ═══ TÄCKNINGSKONTROLLEN (TASK-366 / N6) ═══
+  #
+  # VARFÖR JOBBET FINNS. Hermetik-självtestets dom är fail-closed på tomhet —
+  # "noll tester kördes, en tom svit bevisar ingenting". Den spärren räcker så
+  # länge beviset körs i EN process över hela klassen. Delas det i skärvor är
+  # varje skärva för sig icke-tom, så spärren säger grönt i var och en av dem
+  # även när de TILLSAMMANS inte täckte klassen: faller ett skärv-jobb bort,
+  # kommer dess artefakt inte fram, eller matchar ett filter fel, blir summan
+  # mindre än klassen utan att någon dom märker det.
+  #
+  # Ett tvåsidigt bevis som delas i tre är inte längre ett bevis om summan inte
+  # kontrolleras. Kontrollen byggdes därför FÖRE delningen, i samma
+  # ändringsförslag (Marcus-beslut via PRD TASK-450) — inte efteråt, när
+  # frestelsen att lita på att det nog gick bra är som störst.
+  #
+  # VARFÖR ETT EGET JOBB. En skärva kan per konstruktion inte se de andra. Den
+  # enda punkt där de tre domarna finns samtidigt är EFTER matrisen. Jobbet är
+  # medvetet billigt: varken `npm ci` eller Playwright, eftersom varje skärva
+  # redan mätt både sitt prövade antal och klassens listade antal (`--list`,
+  # ~3 s, se hermetik-sjalvtest.mjs § RÄKNESÄTTET). Här återstår aritmetik.
+  #
+  # VARFÖR DET BLOCKERAR. Jobbet ligger i den ANROPADE workflowen, så det når
+  # paraplyet (`ci.yml`s `ci-passed`) via anropar-jobbet `suite` — inte via en
+  # egen post i `ci-passed.needs`. Att ett rött jobb här gör `needs.suite.result`
+  # till `failure` är MÄTT, inte antaget: run 35218388387 (2026-09-17) där
+  # `Test suite / Acceptance (hermetisk) (3)` föll ensamt och `ci-passed`s egen
+  # `toJSON(needs)`-dump loggade `suite: failure` → `CI Passed or Skipped`
+  # failure. Samma mönster i 14 av 14 körningar med minst ett rött suite-barn i
+  # fönstret 2026-09-14→18, noll motexempel.
+  acceptance-sjalvtest-tackning:
+    name: Acceptance — självtestets täckning (summa över skärvor)
+    needs: [acceptance-sjalvtest]
+    # `always()` OCH INTE default-beteendet, som är hela poängen: utan det
+    # SKIPPAS detta jobb så fort en skärva faller eller dödas av taket — och en
+    # skippad post räknas som "skipped-by-design", alltså GRÖN, av `ci-passed`s
+    # fail-closed-logik. Kontrollen ska FÄLLA när en skärva uteblir, inte tystna.
+    #
+    # ═══ VARFÖR INTE `!cancelled()`, SOM GITHUB REKOMMENDERAR ═══
+    #
+    # Frågan restes i granskningen (TASK-366 runda 2) med GitHubs egen
+    # [!WARNING] mot `always()` för "any task that could suffer from a critical
+    # failure, for example: getting sources" — och detta jobb HAR checkout som
+    # första steg, alltså dokumentationens eget exempel. Invändningen är riktig
+    # och prövades; `always()` står kvar ändå, av fail-closed-skäl, inte av
+    # bekvämlighet.
+    #
+    # FÖRST DET SOM MÄTTES, eftersom repot bar två motstridiga påståenden:
+    # `purge-efter` nedan hävdar i sin kommentar att "`!cancelled()` hade
+    # hoppat över den vid en takfällning". Det är FALSKT som mekanism, och nu
+    # mätt i vårt EGET repo: körning 25845701660 (2026-05-14) hade `Test +
+    # Build` `cancelled` på sitt eget tak (10m15s mot `timeout-minutes: 10`)
+    # medan `ci-passed`, som då bar `if: ${{ !cancelled() && !failure() }}`,
+    # KÖRDE och blev `success` tre sekunder senare. Förstaparts-källkoden
+    # försonar motsägelsen: `actions/runner`s `CancelledFunction.cs` läser
+    # `JobContext.Status`, så STEG inuti ett takdödat jobb ser `cancelled()`
+    # sant (det är TASK-237-mönstret, och det stämmer) — medan JOBB-`if:`
+    # utvärderas server-sidigt och inte gör det.
+    #
+    # `!cancelled()` skulle alltså fungera i DAG. Skälet att välja `always()`
+    # ändå är att den semantiken är ODOKUMENTERAD — docs säger bara "Returns
+    # true if the workflow was canceled" och utfäster ingenting om nedströms
+    # jobb. Community-diskussion #174377 är dessutom en aktiv, obesvarad begäran
+    # om att göra `cancelled()` jobb-scopad OCH ancestor-medveten — exakt den
+    # ändring som TYST skulle få `!cancelled()` att börja skippa detta jobb vid
+    # en takfällning. Och ett skippat jobb är GRÖNT hos oss, alltså fail-OPEN:
+    # samma klass som S77-hålet `ci-passed` självt bär `always()` för att
+    # stänga. En grind vars skydd kan försvinna genom en leverantörsändring vi
+    # inte får veta om är inte ett skydd.
+    #
+    # `success() || failure()` prövades också och är DISKVALIFICERAD: samma
+    # mätning visar att `failure()` är FALSKT när uppströms är `cancelled`, så
+    # den formen hade skippat jobbet vid just en takfällning.
+    #
+    # [!WARNING]-risken är buren, inte ignorerad: jobbet har
+    # `timeout-minutes: 5`, kör varken `npm ci` eller Playwright, och serverns
+    # forcerade terminering efter 5 minuters cancellation-timeout bounder samma
+    # sak. Kostnaden vid en äkta workflow-cancellation är en billig runner-minut
+    # på en körning som ändå inte kan landa.
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      # INGEN `cache: 'npm'`: jobbet kör aldrig `npm ci`. Skriptet nedan är ren
+      # Node utan beroenden — en cache-restore hade varit ren väggklocka.
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+        with:
+          node-version-file: '.nvmrc'
+
+      # FÖRSTA FÖRSVARSLINJEN, och den som skiljer orsakerna åt. En skärva som
+      # föll på sitt EGET bevis, eller dödades av taket, ska ge det beskedet —
+      # inte "täckningen håller inte", som hade pekat läsaren mot fel fil.
+      #
+      # LÄS VAD DEN ÄR OCH INTE ÄR (ADR-083, runda 2-fynd). Steget läser
+      # `needs.acceptance-sjalvtest.result` och kräver `success`. Att det fältet
+      # AGGREGERAR över en MATRIS — alltså blir något annat än `success` när en
+      # av tre skärvor faller — utfäster GitHub INGENSTANS: hela `github/docs`
+      # bär exakt EN förekomst av `needs.<job_id>.result`, en tabellrad som bara
+      # räknar upp värdemängden (success/failure/cancelled/skipped), och
+      # matris-how-to:n nämner fältet noll gånger. Detta är dessutom repots
+      # FÖRSTA `needs`-beroende mot ett matrisjobb, så ingen intern instans
+      # finns heller. Den ENDA grenen som faktiskt mätts är `success` (PR-körning
+      # 35334687514 + 35335750664).
+      #
+      # Därför: detta steg ger BESKED, det är inte spärren. Spärren är SUMMAN
+      # nedan, som inte läser `needs` alls. Skulle aggregeringen inte fungera
+      # som antagen gör den fällda skärvan ändå `suite` rött på egen hand (mätt
+      # 14/14, se jobbets kommentar ovan), så ingen PR kan landa på detta —
+      # det som går förlorat vore beskedet, aldrig grinden.
+      - name: Kräv att varje skärva faktiskt kördes
+        env:
+          SKARVORNAS_RESULTAT: ${{ needs.acceptance-sjalvtest.result }}
+        run: |
+          set -euo pipefail
+          echo "acceptance-sjalvtest: ${SKARVORNAS_RESULTAT}"
+          if [ "${SKARVORNAS_RESULTAT}" != "success" ]; then
+            echo "❌ Minst en skärva av hermetik-självtestet är '${SKARVORNAS_RESULTAT}', inte 'success'."
+            echo "   Täckningen kan inte prövas mot en ofullständig matris — läs skärvans egen logg."
+            exit 1
+          fi
+
+      # `continue-on-error` HÄR ÄR BÄRANDE, inte slarv, och betyder INTE att en
+      # saknad artefakt släpps förbi: kommer rapporterna inte fram fäller
+      # skriptet nedan på "skärva N av M SAKNAS" — ett besked som pekar ut vad
+      # som hände. Utan flaggan hade download-actionens egna, generiska fel
+      # ersatt det. Fällningen är alltså kvar; bara ordvalet är vårt.
+      #
+      # SHA-PINNAD (TASK-366 runda 2), inte `@v8`. Repots disciplin är entydig
+      # — ci.yml § SHA-PINNADE FIRST-PARTY ACTIONS (TASK-312): "Flytande major
+      # är strukturellt samma svaghet som ett opinnat npx-anrop: en tagg
+      # leverantören kan flytta." Här biter den extra hårt: HELA täckningsdomen
+      # räknas ur just de filer denna action levererar, så den som kan flytta
+      # v8-taggen kan lägga tre påhittade rapporter som summerar till `listat`
+      # och få grinden grön. De opinnade anropen i test-staging/purge-efter är
+      # pre-existerande och ligger på jobb PR-ytan aldrig instansierar
+      # (`run_staging` villkorslöst false) — detta var det FÖRSTA på en yta som
+      # kör vid varje PR.
+      - name: Hämta skärvornas täckningsrapporter
+        continue-on-error: true
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
+        with:
+          pattern: hermetik-tackning-*
+          path: .hermetik-tackning
+
+      # ANDRA FÖRSVARSLINJEN: summan. `mkdir -p` i samma block gör att en helt
+      # utebliven nedladdning ger skriptets egen fail-closed-dom ("noll
+      # täckningsrapporter") i stället för exit 2 på en katalog som inte finns.
+      # Logiken bor i scripts/lib/hermetik-tackning.mjs och prövas tvåsidigt av
+      # scripts/test-hermetik-tackning.mjs (42 fall, wirad i ci.yml:s
+      # 'Test gatekeeper script suites').
+      - name: Kräv att skärvorna tillsammans täckte klassen
+        run: |
+          set -euo pipefail
+          mkdir -p .hermetik-tackning
+          node scripts/hermetik-tackning.mjs --katalog=.hermetik-tackning
 
   # Webbläsarbeteende — TASK-131, ADR-094. MUTEXFRITT och secret-fritt, samma
   # placeringsmotivering som Acceptance ovan: jobbet har ingen

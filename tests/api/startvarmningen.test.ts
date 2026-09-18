@@ -111,14 +111,14 @@ test.describe('Startvärmningsmotorn — online-gate (AC #2)', () => {
 
     expect(resultat).toEqual({
       utfall: 'offline',
-      forlopp: { klara: 0, totalt: WARMUP_SET_SIZE },
+      forlopp: { klara: 0, totalt: WARMUP_SET_SIZE, lyckade: 0, misslyckade: 0 },
     });
     // Ingen enda dataSource-metod fick anropas — inte ens startad-och-avbruten.
     for (const namn of Object.keys(anrop) as Array<keyof typeof anrop>) {
       expect(anrop[namn], `${namn} skulle inte ha anropats`).toBe(0);
     }
     // Prenumeranten fick sitt omedelbara snapshot innan slutlöftet ens hann lösas ut.
-    expect(snapshots[0]).toEqual({ klara: 0, totalt: WARMUP_SET_SIZE });
+    expect(snapshots[0]).toEqual({ klara: 0, totalt: WARMUP_SET_SIZE, lyckade: 0, misslyckade: 0 });
   });
 });
 
@@ -147,18 +147,28 @@ test.describe('Startvärmningsmotorn — äkta settled-räkning (AC #1)', () => 
 
     expect(resultat).toEqual({
       utfall: 'klar',
-      forlopp: { klara: WARMUP_SET_SIZE, totalt: WARMUP_SET_SIZE },
+      forlopp: {
+        klara: WARMUP_SET_SIZE,
+        totalt: WARMUP_SET_SIZE,
+        lyckade: WARMUP_SET_SIZE,
+        misslyckade: 0,
+      },
     });
 
     // Omedelbart snapshot (0) + en uppdatering per faktiskt avslut (7) = 8.
     expect(snapshots).toHaveLength(WARMUP_SET_SIZE + 1);
-    expect(snapshots[0]).toEqual({ klara: 0, totalt: WARMUP_SET_SIZE });
+    expect(snapshots[0]).toEqual({ klara: 0, totalt: WARMUP_SET_SIZE, lyckade: 0, misslyckade: 0 });
     // Strikt stigande, ett steg i taget, ingen skippad eller dubblerad räkning.
     for (let i = 1; i < snapshots.length; i++) {
       expect(snapshots[i].klara).toBe(snapshots[i - 1].klara + 1);
       expect(snapshots[i].totalt).toBe(WARMUP_SET_SIZE);
     }
-    expect(snapshots.at(-1)).toEqual({ klara: WARMUP_SET_SIZE, totalt: WARMUP_SET_SIZE });
+    expect(snapshots.at(-1)).toEqual({
+      klara: WARMUP_SET_SIZE,
+      totalt: WARMUP_SET_SIZE,
+      lyckade: WARMUP_SET_SIZE,
+      misslyckade: 0,
+    });
   });
 
   test('avprenumerering stoppar vidare uppdateringar', async () => {
@@ -175,7 +185,7 @@ test.describe('Startvärmningsmotorn — äkta settled-räkning (AC #1)', () => 
     // Bara det initiala snapshotet (givet vid prenumereringstillfället) — inga
     // efterföljande avslut nådde en lyssnare som redan lämnat.
     expect(snapshots).toHaveLength(1);
-    expect(snapshots[0]).toEqual({ klara: 0, totalt: WARMUP_SET_SIZE });
+    expect(snapshots[0]).toEqual({ klara: 0, totalt: WARMUP_SET_SIZE, lyckade: 0, misslyckade: 0 });
   });
 });
 
@@ -263,7 +273,12 @@ test.describe('Startvärmningsmotorn — hård timeout (ADR-112 beslut 3, AC #2)
     const forflutet = Date.now() - start;
 
     expect(resultat.utfall).toBe('timeout');
-    expect(resultat.forlopp).toEqual({ klara: WARMUP_SET_SIZE - 1, totalt: WARMUP_SET_SIZE });
+    expect(resultat.forlopp).toEqual({
+      klara: WARMUP_SET_SIZE - 1,
+      totalt: WARMUP_SET_SIZE,
+      lyckade: WARMUP_SET_SIZE - 1,
+      misslyckade: 0,
+    });
     expect(anrop.activityLog).toBe(1); // startad — bara aldrig avslutad
     // Släpptes runt timeoutMs, inte efter att ha väntat ut den hängande hämtningen.
     expect(forflutet).toBeLessThan(2000);
@@ -271,7 +286,7 @@ test.describe('Startvärmningsmotorn — hård timeout (ADR-112 beslut 3, AC #2)
 });
 
 test.describe('Startvärmningsmotorn — slutlöfte kastar aldrig', () => {
-  test('en avvisad hämtning räknas som settlad; slutlöfte resolvar ändå med utfall klar', async () => {
+  test('en avvisad hämtning räknas som settlad (inte lyckad) — utfall klar-ofullstandig (TASK-451.2)', async () => {
     const { ds } = stubDataSource({
       rejects: { maillog: new Error('EF nere, testfixtur') },
     });
@@ -283,12 +298,168 @@ test.describe('Startvärmningsmotorn — slutlöfte kastar aldrig', () => {
       timeoutMs: 5000,
     }).slutlofte;
 
+    // FÖRE TASK-451.2 var utfallet 'klar' här — identiskt med "alla lyckades".
+    // Nu skiljer utfallet 'klar' (samtliga lyckades) från 'klar-ofullstandig'
+    // (samtliga settlade, minst en misslyckades): den blinda fläcken
+    // diagnoskartan § 2.3 avtäckte.
     expect(resultat).toEqual({
-      utfall: 'klar',
-      forlopp: { klara: WARMUP_SET_SIZE, totalt: WARMUP_SET_SIZE },
+      utfall: 'klar-ofullstandig',
+      forlopp: {
+        klara: WARMUP_SET_SIZE,
+        totalt: WARMUP_SET_SIZE,
+        lyckade: WARMUP_SET_SIZE - 1,
+        misslyckade: 1,
+      },
     });
     // Den avvisade datamängdens nyckel förblir alltså oseedad — men resten
     // av startvärmningen sänks inte av det.
     expect(qc.getQueryData(queryKeys.maillog.all)).toBeUndefined();
   });
 });
+
+test.describe('Startvärmningsmotorn — lyckade vs misslyckade, fyra utfall (TASK-451.2, AC #1/#2)', () => {
+  // RÖTT-FÖRST (AC #1): mot koden FÖRE denna skiva resolvade detta scenario
+  // `{ utfall: 'klar', forlopp: { klara: 7, totalt: 7 } }` — IDENTISKT med
+  // "alla sju lyckades". `resultat.utfall` var `toBe('klar')`,
+  // `forlopp.lyckade`/`forlopp.misslyckade` existerade inte alls, och
+  // `qc.getQueryCache().getAll()` bar noll cachad data trots att förloppet
+  // sade "100 % klart". Detta test fälldes av den gamla koden och är grönt
+  // efter fixen — se PR-kroppens Rött-först-bevis för den faktiska
+  // före/efter-körningen.
+  test('scenario B — alla sju EF:er svarar fel ⇒ klar-ofullstandig, INGEN data cachad, baren ändå 100 % (rött-först)', async () => {
+    const { ds, anrop } = stubDataSource({
+      rejects: {
+        events: new Error('500, testfixtur'),
+        registrations: new Error('500, testfixtur'),
+        waitlist: new Error('500, testfixtur'),
+        intresserade: new Error('500, testfixtur'),
+        maillog: new Error('500, testfixtur'),
+        segment: new Error('500, testfixtur'),
+        activityLog: new Error('500, testfixtur'),
+      },
+    });
+    const qc = nyQueryClient();
+
+    const resultat = await starta(qc, {
+      dataSource: ds,
+      isOnline: () => true,
+      timeoutMs: 5000,
+    }).slutlofte;
+
+    // Utfallet avslöjar nu att INGET lyckades — den gamla koden kunde inte
+    // uttrycka detta (utfall var alltid 'klar' här).
+    expect(resultat.utfall).toBe('klar-ofullstandig');
+    // Baren (klara/totalt) når ändå 100 % — det är AVSIKTLIGT (§ AC #2:
+    // "barens procent bygger på avslutade, så den når slutet"), inte en kvarleva.
+    expect(resultat.forlopp).toEqual({
+      klara: WARMUP_SET_SIZE,
+      totalt: WARMUP_SET_SIZE,
+      lyckade: 0,
+      misslyckade: WARMUP_SET_SIZE,
+    });
+    // Samtliga sju anropades EN gång var (ingen dold retry-loop i motorn själv).
+    for (const namn of Object.keys(anrop) as Array<keyof typeof anrop>) {
+      expect(anrop[namn], `${namn} skulle ha anropats exakt en gång`).toBe(1);
+    }
+    // Den faktiska sanningen bakom "100 % klar": noll queries bär data.
+    const cachade = qc
+      .getQueryCache()
+      .getAll()
+      .filter((q) => q.state.data !== undefined).length;
+    expect(cachade).toBe(0);
+  });
+
+  test('blandat utfall — fyra lyckas, tre misslyckas ⇒ klar-ofullstandig med exakt räkning', async () => {
+    const { ds } = stubDataSource({
+      rejects: {
+        registrations: new Error('fel, testfixtur'),
+        intresserade: new Error('fel, testfixtur'),
+        segment: new Error('fel, testfixtur'),
+      },
+    });
+    const qc = nyQueryClient();
+
+    const resultat = await starta(qc, {
+      dataSource: ds,
+      isOnline: () => true,
+      timeoutMs: 5000,
+    }).slutlofte;
+
+    expect(resultat.utfall).toBe('klar-ofullstandig');
+    expect(resultat.forlopp).toEqual({
+      klara: WARMUP_SET_SIZE,
+      totalt: WARMUP_SET_SIZE,
+      lyckade: 4,
+      misslyckade: 3,
+    });
+    // De lyckade datamängderna cachades ändå korrekt.
+    expect(qc.getQueryData(queryKeys.events.list)).toEqual(SENTINEL.events);
+    expect(qc.getQueryData(queryKeys.waitlist.all)).toEqual(SENTINEL.waitlist);
+    // De misslyckade lämnade sina nycklar tomma.
+    expect(qc.getQueryData(queryKeys.registrations.all)).toBeUndefined();
+    expect(qc.getQueryData(queryKeys.intresserade.all)).toBeUndefined();
+    expect(qc.getQueryData(queryKeys.segment.saved)).toBeUndefined();
+  });
+
+  test('samtliga lyckas ⇒ utfallet är fortfarande exakt "klar", inte "klar-ofullstandig"', async () => {
+    const { ds } = stubDataSource();
+    const qc = nyQueryClient();
+
+    const resultat = await starta(qc, {
+      dataSource: ds,
+      isOnline: () => true,
+      timeoutMs: 5000,
+    }).slutlofte;
+
+    expect(resultat.utfall).toBe('klar');
+    expect(resultat.forlopp.lyckade).toBe(WARMUP_SET_SIZE);
+    expect(resultat.forlopp.misslyckade).toBe(0);
+  });
+
+  test('timeout med misslyckanden BLAND de settlade ⇒ utfallet förblir "timeout" (splittras inte till klar-ofullstandig)', async () => {
+    // Tre av de sex snabba fallerar; den sjunde hänger och tvingar fram timeout.
+    const { ds } = stubDataSource({
+      delays: { events: 1, registrations: 1, waitlist: 1, intresserade: 1, maillog: 1, segment: 1 },
+      rejects: {
+        registrations: new Error('fel, testfixtur'),
+        segment: new Error('fel, testfixtur'),
+      },
+      hangs: ['activityLog'],
+    });
+    const qc = nyQueryClient();
+
+    const resultat = await starta(qc, {
+      dataSource: ds,
+      isOnline: () => true,
+      timeoutMs: 100,
+    }).slutlofte;
+
+    // 'timeout' är en EGEN gren i avgorMed — den remappas ALDRIG till
+    // 'klar'/'klar-ofullstandig' även om några av de settlade misslyckades.
+    expect(resultat.utfall).toBe('timeout');
+    expect(resultat.forlopp).toEqual({
+      klara: WARMUP_SET_SIZE - 1,
+      totalt: WARMUP_SET_SIZE,
+      lyckade: WARMUP_SET_SIZE - 1 - 2,
+      misslyckade: 2,
+    });
+  });
+});
+
+// AC #3 (Sentry-varning vid misslyckande, egen tagg, antal + item-namn i
+// extra) verifieras INTE med en spy i denna hermetiska svit: `@sentry/react`
+// laddas här som ett vanligt ESM-namespace-objekt, och Node fryser det
+// (mätt: `TypeError: Cannot assign to read only property 'captureMessage' of
+// object '[object Module]'` vid ett försök att monkey-patcha det från en
+// testfil). Att bygga en injicerbar rapportörs-seam enbart för detta hade
+// varit en egen, bredare arkitekturändring av `StartvarmningBeroenden` —
+// utanför denna skivas snäva diff, och samma avvägning som redan gäller för
+// den BEFINTLIGA (task-240) timeout-partial-varningen ovan, som aldrig haft
+// ett spy-baserat test. Koden för den nya varningen (`misslyckade > 0` ⇒
+// `Sentry.captureMessage(..., { tags: { warmup: 'delvis-fel' }, extra: {
+// lyckade, misslyckade, totalt, misslyckadeNamn } })`, `startvarmningen.ts`
+// § "OBSERVABILITY 2") följer exakt samma direkta anropsmönster som den
+// redan skarpa, oprövade timeout-varningen intill den. Vad DENNA svit
+// bevisar i stället är förutsättningen varningen bygger på: att
+// `misslyckade`-räkningen (och därmed antalet Sentry skulle rapportera) är
+// korrekt i varje scenario ovan — enskilt, blandat och vid timeout.

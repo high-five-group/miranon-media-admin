@@ -455,8 +455,11 @@ jobs:
         # på en main-push (merge-commit) läses andra föräldern (den mergade
         # PR-headen), och de tunga jobben hoppas ENDAST om merge-commitens träd
         # är identiskt med PR-headens träd OCH den SHA:n redan har en grön
-        # CI-run. Sundheten vilar på merge-grindens strict up-to-date-krav
-        # (ADR-076): en up-to-date-branch ger merge-commit vars träd == PR-head.
+        # CI-run. Sundheten vilar på att STEGET SJÄLVT är fail-closed på varje
+        # avvikelse (se raden nedan) — INTE på merge-grindens strict
+        # up-to-date-krav som denna kommentar tidigare påstod: det kravet
+        # (ADR-076) stängdes av 2026-08-05 och premissen var falsifierad i
+        # sex veckor. Rättat 2026-09-18, se ADR-077 § Updates.
         #
         # ASYMMETRIN ÄR MEDVETEN: nyckeln ÄR trädet självt, så dedupen kan bara
         # orsaka onödig körning, aldrig släppa förbi otestat. FAIL-CLOSED på
@@ -784,6 +787,20 @@ jobs:
         # Frusen ADR-text/arkiv/kommentarer ignoreras (läser bara namngivna
         # bärar-platser). L50:s obyggda test-hälft.
         run: bash scripts/check-fetch-depth-invariant.sh
+
+      - name: Check aggregator needs invariant (TASK-450.3 gate)
+        # Per docs/research/ci-djupgranskning-2026-09-17/10-migrations-och-
+        # atgardsplan.md § N4: `ci-passed` ("CI Passed or Skipped") är repots
+        # ENDA obligatoriska kontroll, och dess `needs`-lista (denna fils
+        # sista jobb) räknar upp toppnivåjobben den bryr sig om — för hand.
+        # Ett nytt toppnivåjobb som glöms i listan blir osynligt för
+        # paraplyet: det kan bli hur rött som helst utan att stoppa en
+        # landning. Samma form som fetch-depth-invarianten ovan: läs filen,
+        # jämför två mängder, fäll med jobbets namn. Medvetna undantag (om
+        # något jobb legitimt inte ska gates:as) bor i
+        # .aggregator-needs-policy.json med ett skrivet skäl — ett undantag
+        # som inte fyller någon funktion fäller också.
+        run: node scripts/check-aggregator-needs.mjs
 
       - name: Check list parity (TASK-85 gate)
         # Repot bär flera invarianter som står på TVÅ ställen och som filerna
@@ -1366,6 +1383,20 @@ jobs:
         # i en sandlåda med muterade kopior av policy+ci.yml+ci-suite.yml.
         # Ingen nätverkstrafik. 18,0 s LOKALT mätt (macOS, 2026-08-26).
         #
+        # test-check-aggregator-needs.mjs (TASK-450.3, N4) hör hit av samma
+        # ADR-039 § lesson→grind-skäl: grinden ovan
+        # (check-aggregator-needs.mjs) är inte en grind förrän dess fyrning
+        # fortlöpande verifieras. 16 fall, tvåsidigt bevis — en sandlådekopia
+        # av ci.yml med ett jobb borttaget ur `needs` FÄLLER med jobbets namn
+        # (grönt-sidan mutationsprövad under bygget: saknade-jobb-loopen
+        # avstängd fällde exakt de två fall som bevisar detta), den RIKTIGA
+        # ci.yml PASSERAR, ett onödigt undantag (jobbet redan i needs, eller
+        # jobbet finns inte) fäller — plus fail-closed-grenar (trasig YAML,
+        # saknad fil, saknat 'jobs:'-block, saknat paraplyjobb, undantag utan
+        # rationale, dubblett-undantag, 'exceptions' ej array) och en
+        # robusthets-kontroll (`needs:` som skalär sträng, giltig YAML-form).
+        # Sandboxad i egen mktemp-katalog, ingen nätverkstrafik.
+        #
         # test-docraptor-sjalvbarande.mjs (TASK-301) hör hit av samma
         # ADR-039-skäl: scripts/docraptor-sjalvbarande.mjs lämnade tidigare
         # en ohämtbar CSS-url() ORÖRD, exakt den referensklassen Prince
@@ -1490,6 +1521,27 @@ jobs:
         # bevisar att sviten fångar en verklig regression och inte bara är
         # grön av konstruktion. 53 fall. 0,13 s LOKALT mätt (macOS,
         # 2026-09-04) — CI-tiden är INTE mätt av mig och kan avvika.
+        #
+        # test-hermetik-tackning.mjs (TASK-366 / N6) hör hit av samma
+        # ADR-039-skäl som syskonen, med en extra tyngd: sviten ÄR den enda
+        # mekaniska prövningen av hermetik-självtestets täckningskontroll.
+        # Kontrollens CI-jobb (`acceptance-sjalvtest-tackning` i ci-suite.yml)
+        # konsumerar artefakter från parallella matrix-jobb och kan därför
+        # strukturellt inte deriveras av verify-ci-parity — se
+        # .ci-parity-policy.json:s post för jobbet, samma skäl-form som
+        # `review-backstopp`. Den bärande kontrasten är B3 mot C1: BÅDA har två
+        # skärvor, men en matris som krympts MED sin nämnare håller (täckningen
+        # oskadd) medan en skärva som fallit bort ur en matris på tre FÄLLER.
+        # Utan det paret hade kontrollen antingen falsklarmat på varje legitim
+        # omkonfigurering eller missat det enda fel den finns för. Sektion D
+        # prövar samma sak på CLI-nivå (D1 mot D2: identiska kataloger så när
+        # som på EN borttagen rapportfil). Mutationsprövad under bygget, två
+        # gånger: summa-jämförelsen kortsluten fällde C1/C2/C3 (42 gröna → 3
+        # röda), saknad-skärva-kontrollen kortsluten fällde C1/C8/D2 — sviten
+        # fångar alltså verkliga regressioner i BÅDA invarianterna, inte bara
+        # i den ena. 42 fall. 1,05 s LOKALT mätt (macOS, 2026-09-18; sektion
+        # D:s tio CLI-fall är spawnSync-dominerade) — CI-tiden är INTE mätt av
+        # mig och kan avvika.
         run: |
           bash scripts/test-check-frontmatter.sh
           bash scripts/test-check-public-checklists.sh
@@ -1540,10 +1592,12 @@ jobs:
           node scripts/test-review-metrics.mjs
           node scripts/test-review-backstopp.mjs
           node scripts/test-verify-ci-parity.mjs
+          node scripts/test-check-aggregator-needs.mjs
           node scripts/test-task-338-6-prod-migration.mjs
           node scripts/test-docraptor-sjalvbarande.mjs
           node scripts/test-backfill-inbetalningar.mjs
           node scripts/test-synka-labels.mjs
+          node scripts/test-hermetik-tackning.mjs
 
       - name: Test post-merge-lagrets ärvda klassning (TASK-73)
         # Per ADR-039 § lesson→grind (L43): en grind är inte en grind förrän

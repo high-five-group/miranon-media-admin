@@ -75,12 +75,14 @@ Ersättaren, bevisad mot faktisk disk och API 2026-07-23 på merge-commit `db6ef
 
 Main-körningen läser andra föräldern (PR-headen), verifierar att merge-commitens
 träd är identiskt med PR-headens, och frågar körnings-API:t om den SHA:n redan har
-en grön körning. Sunt TACK VARE merge-grindens strict up-to-date-krav (ADR-076):
-en up-to-date-branch ger merge-commit vars träd är identiskt med PR-headens.
-**Fail-closed på varje avvikelse:** ingen andra förälder, träd-avvikelse, API-fel
-eller icke-grön körning ⇒ full svit. En besparing kan aldrig bli ett hål. Steget
-bor i `changed`-jobbet, som redan har full historik — fetch-depth-bärar-invarianten
-(ADR-039/054, exakt tre bärande rader) förblir ORÖRD.
+en grön körning. **Fail-closed på varje avvikelse** är själva sundhetsgrunden:
+ingen andra förälder, träd-avvikelse, API-fel eller icke-grön körning ⇒ full svit.
+En besparing kan aldrig bli ett hål. *(Rättat 2026-09-18 — denna rad motiverade
+tidigare sundheten med "merge-grindens strict up-to-date-krav (ADR-076)"; det
+kravet stängdes av 2026-08-05 och premissen var falsifierad i sex veckor utan att
+någon läste om den, se § Updates.)* Steget bor i `changed`-jobbet, som redan har
+full historik — fetch-depth-bärar-invarianten (ADR-039/054, exakt tre bärande
+rader) förblir ORÖRD.
 
 ### 3. Nattnätet — reusable fullsvit + larmkedja (36.2)
 
@@ -154,8 +156,9 @@ dess jq-fail-closed-gren är en verbatim replik av `ci-passed`:s och speglas om
   designfönster.
 - [ADR-071](ADR-071-afk-batch-kontraktet.md) — AFK-batch-kontraktet
   (rött-först-bärarbytets värd, 36.6).
-- [ADR-076](ADR-076-merge-grinden-ruleset-pr-flode.md) — merge-grinden (dedupens
-  sundhetsvillkor: strict up-to-date).
+- [ADR-076](ADR-076-merge-grinden-ruleset-pr-flode.md) — merge-grinden (PR-flödet
+  dedupen förutsätter; dedupens sundhetsgrund är fail-closed-verifieringen i
+  § Beslut 2, inte strict up-to-date — rättat 2026-09-18, se § Updates).
 
 ## Updates
 
@@ -227,3 +230,45 @@ tak — `MAX_KORNINGAR` (körningslistans fönster) och `MAX_JOBBFRAGOR` (taket 
 attributionen svarade OKÄND trots outforskade kandidater. Taken är nu LIKA
 (20/20), så jobbfråge-taket aldrig kan bli det bindande, och `A19` fäller om de
 glider isär.
+
+### 2026-09-18 — Rättelse: dedupens sundhetsgrund var falsifierad; K1-beslutet bokfört (TASK-450.4)
+
+**Rättelsen.** § Beslut 2 ovan (dedup-stycket) och
+`.github/workflows/ci.yml:458` motiverade båda merge-dedupens sundhet med
+*"merge-grindens strict up-to-date-krav (ADR-076)"*. Det kravet stängdes av
+**2026-08-05** (`ADR-076` § Amendering: `strict_required_status_checks_policy`
+satt till `false`) — verifierat på nytt 2026-09-18 mot
+`gh api repos/high-five-group/miranon-media-admin/rulesets/19627609`, oförändrat
+sedan dess. Motiveringen var alltså en falsifierad premiss i sex veckor utan att
+någon läste om den (`ci-djupgranskning-2026-09-17/10-migrations-och-atgardsplan.md`
+§ N5, KG1 fynd 2a). Konsekvensen är mildare än en tidigare läsning kunde dra:
+dedup-steget var, och är, **fail-closed på varje trädavvikelse** (ingen andra
+förälder, träd-avvikelse, API-fel eller icke-grön körning ⇒ full svit) — det är
+DEN egenskapen som bar sundheten hela tiden, oberoende av strict. En falsifierad
+sundhetspremiss kostar alltså besparing, aldrig säkerhet. Båda ställena är
+rättade i samma landning som detta block (`TASK-450.4`); ingen körlogik ändrades.
+
+**K1-beslutet, med Marcus ord.** 2026-09-18, vid återupptagandet av S126 efter
+att ha läst granskningens huvudrapport: *"Rörande besluten: Kör på dina
+rekommendationer."* (`tasks/sessions/2026-09-17-session-126.md` Del 7).
+Rekommendationen för K1 (huvudrapportens § K1) var väg **(b)**: villkora den
+dagliga beroendegranskningen (`audit`, på ändringsförslaget) mot
+beroendeträdet — kör bara `audit` när `package.json`, `package-lock.json`
+eller låsningarna ändrats — **men inte förrän `N2` (`TASK-450.1`) har
+landat**, eftersom väg (b) flyttar lastbärandet till nattkontrollen, och den
+var oläslig i sju veckor före N2.
+
+**Vad som består oförändrat, enligt planen (§ K1):**
+
+i. varje ändring som rör beroendeträdet granskas som i dag, på
+   ändringsförslaget, med blockerande verkan;
+ii. hela trädet granskas varje natt med en STRÄNGARE tröskel än dagsviten;
+iii. `audit` står kvar i paraplyets `needs`-lista, så ett rött resultat
+    blockerar fortfarande landningen;
+iv. `ADR-028`:s konventionsflöde för undantag är orört.
+
+**Vad som INTE är gjort av detta block.** K1 (b) är ett **beslutat** vägval,
+inte ett byggt sådant — ingen kod eller CI-logik är ändrad av denna rättelse.
+Bygget sker i egen skiva `TASK-450.5`, och den skivan **får inte landa före
+`TASK-450.1` (N2)** — samma beroende Marcus rekommendation själv ställde som
+villkor.

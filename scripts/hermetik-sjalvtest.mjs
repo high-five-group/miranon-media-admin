@@ -33,13 +33,48 @@
 //                       FÄLLA. Utan detta läge vore skriptets gröna besked
 //                       oskiljbart från ett skript som inte kan fälla alls.
 //
+// ═══ SKÄRVOR OCH TÄCKNING (TASK-366 / N6, 2026-09-18) ═══
+// Beviset kördes fram till nu över HELA klassen i EN process, medan den skarpa
+// sviten sedan TASK-239 varv 3 körs på tre parallella shards. Jobbet blev
+// därmed CI:s kritiska väg. `--shard=I/N` ger beviset samma delning.
+//
+// Delningen kostar dock exakt det tomhetsspärren nedan skyddar: varje skärva för
+// sig är icke-tom, så spärren säger grönt i var och en även om de TILLSAMMANS
+// inte täckte klassen. `--tackning=<fil>` är motmedlet — skärvan skriver ned
+// både sitt prövade antal och klassens listade antal, och ett sammanfattande
+// jobb kräver att summan går ihop (scripts/hermetik-tackning.mjs). Kontrollen
+// byggdes FÖRE delningen, i samma ändringsförslag, med avsikt.
+//
+// ═══ RÄKNESÄTTET — SAMMA FUNKTION PÅ BÅDA SIDOR ═══
+// "Prövat antal" och "listat antal" MÅSTE räknas likadant, annars jämför
+// summakontrollen två olika saker och blir antingen blind eller falsklarmande.
+// Därför räknas båda av `plattaTester` nedan, på Playwrights JSON-rapport:
+// körningen ger den ena, `--list --reporter=json` den andra, ur samma config,
+// samma projekt och samma filter. Tre egenskaper gör det hållbart:
+//
+//   RETRIES påverkar `test.results[]`, aldrig antalet `spec.tests[]` —
+//   räkningen är därmed retry-oberoende. (Beviset kör ändå `--retries=0`, av
+//   korrekthetsskäl som står i korSvit nedan.)
+//
+//   `--list` ger varje test `status: 'skipped'` och tom `results` — en artefakt
+//   av att inget kördes, inte av att testet är skippat. `plattaTester` räknar
+//   POSTER, inte statusar, så den artefakten påverkar inte talet. Mätt
+//   2026-09-18: 524 tester i 61 filer, identiskt i list- och körningsläge.
+//
+//   `test.skip`/`test.fixme` skulle synas som `expectedStatus: 'skipped'` i
+//   listan och som status `skipped` i körningen — det förra räknas med, det
+//   senare fälls redan av `bedomPositivt` ("status 'skipped', väntat
+//   'unexpected'"). En sådan annotation gör alltså skärvan röd INNAN summan
+//   hinner bli fel. Mätt 2026-09-18: noll annoterade tester i klassen.
+//
 // Exit: 0 = beviset håller · 1 = beviset håller INTE (drift) · 2 = körfel.
 
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync } from 'node:fs';
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
+import { byggTackningsrapport } from './lib/hermetik-tackning.mjs';
 
 /** Vaktens felklass. Träffas som substräng i Playwrights felmeddelande. */
 const VAKT_FEL = 'OmockadRequestError';
@@ -59,7 +94,7 @@ const PROJEKT = 'acceptance';
  * stdout oanvändbart som JSON-kanal. `PLAYWRIGHT_JSON_OUTPUT_FILE` har högsta
  * prioritet i Playwrights `resolveOutputFile` och tar en explicit sökväg.
  */
-function korSvit({ sjalvtest, filter = [] }) {
+function korSvit({ sjalvtest, filter = [], shard = null, listaBara = false }) {
   const katalog = mkdtempSync(path.join(tmpdir(), 'hermetik-sjalvtest-'));
   const rapportFil = path.join(katalog, 'rapport.json');
 
@@ -96,9 +131,23 @@ function korSvit({ sjalvtest, filter = [] }) {
   // FAIL-CLOSED PÅ TOMHET GÄLLER FORTFARANDE: träffar filtret ingenting blir
   // testmängden tom, och `bedomPositivt` avvisar en tom svit uttryckligen. Ett
   // trasigt filter kan alltså inte ge grönt besked.
+  //
+  // SKÄRVAN GÅR ALDRIG IN I LIST-LÄGET (TASK-366). `--list` mäter vad KLASSEN
+  // (eller urvalet) innehåller och är summakontrollens nämnare — hade `--shard`
+  // följt med hade nämnaren krympt med täljaren och kontrollen blivit en
+  // tautologi som alltid går ihop.
+  const extra = listaBara ? ['--list'] : shard ? [`--shard=${shard}`] : [];
   const utfall = spawnSync(
     'npx',
-    ['playwright', 'test', `--project=${PROJEKT}`, '--reporter=json', '--retries=0', ...filter],
+    [
+      'playwright',
+      'test',
+      `--project=${PROJEKT}`,
+      '--reporter=json',
+      '--retries=0',
+      ...extra,
+      ...filter,
+    ],
     // stdout ÄRVS, buffras inte. `'pipe'` + `encoding` lät `spawnSync` samla
     // Playwrights list-utdata i minnet mot Nodes `maxBuffer`-default (1 MB) —
     // trots att bufferten aldrig lästes: enda referensen till `utfall` är
@@ -110,7 +159,16 @@ function korSvit({ sjalvtest, filter = [] }) {
     // medan PR #1840 med färre nya tester passerade — en SKALNINGSVÄGG, inte
     // en flake. `'inherit'` tar bort taket helt och gör dessutom körningen
     // synlig i jobbloggen, som hittills varit tom vid just detta fel.
-    { env: miljo, encoding: 'utf8', stdio: ['ignore', 'inherit', 'inherit'] },
+    // LIST-LÄGET TYSTAR STDOUT (TASK-366). Rapporten kommer från FIL även här,
+    // och `--list` skriver en rad per test — 524 rader ren dubblett i varje
+    // jobblogg, ovanpå körningens egen utdata. `'ignore'` och inte `'pipe'`:
+    // pipe:en var just det som gav ENOBUFS när klassen växte (se ovan), och en
+    // buffert som aldrig läses är ändå bara en vägg att slå i.
+    {
+      env: miljo,
+      encoding: 'utf8',
+      stdio: ['ignore', listaBara ? 'ignore' : 'inherit', 'inherit'],
+    },
   );
 
   if (utfall.error) {
@@ -194,6 +252,40 @@ export function bedomPositivt(tester) {
 // CLI
 // ---------------------------------------------------------------------------
 
+/** Plockar ut ett `--flagga=värde` ur argumentlistan. */
+function flaggvarde(argv, namn) {
+  const prefix = `--${namn}=`;
+  const trad = argv.find((a) => a.startsWith(prefix));
+  return trad ? trad.slice(prefix.length) : null;
+}
+
+/**
+ * Tolkar `--shard=I/N`. Fail-closed på varje avvikande form: ett tyst ignorerat
+ * shard-argument hade kört HELA klassen i varje skärva — tre gånger arbetet,
+ * en summa på 3×listat, och ett besked ingen kan tolka.
+ */
+export function parsaShard(varde) {
+  if (varde === null) return { shardIndex: 1, shardTotal: 1, fel: null };
+
+  const traff = /^(\d+)\/(\d+)$/.exec(varde);
+  if (!traff) {
+    return { shardIndex: null, shardTotal: null, fel: `--shard='${varde}' — väntad form I/N` };
+  }
+  const shardIndex = Number(traff[1]);
+  const shardTotal = Number(traff[2]);
+  if (shardTotal < 1) {
+    return { shardIndex: null, shardTotal: null, fel: `--shard='${varde}' — N måste vara >= 1` };
+  }
+  if (shardIndex < 1 || shardIndex > shardTotal) {
+    return {
+      shardIndex: null,
+      shardTotal: null,
+      fel: `--shard='${varde}' — I måste ligga i 1..${shardTotal}`,
+    };
+  }
+  return { shardIndex, shardTotal, fel: null };
+}
+
 function main(argv) {
   const negativKontroll = argv.includes('--negativ-kontroll');
   // Allt som inte är en flagga är ett fil-filter som skickas vidare till
@@ -201,9 +293,16 @@ function main(argv) {
   // formen bor på ETT ställe, i scripts/acceptance-urval.sh.
   const filter = argv.filter((a) => !a.startsWith('--'));
 
+  const shardArg = flaggvarde(argv, 'shard');
+  const { shardIndex, shardTotal, fel: shardFel } = parsaShard(shardArg);
+  if (shardFel) throw new Error(shardFel);
+  const tackningsFil = flaggvarde(argv, 'tackning');
+
   if (filter.length > 0) {
     console.log(`▶ URVAL — beviset körs på ${filter.length} spec-fil(er): ${filter.join(' ')}\n`);
   }
+
+  if (shardArg) console.log(`▶ SKÄRVA ${shardIndex}/${shardTotal} av klassen.\n`);
 
   if (negativKontroll) {
     console.log('▶ NEGATIV KONTROLL — kör UTAN HERMETIK_SJALVTEST. Sviten ska bli grön,');
@@ -213,7 +312,11 @@ function main(argv) {
     console.log('  testens egna network.use()-överskuggningar verkningslösa.\n');
   }
 
-  const rapport = korSvit({ sjalvtest: !negativKontroll, filter });
+  const rapport = korSvit({
+    sjalvtest: !negativKontroll,
+    filter,
+    shard: shardArg ? `${shardIndex}/${shardTotal}` : null,
+  });
   const tester = plattaTester(rapport);
   const { hallbart, avvikelser } = bedomPositivt(tester);
 
@@ -222,6 +325,33 @@ function main(argv) {
   console.log(
     `\n${tester.length} tester · ${fallda} fällda · ${avVakten} med ${VAKT_FEL} som orsak`,
   );
+
+  // TÄCKNINGSRAPPORTEN SKRIVS FÖRE DOMEN NEDAN, med avsikt: en skärva som faller
+  // på sin egen bedömning ska ändå lämna sitt tal efter sig, så summasteget kan
+  // säga VILKEN skärva som inte gick ihop i stället för bara att en saknas.
+  if (tackningsFil) {
+    // `--list` UTAN shard mäter hela klassen (eller hela urvalet) — nämnaren i
+    // summakontrollen. Kostnaden är mätt till ~3 s lokalt mot en körning på
+    // minuter; den startar ingen dev-server (Playwright hoppar över webServer i
+    // list-läget) trots att env-flaggan är satt.
+    const listRapport = korSvit({ sjalvtest: !negativKontroll, filter, listaBara: true });
+    const listat = plattaTester(listRapport).length;
+
+    const tackning = byggTackningsrapport({
+      shardIndex,
+      shardTotal,
+      provade: tester.length,
+      listat,
+      projekt: PROJEKT,
+      filter,
+    });
+    mkdirSync(path.dirname(path.resolve(tackningsFil)), { recursive: true });
+    writeFileSync(tackningsFil, `${JSON.stringify(tackning, null, 2)}\n`, 'utf8');
+    console.log(
+      `\n▶ TÄCKNING — skärva ${shardIndex}/${shardTotal} prövade ${tester.length} av ` +
+        `${listat} listade. Nedskriven i ${tackningsFil}.`,
+    );
+  }
 
   if (negativKontroll) {
     // Inverterad läsning: den positiva bedömningen SKA falla här.
