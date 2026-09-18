@@ -633,3 +633,9 @@ När Fas 4 är klar ska Chat granska mot:
 ---
 
 *Avvaktar Marcus godkännande av Fas 3 innan Fas 4 startar.*
+
+---
+
+> **Pseudonymiserat (T171, 2026-09-18):** namn i denna fil är ersatta med
+> stabila pseudonymer (`Deltagare NN`) och e-post maskad till `X***@domän`.
+> Se `tasks/threads/T171-personuppgifter-i-publikt-repo.md`.

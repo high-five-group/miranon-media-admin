@@ -751,3 +751,9 @@ Backfill-rapporten (verifiering-2026-04-24) listade **924 backfill-Deltaganden**
 - 6 nya datakvalitetsfynd identifierade (lyfts till 01-extraction.md sektion D)
 
 *Avvaktar Marcus godkännande av Checkpoint 1 innan steg 1.2.*
+
+---
+
+> **Pseudonymiserat (T171, 2026-09-18):** namn i denna fil är ersatta med
+> stabila pseudonymer (`Deltagare NN`) och e-post maskad till `X***@domän`.
+> Se `tasks/threads/T171-personuppgifter-i-publikt-repo.md`.

@@ -177,7 +177,7 @@ motsvarande) som skiljs ut explicit från `"#"`.
 **Det starkaste, helt egna fyndet i hela passet (MÄTT, 2026-08-21, prod-basen
 `app8uGPrVCVOm6LfD`):** `filterByFormula {Namn}="Ej tillgängligt"` mot
 `Personer`-tabellen visar att hela klumpen sorterar **sammanhållet inom
-bokstaven E** — direkt efter `"Deltagare 23"` och före `"Deltagare 24"`, eftersom strängen bokstavligen börjar med "E". Ett naivt
+bokstaven E** — direkt efter `"Deltagare 23"` (namn på E) och före `"Deltagare 24"` (namn på E), eftersom strängen bokstavligen börjar med "E". Ett naivt
 `LEFT({Namn},1)="E"`-filter skulle alltså blanda ~200+ namnlösa poster med de
 äkta E-namnen (Erik, Emma, Eva, Elin...) och göra bokstaven E meningslös som
 filter. **`"Ej tillgängligt"` måste undantas via en EXAKT sträng-jämförelse
@@ -248,7 +248,8 @@ Den VECKAR diakritiska tecken mot sin basbokstav i stället för att sortera
   (samtliga 5 poster som börjar på Å i hela basen) sorterar mellan `Deltagare 13` och `Deltagare 14` — exakt där "Asa" (utan diakrit) hade
   hamnat alfabetiskt (n < s < x).
 - `Deltagare 11` sorterar FÖRE `Deltagare 10` — konsekvent med samma
-  veckning (`Åsblom` ≈ `Asblom` < `Clevenrot`).
+  veckning (`Deltagare 11`:s Å-efternamn veckas till sin as-om-A-form, som
+  alfabetiskt hamnar före `Deltagare 10`:s C-efternamn).
 - **MÄTT:** noll poster i basen börjar på Ä eller Ö (`LEFT({Namn},1)="Ä"` och
   `="Ö"` gav båda tomma träfflistor, 2026-08-21) — vilket också gör
   fokusfråga 3:s "tom bokstav"-problem KONKRET och NUVARANDE för just dessa
@@ -257,7 +258,7 @@ Den VECKAR diakritiska tecken mot sin basbokstav i stället för att sortera
 **Samtidigt är FILTER-jämförelse (`=`) diakritik-KÄNSLIG, till skillnad från
 sortering** — **MÄTT:** `filterByFormula OR(LEFT({Namn},1)="Ä",
 LEFT({Namn},1)="A")` returnerade UTESLUTANDE literal-A-namn (inga Å-namn
-blandades in); `LEFT({Namn},1)="Å"` gav uteslutande de 5 Åsa-posterna. Detta
+blandades in); `LEFT({Namn},1)="Å"` gav uteslutande de 5 Å-posterna (Deltagare 93–97). Detta
 är den avgörande tekniska poängen: **även om basens BLÄDDRINGS-sortering
 veckar Å mot A, kan bokstavsFILTRET ändå byggas diakritik-korrekt** eftersom
 filter-jämförelse och sorteringscollation är två olika mekanismer i Airtable
@@ -497,3 +498,9 @@ motsäger varandra):**
   (`tbl6ZyCm3V026iFTU`), direkta `list_records`-frågor 2026-08-21 (sort,
   `LEFT(Namn,1)`-filter för A/Ä/Å/Ö/O/Ö/P, exakt-matchning på
   `"Ej tillgängligt"`)
+
+---
+
+> **Pseudonymiserat (T171, 2026-09-18):** namn i denna fil är ersatta med
+> stabila pseudonymer (`Deltagare NN`) och e-post maskad till `X***@domän`.
+> Se `tasks/threads/T171-personuppgifter-i-publikt-repo.md`.

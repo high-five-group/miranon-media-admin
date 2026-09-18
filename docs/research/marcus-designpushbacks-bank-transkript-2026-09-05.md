@@ -620,7 +620,7 @@ den enda auktoritativa källan.
 | T-142 | `30850a9b` | 2026-08-29 20:32:28Z | Var nogrann, se till att det blir riktigt snyggt nu! Godnatt! | Generell kvalitetsuppmaning utan specifikt mål. |
 | T-151 | `aad9eb70` | 2026-09-01 07:50:32Z | Bra. Angående punkt 6: JA, men gör det snyggt. | Godkännande med generellt kvalitetskrav. |
 | T-173 | `84b83d9d` | 2026-09-02 08:24:39Z | Bra.<br><br>Jag vet inte exakt hur jag ska göra testet. Ska jag lägga till mig själv vi manuell anmälan på ett event, och sedan göra testet då?<br><br>Jag stör mig mycket på 3 saker jag ser i appen:<br><br>Deltagare 12 har sin e-post som sitt namn<br>Deltagare 73:s namn skrivs ut med gemener "deltagare 73", likadant med "deltagare 93".<br><br>Sådant här får inte nå prodappen, helst ska det vara omöjligt för människor att mata basen (via anmälningsformuläret) med "ful" data, men vi har "städ-fält" i basen som ska ordna detta, men det verkar ju brista. | 'Ful' avser här DATAKVALITET (namn i fel skiftläge), inte visuell design — bör inte tolkas som ett UI-fynd. |
-| T-174 | `84b83d9d` | 2026-09-02 08:28:54Z | GO, Annette med två n. Leta gärna efter fler "fel" och fixa dem också, vill inte visa Lotta "ful" data liksom. Sedan fixar vi detta durabelt efter demon. | Samma datakvalitetsklass som föregående — 'ful data', inte UI. |
+| T-174 | `84b83d9d` | 2026-09-02 08:28:54Z | GO, Deltagare 12:s namn med två n. Leta gärna efter fler "fel" och fixa dem också, vill inte visa Lotta "ful" data liksom. Sedan fixar vi detta durabelt efter demon. | Samma datakvalitetsklass som föregående — 'ful data', inte UI. |
 
 <!-- markdownlint-enable MD033 -->
 
@@ -840,3 +840,9 @@ brist på nytt för hand.
   `docs/research/prototypkod-isolering-och-parallella-strommar-branschmonster-2026-08-08.md`
   — inventerade, ingen överlapp i citat-form (se § Vad tidigare pass
   redan täckte).
+
+---
+
+> **Pseudonymiserat (T171, 2026-09-18):** namn i denna fil är ersatta med
+> stabila pseudonymer (`Deltagare NN`) och e-post maskad till `X***@domän`.
+> Se `tasks/threads/T171-personuppgifter-i-publikt-repo.md`.

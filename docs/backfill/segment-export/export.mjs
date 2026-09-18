@@ -1,6 +1,10 @@
 // S60 Steg 4 — material-listor + Skool-union → CSV. READ-ONLY mot basen.
 // Bygger på segment-export.json (källäst ur Deltaganden, {Närvaropoäng}=1).
 //
+// Pseudonymiserat (T171, 2026-09-18): namn i kommentarerna nedan är ersatta
+// med stabila pseudonymer (Deltagare NN). Se
+// tasks/threads/T171-personuppgifter-i-publikt-repo.md.
+//
 // Marcus-kvitterade justeringar (2026-07-09):
 //   · 2 testkonton exkluderas (highfive-dubbletten + inbox@marcusemails.com)
 //   · Deltagare 88 (rec3ERFZfQnMwMym6): Person.E-post tom i basen → adress hämtad

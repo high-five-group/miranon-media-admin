@@ -2318,3 +2318,9 @@ token-värdet (settle-grinden), och hämta token-värdet FÖRE hovern.
 Släkt: [[L246]] (renderad verifiering — mät computed), [[L356]] (samma
 komponent: `transition-colors` drog med `outline-color`), [[L94]] (a11y-fynd
 kräver flera evidenslinjer — här var felmeddelandet direkt vilseledande).
+
+---
+
+> **Pseudonymiserat (T171, 2026-09-18):** namn i denna fil är ersatta med
+> stabila pseudonymer (`Deltagare NN`) och e-post maskad till `X***@domän`.
+> Se `tasks/threads/T171-personuppgifter-i-publikt-repo.md`.

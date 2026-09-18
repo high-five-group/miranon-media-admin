@@ -1011,3 +1011,9 @@ de inte glömts bort.
 - **Källa** — `TASK-332` · PR `#2045` (**landad** `ecc324b1`, 2026-08-28 —
   två granskningsrundor; runda 1 fångade en tappad S107-post, nu 28 K / 56 Ö)
   · `ADR-052` § Updates 2026-08-28 · sessionsdok S112 Del 7 Fynd 3 + Del 8.
+
+---
+
+> **Pseudonymiserat (T171, 2026-09-18):** namn i denna fil är ersatta med
+> stabila pseudonymer (`Deltagare NN`) och e-post maskad till `X***@domän`.
+> Se `tasks/threads/T171-personuppgifter-i-publikt-repo.md`.

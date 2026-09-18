@@ -18,7 +18,7 @@
 
 ## Kontext
 
-Anmälan ID 989 (Fredrik Björk, `recGoVBQBI1bo66jG`, 2026-08-20) landade utan
+Anmälan ID 989 (Deltagare 99, `recGoVBQBI1bo66jG`, 2026-08-20) landade utan
 Event-länk tre dagar efter att S107 sanerat samma felklass. Utredningen (S110
 Del 1–2) lokaliserade roten och mätte omfattningen över hela basen.
 

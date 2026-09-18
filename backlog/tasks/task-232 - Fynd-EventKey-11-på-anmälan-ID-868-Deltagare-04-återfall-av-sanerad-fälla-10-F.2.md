@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-15 23:37'
-updated_date: '2026-09-18 11:44'
+updated_date: '2026-09-18 22:57'
 labels:
   - ready-for-agent
 dependencies: []
@@ -54,6 +54,8 @@ Ingen av dessa rader ändrades av TASK-248 utöver fältet Inskickad — EventKe
 S110 (2026-08-21): ROTORSAK BELAGD — inte formel/automation utan Elfsight Event Calendar-widgeten på miranon.se (8d8c059d-…): handskrivna anmälningslänkar per kalenderpost, kopierade poster behåller gamla URL-parametrar. '11' = juli-Fjärrskådningspostens nyckel, '10' = oktober-postens. ID 868 (Deltagare 04) låg i 17-klustret som S107 länkade till Event-60 2026-08-17 — datafixad. Fälla 10/F.2 i data-model.md omskriven S110 (hypotesen falsifierad, felklassen utvidgad med tyst felmatchning: 64 rader mätta, städade). Vakt-designen fortsätter i T157.
 
 Rättelse: tråden heter T158, inte T157 (S109 landade sitt T157 parallellt 2026-08-21 — omnumrerat vid konfliktlösning).
+
+Pseudonymiserat (T171, 2026-09-18): namn i kortet ersatta med stabila pseudonymer (Deltagare NN). Se tasks/threads/T171-personuppgifter-i-publikt-repo.md.
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

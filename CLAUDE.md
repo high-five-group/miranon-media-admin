@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-09-18
+updated: 2026-09-19
 review_by: 2026-11-15
 status: stable
 ---
@@ -40,7 +40,11 @@ Detta är en **React-konvertering** av det Vue-byggda systemet i `~/Repon/mirano
   namn eller e-postadress.** Ett defekt- eller dubblett-bevis behöver
   `recXXXX` och en pseudonym som är SAMMA för samma person i hela repot
   (`Deltagare NN`); det behöver aldrig personen. E-post maskas till
-  `X***@domän`. Förlagor och källmaterial med persondata (PDF:er, CSV/xlsx
+  `X***@domän` — ETT tecken är golvet. Delar två adresser i SAMMA tabell
+  eller stycke både domän och första tecken (skiljer dem annars inte åt,
+  t.ex. ett stavfelspar som är själva beviset) höjs masken till så många
+  tecken som krävs för att adresserna förblir urskiljbara, aldrig fler.
+  Förlagor och källmaterial med persondata (PDF:er, CSV/xlsx
   från Lotta, live-dumpar, prod-stickprov) pseudonymiseras vid **FÖRSTA
   citatet** — inte när någon upptäcker dem senare. Gäller varje yta:
   sessionsdok, research, ADR:er, backlog-kort, kodkommentarer, testfixturer

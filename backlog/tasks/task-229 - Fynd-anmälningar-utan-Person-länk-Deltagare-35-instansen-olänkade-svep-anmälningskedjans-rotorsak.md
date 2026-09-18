@@ -6,7 +6,7 @@ title: >-
 status: In Progress
 assignee: []
 created_date: '2026-08-15 22:59'
-updated_date: '2026-09-18 11:46'
+updated_date: '2026-09-18 22:56'
 labels:
   - ready-for-agent
 dependencies: []
@@ -22,9 +22,9 @@ S102 Lotta-vandringen punkt 7 (Marcus 2026-08-16): Deltagare 35:s RIM 3-anmälan
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Marcus-GO inhämtat och Helena-anmälan länkad till rätt personpost, verifierad i appen (historikraden syns)
-- [x] #2 Olänkade-svepet rapporterat med antal + lista + mönsteranalys
-- [x] #3 Rotorsaken belagd eller öppet bokförd som obestämbar med vad som uteslutits
+- [x] #1 Olänkade-svepet rapporterat med antal + lista + mönsteranalys
+- [x] #2 Rotorsaken belagd eller öppet bokförd som obestämbar med vad som uteslutits
+- [ ] #3 Marcus-GO inhämtat och Deltagare 35-anmälan länkad till rätt personpost, verifierad i appen (historikraden syns)
 <!-- AC:END -->
 
 ## Definition of Done
@@ -38,7 +38,7 @@ S102 Lotta-vandringen punkt 7 (Marcus 2026-08-16): Deltagare 35:s RIM 3-anmälan
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
-## Del 1 — Datafix Helena (PROD-write, GO mottaget i uppdragstexten 2026-08-16: "Skicka agenter direkt på punkt 6 och 7")
+## Del 1 — Datafix Deltagare 35 (PROD-write, GO mottaget i uppdragstexten 2026-08-16: "Skicka agenter direkt på punkt 6 och 7")
 
 Skrivet via mcp__airtable__update_records (PAT-servern), tabell Anmälningar
 (tbloOcrppVoyrHbrq), fält Person (fldQekqRlLfup8x5K, multipleRecordLinks →
@@ -62,7 +62,7 @@ EFTER (läst tillbaka från BÅDA sidor av länken):
   "Antal anmälningar (totalt)" 3→4, "Har en aktiv anmälan?" "Ingen aktiv
   anmälan"→"Aktiv".
 
-App-verifiering (AC #1 "verifierad i appen"): källäst mekanismen i kod i
+App-verifiering (AC #3 "verifierad i appen"): källäst mekanismen i kod i
 stället för en live prod-inloggad browser-session (ingen prod-app-session
 tillgänglig för agenten). src/domain/schemas/Registration.schema.ts rad 44+50
 och src/components/events/detail/Deltagare.tsx rad 770+910-916: genomforda =
@@ -75,7 +75,7 @@ resolver till recoFAXvbggTQ8WrL vars Antal genomförda event = 3 →
 antalGenomfordaEvent blir 3 → historikraden ska nu rendera "3 tidigare event
 hos Miranon Media" på Deltagare 35:s RIM 3-anmälan. Detta är en kod-mekanism-
 verifiering, INTE en skärmdump/live-observation i appen — öppet bokfört som
-gap mot AC #1s bokstav.
+gap mot AC #3s bokstav.
 
 ## Del 2 — Olänkade-svepet (read-only, filterByFormula {Person}=BLANK() mot
 hela Anmälningar-tabellen, maxRecords 500, ingen trunkering — 7 träffar kvar
@@ -164,7 +164,7 @@ tidsstämplarna ovan (2026-05-12T21:39, 05-18T18:56, 05-29T15:05,
 06-15T05:09, 06-28T07:38, 06-29T18:28, 07-15T18:15, 08-11T08:23) — en
 HITL-session.
 
-SLUTSATS AC #3: rotorsaken är BELAGD till gren-nivå (Gren 2 tog aldrig sin
+SLUTSATS AC #2: rotorsaken är BELAGD till gren-nivå (Gren 2 tog aldrig sin
 körning; Gren 1/3/4 uteslutna med belägg) men INTE till trigger-vs-
 exekvering-nivå (kräver Airtable run-history, ej nåbar via MCP-ytan) —
 öppet bokförd som obestämbar på den sista graden, med allt uteslutet
@@ -199,7 +199,7 @@ sweep, ingen ny dubblett uppstod under mellantiden.
 
 SLUTKONTROLL: ny sweep {Person}=BLANK() mot hela Anmälningar-tabellen efter
 samtliga 7 skrivningar → 0 träffar. Olänkade-luckan i prod är därmed
-STÄNGD (8/8 ursprungligen olänkade nu länkade: Helena i Del 1 + dessa 7).
+STÄNGD (8/8 ursprungligen olänkade nu länkade: Deltagare 35 i Del 1 + dessa 7).
 
 ## Del 5 — Del 3:s slutsats FALSIFIERAD: rotorsaken är belagd, inte obestämbar [S112, 2026-08-24, Opus-agent, read-only mot prod-basens automations-config + records]
 
@@ -241,5 +241,7 @@ Se `docs/reference/data-model.md` §Kända fällor 21 (raden korrigerad
 2026-08-24, samma källa och samma dag) för den fullständiga mätta
 omfattningen (8/97 ≈ 8,2 % felrat i defekt-fönstret).
 
-S112 slutbatch: 229.1/229.2/229.3 alla Done (rotorsak fixad hela vägen till prod, 61 fällor desarmerade, Deltagare 35:s historikpost backfillad recF10FuDa0NEKFEK). AC #1:s app-verifiering (historikraden syns i persondetaljen) är ett Marcus-vandringsmoment — kortet lämnas öppet tills den blicken; allt annat är klart.
+S112 slutbatch: 229.1/229.2/229.3 alla Done (rotorsak fixad hela vägen till prod, 61 fällor desarmerade, Deltagare 35:s historikpost backfillad recF10FuDa0NEKFEK). AC #3:s app-verifiering (historikraden syns i persondetaljen) är ett Marcus-vandringsmoment — kortet lämnas öppet tills den blicken; allt annat är klart.
+
+Pseudonymiserat (T171, 2026-09-18): namn i kortet ersatta med stabila pseudonymer (Deltagare NN). Se tasks/threads/T171-personuppgifter-i-publikt-repo.md.
 <!-- SECTION:NOTES:END -->

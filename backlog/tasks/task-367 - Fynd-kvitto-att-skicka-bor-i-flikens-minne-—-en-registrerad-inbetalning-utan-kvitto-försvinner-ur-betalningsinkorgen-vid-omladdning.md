@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-09-03 07:46'
-updated_date: '2026-09-18 11:44'
+updated_date: '2026-09-18 22:57'
 labels:
   - ready-for-agent
 dependencies: []
@@ -45,4 +45,6 @@ Review-fynd (runda 2, PR #2416, FYND 3, sidofynd): tests/e2e/atgarder-kvitto.sta
 STÄNGNING (S123 resume 1, 2026-09-07): PR #2416 → 988e0d3b (Marcus 'GO 2416' efter Riskbedömning runda 5, risk HÖG pga manuell prod-sekvens). Prod-sekvensen genomförd i ORDNING: (1) migration 20260906165100 applicerad i prod av orkestreraren på Marcus diktering ('Du kan väl migrera själv') via deny-prod-ref-låsets designade bypass, torrkörning visade exakt en väntande migration, kvitto 'migration list' local=remote=20260906165100, staging återlänkad; (2) fas4-prod-deploy.sh --deploya körd av Marcus i eget terminalfönster — första körningen föll på compute-segment (esm.sh hade inte byggt supabase-js 2.116.0 publicerad 16:26Z, se TASK-433), andra körningen 16:55–17:00Z deployade alla 57 EF:er (mätt med --kontrollera: registrera-inbetalning v5, hamta-oppna-betalningar v5); (3) klienten via Vercel. Post-merge 988e0d3b röd ENBART på get-person-sentineln (L599, städad), efterföljande post-merge gröna. Done-flipp av orkestreraren.
 
 Bockad i efterhand av S125 mot belägg: kortet har inga definierade AC (vacuous DoD#1). PR #2416 mergad 988e0d3b (2026-09-07) efter Marcus 'GO 2416' (risk HÖG, riskbedömning runda 5); post-merge röd endast på orelaterad get-person-sentinel (städad), efterföljande post-merge gröna. Nightly Backlog-stängningsgrinden (körning 35187813487) flaggade kortet som inkonsistent.
+
+Pseudonymiserat (T171, 2026-09-18): namn i kortet ersatta med stabila pseudonymer (Deltagare NN). Se tasks/threads/T171-personuppgifter-i-publikt-repo.md.
 <!-- SECTION:NOTES:END -->

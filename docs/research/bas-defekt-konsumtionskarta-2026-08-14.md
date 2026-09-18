@@ -618,3 +618,9 @@ ligga som rena bas-kandidater.
 **Externa källor:** inga. Frågan är helt intern; Airtables egen dokumentation
 om `COUNTA`-beteende på länkfält hade kunnat stärka §39:s rotorsakshypotes, men
 den hypotesen är inte bärande för konsumtionskartan.
+
+---
+
+> **Pseudonymiserat (T171, 2026-09-18):** namn i denna fil är ersatta med
+> stabila pseudonymer (`Deltagare NN`) och e-post maskad till `X***@domän`.
+> Se `tasks/threads/T171-personuppgifter-i-publikt-repo.md`.

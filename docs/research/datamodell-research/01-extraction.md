@@ -1003,3 +1003,9 @@ Lila            = Informationsmail 1 skickad (ny 2026-04-27, endast Väntelista-
 - G4: Personer 87 fält uppdelat 35 detaljerat (§3.3 i 02-live-state) + 52 i bilaga (§H.2 här)
 
 *Avvaktar Marcus godkännande av Checkpoint 2 innan vi går till Fas 3 (gapanalys).*
+
+---
+
+> **Pseudonymiserat (T171, 2026-09-18):** namn i denna fil är ersatta med
+> stabila pseudonymer (`Deltagare NN`) och e-post maskad till `X***@domän`.
+> Se `tasks/threads/T171-personuppgifter-i-publikt-repo.md`.

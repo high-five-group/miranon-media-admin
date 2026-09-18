@@ -1,5 +1,10 @@
 // Inkorgens härledningar — TASK-346.6 AC #2, #3, #4, #5. PRD TASK-346 DoD #5.
 //
+// Pseudonymiserat (T171, 2026-09-18): `personNamn: 'Deltagare 100'` nedan
+// ersätter ett verkligt namn som läckt in i fixturen (belagt som prod via
+// TASK-372/S115, inte en seed-fixtur) — se
+// tasks/threads/T171-personuppgifter-i-publikt-repo.md.
+//
 // ═══════════════════════════════════════════════════════════════════════════
 // VARJE REGEL BÄR SIN EGEN NEGATIVA KONTROLL
 // ═══════════════════════════════════════════════════════════════════════════

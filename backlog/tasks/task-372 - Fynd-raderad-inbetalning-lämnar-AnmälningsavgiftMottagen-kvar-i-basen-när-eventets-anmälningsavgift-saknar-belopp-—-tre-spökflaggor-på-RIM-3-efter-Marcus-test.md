@@ -7,7 +7,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-09-03 08:58'
-updated_date: '2026-09-18 11:44'
+updated_date: '2026-09-18 22:57'
 labels:
   - ready-for-agent
 dependencies: []
@@ -36,3 +36,9 @@ S115 Del 5 (2026-09-03), prod-läsning via bypass + Airtable-connectorn; Marcus:
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Pseudonymiserat (T171, 2026-09-18): namn i kortet ersatta med stabila pseudonymer (Deltagare NN). Se tasks/threads/T171-personuppgifter-i-publikt-repo.md.
+<!-- SECTION:NOTES:END -->

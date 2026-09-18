@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-22 11:52'
-updated_date: '2026-09-18 11:44'
+updated_date: '2026-09-18 22:57'
 labels:
   - ready-for-human
 dependencies: []
@@ -35,3 +35,9 @@ FYND ur TASK-284.6 AC #2 (prod-kontrollsvepet 2026-08-22, S110 Del 10): Event-18
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Pseudonymiserat (T171, 2026-09-18): namn i kortet ersatta med stabila pseudonymer (Deltagare NN). Se tasks/threads/T171-personuppgifter-i-publikt-repo.md.
+<!-- SECTION:NOTES:END -->

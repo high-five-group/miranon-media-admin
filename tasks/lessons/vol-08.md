@@ -835,7 +835,7 @@ namngiven ägare och ett datum att mäta på nytt — annars läses "sanerad" so
 Instans (S110, 2026-08-21): S107 länkade 26 orphan-anmälningar och skapade tre
 saknade event 2026-08-17, mätte klassen 26 → 0 och bokförde roten som
 *"Elfsight-url-parametrar på webbplatsen (Rogers fix; utanför repot)"*. Tre
-dagar senare landade nästa orphan (Fredrik Björk, ID 989) via samma länk.
+dagar senare landade nästa orphan (Deltagare 99, ID 989) via samma länk.
 Ingen hade talat om för Roger vad som skulle ändras, och ingen mätte om.
 Samma mönster en gång till bakåt: saneringen 2026-04-26 städade fem rader och
 bokförde hypotesen "template-kod" som öppen — den prövades aldrig på fyra

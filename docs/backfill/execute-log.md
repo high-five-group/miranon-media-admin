@@ -524,3 +524,9 @@ Källa: `TASK-229.3`-kortets Implementation Notes (steg 0–2, S112) och
 - Sessionsdok: [`../../tasks/sessions/archive/2026-08/2026-08-17-session-107.md`](../../tasks/sessions/archive/2026-08/2026-08-17-session-107.md) § Del 2.
 - Sessionsdok: [`../../tasks/sessions/archive/2026-08/2026-08-21-session-110.md`](../../tasks/sessions/archive/2026-08/2026-08-21-session-110.md) § Del 2.
 - Kort: `TASK-232` (Fynd EventKey 11 på anmälan ID 868 — återfall av sanerad fälla 10/F.2).
+
+---
+
+> **Pseudonymiserat (T171, 2026-09-18):** namn i denna fil är ersatta med
+> stabila pseudonymer (`Deltagare NN`) och e-post maskad till `X***@domän`.
+> Se `tasks/threads/T171-personuppgifter-i-publikt-repo.md`.

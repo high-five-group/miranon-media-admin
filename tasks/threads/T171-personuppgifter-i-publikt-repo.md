@@ -137,9 +137,11 @@ städar en femtedel och tror sig klar.
   History-rewrite (`git filter-repo` + force-push + GitHub-support för
   cachade vyer) är irreversibel och påverkar alla worktrees och parallella
   sessioner; görs i så fall i ett eget, tomt fönster.
-- **Tveksamt fall, ej rört:** `Björn Sjöberg` i
+- **Tveksamt fall, ej rört:** ett namn i
   `src/components/betalningar/prototype/fixtur.ts` och de ARIA-snapshots som
-  genereras därifrån. Namnet förekommer i INGEN prod-kontext och ser ut som
-  konstruerad prototypdata, men efternamnet finns inte i seed-skriptets
-  fasta listor — så det är inte maskinellt bevisat fiktivt. Lämnat orört och
+  genereras därifrån (samma namn som PR:ens och T171 punkt 1:s egen
+  beskrivning refererar till utan att skriva ut det). Namnet förekommer i
+  INGEN prod-kontext och ser ut som konstruerad prototypdata, men
+  efternamnet finns inte i seed-skriptets fasta listor — så det är inte
+  maskinellt bevisat fiktivt. Lämnat orört och
   flaggat hellre än gissat.
