@@ -4,7 +4,7 @@ title: 'Skiva: N3 — efterkontrollen klassar hela det pushade spannet'
 status: To Do
 assignee: []
 created_date: '2026-09-18 09:53'
-updated_date: '2026-09-18 10:24'
+updated_date: '2026-09-18 10:34'
 labels:
   - ready-for-agent
 dependencies:
@@ -29,12 +29,12 @@ Täcker användarberättelser: 4, 5
 - [x] #1 Fem nya fall i klassningsskriptets befintliga testsvit: två merge-commitar med texttopp ger false (fäller mot dagens skript, passerar efter fixen — tvåsidighetsbeviset); en merge-commit ger oförändrat true; bas noll-SHA ger false; bas onåbar inom taket ger false; bas osatt ger false
 - [x] #2 Skarpt mot verkliga SHA:n ur granskningens mätning: 269f6d476a (texttopp, kodspann) ger false efter fixen; en enkelposts textlandning förblir true
 - [x] #3 Rollback-egenskapen håller: utan bas-variabeln faller skriptet till dagens beteende
-- [ ] #4 Tråd T166 uppdaterad med att vägval 2 är byggt (pekare till PR), via trådregistrets egen rutin
+- [x] #4 Tråd T166 uppdaterad med att vägval 2 är byggt (pekare till PR), via trådregistrets egen rutin
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
