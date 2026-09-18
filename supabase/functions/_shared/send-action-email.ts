@@ -164,11 +164,23 @@ export type ActionSendResult = {
 /**
  * [TASK-147.5, ADR-067 D9] En bilaga vald i väljaren, RESOLVED server-side
  * INNAN orkestratorn nås — send-action-email/index.ts:s jobb (existens +
- * event-ägarskap + Lagringsnyckel-närvaro), inte orkestratorns. Samma
- * uppdelning som `registrationIds` → `ActionTarget[]`: HTTP-validering utanför,
- * ren logik inuti.
+ * event-ägarskap/räckviddsmatchning + Lagringsnyckel-närvaro), inte
+ * orkestratorns. Samma uppdelning som `registrationIds` → `ActionTarget[]`:
+ * HTTP-validering utanför, ren logik inuti.
+ *
+ * `anchor` [TASK-452, TILLAGT]: bilagans EGNA Storage-path-ANKARE
+ * (`buildStorageAnchor`, `_shared/attachments.ts`) — INTE det sändande
+ * eventets ID. En `Gemensam` bilaga kan sedan TASK-452 skickas på ett ANNAT
+ * event än sitt ursprung (`farBilaganSkickasForEvent`), men dess BYTES
+ * ligger fortfarande under dess EGEN lagringsplats. Innan detta fält fanns
+ * härledde `makeRealAttachmentReader` path:en ur det SÄNDANDE eventets ID
+ * (`AttachmentReader`s andra parameter) — rätt så länge en bilaga bara
+ * någonsin skickades på sitt eget event, men fel så fort räckvidds-fixen
+ * gjorde cross-event-sändning möjlig: en 500 "Internal error" (Storage-
+ * objektet finns inte under FEL events mapp), skarpt uppmätt mot staging
+ * INNAN detta fält lades till.
  */
-export type ResolvedAttachment = { id: string; namn: string; lagringsnyckel: string };
+export type ResolvedAttachment = { id: string; namn: string; lagringsnyckel: string; anchor: string };
 
 /** Bilagans bytes, redan hämtade + bas64-kodade — klara att bifogas på Resends `attachments[].content`. */
 export type AttachmentPayload = { filename: string; contentBase64: string };

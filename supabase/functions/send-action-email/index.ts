@@ -3,7 +3,16 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { Resend } from 'https://esm.sh/resend@6';
 import { fetchAirtableRecord, updateAirtableRecord } from '../_shared/airtable-client.ts';
-import { BILAGOR_BUCKET_ID, BILAGOR_TABLE, toBase64 } from '../_shared/attachments.ts';
+import {
+  BILAGOR_BUCKET_ID,
+  BILAGOR_TABLE,
+  buildStorageAnchor,
+  type EventetsAxlar,
+  farBilaganSkickasForEvent,
+  lasBilagansRackvidd,
+  lasEventetsAxlar,
+  toBase64,
+} from '../_shared/attachments.ts';
 import { requireUser } from '../_shared/auth.ts';
 import { scalarString, selectName } from '../_shared/coerce.ts';
 import { corsHeadersFor, handleCors } from '../_shared/cors.ts';
@@ -238,28 +247,34 @@ function makeRealSingleSender(): ActionSingleSender {
  * förhöjd-behörighet-mönster som generate-event-attachment/index.ts,
  * `create-admin-user`-precedenten, se docs/research/utskicks-bilage-
  * arkitektur-2026-08-03.md § Delfråga 2 väg (a)). Path deriveras
- * DETERMINISTISKT ur `eventId` + den redan RESOLVED `lagringsnyckel`
+ * DETERMINISTISKT ur bilagans EGET `anchor` (`ResolvedAttachment.anchor`,
+ * TASK-452 — se den typens docblock) + den redan RESOLVED `lagringsnyckel`
  * (validerad av `resolveAttachments` innan denna funktion någonsin nås) —
  * ingen gissning, ingen `storage.list()`-suffixmatchning (se
  * scripts/create-bilagor-table.mjs § Lagringsnyckel för varför den vägen
  * avvisades: flera Bilagor-rader kan dela identiskt Namn).
  *
- * EF-side download+bas64 valdes i stället för forskningspassets
- * förstahandsval (signerad URL i Resends `path`-fält) — en MEDVETEN
- * avvikelse: realistiska brev-/kvitto-PDF:er är KB-stora (146.5:s egna
- * genererade filer är ~1,3 kB), gott inom EF:ens 256 MB-minne/2s-CPU-budget,
- * och sidesteppar signerad-URL-TTL-osäkerheten (`SIGNED_UPLOAD_URL_TTL_
- * SECONDS`-noten i _shared/attachments.ts) för en lång sekventiell loop.
+ * [TASK-452, RÄTTAD] Path byggdes TIDIGARE ur `eventId` (det SÄNDANDE
+ * eventet, funktionens andra parameter) — korrekt så länge en bilaga bara
+ * kunde skickas på sitt eget event, men FEL så snart räckvidds-fixen ovan
+ * (`farBilaganSkickasForEvent`) gjorde cross-event-sändning möjlig: en
+ * `Gemensam` bilagas bytes ligger under DESS EGET ankare (ursprungseventet,
+ * eller `kurstyp/<familj>`/`alla-event` för en genuint event-lös
+ * uppladdning), inte under mottagareventets. Skarpt uppmätt mot staging
+ * (500 "Internal error" — Storage-nyckeln fanns inte under fel events
+ * mapp) innan `anchor` lades till. `eventId`-parametern lämnas OFÖRÄNDRAD i
+ * `AttachmentReader`-signaturen (delad typ, flera konsumenter i
+ * tests/api/send-action-email.test.ts) men används inte längre här.
  */
 function makeRealAttachmentReader(): AttachmentReader {
-  return async (attachments, eventId) => {
+  return async (attachments, _eventId) => {
     const supabaseAdmin = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
     const payloads: AttachmentPayload[] = [];
     for (const a of attachments) {
-      const path = `${eventId}/${a.lagringsnyckel}`;
+      const path = `${a.anchor}/${a.lagringsnyckel}`;
       const { data, error } = await supabaseAdmin.storage.from(BILAGOR_BUCKET_ID).download(path);
       if (error || !data) {
         throw new Error(
@@ -279,10 +294,23 @@ function makeRealAttachmentReader(): AttachmentReader {
  * [TASK-147.5] Löser `attachmentIds` (klient-buret) → `ResolvedAttachment[]`
  * (namn + lagringsnyckel, server-läst). HTTP-VALIDERING HÄR, INTE i
  * orkestratorn (samma uppdelning som registrationIds → targets): existens
- * (404), event-ägarskap (400, fail-closed — en bilaga från ETT event kan
- * aldrig bifogas på ETT ANNAT events utskick), och Lagringsnyckel-närvaro
+ * (404), event-ägarskap (400, fail-closed), och Lagringsnyckel-närvaro
  * (422 — en rad skapad FÖRE TASK-147.5s additiva fält saknar den och kan
  * inte skickas; ett tydligt fel i stället för en trasig sändning).
+ *
+ * [TASK-452, RÄTTAD] Event-ägarskapet prövas nu via `farBilaganSkickasForEvent`
+ * (delad, `_shared/rackvidd-matchning.ts`) — SAMMA regel `get-event-
+ * attachments` redan VISAR bilageväljaren med, inte längre en egen,
+ * snävare kopia. Fyndet: en `Gemensam`-bilaga syntes i BilageValjare på
+ * varje event den matchar via Kursfamilj/Kursnivå/Plats, men denna
+ * funktion avvisade den ändå med 400 om den inte RÅKADE vara länkad till
+ * exakt det sändande eventet — dokumenterat och staging-bevisat (400,
+ * request-id `01a0b434-854c-74c7-9f86-04b76a4b2149`) i
+ * docs/research/utskicksytan-karta-och-historik-2026-09-18.md § A2. En
+ * bilaga från ETT event kan FORTFARANDE aldrig bifogas på ETT ANNAT events
+ * utskick OM den varken är länkad dit eller matchar det via räckvidden —
+ * fail-closed är oförändrat, bara bredare med exakt den union visningen
+ * redan lovar.
  *
  * Returnerar antingen `{ ok: true, attachments }` eller `{ ok: false,
  * response }` — anroparen returnerar `response` direkt utan att gissa status.
@@ -290,6 +318,7 @@ function makeRealAttachmentReader(): AttachmentReader {
 async function resolveAttachments(
   rawIds: readonly string[],
   eventId: string,
+  eventetsAxlar: EventetsAxlar,
   corsHeaders: Record<string, string>,
 ): Promise<{ ok: true; attachments: ResolvedAttachment[] } | { ok: false; response: Response }> {
   const resolved: ResolvedAttachment[] = [];
@@ -302,7 +331,13 @@ async function resolveAttachments(
       };
     }
     const eventIds = linkedIds(record.fields['Event']);
-    if (!eventIds.includes(eventId)) {
+    const farSkickas = farBilaganSkickasForEvent(
+      lasBilagansRackvidd(record.fields),
+      eventIds,
+      eventId,
+      eventetsAxlar,
+    );
+    if (!farSkickas) {
       return {
         ok: false,
         response: badRequest(`Attachment ${id} does not belong to event ${eventId}`, corsHeaders),
@@ -322,8 +357,34 @@ async function resolveAttachments(
         ),
       };
     }
+    // [TASK-452] Bilagans EGET Storage-path-ANKARE — INTE det sändande
+    // eventet. Samma härledning delete-attachment/index.ts redan använder
+    // för samma rad (`buildStorageAnchor`, `_shared/attachments.ts`): eget
+    // Event-länk om satt, annars kurstyp/<familj>-slug eller `alla-event`
+    // för en genuint event-lös Gemensam uppladdning. Se ResolvedAttachment.
+    // anchor § docblock för VARFÖR (500-fyndet, staging 2026-09-18).
+    const rackviddRaw = record.fields['Räckvidd'];
+    const kursfamiljRaw = record.fields['Kursfamilj'];
+    const anchor = buildStorageAnchor({
+      eventId: eventIds.length > 0 ? eventIds[0] : null,
+      rackvidd: typeof rackviddRaw === 'string' ? rackviddRaw : '',
+      kursfamilj: typeof kursfamiljRaw === 'string' ? kursfamiljRaw : null,
+    });
+    if (anchor === null) {
+      return {
+        ok: false,
+        response: jsonResponse(
+          {
+            error: `Bilagan "${id}" kan inte skickas — dess lagringsplats kan inte härledas.`,
+            code: 'attachment_missing_anchor',
+          },
+          422,
+          corsHeaders,
+        ),
+      };
+    }
     const namn = typeof record.fields['Namn'] === 'string' ? record.fields['Namn'] : 'bilaga.pdf';
-    resolved.push({ id, namn, lagringsnyckel });
+    resolved.push({ id, namn, lagringsnyckel, anchor });
   }
   return { ok: true, attachments: resolved };
 }
@@ -343,15 +404,26 @@ async function readRegistration(
   return mapRegistrationFields(record.id, record.fields);
 }
 
-/** Läs upp eventet — bär de fyra platshållarna {event}/{ort}/{datum}/{deadline}. */
-async function readEvent(id: string): Promise<EventContext | null> {
+/**
+ * Läs upp eventet — bär de fyra platshållarna {event}/{ort}/{datum}/{deadline}
+ * (`context`) OCH dess räckviddsaxlar (`axlar`, TASK-452) — samma
+ * `Kursfamilj`/`Kursnivå`/`Plats`-härledning `get-event-attachments` redan
+ * använder för att avgöra vilka `Gemensam`-bilagor eventet matchar. EN
+ * fetch, två läsningar av samma `record.fields` — inget extra Airtable-anrop.
+ */
+async function readEvent(
+  id: string,
+): Promise<{ context: EventContext; axlar: EventetsAxlar } | null> {
   const record = await fetchAirtableRecord(EVENTS_TABLE, id);
   if (!record) return null;
   const f = record.fields;
   return {
-    eventNamn: selectName(f['Event (source)']), // singleSelect — get-event/get-events-mönstret
-    ort: scalarString(f['Ort']),
-    startdatum: typeof f['Startdatum'] === 'string' ? f['Startdatum'] : null,
+    context: {
+      eventNamn: selectName(f['Event (source)']), // singleSelect — get-event/get-events-mönstret
+      ort: scalarString(f['Ort']),
+      startdatum: typeof f['Startdatum'] === 'string' ? f['Startdatum'] : null,
+    },
+    axlar: lasEventetsAxlar(f),
   };
 }
 
@@ -475,11 +547,13 @@ Deno.serve(async (req) => {
   const utskickSparrat = isUtskickSparrat(Deno.env.get('UTSKICK_SPARR'));
 
   try {
-    // Eventet — 404 om okänt (get-event-kontraktet, aldrig 500).
-    const event = await readEvent(eventId);
-    if (!event) {
+    // Eventet — 404 om okänt (get-event-kontraktet, aldrig 500). `eventetsAxlar`
+    // (TASK-452) matas vidare till `resolveAttachments` nedan — se `readEvent`.
+    const eventRead = await readEvent(eventId);
+    if (!eventRead) {
       return jsonResponse({ error: `Event not found: ${eventId}` }, 404, corsHeaders);
     }
+    const { context: event, axlar: eventetsAxlar } = eventRead;
 
     // [TASK-147.10] TESTMAIL-GRENEN — EN mottagare (FÖRSTA registrationId,
     // ENDAST platshållar-data), adressen ALLTID `user.email` (aldrig
@@ -546,7 +620,7 @@ Deno.serve(async (req) => {
     // tar den bilage-fria batchgrenen, oförändrad.
     let resolvedAttachments: ResolvedAttachment[] = [];
     if (attachmentIds.length > 0) {
-      const resolution = await resolveAttachments(attachmentIds, eventId, corsHeaders);
+      const resolution = await resolveAttachments(attachmentIds, eventId, eventetsAxlar, corsHeaders);
       if (!resolution.ok) return resolution.response;
       resolvedAttachments = resolution.attachments;
     }
