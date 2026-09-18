@@ -1,5 +1,9 @@
 #!/usr/bin/env bash
 #
+# [TASK-450.5-PROOF2] Kastbar sond — bevisar att audit-jobbet KÖR när ENDAST
+# detta skript ändras (K1(b) runda 1-utökning). Denna gren mergas ALDRIG;
+# raden tas bort efter mätning. Se PR #2553.
+#
 # scripts/audit-ci-med-degradering.sh — audit-ci med steg-loop och en SMAL
 # nätverksdegradering (TASK-395, 2026-09-04).
 #
