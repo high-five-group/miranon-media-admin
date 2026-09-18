@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-02 10:50'
+updated_date: '2026-09-18 09:55'
 labels:
   - ready-for-agent
 dependencies: []
@@ -32,3 +33,9 @@ FYND (TASK-239 varv 3, PR #2216, 2026-09-02): i en ren pull_request-körning UTA
 - [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+S126 resume 1 (2026-09-18): N6 i CI-djupgranskningens nu-hög (PRD TASK-450, Marcus GO). Designfrågan som åtgärdsplanen (leverabel 11 § N6) krävde besvarad före plock är besvarad i PRD:n: bygg TÄCKNINGSKONTROLLEN FÖRST, delningen sedan, i samma ändringsförslag — varje skärva skriver ned antalet prövade tester och ett sammanfattande steg kräver att summan är lika med klassens listade antal (npx playwright test --project=acceptance --list). Tillkommande krav utöver kortets tre AC: summakontrollen ska fälla om en skärva tas bort ur matrisen. Ingen takhöjning.
+<!-- SECTION:NOTES:END -->
