@@ -3,6 +3,32 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- TASK-451.5 (docs/research/kallstarten-diagnoskarta-2026-09-18.md §1.1,
+         §6 punkt 4): prod-index.html bar 0 `preconnect` och 42 `modulepreload`
+         — DNS+TCP+TLS mot Supabase-origin startade först när första anropet
+         fyrade, vilket i det vanliga fallet är auth-token-refreshen mitt i
+         Förberedelseskärmen. web.dev (preconnect-and-dns-prefetch) rekommenderar
+         preconnect för ett tredjeparts-origin på kritisk väg.
+
+         Origin läses ur VITE_SUPABASE_URL via Vites INBYGGDA HTML-env-
+         ersättning (%VAR%, vite.dev/guide/env-and-mode#html-env-replacement)
+         — miljöberoende (.env.production/.env.staging), aldrig hårdkodad.
+         VITE_SUPABASE_URL bär redan BARA origin (schema+host, ingen path) i
+         båda mode-filerna, så ingen URL-parsning/plugin behövs.
+
+         `crossorigin` (anonymt) krävs: Supabase-klientens anrop är CORS utan
+         credentials (apikey/Authorization-headers, inga cookies) — utan
+         attributet öppnar webbläsaren en ANDRA, obehandlad anslutning för det
+         faktiska anropet och preconnect-vinsten går förlorad (web.dev, samma
+         källa). Ett enda origin preconnectas — web.dev varnar för fler än ett
+         fåtal, eftersom en oanvänd anslutning stängs av webbläsaren efter 10 s.
+
+         Bygg-tids-skydd mot en tom/trasig tagg: se vite.config.ts (kastar om
+         VITE_SUPABASE_URL saknas — annars lämnar Vite platshållaren %…% orörd
+         i utdatan i stället för att ersätta den). -->
+    <link rel="preconnect" href="%VITE_SUPABASE_URL%" crossorigin />
+
     <!-- Namnlistens färg följer systemets ljus/mörk-läge (Marcus-beslut
          2026-08-06, S96). Meta-taggen ÖVERSTYR manifestets `theme_color`
          (MDN, manifest/theme_color), och `media`-attributet är den enda
