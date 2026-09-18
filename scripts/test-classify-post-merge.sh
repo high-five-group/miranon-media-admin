@@ -3,7 +3,7 @@
 #
 # Empirisk test-suite för scripts/classify-post-merge.sh (TASK-73).
 #
-# 21 testfall — ett per gren i klassningen, båda riktningarna.
+# 27 testfall — ett per gren i klassningen, båda riktningarna.
 #
 # VÄG B — PR-ytan (ursprunglig form, TASK-73):
 #   T1  docs-landning: `Test suite` skipped i PR-körningen        → true
@@ -34,6 +34,21 @@
 # T14 ÄR TVÅSIDIGHETSBEVISET: den fäller mot skriptet FÖRE TASK-78-fixen
 # (träd-avvikelse ⇒ fail-closed ⇒ false) och passerar efter. Mätt, inte antaget
 # — se PR-beskrivningen för körningen mot den ofixade kopian.
+#
+# N3 (TASK-450.2, T166 vägval 2) — BEFORE-SPANNET, INTE BARA TOPPEN:
+#   T22 två merge-commitar, texttopp, BEFORE satt      → false (TVÅSIDIGHETSBEVIS)
+#   T23 en merge-commit, BEFORE satt (exakt ett steg)  → oförändrat true
+#   T24 BEFORE = noll-SHA                              → false
+#   T25 BEFORE onåbar inom taket (historiken tar slut) → false
+#   T26 BEFORE satt men TOMT (ej samma som osatt)      → false
+#   T27 BEFORE OSATT på samma scenario som T22         → true (ROLLBACK-BEVIS)
+#
+# T22 ÄR N3:s TVÅSIDIGHETSBEVIS: den fäller mot skriptet FÖRE denna fix (ingen
+# BEFORE-räkning finns, så bara HEAD^2 läses — toppens docs-klassning ärvs
+# blint) och passerar efter. T27 är SPEGELBILDEN och samtidigt
+# rollback-beviset: exakt samma scenario som T22, men med BEFORE OSATT — det
+# ska ge EXAKT det gamla (buggiga) svaret `true`, eftersom borttagen `BEFORE`-
+# rad i post-merge.yml är den dokumenterade rollback-vägen.
 #
 # ═══ VARFÖR T13 FINNS: PARITETEN ÄR EN STRÄNG, OCH DEN GRINDAS ═══
 # Klassningen ärver ci.yml:s beslut i stället för att räkna om det, just för att
@@ -93,10 +108,13 @@ setup() {
     # gh-stub. Scenariot styrs av miljövariabler:
     #   GH_COMMIT_MERGE_JSON  API-svar för merge-SHA:t (aaaa…)
     #   GH_COMMIT_HEAD_JSON   API-svar för PR-headen (bbbb…)
+    #   GH_COMMIT_EXTRA_JSON  karta {sha: commit-json} för N3:s BEFORE-vandring
+    #                         (varje hopp bakåt förbi aaaa, t.ex. "cccc")
     #   GH_RUNLIST_JSON       API-svar för `gh run list`
     #   GH_RUNVIEW_JSON       API-svar för `gh run view --json jobs`
     #   GH_FAIL_ON            vilket anrop som ska ge exit 1:
-    #                         commit_merge | commit_head | runlist | runview
+    #                         commit_merge | commit_head | commit_walk |
+    #                         runlist | runview
     #   GH_CALL_LOG           fil dit varje anrops argument loggas
     #
     # Stubben kör skriptets EGNA --jq-uttryck genom riktiga jq mot JSON i API:ts
@@ -135,6 +153,16 @@ case "${sub}" in
         if [[ "${target}" == *"/commits/bbbb"* ]]; then
             [[ "${fail_on}" == "commit_head" ]] && exit 1
             printf '%s' "${GH_COMMIT_HEAD_JSON:-{\}}" | jq -r "${jq_expr}"
+            exit $?
+        fi
+        # N3:s BEFORE-vandring: varje hopp bakom aaaa (t.ex. "cccc") slås upp i
+        # GH_COMMIT_EXTRA_JSON, en karta {sha: commit-json i API:ts RÅA form}.
+        # Ett SHA som saknas i kartan speglar gh:s 404 precis som fallet nedan.
+        extra_sha="${target##*/commits/}"
+        extra_body=$(printf '%s' "${GH_COMMIT_EXTRA_JSON:-{\}}" | jq -r --arg sha "${extra_sha}" '.[$sha] // empty')
+        if [[ -n "${extra_body}" ]]; then
+            [[ "${fail_on}" == "commit_walk" ]] && exit 1
+            printf '%s' "${extra_body}" | jq -r "${jq_expr}"
             exit $?
         fi
         # Okänt SHA — spegla gh:s beteende vid 404.
@@ -198,6 +226,10 @@ scenario_defaults() {
     export GH_FAIL_ON=""
     export GH_CALL_LOG="${TEST_DIR}/calls.log"
     : > "${GH_CALL_LOG}"
+    # BEFORE OSATT som DEFAULT — grindar N3-blocket av helt (rollback-egenskapen,
+    # § N3 i classify-post-merge.sh). T1–T21 kör därmed exakt den väg de alltid
+    # kört; N3-scenariona (T22–T27) sätter BEFORE själva.
+    unset BEFORE GH_COMMIT_EXTRA_JSON 2>/dev/null || true
 }
 
 # run_case <namn> <förväntad docs_only> [sha] — kör klassningen under stubben.
@@ -395,6 +427,68 @@ if grep -E -- "--event merge_group" "${GH_CALL_LOG}" | grep -q -- "--commit ${ME
 else
     fel "T21b kö-frågan ställs inte mot merge-SHA:t — klassningen läser fel commit"
 fi
+
+# ═══ N3 — BEFORE-SPANNET, INTE BARA TOPPEN (TASK-450.2, T166 vägval 2) ═══════
+# Topologin: aaaa (MERGE_SHA, topp) → första förälder cccc → första förälder
+# BEFORE_SHA. cccc är alltså SJÄLV en merge-commit — precis kö-batchens form
+# när fler än en post landar i samma push.
+echo "── N3: BEFORE-spannet, inte bara toppen (TASK-450.2) ──"
+
+BEFORE_SHA="dddddddddddddddddddddddddddddddddddddddd"
+ZERO_SHA="0000000000000000000000000000000000000000"
+TVA_MERGE_EXTRA="{\"cccc\": {\"parents\":[{\"sha\":\"${BEFORE_SHA}\"},{\"sha\":\"eeee\"}]}}"
+
+# --- T22: två merge-commitar, texttopp, BEFORE satt → false (TVÅSIDIGHETSBEVIS) ---
+# aaaa ärver i dag docs-klassningen av bbbb (texttoppen), men dess FÖRSTA
+# förälder cccc är SJÄLV en merge-commit vars första förälder är BEFORE — två
+# landningar i samma push, och den nedre bar kod. FÄLLER mot skriptet FÖRE
+# TASK-450.2 (ingen BEFORE-räkning finns, HEAD^2=bbbb ärvs blint → true) och
+# PASSERAR efter (→ false). Mätt mot origin/main-kopian, se PR-beskrivningen.
+scenario_defaults
+export GH_COMMIT_EXTRA_JSON="${TVA_MERGE_EXTRA}"
+export BEFORE="${BEFORE_SHA}"
+run_case "T22 två merge-commitar, texttopp (TVÅSIDIGHETSBEVIS)" "false"
+
+# --- T23: en merge-commit, BEFORE satt (exakt ETT steg) → oförändrat true ---
+# BEFORE = cccc, alltså aaaa:s FÖRSTA förälder direkt: exakt en landning i
+# pushen. Dagens logik (VÄG B, docs-scenariot i scenario_defaults) ska köras
+# helt orörd.
+scenario_defaults
+export BEFORE="cccc"
+run_case "T23 en merge-commit, BEFORE satt (exakt ett steg)" "true"
+
+# --- T24: BEFORE = noll-SHA → false ------------------------------------------
+# Ny gren eller den första pushen mot main — ingen bas att räkna steg mot.
+scenario_defaults
+export BEFORE="${ZERO_SHA}"
+run_case "T24 BEFORE = noll-SHA" "false"
+
+# --- T25: BEFORE onåbar inom taket → false -----------------------------------
+# cccc:s historik tar slut (parents: []) innan BEFORE hittas — omskriven
+# historik eller en djupare batch än taket (BEFORE_STEG_TAK=10) tillåter.
+scenario_defaults
+export GH_COMMIT_EXTRA_JSON='{"cccc": {"parents":[]}}'
+export BEFORE="${BEFORE_SHA}"
+run_case "T25 BEFORE onåbar (historiken tar slut)" "false"
+
+# --- T26: BEFORE satt men TOMT → false (skiljer sig från OSATT, se T27) ------
+# "" är INTE detsamma som att variabeln saknas: grinden är `${BEFORE+x}`
+# (existens), aldrig `-z` (värde). Satt-men-tomt är en egen fail-closed-kant.
+scenario_defaults
+export BEFORE=""
+run_case "T26 BEFORE satt men tomt" "false"
+
+# --- T27: BEFORE OSATT, SAMMA scenario som T22 → true (ROLLBACK-BEVIS) -------
+# scenario_defaults unsetar redan BEFORE. GH_COMMIT_EXTRA_JSON sätts ändå, för
+# att ordagrant vara T22:s topologi — den är inert här eftersom N3-blocket
+# aldrig körs utan BEFORE. Utan BEFORE i miljön hoppas hela blocket, och
+# skriptet faller till EXAKT det gamla svaret (HEAD^2=bbbb, texttopp ⇒ true) —
+# det svaret ÄR bugen T166/N3 stänger, och det är precis vad en borttagen
+# BEFORE-rad i post-merge.yml ska ge (planens § Rollback; § N3 i skriptets
+# eget huvud).
+scenario_defaults
+export GH_COMMIT_EXTRA_JSON="${TVA_MERGE_EXTRA}"
+run_case "T27 BEFORE osatt, T22:s scenario (ROLLBACK-BEVIS)" "true"
 
 # --- T13: KOPPLINGSGRINDEN ---------------------------------------------------
 echo "── T13: kopplingen till ci.yml ──"

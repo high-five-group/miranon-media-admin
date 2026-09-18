@@ -226,6 +226,14 @@ jobs:
           REPO: ${{ github.repository }}
           EVENT_NAME: ${{ github.event_name }}
           SHA: ${{ github.sha }}
+          # TASK-450.2 / T166 vägval 2: pushens bas, vid sidan av toppen (SHA).
+          # Skriptet räknar stegen mellan dem via första föräldern — mer än ETT
+          # steg betyder att kön landade fler än en post i denna push, och
+          # toppens klassning kan då inte stå för hela spannet (60 sådana hål
+          # på 19 dagar, mätt KG1). Grindad av att variabeln FINNS i skriptet,
+          # inte av dess värde — tas raden bort faller skriptet till dagens
+          # beteende utan ändring (rollback-egenskapen).
+          BEFORE: ${{ github.event.before }}
         run: bash scripts/classify-post-merge.sh "${SHA}"
 
   # Den tunga sviten via EN KÄLLA (ci-suite.yml, delad med ci.yml och

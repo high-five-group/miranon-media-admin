@@ -89,6 +89,45 @@
 #      visade att kostnaden bärs av nästan varje landning, och varje extra
 #      staging-körning är ett nytt tillfälle för TASK-76:s purge-race.
 #
+# ═══ N3 (TASK-450.2): SPANNET, INTE BARA TOPPEN — T166 VÄGVAL 2 ═══
+# Allt ovan besvarar frågan för EN commit: MERGE_SHA. Men merge queue kan landa
+# UPP TILL TRE ändringsförslag i EN ENDA push (`max_entries_to_merge: 3`,
+# mätt tre gånger oberoende), och `push`-eventets `GITHUB_SHA` är dokumenterat
+# som pushens TOPP-commit (GitHub Docs: "Tip commit pushed to the ref"). Är
+# toppen en textändring klassas hela pushen docs-only — även när spannet under
+# bär riktig kod. Mätt av KG1 (2026-09-17) över 601 pushar och 686 landningar:
+# 73 pushar bar mer än en landning, och i 60 av dem var toppen text medan
+# spannet bar kod. Tråden `tasks/threads/T166-…` beskrev mekanismen redan
+# 2026-08-21 med tre vägval; detta bygger vägval 2, det billigaste av dem och
+# det som ligger närmast skriptets egen fail-closed-princip: kan spannet inte
+# avgöras räknas det som "kod", aldrig som "docs".
+#
+# MEKANIKEN: `post-merge.yml` skickar `BEFORE` (`github.event.before`, pushens
+# bas) vid sidan av `SHA` (pushens topp). Skriptet går från `MERGE_SHA` bakåt
+# via FÖRSTA FÖRÄLDERN — samma commits-API-anrop steg (2) redan gör, plus vid
+# behov ytterligare identiska anrop ett steg i taget — och räknar hur många hopp
+# det tar att nå `BEFORE`. Exakt ETT steg betyder att pushen bar EN landning:
+# dagens logik (VÄG A/VÄG B nedan) körs helt orörd. FLER än ett steg betyder att
+# batchen bar minst två landningar bakom toppen; spannet klassas då direkt som
+# `docs_only=false` UTAN att VÄG A/VÄG B ens frågas — skälet skrivs ut i loggen.
+#
+# INGEN NY KLASSNINGS-IMPLEMENTATION: räkningen jämför bara SHA-kedjan, den
+# öppnar aldrig en diff och kopierar ingen filmönsterlista. ADR-077 § Beslut 1
+# ("klassningen förblir deklarativ i changed-files-steget") är orörd — samma
+# ärvning som förut, med en räkning framför.
+#
+# GRINDAD AV ATT `BEFORE` FINNS, INTE AV DESS VÄRDE (rollback-egenskapen):
+# testet är `${BEFORE+x}` (finns variabeln, oavsett innehåll), aldrig `-z`.
+# Tas raden bort ur `post-merge.yml` blir `BEFORE` OSATT i miljön, och hela
+# blocket hoppas — skriptet faller till exakt det beteende det hade innan detta
+# kort. Är variabeln SATT men TOM (eller allenaste nollor) är det däremot en
+# egen fail-closed-kant (se nedan), inte en rollback-signal — en tom sträng
+# betyder "pushens bas kunde inte fastställas", inte "räkna inte alls".
+#
+# TAKET PÅ TIO STEG är ett värde, inte en gissning kodad två gånger: se
+# `BEFORE_STEG_TAK` nedan, samma plats som skriptets övriga namngivna
+# konstanter (`CI_SUITE_JOB_NAME`).
+#
 # ═══ SIGNALEN, VERIFIERAD I API:T ═══
 # Ett SKIPPAT reusable-anrop rapporteras som ETT jobb med anropets egna namn.
 # Ett KÖRT anrop expanderas i stället till sina inner-jobb, prefixade
@@ -140,7 +179,11 @@
 # Varje avvikelse ger `docs_only=false`, alltså full svit: fel event, ingen
 # andra förälder, träd-avvikelse, API-fel, ingen grön PR-körning, saknat
 # `Test suite`-jobb, oväntad conclusion — och, sedan TASK-78, en kö-körning vars
-# bas inte är merge-commitens första förälder. VÄG A gör klassningen BILLIGARE,
+# bas inte är merge-commitens första förälder. Och, sedan TASK-450.2 (N3): när
+# `BEFORE` är satt men tomt eller ett noll-SHA, när `BEFORE` inte nås via första
+# föräldern inom taket på tio steg, när ett `gh`-anrop UNDER den vandringen
+# misslyckas, eller när fler än ETT steg krävs för att nå `BEFORE` (en kö-batch
+# med mer än en landning i samma push). VÄG A gör klassningen BILLIGARE,
 # aldrig mer tillåtande: den ärver samma binära signal ur en körning på samma
 # SHA, och varje oväntad form faller till full svit precis som förut. Ingen gren
 # som förut gav `false` ger `true` efter ändringen utan att kö-körningen
@@ -152,7 +195,11 @@
 # av data (TASK-51, L322-klassen).
 #
 # ANVÄNDNING
-#   REPO=<owner/namn> EVENT_NAME=push scripts/classify-post-merge.sh <full-sha>
+#   REPO=<owner/namn> EVENT_NAME=push [BEFORE=<pushens bas-sha>] \
+#       scripts/classify-post-merge.sh <full-sha>
+#
+#   `BEFORE` är OPTIONELL (rollback-egenskapen, se § N3 ovan) — osatt kör
+#   skriptet exakt som innan TASK-450.2.
 #
 #   Skriver `docs_only=<true|false>` till ${GITHUB_OUTPUT} när den är satt, och
 #   alltid en människoläsbar motivering till stdout.
@@ -192,13 +239,22 @@ set -uo pipefail
 CI_SUITE_JOB_NAME="Test suite"
 CI_WORKFLOW="ci.yml"
 
+# N3 (TASK-450.2): hur många första-förälder-hopp som accepteras mellan
+# MERGE_SHA och BEFORE innan spannet räknas som "kan inte avgöras" (full svit).
+# Se § N3 i huvudet för varför just detta värde och var det bor.
+BEFORE_STEG_TAK=10
+
 usage() {
-    echo "Användning: REPO=<owner/namn> [EVENT_NAME=push] $0 <full-merge-sha>" >&2
+    echo "Användning: REPO=<owner/namn> [EVENT_NAME=push] [BEFORE=<bas-sha>] $0 <full-merge-sha>" >&2
 }
 
 MERGE_SHA="${1:-}"
 REPO="${REPO:-}"
 EVENT_NAME="${EVENT_NAME:-push}"
+# BEFORE läses MEDVETET INTE med `${BEFORE:-}` här — det skulle sätta variabeln
+# och radera skillnaden mellan "osatt" (rollback) och "satt men tomt"
+# (fail-closed-kant). Se § N3 i huvudet. Existens-testet `${BEFORE+x}` nedan
+# fungerar oavsett, `set -u` till trots.
 
 if [[ -z "${MERGE_SHA}" ]]; then
     echo "❌ Saknat argument: merge-commitens fulla SHA." >&2
@@ -248,6 +304,54 @@ commit_json=$(gh api "repos/${REPO}/commits/${MERGE_SHA}" \
 if [[ -n "${api_failed}" ]]; then
     skal="commits-API:t svarade inte för ${MERGE_SHA:0:12} — INTE ett påstående om trädet (full svit, fail-closed)."
     emit
+fi
+
+# --- (2.5) N3 (TASK-450.2): räkna steg från MERGE_SHA till BEFORE -----------
+# Grindad av att BEFORE FINNS (${BEFORE+x}), aldrig av dess värde — se § N3 i
+# huvudet för rollback-egenskapen. Steg 1 återanvänder commit_json ovan (redan
+# hämtad); varje ytterligare steg är ett identiskt commits-API-anrop ett hopp
+# bakåt via FÖRSTA föräldern.
+if [[ -n "${BEFORE+x}" ]]; then
+    if [[ -z "${BEFORE}" ]] || [[ "${BEFORE}" =~ ^0+$ ]]; then
+        skal="BEFORE är tomt eller ett noll-SHA (\"${BEFORE}\") — ingen bas att räkna steg mot, sannolikt en ny gren eller den första pushen (full svit, fail-closed)."
+        emit
+    fi
+
+    steg=0
+    hittad=""
+    vandra_parents="${commit_json}"
+    vandra_sha="${MERGE_SHA}"
+
+    while (( steg < BEFORE_STEG_TAK )); do
+        forsta_foralder=$(jq -r '.parents[0] // ""' <<<"${vandra_parents}")
+        if [[ -z "${forsta_foralder}" ]]; then
+            break
+        fi
+        steg=$(( steg + 1 ))
+        if [[ "${forsta_foralder}" == "${BEFORE}" ]]; then
+            hittad="1"
+            break
+        fi
+        vandra_sha="${forsta_foralder}"
+        vandra_failed=""
+        vandra_parents=$(gh api "repos/${REPO}/commits/${vandra_sha}" \
+            --jq '{parents: [.parents[].sha]}') || vandra_failed="1"
+        if [[ -n "${vandra_failed}" ]]; then
+            skal="commits-API:t svarade inte under BEFORE-vandringen, vid ${vandra_sha:0:12} (steg ${steg}) — INTE ett påstående om spannet (full svit, fail-closed)."
+            emit
+        fi
+    done
+
+    if [[ -z "${hittad}" ]]; then
+        skal="BEFORE (${BEFORE:0:12}) nåddes inte via första föräldern inom taket på ${BEFORE_STEG_TAK} steg — omskriven historik eller en djupare batch än taket tillåter (full svit, fail-closed)."
+        emit
+    fi
+
+    if (( steg > 1 )); then
+        skal="pushen bar ${steg} steg från topp-commiten (${MERGE_SHA:0:12}) till BEFORE (${BEFORE:0:12}) via första föräldern — fler än en landning i samma push, toppens klassning gäller inte hela spannet (full svit)."
+        emit
+    fi
+    # steg == 1 ⇒ exakt en landning i denna push. Dagens logik nedan är orörd.
 fi
 
 parent_count=$(jq -r '.parents | length' <<<"${commit_json}")
@@ -320,9 +424,17 @@ fi
 # avstängd, admin-merge). Då gäller VÄG B oförändrat.
 
 # --- (4) VÄG B: träd-identitet mot PR-headen ---------------------------------
-# Sunt TACK VARE merge-grindens strict up-to-date-krav (ADR-076): en up-to-date
-# gren ger merge-commit vars träd är identiskt med PR-headens, och då är den
-# landade diffen exakt PR:ens diff — alltså den diff ci.yml klassade.
+# Sundheten vilar på att STEGET SJÄLVT är fail-closed på varje avvikelse (raden
+# nedan jämför `merge_tree` mot `head_tree` och faller till full svit vid
+# skillnad) — INTE på merge-grindens strict up-to-date-krav som denna
+# kommentar tidigare påstod: det kravet (ADR-076) stängdes av 2026-08-05 och
+# premissen var falsifierad i sex veckor (`strict_required_status_checks_policy:
+# false`, verifierat mot `gh api repos/high-five-group/miranon-media-admin/
+# rulesets/19627609`). Rättat 2026-09-18 (TASK-450.2, samma falska premiss som
+# `ci.yml:458` och `ADR-077` § Beslut 2 bar innan `TASK-450.4`/N5 rättade dem
+# — se ADR-077 § Updates. En up-to-date gren GER fortfarande normalt ett träd
+# identiskt med PR-headens, men det är trädjämförelsen nedan som bär
+# sundheten, aldrig ett antagande om grenens tillstånd.
 head_failed=""
 head_tree=$(gh api "repos/${REPO}/commits/${pr_head}" --jq '.commit.tree.sha') || head_failed="1"
 
