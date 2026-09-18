@@ -88,6 +88,149 @@ export const FORBEREDELSESKARM_VANTAR: ForberedelseskarmProps = { klara: 0, tota
  * så komponenten bor i `AppShell/` tillsammans med annan app-rot-chrome
  * (`AppUpdateBanner`, `OfflineIndicator`) snarare än i `primitives/`.
  *
+ * ═══ OBESTÄMT LÄGE VID klara === 0 (task-451.1, diagnoskartan
+ * docs/research/kallstarten-diagnoskarta-2026-09-18.md § 1.4–1.5, § 6
+ * punkt 1) ═══
+ *
+ * STALL-SIGNALEN OVAN LÖSER INTE HELA PROBLEMET DEN SYFTAR TILL: den kräver
+ * `STALL_THRESHOLD_MS` (3 s) UTAN framsteg innan den slår till, och pulsen
+ * den lägger landar på FYLLNADEN. Mellan skärmens första målning och FÖRSTA
+ * settlade hämtningen (`klara === 0`, per konstruktion 0 % bred, se
+ * `percentage`-räkningen nedan) finns det ÄNNU INGEN fyllnad att pulsera —
+ * en nollbred div syns aldrig, pulserande eller ej. Diagnoskartans §1.5
+ * mätte exakt detta som Marcus prod-observation ("ingen loadingbar kördes").
+ *
+ * En determinate bar utan känt värde ska per branschmönstret degradera till
+ * INDETERMINATE (Material Design 3, "Progress indicators": indeterminate
+ * "when the wait time is unknown"; W3C APG meter/progressbar: en progressbar
+ * UTAN känt värde anges UTAN `aria-valuenow`) — inte visa "0 %" som om 0
+ * vore ett meningsfullt delresultat. `klara === 0` ÄR exakt det tillståndet:
+ * varken auth-fasens platshållare (`FORBEREDELSESKARM_VANTAR`, `totalt: 1`)
+ * eller startvärmningens verkliga `totalt: 7` bär ett meningsfullt
+ * delresultat förrän NÅGOT har settlat (`startvarmningen.ts`s filhuvud §
+ * "Äkta settled-räkning", `main.tsx:439`).
+ *
+ * IMPLEMENTATIONEN: `<ProgressBar isIndeterminate={klara === 0}>`
+ * (react-aria-components, samma bibliotek widgeten redan bygger på) —
+ * biblioteket äger kontraktet: render-propen `percentage` blir `undefined`,
+ * och `useProgressBar` sätter `aria-valuenow`/`aria-valuetext` till
+ * `undefined` (källäst, `node_modules/react-aria/dist/private/progress/
+ * useProgressBar.js`). Ingen egen aria-hantering skrivs här — samma
+ * disciplin som resten av filen (widgeten äger sitt eget a11y-kontrakt).
+ *
+ * VISUELLT: ett segment (40 % av spårets bredd) som sveper genom spåret
+ * (`motion-safe:animate-mm-forberedelseskarm-obestamd`, tailwind.css — se
+ * den tokenens kommentar för svep-mekaniken och reducerad-rörelse-
+ * dubbelbältet). SAMMA fyllnadsfärg/kontrast-token som den determinate baren
+ * (`--mm-forberedelseskarm-bar-fill`/`-fill-contrast`, § "Höjden och
+ * fyllnadsfärgen" nedan) — kontrastbeviset i `Forberedelseskarm.spec.ts`
+ * gäller alltså oförändrat, ingen ny färg att verifiera. Under
+ * `prefers-reduced-motion: reduce` renderas SAMMA segment utan rörelse
+ * (`motion-safe:`-gaten tar bort klassen strukturellt, inte bara
+ * animationens verkan) — en STATISK men SYNLIG indikation, aldrig en osynlig
+ * 0-bredd (AC #3, task-451.1).
+ *
+ * ÖVERGÅNGEN ÄR AUTOMATISK OCH KRÄVER INGEN EGEN TRÖSKEL: så fort `klara`
+ * ökar till 1 (första settlade hämtningen, oavsett lyckad eller fallerad —
+ * `startvarmningen.ts:414–417`s `.finally()`-räknare) blir `isIndeterminate`
+ * falskt och baren återgår till DAGENS determinate "X av N"-presentation
+ * (AC #2). Stall-signalen ovan är HELT ORÖRD och verkar bara i den
+ * determinate grenen (dess className-uttryck refererar `stallad`, det
+ * obestämda segmentets gör det ALDRIG) — den täcker fallet "framsteg har
+ * börjat men stannar sedan mitt i", ett annat tillstånd än "inget framsteg
+ * har skett än", som denna sektion täcker. De två animationerna
+ * (`motion-safe:animate-mm-forberedelseskarm-obestamd` på det obestämda
+ * segmentet, `motion-safe:animate-pulse` på den STALLADE determinate-
+ * fyllnaden) kan alltså ALDRIG samtidigt sitta på samma nod — de hör till
+ * TVÅ SKILDA element i TVÅ SKILDA grenar av samma villkor.
+ *
+ * ═══ ÖVERGÅNGENS EGEN MONTERING — RÖD-FÅNGST, RUNDA 2-GRANSKNING (fynd 2,
+ * PR #2536) ═══
+ *
+ * BUGGEN, mätt: `{isIndeterminate ? <div .../> : <div .../>}` är TVÅ `div`
+ * på SAMMA trädposition. UTAN skilda `key`-attribut ser React dem som SAMMA
+ * nod (samma typ, samma position) och ÅTERANVÄNDER DOM-elementet i stället
+ * för att montera/avmontera — precis reconciliation-algoritmens avsedda
+ * beteende för en icke-nycklad villkorsgren, men fel HÄR: den nya
+ * determinate-fyllnadens `style={{width}}` TRANSITIONERADE då FRÅN det
+ * återanvända elementets FÖREGÅENDE bredd (den obestämda grenens `w-2/5` =
+ * 40 %) i stället för att börja om — en synlig krympning/växning (40 % →
+ * t.ex. 28,57 %) mitt i övergången, samtidigt som `translateX`-svepet
+ * snäppte (transform-egenskapen försvinner ur klassnamnet utan att animeras
+ * ut). Bevisat i en riktig webbläsare (Playwright, inte resonemang, se
+ * `Forberedelseskarm.spec.ts`s övergångstest).
+ *
+ * FIXEN HAR TVÅ DELAR, EN STRUKTURELLT AVGÖRANDE OCH EN DEFENSIV — mätt var
+ * för sig, inte antaget par. (1), AVGÖRANDE: den determinate grenen är
+ * BRUTEN UT till en EGEN komponent (`DeterminateFyllnad` nedan) i stället
+ * för en andra inline-`<div>`. React jämför alltid TYPEN först — ett
+ * host-element (`'div'`) och en komponentreferens (`DeterminateFyllnad`) är
+ * ALDRIG samma typ, oavsett `key`, så reconciliation UNMOUNTAR/MONTERAR
+ * regardless. Mätt isolerat (runda 2, PR #2536): samma övergångstest
+ * (`Forberedelseskarm.spec.ts`) förblev GRÖNT även med `key`-attributen
+ * tillfälligt borttagna — typskillnaden ensam räcker. (2), DEFENSIVT:
+ * `key="obestamd"` / `key="determinate"` sitter kvar ändå, som ett
+ * DUBBELBÄLTE mot en framtida refaktor som råkar kollapsa grenarna till
+ * samma elementtyp igen (t.ex. om någon inlinar `DeterminateFyllnad`
+ * tillbaka till en ren `<div>`) — samma "explicit trots att den för
+ * tillfället är överflödig"-disciplin som repot redan använder för andra
+ * skyddsräcken. Skriv aldrig om detta stycke till att påstå att `key` ENSAM
+ * är den mekanism som fäller buggen (ADR-083) — mätningen säger typskillnaden
+ * är det.
+ *
+ * En färsk montering (oavsett vilken av de två mekanismerna som utlöser den)
+ * behöver ett EGET, UTTALAT svar på "vad animerar den FRÅN" (en ny nod har
+ * ingen tidigare bredd att transitionera från — CSS-transitioner triggar
+ * bara på en ÄNDRING av en REDAN MÅLAD egenskap, aldrig på initial-render).
+ * Svaret: 0 %, samma naturliga startpunkt som en helt ny determinate-
+ * progressbar alltid har.
+ *
+ * `@starting-style` PRÖVADES FÖRST (CSS Transitions-specens EGNA primitiv
+ * för precis detta) och FÖRKASTADES, MÄTT — inte antaget. En första
+ * implementation deklarerade `.mm-forberedelseskarm-bar-determinate {
+ * @starting-style { width: 0%; } }`, byggd (verifierat i `dist/assets/*.css`
+ * att regeln överlevde Tailwind v4:s CSS-pipeline oskadd) och sedan MÄTT i
+ * en riktig webbläsare (`Forberedelseskarm.spec.ts`s övergångstest, 22
+ * bildruteprov över 350 ms): FYLLNADEN VISADE NOLL RÖRELSE — samtliga prov
+ * identiska med slutbredden från allra första bildrutan. Rotorsaken: bredden
+ * sätts via en INLINE `style={{width}}` (React), och en inline-egenskap är
+ * NÄRVARANDE redan vid elementets FÖRSTA style-beräkning — det finns därför
+ * ALDRIG ett separat "starting"-ögonblick där klassregelns `width: 0%` får
+ * vara den ENDA deklarationen; inline vinner cascaden omedelbart, och
+ * "starting"-värdet blir därmed OCKSÅ målbredden (ingen delta att
+ * transitionera, ingen synlig rörelse). Ett dokumenterat, allmänt känt gap
+ * i specen (`@starting-style` interagerar inte meningsfullt med inline
+ * `style`) — inte en Tailwind- eller byggkedje-brist.
+ *
+ * IMPLEMENTATIONEN ÄR DÄRFÖR DEN KLASSISKA "DUBBEL-rAF"-TEKNIKEN
+ * (`DeterminateFyllnad` nedan): en liten intern komponent vars `useEffect`
+ * (mount-only — `key`-fixen ovan garanterar att den bara monteras EN gång
+ * per skärm-livstid) håller bredden vid 0 % i sin FÖRSTA commit, väntar in
+ * TVÅ `requestAnimationFrame`-callbacks (den första garanterar att
+ * webbläsaren hunnit MÅLA 0 %-läget; den andra garanterar att den målningen
+ * är COMMITTAD innan nästa style-ändring begärs — samma dubbel-rAF-mönster
+ * väletablerat i React-ekosystemet för exakt detta problem, t.ex.
+ * Framer Motions/React Transition Groups egna enter-transitioner) och sätter
+ * DÄREFTER den verkliga bredden — en GENUINT andra, senare synkron commit,
+ * så webbläsaren har två skilda style-lägen att transitionera mellan, oavsett
+ * inline vs. klass. Samma `motion-safe:transition-[width]`-deklaration som
+ * redan fanns är oförändrad och gör hela jobbet; `DeterminateFyllnad` styr
+ * bara VILKET tal den binder till `style`, aldrig transitionsmekaniken.
+ *
+ * REDUCERAD RÖRELSE: dubbel-rAF-fördröjningen (två bildrutor, ~33 ms) är i
+ * praktiken omärkbar ÄVEN under `prefers-reduced-motion: reduce` (ingen
+ * `transition`-deklaration finns då i klassnamnet, så språnget 0 % → verklig
+ * bredd sker ändå utan synlig rörelse) — men för att inte tvinga en två-
+ * bildruters extra väntan i onödan hoppar komponenten över dubbel-rAF:en helt
+ * under `reduce` och sätter målbredden DIREKT i sin FÖRSTA commit, samma
+ * "hoppa över mellansteget"-disciplin som resten av filen.
+ *
+ * Remounten (och därmed `DeterminateFyllnad`s mount-effekt) kör EXAKT EN
+ * gång per skärm-livstid (klara går 0 → >0 en enda gång, aldrig tillbaka —
+ * `korAlla()`s räknare är monoton). Efterföljande uppdateringar (klara
+ * 1→2→3…) återanvänder SAMMA determinate-nod och transitionerar normalt
+ * mellan sina egna på-varandra-följande breddvärden, precis som förut.
+ *
  * ═══ HÖJDEN OCH FYLLNADSFÄRGEN — 6 PX + SAGE, INTE GOLD (task-273.1) ═══
  *
  * Baren delar nästa event-kortets bar-KLASS (`hem/NastaEvent.tsx` rad ~95,
@@ -299,6 +442,58 @@ export const FORBEREDELSESKARM_VANTAR: ForberedelseskarmProps = { klara: 0, tota
  * vara `grid` och inte `flex` (mätt: `h-full` mot en flex-förälder med
  * min-height ger 219 px, mot en grid-förälder 720 px).
  */
+
+/**
+ * Den determinate fyllnaden — EGEN komponent enbart för sin mount-EFFEKT
+ * (dubbel-rAF-inträdet, se klassdoc-blocket § ÖVERGÅNGENS EGEN MONTERING för
+ * hela rotorsaken och varför `@starting-style` MÄTTES och FÖRKASTADES). Att
+ * detta ÄR en egen komponent (inte en andra inline-`<div>` i förälderns
+ * villkorsgren) är själva mekanismen som garanterar en FÄRSK montering exakt
+ * en gång per skärm-livstid — React unmountar/monterar alltid vid en
+ * TYPSKILLNAD, oavsett `key` (mätt, se klassdoc-blockets § ÖVERGÅNGENS EGEN
+ * MONTERING). `key="determinate"` i föräldern (nedan) är ett defensivt
+ * dubbelbälte ovanpå det, inte den bärande mekanismen. `useEffect`s tomma
+ * beroendelista är därför sant "mount-only", inte bara en konvention.
+ */
+function DeterminateFyllnad({
+  percentage,
+  stallad,
+}: {
+  percentage: number | undefined;
+  stallad: boolean;
+}) {
+  // `reduce` hoppar dubbel-rAF:en helt — se klassdoc-blocket § REDUCERAD
+  // RÖRELSE. Lazy-init (inte ett `useEffect`) så det första committade
+  // värdet redan är korrekt under `reduce`, ingen extra render.
+  const [redoForMalbredd, setRedoForMalbredd] = useState(
+    () => window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+  );
+  // biome-ignore lint/correctness/useExhaustiveDependencies: medvetet mount-only, se ovan
+  useEffect(() => {
+    if (redoForMalbredd) return; // reduce-grenen är redan klar, se ovan
+    let andraRaf = 0;
+    const forstaRaf = requestAnimationFrame(() => {
+      andraRaf = requestAnimationFrame(() => setRedoForMalbredd(true));
+    });
+    return () => {
+      cancelAnimationFrame(forstaRaf);
+      cancelAnimationFrame(andraRaf);
+    };
+  }, []);
+
+  return (
+    <div
+      data-testid="forberedelseskarm-bar-determinate"
+      className={
+        stallad
+          ? 'h-full rounded-full bg-(--mm-forberedelseskarm-bar-fill) motion-safe:animate-pulse motion-safe:transition-[width] contrast-more:bg-(--mm-forberedelseskarm-bar-fill-contrast)'
+          : 'h-full rounded-full bg-(--mm-forberedelseskarm-bar-fill) motion-safe:transition-[width] contrast-more:bg-(--mm-forberedelseskarm-bar-fill-contrast)'
+      }
+      style={{ width: `${redoForMalbredd ? (percentage ?? 0) : 0}%` }}
+    />
+  );
+}
+
 export function Forberedelseskarm({ klara, totalt }: ForberedelseskarmProps) {
   const textId = useId();
   const besked = `${klara} av ${totalt} hämtningar klara`;
@@ -372,18 +567,38 @@ export function Forberedelseskarm({ klara, totalt }: ForberedelseskarmProps) {
           minValue={0}
           maxValue={totalt}
           valueLabel={besked}
+          isIndeterminate={klara === 0}
           className="w-full"
         >
-          {({ percentage }) => (
+          {({ percentage, isIndeterminate }) => (
             <div className="h-1.5 w-full overflow-hidden rounded-full bg-(--mm-forberedelseskarm-bar-track) outline-border-strong contrast-more:outline print:outline">
-              <div
-                className={
-                  stallad
-                    ? 'h-full rounded-full bg-(--mm-forberedelseskarm-bar-fill) motion-safe:animate-pulse motion-safe:transition-[width] contrast-more:bg-(--mm-forberedelseskarm-bar-fill-contrast)'
-                    : 'h-full rounded-full bg-(--mm-forberedelseskarm-bar-fill) motion-safe:transition-[width] contrast-more:bg-(--mm-forberedelseskarm-bar-fill-contrast)'
-                }
-                style={{ width: `${percentage ?? 0}%` }}
-              />
+              {isIndeterminate ? (
+                // Obestämt läge (task-451.1) — se klassdoc-blocket § OBESTÄMT
+                // LÄGE ovan för hela resonemanget (varför, W3C APG/MD3-källor,
+                // reducerad-rörelse-dubbelbältet). `key` — se § ÖVERGÅNGENS
+                // EGEN MONTERING ovan: FÖRE runda 2-fixen var motparten (den
+                // determinate grenen) en andra inline-`<div>` av SAMMA typ på
+                // samma trädposition, och UTAN skilda `key`-attribut
+                // återanvände React DOM-noden mellan de två — den nya
+                // determinate-bredden TRANSITIONERADE FRÅN detta segments
+                // 40 % i stället för att monteras färsk. Motparten är nu en
+                // EGEN komponent (`DeterminateFyllnad`), en annan TYP som
+                // ensam räcker för att tvinga fram en remount — `key="obestamd"`
+                // är ett defensivt dubbelbälte ovanpå det, inte den bärande
+                // mekanismen (mätt, se `DeterminateFyllnad`s eget docblock).
+                <div
+                  key="obestamd"
+                  data-testid="forberedelseskarm-bar-obestamd"
+                  className="h-full w-2/5 rounded-full bg-(--mm-forberedelseskarm-bar-fill) motion-safe:animate-mm-forberedelseskarm-obestamd contrast-more:bg-(--mm-forberedelseskarm-bar-fill-contrast)"
+                />
+              ) : (
+                // `DeterminateFyllnad` — se dess eget docblock ovan och
+                // klassdoc-blockets § ÖVERGÅNGENS EGEN MONTERING för varför
+                // den är en EGEN komponent (typskillnaden är den bärande
+                // remount-mekanismen) och hur dubbel-rAF-inträdet fungerar.
+                // `key="determinate"` sitter kvar som defensivt dubbelbälte.
+                <DeterminateFyllnad key="determinate" percentage={percentage} stallad={stallad} />
+              )}
             </div>
           )}
         </ProgressBar>

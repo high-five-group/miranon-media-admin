@@ -314,7 +314,13 @@ test.describe('Persist-lagret (task-8.3, ADR-072)', () => {
     await expect
       .poll(async () => progressbar.getAttribute('aria-valuemax'), { timeout: 5_000 })
       .not.toBe('1');
-    await expect(progressbar).toHaveAttribute('aria-valuenow', '0');
+    // TASK-451.1: `klara === 0` degraderar baren till OBESTÄMT läge
+    // (Forberedelseskarm.tsx § OBESTÄMT LÄGE) — `aria-valuenow` är sedan dess
+    // HELT FRÅNVARANDE här, inte `'0'` (W3C APG: en progressbar utan känt
+    // värde bär aldrig aria-valuenow). Rader FÖRE denna skiva asserterade
+    // `'0'`; ändringen är avsiktlig, samma kontrakt som
+    // `Forberedelseskarm.spec.ts`s motsvarande uppdatering.
+    await expect(progressbar).not.toHaveAttribute('aria-valuenow');
     const totaltStr = await progressbar.getAttribute('aria-valuemax');
     if (!totaltStr) throw new Error('progressbar saknar aria-valuemax efter stabilisering');
 

@@ -211,6 +211,55 @@
       opacity: 1;
     }
   }
+
+  /* ── Förberedelseskärmens obestämda läge (task-451.1, diagnoskartan
+     docs/research/kallstarten-diagnoskarta-2026-09-18.md § 6 punkt 1) ──
+     Ett segment (40 % av spårets bredd, se Forberedelseskarm.tsx) som svepar
+     genom spåret medan `klara === 0` — determinate bar-mönstret (statisk
+     bredd, `transition-[width]`) kan per definition inte visa rörelse innan
+     motorn har ETT settlat värde att räkna med, så baren degraderar till
+     INDETERMINATE (Material Design 3 "Progress indicators": indeterminate
+     när väntetiden är okänd; W3C APG meter/progressbar: en progressbar utan
+     känt värde bär ALDRIG aria-valuenow — se komponentens
+     `isIndeterminate`-prop, react-aria-components).
+
+     SAMMA SVEP-TEKNIK SOM --animate-skeleton-shimmer OVAN (translateX
+     -100%→ansluten position), men applierad på en SOLID fylld yta i stället
+     för en genomskinlighets-gradient — skeleton-shimmern sveper ett ljus
+     ÖVER ett statiskt block, denna sveper SJÄLVA fyllnaden genom spåret.
+     `translateX(-100%)` flyttar segmentet en hel EGEN bredd åt vänster
+     (utanför spåret, `overflow-hidden` på spårets div klipper resten), och
+     `translateX(250%)` en och en halv EGEN bredd förbi spårets högerkant
+     (250 % × segmentets 40 %-bredd = 100 % av spårets bredd) — ett fullt
+     svep från kant till kant, aldrig en topp som fastnar i sikte.
+
+     DURATIONEN (1,8 s) ÄR HUSETS EGEN, INTE EN MATERIAL-SPECIFIK SIFFRA:
+     samma "långsamt svep läses lugnare än snabbt"-empiri som redan motiverar
+     --animate-skeleton-shimmers 2,5 s (Chung-empirin, se den tokenens
+     kommentar) — men snabbare än shimmerns 2,5 s eftersom denna bar SJÄLV
+     ÄR informationen (inte en dekoration ovanpå redan synligt innehåll) och
+     ska läsas som "aktivt arbete pågår", inte som en lugn väntan.
+
+     REDUCERAD RÖRELSE ÄR DUBBELBÄLTAD, SAMMA MÖNSTER SOM ÖVRIGA ANIMATIONER
+     I DENNA FIL: klassen konsumeras ENDAST via `motion-safe:` i
+     Forberedelseskarm.tsx, så under `prefers-reduced-motion: reduce`
+     EXISTERAR regeln inte alls för det elementet — segmentet renderas
+     fortfarande (samma `w-2/5`-bredd, samma fyllnadsfärg), bara utan
+     `transform`, alltså en STATISK men SYNLIG obestämd-indikator i stället
+     för en osynlig 0-bredd. base.css:s globala
+     `animation-duration: 0.01ms !important`-neutralisering under samma
+     media-villkor står kvar som andra bältet, som för skeleton-shimmern. */
+  --animate-mm-forberedelseskarm-obestamd: mm-forberedelseskarm-obestamd 1.8s ease-in-out infinite;
+
+  @keyframes mm-forberedelseskarm-obestamd {
+    from {
+      transform: translateX(-100%);
+    }
+
+    to {
+      transform: translateX(250%);
+    }
+  }
 }
 
 /* ── Inline-rullningsytans scrollmarkör (K10-facit, task-4.4) ──

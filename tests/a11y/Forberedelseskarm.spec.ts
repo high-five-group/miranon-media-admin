@@ -230,28 +230,72 @@ test.describe('Forberedelseskarm — Förberedelseskärmens UI-kontrakt (task-21
     expect(underContrastMore).toBe(bg);
   });
 
-  test('AC 2: progressbar-semantik — korrekta aria-värden per förloppsläge (0 %, delvis, full)', async ({
+  test('AC 2: progressbar-semantik — korrekta aria-värden per förloppsläge (obestämd, delvis, full)', async ({
     page,
   }) => {
     const bars = page.locator(`${SEKTION} [role="progressbar"]`);
     await expect(bars).toHaveCount(3);
 
+    // Bar 0 (klara=0/totalt=5) är OBESTÄMD sedan task-451.1 — se
+    // Forberedelseskarm.tsx § OBESTÄMT LÄGE. `now`/`text` är `undefined` här
+    // (attributen ska vara HELT FRÅNVARANDE, inte tomma strängar — W3C APG:
+    // en obestämd progressbar bär aldrig aria-valuenow/aria-valuetext).
     const forvantat = [
-      { now: '0', max: '5', text: '0 av 5 hämtningar klara' },
+      { now: undefined, max: '5', text: undefined },
       { now: '2', max: '5', text: '2 av 5 hämtningar klara' },
       { now: '5', max: '5', text: '5 av 5 hämtningar klara' },
     ];
     for (const [i, vantat] of forvantat.entries()) {
       const bar = bars.nth(i);
-      await expect(bar).toHaveAttribute('aria-valuenow', vantat.now);
+      if (vantat.now === undefined) {
+        await expect(bar).not.toHaveAttribute('aria-valuenow');
+      } else {
+        await expect(bar).toHaveAttribute('aria-valuenow', vantat.now);
+      }
       await expect(bar).toHaveAttribute('aria-valuemin', '0');
       await expect(bar).toHaveAttribute('aria-valuemax', vantat.max);
-      await expect(bar).toHaveAttribute('aria-valuetext', vantat.text);
+      if (vantat.text === undefined) {
+        await expect(bar).not.toHaveAttribute('aria-valuetext');
+      } else {
+        await expect(bar).toHaveAttribute('aria-valuetext', vantat.text);
+      }
       // Namnges av den låsta textraden — ingen dold dubblett-etikett.
       const labelledbyId = await bar.getAttribute('aria-labelledby');
       expect(labelledbyId).toBeTruthy();
       await expect(page.locator(`#${labelledbyId}`)).toHaveText(LAST_TEXT);
     }
+  });
+
+  test('task-451.1 AC #2/#3: obestämt läge (klara=0) — synlig fyllnad, ingen aria-valuenow, reducerad rörelse ger statisk men synlig form', async ({
+    page,
+  }) => {
+    const obestamdBar = page.locator(`${SEKTION} [role="progressbar"]`).first();
+    await expect(obestamdBar).not.toHaveAttribute('aria-valuenow');
+
+    const segment = page
+      .locator(`${SEKTION} [data-testid="forberedelseskarm-0"]`)
+      .locator('[data-testid="forberedelseskarm-bar-obestamd"]');
+    await expect(segment).toBeVisible();
+
+    await page.emulateMedia({ reducedMotion: 'no-preference' });
+    const medRorelse = await segment.evaluate((el) => getComputedStyle(el).animationName);
+    expect(medRorelse).toBe('mm-forberedelseskarm-obestamd');
+    // Bredden ÄR redan icke-noll — AC #2:s kärnpunkt (en RÖD-i-dag 0-bredd
+    // blir GRÖN-efter-fix en synlig yta), oavsett rörelsetillstånd.
+    const boxMedRorelse = await segment.boundingBox();
+    expect(boxMedRorelse?.width ?? 0).toBeGreaterThan(0);
+
+    await page.emulateMedia({ reducedMotion: 'reduce' });
+    // Progressive enhancement (samma `motion-safe:`-gate som resten av
+    // filen): under reduce EXISTERAR animations-klassen inte alls för detta
+    // element — `animationName` faller till webbläsarens 'none'. Segmentet
+    // är ändå KVAR i DOM:en med sin fulla bredd: statisk, men synlig
+    // (AC #3), aldrig en osynlig 0-bredd.
+    const utanRorelse = await segment.evaluate((el) => getComputedStyle(el).animationName);
+    expect(utanRorelse).toBe('none');
+    await expect(segment).toBeVisible();
+    const boxUtanRorelse = await segment.boundingBox();
+    expect(boxUtanRorelse?.width ?? 0).toBeGreaterThan(0);
   });
 
   test('AC 2: polite sr-besked — SEPARAT role=status-kanal, aldrig role=alert', async ({
@@ -273,10 +317,14 @@ test.describe('Forberedelseskarm — Förberedelseskärmens UI-kontrakt (task-21
   test('AC 2: reducerad rörelse — diskret stegning, ingen transition-deklaration alls under reduce', async ({
     page,
   }) => {
+    // Bar 0 (klara=0) är sedan task-451.1 OBESTÄMD (egen animations-gren,
+    // egen reducerad-rörelse-täckning i testet ovan) — DETTA test prövar
+    // fortsatt den DETERMINATE bredd-transitionen, alltså bar 1 (klara=2/5,
+    // "Delvis"), inte längre bar 0.
     await page.emulateMedia({ reducedMotion: 'no-preference' });
     const forstaFyllnad = page
       .locator(`${SEKTION} [role="progressbar"]`)
-      .first()
+      .nth(1)
       .locator('> div > div');
     const medRorelse = await forstaFyllnad.evaluate(
       (el) => getComputedStyle(el).transitionProperty,
