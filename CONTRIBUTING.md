@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-09-05
+updated: 2026-09-18
 review_by: 2027-02-08
 status: stable
 ---
@@ -954,9 +954,46 @@ förutsättningen som gör selektionen försvarbar: en skipp före merge blir en
 fördröjning på högst ett dygn, aldrig ett permanent hål
 ([ADR-077](docs/decisions/ADR-077-riskanpassad-ci-klassning-dedup-nightly.md)).
 
-En röd nattkörning skapar automatiskt ett tilldelat ärende (etikett
-`ci-natt`) med länk till körningen och commit-spannet sedan senaste gröna
-natt.
+### Nattens tre larmkanaler
+
+Fram till 2026-09-18 matade nattens åtta kontroller **en** etikett. Det gjorde
+rött obrukbart: bokföringsgrindarna färgade lampan nästan varje natt, och ett
+verkligt produktfel syntes inte i högen. Mätt över 56 nätter stod
+bokföringsgrindarna för 44, 39, 30 och 28 röda nätter medan produktjobben stod
+för 15, 9, 3 och 1 — på 25 av 52 nätter var ett produktskyddande jobb rött utan
+att kunna urskiljas, och `TASK-239`:s krav på "tre gröna nätter i rad" fick 31 i
+följd utan att kunna bockas.
+
+Sedan `TASK-450.1` (planens § N2, Marcus K2-/K1-beslut 2026-09-18) går natten i
+**tre kanaler**. Varje kontroll bär exakt en:
+
+| Kanal | Etikett | Form | Utlöses av |
+|---|---|---|---|
+| **Produkt** | `ci-natt` | **Tilldelat** ärende, ett per natt, med commit-spann | `suite` · `nightly-metrics` · `kontraktsvakt` |
+| **Bokföring** | `bokforingsdrift` | **Stående** ärende (ADR-082-formen), kommentar per natt | `backlog-closure` · `pausade-sessioner` · `obesvarade-larm` · `sessionsdok-fonster` |
+| **Beroendesäkerhet** | `beroendevarning` | **Stående** ärende | `nightly-audit` |
+| *(Länkröta, sedan ADR-082)* | `lankrota` | **Stående** ärende | `nightly-links` |
+
+**Läs rubriken, inte bara färgen.** Ett `ci-natt`-ärende betyder numera exakt en
+sak: appen eller dess mätning gick sönder. Ett `bokforingsdrift`-ärende säger
+ingenting om appen, och tvärtom.
+
+**Alla fyra ärenden redovisar HELA nattens jobbstatus**, inte bara sin egen
+delmängd — det som skiljer kanalerna är vad som UTLÖSER dem. En läsare ska se
+hela läget i det ärende hon råkar öppna.
+
+**Produktkanalen har medvetet ingen dubblettspärr.** Ett produktfel som
+återkommer natt efter natt är ett verkligt besked, och ett stående ärende hade
+dämpat just det. De två stående kanalerna fäller i stället på tillstånd som är
+bitvis identiska tills någon åtgärdar dem — där är sjuttio ärenden om samma sak
+det som devalverar signalen.
+
+**Bevis-läge:** `gh workflow run nightly.yml -f simulate_failure=<kanal>` där
+kanalen är `produkt`, `bokforing` eller `beroende`. Läget fäller EN verklig
+grind i den valda kanalen, så ärendet skapas via den riktiga `needs`-vägen — och
+lämnar de andra kanalerna gröna, vilket är den halva av beviset som betyder
+något. Den tunga nattsviten hoppas över i ett simuleringsläge: larmkedjan prövas,
+inte sviten. Städa testärendet med motivering.
 
 ### Kontraktsvakten — fixturvärlden mot verkligheten
 
@@ -1034,6 +1071,14 @@ utanför GitHub.
 grundorsaken, eller (b) skrivs en öppen motivering ut i ärendet innan det
 stängs. Regeln är larmkedjans motgift mot kyrkogårdseffekten: ett larm ingen
 läser är värdelöst, och tyst stängning gör larmet till en kyrkogård.
+
+**Regeln gäller ALLA nattens kanaler** — `ci-natt`, `bokforingsdrift`,
+`beroendevarning` och `lankrota`, oavsett om ärendet är tilldelat eller stående.
+Kanaldelningen (`TASK-450.1`) delade upp VAD ett rött ärende betyder; den
+mildrade ingen kanals stängningsregel. Ett stående ärende stängs när kanalen är
+grön igen, eller med en skriven motivering — aldrig för att det blivit gammalt.
+Det är just den risk `ADR-077` § Beslut 3 varnar för: en mildare kanal som blir
+en kyrkogård ingen läser.
 
 ## Acceptance-klassen
 

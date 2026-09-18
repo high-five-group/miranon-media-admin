@@ -30,12 +30,35 @@ on:
       timezone: 'Europe/Stockholm'
   workflow_dispatch:
     inputs:
+      # BEVIS-LÄGE, omformat från boolean till kanalval i TASK-450.1 (N2):
+      # natten bär sedan dess TRE larmkanaler, och en boolean kan inte pröva
+      # den egenskap som betyder något — att en röd grind i kanal X väcker
+      # kanal X och lämnar de andra TYSTA. Tystnaden är beviset.
+      #
+      # Formen fäller också en mätt svaghet i den gamla ingången. task-70.2
+      # skrev ut den när post-merge-lagrets självtest byggdes: nightly:s
+      # simulate_failure "går runt sitt needs-villkor via larmets if-uttryck
+      # och bevisar därför bara att ärendet KAN skapas — inte att en röd svit
+      # utlöser det". Bypass-grenen är nu BORTA ur alla tre kanalers if-uttryck;
+      # i stället fäller ett valt läge EN VERKLIG grind (se de
+      # `Simulerad fällning`-steg som bär samma input nedan), så kanalen väcks
+      # av ett äkta `failure` i needs — samma väg en riktig röd natt tar.
       simulate_failure:
         description: >-
-          true = tvinga larm-jobbet att fyra även om sviten är grön (bevisar
-          larmkedjan utan en äkta röd natt; städa test-ärendet med motivering).
-        type: boolean
-        default: false
+          BEVIS-LÄGE. Fäller EN verklig grind i vald kanal så att kanalens
+          ärende skapas via den riktiga needs-vägen, och lämnar de andra
+          kanalerna gröna. produkt = kontraktsvakten · bokforing =
+          pausade-sessioner · beroende = den bredare sårbarhetsgranskningen.
+          Den tunga nattsviten hoppas över i ett simuleringsläge — larmkedjan
+          prövas, inte sviten. Städa testärendet med motiveringen att det var
+          en simulering.
+        type: choice
+        default: ingen
+        options:
+          - ingen
+          - produkt
+          - bokforing
+          - beroende
 
 # Least-privilege default (ADR-029 §4); larm-jobbet höjer själv till issues:write.
 permissions: {}
@@ -51,6 +74,20 @@ jobs:
   # biter inte). Staging-jobbet tar den delade staging-tests-mutexen.
   suite:
     name: Nattlig fullsvit
+    # ETT SIMULERINGSLÄGE HOPPAR ÖVER SVITEN (TASK-450.1). Villkoret är sant
+    # för varje schemalagd körning (`inputs` är tom på schedule, och tom sträng
+    # matchar den första grenen) och för varje dispatch som inte valt en kanal
+    # — sviten kör alltså oförändrat i allt utom bevis-läget.
+    #
+    # VARFÖR: larmkedjan är ett dödmansgrepp, och ett oprövat dödmansgrepp ger
+    # falsk trygghet (nightly-watchdog.yml:s eget huvud). Med sviten inkopplad
+    # kostar EN kanalprövning en hel nattkörning — mätt 13–31 min på de åtta
+    # senaste körningarna (`gh run list --workflow nightly.yml`), och tre
+    # kanaler måste prövas var för sig eftersom concurrency-gruppen
+    # serialiserar dem. Ett bevis som kostar en och en halv timme körs inte, och
+    # en kanal som aldrig prövats i sin röda riktning är ingen kanal (ADR-082
+    # § Uppföljning). Simuleringen prövar ROUTINGEN; sviten prövas av natten.
+    if: ${{ inputs.simulate_failure == '' || inputs.simulate_failure == 'ingen' }}
     # Permissions-taket för ci-suite.yml — ett anropat workflow kan bara behålla
     # eller minska, aldrig eskalera (samma regel som ci.yml:s suite-jobb). Utan
     # detta grant ärver suite nightly:s topp-nivå permissions: {} och ci-suite:s
@@ -71,6 +108,17 @@ jobs:
     permissions:
       contents: read
     steps:
+      # BEVIS-LÄGE (TASK-450.1): fäller jobbet på riktigt så beroendekanalen
+      # väcks av ett äkta `failure` i needs. Steget ligger FÖRST — jobbet dör
+      # på sekunder i stället för att betala checkout + npm ci för ett svar
+      # som redan är givet. Villkoret kan aldrig bli sant på en schemalagd
+      # körning: `inputs` är tom då.
+      - name: Simulerad fällning — beroendekanalen (BEVIS-LÄGE)
+        if: ${{ inputs.simulate_failure == 'beroende' }}
+        run: |
+          echo "::error::SIMULERAD fällning (simulate_failure=beroende) — larmkedje-test, ingen äkta sårbarhet."
+          exit 1
+
       - name: Checkout
         # SHA-pin: se ci.yml:s FÖRSTA Checkout-steg (jobbet `changed`) för
         # hela rationalen (TASK-312, 2026-08-24) — gäller identiskt för
@@ -347,6 +395,18 @@ jobs:
     permissions:
       contents: read
     steps:
+      # BEVIS-LÄGE (TASK-450.1): produktkanalens simulerade fällning. Varför
+      # just kontraktsvakten och inte `suite` — `suite` är ett anrop av
+      # ci-suite.yml, och ett steg kan inte planteras i ett anropat workflow
+      # utan att röra en fil som delas med presubmit. Kontraktsvakten är ett
+      # äkta produktskyddande jobb i produktkanalens needs, och räcker därför
+      # för att pröva routingen. Se nightly-audit-jobbet för formen.
+      - name: Simulerad fällning — produktkanalen (BEVIS-LÄGE)
+        if: ${{ inputs.simulate_failure == 'produkt' }}
+        run: |
+          echo "::error::SIMULERAD fällning (simulate_failure=produkt) — larmkedje-test, ingen äkta kontraktsdrift."
+          exit 1
+
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
@@ -502,6 +562,19 @@ jobs:
     outputs:
       utfall: ${{ steps.grind.outputs.utfall }}
     steps:
+      # BEVIS-LÄGE (TASK-450.1): bokföringskanalens simulerade fällning. Varför
+      # denna grind och inte `backlog-closure` — backlog-grinden exporterar
+      # `utfall`, som bokföringsärendet renderar som en egen sektion. En
+      # fällning FÖRE klassningen hade då skrivit "föll utan läsbart utfall" i
+      # testärendet, alltså brus i just den text beviset ska läsas i.
+      # pausade-sessioner är en lika äkta bokföringsgrind utan den kopplingen.
+      # Se nightly-audit-jobbet för formen.
+      - name: Simulerad fällning — bokföringskanalen (BEVIS-LÄGE)
+        if: ${{ inputs.simulate_failure == 'bokforing' }}
+        run: |
+          echo "::error::SIMULERAD fällning (simulate_failure=bokforing) — larmkedje-test, ingen äkta paus-drift."
+          exit 1
+
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         with:
@@ -661,43 +734,80 @@ jobs:
           fi
           exit "${KOD}"
 
-  # Larmkedjan: fyrar vid RÖD natt (eller simulate_failure-dispatch). Skapar
-  # ett tilldelat, etiketterat ärende med körningslänk + commit-spann sedan
-  # senaste GRÖNA natt. Grön natt ⇒ jobbet skippas ⇒ inget ärende, inga spår
-  # (AC#4). nightly-metrics ingår i needs — röda mätningar får aldrig vara tysta
-  # (L321-klassen: nightly saknar annan åskådare, rött utan larm vore en tyst
-  # permanent). kontraktsvakt ingår av SAMMA skäl: en fixtur som glidit ifrån
-  # verkligheten ska nå en kedja som redan bevakas, inte bli ännu en signal
-  # ingen läser (ADR-080 beslut 3).
+  # ════════════════════════════════════════════════════════════════════════
+  # TRE LARMKANALER (TASK-450.1 / N2, Marcus GO 2026-09-18) — LÄS DETTA FÖRST
+  # ════════════════════════════════════════════════════════════════════════
+  # Fram till 2026-09-18 matade ÅTTA jobb EN etikett. Följden var mätt, inte
+  # befarad: ett produktskyddande jobb kunde vara rött utan att någon såg det,
+  # eftersom bokföringsgrindarna färgade samma lampa varje natt. KG1:s mätning
+  # över 56 nätter: bokföringsgrindarna stod för 44, 39, 30 och 28 röda nätter
+  # medan produktjobben stod för 15, 9, 3 och 1 — och på 25 av 52 nätter var ett
+  # produktjobb rött utan att kunna urskiljas. Priset står på ett kort:
+  # TASK-239 krävde "tre gröna nätter i rad" och fick 31 i följd utan att kunna
+  # bockas, för att "grön natt" lästes på hela körningens nivå.
   #
-  # nightly-links ingår MEDVETET INTE sedan ADR-082 (2026-07-28). Detta ärende är
-  # tilldelat och ska betyda "något är akut fel"; en extern värds dåliga dag hör
-  # inte dit och devalverar signalen. Länkrötan har i stället en egen, mildare
-  # kanal (links-arende ovan) — utelämnandet är alltså inte fail-open, vilket är
-  # hela skillnaden mot L321/L322-fällan.
+  # Färsk kontrollmätning (`gh run view <id> --json jobs`, de sex nätterna
+  # 2026-09-13 … 2026-09-18) pekar åt samma håll: bokföringsgrindarna röda 5
+  # av 6 nätter, nightly-audit röd 5 av 6 (samma två advisories varje natt),
+  # och ett produktjobb rött 1 av 6. Under den gamla formen var alla sex
+  # nätterna "röd natt".
   #
-  # backlog-closure ingår i needs av samma L321-skäl som nightly-metrics: natten
-  # saknar annan åskådare, och en röd grind utan larm vore en tyst permanent.
-  # Ärendets text SKILJER exit 1 från exit 2 via jobbets utfall-output — de två
-  # koderna kräver motsatta åtgärder (stäng korten respektive laga grinden),
-  # och ett ärende som inte säger vilken devalverar sig självt.
+  # Kanalerna, och vad var och en BETYDER:
   #
-  # pausade-sessioner ingår av EXAKT samma skäl, och tillhör samma klass: en
-  # grind vars fynd bara syns i en nattlogg ingen läser är inte en mekanism,
-  # den är en loggrad. Felet den fångar (S96 Del 8) upptäcktes en gång av
-  # Marcus i en chattfråga — hela poängen med att bygga den är att det inte
-  # ska behöva vara vägen.
+  #   1. alarm (etikett `ci-natt`, TILLDELAT, ett ärende per natt)
+  #      Utlöses av: suite · nightly-metrics · kontraktsvakt.
+  #      Betyder: "appen eller dess mätning gick sönder." Formen är ORÖRD —
+  #      tilldelning, commit-spann, stängningsregel. Ingen dubblettspärr, med
+  #      avsikt: ett produktfel som återkommer natt efter natt är ett verkligt
+  #      besked, och ett stående ärende hade dämpat just det (K2, planens
+  #      § "Vad jag medvetet INTE föreslår").
   #
-  # sessionsdok-fonster (ADR-099, TASK-158.4) ingår av samma L321-skäl: en
-  # rot som vuxit förbi det rullande fönstret utan larm är samma tysta
-  # permanent som de övriga inaktuellt-tillstånd-kontrollerna ovan skyddar
-  # mot — PRD task-158 § användarberättelse 5 begär uttryckligen just detta.
+  #   2. bokforings-arende (etikett `bokforingsdrift`, STÅENDE, ADR-082-formen)
+  #      Utlöses av: backlog-closure · pausade-sessioner · obesvarade-larm ·
+  #      sessionsdok-fonster.
+  #      Betyder: "projektets egen bokföring har glidit." Icke-blockerande,
+  #      samma stängningsregel, kommentar i stället för nytt ärende.
   #
-  # issues:write finns numera på TVÅ jobb (detta + links-arende), inte bara här.
+  #   3. beroende-arende (etikett `beroendevarning`, STÅENDE, ADR-082-formen)
+  #      Utlöses av: nightly-audit.
+  #      Betyder: "omvärlden har publicerat en varning mot vårt träd."
+  #
+  # VAD SOM INTE ÄNDRADES: alla tre kanaler har SAMTLIGA åtta jobb i `needs`
+  # och redovisar därmed hela jobbstatus-listan i sitt ärende. Det är en
+  # MEDVETEN avvikelse från planens formulering "flytta de fyra
+  # bokföringsposterna ut ur alarm.needs": `needs` är den enda vägen till ett
+  # annat jobbs `result` i GitHub Actions, så en utflyttning hade tagit bort
+  # informationen T146 (2026-08-05) byggde in efter natten då sju needs-jobb
+  # var osynliga i ärende #681. Planen kräver på nästa rad att listan FINNS
+  # kvar i alla ärenden. Det som faktiskt delades är därför TRIGGERN — vilket
+  # är precis den effekt planen räknar hem.
+  #
+  # nightly-links ingår MEDVETET INTE i någon av de tre sedan ADR-082
+  # (2026-07-28) — den har sin egen kanal (links-arende ovan). Utelämnandet är
+  # inte fail-open: varje jobb bär en kanal, vilket är hela skillnaden mot
+  # L321/L322-fällan. Samma krav gäller de tre nya trigger-listorna: tar man
+  # bort ett jobb ur en trigger måste det läggas till i en annan.
+  #
+  # issues:write finns numera på FYRA jobb (dessa tre + links-arende).
+  # ────────────────────────────────────────────────────────────────────────
+  # Produktkanalen. nightly-metrics ingår — röda mätningar får aldrig vara
+  # tysta (L321-klassen: natten saknar annan åskådare, rött utan larm vore en
+  # tyst permanent). kontraktsvakt ingår av SAMMA skäl: en fixtur som glidit
+  # ifrån verkligheten ska nå en kedja som redan bevakas, inte bli ännu en
+  # signal ingen läser (ADR-080 beslut 3).
+  #
+  # if-uttrycket räknar upp sina tre jobb EXPLICIT i stället för
+  # `contains(needs.*.result, …)`. Formen är ett krav, inte en stilfråga:
+  # `needs.*` läser ALLA needs, och needs-listan är nu bredare än triggern.
   alarm:
     name: Larm vid röd natt
     needs: [suite, nightly-audit, nightly-metrics, kontraktsvakt, backlog-closure, pausade-sessioner, obesvarade-larm, sessionsdok-fonster]
-    if: ${{ always() && (contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled') || inputs.simulate_failure) }}
+    if: >-
+      ${{ always() && (
+      needs.suite.result == 'failure' || needs.suite.result == 'cancelled' ||
+      needs.nightly-metrics.result == 'failure' || needs.nightly-metrics.result == 'cancelled' ||
+      needs.kontraktsvakt.result == 'failure' || needs.kontraktsvakt.result == 'cancelled'
+      ) }}
     runs-on: ubuntu-latest
     timeout-minutes: 3
     permissions:
@@ -723,13 +833,10 @@ jobs:
           RUN_ID: ${{ github.run_id }}
           CURRENT_SHA: ${{ github.sha }}
           SIMULATED: ${{ inputs.simulate_failure }}
-          # Outputs från ett FALLET jobb är läsbara i needs — steget som skrev
-          # utfall körde klart innan jobbet föll (klassningen sker före exit).
+          # Samtliga åtta needs-jobbs rå-resultat (T146, 2026-08-05) — se
+          # jobb_sektion-blocket nedan för varför HELA listan redovisas även
+          # när bara produktkanalens tre jobb kan utlösa detta ärende.
           BACKLOG_RESULT: ${{ needs.backlog-closure.result }}
-          BACKLOG_UTFALL: ${{ needs.backlog-closure.outputs.utfall }}
-          # Resten av needs-jobbens rå-resultat (T146, 2026-08-05) — se
-          # jobb_sektion-blocket nedan för varför de behövs utöver
-          # BACKLOG_RESULT ovan.
           SUITE_RESULT: ${{ needs.suite.result }}
           AUDIT_RESULT: ${{ needs.nightly-audit.result }}
           METRICS_RESULT: ${{ needs.nightly-metrics.result }}
@@ -743,21 +850,27 @@ jobs:
 
           # ═══ JOBB-STATUS (T146, 2026-08-05) — REDOVISA ALLA ICKE-GRÖNA ═══
           # Rent additivt: bredare INNEHÅLL i ett ärende som ändå skapas, inte
-          # en breddning av NÄR det skapas (villkoret på rad 628 är orört).
+          # en breddning av NÄR det skapas.
           #
-          # Innan detta block namngavs bara backlog-closure explicit
-          # (backlog_sektion nedan) — övriga sex needs-jobb syntes bara
-          # indirekt genom att ärendet fanns, aldrig med NAMN eller RESULTAT i
-          # texten. Den 2026-08-04 föll natten med `Länkkontroll (utan
-          # cache)` CANCELLED (se nightly-links-jobbets kommentarblock för
-          # rotorsaken); den jobbet ligger MEDVETET utanför denna needs-lista
-          # (ADR-082) så det syns aldrig här — men SAMMA natt visade också att
-          # ingen av de sju jobb som FAKTISKT ingår i needs namngavs i
-          # ärendet (#681), bara backlog-closure fick en särskild sektion.
-          # En cancelled eller skipped post i just DESSA sju jobb hade varit
-          # lika osynlig. Listan täckte då alla sju, inte bara det som råkade
-          # utlösa fyndet — sessionsdok-fonster (TASK-158.4) är det åttonde
-          # tillskottet till samma lista, av samma skäl.
+          # Innan detta block namngavs bara backlog-closure explicit — övriga
+          # sex needs-jobb syntes bara indirekt genom att ärendet fanns, aldrig
+          # med NAMN eller RESULTAT i texten. Den 2026-08-04 föll natten med
+          # `Länkkontroll (utan cache)` CANCELLED (se nightly-links-jobbets
+          # kommentarblock för rotorsaken); det jobbet ligger MEDVETET utanför
+          # denna needs-lista (ADR-082) så det syns aldrig här — men SAMMA natt
+          # visade också att ingen av de sju jobb som FAKTISKT ingår i needs
+          # namngavs i ärendet (#681), bara backlog-closure fick en särskild
+          # sektion. En cancelled eller skipped post i just DESSA sju jobb hade
+          # varit lika osynlig. Listan täckte då alla sju, inte bara det som
+          # råkade utlösa fyndet — sessionsdok-fonster (TASK-158.4) är det
+          # åttonde tillskottet till samma lista, av samma skäl.
+          #
+          # SEDAN KANALDELNINGEN (TASK-450.1) redovisas listan IDENTISKT i alla
+          # tre kanalers ärenden, trots att var och en bara utlöses av sin egen
+          # delmängd. Det är hela poängen: en läsare ska se HELA nattens läge i
+          # det ärende hon råkar öppna, och bara behöva tolka RUBRIKEN för att
+          # veta vad som väckte just den kanalen. Listan är alltså gemensam;
+          # triggern är det som skiljer.
           jobbnamn=(
             "Nattlig fullsvit"
             "Bredare sårbarhetsgranskning"
@@ -790,25 +903,13 @@ jobs:
             jobb_sektion=$'\n\n**Jobb-status (icke-gröna):**'"${jobb_rader}"
           fi
 
-          # Backlog-grindens två felkoder kräver MOTSATTA åtgärder och får
-          # aldrig kollapsas i ärendetexten (se backlog-closure-jobbets huvud).
-          # Tom/okänd output med result=failure betyder att jobbet dog FÖRE
-          # klassningen (timeout, npm ci, infra) — det redovisas som sig
-          # självt, aldrig som drift.
-          backlog_sektion=""
-          if [ "${BACKLOG_RESULT}" = "failure" ]; then
-            case "${BACKLOG_UTFALL}" in
-              drift)
-                backlog_sektion=$'\n\n**Backlog-stängningsgrinden: DRIFT (exit 1).** Grinden fann inkonsistenta kort — invariant och åtgärd skiljer sig PER KORT: invariant 1/3 (öppet men bevisat klart) ⇒ stäng korten via CLI:t (`node_modules/.bin/backlog task edit <id> --check-dod … -s Done`); invariant 2 (stängt men obockat) ⇒ bocka DoD/AC mot belägg eller öppna ärligt. Körningsloggens ❌-rader namnger vilket kort som bär vilken invariant — läs dem innan åtgärd, applicera inte en gemensam åtgärd på alla.'
-                ;;
-              anropsfel)
-                backlog_sektion=$'\n\n**Backlog-stängningsgrinden: ANROPSFEL (exit 2).** Grinden kunde inte pröva korten (CLI-, policy- eller formatfel). Detta är INTE ett påstående om kortens tillstånd — åtgärda grinden/miljön, inte korten.'
-                ;;
-              *)
-                backlog_sektion=$'\n\n**Backlog-stängningsgrinden föll utan läsbart utfall** — jobbet dog före klassningen (timeout/npm ci/infra) eller gav en odokumenterad exitkod. Se körningsloggen; korten är oprövade.'
-                ;;
-            esac
-          fi
+          # Backlog-grindens utfalls-sektion bor sedan TASK-450.1 i
+          # bokföringskanalen (bokforings-arende nedan), inte här. Grinden
+          # utlöser inte längre detta ärende, och en åtgärdsanvisning för
+          # backlog-korten i ett PRODUKT-ärende hade varit exakt den
+          # signalblandning kanaldelningen finns för att ta bort. Jobbets
+          # RESULTAT står kvar i jobb-status-listan ovan — det är resultatet,
+          # inte åtgärden, som hör hemma i alla kanaler.
 
           # Senaste GRÖNA körningen av nightly.yml på main (exkl. denna).
           #
@@ -846,19 +947,23 @@ jobs:
             span="[\`${last_green:0:7}...${CURRENT_SHA:0:7}\`](${SERVER}/${REPO}/compare/${last_green}...${CURRENT_SHA})"
           fi
 
+          # SIMULATED är sedan TASK-450.1 ett KANALNAMN, inte "true"/"false" —
+          # tomt på schedule, "ingen" på en dispatch utan bevis-läge.
           note=""
-          if [ "${SIMULATED}" = "true" ]; then
-            note=$'\n\n> ⚠️ **SIMULERAT** via `simulate_failure`-dispatch — larmkedje-test, ingen äkta regression. Stäng med denna motivering.'
+          if [ -n "${SIMULATED}" ] && [ "${SIMULATED}" != "ingen" ]; then
+            note=$'\n\n> ⚠️ **SIMULERAT** via `simulate_failure='"${SIMULATED}"$'`-dispatch — larmkedje-test, ingen äkta regression. Nattsviten hoppades över i detta läge. Stäng med denna motivering.'
           fi
 
-          title="🌙 Nattnätet rött — $(date -u +%F)"
-          body="Den schemalagda nattkörningen (\`nightly.yml\`) blev röd.
+          title="🌙 Nattnätet rött (produkt) — $(date -u +%F)"
+          body="Den schemalagda nattkörningen (\`nightly.yml\`) blev röd i **produktkanalen** — ett av jobben \`Nattlig fullsvit\`, \`CI-mätning\` eller \`Kontraktsvakt\` föll.
 
           - **Körning:** ${run_url}
           - **Commit-spann sedan senaste gröna körning av nattsviten:** ${span}
           - **HEAD:** \`${CURRENT_SHA}\`${jobb_sektion}
 
-          Stängningsregel (CONTRIBUTING § Nattnätet): detta ärende stängs ENDAST med (a) en åtgärd som fixar grundorsaken eller (b) en öppet skriven motivering — aldrig tyst.${backlog_sektion}${note}"
+          Jobb-status-listan ovan redovisar HELA nattens läge. Röda BOKFÖRINGSGRINDAR och röd BEROENDEGRANSKNING har egna kanaler (etiketterna \`bokforingsdrift\` respektive \`beroendevarning\`) och utlöser inte detta ärende — se CONTRIBUTING § Nattnätet.
+
+          Stängningsregel (CONTRIBUTING § Nattnätet): detta ärende stängs ENDAST med (a) en åtgärd som fixar grundorsaken eller (b) en öppet skriven motivering — aldrig tyst.${note}"
 
           gh issue create \
             --repo "${REPO}" \
@@ -866,3 +971,299 @@ jobs:
             --body "${body}" \
             --label ci-natt \
             --assignee marcus803
+
+  # ────────────────────────────────────────────────────────────────────────
+  # Bokföringskanalen (TASK-450.1 / N2, Marcus K2-beslut 2026-09-18).
+  #
+  # ADR-082-mönstrets ANDRA tillämpning, i links-arende-jobbets form: ETT
+  # stående ärende på egen etikett, nya fynd som kommentarer, icke-blockerande,
+  # samma stängningsregel. Formen är vald, inte ärvd av bekvämlighet: de fyra
+  # bokföringsgrindarna fäller på TILLSTÅND som består natt efter natt tills
+  # någon städar (ett kort som glömts öppet är lika öppet i morgon), och ett
+  # ärende per natt hade därför producerat sjuttio ärenden om samma sak. Det
+  # var den mekanismen som devalverade ci-natt.
+  #
+  # Dubblettspärren är MEDVETET inte given åt produktkanalen ovan — se dess
+  # huvud. Skillnaden är innehållet i upprepningen: ett produktfel som
+  # återkommer kan återkomma OLIKA (annat test, annan flake), medan en
+  # kvarglömd bokföringspost är bitvis identisk tills den åtgärdas.
+  #
+  # Ärendet redovisar HELA jobbstatus-listan, inte bara sin egen delmängd —
+  # samma T146-skäl som produktkanalen.
+  bokforings-arende:
+    name: Bokföringsdrift — stående ärende
+    needs: [suite, nightly-audit, nightly-metrics, kontraktsvakt, backlog-closure, pausade-sessioner, obesvarade-larm, sessionsdok-fonster]
+    if: >-
+      ${{ always() && (
+      needs.backlog-closure.result == 'failure' || needs.backlog-closure.result == 'cancelled' ||
+      needs.pausade-sessioner.result == 'failure' || needs.pausade-sessioner.result == 'cancelled' ||
+      needs.obesvarade-larm.result == 'failure' || needs.obesvarade-larm.result == 'cancelled' ||
+      needs.sessionsdok-fonster.result == 'failure' || needs.sessionsdok-fonster.result == 'cancelled'
+      ) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Skapa eller uppdatera det stående bokförings-ärendet
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          SERVER: ${{ github.server_url }}
+          RUN_ID: ${{ github.run_id }}
+          CURRENT_SHA: ${{ github.sha }}
+          SIMULATED: ${{ inputs.simulate_failure }}
+          # Outputs från ett FALLET jobb är läsbara i needs — steget som skrev
+          # utfall körde klart innan jobbet föll (klassningen sker före exit).
+          BACKLOG_UTFALL: ${{ needs.backlog-closure.outputs.utfall }}
+          SUITE_RESULT: ${{ needs.suite.result }}
+          AUDIT_RESULT: ${{ needs.nightly-audit.result }}
+          METRICS_RESULT: ${{ needs.nightly-metrics.result }}
+          KONTRAKTSVAKT_RESULT: ${{ needs.kontraktsvakt.result }}
+          BACKLOG_RESULT: ${{ needs.backlog-closure.result }}
+          PAUSADE_RESULT: ${{ needs.pausade-sessioner.result }}
+          OBESVARADE_RESULT: ${{ needs.obesvarade-larm.result }}
+          SESSIONSDOK_FONSTER_RESULT: ${{ needs.sessionsdok-fonster.result }}
+        run: |
+          set -euo pipefail
+          run_url="${SERVER}/${REPO}/actions/runs/${RUN_ID}"
+
+          # Jobb-status: samma lista och samma ordning som produktkanalen.
+          jobbnamn=(
+            "Nattlig fullsvit"
+            "Bredare sårbarhetsgranskning"
+            "CI-mätning (siffror, ej känsla)"
+            "Kontraktsvakt (fixtur mot skarp staging)"
+            "Backlog-stängning (natt-grind)"
+            "Sannings-avstämning — pausade sessioner (natt-grind)"
+            "Sannings-avstämning — obesvarade larm (natt-grind)"
+            "Sessionsdok-fönstret (natt-grind, ADR-099)"
+          )
+          jobbresultat=(
+            "${SUITE_RESULT}"
+            "${AUDIT_RESULT}"
+            "${METRICS_RESULT}"
+            "${KONTRAKTSVAKT_RESULT}"
+            "${BACKLOG_RESULT}"
+            "${PAUSADE_RESULT}"
+            "${OBESVARADE_RESULT}"
+            "${SESSIONSDOK_FONSTER_RESULT}"
+          )
+          jobb_rader=""
+          for i in "${!jobbnamn[@]}"; do
+            r="${jobbresultat[$i]}"
+            if [ "${r}" != "success" ]; then
+              jobb_rader="${jobb_rader}"$'\n'"- **${jobbnamn[$i]}:** \`${r}\`"
+            fi
+          done
+          jobb_sektion=""
+          if [ -n "${jobb_rader}" ]; then
+            jobb_sektion=$'\n\n**Jobb-status (icke-gröna, hela natten):**'"${jobb_rader}"
+          fi
+
+          # Backlog-grindens två felkoder kräver MOTSATTA åtgärder och får
+          # aldrig kollapsas (se backlog-closure-jobbets huvud). Sektionen bor
+          # i DENNA kanal sedan TASK-450.1 — det är här grinden utlöser.
+          backlog_sektion=""
+          if [ "${BACKLOG_RESULT}" = "failure" ]; then
+            case "${BACKLOG_UTFALL}" in
+              drift)
+                backlog_sektion=$'\n\n**Backlog-stängningsgrinden: DRIFT (exit 1).** Grinden fann inkonsistenta kort — invariant och åtgärd skiljer sig PER KORT: invariant 1/3 (öppet men bevisat klart) ⇒ stäng korten via CLI:t (`node_modules/.bin/backlog task edit <id> --check-dod … -s Done`); invariant 2 (stängt men obockat) ⇒ bocka DoD/AC mot belägg eller öppna ärligt. Körningsloggens ❌-rader namnger vilket kort som bär vilken invariant — läs dem innan åtgärd, applicera inte en gemensam åtgärd på alla.'
+                ;;
+              anropsfel)
+                backlog_sektion=$'\n\n**Backlog-stängningsgrinden: ANROPSFEL (exit 2).** Grinden kunde inte pröva korten (CLI-, policy- eller formatfel). Detta är INTE ett påstående om kortens tillstånd — åtgärda grinden/miljön, inte korten.'
+                ;;
+              *)
+                backlog_sektion=$'\n\n**Backlog-stängningsgrinden föll utan läsbart utfall** — jobbet dog före klassningen (timeout/npm ci/infra) eller gav en odokumenterad exitkod. Se körningsloggen; korten är oprövade.'
+                ;;
+            esac
+          fi
+
+          note=""
+          if [ -n "${SIMULATED}" ] && [ "${SIMULATED}" != "ingen" ]; then
+            note=$'\n\n> ⚠️ **SIMULERAT** via `simulate_failure='"${SIMULATED}"$'`-dispatch — larmkedje-test, ingen äkta drift. Nattsviten hoppades över i detta läge. Stäng med denna motivering.'
+          fi
+
+          # Exit-koden fångas SEPARAT från resultatet — samma disciplin som
+          # links-arende och alarm: formen `$(gh ... || echo "")` kollapsar
+          # "anropet gick fel" och "det finns inget svar" till samma tomma
+          # sträng, och då byggs ett faktapåstående på frånvaro av data
+          # (L322-klassen). --repo är OBLIGATORISK: jobbet gör ingen checkout.
+          gh_failed=""
+          existing=$(gh issue list --repo "${REPO}" --label bokforingsdrift \
+            --state open --limit 1 --json number \
+            --jq '.[0].number // ""') || gh_failed="1"
+
+          if [ -n "${gh_failed}" ]; then
+            echo "::error::Kunde inte läsa befintliga bokforingsdrift-ärenden — kanalen är inte verifierbar denna natt."
+            exit 1
+          fi
+
+          body="En eller flera av nattens BOKFÖRINGSGRINDAR föll — projektets egen bokföring har glidit, inte appen.
+
+          - **Körning:** ${run_url}
+          - **HEAD:** \`${CURRENT_SHA}\`${jobb_sektion}${backlog_sektion}
+
+          Kanalen bärs av fyra grindar: \`backlog-closure\`, \`pausade-sessioner\`, \`obesvarade-larm\` och \`sessionsdok-fonster\`. Att appen fungerar prövas av produktkanalen (etikett \`ci-natt\`, tilldelat ärende) och beroendesäkerheten av \`beroendevarning\` — ett fynd HÄR säger ingenting om någondera.
+
+          **Detta ärende är icke-blockerande och STÅENDE** — nya fynd läggs som kommentarer i stället för nya ärenden (ADR-082-mönstret, andra tillämpningen).
+
+          Stängningsregel (CONTRIBUTING § Nattnätet, gäller ALLA nattkanaler): stängs ENDAST med (a) en åtgärd som fixar grundorsaken eller (b) en öppet skriven motivering — aldrig tyst.${note}"
+
+          if [ -n "${existing}" ]; then
+            gh issue comment "${existing}" --repo "${REPO}" --body "📒 **Ny röd bokföringsnatt $(date -u +%F)**
+
+          - **Körning:** ${run_url}
+          - **HEAD:** \`${CURRENT_SHA}\`${jobb_sektion}${backlog_sektion}${note}
+
+          _(Stående ärende — kommentar i stället för nytt ärende, per ADR-082 beslut 4.)_"
+            echo "Uppdaterade stående bokförings-ärende #${existing}."
+          else
+            gh issue create \
+              --repo "${REPO}" \
+              --title "📒 Bokföringsdrift — nattliga bokföringsgrindar röda" \
+              --label bokforingsdrift \
+              --body "${body}"
+            echo "Skapade nytt stående bokförings-ärende."
+          fi
+
+  # ────────────────────────────────────────────────────────────────────────
+  # Beroendesäkerhetskanalen (TASK-450.1 / N2 + K1, Marcus GO 2026-09-18).
+  #
+  # VARFÖR EN TREDJE KANAL: K1 väg (b) flyttar lastbärandet för "har omvärlden
+  # publicerat en ny varning mot vårt befintliga träd?" från dagsvitens
+  # `audit`-jobb till natten. Ligger det beskedet kvar i samma lampa som en
+  # trasig backlog-post är det per konstruktion oläsbart — och en oläslig
+  # säkerhetskanal är värre än ingen, eftersom den ser ut som en.
+  #
+  # VARFÖR STÅENDE ÄRENDE OCH INTE TILLDELAT (valet som krävde motivering):
+  #   (a) KLASSEN är lankrotas, inte produktfelets. Fyndet handlar om
+  #       omvärlden — en advisory-databas — inte om vår ändring. Samma advisory
+  #       mot samma oförändrade träd ger BITVIS IDENTISK text varje natt tills
+  #       någon agerar.
+  #   (b) MÄTT, inte befarat: nightly-audit var röd 5 av de 6 nätterna
+  #       2026-09-13 … 2026-09-18 på samma två advisories, och planens § K1
+  #       mäter nio dagar med samma två varningar öppna. Under ett ärende per
+  #       natt hade det blivit fem respektive nio ärenden med samma innehåll.
+  #   (c) Planens skäl att INTE ge produktkanalen en dubblettspärr bär inte
+  #       hit. Det skälet är att ett återkommande produktfel kan återkomma
+  #       OLIKA och därför bära ny information. En advisory-upprepning kan inte
+  #       skilja sig: samma advisory-ID, samma oförändrade träd.
+  #   (d) Det stående ärendet TYSTAR inte. Det står öppet, får en kommentar per
+  #       natt, och bär stängningsregeln — ärendets ÅLDER blir signalen i
+  #       stället för antalet dubbletter.
+  # ÖPPEN FRÅGA, medvetet inte avgjord här: när K1 väg (b) faktiskt landat
+  # (TASK-450.5) blir kanalen lastbärande för hela beroendesäkerheten, och då
+  # bör det prövas om ärendet också ska TILLDELAS. Det är ett eget beslut på
+  # data, inte något denna skiva ska föregripa.
+  beroende-arende:
+    name: Beroendevarning — stående ärende
+    needs: [suite, nightly-audit, nightly-metrics, kontraktsvakt, backlog-closure, pausade-sessioner, obesvarade-larm, sessionsdok-fonster]
+    if: >-
+      ${{ always() && (
+      needs.nightly-audit.result == 'failure' || needs.nightly-audit.result == 'cancelled'
+      ) }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 3
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: Skapa eller uppdatera det stående beroende-ärendet
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          SERVER: ${{ github.server_url }}
+          RUN_ID: ${{ github.run_id }}
+          CURRENT_SHA: ${{ github.sha }}
+          SIMULATED: ${{ inputs.simulate_failure }}
+          SUITE_RESULT: ${{ needs.suite.result }}
+          AUDIT_RESULT: ${{ needs.nightly-audit.result }}
+          METRICS_RESULT: ${{ needs.nightly-metrics.result }}
+          KONTRAKTSVAKT_RESULT: ${{ needs.kontraktsvakt.result }}
+          BACKLOG_RESULT: ${{ needs.backlog-closure.result }}
+          PAUSADE_RESULT: ${{ needs.pausade-sessioner.result }}
+          OBESVARADE_RESULT: ${{ needs.obesvarade-larm.result }}
+          SESSIONSDOK_FONSTER_RESULT: ${{ needs.sessionsdok-fonster.result }}
+        run: |
+          set -euo pipefail
+          run_url="${SERVER}/${REPO}/actions/runs/${RUN_ID}"
+
+          # Jobb-status: samma lista och samma ordning som produktkanalen.
+          jobbnamn=(
+            "Nattlig fullsvit"
+            "Bredare sårbarhetsgranskning"
+            "CI-mätning (siffror, ej känsla)"
+            "Kontraktsvakt (fixtur mot skarp staging)"
+            "Backlog-stängning (natt-grind)"
+            "Sannings-avstämning — pausade sessioner (natt-grind)"
+            "Sannings-avstämning — obesvarade larm (natt-grind)"
+            "Sessionsdok-fönstret (natt-grind, ADR-099)"
+          )
+          jobbresultat=(
+            "${SUITE_RESULT}"
+            "${AUDIT_RESULT}"
+            "${METRICS_RESULT}"
+            "${KONTRAKTSVAKT_RESULT}"
+            "${BACKLOG_RESULT}"
+            "${PAUSADE_RESULT}"
+            "${OBESVARADE_RESULT}"
+            "${SESSIONSDOK_FONSTER_RESULT}"
+          )
+          jobb_rader=""
+          for i in "${!jobbnamn[@]}"; do
+            r="${jobbresultat[$i]}"
+            if [ "${r}" != "success" ]; then
+              jobb_rader="${jobb_rader}"$'\n'"- **${jobbnamn[$i]}:** \`${r}\`"
+            fi
+          done
+          jobb_sektion=""
+          if [ -n "${jobb_rader}" ]; then
+            jobb_sektion=$'\n\n**Jobb-status (icke-gröna, hela natten):**'"${jobb_rader}"
+          fi
+
+          note=""
+          if [ -n "${SIMULATED}" ] && [ "${SIMULATED}" != "ingen" ]; then
+            note=$'\n\n> ⚠️ **SIMULERAT** via `simulate_failure='"${SIMULATED}"$'`-dispatch — larmkedje-test, ingen äkta sårbarhet. Nattsviten hoppades över i detta läge. Stäng med denna motivering.'
+          fi
+
+          # Exit-koden fångas SEPARAT — se bokforings-arende ovan för hela
+          # rationalen (L322-klassen). --repo är OBLIGATORISK: ingen checkout.
+          gh_failed=""
+          existing=$(gh issue list --repo "${REPO}" --label beroendevarning \
+            --state open --limit 1 --json number \
+            --jq '.[0].number // ""') || gh_failed="1"
+
+          if [ -n "${gh_failed}" ]; then
+            echo "::error::Kunde inte läsa befintliga beroendevarning-ärenden — kanalen är inte verifierbar denna natt."
+            exit 1
+          fi
+
+          body="Den nattliga beroendegranskningen (\`nightly-audit\`, \`npx audit-ci --moderate\`) föll.
+
+          - **Körning:** ${run_url}
+          - **HEAD:** \`${CURRENT_SHA}\`${jobb_sektion}
+
+          Nattens tröskel är **moderate** — alltså BREDARE än dagsvitens \`high\`. Ett fynd här är därför antingen en ny advisory mot vårt befintliga träd, eller en advisory dagsviten medvetet släpper förbi. Åtgärdsvägen är ADR-028:s femstegsflöde; en varning i en byggsten vi inte äger ska aldrig stå nio dagar.
+
+          **Detta ärende är icke-blockerande och STÅENDE** — nya fynd läggs som kommentarer i stället för nya ärenden. Samma advisory mot ett oförändrat träd ger identisk text varje natt, och ärendets ÅLDER är signalen, inte antalet dubbletter. Att appen fungerar prövas av produktkanalen (\`ci-natt\`), bokföringen av \`bokforingsdrift\`.
+
+          Stängningsregel (CONTRIBUTING § Nattnätet, gäller ALLA nattkanaler): stängs ENDAST med (a) en åtgärd som fixar grundorsaken eller (b) en öppet skriven motivering — aldrig tyst.${note}"
+
+          if [ -n "${existing}" ]; then
+            gh issue comment "${existing}" --repo "${REPO}" --body "🛡️ **Ny röd beroendegranskning $(date -u +%F)**
+
+          - **Körning:** ${run_url}
+          - **HEAD:** \`${CURRENT_SHA}\`${jobb_sektion}${note}
+
+          _(Stående ärende — kommentar i stället för nytt ärende, per ADR-082 beslut 4.)_"
+            echo "Uppdaterade stående beroende-ärende #${existing}."
+          else
+            gh issue create \
+              --repo "${REPO}" \
+              --title "🛡️ Beroendevarning — nattlig sårbarhetsgranskning röd" \
+              --label beroendevarning \
+              --body "${body}"
+            echo "Skapade nytt stående beroende-ärende."
+          fi

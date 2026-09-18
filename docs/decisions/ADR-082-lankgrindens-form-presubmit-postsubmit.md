@@ -239,3 +239,56 @@ dokumenterat död extern länk. Därför står det här, och därför byter
   PR-blockering till ett faktiskt stopp i arbetet.
 - [`docs/research/lankgrindens-form-2026-07-28.md`](../research/lankgrindens-form-2026-07-28.md)
   — underlaget: lychee-källkod på `lychee-v0.24.2` + nio projekts workflow-filer.
+
+## Updates
+
+### 2026-09-18 — Mönstret i beslut 4 får två tillämpningar till (TASK-450.1)
+
+**Vad som hände.** Beslut 4 ovan gav länkrötan en egen, mildare kanal: ETT
+stående ärende på egen etikett, nya fynd som kommentarer, icke-blockerande, med
+stängningsregeln kvar. Det var då en lösning på ETT problem. `TASK-450.1`
+(planens § N2, Marcus K2- och K1-beslut 2026-09-18) tillämpar samma mönster på
+två nya kanaler i samma fil, och nattens larm går därmed i tre kanaler i stället
+för en:
+
+| Kanal | Etikett | Form | Utlöses av |
+|---|---|---|---|
+| Produkt | `ci-natt` | tilldelat ärende per natt, **orörd form** | `suite` · `nightly-metrics` · `kontraktsvakt` |
+| Bokföring | `bokforingsdrift` | stående ärende, **detta besluts form** | `backlog-closure` · `pausade-sessioner` · `obesvarade-larm` · `sessionsdok-fonster` |
+| Beroendesäkerhet | `beroendevarning` | stående ärende, **detta besluts form** | `nightly-audit` |
+| Länkröta | `lankrota` | stående ärende (beslut 4) | `nightly-links` |
+
+**Varför mönstret bar.** Beslut 4:s argument var att en signal om OMVÄRLDENS
+tillstånd inte får devalvera en tilldelad signal om VÅRT. De två nya kanalerna
+är samma klass av fynd i den meningen som betyder något här: de fäller på
+tillstånd som består natt efter natt tills någon åtgärdar dem, och ger därför
+bitvis identisk text varje natt. Mätt över de sex nätterna 2026-09-13 …
+2026-09-18 (`gh run view <id> --json jobs`): bokföringsgrindarna röda 5 av 6,
+`nightly-audit` röd 5 av 6 på samma två advisories, ett produktjobb rött 1 av 6.
+Under den gamla formen var alla sex "röd natt".
+
+**Vad som INTE generaliserades, med avsikt.** Produktkanalen fick INGEN
+dubblettspärr. Ett produktfel som återkommer kan återkomma OLIKA — annat test,
+annan flake — och bär då ny information; ett stående ärende hade dämpat just
+det. Skillnaden mellan kanalerna är alltså inte "viktig kontra mindre viktig"
+utan om upprepningen kan skilja sig från föregående natt. Att generalisera
+mönstret hit vore att tysta det enda beskedet som faktiskt förändras.
+
+**En avvikelse från planens ordalydelse, bokförd öppet.** Planen skrev "flytta
+de fyra bokföringsposterna ut ur `alarm.needs`" och krävde på nästa rad att
+jobbstatus-listan ska finnas kvar i alla ärenden. De två kan inte hållas
+samtidigt: `needs` är den enda vägen till ett annat jobbs `result` i GitHub
+Actions. Byggd form: alla tre kanaljobb har samtliga åtta jobb i `needs` och
+redovisar hela listan; det som delades är TRIGGERN (`if`-uttrycket), vilket är
+den effekt planen räknar hem. `contains(needs.*.result, …)` går därför inte att
+använda längre — varje kanal räknar upp sina utlösande jobb explicit.
+
+**Följdrättelse.** `.sanningsavstamning-policy.conf`:s skäl att utelämna
+`ci-natt` angav en självförstärkande loop via `obesvarade-larm` → `alarm`. Den
+kedjan är bruten av delningen (grinden utlöser nu bokföringskanalen), så skälet
+är flyttat dit det numera gäller och `ci-natt`:s utelämnande vilar på sitt
+andra, kvarstående skäl: nattvakten bevakar redan den etiketten.
+
+**Öppet, ej avgjort här.** Beroendekanalen blir lastbärande för hela
+beroendesäkerheten först när K1 väg (b) landat (`TASK-450.5`). Om dess ärende då
+också bör TILLDELAS är ett eget beslut på data.
