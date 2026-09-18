@@ -4,7 +4,7 @@ title: 'Skiva: N3 — efterkontrollen klassar hela det pushade spannet'
 status: To Do
 assignee: []
 created_date: '2026-09-18 09:53'
-updated_date: '2026-09-18 10:34'
+updated_date: '2026-09-18 11:03'
 labels:
   - ready-for-agent
 dependencies:
@@ -38,3 +38,26 @@ Täcker användarberättelser: 4, 5
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Rättelse (review-runda 2, PR #2526): AC #1:s femte klausul, "bas osatt ger
+false", är FELSTÄLLD — den kolliderar ordagrant med AC #3 (rollback: en
+literalt OSATT bas-variabel ⇒ dagens beteende, vilket i T27:s scenario är
+`true`, inte `false`). Koden är korrekt; AC-texten är fel.
+
+Vad som faktiskt gäller, och vad testerna T24-T27 bevisar:
+
+- AC #1:s "bas osatt" SKA LÄSAS SOM "bas satt men TOMT" (BEFORE="", en
+  variabel som FINNS i miljön men saknar värde) — det är T26, och T26 ger
+  korrekt `false` (en egen fail-closed-kant, skild från noll-SHA).
+- AC #3:s "utan bas-variabeln" är den ANDRA, distinkta kanten: BEFORE
+  literalt SAKNAS ur miljön (${BEFORE+x} falsk) — det är T27, som korrekt
+  ger `true` (rollback till dagens beteende, inklusive dess kända hål).
+
+AC-texten ändras inte via CLI:t i denna runda (risk: `--acceptance-criteria`
+ersätter HELA AC-listan och riskerar att nollställa redan bockade kryss på
+ett kort vars arbete är färdigverifierat) — se scripts/test-classify-post-merge.sh
+T24/T26/T27 för den exakta, körda semantiken.
+<!-- SECTION:NOTES:END -->

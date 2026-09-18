@@ -317,6 +317,15 @@ if [[ -n "${BEFORE+x}" ]]; then
         emit
     fi
 
+    # Degenererad push: BEFORE == topp-commiten själv (before==after). Detta är
+    # INTE "onåbar inom taket" — ingen vandring behövs eller hjälper, eftersom
+    # en commit aldrig är sin egen förälder. Eget, sant skäl i loggen i stället
+    # för att låta den generiska tak-texten (nedan) beskriva ett annat fel.
+    if [[ "${BEFORE}" == "${MERGE_SHA}" ]]; then
+        skal="BEFORE är identiskt med topp-commiten (${MERGE_SHA:0:12}) — degenererad push (before==after, inget nytt landat) eller ett felaktigt värde, ingen giltig bas att räkna steg mot (full svit, fail-closed)."
+        emit
+    fi
+
     steg=0
     hittad=""
     vandra_parents="${commit_json}"

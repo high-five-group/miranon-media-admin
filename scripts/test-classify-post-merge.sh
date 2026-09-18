@@ -3,7 +3,10 @@
 #
 # Empirisk test-suite för scripts/classify-post-merge.sh (TASK-73).
 #
-# 27 testfall — ett per gren i klassningen, båda riktningarna.
+# Ett scenario per gren i klassningen, båda riktningarna. Det exakta antalet
+# gröna kontroller står i skriptets EGEN slutrad ("── Resultat: N passerade
+# ──") — skriv aldrig av ett tal hit för hand (TASK-106-klassen: en kopia
+# glider ur synk utan att någon märker det).
 #
 # VÄG B — PR-ytan (ursprunglig form, TASK-73):
 #   T1  docs-landning: `Test suite` skipped i PR-körningen        → true
@@ -42,6 +45,10 @@
 #   T25 BEFORE onåbar inom taket (historiken tar slut) → false
 #   T26 BEFORE satt men TOMT (ej samma som osatt)      → false
 #   T27 BEFORE OSATT på samma scenario som T22         → true (ROLLBACK-BEVIS)
+#   T28 API-fel MITT I vandringen (steg ≥ 2)           → false
+#   T29 BEFORE == topp-commiten (degenererad push)     → false, eget skäl i loggen
+#   T13c post-merge.yml skickar BEFORE i klassningsjobbets env (kopplingsgrind,
+#       runda 2-tillägg — se § nedan)
 #
 # T22 ÄR N3:s TVÅSIDIGHETSBEVIS: den fäller mot skriptet FÖRE denna fix (ingen
 # BEFORE-räkning finns, så bara HEAD^2 läses — toppens docs-klassning ärvs
@@ -49,6 +56,10 @@
 # rollback-beviset: exakt samma scenario som T22, men med BEFORE OSATT — det
 # ska ge EXAKT det gamla (buggiga) svaret `true`, eftersom borttagen `BEFORE`-
 # rad i post-merge.yml är den dokumenterade rollback-vägen.
+#
+# T13c ÄR EN EGEN TVÅSIDIGHETSGRUND, körd manuellt (inte i denna svit): en
+# scratch-kopia av post-merge.yml UTAN BEFORE-raden fäller T13c, den riktiga
+# filen passerar. Se PR-beskrivningen för körningen mot båda kopiorna.
 #
 # ═══ VARFÖR T13 FINNS: PARITETEN ÄR EN STRÄNG, OCH DEN GRINDAS ═══
 # Klassningen ärver ci.yml:s beslut i stället för att räkna om det, just för att
@@ -490,6 +501,32 @@ scenario_defaults
 export GH_COMMIT_EXTRA_JSON="${TVA_MERGE_EXTRA}"
 run_case "T27 BEFORE osatt, T22:s scenario (ROLLBACK-BEVIS)" "true"
 
+# --- T28: API-fel MITT I vandringen (steg ≥ 2) → false -----------------------
+# Steg 1 återanvänder commit_json (redan hämtad, inget nytt anrop). Steg 2
+# kräver ETT NYTT commits-API-anrop (för cccc) — GH_FAIL_ON=commit_walk river
+# just DET anropet, inte steg 1:s. Samma topologi som T22, men anropet till
+# cccc faller i stället för att lyckas.
+scenario_defaults
+export GH_COMMIT_EXTRA_JSON="${TVA_MERGE_EXTRA}"
+export BEFORE="${BEFORE_SHA}"
+export GH_FAIL_ON="commit_walk"
+run_case "T28 API-fel mitt i BEFORE-vandringen (steg 2)" "false"
+
+# --- T29: BEFORE == topp-commiten (degenererad push) → false -----------------
+# before==after — ingen vandring behövs eller hjälper (en commit kan aldrig
+# vara sin egen förälder). Detta är INTE samma fel som "onåbar inom taket":
+# den generiska tak-texten vore sakligt missvisande här, så fallet har sitt
+# EGET skäl i skriptet (se § N3-blocket, degenererad-push-kontrollen).
+scenario_defaults
+export BEFORE="${MERGE_SHA}"
+run_case "T29 BEFORE == topp-commiten (degenererad push)" "false"
+t29_ut=$(PATH="${TEST_DIR}/bin:${PATH}" REPO="ett/repo" BEFORE="${MERGE_SHA}" bash "${TEST_DIR}/classify.sh" "${MERGE_SHA}" 2>&1)
+if printf '%s' "${t29_ut}" | grep -q "degenererad push"; then
+    pass "T29a skälet är eget (degenererad push), inte den generiska tak-texten"
+else
+    fel "T29a skälet i loggen är INTE det egna degenererad-push-skälet — kan vara den missvisande tak-texten"
+fi
+
 # --- T13: KOPPLINGSGRINDEN ---------------------------------------------------
 echo "── T13: kopplingen till ci.yml ──"
 CI_YML="${REPO_ROOT}/.github/workflows/ci.yml"
@@ -520,6 +557,34 @@ if grep -qE '^[[:space:]]+run: bash scripts/classify-post-merge\.sh' "${POST_MER
 else
     fel "T13b post-merge.yml har inget 'run: bash scripts/classify-post-merge.sh'-steg — klassningen är frånkopplad."
 fi
+
+# --- T13c: BEFORE-RADEN — kopplingsgrind för N3 (TASK-450.2) -----------------
+# Rollback-egenskapen (§ N3 i classify-post-merge.sh:s huvud) gör FRÅNVARO av
+# BEFORE odetekterbar från AVSIKT: skriptet faller tyst till dagens (buggiga)
+# beteende om raden försvinner ur workflowen. Utan denna grind skulle en
+# framtida borttagen rad se identisk ut med en medveten rollback — precis den
+# L322-klass T13b:s egen kommentar varnar för, applicerad på en NY koppling.
+# Scopad till KLASSNINGSJOBBETS env-block (mellan steg-namnet och dess
+# run:-rad), inte en fri substräng någonstans i filen — samma disciplin som
+# T13b:s ankrade grep.
+KLASSNING_BLOCK=$(awk '
+    /name: Ärv ci\.yml:s klassning för det landade trädet/ { f=1 }
+    f { print }
+    f && /run: bash scripts\/classify-post-merge\.sh/ { exit }
+' "${POST_MERGE_YML}")
+
+if [[ -z "${KLASSNING_BLOCK}" ]]; then
+    fel "T13c kunde inte hitta klassningsjobbets steg i ${POST_MERGE_YML} (ankaret 'name: Ärv ci.yml:s klassning …' saknas eller är omdöpt)"
+elif echo "${KLASSNING_BLOCK}" | grep -qE '^[[:space:]]+BEFORE: \$\{\{ github\.event\.before \}\}[[:space:]]*$'; then
+    pass "T13c post-merge.yml skickar BEFORE (github.event.before) i klassningsjobbets env"
+else
+    fel "T13c post-merge.yml saknar BEFORE-raden i klassningsjobbets env — T166-hålet (60 hål/19 dagar) är TYST återinfört."
+    echo "     Fix: lägg tillbaka 'BEFORE: \${{ github.event.before }}' i env-blocket för steget 'Ärv ci.yml:s klassning för det landade trädet'."
+fi
+
+# TVÅSIDIGHETSBEVIS för T13c (körs manuellt, inte i denna svit — se
+# PR-beskrivningen): en scratch-kopia av post-merge.yml UTAN BEFORE-raden
+# fäller ovanstående block; den riktiga filen passerar. Samma metod som T22.
 
 echo ""
 echo "── Resultat: ${PASSED} passerade, ${FAILED} failade ──"
