@@ -1012,10 +1012,22 @@ det bara i körningens logg. Det är en känd lucka, inte en glömska — de tv�
 kanalerna är icke-blockerande stående ärenden, och en vakt som larmar
 tilldelat om dem hade återinfört precis den signalblandning delningen tog bort.
 
-**Listan i configen MÅSTE hållas lika med `alarm`-jobbets trigger i
-`nightly.yml`.** Ingen grind vaktar det i dag; kravet står som prosa på båda
-ställena. Vakten för invarianten (de tre triggerlistorna plus vaktens lista mot
-`needs`-listan) är kortad som egen följdskiva.
+**Invarianten som måste hållas för hand är TVÅDIMENSIONELL** — och den
+formulering som stod här (*"listan ska vara lika med `alarm`-jobbets trigger"*)
+var för grov. Triggrarna och `needs`-listan lever i **jobb-ID**-rymden
+(`suite`, `nightly-metrics`, `kontraktsvakt`); vaktens lista lever i
+**jobb-NAMNPREFIX**-rymden. Kravet har därför två led:
+
+1. **ID-ledet** — de tre kanalernas triggerlistor partitionerar `needs`-listan:
+   varje nattjobb utlöser exakt en kanal, inget två, inget noll.
+2. **Namn-ledet** — varje jobb-ID i `alarm`-triggern mappar till ett `name:`
+   som något prefix i configens lista faktiskt matchar. Byter någon `name:` på
+   de tre produktjobben slutar prefixet matcha, och `Nattlig fullsvit` måste
+   dessutom förbli ett **prefix** till nattsvitens barnjobb.
+
+Bryts ledet 2 ensamt **tystnar vakten för hela produktkanalen** medan en ren
+ID-jämförelse står grön. Ingen grind vaktar något av leden i dag; kravet står
+som prosa i configen och i `nightly.yml`. Följdskivan ska vakta **båda**.
 
 ### Kontraktsvakten — fixturvärlden mot verkligheten
 

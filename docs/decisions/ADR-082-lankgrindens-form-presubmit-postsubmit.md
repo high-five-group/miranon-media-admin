@@ -318,9 +318,26 @@ tre där rödheten bärs av en annan kanal.
 **Fail-safe-riktningen vändes, medvetet.** En denylist larmar som default om ett
 okänt jobb; en allowlist tystar det. Valet följer vaktens egen husregel (*"ett
 falsklarm är värre än ingen vakt"*) och principen att vakten ska vakta exakt det
-`alarm` ansvarar för. Priset är att listan måste hållas lika med `alarm`-triggern
-**för hand** — kravet står som prosa i båda filerna, och vakten för invarianten
-är kortad som egen följdskiva. Ingen mekanism vaktar den i dag (ADR-083).
+`alarm` ansvarar för. Priset är en invariant som måste hållas **för hand** —
+och den är TVÅDIMENSIONELL, vilket en första formulering missade: triggrarna och
+`needs`-listan lever i **jobb-ID**-rymden, vaktens lista i
+**jobb-NAMNPREFIX**-rymden. Kravet har alltså två led: **(i)** de tre
+triggerlistorna partitionerar `needs`-listan, och **(ii)** varje jobb-ID i
+`alarm`-triggern mappar till ett `name:` som något av listans prefix faktiskt
+matchar. Bryts (ii) ensamt tystnar vakten för hela produktkanalen medan en ren
+ID-mängdjämförelse står grön — prefix-formen gör ledet extra känsligt, eftersom
+`Nattlig fullsvit` måste förbli ett prefix till nattsvitens barnjobb. Kravet står
+som prosa i båda filerna; följdskivan ska vakta **båda** leden. Ingen mekanism
+vaktar någotdera i dag (ADR-083).
+
+**Rödhet uttrycks som negation, inte som uppräkning.** Vaktens villkor löd först
+`conclusion == "failure" or "cancelled"` — ofarligt under denylisten, ett tyst
+hål under allowlisten. `.jobs[].conclusion` har nio värden medan
+`needs.<jobb>.result` har fyra, så ett produktjobb med `timed_out` gav
+`result: failure` (alarm fyrade) utan att vakten såg jobbet som rött. Villkoret
+är därför en negation av en liten ofarlig mängd (`success`, `skipped`,
+`neutral`; `null` = pågår hanteras separat), vilket gör varje framtida
+conclusion-värde rött som default i stället för tyst.
 
 **Vad som fortfarande saknar vakt, öppet skrivet:** bokförings- och
 beroendekanalen har ingen "vaktens vakt". `lankrota` har det inte heller, och har
