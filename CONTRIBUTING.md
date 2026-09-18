@@ -377,9 +377,12 @@ branch→flera-commits→sen-push-flödet är en LÄGRE integrationsfrekvens
 
 Regeln att hålla i är **separationen**: commit-frekvens är gratis (lokal
 historik — committa så ofta du vill), medan push-frekvens kostar en full
-CI-körning plus en plats i staging-mutexen. Pusha därför när en arbetsenhet
-är landningsklar — inte per commit, och inte som slut-dump efter en dags
-lokalt arbete.
+CI-körning. **Inte** en plats i staging-mutexen — sedan A7:5 (`TASK-70.3`)
+skickar `ci.yml`s `suite`-anrop `run_staging: false` VILLKORSLÖST (§
+Landnings-ordningen ovan), så PR-ytan tar aldrig den globala
+`staging-tests`-mutexen; den kontrollen flyttades till post-merge/natt.
+Pusha därför när en arbetsenhet är landningsklar — inte per commit, och
+inte som slut-dump efter en dags lokalt arbete.
 
 ### Landnings-ordningen — mekaniserad som merge queue sedan 2026-07-29
 
@@ -1157,9 +1160,13 @@ används inte och ska inte införas (flaggan gör `needs`-resultatet till
 
 ### Urvalet i PR-grinden (`TASK-75`)
 
-Klassen kör **alla 18 spec-filer** i normalfallet. Rör din diff **enbart
-acceptance-spec-filer** — plus filer i docs-klassen, till exempel kortet du
-bockar av — kör PR-grinden i stället **bara de spec-filer du ändrat**.
+Klassen kör **hela acceptance-svitens spec-filer** i normalfallet — räkna
+aktuellt antal med `npx playwright test --project=acceptance --list` i
+stället för att lita på ett hårdkodat tal här; svitens storlek växer
+(TASK-106-felklassen: ett kopierat tal blir fel utan att någon märker det).
+Rör din diff **enbart acceptance-spec-filer** — plus filer i docs-klassen,
+till exempel kortet du bockar av — kör PR-grinden i stället **bara de
+spec-filer du ändrat**.
 
 Mekaniken är `scripts/acceptance-urval.sh`, kallad av `ci.yml`:s
 `acceptance-urval`-steg och skickad vidare som `acceptance_selection` till
