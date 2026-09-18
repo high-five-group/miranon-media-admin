@@ -363,6 +363,7 @@ export function Hem() {
             per rad själv; `onOppnaEventinfo` styr ENDAST eventinfo-svepet. */}
         <Bevakningsrad
           rader={bevakningRader}
+          isPending={anmalDataPending}
           onOppnaEventinfo={(event) => {
             setEventinfoEvent(event);
             setAktivtSvep('eventinfo');

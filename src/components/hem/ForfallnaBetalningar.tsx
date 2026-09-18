@@ -66,6 +66,17 @@ import type { useDashboardRegistrations } from './useDashboardData';
  * (`scrollbar-gutter: stable`), se den filens docblock för hela
  * härledningen. Mätt (boundingBox, `toEqual`/`utanY`, ±0 px):
  * `hem-laddlage.acceptance.test.ts`.
+ *
+ * [TASK-451.7] MEDVETET INGEN SKELETON-RESERVATION FÖR "Skicka påminnelse
+ * till alla"-KNAPPEN ELLER "Att påminna"-UNDERRUBRIKEN, av SAMMA skäl som
+ * `NyaAnmalningar.tsx`s motsvarande knapp (se dess docblock): de två raderna
+ * ovan är redan en approximation av en okänd gruppering/antal, och landar
+ * sektionen i sitt tomläge ("Inga förfallna betalningar.", en `<p>`-rad)
+ * hade en TILLAGD reservation gjort den krympningen större — precis det AC
+ * #3 (TASK-451.7) förbjuder. Den kvarstående Y-skillnaden när "Att
+ * påminna"-gruppen faktiskt visas är en NAMNGIVEN, mätt kvarstående
+ * skillnad (sektionsnivå-boundingBox-testet i
+ * `hem-laddlage.acceptance.test.ts`), inte tyst bortstruken.
  */
 function ForfallenSkeletonRad() {
   return (
@@ -162,7 +173,6 @@ export function ForfallnaBetalningar({
           className="scrollbar-inline flex max-h-96 flex-col gap-1 overflow-y-auto pr-3"
         >
           <span className="sr-only">Laddar förfallna betalningar…</span>
-          <ForfallenSkeletonRad />
           <ForfallenSkeletonRad />
         </div>
       ) : forfallna.rows.length === 0 ? (

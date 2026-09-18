@@ -33,6 +33,34 @@ function radKlass(index: number): string {
  * sist i flödet. `useLatestActivity` + `HEM_SENASTE_AKTIVITET_ANTAL` +
  * `relativTid` + den DELADE verb-copy-modulen (`verbCopy`) är ORÖRDA — bara
  * presentationen är ny.
+ *
+ * [TASK-451.7] KÄND, ÖPPET BOKFÖRD LUCKA: RADEN NEDAN BÄR INGEN `truncate`.
+ * Diagnoskartan (§ 3) namnger `{namn} {verb} · {objekt}`-raden nedan som en
+ * text som kan radbryta förbi skelettets `Skeleton variant="text"` (exakt 1
+ * line-box). Fixen är INTE att lägga till `truncate` här: raden är en del av
+ * `dev/hem-prototyp/ui.tsx`s promoverade, Marcus-godkända facit-form
+ * (`s102-hem-konvergens/facit.json`, "godkand" satt 2026-08-17), och att
+ * klippa aktivitetstexten hade ändrat den LADDADE vyns utseende på en
+ * stämplad yta — förbjudet utan ny Marcus-stämpel (ADR-102), och uppdraget
+ * för denna skiva förbjuder det uttryckligen.
+ *
+ * Skelettet är medvetet INTE breddat till 2 rader heller: det skulle
+ * reservera för värsta fall men skapa en shrink i det vanliga, icke-
+ * radbrytande fallet varje enda laddning — sämre än den nuvarande, mer
+ * sällsynta asymmetrin (samma "reservera där det oftast finns, kollapsa
+ * mjukt där det oftast saknas"-avvägning som motiverar de andra blockens
+ * val i denna skiva).
+ *
+ * Varför det ändå håller CLS-tröskeln (mätt, inte antaget): blocket är det
+ * SISTA innehållet i sidträdet, och pending→laddat-övergången byter HELA
+ * subträdet (`role="status"`-`<div>` → `<ol>`, radnoden `<div>` → `<li>`) —
+ * samma "en helt annan nod monteras i stället för den unmonterade"-mönster
+ * `laddning-cls.acceptance.test.ts`s filhuvud redan dokumenterar för
+ * Check-in/Aktivitetshistorik/Anmälningar (webbläsarens Layout
+ * Instability-API räknar aldrig en shift för en nod som unmonteras och en
+ * helt annan som monteras i dess ställe). Den mätta CLS-siffran för detta
+ * scenario (fixtur med radbrytande aktivitetsrader) står i slutrapporten
+ * för TASK-451.7.
  */
 export function SenasteAktivitetKompakt() {
   const { data, isPending, isError } = useLatestActivity(HEM_SENASTE_AKTIVITET_ANTAL);
