@@ -2591,8 +2591,10 @@ function RadInnehall({ rad, visaEvent }: { rad: InkorgsRad; visaEvent?: boolean 
               `kompakt`-prop (default `false`, se dess docblock) visar
               "Släpar" (ett eget, läsbart ord) i stället för "Basen släpar"
               BARA i denna enda kombination. Skärmläsare hör ändå den
-              ORDAGRANNA originaltexten via `aria-label`; inget döljs bakom
-              hover eller fokus, så INGET tooltip-bibliotek krävs (repot
+              ORDAGRANNA originaltexten via en `sr-only`-nod (aldrig
+              `aria-label` på en rollös `<span>` — se `BasenSlaparPill.tsx`
+              för skälet); inget döljs bakom hover eller fokus, så INGET
+              tooltip-bibliotek krävs (repot
               saknar en tillgänglig Tooltip-primitiv, och att bygga en för
               denna enda pill hade varit långt över golvet för ett
               fynd-kort). `Förfallen`/`Obekräftad` är ORÖRDA — deras

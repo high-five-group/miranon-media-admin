@@ -147,10 +147,7 @@ test.describe('TASK-456 — betalningsinkorgens kort-höjd (pill-raden reservera
 
       const hojder = new Map<number, number>();
       for (const [antalPillar, locator] of kort) {
-        hojder.set(
-          antalPillar,
-          await locator.evaluate((el) => el.getBoundingClientRect().height),
-        );
+        hojder.set(antalPillar, await locator.evaluate((el) => el.getBoundingClientRect().height));
       }
 
       const baslinje = hojder.get(0) as number;
@@ -199,11 +196,15 @@ test.describe('TASK-456 — betalningsinkorgens kort-höjd (pill-raden reservera
       hasText: 'Släpar',
     });
     await expect(kompaktPill).toBeVisible();
-    await expect(kompaktPill).toHaveAttribute('aria-label', 'Basen släpar');
-    // WCAG 2.5.3 (Label in Name): den synliga texten ska vara en delsträng
-    // av det tillgängliga namnet — annars kan röststyrning inte matcha den.
-    const synligText = await kompaktPill.evaluate((el) => el.textContent?.trim());
-    expect('basen släpar'.includes((synligText ?? '').toLowerCase())).toBe(true);
+
+    // Skärmläsartexten (`sr-only`, samma husteknik som `event-detail.
+    // staging.test.ts`s "Laddar event…"-kontroll) — "Basen " finns KVAR i
+    // DOM:en, bara visuellt dold, så det ackumulerade textinnehållet är
+    // fortfarande "Basen Släpar", ordagrant samma ord som förut.
+    const srOnlyPrefix = kompaktPill.getByText('Basen', { exact: false });
+    await expect(srOnlyPrefix).toHaveClass(/sr-only/);
+    const heltTextinnehall = await kompaktPill.evaluate((el) => el.textContent?.trim());
+    expect(heltTextinnehall).toBe('Basen Släpar');
   });
 
   /**

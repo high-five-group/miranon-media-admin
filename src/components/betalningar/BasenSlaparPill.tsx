@@ -20,10 +20,17 @@ import { AlertTriangle } from 'lucide-react';
  * göms bakom hover eller fokus, så inget tooltip-bibliotek behövs (repot
  * saknar en tillgänglig Tooltip-primitiv i dag — att bygga en för denna
  * enda pill hade varit långt över golvet för ett fynd-kort). Skärmläsare
- * får ändå ORDAGRANT samma namn som förut: `aria-label="Basen släpar"`
- * åsidosätter textinnehållet i tillgänglighetsträdet (accname-specen),
- * och WCAG 2.5.3 (Label in Name) håller eftersom den SYNLIGA texten
- * "Släpar" är en delsträng av det tillgängliga namnet "Basen släpar".
+ * hör ändå ORDAGRANT samma namn som förut: en `sr-only`-nod ("Basen ")
+ * döljs BARA visuellt, inte ur tillgänglighetsträdet, så den ackumulerade
+ * accessible name blir "Basen Släpar" — samma ord, samma ordning.
+ *
+ * INTE `aria-label` på span:en — ett `<span>` utan explicit roll (default
+ * `generic`) stödjer inte namngivande ARIA-attribut (biome
+ * `lint/a11y/useAriaPropsSupportedByRole` fällde det direkt; webbläsare kan
+ * tysta strunta i `aria-label` på en rollös nod). `sr-only`-prefixet kräver
+ * ingen roll alls — texten finns bara kvar i DOM:en, bara `clip`ad visuellt
+ * (samma Tailwind-klass som resten av huset redan använder för laddnings-
+ * annonser, se t.ex. `BetalningsInkorg.tsx`s egna `sr-only`-noder).
  * `title`-attributet (förklarande, inte namngivande) är oförändrat i båda
  * lägena. Ikonen + tonen bär fortfarande signalen tillsammans med texten —
  * ingen ny färg-/ikon-bara information.
@@ -33,10 +40,16 @@ export function BasenSlaparPill({ kompakt = false }: { kompakt?: boolean }) {
     <span
       className="inline-flex items-center gap-1 rounded border border-transparent bg-bg px-2 py-0.5 text-caption text-text-muted"
       title="Basen har inte hunnit uppdateras än"
-      aria-label={kompakt ? 'Basen släpar' : undefined}
     >
       <AlertTriangle aria-hidden size={13} />
-      {kompakt ? 'Släpar' : 'Basen släpar'}
+      {kompakt ? (
+        <>
+          <span className="sr-only">Basen </span>
+          Släpar
+        </>
+      ) : (
+        'Basen släpar'
+      )}
     </span>
   );
 }
