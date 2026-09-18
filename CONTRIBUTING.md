@@ -1117,6 +1117,40 @@ grön igen, eller med en skriven motivering — aldrig för att det blivit gamma
 Det är just den risk `ADR-077` § Beslut 3 varnar för: en mildare kanal som blir
 en kyrkogård ingen läser.
 
+## CodeQL — advanced setup (`TASK-464.2`)
+
+Säkerhetsskanningen kör sedan `TASK-464.2` (S5,
+[`actions-minutbudget-2026-09-18.md`](docs/research/actions-minutbudget-2026-09-18.md)
+§ S5) som en egen arbetsflödesfil (`.github/workflows/codeql.yml`,
+"advanced setup") i stället för GitHubs "default setup". Skälet är att
+default setup saknar en väg att undanta sökvägar — en ren markdown-ändring
+körde hela CodeQL-svitet ändå, mätt till ~13 % av augustis Actions-minuter.
+
+**Frågesviternas uppdatering är nu VÅRT ansvar, inte GitHubs.** Default
+setup underhölls automatiskt av GitHub — nya query-packs och
+frågesvit-revisioner rullade ut utan att någon i repot behövde agera.
+Advanced setup äger vi: `codeql.yml` låser språk (`javascript-typescript`,
+`actions`) och lämnar `query_suite: default` (ingen `queries:`-override,
+se filens eget huvud), men SJÄLVA CODEQL-VERKTYGET — `github/codeql-action`
+— är en SHA-pinnad version precis som repots övriga actions, och den
+pinningen rör sig inte av sig själv. Underhållspriset är alltså: när
+`codeql-action` släpper en ny major/minor med reviderade default-frågor,
+måste NÅGON i repot ta emot och landa den uppdateringen, annars fryser vi
+tyst kvar på en äldre frågesvit medan default setup (som andra repon kör)
+hade rullat framåt automatiskt.
+
+**Var Dependabot fångar det:** `.github/dependabot.yml`s
+`github-actions`-ekosystem (`directory: "/"`, `schedule: monthly`,
+gruppen `github-actions`) skannar HELA repots `uses:`-yta månadsvis,
+`github/codeql-action` inräknat — samma mekanism som håller
+`actions/checkout`, `actions/setup-node` m.fl. aktuella. Ingen egen
+Dependabot-post krävs för `codeql.yml` specifikt; den kommer med i den
+befintliga, redan wirade svepningen. Vad Dependabot INTE fångar: om
+GitHub byter namn på eller lägger till en CodeQL-språkidentifierare (t.ex.
+en framtida ersättare för `javascript-typescript`) — den sortens ändring
+kräver att någon läser `codeql-action`s CHANGELOG, inte bara följer en
+versionsbump.
+
 ## Acceptance-klassen
 
 Termen bor här och i

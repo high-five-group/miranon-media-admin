@@ -1,0 +1,164 @@
+---
+# CodeQL — egen "advanced setup"-arbetsflödesfil (TASK-464.2, S5).
+#
+# ═══ VARFÖR DEN HÄR FILEN FINNS ═══
+#
+# Repot körde tidigare GitHubs "default setup" för CodeQL — MÄTT via
+# `gh api repos/high-five-group/miranon-media-admin/code-scanning/default-setup`
+# (2026-09-18): `"state":"configured"`, `"query_suite":"default"`,
+# `"runner_type":"standard"`. Default setup saknar en väg att undanta
+# sökvägar (docs.github.com, "Customizing your advanced setup for code
+# scanning": endast en egen arbetsflödesfil ("advanced setup") ger
+# `paths-ignore`). Följden: en ren markdown-ändring körde hela CodeQL-svitet
+# ändå — mätt till ~13 % av augustis Actions-minuter
+# (`docs/research/actions-minutbudget-2026-09-18.md` § S5, § A1).
+#
+# Den här filen ersätter INTE default setup mekaniskt — orkestreraren stänger
+# av default setup manuellt EFTER att ha jämfört larmlistan (`code-scanning/
+# alerts`) mot en grön körning av DENNA fil (TASK-464.2 § HÅRD GRÄNS). Fram
+# tills dess körs BÅDA parallellt.
+#
+# ═══ SPRÅK OCH FRÅGESVIT — MÄTT, INTE GISSAT ═══
+#
+# Default-setup API:t rapporterar fyra "languages"
+# (`actions, javascript, javascript-typescript, typescript`), men det är en
+# rapporteringsartefakt av upptäckta filändelser — INTE fyra separata
+# analyskörningar. Den FAKTISKA exekveringen mättes direkt mot
+# `code-scanning/analyses` (per körning, inte per konfig): EXAKT två
+# kategorier, `/language:javascript-typescript` (87 regler) och
+# `/language:actions` (17 regler) — verifierat på fem på varandra följande
+# körningar 2026-09-18. `javascript-typescript` är GitHubs egen unifierade
+# alias för JS+TS i en enda pass (codeql-action CHANGELOG v2.21.8,
+# 2023-09-19), vilket är precis vad dessa två separata analyser gör i dag.
+# Matrisen nedan har därför två rader, inte fyra — en tredje/fjärde rad hade
+# varit en NY, dyrare körning, inte en trogen kopia av vad som faktiskt kör.
+#
+# `query_suite: "default"` betyder GitHubs standardfrågor utan override —
+# `queries:` sätts därför INTE i denna fil (att skriva `queries:
+# security-extended` hade bytt frågesvit, inte bevarat den). Källa:
+# docs.github.com, samma sida som ovan — "There is no 'default' suite name;
+# the default queries run automatically unless disabled."
+#
+# ═══ D0-UNDANTAGET — BARA PÅ pull_request ═══
+#
+# `push`-ytan (huvudgrenen) och det schemalagda passet är MEDVETET ORÖRDA —
+# de skannar exakt som i dag, utan `paths-ignore`. Skäl (TASK-464.2 § AC3):
+# en ny CodeQL-regel (nytt query-pack, ny CVE-signatur) måste kunna hitta ett
+# BEFINTLIGT, oförändrat fel i huvudgrenen utan att vänta på veckoschemat —
+# och 68 % av landningarna är renodlade dokumentlandningar
+# (`actions-minutbudget-2026-09-18.md` § A4), så ett D0-filter på `push`
+# hade i praktiken skjutit upp den kontrollen mot huvudgrenen till nästan en
+# gång i veckan. Precedent: `cli/cli` (GitHubs eget CLI-repo) har
+# `paths-ignore` bara under `pull_request`, aldrig under `push`
+# (mätt 2026-09-19, `.github/workflows/codeql.yml`).
+#
+# Kön (`merge_group`) har ALDRIG haft en egen CodeQL-körning — MÄTT via
+# `code-scanning/analyses`: samtliga `ref`-värden är `refs/heads/main` eller
+# `refs/pull/<n>/head`, aldrig en kö-referens. Det landade trädet skannas
+# redan av `push`-ytan direkt efter merge, så ingen tredje yta behövs.
+#
+# ═══ SÖKVÄGSLISTAN — MÄNGD-LIK MED ci.yml:s D0, VAKTAD ═══
+#
+# De 17 posterna nedan är BYTE-IDENTISKA med de positiva raderna i ci.yml:s
+# `# paritet:start klassning-d0`-block (samma markör, samma lista) —
+# vaktat av scripts/check-listparitet.sh, paret `klassning-codeql-positiv`
+# i .listparitet-policy.conf. Glider listorna isär fäller grinden.
+#
+# ci.yml:s D0-block bär ÄVEN nio `!`-negationer (package.json, tsconfig*.json
+# m.fl.) som exkluderar dem från den positiva mängden i tj-actions/
+# changed-files-formen. De är MEDVETET UTESLUTNA härifrån, av två skäl: (1)
+# GitHubs egen dokumentation för `paths-ignore` beskriver `!`-negation ENDAST
+# för syskonfiltret `paths:` ("use the paths filter prefixed with the `!`
+# character") — att blanda in `!`-rader i `paths-ignore` är odokumenterat
+# beteende, och `cli/cli`s samt `crewAIInc/crewAI`s egna `paths-ignore`-block
+# (mätt 2026-09-19) använder uteslutande positiva mönster, aldrig negation;
+# (2) ingen av de nio filerna matchar NÅGOT av de 17 positiva mönstren i dag
+# (t.ex. matchar `package.json` varken `**/*.md`, `docs/**` eller någon annan
+# post) — negationerna är alltså redan verkningslösa mot dagens positiva
+# lista, oavsett filter-typ. Om D0:s positiva lista någon gång växer till att
+# täcka en av de nio (t.ex. ett brett `**/*.json`-mönster), måste detta
+# stycke omprövas — det är en känd, dokumenterad kant, inte en tyst lucka.
+name: CodeQL
+
+on:
+  pull_request:
+    branches: [main]
+    paths-ignore:
+      # paritet:start klassning-codeql-d0
+      - '**/*.md'
+      - 'LICENSE'
+      - 'docs/**'
+      - 'tasks/**'
+      - 'tests/vale-regression/**'
+      - 'scripts/test-vale-regression.sh'
+      - '.github/ISSUE_TEMPLATE/**'
+      - '.github/PULL_REQUEST_TEMPLATE.md'
+      - '.github/CODEOWNERS'
+      - '.vscode/extensions.json'
+      - '.editorconfig'
+      - '.lycheeignore'
+      - '.vale.ini'
+      - '.vale/**'
+      - '.markdownlint-cli2.jsonc'
+      - '.claude/**'
+      - '.claude/**/.*'
+      # paritet:slut klassning-codeql-d0
+  push:
+    branches: [main]
+  schedule:
+    # Veckovis, matchar default-setups "schedule":"weekly". Exakt
+    # veckodag/klockslag för DEN körningen exponeras inte av
+    # code-scanning/default-setup-API:t (bara kadensen "weekly"), så tiden
+    # nedan är ett medvetet, öppet valt tillfälle (måndag 05:00 UTC) utan
+    # kollision med `nightly.yml` (03:00 UTC) eller `nightly-watchdog.yml`
+    # (12:00 UTC dagligen) — inte en återskapad kopia av GitHubs interna
+    # schemaläggning.
+    - cron: '0 5 * * 1'
+  workflow_dispatch: {}
+
+# Security hardening: least-privilege default, samma mönster som ci.yml
+# (ADR-029 §4). GITHUB_TOKEN får bara det jobbet faktiskt behöver.
+permissions: {}
+
+jobs:
+  analyze:
+    name: Analyze (${{ matrix.language }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      # Krävs för att github/codeql-action/analyze ska kunna ladda upp
+      # SARIF-resultat till Security-fliken.
+      security-events: write
+      # Krävs av github/codeql-action/init för att läsa arbetsflödesdetaljer.
+      actions: read
+      contents: read
+
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # Täcker BÅDE JavaScript och TypeScript i en enda pass — se
+          # motiveringen i filhuvudet.
+          - language: javascript-typescript
+            build-mode: none
+          # GitHub Actions-workflowfilerna själva (skript-injektion,
+          # osäker pull_request_target-användning m.m.).
+          - language: actions
+            build-mode: none
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      # Ingen `queries:`-rad här, MEDVETET — se filhuvudets § SPRÅK OCH
+      # FRÅGESVIT. Standardfrågorna (query_suite: default) körs oförändrat.
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@1c5b675653bb5c22dbe9b12b556ec555138e09fd  # v4.38.1
+        with:
+          languages: ${{ matrix.language }}
+          build-mode: ${{ matrix.build-mode }}
+
+      - name: Perform CodeQL analysis
+        uses: github/codeql-action/analyze@1c5b675653bb5c22dbe9b12b556ec555138e09fd  # v4.38.1
+        with:
+          category: "/language:${{ matrix.language }}"

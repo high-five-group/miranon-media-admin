@@ -2,7 +2,8 @@
 #
 # test-check-listparitet.sh — self-test för check-listparitet.sh.
 #
-# ARTON FALL. Grinden är billig att göra GRÖN och det bevisar ingenting; varje
+# TJUGO FALL (arton + T19/T20, TASK-464.2). Grinden är billig att göra GRÖN
+# och det bevisar ingenting; varje
 # fall nedan finns för att bevisa att den FÄLLER när den ska, eller att den
 # vägrar uttala sig när den inte kan läsa det den ska pröva.
 #
@@ -27,6 +28,10 @@
 #     T16 undantag utan skäl                                 → 2
 #     T17 undantag på B-sidan av ett a-till-b-par            → 2
 #     T18 ogiltig riktning                                   → 2
+#
+#   Citerad YAML-listform (TASK-464.2, paret `klassning-codeql-positiv`)
+#     T19 citerad YAML-listform i synk                        → 0
+#     T20 citerad YAML-listform, drift                        → 1
 #
 # T14 är det viktigaste fallet i sviten. Ett uttryck som slutar matcha ger två
 # TOMMA mängder, och tom == tom är grönt — grinden hade då rapporterat paritet
@@ -105,7 +110,7 @@ kor() {
     (cd "${TEST_DIR}" && bash "${GATE}" >/dev/null 2>&1; echo $?)
 }
 
-printf '\ntest-check-listparitet — arton fall\n'
+printf '\ntest-check-listparitet — tjugo fall\n'
 printf '%.0s─' {1..70}; printf '\n'
 
 # ─── Paritet ────────────────────────────────────────────────────────────────
@@ -265,6 +270,63 @@ skriv_lista b.txt alpha
 skriv_policy sidledes ""
 ec="$(kor)"
 report "T18 ogiltig riktning" 2 "${ec}"
+
+# ─── Citerad YAML-listform (TASK-464.2) ────────────────────────────────────
+#
+# T1–T18 prövar mekaniken generellt, men bara i BAR radform (`^[a-z]+$`),
+# den enda formen `skriv_policy` kan producera (dess B-uttryck är
+# hårdkodat). Paret `klassning-codeql-positiv` (.listparitet-policy.conf,
+# TASK-464.2) introducerade en NY B-uttrycksform: `'[^']+'`, som plockar EN
+# citerad YAML-listpost (`- 'alpha'`) ur en äkta sekvens — codeql.yml:s
+# `paths-ignore:` är en riktig YAML-array, inte ett bar block-scalar som
+# ci.yml:s `files: |`. Formen är oprövad av T1–T18 och förtjänar sin egen
+# tvåsidiga bevisning. Policyn skrivs för hand (samma mönster som T9–T11)
+# eftersom `skriv_policy` inte kan uttrycka ett eget B-uttryck.
+
+# T19 — citerad YAML-listform, i synk.
+nollstall
+skriv_lista a.txt alpha beta gamma
+{
+    printf '# paritet:start p\n'
+    printf "      - 'alpha'\n"
+    printf "      - 'beta'\n"
+    printf "      - 'gamma'\n"
+    printf '# paritet:slut p\n'
+} > "${TEST_DIR}/b.txt"
+cat > "${TEST_DIR}/.listparitet-policy.conf" <<'POLICY'
+# shellcheck shell=bash
+# shellcheck disable=SC2034
+LISTPARITET_PAR="
+p:::bada:::a.txt:::# paritet:start p:::# paritet:slut p:::^[a-z]+\$:::b.txt:::# paritet:start p:::# paritet:slut p:::'[^']+'
+"
+LISTPARITET_UNDANTAG="
+"
+POLICY
+ec="$(kor)"
+report "T19 citerad YAML-listform i synk" 0 "${ec}"
+
+# T20 — samma form, men B saknar 'gamma'. Bevisar att den nya
+# extraktionsformen faktiskt FÄLLER på drift och inte bara råkar vara grön
+# (T14-disciplinen tillämpad på den nya formen specifikt).
+nollstall
+skriv_lista a.txt alpha beta gamma
+{
+    printf '# paritet:start p\n'
+    printf "      - 'alpha'\n"
+    printf "      - 'beta'\n"
+    printf '# paritet:slut p\n'
+} > "${TEST_DIR}/b.txt"
+cat > "${TEST_DIR}/.listparitet-policy.conf" <<'POLICY'
+# shellcheck shell=bash
+# shellcheck disable=SC2034
+LISTPARITET_PAR="
+p:::bada:::a.txt:::# paritet:start p:::# paritet:slut p:::^[a-z]+\$:::b.txt:::# paritet:start p:::# paritet:slut p:::'[^']+'
+"
+LISTPARITET_UNDANTAG="
+"
+POLICY
+ec="$(kor)"
+report "T20 citerad YAML-listform, drift → fäller" 1 "${ec}"
 
 # ─── Sammanfattning ─────────────────────────────────────────────────────────
 
