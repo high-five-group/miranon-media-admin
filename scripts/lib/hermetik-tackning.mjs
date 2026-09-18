@@ -36,6 +36,14 @@
 // korrekt INTE. Det är invariantens rätta beteende, inte en lucka: täckningen är
 // oskadd, bara topologin är en annan.
 //
+// DEN SKYDDAR INTE MOT ATT KLASSEN SJÄLV KRYMPER. Både täljaren (summan av
+// skärvornas prövade) och nämnaren (`listat`) härleds ur SAMMA Playwright-config
+// i samma träd. Ett `testIgnore`, ett omdöpt projekt eller en flyttad testkatalog
+// krymper därför BÅDA talen i takt, och summan går ihop precis som förut. Det är
+// ingen regression — kontrollen byggdes aldrig för det — men ingen ska läsa den
+// som det skyddet. Att klassen innehåller rätt tester vaktas av helt andra ytor
+// (ADR-080 beslut 3 och klassens egen kodgranskning), inte här.
+//
 // Kontrollen prövar TÄCKNING, aldrig DOM. Att varje prövat test faktiskt fälldes
 // AV VAKTEN avgörs av `bedomPositivt` i hermetik-sjalvtest.mjs, per skärva, och
 // den spärren är oförändrad av delningen.

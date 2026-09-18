@@ -83,7 +83,7 @@
       "Ladda upp Playwright-artefakter vid rött e2e",
       "Ladda upp skärvans täckningsrapport"
     ],
-    "infraRationale": "Steg som förbereder CI-runnerns MILJÖ (checkout, node-version, npm ci, cache-restore) eller som bara kör vid fel (artefakt-uppladdning, if: failure()). Inget av dem validerar arbetsträdet — att köra dem lokalt vore antingen meningslöst (repot är redan uppcheckat) eller farligt (npm ci mot ett symlänkat node_modules delat med huvudrepot).",
+    "infraRationale": "Steg som förbereder CI-runnerns MILJÖ (checkout, node-version, npm ci, cache-restore), som bara kör vid fel (artefakt-uppladdning, if: failure()), ELLER som enbart FLYTTAR en artefakt mellan CI-jobb utan att själva validera något ('Ladda upp skärvans täckningsrapport', TASK-366 — steget laddar upp en fil som redan skrivits av det härledda steget före det; domen över filens innehåll fälls i jobbet acceptance-sjalvtest-tackning, som deriveras INTE, se knownJobs). Inget av dem validerar arbetsträdet — att köra dem lokalt vore antingen meningslöst (repot är redan uppcheckat, och det finns ingen artefaktyta att ladda upp till), eller farligt (npm ci mot ett symlänkat node_modules delat med huvudrepot).",
     "coveredByCheckDocs": [
       "Run lychee link check (INTERN yta — offline)",
       "Check markdown hygiene (markdownlint-cli2)",

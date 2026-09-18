@@ -461,6 +461,17 @@ jobs:
   # ADR-080 beslut 3: VILLKOR för acceptance-klassens existens, inte
   # förhandlingsbart — och oförändrat av att beviset flyttat hit.
   #
+  # LÄS JOBBNAMNET BOKSTAVLIGT (runda 2-fynd, TASK-366, pre-existerande men
+  # värt att skriva ut sedan delningen): "tvåsidigt bevis" beskriver SKRIPTETS
+  # två lägen, inte vad CI kör. CI kör bara den POSITIVA sidan. Den negativa
+  # kontrollen (`npm run test:acceptance:sjalvtest:negativ`, som kör UTAN
+  # självtestläget och kräver att bedömningen FALLER) finns enbart i
+  # package.json och anropas av INGEN workflow — verifierat 2026-09-18:
+  # `grep -rn 'sjalvtest:negativ' .github/workflows/` ger noll träffar. Den är
+  # alltså en lokal körning, inte en CI-grind, och ett grönt jobb här bevisar
+  # inte att grinden kan fälla. Att CI-wira den är kandidat till eget kort
+  # (registrerat i PR #2524:s kropp) — den byggs INTE i denna skiva.
+  #
   # ═══ VARFÖR ETT EGET JOBB SEDAN TASK-239 (2026-08-17) ═══
   #
   # Beviset var ett STEG i `acceptance`, efter den skarpa sviten. Den formen
@@ -622,12 +633,37 @@ jobs:
               "--tackning=${tackning}"
           fi
 
-      # `if: always()` OCH INTE `success()` (TASK-366): rapporten skrivs FÖRE
-      # skriptets egen dom (se hermetik-sjalvtest.mjs), så en skärva som faller
-      # på sitt eget bevis har ändå ett tal att lämna. Summasteget kan då säga
-      # VILKEN skärva som inte gick ihop i stället för bara att en saknas.
-      # En skärva som dödas av taket hinner aldrig hit — och det är precis vad
-      # summasteget ska fälla på.
+      # KÖR ÄVEN NÄR BEVISET FALLER (TASK-366): rapporten skrivs FÖRE skriptets
+      # egen dom (se hermetik-sjalvtest.mjs), så en skärva som faller på sitt
+      # eget bevis har ändå ett tal att lämna. Summasteget kan då säga VILKEN
+      # skärva som inte gick ihop i stället för bara att en saknas. En skärva som
+      # dödas av taket hinner aldrig hit — och det är precis vad summasteget ska
+      # fälla på.
+      #
+      # `always()` OCH INTE `!cancelled()` — granskningen (runda 2) bad
+      # uttryckligen om en bedömning av just detta steg, så här är den.
+      #
+      # Detta är STEG-nivå, och där är `cancelled()` JOBB-scopad: `actions/
+      # runner`s `CancelledFunction.cs` returnerar `JobContext.Status ==
+      # Cancelled`. `!cancelled()` hade alltså hoppat över uppladdningen när
+      # skärvan dödas av sitt eget tak — vilket är motsatsen till vad raden
+      # finns för. (Det är samma semantik som TASK-237-mönstret på
+      # artefaktsteget nedan bygger på, och den stämmer.)
+      #
+      # Fönstret är smalt men verkligt: rapporten skrivs SIST i skriptet, så en
+      # takdödad skärva har oftast inte hunnit skriva den — men har den det, ska
+      # den med. GitHubs [!WARNING] mot `always()` gäller inte här: den handlar
+      # om "getting sources", och detta steg gör ingen checkout.
+      #
+      # ARTEFAKTNAMNET BÄR INTE `run_attempt` — läs det innan du kör om. En
+      # "Re-run failed jobs" kör bara de fällda skärvorna; de gröna laddar inte
+      # upp på nytt, men deras artefakter från försök 1 ligger kvar under samma
+      # namn, så täckningsjobbet kan se en BLANDNING av försök. Utfallet är
+      # fail-closed (en saknad eller inkonsistent rapport ⇒ rött, aldrig grönt),
+      # men ett falskt rött i kön kostar en konsumerad armering. **Kör om som
+      # "Re-run all jobs", inte "Re-run failed jobs".** Att i stället lägga
+      # `${{ github.run_attempt }}` i namnet är den mekaniska fixen; den är
+      # OPRÖVAD här och kräver en avsiktlig omkörning för att mätas.
       - name: Ladda upp skärvans täckningsrapport
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
@@ -690,11 +726,50 @@ jobs:
     needs: [acceptance-sjalvtest]
     # `always()` OCH INTE default-beteendet, som är hela poängen: utan det
     # SKIPPAS detta jobb så fort en skärva faller eller dödas av taket — och en
-    # skippad post räknas som "skipped-by-design", alltså grön, av `ci-passed`s
+    # skippad post räknas som "skipped-by-design", alltså GRÖN, av `ci-passed`s
     # fail-closed-logik. Kontrollen ska FÄLLA när en skärva uteblir, inte tystna.
-    # (Den fällda skärvan gör visserligen `suite` rött på egen hand, se ovan;
-    # `always()` är det som gör att BESKEDET blir "skärva N saknas" i stället
-    # för att bara försvinna.)
+    #
+    # ═══ VARFÖR INTE `!cancelled()`, SOM GITHUB REKOMMENDERAR ═══
+    #
+    # Frågan restes i granskningen (TASK-366 runda 2) med GitHubs egen
+    # [!WARNING] mot `always()` för "any task that could suffer from a critical
+    # failure, for example: getting sources" — och detta jobb HAR checkout som
+    # första steg, alltså dokumentationens eget exempel. Invändningen är riktig
+    # och prövades; `always()` står kvar ändå, av fail-closed-skäl, inte av
+    # bekvämlighet.
+    #
+    # FÖRST DET SOM MÄTTES, eftersom repot bar två motstridiga påståenden:
+    # `purge-efter` nedan hävdar i sin kommentar att "`!cancelled()` hade
+    # hoppat över den vid en takfällning". Det är FALSKT som mekanism, och nu
+    # mätt i vårt EGET repo: körning 25845701660 (2026-05-14) hade `Test +
+    # Build` `cancelled` på sitt eget tak (10m15s mot `timeout-minutes: 10`)
+    # medan `ci-passed`, som då bar `if: ${{ !cancelled() && !failure() }}`,
+    # KÖRDE och blev `success` tre sekunder senare. Förstaparts-källkoden
+    # försonar motsägelsen: `actions/runner`s `CancelledFunction.cs` läser
+    # `JobContext.Status`, så STEG inuti ett takdödat jobb ser `cancelled()`
+    # sant (det är TASK-237-mönstret, och det stämmer) — medan JOBB-`if:`
+    # utvärderas server-sidigt och inte gör det.
+    #
+    # `!cancelled()` skulle alltså fungera i DAG. Skälet att välja `always()`
+    # ändå är att den semantiken är ODOKUMENTERAD — docs säger bara "Returns
+    # true if the workflow was canceled" och utfäster ingenting om nedströms
+    # jobb. Community-diskussion #174377 är dessutom en aktiv, obesvarad begäran
+    # om att göra `cancelled()` jobb-scopad OCH ancestor-medveten — exakt den
+    # ändring som TYST skulle få `!cancelled()` att börja skippa detta jobb vid
+    # en takfällning. Och ett skippat jobb är GRÖNT hos oss, alltså fail-OPEN:
+    # samma klass som S77-hålet `ci-passed` självt bär `always()` för att
+    # stänga. En grind vars skydd kan försvinna genom en leverantörsändring vi
+    # inte får veta om är inte ett skydd.
+    #
+    # `success() || failure()` prövades också och är DISKVALIFICERAD: samma
+    # mätning visar att `failure()` är FALSKT när uppströms är `cancelled`, så
+    # den formen hade skippat jobbet vid just en takfällning.
+    #
+    # [!WARNING]-risken är buren, inte ignorerad: jobbet har
+    # `timeout-minutes: 5`, kör varken `npm ci` eller Playwright, och serverns
+    # forcerade terminering efter 5 minuters cancellation-timeout bounder samma
+    # sak. Kostnaden vid en äkta workflow-cancellation är en billig runner-minut
+    # på en körning som ändå inte kan landa.
     if: ${{ always() }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -714,6 +789,23 @@ jobs:
       # FÖRSTA FÖRSVARSLINJEN, och den som skiljer orsakerna åt. En skärva som
       # föll på sitt EGET bevis, eller dödades av taket, ska ge det beskedet —
       # inte "täckningen håller inte", som hade pekat läsaren mot fel fil.
+      #
+      # LÄS VAD DEN ÄR OCH INTE ÄR (ADR-083, runda 2-fynd). Steget läser
+      # `needs.acceptance-sjalvtest.result` och kräver `success`. Att det fältet
+      # AGGREGERAR över en MATRIS — alltså blir något annat än `success` när en
+      # av tre skärvor faller — utfäster GitHub INGENSTANS: hela `github/docs`
+      # bär exakt EN förekomst av `needs.<job_id>.result`, en tabellrad som bara
+      # räknar upp värdemängden (success/failure/cancelled/skipped), och
+      # matris-how-to:n nämner fältet noll gånger. Detta är dessutom repots
+      # FÖRSTA `needs`-beroende mot ett matrisjobb, så ingen intern instans
+      # finns heller. Den ENDA grenen som faktiskt mätts är `success` (PR-körning
+      # 35334687514 + 35335750664).
+      #
+      # Därför: detta steg ger BESKED, det är inte spärren. Spärren är SUMMAN
+      # nedan, som inte läser `needs` alls. Skulle aggregeringen inte fungera
+      # som antagen gör den fällda skärvan ändå `suite` rött på egen hand (mätt
+      # 14/14, se jobbets kommentar ovan), så ingen PR kan landa på detta —
+      # det som går förlorat vore beskedet, aldrig grinden.
       - name: Kräv att varje skärva faktiskt kördes
         env:
           SKARVORNAS_RESULTAT: ${{ needs.acceptance-sjalvtest.result }}
@@ -731,9 +823,20 @@ jobs:
       # skriptet nedan på "skärva N av M SAKNAS" — ett besked som pekar ut vad
       # som hände. Utan flaggan hade download-actionens egna, generiska fel
       # ersatt det. Fällningen är alltså kvar; bara ordvalet är vårt.
+      #
+      # SHA-PINNAD (TASK-366 runda 2), inte `@v8`. Repots disciplin är entydig
+      # — ci.yml § SHA-PINNADE FIRST-PARTY ACTIONS (TASK-312): "Flytande major
+      # är strukturellt samma svaghet som ett opinnat npx-anrop: en tagg
+      # leverantören kan flytta." Här biter den extra hårt: HELA täckningsdomen
+      # räknas ur just de filer denna action levererar, så den som kan flytta
+      # v8-taggen kan lägga tre påhittade rapporter som summerar till `listat`
+      # och få grinden grön. De opinnade anropen i test-staging/purge-efter är
+      # pre-existerande och ligger på jobb PR-ytan aldrig instansierar
+      # (`run_staging` villkorslöst false) — detta var det FÖRSTA på en yta som
+      # kör vid varje PR.
       - name: Hämta skärvornas täckningsrapporter
         continue-on-error: true
-        uses: actions/download-artifact@v8
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c  # v8.0.1
         with:
           pattern: hermetik-tackning-*
           path: .hermetik-tackning
