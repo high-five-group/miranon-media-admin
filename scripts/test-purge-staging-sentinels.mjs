@@ -19,6 +19,7 @@ import {
   chunk,
   deleteRecords,
   fetchWithNetworkRetry,
+  grupperaPerLankfalt,
   hanteradeIds,
   isAlreadyDeletedError,
   isExactSentinel,
@@ -27,12 +28,14 @@ import {
   isTransientNetworkError,
   KASTBARA_POSTER_FIL,
   linkGuardTrips,
+  loggaGruppVakt,
   parseArgs,
   parseManifest,
   planEfterKorning,
   planPurge,
   planStoragePurge,
   recordIdFormula,
+  storstaGruppen,
   validatePolicy,
 } from './purge-staging-sentinels.mjs';
 
@@ -375,6 +378,99 @@ t('L288-kontrollen: rad-formens objekt-fält gör INTE länk-guarden till en no-
   assert.deepEqual(plan.toDelete, ['recKnapp']);
 });
 
+// --- [TASK-465] Återfalls-vakten (grupperaPerLankfalt/storstaGruppen/loggaGruppVakt) ---
+//
+// Kodar rotorsaken direkt: docs/research/flake-request-context-disposed-2026-09-19.md
+// mätte seed-eventet reci2UQEPBMl3ebNl till 188 anmälningar (185 sentinels) —
+// vakten finns för att UPPTÄCKA precis den ackumuleringen tidigt.
+
+const EVENT_LANK_FALT = 'Event (länk)';
+const SEED_EVENT = 'reci2UQEPBMl3ebNl';
+const ANNAT_EVENT = 'recAnnatEventXXXX';
+
+function anmalanRad(id, eventId) {
+  return {
+    id,
+    createdTime: OLD,
+    fields: { 'E-post': `create-test+${id}@staging.test`, [EVENT_LANK_FALT]: [eventId] },
+  };
+}
+
+t('grupperaPerLankfalt: räknar poster per länkat ID', () => {
+  const records = [
+    anmalanRad('rec1', SEED_EVENT),
+    anmalanRad('rec2', SEED_EVENT),
+    anmalanRad('rec3', ANNAT_EVENT),
+  ];
+  const grupper = grupperaPerLankfalt(records, EVENT_LANK_FALT);
+  assert.equal(grupper.get(SEED_EVENT), 2);
+  assert.equal(grupper.get(ANNAT_EVENT), 1);
+});
+
+t(
+  'grupperaPerLankfalt: poster utan fältet, eller med icke-array-värde, ignoreras (rör aldrig kraschar)',
+  () => {
+    const records = [
+      { id: 'rec1', fields: {} },
+      { id: 'rec2', fields: { [EVENT_LANK_FALT]: 'inte-en-array' } },
+      { id: 'rec3', fields: { [EVENT_LANK_FALT]: [123] } }, // icke-sträng-element
+    ];
+    const grupper = grupperaPerLankfalt(records, EVENT_LANK_FALT);
+    assert.equal(grupper.size, 0);
+  },
+);
+
+t('grupperaPerLankfalt: tom lista ger en tom karta', () => {
+  assert.equal(grupperaPerLankfalt([], EVENT_LANK_FALT).size, 0);
+});
+
+t('storstaGruppen: plockar ut MAX-gruppen', () => {
+  const grupper = new Map([
+    [SEED_EVENT, 188],
+    [ANNAT_EVENT, 3],
+  ]);
+  assert.deepEqual(storstaGruppen(grupper), { id: SEED_EVENT, antal: 188 });
+});
+
+t('storstaGruppen: tom karta ⇒ null (inget att larma om)', () => {
+  assert.equal(storstaGruppen(new Map()), null);
+});
+
+t('loggaGruppVakt: target UTAN watchGroupField är en no-op (de flesta targets)', () => {
+  const larmade = loggaGruppVakt(EVENT_TARGET, [anmalanRad('rec1', SEED_EVENT)]);
+  assert.equal(larmade, false);
+});
+
+t('loggaGruppVakt: under tröskeln larmar INTE', () => {
+  const target = { ...REG_TARGET, watchGroupField: EVENT_LANK_FALT, watchWarnThreshold: 50 };
+  const records = Array.from({ length: 49 }, (_, i) => anmalanRad(`rec${i}`, SEED_EVENT));
+  assert.equal(loggaGruppVakt(target, records), false);
+});
+
+t(
+  'loggaGruppVakt: ÖVER tröskeln larmar (returnerar true) — men rör aldrig planen/raderar inget själv',
+  () => {
+    const target = { ...REG_TARGET, watchGroupField: EVENT_LANK_FALT, watchWarnThreshold: 50 };
+    const records = Array.from({ length: 51 }, (_, i) => anmalanRad(`rec${i}`, SEED_EVENT));
+    assert.equal(loggaGruppVakt(target, records), true);
+  },
+);
+
+t('loggaGruppVakt: EXAKT på tröskeln larmar INTE (strikt "över", inte "vid eller över")', () => {
+  const target = { ...REG_TARGET, watchGroupField: EVENT_LANK_FALT, watchWarnThreshold: 50 };
+  const records = Array.from({ length: 50 }, (_, i) => anmalanRad(`rec${i}`, SEED_EVENT));
+  assert.equal(loggaGruppVakt(target, records), false);
+});
+
+t(
+  'loggaGruppVakt: target med watchGroupField men UTAN watchWarnThreshold loggar men larmar aldrig',
+  () => {
+    const target = { ...REG_TARGET, watchGroupField: EVENT_LANK_FALT };
+    const records = Array.from({ length: 500 }, (_, i) => anmalanRad(`rec${i}`, SEED_EVENT));
+    assert.equal(loggaGruppVakt(target, records), false);
+  },
+);
+
 // --- Bas-guard (skyddsräcke 1) ---
 
 const VALID_POLICY = {
@@ -419,6 +515,88 @@ t('target utan exakt-mönster refuseras', () => {
   const broken = { ...VALID_POLICY, targets: [{ name: 'x', table: 'T', filterByFormula: 'f' }] };
   assert.throws(() => validatePolicy(broken), /obligatoriska/);
 });
+
+// --- [TASK-465] validatePolicy — watchGroupField/watchWarnThreshold (optionell återfalls-vakt) ---
+
+t('target UTAN watchGroupField/watchWarnThreshold passerar oförändrat (bakåtkompatibelt)', () => {
+  assert.equal(validatePolicy(VALID_POLICY), VALID_POLICY);
+});
+
+t('giltig watchGroupField + watchWarnThreshold passerar', () => {
+  const withWatch = {
+    ...VALID_POLICY,
+    targets: [
+      { ...REG_TARGET, watchGroupField: 'Event (länk)', watchWarnThreshold: 50 },
+      EVENT_TARGET,
+    ],
+  };
+  assert.equal(validatePolicy(withWatch), withWatch);
+});
+
+t('tomt watchGroupField (tom sträng) refuseras', () => {
+  const broken = {
+    ...VALID_POLICY,
+    targets: [{ ...REG_TARGET, watchGroupField: '' }, EVENT_TARGET],
+  };
+  assert.throws(() => validatePolicy(broken), /watchGroupField/);
+});
+
+t('icke-sträng watchGroupField refuseras', () => {
+  const broken = {
+    ...VALID_POLICY,
+    targets: [{ ...REG_TARGET, watchGroupField: 123 }, EVENT_TARGET],
+  };
+  assert.throws(() => validatePolicy(broken), /watchGroupField/);
+});
+
+t('watchWarnThreshold <= 0 refuseras', () => {
+  const broken = {
+    ...VALID_POLICY,
+    targets: [
+      { ...REG_TARGET, watchGroupField: 'Event (länk)', watchWarnThreshold: 0 },
+      EVENT_TARGET,
+    ],
+  };
+  assert.throws(() => validatePolicy(broken), /watchWarnThreshold/);
+});
+
+t('icke-numeriskt watchWarnThreshold refuseras', () => {
+  const broken = {
+    ...VALID_POLICY,
+    targets: [
+      { ...REG_TARGET, watchGroupField: 'Event (länk)', watchWarnThreshold: 'femtio' },
+      EVENT_TARGET,
+    ],
+  };
+  assert.throws(() => validatePolicy(broken), /watchWarnThreshold/);
+});
+
+t(
+  'watchWarnThreshold UTAN watchGroupField passerar validatePolicy (harmlöst — loggaGruppVakt är no-op utan fältet)',
+  () => {
+    const target = { ...REG_TARGET, watchWarnThreshold: 50 };
+    assert.equal(
+      validatePolicy({ ...VALID_POLICY, targets: [target, EVENT_TARGET] }).targets[0],
+      target,
+    );
+  },
+);
+
+t(
+  'policyn på disk BÄR watchGroupField/watchWarnThreshold på create-registration-sentineler (TASK-465)',
+  () => {
+    const onDisk = JSON.parse(
+      readFileSync(new URL('../.purge-staging-policy.json', import.meta.url)),
+    );
+    const target = onDisk.targets.find((tg) => tg.name === 'create-registration-sentineler');
+    assert.ok(
+      target,
+      'create-registration-sentineler-targeten saknas i .purge-staging-policy.json',
+    );
+    assert.equal(target.watchGroupField, 'Event (länk)');
+    assert.equal(target.watchWarnThreshold, 50);
+  },
+);
 
 // --- [TASK-302.3] validatePolicy — storageTargets (optionell klass) ---
 

@@ -200,7 +200,15 @@ async function createSentinelRegistration(
   });
   const raw = await res.text();
   expect(res.status(), raw).toBe(201);
-  return { id: (JSON.parse(raw) as { record: { id: string } }).record.id, email };
+  const id = (JSON.parse(raw) as { record: { id: string } }).record.id;
+  // [TASK-465] Registrera DIREKT vid skapandet — se motivering i
+  // send-registration-confirmation.staging.test.ts:s systervarning. Denna
+  // fil registrerade redan sitt sentinel-EVENT (createSentinelEvent ovan)
+  // men INTE de anmälningar den skapar — samma leak-klass, bara osynlig
+  // tills nu eftersom rebook-registration inte var en av de två test som
+  // föll i #2544/#2549.
+  registreraKastbarPost(id, `rebook-registration/anmalan-${efternamn}`);
+  return { id, email };
 }
 
 /** Registrerar EN inbetalning och returnerar dess id (för flytt-bevis + städning). */

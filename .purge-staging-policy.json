@@ -11,7 +11,10 @@
       "filterByFormula": "AND(FIND('create-test+', {E-post}) = 1, FIND('@staging.test', {E-post}) > 0)",
       "exactMatchField": "E-post",
       "exactMatchPattern": "^create-test\\+[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}@staging\\.test$",
-      "linkGuard": false
+      "linkGuard": false,
+      "_TASK-465": "watchGroupField/watchWarnThreshold är den billiga återfalls-vakten (scripts/purge-staging-sentinels.mjs § loggaGruppVakt) mot exakt den ackumulering som orsakade docs/research/flake-request-context-disposed-2026-09-19.md — 188 poster på ETT event (~34 s mot get-registrations) sprängde testens 30 s-tak. Tröskeln 50 är härledd ur den mätta lutningen 0,174 s/post (§4.2 i researchen): 50 poster ≈ 10,5 s, gott om marginal FÖRE 30 s-taket. Grundfixen är manifest-registrering i *.staging.test.ts (tests/support/kastbara-poster.ts) — vakten larmar OM den ändå glöms i en framtida svit.",
+      "watchGroupField": "Event (länk)",
+      "watchWarnThreshold": 50
     },
     {
       "name": "create-event-sentineler",

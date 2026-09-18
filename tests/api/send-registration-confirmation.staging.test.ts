@@ -36,6 +36,7 @@
 
 import { randomUUID } from 'node:crypto';
 import { type APIRequestContext, type APIResponse, expect, test } from '@playwright/test';
+import { registreraKastbarPost } from '../support/kastbara-poster';
 import { ARBETSKO_EXPECTED } from './fixtures';
 import { type ApiConfig, classify401Body, getApiConfig, getValidUserJWT } from './helpers';
 
@@ -104,7 +105,13 @@ async function createSentinelRegistration(
   });
   const raw = await res.text();
   expect(res.status(), raw).toBe(201);
-  return (JSON.parse(raw) as { record: { id: string } }).record.id;
+  const id = (JSON.parse(raw) as { record: { id: string } }).record.id;
+  // [TASK-465] Registrera DIREKT vid skapandet, inte i en afterEach — en
+  // afterEach hinner inte köra när testet timeoutar (grundorsaken till
+  // flake-diagnosen: den här sentinelen kunde annars bara städas av
+  // setup-purgens 60-min-fönster, som förlorar mot fleet-drift).
+  registreraKastbarPost(id, 'send-registration-confirmation/sentinel');
+  return id;
 }
 
 /** Omläsning via get-registrations — samma läs-väg som arbetskön använder. */
