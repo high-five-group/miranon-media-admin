@@ -218,6 +218,32 @@
 #   ALDRIG beteende tyst, och tipset går aldrig ut i sessionsläge (där det
 #   inte behövs).
 #
+#   PER SESSION SEDAN REVIEW RUNDA 3 (Marcus-beslut 2026-09-19): de tre
+#   notiserna ovan (omarkerad_notis_om_dags/dependabot_status_notis_om_dags/
+#   tips_notis_om_dags) taktades tidigare mot EN gemensam, MASKIN-GLOBAL
+#   STATE_DIR (default /tmp/mm-heartbeat-svep) — empiriskt visat: S126
+#   sveper först och stämplar filen ⇒ S127:s eget svep ser ALDRIG sin egen
+#   förstagångs-notis, exakt den tvärsessions-interferens kortet finns för
+#   att ta bort, återinförd i en NY kanal. Fixat: när --session <ID> är
+#   givet bär statsfilens NAMN sessionens saniterade ID
+#   (session_id_sanitize(), inget path-traversal-utrymme), så två sessioner
+#   som delar STATE_DIR nu stämplar VARSIN fil.
+#
+#   KÄND BEGRÄNSNING — GLOBAL PER MASKIN (samma disclosure-form som § FEMTE
+#   VÄGEN ovan, gren-städningens klocka): fixen löser interferensen
+#   FULLSTÄNDIGT för omarkerad_notis_om_dags()/dependabot_status_notis_om_dags()
+#   — båda kräver sessionslage=1 (SESSION satt) för att ens köra, så deras
+#   state-fil är ALLTID sessions-scopad när de faktiskt avfyrar. Den TREDJE,
+#   tips_notis_om_dags(), är en ANNAN sak: den körs UTESLUTANDE när SESSION
+#   är TOM (motsatt villkor) — det finns då inget sessions-ID att skopa mot,
+#   och dess stämpel förblir OFÖRÄNDRAT GLOBAL PER MASKIN. Två sessioner som
+#   BÅDA kör utan --session (t.ex. innan hubbens AC #5-del landat) delar
+#   alltså fortfarande TIPS-stämpeln — en av dem kan missa sitt eget
+#   förstagångstips om den andra redan konsumerat fönstret. Ofarligt: en
+#   missad TIPS-rad är ingen förlorad signal om PR-läget (RÖTT/DIRTY/
+#   ARMERINGS-KANDIDAT är opåverkade), bara en förlorad påminnelse om en
+#   flagga som redan står permanent dokumenterad i --help och CLAUDE.md.
+#
 # TREVÄGS-SNAPSHOT PER SVEP
 #   1. main-SHA — `gh api repos/<repo>/commits/<branch>`. Avancerar den
 #      sedan förra svepet har en landning skett (ALLTID-PÅ, inte en
@@ -584,6 +610,19 @@ HEARTBEAT_SESSION_MARKER_REGEX='<!-- heartbeat-svep:session:[^[:space:]]+ -->'
 # duplicerad kopia.
 session_marker() { printf '<!-- heartbeat-svep:session:%s -->' "$1"; }
 
+# session_id_sanitize <ID> — review runda 3 (Marcus-beslut 2026-09-19): säker
+# filnamnsdel av en sessions-ID för de PER-SESSION statsfilerna nedan
+# (§ SESSIONSMEDVETET SVEP, "KÄND BEGRÄNSNING"). Behåller ENDAST
+# [A-Za-z0-9_-]; allt annat (`/`, `..`, blanksteg, NUL-liknande insmugna
+# tecken) blir `_`. Ingen path-traversal är möjlig oavsett vad --session
+# bär in — ett saniterat resultat kan aldrig innehålla `/` och kan därför
+# aldrig peka utanför STATE_DIR. Ren bash-parameterexpansion, ingen extern
+# process (samma "billig, aldrig-fallerar"-disciplin som session_marker()).
+session_id_sanitize() {
+    local raw="$1"
+    printf '%s' "${raw//[^A-Za-z0-9_-]/_}"
+}
+
 # pr_har_session_marker <body> <session> — sant om <body> bär EXAKT den
 # markören (inte bara "någon" markör — se pr_har_nagon_marker för det).
 # Substring-match, inte regex: session_marker() innehåller inga
@@ -754,11 +793,13 @@ while [[ $# -gt 0 ]]; do
         # gren-städning; en DESTRUKTIV bieffekt får aldrig stå utanför det
         # block --help faktiskt visar), 61,135 → 61,198 i TASK-462
         # (--session/--alla-flaggorna + § SESSIONSMEDVETET SVEP), 61,198 →
-        # 61,217 i TASK-462 fix-runda (review runda 1: rättad
-        # DEPENDABOT-PR:AR-text + TIPS flyttad till alltid_pa()/stdout);
+        # 61,217 i TASK-462 fix-runda 1 (review runda 1: rättad
+        # DEPENDABOT-PR:AR-text + TIPS flyttad till alltid_pa()/stdout),
+        # 61,217 → 61,246 i TASK-462 fix-runda 2 (review runda 3: PER-SESSION
+        # statsfil-suffix + KÄND BEGRÄNSNING-stycket för TIPS globala fall);
         # scripts/test-heartbeat-svep.sh T24 fäller om raden
         # avviker från blockets faktiska start/slut.
-        -h|--help)  sed -n '61,217p' "$0"; exit 0 ;;
+        -h|--help)  sed -n '61,246p' "$0"; exit 0 ;;
         *) die "okänt argument: $1" ;;
     esac
 done
@@ -794,16 +835,45 @@ STATE_FILE="${STATE_DIR}/last-main-sha"
 # STATE_FILE: de två vägarna är oberoende och ska kunna nollställas var för
 # sig — testsviten river STATE_DIR mellan fall och båda ska då kallstarta
 # rent, utan att den ena vägens format kan korrumpera den andras.
+# MEDVETET GLOBAL (rörs INTE av review runda 3, se KÄND BEGRÄNSNING i §
+# SESSIONSMEDVETET SVEP ovan för fullt resonemang och varför just DEN
+# klockan får förbli delad).
 STADA_STATE_FILE="${STATE_DIR}/last-stada-grenar"
-# Den omärkta-PR-notisens egen tidsstämpel (TASK-462), samma oberoende-skäl.
-OMARKERAD_STATE_FILE="${STATE_DIR}/last-omarkerad-notis"
+
+# PER-SESSION statsfil-suffix (review runda 3, Marcus-beslut 2026-09-19).
+# SAMMA villkor som sweep_once()s sessionslage — dupliceras hit eftersom
+# suffixet behövs INNAN sweep_once() någonsin anropas. Satt ⇒ de tre
+# strypta notisernas state-filer nedan bär sessionens (saniterade) ID, så
+# två samtidiga sessioner med SAMMA STATE_DIR (delad default
+# /tmp/mm-heartbeat-svep om ingen egen HEARTBEAT_STATE_DIR sätts) inte
+# längre stämplar varandras fönster — den empiriskt visade buggen
+# (S126 sveper först ⇒ S127 ser aldrig sin egen förstagångs-notis).
+# OSATT (ingen --session, eller --alla) ⇒ tomt suffix, alltså SAMMA fil som
+# innan denna runda — global strypning, se KÄND BEGRÄNSNING ovan.
+SESSION_STATE_SUFFIX=""
+if [[ -n "${SESSION}" && "${ALLA}" -eq 0 ]]; then
+    SESSION_STATE_SUFFIX="-$(session_id_sanitize "${SESSION}")"
+fi
+
+# Den omärkta-PR-notisens egen tidsstämpel (TASK-462), oberoende av
+# STADA_STATE_FILE av samma skäl som ovan. PER SESSION sedan review runda 3
+# (SESSION_STATE_SUFFIX) — denna notis körs ALDRIG utan att SESSION är satt
+# (sessionslage=1 krävs, se sweep_once()), så den är ALLTID sessions-scopad
+# när den faktiskt kan avfyra: interferensen är fullständigt löst för den.
+OMARKERAD_STATE_FILE="${STATE_DIR}/last-omarkerad-notis${SESSION_STATE_SUFFIX}"
 # TIPS-radens egen tidsstämpel (TASK-462, review runda 1 fynd 1), samma
 # oberoende-skäl — en TOM STATE_DIR (testsvit, kallstart) gör ALLA fyra
-# stämplade vägar kallstarta oberoende av varandra.
-TIPS_STATE_FILE="${STATE_DIR}/last-tips-notis"
+# stämplade vägar kallstarta oberoende av varandra. SESSION_STATE_SUFFIX
+# TILLÄMPAS HÄR MEN ÄR ALLTID TOMT I PRAKTIKEN: tips_notis_om_dags() körs
+# UTESLUTANDE när SESSION är TOM (motsatt villkor mot OMARKERAD/DEPENDABOT
+# ovan/nedan) — det finns då inget sessions-ID att skopa mot, och stämpeln
+# förblir GLOBAL PER MASKIN. Se § SESSIONSMEDVETET SVEP, "KÄND BEGRÄNSNING".
+TIPS_STATE_FILE="${STATE_DIR}/last-tips-notis${SESSION_STATE_SUFFIX}"
 # Dependabot-RÖTT/DIRTY-notisens egen tidsstämpel (TASK-462, review runda 1
-# fynd 2), samma oberoende-skäl.
-DEPENDABOT_STATE_FILE="${STATE_DIR}/last-dependabot-notis"
+# fynd 2), samma oberoende-skäl. PER SESSION sedan review runda 3 — samma
+# "alltid sessions-scopad när aktiv"-egenskap som OMARKERAD_STATE_FILE ovan
+# (dependabot_status_notis_om_dags() kräver också sessionslage=1).
+DEPENDABOT_STATE_FILE="${STATE_DIR}/last-dependabot-notis${SESSION_STATE_SUFFIX}"
 
 # --- EN svep-cykel ----------------------------------------------------------
 # Returnerar bitmask-verdikten via $? (0/1/2/4/kombinationer, 77 vid sond-fel).

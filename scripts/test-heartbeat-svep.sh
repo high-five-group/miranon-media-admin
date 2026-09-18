@@ -98,6 +98,19 @@
 #   T61 Kod-kommentaren (§ SESSIONSMEDVETET SVEP) nämner INTE längre att
 #       dependabot "redan har sin egen hantering" för RÖTT/DIRTY          → syns
 #
+# T62–T65 (review runda 3, Marcus-beslut 2026-09-19): de strypta notisernas
+# state-filer taktades mot en MASKIN-GLOBAL STATE_DIR — S126 sveper först,
+# stämplar filen, S127:s eget svep ser ALDRIG sin egen förstagångs-notis.
+# Fixat: --session <ID> ⇒ statsfilen bär sessionens saniterade ID.
+#   T62 Två sessioner (S126/S127), SAMMA STATE_DIR: dependabot-notisen →
+#       BÅDA ser den EN gång, stryps sedan VAR FÖR SIG                    → 0
+#   T63 Samma tvåsidiga bevis för den omärkta-PR-notisen                  → 0
+#   T64 session_id_sanitize(): farligt session-ID (path-traversal-försök)
+#       → saniterad statsfil DIREKT i STATE_DIR, ingen subkatalog         → 0
+#   T65 UTAN --session (TIPS): dagens GLOBALA beteende oförändrat — en
+#       andra körning som delar STATE_DIR stryps ÄNDÅ (ingen session-ID
+#       att skopa mot, se KÄND BEGRÄNSNING)                        → tyst
+#
 # Test-isolering: /tmp/task119-test-heartbeat-svep/ med en gh-stub som svarar
 # ur ett scenario-katalog (main-sha / rows / fail-mainsha / fail-prlist).
 # INGEN nätverkstrafik, inget riktigt gh-anrop, ingen ändring i real-repot,
@@ -139,8 +152,10 @@
 # (T25–T27b — HEARTBEAT_EXEMPT_AUTHORS, dependabot-kvartetten #632–#635) ·
 # TASK-462 (2026-09-18, T40–T55 — sessionsmedvetet svep: --session/--alla,
 # PR-kropps-markören, den omärkta-PR-notisen, TIPS-raden) · TASK-462
-# fix-runda (2026-09-19, review runda 1: T51–T55 omskrivna + T56–T61 nya —
-# TIPS-raden på stdout/strypt, dependabot-RÖTT/DIRTY-notisen)
+# fix-runda 1 (2026-09-19, review runda 1: T51–T55 omskrivna + T56–T61 nya —
+# TIPS-raden på stdout/strypt, dependabot-RÖTT/DIRTY-notisen) · TASK-462
+# fix-runda 2 (2026-09-19, review runda 3: T62–T65 nya — PER-SESSION
+# statsfil-suffix, session_id_sanitize())
 
 set -uo pipefail
 
@@ -1121,6 +1136,94 @@ reset_scen
 EXPECT_OUT="dependabot_status_notis_om_dags"
 run_case "T61 --help/koden dokumenterar den rättade dependabot-RÖTT/DIRTY-mekanismen" 0 - \
     bash ./scripts/heartbeat-svep.sh --help
+
+# ============================================================
+# T62–T65 — PER-SESSION STATSFIL-SUFFIX (review runda 3, Marcus-beslut
+# 2026-09-19). Granskningens fynd: de strypta notisernas state-filer låg i
+# en MASKIN-GLOBAL STATE_DIR — en session som sopade FÖRE en annan stämplade
+# filen åt BÅDA, så den andra sessionen kunde stå helt tyst under sin EGEN
+# första sopning. INGEN reset_scen mellan T62/T62b (eller T63/T63b): det ÄR
+# poängen — SAMMA STATE_DIR, TVÅ OLIKA --session-värden.
+echo ""
+reset_scen
+set_rows '910\tfalse\tBLOCKED\ttrue\tFAILURE\tfalse\tdependabot\t\n'
+EXPECT_OUT="UNDANTAGEN FÖRFATTARE"
+run_case "T62 Session S126 (delad STATE_DIR): dependabot-notisen syns (kallstart)" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S126
+
+# T62b — FIXEN: en ANNAN session (S127), SAMMA STATE_DIR, SAMMA scenario,
+# direkt efter. Före denna runda: helt tyst (S126:s stämpel gällde för
+# BÅDA). Efter: S127 har sin EGEN state-fil och ser notisen precis som om
+# den vore ensam.
+EXPECT_OUT="UNDANTAGEN FÖRFATTARE"
+run_case "T62b Session S127 (SAMMA STATE_DIR) ser SAMMA notis oberoende — fixen" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S127
+
+# T62c/T62d — båda sessionerna är nu strypta, men VAR FÖR SIG: S126:s andra
+# sopning stryps av SIN EGEN stämpel (inte påverkad av att S127 sopat
+# emellan), och S127:s andra sopning stryps av SIN.
+NOT_EXPECT_OUT="UNDANTAGEN FÖRFATTARE"
+run_case "T62c Session S126 igen → strypt av sin EGEN stämpel" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S126
+
+NOT_EXPECT_OUT="UNDANTAGEN FÖRFATTARE"
+run_case "T62d Session S127 igen → strypt av SIN EGEN stämpel (oberoende av S126)" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S127
+
+# T63/T63b/T63c/T63d — samma tvåsidiga bevis för den omärkta-PR-notisen.
+reset_scen
+set_rows '911\tfalse\tCLEAN\ttrue\tSUCCESS\tfalse\toctocat\t\n'
+EXPECT_OUT="SESSION — 1 öppna PR:ar UTAN sessionsmarkör"
+run_case "T63 Session S126 (delad STATE_DIR): omärkt-notisen syns (kallstart)" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S126
+
+EXPECT_OUT="SESSION — 1 öppna PR:ar UTAN sessionsmarkör"
+run_case "T63b Session S127 (SAMMA STATE_DIR) ser SAMMA notis oberoende — fixen" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S127
+
+NOT_EXPECT_OUT="UTAN sessionsmarkör"
+run_case "T63c Session S126 igen → strypt av sin EGEN stämpel" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S126
+
+NOT_EXPECT_OUT="UTAN sessionsmarkör"
+run_case "T63d Session S127 igen → strypt av SIN EGEN stämpel (oberoende av S126)" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S127
+
+# T64 — session_id_sanitize(): ett session-ID format som en path-
+# traversal-string ("../../etc/passwd") får ALDRIG skapa en fil utanför
+# STATE_DIR eller en subkatalog inuti den. Notisen ska ändå fungera
+# (kallstart, samma som T62) — sanering får inte tysta mekanismen, bara
+# göra filnamnet säkert.
+reset_scen
+set_rows '912\tfalse\tBLOCKED\ttrue\tFAILURE\tfalse\tdependabot\t\n'
+EXPECT_OUT="UNDANTAGEN FÖRFATTARE"
+run_case "T64 Farligt session-ID (path-traversal-försök) → notisen fungerar ändå" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session "../../etc/passwd"
+if [[ -f "${STATE_DIR}/last-dependabot-notis-______etc_passwd" ]]; then
+    printf '  ✓ T64b  saniterad statsfil ligger DIREKT i STATE_DIR (______etc_passwd)\n'; PASSED=$((PASSED+1))
+else
+    printf '  ✗ T64b  saniterad statsfil hittades inte där förväntat\n'; FAILED=$((FAILED+1))
+fi
+if find "${STATE_DIR}" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | grep -q .; then
+    printf '  ✗ T64c  en OVÄNTAD subkatalog skapades i STATE_DIR — path-traversal-risk\n'; FAILED=$((FAILED+1))
+else
+    printf '  ✓ T64c  ingen subkatalog skapades i STATE_DIR — ingen traversal möjlig\n'; PASSED=$((PASSED+1))
+fi
+
+# T65 — UTAN --session (TIPS-raden): dagens GLOBALA beteende är OFÖRÄNDRAT
+# (KÄND BEGRÄNSNING, § SESSIONSMEDVETET SVEP). tips_notis_om_dags() körs
+# ENDAST när SESSION saknas — det finns då inget ID att skopa mot, så två
+# körningar som DELAR STATE_DIR delar fortfarande stämpeln. Samma par-teknik
+# som T51/T51c, upprepad här explicit under review runda 3:s eget test-namn
+# för spårbarhet (inte en ny mekanism — en bekräftelse att fixen INTE av
+# misstag ändrade TIPS-raden).
+reset_scen
+EXPECT_OUT="TIPS — sessionsläge finns"
+run_case "T65 Ingen --session (kallstart): TIPS syns" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once
+NOT_EXPECT_OUT="TIPS —"
+run_case "T65b Ingen --session igen, SAMMA STATE_DIR → strypt globalt (oförändrat)" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once
 
 printf '\ntest-heartbeat-svep: %s passerade, %s failade\n' "${PASSED}" "${FAILED}"
 [[ "${FAILED}" -eq 0 ]] || exit 1

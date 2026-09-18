@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-18 11:53'
-updated_date: '2026-09-18 23:04'
+updated_date: '2026-09-18 23:35'
 labels:
   - ready-for-agent
 dependencies: []
@@ -160,4 +160,24 @@ Ursprungsagenten var död; grenen togs över fri (gammal worktree riven, ren, he
 **Testsvit:** scripts/test-heartbeat-svep.sh 77 → 87 fall (10 nya: T51b, T51c, T56, T56b, T57, T57b, T58, T59, T60, T61), 0 failade, exit 0. shellcheck --severity=style --enable=all mot CI:s fulla filsvit (samma kommando som CI): exit 0, 0 diagnoser. bash -n scripts/heartbeat-svep.sh: syntax OK. npm run check:docs: EJ körd i denna fixrunda — ingen fil under dess grind-scope (docs/**, tasks/**, *.md utanför backlog-kortet) rördes; CLAUDE.md rördes i föregående runda, inte i denna.
 
 **Rörda filer i denna fixrunda:** scripts/heartbeat-svep.sh (tips_notis_om_dags, dependabot_status_notis_om_dags, TIPS_STATE_FILE/DEPENDABOT_STATE_FILE, loop-body-utökning, rättade kod-kommentarer, --help-range 61,198→61,217), scripts/test-heartbeat-svep.sh (T51-T53 omskrivna, T51b/T51c/T56-T61 nya), .heartbeat-svep-policy.conf (GRÄNS-stycket utökat, HEARTBEAT_OMARKERAD_INTERVALL-kommentaren omskriven för tre delade notiser). Riskbedömnings-sektionen i PR-kroppen rördes INTE (uppdragets regel).
+
+## Fix-runda 2 (review runda 3, Marcus-beslut 2026-09-19)
+
+Runda 2 (risk medel) verifierade fix-runda 1:s båda beslut byggda (87/87 gröna, shellcheck 0) och fann ETT nytt fynd (warning/ask-user): de två NYA strypta kanalerna (`tips_notis_om_dags`, `dependabot_status_notis_om_dags`) stryps mot en MASKIN-GLOBAL `STATE_DIR` (default `/tmp/mm-heartbeat-svep`) — empiriskt visat: S126 sveper först och stämplar filen ⇒ S127:s eget svep ser ALDRIG notisen. Exakt den tvärsessions-interferens kortet finns för att ta bort, återinförd i en ny kanal.
+
+**BYGGT.** `--session <ID>` ⇒ de strypta notisernas state-filer bär nu sessionens SANITERADE ID i filnamnet. Ny hjälpfunktion `session_id_sanitize()` (scripts/heartbeat-svep.sh, ren bash-parameterexpansion `${raw//[^A-Za-z0-9_-]/_}`) — behåller endast `[A-Za-z0-9_-]`, allt annat blir `_`; ingen path-traversal möjlig (testat skarpt med session-ID `../../etc/passwd` → statsfil `last-dependabot-notis-______etc_passwd`, direkt i STATE_DIR, ingen subkatalog).
+
+Ny toppnivå-variabel `SESSION_STATE_SUFFIX` beräknas EFTER arg-parsing (samma villkor som `sweep_once()`s `sessionslage`, dupliceras dit eftersom suffixet behövs innan `sweep_once()` någonsin anropas): satt när `--session` är givet OCH `--alla` inte är det, annars tomt. `OMARKERAD_STATE_FILE`/`DEPENDABOT_STATE_FILE`/`TIPS_STATE_FILE` bär nu detta suffix. `STADA_STATE_FILE` (gren-städningens klocka) rördes INTE — medvetet global, oförändrad, enligt uppdraget.
+
+**Asymmetrin mellan kanalerna, viktig att förstå:** `omarkerad_notis_om_dags()` och `dependabot_status_notis_om_dags()` kräver BÅDA `sessionslage=1` (SESSION satt) för att ens köra — deras state-fil är därför ALLTID sessions-scopad när de faktiskt avfyrar, interferensen är FULLSTÄNDIGT löst. `tips_notis_om_dags()` är en ANNAN sak: den körs UTESLUTANDE när SESSION är TOM (motsatt villkor, se dess guard-klausul) — det finns då per definition inget sessions-ID att skopa mot, och dess stämpel förblir OFÖRÄNDRAT GLOBAL PER MASKIN. Detta är INGEN brist i implementationen utan en strukturell konsekvens av TIPS-radens eget syfte (upptäcka `--session`-mekanismen INNAN man känner till den). Dokumenterat explicit som "KÄND BEGRÄNSNING — GLOBAL PER MASKIN" i scripts/heartbeat-svep.sh § SESSIONSMEDVETET SVEP, i SAMMA disclosure-form som gren-städningens befintliga (§ FEMTE VÄGEN) — matchar uppdragets krav ordagrant.
+
+`.heartbeat-svep-policy.conf` § GRÄNS/SESSIONSLÄGE och § "Sessionsmedvetet svep"-kommentaren uppdaterade: "blir heller aldrig helt tyst" var en dold överdrift fram till denna runda (höll bara INOM en session, inte mellan) — nu korrekt för de två per-session-scopade kanalerna, med TIPS-radens kvarvarande globala undantag utskrivet (ADR-083-disciplin).
+
+**Testsvit:** scripts/test-heartbeat-svep.sh 87 → 100 fall (13 nya: T62, T62b, T62c, T62d — två sessioner S126/S127 delar STATE_DIR, dependabot-notisen; T63, T63b, T63c, T63d — samma bevis för omärkt-notisen; T64, T64b, T64c — saniteringen; T65, T65b — TIPS förblir globalt oförändrat), 0 failade, exit 0. shellcheck --severity=style --enable=all mot CI:s fulla filsvit: exit 0, 0 diagnoser. bash -n scripts/heartbeat-svep.sh: syntax OK.
+
+**Differentialbevis (fault injection), inte bara "testerna är gröna":** en extraherad kopia av den ORÖRDA runda-1-koden (git show fe3f1319294a69feb13ff252c4d914c3b8a1f1d0:scripts/heartbeat-svep.sh) kördes mot DENNA rundas nya testfil i isolerad scratchpad-katalog. Utfall: 97 passerade / 3 failade — exakt T62b, T63b, T64b fälls (stdout saknade "UNDANTAGEN FÖRFATTARE" / saknade "SESSION — 1 öppna PR:ar..." / saniterad statsfil hittades inte), medan T62/T63/T64/T65-serien i övrigt går igenom (kallstart-beteendet i sig var redan korrekt, bara ANDRA sessionens tur var trasig). Detta bevisar att de nya testerna FAKTISKT fångar regressionen, inte bara råkar vara gröna mot den fixade koden.
+
+**Rörda filer i denna fixrunda:** scripts/heartbeat-svep.sh (session_id_sanitize(), SESSION_STATE_SUFFIX, tre state-filers namn, KÄND BEGRÄNSNING-stycket, --help-range 61,217→61,246), scripts/test-heartbeat-svep.sh (T62-T65 nya, header/footer-index uppdaterade), .heartbeat-svep-policy.conf (GRÄNS/SESSIONSLÄGE-stycket + OMARKERAD_INTERVALL-kommentaren utökade). Riskbedömnings-sektionen i PR-kroppen rördes INTE (uppdragets regel, verifierat byte-identisk pre/post via diff mot den levande PR-kroppen).
+
+**Kostnad:** PR-kroppens § "Kostnad i två mått" utökad med en tredje rad (100 fall, 3 lokala körningar: 17,591s/13,765s/16,313s, snitt ≈15,89s) och en förklaring av varför fix-runda 2:s per-fall-kostnad är högre än runda 1:s (T62/T63 kör fyra separata run_case-anrop var för det tvåsidiga cross-session-beviset).
 <!-- SECTION:NOTES:END -->
