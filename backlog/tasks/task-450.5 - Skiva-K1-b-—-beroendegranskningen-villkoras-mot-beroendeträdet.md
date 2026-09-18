@@ -4,7 +4,7 @@ title: 'Skiva: K1 (b) — beroendegranskningen villkoras mot beroendeträdet'
 status: To Do
 assignee: []
 created_date: '2026-09-18 09:53'
-updated_date: '2026-09-18 22:54'
+updated_date: '2026-09-18 23:05'
 labels:
   - ready-for-agent
 dependencies:
@@ -26,7 +26,7 @@ Täcker användarberättelser: 14, 15
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 (i) Varje ändring som rör beroendeträdet granskas som i dag, på ändringsförslaget, med blockerande verkan — bevisat tvåsidigt
+- [x] #1 (i) Varje ändring som rör beroendeträdet granskas som i dag, på ändringsförslaget, med blockerande verkan — bevisat tvåsidigt
 - [x] #2 (ii) Hela trädet granskas varje natt med strängare tröskel än dagsviten, i egen kanal (N2 landad och verifierad)
 - [x] #3 (iii) Jobbet står kvar i paraplyets needs-lista; ett rött resultat blockerar fortfarande
 - [x] #4 (iv) ADR-028:s konventionsflöde för undantag är orört
@@ -44,5 +44,5 @@ Täcker användarberättelser: 14, 15
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
-AC #1: mekaniken byggd och lokalt verifierad (verify:ci-parity:fast, actionlint, yamllint, check-listparitet.sh, check-aggregator-needs.mjs, test-audit-degradering.sh — samtliga gröna). Avbockas i en uppföljande commit efter att en tvåsidig SKARP CI-mätning gjorts: (a) denna PR (rör inte package.json/package-lock.json/audit-ci.jsonc) ska visa audit=skipped, ci-passed grönt; (b) en separat, kastbar verifieringsgren (byggd ovanpå denna gren + en trivial audit-ci.jsonc-kommentarrad) ska visa audit=körd. AC #6 (risknivå synlig för Marcus före armering) hör till orkestrerarens review-grinds-steg (CLAUDE.md § Review-grinden, TASK-173.1) — utanför bygg-agentens mandat, lämnas obockad med avsikt.
+AC #1 BEVISAT TVÅSIDIGT, skarpt via GitHub Actions 2026-09-18: (a) PR #2553 (denna PR, rör INTE package.json/package-lock.json/audit-ci.jsonc) — jobbet 'Audit dependencies (audit-ci)' conclusion=skipped (run 35403597247, https://github.com/high-five-group/miranon-media-admin/actions/runs/35403597247), CI Passed or Skipped=success. (b) Kastbar verifieringsgren byggd ovanpå samma commit + en kommentarrad i audit-ci.jsonc — jobbet KÖRDE, conclusion=success (run 35403631029, https://github.com/high-five-group/miranon-media-admin/actions/runs/35403631029), 27 s väggklocka. Verifieringsgrenen och dess PR (#2554) är stängda och raderade efter mätningen (aldrig mergade). AC #6 kvarstår obockad — orkestrerarens review-grinds-mandat.
 <!-- SECTION:NOTES:END -->
