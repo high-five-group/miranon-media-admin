@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-18 11:07'
-updated_date: '2026-09-18 11:57'
+updated_date: '2026-09-18 12:36'
 labels:
   - fynd
   - ready-for-agent
@@ -54,4 +54,14 @@ AC #2 (designfrågan), mätt vid 390 px, inte gissad: TVÅ pillar (Obekräftad +
 AC #3: `RadInnehall` är INTE, som uppdraget påstod, bokstavligen delad med eventdetaljens "Öppna detaljer" — den funktionen är privat till BetalningsInkorg.tsx och används bara internt (3 anrop, alla i samma fil). Vad som FAKTISKT delas är BasenSlaparPill (extraherad ur RadInnehall vid TASK-436, se dess eget docblock) — och den är oförändrad av denna fix. Divergens noterad per ADR-086. Empiriskt verifierad ändå: hela `tests/e2e/mark-paid.staging.test.ts` (22 tester, den exakta "Öppna detaljer"-sviten) körd mot fixad kod — 22/22 gröna.
 
 Grindar: typecheck exit 0, biome check exit 0 (inga fynd i rörda filer), build exit 0, check-langa-streck exit 0 (328 filer). test:api: api-pure 1786/1786 gröna. Full test:api (inkl. api-staging) kolliderade med en SAMTIDIG CI-körning (post-merge.yml #35340750185, "Staging (API + E2E)"-jobbet, bekräftat in_progress via gh) — TASK-77-preflighten stoppade normal körning; kört under MM_STAGING_PREFLIGHT=off gav 3 transienta fel, varav 2 (cancel-registration, generate-event-attachment) gick gröna vid omkörning och 1 (send-registration-confirmation.staging.test.ts "GATE-LIVENESS", helt orört av denna PR — anmälningsbekräftelse-domänen, ingen call-path mot BetalningsInkorg/RadInnehall) konsekvent timeoutade (30s, "Request context disposed") så länge CI-jobbet var in_progress — en känd, transient miljökollision, inte en regression av denna diff.
+
+RUNDA 2 (2026-09-18, samma dag): Marcus förkastade runda 1s namngivna trepills-undantag (+32 px) efter review-agentens fynd (granskadSha 618cc1c4) — kombinationen bedömdes INTE sällsynt. Ny order: pill-raden får ALDRIG radbrytas, alla kort exakt lika höga i varje kombination (0/1/2/3 pillar × 390/1280 px, åtta fall).
+
+FORM: `flex-nowrap` (var `flex-wrap`) på pill-radens div. Mätt exakt (Playwright-probe mot staging): pill-radens egen bredd vid 390 px är 266px; full text för alla tre pillar (Förfallen 89,4 + Obekräftad 84,7 + Basen släpar 111,0 + 2×gap-2 16 = 301,0px) sprängde den med 35px — den ENDA trånga kombinationen (0-2 pillar redan gröna utan ändring). Lösning: BasenSlaparPill fick en `kompakt`-prop (default false, orört överallt utom där den uttryckligen sätts — eventdetaljens Betalningar.tsx sätter den aldrig) som visar "Släpar" i stället för "Basen släpar" — en kortare FULLSTÄNDIG etikett, inte trunkerad text. Sätts ENDAST när alla tre pillar samtidigt är sanna (den enda 3-pill-kombination som finns). Kompakt bredd mätt 61,3px, ny total 251,4px, under 266px-golvet.
+
+A11Y: Ingen text döljs bakom hover/fokus (inget tooltip-bibliotek behövdes — repot saknar en tillgänglig Tooltip-primitiv). Skärmläsare hör ordagrant "Basen Släpar" via en sr-only-nod ("Basen "), inte aria-label — biome lint/a11y/useAriaPropsSupportedByRole fällde ett första försök med aria-label på ett rollöst <span> (korrekt fångst, rättad). Samma husteknik som event-detail.staging.test.ts:495 (toHaveClass(/sr-only/)).
+
+RÖTT-FÖRST för runda 2-kravet: nya 8-falls-testet kört mot förra head (618cc1c4, runda 1s kod) — mobil 390px: 0/1/2 pill=144px men 3 pill=176px (exakt runda 1s "namngivna undantag"), fällt korrekt. Efter fix: alla åtta fall identiska, rad-pillar exakt 24px i samtliga.
+
+Regression: mark-paid.staging.test.ts (22 tester, eventdetaljens Öppna detaljer) körd två gånger under runda 2 — 22/22 gröna båda gångerna, BasenSlaparPill.tsx:s default-beteende (kompakt=false) bevisat oförändrat. betalningar-inkorg-utskicksflode.staging.test.ts (11 tester) grön. test:api:pure 1786/1786 gröna. typecheck/biome/build exit 0. PR satt till DRAFT per uppdrag — armerad INTE.
 <!-- SECTION:NOTES:END -->
