@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-02 10:49'
-updated_date: '2026-09-02 10:52'
+updated_date: '2026-09-18 22:50'
 labels:
   - ready-for-agent
 dependencies: []
@@ -17,7 +17,17 @@ ordinal: 663000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-FYND (S113 resume 8, 2026-09-02): tests/e2e/persondetalj-betalningar-fellage.staging.test.ts var RÖTT från födseln (PR #2175, 2026-08-31, strict-mode: h2 'Betalningar' + h3 'Senaste inbetalningar' matchar samma getByRole utan exact) och kördes aldrig grönt post-merge förrän 2026-09-02 08:00 (run på e99ed65b) — sedan ytterligare två röda (fc91f0be 09:03 avbruten på 12-min-taket, 56ae3c46 09:25). Rotorsak i PROCESSEN, inte i testet (testet fixas i TASK-364): (1) PR-grinden kör inte staging-E2E (medvetet, TASK-70.3); (2) Post-merge-workflowets 'Verifierande svit på det mergade trädet' körs per push men AVBRYTS av nästa push (concurrency) — kod-landningen #2193 (9dca0e56 13:15) fick sin körning cancelled av docs-pushen 2d3647f2 13:43, som själv SKIPPADE sviten (docs-only-klassning). Följd: en kod-landning som följs av en docs-landning inom ~15 min får ALDRIG en post-merge-verifiering. (3) Nattnätet fångade felet 2026-09-01 06:10 (run 33476475878) men ingen läste det — ingen larmväg till orkestreraren utöver ci-natt-ärendet. Belägg: gh run list --workflow Post-merge --limit 40; Post-merge-körningar 2026-09-01 13:09/13:15/14:27 'cancelled'. FORM ATT PRÖVA: (a) post-merge-sviten ska inte avbrytas av en docs-only-push (concurrency-grupp per klassning, eller cancel-in-progress: false för sviten och dedup i stället); (b) en docs-only-push ärver/förlänger den senaste kod-landningens verifiering i stället för att skippa; (c) nattnätets rött ska nå heartbeat-svepet (RÖTT-rad för senaste nightly). Kopplat: TASK-239 (acceptance-tak), TASK-364 (testfixen), ADR-077 (klassning/dedup).
+FYND (S113 resume 8, 2026-09-02): tests/e2e/persondetalj-betalningar-fellage.staging.test.ts var RÖTT från födseln (PR #2175, 2026-08-31, strict-mode: h2 'Betalningar' + h3 'Senaste inbetalningar' matchar samma getByRole utan exact) och kördes aldrig grönt post-merge förrän 2026-09-02 08:00 (run på e99ed65b) — sedan ytterligare två röda (fc91f0be 09:03 avbruten på 12-min-taket, 56ae3c46 09:25).
+
+ROTORSAK — RÄTTAD 2026-09-19 (N8, ur S126:s CI-djupgranskning § N3): kortets tidigare rotorsaksbeskrivning var FEL och är nu ersatt av den MÄTTA mekanismen. Den faktiska felklassen har ingenting med concurrency-avbrott att göra (den delen — PR #2193:s körning 9dca0e56 avbruten av docs-pushen 2d3647f2 — var korrekt beskriven och står kvar som en verklig, men SEPARAT, instans). Den bärande rotorsaken är: `post-merge.yml` skickade bara toppcommiten i en push (`github.sha`) till `scripts/classify-post-merge.sh`, som därmed aldrig såg resten av spannet. Landar merge-kön flera PR:er i EN push (`max_entries_to_merge: 3`) och toppen råkar vara en textändring, klassar skriptet hela pushen som docs-only och hoppar `Staging (API + E2E)`, `A11y (axe-runner)` och de två städjobben — trots att riktig kod låg under. Mätt av KG1 över 601 pushar: 73 pushar bar mer än en landning, och i 60 av dem var toppen text medan spannet bar kod — ett verifierat hål (15 av 15 stickprov "skipped" med grön körning; kontrollgrupp 6 av 6 med kodtopp körde sviten). Exponeringen stängdes alltid av nästa kodlandning (median 0,57 h, längst 33,2 h).
+
+Repot hade redan rätt diagnos, i en ANNAN källa: tråden `tasks/threads/T166-post-merge-klassningen-laser-sista-pr-en-i-ko-batchen.md` beskrev exakt denna mekanism 2026-08-21, med tre namngivna vägval. De två (detta kort och T166) pekade tidigare inte på varandra.
+
+LÖST: vägval 2 ur T166 (billigast, ligger närmast mekanismens egen fail-closed-princip) är BYGGT i TASK-450.2 (N3), landat via PR #2526. `post-merge.yml` skickar nu `BEFORE` (`github.event.before`) vid sidan av `SHA`; `classify-post-merge.sh` räknar stegen från toppcommiten bakåt via första föräldern till `BEFORE` — fler än ETT steg (flera landningar i samma push) ⇒ `docs_only=false` direkt, full svit, fail-closed på varje kant (BEFORE tomt/noll-SHA, tak på tio steg, API-fel). Skarpt bevisat mot en verklig KG1-instans (269f6d476a, PR #2448, topp docs / spann kod) och en enkelpost-landning (484ca305). T166 är stängd på denna grund (2026-09-18).
+
+Kvarvarande, INTE täckt av N3 (bokfört öppet, inte löst av denna rättelse): (3) nattnätets rött nådde tidigare ingen larmväg till orkestreraren utöver ci-natt-ärendet — se kortets egna AC #3/notering om heartbeat-svepet och 'Larm vid rött post-merge' som avslutade success i minst sex röda körningar utan att någon agerade. Detta kort (TASK-365) förblir öppet för den delen; se implementation notes för r1-rättelsens fulla utredning av larmkedjan.
+
+Se T166 för fullständig mekanik, mätserie och stängningsnot. Kopplat: TASK-239 (acceptance-tak), TASK-364 (testfixen), ADR-077 (klassning/dedup), TASK-450.2/N3 (den byggda fixen).
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria

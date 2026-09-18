@@ -850,3 +850,21 @@
 # Ingen repo-åtgärd möjlig; posten är ett brusfilter per ADR-082, inte en
 # grind-tystare. Underlag: S125 Del 3 § Slutläge + S126:s CI-djupgranskning.
 ^https://chromium\.googlesource\.com/
+
+# gitlab.com/gitlab-org/gitlab blob-vyer (TASK-460, 2026-09-19) — SAMMA
+# underliggande klass som gitlab-429:an ovan (S84), fast 503 i stället för
+# 429: GitLabs WAF/anti-scraping mot GHA-runner-IP:n, inte en död länk.
+# Fyra distinkta URL:er citerade i docs/research/aktiveringssida-
+# branschmonster-2026-08-03.md (rad 68, 287, 302, 521-524):
+# invites_controller.rb, _password_input.html.haml,
+# _signup_box_form.html.haml, new.html.haml. Mätt INTERMITTENT över tre
+# nätter: 2026-09-16 grön (nightly 35061163532, ingen träff), 2026-09-17 röd
+# med 3 av 4 URL:er (nightly 35187813487, tillsammans med den då ännu
+# oundantagna chromium-posten), 2026-09-18 röd med samtliga 4 URL:er/7
+# citeringar (nightly 35311984679, 7/7 av natthens fel var denna klass,
+# noll andra fel). Samtliga fyra verifierade FRISKA lokalt 2026-09-19: `curl
+# -A Mozilla/5.0` gav HTTP 200 på alla fyra, direkt efter att samma körning
+# gav 503 i CI-loggen. Path-scopat till just blob-vyer under detta repo
+# (inte domän-brett) eftersom övriga gitlab.com-träffar i repot inte visat
+# samma mönster.
+^https://gitlab\.com/gitlab-org/gitlab/-/blob/
