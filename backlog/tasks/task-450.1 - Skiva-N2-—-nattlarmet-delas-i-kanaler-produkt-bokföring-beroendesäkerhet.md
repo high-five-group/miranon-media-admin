@@ -4,7 +4,7 @@ title: 'Skiva: N2 — nattlarmet delas i kanaler (produkt, bokföring, beroendes
 status: To Do
 assignee: []
 created_date: '2026-09-18 09:53'
-updated_date: '2026-09-18 10:19'
+updated_date: '2026-09-18 10:30'
 labels:
   - ready-for-agent
 dependencies: []
@@ -25,13 +25,13 @@ Täcker användarberättelser: 1, 2, 3
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Tvåsidigt via workflowens simulate_failure-ingång: en röd BOKFÖRINGSGRIND ger ärende/kommentar på den nya etiketten och ci-natt förblir tyst
-- [ ] #2 Tvåsidigt: ett rött PRODUKTJOBB (suite) ger tilldelat ci-natt-ärende och bokföringskanalen förblir tyst
+- [x] #1 Tvåsidigt via workflowens simulate_failure-ingång: en röd BOKFÖRINGSGRIND ger ärende/kommentar på den nya etiketten och ci-natt förblir tyst
+- [x] #2 Tvåsidigt: ett rött PRODUKTJOBB (suite) ger tilldelat ci-natt-ärende och bokföringskanalen förblir tyst
 - [x] #3 Den nattliga beroendegranskningen har egen kanal, skild från både ci-natt och bokföringskanalen
 - [x] #4 Samtliga åtta kontroller kör oförändrat; ingen merge-grind är försvagad; nightly-watchdog orörd
 - [x] #5 Nya etiketter finns i .label-policy.json och i repot på GitHub, och är undantagna i .sanningsavstamning-policy.conf med skrivet skäl
 - [x] #6 CONTRIBUTING § Nattnätet beskriver stängningsregeln för alla kanaler; ADR-082 bär en Updates-amendering om mönstrets nya tillämpningar
-- [ ] #7 Testärendena från den tvåsidiga körningen är städade med den motivering workflowens ingångsbeskrivning kräver
+- [x] #7 Testärendena från den tvåsidiga körningen är städade med den motivering workflowens ingångsbeskrivning kräver
 <!-- AC:END -->
 
 ## Definition of Done
