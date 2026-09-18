@@ -61,6 +61,7 @@
 # ANVÄNDNING
 #   scripts/heartbeat-svep.sh [--once] [--repo ägare/namn] [--branch namn]
 #                             [--interval sek] [--timeout sek] [--quiet]
+#                             [--session ID] [--alla]
 #
 #   --once       kör EN svep-cykel och avsluta med dess verdikt (default:
 #                loopar tills --timeout, eller för evigt om timeout=0).
@@ -95,6 +96,22 @@
 #                avancemang-rad efter en landning; förklaringen var
 #                kallstart/förlorad tillståndskontinuitet, inte trasig
 #                --quiet-hantering — den var, mätt, redan korrekt).
+#
+#   --session ID Filtrerar RÖTT/DIRTY/ARMERINGS-KANDIDAT till PR:ar som bär
+#                sessionens markör i kroppen (satt av bygg-agenten vid
+#                `gh pr create`, se .claude/agents/bygg-agent.md § Landning:
+#                `<!-- heartbeat-svep:session:ID -->`). En PR utan denna
+#                markör, eller märkt för en ANNAN session, larmar INTE här
+#                (TASK-462, § SESSIONSMEDVETET SVEP nedan). Utan flaggan:
+#                dagens beteende (ALLA öppna PR:ar) — en TIPS-rad skrivs då
+#                till stderr EN gång per körning (inte per sopning i
+#                loop-läge) om att sessionsläge finns, så en session som
+#                inte känner till flaggan ändå upptäcker den.
+#   --alla       Uttryckligt "dagens beteende" (alla öppna PR:ar, ingen
+#                markörfiltrering) — VINNER om den kombineras med --session
+#                (session-filtreringen stängs då helt av, ingen kombinerad
+#                effekt). Skriver INGEN TIPS-rad (flaggan bevisar att
+#                sessionen redan känner till mekanismen).
 #
 #   Startform som bakgrunds-monitor (den form § Landning pekar på):
 #     kör skriptet UTAN --once i en Code-sessions bakgrunds-bash och montera
@@ -132,6 +149,52 @@
 #     halvan är byggd här (se stämplingen i stada_grenar_om_dags());
 #     nyckling per session rör hela svepets state-modell och ligger utanför
 #     TASK-323.
+#
+#   SESSIONSMEDVETET SVEP (TASK-462): två sessioner (S126 + S127) som båda
+#   körde svepet mot samma repo väcktes tidigare av VARANDRAS PR:ar — ett
+#   handhållet `grep -v '#NNNN'`-filter i monitor-kommandot var enda
+#   skyddet, och ett felskrivet nummer där döljer den EGNA PR:ens röda
+#   (mätt 2026-09-18, backlog/tasks/task-462). `--session ID` gör svepet
+#   medvetet om ÄGARSKAP: RÖTT/DIRTY/ARMERINGS-KANDIDAT rapporteras bara för
+#   PR:ar som bär `<!-- heartbeat-svep:session:ID -->` i kroppen. En PR
+#   märkt för en ANNAN session är HELT TYST i sessionsläge (den har en känd
+#   ägare, bara inte oss) — AC #2:s krav.
+#
+#   MARKÖREN sätts av bygg-agenten vid `gh pr create`
+#   (.claude/agents/bygg-agent.md § Landning), aldrig av detta skript.
+#   Formatet är HÅRDKODAT, inte config-drivet (samma val som
+#   MARKER_START/MARKER_END i scripts/lib/review-risk-sektion.mjs): det är
+#   en del av PROTOKOLLET mellan bygg-agent och svep, inte ett
+#   projekt-specifikt värde en policy-fil ska kunna byta ut.
+#
+#   EN OMÄRKT PR (ingen sessionsmarkör alls) FÅR ALDRIG BLI TYST (AC #3) —
+#   men larmar heller INTE var 90:e sekund (det vore att återinföra exakt
+#   den brus-klass kortet finns för att åtgärda). Den syns i stället i ett
+#   EGET, GLEST besked på ALLTID-PÅ-kanalen (--quiet-immunt, men UTAN
+#   exit-bit — en observation, aldrig en order att agera på), taktat av
+#   HEARTBEAT_OMARKERAD_INTERVALL (sekunder, default 1800 om policy-filen
+#   saknar värdet — en NY säkerhetsrelevant signal ska vara SYNLIG som
+#   default, inte tyst som default; motsatt riktning mot
+#   HEARTBEAT_STADA_GRENAR_INTERVALL, som är fail-CLOSED eftersom DEN är
+#   destruktiv). Samma stämplade-intervall-mönster som § FEMTE VÄGEN ovan
+#   (egen state-fil, tyst vid noll fynd).
+#
+#   DEPENDABOT-PR:AR HAR INGEN SESSION (AC #4, medvetet beslut): författare
+#   i HEARTBEAT_EXEMPT_AUTHORS räknas ALDRIG in i den omärkta bucketen — de
+#   har redan sin egen hantering (§ ARMERINGS-KANDIDAT ovan, PARKERAD-raden
+#   i --alla-läge) och en påminnelse var 30:e minut om att "dependabot
+#   saknar en sessionsmarkör" vore brus, inte en upptäckt. Detta är den
+#   ANDRA användningen av samma lista (ursprungligen bara
+#   armerings-kandidat-undantaget ovan) — dess ursprungliga betydelse är
+#   OFÖRÄNDRAD, se .heartbeat-svep-policy.conf § "PR-författare vars öppna
+#   PR:ar ALDRIG larmar som ARMERINGS-KANDIDAT" för den första.
+#
+#   BAKÅTKOMPATIBELT (kortets krav): ingen --session och ingen --alla ⇒
+#   IDENTISKT med beteendet innan TASK-462 (alla PR:ar, ingen
+#   markörhantering) — bara en enda TIPS-rad till stderr, en gång per
+#   körning, om att mekanismen finns. En körning som inte känner till
+#   --session (t.ex. hubbens session-start-kommando innan det uppdaterats)
+#   byter alltså ALDRIG beteende tyst.
 #
 # TREVÄGS-SNAPSHOT PER SVEP
 #   1. main-SHA — `gh api repos/<repo>/commits/<branch>`. Avancerar den
@@ -265,12 +328,25 @@ STADA_BIN="${HEARTBEAT_STADA_BIN:-${SCRIPT_DIR}/stada-grenar.sh}"
 # ska aldrig kunna bli en destruktiv operation någon inte bett om.
 HEARTBEAT_STADA_GRENAR_INTERVALL=0
 
+# Fail-safe-mot-SYNLIGHET default INNAN source (TASK-462, § SESSIONSMEDVETET
+# SVEP): en policy-fil UTAN variabeln (äldre spoke-kopia) ska ändå visa den
+# omärkta-PR-notisen — MOTSATT riktning mot HEARTBEAT_STADA_GRENAR_INTERVALL
+# ovan (som defaultar AV eftersom den är DESTRUKTIV). Ett osatt värde här ska
+# aldrig kunna göra en glömd PR permanent osynlig.
+HEARTBEAT_OMARKERAD_INTERVALL=1800
+
 REPO=""
 BRANCH=""
 INTERVAL=""
 TIMEOUT=""
 ONCE=0
 QUIET=0
+# TASK-462 § SESSIONSMEDVETET SVEP. SESSION är körningsspecifik (ett
+# argument, aldrig ett policy-värde — samma "argument där det är
+# körningsspecifikt"-princip som resten av skriptets CLI-flaggor). ALLA är
+# en explicit opt-out ur sessionsfiltreringen.
+SESSION=""
+ALLA=0
 # Fail-open default: tom array. Deklareras FÖRE source så en policy-fil
 # utan HEARTBEAT_EXEMPT_AUTHORS (äldre spoke-kopia, eller filen saknas helt)
 # lämnar mekanismen av — ingen PR tystas — i stället för att skriptet
@@ -473,6 +549,84 @@ stada_grenar_om_dags() {
     return 0
 }
 
+# ── SJÄTTE VÄGEN: sessionsmedvetet svep (TASK-462) ──────────────────────────
+# Se § SESSIONSMEDVETET SVEP ovan för det fulla resonemanget. Sammanfattning
+# här: markören är HÅRDKODAD (protokoll mellan bygg-agent och svep, inte ett
+# projekt-specifikt värde — samma val som review-risk-sektion.mjs:s
+# MARKER_START/MARKER_END).
+HEARTBEAT_SESSION_MARKER_REGEX='<!-- heartbeat-svep:session:[^[:space:]]+ -->'
+
+# session_marker <ID> — den exakta markörsträngen bygg-agenten skriver in i
+# PR-kroppen för sessionen <ID>. Enda platsen formatet definieras — både
+# detta skript och bygg-agent-kontraktet refererar samma sträng, aldrig en
+# duplicerad kopia.
+session_marker() { printf '<!-- heartbeat-svep:session:%s -->' "$1"; }
+
+# pr_har_session_marker <body> <session> — sant om <body> bär EXAKT den
+# markören (inte bara "någon" markör — se pr_har_nagon_marker för det).
+# Substring-match, inte regex: session_marker() innehåller inga
+# glob-specialtecken (*, ?, [), så `==`-mönstermatchningen nedan är säker.
+# Markören läggs i en lokal variabel FÖRE testet (inte inline i `[[ ]]`) —
+# annars varnar shellchecks SC2312 ("consider invoking this command
+# separately") eftersom en command substitution direkt i ett testuttryck
+# maskerar sitt eget avslutningsvärde. session_marker() är en ren printf som
+# aldrig fallerar, men separationen kostar inget och håller grinden på 0.
+pr_har_session_marker() {
+    local body="$1" session="$2" marker
+    marker="$(session_marker "${session}")"
+    [[ "${body}" == *"${marker}"* ]]
+}
+
+# pr_har_nagon_marker <body> — sant om <body> bär EN markör för VILKEN
+# session som helst (används för att skilja "märkt för en ANNAN session"
+# — helt tyst, AC #2 — från "helt omärkt" — det egna glesa beskedet, AC #3).
+pr_har_nagon_marker() {
+    [[ "$1" =~ ${HEARTBEAT_SESSION_MARKER_REGEX} ]]
+}
+
+# omarkerad_notis_om_dags <antal> <kommalista> <antal_undantagna> — den
+# omärkta-PR-notisen (AC #3), taktad av HEARTBEAT_OMARKERAD_INTERVALL. Samma
+# stämplade-intervall-mönster som stada_grenar_om_dags() ovan (egen
+# state-fil, atomär skrivning, tyst vid noll fynd) men ALLTID på
+# alltid_pa()-kanalen (aldrig say() — AC #3 kräver att den ALDRIG blir helt
+# tyst) och ALDRIG en LARM-rad (ingen exit-bit — en observation, inte en
+# order). KONTRAKT: returnerar ALLTID 0.
+omarkerad_notis_om_dags() {
+    local antal="$1" lista="$2" undantagna="$3"
+    local intervall nu senast
+
+    [[ "${antal}" -gt 0 ]] || return 0
+
+    intervall="${HEARTBEAT_OMARKERAD_INTERVALL:-1800}"
+    [[ "${intervall}" =~ ^[0-9]+$ ]] || intervall=1800
+
+    nu="$(date +%s)"
+    senast=0
+    if [[ -f "${OMARKERAD_STATE_FILE}" ]]; then
+        senast="$(cat "${OMARKERAD_STATE_FILE}" 2>/dev/null || echo 0)"
+        [[ "${senast}" =~ ^[0-9]+$ ]] || senast=0
+    fi
+    [[ $(( nu - senast )) -ge "${intervall}" ]] || return 0
+
+    # Atomär stämpling (temp + mv), samma skäl som stada_grenar_om_dags():
+    # en läsare ska aldrig se en halvskriven stämpel, och `mv` inom samma
+    # filsystem är en rename(2) — POSIX-atomär. Ett misslyckat skriv tigs
+    # INTE ihjäl (samma observabilitets-disciplin): nästa svep försöker om
+    # om 90s i stället för om ${intervall}s, och det syns på ALLTID-PÅ.
+    if printf '%s' "${nu}" > "${OMARKERAD_STATE_FILE}.tmp" 2>/dev/null \
+       && mv -f "${OMARKERAD_STATE_FILE}.tmp" "${OMARKERAD_STATE_FILE}" 2>/dev/null; then
+        :
+    else
+        rm -f "${OMARKERAD_STATE_FILE}.tmp" 2>/dev/null || true
+        alltid_pa "heartbeat-svep: UNDERHÅLL — kunde inte stämpla ${OMARKERAD_STATE_FILE}. Notisen kan komma tätare än ${intervall}s tills stämpeln går att skriva."
+    fi
+
+    local undantagna_text=""
+    [[ "${undantagna}" -gt 0 ]] && undantagna_text=" (${undantagna} dependabot m.fl. undantagna via HEARTBEAT_EXEMPT_AUTHORS, räknas inte hit)"
+    alltid_pa "heartbeat-svep: SESSION — ${antal} öppna PR:ar UTAN sessionsmarkör${undantagna_text}: ${lista}. Ingen order — kontrollera själv vem som äger dem (se --alla för fullständig lista). Nästa påminnelse tidigast om ${intervall}s."
+    return 0
+}
+
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --repo)     REPO="${2:-}";     shift 2 ;;
@@ -481,15 +635,18 @@ while [[ $# -gt 0 ]]; do
         --timeout)  TIMEOUT="${2:-}";  shift 2 ;;
         --once)     ONCE=1; shift ;;
         --quiet)    QUIET=1; shift ;;
+        --session)  SESSION="${2:-}"; shift 2 ;;
+        --alla)     ALLA=1; shift ;;
         # Radintervallet är § ANVÄNDNING. Ändras huvudet ovan måste det
         # följa med — annars ljuger --help tyst (samma disciplin som ci-wait.sh).
         # Utökat 61,81 → 61,104 i TASK-135 (ALLTID-PÅ-klass + kallstart-
         # stycket), 61,104 → 61,135 i TASK-323 (§ UNDERHÅLL — gles
         # gren-städning; en DESTRUKTIV bieffekt får aldrig stå utanför det
-        # block --help faktiskt visar);
+        # block --help faktiskt visar), 61,135 → 61,198 i TASK-462
+        # (--session/--alla-flaggorna + § SESSIONSMEDVETET SVEP);
         # scripts/test-heartbeat-svep.sh T24 fäller om raden
         # avviker från blockets faktiska start/slut.
-        -h|--help)  sed -n '61,135p' "$0"; exit 0 ;;
+        -h|--help)  sed -n '61,198p' "$0"; exit 0 ;;
         *) die "okänt argument: $1" ;;
     esac
 done
@@ -508,6 +665,16 @@ done
 [[ -n "${TIMEOUT}" ]] || TIMEOUT=0
 [[ "${TIMEOUT}" =~ ^[0-9]+$ ]] || die "--timeout måste vara ett heltal ≥ 0 (sekunder, 0 = obegränsat), fick '${TIMEOUT}'"
 
+# TASK-462 § SESSIONSMEDVETET SVEP, kortets AC #8 (bakåtkompatibilitet).
+# Skrivs EN gång per SKRIPT-invokation (inte i sweep_once(), som körs var
+# HEARTBEAT_INTERVAL:e sekund i loop-läge) — annars hade en persistent
+# bakgrunds-monitor spammat samma rad om och om igen. --alla räknas som att
+# sessionen redan känner till mekanismen (den valde uttryckligen bort den),
+# så bara den HELT omedvetna kombinationen (varken flagga satt) får tipset.
+if [[ -z "${SESSION}" && "${ALLA}" -eq 0 ]]; then
+    printf 'heartbeat-svep: TIPS — sessionsläge finns (--session <ID>) sedan TASK-462; ingen session angiven, kör i icke-filtrerat läge (dagens beteende, motsvarar --alla). Se CLAUDE.md § Landning.\n' >&2
+fi
+
 mkdir -p "${STATE_DIR}"
 STATE_FILE="${STATE_DIR}/last-main-sha"
 # Gren-städningens egen tidsstämpel (TASK-323). Egen fil, inte en rad i
@@ -515,6 +682,8 @@ STATE_FILE="${STATE_DIR}/last-main-sha"
 # sig — testsviten river STATE_DIR mellan fall och båda ska då kallstarta
 # rent, utan att den ena vägens format kan korrumpera den andras.
 STADA_STATE_FILE="${STATE_DIR}/last-stada-grenar"
+# Den omärkta-PR-notisens egen tidsstämpel (TASK-462), samma oberoende-skäl.
+OMARKERAD_STATE_FILE="${STATE_DIR}/last-omarkerad-notis"
 
 # --- EN svep-cykel ----------------------------------------------------------
 # Returnerar bitmask-verdikten via $? (0/1/2/4/kombinationer, 77 vid sond-fel).
@@ -556,6 +725,14 @@ sweep_once() {
     # GraphQL-variabler som `-f`/`-F` binder på anropet nedan, inte
     # bash-variabler — de ska INTE expanderas av skalet. Samma form som
     # GraphQL-anropen i docs/research/task-99-dequeue-enqueue-live-test-2026-08-01.md.
+    # `body` (TASK-462, § SESSIONSMEDVETET SVEP) hämtas ALLTID, oavsett
+    # --session/--alla, för att hålla frågan i EN statisk sträng i stället
+    # för en fjärde handhållen variant. jq:s @tsv ESCAPAR embedded tabbar/
+    # radbrytningar inom varje fält (`\t`/`\n`/`\r`/`\\` — jq-manualen,
+    # "@tsv"-filtret), så en flerradig PR-kropp bryter INTE en-rad-per-PR-
+    # invarianten `while read` bygger på nedan — den kommer bara innehålla
+    # LITERALA `\n`-sekvenser i stället för riktiga radbrytningar, vilket
+    # inte påverkar en enkel substrängs-/regex-matchning mot markören.
     rows="$("${GH}" api graphql -f query='
         query($owner:String!, $name:String!, $branch:String!, $limit:Int!) {
           repository(owner:$owner, name:$name) {
@@ -567,6 +744,7 @@ sweep_once() {
                 autoMergeRequest { enabledAt }
                 isInMergeQueue
                 author { login }
+                body
                 commits(last: 1) {
                   nodes { commit { statusCheckRollup { state } } }
                 }
@@ -580,7 +758,8 @@ sweep_once() {
                 (.autoMergeRequest != null),
                 (.commits.nodes[0].commit.statusCheckRollup.state // "NONE"),
                 .isInMergeQueue,
-                (.author.login // "")
+                (.author.login // ""),
+                (.body // "")
               ] | @tsv' 2>/dev/null)"
     rc=$?
     set -e
@@ -590,8 +769,51 @@ sweep_once() {
     fi
 
     local granskade=0 antal_rott=0 antal_dirty=0 antal_kandidat=0 antal_undantagna=0
-    while IFS=$'\t' read -r nr draft mss automerge rollup inqueue author; do
+    # TASK-462 § SESSIONSMEDVETET SVEP — endast fyllda när sessionsläge är
+    # AKTIVT (SESSION satt OCH --alla INTE given, se villkoret i loopen).
+    local antal_andra_sessioner=0 antal_omarkerad=0 antal_omarkerad_undantagna=0
+    local omarkerad_lista=""
+    local sessionslage=0
+    [[ -n "${SESSION}" && "${ALLA}" -eq 0 ]] && sessionslage=1
+
+    while IFS=$'\t' read -r nr draft mss automerge rollup inqueue author body; do
         [[ -n "${nr}" ]] || continue
+
+        # SESSIONSFILTRERING (TASK-462). Görs FÖRST, innan RÖTT/DIRTY/
+        # KANDIDAT-klassningen nedan ens körs — en PR som inte hör till oss
+        # ska inte bidra till NÅGON av dem (AC #1/#2). `continue` hoppar
+        # resten av loop-kroppen för den raden.
+        if [[ "${sessionslage}" -eq 1 ]]; then
+            # shellcheck disable=SC2310
+            # AVSIKTLIGT: pr_har_session_marker()/pr_har_nagon_marker() är
+            # ren bash (`[[ ]]`-test, ingen extern process), samma disciplin
+            # som is_exempt_author() ovan — set -e-avstängningen SC2310
+            # varnar för är ofarlig här.
+            if pr_har_session_marker "${body}" "${SESSION}"; then
+                : # EGEN session — fortsätt till RÖTT/DIRTY/KANDIDAT nedan.
+            elif pr_har_nagon_marker "${body}"; then
+                # FRÄMMANDE session — känd ägare, bara inte oss. HELT TYST
+                # (AC #2): varken alarm() eller say(), inte ens i
+                # sammanfattningsraden per-PR — bara i totalräkningen.
+                antal_andra_sessioner=$(( antal_andra_sessioner + 1 ))
+                continue
+            else
+                # INGEN markör alls. Dependabot m.fl. (HEARTBEAT_EXEMPT_
+                # AUTHORS) har ALDRIG en session och räknas separat — se
+                # § SESSIONSMEDVETET SVEP, "DEPENDABOT-PR:AR HAR INGEN
+                # SESSION" för varför listan (ursprungligen bara
+                # armerings-kandidat-undantaget) återanvänds här.
+                # shellcheck disable=SC2310
+                if is_exempt_author "${author}"; then
+                    antal_omarkerad_undantagna=$(( antal_omarkerad_undantagna + 1 ))
+                else
+                    antal_omarkerad=$(( antal_omarkerad + 1 ))
+                    omarkerad_lista="${omarkerad_lista:+${omarkerad_lista}, }#${nr}"
+                fi
+                continue
+            fi
+        fi
+
         granskade=$(( granskade + 1 ))
 
         # RÖTT — GitHubs egen aggregat-klassning per PR (kräver/icke-kräver
@@ -653,11 +875,25 @@ sweep_once() {
         fi
     done <<<"${rows}"
 
-    say "heartbeat-svep: ${granskade} öppna PR:ar granskade mot ${BRANCH} — ${antal_rott} röda, ${antal_dirty} dirty, ${antal_kandidat} armerings-kandidater, ${antal_undantagna} undantagna (parkerade)."
+    local sammanfattning="heartbeat-svep: ${granskade} öppna PR:ar granskade mot ${BRANCH} — ${antal_rott} röda, ${antal_dirty} dirty, ${antal_kandidat} armerings-kandidater, ${antal_undantagna} undantagna (parkerade)."
+    if [[ "${sessionslage}" -eq 1 ]]; then
+        sammanfattning="${sammanfattning} [session ${SESSION}] ${antal_andra_sessioner} tillhör andra sessioner (tysta), ${antal_omarkerad} omärkta, ${antal_omarkerad_undantagna} omärkta men undantagna."
+    fi
+    say "${sammanfattning}"
 
     [[ "${antal_rott}"     -gt 0 ]] && verdict=$(( verdict | 1 ))
     [[ "${antal_dirty}"    -gt 0 ]] && verdict=$(( verdict | 2 ))
     [[ "${antal_kandidat}" -gt 0 ]] && verdict=$(( verdict | 4 ))
+
+    # SJÄTTE VÄGEN — den omärkta-PR-notisen (TASK-462, AC #3). Körs EFTER
+    # att verdikten är färdigberäknad, av samma skäl som FEMTE VÄGEN nedan:
+    # en observation, aldrig ett larm, får aldrig kunna påverka bitmasken.
+    # Bär INGEN exit-bit och larmar aldrig, oavsett vad den skriver.
+    if [[ "${sessionslage}" -eq 1 ]]; then
+        # shellcheck disable=SC2310
+        # AVSIKTLIGT: funktionen returnerar alltid 0 (se dess eget kontrakt).
+        omarkerad_notis_om_dags "${antal_omarkerad}" "${omarkerad_lista}" "${antal_omarkerad_undantagna}" || true
+    fi
 
     # FEMTE VÄGEN — underhåll, körs EFTER att verdikten är färdigberäknad så
     # den bevisligen inte kan påverka den (§ EXIT-KODER: städning larmar

@@ -50,6 +50,33 @@
 #   T27b HEARTBEAT_EXEMPT_AUTHORS definierad men TOM (()) → samma
 #        fail-open, samma larm                                     → bit 4 satt
 #
+# T40–T55 (TASK-462, SESSIONSMEDVETET SVEP): kortets AC #1/#2 kräver
+# tvåsidigt bevis per LARM-väg (RÖTT/DIRTY/KANDIDAT) — en främmande PR tyst,
+# en egen PR larmar — plus AC #3 (omärkt-notisen), AC #4 (dependabot) och
+# AC #8 (bakåtkompatibilitet, TIPS-raden).
+#   T40 RÖTT, EGEN session-markör                                → larmar
+#   T41 RÖTT, FRÄMMANDE session-markör (annan ID)  i sessionsläge → TYST
+#   T42 SAMMA främmande RÖD PR, men --alla                        → larmar
+#   T43 DIRTY, EGEN session-markör                                → larmar
+#   T44 DIRTY, FRÄMMANDE session-markör  i sessionsläge           → TYST
+#   T45 KANDIDAT, EGEN session-markör                             → larmar
+#   T46 KANDIDAT, FRÄMMANDE session-markör i sessionsläge         → TYST
+#   T47 OMÄRKT PR, sessionsläge, kallstart-intervall → ALLTID-PÅ-notis,
+#       syns ÄVEN under --quiet, INGEN exit-bit                    → 0
+#   T48 SAMMA omärkta PR, direkt igen (glesning) → tyst denna gång  → 0
+#   T49 OMÄRKT PR med author=dependabot (exempt) → EXKLUDERAS ur
+#       bucketen, ingen notis (0 fynd)                              → 0
+#   T50 BAKÅTKOMPATIBILITET: ingen --session/--alla, PR med en FRÄMMANDE
+#       markör i kroppen → larmar ÄNDÅ (dagens beteende är okänsligt
+#       för markörer helt och hållet)                              → larmar
+#   T51 TIPS-raden: ingen --session/--alla → EN rad på STDERR         → syns
+#   T52 TIPS-raden UTEBLIR när --session ges                         → tyst
+#   T53 TIPS-raden UTEBLIR när --alla ges                             → tyst
+#   T54 BÅDA FLAGGOR samtidigt (--session X --alla) → --alla VINNER
+#       (samma främmande-PR-scenario som T42, ska larma precis som --alla
+#       ensamt)                                                     → larmar
+#   T55 --help visar § SESSIONSMEDVETET SVEP och de nya flaggorna     → syns
+#
 # Test-isolering: /tmp/task119-test-heartbeat-svep/ med en gh-stub som svarar
 # ur ett scenario-katalog (main-sha / rows / fail-mainsha / fail-prlist).
 # INGEN nätverkstrafik, inget riktigt gh-anrop, ingen ändring i real-repot,
@@ -88,7 +115,9 @@
 #        ALDRIG larmar som ARMERINGS-KANDIDAT"
 # Etablerad: TASK-119, 2026-08-02 · utökad TASK-128 (2026-08-03) · TASK-135
 # (2026-08-04, T23/T24 — kallstart-rad + --help-täckning) · fynd 2026-08-04
-# (T25–T27b — HEARTBEAT_EXEMPT_AUTHORS, dependabot-kvartetten #632–#635)
+# (T25–T27b — HEARTBEAT_EXEMPT_AUTHORS, dependabot-kvartetten #632–#635) ·
+# TASK-462 (2026-09-18, T40–T55 — sessionsmedvetet svep: --session/--alla,
+# PR-kropps-markören, den omärkta-PR-notisen, TIPS-raden)
 
 set -uo pipefail
 
@@ -169,23 +198,48 @@ set_rows() { printf '%b' "$1" > "${SCEN}/rows"; }
 # run_case så de aldrig läcker till nästa fall.
 EXPECT_OUT=""
 NOT_EXPECT_OUT=""
+# EXPECT_ERR/NOT_EXPECT_ERR (TASK-462): samma kontrakt som ovan men mot
+# STDERR specifikt. Behövs sedan TASK-462:s TIPS-rad (§ SESSIONSMEDVETET
+# SVEP) skrivs dit — se § STRÖM-SEPARATION nedan för varför de två strömmarna
+# fångas i separata filer i stället för en enda kombinerad, som tidigare.
+EXPECT_ERR=""
+NOT_EXPECT_ERR=""
 
 # run_case <namn> <förväntad exit> <max sekunder eller "-"> <env-tilldelningar...> -- <args...>
+#
+# ═══ STRÖM-SEPARATION (TASK-462) ═══
+# stdout och stderr fångas numera i VARSIN fil (out.txt / err.txt) i stället
+# för en tidigare kombinerad `2>&1`. Skälet: TASK-462 lade en TIPS-rad på
+# stderr (§ SESSIONSMEDVETET SVEP, kortets AC #8) som skrivs OAVSETT --quiet
+# närhelst varken --session eller --alla ges — och flera BEFINTLIGA testfall
+# (T22/T25b/T35b) bevisar just att stdout är HELT TOMT under exakt den
+# kombinationen (--quiet, inget --session). En kombinerad ström hade gjort
+# dessa fall falskt röda för ett tillägg som inte rör deras egentliga
+# invariant (stdout bär inga RUTIN/LARM-rader) — separationen låter båda
+# kontrakten bevisas oberoende av varandra, utan att mjuka upp någotdera.
+# Alla ÄLDRE `alarm()`/`say()`/`alltid_pa()`-rader gick redan via stdout
+# (ren `printf`, fd1) — bara `die()` (användningsfel, T15–T17, som aldrig
+# haft en EXPECT_OUT-kontroll) gick till stderr innan detta. Separationen
+# ändrar därför INGEN äldre testfalls faktiska bevisbörda.
 run_case() {
     local name="$1" want="$2" maxsec="$3"; shift 3
-    local start elapsed got expect="${EXPECT_OUT}" nexpect="${NOT_EXPECT_OUT}"
+    local start elapsed got
+    local expect="${EXPECT_OUT}" nexpect="${NOT_EXPECT_OUT}"
+    local eexpect="${EXPECT_ERR}" enexpect="${NOT_EXPECT_ERR}"
     EXPECT_OUT=""
     NOT_EXPECT_OUT=""
+    EXPECT_ERR=""
+    NOT_EXPECT_ERR=""
     start="$(date +%s)"
     ( cd "${TEST_DIR}" && env PATH="${TEST_DIR}/bin:${PATH}" T119_SCEN="${SCEN}" \
         HEARTBEAT_STATE_DIR="${STATE_DIR}" \
-        "$@" ) >"${TEST_DIR}/out.txt" 2>&1
+        "$@" ) >"${TEST_DIR}/out.txt" 2>"${TEST_DIR}/err.txt"
     got=$?
     elapsed=$(( $(date +%s) - start ))
 
     if [[ "${got}" -ne "${want}" ]]; then
         printf '  ✗ %s — exit %s, väntade %s\n' "${name}" "${got}" "${want}"
-        sed 's/^/      /' "${TEST_DIR}/out.txt" | head -10
+        cat "${TEST_DIR}/out.txt" "${TEST_DIR}/err.txt" 2>/dev/null | sed 's/^/      /' | head -10
         FAILED=$(( FAILED + 1 )); return
     fi
     if [[ "${maxsec}" != "-" && "${elapsed}" -gt "${maxsec}" ]]; then
@@ -193,13 +247,23 @@ run_case() {
         FAILED=$(( FAILED + 1 )); return
     fi
     if [[ -n "${expect}" ]] && ! grep -qF -- "${expect}" "${TEST_DIR}/out.txt"; then
-        printf '  ✗ %s — utdatan saknade "%s"\n' "${name}" "${expect}"
+        printf '  ✗ %s — stdout saknade "%s"\n' "${name}" "${expect}"
         sed 's/^/      /' "${TEST_DIR}/out.txt" | head -10
         FAILED=$(( FAILED + 1 )); return
     fi
     if [[ -n "${nexpect}" ]] && grep -qF -- "${nexpect}" "${TEST_DIR}/out.txt"; then
-        printf '  ✗ %s — utdatan innehöll oväntat "%s"\n' "${name}" "${nexpect}"
+        printf '  ✗ %s — stdout innehöll oväntat "%s"\n' "${name}" "${nexpect}"
         sed 's/^/      /' "${TEST_DIR}/out.txt" | head -10
+        FAILED=$(( FAILED + 1 )); return
+    fi
+    if [[ -n "${eexpect}" ]] && ! grep -qF -- "${eexpect}" "${TEST_DIR}/err.txt"; then
+        printf '  ✗ %s — stderr saknade "%s"\n' "${name}" "${eexpect}"
+        sed 's/^/      /' "${TEST_DIR}/err.txt" | head -10
+        FAILED=$(( FAILED + 1 )); return
+    fi
+    if [[ -n "${enexpect}" ]] && grep -qF -- "${enexpect}" "${TEST_DIR}/err.txt"; then
+        printf '  ✗ %s — stderr innehöll oväntat "%s"\n' "${name}" "${enexpect}"
+        sed 's/^/      /' "${TEST_DIR}/err.txt" | head -10
         FAILED=$(( FAILED + 1 )); return
     fi
     printf '  ✓ %s\n' "${name}"
@@ -780,6 +844,160 @@ elif [[ -f "${STATE_DIR}/last-stada-grenar" ]]; then
     printf '  ✓ T39b  stämpeln på plats, ingen .tmp kvar\n'; PASSED=$((PASSED+1))
 else
     printf '  ✗ T39b  stämpeln saknas helt\n'; FAILED=$((FAILED+1))
+fi
+
+# ============================================================
+# T40–T55 — TASK-462, SESSIONSMEDVETET SVEP. TSV-radformatet har en 8:e
+# kolumn sedan TASK-462 (`body`, för markören) — se § LAYOUTEN i filhuvudet:
+# äldre rader (7 kolumner) läses fortfarande korrekt (body blir tom sträng),
+# vilket ÄR T1–T39:s implicita bakåtkompatibilitetsbevis. Dessa fall sätter
+# den 8:e kolumnen explicit.
+echo ""
+
+# T40/T41/T42 — RÖTT: tvåsidigt bevis för sessionsfiltreringen (AC #1/#2).
+# automerge=true isolerar RÖTT-vägen från KANDIDAT-vägen, samma teknik som
+# T1/T2.
+reset_scen
+set_rows '801\tfalse\tBLOCKED\ttrue\tFAILURE\tfalse\toctocat\t<!-- heartbeat-svep:session:S126 -->\n'
+EXPECT_OUT="RÖTT — PR #801"
+run_case "T40 RÖTT, EGEN sessionsmarkör → larmar" 1 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S126
+
+reset_scen
+set_rows '802\tfalse\tBLOCKED\ttrue\tFAILURE\tfalse\toctocat\t<!-- heartbeat-svep:session:S127 -->\n'
+NOT_EXPECT_OUT="RÖTT"
+run_case "T41 RÖTT, FRÄMMANDE sessionsmarkör (S127) i sessionsläge S126 → TYST" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S126
+
+reset_scen
+set_rows '802\tfalse\tBLOCKED\ttrue\tFAILURE\tfalse\toctocat\t<!-- heartbeat-svep:session:S127 -->\n'
+EXPECT_OUT="RÖTT — PR #802"
+run_case "T42 SAMMA främmande röda PR, men --alla → larmar (dagens beteende)" 1 - \
+    bash ./scripts/heartbeat-svep.sh --once --alla
+
+# T43/T44 — DIRTY: tvåsidigt bevis. automerge=true isolerar från KANDIDAT.
+reset_scen
+set_rows '803\tfalse\tDIRTY\ttrue\tSUCCESS\tfalse\toctocat\t<!-- heartbeat-svep:session:S126 -->\n'
+EXPECT_OUT="DIRTY — PR #803"
+run_case "T43 DIRTY, EGEN sessionsmarkör → larmar" 2 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S126
+
+reset_scen
+set_rows '804\tfalse\tDIRTY\ttrue\tSUCCESS\tfalse\toctocat\t<!-- heartbeat-svep:session:S127 -->\n'
+NOT_EXPECT_OUT="DIRTY"
+run_case "T44 DIRTY, FRÄMMANDE sessionsmarkör i sessionsläge → TYST" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S126
+
+# T45/T46 — ARMERINGS-KANDIDAT: tvåsidigt bevis.
+reset_scen
+set_rows '805\tfalse\tCLEAN\tfalse\tSUCCESS\tfalse\toctocat\t<!-- heartbeat-svep:session:S126 -->\n'
+EXPECT_OUT="ARMERINGS-KANDIDAT — PR #805"
+run_case "T45 KANDIDAT, EGEN sessionsmarkör → larmar" 4 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S126
+
+reset_scen
+set_rows '806\tfalse\tCLEAN\tfalse\tSUCCESS\tfalse\toctocat\t<!-- heartbeat-svep:session:S127 -->\n'
+NOT_EXPECT_OUT="KANDIDAT"
+run_case "T46 KANDIDAT, FRÄMMANDE sessionsmarkör i sessionsläge → TYST" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S126
+
+# ============================================================
+# T47/T48 — DEN OMÄRKTA-PR-NOTISEN (AC #3): tvåsidigt bevis på GLESNINGEN
+# (fyrar vid kallstart, tiger direkt efter) — samma par-teknik som T28/T29
+# för gren-städningen. rollup/mss hålls SUCCESS/CLEAN så verdikten
+# otvetydigt är 0 oavsett notisen (en omärkt PR bearbetas ALDRIG för
+# RÖTT/DIRTY/KANDIDAT).
+echo ""
+reset_scen
+set_rows '810\tfalse\tCLEAN\ttrue\tSUCCESS\tfalse\toctocat\t\n'
+EXPECT_OUT="SESSION — 1 öppna PR:ar UTAN sessionsmarkör"
+run_case "T47 OMÄRKT PR, kallstart-intervall → ALLTID-PÅ-notis (syns, ingen exit-bit)" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S126
+if grep -qF "#810" "${TEST_DIR}/out.txt"; then
+    printf '  ✓ T47b  notisen namnger PR-numret\n'; PASSED=$((PASSED+1))
+else
+    printf '  ✗ T47b  notisen saknar PR-numret #810\n'; FAILED=$((FAILED+1))
+fi
+
+# T47c — samma scenario UNDER --quiet: notisen ska synas ÄNDÅ (alltid_pa(),
+# --quiet-immun) — men kräver en EGEN kallstart (färskt state) för att
+# glesningen inte redan ska ha stämplats av T47 ovan.
+reset_scen
+set_rows '810\tfalse\tCLEAN\ttrue\tSUCCESS\tfalse\toctocat\t\n'
+EXPECT_OUT="SESSION — 1 öppna PR:ar UTAN sessionsmarkör"
+run_case "T47c samma sak UNDER --quiet → notisen syns ÄNDÅ" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S126 --quiet
+
+# T48 — INGEN reset_scen: stämpeln från T47c ligger kvar, så glesningen ska
+# hålla notisen tyst trots att samma omärkta PR fortfarande står öppen.
+NOT_EXPECT_OUT="UTAN sessionsmarkör"
+run_case "T48 samma omärkta PR direkt igen → glesningen håller notisen tyst" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S126
+
+# ============================================================
+# T49 — DEPENDABOT UNDANTAS UR DEN OMÄRKTA BUCKETEN (AC #4, medvetet
+# beslut). Färsk kallstart (annars döljer T48:s glesning resultatet oavsett
+# vad denna PR är).
+reset_scen
+set_rows '811\tfalse\tCLEAN\ttrue\tSUCCESS\tfalse\tdependabot\t\n'
+NOT_EXPECT_OUT="UTAN sessionsmarkör"
+run_case "T49 omärkt PR, author=dependabot → EXKLUDERAS ur bucketen, ingen notis" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S126
+
+# ============================================================
+# T50 — BAKÅTKOMPATIBILITET (AC #8): ingen --session/--alla ⇒ dagens
+# beteende är HELT okänsligt för markörer — en PR märkt för en annan
+# session larmar ÄNDÅ, exakt som innan TASK-462 fanns.
+echo ""
+reset_scen
+set_rows '820\tfalse\tBLOCKED\ttrue\tFAILURE\tfalse\toctocat\t<!-- heartbeat-svep:session:S999 -->\n'
+EXPECT_OUT="RÖTT — PR #820"
+run_case "T50 BAKÅTKOMPATIBILITET — ingen flagga, märkt PR larmar ändå" 1 - \
+    bash ./scripts/heartbeat-svep.sh --once
+
+# ============================================================
+# T51–T53 — TIPS-RADEN (AC #8): en gång på STDERR när varken --session
+# eller --alla ges; uteblir när endera ges (sessionen känner redan till
+# mekanismen).
+echo ""
+reset_scen
+EXPECT_ERR="TIPS — sessionsläge finns"
+run_case "T51 TIPS-raden på stderr när ingen flagga ges" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once
+
+reset_scen
+NOT_EXPECT_ERR="TIPS"
+run_case "T52 TIPS-raden UTEBLIR när --session ges" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S1
+
+reset_scen
+NOT_EXPECT_ERR="TIPS"
+run_case "T53 TIPS-raden UTEBLIR när --alla ges" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --alla
+
+# ============================================================
+# T54 — BÅDA FLAGGOR SAMTIDIGT: --alla VINNER (dokumenterad precedens,
+# § SESSIONSMEDVETET SVEP). Återanvänder T41/T42:s främmande-PR-scenario:
+# under --session ENSAM är den tyst (T41), under --alla ska den larma
+# OAVSETT att --session också gavs.
+echo ""
+reset_scen
+set_rows '802\tfalse\tBLOCKED\ttrue\tFAILURE\tfalse\toctocat\t<!-- heartbeat-svep:session:S127 -->\n'
+EXPECT_OUT="RÖTT — PR #802"
+run_case "T54 --session OCH --alla samtidigt → --alla vinner, larmar" 1 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S126 --alla
+
+# ============================================================
+# T55 — --help visar den nya SESSIONSMEDVETET SVEP-sektionen och flaggorna
+# (samma "ljug inte tyst"-disciplin som T24).
+echo ""
+EXPECT_OUT="SESSIONSMEDVETET SVEP"
+run_case "T55 --help visar § SESSIONSMEDVETET SVEP" 0 - \
+    bash ./scripts/heartbeat-svep.sh --help
+if grep -qF -- "--session ID" "${TEST_DIR}/out.txt" && grep -qF -- "--alla" "${TEST_DIR}/out.txt"; then
+    printf '  ✓ T55b  --help dokumenterar --session och --alla\n'; PASSED=$((PASSED+1))
+else
+    printf '  ✗ T55b  --help saknar --session/--alla-dokumentationen\n'; FAILED=$((FAILED+1))
 fi
 
 printf '\ntest-heartbeat-svep: %s passerade, %s failade\n' "${PASSED}" "${FAILED}"

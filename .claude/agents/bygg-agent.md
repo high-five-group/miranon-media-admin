@@ -182,7 +182,21 @@ Egen gren, beskrivande namn. Direktpush till `main` avvisas av ruleset (ADR-076)
 `git add` är **path-scopad**, alltid. `git commit` committar hela indexet, och
 DoD kräver noll orelaterade filer i diffen.
 
-Öppna PR med `gh pr create`. **Armeringen ägs av uppdraget.** Säger uppdraget
+Öppna PR med `gh pr create`.
+
+**Sessionsmarkör i PR-kroppen (TASK-462, `scripts/heartbeat-svep.sh`
+§ SESSIONSMEDVETET SVEP).** Anger uppdraget en sessionsidentitet (t.ex.
+"session S126"): lägg raden `<!-- heartbeat-svep:session:S126 -->` FÖRST i
+PR-kroppen (`--body`), på egen rad, innan resten av texten. Formatet är
+EXAKT — `heartbeat-svep.sh --session <ID>` matchar den bokstavligt, ingen
+variant. Anger uppdraget INGEN sessionsidentitet: skapa PR:en UTAN markör
+och säg det uttryckligen i slutrapporten ("ingen sessionsidentitet angiven
+i uppdraget — PR:en saknar sessionsmarkör") — GISSA ALDRIG ett ID. En omärkt
+PR är inget fel i sig (svepet flaggar den i ett eget, glest besked i stället
+för att larma varje sopning), men ett GISSAT ID hade kunnat tysta en
+FRÄMMANDE sessions egna RÖTT/DIRTY/KANDIDAT om det råkade träffa fel session.
+
+**Armeringen ägs av uppdraget.** Säger uppdraget
 inget om armering: armera INTE auto-merge — orkestreraren granskar din diff
 och armerar i sitt svep. Lägger uppdraget armeringen hos dig:
 `gh pr merge --auto` — **ingen strategiflagga**, kön äger strategin och `gh`
