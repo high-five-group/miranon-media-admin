@@ -2522,6 +2522,11 @@ type KortProps = {
  */
 function RadInnehall({ rad, visaEvent }: { rad: InkorgsRad; visaEvent?: boolean }) {
   const saknas = rad.kvar ?? rad.betalning.saknas;
+  /* [TASK-456 runda 2] Den ENDA kombinationen som (mätt, se docblocket vid
+     `rad-pillar` nedan) inte får plats på en rad vid 390 px — det finns
+     bara tre möjliga pillar totalt, så "alla tre" är den enda 3-pill-
+     kombinationen som existerar. */
+  const alla3Pillar = rad.forfallen && rad.obekraftad && rad.spegelSlapar;
   return (
     <div className="flex min-w-0 items-center gap-3 sm:flex-1">
       <InitialAvatar namn={rad.namn} />
@@ -2537,7 +2542,7 @@ function RadInnehall({ rad, visaEvent }: { rad: InkorgsRad; visaEvent?: boolean 
               panelen och anmälans detaljvy. */}
           {saknas === null ? 'Pris saknas i basen' : `${visaKronor(saknas)} kr kvar att betala`}
         </span>
-        <div className="flex min-h-6 flex-wrap items-center gap-2" data-testid="rad-pillar">
+        <div className="flex min-h-6 flex-nowrap items-center gap-2" data-testid="rad-pillar">
           {/* ═══ EN PILL-ANATOMI, TVÅ BETYDELSER (Marcus dom 2026-09-01) ═══
               Marcus såg "Förfallen" och "Obekräftad" sida vid sida HÄR och
               kallade dem inkonsekventa. De var det på två sätt samtidigt:
@@ -2563,22 +2568,44 @@ function RadInnehall({ rad, visaEvent }: { rad: InkorgsRad; visaEvent?: boolean 
               `StatusBadge storlek="sm"`, MÄTT där till exakt 24 px), inte en
               ny uppfinning.
 
-              DESIGNFRÅGAN (AC #2), MÄTT VID 390 PX, INTE GISSAD: en rad med
-              TVÅ pillar radbryter INTE (144 px kort, identiskt med
-              en-pill-kortet — `betalningar-inkorg-pillrad-hojd.staging.
-              test.ts`). TRE SAMTIDIGA pillar (Förfallen + Obekräftad +
-              Basen släpar — en obekräftad anmälan vars deadline OCKSÅ
-              passerat OCH vars Airtable-spegel OCKSÅ släpar) radbryter TILL
-              TVÅ RADER och gör DET kortet 32 px högre än syskonen (176 mot
-              144 px, = en extra pillrad + `gap-2`). NAMNGIVET UNDANTAG,
-              INTE LAGAT: en tredje samtidig varningssignal är en äkta,
-              sällsynt datakombination som behöver mer plats för att säga
-              tre sanna saker — att tvinga fram en rad hade krävt att krympa
-              `StatusBadge`s `sm`-skalsteg eller pillarnas etablerade
-              ordalydelse (Marcus dom 2026-09-01, se ovan), vilket hade
-              rört VARJE annan konsument av samma skalsteg
-              (`AnmalningarSida.tsx`, `Betalningar.tsx` m.fl.) för en enda
-              radrad yta — över golvet, inte under det. */}
+              [TASK-456 RUNDA 2, Marcus 2026-09-18 via granskningsfynd]
+              RADEN BRYTS ALDRIG TILL TVÅ RADER — `flex-nowrap`, inte
+              `flex-wrap`. Runda 1s "namngivna undantag" (tre samtidiga
+              pillar radbryter, kortet blir 32 px högre) förkastades:
+              granskaren bedömde kombinationen INTE sällsynt
+              (`forfallen`/`obekraftad` sannolikt positivt korrelerade, och
+              `spegelSlapar` är per ADR-128 beslut 5 transient men
+              ÅTERKOMMANDE, se `Betalningar.schema.ts` ~rad 240–256) —
+              Marcus beslut: rätta formen, acceptera inte avvikelsen.
+
+              MÄTT VID 390 PX (den enda 3-pill-kombinationen som finns,
+              eftersom det bara existerar tre pillar totalt — `alla3Pillar`
+              ovan): pill-radens EGEN bredd är 266 px. Full text ("Förfallen"
+              89,4 px + "Obekräftad" 84,7 px + "Basen släpar" 111,0 px +
+              2×`gap-2` 16 px = 301,0 px) sprängde den med 35 px — den enda
+              trånga kombinationen (alla ANDRA kombinationer, 0–2 pillar,
+              fick redan plats utan ändring, mätt i samma pass).
+
+              LÖSNINGEN ÄR EN KORTARE, FULLSTÄNDIG ETIKETT — INTE EN
+              AVKLIPPT TEXT ELLER ETT DOLT IKON-LÄGE: `BasenSlaparPill`s nya
+              `kompakt`-prop (default `false`, se dess docblock) visar
+              "Släpar" (ett eget, läsbart ord) i stället för "Basen släpar"
+              BARA i denna enda kombination. Skärmläsare hör ändå den
+              ORDAGRANNA originaltexten via `aria-label`; inget döljs bakom
+              hover eller fokus, så INGET tooltip-bibliotek krävs (repot
+              saknar en tillgänglig Tooltip-primitiv, och att bygga en för
+              denna enda pill hade varit långt över golvet för ett
+              fynd-kort). `Förfallen`/`Obekräftad` är ORÖRDA — deras
+              etablerade ordalydelse (Marcus dom 2026-09-01) och
+              `StatusBadge`s `sm`-skalsteg rör ingen annan konsument
+              (`AnmalningarSida.tsx`, `Betalningar.tsx` m.fl.) eftersom bara
+              `BasenSlaparPill`s EGEN, explicita prop ändrades — allt annat
+              i `StatusBadge` är overörd. Kompakt bredd mätt till 61,3 px
+              (mot 111,0 px full) — ny total 89,4+84,7+61,3+16=251,4 px,
+              under 266 px-golvet med marginal (`betalningar-inkorg-
+              pillrad-hojd.staging.test.ts` bevisar `rad-pillar` är EXAKT
+              24 px, dvs. en rad, i samtliga åtta fall: 0–3 pillar × 390/
+              1280 px). */}
           {rad.forfallen && (
             /* KLOCKAN BEHÅLLS via `ikon`-proppen: det är TIDEN som gått
                fel, inte ett generellt larm. Tonen är kopparns och inte
@@ -2595,7 +2622,7 @@ function RadInnehall({ rad, visaEvent }: { rad: InkorgsRad; visaEvent?: boolean 
               Obekräftad
             </StatusBadge>
           )}
-          {rad.spegelSlapar && <BasenSlaparPill />}
+          {rad.spegelSlapar && <BasenSlaparPill kompakt={alla3Pillar} />}
         </div>
       </div>
     </div>

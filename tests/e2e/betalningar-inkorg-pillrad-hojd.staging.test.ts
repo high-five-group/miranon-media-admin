@@ -6,10 +6,18 @@ import { mockValjarLista, valjarRad } from './helpers/valjar-lista';
  *
  * Källa: `docs/research/betalningsytan-tre-prodobservationer-2026-09-18.md`
  * § O1. `RadInnehall` (`BetalningsInkorg.tsx:2523-2576`) monterar pill-raden
- * (rad 2540) OVILLKORLIGT, men den bär ingen `min-h` — är `rad.forfallen`,
- * `rad.obekraftad` OCH `rad.spegelSlapar` alla falska blir raden 0 px och
- * kortet lägre än syskonen. Marcus i prod 2026-09-18: "alla kort ska alltid
- * vara exakt lika höga".
+ * (rad 2540) OVILLKORLIGT, men den bar ursprungligen ingen `min-h` — är
+ * `rad.forfallen`, `rad.obekraftad` OCH `rad.spegelSlapar` alla falska blev
+ * raden 0 px och kortet lägre än syskonen. Marcus i prod 2026-09-18: "alla
+ * kort ska alltid vara exakt lika höga".
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * RUNDA 2 (Marcus beslut via granskningsfynd, samma dag): "alla kort ska
+ * vara exakt lika höga i VARJE pill-kombination" — inte bara "aldrig
+ * lägre". Runda 1:s "namngivna undantag" (tre samtidiga pillar radbryter,
+ * kortet blir 32 px högre) förkastades: granskaren bedömde kombinationen
+ * INTE sällsynt. Denna svit prövar därför ALLA ÅTTA FALL (0/1/2/3 pillar ×
+ * mobil 390/desktop 1280) mot EN gemensam baslinje.
  *
  * ═══════════════════════════════════════════════════════════════════════════
  * VARFÖR STAGING-E2E OCH INTE ACCEPTANCE-KLASSEN
@@ -24,14 +32,15 @@ import { mockValjarLista, valjarRad } from './helpers/valjar-lista';
  * ═══════════════════════════════════════════════════════════════════════════
  * VAD SVITEN BEVISAR
  * ═══════════════════════════════════════════════════════════════════════════
- * A. RÖTT-FÖRST (AC #1): ett kort utan någon pill mäter EXAKT samma höjd
- *    (`getBoundingClientRect().height` på `[data-testid="betalningar-kort"]`)
- *    som ett syskonkort med en pill, vid mobil (390 px) och desktop
- *    (1280 px). Innan fixen skiljer höjden med precis pillens egen höjd
- *    (24 px, `StatusBadge storlek="sm"` — se `RadInnehall`s pill-rad).
- * B. AC #2 (designfrågan): vid 390 px mäts pill-radens EGEN höjd
- *    (`[data-testid="rad-pillar"]`) för TVÅ och TRE samtidiga pillar —
- *    boundingBox avgör om de radbryter, i stället för att gissas fram.
+ * A. RÖTT-FÖRST (AC #1, runda 1): ett kort utan någon pill mäter EXAKT
+ *    samma höjd (`getBoundingClientRect().height` på
+ *    `[data-testid="betalningar-kort"]`) som ett syskonkort med en pill,
+ *    vid mobil (390 px) och desktop (1280 px).
+ * B. AC #2 (runda 2 — HÅRDARE FORM): alla FYRA korten (0/1/2/3 pillar) har
+ *    EXAKT samma höjd vid BÅDA viewports — åtta jämförelser totalt. Pill-
+ *    radens EGEN `boundingBox`-höjd (`[data-testid="rad-pillar"]`) är
+ *    dessutom mätt till EXAKT 24 px (en rad) i alla åtta fall — beviset att
+ *    raden aldrig radbryter, inte bara att kortets yttre höjd råkar stämma.
  */
 
 const HAMTA_OPPNA_BETALNINGAR = '**/functions/v1/hamta-oppna-betalningar*';
@@ -83,7 +92,8 @@ const TVAPILL = oppenBetalning({
   anmalanStatus: 'Obekräftad',
   spegelIFas: false,
 });
-/** TRE pillar: Förfallen (deadline passerad) + Obekräftad + Basen släpar. */
+/** TRE pillar: Förfallen (deadline passerad) + Obekräftad + Basen släpar —
+    den ENDA 3-pill-kombinationen som finns (bara tre pillar existerar). */
 const TREPILL = oppenBetalning({
   anmalanRecordId: 'recTASK456PILL3',
   personNamn: 'Task456 Trepill Persson',
@@ -91,6 +101,14 @@ const TREPILL = oppenBetalning({
   spegelIFas: false,
   deadlineSlutbetalning: '2026-01-01',
 });
+
+/** Namn → antal pillar den raden bär, för läsbara assertion-meddelanden. */
+const RADER: { namn: string; antalPillar: 0 | 1 | 2 | 3 }[] = [
+  { namn: 'Task456 Pillfri Persson', antalPillar: 0 },
+  { namn: 'Task456 Enpill Persson', antalPillar: 1 },
+  { namn: 'Task456 Tvapill Persson', antalPillar: 2 },
+  { namn: 'Task456 Trepill Persson', antalPillar: 3 },
+];
 
 async function mocka(page: Page): Promise<void> {
   await mockValjarLista(page, [
@@ -113,90 +131,98 @@ const VIEWPORTS: { namn: string; width: number; height: number }[] = [
   { namn: 'desktop (1280×900)', width: 1280, height: 900 },
 ];
 
-test.describe('TASK-456 — betalningsinkorgens kort-höjd (pill-raden reserverar plats)', () => {
+test.describe('TASK-456 — betalningsinkorgens kort-höjd (pill-raden reserverar plats, bryts aldrig)', () => {
   for (const { namn, width, height } of VIEWPORTS) {
-    test(`kort UTAN pill mäter EXAKT samma höjd som kort MED en pill @ ${namn}`, async ({
-      page,
-    }) => {
+    test(`alla FYRA korten (0/1/2/3 pillar) har EXAKT samma höjd @ ${namn}`, async ({ page }) => {
       await page.setViewportSize({ width, height });
       await mocka(page);
       await page.goto('/mer/betalningar');
 
-      const pillfriKort = page
-        .getByTestId('betalningar-kort')
-        .filter({ hasText: 'Task456 Pillfri Persson' });
-      const enpillKort = page
-        .getByTestId('betalningar-kort')
-        .filter({ hasText: 'Task456 Enpill Persson' });
-      await expect(pillfriKort).toBeVisible();
-      await expect(enpillKort).toBeVisible();
+      const kort = new Map<number, ReturnType<typeof page.getByTestId>>();
+      for (const { namn: personNamn, antalPillar } of RADER) {
+        const locator = page.getByTestId('betalningar-kort').filter({ hasText: personNamn });
+        await expect(locator).toBeVisible();
+        kort.set(antalPillar, locator);
+      }
 
-      const pillfriHojd = await pillfriKort.evaluate((el) => el.getBoundingClientRect().height);
-      const enpillHojd = await enpillKort.evaluate((el) => el.getBoundingClientRect().height);
+      const hojder = new Map<number, number>();
+      for (const [antalPillar, locator] of kort) {
+        hojder.set(
+          antalPillar,
+          await locator.evaluate((el) => el.getBoundingClientRect().height),
+        );
+      }
 
-      // Toleransen är 0 — samma husregel som `betalningar-inkorg-
-      // utskicksflode.staging.test.ts`s statusyta-golv.
-      expect(pillfriHojd, `${namn}: pillfri=${pillfriHojd}px, enpill=${enpillHojd}px`).toBe(
-        enpillHojd,
-      );
+      const baslinje = hojder.get(0) as number;
+      const rapport = [0, 1, 2, 3].map((n) => `${n} pill(ar)=${hojder.get(n)}px`).join(', ');
+
+      // ÅTTA-FALLS-KRAVET (runda 2): varje korts höjd === 0-pill-baslinjen,
+      // vid DENNA viewport. Loopen över båda viewports (390 + 1280) ger de
+      // åtta jämförelserna totalt.
+      for (const antalPillar of [1, 2, 3]) {
+        expect(hojder.get(antalPillar), `${namn}: ${rapport}`).toBe(baslinje);
+      }
+
+      // Pill-radens EGEN boundingBox — beviset att den ALDRIG radbryter,
+      // inte bara att kortets yttre höjd råkar stämma (t.ex. via ett
+      // annat kompenserande hopp någon annanstans i kortet).
+      for (const [antalPillar, locator] of kort) {
+        const pillradHojd = await locator
+          .getByTestId('rad-pillar')
+          .evaluate((el) => el.getBoundingClientRect().height);
+        expect(pillradHojd, `${namn}: ${antalPillar} pill(ar), rad-pillar-höjd`).toBe(24);
+      }
     });
   }
 
   /**
-   * AC #2 — DESIGNFRÅGAN, MÄTT MED boundingBox VID 390 PX, INTE GISSAD.
-   * Två pillar (Obekräftad + Basen släpar) radbryter INTE på 390 px — den
-   * pillraden håller sig på EN rad, och kortet ska alltså hålla EXAKT samma
-   * höjd som en-pill-baslinjen. Tre samtidiga pillar (+ Förfallen)
-   * RADBRYTER till två rader — ett NAMNGIVET, MEDVETET UNDANTAG (se
-   * kod-kommentaren vid `data-testid="rad-pillar"` i `BetalningsInkorg.tsx`
-   * för skälet): kortet FÅR bli högre, exakt en extra pillrad plus `gap-2`
-   * (32 px), aldrig lägre och aldrig mer än så — en framtida regression som
-   * gör det annorlunda högt ska fällas, inte tystas.
+   * Kompakt-formen (AC #2-designfrågan): `BasenSlaparPill`s "Släpar" i
+   * trepills-fallet är en KORTARE, FULLSTÄNDIG etikett — inget döljs bakom
+   * hover/fokus, så full text är alltid direkt synlig. Skärmläsare hör ändå
+   * den ORDAGRANNA originaltexten ("Basen släpar") via `aria-label`. Denna
+   * assertion bevisar att INGEN information tappas för AT-användare, bara
+   * att den SYNLIGA formen är kortare.
    */
-  test('AC #2 @ mobil 390 px: två pillar radbryter INTE (samma höjd som baslinjen); tre pillar radbryter MEDVETET (+32 px, namngivet undantag)', async ({
+  test('trepills-kortets kompakta "Släpar"-pill bär den fullständiga originaltexten som tillgängligt namn (ingen infoförlust för skärmläsare)', async ({
     page,
   }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await mocka(page);
     await page.goto('/mer/betalningar');
 
-    const enpillKort = page
-      .getByTestId('betalningar-kort')
-      .filter({ hasText: 'Task456 Enpill Persson' });
-    const tvapillKort = page
-      .getByTestId('betalningar-kort')
-      .filter({ hasText: 'Task456 Tvapill Persson' });
     const trepillKort = page
       .getByTestId('betalningar-kort')
       .filter({ hasText: 'Task456 Trepill Persson' });
-    await expect(enpillKort).toBeVisible();
-    await expect(tvapillKort).toBeVisible();
     await expect(trepillKort).toBeVisible();
 
-    const baslinjeHojd = await enpillKort.evaluate((el) => el.getBoundingClientRect().height);
-    const tvapillHojd = await tvapillKort.evaluate((el) => el.getBoundingClientRect().height);
-    const trepillHojd = await trepillKort.evaluate((el) => el.getBoundingClientRect().height);
+    const kompaktPill = trepillKort.getByTestId('rad-pillar').locator('span', {
+      hasText: 'Släpar',
+    });
+    await expect(kompaktPill).toBeVisible();
+    await expect(kompaktPill).toHaveAttribute('aria-label', 'Basen släpar');
+    // WCAG 2.5.3 (Label in Name): den synliga texten ska vara en delsträng
+    // av det tillgängliga namnet — annars kan röststyrning inte matcha den.
+    const synligText = await kompaktPill.evaluate((el) => el.textContent?.trim());
+    expect('basen släpar'.includes((synligText ?? '').toLowerCase())).toBe(true);
+  });
 
-    // TVÅ pillar: pillraden håller EN rad — kortet är IDENTISKT med
-    // baslinjen (mätt: 144 px == 144 px).
-    expect(tvapillHojd, `baslinje=${baslinjeHojd}px, tvapill=${tvapillHojd}px`).toBe(baslinjeHojd);
+  /**
+   * Negativ kontroll: tvåpills-kortet (Obekräftad + Basen släpar, INTE
+   * förfallen) ska INTE gå in i kompakt-läget — bara den enda 3-pill-
+   * kombinationen som finns gör det. Full text "Basen släpar" ska synas
+   * som förut, oförändrat av denna skiva.
+   */
+  test('tvåpills-kortets Basen släpar-pill är OFÖRÄNDRAD (full text, inget kompakt-läge)', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+    await mocka(page);
+    await page.goto('/mer/betalningar');
 
-    // Pillradens EGEN boundingBox bevisar VARFÖR: fortfarande en rad
-    // (`min-h-6` = 24 px, ingen extra rad tillkommen).
-    const tvapillPillradHojd = await tvapillKort
-      .getByTestId('rad-pillar')
-      .evaluate((el) => el.getBoundingClientRect().height);
-    expect(tvapillPillradHojd).toBe(24);
-
-    // TRE pillar: NAMNGIVET UNDANTAG — kortet är EXAKT 32 px högre (en
-    // extra pillrad, 24 px, plus `gap-2`, 8 px), aldrig lägre än baslinjen
-    // och aldrig ett annat tal.
-    expect(trepillHojd, `baslinje=${baslinjeHojd}px, trepill=${trepillHojd}px`).toBe(
-      baslinjeHojd + 32,
-    );
-    const trepillPillradHojd = await trepillKort
-      .getByTestId('rad-pillar')
-      .evaluate((el) => el.getBoundingClientRect().height);
-    expect(trepillPillradHojd).toBe(56);
+    const tvapillKort = page
+      .getByTestId('betalningar-kort')
+      .filter({ hasText: 'Task456 Tvapill Persson' });
+    await expect(tvapillKort).toBeVisible();
+    await expect(tvapillKort.getByText('Basen släpar', { exact: true })).toBeVisible();
   });
 });
