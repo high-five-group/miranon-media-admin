@@ -4,6 +4,7 @@ title: 'Skiva: N5 — rätta dedupens falsifierade motivering, bokför K1-beslut
 status: To Do
 assignee: []
 created_date: '2026-09-18 09:53'
+updated_date: '2026-09-18 10:15'
 labels:
   - ready-for-agent
 dependencies: []
@@ -24,14 +25,14 @@ Täcker användarberättelser: 7
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Sökning på strict up-to-date-krav ger noll kvarvarande träffar som påstår att kravet gäller
-- [ ] #2 ADR-077 bär Updates-block med (a) rättelsen och när premissen föll, (b) K1-beslutet med Marcus ord och datum
-- [ ] #3 markdownlint och vale exit 0 på den rättade ADR-filen; workflow-lintarna gröna
+- [x] #1 Sökning på strict up-to-date-krav ger noll kvarvarande träffar som påstår att kravet gäller
+- [x] #2 ADR-077 bär Updates-block med (a) rättelsen och när premissen föll, (b) K1-beslutet med Marcus ord och datum
+- [x] #3 markdownlint och vale exit 0 på den rättade ADR-filen; workflow-lintarna gröna
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
