@@ -75,6 +75,35 @@ import { expect, type Page, test } from './acceptance-bas';
  * ENDAST det lagrade `expires_at`-fältet (inte JWT:ens egen `exp`-claim), så
  * en förfluten `expires_at` räcker för att tvinga fram
  * `_callRefreshToken()`-vägen.
+ *
+ * ═══ RÖTT I CI (run 35339679084, jobb 105582559857) — VARFÖR "HÅLL BATCH 2
+ * OCKSÅ", INTE BARA BATCH 1 ═══
+ *
+ * Första versionen av Scenario A höll ENDAST batch 1 (events+registrations)
+ * och asserterade sedan ett EXAKT mellanvärde (`aria-valuenow === '2'`)
+ * efter att ha släppt den. Lokalt (varmt, olastat) höll assertionen hinna
+ * fånga '2' innan resten av batcherna (waitlist/intresserade/maillog/
+ * segment/activityLog — samtliga fasta, snabba EF-svar UTAN håll) hann
+ * settla. På CI:s DELADE, lastade runner satte samma svit polls så glest att
+ * `aria-valuenow` observerades hoppa RAKT förbi '2' — loggen visade "3", "5",
+ * "6" och till slut "element(s) not found" (gaten hade redan släppt och
+ * Förberedelseskärmen avmonterat) INNAN pollningen någonsin såg '2'. Detta
+ * är EXAKT samma dokumenterade mönster som `tests/e2e/persist-cache.
+ * staging.test.ts` § "ROTORSAKAD BASELINE-ÄNDRING" redan bevisat en gång
+ * (task-244 varv 4): React kan batcha flera på-varandra-följande
+ * `klara`-inkrement — inklusive gate-släppet — till EN paint, så ett
+ * MELLANLIGGANDE värde är per konstruktion INTE garanterat observerbart.
+ *
+ * Fixen här är INTE att vidga toleransen (en regex `/[1-7]/` hade bara flyttat
+ * racet till "hann NÅGOT värde observeras innan gaten hann släppa HELT",
+ * fortfarande en kapplöpning mot en obegränsad, snabb resten-av-batcherna-
+ * sekvens). Fixen är att HÅLLA batch 2 (`get-waitlist`+`get-leads`) också:
+ * `korAlla()`s for-loop `await`ar `Promise.allSettled(batch)` INNAN nästa
+ * batch ens STARTAR (`startvarmningen.ts:409–421`), så att hålla ETT enda
+ * item i batch 2 blockerar batch 3 och 4 för evigt — `klara` stabiliserar sig
+ * DETERMINISTISKT vid exakt 2 (batch 1:s två items, inga fler) tills testet
+ * själv väljer att släppa vidare. Samma teknik appliceras i Scenario C (håll
+ * batch 1 där också) av samma skäl — se den testets egen kommentar.
  */
 
 // ─── Håll-bar mock-state (hallbarMock-mönstret) ────────────────────────────
@@ -106,6 +135,27 @@ function hallbarBatch1(network: NetworkFixture): HallbarState {
     http.get(EF('get-registrations'), async () => {
       await st.vantaOmHallen();
       return json(REGISTRATIONS_RESPONSE);
+    }),
+  );
+  return st;
+}
+
+/** Batch 2 = `waitlist` + `intresserade` (EF-namn `get-waitlist`/`get-leads`,
+ *  `startvarmningen.ts:266–285`). Hålls tillbaka för att GARANTERA att
+ *  `klara` stabiliserar vid exakt 2 efter att batch 1 släpps — se filhuvudets
+ *  § "Rött i CI" för varför detta krävs (`Promise.allSettled` per batch
+ *  blockerar hela `korAlla()`s for-loop tills BÅDA batch 2-items settlat,
+ *  oavsett hur snabbt batch 3/4:s FASTA svar annars hade varit). */
+function hallbarBatch2(network: NetworkFixture): HallbarState {
+  const st = nyHallbarState();
+  network.use(
+    http.get(EF('get-waitlist'), async () => {
+      await st.vantaOmHallen();
+      return json({ waitlist: [] });
+    }),
+    http.get(EF('get-leads'), async () => {
+      await st.vantaOmHallen();
+      return json({ intresserade: [] });
     }),
   );
   return st;
@@ -211,6 +261,7 @@ function hallbarRefreshGrant(network: NetworkFixture): HallbarState {
 const BLOCK = '[data-testid="forberedelseskarm-block"]';
 const BAR = '[role="progressbar"]';
 const OBESTAMD_SEGMENT = '[data-testid="forberedelseskarm-bar-obestamd"]';
+const DETERMINATE_SEGMENT = '[data-testid="forberedelseskarm-bar-determinate"]';
 
 function sattVarmningTimeout(page: Page, ms: number) {
   // Se filhuvudets § "Timeout-overriden". Try/catch: samma skyddsräcke som
@@ -232,6 +283,9 @@ test.describe('Forberedelseskarm — obestämd rörelse vid klara=0 (TASK-451.1)
   }) => {
     await sattVarmningTimeout(page, 9000);
     const batch1 = hallbarBatch1(network);
+    // Håller `klara` STABILT vid 2 efter batch 1-släppet — se filhuvudets
+    // § "Rött i CI" för varför detta inte är valfritt.
+    const batch2 = hallbarBatch2(network);
 
     await page.goto('/hem');
 
@@ -257,10 +311,97 @@ test.describe('Forberedelseskarm — obestämd rörelse vid klara=0 (TASK-451.1)
     expect(box?.width ?? 0).toBeGreaterThan(0);
 
     // Släpp batch 1 — bar ska övergå till DAGENS determinate "X av N".
+    // `klara` stannar DETERMINISTISKT vid 2 (batch 2 hålls, se ovan) — inget
+    // kapplöpningsfönster mot resten av warmup-sekvensen.
     batch1.slappAlla();
     await expect(bar).toHaveAttribute('aria-valuenow', '2');
     await expect(bar).toHaveAttribute('aria-valuetext', '2 av 7 hämtningar klara');
     await expect(page.locator(OBESTAMD_SEGMENT)).toHaveCount(0);
+
+    // Hygien — låt resten av warmup-sekvensen landa så testet inte lämnar
+    // en hängande hallad request bakom sig. Ingen ytterligare assertion:
+    // den EGENTLIGA slutgiltiga-transitionen (inga fler klara=0-artefakter,
+    // gaten släpper) är redan `hem.acceptance.test.ts`s vardagliga bevis.
+    batch2.slappAlla();
+  });
+
+  test('Övergångsögonblicket: determinate-fyllnaden krymper ALDRIG från det obestämda segmentets 40 %, väximerar från nära noll (runda 2-granskning, fynd 2)', async ({
+    page,
+    network,
+  }) => {
+    await sattVarmningTimeout(page, 9000);
+    const batch1 = hallbarBatch1(network);
+    const batch2 = hallbarBatch2(network);
+
+    await page.goto('/hem');
+    await expect(page.locator(OBESTAMD_SEGMENT)).toBeVisible();
+
+    // Sampla DETERMINATE-fyllnadens FAKTISKA renderade bredd (px) varje
+    // animationsbildruta, från OMEDELBART innan batch 1 släpps till
+    // 350 ms efteråt (klart mer än transition-durationen, Tailwind v4:s
+    // default 150 ms) — den RÖDA buggen (fynd 2, PR #2536 runda 2) var att
+    // React återanvände DOM-noden mellan grenarna UTAN `key`, så den nya
+    // determinate-bredden transitionerade FRÅN det obestämda segmentets
+    // 40 % (KRYMPNING om målbredden < 40 %, exakt fallet här: 2/7 ≈ 28,6 %)
+    // i stället för att monteras färsk. Mät i riktig browser — gissa inte.
+    await page.evaluate(() => {
+      (window as unknown as { __t4511Sampel: number[] }).__t4511Sampel = [];
+      const start = performance.now();
+      const track = document.querySelector('[role="progressbar"] > div');
+      const sampla = () => {
+        const fyllnad =
+          track?.querySelector('[data-testid="forberedelseskarm-bar-determinate"]') ?? null;
+        if (fyllnad) {
+          (window as unknown as { __t4511Sampel: number[] }).__t4511Sampel.push(
+            fyllnad.getBoundingClientRect().width,
+          );
+        }
+        if (performance.now() - start < 350) requestAnimationFrame(sampla);
+      };
+      requestAnimationFrame(sampla);
+    });
+
+    batch1.slappAlla();
+    await expect
+      .poll(() => page.locator(DETERMINATE_SEGMENT).count(), { timeout: 5000 })
+      .toBeGreaterThan(0);
+    // Vänta ut sampling-fönstret (350 ms ovan) + marginal.
+    await page.waitForTimeout(500);
+
+    const sampel = await page.evaluate(
+      () => (window as unknown as { __t4511Sampel: number[] }).__t4511Sampel,
+    );
+    expect(sampel.length, 'inga bredd-sampel samlades — övergången missades helt').toBeGreaterThan(
+      1,
+    );
+
+    const slutbredd = sampel[sampel.length - 1];
+    // RÖD FÖRE FIXEN — MÄTT, INTE ANTAGET: den ursprungliga formen (två
+    // sysking-`<div>` av SAMMA typ, ingen `key`, ingen dubbel-rAF — den
+    // faktiska koden FÖRE denna skivas runda 2-fix, temporärt återställd och
+    // körd mot exakt detta test) föll deterministiskt:
+    // `sampel[1]=121.609375 < sampel[0]=128 — fyllnaden kröp ihop`. 128 px
+    // är det obestämda segmentets ärvda 40 %-bredd (track ≈ 320 px), och
+    // sekvensen FÖLL därifrån mot den sanna 2/7 ≈ 28,6 %-bredden (≈91,4 px)
+    // — exakt krympningsmönstret runda 2-granskningens fynd 2 förutsåg.
+    // GRÖNT EFTER FIXEN: monotont ICKE-avtagande (± 0,5 px sub-pixel-brus)
+    // hela vägen mot slutbredden.
+    for (let i = 1; i < sampel.length; i += 1) {
+      expect(
+        sampel[i],
+        `sampel[${i}]=${sampel[i]} < sampel[${i - 1}]=${sampel[i - 1]} — fyllnaden kröp ihop`,
+      ).toBeGreaterThanOrEqual(sampel[i - 1] - 0.5);
+    }
+    // Väximerar FRÅN nära noll, inte ett direkt hopp till slutvärdet — det
+    // uttalade "animera FRÅN 0 %"-beslutet (dubbel-rAF, se
+    // Forberedelseskarm.tsx § ÖVERGÅNGENS EGEN MONTERING; `@starting-style`
+    // mättes och förkastades — se samma stycke).
+    expect(
+      sampel[0],
+      `första sampel ${sampel[0]}px är inte meningsfullt mindre än slutbredden ${slutbredd}px`,
+    ).toBeLessThan(slutbredd * 0.6);
+
+    batch2.slappAlla();
   });
 
   test('Scenario C: seg token-refresh — auth-fasens 0/1-skärm är LIKA obestämd, ingen egen skärm-artefakt', async ({
@@ -270,6 +411,11 @@ test.describe('Forberedelseskarm — obestämd rörelse vid klara=0 (TASK-451.1)
     await sattVarmningTimeout(page, 9000);
     await seedaUtganganSession(page);
     const refresh = hallbarRefreshGrant(network);
+    // Håller warmup-fasen STABIL i indeterminate efter att refresh släpps —
+    // se filhuvudets § "Rött i CI": utan detta racear warmupen (fasta,
+    // snabba EF-svar) förbi varje observerbart mellanläge precis som
+    // Scenario A gjorde före fixen.
+    const batch1 = hallbarBatch1(network);
 
     await page.goto('/hem');
 
@@ -287,10 +433,16 @@ test.describe('Forberedelseskarm — obestämd rörelse vid klara=0 (TASK-451.1)
     const box = await segment.boundingBox();
     expect(box?.width ?? 0).toBeGreaterThan(0);
 
-    // Släpp refresh-anropet — auth löser, warmup startar mot normalläget
-    // (fixturvärldens fasta EF-svar, snabba) och bar övergår till
-    // determinate utan att skärmen någonsin visat en osynlig 0-bredd.
+    // Släpp refresh-anropet — auth löser, warmup startar. `totalt` byter
+    // DETERMINISTISKT 1 → 7 (den äkta handlens omedelbara snapshot,
+    // `startvarmningen.ts`s `forloppsprenumeration`-kontrakt) medan `klara`
+    // STANNAR vid 0 (batch 1 hålls) — skärmen förblir obestämd genom BÅDA
+    // faserna, utan att någonsin räkna ut en falsk determinate 0 %.
     refresh.slappAlla();
-    await expect(bar).toHaveAttribute('aria-valuenow', /^[1-7]$/);
+    await expect(bar).toHaveAttribute('aria-valuemax', '7');
+    await expect(bar).not.toHaveAttribute('aria-valuenow');
+    await expect(page.locator(OBESTAMD_SEGMENT)).toBeVisible();
+
+    batch1.slappAlla();
   });
 });
