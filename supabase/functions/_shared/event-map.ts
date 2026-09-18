@@ -41,11 +41,12 @@ type AirtableRecord = { id: string; fields: Record<string, unknown> };
 
 // Svenska månadsnamn (kapitaliserade) för `Månad/år`-härledningen. Basens singleSelect
 // bär options på formen "Mars 2026" → vi bygger samma sträng ur Startdatum. NB: options-
-// listan i basen är ändlig (range Nov 2025 – Dec 2026 i nuläget); ett datum utanför den
-// gör att `typecast:false`-upserten FELAR (→ 500) i stället för att tyst skapa en option.
-// Det är medvetet: basens manuella Månad/år-fält är en designbrist (§Kända fällor 36,
-// LIVE-bekräftad som fälla 45) och en out-of-range-träff ska SYNAS, inte maskeras.
-// Maximerings-kandidat T16.
+// listan i basen är ÄNDLIG (aktuell horisont: docs/reference/data-model.md §Kända fällor
+// 45 — slå upp DÄR, skriv aldrig av intervallet hit, det har redan drivit en gång); ett
+// datum utanför den gör att `typecast:false`-upserten FELAR (→ 500) i stället för att
+// tyst skapa en option. Det är medvetet: basens manuella Månad/år-fält är en designbrist
+// (§Kända fällor 36, LIVE-bekräftad som fälla 45) och en out-of-range-träff ska SYNAS,
+// inte maskeras. Maximerings-kandidat T16.
 const MANAD_AR_MONTHS = [
   'Januari',
   'Februari',
