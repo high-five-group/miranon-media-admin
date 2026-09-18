@@ -243,6 +243,42 @@ efter 60 minuter. **Vid fleet-drift landar staging-körningar tätare än så**
 flera med 2–5 minuters mellanrum. Tillskottet överstiger avräkningen, nivån
 stiger, och latensen med den.
 
+### 4.6 Mätningen är tillståndet VID röd 2, inte ett nattligt drift
+
+Detta var först bokfört som en svaghet ("mätt ~9 timmar efteråt"). Det
+visade sig vara fel — jag prövade det och slutsatsen håller starkare än så.
+
+**Ingen CI-körning har rört staging-basen efter `13:31:35Z`.** Jag räknade
+upp samtliga workflow-körningar efter röd 2 (`35350533479`, `35350938325`,
+`35352765943`, `35352791786`, `35353438164`, `35353935047`, `35355081287`,
+`35356630926`, `35357073178`, `35357569967`) och deras jobb: **varje**
+`Staging (API + E2E)`, `Staging sentinel purge` och
+`… (efter körning)` är `skipped` (D0/docs-only). Nattvakten
+(`35355035790`, schedule `14:14:52Z`) körde ett enda jobb, `Kom natten
+igång?`, utan staging-beröring.
+
+Nivån jag mätte — 188 poster på seed-eventet, 228 sentinels i tabellen — är
+därmed **tillståndet som rådde när röd 2 avslutades**, inte något som vuxit
+fram under natten.
+
+Det ger en kvantitativ konsistenskontroll. Från setup-purgens tal
+(`12:43:26Z`: 114 träffar, 28 raderade → 86 kvar) och de tre API-steg som
+följde (`12:43:28`, `13:00:07`, `13:18:22`) skapades ~142 nya sentinels,
+alltså **~45 anmälnings-sentineler per api-staging-körning**. Vid röd 2:s
+START hade eventet därmed ~140–150 poster ≈ **25–27 s per
+`readRegistration`**:
+
+| Test | Tak | Antal tunga läsningar | Förväntat | Utfall |
+|---|---|---|---|---|
+| GATE-LIVENESS | 30 s | 2 (+ overhead) | ~55 s | **föll** ✓ |
+| cancel-registration runda-trip | 90 s | 4 | ~105 s | **föll** ✓ |
+
+Samma räkning bakåt för röd 1 förklarar varför `cancel-registration`
+klarade sig DÄR: för att 30 s-taket skulle spricka men 90 s-taket hålla
+krävs 13,5 s < t < 22,5 s per läsning, alltså ~70–120 poster på eventet vid
+`12:17`. Modellen förutsäger alltså **både** vilka tester som föll och
+vilket som inte gjorde det, i båda körningarna — utan någon fri parameter.
+
 ### 4.5 Den självförstärkande retryn
 
 Fällningen sker i `readRegistration`, som körs **efter**
@@ -285,11 +321,15 @@ mätbart i efterhand och behövs inte för förklaringen.
 
 ## 6. Vad jag INTE kunde belägga
 
-- **Postantalet vid de röda körningarnas tidpunkt.** Jag mätte 188 poster
-  ~9 timmar efteråt. Airtable har ingen tidsserie att läsa bakåt, och
-  purgen loggar tabellvida träffar (114 vid `12:43`), inte per event. Att
-  nivån var hög framgår indirekt av "85 för färska", men det exakta talet
-  vid `12:17` respektive `13:18` är inte mätt.
+- **Det exakta postantalet per event vid `12:17` respektive `13:18`.**
+  Airtable har ingen tidsserie att läsa bakåt, och purgen loggar tabellvida
+  träffar (114 vid `12:43`), inte per event. **Men osäkerheten är mindre än
+  den såg ut** (§ 4.6): ingen CI-körning har rört basen efter `13:31:35Z`,
+  så mätningen ÄR röd 2:s sluttillstånd, och nivån vid körningarnas start
+  går att räkna bakåt ur purgens tal. Uppskattningarna (~140–150 poster vid
+  röd 2, ~70–120 vid röd 1) är **härledda, inte mätta** — de förutsäger
+  dock korrekt vilka tester som föll och vilket som höll i båda
+  körningarna.
 - **Att en Airtable-429 faktiskt inträffade.** EF:ens backoff loggar i
   Supabase-loggen, inte i CI-loggen, och att nå den kräver
   `supabase link` — som jag medvetet lämnade orörd (sticky-länk-risken,
@@ -366,3 +406,6 @@ Samtliga tal i detta dokument är mätta 2026-09-18/19, inte avskrivna.
 - `.purge-staging-policy.json`; `grep -rn 'create-test+' tests/`;
   `grep -rln 'kastbara-poster' tests/`
 - Egna GET-mätningar mot staging-EF:en (fyra event, se § 4.2)
+- Jobb-uppräkning för samtliga körningar efter `13:31:35Z` (§ 4.6) —
+  staging- och purge-jobben är genomgående `skipped`; nattvakten
+  `35355035790` rörde inte staging
