@@ -533,7 +533,34 @@ jobs:
     # --json jobs`). 20 min ≈ 2× typisk körtid — branschpraxis-headroom, ingen
     # ny mätserie. Uppföljningskort (per-fil-mätning + delningsförslag):
     # se backlog-kortet skapat i samma PR.
+    #
+    # ═══ TASK-366 (2026-09-18) — UPPFÖLJNINGSKORTET BETALAT, TAKET ORÖRT ═══
+    #
+    # Kortet ovan är TASK-366, och dess AC #1 kräver >2 min marginal UTAN
+    # takhöjning. Delningen nedan levererar den: jobbet körde hela klassen
+    # sekventiellt i EN process medan `acceptance` sedan TASK-239 varv 3 kör
+    # tre shards, vilket gjorde självtestet CI:s kritiska väg (leverabel 9 i
+    # docs/research/ci-djupgranskning-2026-09-17/: 12,8–13,7 min av en total
+    # på 13,6–14,0 — 92–98 % av väntetiden, betald på två ytor i följd).
+    #
+    # TALET 20 LIGGER KVAR, OCH DET ÄR ETT VAL. Efter delningen mäter taket
+    # EN skärva i stället för hela klassen, så marginalen växer med
+    # delningsfaktorn utan att en siffra rörs — samma form som task-239 AC #2
+    # krävde två varv i rad. En SÄNKNING vore försvarbar av samma symmetri-skäl
+    # som satte 12 på `acceptance` (samma längd, samma tak), men underlaget är
+    # ännu EN körning: se PR-kroppen för den första skarpa per-shard-mätningen.
+    # Ett tak som sänks på en mätpunkt är ett skyddsnät kalibrerat mot brus.
     timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      # SAMMA VILLKORSFORM SOM `acceptance` OVAN, och det är ingen slump:
+      # beviset ska följa den skarpa svitens topologi, annars blir det jobbets
+      # nya kritiska väg igen. Tom urval (post-merge/nightly/merge_group — full
+      # klass) ⇒ 3 shards. Satt urval (PR-ytans delmängd, redan snabb) ⇒ 1
+      # shard, oförändrat beteende. Se `acceptance`-jobbets kommentar för hela
+      # härledningen av talet 3 och av varför `--shard` splittrar på FIL-gräns.
+      matrix:
+        shard: ${{ fromJson(inputs.acceptance_selection == '' && '[1,2,3]' || '[1]') }}
     permissions:
       contents: read
     steps:
@@ -564,33 +591,164 @@ jobs:
       - name: Install Playwright Chromium
         run: npx playwright install chromium
 
+      # SHARD-VARIABLERNA, samma form och samma skäl som `acceptance`-jobbet:
+      # `strategy.job-total` (inte ett hårdkodat tal) håller nämnaren i
+      # `--shard=I/N` i synk med matrisens FAKTISKA storlek, så att ändra
+      # matris-uttrycket är den enda ändring en omkonfigurering kräver.
+      #
+      # `--tackning` ÄR INTE VALFRI I CI (TASK-366). Utan den skriver skärvan
+      # ingen rapport, och jobbet `acceptance-sjalvtest-tackning` nedan fäller
+      # på en saknad skärva. Det är avsiktligt fail-closed: en delning utan
+      # täckningskontroll är en delning som tyst kan tappa en tredjedel av
+      # beviset. Rapporten går till `test-results/` (gitignorad) så att en
+      # LOKAL paritetskörning — där `matrix.shard`/`strategy.job-total`
+      # substitueras till `1`/`1` — inte lämnar en otrackad fil i arbetsträdet.
       - name: Acceptance-klassens tvåsidiga bevis (hermetik-självtest)
         env:
           ACCEPTANCE_URVAL: ${{ inputs.acceptance_selection }}
+          ACCEPTANCE_SHARD_INDEX: ${{ matrix.shard }}
+          ACCEPTANCE_SHARD_TOTAL: ${{ strategy.job-total }}
         run: |
           set -euo pipefail
+          tackning="test-results/hermetik-tackning-${ACCEPTANCE_SHARD_INDEX}.json"
           if [ -n "${ACCEPTANCE_URVAL}" ]; then
             read -r -a urval <<< "${ACCEPTANCE_URVAL}"
-            npm run test:acceptance:sjalvtest -- "${urval[@]}"
+            npm run test:acceptance:sjalvtest -- \
+              "--shard=${ACCEPTANCE_SHARD_INDEX}/${ACCEPTANCE_SHARD_TOTAL}" \
+              "--tackning=${tackning}" "${urval[@]}"
           else
-            npm run test:acceptance:sjalvtest
+            npm run test:acceptance:sjalvtest -- \
+              "--shard=${ACCEPTANCE_SHARD_INDEX}/${ACCEPTANCE_SHARD_TOTAL}" \
+              "--tackning=${tackning}"
           fi
+
+      # `if: always()` OCH INTE `success()` (TASK-366): rapporten skrivs FÖRE
+      # skriptets egen dom (se hermetik-sjalvtest.mjs), så en skärva som faller
+      # på sitt eget bevis har ändå ett tal att lämna. Summasteget kan då säga
+      # VILKEN skärva som inte gick ihop i stället för bara att en saknas.
+      # En skärva som dödas av taket hinner aldrig hit — och det är precis vad
+      # summasteget ska fälla på.
+      - name: Ladda upp skärvans täckningsrapport
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
+        with:
+          name: hermetik-tackning-${{ matrix.shard }}
+          path: test-results/hermetik-tackning-${{ matrix.shard }}.json
+          retention-days: 7
+          if-no-files-found: ignore
 
       # EGET artefaktnamn, inte `acceptance`-jobbets: `upload-artifact@v4+`
       # avvisar två uppladdningar med samma namn i samma körning, och efter
-      # delningen kan båda jobben vara röda samtidigt. `failure() ||
-      # cancelled()` av samma skäl som överallt annars (TASK-237): utan
-      # `cancelled()` lämnar en takfällning noll spår.
+      # delningen kan båda jobben vara röda samtidigt. Namnet bär sedan
+      # TASK-366 ÄVEN shard-index, av exakt samma skäl som `acceptance`-jobbets
+      # gör det sedan varv 3: tre matrix-jobb med ett gemensamt namn hade
+      # kollaterat på den andra uppladdningen. `failure() || cancelled()` av
+      # samma skäl som överallt annars (TASK-237): utan `cancelled()` lämnar en
+      # takfällning noll spår.
       - name: Ladda upp Playwright-artefakter vid rött
         if: failure() || cancelled()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a  # v7.0.1
         with:
-          name: playwright-acceptance-sjalvtest-artefakter
+          name: playwright-acceptance-sjalvtest-artefakter-${{ matrix.shard }}
           path: |
             test-results/
             playwright-report/
           retention-days: 7
           if-no-files-found: ignore
+
+  # ═══ TÄCKNINGSKONTROLLEN (TASK-366 / N6) ═══
+  #
+  # VARFÖR JOBBET FINNS. Hermetik-självtestets dom är fail-closed på tomhet —
+  # "noll tester kördes, en tom svit bevisar ingenting". Den spärren räcker så
+  # länge beviset körs i EN process över hela klassen. Delas det i skärvor är
+  # varje skärva för sig icke-tom, så spärren säger grönt i var och en av dem
+  # även när de TILLSAMMANS inte täckte klassen: faller ett skärv-jobb bort,
+  # kommer dess artefakt inte fram, eller matchar ett filter fel, blir summan
+  # mindre än klassen utan att någon dom märker det.
+  #
+  # Ett tvåsidigt bevis som delas i tre är inte längre ett bevis om summan inte
+  # kontrolleras. Kontrollen byggdes därför FÖRE delningen, i samma
+  # ändringsförslag (Marcus-beslut via PRD TASK-450) — inte efteråt, när
+  # frestelsen att lita på att det nog gick bra är som störst.
+  #
+  # VARFÖR ETT EGET JOBB. En skärva kan per konstruktion inte se de andra. Den
+  # enda punkt där de tre domarna finns samtidigt är EFTER matrisen. Jobbet är
+  # medvetet billigt: varken `npm ci` eller Playwright, eftersom varje skärva
+  # redan mätt både sitt prövade antal och klassens listade antal (`--list`,
+  # ~3 s, se hermetik-sjalvtest.mjs § RÄKNESÄTTET). Här återstår aritmetik.
+  #
+  # VARFÖR DET BLOCKERAR. Jobbet ligger i den ANROPADE workflowen, så det når
+  # paraplyet (`ci.yml`s `ci-passed`) via anropar-jobbet `suite` — inte via en
+  # egen post i `ci-passed.needs`. Att ett rött jobb här gör `needs.suite.result`
+  # till `failure` är MÄTT, inte antaget: run 35218388387 (2026-09-17) där
+  # `Test suite / Acceptance (hermetisk) (3)` föll ensamt och `ci-passed`s egen
+  # `toJSON(needs)`-dump loggade `suite: failure` → `CI Passed or Skipped`
+  # failure. Samma mönster i 14 av 14 körningar med minst ett rött suite-barn i
+  # fönstret 2026-09-14→18, noll motexempel.
+  acceptance-sjalvtest-tackning:
+    name: Acceptance — självtestets täckning (summa över skärvor)
+    needs: [acceptance-sjalvtest]
+    # `always()` OCH INTE default-beteendet, som är hela poängen: utan det
+    # SKIPPAS detta jobb så fort en skärva faller eller dödas av taket — och en
+    # skippad post räknas som "skipped-by-design", alltså grön, av `ci-passed`s
+    # fail-closed-logik. Kontrollen ska FÄLLA när en skärva uteblir, inte tystna.
+    # (Den fällda skärvan gör visserligen `suite` rött på egen hand, se ovan;
+    # `always()` är det som gör att BESKEDET blir "skärva N saknas" i stället
+    # för att bara försvinna.)
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+
+      # INGEN `cache: 'npm'`: jobbet kör aldrig `npm ci`. Skriptet nedan är ren
+      # Node utan beroenden — en cache-restore hade varit ren väggklocka.
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020  # v7.0.0
+        with:
+          node-version-file: '.nvmrc'
+
+      # FÖRSTA FÖRSVARSLINJEN, och den som skiljer orsakerna åt. En skärva som
+      # föll på sitt EGET bevis, eller dödades av taket, ska ge det beskedet —
+      # inte "täckningen håller inte", som hade pekat läsaren mot fel fil.
+      - name: Kräv att varje skärva faktiskt kördes
+        env:
+          SKARVORNAS_RESULTAT: ${{ needs.acceptance-sjalvtest.result }}
+        run: |
+          set -euo pipefail
+          echo "acceptance-sjalvtest: ${SKARVORNAS_RESULTAT}"
+          if [ "${SKARVORNAS_RESULTAT}" != "success" ]; then
+            echo "❌ Minst en skärva av hermetik-självtestet är '${SKARVORNAS_RESULTAT}', inte 'success'."
+            echo "   Täckningen kan inte prövas mot en ofullständig matris — läs skärvans egen logg."
+            exit 1
+          fi
+
+      # `continue-on-error` HÄR ÄR BÄRANDE, inte slarv, och betyder INTE att en
+      # saknad artefakt släpps förbi: kommer rapporterna inte fram fäller
+      # skriptet nedan på "skärva N av M SAKNAS" — ett besked som pekar ut vad
+      # som hände. Utan flaggan hade download-actionens egna, generiska fel
+      # ersatt det. Fällningen är alltså kvar; bara ordvalet är vårt.
+      - name: Hämta skärvornas täckningsrapporter
+        continue-on-error: true
+        uses: actions/download-artifact@v8
+        with:
+          pattern: hermetik-tackning-*
+          path: .hermetik-tackning
+
+      # ANDRA FÖRSVARSLINJEN: summan. `mkdir -p` i samma block gör att en helt
+      # utebliven nedladdning ger skriptets egen fail-closed-dom ("noll
+      # täckningsrapporter") i stället för exit 2 på en katalog som inte finns.
+      # Logiken bor i scripts/lib/hermetik-tackning.mjs och prövas tvåsidigt av
+      # scripts/test-hermetik-tackning.mjs (42 fall, wirad i ci.yml:s
+      # 'Test gatekeeper script suites').
+      - name: Kräv att skärvorna tillsammans täckte klassen
+        run: |
+          set -euo pipefail
+          mkdir -p .hermetik-tackning
+          node scripts/hermetik-tackning.mjs --katalog=.hermetik-tackning
 
   # Webbläsarbeteende — TASK-131, ADR-094. MUTEXFRITT och secret-fritt, samma
   # placeringsmotivering som Acceptance ovan: jobbet har ingen

@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-02 10:50'
-updated_date: '2026-09-18 09:55'
+updated_date: '2026-09-18 10:24'
 labels:
   - ready-for-agent
 dependencies: []
@@ -23,8 +23,8 @@ FYND (TASK-239 varv 3, PR #2216, 2026-09-02): i en ren pull_request-körning UTA
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [ ] #1 Självtest-jobbet har >2 min marginal till sitt tak i en pull_request-körning, mätt ur gh api jobs, utan takhöjning
-- [ ] #2 Självtestets tvåsidiga bevis (grönt + planterat fel fäller) består efter ändringen
-- [ ] #3 verify:ci-parity + paritetspolicyn gröna; workflow-lintarna gröna
+- [x] #2 Självtestets tvåsidiga bevis (grönt + planterat fel fäller) består efter ändringen
+- [x] #3 verify:ci-parity + paritetspolicyn gröna; workflow-lintarna gröna
 <!-- AC:END -->
 
 ## Definition of Done

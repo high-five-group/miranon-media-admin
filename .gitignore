@@ -67,6 +67,11 @@ src/routeTree.gen.ts
 /blob-report
 /test-results
 /playwright/.cache
+# Hermetik-självtestets täckningsrapporter, nedladdade från skärvornas artefakter
+# (TASK-366). Katalogen skapas av ci-suite.yml:s `acceptance-sjalvtest-tackning`
+# och finns normalt aldrig lokalt — raden är till för den som felsöker jobbet för
+# hand, så att en diagnoskörning inte kan smyga med skräp i nästa commit.
+/.hermetik-tackning
 # Playwright MCP-serverns artefakt-katalog (browser-verktyget) — aldrig committad,
 # rapporterad ospårad i åtta sessioner (task-36.3 hygien-post, L321-klassen: durabel
 # bärare = denna rad, inte en end-pass-anteckning som dör med sessionen)
