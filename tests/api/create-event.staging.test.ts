@@ -26,6 +26,9 @@
 //      `skal: 'ingen-traff'`. FLERA träffar → tom länk, `skal: 'flera-traffar'` (aldrig
 //      den första — en gissad plats hade gett en bilaga med fel adress). Idempotent
 //      replay mot en rad som redan bär en Plats → `skal: 'redan-satt'`, länken ORÖRD.
+//   8. HORISONTVAKT (TASK-450.6, §Kända fällor 45): startdatum 2027-01-15 → 201, inte
+//      500. `Månad/år`-selectens options-horisont fylldes på (14→26 val, båda baserna,
+//      2026-09-18) — se detta testfalls egen kommentar för underhållsplikten.
 //
 // EVENTFORMAT-ANKARE: eventtyp KRÄVS vid create (ADR-066 b5, GREN A) → driver Sessionsmall.
 // Staging Eventformat var TOMT vid bygget (Session 38) → en permanent sentinel-fixtur seedades
@@ -199,6 +202,39 @@ test.describe('create-event — skarp conformance (Fas 6f L1)', () => {
     // (ii) Domän-envelope (adapterns parse-väg byggs i L2) — bär system-tilldelningen.
     expect(body.event.eventNamn).toBe('Fjärrskådning');
     expect(body.event.eventKey).toMatch(/^Event-\d+$/);
+  });
+
+  // HORISONTVAKT (TASK-450.6, §Kända fällor 45): `Månad/år` är en singleSelect vars
+  // options-horisont är ÄNDLIG (event-map.ts `deriveManadAr` + create-event/index.ts).
+  // Ett startdatum bortom horisonten fick tidigare Airtable att avvisa det HÄRLEDDA
+  // värdet (typecast:false) → 500. Marcus fyllde för hand på tolv val (Januari–December
+  // 2027) i BÅDA baserna 2026-09-18 (schema-läst: 14→26 val), så 2027-01-15 är nu INNANFÖR
+  // horisonten. Detta är MEDVETET ett enda fast datum, inte en parametriserad
+  // årsgenerator (över-engineering-vakten, §Kända fällor 45 löses inte av fler
+  // testfall) — det bevisar att horisonten flyttades, inte att den aldrig kan ta slut.
+  // Nästa påfyllning (2028) är en ÅRLIGEN ÅTERKOMMANDE manuell åtgärd tills fältet blir
+  // formelhärlett (SE14/T16, §Kända fällor 36). När horisonten flyttas igen: byt bara
+  // datumet och den förväntade `Månad/år`-strängen nedan.
+  test('HORISONTVAKT: startdatum 2027-01-15 (bortom den GAMLA horisonten) → 201, Månad/år Januari 2027', async ({
+    request,
+  }) => {
+    const config = getApiConfig();
+    const jwt = await getValidUserJWT(request, config);
+    const eventtyp = eventformatId();
+
+    const res = await postCreate(request, config, jwt, {
+      ...validBody(eventtyp, randomUUID()),
+      startdatum: '2027-01-15',
+      slutdatum: '2027-01-16',
+    });
+    const raw = await res.text();
+    registreraSkapadRad(raw, 'horisontvakt-2027');
+    expect(res.status(), raw).toBe(201);
+    const body = JSON.parse(raw) as { record: { fields: Record<string, unknown> } };
+
+    expect(body.record.fields['Startdatum']).toBe('2027-01-15');
+    // Månad/år HÄRLETT ur Startdatum — beviset att options-listan nu bär valet.
+    expect(body.record.fields['Månad/år']).toBe('Januari 2027');
   });
 
   test('BASDIMENSIONERNA (TASK-249.4): RIM-kurs med nivå → Kursfamilj RIM + Kursnivå satt', async ({
