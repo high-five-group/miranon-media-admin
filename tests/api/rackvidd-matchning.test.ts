@@ -356,7 +356,12 @@ test.describe('lasBilagansRackvidd — rå Airtable-fältdata → BilagansRackvi
         Kursnivå: 'Nivå 2',
         Plats: [RONNINGE],
       }),
-    ).toEqual({ rackvidd: 'Gemensam', kursfamilj: 'RIM', kursniva: 'Nivå 2', platsIds: [RONNINGE] });
+    ).toEqual({
+      rackvidd: 'Gemensam',
+      kursfamilj: 'RIM',
+      kursniva: 'Nivå 2',
+      platsIds: [RONNINGE],
+    });
   });
 
   test('frånvarande/tomsträng-fält → null, aldrig tomsträngen', () => {
@@ -400,7 +405,12 @@ test.describe('farBilaganSkickasForEvent — sändkontrollens fulla ägarskaps-b
   test('väg (b), TASK-452-FIXEN: Gemensam + matchande axlar på ETT ANNAT event → true', () => {
     const b = bilaga({ kursfamilj: 'RIM', kursniva: 'Nivå 2' });
     expect(
-      farBilaganSkickasForEvent(b, [URSPRUNG], MAL, event({ kursfamilj: 'RIM', kursniva: 'Nivå 2' })),
+      farBilaganSkickasForEvent(
+        b,
+        [URSPRUNG],
+        MAL,
+        event({ kursfamilj: 'RIM', kursniva: 'Nivå 2' }),
+      ),
     ).toBe(true);
   });
 
@@ -414,9 +424,7 @@ test.describe('farBilaganSkickasForEvent — sändkontrollens fulla ägarskaps-b
 
   test('FAIL-CLOSED BEVARAT: Gemensam men axlarna matchar INTE → false', () => {
     const b = bilaga({ kursfamilj: 'Psionautics' });
-    expect(
-      farBilaganSkickasForEvent(b, [URSPRUNG], MAL, event({ kursfamilj: 'RIM' })),
-    ).toBe(false);
+    expect(farBilaganSkickasForEvent(b, [URSPRUNG], MAL, event({ kursfamilj: 'RIM' }))).toBe(false);
   });
 
   test('FAIL-CLOSED BEVARAT: Event-räckvidd (INTE Gemensam) på ett annat event → false även med identiska axlar', () => {
