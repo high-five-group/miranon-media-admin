@@ -1,10 +1,10 @@
 ---
 id: TASK-450.1
 title: 'Skiva: N2 — nattlarmet delas i kanaler (produkt, bokföring, beroendesäkerhet)'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-18 09:53'
-updated_date: '2026-09-18 11:16'
+updated_date: '2026-09-18 22:36'
 labels:
   - ready-for-agent
 dependencies: []
@@ -36,7 +36,13 @@ Täcker användarberättelser: 1, 2, 3
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+N2 landad via #2521 (a046d29c, 2026-09-18T12:09:24Z) efter tre granskningsrundor: nattlarmet delat i tre kanaler (produkt ci-natt, bokföring, beroenden), samtliga åtta kontroller kör oförändrat, nightly-watchdog konsistent med indelningen. Efterkontrollen: landningens EGEN körning 35343753042 blev RÖD på staging-API-testet send-registration-confirmation.staging.test.ts:192 (Request context disposed) — ett fel utanför N2:s diff (N2 rör nattens workflow, inte staging-sviten), som återkom på ab6b2127 i en annan landning (larmärenden #2544 + #2549, diagnos pågår i S126 resume 2). Trädet bärs i stället av den gröna kodtoppen e6308887 (körning 35344474711) och cdd1856b (35344638454). Den första skarpa natten med tre kanaler (2026-09-19) läses i QA-kortet 450.9 punkt 1. DoD #2/#3: PR:en passerade merge-köns fulla svit och tre rundor review utan fynd om orelaterade filer.
+<!-- SECTION:FINAL_SUMMARY:END -->

@@ -1,10 +1,10 @@
 ---
 id: TASK-450.2
 title: 'Skiva: N3 — efterkontrollen klassar hela det pushade spannet'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-18 09:53'
-updated_date: '2026-09-18 11:03'
+updated_date: '2026-09-18 22:36'
 labels:
   - ready-for-agent
 dependencies:
@@ -61,3 +61,9 @@ ersätter HELA AC-listan och riskerar att nollställa redan bockade kryss på
 ett kort vars arbete är färdigverifierat) — se scripts/test-classify-post-merge.sh
 T24/T26/T27 för den exakta, körda semantiken.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+N3 landad via #2526 (e6308887, 2026-09-18T12:17:44Z): efterkontrollens klassning läser hela spannet sedan föregående körning i stället för bara toppen, så en kodlandning under en texttopp inte längre slinker förbi (tråd T166, vägval 2). Fem nya fall i klassningsskriptets testsvit, skarpt prövat mot 269f6d476a; rollback-egenskapen håller utan bas-variabeln. Efterkontrollen på den egna landningen GRÖN: körning 35344474711 (e6308887), följd av grön 35344638454 (cdd1856b). N3 var den hårda förutsättningen för minutbudgetens S1 och S3 (docs/research/actions-minutbudget-2026-09-18.md § C).
+<!-- SECTION:FINAL_SUMMARY:END -->
