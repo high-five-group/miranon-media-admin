@@ -1148,7 +1148,28 @@ en framtida ersättare för `javascript-typescript`) — den sortens ändring
 kräver att någon läser `codeql-action`s CHANGELOG, inte bara följer en
 versionsbump.
 
-## Acceptance-klassen
+**Default setup och advanced setup kan INTE köra parallellt — mätt, inte
+antaget.** `TASK-464.2`:s PR öppnades med default setup fortfarande PÅ (per
+HÅRD GRÄNS: bygg-agenten stänger aldrig av repo-inställningar). Båda
+matrisjobben (`javascript-typescript`, `actions`) körde CodeQL-analysen
+fullt ut — databasbygge, frågeutvärdering, SARIF-export — men SARIF-
+uppladdningen avvisades av GitHubs backend med exakt detta fel (PR #2558,
+körning `35404550404`, båda jobben, 2026-09-18):
+
+```
+##[error]Code Scanning could not process the submitted SARIF file:
+CodeQL analyses from advanced configurations cannot be processed when the default setup is enabled
+```
+
+**Konsekvens för bytesordningen:** den sekvens kortets AC #4 beskriver
+("grön egen körning → jämför larmlistan → stäng av default setup") går INTE
+att genomföra i den ordningen — en advanced-setup-körning kan mekaniskt
+aldrig bli grön (uppladdningen fälls alltid) medan default setup är
+aktivt. Den enda framkomliga ordningen är omvänd: (1) stäng av default
+setup, (2) kör advanced setup och verifiera att uppladdningen lyckas, (3)
+jämför larmlistan (`code-scanning/alerts`) före/efter avstängningen mot en
+sparad ögonblicksbild tagen FÖRE steg 1. Steg 1 är en repo-inställning och
+utförs av orkestreraren, aldrig av en agent.
 
 Termen bor här och i
 [ADR-080](docs/decisions/ADR-080-acceptance-klassen-hermetisk-utbrytning.md) —
