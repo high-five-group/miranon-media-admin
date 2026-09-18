@@ -68,7 +68,7 @@ function magicHex(bytes: Uint8Array): string {
     .join(' ');
 }
 
-async function matStaticFilesVagen(): Promise<Record<string, unknown>> {
+async function matStaticFilesVagen(requestId: string): Promise<Record<string, unknown>> {
   try {
     const htmlBytes = await Deno.readFile(HTML_URL);
     const html = new TextDecoder('utf-8').decode(htmlBytes);
@@ -79,11 +79,21 @@ async function matStaticFilesVagen(): Promise<Record<string, unknown>> {
       ttf: { bytes: ttfBytes.byteLength, magic: magicHex(ttfBytes) },
     };
   } catch (e) {
-    return {
-      ok: false,
-      errorName: e instanceof Error ? e.name : 'unknown',
-      errorMessage: e instanceof Error ? e.message : String(e),
-    };
+    // TASK-461 (CodeQL js/stack-trace-exposure #3): `e.message` för ett
+    // Deno.readFile-fel bär den fulla sökvägen i bundlet ("No such file or
+    // directory (os error 2): readfile '<path>'") — ett internt fildetalj
+    // som INTE ska nå klienten. `errorName` (t.ex. "NotFound") är Denos
+    // generiska felklass-namn, ingen intern sökväg, och är dessutom LÅST
+    // FACIT för regressionsvakten (test-static-files.staging.test.ts rad
+    // 85) — den behålls. Den fulla meddelandetexten loggas server-side,
+    // korrelerbar via requestId.
+    const errorName = e instanceof Error ? e.name : 'unknown';
+    const errorMessage = e instanceof Error ? e.message : String(e);
+    console.warn(
+      `[test-static-files] static_files-vägen fallerade | requestId=${requestId} | ` +
+        `errorName=${errorName} | errorMessage=${errorMessage}`,
+    );
+    return { ok: false, errorName };
   }
 }
 
@@ -94,7 +104,7 @@ function base64ToBytes(b64: string): Uint8Array {
   return bytes;
 }
 
-function matTsStrangmodulVagen(): Record<string, unknown> {
+function matTsStrangmodulVagen(requestId: string): Record<string, unknown> {
   try {
     const html = minimaltestHtmlViaTsModul;
     const htmlBytes = new TextEncoder().encode(html).byteLength;
@@ -105,11 +115,14 @@ function matTsStrangmodulVagen(): Record<string, unknown> {
       ttf: { bytes: ttfBytes.byteLength, magic: magicHex(ttfBytes) },
     };
   } catch (e) {
-    return {
-      ok: false,
-      errorName: e instanceof Error ? e.name : 'unknown',
-      errorMessage: e instanceof Error ? e.message : String(e),
-    };
+    // Samma disciplin som `matStaticFilesVagen` ovan (TASK-461).
+    const errorName = e instanceof Error ? e.name : 'unknown';
+    const errorMessage = e instanceof Error ? e.message : String(e);
+    console.warn(
+      `[test-static-files] ts-strängmodul-vägen fallerade | requestId=${requestId} | ` +
+        `errorName=${errorName} | errorMessage=${errorMessage}`,
+    );
+    return { ok: false, errorName };
   }
 }
 
@@ -131,8 +144,8 @@ Deno.serve(async (req) => {
   if (auth instanceof Response) return auth;
 
   try {
-    const staticFiles = await matStaticFilesVagen();
-    const tsStrangmodul = matTsStrangmodulVagen();
+    const staticFiles = await matStaticFilesVagen(requestId);
+    const tsStrangmodul = matTsStrangmodulVagen(requestId);
 
     return new Response(JSON.stringify({ staticFiles, tsStrangmodul }), {
       status: 200,

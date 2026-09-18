@@ -83,6 +83,14 @@ test.describe('test-static-files — bundlingsvägarnas regressionsvakt (TASK-30
     // begränsningen, och ADR-125 § Updates ska uppdateras därefter.
     expect(body.staticFiles.ok, JSON.stringify(body.staticFiles)).toBe(false);
     expect(body.staticFiles.errorName).toBe('NotFound');
+    // TASK-461 (CodeQL js/stack-trace-exposure #3): `errorMessage` bar
+    // tidigare `Deno.readFile`s råa felmeddelande, inklusive den fulla
+    // bundle-sökvägen ("No such file or directory (os error 2): readfile
+    // '<intern sökväg>'") — internt implementationsdetalj till klienten.
+    // Fältet ska nu vara BORTA ur svaret helt (loggas server-side i stället,
+    // se `matStaticFilesVagen`). `errorName` ("NotFound") är den enda
+    // fel-detaljen kvar — en Deno-felklass, ingen sökväg.
+    expect(body.staticFiles.errorMessage).toBeUndefined();
 
     // (c) TS-strängmoduler — det FAKTISKT fungerande facit-kontraktet.
     expect(body.tsStrangmodul.ok, JSON.stringify(body.tsStrangmodul)).toBe(true);

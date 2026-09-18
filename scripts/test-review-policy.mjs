@@ -30,7 +30,15 @@
 
 import assert from 'node:assert/strict';
 import { spawnSync } from 'node:child_process';
-import { copyFileSync, mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from 'node:fs';
+import {
+  copyFileSync,
+  mkdirSync,
+  mkdtempSync,
+  readFileSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -503,13 +511,19 @@ try {
      ════════════════════════════════════════════════════════════════ */
 
   test('F1 repots egen .review-policy.json validerar (fångar en trasig regel före push)', () => {
-    const raw = JSON.parse(spawnSync('cat', [join(REPO, POLICY_FIL)], { encoding: 'utf8' }).stdout);
+    // TASK-461 (CodeQL js/unnecessary-use-of-cat): `readFileSync` läser en
+    // lokal, hårdkodad sökväg direkt — ingen anledning att spawna en `cat`-
+    // subprocess (onödigt, oportabelt på Windows, långsammare).
+    const raw = JSON.parse(readFileSync(join(REPO, POLICY_FIL), 'utf8'));
     const { ok, errors } = parsaPolicy(raw);
     assert.equal(ok, true, `repots policyfil validerar inte: ${errors.join('; ')}`);
   });
 
   test('F2 varje regel i repots policyfil har minst ett mönster och en källa', () => {
-    const raw = JSON.parse(spawnSync('cat', [join(REPO, POLICY_FIL)], { encoding: 'utf8' }).stdout);
+    // TASK-461 (CodeQL js/unnecessary-use-of-cat): `readFileSync` läser en
+    // lokal, hårdkodad sökväg direkt — ingen anledning att spawna en `cat`-
+    // subprocess (onödigt, oportabelt på Windows, långsammare).
+    const raw = JSON.parse(readFileSync(join(REPO, POLICY_FIL), 'utf8'));
     const { policy } = parsaPolicy(raw);
     for (const regel of policy.regler) {
       assert.ok(regel.monster.length > 0, `${regel.id} saknar mönster`);
@@ -518,7 +532,10 @@ try {
   });
 
   test('F3 .prod-functions-allowlist.conf träffar prod-och-hemligheter (TASK-344 — filen som ensam avgör vilka EF:er som når prod)', () => {
-    const raw = JSON.parse(spawnSync('cat', [join(REPO, POLICY_FIL)], { encoding: 'utf8' }).stdout);
+    // TASK-461 (CodeQL js/unnecessary-use-of-cat): `readFileSync` läser en
+    // lokal, hårdkodad sökväg direkt — ingen anledning att spawna en `cat`-
+    // subprocess (onödigt, oportabelt på Windows, långsammare).
+    const raw = JSON.parse(readFileSync(join(REPO, POLICY_FIL), 'utf8'));
     const { policy } = parsaPolicy(raw);
     const traffar = matchaRegler(['.prod-functions-allowlist.conf'], policy);
     assert.ok(
@@ -528,7 +545,10 @@ try {
   });
 
   test('F4 KONTRAST: en orelaterad rotfil (README.md) träffar fortfarande INGEN regel', () => {
-    const raw = JSON.parse(spawnSync('cat', [join(REPO, POLICY_FIL)], { encoding: 'utf8' }).stdout);
+    // TASK-461 (CodeQL js/unnecessary-use-of-cat): `readFileSync` läser en
+    // lokal, hårdkodad sökväg direkt — ingen anledning att spawna en `cat`-
+    // subprocess (onödigt, oportabelt på Windows, långsammare).
+    const raw = JSON.parse(readFileSync(join(REPO, POLICY_FIL), 'utf8'));
     const { policy } = parsaPolicy(raw);
     const traffar = matchaRegler(['README.md'], policy);
     assert.deepEqual(
