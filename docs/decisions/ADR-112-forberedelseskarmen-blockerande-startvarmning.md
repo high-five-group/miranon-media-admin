@@ -102,3 +102,42 @@ spår lämnades för detta, det vanligaste felfallet.
 Beslut 1 och 3 kräver ingen omprövning — det som var fel var en OUTTALAD
 premiss i hur räknaren TOLKADES utanför modulen, inte den blockerande
 warmup-designen, determinate-baren eller den hårda timeouten själva.
+
+### 2026-09-18 — Baren degraderar till OBESTÄMD vid `klara === 0`, tills första hämtningen settlat (TASK-451.1)
+
+Samma diagnoskarta (`docs/research/kallstarten-diagnoskarta-2026-09-18.md`
+§ 1.4–1.5, § 6 punkt 1) avtäckte en ANNAN, oberoende blind fläck i beslut 1:
+"äkta determinate bar (X av N hämtningar klara)" beskrev inte det verkliga
+förloppet mellan skärmens första målning och FÖRSTA settlade hämtningen.
+`klara` är per konstruktion 0 i det fönstret (auth-fasens platshållare
+`FORBEREDELSESKARM_VANTAR = {klara:0, totalt:1}` OCH startvärmningens
+verkliga `totalt:7` innan något settlat — se `klara`-räknarens semantik i
+föregående post ovan), vilket renderade en `width: 0%`-fyllnad: en osynlig,
+stillastående yta. Marcus prod-observation ("ingen loadingbar kördes",
+2026-09-18) var alltså inte ett fel i implementationen av beslut 1 — det VAR
+implementationen, bara ett tillstånd beslutstexten inte namngav.
+
+**Fixat (TASK-451.1), beslut 1:s bokstav preciserad, inte omprövad:**
+
+- Baren degraderar till INDETERMINATE närhelst `klara === 0` — branschmönstret
+  för en determinate-bar utan känt delresultat att visa (Material Design 3,
+  "Progress indicators": indeterminate "when the wait time is unknown"; W3C
+  APG meter/progressbar: en obestämd progressbar bär ALDRIG `aria-valuenow`).
+  Implementerat med `react-aria-components`' `<ProgressBar isIndeterminate>`
+  (samma bibliotek widgeten redan byggde på) — biblioteket äger kontraktet,
+  ingen egen ARIA-hantering skrivs i komponenten.
+- Visuellt ett svepande segment i samma fyllnadsfärg/kontrast-token som den
+  determinate baren (ingen ny färg, inget nytt kontraktsbevis) — under
+  `prefers-reduced-motion: reduce` en STATISK men SYNLIG form, aldrig en
+  osynlig 0-bredd.
+- Övergången till determinate "X av N" sker automatiskt så fort `klara` ökar
+  till 1 (ingen egen tröskel), med ett uttalat inträdesfacit (väximerar från
+  0 %, aldrig ett hopp eller en ärvd bredd från det obestämda segmentet —
+  mätt i riktig webbläsare, `Forberedelseskarm.spec.ts`s övergångstest).
+- INGEN NY SYNLIG TEXT (task-273.6 § "rensas till enbart loadingbaren" står
+  kvar oförändrad) — rörelsen bor uteslutande i baren själv.
+
+Beslut 1 kräver ingen omprövning: den blockerande warmup-designen, den
+hårda timeouten och "X av N hämtningar klara"-kontraktet (föregående post)
+är ORÖRDA. Det obestämda delläget är en precisering av VAD baren visar
+INNAN den har ett X att visa, inte ett nytt beslut om NÄR den visas.

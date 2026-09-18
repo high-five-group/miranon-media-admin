@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-18 10:41'
+updated_date: '2026-09-18 11:46'
 labels:
   - fynd
   - ready-for-agent
@@ -26,14 +27,30 @@ Hittat av S127 (P2 + orkestrerarens stickprov). Bär direkt på bilagor i svepet
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Staging-prov: gemensam bilaga bifogad på icke-ursprungsevent via åtgärdssidan — utfallet (200 eller 400) dokumenterat med request-id
-- [ ] #2 Om 400: rött-först-test, sedan sändkontrollen använder samma räckviddsmatchning som get-event-attachments (_shared/rackvidd-matchning.ts) — fail-closed behålls för bilagor som INTE matchar
+- [x] #1 Staging-prov: gemensam bilaga bifogad på icke-ursprungsevent via åtgärdssidan — utfallet (200 eller 400) dokumenterat med request-id
+- [x] #2 Om 400: rött-först-test, sedan sändkontrollen använder samma räckviddsmatchning som get-event-attachments (_shared/rackvidd-matchning.ts) — fail-closed behålls för bilagor som INTE matchar
 - [ ] #3 Om 200: kortet stängs med förklaringen varför koden ändå släpper, och ett test som låser beteendet
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+AC #1 (staging-prov, 2026-09-18): riktig round-trip via Åtgärdssidan (npm run dev mot .env.development, som redan pekar på staging pqtshyierkdgwdnxuirz), sentinel-mottagare delivered@resend.dev. Fixtur: Bilagor-rad Gemensam/Kursfamilj Fjärrskådning uppladdad mot event rec1VuPVUPH7a3bq7 (Falköping), skickad från Åtgärdssidan för event recDUMxyXI8hFHOg3 (annan Falköping-Fjärrskådning-instans). Utfall: HTTP 400 {"error":"Attachment recXGGchXXsckJtWT does not belong to event recDUMxyXI8hFHOg3"}, sb-request-id 01a0b434-854c-74c7-9f86-04b76a4b2149. Fixturerna raderade direkt efter provet.
+
+AC #2 (400-grenen): rött-först via tests/api/rackvidd-matchning.test.ts — 9 nya tester för farBilaganSkickasForEvent/lasBilagansRackvidd/lasEventetsAxlar; en temporär nedgradering av implementationen (bara bilagansEventIds.includes(eventId)) fällde exakt de två TASK-452-fixande testerna, övriga fail-closed-tester förblev gröna — reverterat, alla 44 gröna igen. Fixen: send-action-email prövar nu farBilaganSkickasForEvent (delad, _shared/rackvidd-matchning.ts), SAMMA matcharEvent som get-event-attachments använder. get-event-attachments/index.ts refaktorerad till samma delade helpers (lasBilagansRackvidd/lasEventetsAxlar) i stället för sina lokala kopior — motivet är fyndet självt: två oberoende kopior av samma läsning hade redan hunnit divergera en gång.
+
+Andra fyndet UNDER bygget (utanför kortets ordalydelse men blockerande + tätt kopplat, hanterat i samma skiva per ADR-053-triage): med bara ägarskaps-checken fixad gav send-action-email 500 Internal error i stället för 200 — makeRealAttachmentReader byggde Storage-läsvägen ur det SÄNDANDE eventets ID, inte bilagans EGET lagringsankare (buildStorageAnchor). Fixat genom att ResolvedAttachment nu bär anchor (beräknat i resolveAttachments, samma formel delete-attachment redan använder för samma rad); readern läser ${a.anchor}/${lagringsnyckel} i stället för ${eventId}/${lagringsnyckel}.
+
+Ny staging-regressionssvit: tests/api/send-action-email-gemensam-bilaga.staging.test.ts (2 fall — positiv cross-event-sändning 200 sent, fail-closed 400 för en icke-Gemensam bilaga). Körd mot deployad EF FÖRE fixen (400, sedan efter ägarskaps-fixen 500) och EFTER båda fixarna (200/400 enligt förväntan).
+
+Staging-deploy: send-action-email OCH get-event-attachments deployade till pqtshyierkdgwdnxuirz (supabase functions deploy --project-ref pqtshyierkdgwdnxuirz --use-api). get-event-attachments.staging.test.ts 13/13 grönt mot den redeployade EF:en (ren refaktor, ingen beteendeändring). PROD-deploy (fas4, scripts/fas4-prod-deploy.sh) är EJ gjord — Marcus-moment efter landning, per uppdraget. AC #3 (Om 200) är INTE TILLÄMPLIG — utfallet var 400, AC #2:s gren gäller.
+
+Staging-fixturer städade: de två manuellt skapade posterna (Bilagor + Anmälan) för AC #1-provet raderade direkt efter mätningen. De kastbara create-event/create-registration-posterna som testkörningarna skapade är svepta via npm run purge:staging:efter (26 raderade, 9 länk-guardade kvar — de bär en Anmälan-länk och kräver att den också städas, samma accepterade norm som create-registration.staging.test.ts redan bär, ADR-060). Observerad, orelaterad flake i test:api under detta arbete: cancel-registration.staging.test.ts och send-registration-confirmation.staging.test.ts föll båda på samma get-registrations-anrop (Request context disposed) — rör inte attachments/send-action-email, ej reproducerat av min diff.
+<!-- SECTION:NOTES:END -->

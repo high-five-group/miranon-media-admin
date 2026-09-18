@@ -82,7 +82,8 @@ import {
   ATTACHMENT_SCOPE_EVENT,
   BILAGOR_TABLE,
   EVENTPLANERING_TABLE,
-  lasPlatsIds,
+  lasBilagansRackvidd,
+  lasEventetsAxlar,
   mapAttachmentRecord,
   matcharEvent,
   normaliseraRackvidd,
@@ -137,10 +138,6 @@ const ATTACHMENT_FIELDS = [
   'Plats',
   'Platsnamn',
 ];
-
-/** Eventets Plats-länk (`Eventplanering.Plats`, ADR-125 § 2) — HÄRLEDD
- *  server-side ur `Ort` vid create (TASK-309.30), aldrig klient-buren. */
-const EVENT_PLATS_FIELD = 'Plats';
 
 type Fields = Record<string, unknown>;
 type AirtableRow = { id: string; fields: Fields };
@@ -223,27 +220,17 @@ async function fetchGemensammaKandidater(): Promise<AirtableRow[]> {
   })) as AirtableRow[];
 }
 
-/** Radens räckviddsaxlar, i matcharens form. En läsning, två användningar
- *  (matchningen nedan och räckviddslistningen). */
-function radensRackvidd(row: AirtableRow) {
-  const rackvidd = row.fields['Räckvidd'];
-  const kursfamilj = row.fields['Kursfamilj'];
-  const kursniva = row.fields['Kursnivå'];
-  return {
-    rackvidd: typeof rackvidd === 'string' && rackvidd.length > 0 ? rackvidd : null,
-    kursfamilj: typeof kursfamilj === 'string' && kursfamilj.length > 0 ? kursfamilj : null,
-    kursniva: typeof kursniva === 'string' && kursniva.length > 0 ? kursniva : null,
-    platsIds: lasPlatsIds(row.fields['Plats']),
-  };
-}
-
 /** Matchar EN kandidatrad mot eventets axlar — tunn brygga mellan
- *  Airtable-radens fältform och den rena matcharens datatyp. */
+ *  Airtable-radens fältform och den rena matcharens datatyp.
+ *  [TASK-452] `lasBilagansRackvidd` (delad, `_shared/rackvidd-matchning.ts`)
+ *  ersätter den tidigare lokala `radensRackvidd` — se den delade funktionens
+ *  docblock för varför två oberoende kopior av denna läsning är exakt vad
+ *  som orsakade `send-action-email`s divergerande 400. */
 function matcherEventRad(
   row: AirtableRow,
   eventetsAxlar: { kursfamilj: string | null; kursniva: string | null; platsIds: string[] },
 ): boolean {
-  return matcharEvent(radensRackvidd(row), eventetsAxlar);
+  return matcharEvent(lasBilagansRackvidd(row.fields), eventetsAxlar);
 }
 
 /**
@@ -263,7 +250,7 @@ function matcherEventRad(
 async function fetchAllaGemensamma(): Promise<AirtableRow[]> {
   const kandidater = await fetchGemensammaKandidater();
   return kandidater.filter((row) => {
-    const norm = normaliseraRackvidd(radensRackvidd(row));
+    const norm = normaliseraRackvidd(lasBilagansRackvidd(row.fields));
     return arGemensam(norm.rackvidd);
   });
 }
@@ -347,17 +334,14 @@ Deno.serve(async (req) => {
       ? (eventRecord.fields[ATTACHMENTS_LINK_FIELD] as string[])
       : [];
 
-    // [TASK-275.2 · UTBYGGT TASK-338.2] Eventets EGNA axlar — Kursfamilj/
-    // Kursnivå (ADR-115) OCH Plats (ADR-125 § 2). Alla tre läses ur SAMMA
-    // eventRecord som redan hämtades ovan: inget extra Airtable-anrop, och
-    // ingen risk att Plats läses ur ett annat tidsläge än familjen.
-    const rawKursfamilj = eventRecord.fields['Kursfamilj'];
-    const rawKursniva = eventRecord.fields['Kursnivå'];
-    const eventetsAxlar = {
-      kursfamilj: typeof rawKursfamilj === 'string' && rawKursfamilj.length > 0 ? rawKursfamilj : null,
-      kursniva: typeof rawKursniva === 'string' && rawKursniva.length > 0 ? rawKursniva : null,
-      platsIds: lasPlatsIds(eventRecord.fields[EVENT_PLATS_FIELD]),
-    };
+    // [TASK-275.2 · UTBYGGT TASK-338.2 · TASK-452 delad] Eventets EGNA
+    // axlar — Kursfamilj/Kursnivå (ADR-115) OCH Plats (ADR-125 § 2). Alla
+    // tre läses ur SAMMA eventRecord som redan hämtades ovan: inget extra
+    // Airtable-anrop, och ingen risk att Plats läses ur ett annat tidsläge
+    // än familjen. `lasEventetsAxlar` (delad, `_shared/rackvidd-
+    // matchning.ts`) ersätter den tidigare lokala inline-konstruktionen —
+    // `send-action-email` läser nu EXAKT samma axlar för sitt eget beslut.
+    const eventetsAxlar = lasEventetsAxlar(eventRecord.fields);
 
     // 4) Mängd (a) — eventets EGNA bilagor. Kan först starta nu: den behöver
     //    `attachmentIds` ur eventraden. `kandidaterP` (mängd b, steg 1) är

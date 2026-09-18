@@ -239,3 +239,115 @@ dokumenterat död extern länk. Därför står det här, och därför byter
   PR-blockering till ett faktiskt stopp i arbetet.
 - [`docs/research/lankgrindens-form-2026-07-28.md`](../research/lankgrindens-form-2026-07-28.md)
   — underlaget: lychee-källkod på `lychee-v0.24.2` + nio projekts workflow-filer.
+
+## Updates
+
+### 2026-09-18 — Mönstret i beslut 4 får två tillämpningar till (TASK-450.1)
+
+**Vad som hände.** Beslut 4 ovan gav länkrötan en egen, mildare kanal: ETT
+stående ärende på egen etikett, nya fynd som kommentarer, icke-blockerande, med
+stängningsregeln kvar. Det var då en lösning på ETT problem. `TASK-450.1`
+(planens § N2, Marcus K2- och K1-beslut 2026-09-18) tillämpar samma mönster på
+två nya kanaler i samma fil, och nattens larm går därmed i tre kanaler i stället
+för en:
+
+| Kanal | Etikett | Form | Utlöses av |
+|---|---|---|---|
+| Produkt | `ci-natt` | tilldelat ärende per natt, **orörd form** | `suite` · `nightly-metrics` · `kontraktsvakt` |
+| Bokföring | `bokforingsdrift` | stående ärende, **detta besluts form** | `backlog-closure` · `pausade-sessioner` · `obesvarade-larm` · `sessionsdok-fonster` |
+| Beroendesäkerhet | `beroendevarning` | stående ärende, **detta besluts form** | `nightly-audit` |
+| Länkröta | `lankrota` | stående ärende (beslut 4) | `nightly-links` |
+
+**Varför mönstret bar.** Beslut 4:s argument var att en signal om OMVÄRLDENS
+tillstånd inte får devalvera en tilldelad signal om VÅRT. De två nya kanalerna
+är samma klass av fynd i den meningen som betyder något här: de fäller på
+tillstånd som består natt efter natt tills någon åtgärdar dem, och ger därför
+bitvis identisk text varje natt. Mätt över de sex nätterna 2026-09-13 …
+2026-09-18 (`gh run view <id> --json jobs`): bokföringsgrindarna röda 5 av 6,
+`nightly-audit` röd 5 av 6 på samma två advisories, ett produktjobb rött 1 av 6.
+Under den gamla formen var alla sex "röd natt".
+
+**Vad som INTE generaliserades, med avsikt.** Produktkanalen fick INGEN
+dubblettspärr. Ett produktfel som återkommer kan återkomma OLIKA — annat test,
+annan flake — och bär då ny information; ett stående ärende hade dämpat just
+det. Skillnaden mellan kanalerna är alltså inte "viktig kontra mindre viktig"
+utan om upprepningen kan skilja sig från föregående natt. Att generalisera
+mönstret hit vore att tysta det enda beskedet som faktiskt förändras.
+
+**En avvikelse från planens ordalydelse, bokförd öppet.** Planen skrev "flytta
+de fyra bokföringsposterna ut ur `alarm.needs`" och krävde på nästa rad att
+jobbstatus-listan ska finnas kvar i alla ärenden. De två kan inte hållas
+samtidigt: `needs` är den enda vägen till ett annat jobbs `result` i GitHub
+Actions. Byggd form: alla tre kanaljobb har samtliga åtta jobb i `needs` och
+redovisar hela listan; det som delades är TRIGGERN (`if`-uttrycket), vilket är
+den effekt planen räknar hem. `contains(needs.*.result, …)` går därför inte att
+använda längre — varje kanal räknar upp sina utlösande jobb explicit.
+
+**Följdrättelse.** `.sanningsavstamning-policy.conf`:s skäl att utelämna
+`ci-natt` angav en självförstärkande loop via `obesvarade-larm` → `alarm`. Den
+kedjan är bruten av delningen (grinden utlöser nu bokföringskanalen), så skälet
+är flyttat dit det numera gäller och `ci-natt`:s utelämnande vilar på sitt
+andra, kvarstående skäl: nattvakten bevakar redan den etiketten.
+
+**Öppet, ej avgjort här.** Beroendekanalen blir lastbärande för hela
+beroendesäkerheten först när K1 väg (b) landat (`TASK-450.5`). Om dess ärende då
+också bör TILLDELAS är ett eget beslut på data.
+
+#### Följdrättelse i nattvakten — beslut 4:s exkludering blev en allowlist
+
+Beslut 4 gav länkrötan en egen kanal, och `nightly-watchdog.yml` fick därför en
+**exkluderings**-regel: jobb vars namn matchade `Länkkontroll|Länkröta` räknades
+inte som "alarm-bärande rött". Den formen var korrekt så länge exakt ETT jobb låg
+utanför `alarm.needs`.
+
+Efter kanaldelningen ligger **fem** nattgrindar utanför produktkanalens trigger,
+plus de två nya kanaljobben. En denylist som inte känner dem hade gjort vakten
+till en falsklarmsmaskin: en natt där bara bokföringsgrindarna är röda ger
+`alarm` SKIPPED (korrekt) men körningens `conclusion: failure`, och vakten hade
+skapat ett TILLDELAT, oåtgärdbart `ci-natt`-ärende — exakt felklassen i ärende
+`#469` (2026-07-30, 123 h öppet) som beslut 4 en gång redan rättade. Mätt: PR
+`#2521`:s egen körning `35334331604` visar de två första leden, och
+bokföringsgrindarna var röda 5 av 6 nätter 2026-09-13…09-18.
+
+Vakten läser därför nu en **allowlist** över produktkanalens jobb
+(`.nattvakt-kanal-policy.conf`), matchad som prefix eftersom nattsvitens jobb
+heter `Nattlig fullsvit / <barnjobb>` i körnings-API:t. Kontrastmätning mot fem
+verkliga körningar: den gamla regeln larmar i tre av dem, den nya i noll av de
+tre där rödheten bärs av en annan kanal.
+
+**Fail-safe-riktningen vändes, medvetet.** En denylist larmar som default om ett
+okänt jobb; en allowlist tystar det. Valet följer vaktens egen husregel (*"ett
+falsklarm är värre än ingen vakt"*) och principen att vakten ska vakta exakt det
+`alarm` ansvarar för. Priset är en invariant som måste hållas **för hand** —
+och den är TVÅDIMENSIONELL, vilket en första formulering missade: triggrarna och
+`needs`-listan lever i **jobb-ID**-rymden, vaktens lista i
+**jobb-NAMNPREFIX**-rymden. Kravet har alltså två led: **(i)** de tre
+triggerlistorna partitionerar `needs`-listan, och **(ii)** varje jobb-ID i
+`alarm`-triggern mappar till ett `name:` som något av listans prefix faktiskt
+matchar. Bryts (ii) ensamt tystnar vakten för hela produktkanalen medan en ren
+ID-mängdjämförelse står grön — prefix-formen gör ledet extra känsligt, eftersom
+`Nattlig fullsvit` måste förbli ett prefix till nattsvitens barnjobb. Kravet står
+som prosa i båda filerna; följdskivan ska vakta **båda** leden. Ingen mekanism
+vaktar någotdera i dag (ADR-083).
+
+**Rödhet uttrycks som negation, inte som uppräkning.** Vaktens villkor löd först
+`conclusion == "failure" or "cancelled"` — ofarligt under denylisten, ett tyst
+hål under allowlisten. `.jobs[].conclusion` har nio värden medan
+`needs.<jobb>.result` har fyra, så ett produktjobb med `timed_out` gav
+`result: failure` (alarm fyrade) utan att vakten såg jobbet som rött. Villkoret
+är därför en negation av en liten ofarlig mängd (`success`, `skipped`,
+`neutral`; `null` = pågår hanteras separat), vilket gör varje framtida
+conclusion-värde rött som default i stället för tyst.
+
+**Vad som fortfarande saknar vakt, öppet skrivet:** bokförings- och
+beroendekanalen har ingen "vaktens vakt". `lankrota` har det inte heller, och har
+aldrig haft det — beslut 4 byggde kanalen, inte en vakt över den.
+
+#### Bevis-läget är hermetiskt sedan samma runda
+
+De första fyra bevis-dispatcharna 2026-09-18 lät `links-arende` lägga fyra
+omärkta kommentarer på det levande `lankrota`-ärendet `#1482` — ordagrant
+identiska med en äkta nattrapport. Alla fyra kanaljobb bär därför nu en
+kanalklausul: i ett bevis-läge får bara den valda kanalen skriva. Garantin sitter
+på skrivpunkten, inte på grindarna, så en genuint röd grind i en annan kanal kan
+inte längre förorena beviset.

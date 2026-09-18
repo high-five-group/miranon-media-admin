@@ -1,9 +1,9 @@
 ---
 owner: marcus803
-updated: 2026-08-21
+updated: 2026-09-18
 review_by: 2026-11-21
 status: stable
-lifecycle: paused
+lifecycle: closed
 ---
 
 # T166 — Post-merge-klassningen läser sista PR:en i kö-batchen, inte hela pushen
@@ -79,6 +79,27 @@ ingen det.
 
 Ingen avgörs här. Punkt 2 ligger närmast mekanismens egen deklarerade
 fail-closed-princip.
+
+## Löst (2026-09-18)
+
+Vägval 2 beslutat (Marcus GO 2026-09-18 på nu-högen ur S126:s djupgranskning,
+`tasks/sessions/2026-09-17-session-126.md` Del 7) och BYGGT i `TASK-450.2`
+(N3): [PR #2526](https://github.com/high-five-group/miranon-media-admin/pull/2526).
+
+`post-merge.yml` skickar nu `BEFORE` (`github.event.before`) vid sidan av
+`SHA`, och `classify-post-merge.sh` räknar stegen från topp-commiten bakåt
+via första föräldern till `BEFORE`: fler än ETT steg (flera landningar i
+samma push) ⇒ `docs_only=false` direkt, utan att VÄG A/VÄG B ens frågas.
+Skarpt bevisat mot en verklig instans ur KG1:s mätning (`269f6d476a`, PR #2448
+— topp docs, spann kod) och mot en verklig enkelpost-landning (`484ca305`),
+båda hållna dokumenterat i PR-kroppen.
+
+Vägval 1 (klassa varje commit i spannet och vik ihop utfallen) och vägval 3
+(acceptera fönstret) förblir obyggda — punkt 2 var den som avgjordes, och
+tråden stängs på den grunden. Dyker samma klass av lucka upp i en form
+vägval 2 inte täcker (t.ex. `min_entries_to_merge`-ändring som gör
+tvåförälder-antagandet i `classify-post-merge.sh` osant): ny tråd, inte
+återöppning av denna.
 
 ## Besläktat
 

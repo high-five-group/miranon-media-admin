@@ -4,6 +4,7 @@ title: 'Skiva: N3 — efterkontrollen klassar hela det pushade spannet'
 status: To Do
 assignee: []
 created_date: '2026-09-18 09:53'
+updated_date: '2026-09-18 11:03'
 labels:
   - ready-for-agent
 dependencies:
@@ -25,15 +26,38 @@ Täcker användarberättelser: 4, 5
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Fem nya fall i klassningsskriptets befintliga testsvit: två merge-commitar med texttopp ger false (fäller mot dagens skript, passerar efter fixen — tvåsidighetsbeviset); en merge-commit ger oförändrat true; bas noll-SHA ger false; bas onåbar inom taket ger false; bas osatt ger false
-- [ ] #2 Skarpt mot verkliga SHA:n ur granskningens mätning: 269f6d476a (texttopp, kodspann) ger false efter fixen; en enkelposts textlandning förblir true
-- [ ] #3 Rollback-egenskapen håller: utan bas-variabeln faller skriptet till dagens beteende
-- [ ] #4 Tråd T166 uppdaterad med att vägval 2 är byggt (pekare till PR), via trådregistrets egen rutin
+- [x] #1 Fem nya fall i klassningsskriptets befintliga testsvit: två merge-commitar med texttopp ger false (fäller mot dagens skript, passerar efter fixen — tvåsidighetsbeviset); en merge-commit ger oförändrat true; bas noll-SHA ger false; bas onåbar inom taket ger false; bas osatt ger false
+- [x] #2 Skarpt mot verkliga SHA:n ur granskningens mätning: 269f6d476a (texttopp, kodspann) ger false efter fixen; en enkelposts textlandning förblir true
+- [x] #3 Rollback-egenskapen håller: utan bas-variabeln faller skriptet till dagens beteende
+- [x] #4 Tråd T166 uppdaterad med att vägval 2 är byggt (pekare till PR), via trådregistrets egen rutin
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Rättelse (review-runda 2, PR #2526): AC #1:s femte klausul, "bas osatt ger
+false", är FELSTÄLLD — den kolliderar ordagrant med AC #3 (rollback: en
+literalt OSATT bas-variabel ⇒ dagens beteende, vilket i T27:s scenario är
+`true`, inte `false`). Koden är korrekt; AC-texten är fel.
+
+Vad som faktiskt gäller, och vad testerna T24-T27 bevisar:
+
+- AC #1:s "bas osatt" SKA LÄSAS SOM "bas satt men TOMT" (BEFORE="", en
+  variabel som FINNS i miljön men saknar värde) — det är T26, och T26 ger
+  korrekt `false` (en egen fail-closed-kant, skild från noll-SHA).
+- AC #3:s "utan bas-variabeln" är den ANDRA, distinkta kanten: BEFORE
+  literalt SAKNAS ur miljön (${BEFORE+x} falsk) — det är T27, som korrekt
+  ger `true` (rollback till dagens beteende, inklusive dess kända hål).
+
+AC-texten ändras inte via CLI:t i denna runda (risk: `--acceptance-criteria`
+ersätter HELA AC-listan och riskerar att nollställa redan bockade kryss på
+ett kort vars arbete är färdigverifierat) — se scripts/test-classify-post-merge.sh
+T24/T26/T27 för den exakta, körda semantiken.
+<!-- SECTION:NOTES:END -->

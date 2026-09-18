@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-18 10:39'
+updated_date: '2026-09-18 12:23'
 labels:
   - ready-for-agent
 dependencies:
@@ -27,14 +28,14 @@ Designa mot TanStack Querys egna mönster (context7/källkod FÖRST): t.ex. att 
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Rött-först: scenario A (batch 1 fördröjd förbi tidsgränsen) räknar anrop mot get-events och get-registrations — i dag 2 vardera, efter fix 1 vardera
-- [ ] #2 När den i-flykt-varande hämtningen landar får Hem datan utan egen omhämtning; Hems 60 s-polling fungerar som förut (hem.acceptance grön)
-- [ ] #3 Samma kontroll gjord för activityLog.latest (redan nyckelparitet enligt underlaget § 1.10 — bekräfta eller rätta)
+- [x] #1 Rött-först: scenario A (batch 1 fördröjd förbi tidsgränsen) räknar anrop mot get-events och get-registrations — i dag 2 vardera, efter fix 1 vardera
+- [x] #2 När den i-flykt-varande hämtningen landar får Hem datan utan egen omhämtning; Hems 60 s-polling fungerar som förut (hem.acceptance grön)
+- [x] #3 Samma kontroll gjord för activityLog.latest (redan nyckelparitet enligt underlaget § 1.10 — bekräfta eller rätta)
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->

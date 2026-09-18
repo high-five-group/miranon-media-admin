@@ -562,3 +562,28 @@ p {
     scroll-behavior: auto !important;
   }
 }
+
+/* ── FÖRBEREDELSESKÄRMENS DETERMINATE-FYLLNADS INTRÄDE — `@starting-style`
+   PRÖVAD OCH FÖRKASTAD, MÄTT (task-451.1, runda 2-granskning av PR #2536,
+   fynd 2) ──
+   En första implementation stod HÄR: `.mm-forberedelseskarm-bar-determinate
+   { @starting-style { width: 0%; } }`, avsedd att låta den nymonterade
+   determinate-fyllnaden (se `Forberedelseskarm.tsx`s klassdoc-block §
+   ÖVERGÅNGENS EGEN MONTERING för `key`-fixen den bygger på) transitionera
+   0 % → verklig bredd på egen hand, utan extra JS.
+
+   FÖRKASTAD EFTER MÄTNING I RIKTIG WEBBLÄSARE (Playwright, `Forberedelse-
+   skarm.spec.ts`s övergångstest): 22 bildruteprov över 350 ms visade NOLL
+   rörelse — samtliga identiska med slutbredden redan i första provet.
+   Rotorsaken: bredden sätts via en INLINE `style={{width}}` (React), och en
+   inline-egenskap är NÄRVARANDE redan vid elementets FÖRSTA style-
+   beräkning — `@starting-style`s klassregel hinner därför aldrig vara den
+   ENDA deklarationen vid något ögonblick; inline vinner cascaden direkt, och
+   "starting"-värdet blir därmed OCKSÅ målbredden. Ett dokumenterat gap i
+   specen (inline `style` och `@starting-style` samspelar inte meningsfullt),
+   inte en Tailwind- eller byggkedje-brist — regeln ÖVERLEVDE byggkedjan
+   intakt (verifierat i `dist/assets/*.css`), den bara gjorde ingenting.
+
+   Ersatt av den klassiska dubbel-rAF-tekniken (`DeterminateFyllnad` i
+   `Forberedelseskarm.tsx`) — se den komponentens eget docblock. Ingen
+   motsvarande regel finns kvar här: dubbel-rAF:en behöver ingen CSS-krok. */

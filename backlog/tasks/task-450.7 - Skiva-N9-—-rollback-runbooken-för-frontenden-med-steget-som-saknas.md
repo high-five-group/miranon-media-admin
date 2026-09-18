@@ -1,10 +1,10 @@
 ---
 id: TASK-450.7
 title: 'Skiva: N9 — rollback-runbooken för frontenden, med steget som saknas'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-18 09:54'
-updated_date: '2026-09-18 10:12'
+updated_date: '2026-09-18 11:57'
 labels:
   - ready-for-agent
 dependencies: []
@@ -37,3 +37,9 @@ Täcker användarberättelser: 13
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+N9 landad via #2518 (49ae5f2e, 2026-09-18T10:23:59Z), D0. Avsnittet 'Rollback av frontenden (Vercel)' i docs/reference/prod-driftsattning-runbook.md: leverantörens åtta steg + två egna tillägg (FR9: kontrollera att automatisk produktionstilldelning är PÅ igen; funktionsflaggan bakas in vid bygget och följer med bakåt). Varje leverantörspåstående omverifierat mot vercel.com 2026-09-18 — allt höll. Efterkontrollen på 49ae5f2e grön. Vägen är OÖVAD; övningen är Marcus beslut (QA-kortet 450.9 punkt 7).
+<!-- SECTION:FINAL_SUMMARY:END -->
