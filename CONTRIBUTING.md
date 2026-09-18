@@ -1151,6 +1151,41 @@ en framtida ersättare för `javascript-typescript`) — den sortens ändring
 kräver att någon läser `codeql-action`s CHANGELOG, inte bara följer en
 versionsbump.
 
+**D0-undantaget gäller BÅDE `pull_request` och `push` (Marcus-mandat,
+2026-09-19, samma dag som förstaversionen).** Förstaversionen lämnade
+`push` orörd ("push skannas enligt samma regel som i dag" löd AC #3
+bokstavligt); Marcus skärpte kravet samma dag — en ren dokument-push till
+huvudgrenen skannar kod som inte ändrats sedan den senast skannades, ren
+spilld kostnad, medan ny frågekunskap mot oförändrad kod redan bärs av
+`schedule` (veckovis, `0 5 * * 1`, oförändrad). `push` bär nu SAMMA
+`paths-ignore`-lista som `pull_request` via en YAML-ANKARE
+(`&d0-paths`/`*d0-paths` i `codeql.yml`) — inte en andra handhållen kopia;
+`.listparitet-policy.conf`s par `klassning-codeql-positiv` behöver därför
+bara vakta EN region, eftersom anlaget gör en avvikande kopia strukturellt
+omöjlig.
+
+**Vad detta kostar i skydd, citerat mot förstaparten:** GitHubs
+dokumentation för `on:push`-triggerns syfte
+(`docs.github.com`, "Customizing your advanced setup for code scanning" §
+triggers, hämtat 2026-09-19) säger att push-analys låter "alerts
+automatically surface on pull requests by comparing the head branch
+analysis against the target branch analysis" — push-analysen är alltså
+den baslinje en PR:s "nya larm"-jämförelse mäts mot. Skippas en push (D0)
+uppdateras inte den baslinjen för just den commiten; nästa kod-push (52 %
+av alla PR-körningar, § Kostnad nedan) uppdaterar den igen. Samma källa
+beskriver varningsläget `Missing analysis for base commit SHA-HASH` för när
+basgrenens SENASTE commit saknar analys — de tre dokumenterade orsakerna
+(nytt repo, analys pågår, analys felade) nämner INTE "commit avsiktligt
+hoppad via paths-ignore" som ett fjärde fall. Jag har alltså INTE hittat en
+verbatim-mening som garanterar att jämförelsen "faller tillbaka på senaste
+analyserade commit" för just vårt fall — det är en rimlig läsning av
+mekaniken (`code-scanning/analyses` lagrar per REF, och en hoppad push
+laddar aldrig upp något som skulle ersätta föregående analys för den
+refen) men obelagd som garanti. Flaggat öppet per ADR-086, inte byggt på
+som fakta. Skyddsnätet som gör kvarvarande gap ofarligt oavsett utfall:
+`schedule` skannar huvudgrenens faktiska innehåll minst en gång per vecka,
+så en analys blir aldrig äldre än sju dagar.
+
 **Default setup och advanced setup kan INTE köra parallellt — mätt, inte
 antaget.** `TASK-464.2`:s PR öppnades med default setup fortfarande PÅ (per
 HÅRD GRÄNS: bygg-agenten stänger aldrig av repo-inställningar). Båda
@@ -1173,6 +1208,8 @@ setup, (2) kör advanced setup och verifiera att uppladdningen lyckas, (3)
 jämför larmlistan (`code-scanning/alerts`) före/efter avstängningen mot en
 sparad ögonblicksbild tagen FÖRE steg 1. Steg 1 är en repo-inställning och
 utförs av orkestreraren, aldrig av en agent.
+
+## Acceptance-klassen
 
 Termen bor här och i
 [ADR-080](docs/decisions/ADR-080-acceptance-klassen-hermetisk-utbrytning.md) —

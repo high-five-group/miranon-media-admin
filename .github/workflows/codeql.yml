@@ -39,30 +39,57 @@
 # docs.github.com, samma sida som ovan — "There is no 'default' suite name;
 # the default queries run automatically unless disabled."
 #
-# ═══ D0-UNDANTAGET — BARA PÅ pull_request ═══
+# ═══ D0-UNDANTAGET — PÅ BÅDA pull_request OCH push (TASK-464.2, Marcus-mandat) ═══
 #
-# `push`-ytan (huvudgrenen) och det schemalagda passet är MEDVETET ORÖRDA —
-# de skannar exakt som i dag, utan `paths-ignore`. Skäl (TASK-464.2 § AC3):
-# en ny CodeQL-regel (nytt query-pack, ny CVE-signatur) måste kunna hitta ett
-# BEFINTLIGT, oförändrat fel i huvudgrenen utan att vänta på veckoschemat —
-# och 68 % av landningarna är renodlade dokumentlandningar
-# (`actions-minutbudget-2026-09-18.md` § A4), så ett D0-filter på `push`
-# hade i praktiken skjutit upp den kontrollen mot huvudgrenen till nästan en
-# gång i veckan. Precedent: `cli/cli` (GitHubs eget CLI-repo) har
-# `paths-ignore` bara under `pull_request`, aldrig under `push`
-# (mätt 2026-09-19, `.github/workflows/codeql.yml`).
+# Ursprungsversionen (2026-09-19, samma dag) lämnade `push` orörd med
+# motiveringen att en ny CodeQL-regel måste hitta ett befintligt fel utan
+# att vänta på veckoschemat. Marcus skärpte AC #3 samma dag: en ren
+# dokument-push till huvudgrenen skannar kod som inte ändrats sedan den
+# SENAST skannades — ren spilld kostnad — och ny frågekunskap mot
+# OFÖRÄNDRAD kod bärs redan av `schedule` (se nedan), som är kvar och
+# oförändrad. `push` bär därför NU samma `paths-ignore` som `pull_request`,
+# via en YAML-ANKARE (`&d0-paths` / `*d0-paths`) — INTE en andra
+# handhållen kopia. Ankaret gör kopior omöjliga att glida isär: det finns
+# bara EN lista i filens byte-representation, refererad två gånger.
+#
+# **Vad detta kostar i skydd, och varför det är acceptabelt (citerat):**
+# GitHubs egen dokumentation för `on:push`-triggerns syfte säger att
+# push-analys låter "alerts automatically surface on pull requests by
+# comparing the head branch analysis against the target branch analysis"
+# (docs.github.com, "Customizing your advanced setup for code scanning",
+# avsnittet om triggers, hämtat 2026-09-19) — push-analysen är alltså
+# BASLINJEN en PR:s "nya larm"-jämförelse mäts mot. Skippas en push (D0)
+# uppdateras inte den baslinjen för just den commiten; NÄSTA kod-push
+# (52 % av alla, § Kostnad) uppdaterar den igen. Samma dokumentationssida
+# beskriver `Missing analysis for base commit SHA-HASH` som varningsläget
+# när basgrenens SENASTE commit saknar analys (nya repon, analys pågår,
+# analys felade) — jag har INTE hittat en primärkälla-mening som
+# uttryckligen garanterar "faller tillbaka på senaste analyserade commit"
+# för fallet "commit medvetet hoppad via paths-ignore" specifikt; det är
+# en rimlig läsning av mekaniken (code-scanning/analyses lagrar per REF,
+# inte per exakt commit, och en hoppad push laddar aldrig upp något som
+# skulle ersätta den föregående analysen) men INTE en verbatim-belagd
+# garanti. Se ADR-086: obelagt påstående, flaggat som sådant, inte byggt på
+# som fakta. Skyddsnätet som gör kvarvarande gap ofarligt: `schedule`
+# (nedan) skannar huvudgrenens FAKTISKA innehåll minst en gång per vecka
+# oavsett push-historik, så en analys blir aldrig äldre än sju dagar.
 #
 # Kön (`merge_group`) har ALDRIG haft en egen CodeQL-körning — MÄTT via
 # `code-scanning/analyses`: samtliga `ref`-värden är `refs/heads/main` eller
 # `refs/pull/<n>/head`, aldrig en kö-referens. Det landade trädet skannas
-# redan av `push`-ytan direkt efter merge, så ingen tredje yta behövs.
+# redan av `push`-ytan direkt efter merge (när den landningen är
+# kod-klassad — annars av nästa kod-landning, eller senast av `schedule`),
+# så ingen tredje yta behövs.
 #
 # ═══ SÖKVÄGSLISTAN — MÄNGD-LIK MED ci.yml:s D0, VAKTAD ═══
 #
 # De 17 posterna nedan är BYTE-IDENTISKA med de positiva raderna i ci.yml:s
 # `# paritet:start klassning-d0`-block (samma markör, samma lista) —
 # vaktat av scripts/check-listparitet.sh, paret `klassning-codeql-positiv`
-# i .listparitet-policy.conf. Glider listorna isär fäller grinden.
+# i .listparitet-policy.conf. Glider listorna isär fäller grinden. Paret
+# läser regionen EN gång (under `pull_request`); YAML-ankaret ser till att
+# `push` ALDRIG kan bära en avvikande kopia — grinden behöver därför bara
+# vakta den ENA regionen, inte två.
 #
 # ci.yml:s D0-block bär ÄVEN nio `!`-negationer (package.json, tsconfig*.json
 # m.fl.) som exkluderar dem från den positiva mängden i tj-actions/
@@ -83,7 +110,7 @@ name: CodeQL
 on:
   pull_request:
     branches: [main]
-    paths-ignore:
+    paths-ignore: &d0-paths
       # paritet:start klassning-codeql-d0
       - '**/*.md'
       - 'LICENSE'
@@ -105,6 +132,9 @@ on:
       # paritet:slut klassning-codeql-d0
   push:
     branches: [main]
+    # `*d0-paths` — SAMMA lista som pull_request ovan, via YAML-alias.
+    # Inget nytt uttryck att vakta: paritets-paret läser regionen EN gång.
+    paths-ignore: *d0-paths
   schedule:
     # Veckovis, matchar default-setups "schedule":"weekly". Exakt
     # veckodag/klockslag för DEN körningen exponeras inte av
