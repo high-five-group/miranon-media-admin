@@ -1,10 +1,10 @@
 ---
 id: TASK-450.6
 title: 'Skiva: N7 — listan Månad/år i produktionsbasen fylls på med 2027'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-18 09:53'
-updated_date: '2026-09-18 10:26'
+updated_date: '2026-09-18 12:36'
 labels:
   - ready-for-human
 dependencies: []
@@ -48,3 +48,9 @@ AC3: docs/reference/data-model.md §Kända fällor post 45 uppdaterad ÖPPET (20
 
 DoD2 (rörd fil-klass lokala grindar, mätta): typecheck 0 fel (exit 0), biome check . exit 0 (0 fel, pre-existing infos/warnings oförändrade), npm run build grön, markdownlint-cli2 0 issues/679 filer, vale 0 errors/0 warnings/0 suggestions (data-model.md), npm run check:docs -> 14/14 gröna (exit 0). npm run test:api (full svit, 2316 tester): 2315 passed / 1 failed. Den enda fällningen är send-registration-confirmation.staging.test.ts (GATE-LIVENESS + ATOMICITET AC#1 -- Test timeout of 30000ms exceeded / Request context disposed på ett GET mot get-registrations), en HELT ANNAN Edge Function utan koppling till Månad/år eller create-event. Reproducerad ISOLERAT två gånger (samma fel, samma 30,0s-timeout) -> pre-existing miljö-/timeout-problem, inte orsakat av denna diff. Filklassen jag faktiskt rörde (create-event.staging.test.ts) är 100% grön inklusive det nya testet. Registrerat som oväntat-utanför-scope i slutrapporten (ADR-053) -- ingen fix försökt, ingen fil rörd utanför denna skivas scope.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+N7 klar. Marcus lade 2026-09-18 in tolv listval (Januari–December 2027) i Månad/år i BÅDA baserna; orkestreraren mätte 14 ⇒ 26 val, gamla val orörda. Repo-sidan landad via #2527 (6aaba68e): testfallet HORISONTVAKT i tests/api/create-event.staging.test.ts (skarpt grönt: create-event 2027-01-15 ⇒ 201, Månad/år = Januari 2027), fälla 45 i data-model.md öppet kompletterad (horisont December 2027, staging BEKRÄFTAD), två kodkommentarer pekar nu på fälla 45. Review-loopen: risk lag, konvergerad runda 1. Verifierad av efterkontroll 35340750185. Listan tar slut igen januari 2028 tills SE14 (formelhärlett fält) byggts.
+<!-- SECTION:FINAL_SUMMARY:END -->

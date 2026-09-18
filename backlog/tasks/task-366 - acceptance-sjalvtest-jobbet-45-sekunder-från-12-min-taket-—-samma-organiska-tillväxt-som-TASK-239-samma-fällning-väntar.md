@@ -3,10 +3,10 @@ id: TASK-366
 title: >-
   acceptance-sjalvtest-jobbet 45 sekunder från 12-min-taket — samma organiska
   tillväxt som TASK-239, samma fällning väntar
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-02 10:50'
-updated_date: '2026-09-18 11:29'
+updated_date: '2026-09-18 12:36'
 labels:
   - ready-for-agent
 dependencies: []
@@ -39,3 +39,9 @@ FYND (TASK-239 varv 3, PR #2216, 2026-09-02): i en ren pull_request-körning UTA
 <!-- SECTION:NOTES:BEGIN -->
 S126 resume 1 (2026-09-18), PR #2524, runda 2. HEAD 47dc5be6 (rebasad pa main efter #2520; #2528/N4 har sedan landat — merge-tree MATT mot nuvarande main: exit 0, ingen konflikt, BADA gatekeeper-raderna overlever, rad 1595 N4 + rad 1600 N6). MATNING runda 1 (run 35334687514): skarvorna 299/320/271 s, max 320 s mot ORORT tak 20 min = 14 min 40 s marginal; tackningsjobbet 11 s, logg 175+189+160 = summa 524 = listat 524. Runda 2 rattade: download-artifact SHA-pinnad (@3e5f45b2 = v8.0.1) — var forsta opinnade anropet pa en yta som kor vid varje PR, och hela tackningsdomen raknas ur just de filer den levererar. AVVISAT MED MATNING: granskarens krav att byta always() -> !cancelled(). Matt i eget repo (run 25845701660, 2026-05-14): Test+Build cancelled pa eget tak 10m15s medan ci-passed med if !cancelled() && !failure() KORDE och blev success. actions/runner CancelledFunction.cs laser JobContext.Status — STEG-niva ar jobb-scopad (TASK-237-monstret stammer), JOBB-niva ar server-sidig. !cancelled() skulle funka i dag men semantiken ar ODOKUMENTERAD och community-diskussion #174377 begar aktivt att den andras; ett skippat jobb ar GRONT hos oss = fail-OPEN (S77-klassen). success()||failure() diskvalificerad: failure() ar FALSKT nar uppstroms ar cancelled. SIDOFYND ej rattat: purge-efter-kommentarens mekanism-pastaende om !cancelled() ar obelagd hypotes (TASK-309.15 bar noll matning) och nu falsifierat — jobbets always() ar anda ratt av det andra skalet.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+N6 landad via #2524 (0b3c9a24, 2026-09-18T11:54:54Z). acceptance-sjalvtest delat i tre skärvor med NYTT täckningsjobb som kräver summa(prövade) == listat (524 = 524) och fäller om en skärva saknas; download-artifact SHA-pinnad (v8.0.1). Mätt på landad head (körning 35340044105): skärvor 286/313/261 s mot orört tak 20 min = 14 min 47 s marginal; kedjan ~5,8 min mot 12,8–13,7. Review-loopen: runda 2 konvergerad, risk lag; always() behölls på egen mätning (25845701660). OBS (minutbudget-researchen 2026-09-18): delningen halverar VÄNTAN men HÖJER fakturerbara minuter ~9 100/mån. Efterkontrollen på 0b3c9a24 grön. Tre info-fynd går till N8 (TASK-450.8).
+<!-- SECTION:FINAL_SUMMARY:END -->
