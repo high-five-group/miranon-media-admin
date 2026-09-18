@@ -788,6 +788,20 @@ jobs:
         # bärar-platser). L50:s obyggda test-hälft.
         run: bash scripts/check-fetch-depth-invariant.sh
 
+      - name: Check aggregator needs invariant (TASK-450.3 gate)
+        # Per docs/research/ci-djupgranskning-2026-09-17/10-migrations-och-
+        # atgardsplan.md § N4: `ci-passed` ("CI Passed or Skipped") är repots
+        # ENDA obligatoriska kontroll, och dess `needs`-lista (denna fils
+        # sista jobb) räknar upp toppnivåjobben den bryr sig om — för hand.
+        # Ett nytt toppnivåjobb som glöms i listan blir osynligt för
+        # paraplyet: det kan bli hur rött som helst utan att stoppa en
+        # landning. Samma form som fetch-depth-invarianten ovan: läs filen,
+        # jämför två mängder, fäll med jobbets namn. Medvetna undantag (om
+        # något jobb legitimt inte ska gates:as) bor i
+        # .aggregator-needs-policy.json med ett skrivet skäl — ett undantag
+        # som inte fyller någon funktion fäller också.
+        run: node scripts/check-aggregator-needs.mjs
+
       - name: Check list parity (TASK-85 gate)
         # Repot bär flera invarianter som står på TVÅ ställen och som filerna
         # SJÄLVA säger ska hållas i synk: "PARAD ÄNDRING (obligatorisk)",
@@ -1369,6 +1383,20 @@ jobs:
         # i en sandlåda med muterade kopior av policy+ci.yml+ci-suite.yml.
         # Ingen nätverkstrafik. 18,0 s LOKALT mätt (macOS, 2026-08-26).
         #
+        # test-check-aggregator-needs.mjs (TASK-450.3, N4) hör hit av samma
+        # ADR-039 § lesson→grind-skäl: grinden ovan
+        # (check-aggregator-needs.mjs) är inte en grind förrän dess fyrning
+        # fortlöpande verifieras. 16 fall, tvåsidigt bevis — en sandlådekopia
+        # av ci.yml med ett jobb borttaget ur `needs` FÄLLER med jobbets namn
+        # (grönt-sidan mutationsprövad under bygget: saknade-jobb-loopen
+        # avstängd fällde exakt de två fall som bevisar detta), den RIKTIGA
+        # ci.yml PASSERAR, ett onödigt undantag (jobbet redan i needs, eller
+        # jobbet finns inte) fäller — plus fail-closed-grenar (trasig YAML,
+        # saknad fil, saknat 'jobs:'-block, saknat paraplyjobb, undantag utan
+        # rationale, dubblett-undantag, 'exceptions' ej array) och en
+        # robusthets-kontroll (`needs:` som skalär sträng, giltig YAML-form).
+        # Sandboxad i egen mktemp-katalog, ingen nätverkstrafik.
+        #
         # test-docraptor-sjalvbarande.mjs (TASK-301) hör hit av samma
         # ADR-039-skäl: scripts/docraptor-sjalvbarande.mjs lämnade tidigare
         # en ohämtbar CSS-url() ORÖRD, exakt den referensklassen Prince
@@ -1543,6 +1571,7 @@ jobs:
           node scripts/test-review-metrics.mjs
           node scripts/test-review-backstopp.mjs
           node scripts/test-verify-ci-parity.mjs
+          node scripts/test-check-aggregator-needs.mjs
           node scripts/test-task-338-6-prod-migration.mjs
           node scripts/test-docraptor-sjalvbarande.mjs
           node scripts/test-backfill-inbetalningar.mjs

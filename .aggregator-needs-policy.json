@@ -1,0 +1,31 @@
+{
+  "_readme": [
+    "Config för scripts/check-aggregator-needs.mjs (TASK-450.3, N4 — spec:",
+    "docs/research/ci-djupgranskning-2026-09-17/10-migrations-och-atgardsplan.md",
+    "§ N4). Skriptets LOGIK är universell (kan dupliceras till andra spokes",
+    "utan refactor); VÄRDENA — undantagen — är projekt-specifika, per",
+    "CLAUDE.md-regeln om config-drivna grindvakter (Lesson #6, UNIVERSAL).",
+    "Samma undantags-form som .listparitet-policy.conf och .mailto-policy.json:",
+    "en uttrycklig post per undantag, med ett SKRIVET SKÄL — aldrig en tyst",
+    "lucka i skriptets logik.",
+    "",
+    "VAD EN POST BETYDER: jobbet får saknas i ci-passed.needs UTAN att",
+    "grinden fäller. Ett jobb som INTE står här och INTE står i needs FÄLLS",
+    "med sitt namn.",
+    "",
+    "VAD SOM OCKSÅ FÄLLER (medvetet, AC #2): en post här för ett jobb som",
+    "REDAN står i needs (undantaget fyller då ingen funktion — döda posten),",
+    "eller för ett jobb som inte ens finns bland toppnivåjobben i ci.yml",
+    "(en kvarliggande post som maskerar att listan glidit — samma",
+    "'ett kvarliggande undantag maskerar nästa drift'-argument som",
+    "scripts/verify-ci-parity.mjs § verifieraJobbmangd använder för",
+    ".ci-parity-policy.json).",
+    "",
+    "NULÄGET (TASK-450.3, 2026-09-18, mätt med `node -e` mot ci.yml): ci.yml",
+    "bär SJU toppnivåjobb (changed, lint, audit, suite, docs,",
+    "review-backstopp, ci-passed). ci-passed.needs räknar upp samtliga SEX",
+    "övriga. Listan är alltså KOMPLETT idag — noll undantag krävs. En framtida",
+    "post läggs till HÄR, aldrig hårdkodad i skriptet."
+  ],
+  "exceptions": []
+}
