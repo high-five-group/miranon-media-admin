@@ -1,10 +1,10 @@
 ---
 id: TASK-450.3
 title: 'Skiva: N4 — vakt för paraplyets needs-lista'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-18 09:53'
-updated_date: '2026-09-18 10:40'
+updated_date: '2026-09-18 12:36'
 labels:
   - ready-for-agent
 dependencies: []
@@ -37,3 +37,9 @@ Täcker användarberättelser: 6
 - [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+N4 landad via #2528 (73ede87b, 2026-09-18T11:09:18Z). CI-wirad invariant-vakt scripts/check-aggregator-needs.mjs + testsvit (16 fall/20 kontroller, mutationsbevisad) fäller med jobbets namn när ett toppnivåjobb saknas i ci-passed.needs; undantag i .aggregator-needs-policy.json (tom). Review-loopen: risk lag, konvergerad runda 1; granskaren bekräftade att paraplyet läser GitHubs egen needs-kontext (ingen andra handhållen lista) och att YAML-alias inte lurar vakten. Efterkontrollen: N4 landade under en texttopp (N3-hålet), verifierad i stället av körning 35340750185 (kodtopp b6872fb9) — hela sviten grön inkl. Staging och A11y.
+<!-- SECTION:FINAL_SUMMARY:END -->
