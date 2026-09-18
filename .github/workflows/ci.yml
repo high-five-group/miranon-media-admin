@@ -1521,6 +1521,27 @@ jobs:
         # bevisar att sviten fångar en verklig regression och inte bara är
         # grön av konstruktion. 53 fall. 0,13 s LOKALT mätt (macOS,
         # 2026-09-04) — CI-tiden är INTE mätt av mig och kan avvika.
+        #
+        # test-hermetik-tackning.mjs (TASK-366 / N6) hör hit av samma
+        # ADR-039-skäl som syskonen, med en extra tyngd: sviten ÄR den enda
+        # mekaniska prövningen av hermetik-självtestets täckningskontroll.
+        # Kontrollens CI-jobb (`acceptance-sjalvtest-tackning` i ci-suite.yml)
+        # konsumerar artefakter från parallella matrix-jobb och kan därför
+        # strukturellt inte deriveras av verify-ci-parity — se
+        # .ci-parity-policy.json:s post för jobbet, samma skäl-form som
+        # `review-backstopp`. Den bärande kontrasten är B3 mot C1: BÅDA har två
+        # skärvor, men en matris som krympts MED sin nämnare håller (täckningen
+        # oskadd) medan en skärva som fallit bort ur en matris på tre FÄLLER.
+        # Utan det paret hade kontrollen antingen falsklarmat på varje legitim
+        # omkonfigurering eller missat det enda fel den finns för. Sektion D
+        # prövar samma sak på CLI-nivå (D1 mot D2: identiska kataloger så när
+        # som på EN borttagen rapportfil). Mutationsprövad under bygget, två
+        # gånger: summa-jämförelsen kortsluten fällde C1/C2/C3 (42 gröna → 3
+        # röda), saknad-skärva-kontrollen kortsluten fällde C1/C8/D2 — sviten
+        # fångar alltså verkliga regressioner i BÅDA invarianterna, inte bara
+        # i den ena. 42 fall. 1,05 s LOKALT mätt (macOS, 2026-09-18; sektion
+        # D:s tio CLI-fall är spawnSync-dominerade) — CI-tiden är INTE mätt av
+        # mig och kan avvika.
         run: |
           bash scripts/test-check-frontmatter.sh
           bash scripts/test-check-public-checklists.sh
@@ -1576,6 +1597,7 @@ jobs:
           node scripts/test-docraptor-sjalvbarande.mjs
           node scripts/test-backfill-inbetalningar.mjs
           node scripts/test-synka-labels.mjs
+          node scripts/test-hermetik-tackning.mjs
 
       - name: Test post-merge-lagrets ärvda klassning (TASK-73)
         # Per ADR-039 § lesson→grind (L43): en grind är inte en grind förrän
