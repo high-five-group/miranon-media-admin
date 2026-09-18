@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-02 10:50'
-updated_date: '2026-09-18 10:24'
+updated_date: '2026-09-18 10:38'
 labels:
   - ready-for-agent
 dependencies: []
@@ -22,7 +22,7 @@ FYND (TASK-239 varv 3, PR #2216, 2026-09-02): i en ren pull_request-körning UTA
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Självtest-jobbet har >2 min marginal till sitt tak i en pull_request-körning, mätt ur gh api jobs, utan takhöjning
+- [x] #1 Självtest-jobbet har >2 min marginal till sitt tak i en pull_request-körning, mätt ur gh api jobs, utan takhöjning
 - [x] #2 Självtestets tvåsidiga bevis (grönt + planterat fel fäller) består efter ändringen
 - [x] #3 verify:ci-parity + paritetspolicyn gröna; workflow-lintarna gröna
 <!-- AC:END -->
@@ -37,5 +37,5 @@ FYND (TASK-239 varv 3, PR #2216, 2026-09-02): i en ren pull_request-körning UTA
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
-S126 resume 1 (2026-09-18): N6 i CI-djupgranskningens nu-hög (PRD TASK-450, Marcus GO). Designfrågan som åtgärdsplanen (leverabel 11 § N6) krävde besvarad före plock är besvarad i PRD:n: bygg TÄCKNINGSKONTROLLEN FÖRST, delningen sedan, i samma ändringsförslag — varje skärva skriver ned antalet prövade tester och ett sammanfattande steg kräver att summan är lika med klassens listade antal (npx playwright test --project=acceptance --list). Tillkommande krav utöver kortets tre AC: summakontrollen ska fälla om en skärva tas bort ur matrisen. Ingen takhöjning.
+S126 resume 1 (2026-09-18), PR #2524. MÄTT i PR-körning 35334687514 (gh api .../jobs): självtest-skärvorna 299 s / 320 s / 271 s (10:26:33 -> 10:31:32 / 10:31:53 / 10:31:04). Max 320 s mot ett ORÖRT tak på 20 min = 14 min 40 s marginal (AC #1 krävde >2 min). Täckningsjobbet 11 s (10:31:55 -> 10:32:06), logg: 175+189+160 = summa 524 = listat 524. FÖRE: 12,8-13,7 min (leverabel 9). Kritisk väg för hela kedjan nu 333 s (5,55 min) inkl. summajobbet. TAKSÄNKNING ÖVERVÄGD OCH AVSTÅDD: en mätpunkt, och spridningen mellan de tre skärvorna i SAMMA körning är redan 271-320 s (18 %); körningen bar ingen kö-last, vilket är exakt det läge som gav fyra cancelled 2026-09-03. Sänkning kräver egen mätserie.
 <!-- SECTION:NOTES:END -->
