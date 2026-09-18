@@ -1,4 +1,7 @@
 {
+  // [TASK-450.5-PROOF] Kastbar sond — bevisar att audit-jobbet KÖR när
+  // audit-ci.jsonc ändras (K1(b)). Denna gren mergas ALDRIG; raden tas bort
+  // efter mätning. Se PR #2553.
   // $schema ger IDE-completion. Källa: https://github.com/IBM/audit-ci
   "$schema": "https://github.com/IBM/audit-ci/raw/main/docs/schema.json",
 
