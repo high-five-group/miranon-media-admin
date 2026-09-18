@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-11 19:12'
-updated_date: '2026-08-28 05:09'
+updated_date: '2026-09-18 10:10'
 labels:
   - ready-for-human
 dependencies: []
@@ -90,4 +90,6 @@ INSTANS #2-SERIEN OMTOLKAD EFTER MÄTNING (S105 Del 10, 2026-08-14 kväll) — V
 (d) Kortets ursprungsinstans (stale ≥20 h, 2026-08-11-eran) är därmed INTE motbevisad — men kvällens mätning visar att pipelinen i sitt NUVARANDE läge deployar och servar färskt.
 
 AC saknas medvetet: kortets ursprungliga symptom är delvis åtgärdat (AppUpdateBanner, chunk-laddningsfel.ts, ADR-047-amenderingar redan landade, se kortets egna Implementation Notes) men kortet dokumenterar självt ett kvarstående öppet Marcus-beslut: 'MARCUS-BESLUT KVARSTÄR: plan-nivån (Vercel Pro/Enterprise), och om dpl-pinningen (Skew Protection) är värd att bygga.' Kräver Marcus-beslut om kontonivå + om det återstående nätverks-kraschfönstret (chunk som inte finns efter deploy-skifte) ska stängas helt. Källa: kortets egen Implementation Notes (S105, 2026-08-13/14). Verifierat av registerhygien-passet 2026-08-28 — satte label ready-for-human (saknades).
+
+[TASK-450.7, N9, 2026-09-18] Rollback-runbooken för frontenden (Vercel) är skriven: docs/reference/prod-driftsattning-runbook.md § "Rollback av frontenden (Vercel)" — åttastegssekvensen (vercel rollback/promote/bisect m.fl.), verifierad mot Vercels egen dokumentation 2026-09-18, plus två egna tillägg: FR9 (kontrollera att automatisk tilldelning av produktionsdomänen är PÅ igen efter en rollback — precis den lucka detta kort ursprungligen flaggade) och en not om att VITE_FEATURE_BETALNINGAR bakas in vid bygget och därför följer med bakåt. Vägen är OÖVAD hos oss; övningen är Marcus eget beslut om NÄR, ej del av denna skiva. Steg 6 i den andra runbooken (aktivitetsloggens, samma fil) är fortfarande PRELIMINÄRT tills detta korts egen utredning av deploy-vägens instrument landar — den frågan är oberoende av rollback-avsnittet.
 <!-- SECTION:NOTES:END -->

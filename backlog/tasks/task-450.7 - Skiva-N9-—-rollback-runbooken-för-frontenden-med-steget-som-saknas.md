@@ -4,6 +4,7 @@ title: 'Skiva: N9 — rollback-runbooken för frontenden, med steget som saknas'
 status: To Do
 assignee: []
 created_date: '2026-09-18 09:54'
+updated_date: '2026-09-18 10:12'
 labels:
   - ready-for-agent
 dependencies: []
@@ -24,15 +25,15 @@ Täcker användarberättelser: 13
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Runbooken bär avsnittet med åtta steg + de två egna tilläggen, skrivet så att en person utan teknisk bakgrund kan följa det
-- [ ] #2 Varje leverantörspåstående bär källa (URL + hämtdatum) verifierad vid skrivandet
-- [ ] #3 TASK-199 pekar på avsnittet
-- [ ] #4 Avsnittet säger öppet att vägen är OÖVAD tills övningen körts, med plats för övningens utfall
+- [x] #1 Runbooken bär avsnittet med åtta steg + de två egna tilläggen, skrivet så att en person utan teknisk bakgrund kan följa det
+- [x] #2 Varje leverantörspåstående bär källa (URL + hämtdatum) verifierad vid skrivandet
+- [x] #3 TASK-199 pekar på avsnittet
+- [x] #4 Avsnittet säger öppet att vägen är OÖVAD tills övningen körts, med plats för övningens utfall
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->

@@ -626,7 +626,11 @@ stigande ingrepp:
    Långsammast, och den enda som ändrar sanningen i git.
 
 `TASK-199` är öppen just för att väg 2 och 3 saknar dokumenterad kontroll —
-läs kortet innan du väljer.
+läs kortet innan du väljer. Väg 2:s fulla kommandosekvens (och den bieffekt
+som gör den farligare än den ser ut: en tillbakarullning stänger av
+automatisk tilldelning av produktionsdomänen tills man aktivt slår på den
+igen) finns nu i § [Rollback av frontenden (Vercel)](#rollback-av-frontenden-vercel)
+längre ned i denna fil.
 
 ### R4 — Allt ska tillbaka till läget före
 
@@ -651,6 +655,317 @@ när prod-EF-synken kördes 2026-07-24.
 | 8 | En agent nekas mitt i driftsättningen | Prod-ref-låset ser Claude Codes Bash-anrop. Det är avsiktligt | Kör i din egen terminal. Låt aldrig en agent konstruera bypass-prefixet |
 | 9 | Rök-testet väljs till en åtgärd som skickar mail | Fyra instrumenterade verb skickar utgående post | Välj `antecknade`. Sessionen bär dessutom ett mekaniskt mailstopp |
 
+## Rollback av frontenden (Vercel)
+
+> **Detta avsnitt är FRISTÅENDE från aktivitetsloggens driftsättning ovan.**
+> Det beskriver hur man rullar tillbaka HELA APPEN (fronten, det Lotta ser i
+> webbläsaren) till en tidigare version om en ny version visar sig trasig —
+> oavsett vilken skiva som orsakade det. Ursprung: `TASK-199` (öppen sedan
+> 2026-08-11, se kortets egen historik för utredningen av deploy-vägen) och
+> granskningsfyndet N9
+> (`docs/research/ci-djupgranskning-2026-09-17/10-migrations-och-atgardsplan.md`
+> § N9, byggt som `TASK-450.7`).
+>
+> ⚠ **VÄGEN ÄR OÖVAD HOS OSS.** Kommandona nedan är verifierade mot
+> leverantörens (Vercels) egen dokumentation 2026-09-18, men har ALDRIG
+> körts skarpt i det här projektet. Kör inte detta för första gången mitt i
+> en verklig incident om det går att undvika — öva det EN gång i en lugn
+> stund, mot en känd god version, INNAN det behövs på riktigt. Marcus
+> beslutar när övningen sker; den ingår inte i denna skiva.
+>
+> **Övningens utfall** (fylls i av Marcus efter första övningen):
+>
+> - Datum:
+> - Vad som hände:
+> - Avvikelser mot stegen nedan:
+
+### Ord du behöver innan du börjar
+
+- **Tillbakarullning ("rollback")** — att peka webbadressen Lotta använder
+  tillbaka till en TIDIGARE version av appen som redan fungerade, i stället
+  för att hasta fram en ny fix. Det går på sekunder, inte minuter, eftersom
+  ingenting byggs om — Vercel (företaget som driftsätter fronten åt oss,
+  se [ADR-091](../decisions/ADR-091-hosting-deploy-vercel-pro.md)) pekar
+  bara om vilken redan färdig version som visas.
+- **Deployment ("bygge")** — en version av appen som byggts färdig och kan
+  visas. Varje gång kod landar på `main` skapar Vercel ett nytt bygge.
+- **Produktionsdomän** — webbadressen Lotta faktiskt använder,
+  `admin.miranon.dev`. Skild från en "preview"-adress, som bara en
+  utvecklare ser innan något släpps skarpt.
+- **Automatisk tilldelning ("auto-assignment") av produktionsdomänen** —
+  normalläget vi har i dag: varje gång en ändring landar på `main` bygger
+  Vercel den och pekar automatiskt om `admin.miranon.dev` till det nya
+  bygget, utan att någon människa gör något. **En tillbakarullning stänger
+  av just detta** tills man aktivt slår på det igen — se steg FR9 nedan,
+  som är skälet till att detta avsnitt skrivs.
+
+### Vem kör detta, och var
+
+Samma princip som resten av denna runbook: **Marcus, i sin egen terminal**,
+inte en agent. Vercel-CLI:t är redan inloggat på denna maskin
+(`npx vercel whoami` svarar `marcus-2914` — se
+[`atkomst-och-nycklar.md`](atkomst-och-nycklar.md)), och repot är redan
+länkat mot rätt projekt (`miranon-media-admin`, team
+`marcus-johanssons-projects-1d6d2a3a`). Kommandona nedan skrivs `npx vercel …`
+för att matcha resten av repots dokumentation — Vercels egen dokumentation
+kallar samma binär bara `vercel`.
+
+### Åttastegssekvensen (destillat ur Vercels egen incident-guide)
+
+Källa för samtliga åtta steg och kommandon nedan:
+[vercel.com/docs/deployments/rollback-production-deployment](https://vercel.com/docs/deployments/rollback-production-deployment)
+(hämtad 2026-09-18) — sidans eget "Quick reference"-block numrerar exakt
+åtta steg, med binärsöket som en del av steg 6 och "promota direkt" som ett
+alternativ inom steg 8, precis som nedan.
+
+#### FR1 — Bekräfta att produktionen faktiskt är trasig
+
+```bash
+npx vercel logs --environment production --status-code 5xx --since 30m
+```
+
+**Vad du gör:** ber Vercel om produktionens senaste serverfel.
+**Vad du ska se:** en lista med nyliga fel (HTTP 5xx betyder att servern
+kraschade — inte att en användare skrev fel i ett formulär).
+**Om du ser något annat** (listan är tom): produktionen är sannolikt inte
+trasig på det sätt du trodde. Leta vidare innan du rullar tillbaka något —
+en tillbakarullning löser inget som inte satt i frontend-bygget.
+
+#### FR2 — Rulla tillbaka omedelbart
+
+```bash
+npx vercel rollback <tidigare-deployment-url-eller-id>
+npx vercel rollback status
+```
+
+**Vad du gör:** anger webbadressen eller ID:t för den TIDIGARE, kända goda
+versionen (hittas i Vercel-dashboardens deploy-lista, filtrerad på `main`),
+och pekar produktionen om till den.
+**Vad du ska se:** `rollback status` bekräftar att bytet gick igenom. Bytet
+sker på sekunder — inget byggs om. Källa, ordagrant: *"This points
+production traffic to the deployment you specify without rebuilding"*
+([vercel.com/docs/deployments/rollback-production-deployment](https://vercel.com/docs/deployments/rollback-production-deployment),
+hämtad 2026-09-18).
+**Om du ser något annat** (ett felmeddelande i stället för en bekräftelse):
+läs meddelandet — vanligast är ett felaktigt deployment-ID. Rätta och
+försök igen innan du går vidare till nästa steg.
+
+**Vår plan tillåter tillbakarullning till VILKEN SOM HELST tidigare
+produktionsversion, inte bara den senaste.** Källa, ordagrant: *"For teams
+on a Pro or Enterprise plan, all deployments previously aliased to a
+production domain are eligible to roll back."* Hobby-planen tillåter bara
+den OMEDELBART föregående ([vercel.com/docs/instant-rollback](https://vercel.com/docs/instant-rollback),
+hämtad 2026-09-18). Vi är på Vercel Pro
+([ADR-091](../decisions/ADR-091-hosting-deploy-vercel-pro.md)), så den
+fria formen gäller.
+
+#### FR3 — Verifiera att tjänsten är återställd
+
+```bash
+npx vercel logs --environment production --status-code 5xx --since 5m
+```
+
+**Vad du gör:** kontrollerar felloggen igen, nu efter tillbakarullningen.
+**Vad du ska se:** färre eller inga nya 5xx-fel jämfört med FR1.
+**Om du ser något annat** (felen fortsätter): tillbakarullningen löste inte
+problemet — felet sitter sannolikt någon annanstans (Supabase, Airtable),
+inte i frontend-versionen. Fortsätt ändå till FR9 innan du gör något annat:
+produktionen står nu i rullat-tillbaka-läge oavsett orsak, och det läget
+måste hanteras medvetet.
+
+#### FR4 — Hitta VILKEN version som orsakade felet
+
+```bash
+npx vercel list --prod
+npx vercel inspect <trasig-deployment-url>
+```
+
+**Vad du gör:** listar tidigare produktionsversioner och läser ut vilken
+git-commit den trasiga byggdes från.
+**Vad du ska se:** en lista med tidsstämplar och commits; `inspect` visar
+commit-SHA, gren och byggtid för den trasiga versionen.
+**Om du ser något annat** (listan saknar den trasiga versionen): den kan ha
+rullats bort ur den korta listan — lägg till `--meta` eller bläddra i
+Vercel-dashboardens deploy-lista i stället.
+
+#### FR5 — Läs byggloggen för den trasiga versionen
+
+```bash
+npx vercel inspect <trasig-deployment-url> --logs
+```
+
+**Vad du gör:** läser vad som hände UNDER bygget, inte bara vad som
+händer när appen körs.
+**Vad du letar efter:** varningar eller fel som inte stoppade bygget men
+ändå påverkar hur appen beter sig (t.ex. en miljövariabel som saknades).
+
+#### FR6 — Jämför felloggar mellan den goda och den trasiga versionen
+
+```bash
+npx vercel logs --deployment <trasig-id> --level error --expand
+npx vercel logs --deployment <god-id> --level error --expand
+```
+
+**Vad du gör:** hämtar detaljerade felloggar för båda versionerna, sida vid
+sida.
+**Vad du letar efter:** skillnaden i feltyper mellan de två avslöjar vad som
+faktiskt gick sönder.
+
+**Rör felet flera versioner, inte bara den senaste** (flera landningar
+mellan den goda och den trasiga): binärsök i stället för att gissa.
+
+```bash
+npx vercel bisect --good <god-url> --bad <trasig-url>
+```
+
+**Vad du gör:** Vercel går igenom versionerna en i taget och frågar dig om
+var och en är god eller trasig, tills den hittar exakt den som introducerade
+felet.
+
+#### FR7 — Fixa lokalt och testa som förhandsvisning
+
+```bash
+npx vercel deploy
+npx vercel curl /den-paverkade-sidan --deployment <forhandsvisnings-url>
+```
+
+**Vad du gör:** kodar fixen lokalt och släpper den som en FÖRHANDSVISNING
+(en adress bara du ser) innan den går till produktion.
+**Vad du ska se:** den drabbade sidan fungerar mot förhandsvisningen.
+**Om du ser något annat** (samma fel kvarstår): fixa vidare — släpp aldrig
+en förhandsvisning som fortfarande visar felet till produktion.
+
+#### FR8 — Släpp fixen till produktion
+
+Två vägar, beroende på om du har en ny fix att släppa eller bara vill peka
+tillbaka till en känd god version:
+
+```bash
+# A — en ny fix finns, från FR7:s förhandsvisning
+npx vercel deploy --prod
+
+# B — ingen ny kod behövs, peka bara tillbaka till en version som redan finns
+npx vercel promote <deployment-url>
+npx vercel promote status
+```
+
+**Vad du gör:** släpper den fixade koden till produktion (A), eller pekar
+produktionen till en version som redan är byggd och känd god (B) — t.ex.
+om felet berodde på en extern tjänst och inte på appens egen kod.
+**Vad du ska se:** väg B bekräftas av `promote status`. Båda vägarna är
+formellt EXPLICITA produktionstilldelningar, och väg B är dokumenterat
+liktydigt med dashboardens knapp "Undo Rollback" (se FR9). Källa, ordagrant:
+*"This promotes the specified deployment to production and re-enables
+auto-assignment of production domains."*
+([vercel.com/docs/cli/rollback](https://vercel.com/docs/cli/rollback),
+hämtad 2026-09-18).
+**Om du ser något annat** (ett fel vid promote/deploy): läs meddelandet,
+rätta, försök igen. Gå INTE vidare till FR9 förrän ett av de två lyckats —
+produktionen står annars kvar i rullat-tillbaka-läge.
+
+### FR9 (VÅRT EGET TILLÄGG) — Kontrollera att automatisk tilldelning är PÅ igen
+
+**Detta steg finns INTE i Vercels egen guide.** Det är skälet till att
+detta avsnitt skrivs: utan det kan man tro sig ha "löst" incidenten i FR8
+och gå vidare med jobbet, medan produktionen i verkligheten fortfarande
+står frånkopplad från `main` — huvudgrenen fortsätter se grön ut i CI,
+kollegor fortsätter landa kod som ser ut att gå live, medan Lotta i tysthet
+står kvar på en gammal version tills någon råkar märka det.
+
+**Vad du gör:** öppnar projektets översiktssida i Vercel-dashboarden.
+**Vad du ska se:** så länge produktionen står i "rullad tillbaka"-läge
+visar produktions-rutan en knapp med texten **"Undo Rollback"**. Ser du den
+knappen är automatisk tilldelning FORTFARANDE AVSTÄNGD — oavsett vad du
+gjort i terminalen innan dess.
+**Om du ser den knappen** (den är alltså PÅSLAGEN-avstängd): slå på
+tilldelningen igen på ett av två sätt:
+
+- **I dashboarden:** klicka **"Undo Rollback"** på produktions-rutan, välj
+  vilken version som ska promotas, klicka **"Confirm"**.
+- **I terminalen:** `npx vercel promote <deployment-url>` (FR8, väg B).
+
+**Steget är klart när:** knappen "Undo Rollback" INTE längre visas på
+produktions-rutan. Gör därefter en sista kontroll som inte går via
+dashboarden, som EGENTLIGEN bevisar att kopplingen är tillbaka: landa en
+trivial, ofarlig ändring på `main` (eller vänta in nästa naturliga
+landning) och bekräfta att `admin.miranon.dev` faktiskt byter version av
+sig själv, utan att någon kör ett kommando. Bara det visar att `main` och
+produktionen verkligen är hopkopplade igen — inte bara att en knapp
+försvann.
+
+Källa, ordagrant: *"After a rollback, Vercel turns off auto-assignment of
+production domains. This means new pushes to your production branch won't
+go live automatically. To restore normal deployment behavior, you need to
+undo the rollback by promoting a different deployment."*
+([vercel.com/docs/instant-rollback](https://vercel.com/docs/instant-rollback)
+§ "Undo a rollback", hämtad 2026-09-18).
+
+### Vårt andra tillägg — funktionsflaggan följer med bakåt
+
+**`VITE_FEATURE_BETALNINGAR` bakas in i appen VID BYGGET, inte vid
+körning.** Den definieras i `src/env.ts:63` och läses genom
+`betalningarPa()` i `src/lib/funktionsflaggor.ts:74`
+(`env.VITE_FEATURE_BETALNINGAR === 'pa'`). Byggverktyget Vite skriver in
+värdet i den färdiga appens kod redan när den byggs (`runtimeEnv:
+import.meta.env` i `src/env.ts:65`, Vites standardmekanik för
+byggtidsvariabler) — det finns ingen efterhandsomkoppling i en redan
+byggd, körande app.
+
+**Praktisk konsekvens för en tillbakarullning:** rullar du tillbaka till en
+version av appen som byggdes INNAN flaggan hade sitt NUVARANDE värde i
+Vercels projektinställningar, får du TILLBAKA det gamla flaggvärdet — inte
+det som gäller idag. En tillbakarullning ändrar alltså inte bara vilken
+KOD som körs, utan i förlängningen även vilka FUNKTIONER som är på eller
+av, om flaggan hunnit ändras mellan de två versionerna.
+
+Det här är inte en gissning om Vercels beteende — det följer direkt av att
+miljövariabler över huvud taget inte rör sig vid en tillbakarullning.
+Källa, ordagrant: *"Vercel won't update environment variables if you change
+them in the project settings and will roll back to a previous build"* samt
+*"There are no change in Environment Variables, and they will remain in
+their original state"*
+([vercel.com/docs/instant-rollback](https://vercel.com/docs/instant-rollback),
+hämtad 2026-09-18). Den gamla byggen behåller alltså sitt eget, redan
+inbakade flaggvärde — miljövariabeln i projektinställningarna må vara
+ändrad sedan dess, men den gamla byggen läste den aldrig på nytt, eftersom
+den aldrig byggs om av en tillbakarullning.
+
+### En bieffekt till, för fullständighetens skull
+
+**Schemalagda jobb ("cron jobs") återställs till den tillbakarullade
+versionens tillstånd.** Källa, ordagrant: *"If the project uses cron jobs,
+they will be reverted to the state of the rolled back deployment."*
+([vercel.com/docs/instant-rollback](https://vercel.com/docs/instant-rollback),
+hämtad 2026-09-18). Har ett schemalagt jobb lagts till eller tagits bort
+mellan de två versionerna försvinner eller återkommer det vid
+tillbakarullningen. Vi har (2026-09-18) inga Vercel-cron-jobb konfigurerade
+för detta projekt — posten är bokförd i förväg, inte en känd risk just nu.
+
+### Kvarstående osäkerhet — inte verifierad, öppet bokförd
+
+Vercels dokumentation säger EXPLICIT att `npx vercel promote` (FR8 väg B)
+återställer automatisk tilldelning (citatet i FR8/FR9 ovan). Den säger INTE
+lika explicit att en vanlig `npx vercel deploy --prod` (FR8 väg A) gör
+detsamma — den ÄR en ny, uttrycklig produktionstilldelning, så det är
+rimligt att anta att effekten är densamma, men ingen mening i
+dokumentationen (läst i sin helhet 2026-09-18) säger det rakt ut. Lita
+därför alltid på FR9:s KONTROLL (om knappen "Undo Rollback" är borta),
+aldrig på antagandet att FR8 väg A räckte på egen hand.
+
+#### Källor för detta avsnitt (samtliga hämtade 2026-09-18)
+
+- [vercel.com/docs/instant-rollback](https://vercel.com/docs/instant-rollback)
+  — bieffekten (auto-tilldelning stängs av), miljövariabler, cron-jobb,
+  plan-skillnader.
+- [vercel.com/docs/cli/rollback](https://vercel.com/docs/cli/rollback) —
+  `vercel rollback`/`vercel rollback status`-syntax, promote-citatet.
+- [vercel.com/docs/deployments/rollback-production-deployment](https://vercel.com/docs/deployments/rollback-production-deployment)
+  — hela åttastegssekvensen, verbatim "points production traffic"-citatet.
+- [vercel.com/docs/cli/promote](https://vercel.com/docs/cli/promote) —
+  `vercel promote`/`vercel promote status`-syntax.
+- `src/env.ts:63,65` och `src/lib/funktionsflaggor.ts:74` (denna kodbas,
+  läst 2026-09-18) — att `VITE_FEATURE_BETALNINGAR` är en byggtidsflagga.
+
 ## Vad denna runbook medvetet inte täcker
 
 - **`TASK-201.10` (QA)** — den manuella testplanen i browsern är ett eget kort
@@ -662,6 +977,11 @@ när prod-EF-synken kördes 2026-07-24.
   förbättring. Eget pass, medvetet efter denna driftsättning.
 - **Allt mail.** Inga utskicksvägar aktiveras, inga `send-*`-funktioner
   smoke-körs.
+- **Den skarpa övningen av frontend-rollbacken** (§ Rollback av frontenden
+  ovan) — `TASK-450.7`/N9 kräver bara att vägen är DOKUMENTERAD och
+  verifierad mot leverantörens dokumentation. Att köra den en gång, skarpt,
+  mot en känd god version är Marcus eget beslut om NÄR, inte en del av
+  denna skiva.
 
 ## Relaterat
 
@@ -684,3 +1004,15 @@ när prod-EF-synken kördes 2026-07-24.
   fail-closed deploy-grinden.
 - `scripts/deny-prod-ref.sh` + `.prod-ref-policy.conf` — prod-ref-låset och
   dess dokumenterade väg förbi.
+- [`ADR-091`](../decisions/ADR-091-hosting-deploy-vercel-pro.md) — valet av
+  Vercel Pro för frontend-hosting, plan-skillnaderna § Rollback av
+  frontenden bygger på.
+- `TASK-199` (`npm run bl -- task 199 --plain`) — den fulla utredningen av
+  frontend-deploy-vägen (stale bundles, service worker-precache, Skew
+  Protection) som § Rollback av frontenden ovan är ett svar på en del av.
+- `docs/research/ci-djupgranskning-2026-09-17/10-migrations-och-atgardsplan.md`
+  § N9, och underlagets
+  [`kg2-externa-fakta-och-rattelser.md`](../research/ci-djupgranskning-2026-09-17/underlag/kg2-externa-fakta-och-rattelser.md)
+  § A2 — granskningsfyndet och den ursprungliga leverantörsverifieringen
+  denna skiva (`TASK-450.7`) byggde vidare på och verifierade på nytt
+  2026-09-18.
