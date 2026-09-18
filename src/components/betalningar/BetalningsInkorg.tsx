@@ -2537,7 +2537,7 @@ function RadInnehall({ rad, visaEvent }: { rad: InkorgsRad; visaEvent?: boolean 
               panelen och anmälans detaljvy. */}
           {saknas === null ? 'Pris saknas i basen' : `${visaKronor(saknas)} kr kvar att betala`}
         </span>
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex min-h-6 flex-wrap items-center gap-2" data-testid="rad-pillar">
           {/* ═══ EN PILL-ANATOMI, TVÅ BETYDELSER (Marcus dom 2026-09-01) ═══
               Marcus såg "Förfallen" och "Obekräftad" sida vid sida HÄR och
               kallade dem inkonsekventa. De var det på två sätt samtidigt:
@@ -2552,6 +2552,33 @@ function RadInnehall({ rad, visaEvent }: { rad: InkorgsRad; visaEvent?: boolean 
               (den har ett eget bekräftelseflöde och är det normala läget
               för en ny anmälan — inte samma allvar).
               Se `StatusBadge.tsx` § TON_FORM för hela resonemanget. */}
+          {/* [TASK-456, fynd] RESERVERAD HÖJD — raden var OVILLKORLIGT
+              monterad men utan `min-h`: är `forfallen`/`obekraftad`/
+              `spegelSlapar` alla falska (prod-belagt legitimt tillstånd,
+              O1: Bekräftad, inte förfallen, spegeln i fas) blev raden 0 px
+              och kortet lägre än syskonen — Marcus i prod 2026-09-18: "alla
+              kort ska alltid vara exakt lika höga". `min-h-6` (24 px) är
+              HUSMÖNSTRET (`AnmalningarSida.tsx` rad ~1064: "min-h-6 (24 px)
+              ligger över badgens verkliga höjd i BÅDA fallen" — samma
+              `StatusBadge storlek="sm"`, MÄTT där till exakt 24 px), inte en
+              ny uppfinning.
+
+              DESIGNFRÅGAN (AC #2), MÄTT VID 390 PX, INTE GISSAD: en rad med
+              TVÅ pillar radbryter INTE (144 px kort, identiskt med
+              en-pill-kortet — `betalningar-inkorg-pillrad-hojd.staging.
+              test.ts`). TRE SAMTIDIGA pillar (Förfallen + Obekräftad +
+              Basen släpar — en obekräftad anmälan vars deadline OCKSÅ
+              passerat OCH vars Airtable-spegel OCKSÅ släpar) radbryter TILL
+              TVÅ RADER och gör DET kortet 32 px högre än syskonen (176 mot
+              144 px, = en extra pillrad + `gap-2`). NAMNGIVET UNDANTAG,
+              INTE LAGAT: en tredje samtidig varningssignal är en äkta,
+              sällsynt datakombination som behöver mer plats för att säga
+              tre sanna saker — att tvinga fram en rad hade krävt att krympa
+              `StatusBadge`s `sm`-skalsteg eller pillarnas etablerade
+              ordalydelse (Marcus dom 2026-09-01, se ovan), vilket hade
+              rört VARJE annan konsument av samma skalsteg
+              (`AnmalningarSida.tsx`, `Betalningar.tsx` m.fl.) för en enda
+              radrad yta — över golvet, inte under det. */}
           {rad.forfallen && (
             /* KLOCKAN BEHÅLLS via `ikon`-proppen: det är TIDEN som gått
                fel, inte ett generellt larm. Tonen är kopparns och inte
