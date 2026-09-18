@@ -4,7 +4,6 @@ title: 'Skiva: K1 (b) — beroendegranskningen villkoras mot beroendeträdet'
 status: To Do
 assignee: []
 created_date: '2026-09-18 09:53'
-updated_date: '2026-09-18 22:47'
 labels:
   - ready-for-agent
 dependencies:
@@ -32,7 +31,6 @@ Täcker användarberättelser: 14, 15
 - [ ] #4 (iv) ADR-028:s konventionsflöde för undantag är orört
 - [ ] #5 Den medvetna diff-oberoende-kommentaren från TASK-395 är ersatt med det nya beslutet och dess skäl; paritetspolicyn och verify:ci-parity gröna
 - [ ] #6 Review-utlåtandets risknivå är visad för Marcus före armering
-- [ ] #7 Beroendekanalens (beroende-arende) egen 'vaktens vakt' i nightly-watchdog.yml (dead man's switch, samma mönster som produktkanalens — märker om beroendekanalen borde ha fyrat på en röd nightly-audit men inte gjorde det): tillagd i TASK-450.10 (3A) beslut 2026-09-19, byggs HÄR i stället för i 450.10 eftersom denna skiva gör kanalen lastbärande för hela beroendesäkerheten — en vakt byggd före det hade vaktat en icke-lastbärande kanal (se ADR-082 § Updates 2026-09-18 'Öppet, ej avgjort här')
 <!-- AC:END -->
 
 ## Definition of Done

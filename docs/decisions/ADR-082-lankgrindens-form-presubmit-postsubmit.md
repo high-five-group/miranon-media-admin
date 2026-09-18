@@ -352,9 +352,12 @@ conclusion-värde rött som default i stället för tyst.
 **Vad som fortfarande saknar vakt, öppet skrivet:** bokförings- och
 beroendekanalen har ingen "vaktens vakt". `lankrota` har det inte heller, och har
 aldrig haft det — beslut 4 byggde kanalen, inte en vakt över den.
-Beroendekanalens dödmansgrepp är medvetet lagd som AC på `TASK-450.5`
-(K1 (b)) i stället för byggd i `TASK-450.10`: kanalen blir lastbärande för
-hela beroendesäkerheten först när `TASK-450.5` landat, se § Öppet ovan.
+Beroendekanalens dödmansgrepp bärs av ett eget kort, `TASK-467`
+(rättat 2026-09-19 — flyttades bort från en AC på `TASK-450.5` sedan
+`TASK-450.10` och `TASK-450.5` visade sig redigera samma kortfil, en
+verklig merge-konflikt), i stället för byggt i `TASK-450.10`: kanalen
+blir lastbärande för hela beroendesäkerheten först när `TASK-450.5`
+landat, se § Öppet ovan.
 
 #### Bevis-läget är hermetiskt sedan samma runda
 

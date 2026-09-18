@@ -1014,9 +1014,9 @@ dag **ingen** motsvarande "vaktens vakt": faller deras kanaljobb på gh-I/O syns
 det bara i körningens logg. Det är en känd lucka, inte en glömska — de två
 kanalerna är icke-blockerande stående ärenden, och en vakt som larmar
 tilldelat om dem hade återinfört precis den signalblandning delningen tog
-bort. Beroendekanalens dödmansgrepp är medvetet lagd som en AC på
-`TASK-450.5` (K1 (b)) i stället för byggd i `TASK-450.10` (3A): den kanalen
-blir lastbärande för hela beroendesäkerheten FÖRST när `TASK-450.5` landat.
+bort. Beroendekanalens dödmansgrepp bärs av ett eget kort, `TASK-467`, i
+stället för byggt i `TASK-450.10` (3A): den kanalen blir lastbärande för
+hela beroendesäkerheten FÖRST när `TASK-450.5` landat.
 
 **Invarianten som måste hållas är TVÅDIMENSIONELL** — och den formulering som
 stod här (*"listan ska vara lika med `alarm`-jobbets trigger"*) var för grov.

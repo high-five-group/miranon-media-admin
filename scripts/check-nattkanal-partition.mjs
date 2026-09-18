@@ -61,6 +61,18 @@ import fs from 'node:fs';
 // inget prefix, eller ett prefix matchar inget produktjobbs namn. Grönt
 // (exit 0): båda leden håller.
 //
+// ═══ KÄNDA BEGRÄNSNINGAR (review runda 1, PR #2557) ═══
+// extractTriggerRefs() är en REGEX, inte en GH Actions-expression-parser,
+// och fångar bara punktnotation (`needs.<id>.result`). Bracket-notation
+// (`needs['jobb-id'].result`) och andra funktionsformer fångas INTE av den
+// regexen. Utfallet är ändå fail-loud (kanalens jobb blir "outlöst" och
+// FÄLLER som ID-ledets vanliga "utlöser INGEN kanal"-fynd) — men findUnsupportedNeedsSyntax()
+// nedan ger dessutom ett ÄRLIGT tilläggsmeddelande specifikt för
+// bracket-notation, så felet inte ser ut som en vanlig kanalpartitions-
+// avvikelse när det egentligen är "skriptet kunde inte tolka uttrycket".
+// Andra ovanliga former (t.ex. `fromJSON(needs.x).result`) täcks INTE av
+// den detektorn och ger fortfarande bara det generiska partitionsfyndet.
+//
 // Källa: docs/research/ci-djupgranskning-2026-09-17/10-migrations-och-
 // atgardsplan.md § N2 + § N4 (formen); tasks/sessions/2026-09-17-session-
 // 126.md § Del 9 (Marcus beslut 3A); ADR-082 § Updates 2026-09-18;
@@ -150,16 +162,30 @@ function extractTriggerRefs(ifExpr) {
   return out;
 }
 
+// Hittar en KÄND, ohanterbar needs-syntax i ett if:-uttryck — i dag bara
+// bracket-notation (`needs['jobb-id'].result` / `needs["jobb-id"].result`).
+// Se § KÄNDA BEGRÄNSNINGAR i filhuvudet: detta är en riktad detektor för
+// ETT specifikt fall, inte en generell "är detta needs-uttryck giltigt"-
+// kontroll — andra ovanliga former (funktionsanrop mot needs-kontexten)
+// täcks inte och ger bara det generiska partitionsfyndet.
+function findUnsupportedNeedsSyntax(ifExpr) {
+  if (typeof ifExpr !== 'string') return null;
+  const bracket = ifExpr.match(/needs\s*\[[^\]]*\]/);
+  return bracket ? bracket[0].trim() : null;
+}
+
 function channelInfo(workflow, kanalKey, jobId, nightlyPath) {
   const job = workflow.jobs[jobId];
   if (!job || typeof job !== 'object') {
     usageDie(`kanaljobbet "${jobId}" (${kanalKey}) finns inte i ${nightlyPath}.`);
   }
+  const ifExpr = typeof job.if === 'string' ? job.if : '';
   return {
     kanalKey,
     jobId,
     needs: new Set(normalizeNeeds(job.needs)),
-    triggerRefs: extractTriggerRefs(typeof job.if === 'string' ? job.if : ''),
+    triggerRefs: extractTriggerRefs(ifExpr),
+    unsupportedNeedsSyntax: findUnsupportedNeedsSyntax(ifExpr),
     name: typeof job.name === 'string' ? job.name : jobId,
   };
 }
@@ -207,6 +233,22 @@ function main() {
   ];
 
   const errors = [];
+
+  // Ärligt tilläggsfynd (review runda 1, PR #2557): en känd, ohanterbar
+  // needs-syntax (i dag: bracket-notation) ger annars bara det generiska
+  // "utlöser INGEN kanal"-partitionsfyndet nedan, vilket ser ut som en
+  // vanlig partitionsavvikelse i stället för "skriptet kunde inte tolka
+  // uttrycket". Se § KÄNDA BEGRÄNSNINGAR i filhuvudet.
+  for (const c of infos) {
+    if (c.unsupportedNeedsSyntax) {
+      errors.push(
+        `kanalen "${c.jobId}" (${c.kanalKey}) har ett if-villkor med en needs-referens skriptet ` +
+          `inte kan tolka: "${c.unsupportedNeedsSyntax}" — kunde inte tolka uttrycket: stöder ` +
+          'endast needs.<id>.result (punktnotation), inte bracket- eller funktionsformer. Skriv ' +
+          'om till punktnotation.',
+      );
+    }
+  }
 
   // ═══ LED (i) — ID-LEDET ═══
 

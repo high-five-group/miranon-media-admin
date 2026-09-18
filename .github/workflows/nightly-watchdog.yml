@@ -226,8 +226,10 @@ jobs:
               # och beroendekanalen har ingen motsvarande "vaktens vakt".
               # Faller deras kanaljobb på gh-I/O syns det bara i körningens
               # logg. Det är en KÄND lucka, inte en glömska — se
-              # CONTRIBUTING.md § Nattnätet. Beroendekanalens dödmansgrepp är
-              # medvetet lagd som AC på TASK-450.5 (K1 (b)) i stället för
+              # CONTRIBUTING.md § Nattnätet. Beroendekanalens dödmansgrepp
+              # bärs av ett eget kort, TASK-467 (rättat 2026-09-19 — flyttad
+              # bort från en AC på TASK-450.5 sedan TASK-450.10 och
+              # TASK-450.5 visade sig redigera samma kortfil), i stället för
               # byggd här (TASK-450.10, 3A): den kanalen blir lastbärande för
               # hela beroendesäkerheten FÖRST när TASK-450.5 landat, och en
               # vakt byggd före det hade vaktat en icke-lastbärande kanal —

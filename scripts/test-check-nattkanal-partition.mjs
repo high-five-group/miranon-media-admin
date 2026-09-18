@@ -49,15 +49,21 @@ function writeFile(dir, name, content) {
 // beroende-arende), så realfils-defaultet i grinden gäller oförändrat.
 const ELIGIBLE = ['jobA', 'jobB', 'jobC'];
 
-function channelBlock(jobId, refs, needsList) {
+function channelBlock(jobId, refs, needsList, ifOverride) {
   const needs = needsList ?? ELIGIBLE;
-  const villkor =
-    refs.length === 0 ? 'false' : refs.map((r) => `needs.${r}.result == 'failure'`).join(' || ');
+  let villkorText;
+  if (typeof ifOverride === 'string') {
+    villkorText = ifOverride;
+  } else {
+    const villkor =
+      refs.length === 0 ? 'false' : refs.map((r) => `needs.${r}.result == 'failure'`).join(' || ');
+    villkorText = `\${{ always() && (${villkor}) }}`;
+  }
   return (
     `  ${jobId}:\n` +
     `    needs: [${needs.join(', ')}]\n` +
     `    if: >-\n` +
-    `      \${{ always() && (${villkor}) }}\n` +
+    `      ${villkorText}\n` +
     `    runs-on: ubuntu-latest\n` +
     `    steps:\n      - run: echo ${jobId}\n`
   );
@@ -73,6 +79,7 @@ function nightlyYaml({
   produktNeeds = null,
   bokforingNeeds = null,
   beroendeNeeds = null,
+  produktIfOverride = null, // rått if:-uttryck (t.ex. bracket-notation), kringgår produktRefs
   includeChannel = { produkt: true, bokforing: true, beroende: true },
 } = {}) {
   const jobDefs = eligible
@@ -82,7 +89,8 @@ function nightlyYaml({
     })
     .join('');
   let out = `jobs:\n${jobDefs}`;
-  if (includeChannel.produkt) out += channelBlock('alarm', produktRefs, produktNeeds);
+  if (includeChannel.produkt)
+    out += channelBlock('alarm', produktRefs, produktNeeds, produktIfOverride);
   if (includeChannel.bokforing)
     out += channelBlock('bokforings-arende', bokforingRefs, bokforingNeeds);
   if (includeChannel.beroende) out += channelBlock('beroende-arende', beroendeRefs, beroendeNeeds);
@@ -369,6 +377,30 @@ const BAS_PREFIX = ['Jobb A'];
   assert(
     res.code === 0,
     `Fall 17: förväntade exit 0 (needs som skalär sträng), fick ${res.code}: ${res.stderr}`,
+  );
+}
+
+// ═══ FALL 18 (RÖTT — okänd needs-syntax, review runda 1 PR #2557):
+// produktkanalens if-villkor använder BRACKET-notation ("needs['jobA'].result")
+// i stället för punktnotation. extractTriggerRefs() fångar inte referensen
+// (regexen matchar bara punktnotation), så jobA hade annars bara synts som
+// "utlöser INGEN kanal" — ett generiskt, missvisande partitionsfynd. Grinden
+// ska i stället ge ETT ÄRLIGT tilläggsmeddelande som namnger bracket-
+// strängen och säger att uttrycket inte kunde tolkas. ═══
+{
+  const dir = mkFixture();
+  const yaml = nightlyYaml({
+    jobNames: BAS_JOBNAMN,
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: literal GH Actions-uttryck, inte ett mall-literal-misstag.
+    produktIfOverride: "${{ always() && (needs['jobA'].result == 'failure') }}",
+  });
+  writeFile(dir, 'nightly.yml', yaml);
+  writeFile(dir, 'kanal.conf', kanalConf(BAS_PREFIX));
+  const res = runGrind(dir);
+  assert(res.code === 1, `Fall 18: förväntade exit 1 (okänd needs-syntax), fick ${res.code}`);
+  assert(
+    /kunde inte tolka uttrycket/.test(res.stderr) && /needs\['jobA'\]/.test(res.stderr),
+    `Fall 18: förväntade "kunde inte tolka uttrycket" + bracket-strängen i stderr, fick: ${res.stderr}`,
   );
 }
 
