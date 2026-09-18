@@ -88,6 +88,57 @@ export const FORBEREDELSESKARM_VANTAR: ForberedelseskarmProps = { klara: 0, tota
  * så komponenten bor i `AppShell/` tillsammans med annan app-rot-chrome
  * (`AppUpdateBanner`, `OfflineIndicator`) snarare än i `primitives/`.
  *
+ * ═══ OBESTÄMT LÄGE VID klara === 0 (task-451.1, diagnoskartan
+ * docs/research/kallstarten-diagnoskarta-2026-09-18.md § 1.4–1.5, § 6
+ * punkt 1) ═══
+ *
+ * STALL-SIGNALEN OVAN LÖSER INTE HELA PROBLEMET DEN SYFTAR TILL: den kräver
+ * `STALL_THRESHOLD_MS` (3 s) UTAN framsteg innan den slår till, och pulsen
+ * den lägger landar på FYLLNADEN. Mellan skärmens första målning och FÖRSTA
+ * settlade hämtningen (`klara === 0`, per konstruktion 0 % bred, se
+ * `percentage`-räkningen nedan) finns det ÄNNU INGEN fyllnad att pulsera —
+ * en nollbred div syns aldrig, pulserande eller ej. Diagnoskartans §1.5
+ * mätte exakt detta som Marcus prod-observation ("ingen loadingbar kördes").
+ *
+ * En determinate bar utan känt värde ska per branschmönstret degradera till
+ * INDETERMINATE (Material Design 3, "Progress indicators": indeterminate
+ * "when the wait time is unknown"; W3C APG meter/progressbar: en progressbar
+ * UTAN känt värde anges UTAN `aria-valuenow`) — inte visa "0 %" som om 0
+ * vore ett meningsfullt delresultat. `klara === 0` ÄR exakt det tillståndet:
+ * varken auth-fasens platshållare (`FORBEREDELSESKARM_VANTAR`, `totalt: 1`)
+ * eller startvärmningens verkliga `totalt: 7` bär ett meningsfullt
+ * delresultat förrän NÅGOT har settlat (`startvarmningen.ts`s filhuvud §
+ * "Äkta settled-räkning", `main.tsx:439`).
+ *
+ * IMPLEMENTATIONEN: `<ProgressBar isIndeterminate={klara === 0}>`
+ * (react-aria-components, samma bibliotek widgeten redan bygger på) —
+ * biblioteket äger kontraktet: render-propen `percentage` blir `undefined`,
+ * och `useProgressBar` sätter `aria-valuenow`/`aria-valuetext` till
+ * `undefined` (källäst, `node_modules/react-aria/dist/private/progress/
+ * useProgressBar.js`). Ingen egen aria-hantering skrivs här — samma
+ * disciplin som resten av filen (widgeten äger sitt eget a11y-kontrakt).
+ *
+ * VISUELLT: ett segment (40 % av spårets bredd) som sveper genom spåret
+ * (`motion-safe:animate-mm-forberedelseskarm-obestamd`, tailwind.css — se
+ * den tokenens kommentar för svep-mekaniken och reducerad-rörelse-
+ * dubbelbältet). SAMMA fyllnadsfärg/kontrast-token som den determinate baren
+ * (`--mm-forberedelseskarm-bar-fill`/`-fill-contrast`, § "Höjden och
+ * fyllnadsfärgen" nedan) — kontrastbeviset i `Forberedelseskarm.spec.ts`
+ * gäller alltså oförändrat, ingen ny färg att verifiera. Under
+ * `prefers-reduced-motion: reduce` renderas SAMMA segment utan rörelse
+ * (`motion-safe:`-gaten tar bort klassen strukturellt, inte bara
+ * animationens verkan) — en STATISK men SYNLIG indikation, aldrig en osynlig
+ * 0-bredd (AC #3, task-451.1).
+ *
+ * ÖVERGÅNGEN ÄR AUTOMATISK OCH KRÄVER INGEN EGEN TRÖSKEL: så fort `klara`
+ * ökar till 1 (första settlade hämtningen, oavsett lyckad eller fallerad —
+ * `startvarmningen.ts:414–417`s `.finally()`-räknare) blir `isIndeterminate`
+ * falskt och baren återgår till DAGENS determinate "X av N"-presentation
+ * (AC #2). Stall-signalen ovan är HELT ORÖRD och verkar bara i den
+ * determinate grenen — den täcker fallet "framsteg har börjat men stannar
+ * sedan mitt i", ett annat tillstånd än "inget framsteg har skett än", som
+ * denna sektion täcker.
+ *
  * ═══ HÖJDEN OCH FYLLNADSFÄRGEN — 6 PX + SAGE, INTE GOLD (task-273.1) ═══
  *
  * Baren delar nästa event-kortets bar-KLASS (`hem/NastaEvent.tsx` rad ~95,
@@ -372,18 +423,29 @@ export function Forberedelseskarm({ klara, totalt }: ForberedelseskarmProps) {
           minValue={0}
           maxValue={totalt}
           valueLabel={besked}
+          isIndeterminate={klara === 0}
           className="w-full"
         >
-          {({ percentage }) => (
+          {({ percentage, isIndeterminate }) => (
             <div className="h-1.5 w-full overflow-hidden rounded-full bg-(--mm-forberedelseskarm-bar-track) outline-border-strong contrast-more:outline print:outline">
-              <div
-                className={
-                  stallad
-                    ? 'h-full rounded-full bg-(--mm-forberedelseskarm-bar-fill) motion-safe:animate-pulse motion-safe:transition-[width] contrast-more:bg-(--mm-forberedelseskarm-bar-fill-contrast)'
-                    : 'h-full rounded-full bg-(--mm-forberedelseskarm-bar-fill) motion-safe:transition-[width] contrast-more:bg-(--mm-forberedelseskarm-bar-fill-contrast)'
-                }
-                style={{ width: `${percentage ?? 0}%` }}
-              />
+              {isIndeterminate ? (
+                // Obestämt läge (task-451.1) — se klassdoc-blocket § OBESTÄMT
+                // LÄGE ovan för hela resonemanget (varför, W3C APG/MD3-källor,
+                // reducerad-rörelse-dubbelbältet).
+                <div
+                  data-testid="forberedelseskarm-bar-obestamd"
+                  className="h-full w-2/5 rounded-full bg-(--mm-forberedelseskarm-bar-fill) motion-safe:animate-mm-forberedelseskarm-obestamd contrast-more:bg-(--mm-forberedelseskarm-bar-fill-contrast)"
+                />
+              ) : (
+                <div
+                  className={
+                    stallad
+                      ? 'h-full rounded-full bg-(--mm-forberedelseskarm-bar-fill) motion-safe:animate-pulse motion-safe:transition-[width] contrast-more:bg-(--mm-forberedelseskarm-bar-fill-contrast)'
+                      : 'h-full rounded-full bg-(--mm-forberedelseskarm-bar-fill) motion-safe:transition-[width] contrast-more:bg-(--mm-forberedelseskarm-bar-fill-contrast)'
+                  }
+                  style={{ width: `${percentage ?? 0}%` }}
+                />
+              )}
             </div>
           )}
         </ProgressBar>

@@ -628,11 +628,14 @@ function PrimitivesPage() {
           Förberedelseskärmen (AC 3, task-218.2): helskärmsyta, helt props-driven{' '}
           <code>{'{ klara, totalt }'}</code>. I produktion fyller ytan hela viewporten (anroparen
           sätter höjden, TASK-218.3 gate-integrationen); här begränsas varje instans till en fast
-          inramning så alla tre förloppslägen (0 %, delvis, full) syns samtidigt.
+          inramning så alla tre förloppslägen (obestämd, delvis, full) syns samtidigt. Läget
+          "obestämd" (<code>klara=0</code>) degraderar sedan task-451.1 till ett svepande
+          indeterminate-segment i stället för en osynlig 0 %-bredd, se Forberedelseskarm.tsx §
+          OBESTÄMT LÄGE.
         </p>
         <div className="mt-4 grid gap-4 sm:grid-cols-3">
           <div className="flex flex-col gap-2">
-            <p className="text-caption text-text-muted">0 %</p>
+            <p className="text-caption text-text-muted">Obestämd</p>
             <div
               data-testid="forberedelseskarm-0"
               className="relative h-72 overflow-hidden rounded-2xl border border-border"

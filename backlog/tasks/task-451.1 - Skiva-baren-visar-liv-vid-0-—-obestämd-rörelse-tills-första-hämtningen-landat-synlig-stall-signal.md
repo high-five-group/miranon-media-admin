@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-18 10:38'
+updated_date: '2026-09-18 11:24'
 labels:
   - ready-for-agent
 dependencies: []
@@ -28,16 +29,16 @@ Underlag § 1.4–1.5, § 5.4 (S1-assertionen), § 6 punkt 1.
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Rött-först: acceptance-test (hermetisk MSW, fördröjd batch 1 enligt underlaget § 5.3 scenario A och seg token-refresh scenario C) samplar barens synliga tillstånd; rött på main, grönt efter fix — beviset i PR-kroppen
-- [ ] #2 Från att skärmen blir synlig tills första hämtningen settlat visar baren obestämd rörelse; därefter determinate X av N som i dag
-- [ ] #3 Obestämt läge: ingen aria-valuenow, skärmläsarbeskedet oförändrat begripligt; prefers-reduced-motion ger en icke-animerad men synlig form; prefers-contrast: more klarar kontrast
-- [ ] #4 Ingen ny synlig text på skärmen (task-273.6 står kvar); befintliga a11y- och höjdkedje-tester gröna
+- [x] #1 Rött-först: acceptance-test (hermetisk MSW, fördröjd batch 1 enligt underlaget § 5.3 scenario A och seg token-refresh scenario C) samplar barens synliga tillstånd; rött på main, grönt efter fix — beviset i PR-kroppen
+- [x] #2 Från att skärmen blir synlig tills första hämtningen settlat visar baren obestämd rörelse; därefter determinate X av N som i dag
+- [x] #3 Obestämt läge: ingen aria-valuenow, skärmläsarbeskedet oförändrat begripligt; prefers-reduced-motion ger en icke-animerad men synlig form; prefers-contrast: more klarar kontrast
+- [x] #4 Ingen ny synlig text på skärmen (task-273.6 står kvar); befintliga a11y- och höjdkedje-tester gröna
 - [ ] #5 Marcus ögonmäter formen i dev-server innan Done (tillgänglighet 11, vy-ribban)
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
