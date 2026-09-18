@@ -332,8 +332,12 @@ vaktar någotdera i dag (ADR-083).
 
 **Rödhet uttrycks som negation, inte som uppräkning.** Vaktens villkor löd först
 `conclusion == "failure" or "cancelled"` — ofarligt under denylisten, ett tyst
-hål under allowlisten. `.jobs[].conclusion` har nio värden medan
-`needs.<jobb>.result` har fyra, så ett produktjobb med `timed_out` gav
+hål under allowlisten. `.jobs[].conclusion` har åtta värden (GitHubs
+förstapartsreferens för workflow-jobs: `success` · `failure` · `neutral` ·
+`cancelled` · `skipped` · `timed_out` · `action_required` · `null` — `stale`
+hör till check-runs-referensen, inte till detta fält, TASK-450.1 runda 3
+granskningens fynd 1) medan `needs.<jobb>.result` har fyra, så ett
+produktjobb med `timed_out` gav
 `result: failure` (alarm fyrade) utan att vakten såg jobbet som rött. Villkoret
 är därför en negation av en liten ofarlig mängd (`success`, `skipped`,
 `neutral`; `null` = pågår hanteras separat), vilket gör varje framtida
