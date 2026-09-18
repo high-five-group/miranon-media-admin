@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-18 11:53'
-updated_date: '2026-09-18 12:29'
+updated_date: '2026-09-18 23:04'
 labels:
   - ready-for-agent
 dependencies: []
@@ -144,4 +144,20 @@ isoleringens gräns", tabellraden "Annat repo (hubben) — läsning: OK").
   stdout"-kontrakt
 - `.claude/agents/bygg-agent.md` — markör-kontraktet vid `gh pr create`
 - `CLAUDE.md` — två stycken i § Landning, minimal diff
+
+## Fix-runda (review runda 1, Marcus-beslut 2026-09-19) — ny bygg-agent, PR fortsatt draft
+
+Ursprungsagenten var död; grenen togs över fri (gammal worktree riven, ren, head=fjärr). ORDER = granskarens utlåtande runda 1 (risk medel, 0 error, 2 warning ask-user, 1 info), de två ask-user-frågorna avgjorda av orkestreraren på Marcus mandat.
+
+**Fynd 1 (TIPS-raden på stderr, aldrig synlig via Monitor) — BYGGT.** Ny `tips_notis_om_dags()` (scripts/heartbeat-svep.sh): flyttad till alltid_pa() (stdout, --quiet-immun), taktad av HEARTBEAT_OMARKERAD_INTERVALL, egen state-fil (TIPS_STATE_FILE), anropas nu från sweep_once() i stället för en gång per invokation. Tvåsidigt bevisat: T51 (syns på stdout, kallstart), T51b (syns INTE längre på stderr), T51c (stryps vid omedelbar repetition), T52/T53 (uteblir helt vid --session/--alla).
+
+**Fynd 2 (Dependabot RÖTT/DIRTY osynligt i sessionsläge) — BYGGT.** Ny `dependabot_status_notis_om_dags()`: en HEARTBEAT_EXEMPT_AUTHORS-författares RÖTT/DIRTY rapporteras nu i ett eget, glest besked (samma stämplade-intervall-mönster, HEARTBEAT_OMARKERAD_INTERVALL, egen state-fil DEPENDABOT_STATE_FILE) — INFORMATION, ALDRIG en bitmask-bit i sessionens verdikt. Kod-kommentaren (§ SESSIONSMEDVETET SVEP i heartbeat-svep.sh, och .heartbeat-svep-policy.conf § GRÄNS) rättad — påstod tidigare att dependabot "redan har sin egen hantering" för RÖTT/DIRTY, vilket bara höll för armerings-kandidat-vägen. Författarlistan förblir config-driven (HEARTBEAT_EXEMPT_AUTHORS), ingen ny hårdkodning. Tvåsidigt bevisat: T56/T57 (röd/dirty dependabot-PR i sessionsläge → strypt besked, verdikt 0), T58 (glesning), T59 (--alla → dagens beteende oförändrat, vanlig RÖTT-alarm), T60 (grön dependabot-PR → ingen notis).
+
+**Skarpt levande fall (PR #2506, dependabot, statusCheckRollup FAILURE, verifierat via `gh api graphql` med skriptets exakta query 2026-09-19):** en jämförelsekörning mot ORIGINALKODEN (den orörda commiten, session ZZ-LIVE-VERIFIERING-462) gav "ALLT LUGNT", exit 0 — PR #2506 helt osynlig. Samma körning mot DEN FIXADE koden ger raden "UNDANTAGEN FÖRFATTARE — 1 öppna PR:ar... #2506 (dependabot: RÖTT (FAILURE))", fortfarande exit 0 (ingen bitmask-bit för sessionen). Detta är exakt den bugg granskningens fynd 2 identifierade, bevisad mot verkligt repotillstånd, inte bara mot stubbar.
+
+**Fynd 3 (kostnadsraden saknades) — BYGGT.** Se PR-kroppens nya sektion "Kostnad i två mått".
+
+**Testsvit:** scripts/test-heartbeat-svep.sh 77 → 87 fall (10 nya: T51b, T51c, T56, T56b, T57, T57b, T58, T59, T60, T61), 0 failade, exit 0. shellcheck --severity=style --enable=all mot CI:s fulla filsvit (samma kommando som CI): exit 0, 0 diagnoser. bash -n scripts/heartbeat-svep.sh: syntax OK. npm run check:docs: EJ körd i denna fixrunda — ingen fil under dess grind-scope (docs/**, tasks/**, *.md utanför backlog-kortet) rördes; CLAUDE.md rördes i föregående runda, inte i denna.
+
+**Rörda filer i denna fixrunda:** scripts/heartbeat-svep.sh (tips_notis_om_dags, dependabot_status_notis_om_dags, TIPS_STATE_FILE/DEPENDABOT_STATE_FILE, loop-body-utökning, rättade kod-kommentarer, --help-range 61,198→61,217), scripts/test-heartbeat-svep.sh (T51-T53 omskrivna, T51b/T51c/T56-T61 nya), .heartbeat-svep-policy.conf (GRÄNS-stycket utökat, HEARTBEAT_OMARKERAD_INTERVALL-kommentaren omskriven för tre delade notiser). Riskbedömnings-sektionen i PR-kroppen rördes INTE (uppdragets regel).
 <!-- SECTION:NOTES:END -->

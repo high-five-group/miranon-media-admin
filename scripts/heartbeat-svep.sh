@@ -103,10 +103,13 @@
 #                `<!-- heartbeat-svep:session:ID -->`). En PR utan denna
 #                markör, eller märkt för en ANNAN session, larmar INTE här
 #                (TASK-462, § SESSIONSMEDVETET SVEP nedan). Utan flaggan:
-#                dagens beteende (ALLA öppna PR:ar) — en TIPS-rad skrivs då
-#                till stderr EN gång per körning (inte per sopning i
-#                loop-läge) om att sessionsläge finns, så en session som
-#                inte känner till flaggan ändå upptäcker den.
+#                dagens beteende (ALLA öppna PR:ar) — ett TIPS skrivs då på
+#                ALLTID-PÅ-kanalen (stdout, --quiet-immunt, taktat av
+#                HEARTBEAT_OMARKERAD_INTERVALL — INTE en gång per körning
+#                till stderr längre, review runda 1 fynd 1: en bakgrunds-
+#                Monitor bär bara stdout vidare som notifikation) om att
+#                sessionsläge finns, så en session som inte känner till
+#                flaggan ändå upptäcker den.
 #   --alla       Uttryckligt "dagens beteende" (alla öppna PR:ar, ingen
 #                markörfiltrering) — VINNER om den kombineras med --session
 #                (session-filtreringen stängs då helt av, ingen kombinerad
@@ -180,21 +183,40 @@
 #   (egen state-fil, tyst vid noll fynd).
 #
 #   DEPENDABOT-PR:AR HAR INGEN SESSION (AC #4, medvetet beslut): författare
-#   i HEARTBEAT_EXEMPT_AUTHORS räknas ALDRIG in i den omärkta bucketen — de
-#   har redan sin egen hantering (§ ARMERINGS-KANDIDAT ovan, PARKERAD-raden
-#   i --alla-läge) och en påminnelse var 30:e minut om att "dependabot
-#   saknar en sessionsmarkör" vore brus, inte en upptäckt. Detta är den
-#   ANDRA användningen av samma lista (ursprungligen bara
-#   armerings-kandidat-undantaget ovan) — dess ursprungliga betydelse är
-#   OFÖRÄNDRAD, se .heartbeat-svep-policy.conf § "PR-författare vars öppna
-#   PR:ar ALDRIG larmar som ARMERINGS-KANDIDAT" för den första.
+#   i HEARTBEAT_EXEMPT_AUTHORS räknas ALDRIG in i den omärkta bucketen — den
+#   bucketen handlar om ÄGARSKAP ("vem ska agera på denna PR"), och en sådan
+#   författare äger strukturellt aldrig en session. RÄTTAT (review runda 1
+#   fynd 2, Marcus-beslut 2026-09-19): en tidigare formulering här påstod att
+#   dessa PR:ar "redan har sin egen hantering" och exkluderade dem HELT — det
+#   höll bara för ARMERINGS-KANDIDAT-vägen (§ ARMERINGS-KANDIDAT nedan,
+#   PARKERAD-raden i --alla-läge). RÖTT/DIRTY är en ANNAN väg med en EGEN
+#   GRÄNS i .heartbeat-svep-policy.conf ("undantaget gäller ENDAST
+#   armerings-kandidat-vägen... larmar OFÖRÄNDRAT"), och den gränsen höll
+#   INTE i sessionsläge innan denna fixrunda: "ingen markör"-grenen
+#   `continue`:ade förbi RÖTT/DIRTY-klassningen även för dessa författare. En
+#   undantagen författares RÖTT/DIRTY rapporteras nu i ETT EGET, GLEST besked
+#   (dependabot_status_notis_om_dags(), samma stämplade-intervall-mönster som
+#   ovan, HEARTBEAT_OMARKERAD_INTERVALL, egen state-fil) — INFORMATION,
+#   ALDRIG en bitmask-bit i DENNA sessions verdikt (en sådan PR ägs inte av
+#   den som råkar köra svepet). Detta är den ANDRA användningen av samma
+#   lista (ursprungligen bara armerings-kandidat-undantaget ovan) — dess
+#   FÖRSTA betydelse är OFÖRÄNDRAD, se .heartbeat-svep-policy.conf §
+#   "PR-författare vars öppna PR:ar ALDRIG larmar som ARMERINGS-KANDIDAT".
 #
-#   BAKÅTKOMPATIBELT (kortets krav): ingen --session och ingen --alla ⇒
-#   IDENTISKT med beteendet innan TASK-462 (alla PR:ar, ingen
-#   markörhantering) — bara en enda TIPS-rad till stderr, en gång per
-#   körning, om att mekanismen finns. En körning som inte känner till
-#   --session (t.ex. hubbens session-start-kommando innan det uppdaterats)
-#   byter alltså ALDRIG beteende tyst.
+#   TIPS OM MEKANISMEN (kortets AC #8, bakåtkompatibilitet): ingen --session
+#   och ingen --alla ⇒ RÖTT/DIRTY/ARMERINGS-KANDIDAT är IDENTISKA med
+#   beteendet innan TASK-462 (alla PR:ar, ingen markörhantering). ETT tips om
+#   att sessionsläge finns visas — RÄTTAT (review runda 1 fynd 1): en
+#   tidigare version skrev tipset till STDERR, men repots dokumenterade
+#   körform är en bakgrunds-Monitor, och Monitor-verktygets egen
+#   specifikation säger att BARA stdout blir notifikationer, så målgruppen
+#   såg det aldrig. tips_notis_om_dags() skriver det nu på ALLTID-PÅ-kanalen
+#   (stdout, --quiet-immunt) och taktar det med samma
+#   HEARTBEAT_OMARKERAD_INTERVALL som ovan, så en lång bakgrunds-loop inte
+#   upprepar det var 90:e sekund. En körning som inte känner till --session
+#   (t.ex. hubbens session-start-kommando innan det uppdaterats) byter alltså
+#   ALDRIG beteende tyst, och tipset går aldrig ut i sessionsläge (där det
+#   inte behövs).
 #
 # TREVÄGS-SNAPSHOT PER SVEP
 #   1. main-SHA — `gh api repos/<repo>/commits/<branch>`. Avancerar den
@@ -627,6 +649,94 @@ omarkerad_notis_om_dags() {
     return 0
 }
 
+# dependabot_status_notis_om_dags <antal> <kommalista> — review runda 1 fynd
+# 2 (Marcus-beslut 2026-09-19, TASK-462). HEARTBEAT_EXEMPT_AUTHORS-undantaget
+# gäller ENDAST armerings-kandidat-vägen (.heartbeat-svep-policy.conf §
+# "GRÄNS": "en Dependabot-PR som genuint går RÖD ... eller DIRTY ... larmar
+# OFÖRÄNDRAT"). Fram till denna fixrunda gjorde sessionsfiltreringens "ingen
+# markör alls"-gren i sweep_once() `continue` FÖRE RÖTT/DIRTY-klassningen
+# även för dessa författare — så en genuint trasig Dependabot-CI blev TYST i
+# sessionsläge, i strid med den GRÄNSEN. Samma stämplade-intervall-
+# mönster som omarkerad_notis_om_dags() (egen state-fil, SAMMA
+# HEARTBEAT_OMARKERAD_INTERVALL — "samma strypning som omarkerade") men EGEN
+# alltid_pa()-rad: detta är INFORMATION om att en PR ingen session äger står
+# RÖD/DIRTY, ALDRIG en order till DENNA session (Dependabot-PR:ar ägs inte
+# av den som råkar köra svepet) — bär därför INGEN exit-bit, precis som den
+# omärkta-PR-notisen. KONTRAKT: returnerar ALLTID 0.
+dependabot_status_notis_om_dags() {
+    local antal="$1" lista="$2"
+    local intervall nu senast
+
+    [[ "${antal}" -gt 0 ]] || return 0
+
+    intervall="${HEARTBEAT_OMARKERAD_INTERVALL:-1800}"
+    [[ "${intervall}" =~ ^[0-9]+$ ]] || intervall=1800
+
+    nu="$(date +%s)"
+    senast=0
+    if [[ -f "${DEPENDABOT_STATE_FILE}" ]]; then
+        senast="$(cat "${DEPENDABOT_STATE_FILE}" 2>/dev/null || echo 0)"
+        [[ "${senast}" =~ ^[0-9]+$ ]] || senast=0
+    fi
+    [[ $(( nu - senast )) -ge "${intervall}" ]] || return 0
+
+    if printf '%s' "${nu}" > "${DEPENDABOT_STATE_FILE}.tmp" 2>/dev/null \
+       && mv -f "${DEPENDABOT_STATE_FILE}.tmp" "${DEPENDABOT_STATE_FILE}" 2>/dev/null; then
+        :
+    else
+        rm -f "${DEPENDABOT_STATE_FILE}.tmp" 2>/dev/null || true
+        alltid_pa "heartbeat-svep: UNDERHÅLL — kunde inte stämpla ${DEPENDABOT_STATE_FILE}. Notisen kan komma tätare än ${intervall}s tills stämpeln går att skriva."
+    fi
+
+    alltid_pa "heartbeat-svep: UNDANTAGEN FÖRFATTARE — ${antal} öppna PR:ar från HEARTBEAT_EXEMPT_AUTHORS är RÖTT eller DIRTY (ingen session äger dem, se .heartbeat-svep-policy.conf § GRÄNS): ${lista}. Information, ingen order till DENNA session. Nästa påminnelse tidigast om ${intervall}s."
+    return 0
+}
+
+# tips_notis_om_dags — review runda 1 fynd 1 (Marcus-beslut 2026-09-19,
+# TASK-462, kortets AC #8/bakåtkompatibilitet). Ersätter den tidigare
+# top-nivå-printf:en till stderr (EN gång per invokation, se § ANVÄNDNING
+# ovan för historiken) — repots dokumenterade körform är en bakgrunds-
+# Monitor, och Monitor-verktygets egen specifikation säger att BARA stdout
+# blir notifikationer; stderr hamnar bara i en loggfil ingen läser förrän
+# efteråt (mätt fynd, inte en gissning). Flyttad till alltid_pa() (stdout,
+# quiet-immun) och taktad av SAMMA intervall som den omärkta-PR-notisen
+# (HEARTBEAT_OMARKERAD_INTERVALL) — annars hade en lång bakgrunds-loop
+# upprepat tipset var HEARTBEAT_INTERVAL:e sekund (default 90s), vilket är
+# exakt den brus-klass hela filen finns för att undvika. EGEN state-fil
+# (TIPS_STATE_FILE): oberoende stämpel av samma skäl som
+# STATE_FILE/STADA_STATE_FILE/OMARKERAD_STATE_FILE/DEPENDABOT_STATE_FILE
+# redan är separata. Anropas EN gång per sweep_once() (i stället för en
+# gång per skript-invokation) — --alla räknas fortfarande som att sessionen
+# redan känner till mekanismen (uttryckligt bortval), så bara den HELT
+# omedvetna kombinationen (varken flagga satt) får tipset. KONTRAKT:
+# returnerar ALLTID 0, larmar aldrig (ingen exit-bit).
+tips_notis_om_dags() {
+    [[ -z "${SESSION}" && "${ALLA}" -eq 0 ]] || return 0
+
+    local intervall nu senast
+    intervall="${HEARTBEAT_OMARKERAD_INTERVALL:-1800}"
+    [[ "${intervall}" =~ ^[0-9]+$ ]] || intervall=1800
+
+    nu="$(date +%s)"
+    senast=0
+    if [[ -f "${TIPS_STATE_FILE}" ]]; then
+        senast="$(cat "${TIPS_STATE_FILE}" 2>/dev/null || echo 0)"
+        [[ "${senast}" =~ ^[0-9]+$ ]] || senast=0
+    fi
+    [[ $(( nu - senast )) -ge "${intervall}" ]] || return 0
+
+    if printf '%s' "${nu}" > "${TIPS_STATE_FILE}.tmp" 2>/dev/null \
+       && mv -f "${TIPS_STATE_FILE}.tmp" "${TIPS_STATE_FILE}" 2>/dev/null; then
+        :
+    else
+        rm -f "${TIPS_STATE_FILE}.tmp" 2>/dev/null || true
+        alltid_pa "heartbeat-svep: UNDERHÅLL — kunde inte stämpla ${TIPS_STATE_FILE}. Tipset kan komma tätare än ${intervall}s tills stämpeln går att skriva."
+    fi
+
+    alltid_pa "heartbeat-svep: TIPS — sessionsläge finns (--session <ID>) sedan TASK-462; ingen session angiven, kör i icke-filtrerat läge (dagens beteende, motsvarar --alla). Se CLAUDE.md § Landning. Nästa påminnelse tidigast om ${intervall}s."
+    return 0
+}
+
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --repo)     REPO="${2:-}";     shift 2 ;;
@@ -643,10 +753,12 @@ while [[ $# -gt 0 ]]; do
         # stycket), 61,104 → 61,135 i TASK-323 (§ UNDERHÅLL — gles
         # gren-städning; en DESTRUKTIV bieffekt får aldrig stå utanför det
         # block --help faktiskt visar), 61,135 → 61,198 i TASK-462
-        # (--session/--alla-flaggorna + § SESSIONSMEDVETET SVEP);
+        # (--session/--alla-flaggorna + § SESSIONSMEDVETET SVEP), 61,198 →
+        # 61,217 i TASK-462 fix-runda (review runda 1: rättad
+        # DEPENDABOT-PR:AR-text + TIPS flyttad till alltid_pa()/stdout);
         # scripts/test-heartbeat-svep.sh T24 fäller om raden
         # avviker från blockets faktiska start/slut.
-        -h|--help)  sed -n '61,198p' "$0"; exit 0 ;;
+        -h|--help)  sed -n '61,217p' "$0"; exit 0 ;;
         *) die "okänt argument: $1" ;;
     esac
 done
@@ -666,14 +778,15 @@ done
 [[ "${TIMEOUT}" =~ ^[0-9]+$ ]] || die "--timeout måste vara ett heltal ≥ 0 (sekunder, 0 = obegränsat), fick '${TIMEOUT}'"
 
 # TASK-462 § SESSIONSMEDVETET SVEP, kortets AC #8 (bakåtkompatibilitet).
-# Skrivs EN gång per SKRIPT-invokation (inte i sweep_once(), som körs var
-# HEARTBEAT_INTERVAL:e sekund i loop-läge) — annars hade en persistent
-# bakgrunds-monitor spammat samma rad om och om igen. --alla räknas som att
-# sessionen redan känner till mekanismen (den valde uttryckligen bort den),
-# så bara den HELT omedvetna kombinationen (varken flagga satt) får tipset.
-if [[ -z "${SESSION}" && "${ALLA}" -eq 0 ]]; then
-    printf 'heartbeat-svep: TIPS — sessionsläge finns (--session <ID>) sedan TASK-462; ingen session angiven, kör i icke-filtrerat läge (dagens beteende, motsvarar --alla). Se CLAUDE.md § Landning.\n' >&2
-fi
+# TIPS-raden skrevs HÄR fram till review runda 1 fynd 1 (Marcus-beslut
+# 2026-09-19): EN gång per SKRIPT-invokation, direkt till stderr. Repots
+# dokumenterade körform är en bakgrunds-Monitor, och Monitor-verktygets egen
+# specifikation säger att BARA stdout blir notifikationer — målgruppen såg
+# raden aldrig. Flyttad till tips_notis_om_dags() (alltid_pa(), stdout,
+# taktad av HEARTBEAT_OMARKERAD_INTERVALL) och anropas nu från sweep_once(),
+# se § SJÄTTE VÄGEN nedan — INTE härifrån, av samma skäl den ANDRA
+# stämplade-intervall-notisen (omarkerad_notis_om_dags) redan bor i
+# sweep_once() och inte i toppnivå-koden.
 
 mkdir -p "${STATE_DIR}"
 STATE_FILE="${STATE_DIR}/last-main-sha"
@@ -684,6 +797,13 @@ STATE_FILE="${STATE_DIR}/last-main-sha"
 STADA_STATE_FILE="${STATE_DIR}/last-stada-grenar"
 # Den omärkta-PR-notisens egen tidsstämpel (TASK-462), samma oberoende-skäl.
 OMARKERAD_STATE_FILE="${STATE_DIR}/last-omarkerad-notis"
+# TIPS-radens egen tidsstämpel (TASK-462, review runda 1 fynd 1), samma
+# oberoende-skäl — en TOM STATE_DIR (testsvit, kallstart) gör ALLA fyra
+# stämplade vägar kallstarta oberoende av varandra.
+TIPS_STATE_FILE="${STATE_DIR}/last-tips-notis"
+# Dependabot-RÖTT/DIRTY-notisens egen tidsstämpel (TASK-462, review runda 1
+# fynd 2), samma oberoende-skäl.
+DEPENDABOT_STATE_FILE="${STATE_DIR}/last-dependabot-notis"
 
 # --- EN svep-cykel ----------------------------------------------------------
 # Returnerar bitmask-verdikten via $? (0/1/2/4/kombinationer, 77 vid sond-fel).
@@ -773,6 +893,13 @@ sweep_once() {
     # AKTIVT (SESSION satt OCH --alla INTE given, se villkoret i loopen).
     local antal_andra_sessioner=0 antal_omarkerad=0 antal_omarkerad_undantagna=0
     local omarkerad_lista=""
+    # antal_dependabot_status/dependabot_status_lista — review runda 1 fynd 2
+    # (TASK-462): RÖTT/DIRTY för en HEARTBEAT_EXEMPT_AUTHORS-författare utan
+    # sessionsmarkör. Skild räkning från antal_omarkerad_undantagna ovan (den
+    # räknar BARA "hur många exempt-PR:ar saknar markör", oavsett CI-läge) —
+    # denna räknar bara de som DESSUTOM är RÖTT eller DIRTY just nu.
+    local antal_dependabot_status=0
+    local dependabot_status_lista=""
     local sessionslage=0
     [[ -n "${SESSION}" && "${ALLA}" -eq 0 ]] && sessionslage=1
 
@@ -806,6 +933,27 @@ sweep_once() {
                 # shellcheck disable=SC2310
                 if is_exempt_author "${author}"; then
                     antal_omarkerad_undantagna=$(( antal_omarkerad_undantagna + 1 ))
+
+                    # Review runda 1 fynd 2 (Marcus-beslut 2026-09-19):
+                    # HEARTBEAT_EXEMPT_AUTHORS-undantaget gäller ENDAST
+                    # armerings-kandidat-vägen (.heartbeat-svep-policy.conf §
+                    # "GRÄNS") — RÖTT/DIRTY på en sådan PR FÅR INTE bli tyst
+                    # bara för att den `continue`:ar ut ur RÖTT/DIRTY-
+                    # klassningen nedan. Samma fail-closed-princip som RÖTT-
+                    # klassningen längre ned (allt utom SUCCESS/PENDING/
+                    # EXPECTED/NONE räknas rött) — duplicerad HÄR, inte
+                    # refaktorerad till en delad funktion, eftersom denna gren
+                    # `continue`:ar och aldrig når den klassningen.
+                    local dep_skal=""
+                    case "${rollup}" in
+                        SUCCESS|PENDING|EXPECTED|NONE) ;;
+                        *) dep_skal="RÖTT (${rollup})" ;;
+                    esac
+                    [[ "${mss}" == "DIRTY" ]] && dep_skal="${dep_skal:+${dep_skal}, }DIRTY"
+                    if [[ -n "${dep_skal}" ]]; then
+                        antal_dependabot_status=$(( antal_dependabot_status + 1 ))
+                        dependabot_status_lista="${dependabot_status_lista:+${dependabot_status_lista}, }#${nr} (${author}: ${dep_skal})"
+                    fi
                 else
                     antal_omarkerad=$(( antal_omarkerad + 1 ))
                     omarkerad_lista="${omarkerad_lista:+${omarkerad_lista}, }#${nr}"
@@ -893,7 +1041,23 @@ sweep_once() {
         # shellcheck disable=SC2310
         # AVSIKTLIGT: funktionen returnerar alltid 0 (se dess eget kontrakt).
         omarkerad_notis_om_dags "${antal_omarkerad}" "${omarkerad_lista}" "${antal_omarkerad_undantagna}" || true
+
+        # Review runda 1 fynd 2 — samma "observation, aldrig ett larm"-skäl
+        # som raden ovan: en HEARTBEAT_EXEMPT_AUTHORS-författares RÖTT/DIRTY
+        # tillhör ingen session och får aldrig bidra till DENNA sessions
+        # bitmask, men får heller aldrig bli helt tyst.
+        # shellcheck disable=SC2310
+        dependabot_status_notis_om_dags "${antal_dependabot_status}" "${dependabot_status_lista}" || true
     fi
+
+    # Review runda 1 fynd 1 — TIPS-raden om att sessionsläge finns, se
+    # tips_notis_om_dags() ovan för det fulla resonemanget. Oberoende av
+    # sessionslage (den handlar om FRÅNVARON av --session/--alla, inte om
+    # PR-filtreringen) och körs sist av de tre stämplade ALLTID-PÅ-notiserna
+    # för att inte tränga undan RÖTT/DIRTY/KANDIDAT-larmen som alltid ska stå
+    # överst.
+    # shellcheck disable=SC2310
+    tips_notis_om_dags || true
 
     # FEMTE VÄGEN — underhåll, körs EFTER att verdikten är färdigberäknad så
     # den bevisligen inte kan påverka den (§ EXIT-KODER: städning larmar

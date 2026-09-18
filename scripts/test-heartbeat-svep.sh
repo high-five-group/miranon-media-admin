@@ -69,13 +69,34 @@
 #   T50 BAKÅTKOMPATIBILITET: ingen --session/--alla, PR med en FRÄMMANDE
 #       markör i kroppen → larmar ÄNDÅ (dagens beteende är okänsligt
 #       för markörer helt och hållet)                              → larmar
-#   T51 TIPS-raden: ingen --session/--alla → EN rad på STDERR         → syns
-#   T52 TIPS-raden UTEBLIR när --session ges                         → tyst
-#   T53 TIPS-raden UTEBLIR när --alla ges                             → tyst
+#
+# T51–T55 UPPDATERADE, T56–T61 NYA (review runda 1, Marcus-beslut
+# 2026-09-19). Fynd 1: TIPS-raden syntes aldrig via Monitor (bara stdout blir
+# notifikationer) — flyttad från stderr till alltid_pa()/stdout, taktad av
+# HEARTBEAT_OMARKERAD_INTERVALL. Fynd 2: en HEARTBEAT_EXEMPT_AUTHORS-
+# författares RÖTT/DIRTY blev osynlig i sessionsläge (sessionsfiltreringens
+# "ingen markör"-gren `continue`:ade förbi RÖTT/DIRTY-klassningen) — nu ett
+# eget, glest besked, aldrig en bitmask-bit för sessionen.
+#   T51 TIPS-raden på STDOUT (kallstart, ingen --session/--alla)     → syns
+#   T51b TIPS-raden syns INTE på stderr (positivt bevis på flytten)  → tyst
+#   T51c TIPS-raden STRYPS — samma anrop direkt igen                → tyst
+#   T52 TIPS-raden UTEBLIR HELT (stdout OCH stderr) när --session ges → tyst
+#   T53 TIPS-raden UTEBLIR HELT när --alla ges                        → tyst
 #   T54 BÅDA FLAGGOR samtidigt (--session X --alla) → --alla VINNER
 #       (samma främmande-PR-scenario som T42, ska larma precis som --alla
 #       ensamt)                                                     → larmar
 #   T55 --help visar § SESSIONSMEDVETET SVEP och de nya flaggorna     → syns
+#   T56 Dependabot RÖTT, OMÄRKT, sessionsläge → strypt besked, INGEN
+#       bitmask-bit för sessionen (dagens beteende var HELT TYST)     → 0
+#   T57 Dependabot DIRTY, OMÄRKT, sessionsläge → samma strypta kanal   → 0
+#   T58 SAMMA dependabot-RÖTT-PR, direkt igen (glesning) → tyst        → 0
+#   T59 SAMMA dependabot-RÖTT-PR, men --alla → dagens beteende
+#       OFÖRÄNDRAT (vanlig RÖTT-alarm, ingen "UNDANTAGEN FÖRFATTARE"-
+#       rad)                                                        → larmar
+#   T60 Dependabot GRÖN (SUCCESS/CLEAN), OMÄRKT, sessionsläge → INGEN
+#       dependabot-status-notis (0 fynd, T49:s scenario, utökad kontroll) → 0
+#   T61 Kod-kommentaren (§ SESSIONSMEDVETET SVEP) nämner INTE längre att
+#       dependabot "redan har sin egen hantering" för RÖTT/DIRTY          → syns
 #
 # Test-isolering: /tmp/task119-test-heartbeat-svep/ med en gh-stub som svarar
 # ur ett scenario-katalog (main-sha / rows / fail-mainsha / fail-prlist).
@@ -117,7 +138,9 @@
 # (2026-08-04, T23/T24 — kallstart-rad + --help-täckning) · fynd 2026-08-04
 # (T25–T27b — HEARTBEAT_EXEMPT_AUTHORS, dependabot-kvartetten #632–#635) ·
 # TASK-462 (2026-09-18, T40–T55 — sessionsmedvetet svep: --session/--alla,
-# PR-kropps-markören, den omärkta-PR-notisen, TIPS-raden)
+# PR-kropps-markören, den omärkta-PR-notisen, TIPS-raden) · TASK-462
+# fix-runda (2026-09-19, review runda 1: T51–T55 omskrivna + T56–T61 nya —
+# TIPS-raden på stdout/strypt, dependabot-RÖTT/DIRTY-notisen)
 
 set -uo pipefail
 
@@ -198,29 +221,32 @@ set_rows() { printf '%b' "$1" > "${SCEN}/rows"; }
 # run_case så de aldrig läcker till nästa fall.
 EXPECT_OUT=""
 NOT_EXPECT_OUT=""
-# EXPECT_ERR/NOT_EXPECT_ERR (TASK-462): samma kontrakt som ovan men mot
-# STDERR specifikt. Behövs sedan TASK-462:s TIPS-rad (§ SESSIONSMEDVETET
-# SVEP) skrivs dit — se § STRÖM-SEPARATION nedan för varför de två strömmarna
-# fångas i separata filer i stället för en enda kombinerad, som tidigare.
+# EXPECT_ERR/NOT_EXPECT_ERR: samma kontrakt som ovan men mot STDERR
+# specifikt. Infört av TASK-462 för den ursprungliga TIPS-raden (som då
+# skrevs till stderr) — den flyttades till stdout i review runda 1 fynd 1
+# (se tips_notis_om_dags()), men mekanismen behålls: T51b använder NU
+# NOT_EXPECT_ERR för att POSITIVT bevisa att TIPS inte längre syns på
+# stderr (i stället för att bara råka vara sann, vilket en borttagen
+# EXPECT_ERR-kontroll hade varit). Se § STRÖM-SEPARATION nedan för varför de
+# två strömmarna ändå fångas i separata filer.
 EXPECT_ERR=""
 NOT_EXPECT_ERR=""
 
 # run_case <namn> <förväntad exit> <max sekunder eller "-"> <env-tilldelningar...> -- <args...>
 #
 # ═══ STRÖM-SEPARATION (TASK-462) ═══
-# stdout och stderr fångas numera i VARSIN fil (out.txt / err.txt) i stället
-# för en tidigare kombinerad `2>&1`. Skälet: TASK-462 lade en TIPS-rad på
-# stderr (§ SESSIONSMEDVETET SVEP, kortets AC #8) som skrivs OAVSETT --quiet
-# närhelst varken --session eller --alla ges — och flera BEFINTLIGA testfall
-# (T22/T25b/T35b) bevisar just att stdout är HELT TOMT under exakt den
-# kombinationen (--quiet, inget --session). En kombinerad ström hade gjort
-# dessa fall falskt röda för ett tillägg som inte rör deras egentliga
-# invariant (stdout bär inga RUTIN/LARM-rader) — separationen låter båda
-# kontrakten bevisas oberoende av varandra, utan att mjuka upp någotdera.
-# Alla ÄLDRE `alarm()`/`say()`/`alltid_pa()`-rader gick redan via stdout
-# (ren `printf`, fd1) — bara `die()` (användningsfel, T15–T17, som aldrig
-# haft en EXPECT_OUT-kontroll) gick till stderr innan detta. Separationen
-# ändrar därför INGEN äldre testfalls faktiska bevisbörda.
+# stdout och stderr fångas i VARSIN fil (out.txt / err.txt) i stället för en
+# kombinerad `2>&1`. HISTORIK, rättad i TASK-462 fix-runda (review runda 1
+# fynd 1): denna kommentar påstod tidigare att separationen fanns EFTERSOM
+# TIPS-raden skrevs till stderr — det höll bara fram till fixrundan; TIPS
+# ligger nu på stdout (alltid_pa(), taktad, se tips_notis_om_dags()).
+# Separationen behålls ÄNDÅ: den lämnar EXPECT_ERR/NOT_EXPECT_ERR som en
+# skarp, oberoende kanal för `die()` (användningsfel, T15–T17) och för T51b:s
+# positiva "syns INTE på stderr"-bevis, utan att en kombinerad ström riskerar
+# att blanda ihop de två strömmarnas bevisbörda. Alla ÄLDRE
+# `alarm()`/`say()`/`alltid_pa()`-rader gick redan via stdout (ren `printf`,
+# fd1) — bara `die()` gick till stderr. Separationen ändrar därför INGEN
+# äldre testfalls faktiska bevisbörda.
 run_case() {
     local name="$1" want="$2" maxsec="$3"; shift 3
     local start elapsed got
@@ -956,23 +982,41 @@ run_case "T50 BAKÅTKOMPATIBILITET — ingen flagga, märkt PR larmar ändå" 1 
     bash ./scripts/heartbeat-svep.sh --once
 
 # ============================================================
-# T51–T53 — TIPS-RADEN (AC #8): en gång på STDERR när varken --session
-# eller --alla ges; uteblir när endera ges (sessionen känner redan till
-# mekanismen).
+# T51–T53 — TIPS-RADEN (review runda 1 fynd 1, Marcus-beslut 2026-09-19):
+# flyttad från stderr till STDOUT (alltid_pa(), quiet-immun), taktad av
+# HEARTBEAT_OMARKERAD_INTERVALL — se tips_notis_om_dags() för hela
+# resonemanget (repots dokumenterade körform är en bakgrunds-Monitor, och
+# Monitor-verktygets specifikation säger att bara stdout blir
+# notifikationer). Uteblir HELT (varken stdout eller stderr) när --session
+# eller --alla ges (sessionen känner redan till mekanismen).
 echo ""
 reset_scen
-EXPECT_ERR="TIPS — sessionsläge finns"
-run_case "T51 TIPS-raden på stderr när ingen flagga ges" 0 - \
+EXPECT_OUT="TIPS — sessionsläge finns"
+run_case "T51 TIPS-raden på STDOUT (kallstart) när ingen flagga ges" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once
+if grep -qF "TIPS — sessionsläge finns" "${TEST_DIR}/err.txt" 2>/dev/null; then
+    printf '  ✗ T51b  TIPS-raden syns FORTFARANDE på stderr — flytten är ofullständig\n'; FAILED=$((FAILED+1))
+else
+    printf '  ✓ T51b  TIPS-raden syns INTE på stderr (flytten är fullständig)\n'; PASSED=$((PASSED+1))
+fi
+
+# T51c — INGEN reset_scen: TIPS-stämpeln från T51 ligger kvar (samma
+# glesnings-teknik som T47/T48 för den omärkta-PR-notisen), så tipset ska
+# vara strypt trots att varken --session eller --alla ges den här gången.
+NOT_EXPECT_OUT="TIPS —"
+run_case "T51c TIPS-raden STRYPS — samma anrop direkt igen" 0 - \
     bash ./scripts/heartbeat-svep.sh --once
 
 reset_scen
+NOT_EXPECT_OUT="TIPS"
 NOT_EXPECT_ERR="TIPS"
-run_case "T52 TIPS-raden UTEBLIR när --session ges" 0 - \
+run_case "T52 TIPS-raden UTEBLIR HELT (stdout+stderr) när --session ges" 0 - \
     bash ./scripts/heartbeat-svep.sh --once --session S1
 
 reset_scen
+NOT_EXPECT_OUT="TIPS"
 NOT_EXPECT_ERR="TIPS"
-run_case "T53 TIPS-raden UTEBLIR när --alla ges" 0 - \
+run_case "T53 TIPS-raden UTEBLIR HELT när --alla ges" 0 - \
     bash ./scripts/heartbeat-svep.sh --once --alla
 
 # ============================================================
@@ -999,6 +1043,84 @@ if grep -qF -- "--session ID" "${TEST_DIR}/out.txt" && grep -qF -- "--alla" "${T
 else
     printf '  ✗ T55b  --help saknar --session/--alla-dokumentationen\n'; FAILED=$((FAILED+1))
 fi
+
+# ============================================================
+# T56–T61 — DEPENDABOT RÖTT/DIRTY I SESSIONSLÄGE (review runda 1 fynd 2,
+# Marcus-beslut 2026-09-19). Innan denna fixrunda gjorde sessionsfiltreringens
+# "ingen markör alls"-gren `continue` FÖRE RÖTT/DIRTY-klassningen ÄVEN för
+# HEARTBEAT_EXEMPT_AUTHORS-författare (dependabot m.fl.) — så en genuint
+# trasig Dependabot-CI blev HELT OSYNLIG i sessionsläge, i strid med
+# policy-filens egen § "GRÄNS" ("larmar OFÖRÄNDRAT"). automerge=true och
+# mss=BLOCKED/DIRTY väljs medvetet för att isolera RÖTT/DIRTY-vägen från
+# KANDIDAT-vägen, samma teknik som T1/T3.
+echo ""
+reset_scen
+set_rows '900\tfalse\tBLOCKED\ttrue\tFAILURE\tfalse\tdependabot\t\n'
+EXPECT_OUT="UNDANTAGEN FÖRFATTARE"
+NOT_EXPECT_OUT="RÖTT — PR #900"
+run_case "T56 Dependabot RÖTT, omärkt, sessionsläge → strypt besked, INGEN bitmask-bit" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S126
+if grep -qF "#900 (dependabot: RÖTT (FAILURE))" "${TEST_DIR}/out.txt"; then
+    printf '  ✓ T56b  notisen namnger PR-nummer, författare OCH skäl\n'; PASSED=$((PASSED+1))
+else
+    printf '  ✗ T56b  notisen saknar PR #900/dependabot/RÖTT (FAILURE) i förväntat format\n'; FAILED=$((FAILED+1))
+fi
+
+# T57 — DIRTY-varianten, egen kallstart (annars döljer T56:s glesning
+# resultatet oavsett vad denna PR är).
+reset_scen
+set_rows '901\tfalse\tDIRTY\ttrue\tSUCCESS\tfalse\tdependabot\t\n'
+EXPECT_OUT="UNDANTAGEN FÖRFATTARE"
+run_case "T57 Dependabot DIRTY, omärkt, sessionsläge → samma strypta kanal" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S126
+if grep -qF "#901 (dependabot: DIRTY)" "${TEST_DIR}/out.txt"; then
+    printf '  ✓ T57b  notisen namnger PR #901 med skälet DIRTY\n'; PASSED=$((PASSED+1))
+else
+    printf '  ✗ T57b  notisen saknar #901/DIRTY i förväntat format\n'; FAILED=$((FAILED+1))
+fi
+
+# T58 — GLESNING: INGEN reset_scen, samma dependabot-RÖTT-PR som T56 körs
+# igen direkt (stämpeln från T56 ligger kvar sedan T57:s EGEN state-fil
+# aldrig delar stämpel med T56:s) — måste alltså återanvända T56:s scenario,
+# inte T57:s, för att mäta RÄTT stämpel.
+reset_scen
+set_rows '900\tfalse\tBLOCKED\ttrue\tFAILURE\tfalse\tdependabot\t\n'
+( cd "${TEST_DIR}" && env PATH="${TEST_DIR}/bin:${PATH}" T119_SCEN="${SCEN}" \
+    HEARTBEAT_STATE_DIR="${STATE_DIR}" bash ./scripts/heartbeat-svep.sh --once --session S126 ) >/dev/null 2>&1
+NOT_EXPECT_OUT="UNDANTAGEN FÖRFATTARE"
+run_case "T58 SAMMA dependabot-RÖTT-PR direkt igen → glesningen håller notisen tyst" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S126
+
+# T59 — MED --alla: dagens beteende OFÖRÄNDRAT. Ingen sessionsfiltrering
+# alls körs (sessionslage=0), så PR:en går genom den VANLIGA RÖTT-
+# klassningen och larmar precis som varje annan röd PR — ingen
+# "UNDANTAGEN FÖRFATTARE"-rad (den kanalen existerar bara i sessionsläge).
+reset_scen
+set_rows '900\tfalse\tBLOCKED\ttrue\tFAILURE\tfalse\tdependabot\t\n'
+EXPECT_OUT="RÖTT — PR #900"
+NOT_EXPECT_OUT="UNDANTAGEN FÖRFATTARE"
+run_case "T59 SAMMA PR, men --alla → dagens beteende oförändrat (vanlig RÖTT-alarm)" 1 - \
+    bash ./scripts/heartbeat-svep.sh --once --alla
+
+# T60 — GRÖN dependabot-PR (SUCCESS/CLEAN), omärkt, sessionsläge → INGEN
+# dependabot-status-notis (0 fynd). Utökar T49 (som bara bevisar att den
+# INTE hamnar i den omärkta bucketen) med en EXPLICIT kontroll av den NYA
+# kanalen också.
+reset_scen
+set_rows '902\tfalse\tCLEAN\ttrue\tSUCCESS\tfalse\tdependabot\t\n'
+NOT_EXPECT_OUT="UNDANTAGEN FÖRFATTARE"
+run_case "T60 Dependabot GRÖN, omärkt, sessionsläge → ingen dependabot-status-notis" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S126
+
+# T61 — kod-/hjälptexten är RÄTTAD (ADR-083): --help ska nämna den nya
+# funktionen (positivt bevis på den korrigerade mekanismen), inte bara
+# frånvaron av den gamla, ofullständiga formuleringen (som ändå citeras
+# ordagrant som HISTORIK i den rättade kommentaren — en ren frånvaro-kontroll
+# hade gett falsk röd/grön signal beroende på citatet).
+reset_scen
+EXPECT_OUT="dependabot_status_notis_om_dags"
+run_case "T61 --help/koden dokumenterar den rättade dependabot-RÖTT/DIRTY-mekanismen" 0 - \
+    bash ./scripts/heartbeat-svep.sh --help
 
 printf '\ntest-heartbeat-svep: %s passerade, %s failade\n' "${PASSED}" "${FAILED}"
 [[ "${FAILED}" -eq 0 ]] || exit 1
