@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-02 10:50'
-updated_date: '2026-09-18 10:38'
+updated_date: '2026-09-18 11:29'
 labels:
   - ready-for-agent
 dependencies: []
@@ -37,5 +37,5 @@ FYND (TASK-239 varv 3, PR #2216, 2026-09-02): i en ren pull_request-körning UTA
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
-S126 resume 1 (2026-09-18), PR #2524. MÄTT i PR-körning 35334687514 (gh api .../jobs): självtest-skärvorna 299 s / 320 s / 271 s (10:26:33 -> 10:31:32 / 10:31:53 / 10:31:04). Max 320 s mot ett ORÖRT tak på 20 min = 14 min 40 s marginal (AC #1 krävde >2 min). Täckningsjobbet 11 s (10:31:55 -> 10:32:06), logg: 175+189+160 = summa 524 = listat 524. FÖRE: 12,8-13,7 min (leverabel 9). Kritisk väg för hela kedjan nu 333 s (5,55 min) inkl. summajobbet. TAKSÄNKNING ÖVERVÄGD OCH AVSTÅDD: en mätpunkt, och spridningen mellan de tre skärvorna i SAMMA körning är redan 271-320 s (18 %); körningen bar ingen kö-last, vilket är exakt det läge som gav fyra cancelled 2026-09-03. Sänkning kräver egen mätserie.
+S126 resume 1 (2026-09-18), PR #2524, runda 2. HEAD 47dc5be6 (rebasad pa main efter #2520; #2528/N4 har sedan landat — merge-tree MATT mot nuvarande main: exit 0, ingen konflikt, BADA gatekeeper-raderna overlever, rad 1595 N4 + rad 1600 N6). MATNING runda 1 (run 35334687514): skarvorna 299/320/271 s, max 320 s mot ORORT tak 20 min = 14 min 40 s marginal; tackningsjobbet 11 s, logg 175+189+160 = summa 524 = listat 524. Runda 2 rattade: download-artifact SHA-pinnad (@3e5f45b2 = v8.0.1) — var forsta opinnade anropet pa en yta som kor vid varje PR, och hela tackningsdomen raknas ur just de filer den levererar. AVVISAT MED MATNING: granskarens krav att byta always() -> !cancelled(). Matt i eget repo (run 25845701660, 2026-05-14): Test+Build cancelled pa eget tak 10m15s medan ci-passed med if !cancelled() && !failure() KORDE och blev success. actions/runner CancelledFunction.cs laser JobContext.Status — STEG-niva ar jobb-scopad (TASK-237-monstret stammer), JOBB-niva ar server-sidig. !cancelled() skulle funka i dag men semantiken ar ODOKUMENTERAD och community-diskussion #174377 begar aktivt att den andras; ett skippat jobb ar GRONT hos oss = fail-OPEN (S77-klassen). success()||failure() diskvalificerad: failure() ar FALSKT nar uppstroms ar cancelled. SIDOFYND ej rattat: purge-efter-kommentarens mekanism-pastaende om !cancelled() ar obelagd hypotes (TASK-309.15 bar noll matning) och nu falsifierat — jobbets always() ar anda ratt av det andra skalet.
 <!-- SECTION:NOTES:END -->
