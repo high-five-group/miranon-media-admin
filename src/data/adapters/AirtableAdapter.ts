@@ -116,7 +116,7 @@ import {
 } from './attachmentUpload';
 import * as betalningsportar from './betalningsportar';
 import { samlaCursorSidor } from './cursorWalk';
-import type { DataSourceAdapter, MallId } from './DataSourceAdapter';
+import type { DataSourceAdapter, HamtningsAlternativ, MallId } from './DataSourceAdapter';
 import {
   arKanoniskKallhash,
   berakaAktuellKallhash,
@@ -140,12 +140,15 @@ const INTRESSERADE_MAX_PAGE_SIZE = 100;
 export class AirtableAdapter implements DataSourceAdapter {
   // === Befintliga metoder (oförändrade) ===
 
-  async fetchEvents(): Promise<Event[]> {
-    const data = await callEdgeFunction<{ events: unknown }>('get-events');
+  async fetchEvents(alternativ?: HamtningsAlternativ): Promise<Event[]> {
+    const data = await callEdgeFunction<{ events: unknown }>('get-events', undefined, alternativ);
     return z.array(EventSchema).parse(data.events);
   }
 
-  async fetchRegistrations(filters?: RegistrationFilters): Promise<Registration[]> {
+  async fetchRegistrations(
+    filters?: RegistrationFilters,
+    alternativ?: HamtningsAlternativ,
+  ): Promise<Registration[]> {
     const params: Record<string, string> = {};
     if (filters?.eventId) params.eventId = filters.eventId;
     if (filters?.status) params.status = filters.status;
@@ -154,6 +157,7 @@ export class AirtableAdapter implements DataSourceAdapter {
     const data = await callEdgeFunction<{ registrations: unknown }>(
       'get-registrations',
       Object.keys(params).length > 0 ? params : undefined,
+      alternativ,
     );
     return z.array(RegistrationSchema).parse(data.registrations);
   }
@@ -322,13 +326,17 @@ export class AirtableAdapter implements DataSourceAdapter {
    * passar inga filters → global hämtning. `.parse()` validerar vid datagränsen
    * (ADR-026; z.array — en LISTA).
    */
-  async fetchWaitlist(filters?: WaitlistFilters): Promise<WaitlistEntry[]> {
+  async fetchWaitlist(
+    filters?: WaitlistFilters,
+    alternativ?: HamtningsAlternativ,
+  ): Promise<WaitlistEntry[]> {
     const params: Record<string, string> = {};
     if (filters?.event) params.event = filters.event;
 
     const data = await callEdgeFunction<{ waitlist: unknown }>(
       'get-waitlist',
       Object.keys(params).length > 0 ? params : undefined,
+      alternativ,
     );
     return z.array(WaitlistEntrySchema).parse(data.waitlist);
   }
@@ -353,13 +361,19 @@ export class AirtableAdapter implements DataSourceAdapter {
    * motiveringen). `pageSize` sätts till EF:ens eget tak (`MAX_PAGE_SIZE`,
    * `get-leads/index.ts`) för att minimera antalet sekventiella anrop.
    */
-  async fetchIntresserade(): Promise<Intresserad[]> {
+  async fetchIntresserade(alternativ?: HamtningsAlternativ): Promise<Intresserad[]> {
+    // [TASK-451.4] Signalen leds in i VARJE cursor-sida, inte bara den första:
+    // en avbruten hämtning ska inte fortsätta betala för resterande sidor.
+    // Tidsgränsen är dock PER SIDA (den bor i `callEdgeFunction`), inte för
+    // hela walken — samma form som `fetchPersonsRegister`s fullwalk. En walk
+    // som behöver en budget för helheten får den av sin anropare via `signal`.
     const alla = await samlaCursorSidor<unknown>(async (cursor) => {
       const params: Record<string, string> = { pageSize: String(INTRESSERADE_MAX_PAGE_SIZE) };
       if (cursor) params.cursor = cursor;
       const data = await callEdgeFunction<{ intresserade: unknown[]; nextCursor: string | null }>(
         'get-leads',
         params,
+        alternativ,
       );
       return { poster: data.intresserade, nextCursor: data.nextCursor };
     });
@@ -413,8 +427,12 @@ export class AirtableAdapter implements DataSourceAdapter {
    * Inga params → global hämtning. (Utskickslogg är de facto tom tills L3 send-email
    * skriver första raden; tom array parsar rent.)
    */
-  async fetchMailLog(): Promise<MailLogEntry[]> {
-    const data = await callEdgeFunction<{ maillog: unknown }>('get-mail-log');
+  async fetchMailLog(alternativ?: HamtningsAlternativ): Promise<MailLogEntry[]> {
+    const data = await callEdgeFunction<{ maillog: unknown }>(
+      'get-mail-log',
+      undefined,
+      alternativ,
+    );
     return z.array(MailLogEntrySchema).parse(data.maillog);
   }
 
@@ -450,8 +468,12 @@ export class AirtableAdapter implements DataSourceAdapter {
    * Make-rader utan App-segmentregel exkluderas server-side, så varje rad bär en
    * typad regel. `.parse()` validerar vid datagränsen (ADR-026; z.array — en LISTA).
    */
-  async listSegments(): Promise<SavedSegment[]> {
-    const data = await callEdgeFunction<{ segments: unknown }>('get-segments');
+  async listSegments(alternativ?: HamtningsAlternativ): Promise<SavedSegment[]> {
+    const data = await callEdgeFunction<{ segments: unknown }>(
+      'get-segments',
+      undefined,
+      alternativ,
+    );
     return z.array(SavedSegmentSchema).parse(data.segments);
   }
 
@@ -1266,7 +1288,10 @@ export class AirtableAdapter implements DataSourceAdapter {
    * `ActivityStatementSchema` gäller läsvägen lika strikt som skrivvägen
    * (TASK-201.1 DoD #6), utan att EF:en själv Zod-validerar server-side.
    */
-  async fetchActivityLog(params?: ActivityLogParams): Promise<ActivityLogPage> {
+  async fetchActivityLog(
+    params?: ActivityLogParams,
+    alternativ?: HamtningsAlternativ,
+  ): Promise<ActivityLogPage> {
     const query: Record<string, string> = {};
     if (params?.category) query.category = params.category;
     if (params?.eventId) query.eventId = params.eventId;
@@ -1279,7 +1304,7 @@ export class AirtableAdapter implements DataSourceAdapter {
       statements: unknown;
       nextCursor: string | null;
       total?: unknown;
-    }>('get-activity-log', Object.keys(query).length > 0 ? query : undefined);
+    }>('get-activity-log', Object.keys(query).length > 0 ? query : undefined, alternativ);
     return {
       statements: z.array(ActivityStatementSchema).parse(data.statements),
       nextCursor: data.nextCursor ?? null,

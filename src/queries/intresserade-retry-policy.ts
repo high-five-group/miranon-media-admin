@@ -61,6 +61,28 @@ import { queryKeys } from '@/queries/keys';
  * följa ett av de befintliga. Denna modul löser ETT problem (dubbelpolicy på
  * EN nyckel via `setQueryDefaults`), inte husets bredare duplicering — den
  * frågan är öppen och bokförs i TASK-420s notes, inte åtgärdad här.
+ *
+ * ── ÖVERSKUGGAD AV WARMUP-POLICYN (TASK-451.4, 2026-09-18) ────────────────
+ *
+ * `registreraIntresseradeRetryPolicy` nedan anropas fortfarande i
+ * `src/router.ts`, men dess post för `intresserade.all` ERSÄTTS direkt
+ * efteråt av `registreraWarmupRetryPolicy`
+ * (`src/queries/warmup-retry-policy.ts`), som sätter `retry: false` på hela
+ * warmup-setet — `intresserade.all` inkluderad.
+ *
+ * Det är en SKÄRPNING av denna moduls mål, inte en rivning av det.
+ * Dubbelpolicy-racet som beskrivs ovan är fortsatt löst (policyn bor på
+ * NYCKELN, inte på anropsställena), 4xx-garantin är fortsatt uppfylld
+ * (`retry: false` retryar ingenting alls), och till det kommer TASK-451.4:s
+ * AC #3: värsta fallet per warmup-item ska vara högst 4 nätverksanrop. Denna
+ * moduls form tillät `4 × 4 = 16` vid 5xx, eftersom `failureCount < 3` lät
+ * query-lagret retrya ovanpå `fetchWithRetry`s egna fyra försök.
+ *
+ * Modulen står kvar OFÖRÄNDRAD i sak: den äger historiken om racet, och
+ * `intresseradeRetryPolicy` nedan är fortfarande husets 4xx-medvetna
+ * referenslambda. Raden dokumenteras här i stället för att lämnas outtalad —
+ * en registrering som tyst skrivs över av en senare rad är exakt den sortens
+ * drift ADR-083 finns för att förhindra.
  */
 export const intresseradeRetryPolicy = (failureCount: number, err: Error): boolean =>
   !(err instanceof EdgeFunctionError && err.status >= 400 && err.status < 500) && failureCount < 3;

@@ -101,6 +101,12 @@ function nyQueryClient(): QueryClient {
   });
 }
 
+/** Vaktklocka: resolvar med `'VAKT'` efter `ms`. Används för att MÄTA att ett
+ * löfte inte settlar, i stället för att påstå det (TASK-451.4). */
+function vakt(ms: number): Promise<'VAKT'> {
+  return new Promise((resolve) => setTimeout(() => resolve('VAKT'), ms));
+}
+
 test.describe('Hem delar startvärmningens hämtningar i flykt (AC #1, rött-först)', () => {
   test('scenario A — batch 1 (events+registrations) fördröjd förbi tidsgränsen ⇒ Hem återanvänder, INGET andra anrop', async () => {
     const { ds, anrop } = stubDataSource({
@@ -191,6 +197,54 @@ test.describe('Hems 60 s-poll och 4xx-policy förblir opåverkade (AC #2 — "br
     expect(resultat).toEqual(SENTINEL.events);
   });
 
+  test('delaMedListan: en lista som REVALIDERAR I BAKGRUNDEN (fetching MED data) delegerar ALDRIG', async () => {
+    // [TASK-451.4, tilläggsorder ur granskningen av PR #2543 — info-fynd (ii)]
+    // `delaMedListan`s villkor är TVÅDELAT: `fetchStatus === 'fetching'` OCH
+    // `data === undefined`. Den andra halvan saknade eget positivt test —
+    // befintliga fall täckte `fetching` + tom cache (delegering) och `idle` +
+    // data (ingen delegering), men inte KOMBINATIONEN fetching + data.
+    //
+    // Varför den grenen MÅSTE falla igenom till en egen hämtning: en
+    // bakgrundsrevalidering av listnyckeln bär redan gammal data. Hade
+    // dashboard-queryn delegerat dit skulle den fått listans hämtning, vars
+    // resultat landar under LISTANS färskhetsregler (global staleTime 5 min)
+    // i stället för dashboardens 30 s — exakt den poll-stöld modulens
+    // filhuvud varnar för, fast via den andra grenen.
+    let listansAnrop = 0;
+    let dashboardensAnrop = 0;
+    const qc = nyQueryClient();
+
+    // 1. Ge listnyckeln data OCH gör den stale.
+    qc.setQueryData(queryKeys.events.list, SENTINEL.events);
+
+    // 2. Starta en bakgrundsrevalidering som HÄNGER ⇒ fetchStatus blir
+    //    'fetching' medan data fortfarande finns kvar.
+    void qc.fetchQuery({
+      queryKey: queryKeys.events.list,
+      queryFn: () => {
+        listansAnrop += 1;
+        return new Promise<typeof SENTINEL.events>(() => {}); // aldrig settlad
+      },
+    });
+    await vakt(10);
+
+    const tillstand = qc.getQueryState(queryKeys.events.list);
+    expect(tillstand?.fetchStatus).toBe('fetching');
+    expect(tillstand?.data).toEqual(SENTINEL.events); // data finns KVAR
+    expect(listansAnrop).toBe(1);
+
+    // 3. Dashboard-hämtningen ska då hämta OBEROENDE, inte delegera.
+    const resultat = await delaMedListan(qc, queryKeys.events.list, () => {
+      dashboardensAnrop += 1;
+      return Promise.resolve(SENTINEL_EVENTS_2);
+    });
+
+    expect(dashboardensAnrop).toBe(1);
+    expect(resultat).toEqual(SENTINEL_EVENTS_2);
+    // Listans hängande revalidering rördes inte — ingen extra start.
+    expect(listansAnrop).toBe(1);
+  });
+
   test('delaMedListan: en AVSLUTAD (icke-fetching) lista med data delegerar ALDRIG — direkt-hämtning även om data finns', async () => {
     // Explicit gräns-test av hjälpfunktionen: `fetchStatus !== 'fetching'`
     // räcker för att falla igenom till den oberoende hämtningen, oavsett
@@ -206,6 +260,57 @@ test.describe('Hems 60 s-poll och 4xx-policy förblir opåverkade (AC #2 — "br
 
     expect(egnaAnrop).toBe(1);
     expect(resultat).toEqual(SENTINEL_EVENTS_2);
+  });
+});
+
+test.describe('En EF som ALDRIG svarar (TASK-451.4 AC #1 — skadan tidsgränsen kapar)', () => {
+  test('warmups hängande events-hämtning delas av Hem ⇒ ETT anrop, och Hem hänger med den', async () => {
+    // [TASK-451.4, tilläggsorder ur granskningen av PR #2543 — info-fynd (i)]
+    // `StubOptions.hangs` och dess if-gren i `svar()` var död kod i denna fil
+    // (deklarerad, aldrig använd). Den passar exakt AC #1:s scenario, så den
+    // tas i bruk här i stället för att rivas — samma stub-form som
+    // `startvarmningen.test.ts` redan använder den i.
+    //
+    // Vad testet fastställer, och varför det hör till DENNA skiva: delningen
+    // (TASK-451.3) gör Hem beroende av startvärmningens hämtning. Hänger den,
+    // hänger Hem — det är precis den skada som motiverar en tidsgräns. Den
+    // gränsen bor i `callEdgeFunction` (`src/data/config/supabase-client.ts`)
+    // och kan därför inte mätas genom en STUBBAD adapter; den mäts i
+    // `tests/api/hamtningens-tidsgrans.test.ts`. Här mäts kopplingen: att det
+    // är EN gemensam hämtning som hänger, inte två oberoende.
+    const { ds, anrop } = stubDataSource({ hangs: ['events'] });
+    const qc = nyQueryClient();
+
+    const resultat = await starta(qc, { dataSource: ds, isOnline: () => true, timeoutMs: 30 })
+      .slutlofte;
+
+    // Gaten släpper på TIMEOUT, och events hann aldrig settla.
+    expect(resultat.utfall).toBe('timeout');
+    expect(anrop.events).toBe(1);
+    expect(qc.getQueryState(queryKeys.events.list)?.fetchStatus).toBe('fetching');
+    expect(qc.getQueryState(queryKeys.events.list)?.data).toBeUndefined();
+    // TASK-451.2-räknarna: den hängande hämtningen är VARKEN lyckad eller
+    // misslyckad än — den har inte settlat, så den kan inte ha räknats.
+    expect(resultat.forlopp.lyckade + resultat.forlopp.misslyckade).toBe(resultat.forlopp.klara);
+    expect(resultat.forlopp.klara).toBeLessThan(resultat.forlopp.totalt);
+
+    // Hem monterar och delar den hängande hämtningen i stället för att starta
+    // ett andra anrop mot samma döda Edge Function.
+    const hemsLofte = delaMedListan(qc, queryKeys.events.list, () => ds.fetchEvents());
+    const utfall = await Promise.race([
+      hemsLofte.then(
+        () => 'SETTLADE' as const,
+        () => 'SETTLADE' as const,
+      ),
+      vakt(150),
+    ]);
+
+    // Hem hänger med den delade hämtningen — ETT anrop totalt, inte två.
+    // I produktion är det denna väntan som `HAMTNINGENS_TIDSGRANS_MS` gör
+    // ÄNDLIG: hämtningen avbryts, felet når Hem, och Hem kan visa ett fellage
+    // i stället för en skeleton utan slut.
+    expect(utfall).toBe('VAKT');
+    expect(anrop.events).toBe(1);
   });
 });
 

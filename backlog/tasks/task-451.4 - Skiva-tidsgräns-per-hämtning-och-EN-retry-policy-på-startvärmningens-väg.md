@@ -4,6 +4,7 @@ title: 'Skiva: tidsgräns per hämtning och EN retry-policy på startvärmningen
 status: To Do
 assignee: []
 created_date: '2026-09-18 10:39'
+updated_date: '2026-09-18 13:48'
 labels:
   - ready-for-agent
 dependencies:
@@ -25,10 +26,10 @@ Underlag § 1.7, § 6 punkt 5–6. Research före design: hur TanStack Query-dok
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Rött-först: en EF som aldrig svarar — i dag hänger anropet obegränsat; efter fix avbryts det vid en config-satt gräns och räknas som misslyckat
-- [ ] #2 Varje adapter-hämtning bär en avbrytbar tidsgräns kopplad till TanStack Querys signal; värdet bor på ETT ställe
-- [ ] #3 Retry sker i ETT lager på warmup-vägen; värsta fallet per item är dokumenterat i koden och högst 4 anrop
-- [ ] #4 4xx retryas aldrig på warmup-vägen (samma regel som useDashboardData.noRetryOn4xx)
+- [x] #1 Rött-först: en EF som aldrig svarar — i dag hänger anropet obegränsat; efter fix avbryts det vid en config-satt gräns och räknas som misslyckat
+- [x] #2 Varje adapter-hämtning bär en avbrytbar tidsgräns kopplad till TanStack Querys signal; värdet bor på ETT ställe
+- [x] #3 Retry sker i ETT lager på warmup-vägen; värsta fallet per item är dokumenterat i koden och högst 4 anrop
+- [x] #4 4xx retryas aldrig på warmup-vägen (samma regel som useDashboardData.noRetryOn4xx)
 <!-- AC:END -->
 
 ## Definition of Done

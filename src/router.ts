@@ -7,6 +7,7 @@ import { dataSource } from './data/dataSource';
 import { registreraIntresseradeRetryPolicy } from './queries/intresserade-retry-policy';
 import { PERSIST_MAX_AGE_MS } from './queries/persist';
 import { registreraPersonregistretsFarskhet } from './queries/personregister-farskhet';
+import { registreraWarmupRetryPolicy } from './queries/warmup-retry-policy';
 import { routeTree } from './routeTree.gen';
 
 // QueryClient defaults per docs/specs/STATE-STRATEGY.md §3.
@@ -49,6 +50,22 @@ registreraPersonregistretsFarskhet(queryClient);
 // eget filhuvud (`src/queries/intresserade-retry-policy.ts`) för hela
 // motiveringen och TanStack Query-källorna.
 registreraIntresseradeRetryPolicy(queryClient);
+
+// TASK-451.4 (diagnoskartan § 1.7 + § 6 punkt 6) — EN retry-policy på
+// startvärmningens väg. Två lager staplades på varje warmup-hämtning:
+// `fetchWithRetry`s 4 HTTP-försök (`src/data/utils.ts`) GÅNGER den globala
+// `retry: 3` ovan = upp till 16 nätverksanrop per item mot en kall Edge
+// Function. Query-lagret stängs av (`retry: false`) för warmup-setets sju
+// nycklar; transportlagret blir det enda, och bär redan 4xx-regeln.
+//
+// ORDNINGEN ÄR BETYDELSEBÄRANDE: denna rad står EFTER
+// `registreraIntresseradeRetryPolicy` och överskuggar med avsikt dess post
+// för `intresserade.all` med det strikt starkare `retry: false` (TASK-420:s
+// garanti "aldrig 4xx" bevaras, plus AC #3:s "högst 4 anrop" som dess egen
+// form inte kunde ge). Kastas raderna om, återgår den nyckeln tyst till
+// 4 × 4-staplingen. Hela resonemanget + spridningsräkningen per nyckel:
+// `src/queries/warmup-retry-policy.ts`s filhuvud.
+registreraWarmupRetryPolicy(queryClient);
 
 /**
  * Router instantierad på modul-scope. context.auth fylls per-render via InnerApp-komponenten
