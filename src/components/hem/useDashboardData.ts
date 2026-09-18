@@ -1,8 +1,9 @@
-import { keepPreviousData, useQuery } from '@tanstack/react-query';
+import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
 import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useDataSource } from '@/data/useDataSource';
 import { queryKeys } from '@/queries/keys';
 import { PERSIST_MAX_AGE_MS } from '@/queries/persist';
+import { hamtaDashboardEvents, hamtaDashboardRegistrations } from './hamtaDashboardData';
 
 /**
  * Delade läs-queries för Hem-aggregeringen (Fas 6d) — med poll-lagret (L2).
@@ -13,6 +14,12 @@ import { PERSIST_MAX_AGE_MS } from '@/queries/persist';
  *
  * `useDashboardRegistrations` konsumeras av BÅDE NyaAnmalningar- och Obetalda-
  * cardet; samma `queryKey` ⇒ React Query dedupar till EN nätverksfetch.
+ *
+ * queryFn:erna nedan går via `hamtaDashboardEvents`/`hamtaDashboardRegistrations`
+ * (`./hamtaDashboardData.ts`, TASK-451.3) — EGEN modul, inte inline här, av
+ * hermetisk-testbarhetsskäl (se den filens huvud): DENNA fil importerar
+ * `@/queries/persist` som kör `window.localStorage`-kod vid modul-laddning,
+ * så `hamtaDashboardData.ts` får aldrig importera från HÄR.
  */
 const noRetryOn4xx = (failureCount: number, err: Error): boolean =>
   !(err instanceof EdgeFunctionError && err.status >= 400 && err.status < 500) && failureCount < 3;
@@ -52,23 +59,29 @@ const DASHBOARD_POLLING = {
   placeholderData: keepPreviousData,
 } as const;
 
-/** Alla anmälningar (event-lösa grenen av get-registrations — inget eventId). */
+/** Alla anmälningar (event-lösa grenen av get-registrations — inget eventId).
+ * queryFn går via {@link hamtaDashboardRegistrations} (TASK-451.3) — delar
+ * startvärmningens hämtning i flykt i stället för att starta ett andra
+ * anrop, se den funktionens JSDoc. */
 export function useDashboardRegistrations() {
   const dataSource = useDataSource();
+  const qc = useQueryClient();
   return useQuery({
     queryKey: queryKeys.dashboard.registrations,
-    queryFn: () => dataSource.fetchRegistrations(),
+    queryFn: () => hamtaDashboardRegistrations(qc, dataSource),
     retry: noRetryOn4xx,
     ...DASHBOARD_POLLING,
   });
 }
 
-/** Hela eventlistan (get-events — global, inga params). */
+/** Hela eventlistan (get-events — global, inga params). queryFn går via
+ * {@link hamtaDashboardEvents} (TASK-451.3) — se den funktionens JSDoc. */
 export function useDashboardEvents() {
   const dataSource = useDataSource();
+  const qc = useQueryClient();
   return useQuery({
     queryKey: queryKeys.dashboard.events,
-    queryFn: () => dataSource.fetchEvents(),
+    queryFn: () => hamtaDashboardEvents(qc, dataSource),
     retry: noRetryOn4xx,
     ...DASHBOARD_POLLING,
   });
