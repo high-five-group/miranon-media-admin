@@ -30,7 +30,7 @@ firma-uppgifter (publika på ett kvitto de själva skickar).
 ## Varför det hände — arbetssättet, inte slarv
 
 Basdefekt-kartläggningen (S102–S106) och backfillen bevisar dubbletter och
-länkfel genom att citera de verkliga records som är fel: *"Ulrika X bär två
+länkfel genom att citera de verkliga records som är fel: *"Deltagare 88 bär två
 Person-records"* är beviset. Det är rätt metod — och fel medium. Beviset
 behöver record-ID:t och EN stabil pseudonym, aldrig namnet. Samma sak för
 kvittoförlagan: vi behövde strukturen och talen, aldrig kunden.

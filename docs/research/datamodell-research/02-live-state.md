@@ -669,7 +669,7 @@ Edge Functions agerar effektivt som webhook-konsumenter (POST från Lovable-fron
 | 28 | Deltagare 21 | Resor i medvetandet |
 | 2 | Deltagare 64 | Resor i medvetandet |
 
-**Bekräftelse:** Mia & Daniel kvarstår som Inställt — Punkt 9 STEG C håller. Inställt-status `selebP2V3qmFRTtdP` (redBright) på Anmälningar.Status.
+**Bekräftelse:** Deltagare 64 & Deltagare 21 kvarstår som Inställt — Punkt 9 STEG C håller. Inställt-status `selebP2V3qmFRTtdP` (redBright) på Anmälningar.Status.
 
 ### 7.7 Väntelista — stickprov
 
@@ -747,7 +747,7 @@ Backfill-rapporten (verifiering-2026-04-24) listade **924 backfill-Deltaganden**
 - 5 nya fält (april) bekräftade i basen — schema_reference.md är **stale** för dessa
 - 2 nya Status-options (Anmälningar.Inställt + Eventplanering.Inställt) bekräftade
 - Q5 löst entydigt
-- Punkt 9 från 26-april (Event-6 + Mia + Daniel) verifierad kvarstående
+- Punkt 9 från 26-april (Event-6 + Deltagare 64 + Deltagare 21) verifierad kvarstående
 - 6 nya datakvalitetsfynd identifierade (lyfts till 01-extraction.md sektion D)
 
 *Avvaktar Marcus godkännande av Checkpoint 1 innan steg 1.2.*
