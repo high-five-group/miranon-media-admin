@@ -64,3 +64,41 @@ beslut 1–6).
 - Laddtrappans regelverk (vilken indikator på vilken yta) ägs av
   [ADR-113](ADR-113-laddtrappan-yttrappa-for-laddindikatorer.md);
   Förberedelseskärmen är trappans "determinate bar"-steg på appnivå.
+
+## Updates
+
+### 2026-09-18 — Räknarens semantik preciserad: `klara` är SETTLADE, inte LYCKADE (TASK-451.2)
+
+Kallstartens diagnoskarta
+(`docs/research/kallstarten-diagnoskarta-2026-09-18.md` § 2.3) avtäckte en
+blind fläck i hur beslut 1 och beslut 3 ovan formulerats: texten resonerar
+genomgående som om `klara = totalt` ⇒ data finns i cachen. Så var inte
+fallet. `startvarmningen.ts` räknade från början (TASK-218.1) SETTLADE
+hämtningar — lyckade OCH misslyckade, ökat i varje items `.finally()` — inte
+bara lyckade; en MEDVETEN designpunkt för barens skull (den ska nå 100 % när
+motorn är klar, oavsett enskilda EF-fel, annars fryser den på ett enda fel).
+Konsekvensen var oavsiktlig: en startvärmning där SAMTLIGA sju hämtningar
+fallerade gick igenom identiskt med en där alla sju lyckades
+(`utfall: 'klar'`, `klara: 7 av 7`, baren 100 %), och den enda
+observability-kanalen (beslut 3, task-240) fyrar ENDAST vid timeout — noll
+spår lämnades för detta, det vanligaste felfallet.
+
+**Fixat (TASK-451.2), beslut 1/3s bokstav orörd:**
+
+- `StartvarmningForlopp` bär nu `lyckade`/`misslyckade` separat.
+  `klara`/`totalt` behåller OFÖRÄNDRAT sin roll som barens drivning
+  (Förberedelseskärmens kontrakt "X av N hämtningar klara" syftar
+  fortsatt på SETTLADE, inte lyckade — ORDLISTA.md-posten preciserad i
+  samma skiva).
+- `StartvarmningUtfall` fick ett fjärde värde, `'klar-ofullstandig'`:
+  samtliga sju settlade, men minst en misslyckades. `'klar'` betyder nu
+  striktare "samtliga sju settlade OCH samtliga lyckades".
+- En ANDRA, separat Sentry-varning (tagg `warmup: 'delvis-fel'`, skild från
+  den befintliga `timeout-partial`-mätserien som är HELT ORÖRD) fyrar
+  närhelst `misslyckade > 0`, oavsett om avgörandet kom via timeout eller
+  "alla settlade" — med antal och item-namn (interna diagnostik-etiketter,
+  aldrig personuppgifter) i `extra`.
+
+Beslut 1 och 3 kräver ingen omprövning — det som var fel var en OUTTALAD
+premiss i hur räknaren TOLKADES utanför modulen, inte den blockerande
+warmup-designen, determinate-baren eller den hårda timeouten själva.

@@ -127,7 +127,12 @@ function useAppYtaVarmningsgate(): AppYtaVarmningsFas {
   const [fas, setFas] = useState<AppYtaVarmningsFas>(() =>
     arCacheVarm(queryClient)
       ? { typ: 'redo' }
-      : { typ: 'varmar', forlopp: FORBEREDELSESKARM_VANTAR },
+      : // FORBEREDELSESKARM_VANTAR bär bara {klara,totalt} — komponent-propsens
+        // form (Forberedelseskarm.tsx, TASK-451.1 äger den filen). Det interna
+        // gate-tillståndet här är `StartvarmningForlopp` (TASK-451.2: bär även
+        // `lyckade`/`misslyckade`) — innan startvärmningen ens startat har
+        // NOLL settlat, så 0/0 är korrekt, inte en gissning.
+        { typ: 'varmar', forlopp: { ...FORBEREDELSESKARM_VANTAR, lyckade: 0, misslyckade: 0 } },
   );
   const handleRef = useRef<StartvarmningHandle | null>(null);
   const avgjortRef = useRef(fas.typ === 'redo');
