@@ -501,8 +501,8 @@ tidigare ovillkorade indikator-förbud; Lugnt laddläge förblir trappans
 agent-generaliseringen, inte beslutet.
 
 **Förberedelseskärmen** — den blockerande startskärm som visas vid kall
-appstart (ADR-112): en äkta determinate bar (X av N hämtningar klara) mot
-en dov, fönsterfyllande bakgrundsbild (Roger & Lotta-fotot, task-273.6,
+appstart (ADR-112): en determinate bar (X av N hämtningar klara) mot en
+dov, fönsterfyllande bakgrundsbild (Roger & Lotta-fotot, task-273.6,
 Marcus tillägg 2 2026-08-17) — "rensas till enbart loadingbaren", ingen
 logotyp längre synlig. Den Marcus-låsta texten "Förbereder ditt
 administrationsverktyg" finns kvar i DOM:en (progressbarens tillgängliga
@@ -513,6 +513,13 @@ klara" räknar SETTLADE hämtningar (lyckade OCH misslyckade), inte bara
 lyckade — baren når alltid 100 % vid avslut, oavsett om datan faktiskt
 cachades (TASK-451.2, ADR-112 § Updates 2026-09-18; startvärmningens egna
 utfall skiljer 'klar' från 'klar-ofullstandig' för den distinktionen).
+Baren är INTE ständigt determinate: mellan skärmens första målning och
+FÖRSTA settlade hämtningen (`klara === 0`) degraderar den till OBESTÄMD
+(indeterminate) rörelse i stället för en osynlig `0 %`-yta — branschmönstret
+för en determinate-indikator utan känt delresultat (Material Design 3,
+W3C APG progressbar-mönstret; React Aria `isIndeterminate`), TASK-451.1,
+ADR-112 § Updates 2026-09-18. Övergår automatiskt till determinate så fort
+`klara` når 1, ingen egen tröskel.
 *Undvik:* "splash"/"splash-skärm" i användarvänd text och dokumentation —
 Förberedelseskärmen är det kanoniska namnet ("splash" är okej som
 engelskt branschbegrepp i research-citat).
