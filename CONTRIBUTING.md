@@ -1159,7 +1159,7 @@ fullt ut — databasbygge, frågeutvärdering, SARIF-export — men SARIF-
 uppladdningen avvisades av GitHubs backend med exakt detta fel (PR #2558,
 körning `35404550404`, båda jobben, 2026-09-18):
 
-```
+```text
 ##[error]Code Scanning could not process the submitted SARIF file:
 CodeQL analyses from advanced configurations cannot be processed when the default setup is enabled
 ```
