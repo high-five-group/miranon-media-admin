@@ -244,7 +244,7 @@ function handSkal(rad: BekraftelseRad): string {
       return 'Anmälningsavgiften är redan betald.';
     }
   }
-  if (gallandePris === null) return 'Priset saknas i basen.';
+  if (gallandePris === null) return 'Priset saknas i databasen.';
   return 'Beloppet är tomt.';
 }
 

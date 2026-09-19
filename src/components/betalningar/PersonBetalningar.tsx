@@ -121,7 +121,7 @@ export function PersonBetalningar({ person }: { person: PersonDetail }) {
               </span>
               <span className="text-caption text-text-muted">
                 {rad.kvar === null
-                  ? 'Pris saknas i basen'
+                  ? 'Pris saknas i databasen'
                   : `${visaKronor(rad.kvar)} kr kvar att betala`}
                 {rad.forfallen ? ' · förfallen' : ''}
               </span>

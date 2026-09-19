@@ -1,4 +1,4 @@
-import { AlertTriangle, Ban, Ellipsis, ExternalLink, Loader2, Send, Trash2 } from 'lucide-react';
+import { Ban, Ellipsis, ExternalLink, Loader2, Send, Trash2 } from 'lucide-react';
 import { type FormEvent, type KeyboardEvent, useEffect, useId, useRef, useState } from 'react';
 import { Button, Input, MessageBox, Skeleton } from '@/components/primitives';
 import { Meny, MenyAvdelare, MenyPost } from '@/components/primitives/Meny';
@@ -24,6 +24,7 @@ import {
   kvittolage,
   sorteraInbetalningar,
 } from './panel-harledningar';
+import { SpegelSlaparIkon } from './SpegelSlaparBesked';
 
 /** Menyposternas ikonstorlek — samma 16 px som bilage-kortens `IKON_STORLEK`. */
 const IKON_STORLEK = 16;
@@ -246,11 +247,22 @@ export function InbetalningsLista({ kalla, aktiv, listEtikett = 'Inbetalningar',
     <div className="flex flex-col gap-2">
       {/* SPEGELNS EFTERSLÄPNING SÄGS RAKT UT (ADR-128 beslut 5: den "SYNS I
           APPEN i stället för att tystas"). Talen kommer ur samma svar, så
-          detta kostar inget extra anrop. */}
+          detta kostar inget extra anrop.
+
+          IKONEN ÄR `SpegelSlaparIkon` (Hourglass), INTE `AlertTriangle`
+          (TASK-475 runda 2, granskningsfynd 1) — denna rad var den SISTA
+          varningstriangeln för spegel-budskapet i
+          `src/components/betalningar/**`; Marcus eget skäl (inget är fel,
+          ingen åtgärd krävs) står i `SpegelSlaparBesked.tsx`s docblock och
+          gäller denna yta lika mycket. Texten här är MEDVETET INTE
+          `spegelSlaparMening`: den jämför appens och databasens summor
+          direkt i stället för att räkna berörda betalningar — en annan
+          utsaga än listnivåns "N betalningar", så bara ikonen och tonen
+          återbrukas, inte meningen. */}
       {!spegel.iFas && (
         <p className="flex items-center gap-1.5 text-caption text-text-muted">
-          <AlertTriangle aria-hidden size={13} className="shrink-0" />
-          {`Basen har inte hunnit uppdateras än. Appen har ${visaKronor(spegel.summaPostgres)} kr, basen ${spegel.summaBasen === null ? 'saknar värde' : `${visaKronor(spegel.summaBasen)} kr`}.`}
+          <SpegelSlaparIkon size={13} />
+          {`Databasen har inte hunnit uppdateras än. Appen har ${visaKronor(spegel.summaPostgres)} kr, databasen ${spegel.summaBasen === null ? 'saknar värde' : `${visaKronor(spegel.summaBasen)} kr`}.`}
         </p>
       )}
 

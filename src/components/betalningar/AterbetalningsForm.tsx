@@ -118,7 +118,7 @@ export function AterbetalningsForm({
       skickaKreditkvitto,
       kvittens: resultat.spegel.skrivet
         ? `Återbetalning på ${visaKronor(sparat)} kr registrerad.`
-        : `Återbetalning på ${visaKronor(sparat)} kr registrerad. Basen har inte hunnit uppdateras än.`,
+        : `Återbetalning på ${visaKronor(sparat)} kr registrerad. Databasen har inte hunnit uppdateras än.`,
     });
   }
 

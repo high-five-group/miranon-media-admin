@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-09-18
+updated: 2026-09-19
 review_by: 2027-01-02
 status: stable
 ---
@@ -761,3 +761,26 @@ saknas. Kvittots beteende vid flytten avgörs av research-passet
 `docs/research/kvitto-vid-ombokning-2026-09-03.md` (S115 Del 3, beslut 7–8).
 *Undvik:* byte, flytt (ordet Ombokning bär både avbokningen och den nya
 anmälan).
+
+**Databasen (UI-ord)** — det UI-ord som i ALL ANVÄNDARSYNLIG TEXT (felmeddelanden,
+etiketter, eftersläpningsbesked) benämner datakällan bakom appen: Airtable,
+skrivet via mellanlagret som gör appens egen kopia eventuellt konsistent i
+efterhand. Kanoniserad 2026-09-19 (S127, TASK-475) sedan Marcus underkände
+"Basen släpar" på PR #2541, ordagrant: *"Ser bra ut, men vad betyder 'Basen
+släpar'? Den texten kan vi inte visa för användaren (Lotta)."* Och om
+ersättningen, samma dag: *"Jag vet inte, Lotta säger väl inget av det, det
+bästa kanske är som du sa att hela meningen står en gång synligt överst i
+listan när minst en rad berörs, typ 'Databasen har inte hunnit uppdateras för
+två betalningar. Beloppen här i appen stämmer.'"* Ordet stod ostämplat
+("typ") till dess Marcus såg formen i dev-server och stämplade den ordagrant:
+*"Det blir okej."* (samma datum, TASK-475 runda 2, PR #2576).
+*Undvik:* "basen", "Basen släpar", "spegeln" i TEXT ANVÄNDAREN SER. "basen"
+förblir teamets INTERNA domänspråk i kod, kommentarer och dokumentation —
+denna ordlistas övriga poster inkluderade — och rörs INTE av kristalliseringen;
+distinktionen är UI-yta mot kod/dokumentation, inte en total ersättning av
+ordet "basen" i repot.
+*I koden:* identifierare som redan hette "bas*"/"spegel*" är ORÖRDA —
+`spegelSlaparMening`, `SPEGEL_SLAPAR_RADMENING`, `SpegelSlaparBesked`,
+`SpegelSlaparMarkor`, `SpegelSlaparIkon`
+(`src/components/betalningar/SpegelSlaparBesked.tsx`); `spegel.iFas`,
+`spegel.summaBasen` (datamodellen). Ordbytet gäller bara STRÄNGARNA Lotta ser.

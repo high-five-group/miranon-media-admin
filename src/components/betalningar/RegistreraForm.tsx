@@ -642,7 +642,7 @@ export function RegistreraForm(props: Props) {
        sedan 2026-09-01 av `useSattAvtalatPris` i ett EGET anrop med sitt eget
        felläge vid Spara-knappen, så denna kvittens kan inte längre säga
        något sant om priset och ska därför inte säga något alls om det. */
-    const spegelnot = resultat.spegel.skrivet ? '' : ' Basen har inte hunnit uppdateras än.';
+    const spegelnot = resultat.spegel.skrivet ? '' : ' Databasen har inte hunnit uppdateras än.';
 
     /* NOTERINGEN KVITTERAS BARA NÄR DEN FALLERAT — och den grenen är död kod
        efter deployen. Skrev Lotta en anteckning men svaret bär `null` tillbaka,

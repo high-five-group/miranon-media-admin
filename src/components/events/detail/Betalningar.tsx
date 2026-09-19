@@ -1,7 +1,6 @@
 import { Link } from '@tanstack/react-router';
 import { ChevronDown, Clock } from 'lucide-react';
 import { useMemo, useState } from 'react';
-import { BasenSlaparPill } from '@/components/betalningar/BasenSlaparPill';
 import { idagIso } from '@/components/betalningar/idag';
 import {
   arRentDatum,
@@ -9,6 +8,10 @@ import {
 } from '@/components/betalningar/inbetalnings-handelser';
 import { harledRad, type InkorgsRad } from '@/components/betalningar/inkorg-harledningar';
 import { KvarAttBetala } from '@/components/betalningar/KvarAttBetala';
+import {
+  SpegelSlaparBesked,
+  SpegelSlaparMarkor,
+} from '@/components/betalningar/SpegelSlaparBesked';
 import { Button, MessageBox, Skeleton } from '@/components/primitives';
 import { ToggleButton, ToggleButtonGroup } from '@/components/primitives/ToggleButtonGroup';
 import { type AnmalanHandelse, harledHandelser } from '@/components/registrations/handelser';
@@ -61,7 +64,8 @@ import { kategoriPillText } from './hallplats-steg-prototyp';
  * TVÅ KÄLLOR, OCH VILKEN SOM VINNER: flikarna läser basens spegel
  * (`anmalningsavgift`/`slutbetalning`), beloppet läser Postgres via samma
  * härledning som inkorgen (`harledRad`). Finns en rad vinner Postgres —
- * även under fliken Klara, då med "Basen släpar" på namnraden (ADR-128
+ * även under fliken Klara, då med spegel-markören på namnraden och hela
+ * meningen ovanför listan (`SpegelSlaparBesked`, TASK-475; ADR-128
  * beslut 5: eftersläpningen SYNS, tystas aldrig). Finns ingen rad säger
  * fliken Klara "Allt betalt" (spegeln själv påstår det).
  *
@@ -69,7 +73,7 @@ import { kategoriPillText } from './hallplats-steg-prototyp';
  * kan räkna fram (`hamta-oppna-betalningar` § ÖPPEN BETALNING). Saknar
  * eventet pris sägs det EN gång, på eventnivå ovanför listan, och
  * beloppsraden hoppas över per person — fjorton identiska "Pris saknas i
- * basen" hade varit samma brus som de arton tomma rutorna våg 10 rev
+ * databasen" hade varit samma brus som de arton tomma rutorna våg 10 rev
  * ("bar noll information och ändå dominerade ytan").
  *
  * HÄNDELSELOGGEN ersätter utskicksloggen (K34): samma tidslinje, men senast
@@ -374,7 +378,13 @@ function BetalningsPersonRad({
                 {kategoriPill}
               </span>
             )}
-            {rad?.spegelSlapar && <BasenSlaparPill />}
+            {/* [TASK-475] SAMMA MARKÖR SOM INKORGEN, SAMMA MENING ÖVERST —
+                båda ytorna säger numera exakt samma sak. Ikonen ensam här;
+                teckenförklaringen står i `SpegelSlaparBesked` ovanför listan
+                (se `BetalningsDetaljer` nedan). Ersätter `BasenSlaparPill`,
+                som var ytans enda konsument och därför är RIVEN i samma
+                landning — ingen död komponent lämnas kvar. */}
+            {rad?.spegelSlapar && <SpegelSlaparMarkor />}
           </span>
         )}
       </div>
@@ -501,8 +511,8 @@ export function BetalningsDetaljer({
       )}
       {prisOkant && flik === 'saknar' && lista.length > 0 && (
         // EN gång, på eventnivå — se docblocket § PRISET SAKNAS. Ordvalet är
-        // inkorgens och personkortets ("Pris saknas i basen").
-        <MessageBox intent="warning" title="Pris saknas i basen">
+        // inkorgens och personkortets ("Pris saknas i databasen").
+        <MessageBox intent="warning" title="Pris saknas i databasen">
           Beloppen kan inte räknas fram förrän eventet har ett pris.
         </MessageBox>
       )}
@@ -539,6 +549,16 @@ export function BetalningsDetaljer({
           Kontrollera att du är uppkopplad och försök igen.
         </MessageBox>
       )}
+      {/* [TASK-475] TECKENFÖRKLARINGEN FÖR RADERNAS SPEGEL-IKONER, på samma
+          list-nivå som inkorgen använder: EN mening direkt ovanför precis de
+          rader den räknar. Räkningen följer den AKTIVA fliken (`lista`), inte
+          hela registret — flikbytet ska aldrig lämna ett tal som pekar på
+          rader man inte ser. `raderPerAnmalan` saknar post för anmälningar
+          utan Postgres-rad, och `?.` gör dem därmed korrekt oräknade: de bär
+          ingen markör. */}
+      <SpegelSlaparBesked
+        antal={lista.filter((r) => raderPerAnmalan.get(r.id)?.spegelSlapar).length}
+      />
       {lista.length > 0 ? (
         // Korten separeras av LUFT, inte av hårstreck: när varje person bär
         // en egen kortyta blir en avdelare emellan en andra gräns runt samma
