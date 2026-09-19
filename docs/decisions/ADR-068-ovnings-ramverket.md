@@ -114,3 +114,44 @@ ADR/supersedering, inte tyst redigering.
 "ADR-068" i levande ytor = endast citat-klass + denna ADR:s eget nummer;
 tråd-registrets T57-rad (closed), sessionsdok 46–50 och BUILD-LOG-posterna
 bär historiska referenser per lins-notens skikt ii.
+
+## Updates
+
+### 2026-09-19 — Fas W infogas FÖRE Fas E: punkt 5:s sakbeslut står, en snävare senare läsning omprövas ([ADR-134](ADR-134-publik-webbplats-fore-fas-e-delad-at-max.md), Accepted)
+
+[ADR-134](ADR-134-publik-webbplats-fore-fas-e-delad-at-max.md) inför en
+NY fas i byggplanens §2-tabell — namnet "Fas W — Publik webbplats (nya
+miranon.se)" är fastställt under ADR-134:s delegerade Marcus-mandat —
+placerad FÖRE Fas E, körd parallellt med Session 126:s CI-arkitektur
+och Session 127:s återstående Fas 6-ytor (Marcus, S128: _"A. Allt
+parallellt nu. Jag har tid."_).
+
+**Punkt 5:s sakbeslut STÅR OFÖRÄNDRAT.** Fas E förblir Övning 2:s ENDA
+namngivna slutfas för Supabase-migrationen — den behåller sin plats som
+sist i byggplanens §2-tabell (Fas W läggs FÖRE den, inte i stället för
+den), och ingen ny fas ersätter eller delar Fas E:s roll som slutfas.
+Punkt 5:s bokstav — "ingen ny fas skapas" — talade om Supabase-
+migrationens EGEN slutfas-roll: Fas E behöver ingen syskonfas för att
+fylla den rollen, och den premissen håller.
+
+**Vad som omprövas är en SNÄVARE, senare extrapolering av punkt 5** —
+inte punkt 5:s egen ordalydelse. Arkitektur-destillatet
+(`docs/reference/miranon-arkitektur/arkitektur-destillat-och-gap-2026-07-25.md`
+§ "Vad som INTE är avgjort", 2026-07-25) läste punkt 5 som att den
+_"avvisade uttryckligen att skapa nya faser"_ för spår som custom
+miranon.se eller en AI-assistent, och lämnade frågan öppen: _"Beslutas
+de två spåren [AI-assistent, miranon.se] ihop eller var för sig?"_
+[ADR-134](ADR-134-publik-webbplats-fore-fas-e-delad-at-max.md) besvarar
+den frågan för miranon.se-spåret specifikt (fråga 2 i destillatets
+lista): en ny fas FÅR läggas in före Fas E inom Övning 2, förutsatt att
+den håller sig till EF-protokollgränsen ([ADR-080](ADR-080-acceptance-klassen-hermetisk-utbrytning.md))
+så att Fas E:s datakälle-byte inte kräver att den byggs om. Frågan för
+AI-assistent-spåret (destillatets fråga 1) är OBERÖRD av detta beslut
+och förblir öppen.
+
+**Varför detta är en korrigerings-not, inte en supersedering:** punkt
+5:s KÄRNBESLUT (Fas E som namngiven slutfas, ingen ny fas för dess egen
+roll) består. Det som korrigeras är en tolkning som stod i en ANNAN,
+senare fil (destillatet) och som extrapolerade punkt 5 bredare än dess
+egen text — samma distinktion som `docs/decisions/README.md` § Korrigering
+vs supersedering kräver för en additiv not.
