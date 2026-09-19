@@ -401,12 +401,18 @@ sentinel-städning, klassning, exponeringsfönster-mätning — härlett ≈
 23,5 min i stället för ≈ 60,4 per körning. Marcus: *"C."*
 
 **Skäl.** De tre tidigare ytorna (förslag, kö, huvudgren) kör redan
-samma hermetiska tester på samma träd — den fjärde körningen bevisar
-inget nytt förutom det som är UNIKT för efterkontrollen: att det
-FAKTISKT LANDADE trädet efter en eventuell gruppmerge fortfarande
-håller (samma hål `N3` finns för att stänga, `ADR-077` § Beslut 2 —
-`N3` är därför en hård förutsättning för S3, inte en konkurrent till
-den).
+samma hermetiska tester — den fjärde körningen bevisar inget nytt för
+den hermetiska klassen. Det gäller ÄVEN det faktiskt landade trädet
+efter en grupplandning (rättat 2026-09-19, se § Updates): kö-grenen för
+gruppens sista post ÄR den commit som landar, samma SHA. Mätt samma dag
+som ADR:n landade: `#2588` + `#2596` → `811cece3`, där kö-körningen
+`35448948271` och push-körningen `35449264286` BÅDA körde hela sviten
+grön på exakt den SHA:n. Det som är UNIKT för efterkontrollen är i
+stället staging, tillgänglighet, städning och — för den hermetiska
+klassen — LARMKEDJAN: ett rött på push-ytan utlöser inget ärende och
+inget revert-förslag; den maskinen finns bara i efterkontrollen. `N3`
+(`ADR-077` § Beslut 2), som klassar hela det pushade spannet, är därför
+en hård förutsättning för S3, inte en konkurrent till den.
 
 **Beslut 6b — "efterkontroll på klocka" avvisas, en egen fråga inom
 samma beslut.** Grillningen (Del 17) sköt frågan "ska efterkontrollens
@@ -672,3 +678,23 @@ orkestrerarens dokumentbuntar.
    Stycket säger nu vad talet är, vad samma räkning ger i dag (≈ 7 500)
    och att beslutet bara gäller orkestrerarens dokument. Tabellen är
    oförändrad och är den siffra som gäller.
+
+### 2026-09-19 — beslut 6:s skäl vilade på en falsk premiss om grupplandningar (S126)
+
+Beslutet (S3) står kvar; SKÄLET är rättat. Texten sade att efterkontrollens
+hermetiska körning var den enda som såg det faktiskt landade trädet efter
+en grupplandning. Review-grinden på `#2597` (`TASK-464.6`, runda 1, risk
+hög) fällde premissen, och orkestreraren belade det fristående: på
+grupplandningen `811cece3` (`#2588` + `#2596`, 14:36:34Z) finns kö-körningen
+`35448948271` — kö-gren byggd ovanpå `#2588`:s gruppcommit `6a3a78c3` — och
+push-körningen `35449264286`, och båda körde hela sviten grön på EXAKT den
+landade SHA:n. Kön ser alltså gruppinteraktionen. Felet gick i pessimistisk
+riktning: skyddet var starkare än texten sade. Den verkliga, kvarvarande
+svagheten är en annan och står nu i beslut 6: ett rött på push-ytans
+hermetiska körning utlöser inget ärende — larmkedjan finns bara i
+efterkontrollen. Marcus: *"Vi kör på dina rekommendationer."* Följd för
+`TASK-464.4` (S1): när push-ytan slutar köra om sviten är kön den ENDA ytan
+som bevisar den hermetiska klassen på det landade trädet — S1:s villkor
+("kö-körningen på exakt `github.sha` KÖRDE sviten grön", aldrig den sista
+PR:ens klassning, tråd `T166`) bär därför hela skyddet och ska vara
+fail-closed.
