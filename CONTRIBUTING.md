@@ -1209,6 +1209,73 @@ jämför larmlistan (`code-scanning/alerts`) före/efter avstängningen mot en
 sparad ögonblicksbild tagen FÖRE steg 1. Steg 1 är en repo-inställning och
 utförs av orkestreraren, aldrig av en agent.
 
+**Stale/dubblerade larm vid bytet — riskerna, citerade, och varför de
+undviks.** GitHubs felsökningssida "Two CodeQL workflows"
+(`docs.github.com/.../troubleshoot-analysis-errors/two-codeql-workflows`)
+beskriver exakt den situation en ofullständig övergång ger: *"Default
+setup overrides existing CodeQL setups by disabling any existing CodeQL
+workflows, and blocking any CodeQL analysis API uploads"* — vilket är
+PRECIS felet som mättes ovan, från motsatt håll (default setup är den part
+som blockerar). Samma sida namnger två symptom av att ha KVAR två
+konfigurationer samtidigt: *"These configurations can generate duplicate
+alerts"* och *"stale configurations that no longer run will display
+outdated alert statuses, and the stale alerts will stay open
+indefinitely"*.
+
+Vår bytesordning (§ ovan) undviker båda, av konstruktion: när default
+setup stängs av (steg 1) SLUTAR den producera analyser helt — det blir
+aldrig två AKTIVA konfigurationer samtidigt, bara en avstängd och en ny.
+"Dubblerade larm" kräver att båda parallellt skriver till OLIKA
+identiteter för samma fynd; "stale" kräver att en konfiguration fortsätter
+existera efter att den slutat köra. Ingetdera inträffar när ordningen
+följs.
+
+**Varför en fortsättning i stället för en duplicering — SARIF-
+kategorierna matchar, mätt sida vid sida:**
+
+| Källa | Kategori |
+|---|---|
+| Default setup, mätt `code-scanning/analyses` (fem körningar, 2026-09-18) | `/language:javascript-typescript`, `/language:actions` |
+| `codeql.yml`, `analyze`-stegets `category:`-fält | `"/language:${{ matrix.language }}"` → `/language:javascript-typescript`, `/language:actions` |
+
+Identiska. Kategori är en av de axlar GitHub använder för att gruppera
+SARIF-resultat per (verktyg, kategori, ref) — matchande kategori plus
+samma verktygsnamn (`CodeQL`, satt av `codeql-action` oavsett setup-typ)
+betyder att advanced setups första lyckade uppladdning FORTSÄTTER samma
+larm-identitet i stället för att öppna en parallell. Detta är en rimlig
+läsning av den dokumenterade mekaniken (fingerprinting för att förhindra
+dubblerade larm, `docs.github.com` "SARIF support for code scanning" —
+samma sida `codeql-action`s egen loggtext länkar till), inte en verbatim
+garanti för just detta scenario; flaggat i samma anda som
+`push`-avsnittet ovan.
+
+**Jämför larm PER IDENTITET, inte bara antal — exakt kommando:**
+
+```bash
+gh api "repos/high-five-group/miranon-media-admin/code-scanning/alerts?state=open&per_page=100" \
+  --paginate \
+  --jq '.[] | [.rule.id, .most_recent_instance.location.path, (.most_recent_instance.location.start_line|tostring), (.number|tostring)] | @tsv' \
+  | sort > alerts-fore.tsv
+
+# … stäng av default setup, kör en grön codeql.yml-körning …
+
+gh api "repos/high-five-group/miranon-media-admin/code-scanning/alerts?state=open&per_page=100" \
+  --paginate \
+  --jq '.[] | [.rule.id, .most_recent_instance.location.path, (.most_recent_instance.location.start_line|tostring), (.number|tostring)] | @tsv' \
+  | sort > alerts-efter.tsv
+
+diff alerts-fore.tsv alerts-efter.tsv
+```
+
+Identiteten är `<regel-ID>\t<fil>\t<startrad>\t<larmnummer>` — `diff`-rader
+som börjar med `<` är larm som FÖRSVANN (utred varje en, får aldrig vara
+tyst förlorade); rader med `>` är NYA larm (förväntat om en verkligt ny
+regel eller ändrad kod hittas, men kontrollera att de inte är dubbletter
+av en `<`-rad med samma regel-ID+fil men annat radnummer — ett tecken på
+att fingeravtrycket inte matchade). Provkört mot repots verkliga läge
+2026-09-19: kommandot returnerar 9 rader (den nuvarande larm-baslinjen —
+full lista i PR #2558:s kropp), format bekräftat.
+
 ## Acceptance-klassen
 
 Termen bor här och i

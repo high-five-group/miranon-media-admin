@@ -833,6 +833,32 @@ jobs:
         # paritet-markörerna — grinden läser regionen som data.
         run: bash scripts/check-listparitet.sh
 
+      - name: Validate CodeQL D0-undantaget är kodfritt (TASK-464.2 gate)
+        # Review runda 1 fynd 1 (warning), PR #2558: D0-listan
+        # (.github/workflows/codeql.yml) återanvänder ci.yml:s D0-allowlist
+        # på premissen att sökvägarna är kodfria — stickprov fann åtta
+        # spårade .mjs/.js-filer som falsifierade premissen. Grinden gör
+        # premissen mätbar: listar spårade filer under CodeQL:s D0-undantag
+        # och fäller på analyserbar (JS/TS-familjen) ändelse utan deklarerat
+        # undantag i .codeql-d0-kodfri-policy.conf. Config-driven, tvåsidigt
+        # testad (scripts/test-check-codeql-d0-kodfri.sh, 10 fall).
+        run: bash scripts/check-codeql-d0-kodfri.sh
+
+      - name: Validate CodeQL push===pull_request paths-ignore (TASK-464.2 gate)
+        # Review runda 1 fynd 2 (warning), PR #2558: prosan i
+        # .listparitet-policy.conf och codeql.yml:s eget filhuvud påstod att
+        # YAML-ankaret gör en avvikande push-kopia "strukturellt omöjligt" —
+        # sant bara så länge ingen ERSÄTTER aliaset med en handskriven lista.
+        # check-listparitet.sh:s markörbaserade par läser bara EN region
+        # (under pull_request) och kan inte se den ersättningen. Denna grind
+        # parsar den FAKTISKA YAML-strukturen och kräver djup likhet mellan
+        # on.push['paths-ignore'] och on.pull_request['paths-ignore'] oavsett
+        # hur de skrevs — en semantiskt STARKARE, oberoende kontroll. Tvåsidigt
+        # testat (scripts/test-check-codeql-push-pr-parity.mjs, 7 fall,
+        # inklusive en handskriven-men-identisk-lista-fixtur som bevisar att
+        # grinden jämför semantik, inte ankare-syntax).
+        run: node scripts/check-codeql-push-pr-parity.mjs
+
       - name: Validate locked facit is addressable (ADR-102 gate)
         # Per ADR-102 B1/B3: den låsta prototypen ÄR facit, och prototyp-kod
         # rivs aldrig före Marcus godkännande. Grinden läser facit-manifesten
@@ -1554,6 +1580,8 @@ jobs:
           bash scripts/test-ci-wait.sh
           bash scripts/test-staging-semaphore.sh
           bash scripts/test-check-listparitet.sh
+          bash scripts/test-check-codeql-d0-kodfri.sh
+          node scripts/test-check-codeql-push-pr-parity.mjs
           bash scripts/test-check-backlog-closure.sh
           bash scripts/test-backlog-cli.sh
           bash scripts/test-stop-vakt.sh
@@ -2006,6 +2034,7 @@ jobs:
             .permissions-claims-policy.conf \
             .backlog-closure-policy.conf \
             .listparitet-policy.conf \
+            .codeql-d0-kodfri-policy.conf \
             .thread-index-policy.conf \
             .heartbeat-svep-policy.conf \
             .mail-lock-policy.conf \
