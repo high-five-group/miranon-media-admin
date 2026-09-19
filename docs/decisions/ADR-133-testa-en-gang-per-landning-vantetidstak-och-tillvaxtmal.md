@@ -48,6 +48,23 @@
 
 ## Kontext
 
+> **Ordförklaringar, i vardagsspråk — termerna används genomgående i
+> resten av dokumentet.** Ett **förslag** (engelska "pull request",
+> förkortat **PR**) är en föreslagen kodändring som väntar på att testas
+> och infogas. **Kön** ("merge queue") är GitHubs mekanism som testar och
+> landar förslag i tur och ordning, ett i taget, mot den senaste versionen
+> — så att inget förslag landar förrän det bevisligen fungerar TILLSAMMANS
+> med det som redan landat före det. **Huvudgrenen** (`main`) är den
+> version av koden som faktiskt är i drift. **Efterkontrollen**
+> (`post-merge.yml`) är ett extra test som körs EFTER att ändringen redan
+> landat på huvudgrenen — en sista koll att allt fortfarande håller.
+> **Skärvning** betyder att ett stort, tidsödande test delas upp i flera
+> mindre delar som körs parallellt — väggklockan (väntetiden) krymper,
+> men varje del betalar sin egen minut (se nedan), så notan växer. En
+> **fakturerad minut** är GitHubs minsta debiteringsenhet: varje körning
+> avrundas alltid uppåt till en hel minut, även om den bara tog några
+> sekunder.
+
 Marcus, 2026-09-19, ledstjärnan för allt CI-arbete framåt
 (`tasks/sessions/2026-09-17-session-126.md` Del 11):
 
@@ -226,9 +243,24 @@ efterkontroll delvis) till EN, i kön — precis det steg som gör att P1
 ärligt: bygg-agenten får besked om ett acceptance-fel ETT STEG SENARE
 (i kön i stället för på förslaget), och en kö-fällning konsumerar
 armeringen (§ Landning, `CLAUDE.md`) — dyrare per instans än ett rött
-förslag. Mätt kö-fällningsfrekvens i augusti: 5,2 procent av
-förslagskörningarna (96 av 1 829); vid augustis kodlandningstakt blir
-det ≈ 21 extra kö-varv i månaden, redan inräknat i marginalen.
+förslag.
+
+**Vad som är mätt och vad som är härlett i kostnadstalet, hållet
+isär.** Kön kör i DAG samma fulla svit som förslaget — S2
+(`TASK-464.5`) är obyggd — så en kö-fällning i den mening detta beslut
+definierar den (en PR som var grön på förslaget men ändå faller i
+kön) kan strukturellt inte mätas förrän S2 finns. Det enda som ÄR
+mätt (`actions-minutbudget-2026-09-18.md` § S2): 96 av 1 829
+förslagskörningar (5,2 procent) misslyckades i augusti — det är
+dagens FELFREKVENS PÅ FÖRSLAGSYTAN, inte en kö-fällningsfrekvens. Den
+siffran används här som en PROXY för den framtida kö-fällningsfrekvensen
+(samma tunga svit flyttar bara YTA, inte innehåll, så samma andel
+förslag antas falla oavsett var de testas) — INTE som en mätning av
+den. Ur den proxyn HÄRLEDS ≈ 21 extra kö-varv i månaden vid augustis
+kodlandningstakt, redan inräknat i marginalen. **Snubbeltråden "≈ 5 %
+kö-fällningar en månad" är alltså INTE utlöst av detta tal** — den kan
+först mätas skarpt sedan S2 är i drift och en verklig kö-fällning går
+att observera.
 
 **Precedent.** Rust kör exakt denna modell:
 
@@ -509,7 +541,10 @@ att tappas mellan grillningen och registret:
    kö-fällningar (PR:er gröna på förslaget som ändå faller i kön) ≈ 5
    procent av en månads landningar, tas ett etikett-utlöst
    alternativ upp: en PR kan märkas för att köra den fulla sviten
-   redan på förslaget, i stället för att vänta på kön.
+   redan på förslaget, i stället för att vänta på kön. **Inte utlöst
+   i dag** — kön kör i dag samma svit som förslaget, så en
+   kö-fällning i denna mening går inte att mäta förrän S2
+   (`TASK-464.5`) är i drift; se § Besluten 4.
 
 ## Alternativ som övervägdes
 
@@ -544,8 +579,9 @@ researchen). Beslut 6b:s implementation (väg 3) är explicit ÖPPEN —
 ingen branschprecedent finns för den exakta kombinationen, och dess
 kostnadsöverslag vilar på två dagars data. Bygg-agenten får acceptance-
 besked ett steg senare (i kön, inte på förslaget) sedan beslut 4 —
-mätt ≈ 21 extra kö-varv i månaden vid augustis takt, en upplevd
-kostnad, inte en säkerhetskostnad. Den interna talkälle-divergensen i
+härlett ur en proxy till ≈ 21 extra kö-varv i månaden vid augustis
+takt (inte ännu mätt — se § Besluten 4), en upplevd kostnad, inte en
+säkerhetskostnad. Den interna talkälle-divergensen i
 § Kostnad i två mått (CodeQL 4 kontra ≈ 9) är inte upplöst här; nästa
 mätning (`TASK-464.12`) bör klargöra vilket som var rätt.
 
