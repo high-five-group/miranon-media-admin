@@ -160,7 +160,12 @@ function extraheraMatrisSprak(dokument) {
     matrisHittad = true;
     if (Array.isArray(matrix.include)) {
       for (const post of matrix.include) {
-        if (post && typeof post === 'object' && typeof post.language === 'string' && post.language.length > 0) {
+        if (
+          post &&
+          typeof post === 'object' &&
+          typeof post.language === 'string' &&
+          post.language.length > 0
+        ) {
           sprak.add(post.language);
         }
       }
