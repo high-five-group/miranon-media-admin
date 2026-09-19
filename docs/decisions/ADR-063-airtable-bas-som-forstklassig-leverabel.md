@@ -265,3 +265,41 @@ eftersläpning synlig i appen) och en konsistensvakt som larmar på
 inbetalningar vars anmälan försvunnit. Priset är redovisat i `ADR-128`
 § Konsekvenser och bokförs här för att den som läser ADR-063 ensam ska se
 det.
+
+### 2026-09-19 — AT‑Max-milstolpens TIMING delas: migrationsdel som Fas E-förkrav, mall-maxning oförändrat efter Fas E ([ADR-134](ADR-134-publik-webbplats-fore-fas-e-delad-at-max.md), UTKAST — väntar Marcus granskning)
+
+Session 128 grillade samsyn (arton beslut, Marcus kvittens *"Låter bra.
+Jag kvitterar."*) om att bygga en publik webbplats (nya miranon.se)
+FÖRE Fas E i stället för efter. Beslut 13, ordagrant: *"AT‑Max delas: den
+smala migrationsdelen (registrens korrekthet, kända fällor) görs FÖRE
+Fas E; maxningen av basen som mall löper efter."* Marcus: *"Vi kör på
+din rek."* Fullt beslut och motivering: [ADR-134](ADR-134-publik-webbplats-fore-fas-e-delad-at-max.md)
+(UTKAST — Status `Proposed`, inte `Accepted`; denna not gäller under
+förutsättning att den ADR:n godkänns).
+
+**Vad som ÄNDRAS.** Beslut 5:s milstolpe ((a)+(b)+(c), § Beslut ovan,
+amenderad 2026-08-14) delas i TVÅ separata avstämningspunkter i
+byggplanens tidslinje:
+
+- **Migrationsdelen — (a) audit av app↔Airtable-interaktioner + (b)
+  audit av Airtable-skatten** — blir ett **Fas E-förkrav**. Skälet:
+  byggplanens nya publik-webbplats-fas (["Fas W", FÖRSLAG]) lägger NYA
+  app↔Airtable-interaktioner via sitt Edge Function-lager (Väg A) —
+  samma mönster appens befintliga skrivvägar redan använder. Milstolpens
+  gamla ingångsvillkor ("hela ytan byggd av Fas 6:s EF ensamt", 2026-08-11-
+  posten ovan) håller därmed inte längre: interaktions-registret är
+  ofullständigt förrän den nya fasens skrivvägar är byggda.
+- **Mall-maxningsdelen — (c), slutgenomlysningen** — OFÖRÄNDRAD i sak
+  från 2026-08-14-posten ovan: löper EFTER Fas E, som en fristående
+  pedagogisk pass för Passionslyft-mallen, oberoende av appens datakälla.
+
+**Vad som INTE ändras.** Beslut 1 (basen maxas som leverabel, ej
+ersätts), Beslut 2 (resolution sker I BASEN, för allt utom
+betalningsdomänen — se posten 2026-08-30 ovan), Beslut 3 (defekt-
+registret är kravspecen), Beslut 4 (app-sidans "beräkna från källan")
+och Beslut 6 (Supabase-migrationen som separat senare spår, för allt
+utom betalningsdomänen) står oförändrade. Denna post rör ENBART
+milstolpens INTERNA TIMING — när dess delar (a)/(b) respektive (c) körs
+— inte något av sakbesluten ovan. Full mekanik (den nya fas-raden, den
+amenderade AT‑Max-raden, Fas E:s nya förkrav) bor i `docs/byggplan.md`
+§2 samt §4 § Milstolpe — Airtable-bas-maximering och §4 Fas E § Beroenden.
