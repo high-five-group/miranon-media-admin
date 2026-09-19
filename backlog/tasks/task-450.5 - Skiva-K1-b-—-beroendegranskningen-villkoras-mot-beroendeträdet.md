@@ -4,7 +4,7 @@ title: 'Skiva: K1 (b) — beroendegranskningen villkoras mot beroendeträdet'
 status: To Do
 assignee: []
 created_date: '2026-09-18 09:53'
-updated_date: '2026-09-18 23:05'
+updated_date: '2026-09-19 00:00'
 labels:
   - ready-for-agent
 dependencies:
@@ -45,4 +45,6 @@ Täcker användarberättelser: 14, 15
 
 <!-- SECTION:NOTES:BEGIN -->
 AC #1 BEVISAT TVÅSIDIGT, skarpt via GitHub Actions 2026-09-18: (a) PR #2553 (denna PR, rör INTE package.json/package-lock.json/audit-ci.jsonc) — jobbet 'Audit dependencies (audit-ci)' conclusion=skipped (run 35403597247, https://github.com/high-five-group/miranon-media-admin/actions/runs/35403597247), CI Passed or Skipped=success. (b) Kastbar verifieringsgren byggd ovanpå samma commit + en kommentarrad i audit-ci.jsonc — jobbet KÖRDE, conclusion=success (run 35403631029, https://github.com/high-five-group/miranon-media-admin/actions/runs/35403631029), 27 s väggklocka. Verifieringsgrenen och dess PR (#2554) är stängda och raderade efter mätningen (aldrig mergade). AC #6 kvarstår obockad — orkestrerarens review-grinds-mandat.
+
+Review-grindens runda 1 (risk medel, granskad SHA 009516de) FIX-ORDER besvarad, ny head a9ba3d14: (1) changed-deps-steget (ci.yml) utökat till att även vakta scripts/audit-ci-med-degradering.sh, scripts/test-audit-degradering.sh, .github/workflows/ci.yml, .github/workflows/ci-suite.yml — tvåsidigt bevisat skarpt (run 35407259425: enbart skriptändring ⇒ audit kör; run 35406841339: denna PR rör nu ci.yml ⇒ audit kör). (2) .ci-parity-policy.json rad ~31 'stale 41'-talet ersatt med en pekare till svitens egen slutrad (TASK-106). (3) 'Kvarstående risk'-mening om beroendevarning-kanalens saknade watchdog tillagd i PR-kroppen. OBS: jag av misstag skrev över PR-kroppens Riskbedömnings-sektion med gh pr edit --body-file (helersättning) — återställd BYTE-FÖR-BYTE via GraphQL userContentEdits-historik (inget innehåll ändrat), men sektionen är nu STALE mot ny head (granskadSha 009516de, aktuell head a9ba3d14) och väntar på runda 2 från orkestreraren.
 <!-- SECTION:NOTES:END -->
