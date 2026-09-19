@@ -4,6 +4,7 @@ title: 'PRD: Minutbudgeten under 50 000 — testa varje ändring en gång, inte 
 status: To Do
 assignee: []
 created_date: '2026-09-18 22:38'
+updated_date: '2026-09-19 10:48'
 labels: []
 dependencies: []
 priority: high
@@ -59,3 +60,9 @@ Ledstjärnan i sin helhet: tasks/sessions/2026-09-17-session-126.md Del 11. Unde
 - [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+GRILLAD 2026-09-19 (S126 Del 17, /grill-with-docs, Marcus kvittens). Tio beslut; de som ändrar detta PRD: (1) MÅL skärpt — arkitekturen ska KUNNA bära 2 x augustis takt; (2) STEGAD VÄG — testjusteringar nu (uppskattat 39 000–44 000 min/mån, utrymme till ca 1,3 x), privat därefter, SNUBBELTRÅD: budgetvarning vid 40 000 min; först då research om egen byggmaskin / byggmaskinstjänst / buntade kodlandningar — 'Utanför omfattningen: egen runner' står alltså kvar, nu med ett mätbart omprövningsvillkor; (3) VÄNTETIDSTAK dokument <= 5 min, kod <= 12 min median / <= 15 min p95; skärvningen BEHÅLLS (S6/S7 görs inte); (4) S2 med lokalt urval i bygg-agentens kontrakt, snubbeltråd ca 5 % kö-fällningar; (5) S8 som LANDNINGS-buntning för orkestrerarens dokument, ADR-097 amenderas; (6) S3 nu, efterkontroll på klocka till research-pass (docs/research/efterkontroll-pa-klocka-2026-09-19.md); (7) privat NU i helgen; (8) Code Security + Secret Protection KÖPS (omprövas när appen är 'klar') — 'Utanför omfattningen: tilläggsprodukterna obeslutade' är därmed avgjort. Nya användarberättelser: 5. Som ägare vill jag kunna arbeta MER än i dag utan att taket spricker, så att tillväxt inte kräver en ny arkitektur. 6. Som ägare vill jag att väntan på en landning har ett uttalat tak som mäts, så att den inte glider. 464.1 (S4+SE2) och 464.2 (S5) är Done; mätt: dokumentlandning 31 -> 13 fakturerade min, väntan 8,4 -> 2,8 min per två rundor.
+<!-- SECTION:NOTES:END -->

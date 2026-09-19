@@ -4,7 +4,7 @@ title: 'Skiva: N8 — bokförings- och prosabunten'
 status: To Do
 assignee: []
 created_date: '2026-09-18 09:54'
-updated_date: '2026-09-19 08:26'
+updated_date: '2026-09-19 10:06'
 labels:
   - ready-for-agent
 dependencies:
@@ -27,7 +27,7 @@ Täcker användarberättelser: 11, 12
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 grep på de fyra falska fraserna ger noll kvarvarande träffar; de två talen är ersatta av kommandot som räknar
+- [x] #1 grep på de fyra falska fraserna ger noll kvarvarande träffar; de två talen är ersatta av kommandot som räknar
 - [x] #2 npm run bl -- task 365 --plain visar den mätta mekanismen och pekaren mot T166
 - [ ] #3 npm run bl -- task 239 --plain visar AC #3 bockad med run-ID:n
 - [x] #4 npm run review:metrics visar minst en kalibrering-rad, med belägg per post
@@ -63,4 +63,6 @@ AC #4 — KLAR: `npm run review:kalibrering` kört en gång, PR #2212 (TASK-361 
 AC #5 — EJ RÖRD, PER UPPDRAGETS EGEN INSTRUKTION: "Hubbens rad om popup-frågor... rör den INTE — orkestreraren tar den i hubbens egen kanal." Lämnas obockad med denna not.
 
 OVÄNTAT FYND (ADR-053, registrerat, ej åtgärdat — utanför scope): `scripts/verify-ci-parity.mjs`s diff-klassning läser `git diff --name-only` UTAN `core.quotepath=false`, och micromatch mot D0-globen fäller på varje filnamn med icke-ASCII-tecken (å/ä/ö/—) eftersom git citerar och oktal-escapar sådana sökvägar (`"...f\303\245nga..."`). Denna PR:s SEX filer klassas därför FELAKTIGT som "▶ KOD" av `node scripts/verify-ci-parity.mjs --list` trots att alla sex matchar D0 verbatim (bevisat manuellt: `git -c core.quotepath=false diff --name-only HEAD` ger rena UTF-8-sökvägar, samtliga matchande `**/*.md`/`docs/**`/`.lycheeignore`). Detta repo har GENOMGÅENDE svenska filnamn (backlog-kort i synnerhet) — felet är sannolikt inte unikt för denna PR. Den RIKTIGA CI-klassningen (tj-actions/changed-files) påverkas INTE (annan implementation, hanterar UTF-8 korrekt) — detta är en lokal-verktygs-brist, inte en CI-risk. Ingen åtgärd i denna skiva (script-fix, egen testyta, utanför en dokument-bunt). Flaggat till orkestreraren i slutrapporten.
+
+AC #1 bockad 2026-09-19 (S126 resume 3): de två kvarvarande non-D0-ställena rättades av #2564 (`c5fdc75c`) — scripts/acceptance-urval.sh:12 (talet ersatt av kommandot som räknar) och tests/kontraktsvakt/kontraktsfall.ts:25 ('SJU AV ARTON', med räknekommandot). Verifierat på main `2a825562`: grep på 'alla 18 spec-filer' ger noll träffar; 'ALLA SJU' finns kvar endast som citat av den gamla, rättade lydelsen. AC #5 bockad tidigare i passet (hub #20). KVAR: AC #3 — TASK-239:s fönster har ännu för få nätter; kortet står öppet med avsikt.
 <!-- SECTION:NOTES:END -->
