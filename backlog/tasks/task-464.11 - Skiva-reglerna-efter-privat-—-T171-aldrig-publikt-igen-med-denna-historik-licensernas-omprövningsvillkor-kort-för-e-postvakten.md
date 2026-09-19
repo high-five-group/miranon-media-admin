@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-19 10:50'
-updated_date: '2026-09-19 11:55'
+updated_date: '2026-09-19 12:16'
 labels:
   - ready-for-agent
 dependencies: []
@@ -39,5 +39,5 @@ Beslut 8–9 (S126 Del 17) ska bo i fil, inte i en session. (1) CLAUDE.md-raden 
 ## Implementation Notes
 
 <!-- SECTION:NOTES:BEGIN -->
-Alla fyra AC klara (D0, ren dokumentation). AC #1: CLAUDE.md § Instruktioner (persondata-raden) + tasks/threads/T171-personuppgifter-i-publikt-repo.md punkt 4 bär samma hårda regel (repot blir ALDRIG publikt igen med denna historik; framtida publicering sker som ny historiklös kopia), källmärkt Del 17 beslut 9. AC #2: docs/reference/atkomst-och-nycklar.md ny sektion 'Köpta licenser (GitHub) — omprövningsvillkor' med datum 2026-09-19 och Marcus ord ordagrant ('jag kör väl på att köpa båda då … de kollar vi på då'; omprövningsvillkor 'när appen är klar och aktiv utveckling upphört'). Hemvalet motiverat i PR-kroppen (ADR-100 §1 domän 5, extern-system-register). AC #3: TASK-482 mintat (e-postvakt, config-driven, tvåsidig testsvit, CI-wirad — bara kortet, ingen grind byggd). AC #4: npm run check:docs kört naket två gånger (efter första rundan och efter polish-rundan), exit 0 båda gångerna, '16 gröna'. Dataskyddsbedömningen (T171 § Öppet, ny bullet) är en neutral pekare till Marcus/Miranon Media — ingen juridisk bedömning gjord. Premiss-pass: origin/main var vid start 6d96fcbe (ej aacf3673 som uppdraget angav som utgångsläge — repot rör sig fort under parallell S127/S128-drift; ny gren skapad direkt från fetchad origin/main). Repot fortfarande PUBLIC vid skrivning (väntat, TASK-464.10 är Marcus helgpunkt, ej gjort).
+RUNDA 2 (Marcus 'Rätta fynden först'): tre review-fynd i docs/reference/atkomst-och-nycklar.md § Köpta licenser rättade i en commit. Fynd 1 (motsägelse TYST vs röd): uppdelat i två mekanismer med varsin källa — (a) push-skydd/Secret Protection: TYST avstängning, citat ur docs.github.com via docs/research/repo-privat-konsekvenser-2026-09-18.md § B3 ('Advanced Security features will be disabled...'); (b) CodeQL: repot kör en EGEN advanced-setup-workflow (.github/workflows/codeql.yml, TASK-464.2/PR #2558, bekräftat på disk) — hämtade själv (WebFetch) docs.github.com/.../cannot-enable-codeql-in-a-private-repository OCH about-github-advanced-security; ingen av sidorna innehåller frasen 'red X' eller beskriver runtime-felet — granskarens hypotes om exakt ordalydelse var FALSK, skrivet ärligt i dokumentet, märkt 'INTE mätt i vårt repo — mäts vid TASK-464.10'. Fynd 2 (citat i fel kolumn): omprövningsvillkoret ('när appen är klar...') och köp-citatet ('jag kör väl på att köpa båda då...') särskiljs nu — kontrollerat mot Del 17 rad 8: bara ordet 'klar' står i citattecken i källan (Beslut-kolumnen), köp-citatet ligger i en annan kolumn (Marcus). Fynd 3 (pris): '30/19 USD per aktiv committer och månad' + not om repots enda mänskliga aktiva committer (marcus803), källa samma research-fil rad ~216-227. npm run check:docs kört naket efter rättningen: exit 0, 16 gröna.
 <!-- SECTION:NOTES:END -->

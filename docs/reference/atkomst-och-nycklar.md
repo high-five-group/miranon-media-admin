@@ -114,16 +114,57 @@ redan åtkomst/licens till X, och när ompröva den") är exakt vad detta
 register redan svarar på för nycklar; ett köpt licenspar är samma klass
 fakta.
 
-| Licens | Kostnad | Syfte | Omprövningsvillkor (Marcus ord) |
+| Licens | Kostnad | Syfte | Omprövningsvillkor |
 |---|---|---|---|
-| GitHub Code Security | 30 USD/mån | CodeQL-skanning fortsätter fungera sedan repot blir privat | *"jag kör väl på att köpa båda då … de kollar vi på då"* |
-| GitHub Secret Protection | 19 USD/mån | Push-skydd mot committade hemligheter fortsätter fungera sedan repot blir privat | Samma citat, samma beslut |
+| GitHub Code Security | 30 USD per aktiv committer och månad | CodeQL-skanning fortsätter fungera sedan repot blir privat | När appen är "klar" och aktiv utveckling upphört |
+| GitHub Secret Protection | 19 USD per aktiv committer och månad | Push-skydd mot committade hemligheter fortsätter fungera sedan repot blir privat | Samma villkor |
 
-**Omprövningsvillkor, ordagrant (Marcus, S126 Del 17 beslut 8, 2026-09-19):**
-när appen är "klar" och aktiv utveckling upphört. Utan licenserna stängs
-CodeQL och push-skyddet av TYST i ett privat repo (`codeql.yml` börjar falla
-rött på varje kodlandning) — se checklistan i samma sessionsdok § "Checklista:
-privat-steget" för köp-ordningen (FÖRE synlighetsklicket).
+**Repot har i dag exakt EN mänsklig aktiv committer** (`marcus803`, mätt över
+de senaste 90 dagarna — källa nedan), så priserna ovan ÄR den faktiska
+kostnaden, inte ett tak som växer med antalet agent-genererade PR:er
+(agenterna pushar under samma GitHub-konto). Källa för både priset och
+committer-räkningen: `docs/research/repo-privat-konsekvenser-2026-09-18.md`
+§ B3 (rad ~216–227).
+
+**Omprövningsvillkoret ovan är Del 17:s formulering av Marcus villkor**
+(`tasks/sessions/2026-09-17-session-126.md` Del 17, tabellen "Besluten" rad 8,
+kolumnen "Beslut") — endast ordet "klar" står i citattecken i källan, så bara
+det ordet är en säkrad ordagrann återgivning; resten av meningen är Del 17:s
+parafras, inte ett direktcitat. **Marcus egna ordagranna ord** finns i SAMMA
+rad men i kolumnen "Marcus", och gäller KÖP-beslutet, inte omprövnings-
+villkoret: *"jag kör väl på att köpa båda då … de kollar vi på då."*
+
+**Vad som händer utan licenserna i ett privat repo — TVÅ separata mekanismer,
+inte en:**
+
+(a) **Push-skydd (Secret Protection) utan licens: TYST avstängning.** Citerat
+verbatim ur `docs.github.com` (hämtat 2026-09-18, källa:
+`docs/research/repo-privat-konsekvenser-2026-09-18.md` § B3): *"If you change
+the visibility of a public repository to private and don't pay for Advanced
+Security, Advanced Security features will be disabled for that repository."*
+Researchens egen slutsats av det citatet: "Det som slås av är alltså inte en
+röd check — det är en TYST avstängning. Ingen PR blir röd av att sakna
+CodeQL; kontrollen försvinner bara ur listan." Denna TYSTA avstängningsform
+gäller GitHubs automatiska plattformsfunktioner (samma klass som "default
+setup", se (b)).
+
+(b) **CodeQL: repot kör sedan `TASK-464.2` (PR #2558) en EGEN
+"advanced setup"-arbetsflödesfil**, `.github/workflows/codeql.yml`
+(bekräftat närvarande på disk, filhuvudet källmärker mätningen) — INTE
+GitHubs automatiska "default setup" som (a) beskriver. `docs.github.com`s
+sida "Cannot enable CodeQL in a private repository" (hämtad verbatim i detta
+pass) säger: *"GitHub Code Security must be enabled in order to use code
+scanning on private repositories."* Sidan specificerar INTE den exakta
+runtime-symptomen (rött kryss, felmeddelandets ordalydelse, etc.) — varken
+den sidan eller "About GitHub Advanced Security" (båda hämtade i detta pass)
+innehåller frasen "red X" eller någon beskrivning av hur körningen faktiskt
+ser ut när kravet inte är uppfyllt. **INTE mätt i vårt repo — mäts vid
+privat-steget (`TASK-464.10`).**
+
+Den praktiska slutsatsen är oberoende av vilken av de två mekanismerna som
+gäller för vilken komponent: **köp licenserna FÖRE synlighetsklicket** — se
+checklistan i samma sessionsdok § "Checklista: privat-steget" för
+köp-ordningen.
 
 ## Register — åtkomst per rad
 
