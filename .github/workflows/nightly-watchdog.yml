@@ -333,14 +333,17 @@ jobs:
           # bara efter ÖPPNA ärenden, missade #1028 (redan stängt 07:19 med
           # rotorsaksmotivering) och larmade ändå — ett falsklarm. Beslutet
           # bor nu i scripts/check-nattvakt-dedup.sh (config:
-          # .nattvakt-dedup-policy.conf). I bevis-läge kringgås dedupen med
-          # avsikt, annars kan kedjan inte bevisas medan ett äkta ärende är
-          # öppet.
+          # .nattvakt-dedup-policy.conf). I BÅDA bevis-lägena (simulate_missing
+          # OCH simulate_beroende_tyst, TASK-467) kringgås dedupen med avsikt,
+          # annars kan kedjan inte bevisas medan ett äkta ärende är öppet — mätt
+          # skarpt 2026-09-19: en simulate_beroende_tyst-dispatch mot ett träd
+          # med ett redan öppet ci-natt-ärende (den verkliga natten 2026-09-19
+          # var röd) deduplicerades annars bort och bevisade ingenting.
           #
           # FAIL-CLOSED: kan täckningen inte avgöras (skriptets exit 2)
           # larmar vakten ändå — "vet inte" tystas aldrig, samma hållning
           # som alarm_barande_rott ovan.
-          if [ "${SIMULATE}" != "true" ]; then
+          if [ "${SIMULATE}" != "true" ] && [ "${SIMULATE_BEROENDE}" != "true" ]; then
             dedup_kod=0
             dedup_ut=$(REPO="${REPO}" bash scripts/check-nattvakt-dedup.sh 2>&1) || dedup_kod=$?
             echo "${dedup_ut}"
@@ -351,7 +354,9 @@ jobs:
           fi
 
           note=""
-          if [ "${SIMULATE}" = "true" ]; then
+          if [ "${SIMULATE_BEROENDE}" = "true" ]; then
+            note=$'\n\n> ⚠️ **SIMULERAT** via `simulate_beroende_tyst`-dispatch (TASK-467) — vaktkedje-test, ingen äkta tystnad. Stäng med denna motivering.'
+          elif [ "${SIMULATE}" = "true" ]; then
             note=$'\n\n> ⚠️ **SIMULERAT** via `simulate_missing`-dispatch — vaktkedje-test, ingen äkta avvikelse. Stäng med denna motivering.'
           fi
 
