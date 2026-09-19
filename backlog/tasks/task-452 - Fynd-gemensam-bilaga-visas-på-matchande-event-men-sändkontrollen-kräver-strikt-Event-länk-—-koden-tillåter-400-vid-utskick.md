@@ -3,10 +3,10 @@ id: TASK-452
 title: >-
   Fynd: gemensam bilaga visas på matchande event men sändkontrollen kräver
   strikt Event-länk — koden tillåter 400 vid utskick
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-18 10:41'
-updated_date: '2026-09-18 11:46'
+updated_date: '2026-09-19 12:40'
 labels:
   - fynd
   - ready-for-agent
@@ -29,12 +29,12 @@ Hittat av S127 (P2 + orkestrerarens stickprov). Bär direkt på bilagor i svepet
 <!-- AC:BEGIN -->
 - [x] #1 Staging-prov: gemensam bilaga bifogad på icke-ursprungsevent via åtgärdssidan — utfallet (200 eller 400) dokumenterat med request-id
 - [x] #2 Om 400: rött-först-test, sedan sändkontrollen använder samma räckviddsmatchning som get-event-attachments (_shared/rackvidd-matchning.ts) — fail-closed behålls för bilagor som INTE matchar
-- [ ] #3 Om 200: kortet stängs med förklaringen varför koden ändå släpper, och ett test som låser beteendet
+- [x] #3 Om 200: kortet stängs med förklaringen varför koden ändå släpper, och ett test som låser beteendet
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
@@ -53,4 +53,14 @@ Ny staging-regressionssvit: tests/api/send-action-email-gemensam-bilaga.staging.
 Staging-deploy: send-action-email OCH get-event-attachments deployade till pqtshyierkdgwdnxuirz (supabase functions deploy --project-ref pqtshyierkdgwdnxuirz --use-api). get-event-attachments.staging.test.ts 13/13 grönt mot den redeployade EF:en (ren refaktor, ingen beteendeändring). PROD-deploy (fas4, scripts/fas4-prod-deploy.sh) är EJ gjord — Marcus-moment efter landning, per uppdraget. AC #3 (Om 200) är INTE TILLÄMPLIG — utfallet var 400, AC #2:s gren gäller.
 
 Staging-fixturer städade: de två manuellt skapade posterna (Bilagor + Anmälan) för AC #1-provet raderade direkt efter mätningen. De kastbara create-event/create-registration-posterna som testkörningarna skapade är svepta via npm run purge:staging:efter (26 raderade, 9 länk-guardade kvar — de bär en Anmälan-länk och kräver att den också städas, samma accepterade norm som create-registration.staging.test.ts redan bär, ADR-060). Observerad, orelaterad flake i test:api under detta arbete: cancel-registration.staging.test.ts och send-registration-confirmation.staging.test.ts föll båda på samma get-registrations-anrop (Request context disposed) — rör inte attachments/send-action-email, ej reproducerat av min diff.
+
+## Stangningsbeslut AC3 (S127 stangningsbatch, 2026-09-19)
+
+AC3 ('Om 200: ...') galler en gren som aldrig intraffade - staging-provet (AC1) gav 400, inte 200, sa AC2:s gren ar den som tillampas (redan bockad och bevisad: rott-forst 9 nya tester, 44/44 grona efter fix). AC3 bockas har som ICKE TILLAMPLIG - villkoret for grenen (svaret 200) uppstod aldrig. Detta star redan explicit i kortets Implementation Notes sedan bygget (2026-09-18).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landat: PR #2538, merge cdd1856b (2026-09-18T12:26:06Z, main). Staging-provet (AC1) gav HTTP 400 (request-id 01a0b434-854c-74c7-9f86-04b76a4b2149) for en gemensam bilaga bifogad pa icke-ursprungsevent. Fix (AC2): send-action-emails resolveAttachments anvander nu farBilaganSkickasForEvent (delad, _shared/rackvidd-matchning.ts), samma matcharEvent som get-event-attachments - rott-forst 9 nya tester i tests/api/rackvidd-matchning.test.ts, 44/44 grona efter fix. Andra fyndet under bygget (samma skiva, ADR-053-triage): makeRealAttachmentReader byggde Storage-vagen ur SANDANDE eventets ID i stallet for bilagans eget lagringsanker - fixat via ResolvedAttachment.anchor. AC3 (Om 200) bockas som ICKE TILLAMPLIG - utfallet var 400, ej 200. Staging-deploy (send-action-email + get-event-attachments) gjord under bygget. PROD-deploy (fas4) bekraftad genomford av Marcus 2026-09-19 08:57-09:02Z (send-action-email UPDATED_AT 08:59:43, get-event-attachments UPDATED_AT 08:59:14 - kalla: sessionsdok S127 Del 8, alla 57 EF barande farsk UPDATED_AT, katalogen aterlankad till staging). Grindar (matt): typecheck exit 0; biome exit 0; build exit 0; test:api 2326 passed/2 failed (tva orelaterade, forbefintliga staging-timeouts, ej denna diff); rackvidd-matchning.test.ts 44/44 och send-action-email.test.ts 59/59 (api-pure); tva nya staging-regressionssviter grona (2/2 och 13/13). CI-rott ratt under bygget (biome print-width-fel, atgardat, 4adadc8d). Granskning: risk HOG (auth-andring pa skarp mail-sandvag), runda 1, Marcus GO efter granskning.
+<!-- SECTION:FINAL_SUMMARY:END -->
