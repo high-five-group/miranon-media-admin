@@ -40,6 +40,7 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   extraheraGrupp,
+  harKodAndelse,
   hittaOhanteradeUttryck,
   klassificeraDiff,
   klassificeraSteg,
@@ -302,6 +303,40 @@ console.log('\n▶ klassificeraDiff (TASK-142) — allowlist, aldrig blocklist')
     'T31b men matchar en post som själv börjar med samma dot-prefix',
     true,
     klassificeraDiff(['.claude/x.md'], ['.claude/**']),
+  );
+}
+
+console.log('\n▶ harKodAndelse (TASK-464.1 F2) — any_changed-semantik, motsatt klassificeraDiff');
+{
+  const kodMonster = ['**/*.js', '**/*.mjs', '**/*.ts', '**/*.tsx', '**/*.html', '**/*.htm'];
+  report(
+    'T31c en ensam kod-ändelse-fil → true',
+    true,
+    harKodAndelse(['docs/backfill/segment-export/segments.mjs'], kodMonster),
+  );
+  report(
+    'T31d ingen fil matchar → false',
+    false,
+    harKodAndelse(['docs/foo.md', 'tasks/bar.md'], kodMonster),
+  );
+  report(
+    'T31e any_changed, INTE only_changed: EN kod-fil bland flera icke-kod-filer → ändå true',
+    true,
+    harKodAndelse(['docs/foo.md', 'docs/backfill/segment-export/segments.mjs'], kodMonster),
+  );
+  report(
+    'T31f noll ändrade filer → false (samma vakuöst-sant-vakt som klassificeraDiff)',
+    false,
+    harKodAndelse([], kodMonster),
+  );
+  report(
+    'T31g motsatt av klassificeraDiff på SAMMA indata: docsOnly=true OCH harKod=true samtidigt är ett giltigt, avsiktligt utfall',
+    { docsOnly: true, harKod: true },
+    (() => {
+      const d0 = ['**/*.md', 'docs/**', 'tasks/**'];
+      const filer = ['docs/backfill/segment-export/segments.mjs'];
+      return { docsOnly: klassificeraDiff(filer, d0), harKod: harKodAndelse(filer, kodMonster) };
+    })(),
   );
 }
 
@@ -572,7 +607,14 @@ console.log('\n▶ Diff-klassning — tvåsidigt bevis i äkta git-sandlåda (--
       res.stdout.includes('[docs-only-diff (hoppas)]'),
     );
     report(
-      'D1d ci.yml :: lint HOPPAS INTE (lint är alltid-på i CI, diff-klassningen rör den aldrig)',
+      // RÄTTAT TASK-464.1 (2026-09-19): kommentaren sade tidigare "lint är
+      // alltid-på i CI" — falskt sedan S4 (samma PR): ci.yml:s `lint`-jobb
+      // är numera VILLKORAT (should_skip_tests || has_code_extension).
+      // Vad testet FAKTISKT prövar är oförändrat och fortsatt sant: detta
+      // skripts EGNA lokala plan (`derivedJobs.ci`) taggar aldrig lint som
+      // docs-only-hoppad — en medveten superset-policy (kör MER lokalt än
+      // CI, aldrig mindre), inte en spegling av CI:s if:-villkor.
+      'D1d ci.yml :: lint HOPPAS INTE lokalt (derivedJobs.ci körs alltid, superset-princip — oavsett CI:s eget if:-villkor)',
       false,
       /ci\.yml :: lint {2}— HOPPAS/.test(res.stdout),
     );
@@ -703,6 +745,53 @@ console.log('\n▶ Diff-klassning — tvåsidigt bevis i äkta git-sandlåda (--
     report('D7b klassas FULL (inga ändringar)', true, res.stdout.includes('FULL (inga ändringar)'));
   } finally {
     rmSync(d7, { recursive: true, force: true });
+  }
+
+  // D8 — TASK-464.1 F2: DOCS_ONLY-diff som ÄNDÅ bär en fil med kod-ändelse
+  // under D0 (docs/**). CI:s `lint`-jobb kör den, trots DOCS_ONLY — rapporten
+  // ska säga det, mot den ÄKTA ci.yml/.ci-parity-policy.json (samma sandlåda
+  // D1-D7 använder, ingen syntetisk fixtur för denna klassnings-glob).
+  const d8 = byggGitSandlada();
+  try {
+    skrivFil(d8, 'docs/backfill/segment-export/segments.mjs', 'export const x = 1;\n');
+    gitCommitaAllt(d8, 'docs-kod');
+    const res = korListaISandlada(d8);
+    report('D8 kod-ändelse under D0 → exit 0', 0, res.status);
+    report(
+      'D8b klassas fortfarande DOCS_ONLY (D0-globen ensam avgör should_skip_tests)',
+      true,
+      res.stdout.includes('═══ Diff-klassning: ✅ DOCS_ONLY ═══'),
+    );
+    report(
+      'D8c F2-informationsraden nämner att lint kör ändå',
+      true,
+      res.stdout.includes('CI:s `lint`-jobb kör ÄNDÅ'),
+    );
+  } finally {
+    rmSync(d8, { recursive: true, force: true });
+  }
+
+  // D9 — MOTPROV till D8: en RENODLAD docs-diff (ingen kod-ändelse) ska INTE
+  // bära F2-raden — annars vore raden brus på VARJE DOCS_ONLY-körning i
+  // stället för en riktad varning.
+  const d9 = byggGitSandlada();
+  try {
+    skrivFil(d9, 'tasks/foo.md', '# docs\n');
+    gitCommitaAllt(d9, 'ren-docs');
+    const res = korListaISandlada(d9);
+    report('D9 ren docs-diff → exit 0', 0, res.status);
+    report(
+      'D9b klassas DOCS_ONLY',
+      true,
+      res.stdout.includes('═══ Diff-klassning: ✅ DOCS_ONLY ═══'),
+    );
+    report(
+      'D9c F2-informationsraden nämns INTE (inga kod-ändelser i diffen)',
+      false,
+      res.stdout.includes('CI:s `lint`-jobb kör ÄNDÅ'),
+    );
+  } finally {
+    rmSync(d9, { recursive: true, force: true });
   }
 }
 

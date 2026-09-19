@@ -92,6 +92,14 @@ jobs:
       # Styr `audit`-jobbets `if:` — se det jobbets § K1(b)-kommentar för
       # hela rationalen och de fyra invarianterna (i)–(iv).
       dependency_tree_changed: ${{ steps.changed-deps.outputs.any_changed == 'true' }}
+      # TASK-464.1 F2 (review runda 1, risk hög, fynd 2). true = minst en
+      # ändrad fil bär en analyserbar kod-ändelse (se `changed-code-ext`-
+      # steget för den fulla listan + rationalen), ELLER klassningssteget
+      # SJÄLVT fallerade (fail-closed — se `code-ext`-steget). Styr
+      # `lint`-jobbets `if:` TILLSAMMANS MED should_skip_tests: en D0-klassad
+      # diff som ändå bär en kod-ändelse-fil (t.ex.
+      # docs/backfill/segment-export/segments.mjs) får inte hoppa `lint`.
+      has_code_extension: ${{ steps.code-ext.outputs.has_code_extension == 'true' }}
     steps:
       # ═══ SHA-PINNADE FIRST-PARTY ACTIONS (TASK-312, 2026-08-24) ═══
       #
@@ -315,6 +323,38 @@ jobs:
         # shellcheck-strict-körning (som validerar just dessa skript), en
         # sämre avvägning än den lilla extra `docs`-körningen. Sju nya
         # B-sido-undantag deklarerade i .listparitet-policy.conf § UNDANTAG.
+        #
+        # TASK-464.1 F1 (review runda 1, risk hög, fynd 1): FEM ROT-CONF-
+        # FILER TILLAGDA — .checklist-policy.conf, .frontmatter-policy.conf,
+        # .thread-index-policy.conf, .lesson-policy.conf,
+        # .permissions-claims-policy.conf. Samma self-test-gap som skript-
+        # sökvägarna ovan stänger, men EN NIVÅ NER: fem av de sju flyttade
+        # grindarna `source`:ar en egen policy-conf (grep -n "^source \|^\. "
+        # över de sju skripten, 2026-09-19), och den filen är varken D0-
+        # klassad eller stod i denna lista. En PR som ENBART ändrar t.ex.
+        # .thread-index-policy.conf (en ny THREAD_ROW_MAX_LEN, ett nytt
+        # giltigt tillstånd) satte docs_changed==false (ingen .md rörd) OCH
+        # should_skip_tests==false (rot-.conf är inte D0) — `lint` körde,
+        # men check-thread-index.sh bor inte längre där, och `docs`-jobbet
+        # (som bär grinden) kördes aldrig. Ändringen hade landat oprövad mot
+        # sig själv, samma ADR-083-felklass check-permissions-claims.sh redan
+        # en gång bar innan TASK-98. ASYMMETRISKT MED D0 MED SAMMA AVSIKT som
+        # skript-sökvägarna: rot-.conf hör INTE hemma i D0 — det hade gjort en
+        # ensam ändring av t.ex. .lesson-policy.conf skippbar för hela
+        # testsviten, en sämre avvägning än den lilla extra `docs`-körningen.
+        # De tre "stannar"-grindarna (fetch-depth-invariant, listparitet,
+        # facit) behöver INGEN post här: deras egna conf-filer
+        # (.frontmatter-policy.conf delas med check-frontmatter.sh, se ovan;
+        # .listparitet-policy.conf; .facit-policy.conf) är redan INTE D0,
+        # vilket räcker ensamt — de primära instanserna stannar i `lint` och
+        # `should_skip_tests==false` täcker en ensam-ändring av deras egna
+        # conf redan i dag (verifierat: `.listparitet-policy.conf`/
+        # `.facit-policy.conf` matchar ingen D0-post ovan). En KONFIG-DRIVEN
+        # VAKT som prövar att denna tabell är fullständig bor i
+        # `.listparitet-policy.conf`s par `grind-tillganglighet` (körs av
+        # `bash scripts/check-listparitet.sh`, samma steg som redan finns i
+        # BÅDA jobben — inget nytt steg): se `.grind-tillganglighet-policy.conf`
+        # för den härledda tabellen grind → conf-fil.
         uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96  # v47.0.6
         with:
           # quotepath: false — samma invariant som changed-files-steget
@@ -341,6 +381,11 @@ jobs:
             scripts/check-adr-count.sh
             scripts/check-lesson-numbers.sh
             scripts/check-permissions-claims.sh
+            .checklist-policy.conf
+            .frontmatter-policy.conf
+            .thread-index-policy.conf
+            .lesson-policy.conf
+            .permissions-claims-policy.conf
           # paritet:slut klassning-docs
 
       - name: Get changed UI files (D1-klassning)
@@ -513,6 +558,94 @@ jobs:
             .github/workflows/ci.yml
             .github/workflows/ci-suite.yml
 
+      - name: Get changed files with a code extension (TASK-464.1 F2-klassning)
+        id: changed-code-ext
+        # TASK-464.1 F2 (review runda 1, risk hög, fynd 2, 2026-09-19).
+        #
+        # PREMISSEN S4 (`lint`-jobbets should_skip_tests-villkor) VILADE PÅ:
+        # D0-allowlistan = "ingen analyserbar kod". Falsk. `docs/**`/`tasks/**`
+        # är HELA kataloger i D0 (klassning-d0-blocket ovan), inte bara deras
+        # .md-filer — och repot bär spårad, analyserbar kod under dem: minst
+        # åtta .js/.mjs-filer (t.ex.
+        # `docs/backfill/segment-export/segments.mjs`) plus en .html med ett
+        # `<script>`-block (granskningens `git ls-files` + grep, 2026-09-19).
+        # FÖRE denna PR körde `lint`-jobbet OVILLKORAT (Biome + typkontroll
+        # traverserar hela trädet) på VARJE ändring, kodfilen inkluderad.
+        # EFTER S4 ensamt hade en diff som BARA rör en sådan fil satt
+        # should_skip_tests==true (allt matchar D0) — `lint` hade skippats
+        # HELT, och `docs`-jobbet (villkorat på docs_changed, som inte reagerar
+        # på en .mjs-ändring) hade inte kört den heller. En kodändring hade
+        # landat helt ogranskad, tvärtemot Marcus villkorade GO ("inget
+        # verkligt skydd försvinner").
+        #
+        # BESLUTET: `lint` får hoppas ENDAST när diffen är D0 OCH INTE
+        # innehåller en enda fil med kod-ändelse. Detta steg är den ANDRA
+        # klassningen (samma verktyg, samma mönster som `changed-deps`
+        # ovan/`changed-docs` — tj-actions/changed-files, `any_changed`, ingen
+        # egen glob-tolkare) — TRÄFF (`any_changed==true`) tvingar `lint` att
+        # köra ÄVEN på en i övrigt D0-klassad diff. Ändelselistan är
+        # AVSIKTLIGT INTE begränsad till D0-sökvägarna: en kod-ändelse-fil
+        # UTANFÖR D0 (t.ex. `src/App.tsx`) sätter redan should_skip_tests==
+        # false på egen hand, så en global `any_changed`-glob adderar ingen ny
+        # falsk NEGATIV — den är bara enklare att härleda och pröva än en
+        # sökvägs-scopad variant, och den enda vägen den kan avvika är att köra
+        # `lint` i FLER fall, aldrig färre (samma "kör MER, aldrig mindre"-
+        # riktning som resten av klassnings-mekaniken).
+        #
+        # ÄNDELSELISTAN — minst den mängd uppdraget namngav (js, mjs, cjs, ts,
+        # mts, cts, tsx, jsx, vue, html, htm) plus `action.yml`/`action.yaml`
+        # (fristående förekomster — `.github/workflows/**` är redan aldrig D0,
+        # se undantaget i klassning-d0 ovan, så bara formen VAR SOM HELST i
+        # trädet kan hamna i D0). Syskon-PR #2558 (S5, TASK-464.2, olandad vid
+        # denna push) bygger `scripts/check-codeql-d0-kodfri.sh` för samma
+        # premiss (CodeQL:s D0-undantag) med en BREDARE, källbelagd lista
+        # (CodeQL:s egen extraktor-dokumentation: även `es`/`es6`/`xhtm`/
+        # `xhtml`) och en innehålls-kontroll för HTML utan kod-tecken. Denna
+        # klassning tar INGET BEROENDE på den olandade filen (samma regel som
+        # resten av repot: bygg aldrig på ett olandat kort) — TASK-471 bär den
+        # framtida sammanslagningen till EN gemensam, bredare lista när
+        # #2558 landat.
+        #
+        # continue-on-error: TRUE — nästa steg läser `outcome` explicit och
+        # FAIL-CLOSED-defaultar till "kod-ändelse funnen" om detta steg
+        # fallerar. Ett internt fel i klassningen ska aldrig tystas till
+        # "ingen kod-ändelse funnen" (vilket hade tillåtit `lint` att hoppas
+        # på en diff ingen kunde bevisa var kodfri).
+        continue-on-error: true
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96  # v47.0.6
+        with:
+          quotepath: false
+          files: |
+            **/*.js
+            **/*.mjs
+            **/*.cjs
+            **/*.ts
+            **/*.mts
+            **/*.cts
+            **/*.tsx
+            **/*.jsx
+            **/*.vue
+            **/*.html
+            **/*.htm
+            **/action.yml
+            **/action.yaml
+
+      - name: Derive has_code_extension (fail-closed, TASK-464.1 F2)
+        id: code-ext
+        # Läser `changed-code-ext`-stegets `outcome` EXPLICIT (aldrig bara dess
+        # `outputs.any_changed`, som är tom sträng — inte "true" — om steget
+        # fallerade, vilket hade tolkats som falskt och gett fail-OPEN). Ett
+        # fallerat klassningssteg sätter has_code_extension=true: `lint` KÖR
+        # i stället för att hoppa på en diff ingen kunde bevisa var kodfri.
+        run: |
+          set -euo pipefail
+          if [ "${{ steps.changed-code-ext.outcome }}" != "success" ]; then
+            echo "⚠️ kod-ändelse-klassningen fallerade (outcome=${{ steps.changed-code-ext.outcome }}) — fail-closed, has_code_extension=true" >&2
+            echo "has_code_extension=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "has_code_extension=${{ steps.changed-code-ext.outputs.any_changed }}" >> "${GITHUB_OUTPUT}"
+          fi
+
       - name: Acceptance-urval — kör den delmängd diffen rör
         id: acceptance-urval
         # TASK-75 / ADR-077 §§ 1+3. Efter A7:5 (TASK-70.3) är `Acceptance
@@ -665,7 +798,16 @@ jobs:
     # se de jobbens egna `if:`) — `lint: skipped` hanteras identiskt.
     # `scripts/check-aggregator-needs.mjs` kräver bara att jobbet FINNS i
     # `ci-passed.needs` (oförändrat, `lint` stod redan där).
-    if: needs.changed.outputs.should_skip_tests == 'false'
+    #
+    # ANDRA VILLKORET TILLAGT (TASK-464.1 F2, review runda 1, risk hög, fynd
+    # 2): `should_skip_tests` ensamt antog att D0 = kodfritt. Det är falskt —
+    # `docs/**`/`tasks/**` bär spårad, analyserbar kod (se `changed-code-ext`-
+    # steget i `changed`-jobbet för beläggen). `has_code_extension` tvingar
+    # `lint` att köra även på en D0-klassad diff om den bär en fil med
+    # kod-ändelse. Formen är en OR, inte en ersättning: den befintliga
+    # `should_skip_tests`-halvan är orörd, den nya halvan kan bara göra
+    # jobbet köra i FLER fall, aldrig färre.
+    if: needs.changed.outputs.should_skip_tests == 'false' || needs.changed.outputs.has_code_extension == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -863,20 +1005,24 @@ jobs:
         # "Exkluderingarna är IDENTISKA med should_skip_tests-stegets", "speglar
         # det blocket i sak … får inte glida isär". ci.yml skrev till och med ut
         # att mekaniken saknades: "ingen grind håller dem synkade — paret hålls
-        # för hand". Sex par vaktas nu (docs-grindar tillkom TASK-109); vilka,
-        # och varför just de, står härlett i .listparitet-policy.conf.
+        # för hand". Sju par vaktas nu (docs-grindar tillkom TASK-109;
+        # grind-tillganglighet tillkom TASK-464.1 F1); vilka, och varför just
+        # de, står härlett i .listparitet-policy.conf.
         #
-        # STANNAR PÅ KODÄNDRINGAR (SE2-tabellen): fyra av sex par läser BARA
+        # STANNAR PÅ KODÄNDRINGAR (SE2-tabellen): fyra av sju par läser BARA
         # denna fil (ci.yml) — en ren kodändring som driftar t.ex.
         # klassnings-listorna fäller grinden utan att en .md-fil rörs. Ett
         # femte par (`sentinel-markorer`) läser `.purge-staging-policy.json`
         # (rot-.conf, ej D0). DUBBLETT I `docs`-JOBBET (omärkt, se det
-        # jobbets kommentar): samma pars B-sida är CONTRIBUTING.md, och paret
+        # jobbets kommentar): samma pars B-sida är CONTRIBUTING.md, paret
         # `docs-grindar` (det SJÄTTE) jämför check-docs.sh:s lokala lista mot
-        # DENNA regions motpart i `docs`-jobbet — en ren dokumentändring
-        # (t.ex. en struken sentinel-backtick i CONTRIBUTING.md, eller en ny
-        # docs-grind som glöms i endera listan) måste fånga grinden även när
-        # `should_skip_tests==true`.
+        # DENNA regions motpart i `docs`-jobbet, och paret
+        # `grind-tillganglighet` (det SJUNDE, TASK-464.1 F1) jämför
+        # .grind-tillganglighet-policy.conf:s tabell mot SAMMA region — en ren
+        # dokumentändring (t.ex. en struken sentinel-backtick i
+        # CONTRIBUTING.md, en ny docs-grind som glöms i endera listan, eller
+        # en ny rot-.conf-post utan changed-docs-täckning) måste fånga
+        # grinden även när `should_skip_tests==true`.
         #
         # Ren textläsning, inget nätverk. 1,15–1,28 s väggtid över tre körningar,
         # LOKALT mätt (macOS, 2026-07-30, loadavg 3,97–4,13, `time` på
@@ -2081,7 +2227,10 @@ jobs:
         # SC2310, SC2311 m.fl. som är default-disabled).
         # Scope per ADR-033 § Del 3: scripts/*.sh + .githooks/* +
         # scripts/lib/supabase-cli.sh (tillagd i S108-wiringen, se nedan) +
-        # 20 sourced-config-filer (.checklist-policy.conf +
+        # 34 sourced-config-filer (RÄTTAD TASK-464.1, 2026-09-19 — stod som
+        # "20" trots att den löpande räkningen nedan redan hade nått
+        # trettiotre; talet på DENNA rad glömdes uppdatera i varje enskild
+        # wiring, samma TASK-106-felklass) (.checklist-policy.conf +
         # .frontmatter-policy.conf + .lesson-policy.conf, tillagd S91/ADR-081 +
         # .ci-wait-policy.conf, tillagd S91/TASK-72 +
         # .staging-semaphore-policy.conf, tillagd S91/TASK-77 +
@@ -2173,7 +2322,11 @@ jobs:
         # NATTVAKT_OFARLIGA_CONCLUSIONS, sourcad av nightly-watchdog.yml
         # OCH läst av den nya scripts/check-nattkanal-partition.mjs; filen
         # fanns sedan TASK-450.1 men stod utanför denna uppräkning — en
-        # öppet bokförd skuld i filens eget huvud, se den för hela skälet).
+        # öppet bokförd skuld i filens eget huvud, se den för hela skälet)
+        # och till trettiofyra i TASK-464.1-wiringen (F1, review runda 1,
+        # risk hög, fynd 1 — .grind-tillganglighet-policy.conf, A-sidan i
+        # .listparitet-policy.conf:s nya par `grind-tillganglighet`, se den
+        # filens eget huvud för hela rationalen).
         # Pre-aktiverings-state (post-K3.2 commit d86d846): 0/0/0/0.
         run: |
           shellcheck \
@@ -2186,6 +2339,7 @@ jobs:
             .githooks/* \
             .checklist-policy.conf \
             .frontmatter-policy.conf \
+            .grind-tillganglighet-policy.conf \
             .lesson-policy.conf \
             .ci-wait-policy.conf \
             .staging-semaphore-policy.conf \
@@ -2913,9 +3067,11 @@ jobs:
 
       - name: Check list parity (TASK-85 gate) — docs-jobbets kopia
         # OMÄRKT DUBBLETT av `lint`-jobbets primära instans (se den för hela
-        # rationalen) — inte en flytt. Två av parets sex läser CONTRIBUTING.md
-        # (sentinel-markorer) respektive check-docs.sh:s egen lokala lista
-        # (docs-grindar, paret DENNA region är B-sidan av) — en ren
+        # rationalen) — inte en flytt. Tre av parets sju läser CONTRIBUTING.md
+        # (sentinel-markorer), check-docs.sh:s egen lokala lista (docs-grindar,
+        # paret DENNA region är B-sidan av), respektive
+        # .grind-tillganglighet-policy.conf:s tabell (grind-tillganglighet,
+        # TASK-464.1 F1, DENNA region är B-sidan av även här) — en ren
         # dokumentändring måste fånga grinden även när `should_skip_tests==
         # true`. `.ci-parity-policy.json`: egen post i `coveredByCheckDocs`.
         run: bash scripts/check-listparitet.sh

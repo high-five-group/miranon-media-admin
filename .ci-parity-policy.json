@@ -59,6 +59,11 @@
     "gatedJob": "suite",
     "gatedJobIfMustContain": "needs.changed.outputs.should_skip_tests"
   },
+  "codeExtensionClassification": {
+    "_rationale": "TASK-464.1 F2 (review runda 1, risk hög, fynd 2, 2026-09-19). Läser kod-ändelse-globen (jobbet `changed`, steget `changed-code-ext`, `with.files`) UR ci.yml vid varje körning — samma härlednings-disciplin som diffClassification, ingen handkopierad lista. `harKodAndelse` (any_changed-semantik, inte only_changed) är SANT om MINST EN ändrad fil matchar globen. Används ENDAST för att göra verktygets EGEN diff-klassnings-rapport sanningsenlig när diffen är DOCS_ONLY: CI:s `lint`-jobb kör ÄNDÅ på en D0-klassad diff som bär en kod-ändelse-fil (has_code_extension==true), medan detta skript redan kör `derivedJobs.ci` (lint/audit/docs) OVILLKORAT lokalt oavsett DOCS_ONLY-läge (superset-principen, se diffClassification._rationale) — en drift här kan alltså ALDRIG få skriptet att köra FÄRRE grindar än CI, bara att felaktigt underlåta att NÄMNA varför CI skulle kört lint. Kan globen inte härledas hoppar rapporten tyst över F2-raden (ingen exit 2 — ett fel här påverkar bara TEXTEN, aldrig täckningen, till skillnad från diffClassification vars gatedJobIfMustContain-koppling fäller preflighten om den drifar).",
+    "job": "changed",
+    "stepId": "changed-code-ext"
+  },
   "suiteInputInvariants": [
     {
       "job": "suite",
