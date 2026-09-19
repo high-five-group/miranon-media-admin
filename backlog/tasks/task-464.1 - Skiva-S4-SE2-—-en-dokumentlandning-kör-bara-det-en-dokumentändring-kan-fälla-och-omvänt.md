@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-18 22:39'
+updated_date: '2026-09-19 10:06'
 labels:
   - ready-for-agent
 dependencies:
@@ -45,3 +46,9 @@ Täcker användarberättelser: 1, 3, 4 (TASK-464)
 - [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+MÄTT EFTER LANDNING (S126, 2026-09-19) — AC #1 kontrastpar + AC #5 båda måtten. D0-sidan: #2572 (ren dokumentbunt, första D0-landningen efter S4+S5), körningar 35436151621 (pull_request), 35436267000 (merge_group), 35436352861 (push): 'Lint + TypeCheck', 'Test suite', 'Audit dependencies' och 'Review-backstopp' SKIPPED på alla tre ytorna; körde gjorde endast 'Detect changed files' (11–16 s), 'Docs link check' (60–69 s), 'CI Passed or Skipped' (3 s). Ingen CodeQL-körning på merge-commiten 2a825562. Kod-sidan: #2564:s egna checks (Lint + TypeCheck pass 4m5s) och push-körningen på c5fdc75c (CI + CodeQL körde). VÄNTETID per runda: 1,5 min (förslag) + 1,3 min (kö) = 2,8 min — FÖRE 4,1 + 4,3 = 8,4 min (#2565, samma dag). FAKTURERAT per dokumentlandning: 4 + 3 + 4 + 2 = 13 min — FÖRE 31 min (#2565; 35 min på #2517). Alltså −58 % fakturerat och −67 % väntan; bygg-agentens härledda 23–25 min var för pessimistiskt. Observation: 'Docs link check' ligger PÅ minutgränsen (60–69 s ⇒ fakturerar 1 eller 2 min per yta) — under 60 s stabilt vore värt ~1 min × 3 ytor per dokumentlandning. PR→main-tiden (9 min 54 s) är INTE jämförbar: PR:en rebasades och pushades om mitt i (krock i instrumenteringsloggen mot S127).
+<!-- SECTION:NOTES:END -->
