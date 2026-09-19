@@ -247,10 +247,11 @@
 #   Filnamnets per-session-DEL är sedan ID:T SJÄLVT, HELT OSANERAT: en
 #   kollision mellan två SKIFTLÄGESIDENTISKA men i övrigt olika ID:n är
 #   omöjlig PER KONSTRUKTION. Skiftläge är en EGEN, AVSIKTLIG nyans — se
-#   "SKIFTLÄGESOKÄNSLIGT" nedan (review runda 5): "S126" och "s126" delar
-#   MED FLIT statsfil (normaliserade till gemener innan de används), så
-#   påståendet ovan gäller "upp till skiftläge", inte bokstavligen VARJE
-#   par olika strängar. session_id_sanitize() är BORTTAGEN.
+#   "SKIFTLÄGESOKÄNSLIGT ÖVERALLT" nedan (review runda 5): "S126" och
+#   "s126" ÄR samma session — inte bara delad statsfil, utan (sedan samma
+#   runda) även i markör-matchningen — så påståendet ovan gäller "upp till
+#   skiftläge", inte bokstavligen VARJE par olika strängar.
+#   session_id_sanitize() är BORTTAGEN.
 #
 #   KÄND BEGRÄNSNING — GLOBAL PER MASKIN (samma disclosure-form som § FEMTE
 #   VÄGEN ovan, gren-städningens klocka): valideringen löser interferensen
@@ -279,22 +280,33 @@
 #   spoke utan gren-städning får därför heller ingen statsfil-städning, ett
 #   medvetet val för att hålla ändringen till en handfull rader.
 #
-#   SKIFTLÄGESOKÄNSLIGT MED AVSIKT (review runda 5, Marcus-beslut
-#   2026-09-19): "kollision omöjlig per konstruktion" (review runda 4) höll
-#   på STRÄNGNIVÅ men INTE på ett skiftlägesokänsligt filsystem — macOS
-#   APFS delar FIL för "S126" och "s126" oavsett vad strängarna är på
-#   bash-nivå. `S126` OCH `s126` ÄR SEDAN DENNA RUNDA MED AVSIKT SAMMA
-#   SESSION för de tre strypta notiskanalerna: statsfil-suffixet
-#   normaliseras till GEMENER innan det används (portabel `tr`, INTE
-#   `${var,,}` — den kräver bash 4+, som macOS-default-bash 3.2 inte har).
-#   Gäller ENDAST statsfilnamnet — RÖTT/DIRTY/ARMERINGS-KANDIDAT-
-#   filtreringen (pr_har_session_marker(), som jämför mot bygg-agentens
-#   PR-kroppsmarkör VERBATIM) är en ANNAN, ORÖRD mekanism och förblir
-#   skiftlägeskänslig. Praktisk konsekvens: kör två sessioner med ID:n som
-#   bara skiljer sig i skiftläge (ett misstag, inte ett avsiktligt val),
-#   delar de nu notis-throttlingen (ofarligt — samma klass som två
-#   sessioner med IDENTISKT ID) i stället för att TYST kollidera på en
-#   fil-nivå ingen såg (den ursprungliga risken).
+#   SKIFTLÄGESOKÄNSLIGT ÖVERALLT (review runda 5, RÄTTAT SAMMA RUNDA efter
+#   ett eget granskningsfynd, Marcus-beslut 2026-09-19): "kollision
+#   omöjlig per konstruktion" (review runda 4) höll på STRÄNGNIVÅ men INTE
+#   på ett skiftlägesokänsligt filsystem — macOS APFS delar FIL för
+#   "S126" och "s126" oavsett vad strängarna är på bash-nivå. Den FÖRSTA
+#   versionen av denna fix normaliserade BARA statsfilnamnet (se
+#   SESSION_STATE_SUFFIX nedan) och lämnade pr_har_session_marker() —
+#   RÖTT/DIRTY/ARMERINGS-KANDIDAT-filtreringen — OFÖRÄNDRAD,
+#   skiftlägeskänslig. Det gav en ASYMMETRI ingen kod eller hjälptext
+#   stavade ut: en PR märkt av bygg-agenten med ETT skiftläge ("S126")
+#   blev HELT OSYNLIG för sitt EGET röda om svepet kördes med ett ANNAT
+#   (`--session s126`) — exakt den "sessionen ser aldrig sitt eget
+#   röda"-felklass kortet finns för att ta bort, återinförd via en enda
+#   bokstav.
+#
+#   RÄTTAT: sessions-ID är NU skiftlägesokänsligt I HELA SKRIPTET — EN
+#   policy överallt, inte bara i statsfilnamnet. "S126" och "s126" ÄR
+#   SAMMA SESSION både för de tre strypta notiskanalerna (statsfil-
+#   suffixet normaliseras till GEMENER via portabel `tr` — INTE
+#   `${var,,}`, som kräver bash 4+ och saknas i macOS-default-bash 3.2)
+#   OCH för pr_har_session_marker() (--session-värdet och PR-kroppens
+#   markör normaliseras BÅDA till gemener innan substrängs-matchningen —
+#   se funktionen nedan). En PR märkt
+#   `<!-- heartbeat-svep:session:S126 -->` larmar därför lika korrekt
+#   under `--session S126` som under `--session s126` — medan en PR märkt
+#   för en HELT ANNAN session ("S127") förblir tyst under BÅDA: bara
+#   SKIFTLÄGET normaliseras, inte VILKEN session ID:t pekar ut.
 #
 # TREVÄGS-SNAPSHOT PER SVEP
 #   1. main-SHA — `gh api repos/<repo>/commits/<branch>`. Avancerar den
@@ -750,9 +762,16 @@ session_marker() { printf '<!-- heartbeat-svep:session:%s -->' "$1"; }
 HEARTBEAT_SESSION_ID_REGEX='^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$'
 HEARTBEAT_SESSION_ID_ENDAST_PUNKTER_REGEX='^\.+$'
 
-# pr_har_session_marker <body> <session> — sant om <body> bär EXAKT den
-# markören (inte bara "någon" markör — se pr_har_nagon_marker för det).
-# Substring-match, inte regex: session_marker() innehåller inga
+# pr_har_session_marker <body> <session> — sant om <body> bär markören för
+# <session> (inte bara "någon" markör — se pr_har_nagon_marker för det).
+# SKIFTLÄGESOKÄNSLIGT sedan review runda 5 fynd 1 (se § SESSIONSMEDVETET
+# SVEP, "SKIFTLÄGESOKÄNSLIGT ÖVERALLT" ovan för det fulla resonemanget): en
+# tidigare version jämförde VERBATIM, vilket gjorde en session HELT BLIND
+# för sitt eget RÖTT/DIRTY/ARMERINGS-KANDIDAT så fort svepet kördes med
+# annat skiftläge än det bygg-agenten satte i PR-markören. Både <body> och
+# den konstruerade markören normaliseras till GEMENER (portabel `tr`, samma
+# teknik som SESSION_STATE_SUFFIX nedan) FÖRE substrängs-matchningen —
+# fortfarande substring-match, inte regex: session_marker() innehåller inga
 # glob-specialtecken (*, ?, [), så `==`-mönstermatchningen nedan är säker.
 # Markören läggs i en lokal variabel FÖRE testet (inte inline i `[[ ]]`) —
 # annars varnar shellchecks SC2312 ("consider invoking this command
@@ -760,9 +779,11 @@ HEARTBEAT_SESSION_ID_ENDAST_PUNKTER_REGEX='^\.+$'
 # maskerar sitt eget avslutningsvärde. session_marker() är en ren printf som
 # aldrig fallerar, men separationen kostar inget och håller grinden på 0.
 pr_har_session_marker() {
-    local body="$1" session="$2" marker
+    local body="$1" session="$2" marker body_lower marker_lower
     marker="$(session_marker "${session}")"
-    [[ "${body}" == *"${marker}"* ]]
+    body_lower="$(printf '%s' "${body}" | tr '[:upper:]' '[:lower:]')"
+    marker_lower="$(printf '%s' "${marker}" | tr '[:upper:]' '[:lower:]')"
+    [[ "${body_lower}" == *"${marker_lower}"* ]]
 }
 
 # pr_har_nagon_marker <body> — sant om <body> bär EN markör för VILKEN
@@ -946,10 +967,14 @@ while [[ $# -gt 0 ]]; do
         # TASK-462 fix-runda 5 (review runda 5 uppföljning, samma dag:
         # HEARTBEAT_SESSION_ID_REGEX skärpt så FÖRSTA tecknet måste vara
         # alfanumeriskt — "--session --alla" gick tidigare igenom som ett
-        # "giltigt" ID);
+        # "giltigt" ID), 61,298 → 61,310 i TASK-462 fix-runda 6 (runda 5:s
+        # eget fynd 1: skiftlägespolicyn var ASYMMETRISK —
+        # pr_har_session_marker() jämförde VERBATIM medan statsfilnamnet
+        # redan var normaliserat — rättat till EN policy överallt, se §
+        # SKIFTLÄGESOKÄNSLIGT ÖVERALLT ovan);
         # scripts/test-heartbeat-svep.sh T24 fäller om raden
         # avviker från blockets faktiska start/slut.
-        -h|--help)  sed -n '61,298p' "$0"; exit 0 ;;
+        -h|--help)  sed -n '61,310p' "$0"; exit 0 ;;
         *) die "okänt argument: $1" ;;
     esac
 done
@@ -1048,23 +1073,21 @@ STADA_STATE_FILE="${STATE_DIR}/last-stada-grenar"
 # OSATT (ingen --session, eller --alla) ⇒ tomt suffix, alltså SAMMA fil som
 # innan denna runda — global strypning, se KÄND BEGRÄNSNING ovan.
 #
-# SKIFTLÄGESOKÄNSLIGT MED AVSIKT sedan review runda 5 (Marcus-beslut
-# 2026-09-19): "kollision omöjlig per konstruktion" (review runda 4) höll
-# på STRÄNGNIVÅ men inte på ett skiftlägesokänsligt filsystem — macOS
-# APFS (default-formatet på Marcus maskin, där STATE_DIR:s default
+# SKIFTLÄGESOKÄNSLIGT ÖVERALLT sedan review runda 5 (Marcus-beslut
+# 2026-09-19, se § SESSIONSMEDVETET SVEP ovan för det fulla resonemanget
+# och varför regeln omfattar HELA skriptet, inte bara denna statsfil):
+# "kollision omöjlig per konstruktion" (review runda 4) höll på
+# STRÄNGNIVÅ men inte på ett skiftlägesokänsligt filsystem — macOS APFS
+# (default-formatet på Marcus maskin, där STATE_DIR:s default
 # /tmp/mm-heartbeat-svep faktiskt bor) delar FIL för "S126" och "s126",
-# oavsett vad de två strängarna är på bash-nivå. I stället för att jaga
-# fler filsystem-specifika edge-fall normaliseras suffixet HÄR till
-# GEMENER via `tr` (portabelt, funkar i bash 3.2 — `${var,,}` kräver bash
-# 4+ och är INTE tillgängligt på macOS-default-bash, se
+# oavsett vad de två strängarna är på bash-nivå. Suffixet normaliseras HÄR
+# till GEMENER via `tr` (portabelt, funkar i bash 3.2 — `${var,,}` kräver
+# bash 4+ och är INTE tillgängligt på macOS-default-bash, se
 # is_exempt_author()s bash-3.2-kommentar ovan för samma begränsning) —
-# "S126" och "s126" är SEDAN DENNA RUNDA AVSIKTLIGT SAMMA SESSION för de
-# tre strypta notiskanalerna (delar stämpel, delar throttling), oavsett
-# filsystemets skiftlägeskänslighet. GÄLLER ENDAST STATSFIL-NAMNET —
-# markör-matchningen (pr_har_session_marker(), RÖTT/DIRTY/KANDIDAT-
-# filtreringen) använder fortfarande SESSION oförändrad/skiftlägeskänslig,
-# eftersom den jämför mot bygg-agentens PR-kroppsmarkör VERBATIM och är en
-# annan, orörd mekanism.
+# "S126" och "s126" är SAMMA SESSION för de tre strypta notiskanalerna
+# (delar stämpel, delar throttling) OCH för pr_har_session_marker()
+# (RÖTT/DIRTY/ARMERINGS-KANDIDAT-filtreringen nedan, en ANNAN funktion men
+# SAMMA regel sedan denna runda).
 SESSION_STATE_SUFFIX=""
 if [[ -n "${SESSION}" && "${ALLA}" -eq 0 ]]; then
     SESSION_LOWER="$(printf '%s' "${SESSION}" | tr '[:upper:]' '[:lower:]')"

@@ -160,8 +160,28 @@
 #       statsfil — S126 ser notisen, s126 stryps av S126:s stämpel       → 0
 #   T81/T81b statsfilen är normaliserad till gemener, ingen separat
 #       versal-variant skapas
-#   T82 Markör-matchningen (RÖTT/DIRTY/KANDIDAT) förblir SKIFTLÄGES-
-#       KÄNSLIG — orörd, skild mekanism från statsfilnamnet              → 0
+#   T82 Markör-matchningen (RÖTT/DIRTY/KANDIDAT) — VÄND i fix-runda 6, se
+#       nedan (var SKIFTLÄGESKÄNSLIG i denna runda, RÄTTAD SAMMA DAG efter
+#       ett granskningsfynd — se T82–T82d)                              → 1
+#
+# T82–T82d (fix-runda 6, review runda 5 fynd 1, Marcus-beslut 2026-09-19).
+# Skiftlägespolicyn var ASYMMETRISK: statsfilnamnet (T80–T81b) normaliserades
+# redan till gemener, men pr_har_session_marker() jämförde SESSION VERBATIM
+# mot PR-kroppens markör — en session märkt "S126" blev HELT OSYNLIG för
+# sitt eget RÖTT/DIRTY/ARMERINGS-KANDIDAT om svepet kördes med
+# `--session s126`, exakt "sessionen ser aldrig sitt eget röda"-felklassen
+# kortet finns för att ta bort. RÄTTAT: EN policy överallt — --session-
+# värdet och PR-kroppens markör normaliseras BÅDA till gemener innan
+# jämförelsen (se pr_har_session_marker() i scripts/heartbeat-svep.sh).
+#   T82  Markör "S126" (versaler) MATCHAS NU av --session "s126" (gemener)
+#        — VÄND mot denna runda (var NOT_EXPECT_OUT, är nu EXPECT_OUT)    → 1
+#   T82b Omvänt skiftläge: markör "s126" (gemener) MATCHAS av
+#        --session "S126" (versaler)                                      → 1
+#   T82c Blandat skiftläge: markör "S126-Resume-2" MATCHAS av
+#        --session "s126-resume-2"                                        → 1
+#   T82d Skiftlägesnormaliseringen döljer INTE en genuint FRÄMMANDE
+#        session: markör "S127" förblir TYST under --session "s126" —
+#        bara SKIFTLÄGET normaliseras, inte VILKEN session ID:t pekar ut  → 0
 #
 # T83–T89 (review runda 5 UPPFÖLJNING, samma dag, Marcus-beslut
 # 2026-09-19). Bygg-agenten upptäckte själv under runda 5:s revision att
@@ -231,7 +251,10 @@
 # 2→64 + T75–T82 nya — bitmask-kollision rättad, saknat flaggvärde fångat,
 # skiftlägesokänsligt statsfilnamn) · TASK-462 fix-runda 5 (2026-09-19,
 # review runda 5 uppföljning, samma dag: T83–T89 nya — FÖRSTA tecknet i
-# session-ID måste vara alfanumeriskt, "--session --alla" avvisas)
+# session-ID måste vara alfanumeriskt, "--session --alla" avvisas) ·
+# TASK-462 fix-runda 6 (2026-09-19, runda 5:s eget fynd 1: T82 VÄND +
+# T82b–T82d nya — skiftlägespolicyn var ASYMMETRISK (statsfilnamn
+# normaliserat, markör-matchning inte), rättad till EN policy överallt)
 
 set -uo pipefail
 
@@ -1425,11 +1448,13 @@ run_case "T79 --timeout som SISTA token (inget värde) → exit 64" 64 - \
     bash ./scripts/heartbeat-svep.sh --once --timeout
 
 # ============================================================
-# T80–T82 — SKIFTLÄGESOKÄNSLIGT STATSFILNAMN (review runda 5 fynd 3,
+# T80–T81b — SKIFTLÄGESOKÄNSLIGT STATSFILNAMN (review runda 5 fynd 3,
 # Marcus-beslut 2026-09-19). "S126" och "s126" är MED AVSIKT samma session
 # för de strypta notiskanalerna (macOS APFS delar annars fil ändå, på
 # filsystemnivå, oavsett vad valideringen bevisar på strängnivå — se §
-# SESSIONSMEDVETET SVEP "SKIFTLÄGESOKÄNSLIGT MED AVSIKT").
+# SESSIONSMEDVETET SVEP "SKIFTLÄGESOKÄNSLIGT ÖVERALLT"). T82–T82d (markör-
+# matchningen) flyttade till en egen sektion nedan i fix-runda 6, efter det
+# att runda 5:s eget fynd 1 visade att policyn var asymmetrisk.
 echo ""
 reset_scen
 set_rows '914\tfalse\tCLEAN\ttrue\tSUCCESS\tfalse\toctocat\t\n'
@@ -1468,15 +1493,41 @@ else
     printf '  ✓ T81b  ingen versal-variant av statsfilen skapades — bara EN fil för båda skiftlägena\n'; PASSED=$((PASSED+1))
 fi
 
-# T82 — markör-matchningen (RÖTT/DIRTY/KANDIDAT-filtreringen) är EN ANNAN,
-# ORÖRD mekanism och förblir skiftlägeskänslig: en PR märkt för sessionen
-# "S126" (versaler) ska INTE räknas som "egen" när svepet körs med
-# --session "s126" (gemener) — bara STATSFILNAMNET normaliseras, inte
-# markör-jämförelsen.
+# ============================================================
+# T82–T82d — SKIFTLÄGESOKÄNSLIGT ÖVERALLT, MARKÖR-MATCHNINGEN (fix-runda 6,
+# review runda 5:s EGET fynd 1, Marcus-beslut 2026-09-19). T82 påstod i
+# FÖREGÅENDE runda att pr_har_session_marker() var "en ANNAN, ORÖRD
+# mekanism" och förblev skiftlägeskänslig — det gjorde policyn ASYMMETRISK:
+# statsfilnamnet (T80/T80b ovan) normaliserades redan, men en PR märkt
+# "S126" av bygg-agenten blev HELT OSYNLIG för sitt EGET RÖTT/DIRTY/
+# ARMERINGS-KANDIDAT om svepet kördes med `--session s126` — precis
+# "sessionen ser aldrig sitt eget röda"-felklassen kortet finns för att ta
+# bort, återinförd via en enda bokstav. RÄTTAT: --session-värdet och
+# PR-kroppens markör normaliseras BÅDA till gemener i
+# pr_har_session_marker() innan jämförelsen — EN policy överallt.
+echo ""
 reset_scen
 set_rows '915\tfalse\tBLOCKED\ttrue\tFAILURE\tfalse\toctocat\t<!-- heartbeat-svep:session:S126 -->\n'
-NOT_EXPECT_OUT="RÖTT — PR #915"
-run_case "T82 Markör \"S126\" (versaler) matchas INTE av --session \"s126\" (gemener) — orörd, skild mekanism" 0 - \
+EXPECT_OUT="RÖTT — PR #915"
+run_case "T82 Markör \"S126\" (versaler) MATCHAS NU av --session \"s126\" (gemener) — VÄND fynd, EN policy överallt" 1 - \
+    bash ./scripts/heartbeat-svep.sh --once --session s126
+
+reset_scen
+set_rows '916\tfalse\tBLOCKED\ttrue\tFAILURE\tfalse\toctocat\t<!-- heartbeat-svep:session:s126 -->\n'
+EXPECT_OUT="RÖTT — PR #916"
+run_case "T82b Omvänt skiftläge — markör \"s126\" (gemener) MATCHAS av --session \"S126\" (versaler)" 1 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S126
+
+reset_scen
+set_rows '917\tfalse\tBLOCKED\ttrue\tFAILURE\tfalse\toctocat\t<!-- heartbeat-svep:session:S126-Resume-2 -->\n'
+EXPECT_OUT="RÖTT — PR #917"
+run_case "T82c Blandat skiftläge — markör \"S126-Resume-2\" MATCHAS av --session \"s126-resume-2\"" 1 - \
+    bash ./scripts/heartbeat-svep.sh --once --session s126-resume-2
+
+reset_scen
+set_rows '918\tfalse\tBLOCKED\ttrue\tFAILURE\tfalse\toctocat\t<!-- heartbeat-svep:session:S127 -->\n'
+NOT_EXPECT_OUT="RÖTT — PR #918"
+run_case "T82d Genuint FRÄMMANDE session — markör \"S127\" FORTSATT TYST under --session \"s126\" (bara SKIFTLÄGET normaliseras, inte identiteten)" 0 - \
     bash ./scripts/heartbeat-svep.sh --once --session s126
 
 # ============================================================
