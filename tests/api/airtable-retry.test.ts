@@ -21,6 +21,7 @@ import {
   AIRTABLE_429_JITTER_RATIO,
   AIRTABLE_429_MAX_RETRIES,
   airtable429BackoffMs,
+  callAirtableWithTiming,
   withAirtable429Retry,
 } from '../../supabase/functions/_shared/airtable-retry';
 
@@ -322,6 +323,118 @@ test.describe('strukturerad 429-loggning (TASK-459)', () => {
       event: 'airtable_429_exhausted',
       helper: 'fetchFromAirtable',
       table: 'Eventplanering',
+    });
+  });
+});
+
+// TASK-459 runda 2 (granskningens fynd 2) — `callAirtableWithTiming` bodde tidigare i
+// `airtable-client.ts` och loggade `airtable_call` EFTER `await withAirtable429Retry(...)`.
+// Kastade `send()` (nätverksfel/timeout/DNS — INTE en 429, som redan hanteras separat eftersom
+// `fetch` då RESOLVAR i stället för att kasta) propagerade felet innan loggraden nåddes, och den
+// anropets varaktighet loggades då ALDRIG. Funktionen flyttades hit (Deno-fri, samma skäl som
+// `withAirtable429Retry` flyttades under TASK-53 — se filhuvudet) EXAKT för att göra detta
+// rött-först-bevisbart utan ett nytt `ci.yml`-wirat grindvaktsskript. RÖTT-FÖRST verifierat
+// manuellt under bygget (runda 2): med den GAMLA formen (mät+logga EFTER await, inget
+// try/finally) gav ett kastat `send()` NOLL `airtable_call`-rader — testet 'kastat send() →
+// EXAKT EN airtable_call-rad …' föll (0 rader, inte 1). Efter `try/finally`-fixen är sviten grön.
+test.describe('alltid-loggad airtable_call, även när send() kastar (TASK-459 runda 2, fynd 2)', () => {
+  test('lyckat HTTP-svar (200) → EN airtable_call-rad med korrekt status/varaktighet, inget errorType', async () => {
+    const rader: Record<string, unknown>[] = [];
+    const res = await callAirtableWithTiming(
+      'fetchAirtableRecord',
+      'Eventplanering',
+      () => Promise.resolve(new Response('{}', { status: 200 })),
+      { log: (r) => rader.push(r) },
+    );
+
+    expect(res.status).toBe(200);
+    expect(rader).toHaveLength(1);
+    expect(rader[0]).toMatchObject({
+      level: 'info',
+      event: 'airtable_call',
+      helper: 'fetchAirtableRecord',
+      table: 'Eventplanering',
+      status: 200,
+    });
+    expect(rader[0]).not.toHaveProperty('errorType');
+    expect(typeof rader[0].durationMs).toBe('number');
+  });
+
+  test('kastat send() → EXAKT EN airtable_call-rad, status "thrown", SAMMA fel propagerar oförändrat', async () => {
+    const rader: Record<string, unknown>[] = [];
+    const kastatFel = new TypeError('fetch failed');
+
+    await expect(
+      callAirtableWithTiming(
+        'fetchAirtableRecord',
+        'Eventplanering',
+        () => {
+          throw kastatFel;
+        },
+        { log: (r) => rader.push(r) },
+      ),
+    ).rejects.toBe(kastatFel); // exakt SAMMA objekt — inte omslaget, inte en kopia
+
+    // RÖTT-FÖRST-kärnan: före fixen gav detta 0 rader (loggen nåddes aldrig, se filhuvudet).
+    expect(rader).toHaveLength(1);
+    expect(rader[0]).toMatchObject({
+      level: 'info',
+      event: 'airtable_call',
+      helper: 'fetchAirtableRecord',
+      table: 'Eventplanering',
+      status: 'thrown',
+      errorType: 'TypeError',
+    });
+    expect(typeof rader[0].durationMs).toBe('number');
+  });
+
+  test('kastat send() utan Error-instans (t.ex. ett rått strängkast) → errorType är typeof-strängen, aldrig innehållet', async () => {
+    const rader: Record<string, unknown>[] = [];
+
+    await expect(
+      callAirtableWithTiming(
+        'fetchFromAirtable',
+        'Personer',
+        () => {
+          // Avsiktligt en icke-Error-kastning — bevisar att `errorType` fortfarande klassas
+          // säkert (typeof-strängen, aldrig innehållet) även när `err instanceof Error` är falskt.
+          throw 'https://api.airtable.com/v0/appHemlig/Personer?filterByFormula=NAME%3D%27x%27';
+        },
+        { log: (r) => rader.push(r) },
+      ),
+    ).rejects.toBe('https://api.airtable.com/v0/appHemlig/Personer?filterByFormula=NAME%3D%27x%27');
+
+    expect(rader).toHaveLength(1);
+    // errorType är 'string' (typeof), ALDRIG den kastade URL:ens innehåll — se filhuvudet:
+    // loggraden får inte bära ett fels fulla text om den kan innehålla URL/filterformel.
+    expect(rader[0].errorType).toBe('string');
+    expect(JSON.stringify(rader[0])).not.toContain('filterByFormula');
+    expect(JSON.stringify(rader[0])).not.toContain('appHemlig');
+  });
+
+  test('DEFAULT-loggningen (ingen `log` injicerad) skriver strukturerad JSON via console.info', async () => {
+    const rader: string[] = [];
+    const original = console.info;
+    console.info = (msg?: unknown) => {
+      rader.push(String(msg));
+    };
+    try {
+      const res = await callAirtableWithTiming('fetchAirtablePage', 'Anmälningar', () =>
+        Promise.resolve(new Response(null, { status: 200 })),
+      );
+      expect(res.status).toBe(200);
+    } finally {
+      console.info = original;
+    }
+
+    expect(rader).toHaveLength(1);
+    const parsed = JSON.parse(rader[0]);
+    expect(parsed).toMatchObject({
+      level: 'info',
+      event: 'airtable_call',
+      helper: 'fetchAirtablePage',
+      table: 'Anmälningar',
+      status: 200,
     });
   });
 });

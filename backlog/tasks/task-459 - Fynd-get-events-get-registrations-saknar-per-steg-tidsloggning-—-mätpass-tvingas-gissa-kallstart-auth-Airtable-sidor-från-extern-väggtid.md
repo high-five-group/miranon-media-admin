@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-18 11:10'
-updated_date: '2026-09-19 09:24'
+updated_date: '2026-09-19 09:54'
 labels:
   - ready-for-agent
 dependencies: []
@@ -101,4 +101,6 @@ fetchByRecordIds-omskrivning). Denna PR rör ENDAST Deno.serve-handlern
 (handlerStart/authStart/authMs, ef_step_timing-loggen) och en docblock
 direkt efter import-blocket — #2550 rör fetchByRecordIds-loopen och en ny
 const längre ner. Disjunkta ytor.
+
+RUNDA 2 (PR #2570, granskningens fynd 1) — AC #2:s parentes pekar fel på TVÅ nivåer, inte bara källa (runda 1:s fynd): utöver att raderna landar i function_logs (event_message) i stället för function_edge_logs (metadata.execution_time_ms), räcker INTE en gång rätt källa ensam för ATTRIBUERING per Edge Function — {helper, table} i event_message är delat (fetchAirtableRecord('Eventplanering', ...) anropas av get-event, get-attendance OCH get-registrations; granskningens disk-verifiering). RÄTT källa/fält för attribuering: function_logs's egna metadata.function_id (unikt per deployad EF) och metadata.execution_id (unikt per anrop) — plattformens EGNA fält, ingen kodändring. Verifierat mot supabase.com/docs/guides/observability/log-field-reference 2026-09-19 (två oberoende WebFetch-anrop): ClickHouse-vägen är log_attributes['function_id'] resp. log_attributes['execution_id']; execution_id finns ENDAST i function_logs, INTE i function_edge_logs. Function-ID:n i STAGING 2026-09-19 (supabase functions list --project-ref pqtshyierkdgwdnxuirz): get-events=ed6a72eb-3ab9-4e1e-a6e2-47b81284a4d6, get-registrations=e815d390-23ed-4786-a423-0341c316ec1a. PR-kroppens Mätanvisning + docblocken i airtable-retry.ts/airtable-client.ts omskrivna med detta. Ingen egen funktions-nyckel lades till i loggraderna (orkestrerarens explicita förbud) — attribueringen löses helt av plattformens befintliga fält.
 <!-- SECTION:NOTES:END -->

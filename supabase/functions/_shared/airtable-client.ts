@@ -1,45 +1,27 @@
 import { ValidationError } from './errors.ts';
-import { withAirtable429Retry } from './airtable-retry.ts';
+import { callAirtableWithTiming } from './airtable-retry.ts';
 
 // Airtable REST-API-host (samma för alla baser/miljöer — ej prod-bindning).
 const AIRTABLE_API_URL = 'https://api.airtable.com/v0';
 
 /**
- * Timing- och 429-loggningswrapper runt EN Airtable-läsning (TASK-459, AC #1).
+ * `callAirtableWithTiming` (per-anrops timing + `airtable_call`-loggning, TASK-459 AC #1)
+ * bor sedan runda 2 i `./airtable-retry.ts` — INTE här längre.
  *
- * Central placering — de tre läs-helperna (`fetchFromAirtable`, `fetchAirtablePage`,
- * `fetchAirtableRecord`) ropar alla via denna funktion i stället för `withAirtable429Retry`
- * direkt, så VARJE anropare (get-events, get-registrations, och alla framtida `get-*`-EF:er
- * som delar denna kärna) ärver per-anrops-loggningen gratis — ingen egen instrumentering
- * krävs uppströms. Varaktigheten mäts från FÖRE till EFTER `withAirtable429Retry` och bär
- * alltså med sig eventuell 429-backoff-väntan (bevisligt separat spårbar via de EXPLICITA
- * `airtable_429_retry`/`airtable_429_exhausted`-raderna `airtable-retry.ts` loggar — en
- * ~30 000 ms `airtable_call`-rad utan en åtföljande 429-rad är alltså en genuint långsam
- * Airtable-sida, inte en lockout).
+ * Skälet: samma Deno-frihets-krav som fick backoff-logiken flyttad dit under TASK-53 (se
+ * `airtable-retry.ts`s eget filhuvud § Varför en egen modul) — DENNA fil rör `Deno.env`
+ * direkt och kan därför inte importeras från `tests/api/*.test.ts` utan att fälla `npm run
+ * typecheck` (TS2304 på `Deno`). Granskningens fynd 2 (runda 2, PR #2570) krävde ett
+ * rött-först-test av "kastat `send()` ska ändå logga `airtable_call`" — den flytten var vägen
+ * dit utan ett nytt `ci.yml`-wirat grindvaktsskript.
  *
- * Strukturerad JSON (`errors.ts:110`-mönstret) → sökbar i Supabase Logs Explorer
- * (`function_edge_logs.event_message`) utan en ny extern mätrigg (AC #2).
+ * Attribuering (fynd 1): `{helper, table}` är INTE unikt per Edge Function — samma par
+ * anropas av flera get-*-EF:er (`fetchAirtableRecord('Eventplanering', …)` t.ex. av
+ * get-event, get-attendance OCH get-registrations). Attribuera i stället PER EDGE
+ * FUNCTION/PER ANROP via `function_logs`s egna `metadata.function_id`/`metadata.
+ * execution_id` (finns på varje rad utan kodändring härifrån). Full vägledning + körbar SQL:
+ * `airtable-retry.ts`s filhuvud § Anropsattribuering, och PR #2570-kroppens § Mätanvisning.
  */
-async function callAirtableWithTiming(
-  helper: string,
-  table: string,
-  send: () => Promise<Response>,
-): Promise<Response> {
-  const start = Date.now();
-  const res = await withAirtable429Retry(send, { logContext: { helper, table } });
-  const durationMs = Date.now() - start;
-  console.info(
-    JSON.stringify({
-      level: 'info',
-      event: 'airtable_call',
-      helper,
-      table,
-      status: res.status,
-      durationMs,
-    }),
-  );
-  return res;
-}
 
 /**
  * Klassar Airtables EGNA valideringsavvisning (TASK-190) — typiskt 422 när

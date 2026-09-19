@@ -72,6 +72,42 @@
  * skriva till stdout — se `tests/api/airtable-retry.test.ts`. INGEN av delarna rör backoff-
  * logiken eller svarskontraktet ovan; modulen förblir Deno-fri (`console` är en
  * webbstandard-global, inte en Deno-specifik API, se § Varför en egen modul ovan).
+ *
+ * ## Anropsattribuering är PLATTFORMENS jobb, inte en egen kod-nyckel (TASK-459 runda 2, fynd 1)
+ *
+ * `logContext` (`{helper, table}`) räcker INTE för att räkna 429:or PER EDGE FUNCTION — paret
+ * är delat mellan flera anropare: `fetchAirtableRecord('Eventplanering', …)` anropas av BÅDE
+ * `get-event`, `get-attendance` OCH `get-registrations` (disk-verifierat, granskningsrunda 1
+ * på PR #2570). Lägg ALDRIG till en egen funktions-nyckel här för att lösa det — Supabase
+ * `function_logs`-källan bär redan `metadata.function_id` (unikt per deployad Edge Function)
+ * och `metadata.execution_id` (unikt per invokering/anrop) på VARJE rad, utan kodändring
+ * härifrån (verifierat mot `supabase.com/docs/guides/observability/log-field-reference`,
+ * 2026-09-19 — ClickHouse-vägen är bracket-notation: `log_attributes['function_id']` resp.
+ * `log_attributes['execution_id']`; `execution_id` finns ENDAST i `function_logs`, inte i
+ * `function_edge_logs`). Slå upp funktionens ID i STAGING med `supabase functions list
+ * --project-ref <staging-ref>` (ALDRIG prod-ref i ett kommando), filtrera SQL-frågan på det
+ * ID:t, och räkna 429:or `group by log_attributes['execution_id']` för att skilja "flera
+ * omförsök inom SAMMA anrop" från flera separata drabbade hämtningar. Full körbar SQL:
+ * PR #2570-kroppens § Mätanvisning.
+ *
+ * ## `callAirtableWithTiming` flyttad hit, alltid loggad (TASK-459 runda 2, fynd 2)
+ *
+ * Funktionen bodde ursprungligen i `airtable-client.ts` och mätte/loggade `airtable_call`
+ * EFTER `await withAirtable429Retry(...)` — kastade `send()` (nätverksfel, timeout, DNS) i
+ * stället för att resolva ett HTTP-svar (429 hanteras redan: `fetch` RESOLVAR då, kastar
+ * inte), propagerade felet UTAN att den anropets varaktighet någonsin loggades. Flyttad hit
+ * av SAMMA skäl som `withAirtable429Retry` självt under TASK-53 (§ Varför en egen modul
+ * ovan): `airtable-client.ts` rör `Deno.env` direkt och är därför otestbar från
+ * `tests/api/*.test.ts` utan att fälla `npm run typecheck` (TS2304 på `Deno`) — ett
+ * rött-först-test av "kastat send() ska ändå logga" krävde antingen den flytten eller ett
+ * nytt `scripts/test-*.mjs`-grindvaktsskript wirat i `ci.yml`, vilket låg utanför denna
+ * skivas scope. `try/finally` garanterar att raden ALLTID skrivs: `status: 'thrown'` skiljer
+ * ett kastat fel från ett HTTP-svar, och `errorType` bär feltypens NAMN (`err.name`), ALDRIG
+ * dess fulla meddelandetext (kan bära URL:er/`filterByFormula`-uttryck — repot är publikt).
+ * Kontrollflödet är oförändrat: samma fel propagerar vidare ORÖRT (`throw err` i `catch`,
+ * ingen wrapping, ingen ny typ). `airtable-client.ts` importerar funktionen härifrån nu —
+ * samma tre call-sites (`fetchFromAirtable`, `fetchAirtablePage`, `fetchAirtableRecord`),
+ * identiskt beteende för den lyckade vägen.
  */
 
 /**
@@ -192,5 +228,66 @@ export async function withAirtable429Retry(
     }
 
     await sleep(waitMs);
+  }
+}
+
+const defaultInfoLog = (record: Record<string, unknown>): void => {
+  console.info(JSON.stringify(record));
+};
+
+export interface CallAirtableWithTimingOptions {
+  /**
+   * Injicerbar logg-sink för `airtable_call`-raden (tester). Default:
+   * `console.info(JSON.stringify(record))` — samma mönster som `defaultLog` ovan, fast
+   * info-nivå (detta är INTE en 429-varning, se `defaultLog`/`defaultWarn`-motsvarigheten).
+   */
+  log?: (record: Record<string, unknown>) => void;
+}
+
+/**
+ * Timing- och loggningswrapper runt EN Airtable-läsning (TASK-459 AC #1; flyttad hit och
+ * härdad mot kastade fel i runda 2, fynd 2 — se filhuvudet § `callAirtableWithTiming` flyttad
+ * hit, alltid loggad ovan för hela resonemanget).
+ *
+ * Central placering — de tre läs-helperna i `airtable-client.ts` (`fetchFromAirtable`,
+ * `fetchAirtablePage`, `fetchAirtableRecord`) ropar alla via DENNA funktion i stället för
+ * `withAirtable429Retry` direkt, så VARJE anropare (och alla framtida `get-*`-EF:er som
+ * delar samma kärna) ärver per-anrops-loggningen gratis.
+ *
+ * `try/finally`: raden loggas ALLTID — vid ett lyckat HTTP-svar (`status` = statuskoden) OCH
+ * när `send()` kastar (`status: 'thrown'`, `errorType` = feltypens namn, ALDRIG dess fulla
+ * meddelandetext). Felet kastas vidare OFÖRÄNDRAT (`catch { …; throw err }`, ingen wrapping,
+ * ingen ny typ) — kontrollflöde och returvärde för den lyckade vägen är identiska med före
+ * denna ändring.
+ */
+export async function callAirtableWithTiming(
+  helper: string,
+  table: string,
+  send: () => Promise<Response>,
+  options: CallAirtableWithTimingOptions = {},
+): Promise<Response> {
+  const { log = defaultInfoLog } = options;
+  const start = Date.now();
+  let res: Response | undefined;
+  let errorType: string | undefined;
+  try {
+    res = await withAirtable429Retry(send, { logContext: { helper, table } });
+    return res;
+  } catch (err) {
+    // TASK-459 runda 2 (fynd 2): feltyp/namn, ALDRIG felmeddelandets fulla text — den kan
+    // bära URL:er/filterByFormula-uttryck (repot är publikt).
+    errorType = err instanceof Error ? err.name : typeof err;
+    throw err;
+  } finally {
+    const durationMs = Date.now() - start;
+    log({
+      level: 'info',
+      event: 'airtable_call',
+      helper,
+      table,
+      status: res !== undefined ? res.status : 'thrown',
+      ...(errorType !== undefined ? { errorType } : {}),
+      durationMs,
+    });
   }
 }
