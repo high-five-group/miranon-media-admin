@@ -33,6 +33,7 @@ import { randomUUID } from 'node:crypto';
 import { type APIRequestContext, type APIResponse, expect, test } from '@playwright/test';
 import type { z } from 'zod';
 import { RegistrationSchema } from '../../src/domain/schemas';
+import { registreraKastbarPost } from '../support/kastbara-poster';
 import { type ApiConfig, classify401Body, getApiConfig, getValidUserJWT } from './helpers';
 
 const ENDPOINT = '/functions/v1/create-registration';
@@ -119,6 +120,10 @@ test.describe('create-registration — skarp conformance (Fas 6c L4)', () => {
       registration: unknown;
       record: { id: string; fields: Record<string, unknown> };
     };
+    // [TASK-465] Registrera DIREKT vid skapandet, inte i en afterEach — en
+    // afterEach hinner inte köra när testet timeoutar (grundorsaken till
+    // flake-diagnosen: docs/research/flake-request-context-disposed-2026-09-19.md).
+    registreraKastbarPost(body.record.id, 'create-registration/allow-giltig-create');
 
     // (i) SKRIV-BEVIS ur råa record.fields — EF:en satte fälten i Airtable.
     expect(body.record.id.startsWith('rec')).toBe(true);
@@ -177,6 +182,8 @@ test.describe('create-registration — skarp conformance (Fas 6c L4)', () => {
       registration: unknown;
       record: { id: string; fields: Record<string, unknown> };
     };
+    // [TASK-465] Registrera DIREKT vid skapandet — se motivering ovan.
+    registreraKastbarPost(body.record.id, 'create-registration/allow-antalPlatser-notering');
 
     // (i) SKRIV-BEVIS ur råa record.fields — EF:en satte de två nya fälten i Airtable.
     expect(body.record.fields['Antal platser']).toBe(3);
@@ -259,7 +266,14 @@ test.describe('create-registration — skarp conformance (Fas 6c L4)', () => {
       eventId,
       idempotencyKey: randomUUID(),
     });
-    expect(first.status(), await first.text()).toBe(201);
+    const firstRaw = await first.text();
+    expect(first.status(), firstRaw).toBe(201);
+    // [TASK-465] Registrera DIREKT vid skapandet — se motivering ovan. `second`
+    // skapar aldrig något record (409 = avvisad) och behöver ingen registrering.
+    registreraKastbarPost(
+      (JSON.parse(firstRaw) as { record: { id: string } }).record.id,
+      'create-registration/409-dubblett-first',
+    );
 
     const second = await postCreate(request, config, jwt, {
       fornamn: 'Dubblett',

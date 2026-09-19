@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-09-18
+updated: 2026-09-19
 review_by: 2027-02-08
 status: stable
 ---
@@ -130,6 +130,15 @@ bugg-filnamnet (`2025-HörlurarMiranonMedia.pdf`) som testet medvetet laddar
 upp. Städas via ägar-manifestet (`tests/support/kastbara-poster.ts`,
 ADR-060 punkt 3), inte setup-purgen — testet självstädar redan i sitt eget
 `finally`-block, manifestet är ett säkerhetsnät för en kraschad körning.
+
+Och Resends KANONISKA testadress `delivered@resend.dev` (RESEND_TEST_ADDRESSES,
+`_shared/send-bulk.ts`) i Anmälningars `E-post` (TASK-465, granskning runda 1
+FYND 2) — `send-action-email-gemensam-bilaga.staging.test.ts`s (TASK-452) EGEN
+sentinel-klass. Adressen matchar VARKEN `create-registration-sentineler`s
+`create-test+…@staging.test`-formel eller dess exakt-mönster, så en EGEN, smal
+exakt-literal-target (`send-action-email-gemensam-bilaga-registration-sentineler`)
+krävs vid sidan av ägar-manifestet — utan den fetchar filterByFormula raden
+aldrig server-side, och registrering i manifestet ensamt räcker inte.
 
 Uppräkningen hålls komplett mot `.purge-staging-policy.json` av
 `scripts/check-listparitet.sh` (paret `sentinel-markorer`) — den stod med
@@ -377,9 +386,12 @@ branch→flera-commits→sen-push-flödet är en LÄGRE integrationsfrekvens
 
 Regeln att hålla i är **separationen**: commit-frekvens är gratis (lokal
 historik — committa så ofta du vill), medan push-frekvens kostar en full
-CI-körning plus en plats i staging-mutexen. Pusha därför när en arbetsenhet
-är landningsklar — inte per commit, och inte som slut-dump efter en dags
-lokalt arbete.
+CI-körning. **Inte** en plats i staging-mutexen — sedan A7:5 (`TASK-70.3`)
+skickar `ci.yml`s `suite`-anrop `run_staging: false` VILLKORSLÖST (§
+Landnings-ordningen ovan), så PR-ytan tar aldrig den globala
+`staging-tests`-mutexen; den kontrollen flyttades till post-merge/natt.
+Pusha därför när en arbetsenhet är landningsklar — inte per commit, och
+inte som slut-dump efter en dags lokalt arbete.
 
 ### Landnings-ordningen — mekaniserad som merge queue sedan 2026-07-29
 
@@ -1010,12 +1022,15 @@ stället för den gamla exkluderingen av länkkontrollen.
 dag **ingen** motsvarande "vaktens vakt": faller deras kanaljobb på gh-I/O syns
 det bara i körningens logg. Det är en känd lucka, inte en glömska — de två
 kanalerna är icke-blockerande stående ärenden, och en vakt som larmar
-tilldelat om dem hade återinfört precis den signalblandning delningen tog bort.
+tilldelat om dem hade återinfört precis den signalblandning delningen tog
+bort. Beroendekanalens dödmansgrepp bärs av ett eget kort, `TASK-467`, i
+stället för byggt i `TASK-450.10` (3A): den kanalen blir lastbärande för
+hela beroendesäkerheten FÖRST när `TASK-450.5` landat.
 
-**Invarianten som måste hållas för hand är TVÅDIMENSIONELL** — och den
-formulering som stod här (*"listan ska vara lika med `alarm`-jobbets trigger"*)
-var för grov. Triggrarna och `needs`-listan lever i **jobb-ID**-rymden
-(`suite`, `nightly-metrics`, `kontraktsvakt`); vaktens lista lever i
+**Invarianten som måste hållas är TVÅDIMENSIONELL** — och den formulering som
+stod här (*"listan ska vara lika med `alarm`-jobbets trigger"*) var för grov.
+Triggrarna och `needs`-listan lever i **jobb-ID**-rymden (`suite`,
+`nightly-metrics`, `kontraktsvakt`); vaktens lista lever i
 **jobb-NAMNPREFIX**-rymden. Kravet har därför två led:
 
 1. **ID-ledet** — de tre kanalernas triggerlistor partitionerar `needs`-listan:
@@ -1026,8 +1041,12 @@ var för grov. Triggrarna och `needs`-listan lever i **jobb-ID**-rymden
    dessutom förbli ett **prefix** till nattsvitens barnjobb.
 
 Bryts ledet 2 ensamt **tystnar vakten för hela produktkanalen** medan en ren
-ID-jämförelse står grön. Ingen grind vaktar något av leden i dag; kravet står
-som prosa i configen och i `nightly.yml`. Följdskivan ska vakta **båda**.
+ID-jämförelse står grön. **Sedan `TASK-450.10` (3A, 2026-09-19) vaktar
+`scripts/check-nattkanal-partition.mjs` BÅDA leden**, CI-wirat i `ci.yml`:s
+lint-jobb på varje PR — härlett ur `nightly.yml` (js-yaml) och ur
+`.nattvakt-kanal-policy.conf` (sourcad i en riktig bash-subprocess, samma
+tolkning nightly-watchdog.yml självt gör), ingen femte handhållen lista.
+Tvåsidigt testbevisad: `scripts/test-check-nattkanal-partition.mjs`.
 
 ### Kontraktsvakten — fixturvärlden mot verkligheten
 
@@ -1150,9 +1169,13 @@ används inte och ska inte införas (flaggan gör `needs`-resultatet till
 
 ### Urvalet i PR-grinden (`TASK-75`)
 
-Klassen kör **alla 18 spec-filer** i normalfallet. Rör din diff **enbart
-acceptance-spec-filer** — plus filer i docs-klassen, till exempel kortet du
-bockar av — kör PR-grinden i stället **bara de spec-filer du ändrat**.
+Klassen kör **hela acceptance-svitens spec-filer** i normalfallet — räkna
+aktuellt antal med `npx playwright test --project=acceptance --list` i
+stället för att lita på ett hårdkodat tal här; svitens storlek växer
+(TASK-106-felklassen: ett kopierat tal blir fel utan att någon märker det).
+Rör din diff **enbart acceptance-spec-filer** — plus filer i docs-klassen,
+till exempel kortet du bockar av — kör PR-grinden i stället **bara de
+spec-filer du ändrat**.
 
 Mekaniken är `scripts/acceptance-urval.sh`, kallad av `ci.yml`:s
 `acceptance-urval`-steg och skickad vidare som `acceptance_selection` till

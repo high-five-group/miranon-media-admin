@@ -216,7 +216,8 @@ jobs:
               # bärare. Att lägga "Larm vid röd natt" i listan hade fixat ett
               # smalare fall med större yta: listan hade slutat vara lika med
               # alarm-triggern, vilket är precis den invariant configens
-              # § INVARIANT och följdskivan 3A ska hålla.
+              # § INVARIANT beskriver och scripts/check-nattkanal-partition.mjs
+              # vaktar CI-wirat sedan TASK-450.10 (3A).
               # Motsatt riktning: ingen ny falsklarms-risk, eftersom ett
               # produktjobb måste ha en conclusion UTANFÖR den ofarliga mängden
               # för att räknas — och varje sådan ger `result` failure/cancelled.
@@ -225,7 +226,14 @@ jobs:
               # och beroendekanalen har ingen motsvarande "vaktens vakt".
               # Faller deras kanaljobb på gh-I/O syns det bara i körningens
               # logg. Det är en KÄND lucka, inte en glömska — se
-              # CONTRIBUTING.md § Nattnätet.
+              # CONTRIBUTING.md § Nattnätet. Beroendekanalens dödmansgrepp
+              # bärs av ett eget kort, TASK-467 (rättat 2026-09-19 — flyttad
+              # bort från en AC på TASK-450.5 sedan TASK-450.10 och
+              # TASK-450.5 visade sig redigera samma kortfil), i stället för
+              # byggd här (TASK-450.10, 3A): den kanalen blir lastbärande för
+              # hela beroendesäkerheten FÖRST när TASK-450.5 landat, och en
+              # vakt byggd före det hade vaktat en icke-lastbärande kanal —
+              # se ADR-082 § Updates 2026-09-18 "Öppet, ej avgjort här".
               #
               # FAIL-CLOSED: kan jobblistan inte hämtas eller tolkas larmar
               # vakten ändå, med det öppet skrivet i orsaken. "Vet inte" får

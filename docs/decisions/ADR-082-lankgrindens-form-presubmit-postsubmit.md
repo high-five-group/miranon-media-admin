@@ -326,14 +326,24 @@ triggerlistorna partitionerar `needs`-listan, och **(ii)** varje jobb-ID i
 `alarm`-triggern mappar till ett `name:` som något av listans prefix faktiskt
 matchar. Bryts (ii) ensamt tystnar vakten för hela produktkanalen medan en ren
 ID-mängdjämförelse står grön — prefix-formen gör ledet extra känsligt, eftersom
-`Nattlig fullsvit` måste förbli ett prefix till nattsvitens barnjobb. Kravet står
-som prosa i båda filerna; följdskivan ska vakta **båda** leden. Ingen mekanism
-vaktar någotdera i dag (ADR-083).
+`Nattlig fullsvit` måste förbli ett prefix till nattsvitens barnjobb.
+
+**Mekaniserad sedan `TASK-450.10` (3A, 2026-09-19):**
+`scripts/check-nattkanal-partition.mjs` vaktar BÅDA leden, CI-wirat i
+`ci.yml`:s lint-jobb på varje PR, härlett ur `nightly.yml` och
+`.nattvakt-kanal-policy.conf` — ingen femte handhållen lista. Tvåsidigt
+testbevisad (`scripts/test-check-nattkanal-partition.mjs`), inklusive
+mutationsprov mot en kopia av det riktiga `nightly.yml`. Fram till dess stod
+kravet bara som prosa i båda filerna (ADR-083).
 
 **Rödhet uttrycks som negation, inte som uppräkning.** Vaktens villkor löd först
 `conclusion == "failure" or "cancelled"` — ofarligt under denylisten, ett tyst
-hål under allowlisten. `.jobs[].conclusion` har nio värden medan
-`needs.<jobb>.result` har fyra, så ett produktjobb med `timed_out` gav
+hål under allowlisten. `.jobs[].conclusion` har åtta värden (GitHubs
+förstapartsreferens för workflow-jobs: `success` · `failure` · `neutral` ·
+`cancelled` · `skipped` · `timed_out` · `action_required` · `null` — `stale`
+hör till check-runs-referensen, inte till detta fält, TASK-450.1 runda 3
+granskningens fynd 1) medan `needs.<jobb>.result` har fyra, så ett
+produktjobb med `timed_out` gav
 `result: failure` (alarm fyrade) utan att vakten såg jobbet som rött. Villkoret
 är därför en negation av en liten ofarlig mängd (`success`, `skipped`,
 `neutral`; `null` = pågår hanteras separat), vilket gör varje framtida
@@ -342,6 +352,12 @@ conclusion-värde rött som default i stället för tyst.
 **Vad som fortfarande saknar vakt, öppet skrivet:** bokförings- och
 beroendekanalen har ingen "vaktens vakt". `lankrota` har det inte heller, och har
 aldrig haft det — beslut 4 byggde kanalen, inte en vakt över den.
+Beroendekanalens dödmansgrepp bärs av ett eget kort, `TASK-467`
+(rättat 2026-09-19 — flyttades bort från en AC på `TASK-450.5` sedan
+`TASK-450.10` och `TASK-450.5` visade sig redigera samma kortfil, en
+verklig merge-konflikt), i stället för byggt i `TASK-450.10`: kanalen
+blir lastbärande för hela beroendesäkerheten först när `TASK-450.5`
+landat, se § Öppet ovan.
 
 #### Bevis-läget är hermetiskt sedan samma runda
 

@@ -4,6 +4,7 @@ title: 'Skiva: K1 (b) — beroendegranskningen villkoras mot beroendeträdet'
 status: To Do
 assignee: []
 created_date: '2026-09-18 09:53'
+updated_date: '2026-09-19 00:00'
 labels:
   - ready-for-agent
 dependencies:
@@ -25,17 +26,25 @@ Täcker användarberättelser: 14, 15
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 (i) Varje ändring som rör beroendeträdet granskas som i dag, på ändringsförslaget, med blockerande verkan — bevisat tvåsidigt
-- [ ] #2 (ii) Hela trädet granskas varje natt med strängare tröskel än dagsviten, i egen kanal (N2 landad och verifierad)
-- [ ] #3 (iii) Jobbet står kvar i paraplyets needs-lista; ett rött resultat blockerar fortfarande
-- [ ] #4 (iv) ADR-028:s konventionsflöde för undantag är orört
-- [ ] #5 Den medvetna diff-oberoende-kommentaren från TASK-395 är ersatt med det nya beslutet och dess skäl; paritetspolicyn och verify:ci-parity gröna
+- [x] #1 (i) Varje ändring som rör beroendeträdet granskas som i dag, på ändringsförslaget, med blockerande verkan — bevisat tvåsidigt
+- [x] #2 (ii) Hela trädet granskas varje natt med strängare tröskel än dagsviten, i egen kanal (N2 landad och verifierad)
+- [x] #3 (iii) Jobbet står kvar i paraplyets needs-lista; ett rött resultat blockerar fortfarande
+- [x] #4 (iv) ADR-028:s konventionsflöde för undantag är orört
+- [x] #5 Den medvetna diff-oberoende-kommentaren från TASK-395 är ersatt med det nya beslutet och dess skäl; paritetspolicyn och verify:ci-parity gröna
 - [ ] #6 Review-utlåtandets risknivå är visad för Marcus före armering
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+AC #1 BEVISAT TVÅSIDIGT, skarpt via GitHub Actions 2026-09-18: (a) PR #2553 (denna PR, rör INTE package.json/package-lock.json/audit-ci.jsonc) — jobbet 'Audit dependencies (audit-ci)' conclusion=skipped (run 35403597247, https://github.com/high-five-group/miranon-media-admin/actions/runs/35403597247), CI Passed or Skipped=success. (b) Kastbar verifieringsgren byggd ovanpå samma commit + en kommentarrad i audit-ci.jsonc — jobbet KÖRDE, conclusion=success (run 35403631029, https://github.com/high-five-group/miranon-media-admin/actions/runs/35403631029), 27 s väggklocka. Verifieringsgrenen och dess PR (#2554) är stängda och raderade efter mätningen (aldrig mergade). AC #6 kvarstår obockad — orkestrerarens review-grinds-mandat.
+
+Review-grindens runda 1 (risk medel, granskad SHA 009516de) FIX-ORDER besvarad, ny head a9ba3d14: (1) changed-deps-steget (ci.yml) utökat till att även vakta scripts/audit-ci-med-degradering.sh, scripts/test-audit-degradering.sh, .github/workflows/ci.yml, .github/workflows/ci-suite.yml — tvåsidigt bevisat skarpt (run 35407259425: enbart skriptändring ⇒ audit kör; run 35406841339: denna PR rör nu ci.yml ⇒ audit kör). (2) .ci-parity-policy.json rad ~31 'stale 41'-talet ersatt med en pekare till svitens egen slutrad (TASK-106). (3) 'Kvarstående risk'-mening om beroendevarning-kanalens saknade watchdog tillagd i PR-kroppen. OBS: jag av misstag skrev över PR-kroppens Riskbedömnings-sektion med gh pr edit --body-file (helersättning) — återställd BYTE-FÖR-BYTE via GraphQL userContentEdits-historik (inget innehåll ändrat), men sektionen är nu STALE mot ny head (granskadSha 009516de, aktuell head a9ba3d14) och väntar på runda 2 från orkestreraren.
+<!-- SECTION:NOTES:END -->
