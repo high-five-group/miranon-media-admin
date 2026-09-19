@@ -163,6 +163,23 @@
 #   T82 Markör-matchningen (RÖTT/DIRTY/KANDIDAT) förblir SKIFTLÄGES-
 #       KÄNSLIG — orörd, skild mekanism från statsfilnamnet              → 0
 #
+# T83–T89 (review runda 5 UPPFÖLJNING, samma dag, Marcus-beslut
+# 2026-09-19). Bygg-agenten upptäckte själv under runda 5:s revision att
+# den DÅ gällande regexen (^[A-Za-z0-9._-]{1,64}$) gjorde `--session --alla`
+# GILTIGT — "--alla" matchade (bindestreck/bokstäver tillåtna) och
+# konsumerades TYST som sessions-ID. Byggt SAMMA dag på order, innan nästa
+# granskningsrunda: HEARTBEAT_SESSION_ID_REGEX skärpt till
+# ^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$ — FÖRSTA tecknet måste vara
+# alfanumeriskt.
+#   T83 --session --alla → exit 64 (huvudfyndet — var GILTIGT innan)   → 64
+#   T84 --session -x → exit 64 (börjar med "-")                        → 64
+#   T85 --session . (EN punkt) → exit 64 (första tecknet ej alfanum.)  → 64
+#   T86 --session a (EN bokstav) → giltigt, körs normalt               → 0
+#   T87/T87b Session-ID på EXAKT 64 tecken (övre gränsen) → giltigt     → 0
+#   T88/T88b Session-ID på 65 tecken (EN över gränsen) → exit 64        → 64
+#   T89 --session _S126 (understreck FÖRST) → exit 64 (skärpningen
+#       gäller alla tre "ej alfanumeriskt"-tecken, inte bara "-")       → 64
+#
 # Test-isolering: /tmp/task119-test-heartbeat-svep/ med en gh-stub som svarar
 # ur ett scenario-katalog (main-sha / rows / fail-mainsha / fail-prlist).
 # INGEN nätverkstrafik, inget riktigt gh-anrop, ingen ändring i real-repot,
@@ -212,7 +229,9 @@
 # sanering, session_id_sanitize() BORTTAGEN, per-session-statsfil-städning) ·
 # TASK-462 fix-runda 4 (2026-09-19, review runda 5: T64/T66–T72 exit-kod
 # 2→64 + T75–T82 nya — bitmask-kollision rättad, saknat flaggvärde fångat,
-# skiftlägesokänsligt statsfilnamn)
+# skiftlägesokänsligt statsfilnamn) · TASK-462 fix-runda 5 (2026-09-19,
+# review runda 5 uppföljning, samma dag: T83–T89 nya — FÖRSTA tecknet i
+# session-ID måste vara alfanumeriskt, "--session --alla" avvisas)
 
 set -uo pipefail
 
@@ -1459,6 +1478,73 @@ set_rows '915\tfalse\tBLOCKED\ttrue\tFAILURE\tfalse\toctocat\t<!-- heartbeat-sve
 NOT_EXPECT_OUT="RÖTT — PR #915"
 run_case "T82 Markör \"S126\" (versaler) matchas INTE av --session \"s126\" (gemener) — orörd, skild mekanism" 0 - \
     bash ./scripts/heartbeat-svep.sh --once --session s126
+
+# ============================================================
+# T83–T89 — FÖRSTA TECKNET MÅSTE VARA ALFANUMERISKT (review runda 5
+# UPPFÖLJNING, samma dag, Marcus-beslut 2026-09-19). Upptäckt av
+# bygg-agenten själv under FÖREGÅENDE rundas revision, byggt NU (innan
+# nästa granskningsrunda) på orkestrerarens order: den GAMLA regexen
+# (^[A-Za-z0-9._-]{1,64}$, valfritt tecken var som helst) gjorde
+# `--session --alla` GILTIGT — "--alla" matchade regexen (bindestreck och
+# bokstäver är tillåtna tecken) och konsumerades TYST som sessions-ID i
+# stället för att avvisas som "flaggan --alla, inget värde gavs".
+# HEARTBEAT_SESSION_ID_REGEX är nu ^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$ —
+# FÖRSTA tecknet [A-Za-z0-9], INGET av "-"/"."/"_" — och
+# ENDAST_PUNKTER_REGEX-kontrollen (T71) är sedan denna skärpning
+# STRUKTURELLT REDUNDANT (ett rent punkt-ID kan aldrig ha ett alfanumeriskt
+# FÖRSTA tecken), men behålls och testas ändå.
+echo ""
+reset_scen
+EXPECT_ERR="SER UT SOM EN FLAGGA"
+run_case "T83 --session --alla → exit 64 (var tidigare GILTIGT — huvudfyndet denna runda)" 64 - \
+    bash ./scripts/heartbeat-svep.sh --once --session --alla
+
+reset_scen
+EXPECT_ERR="SER UT SOM EN FLAGGA"
+run_case "T84 --session -x → exit 64 (börjar med \"-\")" 64 - \
+    bash ./scripts/heartbeat-svep.sh --once --session -x
+
+reset_scen
+EXPECT_ERR="OGILTIGT --session-ID"
+run_case "T85 --session . (EN punkt) → exit 64 (första tecknet \".\", inte alfanumeriskt)" 64 - \
+    bash ./scripts/heartbeat-svep.sh --once --session .
+
+reset_scen
+NOT_EXPECT_OUT="OGILTIGT --session-ID"
+run_case "T86 --session a (EN bokstav, kortast giltiga formen) → körs normalt" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session a
+
+reset_scen
+printf -v ID_64 'a%.0s' {1..64}
+NOT_EXPECT_OUT="OGILTIGT --session-ID"
+run_case "T87 Session-ID på EXAKT 64 tecken (övre gränsen) → giltigt, körs normalt" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session "${ID_64}"
+if [[ "${#ID_64}" -eq 64 ]]; then
+    printf '  ✓ T87b  testets eget ID är verifierat 64 tecken\n'; PASSED=$((PASSED+1))
+else
+    printf '  ✗ T87b  testets eget ID är %s tecken, inte 64 — testet mäter fel gräns\n' "${#ID_64}"; FAILED=$((FAILED+1))
+fi
+
+reset_scen
+printf -v ID_65 'a%.0s' {1..65}
+EXPECT_ERR="OGILTIGT --session-ID"
+run_case "T88 Session-ID på 65 tecken (EN över gränsen) → exit 64" 64 - \
+    bash ./scripts/heartbeat-svep.sh --once --session "${ID_65}"
+if [[ "${#ID_65}" -eq 65 ]]; then
+    printf '  ✓ T88b  testets eget ID är verifierat 65 tecken\n'; PASSED=$((PASSED+1))
+else
+    printf '  ✗ T88b  testets eget ID är %s tecken, inte 65 — testet mäter fel gräns\n' "${#ID_65}"; FAILED=$((FAILED+1))
+fi
+
+# T89 — differentierar T84 (börjar med "-") från T71 (består ENBART av
+# punkter): ett ID som börjar med "_" (understreck, tillåtet tecken på
+# POSITION 2+ men INTE som första tecken) ska ocksä avvisas — bevisar att
+# skärpningen gäller GENERELLT för alla tre "inte alfanumeriskt"-tecknen
+# som FÖRSTA position, inte bara "-".
+reset_scen
+EXPECT_ERR="OGILTIGT --session-ID"
+run_case "T89 --session _S126 (understreck FÖRST) → exit 64" 64 - \
+    bash ./scripts/heartbeat-svep.sh --once --session _S126
 
 printf '\ntest-heartbeat-svep: %s passerade, %s failade\n' "${PASSED}" "${FAILED}"
 [[ "${FAILED}" -eq 0 ]] || exit 1

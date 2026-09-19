@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-18 11:53'
-updated_date: '2026-09-19 00:34'
+updated_date: '2026-09-19 00:43'
 labels:
   - ready-for-agent
 dependencies: []
@@ -226,4 +226,20 @@ Runda 4 (risk medel; 111/111 och shellcheck 0 bekräftade av granskaren) fann tr
 **Sidofynd, städat under samma penna:** upptäckte och rättade två pre-existerande felmärkningar i PR-kroppens egna rubriker från tidigare rundor ("Fix-runda 2 (review runda 3, ...)" skulle vara "review runda 2" — mitt eget skrivfel från en tidigare runda). Rättat till korrekt 1:1-numrering (Fix-runda N ↔ review runda N).
 
 **Kostnad:** PR-kroppens § "Kostnad i två mått" utökad med en femte rad (121 fall, 3 lokala körningar: 13,248s/13,297s/13,204s, snitt ≈13,25s — ovanligt samstämmiga jämfört med tidigare rundors bredare spridning).
+
+## Fix-runda 5 uppföljning (samma dag, Marcus-beslut 2026-09-19)
+
+Under fix-runda 4:s egen revision upptäckte jag (bygg-agenten) att `--session --alla` tolkas som ett GILTIGT sessions-ID — "--alla" matchade den då gällande `HEARTBEAT_SESSION_ID_REGEX` (`^[A-Za-z0-9._-]{1,64}$`, valfritt tecken var som helst) och konsumerades TYST som värdet i stället för att kännas igen som "flaggan --alla, inget värde gavs". Rapporterade det öppet som "upptäckt men EJ byggt, utanför denna rundas scope". Orkestreraren beordrade: bygg det NU, innan nästa granskningsrunda, för att undvika en hel extra rundtripp (skulle annars blivit "runda 6").
+
+**BYGGT.** `HEARTBEAT_SESSION_ID_REGEX` skärpt från `^[A-Za-z0-9._-]{1,64}$` till `^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$` — FÖRSTA tecknet måste vara en bokstav/siffra, aldrig `-`/`.`/`_`. Total längdgräns (1–64 tecken) OFÖRÄNDRAD. `HEARTBEAT_SESSION_ID_ENDAST_PUNKTER_REGEX` (avvisar rena punkt-ID som "..") är sedan skärpningen STRUKTURELLT REDUNDANT (ett rent punkt-ID kan aldrig ha ett alfanumeriskt första tecken) men behållen och testad (T71) som explicit andra spärr — dokumenterat som sådan i koden, inte tyst borttagen.
+
+Felmeddelandet är skräddarsytt: ett ID som börjar med `-` får texten "värdet SAKNAS eller SER UT SOM EN FLAGGA" i stället för bara en regex-citering — matchar uppdragets egen formulering.
+
+**Testsvit:** scripts/test-heartbeat-svep.sh 121 → 130 fall (9 nya: T83 `--session --alla`, T84 `--session -x`, T85 `--session .` enpunkts-fall, T86 `--session a` giltigt enbokstavsfall, T87/T87b 64-tecken-gränsen giltig, T88/T88b 65-tecken-gränsen ogiltig, T89 `--session _S126` understreck-först), 0 failade, exit 0. shellcheck --severity=style --enable=all mot CI:s fulla filsvit: exit 0, 0 diagnoser. bash -n scripts/heartbeat-svep.sh: syntax OK.
+
+**Differentialbevis:** T83/T84/T89 fälls DETERMINISTISKT mot den orörda föregående koden (git show f01f35c1c3d888107b4b243dbfd7ee9fbacb5b58:scripts/heartbeat-svep.sh) — 127 passerade / 3 failade i en isolerad scratchpad-kopia — och passerar samtliga mot den fixade koden (130/0). T85/T86/T87/T88 förblir OFÖRÄNDRADE mot den gamla koden (de testar egenskaper — enpunktsavvisning, kortaste giltiga längd, 64/65-teckengränsen — som INTE ändrades av denna skärpning, bara vad som är giltigt på FÖRSTA positionen).
+
+**Rörda filer:** scripts/heartbeat-svep.sh (HEARTBEAT_SESSION_ID_REGEX skärpt, skräddarsytt felmeddelande för ID som börjar med "-", § SESSIONSMEDVETET SVEP-headern utökad, --help-range 61,298 omräknad), scripts/test-heartbeat-svep.sh (T83-T89 nya). Riskbedömnings-sektionen i PR-kroppen rördes INTE (verifierat byte-identisk pre/post via diff).
+
+**Kostnad:** PR-kroppens § "Kostnad i två mått" utökad med en sjätte rad (130 fall, 3 lokala körningar: 13,124s/13,154s/13,658s, snitt ≈13,31s — fix-rundans EGET tillskott ≈+0,06s, försumbart, konsekvent med att detta är en ren valideringsskärpning utan nya externa processanrop per testfall).
 <!-- SECTION:NOTES:END -->

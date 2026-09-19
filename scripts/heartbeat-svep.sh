@@ -230,9 +230,15 @@
 #   tvärsessions-tystnad fixen skulle ta bort (och PR:ens "FULLSTÄNDIGT
 #   löst"-formulering var därmed en överdrift, ADR-083). RÄTTAT, enklare och
 #   FAIL-CLOSED i stället för mer sanering: `--session <ID>` VALIDERAS mot
-#   HEARTBEAT_SESSION_ID_REGEX (^[A-Za-z0-9._-]{1,64}$) OCH mot
+#   HEARTBEAT_SESSION_ID_REGEX (^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$ — FÖRSTA
+#   tecknet MÅSTE vara en bokstav/siffra, aldrig `-`/`.`/`_`, SKÄRPT review
+#   runda 5 sedan den GAMLA formen gjorde `--session --alla` giltigt: "--alla"
+#   matchade regexen och konsumerades tyst som sessions-ID i stället för att
+#   kännas igen som "flaggan --alla, inget värde gavs") OCH mot
 #   HEARTBEAT_SESSION_ID_ENDAST_PUNKTER_REGEX (avvisar ID som består ENBART
-#   av punkter, t.ex. "." eller "..") DIREKT efter arg-parsingen, INNAN
+#   av punkter, t.ex. "." eller ".." — STRUKTURELLT REDUNDANT sedan
+#   FÖRSTA-tecken-skärpningen, punkt är inte alfanumeriskt, men behållen
+#   som explicit, testad andra spärr) DIREKT efter arg-parsingen, INNAN
 #   något svep sker. Ett ogiltigt ID avslutar via `die()` med exit **64**
 #   (RÄTTAT review runda 5, Marcus-beslut 2026-09-19 — ett tidigare
 #   hemmagjort `exit 2` KOLLIDERADE med bitmask-koden DIRTY, se §
@@ -709,6 +715,7 @@ HEARTBEAT_SESSION_MARKER_REGEX='<!-- heartbeat-svep:session:[^[:space:]]+ -->'
 session_marker() { printf '<!-- heartbeat-svep:session:%s -->' "$1"; }
 
 # HEARTBEAT_SESSION_ID_REGEX/-ENDAST_PUNKTER_REGEX — review runda 4
+# (Marcus-beslut 2026-09-19), FÖRSTA TECKNET SKÄRPT review runda 5
 # (Marcus-beslut 2026-09-19). Ersätter session_id_sanitize() (review runda
 # 3, BORTTAGEN här): granskningen fann att saneringen kunde mappa OLIKA
 # ID:n till SAMMA filnamn ("S 126" och "S/126" ⇒ båda "S_126"), vilket tyst
@@ -719,9 +726,28 @@ session_marker() { printf '<!-- heartbeat-svep:session:%s -->' "$1"; }
 # oavsett vilka andra tecken som är tillåtna), avvisas HELT (se
 # valideringsblocket efter argument-parsningen nedan) — körningen fortsätter
 # aldrig till att bygga ett filnamn av ett ID som inte är exakt detta.
-# 1–64 tecken: samma obehagligt-långt-argument-skydd som HEARTBEAT_PR_LIMIT,
-# ingen mätt motivering för just 64 utöver "generöst men begränsat".
-HEARTBEAT_SESSION_ID_REGEX='^[A-Za-z0-9._-]{1,64}$'
+#
+# FÖRSTA TECKNET MÅSTE VARA ALFANUMERISKT (review runda 5 fynd, upptäckt av
+# BYGG-agenten under runda 4:s eget arbete, byggt samma runda): den GAMLA
+# formen (`^[A-Za-z0-9._-]{1,64}$`, valfritt tecken överallt) gjorde
+# `--session --alla` giltigt — `"--alla"` matchade regexen (bindestreck och
+# bokstäver är tillåtna tecken) och konsumerades TYST som sessions-ID i
+# stället för att kännas igen som "flaggan --alla, ingen värde gavs".
+# REGEXEN delas nu i "FÖRSTA tecknet" ([A-Za-z0-9], INGET av `. _ -`) plus
+# "0–63 EFTERFÖLJANDE tecken" ([A-Za-z0-9._-], samma tillåtna mängd som
+# innan) — den totala längdgränsen (1–64 tecken) är OFÖRÄNDRAD, bara VAR i
+# strängen bindestreck/punkt/understreck får förekomma är skärpt. Ett ID
+# som börjar med `-` kan då ALDRIG förväxlas med en flagga som tar det som
+# sitt värde, eftersom det aldrig blir ett GILTIGT ID att konsumera.
+# ENDAST_PUNKTER_REGEX-kontrollen är efter denna skärpning STRUKTURELLT
+# REDUNDANT (ett rent punkt-ID misslyckas redan på FÖRSTA-tecken-kravet,
+# eftersom "." inte är alfanumeriskt) — behållen ändå, explicit och
+# testad (T71), som en läsbar, självdokumenterande andra spärr mot exakt
+# den risken, inte för att den längre är den ENDA vägen dit.
+# 1–64 tecken totalt: samma obehagligt-långt-argument-skydd som
+# HEARTBEAT_PR_LIMIT, ingen mätt motivering för just 64 utöver "generöst
+# men begränsat".
+HEARTBEAT_SESSION_ID_REGEX='^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$'
 HEARTBEAT_SESSION_ID_ENDAST_PUNKTER_REGEX='^\.+$'
 
 # pr_har_session_marker <body> <session> — sant om <body> bär EXAKT den
@@ -916,10 +942,14 @@ while [[ $# -gt 0 ]]; do
         # PER-SESSION-STATSFILERNAS ÅLDER-stycket), 61,269 → 61,286 i
         # TASK-462 fix-runda 4 (review runda 5: exit 64 i stället för
         # bitmask-kolliderande exit 2 för ogiltigt --session-ID, + §
-        # SKIFTLÄGESOKÄNSLIGT-stycket för statsfilnamnet);
+        # SKIFTLÄGESOKÄNSLIGT-stycket för statsfilnamnet), 61,286 → 61,298 i
+        # TASK-462 fix-runda 5 (review runda 5 uppföljning, samma dag:
+        # HEARTBEAT_SESSION_ID_REGEX skärpt så FÖRSTA tecknet måste vara
+        # alfanumeriskt — "--session --alla" gick tidigare igenom som ett
+        # "giltigt" ID);
         # scripts/test-heartbeat-svep.sh T24 fäller om raden
         # avviker från blockets faktiska start/slut.
-        -h|--help)  sed -n '61,286p' "$0"; exit 0 ;;
+        -h|--help)  sed -n '61,298p' "$0"; exit 0 ;;
         *) die "okänt argument: $1" ;;
     esac
 done
@@ -956,7 +986,17 @@ done
 if [[ "${SESSION_GIVEN}" -eq 1 ]]; then
     if [[ ! "${SESSION}" =~ ${HEARTBEAT_SESSION_ID_REGEX} ]] \
        || [[ "${SESSION}" =~ ${HEARTBEAT_SESSION_ID_ENDAST_PUNKTER_REGEX} ]]; then
-        die "OGILTIGT --session-ID '${SESSION}' — måste matcha ${HEARTBEAT_SESSION_ID_REGEX} (1-64 tecken, endast [A-Za-z0-9._-]) och INTE bestå enbart av punkter. Körningen avbröts, inget svep skedde."
+        # Skräddarsytt felmeddelande för det VANLIGASTE ogiltiga fallet
+        # (review runda 5): ett ID som börjar med "-" är nästan alltid
+        # symtomet på en GLÖMD flagga-värde-relation (t.ex. "--session
+        # --alla", där "--alla" av misstag konsumerades som värdet) snarare
+        # än ett faktiskt avsett sessions-ID — meddelandet säger det rakt
+        # ut i stället för att bara citera regexen.
+        if [[ "${SESSION}" == -* ]]; then
+            die "OGILTIGT --session-ID '${SESSION}' — värdet SAKNAS eller SER UT SOM EN FLAGGA (börjar med '-'). Ett giltigt session-ID måste börja med en bokstav eller siffra, aldrig med '-'/'.'/'_' (${HEARTBEAT_SESSION_ID_REGEX}). Körningen avbröts, inget svep skedde."
+        else
+            die "OGILTIGT --session-ID '${SESSION}' — måste matcha ${HEARTBEAT_SESSION_ID_REGEX} (första tecknet en bokstav/siffra, därefter 0-63 tecken till ur [A-Za-z0-9._-], 1-64 tecken totalt) och INTE bestå enbart av punkter. Körningen avbröts, inget svep skedde."
+        fi
     fi
 fi
 
