@@ -50,6 +50,156 @@
 #   T27b HEARTBEAT_EXEMPT_AUTHORS definierad men TOM (()) → samma
 #        fail-open, samma larm                                     → bit 4 satt
 #
+# T40–T55 (TASK-462, SESSIONSMEDVETET SVEP): kortets AC #1/#2 kräver
+# tvåsidigt bevis per LARM-väg (RÖTT/DIRTY/KANDIDAT) — en främmande PR tyst,
+# en egen PR larmar — plus AC #3 (omärkt-notisen), AC #4 (dependabot) och
+# AC #8 (bakåtkompatibilitet, TIPS-raden).
+#   T40 RÖTT, EGEN session-markör                                → larmar
+#   T41 RÖTT, FRÄMMANDE session-markör (annan ID)  i sessionsläge → TYST
+#   T42 SAMMA främmande RÖD PR, men --alla                        → larmar
+#   T43 DIRTY, EGEN session-markör                                → larmar
+#   T44 DIRTY, FRÄMMANDE session-markör  i sessionsläge           → TYST
+#   T45 KANDIDAT, EGEN session-markör                             → larmar
+#   T46 KANDIDAT, FRÄMMANDE session-markör i sessionsläge         → TYST
+#   T47 OMÄRKT PR, sessionsläge, kallstart-intervall → ALLTID-PÅ-notis,
+#       syns ÄVEN under --quiet, INGEN exit-bit                    → 0
+#   T48 SAMMA omärkta PR, direkt igen (glesning) → tyst denna gång  → 0
+#   T49 OMÄRKT PR med author=dependabot (exempt) → EXKLUDERAS ur
+#       bucketen, ingen notis (0 fynd)                              → 0
+#   T50 BAKÅTKOMPATIBILITET: ingen --session/--alla, PR med en FRÄMMANDE
+#       markör i kroppen → larmar ÄNDÅ (dagens beteende är okänsligt
+#       för markörer helt och hållet)                              → larmar
+#
+# T51–T55 UPPDATERADE, T56–T61 NYA (review runda 1, Marcus-beslut
+# 2026-09-19). Fynd 1: TIPS-raden syntes aldrig via Monitor (bara stdout blir
+# notifikationer) — flyttad från stderr till alltid_pa()/stdout, taktad av
+# HEARTBEAT_OMARKERAD_INTERVALL. Fynd 2: en HEARTBEAT_EXEMPT_AUTHORS-
+# författares RÖTT/DIRTY blev osynlig i sessionsläge (sessionsfiltreringens
+# "ingen markör"-gren `continue`:ade förbi RÖTT/DIRTY-klassningen) — nu ett
+# eget, glest besked, aldrig en bitmask-bit för sessionen.
+#   T51 TIPS-raden på STDOUT (kallstart, ingen --session/--alla)     → syns
+#   T51b TIPS-raden syns INTE på stderr (positivt bevis på flytten)  → tyst
+#   T51c TIPS-raden STRYPS — samma anrop direkt igen                → tyst
+#   T52 TIPS-raden UTEBLIR HELT (stdout OCH stderr) när --session ges → tyst
+#   T53 TIPS-raden UTEBLIR HELT när --alla ges                        → tyst
+#   T54 BÅDA FLAGGOR samtidigt (--session X --alla) → --alla VINNER
+#       (samma främmande-PR-scenario som T42, ska larma precis som --alla
+#       ensamt)                                                     → larmar
+#   T55 --help visar § SESSIONSMEDVETET SVEP och de nya flaggorna     → syns
+#   T56 Dependabot RÖTT, OMÄRKT, sessionsläge → strypt besked, INGEN
+#       bitmask-bit för sessionen (dagens beteende var HELT TYST)     → 0
+#   T57 Dependabot DIRTY, OMÄRKT, sessionsläge → samma strypta kanal   → 0
+#   T58 SAMMA dependabot-RÖTT-PR, direkt igen (glesning) → tyst        → 0
+#   T59 SAMMA dependabot-RÖTT-PR, men --alla → dagens beteende
+#       OFÖRÄNDRAT (vanlig RÖTT-alarm, ingen "UNDANTAGEN FÖRFATTARE"-
+#       rad)                                                        → larmar
+#   T60 Dependabot GRÖN (SUCCESS/CLEAN), OMÄRKT, sessionsläge → INGEN
+#       dependabot-status-notis (0 fynd, T49:s scenario, utökad kontroll) → 0
+#   T61 Kod-kommentaren (§ SESSIONSMEDVETET SVEP) nämner INTE längre att
+#       dependabot "redan har sin egen hantering" för RÖTT/DIRTY          → syns
+#
+# T62–T65 (review runda 3, Marcus-beslut 2026-09-19): de strypta notisernas
+# state-filer taktades mot en MASKIN-GLOBAL STATE_DIR — S126 sveper först,
+# stämplar filen, S127:s eget svep ser ALDRIG sin egen förstagångs-notis.
+# Fixat: --session <ID> ⇒ statsfilen bär sessionens ID i namnet.
+#   T62 Två sessioner (S126/S127), SAMMA STATE_DIR: dependabot-notisen →
+#       BÅDA ser den EN gång, stryps sedan VAR FÖR SIG                    → 0
+#   T63 Samma tvåsidiga bevis för den omärkta-PR-notisen                  → 0
+#   T64 OMSKRIVEN i review runda 4 — se T66–T72 nedan (session_id_sanitize()
+#       ersatt av validering; farliga ID avvisas nu i stället för saneras)
+#   T65 UTAN --session (TIPS): dagens GLOBALA beteende oförändrat — en
+#       andra körning som delar STATE_DIR stryps ÄNDÅ (ingen session-ID
+#       att skopa mot, se KÄND BEGRÄNSNING)                        → tyst
+#
+# T66–T74 (review runda 4, EXIT-KOD RÄTTAD I REVIEW RUNDA 5, Marcus-beslut
+# 2026-09-19): review runda 3 fann att session_id_sanitize() kunde mappa
+# OLIKA ID:n till SAMMA filnamn ("S 126"/"S/126" ⇒ båda "S_126") — tyst
+# återinförd tvärsessions-tystnad, och PR:ens "FULLSTÄNDIGT löst"
+# överclaimade. Fixat: --session <ID> VALIDERAS (^[A-Za-z0-9._-]{1,64}$,
+# aldrig enbart punkter) i stället för saneras; ogiltigt ⇒ **exit 64**
+# (INTE 2 — review runda 5 fynd 1: exit 2 kolliderade med bitmask-koden
+# DIRTY), via die() (ENDAST stderr, INTE stdout — samma konvention som
+# REPO/INTERVAL/TIMEOUT), fail-closed, ingen körning, ingen fil skriven.
+#   T66 Giltigt ID "S126" (baseline, oförändrat)                      → 0
+#   T67 Giltigt ID MED punkt "s126.resume.2" (punkt tillåten, inte ENDAST
+#       punkter)                                                       → 0
+#   T68 Tomt --session-ID ("") → exit 64, fel ENDAST på stderr
+#   T69 Session-ID med mellanslag ("S 126") → exit 64
+#   T70 Session-ID med snedstreck ("S/126") → exit 64
+#   T71 Session-ID SOM ENBART punkter ("..") → exit 64 (path-traversal-form,
+#       avvisas trots att tecknen i sig är tillåtna)
+#   T72 Session-ID på 65 tecken (över gränsen) → exit 64
+#   T73 INGEN fil skrivs alls i STATE_DIR när ID:t avvisas (fail-closed
+#       betyder "ingen sopning skedde", inte "sopning med ett tomt namn")
+#   T74 Ett giltigt farligt-LIKNANDE-men-TILLÅTET ID ("../")-substräng är
+#       INTE giltigt (redan täckt av T70:s snedstreck), men ett ID som bara
+#       RÅKAR innehålla punkter mitt i sig ("v1.2.3") är giltigt och ger sin
+#       EGEN statsfil, skild från ett annat giltigt ID — kollision omöjlig
+#       per konstruktion (kompletterar T62/T63:s S126≠S127-bevis med ett
+#       tredje, olikt-format par)
+#
+# T75–T82 (review runda 5, Marcus-beslut 2026-09-19). Fynd 1: exit 2 för
+# ogiltigt --session-ID kolliderade med bitmask-DIRTY — rättat till 64 (se
+# T64/T66–T72 ovan). Fynd 2: `--session` (eller vilken annan värde-flagga
+# som helst) som SISTA token fick `shift 2` att fallera, `set -e` avslutade
+# med `shift`s EGEN exit 1 (= bitmask RÖTT) och NOLL utskrift. Fynd 3:
+# "kollision omöjlig per konstruktion" höll på strängnivå men inte på ett
+# skiftlägesokänsligt filsystem (macOS APFS) — "S126"/"s126" är nu MED
+# AVSIKT samma session för statsfilnamnet.
+#   T75 --session sista token (inget värde) → exit 64, INTE 1          → 64
+#   T76 --repo sista token → exit 64                                    → 64
+#   T77 --branch sista token → exit 64                                  → 64
+#   T78 --interval sista token → exit 64                                → 64
+#   T79 --timeout sista token (inget värde) → exit 64                    → 64
+#       (UPPTÄCKT, EJ FIXAT — utanför denna rundas anspråk: "--session
+#       --alla" tolkar "--alla" som ett GILTIGT sessions-ID i stället för
+#       att avvisa det som en flagga utan värde, eftersom "--alla" råkar
+#       matcha HEARTBEAT_SESSION_ID_REGEX. Ingen bitmask-kollision — bara
+#       en tyst felparsning. Rapporterat, inte byggt.)
+#   T80/T80b "S126" och "s126" (SAMMA STATE_DIR) delar MED AVSIKT
+#       statsfil — S126 ser notisen, s126 stryps av S126:s stämpel       → 0
+#   T81/T81b statsfilen är normaliserad till gemener, ingen separat
+#       versal-variant skapas
+#   T82 Markör-matchningen (RÖTT/DIRTY/KANDIDAT) — VÄND i fix-runda 6, se
+#       nedan (var SKIFTLÄGESKÄNSLIG i denna runda, RÄTTAD SAMMA DAG efter
+#       ett granskningsfynd — se T82–T82d)                              → 1
+#
+# T82–T82d (fix-runda 6, review runda 5 fynd 1, Marcus-beslut 2026-09-19).
+# Skiftlägespolicyn var ASYMMETRISK: statsfilnamnet (T80–T81b) normaliserades
+# redan till gemener, men pr_har_session_marker() jämförde SESSION VERBATIM
+# mot PR-kroppens markör — en session märkt "S126" blev HELT OSYNLIG för
+# sitt eget RÖTT/DIRTY/ARMERINGS-KANDIDAT om svepet kördes med
+# `--session s126`, exakt "sessionen ser aldrig sitt eget röda"-felklassen
+# kortet finns för att ta bort. RÄTTAT: EN policy överallt — --session-
+# värdet och PR-kroppens markör normaliseras BÅDA till gemener innan
+# jämförelsen (se pr_har_session_marker() i scripts/heartbeat-svep.sh).
+#   T82  Markör "S126" (versaler) MATCHAS NU av --session "s126" (gemener)
+#        — VÄND mot denna runda (var NOT_EXPECT_OUT, är nu EXPECT_OUT)    → 1
+#   T82b Omvänt skiftläge: markör "s126" (gemener) MATCHAS av
+#        --session "S126" (versaler)                                      → 1
+#   T82c Blandat skiftläge: markör "S126-Resume-2" MATCHAS av
+#        --session "s126-resume-2"                                        → 1
+#   T82d Skiftlägesnormaliseringen döljer INTE en genuint FRÄMMANDE
+#        session: markör "S127" förblir TYST under --session "s126" —
+#        bara SKIFTLÄGET normaliseras, inte VILKEN session ID:t pekar ut  → 0
+#
+# T83–T89 (review runda 5 UPPFÖLJNING, samma dag, Marcus-beslut
+# 2026-09-19). Bygg-agenten upptäckte själv under runda 5:s revision att
+# den DÅ gällande regexen (^[A-Za-z0-9._-]{1,64}$) gjorde `--session --alla`
+# GILTIGT — "--alla" matchade (bindestreck/bokstäver tillåtna) och
+# konsumerades TYST som sessions-ID. Byggt SAMMA dag på order, innan nästa
+# granskningsrunda: HEARTBEAT_SESSION_ID_REGEX skärpt till
+# ^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$ — FÖRSTA tecknet måste vara
+# alfanumeriskt.
+#   T83 --session --alla → exit 64 (huvudfyndet — var GILTIGT innan)   → 64
+#   T84 --session -x → exit 64 (börjar med "-")                        → 64
+#   T85 --session . (EN punkt) → exit 64 (första tecknet ej alfanum.)  → 64
+#   T86 --session a (EN bokstav) → giltigt, körs normalt               → 0
+#   T87/T87b Session-ID på EXAKT 64 tecken (övre gränsen) → giltigt     → 0
+#   T88/T88b Session-ID på 65 tecken (EN över gränsen) → exit 64        → 64
+#   T89 --session _S126 (understreck FÖRST) → exit 64 (skärpningen
+#       gäller alla tre "ej alfanumeriskt"-tecken, inte bara "-")       → 64
+#
 # Test-isolering: /tmp/task119-test-heartbeat-svep/ med en gh-stub som svarar
 # ur ett scenario-katalog (main-sha / rows / fail-mainsha / fail-prlist).
 # INGEN nätverkstrafik, inget riktigt gh-anrop, ingen ändring i real-repot,
@@ -88,7 +238,23 @@
 #        ALDRIG larmar som ARMERINGS-KANDIDAT"
 # Etablerad: TASK-119, 2026-08-02 · utökad TASK-128 (2026-08-03) · TASK-135
 # (2026-08-04, T23/T24 — kallstart-rad + --help-täckning) · fynd 2026-08-04
-# (T25–T27b — HEARTBEAT_EXEMPT_AUTHORS, dependabot-kvartetten #632–#635)
+# (T25–T27b — HEARTBEAT_EXEMPT_AUTHORS, dependabot-kvartetten #632–#635) ·
+# TASK-462 (2026-09-18, T40–T55 — sessionsmedvetet svep: --session/--alla,
+# PR-kropps-markören, den omärkta-PR-notisen, TIPS-raden) · TASK-462
+# fix-runda 1 (2026-09-19, review runda 1: T51–T55 omskrivna + T56–T61 nya —
+# TIPS-raden på stdout/strypt, dependabot-RÖTT/DIRTY-notisen) · TASK-462
+# fix-runda 2 (2026-09-19, review runda 3: T62–T65 nya — PER-SESSION
+# statsfil-suffix, session_id_sanitize()) · TASK-462 fix-runda 3 (2026-09-19,
+# review runda 4: T64 omskriven + T66–T74 nya — validerat session-ID ersätter
+# sanering, session_id_sanitize() BORTTAGEN, per-session-statsfil-städning) ·
+# TASK-462 fix-runda 4 (2026-09-19, review runda 5: T64/T66–T72 exit-kod
+# 2→64 + T75–T82 nya — bitmask-kollision rättad, saknat flaggvärde fångat,
+# skiftlägesokänsligt statsfilnamn) · TASK-462 fix-runda 5 (2026-09-19,
+# review runda 5 uppföljning, samma dag: T83–T89 nya — FÖRSTA tecknet i
+# session-ID måste vara alfanumeriskt, "--session --alla" avvisas) ·
+# TASK-462 fix-runda 6 (2026-09-19, runda 5:s eget fynd 1: T82 VÄND +
+# T82b–T82d nya — skiftlägespolicyn var ASYMMETRISK (statsfilnamn
+# normaliserat, markör-matchning inte), rättad till EN policy överallt)
 
 set -uo pipefail
 
@@ -169,23 +335,51 @@ set_rows() { printf '%b' "$1" > "${SCEN}/rows"; }
 # run_case så de aldrig läcker till nästa fall.
 EXPECT_OUT=""
 NOT_EXPECT_OUT=""
+# EXPECT_ERR/NOT_EXPECT_ERR: samma kontrakt som ovan men mot STDERR
+# specifikt. Infört av TASK-462 för den ursprungliga TIPS-raden (som då
+# skrevs till stderr) — den flyttades till stdout i review runda 1 fynd 1
+# (se tips_notis_om_dags()), men mekanismen behålls: T51b använder NU
+# NOT_EXPECT_ERR för att POSITIVT bevisa att TIPS inte längre syns på
+# stderr (i stället för att bara råka vara sann, vilket en borttagen
+# EXPECT_ERR-kontroll hade varit). Se § STRÖM-SEPARATION nedan för varför de
+# två strömmarna ändå fångas i separata filer.
+EXPECT_ERR=""
+NOT_EXPECT_ERR=""
 
 # run_case <namn> <förväntad exit> <max sekunder eller "-"> <env-tilldelningar...> -- <args...>
+#
+# ═══ STRÖM-SEPARATION (TASK-462) ═══
+# stdout och stderr fångas i VARSIN fil (out.txt / err.txt) i stället för en
+# kombinerad `2>&1`. HISTORIK, rättad i TASK-462 fix-runda (review runda 1
+# fynd 1): denna kommentar påstod tidigare att separationen fanns EFTERSOM
+# TIPS-raden skrevs till stderr — det höll bara fram till fixrundan; TIPS
+# ligger nu på stdout (alltid_pa(), taktad, se tips_notis_om_dags()).
+# Separationen behålls ÄNDÅ: den lämnar EXPECT_ERR/NOT_EXPECT_ERR som en
+# skarp, oberoende kanal för `die()` (användningsfel, T15–T17) och för T51b:s
+# positiva "syns INTE på stderr"-bevis, utan att en kombinerad ström riskerar
+# att blanda ihop de två strömmarnas bevisbörda. Alla ÄLDRE
+# `alarm()`/`say()`/`alltid_pa()`-rader gick redan via stdout (ren `printf`,
+# fd1) — bara `die()` gick till stderr. Separationen ändrar därför INGEN
+# äldre testfalls faktiska bevisbörda.
 run_case() {
     local name="$1" want="$2" maxsec="$3"; shift 3
-    local start elapsed got expect="${EXPECT_OUT}" nexpect="${NOT_EXPECT_OUT}"
+    local start elapsed got
+    local expect="${EXPECT_OUT}" nexpect="${NOT_EXPECT_OUT}"
+    local eexpect="${EXPECT_ERR}" enexpect="${NOT_EXPECT_ERR}"
     EXPECT_OUT=""
     NOT_EXPECT_OUT=""
+    EXPECT_ERR=""
+    NOT_EXPECT_ERR=""
     start="$(date +%s)"
     ( cd "${TEST_DIR}" && env PATH="${TEST_DIR}/bin:${PATH}" T119_SCEN="${SCEN}" \
         HEARTBEAT_STATE_DIR="${STATE_DIR}" \
-        "$@" ) >"${TEST_DIR}/out.txt" 2>&1
+        "$@" ) >"${TEST_DIR}/out.txt" 2>"${TEST_DIR}/err.txt"
     got=$?
     elapsed=$(( $(date +%s) - start ))
 
     if [[ "${got}" -ne "${want}" ]]; then
         printf '  ✗ %s — exit %s, väntade %s\n' "${name}" "${got}" "${want}"
-        sed 's/^/      /' "${TEST_DIR}/out.txt" | head -10
+        cat "${TEST_DIR}/out.txt" "${TEST_DIR}/err.txt" 2>/dev/null | sed 's/^/      /' | head -10
         FAILED=$(( FAILED + 1 )); return
     fi
     if [[ "${maxsec}" != "-" && "${elapsed}" -gt "${maxsec}" ]]; then
@@ -193,13 +387,23 @@ run_case() {
         FAILED=$(( FAILED + 1 )); return
     fi
     if [[ -n "${expect}" ]] && ! grep -qF -- "${expect}" "${TEST_DIR}/out.txt"; then
-        printf '  ✗ %s — utdatan saknade "%s"\n' "${name}" "${expect}"
+        printf '  ✗ %s — stdout saknade "%s"\n' "${name}" "${expect}"
         sed 's/^/      /' "${TEST_DIR}/out.txt" | head -10
         FAILED=$(( FAILED + 1 )); return
     fi
     if [[ -n "${nexpect}" ]] && grep -qF -- "${nexpect}" "${TEST_DIR}/out.txt"; then
-        printf '  ✗ %s — utdatan innehöll oväntat "%s"\n' "${name}" "${nexpect}"
+        printf '  ✗ %s — stdout innehöll oväntat "%s"\n' "${name}" "${nexpect}"
         sed 's/^/      /' "${TEST_DIR}/out.txt" | head -10
+        FAILED=$(( FAILED + 1 )); return
+    fi
+    if [[ -n "${eexpect}" ]] && ! grep -qF -- "${eexpect}" "${TEST_DIR}/err.txt"; then
+        printf '  ✗ %s — stderr saknade "%s"\n' "${name}" "${eexpect}"
+        sed 's/^/      /' "${TEST_DIR}/err.txt" | head -10
+        FAILED=$(( FAILED + 1 )); return
+    fi
+    if [[ -n "${enexpect}" ]] && grep -qF -- "${enexpect}" "${TEST_DIR}/err.txt"; then
+        printf '  ✗ %s — stderr innehöll oväntat "%s"\n' "${name}" "${enexpect}"
+        sed 's/^/      /' "${TEST_DIR}/err.txt" | head -10
         FAILED=$(( FAILED + 1 )); return
     fi
     printf '  ✓ %s\n' "${name}"
@@ -781,6 +985,617 @@ elif [[ -f "${STATE_DIR}/last-stada-grenar" ]]; then
 else
     printf '  ✗ T39b  stämpeln saknas helt\n'; FAILED=$((FAILED+1))
 fi
+
+# ============================================================
+# T40–T55 — TASK-462, SESSIONSMEDVETET SVEP. TSV-radformatet har en 8:e
+# kolumn sedan TASK-462 (`body`, för markören) — se § LAYOUTEN i filhuvudet:
+# äldre rader (7 kolumner) läses fortfarande korrekt (body blir tom sträng),
+# vilket ÄR T1–T39:s implicita bakåtkompatibilitetsbevis. Dessa fall sätter
+# den 8:e kolumnen explicit.
+echo ""
+
+# T40/T41/T42 — RÖTT: tvåsidigt bevis för sessionsfiltreringen (AC #1/#2).
+# automerge=true isolerar RÖTT-vägen från KANDIDAT-vägen, samma teknik som
+# T1/T2.
+reset_scen
+set_rows '801\tfalse\tBLOCKED\ttrue\tFAILURE\tfalse\toctocat\t<!-- heartbeat-svep:session:S126 -->\n'
+EXPECT_OUT="RÖTT — PR #801"
+run_case "T40 RÖTT, EGEN sessionsmarkör → larmar" 1 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S126
+
+reset_scen
+set_rows '802\tfalse\tBLOCKED\ttrue\tFAILURE\tfalse\toctocat\t<!-- heartbeat-svep:session:S127 -->\n'
+NOT_EXPECT_OUT="RÖTT"
+run_case "T41 RÖTT, FRÄMMANDE sessionsmarkör (S127) i sessionsläge S126 → TYST" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S126
+
+reset_scen
+set_rows '802\tfalse\tBLOCKED\ttrue\tFAILURE\tfalse\toctocat\t<!-- heartbeat-svep:session:S127 -->\n'
+EXPECT_OUT="RÖTT — PR #802"
+run_case "T42 SAMMA främmande röda PR, men --alla → larmar (dagens beteende)" 1 - \
+    bash ./scripts/heartbeat-svep.sh --once --alla
+
+# T43/T44 — DIRTY: tvåsidigt bevis. automerge=true isolerar från KANDIDAT.
+reset_scen
+set_rows '803\tfalse\tDIRTY\ttrue\tSUCCESS\tfalse\toctocat\t<!-- heartbeat-svep:session:S126 -->\n'
+EXPECT_OUT="DIRTY — PR #803"
+run_case "T43 DIRTY, EGEN sessionsmarkör → larmar" 2 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S126
+
+reset_scen
+set_rows '804\tfalse\tDIRTY\ttrue\tSUCCESS\tfalse\toctocat\t<!-- heartbeat-svep:session:S127 -->\n'
+NOT_EXPECT_OUT="DIRTY"
+run_case "T44 DIRTY, FRÄMMANDE sessionsmarkör i sessionsläge → TYST" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S126
+
+# T45/T46 — ARMERINGS-KANDIDAT: tvåsidigt bevis.
+reset_scen
+set_rows '805\tfalse\tCLEAN\tfalse\tSUCCESS\tfalse\toctocat\t<!-- heartbeat-svep:session:S126 -->\n'
+EXPECT_OUT="ARMERINGS-KANDIDAT — PR #805"
+run_case "T45 KANDIDAT, EGEN sessionsmarkör → larmar" 4 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S126
+
+reset_scen
+set_rows '806\tfalse\tCLEAN\tfalse\tSUCCESS\tfalse\toctocat\t<!-- heartbeat-svep:session:S127 -->\n'
+NOT_EXPECT_OUT="KANDIDAT"
+run_case "T46 KANDIDAT, FRÄMMANDE sessionsmarkör i sessionsläge → TYST" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S126
+
+# ============================================================
+# T47/T48 — DEN OMÄRKTA-PR-NOTISEN (AC #3): tvåsidigt bevis på GLESNINGEN
+# (fyrar vid kallstart, tiger direkt efter) — samma par-teknik som T28/T29
+# för gren-städningen. rollup/mss hålls SUCCESS/CLEAN så verdikten
+# otvetydigt är 0 oavsett notisen (en omärkt PR bearbetas ALDRIG för
+# RÖTT/DIRTY/KANDIDAT).
+echo ""
+reset_scen
+set_rows '810\tfalse\tCLEAN\ttrue\tSUCCESS\tfalse\toctocat\t\n'
+EXPECT_OUT="SESSION — 1 öppna PR:ar UTAN sessionsmarkör"
+run_case "T47 OMÄRKT PR, kallstart-intervall → ALLTID-PÅ-notis (syns, ingen exit-bit)" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S126
+if grep -qF "#810" "${TEST_DIR}/out.txt"; then
+    printf '  ✓ T47b  notisen namnger PR-numret\n'; PASSED=$((PASSED+1))
+else
+    printf '  ✗ T47b  notisen saknar PR-numret #810\n'; FAILED=$((FAILED+1))
+fi
+
+# T47c — samma scenario UNDER --quiet: notisen ska synas ÄNDÅ (alltid_pa(),
+# --quiet-immun) — men kräver en EGEN kallstart (färskt state) för att
+# glesningen inte redan ska ha stämplats av T47 ovan.
+reset_scen
+set_rows '810\tfalse\tCLEAN\ttrue\tSUCCESS\tfalse\toctocat\t\n'
+EXPECT_OUT="SESSION — 1 öppna PR:ar UTAN sessionsmarkör"
+run_case "T47c samma sak UNDER --quiet → notisen syns ÄNDÅ" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S126 --quiet
+
+# T48 — INGEN reset_scen: stämpeln från T47c ligger kvar, så glesningen ska
+# hålla notisen tyst trots att samma omärkta PR fortfarande står öppen.
+NOT_EXPECT_OUT="UTAN sessionsmarkör"
+run_case "T48 samma omärkta PR direkt igen → glesningen håller notisen tyst" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S126
+
+# ============================================================
+# T49 — DEPENDABOT UNDANTAS UR DEN OMÄRKTA BUCKETEN (AC #4, medvetet
+# beslut). Färsk kallstart (annars döljer T48:s glesning resultatet oavsett
+# vad denna PR är).
+reset_scen
+set_rows '811\tfalse\tCLEAN\ttrue\tSUCCESS\tfalse\tdependabot\t\n'
+NOT_EXPECT_OUT="UTAN sessionsmarkör"
+run_case "T49 omärkt PR, author=dependabot → EXKLUDERAS ur bucketen, ingen notis" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S126
+
+# ============================================================
+# T50 — BAKÅTKOMPATIBILITET (AC #8): ingen --session/--alla ⇒ dagens
+# beteende är HELT okänsligt för markörer — en PR märkt för en annan
+# session larmar ÄNDÅ, exakt som innan TASK-462 fanns.
+echo ""
+reset_scen
+set_rows '820\tfalse\tBLOCKED\ttrue\tFAILURE\tfalse\toctocat\t<!-- heartbeat-svep:session:S999 -->\n'
+EXPECT_OUT="RÖTT — PR #820"
+run_case "T50 BAKÅTKOMPATIBILITET — ingen flagga, märkt PR larmar ändå" 1 - \
+    bash ./scripts/heartbeat-svep.sh --once
+
+# ============================================================
+# T51–T53 — TIPS-RADEN (review runda 1 fynd 1, Marcus-beslut 2026-09-19):
+# flyttad från stderr till STDOUT (alltid_pa(), quiet-immun), taktad av
+# HEARTBEAT_OMARKERAD_INTERVALL — se tips_notis_om_dags() för hela
+# resonemanget (repots dokumenterade körform är en bakgrunds-Monitor, och
+# Monitor-verktygets specifikation säger att bara stdout blir
+# notifikationer). Uteblir HELT (varken stdout eller stderr) när --session
+# eller --alla ges (sessionen känner redan till mekanismen).
+echo ""
+reset_scen
+EXPECT_OUT="TIPS — sessionsläge finns"
+run_case "T51 TIPS-raden på STDOUT (kallstart) när ingen flagga ges" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once
+if grep -qF "TIPS — sessionsläge finns" "${TEST_DIR}/err.txt" 2>/dev/null; then
+    printf '  ✗ T51b  TIPS-raden syns FORTFARANDE på stderr — flytten är ofullständig\n'; FAILED=$((FAILED+1))
+else
+    printf '  ✓ T51b  TIPS-raden syns INTE på stderr (flytten är fullständig)\n'; PASSED=$((PASSED+1))
+fi
+
+# T51c — INGEN reset_scen: TIPS-stämpeln från T51 ligger kvar (samma
+# glesnings-teknik som T47/T48 för den omärkta-PR-notisen), så tipset ska
+# vara strypt trots att varken --session eller --alla ges den här gången.
+NOT_EXPECT_OUT="TIPS —"
+run_case "T51c TIPS-raden STRYPS — samma anrop direkt igen" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once
+
+reset_scen
+NOT_EXPECT_OUT="TIPS"
+NOT_EXPECT_ERR="TIPS"
+run_case "T52 TIPS-raden UTEBLIR HELT (stdout+stderr) när --session ges" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S1
+
+reset_scen
+NOT_EXPECT_OUT="TIPS"
+NOT_EXPECT_ERR="TIPS"
+run_case "T53 TIPS-raden UTEBLIR HELT när --alla ges" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --alla
+
+# ============================================================
+# T54 — BÅDA FLAGGOR SAMTIDIGT: --alla VINNER (dokumenterad precedens,
+# § SESSIONSMEDVETET SVEP). Återanvänder T41/T42:s främmande-PR-scenario:
+# under --session ENSAM är den tyst (T41), under --alla ska den larma
+# OAVSETT att --session också gavs.
+echo ""
+reset_scen
+set_rows '802\tfalse\tBLOCKED\ttrue\tFAILURE\tfalse\toctocat\t<!-- heartbeat-svep:session:S127 -->\n'
+EXPECT_OUT="RÖTT — PR #802"
+run_case "T54 --session OCH --alla samtidigt → --alla vinner, larmar" 1 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S126 --alla
+
+# ============================================================
+# T55 — --help visar den nya SESSIONSMEDVETET SVEP-sektionen och flaggorna
+# (samma "ljug inte tyst"-disciplin som T24).
+echo ""
+EXPECT_OUT="SESSIONSMEDVETET SVEP"
+run_case "T55 --help visar § SESSIONSMEDVETET SVEP" 0 - \
+    bash ./scripts/heartbeat-svep.sh --help
+if grep -qF -- "--session ID" "${TEST_DIR}/out.txt" && grep -qF -- "--alla" "${TEST_DIR}/out.txt"; then
+    printf '  ✓ T55b  --help dokumenterar --session och --alla\n'; PASSED=$((PASSED+1))
+else
+    printf '  ✗ T55b  --help saknar --session/--alla-dokumentationen\n'; FAILED=$((FAILED+1))
+fi
+
+# ============================================================
+# T56–T61 — DEPENDABOT RÖTT/DIRTY I SESSIONSLÄGE (review runda 1 fynd 2,
+# Marcus-beslut 2026-09-19). Innan denna fixrunda gjorde sessionsfiltreringens
+# "ingen markör alls"-gren `continue` FÖRE RÖTT/DIRTY-klassningen ÄVEN för
+# HEARTBEAT_EXEMPT_AUTHORS-författare (dependabot m.fl.) — så en genuint
+# trasig Dependabot-CI blev HELT OSYNLIG i sessionsläge, i strid med
+# policy-filens egen § "GRÄNS" ("larmar OFÖRÄNDRAT"). automerge=true och
+# mss=BLOCKED/DIRTY väljs medvetet för att isolera RÖTT/DIRTY-vägen från
+# KANDIDAT-vägen, samma teknik som T1/T3.
+echo ""
+reset_scen
+set_rows '900\tfalse\tBLOCKED\ttrue\tFAILURE\tfalse\tdependabot\t\n'
+EXPECT_OUT="UNDANTAGEN FÖRFATTARE"
+NOT_EXPECT_OUT="RÖTT — PR #900"
+run_case "T56 Dependabot RÖTT, omärkt, sessionsläge → strypt besked, INGEN bitmask-bit" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S126
+if grep -qF "#900 (dependabot: RÖTT (FAILURE))" "${TEST_DIR}/out.txt"; then
+    printf '  ✓ T56b  notisen namnger PR-nummer, författare OCH skäl\n'; PASSED=$((PASSED+1))
+else
+    printf '  ✗ T56b  notisen saknar PR #900/dependabot/RÖTT (FAILURE) i förväntat format\n'; FAILED=$((FAILED+1))
+fi
+
+# T57 — DIRTY-varianten, egen kallstart (annars döljer T56:s glesning
+# resultatet oavsett vad denna PR är).
+reset_scen
+set_rows '901\tfalse\tDIRTY\ttrue\tSUCCESS\tfalse\tdependabot\t\n'
+EXPECT_OUT="UNDANTAGEN FÖRFATTARE"
+run_case "T57 Dependabot DIRTY, omärkt, sessionsläge → samma strypta kanal" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S126
+if grep -qF "#901 (dependabot: DIRTY)" "${TEST_DIR}/out.txt"; then
+    printf '  ✓ T57b  notisen namnger PR #901 med skälet DIRTY\n'; PASSED=$((PASSED+1))
+else
+    printf '  ✗ T57b  notisen saknar #901/DIRTY i förväntat format\n'; FAILED=$((FAILED+1))
+fi
+
+# T58 — GLESNING: INGEN reset_scen, samma dependabot-RÖTT-PR som T56 körs
+# igen direkt (stämpeln från T56 ligger kvar sedan T57:s EGEN state-fil
+# aldrig delar stämpel med T56:s) — måste alltså återanvända T56:s scenario,
+# inte T57:s, för att mäta RÄTT stämpel.
+reset_scen
+set_rows '900\tfalse\tBLOCKED\ttrue\tFAILURE\tfalse\tdependabot\t\n'
+( cd "${TEST_DIR}" && env PATH="${TEST_DIR}/bin:${PATH}" T119_SCEN="${SCEN}" \
+    HEARTBEAT_STATE_DIR="${STATE_DIR}" bash ./scripts/heartbeat-svep.sh --once --session S126 ) >/dev/null 2>&1
+NOT_EXPECT_OUT="UNDANTAGEN FÖRFATTARE"
+run_case "T58 SAMMA dependabot-RÖTT-PR direkt igen → glesningen håller notisen tyst" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S126
+
+# T59 — MED --alla: dagens beteende OFÖRÄNDRAT. Ingen sessionsfiltrering
+# alls körs (sessionslage=0), så PR:en går genom den VANLIGA RÖTT-
+# klassningen och larmar precis som varje annan röd PR — ingen
+# "UNDANTAGEN FÖRFATTARE"-rad (den kanalen existerar bara i sessionsläge).
+reset_scen
+set_rows '900\tfalse\tBLOCKED\ttrue\tFAILURE\tfalse\tdependabot\t\n'
+EXPECT_OUT="RÖTT — PR #900"
+NOT_EXPECT_OUT="UNDANTAGEN FÖRFATTARE"
+run_case "T59 SAMMA PR, men --alla → dagens beteende oförändrat (vanlig RÖTT-alarm)" 1 - \
+    bash ./scripts/heartbeat-svep.sh --once --alla
+
+# T60 — GRÖN dependabot-PR (SUCCESS/CLEAN), omärkt, sessionsläge → INGEN
+# dependabot-status-notis (0 fynd). Utökar T49 (som bara bevisar att den
+# INTE hamnar i den omärkta bucketen) med en EXPLICIT kontroll av den NYA
+# kanalen också.
+reset_scen
+set_rows '902\tfalse\tCLEAN\ttrue\tSUCCESS\tfalse\tdependabot\t\n'
+NOT_EXPECT_OUT="UNDANTAGEN FÖRFATTARE"
+run_case "T60 Dependabot GRÖN, omärkt, sessionsläge → ingen dependabot-status-notis" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S126
+
+# T61 — kod-/hjälptexten är RÄTTAD (ADR-083): --help ska nämna den nya
+# funktionen (positivt bevis på den korrigerade mekanismen), inte bara
+# frånvaron av den gamla, ofullständiga formuleringen (som ändå citeras
+# ordagrant som HISTORIK i den rättade kommentaren — en ren frånvaro-kontroll
+# hade gett falsk röd/grön signal beroende på citatet).
+reset_scen
+EXPECT_OUT="dependabot_status_notis_om_dags"
+run_case "T61 --help/koden dokumenterar den rättade dependabot-RÖTT/DIRTY-mekanismen" 0 - \
+    bash ./scripts/heartbeat-svep.sh --help
+
+# ============================================================
+# T62–T65 — PER-SESSION STATSFIL-SUFFIX (review runda 3, Marcus-beslut
+# 2026-09-19). Granskningens fynd: de strypta notisernas state-filer låg i
+# en MASKIN-GLOBAL STATE_DIR — en session som sopade FÖRE en annan stämplade
+# filen åt BÅDA, så den andra sessionen kunde stå helt tyst under sin EGEN
+# första sopning. INGEN reset_scen mellan T62/T62b (eller T63/T63b): det ÄR
+# poängen — SAMMA STATE_DIR, TVÅ OLIKA --session-värden.
+echo ""
+reset_scen
+set_rows '910\tfalse\tBLOCKED\ttrue\tFAILURE\tfalse\tdependabot\t\n'
+EXPECT_OUT="UNDANTAGEN FÖRFATTARE"
+run_case "T62 Session S126 (delad STATE_DIR): dependabot-notisen syns (kallstart)" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S126
+
+# T62b — FIXEN: en ANNAN session (S127), SAMMA STATE_DIR, SAMMA scenario,
+# direkt efter. Före denna runda: helt tyst (S126:s stämpel gällde för
+# BÅDA). Efter: S127 har sin EGEN state-fil och ser notisen precis som om
+# den vore ensam.
+EXPECT_OUT="UNDANTAGEN FÖRFATTARE"
+run_case "T62b Session S127 (SAMMA STATE_DIR) ser SAMMA notis oberoende — fixen" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S127
+
+# T62c/T62d — båda sessionerna är nu strypta, men VAR FÖR SIG: S126:s andra
+# sopning stryps av SIN EGEN stämpel (inte påverkad av att S127 sopat
+# emellan), och S127:s andra sopning stryps av SIN.
+NOT_EXPECT_OUT="UNDANTAGEN FÖRFATTARE"
+run_case "T62c Session S126 igen → strypt av sin EGEN stämpel" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S126
+
+NOT_EXPECT_OUT="UNDANTAGEN FÖRFATTARE"
+run_case "T62d Session S127 igen → strypt av SIN EGEN stämpel (oberoende av S126)" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S127
+
+# T63/T63b/T63c/T63d — samma tvåsidiga bevis för den omärkta-PR-notisen.
+reset_scen
+set_rows '911\tfalse\tCLEAN\ttrue\tSUCCESS\tfalse\toctocat\t\n'
+EXPECT_OUT="SESSION — 1 öppna PR:ar UTAN sessionsmarkör"
+run_case "T63 Session S126 (delad STATE_DIR): omärkt-notisen syns (kallstart)" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S126
+
+EXPECT_OUT="SESSION — 1 öppna PR:ar UTAN sessionsmarkör"
+run_case "T63b Session S127 (SAMMA STATE_DIR) ser SAMMA notis oberoende — fixen" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S127
+
+NOT_EXPECT_OUT="UTAN sessionsmarkör"
+run_case "T63c Session S126 igen → strypt av sin EGEN stämpel" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S126
+
+NOT_EXPECT_OUT="UTAN sessionsmarkör"
+run_case "T63d Session S127 igen → strypt av SIN EGEN stämpel (oberoende av S126)" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S127
+
+# T64 — OMSKRIVEN i review runda 4, EXIT-KOD RÄTTAD i review runda 5
+# (Marcus-beslut 2026-09-19): session_id_sanitize() är BORTTAGEN. Ett
+# tidigare "farligt men saneras"-ID ("../../etc/passwd") avvisas nu HELT i
+# stället — fail-closed via die(), exit **64** (INTE 2: review runda 5
+# fynd 1 — ett hemmagjort exit 2 kolliderade med bitmask-koden DIRTY).
+# die() skriver ENDAST till stderr (den etablerade konventionen för VARJE
+# annat CLI-/argumentfel i detta skript, se REPO/INTERVAL/TIMEOUT) — INTE
+# till stdout som review runda 4:s hemmagjorda variant gjorde. INGEN fil
+# skrivs alls (varken saniterad eller osaniterad). Se T68–T73 för den
+# fullständiga tvåsidiga bevisningen av valideringen; detta fall behålls
+# under T64:s namn som en direkt regressionsspärr mot att sanerings-
+# beteendet av misstag återinförs.
+reset_scen
+EXPECT_ERR="OGILTIGT --session-ID"
+NOT_EXPECT_OUT="OGILTIGT --session-ID"
+run_case "T64 Farligt session-ID (path-traversal-försök) → AVVISAS (exit 64, endast stderr), skriver ingen fil" 64 - \
+    bash ./scripts/heartbeat-svep.sh --once --session "../../etc/passwd"
+if [[ -d "${STATE_DIR}" ]] && find "${STATE_DIR}" -mindepth 1 2>/dev/null | grep -q .; then
+    printf '  ✗ T64b  STATE_DIR innehåller OVÄNTADE filer efter ett avvisat session-ID\n'
+    find "${STATE_DIR}" -mindepth 1 2>/dev/null | sed 's/^/      /'
+    FAILED=$((FAILED+1))
+else
+    printf '  ✓ T64b  STATE_DIR är tom/oskapad — inget skrevs för det avvisade ID:t\n'; PASSED=$((PASSED+1))
+fi
+
+# T65 — UTAN --session (TIPS-raden): dagens GLOBALA beteende är OFÖRÄNDRAT
+# (KÄND BEGRÄNSNING, § SESSIONSMEDVETET SVEP). tips_notis_om_dags() körs
+# ENDAST när SESSION saknas — det finns då inget ID att skopa mot, så två
+# körningar som DELAR STATE_DIR delar fortfarande stämpeln. Samma par-teknik
+# som T51/T51c, upprepad här explicit under review runda 3:s eget test-namn
+# för spårbarhet (inte en ny mekanism — en bekräftelse att fixen INTE av
+# misstag ändrade TIPS-raden).
+reset_scen
+EXPECT_OUT="TIPS — sessionsläge finns"
+run_case "T65 Ingen --session (kallstart): TIPS syns" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once
+NOT_EXPECT_OUT="TIPS —"
+run_case "T65b Ingen --session igen, SAMMA STATE_DIR → strypt globalt (oförändrat)" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once
+
+# ============================================================
+# T66–T74 — SESSION-ID-VALIDERING (review runda 4, EXIT-KOD RÄTTAD i
+# review runda 5, Marcus-beslut 2026-09-19). Fail-closed ersätter sanering:
+# giltiga ID körs OFÖRÄNDRAT, ogiltiga AVVISAS med exit **64** (CLI-fel,
+# samma sysexits-klass OCH samma die()-anrop som REPO/INTERVAL/TIMEOUT-
+# valideringen — INTE ett eget hemmagjort exit 2, som kolliderade med
+# bitmask-koden DIRTY) och ett felmeddelande på STDERR ENDAST (die()s
+# etablerade konvention — EXPECT_ERR/NOT_EXPECT_OUT bevisar tillsammans
+# att det INTE läcker till stdout).
+echo ""
+reset_scen
+NOT_EXPECT_OUT="OGILTIGT --session-ID"
+run_case "T66 Giltigt ID \"S126\" (baseline) → körs normalt" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S126
+
+reset_scen
+NOT_EXPECT_OUT="OGILTIGT --session-ID"
+run_case "T67 Giltigt ID MED punkt \"s126.resume.2\" → körs normalt (punkt tillåten)" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session s126.resume.2
+
+reset_scen
+EXPECT_ERR="OGILTIGT --session-ID"
+NOT_EXPECT_OUT="OGILTIGT --session-ID"
+run_case "T68 Tomt --session-ID (\"\") → exit 64, fel ENDAST på stderr" 64 - \
+    bash ./scripts/heartbeat-svep.sh --once --session ""
+
+reset_scen
+EXPECT_ERR="OGILTIGT --session-ID"
+NOT_EXPECT_OUT="OGILTIGT --session-ID"
+run_case "T69 Session-ID med mellanslag (\"S 126\") → exit 64" 64 - \
+    bash ./scripts/heartbeat-svep.sh --once --session "S 126"
+
+reset_scen
+EXPECT_ERR="OGILTIGT --session-ID"
+run_case "T70 Session-ID med snedstreck (\"S/126\") → exit 64" 64 - \
+    bash ./scripts/heartbeat-svep.sh --once --session "S/126"
+
+reset_scen
+EXPECT_ERR="OGILTIGT --session-ID"
+run_case "T71 Session-ID SOM ENBART punkter (\"..\") → exit 64 (path-traversal-form)" 64 - \
+    bash ./scripts/heartbeat-svep.sh --once --session ".."
+
+reset_scen
+printf -v LANGT_ID 'a%.0s' {1..65}
+EXPECT_ERR="OGILTIGT --session-ID"
+run_case "T72 Session-ID på 65 tecken (över gränsen) → exit 64" 64 - \
+    bash ./scripts/heartbeat-svep.sh --once --session "${LANGT_ID}"
+if [[ "${#LANGT_ID}" -eq 65 ]]; then
+    printf '  ✓ T72b  testets eget ID är verifierat 65 tecken (inte av misstag 64)\n'; PASSED=$((PASSED+1))
+else
+    printf '  ✗ T72b  testets eget ID är %s tecken, inte 65 — testet mäter fel gräns\n' "${#LANGT_ID}"; FAILED=$((FAILED+1))
+fi
+
+# T73 — fail-closed betyder "ingen sopning skedde", inte "sopning med ett
+# tomt/konstigt namn". Kör ETT ogiltigt anrop mot en HELT FÄRSK STATE_DIR
+# (reset_scen) och bevisa att katalogen förblir tom — inte bara att EN
+# specifik fil saknas (T64b), utan att INGET ALLS skrevs.
+reset_scen
+bash ./scripts/heartbeat-svep.sh --once --session "S/126" >/dev/null 2>&1
+if [[ -d "${STATE_DIR}" ]] && find "${STATE_DIR}" -mindepth 1 2>/dev/null | grep -q .; then
+    printf '  ✗ T73  STATE_DIR fick innehåll trots ett avvisat session-ID\n'; FAILED=$((FAILED+1))
+else
+    printf '  ✓ T73  STATE_DIR förblev tom — fail-closed skriver ingenting\n'; PASSED=$((PASSED+1))
+fi
+
+# T74 — kollision omöjlig per konstruktion: ETT TREDJE par giltiga ID i ett
+# ANNAT format (innehåller punkter) än T62/T63:s "S126"/"S127" ska ändå ge
+# VARSIN statsfil. Kompletterar (inte duplicerar) T62/T63 — bevisar att
+# valideringen accepterar, och särskiljer, ID:n som RÅKAR dela ett prefix.
+reset_scen
+set_rows '913\tfalse\tCLEAN\ttrue\tSUCCESS\tfalse\toctocat\t\n'
+run_case "T74 Giltigt ID \"v1.2.3\" (kallstart)" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session v1.2.3
+run_case "T74b Giltigt ID \"v1.2.30\" (delar prefix med T74, SAMMA STATE_DIR) → oberoende, ser notisen ÄNDÅ" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session v1.2.30
+if [[ -f "${STATE_DIR}/last-omarkerad-notis-v1.2.3" && -f "${STATE_DIR}/last-omarkerad-notis-v1.2.30" ]]; then
+    printf '  ✓ T74c  två VARSINA statsfiler (v1.2.3 och v1.2.30) — ingen kollision trots delat prefix\n'; PASSED=$((PASSED+1))
+else
+    printf '  ✗ T74c  förväntade två separata statsfiler för v1.2.3/v1.2.30, hittade inte båda\n'
+    find "${STATE_DIR}" -maxdepth 1 -name 'last-omarkerad-notis-*' 2>/dev/null | sed 's/^/      /'
+    FAILED=$((FAILED+1))
+fi
+
+# ============================================================
+# T75–T79 — SAKNAT FLAGGVÄRDE (review runda 5 fynd 2, Marcus-beslut
+# 2026-09-19). En värde-tagande flagga som är SISTA token (inget värde
+# följer) fick tidigare `shift 2` att fallera — `set -e` avslutade DÅ hela
+# skriptet med `shift`s EGEN exitkod (1, = bitmask RÖTT) och NOLL utskrift.
+# Fångas nu INNAN `shift 2` körs: `die` med exit 64 och ett tydligt
+# meddelande. Alla FEM värde-tagande flaggor testas — uppdraget efterfrågade
+# uttryckligen samma fix "för varje annan flagga som tar ett värde, om
+# samma mönster finns", och det gjorde det: identisk `"${2:-}"; shift 2`-
+# form i alla fem grenar innan denna runda.
+echo ""
+reset_scen
+EXPECT_ERR="kräver ett värde"
+run_case "T75 --session som SISTA token (inget värde) → exit 64, INTE 1" 64 - \
+    bash ./scripts/heartbeat-svep.sh --once --session
+
+reset_scen
+EXPECT_ERR="kräver ett värde"
+run_case "T76 --repo som SISTA token (inget värde) → exit 64" 64 - \
+    bash ./scripts/heartbeat-svep.sh --once --repo
+
+reset_scen
+EXPECT_ERR="kräver ett värde"
+run_case "T77 --branch som SISTA token (inget värde) → exit 64" 64 - \
+    bash ./scripts/heartbeat-svep.sh --once --branch
+
+reset_scen
+EXPECT_ERR="kräver ett värde"
+run_case "T78 --interval som SISTA token (inget värde) → exit 64" 64 - \
+    bash ./scripts/heartbeat-svep.sh --once --interval
+
+reset_scen
+EXPECT_ERR="kräver ett värde"
+run_case "T79 --timeout som SISTA token (inget värde) → exit 64" 64 - \
+    bash ./scripts/heartbeat-svep.sh --once --timeout
+
+# ============================================================
+# T80–T81b — SKIFTLÄGESOKÄNSLIGT STATSFILNAMN (review runda 5 fynd 3,
+# Marcus-beslut 2026-09-19). "S126" och "s126" är MED AVSIKT samma session
+# för de strypta notiskanalerna (macOS APFS delar annars fil ändå, på
+# filsystemnivå, oavsett vad valideringen bevisar på strängnivå — se §
+# SESSIONSMEDVETET SVEP "SKIFTLÄGESOKÄNSLIGT ÖVERALLT"). T82–T82d (markör-
+# matchningen) flyttade till en egen sektion nedan i fix-runda 6, efter det
+# att runda 5:s eget fynd 1 visade att policyn var asymmetrisk.
+echo ""
+reset_scen
+set_rows '914\tfalse\tCLEAN\ttrue\tSUCCESS\tfalse\toctocat\t\n'
+EXPECT_OUT="SESSION — 1 öppna PR:ar UTAN sessionsmarkör"
+run_case "T80 Session \"S126\" (kallstart): omärkt-notisen syns" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S126
+
+# T80b — INGEN reset_scen: SAMMA STATE_DIR, men nu \"s126\" (annat
+# SKIFTLÄGE). Om skiftläge räknades som en ANNAN session hade detta varit
+# en NY kallstart (notisen hade synts igen). Det ska den INTE göra —
+# stämpeln delas MED AVSIKT.
+NOT_EXPECT_OUT="UTAN sessionsmarkör"
+run_case "T80b Session \"s126\" (annat skiftläge, SAMMA STATE_DIR) → strypt av S126:s stämpel (avsiktligt)" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session s126
+
+# T81 — den delade stämpelfilen ligger på GEMENER, inte på det skiftläge
+# som råkade komma in FÖRST ("S126" i T80, versaler). VIKTIGT: `[[ -f ... ]]`
+# DUGER INTE för detta — macOS APFS är skiftlägesOKÄNSLIGT för filLOOKUP som
+# default, så `-f ".../last-omarkerad-notis-S126"` skulle hitta den redan
+# skapade "...s126"-filen och ge ett FALSKT positivt "ja, versal-filen
+# finns". `find -name` gör en STRÄNG-jämförelse mot det verkliga, lagrade
+# katalognamnet (skiftlägeskänslig oavsett filsystemets lookup-beteende) —
+# `ls`/`find`s returnerade sträng, inte ett andra filsystem-lookup, är den
+# enda pålitliga metoden här.
+STATSFIL_LISTA="$(find "${STATE_DIR}" -maxdepth 1 -name 'last-omarkerad-notis-*' 2>/dev/null)"
+if grep -qF "last-omarkerad-notis-s126" <<<"${STATSFIL_LISTA}"; then
+    printf '  ✓ T81  statsfilen är normaliserad till gemener (last-omarkerad-notis-s126)\n'; PASSED=$((PASSED+1))
+else
+    printf '  ✗ T81  förväntade en gemener-normaliserad statsfil, hittade inte\n'
+    printf '%s\n' "${STATSFIL_LISTA}" | sed 's/^/      /'
+    FAILED=$((FAILED+1))
+fi
+if grep -qF "last-omarkerad-notis-S126" <<<"${STATSFIL_LISTA}"; then
+    printf '  ✗ T81b  en OVÄNTAD versal-variant av statsfilen skapades också (last-omarkerad-notis-S126)\n'; FAILED=$((FAILED+1))
+else
+    printf '  ✓ T81b  ingen versal-variant av statsfilen skapades — bara EN fil för båda skiftlägena\n'; PASSED=$((PASSED+1))
+fi
+
+# ============================================================
+# T82–T82d — SKIFTLÄGESOKÄNSLIGT ÖVERALLT, MARKÖR-MATCHNINGEN (fix-runda 6,
+# review runda 5:s EGET fynd 1, Marcus-beslut 2026-09-19). T82 påstod i
+# FÖREGÅENDE runda att pr_har_session_marker() var "en ANNAN, ORÖRD
+# mekanism" och förblev skiftlägeskänslig — det gjorde policyn ASYMMETRISK:
+# statsfilnamnet (T80/T80b ovan) normaliserades redan, men en PR märkt
+# "S126" av bygg-agenten blev HELT OSYNLIG för sitt EGET RÖTT/DIRTY/
+# ARMERINGS-KANDIDAT om svepet kördes med `--session s126` — precis
+# "sessionen ser aldrig sitt eget röda"-felklassen kortet finns för att ta
+# bort, återinförd via en enda bokstav. RÄTTAT: --session-värdet och
+# PR-kroppens markör normaliseras BÅDA till gemener i
+# pr_har_session_marker() innan jämförelsen — EN policy överallt.
+echo ""
+reset_scen
+set_rows '915\tfalse\tBLOCKED\ttrue\tFAILURE\tfalse\toctocat\t<!-- heartbeat-svep:session:S126 -->\n'
+EXPECT_OUT="RÖTT — PR #915"
+run_case "T82 Markör \"S126\" (versaler) MATCHAS NU av --session \"s126\" (gemener) — VÄND fynd, EN policy överallt" 1 - \
+    bash ./scripts/heartbeat-svep.sh --once --session s126
+
+reset_scen
+set_rows '916\tfalse\tBLOCKED\ttrue\tFAILURE\tfalse\toctocat\t<!-- heartbeat-svep:session:s126 -->\n'
+EXPECT_OUT="RÖTT — PR #916"
+run_case "T82b Omvänt skiftläge — markör \"s126\" (gemener) MATCHAS av --session \"S126\" (versaler)" 1 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S126
+
+reset_scen
+set_rows '917\tfalse\tBLOCKED\ttrue\tFAILURE\tfalse\toctocat\t<!-- heartbeat-svep:session:S126-Resume-2 -->\n'
+EXPECT_OUT="RÖTT — PR #917"
+run_case "T82c Blandat skiftläge — markör \"S126-Resume-2\" MATCHAS av --session \"s126-resume-2\"" 1 - \
+    bash ./scripts/heartbeat-svep.sh --once --session s126-resume-2
+
+reset_scen
+set_rows '918\tfalse\tBLOCKED\ttrue\tFAILURE\tfalse\toctocat\t<!-- heartbeat-svep:session:S127 -->\n'
+NOT_EXPECT_OUT="RÖTT — PR #918"
+run_case "T82d Genuint FRÄMMANDE session — markör \"S127\" FORTSATT TYST under --session \"s126\" (bara SKIFTLÄGET normaliseras, inte identiteten)" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session s126
+
+# ============================================================
+# T83–T89 — FÖRSTA TECKNET MÅSTE VARA ALFANUMERISKT (review runda 5
+# UPPFÖLJNING, samma dag, Marcus-beslut 2026-09-19). Upptäckt av
+# bygg-agenten själv under FÖREGÅENDE rundas revision, byggt NU (innan
+# nästa granskningsrunda) på orkestrerarens order: den GAMLA regexen
+# (^[A-Za-z0-9._-]{1,64}$, valfritt tecken var som helst) gjorde
+# `--session --alla` GILTIGT — "--alla" matchade regexen (bindestreck och
+# bokstäver är tillåtna tecken) och konsumerades TYST som sessions-ID i
+# stället för att avvisas som "flaggan --alla, inget värde gavs".
+# HEARTBEAT_SESSION_ID_REGEX är nu ^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$ —
+# FÖRSTA tecknet [A-Za-z0-9], INGET av "-"/"."/"_" — och
+# ENDAST_PUNKTER_REGEX-kontrollen (T71) är sedan denna skärpning
+# STRUKTURELLT REDUNDANT (ett rent punkt-ID kan aldrig ha ett alfanumeriskt
+# FÖRSTA tecken), men behålls och testas ändå.
+echo ""
+reset_scen
+EXPECT_ERR="SER UT SOM EN FLAGGA"
+run_case "T83 --session --alla → exit 64 (var tidigare GILTIGT — huvudfyndet denna runda)" 64 - \
+    bash ./scripts/heartbeat-svep.sh --once --session --alla
+
+reset_scen
+EXPECT_ERR="SER UT SOM EN FLAGGA"
+run_case "T84 --session -x → exit 64 (börjar med \"-\")" 64 - \
+    bash ./scripts/heartbeat-svep.sh --once --session -x
+
+reset_scen
+EXPECT_ERR="OGILTIGT --session-ID"
+run_case "T85 --session . (EN punkt) → exit 64 (första tecknet \".\", inte alfanumeriskt)" 64 - \
+    bash ./scripts/heartbeat-svep.sh --once --session .
+
+reset_scen
+NOT_EXPECT_OUT="OGILTIGT --session-ID"
+run_case "T86 --session a (EN bokstav, kortast giltiga formen) → körs normalt" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session a
+
+reset_scen
+printf -v ID_64 'a%.0s' {1..64}
+NOT_EXPECT_OUT="OGILTIGT --session-ID"
+run_case "T87 Session-ID på EXAKT 64 tecken (övre gränsen) → giltigt, körs normalt" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session "${ID_64}"
+if [[ "${#ID_64}" -eq 64 ]]; then
+    printf '  ✓ T87b  testets eget ID är verifierat 64 tecken\n'; PASSED=$((PASSED+1))
+else
+    printf '  ✗ T87b  testets eget ID är %s tecken, inte 64 — testet mäter fel gräns\n' "${#ID_64}"; FAILED=$((FAILED+1))
+fi
+
+reset_scen
+printf -v ID_65 'a%.0s' {1..65}
+EXPECT_ERR="OGILTIGT --session-ID"
+run_case "T88 Session-ID på 65 tecken (EN över gränsen) → exit 64" 64 - \
+    bash ./scripts/heartbeat-svep.sh --once --session "${ID_65}"
+if [[ "${#ID_65}" -eq 65 ]]; then
+    printf '  ✓ T88b  testets eget ID är verifierat 65 tecken\n'; PASSED=$((PASSED+1))
+else
+    printf '  ✗ T88b  testets eget ID är %s tecken, inte 65 — testet mäter fel gräns\n' "${#ID_65}"; FAILED=$((FAILED+1))
+fi
+
+# T89 — differentierar T84 (börjar med "-") från T71 (består ENBART av
+# punkter): ett ID som börjar med "_" (understreck, tillåtet tecken på
+# POSITION 2+ men INTE som första tecken) ska ocksä avvisas — bevisar att
+# skärpningen gäller GENERELLT för alla tre "inte alfanumeriskt"-tecknen
+# som FÖRSTA position, inte bara "-".
+reset_scen
+EXPECT_ERR="OGILTIGT --session-ID"
+run_case "T89 --session _S126 (understreck FÖRST) → exit 64" 64 - \
+    bash ./scripts/heartbeat-svep.sh --once --session _S126
 
 printf '\ntest-heartbeat-svep: %s passerade, %s failade\n' "${PASSED}" "${FAILED}"
 [[ "${FAILED}" -eq 0 ]] || exit 1

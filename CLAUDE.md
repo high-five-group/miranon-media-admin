@@ -533,6 +533,22 @@ Vakt-event är väckarklocka, aldrig fakta: förgrundsverifiera före varje
 handling — fem falska terminal-signaler i ett enda pass är belagda
 (S91 Del 39.5), inklusive ett "MERGED med SHA" vars SHA aldrig nådde `main`.
 
+**Sessionsmedvetet läge (`TASK-462`, `scripts/heartbeat-svep.sh --session
+<ID>`).** Två samtidiga sessioner som båda körde svepet mot samma repo
+väcktes tidigare av VARANDRAS PR:ar (mätt 2026-09-18, S126+S127).
+`--session <ID>` filtrerar RÖTT/DIRTY/ARMERINGS-KANDIDAT till PR:ar vars
+kropp bär `<!-- heartbeat-svep:session:<ID> -->` (satt av bygg-agenten vid
+`gh pr create`, `.claude/agents/bygg-agent.md` § Landning) — en PR märkt
+för en ANNAN session är helt tyst i det läget. `--alla` ger dagens
+beteende (alla öppna PR:ar, ingen filtrering); utan endera flaggan är
+beteendet OFÖRÄNDRAT och identiskt med innan `TASK-462`. Ett
+ARMERINGS-KANDIDAT-larm i sessionsläge är därför en ORDER till DENNA
+session specifikt — se § "Åtgärdsregeln för en armerings-kandidat" nedan
+för vad ordern innebär. En PR utan sessionsmarkör alls larmar aldrig tyst:
+den syns i ett eget, glest besked (default var 30:e minut,
+`HEARTBEAT_OMARKERAD_INTERVALL`), aldrig formulerat som en order. Full
+mekanik: skriptets eget § SESSIONSMEDVETET SVEP.
+
 **Namnet på mönstret: subagent = Activity, orkestrerare = Workflow** —
 Temporal-mönstret som förebild för namngivningen: en subagent utför sitt
 avgränsade jobb och returnerar, den äger aldrig väntan, eftersom den saknar en
@@ -604,6 +620,10 @@ armerings-kandidat är därför en ORDER till PR:ens ägare, inte enbart
 information: armera den, eller sätt den till draft (`gh pr ready <nr>
 --undo`) — i SAMMA svep larmet upptäcks. En främmande, AKTIV sessions PR
 rörs aldrig av någon annan än ägaren — det är ägarens eget svep som bär den.
+Sedan `TASK-462` är en del av detta mekaniserat: körs svepet i sessionsläge
+visas en FRÄMMANDE sessions kandidat inte alls. `--alla` och en körning
+utan flaggan visar fortfarande samtliga kandidater, som tidigare — i de
+lägena är invarianten fortsatt ett ÅTAGANDE, inte ett lås.
 
 **En köad gren kan inte uppdateras via `gh`.** Push avvisas med `GH006` så
 länge PR:en står i kön, och `--disable-auto` släpper inte låset — `gh` 2.96.0
