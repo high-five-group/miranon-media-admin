@@ -367,10 +367,18 @@ PUSHAR. En gren fortsätter ta emot pushar precis som i dag — ingen
 agentsynlighet går förlorad, write-ahead-principen bryts inte — men
 flera färdiga dokumentenheter samlas i EN PR i stället för att var och
 en pushas och armeras separat. Orkestreraren GJORDE redan detta i
-stängningsbatchar innan beslutet formaliserade det. Besparingen är
-mätt: 870 av augustis 1 279 landningar var rena dokumentlandningar
-(68 procent av landningarna, ≈ 22 procent av minuterna); buntade tre
-och tre faller ≈ 24 200 min/mån bort.
+stängningsbatchar innan beslutet formaliserade det. Underlaget
+(`actions-minutbudget-2026-09-18.md` § S8 — HÄRLETT, inte mätt): 870 av
+augustis 1 279 landningar var rena dokumentlandningar (68 procent av
+landningarna, ≈ 22 procent av minuterna); buntades ALLA dokumentlandningar
+tre och tre föll ≈ 24 200 min/mån bort — räknat på AUGUSTIS styckkostnad,
+före S4 (`TASK-464.1`), som sänkte en dokumentlandning från 31 till 13
+fakturerade minuter (mätt på `#2572`). Med dagens styckkostnad ger samma
+räkning ≈ 7 500 min/mån (870 × 13 × ⅔), och beslutet gäller bara
+ORKESTRERARENS dokument — en delmängd av de 870. Den förväntade effekten
+är alltså mindre än så, och den är inte mätt. Månadstabellen i § Kostnad
+i två mått (≈ 51 000 → ≈ 44 000, tillsammans med länkkontrollen) är den
+siffra som gäller (se § Updates 2026-09-19).
 
 **Avvisat alternativ: buntning av ALLA dokument-PR:er, inklusive
 agenternas.** Detta hade varit exakt den `session-batchad push` `ADR-097`
@@ -649,4 +657,18 @@ svepningskontrollen och rörs inte av något beslut här.
 
 ## Updates
 
-Inga än.
+### 2026-09-19 — två precisionsrättelser samma dag som ADR:n landade (S126)
+
+Inget beslut ändras. Båda rättelserna kom ur review-grinden och landade i
+orkestrerarens dokumentbuntar.
+
+1. **Citatformat (`#2587` runda 4).** GitHub-citatet i ordförklaringen av
+   kön fick URL + hämtdatum, samma form som dokumentets övriga citat.
+2. **Beslut 5:s besparingstal (`#2596` runda 1).** Stycket kallade
+   ≈ 24 200 min/mån för "mätt". Talet är researchens HÄRLEDDA värde för att
+   bunta ALLA 870 dokumentlandningar på augustis styckkostnad — före S4,
+   som sänkte en dokumentlandning från 31 till 13 fakturerade minuter — och
+   det gick inte ihop med ADR:ns egen månadstabell (≈ 51 000 → ≈ 44 000).
+   Stycket säger nu vad talet är, vad samma räkning ger i dag (≈ 7 500)
+   och att beslutet bara gäller orkestrerarens dokument. Tabellen är
+   oförändrad och är den siffra som gäller.
