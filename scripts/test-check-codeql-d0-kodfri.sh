@@ -2,9 +2,10 @@
 #
 # test-check-codeql-d0-kodfri.sh — self-test för check-codeql-d0-kodfri.sh.
 #
-# FEMTON FALL. Grinden är billig att göra grön och det bevisar ingenting;
-# varje fall nedan finns för att bevisa att den FÄLLER när den ska, eller att
-# den vägrar uttala sig när den inte kan läsa det den ska pröva.
+# NITTON FALL (T16–T19 tillagda TASK-471). Grinden är billig att göra grön
+# och det bevisar ingenting; varje fall nedan finns för att bevisa att den
+# FÄLLER när den ska, eller att den vägrar uttala sig när den inte kan läsa
+# det den ska pröva.
 #
 #   T1  analyserbar fil under D0, deklarerad undantag      → 0
 #   T2  analyserbar fil under D0, ODEKLARERAD               → 1
@@ -21,6 +22,10 @@
 #   T13 git ls-files fallerar (ingen .git alls)                → 2
 #   T14 action.yml UTANFÖR .github/workflows/, deklarerad      → 0
 #   T15 action.yaml UTANFÖR .github/workflows/, ODEKLARERAD    → 1
+#   T16 ci.yml-FORM (files:|, negationer), analyserbar odeklarerad → 1
+#   T17 ci.yml-FORM, SAMMA fixtur, filen deklarerad                → 0
+#   T18 ci.yml-FORM, ren .md under D0 (negationsrader i regionen)  → 0
+#   T19 ci.yml-FORM, NOLL globs (bara "files: |" + negationer)     → 2
 #
 # T3 är det viktigaste fallet av de ursprungliga tio: ett kvarliggande
 # undantag för en fil som inte längre matchar maskerar nästa drift på samma
@@ -50,18 +55,37 @@
 # sedan review runda 4 fynd 2 av scripts/check-codeql-push-pr-parity.mjs i
 # stället för härifrån — se den filens egen testsvit.
 #
+# T16–T19 (TASK-471) bevisar den PARAMETRISERADE andra konsumenten — ci.yml:s
+# EGEN `klassning-d0`-region, ett annat SKRIVSÄTT än codeql.yml:s (en
+# tj-actions/changed-files `files: |`-block-scalar med OCITERADE rader, plus
+# `!`-negerade rader som inte hör till den positiva mängden) än T1–T15:s
+# fixtur (en citerad YAML-lista). Grunden till kortet: `ls scripts | grep
+# -iE "klassning|changed|d0"` hittar bara detta par (check-codeql-d0-kodfri.sh
+# + denna fil) — INGEN separat svit finns för `changed`-jobbets EGNA
+# `should_skip_tests`/`requires_lint_by_extension`-steg (de körs bara på
+# GitHub Actions-plattformen; se scripts/verify-ci-parity.mjs för den
+# LOKALA, härledda motsvarigheten). T16–T18 är alltså den tvåsidiga
+# klassningsbeviset AC #1/§ Krav efterfrågar, fört mot samma skript som redan
+# skarpt vaktar CodeQL-ytan: en NY analyserbar fil under ci.yml:s D0-lista
+# fäller (T16), en .md-fil under SAMMA lista gör det inte (T18), och en
+# deklaration räcker (T17) — bevisat mot ci.yml:s FAKTISKA skrivsätt, inte en
+# förenklad kopia av det. T19 bevisar att `files: |`-inledaren och
+# negationsraderna ensamma (ingen positiv glob) fortfarande ger NOLL-fallet,
+# inte tyst noll-poster-grönt.
+#
 # Test-isolering: allt sker i en temp-katalog med ett MINIMALT eget git-repo
 # (grinden kör `git ls-files`, som kräver en git-kontext) samt en fristående
 # workflow-fixtur — INGEN beröring av det riktiga repots .github/workflows/
 # eller .codeql-d0-kodfri-policy.conf.
 #
 # Användning: bash scripts/test-check-codeql-d0-kodfri.sh
-# Exit 0 om alla femton passerar, annars 1.
+# Exit 0 om alla nitton passerar, annars 1.
 #
 # Källa: TASK-464.2, review runda 1 fynd 1 (warning), review runda 2
 # fynd 1 (warning) + fynd 5 (info), review runda 3 fynd 2 (warning),
 # review runda 4 fynd 1 (warning, förenkling — HTML-innehållsfiltret
-# borttaget).
+# borttaget). T16–T19: TASK-471 (D0-klassningen är inte kodfri för ci.yml:s
+# egen klassning), AC #1 + #2.
 
 set -uo pipefail
 
@@ -113,6 +137,25 @@ skriv_policy() {
     printf '%s\n' "${1}" > "${TEST_DIR}/.codeql-d0-kodfri-policy.conf"
 }
 
+# T16–T19 (TASK-471): ci.yml:s EGET skrivsätt — en tj-actions/changed-files
+# `files: |`-block-scalar, OCITERADE glob-rader, plus `!`-negerade rader
+# (ALDRIG en del av den positiva mängden — samma form som ci.yml:s verkliga
+# nio negationer, `!package.json` m.fl.). Skiljer sig medvetet från
+# skriv_workflow ovan (citerad YAML-lista, codeql.yml:s form) — de två
+# funktionerna bevisar att grindens rad-tolkning bär BÅDA formaten, inte bara
+# den ena.
+skriv_ci_workflow() {
+    local start="${1:-# paritet:start klassning-d0}" slut="${2:-# paritet:slut klassning-d0}"
+    {
+        printf 'jobs:\n  changed:\n    steps:\n      - uses: tj-actions/changed-files@x\n        with:\n'
+        printf '          %s\n' "${start}"
+        printf '          files: |\n'
+        printf '            **/*.md\n            docs/**\n            tasks/**\n'
+        printf '            !package.json\n            !tsconfig*.json\n'
+        printf '          %s\n' "${slut}"
+    } > "${TEST_DIR}/.github/workflows/ci.yml"
+}
+
 # Lägger till + committar en fil i test-repots träd, så `git ls-files` ser den.
 lagg_fil() {
     local rel="${1}" innehall="${2:-// probe}"
@@ -125,7 +168,22 @@ kor() {
     (cd "${TEST_DIR}" && bash "${GATE}" >/dev/null 2>&1; echo $?)
 }
 
-printf '\ntest-check-codeql-d0-kodfri — femton fall\n'
+# T16–T19: samma gate-binär, riktad mot ci.yml:s klassning-d0-region i
+# stället för default (codeql.yml). Detta ÄR den skarpa andra konsumenten
+# (ci.yml:s `lint`-jobb, se check-codeql-d0-kodfri.sh § TVÅ KONSUMENTER) —
+# testet skarpkör samma tre env-variabler CI faktiskt sätter.
+kor_ci() {
+    (
+        cd "${TEST_DIR}" \
+        && CODEQL_D0_KODFRI_WORKFLOW=.github/workflows/ci.yml \
+           CODEQL_D0_KODFRI_START_MARK='# paritet:start klassning-d0' \
+           CODEQL_D0_KODFRI_SLUT_MARK='# paritet:slut klassning-d0' \
+           bash "${GATE}" >/dev/null 2>&1
+        echo $?
+    )
+}
+
+printf '\ntest-check-codeql-d0-kodfri — nitton fall\n'
 printf '%.0s─' {1..70}; printf '\n'
 
 # T1 — analyserbar fil, deklarerad.
@@ -277,6 +335,53 @@ lagg_fil "docs/reference/mallaktioner/action.yaml" $'name: x\nruns:\n  using: co
 skriv_policy 'CODEQL_D0_UNDANTAG=""'
 ec="$(kor)"
 report "T15 action.yaml under D0, odeklarerad → fäller" 1 "${ec}"
+
+# T16 — TASK-471, andra konsumenten: ci.yml:s EGET skrivsätt (files: |,
+# ociterat, plus två `!`-negerade rader). Analyserbar fil under D0,
+# ODEKLARERAD. DEN VIKTIGASTE av de fyra nya: bevisar att grinden fäller på
+# ci.yml:s region DIREKT — inte bara på codeql.yml:s speglade kopia.
+nollstall
+skriv_ci_workflow
+lagg_fil "docs/backfill/engangs.mjs"
+skriv_policy 'CODEQL_D0_UNDANTAG=""'
+ec="$(kor_ci)"
+report "T16 ci.yml-FORM: analyserbar fil, odeklarerad → fäller" 1 "${ec}"
+
+# T17 — SAMMA fixtur som T16, filen deklarerad. En delad undantagslista
+# (samma policy-fil som T1/T2 använder) räcker för BÅDA konsumenterna.
+nollstall
+skriv_ci_workflow
+lagg_fil "docs/backfill/engangs.mjs"
+skriv_policy 'CODEQL_D0_UNDANTAG="
+docs/backfill/engangs.mjs:::Testfixtur — engångsskript, ingen npm/workflow-referens.
+"'
+ec="$(kor_ci)"
+report "T17 ci.yml-FORM: samma fil, deklarerad → grönt" 0 "${ec}"
+
+# T18 — ci.yml-FORM, en REN .md-fil under D0, negationsraderna oberörda.
+# Tvåsidigt bevis ihop med T16: dokumentation fortsätter passera obehindrat
+# på ci.yml:s EGEN region, en kodfil gör det inte.
+nollstall
+skriv_ci_workflow
+lagg_fil "docs/README.md" "# ren dokumentation"
+skriv_policy 'CODEQL_D0_UNDANTAG=""'
+ec="$(kor_ci)"
+report "T18 ci.yml-FORM: ren .md-fil under D0 → grönt" 0 "${ec}"
+
+# T19 — ci.yml-FORM, INGA positiva globs (bara "files: |" + två
+# negationsrader mellan markörerna). Samma NOLL-poster-disciplin som T9,
+# bevisad mot det ANDRA skrivsättet: block-scalar-inledaren och `!`-raderna
+# får inte tyst räknas som "en glob hittad".
+nollstall
+{
+    printf 'jobs:\n  changed:\n    steps:\n      - with:\n'
+    printf '          # paritet:start klassning-d0\n'
+    printf '          files: |\n            !package.json\n            !tsconfig*.json\n'
+    printf '          # paritet:slut klassning-d0\n'
+} > "${TEST_DIR}/.github/workflows/ci.yml"
+skriv_policy 'CODEQL_D0_UNDANTAG=""'
+ec="$(kor_ci)"
+report "T19 ci.yml-FORM: NOLL positiva globs (bara negationer)" 2 "${ec}"
 
 printf '%.0s─' {1..70}; printf '\n'
 printf '  %d gröna, %d röda\n\n' "${pass}" "${fail}"

@@ -1058,13 +1058,18 @@ jobs:
 
       - name: Validate CodeQL D0-undantaget är kodfritt (TASK-464.2 gate)
         # STANNAR på kodändringar — se TASK-464.1 AC #2 (review runda 2 fynd
-        # 3). Detta steg ligger i regionen `docs-grindar-ci`
-        # (paritet:start/slut nedan), som TASK-464.1 flyttar bakom
-        # ci.yml:s dokumentvillkor (`docs_changed`). En ren kodändring —
-        # en ny .mjs under docs/, eller en ändrad codeql.yml — FÄLLER
-        # BÅDA de nya CodeQL-grindarna i det steget, precis som de gör i
-        # dag: de läser D0-listan och det verkliga trädet, oavsett vilket
-        # jobb de körs i. S4-agenten är meddelad om kopplingen.
+        # 3). RÄTTAT TASK-471 (info-fynd #1, #2564 runda 3): detta steg
+        # ligger i `lint`-jobbet (detta jobb, rad 791–), INTE i regionen
+        # `docs-grindar-ci` — den regionen (paritet:start/slut docs-grindar-ci)
+        # bor i `docs`-jobbet (nedan i denna fil) och är en annan, SNÄVARE
+        # mängd (check-docs.sh:s docs-grindar-lokal-motpart). Mekaniken var
+        # alltid rätt — steget körs oavsett vilket jobb det bor i, eftersom
+        # det läser D0-listan och det verkliga trädet direkt — men prosan
+        # pekade på fel region (ADR-083-klassen: en agent som litade på
+        # kommentaren och flyttade steget IN i docs-grindar-ci hade
+        # återskapat fail-open-hålet TASK-464.1/SE2 undvek, eftersom
+        # `docs`-jobbet bara kör på `docs_changed==true` — en ren
+        # kodändring, t.ex. en ny .mjs under docs/, sätter INTE den flaggan).
         #
         # Review runda 1 fynd 1 (warning), PR #2558: D0-listan
         # (.github/workflows/codeql.yml) återanvänder ci.yml:s D0-allowlist
@@ -1076,14 +1081,37 @@ jobs:
         # D0-undantag och fäller på analyserbar ändelse (med innehållsprövning
         # för HTML-familjen) utan deklarerat undantag i
         # .codeql-d0-kodfri-policy.conf. Config-driven, tvåsidigt testad
-        # (scripts/test-check-codeql-d0-kodfri.sh, 14 fall).
+        # (scripts/test-check-codeql-d0-kodfri.sh, 19 fall sedan TASK-471).
         run: bash scripts/check-codeql-d0-kodfri.sh
+
+      - name: Validate ci.yml D0-listan är kodfri (TASK-471 gate)
+        # ANDRA KONSUMENTEN av SAMMA skript + SAMMA undantagslista som steget
+        # ovan (check-codeql-d0-kodfri.sh § TVÅ KONSUMENTER) — pekad DIREKT på
+        # DENNA fils egen `klassning-d0`-region i stället för codeql.yml:s
+        # speglade kopia. Fram till TASK-471 vilade ci.yml:s D0-lista på
+        # ENBART transitivt skydd: scripts/check-listparitet.sh:s par
+        # `klassning-codeql-positiv` höll de två regionerna byte-identiska,
+        # men gick DEN grinden någonsin sönder hade ingenting längre
+        # validerat att ci.yml:s D0-lista faktiskt var kodfri — bara att den
+        # matchade codeql.yml:s kopia, som i sin tur var validerad. Detta
+        # steg tar bort det extra ledet: samma § ANALYSERBARHET-regler prövas
+        # DIREKT mot filen `should_skip_tests`/`requires_lint_by_extension`
+        # faktiskt styrs av. Inget nytt jobb (Marcus ledstjärna,
+        # docs/research/actions-minutbudget-2026-09-18.md § S4/S5) — ett
+        # extra steg i EXAKT det jobb som redan kör här.
+        run: >-
+          CODEQL_D0_KODFRI_WORKFLOW=.github/workflows/ci.yml
+          CODEQL_D0_KODFRI_START_MARK='# paritet:start klassning-d0'
+          CODEQL_D0_KODFRI_SLUT_MARK='# paritet:slut klassning-d0'
+          bash scripts/check-codeql-d0-kodfri.sh
 
       - name: Validate CodeQL push===pull_request paths-ignore (TASK-464.2 gate)
         # STANNAR på kodändringar — se TASK-464.1 AC #2 (review runda 2 fynd
-        # 3). Samma region (`docs-grindar-ci`) som steget ovan, samma
-        # konsekvens: en kodändring fäller detta steg oavsett vilket jobb
-        # det körs i, eftersom det parsar codeql.yml:s verkliga innehåll.
+        # 3). Samma jobb (`lint`, INTE `docs-grindar-ci` — se § rättelsen på
+        # steget "Validate CodeQL D0-undantaget är kodfritt" ovan) som stegen
+        # ovan, samma konsekvens: en kodändring fäller detta steg oavsett
+        # vilket jobb det körs i, eftersom det parsar codeql.yml:s verkliga
+        # innehåll.
         #
         # Review runda 1 fynd 2 (warning), PR #2558: prosan i
         # .listparitet-policy.conf och codeql.yml:s eget filhuvud påstod att

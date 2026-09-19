@@ -1,7 +1,11 @@
 #!/usr/bin/env bash
 # check-codeql-d0-kodfri.sh — vaktar premissen bakom TASK-464.2:s
 # återanvändning av ci.yml:s D0-allowlist för CodeQL:s paths-ignore: att
-# sökvägarna som undantas är KODFRIA.
+# sökvägarna som undantas är KODFRIA. Sedan TASK-471 är grinden PARAMETRISERAD
+# och kör TVÅ GÅNGER i ci.yml:s `lint`-jobb — en gång mot codeql.yml:s
+# `klassning-codeql-d0`-region (som förut) och en gång DIREKT mot ci.yml:s
+# EGEN `klassning-d0`-region, med SAMMA policy-fil (.codeql-d0-kodfri-
+# policy.conf) som delad undantagslista. Se § TVÅ KONSUMENTER nedan.
 #
 # ═══ VARFÖR GRINDEN FINNS ═══
 #
@@ -47,11 +51,37 @@
 #
 # ═══ VAD GRINDEN LÄSER ═══
 #
-# D0-globlistan läses LIVE ur .github/workflows/codeql.yml, mellan
-# markörerna `# paritet:start klassning-codeql-d0` / `# paritet:slut
-# klassning-codeql-d0` — SAMMA region scripts/check-listparitet.sh:s par
-# `klassning-codeql-positiv` vaktar mot ci.yml. Grinden härleder alltså
-# aldrig sin egen kopia av listan; glider D0-listan siktar den ändå rätt.
+# D0-globlistan läses LIVE ur en workflow-fil (default codeql.yml), mellan
+# ett par markörer (default `# paritet:start/slut klassning-codeql-d0`) —
+# SAMMA region scripts/check-listparitet.sh:s par `klassning-codeql-positiv`
+# håller byte-identisk med ci.yml. Grinden härleder alltså aldrig sin egen
+# kopia av listan; glider D0-listan siktar den ändå rätt.
+#
+# ═══ TVÅ KONSUMENTER, EN VAKT, EN UNDANTAGSLISTA (TASK-471) ═══
+#
+# Fram till denna ändring litade skriptet HELT på check-listparitet.sh:s
+# `klassning-codeql-positiv`-par för att "täcka" ci.yml:s egen D0-lista —
+# TRANSITIVT, aldrig direkt: gick den paritets-vakten någonsin sönder (fel
+# konfig, en glömd rad i .listparitet-policy.conf) hade DENNA grind fortsatt
+# läsa codeql.yml:s kopia utan att märka att ci.yml:s ORIGINAL hade glidit.
+# Prosan i ci.yml:s steg-kommentar påstod ändå (innan denna ändring) att
+# grinden "läser D0-listan … oavsett vilket jobb de körs i" — ett påstående
+# ADR-083 inte tillåter förrän mekaniken faktiskt gör det.
+#
+# Skriptet konsumeras nu av BÅDA `lint`-jobbets steg (ci.yml), samma binär,
+# samma § ANALYSERBARHET-regler, samma `.codeql-d0-kodfri-policy.conf` som
+# delad undantagslista (INGEN andra kopia):
+#
+#   WORKFLOW=.github/workflows/codeql.yml   (default — CodeQL-ytan, TASK-464.2)
+#   WORKFLOW=.github/workflows/ci.yml       (TASK-471 — ci.yml:s EGEN klassning-d0)
+#     + START_MARK/SLUT_MARK satta till `# paritet:start/slut klassning-d0`
+#
+# Eftersom de två regionerna hålls byte-identiska (positiv mängd) av
+# check-listparitet.sh ger de två körningarna I DAG samma svar — det är
+# AVSIKTEN, inte ett symptom på onödigt dubbelarbete: den ANDRA körningen är
+# en DIREKT, oberoende bekräftelse som inte förlitar sig på att
+# paritets-vakten förblir korrekt. Går de två isär en dag fäller BÅDA
+# grindarna (paritets-vakten OCH denna), var för sig, på sin egen orsak.
 #
 # `git ls-files <pathspec...>` med flera D0-mönster som argument är en
 # UNION (OR) av alla mönster — samma form review-fyndets egen
@@ -139,7 +169,8 @@
 # Exit 2 = anropsfel — grinden kunde inte läsa det den skulle pröva
 #          (inklusive: git ls-files själv fallerade).
 #
-# Config: .codeql-d0-kodfri-policy.conf
+# Config: .codeql-d0-kodfri-policy.conf (delad mellan BÅDA konsumenterna,
+#         TASK-471 — se § TVÅ KONSUMENTER ovan)
 # Källa: TASK-464.2, review runda 1 fynd 1 (warning), review runda 2
 # fynd 1 (warning) + fynd 5 (info), review runda 3 fynd 1 (warning) +
 # fynd 2 (warning), review runda 4 fynd 1 (warning, förenkling) + fynd 2
@@ -148,9 +179,13 @@
 set -uo pipefail
 
 POLICY_FIL="${CODEQL_D0_KODFRI_POLICY:-.codeql-d0-kodfri-policy.conf}"
-CODEQL_YML="${CODEQL_D0_KODFRI_WORKFLOW:-.github/workflows/codeql.yml}"
-START_MARK="# paritet:start klassning-codeql-d0"
-SLUT_MARK="# paritet:slut klassning-codeql-d0"
+WORKFLOW_FIL="${CODEQL_D0_KODFRI_WORKFLOW:-.github/workflows/codeql.yml}"
+# TASK-471: parametriserade så SAMMA skript kan konsumera ci.yml:s EGEN
+# `klassning-d0`-region direkt, inte bara codeql.yml:s (byte-identiska,
+# TASK-85-vaktade) kopia — se § TVÅ KONSUMENTER nedan. Defaultvärdena är
+# OFÖRÄNDRADE (CodeQL-ytan, som innan denna ändring).
+START_MARK="${CODEQL_D0_KODFRI_START_MARK:-# paritet:start klassning-codeql-d0}"
+SLUT_MARK="${CODEQL_D0_KODFRI_SLUT_MARK:-# paritet:slut klassning-codeql-d0}"
 
 # Se § ANALYSERBARHET ovan för källa och motivering per ändelse. HTML-
 # familjen (htm/html/xhtm/xhtml) ingår HÄR, rakt av — inget separat
@@ -170,42 +205,79 @@ fi
 . "${POLICY_FIL}"
 CODEQL_D0_UNDANTAG="${CODEQL_D0_UNDANTAG-}"
 
-if [[ ! -f "${CODEQL_YML}" ]]; then
-    echo "❌ ${CODEQL_YML} saknas" >&2
+if [[ ! -f "${WORKFLOW_FIL}" ]]; then
+    echo "❌ ${WORKFLOW_FIL} saknas" >&2
     exit 2
 fi
-if ! grep -qF -- "${START_MARK}" "${CODEQL_YML}"; then
-    echo "❌ start-markören saknas i ${CODEQL_YML}" >&2
+if ! grep -qF -- "${START_MARK}" "${WORKFLOW_FIL}"; then
+    echo "❌ start-markören saknas i ${WORKFLOW_FIL}" >&2
     echo "   Sökte: ${START_MARK}" >&2
     exit 2
 fi
-if ! grep -qF -- "${SLUT_MARK}" "${CODEQL_YML}"; then
-    echo "❌ slut-markören saknas i ${CODEQL_YML}" >&2
+if ! grep -qF -- "${SLUT_MARK}" "${WORKFLOW_FIL}"; then
+    echo "❌ slut-markören saknas i ${WORKFLOW_FIL}" >&2
     echo "   Sökte: ${SLUT_MARK}" >&2
     exit 2
 fi
 
-# ─── Extrahera D0-globs live ur codeql.yml ──────────────────────────────────
-GLOBS="$(awk -v s="${START_MARK}" -v e="${SLUT_MARK}" '
+# ─── Extrahera D0-globs live ur workflow-filen ──────────────────────────────
+# TASK-471: FORMAT-AGNOSTISK rad-tolkning — grinden konsumerar nu TVÅ olika
+# skrivsätt för SAMMA lista (§ TVÅ KONSUMENTER, filhuvudet):
+#
+#   codeql.yml (klassning-codeql-d0): en YAML-LISTA, en citerad post per rad
+#     - '**/*.md'
+#     - 'docs/**'
+#
+#   ci.yml (klassning-d0): en tj-actions/changed-files `files: |`-block-
+#   scalar — OCITERADE rader, plus NIO `!`-negerade rader som INTE hör till
+#   den positiva mängden (package.json m.fl., aldrig under en D0-katalog i
+#   dag — se ci.yml:s egen kommentar vid blocket för varför de ändå står
+#   kvar där):
+#     files: |
+#       **/*.md
+#       docs/**
+#       !package.json
+#
+# Den GAMLA extraktionen (`grep -oE "'[^']+'"`) gav NOLL träffar på den andra
+# formen — en tolkare byggd för EN form missar den ANDRA TYST, samma
+# § ANALYSERBARHET-disciplin som redan gäller HTML-familjen: FORMEN avgör,
+# aldrig ett antagande om vilken fil som läses.
+#
+# Regel, per rad efter `read`s standard-trimning (leading/trailing IFS-
+# whitespace bort, ingen `IFS=` här — till skillnad från undantags-loopen
+# nedan, som MÅSTE bevara mellanslag i skäl-texten):
+#   tom rad                       → ignorerad
+#   exakt "files: |"              → ignorerad (block-scalar-inledaren, ligger
+#                                    INNANFÖR markörerna i ci.yml men är
+#                                    aldrig en sökväg)
+#   börjar med "!"                → ignorerad (negation, ej positiv mängd)
+#   börjar med "- "                → "- "-prefixet stripas (YAML-listform)
+#   omgärdas av raka citattecken   → citattecknen stripas
+# Kvar står bara glob-strängen, oavsett ursprungsform. Körd mot codeql.yml:s
+# citerade form ger detta IDENTISKT utfall som den gamla extraktionen (regel
+# 5 ensam återskapar `grep -oE "'[^']+'" | tr -d "'"`).
+RAW_RADER="$(awk -v s="${START_MARK}" -v e="${SLUT_MARK}" '
     !f && index($0, s) { f = 1; next }
     f && index($0, e)  { exit }
     f                  { print }
-' "${CODEQL_YML}" | grep -oE "'[^']+'" | tr -d "'")"
+' "${WORKFLOW_FIL}")"
 
-if [[ -z "${GLOBS}" ]]; then
-    echo "❌ NOLL globs extraherade ur ${CODEQL_YML} — grinden läser inget" >&2
+GLOB_ARGS=()
+while read -r rad; do
+    [[ -z "${rad}" ]] && continue
+    [[ "${rad}" == "files: |" ]] && continue
+    [[ "${rad}" == "!"* ]] && continue
+    rad="${rad#- }"
+    rad="${rad#\'}"
+    rad="${rad%\'}"
+    [[ -z "${rad}" ]] && continue
+    GLOB_ARGS+=("${rad}")
+done <<< "${RAW_RADER}"
+
+if [[ "${#GLOB_ARGS[@]}" -eq 0 ]]; then
+    echo "❌ NOLL globs extraherade ur ${WORKFLOW_FIL} — grinden läser inget" >&2
     exit 2
 fi
-
-# git ls-files tar pathspecs som separata argument. `xargs` hade riskerat
-# ord-splittring på mellanslag i sökvägar (ingen av D0:s 17 poster har det
-# i dag, men grinden ska inte tysta gå fel om det ändras) — bygg arg-listan
-# rad för rad i stället.
-GLOB_ARGS=()
-while IFS= read -r g; do
-    [[ -z "${g}" ]] && continue
-    GLOB_ARGS+=("${g}")
-done <<< "${GLOBS}"
 
 # ─── Undantagens egen form prövas FÖRST ─────────────────────────────────────
 UNDANTAGS_FILER=""
