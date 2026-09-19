@@ -4,7 +4,7 @@ title: 'Skiva: Backfill av inbetalningar — staging mätt och kört; prod på M
 status: Done
 assignee: []
 created_date: '2026-08-30 18:46'
-updated_date: '2026-08-31 04:03'
+updated_date: '2026-09-19 00:23'
 labels:
   - ready-for-agent
   - intentionally-unchecked
@@ -86,9 +86,9 @@ pris-okant (22): inget pris kan härledas ur någon av de fyra nivåerna.
   recUMhAPojg0GHgKG Gunilla Törnqvist · Fjärrskådning · Varberg (Mottagen/Mottagen)
   recfsSr39fL990vrB Johan Dahlgren · Fjärrskådning · Varberg (Mottagen/Mottagen)
   reclh31rH9n7mjteQ Gunilla Törnqvist · Fjärrskådning · Falköping (Mottagen/Mottagen)
-  recmdpgUW9NO4JgsO Cecilia Ödman · Fjärrskådning · Falköping (Mottagen/Ej mottagen)
+  recmdpgUW9NO4JgsO Deltagare 106 · Fjärrskådning · Falköping (Mottagen/Ej mottagen)
   recncypv2R4Byf8cX Fredrik Hedlund · Fjärrskådning · Falköping (Mottagen/Ej mottagen)
-  recsIkybrKblGAaDo Cecilia Ödman · Fjärrskådning · Varberg (Mottagen/Ej mottagen)
+  recsIkybrKblGAaDo Deltagare 106 · Fjärrskådning · Varberg (Mottagen/Ej mottagen)
   recw3eVWqfvKvEd27 Sofia Isaksson · Fjärrskådning · Falköping (Mottagen/Mottagen)
   recymxoqKU2oBGPnM Maja Mattsson · Fjärrskådning · Falköping (Mottagen/Ej mottagen)
   recyv9QleJ1ctybQi Bengt Lindqvist · Fjärrskådning · Varberg (Mottagen/Ej mottagen)
@@ -104,7 +104,7 @@ FIXTURSKYDD: samtliga 49 anmälningar på ZZ-event exkluderades, inklusive ZZ-GR
 PREMISS-DIVERGENSER mot uppdraget (ADR-086)
  1. Populationen: uppdraget angav 93 anmälningar med fördelningen 13/24/4/22/25+4. MÄTT 97 med 13 båda Mottagen · 24 Mottagen/Ej · 4 Ej/Mottagen · 22 båda Ej · 34 båda tomma. De fyra extra och de fem extra tomma tillkom sannolikt genom parallell nattlig testaktivitet; följde verkligheten, inte uppdragets tal.
  2. Uppdragets fråga "pröva vad EF:en gör med utelämnat datum" — svaret är att den sätter DAGENS datum, alltså kan väg (a) inte uppfylla AC #1. Väg (b) valdes med bokfört skäl.
- 3. Uppdraget beskrev en "1 rad Backfill (historisk) med tomma fack" — den befintliga Postgres-raden är i stället en MAKULERAD Swish-post på Cecilia Ödman (rec0houPcRjsPBGVz) från en QA-vandring. Den räknas inte i summan (status makulerad) och rördes inte.
+ 3. Uppdraget beskrev en "1 rad Backfill (historisk) med tomma fack" — den befintliga Postgres-raden är i stället en MAKULERAD Swish-post på Deltagare 106 (rec0houPcRjsPBGVz) från en QA-vandring. Den räknas inte i summan (status makulerad) och rördes inte.
  4. Uppdraget antog att fritext-tolkningen skulle bära arbetet. I staging finns fritext bara på den ENA Eventinnehåll-raden, och den var redan parsad till numeriska fält av TASK-346.2. Parsern byggdes och bevisades hermetiskt ändå (AC #2 kräver den, och prod behöver den).
 
 GRINDAR: typecheck 0 · biome check . 0 · build 0 · check:docs 0 (14 grindar) · actionlint 0 · check-langa-streck 0 · test-backfill-inbetalningar.mjs 0 (96 fall) · test:api 1 rött = det kända generate-event-attachment:520 (TASK-347), 1587 gröna.
