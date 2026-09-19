@@ -11,6 +11,18 @@
       "filterByFormula": "AND(FIND('create-test+', {E-post}) = 1, FIND('@staging.test', {E-post}) > 0)",
       "exactMatchField": "E-post",
       "exactMatchPattern": "^create-test\\+[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}@staging\\.test$",
+      "linkGuard": false,
+      "_TASK-465": "watchGroupField/watchWarnThreshold är den billiga återfalls-vakten (scripts/purge-staging-sentinels.mjs § loggaGruppVakt) mot exakt den ackumulering som orsakade docs/research/flake-request-context-disposed-2026-09-19.md — 188 poster på ETT event (~34 s mot get-registrations) sprängde testens 30 s-tak. Tröskeln 50 är härledd ur den mätta lutningen 0,174 s/post (§4.2 i researchen): 50 poster ≈ 10,5 s, gott om marginal FÖRE 30 s-taket. Grundfixen är manifest-registrering i *.staging.test.ts (tests/support/kastbara-poster.ts) — vakten larmar OM den ändå glöms i en framtida svit.",
+      "watchGroupField": "Event (länk)",
+      "watchWarnThreshold": 50
+    },
+    {
+      "name": "send-action-email-gemensam-bilaga-registration-sentineler",
+      "table": "Anmälningar",
+      "_TASK-465-granskning-r1-fynd2": "send-action-email-gemensam-bilaga.staging.test.ts (TASK-452) skapar sina två sentinel-anmälningar med Resends KANONISKA testadress delivered@resend.dev (RESEND_TEST_ADDRESSES, _shared/send-bulk.ts) — den enda adressform icke-prod-spärren tillåter EF:en att faktiskt dispatcha mot. Adressen matchar VARKEN create-registration-sentinelerns FIND('create-test+',…)-formel eller dess UUID-krävande exakt-mönster, så registrering i ägar-manifestet ENSAMT räcker inte: filterByFormula filtrerar server-side, innan klienten någonsin ser raden. Denna target är EXAKT-LITERAL (ingen wildcard) på den kanoniska adressen — smal med avsikt, så ingenting annat än CI:s (eller ett manuellt Resend-smoke-test) egna delivered@resend.dev-rader kan träffas.",
+      "filterByFormula": "{E-post} = 'delivered@resend.dev'",
+      "exactMatchField": "E-post",
+      "exactMatchPattern": "^delivered@resend\\.dev$",
       "linkGuard": false
     },
     {
