@@ -466,11 +466,17 @@ jobs:
   # två lägen, inte vad CI kör. CI kör bara den POSITIVA sidan. Den negativa
   # kontrollen (`npm run test:acceptance:sjalvtest:negativ`, som kör UTAN
   # självtestläget och kräver att bedömningen FALLER) finns enbart i
-  # package.json och anropas av INGEN workflow — verifierat 2026-09-18:
-  # `grep -rn 'sjalvtest:negativ' .github/workflows/` ger noll träffar. Den är
-  # alltså en lokal körning, inte en CI-grind, och ett grönt jobb här bevisar
-  # inte att grinden kan fälla. Att CI-wira den är kandidat till eget kort
-  # (registrerat i PR #2524:s kropp) — den byggs INTE i denna skiva.
+  # package.json och anropas av INGEN workflow — verifierat 2026-09-18. RÄTTAT
+  # 2026-09-19 (N6 runda 2-fynd, PR #2555): en tidigare formulering här hävdade
+  # att `grep -rn 'sjalvtest:negativ' .github/workflows/` "ger noll träffar" —
+  # självfalsifierande, eftersom kommandot citerar sin egen söksträng och
+  # därmed matchar SIG SJÄLVT (denna rad plus raden ovan). Den faktiska
+  # kontrollen är: ingen workflow ANROPAR scriptet (`npm run
+  # test:acceptance:sjalvtest:negativ` som kommando-position, inte
+  # substrängen). Det är alltså en lokal körning, inte en CI-grind, och ett
+  # grönt jobb här bevisar inte att grinden kan fälla. Att CI-wira den är
+  # kandidat till eget kort (registrerat i PR #2524:s kropp) — den byggs INTE
+  # i denna skiva.
   #
   # ═══ VARFÖR ETT EGET JOBB SEDAN TASK-239 (2026-08-17) ═══
   #

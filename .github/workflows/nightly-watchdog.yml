@@ -181,7 +181,11 @@ jobs:
               # ett tyst hål, för de två domänerna är inte lika:
               #   .jobs[].conclusion — success · failure · neutral · cancelled ·
               #                        skipped · timed_out · action_required ·
-              #                        stale · null (pågår)
+              #                        null (pågår) — ÅTTA värden (RÄTTAT
+              #                        2026-09-19, N2 runda 3-fyndet, PR #2555:
+              #                        "stale" hör till check-runs-API:t, inte
+              #                        till detta fält — en tidigare version av
+              #                        raden räknade nio och listade stale här)
               #   needs.<jobb>.result — success · failure · cancelled · skipped
               # Ett produktjobb som slår i timeout har `conclusion: timed_out`
               # men `result: failure`, alltså FYRAR alarm medan vakten inte såg
@@ -204,16 +208,22 @@ jobs:
               #             strängare regel än plattformen själv.
               #   null    — jobbet PÅGÅR. Ett rött-påstående om ett oavslutat
               #             jobb vore ett faktapåstående utan fakta (L322).
-              # Allt annat — failure, cancelled, timed_out, action_required,
-              # stale och varje okänt framtida värde — räknas som rött.
+              # Allt annat — failure, cancelled, timed_out, action_required
+              # och varje okänt framtida värde — räknas som rött ("stale"
+              # struket 2026-09-19, PR #2555: fältet har den aldrig).
               #
               # VARFÖR DETTA RÄCKER, och varför larm-jobbet fortfarande INTE
               # står i listan: `alarm` KÖR bara när ett av produktkanalens tre
               # jobb har `result` failure eller cancelled, och varje conclusion
               # som ger det resultatet ligger utanför den ofarliga mängden ovan.
-              # Vakten fångar alltså numera VARJE körning där alarm alls kunde
-              # ha fyrat — utan att behöva alarm-jobbets eget utfall som
-              # bärare. Att lägga "Larm vid röd natt" i listan hade fixat ett
+              # Vakten fångar alltså numera varje AVSLUTAD körning där alarm
+              # alls kunde ha fyrat, utan att behöva alarm-jobbets eget utfall
+              # som bärare. RÄTTAT 2026-09-19 (N2 runda 3-fyndet, PR #2555):
+              # en tidigare formulering sade "VARJE körning" utan reservation
+              # — sant för jq-filtret isolerat, men vakten är bredare än
+              # mekanismen den citerar: en PÅGÅENDE körning (`conclusion ==
+              # ""`, den `null`-grenen ovan) tystnar vakten i stället för att
+              # invänta ett senare avslut. Att lägga "Larm vid röd natt" i listan hade fixat ett
               # smalare fall med större yta: listan hade slutat vara lika med
               # alarm-triggern, vilket är precis den invariant configens
               # § INVARIANT beskriver och scripts/check-nattkanal-partition.mjs

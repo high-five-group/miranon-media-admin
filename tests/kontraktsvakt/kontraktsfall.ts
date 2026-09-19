@@ -22,12 +22,21 @@ import type { Felkontraktsfall, Kontraktsfall } from './kontraktsjamforelse';
 /**
  * De bevakade kontrakten (task-59.2, ADR-080 beslut 3; utökad i TASK-68).
  *
- * ALLA SJU FIXTURHANDLERS BEVAKAS. `tests/support/fixturvarld/handlers.ts`
- * registrerar sju EF-handlers, och var och en av dem har ett fall nedan.
+ * SJU AV ARTON FIXTURHANDLERS BEVAKAS (RÄTTAT 2026-09-19, N8-fyndet, PR
+ * #2555): en tidigare version av detta stycke påstod "ALLA SJU
+ * FIXTURHANDLERS BEVAKAS" och att `tests/support/fixturvarld/handlers.ts`
+ * registrerade sju EF-handlers totalt. Mätt om 2026-09-19: filen
+ * registrerar 18 handlers i dag (`grep -c 'http\.\(get\|post\|put\|patch\|
+ * delete\)' tests/support/fixturvarld/handlers.ts`); listan nedan har
+ * fortfarande sju fall. Talet sju gällde alltså ALDRIG handler-mängden — det
+ * gällde bara hur många av dem som har ett fall — men den ursprungliga
+ * formuleringen gick att läsa som att de två talen var lika, vilket de inte
+ * längre är.
  *
  * DEN PARITETEN ÄR I DAG EN KONVENTION, INTE EN GRIND — sagt rakt ut hellre än
- * antytt. Inget test binder listan nedan till handler-listan, så en åttonde
- * handler kan tillkomma utan att något fäller. Att mekanisera den vore billigt
+ * antytt. Inget test binder listan nedan till handler-listan, så ytterligare
+ * handlers kan tillkomma utan att något fäller (elva gör redan det, se ovan).
+ * Att mekanisera den vore billigt
  * (`handlers`-arrayens `info.path` är läsbar), men skulle göra det BLOCKERANDE
  * att registrera ett fall — och därmed flytta en nattlig, icke-blockerande vakt
  * in i presubmits beslutsrymd. Det är ett policyval, inte en implementations-

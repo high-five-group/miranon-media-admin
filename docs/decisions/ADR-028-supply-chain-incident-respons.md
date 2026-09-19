@@ -382,7 +382,10 @@ ingen av detta ADR:s fyra grundbeslut. Det utvidgar §1:s supply-chain-grind
 med ett avgränsat undantag, vilket hör hemma i en Updates-post.
 
 **Bevis (tvåsidigt, mätt 2026-09-04, inte resonerat):**
-`scripts/test-audit-degradering.sh` — 41 assertions, hermetisk (`npx` stubbad
+`scripts/test-audit-degradering.sh` — 41 assertions vid detta datum, sedan
+vuxen till **66** (mätt 2026-09-19, granskning #2553 runda 2; svitens egen
+slutrad — "RESULT: 66/66 PASS" — bär det levande talet, skriv aldrig av det
+hit igen, TASK-106), hermetisk (`npx` stubbad
 via PATH, git-fixturer i mktemp, ingen nätverkstrafik), wirad i lint-jobbets
 gatekeeper-steg. Röd sida: ändrad låsfil, ändrat manifest, sårbarhetstabell,
 sårbarhet i ett av två försök, okänd felklass, nätverksfel i ett försök men
