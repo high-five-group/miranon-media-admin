@@ -111,21 +111,24 @@
 #       andra körning som delar STATE_DIR stryps ÄNDÅ (ingen session-ID
 #       att skopa mot, se KÄND BEGRÄNSNING)                        → tyst
 #
-# T66–T72 (review runda 4, Marcus-beslut 2026-09-19): review runda 3 fann
-# att session_id_sanitize() kunde mappa OLIKA ID:n till SAMMA filnamn ("S
-# 126"/"S/126" ⇒ båda "S_126") — tyst återinförd tvärsessions-tystnad, och
-# PR:ens "FULLSTÄNDIGT löst" överclaimade. Fixat: --session <ID> VALIDERAS
-# (^[A-Za-z0-9._-]{1,64}$, aldrig enbart punkter) i stället för saneras;
-# ogiltigt ⇒ exit 2, fail-closed, ingen körning, ingen fil skriven.
+# T66–T74 (review runda 4, EXIT-KOD RÄTTAD I REVIEW RUNDA 5, Marcus-beslut
+# 2026-09-19): review runda 3 fann att session_id_sanitize() kunde mappa
+# OLIKA ID:n till SAMMA filnamn ("S 126"/"S/126" ⇒ båda "S_126") — tyst
+# återinförd tvärsessions-tystnad, och PR:ens "FULLSTÄNDIGT löst"
+# överclaimade. Fixat: --session <ID> VALIDERAS (^[A-Za-z0-9._-]{1,64}$,
+# aldrig enbart punkter) i stället för saneras; ogiltigt ⇒ **exit 64**
+# (INTE 2 — review runda 5 fynd 1: exit 2 kolliderade med bitmask-koden
+# DIRTY), via die() (ENDAST stderr, INTE stdout — samma konvention som
+# REPO/INTERVAL/TIMEOUT), fail-closed, ingen körning, ingen fil skriven.
 #   T66 Giltigt ID "S126" (baseline, oförändrat)                      → 0
 #   T67 Giltigt ID MED punkt "s126.resume.2" (punkt tillåten, inte ENDAST
 #       punkter)                                                       → 0
-#   T68 Tomt --session-ID ("") → exit 2, fel på BÅDE stdout och stderr
-#   T69 Session-ID med mellanslag ("S 126") → exit 2
-#   T70 Session-ID med snedstreck ("S/126") → exit 2
-#   T71 Session-ID SOM ENBART punkter ("..") → exit 2 (path-traversal-form,
+#   T68 Tomt --session-ID ("") → exit 64, fel ENDAST på stderr
+#   T69 Session-ID med mellanslag ("S 126") → exit 64
+#   T70 Session-ID med snedstreck ("S/126") → exit 64
+#   T71 Session-ID SOM ENBART punkter ("..") → exit 64 (path-traversal-form,
 #       avvisas trots att tecknen i sig är tillåtna)
-#   T72 Session-ID på 65 tecken (över gränsen) → exit 2
+#   T72 Session-ID på 65 tecken (över gränsen) → exit 64
 #   T73 INGEN fil skrivs alls i STATE_DIR när ID:t avvisas (fail-closed
 #       betyder "ingen sopning skedde", inte "sopning med ett tomt namn")
 #   T74 Ett giltigt farligt-LIKNANDE-men-TILLÅTET ID ("../")-substräng är
@@ -134,6 +137,31 @@
 #       EGEN statsfil, skild från ett annat giltigt ID — kollision omöjlig
 #       per konstruktion (kompletterar T62/T63:s S126≠S127-bevis med ett
 #       tredje, olikt-format par)
+#
+# T75–T82 (review runda 5, Marcus-beslut 2026-09-19). Fynd 1: exit 2 för
+# ogiltigt --session-ID kolliderade med bitmask-DIRTY — rättat till 64 (se
+# T64/T66–T72 ovan). Fynd 2: `--session` (eller vilken annan värde-flagga
+# som helst) som SISTA token fick `shift 2` att fallera, `set -e` avslutade
+# med `shift`s EGEN exit 1 (= bitmask RÖTT) och NOLL utskrift. Fynd 3:
+# "kollision omöjlig per konstruktion" höll på strängnivå men inte på ett
+# skiftlägesokänsligt filsystem (macOS APFS) — "S126"/"s126" är nu MED
+# AVSIKT samma session för statsfilnamnet.
+#   T75 --session sista token (inget värde) → exit 64, INTE 1          → 64
+#   T76 --repo sista token → exit 64                                    → 64
+#   T77 --branch sista token → exit 64                                  → 64
+#   T78 --interval sista token → exit 64                                → 64
+#   T79 --timeout sista token (inget värde) → exit 64                    → 64
+#       (UPPTÄCKT, EJ FIXAT — utanför denna rundas anspråk: "--session
+#       --alla" tolkar "--alla" som ett GILTIGT sessions-ID i stället för
+#       att avvisa det som en flagga utan värde, eftersom "--alla" råkar
+#       matcha HEARTBEAT_SESSION_ID_REGEX. Ingen bitmask-kollision — bara
+#       en tyst felparsning. Rapporterat, inte byggt.)
+#   T80/T80b "S126" och "s126" (SAMMA STATE_DIR) delar MED AVSIKT
+#       statsfil — S126 ser notisen, s126 stryps av S126:s stämpel       → 0
+#   T81/T81b statsfilen är normaliserad till gemener, ingen separat
+#       versal-variant skapas
+#   T82 Markör-matchningen (RÖTT/DIRTY/KANDIDAT) förblir SKIFTLÄGES-
+#       KÄNSLIG — orörd, skild mekanism från statsfilnamnet              → 0
 #
 # Test-isolering: /tmp/task119-test-heartbeat-svep/ med en gh-stub som svarar
 # ur ett scenario-katalog (main-sha / rows / fail-mainsha / fail-prlist).
@@ -181,7 +209,10 @@
 # fix-runda 2 (2026-09-19, review runda 3: T62–T65 nya — PER-SESSION
 # statsfil-suffix, session_id_sanitize()) · TASK-462 fix-runda 3 (2026-09-19,
 # review runda 4: T64 omskriven + T66–T74 nya — validerat session-ID ersätter
-# sanering, session_id_sanitize() BORTTAGEN, per-session-statsfil-städning)
+# sanering, session_id_sanitize() BORTTAGEN, per-session-statsfil-städning) ·
+# TASK-462 fix-runda 4 (2026-09-19, review runda 5: T64/T66–T72 exit-kod
+# 2→64 + T75–T82 nya — bitmask-kollision rättad, saknat flaggvärde fångat,
+# skiftlägesokänsligt statsfilnamn)
 
 set -uo pipefail
 
@@ -1215,16 +1246,22 @@ NOT_EXPECT_OUT="UTAN sessionsmarkör"
 run_case "T63d Session S127 igen → strypt av SIN EGEN stämpel (oberoende av S126)" 0 - \
     bash ./scripts/heartbeat-svep.sh --once --session S127
 
-# T64 — OMSKRIVEN i review runda 4 (Marcus-beslut 2026-09-19):
-# session_id_sanitize() är BORTTAGEN. Ett tidigare "farligt men saneras"-ID
-# ("../../etc/passwd") avvisas nu HELT i stället — fail-closed, exit 2,
-# INGEN fil skrivs alls (varken saniterad eller osaniterad). Se T68–T73 för
-# den fullständiga tvåsidiga bevisningen av valideringen; detta fall
-# behålls under T64:s namn som en direkt regressionsspärr mot att
-# sanerings-beteendet av misstag återinförs.
+# T64 — OMSKRIVEN i review runda 4, EXIT-KOD RÄTTAD i review runda 5
+# (Marcus-beslut 2026-09-19): session_id_sanitize() är BORTTAGEN. Ett
+# tidigare "farligt men saneras"-ID ("../../etc/passwd") avvisas nu HELT i
+# stället — fail-closed via die(), exit **64** (INTE 2: review runda 5
+# fynd 1 — ett hemmagjort exit 2 kolliderade med bitmask-koden DIRTY).
+# die() skriver ENDAST till stderr (den etablerade konventionen för VARJE
+# annat CLI-/argumentfel i detta skript, se REPO/INTERVAL/TIMEOUT) — INTE
+# till stdout som review runda 4:s hemmagjorda variant gjorde. INGEN fil
+# skrivs alls (varken saniterad eller osaniterad). Se T68–T73 för den
+# fullständiga tvåsidiga bevisningen av valideringen; detta fall behålls
+# under T64:s namn som en direkt regressionsspärr mot att sanerings-
+# beteendet av misstag återinförs.
 reset_scen
-EXPECT_OUT="OGILTIGT --session-ID"
-run_case "T64 Farligt session-ID (path-traversal-försök) → AVVISAS (exit 2), skriver ingen fil" 2 - \
+EXPECT_ERR="OGILTIGT --session-ID"
+NOT_EXPECT_OUT="OGILTIGT --session-ID"
+run_case "T64 Farligt session-ID (path-traversal-försök) → AVVISAS (exit 64, endast stderr), skriver ingen fil" 64 - \
     bash ./scripts/heartbeat-svep.sh --once --session "../../etc/passwd"
 if [[ -d "${STATE_DIR}" ]] && find "${STATE_DIR}" -mindepth 1 2>/dev/null | grep -q .; then
     printf '  ✗ T64b  STATE_DIR innehåller OVÄNTADE filer efter ett avvisat session-ID\n'
@@ -1250,11 +1287,14 @@ run_case "T65b Ingen --session igen, SAMMA STATE_DIR → strypt globalt (oförä
     bash ./scripts/heartbeat-svep.sh --once
 
 # ============================================================
-# T66–T74 — SESSION-ID-VALIDERING (review runda 4, Marcus-beslut
-# 2026-09-19). Fail-closed ersätter sanering: giltiga ID körs OFÖRÄNDRAT,
-# ogiltiga AVVISAS med exit 2 (CLI-fel, samma sysexits-klass som REPO/
-# INTERVAL/TIMEOUT-valideringen) och ett felmeddelande på BÅDE stdout och
-# stderr (EXPECT_OUT/EXPECT_ERR samtidigt bevisar båda strömmarna).
+# T66–T74 — SESSION-ID-VALIDERING (review runda 4, EXIT-KOD RÄTTAD i
+# review runda 5, Marcus-beslut 2026-09-19). Fail-closed ersätter sanering:
+# giltiga ID körs OFÖRÄNDRAT, ogiltiga AVVISAS med exit **64** (CLI-fel,
+# samma sysexits-klass OCH samma die()-anrop som REPO/INTERVAL/TIMEOUT-
+# valideringen — INTE ett eget hemmagjort exit 2, som kolliderade med
+# bitmask-koden DIRTY) och ett felmeddelande på STDERR ENDAST (die()s
+# etablerade konvention — EXPECT_ERR/NOT_EXPECT_OUT bevisar tillsammans
+# att det INTE läcker till stdout).
 echo ""
 reset_scen
 NOT_EXPECT_OUT="OGILTIGT --session-ID"
@@ -1267,31 +1307,31 @@ run_case "T67 Giltigt ID MED punkt \"s126.resume.2\" → körs normalt (punkt ti
     bash ./scripts/heartbeat-svep.sh --once --session s126.resume.2
 
 reset_scen
-EXPECT_OUT="OGILTIGT --session-ID"
 EXPECT_ERR="OGILTIGT --session-ID"
-run_case "T68 Tomt --session-ID (\"\") → exit 2, fel på stdout OCH stderr" 2 - \
+NOT_EXPECT_OUT="OGILTIGT --session-ID"
+run_case "T68 Tomt --session-ID (\"\") → exit 64, fel ENDAST på stderr" 64 - \
     bash ./scripts/heartbeat-svep.sh --once --session ""
 
 reset_scen
-EXPECT_OUT="OGILTIGT --session-ID"
 EXPECT_ERR="OGILTIGT --session-ID"
-run_case "T69 Session-ID med mellanslag (\"S 126\") → exit 2" 2 - \
+NOT_EXPECT_OUT="OGILTIGT --session-ID"
+run_case "T69 Session-ID med mellanslag (\"S 126\") → exit 64" 64 - \
     bash ./scripts/heartbeat-svep.sh --once --session "S 126"
 
 reset_scen
-EXPECT_OUT="OGILTIGT --session-ID"
-run_case "T70 Session-ID med snedstreck (\"S/126\") → exit 2" 2 - \
+EXPECT_ERR="OGILTIGT --session-ID"
+run_case "T70 Session-ID med snedstreck (\"S/126\") → exit 64" 64 - \
     bash ./scripts/heartbeat-svep.sh --once --session "S/126"
 
 reset_scen
-EXPECT_OUT="OGILTIGT --session-ID"
-run_case "T71 Session-ID SOM ENBART punkter (\"..\") → exit 2 (path-traversal-form)" 2 - \
+EXPECT_ERR="OGILTIGT --session-ID"
+run_case "T71 Session-ID SOM ENBART punkter (\"..\") → exit 64 (path-traversal-form)" 64 - \
     bash ./scripts/heartbeat-svep.sh --once --session ".."
 
 reset_scen
 printf -v LANGT_ID 'a%.0s' {1..65}
-EXPECT_OUT="OGILTIGT --session-ID"
-run_case "T72 Session-ID på 65 tecken (över gränsen) → exit 2" 2 - \
+EXPECT_ERR="OGILTIGT --session-ID"
+run_case "T72 Session-ID på 65 tecken (över gränsen) → exit 64" 64 - \
     bash ./scripts/heartbeat-svep.sh --once --session "${LANGT_ID}"
 if [[ "${#LANGT_ID}" -eq 65 ]]; then
     printf '  ✓ T72b  testets eget ID är verifierat 65 tecken (inte av misstag 64)\n'; PASSED=$((PASSED+1))
@@ -1328,6 +1368,97 @@ else
     find "${STATE_DIR}" -maxdepth 1 -name 'last-omarkerad-notis-*' 2>/dev/null | sed 's/^/      /'
     FAILED=$((FAILED+1))
 fi
+
+# ============================================================
+# T75–T79 — SAKNAT FLAGGVÄRDE (review runda 5 fynd 2, Marcus-beslut
+# 2026-09-19). En värde-tagande flagga som är SISTA token (inget värde
+# följer) fick tidigare `shift 2` att fallera — `set -e` avslutade DÅ hela
+# skriptet med `shift`s EGEN exitkod (1, = bitmask RÖTT) och NOLL utskrift.
+# Fångas nu INNAN `shift 2` körs: `die` med exit 64 och ett tydligt
+# meddelande. Alla FEM värde-tagande flaggor testas — uppdraget efterfrågade
+# uttryckligen samma fix "för varje annan flagga som tar ett värde, om
+# samma mönster finns", och det gjorde det: identisk `"${2:-}"; shift 2`-
+# form i alla fem grenar innan denna runda.
+echo ""
+reset_scen
+EXPECT_ERR="kräver ett värde"
+run_case "T75 --session som SISTA token (inget värde) → exit 64, INTE 1" 64 - \
+    bash ./scripts/heartbeat-svep.sh --once --session
+
+reset_scen
+EXPECT_ERR="kräver ett värde"
+run_case "T76 --repo som SISTA token (inget värde) → exit 64" 64 - \
+    bash ./scripts/heartbeat-svep.sh --once --repo
+
+reset_scen
+EXPECT_ERR="kräver ett värde"
+run_case "T77 --branch som SISTA token (inget värde) → exit 64" 64 - \
+    bash ./scripts/heartbeat-svep.sh --once --branch
+
+reset_scen
+EXPECT_ERR="kräver ett värde"
+run_case "T78 --interval som SISTA token (inget värde) → exit 64" 64 - \
+    bash ./scripts/heartbeat-svep.sh --once --interval
+
+reset_scen
+EXPECT_ERR="kräver ett värde"
+run_case "T79 --timeout som SISTA token (inget värde) → exit 64" 64 - \
+    bash ./scripts/heartbeat-svep.sh --once --timeout
+
+# ============================================================
+# T80–T82 — SKIFTLÄGESOKÄNSLIGT STATSFILNAMN (review runda 5 fynd 3,
+# Marcus-beslut 2026-09-19). "S126" och "s126" är MED AVSIKT samma session
+# för de strypta notiskanalerna (macOS APFS delar annars fil ändå, på
+# filsystemnivå, oavsett vad valideringen bevisar på strängnivå — se §
+# SESSIONSMEDVETET SVEP "SKIFTLÄGESOKÄNSLIGT MED AVSIKT").
+echo ""
+reset_scen
+set_rows '914\tfalse\tCLEAN\ttrue\tSUCCESS\tfalse\toctocat\t\n'
+EXPECT_OUT="SESSION — 1 öppna PR:ar UTAN sessionsmarkör"
+run_case "T80 Session \"S126\" (kallstart): omärkt-notisen syns" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S126
+
+# T80b — INGEN reset_scen: SAMMA STATE_DIR, men nu \"s126\" (annat
+# SKIFTLÄGE). Om skiftläge räknades som en ANNAN session hade detta varit
+# en NY kallstart (notisen hade synts igen). Det ska den INTE göra —
+# stämpeln delas MED AVSIKT.
+NOT_EXPECT_OUT="UTAN sessionsmarkör"
+run_case "T80b Session \"s126\" (annat skiftläge, SAMMA STATE_DIR) → strypt av S126:s stämpel (avsiktligt)" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session s126
+
+# T81 — den delade stämpelfilen ligger på GEMENER, inte på det skiftläge
+# som råkade komma in FÖRST ("S126" i T80, versaler). VIKTIGT: `[[ -f ... ]]`
+# DUGER INTE för detta — macOS APFS är skiftlägesOKÄNSLIGT för filLOOKUP som
+# default, så `-f ".../last-omarkerad-notis-S126"` skulle hitta den redan
+# skapade "...s126"-filen och ge ett FALSKT positivt "ja, versal-filen
+# finns". `find -name` gör en STRÄNG-jämförelse mot det verkliga, lagrade
+# katalognamnet (skiftlägeskänslig oavsett filsystemets lookup-beteende) —
+# `ls`/`find`s returnerade sträng, inte ett andra filsystem-lookup, är den
+# enda pålitliga metoden här.
+STATSFIL_LISTA="$(find "${STATE_DIR}" -maxdepth 1 -name 'last-omarkerad-notis-*' 2>/dev/null)"
+if grep -qF "last-omarkerad-notis-s126" <<<"${STATSFIL_LISTA}"; then
+    printf '  ✓ T81  statsfilen är normaliserad till gemener (last-omarkerad-notis-s126)\n'; PASSED=$((PASSED+1))
+else
+    printf '  ✗ T81  förväntade en gemener-normaliserad statsfil, hittade inte\n'
+    printf '%s\n' "${STATSFIL_LISTA}" | sed 's/^/      /'
+    FAILED=$((FAILED+1))
+fi
+if grep -qF "last-omarkerad-notis-S126" <<<"${STATSFIL_LISTA}"; then
+    printf '  ✗ T81b  en OVÄNTAD versal-variant av statsfilen skapades också (last-omarkerad-notis-S126)\n'; FAILED=$((FAILED+1))
+else
+    printf '  ✓ T81b  ingen versal-variant av statsfilen skapades — bara EN fil för båda skiftlägena\n'; PASSED=$((PASSED+1))
+fi
+
+# T82 — markör-matchningen (RÖTT/DIRTY/KANDIDAT-filtreringen) är EN ANNAN,
+# ORÖRD mekanism och förblir skiftlägeskänslig: en PR märkt för sessionen
+# "S126" (versaler) ska INTE räknas som "egen" när svepet körs med
+# --session "s126" (gemener) — bara STATSFILNAMNET normaliseras, inte
+# markör-jämförelsen.
+reset_scen
+set_rows '915\tfalse\tBLOCKED\ttrue\tFAILURE\tfalse\toctocat\t<!-- heartbeat-svep:session:S126 -->\n'
+NOT_EXPECT_OUT="RÖTT — PR #915"
+run_case "T82 Markör \"S126\" (versaler) matchas INTE av --session \"s126\" (gemener) — orörd, skild mekanism" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session s126
 
 printf '\ntest-heartbeat-svep: %s passerade, %s failade\n' "${PASSED}" "${FAILED}"
 [[ "${FAILED}" -eq 0 ]] || exit 1

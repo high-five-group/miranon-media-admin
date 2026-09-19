@@ -233,12 +233,18 @@
 #   HEARTBEAT_SESSION_ID_REGEX (^[A-Za-z0-9._-]{1,64}$) OCH mot
 #   HEARTBEAT_SESSION_ID_ENDAST_PUNKTER_REGEX (avvisar ID som består ENBART
 #   av punkter, t.ex. "." eller "..") DIREKT efter arg-parsingen, INNAN
-#   något svep sker. Ett ogiltigt ID skriver ett felmeddelande på BÅDE
-#   stdout OCH stderr (Monitor-formen, § ANVÄNDNING, ser bara stdout) och
-#   avslutar med exit 2 — ingen sopning, inget state skrivs. Filnamnets
-#   per-session-DEL är sedan ID:T SJÄLVT, HELT OSANERAT: en kollision är
-#   omöjlig PER KONSTRUKTION (två OLIKA giltiga ID-strängar kan aldrig bli
-#   SAMMA sträng), inte bara osannolik. session_id_sanitize() är BORTTAGEN.
+#   något svep sker. Ett ogiltigt ID avslutar via `die()` med exit **64**
+#   (RÄTTAT review runda 5, Marcus-beslut 2026-09-19 — ett tidigare
+#   hemmagjort `exit 2` KOLLIDERADE med bitmask-koden DIRTY, se §
+#   EXIT-KODER — `die()` skriver till stderr, samma etablerade konvention
+#   som REPO/INTERVAL/TIMEOUT) — ingen sopning, inget state skrivs.
+#   Filnamnets per-session-DEL är sedan ID:T SJÄLVT, HELT OSANERAT: en
+#   kollision mellan två SKIFTLÄGESIDENTISKA men i övrigt olika ID:n är
+#   omöjlig PER KONSTRUKTION. Skiftläge är en EGEN, AVSIKTLIG nyans — se
+#   "SKIFTLÄGESOKÄNSLIGT" nedan (review runda 5): "S126" och "s126" delar
+#   MED FLIT statsfil (normaliserade till gemener innan de används), så
+#   påståendet ovan gäller "upp till skiftläge", inte bokstavligen VARJE
+#   par olika strängar. session_id_sanitize() är BORTTAGEN.
 #
 #   KÄND BEGRÄNSNING — GLOBAL PER MASKIN (samma disclosure-form som § FEMTE
 #   VÄGEN ovan, gren-städningens klocka): valideringen löser interferensen
@@ -266,6 +272,23 @@
 #   (HEARTBEAT_STADA_GRENAR_INTERVALL > 0, stada-grenar.sh exekverbar) — en
 #   spoke utan gren-städning får därför heller ingen statsfil-städning, ett
 #   medvetet val för att hålla ändringen till en handfull rader.
+#
+#   SKIFTLÄGESOKÄNSLIGT MED AVSIKT (review runda 5, Marcus-beslut
+#   2026-09-19): "kollision omöjlig per konstruktion" (review runda 4) höll
+#   på STRÄNGNIVÅ men INTE på ett skiftlägesokänsligt filsystem — macOS
+#   APFS delar FIL för "S126" och "s126" oavsett vad strängarna är på
+#   bash-nivå. `S126` OCH `s126` ÄR SEDAN DENNA RUNDA MED AVSIKT SAMMA
+#   SESSION för de tre strypta notiskanalerna: statsfil-suffixet
+#   normaliseras till GEMENER innan det används (portabel `tr`, INTE
+#   `${var,,}` — den kräver bash 4+, som macOS-default-bash 3.2 inte har).
+#   Gäller ENDAST statsfilnamnet — RÖTT/DIRTY/ARMERINGS-KANDIDAT-
+#   filtreringen (pr_har_session_marker(), som jämför mot bygg-agentens
+#   PR-kroppsmarkör VERBATIM) är en ANNAN, ORÖRD mekanism och förblir
+#   skiftlägeskänslig. Praktisk konsekvens: kör två sessioner med ID:n som
+#   bara skiljer sig i skiftläge (ett misstag, inte ett avsiktligt val),
+#   delar de nu notis-throttlingen (ofarligt — samma klass som två
+#   sessioner med IDENTISKT ID) i stället för att TYST kollidera på en
+#   fil-nivå ingen såg (den ursprungliga risken).
 #
 # TREVÄGS-SNAPSHOT PER SVEP
 #   1. main-SHA — `gh api repos/<repo>/commits/<branch>`. Avancerar den
@@ -336,7 +359,19 @@
 #                   dämpningsbar rutin-rad, se § ARMERINGS-KANDIDAT ovan.
 #       (bitmask-summerade, 1..7 vid flera samtidiga larm)
 #  64   användningsfel — config/flagga saknas eller ogiltig (sysexits
-#       EX_USAGE, samma konvention som staging-semaphore.sh)
+#       EX_USAGE, samma konvention som staging-semaphore.sh). OMFATTAR
+#       sedan review runda 5 (Marcus-beslut 2026-09-19) explicit: ETT
+#       ogiltigt --session-ID (matchar inte HEARTBEAT_SESSION_ID_REGEX,
+#       eller består enbart av punkter — § SESSIONSMEDVETET SVEP ovan) OCH
+#       en värde-flagga (--repo/--branch/--interval/--timeout/--session)
+#       given utan sitt värde. BÅDA gick tidigare via EN ANNAN väg som
+#       KOLLIDERADE med bitmask-rymden ovan — ett hemmagjort `exit 2`
+#       (=DIRTY) för det förra, och `shift`s egen `exit 1` (=RÖTT) via
+#       set -e för det senare, i båda fallen omöjliga att skilja från ett
+#       genuint PR-larm genom att bara läsa `$?`. RÄTTAT: samtliga
+#       argumentfel går nu genom den redan existerande `die()`, vars
+#       DEFAULT är just denna 64:a — ingen ny kod, bara konsekvent
+#       användning av den som redan fanns.
 #  77   sonden kunde inte svara — ett `gh`-anrop misslyckades (fail-closed,
 #       samma kod och skäl som staging-semaphore.sh: ett obesvarat
 #       instrument är farligare tystnat än fällt)
@@ -422,9 +457,9 @@ SESSION=""
 # från "flaggan gavs MED ett tomt värde" (`--session ""`, OGILTIGT — måste
 # avvisas). `[[ -n "${SESSION}" ]]` kan INTE skilja de två fallen åt: båda
 # ger en tom sträng. Utan denna flagga hade `--session ""` tyst fallit
-# tillbaka till global/TIPS-läget i stället för att avvisas med exit 2, som
-# uppdraget uttryckligen kräver ("tomt" är ett av de fem namngivna
-# ogiltiga-fallen).
+# tillbaka till global/TIPS-läget i stället för att avvisas (via `die()`,
+# exit 64 sedan review runda 5 — se § EXIT-KODER), som uppdraget
+# uttryckligen kräver ("tomt" är ett av de fem namngivna ogiltiga-fallen).
 SESSION_GIVEN=0
 ALLA=0
 # Fail-open default: tom array. Deklareras FÖRE source så en policy-fil
@@ -842,15 +877,28 @@ tips_notis_om_dags() {
     return 0
 }
 
+# SAKNAT FLAGGVÄRDE (review runda 5 fynd 2, Marcus-beslut 2026-09-19,
+# pre-existing men inom denna PR:s anspråk): varje flagga nedan som
+# konsumerar ETT värde gjorde `shift 2` OVILLKORLIGT. Ges flaggan som
+# SISTA token (`--session` utan något efter) finns bara 1 kvarvarande
+# positionsparameter när `shift 2` körs — bash fallerar då `shift`
+# (dokumenterat: misslyckas om antalet överstiger $#), och `set -e`
+# (skriptets huvud) avslutar HELA skriptet DÄR, med `shift`s EGEN exitkod
+# (1) och NOLL utskrift. 1 är bitmask-koden RÖTT — samma kollisionsklass
+# som fynd 1 ovan, fast för ett ANNAT tal. `[[ $# -ge 2 ]]` (flaggan SJÄLV
+# räknas med i $#, så minst två kvarvarande krävs för att både flaggan och
+# dess värde ska finnas) fångar detta INNAN `shift 2` någonsin körs — `die`
+# med exit 64, samma konvention som allt annat CLI-/argumentfel i detta
+# skript.
 while [[ $# -gt 0 ]]; do
     case "$1" in
-        --repo)     REPO="${2:-}";     shift 2 ;;
-        --branch)   BRANCH="${2:-}";   shift 2 ;;
-        --interval) INTERVAL="${2:-}"; shift 2 ;;
-        --timeout)  TIMEOUT="${2:-}";  shift 2 ;;
+        --repo)     [[ $# -ge 2 ]] || die "--repo kräver ett värde (t.ex. --repo ägare/namn)";     REPO="${2:-}";     shift 2 ;;
+        --branch)   [[ $# -ge 2 ]] || die "--branch kräver ett värde (t.ex. --branch main)";       BRANCH="${2:-}";   shift 2 ;;
+        --interval) [[ $# -ge 2 ]] || die "--interval kräver ett värde (sekunder)";                INTERVAL="${2:-}"; shift 2 ;;
+        --timeout)  [[ $# -ge 2 ]] || die "--timeout kräver ett värde (sekunder, 0 = obegränsat)";  TIMEOUT="${2:-}";  shift 2 ;;
         --once)     ONCE=1; shift ;;
         --quiet)    QUIET=1; shift ;;
-        --session)  SESSION="${2:-}"; SESSION_GIVEN=1; shift 2 ;;
+        --session)  [[ $# -ge 2 ]] || die "--session kräver ett värde (ett sessions-ID)";          SESSION="${2:-}"; SESSION_GIVEN=1; shift 2 ;;
         --alla)     ALLA=1; shift ;;
         # Radintervallet är § ANVÄNDNING. Ändras huvudet ovan måste det
         # följa med — annars ljuger --help tyst (samma disciplin som ci-wait.sh).
@@ -865,23 +913,40 @@ while [[ $# -gt 0 ]]; do
         # statsfil-suffix + KÄND BEGRÄNSNING-stycket för TIPS globala fall),
         # 61,246 → 61,269 i TASK-462 fix-runda 3 (review runda 4: validerat
         # session-ID ersätter sanering, session_id_sanitize() BORTTAGEN, + §
-        # PER-SESSION-STATSFILERNAS ÅLDER-stycket);
+        # PER-SESSION-STATSFILERNAS ÅLDER-stycket), 61,269 → 61,286 i
+        # TASK-462 fix-runda 4 (review runda 5: exit 64 i stället för
+        # bitmask-kolliderande exit 2 för ogiltigt --session-ID, + §
+        # SKIFTLÄGESOKÄNSLIGT-stycket för statsfilnamnet);
         # scripts/test-heartbeat-svep.sh T24 fäller om raden
         # avviker från blockets faktiska start/slut.
-        -h|--help)  sed -n '61,269p' "$0"; exit 0 ;;
+        -h|--help)  sed -n '61,286p' "$0"; exit 0 ;;
         *) die "okänt argument: $1" ;;
     esac
 done
 
-# --session-validering (review runda 4, Marcus-beslut 2026-09-19). Se
+# --session-validering (review runda 4, Marcus-beslut 2026-09-19; EXIT-KOD
+# RÄTTAD review runda 5, Marcus-beslut 2026-09-19). Se
 # HEARTBEAT_SESSION_ID_REGEX/-ENDAST_PUNKTER_REGEX ovan för det fulla
 # resonemanget (ersätter session_id_sanitize(), BORTTAGEN). Körs FÖRE
 # BRANCH/REPO/INTERVAL/TIMEOUT-valideringen nedan — ett ogiltigt session-ID
 # ska aldrig hinna orsaka en obegriplig sekundär fel senare i skriptet.
-# Skrivs på BÅDE stdout OCH stderr (till skillnad från die(), som bara
-# skriver stderr): Monitor-formen (§ ANVÄNDNING) ser BARA stdout, så en
-# ren stderr-rad hade varit exakt den TIPS-rads-bugg review runda 1 fynd 1
-# redan fixade en gång — samma observabilitets-skäl, nytt anropsställe.
+#
+# EXIT-KOD: review runda 4 gav detta fallet en hemmagjord `exit 2` — vilket
+# KOLLIDERAR med skriptets egen bitmask (2 = DIRTY, § EXIT-KODER). En
+# läsare av `$?` kunde då INTE skilja "ogiltigt ID, inget svep skedde" från
+# "en konfliktad PR". RÄTTAT: samma `die()` som REPO/INTERVAL/TIMEOUT-
+# valideringen nedan redan använder — dess DEFAULT-exitkod är 64
+# (sysexits EX_USAGE), UTANFÖR bitmask-rymden (0/1/2/4/77 och
+# kombinationer). `die()` skriver bara till stderr, INTE stdout — det är
+# den etablerade, oförändrade konventionen för VARJE annat CLI-/
+# argumentfel i detta skript (REPO/INTERVAL/TIMEOUT/okänt argument), och
+# denna rad följer nu samma konvention i stället för att uppfinna en egen.
+# Detta är ETT ANNAT fall än TIPS-radens stderr→stdout-flytt (review runda
+# 1 fynd 1): TIPS är en ÅTERKOMMANDE bakgrunds-notifikation i en persistent
+# Monitor-loop som måste synas VARJE gång; ett ogiltigt --session-ID är ett
+# ENGÅNGS-STARTFEL som stoppar processen INNAN någon loop någonsin startar
+# — exakt samma situation som REPO/INTERVAL/TIMEOUT redan hanterar med
+# ren stderr, och samma lösning gäller symmetriskt här.
 #
 # VILLKORET ÄR SESSION_GIVEN, INTE "-n \"\${SESSION}\"": de två skiljer sig
 # EXAKT när `--session ""` ges — ett tomt värde för en flagga som FAKTISKT
@@ -891,10 +956,7 @@ done
 if [[ "${SESSION_GIVEN}" -eq 1 ]]; then
     if [[ ! "${SESSION}" =~ ${HEARTBEAT_SESSION_ID_REGEX} ]] \
        || [[ "${SESSION}" =~ ${HEARTBEAT_SESSION_ID_ENDAST_PUNKTER_REGEX} ]]; then
-        SESSION_VALIDERINGSFEL="heartbeat-svep: OGILTIGT --session-ID '${SESSION}' — måste matcha ${HEARTBEAT_SESSION_ID_REGEX} (1-64 tecken, endast [A-Za-z0-9._-]) och INTE bestå enbart av punkter. Körningen avbröts, inget svep skedde."
-        printf '%s\n' "${SESSION_VALIDERINGSFEL}"
-        printf '%s\n' "${SESSION_VALIDERINGSFEL}" >&2
-        exit 2
+        die "OGILTIGT --session-ID '${SESSION}' — måste matcha ${HEARTBEAT_SESSION_ID_REGEX} (1-64 tecken, endast [A-Za-z0-9._-]) och INTE bestå enbart av punkter. Körningen avbröts, inget svep skedde."
     fi
 fi
 
@@ -934,23 +996,39 @@ STATE_FILE="${STATE_DIR}/last-main-sha"
 # klockan får förbli delad).
 STADA_STATE_FILE="${STATE_DIR}/last-stada-grenar"
 
-# PER-SESSION statsfil-suffix (review runda 3, HÄRLETT DIREKT UR DET
-# VALIDERADE ID:T sedan review runda 4 — se HEARTBEAT_SESSION_ID_REGEX
-# ovan, ingen sanering längre). SAMMA villkor som sweep_once()s
-# sessionslage — dupliceras hit eftersom suffixet behövs INNAN
-# sweep_once() någonsin anropas. Satt ⇒ de tre strypta notisernas
-# state-filer nedan bär sessionens ID VERBATIM (redan bevisat matcha
-# HEARTBEAT_SESSION_ID_REGEX vid detta lägre, se valideringsblocket ovan —
-# INGEN transformation här, kollision är omöjlig per konstruktion), så två
-# samtidiga sessioner med SAMMA STATE_DIR (delad default
-# /tmp/mm-heartbeat-svep om ingen egen HEARTBEAT_STATE_DIR sätts) inte
-# längre stämplar varandras fönster — den empiriskt visade buggen
+# PER-SESSION statsfil-suffix (review runda 3, HÄRLETT UR DET VALIDERADE
+# ID:T sedan review runda 4 — se HEARTBEAT_SESSION_ID_REGEX ovan, ingen
+# sanering längre). SAMMA villkor som sweep_once()s sessionslage —
+# dupliceras hit eftersom suffixet behövs INNAN sweep_once() någonsin
+# anropas. Satt ⇒ de tre strypta notisernas state-filer nedan bär
+# sessionens ID, så två samtidiga sessioner med SAMMA STATE_DIR (delad
+# default /tmp/mm-heartbeat-svep om ingen egen HEARTBEAT_STATE_DIR sätts)
+# inte längre stämplar varandras fönster — den empiriskt visade buggen
 # (S126 sveper först ⇒ S127 ser aldrig sin egen förstagångs-notis).
 # OSATT (ingen --session, eller --alla) ⇒ tomt suffix, alltså SAMMA fil som
 # innan denna runda — global strypning, se KÄND BEGRÄNSNING ovan.
+#
+# SKIFTLÄGESOKÄNSLIGT MED AVSIKT sedan review runda 5 (Marcus-beslut
+# 2026-09-19): "kollision omöjlig per konstruktion" (review runda 4) höll
+# på STRÄNGNIVÅ men inte på ett skiftlägesokänsligt filsystem — macOS
+# APFS (default-formatet på Marcus maskin, där STATE_DIR:s default
+# /tmp/mm-heartbeat-svep faktiskt bor) delar FIL för "S126" och "s126",
+# oavsett vad de två strängarna är på bash-nivå. I stället för att jaga
+# fler filsystem-specifika edge-fall normaliseras suffixet HÄR till
+# GEMENER via `tr` (portabelt, funkar i bash 3.2 — `${var,,}` kräver bash
+# 4+ och är INTE tillgängligt på macOS-default-bash, se
+# is_exempt_author()s bash-3.2-kommentar ovan för samma begränsning) —
+# "S126" och "s126" är SEDAN DENNA RUNDA AVSIKTLIGT SAMMA SESSION för de
+# tre strypta notiskanalerna (delar stämpel, delar throttling), oavsett
+# filsystemets skiftlägeskänslighet. GÄLLER ENDAST STATSFIL-NAMNET —
+# markör-matchningen (pr_har_session_marker(), RÖTT/DIRTY/KANDIDAT-
+# filtreringen) använder fortfarande SESSION oförändrad/skiftlägeskänslig,
+# eftersom den jämför mot bygg-agentens PR-kroppsmarkör VERBATIM och är en
+# annan, orörd mekanism.
 SESSION_STATE_SUFFIX=""
 if [[ -n "${SESSION}" && "${ALLA}" -eq 0 ]]; then
-    SESSION_STATE_SUFFIX="-${SESSION}"
+    SESSION_LOWER="$(printf '%s' "${SESSION}" | tr '[:upper:]' '[:lower:]')"
+    SESSION_STATE_SUFFIX="-${SESSION_LOWER}"
 fi
 
 # Den omärkta-PR-notisens egen tidsstämpel (TASK-462), oberoende av
