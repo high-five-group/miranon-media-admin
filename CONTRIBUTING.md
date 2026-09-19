@@ -917,11 +917,22 @@ a11y. Mätt: `#2556` (körning `35432195230`), 57 fakturerade min totalt, varav
 instansieras inte alls här. `run_staging`/`run_a11y` är OFÖRÄNDRADE
 (utelämnade, defaulter `true`): staging och a11y kör precis som innan S3, och
 `nightly.yml` rörs inte av ändringen (ingen input skickad, samtliga sex jobb
-oförändrade). Skyddsförlusten är liten men inte noll: efterkontrollen är den
-enda ytan som kör på det FAKTISKT LANDADE trädet efter en gruppmerge (`N3`,
-`TASK-450.2`, är förutsättningen som gör den förlusten hanterbar för
-klassningen — men täcker inte den hermetiska sviten). Fullt resonemang:
-`post-merge.yml`s eget filhuvud, § TASK-464.6.
+oförändrade).
+
+**Skyddsförlusten är INTE att efterkontrollen skulle vara den enda ytan som
+kör den hermetiska sviten på det landade trädet — det påståendet är RÄTTAT
+(review runda 2, PR `#2597`, 2026-09-19) och var mätbart falskt.** Kön ser
+gruppinteraktionen redan (kö-grenens SHA ÄR den landade commiten), och
+push-ytan kör i dag OCKSÅ om sviten vid en gruppmerge eftersom
+merge-dedupens trädjämförelse missar då `main` rört sig sedan PR-headen
+skrevs — mätt på grupplandningen `#2588`+`#2596` (`main` = `811cece3`): både
+kö-körningen (`merge_group` `35448948271`) och push-körningen (`push`
+`35449264286`) körde hela `Test suite` grönt på EXAKT den SHA:n. Den
+verkliga förlusten är att push-ytans hermetiska omkörning inte är kopplad
+till larmkedjan (`ci-post-merge`-ärenden, revert-förslag) — den maskinen
+finns bara i efterkontrollen. Fullt resonemang, run-ID:er och en framåtblick
+mot `TASK-464.4` (S1): `post-merge.yml`s eget filhuvud, § "VAD
+SKYDDSFÖRLUSTEN FAKTISKT ÄR".
 
 **Varför staging-flytten gjordes, och vad den faktiskt köpte.** Inte jobbets
 375 s, utan den globala `staging-tests`-mutexen. Den serialiserar över *alla*

@@ -169,18 +169,53 @@ name: Post-merge
 # `Staging sentinel purge` (efter körning), `A11y (axe-runner)`,
 # `Exponeringsfönster (merge → svar)`, `Larm vid rött post-merge`.
 #
-# VARFÖR SKYDDSFÖRLUSTEN ÄR LITEN MEN INTE NOLL (ADR-133 § Besluten 6, § Skäl):
-# efterkontrollen är den ENDA ytan som kör på det FAKTISKT LANDADE trädet efter
-# en eventuell gruppmerge (upp till tre PR:er i samma push, `max_entries_to_merge:
-# 3`, tråd T166) — ett scenario N3 (TASK-450.2, `klassning`-jobbets egen
-# `BEFORE`-räkning) redan täcker för KLASSNINGEN (docs-only-beslutet gäller
-# hela pushens spann, inte bara toppen), men INTE för den hermetiska sviten:
-# skulle en gruppmerge introducera en interaktion mellan två landningar som
-# VARKEN förslaget, kön eller huvudgrenen kunde se var för sig (var och en
-# testade bara SIN egen PR mot `main`s då aktuella spets), fanns den fjärde
-# körningen som sista chansen att fånga den. Den chansen är nu borta för den
-# hermetiska klassen — kvar är staging/a11y, som fortsatt kör på det landade
-# trädet och kan fånga en sådan interaktion om den yttrar sig där.
+# VAD SKYDDSFÖRLUSTEN FAKTISKT ÄR — RÄTTAT (review runda 2, PR #2597,
+# 2026-09-19). Ett tidigare stycke här påstod att efterkontrollen är den
+# ENDA ytan som kör den hermetiska sviten på det FAKTISKT LANDADE trädet
+# efter en gruppmerge. Det är MÄTBART FALSKT — rättat till det som är mätt:
+#
+# (a) KÖN SER GRUPPINTERAKTIONEN. En gruppmerges sista post byggs av kön mot
+# exakt det träd som sedan landar — kö-grenens SHA ÄR den landade commiten,
+# ingen ny commit mintas. Mätt: grupplandningen `#2588`+`#2596`
+# (2026-09-19 ~14:36:34Z) gav `main` = `811cece3`. Kö-körningen på EXAKT den
+# SHA:n (`merge_group` `35448948271`, kö-gren
+# `gh-readonly-queue/main/pr-2596-6a3a78c3…`, byggd OVANPÅ `#2588`:s
+# gruppcommit) körde `Test suite` — `Pure + Build`, `Acceptance (hermetisk)`
+# × 3, tvåsidigt bevis × 3, täckning, `Webblasarbeteende` — HELT GRÖNT.
+#
+# (b) I DAG kör dessutom PUSH-YTAN (`ci.yml`, `on.push`) om SAMMA svit vid
+# EXAKT en sådan gruppmerge, eftersom merge-dedupen (jobbet `changed`,
+# steget "Merge-dedup") jämför merge-commitens träd mot andra förälderns
+# (PR-headens) träd, och den jämförelsen missar så fort `main` rört sig
+# mellan PR-headen och landningen — precis fallet vid en gruppmerge. Mätt på
+# SAMMA SHA: push-körningen `35449264286` körde också hela `Test suite`
+# grönt (dedupen släckte den INTE). Träden skiljer sig bevisligen:
+# `git rev-parse 811cece3^{tree}` = `282abfc0…`, `git rev-parse
+# 811cece3^2{tree}` (PR-headen, `33c26570`) = `9743f516…` — olika träd.
+#
+# (c) S3 TAR DÄRFÖR INTE BORT NÅGOT HERMETISKT SKYDD, varken vid en enskild
+# landning eller vid en gruppmerge: kön bevisar redan den hermetiska klassen
+# på det landade trädet (a), och push-ytan gör det EN GÅNG TILL i dag när
+# dedupen missar (b) — TVÅ ytor kvar efter att efterkontrollens fjärde
+# körning togs bort, inte noll.
+#
+# (d) DEN SKYDDSFÖRLUST SOM ÄR VERKLIG ÄR EN ANNAN: LARMKEDJAN. Ett rött på
+# push-ytans hermetiska omkörning (b) utlöser I DAG inget ärende, inget larm
+# och inget revert-förslag — den maskinen
+# (`scripts/classify-post-merge.sh`, `scripts/post-merge-attribution.sh`,
+# `ci-post-merge`-etiketten, `larm`-jobbet nedan) finns ENDAST i
+# efterkontrollen, och efterkontrollen kör efter S3 inte längre den
+# hermetiska klassen. En äkta regression som push-ytan fångar (b) syns
+# alltså bara som en röd `ci.yml`-körning på `main` — ingen tilldelad,
+# spårad incident, inget revert-förslag. Det är den faktiska kostnaden av
+# S3, inte frånvaron av ett bevis på det landade trädet.
+#
+# (e) FRAMÅTBLICK, INGET PÅSTÅTT OM NULÄGET: `TASK-464.4` (S1, PR `#2598`,
+# under granskning i skrivande stund) avser byta push-ytans trädjämförelse
+# mot SHA-identitet — samma form som kö-vägen i klassnings-skriptet redan
+# bär ("kö-körningen på exakt `github.sha` körde sviten grön"). Landar den
+# stänger den (b) helt, och kön blir den enda ytan som kör den hermetiska
+# klassen på det landade trädet. Fram till dess beskriver (a)–(d) nuläget.
 #
 # VAD SOM MEDVETET INTE RÖRS I DENNA SKIVA (nästa skiva i kedjan, TASK-464.14):
 # triggern (`push` kontra en klocka — ADR-133 beslut 6b AVVISADE klockan efter
