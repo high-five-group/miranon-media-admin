@@ -55,10 +55,34 @@ import { Hourglass } from 'lucide-react';
  *
  * Den strukturellt närmaste förlagan (`VantelistePaminnelse`: neutral
  * informationsrad med `Hourglass` ovanför en lista) bär alltså redan exakt
- * denna form. ORDEN ÄR ÄNDÅ OSTÄMPLADE: Marcus "typ" betyder att de gäller
- * först när han sett dem på plats — `ORDLISTA.md` rörs därför INTE av denna
- * skiva, och kortets AC #1 står obockad med avsikt.
+ * denna form. ORDEN VAR VID FÖRSTA LANDNINGEN OSTÄMPLADE: Marcus "typ"
+ * betydde att de gällde först när han sett dem på plats — `ORDLISTA.md` och
+ * kortets AC #1 stod därför orörda/obockade i runda 1. Marcus ögonmätte i
+ * dev-server 2026-09-19 och stämplade ordagrant: *"Det blir okej."*
+ * `ORDLISTA.md` bär ordvalet sedan TASK-475 runda 2.
  */
+
+/**
+ * IKONEN ENSAM — ÅTERANVÄND ÖVER TRE YTOR, INTE KOPIERAD (TASK-475 runda 2,
+ * granskningsfynd 1). `SpegelSlaparMarkor`/`SpegelSlaparBesked` nedan OCH
+ * `InbetalningsLista`s egen beloppsjämförelserad (den enda kvarvarande
+ * `AlertTriangle`-ytan för detta budskap i `src/components/betalningar/**`
+ * fram till denna runda) delar samma glyf i stället för att var och en
+ * hand-skriver sin egen `<Hourglass ... />`. VILKEN ikon och VARFÖR står i
+ * blockkommentaren ovan, oförändrat — den domen gäller alla tre ytor.
+ * `className` läggs EFTER de fasta klasserna, så en anropares extra klass
+ * (t.ex. Beskeds `mt-0.5`) kompletterar i stället för att riskera att
+ * skuggas av en senare regel med samma specificitet.
+ */
+export function SpegelSlaparIkon({ size, className = '' }: { size: number; className?: string }) {
+  return (
+    <Hourglass
+      aria-hidden="true"
+      size={size}
+      className={['shrink-0 text-text-muted', className].filter(Boolean).join(' ')}
+    />
+  );
+}
 
 /** Meningen som text, delad av båda ytorna och av testerna. */
 export function spegelSlaparMening(antal: number): string {
@@ -87,7 +111,7 @@ export function SpegelSlaparBesked({ antal }: { antal: number }) {
       className="my-0 flex items-start gap-2 text-small text-text-secondary"
       data-testid="spegel-slapar-besked"
     >
-      <Hourglass aria-hidden="true" size={16} className="mt-0.5 shrink-0 text-text-muted" />
+      <SpegelSlaparIkon size={16} className="mt-0.5" />
       {spegelSlaparMening(antal)}
     </p>
   );
@@ -112,7 +136,7 @@ export function SpegelSlaparBesked({ antal }: { antal: number }) {
 export function SpegelSlaparMarkor() {
   return (
     <span className="inline-flex h-[1lh] items-center align-bottom" data-testid="rad-spegel-slapar">
-      <Hourglass aria-hidden="true" size={13} className="shrink-0 text-text-muted" />
+      <SpegelSlaparIkon size={13} />
       <span className="sr-only">{SPEGEL_SLAPAR_RADMENING}</span>
     </span>
   );
