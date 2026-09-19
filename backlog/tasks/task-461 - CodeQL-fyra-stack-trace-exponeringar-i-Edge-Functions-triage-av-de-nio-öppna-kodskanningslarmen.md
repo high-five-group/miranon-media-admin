@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-18 11:53'
-updated_date: '2026-09-19 08:35'
+updated_date: '2026-09-19 09:06'
 labels:
   - ready-for-agent
 dependencies: []
@@ -43,4 +43,6 @@ Prod-deploy krävs för TRE EF:er efter denna PR landar: hantera-inbetalning, re
 Granskningsrunda 1 (risk HÖG, betalningsflöden): AC #1 bedömd FELSTÄLLD — "ett test per EF" levererades inte fullt ut. test-static-files (#3) har NOLL automatiserad täckning efter att den beslutade staging-assertionen togs bort ur PR:en (413-deploy-blockern gjorde den obevisbar skarpt, se PR-kroppen). Källkodsfixen för #3 är kvar och korrekt (verifierad via kodläsning + samma mönster som den hermetiskt bevisade test-pdf-generation-fixen), men AC #1:s bokstav ('bevisat med ett test per EF') håller bara för 3 av 4 EF:er (hantera-inbetalning/registrera-inbetalning/rebook-registration via scripts/test-betalningar-bas-skrivspegel.mjs). Kortet ska inte se mer bevisat ut än det är — denna rad bokför det öppet.
 
 AC #3 bockad 2026-09-19 (S126 resume 3): efter landningen av #2556 (`3c318da4`, 08:30Z) skannade default setup om main (körning 35432194752, grön) och ALLA NIO larm (nr 3, 4, 5, 7, 8, 9, 10, 11, 12) står som 'fixed' med fixed_at 2026-09-19T08:32:41Z — inget är avfärdat. Bokstaven 'state=open ger noll' håller INTE: listan bär ETT öppet larm, nr 13 (js/shell-command-injection-from-environment, scripts/check-nattkanal-partition.mjs:208, skapat 2026-09-18T23:10Z av #2557) — det är inte ett av de nio och fanns inte när kortet skrevs; rationale styr, och larm 13 bärs av eget kort. AC #1 står KVAR öppen med avsikt (granskarens dom 'felställd', runda 2): tre av fyra EF:er bevisas av det delade hermetiska testet, test-static-files saknar automatiserad täckning och går inte ens att deploya (TASK-468) — AC #1 avgörs när TASK-468 valt väg (laga eller riv). Prod-deploy av de tre betalnings-EF:erna: Marcus steg, kommandot lämnat i chatten 2026-09-19.
+
+Prod-deploy BETALD 2026-09-19 ~08:57–09:02Z (Marcus, eget terminalfönster, scripts/fas4-prod-deploy.sh --deploya): 57 av 57 funktioner, mängdlik med allowlisten, färsk UPDATED_AT på samtliga; de sju funktioner som importerar _shared/betalningar-bas.ts bär fixen (kortet nämner tre). Återlänkat till staging, verifierat på disk. Belägg: sessionsdok S126 Del 15.
 <!-- SECTION:NOTES:END -->
