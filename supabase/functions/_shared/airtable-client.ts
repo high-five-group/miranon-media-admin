@@ -1,8 +1,27 @@
 import { ValidationError } from './errors.ts';
-import { withAirtable429Retry } from './airtable-retry.ts';
+import { callAirtableWithTiming } from './airtable-retry.ts';
 
 // Airtable REST-API-host (samma för alla baser/miljöer — ej prod-bindning).
 const AIRTABLE_API_URL = 'https://api.airtable.com/v0';
+
+/**
+ * `callAirtableWithTiming` (per-anrops timing + `airtable_call`-loggning, TASK-459 AC #1)
+ * bor sedan runda 2 i `./airtable-retry.ts` — INTE här längre.
+ *
+ * Skälet: samma Deno-frihets-krav som fick backoff-logiken flyttad dit under TASK-53 (se
+ * `airtable-retry.ts`s eget filhuvud § Varför en egen modul) — DENNA fil rör `Deno.env`
+ * direkt och kan därför inte importeras från `tests/api/*.test.ts` utan att fälla `npm run
+ * typecheck` (TS2304 på `Deno`). Granskningens fynd 2 (runda 2, PR #2570) krävde ett
+ * rött-först-test av "kastat `send()` ska ändå logga `airtable_call`" — den flytten var vägen
+ * dit utan ett nytt `ci.yml`-wirat grindvaktsskript.
+ *
+ * Attribuering (fynd 1): `{helper, table}` är INTE unikt per Edge Function — samma par
+ * anropas av flera get-*-EF:er (`fetchAirtableRecord('Eventplanering', …)` t.ex. av
+ * get-event, get-attendance OCH get-registrations). Attribuera i stället PER EDGE
+ * FUNCTION/PER ANROP via `function_logs`s egna `metadata.function_id`/`metadata.
+ * execution_id` (finns på varje rad utan kodändring härifrån). Full vägledning + körbar SQL:
+ * `airtable-retry.ts`s filhuvud § Anropsattribuering, och PR #2570-kroppens § Mätanvisning.
+ */
 
 /**
  * Klassar Airtables EGNA valideringsavvisning (TASK-190) — typiskt 422 när
@@ -118,7 +137,8 @@ export async function fetchFromAirtable(
 
     // 429 → Airtable-konform backoff (>= 30s, tak på omförsöken) i _shared/airtable-retry.ts.
     // Uttömt tak returnerar 429-svaret → faller genom !res.ok nedan och kastar som vanligt.
-    const res = await withAirtable429Retry(() =>
+    // TASK-459: callAirtableWithTiming loggar varaktighet + eventuella 429:or strukturerat.
+    const res = await callAirtableWithTiming('fetchFromAirtable', tableIdOrName, () =>
       fetch(url.toString(), {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -193,7 +213,8 @@ export async function fetchAirtablePage(
   }
 
   // Den tidigare `for(;;)`-loopen fanns ENBART för 429-omförsöken; retry-modulen äger den nu.
-  const res = await withAirtable429Retry(() =>
+  // TASK-459: callAirtableWithTiming loggar varaktighet + eventuella 429:or strukturerat.
+  const res = await callAirtableWithTiming('fetchAirtablePage', tableIdOrName, () =>
     fetch(url.toString(), {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -238,7 +259,8 @@ export async function fetchAirtableRecord(
   const url = `${AIRTABLE_API_URL}/${baseId}/${encodeURIComponent(tableIdOrName)}/${recordId}`;
 
   // Den tidigare `for(;;)`-loopen fanns ENBART för 429-omförsöken; retry-modulen äger den nu.
-  const res = await withAirtable429Retry(() =>
+  // TASK-459: callAirtableWithTiming loggar varaktighet + eventuella 429:or strukturerat.
+  const res = await callAirtableWithTiming('fetchAirtableRecord', tableIdOrName, () =>
     fetch(url, {
       headers: {
         Authorization: `Bearer ${token}`,
