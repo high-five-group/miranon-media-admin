@@ -11,11 +11,17 @@ name: CI Suite (reusable)
 #                    (`Pure + Build`, `Acceptance (hermetisk)` och
 #                    `Webblasarbeteende` — inget av de tre bär ett `run_x`-
 #                    villkor eller ett dependabot-skip, se resp. jobb).
-#   · post-merge.yml — det mergade trädet på main. Skickar INGA inputs.
+#   · post-merge.yml — det mergade trädet på main. Skickar `run_hermetic_suite:
+#                    false` sedan TASK-464.6 (ADR-133 beslut 6, S3, 2026-09-19)
+#                    — se `run_hermetic_suite`-inputen nedan för varför. Skickar
+#                    ingen annan input.
 #   · nightly.yml  — schemalagd fullsvit. Skickar INGA inputs.
-# De två sistnämnda får därmed defaulterna (allt true) och är de ytor där
-# staging och a11y faktiskt körs. Inputarna finns för att STYRA anropar-ytan —
-# raderas ett jobb här försvinner det ur ALLA tre samtidigt.
+# nightly.yml får därmed ALLA defaulter (allt true) och är den enda ytan som
+# kör den hermetiska sviten OCH staging OCH a11y i samma körning. post-merge.yml
+# kör sedan TASK-464.6 bara staging + a11y (den hermetiska sviten är redan
+# bevisad på samma träd av förslaget, kön och huvudgrenen — se
+# `run_hermetic_suite`s egen beskrivning). Inputarna finns för att STYRA
+# anropar-ytan — raderas ett jobb här försvinner det ur ALLA tre samtidigt.
 #
 # Extraherad ur
 # ci.yml S79 (verbatim steg); villkoren flyttade: caller-jobbet i ci.yml
@@ -78,6 +84,34 @@ on:
           test-acceptance-urval.sh T15f grindar just den raden.
         type: string
         default: ''
+      run_hermetic_suite:
+        description: >-
+          true (default) = kör den HERMETISKA sviten (`Pure + Build`,
+          `Acceptance (hermetisk)`, `Acceptance — tvåsidigt bevis
+          (hermetik-självtest)`, dess täckningskontroll, och
+          `Webblasarbeteende`). false = dessa fem jobb instansieras inte alls.
+
+          `ci.yml` och `nightly.yml` skickar INGEN input och får därför
+          defaulten (oförändrat beteende — ingen av dem rörs av denna input).
+          `post-merge.yml` skickar false sedan TASK-464.6 (ADR-133 beslut 6,
+          "S3", 2026-09-19): förslaget (PR), kön och huvudgrenen har redan
+          bevisat samma hermetiska tester på SAMMA träd innan efterkontrollen
+          körs, så en fjärde hermetisk körning på det landade trädet bevisade
+          inget nytt (mätt 57 fakt. min på `#2556`, körning 35432195230, varav
+          35 av dessa fem jobbklasser). Det som INTE täcks av någon tidigare
+          yta — `run_staging`/`run_a11y` ovan är VILLKORSLÖST false på
+          förslaget, kön och huvudgrenen (ci.yml) — lämnas kvar OAVSETT denna
+          input: staging, a11y, sentinel-städning, klassning och
+          exponeringsfönster-mätning är inte del av denna flagga och rörs inte
+          av den.
+
+          VARFÖR EN INPUT OCH INTE EN RADERING: exakt samma skäl som
+          `run_a11y`/`run_staging` ovan — att radera jobben ur denna fil hade
+          tagit bort dem ur `nightly.yml` OCH `ci.yml` också, inte bara ur
+          `post-merge.yml`. Rör S3 alltså VAR den hermetiska sviten körs, inte
+          OM den finns.
+        type: boolean
+        default: true
 
 permissions: {}
 
@@ -150,8 +184,13 @@ jobs:
 
   # Pure + Build — mutex-fritt, kör även för dependabot (dep-bump-regression
   # fångas här via pure-tests + build). Split ur gamla Test+Build (S77 våg 1).
+  #
+  # `inputs.run_hermetic_suite` (TASK-464.6, ADR-133 beslut 6, S3): post-merge.yml
+  # skickar false sedan förslaget/kön/huvudgrenen redan bevisat detta jobb på
+  # samma träd. Se inputens egen beskrivning ovan för hela resonemanget.
   test-fast:
     name: Pure + Build
+    if: ${{ inputs.run_hermetic_suite }}
     runs-on: ubuntu-latest
     timeout-minutes: 8
     permissions:
@@ -214,7 +253,8 @@ jobs:
   # det med var det ligger (jfr `kontraktsvakt`, som därför bor i nightly.yml
   # och inte här).
   #
-  # VILLKORSLÖST — inget `if`, och varje utelämnat villkor är ett medvetet val:
+  # VILLKORAT ENDAST på `inputs.run_hermetic_suite` — varje ANNAT utelämnat
+  # villkor är fortsatt ett medvetet val:
   #   · INGEN `inputs.run_staging`-gate. D1-klassen (ren UI-ändring) är exakt
   #     det fall klassen finns för; att hoppa över den då vore att stänga av
   #     beviset precis när det är enda beviset.
@@ -224,12 +264,20 @@ jobs:
   #     playwright.config.ts som litteraler, inte i `secrets`. En dep-bump som
   #     bryter renderingen fångas därför här, vilket är precis vad man vill.
   #
-  # VAD SOM KAN FÄLLA JOBBET: appens beteende, och infrastruktur (checkout,
-  # npm ci, browser-nedladdning). Inte staging, inte Airtable, inte en saknad
-  # secret, inte en mutex-timeout, inte en annan PR:s data — sviten når inget
-  # nätverk utanför localhost (hermetik-vakten avbryter, ADR-080 beslut 4).
+  # `inputs.run_hermetic_suite` (TASK-464.6, ADR-133 beslut 6, S3) TILLKOM
+  # 2026-09-19: post-merge.yml skickar false eftersom förslaget, kön och
+  # huvudgrenen redan kört denna EXAKTA hermetiska svit på samma träd — se
+  # inputens egen beskrivning. ci.yml och nightly.yml skickar ingen input och
+  # förblir OFÖRÄNDRADE (default true).
+  #
+  # VAD SOM KAN FÄLLA JOBBET NÄR DET KÖR: appens beteende, och infrastruktur
+  # (checkout, npm ci, browser-nedladdning). Inte staging, inte Airtable, inte
+  # en saknad secret, inte en mutex-timeout, inte en annan PR:s data — sviten
+  # når inget nätverk utanför localhost (hermetik-vakten avbryter, ADR-080
+  # beslut 4).
   acceptance:
     name: Acceptance (hermetisk)
+    if: ${{ inputs.run_hermetic_suite }}
     runs-on: ubuntu-latest
     # TAKET 8 → 12 (task-59.7). Talet är inte plockat: det är test-stagings tak,
     # och de två jobben har efter A5:s migrering i praktiken samma väggklocka
@@ -530,8 +578,13 @@ jobs:
   # skarpa sviten på EN spec-fil men beviset på arton, blev beviset den
   # kritiska vägen och urvalet en halv besparing. Steget bär samma
   # `read -r -a`-form och samma tomma default som `acceptance`-jobbets.
+  #
+  # `inputs.run_hermetic_suite` (TASK-464.6, ADR-133 beslut 6, S3): samma
+  # gate som `acceptance` ovan, och av samma skäl — beviset följer sviten det
+  # bevisar. post-merge.yml skickar false; ci.yml/nightly.yml oförändrade.
   acceptance-sjalvtest:
     name: Acceptance — tvåsidigt bevis (hermetik-självtest)
+    if: ${{ inputs.run_hermetic_suite }}
     runs-on: ubuntu-latest
     # SAMMA TAK SOM `acceptance` VAR TÄNKT ATT VARA, av samma skäl: de två
     # arbetsmängderna är jämnstora (mätserien ovan), och samma längd ska ha
@@ -776,7 +829,19 @@ jobs:
     # forcerade terminering efter 5 minuters cancellation-timeout bounder samma
     # sak. Kostnaden vid en äkta workflow-cancellation är en billig runner-minut
     # på en körning som ändå inte kan landa.
-    if: ${{ always() }}
+    #
+    # `inputs.run_hermetic_suite &&` TILLKOM (TASK-464.6, ADR-133 beslut 6, S3):
+    # när `acceptance-sjalvtest` ovan inte instansieras alls (samma input,
+    # false) ska täckningskontrollen inte köra och fälla på "0 av 3 skärvor" —
+    # det vore att uppfinna ett fel på ett bevis som medvetet inte kördes.
+    # `&&`-formen bevarar `always()`s HELA semantik oförändrad för varje
+    # anropare där inputen är true (default): uttrycket innehåller fortfarande
+    # `always()`, så GitHub Actions injicerar INTE sin implicita
+    # `success()`-default (dokumenterat: den defaulten hoppas över så snart
+    # villkoret innehåller always()/success()/failure()/cancelled() någonstans)
+    # — jobbet kör alltså precis som förut när `run_hermetic_suite` är true,
+    # och skippas helt (aldrig fälls) när det är false.
+    if: ${{ inputs.run_hermetic_suite && always() }}
     runs-on: ubuntu-latest
     timeout-minutes: 5
     permissions:
@@ -889,8 +954,13 @@ jobs:
   # `continue-on-error` FÖREKOMMER INTE, av samma skäl som Acceptance: flaggan
   # hade gjort `needs`-resultatet till `success` oavsett utfall och tystat
   # paraply-checken (`ci-passed`) på en röd svit.
+  #
+  # `inputs.run_hermetic_suite` (TASK-464.6, ADR-133 beslut 6, S3): samma gate
+  # som `acceptance`/`test-fast` — jobbet är hermetiskt och redan bevisat på
+  # samma träd av förslaget/kön/huvudgrenen innan post-merge.yml kör.
   webblasarbeteende:
     name: Webblasarbeteende
+    if: ${{ inputs.run_hermetic_suite }}
     runs-on: ubuntu-latest
     # Mätt lokalt (macOS, 11 tester): 18,1–29,2 s helsvit. INTE en CI-mätning
     # — se § i CONTRIBUTING.md. 8 min matchar a11y-jobbets tak för en svit av

@@ -898,12 +898,41 @@ fram till `TASK-70.3` i den blockerande PR-grinden. Sedan dess skickar `ci.yml`
 `run_staging: false` villkorslöst, och de två jobben instansieras aldrig av en
 PR-körning. `A11y (axe-runner)` följde med `TASK-70.4` på exakt samma form
 (`run_a11y: false`, villkorslöst). `post-merge.yml` och `nightly.yml` utelämnar
-inputarna och får därför `ci-suite.yml`:s defaulter `true` — samma svit, samma
-`EN KÄLLA`, annan tidpunkt. Av de sex tunga jobben instansierar PR-grinden efter
-detta tre: `Pure + Build`, `Acceptance (hermetisk)` och `Webblasarbeteende`
-(TASK-131 — se § Webbläsarbeteende-klassen; jobbet bär inget eget `run_x`-
-villkor, av samma skäl som `Pure + Build`: det behöver inga secrets och rör
-aldrig staging).
+BÅDA dessa inputar och får därför `ci-suite.yml`:s defaulter `true` — samma
+svit, samma `EN KÄLLA`, annan tidpunkt. Av de sex tunga jobben instansierar
+PR-grinden tre: `Pure + Build`, `Acceptance (hermetisk)` och
+`Webblasarbeteende` (TASK-131 — se § Webbläsarbeteende-klassen; jobbet bär
+inget eget `run_x`-villkor, av samma skäl som `Pure + Build`: det behöver inga
+secrets och rör aldrig staging).
+
+**S3 (`TASK-464.6`, `ADR-133` beslut 6, 2026-09-19) är EN TREDJE RÖRELSE, och
+den skiljer sig från de två ovan: den TAR BORT en körning, den flyttar ingen.**
+Före S3 skickade `post-merge.yml` ingen input alls och fick därmed samtliga
+sex jobb — de tre PR-grinden redan kör (`Pure + Build`, `Acceptance
+(hermetisk)` inklusive dess tvåsidiga bevis och täckningskontroll,
+`Webblasarbeteende`) EN FJÄRDE gång på exakt samma träd, plus staging och
+a11y. Mätt: `#2556` (körning `35432195230`), 57 fakturerade min totalt, varav
+35 gick till den fjärde hermetiska körningen. Sedan S3 skickar `suite`-jobbet
+`run_hermetic_suite: false` (ny input i `ci-suite.yml`) — de fem jobben
+instansieras inte alls här. `run_staging`/`run_a11y` är OFÖRÄNDRADE
+(utelämnade, defaulter `true`): staging och a11y kör precis som innan S3, och
+`nightly.yml` rörs inte av ändringen (ingen input skickad, samtliga sex jobb
+oförändrade).
+
+**Skyddsförlusten är INTE att efterkontrollen skulle vara den enda ytan som
+kör den hermetiska sviten på det landade trädet — det påståendet är RÄTTAT
+(review runda 2, PR `#2597`, 2026-09-19) och var mätbart falskt.** Kön ser
+gruppinteraktionen redan (kö-grenens SHA ÄR den landade commiten), och
+push-ytan kör i dag OCKSÅ om sviten vid en gruppmerge eftersom
+merge-dedupens trädjämförelse missar då `main` rört sig sedan PR-headen
+skrevs — mätt på grupplandningen `#2588`+`#2596` (`main` = `811cece3`): både
+kö-körningen (`merge_group` `35448948271`) och push-körningen (`push`
+`35449264286`) körde hela `Test suite` grönt på EXAKT den SHA:n. Den
+verkliga förlusten är att push-ytans hermetiska omkörning inte är kopplad
+till larmkedjan (`ci-post-merge`-ärenden, revert-förslag) — den maskinen
+finns bara i efterkontrollen. Fullt resonemang, run-ID:er och en framåtblick
+mot `TASK-464.4` (S1): `post-merge.yml`s eget filhuvud, § "VAD
+SKYDDSFÖRLUSTEN FAKTISKT ÄR".
 
 **Varför staging-flytten gjordes, och vad den faktiskt köpte.** Inte jobbets
 375 s, utan den globala `staging-tests`-mutexen. Den serialiserar över *alla*
@@ -1572,9 +1601,15 @@ Mekaniken är `scripts/acceptance-urval.sh`, kallad av `ci.yml`:s
   spec-mönstret `*.acceptance.test.ts`, inte för att den ligger i en
   egen katalog), en workflow eller en okänd filtyp ⇒ **full klass**. Vid
   minsta osäkerhet körs allt.
-- **Post-merge är nätet.** `post-merge.yml` och `nightly.yml` skickar ingen
-  input och kör därför hela klassen på varje mergat träd. Ett urval som missar
-  något fångas där, inom minuter — inte aldrig.
+- **`nightly.yml` är nätet — `post-merge.yml` är det INTE längre för DENNA
+  klass.** RÄTTAT (`TASK-464.6`, ADR-133 beslut 6, "S3", 2026-09-19): denna
+  rad sade tidigare att både `post-merge.yml` och `nightly.yml` körde hela
+  klassen på varje mergat träd. `post-merge.yml` skickar sedan S3
+  `run_hermetic_suite: false` till `ci-suite.yml` — `Acceptance (hermetisk)`
+  instansieras då INTE alls där, oavsett urval. `nightly.yml` skickar
+  fortsatt ingen input och kör hela klassen varje natt; det är den ENDA
+  ytan (utöver förslaget och kön) som fångar ett urval som missat något.
+  Fullt resonemang: `post-merge.yml`s eget filhuvud, § TASK-464.6.
 
 **Urval på källkod finns inte, och det är ett medvetet val.** Att mappa
 `src/**` till spec-filer kräver en testgraf, och ADR-077 § Beslut 1 lämnar den
@@ -1670,7 +1705,9 @@ onödig.
 
 **CI:** eget jobb i `ci-suite.yml`, **utan staging-mutex och utan secrets** —
 exakt samma motivering som Acceptance-jobbet. Jobbet är blockerande, som alla
-andra jobb i sviten (inget `run_x`-villkor, inget Dependabot-skip — jobbet
+andra jobb i sviten (ingen EGEN, dedikerad on/off-flagga som `run_a11y` —
+sedan `TASK-464.6` delar det `run_hermetic_suite`-gaten med `Pure + Build`
+och `Acceptance`, se § Post-merge-lagret ovan; inget Dependabot-skip — jobbet
 kräver inga secrets och rör aldrig staging, samma logik som `Pure + Build`).
 Mätt LOKALT (macOS, 11 tester): 18,1–29,2 s helsvit — ingen CI-mätning
 projicerad, se § Flakighet mäts med riggen ovan för varför den skillnaden

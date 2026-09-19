@@ -26,8 +26,18 @@ name: Post-merge
 # ═══ VAD DEN INTE GÖR — icke-dubblering är ett krav, inte en bonus ═══
 # ci.yml:s `lint`-jobb kör OVILLKORAT på varje main-push (inget if, inget
 # needs) och dess `docs`-jobb kör på docs-ändringar. Den här filen rör inget av
-# det: den kör ENBART den tunga sviten via samma EN KÄLLA (ci-suite.yml) —
-# alltså exakt det lager dedupen släcker, och ingenting annat.
+# det: den kör via samma EN KÄLLA (ci-suite.yml) — alltså exakt det lager
+# dedupen släcker, och ingenting annat.
+#
+# SEDAN TASK-464.6 (ADR-133 beslut 6, "S3", 2026-09-19) ÄR "DEN TUNGA SVITEN"
+# OVAN INTE LÄNGRE HELA ci-suite.yml. `suite`-jobbet skickar
+# `run_hermetic_suite: false` (se jobbets egen kommentar nedan) — den
+# hermetiska sviten (`Pure + Build`, `Acceptance (hermetisk)`, dess tvåsidiga
+# bevis och täckningskontroll, `Webblasarbeteende`) är redan bevisad på SAMMA
+# träd av förslaget, kön och huvudgrenen innan denna fil körs, och en fjärde
+# körning av dem bevisade inget nytt. Vad som körs HÄR — och bara här,
+# eftersom `run_staging`/`run_a11y` är VILLKORSLÖST false på de tre tidigare
+# ytorna — är: staging (purge + test-staging + purge-efter) och a11y.
 #
 # Den FÖRLITAR sig heller inte på ci.yml:s main-push-körning: sviten anropas
 # härifrån oavsett vad dedupen beslutade, eftersom det är just dedupen som
@@ -137,7 +147,80 @@ name: Post-merge
 # nattsidan. Motsvarande vakt för denna workflow finns INTE och är medvetet
 # INTE byggd här: den hör till en egen avvägning om huruvida en andra vakt
 # tjänar mer än den kostar. Bokförd, inte antagen bort.
-
+#
+# ═══ TASK-464.6 (ADR-133 beslut 6, "S3", 2026-09-19) — DEN FJÄRDE HERMETISKA
+# KÖRNINGEN TAGEN BORT ═══
+# Före denna skiva anropade `suite`-jobbet ci-suite.yml UTAN någon `with:`,
+# alltså med SAMTLIGA defaulter (`run_staging: true`, `run_a11y: true`,
+# ingen `run_hermetic_suite`-input fanns) — hela den hermetiska sviten körde
+# därför EN FJÄRDE gång på det landade trädet, trots att förslaget (PR), kön
+# och huvudgrenen redan kört exakt samma tester på samma träd (ADR-133 § Besluten
+# 6). Mätt: `#2556`, körning 35432195230, 57 fakturerade minuter totalt, varav
+# 35 av dessa gick till den hermetiska klassen (`Pure + Build` 1 min,
+# `Acceptance (hermetisk)` × 3 skärvor 6+6+5=17 min, `Acceptance — tvåsidigt
+# bevis` × 3 skärvor 5+4+4=13 min, dess täckningskontroll 1 min,
+# `Webblasarbeteende` 3 min).
+#
+# ÅTGÄRDEN: `suite`-jobbet skickar sedan denna skiva `run_hermetic_suite:
+# false` (ny input i ci-suite.yml, se dess egen beskrivning). De fem jobben
+# ovan instansieras då inte alls. KVAR — oförändrat, samma jobb som förut,
+# eftersom `run_staging`/`run_a11y` INTE rörs av denna ändring: `klassning`
+# (denna fil), `Staging sentinel purge` (före), `Staging (API + E2E)`,
+# `Staging sentinel purge` (efter körning), `A11y (axe-runner)`,
+# `Exponeringsfönster (merge → svar)`, `Larm vid rött post-merge`.
+#
+# VAD SKYDDSFÖRLUSTEN FAKTISKT ÄR — RÄTTAT (review runda 2, PR #2597,
+# 2026-09-19). Ett tidigare stycke här påstod att efterkontrollen är den
+# ENDA ytan som kör den hermetiska sviten på det FAKTISKT LANDADE trädet
+# efter en gruppmerge. Det är MÄTBART FALSKT — rättat till det som är mätt:
+#
+# (a) KÖN SER GRUPPINTERAKTIONEN. En gruppmerges sista post byggs av kön mot
+# exakt det träd som sedan landar — kö-grenens SHA ÄR den landade commiten,
+# ingen ny commit mintas. Mätt: grupplandningen `#2588`+`#2596`
+# (2026-09-19 ~14:36:34Z) gav `main` = `811cece3`. Kö-körningen på EXAKT den
+# SHA:n (`merge_group` `35448948271`, kö-gren
+# `gh-readonly-queue/main/pr-2596-6a3a78c3…`, byggd OVANPÅ `#2588`:s
+# gruppcommit) körde `Test suite` — `Pure + Build`, `Acceptance (hermetisk)`
+# × 3, tvåsidigt bevis × 3, täckning, `Webblasarbeteende` — HELT GRÖNT.
+#
+# (b) I DAG kör dessutom PUSH-YTAN (`ci.yml`, `on.push`) om SAMMA svit vid
+# EXAKT en sådan gruppmerge, eftersom merge-dedupen (jobbet `changed`,
+# steget "Merge-dedup") jämför merge-commitens träd mot andra förälderns
+# (PR-headens) träd, och den jämförelsen missar så fort `main` rört sig
+# mellan PR-headen och landningen — precis fallet vid en gruppmerge. Mätt på
+# SAMMA SHA: push-körningen `35449264286` körde också hela `Test suite`
+# grönt (dedupen släckte den INTE). Träden skiljer sig bevisligen:
+# `git rev-parse 811cece3^{tree}` = `282abfc0…`, `git rev-parse
+# 811cece3^2{tree}` (PR-headen, `33c26570`) = `9743f516…` — olika träd.
+#
+# (c) S3 TAR DÄRFÖR INTE BORT NÅGOT HERMETISKT SKYDD, varken vid en enskild
+# landning eller vid en gruppmerge: kön bevisar redan den hermetiska klassen
+# på det landade trädet (a), och push-ytan gör det EN GÅNG TILL i dag när
+# dedupen missar (b) — TVÅ ytor kvar efter att efterkontrollens fjärde
+# körning togs bort, inte noll.
+#
+# (d) DEN SKYDDSFÖRLUST SOM ÄR VERKLIG ÄR EN ANNAN: LARMKEDJAN. Ett rött på
+# push-ytans hermetiska omkörning (b) utlöser I DAG inget ärende, inget larm
+# och inget revert-förslag — den maskinen
+# (`scripts/classify-post-merge.sh`, `scripts/post-merge-attribution.sh`,
+# `ci-post-merge`-etiketten, `larm`-jobbet nedan) finns ENDAST i
+# efterkontrollen, och efterkontrollen kör efter S3 inte längre den
+# hermetiska klassen. En äkta regression som push-ytan fångar (b) syns
+# alltså bara som en röd `ci.yml`-körning på `main` — ingen tilldelad,
+# spårad incident, inget revert-förslag. Det är den faktiska kostnaden av
+# S3, inte frånvaron av ett bevis på det landade trädet.
+#
+# (e) FRAMÅTBLICK, INGET PÅSTÅTT OM NULÄGET: `TASK-464.4` (S1, PR `#2598`,
+# under granskning i skrivande stund) avser byta push-ytans trädjämförelse
+# mot SHA-identitet — samma form som kö-vägen i klassnings-skriptet redan
+# bär ("kö-körningen på exakt `github.sha` körde sviten grön"). Landar den
+# stänger den (b) helt, och kön blir den enda ytan som kör den hermetiska
+# klassen på det landade trädet. Fram till dess beskriver (a)–(d) nuläget.
+#
+# VAD SOM MEDVETET INTE RÖRS I DENNA SKIVA (nästa skiva i kedjan, TASK-464.14):
+# triggern (`push` kontra en klocka — ADR-133 beslut 6b AVVISADE klockan efter
+# ett eget research-pass, `docs/research/efterkontroll-pa-klocka-2026-09-19.md`)
+# och `concurrency`-gruppen (per-SHA nedan, oförändrad).
 on:
   push:
     branches: [main]
@@ -254,26 +337,33 @@ jobs:
     permissions:
       contents: read
     uses: ./.github/workflows/ci-suite.yml
-    # INGEN `with:` — ci-suite.yml:s defaulter gäller (`run_staging: true`,
-    # `run_a11y: true` OCH `acceptance_selection: ''`), samma form som
-    # nightly.yml. Se § MUTEX-KOSTNADEN i huvudet: talet är mätt, och levern för
-    # att sänka det står skriven där.
+    # `run_staging`/`run_a11y` UTELÄMNAS — ci-suite.yml:s defaulter (`true`/
+    # `true`) gäller, samma form som nightly.yml. Se § MUTEX-KOSTNADEN i
+    # huvudet: talet är mätt, och levern för att sänka det står skriven där.
     # Sedan A7:5 (TASK-70.3) är detta anrop den ENDA ytan som kör staging på ett
     # landat träd före natten, och sedan A7:6 (TASK-70.4) gäller detsamma för
-    # a11y. Utelämnandet av `with:` är alltså inte längre en default man ärver,
-    # utan den rad som bär ALLA TRE kontrollerna.
+    # a11y. Utelämnandet av dessa två är alltså inte en default man råkar
+    # ärva, utan den form som bär BÅDA kontrollerna.
     #
-    # DEN TREDJE KOM MED TASK-75 och är av en annan sort än de två andra. Där
-    # `run_staging`/`run_a11y` styr OM ett jobb instansieras, styr
-    # `acceptance_selection` HUR MYCKET `Acceptance (hermetisk)` kör: tom sträng
-    # = hela klassens 18 spec-filer. PR-grinden kan skicka ett urval när diffen
-    # rör enbart spec-filer, och det urvalet är försvarbart ENDAST för att denna
-    # rad kör full klass på det mergade trädet (ADR-077 § Kontext,
-    # Google-modellen). scripts/test-acceptance-urval.sh T15f grindar defaulten.
+    # `run_hermetic_suite: false` — TILLAGD (TASK-464.6, ADR-133 beslut 6,
+    # "S3", 2026-09-19). Se filhuvudets egen sektion (§ TASK-464.6) för hela
+    # resonemanget och de mätta talen. Kort: `Pure + Build`, `Acceptance
+    # (hermetisk)`, dess tvåsidiga bevis + täckningskontroll och
+    # `Webblasarbeteende` är samtliga redan bevisade på SAMMA träd av
+    # förslaget, kön och huvudgrenen — en fjärde körning av dem här bevisade
+    # inget nytt. `ci.yml` och `nightly.yml` skickar INGEN input för denna
+    # flagga och förblir därmed oförändrade (default `true`).
     #
-    # Att lägga till en `with:` här släcker alltså antingen ett jobb som ingen
-    # annan yta kör förrän natten, eller — för den tredje inputen — smalnar av
-    # det enda stället där hela acceptance-klassen möter ett landat träd.
+    # `acceptance_selection` UTELÄMNAS ALLTJÄMT — men sedan raden ovan är den
+    # UTAN KONSUMENT här: `Acceptance (hermetisk)` instansieras inte alls
+    # längre av detta anrop, oavsett vad inputen skulle ha sagt. Den lämnas
+    # ändå osatt i stället för att sättas till en tom sträng: en framtida
+    # ändring som tar bort `run_hermetic_suite: false` (t.ex. om N3:s
+    # täckningshål visar sig kräva den fjärde körningen igen) ska falla
+    # tillbaka till ci-suite.yml:s SÄKRA default (hela klassen), inte till ett
+    # urval som glömdes kvar i just den här filen.
+    with:
+      run_hermetic_suite: false
     secrets: inherit
 
   # Självtestet (tvåsidigt bevis, gate-proof.yml:s form). Normalt SKIPPAT — det
