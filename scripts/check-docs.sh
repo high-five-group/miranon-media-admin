@@ -267,10 +267,27 @@ run_gate "Permissions-påståenden (prosa som påstår mekanism)" bash scripts/c
 # alltså ~+4,8 %. CI-TIDEN ÄR INTE MÄTT AV MIG.
 run_gate "fetch-depth-invarianten (ADR-029/030 erratum)" bash scripts/check-fetch-depth-invariant.sh
 run_gate "Listparitet (CONTRIBUTING ↔ purge-policy, lychee-scopen, grind-conf-täckningen)" bash scripts/check-listparitet.sh
-run_gate "CodeQL D0-undantaget är kodfritt (TASK-464.2)" bash scripts/check-codeql-d0-kodfri.sh
-run_gate "CodeQL push===pull_request paths-ignore (TASK-464.2)" node scripts/check-codeql-push-pr-parity.mjs
 run_gate "Låst facits adresserbarhet + rivningsspärr (ADR-102)" bash scripts/check-facit.sh
 # paritet:slut docs-grindar-lokal
+
+# De två CodeQL-grindarna (TASK-464.2, PR #2558) körs lokalt här för full
+# täckning, men står MEDVETET UTANFÖR docs-grindar-regionen ovan: paret
+# `docs-grindar` mäter check-docs.sh mot ci.yml:s `docs`-jobb specifikt
+# (radernas egen kommentar, "hålls mängd-likt med ci.yml:s docs-jobb"), och
+# båda grindarna ligger i `lint`-jobbet, INTE `docs`-jobbet — se
+# ci.yml:s egna kommentarer vid `run: bash scripts/check-codeql-d0-kodfri.sh`.
+# Det är avsiktligt: `.github/workflows/**` är explicit undantaget D0, så en
+# ren ändring av codeql.yml gör `should_skip_tests` falskt och kör `lint`-
+# jobbet — men `.github/workflows/codeql.yml` står INTE i changed-docs-listan
+# (klassning-docs), så `docs`-jobbets `docs_changed`-villkor hade INTE blivit
+# sant av samma ändring. Att flytta dessa två steg till `docs`-jobbet hade
+# alltså gjort dem tysta på precis den ändringstyp de finns för att fånga —
+# ett fail-open-hål. Se sessionsrapporten för TASK-464.1:s rebase-runda
+# (2026-09-19) för full utredning; en eventuell flytt kräver att codeql.yml +
+# de två skriptens egna sökvägar FÖRST läggs till klassning-docs, vilket är
+# ett eget beslut utanför denna rebase-konflikts scope.
+run_gate "CodeQL D0-undantaget är kodfritt (TASK-464.2)" bash scripts/check-codeql-d0-kodfri.sh
+run_gate "CodeQL push===pull_request paths-ignore (TASK-464.2)" node scripts/check-codeql-push-pr-parity.mjs
 
 # --- Sammanfattning -------------------------------------------------------
 printf '\n\033[1m─────────── check:docs ───────────\033[0m\n'
