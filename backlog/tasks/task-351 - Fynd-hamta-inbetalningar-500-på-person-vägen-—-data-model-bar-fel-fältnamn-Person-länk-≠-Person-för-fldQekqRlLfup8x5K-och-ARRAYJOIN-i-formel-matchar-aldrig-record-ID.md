@@ -7,7 +7,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-08-31 10:04'
-updated_date: '2026-09-04 08:12'
+updated_date: '2026-09-19 00:22'
 labels:
   - ready-for-agent
 dependencies: []
@@ -26,7 +26,7 @@ ordinal: 655000
 
 1. **Fel fältnamn.** `supabase/functions/hamta-inbetalningar/index.ts` byggde `filterByFormula: buildLinkedRecordFilter('Person (länk)', personId)` mot tabellen `Anmälningar`. Fältet `fldQekqRlLfup8x5K` heter i verkligheten **`Person`** (utan `(länk)`) i BÅDA baserna — `describe_table`-verifierat. Källan till felnamnet var `docs/reference/data-model.md` rad ~1053 (”Anmälningar — write-fält”-tabellen), som stod i självmotsägelse mot rad 950 i samma fil (§Kritiska länkfält), som redan hade rätt namn. Formeln föll med `422 INVALID_FILTER_BY_FORMULA: Unknown field names: person (länk)`, vilket EF:en mappade till en generisk `500`.
 
-2. **Ett rent namnbyte hade INTE räckt — och hade varit en VÄRRE bugg.** Även med rätt namn matchar `FIND(personId, ARRAYJOIN({Person}))` ALDRIG: `ARRAYJOIN` på ett länkfält i en Airtable-FORMEL renderar de länkade posternas PRIMÄRFÄLT (personens NAMN), aldrig record-ID:t. Mätt: `FIND("rec2JwV3Bh0x5qlvl", ARRAYJOIN({Person}))` → 0 träffar, trots att den posten faktiskt länkar just den personen; `FIND("Cecilia Ödman", ARRAYJOIN({Person}))` (namnet) → träff. Ett namnbyte utan att åtgärda semantiken hade alltså bytt en 500:a mot en TYST tom sektion för varje person — en värre felklass, och namnkollisioner (samma namn, olika personer) hade gjort ett namn-baserat filter direkt farligt.
+2. **Ett rent namnbyte hade INTE räckt — och hade varit en VÄRRE bugg.** Även med rätt namn matchar `FIND(personId, ARRAYJOIN({Person}))` ALDRIG: `ARRAYJOIN` på ett länkfält i en Airtable-FORMEL renderar de länkade posternas PRIMÄRFÄLT (personens NAMN), aldrig record-ID:t. Mätt: `FIND("rec2JwV3Bh0x5qlvl", ARRAYJOIN({Person}))` → 0 träffar, trots att den posten faktiskt länkar just den personen; `FIND("Deltagare 106", ARRAYJOIN({Person}))` (namnet) → träff. Ett namnbyte utan att åtgärda semantiken hade alltså bytt en 500:a mot en TYST tom sektion för varje person — en värre felklass, och namnkollisioner (samma namn, olika personer) hade gjort ett namn-baserat filter direkt farligt.
 
 3. **Rätt design: API-READ av reverse-länken, ingen formel.** `Personer.Anmälningar (länkat fält)` (`fld8pOivka8YdiywK`, samma fält-ID i staging OCH prod) bär samma relation från andra hållet. Ett record-GET av Personens EGEN rad returnerar den länkens record-ID:n rakt av (API-läsning ≠ formel-rendering). Fixen läser `Personer/<personId>` och tar `anmalanIds` ur det fältet, respekterar befintlig `MAX_ANMALNINGAR_PER_PERSON`-tak via slice.
 

@@ -202,10 +202,10 @@ test('inom en grupp går FÖRFALLNA först, därefter svensk namnordning', () =>
 /* ═══════════════════════════ SÖKNINGEN ═══════════════════════════ */
 
 test('sökning på namn är skiftlägesokänslig och matchar del av namnet', () => {
-  const r = rad({ personNamn: 'Cecilia Ödman' });
-  expect(matcharSokning(r, 'cecilia')).toBe(true);
-  expect(matcharSokning(r, 'ÖDMAN')).toBe(true);
-  expect(matcharSokning(r, 'ödm')).toBe(true);
+  const r = rad({ personNamn: 'Ingrid Ekström' });
+  expect(matcharSokning(r, 'ingrid')).toBe(true);
+  expect(matcharSokning(r, 'EKSTRÖM')).toBe(true);
+  expect(matcharSokning(r, 'ström')).toBe(true);
   expect(matcharSokning(r, 'Bengt')).toBe(false);
 });
 
