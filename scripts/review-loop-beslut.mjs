@@ -266,12 +266,25 @@ export function metrikFilFor(repo, override = null) {
  * docs/reference/ än). Ren I/O, ingen validering — anroparen skickar en
  * redan schema-validerad rad (`byggKorningRad(...).data`).
  *
+ * Säkerställer en LEDANDE radbrytning om filen redan finns och INTE slutar
+ * på `\n` — annars klistras denna rad ihop med föregående rad till EN
+ * fysisk textrad (`{...}{...}`), som inte är giltig JSON längre. Detta är
+ * oberoende av `.gitattributes`/`merge=union` (TASK-464.7): felet uppstår
+ * redan vid SKRIVNING, långt före en eventuell merge. Tvågrens-testet i
+ * PR-kroppen för TASK-464.7 reproducerar exakt detta fall.
+ *
  * @param {string} path
  * @param {object} rad
  */
 function appendMetrikRad(path, rad) {
   if (!existsSync(dirname(path))) mkdirSync(dirname(path), { recursive: true });
-  appendFileSync(path, `${JSON.stringify(rad)}\n`, 'utf8');
+  let behoverLedandeRadbrytning = false;
+  if (existsSync(path)) {
+    const befintligt = readFileSync(path, 'utf8');
+    behoverLedandeRadbrytning = befintligt.length > 0 && !befintligt.endsWith('\n');
+  }
+  const prefix = behoverLedandeRadbrytning ? '\n' : '';
+  appendFileSync(path, `${prefix}${JSON.stringify(rad)}\n`, 'utf8');
 }
 
 function main(argv) {

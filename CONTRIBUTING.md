@@ -529,6 +529,40 @@ som förutsätter att en PR redan är mergad gör granskningen beroende av kön,
 vilket är precis den väntan i handlingsögonblicket `ADR-096`/`ADR-097`
 flyttar bort.
 
+**Landnings-buntning — ORKESTRERARENS egna dokument, ett ÅTAGANDE
+([ADR-133](docs/decisions/ADR-133-testa-en-gang-per-landning-vantetidstak-och-tillvaxtmal.md)
+§ Besluten 5,
+[ADR-097](docs/decisions/ADR-097-arbetsformens-tillstandsbarare.md)
+§ Updates 2026-09-19, `TASK-464.7`).** Normalform för ORKESTRERARENS egna
+dokument (sessionsdok, `tasks/todo.md`, kortstängningar,
+`docs/reference/review-instrumentering.jsonl`) är en LANDNINGS-bunt per
+pass — flera färdiga dokumentenheter samlas i EN PR i stället för att var
+och en pushas och armeras separat. Orkestreraren gjorde redan detta i sina
+stängningsbatchar innan beslutet formaliserade det; besparingen är mätt
+(`ADR-133` § Besluten 5: 870 av augustis 1 279 landningar var rena
+dokumentlandningar).
+
+**Detta är INTE samma sak som "session-batchad push"** — den formen avvisade
+`ADR-097` § Decline-rationale redan med fyra mätta skäl (parallell
+nummerallokering, agent-synlighet mot origin, write-ahead-principen, DORA:s
+stor-batch-risk), och den avvisningen gäller PUSH och står OFÖRÄNDRAD.
+Skillnaden är strukturell: en gren fortsätter ta emot pushar precis som i
+dag, och ingen ANNAN agent behöver se orkestrerarens mellansteg —
+write-ahead-risken gäller ett arbetsträd som väntar på en framtida tur att
+vakna i, en egenskap orkestrerarens egen, centralt hanterade dokumentbunt
+inte delar (fullt resonemang: `ADR-097` § Updates).
+
+**Agenters dokument-PR:er är ORÖRDA av denna regel.** En bygg-agent pushar
+och öppnar sin PR för sin egen färdiga enhet precis som annars beskrivs i
+denna sektion — `ADR-097` § Decline-rationale gäller dem oförändrat, och
+ingen av deras fyra skäl bortfaller för en agents arbetsträd.
+
+**Detta är ett ÅTAGANDE, ingen mekanism ([ADR-083](docs/decisions/ADR-083-prosa-som-pastar-mekanism.md)).**
+Inget skript eller CI-jobb tvingar fram buntningen eller fäller en
+dokument-PR för att den INTE är buntad — orkestreraren väljer när ett pass
+utgör en färdig bunt värd en landning. Skriv inte om detta stycke till att
+påstå en spärr som inte finns.
+
 **Den upphävda manuella formen bevaras nedan** — inte som instruktion, utan för
 att den förklarar varför kön behövdes. Följ den inte; den är historik. Här stod
 fram till `TASK-96` också en avgränsning om att merge queue var en egen öppen
