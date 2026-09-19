@@ -115,6 +115,30 @@ amenderat). Marcus granskar den utvidgade formen i dev-server/staging (se
 PR-kroppens "Så här tittar Marcus på formen") och omstämplar via sin egen
 kanal om han godkänner den — inte via denna sidofil eller denna agent.
 
+**Godkänd av Marcus 2026-09-19 (S127) — den MEKANISKA omstämplingen gick
+inte att bära.** Marcus granskade den utvidgade formen i dev-server (`#2547`,
+head `1420780c`, efter iterationen som förvärmer gruppernas bilagor) och
+godkände den med orden *"Ser bra ut med bilageväljaren."* Han körde därefter
+själv stämplings-skriptet via `!`-kanalen med `--ersatt` och det citatet; det
+skrev `datum: 2026-09-19`, sha `2a825562…`.
+
+Den stämpeln FÄLLDE `scripts/check-facit.sh` (exit 1, sex fel): manifestets
+`kallor` pekar på prototyp-källorna (`src/routes/dev/svep-prototyp.tsx` och fem
+filer under `src/components/dev/svep-prototyp/`), som revs vid promoveringen
+(`ADR-103` B2 steg 4). Rivnings-klausulen (`ADR-102` § Updates 2026-08-22)
+godtar en riven källa ENDAST om filen fanns i stämpel-commiten — sant för den
+gamla stämpeln (`10dff531…`), falskt för varje ny. Ett stämplat manifest vars
+prototyp är riven kan alltså inte omstämplas med dagens mekanik. Marcus backade
+stämpeln själv (`git checkout` på manifestet); ingenting av den landade.
+
+**Gällande läge:** manifestets stämpel är den ursprungliga (`av: marcus`,
+`datum: 2026-08-16`, sha `10dff531…`) och gäller den orörda formen. Godkännandet
+av UTVIDGNINGEN bärs av detta stycke — citatet ovan, datumet och PR `#2547`
+(merge `018dfeef`) — tills mekaniken kan bära en omstämpling. Luckan är
+registrerad som tråd `T188`. De fyra `KANDIDAT-svep-bilageval-*.png` nedan
+avbildar den godkända formens utseende (iterationen ändrade laddbeteendet,
+inte utseendet) men har inte granskats bild för bild av Marcus.
+
 ## Bilder — KANDIDAT, inte facit
 
 Fyra nya skärmdumpar av den UTVIDGADE formen (bilageväljare vald i en

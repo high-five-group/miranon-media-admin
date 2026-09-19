@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-18 10:48'
-updated_date: '2026-09-19 09:16'
+updated_date: '2026-09-19 10:11'
 labels:
   - ready-for-agent
 dependencies:
@@ -47,7 +47,7 @@ Köad jobbmotor för stora utskick (ADR-120-tröskeln) · "mallen bär sina bila
 - [x] #3 Rött-först: test som visar att ett svep med vald bilaga i dag sänder utan attachmentIds; grönt efter fix. API-test mot staging: mottagaren får bilagan (mail-låset respekterat — sentinel-adress)
 - [x] #4 Granskningssteget visar per grupp vilka bilagor som följer med, och att bilage-bärande grupper tar längre tid (loopad sändning) — begripligt för Lotta utan teknisk förklaring
 - [x] #5 Tillgänglighet 11: tangentbord, skärmläsare, prefers-contrast, reduced-motion; aria-mönstret följer åtgärdssidans väljare
-- [ ] #6 Marcus stämplar formen i dev-server/staging; facit-manifestet s102-svep-konvergens amenderas med nya bilder (ADR-102/ADR-104) — landning sker först efter stämpeln
+- [x] #6 Marcus stämplar formen i dev-server/staging; facit-manifestet s102-svep-konvergens amenderas med nya bilder (ADR-102/ADR-104) — landning sker först efter stämpeln
 <!-- AC:END -->
 
 ## Definition of Done
@@ -105,4 +105,6 @@ Grindar körda och mätta (exitkoder lästa separat, ingen pipe):
 INTE kört: npm run test:api:staging (ingen EF/server-kontrakt rörd i denna iteration — bara en ny klientsides prefetch-hook mot samma befintliga get-event-attachments-EF; staging-preflighten rördes aldrig, MM_STAGING_PREFLIGHT satt aldrig till off).
 
 Sidofilen AMENDERING-2026-09-18-svep-bilageval.md prövad mot laddbeteendet (uppdragets punkt 5) — nämner det INTE (handlar enbart om UTSEENDET), så ingen rad tillagd där; facit.json orört.
+
+AC #6 (S127, 2026-09-19): Marcus godkände den utvidgade formen i dev-server med orden 'Ser bra ut med bilageväljaren.' och körde själv stämplingen via sin kanal. Den nya stämpeln fällde check-facit.sh (sex fel): manifestets kallor pekar på prototyp-källor som revs vid promoveringen, och rivnings-klausulen godtar dem bara under den ursprungliga stämpel-SHA:n. Marcus backade stämpeln; manifestet bär fortsatt stämpeln från 2026-08-16 och godkännandet av utvidgningen bärs av amenderings-sidofilen. Luckan: tråd T188.
 <!-- SECTION:NOTES:END -->
