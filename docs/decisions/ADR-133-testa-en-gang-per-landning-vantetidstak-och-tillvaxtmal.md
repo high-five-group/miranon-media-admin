@@ -63,7 +63,8 @@
 > tillsammans — GitHubs egen dokumentation säger det uttryckligen: *"Merge
 > limits do not combine `merge_group` builds. Merge limits only affect
 > merges to the base branch once one or more `merge_group` has satisfied
-> build checks."* Byggsidan i detalj: `CLAUDE.md` § Review-grinden,
+> build checks."* — [GitHubs dokumentation om merge queue](https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/configuring-pull-request-merges/managing-a-merge-queue),
+> § Merge limits, hämtat 2026-09-19. Byggsidan i detalj: `CLAUDE.md` § Review-grinden,
 > "Kö-antagandet som bär grinden".) **Huvudgrenen**
 > (`main`) är den gemensamma, godkända versionen av koden — webbappen i
 > drift följer den (via Vercel), medan serverfunktionerna (Edge Functions

@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-19 12:38'
+updated_date: '2026-09-19 13:20'
 labels:
   - ready-for-agent
 dependencies: []
@@ -34,6 +35,7 @@ Rör INTE `nightly-watchdog.yml` eller `nightly.yml` i denna skiva om det går a
 - [ ] #2 Samma testsvit bevisar att ett ÄKTA ärende (stängt-med-motivering inom fönstret, ELLER öppet) fortfarande dedupar korrekt — regressionsskydd mot TASK-180s ursprungliga fix (issue #1042).
 - [ ] #3 Lösningen dokumenterad i CONTRIBUTING.md § Nattnätet (ersätter ÅTAGANDE-noten TASK-467 lade till om manuell etikett-borttagning) och i scripts/check-nattvakt-dedup.sh + .nattvakt-dedup-policy.conf sina egna huvuden, med instansen (#2589) som källa.
 - [ ] #4 Bedömt och antingen fixat eller explicit avfört (med skäl) huruvida samma risk gäller nightly.yml simulate_failure=produkt-dispatchens ci-natt-ärenden.
+- [ ] #5 Den kvarlämnade kommentaren i .github/workflows/nightly-watchdog.yml (~rad 262, direkt ovanför alarm_barande_rott-blocket) som säger att SIDA 2 'körs OBEROENDE av produktkanal-checken' är rättad — den motsäger koden och den korrekta kommentaren ~40 rader längre ner (SIDA 2 körs bara i SIDA 1:s else-gren). Fynd ur PR #2590 review runda 2; avskrivet vid landning på Marcus mandat med denna AC som bärare
 <!-- AC:END -->
 
 ## Definition of Done
