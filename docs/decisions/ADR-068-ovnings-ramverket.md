@@ -117,14 +117,14 @@ bär historiska referenser per lins-notens skikt ii.
 
 ## Updates
 
-### 2026-09-19 — Fas W (FÖRSLAG) infogas FÖRE Fas E: punkt 5:s sakbeslut står, en snävare senare läsning omprövas ([ADR-134](ADR-134-publik-webbplats-fore-fas-e-delad-at-max.md), UTKAST — väntar Marcus granskning)
+### 2026-09-19 — Fas W infogas FÖRE Fas E: punkt 5:s sakbeslut står, en snävare senare läsning omprövas ([ADR-134](ADR-134-publik-webbplats-fore-fas-e-delad-at-max.md), Accepted)
 
 [ADR-134](ADR-134-publik-webbplats-fore-fas-e-delad-at-max.md) inför en
-NY fas i byggplanens §2-tabell — FÖRESLAGET namn "Fas W — Publik
-webbplats (nya miranon.se)", ej Marcus-kvitterat — placerad FÖRE Fas E,
-körd parallellt med Session 126:s CI-arkitektur och Session 127:s
-återstående Fas 6-ytor (Marcus, S128: _"A. Allt parallellt nu. Jag har
-tid."_).
+NY fas i byggplanens §2-tabell — namnet "Fas W — Publik webbplats (nya
+miranon.se)" är fastställt under ADR-134:s delegerade Marcus-mandat —
+placerad FÖRE Fas E, körd parallellt med Session 126:s CI-arkitektur
+och Session 127:s återstående Fas 6-ytor (Marcus, S128: _"A. Allt
+parallellt nu. Jag har tid."_).
 
 **Punkt 5:s sakbeslut STÅR OFÖRÄNDRAT.** Fas E förblir Övning 2:s ENDA
 namngivna slutfas för Supabase-migrationen — den behåller sin plats som

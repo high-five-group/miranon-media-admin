@@ -1,16 +1,26 @@
 # ADR-134: Publik webbplats FÖRE Fas E — ordningen vänds, AT‑Max delas i en migrationsdel och en mall-maxningsdel
 
-- **Status:** Proposed (UTKAST för Marcus granskning — bär ingen mekanisk
-  verkan förrän den sätts till Accepted. `Proposed` är inte del av
-  [`docs/decisions/README.md`](README.md) § Formats dokumenterade enum
-  `Accepted | Superseded | Deprecated`; se § Öppna frågor för den
-  öppna punkten.)
+- **Status:** Accepted — grillad samsyn S128 (`/grill-me`, arton
+  kvitterade beslut; beslut 8 och 13 — de två denna ADR bär — kvitterade
+  av Marcus i klartext, Del 3–4: se § Kontext för de ordagranna
+  citaten). **ADR-TEXTENS utformning** (kontext, beslut, ADR-bar-
+  prövning, alternativ, konsekvenser) är granskad och godkänd av
+  ORKESTRERAREN på Marcus DELEGERADE mandat, inte genom Marcus egen
+  radgranskning av dokumentet: Marcus, 2026-09-19, ordagrant till
+  orkestreraren — _"Du har mandat, anser du att det är GO så är det
+  GO."_ Orkestreraren läste hela diffen (denna ADR:s beslutsdel,
+  byggplanens rader W/AT‑Max/E + §4-förkrav + versionsrad 1.18,
+  ADR-068- och ADR-063-posterna) och gav GO 2026-09-19. Detta är alltså
+  ett DELEGERAT GO på formuleringen — ett bevis att den delegerade
+  granskningen skedde, inte ett bevis att Marcus själv läst varje rad i
+  denna ADR.
 - **Datum:** 2026-09-19
-- **Fas:** Ny fas i byggplanens §2-tabell, placerad FÖRE Fas E. FÖRESLAGET
-  namn **"Fas W — Publik webbplats (nya miranon.se)"** — namnet är
-  orkestrerarens förslag, INTE Marcus-kvitterat (se § Öppna frågor).
-  Fasens scope, DoD och estimat dekomponeras separat via PRD-kort
-  (`/to-prd`) när stack-beslutet är fattat.
+- **Fas:** Ny fas i byggplanens §2-tabell, placerad FÖRE Fas E. Namnet
+  **"Fas W — Publik webbplats (nya miranon.se)"** är fastställt under
+  samma delegerade mandat som Status-fältet ovan (se § Öppna frågor
+  punkt 1 för avgörandets form). Fasens scope, DoD och estimat
+  dekomponeras separat via PRD-kort (`/to-prd`) när stack-beslutet är
+  fattat.
 - **Rör:** [`docs/byggplan.md`](../byggplan.md) §2 (fas-tabell, ny rad +
   amendering av raden AT‑Max) och §4 (Fas E:s förkrav, AT‑Max-milstolpens
   block) · [ADR-068](ADR-068-ovnings-ramverket.md) (amenderas, § Updates)
@@ -103,7 +113,7 @@ byter lagring) — se § Konsekvenser.
 
 ## Beslutet
 
-### 1. En ny fas — FÖRESLAGET namn "Fas W — Publik webbplats (nya miranon.se)" — läggs in FÖRE Fas E, körs PARALLELLT med pågående arbete
+### 1. En ny fas — "Fas W — Publik webbplats (nya miranon.se)" — läggs in FÖRE Fas E, körs PARALLELLT med pågående arbete
 
 Byggplanens §2-tabell får en ny rad, placerad omedelbart före raden för
 Fas E (raden AT‑Max, 7, 8 och B ligger — som i dag — mellan). Fasen
@@ -118,9 +128,10 @@ sekvens efter dem:
    `/to-prd`, skivor via `/to-issues` — startar nu, byggs när specen är
    klar.
 
-Fasens namn är **INTE** Marcus-kvitterat — se § Öppna frågor. Att en ny
-fas läggs in framför Fas E ÄR kvitterat (beslut 8 ovan); vad den ska
-heta är ett förslag denna ADR lägger fram för granskning.
+Fasens namn är fastställt under det delegerade mandatet i § Status ovan
+— se § Öppna frågor punkt 1 för avgörandets form. Att en ny fas läggs
+in framför Fas E ÄR kvitterat av Marcus själv (beslut 8 ovan); namnet
+är orkestrerarens förslag, godkänt under samma delegation.
 
 ### 2. AT‑Max delas: en migrationsdel blir ett Fas E-förkrav, en mall-maxningsdel löper efter Fas E
 
@@ -302,17 +313,23 @@ Vue-repots frysning, lins-noten, målytorna) står likaså oförändrade —
 enbart en snävare tolkning av punkt 5 omprövas (se § Updates i den
 ADR:n).
 
-## Öppna frågor — denna ADR avgör INTE dessa
+## Öppna frågor
 
-1. **Fasens NAMN.** "Fas W — Publik webbplats (nya miranon.se)" är
-   orkestrerarens förslag i denna ADR, INTE Marcus-kvitterat. Kontrollerat
-   mot `ORDLISTA.md` (inga "Fas"-relaterade termer där — domänordlistan
-   omfattar Miranon Medias produktdomän, inte byggplanens fas-namn) och
-   mot byggplanens egen numreringsnot (§2, "Det 'saknas' en Fas 4...") —
-   ingen krock; bokstaven W är oanvänd i dagens tabell (0, 1, A, 2, 2.5,
-   3, 3.5, 5, 5.5, 6, 6.5, AT‑Max, 7, 8, B, E). Marcus väljer namnet vid
-   granskning av denna ADR; byggplans-editen i denna landning använder
-   "Fas W" konsekvent men är märkt FÖRSLAG genomgående.
+Numreringen nedan är stabil (interna hänvisningar, t.ex. § Beslut 3
+steg 2, pekar på specifika nummer). Punkt 1 och 6 är sedan 2026-09-19
+**AVGJORDA** under det delegerade mandatet (§ Status) och bevaras här
+som historik, inte som öppna punkter; punkterna 2–5 och 7 avgör denna
+ADR fortsatt INTE.
+
+1. **Fasens NAMN — AVGJORT 2026-09-19.** "Fas W — Publik webbplats (nya
+   miranon.se)" var orkestrerarens förslag i denna ADR:s ursprungliga
+   utkast; fastställt under det delegerade Marcus-mandatet (§ Status)
+   samma dag. Kontrollerat mot `ORDLISTA.md` (inga "Fas"-relaterade
+   termer där — domänordlistan omfattar Miranon Medias produktdomän,
+   inte byggplanens fas-namn) och mot byggplanens egen numreringsnot
+   (§2, "Det 'saknas' en Fas 4...") — ingen krock; bokstaven W var
+   oanvänd i tabellen vid mintningen (0, 1, A, 2, 2.5, 3, 3.5, 5, 5.5, 6,
+   6.5, AT‑Max, 7, 8, B, E).
 2. **Stack och repo-form.** Öppen — eget research-pass pågick vid denna
    ADR:s författning (`docs/research/miranon-se-stack-och-repoform-2026-09-19.md`,
    samt ett omprövande andra varv registrerat i sessionsdokets Del 6,
@@ -335,14 +352,16 @@ ADR:n).
    AT‑Max-audit (a) ska kunna starta, eller krävs fullständig
    DNS-lansering (steg 2)? Denna ADR tar inte ställning — frågan avgörs
    praktiskt när Fas W närmar sig sitt slut.
-6. **`Status`-fältets enum.** Denna ADR använder `Proposed`, ett värde
-   som [`docs/decisions/README.md`](README.md) § Format inte
-   dokumenterar (`Accepted | Superseded | Deprecated`). Ingen grind
-   validerar Status-fältets värde mekaniskt (`scripts/check-adr-count.sh`
-   räknar bara filer) — så detta blockerar inget, men README:s format-
-   spec bör antingen utvidgas med `Proposed` som eget enum-värde eller
-   så bör denna ADR bytas till `Accepted` direkt vid Marcus godkännande
-   utan mellansteg. Beslutas inte här; flaggat för Marcus.
+6. **`Status`-fältets enum — AVGJORT 2026-09-19, via det snabbare av de
+   två föreslagna alternativen.** ADR:ns ursprungliga utkast använde
+   `Proposed`, ett värde [`docs/decisions/README.md`](README.md)
+   § Format inte dokumenterar (`Accepted | Superseded | Deprecated`);
+   utkastet flaggade två vägar — utvidga enumet, eller byt ADR:n direkt
+   till `Accepted` utan mellansteg. Denna ADR bytte direkt till
+   `Accepted` (§ Status) under det delegerade mandatet. README:s
+   format-spec är alltså ORÖRD av detta beslut — `Proposed` finns
+   fortfarande inte som dokumenterat enum-värde, men frågan är moot för
+   DENNA ADR eftersom den aldrig behövde bära värdet i sin landade form.
 7. **Den exakta listan av vilka Zapier-kopplingar som stängs av vid
    DNS-bytet är OVERIFIERAD.** § Beslut 3, steg 2 pekar ut Zap 3–6
    (express- och huvudformuläret samt de två lead-formulären för

@@ -266,7 +266,7 @@ inbetalningar vars anmälan försvunnit. Priset är redovisat i `ADR-128`
 § Konsekvenser och bokförs här för att den som läser ADR-063 ensam ska se
 det.
 
-### 2026-09-19 — AT‑Max-milstolpens TIMING delas: migrationsdel som Fas E-förkrav, mall-maxning oförändrat efter Fas E ([ADR-134](ADR-134-publik-webbplats-fore-fas-e-delad-at-max.md), UTKAST — väntar Marcus granskning)
+### 2026-09-19 — AT‑Max-milstolpens TIMING delas: migrationsdel som Fas E-förkrav, mall-maxning oförändrat efter Fas E ([ADR-134](ADR-134-publik-webbplats-fore-fas-e-delad-at-max.md), Accepted)
 
 Session 128 grillade samsyn (arton beslut, Marcus kvittens *"Låter bra.
 Jag kvitterar."*) om att bygga en publik webbplats (nya miranon.se)
@@ -274,8 +274,9 @@ FÖRE Fas E i stället för efter. Beslut 13, ordagrant: *"AT‑Max delas: den
 smala migrationsdelen (registrens korrekthet, kända fällor) görs FÖRE
 Fas E; maxningen av basen som mall löper efter."* Marcus: *"Vi kör på
 din rek."* Fullt beslut och motivering: [ADR-134](ADR-134-publik-webbplats-fore-fas-e-delad-at-max.md)
-(UTKAST — Status `Proposed`, inte `Accepted`; denna not gäller under
-förutsättning att den ADR:n godkänns).
+(Accepted — ADR-134:s TEXT granskad och godkänd av orkestreraren på
+Marcus delegerade mandat 2026-09-19, se den ADR:ns Status-fält för det
+ordagranna citatet).
 
 **Vad som ÄNDRAS.** Beslut 5:s milstolpe ((a)+(b)+(c), § Beslut ovan,
 amenderad 2026-08-14) delas i TVÅ separata avstämningspunkter i
@@ -283,7 +284,7 @@ byggplanens tidslinje:
 
 - **Migrationsdelen — (a) audit av app↔Airtable-interaktioner + (b)
   audit av Airtable-skatten** — blir ett **Fas E-förkrav**. Skälet:
-  byggplanens nya publik-webbplats-fas (["Fas W", FÖRSLAG]) lägger NYA
+  byggplanens nya publik-webbplats-fas ("Fas W") lägger NYA
   app↔Airtable-interaktioner via sitt Edge Function-lager (Väg A) —
   samma mönster appens befintliga skrivvägar redan använder. Milstolpens
   gamla ingångsvillkor ("hela ytan byggd av Fas 6:s EF ensamt", 2026-08-11-
