@@ -113,3 +113,20 @@ som tillkommer är en fast, svep-undantagen demofixtur, en nattlig
 återställning (`aterstall-demo`) och demoappens origin i
 `CORS_ALLOWED_ORIGINS`. Branching-avvisningen ovan omprövas INTE (research
 § 11 fynd 5): en gren som demobackend vore en tredje roll och en egen ADR.
+
+### 2026-09-06 — Vercel-förhandsvisningarnas CORS: en ANDRA, mönster-driven secret (TASK-415.1)
+
+`TASK-415` mätte att Vercels PR-förhandsvisningar (unika origins per bygge)
+byggde mot PROD-projektet, inte staging — se
+[docs/research/pr-forhandsvisningar-och-backend-branschmonster-2026-09-06.md](../research/pr-forhandsvisningar-och-backend-branschmonster-2026-09-06.md).
+Marcus GO på väg (a): koppla Vercels Preview-target till staging.
+`CORS_ALLOWED_ORIGINS` (exakt matchning, punkt 4 ovan) kan inte bära en
+origin som byter sträng vid varje bygge. Lösningen är en EGEN, valfri
+staging-secret — `CORS_ALLOWED_ORIGIN_PATTERNS` — som prövas EFTER
+exaktlistan och matchar Vercel-förhandsvisningarnas två adressformer via ett
+`*`-mönster (branschprecedent: Supabases eget redirect-URL-mönster för
+Vercel, <https://supabase.com/docs/guides/auth/redirect-urls>). `*` matchar
+aldrig över en `.`-gräns, och ett mönster utan en literal domän-del
+ignoreras fail-closed. `CORS_ALLOWED_ORIGINS` självt rör TASK-415.1 inte —
+prod är opåverkad. Full mekanik: docs/specs/SECURITY-SPEC.md §6.2,
+`supabase/functions/_shared/cors-origin-policy.ts`.
