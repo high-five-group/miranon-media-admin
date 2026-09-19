@@ -3,10 +3,10 @@ id: TASK-467
 title: >-
   Beroendekanalens dödmansgrepp — nattvakten märker om beroendegranskningens
   larmkedja tystnat
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-18 23:23'
-updated_date: '2026-09-19 12:20'
+updated_date: '2026-09-19 14:37'
 labels:
   - ready-for-agent
 dependencies:
@@ -40,23 +40,5 @@ K1 (b) (TASK-450.5, PR #2553) flyttar beroendegranskningen från varje ändring 
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
-Beroendekanalens dödmansgrepp landad via PR #2590 (feat/task-467-nattvakt-dodmansgrepp, head f6bfd6f1). scripts/check-beroendekanal-dodmansgrepp.sh prövar en TVÅLEDS-relation (nightly-audit rött ⇒ beroende-arende MÅSTE nå success) i stället för produktkanalens "kördes natten alls?"-fråga — samma Prometheus Watchdog-mönster, ny relation. Wirad som ETT STEG i nightly-watchdog.yml:s befintliga jobb "watch" (ingen ny job), config-driven via NATTVAKT_BEROENDE_GRANSKNING_JOBBNAMN/NATTVAKT_BEROENDE_ARENDE_JOBBNAMN i .nattvakt-kanal-policy.conf, återanvänder NATTVAKT_OFARLIGA_CONCLUSIONS rakt av.
-
-scripts/check-nattkanal-partition.mjs (TASK-450.10) fick ett TREDJE led som vaktar att kanal-configen matchar nightly.yml:s faktiska name:-fält OCH att nightly-watchdog.yml fortfarande refererar skriptet.
-
-Tvåsidigt bevisat lokalt (mutationsprövat): scripts/test-check-beroendekanal-dodmansgrepp.sh 20 fall (6 LARMA + 5 TYST + 9 fail-closed), scripts/test-check-nattkanal-partition.mjs 23 fall/36 kontroller (upp från 18/26, +5 nya för led iii) — de RIKTIGA filerna passerar.
-
-Tvåsidigt bevisat SKARPT via workflowens simulate-ingång (AC #1), på PR-grenen: (1) simulate_beroende_tyst=true, första försöket (run 35442300881) avslöjade en genuin bugg — dedupen (scripts/check-nattvakt-dedup.sh) kringgicks bara vid simulate_missing, inte vid det nya läget, så testet deduplicerades bort mot en redan täckt natt och bevisade ingenting; fixat i commit f6bfd6f1. (2) simulate_beroende_tyst=true efter fix (run 35442387722) skapade tilldelat ci-natt-ärende #2589 "Beroendekanalen tystnade — BEVIS-LÄGE" (assignee marcus803), stängt direkt med motivering. (3) Normal dispatch utan simulate-flaggor (run 35442426281) mot verklig produktionsdata (senaste schemalagda natten, run 35424541948, där nightly-audit var success) — vakten korrekt TYST trots att körningens totala conclusion var failure (rödheten bars av en obesluten bokföringsgrind, en annan kanal). Rad 3 är den starkaste raden: mekanismen urskiljer rätt kanal mot skarp, oförändrad produktionsdata.
-
-CONTRIBUTING.md § Nattnätet och ADR-082 uppdaterade (AC #3): "känd lucka" gäller numera bara bokföringskanalen.
-
-Kostnad i två mått (PR-kroppen har full tabell): väntetid omätbar utöver brus (steg-tid 3–6 s både före och efter, mätt över fyra gh run view-körningar, ingen riktningsskillnad). Fakturerade Actions-minuter: 0 nya per natt/månad — steg i BEFINTLIGT jobb, jobbets hela körning mätt till 9 s i värsta observerade fall, långt under 60 s-avrundningsgränsen; workflow körs 1x/dygn, 30 fakturerade minuter/månad oförändrat.
-
-Grindar (exitkoder mätta, ej pipade): actionlint 0 (nightly-watchdog.yml + ci.yml, med CI:s exakta -ignore-flagga), yamllint 0 (båda), shellcheck --severity=style --enable=all 0 (exakt CI:s fillista via scripts/*.sh-glob + policy-uppräkningen), bash scripts/test-check-beroendekanal-dodmansgrepp.sh 0 (20/20), node scripts/test-check-nattkanal-partition.mjs 0 (36/36), bash scripts/test-check-nattvakt-dedup.sh 0 (13/13, regressionskontroll), bash scripts/check-listparitet.sh 0, node scripts/check-aggregator-needs.mjs 0, npm run check:docs 0 (16/16), npx @biomejs/biome check . 0, npm run typecheck 0, npm run build 0.
-
-Avvikelse, oförändrad av denna diff: npm run test:api gav 2413 passed / 5 failed i tests/api/*.staging.test.ts (generate-event-attachment, hamta-oppna-betalningar-kvitto-avbojt, save-place-standard, send-registration-confirmation, skapa-om-event-bilaga) — ingen rör CI-workflows/bash-skript/natt-kanaler, diffen rör aldrig src/tests/supabase. Flaggat som sannolik live-staging-flakighet, inte åtgärdat (utanför scope).
-
-Premiss-pass (ADR-086): origin/main hade avancerat 2 commit (7ba4ef0d, 6d96fcbe) förbi orkestrerarens spawn-tidsstämplade aacf3673 — byggde på FÄRSK origin/main i stället för det uppdragna talet, ingen blockerande divergens. Worktreens ursprungliga gren bar en orelaterad session-dok-commit (4a8a6eb4, orkestrerarens egen bokföring) — ny gren skapad från origin/main i stället för att ärva den, så PR-diffen är ren. Inga andra divergenser mätta.
-
-Kortnummer/beroenden (TASK-450.5, TASK-450.10) verifierade Done i backlog/tasks/ på origin/main, deras Final Summary läst före design.
+Landad som PR #2590 → 6eef96de (2026-09-19 13:16Z), efterkontroll grön (35445267477). Två rundor (risk medel): dödmansgreppet byggt som STEG i nightly-watchdog.yml:s befintliga watch-jobb (0 nya fakturerade minuter per natt), config-drivet via .nattvakt-kanal-policy.conf, partitionsvakten fick ett tredje led, tvåsidigt bevisat lokalt (20/20) och skarpt via simulate-ingången. Runda 1-fynd: bevis-körningen lämnade det stängda ärendet #2589 med etiketten ci-natt, som nattvaktens dedup kunde ha läst som täckning för ett äkta larm natten 2026-09-20 — orkestreraren tog bort etiketten 12:35Z; regeln (stäng + ta bort etiketten) står i CONTRIBUTING § Nattnätet som ÅTAGANDE; strukturell fix kortad som TASK-484. Runda 2-fynd (kvarlämnad 'OBEROENDE'-kommentar i nightly-watchdog.yml ~rad 262) avskrivet vid landning på Marcus mandat, buret som AC på TASK-484. verify:ci-parity:fast exit 0.
 <!-- SECTION:FINAL_SUMMARY:END -->
