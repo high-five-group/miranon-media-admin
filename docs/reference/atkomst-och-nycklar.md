@@ -103,6 +103,28 @@ enda projekts data, med en specifik behörighetsnivå för det rummet).
 Båda lästa av bygg-agenten via WebFetch 2026-08-12; citaten ovan är verbatim
 ur sidorna.
 
+## Köpta licenser (GitHub) — omprövningsvillkor
+
+Del av privat-steget (`TASK-464.10`, Marcus eget handgrepp — INTE gjort vid
+denna skrivning: `gh repo view --json visibility` gav `PUBLIC` 2026-09-19).
+Bokfört här snarare än som ADR: `tasks/sessions/2026-09-17-session-126.md`
+Del 17 § "ADR-baren — prövad" placerar beslut 7–9 (inklusive detta) hos
+`T171`/`CLAUDE.md`, uttryckligen INGEN ADR — och den kunskapsklassen ("har vi
+redan åtkomst/licens till X, och när ompröva den") är exakt vad detta
+register redan svarar på för nycklar; ett köpt licenspar är samma klass
+fakta.
+
+| Licens | Kostnad | Syfte | Omprövningsvillkor (Marcus ord) |
+|---|---|---|---|
+| GitHub Code Security | 30 USD/mån | CodeQL-skanning fortsätter fungera sedan repot blir privat | *"jag kör väl på att köpa båda då … de kollar vi på då"* |
+| GitHub Secret Protection | 19 USD/mån | Push-skydd mot committade hemligheter fortsätter fungera sedan repot blir privat | Samma citat, samma beslut |
+
+**Omprövningsvillkor, ordagrant (Marcus, S126 Del 17 beslut 8, 2026-09-19):**
+när appen är "klar" och aktiv utveckling upphört. Utan licenserna stängs
+CodeQL och push-skyddet av TYST i ett privat repo (`codeql.yml` börjar falla
+rött på varje kodlandning) — se checklistan i samma sessionsdok § "Checklista:
+privat-steget" för köp-ordningen (FÖRE synlighetsklicket).
+
 ## Register — åtkomst per rad
 
 Alla "Senast verifierad"-datum där källan är bygg-agentens egen körning är
