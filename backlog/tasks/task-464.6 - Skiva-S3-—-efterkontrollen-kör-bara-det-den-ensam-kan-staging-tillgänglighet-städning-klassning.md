@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-19 10:48'
-updated_date: '2026-09-19 14:15'
+updated_date: '2026-09-19 14:35'
 labels:
   - ready-for-agent
 dependencies:
@@ -24,16 +24,16 @@ Post-merge kör i dag hela den hermetiska sviten en FJÄRDE gång plus 'Staging 
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Kontrastpar med run-ID: efterkontrollen på en kodlandning kör staging + a11y + städning men INGEN hermetisk acceptance-körning; fakturerade minuter före/efter redovisade per jobb
+- [x] #1 Kontrastpar med run-ID: efterkontrollen på en kodlandning kör staging + a11y + städning men INGEN hermetisk acceptance-körning; fakturerade minuter före/efter redovisade per jobb
 - [x] #2 Post-merge-larmet (ärende + klassning av hela spannet) fungerar oförändrat — bevisat med workflowens självtest (simulate_failure) eller befintlig gatekeeper-svit
 - [x] #3 En dokumentlandning ger fortfarande en efterkontroll som hoppar sviten (som #2572: 2 fakturerade min)
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
-- [ ] #4 PR-kroppen bär sektionen 'Kostnad i två mått': VÄNTETID och FAKTURERADE MINUTER sida vid sida, mätta körningar med run-ID, enheter utskrivna, månadseffekt vid 1 279 landningar
-- [ ] #5 Inget nytt JOBB där ett steg i ett befintligt jobb räcker (varje jobb avrundas upp till hel minut, gånger ytorna)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #4 PR-kroppen bär sektionen 'Kostnad i två mått': VÄNTETID och FAKTURERADE MINUTER sida vid sida, mätta körningar med run-ID, enheter utskrivna, månadseffekt vid 1 279 landningar
+- [x] #5 Inget nytt JOBB där ett steg i ett befintligt jobb räcker (varje jobb avrundas upp till hel minut, gånger ytorna)
 <!-- DOD:END -->
