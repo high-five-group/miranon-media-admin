@@ -3,10 +3,10 @@ id: TASK-479.2
 title: >-
   Skiva: SE16 — tidsregel och namngiven ägare för rött efter landning; svepet
   rapporterar nattens och efterkontrollens rött
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-19 10:52'
-updated_date: '2026-09-19 12:50'
+updated_date: '2026-09-19 15:07'
 labels:
   - ready-for-agent
 dependencies: []
@@ -43,3 +43,9 @@ Implementerat: scripts/heartbeat-svep.sh § SJUNDE VÄGEN (rapportera_arende_lag
 
 RUNDA 2 (review, Marcus mandat 2026-09-19, PR #2588): tre fynd rättade i EN commit på samma gren. Fynd 1 (config-driven): etikett/söksträng flyttade till HEARTBEAT_ARENDE_LABEL_POSTMERGE/HEARTBEAT_ARENDE_SEARCH_NATT i .heartbeat-svep-policy.conf, resolverade efter source med samma ${VAR:-default}-mönster som ARENDE_LIMIT; bevisat tvåsidigt (T101a/b, T102a/b: default OCH överstyrt värde når gh-anropets argv, fångat via en ny T119_ARENDE_ARGV-stub-teknik). Fynd 2 (TASK-365 AC #3-primitiven): beslutet bokfört ordagrant i TASK-365s notes via CLI, AC-text/bockning orörd. Fynd 3 (mängdmedveten): rapportera_arende_lage() sparar nu den SORTERADE, kommaseparerade mängden ärendenummer (inte bara rod/gron) och beräknar tillkommit/försvunnet via comm(1) mot de två sorterade CSV-listorna vid en mängdförändring; bakåtkompatibel med det gamla rod/gron-formatet (klassas GAMMALT_FORMAT, tyst migreringssopning som ÄVEN stämplar påminnelseklockan så nästa oförändrade sopning inte falsklarmar en för-tidig påminnelse — mätt fel i T103c-uppfoljning1 innan den fixen, se kommentaren i koden). Testsvit 149→167 (18 nya: T101a/argv, T101b/argv, T102a/argv, T102b/argv, T103a-kallstart/a, T103b-kallstart/b, T103c/-migrerat/-uppfoljning1/-uppfoljning2, T103c2, T100c). shellcheck 0/0/0/0 (tre nya SC2312-disabler, motiverade — comm/paste-pipe i en tilldelning, samma riskklass som filens övriga externa-verktyg-disabler). npm run check:docs 16 gröna (CONTRIBUTING.md ej rörd denna runda).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landad som PR #2588 → 6a3a78c3 (2026-09-19 14:36:34Z, grupplandning med #2596), efterkontroll grön (35449264278 på 811cece3). Tre rundor: r1 (medel) — etiketter/söksträng hårdkodade, TASK-365 AC #3 bockad med annan primitiv (öppna larmärenden i stället för senaste körningens utfall — godkänd av orkestreraren på Marcus mandat: ett öppet ärende är den hållbara formen av rött), binärt tillstånd såg inte ändrad sammansättning; r2 — fixen förde in en REPRODUCERAD bugg (comm matad med sort -n-ordnad indata: {2,3,10}→{2,10} gav fel rader; vilande med fyrsiffriga nummer, garanterad vid #10000); r3 — rättad (LC_ALL=C sort -u för jämförelse och tillståndsfil, numerisk ordning bara i visningen), noll fynd, risk låg. Sviten 133 → 178. SKARPBEVIS i harnesset samma eftermiddag, båda riktningar: 14:40Z rapporterade svepet 'ÄRENDE — 4 öppna ci-post-merge-ärenden: #2573, #2575, #2578, #2582' + nattärendet #2566; efter att orkestreraren stängt de fyra med belagd motivering (samma rot, TASK-481, lagad av #2583) rapporterade det 'ÄRENDE ÅTERSTÄLLT … Stängt: #2573, #2575, #2578, #2582'. Följdkort: TASK-483 (mekanisk länkning av ärvt rött).
+<!-- SECTION:FINAL_SUMMARY:END -->
