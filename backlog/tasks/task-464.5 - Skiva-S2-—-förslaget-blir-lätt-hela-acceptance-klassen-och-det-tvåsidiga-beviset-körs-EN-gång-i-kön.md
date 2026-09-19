@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-19 10:48'
-updated_date: '2026-09-19 12:48'
+updated_date: '2026-09-19 16:24'
 labels:
   - ready-for-agent
 dependencies:
@@ -31,6 +31,8 @@ Förslagsytan (pull_request) kör lint, typkontroll, bygge och de snabba testern
 - [ ] #5 Mätt väntan: förslagsrundan och kö-rundan var för sig (väggtid) före/efter, mot taket kod <= 12 min median
 - [ ] #6 verify:ci-parity:fast grön; .ci-parity-policy.json och .listparitet-policy.conf följer med
 - [ ] #7 Körbevis: scripts/acceptance-urval.sh körd LOKALT i en bygg-agents worktree mot en verklig diff, med utdata och exitkod i PR-kroppen — eller ett mätt, skrivet skäl till varför det inte går (ADR-133 beslut 4 § Nuläge lovar att den lokala körbarheten prövas här)
+- [ ] #8 S1:s svit-signal (scripts/lib/svit-signal.sh) kräver de NAMNGIVNA hermetiska jobben gröna — inte 'minst ett inre jobb' — och en statisk kopplingsgrind (samma form som T14/T13a) fäller om ci-suite.yml:s hermetiska jobb får if:/needs:-villkor som signalen inte känner. Skäl: S2 är den ändring som inför körningar där delar av sviten hoppas; fynd ur PR #2598 review runda 2 (info, avskrivet vid landning på Marcus mandat med detta AC som bärare)
+- [ ] #9 ci.yml:s 'SKYDDSNÄTET'-kommentar vid acceptance-urval-steget (~rad 694) rättad: post-merge.yml kör sedan TASK-464.6 (#2597) INTE längre full klass på det mergade trädet — fynd ur PR #2597 review runda 1
 <!-- AC:END -->
 
 ## Definition of Done
