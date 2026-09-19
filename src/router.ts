@@ -61,10 +61,17 @@ registreraIntresseradeRetryPolicy(queryClient);
 // ORDNINGEN ÄR BETYDELSEBÄRANDE: denna rad står EFTER
 // `registreraIntresseradeRetryPolicy` och överskuggar med avsikt dess post
 // för `intresserade.all` med det strikt starkare `retry: false` (TASK-420:s
-// garanti "aldrig 4xx" bevaras, plus AC #3:s "högst 4 anrop" som dess egen
-// form inte kunde ge). Kastas raderna om, återgår den nyckeln tyst till
-// 4 × 4-staplingen. Hela resonemanget + spridningsräkningen per nyckel:
-// `src/queries/warmup-retry-policy.ts`s filhuvud.
+// garanti "aldrig 4xx" bevaras, plus AC #3:s tak på query-lagrets omförsök
+// som dess egen form inte kunde ge). Kastas raderna om, återgår den nyckeln
+// tyst till 4 × 4-staplingen. Hela resonemanget + spridningsräkningen per
+// nyckel: `src/queries/warmup-retry-policy.ts`s filhuvud.
+//
+// ORDNINGEN ÄR VAKTAD AV ETT TEST SOM LÄSER DENNA FIL:
+// `tests/api/warmup-retry-policy.test.ts` § D, fallet "src/router.ts anropar
+// registrarna i DEN ordningen". Vaktposten tillkom i TASK-451.4:s runda 2
+// (granskningens fynd 4) — dessförinnan påstods ordningen vara test-vaktad
+// medan de faktiska testen bara anropade registrarna manuellt i testkroppen
+// och därmed aldrig kunde se denna fil.
 registreraWarmupRetryPolicy(queryClient);
 
 /**

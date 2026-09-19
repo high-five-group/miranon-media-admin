@@ -44,9 +44,32 @@ import { HEM_SENASTE_AKTIVITET_ANTAL, queryKeys } from '@/queries/keys';
  *    blivit `retry + 1` gånger gränsen.
  *
  * **VÄRSTA FALLET PER WARMUP-ITEM EFTER DENNA MODUL (AC #3):**
- * 1 `queryFn`-körning × högst 4 HTTP-försök = **högst 4 nätverksanrop**, hela
- * sekvensen kapad av `HAMTNINGENS_TIDSGRANS_MS`. Ett 4xx ger exakt **1**
- * anrop (transporten retryar inte klient-fel).
+ * 1 `queryFn`-körning × högst 4 HTTP-försök **PER EF-ANROP**, hela
+ * försökssekvensen kapad av `HAMTNINGENS_TIDSGRANS_MS`. Ett 4xx ger exakt
+ * **1** anrop (transporten retryar inte klient-fel).
+ *
+ * SEX av de sju itemen gör **exakt ETT** EF-anrop, och för dem är taket
+ * alltså **högst 4 nätverksanrop**. Det SJUNDE — `intresserade` — gör det
+ * INTE, och den skillnaden var felskriven här fram till runda 2
+ * (granskningens fynd 3):
+ *
+ * `AirtableAdapter.fetchIntresserade` är en KLIENT-SIDIG cursor-walk
+ * (`samlaCursorSidor`, `src/data/adapters/cursorWalk.ts`, TASK-350). Varje
+ * SIDA är ett eget `callEdgeFunction('get-leads')` med sina EGNA upp till 4
+ * HTTP-försök och sin EGEN tidsgräns — budgeten är per sida, inte för hela
+ * walken (bokfört i den metodens egen kommentar). Taket för det itemet är
+ * därför `4 × antal sidor`, där antalet sidor är
+ * `ceil(antal intresserade / 100)` (`INTRESSERADE_MAX_PAGE_SIZE = 100`, EF:ens
+ * eget `MAX_PAGE_SIZE`), med `maxSidor = 1000` som yttersta säkerhetstak.
+ *
+ * Det ÄNDRAR INTE vad denna modul gör, och inte heller dess vinst: före
+ * skivan multiplicerade query-lagrets `retry: 3` HELA walken med 4
+ * (`4 × 4 × sidor`); efter den är faktorn borta (`4 × sidor`). Den
+ * additiva staplingen är alltså tagen bort för alla sju itemen — det som
+ * inte håller är enbart den ABSOLUTA siffran "högst 4" för det ena itemet
+ * som per konstruktion gör flera anrop. En budget för HELA walken vore en
+ * annan ändring (en signal/gräns kring `samlaCursorSidor`), inte en
+ * retry-policy, och ligger utanför denna skiva.
  *
  * ── VARFÖR `setQueryDefaults` OCH INTE `retry` VID VARJE ANROPSSTÄLLE ──────
  *

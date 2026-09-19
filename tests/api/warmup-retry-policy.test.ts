@@ -16,6 +16,9 @@
 //  D. Överskuggningsordningen mot TASK-420 — `intresserade.all` hamnar på
 //     `retry: false`, inte på `intresseradeRetryPolicy`.
 
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { expect, test } from '@playwright/test';
 import { QueryClient } from '@tanstack/react-query';
 import type { DataSourceAdapter } from '../../src/data/adapters/DataSourceAdapter';
@@ -266,5 +269,37 @@ test.describe('D. Överskuggningsordningen mot TASK-420', () => {
     // ovanpå transportens fyra. Detta test finns för att göra ordningens
     // betydelse mätbar i stället för att bara påstådd i en kommentar.
     expect(typeof qc.getQueryDefaults(queryKeys.intresserade.all).retry).toBe('function');
+  });
+
+  test('src/router.ts anropar registrarna i DEN ordningen — källan, inte bara mekaniken', () => {
+    // [Runda 2, granskningens fynd 4] De tre testen ovan anropar registrarna
+    // MANUELLT i testkroppen. De bevisar därför att ordningen BETYDER något —
+    // aldrig att `src/router.ts` faktiskt har den. Fram till runda 2 påstod
+    // både router.ts:s kommentar och PR-kroppen att ordningen var test-vaktad;
+    // inget test läste filen. Det är exakt den sortens obelagda
+    // mekanism-påstående ADR-083 finns för att stoppa, så här är mekanismen.
+    //
+    // Filen LÄSES som text i stället för att importeras — samma etablerade
+    // mönster och samma skäl som `tests/api/router-preload-defaults.test.ts`
+    // och `personregister-farskhet.test.ts` § 3 redan bokför: `src/router.ts`
+    // drar in `routeTree.gen.ts` och därmed varje routes fulla komponentträd,
+    // vilket api-pure-miljön (ingen browser, inget DOM) inte kan ladda.
+    const repoRot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+    const kalla = readFileSync(path.join(repoRot, 'src', 'router.ts'), 'utf8');
+
+    // Matchar ANROPS-satserna, inte import-raderna (där båda namnen också
+    // förekommer) och inte kommentarerna.
+    const intresseradeVid = kalla.search(/^registreraIntresseradeRetryPolicy\(queryClient\);$/m);
+    const warmupVid = kalla.search(/^registreraWarmupRetryPolicy\(queryClient\);$/m);
+
+    expect(intresseradeVid, 'router.ts ska anropa registreraIntresseradeRetryPolicy').not.toBe(-1);
+    expect(warmupVid, 'router.ts ska anropa registreraWarmupRetryPolicy').not.toBe(-1);
+
+    // Kastas raderna om faller detta test — och `intresserade.all` hade tyst
+    // återgått till TASK-420:s funktions-policy, alltså 4 x 4-staplingen.
+    expect(
+      warmupVid,
+      'registreraWarmupRetryPolicy MÅSTE anropas EFTER registreraIntresseradeRetryPolicy — annars överskuggas retry: false av TASK-420:s funktions-policy för intresserade.all',
+    ).toBeGreaterThan(intresseradeVid);
   });
 });

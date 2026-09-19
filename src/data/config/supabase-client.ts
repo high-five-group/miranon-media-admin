@@ -159,6 +159,13 @@ export async function callEdgeFunction<T>(
  * skrivningen bli klar" det säkra svaret, och kortet (TASK-451.4) gäller
  * uttryckligen HÄMTNINGAR på startvärmningens väg.
  *
+ * BESLUTET ÄR VAKTAT, inte bara nedskrivet (runda 2, granskningens fynd 5):
+ * `tests/api/hamtningens-tidsgrans.test.ts` § "SKRIVVÄGEN bär ingen
+ * tidsgräns" källtextläser denna funktions kropp och FÄLLER om `signal`,
+ * `medTidsgrans` eller en `AbortController` någonsin smyger in här. Samma
+ * fil bevisar tvåsidigt att `callEdgeFunction` DÄREMOT bär dem, så vakten
+ * inte kan passera tomt.
+ *
  * Throws AuthError (från getAuthHeader) om ingen session finns vid anrop.
  */
 export async function postEdgeFunction<T>(name: string, body: Record<string, unknown>): Promise<T> {

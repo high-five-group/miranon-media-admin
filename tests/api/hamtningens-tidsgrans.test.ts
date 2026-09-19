@@ -22,6 +22,9 @@
 // ledningsdragning (den bygger signalen och skickar den vidare), medan
 // mekaniken som faktiskt kan gå sönder bor i de två funktionerna nedan.
 
+import { readFileSync } from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import { expect, test } from '@playwright/test';
 import {
   fetchWithRetry,
@@ -229,10 +232,21 @@ test.describe('Tidsgränsen stör INTE anrop som hinner klart', () => {
     expect(tidsgrans.signal.aborted).toBe(false);
   });
 
-  test('5xx retryas fortfarande, och ryms i EN tidsgräns (budgeten är per anrop, inte per försök)', async () => {
+  test('5xx retryas fortfarande, och ALLA fyra försöken delar EN OCH SAMMA budget', async () => {
+    // [Runda 2, granskningens info-fynd 10] Titeln löd tidigare "...ryms i EN
+    // tidsgräns (budgeten är per anrop, inte per försök)", men de två
+    // assertionerna (status 200, anrop 4) mätte ingenting om budgeten — med
+    // injicerad, momentan `sleep` ryms fyra försök i vilken gräns som helst.
+    // Egenskapen mäts nu direkt, och deterministiskt: alla försök får SAMMA
+    // signalinstans, alltså samma timer. En budget PER FÖRSÖK hade krävt en ny
+    // signal per varv, och värsta väggtiden blivit 4 × gränsen i stället för
+    // 1 × — exakt det `fetchWithRetry` läser `init?.signal` EN gång utanför
+    // loopen för att förhindra.
     let anrop = 0;
-    const impl = ((_i: RequestInfo | URL, _init?: RequestInit) => {
+    const settSignal: Array<AbortSignal | null | undefined> = [];
+    const impl = ((_i: RequestInfo | URL, init?: RequestInit) => {
       anrop += 1;
+      settSignal.push(init?.signal);
       // Lyckas på fjärde försöket — bevisar att transportlagrets retry lever
       // kvar oförändrat under tidsgränsen.
       return Promise.resolve(
@@ -249,7 +263,11 @@ test.describe('Tidsgränsen stör INTE anrop som hinner klart', () => {
     tidsgrans.stang();
 
     expect(res.status).toBe(200);
-    expect(anrop).toBe(4); // maxRetries 3 + första försöket — AC #3:s tak
+    expect(anrop).toBe(4); // maxRetries 3 + första försöket — transportens tak
+    expect(settSignal).toHaveLength(4);
+    for (const signal of settSignal) {
+      expect(signal).toBe(tidsgrans.signal);
+    }
   });
 
   test('4xx retryas ALDRIG av transportlagret (AC #4:s mekanik, oberoende av query-lagret)', async () => {
@@ -278,21 +296,92 @@ test.describe('Tidsgränsen stör INTE anrop som hinner klart', () => {
 });
 
 test.describe('Värdet bor på ETT ställe (AC #2)', () => {
-  test('HAMTNINGENS_TIDSGRANS_MS är default när ingen gräns anges, och ligger över warmup-gatens 9 s', async () => {
-    // Defaulten är den konstanten — inte ett tal upprepat vid anropsstället.
-    const tidsgrans = medTidsgrans();
-    expect(tidsgrans.signal.aborted).toBe(false);
-    tidsgrans.stang();
+  test('HAMTNINGENS_TIDSGRANS_MS ÄR defaulten när ingen gräns anges, och ligger över warmup-gatens 9 s', () => {
+    // [Runda 2, granskningens info-fynd 10] Fram till runda 2 var den enda
+    // assertion som rörde defaulten `expect(medTidsgrans().signal.aborted)
+    // .toBe(false)` — sant för VILKET tal som helst, alltså en titel som lovade
+    // mer än den mätte. `Tidsgrans.tidsgransMs` finns just för att göra
+    // defaulten mätbar: nu asserteras den faktiskt.
+    const utanArgument = medTidsgrans();
+    expect(utanArgument.tidsgransMs).toBe(HAMTNINGENS_TIDSGRANS_MS);
+    expect(utanArgument.signal.aborted).toBe(false);
+    utanArgument.stang();
+
+    // Tvåsidigt: ett UTTRYCKLIGT argument vinner över defaulten, så fältet
+    // speglar den gräns som faktiskt gäller och inte bara konstanten.
+    const medArgument = medTidsgrans(undefined, 50);
+    expect(medArgument.tidsgransMs).toBe(50);
+    medArgument.stang();
 
     // Den bärande invarianten mot ADR-112 beslut 3: per-hämtnings-gränsen
     // MÅSTE ligga över startvärmningens hårda 9 s-gate. Vore den lägre skulle
     // den kapa just de hämtningar som i dag landar EFTER timeout-släppet och
-    // fyller Hem — alltså göra Hem sämre, inte bättre. Se konstantens egen
-    // docblock för hela motiveringen och mätdatan bakom talet.
+    // fyller Hem — alltså göra Hem sämre, inte bättre.
     expect(HAMTNINGENS_TIDSGRANS_MS).toBeGreaterThan(9000);
-    // ...och över den värsta latens som någonsin mätts i denna kodbas
-    // (14 087,8 ms, get-events mot staging —
-    // docs/research/startvarmningen-batch1-kall-latens-2026-09-18.md § 2.2).
-    expect(HAMTNINGENS_TIDSGRANS_MS).toBeGreaterThan(14_088);
+
+    // DET SOM STOD HÄR FÖRE RUNDA 2: `toBeGreaterThan(14_088)`, alltså den
+    // värsta latens som mätts i kodbasen. Det skyddsräcket är FLYTTAT, inte
+    // struket — och skälet är granskningens fynd 1: normal-latens (även
+    // "värsta mätta") är fel härledningsgrund för en tidsgräns som ligger
+    // ovanpå ett Edge Function-lager med egen 429-backoff. De BINDANDE
+    // invarianterna (mot serverns värsta 429-väntan och mot EF:ens 150 s idle
+    // timeout) är härledda ur serverns egna konstanter och bor i
+    // `tests/api/tidsgrans-mot-serverlagret.test.ts`. Att duplicera ett
+    // strikt svagare tak här hade bara gett två ställen att glida isär.
+  });
+});
+
+test.describe('SKRIVVÄGEN bär ingen tidsgräns, och det är vaktat (granskningens fynd 5)', () => {
+  // `postEdgeFunction` bär ett uttryckligt säkerhetsbeslut: INGEN tidsgräns,
+  // ingen signal. Skälet står i dess docblock — en avbruten SKRIVNING kan
+  // redan ha genomförts i Airtable, så ett klient-sidigt avbrott kan ge
+  // dubbla betalningsrader eller dubbla utskick. Fram till runda 2 bars det
+  // beslutet ENBART av prosa: lade någon till `signal: medTidsgrans().signal`
+  // på skrivvägen föll ingen grind.
+  //
+  // Källkods-nivå av samma skäl som `mutation-hemvist-vakt.test.ts` och
+  // `ef-metod-vakt.test.ts`: egenskapen ("funktionen bär ingen signal") är en
+  // egenskap hos KÄLLAN, den mäts träffsäkrast där, och `supabase-client.ts`
+  // går inte att importera i api-pure (den drar in `@/env`, som läser
+  // `import.meta.env` vid modul-load medan `tsconfig.tests.json` medvetet
+  // saknar `vite/client`).
+  const REPO_ROT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
+  const KLIENT_FIL = path.join(REPO_ROT, 'src', 'data', 'config', 'supabase-client.ts');
+
+  /** Plockar ut EN exporterad funktions kropp ur källan — signaturen till och
+   * med den avslutande `}` i kolumn 0. Docblocket ovanför ingår ALDRIG, vilket
+   * är hela poängen: prosan NÄMNER tidsgränsen, koden ska inte bära den. */
+  function funktionskropp(kalla: string, namn: string): string {
+    const start = kalla.search(new RegExp(`^export async function ${namn}\\b`, 'm'));
+    if (start === -1) throw new Error(`hittade ingen export async function ${namn} i källan`);
+    const resten = kalla.slice(start);
+    const slut = resten.search(/^\}$/m);
+    if (slut === -1) throw new Error(`hittade ingen avslutande rad för ${namn}`);
+    return resten.slice(0, slut + 1);
+  }
+
+  test('postEdgeFunction bär varken signal, medTidsgrans eller AbortController', () => {
+    const kalla = readFileSync(KLIENT_FIL, 'utf8');
+    const kropp = funktionskropp(kalla, 'postEdgeFunction');
+
+    // POSITIV KONTROLL FÖRST — utan den kan hela testet passera tomt om
+    // extraktionen går sönder (en tom sträng innehåller inte heller "signal").
+    expect(kropp).toContain('fetchWithRetry(');
+    expect(kropp).toContain("method: 'POST'");
+
+    expect(kropp, 'skrivvägen får inte bära en AbortSignal').not.toContain('signal');
+    expect(kropp, 'skrivvägen får inte bygga en tidsgräns').not.toContain('medTidsgrans');
+    expect(kropp, 'skrivvägen får inte bygga en egen AbortController').not.toContain('Abort');
+  });
+
+  test('...medan LÄSVÄGEN gör det — tvåsidigt, så vakten bevisligen diskriminerar', () => {
+    const kalla = readFileSync(KLIENT_FIL, 'utf8');
+    const kropp = funktionskropp(kalla, 'callEdgeFunction');
+
+    // Samma extraktion, motsatt utfall. Faller detta är det vakten som är
+    // trasig, inte skrivvägen — skillnaden är värd att kunna läsa direkt.
+    expect(kropp).toContain('medTidsgrans(options?.signal)');
+    expect(kropp).toContain('signal: tidsgrans.signal');
+    expect(kropp).toContain('tidsgrans.stang()');
   });
 });

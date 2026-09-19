@@ -66,20 +66,29 @@ import { HEM_SENASTE_AKTIVITET_ANTAL, queryKeys } from '@/queries/keys';
  *    [TASK-451.4] "Avbryts inte" gäller fortfarande GATEN, men är sedan denna
  *    skiva inte längre samma sak som "kan hänga för evigt": varje hämtning
  *    bär numera en EGEN tidsgräns i transportlagret
- *    (`HAMTNINGENS_TIDSGRANS_MS`, `src/data/utils.ts` — 20 s, medvetet långt
- *    över gatens 9 s så att hämtningar som landar EFTER släppet fortfarande
- *    får fylla Hem). En Edge Function som aldrig svarar settlar alltså till
- *    slut som ETT FEL i stället för att hänga tills webbläsarens
- *    socket-timeout — och räknas då i `misslyckade` (§ nedan) i stället för
- *    att aldrig räknas alls. Se den konstantens docblock för varför 20 s och
- *    inte 9.
+ *    (`HAMTNINGENS_TIDSGRANS_MS`, `src/data/utils.ts` — 160 s). Talet är
+ *    HÄRLETT ur lagret under, inte valt mot gaten: det ligger över Edge
+ *    Function-lagrets egen idle timeout (150 s) och därmed över serverns
+ *    värsta legitima Airtable-429-återhämtning (112,5 s), så gränsen aldrig
+ *    kapar en läsning som skulle ha lyckats. Att den därmed också ligger
+ *    långt över gatens 9 s är en FÖLJD, inte skälet — men en nödvändig
+ *    sådan: hämtningar som landar EFTER släppet ska fortfarande få fylla
+ *    Hem. En Edge Function som aldrig svarar settlar alltså till slut som
+ *    ETT FEL i stället för att hänga tills webbläsarens socket-timeout — och
+ *    räknas då i `misslyckade` (§ nedan) i stället för att aldrig räknas
+ *    alls. Hela härledningen, inklusive varför 20 s var FEL, står i den
+ *    konstantens docblock.
  *
  *    ÄRLIG KANT, ingen kod skriven för att stänga den: settlar en hämtning
- *    EFTER att `avgorMed()` redan kört (vilket ett 20 s-avbrott per
- *    definition gör när gaten släppte vid 9 s) hinner dess `misslyckade`-
- *    ökning aldrig med i Sentry-rapporten nedan — den är redan skickad.
- *    Det gäller ALLA sena settles, inte bara avbrutna, och är ett befintligt
- *    förhållande som TASK-451.4 varken förvärrar eller lagar.
+ *    EFTER att `avgorMed()` redan kört (vilket ett 160 s-avbrott ALLTID gör
+ *    när gaten släppte vid 9 s) hinner dess `misslyckade`-ökning aldrig med
+ *    i Sentry-rapporten nedan — den är redan skickad. Det gäller ALLA sena
+ *    settles, inte bara avbrutna, och är ett befintligt förhållande som
+ *    TASK-451.4 varken förvärrar eller lagar. Vad skivan däremot gör är att
+ *    göra kanten BREDARE i tid (20 s → 160 s), och det ska sägas rakt ut:
+ *    en tidsgräns som fyrar har i dag INGEN observability-kanal alls. Se
+ *    `HAMTNINGENS_TIDSGRANS_MS` § "Varför ingen Sentry-kanal ser att gränsen
+ *    fyrat" för varför, och för vad en omprövning av talet faktiskt kräver.
  * 3. **`slutlöfte` kastar ALDRIG.** `Promise.allSettled` fångar varje
  *    enskild hämtnings fel — en trasig datamängd sänker aldrig hela
  *    startvärmningen (samma fire-and-forget-anda som
