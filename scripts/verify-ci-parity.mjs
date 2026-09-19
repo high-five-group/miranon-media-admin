@@ -16,8 +16,12 @@
 // trygghet på köpet (precis ADR-083-felklassen: prosa som påstår en täckning
 // ingen mekanism håller). Detta skript väljer därför en annan form:
 //
-//   1. `npm run check:docs` täcker redan TRETTON grindar (docs-jobbet +
-//      lint-jobbets dokumentations-grindar) — de återanvänds, dupliceras inte.
+//   1. `npm run check:docs` täcker redan FJORTON grindar (RÄTTAT TASK-464.1,
+//      2026-09-19 — stod som "TRETTON" trots att check:docs.sh:s egen
+//      slutrad redan sade 14 sedan grinden `Validate locked facit is
+//      addressable` lades till listan; skriv aldrig av ett tal utan att köra
+//      grinden, TASK-106) (docs-jobbet + lint-jobbets dokumentations-grindar)
+//      — de återanvänds, dupliceras inte.
 //   2. RESTEN av lint-jobbets och docs-jobbets steg, plus ci-suite.yml:s
 //      `test-fast`/`acceptance`/`webblasarbeteende`-jobb (de tre som faktiskt
 //      instansieras på PR-ytan — se § SUITE-YTAN nedan), läses ur
@@ -99,6 +103,23 @@
 // `should_skip_tests` och `suite`-jobbets `if:`-villkor har drifat (se
 // § PARITETS-GRINDEN c nedan) — då litar skriptet inte längre på att en
 // DOCS_ONLY-klassning betyder vad den påstår.
+//
+// TASK-464.1 runda 3-TILLÄGG (2026-09-19, review runda 2, risk hög, fynd 1):
+// D0 ÄR INTE LINT-INERT (docs/**/tasks/** bär spårad, analyserbar kod OCH
+// filtyper — JSON, CSS — Biome bevisligen lintar). `.ci-parity-policy.json`:s
+// `lintInertClassification` läser en ANDRA, härledd glob (`changed`-jobbets
+// `changed-lint-inert-ext`-steg, en POSITIV lista över bevisat lint-inerta
+// ändelser) och `klassificeraDiff` (samma only_changed-semantik som
+// D0-klassningen ovan — ÅTERANVÄND, inte en ny funktion) avgör om
+// DOCS_ONLY-diffen har MINST EN fil som inte är lint-inert — samma invariant
+// som ger CI:s `lint`-jobb sitt andra `if:`-villkor. ERSÄTTER runda 1:s F2
+// (`codeExtensionClassification`/`harKodAndelse`, en NEKANDE lista över
+// kända kod-ändelser — fail-open mot json/css, se .lint-inert-policy.conf §
+// BELÄGG för den körda regressionen). Detta påverkar ALDRIG vad detta
+// skript kör lokalt (`derivedJobs.ci` — lint/audit/docs — körs redan
+// ovillkorat oavsett DOCS_ONLY, se ovan): det gör bara diff-klassnings-
+// RAPPORTEN sanningsenlig i stället för att tyst påstå att `lint` skulle
+// skippats i CI när den faktiskt inte skulle det.
 //
 // `--full` tvingar fullständigt läge OAVSETT diff (ingen git-analys körs
 // alls) — för de lägen där hela sviten ska mätas oberoende av arbetsträdet.
@@ -428,14 +449,33 @@ function avgorDiffKlassning(policy, ciParsed, args) {
 
   const docsOnly = klassificeraDiff(diff.filer, glob.monster);
   if (docsOnly) {
-    return {
-      lage: 'DOCS_ONLY',
-      docsOnly: true,
-      rader: [
-        `${diff.filer.length} ändrad(e) fil(er) mot ${spec.baseRef} (committat ∪ arbetsträd ∪ otrackat) — samtliga matchar D0-glob.`,
-        `Hoppar: ${policy.derivedJobs.ciSuite.join(', ')} (ci-suite.yml) — CI:s should_skip_tests skulle skippat samma jobb.`,
-      ],
-    };
+    const rader = [
+      `${diff.filer.length} ändrad(e) fil(er) mot ${spec.baseRef} (committat ∪ arbetsträd ∪ otrackat) — samtliga matchar D0-glob.`,
+      `Hoppar: ${policy.derivedJobs.ciSuite.join(', ')} (ci-suite.yml) — CI:s should_skip_tests skulle skippat samma jobb.`,
+    ];
+    // TASK-464.1 runda 3 (ersätter F2): informationsrad, ändrar INGET om vad
+    // detta skript kör lokalt (derivedJobs.ci — lint/audit/docs — körs redan
+    // ovillkorat, se huvudet § SUITE-YTAN). Syftet är att rapporten inte ska
+    // påstå att `lint` skulle skippats i CI när diffen bär MINST EN fil som
+    // inte är bevisat lint-inert (t.ex. docs/backfill/segment-export/
+    // segments.mjs, eller en .json/.css-fil under docs/**) — CI:s
+    // `requires_lint_by_extension`-output tvingar `lint` att köra ändå.
+    // `klassificeraDiff` ÅTERANVÄNDS (only_changed-semantik — samma funktion
+    // som D0-klassningen ovan): sant = ALLA filer är lint-inerta.
+    const lintInertSpec = policy.lintInertClassification;
+    if (lintInertSpec) {
+      const lintInertGlob = parseraD0Glob(ciParsed, lintInertSpec);
+      if (!lintInertGlob.fel && !klassificeraDiff(diff.filer, lintInertGlob.monster)) {
+        rader.push(
+          '⚠️  Minst en av dessa D0-filer saknar en bevisat lint-inert ändelse ' +
+            '(TASK-464.1 runda 3) — CI:s `lint`-jobb kör ÄNDÅ ' +
+            '(requires_lint_by_extension==true), trots DOCS_ONLY. ' +
+            'Detta skript kör lint/audit/docs lokalt oavsett (superset-principen), ' +
+            'så täckningen påverkas inte — raden är informativ.',
+        );
+      }
+    }
+    return { lage: 'DOCS_ONLY', docsOnly: true, rader };
   }
   const exempel = diff.filer.find((f) => !mm.isMatch(f, glob.monster, { dot: false }));
   return {
@@ -664,7 +704,7 @@ function hanteraToolPresenceLastLine(step, spec, tmpRoot) {
 
 function korCheckDocs() {
   console.log(
-    '\n\x1b[1m═══ npm run check:docs (13 grindar — docs-jobbet + lint-jobbets docs-grindar) ═══\x1b[0m',
+    '\n\x1b[1m═══ npm run check:docs (14 grindar — docs-jobbet + lint-jobbets docs-grindar) ═══\x1b[0m',
   );
   const start = Date.now();
   const res = spawnSync('npm', ['run', '--silent', 'check:docs'], { cwd: REPO, stdio: 'inherit' });
@@ -789,7 +829,7 @@ async function main() {
 
   const checkDocs = korCheckDocs();
   resultat.push({
-    namn: 'npm run check:docs (13 grindar)',
+    namn: 'npm run check:docs (14 grindar)',
     jobLabel: '(täcker ci.yml docs-jobbet + 9 av lint-jobbets steg)',
     status: checkDocs.ok ? 'PASS' : 'FAIL',
     ms: checkDocs.ms,
@@ -882,7 +922,7 @@ async function main() {
 
   console.log('\n\x1b[1m─────────── verify-ci-parity ───────────\x1b[0m');
   console.log(`🔎 Diff-klassning: ${diffBeslut.lage}`);
-  console.log(`\x1b[32m✅ ${passed.length} gröna\x1b[0m (inkl. check:docs 13 grindar)`);
+  console.log(`\x1b[32m✅ ${passed.length} gröna\x1b[0m (inkl. check:docs 14 grindar)`);
   if (skipped.length > 0) {
     console.log(
       `\x1b[33m⏭  ${skipped.length} skippade (${[...new Set(skipped.map((s) => s.detail))].join(', ')})\x1b[0m`,

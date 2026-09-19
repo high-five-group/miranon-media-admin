@@ -6,7 +6,7 @@ title: >-
 status: Done
 assignee: []
 created_date: '2026-09-18 11:52'
-updated_date: '2026-09-19 00:33'
+updated_date: '2026-09-19 00:39'
 labels:
   - ready-for-agent
 dependencies:
@@ -48,6 +48,8 @@ Täcker användarberättelser: 1, 2, 3
 Byggd i samma form som N4 (check-aggregator-needs.mjs): scripts/check-nattkanal-partition.mjs härleder BÅDA leden ur nightly.yml (js-yaml) och .nattvakt-kanal-policy.conf (sourcad i en riktig bash-subprocess) — ingen femte handhållen lista. 17 fall / 24 assert i test-check-nattkanal-partition.mjs, tvåsidigt mutationsprövat (led i och led ii var för sig avstängda -> exakt de fyra förväntade fallen fälls). Extra bevis mot en muterad KOPIA av det RIKTIGA nightly.yml (inte bara den förenklade fixturen): drop av sessionsdok-fonster ur bokforings-arende-triggern -> FÄLLER; omdöpt suite-jobb -> FÄLLER (bägge leden samtidigt). Wirad i ci.yml lint-jobbet (ingen ny job/minut, samma placering som N4) + gatekeeper-testsviten. .nattvakt-kanal-policy.conf tillagd i shellcheck-strict (post 33). AC #4: beroendekanalens dödmansgrepp lagd som AC #7 på TASK-450.5 i stället för byggd här -- den kanalen blir lastbärande för hela beroendesäkerheten forst nar 450.5 landat (ADR-082 § Updates). AC #5: prosan rättad i nightly.yml, .nattvakt-kanal-policy.conf, CONTRIBUTING § Nattnätet, ADR-082 (+ nightly-watchdog.yml som bonus).
 
 RÄTTELSE 2026-09-19, orkestrerar-order efter review runda 1, Marcus mandat: den ursprungliga lösningen på AC #4 - en ny AC #7 på TASK-450.5 - togs bort ur denna PR eftersom PR #2553 redigerar samma kortfil och git merge-tree bekräftade en verklig konflikt. Beroendekanalens dödmansgrepp bärs nu av ett eget kort, TASK-467, mintat i orkestrerarens olandade docs-gren och saknas i denna worktree. AC #4 avbockad eftersom ordalydelsen byggd här eller AC på TASK-450.5 inte längre stämmer. Skälet till att vakten ändå inte byggs i 450.10 kvarstår: beroendekanalen blir lastbärande för hela beroendesäkerheten först när TASK-450.5 landat, ADR-082 paragraf Updates 2026-09-18. DoD #1 avbockad av samma skäl. AC 1, 2, 3 och 5 opåverkade och fortsatt sanna.
+
+RÄTTELSE 2026-09-19 (TASK-464.1, granskning #2557 runda 2): noten ovan säger '17 fall / 24 assert i test-check-nattkanal-partition.mjs' — mätt om 2026-09-19 (node scripts/test-check-nattkanal-partition.mjs): sviten kör 18 fall (26 assert-kontroller), inte 17/24. Samma rättelse gjord i ci.yml:s kommentar vid svitens wiring, omformulerad att peka på svitens egen slutrad i stället för ett hårdkodat tal (TASK-106).
 <!-- SECTION:NOTES:END -->
 
 ## Final Summary

@@ -9,7 +9,12 @@
 # Nej ⇒ skriver INGENTING. Tomt betyder full acceptance-klass.
 #
 # ═══ VARFÖR SKRIPTET FINNS — MÄTT, INTE ANTAGET ═══
-# Acceptance-sviten kör alla 18 spec-filer på varje kod-PR. Efter A7:5
+# Acceptance-sviten kör ALLA spec-filer på varje kod-PR (RÄTTAT 2026-09-19,
+# N8-fyndet, PR #2555: raden sade tidigare "18 spec-filer" — talet var redan
+# stalest då, 62 filer mätt om 2026-09-19 med `find tests/acceptance -maxdepth
+# 1 -name '*.acceptance.test.ts' | wc -l`; klassens levande antal läses i
+# stället med `npx playwright test --project=acceptance --list`, samma
+# rättelse CONTRIBUTING.md fick i samma PR). Efter A7:5
 # (`TASK-70.3`) flyttade `Staging (API + E2E)` till post-merge-lagret och
 # `Acceptance (hermetisk)` blev ENSAM bärare av PR-grindens kritiska väg —
 # mätt till 422/433/422 s över tre fulla körningar 2026-07-28, alltså cirka
