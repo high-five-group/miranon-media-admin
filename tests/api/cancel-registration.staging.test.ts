@@ -59,6 +59,7 @@ import {
   ANMALAN_VERB,
   anmalanObjektId,
 } from '../../supabase/functions/_shared/aktivitetslogg';
+import { registreraKastbarPost } from '../support/kastbara-poster';
 import { type ApiConfig, classify401Body, getApiConfig, getValidUserJWT } from './helpers';
 
 const ENDPOINT = '/functions/v1/cancel-registration';
@@ -128,7 +129,11 @@ async function createSentinelRegistration(
   });
   const raw = await res.text();
   expect(res.status(), raw).toBe(201);
-  return (JSON.parse(raw) as { record: { id: string } }).record.id;
+  const id = (JSON.parse(raw) as { record: { id: string } }).record.id;
+  // [TASK-465] Registrera DIREKT vid skapandet — se motivering i
+  // send-registration-confirmation.staging.test.ts:s systervarning.
+  registreraKastbarPost(id, 'cancel-registration/sentinel');
+  return id;
 }
 
 /** Omläsning via get-registrations — samma läs-väg som resten av API-sviterna. */

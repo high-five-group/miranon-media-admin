@@ -38,6 +38,7 @@
 
 import { randomUUID } from 'node:crypto';
 import { type APIRequestContext, type APIResponse, expect, test } from '@playwright/test';
+import { registreraKastbarPost } from '../support/kastbara-poster';
 import { type ApiConfig, getApiConfig, getValidUserJWT } from './helpers';
 
 function postJson(
@@ -99,7 +100,11 @@ async function createSentinelRegistration(
   });
   const raw = await res.text();
   expect(res.status(), raw).toBe(201);
-  return (JSON.parse(raw) as { record: { id: string } }).record.id;
+  const id = (JSON.parse(raw) as { record: { id: string } }).record.id;
+  // [TASK-465] Registrera DIREKT vid skapandet — se motivering i
+  // send-registration-confirmation.staging.test.ts:s systervarning.
+  registreraKastbarPost(id, `hamta-oppna-betalningar-kvitto-avbojt/sentinel-${suffix}`);
+  return id;
 }
 
 type OppenBetalningRad = { anmalanRecordId: string; oskickadeKvitton: unknown[] };

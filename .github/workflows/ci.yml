@@ -84,6 +84,14 @@ jobs:
       # eller TOM STRÄNG för full klass. Tomt är defaulten i varje osäkert läge
       # — se `acceptance-urval`-steget nedan och scripts/acceptance-urval.sh.
       acceptance_urval: ${{ steps.acceptance-urval.outputs.acceptance_urval }}
+      # K1(b) (TASK-450.5, Marcus GO 2026-09-18 — planens § K1, huvudrapporten
+      # § 8; utökad efter review-grindens runda 1, risk medel, 2026-09-18).
+      # true = minst en av de filer `changed-deps`-steget vaktar ändrades i
+      # denna diff, oavsett vad ÖVRIGA diffen innehåller — DEN kanoniska
+      # listan bor i det steget, ingen kopia här (håll listan på ETT ställe).
+      # Styr `audit`-jobbets `if:` — se det jobbets § K1(b)-kommentar för
+      # hela rationalen och de fyra invarianterna (i)–(iv).
+      dependency_tree_changed: ${{ steps.changed-deps.outputs.any_changed == 'true' }}
     steps:
       # ═══ SHA-PINNADE FIRST-PARTY ACTIONS (TASK-312, 2026-08-24) ═══
       #
@@ -403,6 +411,79 @@ jobs:
             !.nvmrc
             !.gitignore
           # paritet:slut klassning-acceptance
+
+      - name: Get changed dependency-tree + granskningsmekanism files (K1b-klassning)
+        id: changed-deps
+        # K1(b) (TASK-450.5, Marcus GO 2026-09-18 — planens § K1, huvudrapporten
+        # § 8). Matar `dependency_tree_changed` ovan, som styr `audit`-jobbets
+        # `if:` (se det jobbets § K1(b)-kommentar för hela rationalen). DETTA
+        # STEG ÄR DEN KANONISKA LISTAN — ingen kopia av filnamnen förs vidare
+        # i prosa på andra ställen i repot; de pekar hit i stället.
+        #
+        # VARFÖR EN EGEN POSITIV-LISTA, INTE D0:s NEGATION ÅTERANVÄND. D0
+        # (`should_skip_tests`) svarar "är HELA diffen docs/tasks/config-yta?"
+        # — en allowlist där `!package.json` m.fl. är TRE av tolv undantag
+        # bland många andra. Den frågan svarar inte på "rörde DENNA diff
+        # beroendeträdet?": en kod-PR som ändrar både `src/` och `package.json`
+        # ger `should_skip_tests=false` (korrekt, den är inte docs-only) men
+        # det säger ingenting om huruvida `package.json` rördes.
+        #
+        # any_changed (INTE only_changed) är rätt primitiv: sant om NÅGON av
+        # filerna ändrades, oavsett resten av diffen — samma "sant oavsett
+        # övrig diff"-fråga som `changed-docs`-steget ovan löser för
+        # `docs_changed`.
+        #
+        # DE TRE FÖRSTA FILERNA ÄR PLANENS EGEN DEFINITION AV "BEROENDETRÄDET"
+        # (K1): `package.json` (manifestet), `package-lock.json`
+        # ("låsningarna") och `audit-ci.jsonc` (ADR-028:s allowlist —
+        # "undantagen"). Ingen fjärde låsfil finns i repot i dag (npm-only
+        # monorepo: `ls *.lock*` gav bara `package-lock.json`, ingen
+        # `yarn.lock`/`pnpm-lock.yaml`, verifierat vid byggtillfället
+        # 2026-09-19) — dyker en sådan upp senare hör den hemma i denna lista,
+        # inte som ett nytt jobb.
+        #
+        # ═══ UTÖKAD MED FYRA FILER, GRANSKNINGSMEKANISMEN SJÄLV (review-
+        # grindens runda 1, risk medel, 2026-09-18) ═══
+        #
+        # SKÄLET. Utan detta kan en FÖRSVAGNING av granskningen — en ändrad
+        # tröskel i skriptet, ett borttaget villkor, ett kringgånget test —
+        # landa utan att någonsin ha körts mot ett riktigt träd, eftersom
+        # exakt den ändringen per definition inte rör `package.json`/
+        # `package-lock.json`/`audit-ci.jsonc`. `audit`-jobbet skulle då
+        # skippas på den PR som ändrar dess EGEN logik. De fyra tillagda
+        # filerna:
+        #   `scripts/audit-ci-med-degradering.sh` — själva granskningslogiken
+        #     (nätverksdegraderingen, VILLKOR A/B ovan).
+        #   `scripts/test-audit-degradering.sh` — dess testsvit. En ändring
+        #     här är typiskt en ändring av VAD som räknas som grönt/rött.
+        #   `.github/workflows/ci.yml` — bär både `audit`-jobbets `if:`/`run:`
+        #     och detta klassnings-steg självt. En PR som mjukar upp villkoret
+        #     ELLER lindrar `run:`-blocket rör per definition denna fil.
+        #   `.github/workflows/ci-suite.yml` — nämnd i uppdraget som en plats
+        #     `audit`-jobbets `if:`/`run:` "bor" i historiken; ingen sådan kod
+        #     finns där i dag (verifierat: `grep -n "if:\|run:" i filen ger
+        #     inga audit-träffar), men filen vaktas ändå — vaktar den NÅGONSIN
+        #     lägger audit-relaterad styrning fångas det utan en ny PR.
+        #
+        # SJÄLV-REFERENSEN ÄR AVSIKTLIG, INTE EN BUGG. Detta steg bor i
+        # `ci.yml`, och `ci.yml` står i dess egen bevakade lista — en ändring
+        # av STEGET SJÄLVT (t.ex. att smalna listan) rör alltså per
+        # konstruktion filen som avgör om `audit` körs, och `audit` körs då.
+        # Det är precis den självskyddande egenskapen syftet kräver.
+        #
+        # quotepath: false — samma invariant som övriga steg i detta jobb
+        # (TASK-15 S69).
+        uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96  # v47.0.6
+        with:
+          quotepath: false
+          files: |
+            package.json
+            package-lock.json
+            audit-ci.jsonc
+            scripts/audit-ci-med-degradering.sh
+            scripts/test-audit-degradering.sh
+            .github/workflows/ci.yml
+            .github/workflows/ci-suite.yml
 
       - name: Acceptance-urval — kör den delmängd diffen rör
         id: acceptance-urval
@@ -801,6 +882,24 @@ jobs:
         # .aggregator-needs-policy.json med ett skrivet skäl — ett undantag
         # som inte fyller någon funktion fäller också.
         run: node scripts/check-aggregator-needs.mjs
+
+      - name: Check nightly channel partition invariant (TASK-450.10 gate, 3A)
+        # Per docs/research/ci-djupgranskning-2026-09-17/10-migrations-och-
+        # atgardsplan.md § N2/N4 + tasks/sessions/2026-09-17-session-126.md
+        # § Del 9 (Marcus beslut 3A): sedan TASK-450.1 går nattens åtta
+        # larmbärande jobb i TRE kanaler (produkt/bokföring/beroende), och
+        # varje kanal räknar upp sina utlösande jobb-ID:n för hand i sitt
+        # if-villkor (nightly.yml) — plus nattvaktens allowlist över
+        # produktkanalens jobb-NAMNPREFIX (.nattvakt-kanal-policy.conf),
+        # oberoende. Ett nionde nattjobb som glöms i alla tre triggrar blir
+        # TYST; ett omdöpt produktjobb (eller ett prefix som glidit) tystar
+        # nattvaktens dödmansgrepp för HELA produktkanalen medan en ren
+        # ID-jämförelse fortfarande ser grönt — exakt N2 runda 2:s fynd.
+        # Samma form som steget ovan: läs filen(erna), jämför mängder, fäll
+        # med jobbets/prefixets namn. Kör i lint-jobbet av samma skäl som
+        # N4 (billigast redan-körande jobb, ingen ny fakturerad minut) —
+        # se PR-kroppens "Kostnad i två mått".
+        run: node scripts/check-nattkanal-partition.mjs
 
       - name: Check list parity (TASK-85 gate)
         # Repot bär flera invarianter som står på TVÅ ställen och som filerna
@@ -1444,6 +1543,25 @@ jobs:
         # robusthets-kontroll (`needs:` som skalär sträng, giltig YAML-form).
         # Sandboxad i egen mktemp-katalog, ingen nätverkstrafik.
         #
+        # test-check-nattkanal-partition.mjs (TASK-450.10, 3A) hör hit av
+        # samma ADR-039 § lesson→grind-skäl applicerat på grinden ovan
+        # (check-nattkanal-partition.mjs): den är inte en grind förrän dess
+        # fyrning fortlöpande verifieras. 17 fall (24 assert-kontroller),
+        # tvåsidigt bevis i BÅDA leden (mutationsprövat under bygget: ID-
+        # ledets partitionsloop avstängd fällde exakt de två fall som
+        # bevisar det, namn-ledets båda loopar avstängda fällde de två
+        # fall som bevisar det) — en sandlådekopia av nightly.yml med ett
+        # jobb borttaget ur ALLA tre triggrar FÄLLER med jobbets namn, ett
+        # jobb i TVÅ triggrar FÄLLER, ett ändrat name: på ett produktjobb
+        # FÄLLER, ett föråldrat prefix i .nattvakt-kanal-policy.conf FÄLLER
+        # — plus fail-closed-grenar (saknad/trasig nightly.yml, saknat
+        # 'jobs:'-block, saknat kanaljobb, saknad/tom/trasig kanal-config)
+        # och robusthetskontroller (prefix-matchning som PREFIX, inte
+        # likhet; `needs:` som skalär sträng). De RIKTIGA nightly.yml +
+        # .nattvakt-kanal-policy.conf PASSERAR. Sandboxad i egen mktemp-
+        # katalog, ingen nätverkstrafik. 1,5 s LOKALT mätt (macOS,
+        # 2026-09-19) — CI-tiden är INTE mätt av mig och kan avvika.
+        #
         # test-docraptor-sjalvbarande.mjs (TASK-301) hör hit av samma
         # ADR-039-skäl: scripts/docraptor-sjalvbarande.mjs lämnade tidigare
         # en ohämtbar CSS-url() ORÖRD, exakt den referensklassen Prince
@@ -1642,6 +1760,7 @@ jobs:
           node scripts/test-review-backstopp.mjs
           node scripts/test-verify-ci-parity.mjs
           node scripts/test-check-aggregator-needs.mjs
+          node scripts/test-check-nattkanal-partition.mjs
           node scripts/test-task-338-6-prod-migration.mjs
           node scripts/test-docraptor-sjalvbarande.mjs
           node scripts/test-backfill-inbetalningar.mjs
@@ -2036,7 +2155,12 @@ jobs:
         # mekaniska PreToolUse-låset mot Airtable-produktionsbasen via
         # mcp__airtable__*/mcp__claude_ai_Airtable__* — samma form som
         # .prod-ref-policy.conf, fast för Airtable-MCP-ytan i stället för
-        # Supabase-CLI:t i Bash).
+        # Supabase-CLI:t i Bash) och till trettiotre i TASK-450.10-wiringen
+        # (.nattvakt-kanal-policy.conf — NATTVAKT_PRODUKTKANAL_JOBBPREFIX/
+        # NATTVAKT_OFARLIGA_CONCLUSIONS, sourcad av nightly-watchdog.yml
+        # OCH läst av den nya scripts/check-nattkanal-partition.mjs; filen
+        # fanns sedan TASK-450.1 men stod utanför denna uppräkning — en
+        # öppet bokförd skuld i filens eget huvud, se den för hela skälet).
         # Pre-aktiverings-state (post-K3.2 commit d86d846): 0/0/0/0.
         run: |
           shellcheck \
@@ -2079,7 +2203,8 @@ jobs:
             .jq-version-policy.conf \
             .gh-version-policy.conf \
             .hemlighets-namn-policy.conf \
-            .prod-airtable-policy.conf
+            .prod-airtable-policy.conf \
+            .nattvakt-kanal-policy.conf
 
   # ═══ Job 2b: SUPPLY-CHAIN-AUDITEN, EGET JOBB (TASK-395, 2026-09-04) ═══
   #
@@ -2093,11 +2218,16 @@ jobs:
   # loopens värsta fall (5 × 90 s fetch-timeout + 4 × 30 s paus = 570 s ≈
   # 9,5 min) plus `npm ci` med god marginal.
   #
-  # VILLKORSLÖST, precis som `lint` — INGET `needs:`, INGET `if:`. Det är
-  # samma form lint bär och samma skäl: supply-chain-grinden ska gälla varje
-  # commit, kod som doc-only (K17). Jobbet ligger i aggregatorns `needs`
-  # (`ci-passed`) och är därmed exakt lika required som audit-steget var när
-  # det bodde i `lint`.
+  # VILLKORAT sedan `TASK-450.5` (K1(b), se § K1(b) nedan) — INTE längre den
+  # villkorslösa formen `lint` bär. Historik: fram till dess bar jobbet
+  # varken `needs:` eller `if:`, av skälet "supply-chain-grinden ska gälla
+  # varje commit, kod som doc-only (K17)". Den motiveringen höll tills
+  # kostnaden mättes: en diff-oberoende grind mot beroenden vi inte äger
+  # fällde VARJE ändringsförslag i nio dagar på två öppna advisories (N1,
+  # `docs/research/ci-djupgranskning-2026-09-17/
+  # 10-migrations-och-atgardsplan.md`). Jobbet ligger fortfarande i
+  # aggregatorns `needs` (`ci-passed`) och är därmed lika required som förut
+  # NÄR DET KÖR — se § K1(b) för vad "när det kör" betyder i praktiken.
   #
   # ═══ MÄTNINGARNA (2026-09-04, `gh api`, inte avskrivna) ═══
   #
@@ -2198,8 +2328,97 @@ jobs:
   # run:-block — så shellcheck-strict (`scripts/*.sh`) täcker den och
   # `scripts/test-audit-degradering.sh` (41 assertions, tvåsidig, hermetisk,
   # körs i lint-jobbets gatekeeper-steg) prövar EXAKT den kod som körs här.
+  #
+  # ═══ § K1(b) — VILLKORAT PÅ BEROENDETRÄDET + GRANSKNINGSMEKANISMEN
+  # (TASK-450.5, Marcus GO 2026-09-18 — planens § K1, huvudrapportens § 8) ═══
+  #
+  # VAD SOM ÄNDRADES. Jobbet bär numera `needs: [changed]` + `if:` (nedan).
+  # Det körs BARA när `changed`-jobbets `changed-deps`-steg rapporterar en
+  # träff — DEN kanoniska listan över vilka filer som räknas bor i DET
+  # steget, ingen kopia här (håll listan på ETT ställe). Rör diffen ingen av
+  # dem SKIPPAS jobbet HELT på JOBB-nivå — ingen runner startar (ledstjärnan,
+  # Marcus 2026-09-19: "ett hoppat jobb som ändå startar en runner i 10 s
+  # kostar en hel minut — villkora på JOBB-nivå").
+  #
+  # SKÄLET. TASK-395:s ursprungliga "varje commit, kod som doc-only"-
+  # motivering höll tills kostnaden mättes: två öppna advisories mot
+  # beroenden vi inte äger fällde VARJE ändringsförslag — inklusive rena
+  # textändringar — i NIO DAGAR (N1). En diff-oberoende grind mot en
+  # byggsten vi inte äger är strukturellt sårbar för exakt den händelsen.
+  #
+  # PLANENS FYRA INVARIANTER, VAR OCH EN ORDAGRANT PRÖVAD HÄR:
+  #   (i)   RÖR diffen beroendeträdet granskas den ändå på ändringsförslaget/
+  #         kön, med blockerande verkan — samma audit-ci, samma high-tröskel,
+  #         samma degraderingslogik (VILLKOR A/B ovan), oförändrade.
+  #   (ii)  Hela trädet granskas ändå varje natt, med en STRÄNGARE tröskel
+  #         (`nightly.yml:168`, `npx audit-ci --moderate` — moderate är
+  #         bredare än dagsvitens `high`) i sin EGEN kanal:
+  #         `nightly.yml`s `beroende-arende`-jobb (stående ärende, etikett
+  #         `beroendevarning`), byggt av N2 (`TASK-450.1`, landad
+  #         `a046d29c`). En ny extern varning mot ett OFÖRÄNDRAT träd fångas
+  #         där inom ett dygn, aldrig tystare.
+  #   (iii) Jobbet står KVAR i `ci-passed.needs` (oförändrat, se det jobbet)
+  #         — ett rött resultat blockerar fortfarande. `skipped` är varken
+  #         `failure` eller `cancelled`, så fail-closed-grenen där kräver
+  #         ingen ändring — se det jobbets uppdaterade kommentar.
+  #   (iv)  `ADR-028`:s femstegs-konventionsflöde för undantag rörs INTE —
+  #         denna ändring styr NÄR jobbet triggas, aldrig VAD det gör när
+  #         det kör.
+  #
+  # ═══ SJÄLVSKYDD: LISTAN OMFATTAR ÄVEN GRANSKNINGSMEKANISMEN SJÄLV (review-
+  # grindens runda 1, risk medel, 2026-09-18) ═══
+  #
+  # Utan det kunde en FÖRSVAGNING av granskningen — ett mjukat villkor, en
+  # sänkt tröskel i `scripts/audit-ci-med-degradering.sh`, ett kringgånget
+  # test — landa utan en enda LIVE-körning mot det riktiga trädet, eftersom
+  # exakt den ändringen per definition inte rör `package.json`/
+  # `package-lock.json`/`audit-ci.jsonc`. `changed-deps`-steget vaktar därför
+  # även skriptet, dess testsvit och de två workflow-filer `audit`-jobbets
+  # `if:`/`run:` bor i (se det stegets kommentar för den fullständiga listan
+  # och varför den formen är självskyddande snarare än cirkulär).
+  #
+  # KOSTNAD, MÄTT SAMMA METOD SOM ANDRA MÅTTET I PR-KROPPEN: `git log
+  # origin/main --since=2026-08-01 --until=2026-09-01 --first-parent --merges
+  # -- scripts/audit-ci-med-degradering.sh scripts/test-audit-degradering.sh
+  # .github/workflows/ci.yml .github/workflows/ci-suite.yml` — se PR-kroppens
+  # § Kostnad i två mått för talet och hur det påverkar månadseffekten.
+  #
+  # BEVIS, TVÅSIDIGT (AC #1s utökning): en ändring i ENBART
+  # `scripts/audit-ci-med-degradering.sh` ska ge `audit`-jobbet KÖR — och
+  # DENNA PR rör nu `.github/workflows/ci.yml` (denna kommentar, bland
+  # annat) och ska alltså SJÄLV visa `audit` = kört, inte skippat. Run-ID:n
+  # i PR-kroppens § Bevis.
+  #
+  # SAMMA MEKANISM SOM D0/D1/ACCEPTANCE-KLASSNINGEN — MEDVETET INTE
+  # DEGRADERINGS-SKRIPTETS EGEN DIFF. `scripts/audit-ci-med-degradering.sh`
+  # beräknar redan en "oförändrat träd"-diff (VILLKOR B ovan), men den
+  # svarar på en ANNAN fråga (får nätverksdegraderingen slå till när
+  # advisory-endpointen är onåbar?) och körs först EFTER att jobbet redan
+  # startat en runner. Frågan "ska jobbet köra ALLS?" måste avgöras FÖRE en
+  # runner startar, alltså i `changed`-jobbet, med samma
+  # `tj-actions/changed-files`-primitiv som `should_skip_tests`/
+  # `docs_changed`/`ui_low_risk`/`acceptance_local` redan använder — bevisat
+  # fungera på BÅDA event-ytorna (`pull_request` OCH `merge_group`:
+  # merge_group-körning 33138424216 skippade `Test suite` på samma jobbs
+  # klassning, mätt 2026-08-28, se review-backstopp-jobbets kommentar för
+  # källan).
+  #
+  # OMFATTAR ÄVEN `push` MOT MAIN, MEDVETET. Denna fil triggas också av
+  # landningen själv (`push: branches: [main]`, se filhuvudet); samma
+  # `changed-deps`-steg härleder diffen mot föregående main-HEAD där också,
+  # så en landning som inte rörde beroendeträdet skippar `audit` en tredje
+  # gång. `audit` finns ENDAST i denna fil (PR/kö/main-push) — varken
+  # `post-merge.yml` eller `nightly.yml` bär ett eget PR-liknande
+  # audit-jobb, bara `nightly-audit` (se (ii) ovan). Ledstjärnan (Marcus
+  # 2026-09-19 § A3): "samma träd körs i dag på fyra ytor per landning (PR,
+  # kö, main, efterkontroll)" — de tre första delar nu samma klassning och
+  # samma svar; den fjärde (natten) är redan en annan, strängare kontroll
+  # och rörs inte av denna ändring.
   audit:
     name: Audit dependencies (audit-ci)
+    needs: [changed]
+    # dependency_tree_changed — se § K1(b) ovan för hela rationalen.
+    if: ${{ needs.changed.outputs.dependency_tree_changed == 'true' }}
     runs-on: ubuntu-latest
     timeout-minutes: 20
     permissions:
@@ -2648,10 +2867,15 @@ jobs:
     # inte göra varje opgranskad PR röd (se jobbets eget kommentarsblock).
     # audit tillagt TASK-395 (2026-09-04): supply-chain-auditen flyttade ur
     # `lint` till ett eget jobb, och posten här är det som håller den lika
-    # required som förut. `audit` har varken `if:` eller `needs:` och kan
-    # därför aldrig bli `skipped` — den rapporterar alltid success eller
-    # failure, precis som `lint`, och fail-closed-logiken nedan behöver
-    # ingen särskild hantering för den.
+    # required som förut. Sedan `TASK-450.5` (K1(b), se `audit`-jobbets
+    # § K1(b)-kommentar) bär jobbet `needs: [changed]` + `if:` och KAN bli
+    # `skipped` — när diffen inte rör någon av de filer `changed-deps`-steget
+    # vaktar (beroendeträdet OCH sedan runda 1 granskningsmekanismen själv)
+    # startas ingen runner alls. Det är samma "skipped-by-design"-mönster
+    # som `review-backstopp` ovan och `suite`/`docs` redan bär, och
+    # fail-closed-logiken nedan
+    # behöver INGEN särskild hantering för den: `skipped` är varken
+    # `failure` eller `cancelled`.
     needs: [changed, lint, audit, docs, suite, review-backstopp]
     runs-on: ubuntu-latest
     timeout-minutes: 1

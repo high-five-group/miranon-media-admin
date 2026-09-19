@@ -200,7 +200,15 @@ async function createSentinelRegistration(
   });
   const raw = await res.text();
   expect(res.status(), raw).toBe(201);
-  return { id: (JSON.parse(raw) as { record: { id: string } }).record.id, email };
+  const id = (JSON.parse(raw) as { record: { id: string } }).record.id;
+  // [TASK-465] Registrera DIREKT vid skapandet — se motivering i
+  // send-registration-confirmation.staging.test.ts:s systervarning. Denna
+  // fil registrerade redan sitt sentinel-EVENT (createSentinelEvent ovan)
+  // men INTE de anmälningar den skapar — samma leak-klass, bara osynlig
+  // tills nu eftersom rebook-registration inte var en av de två test som
+  // föll i #2544/#2549.
+  registreraKastbarPost(id, `rebook-registration/anmalan-${efternamn}`);
+  return { id, email };
 }
 
 /** Registrerar EN inbetalning och returnerar dess id (för flytt-bevis + städning). */
@@ -472,6 +480,12 @@ test.describe('rebook-registration — skarp conformance (TASK-368.4)', () => {
       const raw = await res.text();
       expect(res.status(), raw).toBe(200);
       const svar = JSON.parse(raw) as RebookSvar;
+      // [TASK-465 granskning runda 1, FYND 1] `nyAnmalanId` skapas av
+      // rebook-EF:en SJÄLV (indirekt — inte av testets eget create-anrop).
+      // Samma blinda fläck som gav #2544/#2549: registrera DIREKT, inte i
+      // `finally` (som inte ens finns här) och inte villkorat av vidare
+      // asserts som kan fälla innan raden nås.
+      registreraKastbarPost(svar.nyAnmalanId, 'rebook-registration/ny-anmalan-flera-inbetalningar');
 
       expect(svar.gammalAnmalanId).toBe(registrationId);
       expect(svar.nyAnmalanId.startsWith('rec')).toBe(true);
@@ -599,6 +613,12 @@ test.describe('rebook-registration — skarp conformance (TASK-368.4)', () => {
       const raw = await res.text();
       expect(res.status(), raw).toBe(200);
       const svar = JSON.parse(raw) as RebookSvar;
+      // [TASK-465 granskning runda 1, FYND 1] Detta är EXAKT den läckan
+      // granskaren namngav: `nyttEventId` HÄR är det seedade eventet
+      // (motsatt riktning mot testet ovan), så `svar.nyAnmalanId` landar
+      // DIREKT på seed-eventet — samma sentinel-familj som orsakade
+      // #2544/#2549. Registrera DIREKT vid svaret.
+      registreraKastbarPost(svar.nyAnmalanId, 'rebook-registration/ny-anmalan-en-inbetalning');
 
       expect(svar.nyAnmalanSkapad).toBe(true);
       expect(svar.flyttadeRader).toBe(1);
