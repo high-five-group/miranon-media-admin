@@ -1171,7 +1171,11 @@ påminnelseintervall (`HEARTBEAT_ARENDE_PAMINNELSE_INTERVALL`,
 `.heartbeat-svep-policy.conf`, default 1800s). Rapporteringen är GLOBAL, inte
 sessions-scopad — `--session <ID>` filtrerar RÖTT/DIRTY/ARMERINGS-KANDIDAT för
 PR:ar (`CLAUDE.md` § Landning), men huvudgrenens ärenderegister har ingen
-sessionsmarkör och angår varje session oavsett flagga.
+sessionsmarkör och angår varje session oavsett flagga. Sveper flera sessioner
+samtidigt mot samma delade tillstånd rapporteras ett rött på `main` EN gång
+PER MASKIN, inte en gång per session — den ENA session som sveper FÖRST
+skriver raden, de övriga läser redan-uppdaterat läge och är tysta; det gles
+påminnelseintervallet är vad som når dem, inte en garanti om samtidighet.
 
 **En känd, medvetet obyggd gräns.** Svepet pekar INTE automatiskt mot "det
 första ärendet" när flera `ci-post-merge`-ärenden delar samma rotorsak — att

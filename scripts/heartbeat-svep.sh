@@ -1033,6 +1033,26 @@ tips_notis_om_dags() {
 # ligger därför direkt i STATE_DIR utan SESSION_STATE_SUFFIX, samma
 # MEDVETET GLOBAL-klass som STADA_STATE_FILE (§ FEMTE VÄGEN).
 #
+# FÖLJDEN AV DET GLOBALA STATET VID FLERA SAMTIDIGA SESSIONER (review runda
+# 3 fynd 3, Marcus-beslut 2026-09-19, PROSA-DOKUMENTATION — INGEN
+# BETEENDEÄNDRING). Sveper S126, S127 och S128 samtidigt mot SAMMA
+# STATE_DIR (defaulten, om ingen sätter en egen HEARTBEAT_STATE_DIR): det
+# är BARA den session vars sopning FÖRST observerar en övergång eller
+# mängdförändring som skriver den atomära state_fil-uppdateringen och
+# rapporterar raden — de ANDRA sessionernas efterföljande sopningar läser
+# redan-uppdaterat tillstånd (gammalt_csv == nytt) och blir TYSTA, exakt
+# samma "först-observerad-vinner"-mekanik som redan gäller för
+# STADA_STATE_FILE (§ FEMTE VÄGEN) och för main-SHA-avancemangsraden. Ett
+# rött på main rapporteras alltså EN gång PER MASKIN (per delad STATE_DIR),
+# inte en gång PER SESSION — den gles påminnelsen (§ ANVÄNDNING ovan) är
+# den mekanism som når de sessioner som missade den första raden, inte en
+# garanti att alla ser den direkt. PÅSTÅ INTE MER ÄN DETTA (ADR-083): ingen
+# session är "primär" eller "sekundär" i någon annan mening, och ingen
+# koordinering mellan sessionerna sker — det är ren kapplöpning om vem som
+# sveper FÖRST, med samma ofarlighet som F10-klassen redan dokumenterar (§
+# UNDERHÅLL, TASK-323): en förlorad kapplöpning kostar en observation, inte
+# en korrekthet.
+#
 # INGEN EXIT-BIT (se § EXIT-KODER ovan för det fulla resonemanget) men
 # FAIL-CLOSED PÅ SONDFEL (77, samma som main-SHA-/PR-list-sonderna): ett gh-
 # anrop som inte svarar tystas hellre INTE — se sweep_once() nedan.
@@ -1080,34 +1100,63 @@ arende_split_csv() {
 }
 
 # arende_display_lista <csv> — "#A, #B" från en siffer-CSV (tom sträng om
-# <csv> är tom). EN delad formatterare för HELA mängden och för
-# tillkommit-/försvunnet-delmängderna i rapportera_arende_lage(), så alla
-# tre garanterat använder EXAKT samma "#"-prefix-stil.
+# <csv> är tom), ALLTID i NUMERISK ordning (review runda 3 fynd 1, punkt e)
+# — OAVSETT vilken ordning <csv> själv råkar bära. <csv> kan vara den
+# KANONISKA jämförelseformen (byte-/`LC_ALL=C`-sorterad, se ARENDE_NUMMER_
+# REGEX-stycket nedan) eller en direkt `comm`-utdata (samma sortering som
+# sina indata) — ingendera är läsbar för en människa rakt av: byte-ordning
+# sätter t.ex. "10000" FÖRE "9999". Denna funktion är den ENDA platsen text
+# faktiskt visas för Marcus, så den är den ENDA platsen som behöver sortera
+# om — EN delad formatterare för HELA mängden och för tillkommit-/
+# försvunnet-delmängderna i rapportera_arende_lage(), så alla tre garanterat
+# använder EXAKT samma numeriska "#"-prefix-stil.
 arende_display_lista() {
     local csv="$1" n ut=""
     # shellcheck disable=SC2312
-    # AVSIKTLIGT: arende_split_csv() är ren bash (for-loop + printf, ingen
-    # extern process som kan misslyckas oväntat) — samma disciplin som
-    # övriga process-substitutions-disabler i detta skript (§ Körläge).
+    # AVSIKTLIGT: arende_split_csv() är ren bash (for-loop + printf) och
+    # `sort` är ett POSIX-verktyg vars enda felläge här är "binären saknas"
+    # — samma riskklass som övriga externa-verktyg-disabler i detta skript.
     while IFS= read -r n; do
         [[ -n "${n}" ]] || continue
         ut="${ut:+${ut}, }#${n}"
-    done < <(arende_split_csv "${csv}")
+    done < <(arende_split_csv "${csv}" | sort -n)
     printf '%s' "${ut}"
 }
 
 # ARENDE_NUMMER_REGEX — ett GILTIGT (nytt format) state_fil-innehåll: tom
-# sträng (explicit "noll öppna, känt") ELLER en sorterad, kommaseparerad
-# lista av positiva heltal utan mellanslag. Allt annat — framför allt de
-# GAMLA bokstavsvärdena "rod"/"gron" — är GAMMALT_FORMAT (se ovan).
+# sträng (explicit "noll öppna, känt") ELLER en kommaseparerad lista av
+# positiva heltal utan mellanslag (SORTERINGEN prövas INTE av regexen — se
+# normaliseringen i rapportera_arende_lage() nedan för varför). Allt annat
+# — framför allt de GAMLA bokstavsvärdena "rod"/"gron" — är GAMMALT_FORMAT
+# (se ovan).
 ARENDE_NUMMER_REGEX='^[0-9]+(,[0-9]+)*$'
 
+# KANONISK JÄMFÖRELSEORDNING — `LC_ALL=C` (byte-ordning), INTE numerisk
+# (review runda 3 fynd 1, Marcus-beslut 2026-09-19). `comm(1)` kräver att
+# BÅDA indataströmmarna redan är sorterade i SIN EGEN jämförelseordning —
+# annars är resultatet TYST FEL, inte ett fel som syns. Numerisk sortering
+# ("2,3,10") och byte-sortering ("10,2,3") SAMMANFALLER bara inom en enda
+# sifferlängd; en mängd som spänner över en längdgräns (…9999,10000…) ger
+# `comm` en ström den INTE anser sorterad, och den producerar en felaktig
+# diff utan att fela synligt. Reproducerat och verifierat (review runda 3):
+#   comm -23 <(printf '2\n3\n10\n') <(printf '2\n10\n')      # FEL: "3" OCH "10"
+#   comm -23 <(printf '2\n3\n10\n' | LC_ALL=C sort -u) \
+#            <(printf '2\n10\n'    | LC_ALL=C sort -u)       # RÄTT: bara "3"
+# Följden: JÄMFÖRELSE (likhetstestet nedan) och PERSISTERING (state_fil,
+# byggs av sweep_once() med `LC_ALL=C sort -u`) delar EN kanonisk ordning;
+# `comm` körs UTTRYCKLIGEN under samma `LC_ALL=C`; och PRESENTATIONEN
+# (arende_display_lista() ovan) sorterar ALLTID om NUMERISKT för människan
+# som läser, oavsett vilken ordning indatat bar. De två ordningarna hålls
+# medvetet ISÄR — att blanda dem tillbaka är exakt regressionen denna
+# kommentar finns för att förhindra.
+#
 # rapportera_arende_lage <namn> <antal> <lista> <nummer_csv_ny> <state_fil>
 # <notis_fil> — ren logik, inga gh-anrop (de görs av anroparen i
 # sweep_once(), som också äger fail-closed-hanteringen). <lista> är
-# "#A, #B"-visningssträngen för HELA den aktuella mängden;
-# <nummer_csv_ny> är samma mängd som en SORTERAD, kommaseparerad CSV (för
-# persistering/diffning — se arende_split_csv() ovan för formatet).
+# "#A, #B"-visningssträngen (numeriskt ordnad) för HELA den aktuella
+# mängden; <nummer_csv_ny> är samma mängd som en KANONISKT (`LC_ALL=C`)
+# sorterad, kommaseparerad CSV (för persistering/diffning — se
+# arende_split_csv() ovan för formatet).
 #
 # TRE VÄGAR, avgjorda av vad state_fil INNEHÅLLER när sopningen börjar:
 #   1. KALLSTART (ingen state_fil alls): identiskt med runda 1 — rapportera
@@ -1117,12 +1166,20 @@ ARENDE_NUMMER_REGEX='^[0-9]+(,[0-9]+)*$'
 #      — runda 1:s "rod"/"gron"): TYST denna ENDA sopning (se § ovan för
 #      varför), state_fil skrivs om till nya formatet, normal diffning
 #      återupptas nästa sopning.
-#   3. NORMAL (state_fil matchar ARENDE_NUMMER_REGEX): jämför MÄNGDERNA.
+#   3. NORMAL (state_fil matchar ARENDE_NUMMER_REGEX): det inlästa värdet
+#      NORMALISERAS ALLTID till kanonisk `LC_ALL=C`-ordning innan det
+#      används i någon jämförelse (review runda 3 fynd 1, punkt d) — en
+#      state_fil skriven av RUNDA 2:s kod (numerisk sortering, t.ex.
+#      "999,1000") är fortfarande GILTIG per regexen ovan men i FEL ordning
+#      för `comm`; utan denna normalisering hade den ordningen skilja sig
+#      från en FRÄSCH `LC_ALL=C`-beräkning av SAMMA, oförändrade mängd och
+#      gett ett falskt övergångslarm. Därefter jämförs MÄNGDERNA:
 #      - OFÖRÄNDRAD mängd, antal>0: gles påminnelse (samma
 #        HEARTBEAT_ARENDE_PAMINNELSE_INTERVALL-logik som runda 1).
 #      - OFÖRÄNDRAD mängd, antal=0: tyst (grönt läge, redan känt).
 #      - FÖRÄNDRAD mängd, antal>0: rapportera med Tillkommit:/Stängt:
-#        -delmängderna (comm(1) mot de två sorterade CSV-listorna).
+#        -delmängderna (`LC_ALL=C comm(1)` mot de två kanoniskt sorterade
+#        CSV-listorna, presenterade numeriskt av arende_display_lista()).
 #      - FÖRÄNDRAD mängd, antal=0: "ÄRENDE ÅTERSTÄLLT" (samma rubrik som
 #        runda 1), utökad med VILKA nummer som stängdes.
 # Läget stämplas ALLTID (atomärt, temp+mv), oavsett väg eller om en rad
@@ -1135,7 +1192,16 @@ rapportera_arende_lage() {
         raw="$(cat "${state_fil}" 2>/dev/null || true)"
         if [[ -z "${raw}" || "${raw}" =~ ${ARENDE_NUMMER_REGEX} ]]; then
             laege="normal"
-            gammalt_csv="${raw}"
+            # NORMALISERA till kanonisk LC_ALL=C-ordning (review runda 3
+            # fynd 1, punkt d) — se motiveringen i § KANONISK
+            # JÄMFÖRELSEORDNING ovan. Ett tomt <raw> ger tomt resultat
+            # (arende_split_csv("") ⇒ noll rader ⇒ sort/paste på noll rader
+            # ⇒ tom sträng), så grenen är korrekt även för "explicit noll".
+            # shellcheck disable=SC2312
+            # AVSIKTLIGT: arende_split_csv() är ren bash; `sort`/`paste` är
+            # POSIX-verktyg vars enda felläge är "binären saknas" — samma
+            # riskklass som filens övriga externa-verktyg-disabler.
+            gammalt_csv="$(arende_split_csv "${raw}" | LC_ALL=C sort -u | paste -sd, -)"
         else
             laege="gammalt_format"
         fi
@@ -1215,10 +1281,14 @@ rapportera_arende_lage() {
         return 0
     fi
 
-    # FÖRÄNDRAD mängd — beräkna tillkommit/försvunnet mot de TVÅ sorterade
-    # CSV-listorna. comm(1) kräver sorterad indata i SAMMA ordning på båda
-    # sidor; båda är sorterade vid PERSISTERING (se sweep_once()), så ingen
-    # omsortering behövs här.
+    # FÖRÄNDRAD mängd — beräkna tillkommit/försvunnet mot de TVÅ KANONISKT
+    # (LC_ALL=C) sorterade CSV-listorna (se § KANONISK JÄMFÖRELSEORDNING
+    # ovan för hela resonemanget och den skarpa reproduktionen). `gammalt_csv`
+    # normaliserades vid inläsning ovan; `nummer_csv_ny` anländer redan
+    # kanoniskt sorterad från sweep_once() (som bygger den med
+    # `LC_ALL=C sort -u`) — så INGEN omsortering behövs här, bara att `comm`
+    # KÖRS under SAMMA `LC_ALL=C` som sorteringen skedde under (comm:s eget
+    # radjämförelse-steg är ANNARS lika locale-känsligt som sort:s).
     local tillkommit_csv forsvunnet_csv tillkommit_disp forsvunnet_disp
     # shellcheck disable=SC2312
     # AVSIKTLIGT: arende_split_csv() är ren bash (se ovan) och `comm`/`paste`
@@ -1229,11 +1299,15 @@ rapportera_arende_lage() {
     # skriptet på en icke-noll exitkod från EN länk i en pipe utan
     # `pipefail` INOM parentesen — samma etablerade gräns som redan gäller
     # för filens ÖVRIGA `$(... | ...)`-tilldelningar).
-    tillkommit_csv="$(comm -13 <(arende_split_csv "${gammalt_csv}") <(arende_split_csv "${nummer_csv_ny}") | paste -sd, - 2>/dev/null)"
+    tillkommit_csv="$(LC_ALL=C comm -13 <(arende_split_csv "${gammalt_csv}") <(arende_split_csv "${nummer_csv_ny}") | paste -sd, - 2>/dev/null)"
     # shellcheck disable=SC2312
     # AVSIKTLIGT: samma motivering som raden ovan — shellcheck kräver disabet
     # per rad, inte per block.
-    forsvunnet_csv="$(comm -23 <(arende_split_csv "${gammalt_csv}") <(arende_split_csv "${nummer_csv_ny}") | paste -sd, - 2>/dev/null)"
+    forsvunnet_csv="$(LC_ALL=C comm -23 <(arende_split_csv "${gammalt_csv}") <(arende_split_csv "${nummer_csv_ny}") | paste -sd, - 2>/dev/null)"
+    # PRESENTATIONEN (arende_display_lista) sorterar NUMERISKT internt —
+    # se den funktionens § ovan. Indatat hit (tillkommit_csv/forsvunnet_csv)
+    # bär comm:s KANONISKA (LC_ALL=C) ordning; displayfunktionen sorterar
+    # ALLTID om, så den ordningen spelar ingen roll här.
     tillkommit_disp="$(arende_display_lista "${tillkommit_csv}")"
     forsvunnet_disp="$(arende_display_lista "${forsvunnet_csv}")"
     [[ -n "${tillkommit_disp}" ]] || tillkommit_disp="inga"
@@ -1749,31 +1823,39 @@ sweep_once() {
         return 77
     fi
 
-    # SORTERAD CSV + VISNINGSLISTA byggs från SAMMA mellanled (review runda 2
-    # fynd 3) — `sort -n` här är den ENDA sorteringspunkten; comm(1) i
-    # rapportera_arende_lage() litar på att BÅDA sidor redan är sorterade
-    # när de persisteras, se den funktionens kommentar för hela resonemanget.
+    # KANONISK CSV byggs med `LC_ALL=C sort -u` (review runda 3 fynd 1,
+    # Marcus-beslut 2026-09-19 — RÄTTAT från runda 2:s `sort -n`). Detta ÄR
+    # den ENDA sorteringspunkten för JÄMFÖRELSE/PERSISTERING; se § KANONISK
+    # JÄMFÖRELSEORDNING i rapportera_arende_lage() ovan för HELA
+    # resonemanget (comm(1) kräver byte-ordnad indata, inte numerisk — de
+    # två sammanfaller bara inom en sifferlängd, t.ex. "9999"/"10000").
+    # VISNINGSLISTAN (lista/antal nedan) härleds i STÄLLET från
+    # arende_display_lista(), som sorterar om NUMERISKT internt — så
+    # presentationen förblir läsbar för en människa oavsett den kanoniska
+    # ordningens byte-kvirkar (§ ANVÄNDNING där, punkt e).
     local postmerge_csv natt_csv
-    postmerge_csv="$(printf '%s\n' "${postmerge_nrs}" | grep -E '^[0-9]+$' | sort -n | paste -sd, -)"
-    natt_csv="$(printf '%s\n' "${natt_nrs}" | grep -E '^[0-9]+$' | sort -n | paste -sd, -)"
+    postmerge_csv="$(printf '%s\n' "${postmerge_nrs}" | grep -E '^[0-9]+$' | LC_ALL=C sort -u | paste -sd, -)"
+    natt_csv="$(printf '%s\n' "${natt_nrs}" | grep -E '^[0-9]+$' | LC_ALL=C sort -u | paste -sd, -)"
 
-    local postmerge_antal=0 postmerge_lista="" natt_antal=0 natt_lista="" n old_ifs="${IFS}"
+    local postmerge_antal=0 natt_antal=0 n old_ifs="${IFS}"
     IFS=','
     # shellcheck disable=SC2086
     # AVSIKTLIGT: samma ordsplitting-på-IFS=','-teknik som arende_split_csv()
-    # (bash-3.2-säkert, inga glob-tecken i en siffer-CSV).
+    # (bash-3.2-säkert, inga glob-tecken i en siffer-CSV) — räknar ENDAST
+    # antalet element här; VISNINGSTEXTEN byggs separat nedan via
+    # arende_display_lista() (numerisk ordning), inte i denna loop.
     for n in ${postmerge_csv}; do
-        [[ -n "${n}" ]] || continue
-        postmerge_antal=$(( postmerge_antal + 1 ))
-        postmerge_lista="${postmerge_lista:+${postmerge_lista}, }#${n}"
+        [[ -n "${n}" ]] && postmerge_antal=$(( postmerge_antal + 1 ))
     done
     # shellcheck disable=SC2086
     for n in ${natt_csv}; do
-        [[ -n "${n}" ]] || continue
-        natt_antal=$(( natt_antal + 1 ))
-        natt_lista="${natt_lista:+${natt_lista}, }#${n}"
+        [[ -n "${n}" ]] && natt_antal=$(( natt_antal + 1 ))
     done
     IFS="${old_ifs}"
+
+    local postmerge_lista natt_lista
+    postmerge_lista="$(arende_display_lista "${postmerge_csv}")"
+    natt_lista="$(arende_display_lista "${natt_csv}")"
 
     # shellcheck disable=SC2310
     # AVSIKTLIGT: rapportera_arende_lage() returnerar alltid 0 (eget
