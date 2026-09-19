@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
-import { CalendarRange, ChevronsUpDown, Clock, Upload, X } from 'lucide-react';
+import { AlertTriangle, CalendarRange, ChevronsUpDown, Clock, Upload, X } from 'lucide-react';
 import { parseAsString, parseAsStringEnum, useQueryState } from 'nuqs';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import {
@@ -39,7 +39,6 @@ import type { Event } from '@/domain/models/Event';
 import { filtreraPersonregister, personVisningsnamn } from '@/lib/person-sok';
 import { skrivLaddningssida } from '@/lib/skriv-laddningssida';
 import { queryKeys } from '@/queries/keys';
-import { BasenSlaparPill } from './BasenSlaparPill';
 import { visaKronor } from './belopp-inmatning';
 import { type Betalsatt, lasSenasteBetalsatt, sparaBetalsatt } from './betalsatt-minne';
 import { idagIso } from './idag';
@@ -2522,17 +2521,12 @@ type KortProps = {
  */
 function RadInnehall({ rad, visaEvent }: { rad: InkorgsRad; visaEvent?: boolean }) {
   const saknas = rad.kvar ?? rad.betalning.saknas;
-  /* [TASK-456 runda 2] Den ENDA kombinationen som (mätt, se docblocket vid
-     `rad-pillar` nedan) inte får plats på en rad vid 390 px — det finns
-     bara tre möjliga pillar totalt, så "alla tre" är den enda 3-pill-
-     kombinationen som existerar. */
-  const alla3Pillar = rad.forfallen && rad.obekraftad && rad.spegelSlapar;
   return (
     <div className="flex min-w-0 items-center gap-3 sm:flex-1">
       <InitialAvatar namn={rad.namn} />
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <span className="font-medium text-body sm:truncate">{rad.namn}</span>
-        <span className="text-caption text-text-muted sm:truncate">
+        <span className="text-caption text-text-muted sm:truncate" data-testid="rad-belopp">
           {visaEvent && rad.betalning.eventNamn ? `${rad.betalning.eventNamn} · ` : ''}
           {/* LÖPANDE TEXT ⇒ BELOPPET FÖRST (Marcus 2026-09-01, samma
               domänterm över alla betalningsytor): "1 500 kr kvar att
@@ -2541,8 +2535,57 @@ function RadInnehall({ rad, visaEvent }: { rad: InkorgsRad; visaEvent?: boolean 
               Etikett-formen ("Kvar att betala" + högerställt värde) bär
               panelen och anmälans detaljvy. */}
           {saknas === null ? 'Pris saknas i basen' : `${visaKronor(saknas)} kr kvar att betala`}
+          {/* [TASK-456 RUNDA 3, Marcus 2026-09-19] SPEGEL-BESKEDET BOR HÄR,
+              INTE I PILL-RADEN — och det är ett BETYDELSE-argument innan det
+              är ett utrymmes-argument. `spegelSlapar` (`!betalning.spegelIFas`,
+              `inkorg-harledningar.ts`) säger att BELOPPET på just denna rad
+              kan visa något annat i basen än här: raden läser Postgres,
+              basen läser spegeln. Beskedet KVALIFICERAR ALLTSÅ BELOPPET och
+              hör till beloppets mening, medan "Förfallen"/"Obekräftad" är
+              tillstånd hos betalningen respektive anmälan. Bredvid dem läste
+              det dessutom som att BETALNINGEN släpar (granskningsfynd 2,
+              runda 2) — fel subjekt, och det syns inte förrän subjektet står
+              intill det det gäller. ADR-128 beslut 5 (eftersläpningen SYNS i
+              appen, tystas inte) är uppfyllt oförändrat: samma ikon, samma
+              `title`, samma FULLSTÄNDIGA ord, per rad.
+
+              MÄTT (Playwright, `betalningar-inkorg-pillrad-hojd.staging.
+              test.ts` + probe, femsiffrigt belopp "12 500 kr kvar att
+              betala"): beloppsradens innehåll blir 246,2 px med beskedet
+              mot 266,0 px tillgängligt vid 390 px (marginal 19,8 px) och
+              305,7 px vid 1280 px (marginal 59,5 px) — EN rad i båda
+              fallen, radens höjd 18 px, korthöjden oförändrad 144/100 px.
+
+              OCH OM MARGINALEN NÅGON GÅNG TAR SLUT SVÄMMAR INGET ÖVER:
+              detta är löpande TEXT, så den radbryter. Det är hela skälet
+              att beskedet bor här och inte i en pill-rad — runda 2:s fel
+              var inte ett för litet mått utan ett felläge som bröt mot
+              WCAG 1.4.10 i stället för att flöda om. Vid 360 px och 320 px
+              bryter raden mätt till två rader (36 px), korten blir olika
+              höga, och INGET sticker ut horisontellt. Det är den
+              namngivna gränsen, inte en regression.
+
+              `h-[1lh]` + `align-bottom` PÅ WRAPPERN ÄR INTE KOSMETIK: utan
+              dem blir den inline-flexade ikonen radboxens högsta element
+              och drar upp kortet 2,5 px (mätt: 146,5 mot 144 px) — nog för
+              att bryta exakt det krav skivan finns för. Låst till precis en
+              radhöjd (`1lh` = 18 px här) kan den inte växa. Samma
+              `1lh`-husmönster som Intresserade-listans `min-h-[1lh]`. */}
+          {rad.spegelSlapar && (
+            <>
+              {' · '}
+              <span
+                className="inline-flex h-[1lh] items-center gap-1 whitespace-nowrap align-bottom"
+                data-testid="rad-spegel-slapar"
+                title="Basen har inte hunnit uppdateras än"
+              >
+                <AlertTriangle aria-hidden size={13} />
+                Basen släpar
+              </span>
+            </>
+          )}
         </span>
-        <div className="flex min-h-6 flex-nowrap items-center gap-2" data-testid="rad-pillar">
+        <div className="flex min-h-6 flex-wrap items-center gap-2" data-testid="rad-pillar">
           {/* ═══ EN PILL-ANATOMI, TVÅ BETYDELSER (Marcus dom 2026-09-01) ═══
               Marcus såg "Förfallen" och "Obekräftad" sida vid sida HÄR och
               kallade dem inkonsekventa. De var det på två sätt samtidigt:
@@ -2568,46 +2611,32 @@ function RadInnehall({ rad, visaEvent }: { rad: InkorgsRad; visaEvent?: boolean 
               `StatusBadge storlek="sm"`, MÄTT där till exakt 24 px), inte en
               ny uppfinning.
 
-              [TASK-456 RUNDA 2, Marcus 2026-09-18 via granskningsfynd]
-              RADEN BRYTS ALDRIG TILL TVÅ RADER — `flex-nowrap`, inte
-              `flex-wrap`. Runda 1s "namngivna undantag" (tre samtidiga
-              pillar radbryter, kortet blir 32 px högre) förkastades:
-              granskaren bedömde kombinationen INTE sällsynt
-              (`forfallen`/`obekraftad` sannolikt positivt korrelerade, och
-              `spegelSlapar` är per ADR-128 beslut 5 transient men
-              ÅTERKOMMANDE, se `Betalningar.schema.ts` ~rad 240–256) —
-              Marcus beslut: rätta formen, acceptera inte avvikelsen.
+              [TASK-456 RUNDA 3, Marcus 2026-09-19] RADEN BÄR HÖGST TVÅ
+              PILLAR, OCH `flex-wrap` ÄR SKYDDSNÄTET. Spegel-beskedet flyttade
+              till beloppsraden (se dess egen kommentar ovan) — kvar här är
+              bara `Förfallen` + `Obekräftad`: MÄTT 182,0 px (89,3 + 84,7 +
+              `gap-2` 8) mot radens 266,0 px vid 390 px, och 184,0 px mot
+              196,0 px ÄVEN vid 320 px. Två pillar får alltså plats på en
+              rad hela vägen ned till 320 px — mätt, inte antaget.
 
-              MÄTT VID 390 PX (den enda 3-pill-kombinationen som finns,
-              eftersom det bara existerar tre pillar totalt — `alla3Pillar`
-              ovan): pill-radens EGEN bredd är 266 px. Full text ("Förfallen"
-              89,4 px + "Obekräftad" 84,7 px + "Basen släpar" 111,0 px +
-              2×`gap-2` 16 px = 301,0 px) sprängde den med 35 px — den enda
-              trånga kombinationen (alla ANDRA kombinationer, 0–2 pillar,
-              fick redan plats utan ändring, mätt i samma pass).
+              RUNDA 2:s `flex-nowrap` ÄR RIVEN, och skälet är mätt, inte
+              principiellt: en rad som inte FÅR brytas kan inte heller
+              KRYMPA (pillarna är obrytbara ord utan `truncate`, och ingen
+              förälder klipper), så vid 320/360 px och vid 200 %
+              textförstoring svämmade den i stället över horisontellt —
+              `ACCESSIBILITY-CHECKLIST.md` §4 (WCAG 1.4.10 reflow) och §10
+              (1.4.4), och tillgänglighet är ALLTID 11 i detta repo.
+              `flex-wrap` gör det tillgänglighetsriktiga i stället: raden
+              bryts hellre än spränger kortet. Med två pillar inträffar det
+              först under 320 px — mätt, inte antaget.
 
-              LÖSNINGEN ÄR EN KORTARE, FULLSTÄNDIG ETIKETT — INTE EN
-              AVKLIPPT TEXT ELLER ETT DOLT IKON-LÄGE: `BasenSlaparPill`s nya
-              `kompakt`-prop (default `false`, se dess docblock) visar
-              "Släpar" (ett eget, läsbart ord) i stället för "Basen släpar"
-              BARA i denna enda kombination. Skärmläsare hör ändå den
-              ORDAGRANNA originaltexten via en `sr-only`-nod (aldrig
-              `aria-label` på en rollös `<span>` — se `BasenSlaparPill.tsx`
-              för skälet); inget döljs bakom hover eller fokus, så INGET
-              tooltip-bibliotek krävs (repot
-              saknar en tillgänglig Tooltip-primitiv, och att bygga en för
-              denna enda pill hade varit långt över golvet för ett
-              fynd-kort). `Förfallen`/`Obekräftad` är ORÖRDA — deras
-              etablerade ordalydelse (Marcus dom 2026-09-01) och
-              `StatusBadge`s `sm`-skalsteg rör ingen annan konsument
-              (`AnmalningarSida.tsx`, `Betalningar.tsx` m.fl.) eftersom bara
-              `BasenSlaparPill`s EGEN, explicita prop ändrades — allt annat
-              i `StatusBadge` är overörd. Kompakt bredd mätt till 61,3 px
-              (mot 111,0 px full) — ny total 89,4+84,7+61,3+16=251,4 px,
-              under 266 px-golvet med marginal (`betalningar-inkorg-
-              pillrad-hojd.staging.test.ts` bevisar `rad-pillar` är EXAKT
-              24 px, dvs. en rad, i samtliga åtta fall: 0–3 pillar × 390/
-              1280 px). */}
+              "EXAKT LIKA HÖGA" HAR DÄRFÖR EN NAMNGIVEN GRÄNS, och det är
+              den ENDA: kravet gäller 390 px och 1280 px (Marcus ytor). Vid
+              360 px och 320 px, och vid 200 % textförstoring, gäller i
+              stället att INGET svämmar över horisontellt — radbrytning är
+              då det RIKTIGA beteendet, inte ett undantag som köpts loss.
+              Båda halvorna bevisas av `betalningar-inkorg-pillrad-hojd.
+              staging.test.ts`. */}
           {rad.forfallen && (
             /* KLOCKAN BEHÅLLS via `ikon`-proppen: det är TIDEN som gått
                fel, inte ett generellt larm. Tonen är kopparns och inte
@@ -2624,7 +2653,6 @@ function RadInnehall({ rad, visaEvent }: { rad: InkorgsRad; visaEvent?: boolean 
               Obekräftad
             </StatusBadge>
           )}
-          {rad.spegelSlapar && <BasenSlaparPill kompakt={alla3Pillar} />}
         </div>
       </div>
     </div>

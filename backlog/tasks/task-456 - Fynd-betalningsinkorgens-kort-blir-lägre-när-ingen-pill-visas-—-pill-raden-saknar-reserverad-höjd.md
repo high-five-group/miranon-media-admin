@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-18 11:07'
-updated_date: '2026-09-18 12:36'
+updated_date: '2026-09-19 09:13'
 labels:
   - fynd
   - ready-for-agent
@@ -64,4 +64,72 @@ A11Y: Ingen text döljs bakom hover/fokus (inget tooltip-bibliotek behövdes —
 RÖTT-FÖRST för runda 2-kravet: nya 8-falls-testet kört mot förra head (618cc1c4, runda 1s kod) — mobil 390px: 0/1/2 pill=144px men 3 pill=176px (exakt runda 1s "namngivna undantag"), fällt korrekt. Efter fix: alla åtta fall identiska, rad-pillar exakt 24px i samtliga.
 
 Regression: mark-paid.staging.test.ts (22 tester, eventdetaljens Öppna detaljer) körd två gånger under runda 2 — 22/22 gröna båda gångerna, BasenSlaparPill.tsx:s default-beteende (kompakt=false) bevisat oförändrat. betalningar-inkorg-utskicksflode.staging.test.ts (11 tester) grön. test:api:pure 1786/1786 gröna. typecheck/biome/build exit 0. PR satt till DRAFT per uppdrag — armerad INTE.
+
+RUNDA 3 (2026-09-19, Marcus beslut efter runda 2:s granskning). Runda 2:s
+`flex-nowrap` + kompakt "Släpar"-etikett REVS. Ny form: spegel-beskedet
+flyttat UR pill-raden till BELOPPSRADEN som löpande caption-text med
+FULLSTÄNDIG text "Basen släpar" (samma AlertTriangle aria-hidden, samma
+title); pill-raden tillbaka till `flex-wrap` + `min-h-6` och bär därefter
+högst TVÅ pillar. `BasenSlaparPill.tsx` är BYTE-IDENTISK med main igen (tom
+diff mot origin/main), och eventdetaljens `Betalningar.tsx` likaså — den
+ytan är orörd i hela skivan.
+
+VARFÖR BELOPPSRADEN, och det är ett BETYDELSE-argument före ett
+utrymmes-argument: `spegelSlapar` (= `!betalning.spegelIFas`) säger att
+BELOPPET på raden kan visa något annat i basen. Beskedet kvalificerar
+beloppet; "Förfallen"/"Obekräftad" är tillstånd hos betalningen resp.
+anmälan. Bredvid dem läste beskedet som att BETALNINGEN släpar
+(granskningsfynd 2). ADR-128 beslut 5 uppfyllt oförändrat, per rad.
+
+GRANSKNINGSFYND 1 ÄR NU MÄTT, INTE BARA RESONERAT. Röd-först mot runda 2:s
+kod (acd0a9d1, källfilerna temporärt återställda) med det NYA testet:
+horisontell overflow i tre lägen — 360 px: scrollWidth 323 > clientWidth
+308; 320 px: 323 > 268; 200 % textförstoring @ 390 px: 423 > 290. Samtliga
+sju tester föll. Efter runda 3-fixen: 7/7 gröna, ingen overflow någonstans.
+
+MÄTSERIE (Playwright mot dev-server, femsiffrigt belopp "12 500 kr kvar att
+betala" på ALLA fyra raderna så spegel-beskedet är enda skillnaden):
+- 390 px: korthöjd 144 px i ALLA fyra beskedslägen. Beloppsraden 18 px (EN
+  rad) i alla fyra; innehåll 246,2 px mot 266,0 px tillgängligt = 19,8 px
+  marginal. Pill-raden 24 px, innehåll 182,0 px (89,3 + 84,7 + gap 8).
+- 1280 px: korthöjd 100 px i alla fyra. Beloppsraden 18 px; 246,2 mot
+  305,7 px = 59,5 px marginal.
+- 360 px: 144/144/162/162 px — beloppsraden bryter till 36 px. INGEN
+  overflow (scrollWidth == clientWidth, noll utstickande innehåll).
+- 320 px: 144/144/162/162 px, samma. Två pillar ryms ÄNDÅ på en rad:
+  184,0 px mot 196,0 px.
+- 200 % @ 390 px: 476/476/512/572 px, ingen overflow.
+
+`h-[1lh]` + `align-bottom` på beskedets wrapper är INTE kosmetik: utan dem
+blev den inline-flexade ikonen radboxens högsta element och drog upp kortet
+2,5 px (mätt 146,5 mot 144) — nog för att bryta exakt det krav skivan finns
+för. Mätt, fångat och rättat i samma pass.
+
+DEN NAMNGIVNA GRÄNSEN (dokumenterad i testets filhuvud och i koden): "exakt
+lika höga" gäller 390 px och 1280 px. Vid 360 px, 320 px och 200 %
+textförstoring gäller i stället ENBART att inget svämmar över horisontellt —
+radbrytning är det tillgänglighetsriktiga beteendet där (WCAG 1.4.10).
+
+Info-fynd 3 (två kommentarer som sade "aria-label") försvann med koden —
+verifierat: noll träffar på aria-label i de rörda filerna.
+
+FACIT-PRÖVNING (ADR-102, order 6): betalningsinkorgens kort är INTE en
+stämplad facit-yta. Mätt mot disk, inte övertaget från underlaget: 19
+facit.json i repot; ENDAST `s121-bekraftelsesteget-konvergens/facit.json`
+nämner BetalningsInkorg, och där står namnet i den beskrivande `not`-texten,
+INTE i `kallor` (som listar `src/components/betalningar/prototype/*` +
+`betalningar_.registrera.tsx`). Prototypen importerar ingenting ur
+BetalningsInkorg/BasenSlaparPill (fyra sökträffar, alla prosakommentarer i
+VariantC.tsx), och dess `referenser` är aria-snapshots av
+bekraftelsesteget-promoverings-grind, inte inkorgen. Manifestet har dessutom
+`godkand: null` = ADR-102 A1 klass (a), fri ändring utan bokföring, även om
+det HADE varit ytan. `.facit-policy.conf` har ingen inkorgs-post. INGEN
+AMENDERING-sidofil krävs.
+
+Grindar runda 3: typecheck exit 0 · biome (tre rörda filer) exit 0 ·
+check-langa-streck exit 0 (328 filer) · build exit 0 · test:api:pure exit 0
+(1786/1786) · ny e2e-svit 7/7 grön.
+
+AC #4 (Marcus ögonmätning) förblir OBOCKAD per uppdrag. Skärmbilder tagna
+vid 390 och 1280 px, sökvägar i bygg-agentens slutrapport.
 <!-- SECTION:NOTES:END -->
