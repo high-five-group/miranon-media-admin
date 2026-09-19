@@ -218,31 +218,54 @@
 #   ALDRIG beteende tyst, och tipset går aldrig ut i sessionsläge (där det
 #   inte behövs).
 #
-#   PER SESSION SEDAN REVIEW RUNDA 3 (Marcus-beslut 2026-09-19): de tre
-#   notiserna ovan (omarkerad_notis_om_dags/dependabot_status_notis_om_dags/
-#   tips_notis_om_dags) taktades tidigare mot EN gemensam, MASKIN-GLOBAL
+#   VALIDERAT SESSION-ID SEDAN REVIEW RUNDA 4 (Marcus-beslut 2026-09-19): de
+#   tre notiserna ovan (omarkerad_notis_om_dags/dependabot_status_notis_om_dags/
+#   tips_notis_om_dags) taktades ursprungligen mot EN gemensam, MASKIN-GLOBAL
 #   STATE_DIR (default /tmp/mm-heartbeat-svep) — empiriskt visat: S126
 #   sveper först och stämplar filen ⇒ S127:s eget svep ser ALDRIG sin egen
-#   förstagångs-notis, exakt den tvärsessions-interferens kortet finns för
-#   att ta bort, återinförd i en NY kanal. Fixat: när --session <ID> är
-#   givet bär statsfilens NAMN sessionens saniterade ID
-#   (session_id_sanitize(), inget path-traversal-utrymme), så två sessioner
-#   som delar STATE_DIR nu stämplar VARSIN fil.
+#   förstagångs-notis. Review runda 3 fixade det med en SANERINGSFUNKTION
+#   (session_id_sanitize(), mappade otillåtna tecken till `_`) — men review
+#   runda 4 fann att SANERINGEN SJÄLV kunde kollidera: "S 126" och "S/126"
+#   sanerades BÅDA till "S_126", vilket tyst återinförde exakt den
+#   tvärsessions-tystnad fixen skulle ta bort (och PR:ens "FULLSTÄNDIGT
+#   löst"-formulering var därmed en överdrift, ADR-083). RÄTTAT, enklare och
+#   FAIL-CLOSED i stället för mer sanering: `--session <ID>` VALIDERAS mot
+#   HEARTBEAT_SESSION_ID_REGEX (^[A-Za-z0-9._-]{1,64}$) OCH mot
+#   HEARTBEAT_SESSION_ID_ENDAST_PUNKTER_REGEX (avvisar ID som består ENBART
+#   av punkter, t.ex. "." eller "..") DIREKT efter arg-parsingen, INNAN
+#   något svep sker. Ett ogiltigt ID skriver ett felmeddelande på BÅDE
+#   stdout OCH stderr (Monitor-formen, § ANVÄNDNING, ser bara stdout) och
+#   avslutar med exit 2 — ingen sopning, inget state skrivs. Filnamnets
+#   per-session-DEL är sedan ID:T SJÄLVT, HELT OSANERAT: en kollision är
+#   omöjlig PER KONSTRUKTION (två OLIKA giltiga ID-strängar kan aldrig bli
+#   SAMMA sträng), inte bara osannolik. session_id_sanitize() är BORTTAGEN.
 #
 #   KÄND BEGRÄNSNING — GLOBAL PER MASKIN (samma disclosure-form som § FEMTE
-#   VÄGEN ovan, gren-städningens klocka): fixen löser interferensen
-#   FULLSTÄNDIGT för omarkerad_notis_om_dags()/dependabot_status_notis_om_dags()
-#   — båda kräver sessionslage=1 (SESSION satt) för att ens köra, så deras
-#   state-fil är ALLTID sessions-scopad när de faktiskt avfyrar. Den TREDJE,
-#   tips_notis_om_dags(), är en ANNAN sak: den körs UTESLUTANDE när SESSION
-#   är TOM (motsatt villkor) — det finns då inget sessions-ID att skopa mot,
-#   och dess stämpel förblir OFÖRÄNDRAT GLOBAL PER MASKIN. Två sessioner som
-#   BÅDA kör utan --session (t.ex. innan hubbens AC #5-del landat) delar
-#   alltså fortfarande TIPS-stämpeln — en av dem kan missa sitt eget
-#   förstagångstips om den andra redan konsumerat fönstret. Ofarligt: en
-#   missad TIPS-rad är ingen förlorad signal om PR-läget (RÖTT/DIRTY/
-#   ARMERINGS-KANDIDAT är opåverkade), bara en förlorad påminnelse om en
-#   flagga som redan står permanent dokumenterad i --help och CLAUDE.md.
+#   VÄGEN ovan, gren-städningens klocka): valideringen löser interferensen
+#   för omarkerad_notis_om_dags()/dependabot_status_notis_om_dags() — båda
+#   kräver sessionslage=1 (SESSION satt) för att ens köra, så deras
+#   state-fil är ALLTID sessions-scopad OCH kollisionsfri när de faktiskt
+#   avfyrar. Den TREDJE, tips_notis_om_dags(), är en ANNAN sak: den körs
+#   UTESLUTANDE när SESSION är TOM (motsatt villkor) — det finns då inget
+#   sessions-ID att skopa mot, och dess stämpel förblir OFÖRÄNDRAT GLOBAL PER
+#   MASKIN. Två sessioner som BÅDA kör utan --session (t.ex. innan hubbens
+#   AC #5-del landat) delar alltså fortfarande TIPS-stämpeln — en av dem kan
+#   missa sitt eget förstagångstips om den andra redan konsumerat fönstret.
+#   Ofarligt: en missad TIPS-rad är ingen förlorad signal om PR-läget
+#   (RÖTT/DIRTY/ARMERINGS-KANDIDAT är opåverkade), bara en förlorad
+#   påminnelse om en flagga som redan står permanent dokumenterad i --help
+#   och CLAUDE.md.
+#
+#   PER-SESSION-STATSFILERNAS ÅLDER (review runda 4 fynd 2, info): STATE_DIR
+#   växer med EN fil per unikt session-ID sedan review runda 3 — ingen
+#   städning fanns. Löst genom att PIGGYBACKA på gren-städningens BEFINTLIGA
+#   glesa klocka i stada_grenar_om_dags() (SAMMA stämpel/intervall, INGEN ny
+#   klocka byggd): varje gång den klockan är due raderas per-session-
+#   statsfiler äldre än HEARTBEAT_SESSION_STATE_MAX_DAGAR dagar (default
+#   30). Ärver samma på/av-villkor som gren-städningen
+#   (HEARTBEAT_STADA_GRENAR_INTERVALL > 0, stada-grenar.sh exekverbar) — en
+#   spoke utan gren-städning får därför heller ingen statsfil-städning, ett
+#   medvetet val för att hålla ändringen till en handfull rader.
 #
 # TREVÄGS-SNAPSHOT PER SVEP
 #   1. main-SHA — `gh api repos/<repo>/commits/<branch>`. Avancerar den
@@ -394,6 +417,15 @@ QUIET=0
 # körningsspecifikt"-princip som resten av skriptets CLI-flaggor). ALLA är
 # en explicit opt-out ur sessionsfiltreringen.
 SESSION=""
+# SESSION_GIVEN (review runda 4, Marcus-beslut 2026-09-19): skiljer "flaggan
+# gavs INTE alls" (giltigt — global/TIPS-läget, oförändrat sedan TASK-462)
+# från "flaggan gavs MED ett tomt värde" (`--session ""`, OGILTIGT — måste
+# avvisas). `[[ -n "${SESSION}" ]]` kan INTE skilja de två fallen åt: båda
+# ger en tom sträng. Utan denna flagga hade `--session ""` tyst fallit
+# tillbaka till global/TIPS-läget i stället för att avvisas med exit 2, som
+# uppdraget uttryckligen kräver ("tomt" är ett av de fem namngivna
+# ogiltiga-fallen).
+SESSION_GIVEN=0
 ALLA=0
 # Fail-open default: tom array. Deklareras FÖRE source så en policy-fil
 # utan HEARTBEAT_EXEMPT_AUTHORS (äldre spoke-kopia, eller filen saknas helt)
@@ -509,9 +541,11 @@ is_exempt_author() {
 # Ett lås mot ett CLI som inte känner till vårt lås vore dessutom inte
 # byggbart utan att wrappa varje backlog-anrop i repot.
 #
-# KONTRAKT: returnerar ALLTID 0. Skriver som mest en RUTIN-rad (say(),
-# dämpas av --quiet). Larmar aldrig, bär ingen exit-bit, och tiger helt när
-# ingenting raderades.
+# KONTRAKT: returnerar ALLTID 0. Skriver noll, en ELLER TVÅ RUTIN-rader
+# (say(), dämpas av --quiet — utökat till "en eller två" i review runda 4:
+# funktionen piggybackar sedan dess även den glesa per-session-statsfil-
+# städningen, se dess egen kommentar nedan). Larmar aldrig, bär ingen
+# exit-bit, och tiger helt när ingenting raderades.
 stada_grenar_om_dags() {
     local intervall nu senast utfil rc raderade
 
@@ -555,6 +589,35 @@ stada_grenar_om_dags() {
     else
         rm -f "${STADA_STATE_FILE}.tmp" 2>/dev/null || true
         alltid_pa "heartbeat-svep: UNDERHÅLL — kunde inte stämpla ${STADA_STATE_FILE}. Städningen körs, men glesningen kan gå tätare än ${intervall}s tills stämpeln går att skriva. Verdikt OPÅVERKAT."
+    fi
+
+    # PER-SESSION-STATSFILERNAS ÅLDER (review runda 4 fynd 2, Marcus-beslut
+    # 2026-09-19, info). STATE_DIR växer med EN fil per unikt session-ID
+    # sedan review runda 3 (SESSION_STATE_SUFFIX) — ingen städning fanns.
+    # PIGGYBACKAR på DENNA klocka (samma due-villkor/stämpel som ovan, INGEN
+    # egen klocka) i stället för att bygga en fjärde: raderar
+    # omarkerad/dependabot-notisernas per-session-statsfiler äldre än
+    # HEARTBEAT_SESSION_STATE_MAX_DAGAR dagar. Egen ÅLDERS-tröskel (dagar,
+    # inte sekunder) eftersom kriteriet skiljer sig från gren-städningens
+    # (merge-status, inte ålder). TIPS_STATE_FILE/global-läget rörs INTE —
+    # den bär inget session-ID i namnet att matcha mot. Larmar aldrig
+    # (UNDERHÅLL, samma klass som gren-städningen ovan).
+    local session_max_dagar session_statsfiler_raderade=0 f
+    session_max_dagar="${HEARTBEAT_SESSION_STATE_MAX_DAGAR:-30}"
+    [[ "${session_max_dagar}" =~ ^[0-9]+$ ]] || session_max_dagar=30
+    if [[ "${session_max_dagar}" -gt 0 && -d "${STATE_DIR}" ]]; then
+        # shellcheck disable=SC2312
+        # AVSIKTLIGT: `find`s exitkod maskeras av process-substitutionen —
+        # ofarligt här eftersom loopen redan hanterar tomt/inget-fynd
+        # graciöst (session_statsfiler_raderade förblir 0, funktionen
+        # larmar aldrig oavsett), samma disciplin som filens övriga
+        # SC2310/SC2312-disabler.
+        while IFS= read -r -d '' f; do
+            rm -f "${f}" 2>/dev/null && session_statsfiler_raderade=$(( session_statsfiler_raderade + 1 ))
+        done < <(find "${STATE_DIR}" -maxdepth 1 -type f \
+                  \( -name 'last-omarkerad-notis-*' -o -name 'last-dependabot-notis-*' \) \
+                  -mtime "+${session_max_dagar}" -print0 2>/dev/null)
+        [[ "${session_statsfiler_raderade}" -gt 0 ]] && say "heartbeat-svep: UNDERHÅLL — ${session_statsfiler_raderade} gamla per-session-statsfiler (äldre än ${session_max_dagar} dagar) städade."
     fi
 
     utfil="${STATE_DIR}/stada-grenar-senaste-utdata.txt"
@@ -610,18 +673,21 @@ HEARTBEAT_SESSION_MARKER_REGEX='<!-- heartbeat-svep:session:[^[:space:]]+ -->'
 # duplicerad kopia.
 session_marker() { printf '<!-- heartbeat-svep:session:%s -->' "$1"; }
 
-# session_id_sanitize <ID> — review runda 3 (Marcus-beslut 2026-09-19): säker
-# filnamnsdel av en sessions-ID för de PER-SESSION statsfilerna nedan
-# (§ SESSIONSMEDVETET SVEP, "KÄND BEGRÄNSNING"). Behåller ENDAST
-# [A-Za-z0-9_-]; allt annat (`/`, `..`, blanksteg, NUL-liknande insmugna
-# tecken) blir `_`. Ingen path-traversal är möjlig oavsett vad --session
-# bär in — ett saniterat resultat kan aldrig innehålla `/` och kan därför
-# aldrig peka utanför STATE_DIR. Ren bash-parameterexpansion, ingen extern
-# process (samma "billig, aldrig-fallerar"-disciplin som session_marker()).
-session_id_sanitize() {
-    local raw="$1"
-    printf '%s' "${raw//[^A-Za-z0-9_-]/_}"
-}
+# HEARTBEAT_SESSION_ID_REGEX/-ENDAST_PUNKTER_REGEX — review runda 4
+# (Marcus-beslut 2026-09-19). Ersätter session_id_sanitize() (review runda
+# 3, BORTTAGEN här): granskningen fann att saneringen kunde mappa OLIKA
+# ID:n till SAMMA filnamn ("S 126" och "S/126" ⇒ båda "S_126"), vilket tyst
+# återinförde tvärsessions-tystnaden hela mekanismen finns för att ta bort.
+# FAIL-CLOSED i stället för mer sanering: ett --session-ID som inte matchar
+# REGEX, eller som matchar ENDAST_PUNKTER_REGEX (består uteslutande av
+# punkter — "." och ".." är path-traversal-riskabla filnamnskomponenter
+# oavsett vilka andra tecken som är tillåtna), avvisas HELT (se
+# valideringsblocket efter argument-parsningen nedan) — körningen fortsätter
+# aldrig till att bygga ett filnamn av ett ID som inte är exakt detta.
+# 1–64 tecken: samma obehagligt-långt-argument-skydd som HEARTBEAT_PR_LIMIT,
+# ingen mätt motivering för just 64 utöver "generöst men begränsat".
+HEARTBEAT_SESSION_ID_REGEX='^[A-Za-z0-9._-]{1,64}$'
+HEARTBEAT_SESSION_ID_ENDAST_PUNKTER_REGEX='^\.+$'
 
 # pr_har_session_marker <body> <session> — sant om <body> bär EXAKT den
 # markören (inte bara "någon" markör — se pr_har_nagon_marker för det).
@@ -784,7 +850,7 @@ while [[ $# -gt 0 ]]; do
         --timeout)  TIMEOUT="${2:-}";  shift 2 ;;
         --once)     ONCE=1; shift ;;
         --quiet)    QUIET=1; shift ;;
-        --session)  SESSION="${2:-}"; shift 2 ;;
+        --session)  SESSION="${2:-}"; SESSION_GIVEN=1; shift 2 ;;
         --alla)     ALLA=1; shift ;;
         # Radintervallet är § ANVÄNDNING. Ändras huvudet ovan måste det
         # följa med — annars ljuger --help tyst (samma disciplin som ci-wait.sh).
@@ -796,13 +862,41 @@ while [[ $# -gt 0 ]]; do
         # 61,217 i TASK-462 fix-runda 1 (review runda 1: rättad
         # DEPENDABOT-PR:AR-text + TIPS flyttad till alltid_pa()/stdout),
         # 61,217 → 61,246 i TASK-462 fix-runda 2 (review runda 3: PER-SESSION
-        # statsfil-suffix + KÄND BEGRÄNSNING-stycket för TIPS globala fall);
+        # statsfil-suffix + KÄND BEGRÄNSNING-stycket för TIPS globala fall),
+        # 61,246 → 61,269 i TASK-462 fix-runda 3 (review runda 4: validerat
+        # session-ID ersätter sanering, session_id_sanitize() BORTTAGEN, + §
+        # PER-SESSION-STATSFILERNAS ÅLDER-stycket);
         # scripts/test-heartbeat-svep.sh T24 fäller om raden
         # avviker från blockets faktiska start/slut.
-        -h|--help)  sed -n '61,246p' "$0"; exit 0 ;;
+        -h|--help)  sed -n '61,269p' "$0"; exit 0 ;;
         *) die "okänt argument: $1" ;;
     esac
 done
+
+# --session-validering (review runda 4, Marcus-beslut 2026-09-19). Se
+# HEARTBEAT_SESSION_ID_REGEX/-ENDAST_PUNKTER_REGEX ovan för det fulla
+# resonemanget (ersätter session_id_sanitize(), BORTTAGEN). Körs FÖRE
+# BRANCH/REPO/INTERVAL/TIMEOUT-valideringen nedan — ett ogiltigt session-ID
+# ska aldrig hinna orsaka en obegriplig sekundär fel senare i skriptet.
+# Skrivs på BÅDE stdout OCH stderr (till skillnad från die(), som bara
+# skriver stderr): Monitor-formen (§ ANVÄNDNING) ser BARA stdout, så en
+# ren stderr-rad hade varit exakt den TIPS-rads-bugg review runda 1 fynd 1
+# redan fixade en gång — samma observabilitets-skäl, nytt anropsställe.
+#
+# VILLKORET ÄR SESSION_GIVEN, INTE "-n \"\${SESSION}\"": de två skiljer sig
+# EXAKT när `--session ""` ges — ett tomt värde för en flagga som FAKTISKT
+# angavs. `-n`-formen hade tyst tolkat det som "flaggan gavs inte" och fallit
+# tillbaka till global/TIPS-läget; SESSION_GIVEN fångar att flaggan verkligen
+# lästes av arg-parsern, oavsett vad den bar.
+if [[ "${SESSION_GIVEN}" -eq 1 ]]; then
+    if [[ ! "${SESSION}" =~ ${HEARTBEAT_SESSION_ID_REGEX} ]] \
+       || [[ "${SESSION}" =~ ${HEARTBEAT_SESSION_ID_ENDAST_PUNKTER_REGEX} ]]; then
+        SESSION_VALIDERINGSFEL="heartbeat-svep: OGILTIGT --session-ID '${SESSION}' — måste matcha ${HEARTBEAT_SESSION_ID_REGEX} (1-64 tecken, endast [A-Za-z0-9._-]) och INTE bestå enbart av punkter. Körningen avbröts, inget svep skedde."
+        printf '%s\n' "${SESSION_VALIDERINGSFEL}"
+        printf '%s\n' "${SESSION_VALIDERINGSFEL}" >&2
+        exit 2
+    fi
+fi
 
 [[ -n "${BRANCH}" ]] || BRANCH="main"
 
@@ -840,11 +934,15 @@ STATE_FILE="${STATE_DIR}/last-main-sha"
 # klockan får förbli delad).
 STADA_STATE_FILE="${STATE_DIR}/last-stada-grenar"
 
-# PER-SESSION statsfil-suffix (review runda 3, Marcus-beslut 2026-09-19).
-# SAMMA villkor som sweep_once()s sessionslage — dupliceras hit eftersom
-# suffixet behövs INNAN sweep_once() någonsin anropas. Satt ⇒ de tre
-# strypta notisernas state-filer nedan bär sessionens (saniterade) ID, så
-# två samtidiga sessioner med SAMMA STATE_DIR (delad default
+# PER-SESSION statsfil-suffix (review runda 3, HÄRLETT DIREKT UR DET
+# VALIDERADE ID:T sedan review runda 4 — se HEARTBEAT_SESSION_ID_REGEX
+# ovan, ingen sanering längre). SAMMA villkor som sweep_once()s
+# sessionslage — dupliceras hit eftersom suffixet behövs INNAN
+# sweep_once() någonsin anropas. Satt ⇒ de tre strypta notisernas
+# state-filer nedan bär sessionens ID VERBATIM (redan bevisat matcha
+# HEARTBEAT_SESSION_ID_REGEX vid detta lägre, se valideringsblocket ovan —
+# INGEN transformation här, kollision är omöjlig per konstruktion), så två
+# samtidiga sessioner med SAMMA STATE_DIR (delad default
 # /tmp/mm-heartbeat-svep om ingen egen HEARTBEAT_STATE_DIR sätts) inte
 # längre stämplar varandras fönster — den empiriskt visade buggen
 # (S126 sveper först ⇒ S127 ser aldrig sin egen förstagångs-notis).
@@ -852,12 +950,13 @@ STADA_STATE_FILE="${STATE_DIR}/last-stada-grenar"
 # innan denna runda — global strypning, se KÄND BEGRÄNSNING ovan.
 SESSION_STATE_SUFFIX=""
 if [[ -n "${SESSION}" && "${ALLA}" -eq 0 ]]; then
-    SESSION_STATE_SUFFIX="-$(session_id_sanitize "${SESSION}")"
+    SESSION_STATE_SUFFIX="-${SESSION}"
 fi
 
 # Den omärkta-PR-notisens egen tidsstämpel (TASK-462), oberoende av
 # STADA_STATE_FILE av samma skäl som ovan. PER SESSION sedan review runda 3
-# (SESSION_STATE_SUFFIX) — denna notis körs ALDRIG utan att SESSION är satt
+# (SESSION_STATE_SUFFIX), KOLLISIONSFRI sedan review runda 4 (validerat ID,
+# ingen sanering) — denna notis körs ALDRIG utan att SESSION är satt
 # (sessionslage=1 krävs, se sweep_once()), så den är ALLTID sessions-scopad
 # när den faktiskt kan avfyra: interferensen är fullständigt löst för den.
 OMARKERAD_STATE_FILE="${STATE_DIR}/last-omarkerad-notis${SESSION_STATE_SUFFIX}"

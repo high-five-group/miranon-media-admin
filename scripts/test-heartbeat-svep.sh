@@ -101,15 +101,39 @@
 # T62–T65 (review runda 3, Marcus-beslut 2026-09-19): de strypta notisernas
 # state-filer taktades mot en MASKIN-GLOBAL STATE_DIR — S126 sveper först,
 # stämplar filen, S127:s eget svep ser ALDRIG sin egen förstagångs-notis.
-# Fixat: --session <ID> ⇒ statsfilen bär sessionens saniterade ID.
+# Fixat: --session <ID> ⇒ statsfilen bär sessionens ID i namnet.
 #   T62 Två sessioner (S126/S127), SAMMA STATE_DIR: dependabot-notisen →
 #       BÅDA ser den EN gång, stryps sedan VAR FÖR SIG                    → 0
 #   T63 Samma tvåsidiga bevis för den omärkta-PR-notisen                  → 0
-#   T64 session_id_sanitize(): farligt session-ID (path-traversal-försök)
-#       → saniterad statsfil DIREKT i STATE_DIR, ingen subkatalog         → 0
+#   T64 OMSKRIVEN i review runda 4 — se T66–T72 nedan (session_id_sanitize()
+#       ersatt av validering; farliga ID avvisas nu i stället för saneras)
 #   T65 UTAN --session (TIPS): dagens GLOBALA beteende oförändrat — en
 #       andra körning som delar STATE_DIR stryps ÄNDÅ (ingen session-ID
 #       att skopa mot, se KÄND BEGRÄNSNING)                        → tyst
+#
+# T66–T72 (review runda 4, Marcus-beslut 2026-09-19): review runda 3 fann
+# att session_id_sanitize() kunde mappa OLIKA ID:n till SAMMA filnamn ("S
+# 126"/"S/126" ⇒ båda "S_126") — tyst återinförd tvärsessions-tystnad, och
+# PR:ens "FULLSTÄNDIGT löst" överclaimade. Fixat: --session <ID> VALIDERAS
+# (^[A-Za-z0-9._-]{1,64}$, aldrig enbart punkter) i stället för saneras;
+# ogiltigt ⇒ exit 2, fail-closed, ingen körning, ingen fil skriven.
+#   T66 Giltigt ID "S126" (baseline, oförändrat)                      → 0
+#   T67 Giltigt ID MED punkt "s126.resume.2" (punkt tillåten, inte ENDAST
+#       punkter)                                                       → 0
+#   T68 Tomt --session-ID ("") → exit 2, fel på BÅDE stdout och stderr
+#   T69 Session-ID med mellanslag ("S 126") → exit 2
+#   T70 Session-ID med snedstreck ("S/126") → exit 2
+#   T71 Session-ID SOM ENBART punkter ("..") → exit 2 (path-traversal-form,
+#       avvisas trots att tecknen i sig är tillåtna)
+#   T72 Session-ID på 65 tecken (över gränsen) → exit 2
+#   T73 INGEN fil skrivs alls i STATE_DIR när ID:t avvisas (fail-closed
+#       betyder "ingen sopning skedde", inte "sopning med ett tomt namn")
+#   T74 Ett giltigt farligt-LIKNANDE-men-TILLÅTET ID ("../")-substräng är
+#       INTE giltigt (redan täckt av T70:s snedstreck), men ett ID som bara
+#       RÅKAR innehålla punkter mitt i sig ("v1.2.3") är giltigt och ger sin
+#       EGEN statsfil, skild från ett annat giltigt ID — kollision omöjlig
+#       per konstruktion (kompletterar T62/T63:s S126≠S127-bevis med ett
+#       tredje, olikt-format par)
 #
 # Test-isolering: /tmp/task119-test-heartbeat-svep/ med en gh-stub som svarar
 # ur ett scenario-katalog (main-sha / rows / fail-mainsha / fail-prlist).
@@ -155,7 +179,9 @@
 # fix-runda 1 (2026-09-19, review runda 1: T51–T55 omskrivna + T56–T61 nya —
 # TIPS-raden på stdout/strypt, dependabot-RÖTT/DIRTY-notisen) · TASK-462
 # fix-runda 2 (2026-09-19, review runda 3: T62–T65 nya — PER-SESSION
-# statsfil-suffix, session_id_sanitize())
+# statsfil-suffix, session_id_sanitize()) · TASK-462 fix-runda 3 (2026-09-19,
+# review runda 4: T64 omskriven + T66–T74 nya — validerat session-ID ersätter
+# sanering, session_id_sanitize() BORTTAGEN, per-session-statsfil-städning)
 
 set -uo pipefail
 
@@ -1189,25 +1215,23 @@ NOT_EXPECT_OUT="UTAN sessionsmarkör"
 run_case "T63d Session S127 igen → strypt av SIN EGEN stämpel (oberoende av S126)" 0 - \
     bash ./scripts/heartbeat-svep.sh --once --session S127
 
-# T64 — session_id_sanitize(): ett session-ID format som en path-
-# traversal-string ("../../etc/passwd") får ALDRIG skapa en fil utanför
-# STATE_DIR eller en subkatalog inuti den. Notisen ska ändå fungera
-# (kallstart, samma som T62) — sanering får inte tysta mekanismen, bara
-# göra filnamnet säkert.
+# T64 — OMSKRIVEN i review runda 4 (Marcus-beslut 2026-09-19):
+# session_id_sanitize() är BORTTAGEN. Ett tidigare "farligt men saneras"-ID
+# ("../../etc/passwd") avvisas nu HELT i stället — fail-closed, exit 2,
+# INGEN fil skrivs alls (varken saniterad eller osaniterad). Se T68–T73 för
+# den fullständiga tvåsidiga bevisningen av valideringen; detta fall
+# behålls under T64:s namn som en direkt regressionsspärr mot att
+# sanerings-beteendet av misstag återinförs.
 reset_scen
-set_rows '912\tfalse\tBLOCKED\ttrue\tFAILURE\tfalse\tdependabot\t\n'
-EXPECT_OUT="UNDANTAGEN FÖRFATTARE"
-run_case "T64 Farligt session-ID (path-traversal-försök) → notisen fungerar ändå" 0 - \
+EXPECT_OUT="OGILTIGT --session-ID"
+run_case "T64 Farligt session-ID (path-traversal-försök) → AVVISAS (exit 2), skriver ingen fil" 2 - \
     bash ./scripts/heartbeat-svep.sh --once --session "../../etc/passwd"
-if [[ -f "${STATE_DIR}/last-dependabot-notis-______etc_passwd" ]]; then
-    printf '  ✓ T64b  saniterad statsfil ligger DIREKT i STATE_DIR (______etc_passwd)\n'; PASSED=$((PASSED+1))
+if [[ -d "${STATE_DIR}" ]] && find "${STATE_DIR}" -mindepth 1 2>/dev/null | grep -q .; then
+    printf '  ✗ T64b  STATE_DIR innehåller OVÄNTADE filer efter ett avvisat session-ID\n'
+    find "${STATE_DIR}" -mindepth 1 2>/dev/null | sed 's/^/      /'
+    FAILED=$((FAILED+1))
 else
-    printf '  ✗ T64b  saniterad statsfil hittades inte där förväntat\n'; FAILED=$((FAILED+1))
-fi
-if find "${STATE_DIR}" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | grep -q .; then
-    printf '  ✗ T64c  en OVÄNTAD subkatalog skapades i STATE_DIR — path-traversal-risk\n'; FAILED=$((FAILED+1))
-else
-    printf '  ✓ T64c  ingen subkatalog skapades i STATE_DIR — ingen traversal möjlig\n'; PASSED=$((PASSED+1))
+    printf '  ✓ T64b  STATE_DIR är tom/oskapad — inget skrevs för det avvisade ID:t\n'; PASSED=$((PASSED+1))
 fi
 
 # T65 — UTAN --session (TIPS-raden): dagens GLOBALA beteende är OFÖRÄNDRAT
@@ -1224,6 +1248,86 @@ run_case "T65 Ingen --session (kallstart): TIPS syns" 0 - \
 NOT_EXPECT_OUT="TIPS —"
 run_case "T65b Ingen --session igen, SAMMA STATE_DIR → strypt globalt (oförändrat)" 0 - \
     bash ./scripts/heartbeat-svep.sh --once
+
+# ============================================================
+# T66–T74 — SESSION-ID-VALIDERING (review runda 4, Marcus-beslut
+# 2026-09-19). Fail-closed ersätter sanering: giltiga ID körs OFÖRÄNDRAT,
+# ogiltiga AVVISAS med exit 2 (CLI-fel, samma sysexits-klass som REPO/
+# INTERVAL/TIMEOUT-valideringen) och ett felmeddelande på BÅDE stdout och
+# stderr (EXPECT_OUT/EXPECT_ERR samtidigt bevisar båda strömmarna).
+echo ""
+reset_scen
+NOT_EXPECT_OUT="OGILTIGT --session-ID"
+run_case "T66 Giltigt ID \"S126\" (baseline) → körs normalt" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S126
+
+reset_scen
+NOT_EXPECT_OUT="OGILTIGT --session-ID"
+run_case "T67 Giltigt ID MED punkt \"s126.resume.2\" → körs normalt (punkt tillåten)" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session s126.resume.2
+
+reset_scen
+EXPECT_OUT="OGILTIGT --session-ID"
+EXPECT_ERR="OGILTIGT --session-ID"
+run_case "T68 Tomt --session-ID (\"\") → exit 2, fel på stdout OCH stderr" 2 - \
+    bash ./scripts/heartbeat-svep.sh --once --session ""
+
+reset_scen
+EXPECT_OUT="OGILTIGT --session-ID"
+EXPECT_ERR="OGILTIGT --session-ID"
+run_case "T69 Session-ID med mellanslag (\"S 126\") → exit 2" 2 - \
+    bash ./scripts/heartbeat-svep.sh --once --session "S 126"
+
+reset_scen
+EXPECT_OUT="OGILTIGT --session-ID"
+run_case "T70 Session-ID med snedstreck (\"S/126\") → exit 2" 2 - \
+    bash ./scripts/heartbeat-svep.sh --once --session "S/126"
+
+reset_scen
+EXPECT_OUT="OGILTIGT --session-ID"
+run_case "T71 Session-ID SOM ENBART punkter (\"..\") → exit 2 (path-traversal-form)" 2 - \
+    bash ./scripts/heartbeat-svep.sh --once --session ".."
+
+reset_scen
+printf -v LANGT_ID 'a%.0s' {1..65}
+EXPECT_OUT="OGILTIGT --session-ID"
+run_case "T72 Session-ID på 65 tecken (över gränsen) → exit 2" 2 - \
+    bash ./scripts/heartbeat-svep.sh --once --session "${LANGT_ID}"
+if [[ "${#LANGT_ID}" -eq 65 ]]; then
+    printf '  ✓ T72b  testets eget ID är verifierat 65 tecken (inte av misstag 64)\n'; PASSED=$((PASSED+1))
+else
+    printf '  ✗ T72b  testets eget ID är %s tecken, inte 65 — testet mäter fel gräns\n' "${#LANGT_ID}"; FAILED=$((FAILED+1))
+fi
+
+# T73 — fail-closed betyder "ingen sopning skedde", inte "sopning med ett
+# tomt/konstigt namn". Kör ETT ogiltigt anrop mot en HELT FÄRSK STATE_DIR
+# (reset_scen) och bevisa att katalogen förblir tom — inte bara att EN
+# specifik fil saknas (T64b), utan att INGET ALLS skrevs.
+reset_scen
+bash ./scripts/heartbeat-svep.sh --once --session "S/126" >/dev/null 2>&1
+if [[ -d "${STATE_DIR}" ]] && find "${STATE_DIR}" -mindepth 1 2>/dev/null | grep -q .; then
+    printf '  ✗ T73  STATE_DIR fick innehåll trots ett avvisat session-ID\n'; FAILED=$((FAILED+1))
+else
+    printf '  ✓ T73  STATE_DIR förblev tom — fail-closed skriver ingenting\n'; PASSED=$((PASSED+1))
+fi
+
+# T74 — kollision omöjlig per konstruktion: ETT TREDJE par giltiga ID i ett
+# ANNAT format (innehåller punkter) än T62/T63:s "S126"/"S127" ska ändå ge
+# VARSIN statsfil. Kompletterar (inte duplicerar) T62/T63 — bevisar att
+# valideringen accepterar, och särskiljer, ID:n som RÅKAR dela ett prefix.
+reset_scen
+set_rows '913\tfalse\tCLEAN\ttrue\tSUCCESS\tfalse\toctocat\t\n'
+run_case "T74 Giltigt ID \"v1.2.3\" (kallstart)" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session v1.2.3
+run_case "T74b Giltigt ID \"v1.2.30\" (delar prefix med T74, SAMMA STATE_DIR) → oberoende, ser notisen ÄNDÅ" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session v1.2.30
+if [[ -f "${STATE_DIR}/last-omarkerad-notis-v1.2.3" && -f "${STATE_DIR}/last-omarkerad-notis-v1.2.30" ]]; then
+    printf '  ✓ T74c  två VARSINA statsfiler (v1.2.3 och v1.2.30) — ingen kollision trots delat prefix\n'; PASSED=$((PASSED+1))
+else
+    printf '  ✗ T74c  förväntade två separata statsfiler för v1.2.3/v1.2.30, hittade inte båda\n'
+    find "${STATE_DIR}" -maxdepth 1 -name 'last-omarkerad-notis-*' 2>/dev/null | sed 's/^/      /'
+    FAILED=$((FAILED+1))
+fi
 
 printf '\ntest-heartbeat-svep: %s passerade, %s failade\n' "${PASSED}" "${FAILED}"
 [[ "${FAILED}" -eq 0 ]] || exit 1
