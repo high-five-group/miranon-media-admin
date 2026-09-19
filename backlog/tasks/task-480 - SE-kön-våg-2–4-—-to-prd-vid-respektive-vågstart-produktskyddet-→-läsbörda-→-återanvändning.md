@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-19 10:53'
+updated_date: '2026-09-19 10:57'
 labels: []
 dependencies: []
 priority: medium
@@ -31,3 +32,9 @@ Durabel kö för resten av SE-högen, i den ordning Marcus godkände 2026-09-19 
 - [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Tillägg 2026-09-19 (beslut 6b): bisektion av ett rött multi-landningsspann (researchens väg 4, docs/research/efterkontroll-pa-klocka-2026-09-19.md § Rekommendation punkt 4) ligger här som SENARE post — byggs först när efterkontrollens larm fyrar på ett spann > 1 landning oftare än sällan. Låg prioritet; mät först.
+<!-- SECTION:NOTES:END -->

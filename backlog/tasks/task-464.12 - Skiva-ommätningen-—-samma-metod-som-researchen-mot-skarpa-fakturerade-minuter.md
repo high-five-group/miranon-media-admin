@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-19 10:50'
+updated_date: '2026-09-19 10:57'
 labels:
   - ready-for-agent
 dependencies:
@@ -16,6 +17,7 @@ dependencies:
   - TASK-464.8
   - TASK-464.9
   - TASK-464.10
+  - TASK-464.14
 parent_task_id: TASK-464
 priority: medium
 ordinal: 828000
