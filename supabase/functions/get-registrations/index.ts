@@ -20,6 +20,37 @@ import {
 const TABLE_NAME = REGISTRATIONS_TABLE;
 const EVENTPLANERING_TABLE = 'Eventplanering';
 
+/**
+ * § PER-STEG-TIDSLOGGNING (TASK-459, AC #4)
+ *
+ * task-451.6 (docs/research/startvarmningen-batch1-kall-latens-2026-09-18.md) mätte
+ * denna EF enbart som EN extern väggtid per anrop — koden loggade inga steg, så
+ * kallstart (Deno-isolat-boot), auth (`requireUser`) och varje Airtable-anrops
+ * svarstid gick inte att särskilja utan extern gissning. Denna EF loggar därför,
+ * på BÅDA grenarna (eventId-grenen och den event-lösa grenen):
+ *   - `ef_step_timing` (via `logStepTiming` nedan): `authMs` + total `totalMs`.
+ *   - `airtable_call` (centralt i `_shared/airtable-client.ts`): EN rad per faktiskt
+ *     Airtable-HTTP-anrop (helper, tabell, status, varaktighet) — eventuppslaget,
+ *     `fetchByRecordIds`-batcharna och `berikaPersonhistorik`s Personer-/Deltaganden-
+ *     batchar ärver detta GRATIS, ingen egen instrumentering krävs här.
+ *   - `airtable_429_retry`/`airtable_429_exhausted` (centralt i `_shared/airtable-retry.ts`):
+ *     EXPLICIT rad per 429-svar — utan den syns en 429-lockout bara indirekt som en
+ *     ovanligt lång `airtable_call`-rad.
+ * Ren instrumentering — INGEN ändring i svarets form eller i backoff-beteendet
+ * (AC #3). Sökbart i Supabase Logs Explorer (`function_edge_logs.event_message`) utan
+ * en ny extern mätrigg (AC #2) — se PR-kroppens mätanvisning för en körbar fråga.
+ */
+function logStepTiming(extra: Record<string, unknown>): void {
+  console.info(
+    JSON.stringify({
+      level: 'info',
+      event: 'ef_step_timing',
+      function: 'get-registrations',
+      ...extra,
+    }),
+  );
+}
+
 /** Inskickad desc, nulls sist (dateTime ISO → Date.parse; båda null → 0; en null → sist). */
 function byInskickadDesc(a: Registration, b: Registration): number {
   const ta = a.inskickad ? Date.parse(a.inskickad as string) : null;
@@ -65,6 +96,8 @@ Deno.serve(async (req) => {
 
   const corsHeaders = corsHeadersFor(req);
   const requestId = generateRequestId();
+  // TASK-459: total handler-tid — se filhuvudets § PER-STEG-TIDSLOGGNING för varför.
+  const handlerStart = Date.now();
 
   if (req.method !== 'GET') {
     return new Response(JSON.stringify({ error: 'Method not allowed. Use GET.' }), {
@@ -73,7 +106,9 @@ Deno.serve(async (req) => {
     });
   }
 
+  const authStart = Date.now();
   const auth = await requireUser(req, corsHeaders);
+  const authMs = Date.now() - authStart;
   if (auth instanceof Response) return auth;
 
   const url = new URL(req.url);
@@ -87,6 +122,13 @@ Deno.serve(async (req) => {
       // 1) Eventraden — ETT single-get. null = 404 (ärver get-event/get-attendance-kontraktet).
       const eventRecord = await fetchAirtableRecord(EVENTPLANERING_TABLE, eventId);
       if (!eventRecord) {
+        logStepTiming({
+          requestId,
+          branch: 'eventId',
+          outcome: 'event_not_found',
+          authMs,
+          totalMs: Date.now() - handlerStart,
+        });
         return new Response(JSON.stringify({ error: 'Event not found' }), {
           status: 404,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' },
@@ -120,6 +162,16 @@ Deno.serve(async (req) => {
       //    anmälningar, där en person-batch vore O(hela basen) per anrop.
       await berikaPersonhistorik(registrations);
 
+      // TASK-459 (AC #1): auth + total handler-tid för eventId-grenen. Varje Airtable-
+      // anrops egen varaktighet loggas redan centralt i airtable-client.ts.
+      logStepTiming({
+        requestId,
+        branch: 'eventId',
+        authMs,
+        totalMs: Date.now() - handlerStart,
+        registrationCount: registrations.length,
+      });
+
       return new Response(JSON.stringify({ registrations }), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
@@ -128,6 +180,10 @@ Deno.serve(async (req) => {
         function: 'get-registrations',
         method: req.method,
         callerUserId: auth.user.id,
+        // TASK-459: samma authMs/totalMs-fält på felvägen — en 429-utlöst lockout som
+        // slutar i ett kastat fel ska bära lika mycket tidsinformation som lyckade svar.
+        authMs,
+        totalMs: Date.now() - handlerStart,
       });
     }
   }
@@ -166,6 +222,16 @@ Deno.serve(async (req) => {
 
     const registrations = records.map(mapRegistration);
 
+    // TASK-459 (AC #1): auth + total handler-tid för den event-lösa grenen. Varje
+    // Airtable-anrops egen varaktighet loggas redan centralt i airtable-client.ts.
+    logStepTiming({
+      requestId,
+      branch: 'eventLos',
+      authMs,
+      totalMs: Date.now() - handlerStart,
+      registrationCount: registrations.length,
+    });
+
     return new Response(JSON.stringify({ registrations }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
@@ -174,6 +240,10 @@ Deno.serve(async (req) => {
       function: 'get-registrations',
       method: req.method,
       callerUserId: auth.user.id,
+      // TASK-459: samma authMs/totalMs-fält på felvägen — en 429-utlöst lockout som
+      // slutar i ett kastat fel ska bära lika mycket tidsinformation som lyckade svar.
+      authMs,
+      totalMs: Date.now() - handlerStart,
     });
   }
 });

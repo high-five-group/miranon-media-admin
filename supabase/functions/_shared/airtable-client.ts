@@ -5,6 +5,43 @@ import { withAirtable429Retry } from './airtable-retry.ts';
 const AIRTABLE_API_URL = 'https://api.airtable.com/v0';
 
 /**
+ * Timing- och 429-loggningswrapper runt EN Airtable-läsning (TASK-459, AC #1).
+ *
+ * Central placering — de tre läs-helperna (`fetchFromAirtable`, `fetchAirtablePage`,
+ * `fetchAirtableRecord`) ropar alla via denna funktion i stället för `withAirtable429Retry`
+ * direkt, så VARJE anropare (get-events, get-registrations, och alla framtida `get-*`-EF:er
+ * som delar denna kärna) ärver per-anrops-loggningen gratis — ingen egen instrumentering
+ * krävs uppströms. Varaktigheten mäts från FÖRE till EFTER `withAirtable429Retry` och bär
+ * alltså med sig eventuell 429-backoff-väntan (bevisligt separat spårbar via de EXPLICITA
+ * `airtable_429_retry`/`airtable_429_exhausted`-raderna `airtable-retry.ts` loggar — en
+ * ~30 000 ms `airtable_call`-rad utan en åtföljande 429-rad är alltså en genuint långsam
+ * Airtable-sida, inte en lockout).
+ *
+ * Strukturerad JSON (`errors.ts:110`-mönstret) → sökbar i Supabase Logs Explorer
+ * (`function_edge_logs.event_message`) utan en ny extern mätrigg (AC #2).
+ */
+async function callAirtableWithTiming(
+  helper: string,
+  table: string,
+  send: () => Promise<Response>,
+): Promise<Response> {
+  const start = Date.now();
+  const res = await withAirtable429Retry(send, { logContext: { helper, table } });
+  const durationMs = Date.now() - start;
+  console.info(
+    JSON.stringify({
+      level: 'info',
+      event: 'airtable_call',
+      helper,
+      table,
+      status: res.status,
+      durationMs,
+    }),
+  );
+  return res;
+}
+
+/**
  * Klassar Airtables EGNA valideringsavvisning (TASK-190) — typiskt 422 när
  * `typecast:false` möter ett värde ett fält inte kan acceptera (t.ex. en
  * fri text mot en STÄNGD singleSelect, `create-event`s repro: `Event
@@ -118,7 +155,8 @@ export async function fetchFromAirtable(
 
     // 429 → Airtable-konform backoff (>= 30s, tak på omförsöken) i _shared/airtable-retry.ts.
     // Uttömt tak returnerar 429-svaret → faller genom !res.ok nedan och kastar som vanligt.
-    const res = await withAirtable429Retry(() =>
+    // TASK-459: callAirtableWithTiming loggar varaktighet + eventuella 429:or strukturerat.
+    const res = await callAirtableWithTiming('fetchFromAirtable', tableIdOrName, () =>
       fetch(url.toString(), {
         headers: {
           Authorization: `Bearer ${token}`,
@@ -193,7 +231,8 @@ export async function fetchAirtablePage(
   }
 
   // Den tidigare `for(;;)`-loopen fanns ENBART för 429-omförsöken; retry-modulen äger den nu.
-  const res = await withAirtable429Retry(() =>
+  // TASK-459: callAirtableWithTiming loggar varaktighet + eventuella 429:or strukturerat.
+  const res = await callAirtableWithTiming('fetchAirtablePage', tableIdOrName, () =>
     fetch(url.toString(), {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -238,7 +277,8 @@ export async function fetchAirtableRecord(
   const url = `${AIRTABLE_API_URL}/${baseId}/${encodeURIComponent(tableIdOrName)}/${recordId}`;
 
   // Den tidigare `for(;;)`-loopen fanns ENBART för 429-omförsöken; retry-modulen äger den nu.
-  const res = await withAirtable429Retry(() =>
+  // TASK-459: callAirtableWithTiming loggar varaktighet + eventuella 429:or strukturerat.
+  const res = await callAirtableWithTiming('fetchAirtableRecord', tableIdOrName, () =>
     fetch(url, {
       headers: {
         Authorization: `Bearer ${token}`,

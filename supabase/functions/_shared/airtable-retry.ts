@@ -56,6 +56,22 @@
  * summera över idle timeout. Det är ett existerande förhållande som denna modul förbättrar men
  * inte löser (dagens oändliga 1 s-loop var strikt värre: 150 varv innan samma timeout).
  * Strukturell lösning hör till Fas E — Postgres har ingen per-bas-throttle (P4 Fas E-krav).
+ *
+ * ## Strukturerad 429-loggning (TASK-459)
+ *
+ * `get-events`/`get-registrations` mättes (task-451.6) enbart som EN extern väggtid per
+ * anrop — ingen intern instrumentering fanns, så en 429-lockout (denna moduls 30–90 s
+ * väntan) syntes bara indirekt som ett ovanligt långt anrop, omöjlig att skilja från en
+ * genuint långsam Airtable-sida. `withAirtable429Retry` loggar därför nu EXPLICIT, per
+ * försök: `airtable_429_retry` (vilket försök, vald backoff i ms) och — när taket är
+ * uttömt — `airtable_429_exhausted`. Formen är strukturerad JSON (`errors.ts:110`-mönstret)
+ * så Supabase Logs Explorer kan filtrera/parsa `event_message` utan en ny extern mätrigg
+ * (AC #2). `logContext` (helper + tabell, satt av `airtable-client.ts`) slås samman in i
+ * varje rad så en 429 går att koppla till VILKET anrop som mötte taket. `log` är injicerbar
+ * (default: `console.warn(JSON.stringify(...))`) enbart så testet kan fånga raderna utan att
+ * skriva till stdout — se `tests/api/airtable-retry.test.ts`. INGEN av delarna rör backoff-
+ * logiken eller svarskontraktet ovan; modulen förblir Deno-fri (`console` är en
+ * webbstandard-global, inte en Deno-specifik API, se § Varför en egen modul ovan).
  */
 
 /**
@@ -91,9 +107,25 @@ export interface Airtable429RetryOptions {
   sleep?: (ms: number) => Promise<void>;
   /** Injicerbar slumpkälla för jittern (tester). Default: `Math.random`. */
   random?: () => number;
+  /**
+   * Metadata som slås samman in i varje 429-loggrad (TASK-459) — t.ex. `{ helper:
+   * 'fetchFromAirtable', table: 'Eventplanering' }`. Ren spårbarhet, påverkar aldrig
+   * backoff-beslutet. Default: `{}` (raden loggas ändå, bara utan anropskontext).
+   */
+  logContext?: Record<string, unknown>;
+  /**
+   * Injicerbar logg-sink (TASK-459). Default: `console.warn(JSON.stringify(record))` —
+   * samma strukturerade-JSON-mönster som `_shared/errors.ts:110`. Enbart till för att
+   * testet ska kunna fånga raderna utan att skriva till stdout.
+   */
+  log?: (record: Record<string, unknown>) => void;
 }
 
 const defaultSleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
+
+const defaultLog = (record: Record<string, unknown>): void => {
+  console.warn(JSON.stringify(record));
+};
 
 /**
  * Kör `send` och gör om anropet vid HTTP 429, med Airtable-konform backoff och ett hårt tak.
@@ -114,6 +146,8 @@ export async function withAirtable429Retry(
     maxRetries = AIRTABLE_429_MAX_RETRIES,
     sleep = defaultSleep,
     random = Math.random,
+    logContext = {},
+    log = defaultLog,
   } = options;
 
   for (let attempt = 0; ; attempt++) {
@@ -124,17 +158,29 @@ export async function withAirtable429Retry(
     }
 
     if (attempt >= maxRetries) {
-      console.warn(
-        `Airtable rate limit (429) — gav upp efter ${maxRetries} omförsök; felet propageras`,
-      );
+      // TASK-459: EXPLICIT rad när taket är uttömt — utan den syns ett uttömt 429-tak bara
+      // indirekt, som ett fel längre upp i anropskedjan utan tidsstämpel på VAR budgeten tog slut.
+      log({
+        level: 'warn',
+        event: 'airtable_429_exhausted',
+        maxRetries,
+        attempt: attempt + 1,
+        ...logContext,
+      });
       return res;
     }
 
     const waitMs = airtable429BackoffMs(attempt, random);
-    console.warn(
-      `Airtable rate limit (429) — väntar ${Math.round(waitMs / 1000)}s ` +
-        `(omförsök ${attempt + 1}/${maxRetries}, Airtable kräver >= 30s)`,
-    );
+    // TASK-459: EXPLICIT rad per 429-svar (helper/tabell via logContext, försök-nr, vald
+    // backoff i ms) — se filhuvudet § Strukturerad 429-loggning för varför.
+    log({
+      level: 'warn',
+      event: 'airtable_429_retry',
+      attempt: attempt + 1,
+      maxRetries,
+      waitMs: Math.round(waitMs),
+      ...logContext,
+    });
 
     // Släpp svarskroppen innan omförsöket. En icke-konsumerad body läcker resurser i Deno, och
     // vi kommer aldrig att läsa detta 429-svar — bara det sista behöver sin body (callern läser
