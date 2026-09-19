@@ -98,16 +98,49 @@ function nightlyYaml({
   return out;
 }
 
-function kanalConf(prefixes) {
+// beroendeGranskning/beroendeArende speglar fixturens DEFAULT beroendekanal
+// (beroendeRefs: ['jobC'] ⇒ granskningsjobbets name: är "Jobb C"; beroende-
+// arende-jobbet har inget eget name:-fält i channelBlock() och faller
+// därför tillbaka till sitt jobb-ID, "beroende-arende" — se channelInfo()
+// i check-nattkanal-partition.mjs). omitBeroende=true utelämnar båda
+// NATTVAKT_BEROENDE_*-raderna helt (led iii, TASK-467: config borttagen).
+function kanalConf(
+  prefixes,
+  { beroendeGranskning = 'Jobb C', beroendeArende = 'beroende-arende', omitBeroende = false } = {},
+) {
   const rader = prefixes.map((p) => `    "${p}"`).join('\n');
-  return `NATTVAKT_PRODUKTKANAL_JOBBPREFIX=(\n${rader}\n)\n`;
+  let out = `NATTVAKT_PRODUKTKANAL_JOBBPREFIX=(\n${rader}\n)\n`;
+  if (!omitBeroende) {
+    out += `NATTVAKT_BEROENDE_GRANSKNING_JOBBNAMN="${beroendeGranskning}"\n`;
+    out += `NATTVAKT_BEROENDE_ARENDE_JOBBNAMN="${beroendeArende}"\n`;
+  }
+  return out;
 }
 
-function runGrind(dir, { file = 'nightly.yml', kanalConfig = 'kanal.conf' } = {}) {
+// Default-fixturen för nightly-watchdog.yml (led iii, TASK-467): en minimal
+// men GILTIG watchdog-fil som refererar dödmansgrepp-skriptet, så samtliga
+// BEFINTLIGA test-fall (som aldrig rör led iii) fortsätter passera utan
+// ändring — bara de NYA fallen nedan bryter referensen medvetet.
+const GILTIG_WATCHDOG_YAML =
+  'name: Nattvakt\njobs:\n  watch:\n    steps:\n      - run: bash scripts/check-beroendekanal-dodmansgrepp.sh\n';
+
+function runGrind(
+  dir,
+  {
+    file = 'nightly.yml',
+    kanalConfig = 'kanal.conf',
+    watchdogFile = 'watchdog.yml',
+    watchdogContent = GILTIG_WATCHDOG_YAML,
+    skipWatchdogFile = false,
+  } = {},
+) {
+  if (!skipWatchdogFile) {
+    writeFile(dir, watchdogFile, watchdogContent);
+  }
   try {
     const out = execFileSync(
       process.execPath,
-      [SCRIPT, '--file', file, '--kanal-config', kanalConfig],
+      [SCRIPT, '--file', file, '--kanal-config', kanalConfig, '--watchdog-file', watchdogFile],
       { cwd: dir, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] },
     );
     return { code: 0, stdout: out, stderr: '' };
@@ -401,6 +434,97 @@ const BAS_PREFIX = ['Jobb A'];
   assert(
     /kunde inte tolka uttrycket/.test(res.stderr) && /needs\['jobA'\]/.test(res.stderr),
     `Fall 18: förväntade "kunde inte tolka uttrycket" + bracket-strängen i stderr, fick: ${res.stderr}`,
+  );
+}
+
+// ═══ LED (iii) — BEROENDEKANALENS DÖDMANSGREPP (TASK-467) ═══
+// Samma tvåsidiga disciplin som led (i)/(ii) ovan: varje enskild bit av
+// dödmansgreppets config/wiring bryts EN i taget och ska fälla, medan
+// bas-fixturen (Fall 1, och den RIKTIGA filen i Fall 6) håller ledet grönt
+// utan att någon av dessa fall rördes.
+
+// ═══ FALL 19 (RÖTT — led iii: config helt borttagen) ═══
+{
+  const dir = mkFixture();
+  writeFile(dir, 'nightly.yml', nightlyYaml({ jobNames: BAS_JOBNAMN }));
+  writeFile(dir, 'kanal.conf', kanalConf(BAS_PREFIX, { omitBeroende: true }));
+  const res = runGrind(dir);
+  assert(
+    res.code === 1,
+    `Fall 19: förväntade exit 1 (dödmansgreppets config borttagen), fick ${res.code}: ${res.stderr}`,
+  );
+  assert(
+    /NATTVAKT_BEROENDE_GRANSKNING_JOBBNAMN/.test(res.stderr) && /TASK-467/.test(res.stderr),
+    `Fall 19: förväntade "NATTVAKT_BEROENDE_GRANSKNING_JOBBNAMN" + "TASK-467" i stderr, fick: ${res.stderr}`,
+  );
+}
+
+// ═══ FALL 20 (RÖTT — led iii: granskningsjobbets namn glidit ur configen) ═══
+{
+  const dir = mkFixture();
+  writeFile(dir, 'nightly.yml', nightlyYaml({ jobNames: BAS_JOBNAMN }));
+  writeFile(dir, 'kanal.conf', kanalConf(BAS_PREFIX, { beroendeGranskning: 'Fel Namn' }));
+  const res = runGrind(dir);
+  assert(
+    res.code === 1,
+    `Fall 20: förväntade exit 1 (granskningsnamn matchar inte), fick ${res.code}: ${res.stderr}`,
+  );
+  assert(
+    /NATTVAKT_BEROENDE_GRANSKNING_JOBBNAMN \("Fel Namn"\)/.test(res.stderr) &&
+      /matchar[\s\S]*inte/.test(res.stderr),
+    `Fall 20: förväntade "NATTVAKT_BEROENDE_GRANSKNING_JOBBNAMN (\\"Fel Namn\\")" + "matchar ... inte" i stderr, fick: ${res.stderr}`,
+  );
+}
+
+// ═══ FALL 21 (RÖTT — led iii: ärendejobbets namn glidit ur configen) ═══
+{
+  const dir = mkFixture();
+  writeFile(dir, 'nightly.yml', nightlyYaml({ jobNames: BAS_JOBNAMN }));
+  writeFile(dir, 'kanal.conf', kanalConf(BAS_PREFIX, { beroendeArende: 'Fel Namn' }));
+  const res = runGrind(dir);
+  assert(
+    res.code === 1,
+    `Fall 21: förväntade exit 1 (ärendenamn matchar inte), fick ${res.code}: ${res.stderr}`,
+  );
+  assert(
+    /NATTVAKT_BEROENDE_ARENDE_JOBBNAMN \("Fel Namn"\)/.test(res.stderr),
+    `Fall 21: förväntade "NATTVAKT_BEROENDE_ARENDE_JOBBNAMN (\\"Fel Namn\\")" i stderr, fick: ${res.stderr}`,
+  );
+}
+
+// ═══ FALL 22 (RÖTT — led iii: nightly-watchdog.yml refererar inte längre
+// dödmansgrepp-skriptet — configen kan se helt intakt ut samtidigt) ═══
+{
+  const dir = mkFixture();
+  writeFile(dir, 'nightly.yml', nightlyYaml({ jobNames: BAS_JOBNAMN }));
+  writeFile(dir, 'kanal.conf', kanalConf(BAS_PREFIX));
+  const res = runGrind(dir, {
+    watchdogContent: 'name: Nattvakt\njobs:\n  watch:\n    steps:\n      - run: echo hej\n',
+  });
+  assert(
+    res.code === 1,
+    `Fall 22: förväntade exit 1 (watchdog saknar referensen), fick ${res.code}: ${res.stderr}`,
+  );
+  assert(
+    /refererar inte längre/.test(res.stderr) &&
+      /scripts\/check-beroendekanal-dodmansgrepp\.sh/.test(res.stderr),
+    `Fall 22: förväntade "refererar inte längre" + skriptvägen i stderr, fick: ${res.stderr}`,
+  );
+}
+
+// ═══ FALL 23 (RÖTT — led iii: nightly-watchdog.yml-filen saknas helt) ═══
+{
+  const dir = mkFixture();
+  writeFile(dir, 'nightly.yml', nightlyYaml({ jobNames: BAS_JOBNAMN }));
+  writeFile(dir, 'kanal.conf', kanalConf(BAS_PREFIX));
+  const res = runGrind(dir, { watchdogFile: 'finns-inte-watchdog.yml', skipWatchdogFile: true });
+  assert(
+    res.code === 1,
+    `Fall 23: förväntade exit 1 (watchdog-filen saknas), fick ${res.code}: ${res.stderr}`,
+  );
+  assert(
+    /nattvakten saknas/.test(res.stderr),
+    `Fall 23: förväntade "nattvakten saknas" i stderr, fick: ${res.stderr}`,
   );
 }
 

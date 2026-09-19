@@ -830,7 +830,18 @@ async function main() {
   const checkDocs = korCheckDocs();
   resultat.push({
     namn: 'npm run check:docs (14 grindar)',
-    jobLabel: '(täcker ci.yml docs-jobbet + 9 av lint-jobbets steg)',
+    // RÄTTAT TASK-464.1/SE2, 2026-09-19 (uppskjutet till TASK-471 — #2564
+    // runda 3 info-fynd #2): stod som "9" — det pre-SE2-talet, då ALLA tio
+    // docs-grindar levde primärt i `lint`-jobbet. Efter SE2 flyttade sju av
+    // dem till `docs`-jobbet (check-docs.sh § "DE FJORTON"); kvar i `lint`
+    // som PRIMÄR instans är bara TRE: fetch-depth-invarianten, listparitet,
+    // facit (`.ci-parity-policy.json`s `coveredByCheckDocsRationale`, "tre
+    // av de kvarvarande fem"). De två CodeQL-grindarna (TASK-464.2) och den
+    // TREDJE (TASK-471, samma skript, ci.yml:s egen D0-lista) räknas INTE
+    // hit — de står MEDVETET UTANFÖR `coveredByCheckDocs` (check-docs.sh
+    // kör dem också, men verify-ci-parity.mjs kör dem ÄNDÅ verbatim som en
+    // vanlig `lint`-jobbsteg, se `coveredByCheckDocs` i .ci-parity-policy.json).
+    jobLabel: '(täcker ci.yml docs-jobbet + 3 av lint-jobbets steg)',
     status: checkDocs.ok ? 'PASS' : 'FAIL',
     ms: checkDocs.ms,
   });

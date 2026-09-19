@@ -131,11 +131,14 @@ npm run build               # bygg grön
 
 De fyra ovan är DoD-disciplinen (`ADR-036`, `CONTRIBUTING.md`) och är vad som
 körs före push. CI kör betydligt fler grindar (shellcheck-strict, actionlint,
-yamllint, audit-ci, 16 dokumentations-grindar (`npm run check:docs`s egen
-slutrad — 14 fram till TASK-464.2 review runda 1, som lade till
-`check-codeql-d0-kodfri.sh` och `check-codeql-push-pr-parity.mjs`; talet
-stod tidigare som "13" här, exakt den kopierings-drift stycket nedan varnar
-för), ~20 gatekeeper-testsviter,
+yamllint, audit-ci, 17 dokumentations-grindar (`npm run check:docs`s egen
+slutrad, mätt 2026-09-19 — 16 fram till TASK-471, som lade till en ANDRA
+konsument av `check-codeql-d0-kodfri.sh` (ci.yml:s egen D0-lista, inte bara
+codeql.yml:s speglade kopia); 14 fram till TASK-464.2 review runda 1, som
+lade till `check-codeql-d0-kodfri.sh` och `check-codeql-push-pr-parity.mjs`;
+talet stod tidigare som "13" här, exakt den kopierings-drift stycket nedan
+varnar för — skriv aldrig av det hit utan att köra grinden, TASK-106), ~20
+gatekeeper-testsviter,
 Acceptance-klassen, Webblasarbeteende-klassen) — **och det är CI:s jobb, inte
 ditt.** Merge queue hindrar en röd PR från att landa, så kostnaden av att
 missa något lokalt är en extra CI-cykel, inte ett trasigt `main`.
@@ -455,20 +458,50 @@ checkout first. **A command too complex to check also fails**"*.
 | Eget repos huvudkatalog — **Read-verktyget** | **OK** — spärren gäller Bash-git, inte filläsning | OK |
 | Annat repo (hubben) — läsning | OK | OK |
 | Annat repo — skrivning, `git add`, `git commit` | **OK** | OK |
+| Annan BEFINTLIG worktree (samma repo) — `EnterWorktree(path)` | **AVVISAS efter första steget** — rapporterar lyckat byte, men varje EFTERFÖLJANDE Bash-anrop nekas ("working directory resolved to the shared checkout") | Oprövat |
 
 Två celler är kontraintuitiva och värda att minnas: **läsning** mot eget repos
 huvudkatalog avvisas (spärren skiljer inte på läs/skriv), medan
 **Read-verktyget** mot samma katalog går igenom (spärren sitter på Bash-git,
 inte på filsystemet).
 
+**Tre nya mätta celler (S127, 2026-09-19), samtliga utöver matrisen
+ovan:**
+
+1. **`EnterWorktree(path)` in i en ANNAN befintlig worktree** rapporterar
+   lyckat byte för en isolerad agent, men varje efterföljande Bash-anrop
+   nekas därefter ("working directory resolved to the shared checkout"),
+   och `ExitWorktree` nekas från en subagent. Vägen tillbaka är
+   `EnterWorktree(path=<egen>)`. Mätt av tre oberoende agenter som fick
+   samma order (en stoppade och rapporterade, två tog sig tillbaka själva —
+   orkestrerarens order byggde på motsatt antagande, rättat i flykt).
+   Arbetsformen som fungerar i stället: egen
+   worktree, PR-grenen hämtad under ANNAT lokalt namn, push med refspec
+   `HEAD:<pr-gren>` som ren fast-forward.
+2. **En STOPPAD isolerad agent som återupptas med `SendMessage` hamnar i
+   orkestrerarens arbetskatalog, inte i sin egen worktree** (mätt: agenten
+   vaknade i orkestrerarens dåvarande worktree, upptäckte det och rörde
+   inget). Ett meddelande till en agent som fortfarande ARBETAR rubbar
+   inte pinningen. Regel: stoppad isolerad agent ⇒ ny spawn, aldrig
+   återupptagning.
+3. **`!`-prefixet i en session som gått in i en worktree lyder under
+   samma spärr som agenten:** `! cd <huvudkatalog> && git …` avvisas.
+   Följd: allt som ska köras i huvudkatalogen av Marcus kräver ett eget
+   terminalfönster — inte `!`-kanalen i en worktree-bunden session.
+
 **Konsekvensen är operativ:** hub-ändringar — plugin-skills, `SYSTEMET.md`,
 hubbens lessons-volymer — **kan delegeras**, till en agent som kör
 **oisolerat**. Kör den i egen worktree fungerar hub-arbetet fortfarande, men
 den kan inte röra spokens huvudkatalog under tiden.
 
-**OPRÖVAT, anta ingenting:** `EnterWorktree` mot ett syskonrepo. Den är en
-annan mekanism än `git -C` och kan mycket väl avvisas — den ingick i S97:s
-ursprungliga påstående men har aldrig mätts isolerat.
+**Vad som nu ÄR mätt (S127, 2026-09-19):** `EnterWorktree(path)` mot en
+ANNAN BEFINTLIG worktree av SAMMA repo — se de tre nya cellerna ovan.
+
+**OPRÖVAT, anta ingenting:** `EnterWorktree` mot ett syskonREPO (ett
+annat repos worktree, inte en annan worktree av samma repo — den
+distinktionen är skillnaden mellan denna rad och cellerna precis ovan).
+Den är en annan mekanism än `git -C` och kan mycket väl avvisas — den
+ingick i S97:s ursprungliga påstående men har aldrig mätts isolerat.
 
 **Varför raden stod fel i tre veckor, och vad det lär:** den sade tidigare att
 "agenter kan INTE arbeta cross-repo" och att hub-arbete aldrig får delegeras.
@@ -516,6 +549,17 @@ Landnings-ordningen · [ADR-076](docs/decisions/ADR-076-merge-grinden-ruleset-pr
 
 **Vad som fortfarande gäller:** armera aldrig en PR vars bygg-agent fortfarande
 arbetar, och kör aldrig `update-branch` mot en sådan gren.
+
+**En ändring av en ytas GEOMETRI ska möta ytans BEFINTLIGA
+laddläges-/staging-svit på riktigt FÖRE armering — inte bara sin egen nya
+svit.** Staging-klassen körs inte på PR-ytan (`run_staging: false`) utan
+först i Post-merge, EFTER landning; en hermetisk körning av en ny,
+egen svit bevisar ingenting om de befintliga syskon-sviterna för samma
+yta. Detta är ett ÅTAGANDE (ingen mekanisk spärr hindrar armering utan
+det), inte en mekanism. Instans (`TASK-456`/PR #2541 → `TASK-481`,
+2026-09-19): en pill-rad fick en reserverad höjd, men skeleton-kortet
+fick ingen motsvarande — Post-merge stod röd på fyra kod-landningar i rad
+innan felet fångades och åtgärdades separat.
 
 **Svep vid varje väckning — passiv väntan är avskaffad som arbetsläge
 (`T112`, Marcus GO 2026-08-01).** Orkestreraren äger landnings- och

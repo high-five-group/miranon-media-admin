@@ -270,23 +270,36 @@ run_gate "Listparitet (CONTRIBUTING ↔ purge-policy, lychee-scopen, grind-conf-
 run_gate "Låst facits adresserbarhet + rivningsspärr (ADR-102)" bash scripts/check-facit.sh
 # paritet:slut docs-grindar-lokal
 
-# De två CodeQL-grindarna (TASK-464.2, PR #2558) körs lokalt här för full
-# täckning, men står MEDVETET UTANFÖR docs-grindar-regionen ovan: paret
-# `docs-grindar` mäter check-docs.sh mot ci.yml:s `docs`-jobb specifikt
-# (radernas egen kommentar, "hålls mängd-likt med ci.yml:s docs-jobb"), och
-# båda grindarna ligger i `lint`-jobbet, INTE `docs`-jobbet — se
-# ci.yml:s egna kommentarer vid `run: bash scripts/check-codeql-d0-kodfri.sh`.
-# Det är avsiktligt: `.github/workflows/**` är explicit undantaget D0, så en
-# ren ändring av codeql.yml gör `should_skip_tests` falskt och kör `lint`-
-# jobbet — men `.github/workflows/codeql.yml` står INTE i changed-docs-listan
+# De TRE CodeQL/D0-grindarna (två TASK-464.2, PR #2558; en TASK-471) körs
+# lokalt här för full täckning, men står MEDVETET UTANFÖR
+# docs-grindar-regionen ovan: paret `docs-grindar` mäter check-docs.sh mot
+# ci.yml:s `docs`-jobb specifikt (radernas egen kommentar, "hålls mängd-likt
+# med ci.yml:s docs-jobb"), och alla tre grindarna ligger i `lint`-jobbet,
+# INTE `docs`-jobbet — se ci.yml:s egna kommentarer vid
+# `run: bash scripts/check-codeql-d0-kodfri.sh`. Det är avsiktligt:
+# `.github/workflows/**` är explicit undantaget D0, så en ren ändring av
+# codeql.yml ELLER ci.yml gör `should_skip_tests` falskt och kör
+# `lint`-jobbet — men ingendera filen står i changed-docs-listan
 # (klassning-docs), så `docs`-jobbets `docs_changed`-villkor hade INTE blivit
-# sant av samma ändring. Att flytta dessa två steg till `docs`-jobbet hade
+# sant av samma ändring. Att flytta dessa tre steg till `docs`-jobbet hade
 # alltså gjort dem tysta på precis den ändringstyp de finns för att fånga —
 # ett fail-open-hål. Se sessionsrapporten för TASK-464.1:s rebase-runda
 # (2026-09-19) för full utredning; en eventuell flytt kräver att codeql.yml +
-# de två skriptens egna sökvägar FÖRST läggs till klassning-docs, vilket är
-# ett eget beslut utanför denna rebase-konflikts scope.
+# ci.yml + de tre skriptens egna sökvägar FÖRST läggs till klassning-docs,
+# vilket är ett eget beslut utanför denna rebase-konflikts scope.
 run_gate "CodeQL D0-undantaget är kodfritt (TASK-464.2)" bash scripts/check-codeql-d0-kodfri.sh
+# TASK-471: SAMMA gate-binär, ANDRA konsumenten — pekad direkt på ci.yml:s
+# egen `klassning-d0`-region i stället för codeql.yml:s speglade kopia (se
+# check-codeql-d0-kodfri.sh § TVÅ KONSUMENTER + ci.yml:s steg "Validate
+# ci.yml D0-listan är kodfri"). `env VAR=val … cmd` i stället för ett
+# inline `VAR=val cmd`-prefix: run_gate kör "$@" direkt (exec, inget skal),
+# så ett bart VAR=val-prefix hade tolkats som ett literalt ARGUMENT till
+# `bash`, inte som en miljövariabel.
+run_gate "ci.yml D0-listan är kodfri (TASK-471)" \
+    env CODEQL_D0_KODFRI_WORKFLOW=.github/workflows/ci.yml \
+        CODEQL_D0_KODFRI_START_MARK='# paritet:start klassning-d0' \
+        CODEQL_D0_KODFRI_SLUT_MARK='# paritet:slut klassning-d0' \
+        bash scripts/check-codeql-d0-kodfri.sh
 run_gate "CodeQL push===pull_request paths-ignore (TASK-464.2)" node scripts/check-codeql-push-pr-parity.mjs
 
 # --- Sammanfattning -------------------------------------------------------

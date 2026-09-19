@@ -1,10 +1,10 @@
 ---
 id: TASK-451.4
 title: 'Skiva: tidsgräns per hämtning och EN retry-policy på startvärmningens väg'
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-18 10:39'
-updated_date: '2026-09-19 10:45'
+updated_date: '2026-09-19 12:40'
 labels:
   - ready-for-agent
 dependencies:
@@ -34,9 +34,9 @@ Underlag § 1.7, § 6 punkt 5–6. Research före design: hur TanStack Query-dok
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -72,4 +72,16 @@ Mätt i runda 4: `samlaCursorSidor` har ETT anropsställe i `src/`, så
 `fetchIntresserade` är den enda klient-sidiga walken. `fetchPersonsRegister`s
 fullwalk är SERVER-sidig (`supabase/functions/get-persons/index.ts`,
 `register=true`-grenen) och kostar klienten ETT anrop, alltså EN tidsbudget.
+
+## Stangningsbeslut om AC-texterna (S127 stangningsbatch, 2026-09-19)
+
+Undersokt: npx backlog task edit --help ger ingen indexerad in-place-redigering av en enskild AC-texts strang. De tva tillgangliga vagarna misslyckas bada det uppdragna kravet (bevara bock-status OCH ordning): (1) --remove-ac <index> + --ac <text> tar bort posten och lagger den NYA sist i listan (ordning forlorad, ny post startar avbockad) och (2) --acceptance-criteria <...> ersatter HELA AC-listan (samtliga fyra poster maste skrivas om och ateravbockas, risk for tyst omordning). Ingendera bevarar bock-status och ordning samtidigt.
+
+Beslut: AC-texterna lamnas ORORDA (samma linje som runda 4-ordern Ror INTE AC-texterna). De tva sakfelen ar redan bokforda verbatim ovan (## AC-textavvikelser - bokforda i runda 4) och i PR #2551 runda 4:s granskningsutlatande (AC-provning for AC3/AC4). Koden och dokblocken bar sanningen (husetsRetryPolicy, warmup-retry-policy.ts SS RESERVATION); enbart de tva textfragmenten (parentesen i AC4, den absoluta siffran i AC3) ar felstallda. Ingen ytterligare atgard mojlig utan att bryta uppdragets bade-och-krav.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landat: PR #2551, merge c5d3882d (2026-09-19T11:07:09Z, main), fyra granskningsrundor. HAMTNINGENS_TIDSGRANS_MS=160000 (harledd ur EF:ens 150s-tak) pa ETT stalle, AbortSignal.timeout via TanStack Querys signal pa samtliga sju hamtmetoder. EN retry-policy (warmup-retry-policy.ts) ersatte 18 tecken-identiska retry-kopior; TidsgransFel slutgiltigt (aldrig retryas) i varje lager; kalltextvakt (tests/api/retry-vakt.test.ts, namn-niva, 7 negativa fixturer) mot nya retry:-stallen. Runda 3 (Marcus-mandat, vag A): global retry:3 i router.ts + ~17 inline-retryfunktioner konsoliderade, 4 till 1 korningar matt. Runda 4: tva warnings stangda (vaktens kringgaende via citerad property-nyckel patchat pa namn-niva; STATE-STRATEGY.md synkad). AC-textkorrigeringar: se append-notes stangningsbeslut ovan - texterna lamnas ORORDA per Marcus runda 4-order, sakfelen bokforda i notes + i PR-granskningens AC-provning. Grindar runda 4 (matt, exitkod separat): typecheck exit 0; typecheck:tests exit 0; biome (872 filer) exit 0; check-langa-streck exit 0 (331 filer); check:docs 14/14 (var vid PR-tidpunkten - se CLAUDE.md-rattelsen i denna batch for aktuellt tal); test:api:pure exit 0, 1869 passed; rott-forst-injektion (tillfallig, raderad) exit 1 (5 failed/2 passed pa manipulerad kod, som forvantat). Granskning: risk LAG, runda 4, 1 info-fynd (biome-formatgrinden stanger det i praktiken).
+<!-- SECTION:FINAL_SUMMARY:END -->

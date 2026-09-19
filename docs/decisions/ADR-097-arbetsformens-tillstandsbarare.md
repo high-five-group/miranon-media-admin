@@ -370,3 +370,36 @@ fullt känd förrän den skivan landar.
   mekaniken byggs i `TASK-149.3`/`TASK-149.4`, push-ekonomins undantagslista
   i `TASK-149.5`, hypotes-beviset i `TASK-149.2`, inventeringen i
   `TASK-149.6`.
+
+## Updates
+
+### 2026-09-19 (S126, grillad samsyn Del 17 beslut 5) — distinktionen push kontra landning; session-batchad push står avvisad
+
+**Vad som INTE ändras.** § Decline-rationale ovan, "Session-batchad
+push — avvisad, fyra mätta skäl", står oförändrad. Avvisningen gällde
+PUSH — att en agent håller sina egna färdiga enheter opushade mot
+origin under en hel session. Alla fyra skälen (parallell
+nummerallokering, agent-synlighet mot origin, write-ahead-principen,
+DORA:s stor-batch-risk) gäller oförändrat för den formen, och för
+agenternas dokument-PR:er.
+
+**Vad som TILLKOMMER.** [ADR-133](ADR-133-testa-en-gang-per-landning-vantetidstak-och-tillvaxtmal.md)
+§ Besluten 5 beslutar en NY, avgränsad form som inte fanns i den
+options-rymd detta beslut prövade 2026-08-07: LANDNINGS-buntning,
+uteslutande för ORKESTRERARENS EGNA dokument (sessionsdok, todo,
+kortstängningar, instrumenteringsloggen) — en bunt per pass i stället
+för en PR per färdig dokumentenhet. En gren fortsätter ta emot pushar
+precis som i dag; det som ändras är hur många FÄRDIGA enheter som
+landar i samma PR. Skälet till att detta inte är samma sak som
+session-batchad push: ingen annan agent behöver se orkestrerarens
+mellansteg (agent-synlighets-skälet bortfaller), och write-ahead-risken
+gäller ett arbetsträd som väntar på en framtida tur att vakna i — en
+egenskap orkestrerarens egen, centralt hanterade dokumentbunt inte
+delar. `ADR-133` § Besluten 5 § "Avvisat alternativ" avvisar
+uttryckligen den BREDARE formen (buntning av ALLA dokument-PR:er,
+inklusive agenternas) med samma fyra skäl som detta beslut redan gav —
+distinktionen är alltså skärpt, inte uppluckrad.
+
+**Vad som ändras konkret:** `docs/reference/review-instrumentering.jsonl`
+får `merge=union` i `.gitattributes`; todo-filens kadensrad blir en rad
+per session i stället för en rad per landning. Byggs i `TASK-464.7`.

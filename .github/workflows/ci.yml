@@ -1058,13 +1058,18 @@ jobs:
 
       - name: Validate CodeQL D0-undantaget är kodfritt (TASK-464.2 gate)
         # STANNAR på kodändringar — se TASK-464.1 AC #2 (review runda 2 fynd
-        # 3). Detta steg ligger i regionen `docs-grindar-ci`
-        # (paritet:start/slut nedan), som TASK-464.1 flyttar bakom
-        # ci.yml:s dokumentvillkor (`docs_changed`). En ren kodändring —
-        # en ny .mjs under docs/, eller en ändrad codeql.yml — FÄLLER
-        # BÅDA de nya CodeQL-grindarna i det steget, precis som de gör i
-        # dag: de läser D0-listan och det verkliga trädet, oavsett vilket
-        # jobb de körs i. S4-agenten är meddelad om kopplingen.
+        # 3). RÄTTAT TASK-471 (info-fynd #1, #2564 runda 3): detta steg
+        # ligger i `lint`-jobbet (detta jobb, rad 791–), INTE i regionen
+        # `docs-grindar-ci` — den regionen (paritet:start/slut docs-grindar-ci)
+        # bor i `docs`-jobbet (nedan i denna fil) och är en annan, SNÄVARE
+        # mängd (check-docs.sh:s docs-grindar-lokal-motpart). Mekaniken var
+        # alltid rätt — steget körs oavsett vilket jobb det bor i, eftersom
+        # det läser D0-listan och det verkliga trädet direkt — men prosan
+        # pekade på fel region (ADR-083-klassen: en agent som litade på
+        # kommentaren och flyttade steget IN i docs-grindar-ci hade
+        # återskapat fail-open-hålet TASK-464.1/SE2 undvek, eftersom
+        # `docs`-jobbet bara kör på `docs_changed==true` — en ren
+        # kodändring, t.ex. en ny .mjs under docs/, sätter INTE den flaggan).
         #
         # Review runda 1 fynd 1 (warning), PR #2558: D0-listan
         # (.github/workflows/codeql.yml) återanvänder ci.yml:s D0-allowlist
@@ -1076,14 +1081,37 @@ jobs:
         # D0-undantag och fäller på analyserbar ändelse (med innehållsprövning
         # för HTML-familjen) utan deklarerat undantag i
         # .codeql-d0-kodfri-policy.conf. Config-driven, tvåsidigt testad
-        # (scripts/test-check-codeql-d0-kodfri.sh, 14 fall).
+        # (scripts/test-check-codeql-d0-kodfri.sh, 19 fall sedan TASK-471).
         run: bash scripts/check-codeql-d0-kodfri.sh
+
+      - name: Validate ci.yml D0-listan är kodfri (TASK-471 gate)
+        # ANDRA KONSUMENTEN av SAMMA skript + SAMMA undantagslista som steget
+        # ovan (check-codeql-d0-kodfri.sh § TVÅ KONSUMENTER) — pekad DIREKT på
+        # DENNA fils egen `klassning-d0`-region i stället för codeql.yml:s
+        # speglade kopia. Fram till TASK-471 vilade ci.yml:s D0-lista på
+        # ENBART transitivt skydd: scripts/check-listparitet.sh:s par
+        # `klassning-codeql-positiv` höll de två regionerna byte-identiska,
+        # men gick DEN grinden någonsin sönder hade ingenting längre
+        # validerat att ci.yml:s D0-lista faktiskt var kodfri — bara att den
+        # matchade codeql.yml:s kopia, som i sin tur var validerad. Detta
+        # steg tar bort det extra ledet: samma § ANALYSERBARHET-regler prövas
+        # DIREKT mot filen `should_skip_tests`/`requires_lint_by_extension`
+        # faktiskt styrs av. Inget nytt jobb (Marcus ledstjärna,
+        # docs/research/actions-minutbudget-2026-09-18.md § S4/S5) — ett
+        # extra steg i EXAKT det jobb som redan kör här.
+        run: >-
+          CODEQL_D0_KODFRI_WORKFLOW=.github/workflows/ci.yml
+          CODEQL_D0_KODFRI_START_MARK='# paritet:start klassning-d0'
+          CODEQL_D0_KODFRI_SLUT_MARK='# paritet:slut klassning-d0'
+          bash scripts/check-codeql-d0-kodfri.sh
 
       - name: Validate CodeQL push===pull_request paths-ignore (TASK-464.2 gate)
         # STANNAR på kodändringar — se TASK-464.1 AC #2 (review runda 2 fynd
-        # 3). Samma region (`docs-grindar-ci`) som steget ovan, samma
-        # konsekvens: en kodändring fäller detta steg oavsett vilket jobb
-        # det körs i, eftersom det parsar codeql.yml:s verkliga innehåll.
+        # 3). Samma jobb (`lint`, INTE `docs-grindar-ci` — se § rättelsen på
+        # steget "Validate CodeQL D0-undantaget är kodfritt" ovan) som stegen
+        # ovan, samma konsekvens: en kodändring fäller detta steg oavsett
+        # vilket jobb det körs i, eftersom det parsar codeql.yml:s verkliga
+        # innehåll.
         #
         # Review runda 1 fynd 2 (warning), PR #2558: prosan i
         # .listparitet-policy.conf och codeql.yml:s eget filhuvud påstod att
@@ -1686,28 +1714,76 @@ jobs:
         # robusthets-kontroll (`needs:` som skalär sträng, giltig YAML-form).
         # Sandboxad i egen mktemp-katalog, ingen nätverkstrafik.
         #
-        # test-check-nattkanal-partition.mjs (TASK-450.10, 3A) hör hit av
-        # samma ADR-039 § lesson→grind-skäl applicerat på grinden ovan
-        # (check-nattkanal-partition.mjs): den är inte en grind förrän dess
-        # fyrning fortlöpande verifieras. Fallantalet läses ur svitens egen
-        # slutrad ("alla N kontroller OK") — skriv aldrig av talet hit
+        # test-check-nattkanal-partition.mjs (TASK-450.10, 3A; utökad TASK-467)
+        # hör hit av samma ADR-039 § lesson→grind-skäl applicerat på grinden
+        # ovan (check-nattkanal-partition.mjs): den är inte en grind förrän
+        # dess fyrning fortlöpande verifieras. Fallantalet läses ur svitens
+        # egen slutrad ("alla N kontroller OK") — skriv aldrig av talet hit
         # (TASK-106; en tidigare version sade "17 fall (24 assert-
-        # kontroller)" här, verkligt 18 fall / 26 assertions, rättat
-        # 2026-09-19 efter granskningens fynd på PR #2557 runda 2). Rättningen
-        # gäller BARA denna kommentar — testfallens sakliga täckning är
-        # oförändrad: tvåsidigt bevis i BÅDA leden (mutationsprövat under bygget: ID-
-        # ledets partitionsloop avstängd fällde exakt de två fall som
-        # bevisar det, namn-ledets båda loopar avstängda fällde de två
-        # fall som bevisar det) — en sandlådekopia av nightly.yml med ett
+        # kontroller)" här, verkligt 18 fall / 26 assertions vid ADR-083-
+        # rättelsen 2026-09-19 efter granskningens fynd på PR #2557 runda 2;
+        # TASK-467 (S126, samma dag) lade till ett TREDJE led — se nedan —
+        # och fem nya fall, mätt 23 fall / 36 assertions). Tvåsidigt bevis i
+        # ALLA TRE leden (mutationsprövat under bygget: ID-ledets
+        # partitionsloop avstängd fällde exakt de två fall som bevisar det,
+        # namn-ledets båda loopar avstängda fällde de två fall som bevisar
+        # det, LED (iii) — se nedan — helt borttaget fällde exakt de fem nya
+        # fallen och INGET annat) — en sandlådekopia av nightly.yml med ett
         # jobb borttaget ur ALLA tre triggrar FÄLLER med jobbets namn, ett
         # jobb i TVÅ triggrar FÄLLER, ett ändrat name: på ett produktjobb
         # FÄLLER, ett föråldrat prefix i .nattvakt-kanal-policy.conf FÄLLER
         # — plus fail-closed-grenar (saknad/trasig nightly.yml, saknat
         # 'jobs:'-block, saknat kanaljobb, saknad/tom/trasig kanal-config)
         # och robusthetskontroller (prefix-matchning som PREFIX, inte
-        # likhet; `needs:` som skalär sträng). De RIKTIGA nightly.yml +
-        # .nattvakt-kanal-policy.conf PASSERAR. Sandboxad i egen mktemp-
-        # katalog, ingen nätverkstrafik. 1,5 s LOKALT mätt (macOS,
+        # likhet; `needs:` som skalär sträng).
+        #
+        # LED (iii) (TASK-467, S126, 2026-09-19): beroendekanalens
+        # dödmansgrepp (scripts/check-beroendekanal-dodmansgrepp.sh) får
+        # sina två jobbnamn ur .nattvakt-kanal-policy.conf
+        # (NATTVAKT_BEROENDE_GRANSKNING_JOBBNAMN/NATTVAKT_BEROENDE_ARENDE_JOBBNAMN)
+        # — samma tysta felklass som led (ii) om de glider ur synk med
+        # nightly.yml:s faktiska name:-fält. Fem nya fall: config helt
+        # borttagen FÄLLER, granskningsnamnet fel FÄLLER, ärendenamnet fel
+        # FÄLLER, nightly-watchdog.yml som slutat referera skriptet FÄLLER
+        # (config kan se helt intakt ut samtidigt), och watchdog-filen
+        # helt borttagen FÄLLER.
+        #
+        # De RIKTIGA nightly.yml + .nattvakt-kanal-policy.conf +
+        # nightly-watchdog.yml PASSERAR — detta är det starkaste beviset att
+        # TASK-467:s wiring faktiskt stämmer, inte bara att fixturerna gör
+        # det. Sandboxad i egen mktemp-katalog, ingen nätverkstrafik. 3,1 s
+        # LOKALT mätt (macOS, 2026-09-19, `time node scripts/test-check-
+        # nattkanal-partition.mjs`) — CI-tiden är INTE mätt av mig och kan
+        # avvika.
+        #
+        # test-check-beroendekanal-dodmansgrepp.sh (TASK-467) hör hit av
+        # samma ADR-039 § lesson→grind-skäl som test-check-nattvakt-dedup.sh
+        # ovan, applicerat på grinden scripts/check-beroendekanal-
+        # dodmansgrepp.sh: den prövar beroendekanalens EGNA dödmansgrepp
+        # (nightly-audit rött ⇒ beroende-arende MÅSTE nå `success`, annars
+        # fallerade ärendeskapandet tyst) — samma Prometheus Watchdog-mönster
+        # som produktkanalens dödmansgrepp (TASK-450.10) redan bär, applicerat
+        # på en TVÅLEDS-relation mellan två jobb i stället för en ensam
+        # heartbeat. Riggen matar jobblistan ur en JSON-fixtur
+        # (NATTVAKT_BEROENDE_FAKE_JOBS_JSON) i stället för att fråga GitHub,
+        # samma mönster som NATTVAKT_DEDUP_FAKE_JSON. 20 fall (MÄTT
+        # 2026-09-19, `bash scripts/test-check-beroendekanal-dodmansgrepp.sh`
+        # egen slutrad "20/20 gröna") — tvåsidigt: SIDA 1 (sex fall) bevisar
+        # att en genuint TYSTNAD kanal LARMAR (granskning rött + ärende
+        # failure/skipped/cancelled/null, inklusive okända framtida
+        # conclusion-värden som `timed_out`/`action_required` — negationen
+        # gör dem röda som default, samma disciplin som
+        # .nattvakt-kanal-policy.conf § NATTVAKT_OFARLIGA_CONCLUSIONS, ÅTER-
+        # ANVÄND rakt av, ingen andra rödhets-definition); SIDA 2 (fem fall)
+        # bevisar att en FRISK kanal är TYST (granskning inte rött i något
+        # av sina ofarliga lägen, ELLER ärendejobbet lyckades trots rött
+        # granskningsjobb — kanalen larmade korrekt); SIDA 3 (nio fall)
+        # bevisar fail-closed (saknad/otolkbar jobblista, ett jobbnamn som
+        # glidit — noll ELLER flera träffar räknas båda som anropsfel, ej
+        # gissning — eller en ofullständig policy) LARMAR, aldrig tystar.
+        # Mutationsprövat under bygget: ARENDE_CONCLUSION-jämförelsen
+        # tvingad sann (`if true`) fällde exakt SIDA 1:s sex fall och INGET
+        # annat. Hermetisk (ingen nätverkstrafik). 2,0 s LOKALT mätt (macOS,
         # 2026-09-19) — CI-tiden är INTE mätt av mig och kan avvika.
         #
         # test-docraptor-sjalvbarande.mjs (TASK-301) hör hit av samma
@@ -1945,6 +2021,7 @@ jobs:
           bash scripts/test-lint-inert-extensions.sh
           node scripts/test-check-aggregator-needs.mjs
           node scripts/test-check-nattkanal-partition.mjs
+          bash scripts/test-check-beroendekanal-dodmansgrepp.sh
           node scripts/test-task-338-6-prod-migration.mjs
           node scripts/test-docraptor-sjalvbarande.mjs
           node scripts/test-backfill-inbetalningar.mjs
