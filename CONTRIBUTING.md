@@ -1013,12 +1013,15 @@ stället för den gamla exkluderingen av länkkontrollen.
 dag **ingen** motsvarande "vaktens vakt": faller deras kanaljobb på gh-I/O syns
 det bara i körningens logg. Det är en känd lucka, inte en glömska — de två
 kanalerna är icke-blockerande stående ärenden, och en vakt som larmar
-tilldelat om dem hade återinfört precis den signalblandning delningen tog bort.
+tilldelat om dem hade återinfört precis den signalblandning delningen tog
+bort. Beroendekanalens dödmansgrepp bärs av ett eget kort, `TASK-467`, i
+stället för byggt i `TASK-450.10` (3A): den kanalen blir lastbärande för
+hela beroendesäkerheten FÖRST när `TASK-450.5` landat.
 
-**Invarianten som måste hållas för hand är TVÅDIMENSIONELL** — och den
-formulering som stod här (*"listan ska vara lika med `alarm`-jobbets trigger"*)
-var för grov. Triggrarna och `needs`-listan lever i **jobb-ID**-rymden
-(`suite`, `nightly-metrics`, `kontraktsvakt`); vaktens lista lever i
+**Invarianten som måste hållas är TVÅDIMENSIONELL** — och den formulering som
+stod här (*"listan ska vara lika med `alarm`-jobbets trigger"*) var för grov.
+Triggrarna och `needs`-listan lever i **jobb-ID**-rymden (`suite`,
+`nightly-metrics`, `kontraktsvakt`); vaktens lista lever i
 **jobb-NAMNPREFIX**-rymden. Kravet har därför två led:
 
 1. **ID-ledet** — de tre kanalernas triggerlistor partitionerar `needs`-listan:
@@ -1029,8 +1032,12 @@ var för grov. Triggrarna och `needs`-listan lever i **jobb-ID**-rymden
    dessutom förbli ett **prefix** till nattsvitens barnjobb.
 
 Bryts ledet 2 ensamt **tystnar vakten för hela produktkanalen** medan en ren
-ID-jämförelse står grön. Ingen grind vaktar något av leden i dag; kravet står
-som prosa i configen och i `nightly.yml`. Följdskivan ska vakta **båda**.
+ID-jämförelse står grön. **Sedan `TASK-450.10` (3A, 2026-09-19) vaktar
+`scripts/check-nattkanal-partition.mjs` BÅDA leden**, CI-wirat i `ci.yml`:s
+lint-jobb på varje PR — härlett ur `nightly.yml` (js-yaml) och ur
+`.nattvakt-kanal-policy.conf` (sourcad i en riktig bash-subprocess, samma
+tolkning nightly-watchdog.yml självt gör), ingen femte handhållen lista.
+Tvåsidigt testbevisad: `scripts/test-check-nattkanal-partition.mjs`.
 
 ### Kontraktsvakten — fixturvärlden mot verkligheten
 
