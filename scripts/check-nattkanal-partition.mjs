@@ -39,6 +39,16 @@ import fs from 'node:fs';
 //      produktkanalens jobbnamn — ett prefix som glidit och inte matchar
 //      något är lika farligt som ett omdöpt jobb, det maskerar bara på
 //      andra hållet.
+// (iii) BEROENDEKANALENS DÖDMANSGREPP (TASK-467, S126). Beroendekanalen fick
+//      sitt EGET dödmansgrepp (scripts/check-beroendekanal-dodmansgrepp.sh,
+//      anropat av nightly-watchdog.yml) sedan K1 (b) (TASK-450.5) gjorde den
+//      lastbärande. Ledet prövar att NATTVAKT_BEROENDE_GRANSKNING_JOBBNAMN/
+//      NATTVAKT_BEROENDE_ARENDE_JOBBNAMN i .nattvakt-kanal-policy.conf
+//      matchar de FAKTISKA name:-fälten på beroendekanalens två jobb
+//      (nightly-audit / beroende-arende), OCH att nightly-watchdog.yml
+//      fortfarande refererar skriptet — tas endera bort tystnar
+//      dödmansgreppet precis lika tyst som ett omdöpt produktjobb tystar
+//      led (ii), fast för en ANNAN kanal.
 //
 // ═══ HÄRLETT, INGEN FEMTE HANDHÅLLEN LISTA ═══
 // Skriptet skapar INGEN ny policy-fil. Kanaljobbens ID:n (produkt/
@@ -58,8 +68,11 @@ import fs from 'node:fs';
 // tom prefix-array. Fynd (exit 1): ett jobb i unionen utlöses av noll eller
 // fler än en kanal, en kanal refererar ett jobb utanför sin egen `needs:`-
 // lista eller ett jobb som inte finns alls, ett produktjobbs namn matchas av
-// inget prefix, eller ett prefix matchar inget produktjobbs namn. Grönt
-// (exit 0): båda leden håller.
+// inget prefix, ett prefix matchar inget produktjobbs namn, beroendekanalens
+// dödmansgrepp-config (TASK-467) saknas/inte matchar de faktiska name:-
+// fälten, eller nightly-watchdog.yml inte längre refererar
+// scripts/check-beroendekanal-dodmansgrepp.sh. Grönt (exit 0): alla tre led
+// håller.
 //
 // ═══ KÄNDA BEGRÄNSNINGAR (review runda 1, PR #2557) ═══
 // extractTriggerRefs() är en REGEX, inte en GH Actions-expression-parser,
@@ -87,6 +100,8 @@ import { load as loadYaml } from 'js-yaml';
 const REPO_ROOT = process.cwd();
 const DEFAULT_NIGHTLY_PATH = '.github/workflows/nightly.yml';
 const DEFAULT_KANAL_CONFIG_PATH = '.nattvakt-kanal-policy.conf';
+const DEFAULT_WATCHDOG_PATH = '.github/workflows/nightly-watchdog.yml';
+const DODMANSGREPP_SCRIPT_REF = 'scripts/check-beroendekanal-dodmansgrepp.sh';
 const DEFAULT_CHANNELS = {
   produkt: 'alarm',
   bokforing: 'bokforings-arende',
@@ -102,11 +117,13 @@ function parseArgs(argv) {
   const out = {
     nightlyPath: DEFAULT_NIGHTLY_PATH,
     kanalConfigPath: DEFAULT_KANAL_CONFIG_PATH,
+    watchdogPath: DEFAULT_WATCHDOG_PATH,
     channels: { ...DEFAULT_CHANNELS },
   };
   for (let i = 0; i < argv.length; i++) {
     if (argv[i] === '--file' && argv[i + 1]) out.nightlyPath = argv[++i];
     else if (argv[i] === '--kanal-config' && argv[i + 1]) out.kanalConfigPath = argv[++i];
+    else if (argv[i] === '--watchdog-file' && argv[i + 1]) out.watchdogPath = argv[++i];
     else if (argv[i] === '--produkt' && argv[i + 1]) out.channels.produkt = argv[++i];
     else if (argv[i] === '--bokforing' && argv[i + 1]) out.channels.bokforing = argv[++i];
     else if (argv[i] === '--beroende' && argv[i + 1]) out.channels.beroende = argv[++i];
@@ -221,8 +238,38 @@ function loadProduktPrefixes(kanalConfigPath) {
   return prefixes;
 }
 
+// Läser NATTVAKT_BEROENDE_GRANSKNING_JOBBNAMN/NATTVAKT_BEROENDE_ARENDE_JOBBNAMN
+// (TASK-467) genom att SOURCA samma kanal-config i en riktig bash-process —
+// samma tolkning som scripts/check-beroendekanal-dodmansgrepp.sh självt gör.
+// Tomma strängar (variabel saknas/tom) returneras rakt av — anroparen (LED
+// iii nedan) avgör om det är ett fynd, denna funktion gissar inget.
+function loadBeroendeDodmansgrepp(kanalConfigPath) {
+  const abs = path.resolve(REPO_ROOT, kanalConfigPath);
+  if (!fs.existsSync(abs)) {
+    usageDie(`kanal-policy-filen saknas: ${abs}`);
+  }
+  const script =
+    'set -euo pipefail\n' +
+    'source "$1"\n' +
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: literal bash-parameterexpansion (${VAR:-}), inte ett mall-literal-misstag.
+    'printf "%s\\n" "${NATTVAKT_BEROENDE_GRANSKNING_JOBBNAMN:-}"\n' +
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: literal bash-parameterexpansion (${VAR:-}), inte ett mall-literal-misstag.
+    'printf "%s\\n" "${NATTVAKT_BEROENDE_ARENDE_JOBBNAMN:-}"\n';
+  const res = spawnSync('bash', ['-c', script, '--', abs], { encoding: 'utf8' });
+  if (res.error) {
+    usageDie(`kunde inte köra bash för att läsa ${abs}: ${res.error.message}`);
+  }
+  if (res.status !== 0) {
+    usageDie(
+      `kunde inte läsa NATTVAKT_BEROENDE_*-variabler ur ${abs} (exit ${res.status}): ${res.stderr.trim()}`,
+    );
+  }
+  const rader = res.stdout.split('\n');
+  return { granskningJobbnamn: rader[0] ?? '', arendeJobbnamn: rader[1] ?? '' };
+}
+
 function main() {
-  const { nightlyPath, kanalConfigPath, channels } = parseArgs(process.argv.slice(2));
+  const { nightlyPath, kanalConfigPath, watchdogPath, channels } = parseArgs(process.argv.slice(2));
   const workflow = loadWorkflow(nightlyPath);
   const allJobs = Object.keys(workflow.jobs);
 
@@ -329,6 +376,78 @@ function main() {
     }
   }
 
+  // ═══ LED (iii) — BEROENDEKANALENS DÖDMANSGREPP (TASK-467) ═══
+  // Samma "två namnrymder"-skäl som led (ii), applicerat på ETT nytt jobbpar
+  // i stället för produktkanalens tre. scripts/check-beroendekanal-
+  // dodmansgrepp.sh känner de här jobben bara via sina name:-fält (config,
+  // inte YAML-parsning), så ett omdöpt granskningsjobb eller ärendejobb
+  // tystar dödmansgreppet på exakt samma tysta sätt ett omdöpt produktjobb
+  // tystade nattvaktens produktkanal (led ii). Kontrollen har TVÅ delar:
+  //   (a) config-värdena finns och matchar de FAKTISKA name:-fälten i
+  //       nightly.yml,
+  //   (b) nightly-watchdog.yml refererar fortfarande skriptet — annars kan
+  //       config-värdena vara perfekta samtidigt som invokeringen är
+  //       borttagen, och dödmansgreppet är lika tyst.
+  const beroendeInfo = infos.find((c) => c.kanalKey === 'beroende');
+  const { granskningJobbnamn, arendeJobbnamn } = loadBeroendeDodmansgrepp(kanalConfigPath);
+
+  if (!granskningJobbnamn || !arendeJobbnamn) {
+    errors.push(
+      `${kanalConfigPath} saknar NATTVAKT_BEROENDE_GRANSKNING_JOBBNAMN och/eller ` +
+        'NATTVAKT_BEROENDE_ARENDE_JOBBNAMN — beroendekanalens dödmansgrepp (TASK-467) är borttaget ' +
+        'eller ofullständigt konfigurerat.',
+    );
+  } else {
+    const granskningRefs = [...beroendeInfo.triggerRefs];
+    if (granskningRefs.length !== 1) {
+      errors.push(
+        `beroendekanalen ("${beroendeInfo.jobId}") har ${granskningRefs.length} trigger-jobb i sitt ` +
+          'if-villkor — beroendekanalens dödmansgrepp (TASK-467) förutsätter exakt ett ' +
+          '(granskningsjobbet). Detta är sannolikt redan fångat av led (i) ovan.',
+      );
+    } else {
+      const granskningJobId = granskningRefs[0];
+      const granskningJob = workflow.jobs[granskningJobId];
+      const faktisktGranskningNamn =
+        granskningJob && typeof granskningJob.name === 'string'
+          ? granskningJob.name
+          : granskningJobId;
+      if (faktisktGranskningNamn !== granskningJobbnamn) {
+        errors.push(
+          `NATTVAKT_BEROENDE_GRANSKNING_JOBBNAMN ("${granskningJobbnamn}") i ${kanalConfigPath} matchar ` +
+            `inte granskningsjobbets faktiska name: ("${faktisktGranskningNamn}") i ${nightlyPath} — ` +
+            'beroendekanalens dödmansgrepp (scripts/check-beroendekanal-dodmansgrepp.sh) skulle inte ' +
+            'känna igen jobbet.',
+        );
+      }
+    }
+
+    if (arendeJobbnamn !== beroendeInfo.name) {
+      errors.push(
+        `NATTVAKT_BEROENDE_ARENDE_JOBBNAMN ("${arendeJobbnamn}") i ${kanalConfigPath} matchar inte ` +
+          `beroendekanalens ärendejobbs faktiska name: ("${beroendeInfo.name}") i ${nightlyPath} — ` +
+          'beroendekanalens dödmansgrepp (scripts/check-beroendekanal-dodmansgrepp.sh) skulle inte ' +
+          'känna igen jobbet.',
+      );
+    }
+  }
+
+  const watchdogAbs = path.resolve(REPO_ROOT, watchdogPath);
+  if (!fs.existsSync(watchdogAbs)) {
+    errors.push(
+      `nattvakten saknas: ${watchdogAbs} — beroendekanalens dödmansgrepp (TASK-467) kan inte vara wirad.`,
+    );
+  } else {
+    const watchdogText = fs.readFileSync(watchdogAbs, 'utf8');
+    if (!watchdogText.includes(DODMANSGREPP_SCRIPT_REF)) {
+      errors.push(
+        `${watchdogPath} refererar inte längre ${DODMANSGREPP_SCRIPT_REF} — beroendekanalens ` +
+          'dödmansgrepp (TASK-467) är borttaget ur nattvakten, medan configen (led iii ovan) kan ' +
+          'se helt intakt ut.',
+      );
+    }
+  }
+
   if (errors.length > 0) {
     process.stderr.write(
       `❌ check-nattkanal-partition: ${errors.length} avvikelse(r) i ${nightlyPath} / ${kanalConfigPath}:\n\n`,
@@ -340,7 +459,8 @@ function main() {
 
   process.stdout.write(
     `✅ check-nattkanal-partition: OK — ${population.size} nattjobb partitionerade över 3 kanaler, ` +
-      `${prefixes.length} produktkanals-prefix, alla matchade.\n`,
+      `${prefixes.length} produktkanals-prefix, alla matchade; beroendekanalens dödmansgrepp ` +
+      `(TASK-467) konfigurerat, namn-matchat och wirat i ${watchdogPath}.\n`,
   );
 }
 

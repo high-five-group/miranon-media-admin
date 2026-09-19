@@ -349,15 +349,15 @@ produktjobb med `timed_out` gav
 `neutral`; `null` = pågår hanteras separat), vilket gör varje framtida
 conclusion-värde rött som default i stället för tyst.
 
-**Vad som fortfarande saknar vakt, öppet skrivet:** bokförings- och
-beroendekanalen har ingen "vaktens vakt". `lankrota` har det inte heller, och har
-aldrig haft det — beslut 4 byggde kanalen, inte en vakt över den.
-Beroendekanalens dödmansgrepp bärs av ett eget kort, `TASK-467`
-(rättat 2026-09-19 — flyttades bort från en AC på `TASK-450.5` sedan
-`TASK-450.10` och `TASK-450.5` visade sig redigera samma kortfil, en
-verklig merge-konflikt), i stället för byggt i `TASK-450.10`: kanalen
-blir lastbärande för hela beroendesäkerheten först när `TASK-450.5`
-landat, se § Öppet ovan.
+**Vad som fortfarande saknar vakt, öppet skrivet:** bokföringskanalen har
+ingen "vaktens vakt". `lankrota` har det inte heller, och har aldrig haft
+det — beslut 4 byggde kanalen, inte en vakt över den. Beroendekanalen HADE
+samma lucka fram till `TASK-467` (2026-09-19, se § Updates nedan för
+mekaniken) — den byggdes INTE i `TASK-450.10` (rättat 2026-09-19 — flyttades
+bort från en AC på `TASK-450.5` sedan `TASK-450.10` och `TASK-450.5` visade
+sig redigera samma kortfil, en verklig merge-konflikt) eftersom kanalen blev
+lastbärande för hela beroendesäkerheten först när `TASK-450.5` landade, se
+§ Öppet ovan.
 
 #### Bevis-läget är hermetiskt sedan samma runda
 
@@ -367,3 +367,45 @@ identiska med en äkta nattrapport. Alla fyra kanaljobb bär därför nu en
 kanalklausul: i ett bevis-läge får bara den valda kanalen skriva. Garantin sitter
 på skrivpunkten, inte på grindarna, så en genuint röd grind i en annan kanal kan
 inte längre förorena beviset.
+
+### 2026-09-19 — Beroendekanalens dödmansgrepp landad (`TASK-467`)
+
+**Vad som byggdes.** Den öppna frågan i § Öppet ("blir kanalen lastbärande
+förutsätter en 'vaktens vakt' på egen hand") är besvarad för den DEL av
+frågan som gällde en dödmansgrepp-mekanism (TILLDELNING av det befintliga
+`beroendevarning`-ärendet är fortfarande obesvarad, ett eget beslut på
+data). `scripts/check-beroendekanal-dodmansgrepp.sh` prövar en
+TVÅLEDS-relation mellan de två jobb som bär kanalen: gavs granskningsjobbet
+(`nightly-audit`, "Bredare sårbarhetsgranskning") ett rött resultat UTAN att
+ärendejobbet (`beroende-arende`, "Beroendevarning — stående ärende") nådde
+`conclusion: success`? Det är en ANNAN relation än produktkanalens vakt
+(`nightly-watchdog.yml`s ursprungliga "kom natten alls igång?") — samma
+Prometheus Watchdog-idé, applicerad på en relation mellan två jobb i SAMMA
+körning i stället för på en extern heartbeat mot klockan.
+
+**Var den bor.** Ett STEG i `nightly-watchdog.yml`s befintliga jobb `watch`
+— inte ett nytt jobb — som återanvänder den JOBBLISTA workflowet redan
+hämtar för produktkanal-checken (`gh run view … --json jobs`). Config-driven
+via TVÅ nya variabler i `.nattvakt-kanal-policy.conf`
+(`NATTVAKT_BEROENDE_GRANSKNING_JOBBNAMN`/`NATTVAKT_BEROENDE_ARENDE_JOBBNAMN`)
+som återanvänder samma `NATTVAKT_OFARLIGA_CONCLUSIONS`-negation som
+produktkanalens dödmansgrepp redan bär — ingen andra rödhets-definition.
+Tystnar kanalen skapas SAMMA tilldelade `ci-natt`-ärende som produktkanalens
+vakt använder, med rubriken "Beroendekanalen tystnade". Eget bevis-läge
+(`simulate_beroende_tyst: true`), oberoende av det befintliga
+`simulate_missing`.
+
+**Partitionsvakten fick ett TREDJE led.** `scripts/check-nattkanal-
+partition.mjs` (`TASK-450.10`, § "Följdrättelse i nattvakten" ovan) vaktar
+nu även att `NATTVAKT_BEROENDE_*`-variablerna matchar de FAKTISKA
+`name:`-fälten på `nightly-audit`/`beroende-arende`, OCH att
+`nightly-watchdog.yml` fortfarande refererar skriptet — samma tysta
+felklass som led (ii) om endera glider. Tvåsidigt testbevisad, alla tre led:
+`scripts/test-check-nattkanal-partition.mjs`.
+
+**Kostnad.** Noll nya fakturerade Actions-minuter (samma jobb, samma redan
+hämtade jobblista) — `nightly-watchdog.yml`s körningar ligger mätt på
+~15–30 s väggklocka, långt under GitHubs per-jobb-minutgräns, och det nya
+steget adderar sub-sekund lokalt/~2 s mot skarpt `gh run view` (mätt
+2026-09-19 mot verklig körning `35424541948`, se `TASK-467`:s PR-kropp
+§ "Kostnad i två mått" för fullständig mätning).
