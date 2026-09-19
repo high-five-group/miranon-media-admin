@@ -14,7 +14,7 @@
 | Typ | Fix |
 | Konkret förändring | Uppdatera `Anmälningar.Är aktiv (1/0)` (`fld4j7PeckDViTdIB`) från `IF(Status="Avbokad/Ombokad", 0, 1)` till `IF(OR({Status}="Avbokad/Ombokad", {Status}="Inställt"), 0, 1)`. Behåll `Anmälningar.Status="Inställt"` som arrangör-initierad terminal state och ändra inte `Avbokad/Ombokad`-semantiken. |
 | Konsumentkontroll | Views: alla Anmälningar-vyer som filtrerar/grupperar/sorterar på `Status`, `Är aktiv (1/0)`, `Event`, `Flagga`; alla Personer-vyer som visar `Antal anmälningar (aktiva)`, `Har en aktiv anmälan?`, `Har en aktiv anmälan (Ja/Nej)`; alla Eventplanering-vyer som visar beläggning/deltagarunderlag. Automationer: A1-A3 indirekt via Anmälningar-kedjan, A6 beläggningsnotis, A7 slutbetalningssynk, A8-A11 som downstream-närvaro; verifiera att ingen automation har villkor på gamla aktiv-formeln. Formulär: Huvudformulär, Expressformulär, Anmälan-Psionautics.se, väntelisteformulär samt de två lead-magnet-formulären och Soundwise-formulären ska bara kontrolleras för att de inte skickar `Inställt` som input. Zapier: Zap 1, 3 och 4 sätter `Status="Obekräftad"` till Anmälningar; Zap 2 skriver Väntelista; Zap 5-6 skriver Hämtade erbjudanden. Edge Functions: `get-registrations` läser och filtrerar `Status`, `get-events` läser eventstatus/beläggning, `update-record` kan skriva Anmälningar.Status, `AirtableAdapter.fetchRegistrations` skickar statusfilter. Exporter: CSV/exporter/deltagarinsikter/rapportvyer som använder aktiva anmälningar, Personer-exporter, Make.com segmentberäkning. |
-| Sekvens | Första driftkritiska schemaändringen post-MK. Kör i testbas eller Airtable snapshot först. Kör efter att MK är avslutat och efter att Mia/Daniel/andra `Inställt`-records kan användas som verifieringsfall. Ska göras före A6/A7 cleanup eftersom aktiv-semantiken är grund för rapport-/segmentförtroende. |
+| Sekvens | Första driftkritiska schemaändringen post-MK. Kör i testbas eller Airtable snapshot först. Kör efter att MK är avslutat och efter att Deltagare 64/Deltagare 21/andra `Inställt`-records kan användas som verifieringsfall. Ska göras före A6/A7 cleanup eftersom aktiv-semantiken är grund för rapport-/segmentförtroende. |
 | Blast radius | Medel. En formeländring i en central rollup påverkar Personer-rollups och rapporter, men ändrar inte rådata, relationer eller automation actions. |
 | Rollback | Återställ formeln till `IF({Status}="Avbokad/Ombokad", 0, 1)`. Eftersom detta är computed data krävs ingen data-backfill; verifiera bara att Personer-rollups räknas om. |
 | Spårbarhet | DS1; `docs/reference/data-model.md:1170`; `docs/research/datamodell-research/02-live-state.md:166`; `docs/research/datamodell-research/05-gap-vs-worldclass.md:38` |
@@ -300,3 +300,9 @@ Allt nedan är post-MK. Inga förberedande Airtable-/Zapier-/Edge-/Resend-ändri
 4. **Inter-fas-kontrakt:** Ja. S-track får tydligt vad A-track låser och vad som lämnas öppet.
 5. **MK-frys:** Respekterad. Inga pre-MK-åtgärder finns i 06a.
 6. **G0.3-disciplin:** Respekterad. Ingen tenant_id, tenant-view, workspace-prefix eller annan Airtable-tenant-abstraktion föreslås.
+
+---
+
+> **Pseudonymiserat (T171, 2026-09-18):** namn i denna fil är ersatta med
+> stabila pseudonymer (`Deltagare NN`) och e-post maskad till `X***@domän`.
+> Se `tasks/threads/T171-personuppgifter-i-publikt-repo.md`.

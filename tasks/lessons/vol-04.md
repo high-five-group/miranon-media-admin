@@ -74,7 +74,7 @@ felaktig revert.
 ### L255 [UNIVERSAL] — Stäm av på identitets-stabila nycklar, aldrig på visningsnamn — dubblettnamn mis-mappar tyst
 
 Datum: 2026-07-08 | Källa: S60 Psionautics-avstämning (namn-baserad Deltagande-ID-extraktion
-kopplade "Stefan Martinsson" till fel anmälan — det fanns TVÅ [nr 843 Bekräftad, nr 844
+kopplade "Deltagare 84" till fel anmälan — det fanns TVÅ [nr 843 Bekräftad, nr 844
 Avbokad]; en namn-dict skrev över så fel Deltaganden-IDs plockades; fångat genom att korsläsa
 CSV-status mot bas-status per person) (klass: reconciliation/dedup-korrekthet; [[L254]]-släkt)
 
@@ -2318,3 +2318,9 @@ token-värdet (settle-grinden), och hämta token-värdet FÖRE hovern.
 Släkt: [[L246]] (renderad verifiering — mät computed), [[L356]] (samma
 komponent: `transition-colors` drog med `outline-color`), [[L94]] (a11y-fynd
 kräver flera evidenslinjer — här var felmeddelandet direkt vilseledande).
+
+---
+
+> **Pseudonymiserat (T171, 2026-09-18):** namn i denna fil är ersatta med
+> stabila pseudonymer (`Deltagare NN`) och e-post maskad till `X***@domän`.
+> Se `tasks/threads/T171-personuppgifter-i-publikt-repo.md`.

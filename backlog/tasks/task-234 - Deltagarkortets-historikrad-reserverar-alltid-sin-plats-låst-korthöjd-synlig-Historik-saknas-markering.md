@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-08-15 23:52'
+updated_date: '2026-09-18 23:45'
 labels:
   - ready-for-agent
 dependencies: []
@@ -16,7 +17,7 @@ ordinal: 434000
 ## Description
 
 <!-- SECTION:DESCRIPTION:BEGIN -->
-S102 Lotta-vandringen punkt 7-designbeslutet (Marcus kvittens 2026-08-16): deltagarkortet på eventdetaljen utelämnar idag historikraden helt när antalGenomfordaEvent är null (Deltagare.tsx rad ~910, villkorad rendering) - kortet blir kortare och höjderna spretar, och datafel blir OSYNLIGA (Helena-fallet låg obemärkt i sju veckor för att felet visade sig som frånvaron av en rad). BESLUT: historikradens plats reserveras ALLTID (samma fasta-slot-mönster som eventinfo-signalens min-h-8 i samma fil, rad ~302-306); vid null visas en diskret 'Historik saknas'-markering i slotten - layouten blir stabil per definition OCH framtida olänkade anmälningar blir synliga dag ett i stället for tysta. Gäller båda kortlägena (aktivt + vilande). BYGGORDNING: EFTER TASK-228 landat - samma fil (Deltagare.tsx), kollisionsrisk annars. A11y: markeringen ska vara läsbar för skärmläsare utan att bli brus (jfr signal-slottens mönster).
+S102 Lotta-vandringen punkt 7-designbeslutet (Marcus kvittens 2026-08-16): deltagarkortet på eventdetaljen utelämnar idag historikraden helt när antalGenomfordaEvent är null (Deltagare.tsx rad ~910, villkorad rendering) - kortet blir kortare och höjderna spretar, och datafel blir OSYNLIGA (Deltagare 35-fallet låg obemärkt i sju veckor för att felet visade sig som frånvaron av en rad). BESLUT: historikradens plats reserveras ALLTID (samma fasta-slot-mönster som eventinfo-signalens min-h-8 i samma fil, rad ~302-306); vid null visas en diskret 'Historik saknas'-markering i slotten - layouten blir stabil per definition OCH framtida olänkade anmälningar blir synliga dag ett i stället for tysta. Gäller båda kortlägena (aktivt + vilande). BYGGORDNING: EFTER TASK-228 landat - samma fil (Deltagare.tsx), kollisionsrisk annars. A11y: markeringen ska vara läsbar för skärmläsare utan att bli brus (jfr signal-slottens mönster).
 <!-- SECTION:DESCRIPTION:END -->
 
 ## Acceptance Criteria
@@ -33,3 +34,9 @@ S102 Lotta-vandringen punkt 7-designbeslutet (Marcus kvittens 2026-08-16): delta
 - [ ] #3 CI grön per jobb på pushad commit
 - [ ] #4 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Pseudonymiserat (T171, 2026-09-18): namn i kortet ersatta med stabila pseudonymer (Deltagare NN). Se tasks/threads/T171-personuppgifter-i-publikt-repo.md.
+<!-- SECTION:NOTES:END -->

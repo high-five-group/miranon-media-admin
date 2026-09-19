@@ -1,5 +1,10 @@
 // Inkorgens härledningar — TASK-346.6 AC #2, #3, #4, #5. PRD TASK-346 DoD #5.
 //
+// Pseudonymiserat (T171, 2026-09-18): `personNamn: 'Deltagare 100'` nedan
+// ersätter ett verkligt namn som läckt in i fixturen (belagt som prod via
+// TASK-372/S115, inte en seed-fixtur) — se
+// tasks/threads/T171-personuppgifter-i-publikt-repo.md.
+//
 // ═══════════════════════════════════════════════════════════════════════════
 // VARJE REGEL BÄR SIN EGEN NEGATIVA KONTROLL
 // ═══════════════════════════════════════════════════════════════════════════
@@ -197,10 +202,10 @@ test('inom en grupp går FÖRFALLNA först, därefter svensk namnordning', () =>
 /* ═══════════════════════════ SÖKNINGEN ═══════════════════════════ */
 
 test('sökning på namn är skiftlägesokänslig och matchar del av namnet', () => {
-  const r = rad({ personNamn: 'Cecilia Ödman' });
-  expect(matcharSokning(r, 'cecilia')).toBe(true);
-  expect(matcharSokning(r, 'ÖDMAN')).toBe(true);
-  expect(matcharSokning(r, 'ödm')).toBe(true);
+  const r = rad({ personNamn: 'Ingrid Ekström' });
+  expect(matcharSokning(r, 'ingrid')).toBe(true);
+  expect(matcharSokning(r, 'EKSTRÖM')).toBe(true);
+  expect(matcharSokning(r, 'ström')).toBe(true);
   expect(matcharSokning(r, 'Bengt')).toBe(false);
 });
 
@@ -588,7 +593,7 @@ test('regeln är stabil över flera rader i kön — var och en bedöms för sig
 
 test('en anmälan med ett oskickat kvitto ger en post, namnet är RADENS, beloppet är INBETALNINGENS', () => {
   const r = rad({
-    personNamn: 'Cecilia Örning',
+    personNamn: 'Deltagare 100',
     saknas: 0,
     gallandePris: 2500,
     summaInbetalt: 2500,
@@ -596,7 +601,7 @@ test('en anmälan med ett oskickat kvitto ger en post, namnet är RADENS, belopp
   });
 
   expect(harledKvittoAttSkicka([r], new Set())).toEqual([
-    { inbetalningId: 'inb-1', namn: 'Cecilia Örning', belopp: 2500 },
+    { inbetalningId: 'inb-1', namn: 'Deltagare 100', belopp: 2500 },
   ]);
 });
 

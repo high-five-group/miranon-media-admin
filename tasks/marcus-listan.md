@@ -866,16 +866,16 @@ webbläsarkontext.
 - **Källa** — `TASK-269` Implementation Notes (deploy-utfallet 39 funktioner
   ACTIVE, deny-triplen 401/401/405 — men beteendet oprövat).
 
-### 32. Helenas historikrad (10 sekunder + ett GO)
+### 32. Deltagare 35:s historikrad (10 sekunder + ett GO)
 
-- **Vad det är** — Helena Skoglunds anmälan till RIM 3 saknar länk till sin
+- **Vad det är** — Deltagare 35:s anmälan till RIM 3 saknar länk till sin
   personpost i prod. Följden i appen: hennes deltagarkort visar ingen
   historikrad, trots att hon har tre tidigare event. Svepet och rotorsaken
   är redan avklarade; kvar är själva datafixen.
 - **Varför det väntar på dig** — det är en skrivning i prod-basen och kräver
   ditt GO enligt `ADR-063`.
 - **Gör så här** — svara **GO** i chatten. Agenten länkar anmälan till rätt
-  personpost. Öppna sedan Helenas personkort i appen — godkänt = historikraden
+  personpost. Öppna sedan Deltagare 35:s personkort i appen — godkänt = historikraden
   syns. Tar tio sekunder.
 - **Min rekommendation** — ge GO: kortet har `priority: high`, felet syns för
   Lotta, och två av tre kriterier är redan bockade.
@@ -1011,3 +1011,9 @@ de inte glömts bort.
 - **Källa** — `TASK-332` · PR `#2045` (**landad** `ecc324b1`, 2026-08-28 —
   två granskningsrundor; runda 1 fångade en tappad S107-post, nu 28 K / 56 Ö)
   · `ADR-052` § Updates 2026-08-28 · sessionsdok S112 Del 7 Fynd 3 + Del 8.
+
+---
+
+> **Pseudonymiserat (T171, 2026-09-18):** namn i denna fil är ersatta med
+> stabila pseudonymer (`Deltagare NN`) och e-post maskad till `X***@domän`.
+> Se `tasks/threads/T171-personuppgifter-i-publikt-repo.md`.

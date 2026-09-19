@@ -47,19 +47,19 @@ Källa: `~/Downloads/2026-06-24 uppdaterade deltagare.xlsx` (2 flikar). GRIND 1
 - **20 walk-in-anmälningar skapade** (Marcus, Airtable Scripting; `Från formulär =
   Backfill (historisk)`, Status Obekräftad, ID 916–935). 18/20 rena (Person + 2
   Deltaganden via A3). 2 kantfall fixade via MCP:
-  - **Jasmin Haghighi** (namnlös lead `recdea3cmbLQ3kTE8`): A2 Gren 1 fyllde namnet
+  - **Deltagare 42** (namnlös lead `recdea3cmbLQ3kTE8`): A2 Gren 1 fyllde namnet
     men hoppade Gren 2 (länken) → anmälan `recvl22JvgJVyd6TQ` okopplad, 0 Deltaganden.
     Reverse-flow-kompensation: `Anmälan.Person` satt → A3 triggade → 2 Deltaganden.
     **Bekräftar data-model fälla 21 / A2-decision-hypotesen live** (ej bara i script-scenario).
-  - **Lene Hay** (dubblett-Person, case-e-post-bug): A2 matchar rå `E-post`
-    (`fldcd5HnYooVZY4Ts`) CASE-KÄNSLIGT; gamla Lene bar `Lenehay@gmail.com` (versal) →
+  - **Deltagare 49** (dubblett-Person, case-e-post-bug): A2 matchar rå `E-post`
+    (`fldcd5HnYooVZY4Ts`) CASE-KÄNSLIGT; gamla Deltagare 49 bar `L***@gmail.com` (versal) →
     walk-in:ens gemener matchade inte → dubblett skapad (`reclqYPq7sd4isEN2`).
     Konsoliderad (anmälan + 2 Deltaganden + touchpoint re-pekade → gamla
     `rec5Edyvkfo7hHQ8n`; e-post normaliserad till gemener); **dubbletten raderad**.
     → **ny data-model fälla 40**.
 - **80 Deltaganden → Närvarande** (40 närvarande × Dag 1+2): FJS 44 + RIM1 36.
   No-shows (9 pers / 18 Delt) lämnade `Ej avstämt` (direkt-markering, ej blanket).
-  Verifierat cross-event via Andreas Pettersson: `Fjärrskådning ×1` + `RIM 1 ×1` +
+  Verifierat cross-event via Deltagare 05: `Fjärrskådning ×1` + `RIM 1 ×1` +
   Närvaro 4/4 + `Antal genomförda event 2`.
 
 ## Fas 1 (Psionautics) — närvaro-markering + korrektion, 2026-07-08
@@ -74,7 +74,7 @@ Event-17 (Psionautics) hade 88 anmälningar, **220 Deltaganden** (alla `Ej avst�
 Kryssade `Markera alla närvarande (alla sessioner)` (`fldF5atXm9lV2nAeq = true`) på
 Event-17 → **A10 markerade alla 220 Deltaganden → Närvarande**, återställde checkboxen.
 Verifierat: stickprov `rectP09uMIFIqoIqc` (Status Närvarande, Närvaropoäng 1,
-`Avstämt` A8-satt), rollup-kaskad (Marie Bäcklin 6/8 → 8/8).
+`Avstämt` A8-satt), rollup-kaskad (Deltagare 60 6/8 → 8/8).
 
 ### Steg 2 — Källavstämning avslöjade över-markering (Marcus levererade faktisk lista)
 
@@ -152,12 +152,12 @@ Roll-listan över interna identiteter: [`../reference/testkonton.md`](../referen
 
 ### Steg 5 — Faktiska korrektioner 2026-07-09 (dessa står)
 
-- **Ulrika Arvas + Stefan Martinsson:** dubblett-Personer konsoliderade (fälla 42 —
+- **Deltagare 88 + Deltagare 84:** dubblett-Personer konsoliderade (fälla 42 —
   anmälan utan e-post → A2 Gren 4 skapar omatchbar Person). Anmälan + Deltaganden +
   touchpoint re-pekade; dubbletterna raderade. Påverkar inte Event-17:s närvaro-tal.
-- **Ann-Marie Martinsson** (`recsqD7ZxM6c13KbC`): saknar e-post helt → **77
+- **Deltagare 07** (`recsqD7ZxM6c13KbC`): saknar e-post helt → **77
   mottagare** i Psionautics-materiallistan (av 78 deltagare). Hennes `Medföljande
-  till` pekade på Stefans **avbokade** anmälan och pekades om till den bekräftade
+  till` pekade på Deltagare 84:s **avbokade** anmälan och pekades om till den bekräftade
   (`recoihpXidEHFry74`).
 
 ## Fas 6 — Status-flip → Genomfört, 2026-07-08
@@ -186,8 +186,8 @@ update). Verifierat i svaret.
 - **Fälla 40** (case-e-post-dubbletter) + **fälla 41** (orphan-Deltaganden) — se data-model.
 - Ingen `Psionautics ×`-rollup på Personer (re-verifierat live) — redan känt via
   **fälla 4 + fälla 33 (Lucka C)**; segment påverkas ej (källäst).
-- **Jessica Karlsson** (Event-19): inbjudan → senaste anmälans e-post
-  (`jesshundteam@gmail.com`); `@live.se` läggs i hennes Persons `Anteckningar` — EJ GJORT.
+- **Deltagare 43** (Event-19): inbjudan → senaste anmälans e-post
+  (`j***@gmail.com`); `@live.se` läggs i hennes Persons `Anteckningar` — EJ GJORT.
 
 ## 2026-08-17 — Backfill av `Inskickad` (294 rader), Session 102
 
@@ -236,7 +236,7 @@ aldrig vara tomt, och det är per konstruktion identiskt med `record.createdTime
 
 A3 var den enda reella risken (den skapar Deltaganden — en annan tabell, utanför
 mandatet). I stället för att anta Airtables trigger-semantik skrevs **en** rad ur
-just den exponerade klassen (`rec1g6TqK9yKOpa5V`, Elnaz Mohajer), följt av
+just den exponerade klassen (`rec1g6TqK9yKOpa5V`, Deltagare 27), följt av
 mätning: Deltaganden **1716 → 1716**, kanariefågelns egna Deltaganden 0 → 0.
 Först därefter kördes resterande 293.
 
@@ -300,14 +300,12 @@ Tre Eventplanering-rader skapade: **Event-59** (RIM 1, Arboga, 31 okt–1 nov,
 `recqA2Us1FByBnibz`) · **Event-60** (Fjärrskådning, Rönninge, 25–26 juli,
 Genomfört — retroaktivt satt, Marcus bekräftade att eventet hölls) · **Event-61**
 (Fjärrskådning, Rönninge, 17–18 okt, Planerat). De 26 orphan-anmälningarna
-länkade till respektive event (17 juli + 8 okt, inkl. Maud + 1 nov), plus
-Agnetas separat felmatchade anmälan (`reczi2qUFpS1eiyYm`) → Event-59 och Maria
-Karlsson → Event-56.
+länkade till respektive event (17 juli + 8 okt, inkl. Deltagare 98 + 1 nov), plus
+Deltagare 02:s separat felmatchade anmälan (`reczi2qUFpS1eiyYm`) → Event-59 och Deltagare 57 → Event-56.
 
 ### Verifiering
 
-`{Event} = BLANK()` mätt **26 → 0** i prod efter länkningen. ID 868 (Allan
-Nieminen, `TASK-232`s namngivna instans, `EventKey = "11"` sedan raden skapades
+`{Event} = BLANK()` mätt **26 → 0** i prod efter länkningen. ID 868 (Deltagare 04, `TASK-232`s namngivna instans, `EventKey = "11"` sedan raden skapades
 2026-05-12) låg i juli-klustret → länkad till Event-60 — Event-länken datafixad;
 `EventKey`-textfältet självt rördes inte i detta steg (fält-mandatet var
 Event-länken, inte texten — normaliseringen av `EventKey`-fältet hör till
@@ -332,7 +330,7 @@ bockade, Done i stängningscommit), tråd `T158`.
 |---|---|---|---|
 | 1 | Event skapade: **Event-62** (RIM 1, Rönninge, 12–13 sep, `recPSBvKXcjDUpnkF`) · **Event-63** (RIM 1, Bredaryd, 10–11 okt, `rectqoBHIXQpOcmUY`) · **Event-64** (RIM 2, Rönninge, 24–25 okt, `recfCJJozYm4IN118`) | 3 | `AnmälningsURL` + Sessionsmall Dag 1/Dag 2 lästa tillbaka |
 | 2a–2f | Anmälningar omlänkade (`Event` + `EventKey` + `Notering`): 18 → 62 · 19 → 63 · 15 → 59 · 1 → 61 · 3 → 64 · 5 → 60 | 61 | `Antal anmälningar` per event = förväntat, nio räkningar |
-| 3 | Deltaganden flyttade/skapade (112 flyttade + Agnetas 2 S107-rest + 5+5 nya Dag 1/Dag 2 för 2f:s Föreläsning-rader + Fredriks 2 av A3) | 124 | 304/304 anmälningar konsistenta · 1 777/1 777 Deltaganden `Event` = lookup |
+| 3 | Deltaganden flyttade/skapade (112 flyttade + Deltagare 02:s 2 S107-rest + 5+5 nya Dag 1/Dag 2 för 2f:s Föreläsning-rader + Deltagare 99:s 2 av A3) | 124 | 304/304 anmälningar konsistenta · 1 777/1 777 Deltaganden `Event` = lookup |
 | 4 | A7:s `Ej betalda (records)` räknad om på Event-10, Event-11, Event-55 | 3 | fältet läst tillbaka |
 | 5 | Kontrollsvep, samma metod som före | — | **MISMATCH 65 → 4 · ORPHAN 1 → 0** |
 
@@ -380,8 +378,7 @@ och `Inskickad` matchade spec-tabellen **exakt**, 0 avvikelser — inget
 skäl att hoppa över någon post. Dedup kördes därefter per person
 (`tbl6ZyCm3V026iFTU`s `Touchpoints`-array läst ut, varje länkad post hämtad):
 ingen av de 8 personerna bar en befintlig `Typ="Inskickad anmälan"`-touchpoint
-inom ±5 min av respektive måldatum — närmaste kollisionskandidat var Allan
-Nieminens `recOStoMeytYbeHIv` (2026-05-14T09:47, mot måldatum
+inom ±5 min av respektive måldatum — närmaste kollisionskandidat var Deltagare 04:s `recOStoMeytYbeHIv` (2026-05-14T09:47, mot måldatum
 2026-05-12T21:39 — ca 1 dygn 12 tim bort, långt utanför fönstret). 0 poster
 hoppades över.
 
@@ -389,40 +386,34 @@ hoppades över.
 
 | # | Anmälan (ID) | Person | Ny touchpoint | Datum |
 |---|---|---|---|---|
-| 1 | recNbJwwt8nlFtasL (868) | rec5fF7QD16Qpr0C9 (Allan Nieminen) | `recRZ8xLB3HwxvZzn` (TP 1087) | 2026-05-12T21:39:15.000Z |
-| 2 | rec4QfGSOjwljAbKV (877) | recZ8qJn3iOquLXC8 (Elin Melwinsson) | `recAiFxc3V2xGTVgj` (TP 1088) | 2026-05-18T18:56:59.000Z |
-| 3 | recViNdItldmL6O8l (884) | recT8y8DvaZz09gtW (Ulrika Arvas) | `recVEpBSnxtK1KAPZ` (TP 1089) | 2026-05-29T15:05:48.000Z |
-| 4 | rec1SD7i2467gPrJ9 (899) | rectj3ixgMylQYAGH (Lena Maria Olsson) | `recrQO0193gPayvEI` (TP 1090) | 2026-06-15T05:09:16.000Z |
-| 5 | rec3A0IJir34yoekd (910) | recAZF4Y7Y0AyKFNq (maria lejdeby) | `recvZvsKJ2jInu5Rv` (TP 1091) | 2026-06-28T07:38:56.000Z |
-| 6 | rec1ft7CDqLJwZw9V (911) | recoFAXvbggTQ8WrL (Helena Skoglund) | `recF10FuDa0NEKFEK` (TP 1092) | 2026-06-29T18:28:11.000Z |
-| 7 | rechDOujWs8FdnrCL (941) | recAc3ToqnjYUWEHq (Karl Areskough) | `recnlsDTWAt3qCAwx` (TP 1093) | 2026-07-15T18:15:54.000Z |
-| 8 | reczi2qUFpS1eiyYm (981) | recM5CHah9vqFh3fb (Agneta Lindell) | `recALBd4SUmGERO2Q` (TP 1094) | 2026-08-11T08:23:24.000Z |
+| 1 | recNbJwwt8nlFtasL (868) | rec5fF7QD16Qpr0C9 (Deltagare 04) | `recRZ8xLB3HwxvZzn` (TP 1087) | 2026-05-12T21:39:15.000Z |
+| 2 | rec4QfGSOjwljAbKV (877) | recZ8qJn3iOquLXC8 (Deltagare 26) | `recAiFxc3V2xGTVgj` (TP 1088) | 2026-05-18T18:56:59.000Z |
+| 3 | recViNdItldmL6O8l (884) | recT8y8DvaZz09gtW (Deltagare 88) | `recVEpBSnxtK1KAPZ` (TP 1089) | 2026-05-29T15:05:48.000Z |
+| 4 | rec1SD7i2467gPrJ9 (899) | rectj3ixgMylQYAGH (Deltagare 48) | `recrQO0193gPayvEI` (TP 1090) | 2026-06-15T05:09:16.000Z |
+| 5 | rec3A0IJir34yoekd (910) | recAZF4Y7Y0AyKFNq (Deltagare 58) | `recvZvsKJ2jInu5Rv` (TP 1091) | 2026-06-28T07:38:56.000Z |
+| 6 | rec1ft7CDqLJwZw9V (911) | recoFAXvbggTQ8WrL (Deltagare 35) | `recF10FuDa0NEKFEK` (TP 1092) | 2026-06-29T18:28:11.000Z |
+| 7 | rechDOujWs8FdnrCL (941) | recAc3ToqnjYUWEHq (Deltagare 46) | `recnlsDTWAt3qCAwx` (TP 1093) | 2026-07-15T18:15:54.000Z |
+| 8 | reczi2qUFpS1eiyYm (981) | recM5CHah9vqFh3fb (Deltagare 02) | `recALBd4SUmGERO2Q` (TP 1094) | 2026-08-11T08:23:24.000Z |
 
 ### Verifiering
 
 Read-back per post: samtliga 8 nya touchpoints hämtade tillbaka individuellt
 — alla tre fält (Person-länk, Typ, Datum) matchade exakt vad som skickades.
 Samtliga 8 personers `Touchpoints`-array läst tillbaka: växte med **exakt 1**
-i varje fall (Allan 5→6, Elin 1→2, Ulrika 2→3, Lena Maria 1→2, maria lejdeby
-1→2, Helena 2→3, Karl 1→2, Agneta 1→2).
+i varje fall (Deltagare 04 5→6, Deltagare 26 1→2, Deltagare 88 2→3, Deltagare 48 1→2, Deltagare 58
+1→2, Deltagare 35 2→3, Deltagare 46 1→2, Deltagare 02 1→2).
 
 Slutsvep kört som en **oberoende serverfrågad räkning** (`filterByFormula`
 mot `Touchpoints` direkt, `Typ='Inskickad anmälan'` + `OR(FIND(personnamn,
 ARRAYJOIN({Person (länkat fält)})), …)` över de 8 namnen — inte en manuell
 räkning av arrayerna) → **15 poster**, exakt det förväntade (7 befintliga + 8
-nya). Fördelning per person i svepet: Allan 4 (3+1), Elin 1 (0+1), Ulrika 3
-(2+1), Lena Maria 2 (1+1), maria lejdeby 2 (1+1), Helena 1 (0+1), Karl 1
-(0+1), Agneta 1 (0+1) — summan matchar både den manuella tallyn och
+nya). Fördelning per person i svepet: Deltagare 04 4 (3+1), Deltagare 26 1 (0+1), Deltagare 88 3 (2+1), Deltagare 48 2 (1+1), Deltagare 58 2 (1+1), Deltagare 35 1 (0+1), Deltagare 46 1 (0+1), Deltagare 02 1 (0+1) — summan matchar både den manuella tallyn och
 person-array-räkningen, tre oberoende metoder som konvergerar på samma tal.
 
 ### Sidoeffekt (känd i förväg, observerad — inte åtgärdad)
 
 `Senast touchpoint datum` (formel över `Touchpoints`) flyttades framåt för de
-personer vars nya touchpoint blev den SENASTE i deras historik (7 av 8: Elin
-2026-05-15→2026-05-18, Ulrika 2026-04-19→2026-05-29, Lena Maria
-2026-04-19→2026-06-15, maria lejdeby 2026-04-19→2026-06-28, Helena
-2025-12-26→2026-06-29, Karl 2026-04-26→2026-07-15, Agneta
-2026-05-10→2026-08-11). Allan opåverkad — hans senaste touchpoint
+personer vars nya touchpoint blev den SENASTE i deras historik (7 av 8: Deltagare 26 2026-05-15→2026-05-18, Deltagare 88 2026-04-19→2026-05-29, Deltagare 48 2026-04-19→2026-06-15, Deltagare 58 2026-04-19→2026-06-28, Deltagare 35 2025-12-26→2026-06-29, Deltagare 46 2026-04-26→2026-07-15, Deltagare 02 2026-05-10→2026-08-11). Deltagare 04 opåverkad — hans senaste touchpoint
 (2026-08-24, dagens anmälan) var redan nyare än den backfillade
 2026-05-12-posten. Korrekt utfall per kortets spec, ingen åtgärd.
 
@@ -533,3 +524,9 @@ Källa: `TASK-229.3`-kortets Implementation Notes (steg 0–2, S112) och
 - Sessionsdok: [`../../tasks/sessions/archive/2026-08/2026-08-17-session-107.md`](../../tasks/sessions/archive/2026-08/2026-08-17-session-107.md) § Del 2.
 - Sessionsdok: [`../../tasks/sessions/archive/2026-08/2026-08-21-session-110.md`](../../tasks/sessions/archive/2026-08/2026-08-21-session-110.md) § Del 2.
 - Kort: `TASK-232` (Fynd EventKey 11 på anmälan ID 868 — återfall av sanerad fälla 10/F.2).
+
+---
+
+> **Pseudonymiserat (T171, 2026-09-18):** namn i denna fil är ersatta med
+> stabila pseudonymer (`Deltagare NN`) och e-post maskad till `X***@domän`.
+> Se `tasks/threads/T171-personuppgifter-i-publikt-repo.md`.
