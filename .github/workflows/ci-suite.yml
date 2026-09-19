@@ -1185,8 +1185,21 @@ jobs:
   # rivit EF-only-gränsen (ADR-060 punkt 2+4) för en ren bekvämlighet.
   #
   # VARFÖR `always()`. Städningen ska ske oavsett testutfall — och oavsett om
-  # workflowet avbröts. `!cancelled()` hade hoppat över den vid en
-  # takfällning, alltså vid en av de körningar som lämnar MEST skräp.
+  # workflowet avbröts. RÄTTELSE (TASK-450.5, 2026-09-18): denna rad påstod
+  # tidigare att `!cancelled()` "hade hoppat över" städningen vid en
+  # takfällning — det är OBELAGT som mekanism och motsagt av samma fils egen
+  # mätning vid `acceptance-sjalvtest-tackning`-jobbet ovan (§ "VARFÖR INTE
+  # `!cancelled()`, SOM GITHUB REKOMMENDERAR", rad ~732–760): körning
+  # `25845701660` (2026-05-14) hade ett UPPSTRÖMS jobb `cancelled` på sitt
+  # eget tak, medan ett NEDSTRÖMS jobb med `if: !cancelled()` KÖRDE och blev
+  # `success` tre sekunder senare. `!cancelled()` FUNGERAR alltså i dag för
+  # just den här formen. Skälet att `purge-efter` ändå bär `always()` är
+  # detsamma som där: semantiken är ODOKUMENTERAD, och en pågående, obesvarad
+  # community-diskussion (#174377) ber uttryckligen om att göra `cancelled()`
+  # ancestor-medveten — en ändring som TYST skulle få `!cancelled()` att börja
+  # hoppa över just detta jobb vid en takfällning, precis en av de körningar
+  # som lämnar MEST skräp. `always()` är alltså det framtidssäkra valet, inte
+  # ett val gjort för att `!cancelled()` redan är trasigt.
   # Jobbet är ofarligt att köra utan manifest: skriptet loggar "inget att
   # städa" och avslutar 0.
   #

@@ -16,9 +16,11 @@ import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import {
   backoffMs,
+  buildActionsWarningAnnotation,
   chunk,
   deleteRecords,
   fetchWithNetworkRetry,
+  grupperaPerLankfalt,
   hanteradeIds,
   isAlreadyDeletedError,
   isExactSentinel,
@@ -27,12 +29,14 @@ import {
   isTransientNetworkError,
   KASTBARA_POSTER_FIL,
   linkGuardTrips,
+  loggaGruppVakt,
   parseArgs,
   parseManifest,
   planEfterKorning,
   planPurge,
   planStoragePurge,
   recordIdFormula,
+  storstaGruppen,
   validatePolicy,
 } from './purge-staging-sentinels.mjs';
 
@@ -69,6 +73,37 @@ function t(name, fn) {
   } catch (err) {
     failed += 1;
     console.error(`❌ ${name}: ${err.message}`);
+  }
+}
+
+/**
+ * Fångar console.log-rader under `fn()` — testar loggaGruppVakts CI-gate
+ * (TASK-465 granskning runda 1, INFO 3) utan att skriva riktig utdata under
+ * testkörningen. Återställer ALLTID `console.log`, även om `fn()` kastar.
+ */
+function fangaConsoleLog(fn) {
+  const original = console.log;
+  const rader = [];
+  console.log = (...args) => rader.push(args.join(' '));
+  try {
+    fn();
+  } finally {
+    console.log = original;
+  }
+  return rader;
+}
+
+/** Kör `fn()` med `GITHUB_ACTIONS` satt till `varde` (eller borttagen om
+ *  `null`), och återställer alltid föregående värde efteråt. */
+function medGithubActions(varde, fn) {
+  const foregaende = process.env.GITHUB_ACTIONS;
+  if (varde === null) delete process.env.GITHUB_ACTIONS;
+  else process.env.GITHUB_ACTIONS = varde;
+  try {
+    return fn();
+  } finally {
+    if (foregaende === undefined) delete process.env.GITHUB_ACTIONS;
+    else process.env.GITHUB_ACTIONS = foregaende;
   }
 }
 
@@ -375,6 +410,195 @@ t('L288-kontrollen: rad-formens objekt-fält gör INTE länk-guarden till en no-
   assert.deepEqual(plan.toDelete, ['recKnapp']);
 });
 
+// --- [TASK-465] Återfalls-vakten (grupperaPerLankfalt/storstaGruppen/loggaGruppVakt) ---
+//
+// Kodar rotorsaken direkt: docs/research/flake-request-context-disposed-2026-09-19.md
+// mätte seed-eventet reci2UQEPBMl3ebNl till 188 anmälningar (185 sentinels) —
+// vakten finns för att UPPTÄCKA precis den ackumuleringen tidigt.
+
+const EVENT_LANK_FALT = 'Event (länk)';
+const SEED_EVENT = 'reci2UQEPBMl3ebNl';
+const ANNAT_EVENT = 'recAnnatEventXXXX';
+
+function anmalanRad(id, eventId) {
+  return {
+    id,
+    createdTime: OLD,
+    fields: { 'E-post': `create-test+${id}@staging.test`, [EVENT_LANK_FALT]: [eventId] },
+  };
+}
+
+t('grupperaPerLankfalt: räknar poster per länkat ID', () => {
+  const records = [
+    anmalanRad('rec1', SEED_EVENT),
+    anmalanRad('rec2', SEED_EVENT),
+    anmalanRad('rec3', ANNAT_EVENT),
+  ];
+  const grupper = grupperaPerLankfalt(records, EVENT_LANK_FALT);
+  assert.equal(grupper.get(SEED_EVENT), 2);
+  assert.equal(grupper.get(ANNAT_EVENT), 1);
+});
+
+t(
+  'grupperaPerLankfalt: poster utan fältet, eller med icke-array-värde, ignoreras (rör aldrig kraschar)',
+  () => {
+    const records = [
+      { id: 'rec1', fields: {} },
+      { id: 'rec2', fields: { [EVENT_LANK_FALT]: 'inte-en-array' } },
+      { id: 'rec3', fields: { [EVENT_LANK_FALT]: [123] } }, // icke-sträng-element
+    ];
+    const grupper = grupperaPerLankfalt(records, EVENT_LANK_FALT);
+    assert.equal(grupper.size, 0);
+  },
+);
+
+t('grupperaPerLankfalt: tom lista ger en tom karta', () => {
+  assert.equal(grupperaPerLankfalt([], EVENT_LANK_FALT).size, 0);
+});
+
+t('storstaGruppen: plockar ut MAX-gruppen', () => {
+  const grupper = new Map([
+    [SEED_EVENT, 188],
+    [ANNAT_EVENT, 3],
+  ]);
+  assert.deepEqual(storstaGruppen(grupper), { id: SEED_EVENT, antal: 188 });
+});
+
+t('storstaGruppen: tom karta ⇒ null (inget att larma om)', () => {
+  assert.equal(storstaGruppen(new Map()), null);
+});
+
+t('loggaGruppVakt: target UTAN watchGroupField är en no-op (de flesta targets)', () => {
+  const larmade = loggaGruppVakt(EVENT_TARGET, [anmalanRad('rec1', SEED_EVENT)]);
+  assert.equal(larmade, false);
+});
+
+t('loggaGruppVakt: under tröskeln larmar INTE', () => {
+  const target = { ...REG_TARGET, watchGroupField: EVENT_LANK_FALT, watchWarnThreshold: 50 };
+  const records = Array.from({ length: 49 }, (_, i) => anmalanRad(`rec${i}`, SEED_EVENT));
+  assert.equal(loggaGruppVakt(target, records), false);
+});
+
+t(
+  'loggaGruppVakt: ÖVER tröskeln larmar (returnerar true) — men rör aldrig planen/raderar inget själv',
+  () => {
+    const target = { ...REG_TARGET, watchGroupField: EVENT_LANK_FALT, watchWarnThreshold: 50 };
+    const records = Array.from({ length: 51 }, (_, i) => anmalanRad(`rec${i}`, SEED_EVENT));
+    assert.equal(loggaGruppVakt(target, records), true);
+  },
+);
+
+t('loggaGruppVakt: EXAKT på tröskeln larmar INTE (strikt "över", inte "vid eller över")', () => {
+  const target = { ...REG_TARGET, watchGroupField: EVENT_LANK_FALT, watchWarnThreshold: 50 };
+  const records = Array.from({ length: 50 }, (_, i) => anmalanRad(`rec${i}`, SEED_EVENT));
+  assert.equal(loggaGruppVakt(target, records), false);
+});
+
+t(
+  'loggaGruppVakt: target med watchGroupField men UTAN watchWarnThreshold loggar men larmar aldrig',
+  () => {
+    const target = { ...REG_TARGET, watchGroupField: EVENT_LANK_FALT };
+    const records = Array.from({ length: 500 }, (_, i) => anmalanRad(`rec${i}`, SEED_EVENT));
+    assert.equal(loggaGruppVakt(target, records), false);
+  },
+);
+
+// --- [TASK-465 granskning runda 1, INFO 3] GitHub Actions ::warning::-annotation ---
+
+t('buildActionsWarningAnnotation: bygger en korrekt ::warning title=…::…-rad', () => {
+  const rad = buildActionsWarningAnnotation(
+    'create-registration-sentineler',
+    EVENT_LANK_FALT,
+    { id: SEED_EVENT, antal: 188 },
+    50,
+  );
+  assert.equal(
+    rad,
+    '::warning title=Återfalls-vakt%3A create-registration-sentineler::' +
+      `Event (länk)="${SEED_EVENT}" bär 188 poster — över varningströskeln 50. Samma ` +
+      'tillväxtmönster orsakade TASK-465s "Request context disposed"-flake. Kontrollera att ' +
+      'alla staging-sviter som skapar poster på detta target registrerar dem i ägar-manifestet ' +
+      '(tests/support/kastbara-poster.ts).',
+  );
+});
+
+t('buildActionsWarningAnnotation: escaper %, ":" och "," i title-PROPERTYN', () => {
+  const rad = buildActionsWarningAnnotation(
+    'mal, med: tecken%',
+    'Fält',
+    { id: 'recX', antal: 1 },
+    1,
+  );
+  assert.ok(rad.startsWith('::warning title=Återfalls-vakt%3A mal%2C med%3A tecken%25::'), rad);
+});
+
+t(
+  'buildActionsWarningAnnotation: DATA-delen (meddelandet) escaper BARA % — ":" och "," lämnas orörda',
+  () => {
+    const rad = buildActionsWarningAnnotation(
+      't',
+      'Fält: med, tecken',
+      { id: 'recX', antal: 1 },
+      1,
+    );
+    const sepIdx = rad.indexOf('::', '::warning title='.length);
+    const data = rad.slice(sepIdx + 2);
+    assert.ok(data.startsWith('Fält: med, tecken="recX"'), data);
+  },
+);
+
+t(
+  'loggaGruppVakt: GITHUB_ACTIONS ej satt (lokal körning) → ingen ::warning-annotation, även ÖVER tröskeln',
+  () => {
+    const target = { ...REG_TARGET, watchGroupField: EVENT_LANK_FALT, watchWarnThreshold: 50 };
+    const records = Array.from({ length: 51 }, (_, i) => anmalanRad(`rec${i}`, SEED_EVENT));
+    medGithubActions(null, () => {
+      const rader = fangaConsoleLog(() => {
+        assert.equal(loggaGruppVakt(target, records), true); // larmet självt är oförändrat
+      });
+      assert.ok(!rader.some((r) => r.startsWith('::warning')), JSON.stringify(rader));
+    });
+  },
+);
+
+t('loggaGruppVakt: GITHUB_ACTIONS=true OCH över tröskeln → skriver ::warning-annotationen', () => {
+  const target = { ...REG_TARGET, watchGroupField: EVENT_LANK_FALT, watchWarnThreshold: 50 };
+  const records = Array.from({ length: 51 }, (_, i) => anmalanRad(`rec${i}`, SEED_EVENT));
+  medGithubActions('true', () => {
+    const rader = fangaConsoleLog(() => loggaGruppVakt(target, records));
+    assert.ok(
+      rader.some((r) => r.startsWith('::warning title=')),
+      JSON.stringify(rader),
+    );
+  });
+});
+
+t('loggaGruppVakt: GITHUB_ACTIONS=true men UNDER tröskeln → ingen ::warning-annotation', () => {
+  const target = { ...REG_TARGET, watchGroupField: EVENT_LANK_FALT, watchWarnThreshold: 50 };
+  const records = Array.from({ length: 49 }, (_, i) => anmalanRad(`rec${i}`, SEED_EVENT));
+  medGithubActions('true', () => {
+    const rader = fangaConsoleLog(() => {
+      assert.equal(loggaGruppVakt(target, records), false);
+    });
+    assert.ok(!rader.some((r) => r.startsWith('::warning')), JSON.stringify(rader));
+  });
+});
+
+t(
+  'loggaGruppVakt: GITHUB_ACTIONS="false" (sträng, ej boolean) räknas INTE som CI — ingen annotation',
+  () => {
+    // process.env-värden är ALLTID strängar; en agent som testar lokalt med
+    // GITHUB_ACTIONS=false satt (t.ex. kopierat ur en .env-fil) ska inte få
+    // en annotation den aldrig bett om. Strikt `=== 'true'`, inte truthy-check.
+    const target = { ...REG_TARGET, watchGroupField: EVENT_LANK_FALT, watchWarnThreshold: 50 };
+    const records = Array.from({ length: 51 }, (_, i) => anmalanRad(`rec${i}`, SEED_EVENT));
+    medGithubActions('false', () => {
+      const rader = fangaConsoleLog(() => loggaGruppVakt(target, records));
+      assert.ok(!rader.some((r) => r.startsWith('::warning')), JSON.stringify(rader));
+    });
+  },
+);
+
 // --- Bas-guard (skyddsräcke 1) ---
 
 const VALID_POLICY = {
@@ -419,6 +643,158 @@ t('target utan exakt-mönster refuseras', () => {
   const broken = { ...VALID_POLICY, targets: [{ name: 'x', table: 'T', filterByFormula: 'f' }] };
   assert.throws(() => validatePolicy(broken), /obligatoriska/);
 });
+
+// --- [TASK-465] validatePolicy — watchGroupField/watchWarnThreshold (optionell återfalls-vakt) ---
+
+t('target UTAN watchGroupField/watchWarnThreshold passerar oförändrat (bakåtkompatibelt)', () => {
+  assert.equal(validatePolicy(VALID_POLICY), VALID_POLICY);
+});
+
+t('giltig watchGroupField + watchWarnThreshold passerar', () => {
+  const withWatch = {
+    ...VALID_POLICY,
+    targets: [
+      { ...REG_TARGET, watchGroupField: 'Event (länk)', watchWarnThreshold: 50 },
+      EVENT_TARGET,
+    ],
+  };
+  assert.equal(validatePolicy(withWatch), withWatch);
+});
+
+t('tomt watchGroupField (tom sträng) refuseras', () => {
+  const broken = {
+    ...VALID_POLICY,
+    targets: [{ ...REG_TARGET, watchGroupField: '' }, EVENT_TARGET],
+  };
+  assert.throws(() => validatePolicy(broken), /watchGroupField/);
+});
+
+t('icke-sträng watchGroupField refuseras', () => {
+  const broken = {
+    ...VALID_POLICY,
+    targets: [{ ...REG_TARGET, watchGroupField: 123 }, EVENT_TARGET],
+  };
+  assert.throws(() => validatePolicy(broken), /watchGroupField/);
+});
+
+t('watchWarnThreshold <= 0 refuseras', () => {
+  const broken = {
+    ...VALID_POLICY,
+    targets: [
+      { ...REG_TARGET, watchGroupField: 'Event (länk)', watchWarnThreshold: 0 },
+      EVENT_TARGET,
+    ],
+  };
+  assert.throws(() => validatePolicy(broken), /watchWarnThreshold/);
+});
+
+t('icke-numeriskt watchWarnThreshold refuseras', () => {
+  const broken = {
+    ...VALID_POLICY,
+    targets: [
+      { ...REG_TARGET, watchGroupField: 'Event (länk)', watchWarnThreshold: 'femtio' },
+      EVENT_TARGET,
+    ],
+  };
+  assert.throws(() => validatePolicy(broken), /watchWarnThreshold/);
+});
+
+t(
+  'watchWarnThreshold UTAN watchGroupField passerar validatePolicy (harmlöst — loggaGruppVakt är no-op utan fältet)',
+  () => {
+    const target = { ...REG_TARGET, watchWarnThreshold: 50 };
+    assert.equal(
+      validatePolicy({ ...VALID_POLICY, targets: [target, EVENT_TARGET] }).targets[0],
+      target,
+    );
+  },
+);
+
+t(
+  'policyn på disk BÄR watchGroupField/watchWarnThreshold på create-registration-sentineler (TASK-465)',
+  () => {
+    const onDisk = JSON.parse(
+      readFileSync(new URL('../.purge-staging-policy.json', import.meta.url)),
+    );
+    const target = onDisk.targets.find((tg) => tg.name === 'create-registration-sentineler');
+    assert.ok(
+      target,
+      'create-registration-sentineler-targeten saknas i .purge-staging-policy.json',
+    );
+    assert.equal(target.watchGroupField, 'Event (länk)');
+    assert.equal(target.watchWarnThreshold, 50);
+  },
+);
+
+// --- [TASK-465 granskning runda 1, FYND 2] send-action-email-gemensam-bilaga-
+// registration-sentineler — Resends kanoniska delivered@resend.dev, en EGEN
+// exakt-literal-target eftersom create-registration-sentinelerns filterByFormula
+// aldrig fetchar den adressformen server-side (registrering i manifestet
+// ensamt räcker inte).
+
+const RESEND_TARGET = {
+  name: 'send-action-email-gemensam-bilaga-registration-sentineler',
+  table: 'Anmälningar',
+  filterByFormula: "{E-post} = 'delivered@resend.dev'",
+  exactMatchField: 'E-post',
+  exactMatchPattern: '^delivered@resend\\.dev$',
+  linkGuard: false,
+};
+
+t(
+  'policyn på disk BÄR send-action-email-gemensam-bilaga-registration-sentineler (TASK-465)',
+  () => {
+    const onDisk = JSON.parse(
+      readFileSync(new URL('../.purge-staging-policy.json', import.meta.url)),
+    );
+    const target = onDisk.targets.find(
+      (tg) => tg.name === 'send-action-email-gemensam-bilaga-registration-sentineler',
+    );
+    assert.ok(target, 'send-action-email-gemensam-bilaga-registration-sentineler saknas på disk');
+    assert.equal(target.table, 'Anmälningar');
+    assert.equal(target.filterByFormula, "{E-post} = 'delivered@resend.dev'");
+    assert.equal(target.exactMatchField, 'E-post');
+    assert.equal(target.exactMatchPattern, '^delivered@resend\\.dev$');
+    assert.equal(target.linkGuard, false);
+  },
+);
+
+t('RESEND_TARGET: delivered@resend.dev matchar exakt', () => {
+  const rec = { id: 'recResend1', createdTime: OLD, fields: { 'E-post': 'delivered@resend.dev' } };
+  assert.equal(isExactSentinel(rec, RESEND_TARGET), true);
+});
+
+t('RESEND_TARGET: create-test+-adressen (den ANDRA sentinel-klassen) matchar ALDRIG', () => {
+  const rec = {
+    id: 'recResend2',
+    createdTime: OLD,
+    fields: { 'E-post': `create-test+${UUID}@staging.test` },
+  };
+  assert.equal(isExactSentinel(rec, RESEND_TARGET), false);
+});
+
+t('RESEND_TARGET: en NÄRA men icke-exakt adress (t.ex. med gemener-suffix) matchar ALDRIG', () => {
+  const rec = {
+    id: 'recResend3',
+    createdTime: OLD,
+    fields: { 'E-post': 'inte-delivered@resend.dev' },
+  };
+  assert.equal(isExactSentinel(rec, RESEND_TARGET), false);
+});
+
+t('RESEND_TARGET: planPurge klassar en gammal delivered@resend.dev-rad som radera-bar', () => {
+  const rec = { id: 'recResend4', createdTime: OLD, fields: { 'E-post': 'delivered@resend.dev' } };
+  const plan = planPurge([rec], RESEND_TARGET, 60, NOW);
+  assert.deepEqual(plan.toDelete, ['recResend4']);
+});
+
+t(
+  'RESEND_TARGET: seed-ankarets riktiga e-post matchar ALDRIG (samma S69-form som REG_TARGET)',
+  () => {
+    const rec = { id: 'recResend5', createdTime: OLD, fields: { 'E-post': 'lotta@miranon.se' } };
+    assert.equal(isExactSentinel(rec, RESEND_TARGET), false);
+  },
+);
 
 // --- [TASK-302.3] validatePolicy — storageTargets (optionell klass) ---
 

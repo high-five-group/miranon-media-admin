@@ -556,3 +556,75 @@ versionsprefix.
   "Webblasarbeteende"
 - Advisory: <https://github.com/advisories/GHSA-rmmr-r34h-pfm5>
 - K0åi-triggerdefinition: `tasks/todo.md` rad ~8076–8083
+
+### 2026-09-18 — Beroendegranskningen villkorad mot beroendeträdet (K1(b), `TASK-450.5`)
+
+**Bakgrund.** `#2491` (`TASK-444`, se N1 i
+`docs/research/ci-djupgranskning-2026-09-17/10-migrations-och-atgardsplan.md`)
+löste ett nio dagar långt stillestånd: `audit`-jobbet (`ci.yml`) saknade sedan
+`TASK-395` (2026-09-04, se § 2026-09-04-posten ovan) både `needs:` och `if:`
+och fällde därmed VARJE ändringsförslag — inklusive rena textändringar — så
+länge en enda extern advisory stod öppen mot ett beroende vi inte äger. Två
+sådana advisories (`sharp`, `smol-toml`) gjorde exakt det 2026-09-09→17.
+Granskningen (`00-huvudrapport.md` § 8, `10-migrations-och-atgardsplan.md`
+§ K1) namngav frågan bakom incidenten som ett eget vägval: ska den diff-
+oberoende formen bestå?
+
+**Beslut (Marcus GO 2026-09-18, väg (b)):** nej. `audit` villkoras nu mot
+diffen — jobbet körs BARA när `package.json`, `package-lock.json` eller
+`audit-ci.jsonc` faktiskt ändrats (`ci.yml`s `changed`-jobb, steget
+`changed-deps`, output `dependency_tree_changed`). En ny extern advisory mot
+ett OFÖRÄNDRAT träd upptäcks i stället av natten — redan BREDARE
+(`npx audit-ci --moderate` mot dagsvitens `high`) och sedan `TASK-450.1` (N2,
+landad `a046d29c`) i sin EGEN kanal (`nightly.yml`s `beroende-arende`-jobb,
+etikett `beroendevarning`) — inom ett dygn i stället för att blockera allt
+inom minuter.
+
+**Vad som INTE ändrades, prövat mot planens fyra invarianter:** varje
+ändring som rör beroendeträdet granskas fortfarande på ändringsförslaget/kön
+med blockerande verkan (samma `audit-ci`, samma `high`-tröskel, samma
+nätverksdegradering som § 2026-09-04-posten beskriver); hela trädet granskas
+fortfarande varje natt, strängare; jobbet står kvar i `ci-passed.needs` — ett
+rött resultat blockerar fortfarande; och DENNA post kodifierar den enda
+avsedda ändringen i detta ADR:s domän — NÄR jobbet triggas, aldrig VAD det
+gör eller detta ADR:s femstegs-konventionsflöde för undantag (Beslut §1–§5
+ovan, orört).
+
+**Varför beslutet väntade på N2.** Att villkora `audit` utan en läsbar natt
+hade flyttat lastbärandet för "har omvärlden publicerat en ny varning?" till
+en kanal ingen kunde läsa (natten var röd 51 av 52 nätter innan N2 delade
+den). N2 landade FÖRST (`a046d29c`, 2026-09-18), av just det skälet.
+
+**Bevis (tvåsidigt, krävt av kortets AC #1):** en PR som rör `package.json`
+kör `audit` — röd på en känd sårbarhet, precis som förut; en PR som INTE rör
+beroendeträdet SKIPPAR `audit` helt (ingen runner startar) och `CI Passed or
+Skipped` förblir grön ändå (`skipped` är varken `failure` eller `cancelled`
+i aggregatorns fail-closed-logik).
+
+**Amendering samma dag — review-grindens runda 1 (risk medel) utökade
+triggern till att även omfatta GRANSKNINGSMEKANISMEN själv.** Utan det kunde
+en försvagning av granskningen (ett mjukat villkor, en sänkt tröskel i
+degraderingsskriptet, ett kringgånget test) landa utan en enda live-körning
+mot ett riktigt träd — exakt den ändringen rör per definition inte
+beroendeträdet. `changed-deps`-steget i `ci.yml` (den ENDA kanoniska listan
+— den återges inte här, se steget) vaktar sedan denna amendering även
+degraderingsskriptet, dess testsvit och de workflow-filer som bär
+`audit`-jobbets `if:`/`run:`. Denna ADR:s ursprungliga fyra invarianter
+((i)–(iv) ovan) står oförändrade — amenderingen vidgar VILKA ändringar som
+räknas som "rör beroendeträdet", den ändrar inget av vad som händer när
+jobbet väl kör.
+
+**Spårbarhet:**
+
+- Kort: `TASK-450.5` (K1(b)), beroende av `TASK-450.1` (N2, `a046d29c`)
+- Grind: `.github/workflows/ci.yml` jobben `changed` (steget `changed-deps`)
+  och `audit` — se `audit`-jobbets § K1(b)-kommentar för hela mekaniken
+- Nattens kanal (invariant (ii)): `.github/workflows/nightly.yml` jobbet
+  `beroende-arende`
+- Paritet: `.ci-parity-policy.json` (`knownJobs.ci.changed`,
+  `knownJobs.ci.audit`) — jobbet DERIVERAS oförändrat lokalt, den nya
+  `if:`-gatningen ignoreras medvetet (säker superset, samma form som
+  `docs`-jobbets `if: docs_changed`)
+- Underlag: `docs/research/ci-djupgranskning-2026-09-17/
+  10-migrations-och-atgardsplan.md` § K1,
+  `docs/research/ci-djupgranskning-2026-09-17/00-huvudrapport.md` § 8
