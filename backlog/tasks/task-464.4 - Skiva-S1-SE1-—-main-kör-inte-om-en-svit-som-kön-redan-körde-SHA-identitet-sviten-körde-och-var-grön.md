@@ -3,10 +3,10 @@ id: TASK-464.4
 title: >-
   Skiva: S1/SE1 — main kör inte om en svit som kön redan körde (SHA-identitet,
   'sviten körde och var grön')
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-19 10:48'
-updated_date: '2026-09-19 14:46'
+updated_date: '2026-09-19 17:04'
 labels:
   - ready-for-agent
 dependencies:
@@ -42,5 +42,5 @@ Efter en landning kör CI i dag hela sviten en gång till på main — på exakt
 ## Final Summary
 
 <!-- SECTION:FINAL_SUMMARY:BEGIN -->
-Mekanism: scripts/dedup-huvudgren.sh ersatter ci.yml:s trädjämförelse (HEAD^2) med SHA-identitet mot kön (VÄG A-monstret ur classify-post-merge.sh). Fråga: har github.sha en GRÖN merge_group-körning DÄR Test suite faktiskt körde (ej skippades)? Läsningen delad via scripts/lib/svit-signal.sh + ci-suite-job-name.sh (classify-post-merge.sh refaktorerad, 37/37 gamla tester grona). Kontrastpar AC#1: e845dfab (docs, kö grön MED sviten hoppad) -> dedup_hit=false; 6eef96de (kod, kö körde sviten) -> dedup_hit=true. Tredje skarpt fall (orkestrerarens fynd): #2588+#2596 samtidig merge, 811cece3 -> dedup_hit=true korrekt via egen kö-körning 35448948271. Grupplandningar belagda via ALLGREEN kumulativ byggnad, ej BEFORE-spannvandring. Fail-closed tvasidigt (15 fall, AC#2: API-fel/noll/FLERA träffar). Sidofynd i check-codeql-d0-kodfri.sh: negationsöverlapp (T20) + markörsubsträngens andra förekomst, ankrad radmatchning (T21, tvåsidigt mutationstestad). AC#4 redan rättat av #2591/TASK-471. Grindar: shellcheck-strict 0/0/0/0, actionlint/yamllint/listparitet/aggregator-needs/check:docs/typecheck/biome/build gröna, verify:ci-parity:fast 39 gröna/3 skip.
+Landad som PR #2598 → 1dc13c1f (2026-09-19 16:43Z), efterkontroll grön (35455877261: klassning 10 s, städning 22 + 29 s, a11y 172 s, Staging 1094 s, exponeringsfönster 4 s ≈ 26 fakturerade min). Två granskningsrundor (risk låg båda) + tre rebaser (ärvda orkestrerar-commits; ADR-133 § Updates två gånger). Mekanik: scripts/dedup-huvudgren.sh ersätter trädjämförelsen i changed-jobbet med SHA-identitet — main hoppar sviten ENDAST när en merge_group-körning på exakt github.sha KÖRDE 'Test suite' grön; delad signal-lib (scripts/lib/svit-signal.sh) med classify-post-merge.sh; positivt belägg krävs, tredje utfallet OKAND ⇒ sviten kör. Fyra skarpa fall rätt i båda rundorna (e845dfab false, 6eef96de true, grupplandningen 811cece3 true, T166-fallet fb1c7fa4 false). SKARPBEVIS på egen landning: push-körning 35455877309 loggade dedup_hit=true mot kö-körning 35455515883 (samma SHA, hela sviten grön — belagt fristående av orkestreraren), 'Test suite' skipped, CI Passed grön. Bifynd betalda: radtolkarens !-negationer och markörförankringen i check-codeql-d0-kodfri.sh (T20/T21). Buret vidare: TASK-464.5 AC #8 (namngivna hermetiska jobb + kopplingsgrind) och AC #9 (SKYDDSNÄTET-kommentaren).
 <!-- SECTION:FINAL_SUMMARY:END -->
