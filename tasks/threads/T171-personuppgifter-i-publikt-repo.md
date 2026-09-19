@@ -121,22 +121,33 @@ prod via `TASK-372`/S115, inte en seed-fixtur).
 Undre gränser ska läsas som undre gränser: den som tar dem för totalsiffror
 städar en femtedel och tror sig klar.
 
+**Punkt 4 — BESLUTAD (S126 Del 17 beslut 9, 2026-09-19, Marcus: *"A"*).**
+Ingen history-rewrite (`git filter-repo` + force-push + GitHub-support för
+cachade vyer är irreversibelt och påverkar alla worktrees och parallella
+sessioner — skälet mot att göra det alls). **Hård regel: repot blir ALDRIG
+publikt igen med denna historik** — en framtida publicering (t.ex.
+komponentbiblioteket som portfölj) sker som en NY, historiklös kopia. Skälet
+mot rewrite, källmärkt till grillningen: den förstör SHA-bevisföringen och
+tar ändå inte tillbaka det som redan är klonat.
+
 ## Öppet
 
-- **Punkt 3 — e-postvakten:** ej byggd, Marcus-beslut. Regeln i `CLAUDE.md`
-  är PROSA och bärs av disciplin, inte av en grind (ADR-083). En regex-vakt
-  med allowlist skulle fånga e-postklassen billigt; **namn går inte att
-  grinda** — samma sträng var en verklig person, en staging-fixtur och ett
-  generiskt bokstavsexempel i tre olika filer under detta pass.
-- **Punkt 4 — git-historiken:** kvarstår som Marcus-beslut, och det är värt
-  att säga rakt ut: **uppgifterna finns kvar i varje commit som införde dem,
-  även efter punkt 1.** Städningen skyddar framtida läsare av arbetsträdet,
-  inte historiken. Repot är publikt i dag; en synlighetsändring tar inte
-  heller tillbaka det som redan hämtats eller arkiverats av tredje part
+- **Punkt 3 — e-postvakten:** ej byggd. Regeln i `CLAUDE.md` är PROSA och
+  bärs av disciplin, inte av en grind (ADR-083). Kort mintat: `TASK-482`,
+  med mätbar AC (config-driven allowlist, tvåsidig testsvit, CI-wirad).
+  **Namn går inte att grinda** — samma sträng var en verklig person, en
+  staging-fixtur och ett generiskt bokstavsexempel i tre olika filer under
+  detta pass.
+- **Git-historiken, kompletterande fakta (beslutet står i punkt 4 ovan):**
+  **uppgifterna finns kvar i varje commit som införde dem, även efter
+  punkt 1.** Städningen skyddar framtida läsare av arbetsträdet, inte
+  historiken. Repot är publikt i dag; en synlighetsändring tar inte heller
+  tillbaka det som redan hämtats eller arkiverats av tredje part
   (`docs/research/repo-privat-konsekvenser-2026-09-18.md` § B6).
-  History-rewrite (`git filter-repo` + force-push + GitHub-support för
-  cachade vyer) är irreversibel och påverkar alla worktrees och parallella
-  sessioner; görs i så fall i ett eget, tomt fönster.
+- **Personuppgiftsincident — flaggat till Marcus, ej utrett av orkestreraren
+  eller av denna skiva (ingen juridisk bedömning given).** Om exponeringen
+  ska bedömas som en personuppgiftsincident är Miranon Medias och Marcus
+  egen punkt (S126 Del 17 beslut 9).
 - **Tveksamt fall, ej rört:** ett namn i
   `src/components/betalningar/prototype/fixtur.ts` och de ARIA-snapshots som
   genereras därifrån (samma namn som PR:ens och T171 punkt 1:s egen

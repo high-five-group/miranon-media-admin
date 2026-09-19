@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-19 10:50'
+updated_date: '2026-09-19 12:16'
 labels:
   - ready-for-agent
 dependencies: []
@@ -22,15 +23,21 @@ Beslut 8–9 (S126 Del 17) ska bo i fil, inte i en session. (1) CLAUDE.md-raden 
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Regeln står i CLAUDE.md och i T171, ordagrant förenlig med Del 17 beslut 9
-- [ ] #2 Omprövningsvillkoret för licenserna står i docs/reference/atkomst-och-nycklar.md eller motsvarande register, med datum och Marcus ord
-- [ ] #3 Kort för e-postvakten finns, med AC som går att pröva
-- [ ] #4 npm run check:docs grön
+- [x] #1 Regeln står i CLAUDE.md och i T171, ordagrant förenlig med Del 17 beslut 9
+- [x] #2 Omprövningsvillkoret för licenserna står i docs/reference/atkomst-och-nycklar.md eller motsvarande register, med datum och Marcus ord
+- [x] #3 Kort för e-postvakten finns, med AC som går att pröva
+- [x] #4 npm run check:docs grön
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+RUNDA 2 (Marcus 'Rätta fynden först'): tre review-fynd i docs/reference/atkomst-och-nycklar.md § Köpta licenser rättade i en commit. Fynd 1 (motsägelse TYST vs röd): uppdelat i två mekanismer med varsin källa — (a) push-skydd/Secret Protection: TYST avstängning, citat ur docs.github.com via docs/research/repo-privat-konsekvenser-2026-09-18.md § B3 ('Advanced Security features will be disabled...'); (b) CodeQL: repot kör en EGEN advanced-setup-workflow (.github/workflows/codeql.yml, TASK-464.2/PR #2558, bekräftat på disk) — hämtade själv (WebFetch) docs.github.com/.../cannot-enable-codeql-in-a-private-repository OCH about-github-advanced-security; ingen av sidorna innehåller frasen 'red X' eller beskriver runtime-felet — granskarens hypotes om exakt ordalydelse var FALSK, skrivet ärligt i dokumentet, märkt 'INTE mätt i vårt repo — mäts vid TASK-464.10'. Fynd 2 (citat i fel kolumn): omprövningsvillkoret ('när appen är klar...') och köp-citatet ('jag kör väl på att köpa båda då...') särskiljs nu — kontrollerat mot Del 17 rad 8: bara ordet 'klar' står i citattecken i källan (Beslut-kolumnen), köp-citatet ligger i en annan kolumn (Marcus). Fynd 3 (pris): '30/19 USD per aktiv committer och månad' + not om repots enda mänskliga aktiva committer (marcus803), källa samma research-fil rad ~216-227. npm run check:docs kört naket efter rättningen: exit 0, 16 gröna.
+<!-- SECTION:NOTES:END -->

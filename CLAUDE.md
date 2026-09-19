@@ -52,11 +52,14 @@ Detta är en **React-konvertering** av det Vue-byggda systemet i `~/Repon/mirano
   record-/anmälnings-ID:n, belopp, datum utan namn, Marcus egna adresser
   (han är repo-ägare) och Roger & Lottas firmauppgifter. **Detta är PROSA,
   ingen mekanism** — ingen grind fäller ett namn i fri text, och en
-  e-postvakt är ofärdig (`T171` punkt 3, Marcus-beslut). **Varför raden står
+  e-postvakt är ofärdig (`T171` punkt 3, `TASK-482`). **Varför raden står
   här:** 100 verkliga personer och 13 e-postadresser låg citerade i klartext
   på `main` i ett PUBLIKT repo — över 34 filer — tills `T171` punkt 1 städade
   dem 2026-09-18. Bevisföringen var rätt metod i fel medium, och historiken
-  bär dem fortfarande (`T171` punkt 4).
+  bär dem fortfarande (`T171` punkt 4). **Hård regel (Del 17 beslut 9, S126,
+  2026-09-19):** historiken skrivs INTE om — repot blir ALDRIG publikt igen
+  med denna historik; en framtida publicering (t.ex. komponentbiblioteket
+  som portfölj) sker som en NY, historiklös kopia.
 - **Bilagemallarnas FÖRLAGOR ligger utanför repot** —
   `~/Desktop/Miranon Media/exempelpdokument/` (`bekräftelsebilaga-exempel.pdf`,
   `deltagarinformation-exempel.pdf`, `2026-08-03 kvitto-forlaga.pdf`). De är
