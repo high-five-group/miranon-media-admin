@@ -44,21 +44,24 @@ import { queryKeys } from '@/queries/keys';
  * Delningen sker därför ENDAST när listnyckeln FAKTISKT har en hämtning i
  * flykt UTAN cachad data (den exakta timeout-race-formen ovan) — annars
  * hämtar dashboard-queryn OFÖRÄNDRAT direkt mot adaptern, precis som innan
- * denna skiva. `DASHBOARD_POLLING`/`noRetryOn4xx` (i `useDashboardData.ts`)
- * är därmed helt orörda utanför just detta smala race-fönster.
+ * denna skiva. `DASHBOARD_POLLING` och Hems retry-policy (i
+ * `useDashboardData.ts`) är därmed helt orörda utanför just detta smala
+ * race-fönster.
  *
- * Kant, öppet bokförd (ingen kod skriven för att stänga den, se
- * över-engineering-vakten i `~/.claude/CLAUDE.md`): I DELNINGS-grenen ärver
- * dashboard-hämtningen listnyckelns EGEN retry-policy (global default,
- * `retry: 3`, INGEN 4xx-genväg) i stället för `noRetryOn4xx` — en 4xx i just
- * det race-fönstret tar därför upp till tre interna backoff-försök
- * (~1,4 s) innan felet når Hem, i stället för att fela direkt. Detta är
- * startvärmningens EGEN, sedan tidigare oförändrade retry-policy (warmup har
- * alltid hämtat `events.list` med den globala defaulten) — fixen ändrar inte
- * DEN, den ändrar bara att Hem VÄNTAR på samma hämtning i stället för att
- * starta en egen. Fönstret är smalt (bara mellan ett timeout-släpp och att
- * startvärmningens egen hämtning settlar) och kostnaden är begränsad
- * (~1,4 s), så det bedöms inte motivera egen komplexitet.
+ * [STÄNGD av TASK-451.4 — kanten stod här som öppet bokförd] I DELNINGS-grenen
+ * ärvde dashboard-hämtningen listnyckelns EGEN retry-policy (global default,
+ * `retry: 3`, INGEN 4xx-genväg) i stället för Hems egen policy: en 4xx i just
+ * det race-fönstret tog upp till tre interna backoff-försök (~1,4 s) innan
+ * felet nådde Hem, i stället för att fela direkt.
+ *
+ * Kanten är stängd, och inte med en lapp på detta ställe: `events.list` och
+ * `registrations.all` bär sedan TASK-451.4 `retry: false` via
+ * `setQueryDefaults` (`src/queries/warmup-retry-policy.ts`). Delnings-grenens
+ * `ensureQueryData` nedan ärver därmed SAMMA policy som startvärmningen
+ * själv, och ett 4xx i race-fönstret når Hem direkt. Att policyn bor på
+ * NYCKELN i stället för hos någon av de tre konsumenterna (warmup,
+ * `delaMedListan`, list-vyn) är just vad som gör att de inte kan glida isär —
+ * samma resonemang som TASK-420 och TASK-286.4 redan etablerat.
  *
  * EGEN MODUL, INTE inline i `useDashboardData.ts` (TASK-451.3, speglar
  * `startvarmningen.ts`s filhuvuds § om `dataSource`-injektionens

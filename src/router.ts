@@ -7,6 +7,8 @@ import { dataSource } from './data/dataSource';
 import { registreraIntresseradeRetryPolicy } from './queries/intresserade-retry-policy';
 import { PERSIST_MAX_AGE_MS } from './queries/persist';
 import { registreraPersonregistretsFarskhet } from './queries/personregister-farskhet';
+import { globalRetryPolicy } from './queries/retry-policy';
+import { registreraWarmupRetryPolicy } from './queries/warmup-retry-policy';
 import { routeTree } from './routeTree.gen';
 
 // QueryClient defaults per docs/specs/STATE-STRATEGY.md §3.
@@ -18,7 +20,11 @@ export const queryClient = new QueryClient({
       // (skyddsräcke 2 — lägre värde kasserar lagrad cache i förtid,
       // dokumenterad GC-fälla). Var 30 min före persist-lagret (task-8.3).
       gcTime: PERSIST_MAX_AGE_MS,
-      retry: 3,
+      // TASK-451.4 runda 3: FUNKTION, inte talet 3. Ekvivalent med `retry: 3`
+      // för varje fel utom ett uttömt tidsbudget-fel (`TidsgransFel`), som
+      // aldrig retryas — ett omförsök startar annars en NY 160 s-budget och
+      // gör taket till 4 × gränsen. Se `src/queries/retry-policy.ts`.
+      retry: globalRetryPolicy,
       retryDelay: (attempt) => Math.min(200 * 2 ** attempt, 2000),
       refetchOnWindowFocus: true, // Uppdatera när Lotta återvänder
       refetchOnReconnect: 'always', // Uppdatera när internet återgår
@@ -49,6 +55,29 @@ registreraPersonregistretsFarskhet(queryClient);
 // eget filhuvud (`src/queries/intresserade-retry-policy.ts`) för hela
 // motiveringen och TanStack Query-källorna.
 registreraIntresseradeRetryPolicy(queryClient);
+
+// TASK-451.4 (diagnoskartan § 1.7 + § 6 punkt 6) — EN retry-policy på
+// startvärmningens väg. Två lager staplades på varje warmup-hämtning:
+// `fetchWithRetry`s 4 HTTP-försök (`src/data/utils.ts`) GÅNGER den globala
+// `retry: 3` ovan = upp till 16 nätverksanrop per item mot en kall Edge
+// Function. Query-lagret stängs av (`retry: false`) för warmup-setets sju
+// nycklar; transportlagret blir det enda, och bär redan 4xx-regeln.
+//
+// ORDNINGEN ÄR BETYDELSEBÄRANDE: denna rad står EFTER
+// `registreraIntresseradeRetryPolicy` och överskuggar med avsikt dess post
+// för `intresserade.all` med det strikt starkare `retry: false` (TASK-420:s
+// garanti "aldrig 4xx" bevaras, plus AC #3:s tak på query-lagrets omförsök
+// som dess egen form inte kunde ge). Kastas raderna om, återgår den nyckeln
+// tyst till 4 × 4-staplingen. Hela resonemanget + spridningsräkningen per
+// nyckel: `src/queries/warmup-retry-policy.ts`s filhuvud.
+//
+// ORDNINGEN ÄR VAKTAD AV ETT TEST SOM LÄSER DENNA FIL:
+// `tests/api/warmup-retry-policy.test.ts` § D, fallet "src/router.ts anropar
+// registrarna i DEN ordningen". Vaktposten tillkom i TASK-451.4:s runda 2
+// (granskningens fynd 4) — dessförinnan påstods ordningen vara test-vaktad
+// medan de faktiska testen bara anropade registrarna manuellt i testkroppen
+// och därmed aldrig kunde se denna fil.
+registreraWarmupRetryPolicy(queryClient);
 
 /**
  * Router instantierad på modul-scope. context.auth fylls per-render via InnerApp-komponenten

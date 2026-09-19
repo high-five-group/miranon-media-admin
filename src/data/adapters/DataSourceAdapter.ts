@@ -72,10 +72,48 @@ import type {
 } from '../../domain/types/Filters';
 import type { ActivityLogPage, ActivityLogParams } from '../../domain/types/Pagination';
 
+/**
+ * Avbrytnings-alternativ för en LÄSANDE adapter-metod (TASK-451.4).
+ *
+ * `signal` är den `AbortSignal` TanStack Query ger varje `queryFn` via sin
+ * kontext (`docs/framework/react/guides/query-cancellation.md`: *"TanStack
+ * Query provides each query function with an AbortSignal instance ... you can
+ * respond to the cancellation inside your query function"*). Den leds GENOM
+ * adaptern — aldrig runt den — så lagerregeln håller: datalagret nås endast
+ * via sin adapter, och transportlagret
+ * (`callEdgeFunction` → `fetchWithRetry`) nås aldrig direkt av en konsument.
+ *
+ * ## Varför parametern är VALFRI, och bara på läsande metoder
+ *
+ * Valfri: en obligatorisk parameter hade brutit varje befintlig anropare
+ * (adaptern har långt över hundra metoder och två implementationer plus
+ * teststubbar). Additiv form ⇒ noll anropsställen behöver röras, och en
+ * anropsväg kan börja leda in signalen utan att någon annan väg påverkas.
+ *
+ * Bara läsande: en tidsgräns eller ett avbrott på en SKRIVANDE metod är
+ * farligt — anropet kan redan ha genomförts på servern. Se
+ * `postEdgeFunction`s docblock (`src/data/config/supabase-client.ts`) för
+ * hela resonemanget. Skrivvägarnas semantik är ORÖRD av TASK-451.4.
+ *
+ * I DAG bär de SJU metoder startvärmningen använder denna parameter
+ * (`src/data/warmup/startvarmningen.ts`s `WARMUP_ITEMS`), eftersom det är
+ * kortets scope. Övriga läsmetoder får ändå tidsgränsen — den bor i
+ * `callEdgeFunction` och gäller varje GET — de saknar bara den frivilliga
+ * kopplingen till TanStacks cancel-signal. Att leda in signalen på fler
+ * metoder är en ren additiv utvidgning när en väg behöver den.
+ */
+export interface HamtningsAlternativ {
+  signal?: AbortSignal;
+}
+
 export interface DataSourceAdapter {
-  // === Befintliga (oförändrade) ===
-  fetchEvents(): Promise<Event[]>;
-  fetchRegistrations(filters?: RegistrationFilters): Promise<Registration[]>;
+  // === Befintliga (oförändrade så när som på det additiva, valfria
+  // `alternativ`-argumentet — se HamtningsAlternativ ovan, TASK-451.4) ===
+  fetchEvents(alternativ?: HamtningsAlternativ): Promise<Event[]>;
+  fetchRegistrations(
+    filters?: RegistrationFilters,
+    alternativ?: HamtningsAlternativ,
+  ): Promise<Registration[]>;
 
   /**
    * Hämta HELA personregistret (ADR-123 beslut 1, TASK-286.1) —
@@ -174,10 +212,13 @@ export interface DataSourceAdapter {
   createAttendance(input: CreateAttendanceInput): Promise<CreatedAttendance>;
 
   /** Hämta väntelistan */
-  fetchWaitlist(filters?: WaitlistFilters): Promise<WaitlistEntry[]>;
+  fetchWaitlist(
+    filters?: WaitlistFilters,
+    alternativ?: HamtningsAlternativ,
+  ): Promise<WaitlistEntry[]>;
 
   /** Hämta Intresserade (leads = personer som hämtat något men aldrig anmält sig) */
-  fetchIntresserade(): Promise<Intresserad[]>;
+  fetchIntresserade(alternativ?: HamtningsAlternativ): Promise<Intresserad[]>;
 
   /** Hämta engagemang, valfritt filtrerat per person */
   fetchEngagements(personId?: string): Promise<Engagement[]>;
@@ -186,7 +227,7 @@ export interface DataSourceAdapter {
   sendEmail(payload: MailPayload): Promise<MailSendResult>;
 
   /** Hämta mailloggen (GLOBAL lista — hela utskicksloggen, ingen filter-gren) */
-  fetchMailLog(): Promise<MailLogEntry[]>;
+  fetchMailLog(alternativ?: HamtningsAlternativ): Promise<MailLogEntry[]>;
 
   /** Beräkna segment-medlemskap från källan (Deltaganden, strikt Närvaropoäng=1) givet en regel.
    *  `SegmentRuleDnf` (TASK-249.5, ADR-115): DNF-formen (Par | Konjunkt)[] — en vanlig
@@ -200,7 +241,7 @@ export interface DataSourceAdapter {
    * Lista app-sparade segment (Fas 6g L3). Legacy Make-rader utan App-segmentregel
    * exkluderas server-side (get-segments) — varje SavedSegment bär en typad regel.
    */
-  listSegments(): Promise<SavedSegment[]>;
+  listSegments(alternativ?: HamtningsAlternativ): Promise<SavedSegment[]>;
 
   /** Lista Eventformat-poster (record-ID + namn) för create-event:s Eventtyp-dropdown (Fas 6f) */
   getEventFormats(): Promise<EventFormat[]>;
@@ -779,7 +820,10 @@ export interface DataSourceAdapter {
    * `statements` är exakt `ActivityStatement[]` — ingen parallell "flat"-typ
    * (se get-activity-log-EF:ens filhuvud för den fulla motiveringen).
    */
-  fetchActivityLog(params?: ActivityLogParams): Promise<ActivityLogPage>;
+  fetchActivityLog(
+    params?: ActivityLogParams,
+    alternativ?: HamtningsAlternativ,
+  ): Promise<ActivityLogPage>;
 
   // ═════════════════════════════════════════════════════════════════════════
   // BETALNINGSDOMÄNEN (TASK-346.4, ADR-128/ADR-129)

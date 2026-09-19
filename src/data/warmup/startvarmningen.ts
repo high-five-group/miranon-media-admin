@@ -60,9 +60,35 @@ import { HEM_SENASTE_AKTIVITET_ANTAL, queryKeys } from '@/queries/keys';
  *    kallstart OCH enheten som blir offline MITT I en redan startad
  *    startvärmning (samma mekanism löser båda — se ADR-112 beslut 3).
  *    Släpper med delresultatet (`klara` vid timeout-ögonblicket); de
- *    pågående hämtningarna avbryts INTE (inget `AbortController`) — de får
- *    landa i cachen som vanligt om/när de settlar, men `slutlöfte` väntar
- *    inte in dem.
+ *    pågående hämtningarna avbryts INTE AV GATEN — de får landa i cachen som
+ *    vanligt om/när de settlar, men `slutlöfte` väntar inte in dem.
+ *
+ *    [TASK-451.4] "Avbryts inte" gäller fortfarande GATEN, men är sedan denna
+ *    skiva inte längre samma sak som "kan hänga för evigt": varje hämtning
+ *    bär numera en EGEN tidsgräns i transportlagret
+ *    (`HAMTNINGENS_TIDSGRANS_MS`, `src/data/utils.ts` — 160 s). Talet är
+ *    HÄRLETT ur lagret under, inte valt mot gaten: det ligger över Edge
+ *    Function-lagrets egen idle timeout (150 s) och därmed över serverns
+ *    värsta legitima Airtable-429-återhämtning (112,5 s), så gränsen aldrig
+ *    kapar en läsning som skulle ha lyckats. Att den därmed också ligger
+ *    långt över gatens 9 s är en FÖLJD, inte skälet — men en nödvändig
+ *    sådan: hämtningar som landar EFTER släppet ska fortfarande få fylla
+ *    Hem. En Edge Function som aldrig svarar settlar alltså till slut som
+ *    ETT FEL i stället för att hänga tills webbläsarens socket-timeout — och
+ *    räknas då i `misslyckade` (§ nedan) i stället för att aldrig räknas
+ *    alls. Hela härledningen, inklusive varför 20 s var FEL, står i den
+ *    konstantens docblock.
+ *
+ *    ÄRLIG KANT, ingen kod skriven för att stänga den: settlar en hämtning
+ *    EFTER att `avgorMed()` redan kört (vilket ett 160 s-avbrott ALLTID gör
+ *    när gaten släppte vid 9 s) hinner dess `misslyckade`-ökning aldrig med
+ *    i Sentry-rapporten nedan — den är redan skickad. Det gäller ALLA sena
+ *    settles, inte bara avbrutna, och är ett befintligt förhållande som
+ *    TASK-451.4 varken förvärrar eller lagar. Vad skivan däremot gör är att
+ *    göra kanten BREDARE i tid (20 s → 160 s), och det ska sägas rakt ut:
+ *    en tidsgräns som fyrar har i dag INGEN observability-kanal alls. Se
+ *    `HAMTNINGENS_TIDSGRANS_MS` § "Varför ingen Sentry-kanal ser att gränsen
+ *    fyrat" för varför, och för vad en omprövning av talet faktiskt kräver.
  * 3. **`slutlöfte` kastar ALDRIG.** `Promise.allSettled` fångar varje
  *    enskild hämtnings fel — en trasig datamängd sänker aldrig hela
  *    startvärmningen (samma fire-and-forget-anda som
@@ -99,6 +125,25 @@ import { HEM_SENASTE_AKTIVITET_ANTAL, queryKeys } from '@/queries/keys';
  * Övriga fem datamängder (waitlist/intresserade/maillog/segment/
  * activityLog) har bara EN nyckelfamilj var — ingen delning behövs, bara
  * en enkel `ensureQueryData` per nyckel.
+ *
+ * ## EN retry-policy, och signalen genom adaptern (TASK-451.4)
+ *
+ * Varje items `queryFn` tar emot TanStack Querys `signal` ur queryFn-
+ * kontexten och leder den GENOM adaptern (`ds.fetchX({ signal })`) — aldrig
+ * runt den. Signalen når `callEdgeFunction`, som kombinerar den med
+ * tidsgränsen ovan; anropet fäller alltså på det som inträffar FÖRST av
+ * query-cancel och tidsgräns. Att konsumera signalen ändrar INTE denna
+ * motors cancel-semantik: `ensureQueryData` skapar ingen observer, och
+ * query-core avbryter bara vid `removeObserver` när den SISTA observern
+ * försvinner (källäst, `query.js` `removeObserver`) — här finns ingen.
+ *
+ * Retryn ligger i ETT lager. Warmup-setets sju nycklar bär
+ * `retry: false` via `setQueryDefaults`
+ * (`src/queries/warmup-retry-policy.ts`, registrerad i `src/router.ts`), så
+ * query-lagret retryar inte ovanpå `fetchWithRetry`s fyra HTTP-försök.
+ * VÄRSTA FALLET PER ITEM: **högst 4 nätverksanrop** (1 vid 4xx — transporten
+ * retryar aldrig klient-fel), hela sekvensen kapad av tidsgränsen. FÖRE den
+ * skivan var talet 4 × 4 = 16.
  *
  * ## Rate-limit-respekterande sekvensering (research § 5.1/§ 6)
  *
@@ -283,7 +328,7 @@ const WARMUP_ITEMS: WarmupItem[] = [
     async kor({ qc, ds }) {
       const events = await qc.ensureQueryData({
         queryKey: queryKeys.events.list,
-        queryFn: () => ds.fetchEvents(),
+        queryFn: ({ signal }) => ds.fetchEvents({ signal }),
         revalidateIfStale: true,
       });
       // Hämta en gång, dela (ADR-112 beslut 4) — se filhuvudet.
@@ -295,7 +340,7 @@ const WARMUP_ITEMS: WarmupItem[] = [
     async kor({ qc, ds }) {
       const registrations = await qc.ensureQueryData({
         queryKey: queryKeys.registrations.all,
-        queryFn: () => ds.fetchRegistrations(),
+        queryFn: ({ signal }) => ds.fetchRegistrations(undefined, { signal }),
         revalidateIfStale: true,
       });
       qc.setQueryData(queryKeys.dashboard.registrations, registrations);
@@ -306,7 +351,7 @@ const WARMUP_ITEMS: WarmupItem[] = [
     async kor({ qc, ds }) {
       await qc.ensureQueryData({
         queryKey: queryKeys.waitlist.all,
-        queryFn: () => ds.fetchWaitlist(),
+        queryFn: ({ signal }) => ds.fetchWaitlist(undefined, { signal }),
         revalidateIfStale: true,
       });
     },
@@ -316,7 +361,7 @@ const WARMUP_ITEMS: WarmupItem[] = [
     async kor({ qc, ds }) {
       await qc.ensureQueryData({
         queryKey: queryKeys.intresserade.all,
-        queryFn: () => ds.fetchIntresserade(),
+        queryFn: ({ signal }) => ds.fetchIntresserade({ signal }),
         revalidateIfStale: true,
       });
     },
@@ -326,7 +371,7 @@ const WARMUP_ITEMS: WarmupItem[] = [
     async kor({ qc, ds }) {
       await qc.ensureQueryData({
         queryKey: queryKeys.maillog.all,
-        queryFn: () => ds.fetchMailLog(),
+        queryFn: ({ signal }) => ds.fetchMailLog({ signal }),
         revalidateIfStale: true,
       });
     },
@@ -336,7 +381,7 @@ const WARMUP_ITEMS: WarmupItem[] = [
     async kor({ qc, ds }) {
       await qc.ensureQueryData({
         queryKey: queryKeys.segment.saved,
-        queryFn: () => ds.listSegments(),
+        queryFn: ({ signal }) => ds.listSegments({ signal }),
         revalidateIfStale: true,
       });
     },
@@ -346,7 +391,8 @@ const WARMUP_ITEMS: WarmupItem[] = [
     async kor({ qc, ds }) {
       await qc.ensureQueryData({
         queryKey: queryKeys.activityLog.latest(HEM_SENASTE_AKTIVITET_ANTAL),
-        queryFn: () => ds.fetchActivityLog({ pageSize: HEM_SENASTE_AKTIVITET_ANTAL }),
+        queryFn: ({ signal }) =>
+          ds.fetchActivityLog({ pageSize: HEM_SENASTE_AKTIVITET_ANTAL }, { signal }),
         revalidateIfStale: true,
       });
     },
