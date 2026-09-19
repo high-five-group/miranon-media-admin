@@ -6,7 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-02 10:49'
-updated_date: '2026-09-19 12:08'
+updated_date: '2026-09-19 12:49'
 labels:
   - ready-for-agent
 dependencies: []
@@ -51,4 +51,6 @@ Se T166 för fullständig mekanik, mätserie och stängningsnot. Kopplat: TASK-2
 RÄTTELSE 2026-09-02 (review r1 PR #2218): premissen 'post-merge-körningen avbröts/skippades efter #2175' är FALSIFIERAD — Post-merge körde direkt efter #2175:s merge (53681e08, 2026-08-31 10:50Z) och föll 11:05 (run 33384227389) med samma strict-mode-fel. Concurrency-avbrottet gällde #2193:s körning (9dca0e56, cancelled av docs-pushen 2d3647f2) — den delen står. Den PRIMÄRA luckan är larmkedjan: jobbet 'Larm vid rött post-merge' avslutades success i minst sex röda körningar (~47 h) utan att en människa eller orkestreraren agerade. AC (c) 'nattnätets rött når heartbeat-svepet' ska breddas till: post-merge-rött OCH nightly-rött rapporteras som RÖTT-rad i svepet, och larm-jobbets faktiska mottagare kartläggs.
 
 RÄTTAT 2026-09-19 (TASK-479.2, SE16): AC #3 löst av scripts/heartbeat-svep.sh § SJUNDE VÄGEN, men på en BREDARE primitiv än den bokstavliga formuleringen — öppna nattärenden (`gh issue list` mot etiketterna ci-natt/bokforingsdrift/beroendevarning/lankrota), inte senaste körningens `conclusion` (`gh run list`). Skäl (ADR-086-prövning av en orkestrerar-hypotes som gissade `gh run list --limit 1`): en grön NÄSTA nattkörning säger inget om huruvida ett ÄLDRE öppet ärende fortfarande väntar på svar — exakt det TASK-479.2s nya tidsregel (CONTRIBUTING.md § Tidsregel och ägare) mäter. Samma väg täcker OCKSÅ post-merge-rött (öppna ci-post-merge-ärenden), bredare än AC #3s ursprungliga scope (bara natten). Fullt resonemang: CONTRIBUTING.md § 'Varifrån TASK-365 AC #3 är löst'.
+
+BESLUTAT (orkestreraren, Marcus mandat, 2026-09-19, S126, PR #2588 runda 1 fynd 2): primitiven (öppna ärenden via gh issue list, i stället för senaste nightly-körningens conclusion via gh run list) GODKÄNNS — AC #3-bockningen står kvar, AC-texten och bockningen ändras INTE. Skäl: ett öppet larmärende är den hållbara formen av "rött" — det finns kvar tills någon stängt det med motivering och bär en ägare, medan en körnings utfall slår om till grönt vid nästa omkörning; och en level-triggered RÖTT-rad var 90:e sekund är exakt det brus sessionsmedvetna svepet (TASK-462) byggdes för att få bort.
 <!-- SECTION:NOTES:END -->

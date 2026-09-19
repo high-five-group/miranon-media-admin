@@ -309,16 +309,22 @@
 #   SKIFTLÄGET normaliseras, inte VILKEN session ID:t pekar ut.
 #
 #   SJUNDE VÄGEN — öppna ci-post-merge-/nattärenden (TASK-479.2, SE16):
-#   svepet rapporterar GLEST (övergång + påminnelseintervall, ALDRIG var
-#   90:e sekund) huruvida GitHub bär öppna `ci-post-merge`- eller
-#   nattärenden (`ci-natt`/`bokforingsdrift`/`beroendevarning`/`lankrota`)
-#   — CONTRIBUTING.md § Tidsregel och ägare lägger en tidsregel på dem
-#   (svar inom 24 timmar), och denna väg är mekaniken som gör läget
-#   synligt. GLOBALT (inte sessions-scopat) — rött på main angår varje
-#   session, oavsett --session/--alla. Config:
-#   HEARTBEAT_ARENDE_PAMINNELSE_INTERVALL/HEARTBEAT_ARENDE_LIMIT i
-#   .heartbeat-svep-policy.conf. Ingen exit-bit (§ EXIT-KODER); fail-closed
-#   (77) på sondfel. Full mekanik: rapportera_arende_lage() nedan i filen.
+#   svepet rapporterar GLEST (övergång/mängdförändring + påminnelse-
+#   intervall, ALDRIG var 90:e sekund) huruvida GitHub bär öppna
+#   `ci-post-merge`- eller nattärenden
+#   (`ci-natt`/`bokforingsdrift`/`beroendevarning`/`lankrota`) —
+#   CONTRIBUTING.md § Tidsregel och ägare lägger en tidsregel på dem (svar
+#   inom 24 timmar), och denna väg är mekaniken som gör läget synligt.
+#   GLOBALT (inte sessions-scopat) — rött på main angår varje session,
+#   oavsett --session/--alla. MÄNGDMEDVETEN (review runda 2 fynd 3): stängs
+#   ett ärende SAMTIDIGT som ett annat öppnas rapporteras VILKA nummer som
+#   tillkommit och vilka som stängts — inte bara att "antalet är
+#   oförändrat". Config (samtliga i .heartbeat-svep-policy.conf):
+#   HEARTBEAT_ARENDE_PAMINNELSE_INTERVALL/HEARTBEAT_ARENDE_LIMIT/
+#   HEARTBEAT_ARENDE_LABEL_POSTMERGE/HEARTBEAT_ARENDE_SEARCH_NATT (de två
+#   sista sedan review runda 2 fynd 1 — etikett/söksträng är INTE
+#   hårdkodade). Ingen exit-bit (§ EXIT-KODER); fail-closed (77) på
+#   sondfel. Full mekanik: rapportera_arende_lage() nedan i filen.
 #
 # TREVÄGS-SNAPSHOT PER SVEP
 #   1. main-SHA — `gh api repos/<repo>/commits/<branch>`. Avancerar den
@@ -522,6 +528,19 @@ PR_LIMIT="${HEARTBEAT_PR_LIMIT:-100}"
 # filen) — repots faktiska öppna-ärende-djup är litet (en handfull i taget,
 # mätt 2026-09-19: 4 ci-post-merge + 1 bokforingsdrift), 50 ger bred marginal.
 ARENDE_LIMIT="${HEARTBEAT_ARENDE_LIMIT:-50}"
+# TASK-479.2 review runda 2 fynd 1 (config-driven, Marcus-beslut 2026-09-19):
+# etikett- och söksträngarna var i runda 1 HÅRDKODADE i sweep_once() — mot
+# repots egen konvention (~/.claude/CLAUDE.md § Instruktioner, "Custom
+# CI-grindvakts-logik i spokes är alltid config-driven": skriptets LOGIK ska
+# vara universell, ETIKETTNAMNEN är projektets — samma separation som
+# HEARTBEAT_EXEMPT_AUTHORS i .heartbeat-svep-policy.conf redan följer i DENNA
+# fil). Flyttade hit, resolverade EFTER source med samma
+# `${HEARTBEAT_X:-default}`-mönster som ARENDE_LIMIT ovan — ett spoke utan
+# raden i sin policy-kopia får ORDAGRANT dagens beteende (fail-safe mot
+# regression, inte mot tystnad: en oöverstyrd default är fortfarande rätt
+# etikett för DETTA repo).
+ARENDE_LABEL_POSTMERGE="${HEARTBEAT_ARENDE_LABEL_POSTMERGE:-ci-post-merge}"
+ARENDE_SEARCH_NATT="${HEARTBEAT_ARENDE_SEARCH_NATT:-label:ci-natt,bokforingsdrift,beroendevarning,lankrota is:open}"
 
 die() { printf 'heartbeat-svep: %s\n' "$1" >&2; exit "${2:-64}"; }
 say() { [[ "${QUIET}" -eq 1 ]] || printf '%s\n' "$1"; }
@@ -966,7 +985,10 @@ tips_notis_om_dags() {
 #
 # VAD: TVÅ gh-anrop, en `gh issue list` per bucket — samma kostnadsklass som
 # main-SHA-/PR-list-sonderna ovan (en direkt etikett-/sökfråga, ingen
-# paginerad skanning):
+# paginerad skanning). Etikett/söksträng är CONFIG-DRIVNA sedan review runda
+# 2 fynd 1 (ARENDE_LABEL_POSTMERGE/ARENDE_SEARCH_NATT ovan i filen,
+# .heartbeat-svep-policy.conf) — den här kommentaren visar bara DEFAULT-
+# värdet för resonemanget, inte den faktiska källan:
 #   ci-post-merge  --label ci-post-merge --state open (samma fråga
 #                  `post-merge.yml` § Dedup redan kör mot samma etikett)
 #   natt           --search 'label:ci-natt,bokforingsdrift,beroendevarning,
@@ -998,9 +1020,9 @@ tips_notis_om_dags() {
 # level-triggered VARJE svep (L443: en vakt som pollar tillståndsBYTE är
 # blind för rött). Denna väg är AVSIKTLIGT en ANNAN klass: ärendena har
 # REDAN en ägare och en stängningsregel i GitHub Issues, svepets jobb är
-# bara att göra det OMÖJLIGT att glömma — en rad vid varje ÖVERGÅNG
-# (kallstart/grön → röd, röd → grön) plus en gles påminnelse medan rött
-# kvarstår (rapportera_arende_lage() nedan), aldrig en rad per sopning.
+# bara att göra det OMÖJLIGT att glömma — en rad vid varje ÖVERGÅNG eller
+# MÄNGDFÖRÄNDRING (rapportera_arende_lage() nedan), aldrig en rad per
+# sopning.
 #
 # GLOBALT, INTE SESSIONS-SCOPAT (kortets krav: "--session-läget filtrerar
 # INTE bort main-läget — rött på main angår varje session"). Till skillnad
@@ -1015,34 +1037,114 @@ tips_notis_om_dags() {
 # FAIL-CLOSED PÅ SONDFEL (77, samma som main-SHA-/PR-list-sonderna): ett gh-
 # anrop som inte svarar tystas hellre INTE — se sweep_once() nedan.
 #
-# rapportera_arende_lage <namn> <antal> <lista> <state_fil> <notis_fil> —
-# ren logik, inga gh-anrop (de görs av anroparen i sweep_once(), som också
-# äger fail-closed-hanteringen). Tre möjliga utfall per anrop:
-#   1. ÖVERGÅNG in i rött (state_fil bar "okänd" eller "gron", antal>0):
-#      rapportera OMEDELBART (alltid_pa, quiet-immunt), inget att vänta på —
-#      ett NYTT eller ÅTERUPPTÄCKT rött läge ska synas i samma sopning det
-#      upptäcks. Kallstart räknas hit (ett skript som startar med ett REDAN
-#      rött läge ska INTE vänta ett helt påminnelseintervall innan det syns
-#      första gången — motsatsen till main-SHA-kallstartens "ingenting att
-#      jämföra mot"-problem: här FINNS ett facit direkt, GitHubs ärende-API).
-#   2. RÖTT KVARSTÅR (state_fil bar redan "rod", antal>0): påminnelse ENDAST
-#      om HEARTBEAT_ARENDE_PAMINNELSE_INTERVALL sekunder passerat sedan
-#      förra notisen för DENNA bucket — annars helt tyst denna sopning.
-#   3. GRÖNT (antal=0): TYST — utom när state_fil bar "rod" (övergång UR
-#      rött), då rapporteras det EN gång ("ÄRENDE ÅTERSTÄLLT"). Kallstart-
-#      grönt och grönt-kvarstår ger noll rader, ordagrant kortets krav
-#      "inget ärende ⇒ tyst".
-# Läget stämplas ALLTID (atomärt, temp+mv — samma disciplin som varje annan
-# state-fil i detta skript), oavsett om en rad skrivs. KONTRAKT: returnerar
-# ALLTID 0, larmar aldrig (ingen exit-bit, se ovan).
+# MÄNGDMEDVETET SEDAN REVIEW RUNDA 2 FYND 3 (Marcus-beslut 2026-09-19).
+# Runda 1 sparade bara RÖD/GRÖN (två bokstäver) per bucket. Fel klass: stängs
+# ett ärende SAMTIDIGT som ett annat öppnas (samma ANTAL, ny SAMMANSÄTTNING)
+# höll `antal`-jämförelsen tyst tills nästa gles påminnelse — exakt det
+# tillstånd-utan-bevakare-mönstret (`T108`) hela vägen finns för att stänga.
+# Fixat: state_fil bär nu den SORTERADE, kommaseparerade mängden ärende-
+# nummer (t.ex. "2573,2578"), inte "rod"/"gron" — en jämförelse av HELA
+# mängden, inte bara dess kardinalitet.
+#
+# BAKÅTKOMPATIBILITET MED DET GAMLA "rod"/"gron"-FORMATET (samma runda,
+# samma fynd, punkt c): en state_fil skriven av runda 1-koden matchar INTE
+# ARENDE_NUMMER_REGEX nedan och klassas som GAMMALT_FORMAT. En sådan sopning
+# rapporterar INGENTING (varken "tillkommit" för hela den okända mängden
+# ELLER en förnyad övergångsrad) — den skulle annars antingen krascha
+# (ingen mängd att tolka) eller påstå att VARJE nu-öppet ärende just
+# "tillkommit", vilket är FALSKT för ärenden som redan var kända under det
+# gamla formatet. State_fil skrivs ALLTID om till det nya formatet samma
+# sopning (migreringen är alltså ENGÅNGS och TYST); normal mängd-diffning
+# återupptas automatiskt nästa sopning. En genuin KALLSTART (ingen fil alls)
+# är en ANNAN sak och behåller runda 1:s beteende: rapportera omedelbart om
+# röd, annars tyst — se rapportera_arende_lage() nedan för den fulla
+# tre-vägs-dispatchen (kallstart / gammalt_format / normal).
+#
+# arende_split_csv <csv> — echo:ar varje nummer i <csv> på sin EGEN rad.
+# Bash-3.2-säker ordsplitting via IFS=',' (inga arrayer, ingen associativ
+# struktur — samma macOS-default-bash-begränsning som resten av filen redan
+# navigerar, se is_exempt_author()). Tom <csv> ⇒ noll rader.
+arende_split_csv() {
+    local csv="$1" n old_ifs="${IFS}"
+    IFS=','
+    # shellcheck disable=SC2086
+    # AVSIKTLIGT: ordsplitting PÅ IFS=',' är hela poängen med raden — <csv>
+    # innehåller uteslutande siffror och kommatecken (ingen anropare skickar
+    # in fritt formaterad text hit, se de två anropsställena i
+    # sweep_once()/rapportera_arende_lage()), så en oquoterad expansion är
+    # säker: inga glob-tecken att av misstag expandera.
+    for n in ${csv}; do
+        [[ -n "${n}" ]] && printf '%s\n' "${n}"
+    done
+    IFS="${old_ifs}"
+}
+
+# arende_display_lista <csv> — "#A, #B" från en siffer-CSV (tom sträng om
+# <csv> är tom). EN delad formatterare för HELA mängden och för
+# tillkommit-/försvunnet-delmängderna i rapportera_arende_lage(), så alla
+# tre garanterat använder EXAKT samma "#"-prefix-stil.
+arende_display_lista() {
+    local csv="$1" n ut=""
+    # shellcheck disable=SC2312
+    # AVSIKTLIGT: arende_split_csv() är ren bash (for-loop + printf, ingen
+    # extern process som kan misslyckas oväntat) — samma disciplin som
+    # övriga process-substitutions-disabler i detta skript (§ Körläge).
+    while IFS= read -r n; do
+        [[ -n "${n}" ]] || continue
+        ut="${ut:+${ut}, }#${n}"
+    done < <(arende_split_csv "${csv}")
+    printf '%s' "${ut}"
+}
+
+# ARENDE_NUMMER_REGEX — ett GILTIGT (nytt format) state_fil-innehåll: tom
+# sträng (explicit "noll öppna, känt") ELLER en sorterad, kommaseparerad
+# lista av positiva heltal utan mellanslag. Allt annat — framför allt de
+# GAMLA bokstavsvärdena "rod"/"gron" — är GAMMALT_FORMAT (se ovan).
+ARENDE_NUMMER_REGEX='^[0-9]+(,[0-9]+)*$'
+
+# rapportera_arende_lage <namn> <antal> <lista> <nummer_csv_ny> <state_fil>
+# <notis_fil> — ren logik, inga gh-anrop (de görs av anroparen i
+# sweep_once(), som också äger fail-closed-hanteringen). <lista> är
+# "#A, #B"-visningssträngen för HELA den aktuella mängden;
+# <nummer_csv_ny> är samma mängd som en SORTERAD, kommaseparerad CSV (för
+# persistering/diffning — se arende_split_csv() ovan för formatet).
+#
+# TRE VÄGAR, avgjorda av vad state_fil INNEHÅLLER när sopningen börjar:
+#   1. KALLSTART (ingen state_fil alls): identiskt med runda 1 — rapportera
+#      OMEDELBART om antal>0 (inget att vänta på, GitHubs ärende-API ÄR
+#      facit direkt), annars helt tyst.
+#   2. GAMMALT_FORMAT (state_fil finns men matchar INTE ARENDE_NUMMER_REGEX
+#      — runda 1:s "rod"/"gron"): TYST denna ENDA sopning (se § ovan för
+#      varför), state_fil skrivs om till nya formatet, normal diffning
+#      återupptas nästa sopning.
+#   3. NORMAL (state_fil matchar ARENDE_NUMMER_REGEX): jämför MÄNGDERNA.
+#      - OFÖRÄNDRAD mängd, antal>0: gles påminnelse (samma
+#        HEARTBEAT_ARENDE_PAMINNELSE_INTERVALL-logik som runda 1).
+#      - OFÖRÄNDRAD mängd, antal=0: tyst (grönt läge, redan känt).
+#      - FÖRÄNDRAD mängd, antal>0: rapportera med Tillkommit:/Stängt:
+#        -delmängderna (comm(1) mot de två sorterade CSV-listorna).
+#      - FÖRÄNDRAD mängd, antal=0: "ÄRENDE ÅTERSTÄLLT" (samma rubrik som
+#        runda 1), utökad med VILKA nummer som stängdes.
+# Läget stämplas ALLTID (atomärt, temp+mv), oavsett väg eller om en rad
+# skrivs. KONTRAKT: returnerar ALLTID 0, larmar aldrig (ingen exit-bit).
 rapportera_arende_lage() {
-    local namn="$1" antal="$2" lista="$3" state_fil="$4" notis_fil="$5"
-    local prev="okänd" curr="gron" nu senast intervall
+    local namn="$1" antal="$2" lista="$3" nummer_csv_ny="$4" state_fil="$5" notis_fil="$6"
+    local raw="" laege="kallstart" gammalt_csv="" nu senast intervall
 
-    [[ -f "${state_fil}" ]] && prev="$(cat "${state_fil}" 2>/dev/null || echo okänd)"
-    [[ "${antal}" -gt 0 ]] && curr="rod"
+    if [[ -f "${state_fil}" ]]; then
+        raw="$(cat "${state_fil}" 2>/dev/null || true)"
+        if [[ -z "${raw}" || "${raw}" =~ ${ARENDE_NUMMER_REGEX} ]]; then
+            laege="normal"
+            gammalt_csv="${raw}"
+        else
+            laege="gammalt_format"
+        fi
+    fi
 
-    if printf '%s' "${curr}" > "${state_fil}.tmp" 2>/dev/null \
+    # Persistera ALLTID det NYA formatet (atomärt) — oavsett väg. Detta gör
+    # en gammalt_format-migrering ENGÅNGS: state_fil är redan nya formatet
+    # innan funktionen returnerar, så nästa sopning tar väg 3 (normal).
+    if printf '%s' "${nummer_csv_ny}" > "${state_fil}.tmp" 2>/dev/null \
        && mv -f "${state_fil}.tmp" "${state_fil}" 2>/dev/null; then
         :
     else
@@ -1050,11 +1152,31 @@ rapportera_arende_lage() {
         alltid_pa "heartbeat-svep: UNDERHÅLL — kunde inte stämpla ${state_fil}. Ärende-läget (${namn}) kan rapporteras fel nästa sopning."
     fi
 
-    if [[ "${curr}" == "rod" ]]; then
-        intervall="${HEARTBEAT_ARENDE_PAMINNELSE_INTERVALL:-1800}"
-        [[ "${intervall}" =~ ^[0-9]+$ ]] || intervall=1800
+    if [[ "${laege}" == "gammalt_format" ]]; then
+        # MIGRERING: se § ovan för varför denna väg är TYST — en diff mot
+        # okänt gammalt innehåll kan bara krascha eller ljuga. Stämpla ÄNDÅ
+        # notis_fil=NU (tyst, ingen rad skrivs): denna sopning KÄNNER
+        # faktiskt till den aktuella mängden (gh-svaret), så "nu" är en
+        # korrekt baslinje för PÅMINNELSE-klockan. Utan detta skulle en
+        # OFÖRÄNDRAD mängd på den OMEDELBART följande sopningen läsas som
+        # "0 sekunder sedan förra notisen ⇒ intervallet är passerat" (ingen
+        # notis_fil fanns än) och avfyra en påminnelse direkt efter en tyst
+        # migrering — inte en FALSK övergång, men ett för tidigt PÅMINNELSE-
+        # larm av samma rotorsak (mätt i denna rundas T103c-uppfoljning1).
+        if [[ "${antal}" -gt 0 ]]; then
+            nu="$(date +%s)"
+            if printf '%s' "${nu}" > "${notis_fil}.tmp" 2>/dev/null \
+               && mv -f "${notis_fil}.tmp" "${notis_fil}" 2>/dev/null; then
+                :
+            else
+                rm -f "${notis_fil}.tmp" 2>/dev/null || true
+            fi
+        fi
+        return 0
+    fi
 
-        if [[ "${prev}" != "rod" ]]; then
+    if [[ "${laege}" == "kallstart" ]]; then
+        if [[ "${antal}" -gt 0 ]]; then
             alltid_pa "heartbeat-svep: ÄRENDE — ${antal} öppna ${namn}-ärenden: ${lista}. Svara inom tidsregeln (CONTRIBUTING.md § Tidsregel och ägare): åtgärd, genomförd revert eller skriven motivering — aldrig tyst."
             nu="$(date +%s)"
             if printf '%s' "${nu}" > "${notis_fil}.tmp" 2>/dev/null \
@@ -1063,7 +1185,17 @@ rapportera_arende_lage() {
             else
                 rm -f "${notis_fil}.tmp" 2>/dev/null || true
             fi
-        else
+        fi
+        return 0
+    fi
+
+    # laege == "normal": jämför MÄNGDERNA (review runda 2 fynd 3), inte bara
+    # antal>0/antal=0 som runda 1 gjorde.
+    if [[ "${gammalt_csv}" == "${nummer_csv_ny}" ]]; then
+        # OFÖRÄNDRAD mängd.
+        if [[ "${antal}" -gt 0 ]]; then
+            intervall="${HEARTBEAT_ARENDE_PAMINNELSE_INTERVALL:-1800}"
+            [[ "${intervall}" =~ ^[0-9]+$ ]] || intervall=1800
             nu="$(date +%s)"
             senast=0
             if [[ -f "${notis_fil}" ]]; then
@@ -1080,10 +1212,44 @@ rapportera_arende_lage() {
                 fi
             fi
         fi
-    else
-        if [[ "${prev}" == "rod" ]]; then
-            alltid_pa "heartbeat-svep: ÄRENDE ÅTERSTÄLLT — inga öppna ${namn}-ärenden längre."
+        return 0
+    fi
+
+    # FÖRÄNDRAD mängd — beräkna tillkommit/försvunnet mot de TVÅ sorterade
+    # CSV-listorna. comm(1) kräver sorterad indata i SAMMA ordning på båda
+    # sidor; båda är sorterade vid PERSISTERING (se sweep_once()), så ingen
+    # omsortering behövs här.
+    local tillkommit_csv forsvunnet_csv tillkommit_disp forsvunnet_disp
+    # shellcheck disable=SC2312
+    # AVSIKTLIGT: arende_split_csv() är ren bash (se ovan) och `comm`/`paste`
+    # är POSIX-verktyg vars enda felläge här är "binären saknas" — samma
+    # riskklass staging-semaphore.sh/ci-wait.sh redan accepterar för sina
+    # externa hjälpverktyg. Ett fel ger tom sträng, inte en krasch (`set -e`
+    # är aktivt men command substitution i en tilldelning stoppar inte
+    # skriptet på en icke-noll exitkod från EN länk i en pipe utan
+    # `pipefail` INOM parentesen — samma etablerade gräns som redan gäller
+    # för filens ÖVRIGA `$(... | ...)`-tilldelningar).
+    tillkommit_csv="$(comm -13 <(arende_split_csv "${gammalt_csv}") <(arende_split_csv "${nummer_csv_ny}") | paste -sd, - 2>/dev/null)"
+    # shellcheck disable=SC2312
+    # AVSIKTLIGT: samma motivering som raden ovan — shellcheck kräver disabet
+    # per rad, inte per block.
+    forsvunnet_csv="$(comm -23 <(arende_split_csv "${gammalt_csv}") <(arende_split_csv "${nummer_csv_ny}") | paste -sd, - 2>/dev/null)"
+    tillkommit_disp="$(arende_display_lista "${tillkommit_csv}")"
+    forsvunnet_disp="$(arende_display_lista "${forsvunnet_csv}")"
+    [[ -n "${tillkommit_disp}" ]] || tillkommit_disp="inga"
+    [[ -n "${forsvunnet_disp}" ]] || forsvunnet_disp="inga"
+
+    if [[ "${antal}" -gt 0 ]]; then
+        alltid_pa "heartbeat-svep: ÄRENDE — förändring i öppna ${namn}-ärenden: ${antal} öppna nu (${lista}). Tillkommit: ${tillkommit_disp}. Stängt: ${forsvunnet_disp}. Svara inom tidsregeln (CONTRIBUTING.md § Tidsregel och ägare)."
+        nu="$(date +%s)"
+        if printf '%s' "${nu}" > "${notis_fil}.tmp" 2>/dev/null \
+           && mv -f "${notis_fil}.tmp" "${notis_fil}" 2>/dev/null; then
+            :
+        else
+            rm -f "${notis_fil}.tmp" 2>/dev/null || true
         fi
+    else
+        alltid_pa "heartbeat-svep: ÄRENDE ÅTERSTÄLLT — inga öppna ${namn}-ärenden längre. Stängt: ${forsvunnet_disp}."
     fi
     return 0
 }
@@ -1138,10 +1304,13 @@ while [[ $# -gt 0 ]]; do
         # SKIFTLÄGESOKÄNSLIGT ÖVERALLT ovan), 61,310 → 61,322 i TASK-479.2
         # (SE16: § SJUNDE VÄGEN-stycket — öppna ci-post-merge-/nattärenden,
         # konfigrattarna och pekaren till CONTRIBUTING.md § Tidsregel och
-        # ägare);
+        # ägare), 61,322 → 61,328 i TASK-479.2 review runda 2 (fynd 1:
+        # etikett/söksträng config-driven, HEARTBEAT_ARENDE_LABEL_POSTMERGE/
+        # HEARTBEAT_ARENDE_SEARCH_NATT tillagda; fynd 3: mängdmedveten
+        # diffning nämnd i stycket);
         # scripts/test-heartbeat-svep.sh T24 fäller om raden
         # avviker från blockets faktiska start/slut.
-        -h|--help)  sed -n '61,322p' "$0"; exit 0 ;;
+        -h|--help)  sed -n '61,328p' "$0"; exit 0 ;;
         *) die "okänt argument: $1" ;;
     esac
 done
@@ -1555,8 +1724,12 @@ sweep_once() {
     # funktion: en observationssond som inte svarar tystas hellre INTE.
     local postmerge_nrs natt_nrs
 
+    # ETIKETT/SÖKSTRÄNG ÄR CONFIG-DRIVNA (review runda 2 fynd 1) —
+    # ARENDE_LABEL_POSTMERGE/ARENDE_SEARCH_NATT (resolverade ur
+    # .heartbeat-svep-policy.conf, defaults ovan i filen), aldrig
+    # hårdkodade litteraler här.
     set +e
-    postmerge_nrs="$("${GH}" issue list --repo "${REPO}" --label ci-post-merge \
+    postmerge_nrs="$("${GH}" issue list --repo "${REPO}" --label "${ARENDE_LABEL_POSTMERGE}" \
         --state open --limit "${ARENDE_LIMIT}" --json number --jq '.[].number' 2>/dev/null)"
     rc=$?
     set -e
@@ -1566,14 +1739,8 @@ sweep_once() {
     fi
 
     set +e
-    # shellcheck disable=SC2016
-    # Enkla citattecken AVSIKTLIGA (samma skäl som GraphQL-frågan högre upp):
-    # `label:...`-strängen är en GitHub-SÖKFRÅGA, inte ett skal-uttryck —
-    # inget i den ska expanderas av bash. Kommatecken inom `label:` är
-    # GitHubs egen OR-syntax, se rapportera_arende_lage() § VAD ovan för
-    # källa och skarp verifiering.
     natt_nrs="$("${GH}" issue list --repo "${REPO}" \
-        --search 'label:ci-natt,bokforingsdrift,beroendevarning,lankrota is:open' \
+        --search "${ARENDE_SEARCH_NATT}" \
         --limit "${ARENDE_LIMIT}" --json number --jq '.[].number' 2>/dev/null)"
     rc=$?
     set -e
@@ -1582,31 +1749,41 @@ sweep_once() {
         return 77
     fi
 
-    local postmerge_antal=0 postmerge_lista="" natt_antal=0 natt_lista=""
-    if [[ -n "${postmerge_nrs}" ]]; then
-        while IFS= read -r n; do
-            [[ -n "${n}" ]] || continue
-            postmerge_antal=$(( postmerge_antal + 1 ))
-            postmerge_lista="${postmerge_lista:+${postmerge_lista}, }#${n}"
-        done <<<"${postmerge_nrs}"
-    fi
-    if [[ -n "${natt_nrs}" ]]; then
-        while IFS= read -r n; do
-            [[ -n "${n}" ]] || continue
-            natt_antal=$(( natt_antal + 1 ))
-            natt_lista="${natt_lista:+${natt_lista}, }#${n}"
-        done <<<"${natt_nrs}"
-    fi
+    # SORTERAD CSV + VISNINGSLISTA byggs från SAMMA mellanled (review runda 2
+    # fynd 3) — `sort -n` här är den ENDA sorteringspunkten; comm(1) i
+    # rapportera_arende_lage() litar på att BÅDA sidor redan är sorterade
+    # när de persisteras, se den funktionens kommentar för hela resonemanget.
+    local postmerge_csv natt_csv
+    postmerge_csv="$(printf '%s\n' "${postmerge_nrs}" | grep -E '^[0-9]+$' | sort -n | paste -sd, -)"
+    natt_csv="$(printf '%s\n' "${natt_nrs}" | grep -E '^[0-9]+$' | sort -n | paste -sd, -)"
+
+    local postmerge_antal=0 postmerge_lista="" natt_antal=0 natt_lista="" n old_ifs="${IFS}"
+    IFS=','
+    # shellcheck disable=SC2086
+    # AVSIKTLIGT: samma ordsplitting-på-IFS=','-teknik som arende_split_csv()
+    # (bash-3.2-säkert, inga glob-tecken i en siffer-CSV).
+    for n in ${postmerge_csv}; do
+        [[ -n "${n}" ]] || continue
+        postmerge_antal=$(( postmerge_antal + 1 ))
+        postmerge_lista="${postmerge_lista:+${postmerge_lista}, }#${n}"
+    done
+    # shellcheck disable=SC2086
+    for n in ${natt_csv}; do
+        [[ -n "${n}" ]] || continue
+        natt_antal=$(( natt_antal + 1 ))
+        natt_lista="${natt_lista:+${natt_lista}, }#${n}"
+    done
+    IFS="${old_ifs}"
 
     # shellcheck disable=SC2310
     # AVSIKTLIGT: rapportera_arende_lage() returnerar alltid 0 (eget
     # kontrakt) — `|| true` är bälte-och-hängslen, samma disciplin som
     # FEMTE/SJÄTTE VÄGEN nedan/ovan.
-    rapportera_arende_lage "ci-post-merge" "${postmerge_antal}" "${postmerge_lista}" \
+    rapportera_arende_lage "ci-post-merge" "${postmerge_antal}" "${postmerge_lista}" "${postmerge_csv}" \
         "${ARENDE_POSTMERGE_STATE_FILE}" "${ARENDE_POSTMERGE_NOTIS_FILE}" || true
     # shellcheck disable=SC2310
     rapportera_arende_lage "natt (ci-natt/bokforingsdrift/beroendevarning/lankrota)" \
-        "${natt_antal}" "${natt_lista}" \
+        "${natt_antal}" "${natt_lista}" "${natt_csv}" \
         "${ARENDE_NATT_STATE_FILE}" "${ARENDE_NATT_NOTIS_FILE}" || true
 
     # FEMTE VÄGEN — underhåll, körs EFTER att verdikten är färdigberäknad så
