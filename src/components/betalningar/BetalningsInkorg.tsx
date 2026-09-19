@@ -190,6 +190,32 @@ const BETALNINGS_ENHET = { ental: 'betalning', flertal: 'betalningar' };
 const ALLA_EVENT = 'Alla event';
 
 /**
+ * [TASK-481] PILL-RADENS GEOMETRI — EN KÄLLA, TVÅ KONSUMENTER.
+ *
+ * Bärs av BÅDE `RadInnehall`s riktiga pill-rad (rad ~2588) och
+ * `datakroppPending`s skeleton-spegel (rad ~1877), av exakt samma skäl som
+ * `ALLA_EVENT` ovan är delad: de två får aldrig kunna glida isär.
+ *
+ * VARFÖR KONSTANTEN FINNS (mätt, inte antaget): TASK-456 (PR #2541) gav den
+ * RIKTIGA raden `min-h-6` så att ett kort utan pillar blir lika högt som sina
+ * syskon — men skeletonens spegel-rad hade klassträngen kopierad UTAN `min-h-6`
+ * och blev därför 0 px. Följden var en verklig layoutförskjutning skeleton →
+ * data på EXAKT 24 px, och `mer-betalningar-laddlage.staging.test.ts:275`
+ * ("första kortet.height (±1 px tolerans) · Expected: <= 1 · Received: 24")
+ * fällde Post-merge på `main` för VARJE kod-landning från `168dd403` till
+ * `622803a3`. Två handskrivna kopior av samma geometri var hela felet; att
+ * lägga till `min-h-6` på ett andra ställe hade återskapat samma felklass vid
+ * nästa ändring, så raden har en källa i stället.
+ *
+ * `min-h-6` (24 px) är HUSMÖNSTRET, inte ett nytt tal — se
+ * `AnmalningarSida.tsx` rad ~1062 ("ligger över badgens verkliga höjd i BÅDA
+ * fallen", samma `StatusBadge storlek="sm"`) och den fullständiga
+ * TASK-456-motiveringen vid `RadInnehall`s pill-rad nedan. Höjden bevisas
+ * exakt (`toBe(24)`) av `betalningar-inkorg-pillrad-hojd.staging.test.ts`.
+ */
+const PILLRAD_KLASS = 'flex min-h-6 flex-wrap items-center gap-2';
+
+/**
  * [TASK-370.4] SENTINEL-nyckel för "Förhandsgranska alla"-knappens
  * laddläge/spärr i `forhandsgranskaPagar` — SAMMA `Set<string>` som
  * radernas `inbetalningId`, inte ett eget state. Kollisionsfritt PER
@@ -1827,13 +1853,25 @@ export function BetalningsInkorg() {
      Kortskelettet härmar den LADDADE listans exakta boxmodell
      (grupprubrik + `-mx-4`-kort i `bg-bg-muted`, `BetalningsradKort`s
      stängda form: avatar `size-9`, namnrad `text-body`, metarad
-     `text-caption`, en tom badge-rad-spegel så `gap-1`-mellanrummet blir
-     detsamma som en rad UTAN förfallen-/obekräftad-/spegelSlapar-pillar,
-     plus en knapp-yta för "Registrera betalning") så att FÖRSTA kortets
-     boundingBox blir identisk pending/laddat (mätt, se PR-kroppen).
+     `text-caption`, en tom pill-rads-spegel som bär `PILLRAD_KLASS` — SAMMA
+     konstant som den riktiga raden, så både `gap-1`-mellanrummet och den
+     reserverade höjden är detsamma som en rad UTAN förfallen-/obekräftad-
+     pillar — plus en knapp-yta för "Registrera betalning") så att FÖRSTA
+     kortets boundingBox blir identisk pending/laddat (mätt, se PR-kroppen).
      `<div>`, inte `<ul>/<li>` — samma val som `EventsList.tsx`/
      `AnmalningarSida.tsx` gör i sina skeleton-grenar: rent dekorativa
      block ska inte annonseras som en (tom) lista.
+
+     [TASK-481] SPEGEL-RADEN DELAR KLASSTRÄNG, DEN KOPIERAR DEN INTE. Fram
+     till denna fix var klassträngen skriven två gånger, och när TASK-456
+     (PR #2541) gav den RIKTIGA raden `min-h-6` följde spegeln inte med:
+     skeletonkortet blev exakt 24 px lägre än det laddade och fällde
+     `mer-betalningar-laddlage.staging.test.ts:275` i Post-merge på `main`
+     för varje kod-landning från `168dd403` till `622803a3`. Meningen ovan
+     ("en tom badge-rad-spegel så `gap-1`-mellanrummet blir detsamma")
+     beskrev alltså ett läge som var sant före TASK-456 och falskt efter —
+     den var prosan som INTE följde med koden. Konstanten gör det omöjligt
+     att upprepa: se `PILLRAD_KLASS`s egen docblock högst upp i filen.
 
      MARKERA-KNAPPENS RAD RESERVERAS ÄVEN HÄR (mätt, inte antaget): en
      tidigare version av detta skelett saknade denna rad helt och sköt
@@ -1874,7 +1912,14 @@ export function BetalningsInkorg() {
                   <div className="flex min-w-0 flex-1 flex-col gap-1">
                     <Skeleton variant="text" className="w-2/5 text-body" />
                     <Skeleton variant="text" className="w-3/5 text-caption" />
-                    <div className="flex flex-wrap items-center gap-2" />
+                    {/* PILL-RADENS SPEGEL — `PILLRAD_KLASS`, samma konstant
+                        som den riktiga raden i `RadInnehall`. Den är TOM med
+                        avsikt: skeletonen ska reservera radens HÖJD, inte rita
+                        pill-formade block (rent dekorativa block ska inte
+                        antyda ett datainnehåll som ännu inte finns). Höjden
+                        kommer helt ur konstantens `min-h-6`. Se konstantens
+                        docblock för de 24 px detta kostade på `main`. */}
+                    <div className={PILLRAD_KLASS} />
                   </div>
                 </div>
                 <Skeleton
@@ -2585,7 +2630,7 @@ function RadInnehall({ rad, visaEvent }: { rad: InkorgsRad; visaEvent?: boolean 
             </>
           )}
         </span>
-        <div className="flex min-h-6 flex-wrap items-center gap-2" data-testid="rad-pillar">
+        <div className={PILLRAD_KLASS} data-testid="rad-pillar">
           {/* ═══ EN PILL-ANATOMI, TVÅ BETYDELSER (Marcus dom 2026-09-01) ═══
               Marcus såg "Förfallen" och "Obekräftad" sida vid sida HÄR och
               kallade dem inkonsekventa. De var det på två sätt samtidigt:

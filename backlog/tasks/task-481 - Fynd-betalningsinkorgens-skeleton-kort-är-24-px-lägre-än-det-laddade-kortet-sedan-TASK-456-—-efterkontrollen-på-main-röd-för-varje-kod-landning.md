@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-19 11:14'
+updated_date: '2026-09-19 11:21'
 labels:
   - fynd
   - ready-for-agent
@@ -38,7 +39,7 @@ Staging-klassen körs inte på PR-ytan (`run_staging: false`, TASK-70.3) utan f�
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [ ] #1 Rött-först är redan belagt på main (Post-merge-körningarna ovan); efter fix är mer-betalningar-laddlage.staging.test.ts grön, kört PÅ RIKTIGT mot staging via den normala vägen (setup-projektet, preflighten respekterad)
-- [ ] #2 Skeleton-kortet reserverar pill-radens höjd enligt samma husmönster som det laddade kortet (en källa för höjden, inte två tal som kan glida isär)
+- [x] #2 Skeleton-kortet reserverar pill-radens höjd enligt samma husmönster som det laddade kortet (en källa för höjden, inte två tal som kan glida isär)
 - [ ] #3 Övriga laddläges-sviter för betalningsytan (bekraftelsesteget-laddlage m.fl.) körda och gröna eller belagt förbefintligt flakiga
 - [ ] #4 Efterkontrollen (Post-merge) på main grön för fixens merge-commit
 <!-- AC:END -->
