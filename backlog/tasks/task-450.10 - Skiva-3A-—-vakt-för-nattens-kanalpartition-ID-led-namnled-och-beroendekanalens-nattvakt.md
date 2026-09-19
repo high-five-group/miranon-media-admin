@@ -3,10 +3,10 @@ id: TASK-450.10
 title: >-
   Skiva: 3A — vakt för nattens kanalpartition (ID-led + namnled) och
   beroendekanalens nattvakt
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-18 11:52'
-updated_date: '2026-09-18 23:27'
+updated_date: '2026-09-19 00:33'
 labels:
   - ready-for-agent
 dependencies:
@@ -31,13 +31,13 @@ Täcker användarberättelser: 1, 2, 3
 - [x] #1 Tvåsidig testsvit mot sandlådekopior av nightly.yml: ett jobb borttaget ur alla tre triggrar FÄLLER med jobbets namn; ett jobb i två triggrar FÄLLER; riktiga filen PASSERAR
 - [x] #2 Namnledet: ett ändrat name: på ett produktjobb (eller ett prefix som inte längre matchar något jobb) FÄLLER; riktiga filerna PASSERAR
 - [x] #3 Vakten och dess testsvit är wirade i ci.yml och gröna i PR:ens lint-jobb; .nattvakt-kanal-policy.conf står i shellcheck-strict-uppräkningen
-- [ ] #4 Beroendekanalens nattvakt är byggd här ELLER uttryckligen lagd som AC på TASK-450.5, med skälet utskrivet
-- [x] #5 Prosan i nightly.yml, .nattvakt-kanal-policy.conf, CONTRIBUTING § Nattnätet och ADR-082 som i dag säger att invarianten INTE är mekaniserad är rättad till att peka på vakten (ADR-083)
+- [x] #4 Prosan i nightly.yml, .nattvakt-kanal-policy.conf, CONTRIBUTING § Nattnätet och ADR-082 som i dag säger att invarianten INTE är mekaniserad är rättad till att peka på vakten (ADR-083)
+- [x] #5 Beroendekanalens nattvakt är uttryckligen lagd som EGET kort (TASK-467) med skälet utskrivet — omformulerat vid stängning 2026-09-19: den ursprungliga lydelsen ('byggd här ELLER AC på TASK-450.5') förutsåg inte en tredje väg; två PR:er redigerade samma kortfil (bekräftad merge-konflikt, granskning #2557 runda 1), och kanalen blir lastbärande först när K1 (b) landat (5ca4cb54)
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
@@ -49,3 +49,9 @@ Byggd i samma form som N4 (check-aggregator-needs.mjs): scripts/check-nattkanal-
 
 RÄTTELSE 2026-09-19, orkestrerar-order efter review runda 1, Marcus mandat: den ursprungliga lösningen på AC #4 - en ny AC #7 på TASK-450.5 - togs bort ur denna PR eftersom PR #2553 redigerar samma kortfil och git merge-tree bekräftade en verklig konflikt. Beroendekanalens dödmansgrepp bärs nu av ett eget kort, TASK-467, mintat i orkestrerarens olandade docs-gren och saknas i denna worktree. AC #4 avbockad eftersom ordalydelsen byggd här eller AC på TASK-450.5 inte längre stämmer. Skälet till att vakten ändå inte byggs i 450.10 kvarstår: beroendekanalen blir lastbärande för hela beroendesäkerheten först när TASK-450.5 landat, ADR-082 paragraf Updates 2026-09-18. DoD #1 avbockad av samma skäl. AC 1, 2, 3 och 5 opåverkade och fortsatt sanna.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+3A landad via #2557 (91213006, 2026-09-19T00:02Z) efter två granskningsrundor (medel → låg, konvergerad). scripts/check-nattkanal-partition.mjs HÄRLEDER nattens kanalpartition ur nightly.yml + den befintliga .nattvakt-kanal-policy.conf (ingen femte handhållen lista) och fäller om ett nattjobb saknar kanal, tillhör två, eller om ett listat jobb/visningsnamn inte finns; rött-först bevisat åt båda håll, mutationsbevisat testfall för uttryckstolkens begränsning. Kostnad i två mått: steg i det befintliga lint-jobbet + gatekeeper-steget — 0 nya fakturerade minuter, ≈ 1,6 s väntan. nightly.yml/nightly-watchdog.yml: noll icke-kommentarsrader ändrade. Efterkontrollen GRÖN: körning 35407924365 — dessutom den första gröna staging-körningen efter att seed-eventets CI-sentinels städats (TASK-465). Beroendekanalens dödmansgrepp bärs av TASK-467 (se AC #5). Kvar att rätta i S4+SE2-PR:en (TASK-464.1): kommentaren i ci.yml ~rad 1421 säger '17 fall (24)' — sviten kör 18 fall / 26 assertions.
+<!-- SECTION:FINAL_SUMMARY:END -->
