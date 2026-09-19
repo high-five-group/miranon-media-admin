@@ -191,11 +191,29 @@ export type SpegelFalt = {
  * skärpa texten med kontext bara den känner till — se
  * `registrera-inbetalning` § asymmetrin kring `Avtalat pris (kr)`, där ett
  * fallerat fält är PERMANENT förlorat till skillnad från de självläkande.
+ *
+ * `skal` är ALLTID en GENERISK, stabil text vid ett Airtable-fel (TASK-461,
+ * CodeQL js/stack-trace-exposure #7/#8/#9) — ALDRIG den råa undantagstexten
+ * från `updateAirtableRecord`. Samtliga tre anropare (`hantera-inbetalning`,
+ * `registrera-inbetalning`, `rebook-registration`) lägger `spegel` rakt av i
+ * klientsvaret, så en Airtable-feltext här (kan bära fältnamn, tabell-ID,
+ * HTTP-status ur `classifyAirtableWriteError`) hade läckt till klienten på
+ * exakt samma sätt som de fyra flaggade Edge Function-alarmen. Den råa
+ * detaljen förloras INTE — den loggas server-side (`console.warn` nedan,
+ * sökbar på `anmalanRecordId` + `loggPrefix`) precis som M7-mönstret
+ * (`_shared/errors.ts`) redan gör för det YTTRE felkontraktet.
  */
 export type SpegelUtfall = { skrivet: boolean; forsok: number; skal: string | null };
 
 /** Hur många gånger spegelskrivningen försöks innan eftersläpningen bokförs. */
 export const SPEGEL_FORSOK = 3;
+
+/**
+ * Klientsynlig text när ALLA omförsök fallerat. Generisk med avsikt
+ * (TASK-461) — den råa Airtable-feltexten stannar i serverloggen.
+ */
+const SPEGEL_GENERISK_SKAL =
+  'Basen kunde inte uppdateras just nu. Detaljer finns i serverloggen.';
 
 /**
  * Skriver spegeln till basen med OMFÖRSÖK (ADR-128 beslut 5).
@@ -243,16 +261,19 @@ export async function skrivSpegel(
     };
   }
 
-  let sistaFel = '';
   for (let forsok = 1; forsok <= SPEGEL_FORSOK; forsok += 1) {
     try {
       await updateAirtableRecord(operation.tableId, anmalanRecordId, patch);
       return { skrivet: true, forsok, skal: null };
     } catch (fel) {
-      sistaFel = fel instanceof Error ? fel.message : String(fel);
+      // Den råa feltexten (kan bära Airtables fältnamn/tabell-ID/HTTP-status,
+      // se `classifyAirtableWriteError`) stannar HÄR — server-side, sökbar på
+      // anmalan + loggPrefix. Den returneras ALDRIG (TASK-461, se
+      // `SpegelUtfall` § docstring ovan).
+      const raFel = fel instanceof Error ? fel.message : String(fel);
       console.warn(
         `${loggPrefix} spegelskrivning försök ${forsok}/${SPEGEL_FORSOK} misslyckades | ` +
-          `anmalan=${anmalanRecordId} | fel=${sistaFel}`,
+          `anmalan=${anmalanRecordId} | fel=${raFel}`,
       );
       if (forsok < SPEGEL_FORSOK) {
         // Kort, växande paus. `airtable-retry.ts` äger husets generella
@@ -263,5 +284,5 @@ export async function skrivSpegel(
       }
     }
   }
-  return { skrivet: false, forsok: SPEGEL_FORSOK, skal: sistaFel };
+  return { skrivet: false, forsok: SPEGEL_FORSOK, skal: SPEGEL_GENERISK_SKAL };
 }

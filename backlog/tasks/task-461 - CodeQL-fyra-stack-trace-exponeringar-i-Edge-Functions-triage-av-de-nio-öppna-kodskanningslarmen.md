@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-18 11:53'
+updated_date: '2026-09-18 23:40'
 labels:
   - ready-for-agent
 dependencies: []
@@ -22,9 +23,9 @@ Mätt av orkestreraren 2026-09-18 (S126, gh api repos/high-five-group/miranon-me
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [ ] #1 De fyra EF:erna returnerar aldrig stack-trace eller internt felmeddelande till klienten — bevisat med ett test per EF som provocerar felvägen
-- [ ] #2 Stack-tracen loggas fortfarande server-side (felsökbarheten består)
+- [x] #2 Stack-tracen loggas fortfarande server-side (felsökbarheten består)
 - [ ] #3 Alla nio larm är stängda i GitHub: 'fixed' av landad kod eller 'dismissed' med skrivet skäl — gh api …/code-scanning/alerts?state=open ger noll
-- [ ] #4 Kortet säger vilka EF:er som behöver prod-deploy och att den är Marcus steg
+- [x] #4 Kortet säger vilka EF:er som behöver prod-deploy och att den är Marcus steg
 <!-- AC:END -->
 
 ## Definition of Done
@@ -33,3 +34,11 @@ Mätt av orkestreraren 2026-09-18 (S126, gh api repos/high-five-group/miranon-me
 - [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Prod-deploy krävs för TRE EF:er efter denna PR landar: hantera-inbetalning, registrera-inbetalning, rebook-registration (samtliga i .prod-functions-allowlist.conf). Detta är Marcus eget steg via scripts/fas4-prod-deploy.sh --deploya <prod-ref> — aldrig en agent. test-static-files och test-pdf-generation är MEDVETET UTELÄMNADE ur .prod-functions-allowlist.conf (staging-only testharness-EF:er, får aldrig nå prod) och kräver alltså inget prod-deploy-steg. AC #3 (0 öppna larm i GitHub) kan INTE bockas från en byggagents worktree — CodeQL-alerts state flippar till 'fixed' först efter att koden landat på main och skannats om; det är en orkestrerar-/Marcus-verifiering efter merge, inte något en bygg-agent kan uppnå. Känd öppen skuld: test-static-files kunde INTE deployas till staging under detta bygge (413 'request entity too large' mot Supabase Management API:s functions/deploy-endpoint, orsakad av funktionens EGNA static_files-bundle på 5,3 MB — config.toml static_files = ['./functions/_shared/mallar/*'], helt orört av denna PR:s diff). De tre betalnings-EF:erna + test-pdf-generation deployades till staging OK (version bumpad, verifierat via 'supabase functions list'). Full analys i PR-kroppen.
+
+Granskningsrunda 1 (risk HÖG, betalningsflöden): AC #1 bedömd FELSTÄLLD — "ett test per EF" levererades inte fullt ut. test-static-files (#3) har NOLL automatiserad täckning efter att den beslutade staging-assertionen togs bort ur PR:en (413-deploy-blockern gjorde den obevisbar skarpt, se PR-kroppen). Källkodsfixen för #3 är kvar och korrekt (verifierad via kodläsning + samma mönster som den hermetiskt bevisade test-pdf-generation-fixen), men AC #1:s bokstav ('bevisat med ett test per EF') håller bara för 3 av 4 EF:er (hantera-inbetalning/registrera-inbetalning/rebook-registration via scripts/test-betalningar-bas-skrivspegel.mjs). Kortet ska inte se mer bevisat ut än det är — denna rad bokför det öppet.
+<!-- SECTION:NOTES:END -->

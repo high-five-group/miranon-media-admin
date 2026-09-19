@@ -77,12 +77,34 @@ function toBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
-/** Deno.memoryUsage() är overifierad i Edge Runtime — mät försiktigt, gissa aldrig. */
-function safeMemoryUsage(): { supported: true; usage: Deno.MemoryUsage } | { supported: false; error: string } {
+/** Klientsynlig text när `Deno.memoryUsage()` inte stöds. Generisk med
+ * avsikt (TASK-461, samma mönster som `test-static-files`) — den råa
+ * feltexten stannar i serverloggen. */
+const MEMORY_USAGE_GENERISK_FEL = 'Deno.memoryUsage() stöds inte i denna runtime.';
+
+/**
+ * Deno.memoryUsage() är overifierad i Edge Runtime — mät försiktigt, gissa
+ * aldrig.
+ *
+ * TASK-461 (samma mönster som CodeQL js/stack-trace-exposure #3, ej av
+ * CodeQL flaggat här): `error.message` returnerades tidigare rakt av i
+ * klientsvaret. Den kan bära interna detaljer beroende på VARFÖR
+ * `Deno.memoryUsage()` kastar (t.ex. "X is not a function" med intern
+ * modulväg) — internt implementationsdetalj, inte avsett för klienten.
+ * Loggas server-side (korrelerbar via requestId), klienten ser en generisk,
+ * stabil text.
+ */
+function safeMemoryUsage(
+  requestId: string,
+): { supported: true; usage: Deno.MemoryUsage } | { supported: false; error: string } {
   try {
     return { supported: true, usage: Deno.memoryUsage() };
   } catch (error) {
-    return { supported: false, error: error instanceof Error ? error.message : String(error) };
+    const raFel = error instanceof Error ? error.message : String(error);
+    console.warn(
+      `[test-pdf-generation] Deno.memoryUsage() stöds inte | requestId=${requestId} | fel=${raFel}`,
+    );
+    return { supported: false, error: MEMORY_USAGE_GENERISK_FEL };
   }
 }
 
@@ -104,7 +126,7 @@ Deno.serve(async (req) => {
   if (auth instanceof Response) return auth;
 
   try {
-    const memBefore = safeMemoryUsage();
+    const memBefore = safeMemoryUsage(requestId);
     const t0 = performance.now();
 
     const doc = await PDFDocument.create();
@@ -120,7 +142,7 @@ Deno.serve(async (req) => {
     const pdfBytes = await doc.save();
 
     const t1 = performance.now();
-    const memAfter = safeMemoryUsage();
+    const memAfter = safeMemoryUsage(requestId);
 
     return new Response(
       JSON.stringify({
