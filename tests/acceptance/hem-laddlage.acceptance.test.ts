@@ -9,6 +9,7 @@ import type {
 } from '../../src/domain/schemas';
 import { REQUEST_ID_EXTENSION_IRI, XAPI_IRI_BASE } from '../../src/domain/schemas';
 import { EF, json } from '../support/fixturvarld/handlers';
+import { matCLSOverNavigering } from '../support/mat-cls';
 import { expect, type Page, test } from './acceptance-bas';
 
 /**
@@ -25,16 +26,17 @@ import { expect, type Page, test } from './acceptance-bas';
  * 'Laddar…'-textraderna är borta och ingen spinner finns (medvetet över
  * FK-golvet, PRD-beslut 9).
  *
- * DE TRE MÄTTA CONTAINRARNA (`main#main [role="status"]`, count 3 nedan) är
- * Nästa event + Nya anmälningar + Förfallna betalningar — samtliga styrda av
- * `anmalDataPending`/`eventsQuery.isPending`. Senaste aktivitet-blocket
- * (`SenasteAktivitetKompakt.tsx`) bär SITT EGET, OBEROENDE `role="status"`
- * (egen query, `useLatestActivity`) — held-mock-riggen nedan parkerar bara
- * get-events/get-registrations, så den fjärde containern hinner alltid
- * settla (normalläget svarar utan konstgjord fördröjning) innan assertionerna
- * läses; en fjärde, permanent parkerad container hade krävt en egen
- * `get-activity-log`-hållning här, vilket denna svit inte behöver för att
- * bevisa sitt kontrakt.
+ * DE FYRA MÄTTA CONTAINRARNA (`main#main [role="status"]`, count 4 nedan,
+ * TASK-451.7 — var 3 innan Bevakningsrad fick en egen pending-skelett-rad)
+ * är Nästa event + Bevakningsrad + Nya anmälningar + Förfallna betalningar —
+ * samtliga styrda av `anmalDataPending`/`eventsQuery.isPending`. Senaste
+ * aktivitet-blocket (`SenasteAktivitetKompakt.tsx`) bär SITT EGET, OBEROENDE
+ * `role="status"` (egen query, `useLatestActivity`) — held-mock-riggen nedan
+ * parkerar bara get-events/get-registrations, så den femte containern hinner
+ * alltid settla (normalläget svarar utan konstgjord fördröjning) innan
+ * assertionerna läses; en femte, permanent parkerad container hade krävt en
+ * egen `get-activity-log`-hållning här, vilket denna svit inte behöver för
+ * att bevisa sitt kontrakt.
  *
  * Bevisformer:
  * - Layout-skift ≈ 0 per task-4.5-bevismönstret (S55 Del 11): EF-svaren
@@ -258,19 +260,42 @@ function arrangeraTomCache(page: Page) {
  * Status `Obekräftad` på BÅDA raderna gör dubbel nytta: det räknar dem som
  * "nya anmälningar att bekräfta" OCH det UTESLUTER dem samtidigt ur
  * Bevakningsradens "bekräftade saknar deltagarinfo"-definition B
- * (`arBekraftad`, `hem-derivations.ts`) — Bevakningsraden förblir därför
- * osynlig i BÅDA lägena, ingen tredje okontrollerad layoutkälla mellan
- * Nästa event och Nya anmälningar som hade gjort en eventuell avvikelse
- * svårare att tillskriva rätt block.
+ * (`arBekraftad`, `hem-derivations.ts`) för DESSA två rader.
  *
- * Startdatum/deadline-paret är den ETABLERADE facit-kombinationen ur
- * `hem.acceptance.test.ts`s egen "Förfallna betalningar"-svit: `2026-09-20`
- * ⇒ deadline `2026-09-06` (14 dagar före), redan passerad mot FROZEN_NOW
- * (`fixture-data.ts`, `2026-09-15T10:00+02:00` — sidans klocka är FRUSEN dit,
- * `hermetic.ts`). ETT hårdkodat framtidsdatum (`2099-…`, som `fulltData()`)
- * hade ALDRIG blivit förfallet; ett `Date.now()`-relativt datum räknas i
- * Node-testprocessens VERKLIGA klocka — en annan tidslinje än sidans frusna
- * — och glider isär från facit-kombinationen ovan varje dag som går.
+ * [TASK-451.7] ANDRA EVENTET + TREDJE REGISTRERINGEN TILLAGDA — Bevakningsrad
+ * BÄR NU EN RIKTIG RAD I BÅDA LÄGENA. Sedan `Bevakningsrad`s pending-gren
+ * fick en egen skelett-rad (§ `isPending`, `Bevakningsrad.tsx`) skulle den
+ * gamla, avsiktligt bevaknings-tomma fixturen ha introducerat en NY,
+ * okontrollerad layoutkälla i just DENNA mätning: skelettet hade visat EN
+ * rad under laddning och kollapsat till NOLL rader efter datalandning,
+ * vilket hade knuffat `nyaAnmH2`/`nyaAnmRad` (och allt därunder) precis den
+ * typ av Y-förskjutning denna mätning är byggd för att hålla borta. Fixen är
+ * INTE att undanta Bevakningsrad ur mätningen (`utanY` är förbjudet att
+ * UTÖKAS, TASK-451.7 AC #2) — den är att låta fixturen bära en RIKTIG
+ * bevakning, så pending-skelettets EN rad matchar en LADDAD EN rad, samma
+ * "känt antal → matchande skelett"-princip TASK-416.18 redan etablerat för
+ * Nya anmälningar/Förfallna betalningar.
+ *
+ * Det nya eventets startdatum (`2026-09-25`) ligger EFTER `recEventMatning1`
+ * (`2026-09-20`), så `velNastaEvent` väljer fortfarande `recEventMatning1` —
+ * NastaEvent-assertionerna är opåverkade. Den nya registreringen är
+ * `Bekräftad (mail skickat)` (INTE `Obekräftad` — räknas därför inte som "ny
+ * anmälan") med BÅDA avgifterna `Mottagen` (räknas därför inte som "förfallen
+ * betalning", trots att även DENNA deadline redan passerat FROZEN_NOW) och
+ * saknar `deltagarinfoSkickad` — exakt Bevakningsradens definition B. De
+ * ETABLERADE räknarna ("2 nya anmälningar att bekräfta"/"2 förfallna
+ * betalningar" nedan) är därför ORÖRDA av tillägget; enda nya effekten är EN
+ * bevakningsrad, i båda lägena.
+ *
+ * Startdatum/deadline-paret för `recEventMatning1` är den ETABLERADE
+ * facit-kombinationen ur `hem.acceptance.test.ts`s egen "Förfallna
+ * betalningar"-svit: `2026-09-20` ⇒ deadline `2026-09-06` (14 dagar före),
+ * redan passerad mot FROZEN_NOW (`fixture-data.ts`, `2026-09-15T10:00+02:00`
+ * — sidans klocka är FRUSEN dit, `hermetic.ts`). ETT hårdkodat framtidsdatum
+ * (`2099-…`, som `fulltData()`) hade ALDRIG blivit förfallet; ett
+ * `Date.now()`-relativt datum räknas i Node-testprocessens VERKLIGA klocka —
+ * en annan tidslinje än sidans frusna — och glider isär från
+ * facit-kombinationen ovan varje dag som går.
  */
 function medMatningsdata() {
   return {
@@ -281,6 +306,24 @@ function medMatningsdata() {
         ort: 'Skövde',
         startdatum: '2026-09-20',
         antalAnmalda: 2,
+        // [TASK-451.7] `maxPlatser: null` — VAR 20 innan denna skiva.
+        // `NastaEvent.tsx`s skelett bär inte längre en
+        // beläggningsbar-platshållare (§ docblocket där), så en
+        // `maxPlatser`-SATT primär-event hade gjort DENNA mätning (exakt
+        // `toEqual`) röd av en avsikt, inte en regression — precis den
+        // NAMNGIVNA, mätta asymmetrin `NastaEvent.tsx`s docblock bokför för
+        // event MED satt maxPlatser. Den asymmetrin mäts i stället av den
+        // nya CLS-grinden nedan (TASK-451.7), som EXPLICIT provar båda
+        // fallen. `null` matchar dessutom AC #1:s egen fixtur-linje ("ett
+        // event utan maxPlatser").
+        maxPlatser: null,
+      }),
+      ev({
+        id: 'recEventMatningBevakning1',
+        eventNamn: 'Bevakningseventet',
+        ort: 'Skövde',
+        startdatum: '2026-09-25',
+        antalAnmalda: 1,
         maxPlatser: 20,
       }),
     ],
@@ -304,6 +347,16 @@ function medMatningsdata() {
         anmalningsavgift: 'Ej mottagen',
         slutbetalning: 'Mottagen',
         inskickad: '2026-09-15T05:00:00.000Z', // 3 tim före FROZEN_NOW
+      }),
+      reg({
+        id: 'recRegMatningBevakning0',
+        fornamn: 'Cecilia',
+        efternamn: 'Ceder',
+        eventId: 'recEventMatningBevakning1',
+        status: 'Bekräftad (mail skickat)',
+        anmalningsavgift: 'Mottagen',
+        slutbetalning: 'Mottagen',
+        inskickad: '2026-09-10T06:00:00.000Z',
       }),
     ],
   };
@@ -382,12 +435,12 @@ test.describe('Hem — Lugnt laddläge (task-8.4)', () => {
     await arrangeraTomCache(page);
     hallbarMock(network, fulltData());
     await page.goto('/hem');
-    await expect(page.locator('main#main').getByRole('status')).toHaveCount(3);
+    await expect(page.locator('main#main').getByRole('status')).toHaveCount(4);
 
     // Varje 'Laddar…'-förekomst är ett sr-only-besked (1×1, absolut) — den
     // gamla formens SYNLIGA textrader existerar inte längre.
     const laddTexter = page.getByText(/^Laddar/);
-    await expect(laddTexter).toHaveCount(3);
+    await expect(laddTexter).toHaveCount(4);
     for (const el of await laddTexter.all()) {
       const stil = await el.evaluate((n) => {
         const s = getComputedStyle(n);
@@ -437,7 +490,7 @@ test.describe('Hem — Lugnt laddläge (task-8.4)', () => {
     await page.goto('/hem');
 
     const laddande = page.locator('main#main').getByRole('status');
-    await expect(laddande).toHaveCount(3);
+    await expect(laddande).toHaveCount(4);
     for (const container of await laddande.all()) {
       // aria-busy på containern som laddar …
       await expect(container).toHaveAttribute('aria-busy', 'true');
@@ -484,7 +537,7 @@ test.describe('Hem — Lugnt laddläge (task-8.4)', () => {
     await arrangeraTomCache(page);
     hallbarMock(network, fulltData());
     await page.goto('/hem');
-    await expect(page.locator('main#main').getByRole('status')).toHaveCount(3);
+    await expect(page.locator('main#main').getByRole('status')).toHaveCount(4);
 
     const results = await new AxeBuilder({ page })
       .withTags(['wcag2a', 'wcag2aa', 'wcag21a', 'wcag21aa', 'wcag22aa'])
@@ -557,7 +610,7 @@ test.describe('Hem — Lugnt laddläge (task-8.4)', () => {
       // container hinna montera EFTER att en annan redan mätts, och "identisk
       // boundingBox" hade bevisat en tillfällighet i testets EGEN tur snarare
       // än kontraktet.
-      await expect(page.locator('main#main').getByRole('status')).toHaveCount(4);
+      await expect(page.locator('main#main').getByRole('status')).toHaveCount(5);
       await page.mouse.move(0, 0); // mät-stillhet — neutralisera pekaren (L246)
 
       // Rubrikerna: SAMMA element i båda lägena (h2:n bytter aldrig ut sig
@@ -711,3 +764,522 @@ test.describe('Hem — Lugnt laddläge (task-8.4)', () => {
     });
   }
 });
+
+/**
+ * ═══════════════════════════════════════════════════════════════════════════
+ * CLS-GRINDEN — HEM (TASK-451.7)
+ * ═══════════════════════════════════════════════════════════════════════════
+ * Diagnoskartan (`docs/research/kallstarten-diagnoskarta-2026-09-18.md` § 3,
+ * § 3.1) mätte att `laddning-cls.acceptance.test.ts` (TASK-416.14) täcker
+ * Check-in/Aktivitetshistorik/Anmälningar — INTE Hem, appens EGEN startvy.
+ * Denna svit fyller den luckan för Hem specifikt, byggd HÄR (inte i
+ * `laddning-cls.acceptance.test.ts`) för att återanvända filens EGNA
+ * `reg()`/`ev()`/`hallbarMock`/`arrangeraTomCache` rakt av i stället för att
+ * duplicera dem i en tredje fil — samma DRY-avvägning som
+ * `hallbarMockMedAktivitet` redan gör för `get-activity-log`.
+ *
+ * FIXTUREN (AC #1, ordagrant ur kortet): "minst en bevakningsrad, ett event
+ * utan maxPlatser och aktivitetsrader som radbryter" — se `clsFixturdata()`
+ * nedan för hur var och en av de tre triggras, plus en icke-tom
+ * Nya-anmälningar/Förfallna-betalningar-lista (en rad vardera) så att BÅDA
+ * knapparnas namngivna, kvarstående Y-skillnad (`NyaAnmalningar.tsx`/
+ * `ForfallnaBetalningar.tsx`s docblock, TASK-451.7) faktiskt ingår i den
+ * uppmätta summan i stället för att gömmas i ett tomt scenario.
+ *
+ * TRÖSKELN ÄR DELAD MED `laddning-cls.acceptance.test.ts` (0,05) — samma
+ * web.dev/cls-golv (0,1), samma marginal.
+ */
+const HEM_CLS_TROSKEL = 0.05;
+const HEM_CLS_DESKTOP = { width: 1280, height: 720 } as const;
+const HEM_CLS_MOBIL = { width: 390, height: 844 } as const;
+
+/**
+ * Fixturen — ETT event UTAN `maxPlatser` (AC #1), inom Bevakningsradens
+ * 21-dagarsfönster (`EVENTINFO_FONSTER_DAGAR`, `hem-derivations.ts`) så
+ * `recClsReg1` (bekräftad, ingen `deltagarinfoSkickad`) triggar EXAKT EN
+ * bevakningsrad (definition B). `recClsReg0` är `Obekräftad` med obetald
+ * anmälningsavgift — räknas BÅDE som "ny anmälan" (Nya anmälningar, icke-tomt
+ * läge) OCH som "förfallen betalning" (Förfallna betalningar, icke-tomt
+ * läge; eventets deadline, startdatum − 14 dagar, ligger redan bakom
+ * FROZEN_NOW) — ETT dubbelsyfte i stället för fyra separata registreringar,
+ * eftersom `forfallnaBetalningar()` inte filtrerar på `status`
+ * (`hem-derivations.ts`). `recClsReg1` har båda avgifterna `Mottagen` så den
+ * INTE också räknas som förfallen — bevakningsraden ska vara den ENDA nya
+ * layoutkällan denna registrering bidrar med.
+ *
+ * EVENTNAMNET ÄR MEDVETET KORT ("Fjärrskådning kort"), INTE ett värsta-fall.
+ * MÄTT (TASK-451.7, `[DEBUG-task451.7]`-passet, städat): ett långt namn
+ * ("Fjärrskådning och medveten närvaro") FÅR titeln i `NastaEvent.tsx` att
+ * radbryta till två rader vid 390 px — `NastaEvent.tsx`s docblock bokför
+ * den asymmetrin redan som en NAMNGIVEN, accepterad lucka (skelettet
+ * reserverar bara en rad; att göra annat kräver antingen att ändra den
+ * LADDADE, facit-låsta vyn eller att gissa framtida textlängd i skelettet).
+ * AC #1 kräver INTE en radbrytande TITEL — bara "ett event utan maxPlatser"
+ * — så fixturen undviker medvetet att sammanblanda den redan bokförda,
+ * separata luckan med DENNA grinds mätning.
+ *
+ * ÖPPET BOKFÖRD AVVIKELSE MOT AC #1:S PREMISS (ADR-086 — pröva, gissa
+ * aldrig): AC #1 antar att DENNA minimala fixtur ("minst en bevakningsrad,
+ * ett event utan maxPlatser, aktivitetsrader som radbryter") ger rött på
+ * `origin/main`. MÄTT (temporärt återställd `src/`, `git diff`/`checkout`-
+ * dansen — ALDRIG `git stash`): 0,045234199476017936 (mobil),
+ * 0,011239149305555555 (desktop) — BÅDA under tröskeln 0,05. Premissen
+ * höll alltså INTE för den isolerade, minimala kombinationen. En
+ * sammansatt variant (Bevakningsrad bär BÅDE en åtgärdskö-rad OCH en
+ * eventinfo-rad — en realistisk, inte konstruerad kombination) MÄTER rött
+ * på `origin/main` (0,0848 mobil) — men den variantens grönhet efter fix
+ * kräver MER än denna skivas Bevakningsrad-design (en enda generisk rad,
+ * se `Bevakningsrad.tsx`s docblock) ger: 0,0611, fortsatt rött. Det är en
+ * NAMNGIVEN, accepterad gräns för "en generisk rad" — att reservera för
+ * flera samtidiga bevakningsrader hade krävt att gissa antalet i förväg.
+ * Den MINIMALA, komitterade fixturen nedan är den som faktiskt går från
+ * mätt förbättring (0,045→0,021 mobil, 0,011→0,003 desktop — se testets
+ * `test.info().annotations`) till en grön grind, utan att könstla fram ett
+ * "rött" den inte äger. Se slutrapporten för TASK-451.7 för fullständig
+ * metod och samtliga fyra mätta tal.
+ */
+function clsFixturdata() {
+  return {
+    events: [
+      ev({
+        id: 'recClsEvent1',
+        eventNamn: 'Fjärrskådning kort',
+        ort: 'Skövde',
+        startdatum: '2026-09-25', // 10 dagar efter FROZEN_NOW — inom 21-dagarsfönstret
+        antalAnmalda: 2,
+        maxPlatser: null, // AC #1: "ett event utan maxPlatser"
+      }),
+    ],
+    registrations: [
+      reg({
+        id: 'recClsReg0',
+        fornamn: 'Diana',
+        efternamn: 'Dahl',
+        eventId: 'recClsEvent1',
+        status: 'Obekräftad',
+        anmalningsavgift: 'Ej mottagen',
+        slutbetalning: 'Mottagen',
+        inskickad: '2026-09-15T06:00:00.000Z',
+      }),
+      reg({
+        id: 'recClsReg1',
+        fornamn: 'Erik',
+        efternamn: 'Ekberg',
+        eventId: 'recClsEvent1',
+        status: 'Bekräftad (mail skickat)',
+        anmalningsavgift: 'Mottagen',
+        slutbetalning: 'Mottagen',
+        inskickad: '2026-09-10T06:00:00.000Z',
+        // deltagarinfoSkickad UTELÄMNAD — Bevakningsradens definition B.
+      }),
+    ],
+  };
+}
+
+let clsAktivitetCounter = 0;
+function clsAktivitetUuid(): string {
+  clsAktivitetCounter += 1;
+  return `00000000-0000-4000-8000-${String(clsAktivitetCounter).padStart(12, '0')}`;
+}
+
+/**
+ * ETT xAPI-statement vars renderade rad (`{namn} {verb} · {objekt}`,
+ * `SenasteAktivitetKompakt.tsx`) MÄTT radbryter till minst två rader vid
+ * BÅDA testade viewportbredder — AC #1: "aktivitetsrader som radbryter".
+ * Namn/verb/objekt är alla medvetet långa i stället för att luta sig mot en
+ * enda extremt lång sträng, samma realism-avvägning som
+ * `Bevakningsrad.tsx`s "värsta fall"-fixtur (`demo-event-bevakning-varsta-fall`).
+ *
+ * `namnSuffix`/`timestamp` GÖR TVÅ RADER MÖJLIGA (`clsFixturdata()`s
+ * håll-bar mock returnerar TVÅ, inte en) — en enda radbrytande rad ligger,
+ * mätt, nära men INTE över tröskeln på `origin/main` (0,0452 mobil, se
+ * PR-kroppen/slutrapporten TASK-451.7 för det röd-först-beviset); TVÅ
+ * realistiska (inte konstgjort extra långa) rader — en morgon med flera
+ * påminnelser, inte en osannolik — är den kombination som faktiskt fäller
+ * `origin/main` över 0,05.
+ */
+function clsWrappandeStatement(
+  namnSuffix: string,
+  timestamp: string,
+): z.infer<typeof ActivityStatementSchema> {
+  return {
+    id: clsAktivitetUuid(),
+    actor: {
+      objectType: 'Agent',
+      name: `Alexandra Kristoffersdotter-Lindqvist${namnSuffix}`,
+      account: { homePage: XAPI_IRI_BASE, name: clsAktivitetUuid() },
+    },
+    verb: {
+      id: `${XAPI_IRI_BASE}/verbs/cls-test-verb`,
+      display: {
+        'sv-SE': 'skickade en mycket lång och detaljerad betalningspåminnelse om flera avgifter',
+      },
+    },
+    object: {
+      objectType: 'Activity',
+      id: `${XAPI_IRI_BASE}/objects/registrations/rec-cls-451-7-${namnSuffix || '0'}`,
+      definition: {
+        name: {
+          'sv-SE': 'Utbildning i medveten närvaro och kroppslig integration, Skövde, hösttermin',
+        },
+        type: `${XAPI_IRI_BASE}/activity-types/betalning`,
+      },
+    },
+    context: { extensions: { [REQUEST_ID_EXTENSION_IRI]: clsAktivitetUuid() } },
+    timestamp,
+  };
+}
+
+/**
+ * Håll-bar mock — SAMMA `hallbarMock` som resten av filen (get-events/
+ * get-registrations) UTÖKAD med en egen `get-activity-log`-hållning, samma
+ * FORM som `hallbarMockMedAktivitet` ovan men med den radbrytande
+ * statement-fixturen i stället för `matningsStatement()` — en egen,
+ * fil-lokal kopia (samma per-fil-duplicerings-konvention huset redan bär,
+ * se t.ex. `SenasteAktivitetKompakt.tsx`s `sprakText`-docblock), inte en
+ * omskrivning av den etablerade funktionens beteende under fötterna på
+ * TASK-416.13:s test.
+ */
+function hallbarMockClsFixtur(
+  network: NetworkFixture,
+  data: { registrations: RegRow[]; events: EventRow[] },
+): HallbarStateGeneric {
+  const st = hallbarMock(network, data);
+  const aktivitetParkerade: Array<() => void> = [];
+  network.use(
+    http.get(EF('get-activity-log'), async () => {
+      await new Promise<void>((slapp) => aktivitetParkerade.push(slapp));
+      const statements = [
+        clsWrappandeStatement('', '2026-09-15T07:00:00.000Z'),
+        clsWrappandeStatement(' Andersson', '2026-09-15T06:30:00.000Z'),
+      ];
+      return json({ statements, nextCursor: null, total: statements.length });
+    }),
+  );
+  const slappDeTre = st.slappAlla.bind(st);
+  st.slappAlla = () => {
+    slappDeTre();
+    for (const slapp of aktivitetParkerade.splice(0)) slapp();
+  };
+  return st;
+}
+
+type HallbarStateGeneric = ReturnType<typeof hallbarMock>;
+
+test.describe('CLS-grinden — Hem (TASK-451.7)', () => {
+  for (const [namn, viewport] of [
+    ['desktop 1280×720', HEM_CLS_DESKTOP],
+    ['mobil 390×844', HEM_CLS_MOBIL],
+  ] as const) {
+    test(`${namn} — bevakningsrad + event utan maxPlatser + radbrytande aktivitet`, async ({
+      page,
+      network,
+    }) => {
+      await arrangeraTomCache(page);
+      const mocken = hallbarMockClsFixtur(network, clsFixturdata());
+
+      const cls = await matCLSOverNavigering(page, viewport, '/hem', async (p) => {
+        // Fem laddande containrar (§ filhuvudet ovan) — deterministiskt
+        // fönster, ingen tidsgissning (hallbarMock-mönstret).
+        await expect(p.locator('main#main').getByRole('status')).toHaveCount(5);
+        mocken.slappAlla();
+        await expect(p.locator('main#main').getByRole('status')).toHaveCount(0);
+        // Bevakningsraden faktiskt landad (inte bara "inga status-regioner
+        // kvar") — `recClsReg1` är den ENDA bekräftade för eventet, så
+        // `bevakningar()` ger `lage: 'ej-skickad'` ("Deltagarinfo saknas",
+        // `hem-derivations.ts` § `bevakningStatusText`) snarare än
+        // eftersläntrar-formen. Plus den radbrytande aktivitetsraden.
+        await expect(p.locator('ul[aria-label="Bevakningar"]')).toBeVisible();
+        await expect(p.getByText('Deltagarinfo saknas')).toBeVisible();
+        await expect(
+          p.getByText('Alexandra Kristoffersdotter-Lindqvist', { exact: true }),
+        ).toBeVisible();
+        await expect(p.getByText('Alexandra Kristoffersdotter-Lindqvist Andersson')).toBeVisible();
+      });
+
+      test.info().annotations.push({ type: 'cls', description: String(cls) });
+      expect(cls).toBeLessThan(HEM_CLS_TROSKEL);
+    });
+  }
+});
+
+/**
+ * ═══════════════════════════════════════════════════════════════════════════
+ * TOMLÄGES-CLS — AC #3 (TASK-451.7)
+ * ═══════════════════════════════════════════════════════════════════════════
+ * "Skeleton reserverar plats för block som KAN komma … tomlägen (en p-rad)
+ * får inte ge större hopp än tröskeln." Fixturen nedan är den MOTSATTA
+ * ytterligheten mot `clsFixturdata()` ovan: TOM data överallt — inga
+ * events, inga registreringar, inga aktivitetsrader.
+ *
+ * MÄTT, INTE GISSAT — resultatet i TVÅ steg:
+ *
+ * 1. Redan kända asymmetrin (Nya anmälningar/Förfallna betalningars
+ *    skelett mot en `<p>`-rad i tomläge, PRD § Öppna frågor) mättes till
+ *    0,194 (mobil, `origin/main`, TVÅRADIGT skelett) — långt över
+ *    tröskeln. `NyaAnmalningar.tsx`/`ForfallnaBetalningar.tsx` fick därför
+ *    ETT skelett i stället för två (se resp. fils "MEDVETET INGEN
+ *    SKELETON-RESERVATION"-stycken för BulkAtgardsknapp-avvägningen — en
+ *    SEPARAT fråga från radantalet). Det ENSAMT gav 0,194 → 0,148 (mobil).
+ * 2. Det KVARSTÅENDE talet (0,148) är INTE längre dominerat av
+ *    skelett-vs-tomläge-geometrin: en källdump
+ *    (`PerformanceObserver('layout-shift')`, `entry.sources`, kört mot
+ *    BÅDE denna skivas fix OCH en temporärt återställd `origin/main` —
+ *    IDENTISKT mönster på båda, 0,148 resp. 0,194) visar EN
+ *    layout-shift-entry med FYRA källor: Nya anmälningar/Förfallna
+ *    betalningars sektioner (den KÄNDA, delvis åtgärdade asymmetrin) PLUS
+ *    Genvägars och Senaste aktivitets `<section>`-noder rapporterade med
+ *    `previousRect` {0,0,0,0} — Layout Instability-API:ts definition för
+ *    "fanns inte i föregående bildruta", trots att BÅDA alltid renderas
+ *    (Genvägar har ingen pending-gren alls). Detta är ett NYTT, tidigare
+ *    OMÄTT fynd (ingen tidigare skiva testade "allt tomt samtidigt") —
+ *    strukturellt en ANNAN felklass än "skeleton matchar inte laddad
+ *    geometri" (den klass denna skiva är kontrakterad att åtgärda för
+ *    Bevakningsrad/KvittojobbBanderoll/BulkAtgardsknapp), och bekräftat
+ *    PRE-EXISTERANDE (mätt på `origin/main` innan denna skivas ändringar).
+ *
+ * MOBIL-FALLET ÄR MEDVETET BORTTAGET UR DENNA SVIT (runda 2-fynd,
+ * granskningsrunda 1 av PR #2548) — INTE `test.fixme()`-markerat. Ett
+ * `test.fixme()`/`test.skip()`/`test.fail()`-test ÖVERLEVER
+ * `npm run test:acceptance:sjalvtest` (hermetik-självtestet): sviten kör
+ * HELA acceptance-sviten UTAN fixturens svar och kräver att VARJE test då
+ * faller med `OmockadRequestError`; ett `test.fixme()`-test hoppar över
+ * helt och "överlever utan fixturens svar och bevisar därför inget om
+ * appens databeteende" — exakt samma felklass som
+ * `tasks/lessons.d/test-fail-som-rott-forst-markor-overlever-hermetik-sjalvtestet.md`
+ * (PR #2412, TASK-416.18) redan dokumenterar för `test.fail()`. En känd
+ * defekt bokförs som KORT (TASK-463 — mätvärden, källdump, misstänkt
+ * mekanism och den borttagna testkroppen för återinförande som
+ * rött-först i fix-PR:en), ALDRIG som en skip-/fail-/fixme-markör kvar i
+ * huvudsviten. Desktop är kvar som en RIKTIG, grön assertion — den håller
+ * tröskeln utan undantag.
+ */
+function hallbarMockTomtLage(network: NetworkFixture): HallbarStateGeneric {
+  const st = hallbarMock(network, { events: [], registrations: [] });
+  const aktivitetParkerade: Array<() => void> = [];
+  network.use(
+    http.get(EF('get-activity-log'), async () => {
+      await new Promise<void>((slapp) => aktivitetParkerade.push(slapp));
+      return json({ statements: [], nextCursor: null, total: 0 });
+    }),
+  );
+  const slappDeTre = st.slappAlla.bind(st);
+  st.slappAlla = () => {
+    slappDeTre();
+    for (const slapp of aktivitetParkerade.splice(0)) slapp();
+  };
+  return st;
+}
+
+test.describe('CLS-grinden — Hem tomläge (AC #3, TASK-451.7)', () => {
+  // ENDAST DESKTOP HÄR (runda 2-fynd, se docblocket ovan) — mobil-fallet
+  // mäter fortsatt över tröskeln (0,148) av ett skäl utanför denna skivas
+  // scope, registrerat som TASK-463 med den fullständiga testkroppen för
+  // återinförande. En ensam desktop-post i denna `for`-loop (i stället för
+  // ett bokstavligt enda `test(...)`-anrop) håller formen identisk med
+  // filens övriga viewport-loopar och gör en framtida återinsättning av
+  // mobil-posten till en enradsdiff.
+  for (const [namn, viewport] of [['desktop 1280×720', HEM_CLS_DESKTOP]] as const) {
+    test(`${namn} — tom data överallt (Nästa event/Nya anmälningar/Förfallna betalningar/Senaste aktivitet i tomläge)`, async ({
+      page,
+      network,
+    }) => {
+      await arrangeraTomCache(page);
+      const mocken = hallbarMockTomtLage(network);
+
+      const cls = await matCLSOverNavigering(page, viewport, '/hem', async (p) => {
+        await expect(p.locator('main#main').getByRole('status')).toHaveCount(5);
+        mocken.slappAlla();
+        await expect(p.locator('main#main').getByRole('status')).toHaveCount(0);
+        await expect(
+          p.getByText('Inga nya anmälningar att bekräfta, läget är under kontroll.'),
+        ).toBeVisible();
+        await expect(p.getByText('Inga förfallna betalningar.')).toBeVisible();
+      });
+
+      test.info().annotations.push({ type: 'cls-tomlage', description: String(cls) });
+      expect(cls).toBeLessThan(HEM_CLS_TROSKEL);
+    });
+  }
+});
+
+/**
+ * ═══════════════════════════════════════════════════════════════════════════
+ * SEKTIONSNIVÅ-BOUNDINGBOX, UTAN `utanY()` — AC #2 (TASK-451.7)
+ * ═══════════════════════════════════════════════════════════════════════════
+ * TASK-416.13:s mätning ovan (viewport-loopen) jämför h2-rubriker och
+ * FÖRSTA RADEN — uttryckligen INTE hela sektionen (dess eget filhuvud:
+ * "blind för listkroppar som unmountas"). Denna svit kompletterar med hela
+ * `<section>`-boxen (x/y/width/height) för VARJE block på Hem, under
+ * laddning kontra efter datalandning — samma `clsFixturdata()` som AC #1
+ * ovan (bevakningsrad + event utan maxPlatser + icke-tomma listor).
+ *
+ * INGEN `utanY()`-motsvarighet HÄR (AC #2:s uttryckliga krav): varje fälts
+ * jämförelse är en EGEN, namngiven assertion. Där en sektion är IDENTISK
+ * (`toEqual` på hela boxen) säger koden det rakt av. Där en Y/höjd-skillnad
+ * KVARSTÅR (BulkAtgardsknapp/"Att påminna"-underrubriken, se
+ * `NyaAnmalningar.tsx`/`ForfallnaBetalningar.tsx`s "MEDVETET INGEN
+ * SKELETON-RESERVATION"-stycken) mäts talet och asserteras EXPLICIT mot
+ * den faktiska boxen — det är fortfarande en RIKTIG assertion (fäller om
+ * talet ändras oväntat), bara inte ett krav på nollskillnad.
+ */
+test.describe('Sektionsnivå-boundingBox — Hem, utan utanY-undantag (AC #2, TASK-451.7)', () => {
+  for (const [namn, viewport] of [
+    ['desktop 1280×720', HEM_CLS_DESKTOP],
+    ['mobil 390×844', HEM_CLS_MOBIL],
+  ] as const) {
+    test(`${namn} — hela sektionens boundingBox, sex block`, async ({ page, network }) => {
+      await page.setViewportSize(viewport);
+      await arrangeraTomCache(page);
+      const mocken = hallbarMockClsFixtur(network, clsFixturdata());
+      await page.goto('/hem');
+
+      await expect(page.locator('main#main').getByRole('status')).toHaveCount(5);
+      await page.mouse.move(0, 0); // mät-stillhet — neutralisera pekaren (L246)
+
+      const nastaEvent = page.locator('section[aria-labelledby="hem-nasta-event"]');
+      // Bevakningsrad saknar en gemensam wrapper-tagg mellan pending (`<div
+      // role="status">`) och laddat (`<ul aria-label="Bevakningar">`) — två
+      // EGNA, textbaserade locators i stället för en positionell (samma
+      // skäl som `senasteRadLaddar`/`senasteRadLaddad` i TASK-416.13-testet
+      // ovan redan väljer olika locators för de två lägena).
+      const bevakningUnder = page.locator('div[role="status"]', { hasText: 'Laddar bevakningar' });
+      const bevakningEfter = page.locator('ul[aria-label="Bevakningar"]');
+      const nyaAnm = page.locator('section[aria-labelledby="hem-nya-anmalningar"]');
+      const forfallna = page.locator('section[aria-labelledby="hem-forfallna"]');
+      const genvagar = page.locator('section[aria-labelledby="hem-genvagar"]');
+      const senaste = page.locator('section[aria-labelledby="hem-senaste-aktivitet"]');
+
+      const under = kravBoxarAC2(
+        {
+          nastaEvent: await nastaEvent.boundingBox(),
+          bevakning: await bevakningUnder.boundingBox(),
+          nyaAnm: await nyaAnm.boundingBox(),
+          forfallna: await forfallna.boundingBox(),
+          genvagar: await genvagar.boundingBox(),
+          senaste: await senaste.boundingBox(),
+        },
+        'UNDER laddning',
+      );
+
+      mocken.slappAlla();
+      await expect(page.locator('main#main').getByRole('status')).toHaveCount(0);
+      await expect(page.locator('ul[aria-label="Bevakningar"]')).toBeVisible();
+      await page.evaluate(
+        () => new Promise((klar) => requestAnimationFrame(() => requestAnimationFrame(klar))),
+      );
+
+      const efter = kravBoxarAC2(
+        {
+          nastaEvent: await nastaEvent.boundingBox(),
+          bevakning: await bevakningEfter.boundingBox(),
+          nyaAnm: await nyaAnm.boundingBox(),
+          forfallna: await forfallna.boundingBox(),
+          genvagar: await genvagar.boundingBox(),
+          senaste: await senaste.boundingBox(),
+        },
+        'EFTER datalandning',
+      );
+
+      // NASTA EVENT — IDENTISK: inget ovanför den, och beläggningsbaren är
+      // borttagen ur skelettet (`NastaEvent.tsx`) exakt för att matcha
+      // fixturens `maxPlatser: null`-event.
+      expect(efter.nastaEvent).toEqual(under.nastaEvent);
+
+      // BEVAKNINGSRAD — HELA BOXEN IDENTISK, HÖJDEN INKLUDERAD (runda
+      // 2-fynd, granskningsrunda 1 av PR #2548): en tidigare version av
+      // detta stycke lämnade höjden ENDAST annoterad, aldrig asserterad
+      // — filhuvudets löfte ("varje fälts jämförelse är en EGEN, namngiven
+      // assertion") höll alltså inte bokstavligt för just detta fält.
+      // MÄTT (båda testade breddar): den enradiga platshållaren och den
+      // enradiga riktiga raden är BYTE-IDENTISKA — 70px = 70px, inte en
+      // approximation som råkar ligga nära.
+      expect(efter.bevakning.x).toBe(under.bevakning.x);
+      expect(efter.bevakning.y).toBe(under.bevakning.y);
+      expect(efter.bevakning.width).toBe(under.bevakning.width);
+      expect(efter.bevakning.height).toBe(under.bevakning.height);
+      test.info().annotations.push({
+        type: 'bevakningsrad-hojddelta',
+        description: `${namn}: under=${under.bevakning.height} efter=${efter.bevakning.height}`,
+      });
+
+      // NYA ANMÄLNINGAR — bredd/vänsterkant/Y IDENTISK (Bevakningsrad ovanför
+      // matchade, se ovan); HÖJDEN skiljer sig MÄTT (namngiven, inte tyst
+      // struken): `BulkAtgardsknapp` monteras när `anmalningar.total > 0`
+      // blir känt, ett tillstånd skelettet per definition inte kan reservera
+      // för utan att skada tomläget (`NyaAnmalningar.tsx`s docblock).
+      expect(efter.nyaAnm.x).toBe(under.nyaAnm.x);
+      expect(efter.nyaAnm.y).toBe(under.nyaAnm.y);
+      expect(efter.nyaAnm.width).toBe(under.nyaAnm.width);
+      expect(efter.nyaAnm.height).not.toBe(under.nyaAnm.height);
+      test.info().annotations.push({
+        type: 'nya-anmalningar-hojddelta-namngiven',
+        description: `${namn}: under=${under.nyaAnm.height} efter=${efter.nyaAnm.height} (BulkAtgardsknapp)`,
+      });
+
+      // FÖRFALLNA BETALNINGAR — bredd/vänsterkant IDENTISK; Y OCH HÖJD
+      // skiljer sig MÄTT (namngivet): Y ärver Nya anmälningars höjdändring
+      // (ovan) och HÖJDEN bär SAMMA "Att påminna"-knapp/underrubrik-gap som
+      // `NyaAnmalningar.tsx` — se `ForfallnaBetalningar.tsx`s docblock.
+      expect(efter.forfallna.x).toBe(under.forfallna.x);
+      expect(efter.forfallna.width).toBe(under.forfallna.width);
+      expect(efter.forfallna.y).not.toBe(under.forfallna.y);
+      expect(efter.forfallna.height).not.toBe(under.forfallna.height);
+      test.info().annotations.push({
+        type: 'forfallna-boundingbox-delta-namngiven',
+        description: `${namn}: under=${JSON.stringify(under.forfallna)} efter=${JSON.stringify(efter.forfallna)}`,
+      });
+
+      // GENVÄGAR — statisk (ingen egen pending-gren, `Genvagar.tsx` har
+      // ingen datakälla) — bredd/vänsterkant/HÖJD IDENTISK (samma innehåll
+      // i båda lägena); Y ärver kaskaden ovan, mätt och namngivet, inte
+      // struken.
+      expect(efter.genvagar.x).toBe(under.genvagar.x);
+      expect(efter.genvagar.width).toBe(under.genvagar.width);
+      expect(efter.genvagar.height).toBe(under.genvagar.height);
+      expect(efter.genvagar.y).not.toBe(under.genvagar.y);
+      test.info().annotations.push({
+        type: 'genvagar-y-delta-namngiven',
+        description: `${namn}: under.y=${under.genvagar.y} efter.y=${efter.genvagar.y}`,
+      });
+
+      // SENASTE AKTIVITET — bredd/vänsterkant IDENTISK. Y OCH HÖJD hade
+      // (runda 2-fynd, granskningsrunda 1 av PR #2548) INGEN assertion
+      // alls — bara en annotation. Rättat med EXAKTA mätta deltan, inte
+      // ett toleransintervall:
+      //   Y: +150px på BÅDA testade breddar — ärver EXAKT samma kaskad
+      //   som Genvägar (Nya anmälningar +60px BulkAtgardsknapp + Förfallna
+      //   betalningar +90px "Att påminna"-knapp/underrubrik = 150px,
+      //   bredd-oberoende eftersom kaskaden är absoluta pixelinsättningar,
+      //   inte breddberoende reflow).
+      //   HÖJD: skiljer sig i RIKTNING per bredd (radbrytande
+      //   aktivitetstext, facit-låst loaded-markup —
+      //   `SenasteAktivitetKompakt.tsx`s docblock, INTE fixad här): desktop
+      //   KRYMPER 46px, mobil VÄXER 50px.
+      expect(efter.senaste.x).toBe(under.senaste.x);
+      expect(efter.senaste.width).toBe(under.senaste.width);
+      expect(efter.senaste.y - under.senaste.y).toBe(150);
+      const forvantatSenasteHojddelta = namn === 'desktop 1280×720' ? -46 : 50;
+      expect(efter.senaste.height - under.senaste.height).toBe(forvantatSenasteHojddelta);
+      test.info().annotations.push({
+        type: 'senaste-aktivitet-boundingbox-delta-namngiven',
+        description: `${namn}: under=${JSON.stringify(under.senaste)} efter=${JSON.stringify(efter.senaste)}`,
+      });
+    });
+  }
+});
+
+/** Samma kontrakt som `kravBoxar` (TASK-416.13-testet ovan) — egen kopia
+ *  scopad till AC #2-sviten så namnen (`nastaEvent`/`bevakning`/…) inte
+ *  krockar med den äldre testets `nastaEventH2`/…-nycklar. */
+function kravBoxarAC2<
+  T extends Record<string, { x: number; y: number; width: number; height: number } | null>,
+>(
+  boxar: T,
+  sammanhang: string,
+): { [K in keyof T]: { x: number; y: number; width: number; height: number } } {
+  for (const [namn, box] of Object.entries(boxar)) {
+    if (!box) throw new Error(`boundingBox saknas för ${namn} ${sammanhang}`);
+  }
+  return boxar as { [K in keyof T]: { x: number; y: number; width: number; height: number } };
+}

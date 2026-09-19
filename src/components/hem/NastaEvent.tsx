@@ -11,6 +11,26 @@ import type { useDashboardEvents } from './useDashboardData';
  * "hem-vyn V1 Lugna morgonen"). Dagar-kvar-formen står som en egen rad under
  * eventnamnet (INTE en positionerad pill — det var K10-facitets form, riven
  * med `NastaEventCard.tsx`).
+ *
+ * [TASK-451.7] SKELETONEN BÄR INGEN BELÄGGNINGSBAR-PLATSHÅLLARE.
+ * Diagnoskartan (`docs/research/kallstarten-diagnoskarta-2026-09-18.md` § 3)
+ * mätte att skelettets caption+bar-block (rad ~98–110 innan denna ändring)
+ * renderades OVILLKORLIGT, medan den LADDADE vyn bara visar det paret när
+ * `nasta.maxPlatser != null` — ett event UTAN satt maxPlatser krymper alltså
+ * kortets höjd vid datalandning (ett äkta layout-skift, fångat av AC #1:s
+ * röd-först-fixtur). Fixen följer uppdragets riktlinje ("skeletonen anpassas
+ * till den laddade vyn, inte tvärtom"): den LADDADE grenen (rad ~98–110
+ * nedan) är HELT ORÖRD — bara skelettets eget villkor är borttaget.
+ *
+ * NAMNGIVEN KVARSTÅENDE ASYMMETRI: för event MED `maxPlatser` satt växer
+ * kortet i stället med ~30 px (caption + progress-rad) när datan landar —
+ * en GROW, inte en SHRINK. Den riktningen bedöms mindre störande (ny
+ * information tillkommer i stället för att försvinna) och kan inte elimineras
+ * utan att antingen (a) ALLTID visa raden i den laddade vyn (ändrar en
+ * stämplad facit-yta för event som saknar maxPlatser — förbjudet utan Marcus
+ * stämpel, ADR-102) eller (b) gissa i skelettet om maxPlatser kommer vara
+ * satt — vilket skelettet per definition inte kan veta. Se slutrapporten för
+ * TASK-451.7 för mätta CLS-tal i båda riktningarna.
  */
 export function NastaEvent({
   eventsQuery,
@@ -48,10 +68,6 @@ export function NastaEvent({
             <Skeleton variant="text" className="w-1/2 text-body" />
           </div>
           <Skeleton variant="text" className="w-2/3 text-body" />
-          <div className="flex flex-col gap-1.5">
-            <Skeleton variant="text" className="w-1/3 text-caption" />
-            <Skeleton variant="text" className="h-1.5 w-full rounded-full" />
-          </div>
         </div>
       ) : eventsQuery.isError ? (
         <MessageBox intent="error" title="Kunde inte hämta event">

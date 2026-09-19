@@ -46,6 +46,38 @@ import { betalningarPa } from '@/lib/funktionsflaggor';
  *
  * Hooken läser `jobbstatus(null)` — samma cache-nyckel `JobbLyssnare` redan
  * håller färsk för hela appen — så monteringen kostar inget extra anrop.
+ *
+ * ═══════════════════════════════════════════════════════════════════════════
+ * [TASK-451.7] MEDVETET INGEN SKELETON-RESERVATION
+ * ═══════════════════════════════════════════════════════════════════════════
+ * Diagnoskartan (`docs/research/kallstarten-diagnoskarta-2026-09-18.md` § 6
+ * punkt 7) namnger denna komponent som ETT av tre block som "KAN komma" och
+ * därför principiellt kunde reservera plats (samma regel som motiverar
+ * `Bevakningsrad`s nya pending-skelett). Valet här är ändå att INTE
+ * reservera, av två skäl, mätta snarare än gissade:
+ *
+ * 1. Villkoret ovan (`betalningarPa()`) gatar hela hooken — flaggan är AV i
+ *    hela acceptance-/webblasarbeteende-miljön (`playwright.config.ts`
+ *    hårdkodar `VITE_FEATURE_BETALNINGAR: 'av'`), så komponenten renderar
+ *    `null` OAVSETT laddningsläge i varje test denna skiva kan mäta mot. En
+ *    reservation hade alltså varit en ren, evig SHRINK i just den miljö
+ *    CLS-grinden kör i — motsatsen till avsikten.
+ * 2. Banderollen visas per konstruktion bara medan ett kvittojobb faktiskt
+ *    ARBETAR (`kvar > 0`) — en sällsynt, session-bunden händelse (Lotta
+ *    startar ett jobb och lämnar sidan öppen), inte något som är sant vid en
+ *    genomsnittlig sidladdning. "Reservera där blocket oftast finns,
+ *    kollapsa mjukt där det oftast saknas" (uppdragets dilemma-regel) pekar
+ *    här entydigt mot kollaps: att reservera en platshållare som nästan
+ *    alltid inte fylls är en sämre avvägning än den ovanliga, riktiga
+ *    insättningen när ett jobb väl pågår.
+ *
+ * Namngiven kvarstående lucka: startar ett kvittojobb EXAKT under en
+ * pågående Hem-laddning (osannolikt — jobbet startas via en handling på en
+ * redan laddad sida) skulle banderollens första framträdande fortfarande
+ * knuffa `Genvagar`/`SenasteAktivitetKompakt` — samma insättnings-CLS som
+ * `Bevakningsrad` hade innan denna skiva. Inte åtgärdat här: scenariot
+ * kräver flaggan PÅ och en pågående Hem-laddning samtidigt, ett fönster som
+ * varken denna miljö kan mäta eller produkt-datan visar vara vanligt.
  */
 export function KvittojobbBanderoll() {
   const jobb = useJobbstatus(undefined, betalningarPa());

@@ -6,6 +6,7 @@ import {
   Link as AriaLink,
   type LinkProps as AriaLinkProps,
 } from 'react-aria-components';
+import { Skeleton } from '@/components/primitives';
 import type { Event } from '@/domain/models/Event';
 import {
   type BevakningRad,
@@ -97,18 +98,44 @@ import {
  * läge") är därmed INTE sann för rubriken; kriteriet är inte bockat av
  * promoveringen och kräver Marcus ord, precis som kortets redan strukna
  * badge-kriterium gjorde.
+ *
+ * [TASK-451.7] `isPending` — SKELETONEN RESERVERAR PLATS FÖR RADEN.
+ * Diagnoskartan (`docs/research/kallstarten-diagnoskarta-2026-09-18.md` § 3,
+ * § 6 punkt 7) mätte att komponenten renderar `null` under HELA laddningen
+ * (`rader` härleds ur `eventsQuery.data`/`registrationsQuery.data`, båda
+ * `undefined` medan de laddar — `bevakningar()`/`atgardskoRad()` returnerar
+ * tomt för `undefined`-indata, se `hem-derivations.ts`), så när minst en
+ * bevakning FAKTISKT finns efter datalandning är det en ren INSÄTTNING —
+ * klassisk CLS, allt under raden knuffas ner. DESIGN-SYSTEM-SPEC §15
+ * (TASK-416.21) + diagnoskartans GOLV-punkt 7 pekar uttryckligen ut denna
+ * komponent som ett block som "KAN komma" och som därför ska reservera
+ * plats. `Hem.tsx` skickar `isPending={anmalDataPending}` — SAMMA
+ * pending-flagga NastaEvent/NyaAnmalningar/ForfallnaBetalningar redan läser.
+ *
+ * EN generisk rad, inte en per rader vi inte känner till: vi vet aldrig i
+ * förväg HUR MÅNGA bevakningar som kommer (kan vara 0, kan vara flera) — en
+ * fast enda-rad-reservation är samma avvägning `NyaAnmalningar.tsx`/
+ * `ForfallnaBetalningar.tsx` redan gör med sina två skeleton-rader (ett
+ * KÄNT antal skulle vara bättre, men skelettet kan strukturellt inte känna
+ * det). Det tomma facit-låsta lägets `return null` (ovan, `rader.length ===
+ * 0`) är HELT ORÖRT — bara pending-grenen är ny, så facit-formen för både
+ * "har bevakningar" och "har inga" är byte-identisk med före denna ändring.
  */
 export function Bevakningsrad({
   rader,
+  isPending,
   onOppnaEventinfo,
 }: {
   rader: BevakningRad[];
+  /** [TASK-451.7] `Hem.tsx`s `anmalDataPending` — se docblocket ovan. */
+  isPending?: boolean;
   /** [TASK-241.8 AC #1] Klickad rads FULLA `Event` — `Hem.tsx` öppnar
       eventinfo-svepet förifiltrerat på just det eventet. Anropas ENDAST
       för `'eventinfo'`-rader; `'atgardsko'`-raden navigerar bort via
       `AtgardskoRadLink` i stället (se filens docblock § TVÅ RADTYPER). */
   onOppnaEventinfo: (event: Event) => void;
 }) {
+  if (isPending) return <BevakningsradSkeleton />;
   if (rader.length === 0) return null;
   return (
     <ul aria-label="Bevakningar" className="flex min-w-0 flex-col gap-2">
@@ -189,6 +216,31 @@ function RadInnehall({
     textrader + `py-3`) och är mätt konstant, se filens docblock. */
 const RAD_YTA =
   'text-(color:--mm-navcard-text) flex min-h-14 w-full items-center gap-3 rounded-2xl border border-(--mm-navcard-border) bg-(--mm-navcard-bg) px-4 py-3 text-left hover:bg-bg-emphasized motion-safe:transition-colors contrast-more:border-(--mm-navcard-border-contrast)';
+
+/**
+ * [TASK-451.7] Pending-platshållaren — se `Bevakningsrad`s docblock
+ * § `isPending`. Formen är EN `RAD_YTA`-yta (samma kortgeometri som en
+ * riktig rad — `min-h-14`, samma padding/kant), med samma tvåradiga
+ * textkolumn som `RadInnehall` bär (rubrikrad + undertextrad), byggd av
+ * `Skeleton`-primitivens block i stället för `AriaButton`/`AriaLink` —
+ * platshållaren är varken klickbar eller navigerbar. Egen `role="status"` +
+ * `aria-busy` + sr-only-besked (Roselli-mönstret, DESIGN-SYSTEM-SPEC §15) —
+ * SAMMA a11y-kontrakt som `NastaEvent`/`NyaAnmalningar`/
+ * `ForfallnaBetalningar`s laddande containrar.
+ */
+function BevakningsradSkeleton() {
+  return (
+    <div role="status" aria-busy="true" className="flex min-w-0 flex-col gap-2">
+      <span className="sr-only">Laddar bevakningar…</span>
+      <div className={RAD_YTA}>
+        <span className="flex min-w-0 flex-1 flex-col gap-0.5">
+          <Skeleton variant="text" className="w-2/5 text-body" />
+          <Skeleton variant="text" className="w-1/3 text-caption" />
+        </span>
+      </div>
+    </div>
+  );
+}
 
 function EventinfoRad({
   rad,

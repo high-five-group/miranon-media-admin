@@ -146,7 +146,6 @@ export function NyaAnmalningar({
         >
           <span className="sr-only">Laddar nya anmälningar…</span>
           <NyaAnmalanSkeletonRad />
-          <NyaAnmalanSkeletonRad />
         </div>
       ) : !visarNagot ? (
         <p className="flex items-center gap-2 text-body text-text-secondary">
@@ -228,6 +227,24 @@ export function NyaAnmalningar({
           ))}
         </ul>
       )}
+      {/* [TASK-451.7] MEDVETET INGEN SKELETON-RESERVATION FÖR KNAPPEN.
+          Övervägd och AVVISAD: en fast knapp-platshållare hade tagit bort
+          den `utanY()`-dokumenterade Y-förskjutningen NÄR sektionen landar
+          icke-tom (`anmalningar.total > 0`) — men de två skeleton-raderna
+          ovan är REDAN en approximation (ett känt, av PRD:n Marcus-avvägt
+          "Öppna frågor"-gap, se `medMatningsdata()`s docblock i
+          `hem-laddlage.acceptance.test.ts`): landar sektionen i STÄLLET i
+          sitt tomläge ("Inga nya anmälningar…", en `<p>`-rad) skulle en
+          TILLAGD knapp-platshållare göra den redan kända krympningen ÄNNU
+          större — exakt det AC #3 förbjuder ("tomlägen får inte ge större
+          hopp än tröskeln"). Att lägga till en reservation här hade alltså
+          löst EN sidas problem (fylld lista) genom att förvärra en ANNAN,
+          minst lika vanlig sida (tomt läge). Den kvarstående Y-skillnaden
+          i det fyllda fallet är därför en NAMNGIVEN, mätt kvarstående
+          skillnad (se `hem-laddlage.acceptance.test.ts`s
+          sektionsnivå-boundingBox-test, TASK-451.7) — inte tyst
+          bortstruken, bara inte "löst" med en reservation som skulle
+          skadat mer än den hjälpt. */}
       {anmalningar.total > 0 ? (
         <div className="pt-1">
           <BulkAtgardsknapp label="Bekräfta alla" onPress={onBekraftaAlla} />
