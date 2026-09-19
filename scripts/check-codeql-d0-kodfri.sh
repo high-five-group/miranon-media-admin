@@ -19,6 +19,16 @@
 # den ursprungliga JS/TS-familj-ändelselistan. § ANALYSERBARHET nedan är
 # omskriven mot CodeQL:s egen extraktor-dokumentation.
 #
+# Review runda 3 (samma PR) fann TVÅ till: (1) LAGER 2:s HTML-innehålls-
+# filter var skiftlägesKÄNSLIGT och saknade javascript:-URI-detektion och
+# multirads-attribut-hantering — ett fail-OPEN-hål i en mekanism byggd för
+# att vara fail-closed, nu även uttryckligt fail-closed vid en oläsbar/
+# binär/ogiltig-UTF8-fil (fynd 1); (2) grinden prövade ALDRIG codeql.yml:s
+# ANDRA matrisspråk, `actions` — samma "D0 = kodfritt"-premiss föll en
+# TREDJE gång (JS/TS → HTML → actions). § SPRÅKMATRISEN nedan gör
+# matris-täckningen till en levande, fällbar invariant i stället för ett
+# tyst antagande (fynd 2).
+#
 # ═══ VAD GRINDEN LÄSER ═══
 #
 # D0-globlistan läses LIVE ur .github/workflows/codeql.yml, mellan
@@ -62,12 +72,71 @@
 # OBEROENDE av JS/TS-referenser, måste denna gräns omprövas.
 #
 # LAGER 2 — INNEHÅLL, bara för HTML-familjen (.html/.htm/.xhtml/.xhtm): en
-# ren statisk HTML-fil UTAN `<script`-block och UTAN inline-händelsehanterare
-# (onclick=, onload= osv.) bär ingen analyserbar JS-kod — den får PASSERA
-# TYST, ingen flaggning, inget undantag krävs. Detta håller grinden fokuserad
-# på faktisk kod i stället för att drunkna i vanlig dokumentations-HTML.
-# `.vue`/`.js`/`.ts`-familjen filtreras INTE på innehåll — hela poängen med
-# de ändelserna är att filen per definition ÄR kod.
+# ren statisk HTML-fil UTAN `<script`-block, UTAN inline-händelsehanterare
+# (onclick=, onload= osv.) och UTAN javascript:-URI bär ingen analyserbar
+# JS-kod — den får PASSERA TYST, ingen flaggning, inget undantag krävs.
+# Detta håller grinden fokuserad på faktisk kod i stället för att drunkna i
+# vanlig dokumentations-HTML. `.vue`/`.js`/`.ts`-familjen filtreras INTE på
+# innehåll — hela poängen med de ändelserna är att filen per definition ÄR
+# kod.
+#
+# Prövningen (review runda 3 fynd 1) är:
+#   - SKIFTLÄGESOKÄNSLIG (`grep -qEi`) — HTML är case-insensitive per spec,
+#     `<SCRIPT>`/`ONCLICK=` är lika giltiga som gemener. Runda 2:s filter
+#     körde `grep -qE` UTAN `-i` och missade båda.
+#   - Prövas mot en RADBRYTNINGS-PLATTAD kopia av filen (`tr` ersätter
+#     \n/\r/\t med mellanslag) INNAN grep, så ett attribut på egen rad utan
+#     eget inledande mellanslag (`<script\nonload=...>`) fortfarande matchar
+#     `[[:space:]]on[a-zA-Z]+[[:space:]]*=` — grep:s rad-för-rad-läsning
+#     hade annars gjort just den formen till en tyst bypass.
+#   - Innehåller en `javascript:`-URI-kontroll (`<a href="javascript:...">`
+#     m.fl.) — en fail-open-lucka runda 2:s version saknade helt.
+#   - Är FAIL-CLOSED: en fil som inte går att läsa (`[[ ! -f ]]`), som
+#     `file -b --mime-encoding` klassar som `binary`, eller som `iconv -f
+#     UTF-8 -t UTF-8` avvisar som ogiltig UTF-8, räknas ALDRIG som ren —
+#     grinden kan då inte BEVISA frånvaro av kod, och ett sådant "kan inte
+#     avgöra" ska aldrig tolkas som "säkert". Se `html_lager2_status()`
+#     nedan i skriptkroppen.
+#
+# SVG-inbäddat `<script>` INOM en redan HTML-familje-täckt fil (t.ex. en
+# `.html`-fil med en inline `<svg><script>...</script></svg>`) täcks redan
+# av `<script`-mönstret ovan, ingen särskild kod krävs. Fristående `.svg`-
+# filer läggs DÄREMOT INTE till i LAGER 1: varken JavaScript- eller
+# TypeScript-extraktorns dokumenterade extension-lista (§ SPRÅKMATRISEN
+# nedan, samma primärkälla) nämner `.svg` — att lägga till den hade varit en
+# obelagd utvidgning (ADR-086), inte en verifierad täckning.
+#
+# ═══ SPRÅKMATRISEN — VAD VAKTEN KÄNNER, INTE EN KOPIA (review runda 3 fynd 2) ═══
+#
+# Grinden prövade tidigare BARA `codeql.yml`:s första matrisspråk
+# (javascript-typescript). Det ANDRA, `actions`, prövades aldrig — samma
+# "D0 = kodfritt"-premiss som redan fallit två gånger (§ ANALYSERBARHET
+# ovan) föll en TREDJE gång på exakt samma sätt. CodeQL:s egen
+# extraktor-tabell (codeql.github.com, "Supported languages and
+# frameworks", GitHub Actions-raden, hämtad 2026-09-19) listar
+# `.github/workflows/*.yml`, `.github/workflows/*.yaml`, `**/action.yml`,
+# `**/action.yaml` — ett REPO-BRETT mönster, inte begränsat till
+# `.github/workflows/`.
+#
+#   Matrisspråk (codeql.yml)   Vad vakten prövar                                Källa
+#   javascript-typescript      LAGER 1 (ANALYSERBAR_ERE) + LAGER 2 (HTML-family) codeql.github.com, JavaScript/TypeScript-raderna
+#   actions                    ACTIONS_FIL_ERE — action.yml/action.yaml VAR SOM  codeql.github.com, GitHub Actions-raden
+#                               HELST i trädet (.github/workflows/** ligger
+#                               redan UTANFÖR D0 — se codeql.yml § SÖKVÄGSLISTAN
+#                               — så bara den fristående formen kan hamna i D0)
+#
+# `.github/workflows/*.yml`/`*.yaml` behöver INGEN egen kontroll här: den
+# katalogen står aldrig i D0-listan (`codeql.yml`s `paths-ignore` undantar
+# bara specifika `.github/`-underfiler som ISSUE_TEMPLATE/CODEOWNERS, aldrig
+# hela `workflows/**`), så de filerna analyseras redan alltid.
+#
+# Matrisen läses LIVE ur `codeql.yml`s `strategy.matrix.include[].language`-
+# rader (ingen egen kopia). Ett matrisspråk grinden INTE känner igen (varken
+# `javascript-typescript` eller `actions`) fäller den — anropsfel-koden,
+# eftersom grinden då bevisligen INTE kan avgöra D0-kodfriheten för det
+# nya språket. Ett `codeql.yml` UTAN någon `- language:`-rad alls (t.ex.
+# testsvitens minimala fixtur) hoppar kontrollen tyst över — den prövar
+# NÄRVARANDE, okända språk, inte frånvaro av en matris.
 #
 # ═══ UNDANTAG ═══
 #
@@ -96,12 +165,15 @@
 # Exit 0 = inga otillåtna filer (eller samtliga är deklarerade undantag,
 #          och inga obehövliga undantag kvarligger).
 # Exit 1 = otillåten fil funnen ODEKLARERAD, eller obehövligt undantag.
-# Exit 2 = anropsfel — grinden kunde inte läsa det den skulle pröva
-#          (inklusive: git ls-files själv fallerade).
+# Exit 2 = anropsfel — grinden kunde inte läsa/tolka det den skulle pröva
+#          (inklusive: git ls-files själv fallerade, ELLER codeql.yml:s
+#          matris bär ett språk grinden inte har täckning för, § SPRÅK-
+#          MATRISEN ovan — review runda 3 fynd 2).
 #
 # Config: .codeql-d0-kodfri-policy.conf
 # Källa: TASK-464.2, review runda 1 fynd 1 (warning), review runda 2
-# fynd 1 (warning) + fynd 5 (info).
+# fynd 1 (warning) + fynd 5 (info), review runda 3 fynd 1 (warning) +
+# fynd 2 (warning).
 
 set -uo pipefail
 
@@ -112,12 +184,52 @@ SLUT_MARK="# paritet:slut klassning-codeql-d0"
 
 # LAGER 1 — se § ANALYSERBARHET ovan för källa och motivering per ändelse.
 ANALYSERBAR_ERE='\.(js|jsx|mjs|es6?|cjs|ts|tsx|mts|cts|vue|htm|html|xhtm|xhtml)$'
+# actions-språket (§ SPRÅKMATRISEN ovan) — `**/action.yml`/`**/action.yaml`
+# VAR SOM HELST i trädet, inte bara under .github/workflows/ (som aldrig är
+# D0 i första hand, se § SPRÅKMATRISEN).
+ACTIONS_FIL_ERE='(^|/)action\.ya?ml$'
 # Delmängden som kräver LAGER 2 (innehållskontroll) innan den flaggas.
 HTML_FAMILJ_ERE='\.(htm|html|xhtm|xhtml)$'
-# `<script`-block eller ett inline-händelsehanterar-attribut (onclick=,
-# onload=, ...). `-i` för attributnamnets skiftläge; `<script` matchar även
-# `<script>`/`<script type=...>` utan att kräva en avslutande `>`.
-HTML_KOD_ERE='<script|[[:space:]]on[a-zA-Z]+[[:space:]]*='
+# `<script`-block, ett inline-händelsehanterar-attribut (onclick=, onload=,
+# ...) eller en javascript:-URI (review runda 3 fynd 1). Prövas
+# SKIFTLÄGESOKÄNSLIGT (`grep -qEi`, se html_lager2_status() nedan) — `-i`
+# själv sköter versal/gemen, ingen egen teckenklass-gymnastik behövs.
+# `<script` matchar även `<script>`/`<script type=...>` utan att kräva en
+# avslutande `>`.
+HTML_KOD_ERE='<script|[[:space:]]on[a-zA-Z]+[[:space:]]*=|javascript:'
+
+# Avgör LAGER 2-status för en HTML-familjefil (review runda 3 fynd 1):
+#   "ren"     — läsbar, giltig text, INGEN träff i HTML_KOD_ERE.
+#   "kod"     — läsbar, träff i HTML_KOD_ERE.
+#   "olasbar" — saknas, binär (file -b --mime-encoding == "binary"), eller
+#               ogiltig UTF-8 (iconv avvisar den) — FAIL-CLOSED, behandlas
+#               som "kod" av anroparen (grinden kan inte BEVISA frånvaro).
+# Radbrytningar/tabbar plattas till mellanslag FÖRE grep, så ett attribut på
+# egen rad utan eget inledande mellanslag ("<script\nonload=...") fortfarande
+# matchar `[[:space:]]on[a-zA-Z]+[[:space:]]*=` — grep:s rad-för-rad-läsning
+# hade annars gjort den formen till en tyst bypass.
+html_lager2_status() {
+    local f="${1}" mime platt
+    if [[ ! -f "${f}" ]]; then
+        echo "olasbar"
+        return
+    fi
+    mime="$(file -b --mime-encoding -- "${f}" 2>/dev/null)" || mime=""
+    if [[ -z "${mime}" || "${mime}" == "binary" ]]; then
+        echo "olasbar"
+        return
+    fi
+    if ! iconv -f UTF-8 -t UTF-8 -- "${f}" >/dev/null 2>&1; then
+        echo "olasbar"
+        return
+    fi
+    platt="$(tr '\n\r\t' '   ' < "${f}" 2>/dev/null)"
+    if printf '%s' "${platt}" | grep -qEi -- "${HTML_KOD_ERE}"; then
+        echo "kod"
+    else
+        echo "ren"
+    fi
+}
 
 if [[ ! -f "${POLICY_FIL}" ]]; then
     echo "❌ policy-fil saknas: ${POLICY_FIL}" >&2
@@ -142,6 +254,28 @@ if ! grep -qF -- "${SLUT_MARK}" "${CODEQL_YML}"; then
     echo "   Sökte: ${SLUT_MARK}" >&2
     exit 2
 fi
+
+# ─── Språkmatrisen — vaktens täckning, INTE en kopia (review runda 3 fynd 2) ─
+# Läses LIVE ur codeql.yml:s `strategy.matrix.include[].language`-rader,
+# formen `- language: <värde>` (valfritt inledande whitespace). Ett
+# `codeql.yml` UTAN någon sådan rad (testsvitens minimala fixtur, eller ett
+# arbetsflöde som inte använder matrisformen) ger en TOM SPRAK_MATRIS —
+# loopen nedan itererar då noll gånger och kontrollen är ett no-op, se §
+# SPRÅKMATRISEN i skripthuvudet för varför det INTE är samma sak som
+# NOLL-globs-disciplinen för D0-listan.
+KANDA_SPRAK_ERE='^(javascript-typescript|actions)$'
+SPRAK_MATRIS="$(grep -E '^[[:space:]]*-[[:space:]]*language:[[:space:]]*\S+' "${CODEQL_YML}" 2>/dev/null | sed -E 's/^[[:space:]]*-[[:space:]]*language:[[:space:]]*//')"
+while IFS= read -r sprak; do
+    [[ -z "${sprak}" ]] && continue
+    if [[ ! "${sprak}" =~ ${KANDA_SPRAK_ERE} ]]; then
+        echo "❌ ${CODEQL_YML}:s matris innehåller språket '${sprak}' — grinden" >&2
+        echo "   känner bara javascript-typescript/actions (§ SPRÅKMATRISEN i" >&2
+        echo "   skripthuvudet). Ett nytt matrisspråk kräver att någon verifierar" >&2
+        echo "   dess D0-täckning (ny ANALYSERBAR_ERE/ACTIONS_FIL_ERE-liknande" >&2
+        echo "   kontroll) innan grinden kan lita på att befintlig logik räcker." >&2
+        exit 2
+    fi
+done <<< "${SPRAK_MATRIS}"
 
 # ─── Extrahera D0-globs live ur codeql.yml ──────────────────────────────────
 GLOBS="$(awk -v s="${START_MARK}" -v e="${SLUT_MARK}" '
@@ -203,7 +337,11 @@ if [[ "${LS_STATUS}" -ne 0 ]]; then
     exit 2
 fi
 ALLA_D0_FILER="${LS_UTDATA}"
-TRAFFAR="$(printf '%s\n' "${ALLA_D0_FILER}" | grep -E "${ANALYSERBAR_ERE}" || true)"
+# Union av JS/TS/HTML-familjen (LAGER 1) och actions-språkets action.yml/
+# action.yaml (§ SPRÅKMATRISEN, review runda 3 fynd 2) — grep -E med `|`
+# ger varje matchande rad EN gång, ingen dubbelräkning även om en fil
+# (aldrig i praktiken) skulle matcha båda mönstren.
+TRAFFAR="$(printf '%s\n' "${ALLA_D0_FILER}" | grep -E "${ANALYSERBAR_ERE}|${ACTIONS_FIL_ERE}" || true)"
 
 EXIT_CODE=0
 antal_traffar=0
@@ -215,9 +353,13 @@ SEDDA_FILER=""
 while IFS= read -r fil; do
     [[ -z "${fil}" ]] && continue
 
-    # LAGER 2: HTML-familjen kräver bevis på faktisk kod innan den räknas.
+    # LAGER 2: HTML-familjen kräver bevis på faktisk kod innan den räknas
+    # som ren — och FAIL-CLOSED (review runda 3 fynd 1) om det beviset inte
+    # går att inhämta (fil oläsbar/binär/ogiltig UTF-8): sådana fall faller
+    # igenom till träff-räkningen nedan precis som "kod" gör.
     if [[ "${fil}" =~ ${HTML_FAMILJ_ERE} ]]; then
-        if [[ ! -f "${fil}" ]] || ! grep -qE "${HTML_KOD_ERE}" -- "${fil}" 2>/dev/null; then
+        HTML_STATUS="$(html_lager2_status "${fil}")"
+        if [[ "${HTML_STATUS}" == "ren" ]]; then
             antal_html_passerade=$((antal_html_passerade + 1))
             continue
         fi
@@ -250,7 +392,7 @@ done <<< "${UNDANTAGS_FILER}"
 
 echo ""
 if [[ "${EXIT_CODE}" -eq 0 ]]; then
-    echo "✅ codeql-d0-kodfri: ${antal_traffar} analyserbara filer under D0 (${antal_html_passerade} HTML-familjefiler passerade utan kod), ${antal_deklarerade} deklarerade undantag, 0 odeklarerade."
+    echo "✅ codeql-d0-kodfri: ${antal_traffar} analyserbara filer under D0 (js/ts/html-familjen + actions; ${antal_html_passerade} HTML-familjefiler passerade utan kod), ${antal_deklarerade} deklarerade undantag, 0 odeklarerade."
 else
     echo "${antal_odeklarerade} odeklarerad(e), ${antal_obehovliga} obehövlig(a) undantag."
 fi

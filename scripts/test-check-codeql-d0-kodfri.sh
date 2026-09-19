@@ -2,7 +2,7 @@
 #
 # test-check-codeql-d0-kodfri.sh — self-test för check-codeql-d0-kodfri.sh.
 #
-# FJORTON FALL. Grinden är billig att göra grön och det bevisar ingenting;
+# TJUGOTRE FALL. Grinden är billig att göra grön och det bevisar ingenting;
 # varje fall nedan finns för att bevisa att den FÄLLER när den ska, eller att
 # den vägrar uttala sig när den inte kan läsa det den ska pröva.
 #
@@ -20,6 +20,15 @@
 #   T12 HTML UTAN kod (varken script eller handler)            → 0 (tyst, inget undantag krävs)
 #   T13 HTML med inline-händelsehanterare (onclick=)           → 1
 #   T14 git ls-files fallerar (ingen .git alls)                → 2
+#   T15 HTML <SCRIPT> VERSAL tagg, odeklarerad                 → 1 (case-insensitive)
+#   T16 HTML javascript:-URI, odeklarerad                      → 1 (javascript:-fix)
+#   T17 HTML ONCLICK= VERSALT attribut, odeklarerad            → 1 (case-insensitive)
+#   T18 HTML attribut på egen rad, inget eget mellanslag       → 1 (radbrytnings-fix)
+#   T19 HTML binär/ogiltig UTF-8, odeklarerad                  → 1 (fail-closed)
+#   T20 action.yml UTANFÖR .github/workflows/, deklarerad      → 0
+#   T21 action.yaml UTANFÖR .github/workflows/, ODEKLARERAD    → 1
+#   T22 matrisspråk KÄNDA (javascript-typescript+actions)      → 0 (regression)
+#   T23 matrisspråk med ETT okänt språk ('python')              → 2 (matris-vakt)
 #
 # T3 är det viktigaste fallet av de ursprungliga tio: ett kvarliggande
 # undantag för en fil som inte längre matchar maskerar nästa drift på samma
@@ -32,16 +41,28 @@
 # tidigare tolkas som "noll filer, allt grönt" (fail-open); nu ska SAMMA fel
 # ge anropsfel-koden.
 #
+# T15–T19 är review runda 3 fynd 1: samtliga fem är BEVISADE BYPASSER mot
+# runda 2:s version av LAGER 2 (körda mot den gamla `grep -qE` UTAN `-i`,
+# utan javascript:-mönster, rad-för-rad — varje fall gav "NOT MATCHED" innan
+# fixen). T20–T21 är review runda 3 fynd 2: samma "D0 = kodfritt"-premiss
+# som redan fallit två gånger (§ ANALYSERBARHET) föll en TREDJE gång på
+# `actions`-språket — grinden prövade det ALDRIG förut. T22–T23 bevisar att
+# den nya matris-vakten (§ SPRÅKMATRISEN) varken stör det KÄNDA fallet
+# (T22) eller missar det OKÄNDA (T23) — den viktigaste av de två är T23:
+# den är just det test instruktionen krävde ("fäller om codeql.yml:s
+# språkmatris innehåller ett språk tabellen/vakten inte känner").
+#
 # Test-isolering: allt sker i en temp-katalog med ett MINIMALT eget git-repo
 # (grinden kör `git ls-files`, som kräver en git-kontext) samt en fristående
 # workflow-fixtur — INGEN beröring av det riktiga repots .github/workflows/
 # eller .codeql-d0-kodfri-policy.conf.
 #
 # Användning: bash scripts/test-check-codeql-d0-kodfri.sh
-# Exit 0 om alla fjorton passerar, annars 1.
+# Exit 0 om alla tjugotre passerar, annars 1.
 #
 # Källa: TASK-464.2, review runda 1 fynd 1 (warning), review runda 2
-# fynd 1 (warning) + fynd 5 (info).
+# fynd 1 (warning) + fynd 5 (info), review runda 3 fynd 1 (warning) +
+# fynd 2 (warning).
 
 set -uo pipefail
 
@@ -105,7 +126,7 @@ kor() {
     (cd "${TEST_DIR}" && bash "${GATE}" >/dev/null 2>&1; echo $?)
 }
 
-printf '\ntest-check-codeql-d0-kodfri — fjorton fall\n'
+printf '\ntest-check-codeql-d0-kodfri — tjugotre fall\n'
 printf '%.0s─' {1..70}; printf '\n'
 
 # T1 — analyserbar fil, deklarerad.
@@ -239,6 +260,119 @@ skriv_workflow
 skriv_policy 'CODEQL_D0_UNDANTAG=""'
 ec="$(kor)"
 report "T14 git ls-files fallerar (ingen .git) → anropsfel" 2 "${ec}"
+
+# T15 — HTML <SCRIPT> med VERSAL tagg. Review runda 2:s filter körde
+# `grep -qE` UTAN `-i` — bevisad bypass (§ header). Nu skiftlägesokänsligt.
+nollstall
+skriv_workflow
+lagg_fil "docs/design/upper.html" "<html><body><SCRIPT>alert(1)</SCRIPT></body></html>"
+skriv_policy 'CODEQL_D0_UNDANTAG=""'
+ec="$(kor)"
+report "T15 HTML <SCRIPT> versal tagg, odeklarerad → fäller" 1 "${ec}"
+
+# T16 — HTML med en javascript:-URI, INGEN <script>-tagg och INGET
+# onXxx=-attribut. Review runda 3 fynd 1: helt osynligt för runda 2:s ERE.
+nollstall
+skriv_workflow
+lagg_fil "docs/design/jsuri.html" "<html><body><a href=\"javascript:alert(1)\">x</a></body></html>"
+skriv_policy 'CODEQL_D0_UNDANTAG=""'
+ec="$(kor)"
+report "T16 HTML javascript:-URI, odeklarerad → fäller" 1 "${ec}"
+
+# T17 — HTML med VERSALT ONCLICK=-attribut. Samma case-känslighets-bypass
+# som T15, andra formen (attribut i stället för tagg).
+nollstall
+skriv_workflow
+lagg_fil "docs/design/upperattr.html" "<html><body><button ONCLICK=\"alert(1)\">x</button></body></html>"
+skriv_policy 'CODEQL_D0_UNDANTAG=""'
+ec="$(kor)"
+report "T17 HTML ONCLICK= versalt attribut, odeklarerad → fäller" 1 "${ec}"
+
+# T18 — attribut på EGEN RAD utan eget inledande mellanslag. grep:s
+# rad-för-rad-läsning gjorde detta till en tyst bypass mot runda 2:s
+# version ('onclick="..."' står då först på sin rad, ingen [[:space:]]
+# direkt före "on" INOM den raden). Radbrytnings-plattningen fixar det.
+nollstall
+skriv_workflow
+lagg_fil "docs/design/flerrad.html" $'<html><body><button\nonclick="alert(1)">x</button></body></html>'
+skriv_policy 'CODEQL_D0_UNDANTAG=""'
+ec="$(kor)"
+report "T18 HTML attribut på egen rad utan mellanslag, odeklarerad → fäller" 1 "${ec}"
+
+# T19 — HTML-familjefil som inte går att läsa som giltig text (binär/
+# ogiltig UTF-8, innehåller ett NUL-byte). FAIL-CLOSED (review runda 3
+# fynd 1): grinden kan inte bevisa frånvaro av kod och räknar filen som
+# analyserbar, trots att INGET av HTML_KOD_ERE:s läsbara mönster syns.
+nollstall
+skriv_workflow
+mkdir -p "${TEST_DIR}/docs/design"
+printf '\x00\x01<html><body>brus</body></html>' > "${TEST_DIR}/docs/design/binart.html"
+(cd "${TEST_DIR}" && git add docs/design/binart.html && git commit -q -m "add binart.html")
+skriv_policy 'CODEQL_D0_UNDANTAG=""'
+ec="$(kor)"
+report "T19 binär/ogiltig HTML (fail-closed), odeklarerad → fäller" 1 "${ec}"
+
+# T20 — action.yml UTANFÖR .github/workflows/, under en D0-sökväg,
+# DEKLARERAD. actions-extraktorn (codeql.github.com, GitHub Actions-raden)
+# läser **/action.yml oavsett katalog, inte bara .github/workflows/.
+nollstall
+skriv_workflow
+lagg_fil "docs/reference/mallaktioner/action.yml" $'name: x\nruns:\n  using: composite\n  steps: []\n'
+skriv_policy 'CODEQL_D0_UNDANTAG="
+docs/reference/mallaktioner/action.yml:::Testfixtur — action.yml under D0, deklarerat undantag.
+"'
+ec="$(kor)"
+report "T20 action.yml under D0, deklarerad undantag" 0 "${ec}"
+
+# T21 — samma mönster, alternativ ändelse (.yaml), ODEKLARERAD. Review
+# runda 3 fynd 2: grinden prövade tidigare ALDRIG detta filnamnsmönster —
+# den nionde exceptionens grannmängd var alltid osynlig.
+nollstall
+skriv_workflow
+lagg_fil "docs/reference/mallaktioner/action.yaml" $'name: x\nruns:\n  using: composite\n  steps: []\n'
+skriv_policy 'CODEQL_D0_UNDANTAG=""'
+ec="$(kor)"
+report "T21 action.yaml under D0, odeklarerad → fäller" 1 "${ec}"
+
+# T22 — codeql.yml:s matris bär BARA kända språk (javascript-typescript +
+# actions). Bevisar att den nya matris-vakten inte stör det normala,
+# förväntade fallet.
+nollstall
+{
+    printf 'on:\n  pull_request:\n    paths-ignore:\n'
+    printf '      # paritet:start klassning-codeql-d0\n'
+    printf "      - '**/*.md'\n      - 'docs/**'\n      - 'tasks/**'\n"
+    printf '      # paritet:slut klassning-codeql-d0\n'
+    printf 'jobs:\n  analyze:\n    strategy:\n      matrix:\n        include:\n'
+    printf '          - language: javascript-typescript\n'
+    printf '            build-mode: none\n'
+    printf '          - language: actions\n'
+    printf '            build-mode: none\n'
+} > "${TEST_DIR}/.github/workflows/codeql.yml"
+skriv_policy 'CODEQL_D0_UNDANTAG=""'
+ec="$(kor)"
+report "T22 matrisspråk kända (javascript-typescript+actions) → grönt" 0 "${ec}"
+
+# T23 — codeql.yml:s matris bär ETT språk vakten inte känner ('python').
+# DEN VIKTIGASTE av de nya fallen: exakt det scenario instruktionen
+# efterfrågade ("fäller om språkmatrisen innehåller ett språk tabellen/
+# vakten inte känner") — bevisar att premissen inte kan falla en FJÄRDE
+# gång tyst.
+nollstall
+{
+    printf 'on:\n  pull_request:\n    paths-ignore:\n'
+    printf '      # paritet:start klassning-codeql-d0\n'
+    printf "      - '**/*.md'\n"
+    printf '      # paritet:slut klassning-codeql-d0\n'
+    printf 'jobs:\n  analyze:\n    strategy:\n      matrix:\n        include:\n'
+    printf '          - language: javascript-typescript\n'
+    printf '            build-mode: none\n'
+    printf '          - language: python\n'
+    printf '            build-mode: none\n'
+} > "${TEST_DIR}/.github/workflows/codeql.yml"
+skriv_policy 'CODEQL_D0_UNDANTAG=""'
+ec="$(kor)"
+report "T23 okänt matrisspråk ('python') → anropsfel" 2 "${ec}"
 
 printf '%.0s─' {1..70}; printf '\n'
 printf '  %d gröna, %d röda\n\n' "${pass}" "${fail}"
