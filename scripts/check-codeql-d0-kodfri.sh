@@ -256,10 +256,47 @@ fi
 # Kvar står bara glob-strängen, oavsett ursprungsform. Körd mot codeql.yml:s
 # citerade form ger detta IDENTISKT utfall som den gamla extraktionen (regel
 # 5 ensam återskapar `grep -oE "'[^']+'" | tr -d "'"`).
+#
+# ═══ ÖVERLAPPET — BESLUT, UTTRYCKLIGT (TASK-464.4) ═══
+# En `!`-negerad rad HOPPAS HELT — den appliceras ALDRIG som en exkludering
+# mot de positiva globerna (till skillnad från vad tj-actions/changed-files
+# faktiskt gör vid körtid). Skulle en negations sökväg någon dag FALLA
+# INNANFÖR en positiv globs träd (i dag gör ingen av ci.yml:s nio negationer
+# det — samtliga ligger på repo-roten, aldrig under docs/**, tasks/** eller
+# .claude/**), räknas den filen ÄNDÅ som en träff av `git ls-files` nedan.
+# Det är en SÄKER superset, aldrig en lucka: ci.yml:s VERKLIGA
+# `should_skip_tests` skulle klassa en sådan fil som KOD (negationen gäller
+# där, på riktigt) och köra full svit på den — grinden här blir bara
+# STRÄNGARE än nödvändigt (kräver en deklaration för en fil som aldrig
+# faktiskt hade landat i D0), aldrig SLAPPARE. Tvåsidigt bevis:
+# scripts/test-check-codeql-d0-kodfri.sh T20.
+#
+# ═══ MARKÖRMATCHNINGEN ÄR RADSTARTS-ANKRAD (TASK-464.4) ═══
+# ci.yml:s EGEN `lint`-jobb skickar markörsträngarna en ANDRA gång längre
+# ned i filen, som env-VÄRDEN till detta skripts CODEQL_D0_KODFRI_START_MARK/
+# _SLUT_MARK (`CODEQL_D0_KODFRI_START_MARK='# paritet:start klassning-d0'`
+# m.fl.) — en rad som INNEHÅLLER samma substräng utan att VARA markören. Ett
+# `index($0, s)`-uttryck utan ankring hade träffat BÅDA formerna lika, och
+# fungerade tidigare bara för att den RIKTIGA regionen (i `files: |`-blocket)
+# kommer FÖRE env-raderna i filen — `f && index($0, e) { exit }` avslutar
+# awk vid FÖRSTA träffen, så den andra förekomsten aldrig nås. En framtida
+# omkastad jobbordning (env-raderna FÖRE `files: |`-blocket) hade tyst gett
+# en GARBAGE-region. Matchningen ankras nu vid raden EFTER whitespace-
+# trimning: `index(rad, s) == 1` kräver att markören är radens FÖRSTA
+# tecken, inte bara EN substräng någonstans — en env-tilldelning som
+# `CODEQL_D0_KODFRI_START_MARK='...'` börjar aldrig med `#`, så den kan
+# aldrig matcha ankrat, oavsett var i filen den står. Tvåsidigt bevis:
+# scripts/test-check-codeql-d0-kodfri.sh T21 (den falska formen FÖRE den
+# riktiga regionen i filen — ankrad matchning hittar ändå rätt region;
+# ett oankrat `index()` hade fallit på detta scenario).
 RAW_RADER="$(awk -v s="${START_MARK}" -v e="${SLUT_MARK}" '
-    !f && index($0, s) { f = 1; next }
-    f && index($0, e)  { exit }
-    f                  { print }
+    {
+        rad = $0
+        sub(/^[ \t]+/, "", rad)
+    }
+    !f && index(rad, s) == 1 { f = 1; next }
+    f && index(rad, e) == 1  { exit }
+    f                        { print }
 ' "${WORKFLOW_FIL}")"
 
 GLOB_ARGS=()

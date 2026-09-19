@@ -2,10 +2,10 @@
 #
 # test-check-codeql-d0-kodfri.sh — self-test för check-codeql-d0-kodfri.sh.
 #
-# NITTON FALL (T16–T19 tillagda TASK-471). Grinden är billig att göra grön
-# och det bevisar ingenting; varje fall nedan finns för att bevisa att den
-# FÄLLER när den ska, eller att den vägrar uttala sig när den inte kan läsa
-# det den ska pröva.
+# TJUGOETT FALL (T16–T19 tillagda TASK-471; T20–T21 tillagda TASK-464.4).
+# Grinden är billig att göra grön och det bevisar ingenting; varje fall
+# nedan finns för att bevisa att den FÄLLER när den ska, eller att den
+# vägrar uttala sig när den inte kan läsa det den ska pröva.
 #
 #   T1  analyserbar fil under D0, deklarerad undantag      → 0
 #   T2  analyserbar fil under D0, ODEKLARERAD               → 1
@@ -26,6 +26,8 @@
 #   T17 ci.yml-FORM, SAMMA fixtur, filen deklarerad                → 0
 #   T18 ci.yml-FORM, ren .md under D0 (negationsrader i regionen)  → 0
 #   T19 ci.yml-FORM, NOLL globs (bara "files: |" + negationer)     → 2
+#   T20 negation ÖVERLAPPAR positiv glob → räknas ändå som träff  → 1
+#   T21 markörsubsträng FÖRE riktiga regionen (ankrad matchning)  → 1
 #
 # T3 är det viktigaste fallet av de ursprungliga tio: ett kvarliggande
 # undantag för en fil som inte längre matchar maskerar nästa drift på samma
@@ -79,13 +81,15 @@
 # eller .codeql-d0-kodfri-policy.conf.
 #
 # Användning: bash scripts/test-check-codeql-d0-kodfri.sh
-# Exit 0 om alla nitton passerar, annars 1.
+# Exit 0 om alla tjugoett passerar, annars 1.
 #
 # Källa: TASK-464.2, review runda 1 fynd 1 (warning), review runda 2
 # fynd 1 (warning) + fynd 5 (info), review runda 3 fynd 2 (warning),
 # review runda 4 fynd 1 (warning, förenkling — HTML-innehållsfiltret
 # borttaget). T16–T19: TASK-471 (D0-klassningen är inte kodfri för ci.yml:s
-# egen klassning), AC #1 + #2.
+# egen klassning), AC #1 + #2. T20–T21: TASK-464.4 (orkestrerarens två
+# info-fynd mot #2591 runda 1) — negations-överlappet (T20) och
+# markörsubsträngens andra förekomst (T21), båda tidigare otestade.
 
 set -uo pipefail
 
@@ -183,7 +187,12 @@ kor_ci() {
     )
 }
 
-printf '\ntest-check-codeql-d0-kodfri — nitton fall\n'
+# Talet i denna banner skrivs INTE ut för hand (TASK-464.4 runda 2,
+# review-fynd 2 — bannern sade "nitton fall" i tre veckor efter att T20/T21
+# höjde det till tjugoett; filens eget huvud varnar mot exakt den TASK-106-
+# klassen, ändå glömdes DENNA rad). Det exakta antalet står bara i
+# slutraden ("N gröna, N röda"), som redan räknas dynamiskt.
+printf '\ntest-check-codeql-d0-kodfri\n'
 printf '%.0s─' {1..70}; printf '\n'
 
 # T1 — analyserbar fil, deklarerad.
@@ -382,6 +391,64 @@ nollstall
 skriv_policy 'CODEQL_D0_UNDANTAG=""'
 ec="$(kor_ci)"
 report "T19 ci.yml-FORM: NOLL positiva globs (bara negationer)" 2 "${ec}"
+
+# T20 (TASK-464.4, orkestrerarens info-fynd #1 mot #2591 runda 1) —
+# ÖVERLAPPET: en `!`-negerad rad vars sökväg FALLER INNANFÖR en positiv
+# glob, på en fil med analyserbar ändelse. Radtolkaren (§ Extrahera D0-globs
+# live i check-codeql-d0-kodfri.sh) HOPPAR negerade rader helt i stället för
+# att applicera dem som undantag från de positiva globerna — i dagens
+# VERKLIGA ci.yml är det fail-safe (ingen av de nio negationerna ligger
+# under en D0-katalog), men det var OTESTAT: inget fall bevisade vad som
+# händer när en negation FAKTISKT överlappar. Beslutet, uttryckligt: en
+# överlappad, negerad fil räknas ÄNDÅ som en träff (grinden ignorerar
+# negationen, i stället för att dra bort den) — en SÄKER superset av
+# ci.yml:s verkliga D0-mängd (ci.yml:s egen `should_skip_tests` skulle
+# klassa filen som KOD via negationen och köra full svit på den; grinden
+# här är strängare, aldrig slappare, vilket är rätt riktning för en
+# säkerhetsangränsande vakt). Fixturen: `docs/**` (positiv) + `!docs/x/
+# probe.ts` (negation som överlappar den positiva globen) + filen faktiskt
+# skapad på just den sökvägen.
+nollstall
+{
+    printf 'jobs:\n  changed:\n    steps:\n      - with:\n'
+    printf '          # paritet:start klassning-d0\n'
+    printf '          files: |\n            **/*.md\n            docs/**\n'
+    printf '            !docs/x/probe.ts\n'
+    printf '          # paritet:slut klassning-d0\n'
+} > "${TEST_DIR}/.github/workflows/ci.yml"
+lagg_fil "docs/x/probe.ts"
+skriv_policy 'CODEQL_D0_UNDANTAG=""'
+ec="$(kor_ci)"
+report "T20 negation ÖVERLAPPAR positiv glob → räknas ändå som träff (säker superset)" 1 "${ec}"
+
+# T21 (TASK-464.4, orkestrerarens info-fynd #2 mot #2591 runda 1) —
+# MARKÖRSTRÄNGARNA FÖREKOMMER EN ANDRA GÅNG i ci.yml, som env-VÄRDEN till
+# CODEQL_D0_KODFRI_START_MARK/_SLUT_MARK (rad ~1085–1086 i det RIKTIGA
+# ci.yml). Ett `index($0, s)`-uttryck utan ankring hade träffat den formen
+# lika villigt som den RIKTIGA markören — det fungerade tidigare BARA för
+# att den riktiga regionen alltid stod FÖRE env-raderna i filen. Denna
+# fixtur kastar om ordningen: de FÖRVIRRANDE env-raderna (som INNEHÅLLER
+# markörsubsträngen men inte ÄR markören) står FÖRE den riktiga
+# `files: |`-regionen. Ankrad matchning (§ MARKÖRMATCHNINGEN, check-codeql-
+# d0-kodfri.sh) hittar ändå RÄTT region och fäller på den odeklarerade
+# analyserbara filen; ett oankrat `index()` hade i stället låst fast `f` på
+# den FÖRSTA förvirrande raden och `exit`:at på den ANDRA (ingenting
+# däremellan) — NOLL globs extraherade, exit 2, aldrig den riktiga
+# klassningen.
+nollstall
+{
+    printf "jobs:\n  lint:\n    steps:\n      - env:\n"
+    printf "          CODEQL_D0_KODFRI_START_MARK: '# paritet:start klassning-d0'\n"
+    printf "          CODEQL_D0_KODFRI_SLUT_MARK: '# paritet:slut klassning-d0'\n"
+    printf '  changed:\n    steps:\n      - uses: tj-actions/changed-files@x\n        with:\n'
+    printf '          # paritet:start klassning-d0\n'
+    printf '          files: |\n            **/*.md\n            docs/**\n'
+    printf '          # paritet:slut klassning-d0\n'
+} > "${TEST_DIR}/.github/workflows/ci.yml"
+lagg_fil "docs/backfill/engangs.mjs"
+skriv_policy 'CODEQL_D0_UNDANTAG=""'
+ec="$(kor_ci)"
+report "T21 markörsubsträng FÖRE riktiga regionen (ankrad matchning) → fäller ändå rätt" 1 "${ec}"
 
 printf '%.0s─' {1..70}; printf '\n'
 printf '  %d gröna, %d röda\n\n' "${pass}" "${fail}"

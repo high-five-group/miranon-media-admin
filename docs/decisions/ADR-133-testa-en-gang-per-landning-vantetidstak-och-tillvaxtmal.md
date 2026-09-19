@@ -698,3 +698,38 @@ som bevisar den hermetiska klassen på det landade trädet — S1:s villkor
 ("kö-körningen på exakt `github.sha` KÖRDE sviten grön", aldrig den sista
 PR:ens klassning, tråd `T166`) bär därför hela skyddet och ska vara
 fail-closed.
+
+### 2026-09-19 — S1 byggd: SHA-identitet i stället för trädjämförelse (`TASK-464.4`)
+
+`TASK-464.4` byggde § Kontexts S1/S1b — huvudgrenen kör inte längre om
+en svit kön redan körde och bevisade grön. Mekanism:
+`scripts/dedup-huvudgren.sh`, anropad av `ci.yml`:s `changed`-jobb på
+`push`-ytan, frågar SHA-identitet mot en grön `merge_group`-körning DÄR
+"Test suite" faktiskt körde. Fällan hålls, kontrastparsbevisad: `e845dfab`
+(docs-landning, sviten HOPPAD i en ändå grön kö-körning) →
+`dedup_hit=false`; `6eef96de` (kod-landning, sviten KÖRDE) →
+`dedup_hit=true` — "kö-körningen är grön" räcker alltså aldrig ensamt.
+
+Grupplandningar är BELAGDA, inte antagna: `ALLGREEN`-strategins
+kumulativa byggnad (verifierad mot GitHubs egen dokumentation) plus
+SAMMA grupplandning som beslut 6:s rättade skäl ovan citerar
+(`811cece3`, `#2588`+`#2596`) visar att `github.sha`s EGEN
+`merge_group`-körning (`35448948271`, byggd ovanpå `#2588`s
+gruppcommit) täcker hela batchen — `dedup-huvudgren.sh` gav
+`dedup_hit=true` på exakt den SHA:n, ingen separat BEFORE-spannvandring
+behövdes. Eftersom push-ytan efter S1 inte längre kör om sviten
+oberoende är kön den ENDA ytan som bevisar den hermetiska klassen på
+det landade trädet (samma slutsats beslut 6:s § Updates ovan drar) —
+S1:s villkor bär därför hela det skyddet och måste vara fail-closed:
+`scripts/dedup-huvudgren.sh` faller till `dedup_hit=false` på varje
+osäkerhet (API-fel, noll träffar, flera träffar, kö-bas-mismatch, eller
+en signal utan positivt belägg — se skriptets eget filhuvud och
+`scripts/lib/svit-signal.sh`), aldrig på "den sista PR:ens klassning"
+(T166-felklassen). Full analys: `scripts/dedup-huvudgren.sh`:s eget
+filhuvud. `ADR-077` § Updates (2026-09-19) bär motsvarande rättelse av
+§ Beslut 2:s nu-historiska mekanismbeskrivning.
+
+**Kolumnen "Efter S1+S2+S3" i § Kostnad i två mått är fortfarande en
+PROJEKTION för S2/S3 (obyggda).** Denna ADR:s egna talintervall
+(≈ 44 000–51 000 min/mån) omprövas i sin helhet av `TASK-464.12`, inte
+skiva för skiva — S1/S1b:s isolerade bidrag är inte ommätt separat här.

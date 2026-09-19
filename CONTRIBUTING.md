@@ -684,11 +684,16 @@ och är tyst farlig: den lyckas ibland utan att ta bort någonting (uppmätt i
 Flaggan behövs för att **varje** landning här blir en merge-commit. Rulesetet
 `main-skydd` tillåter exakt en merge-metod, `allowed_merge_methods: ["merge"]`
 ([ADR-076](docs/decisions/ADR-076-merge-grinden-ruleset-pr-flode.md) beslut 6) —
-squash och rebase är avstängda, eftersom merge-dedupen letar PR-trädet via
-merge-commitens andra förälder (`HEAD^2`). Ett revert-recept skrivet för
-squash-landningar är därför fel recept för detta repo. Ändras metoden någon gång
-faller `-m 1`-kravet med den; verifiera inställningen i stället för att lita på
-raden:
+squash och rebase är avstängda av TVÅ skäl som fortfarande gäller, ETT rättat
+(TASK-464.4/SE1, 2026-09-19): `git revert -m 1` (ovan) kräver en riktig
+merge-commit, och `scripts/classify-post-merge.sh`:s reservväg (VÄG B) letar
+fortfarande PR-trädet via merge-commitens andra förälder (`HEAD^2`).
+Huvudgrenens EGEN merge-dedup (`scripts/dedup-huvudgren.sh`) bytte däremot
+2026-09-19 till SHA-identitet mot kön och behöver inte längre `HEAD^2` — den
+raden är historisk, inte en tredje pågående motivering. Ett revert-recept
+skrivet för squash-landningar är därför fel recept för detta repo av de två
+kvarvarande skälen. Ändras metoden någon gång faller `-m 1`-kravet med den;
+verifiera inställningen i stället för att lita på raden:
 
 ```bash
 gh api repos/high-five-group/miranon-media-admin/rulesets/19627609

@@ -302,3 +302,32 @@ bytt till senaste FAKTISKT avslutade körning) är en öppen, deferrad
 implementation, `TASK-464.14` — se `ADR-133` § Besluten 6 för den fulla
 motiveringen och den öppet flaggade avsaknaden av branschprecedent för
 just den kombinationen.
+
+### 2026-09-19 — § Beslut 2:s MEKANISM byggd om till SHA-identitet (TASK-464.4/SE1)
+
+**Vad som ändras.** § Beslut 2 ovan beskriver merge-dedupen som en
+TRÄD-jämförelse (merge-commitens träd mot PR-headens träd via `HEAD^2`)
+plus en fråga till körnings-API:t om PR-headens SHA. Den beskrivningen
+är historisk för `ci.yml`:s EGEN dedup-mekanism (`changed`-jobbets
+`dedup`-steg): `docs/research/actions-minutbudget-2026-09-18.md` § S1
+mätte att den ALDRIG träffade i praktiken (samtliga kodklassade
+huvudgrenskörningar körde hela sviten i mätfönstret — huvudgrenen med
+>40 landningar/dygn stod aldrig still sedan PR-headen skrevs). Steget
+byggdes om i `TASK-464.4` (`scripts/dedup-huvudgren.sh`) till att fråga
+SHA-IDENTITET mot kön i stället: har det landade SHA:t en grön
+`merge_group`-körning av `ci.yml` DÄR "Test suite" faktiskt körde? Ingen
+träd-jämförelse görs längre av DENNA mekanism — kön skapar
+merge-commiten i förväg och flyttar `main` dit vid grönt (ingen ny
+commit mintas), så identiteten är gratis.
+
+**Vad som INTE ändras.** `scripts/classify-post-merge.sh`:s egen VÄG B
+(post-merge-lagrets docs_only-klassning, TASK-73) använder FORTFARANDE
+`HEAD^2`-trädjämförelsen § Beslut 2 beskriver — det är en ANNAN
+mekanism med en ANNAN fråga ("skippade PR-grinden hela sviten?"), och
+den är orörd av detta kort. § Beslut 2:s text ovan står kvar oredigerad
+(samma disciplin som `2026-09-18`-rättelsen ovan) — den beskriver
+korrekt vad `classify-post-merge.sh` VÄG B fortfarande gör, men inte
+längre vad `ci.yml`:s egna dedup-steg gör. Full mekanik, den skarpa
+kontrastparsmätningen och gruppland­nings-analysen:
+`scripts/dedup-huvudgren.sh`:s eget filhuvud · `ADR-133` § Kostnad i två
+mått (S1/S1b).
