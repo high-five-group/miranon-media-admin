@@ -51,19 +51,26 @@
 > **Ordförklaringar, i vardagsspråk — termerna används genomgående i
 > resten av dokumentet.** Ett **förslag** (engelska "pull request",
 > förkortat **PR**) är en föreslagen kodändring som väntar på att testas
-> och infogas. **Kön** ("merge queue") är GitHubs mekanism som testar och
-> landar förslag i tur och ordning, ett i taget, mot den senaste versionen
-> — så att inget förslag landar förrän det bevisligen fungerar TILLSAMMANS
-> med det som redan landat före det. **Huvudgrenen** (`main`) är den
-> version av koden som faktiskt är i drift. **Efterkontrollen**
-> (`post-merge.yml`) är ett extra test som körs EFTER att ändringen redan
-> landat på huvudgrenen — en sista koll att allt fortfarande håller.
-> **Skärvning** betyder att ett stort, tidsödande test delas upp i flera
-> mindre delar som körs parallellt — väggklockan (väntetiden) krymper,
-> men varje del betalar sin egen minut (se nedan), så notan växer. En
-> **fakturerad minut** är GitHubs minsta debiteringsenhet: varje körning
-> avrundas alltid uppåt till en hel minut, även om den bara tog några
-> sekunder.
+> och infogas. **Kön** ("merge queue") är GitHubs mekanism som testar
+> varje förslag TILLSAMMANS med de förslag som redan står före det i
+> kön (flera förslag testas samtidigt — repots kö tillåter tre parallellt),
+> men släpper bara in dem i huvudgrenen EN ÅT GÅNGEN, i tur och ordning,
+> och först när det egna testet är grönt (mekaniken i detalj: `CLAUDE.md`
+> § Review-grinden, "Kö-antagandet som bär grinden"). **Huvudgrenen**
+> (`main`) är den gemensamma, godkända versionen av koden — webbappen i
+> drift följer den (via Vercel), medan serverfunktionerna (Edge Functions
+> hos Supabase) deployas i ett EGET, separat steg och kan ligga efter
+> (`CLAUDE.md` § Prod-EF-deploy). **Efterkontrollen** (`post-merge.yml`)
+> är ett extra test som körs EFTER att ändringen redan landat på
+> huvudgrenen — en sista koll att allt fortfarande håller. **Skärvning**
+> betyder att ett stort, tidsödande test delas upp i flera mindre JOBB
+> som körs parallellt — väggklockan (väntetiden) krymper, men varje jobb
+> betalar sin egen minut (se nedan), så fler jobb ur samma test höjer
+> notan. En **fakturerad minut** är GitHubs minsta debiteringsenhet:
+> varje JOBB (en enskild körning består av flera jobb) avrundas alltid
+> uppåt till en hel minut, även om det bara tog några sekunder — därför
+> gör fler, mindre jobb (skärvning) notan dyrare även när väggklockan
+> blir kortare.
 
 Marcus, 2026-09-19, ledstjärnan för allt CI-arbete framåt
 (`tasks/sessions/2026-09-17-session-126.md` Del 11):
@@ -228,12 +235,30 @@ medvetet designval utan att skälet till det försvunnit.
 **Beslut:** förslagsytan (PR) kör lint, typkontroll, bygge och de snabba
 testerna. Hela `Acceptance`-klassen och det tvåsidiga hermetikbeviset
 körs BARA i kön, där de bevisar exakt det träd som landar. Bygg-agenten
-kör ett berört urval lokalt före push (`scripts/acceptance-urval.sh`,
-redan byggd — en rad i bygg-agentens kontrakt, ingen ny CI-mekanik).
-**Snubbeltråd:** överstiger kö-fällningar (PR:er som faller i kön efter
-att ha varit gröna på förslaget) ≈ 5 procent av landningarna en månad,
-tas ett etikett-utlöst alternativ upp — en PR kan då märkas för att köra
-den fulla sviten redan på förslaget. Marcus: *"B (din rek)."*
+SKA köra ett berört urval lokalt före push — en ny rad i bygg-agentens
+kontrakt, tillagd av `TASK-464.5`. **Snubbeltråd:** överstiger
+kö-fällningar (PR:er som faller i kön efter att ha varit gröna på
+förslaget) ≈ 5 procent av landningarna en månad, tas ett etikett-utlöst
+alternativ upp — en PR kan då märkas för att köra den fulla sviten
+redan på förslaget. Marcus: *"B (din rek)."*
+
+**Nuläge, hållet isär från beslutet ovan.** Mekaniken
+(`scripts/acceptance-urval.sh`) finns redan i repot, men körs I DAG av
+`ci.yml`:s `acceptance-urval`-steg i `changed`-jobbet — det vill säga
+EFTER push, som en CI-mekanik, inte lokalt av bygg-agenten
+(`CONTRIBUTING.md` § "Urvalet i PR-grinden (`TASK-75`)"). Ingen rad om
+urvalet finns i dag i bygg-agentens kontrakt (`grep -n -i
+"acceptance-urval" .claude/agents/bygg-agent.md` ⇒ noll träffar). Att
+skriptet går att köra lokalt i en agents arbetsträd är INTE prövat —
+det prövas i `TASK-464.5`, som lägger till kontraktsraden.
+
+**Källnot.** Del 17:s egen formulering av detta beslut i grillningen
+beskrev skriptet som *"redan byggd — en rad i bygg-agentens kontrakt,
+ingen ny CI-mekanik"* — en sammanblandning av BESLUT (bygg-agenten SKA
+köra urvalet lokalt) och NULÄGE (skriptet körs redan, men av CI, inte
+lokalt). Denna ADR är den rättade formen på denna punkt;
+sessionsdoket självt rättas inte i efterhand (samma disciplin som
+§ Kostnad i två mått redan tillämpar på en annan källdivergens).
 
 **Skäl.** Detta är kärnan i "testa en gång per landning": den tunga,
 hermetiska sviten flyttar från FYRA körningar (förslag, kö, huvudgren,
