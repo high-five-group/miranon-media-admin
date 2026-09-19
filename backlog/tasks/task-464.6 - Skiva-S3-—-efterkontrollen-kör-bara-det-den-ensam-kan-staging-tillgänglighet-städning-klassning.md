@@ -3,10 +3,10 @@ id: TASK-464.6
 title: >-
   Skiva: S3 — efterkontrollen kör bara det den ensam kan (staging,
   tillgänglighet, städning, klassning)
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-19 10:48'
-updated_date: '2026-09-19 14:35'
+updated_date: '2026-09-19 16:36'
 labels:
   - ready-for-agent
 dependencies:
@@ -37,3 +37,15 @@ Post-merge kör i dag hela den hermetiska sviten en FJÄRDE gång plus 'Staging 
 - [x] #4 PR-kroppen bär sektionen 'Kostnad i två mått': VÄNTETID och FAKTURERADE MINUTER sida vid sida, mätta körningar med run-ID, enheter utskrivna, månadseffekt vid 1 279 landningar
 - [x] #5 Inget nytt JOBB där ett steg i ett befintligt jobb räcker (varje jobb avrundas upp till hel minut, gånger ytorna)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+RÄTTELSE AV KORTETS EGEN BESKRIVNING (S126, 2026-09-19): meningen 'efterkontrollen är enda ytan som kör på det faktiskt landade trädet efter en gruppmerge' är FALSK och står kvar ovan endast som historik. Mätt mot grupplandningen 811cece3 (#2588 + #2596): kö-körningen 35448948271 och push-körningen 35449264286 körde båda hela sviten grön på exakt den landade SHA:n — kön ser gruppinteraktionen. Felet var orkestrerarens formulering vid nedbrytningen; rättat i post-merge.yml:s filhuvud, CONTRIBUTING § Post-merge-lagret (denna PR) och ADR-133 beslut 6 + § Updates (#2600). Fynd ur PR #2597 review runda 1 (risk hög) och runda 2.
+<!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landad som PR #2597 → 51d5d762 (2026-09-19 16:17Z). Två rundor: r1 risk HÖG på en falsk premiss i motiveringen (koden rätt, alla AC höll); Marcus: 'Vi kör på dina rekommendationer' → texten rättad, r2 risk medel, armerad på Marcus mandat ('anser du att det är GO så är det GO'). Mekanik: ny workflow_call-input run_hermetic_suite (default true) i ci-suite.yml; post-merge.yml skickar false; ci.yml och nightly.yml oförändrade. FÖRSTA SKARPA EFTERKONTROLLEN (35454478001 på 51d5d762): success — klassning 8 s, sentinel-städning 64 s + 24 s, a11y 172 s, Staging (API + E2E) 961 s, exponeringsfönster 4 s; Pure + Build, Acceptance ×3, tvåsidigt bevis ×3, täckning och Webblasarbeteende skipped. Fakturerat ≈ 25 min (varje jobb avrundat uppåt: 1+2+3+17+1+1) mot 57 före (#2556, 35432195230) och 24 i provkörningen (35448234177). Kvar för TASK-464.5: ci.yml:s SKYDDSNÄTET-kommentar (AC #9 där).
+<!-- SECTION:FINAL_SUMMARY:END -->
