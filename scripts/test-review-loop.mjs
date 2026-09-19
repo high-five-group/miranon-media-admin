@@ -765,6 +765,22 @@ test('E19 --policy-fil flaggas SYNLIGT som svagare läge än trusted ref', () =>
   assert.match(JSON.parse(r.stdout).policyKalla, /SVAGARE LÄGE/);
 });
 
+// TASK-464.7: appendMetrikRad måste ge en LEDANDE radbrytning när
+// instrumenteringsloggen redan finns men INTE slutar på `\n` — annars
+// klistras den nya raden ihop med den befintliga sista raden till en enda
+// ogiltig JSONL-rad (`{...}{...}`), oberoende av `.gitattributes`/
+// `merge=union` (felet uppstår vid SKRIVNING, före en eventuell merge).
+test('E20 append till en logg UTAN avslutande radbrytning ger två giltiga JSON-rader, inte en hopklistrad', () => {
+  writeFileSync(METRIK_TMP, '{"korning":"forkommande-utan-radbrytning"}'); // ingen \n
+  const r = korCli([skrivUtlatande('e20.json'), '--policy-fil', LOKAL_POLICY]);
+  assert.equal(r.status, 0);
+  const rader = readFileSync(METRIK_TMP, 'utf8')
+    .split('\n')
+    .filter((rad) => rad.length > 0);
+  assert.equal(rader.length, 2, `förväntade 2 rader, fick: ${JSON.stringify(rader)}`);
+  for (const rad of rader) assert.doesNotThrow(() => JSON.parse(rad));
+});
+
 /* ════════════════════════════════════════════════════════════════════
    F. Trusted ref — policyn läses ur den COMMITTADE origin/main-versionen,
       aldrig ur arbetsträdet (ADR-105 beslut 7).

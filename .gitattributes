@@ -1,0 +1,25 @@
+# .gitattributes — TASK-464.7 (ADR-133 § Besluten 5, ADR-097 § Updates
+# 2026-09-19 "landnings-buntning").
+#
+# review-instrumentering.jsonl är en append-only logg: två parallella
+# sessioner (S126/S127/S128, 2026-09-19) appendar rader till samma fil och
+# krockar i git:s DEFAULT tredjeparts-merge om båda appendar i samma
+# landningsfönster — bevisat lokalt (ren CONFLICT, ingen union-driver):
+# se PR-kroppen § "Kostnad i två mått"/tvågrens-testet för TASK-464.7.
+# `merge=union` är en INBYGGD git-merge-driver (kräver ingen
+# `.git/config`-registrering — `man gitattributes` § "union": "Run 3-way
+# file level merge for text files, but take lines from both versions,
+# instead of leaving conflict markers.") och löser EXAKT detta: två
+# appendar mergar rent utan konfliktmarkörer.
+#
+# GÄLLER ENDAST LOKALA git-operationer (merge/rebase i en arbetsträd-klon).
+# GitHub respekterar INTE `.gitattributes`-merge-drivrutiner i sin
+# SERVER-SIDIGA merge (PR-merge-knappen, merge-kön) — GitHub support,
+# citerat i github/community-diskussion #9288 (2021, oemotsagd fram till
+# 2026): "GitHub doesn't consider user-defined .gitattributes files
+# (normally, we use our own .gitattrbutes file which you can't change)."
+# En krock som uppstår FÖRST i kön (två köade PR:er som båda rör denna fil)
+# löses alltså INTE av detta attribut — bara en lokal rebase/merge FÖRE
+# push gör det. Se PR-kroppen för TASK-464.7 för fullständig källa och
+# konsekvens.
+docs/reference/review-instrumentering.jsonl merge=union
