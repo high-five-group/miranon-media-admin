@@ -137,15 +137,20 @@
 # 2026-07-28. Utfallet var binärt utan undantag — 13 körningar hade exakt ETT
 # jobb `Test suite` (conclusion `skipped`) och NOLL inner-jobb; 7 hade NOLL
 # `Test suite` och FEM inner-jobb. Aldrig blandat, aldrig `Test suite` med
-# annan conclusion än `skipped`.
+# annan conclusion än `skipped`. Läsningen bor sedan TASK-464.4/SE1 i
+# scripts/lib/svit-signal.sh (las_svit_signal) — delad med scripts/dedup-
+# huvudgren.sh, som läser SAMMA signal om `merge_group`-ytan för en annan
+# fråga (dedup_hit). Empirin ovan gäller läsningen, oberoende av vem som ropar.
 #
 # EVENT-FILTRET ÄR INTE KOSMETIK — OCH DET GÄLLER BÅDA VÄGARNA. Ekvivalensen
 # `Test suite skipped` ⇔ `should_skip_tests` ⇔ D0 håller EXAKT bara när
 # merge-dedupen inte kan ha släckt jobbet av ett annat skäl. Dedup-steget
-# (ci.yml, jobbet `changed`) är grindat av `if [ "${EVENT_NAME}" = "push" ]`
-# (ci.yml rad 419) och skriver annars ut "Dedup ej tillämplig … → full svit"
-# (rad 441). `dedup_hit` är därför strukturellt false på BÅDE `pull_request` och
-# `merge_group` — läst i källan, inte antaget.
+# (scripts/dedup-huvudgren.sh sedan TASK-464.4/SE1, anropat av ci.yml:s
+# `changed`-jobb) är grindat av `if [ "${EVENT_NAME}" = "push" ]` och skriver
+# annars ut "Dedup ej tillämplig … → full svit" — samma villkor, nu i ett
+# eget skript i stället för inline `run:`-rader, ett filnamn drifar inte som
+# ett radnummer gör. `dedup_hit` är därför strukturellt false på BÅDE
+# `pull_request` och `merge_group` — läst i källan, inte antaget.
 #
 # Det stänger den enda invändning TASK-78 reste mot VÄG A ("kö-körningen kan ha
 # skippats av dedup"): den kan den inte. Kö-ytan bär samma exakta ekvivalens som
@@ -231,12 +236,20 @@
 
 set -uo pipefail
 
-# ci.yml:s `suite`-jobbs `name:`. Detta är skriptets ENDA koppling till ci.yml,
-# och den är mekaniskt grindad — scripts/test-classify-post-merge.sh T9 hävdar
-# att strängen fortfarande är ci.yml:s faktiska jobbnamn. Byts namnet utan att
-# grinden uppdateras fäller testsviten i lint-jobbet; skulle den ändå passera är
-# utfallet fail-closed (jobbet hittas inte ⇒ full svit).
-CI_SUITE_JOB_NAME="Test suite"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=scripts/lib/ci-suite-job-name.sh
+source "${SCRIPT_DIR}/lib/ci-suite-job-name.sh"
+# shellcheck source=scripts/lib/svit-signal.sh
+source "${SCRIPT_DIR}/lib/svit-signal.sh"
+
+# ci.yml:s `suite`-jobbs `name:` (CI_SUITE_JOB_NAME, definierad i den delade
+# scripts/lib/ci-suite-job-name.sh sedan TASK-464.4/SE1 — scripts/dedup-
+# huvudgren.sh sourcear SAMMA fil, i stället för att skriva strängen på nytt).
+# Kopplingen till ci.yml är mekaniskt grindad — scripts/test-classify-post-
+# merge.sh T13a hävdar att värdet fortfarande är ci.yml:s faktiska jobbnamn.
+# Byts namnet utan att grinden uppdateras fäller testsviten i lint-jobbet;
+# skulle den ändå passera är utfallet fail-closed (jobbet hittas inte ⇒ full
+# svit).
 CI_WORKFLOW="ci.yml"
 
 # N3 (TASK-450.2): hur många första-förälder-hopp som accepteras mellan
@@ -375,24 +388,27 @@ pr_head=$(jq -r '.parents[1]' <<<"${commit_json}")
 
 # --- Delad ärvning: läs `Test suite` ur en körning och avgör -----------------
 # Identisk för båda vägarna — signalen är densamma, bara källan skiljer.
+# Läsningen SJÄLV bor sedan TASK-464.4/SE1 i scripts/lib/svit-signal.sh
+# (las_svit_signal, sourcad ovan) — delad med scripts/dedup-huvudgren.sh, som
+# ställer en ANNAN fråga (dedup_hit) om samma rådata. Denna funktion äger bara
+# TOLKNINGEN av signalen för docs_only-klassningen, plus emit-anropet.
 # Returnerar aldrig: varje gren slutar i `emit`, som gör exit 0.
 arv_ur_korning() {
     local run_id="$1" kalla="$2"
-    local jobs_failed="" suite_concl
+    local signal
 
-    suite_concl=$(gh run view "${run_id}" --repo "${REPO}" --json jobs \
-        --jq "[.jobs[] | select(.name == \"${CI_SUITE_JOB_NAME}\")][0].conclusion // \"\"") || jobs_failed="1"
+    signal=$(las_svit_signal "${run_id}")
 
-    if [[ -n "${jobs_failed}" ]]; then
+    if [[ "${signal}" == "API_FEL" ]]; then
         skal="jobblistan för ${kalla}-körning ${run_id} kunde inte läsas (full svit, fail-closed)."
         emit
     fi
-    if [[ -z "${suite_concl}" ]]; then
+    if [[ "${signal}" == "RUN" ]]; then
         skal="'${CI_SUITE_JOB_NAME}' saknas som eget jobb i ${kalla}-körning ${run_id} ⇒ ci.yml KÖRDE sviten på detta träd (full svit)."
         emit
     fi
-    if [[ "${suite_concl}" != "skipped" ]]; then
-        skal="'${CI_SUITE_JOB_NAME}' har conclusion '${suite_concl}' i ${kalla}-körning ${run_id}, väntat 'skipped' — oväntad form (full svit, fail-closed)."
+    if [[ "${signal}" != "SKIPPED:skipped" ]]; then
+        skal="'${CI_SUITE_JOB_NAME}' har conclusion '${signal#SKIPPED:}' i ${kalla}-körning ${run_id}, väntat 'skipped' — oväntad form (full svit, fail-closed)."
         emit
     fi
 

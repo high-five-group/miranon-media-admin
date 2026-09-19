@@ -112,9 +112,14 @@ trap cleanup EXIT
 
 setup() {
     rm -rf "${TEST_DIR}"
-    mkdir -p "${TEST_DIR}/bin"
+    mkdir -p "${TEST_DIR}/bin" "${TEST_DIR}/lib"
     cp "${GATE_SRC}" "${TEST_DIR}/classify.sh"
     chmod +x "${TEST_DIR}/classify.sh"
+    # TASK-464.4/SE1: classify-post-merge.sh sourcear två delade libs
+    # (CI_SUITE_JOB_NAME + las_svit_signal) relativt sin egen SCRIPT_DIR —
+    # sandboxen måste bära dem på samma relativa plats som riktiga scripts/.
+    cp "${REPO_ROOT}/scripts/lib/ci-suite-job-name.sh" "${TEST_DIR}/lib/"
+    cp "${REPO_ROOT}/scripts/lib/svit-signal.sh" "${TEST_DIR}/lib/"
 
     # gh-stub. Scenariot styrs av miljövariabler:
     #   GH_COMMIT_MERGE_JSON  API-svar för merge-SHA:t (aaaa…)
@@ -531,12 +536,16 @@ fi
 echo "── T13: kopplingen till ci.yml ──"
 CI_YML="${REPO_ROOT}/.github/workflows/ci.yml"
 POST_MERGE_YML="${REPO_ROOT}/.github/workflows/post-merge.yml"
+# TASK-464.4/SE1: konstanten flyttade till en delad lib (scripts/lib/ci-suite-
+# job-name.sh, sourcad av GATE_SRC OCH scripts/dedup-huvudgren.sh) — läs den
+# DÄR, inte längre ur GATE_SRC självt.
+CI_SUITE_JOB_NAME_LIB="${REPO_ROOT}/scripts/lib/ci-suite-job-name.sh"
 
-skript_namn=$(sed -n 's/^CI_SUITE_JOB_NAME="\(.*\)"$/\1/p' "${GATE_SRC}" | head -1)
+skript_namn=$(sed -n 's/^CI_SUITE_JOB_NAME="\(.*\)"$/\1/p' "${CI_SUITE_JOB_NAME_LIB}" | head -1)
 ci_namn=$(awk '/^  suite:/{f=1;next} f&&/^    name: /{sub(/^    name: /,"");print;exit}' "${CI_YML}")
 
 if [[ -z "${skript_namn}" ]]; then
-    fel "T13a kunde inte läsa CI_SUITE_JOB_NAME ur ${GATE_SRC}"
+    fel "T13a kunde inte läsa CI_SUITE_JOB_NAME ur ${CI_SUITE_JOB_NAME_LIB}"
 elif [[ -z "${ci_namn}" ]]; then
     fel "T13a kunde inte läsa suite-jobbets name: ur ci.yml"
 elif [[ "${skript_namn}" == "${ci_namn}" ]]; then

@@ -698,3 +698,25 @@ som bevisar den hermetiska klassen på det landade trädet — S1:s villkor
 ("kö-körningen på exakt `github.sha` KÖRDE sviten grön", aldrig den sista
 PR:ens klassning, tråd `T166`) bär därför hela skyddet och ska vara
 fail-closed.
+
+### 2026-09-19 — S1 byggd: SHA-identitet i stället för trädjämförelse (`TASK-464.4`)
+
+`TASK-464.4` byggde § Kontexts S1/S1b — huvudgrenen kör inte längre om
+en svit kön redan körde och bevisade grön. Mekanism:
+`scripts/dedup-huvudgren.sh`, anropad av `ci.yml`:s `changed`-jobb på
+`push`-ytan, frågar SHA-identitet mot en grön `merge_group`-körning DÄR
+"Test suite" faktiskt körde (inte bara "körningen är grön" — samma
+fälla § Kontext redan namnger). Grupplandningar är BELAGDA, inte
+antagna: `ALLGREEN`-strategins kumulativa byggnad (verifierad mot
+GitHubs egen dokumentation) plus en skarp kontrastparsmätning samma dag
+(`e845dfab` → `dedup_hit=false`, docs-landning med sviten hoppad i
+kön; `6eef96de` → `dedup_hit=true`, kod-landning där sviten kördes)
+visar att SHA-identitet ensam täcker batchen, utan en separat
+BEFORE-spannvandring. Full analys: `scripts/dedup-huvudgren.sh`:s eget
+filhuvud. `ADR-077` § Updates (2026-09-19) bär motsvarande rättelse av
+§ Beslut 2:s nu-historiska mekanismbeskrivning.
+
+**Kolumnen "Efter S1+S2+S3" i § Kostnad i två mått är fortfarande en
+PROJEKTION för S2/S3 (obyggda).** Denna ADR:s egna talintervall
+(≈ 44 000–51 000 min/mån) omprövas i sin helhet av `TASK-464.12`, inte
+skiva för skiva — S1/S1b:s isolerade bidrag är inte ommätt separat här.

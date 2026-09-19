@@ -702,57 +702,38 @@ jobs:
           urval=$(bash scripts/acceptance-urval.sh "${OVRIGA_ANDRADE}")
           echo "acceptance_urval=${urval}" >> "${GITHUB_OUTPUT}"
 
-      - name: Merge-dedup — hoppa tungt om trädet redan bevisats grönt
+      - name: Merge-dedup — hoppa tungt om SHA:t redan bevisats i kön
         id: dedup
-        # task-36.4 / ADR-077. Innehållsadresserad dedup UTAN ny lagringsyta:
-        # på en main-push (merge-commit) läses andra föräldern (den mergade
-        # PR-headen), och de tunga jobben hoppas ENDAST om merge-commitens träd
-        # är identiskt med PR-headens träd OCH den SHA:n redan har en grön
-        # CI-run. Sundheten vilar på att STEGET SJÄLVT är fail-closed på varje
-        # avvikelse (se raden nedan) — INTE på merge-grindens strict
-        # up-to-date-krav som denna kommentar tidigare påstod: det kravet
-        # (ADR-076) stängdes av 2026-08-05 och premissen var falsifierad i
-        # sex veckor. Rättat 2026-09-18, se ADR-077 § Updates.
+        # task-36.4 / ADR-077 § Beslut 2, BYTT (TASK-464.4/SE1, 2026-09-19,
+        # ADR-133 § Kostnad i två mått S1/S1b). Frågan var TRÄD-LIKHET
+        # (merge-commitens träd == PR-headens träd) — MÄTT verkningslös
+        # (`docs/research/actions-minutbudget-2026-09-18.md` § S1: samtliga
+        # kodklassade huvudgrenskörningar körde hela sviten i mätfönstret,
+        # eftersom huvudgrenen med >40 landningar/dygn aldrig stått still
+        # sedan PR-headen skrevs). Frågan är nu SHA-IDENTITET mot kön: har
+        # DETTA SHA en grön merge_group-körning av ci.yml DÄR "Test suite"
+        # FAKTISKT KÖRDE (inte bara "körningen är grön" — 68 % av
+        # kö-körningarna är gröna MED sviten hoppad, samma källa § S1/S1b)?
+        # Kön skapar merge-commiten i förväg och flyttar main dit vid grönt
+        # (ingen ny commit mintas) — identiteten är gratis, ingen jämförelse
+        # behövs. Full mekanik, gruppland­nings-analysen och den skarpa
+        # kontrastparsmätningen (`e845dfab`→false, `6eef96de`→true, samma
+        # dag): scripts/dedup-huvudgren.sh:s eget filhuvud.
         #
-        # ASYMMETRIN ÄR MEDVETEN: nyckeln ÄR trädet självt, så dedupen kan bara
-        # orsaka onödig körning, aldrig släppa förbi otestat. FAIL-CLOSED på
-        # VARJE avvikelse — ingen andra förälder, träd-avvikelse, API-fel eller
-        # icke-grön run ⇒ dedup_hit=false ⇒ full svit. Full SHA mot API:t (L314;
-        # förkortad SHA ger noll träffar). Bor i changed-jobbet som redan har
-        # fetch-depth: 0 → fetch-depth-invarianten (ADR-039/054) ORÖRD.
-        # Logiken unit-testad lokalt mot 6 grenar (1 hit + 5 fail-closed) före
-        # bygget. Cache-formen är FALSIFIERAD och byggs aldrig (L325).
+        # ASYMMETRIN ÄR FORTFARANDE MEDVETEN: nyckeln är SHA:t självt, så
+        # dedupen kan bara orsaka onödig körning, aldrig släppa förbi
+        # otestat — varje osäkerhet (API-fel, ingen träff, flera träffar)
+        # ⇒ dedup_hit=false ⇒ full svit (fail-closed). Bor i changed-jobbet
+        # som redan har fetch-depth: 0, men skriptet självt gör inga lokala
+        # git-operationer längre → fetch-depth-invarianten (ADR-039/054)
+        # ORÖRD, bara nu av ett annat skäl (jobbet behåller invarianten,
+        # detta steg konsumerar den inte).
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
           EVENT_NAME: ${{ github.event_name }}
-        run: |
-          set -euo pipefail
-          dedup_hit=false
-          if [ "${EVENT_NAME}" = "push" ]; then
-            if head2=$(git rev-parse --verify HEAD^2 2>/dev/null); then
-              tree_head=$(git rev-parse 'HEAD^{tree}')
-              tree_head2=$(git rev-parse "${head2}^{tree}")
-              if [ "${tree_head}" = "${tree_head2}" ]; then
-                conc=$(gh run list --commit "${head2}" --workflow ci.yml \
-                  --json conclusion,status \
-                  --jq '[.[] | select(.status == "completed")][0].conclusion // ""' \
-                  2>/dev/null || echo "APIERR")
-                if [ "${conc}" = "success" ]; then
-                  dedup_hit=true
-                  echo "✅ Dedup-TRÄFF: träd == ${head2:0:12}^{tree} och den SHA:n har grön CI-run → tunga jobb hoppas."
-                else
-                  echo "Dedup-miss: PR-head-run conclusion='${conc}' ej success → full svit (fail-closed)."
-                fi
-              else
-                echo "Dedup-miss: träd-avvikelse (${tree_head:0:12} != ${tree_head2:0:12}) → full svit (fail-closed)."
-              fi
-            else
-              echo "Dedup-miss: ingen andra förälder (ej merge-commit) → full svit (fail-closed)."
-            fi
-          else
-            echo "Dedup ej tillämplig (event=${EVENT_NAME}, ej push) → full svit."
-          fi
-          echo "dedup_hit=${dedup_hit}" >> "${GITHUB_OUTPUT}"
+          SHA: ${{ github.sha }}
+        run: bash scripts/dedup-huvudgren.sh "${SHA}"
 
   # Job 2: Kod-villkorat lint + typecheck (S4, TASK-464.1).
   #
@@ -2049,6 +2030,26 @@ jobs:
         # sitt innehåll.
         run: bash scripts/test-classify-post-merge.sh
 
+      - name: Test huvudgrenens SHA-identitetsdedup (TASK-464.4/SE1)
+        # Per ADR-039 § lesson→grind (L43), samma kadens-argument som steget
+        # ovan. Sviten prövar scripts/dedup-huvudgren.sh i BÅDA riktningar:
+        # att en grön merge_group-körning DÄR sviten faktiskt körde ger
+        # dedup_hit=true (HIT), och att varje osäkerhet — API-fel, noll
+        # träffar, FLERA träffar, en grön kö-körning där sviten ändå var
+        # SKIPPAD (fällan uppdraget namnger) — ger dedup_hit=false
+        # (fail-closed, AC#2).
+        #
+        # T14/T15 är skälet steget bor just HÄR och inte enbart i denna
+        # kommentar: kopplingen till ci.yml:s faktiska `suite`-jobbnamn (delad
+        # via scripts/lib/ci-suite-job-name.sh med scripts/classify-post-
+        # merge.sh) och att ci.yml faktiskt anropar detta skript kan bara
+        # vaktas där ci.yml faktiskt läses.
+        #
+        # Hermetisk (gh-stub på PATH, ingen nätverkstrafik, ~1 s). Eget steg
+        # med ärligt namn per Session 17 K7-disciplinen — stegnamn ska inte
+        # ljuga om sitt innehåll.
+        run: bash scripts/test-dedup-huvudgren.sh
+
       - name: Test post-merge-larmets attribution (TASK-334)
         # Per ADR-039 § lesson→grind (L43), samma kadens-argument som steget
         # ovan. Sviten prövar scripts/post-merge-attribution.sh i BÅDA
@@ -2435,6 +2436,13 @@ jobs:
         # .lint-inert-policy.conf, A-sidan i .listparitet-policy.conf:s nya
         # par `lint-inert-ext`, sourcad av scripts/test-lint-inert-
         # extensions.sh).
+        # TASK-464.4/SE1 (2026-09-19) lade till TVÅ nya sourcade .sh-KODFILER
+        # under scripts/lib/ (ci-suite-job-name.sh, svit-signal.sh — delad
+        # läsning mellan scripts/classify-post-merge.sh och scripts/dedup-
+        # huvudgren.sh) — räknas SEPARAT av samma skäl som supabase-cli.sh/
+        # jq-guard.sh/gh-guard.sh ovan: en sourcad .sh-KODFIL utanför den
+        # flata scripts/*.sh-globen, inte en config, alltså ingen del av
+        # ".conf"-räkningen ovan.
         # Pre-aktiverings-state (post-K3.2 commit d86d846): 0/0/0/0.
         run: |
           shellcheck \
@@ -2444,6 +2452,8 @@ jobs:
             scripts/lib/supabase-cli.sh \
             scripts/lib/jq-guard.sh \
             scripts/lib/gh-guard.sh \
+            scripts/lib/ci-suite-job-name.sh \
+            scripts/lib/svit-signal.sh \
             .githooks/* \
             .checklist-policy.conf \
             .frontmatter-policy.conf \
