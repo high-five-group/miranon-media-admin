@@ -58,6 +58,16 @@ on:
           med motivering).
         type: boolean
         default: false
+      simulate_beroende_tyst:
+        description: >-
+          true = tvinga fram "Beroendekanalen tystnade"-larmet (TASK-467)
+          även när kanalen faktiskt är frisk — bevisar beroendekanalens
+          EGET dödmansgrepp (scripts/check-beroendekanal-dodmansgrepp.sh)
+          utan att invänta en äkta tystnad. Ignoreras om simulate_missing
+          också är true (den grenen prövas då i stället). Städa
+          testärendet med motivering.
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -95,6 +105,7 @@ jobs:
           SERVER: ${{ github.server_url }}
           RUN_ID: ${{ github.run_id }}
           SIMULATE: ${{ inputs.simulate_missing }}
+          SIMULATE_BEROENDE: ${{ inputs.simulate_beroende_tyst }}
         run: |
           set -euo pipefail
 
@@ -111,7 +122,15 @@ jobs:
           rubrik=""
           orsak=""
 
-          if [ "${SIMULATE}" = "true" ]; then
+          # simulate_beroende_tyst PRÖVAS FÖRE simulate_missing: de är två
+          # oberoende bevis-lägen (TASK-467 respektive den ursprungliga
+          # "kom natten igång?"-vakten), och simulate_missing tar prioritet om
+          # båda av misstag sätts samtidigt — samma ordning som dispatch-
+          # inputens egen beskrivning.
+          if [ "${SIMULATE}" != "true" ] && [ "${SIMULATE_BEROENDE}" = "true" ]; then
+            rubrik="Beroendekanalen tystnade — BEVIS-LÄGE"
+            orsak="Avfyrad via \`simulate_beroende_tyst\`-dispatch — ingen äkta tystnad. Bevisar att TASK-467:s dödmansgrepp för beroendekanalen (scripts/check-beroendekanal-dodmansgrepp.sh) kan fyra: nightly-audit rött + beroende-arende kunde inte skapa/uppdatera sitt beroendevarning-ärende."
+          elif [ "${SIMULATE}" = "true" ]; then
             rubrik="Nattvakten — BEVIS-LÄGE"
             orsak="Avfyrad via \`simulate_missing\`-dispatch. Ingen äkta avvikelse; detta bevisar bara att vaktkedjan fungerar."
           elif [ "${count}" -eq 0 ]; then
@@ -233,17 +252,19 @@ jobs:
               # för att räknas — och varje sådan ger `result` failure/cancelled.
               #
               # VAD VAKTEN INTE VAKTAR, öppet skrivet (ADR-083): bokförings-
-              # och beroendekanalen har ingen motsvarande "vaktens vakt".
-              # Faller deras kanaljobb på gh-I/O syns det bara i körningens
-              # logg. Det är en KÄND lucka, inte en glömska — se
-              # CONTRIBUTING.md § Nattnätet. Beroendekanalens dödmansgrepp
-              # bärs av ett eget kort, TASK-467 (rättat 2026-09-19 — flyttad
-              # bort från en AC på TASK-450.5 sedan TASK-450.10 och
-              # TASK-450.5 visade sig redigera samma kortfil), i stället för
-              # byggd här (TASK-450.10, 3A): den kanalen blir lastbärande för
-              # hela beroendesäkerheten FÖRST när TASK-450.5 landat, och en
-              # vakt byggd före det hade vaktat en icke-lastbärande kanal —
-              # se ADR-082 § Updates 2026-09-18 "Öppet, ej avgjort här".
+              # kanalen har ingen motsvarande "vaktens vakt" — faller dess
+              # kanaljobb på gh-I/O syns det bara i körningens logg. Det är
+              # en KÄND lucka, inte en glömska (CONTRIBUTING.md § Nattnätet).
+              #
+              # Beroendekanalen HAR sedan TASK-467 (2026-09-19) sin EGEN
+              # dödmansgrepp-kontroll — se blocket "SIDA 2 — BEROENDEKANALENS
+              # DÖDMANSGREPP" nedan, som körs OBEROENDE av produktkanal-
+              # checken ovan (samma jobblista, samma gh run view-anrop,
+              # noll extra fakturerade minuter). Den byggdes INTE i
+              # TASK-450.10 (3A) eftersom kanalen blev lastbärande för hela
+              # beroendesäkerheten först när TASK-450.5 landade — se
+              # ADR-082 § Updates 2026-09-18 "Öppet, ej avgjort här" och
+              # § Updates 2026-09-19 för landningen.
               #
               # FAIL-CLOSED: kan jobblistan inte hämtas eller tolkas larmar
               # vakten ändå, med det öppet skrivet i orsaken. "Vet inte" får
@@ -277,7 +298,26 @@ jobs:
                 rubrik="Nattnätet rött utan larm"
                 orsak="Senaste körningen har \`conclusion: ${conclusion}\` men inget öppet \`ci-natt\`-ärende finns — larm-jobbet kan självt ha uteblivit. Röda jobb i PRODUKTKANALEN (de enda som utlöser \`ci-natt\`): ${alarm_barande_rott}. Körning: ${last_url}"
               else
-                echo "Körningen är röd (${conclusion}), men inget av PRODUKTKANALENS jobb (.nattvakt-kanal-policy.conf) var rött — rödheten bärs av en annan kanal (länkröta per ADR-082, eller bokförings-/beroendekanalen per TASK-450.1). Larm-jobbet skippades korrekt — vakten är tyst. Körning: ${last_url}"
+                # ═══ SIDA 2 — BEROENDEKANALENS DÖDMANSGREPP (TASK-467) ═══
+                # Produktkanalen fann inget att larma om (grenen ovan) — pröva
+                # nu OBEROENDE om beroendekanalen (nightly-audit →
+                # beroende-arende) tystnade. scripts/check-beroendekanal-
+                # dodmansgrepp.sh gör sitt EGET `gh run view` mot SAMMA
+                # `last_id` (sub-sekund, ingen ny fakturerad minut — se
+                # PR-kroppens "Kostnad i två mått") och skriver sitt skäl på
+                # stdout/stderr, vilket fångas i beroende_ut och vävs in i
+                # ärendetexten nedan i stället för att gissas om här.
+                beroende_kod=0
+                beroende_ut=$(REPO="${REPO}" NATTVAKT_BEROENDE_RUN_ID="${last_id}" \
+                  bash scripts/check-beroendekanal-dodmansgrepp.sh 2>&1) || beroende_kod=$?
+                echo "${beroende_ut}"
+
+                if [ "${beroende_kod}" -ne 0 ]; then
+                  rubrik="Beroendekanalen tystnade"
+                  orsak="Den nattliga beroendegranskningen (\`nightly-audit\`) var röd, men beroendekanalens ärendejobb (\`beroende-arende\`) skapade eller uppdaterade inte sitt \`beroendevarning\`-ärende (scripts/check-beroendekanal-dodmansgrepp.sh, TASK-467). ${beroende_ut} Körning: ${last_url}"
+                else
+                  echo "Körningen är röd (${conclusion}), men varken produktkanalens jobb (.nattvakt-kanal-policy.conf) eller beroendekanalens dödmansgrepp (TASK-467) fann något att larma om — rödheten bärs av en annan kanal (länkröta per ADR-082, eller bokföringskanalen per TASK-450.1). Larm-jobbet skippades korrekt — vakten är tyst. Körning: ${last_url}"
+                fi
               fi
             fi
           fi

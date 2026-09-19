@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-18 23:23'
+updated_date: '2026-09-19 12:13'
 labels:
   - ready-for-agent
 dependencies:
@@ -24,8 +25,8 @@ K1 (b) (TASK-450.5, PR #2553) flyttar beroendegranskningen från varje ändring 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [ ] #1 Tvåsidigt via workflowens simulate-ingång: en tystnad beroendekanal (granskningen körde rött men inget ärende skapades) ger ett tilldelat larm; en frisk kanal ger inget
-- [ ] #2 Partitionsvakten (TASK-450.10) känner kanalen och fäller om dess dödmansgrepp tas bort
-- [ ] #3 CONTRIBUTING § Nattnätet säger inte längre 'känd lucka' — och påstår inte mer än mekanismen gör (ADR-083)
+- [x] #2 Partitionsvakten (TASK-450.10) känner kanalen och fäller om dess dödmansgrepp tas bort
+- [x] #3 CONTRIBUTING § Nattnätet säger inte längre 'känd lucka' — och påstår inte mer än mekanismen gör (ADR-083)
 - [ ] #4 PR-kroppens 'Kostnad i två mått' med mätta körningar
 <!-- AC:END -->
 

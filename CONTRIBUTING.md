@@ -1018,14 +1018,31 @@ nätter där `alarm` skippades KORREKT. Sedan `TASK-450.1` läser den en
 **allowlist** över produktkanalens jobb (`.nattvakt-kanal-policy.conf`) i
 stället för den gamla exkluderingen av länkkontrollen.
 
-**Vakten vaktar bara produktkanalen.** Bokförings- och beroendekanalen har i
-dag **ingen** motsvarande "vaktens vakt": faller deras kanaljobb på gh-I/O syns
-det bara i körningens logg. Det är en känd lucka, inte en glömska — de två
-kanalerna är icke-blockerande stående ärenden, och en vakt som larmar
-tilldelat om dem hade återinfört precis den signalblandning delningen tog
-bort. Beroendekanalens dödmansgrepp bärs av ett eget kort, `TASK-467`, i
-stället för byggt i `TASK-450.10` (3A): den kanalen blir lastbärande för
-hela beroendesäkerheten FÖRST när `TASK-450.5` landat.
+**Vakten vaktar produktkanalen OCH (sedan `TASK-467`) beroendekanalen —
+bokföringskanalen har fortfarande ingen "vaktens vakt".** Faller
+bokföringskanalens kanaljobb på gh-I/O syns det bara i körningens logg — en
+känd lucka, inte en glömska: kanalen är ett icke-blockerande stående ärende,
+och en vakt som larmar tilldelat om den hade återinfört precis den
+signalblandning delningen tog bort.
+
+Beroendekanalen var samma klass av lucka tills `TASK-467` (2026-09-19)
+byggde ut ett EGET dödmansgrepp för den — inte en generalisering av
+produktkanalens vakt, utan en ANNAN relation: i stället för "kördes
+körningen alls?" prövar `scripts/check-beroendekanal-dodmansgrepp.sh`
+"gavs granskningsjobbet (`nightly-audit`) ett rött resultat UTAN att
+ärendejobbet (`beroende-arende`) nådde `success`?" — samma Prometheus
+Watchdog-idé applicerad på en tvåleds-relation mellan två jobb i samma
+körning i stället för på en ensam heartbeat. `nightly-watchdog.yml`:s jobb
+anropar skriptet som ETT STEG i sitt befintliga jobb (samma redan hämtade
+jobblista som produktkanal-checken, `gh run view`) — noll nya fakturerade
+Actions-minuter. Tystnar kanalen (granskningsjobbet rött, ärendejobbet
+inte `success`) skapas samma TILLDELADE `ci-natt`-ärende som produktkanalens
+vakt använder, med rubriken "Beroendekanalen tystnade". Bevis-läge:
+`gh workflow run nightly-watchdog.yml -f simulate_beroende_tyst=true`.
+Byggd först nu och inte i `TASK-450.10` (3A) av skälet ADR-082 § Updates
+2026-09-18 "Öppet, ej avgjort här" skriver ut: kanalen blev lastbärande för
+hela beroendesäkerheten FÖRST när `TASK-450.5` landade — en vakt byggd
+före det hade vaktat en kanal som ännu inte bar något.
 
 **Invarianten som måste hållas är TVÅDIMENSIONELL** — och den formulering som
 stod här (*"listan ska vara lika med `alarm`-jobbets trigger"*) var för grov.
@@ -1046,7 +1063,16 @@ ID-jämförelse står grön. **Sedan `TASK-450.10` (3A, 2026-09-19) vaktar
 lint-jobb på varje PR — härlett ur `nightly.yml` (js-yaml) och ur
 `.nattvakt-kanal-policy.conf` (sourcad i en riktig bash-subprocess, samma
 tolkning nightly-watchdog.yml självt gör), ingen femte handhållen lista.
-Tvåsidigt testbevisad: `scripts/test-check-nattkanal-partition.mjs`.
+
+**Sedan `TASK-467` (2026-09-19) vaktar samma skript ETT TREDJE led**:
+beroendekanalens dödmansgrepp. `NATTVAKT_BEROENDE_GRANSKNING_JOBBNAMN` och
+`NATTVAKT_BEROENDE_ARENDE_JOBBNAMN` i `.nattvakt-kanal-policy.conf` måste
+matcha de faktiska `name:`-fälten på `nightly-audit` respektive
+`beroende-arende`, OCH `nightly-watchdog.yml` måste fortfarande referera
+`scripts/check-beroendekanal-dodmansgrepp.sh` — tas endera bort tystnar
+dödmansgreppet, precis lika tyst som ett omdöpt produktjobb tystar led 2,
+fast för en annan kanal. Tvåsidigt testbevisad, alla tre led:
+`scripts/test-check-nattkanal-partition.mjs`.
 
 ### Kontraktsvakten — fixturvärlden mot verkligheten
 
@@ -1113,6 +1139,10 @@ rotorsaksmotivering, och larmade själv — ett falsklarm. Beslutet bor i
 true` för att avfyra larmkedjan utan att invänta en äkta incident. En
 otestad dödmansgrepp ger falsk trygghet — därför är läget en del av
 konstruktionen, inte en eftertanke. Städa testärendet med motivering.
+Beroendekanalens dödmansgrepp (`TASK-467`) har sitt EGET, oberoende
+bevis-läge — `simulate_beroende_tyst: true` — av samma skäl: `simulate_missing`
+prövar bara "kom natten igång?", inte "tystnade beroendekanalen trots att
+granskningen var röd?".
 
 **Öppet bokförd begränsning:** vakten är själv en schemalagd körning och
 ärver därmed den defekt den ska täcka. Den fångar det vanliga fallet (en

@@ -1686,28 +1686,76 @@ jobs:
         # robusthets-kontroll (`needs:` som skalär sträng, giltig YAML-form).
         # Sandboxad i egen mktemp-katalog, ingen nätverkstrafik.
         #
-        # test-check-nattkanal-partition.mjs (TASK-450.10, 3A) hör hit av
-        # samma ADR-039 § lesson→grind-skäl applicerat på grinden ovan
-        # (check-nattkanal-partition.mjs): den är inte en grind förrän dess
-        # fyrning fortlöpande verifieras. Fallantalet läses ur svitens egen
-        # slutrad ("alla N kontroller OK") — skriv aldrig av talet hit
+        # test-check-nattkanal-partition.mjs (TASK-450.10, 3A; utökad TASK-467)
+        # hör hit av samma ADR-039 § lesson→grind-skäl applicerat på grinden
+        # ovan (check-nattkanal-partition.mjs): den är inte en grind förrän
+        # dess fyrning fortlöpande verifieras. Fallantalet läses ur svitens
+        # egen slutrad ("alla N kontroller OK") — skriv aldrig av talet hit
         # (TASK-106; en tidigare version sade "17 fall (24 assert-
-        # kontroller)" här, verkligt 18 fall / 26 assertions, rättat
-        # 2026-09-19 efter granskningens fynd på PR #2557 runda 2). Rättningen
-        # gäller BARA denna kommentar — testfallens sakliga täckning är
-        # oförändrad: tvåsidigt bevis i BÅDA leden (mutationsprövat under bygget: ID-
-        # ledets partitionsloop avstängd fällde exakt de två fall som
-        # bevisar det, namn-ledets båda loopar avstängda fällde de två
-        # fall som bevisar det) — en sandlådekopia av nightly.yml med ett
+        # kontroller)" här, verkligt 18 fall / 26 assertions vid ADR-083-
+        # rättelsen 2026-09-19 efter granskningens fynd på PR #2557 runda 2;
+        # TASK-467 (S126, samma dag) lade till ett TREDJE led — se nedan —
+        # och fem nya fall, mätt 23 fall / 36 assertions). Tvåsidigt bevis i
+        # ALLA TRE leden (mutationsprövat under bygget: ID-ledets
+        # partitionsloop avstängd fällde exakt de två fall som bevisar det,
+        # namn-ledets båda loopar avstängda fällde de två fall som bevisar
+        # det, LED (iii) — se nedan — helt borttaget fällde exakt de fem nya
+        # fallen och INGET annat) — en sandlådekopia av nightly.yml med ett
         # jobb borttaget ur ALLA tre triggrar FÄLLER med jobbets namn, ett
         # jobb i TVÅ triggrar FÄLLER, ett ändrat name: på ett produktjobb
         # FÄLLER, ett föråldrat prefix i .nattvakt-kanal-policy.conf FÄLLER
         # — plus fail-closed-grenar (saknad/trasig nightly.yml, saknat
         # 'jobs:'-block, saknat kanaljobb, saknad/tom/trasig kanal-config)
         # och robusthetskontroller (prefix-matchning som PREFIX, inte
-        # likhet; `needs:` som skalär sträng). De RIKTIGA nightly.yml +
-        # .nattvakt-kanal-policy.conf PASSERAR. Sandboxad i egen mktemp-
-        # katalog, ingen nätverkstrafik. 1,5 s LOKALT mätt (macOS,
+        # likhet; `needs:` som skalär sträng).
+        #
+        # LED (iii) (TASK-467, S126, 2026-09-19): beroendekanalens
+        # dödmansgrepp (scripts/check-beroendekanal-dodmansgrepp.sh) får
+        # sina två jobbnamn ur .nattvakt-kanal-policy.conf
+        # (NATTVAKT_BEROENDE_GRANSKNING_JOBBNAMN/NATTVAKT_BEROENDE_ARENDE_JOBBNAMN)
+        # — samma tysta felklass som led (ii) om de glider ur synk med
+        # nightly.yml:s faktiska name:-fält. Fem nya fall: config helt
+        # borttagen FÄLLER, granskningsnamnet fel FÄLLER, ärendenamnet fel
+        # FÄLLER, nightly-watchdog.yml som slutat referera skriptet FÄLLER
+        # (config kan se helt intakt ut samtidigt), och watchdog-filen
+        # helt borttagen FÄLLER.
+        #
+        # De RIKTIGA nightly.yml + .nattvakt-kanal-policy.conf +
+        # nightly-watchdog.yml PASSERAR — detta är det starkaste beviset att
+        # TASK-467:s wiring faktiskt stämmer, inte bara att fixturerna gör
+        # det. Sandboxad i egen mktemp-katalog, ingen nätverkstrafik. 3,1 s
+        # LOKALT mätt (macOS, 2026-09-19, `time node scripts/test-check-
+        # nattkanal-partition.mjs`) — CI-tiden är INTE mätt av mig och kan
+        # avvika.
+        #
+        # test-check-beroendekanal-dodmansgrepp.sh (TASK-467) hör hit av
+        # samma ADR-039 § lesson→grind-skäl som test-check-nattvakt-dedup.sh
+        # ovan, applicerat på grinden scripts/check-beroendekanal-
+        # dodmansgrepp.sh: den prövar beroendekanalens EGNA dödmansgrepp
+        # (nightly-audit rött ⇒ beroende-arende MÅSTE nå `success`, annars
+        # fallerade ärendeskapandet tyst) — samma Prometheus Watchdog-mönster
+        # som produktkanalens dödmansgrepp (TASK-450.10) redan bär, applicerat
+        # på en TVÅLEDS-relation mellan två jobb i stället för en ensam
+        # heartbeat. Riggen matar jobblistan ur en JSON-fixtur
+        # (NATTVAKT_BEROENDE_FAKE_JOBS_JSON) i stället för att fråga GitHub,
+        # samma mönster som NATTVAKT_DEDUP_FAKE_JSON. 20 fall (MÄTT
+        # 2026-09-19, `bash scripts/test-check-beroendekanal-dodmansgrepp.sh`
+        # egen slutrad "20/20 gröna") — tvåsidigt: SIDA 1 (sex fall) bevisar
+        # att en genuint TYSTNAD kanal LARMAR (granskning rött + ärende
+        # failure/skipped/cancelled/null, inklusive okända framtida
+        # conclusion-värden som `timed_out`/`action_required` — negationen
+        # gör dem röda som default, samma disciplin som
+        # .nattvakt-kanal-policy.conf § NATTVAKT_OFARLIGA_CONCLUSIONS, ÅTER-
+        # ANVÄND rakt av, ingen andra rödhets-definition); SIDA 2 (fem fall)
+        # bevisar att en FRISK kanal är TYST (granskning inte rött i något
+        # av sina ofarliga lägen, ELLER ärendejobbet lyckades trots rött
+        # granskningsjobb — kanalen larmade korrekt); SIDA 3 (nio fall)
+        # bevisar fail-closed (saknad/otolkbar jobblista, ett jobbnamn som
+        # glidit — noll ELLER flera träffar räknas båda som anropsfel, ej
+        # gissning — eller en ofullständig policy) LARMAR, aldrig tystar.
+        # Mutationsprövat under bygget: ARENDE_CONCLUSION-jämförelsen
+        # tvingad sann (`if true`) fällde exakt SIDA 1:s sex fall och INGET
+        # annat. Hermetisk (ingen nätverkstrafik). 2,0 s LOKALT mätt (macOS,
         # 2026-09-19) — CI-tiden är INTE mätt av mig och kan avvika.
         #
         # test-docraptor-sjalvbarande.mjs (TASK-301) hör hit av samma
@@ -1945,6 +1993,7 @@ jobs:
           bash scripts/test-lint-inert-extensions.sh
           node scripts/test-check-aggregator-needs.mjs
           node scripts/test-check-nattkanal-partition.mjs
+          bash scripts/test-check-beroendekanal-dodmansgrepp.sh
           node scripts/test-task-338-6-prod-migration.mjs
           node scripts/test-docraptor-sjalvbarande.mjs
           node scripts/test-backfill-inbetalningar.mjs
