@@ -1,5 +1,6 @@
-import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useCallback } from 'react';
+import { type QueryClient, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useCallback, useEffect } from 'react';
+import type { DataSourceAdapter } from '@/data/adapters/DataSourceAdapter';
 import { useDataSource } from '@/data/useDataSource';
 import type { Attachment } from '@/domain/models/Attachment';
 import { queryKeys } from '@/queries/keys';
@@ -43,6 +44,30 @@ export function useEventAttachments(eventId: string | null) {
 }
 
 /**
+ * DEN DELADE PREFETCH-KÄRNAN (TASK-455-ITERATION, S127) — samma
+ * `queryClient.prefetchQuery`-anrop, samma nyckel, samma `staleTime: 30_000`
+ * som `useForberedAtgardsBilagor` (nedan) redan använde INLINE innan denna
+ * extraktion. Bruten ut hit så en ANDRA konsument (svepets sekventiella
+ * förvärmning, `useForberedSvepBilagor` längre ner) kan återanvända EXAKT
+ * samma form utan att kopiera den — annars hade `useForberedAtgardsBilagor`s
+ * eget docblock ("husets form, IDENTISK med `useForberedEventDetalj`/
+ * `varmPersonregister`") blivit osant i det ögonblick en systerfunktion
+ * tappade synk med den. Modulnivå, inte en hook — ingen egen `useCallback`-
+ * identitet behövs, den byggs av ANROPARENS hook.
+ */
+function forberedEventBilagor(
+  dataSource: DataSourceAdapter,
+  queryClient: QueryClient,
+  eventId: string,
+): Promise<void> {
+  return queryClient.prefetchQuery({
+    queryKey: queryKeys.attachments.byEvent(eventId),
+    queryFn: () => dataSource.fetchEventAttachments(eventId),
+    staleTime: 30_000,
+  });
+}
+
+/**
  * PREFETCH PÅ AVSIKT (ADR-078 beslut 3) för eventets bilagor — husets form,
  * identisk med `useForberedEventDetalj` (`EventCard.tsx`) och
  * `varmPersonregister` (`TabBar.tsx`): en stabil callback via `useCallback`
@@ -70,12 +95,84 @@ export function useForberedAtgardsBilagor(): (eventId: string) => void {
   const queryClient = useQueryClient();
   return useCallback(
     (eventId: string) => {
-      queryClient.prefetchQuery({
-        queryKey: queryKeys.attachments.byEvent(eventId),
-        queryFn: () => dataSource.fetchEventAttachments(eventId),
-        staleTime: 30_000,
-      });
+      void forberedEventBilagor(dataSource, queryClient, eventId);
     },
     [dataSource, queryClient],
   );
+}
+
+/**
+ * [TASK-455-ITERATION, S127] Svepets SEKVENTIELLA förvärmning av SAMTLIGA
+ * event-gruppers bilagor, EN i taget, i den ordning `eventIds` ges.
+ *
+ * Marcus 2026-09-19 (efter stämplingspasset): "jag gillar inte att bilagorna
+ * laddar när jag växlar mellan eventgrupp" — `Forhandsvisning.tsx` frågade
+ * (`useEventAttachments`) bara den BLÄDDRADE gruppens event-ID, så en
+ * kall cache visade `BilageValjare`s skeleton VARJE gång Lotta bytte grupp.
+ * Denna hook värmer alla gruppers cache-poster i förväg (anropad från
+ * `SvepOverlay`, se dess docblock för VARFÖR just den nivån äger anropet),
+ * så att `Forhandsvisning`s egen `useEventAttachments`-läsning för den
+ * bläddrade gruppen normalt redan träffar en varm cache-post.
+ *
+ * VARFÖR SEKVENTIELLT, INTE `Promise.all`: `get-event-attachments` gör
+ * flera Airtable-anrop per event (egen `withConcurrencyLimit`,
+ * `supabase/functions/get-event-attachments/index.ts`), och Airtables
+ * rate-tak är 5 anrop/SEKUND PER BAS, delat mellan ALLA samtidiga klienter
+ * (`docs/reference/airtable-constraints.md` § P4). En 429 kostar minst 30 s
+ * lockout för ALLA klienter, inte bara den här sessionen
+ * (`supabase/functions/_shared/airtable-retry.ts`). En människa hinner gott
+ * om sekunder per grupp när hon bläddrar, så en sekventiell kedja hinner
+ * alltid ikapp innan hon når nästa grupp — en burst av N parallella
+ * hämtningar riskerar taket redan vid en handfull grupper, för en vinst
+ * (några hundra ms) som inte är värd den kostnaden.
+ *
+ * VARFÖR INTE BREDDA `useForberedAtgardsBilagor` TILL EN LISTA: den hookens
+ * kontrakt är EN stabil callback för EN eventId, triggad av hover/fokus —
+ * att ändra dess signatur hade brutit dess befintliga konsumenter
+ * (`Atgarder.tsx`, `Deltagare.tsx`) och gjort dess docblock osant. Den
+ * DELADE KÄRNAN (`forberedEventBilagor` ovan) är återanvänd rakt av i
+ * stället.
+ *
+ * FELHANTERING: `queryClient.prefetchQuery` KASTAR ALDRIG — TanStack Query
+ * 5.102.2s egen implementation sväljer varje fel internt
+ * (`fetchQuery(...).then(noop).catch(noop)`,
+ * `@tanstack/query-core/build/modern/queryClient.js`, verifierat mot den
+ * installerade versionen). Ett misslyckat länk i kedjan stoppar därför
+ * ALDRIG resten, och ger inget synligt fel HÄR — gruppen faller tillbaka på
+ * sin egen `useEventAttachments`-hämtning (skeleton + ev. felruta,
+ * `BilageValjare.tsx`s `fel`-gren) när den FAKTISKT visas, exakt dagens
+ * beteende.
+ *
+ * AVBRYTS NÄR ÖVERLÄGGET STÄNGS: `SvepOverlay` unmountas HELT vid stängning
+ * (`Hem.tsx`: `aktivtSvep && <SvepOverlay/>`), vilket kör denna effekts
+ * cleanup — en `avbruten`-flagga stoppar kedjan FÖRE nästa länk hinner
+ * starta. Ingen `AbortController`: `dataSource.fetchEventAttachments` har
+ * ingen abort-signal-parameter, och en redan avfyrad hämtning får landa i
+ * cachen som vanligt (samma "inget avbryts, bara inget NYTT startas"-princip
+ * som `startvarmningen.ts`s hårda timeout).
+ *
+ * `eventIds` MÅSTE vara referensstabil mellan renders (anroparen memoiserar
+ * den, t.ex. `useMemo(() => eventGrupper.map((g) => g.event.id),
+ * [eventGrupper])`) — annars startar effekten om kedjan på varje render i
+ * stället för en gång per faktisk gruppmängd.
+ */
+export function useForberedSvepBilagor(eventIds: string[]): void {
+  const dataSource = useDataSource();
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    let avbruten = false;
+
+    async function korKedjan() {
+      for (const eventId of eventIds) {
+        if (avbruten) return;
+        await forberedEventBilagor(dataSource, queryClient, eventId);
+      }
+    }
+    void korKedjan();
+
+    return () => {
+      avbruten = true;
+    };
+  }, [eventIds, dataSource, queryClient]);
 }

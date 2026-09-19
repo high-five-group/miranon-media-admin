@@ -1,11 +1,12 @@
 import { X } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useAuth } from '@/auth/useAuth';
 import { ATGARDER, fyllPlatshallare } from '@/components/events/atgarder/atgardsmallar';
 import { DetaljGrupp } from '@/components/events/detail/DetaljGrupp';
 import { Button, Dialog, MessageBox, SlideToConfirm } from '@/components/primitives';
 import { useSendActionTestEmail } from '@/data/mutations/actionEmail';
 import { type SvepGruppUtfall, useSendSvep } from '@/data/mutations/svepSend';
+import { useForberedSvepBilagor } from '@/data/queries/useEventAttachments';
 import type { Registration } from '@/domain/models/Registration';
 import { Adresslista } from './Adresslista';
 import { Forhandsvisning, type TestUtfall } from './Forhandsvisning';
@@ -90,6 +91,24 @@ const ATGARD_NAMN: Record<SvepTyp, string> = {
  * denna skiva) och renderas per bläddrad grupp i `Forhandsvisning.tsx` —
  * ingen ny UI-komponent uppfanns, bara en ny konsument av en redan
  * facit-godkänd form.
+ *
+ * [TASK-455-ITERATION, S127] BILAGE-FÖRVÄRMNINGEN — Marcus efter
+ * stämplingspasset: "jag gillar inte att bilagorna laddar när jag växlar
+ * mellan eventgrupp". `Forhandsvisning.tsx` frågade bara den BLÄDDRADE
+ * gruppens `useEventAttachments`, så varje ny grupp mötte en kall cache.
+ * `useForberedSvepBilagor` (`@/data/queries/useEventAttachments`, se dess
+ * docblock för hela kontraktet: sekventiell kedja, felsvälj, avbrott vid
+ * stängning) startas HÄR — inte i `Forhandsvisning` — eftersom `SvepOverlay`
+ * är nivån som ÄGER `eventGrupper`-LISTAN som en HEL, stängningsbar
+ * livscykel: den unmountas EXAKT när dialogen stängs
+ * (`aktivtSvep && <SvepOverlay/>` i `Hem.tsx`), vilket ger förvärmnings-
+ * effekten en ren "avbryt vid stängning"-koppling. `Forhandsvisning` är i
+ * stället en ren bläddrings-presentation (dess eget docblock: "data lokalt,
+ * urval hos föräldern") — att lägga en ALLA-grupper-koncern där hade blandat
+ * ihop "den grupp jag visar just nu" med "alla grupper som finns", två
+ * skilda ansvar. `bilageEventIds` memoiseras på `eventGrupper` (inte
+ * omberäknad varje render) — `useForberedSvepBilagor`s eget kontrakt kräver
+ * en referensstabil lista, se dess docblock.
  */
 export function SvepOverlay({
   svepTyp,
@@ -123,6 +142,16 @@ export function SvepOverlay({
      börjar tom, och en grupp utan egen post behandlas som "inget valt"
      (`bilagorPerGrupp.get(id) ?? TOM_MANGD`). */
   const [bilagorPerGrupp, setBilagorPerGrupp] = useState<Map<string, Set<string>>>(new Map());
+
+  /* [TASK-455-ITERATION, S127] Förvärm SAMTLIGA gruppers bilagor sekventiellt
+     när overlayen öppnas — se filhuvudets § "BILAGE-FÖRVÄRMNINGEN" för VARFÖR
+     denna nivå äger anropet, och `useForberedSvepBilagor`s eget docblock
+     (`@/data/queries/useEventAttachments`) för hela kontraktet (sekventiell
+     kedja, felsvälj, avbrott vid stängning). Memoiserad på `eventGrupper` —
+     hooken kräver en referensstabil lista, annars startar kedjan om varje
+     render. */
+  const bilageEventIds = useMemo(() => eventGrupper.map((g) => g.event.id), [eventGrupper]);
+  useForberedSvepBilagor(bilageEventIds);
 
   function vaxlaBilaga(eventId: string, attachmentId: string) {
     setBilagorPerGrupp((forra) => {
