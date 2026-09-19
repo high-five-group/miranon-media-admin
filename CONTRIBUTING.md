@@ -1007,7 +1007,11 @@ grind i den valda kanalen, så ärendet skapas via den riktiga `needs`-vägen �
 som betyder något. Tystnaden garanteras alltså av konstruktionen, inte av att
 övriga grindar råkar vara gröna: alla fyra kanaljobb bär en kanalklausul i sitt
 `if`. Den tunga nattsviten hoppas över i ett simuleringsläge — larmkedjan
-prövas, inte sviten. Städa testärendet med motivering.
+prövas, inte sviten. **Städa testärendet med motivering — och för `produkt`
+(som går via `alarm` och etiketten `ci-natt`, samma etikett nattvakten
+dedupar mot) ta ÄVEN bort etiketten efter stängning**, se § "Vad nattvakten
+vaktar" nedan för hela skälet och instansen (`TASK-484` är den strukturella
+fixen, ännu inte byggd).
 
 ### Vad nattvakten vaktar — och vad den INTE vaktar
 
@@ -1043,6 +1047,18 @@ Byggd först nu och inte i `TASK-450.10` (3A) av skälet ADR-082 § Updates
 2026-09-18 "Öppet, ej avgjort här" skriver ut: kanalen blev lastbärande för
 hela beroendesäkerheten FÖRST när `TASK-450.5` landade — en vakt byggd
 före det hade vaktat en kanal som ännu inte bar något.
+
+**Produktkanal-checken prövas FÖRE beroendekanal-checken samma körning, inte
+båda oberoende.** `nightly-watchdog.yml`:s `watch`-jobb kör beroendekanalens
+dödmansgrepp bara i `else`-grenen av produktkanal-kontrollen: hittar den
+förra ett rött produktjobb vinner rubriken "Nattnätet rött utan larm", och
+beroendekanalens check körs aldrig den natten. En människa larmas ändå
+(samma `ci-natt`-ärende, samma assignee) — men om BÅDA kanalerna genuint
+fallerar tyst samma natt säger ärendet bara "produktkanalen", aldrig att
+beroendekanalen också var drabbad. Läs alltså "Nattnätet rött utan larm"
+som "minst produktkanalen", inte som ett uteslutande av en tyst
+beroendekanal — kontrollflödet är medvetet oförändrat (en riktig fix vore
+att köra båda checkarna alltid och redovisa båda, men det är inte gjort).
 
 **Invarianten som måste hållas är TVÅDIMENSIONELL** — och den formulering som
 stod här (*"listan ska vara lika med `alarm`-jobbets trigger"*) var för grov.
@@ -1143,6 +1159,24 @@ Beroendekanalens dödmansgrepp (`TASK-467`) har sitt EGET, oberoende
 bevis-läge — `simulate_beroende_tyst: true` — av samma skäl: `simulate_missing`
 prövar bara "kom natten igång?", inte "tystnade beroendekanalen trots att
 granskningen var röd?".
+
+**"Städa" betyder BÅDA: stäng ärendet OCH ta bort etiketten `ci-natt` —
+ett ÅTAGANDE, ingen mekanism (ADR-083).** Dedupen ovan (`check-nattvakt-
+dedup.sh`) läser VARJE `ci-natt`-märkt ärende som är stängt med kommentar
+inom `NATTVAKT_DEDUP_FONSTER_TIMMAR` (26 h) — den skiljer inte en äkta natt
+från en bevis-dispatch, för dedupen känner bara till etiketten och
+kommentaren. Ett bevis-ärende som BARA stängs men behåller `ci-natt` kan
+därför tysta ett äkta larm i upp till 26 timmar efter stängningen — dedupen
+hittar det stängda bevis-ärendet, kallar avvikelsen "redan täckt" och
+skapar aldrig det riktiga larmet. Instans: `TASK-467` (`PR #2590`) lämnade
+issue `#2589` stängt-med-motivering `2026-09-19T12:17:05Z` men fortfarande
+`ci-natt`-märkt; fönstret stängdes manuellt genom att ta bort etiketten
+`2026-09-19T12:35:17Z` (~18 min senare). Gäller VARJE bevis-läge som skapar
+ett `ci-natt`-märkt ärende — `simulate_missing`, `simulate_beroende_tyst`
+och (sannolikt, oprövat) `nightly.yml`s `simulate_failure=produkt`, som
+går via samma `alarm`-jobb och samma etikett. Den strukturella fixen
+(dedupen ska inte kunna matcha ett bevis-ärende över huvud taget) är ett
+eget kort, `TASK-484` — ändras inte här.
 
 **Öppet bokförd begränsning:** vakten är själv en schemalagd körning och
 ärver därmed den defekt den ska täcka. Den fångar det vanliga fallet (en
