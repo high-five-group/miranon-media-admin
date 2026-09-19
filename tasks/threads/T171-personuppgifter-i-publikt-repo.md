@@ -30,7 +30,7 @@ firma-uppgifter (publika på ett kvitto de själva skickar).
 ## Varför det hände — arbetssättet, inte slarv
 
 Basdefekt-kartläggningen (S102–S106) och backfillen bevisar dubbletter och
-länkfel genom att citera de verkliga records som är fel: *"Ulrika X bär två
+länkfel genom att citera de verkliga records som är fel: *"Deltagare 88 bär två
 Person-records"* är beviset. Det är rätt metod — och fel medium. Beviset
 behöver record-ID:t och EN stabil pseudonym, aldrig namnet. Samma sak för
 kvittoförlagan: vi behövde strukturen och talen, aldrig kunden.
@@ -93,8 +93,55 @@ persondata (köparuppgifter ur ett kvitto) i en NY leveransväg som tillkom
   sju ytor, den lokala PDF:en omdöpt, en e-postadress maskad.
 - `TASK-302.3` (2026-08-22): kvitto-utkastets exponeringsklass bokförd ovan
   (§ Adjacent) — ingen kod ändrad av DENNA post, endast bokföring.
+- **Punkt 1 + 2 KLARA (S126, 2026-09-18, Marcus GO).** 100 verkliga personer
+  → `Deltagare NN` (stabil pseudonym, samma nummer överallt) och 13
+  e-postadresser → `X***@domän`, över **34 filer**. Citeringsregeln ligger i
+  `CLAUDE.md` § Instruktioner — Alltid gäller, med lesson-fragment
+  `tasks/lessons.d/basdata-citeras-med-record-id-och-pseudonym-aldrig-med-namn.md`
+  `[UNIVERSAL]`. Record-ID:n, anmälnings-ID:n, belopp och datum står kvar —
+  dubblett-bevisen är fortfarande följbara (stickprov: fälla 40:s
+  case-e-post-dubblett och fälla 42:s två Person-records går att följa mellan
+  `data-model.md`, `execute-log.md`, `segment-export/export.mjs` och
+  sessionsdok S60).
+
+### Omfattningen var ~20× tabellens uppskattning
+
+Tabellen ovan säger *"fem kända namn"* och *"≥ 13 filer"*, båda märkta som
+undre gränser. Den faktiska mätningen 2026-09-18 gav **100 personer i 34
+filer** — inklusive ytor tabellen inte nämnde: två fullständiga
+närvarolistor med ~47 namn (S60), fyra prod-stickprov i
+`02-live-state.md`, en rad ur backfillens touchpoint-tabell med åtta
+namngivna personer, nio namn i ett bokstavsindex-research, **sju
+backlog-kort** (två bar dessutom ett namn i sin TITEL, alltså i filnamnet),
+en kodkommentar i `PersonsList.tsx`, tre i `segment-export/export.mjs` och
+**ett namn som läckt in i en enhetstest-fixtur**
+(`tests/api/betalningar-inkorg.test.ts` — personen är belagd som verklig i
+prod via `TASK-372`/S115, inte en seed-fixtur).
+
+Undre gränser ska läsas som undre gränser: den som tar dem för totalsiffror
+städar en femtedel och tror sig klar.
 
 ## Öppet
 
-- Punkt 1–4 ovan. Punkt 1 är en bygg-agent-enhet med `git grep` som facit;
-  punkt 2 är en CLAUDE.md-rad; punkt 3 och 4 är Marcus-beslut.
+- **Punkt 3 — e-postvakten:** ej byggd, Marcus-beslut. Regeln i `CLAUDE.md`
+  är PROSA och bärs av disciplin, inte av en grind (ADR-083). En regex-vakt
+  med allowlist skulle fånga e-postklassen billigt; **namn går inte att
+  grinda** — samma sträng var en verklig person, en staging-fixtur och ett
+  generiskt bokstavsexempel i tre olika filer under detta pass.
+- **Punkt 4 — git-historiken:** kvarstår som Marcus-beslut, och det är värt
+  att säga rakt ut: **uppgifterna finns kvar i varje commit som införde dem,
+  även efter punkt 1.** Städningen skyddar framtida läsare av arbetsträdet,
+  inte historiken. Repot är publikt i dag; en synlighetsändring tar inte
+  heller tillbaka det som redan hämtats eller arkiverats av tredje part
+  (`docs/research/repo-privat-konsekvenser-2026-09-18.md` § B6).
+  History-rewrite (`git filter-repo` + force-push + GitHub-support för
+  cachade vyer) är irreversibel och påverkar alla worktrees och parallella
+  sessioner; görs i så fall i ett eget, tomt fönster.
+- **Tveksamt fall, ej rört:** ett namn i
+  `src/components/betalningar/prototype/fixtur.ts` och de ARIA-snapshots som
+  genereras därifrån (samma namn som PR:ens och T171 punkt 1:s egen
+  beskrivning refererar till utan att skriva ut det). Namnet förekommer i
+  INGEN prod-kontext och ser ut som konstruerad prototypdata, men
+  efternamnet finns inte i seed-skriptets fasta listor — så det är inte
+  maskinellt bevisat fiktivt. Lämnat orört och
+  flaggat hellre än gissat.

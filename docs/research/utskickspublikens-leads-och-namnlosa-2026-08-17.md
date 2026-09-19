@@ -244,7 +244,7 @@ Detta är **exakt** det `PersonDetail.tsx:275-281` redan dokumenterar som ett
 "DELAT problem" för persondetaljen — men det hade aldrig bokförts för
 segment-/utskicksytan.
 
-### Varför just "Hej Ej," och inte "Hej Daniel,"
+### Varför just "Hej Ej," och inte "Hej Deltagare 22,"
 
 Förhandsvisningen exemplifierar med `mottagare[0]`
 (`VariantD.tsx:4374-4376`) — unionens första medlem i EF:ens svarsordning,
@@ -254,7 +254,7 @@ prod:
 | Segment först i valet | `mottagare[0]` | Förhandsvisningen säger |
 |---|---|---|
 | **"RIM 1"** | `recCtTpTWOPOltmFf`, namnlös | **"Hej Ej,"** |
-| "Fjärrskådning" | `recyscqpq1fU36xsY`, Daniel Karlsson | "Hej Daniel," |
+| "Fjärrskådning" | `recyscqpq1fU36xsY`, Deltagare 22 | "Hej Deltagare 22," |
 
 Marcus listade "RIM 1" först. Utfallet är alltså inte slumpmässigt — det är
 deterministiskt givet valordningen, och en ren funktion av att 62 % av den
@@ -285,7 +285,7 @@ publiken.
 | **Vyn ∩ publiken (247→373)** | **267** |
 | Vyn ∩ appens `get-leads`-filter (77) | 77 (vyn är en äkta övermängd) |
 
-Stickprov ur snittet: `Beatrice Nilsson` — 3 anmälningar, 3 genomförda
+Stickprov ur snittet: `Deltagare 15` — 3 anmälningar, 3 genomförda
 event, deltagit i Fjärrskådning + RIM 1 + RIM 2 — **ligger i vyn "Leads"**.
 
 Slår man upp en mottagare i basens `Leads`-vy för att kontrollera vem hon
@@ -393,7 +393,7 @@ fjärde och den enda där strängen kan lämna systemet i ett mail.
 
 **B4 — Registrera de 20 spårlösa namnlösa.** 20 personer utan anmälningar,
 utan hämtningar och utan närvaro (14 skapade 2025-11-25). Bland dem
-`fornander33@gmail.com` och `formander33@gmail.com` — ett stavfelspar som
+`fo***@gmail.com` och `fm***@gmail.com` — ett stavfelspar som
 ser ut som en dubblett. Låg prioritet, men de hör hemma i registret.
 
 ### I KODEN (där felet bevisligen är vårt)
@@ -497,3 +497,9 @@ frågan ställdes. `K1` före `B2`, annars försämrar bas-fixen mailvägen.
 **Extern förstapartskälla:**
 
 - Airtable Web API — [`filterByFormula` / list records](https://airtable.com/developers/web/api/list-records) och [metadata: get table](https://airtable.com/developers/web/api/get-base-schema) (vy-filter exponeras inte, vilket är grunden för den öppna punkten ovan)
+
+---
+
+> **Pseudonymiserat (T171, 2026-09-18):** namn i denna fil är ersatta med
+> stabila pseudonymer (`Deltagare NN`) och e-post maskad till `X***@domän`.
+> Se `tasks/threads/T171-personuppgifter-i-publikt-repo.md`.

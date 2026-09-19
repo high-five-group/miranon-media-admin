@@ -158,7 +158,8 @@ const SEARCH_DEBOUNCE_MS = 250;
  * `Personer.ort` är INTE personens hemort — det är en ROLLUP över personens
  * ANMÄLNINGAR av `Anmälningar.Ort` (en post per anmälan, inklusive tomma).
  * Mätt i prod-basen 2026-08-10: 27 personer har två eller fler olika orter
- * (t.ex. Roger Mukka: Falköping, Rönninge, Varberg). En rad som visar orten
+ * (t.ex. Deltagare 76: Falköping, Rönninge, Varberg — pseudonymiserat,
+ * T171, 2026-09-18). En rad som visar orten
  * bredvid namnet läses som "var hen bor" och är i så fall ofta fel eller
  * inkonsekvent — den tidigare motiveringen ("orten är det starkaste
  * särskiljande draget efter namnet") är därmed falsifierad. Fältet är

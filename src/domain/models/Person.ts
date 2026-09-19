@@ -8,8 +8,9 @@ export interface Person {
   /**
    * ROLLUP över personens ANMÄLNINGAR av `Anmälningar.Ort` (en post per
    * anmälan, inklusive tomma) — INTE personens hemort. Mätt i prod-basen
-   * 2026-08-10: 27 personer har två eller fler olika orter (t.ex. Roger
-   * Mukka: Falköping, Rönninge, Varberg). Fältet är fortsatt legitimt för
+   * 2026-08-10: 27 personer har två eller fler olika orter (t.ex. Deltagare
+   * 76: Falköping, Rönninge, Varberg — pseudonymiserat, T171, 2026-09-18).
+   * Fältet är fortsatt legitimt för
    * SÖKNING (`get-persons` SEARCH_FIELDS) och stannar av det skälet — men
    * visas MEDVETET INTE i person-kontext (personlistan/persondetaljen), där
    * det skulle läsas som "var personen bor". Rör aldrig detta fält utan att
