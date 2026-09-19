@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # check-docs.sh — kör ALLA dokumentations-grindar CI kör, i ett kommando.
 #
-# VARFÖR: grindarna bor på två ställen i ci.yml (docs-jobbet + det alltid-på
-# lint-jobbet) och måste idag minnas var för sig. S91 mätte kostnaden: två av
+# VARFÖR: grindarna bor på flera ställen i ci.yml (docs-jobbet huvudsakligen,
+# plus tre omärkta dubbletter i lint-jobbet sedan TASK-464.1/SE2 — se DE
+# FJORTON nedan) och måste idag minnas var för sig. S91 mätte kostnaden: två av
 # tre kördes vid två separata tillfällen samma dag, av två olika aktörer, och
 # de missade grindarna föll först i CI — ~9 minuter per träff bakom
 # staging-låset. Ett kommando som kör allt är billigare än ett minne som ska
@@ -46,31 +47,38 @@
 # MELLAN filer: `.claude/agents/bygg-agent.md` sade "nio". Den halvan är löst
 # genom att slutradens tal nu är härlett och kopian borttagen.)
 #
-# DE FJORTON:
+# DE FJORTON (JOBB-PLACERINGEN RÄTTAD TASK-464.1/SE2, 2026-09-19 — se den
+# ändringens PR-kropp för "kan en ren kodändring fälla den?"-tabellen per
+# grind; denna filS EGEN LISTA nedan och dess körordning är OFÖRÄNDRAD, bara
+# VILKET ci.yml-jobb som kör varje post ändrades):
 #   ci.yml docs-jobbet (villkorat på docs_changed):
 #     1. lychee link check          — kräver lychee-binär, SKIPPAS om den saknas
 #     2. markdownlint-cli2
 #     3. Vale (npm run lint:prose)  — kräver vale-binär, SKIPPAS om den saknas
 #     4. scripts/test-vale-regression.sh
-#   ci.yml lint-jobbet (kör alltid, även på kod-PR:er):
 #     5. scripts/check-frontmatter.sh
 #     6. scripts/check-lifecycle.sh
 #     7. scripts/check-public-checklists.sh
 #     8. scripts/check-adr-count.sh
 #     9. scripts/check-lesson-numbers.sh
 #    10. scripts/check-permissions-claims.sh
-#    11. scripts/check-fetch-depth-invariant.sh — läser ADR-029 + ADR-030 och
-#        kräver att erratum-noten finns. Mätt 2026-07-31 mot fixtur: struken
-#        erratum-rad i ADR-029 ⇒ exit 1. Ingenting utom en .md-ändring behövdes.
-#    12. scripts/check-listparitet.sh — paret `sentinel-markorer` läser
-#        CONTRIBUTING.md, paret `lychee-scope` läser DENNA fil. Mätt samma dag:
-#        en struken sentinel-backtick i CONTRIBUTING.md ⇒ exit 1.
 #    13. scripts/check-thread-index.sh — trådregistrets index (radform, enum i
 #        rätt kolumn, numrering, index↔fil, besläktad↔registret,
 #        barn-manifest↔registret). Wirad i lint-jobbet i TASK-108-wiringen;
 #        rubriken ovan blev sann i SAMMA commit som denna rad skrevs —
 #        ADR-083 förbjuder ordningen "lista först, mekanism sen". Femte
 #        invarianten (besläktad, ADR-095 beslut 2–3) tillagd i TASK-140.
+#   ci.yml lint-jobbet (villkorat på should_skip_tests==false sedan
+#   TASK-464.1/S4 — TIDIGARE kör alltid, även på kod-PR:er; posterna 11/12/14
+#   nedan har DESSUTOM en omärkt dubblett i docs-jobbet, se ci.yml:s egen
+#   kommentar vid varje dubblett-steg — check-docs.sh kör den underliggande
+#   SKRIPTLOGIKEN bara en gång oavsett hur många CI-jobb som anropar den):
+#    11. scripts/check-fetch-depth-invariant.sh — läser ADR-029 + ADR-030 och
+#        kräver att erratum-noten finns. Mätt 2026-07-31 mot fixtur: struken
+#        erratum-rad i ADR-029 ⇒ exit 1. Ingenting utom en .md-ändring behövdes.
+#    12. scripts/check-listparitet.sh — paret `sentinel-markorer` läser
+#        CONTRIBUTING.md, paret `lychee-scope` läser DENNA fil. Mätt samma dag:
+#        en struken sentinel-backtick i CONTRIBUTING.md ⇒ exit 1.
 #    14. scripts/check-facit.sh — låst facits adresserbarhet (ADR-102). Läser
 #        facit-manifesten under tasks/sessions/bilagor/ och fäller på
 #        odeklarerad facit-bild, saknat manifest, samt rivning av
@@ -100,15 +108,18 @@
 #     testsviten — kod-grindar. Ingen av dem läser en .md-fil, alltså kan ingen
 #     ren dokumentations-ändring fälla dem. `npm run lint` + `npm run typecheck`
 #     är deras väg. Skriptet lovar dokumentation, inget annat.
-#   · scripts/check-staging-preflight-wiring.mjs — kör i SAMMA alltid-på
-#     lint-jobb som 5-12 och är därför den enda kandidat kriteriet måste prövas
-#     mot uttryckligen i stället för att avfärdas som "kod-grind". Dess indata är
-#     playwright.config.ts och scripts/*.mjs; ingen .md-fil ingår. Utanför, med
-#     skäl.
+#   · scripts/check-staging-preflight-wiring.mjs — kör i SAMMA `lint`-jobb som
+#     11/12/14 (RÄTTAT TASK-464.1: posterna 5-10 flyttade till `docs`-jobbet,
+#     "alltid-på" gäller inte längre — `lint` är villkorat på
+#     should_skip_tests==false) och är därför den enda kandidat kriteriet
+#     måste prövas mot uttryckligen i stället för att avfärdas som
+#     "kod-grind". Dess indata är playwright.config.ts och scripts/*.mjs;
+#     ingen .md-fil ingår. Utanför, med skäl.
 #
 # LISTAN HÅLLS MOT ci.yml AV PARET `docs-grindar` SEDAN TASK-109 (2026-08-01).
 # Markör-paren (paritet-start/-slut med namnen `docs-grindar-lokal` nedan
-# respektive `docs-grindar-ci` i ci.yml:s lint-jobb) avgränsar de två
+# respektive `docs-grindar-ci` i ci.yml:s `docs`-jobb SEDAN TASK-464.1 —
+# TIDIGARE i lint-jobbet) avgränsar de två
 # regionerna — markör-literalen skrivs MEDVETET inte ut här: grinden tar
 # FÖRSTA raden som bär strängen, så ett omnämnande före den riktiga markören
 # flyttar regionsgränsen (fångat av mig själv 2026-08-01, fail-closed exit 2
@@ -233,9 +244,11 @@ else
     skip_gate "Vale L_X.2-regressionssvit" "vale-binären saknas lokalt — CI kör den"
 fi
 
-# --- 5-13. De alltid-på grindarna i lint-jobbet --------------------------
+# --- 5-13. Docs-grindarna (RÄTTAT TASK-464.1: 5-10/13 bor i `docs`-jobbet
+# sedan SE2; 11/12/14 nedan i "INGÅR"-listan bor PRIMÄRT i `lint`-jobbet men
+# har en omärkt dubblett i `docs` — se ci.yml:s egen kommentar per steg) ---
 # Blocket är A-SIDAN i paret `docs-grindar` (.listparitet-policy.conf, TASK-109)
-# och hålls mängd-likt med ci.yml:s lint-jobb av scripts/check-listparitet.sh.
+# och hålls mängd-likt med ci.yml:s `docs`-jobb av scripts/check-listparitet.sh.
 # Regionen mellan markörerna läses som data — inga kommentarer med frasen
 # "bash scripts/check-…" här inne.
 # paritet:start docs-grindar-lokal
