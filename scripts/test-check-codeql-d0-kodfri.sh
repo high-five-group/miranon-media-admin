@@ -187,7 +187,12 @@ kor_ci() {
     )
 }
 
-printf '\ntest-check-codeql-d0-kodfri — nitton fall\n'
+# Talet i denna banner skrivs INTE ut för hand (TASK-464.4 runda 2,
+# review-fynd 2 — bannern sade "nitton fall" i tre veckor efter att T20/T21
+# höjde det till tjugoett; filens eget huvud varnar mot exakt den TASK-106-
+# klassen, ändå glömdes DENNA rad). Det exakta antalet står bara i
+# slutraden ("N gröna, N röda"), som redan räknas dynamiskt.
+printf '\ntest-check-codeql-d0-kodfri\n'
 printf '%.0s─' {1..70}; printf '\n'
 
 # T1 — analyserbar fil, deklarerad.

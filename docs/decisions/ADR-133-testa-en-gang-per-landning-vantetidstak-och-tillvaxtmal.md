@@ -705,14 +705,27 @@ fail-closed.
 en svit kön redan körde och bevisade grön. Mekanism:
 `scripts/dedup-huvudgren.sh`, anropad av `ci.yml`:s `changed`-jobb på
 `push`-ytan, frågar SHA-identitet mot en grön `merge_group`-körning DÄR
-"Test suite" faktiskt körde (inte bara "körningen är grön" — samma
-fälla § Kontext redan namnger). Grupplandningar är BELAGDA, inte
-antagna: `ALLGREEN`-strategins kumulativa byggnad (verifierad mot
-GitHubs egen dokumentation) plus en skarp kontrastparsmätning samma dag
-(`e845dfab` → `dedup_hit=false`, docs-landning med sviten hoppad i
-kön; `6eef96de` → `dedup_hit=true`, kod-landning där sviten kördes)
-visar att SHA-identitet ensam täcker batchen, utan en separat
-BEFORE-spannvandring. Full analys: `scripts/dedup-huvudgren.sh`:s eget
+"Test suite" faktiskt körde. Fällan hålls, kontrastparsbevisad: `e845dfab`
+(docs-landning, sviten HOPPAD i en ändå grön kö-körning) →
+`dedup_hit=false`; `6eef96de` (kod-landning, sviten KÖRDE) →
+`dedup_hit=true` — "kö-körningen är grön" räcker alltså aldrig ensamt.
+
+Grupplandningar är BELAGDA, inte antagna: `ALLGREEN`-strategins
+kumulativa byggnad (verifierad mot GitHubs egen dokumentation) plus
+SAMMA grupplandning som beslut 6:s rättade skäl ovan citerar
+(`811cece3`, `#2588`+`#2596`) visar att `github.sha`s EGEN
+`merge_group`-körning (`35448948271`, byggd ovanpå `#2588`s
+gruppcommit) täcker hela batchen — `dedup-huvudgren.sh` gav
+`dedup_hit=true` på exakt den SHA:n, ingen separat BEFORE-spannvandring
+behövdes. Eftersom push-ytan efter S1 inte längre kör om sviten
+oberoende är kön den ENDA ytan som bevisar den hermetiska klassen på
+det landade trädet (samma slutsats beslut 6:s § Updates ovan drar) —
+S1:s villkor bär därför hela det skyddet och måste vara fail-closed:
+`scripts/dedup-huvudgren.sh` faller till `dedup_hit=false` på varje
+osäkerhet (API-fel, noll träffar, flera träffar, kö-bas-mismatch, eller
+en signal utan positivt belägg — se skriptets eget filhuvud och
+`scripts/lib/svit-signal.sh`), aldrig på "den sista PR:ens klassning"
+(T166-felklassen). Full analys: `scripts/dedup-huvudgren.sh`:s eget
 filhuvud. `ADR-077` § Updates (2026-09-19) bär motsvarande rättelse av
 § Beslut 2:s nu-historiska mekanismbeskrivning.
 

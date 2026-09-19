@@ -22,12 +22,30 @@
 #   T13 användningsfel (saknad REPO)                                → exit 2
 #   T14 KOPPLINGSGRINDEN — se nedan
 #   T15 WIRING — ci.yml:s dedup-steg anropar faktiskt detta skript
+#   T16 jobbnamn OMDÖPT, konstant OFÖRÄNDRAD, skippad under NYA namnet → false
+#       (var TRUE mot den gamla koden — se § RUNDA 2 nedan)
+#   T17 inga jobb alls i svaret                                     → false
+#   T18 ett inre jobb failure bland i övrigt lyckade                 → false
+#   T19 full svit grön, Staging/A11y ALLTID skippade där             → true
 #
-# T9/T10 ÄR AC#1:S KONTRASTPAR I STUBBFORM — samma binära distinktion som är
+# T9/T10 ÄR AC#1:S KONTRASTPAR I STUBBFORM — samma distinktion som är
 # skarpt bevisad mot verkliga körningar (se nedan). FÄLLAN uppdraget namnger
 # ordagrant ("villkoret får ALDRIG vara 'körningen är grön'") är T10: en
 # merge_group-körning med conclusion=success DÄR 'Test suite' ändå är
 # NÄRVARANDE (alltså skippad, D0-liknande kö-post) måste ge dedup_hit=false.
+#
+# ═══ RUNDA 2 (orkestrerarens review-fynd 1, PR #2598): POSITIVT BELÄGG ═══
+# T16 är den skarpa buggen som fångades: `las_svit_signal` (scripts/lib/
+# svit-signal.sh) tolkade TIDIGARE "paraplyjobbet saknas som eget namn" som
+# RUN — sant när anropet expanderat till inre jobb, men EXAKT samma tomma
+# träff uppstår om `Test suite` döps om i ci.yml utan att `scripts/lib/
+# ci-suite-job-name.sh` följer med. Signalen kräver nu POSITIVT belägg
+# (minst ETT inre jobb, prefixat `<namn> / `, med conclusion=success) i
+# stället för FRÅNVARO av det gamla namnet. T16 mutationstestad mot den
+# GAMLA koden (se PR-beskrivningen): gav dedup_hit=TRUE på exakt denna
+# fixtur före fixen, ger FALSE efter. T17–T19 är de tre återstående
+# grenarna review-fyndet efterfrågade (tomt svar, ett dåligt inre jobb,
+# ett fullt grönt fall med de ALLTID-skippade Staging/A11y-jobben kvar).
 #
 # ═══ SKARPT KONTRASTPAR (AC#1), MOT VERKLIGA KÖRNINGAR — INTE STUBBAT ═══
 # Mätt 2026-09-19 mot detta repos faktiska historik (`gh run view`, ingen
@@ -219,6 +237,32 @@ run_case "T10 'Test suite' skippad TROTS grön kö-körning (FÄLLAN, AC#1)" "fa
 scenario_defaults
 export GH_RUNVIEW_JSON='{"jobs":[{"name":"Detect changed files","conclusion":"success"},{"name":"Test suite","conclusion":"failure"}]}'
 run_case "T11 'Test suite' oväntad conclusion (failure)" "false"
+
+echo "── T16–T19: POSITIVT belägg (TASK-464.4 runda 2, review-fynd 1) ──"
+
+# T16 ÄR DEN SKARPA BUGGEN — samma scenario mätt tvåsidigt mot den GAMLA
+# koden (se PR-beskrivningen för mutant-körningen): jobbnamnet i ci.yml
+# döps om utan att CI_SUITE_JOB_NAME (scripts/lib/ci-suite-job-name.sh)
+# följer med. Körningen är GRÖN och sviten är SKIPPAD, men under det NYA
+# namnet — varken paraplyjobbets GAMLA namn eller något prefixat inre jobb
+# finns i listan. Gamla logiken ("paraplyjobbet saknas ⇒ RUN") gav
+# dedup_hit=true HÄR — en OTESTAD landning hade sett grön ut. Fixad logik
+# kräver POSITIVT belägg (minst ett inre jobb) och ger false.
+scenario_defaults
+export GH_RUNVIEW_JSON='{"jobs":[{"name":"Detect changed files","conclusion":"success"},{"name":"Full svit (omdöpt, EJ Test suite)","conclusion":"skipped"}]}'
+run_case "T16 jobbnamn omdöpt i ci.yml, konstant OFÖRÄNDRAD, sviten skippad under NYA namnet ⇒ false (var true före fixen)" "false"
+
+scenario_defaults
+export GH_RUNVIEW_JSON='{"jobs":[]}'
+run_case "T17 inga jobb alls i svaret ⇒ false (OKAND:tomt)" "false"
+
+scenario_defaults
+export GH_RUNVIEW_JSON='{"jobs":[{"name":"Test suite / Pure + Build","conclusion":"success"},{"name":"Test suite / Acceptance (hermetisk) (1)","conclusion":"failure"}]}'
+run_case "T18 ett inre jobb failure bland i övrigt lyckade ⇒ false (OKAND:ovantad-konklusion)" "false"
+
+scenario_defaults
+export GH_RUNVIEW_JSON='{"jobs":[{"name":"Test suite / Pure + Build","conclusion":"success"},{"name":"Test suite / Acceptance (hermetisk) (1)","conclusion":"success"},{"name":"Test suite / Staging (API + E2E)","conclusion":"skipped"},{"name":"Test suite / A11y (axe-runner)","conclusion":"skipped"}]}'
+run_case "T19 full svit grön, Staging/A11y ALLTID skippade där ⇒ true (oförändrat)" "true"
 
 echo "── T12–T13: användningsfel ──"
 

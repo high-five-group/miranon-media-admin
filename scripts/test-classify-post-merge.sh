@@ -50,6 +50,12 @@
 #   T13c post-merge.yml skickar BEFORE i klassningsjobbets env (kopplingsgrind,
 #       runda 2-tillägg — se § nedan)
 #
+# OKAND-SIGNALEN (TASK-464.4 runda 2, review-fynd 1 — scripts/lib/svit-
+# signal.sh kräver nu POSITIVT belägg, inte frånvaro, se den filens huvud):
+#   T30 jobbnamn omdöpt i kö-körningen (OKAND:tomt)          → false
+#   T31 inre jobb finns, inget success (OKAND:inga-lyckade)  → false
+#   T32 inre jobb med failure bland lyckade (OKAND:ovantad)  → false
+#
 # T22 ÄR N3:s TVÅSIDIGHETSBEVIS: den fäller mot skriptet FÖRE denna fix (ingen
 # BEFORE-räkning finns, så bara HEAD^2 läses — toppens docs-klassning ärvs
 # blint) och passerar efter. T27 är SPEGELBILDEN och samtidigt
@@ -531,6 +537,31 @@ if printf '%s' "${t29_ut}" | grep -q "degenererad push"; then
 else
     fel "T29a skälet i loggen är INTE det egna degenererad-push-skälet — kan vara den missvisande tak-texten"
 fi
+
+# ═══ T30–T32: OKAND-signalen (TASK-464.4 runda 2, review-fynd 1) ═══
+# scripts/lib/svit-signal.sh kräver sedan runda 2 POSITIVT belägg för RUN.
+# Dessa tre fall bevisar att classify-post-merge.sh:s docs_only FÖRBLIR
+# false (samma utfall som RUN/API-fel gav förut) för alla tre OKAND-formerna
+# — efterkontrollens fail-closed-riktning ("okänt = sviten kördes INTE").
+# Körda via VÄG A (kö-ytan) eftersom det är den ytan SE1 delar med
+# scripts/dedup-huvudgren.sh; den delade funktionens EGNA sju/åtta fall
+# (RUN/SKIPPED/OKAND × alla varianter) är redan bevisade i
+# scripts/test-svit-signal.sh — dessa tre är KOPPLINGS-beviset: att
+# classify-post-merge.sh tolkar OKAND rätt, inte att signalen själv är rätt.
+scenario_defaults
+export GH_RUNLIST_MG_JSON="${MG_OK}"
+export GH_RUNVIEW_MG_JSON='{"jobs":[{"name":"Detect changed files","conclusion":"success"},{"name":"Full svit (omdöpt, EJ Test suite)","conclusion":"skipped"}]}'
+run_case "T30 jobbnamn omdöpt i kö-körningen (OKAND:tomt) → docs_only=false" "false"
+
+scenario_defaults
+export GH_RUNLIST_MG_JSON="${MG_OK}"
+export GH_RUNVIEW_MG_JSON='{"jobs":[{"name":"Test suite / Staging (API + E2E)","conclusion":"skipped"}]}'
+run_case "T31 inre jobb finns, inget success (OKAND:inga-lyckade) → docs_only=false" "false"
+
+scenario_defaults
+export GH_RUNLIST_MG_JSON="${MG_OK}"
+export GH_RUNVIEW_MG_JSON='{"jobs":[{"name":"Test suite / Pure + Build","conclusion":"success"},{"name":"Test suite / Acceptance (hermetisk) (1)","conclusion":"failure"}]}'
+run_case "T32 inre jobb med failure bland lyckade (OKAND:ovantad-konklusion) → docs_only=false" "false"
 
 # --- T13: KOPPLINGSGRINDEN ---------------------------------------------------
 echo "── T13: kopplingen till ci.yml ──"

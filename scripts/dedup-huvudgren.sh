@@ -36,9 +36,10 @@
 # Villkoret är ALDRIG "kö-körningen är grön". `actions-minutbudget-2026-09-
 # 18.md` § S1/S1b mätte att 68 % av kö-körningarna ÄR gröna MED sviten
 # hoppad (D0/dedup/etc på kö-ytan självt). Signalen måste vara "sviten
-# KÖRDE och var grön" — samma binära signal scripts/classify-post-merge.sh
-# redan läser (se scripts/lib/svit-signal.sh, delad läsning). Läs ALDRIG
-# bara `conclusion`.
+# KÖRDE och var grön" — samma signal scripts/classify-post-merge.sh redan
+# läser (se scripts/lib/svit-signal.sh, delad läsning, POSITIVT belägg
+# krävs sedan runda 2 — se den filens eget huvud). Läs ALDRIG bara
+# `conclusion`.
 #
 # ═══ GRUPPLANDNINGAR — BELAGT, INTE ANTAGET (den svåra delen) ═══
 # `grouping_strategy: ALLGREEN` (verifierat 2026-09-19: `gh api
@@ -241,7 +242,7 @@ case "${signal}" in
         ;;
     RUN)
         dedup_hit=true
-        skal="'${CI_SUITE_JOB_NAME}' saknas som eget jobb i kö-körning ${mg_run_id} ⇒ sviten KÖRDE på detta träd och kö-körningen var grön ⇒ redan bevisat, tunga jobb hoppas på push-ytan."
+        skal="minst ett inre '${CI_SUITE_JOB_NAME} / …'-jobb lyckades i kö-körning ${mg_run_id} och inget hade en oväntad konklusion ⇒ sviten KÖRDE på detta träd och kö-körningen var grön ⇒ redan bevisat, tunga jobb hoppas på push-ytan."
         emit
         ;;
     SKIPPED:skipped)
@@ -250,6 +251,18 @@ case "${signal}" in
         ;;
     SKIPPED:*)
         skal="'${CI_SUITE_JOB_NAME}' har oväntad conclusion '${signal#SKIPPED:}' i kö-körning ${mg_run_id}, väntat 'skipped' (full svit, fail-closed)."
+        emit
+        ;;
+    OKAND:tomt)
+        skal="varken '${CI_SUITE_JOB_NAME}' eller något inre '${CI_SUITE_JOB_NAME} / …'-jobb hittades i kö-körning ${mg_run_id} — oväntad jobblista, inget att luta sig mot (full svit, fail-closed)."
+        emit
+        ;;
+    OKAND:inga-lyckade)
+        skal="inre '${CI_SUITE_JOB_NAME} / …'-jobb hittades i kö-körning ${mg_run_id}, men INGET lyckades — inget positivt belägg (full svit, fail-closed)."
+        emit
+        ;;
+    OKAND:ovantad-konklusion)
+        skal="minst ett inre '${CI_SUITE_JOB_NAME} / …'-jobb i kö-körning ${mg_run_id} har en konklusion utanför {success, skipped} — inget helt betrott belägg (full svit, fail-closed)."
         emit
         ;;
     *)

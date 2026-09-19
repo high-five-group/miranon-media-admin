@@ -2030,14 +2030,29 @@ jobs:
         # sitt innehåll.
         run: bash scripts/test-classify-post-merge.sh
 
+      - name: Test svit-signalen — delad läsning (TASK-464.4 runda 2)
+        # Per ADR-039 § lesson→grind (L43). Sviten prövar scripts/lib/
+        # svit-signal.sh:s las_svit_signal() DIREKT, isolerat från de två
+        # konsumenterna (scripts/dedup-huvudgren.sh, scripts/classify-post-
+        # merge.sh) — sju/åtta utfall, inklusive OKAND-formerna (review-fynd
+        # 1: RUN kräver nu POSITIVT belägg — minst ett inre `<namn> / …`-jobb
+        # med success — i stället för att tolka FRÅNVARO av paraplyjobbets
+        # namn som RUN, vilket gav ett falskt dedup_hit=true om jobbnamnet
+        # döptes om i ci.yml utan att konstanten följde med).
+        #
+        # Hermetisk (gh-stub på PATH, ingen nätverkstrafik, <1 s). Eget steg
+        # med ärligt namn per Session 17 K7-disciplinen.
+        run: bash scripts/test-svit-signal.sh
+
       - name: Test huvudgrenens SHA-identitetsdedup (TASK-464.4/SE1)
         # Per ADR-039 § lesson→grind (L43), samma kadens-argument som steget
         # ovan. Sviten prövar scripts/dedup-huvudgren.sh i BÅDA riktningar:
         # att en grön merge_group-körning DÄR sviten faktiskt körde ger
         # dedup_hit=true (HIT), och att varje osäkerhet — API-fel, noll
         # träffar, FLERA träffar, en grön kö-körning där sviten ändå var
-        # SKIPPAD (fällan uppdraget namnger) — ger dedup_hit=false
-        # (fail-closed, AC#2).
+        # SKIPPAD (fällan uppdraget namnger), ett omdöpt jobbnamn (OKAND,
+        # runda 2 review-fynd 1), inga jobb alls, eller ett inre jobb med
+        # oväntad konklusion — ger dedup_hit=false (fail-closed, AC#2).
         #
         # T14/T15 är skälet steget bor just HÄR och inte enbart i denna
         # kommentar: kopplingen till ci.yml:s faktiska `suite`-jobbnamn (delad

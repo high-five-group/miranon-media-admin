@@ -183,13 +183,14 @@
 # ═══ FAIL-CLOSED, UTAN UNDANTAG ═══
 # Varje avvikelse ger `docs_only=false`, alltså full svit: fel event, ingen
 # andra förälder, träd-avvikelse, API-fel, ingen grön PR-körning, saknat
-# `Test suite`-jobb, oväntad conclusion — och, sedan TASK-78, en kö-körning vars
+# `Test suite`-jobb, oväntad conclusion, OKAND svit-signal (TASK-464.4 runda
+# 2 — se § Delad ärvning) — och, sedan TASK-78, en kö-körning vars
 # bas inte är merge-commitens första förälder. Och, sedan TASK-450.2 (N3): när
 # `BEFORE` är satt men tomt eller ett noll-SHA, när `BEFORE` inte nås via första
 # föräldern inom taket på tio steg, när ett `gh`-anrop UNDER den vandringen
 # misslyckas, eller när fler än ETT steg krävs för att nå `BEFORE` (en kö-batch
 # med mer än en landning i samma push). VÄG A gör klassningen BILLIGARE,
-# aldrig mer tillåtande: den ärver samma binära signal ur en körning på samma
+# aldrig mer tillåtande: den ärver samma signal ur en körning på samma
 # SHA, och varje oväntad form faller till full svit precis som förut. Ingen gren
 # som förut gav `false` ger `true` efter ändringen utan att kö-körningen
 # uttryckligen sagt `skipped` på det landade trädet.
@@ -404,7 +405,19 @@ arv_ur_korning() {
         emit
     fi
     if [[ "${signal}" == "RUN" ]]; then
-        skal="'${CI_SUITE_JOB_NAME}' saknas som eget jobb i ${kalla}-körning ${run_id} ⇒ ci.yml KÖRDE sviten på detta träd (full svit)."
+        skal="minst ett inre '${CI_SUITE_JOB_NAME} / …'-jobb lyckades i ${kalla}-körning ${run_id} ⇒ ci.yml KÖRDE sviten på detta träd (full svit)."
+        emit
+    fi
+    # OKAND (TASK-464.4 runda 2): varken paraplyjobbet eller ett tillräckligt
+    # inre belägg hittades. Efterkontrollens fail-closed-riktning är den
+    # MOTSATTA av dedup-huvudgren.sh:s — okänt betyder här "sviten kördes
+    # INTE (bevisat)" ⇒ docs_only förblir false ⇒ post-merge.yml kör sin
+    # egna fulla klass i stället för att tyst lita på ett odiagnostiserat
+    # svar. Samma utfall (docs_only=false) som `signal != SKIPPED:skipped`-
+    # grenen nedan hade gett ändå — denna gren finns för att LOGGA rätt skäl
+    # i stället för att låta OKAND läsas som "en oväntad conclusion".
+    if [[ "${signal}" == OKAND:* ]]; then
+        skal="svit-signalen för ${kalla}-körning ${run_id} är OKÄND (${signal#OKAND:}) — varken paraplyjobbet eller ett tillräckligt inre belägg hittades; okänt tolkas här som 'sviten kördes INTE' (full svit, fail-closed)."
         emit
     fi
     if [[ "${signal}" != "SKIPPED:skipped" ]]; then
