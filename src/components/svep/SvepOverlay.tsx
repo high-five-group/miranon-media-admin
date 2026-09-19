@@ -1,11 +1,12 @@
 import { X } from 'lucide-react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useAuth } from '@/auth/useAuth';
 import { ATGARDER, fyllPlatshallare } from '@/components/events/atgarder/atgardsmallar';
 import { DetaljGrupp } from '@/components/events/detail/DetaljGrupp';
 import { Button, Dialog, MessageBox, SlideToConfirm } from '@/components/primitives';
 import { useSendActionTestEmail } from '@/data/mutations/actionEmail';
 import { type SvepGruppUtfall, useSendSvep } from '@/data/mutations/svepSend';
+import { useForberedSvepBilagor } from '@/data/queries/useEventAttachments';
 import type { Registration } from '@/domain/models/Registration';
 import { Adresslista } from './Adresslista';
 import { Forhandsvisning, type TestUtfall } from './Forhandsvisning';
@@ -76,6 +77,38 @@ const ATGARD_NAMN: Record<SvepTyp, string> = {
  * (skalning/duration/origin) bor i `Hem.tsx`s docblock — den filen äger
  * `<Modal>`, se dess § WOW-ÖVERGÅNGEN för hela resonemanget inklusive de
  * avfärdade alternativen.
+ *
+ * [TASK-455] BILAGOR — UTVIDGNING AV DET STÄMPLADE FACITET
+ * (`tasks/sessions/bilagor/s102-svep-konvergens/facit.json`), Marcus-GO
+ * 2026-09-18 ("GO på bilageväljaren i svepet"), landad som PR-KANDIDAT i
+ * väntan på hans stämpel (ADR-102 § Updates 2026-08-22 punkt A4: en
+ * utvidgning av en låst form är klass (c) och avgörs av honom, inte av
+ * denna kod). `bilagorPerGrupp` (state ovan) håller urvalet PER
+ * event-grupp — samma princip som `amne`/`mailtext` redan är funktioner AV
+ * grupp, eftersom `resolveAttachments` server-side kräver exakt event-match
+ * (se `svepSend.ts`s docblock). Väljaren själv återanvänder Åtgärds-sidans
+ * `BilageValjare` (`@/components/attachments/BilageValjare`, utbruten dit i
+ * denna skiva) och renderas per bläddrad grupp i `Forhandsvisning.tsx` —
+ * ingen ny UI-komponent uppfanns, bara en ny konsument av en redan
+ * facit-godkänd form.
+ *
+ * [TASK-455-ITERATION, S127] BILAGE-FÖRVÄRMNINGEN — Marcus efter
+ * stämplingspasset: "jag gillar inte att bilagorna laddar när jag växlar
+ * mellan eventgrupp". `Forhandsvisning.tsx` frågade bara den BLÄDDRADE
+ * gruppens `useEventAttachments`, så varje ny grupp mötte en kall cache.
+ * `useForberedSvepBilagor` (`@/data/queries/useEventAttachments`, se dess
+ * docblock för hela kontraktet: sekventiell kedja, felsvälj, avbrott vid
+ * stängning) startas HÄR — inte i `Forhandsvisning` — eftersom `SvepOverlay`
+ * är nivån som ÄGER `eventGrupper`-LISTAN som en HEL, stängningsbar
+ * livscykel: den unmountas EXAKT när dialogen stängs
+ * (`aktivtSvep && <SvepOverlay/>` i `Hem.tsx`), vilket ger förvärmnings-
+ * effekten en ren "avbryt vid stängning"-koppling. `Forhandsvisning` är i
+ * stället en ren bläddrings-presentation (dess eget docblock: "data lokalt,
+ * urval hos föräldern") — att lägga en ALLA-grupper-koncern där hade blandat
+ * ihop "den grupp jag visar just nu" med "alla grupper som finns", två
+ * skilda ansvar. `bilageEventIds` memoiseras på `eventGrupper` (inte
+ * omberäknad varje render) — `useForberedSvepBilagor`s eget kontrakt kräver
+ * en referensstabil lista, se dess docblock.
  */
 export function SvepOverlay({
   svepTyp,
@@ -101,6 +134,38 @@ export function SvepOverlay({
   const [lage, setLage] = useState<SvepLage>('granska');
   const [resultat, setResultat] = useState<SvepGruppUtfall[] | null>(null);
   const sendSvep = useSendSvep();
+
+  /* [TASK-455 AC #1/#2] BILAGEURVALET ÄR PER EVENT-GRUPP, aldrig globalt —
+     ett `eventId → valda Bilagor-record-ID:n`-register, ägt HÄR (inte i
+     `Forhandsvisning`) eftersom valet måste överleva bläddring mellan
+     grupper OCH nå fram till `skicka()` nedan. Ingen förvalslogik: kartan
+     börjar tom, och en grupp utan egen post behandlas som "inget valt"
+     (`bilagorPerGrupp.get(id) ?? TOM_MANGD`). */
+  const [bilagorPerGrupp, setBilagorPerGrupp] = useState<Map<string, Set<string>>>(new Map());
+
+  /* [TASK-455-ITERATION, S127] Förvärm SAMTLIGA gruppers bilagor sekventiellt
+     när overlayen öppnas — se filhuvudets § "BILAGE-FÖRVÄRMNINGEN" för VARFÖR
+     denna nivå äger anropet, och `useForberedSvepBilagor`s eget docblock
+     (`@/data/queries/useEventAttachments`) för hela kontraktet (sekventiell
+     kedja, felsvälj, avbrott vid stängning). Memoiserad på `eventGrupper` —
+     hooken kräver en referensstabil lista, annars startar kedjan om varje
+     render. */
+  const bilageEventIds = useMemo(() => eventGrupper.map((g) => g.event.id), [eventGrupper]);
+  useForberedSvepBilagor(bilageEventIds);
+
+  function vaxlaBilaga(eventId: string, attachmentId: string) {
+    setBilagorPerGrupp((forra) => {
+      const nasta = new Map(forra);
+      const forGrupp = new Set(nasta.get(eventId) ?? []);
+      if (forGrupp.has(attachmentId)) {
+        forGrupp.delete(attachmentId);
+      } else {
+        forGrupp.add(attachmentId);
+      }
+      nasta.set(eventId, forGrupp);
+      return nasta;
+    });
+  }
 
   /* [TASK-147.10, T53 väg C] SAMMA kontrakt som `AtgardsSida.tsx`s
      `GranskningsSida` — se den filens docblock. `aktuellGrupp?.event.id`
@@ -151,7 +216,7 @@ export function SvepOverlay({
   function skicka() {
     setLage('skickar');
     sendSvep.mutate(
-      { svepTyp, eventGrupper, amne, mailtext },
+      { svepTyp, eventGrupper, amne, mailtext, attachmentIds },
       {
         onSuccess: (utfallPerGrupp) => {
           setResultat(utfallPerGrupp);
@@ -172,6 +237,9 @@ export function SvepOverlay({
     fyllPlatshallare(atgard.amne, grupp.mottagare[0], grupp.event).text;
   const mailtext = (grupp: SvepEventGrupp) =>
     fyllPlatshallare(atgard.mall, grupp.mottagare[0], grupp.event).text;
+  /* [TASK-455] `[...Set]` — `sendActionEmail` vill ha en array (Bilagor-
+     record-ID:n), urvals-STATE ovan är en `Set` bara för O(1)-toggling. */
+  const attachmentIds = (grupp: SvepEventGrupp) => [...(bilagorPerGrupp.get(grupp.event.id) ?? [])];
 
   return (
     <Dialog
@@ -269,6 +337,8 @@ export function SvepOverlay({
                   testAdress={user?.email ?? null}
                   onSkickaTest={skickaTest}
                   onGruppVisas={setAktuellGrupp}
+                  bilagorPerGrupp={bilagorPerGrupp}
+                  onVaxlaBilaga={vaxlaBilaga}
                 />
               </DetaljGrupp>
             </div>

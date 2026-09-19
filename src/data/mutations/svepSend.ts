@@ -1,8 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/auth/useAuth';
-import { type Utfall, verkligtUtfallTillUtfall } from '@/components/events/atgarder/atgardsutfall';
 import { displayName } from '@/components/registrations/registration-display';
-import type { SvepEventGrupp, SvepTyp } from '@/components/svep/types';
 import {
   ACTIVITY_OBJECT_TYPES,
   mailVerb,
@@ -11,36 +9,33 @@ import {
 import { recordActivity } from '@/data/activityLog/recordActivity';
 import { useDataSource } from '@/data/useDataSource';
 import { queryKeys } from '@/queries/keys';
+import { type SvepGruppUtfall, type SvepSendInput, sendSvepGrupper } from './svepSendGrupper';
+
+/** [TASK-455] Re-exporterat härifrån så `SvepOverlay.tsx` och andra
+    konsumenter ser SAMMA importväg som innan flytten — den rena sändloopen
+    (`sendSvepGrupper`) och dess typer bor sedan denna skiva i
+    `svepSendGrupper.ts`, se DEN filens docblock för VARFÖR (env.ts-krocken
+    i api-pure-tester). */
+export { type SvepGruppUtfall, type SvepSendInput, sendSvepGrupper };
 
 /**
  * [TASK-241.3 AC #1/#2] Bekräftelsesvepets (och framtida påminnelsesvepets,
  * TASK-241.4) sändväg — `useConfirmAll`-MÖNSTRET återuppstår som ny
  * konsument (ADR-114 § Konsekvenser), inte den rivna hookens KOD: den
- * verkliga sändningen går genom SAMMA server-kontrakt som Åtgärds-sidans
- * `useSendActionEmail` (`dataSource.sendActionEmail`, TASK-147.1/147.2) —
- * STOPP-VILLKORET (AC #1) prövade ytan och den räckte, ingen ny EF byggdes.
+ * verkliga sändloopen bor i `sendSvepGrupper` (`svepSendGrupper.ts`); DENNA
+ * fil är hooken som binder den mot React Query, autentiseringen och
+ * aktivitetsloggen.
  *
  * VARFÖR EN NY HOOK OCH INTE `useSendActionEmail` RAKT AV: den hooken är
  * bunden till ETT `eventId` vid MONTERING (`useSendActionEmail(eventId)`) —
  * en React-hook kan inte anropas i en loop över event-grupper (Rules of
- * Hooks). Sändytan är cross-event (ADR-114 beslut 2), så denna hook gör
- * SJÄLVA loopen: ETT `dataSource.sendActionEmail`-anrop PER event-grupp
- * (ADR-114 beslut 3 — "ett sändanrop per event-grupp under huven"), parallellt
- * (`Promise.all`), och mappar varje grupps `SendActionEmailResult` genom
- * EXAKT samma `verkligtUtfallTillUtfall` (`atgardsutfall.ts`, ren flytt ur
- * `AtgardsSida.tsx`) som den per-event-ytan redan använder — samma
- * server-till-svensk-text-mappning, noll ny logik att hålla i synk.
+ * Hooks). Sändytan är cross-event (ADR-114 beslut 2), så `sendSvepGrupper`
+ * gör SJÄLVA loopen — se den filens docblock för sändkontraktet,
+ * bilage-forwardingen (TASK-455) och felfångst-disciplinen.
  *
  * HEMVIST-VAKTEN (`tests/api/mutation-hemvist-vakt.test.ts`, TASK-201.15):
  * `useMutation` MÅSTE bo under `src/data/mutations/` — SvepOverlay.tsx är
  * därför BARA en konsument, aldrig ägare av mutationen.
- *
- * EN GRUPPS NÄTVERKSFEL FÄLLER ALDRIG HELA SVEPET (ADR-114 beslut 3): ett
- * kastat fel för EN grupp fångas lokalt och mappas till samma `'failed'`-form
- * som ett server-rapporterat totalt misslyckande för just den gruppen — de
- * ÖVRIGA gruppernas resultat renderas ändå. Facitets "fel-resultat"-läge
- * visar exakt detta: sent/partial/failed SAMTIDIGT, aldrig en global
- * felskärm som döljer de grupper som faktiskt gick fram.
  *
  * AKTIVITETSLOGGEN (AC #4): EN post per FAKTISKT skickad mottagare
  * (`utfall.lyckade` — "servern är facit", samma disciplin som
@@ -51,51 +46,13 @@ import { queryKeys } from '@/queries/keys';
  * RENDERING, precis som varje annan mail-aktivitetsrad — ingen egen
  * sweep-specifik copy myntas.
  */
-
-export type SvepGruppUtfall = Utfall & { eventId: string };
-
-export interface SvepSendInput {
-  svepTyp: SvepTyp;
-  eventGrupper: SvepEventGrupp[];
-  amne: (grupp: SvepEventGrupp) => string;
-  mailtext: (grupp: SvepEventGrupp) => string;
-}
-
 export function useSendSvep() {
   const queryClient = useQueryClient();
   const dataSource = useDataSource();
   const { user } = useAuth();
 
   return useMutation<SvepGruppUtfall[], Error, SvepSendInput>({
-    mutationFn: async ({ svepTyp, eventGrupper, amne, mailtext }) =>
-      Promise.all(
-        eventGrupper.map(async (grupp): Promise<SvepGruppUtfall> => {
-          try {
-            const result = await dataSource.sendActionEmail({
-              actionType: svepTyp,
-              eventId: grupp.event.id,
-              registrationIds: grupp.mottagare.map((r) => r.id),
-              amne: amne(grupp),
-              mailtext: mailtext(grupp),
-              idempotencyKey: crypto.randomUUID(),
-            });
-            return {
-              eventId: grupp.event.id,
-              ...verkligtUtfallTillUtfall(result, grupp.mottagare),
-            };
-          } catch (error) {
-            return {
-              eventId: grupp.event.id,
-              status: 'failed',
-              lyckade: [],
-              fallna: grupp.mottagare.map((reg) => ({
-                reg,
-                skal: error instanceof Error ? error.message : 'Inget felmeddelande angavs.',
-              })),
-            };
-          }
-        }),
-      ),
+    mutationFn: (input) => sendSvepGrupper(dataSource, input),
 
     // SAMMA FALLBACK-FORM SOM `useSendActionEmail` (TASK-201.3): entiteten
     // är en ANMÄLAN (`registrationObjectId`), `mail` är kategorin.
