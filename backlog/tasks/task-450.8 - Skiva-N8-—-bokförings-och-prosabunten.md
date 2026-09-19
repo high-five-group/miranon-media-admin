@@ -4,7 +4,7 @@ title: 'Skiva: N8 — bokförings- och prosabunten'
 status: To Do
 assignee: []
 created_date: '2026-09-18 09:54'
-updated_date: '2026-09-18 23:02'
+updated_date: '2026-09-19 08:26'
 labels:
   - ready-for-agent
 dependencies:
@@ -31,7 +31,7 @@ Täcker användarberättelser: 11, 12
 - [x] #2 npm run bl -- task 365 --plain visar den mätta mekanismen och pekaren mot T166
 - [ ] #3 npm run bl -- task 239 --plain visar AC #3 bockad med run-ID:n
 - [x] #4 npm run review:metrics visar minst en kalibrering-rad, med belägg per post
-- [ ] #5 Hubbens rad rättad i hub-repot som egen commit (eller öppet bokförd som överlämnad till Marcus)
+- [x] #5 Hubbens rad rättad i hub-repot som egen commit (eller öppet bokförd som överlämnad till Marcus)
 <!-- AC:END -->
 
 ## Definition of Done

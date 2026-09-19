@@ -4,7 +4,7 @@ title: 'Skiva: N4 — vakt för paraplyets needs-lista'
 status: Done
 assignee: []
 created_date: '2026-09-18 09:53'
-updated_date: '2026-09-18 12:36'
+updated_date: '2026-09-19 08:26'
 labels:
   - ready-for-agent
 dependencies: []
@@ -33,9 +33,9 @@ Täcker användarberättelser: 6
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Final Summary
