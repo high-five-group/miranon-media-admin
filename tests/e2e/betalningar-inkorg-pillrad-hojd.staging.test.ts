@@ -24,9 +24,18 @@ import { mockValjarLista, valjarRad } from './helpers/valjar-lista';
  *      BETALNINGEN släpar — men beskedet gäller Airtable-spegeln.
  *
  * Runda 3:s form: spegel-beskedet flyttar UR pill-raden till BELOPPSRADEN
- * ("… kr kvar att betala"), som löpande caption-text med FULLSTÄNDIG text
- * "Basen släpar" intill det belopp det kvalificerar. Pill-raden får
+ * ("… kr kvar att betala"), intill det belopp det kvalificerar. Pill-raden får
  * `flex-wrap` tillbaka som skyddsnät och bär därefter högst TVÅ pillar.
+ *
+ * [TASK-475, Marcus 2026-09-19] BESKEDETS ORD ÄR SEDAN DESS RIVNA, PLACERINGEN
+ * ÄR DET INTE. Runda 3 satte den fullständiga texten "Basen släpar" plus ett
+ * `title` på beloppsraden; Marcus fällde bägge efter ögonmätning (*"vad betyder
+ * 'Basen släpar'? Den texten kan vi inte visa för användaren (Lotta)."*, och
+ * `title` är onåbart på pekskärm och för tangentbord). Raden bär numera en
+ * neutral IKON utan text, och hela meningen står synligt en gång ovanför
+ * listan. DENNA FIL prövar oförändrat PLACERINGEN och HÖJDLIKHETEN — TASK-456:s
+ * egna krav, som formbytet inte rör. Ordalydelse, teckenförklaring, sökläget
+ * och eventdetaljen prövas av `betalningar-inkorg-spegelbesked.staging.test.ts`.
  *
  * ═══════════════════════════════════════════════════════════════════════════
  * "EXAKT LIKA HÖGA" HAR EN NAMNGIVEN GRÄNS — DEN ENDA SOM FINNS
@@ -349,14 +358,21 @@ test.describe('TASK-456 — betalningsinkorgens kort-höjd (beskeden delade mell
   });
 
   /**
-   * RUNDA 3:s PLACERINGSKRAV: spegel-beskedet står på BELOPPSRADEN, med
-   * FULLSTÄNDIG text och sin förklarande `title` — och det står INTE kvar i
-   * pill-raden. Båda halvorna asserteras: en fix som lade till beskedet på
-   * beloppsraden men glömde ta bort pillen hade annars gått grön.
+   * RUNDA 3:s PLACERINGSKRAV, OFÖRÄNDRAT I SAK: spegel-markören står på
+   * BELOPPSRADEN och INTE i pill-raden. Båda halvorna asserteras — en fix som
+   * lade markören på beloppsraden men glömde ta bort pillen hade annars gått
+   * grön.
+   *
+   * [TASK-475] VAD SOM ÄNDRADES HÄR: markören bär inte längre den synliga
+   * texten "Basen släpar" eller ett `title`-attribut. Marcus fällde bägge
+   * 2026-09-19 (*"Den texten kan vi inte visa för användaren"*; `title` är
+   * dessutom onåbart på pekskärm och för tangentbord). Markören är nu en
+   * neutral ikon vars förklaring står synligt EN gång ovanför listan.
+   * ORDALYDELSEN och den nya ytan prövas av
+   * `betalningar-inkorg-spegelbesked.staging.test.ts`; denna fil prövar
+   * fortsatt bara PLACERINGEN och HÖJDEN, som är TASK-456:s eget krav.
    */
-  test('spegel-beskedet står på beloppsraden med fullständig text — aldrig i pill-raden', async ({
-    page,
-  }) => {
+  test('spegel-markören står på beloppsraden — aldrig i pill-raden', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await mocka(page);
     await page.goto('/mer/betalningar');
@@ -364,32 +380,39 @@ test.describe('TASK-456 — betalningsinkorgens kort-höjd (beskeden delade mell
     const kort = await hamtaKort(page);
     const trepill = kort.get(3) as Kort;
 
-    const besked = trepill.getByTestId('rad-belopp').getByTestId('rad-spegel-slapar');
-    await expect(besked).toBeVisible();
-    await expect(besked).toHaveText('Basen släpar');
-    await expect(besked).toHaveAttribute('title', 'Basen har inte hunnit uppdateras än');
+    const markor = trepill.getByTestId('rad-belopp').getByTestId('rad-spegel-slapar');
+    await expect(markor).toBeVisible();
 
-    // Beloppet och beskedet står i SAMMA rad, i den ordningen — beskedet
-    // kvalificerar beloppet och måste därför läsas efter det.
-    const beloppsradText = await trepill.getByTestId('rad-belopp').innerText();
-    expect(beloppsradText.replace(/\s+/g, ' ')).toContain('kr kvar att betala · Basen släpar');
+    // INGEN SYNLIG TEXT PÅ RADEN: beloppsraden säger bara beloppet.
+    //
+    // MÄTT, INTE ANTAGET, att `innerText` är FEL instrument här: sr-only-noden
+    // döljs med `position:absolute` + `clip`, inte med `display:none`, och
+    // `innerText` räknar därför MED den (bevisat i TASK-475:s första körning av
+    // syskonsviten — assertionen föll med hela sr-only-meningen i `Received`).
+    // Klona-och-ta-bort mäter det som faktiskt påstås.
+    const beloppsradText = await trepill.getByTestId('rad-belopp').evaluate((el) => {
+      const kopia = el.cloneNode(true) as HTMLElement;
+      for (const n of kopia.querySelectorAll('.sr-only')) n.remove();
+      return (kopia.textContent ?? '').replace(/\s+/g, ' ').trim();
+    });
+    expect(beloppsradText).toBe('12 500 kr kvar att betala');
 
-    // Pill-raden bär BARA pillar — aldrig spegel-beskedet, i någon form.
+    // Pill-raden bär BARA pillar — aldrig spegel-markören, i någon form.
     await expect(trepill.getByTestId('rad-pillar').getByTestId('rad-spegel-slapar')).toHaveCount(0);
     const pillradText = (await trepill.getByTestId('rad-pillar').innerText()).replace(/\s+/g, ' ');
     expect(pillradText).toContain('Förfallen');
     expect(pillradText).toContain('Obekräftad');
-    expect(pillradText).not.toContain('Basen');
-    expect(pillradText).not.toContain('släpar');
+    expect(pillradText).not.toContain('Databasen');
+    expect(pillradText).not.toContain('uppdaterats');
   });
 
   /**
-   * Negativ kontroll: en rad vars spegel är i fas bär INGET besked alls —
+   * Negativ kontroll: en rad vars spegel är i fas bär INGEN markör alls —
    * varken på beloppsraden eller i pill-raden. Utan den kunde en ovillkorlig
-   * rendering ha passerat höjdtesterna (alla kort lika höga, men alla med ett
-   * besked de inte ska ha).
+   * rendering ha passerat höjdtesterna (alla kort lika höga, men alla med en
+   * markör de inte ska ha).
    */
-  test('rad med spegeln i fas bär inget spegel-besked alls', async ({ page }) => {
+  test('rad med spegeln i fas bär ingen spegel-markör alls', async ({ page }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     await mocka(page);
     await page.goto('/mer/betalningar');
@@ -398,10 +421,11 @@ test.describe('TASK-456 — betalningsinkorgens kort-höjd (beskeden delade mell
     const pillfri = kort.get(0) as Kort;
 
     await expect(pillfri.getByTestId('rad-spegel-slapar')).toHaveCount(0);
-    await expect(pillfri.getByText('Basen släpar')).toHaveCount(0);
     // `sv-SE` grupperar med U+00A0 (hårt blanksteg), inte vanligt mellanslag —
     // normaliseras därför före jämförelsen i stället för att skrivas in rått.
-    const beloppsrad = (await pillfri.getByTestId('rad-belopp').innerText()).replace(/\s+/g, ' ');
+    const beloppsrad = (await pillfri.getByTestId('rad-belopp').innerText())
+      .replace(/\s+/g, ' ')
+      .trim();
     expect(beloppsrad).toBe('12 500 kr kvar att betala');
   });
 });

@@ -391,7 +391,7 @@ test('överbetalning sägs rakt ut i stället för att avrundas bort', () => {
 test('okänt pris säger att det är okänt, i stället för att gissa', () => {
   const utfall = beloppsutfall(rad({ gallandePris: null }), 1000);
   expect(utfall.ton).toBe('okant');
-  expect(utfall.text).toContain('Priset saknas i basen');
+  expect(utfall.text).toContain('Priset saknas i databasen');
 });
 
 test('ören räknas utan flyttalsdrift', () => {

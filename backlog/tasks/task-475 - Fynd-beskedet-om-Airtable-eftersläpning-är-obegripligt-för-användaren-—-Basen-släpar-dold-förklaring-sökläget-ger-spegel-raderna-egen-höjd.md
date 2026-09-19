@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-19 09:45'
+updated_date: '2026-09-19 10:36'
 labels:
   - fynd
 dependencies: []
@@ -47,16 +48,85 @@ Vilket ord stör: "släpar", "basen" eller båda? Säger Lotta "Airtable" eller 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
 - [ ] #1 Marcus har avgjort ordvalet (grillning eller direkt besked); beslutet bokfört i ORDLISTA.md om det rör fler än denna text
-- [ ] #2 Rött-först: test som visar att förklaringen i dag inte är nåbar utan hover (title-attribut) — efter fix är hela meningen synlig text
-- [ ] #3 Radmarkeringen är neutral (ingen varningssignal) och ryms på beloppsraden vid 390 px och 1280 px utan radbrytning, mätt med realistiska belopp inkl. sexsiffriga
-- [ ] #4 Sökläget: korthöjden är lika för rader med och utan besked vid 390 px, även med långt eventnamn — testat
-- [ ] #5 Båda konsumenterna (inkorgen och eventdetaljens Öppna detaljer) bär samma ord; tillgänglighet 11
+- [x] #2 Rött-först: test som visar att förklaringen i dag inte är nåbar utan hover (title-attribut) — efter fix är hela meningen synlig text
+- [x] #3 Radmarkeringen är neutral (ingen varningssignal) och ryms på beloppsraden vid 390 px och 1280 px utan radbrytning, mätt med realistiska belopp inkl. sexsiffriga
+- [x] #4 Sökläget: korthöjden är lika för rader med och utan besked vid 390 px, även med långt eventnamn — testat
+- [x] #5 Båda konsumenterna (inkorgen och eventdetaljens Öppna detaljer) bär samma ord; tillgänglighet 11
 - [ ] #6 Marcus ögonmäter i dev-server innan Done
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+## Marcus beslut, ordagrant (2026-09-19, S127)
+
+Om dagens text: *"Ser bra ut, men vad betyder 'Basen släpar'? Den texten kan
+vi inte visa för användaren (Lotta)."*
+
+Om lösningen: *"Jag vet inte, Lotta säger väl inget av det, det bästa kanske
+är som du sa att hela meningen står en gång synligt överst i listan när minst
+en rad berörs, typ 'Databasen har inte hunnit uppdateras för två betalningar.
+Beloppen här i appen stämmer.'"*
+
+På orkestrerarens konkretisering: *"Låter bra."*
+
+**"Typ" betyder att orden stämplas först när Marcus sett dem på plats.**
+AC #1 står därför obockad, och `ORDLISTA.md` är ORÖRD i denna PR — ordvalet
+bokförs där efter stämpeln, inte före.
+
+## Formen som byggdes
+
+- `SpegelSlaparBesked` — hela meningen, EN gång, synligt överst i den lista
+  där berörda rader står. Nivån är LIST-nivå (per eventgrupp i gruppvyn, per
+  träfflista i sökläget), inte sidnivå: meningen räknar, och ett tal måste gå
+  att koppla till de rader man faktiskt ser.
+- `SpegelSlaparMarkor` — radens markering: `Hourglass` utan text, `aria-hidden`,
+  med full mening i `sr-only`. Meningen överst är teckenförklaringen.
+- `BasenSlaparPill` är RIVEN (ingen död komponent kvar).
+- Ikonvalet: `Hourglass` är husets neutrala väntar-ikon (`VantelistePaminnelse`),
+  `AlertTriangle` är husets varningssignal. Inget är fel, ingen åtgärd krävs.
+- Numerus: SIFFRA, inte utskrivet räkneord — husets mönster utan motinstans
+  (`1 person väntar på plats.`, `1 dag kvar`, `3 träffar`).
+
+## Tre fel rättade, inte ett
+
+1. **Förklaringen var inte nåbar utan hover** (`title`-attribut) — nu synlig text.
+2. **Sökläget gav spegel-raderna egen höjd** @ 390 px: 162 mot 180 px. Nu 166/166.
+3. **Beloppet klipptes bort** @ 1280 px i sökläget: beloppsraden bar
+   `eventnamn · belopp · besked` i en `sm:truncate`-span, innehåll 458 px mot
+   306 px tillgängligt, så raden slutade i "… hösten 202…" och varken beloppet
+   eller beskedet syntes. Felet fanns på `main` före denna skiva och är
+   OBEROENDE av spegel-beskedet; eventnamnet har fått egen rad (ordens
+   fallback-gren, utlöst av mätning). Fyndet gjordes av skivans egen mätrigg,
+   inte av uppdraget.
+
+## Registrerat, ej åtgärdat (triage: blockerar ej, utanför ordern)
+
+`InbetalningsLista.tsx` bär SAMMA utsaga ("Databasen har inte hunnit
+uppdateras än …") men fortfarande med `AlertTriangle`. Ordern begränsade den
+ytan till ordbytet; att byta även dess ikon till `Hourglass` är ett
+designbeslut utanför skivan. Inkonsekvensen är medveten och bokförd här i
+stället för tyst tagen.
+
+## Facit-prövning (ADR-102)
+
+Två manifest nämner rörda sökvägar. `s121-bekraftelsesteget-konvergens/facit.json`
+listar `prototype/VariantC.tsx` + `prototype/radfalt.tsx` i `kallor` men bär
+`godkand: null`, alltså ADR-102 A1 **klass (a)** — fri ändring, ingen sidofil.
+`s111-anmalningssidan-konvergens/facit.json` ÄR stämplat, men dess `kallor`
+(`dev/anmalningar-prototyp/VariantB.tsx`, `FilterRad.tsx`, `EventValjare.tsx`,
+`hem-derivations.ts`) rör ingen fil i denna diff. **Ingen AMENDERING-sidofil
+krävs.**
+
+## Ögonmätning
+
+Skärmbilder (390 + 1280, gruppvy + sökläge, med och utan berörda rader) plus
+läsanvisning och mätvärden: `docs/research/task-475-spegelbesked-2026-09-19/`.
+<!-- SECTION:NOTES:END -->

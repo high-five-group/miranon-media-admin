@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { Link, useNavigate } from '@tanstack/react-router';
-import { AlertTriangle, CalendarRange, ChevronsUpDown, Clock, Upload, X } from 'lucide-react';
+import { CalendarRange, ChevronsUpDown, Clock, Upload, X } from 'lucide-react';
 import { parseAsString, parseAsStringEnum, useQueryState } from 'nuqs';
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import {
@@ -67,6 +67,7 @@ import {
 } from './markerings-minne';
 import { RegistreraForm, type RegistreringsUtfall } from './RegistreraForm';
 import { RegistreratNuBlock, type SessionsRad, type VantandeKvitto } from './RegistreratNuBlock';
+import { SpegelSlaparBesked, SpegelSlaparMarkor } from './SpegelSlaparBesked';
 import { SwishImport } from './SwishImport';
 
 /**
@@ -2294,6 +2295,13 @@ export function BetalningsInkorg() {
           <h2 className="font-semibold text-lg">
             {`${traffar.length} ${traffar.length === 1 ? 'träff' : 'träffar'}`}
           </h2>
+          {/* [TASK-475] TECKENFÖRKLARINGEN FÖR TRÄFFLISTANS SPEGEL-IKONER.
+              Sökläget har EN lista, så meningen står EN gång — direkt under
+              rubriken, ovanför de rader den räknar. `traffar` är hela den
+              renderade mängden (`rankaTraffar` blandar klara och öppna, och
+              BÅDA renderas som kort här), så talet och ikonerna kan aldrig
+              divergera. Se gruppvyns motsvarande kommentar för nivåvalet. */}
+          <SpegelSlaparBesked antal={traffar.filter((r) => r.spegelSlapar).length} />
           {traffar.length === 0 && (
             <p className="text-small text-text-muted">
               Ingen kvarvarande betalning matchar sökningen.
@@ -2408,6 +2416,23 @@ export function BetalningsInkorg() {
                   </span>
                 )}
               </h2>
+              {/* [TASK-475] TECKENFÖRKLARINGEN BOR PÅ LIST-NIVÅ, INTE PÅ
+                  SIDNIVÅ — och nivåvalet är hela poängen med formen.
+
+                  Meningen räknar ("för N betalningar"), och ett tal måste gå
+                  att koppla till de rader man har framför sig. Gruppvyn visar
+                  en lista PER EVENT, var och en med egen rubrik: ett enda tal
+                  överst på sidan hade räknat rader utspridda över flera
+                  grupper, och när Lotta scrollat ned till fjärde eventet hade
+                  teckenförklaringen för ikonerna hon ser legat utanför skärmen.
+                  På list-nivå står meningen alltid direkt ovanför precis de
+                  rader den förklarar — samma nivå som sökläget, alltså EN form
+                  och ETT beteende i båda lägena.
+
+                  `grupp.oppna`, inte hela gruppen: `grupp.klara` renderas som
+                  hopfällda textrader UTAN markör (se fällningen nedan), så att
+                  räkna dem hade lovat ikoner som inte finns. */}
+              <SpegelSlaparBesked antal={grupp.oppna.filter((r) => r.spegelSlapar).length} />
               {/* Villkorad på längd (samma skäl som träfflistans egen `<ul>`
                   ovan): en grupp kan bestå av ENDAST `klara`-rader, och en
                   tom `divide-y`-ruta hade då stått kvar utan innehåll ovanför
@@ -2526,62 +2551,95 @@ function RadInnehall({ rad, visaEvent }: { rad: InkorgsRad; visaEvent?: boolean 
       <InitialAvatar namn={rad.namn} />
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <span className="font-medium text-body sm:truncate">{rad.namn}</span>
+        {/* [TASK-475] EVENTNAMNET HAR EGEN RAD I SÖKLÄGET — MÄTT NÖDVÄNDIGT,
+            INTE VALT AV SMAK. Fram till nu stod `${eventNamn} · ` FÖRE beloppet
+            i SAMMA span som beloppet och spegel-markören, och den spannen bär
+            `sm:truncate`. Följden var mätt i denna skivas mätrigg, med ett
+            realistiskt långt eventnamn ("Retreat för kropp och sinne i Rongne,
+            hösten 2026") och ett sexsiffrigt belopp:
+
+              sökläge @ 1280 px — beloppsradens innehåll 458 px mot 306 px
+              tillgängligt ⇒ raden klipptes vid "… hösten 202…", och BÅDE
+              beloppet OCH markören låg utanför klippet. Skärmbilderna före
+              och efter: `docs/research/task-475-spegelbesked-2026-09-19/`.
+
+            Beloppet är radens hela ärende, så att ett långt eventnamn kunde
+            klippa bort det var ett fel OBEROENDE av spegel-beskedet — det
+            fanns på `main` före denna skiva och syntes aldrig, eftersom inget
+            test övade sökläget med ett långt namn. Egen rad löser båda:
+            beloppsraden bär numera BARA belopp (+ markör) och kan inte
+            klippas, och eventnamnet klipps med "…" i stället för att tränga
+            undan det. Mätt efter: beloppsraden 18 px (EN rad) och
+            scrollWidth === clientWidth i BÅDA bredderna.
+
+            `truncate` UTAN `sm:`-prefix, till skillnad från namnraden ovanför:
+            eventnamnet ska klippas på ETT sätt i alla bredder. Med `sm:` hade
+            det radbrutit under 640 px och klippts över, alltså gett kortet
+            olika höjd beroende på bredd — precis den bredd-beroende
+            höjdvariation skivan finns för att ta bort.
+
+            FULLT NAMN UTAN HOVER: `truncate` är ren CSS, så nodens
+            textinnehåll är hela namnet och skärmläsaren får det oavkortat.
+            Ingen `title` — det vore samma mus-bundna förklaring som denna
+            skiva river från spegel-markören. Gruppvyn visar dessutom hela
+            namnet som grupprubrik. */}
+        {visaEvent && rad.betalning.eventNamn && (
+          <span className="truncate text-caption text-text-muted" data-testid="rad-event">
+            {rad.betalning.eventNamn}
+          </span>
+        )}
         <span className="text-caption text-text-muted sm:truncate" data-testid="rad-belopp">
-          {visaEvent && rad.betalning.eventNamn ? `${rad.betalning.eventNamn} · ` : ''}
           {/* LÖPANDE TEXT ⇒ BELOPPET FÖRST (Marcus 2026-09-01, samma
               domänterm över alla betalningsytor): "1 500 kr kvar att
-              betala" läser som svenska efter eventnamnet, medan
-              etikett-först hade läst som en tabellrad i en mening.
-              Etikett-formen ("Kvar att betala" + högerställt värde) bär
-              panelen och anmälans detaljvy. */}
-          {saknas === null ? 'Pris saknas i basen' : `${visaKronor(saknas)} kr kvar att betala`}
-          {/* [TASK-456 RUNDA 3, Marcus 2026-09-19] SPEGEL-BESKEDET BOR HÄR,
-              INTE I PILL-RADEN — och det är ett BETYDELSE-argument innan det
-              är ett utrymmes-argument. `spegelSlapar` (`!betalning.spegelIFas`,
-              `inkorg-harledningar.ts`) säger att BELOPPET på just denna rad
-              kan visa något annat i basen än här: raden läser Postgres,
-              basen läser spegeln. Beskedet KVALIFICERAR ALLTSÅ BELOPPET och
-              hör till beloppets mening, medan "Förfallen"/"Obekräftad" är
-              tillstånd hos betalningen respektive anmälan. Bredvid dem läste
-              det dessutom som att BETALNINGEN släpar (granskningsfynd 2,
-              runda 2) — fel subjekt, och det syns inte förrän subjektet står
-              intill det det gäller. ADR-128 beslut 5 (eftersläpningen SYNS i
-              appen, tystas inte) är uppfyllt oförändrat: samma ikon, samma
-              `title`, samma FULLSTÄNDIGA ord, per rad.
+              betala" läser som svenska, medan etikett-först hade läst som en
+              tabellrad i en mening. Etikett-formen ("Kvar att betala" +
+              högerställt värde) bär panelen och anmälans detaljvy.
+              [TASK-475] Raden sade tidigare "läser som svenska EFTER
+              eventnamnet" — den halvan är riven med flytten ovan; beloppet
+              inleder numera sin egen rad, och den löpande formen står
+              oförändrad på egna ben. */}
+          {saknas === null ? 'Pris saknas i databasen' : `${visaKronor(saknas)} kr kvar att betala`}
+          {/* [TASK-475, Marcus 2026-09-19] RADEN BÄR IKONEN, LISTAN BÄR ORDEN.
+              Marcus fällde runda 3:s form efter ögonmätning, ordagrant: *"vad
+              betyder 'Basen släpar'? Den texten kan vi inte visa för
+              användaren (Lotta)."* Förklaringen låg dessutom i ett
+              `title`-attribut — osynligt på pekskärm och för tangentbord,
+              alltså ingen förklaring alls på mobil. Båda halvorna rättas i
+              samma drag: HELA meningen står synligt EN gång överst i listan
+              (`SpegelSlaparBesked`), och raden bär SAMMA ikon utan text
+              (`SpegelSlaparMarkor`) — meningen överst ÄR teckenförklaringen.
+              Skärmläsaren får meningen per rad via `sr-only`; ikonen är
+              `aria-hidden`. Ordval, ikonval och numerus: `SpegelSlaparBesked.
+              tsx` § filhuvud.
 
-              MÄTT (Playwright, `betalningar-inkorg-pillrad-hojd.staging.
-              test.ts` + probe, femsiffrigt belopp "12 500 kr kvar att
-              betala"): beloppsradens innehåll blir 246,2 px med beskedet
-              mot 266,0 px tillgängligt vid 390 px (marginal 19,8 px) och
-              305,7 px vid 1280 px (marginal 59,5 px) — EN rad i båda
-              fallen, radens höjd 18 px, korthöjden oförändrad 144/100 px.
+              PLACERINGEN PÅ BELOPPSRADEN ÄR ÄRVD FRÅN `TASK-456` RUNDA 3 OCH
+              OFÖRÄNDRAD I SIN MOTIVERING: `spegelSlapar` (`!betalning.
+              spegelIFas`, `inkorg-harledningar.ts`) säger att BELOPPET på just
+              denna rad kan visa något annat i databasen än här — raden läser
+              Postgres, databasen läser spegeln. Beskedet KVALIFICERAR alltså
+              beloppet, medan "Förfallen"/"Obekräftad" är tillstånd hos
+              betalningen respektive anmälan. Bredvid dem läste det som att
+              BETALNINGEN släpar (granskningsfynd 2, runda 2) — fel subjekt.
+              ADR-128 beslut 5 (eftersläpningen SYNS i appen, tystas inte) är
+              uppfyllt oförändrat, fortfarande per rad.
 
-              OCH OM MARGINALEN NÅGON GÅNG TAR SLUT SVÄMMAR INGET ÖVER:
-              detta är löpande TEXT, så den radbryter. Det är hela skälet
-              att beskedet bor här och inte i en pill-rad — runda 2:s fel
-              var inte ett för litet mått utan ett felläge som bröt mot
-              WCAG 1.4.10 i stället för att flöda om. Vid 360 px och 320 px
-              bryter raden mätt till två rader (36 px), korten blir olika
-              höga, och INGET sticker ut horisontellt. Det är den
-              namngivna gränsen, inte en regression.
+              ATT IKONEN ERSÄTTER TEXTEN ÄR OCKSÅ VAD SOM LÖSER SÖKLÄGET: där
+              bär samma span dessutom `${eventNamn} · ` FÖRE beloppet, och
+              `sm:truncate` klipper först vid 640 px — under den bredden
+              radbryter raden i stället. Runda 3:s tolv tecken ("Basen släpar")
+              gjorde brytningen tidigare för just spegel-raderna, vilket gav
+              dem egen höjd i sökläget. Ikonen bär samma utsaga på en bråkdel
+              av bredden. Mätvärden per bredd:
+              `betalningar-inkorg-spegelbesked.staging.test.ts` § filhuvud.
 
-              `h-[1lh]` + `align-bottom` PÅ WRAPPERN ÄR INTE KOSMETIK: utan
-              dem blir den inline-flexade ikonen radboxens högsta element
-              och drar upp kortet 2,5 px (mätt: 146,5 mot 144 px) — nog för
-              att bryta exakt det krav skivan finns för. Låst till precis en
-              radhöjd (`1lh` = 18 px här) kan den inte växa. Samma
-              `1lh`-husmönster som Intresserade-listans `min-h-[1lh]`. */}
+              `h-[1lh]` + `align-bottom` PÅ MARKÖREN ÄR INTE KOSMETIK — arvet
+              från runda 3, där det mättes: utan dem blir den inline-flexade
+              ikonen radboxens högsta element och drar upp kortet 2,5 px (146,5
+              mot 144 px). Formen bor i `SpegelSlaparMarkor`. */}
           {rad.spegelSlapar && (
             <>
-              {' · '}
-              <span
-                className="inline-flex h-[1lh] items-center gap-1 whitespace-nowrap align-bottom"
-                data-testid="rad-spegel-slapar"
-                title="Basen har inte hunnit uppdateras än"
-              >
-                <AlertTriangle aria-hidden size={13} />
-                Basen släpar
-              </span>
+              {' '}
+              <SpegelSlaparMarkor />
             </>
           )}
         </span>

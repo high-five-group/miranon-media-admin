@@ -223,7 +223,7 @@ export function markeringsSkal(rad: BekraftelseRad): string {
       return 'Anmälningsavgiften är redan betald. Välj "Allt som saknas" eller skriv beloppet.';
     }
   }
-  if (gallandePris === null) return 'Priset saknas i basen. Skriv beloppet för hand.';
+  if (gallandePris === null) return 'Priset saknas i databasen. Skriv beloppet för hand.';
   return 'Välj ett belopp eller skriv det för hand.';
 }
 

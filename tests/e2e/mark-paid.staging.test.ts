@@ -687,9 +687,15 @@ test.describe('Betalningsytan — LÄSYTA, mekaniskt bevisad (TASK-145.4 AC #5/#
       personRad(page, 'Peter Åkesson').getByText('1 500 kr', { exact: true }),
     ).toBeVisible();
 
-    // Anders: Postgres säger 1 000 inbetalt, spegeln 0 — pillen på namnraden.
-    await expect(personRad(page, 'Anders Ek').getByText('Basen släpar')).toBeVisible();
-    await expect(eva.getByText('Basen släpar')).toHaveCount(0);
+    // Anders: Postgres säger 1 000 inbetalt, spegeln 0 — markören på namnraden.
+    // [TASK-475] Markören är numera en IKON utan synlig text, så den lokaliseras
+    // på sitt test-id; hela meningen står EN gång ovanför listan och asserteras
+    // separat nedan (det är den som gör ikonen begriplig).
+    await expect(personRad(page, 'Anders Ek').getByTestId('rad-spegel-slapar')).toBeVisible();
+    await expect(eva.getByTestId('rad-spegel-slapar')).toHaveCount(0);
+    await expect(arbetsytan(page).getByTestId('spegel-slapar-besked')).toHaveText(
+      'Databasen har inte hunnit uppdateras för 1 betalning. Beloppet här i appen stämmer.',
+    );
 
     // Klara: ingen rad i öppna betalningar — spegeln själv säger klart.
     await arbetsytan(page).getByRole('radio', { name: 'Klara (2)' }).click();
@@ -916,7 +922,7 @@ test.describe('Betalningsytan — LÄSYTA, mekaniskt bevisad (TASK-145.4 AC #5/#
     await expect(karin.getByText('Kvar att betala', { exact: true })).toBeVisible();
     await expect(karin.getByText('500 kr', { exact: true })).toBeVisible();
     await expect(karin.getByText('900 kr', { exact: true })).toHaveCount(0);
-    await expect(karin.getByText('Basen släpar')).toBeVisible();
+    await expect(karin.getByTestId('rad-spegel-slapar')).toBeVisible();
     await expect(karin.getByText('Allt betalt.')).toHaveCount(0);
     await expect(personRad(page, 'Lars Öhman').getByText('Allt betalt.')).toBeVisible();
   });
@@ -928,13 +934,17 @@ test.describe('Betalningsytan — LÄSYTA, mekaniskt bevisad (TASK-145.4 AC #5/#
     await page.goto(`/event/${EVENT_ID}`);
     await oppnaDetaljer(page);
 
-    await expect(arbetsytan(page).getByText('Pris saknas i basen', { exact: true })).toHaveCount(1);
+    await expect(
+      arbetsytan(page).getByText('Pris saknas i databasen', { exact: true }),
+    ).toHaveCount(1);
     await expect(arbetsytan(page).getByText('Kvar att betala', { exact: true })).toHaveCount(0);
     await expect(arbetsytan(page).getByText('Inget att betala.')).toHaveCount(0);
 
     // Klara-fliken vet mer än priset: spegeln säger klart.
     await arbetsytan(page).getByRole('radio', { name: 'Klara (2)' }).click();
-    await expect(arbetsytan(page).getByText('Pris saknas i basen', { exact: true })).toHaveCount(0);
+    await expect(
+      arbetsytan(page).getByText('Pris saknas i databasen', { exact: true }),
+    ).toHaveCount(0);
     await expect(personRad(page, 'Karin Sjögren').getByText('Allt betalt.')).toBeVisible();
   });
 

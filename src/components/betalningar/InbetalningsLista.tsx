@@ -250,7 +250,7 @@ export function InbetalningsLista({ kalla, aktiv, listEtikett = 'Inbetalningar',
       {!spegel.iFas && (
         <p className="flex items-center gap-1.5 text-caption text-text-muted">
           <AlertTriangle aria-hidden size={13} className="shrink-0" />
-          {`Basen har inte hunnit uppdateras än. Appen har ${visaKronor(spegel.summaPostgres)} kr, basen ${spegel.summaBasen === null ? 'saknar värde' : `${visaKronor(spegel.summaBasen)} kr`}.`}
+          {`Databasen har inte hunnit uppdateras än. Appen har ${visaKronor(spegel.summaPostgres)} kr, databasen ${spegel.summaBasen === null ? 'saknar värde' : `${visaKronor(spegel.summaBasen)} kr`}.`}
         </p>
       )}
 

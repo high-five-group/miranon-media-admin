@@ -463,7 +463,7 @@ export function beloppsutfall(rad: InkorgsRad, belopp: number): Beloppsutfall {
   if (gallandePris === null) {
     return {
       ton: 'okant',
-      text: `${visat} kr registreras. Priset saknas i basen, så appen kan inte säga vad det täcker.`,
+      text: `${visat} kr registreras. Priset saknas i databasen, så appen kan inte säga vad det täcker.`,
     };
   }
 
