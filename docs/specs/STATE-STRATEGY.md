@@ -95,7 +95,7 @@ const queryClient = new QueryClient({
     queries: {
       staleTime: 5 * 60 * 1000,       // 5 min -- data anses farsk
       gcTime: PERSIST_MAX_AGE_MS,      // 24 h -- >= persistens maxAge (ADR-072)
-      retry: 3,
+      retry: globalRetryPolicy,        // funktion, inte talet 3 -- se nedan
       retryDelay: (attempt) => Math.min(200 * 2 ** attempt, 2000),
       refetchOnWindowFocus: true,       // Uppdatera nar Lotta atervander
       refetchOnReconnect: 'always',     // Uppdatera nar internet atergar
@@ -103,6 +103,20 @@ const queryClient = new QueryClient({
   },
 });
 ```
+
+**`retry: globalRetryPolicy` ersatte `retry: 3`** (TASK-451.4, 2026-09-19).
+Ett uttömt tidsbudget-fel är SLUTGILTIGT och retryas aldrig: tidsgränsen
+(`HAMTNINGENS_TIDSGRANS_MS`, 160 s) ligger i `callEdgeFunction`, alltså per
+EF-anrop, och ett omförsök efter en uttömd budget startar en NY budget --
+taket blir då `retry + 1` gånger gränsen, alltså precis det gränsen fanns
+för att sätta. För varje annat fel är funktionen ekvivalent med `retry: 3`.
+Regeln bor på ETT ställe, `src/queries/retry-policy.ts`
+(`arSlutgiltigtFel` + `husetsRetryPolicy` + `globalRetryPolicy`); att varje
+`retry:` i `src/` faktiskt går genom den vaktas av
+`tests/api/retry-vakt.test.ts`. Skillnaden mellan de två exporterna:
+`globalRetryPolicy` är fortsatt blind på 4xx (scope-gräns), medan
+`husetsRetryPolicy` -- den som anropsställena använder -- aldrig retryar ett
+klientfel.
 
 Query-cachen persistas till localStorage via PersistQueryClientProvider
 (ADR-072, task-8.3): varm appstart renderar senast kanda data direkt.

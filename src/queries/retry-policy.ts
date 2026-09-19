@@ -18,6 +18,25 @@ import { TidsgransFel } from '@/data/utils';
  * felklassen var APP-BRED: routerns globala default och samtliga 18 kopior av
  * 4xx-lambdan bar samma blindhet.
  *
+ * RESERVATION — "PER FRÅGA" BETYDER I SJÄLVA VERKET "PER EF-ANROP".
+ * Tidsgränsen bor i `callEdgeFunction` (`supabase-client.ts`), alltså per
+ * EF-anrop. För en fråga vars `queryFn` gör exakt ETT EF-anrop är de två
+ * samma sak, och det är alla frågor i appen utom en. Undantaget är en
+ * KLIENT-SIDIG cursor-walk: `AirtableAdapter.fetchIntresserade` går via
+ * `samlaCursorSidor` (`src/data/adapters/cursorWalk.ts`, TASK-350) och gör ett
+ * eget `callEdgeFunction` PER SIDA — värsta väggtid för den frågan är därför
+ * `160 s × antal sidor`, inte 160 s. Vad denna modul tar bort är i båda fallen
+ * query-lagrets FAKTOR 4, inte den absoluta siffran. Samma felklass som
+ * granskningens runda 2-fynd 3 på PR #2551, återinförd i ny prosa och rättad i
+ * runda 4.
+ *
+ * Räknat, inte antaget (runda 4): `samlaCursorSidor` har ETT anropsställe i
+ * `src/`, så `fetchIntresserade` är den enda klient-sidiga walken.
+ * `fetchPersonsRegister`s fullwalk är SERVER-sidig — den bor i
+ * `supabase/functions/get-persons/index.ts` (`register=true`-grenen,
+ * "funktionens ENDA fullwalk") och klienten gör ETT anrop, alltså EN budget
+ * för hela registret.
+ *
  * ── REGELN: ETT UTTÖMT TIDSBUDGET-FEL ÄR SLUTGILTIGT ──────────────────────
  *
  * Ett omförsök efter en uttömd budget är fel i två oberoende led:

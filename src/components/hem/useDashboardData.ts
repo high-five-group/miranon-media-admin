@@ -20,6 +20,15 @@ import { hamtaDashboardEvents, hamtaDashboardRegistrations } from './hamtaDashbo
  * egen 160 s-budget, alltså ~640 s väggtid för EN poll-omgång. Nu är värsta
  * väggtiden per fråga EN budget.
  *
+ * RESERVATION (runda 4): "EN budget per fråga" är exakt sant FÖR DESSA TVÅ
+ * frågor, och det är inte en generell app-regel. Tidsgränsen bor i
+ * `callEdgeFunction`, alltså per EF-anrop; båda queryFn:erna nedan gör precis
+ * ETT anrop (`fetchEvents` respektive `fetchRegistrations`, via
+ * `hamtaDashboardData.ts`). En fråga vars queryFn i stället gör en
+ * KLIENT-SIDIG cursor-walk betalar en egen budget per SIDA — i dag gäller det
+ * `fetchIntresserade` (`samlaCursorSidor`), som Hem inte konsumerar. Hela
+ * resonemanget: `src/queries/retry-policy.ts` § RESERVATION.
+ *
  * `useDashboardRegistrations` konsumeras av BÅDE NyaAnmalningar- och Obetalda-
  * cardet; samma `queryKey` ⇒ React Query dedupar till EN nätverksfetch.
  *
