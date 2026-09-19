@@ -3,10 +3,10 @@ id: TASK-460
 title: >-
   Länkröta #1482: hitta den trasiga länken och laga eller undanta den — enda
   kvarvarande orsaken till röd natt 2026-09-18
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-18 11:52'
-updated_date: '2026-09-18 22:57'
+updated_date: '2026-09-19 08:27'
 labels:
   - ready-for-agent
 dependencies: []
@@ -24,14 +24,14 @@ Mätt av orkestreraren 2026-09-18 (S126): natten 2026-09-18 hade ALLA åtta kont
 <!-- AC:BEGIN -->
 - [x] #1 Varje felande länk i den senaste nattens lychee-logg är listad i kortet med felkod och åtgärd (rättad / undantagen med mätt skäl)
 - [x] #2 En manuell körning av länkkontrollen (workflow_dispatch eller lokalt lychee utan cache med samma flaggor som nightly.yml) är grön
-- [ ] #3 Efter första skarpa natten: #1482 stängt enligt stängningsregeln i CONTRIBUTING § Nattnätet
+- [x] #3 Efter första skarpa natten: #1482 stängt enligt stängningsregeln i CONTRIBUTING § Nattnätet
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -65,3 +65,9 @@ Grönt, inga fel. (En tidigare körning samma dag visade transient två DNS-rela
 
 AC #3 (stängning av #1482 efter första skarpa gröna natten): EJ görbar i denna skiva — kräver att NÄSTA schemalagda nattkörning (efter denna PR:s landning) faktiskt är grön, vilket inte kan verifieras innan den kört. Lämnas obockad med avsikt; orkestreraren/nästa session stänger #1482 enligt CONTRIBUTING § Nattnätets stängningsregel när den gröna natten är bekräftad.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landad i PR #2555 (`12153710`, buntad med N8): de felande länkarna lagade eller undantagna i `.lycheeignore` med mätt skäl per post. AC #3 stängd 2026-09-19 (S126 resume 3): första skarpa natten efter landningen — schemalagd körning 35424541948 — hade "Länkkontroll (utan cache)" grön och kanaljobbet "Länkröta — stående ärende" överhoppat; ärende #1482 stängt med skriven motivering enligt CONTRIBUTING § Nattnätet, väg (a). DoD #2/#3 belagda av landningen själv: PR:en gick genom merge-kön med grön CI, och dess sju filer hör alla till bunten N8+460.
+<!-- SECTION:FINAL_SUMMARY:END -->

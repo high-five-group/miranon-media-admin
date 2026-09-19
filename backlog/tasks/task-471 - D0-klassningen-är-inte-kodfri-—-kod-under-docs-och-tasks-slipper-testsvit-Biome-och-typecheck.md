@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-19 01:36'
+updated_date: '2026-09-19 09:44'
 labels:
   - ready-for-agent
 dependencies: []
@@ -33,3 +34,9 @@ Funnet av granskaren av #2558 (S5) och stickprovat av orkestreraren 2026-09-19: 
 - [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+ÅKER MED NÄSTA KODKLASSADE CI-PR (S126, 2026-09-19, Marcus-beslut A på #2564 runda 3): två info-fynd som INTE rättades i #2564 för att slippa en ny head + ny granskning (~190 fakturerade min för två textrader): (1) .github/workflows/ci.yml rad ~1061 — kommentaren på steget 'Validate CodeQL D0-undantaget är kodfritt' påstår att steget ligger i regionen docs-grindar-ci; det ligger i lint-jobbet (rad 1059–1104), regionen ligger i docs-jobbet (rad 2948–3123). Mekaniken är rätt, prosan falsk (ADR-083-klassen) — en agent som litar på kommentaren och flyttar steget återskapar fail-open-hålet rebasen undvek. (2) scripts/verify-ci-parity.mjs rad ~833 — jobLabel '(… + 9 av lint-jobbets steg)' ska vara 3 efter SE2. Källa: review-utlåtandet runda 3 i #2564:s PR-kropp.
+<!-- SECTION:NOTES:END -->
