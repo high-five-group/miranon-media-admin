@@ -1133,6 +1133,65 @@ grön igen, eller med en skriven motivering — aldrig för att det blivit gamma
 Det är just den risk `ADR-077` § Beslut 3 varnar för: en mildare kanal som blir
 en kyrkogård ingen läser.
 
+### Tidsregel och ägare — rött efter landning och nattärenden (`TASK-479.2`, SE16)
+
+Stängningsreglerna ovan (§ Exponeringsfönstret, § Nattnätet) säger VAD ett
+svar är: en åtgärd, en genomförd revert eller en öppet skriven motivering —
+aldrig tyst. Fram till `TASK-479.2` sa de ingenting om NÄR och VEM. **16 larm
+stod obesvarade i 10–11 dygn**
+(`docs/research/ci-djupgranskning-2026-09-17/10-migrations-och-atgardsplan.md`
+§ SE16) innan denna regel fanns, och 2026-09-19 stod tre röda efterkontroller
+på `main` samtidigt (`#2573`, `#2575`, `#2577`) — alla på samma ärvda testfel
+från en landning, varav två tillhörde en annan session än den som först såg
+felet.
+
+**Tidsregel.** Ett öppet `ci-post-merge`-ärende eller nattärende (`ci-natt`,
+`bokforingsdrift`, `beroendevarning`, `lankrota`) ska ha fått ett SVAR — enligt
+respektive stängningsregels egen definition, alltså inte nödvändigtvis
+STÄNGT — inom **24 timmar** från att det öppnades. Fristen gäller svaret, inte
+lösningen: en kommentar som beskriver rotorsak och plan räknas, ett
+`ci-natt`-ärende som medvetet väntar på ett namngivet villkor (t.ex.
+`TASK-239`:s fönster, § ovan) räknas, en tyst öppen ruta i tio dygn gör det
+inte.
+
+**Ägarregel.** Den session vars landning FÖRST gjorde efterkontrollen eller
+natten röd äger det ärendet. En landning som råkar ärva ett redan-rött träd —
+`post-merge.yml`s attributionstext säger det rakt ut när den kan ("... var
+redan RÖD ⇒ felet är sannolikt ÄLDRE än den här landningen. Revertera inte
+reflexmässigt") — äger INTE ett nytt ärende bara för att den råkade vara
+landningen som mätte igen; den pekar mot det FÖRSTA ärendet i stället för att
+öppna en egen utredning mot fel commit.
+
+**Mekaniskt stöd — svepet gör det synligt.**
+`scripts/heartbeat-svep.sh` rapporterar sedan `TASK-479.2` öppna
+`ci-post-merge`- och nattärenden som en egen, GLES rad (skriptets § SJUNDE
+VÄGEN) — ett känt, ägt läge ska inte larma var 90:e sekund, så raden visas
+vid ÖVERGÅNG (in i eller ur rött) och därefter med ett konfigurerbart
+påminnelseintervall (`HEARTBEAT_ARENDE_PAMINNELSE_INTERVALL`,
+`.heartbeat-svep-policy.conf`, default 1800s). Rapporteringen är GLOBAL, inte
+sessions-scopad — `--session <ID>` filtrerar RÖTT/DIRTY/ARMERINGS-KANDIDAT för
+PR:ar (`CLAUDE.md` § Landning), men huvudgrenens ärenderegister har ingen
+sessionsmarkör och angår varje session oavsett flagga.
+
+**En känd, medvetet obyggd gräns.** Svepet pekar INTE automatiskt mot "det
+första ärendet" när flera `ci-post-merge`-ärenden delar samma rotorsak — att
+avgöra "samma felande TEST" kräver att parsa jobbets logg-utdata, inte bara
+`needs`-resultatets pass/fail per JOBB, och är ett nytt beroende som låg
+utanför `TASK-479.2`:s scope (dess Testbeslut-sektion omfattar bara svepets
+egen rapportering). Uppföljning kortad: `TASK-483`.
+
+### Varifrån `TASK-365` AC #3 är löst
+
+`TASK-365` AC #3 ("Heartbeat-svepet rapporterar senaste nightly-körningens
+rött som RÖTT-rad") löses av § SJUNDE VÄGEN ovan, men på en BREDARE primitiv
+än den bokstavliga formuleringen: öppna nattärenden (GitHub Issues), inte
+senaste körningens `conclusion`. Skälet är en ADR-086-prövning av kortets
+egen hypotes (`gh run list --limit 1`): en grön NÄSTA körning säger inget om
+huruvida ett ÄLDRE öppet ärende fortfarande väntar på svar — exakt det
+tidsregeln ovan mäter. `gh issue list` är dessutom samma primitiv
+`post-merge.yml`/`nightly.yml` SJÄLVA bygger sina ärenden mot, inte en ny
+sanningskälla vid sidan av. Avvikelsen är bokförd på kortet, inte tyst.
+
 ## CodeQL — advanced setup (`TASK-464.2`)
 
 Säkerhetsskanningen kör sedan `TASK-464.2` (S5,

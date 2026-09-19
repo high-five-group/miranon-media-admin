@@ -308,6 +308,18 @@
 #   för en HELT ANNAN session ("S127") förblir tyst under BÅDA: bara
 #   SKIFTLÄGET normaliseras, inte VILKEN session ID:t pekar ut.
 #
+#   SJUNDE VÄGEN — öppna ci-post-merge-/nattärenden (TASK-479.2, SE16):
+#   svepet rapporterar GLEST (övergång + påminnelseintervall, ALDRIG var
+#   90:e sekund) huruvida GitHub bär öppna `ci-post-merge`- eller
+#   nattärenden (`ci-natt`/`bokforingsdrift`/`beroendevarning`/`lankrota`)
+#   — CONTRIBUTING.md § Tidsregel och ägare lägger en tidsregel på dem
+#   (svar inom 24 timmar), och denna väg är mekaniken som gör läget
+#   synligt. GLOBALT (inte sessions-scopat) — rött på main angår varje
+#   session, oavsett --session/--alla. Config:
+#   HEARTBEAT_ARENDE_PAMINNELSE_INTERVALL/HEARTBEAT_ARENDE_LIMIT i
+#   .heartbeat-svep-policy.conf. Ingen exit-bit (§ EXIT-KODER); fail-closed
+#   (77) på sondfel. Full mekanik: rapportera_arende_lage() nedan i filen.
+#
 # TREVÄGS-SNAPSHOT PER SVEP
 #   1. main-SHA — `gh api repos/<repo>/commits/<branch>`. Avancerar den
 #      sedan förra svepet har en landning skett (ALLTID-PÅ, inte en
@@ -405,6 +417,14 @@
 #   "rött" hade fått orkestreraren att leta efter en trasig PR som inte
 #   finns.
 #
+#   SJUNDE VÄGEN — öppna ci-post-merge-/nattärenden (TASK-479.2, SE16, se §
+#   nedan) — bär LIKASÅ ingen egen exit-bit, samma familj-skäl som
+#   gren-städningen: en observation av HUVUDGRENENS ärenderegister, inte en
+#   klassning av PR-landningsläget bitmasken ovan redan uttömmande beskriver.
+#   Ett fel i DENNA sond (gh-anropet misslyckas) FÅR dock samma fail-closed
+#   behandling som main-SHA-/PR-list-sonderna: 77, hela sopningen avbryts —
+#   se sweep_once() § SJUNDE VÄGEN för skälet.
+#
 # gh-binären kan överstyras med GH_BIN (testsvitens stub-väg, samma form
 # som ci-wait.sh/staging-semaphore.sh). Policy-filen med
 # HEARTBEAT_SVEP_POLICY, tillstånds-katalogen (senast sedda main-SHA) med
@@ -495,6 +515,13 @@ if [[ -f "${HEARTBEAT_SVEP_POLICY}" ]]; then
     TIMEOUT="${HEARTBEAT_TIMEOUT:-}"
 fi
 PR_LIMIT="${HEARTBEAT_PR_LIMIT:-100}"
+# SJUNDE VÄGEN (TASK-479.2, SE16, se § nedan). Tak för antal öppna ärenden
+# hämtade PER BUCKET (ci-post-merge / natt) — samma "teknisk säkerhetsgräns,
+# inte ett projekt-specifikt värde i sig"-motivering som PR_LIMIT ovan. 50
+# matchar `post-merge.yml`s EGEN --limit för samma etikett (§ Dedup i den
+# filen) — repots faktiska öppna-ärende-djup är litet (en handfull i taget,
+# mätt 2026-09-19: 4 ci-post-merge + 1 bokforingsdrift), 50 ger bred marginal.
+ARENDE_LIMIT="${HEARTBEAT_ARENDE_LIMIT:-50}"
 
 die() { printf 'heartbeat-svep: %s\n' "$1" >&2; exit "${2:-64}"; }
 say() { [[ "${QUIET}" -eq 1 ]] || printf '%s\n' "$1"; }
@@ -924,6 +951,143 @@ tips_notis_om_dags() {
     return 0
 }
 
+# ── SJUNDE VÄGEN: öppna ci-post-merge-/nattärenden (TASK-479.2, SE16) ───────
+#
+# VARFÖR: `CONTRIBUTING.md` § Tidsregel och ägare — rött efter landning och
+# nattärenden (samma skiva) lägger en TIDSREGEL på ett öppet ci-post-merge-
+# eller nattärende (svar inom 24 timmar). En tidsregel utan en mekanism som
+# GÖR läget synligt är prosa utan bett (samma ADR-083-lucka som L328/T112
+# redan bevisat för landnings-läget: en regel utan mekanism efterlevs inte
+# pålitligt) — 16 larm stod obesvarade i 10–11 dygn innan denna väg fanns
+# (docs/research/ci-djupgranskning-2026-09-17/10-migrations-och-atgardsplan.md
+# § SE16). `TASK-365` AC #3 begärde specifikt att nattens rött når svepet;
+# denna väg täcker det bredare (öppna ÄRENDEN, inte bara senaste körningens
+# conclusion — se kortets ADR-086-prövning för resonemanget).
+#
+# VAD: TVÅ gh-anrop, en `gh issue list` per bucket — samma kostnadsklass som
+# main-SHA-/PR-list-sonderna ovan (en direkt etikett-/sökfråga, ingen
+# paginerad skanning):
+#   ci-post-merge  --label ci-post-merge --state open (samma fråga
+#                  `post-merge.yml` § Dedup redan kör mot samma etikett)
+#   natt           --search 'label:ci-natt,bokforingsdrift,beroendevarning,
+#                  lankrota is:open' — kommatecken INOM `label:`-kvalificeraren
+#                  är GitHubs egen OR-syntax (docs.github.com, "Filtering and
+#                  searching issues and pull requests" — "You can use logical
+#                  OR ... by separating each label with a comma"), verifierat
+#                  LIVE 2026-09-19 mot high-five-group/miranon-media-admin:
+#                  frågan gav uteslutande #2566 (bokforingsdrift), inte en
+#                  AND-tom mängd — `gh issue list --label` (utan --search) är
+#                  AND-semantik (GitHubs REST `labels`-parameter), därför
+#                  `--search` för just detta fall, plain `--label` för
+#                  ci-post-merge (en enda etikett, ingen tvetydighet).
+#
+# VARFÖR TVÅ ANROP OCH INTE ETT (ADR-086-prövning av uppdragets egen
+# hypotes): uppdraget gissade "två billiga `gh run list --limit 1`-anrop"
+# (senaste körningens conclusion). Prövat och avvisat: AC #2 (kortet) ber om
+# ÖPPNA ÄRENDEN ("öppna ci-post-merge- och nattärenden ... öppet ärende ⇒
+# rad"), inte senaste körningens status — ett `gh run list` ger fel
+# primitiv (en grön NÄSTA körning säger inget om huruvida GÅRDAGENS öppna
+# ärende fortfarande väntar på svar, vilket är exakt vad tidsregeln mäter).
+# `gh issue list` är den primitiv `post-merge.yml`/`nightly.yml` SJÄLVA
+# bygger sina ärenden mot — samma sanningskälla, inte en ny. Kostnaden är
+# ändå LÅG (två enkla listfrågor, ingen paginering): uppdragets miss var i
+# VILKET api som skulle anropas, inte i BUDGETEN.
+#
+# SPARSE, INTE LEVEL-TRIGGERED (kortets krav, "ett känt, ägt läge ska inte
+# larma var 90:e sekund" — TASK-473-noten). RÖTT/DIRTY (PR-nivå) är
+# level-triggered VARJE svep (L443: en vakt som pollar tillståndsBYTE är
+# blind för rött). Denna väg är AVSIKTLIGT en ANNAN klass: ärendena har
+# REDAN en ägare och en stängningsregel i GitHub Issues, svepets jobb är
+# bara att göra det OMÖJLIGT att glömma — en rad vid varje ÖVERGÅNG
+# (kallstart/grön → röd, röd → grön) plus en gles påminnelse medan rött
+# kvarstår (rapportera_arende_lage() nedan), aldrig en rad per sopning.
+#
+# GLOBALT, INTE SESSIONS-SCOPAT (kortets krav: "--session-läget filtrerar
+# INTE bort main-läget — rött på main angår varje session"). Till skillnad
+# från omarkerad_notis_om_dags()/dependabot_status_notis_om_dags() (kräver
+# sessionslage=1, ALLTID sessions-scopade när de kör) körs DENNA väg
+# OVILLKORLIGT i sweep_once() — huvudgrenens ärenderegister är inte en
+# PR-egenskap och har ingen sessionsmarkör att filtrera mot. Statsfilerna
+# ligger därför direkt i STATE_DIR utan SESSION_STATE_SUFFIX, samma
+# MEDVETET GLOBAL-klass som STADA_STATE_FILE (§ FEMTE VÄGEN).
+#
+# INGEN EXIT-BIT (se § EXIT-KODER ovan för det fulla resonemanget) men
+# FAIL-CLOSED PÅ SONDFEL (77, samma som main-SHA-/PR-list-sonderna): ett gh-
+# anrop som inte svarar tystas hellre INTE — se sweep_once() nedan.
+#
+# rapportera_arende_lage <namn> <antal> <lista> <state_fil> <notis_fil> —
+# ren logik, inga gh-anrop (de görs av anroparen i sweep_once(), som också
+# äger fail-closed-hanteringen). Tre möjliga utfall per anrop:
+#   1. ÖVERGÅNG in i rött (state_fil bar "okänd" eller "gron", antal>0):
+#      rapportera OMEDELBART (alltid_pa, quiet-immunt), inget att vänta på —
+#      ett NYTT eller ÅTERUPPTÄCKT rött läge ska synas i samma sopning det
+#      upptäcks. Kallstart räknas hit (ett skript som startar med ett REDAN
+#      rött läge ska INTE vänta ett helt påminnelseintervall innan det syns
+#      första gången — motsatsen till main-SHA-kallstartens "ingenting att
+#      jämföra mot"-problem: här FINNS ett facit direkt, GitHubs ärende-API).
+#   2. RÖTT KVARSTÅR (state_fil bar redan "rod", antal>0): påminnelse ENDAST
+#      om HEARTBEAT_ARENDE_PAMINNELSE_INTERVALL sekunder passerat sedan
+#      förra notisen för DENNA bucket — annars helt tyst denna sopning.
+#   3. GRÖNT (antal=0): TYST — utom när state_fil bar "rod" (övergång UR
+#      rött), då rapporteras det EN gång ("ÄRENDE ÅTERSTÄLLT"). Kallstart-
+#      grönt och grönt-kvarstår ger noll rader, ordagrant kortets krav
+#      "inget ärende ⇒ tyst".
+# Läget stämplas ALLTID (atomärt, temp+mv — samma disciplin som varje annan
+# state-fil i detta skript), oavsett om en rad skrivs. KONTRAKT: returnerar
+# ALLTID 0, larmar aldrig (ingen exit-bit, se ovan).
+rapportera_arende_lage() {
+    local namn="$1" antal="$2" lista="$3" state_fil="$4" notis_fil="$5"
+    local prev="okänd" curr="gron" nu senast intervall
+
+    [[ -f "${state_fil}" ]] && prev="$(cat "${state_fil}" 2>/dev/null || echo okänd)"
+    [[ "${antal}" -gt 0 ]] && curr="rod"
+
+    if printf '%s' "${curr}" > "${state_fil}.tmp" 2>/dev/null \
+       && mv -f "${state_fil}.tmp" "${state_fil}" 2>/dev/null; then
+        :
+    else
+        rm -f "${state_fil}.tmp" 2>/dev/null || true
+        alltid_pa "heartbeat-svep: UNDERHÅLL — kunde inte stämpla ${state_fil}. Ärende-läget (${namn}) kan rapporteras fel nästa sopning."
+    fi
+
+    if [[ "${curr}" == "rod" ]]; then
+        intervall="${HEARTBEAT_ARENDE_PAMINNELSE_INTERVALL:-1800}"
+        [[ "${intervall}" =~ ^[0-9]+$ ]] || intervall=1800
+
+        if [[ "${prev}" != "rod" ]]; then
+            alltid_pa "heartbeat-svep: ÄRENDE — ${antal} öppna ${namn}-ärenden: ${lista}. Svara inom tidsregeln (CONTRIBUTING.md § Tidsregel och ägare): åtgärd, genomförd revert eller skriven motivering — aldrig tyst."
+            nu="$(date +%s)"
+            if printf '%s' "${nu}" > "${notis_fil}.tmp" 2>/dev/null \
+               && mv -f "${notis_fil}.tmp" "${notis_fil}" 2>/dev/null; then
+                :
+            else
+                rm -f "${notis_fil}.tmp" 2>/dev/null || true
+            fi
+        else
+            nu="$(date +%s)"
+            senast=0
+            if [[ -f "${notis_fil}" ]]; then
+                senast="$(cat "${notis_fil}" 2>/dev/null || echo 0)"
+                [[ "${senast}" =~ ^[0-9]+$ ]] || senast=0
+            fi
+            if [[ $(( nu - senast )) -ge "${intervall}" ]]; then
+                alltid_pa "heartbeat-svep: ÄRENDE (påminnelse) — fortfarande ${antal} öppna ${namn}-ärenden: ${lista}. Nästa påminnelse tidigast om ${intervall}s."
+                if printf '%s' "${nu}" > "${notis_fil}.tmp" 2>/dev/null \
+                   && mv -f "${notis_fil}.tmp" "${notis_fil}" 2>/dev/null; then
+                    :
+                else
+                    rm -f "${notis_fil}.tmp" 2>/dev/null || true
+                fi
+            fi
+        fi
+    else
+        if [[ "${prev}" == "rod" ]]; then
+            alltid_pa "heartbeat-svep: ÄRENDE ÅTERSTÄLLT — inga öppna ${namn}-ärenden längre."
+        fi
+    fi
+    return 0
+}
+
 # SAKNAT FLAGGVÄRDE (review runda 5 fynd 2, Marcus-beslut 2026-09-19,
 # pre-existing men inom denna PR:s anspråk): varje flagga nedan som
 # konsumerar ETT värde gjorde `shift 2` OVILLKORLIGT. Ges flaggan som
@@ -971,10 +1135,13 @@ while [[ $# -gt 0 ]]; do
         # eget fynd 1: skiftlägespolicyn var ASYMMETRISK —
         # pr_har_session_marker() jämförde VERBATIM medan statsfilnamnet
         # redan var normaliserat — rättat till EN policy överallt, se §
-        # SKIFTLÄGESOKÄNSLIGT ÖVERALLT ovan);
+        # SKIFTLÄGESOKÄNSLIGT ÖVERALLT ovan), 61,310 → 61,322 i TASK-479.2
+        # (SE16: § SJUNDE VÄGEN-stycket — öppna ci-post-merge-/nattärenden,
+        # konfigrattarna och pekaren till CONTRIBUTING.md § Tidsregel och
+        # ägare);
         # scripts/test-heartbeat-svep.sh T24 fäller om raden
         # avviker från blockets faktiska start/slut.
-        -h|--help)  sed -n '61,310p' "$0"; exit 0 ;;
+        -h|--help)  sed -n '61,322p' "$0"; exit 0 ;;
         *) die "okänt argument: $1" ;;
     esac
 done
@@ -1114,6 +1281,16 @@ TIPS_STATE_FILE="${STATE_DIR}/last-tips-notis${SESSION_STATE_SUFFIX}"
 # "alltid sessions-scopad när aktiv"-egenskap som OMARKERAD_STATE_FILE ovan
 # (dependabot_status_notis_om_dags() kräver också sessionslage=1).
 DEPENDABOT_STATE_FILE="${STATE_DIR}/last-dependabot-notis${SESSION_STATE_SUFFIX}"
+
+# SJUNDE VÄGEN — öppna ci-post-merge-/nattärenden (TASK-479.2, SE16). FYRA
+# filer (två buckets × läge/notis), MEDVETET UTAN SESSION_STATE_SUFFIX —
+# till skillnad från de fyra filerna ovan är detta INGEN
+# sessions-scopad väg (huvudgrenens ärenderegister angår varje session, se
+# rapportera_arende_lage() § ANVÄNDNING ovan för hela resonemanget).
+ARENDE_POSTMERGE_STATE_FILE="${STATE_DIR}/last-arende-ci-post-merge-lage"
+ARENDE_POSTMERGE_NOTIS_FILE="${STATE_DIR}/last-arende-ci-post-merge-notis"
+ARENDE_NATT_STATE_FILE="${STATE_DIR}/last-arende-natt-lage"
+ARENDE_NATT_NOTIS_FILE="${STATE_DIR}/last-arende-natt-notis"
 
 # --- EN svep-cykel ----------------------------------------------------------
 # Returnerar bitmask-verdikten via $? (0/1/2/4/kombinationer, 77 vid sond-fel).
@@ -1368,6 +1545,69 @@ sweep_once() {
     # överst.
     # shellcheck disable=SC2310
     tips_notis_om_dags || true
+
+    # SJUNDE VÄGEN — öppna ci-post-merge-/nattärenden (TASK-479.2, SE16). Se
+    # rapportera_arende_lage() § ANVÄNDNING (ovan i filen) för hela
+    # resonemanget. Körs OVILLKORLIGT — aldrig gated på sessionslage, till
+    # skillnad från SJÄTTE VÄGEN ovan: huvudgrenens ärenderegister har ingen
+    # sessionsmarkör och angår varje session (kortets krav). FAIL-CLOSED på
+    # sondfel, SAMMA 77 som main-SHA-/PR-list-sonderna högre upp i denna
+    # funktion: en observationssond som inte svarar tystas hellre INTE.
+    local postmerge_nrs natt_nrs
+
+    set +e
+    postmerge_nrs="$("${GH}" issue list --repo "${REPO}" --label ci-post-merge \
+        --state open --limit "${ARENDE_LIMIT}" --json number --jq '.[].number' 2>/dev/null)"
+    rc=$?
+    set -e
+    if [[ "${rc}" -ne 0 ]]; then
+        alarm "heartbeat-svep: SONDEN KUNDE INTE SVARA — öppna ci-post-merge-ärenden (repo ${REPO})."
+        return 77
+    fi
+
+    set +e
+    # shellcheck disable=SC2016
+    # Enkla citattecken AVSIKTLIGA (samma skäl som GraphQL-frågan högre upp):
+    # `label:...`-strängen är en GitHub-SÖKFRÅGA, inte ett skal-uttryck —
+    # inget i den ska expanderas av bash. Kommatecken inom `label:` är
+    # GitHubs egen OR-syntax, se rapportera_arende_lage() § VAD ovan för
+    # källa och skarp verifiering.
+    natt_nrs="$("${GH}" issue list --repo "${REPO}" \
+        --search 'label:ci-natt,bokforingsdrift,beroendevarning,lankrota is:open' \
+        --limit "${ARENDE_LIMIT}" --json number --jq '.[].number' 2>/dev/null)"
+    rc=$?
+    set -e
+    if [[ "${rc}" -ne 0 ]]; then
+        alarm "heartbeat-svep: SONDEN KUNDE INTE SVARA — öppna nattärenden (repo ${REPO})."
+        return 77
+    fi
+
+    local postmerge_antal=0 postmerge_lista="" natt_antal=0 natt_lista=""
+    if [[ -n "${postmerge_nrs}" ]]; then
+        while IFS= read -r n; do
+            [[ -n "${n}" ]] || continue
+            postmerge_antal=$(( postmerge_antal + 1 ))
+            postmerge_lista="${postmerge_lista:+${postmerge_lista}, }#${n}"
+        done <<<"${postmerge_nrs}"
+    fi
+    if [[ -n "${natt_nrs}" ]]; then
+        while IFS= read -r n; do
+            [[ -n "${n}" ]] || continue
+            natt_antal=$(( natt_antal + 1 ))
+            natt_lista="${natt_lista:+${natt_lista}, }#${n}"
+        done <<<"${natt_nrs}"
+    fi
+
+    # shellcheck disable=SC2310
+    # AVSIKTLIGT: rapportera_arende_lage() returnerar alltid 0 (eget
+    # kontrakt) — `|| true` är bälte-och-hängslen, samma disciplin som
+    # FEMTE/SJÄTTE VÄGEN nedan/ovan.
+    rapportera_arende_lage "ci-post-merge" "${postmerge_antal}" "${postmerge_lista}" \
+        "${ARENDE_POSTMERGE_STATE_FILE}" "${ARENDE_POSTMERGE_NOTIS_FILE}" || true
+    # shellcheck disable=SC2310
+    rapportera_arende_lage "natt (ci-natt/bokforingsdrift/beroendevarning/lankrota)" \
+        "${natt_antal}" "${natt_lista}" \
+        "${ARENDE_NATT_STATE_FILE}" "${ARENDE_NATT_NOTIS_FILE}" || true
 
     # FEMTE VÄGEN — underhåll, körs EFTER att verdikten är färdigberäknad så
     # den bevisligen inte kan påverka den (§ EXIT-KODER: städning larmar

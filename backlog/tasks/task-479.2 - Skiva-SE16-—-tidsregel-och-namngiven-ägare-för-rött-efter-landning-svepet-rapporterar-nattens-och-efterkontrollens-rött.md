@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-19 10:52'
+updated_date: '2026-09-19 12:08'
 labels:
   - ready-for-agent
 dependencies: []
@@ -22,15 +23,21 @@ Ett rött efter landning (ci-post-merge-ärende) och ett rött nattärende har i
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 CONTRIBUTING bär tidsregel + ägarregel för rött efter landning och för nattärenden, förenlig med stängningsregeln
-- [ ] #2 Svepet rapporterar öppna ci-post-merge- och nattärenden; tvåsidigt bevisat i svepets testsvit (öppet ärende ⇒ rad; inget ärende ⇒ tyst); intervallet är config-drivet
-- [ ] #3 Ett ärvt rött (samma felande test som ett äldre öppet ärende) pekas mot det första ärendet i stället för att ge ett nytt revert-förslag mot fel landning — eller, om det inte går mekaniskt, är begränsningen utskriven och kortad
-- [ ] #4 TASK-365 AC #3 bockad eller uttryckligen hänvisad hit
+- [x] #1 CONTRIBUTING bär tidsregel + ägarregel för rött efter landning och för nattärenden, förenlig med stängningsregeln
+- [x] #2 Svepet rapporterar öppna ci-post-merge- och nattärenden; tvåsidigt bevisat i svepets testsvit (öppet ärende ⇒ rad; inget ärende ⇒ tyst); intervallet är config-drivet
+- [x] #3 Ett ärvt rött (samma felande test som ett äldre öppet ärende) pekas mot det första ärendet i stället för att ge ett nytt revert-förslag mot fel landning — eller, om det inte går mekaniskt, är begränsningen utskriven och kortad
+- [x] #4 TASK-365 AC #3 bockad eller uttryckligen hänvisad hit
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Implementerat: scripts/heartbeat-svep.sh § SJUNDE VÄGEN (rapportera_arende_lage(), två gh issue list-sonder — --label ci-post-merge, --search 'label:ci-natt,bokforingsdrift,beroendevarning,lankrota is:open', OR-semantiken verifierad LIVE mot repot 2026-09-19 innan bygget). Sparse: övergång (kallstart/grön→röd, röd→grön) rapporteras alltid, röd-kvarstår rapporteras med gles påminnelse (HEARTBEAT_ARENDE_PAMINNELSE_INTERVALL, default 1800s, config-driven i .heartbeat-svep-policy.conf), grönt-kvarstår är helt tyst. GLOBAL state (inte sessions-scopad) — --session filtrerar INTE bort main-läget (AC #2/kortets krav, T97). Fail-closed (77) på sondfel, samma klass som main-SHA-/PR-list-sonderna. Testsvit: scripts/test-heartbeat-svep.sh T90-T100b (16 nya fall, tvåsidigt bevis per bucket + övergång + påminnelseintervall config-drivet + session-transparens + fail-closed per sond isolerat), 133→149 totalt, shellcheck 0/0/0/0. AC #3: mekanisk länkning (samma felande TEST) kräver att parsa jobb-loggutdata — utanför TASK-479.2s Testbeslut-scope (som bara omfattar svepets egen rapportering). Escape-klausulen användes: begränsningen är utskriven i CONTRIBUTING.md § Tidsregel och ägare ('En känd, medvetet obyggd gräns') och kortad som TASK-483. AC #4: TASK-365 AC #3 bockad med en förklarande implementation-note om vilken (bredare) primitiv som faktiskt löste den. CONTRIBUTING.md ny sektion § Tidsregel och ägare + § 'Varifrån TASK-365 AC #3 är löst'. Premiss-prövning (ADR-086): #2577 verifierat existerat och varit öppet 2026-09-19 10:40-10:43Z (nu stängt) — den citerade tregruppen (#2573/#2575/#2577) höll för tidsfönstret innan #2577 stängdes, inte för ~11:45Z-ögonblicket (nu 4 öppna: #2573/#2575/#2578/#2582, mätt om). Orkestrerarens hypotes om 'två gh run list-anrop' avvisades till förmån för 'två gh issue list-anrop' (öppna ÄRENDEN, inte senaste körningens conclusion) — se CONTRIBUTING.md § Tidsregel och ägare för resonemanget.
+<!-- SECTION:NOTES:END -->
