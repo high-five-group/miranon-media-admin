@@ -1209,6 +1209,65 @@ jämför larmlistan (`code-scanning/alerts`) före/efter avstängningen mot en
 sparad ögonblicksbild tagen FÖRE steg 1. Steg 1 är en repo-inställning och
 utförs av orkestreraren, aldrig av en agent.
 
+**ROLLBACK — om den egna körningen INTE blir grön efter steg 1 (review
+runda 2 fynd 6).** Skriven av bygg-agenten; utförs fortfarande enbart av
+orkestreraren, som steg 1 ovan. Ordning:
+
+1. **Stanna, försök inte laga vidare mot advanced setup** — ett rött
+   `codeql.yml`-jobb efter att default setup redan stängts av är en signal
+   att rulla tillbaka, inte att iterera i produktion.
+2. **Återställ default setup**, med SAMMA språk/svit som mättes FÖRE bytet
+   (`code-scanning/default-setup`-mätningen i denna PR-kropp/§ AC #1):
+
+   ```bash
+   gh api -X PATCH repos/high-five-group/miranon-media-admin/code-scanning/default-setup \
+     -f state=configured \
+     -f query_suite=default \
+     -f runner_type=standard \
+     -f threat_model=remote \
+     -f 'languages[]=actions' \
+     -f 'languages[]=javascript-typescript'
+   ```
+
+   **Käll-varning, mätt mot `docs.github.com`s REST-referens (denna
+   endpoints `languages`-parameter), 2026-09-19:** skriv-sidans (PATCH)
+   `languages`-enum accepterar ENDAST den unifierade `javascript-typescript`
+   — INTE bara `javascript`/`typescript` separat, trots att LÄS-sidan (GET,
+   det ursprungliga måttet) rapporterade fyra poster inklusive bara
+   `javascript` och `typescript`. Ett rollback-anrop som skickar den RÅA
+   fyra-postslistan från mätningen riskerar alltså att AVVISAS av API:t.
+   Kommandot ovan använder den enda formen skriv-sidan dokumenterar.
+
+3. **Verifiera att inställningen faktiskt är tillbaka:**
+
+   ```bash
+   gh api repos/high-five-group/miranon-media-admin/code-scanning/default-setup
+   # förväntat: "state":"configured", "languages" innehåller
+   # "actions" och "javascript-typescript", "query_suite":"default"
+   ```
+
+4. **Verifiera att SKANNINGEN är tillbaka** (inte bara inställningen) —
+   default setup analyserar inte omedelbart vid PATCH; vänta på nästa
+   push/PR eller det veckovisa schemat, sedan:
+
+   ```bash
+   gh api "repos/high-five-group/miranon-media-admin/code-scanning/analyses?per_page=5" \
+     --jq '.[] | {ref, category, created_at}'
+   # förväntat: en NY post med created_at EFTER PATCH-anropet,
+   # category /language:javascript-typescript eller /language:actions
+   ```
+
+5. **Städa upp `codeql.yml`** i ett separat, medvetet steg (revert av denna
+   PR eller en ny PR som tar bort filen) — annars fortsätter den advanced-
+   setup-workflown att köra och röd-markera sig själv vid varje push/PR
+   (samma `"CodeQL analyses from advanced configurations cannot be
+   processed..."`-fel som § Samexistens ovan), utan att skada något (den
+   är inte en required check) men som ren brus i Checks-fliken.
+
+**Ändrar fortfarande INGA repo-inställningar själv** — detta är
+dokumentation för orkestreraren att utföra, inte ett kommando bygg-agenten
+kör.
+
 **Stale/dubblerade larm vid bytet — riskerna, citerade, och varför de
 undviks.** GitHubs felsökningssida "Two CodeQL workflows"
 (`docs.github.com/.../troubleshoot-analysis-errors/two-codeql-workflows`)

@@ -2,9 +2,9 @@
 #
 # test-check-codeql-d0-kodfri.sh — self-test för check-codeql-d0-kodfri.sh.
 #
-# TIO FALL. Grinden är billig att göra grön och det bevisar ingenting; varje
-# fall nedan finns för att bevisa att den FÄLLER när den ska, eller att den
-# vägrar uttala sig när den inte kan läsa det den ska pröva.
+# FJORTON FALL. Grinden är billig att göra grön och det bevisar ingenting;
+# varje fall nedan finns för att bevisa att den FÄLLER när den ska, eller att
+# den vägrar uttala sig när den inte kan läsa det den ska pröva.
 #
 #   T1  analyserbar fil under D0, deklarerad undantag      → 0
 #   T2  analyserbar fil under D0, ODEKLARERAD               → 1
@@ -16,10 +16,21 @@
 #   T8  slut-markören saknas i workflow-filen                → 2
 #   T9  NOLL globs extraherade (markörer tomma)               → 2
 #   T10 undantags-post utan skäl                              → 2
+#   T11 HTML MED <script>-block, odeklarerad                  → 1
+#   T12 HTML UTAN kod (varken script eller handler)            → 0 (tyst, inget undantag krävs)
+#   T13 HTML med inline-händelsehanterare (onclick=)           → 1
+#   T14 git ls-files fallerar (ingen .git alls)                → 2
 #
-# T3 är det viktigaste fallet: ett kvarliggande undantag för en fil som inte
-# längre matchar maskerar nästa drift på samma post — samma disciplin som
-# check-listparitet.sh:s T7.
+# T3 är det viktigaste fallet av de ursprungliga tio: ett kvarliggande
+# undantag för en fil som inte längre matchar maskerar nästa drift på samma
+# post — samma disciplin som check-listparitet.sh:s T7.
+#
+# T12 är det viktigaste av review runda 2:s fyra nya fall: bevisar att
+# LAGER 2 (innehållsfiltret) faktiskt håller grinden TYST på ren HTML i
+# stället för att dränka varje docs/mallar/-fil i onödiga undantag. T14 är
+# det NÄST viktigaste: review runda 2 fynd 5 — ett `git ls-files`-fel fick
+# tidigare tolkas som "noll filer, allt grönt" (fail-open); nu ska SAMMA fel
+# ge anropsfel-koden.
 #
 # Test-isolering: allt sker i en temp-katalog med ett MINIMALT eget git-repo
 # (grinden kör `git ls-files`, som kräver en git-kontext) samt en fristående
@@ -27,9 +38,10 @@
 # eller .codeql-d0-kodfri-policy.conf.
 #
 # Användning: bash scripts/test-check-codeql-d0-kodfri.sh
-# Exit 0 om alla tio passerar, annars 1.
+# Exit 0 om alla fjorton passerar, annars 1.
 #
-# Källa: TASK-464.2, review runda 1 fynd 1 (warning).
+# Källa: TASK-464.2, review runda 1 fynd 1 (warning), review runda 2
+# fynd 1 (warning) + fynd 5 (info).
 
 set -uo pipefail
 
@@ -56,6 +68,14 @@ nollstall() {
     rm -rf "${TEST_DIR:?}"
     mkdir -p "${TEST_DIR}/.github/workflows"
     (cd "${TEST_DIR}" && git init -q && git config user.email "t@t.t" && git config user.name "t")
+}
+
+# T14 — samma katalogstruktur, men INGET git-repo alls. `git ls-files` ska
+# då fallera, och grinden ska pröva den exitkoden explicit i stället för
+# att tolka den tomma/felande utdatan som "noll filer".
+nollstall_utan_git() {
+    rm -rf "${TEST_DIR:?}"
+    mkdir -p "${TEST_DIR}/.github/workflows"
 }
 
 # Skriver en minimal codeql.yml-fixtur med D0-globs mellan markörerna.
@@ -85,7 +105,7 @@ kor() {
     (cd "${TEST_DIR}" && bash "${GATE}" >/dev/null 2>&1; echo $?)
 }
 
-printf '\ntest-check-codeql-d0-kodfri — tio fall\n'
+printf '\ntest-check-codeql-d0-kodfri — fjorton fall\n'
 printf '%.0s─' {1..70}; printf '\n'
 
 # T1 — analyserbar fil, deklarerad.
@@ -181,6 +201,44 @@ docs/x.mjs:::
 "'
 ec="$(kor)"
 report "T10 undantag utan skäl" 2 "${ec}"
+
+# T11 — HTML-fil MED <script>-block, odeklarerad. Bevisar LAGER 2 fångar
+# den typ av fil review runda 2 fynd 1 visade att LAGER 1 (ändelse-listan)
+# ensam missade helt (docs/design/farg-atlas.html i det verkliga trädet).
+nollstall
+skriv_workflow
+lagg_fil "docs/design/atlas.html" "<html><body><script>console.log('x');</script></body></html>"
+skriv_policy 'CODEQL_D0_UNDANTAG=""'
+ec="$(kor)"
+report "T11 HTML med <script>, odeklarerad → fäller" 1 "${ec}"
+
+# T12 — HTML-fil UTAN kod (ren statisk markup). DEN VIKTIGASTE av de fyra
+# nya fallen: bevisar att grinden är TYST på vanlig dokumentations-HTML i
+# stället för att dränka varje docs/mallar/-fil i onödiga undantag.
+nollstall
+skriv_workflow
+lagg_fil "docs/mallar/kvitto.html" "<html><body><h1>Kvitto</h1><p>Ren statisk markup.</p></body></html>"
+skriv_policy 'CODEQL_D0_UNDANTAG=""'
+ec="$(kor)"
+report "T12 HTML utan kod → tyst grönt, inget undantag krävs" 0 "${ec}"
+
+# T13 — HTML-fil utan <script> men med en inline-händelsehanterare. Samma
+# LAGER 2-mekanik, andra signalen (onXxx=-attribut i stället för <script>).
+nollstall
+skriv_workflow
+lagg_fil "docs/design/knapp.html" "<html><body><button onclick=\"alert('x')\">Klicka</button></body></html>"
+skriv_policy 'CODEQL_D0_UNDANTAG=""'
+ec="$(kor)"
+report "T13 HTML med inline-händelsehanterare → fäller" 1 "${ec}"
+
+# T14 — `git ls-files` fallerar helt (ingen .git). Review runda 2 fynd 5:
+# stderr/exitkod svaldes tidigare tyst, vilket hade gett "0 filer, allt
+# grönt" här — nu ska anropsfel-koden användas i stället.
+nollstall_utan_git
+skriv_workflow
+skriv_policy 'CODEQL_D0_UNDANTAG=""'
+ec="$(kor)"
+report "T14 git ls-files fallerar (ingen .git) → anropsfel" 2 "${ec}"
 
 printf '%.0s─' {1..70}; printf '\n'
 printf '  %d gröna, %d röda\n\n' "${pass}" "${fail}"

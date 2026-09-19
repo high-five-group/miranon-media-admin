@@ -49,8 +49,16 @@
 # OFÖRÄNDRAD kod bärs redan av `schedule` (se nedan), som är kvar och
 # oförändrad. `push` bär därför NU samma `paths-ignore` som `pull_request`,
 # via en YAML-ANKARE (`&d0-paths` / `*d0-paths`) — INTE en andra
-# handhållen kopia. Ankaret gör kopior omöjliga att glida isär: det finns
-# bara EN lista i filens byte-representation, refererad två gånger.
+# handhållen kopia. Ankaret gör KOPIERINGS-drift omöjlig (det finns bara EN
+# lista i filens byte-representation, refererad två gånger) — men INTE
+# ERSÄTTNINGS-drift: ingenting hindrar en framtida redigering från att byta
+# `paths-ignore: *d0-paths` mot en egen, handskriven lista (review runda 1
+# fynd 2, ADR-083). Den luckan fångas i stället av en SEPARAT, oberoende
+# grind, `scripts/check-codeql-push-pr-parity.mjs` (CI-wirad, se §
+# SÖKVÄGSLISTAN nedan) — den parsar den FAKTISKA, resolverade YAML-
+# strukturen och kräver djup likhet oavsett hur listorna skrevs, och sedan
+# review runda 2 gäller den GENERELLT för varje trigger under `on:`, inte
+# bara push/pull_request.
 #
 # **Vad detta kostar i skydd, och varför det är acceptabelt (citerat):**
 # GitHubs egen dokumentation för `on:push`-triggerns syfte säger att
@@ -87,9 +95,13 @@
 # `# paritet:start klassning-d0`-block (samma markör, samma lista) —
 # vaktat av scripts/check-listparitet.sh, paret `klassning-codeql-positiv`
 # i .listparitet-policy.conf. Glider listorna isär fäller grinden. Paret
-# läser regionen EN gång (under `pull_request`); YAML-ankaret ser till att
-# `push` ALDRIG kan bära en avvikande kopia — grinden behöver därför bara
-# vakta den ENA regionen, inte två.
+# läser regionen EN gång (under `pull_request`) — YAML-ankaret gör en
+# KOPIERINGS-drift på `push` omöjlig, så grinden behöver bara vakta den
+# ENA regionen. Ankaret skyddar ALDRIG mot att någon ERSÄTTER
+# `paths-ignore: *d0-paths` med en egen lista (review runda 1 fynd 2) —
+# den luckan täcks av `scripts/check-codeql-push-pr-parity.mjs`, en
+# SEPARAT grind som parsar den resolverade YAML-strukturen och (sedan
+# review runda 2) prövar VARJE trigger under `on:`, inte bara push.
 #
 # ci.yml:s D0-block bär ÄVEN nio `!`-negationer (package.json, tsconfig*.json
 # m.fl.) som exkluderar dem från den positiva mängden i tj-actions/
