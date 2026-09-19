@@ -167,9 +167,15 @@ in Fas W, inte en komplett kravlista.
    PRD → skivor).
 2. **Fas W byggs och lanseras** enligt sin egen lanseringskedja (S128
    beslut 15: dold testadress → omdirigeringslista → integritetspolicy
-   → DNS-byte samtidigt som Elfsight och Zapier-kopplingarna 1–6 stängs
-   av → fyra veckors reservperiod → Shopify/Elfsight/Common Ninja sägs
-   upp). GO ges av Marcus tillsammans med Roger och Lotta.
+   → DNS-byte, då Elfsight stängs av OCH miranon.se:s EGNA
+   Zapier-kopplingar in i basen stängs av (enligt den frusna referensen
+   `docs/reference/schema_reference.md` Zap 3–6: express- och
+   huvudformuläret samt de två lead-formulären — exakt lista verifieras
+   mot Zapier före lansering, se § Öppna frågor punkt 7); **Zap 1**
+   (`psionautics.se`) rörs INTE och ärvs av Fas E (§ Konsekvenser); Zap
+   7–8 (Soundwise) byggs om till den tunna bryggan enligt beslut 6 →
+   fyra veckors reservperiod → Shopify/Elfsight/Common Ninja sägs upp).
+   GO ges av Marcus tillsammans med Roger och Lotta.
 3. **AT‑Max:s migrationsdel** ((a)+(b) ovan) körs när Fas W:s
    Airtable-berörande skrivvägar är BYGGDA — denna ADR tar INTE
    ställning till om det kräver fullständig DNS-lansering eller räcker
@@ -337,6 +343,23 @@ ADR:n).
    spec bör antingen utvidgas med `Proposed` som eget enum-värde eller
    så bör denna ADR bytas till `Accepted` direkt vid Marcus godkännande
    utan mellansteg. Beslutas inte här; flaggat för Marcus.
+7. **Den exakta listan av vilka Zapier-kopplingar som stängs av vid
+   DNS-bytet är OVERIFIERAD.** § Beslut 3, steg 2 pekar ut Zap 3–6
+   (express- och huvudformuläret samt de två lead-formulären för
+   "Meditationen Kraftfältet" och "Pyramidernas vajrar") som miranon.se:s
+   EGNA kopplingar, enligt den frusna referensen
+   [`schema_reference.md`](../reference/schema_reference.md) § Zapier-
+   kopplingar (10 Zaps) — men den referensen är en ögonblicksbild från
+   mars 2026, och orkestreraren saknar Zapier-åtkomst för att verifiera
+   den mot dagens läge. **Ett sidofynd vid denna verifiering:** referensen
+   listar ÄVEN **Zap 2** ("väntelista-psionautics.se → Airtable") som en
+   TREDJE `psionautics.se`-koppling, utöver Zap 1 — Marcus besked
+   ("psionautics kan vi hålla utanför detta tillsvidare") nämnde bara
+   Zap 1 explicit. Om Zap 2 delar samma undantag som Zap 1 (rimligt, då
+   den också matar `psionautics.se`) eller ska stängas av är INTE avgjort
+   här. Den exakta listan — vilka Zaps som faktiskt stängs, vilka som
+   ärvs av Fas E — måste verifieras direkt mot Zapier innan lansering,
+   inte härledas ur en frusen referens.
 
 ## Relaterat
 
