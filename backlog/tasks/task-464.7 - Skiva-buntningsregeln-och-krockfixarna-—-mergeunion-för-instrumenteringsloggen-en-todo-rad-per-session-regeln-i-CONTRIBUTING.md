@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-19 10:49'
+updated_date: '2026-09-19 14:09'
 labels:
   - ready-for-agent
 dependencies:
@@ -23,14 +24,14 @@ Två parallella sessioner (S126 + S127) krockade tre gånger 2026-09-19 på doku
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Två grenar som båda appendar till instrumenteringsloggen mergar utan konflikt (bevisat i test eller dokumenterad körning); varje rad giltig JSON efteråt
-- [ ] #2 Två sessioner kan uppdatera todo-filens kadens utan att röra samma rad; lifecycle- och övriga dokumentgrindar gröna (npm run check:docs)
-- [ ] #3 CONTRIBUTING bär buntningsregeln med pekare till ADR-133 och ADR-097 § Updates
+- [x] #1 Två grenar som båda appendar till instrumenteringsloggen mergar utan konflikt (bevisat i test eller dokumenterad körning); varje rad giltig JSON efteråt
+- [x] #2 Två sessioner kan uppdatera todo-filens kadens utan att röra samma rad; lifecycle- och övriga dokumentgrindar gröna (npm run check:docs)
+- [x] #3 CONTRIBUTING bär buntningsregeln med pekare till ADR-133 och ADR-097 § Updates
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
