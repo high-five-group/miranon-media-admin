@@ -3,10 +3,10 @@ id: TASK-462
 title: >-
   Heartbeat-svepet ska vara sessionsmedvetet — larma bara på den egna sessionens
   PR:er
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-18 11:53'
-updated_date: '2026-09-19 00:43'
+updated_date: '2026-09-19 02:16'
 labels:
   - ready-for-agent
 dependencies: []
@@ -26,12 +26,12 @@ Mätt 2026-09-18 (S126 parallellt med S127): scripts/heartbeat-svep.sh sveper AL
 - [x] #2 Tvåsidig testsvit: en främmande röd PR ger INGET larm i sessionsläge men larm med --alla; en egen röd PR larmar i båda
 - [x] #3 En PR UTAN markör (glömd etikett) syns i ett eget, lågfrekvent besked — aldrig tyst, aldrig som order
 - [x] #4 Dependabot-PR:er: beslut utskrivet om de tillhör ingen session (egen kanal) eller den session som äger huvudkatalogen
-- [ ] #5 bygg-agentens kontrakt och session-start/-resume bär markören; CLAUDE.md § Landning säger vad svepet nu gör — utan att påstå mer än mekanismen håller (ADR-083)
+- [x] #5 bygg-agentens kontrakt bär markören och CLAUDE.md § Landning säger vad svepet nu gör, utan att påstå mer än mekanismen håller (ADR-083) — omformulerat vid stängning 2026-09-19: hub-delen (marcus-system-pluginets session-start/-resume startar monitorn med --session) ligger utanför spoke-PR:en och bärs av TASK-473
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
@@ -243,3 +243,9 @@ Felmeddelandet är skräddarsytt: ett ID som börjar med `-` får texten "värde
 
 **Kostnad:** PR-kroppens § "Kostnad i två mått" utökad med en sjätte rad (130 fall, 3 lokala körningar: 13,124s/13,154s/13,658s, snitt ≈13,31s — fix-rundans EGET tillskott ≈+0,06s, försumbart, konsekvent med att detta är en ren valideringsskärpning utan nya externa processanrop per testfall).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landad via #2545 (caaa4885, 2026-09-19T01:34Z) efter SEX granskningsrundor och två bygg-agenter (den första dog av fullt kontextfönster efter fem fix-rundor). scripts/heartbeat-svep.sh är sessionsmedvetet: --session <ID> gör att RÖTT/DIRTY/ARMERINGS-KANDIDAT bara larmar för PR:er vars kropp bär markören <!-- heartbeat-svep:session:ID -->; --alla ger det gamla beteendet. Omarkerade PR:er och röda/konfliktade Dependabot-PR:er syns i en egen lågfrekvent, per session strypt informationskanal — aldrig tyst, aldrig som order. Rundornas fynd, vart och ett ett verkligt fel i koden som föregående fix lade till: (1) tipsraden gick till stderr, osynlig i Monitor-formen · (2) strypningen delade en maskin-global state-katalog mellan sessioner · (3) saneringen kunde mappa två ID:n till samma filnamn · (4) exit 2 för ogiltigt ID krockade med bitmaskens DIRTY — orkestrerarens eget beslutsfel, rättat till die()/64 — samt tyst exit 1 vid saknat flaggvärde · (5) skiftlägespolicyn var asymmetrisk (state okänsligt, markör känslig) — också en halvmesyr i orkestrerarens beslut · (6) konvergerad, risk låg. Slutform: ID valideras mot ^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$ (fail-closed, exit 64), skiftlägesokänsligt överallt, per-session-state städas av gren-städningens befintliga glesa klocka (30 dagar). Testsviten 58 → 133 fall; shellcheck 0. Kostnad i två mått: steg i befintligt lint-jobb, 0 nya fakturerade minuter, svitens körtid ≈ 10 → ≈ 15 s. Skarpbevis genom harnesset 2026-09-19: tipsraden levererades på stdout i orkestrerarens egen Monitor efter landning. Efterkontrollen GRÖN: 35413088382. Restposter (substrängsmatchning över hela PR-kroppen, icke-ASCII-testfall, hub-delen): TASK-473.
+<!-- SECTION:FINAL_SUMMARY:END -->
