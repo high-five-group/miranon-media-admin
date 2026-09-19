@@ -52,11 +52,19 @@
 > resten av dokumentet.** Ett **förslag** (engelska "pull request",
 > förkortat **PR**) är en föreslagen kodändring som väntar på att testas
 > och infogas. **Kön** ("merge queue") är GitHubs mekanism som testar
-> varje förslag TILLSAMMANS med de förslag som redan står före det i
-> kön (flera förslag testas samtidigt — repots kö tillåter tre parallellt),
-> men släpper bara in dem i huvudgrenen EN ÅT GÅNGEN, i tur och ordning,
-> och först när det egna testet är grönt (mekaniken i detalj: `CLAUDE.md`
-> § Review-grinden, "Kö-antagandet som bär grinden"). **Huvudgrenen**
+> varje förslag TILLSAMMANS med de förslag som redan står före det i kön
+> — flera förslag testas samtidigt, upp till tre enligt repots inställning
+> — och släpper in dem i huvudgrenen i tur och ordning, först när testet
+> är grönt. Flera gröna förslag kan landa i SAMMA landning (upp till tre;
+> mätt hos oss: `#1711` och `#1713` landade i en och samma push, tråd
+> `T166`). Vad en sådan grupplandning betyder för `ADR-077` § Beslut 2:s
+> SHA-identitet avgörs i `TASK-464.4`, inte här. (BYGGET av varje köad
+> posts test-grupp är en annan fråga än hur många som sedan LANDAR
+> tillsammans — GitHubs egen dokumentation säger det uttryckligen: *"Merge
+> limits do not combine `merge_group` builds. Merge limits only affect
+> merges to the base branch once one or more `merge_group` has satisfied
+> build checks."* Byggsidan i detalj: `CLAUDE.md` § Review-grinden,
+> "Kö-antagandet som bär grinden".) **Huvudgrenen**
 > (`main`) är den gemensamma, godkända versionen av koden — webbappen i
 > drift följer den (via Vercel), medan serverfunktionerna (Edge Functions
 > hos Supabase) deployas i ett EGET, separat steg och kan ligga efter
@@ -252,13 +260,20 @@ urvalet finns i dag i bygg-agentens kontrakt (`grep -n -i
 skriptet går att köra lokalt i en agents arbetsträd är INTE prövat —
 det prövas i `TASK-464.5`, som lägger till kontraktsraden.
 
-**Källnot.** Del 17:s egen formulering av detta beslut i grillningen
-beskrev skriptet som *"redan byggd — en rad i bygg-agentens kontrakt,
-ingen ny CI-mekanik"* — en sammanblandning av BESLUT (bygg-agenten SKA
-köra urvalet lokalt) och NULÄGE (skriptet körs redan, men av CI, inte
-lokalt). Denna ADR är den rättade formen på denna punkt;
-sessionsdoket självt rättas inte i efterhand (samma disciplin som
-§ Kostnad i två mått redan tillämpar på en annan källdivergens).
+**Källnot.** Del 17:s tabell ("Besluten", rad 4) formulerar detta
+beslut ordagrant: *"Bygg-agenten kör berört urval lokalt före push
+(`scripts/acceptance-urval.sh`, en rad i kontraktet — ingen ny
+CI-mekanik)."* Formuleringen står i PRESENS ("kör") och kallar det
+"ingen ny CI-mekanik" — vilket läses som ett nuläge, fast det är ett
+beslut om framtida bygge. Denna ADR:s FÖRSTA version (runda 1–2)
+förstärkte sammanblandningen ytterligare genom att själv lägga till
+orden "redan byggd", som inte finns i Del 17 alls. Denna version håller
+isär BESLUT (bygg-agenten SKA köra urvalet lokalt, `TASK-464.5`) och
+NULÄGE (skriptet finns och körs redan, men av CI, inte lokalt).
+Sessionsdoket självt rättas inte i efterhand — Del 17:s tabellrad står
+kvar som den skrevs; det är denna ADR som bär den rättade formen (samma
+disciplin som § Kostnad i två mått redan tillämpar på en annan
+källdivergens).
 
 **Skäl.** Detta är kärnan i "testa en gång per landning": den tunga,
 hermetiska sviten flyttar från FYRA körningar (förslag, kö, huvudgren,
