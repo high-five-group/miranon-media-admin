@@ -3,10 +3,10 @@ id: TASK-481
 title: >-
   Fynd: betalningsinkorgens skeleton-kort är 24 px lägre än det laddade kortet
   sedan TASK-456 — efterkontrollen på main röd för varje kod-landning
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-19 11:14'
-updated_date: '2026-09-19 11:55'
+updated_date: '2026-09-19 12:42'
 labels:
   - fynd
   - ready-for-agent
@@ -41,14 +41,14 @@ Staging-klassen körs inte på PR-ytan (`run_staging: false`, TASK-70.3) utan f�
 - [x] #1 Rött-först är redan belagt på main (Post-merge-körningarna ovan); efter fix är mer-betalningar-laddlage.staging.test.ts grön, kört PÅ RIKTIGT mot staging via den normala vägen (setup-projektet, preflighten respekterad)
 - [x] #2 Skeleton-kortet reserverar pill-radens höjd enligt samma husmönster som det laddade kortet (en källa för höjden, inte två tal som kan glida isär)
 - [x] #3 Övriga laddläges-sviter för betalningsytan (bekraftelsesteget-laddlage m.fl.) körda och gröna eller belagt förbefintligt flakiga
-- [ ] #4 Efterkontrollen (Post-merge) på main grön för fixens merge-commit
+- [x] #4 Efterkontrollen (Post-merge) på main grön för fixens merge-commit
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
 
 ## Implementation Notes
@@ -65,4 +65,14 @@ Exitkod: 0. 19/19 passed, 0 failed, 0 flaky, 0 retries — grönt på FÖRSTA f�
 Det kritiska fallet `tests/e2e/mer-betalningar-laddlage.staging.test.ts:275` ("AC #2 — MÄTNING: boundingBox … IDENTISK före och efter datalandning") är GRÖNT — samma fall som gav `Received: 24` i alla fyra röda Post-merge-körningar på main. `bekraftelsesteget-laddlage.staging.test.ts:225` (tidigare känt flakigt fall) grönt utan omkörning.
 
 AC #1 och #3 bockade på detta underlag. AC #4 (Post-merge grönt för fixens merge-commit) kan bara bockas efter landning.
+
+## AC4-verifiering (S127 stangningsbatch, 2026-09-19)
+
+gh run view 35442296824 --json conclusion,headSha,name,status verifierat direkt: {conclusion: success, headSha: 3f3b1aed444ce24eea03fb613ec732e8f947f857, name: Post-merge, status: completed}. headSha matchar TASK-481s merge-commit exakt.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landat: PR #2583, merge 3f3b1aed (2026-09-19T12:14:27Z, main). PR #2541 gav pill-radens min-h-6 (24px) reservation men skeleton-kortet fick ingen motsvarande reservation - verklig 24px layoutforskjutning skeleton->data i prod, fangad av Post-merge (rod pa 4 kod-landningar i rad efter 168dd403: 35435779866/35435793128/35435803515/35436771357). Fix: EN delad kalla for hojdreservationen mellan laddat kort och skeleton-kort (samma husmonster), i stallet for tva tal som kan glida isar. Rotorsak: staging-klassen kors inte pa PR-ytan (run_staging: false), och byggagenten for #2541 korde bara sin egen nya svit hermetiskt - aldrig ytans befintliga laddlages-svit. Staging-bevis: port 5173 verifierad ledig, staging-semaforen LEDIGT, npm run test:e2e:staging (normal vag, setup-projektet, ingen --no-deps, MM_STAGING_PREFLIGHT ororid) mot tre filer (mer-betalningar-laddlage, bekraftelsesteget-laddlage, betalningar-inkorg-pillrad-hojd) - 19/19 passed, 0 failed, 0 flaky, forsta forsoket. Det kritiska fallet (mer-betalningar-laddlage.staging.test.ts:275) gront - samma fall som gav Received: 24 i alla fyra roda Post-merge-korningar. AC4 verifierat: gh run view 35442296824 -> conclusion success, headSha 3f3b1aed444ce24eea03fb613ec732e8f947f857 = denna PR:s merge-commit exakt. Grindar (matt): typecheck exit 0; biome exit 0; build exit 0; test:api:pure 1884 passed; check-langa-streck exit 0. Granskning: risk LAG, runda 1, 0 fynd.
+<!-- SECTION:FINAL_SUMMARY:END -->

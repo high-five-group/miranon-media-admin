@@ -3,10 +3,10 @@ id: TASK-451.3
 title: >-
   Skiva: efter ett timeout-släpp återanvänder Hem startvärmningens hämtningar i
   flykt — inga dubbla anrop
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-18 10:39'
-updated_date: '2026-09-18 12:23'
+updated_date: '2026-09-19 12:39'
 labels:
   - ready-for-agent
 dependencies:
@@ -39,3 +39,9 @@ Designa mot TanStack Querys egna mönster (context7/källkod FÖRST): t.ex. att 
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landat: PR #2543, merge ab6b2127 (2026-09-18T12:42:55Z, main). Ny delaMedListan()-hjalpfunktion (hamtaDashboardData.ts) delegerar till qc.ensureQueryData pa list-nyckeln ENDAST nar den nyckeln har en hamtning i flykt utan cachad data (fetchStatus fetching, data undefined) - stoppar Hems andra, dubbla natverksanrop efter ett timeout-slapp. Rott-forst (AC1): scenario A gav 2 anrop vardera mot get-events/get-registrations fore fix, 1 vardera efter (bevisat via temporar reversion + omkorning). Grindar (matt): typecheck exit 0; biome (rorda filer) exit 0; check-langa-streck exit 0 (329 filer); build exit 0; playwright api-pure 1795/1795 grona (inkl 5 nya); test:acceptance hem.acceptance.test.ts 48/48 grona; test:api (full inkl api-staging) blockerad av staging-preflight-laset (TASK-77, samtidig post-merge-korning holl staging) - ingen del av diffen ror staging/EF. AC3 (activityLog.latest-nyckelparitet) bekraftad. Granskning: risk LAG, runda 1, 2 info-fynd (auto-fix-klass).
+<!-- SECTION:FINAL_SUMMARY:END -->

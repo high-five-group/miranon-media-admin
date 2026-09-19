@@ -3,10 +3,10 @@ id: TASK-455
 title: >-
   Svepet får bilagor — bilageväljare per eventgrupp i Hem-vyns sändyta (Bekräfta
   alla, Påminnelse till alla, Eventinfo)
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-18 10:48'
-updated_date: '2026-09-19 10:11'
+updated_date: '2026-09-19 12:41'
 labels:
   - ready-for-agent
 dependencies:
@@ -52,7 +52,7 @@ Köad jobbmotor för stora utskick (ADR-120-tröskeln) · "mallen bär sina bila
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
@@ -108,3 +108,9 @@ Sidofilen AMENDERING-2026-09-18-svep-bilageval.md prövad mot laddbeteendet (upp
 
 AC #6 (S127, 2026-09-19): Marcus godkände den utvidgade formen i dev-server med orden 'Ser bra ut med bilageväljaren.' och körde själv stämplingen via sin kanal. Den nya stämpeln fällde check-facit.sh (sex fel): manifestets kallor pekar på prototyp-källor som revs vid promoveringen, och rivnings-klausulen godtar dem bara under den ursprungliga stämpel-SHA:n. Marcus backade stämpeln; manifestet bär fortsatt stämpeln från 2026-08-16 och godkännandet av utvidgningen bärs av amenderings-sidofilen. Luckan: tråd T188.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landat: PR #2547, merge 018dfeef (2026-09-19T09:50:21Z, main). Bilagevaljare per eventgrupp i Hem-vyns svep (Bekrafta alla / Paminnelse till alla / Eventinfo): ny delad komponent BilageValjare.tsx (utbruten ur AtgardsSida.tsx), svepSendGrupper.ts (ny sandloop), attachmentIds foljer nu med per eventgrupp - batch-vagen ofoprandrad (ADR-067 D9) for grupper utan val. Rott-forst (AC3): klientlagrets bevis matt, staging-halften (AC3 andra halvan) live-kord efter en 13-14 min preflight-backoff mot svep-send-attachments.staging.test.ts, 3/3 grona (positiv bilage-bararande vag, batch-vag, negativ kontroll ett pahittat attachmentId ger 404 fore Resend nas). AC6: Marcus stampling i dev-server (Ser bra ut med bilagevaljaren, 2026-09-19) - amenderings-sidofilen AMENDERING-2026-09-18-svep-bilageval.md skriven, facit.json rort ENDAST av Marcus egen kanal (ADR-104); hans forsta stamplingsforsok fallde check-facit.sh (rivningsklausulen, sex fel) och backades av honom sjalv - facit bar fortsatt 2026-08-16-stampeln, luckan ar trad T188. Iteration efter stampling: forvarmning av samtliga gruppers bilagor sekventiellt (useForberedSvepBilagor) loste att bilagorna laddade om vid gruppvaxling. Grindar (matt): typecheck exit 0; biome exit 0; build exit 0; check-langa-streck exit 0 (330 filer); check-facit.sh exit 0; check:docs 14/14; api-pure 1804 passed; api-staging (svep + TASK-452-korskoll) 3+3 passed live mot staging; acceptance (6 filer) 25 passed (1 orelaterad flake, gron vid isolerad omkorning). Granskning: risk MEDEL, runda 2, 4 info/ask-user-fynd (restposter kortade TASK-476-478).
+<!-- SECTION:FINAL_SUMMARY:END -->

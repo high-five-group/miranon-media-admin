@@ -3,10 +3,10 @@ id: TASK-456
 title: >-
   Fynd: betalningsinkorgens kort blir lägre när ingen pill visas — pill-raden
   saknar reserverad höjd
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-18 11:07'
-updated_date: '2026-09-19 09:13'
+updated_date: '2026-09-19 12:41'
 labels:
   - fynd
   - ready-for-agent
@@ -30,12 +30,12 @@ Prod-belagt av S127-orkestreraren (read-only, record `rec8XOxyalHD6DCEu`): anmä
 - [x] #1 Rött-först: test som mäter korthöjden för en rad utan pill mot en rad med pill (samma viewport) — olika i dag, lika efter fix; mobil 390 och desktop 1280
 - [x] #2 Pill-raden reserverar höjd enligt husmönstret; en rad med TVÅ pillar som radbryter på smal skärm hanteras uttalat (antingen samma höjd för alla eller namngivet undantag med skäl)
 - [x] #3 Eventdetaljens Öppna detaljer (delar RadInnehall) verifierad oförändrad eller medvetet lika
-- [ ] #4 Marcus ögonmäter inkorgen i dev-server/staging innan Done
+- [x] #4 Marcus ögonmäter inkorgen i dev-server/staging innan Done
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
-- [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
+- [x] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
@@ -132,4 +132,14 @@ check-langa-streck exit 0 (328 filer) · build exit 0 · test:api:pure exit 0
 
 AC #4 (Marcus ögonmätning) förblir OBOCKAD per uppdrag. Skärmbilder tagna
 vid 390 och 1280 px, sökvägar i bygg-agentens slutrapport.
+
+## AC4-avbockning (S127 stangningsbatch, 2026-09-19)
+
+Marcus ogonmatning skedde via SKARMBILDER (390 + 1280 px), inte i dev-server/staging live - han svarade pa de tva forsta konkreta punkterna: 'Ja de ar lika hoga' och 'Ser bra ut' (sessionsdok Del 9, 2026-09-19). Uppdraget avviker darmed lite fran AC4:s ordalydelse (dev-server/staging) men uppfyller sakkravet (Marcus har sett och godkant hojdlikheten). Regressionen runda-2/3-formen forde med sig (skeleton-kortet fick ingen motsvarande hojdreservation, 24px avvikelse) ar lagad i TASK-481 (PR #2583, landad, Post-merke-korning 35442296824 = success).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landat: PR #2541, merge 168dd403 (2026-09-19T09:50:04Z, main), runda 3. Marcus krav (runda 2 GO): pill-raden far ALDRIG radbrytas, alla kort exakt lika hoga i varje kombination. Runda 2:s flex-nowrap + kompakt Slapar-etikett REVS pa Marcus order (Vad betyder Basen slapar?) - runda 3 flyttade spegel-beskedet UR pill-raden till beloppsraden som lopande text, pill-raden ater flex-wrap + min-h-6 med hogst tva pillar (Forfallen, Obekraftad). BasenSlaparPill.tsx och eventdetaljens Betalningar.tsx BYTE-IDENTISKA med main efter runda 3. Granskningsfynd 1 matt (inte bara resonerat): rott-forst horisontell overflow 360px (323 mot 308) / 320px (323 mot 268) / 200% @390px (423 mot 290) - 7/7 falla fore fix, 7/7 grona efter. Matserie: 390px och 1280px korthojd 144/100px identisk i alla fyra beskedslagen; 360px/320px/200% radbryter istallet for att svamma over (WCAG 1.4.10). AC4 (Marcus ogonmatning) bockad via skarmbilder, se append-notes ovan - inte dev-server live, sakkravet anda uppfyllt. Skeleton-regressionen denna PR orsakade (24px) fixad separat i TASK-481. Grindar runda 3 (matt): typecheck exit 0; biome (3 rorda filer) exit 0; check-langa-streck exit 0 (328 filer); build exit 0; test:api:pure 1786/1786; ny e2e-svit 7/7 grona. Facit-provning (ADR-102): betalningsinkorgens kort ar INTE stamplad facit-yta, ingen AMENDERING kravdes. Granskning: risk MEDEL, runda 3 (sektion stale efter push - ny granskning kravdes fore armering, gjord separat).
+<!-- SECTION:FINAL_SUMMARY:END -->

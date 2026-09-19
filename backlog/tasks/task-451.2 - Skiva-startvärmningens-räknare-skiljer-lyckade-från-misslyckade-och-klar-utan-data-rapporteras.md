@@ -3,10 +3,10 @@ id: TASK-451.2
 title: >-
   Skiva: startvärmningens räknare skiljer lyckade från misslyckade, och 'klar
   utan data' rapporteras
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-18 10:38'
-updated_date: '2026-09-18 11:13'
+updated_date: '2026-09-19 12:39'
 labels:
   - ready-for-agent
 dependencies: []
@@ -39,3 +39,9 @@ Underlag § 1.4, § 2.3, § 5.3 scenario B, § 6 punkt 2–3.
 - [x] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landat: PR #2534, merge c6983588 (2026-09-18T11:43:34Z, main). StartvarmningForlopp skiljer nu lyckade/misslyckade; nytt utfall klar-ofullstandig; ny Sentry-varning (tagg delvis-fel) vid minst en misslyckad hamtning; ADR-112 par Updates + ORDLISTA-posten for Forberedelsekarmen preciserade. Rott-forst: scenario B (7/7 EF svarar 500) falld pa main, gron efter fix. Grindar (matt): typecheck exit 0; tests/api/startvarmningen.test.ts 12/12 (api-pure); test:api bredare 1790 grona (api-staging/api-setup blockerad av samtidig CI-korning, orort av diffen); biome (5 rorda filer) exit 0; build exit 0; check-langa-streck exit 0 (328 filer); check:docs 14/14. Granskning: risk LAG, runda 1, 2 info-fynd (auto-fix-klass, ingen atgard kravd).
+<!-- SECTION:FINAL_SUMMARY:END -->

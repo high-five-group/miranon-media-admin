@@ -3,10 +3,10 @@ id: TASK-475
 title: >-
   Fynd: beskedet om Airtable-eftersläpning är obegripligt för användaren —
   'Basen släpar' + dold förklaring; sökläget ger spegel-raderna egen höjd
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-19 09:45'
-updated_date: '2026-09-19 11:05'
+updated_date: '2026-09-19 12:40'
 labels:
   - fynd
 dependencies: []
@@ -138,3 +138,9 @@ Marcus ögonmätte formen i dev-server (rutten /mer/betalningar) och stämplade 
 
 Granskningens runda 1-fynd 1 (PR #2576) fångade exakt den inkonsekvens som noterades ovan: `InbetalningsLista.tsx` bytte till `SpegelSlaparIkon` (Hourglass) i denna runda, återanvänd som exporterad komponent ur `SpegelSlaparBesked.tsx` i stället för en hand-kopierad `<Hourglass ... />`. Rött-först-vakt tillagd: `tests/api/spegel-budskap-ikon-vakt.test.ts` (källtextsvakt, api-pure) fäller om `AlertTriangle` återkommer nära spegel-budskapet i `src/components/betalningar/**`. Ovanstående sektion är alltså historisk, inte längre aktuell.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landat: PR #2576, merge 0cbd12f6 (2026-09-19T12:14:44Z, main), runda 2. Etiketten Basen slapar ersatt av synligt heldbeskede en gang per lista (SpegelSlaparBesked) + neutral Hourglass-markor per rad (SpegelSlaparMarkor, aria-hidden, sr-only-mening) - BasenSlaparPill riven. Ordvalet stamplat av Marcus i dev-server (Det blir okej): meningen Databasen har inte hunnit uppdateras for N betalningar. Beloppen har i appen stammer., ordet databasen i stallet for basen. ORDLISTA.md fick posten Databasen (UI-ord). Tre fel rattade: forklaring nu synlig text (var title-attribut), soklagets spegel-rader fick lika hojd (162 mot 180px -> 166/166), belopp som klipptes bort i soklaget vid 1280px synligt igen (eventnamn fick egen rad). Runda 2 stangde granskningens fynd: InbetalningsLista.tsx bytte till samma SpegelSlaparIkon (Hourglass) + ny kalltextsvakt tests/api/spegel-budskap-ikon-vakt.test.ts mot AlertTriangle-atervand. Grindar runda 2 (matt): typecheck exit 0; biome (repo-brett) exit 0 (18 warn/84 info forbefintliga); build exit 0; test:api:pure 1839/1839; check-langa-streck exit 0 (331 filer); check:docs 16/16 grona. Granskning: risk LAG, runda 2, 1 info-fynd. Facit-provning (ADR-102): ingen AMENDERING kravdes (godkand: null / ingen berord kalla).
+<!-- SECTION:FINAL_SUMMARY:END -->

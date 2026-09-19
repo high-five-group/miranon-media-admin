@@ -3,10 +3,10 @@ id: TASK-451.6
 title: >-
   Skiva: mät och rotorsaka varför batch 1 (get-events, get-registrations) tar
   över 9 s kallt
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-18 10:39'
-updated_date: '2026-09-18 11:26'
+updated_date: '2026-09-19 12:39'
 labels:
   - ready-for-agent
 dependencies: []
@@ -45,3 +45,9 @@ Detta är ett MÄTPASS mot STAGING (aldrig prod — prod-loggarna är Marcus kan
 <!-- SECTION:NOTES:BEGIN -->
 Mätt mot STAGING (aldrig prod). Två mätomgångar: (1) 11:00:31–11:01:22 UTC, kontaminerad av okänd samtidig flotta-skrivaktivitet (recordCount växte mitt i mätningen) — get-events 2 476–14 088 ms, get-registrations 1 092–1 740 ms. (2) 11:18:59–11:19:49 UTC, efter att staging-semaforens preflight tvingade en 16 min 27 s väntan ut en levande post-merge.yml Staging(API+E2E)-körning — en STABIL delserie (tre anrop, identisk bas 218/194 rader) gav get-events 2 259,9–2 331,6 ms mot get-registrations 1 062,7–1 132,6 ms, kvot ≈2,1x, mycket tätt spann (~70 ms). Kod-räkning (fil:rad): get-events gör ~7 sekventiella Airtable-rundresor (paginering + en SEKVENTIELL for-loop över Bor-över-chunkar, get-events/index.ts rad 39–51/45), get-registrations (event-lösa grenen, warmup-vägen) gör ~2. Dom: latensen är till stor del ARKITEKTUR (sekventiell chunk-hämtning), inte en ren Airtable-vägg/EF-kallstart — men äkta kallstart kunde varken bekräftas eller uteslutas (ingen serverloggning finns). Två kort mintade: TASK-458 (parallellisera Bor-över-chunkarna, samma withConcurrencyLimit-mönster som TASK-416.12 redan bevisade fungerar för get-event-attachments) och TASK-459 (instrumentering — per-steg-loggning, byggs inte i detta pass). Prod-mätkommandon åt Marcus i § 7 (Dashboard-väg + verifierade function_edge_logs-fältnamn; CLI 2.75.0 saknar functions logs helt). Fullständig research-fil: docs/research/startvarmningen-batch1-kall-latens-2026-09-18.md. Grindar: markdownlint 0/vale 0/check:docs 14 gröna (mätt, exitkod läst separat, ej pipe).
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landat: PR #2537, merge 815fa3ad (2026-09-18T11:43:34Z, main). Rent matpass mot STAGING (ingen kod), research-fil docs/research/startvarmningen-batch1-kall-latens-2026-09-18.md. Dom: latensen ar till stor del ARKITEKTUR (get-events sekventiell for-loop over Bor-over-chunkar), inte enbart Airtables 5 req/s-vagg - stabil delserie (tre anrop, identisk bas 218/194 rader) gav get-events 2259,9-2331,6 ms mot get-registrations 1062,7-1132,6 ms, kvot ca 2,1x. Aakta EF-kallstart varken bekraftad eller utesluten (ingen serverloggning). Tva kort mintade: TASK-458 (parallellisera Bor-over-chunkarna) och TASK-459 (per-steg-instrumentering). Grindar (matt, exitkod last separat): markdownlint-cli2 0 issues; vale 0 errors/warnings; check:docs 14/14 grona.
+<!-- SECTION:FINAL_SUMMARY:END -->
