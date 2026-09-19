@@ -244,7 +244,7 @@ ingenstans — varken i kod, bas, ordlista eller historik.**
 6. **Det enda verkliga eventinfo-utskicket i loggen** (`data-model.md` § Skarpa
    skick, rad 988): 2026-04-16 09:48, mallen
    `medveten-kontakt-deltagarinformation`, **74 mottagare** — *"75
-   incheckning-aktiva minus 1 (Ulrika Arvas — saknar e-post). Bulk-utskick.
+   incheckning-aktiva minus 1 (Deltagare 88 — saknar e-post). Bulk-utskick.
    Lotta körde själv i admin."* Urvalskriteriet var **aktiv**, inte **betald**.
 
 7. **PRD task-18 § Utanför omfattningen:** *"Eventinfo-auto-utskickets MOTOR
@@ -877,3 +877,9 @@ Ordnade efter hur mycket som hänger på svaret.
 - Sekundära/opinionskällor om icke-linjära pipelines (markerade som svagare):
   <https://garysmithpartnership.com/opportunity-stages/> ·
   <https://www.demandfarm.com/blog/salesforce-opportunity-stages-best-practices-are-you-managing-deals-or-losing-them/>
+
+---
+
+> **Pseudonymiserat (T171, 2026-09-18):** namn i denna fil är ersatta med
+> stabila pseudonymer (`Deltagare NN`) och e-post maskad till `X***@domän`.
+> Se `tasks/threads/T171-personuppgifter-i-publikt-repo.md`.

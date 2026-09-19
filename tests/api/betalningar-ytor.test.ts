@@ -267,7 +267,7 @@ test('MAKULERAD INBETALNING: varken felskäl eller köa-om, trots ett känt jobb
 });
 
 test('MAKULERAD INBETALNING skickar aldrig om sitt kvitto — även när kvittot står som skickat', () => {
-  // MÄTT I ACCEPTANSVANDRINGEN 2026-08-31 mot staging: Cecilia Ödmans två
+  // MÄTT I ACCEPTANSVANDRINGEN 2026-08-31 mot staging: Deltagare 106:s två
   // inbetalningar är makulerade (städade testposter) medan deras kvitton står
   // kvar som `skickat`. Raden erbjöd "Skicka igen" innan denna regel fanns —
   // ett tryck hade skickat om ett kvitto för en betalning som inte gäller.

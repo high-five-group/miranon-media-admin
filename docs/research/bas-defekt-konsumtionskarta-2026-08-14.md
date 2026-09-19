@@ -300,7 +300,7 @@ listan — det är räkningen som är fel, inte visningen.
 Ingen kod läser ett defekt fält här; defekten är i DATAN. Men den når UI direkt:
 båda posterna producerar två Person-records för samma människa, och
 `get-persons` listar records. Lotta ser två rader med samma namn, med
-historiken delad mellan dem (§42:s Ulrika Arvas bar RIM 1 på ena raden och
+historiken delad mellan dem (§42:s Deltagare 88 bar RIM 1 på ena raden och
 Psionautics-närvaron på den andra).
 
 Konsekvensen sträcker sig till segment-ytan: `segment-resolution.ts:122-124`
@@ -618,3 +618,9 @@ ligga som rena bas-kandidater.
 **Externa källor:** inga. Frågan är helt intern; Airtables egen dokumentation
 om `COUNTA`-beteende på länkfält hade kunnat stärka §39:s rotorsakshypotes, men
 den hypotesen är inte bärande för konsumtionskartan.
+
+---
+
+> **Pseudonymiserat (T171, 2026-09-18):** namn i denna fil är ersatta med
+> stabila pseudonymer (`Deltagare NN`) och e-post maskad till `X***@domän`.
+> Se `tasks/threads/T171-personuppgifter-i-publikt-repo.md`.

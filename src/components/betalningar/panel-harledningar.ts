@@ -136,7 +136,7 @@ export function kvittolage(
       kanVisa: harPdf,
       // ═══ EN MAKULERAD INBETALNING SKICKAR ALDRIG OM SITT KVITTO ═══
       //
-      // MÄTT I ACCEPTANSVANDRINGEN 2026-08-31, inte befarat: Cecilia Ödmans
+      // MÄTT I ACCEPTANSVANDRINGEN 2026-08-31, inte befarat: Deltagare 106:s
       // två inbetalningar i staging är MAKULERADE (städade testposter), men
       // deras kvitton står kvar som `skickat` - och raden erbjöd "Skicka
       // igen". Ett tryck hade skickat om ett kvitto för en betalning som

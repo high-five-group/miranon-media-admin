@@ -96,8 +96,8 @@
 //     ARRAYJOIN({Person}))` mot samma tabell gav **0 träffar**, trots att
 //     `rec2JwV3Bh0x5qlvl` faktiskt är den länkade personen på en verklig
 //     rad. `ARRAYJOIN` på ett länkfält i en Airtable-FORMEL renderar de
-//     länkade posternas PRIMÄRFÄLT (personens NAMN — `FIND("Cecilia
-//     Ödman", ...)` MATCHADE samma rad), aldrig record-ID:n. Ett filter på
+//     länkade posternas PRIMÄRFÄLT (personens NAMN — `FIND("Deltagare
+//     106", ...)` MATCHADE samma rad), aldrig record-ID:n. Ett filter på
 //     personId kan alltså aldrig matcha via den vägen — en tyst TOM sektion
 //     för varje person, i stället för en 500.
 //

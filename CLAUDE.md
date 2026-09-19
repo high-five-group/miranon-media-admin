@@ -1,6 +1,6 @@
 ---
 owner: marcus803
-updated: 2026-09-18
+updated: 2026-09-19
 review_by: 2026-11-15
 status: stable
 ---
@@ -36,6 +36,27 @@ Detta är en **React-konvertering** av det Vue-byggda systemet i `~/Repon/mirano
 - **Styrande dokument för byggandet:** `docs/byggplan.md`. Läs den innan varje fas. Avvik aldrig utan att uppdatera byggplanen först.
 - Research före implementation (princip: `~/.claude/CLAUDE.md` § Instruktioner, "Research först, bygg sedan"): kolla React Aria, TanStack, Radix, FK Designsystemet INNAN du designar en lösning. Branschledarnas mönster är golvet.
 - **Airtable-schema före write:** konsultera `docs/reference/data-model.md` (fält-skrivbarhet, formel/rollup-fält, §Kända fällor, write-fält-IDs) INNAN du designar någon Airtable-fält-operation. Anta aldrig fält-form — verifiera mot referensen eller live via Code. Gäller vid Code:s fält-operations-design och utförande.
+- **Basdata citeras med record-ID + stabil pseudonym — aldrig med verkligt
+  namn eller e-postadress.** Ett defekt- eller dubblett-bevis behöver
+  `recXXXX` och en pseudonym som är SAMMA för samma person i hela repot
+  (`Deltagare NN`); det behöver aldrig personen. E-post maskas till
+  `X***@domän` — ETT tecken är golvet. Delar två adresser i SAMMA tabell
+  eller stycke både domän och första tecken (skiljer dem annars inte åt,
+  t.ex. ett stavfelspar som är själva beviset) höjs masken till så många
+  tecken som krävs för att adresserna förblir urskiljbara, aldrig fler.
+  Förlagor och källmaterial med persondata (PDF:er, CSV/xlsx
+  från Lotta, live-dumpar, prod-stickprov) pseudonymiseras vid **FÖRSTA
+  citatet** — inte när någon upptäcker dem senare. Gäller varje yta:
+  sessionsdok, research, ADR:er, backlog-kort, kodkommentarer, testfixturer
+  och agenters rapporter. Det som INTE är personuppgift och får stå kvar:
+  record-/anmälnings-ID:n, belopp, datum utan namn, Marcus egna adresser
+  (han är repo-ägare) och Roger & Lottas firmauppgifter. **Detta är PROSA,
+  ingen mekanism** — ingen grind fäller ett namn i fri text, och en
+  e-postvakt är ofärdig (`T171` punkt 3, Marcus-beslut). **Varför raden står
+  här:** 100 verkliga personer och 13 e-postadresser låg citerade i klartext
+  på `main` i ett PUBLIKT repo — över 34 filer — tills `T171` punkt 1 städade
+  dem 2026-09-18. Bevisföringen var rätt metod i fel medium, och historiken
+  bär dem fortfarande (`T171` punkt 4).
 - **Bilagemallarnas FÖRLAGOR ligger utanför repot** —
   `~/Desktop/Miranon Media/exempelpdokument/` (`bekräftelsebilaga-exempel.pdf`,
   `deltagarinformation-exempel.pdf`, `2026-08-03 kvitto-forlaga.pdf`). De är

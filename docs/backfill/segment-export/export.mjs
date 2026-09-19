@@ -1,11 +1,15 @@
 // S60 Steg 4 — material-listor + Skool-union → CSV. READ-ONLY mot basen.
 // Bygger på segment-export.json (källäst ur Deltaganden, {Närvaropoäng}=1).
 //
+// Pseudonymiserat (T171, 2026-09-18): namn i kommentarerna nedan är ersatta
+// med stabila pseudonymer (Deltagare NN). Se
+// tasks/threads/T171-personuppgifter-i-publikt-repo.md.
+//
 // Marcus-kvitterade justeringar (2026-07-09):
 //   · 2 testkonton exkluderas (highfive-dubbletten + inbox@marcusemails.com)
-//   · Ulrika Arvas (rec3ERFZfQnMwMym6): Person.E-post tom i basen → adress hämtad
+//   · Deltagare 88 (rec3ERFZfQnMwMym6): Person.E-post tom i basen → adress hämtad
 //     ur hennes Event-21-anmälan; bas-defekt registrerad till T16
-//   · Ann-Marie Martinsson: ingen e-post någonstans → ingen inbjudan (noterad)
+//   · Deltagare 07: ingen e-post någonstans → ingen inbjudan (noterad)
 //   · RIM 3: inget event genomfört → listan existerar inte (väntat, ADR-064)
 
 import fs from 'node:fs';
@@ -19,7 +23,7 @@ const TESTKONTON = new Map([
   ['recIynU41be2DcYup', 'marcus@h5gruppen.se — testpersona, 0 anmälningar, 22 orphans'],
   ['rec3iFLEHuRHl1QZH', 'test-kalla-delete@example.com — ren testrad'],
 ]);
-// Tom: Ulrikas Person bär numera sin adress i basen (dubbletten konsoliderad).
+// Tom: Deltagare 88:s Person bär numera sin adress i basen (dubbletten konsoliderad).
 const EPOST_OVERRIDE = new Map();
 
 const data = JSON.parse(fs.readFileSync(new URL('./segment-export.json', import.meta.url), 'utf8'));
@@ -29,7 +33,7 @@ const arTest = (p) => TESTKONTON.has(p.id);
 const nyckel = (p) => epost(p).trim().toLowerCase();
 
 // Dedup-vid-utskick på normaliserad e-post (segment-arkitektur.md). Krävs på
-// riktigt: Ulrika Arvas bär TVÅ Person-records (fälla 40 — Event-17-anmälan
+// riktigt: Deltagare 88 bär TVÅ Person-records (fälla 40 — Event-17-anmälan
 // saknade e-post → A2 matchade inte → dubblett), ett per material. Hon ska ha
 // båda materialen men EN inbjudan.
 function dedupa(personer) {

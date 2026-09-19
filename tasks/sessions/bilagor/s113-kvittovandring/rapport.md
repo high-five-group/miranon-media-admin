@@ -115,22 +115,22 @@ Logiken: `Number(belopp.replace(',', '.'))` måste vara ändligt och > 0
 ## 3. Lottas tisdag
 
 Lotta öppnar bankappen på iPaden. Tre Swish har kommit in under natten: 2 500 kr
-från Cecilia Ödman, 2 500 kr från Bengt Lindqvist och 1 000 kr från Gunilla
+från Deltagare 106, 2 500 kr från Bengt Lindqvist och 1 000 kr från Gunilla
 Törnqvist. Hon vet att Fjärrskådningen i september kostar 2 500, varav 1 000 i
 anmälningsavgift — det står i hennes huvud och i bekräftelsebilagan, inte i
 appen. Hon öppnar appen. På Hem ser hon "Nästa event: Fjärrskådning, 8 dagar
 kvar" och klickar sig in (1), vidare till "Gå till åtgärder" (2) och skrollar
 förbi fyra utskicksåtgärder ner till "Pricka av och notera · 7 saknar" (3).
-Åtta plattor fälls ut. Hon hittar Cecilia, bockar Anmälningsavgift (4) — krysset
+Åtta plattor fälls ut. Hon hittar Deltagare 106, bockar Anmälningsavgift (4) — krysset
 blir grönt, ingen text säger "sparat", men "Skicka kvitto" dyker upp. Hon
 trycker (5). Dialogen frågar om belopp och betalsätt; hon växlar till
 bankappen för att kolla exakta kronor, växlar tillbaka, skriver "2 500" som hon
 är van (6 + inmatning) — knappen är fortfarande grå. Hon suddar mellanslaget,
 knappen tänds. Betalsätt → Swish (7, 8). Skicka (9). "Kvitto MM-2026-1001
-skickat till Cecilia Ödman." Stäng (10). Samma dans för Bengt och Gunilla, men
+skickat till Deltagare 106." Stäng (10). Samma dans för Bengt och Gunilla, men
 för Gunilla är det slutbetalningen som ska bockas, så hon måste läsa raden
 noga. Efter tre kvitton har hon ingen kopia — vill hon kontrollera vad som gick
-ut får hon be Cecilia vidarebefordra mailet, eller leta i Mer → Aktivitetshistorik
+ut får hon be Deltagare 106 vidarebefordra mailet, eller leta i Mer → Aktivitetshistorik
 efter tre rader "skickade kvitto". Om Roger frågar "vad skickade vi till
 Bengt?" finns svaret bara i Bengts inkorg.
 
