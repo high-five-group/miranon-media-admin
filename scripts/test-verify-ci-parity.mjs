@@ -40,7 +40,6 @@ import { dirname, join, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
   extraheraGrupp,
-  harKodAndelse,
   hittaOhanteradeUttryck,
   klassificeraDiff,
   klassificeraSteg,
@@ -306,36 +305,70 @@ console.log('\n▶ klassificeraDiff (TASK-142) — allowlist, aldrig blocklist')
   );
 }
 
-console.log('\n▶ harKodAndelse (TASK-464.1 F2) — any_changed-semantik, motsatt klassificeraDiff');
+console.log(
+  '\n▶ lint-inert-klassningen (TASK-464.1 runda 3, review runda 2 fynd 1) — ' +
+    'klassificeraDiff ÅTERANVÄND mot .lint-inert-policy.conf:s POSITIVA lista',
+);
 {
-  const kodMonster = ['**/*.js', '**/*.mjs', '**/*.ts', '**/*.tsx', '**/*.html', '**/*.htm'];
+  // Samma glob som .lint-inert-policy.conf/ci.yml:s `changed-lint-inert-ext`
+  // — se den listan för de tre beläggen (Biome/typkontroll/shellcheck),
+  // körda av scripts/test-lint-inert-extensions.sh.
+  const inertMonster = [
+    '**/*.md',
+    '**/*.jsonl',
+    '**/*.txt',
+    '**/*.pdf',
+    '**/*.png',
+    '**/*.jpg',
+    '**/*.jpeg',
+    '**/*.gif',
+    '**/*.webp',
+    '**/*.csv',
+  ];
   report(
-    'T31c en ensam kod-ändelse-fil → true',
+    'T31c alla ändrade filer bär en lint-inert ändelse → true (only_changed-semantik, ÅTERANVÄND funktion)',
     true,
-    harKodAndelse(['docs/backfill/segment-export/segments.mjs'], kodMonster),
+    klassificeraDiff(['docs/foo.md', 'tasks/bar.md', 'docs/notes.jsonl'], inertMonster),
   );
   report(
-    'T31d ingen fil matchar → false',
+    'T31d en ensam kod-ändelse-fil bland inerta → false (fail-closed: kräver ATT ALLA matchar)',
     false,
-    harKodAndelse(['docs/foo.md', 'tasks/bar.md'], kodMonster),
+    klassificeraDiff(['docs/foo.md', 'docs/backfill/segment-export/segments.mjs'], inertMonster),
   );
   report(
-    'T31e any_changed, INTE only_changed: EN kod-fil bland flera icke-kod-filer → ändå true',
-    true,
-    harKodAndelse(['docs/foo.md', 'docs/backfill/segment-export/segments.mjs'], kodMonster),
-  );
-  report(
-    'T31f noll ändrade filer → false (samma vakuöst-sant-vakt som klassificeraDiff)',
+    'T31e REGRESSIONS-BELÄGG (runda 1:s F2-brist): en .json-fil under D0 → false, ' +
+      'trots att .json ALDRIG stod i den gamla nekande listan — den nya positiva ' +
+      'listan fångar den ändå eftersom .json inte är UPPTAGEN som inert',
     false,
-    harKodAndelse([], kodMonster),
+    klassificeraDiff(['docs/reference/review-utlatande.schema.json'], inertMonster),
   );
   report(
-    'T31g motsatt av klassificeraDiff på SAMMA indata: docsOnly=true OCH harKod=true samtidigt är ett giltigt, avsiktligt utfall',
-    { docsOnly: true, harKod: true },
+    'T31f REGRESSIONS-BELÄGG: en .css-fil under D0 → false, samma skäl som T31e',
+    false,
+    klassificeraDiff(['docs/mallar/bilagor/kvitto.css'], inertMonster),
+  );
+  report(
+    'T31g svg PRÖVADES OCH STRÖKS ur listan (Biome har en HTML/SVG-parser, mätt) — ' +
+      'en .svg-fil är alltså INTE lint-inert enligt denna glob',
+    false,
+    klassificeraDiff(['docs/design/icon.svg'], inertMonster),
+  );
+  report(
+    'T31h noll ändrade filer → false (samma vakuöst-sant-är-farligt-vakt som D0-klassningen)',
+    false,
+    klassificeraDiff([], inertMonster),
+  );
+  report(
+    'T31i docsOnly=true (D0-glob) OCH alltInert=false (lint-inert-glob) samtidigt — giltigt, ' +
+      'avsiktligt utfall: diffen är DOCS_ONLY men CI:s lint kör ändå (requires_lint_by_extension)',
+    { docsOnly: true, alltInert: false },
     (() => {
       const d0 = ['**/*.md', 'docs/**', 'tasks/**'];
       const filer = ['docs/backfill/segment-export/segments.mjs'];
-      return { docsOnly: klassificeraDiff(filer, d0), harKod: harKodAndelse(filer, kodMonster) };
+      return {
+        docsOnly: klassificeraDiff(filer, d0),
+        alltInert: klassificeraDiff(filer, inertMonster),
+      };
     })(),
   );
 }
@@ -609,8 +642,10 @@ console.log('\n▶ Diff-klassning — tvåsidigt bevis i äkta git-sandlåda (--
     report(
       // RÄTTAT TASK-464.1 (2026-09-19): kommentaren sade tidigare "lint är
       // alltid-på i CI" — falskt sedan S4 (samma PR): ci.yml:s `lint`-jobb
-      // är numera VILLKORAT (should_skip_tests || has_code_extension).
-      // Vad testet FAKTISKT prövar är oförändrat och fortsatt sant: detta
+      // är numera VILLKORAT (should_skip_tests || requires_lint_by_extension,
+      // den senare bytt namn i runda 3 — se knownJobs.ci.lint i
+      // .ci-parity-policy.json). Vad testet FAKTISKT prövar är oförändrat
+      // och fortsatt sant: detta
       // skripts EGNA lokala plan (`derivedJobs.ci`) taggar aldrig lint som
       // docs-only-hoppad — en medveten superset-policy (kör MER lokalt än
       // CI, aldrig mindre), inte en spegling av CI:s if:-villkor.
@@ -747,10 +782,11 @@ console.log('\n▶ Diff-klassning — tvåsidigt bevis i äkta git-sandlåda (--
     rmSync(d7, { recursive: true, force: true });
   }
 
-  // D8 — TASK-464.1 F2: DOCS_ONLY-diff som ÄNDÅ bär en fil med kod-ändelse
-  // under D0 (docs/**). CI:s `lint`-jobb kör den, trots DOCS_ONLY — rapporten
-  // ska säga det, mot den ÄKTA ci.yml/.ci-parity-policy.json (samma sandlåda
-  // D1-D7 använder, ingen syntetisk fixtur för denna klassnings-glob).
+  // D8 — TASK-464.1 runda 3 (ersätter F2): DOCS_ONLY-diff som ÄNDÅ bär en
+  // fil med kod-ändelse under D0 (docs/**). CI:s `lint`-jobb kör den, trots
+  // DOCS_ONLY — rapporten ska säga det, mot den ÄKTA
+  // ci.yml/.ci-parity-policy.json (samma sandlåda D1-D7 använder, ingen
+  // syntetisk fixtur för denna klassnings-glob).
   const d8 = byggGitSandlada();
   try {
     skrivFil(d8, 'docs/backfill/segment-export/segments.mjs', 'export const x = 1;\n');
@@ -763,7 +799,7 @@ console.log('\n▶ Diff-klassning — tvåsidigt bevis i äkta git-sandlåda (--
       res.stdout.includes('═══ Diff-klassning: ✅ DOCS_ONLY ═══'),
     );
     report(
-      'D8c F2-informationsraden nämner att lint kör ändå',
+      'D8c informationsraden nämner att lint kör ändå',
       true,
       res.stdout.includes('CI:s `lint`-jobb kör ÄNDÅ'),
     );
@@ -771,9 +807,9 @@ console.log('\n▶ Diff-klassning — tvåsidigt bevis i äkta git-sandlåda (--
     rmSync(d8, { recursive: true, force: true });
   }
 
-  // D9 — MOTPROV till D8: en RENODLAD docs-diff (ingen kod-ändelse) ska INTE
-  // bära F2-raden — annars vore raden brus på VARJE DOCS_ONLY-körning i
-  // stället för en riktad varning.
+  // D9 — MOTPROV till D8: en RENODLAD docs-diff (bara lint-inerta ändelser)
+  // ska INTE bära informationsraden — annars vore raden brus på VARJE
+  // DOCS_ONLY-körning i stället för en riktad varning.
   const d9 = byggGitSandlada();
   try {
     skrivFil(d9, 'tasks/foo.md', '# docs\n');
@@ -786,12 +822,60 @@ console.log('\n▶ Diff-klassning — tvåsidigt bevis i äkta git-sandlåda (--
       res.stdout.includes('═══ Diff-klassning: ✅ DOCS_ONLY ═══'),
     );
     report(
-      'D9c F2-informationsraden nämns INTE (inga kod-ändelser i diffen)',
+      'D9c informationsraden nämns INTE (samtliga filer lint-inerta)',
       false,
       res.stdout.includes('CI:s `lint`-jobb kör ÄNDÅ'),
     );
   } finally {
     rmSync(d9, { recursive: true, force: true });
+  }
+
+  // D10 — REGRESSIONS-BELÄGG (review runda 2, risk hög, fynd 1): en DOCS_ONLY
+  // diff vars ENDA fil är JSON under docs/**. Runda 1:s nekande F2-lista
+  // (js/ts/html/…) INTE innehöll json — samma diff hade tystnat vid runda 1.
+  // Den nya POSITIVA listan (.lint-inert-policy.conf) saknar json ⇒ raden
+  // ska synas — mot den ÄKTA ci.yml/.ci-parity-policy.json.
+  const d10 = byggGitSandlada();
+  try {
+    skrivFil(d10, 'docs/reference/review-utlatande.schema.json', '{"a": 1}\n');
+    gitCommitaAllt(d10, 'docs-json');
+    const res = korListaISandlada(d10);
+    report('D10 json-fil under D0 → exit 0', 0, res.status);
+    report(
+      'D10b klassas fortfarande DOCS_ONLY',
+      true,
+      res.stdout.includes('═══ Diff-klassning: ✅ DOCS_ONLY ═══'),
+    );
+    report(
+      'D10c informationsraden nämner att lint kör ändå (json är INTE lint-inert)',
+      true,
+      res.stdout.includes('CI:s `lint`-jobb kör ÄNDÅ'),
+    );
+  } finally {
+    rmSync(d10, { recursive: true, force: true });
+  }
+
+  // D11 — svg PRÖVADES OCH STRÖKS ur listan (Biome har en HTML/SVG-parser,
+  // se .lint-inert-policy.conf § BELÄGG). En DOCS_ONLY-diff vars enda fil är
+  // .svg ska alltså OCKSÅ bära informationsraden.
+  const d11 = byggGitSandlada();
+  try {
+    skrivFil(d11, 'docs/design/icon.svg', '<svg></svg>\n');
+    gitCommitaAllt(d11, 'docs-svg');
+    const res = korListaISandlada(d11);
+    report('D11 svg-fil under D0 → exit 0', 0, res.status);
+    report(
+      'D11b klassas fortfarande DOCS_ONLY',
+      true,
+      res.stdout.includes('═══ Diff-klassning: ✅ DOCS_ONLY ═══'),
+    );
+    report(
+      'D11c informationsraden nämner att lint kör ändå (svg är INTE lint-inert)',
+      true,
+      res.stdout.includes('CI:s `lint`-jobb kör ÄNDÅ'),
+    );
+  } finally {
+    rmSync(d11, { recursive: true, force: true });
   }
 }
 

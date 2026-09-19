@@ -104,16 +104,22 @@
 // § PARITETS-GRINDEN c nedan) — då litar skriptet inte längre på att en
 // DOCS_ONLY-klassning betyder vad den påstår.
 //
-// TASK-464.1 F2-TILLÄGG (2026-09-19): D0 ÄR INTE KODFRITT (docs/**/tasks/**
-// bär spårad, analyserbar kod). `.ci-parity-policy.json`:s
-// `codeExtensionClassification` läser en ANDRA, härledd glob (`changed`-
-// jobbets `changed-code-ext`-steg) och `harKodAndelse` (any_changed-
-// semantik) avgör om DOCS_ONLY-diffen ändå bär en kod-ändelse-fil — samma
-// invariant som ger CI:s `lint`-jobb sitt andra `if:`-villkor. Detta
-// påverkar ALDRIG vad detta skript kör lokalt (`derivedJobs.ci` —
-// lint/audit/docs — körs redan ovillkorat oavsett DOCS_ONLY, se ovan): det
-// gör bara diff-klassnings-RAPPORTEN sanningsenlig i stället för att tyst
-// påstå att `lint` skulle skippats i CI när den faktiskt inte skulle det.
+// TASK-464.1 runda 3-TILLÄGG (2026-09-19, review runda 2, risk hög, fynd 1):
+// D0 ÄR INTE LINT-INERT (docs/**/tasks/** bär spårad, analyserbar kod OCH
+// filtyper — JSON, CSS — Biome bevisligen lintar). `.ci-parity-policy.json`:s
+// `lintInertClassification` läser en ANDRA, härledd glob (`changed`-jobbets
+// `changed-lint-inert-ext`-steg, en POSITIV lista över bevisat lint-inerta
+// ändelser) och `klassificeraDiff` (samma only_changed-semantik som
+// D0-klassningen ovan — ÅTERANVÄND, inte en ny funktion) avgör om
+// DOCS_ONLY-diffen har MINST EN fil som inte är lint-inert — samma invariant
+// som ger CI:s `lint`-jobb sitt andra `if:`-villkor. ERSÄTTER runda 1:s F2
+// (`codeExtensionClassification`/`harKodAndelse`, en NEKANDE lista över
+// kända kod-ändelser — fail-open mot json/css, se .lint-inert-policy.conf §
+// BELÄGG för den körda regressionen). Detta påverkar ALDRIG vad detta
+// skript kör lokalt (`derivedJobs.ci` — lint/audit/docs — körs redan
+// ovillkorat oavsett DOCS_ONLY, se ovan): det gör bara diff-klassnings-
+// RAPPORTEN sanningsenlig i stället för att tyst påstå att `lint` skulle
+// skippats i CI när den faktiskt inte skulle det.
 //
 // `--full` tvingar fullständigt läge OAVSETT diff (ingen git-analys körs
 // alls) — för de lägen där hela sviten ska mätas oberoende av arbetsträdet.
@@ -336,21 +342,6 @@ export function klassificeraDiff(filer, monster) {
   return filer.every((f) => matchade.has(f));
 }
 
-/**
- * TASK-464.1 F2 (review runda 1, risk hög, fynd 2). `any_changed`-semantik —
- * SANT om MINST EN fil i `filer` matchar globen, oavsett resten av diffen.
- * Mirrorar CI:s `changed-code-ext`-steg (tj-actions/changed-files,
- * `any_changed`), samma primitiv som `changed-deps`/`changed-docs` redan
- * använder i ci.yml — skiljer sig medvetet från `klassificeraDiff` ovan
- * (`only_changed`-semantik, kräver att ALLA filer matchar). Noll ändrade
- * filer ⇒ false, samma vakuöst-sant-är-farligt-resonemang som
- * `klassificeraDiff`.
- */
-export function harKodAndelse(filer, monster) {
-  if (filer.length === 0) return false;
-  return mm(filer, monster, { dot: false }).length > 0;
-}
-
 /* ── Ändrade filer mot baseRef — committat ∪ arbetsträd ∪ otrackat ───────
  *
  * `origin/main...HEAD` (tre-punkts = mot merge-base) är samma bas CI:s
@@ -462,19 +453,23 @@ function avgorDiffKlassning(policy, ciParsed, args) {
       `${diff.filer.length} ändrad(e) fil(er) mot ${spec.baseRef} (committat ∪ arbetsträd ∪ otrackat) — samtliga matchar D0-glob.`,
       `Hoppar: ${policy.derivedJobs.ciSuite.join(', ')} (ci-suite.yml) — CI:s should_skip_tests skulle skippat samma jobb.`,
     ];
-    // TASK-464.1 F2: informationsrad, ändrar INGET om vad detta skript kör
-    // lokalt (derivedJobs.ci — lint/audit/docs — körs redan ovillkorat, se
-    // huvudet § SUITE-YTAN). Syftet är att rapporten inte ska påstå att
-    // `lint` skulle skippats i CI när diffen bär en kod-ändelse-fil under D0
-    // (t.ex. docs/backfill/segment-export/segments.mjs) — CI:s
-    // `has_code_extension`-output tvingar `lint` att köra ändå.
-    const kodSpec = policy.codeExtensionClassification;
-    if (kodSpec) {
-      const kodGlob = parseraD0Glob(ciParsed, kodSpec);
-      if (!kodGlob.fel && harKodAndelse(diff.filer, kodGlob.monster)) {
+    // TASK-464.1 runda 3 (ersätter F2): informationsrad, ändrar INGET om vad
+    // detta skript kör lokalt (derivedJobs.ci — lint/audit/docs — körs redan
+    // ovillkorat, se huvudet § SUITE-YTAN). Syftet är att rapporten inte ska
+    // påstå att `lint` skulle skippats i CI när diffen bär MINST EN fil som
+    // inte är bevisat lint-inert (t.ex. docs/backfill/segment-export/
+    // segments.mjs, eller en .json/.css-fil under docs/**) — CI:s
+    // `requires_lint_by_extension`-output tvingar `lint` att köra ändå.
+    // `klassificeraDiff` ÅTERANVÄNDS (only_changed-semantik — samma funktion
+    // som D0-klassningen ovan): sant = ALLA filer är lint-inerta.
+    const lintInertSpec = policy.lintInertClassification;
+    if (lintInertSpec) {
+      const lintInertGlob = parseraD0Glob(ciParsed, lintInertSpec);
+      if (!lintInertGlob.fel && !klassificeraDiff(diff.filer, lintInertGlob.monster)) {
         rader.push(
-          '⚠️  Minst en av dessa D0-filer bär en kod-ändelse (F2, TASK-464.1) — ' +
-            'CI:s `lint`-jobb kör ÄNDÅ (has_code_extension==true), trots DOCS_ONLY. ' +
+          '⚠️  Minst en av dessa D0-filer saknar en bevisat lint-inert ändelse ' +
+            '(TASK-464.1 runda 3) — CI:s `lint`-jobb kör ÄNDÅ ' +
+            '(requires_lint_by_extension==true), trots DOCS_ONLY. ' +
             'Detta skript kör lint/audit/docs lokalt oavsett (superset-principen), ' +
             'så täckningen påverkas inte — raden är informativ.',
         );

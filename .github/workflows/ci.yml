@@ -92,14 +92,16 @@ jobs:
       # Styr `audit`-jobbets `if:` — se det jobbets § K1(b)-kommentar för
       # hela rationalen och de fyra invarianterna (i)–(iv).
       dependency_tree_changed: ${{ steps.changed-deps.outputs.any_changed == 'true' }}
-      # TASK-464.1 F2 (review runda 1, risk hög, fynd 2). true = minst en
-      # ändrad fil bär en analyserbar kod-ändelse (se `changed-code-ext`-
-      # steget för den fulla listan + rationalen), ELLER klassningssteget
-      # SJÄLVT fallerade (fail-closed — se `code-ext`-steget). Styr
-      # `lint`-jobbets `if:` TILLSAMMANS MED should_skip_tests: en D0-klassad
-      # diff som ändå bär en kod-ändelse-fil (t.ex.
-      # docs/backfill/segment-export/segments.mjs) får inte hoppa `lint`.
-      has_code_extension: ${{ steps.code-ext.outputs.has_code_extension == 'true' }}
+      # TASK-464.1 runda 3 (review runda 2, risk hög, fynd 1) — ERSÄTTER
+      # runda 1:s F2-mekanism (`has_code_extension`, nekande lista, missade
+      # json/css). true = MINST EN ändrad fil saknar en bevisat lint-inert
+      # ändelse (se `changed-lint-inert-ext`-steget för den positiva listan +
+      # rationalen), ELLER klassningssteget SJÄLVT fallerade (fail-closed —
+      # se `lint-ext`-steget). Styr `lint`-jobbets `if:` TILLSAMMANS MED
+      # should_skip_tests: en D0-klassad diff där ALLA filer är lint-inerta
+      # får hoppa `lint` — allt annat (en kod-ändelse, JSON, CSS, en okänd
+      # ändelse) tvingar `lint` att köra.
+      requires_lint_by_extension: ${{ steps.lint-ext.outputs.requires_lint_by_extension == 'true' }}
     steps:
       # ═══ SHA-PINNADE FIRST-PARTY ACTIONS (TASK-312, 2026-08-24) ═══
       #
@@ -355,6 +357,30 @@ jobs:
         # `bash scripts/check-listparitet.sh`, samma steg som redan finns i
         # BÅDA jobben — inget nytt steg): se `.grind-tillganglighet-policy.conf`
         # för den härledda tabellen grind → conf-fil.
+        #
+        # TASK-464.1 runda 3 (review runda 2, risk medel/info, fynd 2):
+        # SCRIPTS/LIB/JQ-GUARD.SH TILLAGD — samma self-test-gap som ovan, EN
+        # NIVÅ NER ÄN F1: `check-permissions-claims.sh` (flyttad till `docs`-
+        # jobbet) sourcar `scripts/lib/jq-guard.sh` (rad 40) — ett DELAT
+        # bash-BIBLIOTEK, inte en `-policy.conf`-fil (F1:s
+        # `grind-tillganglighet`-tabell spårar bara conf-filer, se dess eget
+        # filhuvud § VARFÖR INTE ALLA TIO). En PR som ENBART ändrar jq-
+        # guard.sh:s LOGIK satte docs_changed==false (ingen .md/listad
+        # sökväg rörd) — `docs`-jobbet (som kör check-permissions-claims.sh,
+        # den enda konsument av jq-guard.sh SOM SJÄLV BOR I `docs`-jobbet)
+        # hade aldrig körts, och check-permissions-claims.sh:s INTEGRATION
+        # mot den nya jq-guard.sh-logiken hade landat oprövad. `lint`-jobbet
+        # kör visserligen (scripts/** är aldrig D0) och dess
+        # shellcheck-strict-steg validerar jq-guard.sh:s SYNTAX (redan i
+        # listan där, se steget "Validate bash scripts with
+        # shellcheck-strict") samt `scripts/test-jq-guard.sh`:s egen
+        # BIBLIOTEKS-logik — men ingendera kör
+        # `check-permissions-claims.sh` SJÄLV, så en regression i hur den
+        # ANVÄNDER jq-guard.sh (t.ex. ett API-namnbyte) hade smugit förbi.
+        # De ~27 ÖVRIGA sourcarna av jq-guard.sh (deny-*.sh, stop-vakt.sh
+        # m.fl.) är PreToolUse-hookar som körs av harnesset lokalt, inte av
+        # CI, och behöver därför ingen post här — bara den EN konsument som
+        # bor i ett `docs_changed`-gated CI-jobb gör.
         uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96  # v47.0.6
         with:
           # quotepath: false — samma invariant som changed-files-steget
@@ -381,6 +407,7 @@ jobs:
             scripts/check-adr-count.sh
             scripts/check-lesson-numbers.sh
             scripts/check-permissions-claims.sh
+            scripts/lib/jq-guard.sh
             .checklist-policy.conf
             .frontmatter-policy.conf
             .thread-index-policy.conf
@@ -558,92 +585,76 @@ jobs:
             .github/workflows/ci.yml
             .github/workflows/ci-suite.yml
 
-      - name: Get changed files with a code extension (TASK-464.1 F2-klassning)
-        id: changed-code-ext
-        # TASK-464.1 F2 (review runda 1, risk hög, fynd 2, 2026-09-19).
+      - name: Get changed files with a lint-inert extension (TASK-464.1 runda 3-klassning)
+        id: changed-lint-inert-ext
+        # TASK-464.1 runda 3 (review runda 2, risk hög, fynd 1, 2026-09-19).
+        # ERSÄTTER runda 1:s F2-mekanism (`changed-code-ext`/`has_code_extension`)
+        # — den var en NEKANDE lista (kända kod-ändelser: js/ts/html/…), och en
+        # nekande lista är fail-OPEN: json/css stod INTE i den, trots att Biome
+        # (lint-jobbets `npx @biomejs/biome check .`) BEVISLIGEN lintar båda
+        # (se .lint-inert-policy.conf § BELÄGG). En diff som bara ändrade t.ex.
+        # `docs/reference/review-utlatande.schema.json` hade landat OGRANSKAD.
         #
-        # PREMISSEN S4 (`lint`-jobbets should_skip_tests-villkor) VILADE PÅ:
-        # D0-allowlistan = "ingen analyserbar kod". Falsk. `docs/**`/`tasks/**`
-        # är HELA kataloger i D0 (klassning-d0-blocket ovan), inte bara deras
-        # .md-filer — och repot bär spårad, analyserbar kod under dem: minst
-        # åtta .js/.mjs-filer (t.ex.
-        # `docs/backfill/segment-export/segments.mjs`) plus en .html med ett
-        # `<script>`-block (granskningens `git ls-files` + grep, 2026-09-19).
-        # FÖRE denna PR körde `lint`-jobbet OVILLKORAT (Biome + typkontroll
-        # traverserar hela trädet) på VARJE ändring, kodfilen inkluderad.
-        # EFTER S4 ensamt hade en diff som BARA rör en sådan fil satt
-        # should_skip_tests==true (allt matchar D0) — `lint` hade skippats
-        # HELT, och `docs`-jobbet (villkorat på docs_changed, som inte reagerar
-        # på en .mjs-ändring) hade inte kört den heller. En kodändring hade
-        # landat helt ogranskad, tvärtemot Marcus villkorade GO ("inget
-        # verkligt skydd försvinner").
+        # ORKESTRERARENS BESLUT: vänd formen till FAIL-CLOSED. `lint` hoppas
+        # över ENDAST när diffen är D0-klassad OCH VARJE ändrad fil har en
+        # ändelse i DEN POSITIVA listan nedan över bevisat lint-inerta
+        # ändelser (.lint-inert-policy.conf, paret `lint-inert-ext` i
+        # .listparitet-policy.conf håller de två listorna i synk). En okänd
+        # ändelse, ingen ändelse, eller minsta osäkerhet i klassningen ⇒
+        # `lint` KÖR — se `Derive requires_lint_by_extension`-steget nedan.
         #
-        # BESLUTET: `lint` får hoppas ENDAST när diffen är D0 OCH INTE
-        # innehåller en enda fil med kod-ändelse. Detta steg är den ANDRA
-        # klassningen (samma verktyg, samma mönster som `changed-deps`
-        # ovan/`changed-docs` — tj-actions/changed-files, `any_changed`, ingen
-        # egen glob-tolkare) — TRÄFF (`any_changed==true`) tvingar `lint` att
-        # köra ÄVEN på en i övrigt D0-klassad diff. Ändelselistan är
-        # AVSIKTLIGT INTE begränsad till D0-sökvägarna: en kod-ändelse-fil
-        # UTANFÖR D0 (t.ex. `src/App.tsx`) sätter redan should_skip_tests==
-        # false på egen hand, så en global `any_changed`-glob adderar ingen ny
-        # falsk NEGATIV — den är bara enklare att härleda och pröva än en
-        # sökvägs-scopad variant, och den enda vägen den kan avvika är att köra
-        # `lint` i FLER fall, aldrig färre (samma "kör MER, aldrig mindre"-
-        # riktning som resten av klassnings-mekaniken).
+        # `only_changed` (INTE `any_changed`) — samma primitiv som D0:s
+        # `should_skip_tests` ovan (`only_changed==true` ⇔ VARJE ändrad fil
+        # matchar listan). Skiljer sig medvetet från runda 1:s F2, som läste
+        # `any_changed` (TRÄFF på EN fil räckte för att tvinga `lint` att
+        # köra) — den nya listan är i stället en allowlist över SÄKRA filer,
+        # så alla filer måste matcha för att `lint` ska få hoppas.
         #
-        # ÄNDELSELISTAN — minst den mängd uppdraget namngav (js, mjs, cjs, ts,
-        # mts, cts, tsx, jsx, vue, html, htm) plus `action.yml`/`action.yaml`
-        # (fristående förekomster — `.github/workflows/**` är redan aldrig D0,
-        # se undantaget i klassning-d0 ovan, så bara formen VAR SOM HELST i
-        # trädet kan hamna i D0). Syskon-PR #2558 (S5, TASK-464.2, olandad vid
-        # denna push) bygger `scripts/check-codeql-d0-kodfri.sh` för samma
-        # premiss (CodeQL:s D0-undantag) med en BREDARE, källbelagd lista
-        # (CodeQL:s egen extraktor-dokumentation: även `es`/`es6`/`xhtm`/
-        # `xhtml`) och en innehålls-kontroll för HTML utan kod-tecken. Denna
-        # klassning tar INGET BEROENDE på den olandade filen (samma regel som
-        # resten av repot: bygg aldrig på ett olandat kort) — TASK-471 bär den
-        # framtida sammanslagningen till EN gemensam, bredare lista när
-        # #2558 landat.
+        # ÄNDELSELISTAN — se .lint-inert-policy.conf:s filhuvud för de tre
+        # beläggen (a) Biome (b) typkontrollens include (c) shellcheck-strict-
+        # uppräkningen, körda per ändelse av
+        # scripts/test-lint-inert-extensions.sh. `svg` PRÖVADES och STRÖKS:
+        # Biome har en HTML/SVG-parser (se biome.json:s
+        # `public/**/*.svg`-override, som bara stänger AV en enskild a11y-
+        # regel — beviset att Biome behandlar SVG som lintbar HTML/XML).
         #
         # continue-on-error: TRUE — nästa steg läser `outcome` explicit och
-        # FAIL-CLOSED-defaultar till "kod-ändelse funnen" om detta steg
-        # fallerar. Ett internt fel i klassningen ska aldrig tystas till
-        # "ingen kod-ändelse funnen" (vilket hade tillåtit `lint` att hoppas
-        # på en diff ingen kunde bevisa var kodfri).
+        # FAIL-CLOSED-defaultar till "kräver lint" om detta steg fallerar.
         continue-on-error: true
         uses: tj-actions/changed-files@9426d40962ed5378910ee2e21d5f8c6fcbf2dd96  # v47.0.6
         with:
           quotepath: false
+          # paritet:start klassning-lint-inert
           files: |
-            **/*.js
-            **/*.mjs
-            **/*.cjs
-            **/*.ts
-            **/*.mts
-            **/*.cts
-            **/*.tsx
-            **/*.jsx
-            **/*.vue
-            **/*.html
-            **/*.htm
-            **/action.yml
-            **/action.yaml
+            **/*.md
+            **/*.jsonl
+            **/*.txt
+            **/*.pdf
+            **/*.png
+            **/*.jpg
+            **/*.jpeg
+            **/*.gif
+            **/*.webp
+            **/*.csv
+          # paritet:slut klassning-lint-inert
 
-      - name: Derive has_code_extension (fail-closed, TASK-464.1 F2)
-        id: code-ext
-        # Läser `changed-code-ext`-stegets `outcome` EXPLICIT (aldrig bara dess
-        # `outputs.any_changed`, som är tom sträng — inte "true" — om steget
-        # fallerade, vilket hade tolkats som falskt och gett fail-OPEN). Ett
-        # fallerat klassningssteg sätter has_code_extension=true: `lint` KÖR
-        # i stället för att hoppa på en diff ingen kunde bevisa var kodfri.
+      - name: Derive requires_lint_by_extension (fail-closed, TASK-464.1 runda 3)
+        id: lint-ext
+        # Läser `changed-lint-inert-ext`-stegets `outcome` EXPLICIT (aldrig
+        # bara dess `outputs.only_changed`, som är tom sträng — inte "true" —
+        # om steget fallerade, vilket hade tolkats som falskt/osäkert). Ett
+        # fallerat klassningssteg sätter requires_lint_by_extension=true:
+        # `lint` KÖR i stället för att hoppa på en diff ingen kunde bevisa
+        # var lint-inert.
         run: |
           set -euo pipefail
-          if [ "${{ steps.changed-code-ext.outcome }}" != "success" ]; then
-            echo "⚠️ kod-ändelse-klassningen fallerade (outcome=${{ steps.changed-code-ext.outcome }}) — fail-closed, has_code_extension=true" >&2
-            echo "has_code_extension=true" >> "${GITHUB_OUTPUT}"
+          if [ "${{ steps.changed-lint-inert-ext.outcome }}" != "success" ]; then
+            echo "⚠️ lint-inert-klassningen fallerade (outcome=${{ steps.changed-lint-inert-ext.outcome }}) — fail-closed, requires_lint_by_extension=true" >&2
+            echo "requires_lint_by_extension=true" >> "${GITHUB_OUTPUT}"
+          elif [ "${{ steps.changed-lint-inert-ext.outputs.only_changed }}" = "true" ]; then
+            echo "requires_lint_by_extension=false" >> "${GITHUB_OUTPUT}"
           else
-            echo "has_code_extension=${{ steps.changed-code-ext.outputs.any_changed }}" >> "${GITHUB_OUTPUT}"
+            echo "requires_lint_by_extension=true" >> "${GITHUB_OUTPUT}"
           fi
 
       - name: Acceptance-urval — kör den delmängd diffen rör
@@ -799,15 +810,18 @@ jobs:
     # `scripts/check-aggregator-needs.mjs` kräver bara att jobbet FINNS i
     # `ci-passed.needs` (oförändrat, `lint` stod redan där).
     #
-    # ANDRA VILLKORET TILLAGT (TASK-464.1 F2, review runda 1, risk hög, fynd
-    # 2): `should_skip_tests` ensamt antog att D0 = kodfritt. Det är falskt —
-    # `docs/**`/`tasks/**` bär spårad, analyserbar kod (se `changed-code-ext`-
-    # steget i `changed`-jobbet för beläggen). `has_code_extension` tvingar
-    # `lint` att köra även på en D0-klassad diff om den bär en fil med
-    # kod-ändelse. Formen är en OR, inte en ersättning: den befintliga
-    # `should_skip_tests`-halvan är orörd, den nya halvan kan bara göra
-    # jobbet köra i FLER fall, aldrig färre.
-    if: needs.changed.outputs.should_skip_tests == 'false' || needs.changed.outputs.has_code_extension == 'true'
+    # ANDRA VILLKORET TILLAGT (TASK-464.1, runda 3 — review runda 2, risk
+    # hög, fynd 1, ERSÄTTER runda 1:s F2/`has_code_extension`):
+    # `should_skip_tests` ensamt antog att D0 = kodfritt. Det är falskt —
+    # `docs/**`/`tasks/**` bär spårad, analyserbar kod OCH filtyper (JSON,
+    # CSS) Biome bevisligen lintar (se `changed-lint-inert-ext`-steget i
+    # `changed`-jobbet + .lint-inert-policy.conf för beläggen).
+    # `requires_lint_by_extension` tvingar `lint` att köra på en D0-klassad
+    # diff OM INTE VARJE fil har en bevisat lint-inert ändelse — fail-closed
+    # positiv lista, inte runda 1:s nekande lista. Formen är en OR, inte en
+    # ersättning: den befintliga `should_skip_tests`-halvan är orörd, den
+    # nya halvan kan bara göra jobbet köra i FLER fall, aldrig färre.
+    if: needs.changed.outputs.should_skip_tests == 'false' || needs.changed.outputs.requires_lint_by_extension == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     permissions:
@@ -1647,6 +1661,17 @@ jobs:
         # i en sandlåda med muterade kopior av policy+ci.yml+ci-suite.yml.
         # Ingen nätverkstrafik. 18,0 s LOKALT mätt (macOS, 2026-08-26).
         #
+        # test-lint-inert-extensions.sh (TASK-464.1 runda 3, review runda 2
+        # risk hög fynd 1, 2026-09-19) hör hit av samma ADR-039 §
+        # lesson→grind-skäl: .lint-inert-policy.conf:s POSITIVA lista över
+        # lint-inerta ändelser är inte en grind förrän dess belägg
+        # fortlöpande verifieras. 36 fall (MÄTT 2026-09-19): tre belägg — (a)
+        # Biome, (b) typkontrollens include, (c) shellcheck-strict-
+        # uppräkningen — per ändelse, mot en provfil med avsiktligt trasigt
+        # innehåll konstruerad för att GARANTERAT trigga ett fel om verktyget
+        # faktiskt parsar filen. Provfiler skapas i en mktemp-sandlåda
+        # UTANFÖR repot, städas av en EXIT-trap. Ingen nätverkstrafik.
+        #
         # test-check-aggregator-needs.mjs (TASK-450.3, N4) hör hit av samma
         # ADR-039 § lesson→grind-skäl: grinden ovan
         # (check-aggregator-needs.mjs) är inte en grind förrän dess fyrning
@@ -1917,6 +1942,7 @@ jobs:
           node scripts/test-review-metrics.mjs
           node scripts/test-review-backstopp.mjs
           node scripts/test-verify-ci-parity.mjs
+          bash scripts/test-lint-inert-extensions.sh
           node scripts/test-check-aggregator-needs.mjs
           node scripts/test-check-nattkanal-partition.mjs
           node scripts/test-task-338-6-prod-migration.mjs
@@ -2227,10 +2253,11 @@ jobs:
         # SC2310, SC2311 m.fl. som är default-disabled).
         # Scope per ADR-033 § Del 3: scripts/*.sh + .githooks/* +
         # scripts/lib/supabase-cli.sh (tillagd i S108-wiringen, se nedan) +
-        # 34 sourced-config-filer (RÄTTAD TASK-464.1, 2026-09-19 — stod som
-        # "20" trots att den löpande räkningen nedan redan hade nått
-        # trettiotre; talet på DENNA rad glömdes uppdatera i varje enskild
-        # wiring, samma TASK-106-felklass) (.checklist-policy.conf +
+        # 35 sourced-config-filer (RÄKNAT OM TASK-464.1 runda 3, 2026-09-19,
+        # mot den faktiska run:-listan — stod som "34" fram till samma
+        # ändring som lade till post 35; talet på DENNA rad glömdes
+        # uppdatera i varje enskild wiring, samma TASK-106-felklass)
+        # (.checklist-policy.conf +
         # .frontmatter-policy.conf + .lesson-policy.conf, tillagd S91/ADR-081 +
         # .ci-wait-policy.conf, tillagd S91/TASK-72 +
         # .staging-semaphore-policy.conf, tillagd S91/TASK-77 +
@@ -2326,7 +2353,11 @@ jobs:
         # och till trettiofyra i TASK-464.1-wiringen (F1, review runda 1,
         # risk hög, fynd 1 — .grind-tillganglighet-policy.conf, A-sidan i
         # .listparitet-policy.conf:s nya par `grind-tillganglighet`, se den
-        # filens eget huvud för hela rationalen).
+        # filens eget huvud för hela rationalen) och till trettiofem i SAMMA
+        # TASK-464.1-wiring (runda 3, review runda 2, risk hög, fynd 1 —
+        # .lint-inert-policy.conf, A-sidan i .listparitet-policy.conf:s nya
+        # par `lint-inert-ext`, sourcad av scripts/test-lint-inert-
+        # extensions.sh).
         # Pre-aktiverings-state (post-K3.2 commit d86d846): 0/0/0/0.
         run: |
           shellcheck \
@@ -2340,6 +2371,7 @@ jobs:
             .checklist-policy.conf \
             .frontmatter-policy.conf \
             .grind-tillganglighet-policy.conf \
+            .lint-inert-policy.conf \
             .lesson-policy.conf \
             .ci-wait-policy.conf \
             .staging-semaphore-policy.conf \
