@@ -3,10 +3,10 @@ id: TASK-464.3
 title: >-
   Skiva: ADR-133 — testa en gång per landning: ytornas arbetsfördelning,
   väntetidstak och tillväxtmål (+ ADR-097-amendering push/landning)
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-19 10:48'
-updated_date: '2026-09-19 12:01'
+updated_date: '2026-09-19 13:21'
 labels:
   - ready-for-agent
 dependencies: []
@@ -36,3 +36,9 @@ Skriv ADR-133 ur den kvitterade samsynen och amendera ADR-097. ADR:n låser: vad
 - [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
 - [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landad som PR #2587 → e845dfab (2026-09-19 13:11Z), efterkontroll grön. ADR-133 mintad (sex beslut ur S126 Del 17–18, precedent Rust/Kubernetes Prow-Tide/Chromium CQ/Google TAP/GitHub, avvisade alternativ, två snubbeltrådar med mätbart villkor), Updates-poster i ADR-036/076/077/097. Fyra granskningsrundor (r3–r4 på Marcus mandat): r1 talmärkning (5,2 % är felfrekvens på förslagsytan, en PROXY — snubbeltråden INTE utlöst) + ordförklaringar; r2–r3 sakfel i ordförklaringarna (kön testar/landar INTE ett i taget — max_entries_to_merge 3, mätt i T166; avrundning per JOBB; main ≠ allt i drift) och beslut 4 höll inte isär beslut och nuläge (felet ärvt ur orkestrerarens Del 17-formulering) — rättat, TASK-464.5 fick AC #7 (körbevis lokalt urval); r4 ett kvarstående citatformat-fynd (URL + hämtdatum), avskrivet vid armering och rättat i orkestrerarens dokumentbunt direkt efter landning.
+<!-- SECTION:FINAL_SUMMARY:END -->

@@ -3,10 +3,10 @@ id: TASK-464.11
 title: >-
   Skiva: reglerna efter privat — T171 'aldrig publikt igen med denna historik',
   licensernas omprövningsvillkor, kort för e-postvakten
-status: To Do
+status: Done
 assignee: []
 created_date: '2026-09-19 10:50'
-updated_date: '2026-09-19 12:16'
+updated_date: '2026-09-19 12:55'
 labels:
   - ready-for-agent
 dependencies: []
@@ -41,3 +41,9 @@ Beslut 8–9 (S126 Del 17) ska bo i fil, inte i en session. (1) CLAUDE.md-raden 
 <!-- SECTION:NOTES:BEGIN -->
 RUNDA 2 (Marcus 'Rätta fynden först'): tre review-fynd i docs/reference/atkomst-och-nycklar.md § Köpta licenser rättade i en commit. Fynd 1 (motsägelse TYST vs röd): uppdelat i två mekanismer med varsin källa — (a) push-skydd/Secret Protection: TYST avstängning, citat ur docs.github.com via docs/research/repo-privat-konsekvenser-2026-09-18.md § B3 ('Advanced Security features will be disabled...'); (b) CodeQL: repot kör en EGEN advanced-setup-workflow (.github/workflows/codeql.yml, TASK-464.2/PR #2558, bekräftat på disk) — hämtade själv (WebFetch) docs.github.com/.../cannot-enable-codeql-in-a-private-repository OCH about-github-advanced-security; ingen av sidorna innehåller frasen 'red X' eller beskriver runtime-felet — granskarens hypotes om exakt ordalydelse var FALSK, skrivet ärligt i dokumentet, märkt 'INTE mätt i vårt repo — mäts vid TASK-464.10'. Fynd 2 (citat i fel kolumn): omprövningsvillkoret ('när appen är klar...') och köp-citatet ('jag kör väl på att köpa båda då...') särskiljs nu — kontrollerat mot Del 17 rad 8: bara ordet 'klar' står i citattecken i källan (Beslut-kolumnen), köp-citatet ligger i en annan kolumn (Marcus). Fynd 3 (pris): '30/19 USD per aktiv committer och månad' + not om repots enda mänskliga aktiva committer (marcus803), källa samma research-fil rad ~216-227. npm run check:docs kört naket efter rättningen: exit 0, 16 gröna.
 <!-- SECTION:NOTES:END -->
+
+## Final Summary
+
+<!-- SECTION:FINAL_SUMMARY:BEGIN -->
+Landad som PR #2586 → e390a2fe (2026-09-19 12:24Z), efterkontroll grön (post-merge på e390a2fe: success). Två granskningsrundor: runda 1 gav tre fynd i den nya registersektionen (självmotsägande mening om CodeQL tyst/rött, köp-citat i villkorskolumnen, pris utan 'per aktiv committer'); Marcus: 'Rätta fynden först'; runda 2 noll fynd, risk låg, konvergerad. Levererat: hård regel i CLAUDE.md + T171 (aldrig publikt igen med denna historik; ny historiklös kopia vid publicering), licensernas omprövningsvillkor i docs/reference/atkomst-och-nycklar.md (CodeQL-beteendet utan licens uttryckligen märkt INTE mätt — mäts vid TASK-464.10), e-postvakten kortad som TASK-482.
+<!-- SECTION:FINAL_SUMMARY:END -->

@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-19 10:48'
+updated_date: '2026-09-19 12:48'
 labels:
   - ready-for-agent
 dependencies:
@@ -29,6 +30,7 @@ Förslagsytan (pull_request) kör lint, typkontroll, bygge och de snabba testern
 - [ ] #4 Bygg-agentens kontrakt bär raden om lokalt urval; SE20:s fyra referenser är låsta till exakta versioner
 - [ ] #5 Mätt väntan: förslagsrundan och kö-rundan var för sig (väggtid) före/efter, mot taket kod <= 12 min median
 - [ ] #6 verify:ci-parity:fast grön; .ci-parity-policy.json och .listparitet-policy.conf följer med
+- [ ] #7 Körbevis: scripts/acceptance-urval.sh körd LOKALT i en bygg-agents worktree mot en verklig diff, med utdata och exitkod i PR-kroppen — eller ett mätt, skrivet skäl till varför det inte går (ADR-133 beslut 4 § Nuläge lovar att den lokala körbarheten prövas här)
 <!-- AC:END -->
 
 ## Definition of Done
