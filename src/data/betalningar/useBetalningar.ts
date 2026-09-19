@@ -1,28 +1,10 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useCallback } from 'react';
-import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useDataSource } from '@/data/useDataSource';
 import type { InbetalningarBatch, Inbetalningslista, OppnaBetalningar } from '@/domain/schemas';
 import { betalningarPa } from '@/lib/funktionsflaggor';
 import { queryKeys } from '@/queries/keys';
-
-/**
- * [TASK-346.7.1] Husets etablerade EdgeFunctionError-medvetna retry-policy —
- * SAMMA lambda-form som `PersonDetail.tsx`/`EventDetail.tsx`/
- * `EventRegistrations.tsx` m.fl. redan bär, kopierad hit i stället för
- * abstraherad: majoriteten av husets EF-backade queries duplicerar denna
- * exakta form inline (`useDashboardData.ts`s lokala `noRetryOn4xx` är
- * undantaget, inte normen), och att extrahera en delad export här hade varit
- * att uppfinna ett fjärde mönster där tre redan finns.
- *
- * UTAN denna rad ärvde de tre hookarna nedan routerns naiva globala
- * `retry: 3` (router.ts) — som retryar BLINT även på 4xx (ett fel Lotta
- * aldrig kan läka genom att vänta). Fynd: `TASK-346.7.1`, orkestrerarens
- * S113-slutvandring 2026-08-31 (persondetalj `rec2JwV3Bh0x5qlvl`,
- * `hamta-inbetalningar` 500, felläget syntes aldrig inom 14+ s).
- */
-const husetsRetryPolicy = (failureCount: number, err: Error): boolean =>
-  !(err instanceof EdgeFunctionError && err.status >= 400 && err.status < 500) && failureCount < 3;
+import { husetsRetryPolicy } from '@/queries/retry-policy';
 
 /**
  * [TASK-346.7] Läsningarna som de FYRA ytorna utanför inkorgen delar:
@@ -265,11 +247,14 @@ export function useInbetalningarForEvent(
  * `BetalningsDetaljer`s egna skelett och felrutor.
  *
  * `retry: husetsRetryPolicy` PÅ BÅDA, av exakt samma skäl som hookarna ovan
- * bär den (TASK-346.7.1): `prefetchQuery` ärver annars routerns naiva globala
- * `retry: 3` (`src/router.ts`), som retryar BLINT även på 4xx — tre extra
- * anrop mot det delade taket för ett fel som aldrig kan läka av att man
- * väntar, och det i en väg Lotta inte ens bett om. En förvärmning som
- * misslyckas ska misslyckas tyst och EN gång.
+ * bär den (TASK-346.7.1): `prefetchQuery` ärver annars routerns globala
+ * default, som är BLIND på 4xx — tre extra anrop mot det delade taket för ett
+ * fel som aldrig kan läka av att man väntar, och det i en väg Lotta inte ens
+ * bett om. En förvärmning som misslyckas ska misslyckas tyst och EN gång.
+ *
+ * Sedan TASK-451.4 runda 3 kommer policyn från `@/queries/retry-policy` i
+ * stället för en lokal kopia i denna fil, och bär utöver 4xx-regeln även
+ * slutgiltighets-regeln (ett uttömt tidsbudget-fel retryas aldrig).
  */
 export function useForberedEventBetalningar(): (
   eventId: string,

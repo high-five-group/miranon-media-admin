@@ -2,12 +2,12 @@ import { useQuery } from '@tanstack/react-query';
 import { Check } from 'lucide-react';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Skeleton } from '@/components/primitives/Skeleton';
-import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useDataSource } from '@/data/useDataSource';
 import type { Attendance } from '@/domain/models/Attendance';
 import type { Event } from '@/domain/models/Event';
 import { AttendanceSession, AttendanceStatus, EventStatus } from '@/domain/types/Status';
 import { queryKeys } from '@/queries/keys';
+import { husetsRetryPolicy } from '@/queries/retry-policy';
 import { DetaljGrupp } from './DetaljGrupp';
 
 /**
@@ -112,10 +112,7 @@ function NarvaroRegister({ eventId }: { eventId: string }) {
   } = useQuery({
     queryKey: queryKeys.events.attendance(eventId),
     queryFn: () => dataSource.fetchAttendance({ eventId }),
-    // 4xx är klient-fel → meningslöst att retrya (speglar EventAttendance/EventDetail).
-    retry: (failureCount, err) =>
-      !(err instanceof EdgeFunctionError && err.status >= 400 && err.status < 500) &&
-      failureCount < 3,
+    retry: husetsRetryPolicy,
   });
 
   if (isPending) {

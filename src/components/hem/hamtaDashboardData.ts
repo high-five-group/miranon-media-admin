@@ -44,12 +44,13 @@ import { queryKeys } from '@/queries/keys';
  * Delningen sker därför ENDAST när listnyckeln FAKTISKT har en hämtning i
  * flykt UTAN cachad data (den exakta timeout-race-formen ovan) — annars
  * hämtar dashboard-queryn OFÖRÄNDRAT direkt mot adaptern, precis som innan
- * denna skiva. `DASHBOARD_POLLING`/`noRetryOn4xx` (i `useDashboardData.ts`)
- * är därmed helt orörda utanför just detta smala race-fönster.
+ * denna skiva. `DASHBOARD_POLLING` och Hems retry-policy (i
+ * `useDashboardData.ts`) är därmed helt orörda utanför just detta smala
+ * race-fönster.
  *
  * [STÄNGD av TASK-451.4 — kanten stod här som öppet bokförd] I DELNINGS-grenen
  * ärvde dashboard-hämtningen listnyckelns EGEN retry-policy (global default,
- * `retry: 3`, INGEN 4xx-genväg) i stället för `noRetryOn4xx`: en 4xx i just
+ * `retry: 3`, INGEN 4xx-genväg) i stället för Hems egen policy: en 4xx i just
  * det race-fönstret tog upp till tre interna backoff-försök (~1,4 s) innan
  * felet nådde Hem, i stället för att fela direkt.
  *

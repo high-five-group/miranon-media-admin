@@ -3,10 +3,10 @@ import { useEffect, useRef } from 'react';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { SidRam } from '@/components/primitives/SidRam';
 import { Skeleton } from '@/components/primitives/Skeleton';
-import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useDataSource } from '@/data/useDataSource';
 import type { MailLogEntry } from '@/domain/models/MailPayload';
 import { queryKeys } from '@/queries/keys';
+import { husetsRetryPolicy } from '@/queries/retry-policy';
 
 /** Visningsnamn för ett utskick — aldrig record-ID, aldrig tomt (Gunilla-princip).
  * utskicksNamn → mailutskickCopy → generisk etikett (namnlösa utskick är legitim data). */
@@ -164,10 +164,7 @@ export function MailLog() {
   } = useQuery({
     queryKey: queryKeys.maillog.all,
     queryFn: () => dataSource.fetchMailLog(),
-    // 4xx är klient-fel → meningslöst att retrya (speglar Waitlist).
-    retry: (failureCount, err) =>
-      !(err instanceof EdgeFunctionError && err.status >= 400 && err.status < 500) &&
-      failureCount < 3,
+    retry: husetsRetryPolicy,
   });
 
   // Fokus → <h1> + document.title när data anlänt (en gång per laddning). [] är ett

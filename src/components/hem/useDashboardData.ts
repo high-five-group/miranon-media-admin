@@ -1,16 +1,24 @@
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/react-query';
-import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useDataSource } from '@/data/useDataSource';
 import { queryKeys } from '@/queries/keys';
 import { PERSIST_MAX_AGE_MS } from '@/queries/persist';
+import { husetsRetryPolicy } from '@/queries/retry-policy';
 import { hamtaDashboardEvents, hamtaDashboardRegistrations } from './hamtaDashboardData';
 
 /**
  * Delade läs-queries för Hem-aggregeringen (Fas 6d) — med poll-lagret (L2).
  *
  * Båda speglar 6a/6c-konsumtionsmönstret (router-context-DI via `useDataSource`,
- * ADR-055 + `useQuery`). 4xx = klient-fel → ingen retry (samma kontrakt som
- * Waitlist/EventRegistrations).
+ * ADR-055 + `useQuery`).
+ *
+ * RETRY: `husetsRetryPolicy` (`@/queries/retry-policy`). Filen bar fram till
+ * TASK-451.4 runda 3 en EGEN kopia av regeln (`noRetryOn4xx`); den är borta,
+ * och regeln delas nu med resten av frågelagret. Två garantier följer med:
+ * 4xx retryas aldrig (som förut), och ett uttömt tidsbudget-fel
+ * (`TidsgransFel`, 160 s) retryas aldrig (NYTT). Det senare är bärande just
+ * här: med 60 s-pollen nedan gav den gamla regeln upp till fyra körningar à en
+ * egen 160 s-budget, alltså ~640 s väggtid för EN poll-omgång. Nu är värsta
+ * väggtiden per fråga EN budget.
  *
  * `useDashboardRegistrations` konsumeras av BÅDE NyaAnmalningar- och Obetalda-
  * cardet; samma `queryKey` ⇒ React Query dedupar till EN nätverksfetch.
@@ -21,8 +29,6 @@ import { hamtaDashboardEvents, hamtaDashboardRegistrations } from './hamtaDashbo
  * `@/queries/persist` som kör `window.localStorage`-kod vid modul-laddning,
  * så `hamtaDashboardData.ts` får aldrig importera från HÄR.
  */
-const noRetryOn4xx = (failureCount: number, err: Error): boolean =>
-  !(err instanceof EdgeFunctionError && err.status >= 400 && err.status < 500) && failureCount < 3;
 
 /**
  * Polling per ADR-017 (se erratum 2026-06-23). Realtime kommer i Fas E.
@@ -69,7 +75,7 @@ export function useDashboardRegistrations() {
   return useQuery({
     queryKey: queryKeys.dashboard.registrations,
     queryFn: () => hamtaDashboardRegistrations(qc, dataSource),
-    retry: noRetryOn4xx,
+    retry: husetsRetryPolicy,
     ...DASHBOARD_POLLING,
   });
 }
@@ -82,7 +88,7 @@ export function useDashboardEvents() {
   return useQuery({
     queryKey: queryKeys.dashboard.events,
     queryFn: () => hamtaDashboardEvents(qc, dataSource),
-    retry: noRetryOn4xx,
+    retry: husetsRetryPolicy,
     ...DASHBOARD_POLLING,
   });
 }

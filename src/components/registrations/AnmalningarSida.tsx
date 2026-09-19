@@ -18,11 +18,11 @@ import {
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { SidRam } from '@/components/primitives/SidRam';
 import { Skeleton } from '@/components/primitives/Skeleton';
-import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useDataSource } from '@/data/useDataSource';
 import type { Event } from '@/domain/models/Event';
 import type { Registration } from '@/domain/models/Registration';
 import { queryKeys } from '@/queries/keys';
+import { husetsRetryPolicy } from '@/queries/retry-policy';
 import { AnmalningRadResolution } from './AnmalningRadResolution';
 import { atgardskoText, behoverAtgard, displayName, inskickadTid } from './registration-display';
 import { StatusBadge } from './StatusBadge';
@@ -404,9 +404,7 @@ export function AnmalningarSida({
   } = useQuery({
     queryKey: queryKeys.registrations.all,
     queryFn: () => dataSource.fetchRegistrations(),
-    retry: (failureCount, err) =>
-      !(err instanceof EdgeFunctionError && err.status >= 400 && err.status < 500) &&
-      failureCount < 3,
+    retry: husetsRetryPolicy,
   });
 
   // "Har jag en pålitlig siffra/kontroll?" — deklarerad HÄR (inte längre

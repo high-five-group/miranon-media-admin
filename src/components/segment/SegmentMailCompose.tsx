@@ -7,11 +7,11 @@ import { MessageBox } from '@/components/primitives/MessageBox';
 import { Modal } from '@/components/primitives/Modal';
 import { Select, SelectItem } from '@/components/primitives/Select';
 import { TextArea } from '@/components/primitives/TextArea';
-import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useSendSegmentMail } from '@/data/mutations/segment';
 import { useDataSource } from '@/data/useDataSource';
 import type { MailSendResult } from '@/domain/models/MailPayload';
 import { queryKeys } from '@/queries/keys';
+import { husetsRetryPolicy } from '@/queries/retry-policy';
 
 /**
  * Skicka-mail-på-segment-yta (Fas 6h L3, ADR-067) — monterad i SegmentBuilder. Lotta
@@ -52,9 +52,7 @@ export function SegmentMailCompose() {
   const segments = useQuery({
     queryKey: queryKeys.segment.saved,
     queryFn: () => dataSource.listSegments(),
-    retry: (failureCount, err) =>
-      !(err instanceof EdgeFunctionError && err.status >= 400 && err.status < 500) &&
-      failureCount < 3,
+    retry: husetsRetryPolicy,
   });
 
   const selectedSegment = segments.data?.find((s) => s.id === selectedId);
@@ -66,9 +64,7 @@ export function SegmentMailCompose() {
     queryFn: () => dataSource.computeSegment(selectedSegment?.rule ?? { include: [], exclude: [] }),
     enabled: selectedSegment !== undefined,
     staleTime: 5 * 60_000,
-    retry: (failureCount, err) =>
-      !(err instanceof EdgeFunctionError && err.status >= 400 && err.status < 500) &&
-      failureCount < 3,
+    retry: husetsRetryPolicy,
   });
 
   // Mutationen extraherad till `useSendSegmentMail` (TASK-201.15,

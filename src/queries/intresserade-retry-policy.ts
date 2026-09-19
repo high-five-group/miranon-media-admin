@@ -1,6 +1,6 @@
 import type { QueryClient } from '@tanstack/react-query';
-import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { queryKeys } from '@/queries/keys';
+import { husetsRetryPolicy } from '@/queries/retry-policy';
 
 /**
  * Intresserade-nyckelns retry-policy (TASK-420, fynd ur review-runda 2 på
@@ -50,17 +50,21 @@ import { queryKeys } from '@/queries/keys';
  * skulle ÄRVA samma retry-policy — rimligt (samma EF-familj), men värt att
  * ha i minnet om en sådan gren någonsin läggs till.
  *
- * ── VARFÖR LAMBDAN ÄR DUPLICERAD, INTE EXTRAHERAD TILL EN DELAD EXPORT ──
+ * ── DUPLICERINGEN ÄR UPPLÖST (TASK-451.4 runda 3, 2026-09-19) ─────────────
  *
- * Samma form som `Waitlist.tsx`/`MailLog.tsx`/`SavedSegmentsList.tsx`/
- * `AnmalningarSida.tsx`/`EventDetail.tsx`/`PersonDetail.tsx` m.fl. redan bär
- * inline, och `src/data/betalningar/useBetalningar.ts`s `husetsRetryPolicy`
- * kopierad hit av SAMMA skäl som den filen bokför (TASK-346.7.1): husets
- * EF-medvetna retry-lambda är redan duplicerad över tre-fyra mönster i
- * repot, och en delad export här hade uppfunnit ett femte i stället för att
- * följa ett av de befintliga. Denna modul löser ETT problem (dubbelpolicy på
- * EN nyckel via `setQueryDefaults`), inte husets bredare duplicering — den
- * frågan är öppen och bokförs i TASK-420s notes, inte åtgärdad här.
+ * Här stod fram till runda 3 en rubrik med motsatt innehåll: "VARFÖR LAMBDAN
+ * ÄR DUPLICERAD, INTE EXTRAHERAD TILL EN DELAD EXPORT". Argumentet var att
+ * husets EF-medvetna lambda redan låg duplicerad över tre-fyra mönster, och
+ * att en delad export här hade uppfunnit ett femte i stället för att följa ett
+ * av de befintliga. Den öppna frågan bokfördes i TASK-420s notes.
+ *
+ * Runda 3 besvarade den, och falsifierade premissen samtidigt: argumentet höll
+ * bara så länge regeln var STABIL. När ett uttömt tidsbudget-fel (`TidsgransFel`)
+ * måste bli slutgiltigt i HELA frågelagret blev de 18 identiska kopiorna 18
+ * ställen att ändra i takt — alltså 18 chanser att missa ett, tyst. Regeln bor
+ * sedan dess i `src/queries/retry-policy.ts`, och `intresseradeRetryPolicy`
+ * nedan ÄR den modulens `husetsRetryPolicy` (samma funktionsreferens, inte en
+ * kopia av den). Mekaniskt vaktat av `tests/api/retry-vakt.test.ts`.
  *
  * ── ÖVERSKUGGAD AV WARMUP-POLICYN (TASK-451.4, 2026-09-18) ────────────────
  *
@@ -84,8 +88,7 @@ import { queryKeys } from '@/queries/keys';
  * en registrering som tyst skrivs över av en senare rad är exakt den sortens
  * drift ADR-083 finns för att förhindra.
  */
-export const intresseradeRetryPolicy = (failureCount: number, err: Error): boolean =>
-  !(err instanceof EdgeFunctionError && err.status >= 400 && err.status < 500) && failureCount < 3;
+export const intresseradeRetryPolicy = husetsRetryPolicy;
 
 /**
  * Registrerar retry-policyn för `intresserade.all` på klienten — anropas en
@@ -93,5 +96,5 @@ export const intresseradeRetryPolicy = (failureCount: number, err: Error): boole
  * plats och mönster som `registreraPersonregistretsFarskhet`.
  */
 export function registreraIntresseradeRetryPolicy(queryClient: QueryClient): void {
-  queryClient.setQueryDefaults(queryKeys.intresserade.all, { retry: intresseradeRetryPolicy });
+  queryClient.setQueryDefaults(queryKeys.intresserade.all, { retry: husetsRetryPolicy });
 }

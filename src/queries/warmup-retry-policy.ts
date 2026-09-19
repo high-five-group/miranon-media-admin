@@ -29,9 +29,10 @@ import { HEM_SENASTE_AKTIVITET_ANTAL, queryKeys } from '@/queries/keys';
  *
  * 1. **Transportlagret bär redan 4xx-regeln.** `fetchWithRetry` retryar
  *    ENDAST 5xx och nätverksfel (`utils.ts`, `res.status >= 500`) — alltså
- *    exakt samma regel som `useDashboardData.ts`s `noRetryOn4xx`, fast
- *    inbyggd i transporten i stället för upprepad per anropsställe. AC #4
- *    faller ut ur mekaniken, inte ur ännu en handskriven lambda.
+ *    exakt samma regel som husets `husetsRetryPolicy`
+ *    (`src/queries/retry-policy.ts`), fast inbyggd i transporten i stället
+ *    för upprepad per anropsställe. AC #4 faller ut ur mekaniken, inte ur
+ *    ännu en handskriven lambda.
  * 2. **Ett transport-omförsök är billigare än ett query-omförsök.** Varje ny
  *    `queryFn`-körning går om `getAuthHeader()`, som gör en EGEN
  *    `supabase.auth.getSession()` per anrop (diagnoskartan § 1.8). Query-

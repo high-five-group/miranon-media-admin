@@ -1,9 +1,9 @@
 import { useQuery } from '@tanstack/react-query';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Skeleton } from '@/components/primitives/Skeleton';
-import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useDataSource } from '@/data/useDataSource';
 import { queryKeys } from '@/queries/keys';
+import { husetsRetryPolicy } from '@/queries/retry-policy';
 
 /**
  * Lista över app-sparade segment (Fas 6g L3, ADR-065). Egen query
@@ -21,10 +21,7 @@ export function SavedSegmentsList() {
   const { data, isPending, isError, error } = useQuery({
     queryKey: queryKeys.segment.saved,
     queryFn: () => dataSource.listSegments(),
-    // 4xx är klient-fel → meningslöst att retrya (speglar SegmentBuilder/Intresserade).
-    retry: (failureCount, err) =>
-      !(err instanceof EdgeFunctionError && err.status >= 400 && err.status < 500) &&
-      failureCount < 3,
+    retry: husetsRetryPolicy,
   });
 
   return (

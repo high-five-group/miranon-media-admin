@@ -153,8 +153,9 @@ test.describe('B. Globala retry: 3 är ORÖRD utanför warmup-setet', () => {
     const qc = produktionsliknandeKlient();
     registreraWarmupRetryPolicy(qc);
 
-    // Hem sätter sin EGEN `noRetryOn4xx` vid anropsstället
-    // (`useDashboardData.ts`); policyn ska inte lägga sig i den.
+    // Hem sätter `husetsRetryPolicy` vid anropsstället
+    // (`useDashboardData.ts`, delad ur `src/queries/retry-policy.ts` sedan
+    // TASK-451.4 runda 3); warmup-policyn ska inte lägga sig i den.
     expect(qc.getQueryDefaults(queryKeys.dashboard.events).retry).toBeUndefined();
     expect(qc.getQueryDefaults(queryKeys.dashboard.registrations).retry).toBeUndefined();
   });

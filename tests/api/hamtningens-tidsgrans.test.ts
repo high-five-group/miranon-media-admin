@@ -289,7 +289,7 @@ test.describe('Tidsgränsen stör INTE anrop som hinner klart', () => {
 
     expect(res.status).toBe(401);
     // ETT anrop. Det är regeln AC #4 kräver, och den är inbyggd i
-    // transporten — inte beroende av att någon kommer ihåg en `noRetryOn4xx`
+    // transporten — inte beroende av att någon kommer ihåg en retry-policy
     // vid varje anropsställe.
     expect(anrop).toBe(1);
   });

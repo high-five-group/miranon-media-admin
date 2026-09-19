@@ -16,6 +16,7 @@ import { useDataSource } from '@/data/useDataSource';
 import type { Event } from '@/domain/models/Event';
 import { EventStatus } from '@/domain/types/Status';
 import { queryKeys } from '@/queries/keys';
+import { husetsRetryPolicy } from '@/queries/retry-policy';
 import { BelaggningsStapel } from './EventCard';
 import { EventValjare } from './EventValjare';
 
@@ -224,16 +225,13 @@ function ValtLage({ eventId, fran }: { eventId: string; fran?: NyAnmalanUrsprung
 
   // Sammanfattningen: samma cache-nyckel som eventsidan — varm vid navigering
   // från Åtgärder. INSTANT (ADR-078 beslut 1): seedas ur listcachen med
-  // placeholderData (aldrig initialData — listposten är partiell). 4xx retryas
-  // ej (CreateEventForm-formen).
+  // placeholderData (aldrig initialData — listposten är partiell).
   const eventQuery = useQuery({
     queryKey: queryKeys.events.detail(eventId),
     queryFn: () => dataSource.fetchEvent(eventId),
     placeholderData: () =>
       queryClient.getQueryData<Event[]>(queryKeys.events.list)?.find((e) => e.id === eventId),
-    retry: (failureCount, err) =>
-      !(err instanceof EdgeFunctionError && err.status >= 400 && err.status < 500) &&
-      failureCount < 3,
+    retry: husetsRetryPolicy,
   });
   const event = eventQuery.data;
   const arPlaceholder = eventQuery.isPlaceholderData;

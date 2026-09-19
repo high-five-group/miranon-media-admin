@@ -8,6 +8,7 @@ import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useDataSource } from '@/data/useDataSource';
 import type { Event } from '@/domain/models/Event';
 import { queryKeys } from '@/queries/keys';
+import { husetsRetryPolicy } from '@/queries/retry-policy';
 import { Anteckningar } from './detail/Anteckningar';
 import { AtgarderKort, CheckInKort, SkrivUtKort } from './detail/Atgarder';
 import { Belaggning } from './detail/Belaggning';
@@ -75,10 +76,7 @@ export function EventDetail({ eventId }: { eventId: string }) {
     // landat — utan det hade mätaren ritat en sekund av falska nollor.
     placeholderData: () =>
       queryClient.getQueryData<Event[]>(queryKeys.events.list)?.find((e) => e.id === eventId),
-    // 4xx (inkl. 404) är klient-fel → meningslöst att retrya (speglar fetchPerson).
-    retry: (failureCount, err) =>
-      !(err instanceof EdgeFunctionError && err.status >= 400 && err.status < 500) &&
-      failureCount < 3,
+    retry: husetsRetryPolicy,
   });
 
   const notFound = error instanceof EdgeFunctionError && error.status === 404;

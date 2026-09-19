@@ -12,11 +12,11 @@ import { Input } from '@/components/primitives/Input';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Select, SelectItem } from '@/components/primitives/Select';
 import { SlideToConfirm } from '@/components/primitives/SlideToConfirm';
-import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useCreateEvent } from '@/data/mutations/useCreateEvent';
 import { useDataSource } from '@/data/useDataSource';
 import { eventformatEtikett } from '@/lib/eventformat-etikett';
 import { queryKeys } from '@/queries/keys';
+import { husetsRetryPolicy } from '@/queries/retry-policy';
 
 /** Distinkta, sorterade icke-tomma värden (för options härledda ur befintliga event). */
 function distinct(values: (string | null)[]): string[] {
@@ -95,18 +95,14 @@ export function CreateEventForm() {
   const formats = useQuery({
     queryKey: queryKeys.events.formats,
     queryFn: () => dataSource.getEventFormats(),
-    retry: (failureCount, err) =>
-      !(err instanceof EdgeFunctionError && err.status >= 400 && err.status < 500) &&
-      failureCount < 3,
+    retry: husetsRetryPolicy,
   });
 
   // Befintliga event → härled Event- + Eventtyp-options (självväxande, ingen stale-lista).
   const events = useQuery({
     queryKey: queryKeys.events.list,
     queryFn: () => dataSource.fetchEvents(),
-    retry: (failureCount, err) =>
-      !(err instanceof EdgeFunctionError && err.status >= 400 && err.status < 500) &&
-      failureCount < 3,
+    retry: husetsRetryPolicy,
   });
 
   const eventOptions = useMemo(

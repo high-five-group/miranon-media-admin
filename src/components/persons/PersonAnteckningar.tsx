@@ -4,11 +4,11 @@ import { Button } from '@/components/primitives/Button';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { TextArea } from '@/components/primitives/TextArea';
-import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useCreatePersonNote } from '@/data/mutations/useCreatePersonNote';
 import { useDataSource } from '@/data/useDataSource';
 import type { PersonNote } from '@/domain/models/PersonNote';
 import { queryKeys } from '@/queries/keys';
+import { husetsRetryPolicy } from '@/queries/retry-policy';
 
 /**
  * Personens antecknings-STRÖM (S103, T97-bygg-spåret) — speglar eventsidans
@@ -127,10 +127,7 @@ function Strommen({ personId }: { personId: string }) {
   } = useQuery({
     queryKey: queryKeys.persons.notes(personId),
     queryFn: () => dataSource.fetchPersonNotes(personId),
-    // 4xx är klient-fel → meningslöst att retrya (speglar event-strömmens val).
-    retry: (failureCount, err) =>
-      !(err instanceof EdgeFunctionError && err.status >= 400 && err.status < 500) &&
-      failureCount < 3,
+    retry: husetsRetryPolicy,
   });
 
   if (isPending) {

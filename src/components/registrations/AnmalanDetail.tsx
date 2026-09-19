@@ -16,6 +16,7 @@ import { PaymentStatus, RegistrationStatus } from '@/domain/types/Status';
 import { betalningarPa } from '@/lib/funktionsflaggor';
 import { kursfargForKurs } from '@/lib/kursfarg';
 import { queryKeys } from '@/queries/keys';
+import { husetsRetryPolicy } from '@/queries/retry-policy';
 import { AvbokningsYta } from './AvbokningsYta';
 import { harledBehorighet } from './behorighet';
 import { FritextRad } from './FritextRad';
@@ -177,10 +178,7 @@ export function AnmalanDetail({
         ?.find((r) => r.id === registrationId);
       return rad ? ({ ...rad, ...DETALJ_PLACEHOLDER } satisfies RegistrationDetail) : undefined;
     },
-    // 4xx (inkl. 404) är klient-fel → meningslöst att retrya (fetchEvent-mönstret).
-    retry: (failureCount, err) =>
-      !(err instanceof EdgeFunctionError && err.status >= 400 && err.status < 500) &&
-      failureCount < 3,
+    retry: husetsRetryPolicy,
   });
 
   const bekrafta = useSendConfirmationFromDetail(eventId, registrationId);

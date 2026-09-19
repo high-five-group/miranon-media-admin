@@ -260,7 +260,29 @@ test('Intresserade.tsx sätter ingen egen retry på intresserade.all-frågan', (
 test('router.ts wirar registreringen, och den reproducerade globala retryn matchar filen', () => {
   const kalla = readFileSync(ROUTER_FIL, 'utf8');
 
-  expect(kalla, 'router.ts global retry').toContain('retry: 3');
+  // TASK-451.4 runda 3: globalen är inte längre talet 3 utan `globalRetryPolicy`
+  // (`src/queries/retry-policy.ts`) — ekvivalent med `retry: 3` för varje fel
+  // UTOM ett uttömt tidsbudget-fel, som aldrig retryas.
+  //
+  // Assertionen löd tidigare `toContain('retry: 3')`. Den fortsatte passera
+  // efter omskrivningen, men av FEL skäl: strängen `retry: 3` finns kvar i
+  // router.ts:s nya KOMMENTAR, så låset matchade prosa i stället för värde.
+  // Formen nedan kan inte göra om det misstaget — den kräver den faktiska
+  // tilldelningen, och att talformen är BORTA.
+  expect(kalla, 'router.ts global retry ska vara den delade policyn').toContain(
+    'retry: globalRetryPolicy,',
+  );
+  expect(kalla, 'router.ts ska importera den delade policyn').toContain('globalRetryPolicy }');
+  expect(
+    kalla.includes('retry: 3,'),
+    'den gamla blinda talformen ska vara borta ur router.ts',
+  ).toBe(false);
+
+  // `GLOBAL_RETRY = 3` ovan är fortfarande en TROGEN modell av globalen för
+  // denna fils syften: `globalRetryPolicy` skiljer sig från `retry: 3` enbart
+  // på TidsgransFel, och ingen av testerna här kastar ett sådant. Den
+  // skillnaden mäts i stället av `tests/api/retry-slutgiltighet.test.ts` § 3.
+  expect(GLOBAL_RETRY, 'modellen ovan speglar taket på tre omförsök').toBe(3);
   expect(kalla, 'router.ts ska importera registreringsfunktionen').toContain(
     'registreraIntresseradeRetryPolicy',
   );

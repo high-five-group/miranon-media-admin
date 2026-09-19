@@ -7,6 +7,7 @@ import { dataSource } from './data/dataSource';
 import { registreraIntresseradeRetryPolicy } from './queries/intresserade-retry-policy';
 import { PERSIST_MAX_AGE_MS } from './queries/persist';
 import { registreraPersonregistretsFarskhet } from './queries/personregister-farskhet';
+import { globalRetryPolicy } from './queries/retry-policy';
 import { registreraWarmupRetryPolicy } from './queries/warmup-retry-policy';
 import { routeTree } from './routeTree.gen';
 
@@ -19,7 +20,11 @@ export const queryClient = new QueryClient({
       // (skyddsräcke 2 — lägre värde kasserar lagrad cache i förtid,
       // dokumenterad GC-fälla). Var 30 min före persist-lagret (task-8.3).
       gcTime: PERSIST_MAX_AGE_MS,
-      retry: 3,
+      // TASK-451.4 runda 3: FUNKTION, inte talet 3. Ekvivalent med `retry: 3`
+      // för varje fel utom ett uttömt tidsbudget-fel (`TidsgransFel`), som
+      // aldrig retryas — ett omförsök startar annars en NY 160 s-budget och
+      // gör taket till 4 × gränsen. Se `src/queries/retry-policy.ts`.
+      retry: globalRetryPolicy,
       retryDelay: (attempt) => Math.min(200 * 2 ** attempt, 2000),
       refetchOnWindowFocus: true, // Uppdatera när Lotta återvänder
       refetchOnReconnect: 'always', // Uppdatera när internet återgår

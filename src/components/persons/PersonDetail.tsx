@@ -50,6 +50,7 @@ import type { PersonDetail as PersonDetailType, PersonHistoryEntry } from '@/dom
 import { betalningarPa } from '@/lib/funktionsflaggor';
 import { type KursfargKlass, kursfargForKurs } from '@/lib/kursfarg';
 import { queryKeys } from '@/queries/keys';
+import { husetsRetryPolicy } from '@/queries/retry-policy';
 // D-variantens SKARPA ytor (`#1151`). a/b/c rör dem aldrig — de behåller sina
 // no-op-stubbar, eftersom en prototyp aldrig skriver. D är undantaget med
 // avsikt: den är konvergens-vinnaren och ska prövas som den kommer att bli.
@@ -1647,9 +1648,7 @@ export function PersonDetail({ personId }: { personId: string }) {
   } = useQuery({
     queryKey: queryKeys.persons.detail(personId),
     queryFn: () => dataSource.fetchPerson(personId),
-    retry: (failureCount, err) =>
-      !(err instanceof EdgeFunctionError && err.status >= 400 && err.status < 500) &&
-      failureCount < 3,
+    retry: husetsRetryPolicy,
   });
 
   // Fokus → h1 när data anlänt (en gång per laddning) — skarpa vyns beteende.

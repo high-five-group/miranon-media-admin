@@ -4,12 +4,12 @@ import { Button } from '@/components/primitives/Button';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { Skeleton } from '@/components/primitives/Skeleton';
 import { TextArea } from '@/components/primitives/TextArea';
-import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useCreateEventNote } from '@/data/mutations/useCreateEventNote';
 import { useDataSource } from '@/data/useDataSource';
 import type { Event } from '@/domain/models/Event';
 import type { EventNote } from '@/domain/models/EventNote';
 import { queryKeys } from '@/queries/keys';
+import { husetsRetryPolicy } from '@/queries/retry-policy';
 import { DetaljGrupp } from './DetaljGrupp';
 
 /**
@@ -173,10 +173,7 @@ function Strommen({ event }: { event: Event }) {
   } = useQuery({
     queryKey: queryKeys.events.notes(event.id),
     queryFn: () => dataSource.fetchEventNotes(event.id),
-    // 4xx är klient-fel → meningslöst att retrya (speglar EventDetail/Narvaro).
-    retry: (failureCount, err) =>
-      !(err instanceof EdgeFunctionError && err.status >= 400 && err.status < 500) &&
-      failureCount < 3,
+    retry: husetsRetryPolicy,
   });
 
   if (isPending) {

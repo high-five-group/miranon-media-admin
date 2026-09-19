@@ -4,10 +4,10 @@ import { InitialAvatar } from '@/components/primitives/InitialAvatar';
 import { MessageBox } from '@/components/primitives/MessageBox';
 import { SidRam } from '@/components/primitives/SidRam';
 import { Skeleton } from '@/components/primitives/Skeleton';
-import { EdgeFunctionError } from '@/data/config/EdgeFunctionError';
 import { useDataSource } from '@/data/useDataSource';
 import type { WaitlistEntry } from '@/domain/models/WaitlistEntry';
 import { queryKeys } from '@/queries/keys';
+import { husetsRetryPolicy } from '@/queries/retry-policy';
 
 /** Visningsnamn ur namnfälten — aldrig record-ID, aldrig tomt (Gunilla-princip). */
 function displayName(entry: WaitlistEntry): string {
@@ -174,10 +174,7 @@ export function Waitlist() {
   } = useQuery({
     queryKey: queryKeys.waitlist.all,
     queryFn: () => dataSource.fetchWaitlist(),
-    // 4xx är klient-fel → meningslöst att retrya (speglar EventRegistrations).
-    retry: (failureCount, err) =>
-      !(err instanceof EdgeFunctionError && err.status >= 400 && err.status < 500) &&
-      failureCount < 3,
+    retry: husetsRetryPolicy,
   });
 
   // Fokus → <h1> + document.title när data anlänt (en gång per laddning). [] är ett
