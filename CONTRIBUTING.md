@@ -131,6 +131,15 @@ upp. Städas via ägar-manifestet (`tests/support/kastbara-poster.ts`,
 ADR-060 punkt 3), inte setup-purgen — testet självstädar redan i sitt eget
 `finally`-block, manifestet är ett säkerhetsnät för en kraschad körning.
 
+Och Resends KANONISKA testadress `delivered@resend.dev` (RESEND_TEST_ADDRESSES,
+`_shared/send-bulk.ts`) i Anmälningars `E-post` (TASK-465, granskning runda 1
+FYND 2) — `send-action-email-gemensam-bilaga.staging.test.ts`s (TASK-452) EGEN
+sentinel-klass. Adressen matchar VARKEN `create-registration-sentineler`s
+`create-test+…@staging.test`-formel eller dess exakt-mönster, så en EGEN, smal
+exakt-literal-target (`send-action-email-gemensam-bilaga-registration-sentineler`)
+krävs vid sidan av ägar-manifestet — utan den fetchar filterByFormula raden
+aldrig server-side, och registrering i manifestet ensamt räcker inte.
+
 Uppräkningen hålls komplett mot `.purge-staging-policy.json` av
 `scripts/check-listparitet.sh` (paret `sentinel-markorer`) — den stod med
 två av fyra tills den grinden byggdes. CI städar dem automatiskt i jobbet **Staging sentinel
@@ -1013,12 +1022,15 @@ stället för den gamla exkluderingen av länkkontrollen.
 dag **ingen** motsvarande "vaktens vakt": faller deras kanaljobb på gh-I/O syns
 det bara i körningens logg. Det är en känd lucka, inte en glömska — de två
 kanalerna är icke-blockerande stående ärenden, och en vakt som larmar
-tilldelat om dem hade återinfört precis den signalblandning delningen tog bort.
+tilldelat om dem hade återinfört precis den signalblandning delningen tog
+bort. Beroendekanalens dödmansgrepp bärs av ett eget kort, `TASK-467`, i
+stället för byggt i `TASK-450.10` (3A): den kanalen blir lastbärande för
+hela beroendesäkerheten FÖRST när `TASK-450.5` landat.
 
-**Invarianten som måste hållas för hand är TVÅDIMENSIONELL** — och den
-formulering som stod här (*"listan ska vara lika med `alarm`-jobbets trigger"*)
-var för grov. Triggrarna och `needs`-listan lever i **jobb-ID**-rymden
-(`suite`, `nightly-metrics`, `kontraktsvakt`); vaktens lista lever i
+**Invarianten som måste hållas är TVÅDIMENSIONELL** — och den formulering som
+stod här (*"listan ska vara lika med `alarm`-jobbets trigger"*) var för grov.
+Triggrarna och `needs`-listan lever i **jobb-ID**-rymden (`suite`,
+`nightly-metrics`, `kontraktsvakt`); vaktens lista lever i
 **jobb-NAMNPREFIX**-rymden. Kravet har därför två led:
 
 1. **ID-ledet** — de tre kanalernas triggerlistor partitionerar `needs`-listan:
@@ -1029,8 +1041,12 @@ var för grov. Triggrarna och `needs`-listan lever i **jobb-ID**-rymden
    dessutom förbli ett **prefix** till nattsvitens barnjobb.
 
 Bryts ledet 2 ensamt **tystnar vakten för hela produktkanalen** medan en ren
-ID-jämförelse står grön. Ingen grind vaktar något av leden i dag; kravet står
-som prosa i configen och i `nightly.yml`. Följdskivan ska vakta **båda**.
+ID-jämförelse står grön. **Sedan `TASK-450.10` (3A, 2026-09-19) vaktar
+`scripts/check-nattkanal-partition.mjs` BÅDA leden**, CI-wirat i `ci.yml`:s
+lint-jobb på varje PR — härlett ur `nightly.yml` (js-yaml) och ur
+`.nattvakt-kanal-policy.conf` (sourcad i en riktig bash-subprocess, samma
+tolkning nightly-watchdog.yml självt gör), ingen femte handhållen lista.
+Tvåsidigt testbevisad: `scripts/test-check-nattkanal-partition.mjs`.
 
 ### Kontraktsvakten — fixturvärlden mot verkligheten
 

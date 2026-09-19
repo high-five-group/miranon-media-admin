@@ -158,6 +158,28 @@ export function validatePolicy(policy) {
     if (!t.name || !t.table || !t.filterByFormula || !t.exactMatchField || !t.exactMatchPattern) {
       throw new Error(`policy: target "${t.name ?? '?'}" saknar obligatoriska fält`);
     }
+    // [TASK-465] watchGroupField/watchWarnThreshold är OPTIONELLA — samma
+    // klass-form som storageTargets/postgresTargets: en helt frivillig,
+    // billig återfalls-vakt (se loggaGruppVakt) som inte finns för de flesta
+    // targets. Validerad här ändå, samma disciplin som resten av filen: en
+    // felstavad tröskel ska fällas vid policy-inläsning, inte tigas ihjäl
+    // första gången vakten faktiskt skulle ha larmat.
+    if (
+      t.watchGroupField !== undefined &&
+      (typeof t.watchGroupField !== 'string' || t.watchGroupField === '')
+    ) {
+      throw new Error(
+        `policy: target "${t.name}" har ett ogiltigt watchGroupField (måste vara ett icke-tomt fältnamn)`,
+      );
+    }
+    if (
+      t.watchWarnThreshold !== undefined &&
+      !(Number.isFinite(t.watchWarnThreshold) && t.watchWarnThreshold > 0)
+    ) {
+      throw new Error(
+        `policy: target "${t.name}" har ett ogiltigt watchWarnThreshold (måste vara ett tal > 0)`,
+      );
+    }
   }
   // [TASK-302.3] storageTargets är OPTIONELLT (Airtable-targets är den
   // ursprungliga, obligatoriska klassen). Formen prövas generiskt här — den
@@ -281,6 +303,145 @@ export function linkGuardTrips(record, excludeFields = []) {
     }
   }
   return tripped;
+}
+
+// ---------------------------------------------------------------------------
+// [TASK-465] Billig återfalls-vakt — config-driven, EJ på som default.
+//
+// ═══ ROTORSAKEN DEN VAKTAR MOT ═══
+// docs/research/flake-request-context-disposed-2026-09-19.md: seed-eventet
+// `reci2UQEPBMl3ebNl` svällde till 188 anmälningar (185 sentinels) eftersom
+// anmälnings-sviterna inte registrerade sig i ägar-manifestet — setup-purgens
+// 60-min-fönster hann aldrig ikapp vid fleet-drift. `get-registrations`s
+// event-gren är O(n) i eventets anmälningar (~0,174 s/post, mätt), och 188
+// poster (~34 s) sprängde testens 30 s-tak. Grundfixen (manifest-registrering,
+// se tests/support/kastbara-poster.ts-importerna i *.staging.test.ts) STÄNGER
+// hålet för NYA poster; denna vakt är ett andra lager som larmar om hålet
+// öppnas igen (t.ex. en framtida svit som glömmer registrera).
+//
+// ═══ VARFÖR "BILLIG" ═══
+// Noll extra Airtable-anrop: grupperingen läser samma `records` som redan
+// hämtats för purge-planen (listSentinels körs ändå, för varje target, i
+// båda lägena). Ingen ny CI-tid, inga nya Actions-minuter, inget nytt jobb
+// (CLAUDE.md § seed:review/metrics:flake-disciplinen: ett steg i BEFINTLIGT
+// maskineri, aldrig ett nytt jobb för en punktinsats).
+//
+// ═══ NON-FATAL, MED FLIT ═══
+// Larmet skriver en synlig ⚠️-rad men fäller ALDRIG jobbet — samma
+// fail-safe-riktning som resten av filen (rapportera, radera/fäll aldrig på
+// grund av ett HEURISTISKT tröskelvärde). Testtaket 30 s höjs inte av detta
+// (eller av något annat) — vakten finns för att UPPTÄCKA tillväxten långt
+// innan den, inte för att kompensera för den.
+// ---------------------------------------------------------------------------
+
+/**
+ * Gruppera ALLA fetchade poster för ett target efter ett länkat fälts värden
+ * (t.ex. Anmälningars "Event (länk)"). En post med flera länkade ID:n räknas
+ * mot VARJE ID — i praktiken bär write-fältet högst ett för de targets vakten
+ * är avsedd för (Event-länken sätts alltid ensam av create-registration).
+ */
+export function grupperaPerLankfalt(records, field) {
+  const grupper = new Map();
+  for (const record of records) {
+    const varde = record.fields?.[field];
+    if (!Array.isArray(varde)) continue;
+    for (const id of varde) {
+      if (typeof id !== 'string') continue;
+      grupper.set(id, (grupper.get(id) ?? 0) + 1);
+    }
+  }
+  return grupper;
+}
+
+/** Störst-grupp ur en grupperaPerLankfalt-karta, eller null om kartan är tom. */
+export function storstaGruppen(grupper) {
+  let bast = null;
+  for (const [id, antal] of grupper) {
+    if (bast === null || antal > bast.antal) bast = { id, antal };
+  }
+  return bast;
+}
+
+/**
+ * [TASK-465 granskning runda 1, INFO 3] Escapening för GitHub Actions
+ * workflow-commands (`::warning …::…`), per förstapartsdokumentationen
+ * (actions/toolkit `docs/commands.md`): PROPERTY-värden (t.ex. `title=`)
+ * kräver `%`/CR/LF/`:`/`,` escapade, DATA (meddelandet efter `::`) bara
+ * `%`/CR/LF. De två är medvetet OLIKA funktioner — en `:` eller `,` i
+ * meddelandetexten ska inte procent-kodas, bara i en property.
+ */
+function escapeActionsProperty(value) {
+  return String(value)
+    .replace(/%/g, '%25')
+    .replace(/\r/g, '%0D')
+    .replace(/\n/g, '%0A')
+    .replace(/:/g, '%3A')
+    .replace(/,/g, '%2C');
+}
+
+function escapeActionsData(value) {
+  return String(value).replace(/%/g, '%25').replace(/\r/g, '%0D').replace(/\n/g, '%0A');
+}
+
+/**
+ * [TASK-465 granskning runda 1, INFO 3] Bygger en GitHub Actions
+ * `::warning::`-annotation för återfalls-vakten. REN funktion (ingen I/O) —
+ * testbar utan att fånga stdout, och anropas bara av loggaGruppVakt när
+ * BÅDE `GITHUB_ACTIONS === 'true'` och tröskeln är passerad. Syns i
+ * körningens sammanfattning (Actions-fliken) utan att någon behöver läsa
+ * hela jobb-loggen — noll nya nätverksanrop, noll nytt jobb.
+ */
+export function buildActionsWarningAnnotation(targetName, watchGroupField, storst, tak) {
+  const title = escapeActionsProperty(`Återfalls-vakt: ${targetName}`);
+  const message = escapeActionsData(
+    `${watchGroupField}="${storst.id}" bär ${storst.antal} poster — över varningströskeln ${tak}. ` +
+      'Samma tillväxtmönster orsakade TASK-465s "Request context disposed"-flake. Kontrollera att ' +
+      'alla staging-sviter som skapar poster på detta target registrerar dem i ägar-manifestet ' +
+      '(tests/support/kastbara-poster.ts).',
+  );
+  return `::warning title=${title}::${message}`;
+}
+
+/**
+ * Loggar återfalls-vakten för ETT target — no-op om policyn inte satt
+ * `watchGroupField` för det targetet (de allra flesta targets bär ingen).
+ * Returnerar `true` om tröskeln (`watchWarnThreshold`) överskreds, annars
+ * `false` — rent informativt, ingen anropare fäller på det i dag, men värdet
+ * är exponerat så ett framtida CI-steg kan läsa det utan att duplicera
+ * grupperingslogiken.
+ */
+export function loggaGruppVakt(target, records) {
+  if (!target.watchGroupField) return false;
+  const grupper = grupperaPerLankfalt(records, target.watchGroupField);
+  const storst = storstaGruppen(grupper);
+  if (!storst) return false;
+  const tak = target.watchWarnThreshold;
+  const overTak = typeof tak === 'number' && storst.antal > tak;
+  const markor = overTak ? '⚠️  VAKT' : '👁  vakt';
+  console.log(
+    `   ${markor}: ${target.watchGroupField}="${storst.id}" bär ${storst.antal}/${records.length} poster` +
+      (typeof tak === 'number' ? ` (varningströskel: ${tak})` : ''),
+  );
+  if (overTak) {
+    console.warn(
+      `   ⚠️  ${target.name}: "${storst.id}" har ${storst.antal} poster på ` +
+        `${target.watchGroupField} — över varningströskeln ${tak}. Samma tillväxtmönster ` +
+        'orsakade TASK-465s "Request context disposed"-flake (188 poster ≈ 34 s mot ' +
+        'get-registrations, testtaket 30 s). Fäller INTE jobbet — kontrollera i stället att ' +
+        'alla staging-sviter som skapar poster på detta target registrerar dem i ' +
+        'ägar-manifestet (tests/support/kastbara-poster.ts).',
+    );
+    // [TASK-465 granskning runda 1, INFO 3] I CI: skriv ÄVEN en synlig
+    // ::warning::-annotation, så larmet syns i körningens sammanfattning
+    // utan att någon läser jobb-loggen. GITHUB_ACTIONS sätts bara av
+    // GitHubs egen runner (samma signal som staging-preflighten redan
+    // litar på, se scripts/lib/staging-preflight.mjs) — noll nya anrop,
+    // noll nytt jobb.
+    if (process.env.GITHUB_ACTIONS === 'true') {
+      console.log(buildActionsWarningAnnotation(target.name, target.watchGroupField, storst, tak));
+    }
+  }
+  return overTak;
 }
 
 /** Klassa listade records till en purge-plan (raderas / skippas med orsak). */
@@ -829,6 +990,9 @@ async function efterKorning(policy, token, manifestFil, dryRun) {
   for (const target of policy.targets) {
     try {
       const records = await listSentinels(expectedBaseId, target, token, requestThrottleMs);
+      // [TASK-465] Återfalls-vakten läser SAMMA records som planen nedan —
+      // noll extra Airtable-anrop. No-op om targetet inte bär watchGroupField.
+      loggaGruppVakt(target, records);
       const plan = planEfterKorning(records, target, ids, nowMs);
       for (const id of hanteradeIds(plan)) kvar.delete(id);
       if (
@@ -999,6 +1163,9 @@ async function main() {
   for (const target of policy.targets) {
     try {
       const records = await listSentinels(expectedBaseId, target, token, requestThrottleMs);
+      // [TASK-465] Återfalls-vakten läser SAMMA records som planen nedan —
+      // noll extra Airtable-anrop. No-op om targetet inte bär watchGroupField.
+      loggaGruppVakt(target, records);
       const plan = planPurge(records, target, minAgeMinutes, nowMs);
       console.log(
         `▸ ${target.name} (${target.table}): ${records.length} träffar — ` +

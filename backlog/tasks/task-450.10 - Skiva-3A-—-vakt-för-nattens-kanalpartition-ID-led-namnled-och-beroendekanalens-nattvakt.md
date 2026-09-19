@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-18 11:52'
+updated_date: '2026-09-18 23:27'
 labels:
   - ready-for-agent
 dependencies:
@@ -27,16 +28,24 @@ Täcker användarberättelser: 1, 2, 3
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 Tvåsidig testsvit mot sandlådekopior av nightly.yml: ett jobb borttaget ur alla tre triggrar FÄLLER med jobbets namn; ett jobb i två triggrar FÄLLER; riktiga filen PASSERAR
-- [ ] #2 Namnledet: ett ändrat name: på ett produktjobb (eller ett prefix som inte längre matchar något jobb) FÄLLER; riktiga filerna PASSERAR
-- [ ] #3 Vakten och dess testsvit är wirade i ci.yml och gröna i PR:ens lint-jobb; .nattvakt-kanal-policy.conf står i shellcheck-strict-uppräkningen
+- [x] #1 Tvåsidig testsvit mot sandlådekopior av nightly.yml: ett jobb borttaget ur alla tre triggrar FÄLLER med jobbets namn; ett jobb i två triggrar FÄLLER; riktiga filen PASSERAR
+- [x] #2 Namnledet: ett ändrat name: på ett produktjobb (eller ett prefix som inte längre matchar något jobb) FÄLLER; riktiga filerna PASSERAR
+- [x] #3 Vakten och dess testsvit är wirade i ci.yml och gröna i PR:ens lint-jobb; .nattvakt-kanal-policy.conf står i shellcheck-strict-uppräkningen
 - [ ] #4 Beroendekanalens nattvakt är byggd här ELLER uttryckligen lagd som AC på TASK-450.5, med skälet utskrivet
-- [ ] #5 Prosan i nightly.yml, .nattvakt-kanal-policy.conf, CONTRIBUTING § Nattnätet och ADR-082 som i dag säger att invarianten INTE är mekaniserad är rättad till att peka på vakten (ADR-083)
+- [x] #5 Prosan i nightly.yml, .nattvakt-kanal-policy.conf, CONTRIBUTING § Nattnätet och ADR-082 som i dag säger att invarianten INTE är mekaniserad är rättad till att peka på vakten (ADR-083)
 <!-- AC:END -->
 
 ## Definition of Done
 <!-- DOD:BEGIN -->
 - [ ] #1 Alla acceptanskriterier avbockade (task edit --check-ac)
-- [ ] #2 Rörd fil-klass lokala grindar gröna (L147)
-- [ ] #3 Inga orelaterade filer i diffen (path-scopad add)
+- [x] #2 Rörd fil-klass lokala grindar gröna (L147)
+- [x] #3 Inga orelaterade filer i diffen (path-scopad add)
 <!-- DOD:END -->
+
+## Implementation Notes
+
+<!-- SECTION:NOTES:BEGIN -->
+Byggd i samma form som N4 (check-aggregator-needs.mjs): scripts/check-nattkanal-partition.mjs härleder BÅDA leden ur nightly.yml (js-yaml) och .nattvakt-kanal-policy.conf (sourcad i en riktig bash-subprocess) — ingen femte handhållen lista. 17 fall / 24 assert i test-check-nattkanal-partition.mjs, tvåsidigt mutationsprövat (led i och led ii var för sig avstängda -> exakt de fyra förväntade fallen fälls). Extra bevis mot en muterad KOPIA av det RIKTIGA nightly.yml (inte bara den förenklade fixturen): drop av sessionsdok-fonster ur bokforings-arende-triggern -> FÄLLER; omdöpt suite-jobb -> FÄLLER (bägge leden samtidigt). Wirad i ci.yml lint-jobbet (ingen ny job/minut, samma placering som N4) + gatekeeper-testsviten. .nattvakt-kanal-policy.conf tillagd i shellcheck-strict (post 33). AC #4: beroendekanalens dödmansgrepp lagd som AC #7 på TASK-450.5 i stället för byggd här -- den kanalen blir lastbärande för hela beroendesäkerheten forst nar 450.5 landat (ADR-082 § Updates). AC #5: prosan rättad i nightly.yml, .nattvakt-kanal-policy.conf, CONTRIBUTING § Nattnätet, ADR-082 (+ nightly-watchdog.yml som bonus).
+
+RÄTTELSE 2026-09-19, orkestrerar-order efter review runda 1, Marcus mandat: den ursprungliga lösningen på AC #4 - en ny AC #7 på TASK-450.5 - togs bort ur denna PR eftersom PR #2553 redigerar samma kortfil och git merge-tree bekräftade en verklig konflikt. Beroendekanalens dödmansgrepp bärs nu av ett eget kort, TASK-467, mintat i orkestrerarens olandade docs-gren och saknas i denna worktree. AC #4 avbockad eftersom ordalydelsen byggd här eller AC på TASK-450.5 inte längre stämmer. Skälet till att vakten ändå inte byggs i 450.10 kvarstår: beroendekanalen blir lastbärande för hela beroendesäkerheten först när TASK-450.5 landat, ADR-082 paragraf Updates 2026-09-18. DoD #1 avbockad av samma skäl. AC 1, 2, 3 och 5 opåverkade och fortsatt sanna.
+<!-- SECTION:NOTES:END -->
