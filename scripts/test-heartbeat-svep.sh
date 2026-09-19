@@ -254,7 +254,27 @@
 # session-ID måste vara alfanumeriskt, "--session --alla" avvisas) ·
 # TASK-462 fix-runda 6 (2026-09-19, runda 5:s eget fynd 1: T82 VÄND +
 # T82b–T82d nya — skiftlägespolicyn var ASYMMETRISK (statsfilnamn
-# normaliserat, markör-matchning inte), rättad till EN policy överallt)
+# normaliserat, markör-matchning inte), rättad till EN policy överallt) ·
+# TASK-479.2 (2026-09-19, SE16 — T90–T100b nya, SJUNDE VÄGEN: öppna
+# ci-post-merge-/nattärenden)
+#   T90/T91 ci-post-merge: tvåsidigt bevis (öppet ärende ⇒ rad, inget ⇒ tyst)
+#   T92/T93 natt (ci-natt/bokforingsdrift/beroendevarning/lankrota): samma,
+#       egen bucket/egen state-fil
+#   T94a–c ÖVERGÅNG röd→grön rapporteras EN gång, sedan tyst igen (kallstart
+#       räknas som övergång in i rött — rapporteras omedelbart, inte väntar)
+#   T95a/b PÅMINNELSEINTERVALLET HÅLLS — röd kvarstår, andra sopningen direkt
+#       efter (default 1800s) ger INGEN andra rad
+#   T96a/b PÅMINNELSEINTERVALLET ÄR CONFIG-DRIVET —
+#       HEARTBEAT_ARENDE_PAMINNELSE_INTERVALL=0 via egen policy-fil (samma
+#       teknik som T30) ger tvärtemot T95b en PÅMINNELSE-rad på andra
+#       sopningen
+#   T97 SESSIONS-LÄGET FILTRERAR INTE BORT MAIN-LÄGET — --session S1 med ett
+#       öppet ci-post-merge-ärende visar ÄRENDE-raden ändå (kortets krav)
+#   T98/T99 FAIL-CLOSED (77) på VARDERA av de två oberoende gh-anropen,
+#       isolerat — ci-post-merge-sonden fallerar utan att smitta natt-sonden
+#       och vice versa
+#   T100/T100b --help visar § SJUNDE VÄGEN, config-rattarna och pekaren till
+#       CONTRIBUTING.md § Tidsregel och ägare — radintervallet 61,310→61,322
 
 set -uo pipefail
 
@@ -285,10 +305,26 @@ setup() {
     cp "${POLICY_SRC}" "${TEST_DIR}/.heartbeat-svep-policy.conf"
 
     # gh-stub. Svarar ur ${SCEN}:
-    #   main-sha       en rad, SHA:t "commits/<branch>"-anropet ska returnera
-    #   rows           förberäknade TSV-rader, som gh:s --jq redan hade gjort
-    #   fail-mainsha   NÄRVARO ⇒ main-SHA-anropet misslyckas (exit 1)
-    #   fail-prlist    NÄRVARO ⇒ pr-lista-anropet (graphql) misslyckas (exit 1)
+    #   main-sha          en rad, SHA:t "commits/<branch>"-anropet ska
+    #                     returnera
+    #   rows              förberäknade TSV-rader, som gh:s --jq redan hade
+    #                     gjort
+    #   fail-mainsha      NÄRVARO ⇒ main-SHA-anropet misslyckas (exit 1)
+    #   fail-prlist       NÄRVARO ⇒ pr-lista-anropet (graphql) misslyckas
+    #                     (exit 1)
+    #   postmerge-arenden ett ärendenummer per rad — `gh issue list --label
+    #                     ci-post-merge`-svaret (TASK-479.2, SE16)
+    #   natt-arenden      ett ärendenummer per rad — `gh issue list --search
+    #                     'label:ci-natt,...'`-svaret (TASK-479.2, SE16)
+    #   fail-arenden-pm   NÄRVARO ⇒ ci-post-merge-ärendesonden misslyckas
+    #   fail-arenden-natt NÄRVARO ⇒ nattärendesonden misslyckas
+    # STUBBENS GRÄNS gäller likaså här (§ ovan i filhuvudet): den matchar
+    # `issue`/`list` OCH SÖKER efter "ci-post-merge" resp. "ci-natt" BLAND
+    # ARGUMENTEN — den kör aldrig det verkliga `gh issue list`-anropet mot
+    # GitHubs API. Vilken av de TVÅ buckets ett anrop hör till avgörs av
+    # skriptets EGNA, distinkta argument (`--label ci-post-merge` vs.
+    # `--search '...ci-natt...'`) — samma teknik som `graphql`-grenen ovan
+    # särskiljer sig från main-SHA-grenen på `$2`.
     cat > "${TEST_DIR}/bin/gh" <<'STUB'
 #!/usr/bin/env bash
 SCEN="${T119_SCEN}"
@@ -304,14 +340,57 @@ if [ "${1:-}" = "api" ]; then
     [ -f "${SCEN}/main-sha" ] && cat "${SCEN}/main-sha"
     exit 0
 fi
+if [ "${1:-}" = "issue" ] && [ "${2:-}" = "list" ]; then
+    # ARGV-fångst (TASK-479.2 review runda 2 fynd 1, samma teknik som
+    # T323_ARGV för stada-stubben): skriver argumentlistan om
+    # T119_ARENDE_ARGV är satt — bevisar att en CONFIG-ÖVERSTYRD etikett/
+    # söksträng faktiskt når `gh`-anropet, oavsett om denna stubbs egen
+    # ci-post-merge/ci-natt-routing nedan känner igen det anpassade värdet.
+    #
+    # ETT ELEMENT PER RAD, INRAMAT (review runda 3 fynd 2, Marcus-beslut
+    # 2026-09-19): `printf '%s\n' "$*"` (runda 2) SLÅR IHOP hela argv med
+    # blanksteg till EN rad — ett korrekt citerat `--search "a b"` (ETT
+    # argv-element) och ett ordsplittrat `--search a b` (TVÅ element) ger
+    # DÄRMED IDENTISK loggrad; stubben kunde alltså aldrig bevisa att
+    # produktionskoden faktiskt citerar `${ARENDE_SEARCH_NATT}` korrekt.
+    # `printf '<%s>\n' "$@"` bevarar element-GRÄNSEN synligt (varje `$@`-
+    # element blir sin EGEN rad, inramad i `<...>`) — T102b nedan kräver
+    # nu `<label:egen-sok is:open>` som ETT sammanhängande element.
+    if [ -n "${T119_ARENDE_ARGV:-}" ]; then
+        printf '<%s>\n' "$@" >> "${T119_ARENDE_ARGV}"
+    fi
+    is_postmerge=0
+    is_natt=0
+    for a in "$@"; do
+        case "${a}" in
+            ci-post-merge) is_postmerge=1 ;;
+            *ci-natt*) is_natt=1 ;;
+        esac
+    done
+    if [ "${is_postmerge}" = 1 ]; then
+        if [ -f "${SCEN}/fail-arenden-pm" ]; then exit 1; fi
+        [ -f "${SCEN}/postmerge-arenden" ] && cat "${SCEN}/postmerge-arenden"
+        exit 0
+    fi
+    if [ "${is_natt}" = 1 ]; then
+        if [ -f "${SCEN}/fail-arenden-natt" ]; then exit 1; fi
+        [ -f "${SCEN}/natt-arenden" ] && cat "${SCEN}/natt-arenden"
+        exit 0
+    fi
+    exit 0
+fi
 exit 0
 STUB
     chmod +x "${TEST_DIR}/bin/gh"
 
-    # Baseline-scenario: inga fel, inga PR:ar, ett stabilt SHA.
+    # Baseline-scenario: inga fel, inga PR:ar, ett stabilt SHA, inga öppna
+    # ärenden i endera bucketen.
     printf 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' > "${SCEN}/main-sha"
     : > "${SCEN}/rows"
     rm -f "${SCEN}/fail-mainsha" "${SCEN}/fail-prlist"
+    : > "${SCEN}/postmerge-arenden"
+    : > "${SCEN}/natt-arenden"
+    rm -f "${SCEN}/fail-arenden-pm" "${SCEN}/fail-arenden-natt"
 }
 
 # reset_scen: återställ scenariot till en ren baseline MELLAN testfall, utan
@@ -322,11 +401,16 @@ reset_scen() {
     printf 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa' > "${SCEN}/main-sha"
     : > "${SCEN}/rows"
     rm -f "${SCEN}/fail-mainsha" "${SCEN}/fail-prlist"
+    : > "${SCEN}/postmerge-arenden"
+    : > "${SCEN}/natt-arenden"
+    rm -f "${SCEN}/fail-arenden-pm" "${SCEN}/fail-arenden-natt"
     rm -rf "${STATE_DIR}"
     mkdir -p "${STATE_DIR}"
 }
 
 set_rows() { printf '%b' "$1" > "${SCEN}/rows"; }
+set_postmerge_arenden() { printf '%b' "$1" > "${SCEN}/postmerge-arenden"; }
+set_natt_arenden() { printf '%b' "$1" > "${SCEN}/natt-arenden"; }
 
 # EXPECT_OUT sätts FÖRE ett run_case-anrop för att dessutom kräva en sträng i
 # utdatan. NOT_EXPECT_OUT sätts för att kräva att en sträng SAKNAS (används
@@ -1596,6 +1680,403 @@ reset_scen
 EXPECT_ERR="OGILTIGT --session-ID"
 run_case "T89 --session _S126 (understreck FÖRST) → exit 64" 64 - \
     bash ./scripts/heartbeat-svep.sh --once --session _S126
+
+# ============================================================
+# T90–T101 (TASK-479.2, SE16): SJUNDE VÄGEN — öppna ci-post-merge-/
+# nattärenden. Tvåsidigt bevis (öppet ärende ⇒ rad, inget ärende ⇒ tyst),
+# övergångarna i BÅDA riktningarna, påminnelseintervallet (config-drivet),
+# att sessionsläge INTE filtrerar bort main-läget, och fail-closed på
+# sondfel för VARDERA av de två oberoende gh-anropen.
+
+# T90/T91 — ci-post-merge: tvåsidigt bevis.
+reset_scen
+set_postmerge_arenden "2573\n"
+EXPECT_OUT="ÄRENDE — 1 öppna ci-post-merge-ärenden: #2573"
+run_case "T90 ÖPPET ci-post-merge-ärende (kallstart) → ÄRENDE-rad" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once
+
+reset_scen
+NOT_EXPECT_OUT="ÄRENDE"
+run_case "T91 INGA öppna ci-post-merge-ärenden → helt tyst" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once
+
+# T92/T93 — natt (ci-natt/bokforingsdrift/beroendevarning/lankrota):
+# samma tvåsidiga bevis, egen bucket.
+reset_scen
+set_natt_arenden "2566\n"
+EXPECT_OUT="ÄRENDE — 1 öppna natt (ci-natt/bokforingsdrift/beroendevarning/lankrota)-ärenden: #2566"
+run_case "T92 ÖPPET nattärende (kallstart) → ÄRENDE-rad, egen bucket" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once
+
+reset_scen
+NOT_EXPECT_OUT="ÄRENDE"
+run_case "T93 INGA öppna nattärenden → helt tyst" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once
+
+# T94 — ÖVERGÅNG röd→grön rapporteras EN gång. INGEN reset_scen mellan de
+# två anropen: STATE_DIR (och därmed "senast kända läge") måste bevaras för
+# att övergången ska gå att mäta.
+reset_scen
+set_postmerge_arenden "2573\n"
+run_case "T94a röd (kallstart) → transition rapporteras" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once
+set_postmerge_arenden ""
+EXPECT_OUT="ÄRENDE ÅTERSTÄLLT — inga öppna ci-post-merge-ärenden längre"
+run_case "T94b samma bucket blir grön → ÄRENDE ÅTERSTÄLLT rapporteras EN gång" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once
+NOT_EXPECT_OUT="ÄRENDE"
+run_case "T94c fortsatt grön (tredje sopningen) → tyst igen, ingen upprepning" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once
+
+# T95 — PÅMINNELSEINTERVALLET HÅLLS: röd kvarstår, andra sopningen direkt
+# efter (default-intervallet 1800s har inte passerat) → INGEN andra
+# ÄRENDE-rad. Samma glesnings-teknik som T29 (branch-städningen).
+reset_scen
+set_postmerge_arenden "2573\n"
+run_case "T95a röd (kallstart) → rapporteras" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once
+NOT_EXPECT_OUT="ÄRENDE"
+run_case "T95b SAMMA röda läge direkt igen → glesningen håller tyst (default-intervallet)" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once
+
+# T96 — PÅMINNELSEINTERVALLET ÄR CONFIG-DRIVET: egen policy-fil med
+# HEARTBEAT_ARENDE_PAMINNELSE_INTERVALL=0 (samma teknik som T30:s
+# HEARTBEAT_STADA_GRENAR_INTERVALL=0) gör varje sopning "förfallen"
+# omedelbart — röd kvarstår ska då ge en PÅMINNELSE-rad redan på andra
+# sopningen, till skillnad från T95b.
+printf '%s\n' \
+    'HEARTBEAT_REPO="owner/repo"' \
+    'HEARTBEAT_BRANCH="main"' \
+    'HEARTBEAT_INTERVAL=90' \
+    'HEARTBEAT_TIMEOUT=0' \
+    'HEARTBEAT_ARENDE_PAMINNELSE_INTERVALL=0' \
+    > "${TEST_DIR}/.arende-tat-policy.conf"
+reset_scen
+set_postmerge_arenden "2573\n"
+run_case "T96a röd (kallstart), HEARTBEAT_ARENDE_PAMINNELSE_INTERVALL=0 → rapporteras" 0 - \
+    env HEARTBEAT_SVEP_POLICY="${TEST_DIR}/.arende-tat-policy.conf" \
+    bash ./scripts/heartbeat-svep.sh --once
+EXPECT_OUT="ÄRENDE (påminnelse) — fortfarande 1 öppna ci-post-merge-ärenden: #2573"
+run_case "T96b SAMMA röda läge, intervall=0 → PÅMINNELSE-rad denna gång (config-drivet, TVÄRTEMOT T95b)" 0 - \
+    env HEARTBEAT_SVEP_POLICY="${TEST_DIR}/.arende-tat-policy.conf" \
+    bash ./scripts/heartbeat-svep.sh --once
+
+# T97 — SESSIONS-LÄGET FILTRERAR INTE BORT MAIN-LÄGET (kortets uttryckliga
+# krav): samma röda ci-post-merge-läge som T90, men körningen sker MED
+# --session — ÄRENDE-raden ska synas OFÖRÄNDRAT (huvudgrenens ärenderegister
+# har ingen sessionsmarkör att filtrera mot).
+reset_scen
+set_postmerge_arenden "2573\n"
+EXPECT_OUT="ÄRENDE — 1 öppna ci-post-merge-ärenden: #2573"
+run_case "T97 --session S1 med öppet ci-post-merge-ärende → ÄRENDE-raden syns ÄNDÅ" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once --session S1
+
+# T98/T99 — FAIL-CLOSED PÅ SONDFEL (samma 77 som main-SHA-/PR-list-
+# sonderna), VARDERA av de två oberoende gh-anropen isolerat.
+reset_scen
+touch "${SCEN}/fail-arenden-pm"
+EXPECT_OUT="SONDEN KUNDE INTE SVARA — öppna ci-post-merge-ärenden"
+run_case "T98 gh issue list (ci-post-merge) misslyckas → 77" 77 - \
+    bash ./scripts/heartbeat-svep.sh --once
+
+reset_scen
+touch "${SCEN}/fail-arenden-natt"
+EXPECT_OUT="SONDEN KUNDE INTE SVARA — öppna nattärenden"
+run_case "T99 gh issue list (natt) misslyckas, ci-post-merge-sonden OK → 77" 77 - \
+    bash ./scripts/heartbeat-svep.sh --once
+
+# T100 — --help ljuger inte tyst (samma disciplin som T24/T55). Radintervallet
+# `sed -n '61,328p'` utökades 61,310 → 61,322 (TASK-479.2 runda 1) →
+# 61,328 (TASK-479.2 review runda 2: fynd 1-config-rattarna).
+reset_scen
+EXPECT_OUT="SJUNDE VÄGEN"
+run_case "T100 --help visar § SJUNDE VÄGEN (TASK-479.2, SE16)" 0 - \
+    bash ./scripts/heartbeat-svep.sh --help
+if grep -qF "HEARTBEAT_ARENDE_PAMINNELSE_INTERVALL" "${TEST_DIR}/out.txt" \
+   && grep -qF "Tidsregel och ägare" "${TEST_DIR}/out.txt"; then
+    printf '  ✓ T100b  --help nämner config-ratten OCH pekaren till CONTRIBUTING.md\n'; PASSED=$((PASSED+1))
+else
+    printf '  ✗ T100b  --help saknar config-ratten eller CONTRIBUTING.md-pekaren\n'; FAILED=$((FAILED+1))
+fi
+# T100c (review runda 2 fynd 1) — samma "ljug inte tyst"-disciplin för de
+# TVÅ NYA config-rattarna (etikett/söksträng är inte längre hårdkodade).
+if grep -qF "HEARTBEAT_ARENDE_LABEL_POSTMERGE" "${TEST_DIR}/out.txt" \
+   && grep -qF "HEARTBEAT_ARENDE_SEARCH_NATT" "${TEST_DIR}/out.txt"; then
+    printf '  ✓ T100c  --help nämner de NYA config-rattarna (etikett/söksträng)\n'; PASSED=$((PASSED+1))
+else
+    printf '  ✗ T100c  --help saknar de nya config-rattarna — radintervallet följde inte med\n'; FAILED=$((FAILED+1))
+fi
+
+# ============================================================
+# T101–T103 (TASK-479.2 review runda 2, Marcus-beslut 2026-09-19): tre fynd
+# ur PR #2588 runda 1.
+#
+# T101/T102 (fynd 1, config-driven etikett/söksträng): bevisar att BÅDE
+# default OCH ett ÖVERSTYRT policy-värde faktiskt når `gh`-anropets
+# argumentlista — ARGV-fångst via T119_ARENDE_ARGV (samma teknik som
+# T323_ARGV för stada-stubben), INTE bara att svepets EGEN klassnings-logik
+# (som bara känner igen de HÅRDKODADE defaultvärdena) råkar fungera.
+ARENDE_ARGV_FIL="${TEST_DIR}/arende-argv.txt"
+
+# ARGV-ASSERTIONERNA MATCHAR NU `<element>`-PER-RAD-FORMATET (review runda 3
+# fynd 2): `<label:a b>` som ETT sammanhängande grepp-mönster bevisar att
+# hela strängen var ETT argv-element (citerat rätt) — två SEPARATA rader
+# `<label:a>`/`<b>` (ordsplittring) hade INTE matchat samma mönster. Detta
+# är den skarpa skillnaden mot runda 2:s "--label ci-post-merge"-sökning,
+# som var identisk oavsett citering (se stubbens egen kommentar ovan).
+reset_scen
+set_postmerge_arenden "2573\n"
+rm -f "${ARENDE_ARGV_FIL}"
+run_case "T101a DEFAULT-policy → ci-post-merge-etiketten når gh-anropet" 0 - \
+    env T119_ARENDE_ARGV="${ARENDE_ARGV_FIL}" \
+    bash ./scripts/heartbeat-svep.sh --once
+if grep -qF -- "<ci-post-merge>" "${ARENDE_ARGV_FIL}" 2>/dev/null; then
+    printf '  ✓ T101a-argv  argv bar default-etiketten "ci-post-merge" som ETT element\n'; PASSED=$((PASSED+1))
+else
+    printf '  ✗ T101a-argv  argv saknade default-etiketten\n'; FAILED=$((FAILED+1))
+fi
+
+printf '%s\n' \
+    'HEARTBEAT_REPO="owner/repo"' \
+    'HEARTBEAT_BRANCH="main"' \
+    'HEARTBEAT_INTERVAL=90' \
+    'HEARTBEAT_TIMEOUT=0' \
+    'HEARTBEAT_ARENDE_LABEL_POSTMERGE="egen-etikett"' \
+    > "${TEST_DIR}/.arende-label-policy.conf"
+reset_scen
+set_postmerge_arenden "2573\n"
+rm -f "${ARENDE_ARGV_FIL}"
+run_case "T101b ÖVERSTYRD policy (HEARTBEAT_ARENDE_LABEL_POSTMERGE) → når gh-anropet" 0 - \
+    env HEARTBEAT_SVEP_POLICY="${TEST_DIR}/.arende-label-policy.conf" \
+    T119_ARENDE_ARGV="${ARENDE_ARGV_FIL}" \
+    bash ./scripts/heartbeat-svep.sh --once
+if grep -qF -- "<egen-etikett>" "${ARENDE_ARGV_FIL}" 2>/dev/null \
+   && ! grep -qF -- "<ci-post-merge>" "${ARENDE_ARGV_FIL}" 2>/dev/null; then
+    printf '  ✓ T101b-argv  argv bar den ÖVERSTYRDA etiketten som ETT element, INTE defaulten\n'; PASSED=$((PASSED+1))
+else
+    printf '  ✗ T101b-argv  argv saknade den överstyrda etiketten (eller läckte defaulten)\n'; FAILED=$((FAILED+1))
+fi
+
+reset_scen
+rm -f "${ARENDE_ARGV_FIL}"
+run_case "T102a DEFAULT-policy → nattens söksträng når gh-anropet SOM ETT ELEMENT" 0 - \
+    env T119_ARENDE_ARGV="${ARENDE_ARGV_FIL}" \
+    bash ./scripts/heartbeat-svep.sh --once
+if grep -qF -- "<label:ci-natt,bokforingsdrift,beroendevarning,lankrota is:open>" "${ARENDE_ARGV_FIL}" 2>/dev/null; then
+    printf '  ✓ T102a-argv  argv bar default-söksträngen som ETT SAMMANHÄNGANDE element (citerad rätt)\n'; PASSED=$((PASSED+1))
+else
+    printf '  ✗ T102a-argv  argv saknade default-söksträngen som ETT element\n'; FAILED=$((FAILED+1))
+fi
+
+printf '%s\n' \
+    'HEARTBEAT_REPO="owner/repo"' \
+    'HEARTBEAT_BRANCH="main"' \
+    'HEARTBEAT_INTERVAL=90' \
+    'HEARTBEAT_TIMEOUT=0' \
+    'HEARTBEAT_ARENDE_SEARCH_NATT="label:egen-sok is:open"' \
+    > "${TEST_DIR}/.arende-search-policy.conf"
+reset_scen
+rm -f "${ARENDE_ARGV_FIL}"
+run_case "T102b ÖVERSTYRD policy (HEARTBEAT_ARENDE_SEARCH_NATT) → når gh-anropet SOM ETT ELEMENT" 0 - \
+    env HEARTBEAT_SVEP_POLICY="${TEST_DIR}/.arende-search-policy.conf" \
+    T119_ARENDE_ARGV="${ARENDE_ARGV_FIL}" \
+    bash ./scripts/heartbeat-svep.sh --once
+if grep -qF -- "<label:egen-sok is:open>" "${ARENDE_ARGV_FIL}" 2>/dev/null \
+   && ! grep -qF -- "ci-natt" "${ARENDE_ARGV_FIL}" 2>/dev/null; then
+    printf '  ✓ T102b-argv  argv bar den ÖVERSTYRDA söksträngen som ETT SAMMANHÄNGANDE element, INTE defaulten\n'; PASSED=$((PASSED+1))
+else
+    printf '  ✗ T102b-argv  argv saknade den överstyrda söksträngen som ETT element (eller läckte defaulten)\n'; FAILED=$((FAILED+1))
+fi
+
+# T102c (review runda 3 fynd 2, RÖTT-FÖRST-BEVIS FÖR SJÄLVA TESTMETODEN):
+# ett korrekt citerat `--search "$ARENDE_SEARCH_NATT"` ska ge söksträngen
+# som ETT argv-element (T102a/b ovan bevisar detta för PRODUKTIONSKODEN).
+# Detta fall bevisar det OMVÄNDA: en TILLFÄLLIG, OCITERAD kopia av samma
+# anrop ger TVÅ element i stället för ETT, så samma "ETT element"-assertion
+# FALLER mot den trasiga kopian — annars vore assertionen själv tandlös
+# (den hade kunnat "råka" passera även om citeringen aldrig prövades).
+# Produktionsskriptet RÖRS INTE — kopian lever bara i TEST_DIR.
+OCITERAD_KOPIA="${TEST_DIR}/scripts/heartbeat-svep-ociterad-kopia.sh"
+cp "${SKRIPT}" "${OCITERAD_KOPIA}"
+# Samma sed-baserade punktändring som ingenstans annars i denna svit: tar
+# bort ENBART citattecknen kring den specifika `--search`-expansionen (inte
+# någon annan `${...}`-användning i filen), så resten av skriptets beteende
+# är oförändrat.
+# shellcheck disable=SC2016
+# AVSIKTLIGT: enkla citattecken är HELA POÄNGEN — `${ARENDE_SEARCH_NATT}`
+# ska matchas LITTERALT i sed-mönstret/grep-mönstren nedan (mot FILENS
+# text), aldrig expanderas av detta skal.
+sed -i.bak 's/--search "\${ARENDE_SEARCH_NATT}"/--search ${ARENDE_SEARCH_NATT}/' "${OCITERAD_KOPIA}"
+rm -f "${OCITERAD_KOPIA}.bak"
+# shellcheck disable=SC2016
+if grep -qF -- '--search ${ARENDE_SEARCH_NATT}' "${OCITERAD_KOPIA}" \
+   && ! grep -qF -- '--search "${ARENDE_SEARCH_NATT}"' "${OCITERAD_KOPIA}"; then
+    printf '  ✓ T102c-forutsattning  den ociterade kopian saknar verkligen citattecknen (testet mäter rätt sak)\n'; PASSED=$((PASSED+1))
+else
+    printf '  ✗ T102c-forutsattning  sed-ändringen träffade inte förväntad rad — kopian är INTE ociterad, testet nedan mäter ingenting\n'; FAILED=$((FAILED+1))
+fi
+chmod +x "${OCITERAD_KOPIA}"
+reset_scen
+rm -f "${ARENDE_ARGV_FIL}"
+run_case "T102c OCITERAD kopia (kontrast, INTE produktionskoden) → söksträngen splittras i FLERA element" 0 - \
+    env T119_ARENDE_ARGV="${ARENDE_ARGV_FIL}" \
+    bash "${OCITERAD_KOPIA}" --once
+if grep -qF -- "<label:ci-natt,bokforingsdrift,beroendevarning,lankrota" "${ARENDE_ARGV_FIL}" 2>/dev/null \
+   && ! grep -qF -- "<label:ci-natt,bokforingsdrift,beroendevarning,lankrota is:open>" "${ARENDE_ARGV_FIL}" 2>/dev/null; then
+    printf '  ✓ T102c-argv  den OCITERADE kopian splittrar söksträngen i FLERA element (bevisar att "ETT element"-assertionen ovan är skarp, inte tandlös)\n'; PASSED=$((PASSED+1))
+else
+    printf '  ✗ T102c-argv  den ociterade kopian splittrade INTE söksträngen — testmetoden bevisar ingenting\n'; FAILED=$((FAILED+1))
+fi
+rm -f "${ARENDE_ARGV_FIL}"
+
+# ============================================================
+# T103 (fynd 3, mängdmedvetet): {A,B} → {A,C} ger EN rad som nämner BÅDE
+# tillkommet och stängt; {A,B} → {A,B} (oförändrad SAMMANSÄTTNING, inte bara
+# oförändrat ANTAL) är tyst; och det GAMLA "rod"/"gron"-formatet krashar
+# inte och ger inget falskt övergångslarm på migreringssopningen.
+
+# (a) {2573,2575} → {2573,2578}: 2575 stängs, 2578 tillkommer, antalet är
+# OFÖRÄNDRAT (2→2) — runda 1:s antal-baserade jämförelse hade missat detta
+# helt (samma antal ⇒ "oförändrad", tyst tills nästa påminnelse).
+reset_scen
+set_postmerge_arenden "2573\n2575\n"
+run_case "T103a-kallstart {2573,2575} (kallstart) → etablerar mängden" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once
+set_postmerge_arenden "2573\n2578\n"
+EXPECT_OUT="ÄRENDE — förändring i öppna ci-post-merge-ärenden: 2 öppna nu (#2573, #2578). Tillkommit: #2578. Stängt: #2575."
+run_case "T103a SAMMA ANTAL, NY SAMMANSÄTTNING ({2573,2575}→{2573,2578}) → EN rad, båda delmängderna nämnda" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once
+
+# (b) {2573,2575} → {2573,2575}: identisk mängd, tyst (även om antalet
+# "råkar" vara detsamma som (a) — det är SAMMANSÄTTNINGEN som avgör).
+reset_scen
+set_postmerge_arenden "2573\n2575\n"
+run_case "T103b-kallstart {2573,2575} (kallstart) → etablerar mängden" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once
+NOT_EXPECT_OUT="ÄRENDE"
+run_case "T103b OFÖRÄNDRAD SAMMANSÄTTNING ({2573,2575}→{2573,2575}) → tyst" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once
+
+# (c) GAMMALT FORMAT ("rod"), pre-existing state_fil skriven av runda 1-
+# koden: får INTE krascha och får INTE ge ett falskt övergångslarm (varje
+# nu-öppet ärende skulle annars felaktigt se ut som "just tillkommet").
+# Beteendet: TYST denna ENDA migreringssopning, staten skrivs om till nya
+# formatet, och normal mängd-diffning återupptas AUTOMATISKT nästa sopning.
+reset_scen
+mkdir -p "${STATE_DIR}"
+printf 'rod' > "${STATE_DIR}/last-arende-ci-post-merge-lage"
+set_postmerge_arenden "2573\n2578\n"
+NOT_EXPECT_OUT="ÄRENDE"
+run_case "T103c GAMMALT FORMAT ('rod') → tyst migreringssopning, ingen krasch" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once
+T103C_MIGRERAT="$(cat "${STATE_DIR}/last-arende-ci-post-merge-lage" 2>/dev/null)"
+if [[ "${T103C_MIGRERAT}" == "2573,2578" ]]; then
+    printf '  ✓ T103c-migrerat  state_fil skriven om till nya (sorterade) formatet\n'; PASSED=$((PASSED+1))
+else
+    printf '  ✗ T103c-migrerat  state_fil INTE i förväntat nytt format: %s\n' "${T103C_MIGRERAT}"; FAILED=$((FAILED+1))
+fi
+# Nästa sopning: OFÖRÄNDRAD mängd (fortfarande {2573,2578}) → tyst, precis
+# som (b) — bevisar att normal diffning återupptagits, inte att vägen bara
+# råkar vara tyst av andra skäl.
+NOT_EXPECT_OUT="ÄRENDE"
+run_case "T103c-uppfoljning1 OFÖRÄNDRAD mängd efter migrering → tyst (normal diffning)" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once
+# Tredje sopningen: mängden ÄNDRAS (2582 tillkommer) → normal
+# diff-rapportering ska nu fungera, INTE fortsatt tyst från migreringen.
+set_postmerge_arenden "2573\n2578\n2582\n"
+EXPECT_OUT="Tillkommit: #2582. Stängt: inga."
+run_case "T103c-uppfoljning2 mängden ÄNDRAS efter migrering → normal diff-rapportering fungerar" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once
+
+# (c2) samma bevis för "gron" (det ANDRA gamla värdet) — punkt (c) i
+# uppdraget namnger båda literalerna explicit.
+reset_scen
+mkdir -p "${STATE_DIR}"
+printf 'gron' > "${STATE_DIR}/last-arende-ci-post-merge-lage"
+set_postmerge_arenden "2573\n"
+NOT_EXPECT_OUT="ÄRENDE"
+run_case "T103c2 GAMMALT FORMAT ('gron') → tyst migreringssopning, ingen krasch" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once
+
+# ============================================================
+# T104a–e (TASK-479.2 review runda 3 fynd 1, Marcus-beslut 2026-09-19):
+# `comm` kräver indata sorterad i SIN EGEN (lexikala/byte-)ordning, inte
+# numerisk — T103 ovan råkade aldrig korsa en sifferlängdsgräns (alla
+# testnummer var fyrsiffriga) och missade därför bevisa detta. RÖTT-FÖRST:
+# dessa fall skrevs INNAN koden fixades (se PR-kroppens körutdrag för
+# den faktiska röda körningen mot a8bde2ef).
+
+# (a) {2,3,10} → {2,10}: 10 finns i BÅDA mängderna men numerisk sortering
+# ("2,3,10") är INTE byte-sorterad ("10" < "2" < "3" lexikalt) — en `comm`
+# som får numerisk indata ser "10" som en RAD SOM SKILJER mängderna åt,
+# fast den inte gör det. Rätt svar: bara 3 stängdes, inget tillkom.
+reset_scen
+set_postmerge_arenden "2\n3\n10\n"
+run_case "T104a-kallstart {2,3,10} (kallstart) → etablerar mängden" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once
+set_postmerge_arenden "2\n10\n"
+EXPECT_OUT="ÄRENDE — förändring i öppna ci-post-merge-ärenden: 2 öppna nu (#2, #10). Tillkommit: inga. Stängt: #3."
+run_case "T104a {2,3,10}→{2,10}: EXAKT 'Stängt: #3', INGET tillkommet (comm-sorteringsbuggen)" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once
+
+# (b) {9999,10000} → {10000,10001}: samma bugklass vid 9999/10000-gränsen
+# uppdraget själv namnger. Rätt svar: 10001 tillkom, 9999 stängdes.
+reset_scen
+set_postmerge_arenden "9999\n10000\n"
+run_case "T104b-kallstart {9999,10000} (kallstart) → etablerar mängden" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once
+set_postmerge_arenden "10000\n10001\n"
+EXPECT_OUT="ÄRENDE — förändring i öppna ci-post-merge-ärenden: 2 öppna nu (#10000, #10001). Tillkommit: #10001. Stängt: #9999."
+run_case "T104b {9999,10000}→{10000,10001}: EXAKT 'Tillkommit: #10001. Stängt: #9999.'" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once
+
+# (c) {999,1000} → {999,1000}: OFÖRÄNDRAD mängd över SAMMA sifferlängds-
+# gräns ska vara TYST — regressionsvakt mot att fixen (byte-ordning för
+# jämförelse) av misstag gör en genuint oförändrad mängd till en falsk
+# övergång.
+reset_scen
+set_postmerge_arenden "999\n1000\n"
+run_case "T104c-kallstart {999,1000} (kallstart) → etablerar mängden" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once
+NOT_EXPECT_OUT="ÄRENDE"
+run_case "T104c OFÖRÄNDRAD {999,1000}→{999,1000} över sifferlängdsgräns → tyst" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once
+
+# (d) En tillståndsfil skriven i NUMERISK ordning ("999,1000" — den ordning
+# RUNDA 2:s kod skrev innan denna fix) läst av den NYA koden för SAMMA,
+# OFÖRÄNDRADE mängd ({999,1000}) får INTE ge ett falskt ÖVERGÅNGSlarm. Utan
+# normalisering-vid-läsning skulle "999,1000" (filen) != "1000,999" (fräscht
+# beräknad byte-ordning) se ut som en mängdFÖRÄNDRING (en "Tillkommit:/
+# Stängt:"-rad), fast inget ändrats.
+#
+# NOTIS_FIL SEEDAS OCKSÅ, med en FÄRSK stämpel (realistisk in-place-
+# uppgradering): notis-formatet ändrades ALDRIG mellan runda 2 och 3 (bara
+# state_fil:s CSV-ordning gjorde det), så en verklig uppgraderad
+# installation HAR en äkta, nyligen stämplad notis_fil kvar. Utan den
+# stämpeln (t.ex. ett rent nollställt STATE_DIR) hade funktionen sett
+# "ingen tidigare notis" och skickat en LEGITIM påminnelse (§ ANVÄNDNING,
+# väg 3 "oförändrad mängd, röd kvarstår, påminnelseintervallet passerat")
+# — sant och rätt i sig, men en ANNAN signal än den FALSKA ÖVERGÅNGEN detta
+# fall specifikt prövar frånvaron av. Med en färsk notis-stämpel är
+# FÖRVÄNTAN entydig: HELT TYST (varken övergång eller påminnelse).
+reset_scen
+mkdir -p "${STATE_DIR}"
+printf '999,1000' > "${STATE_DIR}/last-arende-ci-post-merge-lage"
+T104D_NU="$(date +%s)"
+printf '%s' "${T104D_NU}" > "${STATE_DIR}/last-arende-ci-post-merge-notis"
+set_postmerge_arenden "999\n1000\n"
+NOT_EXPECT_OUT="ÄRENDE"
+run_case "T104d state_fil i GAMMAL NUMERISK ordning ('999,1000'), oförändrad mängd, färsk notis-stämpel → HELT TYST" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once
+
+# (e) PRESENTATIONEN är numeriskt ordnad även när gh:s råa svarsordning INTE
+# är det (här: 10001 FÖRE 9999 i rå gh-utdata) — en byte-sorterad
+# presentation hade visat "#10001, #9999" (fel för en människa att läsa).
+reset_scen
+set_postmerge_arenden "10001\n9999\n"
+EXPECT_OUT="ÄRENDE — 2 öppna ci-post-merge-ärenden: #9999, #10001."
+run_case "T104e presentationen är NUMERISKT ordnad ('#9999, #10001'), oavsett gh:s råa svarsordning" 0 - \
+    bash ./scripts/heartbeat-svep.sh --once
 
 printf '\ntest-heartbeat-svep: %s passerade, %s failade\n' "${PASSED}" "${FAILED}"
 [[ "${FAILED}" -eq 0 ]] || exit 1
