@@ -149,3 +149,18 @@ röda. Ett stickprov, inte statistik. Riktningen är entydig och eskalering upp�
 data. Detta är samma försiktighet den första amenderingen efterlyste — och
 noteras här eftersom dagen dessförinnan visade vad en regel skriven på för
 tunt underlag kostar.
+
+### 2026-09-19 — [ADR-133](ADR-133-testa-en-gang-per-landning-vantetidstak-och-tillvaxtmal.md) flyttar VAR CI bevisar, inte att CI är enda mekaniska grinden
+
+**Beslutet ovan — "CI är den enda mekaniska enforcement-grinden" — står
+oförändrat.** `ADR-133` rör inte lokal kvalitetssäkring, DoD-disciplinen
+eller `verify:ci-parity`s klassning som diagnosverktyg; ingen del av
+detta rörs.
+
+**Vad som ändras, i ett syskonbeslut.** `ADR-133` § Besluten 4 (S2)
+flyttar VAR i CI det obligatoriska beviset (`Acceptance`-klassen, det
+tvåsidiga hermetikbeviset) produceras — från förslagsytan (PR) till
+enbart kön. Merge-kön förblir en PR-yta (`ADR-076` oförändrad), så
+"CI som enda mekaniska grind" gäller lika starkt efteråt: en PR kan
+fortfarande inte landa utan att den obligatoriska checken rapporterat
+grönt, bara på en annan tidpunkt i flödet.

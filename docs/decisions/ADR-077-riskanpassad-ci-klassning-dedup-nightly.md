@@ -272,3 +272,33 @@ inte ett byggt sådant — ingen kod eller CI-logik är ändrad av denna rättel
 Bygget sker i egen skiva `TASK-450.5`, och den skivan **får inte landa före
 `TASK-450.1` (N2)** — samma beroende Marcus rekommendation själv ställde som
 villkor.
+
+### 2026-09-19 — [ADR-133](ADR-133-testa-en-gang-per-landning-vantetidstak-och-tillvaxtmal.md) smalnar postsubmit-lagrets omfång och avgör triggerfrågan
+
+**Vad som INTE ändras.** § Beslut 1 (riskklassningen som allowlist) och
+§ Beslut 2 (merge-dedupen, fail-closed på varje trädavvikelse) står
+orörda. § Beslut 3 (nattnätet som reusable svit, anropad av BÅDE
+`ci.yml` och `nightly.yml`) står också orört — nattnätet förblir den
+korrekta, branschlika periodiska svepningskontrollen; `ADR-133` rör
+den inte.
+
+**Vad som tillkommer.** `ADR-133` § Besluten 6 (S3) smalnar
+`post-merge.yml`:s (efterkontrollens) omfång till det den ensam KAN
+bevisa — staging mot en verklig Airtable-bas, tillgänglighet,
+sentinel-städning, klassning, exponeringsfönster — i stället för att
+upprepa hela den hermetiska sviten en fjärde gång. `N3`
+(spann-klassningen, `scripts/classify-post-merge.sh`, `TASK-450.2`)
+förblir en hård förutsättning för den flytten, precis som § Kontext
+ovan redan slog fast för S1/S3-familjen.
+
+**Vad som tillkommer, en steg till.** `ADR-133` § Besluten 6b avgör
+den fråga denna ADR aldrig ställde: SKA efterkontrollens trigger vara
+`push`-händelsen eller en klocka? Svaret är `push`, oförändrat — sex
+undersökta branschledare (inklusive Kubernetes Prow, samma § Beslut 3
+redan citerar för nattnätets `periodic`-form) kör alla sin
+postsubmit-kontroll händelsestyrt, aldrig på en klocka. Den
+rekommenderade vidareutvecklingen (fast concurrency-grupp + spann-källa
+bytt till senaste FAKTISKT avslutade körning) är en öppen, deferrad
+implementation, `TASK-464.14` — se `ADR-133` § Besluten 6 för den fulla
+motiveringen och den öppet flaggade avsaknaden av branschprecedent för
+just den kombinationen.
