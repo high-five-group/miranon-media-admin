@@ -128,9 +128,11 @@ npm run build               # bygg grön
 
 De fyra ovan är DoD-disciplinen (`ADR-036`, `CONTRIBUTING.md`) och är vad som
 körs före push. CI kör betydligt fler grindar (shellcheck-strict, actionlint,
-yamllint, audit-ci, 14 dokumentations-grindar (`npm run check:docs`s egen
-slutrad, TASK-161.2-omräkning 2026-08-08 — stod som "13" här, exakt den
-kopierings-drift stycket nedan varnar för), ~20 gatekeeper-testsviter,
+yamllint, audit-ci, 16 dokumentations-grindar (`npm run check:docs`s egen
+slutrad — 14 fram till TASK-464.2 review runda 1, som lade till
+`check-codeql-d0-kodfri.sh` och `check-codeql-push-pr-parity.mjs`; talet
+stod tidigare som "13" här, exakt den kopierings-drift stycket nedan varnar
+för), ~20 gatekeeper-testsviter,
 Acceptance-klassen, Webblasarbeteende-klassen) — **och det är CI:s jobb, inte
 ditt.** Merge queue hindrar en röd PR från att landa, så kostnaden av att
 missa något lokalt är en extra CI-cykel, inte ett trasigt `main`.

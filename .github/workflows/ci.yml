@@ -932,6 +932,53 @@ jobs:
         # paritet-markörerna — grinden läser regionen som data.
         run: bash scripts/check-listparitet.sh
 
+      - name: Validate CodeQL D0-undantaget är kodfritt (TASK-464.2 gate)
+        # STANNAR på kodändringar — se TASK-464.1 AC #2 (review runda 2 fynd
+        # 3). Detta steg ligger i regionen `docs-grindar-ci`
+        # (paritet:start/slut nedan), som TASK-464.1 flyttar bakom
+        # ci.yml:s dokumentvillkor (`docs_changed`). En ren kodändring —
+        # en ny .mjs under docs/, eller en ändrad codeql.yml — FÄLLER
+        # BÅDA de nya CodeQL-grindarna i det steget, precis som de gör i
+        # dag: de läser D0-listan och det verkliga trädet, oavsett vilket
+        # jobb de körs i. S4-agenten är meddelad om kopplingen.
+        #
+        # Review runda 1 fynd 1 (warning), PR #2558: D0-listan
+        # (.github/workflows/codeql.yml) återanvänder ci.yml:s D0-allowlist
+        # på premissen att sökvägarna är kodfria — stickprov fann åtta
+        # spårade .mjs/.js-filer som falsifierade premissen. Runda 2 fynd 1
+        # utökade premissen till HELA CodeQL:s extraktor-lista (inte bara
+        # JS/TS-ändelser) och fann en nionde fil (en HTML med `<script>`).
+        # Grinden gör premissen mätbar: listar spårade filer under CodeQL:s
+        # D0-undantag och fäller på analyserbar ändelse (med innehållsprövning
+        # för HTML-familjen) utan deklarerat undantag i
+        # .codeql-d0-kodfri-policy.conf. Config-driven, tvåsidigt testad
+        # (scripts/test-check-codeql-d0-kodfri.sh, 14 fall).
+        run: bash scripts/check-codeql-d0-kodfri.sh
+
+      - name: Validate CodeQL push===pull_request paths-ignore (TASK-464.2 gate)
+        # STANNAR på kodändringar — se TASK-464.1 AC #2 (review runda 2 fynd
+        # 3). Samma region (`docs-grindar-ci`) som steget ovan, samma
+        # konsekvens: en kodändring fäller detta steg oavsett vilket jobb
+        # det körs i, eftersom det parsar codeql.yml:s verkliga innehåll.
+        #
+        # Review runda 1 fynd 2 (warning), PR #2558: prosan i
+        # .listparitet-policy.conf och codeql.yml:s eget filhuvud påstod att
+        # YAML-ankaret gör en avvikande push-kopia "strukturellt omöjligt" —
+        # sant bara så länge ingen ERSÄTTER aliaset med en handskriven lista.
+        # check-listparitet.sh:s markörbaserade par läser bara EN region
+        # (under pull_request) och kan inte se den ersättningen. Denna grind
+        # parsar den FAKTISKA YAML-strukturen och kräver djup likhet mellan
+        # on.push['paths-ignore'] och on.pull_request['paths-ignore'] oavsett
+        # hur de skrevs — en semantiskt STARKARE, oberoende kontroll. Runda 2
+        # fynd 2 generaliserade grinden till VARJE trigger under `on:` som
+        # bär paths/paths-ignore (inte bara push↔pull_request), och fäller
+        # på `paths` (positiv form) närhelst den förekommer. Tvåsidigt
+        # testat (scripts/test-check-codeql-push-pr-parity.mjs, 11 fall,
+        # inklusive en handskriven-men-identisk-lista-fixtur som bevisar att
+        # grinden jämför semantik, inte ankare-syntax, och en tredje-trigger-
+        # fixtur som bevisar generaliseringen).
+        run: node scripts/check-codeql-push-pr-parity.mjs
+
       - name: Validate locked facit is addressable (ADR-102 gate)
         # Per ADR-102 B1/B3: den låsta prototypen ÄR facit, och prototyp-kod
         # rivs aldrig före Marcus godkännande. Grinden läser facit-manifesten
@@ -1707,6 +1754,8 @@ jobs:
           bash scripts/test-ci-wait.sh
           bash scripts/test-staging-semaphore.sh
           bash scripts/test-check-listparitet.sh
+          bash scripts/test-check-codeql-d0-kodfri.sh
+          node scripts/test-check-codeql-push-pr-parity.mjs
           bash scripts/test-check-backlog-closure.sh
           bash scripts/test-backlog-cli.sh
           bash scripts/test-stop-vakt.sh
@@ -2166,6 +2215,7 @@ jobs:
             .permissions-claims-policy.conf \
             .backlog-closure-policy.conf \
             .listparitet-policy.conf \
+            .codeql-d0-kodfri-policy.conf \
             .thread-index-policy.conf \
             .heartbeat-svep-policy.conf \
             .mail-lock-policy.conf \

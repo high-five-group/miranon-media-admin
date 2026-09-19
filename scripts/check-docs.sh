@@ -254,6 +254,8 @@ run_gate "Permissions-påståenden (prosa som påstår mekanism)" bash scripts/c
 # alltså ~+4,8 %. CI-TIDEN ÄR INTE MÄTT AV MIG.
 run_gate "fetch-depth-invarianten (ADR-029/030 erratum)" bash scripts/check-fetch-depth-invariant.sh
 run_gate "Listparitet (CONTRIBUTING ↔ purge-policy, lychee-scopen)" bash scripts/check-listparitet.sh
+run_gate "CodeQL D0-undantaget är kodfritt (TASK-464.2)" bash scripts/check-codeql-d0-kodfri.sh
+run_gate "CodeQL push===pull_request paths-ignore (TASK-464.2)" node scripts/check-codeql-push-pr-parity.mjs
 run_gate "Låst facits adresserbarhet + rivningsspärr (ADR-102)" bash scripts/check-facit.sh
 # paritet:slut docs-grindar-lokal
 

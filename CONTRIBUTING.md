@@ -1133,6 +1133,224 @@ grön igen, eller med en skriven motivering — aldrig för att det blivit gamma
 Det är just den risk `ADR-077` § Beslut 3 varnar för: en mildare kanal som blir
 en kyrkogård ingen läser.
 
+## CodeQL — advanced setup (`TASK-464.2`)
+
+Säkerhetsskanningen kör sedan `TASK-464.2` (S5,
+[`actions-minutbudget-2026-09-18.md`](docs/research/actions-minutbudget-2026-09-18.md)
+§ S5) som en egen arbetsflödesfil (`.github/workflows/codeql.yml`,
+"advanced setup") i stället för GitHubs "default setup". Skälet är att
+default setup saknar en väg att undanta sökvägar — en ren markdown-ändring
+körde hela CodeQL-svitet ändå, mätt till ~13 % av augustis Actions-minuter.
+
+**Frågesviternas uppdatering är nu VÅRT ansvar, inte GitHubs.** Default
+setup underhölls automatiskt av GitHub — nya query-packs och
+frågesvit-revisioner rullade ut utan att någon i repot behövde agera.
+Advanced setup äger vi: `codeql.yml` låser språk (`javascript-typescript`,
+`actions`) och lämnar `query_suite: default` (ingen `queries:`-override,
+se filens eget huvud), men SJÄLVA CODEQL-VERKTYGET — `github/codeql-action`
+— är en SHA-pinnad version precis som repots övriga actions, och den
+pinningen rör sig inte av sig själv. Underhållspriset är alltså: när
+`codeql-action` släpper en ny major/minor med reviderade default-frågor,
+måste NÅGON i repot ta emot och landa den uppdateringen, annars fryser vi
+tyst kvar på en äldre frågesvit medan default setup (som andra repon kör)
+hade rullat framåt automatiskt.
+
+**Var Dependabot fångar det:** `.github/dependabot.yml`s
+`github-actions`-ekosystem (`directory: "/"`, `schedule: monthly`,
+gruppen `github-actions`) skannar HELA repots `uses:`-yta månadsvis,
+`github/codeql-action` inräknat — samma mekanism som håller
+`actions/checkout`, `actions/setup-node` m.fl. aktuella. Ingen egen
+Dependabot-post krävs för `codeql.yml` specifikt; den kommer med i den
+befintliga, redan wirade svepningen. Vad Dependabot INTE fångar: om
+GitHub byter namn på eller lägger till en CodeQL-språkidentifierare (t.ex.
+en framtida ersättare för `javascript-typescript`) — den sortens ändring
+kräver att någon läser `codeql-action`s CHANGELOG, inte bara följer en
+versionsbump.
+
+**D0-undantaget gäller BÅDE `pull_request` och `push` (Marcus-mandat,
+2026-09-19, samma dag som förstaversionen).** Förstaversionen lämnade
+`push` orörd ("push skannas enligt samma regel som i dag" löd AC #3
+bokstavligt); Marcus skärpte kravet samma dag — en ren dokument-push till
+huvudgrenen skannar kod som inte ändrats sedan den senast skannades, ren
+spilld kostnad, medan ny frågekunskap mot oförändrad kod redan bärs av
+`schedule` (veckovis, `0 5 * * 1`, oförändrad). `push` bär nu SAMMA
+`paths-ignore`-lista som `pull_request` via en YAML-ANKARE
+(`&d0-paths`/`*d0-paths` i `codeql.yml`) — inte en andra handhållen kopia;
+`.listparitet-policy.conf`s par `klassning-codeql-positiv` behöver därför
+bara vakta EN region, eftersom anlaget gör en avvikande kopia strukturellt
+omöjlig.
+
+**Vad detta kostar i skydd, citerat mot förstaparten:** GitHubs
+dokumentation för `on:push`-triggerns syfte
+(`docs.github.com`, "Customizing your advanced setup for code scanning" §
+triggers, hämtat 2026-09-19) säger att push-analys låter "alerts
+automatically surface on pull requests by comparing the head branch
+analysis against the target branch analysis" — push-analysen är alltså
+den baslinje en PR:s "nya larm"-jämförelse mäts mot. Skippas en push (D0)
+uppdateras inte den baslinjen för just den commiten; nästa kod-push (52 %
+av alla PR-körningar, § Kostnad nedan) uppdaterar den igen. Samma källa
+beskriver varningsläget `Missing analysis for base commit SHA-HASH` för när
+basgrenens SENASTE commit saknar analys — de tre dokumenterade orsakerna
+(nytt repo, analys pågår, analys felade) nämner INTE "commit avsiktligt
+hoppad via paths-ignore" som ett fjärde fall. Jag har alltså INTE hittat en
+verbatim-mening som garanterar att jämförelsen "faller tillbaka på senaste
+analyserade commit" för just vårt fall — det är en rimlig läsning av
+mekaniken (`code-scanning/analyses` lagrar per REF, och en hoppad push
+laddar aldrig upp något som skulle ersätta föregående analys för den
+refen) men obelagd som garanti. Flaggat öppet per ADR-086, inte byggt på
+som fakta. Skyddsnätet som gör kvarvarande gap ofarligt oavsett utfall:
+`schedule` skannar huvudgrenens faktiska innehåll minst en gång per vecka,
+så en analys blir aldrig äldre än sju dagar.
+
+**Default setup och advanced setup kan INTE köra parallellt — mätt, inte
+antaget.** `TASK-464.2`:s PR öppnades med default setup fortfarande PÅ (per
+HÅRD GRÄNS: bygg-agenten stänger aldrig av repo-inställningar). Båda
+matrisjobben (`javascript-typescript`, `actions`) körde CodeQL-analysen
+fullt ut — databasbygge, frågeutvärdering, SARIF-export — men SARIF-
+uppladdningen avvisades av GitHubs backend med exakt detta fel (PR #2558,
+körning `35404550404`, båda jobben, 2026-09-18):
+
+```text
+##[error]Code Scanning could not process the submitted SARIF file:
+CodeQL analyses from advanced configurations cannot be processed when the default setup is enabled
+```
+
+**Konsekvens för bytesordningen:** den sekvens kortets AC #4 beskriver
+("grön egen körning → jämför larmlistan → stäng av default setup") går INTE
+att genomföra i den ordningen — en advanced-setup-körning kan mekaniskt
+aldrig bli grön (uppladdningen fälls alltid) medan default setup är
+aktivt. Den enda framkomliga ordningen är omvänd: (1) stäng av default
+setup, (2) kör advanced setup och verifiera att uppladdningen lyckas, (3)
+jämför larmlistan (`code-scanning/alerts`) före/efter avstängningen mot en
+sparad ögonblicksbild tagen FÖRE steg 1. Steg 1 är en repo-inställning och
+utförs av orkestreraren, aldrig av en agent.
+
+**ROLLBACK — om den egna körningen INTE blir grön efter steg 1 (review
+runda 2 fynd 6).** Skriven av bygg-agenten; utförs fortfarande enbart av
+orkestreraren, som steg 1 ovan. Ordning:
+
+1. **Stanna, försök inte laga vidare mot advanced setup** — ett rött
+   `codeql.yml`-jobb efter att default setup redan stängts av är en signal
+   att rulla tillbaka, inte att iterera i produktion.
+2. **Återställ default setup**, med SAMMA språk/svit som mättes FÖRE bytet
+   (`code-scanning/default-setup`-mätningen i denna PR-kropp/§ AC #1):
+
+   ```bash
+   gh api -X PATCH repos/high-five-group/miranon-media-admin/code-scanning/default-setup \
+     -f state=configured \
+     -f query_suite=default \
+     -f runner_type=standard \
+     -f threat_model=remote \
+     -f 'languages[]=actions' \
+     -f 'languages[]=javascript-typescript'
+   ```
+
+   **Käll-varning, mätt mot `docs.github.com`s REST-referens (denna
+   endpoints `languages`-parameter), 2026-09-19:** skriv-sidans (PATCH)
+   `languages`-enum accepterar ENDAST den unifierade `javascript-typescript`
+   — INTE bara `javascript`/`typescript` separat, trots att LÄS-sidan (GET,
+   det ursprungliga måttet) rapporterade fyra poster inklusive bara
+   `javascript` och `typescript`. Ett rollback-anrop som skickar den RÅA
+   fyra-postslistan från mätningen riskerar alltså att AVVISAS av API:t.
+   Kommandot ovan använder den enda formen skriv-sidan dokumenterar.
+
+3. **Verifiera att inställningen faktiskt är tillbaka:**
+
+   ```bash
+   gh api repos/high-five-group/miranon-media-admin/code-scanning/default-setup
+   # förväntat: "state":"configured", "languages" innehåller
+   # "actions" och "javascript-typescript", "query_suite":"default"
+   ```
+
+4. **Verifiera att SKANNINGEN är tillbaka** (inte bara inställningen) —
+   default setup analyserar inte omedelbart vid PATCH; vänta på nästa
+   push/PR eller det veckovisa schemat, sedan:
+
+   ```bash
+   gh api "repos/high-five-group/miranon-media-admin/code-scanning/analyses?per_page=5" \
+     --jq '.[] | {ref, category, created_at}'
+   # förväntat: en NY post med created_at EFTER PATCH-anropet,
+   # category /language:javascript-typescript eller /language:actions
+   ```
+
+5. **Städa upp `codeql.yml`** i ett separat, medvetet steg (revert av denna
+   PR eller en ny PR som tar bort filen) — annars fortsätter den advanced-
+   setup-workflown att köra och röd-markera sig själv vid varje push/PR
+   (samma `"CodeQL analyses from advanced configurations cannot be
+   processed..."`-fel som § Samexistens ovan), utan att skada något (den
+   är inte en required check) men som ren brus i Checks-fliken.
+
+**Ändrar fortfarande INGA repo-inställningar själv** — detta är
+dokumentation för orkestreraren att utföra, inte ett kommando bygg-agenten
+kör.
+
+**Stale/dubblerade larm vid bytet — riskerna, citerade, och varför de
+undviks.** GitHubs felsökningssida "Two CodeQL workflows"
+(`docs.github.com/.../troubleshoot-analysis-errors/two-codeql-workflows`)
+beskriver exakt den situation en ofullständig övergång ger: *"Default
+setup overrides existing CodeQL setups by disabling any existing CodeQL
+workflows, and blocking any CodeQL analysis API uploads"* — vilket är
+PRECIS felet som mättes ovan, från motsatt håll (default setup är den part
+som blockerar). Samma sida namnger två symptom av att ha KVAR två
+konfigurationer samtidigt: *"These configurations can generate duplicate
+alerts"* och *"stale configurations that no longer run will display
+outdated alert statuses, and the stale alerts will stay open
+indefinitely"*.
+
+Vår bytesordning (§ ovan) undviker båda, av konstruktion: när default
+setup stängs av (steg 1) SLUTAR den producera analyser helt — det blir
+aldrig två AKTIVA konfigurationer samtidigt, bara en avstängd och en ny.
+"Dubblerade larm" kräver att båda parallellt skriver till OLIKA
+identiteter för samma fynd; "stale" kräver att en konfiguration fortsätter
+existera efter att den slutat köra. Ingetdera inträffar när ordningen
+följs.
+
+**Varför en fortsättning i stället för en duplicering — SARIF-
+kategorierna matchar, mätt sida vid sida:**
+
+| Källa | Kategori |
+|---|---|
+| Default setup, mätt `code-scanning/analyses` (fem körningar, 2026-09-18) | `/language:javascript-typescript`, `/language:actions` |
+| `codeql.yml`, `analyze`-stegets `category:`-fält | `"/language:${{ matrix.language }}"` → `/language:javascript-typescript`, `/language:actions` |
+
+Identiska. Kategori är en av de axlar GitHub använder för att gruppera
+SARIF-resultat per (verktyg, kategori, ref) — matchande kategori plus
+samma verktygsnamn (`CodeQL`, satt av `codeql-action` oavsett setup-typ)
+betyder att advanced setups första lyckade uppladdning FORTSÄTTER samma
+larm-identitet i stället för att öppna en parallell. Detta är en rimlig
+läsning av den dokumenterade mekaniken (fingerprinting för att förhindra
+dubblerade larm, `docs.github.com` "SARIF support for code scanning" —
+samma sida `codeql-action`s egen loggtext länkar till), inte en verbatim
+garanti för just detta scenario; flaggat i samma anda som
+`push`-avsnittet ovan.
+
+**Jämför larm PER IDENTITET, inte bara antal — exakt kommando:**
+
+```bash
+gh api "repos/high-five-group/miranon-media-admin/code-scanning/alerts?state=open&per_page=100" \
+  --paginate \
+  --jq '.[] | [.rule.id, .most_recent_instance.location.path, (.most_recent_instance.location.start_line|tostring), (.number|tostring)] | @tsv' \
+  | sort > alerts-fore.tsv
+
+# … stäng av default setup, kör en grön codeql.yml-körning …
+
+gh api "repos/high-five-group/miranon-media-admin/code-scanning/alerts?state=open&per_page=100" \
+  --paginate \
+  --jq '.[] | [.rule.id, .most_recent_instance.location.path, (.most_recent_instance.location.start_line|tostring), (.number|tostring)] | @tsv' \
+  | sort > alerts-efter.tsv
+
+diff alerts-fore.tsv alerts-efter.tsv
+```
+
+Identiteten är `<regel-ID>\t<fil>\t<startrad>\t<larmnummer>` — `diff`-rader
+som börjar med `<` är larm som FÖRSVANN (utred varje en, får aldrig vara
+tyst förlorade); rader med `>` är NYA larm (förväntat om en verkligt ny
+regel eller ändrad kod hittas, men kontrollera att de inte är dubbletter
+av en `<`-rad med samma regel-ID+fil men annat radnummer — ett tecken på
+att fingeravtrycket inte matchade). Provkört mot repots verkliga läge
+2026-09-19: kommandot returnerar 9 rader (den nuvarande larm-baslinjen —
+full lista i PR #2558:s kropp), format bekräftat.
+
 ## Acceptance-klassen
 
 Termen bor här och i
