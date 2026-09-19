@@ -6,6 +6,7 @@ title: >-
 status: To Do
 assignee: []
 created_date: '2026-09-19 10:48'
+updated_date: '2026-09-19 12:01'
 labels:
   - ready-for-agent
 dependencies: []
@@ -22,11 +23,11 @@ Skriv ADR-133 ur den kvitterade samsynen och amendera ADR-097. ADR:n låser: vad
 
 ## Acceptance Criteria
 <!-- AC:BEGIN -->
-- [ ] #1 ADR-133 finns i docs/decisions/, följer repots ADR-mall, och bär ADR-barens tre villkor prövade i egen sektion
-- [ ] #2 Varje beslut 1–6 i Del 17 återfinns i ADR:n med sitt skäl och sitt avvisade alternativ; inget beslut är omtolkat
-- [ ] #3 Minst tre branschprecedent citerade ordagrant med URL + hämtdatum ur researchen; är precedent-rymden tunn på en punkt sägs det öppet
-- [ ] #4 ADR-097 bär en Updates-post om distinktionen push/landning; ADR-076, ADR-077 och ADR-036 pekar på ADR-133 där den ändrar deras räckvidd
-- [ ] #5 npm run check:docs grön (ADR-räkningen och index uppdaterade)
+- [x] #1 ADR-133 finns i docs/decisions/, följer repots ADR-mall, och bär ADR-barens tre villkor prövade i egen sektion
+- [x] #2 Varje beslut 1–6 i Del 17 återfinns i ADR:n med sitt skäl och sitt avvisade alternativ; inget beslut är omtolkat
+- [x] #3 Minst tre branschprecedent citerade ordagrant med URL + hämtdatum ur researchen; är precedent-rymden tunn på en punkt sägs det öppet
+- [x] #4 ADR-097 bär en Updates-post om distinktionen push/landning; ADR-076, ADR-077 och ADR-036 pekar på ADR-133 där den ändrar deras räckvidd
+- [x] #5 npm run check:docs grön (ADR-räkningen och index uppdaterade)
 <!-- AC:END -->
 
 ## Definition of Done

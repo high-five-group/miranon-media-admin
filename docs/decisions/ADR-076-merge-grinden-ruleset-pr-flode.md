@@ -165,3 +165,23 @@ org-ägt repo).
   samma våg (actionlint release-pinnad, PR #99).
 - Deferral-klassens rot — medveten utelämning utan återbesöks-trigger —
   adresseras i sessionens lessons-skörd.
+
+## Updates
+
+### 2026-09-19 — [ADR-133](ADR-133-testa-en-gang-per-landning-vantetidstak-och-tillvaxtmal.md) flyttar VAD som körs under `CI Passed or Skipped`, inte mekaniken denna ADR äger
+
+**Vad som INTE ändras.** Ruleset `main-skydd`, den obligatoriska
+checken `CI Passed or Skipped`, dess app-bindning (`integration_id:
+15368`), `ALLGREEN`-kö-mekaniken, merge-only-husregeln och auto-merge-
+flödet står precis som beslutat och amenderat här. Ingen del av detta
+beslut rivs eller omprövas.
+
+**Vad som ändras, i ett syskonbeslut.** `ADR-133` § Besluten 4 (S2)
+beslutar att den obligatoriska kontrollens INNEHÅLL flyttar: hela
+`Acceptance`-klassen och det tvåsidiga hermetikbeviset körs bara i
+kön, inte längre på förslaget. Checkens NAMN och det faktum att den
+måste rapporteras under samma namn på båda ytorna (§ Beslut 1 ovan,
+`required_status_checks`) är oförändrat och är precis den mekanik
+`ADR-133` § Besluten 4 citerar GitHubs egen dokumentation för. Detta
+är en flytt av VAR grinden bevisar sitt beslut, inte ett byte av VEM
+som är grinden.
